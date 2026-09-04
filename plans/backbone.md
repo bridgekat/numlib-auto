@@ -9,11 +9,10 @@ and lists what is left to the surface layer. The phase-1 Lean skeleton (`Numlib/
 with `sorry`) is the full-signature sub-plan for every phase-1 section; sub-plans for later
 phases (e.g. `plans/floating-point.md`) are split off when their formalization starts.
 
-The analyses that this plan was distilled from (per-book theorem inventories, ~6000 lines) were
-produced by sub-agents from low-quality OCR text and are kept in `plans/analysis/` as working
-notes (theorem numbers and formulas there may be garbled; the notes flag uncertain spots). The
-three selected books were re-converted with better OCR and the chapter-level surface plans in
-`plans/surface/` were written from the new text; the notes remain for the other five sources.
+The analyses that this plan was distilled from (per-book theorem inventories produced by
+sub-agents from low-quality OCR text) have been removed; the three selected books were
+re-converted with better OCR and the chapter-level surface plans in `plans/surface/` were
+written from the new text.
 The prototype files that backed the ✓ marks in v0 were superseded by the skeleton and removed.
 
 ---
@@ -954,7 +953,7 @@ expansions, `x_k → x*`) is a phase-3 improvement.
 Shared by Saad-eig (whole book), Saad §1.8–1.9/§4/§6.6, Kress Ch. 7, Higham Ch. 18, Meurant §2
 (Ritz values), Choi §2.1. Phase 1 contains only what the Krylov layer needs (4.1, part of 4.2);
 the rest is phase 2–3 and is driven by the Saad-eig surface. Theorem numbers follow the survey
-`plans/analysis/saad-eig-and-kress.md` (Saad-eig = revised edition; Kress = GTM 181). The survey's
+the Saad-eig/Kress analysis notes (since removed) (Saad-eig = revised edition; Kress = GTM 181). The survey's
 main structural finding is adopted here: linear-system projection methods (§2.4) and eigenvalue
 projection methods (4.2) are the same object, the compression `compression A K` of 2.1.6, with
 Céa's `‖A‖/c` and Saad-eig's `γ = ‖P_K A (1 − P_K)‖` as the two error constants.
@@ -1283,7 +1282,7 @@ noncomputable def Fl.gamma (u : K) (n : ℕ) : K := n * u / (1 - n * u)
 /-- Perturbed Arnoldi/Lanczos relation `A V_m = V_{m+1} H̄_m + F_m`, `‖F_m‖ ≤ ε` and orthogonality defect `‖V_mᴴ V_m − I‖ ≤ ε'` (Paige; Meurant Thm 14–15) as a *structure* `Arnoldi.IsPerturbedRelation`, with exact results restated as "`ε = 0` instance". -/
 /-- Higham Thm 17.1–17.2 (stationary iteration in finite precision) as an instance of a perturbed 2.3.1 iteration. -/
 ```
-Design rules (from `analysis/higham.md` §13): componentwise statements first, normwise as
+Design rules (from the Higham analysis notes, since removed): componentwise statements first, normwise as
 corollaries through `Matrix/Order.lean` (2.1.12); results about *algorithms* are stated for an
 explicit evaluation order (a `SumTree`/fold), never for "the" floating-point sum; keep `K` abstract
 (`ℝ` with a rounding relation), so that a concrete IEEE model (flean / FloatSpec) can instantiate
@@ -1421,7 +1420,7 @@ Surface-specific definitions: real bilinear forms `a : V → V → ℝ` with `Is
   everything else specializes 3.3–3.6.
 * **Meurant–Strakoš**: 3.12 `OrthogonalPolynomials`; §3 identities are in 3.7 (HS 6:1/6:3) and 2.1.5;
   §4–5 finite precision in §6.
-* **Saad-eig**: §4 (numbers integrated above from `plans/analysis/saad-eig-and-kress.md`); shares
+* **Saad-eig**: §4 (numbers integrated above from the Saad-eig/Kress analysis notes (since removed)); shares
   Ch. 1 with `SaadSparse/Ch01`, §4.3 with 2.4/2.1.6, §4.4 with 2.1.9, Ch. 6 with 3.1–3.3; Ch. 3
   analytic perturbation theory (Riesz–Dunford) and Ch. 7–9 are phase 3.
 * **Kress**: Ch. 3 → 2.1.1, 2.3.1, 5.1.1, 5.3.1; Ch. 4 → 2.3.2–2.3.5 (Kress is the second source for
