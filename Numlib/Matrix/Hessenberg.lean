@@ -1,0 +1,70 @@
+/-
+Upstreaming candidate: general material with no numerical-analysis-specific content, written
+to Mathlib conventions with a view to contributing it to Mathlib.
+Natural home: `Mathlib.LinearAlgebra.Matrix`.
+Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
+-/
+import Mathlib.Data.Matrix.Basic
+import Mathlib.LinearAlgebra.Matrix.Block
+import Mathlib.Analysis.RCLike.Basic
+
+/-!
+# Hessenberg and tridiagonal matrices; triangular parts
+
+Basic predicates on matrices indexed by a linearly ordered type, and the strict lower / strict
+upper / diagonal parts used by the classical splittings `A = D - E - F` (Saad §4.1).
+-/
+
+namespace Matrix
+
+variable {n R : Type*} [LinearOrder n]
+
+/-- Upper Hessenberg: zero below the first subdiagonal. -/
+def IsUpperHessenberg [Zero R] (H : Matrix n n R) : Prop :=
+  ∀ i j, (∃ k, j < k ∧ k < i) → H i j = 0
+
+/-- Tridiagonal: zero outside the three central diagonals. -/
+def IsTridiagonal [Zero R] (T : Matrix n n R) : Prop :=
+  ∀ i j, (∃ k, j < k ∧ k < i) ∨ (∃ k, i < k ∧ k < j) → T i j = 0
+
+theorem IsTridiagonal.isUpperHessenberg [Zero R] {T : Matrix n n R} (hT : T.IsTridiagonal) :
+    T.IsUpperHessenberg := by
+  sorry
+
+/-- Rectangular upper Hessenberg (`(m+1) × m`, as in Arnoldi's `H̄_m`). -/
+def IsUpperHessenbergRect [Zero R] {m : ℕ} (H : Matrix (Fin (m + 1)) (Fin m) R) : Prop :=
+  ∀ (i : Fin (m + 1)) (j : Fin m), (j : ℕ) + 1 < (i : ℕ) → H i j = 0
+
+section Parts
+
+variable [Zero R]
+
+/-- Strict lower triangular part. -/
+def strictLower (A : Matrix n n R) : Matrix n n R := Matrix.of fun i j => if j < i then A i j else 0
+
+/-- Strict upper triangular part. -/
+def strictUpper (A : Matrix n n R) : Matrix n n R := Matrix.of fun i j => if i < j then A i j else 0
+
+/-- Diagonal part. -/
+def diagPart [DecidableEq n] (A : Matrix n n R) : Matrix n n R := Matrix.diagonal A.diag
+
+theorem strictLower_blockTriangular (A : Matrix n n R) :
+    (strictLower A).BlockTriangular id := by
+  sorry
+
+theorem strictUpper_blockTriangular (A : Matrix n n R) :
+    (strictUpper A).BlockTriangular OrderDual.toDual := by
+  sorry
+
+end Parts
+
+theorem diagPart_add_strictLower_add_strictUpper [DecidableEq n] [AddCommMonoid R]
+    (A : Matrix n n R) : diagPart A + strictLower A + strictUpper A = A := by
+  sorry
+
+/-- Saad's convention `A = D - E - F` with `E = -strictLower A`, `F = -strictUpper A`. -/
+theorem diagPart_sub_neg_strictLower_sub_neg_strictUpper [DecidableEq n] [AddCommGroup R]
+    (A : Matrix n n R) : diagPart A - (-strictLower A) - (-strictUpper A) = A := by
+  sorry
+
+end Matrix

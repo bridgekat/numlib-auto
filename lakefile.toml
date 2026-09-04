@@ -7,6 +7,7 @@ defaultTargets = ["Numlib"]
 pp.unicode.fun = true # pretty-prints `fun a ↦ b`
 relaxedAutoImplicit = false
 weak.linter.mathlibStandardSet = true
+weak.linter.style.header = false # no Mathlib copyright headers in this project
 maxSynthPendingDepth = 3
 
 [[require]]
@@ -16,3 +17,16 @@ rev = "v4.34.0-rc2"
 
 [[lean_lib]]
 name = "Numlib"
+
+# Surface libraries: one per textbook, thin specializations of the backbone (see README).
+[[lean_lib]]
+name = "SaadSparse"
+srcDir = "Surface"
+
+[[lean_lib]]
+name = "FongSaunders"
+srcDir = "Surface"
+
+[[lean_lib]]
+name = "AtkinsonHan"
+srcDir = "Surface"
