@@ -48,8 +48,8 @@ Backbone modules listed as phase 1 in §7 compiled without `sorry`; surface libr
 ---
 
 > **Status (v1, 2026-09-04).** The phase-1 backbone skeleton is written and compiles with
-> `sorry` (37 modules, `Numlib.lean`); proofs are being filled in. The adversarial review
-> (`plans/review/backbone-review-v0.md`) and the surface plans (`plans/surface/`) are folded
+> `sorry` (37 modules, `Numlib.lean`); proof filling is paused. The adversarial review (v0,
+> issues R1–R20, addressed and removed) and the surface plans (`plans/surface/`) are folded
 > into §12, which overrides §1–§11 wherever they differ. A "✓" in §2–§6 means "elaborates",
 > not "proved" (R5).
 
@@ -1514,7 +1514,7 @@ Surface-specific definitions: real bilinear forms `a : V → V → ℝ` with `Is
 ## 12. Review outcome, surface demands and skeleton status (v1, 2026-09-04)
 
 This section records what changed after the adversarial review
-(`plans/review/backbone-review-v0.md`, issues R1–R20) and the six chapter-level surface plans
+(issues R1–R20; the review file was removed once addressed) and the six chapter-level surface plans
 (`plans/surface/*.md`, written from the high-quality OCR text). Where it contradicts §1–§11, this
 section wins; the earlier sections are kept as the design rationale and have been patched only
 where a name or path changed.
@@ -1557,7 +1557,7 @@ Mathlib conventions throughout, no dependency on the numerical-analysis layers.
 * **§11 Q1** `→ₗ` at L0/L1, `→L` where norms/completeness enter (unchanged). **Q2** `RCLike` with
   `RCLike.re`; no real `abbrev`s; the surfaces state real theorems (`SesqForm.isCoerciveWith_real_iff`
   etc. remove the decorations). **Q3** quadratic-form bounds (R3). **Q4** `finrank` grade (R4).
-  **Q5** Givens rotations are `ℕ`-indexed recursions on the infinite coefficient function
+  **Q5 / R11** Givens rotations are `ℕ`-indexed recursions on the infinite coefficient function
   (`Krylov.rotated`, `givensC/S/Rho`, `gamma`, `gvec`; `Krylov/Hessenberg.lean`), so prefix stability
   across `m` is automatic; the `Fin`-matrices `hessenbergOf`, `givensMatrix`, `givensQ` are built at
   the end. The spec-level identities `|s_m| = ‖r^G_{m+1}‖/‖r^G_m‖`, `|c_m| = ‖r^G_{m+1}‖/‖r^F_{m+1}‖`
@@ -1595,6 +1595,7 @@ Mathlib conventions throughout, no dependency on the numerical-analysis layers.
 * **R15** the floating-point layer will be relational (`FloatingPoint` namespace), phase 4.
 * **R16** names kept: `IsMinRes`, `compression`, `Arnoldi.vec`, `IsStrictDiagDominant` (with the
   `Col` variant); `IsSymmetricCoercive`'s docstring mentions SPD/HPD/`Matrix.PosDef`.
+* **R18** power/subspace iteration (phase 2, 4.2) goes through `Module.End.iSup_maxGenEigenspace_eq_top` and `independent_maxGenEigenspace` with the restriction to `⨆_{μ ≠ λ₁} maxGenEigenspace μ`; the gap metric between subspaces is a Mathlib gap and is postponed.
 * **R17** Chebyshev min–max avoids parity (`q.comp (-X)`). **R19** `⨅` statements kept; `IsLeast`
   forms can be added as corollaries when a consumer needs them.
 
