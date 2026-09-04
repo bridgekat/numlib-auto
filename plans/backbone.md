@@ -953,7 +953,7 @@ expansions, `x_k → x*`) is a phase-3 improvement.
 Shared by Saad-eig (whole book), Saad §1.8–1.9/§4/§6.6, Kress Ch. 7, Higham Ch. 18, Meurant §2
 (Ritz values), Choi §2.1. Phase 1 contains only what the Krylov layer needs (4.1, part of 4.2);
 the rest is phase 2–3 and is driven by the Saad-eig surface. Theorem numbers follow the survey
-the Saad-eig/Kress analysis notes (since removed) (Saad-eig = revised edition; Kress = GTM 181). The survey's
+the Saad-eig/Kress analysis notes, since removed (Saad-eig = revised edition; Kress = GTM 181). The survey's
 main structural finding is adopted here: linear-system projection methods (§2.4) and eigenvalue
 projection methods (4.2) are the same object, the compression `compression A K` of 2.1.6, with
 Céa's `‖A‖/c` and Saad-eig's `γ = ‖P_K A (1 − P_K)‖` as the two error constants.
@@ -1420,7 +1420,7 @@ Surface-specific definitions: real bilinear forms `a : V → V → ℝ` with `Is
   everything else specializes 3.3–3.6.
 * **Meurant–Strakoš**: 3.12 `OrthogonalPolynomials`; §3 identities are in 3.7 (HS 6:1/6:3) and 2.1.5;
   §4–5 finite precision in §6.
-* **Saad-eig**: §4 (numbers integrated above from the Saad-eig/Kress analysis notes (since removed)); shares
+* **Saad-eig**: §4 (numbers integrated above from the Saad-eig/Kress analysis notes, since removed); shares
   Ch. 1 with `SaadSparse/Ch01`, §4.3 with 2.4/2.1.6, §4.4 with 2.1.9, Ch. 6 with 3.1–3.3; Ch. 3
   analytic perturbation theory (Riesz–Dunford) and Ch. 7–9 are phase 3.
 * **Kress**: Ch. 3 → 2.1.1, 2.3.1, 5.1.1, 5.3.1; Ch. 4 → 2.3.2–2.3.5 (Kress is the second source for
