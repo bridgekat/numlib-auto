@@ -1,19 +1,20 @@
 # Surface plan: Saad, Iterative Methods — Chapter 6
 
 Surface library `SaadSparse`, chapter file set `Surface/SaadSparse/Ch06/*.lean`, importing only the
-backbone `Numlib` (backbone references are to `plans/backbone.md` § numbers; names marked ✓ are
-already in the skeleton under `Numlib/`). Chapter 6 is the book's presentation of the Krylov spine:
-every numbered result is either a statement about *the* Galerkin / minimal-residual iterate
-(backbone specs `Krylov.IsGalerkinIterate`, `Krylov.IsMinResIterate`, 3.4) transported to a concrete
-implementation (Arnoldi/Lanczos/Givens bookkeeping, 3.2–3.6), or a convergence bound (3.9–3.10,
-2.1.9). The surface therefore consists of (a) *book-exact* definitions of the 24 algorithms as Lean
-functions over `Matrix (Fin n) (Fin n) 𝕜` acting on `EuclideanSpace 𝕜 (Fin n)`, (b) an equivalence
-lemma per algorithm ("the book's algorithm computes the backbone object / satisfies the backbone
-spec"), and (c) the numbered results as one-line specializations. Truncated/restarted variants
-(FOM(m), IOM, DIOM, GMRES(m), QGMRES, DQGMRES, ORTHOMIN(k), GCR(m)) are defined faithfully and only
-the properties the book actually proves about them are stated (§2 says which, per variant).
+backbone `Numlib` (backbone references are to `plans/backbone.md` § numbers and to declarations
+under `Numlib/`, cited with their module). Chapter 6 is the book's presentation of the Krylov
+spine: every numbered result is either a statement about *the* Galerkin / minimal-residual iterate
+(backbone specs `Krylov.IsGalerkinIterate`, `Krylov.IsMinResIterate`, §3.4) transported to a
+concrete implementation (Arnoldi/Lanczos/Givens bookkeeping, §3.2–3.6), or a convergence bound
+(§3.9–3.10, §2.1.9). The surface therefore consists of (a) *book-exact* definitions of the 24
+algorithms as Lean functions over `Matrix (Fin n) (Fin n) 𝕜` acting on `EuclideanSpace 𝕜 (Fin n)`,
+(b) an equivalence lemma per algorithm ("the book's algorithm computes the backbone object /
+satisfies the backbone spec"), and (c) the numbered results as one-line specializations.
+Truncated/restarted variants (FOM(m), IOM, DIOM, GMRES(m), QGMRES, DQGMRES, ORTHOMIN(k), GCR(m))
+are defined faithfully and only the properties the book actually proves about them are stated
+(§2 says which, per variant).
 
-Conventions used throughout this plan:
+## 1. Conventions and file layout
 
 * `𝕜` with `[RCLike 𝕜]`, `n : ℕ`, `𝔼 := EuclideanSpace 𝕜 (Fin n)`, `A : Matrix (Fin n) (Fin n) 𝕜`,
   `op A := Matrix.toEuclideanLin A : 𝔼 →ₗ[𝕜] 𝔼`. Definitions and algorithms are polymorphic in `𝕜`
@@ -27,14 +28,17 @@ Conventions used throughout this plan:
 * Indices: Arnoldi/Lanczos/IOP vectors are `ℕ`-indexed and 0-based (`v j` is the book's `v_{j+1}`,
   `coeff i j` is `h_{i+1,j+1}`); matrices `V_m : Matrix (Fin n) (Fin m) 𝕜`,
   `H_m : Matrix (Fin m) (Fin m) 𝕜`, `H̄_m : Matrix (Fin (m+1)) (Fin m) 𝕜` with `Fin` indices
-  shifted by one from the book. CG/CR/GCR iterates are 0-based exactly as in the book.
+  shifted by one from the book. CG/CR/GCR iterates are 0-based exactly as in the book. The Givens
+  quantities `c_i, s_i, γ_i` are likewise 0-based functions of `ℕ` (D8).
 * "Stop" semantics: a division by a vanishing norm yields `0` (Lean), which reproduces the book's
   "if `h_{j+1,j} = 0` then Stop" for the vectors (all later vectors are `0`); for FOM/GMRES the
   book's "set `m := j`" is implemented as `m' := min m (grade A r₀)`.
-* Type-checked sketches: `Scratch.lean` next to this file (`krylov`, `grade` by `Nat.find`,
-  `arnoldiCGS` by well-founded recursion, `V/H/Hbar`, (6.7)/(6.8), `givens`, `IsGMRESIterate`,
-  `cg`, `anorm`, Thm 6.29 and Thm 6.25 statements) elaborates with `sorry` against the pinned
-  Mathlib (needs `open Matrix` for `ᴴ`).
+* Matrix ↔ operator glue is `Numlib/Matrix/ToEuclideanLin.lean` (`Matrix.toEuclideanLin_pow`,
+  `toEuclideanLin_mul`, `toEuclideanLin_conjTranspose`, `krylov_subspace_toEuclideanLin`,
+  `toEuclideanLin_apply_eq_sum` for `V_m y = ∑ y_j • v_j`,
+  `IsHermitian.hasEigenvalue_toEuclideanLin_iff`, `IsHermitian.isSymmetricBoundedBy_toEuclideanLin`,
+  `l2_opNorm_eq_norm_toEuclideanLin`), together with Mathlib's `Matrix.isHermitian_iff_isSymmetric`
+  and `Matrix.posDef_iff_isSymmetricCoercive` (`Numlib/InnerProductSpace/Coercive.lean`).
 
 Proposed files (in dependency order):
 
@@ -52,17 +56,17 @@ Proposed files (in dependency order):
 | `Ch06/CG.lean` | §6.7 | (6.86)–(6.103), Alg 6.16 (Lanczos method), 6.17 (D-Lanczos), 6.18 (CG), 6.19 (three-term CG), Prop 6.20; P-6.17, P-6.19 |
 | `Ch06/CR.lean` | §6.8 | Alg 6.20 and its invariants |
 | `Ch06/GCR.lean` | §6.9 | Lemma 6.21, Alg 6.21 (GCR), ORTHOMIN(k), ORTHODIR, GCR(m) |
-| `Ch06/FaberManteuffel.lean` | §6.10 | Prop 6.22, `ν(A)`, `CG(s)`, Lemma 6.23, Thm 6.24 (see status) |
-| `Ch06/Chebyshev.lean` | §6.11.1–6.11.2 | (6.109)–(6.121), Thm 6.25, Lemma 6.26, Thm 6.27 |
-| `Ch06/Convergence.lean` | §6.11.3–6.11.4 | Lemma 6.28, Thm 6.29, (6.122)–(6.128), Thm 6.30, Lemma 6.31, Prop 6.32, Cor 6.33 |
-| `Ch06/Block.lean` | §6.12 | Alg 6.22–6.24, (6.129)–(6.136), block-FOM/GMRES specifications |
+| `Ch06/FaberManteuffel.lean` | §6.10 | Prop 6.22, `ν(A)`, `CG(s)`; Lemma 6.23, Thm 6.24 (deferred, §4) |
+| `Ch06/Chebyshev.lean` | §6.11.1–6.11.2 | (6.109)–(6.121), Thm 6.25; Lemma 6.26, Thm 6.27 (deferred, §4) |
+| `Ch06/Convergence.lean` | §6.11.3–6.11.4 | Lemma 6.28, Thm 6.29, (6.122)–(6.128), Thm 6.30, Lemma 6.31, Prop 6.32; Cor 6.33 (deferred, §4) |
+| `Ch06/Block.lean` | §6.12 | Alg 6.22–6.24, (6.129)–(6.136), block-FOM/GMRES specifications (relations deferred, §4) |
 | `Ch06/Problems.lean` | Problems | P-6.1, 6.5, 6.9, 6.13, 6.14, 6.17, 6.22, 6.25, 6.26, 6.29 (cited by the text, or supplying proofs the text omits) |
 
-## Book-specific definitions and algorithms
+## 2. Book-specific definitions and algorithms
 
 Each entry: book formulation → Lean surface sketch → backbone counterpart → equivalence lemma.
 All Lean below is a sketch (namespace `SaadSparse.Ch06`, `variable {n : ℕ} {𝕜 : Type*} [RCLike 𝕜]`,
-`local notation "𝔼" => EuclideanSpace 𝕜 (Fin n)`); ✓ = type-checked in `Scratch.lean`.
+`local notation "𝔼" => EuclideanSpace 𝕜 (Fin n)`, `open Matrix` for `ᴴ`).
 
 ### D1. Operator of a matrix, Krylov subspace (6.2), grade (§6.2)
 
@@ -72,10 +76,10 @@ it is `≤ n`.
 
 ```lean
 abbrev op (A : Matrix (Fin n) (Fin n) 𝕜) : 𝔼 →ₗ[𝕜] 𝔼 := Matrix.toEuclideanLin A
-/-- (6.2). ✓ -/
+/-- (6.2). -/
 def krylov (A : Matrix (Fin n) (Fin n) 𝕜) (v : 𝔼) (m : ℕ) : Submodule 𝕜 𝔼 :=
   Submodule.span 𝕜 (Set.range fun i : Fin m => Matrix.toEuclideanLin (A ^ (i : ℕ)) v)
-/-- degree of the minimal polynomial of `v` w.r.t. `A` (exists by Cayley–Hamilton). ✓ -/
+/-- degree of the minimal polynomial of `v` w.r.t. `A` (exists by Cayley–Hamilton). -/
 noncomputable def grade (A) (v : 𝔼) : ℕ := by
   classical
   exact Nat.find (p := fun d => ∃ p : 𝕜[X], p.Monic ∧ p.natDegree = d ∧
@@ -84,11 +88,19 @@ noncomputable def grade (A) (v : 𝔼) : ℕ := by
 noncomputable def minpolyVec (A) (v : 𝔼) : 𝕜[X]   -- a monic witness of degree `grade A v`
 ```
 
-Backbone: 3.1 `Krylov.subspace` ✓, `Krylov.grade` ✓ (`sInf {m | A^m v ∈ 𝒦_m}`), `Krylov.grade_le_finrank` ✓,
-`Krylov.subspace_eq_map_degreeLT` ✓, `Krylov.mem_subspace_iff_exists_aeval` ✓, `Krylov.grade_le_iff` ✓.
-Equivalence lemmas: `krylov_eq : krylov A v m = 𝒦[op A, v] m` (needs `toEuclideanLin (A ^ i) = (op A) ^ i`,
-glue G12); `grade_eq : grade A v = Krylov.grade (op A) v` (needs request G4:
-`(A ^ m) v ∈ 𝒦_m ↔ ∃ p monic, natDegree p = m ∧ aeval A p v = 0`); `grade_le : grade A v ≤ n`.
+Backbone (§3.1, `Numlib/Krylov/Subspace.lean`): `Krylov.subspace`, `Krylov.grade`
+(`Module.finrank 𝕜 (fullSubspace A v)`, equal to `sInf {m | A^m v ∈ 𝒦_m}` by `Krylov.grade_eq_sInf`),
+`Krylov.grade_le_finrank`, `Krylov.subspace_eq_map_degreeLT`, `Krylov.mem_subspace_iff_exists_aeval`,
+`Krylov.grade_le_iff`, `Krylov.pow_apply_mem_subspace_iff_exists_monic`
+(`A^m v ∈ 𝒦_m ↔ ∃ p, p.Monic ∧ p.natDegree = m ∧ aeval A p v = 0`); glue
+`Matrix.krylov_subspace_toEuclideanLin`, `Matrix.toEuclideanLin_pow`. The finite-grade hypothesis
+`[FiniteDimensional 𝕜 (fullSubspace A v)]` of §3.1 is automatic on `𝔼`.
+Equivalence lemmas: `krylov_eq : krylov A v m = 𝒦[op A, v] m` (the symmetric form of
+`Matrix.krylov_subspace_toEuclideanLin`); `grade_eq : grade A v = Krylov.grade (op A) v`
+(`Nat.find` of the monic-annihilator predicate is `sInf {m | A^m v ∈ 𝒦_m}` by
+`pow_apply_mem_subspace_iff_exists_monic`, `grade_eq_sInf` and `grade_le_iff`, after moving
+`toEuclideanLin (aeval A p)` to `aeval (op A) p` with `toEuclideanLin_pow`);
+`grade_le : grade A v ≤ n` (`grade_le_finrank`, `finrank_euclideanSpace`).
 
 ### D2. Algorithm 6.1 (Arnoldi, classical Gram–Schmidt) and `V_m, H_m, H̄_m, w_m`
 
@@ -96,7 +108,7 @@ Book: `v_1` unit; for `j = 1..m`: `h_ij = (A v_j, v_i)` (`i ≤ j`), `w_j = A v_
 `h_{j+1,j} = ‖w_j‖₂`, stop if `0`, `v_{j+1} = w_j/h_{j+1,j}`.
 
 ```lean
-/-- Alg 6.1, 0-based; `0` after the process has stopped. ✓ -/
+/-- Alg 6.1, 0-based; `0` after the process has stopped. -/
 noncomputable def arnoldiCGS (A) (v₁ : 𝔼) : ℕ → 𝔼
   | 0 => v₁
   | j + 1 =>
@@ -106,22 +118,25 @@ noncomputable def arnoldiCGS (A) (v₁ : 𝔼) : ℕ → 𝔼
     ((‖w‖ : 𝕜)⁻¹) • w
 termination_by j => j
 decreasing_by exact i.isLt
-noncomputable def arnoldiCoeff (A) (v₁) (i j : ℕ) : 𝕜 := inner 𝕜 (arnoldiCGS A v₁ i) (op A (arnoldiCGS A v₁ j))   -- ✓
-noncomputable def arnoldiW (A) (v₁) (j : ℕ) : 𝔼 := op A (v j) - ∑ i ∈ Finset.range (j + 1), arnoldiCoeff A v₁ i j • v i
-noncomputable def V (A) (v₁) (m : ℕ) : Matrix (Fin n) (Fin m) 𝕜 := Matrix.of fun i j => arnoldiCGS A v₁ j i   -- ✓
-noncomputable def Hbar (A) (v₁) (m) : Matrix (Fin (m + 1)) (Fin m) 𝕜 := Matrix.of fun i j => arnoldiCoeff A v₁ i j   -- ✓
-noncomputable def H (A) (v₁) (m) : Matrix (Fin m) (Fin m) 𝕜 := Matrix.of fun i j => arnoldiCoeff A v₁ i j   -- ✓
+noncomputable def arnoldiCoeff (A) (v₁) (i j : ℕ) : 𝕜 :=
+  inner 𝕜 (arnoldiCGS A v₁ i) (op A (arnoldiCGS A v₁ j))
+noncomputable def arnoldiW (A) (v₁) (j : ℕ) : 𝔼 :=
+  op A (v j) - ∑ i ∈ Finset.range (j + 1), arnoldiCoeff A v₁ i j • v i
+noncomputable def V (A) (v₁) (m : ℕ) : Matrix (Fin n) (Fin m) 𝕜 := Matrix.of fun i j => arnoldiCGS A v₁ j i
+noncomputable def Hbar (A) (v₁) (m) : Matrix (Fin (m + 1)) (Fin m) 𝕜 := Matrix.of fun i j => arnoldiCoeff A v₁ i j
+noncomputable def H (A) (v₁) (m) : Matrix (Fin m) (Fin m) 𝕜 := Matrix.of fun i j => arnoldiCoeff A v₁ i j
 /-- "Algorithm 6.1 does not stop before the `m`-th step": `h_{j+1,j} ≠ 0` for `j < m`. -/
 def NoBreakdownBefore (A) (v₁) (m : ℕ) : Prop := ∀ j, j + 1 < m → arnoldiCoeff A v₁ (j + 1) j ≠ 0
 ```
 
-Backbone: 3.2 `Arnoldi.vec` ✓ (`gramSchmidtNormed` of `A^i b`), `Arnoldi.coeff` ✓, `Arnoldi.w` ✓,
-`Arnoldi.vec_succ_eq` ✓ (`v_{j+1} = ‖w_j‖⁻¹ • w_j`), `Arnoldi.coeff_succ_self` ✓, `Arnoldi.hessenberg` ✓,
-`Arnoldi.hessenbergSq` ✓, `Arnoldi.vec_zero` ✓, `Arnoldi.coeff_succ_self_eq_zero_iff` ✓.
-Equivalence: `arnoldiCGS_eq (hv : ‖v₁‖ = 1) : arnoldiCGS A v₁ j = Arnoldi.vec (op A) v₁ j` (induction on `j`
-using `vec_zero`, `vec_succ_eq`, `coeff_succ_self`: the surface definition is literally the backbone's
-recurrence), hence `arnoldiCoeff = Arnoldi.coeff`, `Hbar = Arnoldi.hessenberg`, `H = Arnoldi.hessenbergSq`,
-`NoBreakdownBefore A v₁ m ↔ m ≤ Krylov.grade (op A) v₁`.
+Backbone (§3.2, `Numlib/Krylov/Arnoldi.lean`): `Arnoldi.vec` (`gramSchmidtNormed` of `A^i b`),
+`Arnoldi.coeff`, `Arnoldi.w`, `Arnoldi.vec_succ_eq` (`v_{j+1} = ‖w_j‖⁻¹ • w_j`),
+`Arnoldi.coeff_succ_self`, `Arnoldi.hessenberg`, `Arnoldi.hessenbergSq`, `Arnoldi.vec_zero`,
+`Arnoldi.coeff_succ_self_eq_zero_iff`, `Arnoldi.hessenberg_isUpperHessenbergRect`.
+Equivalence: `arnoldiCGS_eq (hv : ‖v₁‖ = 1) : arnoldiCGS A v₁ j = Arnoldi.vec (op A) v₁ j` (induction
+on `j` using `vec_zero`, `vec_succ_eq`, `coeff_succ_self`: the surface definition is literally the
+backbone's recurrence), hence `arnoldiCoeff = Arnoldi.coeff`, `Hbar = Arnoldi.hessenberg`,
+`H = Arnoldi.hessenbergSq`, `NoBreakdownBefore A v₁ m ↔ m ≤ Krylov.grade (op A) v₁`.
 
 ### D3. Algorithm 6.2 (Arnoldi, modified Gram–Schmidt)
 
@@ -136,11 +151,16 @@ noncomputable def arnoldiMGS (A) (v₁ : 𝔼) : ℕ → 𝔼      -- same recur
 noncomputable def arnoldiMGSCoeff (A) (v₁) (i j : ℕ) : 𝕜   -- the `h_ij` produced by the loop
 ```
 
-Backbone: none (1.2: MGS is surface material).
+Backbone: none (§1.2: MGS is surface material); the flag-uniqueness lemmas
+`InnerProductSpace.exists_norm_eq_one_smul_gramSchmidtNormed` and
+`InnerProductSpace.eq_gramSchmidtNormed_of_re_inner_pos` (`Numlib/InnerProductSpace/GramSchmidt.lean`)
+are the general tool.
 Equivalence: `arnoldiMGS_eq_arnoldiCGS (hv : ‖v₁‖ = 1) : arnoldiMGS A v₁ = arnoldiCGS A v₁` and
 `arnoldiMGSCoeff = arnoldiCoeff` ("in exact arithmetic … mathematically equivalent"): induction,
-using orthonormality of `v_0..v_j` (`Arnoldi.orthonormal` ✓ via D2) to show that the partial
-subtractions do not change `inner (v i) w`. Alternatively via the flag-uniqueness lemma G8.
+using orthonormality of `v_0..v_j` (`Arnoldi.orthonormal` via D2) to show that the partial
+subtractions do not change `inner (v i) w`. Alternatively: the MGS vectors are orthonormal, span the
+Krylov flag and have positive inner product with `A^j v₁`, so `eq_gramSchmidtNormed_of_re_inner_pos`
+identifies them with `Arnoldi.vec` (which is `gramSchmidtNormed` of the Krylov sequence).
 
 ### D4. Algorithm 6.3 (Householder Arnoldi), (6.10)–(6.13)
 
@@ -161,12 +181,14 @@ noncomputable def Qhh (…) (j : ℕ) : 𝔼 →ₗ[ℝ] 𝔼            -- (6.1
 noncomputable def HbarHH (…) : Matrix (Fin (m + 1)) (Fin m) ℝ   -- first `m+1` rows of `[h_1, …, h_m]`
 ```
 
-Backbone: none (3.2: Householder Arnoldi is surface); Mathlib `reflection`.
+Backbone: none (§3.2: Householder Arnoldi is surface); Mathlib `reflection`;
+`InnerProductSpace.exists_norm_eq_one_smul_gramSchmidtNormed` for the sign statement.
 Equivalence (§6.3.2 last paragraph, P-6.1(f)):
 `∃ ε : ℕ → ℝ, (∀ j, ε j = 1 ∨ ε j = -1) ∧ ∀ j ≤ m, vHH j = ε j • arnoldiCGS A (‖v‖⁻¹ • v) j` and
 `HbarHH = diagonal ε * Hbar * diagonal ε`. Proof: (6.12) is a QR factorization of
 `[v, A v_1, …, A v_m]` with `Q_mᵀ` orthogonal and `[h_0, …, h_m]` upper triangular, hence
-`span{v_1..v_j} = 𝒦_j` and orthonormality; flag-uniqueness (G8) gives the `±`. Surface-heavy.
+`span{v_1..v_j} = 𝒦_j` and orthonormality; the flag lemma applied to `f i = (op A)^i v` (whose
+Gram–Schmidt is `Arnoldi.vec`) gives the `±`. Surface-heavy.
 
 ### D5. FOM (6.16)–(6.17), Algorithm 6.4, Algorithm 6.5 (FOM(m))
 
@@ -193,12 +215,19 @@ noncomputable def fomCycle (A) (b) (m : ℕ) (x₀ : 𝔼) : 𝔼 := fom A b x�
 noncomputable def fomRestarted (A) (b) (m : ℕ) (x₀ : 𝔼) (k : ℕ) : 𝔼 := (fomCycle A b m)^[k] x₀
 ```
 
-Backbone: 3.4 `Krylov.IsGalerkinIterate`, 3.5 `Krylov.isGalerkinIterate_of_mulVec_eq` (`H_m y = β e_1 ⇒` Galerkin),
-2.4.1 `IsPetrovGalerkin.isPetrovGalerkin_iff_mulVec` ✓ (Saad (5.7)), `existsUnique_isGalerkin_of_isCoercive` ✓.
-Equivalence: `fom_isGalerkinIterate (h : FOMDefined A b x₀ m) (hm : m ≤ grade) : Krylov.IsGalerkinIterate (op A) b x₀ m (fom A b x₀ m)`
-and the converse `existsUnique_isGalerkinIterate_iff (hm : m ≤ grade) : (∃! x, IsGalerkinIterate … m x) ↔ FOMDefined …`,
-`IsGalerkinIterate … x → FOMDefined → x = fom …` (request G6). What the book proves about FOM(m):
-nothing (Example 6.1 is numerical); only the definition is formalized.
+Backbone (§3.4–3.5): `Krylov.IsGalerkinIterate` (`Numlib/Krylov/Iterate.lean`); in coordinates
+(`Numlib/Krylov/Hessenberg.lean`, for `m ≤ grade`): `Krylov.isGalerkinIterate_iff_mulVec_eq`
+(`x₀ + ∑ y_j v_j` is the Galerkin iterate iff `H_m y = β e₁`),
+`Krylov.isGalerkinIterate_iff_exists_mulVec_eq`, `Krylov.existsUnique_isGalerkinIterate_iff_isUnit`
+(a unique Galerkin iterate exists iff `IsUnit H_m`); §2.4.1 `isPetrovGalerkin_iff_mulVec`
+(Saad (5.7)), `existsUnique_isGalerkin_of_isCoercive`. The backbone writes the book's `β e₁` as
+`Krylov.firstVec β m` and `V_m y` as `∑ y_j • v_j` (`Matrix.toEuclideanLin_apply_eq_sum`).
+Equivalence: `fom_isGalerkinIterate (h : FOMDefined A b x₀ m) (hm : m ≤ grade) :
+Krylov.IsGalerkinIterate (op A) b x₀ m (fom A b x₀ m)` (`H_m (H_m⁻¹ (β e₁)) = β e₁` for a unit
+`H_m`, then `isGalerkinIterate_iff_mulVec_eq`); `existsUnique_isGalerkinIterate_iff (hm : m ≤ grade) :
+(∃! x, IsGalerkinIterate … m x) ↔ FOMDefined …` (`existsUnique_isGalerkinIterate_iff_isUnit` through
+`H = Arnoldi.hessenbergSq`, D2); `IsGalerkinIterate … x → FOMDefined → x = fom …`. What the book
+proves about FOM(m): nothing (Example 6.1 is numerical); only the definition is formalized.
 
 ### D6. Algorithms 6.6 (IOP), 6.7 (IOM), 6.8 (DIOM); (6.19)–(6.21)
 
@@ -219,13 +248,22 @@ structure DIOMState where (x : 𝔼) (ζ : 𝕜) (p : ℕ → 𝔼) (u : ℕ →
 noncomputable def diom (A) (b x₀) (k : ℕ) : ℕ → DIOMState     -- Alg 6.8, one step per `m`
 ```
 
-Backbone: none for IOP/IOM/DIOM (1.2: surface until a second book needs them). What the book proves
-about them: (i) (6.6)/(6.7) still hold for IOP vectors (by construction); (ii) Prop 6.7 and (6.18)
-for IOM/DIOM; (iii) `‖b − A x_m‖ = h_{m+1,m} |ζ_m/u_mm|` for DIOM; (iv) DIOM ≡ IOM when all
-`u_jj ≠ 0`; (v) Prop 6.8; (vi) (6.22)–(6.24) (P-6.22); (vii) IOP with `k ≥ m` is Alg 6.2. These are
-in §3 as `surface-only`, becoming `direct` if the backbone adopts request G1.
-Equivalence lemmas: `iop_eq_arnoldiMGS_of_le (hk : m ≤ k) (j < m) : iop A v₁ k j = arnoldiMGS A v₁ j` (vii);
-`diom_x_eq_iom (hu : ∀ j ≤ m, u_jj ≠ 0) : (diom A b x₀ k m).x = iom A b x₀ k m` (iv).
+Backbone: none for the IOP/IOM/DIOM recurrences (§1.2: surface until a second book needs them).
+The identities the book reuses for them "because orthogonality was not used" are stated in the
+backbone for any sequence satisfying `Krylov.HessenbergRelation A v h : Prop`
+(`Numlib/Krylov/Hessenberg.lean`; fields `apply_eq : ∀ j, A (v j) = ∑ i ∈ range (j + 2), h i j • v i`
+and `eq_zero_of_lt : ∀ i j, j + 1 < i → h i j = 0`), with `HessenbergRelation.apply_sum` ((6.7) in
+coordinates), `HessenbergRelation.residual_eq` ((6.27), for `b − A x₀ = β • v 0`) and
+`HessenbergRelation.residual_eq_of_mulVec_eq` (Prop 6.7 / (6.18)); `Arnoldi.hessenbergRelation` is
+the Arnoldi instance. What the book proves about IOP/IOM/DIOM: (i) (6.6)/(6.7) still hold for IOP
+vectors (by construction); (ii) Prop 6.7 and (6.18) for IOM/DIOM; (iii)
+`‖b − A x_m‖ = h_{m+1,m} |ζ_m/u_mm|` for DIOM; (iv) DIOM ≡ IOM when all `u_jj ≠ 0`; (v) Prop 6.8;
+(vi) (6.22)–(6.24) (P-6.22); (vii) IOP with `k ≥ m` is Alg 6.2. These are in §3 as
+`needs-equivalence` ((i)–(iii), through `iop_hessenbergRelation`) or `surface-only`.
+Equivalence lemmas: `iop_hessenbergRelation : Krylov.HessenbergRelation (op A) (iop A v₁ k) (iopCoeff A v₁ k)`
+(the loop computes `A v_j = ∑_{i ∈ band} h_ij v_i + w_j` with `v_{j+1} = w_j/‖w_j‖`, and `iopCoeff`
+is `0` outside the band); `iop_eq_arnoldiMGS_of_le (hk : m ≤ k) (j < m) : iop A v₁ k j = arnoldiMGS A v₁ j`
+(vii); `diom_x_eq_iom (hu : ∀ j ≤ m, u_jj ≠ 0) : (diom A b x₀ k m).x = iom A b x₀ k m` (iv).
 
 ### D7. GMRES (6.25)–(6.30), Algorithm 6.9, Algorithm 6.10 (Householder GMRES), Algorithm 6.11 (GMRES(m))
 
@@ -238,11 +276,11 @@ GMRES(m): repeat with `x_0 := x_m`.
 /-- `J(y)` of (6.26)/(6.28) in Hessenberg coordinates. -/
 noncomputable def J (A) (b x₀) (m) (y : Fin m → 𝕜) : ℝ :=
   ‖(WithLp.toLp 2 ((β A b x₀ : 𝕜) • e₁ (m+1) - (Hbar A (v₁ A b x₀) m).mulVec y) : EuclideanSpace 𝕜 (Fin (m + 1)))‖
-/-- Alg 6.9 as a relation (line 12: "compute `y_m` the minimizer"). ✓ -/
+/-- Alg 6.9 as a relation (line 12: "compute `y_m` the minimizer"). -/
 def IsGMRESIterate (A) (b x₀ : 𝔼) (m : ℕ) (x : 𝔼) : Prop :=
   ∃ y : Fin m → 𝕜, IsMinOn (J A b x₀ m) Set.univ y ∧ x = x₀ + Matrix.toEuclideanLin (V A (v₁ A b x₀) m) (WithLp.toLp 2 y)
 /-- the minimizer as computed in §6.5.3 (Prop 6.9(2)): `y_m = R_m⁻¹ g_m` (`R, g` from D8). -/
-noncomputable def gmresY (A) (b x₀) (m) : Fin m → 𝕜 := (R A b x₀ m)⁻¹.mulVec (g A b x₀ m)
+noncomputable def gmresY (A) (b x₀) (m) : Fin m → 𝕜 := (R (arnoldiCoeff A (v₁ A b x₀)) m)⁻¹.mulVec (g … m)
 noncomputable def gmresFixed (A) (b x₀) (m) : 𝔼 := x₀ + Matrix.toEuclideanLin (V …) (WithLp.toLp 2 (gmresY A b x₀ m))
 noncomputable def gmres (A) (b x₀) (m : ℕ) : 𝔼 := gmresFixed A b x₀ (mEff A b x₀ m)   -- Alg 6.9 with "set m := j"
 /-- Alg 6.10: Householder basis, `βHH := (h_0)_1`, Horner accumulation (6.31)–(6.33). -/
@@ -254,15 +292,23 @@ noncomputable def gmresCycle (A) (b) (m : ℕ) (x₀ : 𝔼) : 𝔼 := gmres A b
 noncomputable def gmresRestarted (A) (b) (m) (x₀) (k : ℕ) : 𝔼 := (gmresCycle A b m)^[k] x₀
 ```
 
-Backbone: 3.4 `Krylov.IsMinResIterate`, 3.5 `Krylov.norm_residual_eq_norm_hessenberg` (6.28),
-`Krylov.isMinResIterate_of_isLeast` (6.30), 2.4.1 `IsMinRes.residual_unique` ✓, `existsUnique_isMinRes_of_injOn` ✓.
+Backbone (§3.4–3.5): `Krylov.IsMinResIterate`, `Krylov.exists_isMinResIterate`,
+`Krylov.existsUnique_isMinResIterate_of_injective` (`Numlib/Krylov/Iterate.lean`); in coordinates
+(`Numlib/Krylov/Hessenberg.lean`, `m ≤ grade`): `Krylov.norm_residual_eq_norm_firstVec_sub_mulVec`
+(6.28), `Krylov.isMinResIterate_iff_isMinOn` ((6.29)–(6.30): `x₀ + ∑ y_j v_j` is the
+minimal-residual iterate iff `y` minimizes `‖β e₁ − H̄_m z‖₂` over `z`),
+`Krylov.IsMinResIterate.exists_mulVec_rotated_eq` (the minimizer solves `R_m y = g_m`, D8);
+§2.4.1 `IsMinRes.residual_unique`, `existsUnique_isMinRes_of_injOn`.
 Equivalence: `isGMRESIterate_iff (hm : m ≤ grade) : IsGMRESIterate A b x₀ m x ↔ Krylov.IsMinResIterate (op A) b x₀ m x`
-(⇒ backbone; ⇐ from (6.28): every element of `x₀ + 𝒦_m` is `x₀ + V_m y`, and residual minimality is
-`J`-minimality); `gmresFixed_isGMRESIterate (hm : m ≤ grade) (hR : IsUnit (R …))` (Prop 6.9(2));
-`gmresHH_eq (hm) : gmresHH A b x₀ m = gmres A b x₀ m` (Householder basis is `V_m D_m`, `H̄^{HH} = D_{m+1} H̄ D_m`,
-`βHH = ε_1 β`, so `J^{HH}(y) = J(D_m y)`, and the two minimizers give the same `x`; (6.31)–(6.33) is
-Horner's scheme for `x₀ + ∑ η_j v_j`). What the book proves about GMRES(m): Thm 6.30 (convergence
-for positive definite `A`) and the remark "full GMRES converges in at most `n` steps"; nothing else.
+(`J` is the backbone's function once `Hbar = Arnoldi.hessenberg`, `β • e₁ = firstVec β` and
+`V_m y = ∑ y_j • v_j` are rewritten; `⇒` is `isMinResIterate_iff_isMinOn`, `⇐` adds "every element
+of `x₀ + 𝒦_m` is `x₀ + V_m y`" from `Arnoldi.span_vec`);
+`gmresFixed_isGMRESIterate (hm : m ≤ grade) (hR : IsUnit (R …))` (Prop 6.9(2));
+`gmresHH_eq (hm) : gmresHH A b x₀ m = gmres A b x₀ m` (Householder basis is `V_m D_m`,
+`H̄^{HH} = D_{m+1} H̄ D_m`, `βHH = ε_1 β`, so `J^{HH}(y) = J(D_m y)`, and the two minimizers give the
+same `x`; (6.31)–(6.33) is Horner's scheme for `x₀ + ∑ η_j v_j`). What the book proves about
+GMRES(m): Thm 6.30 (convergence for positive definite `A`) and the remark "full GMRES converges in
+at most `n` steps"; nothing else.
 
 ### D8. Givens rotations and `Q_m, R̄_m, ḡ_m` (§6.5.3, §6.5.9)
 
@@ -272,31 +318,41 @@ Book: `Ω_i` (6.34) (real) / (6.80) (complex: row `i` = `(c̄_i, s̄_i)`, row `i
 (6.40); `R_m, g_m` drop the last row/component; `H̄_m^{(k)}, ḡ_m^{(k)}` after the first `k` rotations.
 
 ```lean
-/-- (6.34)/(6.80) in the `(i, i+1)` plane. ✓ -/
-def givens {m : ℕ} (i : Fin m) (c s : 𝕜) : Matrix (Fin (m + 1)) (Fin (m + 1)) 𝕜 := Matrix.of fun a b =>
-  if a = i.castSucc ∧ b = i.castSucc then star c else if a = i.castSucc ∧ b = i.succ then star s else
-  if a = i.succ ∧ b = i.castSucc then -s else if a = i.succ ∧ b = i.succ then c else if a = b then 1 else 0
-/-- `(H̄^{(k)}, ḡ^{(k)})` after the first `k` rotations of (6.37)/(6.81); the degenerate case
-`h_ii^{(i−1)} = h_{i+1,i} = 0` (only possible when `A` is singular) uses `c = 1, s = 0`. -/
-noncomputable def rotStage (Hb : Matrix (Fin (m + 1)) (Fin m) 𝕜) (β : ℝ) :
-    ℕ → Matrix (Fin (m + 1)) (Fin m) 𝕜 × (Fin (m + 1) → 𝕜)
-noncomputable def c (Hb) (β) (i : Fin m) : 𝕜 ;  noncomputable def s (Hb) (β) (i : Fin m) : ℝ    -- (6.37)/(6.81)
-noncomputable def Ω (Hb) (β) (i : Fin m) := givens i (c Hb β i) (s Hb β i)
-noncomputable def Qrot (Hb) (β) (k : ℕ) : Matrix (Fin (m + 1)) (Fin (m + 1)) 𝕜   -- `Ω_k ⋯ Ω_1`; `Q_m := Qrot m`
-noncomputable def Rbar (Hb) (β) := (rotStage Hb β m).1 ; noncomputable def gbar (Hb) (β) := (rotStage Hb β m).2
-noncomputable def γ (Hb) (β) (i : Fin (m + 1)) : 𝕜 := gbar Hb β i
-noncomputable def R (Hb) (β) : Matrix (Fin m) (Fin m) 𝕜 := (Rbar Hb β).submatrix Fin.castSucc id
-noncomputable def g (Hb) (β) : Fin m → 𝕜 := fun i => gbar Hb β i.castSucc
--- GMRES instances: `R A b x₀ m := R (Hbar A (v₁ …) m) (β …)`, `c A b x₀ m i`, `s …`, `γ …` etc.
+/-- (6.37)/(6.81): the book's `c_i, s_i` (0-based), computed from the coefficients after the first
+`i` rotations; functions of the `ℕ`-indexed coefficient function `h`, not of `m`. -/
+abbrev c (h : ℕ → ℕ → 𝕜) (i : ℕ) : 𝕜 := Krylov.givensC h i
+abbrev s (h : ℕ → ℕ → 𝕜) (i : ℕ) : 𝕜 := Krylov.givensS h i
+/-- (6.34)/(6.80) in the `(i, i+1)` plane, as an `(m+1) × (m+1)` matrix. -/
+abbrev Ω (h) (i m : ℕ) : Matrix (Fin (m + 1)) (Fin (m + 1)) 𝕜 := Krylov.givensMatrix h i m
+/-- (6.38) `Q_m = Ω_m ⋯ Ω_1`. -/
+abbrev Qrot (h) (m : ℕ) : Matrix (Fin (m + 1)) (Fin (m + 1)) 𝕜 := Krylov.givensQ h m
+/-- (6.39) `R̄_m = Q_m H̄_m`; (6.40) `ḡ_m = Q_m (β e₁) = (γ_1, …, γ_{m+1})ᵀ`. -/
+noncomputable def Rbar (h) (m) : Matrix (Fin (m + 1)) (Fin m) 𝕜 := Qrot h m * Krylov.hessenbergOf h m
+noncomputable def gbar (h) (β : 𝕜) (m) : Fin (m + 1) → 𝕜 := (Qrot h m).mulVec (Krylov.firstVec β (m + 1))
+/-- the book's `γ_{i+1}` as it enters rotation `i+1` (so `γ 0 = β`, `γ_{m+1}` of `ḡ_m` is `γ h β m`). -/
+abbrev γ (h) (β : 𝕜) (i : ℕ) : 𝕜 := Krylov.gamma h β i
+noncomputable def R (h) (m) : Matrix (Fin m) (Fin m) 𝕜 := (Rbar h m).submatrix Fin.castSucc id
+noncomputable def g (h) (β) (m) : Fin m → 𝕜 := fun i => gbar h β m i.castSucc
+-- GMRES instances: `h := arnoldiCoeff A v₁` (`= Arnoldi.coeff (op A) v₁` by D2), `β := β A b x₀`;
+-- `H̄_m^{(k)}` is `Krylov.hessenbergOf (Krylov.rotated h k) m`.
 ```
 
-Backbone: 2.1.10 `Matrix.givens`, `HessenbergQR` (bundled `Q, R, rotations, unitary, triangular, Q H = R`),
-lemma (6.43) `‖β e₁ − H̄ y‖² = |γ_{m+1}|² + ‖g − R y‖²`, (6.47) `γ_{j+1} = −s_j γ_j` (planned; the skeleton
-so far has only `IsUpperHessenberg`, `IsUpperHessenbergRect`, `IsTridiagonal`).
-Equivalence: `toHessenbergQR : HessenbergQR Hb := ⟨Qrot m, Rbar, Ω, unitary, upper-triangular ∧ last row 0, rfl⟩`;
-with request G7 the book's `c, s, γ` are definitionally the backbone's. The "progressive" facts
-(6.44)–(6.46): `rotStage (Hbar A v₁ (m+1)) β k` restricted to the first `m` columns equals
-`rotStage (Hbar A v₁ m) β k` for `k ≤ m` (prefix stability) — surface bookkeeping or G7.
+Backbone (`Numlib/Krylov/Hessenberg.lean`, section Givens; everything is indexed by `ℕ` and computed
+from the infinite coefficient function, so the book's "progressive" facts (6.44)–(6.46) hold by
+definition): `Krylov.rotated h k` (coefficients after `k` rotations), `Krylov.givensRho`, `givensC`,
+`givensS`, `gamma` (`γ_0 = β`, `γ_{k+1} = −s_k γ_k`), `gvec` (`g_k = c̄_k γ_k`), `givensMatrix`,
+`givensQ`; lemmas `givensQ_mul_hessenbergOf` (`Q_m H̄_m = H̄_m^{(m)}`), `givensQ_mulVec_firstVec`
+(`Q_m (β e₁) = (g_0, …, g_{m−1}, γ_m)`), `givensMatrix_mem_unitaryGroup`, `givensQ_mem_unitaryGroup`,
+`norm_givensC_sq_add_norm_givensS_sq`, `rotated_eq_zero_of_lt` and `rotated_last_row` (triangular
+with zero last row), `rotated_succ_self` (`r_kk = ρ_k ≥ 0`), `rotated_succ_eq_of_lt` (rotation `k`
+leaves columns `j < k` unchanged), `rotated_eq_of_le` (rows below `k` untouched), `gamma_succ`,
+`norm_gamma_eq_prod`, `givensS_arnoldi_eq` (`s_k` real nonnegative for Arnoldi coefficients). The
+degenerate case `ρ_k = 0` (only possible when `A` is singular) gives `c_k = s_k = 0` by Lean's
+`x / 0 = 0`; the unitarity lemmas carry the hypothesis `givensRho h k ≠ 0`.
+Equivalence: `Rbar_eq : Rbar h m = Krylov.hessenbergOf (Krylov.rotated h m) m` (`givensQ_mul_hessenbergOf`)
+and `gbar_eq : gbar h β m = fun i => if (i : ℕ) < m then Krylov.gvec h β i else Krylov.gamma h β m`
+(`givensQ_mulVec_firstVec`), so the book's `R_m`, `g_m`, `γ_{m+1}` are definitionally the backbone's
+`Krylov.hessenbergSqOf (Krylov.rotated h m) m`, `Krylov.gvec h β`, `Krylov.gamma h β m`.
 
 ### D9. Algorithms 6.12 (QGMRES), 6.13 (DQGMRES); `Z_{m+1}, z_{m+1}, ζ_m` (§6.5.6)
 
@@ -306,32 +362,47 @@ Book: QGMRES = Alg 6.9 with IOP; DQGMRES: `γ_1 = ‖r_0‖`, per step `m`: IOP 
 `Z_{m+1} = V_{m+1} Q_mᵀ` (6.52), `z_{m+1}` its last column, `ζ_m = ‖z_m‖₂`; quasi-residual norm `|γ_{m+1}|`.
 
 ```lean
-noncomputable def qgmres (A) (b x₀) (k m : ℕ) : 𝔼    -- `x₀ + VI_m R_m⁻¹ g_m` with `R, g` from `rotStage (HbarI …)`
+noncomputable def qgmres (A) (b x₀) (k m : ℕ) : 𝔼    -- `x₀ + VI_m R_m⁻¹ g_m`, `R, g` of D8 at `h := iopCoeff A v₁ k`
 structure DQGMRESState where (x : 𝔼) (γ : 𝕜) (p : ℕ → 𝔼) …
 noncomputable def dqgmres (A) (b x₀) (k : ℕ) : ℕ → DQGMRESState   -- Alg 6.13 verbatim
-noncomputable def Z (A) (b x₀) (k m) : Matrix (Fin n) (Fin (m + 1)) 𝕜 := VI … (m+1) * (Qrot … m)ᴴ   -- (6.52)
+noncomputable def Z (A) (b x₀) (k m) : Matrix (Fin n) (Fin (m + 1)) 𝕜 := VI … (m+1) * (Qrot (iopCoeff …) m)ᴴ   -- (6.52)
 noncomputable def z (…) (m) : 𝔼 := WithLp.toLp 2 fun i => Z … i (Fin.last m) ;  noncomputable def ζ (…) (m) : ℝ := ‖z … m‖
-noncomputable def quasiResidualNorm (…) (m) : ℝ := ‖γ … (Fin.last m)‖
+noncomputable def quasiResidualNorm (…) (m) : ℝ := ‖γ (iopCoeff …) (β …) m‖
 ```
 
-Backbone: none (1.2: DQGMRES surface). What the book proves: (6.50), (6.51), (6.53)–(6.58), Thm 6.11,
-and "QGMRES/DQGMRES = GMRES when `k ≥ m`". Equivalence: `dqgmres_x_eq_qgmres (h : ∀ j ≤ m, h_jj ≠ 0) : (dqgmres A b x₀ k m).x = qgmres A b x₀ k m`
-(same argument as DIOM ≡ IOM with the QR in place of the LU) and `qgmres_eq_gmres (hk : m ≤ k) : qgmres A b x₀ k m = gmres A b x₀ m`.
+Backbone: none for the recurrence (§1.2: DQGMRES is surface); the residual identities come from
+`Krylov.HessenbergRelation` (D6) and the Givens data of D8 applied to `iopCoeff A v₁ k`. What the
+book proves: (6.50), (6.51), (6.53)–(6.58), Thm 6.11, and "QGMRES/DQGMRES = GMRES when `k ≥ m`".
+Equivalence: `dqgmres_x_eq_qgmres (h : ∀ j ≤ m, h_jj ≠ 0) : (dqgmres A b x₀ k m).x = qgmres A b x₀ k m`
+(same argument as DIOM ≡ IOM with the QR in place of the LU) and
+`qgmres_eq_gmres (hk : m ≤ k) : qgmres A b x₀ k m = gmres A b x₀ m`.
 
 ### D10. FOM/GMRES residual norms `ρ_m^F, ρ_m^G`, `ξ, h`, `R̃_m, g̃_m, ỹ_m` (§6.5.7)
 
 ```lean
 noncomputable def ρG (A) (b x₀) (m) : ℝ := ‖b - op A (gmresFixed A b x₀ m)‖
 noncomputable def ρF (A) (b x₀) (m) : ℝ := ‖b - op A (fomFixed A b x₀ m)‖   -- meaningful when `FOMDefined`
-noncomputable def ξ (A) (b x₀) (m) : 𝕜   -- `(Q_{m−1} H̄_m)_{mm}` = `((rotStage (Hbar …) β (m-1)).1) (last-but-one row) (last col)`
-noncomputable def Rtilde (…) (m) : Matrix (Fin m) (Fin m) 𝕜 ; gtilde ; ytilde := Rtilde⁻¹ *ᵥ gtilde   -- Lemma 6.16
+/-- `ξ_m = (Q_{m−1} H̄_m)_{mm}` (Prop 6.12), 0-based: the diagonal entry after `m − 1` rotations. -/
+noncomputable def ξ (h : ℕ → ℕ → 𝕜) (m : ℕ) : 𝕜 := Krylov.rotated h (m - 1) (m - 1) (m - 1)
+/-- Lemma 6.16: `R̃_m`, `g̃_m` are the top `m × m` block / first `m` entries after `m − 1` rotations. -/
+noncomputable def Rtilde (h) (m) : Matrix (Fin m) (Fin m) 𝕜 := Krylov.hessenbergSqOf (Krylov.rotated h (m - 1)) m
+noncomputable def gtilde (h) (β) (m) : Fin m → 𝕜 :=
+  fun i => if (i : ℕ) < m - 1 then Krylov.gvec h β i else Krylov.gamma h β (m - 1)
+noncomputable def ytilde (h) (β) (m) : Fin m → 𝕜 := (Rtilde h m)⁻¹.mulVec (gtilde h β m)
 /-- "the smallest residual norm achieved by FOM in the first `m` steps (singular `H_i` skipped)". -/
 noncomputable def ρFmin (A) (b x₀) (m) : ℝ :=
   ((Finset.range (m+1)).filter (FOMDefined A b x₀)).inf' ⟨0, by simp [FOMDefined]⟩ (ρF A b x₀)
 ```
 
-Backbone: 3.6 `Krylov.inv_sq_norm_residual_minRes` ✓(proto) and the spec-level Cor 6.14/Prop 6.15/(6.74)–(6.75)
-statements, 3.5 `‖r_m^F‖ = ‖r_m^G‖/|c_m|`, 3.6 Brown (Prop 6.17).
+Backbone (§3.6, `Numlib/Krylov/Relations.lean`, at the specification level):
+`Krylov.inv_sq_norm_residual_minRes` (Prop 6.13), `Krylov.inv_sq_norm_residual_minRes_eq_sum`
+(Cor 6.14), `Krylov.norm_residual_minRes_le_galerkin`, `Krylov.exists_norm_residual_galerkin_le`
+(Prop 6.15), `Krylov.minRes_eq_combination` (6.74), `Krylov.norm_residual_minRes_eq_iff_not_exists_galerkin`
+(Prop 6.17); identifications with the Givens data (§3.5, `Numlib/Krylov/Hessenberg.lean`):
+`Krylov.IsMinResIterate.norm_residual_eq_norm_gamma` (6.42), `Krylov.IsMinResIterate.norm_residual_succ_eq`
+(`‖r^G_{m+1}‖ = |s_m| ‖r^G_m‖`), `Krylov.isUnit_hessenbergSq_iff_givensC_ne_zero` (`H_{m+1}` is a
+unit iff `c_m ≠ 0`), `Krylov.IsGalerkinIterate.norm_residual_eq_div_norm_givensC`
+(`‖r^F_{m+1}‖ = ‖r^G_{m+1}‖/|c_m|`, Prop 6.12).
 
 ### D11. Residual smoothing: Algorithm 6.14 (MRS) and QMRS (§6.5.8)
 
@@ -346,8 +417,14 @@ noncomputable def mrsEta (xO rO) (m : ℕ) : 𝕜
 noncomputable def qmrs (xO rO : ℕ → 𝔼) : ℕ → 𝔼 × 𝔼 × ℝ         -- `(x^S_m, r^S_m, τ_m)`
 ```
 
-Backbone: 3.6 Weiss's lemma (Lemma 6.18) and D7's construction (MRS of Galerkin iterates = minimal
-residual iterates; request G9 to expose it). The book's `(r^S, r^O − r^S)` is `inner (r^O − r^S) r^S`.
+Backbone (§3.6, `Numlib/Krylov/Relations.lean`): `Krylov.smoothingCoeff s r = ⟪r − s, −s⟫/‖r − s‖²`
+(the book's `η_m`: its `(r^S, r^O − r^S)` is `inner (r^O − r^S) r^S`), `Krylov.inv_sq_norm_smoothing`
+(Lemma 6.18), `Krylov.mrs A b xO` (Alg 6.14 on the iterates, residuals recomputed as `b − A x`),
+`Krylov.IsGalerkinIterate.mrs_isMinResIterate` (MRS of Galerkin iterates = minimal-residual
+iterates), `Krylov.residual_mrs_eq` (6.79).
+Equivalence: `mrs_eq (hr : ∀ j, rO j = b - op A (xO j)) (m) : (mrs xO rO m).1 = Krylov.mrs (op A) b xO m ∧
+(mrs xO rO m).2 = b - op A (Krylov.mrs (op A) b xO m)` (induction on `m`; `mrsEta xO rO m` is
+`Krylov.smoothingCoeff (rS (m−1)) (rO m)` definitionally).
 
 ### D12. Lanczos: `T_m` (6.84) and Algorithm 6.15 (§6.6)
 
@@ -364,12 +441,17 @@ noncomputable def T (A) (v₁) (m : ℕ) : Matrix (Fin m) (Fin m) ℝ := Matrix.
 noncomputable def Tbar (A) (v₁) (m) : Matrix (Fin (m + 1)) (Fin m) ℝ
 ```
 
-Backbone: 3.3 `Arnoldi.coeff_eq_zero_of_isSymmetric` ✓(proto), `coeff_conj_of_isSymmetric`, `Lanczos.alpha`,
-`Lanczos.beta`, `Lanczos.apply_vec`, `Lanczos.tridiag`, `Lanczos.tridiagExt`.
+Backbone (§3.3, `Numlib/Krylov/Lanczos.lean`): `Arnoldi.coeff_eq_zero_of_isSymmetric`,
+`Arnoldi.coeff_conj_of_isSymmetric`, `Arnoldi.coeff_diag_re_of_isSymmetric`, `Lanczos.alpha`
+(`re ⟪v_j, A v_j⟫`), `Lanczos.beta` (`‖w_j‖`), `Lanczos.coe_alpha`, `Lanczos.coe_beta`,
+`Lanczos.apply_vec_zero`, `Lanczos.apply_vec` (three-term recurrence), `Lanczos.w_succ_eq`
+(the algorithmic form `w_{j+1} = A v_{j+1} − α_{j+1} v_{j+1} − β_j v_j`), `Lanczos.tridiag`,
+`Lanczos.tridiagExt`, `Lanczos.hessenbergSq_eq_map_tridiag`, `Lanczos.hessenberg_eq_map_tridiagExt`,
+`Lanczos.beta_eq_zero_iff`.
 Equivalence (real symmetric `A`): `lanczosV_eq (hA : A.IsSymm) : lanczosV A v₁ j = arnoldiMGS A v₁ j (= Arnoldi.vec (op A) v₁ j)`,
 `lanczosAlpha_eq : lanczosAlpha A v₁ j = Lanczos.alpha (op A) v₁ j`, `lanczosBeta_eq`,
-`T_eq : T A v₁ m = Lanczos.tridiag (op A) v₁ m` (`= H A v₁ m`). Proof: induction with Thm 6.19 (the
-MGS loop subtracts only the `i = j−1, j` terms; the other `h_ij` vanish).
+`T_eq : T A v₁ m = Lanczos.tridiag (op A) v₁ m` (`= H A v₁ m`). Proof: induction with Thm 6.19 and
+`Lanczos.w_succ_eq` (the MGS loop subtracts only the `i = j−1, j` terms; the other `h_ij` vanish).
 
 ### D13. §6.6.2: the inner product (6.85) and the Lanczos polynomials
 
@@ -379,9 +461,9 @@ noncomputable def polyInner (A) (v₁ : 𝔼) (p q : 𝕜[X]) : 𝕜 := inner �
 noncomputable def lanczosPoly (A) (v₁) (i : ℕ) : 𝕜[X]   -- the `q_{i−1}` with `v_i = q_{i−1}(A) v₁` (from `Krylov.mem_subspace_iff_exists_aeval`)
 ```
 
-Backbone: 3.1 `subspace_eq_map_degreeLT` ✓, `linearIndependent_of_le_grade` ✓; 3.12
-`Krylov/OrthogonalPolynomials.lean` (phase 2) and 4.2 `Arnoldi.charpoly_compression_isMinOn`
-(Saad-eig Thm 6.1) for the two claims the book cites without proof.
+Backbone: §3.1 `subspace_eq_map_degreeLT`, `linearIndependent_of_le_grade`, `Krylov.polyEval`.
+The two claims the book cites without proof ((d), (e) of R46) belong to the deferred items
+`Arnoldi.charpoly_compression_isMinOn` (§4.2) and `Krylov/OrthogonalPolynomials.lean` (§3.12), see §4.
 
 ### D14. Algorithms 6.16 (Lanczos method), 6.17 (D-Lanczos), 6.18 (CG), 6.19 (three-term CG); (6.86)–(6.98) (§6.7)
 
@@ -392,14 +474,14 @@ Book: (6.86) `x_m = x_0 + V_m y_m`, `y_m = T_m^{-1}(β e_1)`; D-Lanczos: `T_m = 
 `β_j = (r_{j+1},r_{j+1})/(r_j,r_j)`, `p_{j+1} = r_{j+1} + β_j p_j`; three-term CG (Alg 6.19):
 `x_{−1} = 0`, `ρ_0 = 1`, `γ_j = (r_j,r_j)/(A r_j,r_j)`,
 `ρ_j = [1 − (γ_j/γ_{j−1})((r_j,r_j)/(r_{j−1},r_{j−1}))/ρ_{j−1}]^{-1}` (`j > 0`),
-`x_{j+1} = ρ_j(x_j − γ_j r_j) + (1−ρ_j) x_{j−1}`, `r_{j+1} = ρ_j(r_j − γ_j A r_j) + (1−ρ_j) r_{j−1}`.
+`x_{j+1} = ρ_j(x_j + γ_j r_j) + (1−ρ_j) x_{j−1}`, `r_{j+1} = ρ_j(r_j − γ_j A r_j) + (1−ρ_j) r_{j−1}`.
 
 ```lean
 noncomputable def lanczosMethod (A : Matrix (Fin n) (Fin n) ℝ) (b x₀) (m) : 𝔼 :=      -- Alg 6.16 (with `mEff`)
   x₀ + Matrix.toEuclideanLin (VL …) (WithLp.toLp 2 ((T A (v₁ …) m)⁻¹.mulVec (β • e₁ m)))
 structure DLState where (x : 𝔼) (v vPrev : 𝔼) (p : 𝔼) (ζ η β : ℝ)
 noncomputable def dLanczos (A) (b x₀) : ℕ → DLState                                     -- Alg 6.17 verbatim
-/-- Alg 6.18. ✓ -/
+/-- Alg 6.18. -/
 noncomputable def cgStep (A) (s : 𝔼 × 𝔼 × 𝔼) : 𝔼 × 𝔼 × 𝔼 :=
   let Ap := op A s.2.2; let α : 𝕜 := inner 𝕜 s.2.1 s.2.1 / inner 𝕜 s.2.2 Ap; let r' := s.2.1 - α • Ap
   let β : 𝕜 := inner 𝕜 r' r' / inner 𝕜 s.2.1 s.2.1; (s.1 + α • s.2.2, r', r' + β • s.2.2)
@@ -409,15 +491,21 @@ noncomputable def cg3 (A) (b x₀) : ℕ → 𝔼 × 𝔼 × 𝔼 × 𝔼 × ℝ
 noncomputable def cgGamma ; cgRho                                -- (6.95)–(6.97)
 ```
 
-Backbone: 3.7 `CG.State`, `CG.step`, `CG.iterate` ✓(proto), `CG.residual_eq`, `CG.isGalerkinIterate`,
-`CG.inner_residual_eq_zero`, `CG.inner_apply_direction_eq_zero`, `CG.arnoldi_vec_eq`, `CG.lanczos_alpha_eq`,
-`CG.lanczos_beta_eq`, three-term recurrence (Alg 6.19 / Meurant (3.3)); 3.5 Lanczos residual formula (6.87).
+Backbone (§3.7, `Numlib/Krylov/CG.lean`): `CG.State`, `CG.alpha`, `CG.step`, `CG.beta`, `CG.init`,
+`CG.iterate`, `CG.residual_eq`, `CG.step_x`, `CG.step_r`, `CG.isGalerkinIterate`,
+`CG.inner_residual_eq_zero`, `CG.inner_apply_direction_eq_zero`, `CG.inner_residual_direction_eq`,
+`CG.span_direction_eq`, `CG.arnoldi_vec_eq`, and the three-term form `CG.gamma`, `CG.rho`
+(the book's (6.97) with `ρ_0 = 1`), `CG.iterate_succ_eq_three_term` (6.98),
+`CG.residual_succ_eq_three_term` (6.96), valid while `r_j ≠ 0` for `j ≤ m`; §3.5
+`Krylov.residual_galerkin_eq` for the Lanczos residual formula (6.87).
 Equivalence: `cg_eq_CG (hA : A.IsSymm) : cg A b x₀ j = ((CG.iterate (op A) b x₀ j).x, .r, .p)` (definitional
 up to `real_inner_comm` in `α`); `lanczosMethod_eq_fom (hA) : lanczosMethod A b x₀ m = fom A b x₀ m` (D12);
 `dLanczos_x_eq (hη : ∀ j ≤ m, η_j ≠ 0) : (dLanczos A b x₀ m).x = lanczosMethod A b x₀ m` (this is DIOM(2)
 for symmetric `A`, as the book remarks; reuse D6's LU argument);
 `cg_x_eq_dLanczos (hA : A.PosDef) : (cg A b x₀ j).1 = (dLanczos A b x₀ j).x` (both are the unique Galerkin iterate);
-`cg3_eq_cg (hA : A.PosDef) (hr : ∀ i ≤ j, r_i ≠ 0) : (cg3 …).x = (cg …).1 ∧ (cg3 …).r = (cg …).2.1` (request G10).
+`cg3_eq_cg (hA : A.PosDef) (hr : ∀ i ≤ j, r_i ≠ 0) : (cg3 …).x = (cg …).1 ∧ (cg3 …).r = (cg …).2.1`
+(induction on `j` with `CG.iterate_succ_eq_three_term` and `CG.residual_succ_eq_three_term`;
+`cgGamma = CG.gamma`, `cgRho = CG.rho` after `cg_eq_CG`).
 
 ### D15. Algorithm 6.20 (CR), Algorithm 6.21 (GCR), ORTHOMIN(k), ORTHODIR, GCR(m) (§6.8–6.9)
 
@@ -436,8 +524,13 @@ noncomputable def orthodir (A) (b x₀) : ℕ → GCRState   -- (6.107) + (6.105
 noncomputable def gcrRestarted (A) (b) (m) (x₀) (k : ℕ) : 𝔼   -- GCR(m)
 ```
 
-Backbone: 3.8 `CR.State/step/iterate` ✓(proto), `CR.isMinResIterate`, Fong–Saunders Thm 2.1 invariants,
-`Krylov.isMinResIterate_of_orthogonal_directions` (Lemma 6.21).
+Backbone (§3.8, `Numlib/Krylov/CR.lean`): `CR.State`, `CR.alpha`, `CR.step`, `CR.init`, `CR.iterate`,
+`CR.residual_eq`, `CR.q_eq`, `CR.isMinResIterate` (symmetric coercive `A`),
+`CR.isMinResIterate_of_no_breakdown` (symmetric `A` with the no-breakdown hypotheses
+`⟪r_j, A r_j⟫ ≠ 0` and `A p_j ≠ 0` for `j < k`: the book's Hermitian generality),
+`CR.inner_apply_direction_eq_zero`, `CR.inner_residual_apply_direction_eq_zero`,
+`CR.inner_residual_apply_residual_eq_zero` (Fong–Saunders Thm 2.1 invariants),
+`Krylov.isMinResIterate_of_orthogonal_directions` (Lemma 6.21, no symmetry assumption).
 Equivalence: `cr_eq_CR : cr A b x₀ j = (CR.iterate (op A) b x₀ j).(x, r, p, q)` (definitional; the book's
 `(r_j, A r_j)` is `inner (A r_j) r_j`, the backbone's is `inner r (A r)` — equal for Hermitian `A`);
 `gcr_x_isMinResIterate (h : ∀ i < m, A p_i ≠ 0) (hm : m ≤ grade)`; `orthomin_eq_gcr (hk : m ≤ k)`;
@@ -455,7 +548,8 @@ def IsCGs (A : Matrix (Fin n) (Fin n) ℂ) (s : ℕ) : Prop :=
   ∀ v₁ : EuclideanSpace ℂ (Fin n), ∀ i j : ℕ, i + s ≤ j → j + 1 ≤ grade A v₁ → arnoldiCoeff A v₁ i j = 0
 ```
 
-Backbone: 3.12 (Faber–Manteuffel is Saad-surface, phase 3; Lemma 6.23 could go to `Eigen/Normal.lean`).
+Backbone: none (§3.12: Faber–Manteuffel is Saad-surface; Lemma 6.23 and Thm 6.24 depend on the
+deferred normal-matrix theory, §4).
 
 ### D17. Chebyshev polynomials and the quantities of §6.11
 
@@ -468,18 +562,23 @@ noncomputable def Chat (k : ℕ) (α β γ : ℝ) : ℝ[X] :=
     (C k).comp (Polynomial.C (1 - 2 * β / (β - α)) + Polynomial.C (2 / (β - α)) * X)
 noncomputable def η (lmin lmax : ℝ) : ℝ := lmin / (lmax - lmin)          -- (6.122)
 noncomputable def κ (lmin lmax : ℝ) : ℝ := lmax / lmin
-noncomputable def anorm (A) (x : 𝔼) : ℝ := Real.sqrt (RCLike.re (inner 𝕜 (op A x) x))   -- `‖x‖_A` ✓
+noncomputable def anorm (A) (x : 𝔼) : ℝ := Real.sqrt (RCLike.re (inner 𝕜 (op A x) x))   -- `‖x‖_A`
 /-- `ε^{(m)}` of Prop 6.32. -/
 noncomputable def epsMin (lam : Fin n → ℂ) (m : ℕ) : ℝ :=
   ⨅ p : {p : ℂ[X] // p.degree ≤ m ∧ p.eval 0 = 1}, ⨆ i, ‖p.1.eval (lam i)‖
-noncomputable def ellipse (c d a : ℂ) : Set ℂ                                -- `E(c, d, a)`, phase 3
+noncomputable def ellipse (c d a : ℂ) : Set ℂ                                -- `E(c, d, a)`, deferred (§4)
 ```
 
-Backbone: 2.1.9 `Polynomial.Chebyshev.eval_T_eq_half_add_pow` ✓, `half_pow_le_eval_T` ✓, `shifted` ✓,
-`one_div_eval_T_le_sSup_abs_eval` ✓ (general `γ`), `sSup_abs_eval_shifted` ✓, `one_div_eval_T_le_two_mul_pow` ✓;
-2.1.5 `energyNorm` ✓; 3.9–3.10.
+Backbone (§2.1.9, `Numlib/Polynomial/ChebyshevMinimax.lean`): `Polynomial.Chebyshev.eval_T_eq_half_add_pow`,
+`half_pow_le_eval_T`, `one_le_eval_T`, `shifted`, `shifted_degree_le`, `shifted_eval_self`,
+`one_div_eval_T_le_sSup_abs_eval` (general `γ`), `sSup_abs_eval_shifted`,
+`one_div_eval_T_le_sSup_abs_eval_of_eval_zero`, `one_div_eval_T_le_two_mul_pow`; §2.1.5 `energyNorm`
+(`Numlib/InnerProductSpace/Energy.lean`); §3.9–3.10 (`Numlib/Krylov/Convergence/Polynomial.lean`,
+`Numlib/Krylov/Convergence/CG.lean`), whose hypothesis `A.IsSymmetricBoundedBy lmin lmax`
+(`Numlib/InnerProductSpace/Coercive.lean`) replaces the book's eigenvalue list.
 Equivalence: `Chat_eq_shifted : Chat k α β γ = Polynomial.Chebyshev.shifted k α β γ` (the arguments differ by a
-sign, `T_k(−x) = (−1)^k T_k(x)` cancels in the quotient); `anorm_eq : anorm A x = energyNorm (op A) x` (rfl).
+sign, `T_k(−x) = (−1)^k T_k(x)` cancels in the quotient); `anorm_eq : anorm A x = energyNorm (op A) x` (rfl);
+`one_add_two_mul_η : 1 + 2 * η lmin lmax = (lmax + lmin) / (lmax - lmin)`.
 
 ### D18. Block Krylov: Algorithms 6.22–6.24 and the block-FOM/GMRES specifications (§6.12)
 
@@ -498,564 +597,1149 @@ def IsBlockGMRES (A) (B X₀ : Matrix (Fin n) (Fin p) 𝕜) (m) (i : Fin p) (x :
 def IsBlockFOM … := IsGalerkin (op A) … (Submodule.span 𝕜 …) x
 ```
 
-Backbone: 2.4.1 `IsMinRes`, `IsGalerkin` ✓ (general subspaces, not the Krylov abbreviations); 3.12
-`Krylov/Block.lean` (surface / phase 3).
+Backbone: §2.4.1 `IsMinRes`, `IsGalerkin` (`Numlib/LinearSolve/Projection/Basic.lean`; general
+subspaces, not the Krylov abbreviations); the block relations belong to the deferred
+`Krylov/Block.lean` (§3.12, see §4).
 
-## Results
+## 3. Results
 
 One block per numbered result and per equation-level fact stated as a result, in book order. In the
 Lean sketches `Aop := op A`, `r₀ := r₀ A b x₀`, `v₁ := v₁ A b x₀`, `β := β A b x₀`,
-`μ := grade A v₁` (`= Krylov.grade Aop v₁` by D1), `v j := arnoldiCGS A v₁ j`, `h i j := arnoldiCoeff A v₁ i j`.
-Status legend: `direct` = specialization of an existing/planned backbone theorem through the D-lemmas;
-`needs-equivalence` = same, but the main work is a surface equivalence lemma (D2–D18) or a small
-requested backbone lemma (G-list in §4); `surface-only` = proved in the surface because the backbone
-plan (§1.2) deliberately leaves the object there; `GAP` = no backbone route in phase 1.
+`μ := grade A v₁` (`= Krylov.grade Aop v₁` by D1), `v j := arnoldiCGS A v₁ j`,
+`h i j := arnoldiCoeff A v₁ i j`; the Givens quantities `c, s, γ, R, g, ξ` of D8/D10 are taken at
+this `h` and at `β` unless another coefficient function is named.
+Classification of each item: `direct` = specialization of a backbone (or Mathlib) theorem through
+the D-lemmas; `needs-equivalence` = the main work is a surface bridging lemma (one of D2–D18 or a
+named one); `surface-only` = proved in the surface (from Mathlib, with backbone lemmas as tools)
+because the backbone plan (§1.2) deliberately leaves the object there; `deferred` = needs a backbone
+item scheduled for a later phase (listed in §4); `out-of-scope` = not formalized, with the reason.
 
 ### R1. §6.2, first property — `𝒦_m` is the set of `p(A) v` with `deg p ≤ m − 1`
-- **Book statement.** `𝒦_m(A, v) = {p(A) v : p polynomial, deg p ≤ m − 1}` (real `n × n` `A`, `v ∈ ℝⁿ`).
-- **Lean surface statement.** `theorem krylov_eq_image_degreeLT : krylov A v m = (Polynomial.degreeLT ℝ m).map (Krylov.polyEval Aop v)`; and `x ∈ krylov A v m ↔ ∃ p, p.degree < m ∧ x = aeval Aop p v`.
-- **Backbone item.** 3.1 / 2.1.8 `Krylov.subspace_eq_map_degreeLT` ✓, `Krylov.mem_subspace_iff_exists_aeval` ✓.
+- **Book statement.** `𝒦_m(A, v) = {p(A) v : p polynomial, deg p ≤ m − 1}` (real `n × n` `A`,
+  `v ∈ ℝⁿ`).
+- **Lean surface statement.** `theorem krylov_eq_image_degreeLT : krylov A v m =
+  (Polynomial.degreeLT ℝ m).map (Krylov.polyEval Aop v)`; and
+  `x ∈ krylov A v m ↔ ∃ p, p.degree < m ∧ x = aeval Aop p v`.
+- **Backbone item.** §3.1 `Krylov.subspace_eq_map_degreeLT`, `Krylov.mem_subspace_iff_exists_aeval`
+  (`Numlib/Krylov/Subspace.lean`).
 - **Proof route.** Rewrite by `krylov_eq` (D1).
-- **Status.** `direct`.
+- **Classification.** `direct`.
 
 ### R2. Proposition 6.1
-- **Book statement.** Let `μ` be the grade of `v`. Then `𝒦_μ` is invariant under `A`, and `𝒦_m = 𝒦_μ` for all `m ≥ μ`.
-- **Lean surface statement.** `theorem prop_6_1 : (krylov A v (grade A v)) ∈ Module.End.invtSubmodule Aop ∧ ∀ m, grade A v ≤ m → krylov A v m = krylov A v (grade A v)`.
-- **Backbone item.** 3.1 `Krylov.subspace_grade_mem_invtSubmodule` ✓, `Krylov.subspace_eq_of_grade_le` ✓ (with `Fact (HasFiniteGrade)` from finite dimension ✓).
+- **Book statement.** Let `μ` be the grade of `v`. Then `𝒦_μ` is invariant under `A`, and
+  `𝒦_m = 𝒦_μ` for all `m ≥ μ`.
+- **Lean surface statement.** `theorem prop_6_1 : (krylov A v (grade A v)) ∈ Module.End.invtSubmodule Aop ∧
+  ∀ m, grade A v ≤ m → krylov A v m = krylov A v (grade A v)`.
+- **Backbone item.** §3.1 `Krylov.subspace_grade_mem_invtSubmodule`, `Krylov.subspace_eq_of_grade_le`
+  (under `[FiniteDimensional 𝕜 (fullSubspace A v)]`, automatic on `𝔼`).
 - **Proof route.** `krylov_eq`, `grade_eq` (D1), then the two backbone lemmas.
-- **Status.** `direct` (modulo G4 for `grade_eq`).
+- **Classification.** `direct`.
 
 ### R3. Proposition 6.2, (6.3)–(6.4), and "grade ≤ n"
-- **Book statement.** `dim 𝒦_m = m ↔ grade(v) ≥ m` (6.3); hence `dim 𝒦_m = min{m, grade(v)}` (6.4). Also (text): the grade of `v` does not exceed `n` (Cayley–Hamilton).
-- **Lean surface statement.** `theorem prop_6_2 : Module.finrank ℝ (krylov A v m) = m ↔ m ≤ grade A v`; `theorem eq_6_4 : Module.finrank ℝ (krylov A v m) = min m (grade A v)`; `theorem grade_le_card : grade A v ≤ n`.
-- **Backbone item.** 3.1 `Krylov.finrank_subspace` ✓, `Krylov.grade_le_finrank` ✓, `Krylov.linearIndependent_of_le_grade` ✓.
-- **Proof route.** (6.4) is the backbone lemma; (6.3) from (6.4) by `min_eq_left_iff`; `grade ≤ n` from `grade_le_finrank` and `finrank_euclideanSpace`.
-- **Status.** `direct`.
+- **Book statement.** `dim 𝒦_m = m ↔ grade(v) ≥ m` (6.3); hence `dim 𝒦_m = min{m, grade(v)}` (6.4).
+  Also (text): the grade of `v` does not exceed `n` (Cayley–Hamilton).
+- **Lean surface statement.** `theorem prop_6_2 : Module.finrank ℝ (krylov A v m) = m ↔ m ≤ grade A v`;
+  `theorem eq_6_4 : Module.finrank ℝ (krylov A v m) = min m (grade A v)`;
+  `theorem grade_le_card : grade A v ≤ n`.
+- **Backbone item.** §3.1 `Krylov.finrank_subspace`, `Krylov.grade_le_finrank`,
+  `Krylov.linearIndependent_of_le_grade`.
+- **Proof route.** (6.4) is the backbone lemma; (6.3) from (6.4) by `min_eq_left_iff`; `grade ≤ n`
+  from `grade_le_finrank` and `finrank_euclideanSpace`.
+- **Classification.** `direct`.
 
 ### R4. Proposition 6.3 (polynomials of `A` versus the section `A_m`)
-- **Book statement.** Let `Q_m` be *any* projector onto `𝒦_m`, `A_m = Q_m A|_{𝒦_m}` the section of `A` in `𝒦_m`. Then `q(A) v = q(A_m) v` for `deg q ≤ m − 1`, and `Q_m q(A) v = q(A_m) v` for `deg q ≤ m`.
-- **Lean surface statement.** 
+- **Book statement.** Let `Q_m` be *any* projector onto `𝒦_m`, `A_m = Q_m A|_{𝒦_m}` the section of
+  `A` in `𝒦_m`. Then `q(A) v = q(A_m) v` for `deg q ≤ m − 1`, and `Q_m q(A) v = q(A_m) v` for
+  `deg q ≤ m`.
+- **Lean surface statement.**
   ```lean
   theorem prop_6_3 (Q : 𝔼 →ₗ[ℝ] 𝔼) (hQ : IsIdempotentElem Q) (hrange : LinearMap.range Q = krylov A v m)
       (hm : 0 < m) (q : ℝ[X]) :
       (q.degree < m → aeval Aop q v = (aeval (section' A Q hrange) q ⟨v, _⟩ : 𝔼)) ∧
       (q.degree ≤ m → Q (aeval Aop q v) = (aeval (section' A Q hrange) q ⟨v, _⟩ : 𝔼))
-  -- `section' A Q hrange : krylov A v m →ₗ[ℝ] krylov A v m := (Q ∘ₗ Aop).restrict …`
+  -- `section' A Q hrange : krylov A v m →ₗ[ℝ] krylov A v m :=
+  --   compressionBy (Q.codRestrict (krylov A v m) (fun x => hrange ▸ LinearMap.mem_range_self Q x)) Aop`
   ```
-- **Backbone item.** 2.1.6 `compression`, `aeval_compression_krylov` (planned for the *orthogonal* compression; the skeleton has `compression`, `apply_of_invt`).
-- **Proof route.** Induction on monomials as in the book, using only `Q x = x` for `x ∈ 𝒦_m` and `Krylov.map_subspace_le` ✓. Needs the backbone lemma generalized to any idempotent with range `𝒦_m` (request G3); the orthogonal case (`Q = starProjection`) is then a corollary.
-- **Status.** `needs-equivalence` (G3); without G3 it is a 20-line surface induction.
+- **Backbone item.** §2.1.6 `compressionBy` (compression through an arbitrary projector
+  `Q : E →ₗ[𝕜] K` with `∀ x : K, Q x = x`), `compressionBy.aeval_apply_of_forall_pow_mem` (first
+  part), `compressionBy.apply_aeval_of_forall_pow_lt_mem` (second part); the orthogonal case is
+  `compression` with `compression.aeval_apply_of_forall_pow_mem` and `compression.eq_compressionBy`
+  (`Numlib/InnerProductSpace/Compression.lean`).
+- **Proof route.** `Q x = x` on `𝒦_m` from `hQ` and `hrange`; the membership hypotheses
+  `A^i v ∈ 𝒦_m` for `i ≤ natDegree q < m` (resp. `i < natDegree q ≤ m`) are
+  `Krylov.pow_apply_mem_subspace` through `krylov_eq`.
+- **Classification.** `direct`.
 
 ### R5. Proposition 6.4
-- **Book statement.** If Algorithm 6.1 does not stop before the `m`-th step, then `v_1, …, v_m` form an orthonormal basis of `𝒦_m = span{v_1, A v_1, …, A^{m−1} v_1}`.
-- **Lean surface statement.** `theorem prop_6_4 (hv : ‖v₁‖ = 1) (h : NoBreakdownBefore A v₁ m) : Orthonormal ℝ (fun i : Fin m => v i) ∧ Submodule.span ℝ (Set.range fun i : Fin m => v i) = krylov A v₁ m` (equivalently an `OrthonormalBasis (Fin m) ℝ (krylov A v₁ m)`).
-- **Backbone item.** 3.2 `Arnoldi.orthonormal` ✓, `Arnoldi.span_vec` ✓, `Arnoldi.orthonormalBasis` ✓.
-- **Proof route.** `arnoldiCGS_eq` (D2) and `NoBreakdownBefore ↔ m ≤ grade`, then restrict `Arnoldi.orthonormal` to `Fin m`.
-- **Status.** `direct`.
+- **Book statement.** If Algorithm 6.1 does not stop before the `m`-th step, then `v_1, …, v_m` form
+  an orthonormal basis of `𝒦_m = span{v_1, A v_1, …, A^{m−1} v_1}`.
+- **Lean surface statement.** `theorem prop_6_4 (hv : ‖v₁‖ = 1) (h : NoBreakdownBefore A v₁ m) :
+  Orthonormal ℝ (fun i : Fin m => v i) ∧ Submodule.span ℝ (Set.range fun i : Fin m => v i) = krylov A v₁ m`
+  (equivalently an `OrthonormalBasis (Fin m) ℝ (krylov A v₁ m)`).
+- **Backbone item.** §3.2 `Arnoldi.orthonormal` (indexed by `Fin (grade)`), `Arnoldi.span_vec`,
+  `Arnoldi.orthonormalBasis`.
+- **Proof route.** `arnoldiCGS_eq` (D2) and `NoBreakdownBefore ↔ m ≤ grade`, then restrict
+  `Arnoldi.orthonormal` to `Fin m`.
+- **Classification.** `direct`.
 
 ### R6. Proposition 6.5, (6.6)–(6.9)
-- **Book statement.** With `V_m = [v_1 … v_m]`, `H̄_m` the `(m+1)×m` Hessenberg matrix of the `h_ij`, `H_m` its top `m×m` part: `A V_m = V_m H_m + w_m e_mᵀ` (6.6) `= V_{m+1} H̄_m` (6.7), `V_mᵀ A V_m = H_m` (6.8); and `A v_j = ∑_{i=1}^{j+1} h_ij v_i` (6.9).
-- **Lean surface statement.** ✓ `theorem eq_6_7 : A * V A v₁ m = V A v₁ (m + 1) * Hbar A v₁ m`; `theorem eq_6_6 : A * V A v₁ m = V A v₁ m * H A v₁ m + Matrix.vecMulVec (arnoldiW A v₁ (m-1)) (Pi.single (Fin.last _) 1)` (for `m ≥ 1`); ✓ `theorem eq_6_8 (hv) (hm : m ≤ μ) : (V A v₁ m)ᵀ * A * V A v₁ m = H A v₁ m`; `theorem eq_6_9 : Aop (v j) = ∑ i ∈ Finset.range (j + 2), h i j • v i`.
-- **Backbone item.** 3.2 `Arnoldi.apply_vec` ✓ (6.9), `Arnoldi.apply_sum` ✓ (6.7 in coordinates), `Arnoldi.hessenbergSq_eq_toMatrix_compression` ✓ + 2.1.6 `compression.toMatrix_orthonormalBasis` ✓ (6.8), `Arnoldi.coeff_succ_self` ✓ (`w_m = h_{m+1,m} v_{m+1}`).
-- **Proof route.** Column `j` of (6.7) is `apply_vec`; (6.6) splits the last term of (6.9) at `j = m` via `vec_succ_eq`; (6.8): entry `(i, j)` of `V_mᵀ A V_m` is `inner (v i) (A v j) = h i j` by definition (no backbone needed; real transpose = `ᴴ`). Note (6.8) needs no `hm` with our convention if `v j = 0` for `j ≥ μ` — but then `V_m` is not a basis; the book assumes `m` steps were taken, keep `hm`.
-- **Status.** `direct` (matrix-form bookkeeping only; glue G12).
+- **Book statement.** With `V_m = [v_1 … v_m]`, `H̄_m` the `(m+1)×m` Hessenberg matrix of the
+  `h_ij`, `H_m` its top `m×m` part: `A V_m = V_m H_m + w_m e_mᵀ` (6.6) `= V_{m+1} H̄_m` (6.7),
+  `V_mᵀ A V_m = H_m` (6.8); and `A v_j = ∑_{i=1}^{j+1} h_ij v_i` (6.9).
+- **Lean surface statement.** `theorem eq_6_7 : A * V A v₁ m = V A v₁ (m + 1) * Hbar A v₁ m`;
+  `theorem eq_6_6 : A * V A v₁ m = V A v₁ m * H A v₁ m + Matrix.vecMulVec (arnoldiW A v₁ (m-1)) (Pi.single (Fin.last _) 1)`
+  (for `m ≥ 1`); `theorem eq_6_8 (hv) (hm : m ≤ μ) : (V A v₁ m)ᵀ * A * V A v₁ m = H A v₁ m`;
+  `theorem eq_6_9 : Aop (v j) = ∑ i ∈ Finset.range (j + 2), h i j • v i`.
+- **Backbone item.** §3.2 `Arnoldi.apply_vec` (6.9), `Arnoldi.apply_sum` and `Arnoldi.hessenbergRelation`
+  with `Krylov.HessenbergRelation.apply_sum` ((6.7) in coordinates),
+  `Arnoldi.hessenbergSq_eq_toMatrix_compression` + §2.1.6 `compression.toMatrix_orthonormalBasis`
+  (6.8), `Arnoldi.coeff_succ_self` (`w_m = h_{m+1,m} v_{m+1}`); `Matrix.toEuclideanLin_apply_eq_sum`
+  for `V_m y = ∑ y_j • v_j`.
+- **Proof route.** Column `j` of (6.7) is `apply_vec`; (6.6) splits the last term of (6.9) at
+  `j = m` via `vec_succ_eq`; (6.8): entry `(i, j)` of `V_mᵀ A V_m` is `inner (v i) (A v j) = h i j`
+  by definition (real transpose = `ᴴ`). (6.8) needs no `hm` with our convention if `v j = 0` for
+  `j ≥ μ` — but then `V_m` is not a basis; the book assumes `m` steps were taken, keep `hm`.
+- **Classification.** `direct` (matrix-form bookkeeping only).
 
 ### R7. Proposition 6.6
-- **Book statement.** Arnoldi's algorithm breaks down at step `j` (`h_{j+1,j} = 0` in line 5) iff the minimal polynomial of `v_1` has degree `j`; moreover `𝒦_j` is then invariant under `A`.
-- **Lean surface statement.** `theorem prop_6_6 (hv : ‖v₁‖ = 1) (hj : 0 < j) : (NoBreakdownBefore A v₁ j ∧ h j (j-1) = 0) ↔ grade A v₁ = j` and `theorem prop_6_6' (h : NoBreakdownBefore A v₁ j ∧ h j (j-1) = 0) : krylov A v₁ j ∈ Module.End.invtSubmodule Aop`.
-- **Backbone item.** 3.2 `Arnoldi.coeff_succ_self_eq_zero_iff` ✓ (`h_{j+1,j} = 0 ↔ grade ≤ j+1`), `Arnoldi.vec_eq_zero_iff` ✓; 3.1 `subspace_grade_mem_invtSubmodule` ✓.
-- **Proof route.** "no earlier breakdown" gives `j ≤ grade`, the vanishing coefficient gives `grade ≤ j`; invariance from R2.
-- **Status.** `direct`.
+- **Book statement.** Arnoldi's algorithm breaks down at step `j` (`h_{j+1,j} = 0` in line 5) iff the
+  minimal polynomial of `v_1` has degree `j`; moreover `𝒦_j` is then invariant under `A`.
+- **Lean surface statement.** `theorem prop_6_6 (hv : ‖v₁‖ = 1) (hj : 0 < j) :
+  (NoBreakdownBefore A v₁ j ∧ h j (j-1) = 0) ↔ grade A v₁ = j` and
+  `theorem prop_6_6' (h : NoBreakdownBefore A v₁ j ∧ h j (j-1) = 0) : krylov A v₁ j ∈ Module.End.invtSubmodule Aop`.
+- **Backbone item.** §3.2 `Arnoldi.coeff_succ_self_eq_zero_iff` (`h_{j+1,j} = 0 ↔ grade ≤ j+1`),
+  `Arnoldi.vec_eq_zero_iff`; §3.1 `subspace_grade_mem_invtSubmodule`.
+- **Proof route.** "no earlier breakdown" gives `j ≤ grade`, the vanishing coefficient gives
+  `grade ≤ j`; invariance from R2.
+- **Classification.** `direct`.
 
 ### R8. Corollary of Prop 6.6 (lucky breakdown; text after Prop 6.6)
-- **Book statement.** A projection method onto `𝒦_j` (any `L` with `𝒦_j ⊓ Lᗮ = 0`, `r_0 ∈ 𝒦_j`) is exact when a breakdown occurs at step `j` (via Prop 5.6).
-- **Lean surface statement.** `theorem lucky_breakdown (hbreak : grade A v₁ ≤ j) {L} (hKL : ∀ z ∈ krylov A r₀ j, z ∈ Lᗮ → z = 0) (hx : IsPetrovGalerkin Aop b x₀ (krylov A r₀ j) L x) : Aop x = b` (with `v₁ = r₀/β`).
-- **Backbone item.** 2.4.1 `IsPetrovGalerkin.eq_of_invt` ✓ + R2 invariance.
+- **Book statement.** A projection method onto `𝒦_j` (any `L` with `𝒦_j ⊓ Lᗮ = 0`, `r_0 ∈ 𝒦_j`) is
+  exact when a breakdown occurs at step `j` (via Prop 5.6).
+- **Lean surface statement.** `theorem lucky_breakdown (hbreak : grade A v₁ ≤ j) {L}
+  (hKL : ∀ z ∈ krylov A r₀ j, z ∈ Lᗮ → z = 0) (hx : IsPetrovGalerkin Aop b x₀ (krylov A r₀ j) L x) : Aop x = b`
+  (with `v₁ = r₀/β`).
+- **Backbone item.** §2.4.1 `IsPetrovGalerkin.eq_of_invt` + R2 invariance.
 - **Proof route.** R7/R2 give invariance of `𝒦_j`, `r₀ ∈ 𝒦_j` for `j ≥ 1`; apply `eq_of_invt`.
-- **Status.** `direct`.
+- **Classification.** `direct`.
 
 ### R9. §6.3.2 — Algorithm 6.2 is mathematically equivalent to Algorithm 6.1
-- **Book statement.** "In exact arithmetic, this algorithm and Algorithm 6.1 are mathematically equivalent" (same `v_j`, same `h_ij`).
-- **Lean surface statement.** `theorem alg_6_2_eq_alg_6_1 (hv : ‖v₁‖ = 1) : arnoldiMGS A v₁ = arnoldiCGS A v₁ ∧ arnoldiMGSCoeff A v₁ = arnoldiCoeff A v₁`.
-- **Backbone item.** 3.2 `Arnoldi.orthonormal` ✓ (through D2).
+- **Book statement.** "In exact arithmetic, this algorithm and Algorithm 6.1 are mathematically
+  equivalent" (same `v_j`, same `h_ij`).
+- **Lean surface statement.** `theorem alg_6_2_eq_alg_6_1 (hv : ‖v₁‖ = 1) :
+  arnoldiMGS A v₁ = arnoldiCGS A v₁ ∧ arnoldiMGSCoeff A v₁ = arnoldiCoeff A v₁`.
+- **Backbone item.** §3.2 `Arnoldi.orthonormal` (through D2), or the flag lemma
+  `InnerProductSpace.eq_gramSchmidtNormed_of_re_inner_pos`.
 - **Proof route.** D3.
-- **Status.** `needs-equivalence` (this *is* the equivalence lemma; surface proof).
+- **Classification.** `needs-equivalence` (this *is* the equivalence lemma; surface proof).
 
 ### R10. §6.3.2 — Householder Arnoldi: (6.10)–(6.13), (6.12) factorization, `A V_m = V_{m+1} H̄_m`, orthonormality, `±` Arnoldi; P-6.1 (a)–(f)
-- **Book statement.** With `Q_j = P_j ⋯ P_1` (6.10): `Q_j A v_j = z_{j+1}`, `h_j = Q_{j+1} A v_j = Q_m A v_j` (6.11), `Q_m [v, A v_1, …, A v_m] = [h_0, …, h_m]` upper triangular with `Q_m` unitary (6.12), `Q_{j+1}ᵀ e_i = v_i` for `i ≤ j + 1` (6.13), hence `A V_m = V_{m+1} H̄_m`; the `v_i` are orthonormal and identical with the Arnoldi vectors apart from a possible sign. P-6.1: (a) `Q_{j+1}` unitary with inverse `Q_{j+1}ᵀ`, (b) `Q_{j+1}ᵀ = P_1 ⋯ P_{j+1}`, (c) `Q_{j+1}ᵀ e_i = v_i` (`i < j`), (d) `Q_{j+1} A V_m = V_{m+1}[e_1 … e_{j+1}] H̄_m`, (e) orthonormality, (f) equality with Gram–Schmidt Arnoldi up to scaling.
-- **Lean surface statement.** For `A : Matrix (Fin n) (Fin n) ℝ`, `v ≠ 0`, `m + 1 ≤ n`, with `(vHH, hHH, wHH) := householderArnoldi A v m _`: `theorem hh_Q_orthogonal (j) : (Qhh j)ᵀ * Qhh j = 1`; `theorem eq_6_11 (j ≤ m) : hHH j = Qhh m (A v_j)`; `theorem eq_6_12 : Qhh m * [v, A v_1, …, A v_m] = [h_0, …, h_m] ∧ upperTriangular`; `theorem eq_6_13 (i ≤ j + 1) : (Qhh (j+1))ᵀ e_i = vHH i`; `theorem hh_arnoldi_relation : A * VHH m = VHH (m+1) * HbarHH`; `theorem hh_orthonormal : Orthonormal ℝ (vHH)`; `theorem hh_eq_arnoldi_up_to_sign : ∃ ε, (∀ j, ε j = 1 ∨ ε j = -1) ∧ ∀ j ≤ m, vHH j = ε j • arnoldiCGS A (‖v‖⁻¹ • v) j`.
-- **Backbone item.** none (3.2: Householder is surface); Mathlib `reflection`, `reflection_orthogonal`; request G8 for the sign statement.
-- **Proof route.** `P_j` is an orthogonal involution fixing `e_i` (`i < j`) (`(w_j)_i = 0`); the triangular structure comes from the zero pattern of `h_j`; (6.13) by `P_k e_i = e_i` for `i < k`; orthonormality from (6.13) and orthogonality of `Q_{j+1}`; `A V_m = V_{m+1} H̄_m` by transporting (6.11) with (6.13); the `±` from G8 applied to the flag `span{v_1..v_j} = 𝒦_j` (which follows from the triangular factorization by induction).
-- **Status.** `surface-only` (the backbone plan puts Householder in the surface; ~150 lines; the sign statement uses G8).
+- **Book statement.** With `Q_j = P_j ⋯ P_1` (6.10): `Q_j A v_j = z_{j+1}`, `h_j = Q_{j+1} A v_j = Q_m A v_j`
+  (6.11), `Q_m [v, A v_1, …, A v_m] = [h_0, …, h_m]` upper triangular with `Q_m` unitary (6.12),
+  `Q_{j+1}ᵀ e_i = v_i` for `i ≤ j + 1` (6.13), hence `A V_m = V_{m+1} H̄_m`; the `v_i` are orthonormal
+  and identical with the Arnoldi vectors apart from a possible sign. P-6.1: (a) `Q_{j+1}` unitary with
+  inverse `Q_{j+1}ᵀ`, (b) `Q_{j+1}ᵀ = P_1 ⋯ P_{j+1}`, (c) `Q_{j+1}ᵀ e_i = v_i` (`i < j`),
+  (d) `Q_{j+1} A V_m = V_{m+1}[e_1 … e_{j+1}] H̄_m`, (e) orthonormality, (f) equality with
+  Gram–Schmidt Arnoldi up to scaling.
+- **Lean surface statement.** For `A : Matrix (Fin n) (Fin n) ℝ`, `v ≠ 0`, `m + 1 ≤ n`, with
+  `(vHH, hHH, wHH) := householderArnoldi A v m _`: `theorem hh_Q_orthogonal (j) : (Qhh j)ᵀ * Qhh j = 1`;
+  `theorem eq_6_11 (j ≤ m) : hHH j = Qhh m (A v_j)`;
+  `theorem eq_6_12 : Qhh m * [v, A v_1, …, A v_m] = [h_0, …, h_m] ∧ upperTriangular`;
+  `theorem eq_6_13 (i ≤ j + 1) : (Qhh (j+1))ᵀ e_i = vHH i`;
+  `theorem hh_arnoldi_relation : A * VHH m = VHH (m+1) * HbarHH`; `theorem hh_orthonormal : Orthonormal ℝ (vHH)`;
+  `theorem hh_eq_arnoldi_up_to_sign : ∃ ε, (∀ j, ε j = 1 ∨ ε j = -1) ∧ ∀ j ≤ m, vHH j = ε j • arnoldiCGS A (‖v‖⁻¹ • v) j`.
+- **Backbone item.** none (§3.2: Householder is surface); Mathlib `reflection`,
+  `reflection_orthogonal`; `InnerProductSpace.exists_norm_eq_one_smul_gramSchmidtNormed`
+  (`Numlib/InnerProductSpace/GramSchmidt.lean`) for the sign statement.
+- **Proof route.** `P_j` is an orthogonal involution fixing `e_i` (`i < j`) (`(w_j)_i = 0`); the
+  triangular structure comes from the zero pattern of `h_j`; (6.13) by `P_k e_i = e_i` for `i < k`;
+  orthonormality from (6.13) and orthogonality of `Q_{j+1}`; `A V_m = V_{m+1} H̄_m` by transporting
+  (6.11) with (6.13); the `±` from the flag lemma applied to the flag `span{v_1..v_j} = 𝒦_j` (which
+  follows from the triangular factorization by induction), with `ε j ∈ {±1}` since `‖ε j‖ = 1` in `ℝ`.
+- **Classification.** `surface-only` (the backbone plan puts Householder in the surface; ~150 lines).
 
 ### R11. (6.16)–(6.17) — the FOM iterate is the Galerkin iterate on `𝒦_m(A, r_0)`
-- **Book statement.** With `v_1 = r_0/‖r_0‖`, `β = ‖r_0‖`: `V_mᵀ A V_m = H_m`, `V_mᵀ r_0 = β e_1`, and the orthogonal projection method with `L = K = 𝒦_m(A, r_0)` (6.15) gives `x_m = x_0 + V_m y_m`, `y_m = H_m^{-1}(β e_1)`.
-- **Lean surface statement.** `theorem fom_isGalerkinIterate (hH : FOMDefined A b x₀ m) (hm : m ≤ μ) : Krylov.IsGalerkinIterate Aop b x₀ m (fomFixed A b x₀ m)`; `theorem eq_6_16_17 (hH) (hm) (hx : Krylov.IsGalerkinIterate Aop b x₀ m x) : x = fomFixed A b x₀ m`; `theorem Vt_r₀ : (V A v₁ m)ᵀ *ᵥ r₀ = β • e₁ m`.
-- **Backbone item.** 3.5 `Krylov.isGalerkinIterate_of_mulVec_eq`; 2.4.1 `isPetrovGalerkin_iff_mulVec` ✓ (with `V = W = Arnoldi.orthonormalBasis`); uniqueness from `H_m` nonsingular (G6).
-- **Proof route.** `isPetrovGalerkin_iff_mulVec` with the Arnoldi basis reads `H_m y = β e_1` by (6.8) and `Vt_r₀`; `y = H_m⁻¹ (β e_1)` when `H_m` is a unit.
-- **Status.** `direct` for existence; `needs-equivalence` (G6) for the characterization.
+- **Book statement.** With `v_1 = r_0/‖r_0‖`, `β = ‖r_0‖`: `V_mᵀ A V_m = H_m`, `V_mᵀ r_0 = β e_1`, and
+  the orthogonal projection method with `L = K = 𝒦_m(A, r_0)` (6.15) gives `x_m = x_0 + V_m y_m`,
+  `y_m = H_m^{-1}(β e_1)`.
+- **Lean surface statement.** `theorem fom_isGalerkinIterate (hH : FOMDefined A b x₀ m) (hm : m ≤ μ) :
+  Krylov.IsGalerkinIterate Aop b x₀ m (fomFixed A b x₀ m)`;
+  `theorem eq_6_16_17 (hH) (hm) (hx : Krylov.IsGalerkinIterate Aop b x₀ m x) : x = fomFixed A b x₀ m`;
+  `theorem Vt_r₀ : (V A v₁ m)ᵀ *ᵥ r₀ = β • e₁ m`.
+- **Backbone item.** §3.5 `Krylov.isGalerkinIterate_iff_mulVec_eq`,
+  `Krylov.isGalerkinIterate_iff_exists_mulVec_eq`, `Krylov.existsUnique_isGalerkinIterate_iff_isUnit`
+  (`Numlib/Krylov/Hessenberg.lean`); §2.4.1 `isPetrovGalerkin_iff_mulVec` (with
+  `V = W = Arnoldi.orthonormalBasis`) for the book's derivation through (5.7).
+- **Proof route.** `fom_isGalerkinIterate` and `existsUnique_isGalerkinIterate_iff` (D5); `Vt_r₀` from
+  `Arnoldi.vec_zero` and orthonormality.
+- **Classification.** `direct`.
 
 ### R12. Proposition 6.7, (6.18)
-- **Book statement.** The FOM residual satisfies `b − A x_m = −h_{m+1,m} (e_mᵀ y_m) v_{m+1}`, hence `‖b − A x_m‖₂ = h_{m+1,m} |e_mᵀ y_m|` (6.18).
-- **Lean surface statement.** `theorem prop_6_7 (hH : FOMDefined A b x₀ m) (hm : m ≤ μ) (hm0 : 0 < m) : b - Aop (fomFixed A b x₀ m) = -(h m (m-1) * fomY A b x₀ m (Fin.last _)) • v m` and `theorem eq_6_18 … : ‖b - Aop (fomFixed …)‖ = ‖h m (m-1)‖ * ‖fomY … (Fin.last _)‖` (`h m (m-1)` is real `≥ 0`, `‖v m‖ = 1` when `m < μ`; when `m = μ` both sides are `0`).
-- **Backbone item.** 3.2 `Arnoldi.apply_sum` ✓; 3.4 `IsGalerkinIterate.residual_mem_span`; 3.5 `‖r_m^F‖ = h_{m+1,m} |e_mᵀ y_m|` (Lanczos form (6.87) is listed; the Arnoldi form should be stated there too, G1/G6).
-- **Proof route.** The book's three-line computation: `r_0 − A V_m y = β v_1 − V_m H_m y − h_{m+1,m} y_m v_{m+1}` from `apply_sum` and `H_m y = β e_1`.
-- **Status.** `direct` once G6 exposes the residual formula; otherwise a 10-line surface computation from `apply_sum`.
+- **Book statement.** The FOM residual satisfies `b − A x_m = −h_{m+1,m} (e_mᵀ y_m) v_{m+1}`, hence
+  `‖b − A x_m‖₂ = h_{m+1,m} |e_mᵀ y_m|` (6.18).
+- **Lean surface statement.** `theorem prop_6_7 (hH : FOMDefined A b x₀ m) (hm : m ≤ μ) (hm0 : 0 < m) :
+  b - Aop (fomFixed A b x₀ m) = -(h m (m-1) * fomY A b x₀ m (Fin.last _)) • v m` and
+  `theorem eq_6_18 … : ‖b - Aop (fomFixed …)‖ = ‖h m (m-1)‖ * ‖fomY … (Fin.last _)‖` (`h m (m-1)` is
+  real `≥ 0`, `‖v m‖ = 1` when `m < μ`; when `m = μ` both sides are `0`).
+- **Backbone item.** §3.5 `Krylov.residual_galerkin_eq` (the Arnoldi instance of
+  `Krylov.HessenbergRelation.residual_eq_of_mulVec_eq`); §3.4 `Krylov.IsGalerkinIterate.residual_mem_span`;
+  §3.2 `Arnoldi.norm_vec_eq_one_of_lt_grade`, `Arnoldi.vec_eq_zero_iff`.
+- **Proof route.** `H_m y = β e₁` for `y = fomY` (D5), then `residual_galerkin_eq`; the norm form by
+  `‖v m‖ = 1` or `v m = 0`.
+- **Classification.** `direct`.
 
 ### R13. §6.4.2 — (6.6)/(6.7), Prop 6.7 and (6.18) remain valid for IOP/IOM/DIOM; DIOM residual `h_{m+1,m}|ζ_m/u_mm|`
-- **Book statement.** "(6.6) is still valid" for the incomplete orthogonalization (orthogonality was not used), so Prop 6.7 and (6.18) hold for IOM/DIOM; moreover `‖b − A x_m‖₂ = h_{m+1,m}|e_mᵀ y_m| = h_{m+1,m}|ζ_m/u_mm|`.
-- **Lean surface statement.** `theorem iop_eq_6_7 : A * VI A v₁ k m = VI A v₁ k (m+1) * HbarI A v₁ k m`; `theorem iom_residual (hH : IsUnit (HI …)) (hnb : ∀ j < m, iopCoeff … (j+1) j ≠ 0) : b - Aop (iom A b x₀ k m) = -(h^I_{m+1,m} * y^I_m) • vI m ∧ ‖…‖ = h^I_{m+1,m} * |y^I_m|`; `theorem diom_residual (hu : ∀ j ≤ m, u_jj ≠ 0) : ‖b - Aop (diom A b x₀ k m).x‖ = h^I_{m+1,m} * |ζ_m / u_mm|`.
-- **Backbone item.** none (1.2); would be G1 (`Krylov.HessenbergRelation` transport).
-- **Proof route.** Same computation as R12 with the IOP relation; `e_mᵀ y_m = ζ_m/u_mm` from `U_m y_m = z_m` and `U_m` upper triangular.
-- **Status.** `surface-only` (→ `direct` with G1).
+- **Book statement.** "(6.6) is still valid" for the incomplete orthogonalization (orthogonality was
+  not used), so Prop 6.7 and (6.18) hold for IOM/DIOM; moreover
+  `‖b − A x_m‖₂ = h_{m+1,m}|e_mᵀ y_m| = h_{m+1,m}|ζ_m/u_mm|`.
+- **Lean surface statement.** `theorem iop_eq_6_7 : A * VI A v₁ k m = VI A v₁ k (m+1) * HbarI A v₁ k m`;
+  `theorem iom_residual (hH : IsUnit (HI …)) (hnb : ∀ j < m, iopCoeff … (j+1) j ≠ 0) :
+  b - Aop (iom A b x₀ k m) = -(h^I_{m+1,m} * y^I_m) • vI m ∧ ‖…‖ = h^I_{m+1,m} * |y^I_m|`;
+  `theorem diom_residual (hu : ∀ j ≤ m, u_jj ≠ 0) : ‖b - Aop (diom A b x₀ k m).x‖ = h^I_{m+1,m} * |ζ_m / u_mm|`.
+- **Backbone item.** §3.5 `Krylov.HessenbergRelation.apply_sum`,
+  `Krylov.HessenbergRelation.residual_eq_of_mulVec_eq` (`Numlib/Krylov/Hessenberg.lean`), instantiated
+  by `iop_hessenbergRelation` (D6).
+- **Proof route.** The backbone residual formula with the IOP relation; `e_mᵀ y_m = ζ_m/u_mm` from
+  `U_m y_m = z_m` and `U_m` upper triangular.
+- **Classification.** `needs-equivalence` (`iop_hessenbergRelation`; the DIOM form adds R14's LU
+  bookkeeping).
 
 ### R14. §6.4.2 — DIOM is mathematically equivalent to IOM (6.20)–(6.21)
-- **Book statement.** With `H_m = L_m U_m` (no pivoting), `P_m = V_m U_m^{-1}`, `z_m = L_m^{-1}(β e_1)`: `x_m = x_0 + P_m z_m` (6.20) and `x_m = x_{m−1} + ζ_m p_m` (6.21), so Alg 6.8 produces the IOM iterates.
-- **Lean surface statement.** `theorem hessLU_spec (hu : ∀ j, u_jj ≠ 0) : (hessLU Hm).1 * (hessLU Hm).2 = Hm ∧ unitLowerBidiagonal L ∧ upperTriangularBand U k`; `theorem diom_x_eq_iom (hu : ∀ j ≤ m, (hessLU (HI … m)).2 j j ≠ 0) : (diom A b x₀ k m).x = iom A b x₀ k m`.
-- **Backbone item.** none (1.2).
-- **Proof route.** Induction on `m` with the last-column identities `∑_{i=m−k+1}^m u_im p_i = v_m` and `ζ_m = −l_{m,m−1} ζ_{m−1}`; the LU of a Hessenberg matrix is `Matrix.BlockTriangular` bookkeeping.
-- **Status.** `surface-only`.
+- **Book statement.** With `H_m = L_m U_m` (no pivoting), `P_m = V_m U_m^{-1}`, `z_m = L_m^{-1}(β e_1)`:
+  `x_m = x_0 + P_m z_m` (6.20) and `x_m = x_{m−1} + ζ_m p_m` (6.21), so Alg 6.8 produces the IOM
+  iterates.
+- **Lean surface statement.** `theorem hessLU_spec (hu : ∀ j, u_jj ≠ 0) :
+  (hessLU Hm).1 * (hessLU Hm).2 = Hm ∧ unitLowerBidiagonal L ∧ upperTriangularBand U k`;
+  `theorem diom_x_eq_iom (hu : ∀ j ≤ m, (hessLU (HI … m)).2 j j ≠ 0) : (diom A b x₀ k m).x = iom A b x₀ k m`.
+- **Backbone item.** none (§1.2).
+- **Proof route.** Induction on `m` with the last-column identities `∑_{i=m−k+1}^m u_im p_i = v_m`
+  and `ζ_m = −l_{m,m−1} ζ_{m−1}`; the LU of a Hessenberg matrix is `Matrix.BlockTriangular`
+  bookkeeping.
+- **Classification.** `surface-only`.
 
 ### R15. Proposition 6.8
-- **Book statement.** IOM and DIOM are mathematically equivalent to a projection process onto `𝒦_m` orthogonally to `L_m = span{z_1, …, z_m}`, `z_i = v_i − (v_i, v_{m+1}) v_{m+1}`.
-- **Lean surface statement.** `theorem prop_6_8 (hH : IsUnit (HI …)) (hnb : ∀ j < m, iopCoeff … (j+1) j ≠ 0) (hspan : span (vI '' Iio m) = krylov A r₀ m) : IsPetrovGalerkin Aop b x₀ (krylov A r₀ m) (Submodule.span ℝ (Set.range fun i : Fin m => vI i - inner (vI m) (vI i) • vI m)) (iom A b x₀ k m)`.
-- **Backbone item.** 2.4.1 `IsPetrovGalerkin` ✓.
-- **Proof route.** `mem`: `x_m − x_0 ∈ span(V_m) = 𝒦_m`; `orth`: the residual is a multiple of `v_{m+1}` (R13) and `(z_i, v_{m+1}) = 0` by construction.
-- **Status.** `surface-only` (5 lines given R13).
+- **Book statement.** IOM and DIOM are mathematically equivalent to a projection process onto `𝒦_m`
+  orthogonally to `L_m = span{z_1, …, z_m}`, `z_i = v_i − (v_i, v_{m+1}) v_{m+1}`.
+- **Lean surface statement.** `theorem prop_6_8 (hH : IsUnit (HI …)) (hnb : ∀ j < m, iopCoeff … (j+1) j ≠ 0)
+  (hspan : span (vI '' Iio m) = krylov A r₀ m) : IsPetrovGalerkin Aop b x₀ (krylov A r₀ m)
+  (Submodule.span ℝ (Set.range fun i : Fin m => vI i - inner (vI m) (vI i) • vI m)) (iom A b x₀ k m)`.
+- **Backbone item.** §2.4.1 `IsPetrovGalerkin`.
+- **Proof route.** `mem`: `x_m − x_0 ∈ span(V_m) = 𝒦_m`; `orth`: the residual is a multiple of
+  `v_{m+1}` (R13) and `(z_i, v_{m+1}) = 0` by construction.
+- **Classification.** `surface-only` (5 lines given R13).
 
 ### R16. (6.22)–(6.24) (P-6.22)
-- **Book statement.** For IOM/DIOM with parameter `k`: `(r_j, r_i) = 0` for `|i − j| ≤ k, i ≠ j` (6.22); `(A p_j, v_i) = 0` for `j − k + 1 < i < j` (6.23); for `k = ∞` (full orthogonalization) `(A p_j, p_i) = 0` for `i < j` (6.24) (semi-conjugacy).
-- **Lean surface statement.** `theorem eq_6_22 (hij : i ≠ j) (hk : |(i:ℤ) - j| ≤ k) : inner (rI i) (rI j) = 0`; `theorem eq_6_23 (h₁ : j + 1 < i + k) (h₂ : i < j) : inner (vI i) (Aop (pD j)) = 0`; `theorem eq_6_24 (hk : m ≤ k) (h : i < j) : inner (pD i) (Aop (pD j)) = 0` (under the no-breakdown hypotheses of R13/R14).
+- **Book statement.** For IOM/DIOM with parameter `k`: `(r_j, r_i) = 0` for `|i − j| ≤ k, i ≠ j`
+  (6.22); `(A p_j, v_i) = 0` for `j − k + 1 < i < j` (6.23); for `k = ∞` (full orthogonalization)
+  `(A p_j, p_i) = 0` for `i < j` (6.24) (semi-conjugacy).
+- **Lean surface statement.** `theorem eq_6_22 (hij : i ≠ j) (hk : |(i:ℤ) - j| ≤ k) : inner (rI i) (rI j) = 0`;
+  `theorem eq_6_23 (h₁ : j + 1 < i + k) (h₂ : i < j) : inner (vI i) (Aop (pD j)) = 0`;
+  `theorem eq_6_24 (hk : m ≤ k) (h : i < j) : inner (pD i) (Aop (pD j)) = 0` (under the no-breakdown
+  hypotheses of R13/R14).
 - **Backbone item.** none.
-- **Proof route.** (6.22): `r_j ∝ v_{j+1}` and local orthogonality of IOP vectors; (6.23): `A P_m = V_{m+1} H̄_m U_m^{-1}` and `H̄_m U_m^{-1}` is unit lower bidiagonal plus a last row, so `A p_j ∈ span{v_j, v_{j+1}}`; (6.24): `P_mᵀ A P_m = U_m^{-T} L_m` is lower triangular.
-- **Status.** `surface-only`.
+- **Proof route.** (6.22): `r_j ∝ v_{j+1}` and local orthogonality of IOP vectors; (6.23):
+  `A P_m = V_{m+1} H̄_m U_m^{-1}` and `H̄_m U_m^{-1}` is unit lower bidiagonal plus a last row, so
+  `A p_j ∈ span{v_j, v_{j+1}}`; (6.24): `P_mᵀ A P_m = U_m^{-T} L_m` is lower triangular.
+- **Classification.** `surface-only`.
 
 ### R17. (6.27)–(6.28)
-- **Book statement.** For `x = x_0 + V_m y`: `b − A x = V_{m+1}(β e_1 − H̄_m y)` (6.27) and `J(y) = ‖b − A(x_0 + V_m y)‖₂ = ‖β e_1 − H̄_m y‖₂` (6.28).
-- **Lean surface statement.** `theorem eq_6_27 (y : Fin m → ℝ) : b - Aop (x₀ + V *ᵥ y) = V A v₁ (m+1) *ᵥ (β • e₁ (m+1) - Hbar A v₁ m *ᵥ y)`; `theorem eq_6_28 (hm : m ≤ μ) (y) : ‖b - Aop (x₀ + V *ᵥ y)‖ = J A b x₀ m y`.
-- **Backbone item.** 3.5 `Krylov.norm_residual_eq_norm_hessenberg` (planned), 3.2 `Arnoldi.apply_sum` ✓, `Arnoldi.orthonormal` ✓.
-- **Proof route.** (6.27) from `apply_sum` and `r₀ = β v_0`; (6.28) by orthonormality of `v_0..v_m` (`m ≤ μ`; if `m = μ`, `v_m = 0` and the last coordinate of `β e_1 − H̄ y` is `0` since `h_{m+1,m} = 0`, so the identity still holds).
-- **Status.** `direct`.
+- **Book statement.** For `x = x_0 + V_m y`: `b − A x = V_{m+1}(β e_1 − H̄_m y)` (6.27) and
+  `J(y) = ‖b − A(x_0 + V_m y)‖₂ = ‖β e_1 − H̄_m y‖₂` (6.28).
+- **Lean surface statement.** `theorem eq_6_27 (y : Fin m → ℝ) :
+  b - Aop (x₀ + V *ᵥ y) = V A v₁ (m+1) *ᵥ (β • e₁ (m+1) - Hbar A v₁ m *ᵥ y)`;
+  `theorem eq_6_28 (hm : m ≤ μ) (y) : ‖b - Aop (x₀ + V *ᵥ y)‖ = J A b x₀ m y`.
+- **Backbone item.** §3.5 `Krylov.HessenbergRelation.residual_eq` through `Arnoldi.hessenbergRelation`
+  (6.27), `Krylov.norm_residual_eq_norm_firstVec_sub_mulVec` (6.28) (`Numlib/Krylov/Hessenberg.lean`);
+  §3.2 `Arnoldi.vec_zero`, `Arnoldi.orthonormal`.
+- **Proof route.** `r₀ = β v_0` (`Arnoldi.vec_zero`), then the two backbone lemmas, with
+  `Matrix.toEuclideanLin_apply_eq_sum` for `V y`. (If `m = μ`, `v_m = 0` and the last coordinate of
+  `β e_1 − H̄ y` is `0` since `h_{m+1,m} = 0`, which is why (6.28) holds up to `m = μ`.)
+- **Classification.** `direct`.
 
 ### R18. (6.29)–(6.30) — GMRES iterate is the (unique) minimal-residual iterate
-- **Book statement.** The GMRES approximation is the unique vector of `x_0 + 𝒦_m` minimizing (6.26); it is `x_m = x_0 + V_m y_m` with `y_m = argmin_y ‖β e_1 − H̄_m y‖₂`.
-- **Lean surface statement.** `theorem isGMRESIterate_iff (hm : m ≤ μ) : IsGMRESIterate A b x₀ m x ↔ Krylov.IsMinResIterate Aop b x₀ m x`; `theorem gmres_unique (hm) (hA : IsUnit A) : ∃! x, IsGMRESIterate A b x₀ m x`.
-- **Backbone item.** 3.4 `Krylov.IsMinResIterate`; 3.5 `Krylov.isMinResIterate_of_isLeast`; 2.4.1 `existsUnique_isMinRes_of_injOn` ✓, `exists_isMinRes` ✓.
-- **Proof route.** D7 (both directions via (6.28) and the parametrization `x₀ + V_m y` of `x₀ + 𝒦_m`).
-- **Status.** `direct`.
+- **Book statement.** The GMRES approximation is the unique vector of `x_0 + 𝒦_m` minimizing (6.26);
+  it is `x_m = x_0 + V_m y_m` with `y_m = argmin_y ‖β e_1 − H̄_m y‖₂`.
+- **Lean surface statement.** `theorem isGMRESIterate_iff (hm : m ≤ μ) :
+  IsGMRESIterate A b x₀ m x ↔ Krylov.IsMinResIterate Aop b x₀ m x`;
+  `theorem gmres_unique (hm) (hA : IsUnit A) : ∃! x, IsGMRESIterate A b x₀ m x`.
+- **Backbone item.** §3.4 `Krylov.IsMinResIterate`, `Krylov.exists_isMinResIterate`,
+  `Krylov.existsUnique_isMinResIterate_of_injective` (`Numlib/Krylov/Iterate.lean`); §3.5
+  `Krylov.isMinResIterate_iff_isMinOn`; §2.4.1 `existsUnique_isMinRes_of_injOn`, `exists_isMinRes`.
+- **Proof route.** D7 (both directions via (6.28) and the parametrization `x₀ + V_m y` of
+  `x₀ + 𝒦_m`).
+- **Classification.** `direct`.
 
 ### R19. §6.5.2 — Householder GMRES (Alg 6.10) computes the GMRES iterate; (6.31)–(6.33); `β = ±‖r_0‖`; residual norm `‖h_0 − ∑ η_i h_i‖`
-- **Book statement.** With the Householder Arnoldi basis, `x_m = x_0 + ∑ η_j v_j` is obtained by `z := 0; z := P_j(η_j e_j + z)` for `j = m..1`; `x_m = x_0 + z` (6.31)–(6.33); the scalar `β = e_1ᵀ h_0` equals `±‖r_0‖₂`; the residual norm of `x_0 + V_m y` equals `‖h_0 − η_1 h_1 − ⋯ − η_m h_m‖₂` whose minimizer is the same `y_m`.
-- **Lean surface statement.** `theorem horner_eq (P) (η) : hornerAccumulate P η = ∑ j, η j • (P 0 ∘ … ∘ P j) e_j`; `theorem hh_beta : |βHH| = ‖r₀‖`; `theorem hh_residual_norm (y) : ‖b - Aop (x₀ + VHH *ᵥ y)‖ = ‖h₀ - ∑ j, y j • hHH j‖`; `theorem gmresHH_eq (hm : m ≤ μ) (hn : m + 1 ≤ n) : gmresHH A b x₀ m hn = gmres A b x₀ m`.
+- **Book statement.** With the Householder Arnoldi basis, `x_m = x_0 + ∑ η_j v_j` is obtained by
+  `z := 0; z := P_j(η_j e_j + z)` for `j = m..1`; `x_m = x_0 + z` (6.31)–(6.33); the scalar
+  `β = e_1ᵀ h_0` equals `±‖r_0‖₂`; the residual norm of `x_0 + V_m y` equals
+  `‖h_0 − η_1 h_1 − ⋯ − η_m h_m‖₂` whose minimizer is the same `y_m`.
+- **Lean surface statement.** `theorem horner_eq (P) (η) : hornerAccumulate P η = ∑ j, η j • (P 0 ∘ … ∘ P j) e_j`;
+  `theorem hh_beta : |βHH| = ‖r₀‖`; `theorem hh_residual_norm (y) : ‖b - Aop (x₀ + VHH *ᵥ y)‖ = ‖h₀ - ∑ j, y j • hHH j‖`;
+  `theorem gmresHH_eq (hm : m ≤ μ) (hn : m + 1 ≤ n) : gmresHH A b x₀ m hn = gmres A b x₀ m`.
 - **Backbone item.** none (surface); uses R10 and R18.
 - **Proof route.** D7; `Q_m` orthogonal makes the residual norm `‖Q_m(r_0 − ∑ η_i A v_i)‖ = ‖h_0 − ∑ η_i h_i‖`.
-- **Status.** `surface-only` (depends on R10).
+- **Classification.** `surface-only` (depends on R10).
 
 ### R20. §6.5.3/§6.5.9 — properties of the rotations (6.34)–(6.40), (6.80)–(6.81)
-- **Book statement.** `c_i² + s_i² = 1` (real) / `|c_i|² + |s_i|² = 1` (complex); each `Ω_i` and `Q_m = Ω_m ⋯ Ω_1` is unitary; `R̄_m = Q_m H̄_m` is upper triangular with zero last row; `ḡ_m = Q_m(β e_1)`; in the complex case `s_i` is real nonnegative, `c_i` complex, the diagonal of `R_m` is real nonnegative and the `γ_i` are real (§6.5.9).
-- **Lean surface statement.** `theorem c_sq_add_s_sq (i) : ‖c Hb β i‖^2 + (s Hb β i)^2 = 1`; `theorem givens_mem_unitary : Ω Hb β i ∈ Matrix.unitaryGroup _ 𝕜`; `theorem Qrot_mem_unitary`; `theorem Rbar_upperTriangular : (Rbar Hb β).BlockTriangular (Fin.castSucc-order) ∧ ∀ j, Rbar Hb β (Fin.last m) j = 0` (under `IsUpperHessenbergRect Hb` and real nonnegative subdiagonal); `theorem s_nonneg`, `theorem Rbar_diag_real_nonneg`, `theorem γ_real : ∀ i, (γ Hb β i).im = 0`.
-- **Backbone item.** 2.1.10 `Matrix.givens` (unitary), `HessenbergQR` (planned).
-- **Proof route.** Finite index computations; the reality statements by induction over the stages (each stage multiplies real quantities by real `s` and `c̄ h` with `h` real, cf. (6.81)).
-- **Status.** `direct` if 2.1.10 adopts the explicit constructor (G7), else `surface-only` bookkeeping (~100 lines).
+- **Book statement.** `c_i² + s_i² = 1` (real) / `|c_i|² + |s_i|² = 1` (complex); each `Ω_i` and
+  `Q_m = Ω_m ⋯ Ω_1` is unitary; `R̄_m = Q_m H̄_m` is upper triangular with zero last row;
+  `ḡ_m = Q_m(β e_1)`; in the complex case `s_i` is real nonnegative, `c_i` complex, the diagonal of
+  `R_m` is real nonnegative and the `γ_i` are real (§6.5.9).
+- **Lean surface statement.** `theorem c_sq_add_s_sq (i) (hρ : Krylov.givensRho h i ≠ 0) : ‖c h i‖^2 + ‖s h i‖^2 = 1`;
+  `theorem givens_mem_unitary (hρ) : Ω h i m ∈ Matrix.unitaryGroup _ 𝕜`; `theorem Qrot_mem_unitary (hρ : ∀ i < m, …)`;
+  `theorem Rbar_upperTriangular : (∀ i j : Fin _, (j : ℕ) < i → Rbar h m i j = 0) ∧ ∀ j, Rbar h m (Fin.last m) j = 0`
+  (for upper Hessenberg `h`); `theorem s_real_nonneg : s h i = ((‖arnoldiW A v₁ i‖ / Krylov.givensRho h i : ℝ) : 𝕜)`;
+  `theorem Rbar_diag_real_nonneg : R h m i i = (Krylov.givensRho h i : 𝕜)`; `theorem γ_real : ∀ i, (γ h β i).im = 0`.
+- **Backbone item.** `Numlib/Krylov/Hessenberg.lean` (D8): `Krylov.norm_givensC_sq_add_norm_givensS_sq`,
+  `givensMatrix_mem_unitaryGroup`, `givensQ_mem_unitaryGroup`, `rotated_eq_zero_of_lt`,
+  `rotated_last_row` (with `Rbar_eq`), `rotated_succ_self`, `givensS_arnoldi_eq`, `gamma_succ`;
+  §3.2 `Arnoldi.hessenberg_isUpperHessenbergRect` / `Arnoldi.coeff_eq_zero_of_lt` for the Hessenberg
+  hypothesis.
+- **Proof route.** Instances of the backbone lemmas at `h = arnoldiCoeff A v₁`; `γ_i` real by
+  induction from `gamma_succ` and real `s_i`.
+- **Classification.** `direct` (the reality of `γ_i` is a three-line surface induction).
 
 ### R21. (6.43)
 - **Book statement.** For every `y`: `‖β e_1 − H̄_m y‖₂² = ‖Q_m(β e_1 − H̄_m y)‖² = ‖ḡ_m − R̄_m y‖² = |γ_{m+1}|² + ‖g_m − R_m y‖₂²`.
-- **Lean surface statement.** `theorem eq_6_43 (y : Fin m → 𝕜) : (J A b x₀ m y)^2 = ‖γ A b x₀ m (Fin.last m)‖^2 + ‖g A b x₀ m - R A b x₀ m *ᵥ y‖^2` (Euclidean norms on `Fin m → 𝕜` via `WithLp.toLp 2`).
-- **Backbone item.** 2.1.10 lemma "(6.43)" (planned).
-- **Proof route.** `Q_m` unitary preserves the norm; split the last coordinate (last row of `R̄_m` is `0`).
-- **Status.** `direct` (via `toHessenbergQR`, D8).
+- **Lean surface statement.** `theorem eq_6_43 (hρ : ∀ i < m, Krylov.givensRho h i ≠ 0) (y : Fin m → 𝕜) :
+  (J A b x₀ m y)^2 = ‖γ h β m‖^2 + ‖g h β m - R h m *ᵥ y‖^2` (Euclidean norms on `Fin m → 𝕜` via
+  `WithLp.toLp 2`).
+- **Backbone item.** `Krylov.givensQ_mem_unitaryGroup`, `Rbar_eq`, `gbar_eq` (D8),
+  `Krylov.rotated_last_row`.
+- **Proof route.** `Q_m` unitary preserves the norm; split the last coordinate (last row of `R̄_m`
+  is `0`, last entry of `ḡ_m` is `γ_{m+1}`).
+- **Classification.** `surface-only` (ten lines from the D8 lemmas).
 
 ### R22. Proposition 6.9 (1)–(3), (6.41)–(6.42)
-- **Book statement.** Let `m ≤ n`, rotations as above, `R_m, g_m` the top parts. (1) `rank(A V_m) = rank(R_m)`; in particular `r_mm = 0 ⇒ A` singular. (2) The minimizer of `‖β e_1 − H̄_m y‖₂` is `y_m = R_m^{-1} g_m`. (3) `b − A x_m = V_{m+1}(β e_1 − H̄_m y_m) = V_{m+1} Q_mᵀ(γ_{m+1} e_{m+1})` (6.41) and `‖b − A x_m‖₂ = |γ_{m+1}|` (6.42).
-- **Lean surface statement.** (implicit hypothesis "m steps taken": `hm : m ≤ μ`) `theorem prop_6_9_1 (hm) : (A * V A v₁ m).rank = (R A b x₀ m).rank ∧ (R A b x₀ m (Fin.last _) (Fin.last _) = 0 → ¬ IsUnit A)`; `theorem prop_6_9_2 (hm) (hR : IsUnit (R …)) : IsMinOn (J A b x₀ m) univ (gmresY A b x₀ m) ∧ ∀ y, IsMinOn (J …) univ y → y = gmresY …`; `theorem eq_6_41 (hm) (hR) : b - Aop (gmresFixed A b x₀ m) = V A v₁ (m+1) *ᵥ ((Qrot … m)ᴴ *ᵥ (γ … (Fin.last m) • e_{m+1}))`; `theorem eq_6_42 (hm) (hR) : ‖b - Aop (gmresFixed A b x₀ m)‖ = ‖γ A b x₀ m (Fin.last m)‖`.
-- **Backbone item.** 3.5 (`‖r_m‖ = |γ_{m+1}|` via 2.1.10), R17, R21; 2.4.1 `IsMinRes.residual_eq` ✓.
-- **Proof route.** (2) from R21: the minimum of `|γ|² + ‖g − R y‖²` is attained iff `R y = g`; (3) from (6.27) and `Q_mᴴ Q_m = 1`; (1): `A V_m = (V_{m+1} Q_mᴴ) R̄_m` with `V_{m+1} Q_mᴴ` injective, so `rank(A V_m) = rank R̄_m = rank R_m`; `r_mm = 0` gives `rank R_m ≤ m − 1` while `V_m` has rank `m`.
-- **Status.** `direct` for (2)–(3); `surface-only` for (1) (rank bookkeeping with `Matrix.rank`, no backbone item).
+- **Book statement.** Let `m ≤ n`, rotations as above, `R_m, g_m` the top parts. (1) `rank(A V_m) = rank(R_m)`;
+  in particular `r_mm = 0 ⇒ A` singular. (2) The minimizer of `‖β e_1 − H̄_m y‖₂` is `y_m = R_m^{-1} g_m`.
+  (3) `b − A x_m = V_{m+1}(β e_1 − H̄_m y_m) = V_{m+1} Q_mᵀ(γ_{m+1} e_{m+1})` (6.41) and
+  `‖b − A x_m‖₂ = |γ_{m+1}|` (6.42).
+- **Lean surface statement.** (implicit hypothesis "m steps taken": `hm : m ≤ μ`)
+  `theorem prop_6_9_1 (hm) : (A * V A v₁ m).rank = (R h m).rank ∧ (R h m (Fin.last _) (Fin.last _) = 0 → ¬ IsUnit A)`;
+  `theorem prop_6_9_2 (hm) (hR : IsUnit (R h m)) : IsMinOn (J A b x₀ m) univ (gmresY A b x₀ m) ∧ ∀ y, IsMinOn (J …) univ y → y = gmresY …`;
+  `theorem eq_6_41 (hm) (hR) : b - Aop (gmresFixed A b x₀ m) = V A v₁ (m+1) *ᵥ ((Qrot h m)ᴴ *ᵥ (γ h β m • e_{m+1}))`;
+  `theorem eq_6_42 (hm) (hR) : ‖b - Aop (gmresFixed A b x₀ m)‖ = ‖γ h β m‖`.
+- **Backbone item.** §3.5 `Krylov.IsMinResIterate.norm_residual_eq_norm_gamma` (6.42),
+  `Krylov.IsMinResIterate.exists_mulVec_rotated_eq` (the minimal-residual iterate has coordinates
+  with `R_m y = g_m`), `Krylov.HessenbergRelation.residual_eq` and `Krylov.givensQ_mulVec_firstVec`
+  (6.41); §2.4.1 `IsMinRes.residual_eq`; R17, R21.
+- **Proof route.** (2): R21 shows the minimum of `|γ|² + ‖g − R y‖²` is attained exactly at
+  `R y = g`, unique when `R` is a unit (and `exists_mulVec_rotated_eq` gives the same `y` for the
+  backbone iterate); (3): `isGMRESIterate_iff` then `norm_residual_eq_norm_gamma`; (6.41) from
+  (6.27) and `Q_mᴴ Q_m = 1`; (1): `A V_m = (V_{m+1} Q_mᴴ) R̄_m` with `V_{m+1} Q_mᴴ` injective, so
+  `rank(A V_m) = rank R̄_m = rank R_m`; `r_mm = 0` gives `rank R_m ≤ m − 1` while `V_m` has rank `m`.
+- **Classification.** `direct` for (2)–(3); `surface-only` for (1) (rank bookkeeping with
+  `Matrix.rank`).
 
 ### R23. (6.44)–(6.47) — progressive update and `γ_{j+1} = −s_j γ_j`
-- **Book statement.** Appending the `(m+1)`-st Arnoldi column and applying `Ω_1..Ω_m` to it, then `Ω_{m+1}`, yields `R̄_{m+1}, ḡ_{m+1}` with `ḡ_{m+1} = (γ_1, …, γ_m, c_{m+1} γ_{m+1}, −s_{m+1} γ_{m+1})ᵀ`; hence `γ_{j+1} = −s_j γ_j` (6.47); if `s_j = 0` the solution is exact at step `j`.
-- **Lean surface statement.** `theorem rot_prefix (k ≤ m) : (rotStage (Hbar A v₁ (m+1)) β k).1.submatrix id Fin.castSucc = (rotStage (Hbar A v₁ m) β k).1.extendRow0 ∧ (rotStage … (m+1) …).2 = extend (rotStage … m …).2`; `theorem c_prefix : c (Hbar … (m+1)) β i.castSucc = c (Hbar … m) β i` (same for `s`, `γ`); `theorem eq_6_47 (j : Fin m) : γ A b x₀ m j.succ = -(s A b x₀ m j : 𝕜) * γ A b x₀ m j.castSucc`; `theorem exact_of_s_eq_zero (hm) (hR) (hs : s … (Fin.last (m-1)) = 0) : Aop (gmresFixed A b x₀ m) = b`.
-- **Backbone item.** 2.1.10 "(6.47)" (planned); G7 for prefix stability.
-- **Proof route.** Direct from the definition of `rotStage` (the `k`-th rotation only touches rows `k, k+1`, and the appended column is untouched by the first `k−1` rotations' effect on earlier columns); exactness from (6.42).
-- **Status.** `direct` with G7, else `surface-only`.
+- **Book statement.** Appending the `(m+1)`-st Arnoldi column and applying `Ω_1..Ω_m` to it, then
+  `Ω_{m+1}`, yields `R̄_{m+1}, ḡ_{m+1}` with `ḡ_{m+1} = (γ_1, …, γ_m, c_{m+1} γ_{m+1}, −s_{m+1} γ_{m+1})ᵀ`;
+  hence `γ_{j+1} = −s_j γ_j` (6.47); if `s_j = 0` the solution is exact at step `j`.
+- **Lean surface statement.** `theorem Rbar_succ_submatrix : (Rbar h (m+1)).submatrix Fin.castSucc Fin.castSucc = Rbar h m`
+  (the first `m` columns of `R̄_{m+1}` are those of `R̄_m`, extended by a zero row);
+  `theorem gbar_succ : gbar h β (m+1) = Fin.snoc (Fin.snoc (g h β m) (Krylov.gvec h β m)) (γ h β (m+1))`;
+  `theorem eq_6_47 (j : ℕ) : γ h β (j+1) = -(s h j) * γ h β j`;
+  `theorem exact_of_s_eq_zero (hm) (hR) (hs : s h (m-1) = 0) : Aop (gmresFixed A b x₀ m) = b`.
+- **Backbone item.** `Krylov.gamma_succ` (6.47), `Krylov.givensQ_mulVec_firstVec` ((6.44)–(6.46)),
+  `Krylov.rotated_succ_eq_of_lt` (rotation `m` leaves the first `m` columns unchanged) and
+  `Krylov.rotated_eq_of_le`; since `c_i, s_i, γ_i` are defined from the infinite coefficient function
+  they do not depend on `m` (the book's "the previous rotations need not be recomputed").
+- **Proof route.** `Rbar_eq`/`gbar_eq` and the listed lemmas; exactness from (6.42) and
+  `gamma_succ`.
+- **Classification.** `direct`.
 
 ### R24. Proposition 6.10 (breakdown of GMRES)
-- **Book statement.** Let `A` be nonsingular. GMRES breaks down at step `j` (`h_{j+1,j} = 0`) iff the approximate solution `x_j` is exact.
-- **Lean surface statement.** `theorem prop_6_10 (hA : IsUnit A) (hj : NoBreakdownBefore A v₁ j) (hj0 : 0 < j) : h j (j-1) = 0 ↔ Aop (gmresFixed A b x₀ j) = b`.
-- **Backbone item.** 3.4 `Krylov.IsMinResIterate.apply_eq_of_grade_le` (⇒, lucky breakdown) and the converse `Krylov.grade_le_of_apply_eq` (request G5); 3.2 `coeff_succ_self_eq_zero_iff` ✓.
-- **Proof route.** `h_{j+1,j} = 0 ↔ grade ≤ j` (R7); ⇒ backbone; ⇐: `A x_j = b` with `x_j − x_0 ∈ 𝒦_j` gives `r_0 = A q(A) r_0` with `deg q < j`, so `(1 − t q)(A) r_0 = 0` and `grade ≤ j`. (The book's route through `s_j = 0` is R23 + R22(1).)
-- **Status.** `direct` (⇒); `needs-equivalence` (⇐ via G5, 10 lines).
+- **Book statement.** Let `A` be nonsingular. GMRES breaks down at step `j` (`h_{j+1,j} = 0`) iff the
+  approximate solution `x_j` is exact.
+- **Lean surface statement.** `theorem prop_6_10 (hA : IsUnit A) (hj : NoBreakdownBefore A v₁ j) (hj0 : 0 < j) :
+  h j (j-1) = 0 ↔ Aop (gmresFixed A b x₀ j) = b`.
+- **Backbone item.** §3.4 `Krylov.IsMinResIterate.apply_eq_of_grade_le` (⇒, lucky breakdown; its
+  `Set.InjOn` hypothesis from `IsUnit A`) and `Krylov.grade_le_of_apply_eq` (⇐: an exact solution in
+  `x₀ + 𝒦_j` forces `grade ≤ j`) (`Numlib/Krylov/Iterate.lean`); §3.2
+  `Arnoldi.coeff_succ_self_eq_zero_iff`.
+- **Proof route.** `h_{j+1,j} = 0 ↔ grade ≤ j` (R7); both directions are the backbone lemmas. (The
+  book's route through `s_j = 0` is R23 + R22(1).)
+- **Classification.** `direct`.
 
 ### R25. §6.5.5 remark — full GMRES converges in at most `n` steps
-- **Book statement.** "The full GMRES algorithm is guaranteed to converge in at most `n` steps" (nonsingular `A`).
-- **Lean surface statement.** `theorem gmres_exact_of_card_le (hA : IsUnit A) (hm : n ≤ m) : Aop (gmres A b x₀ m) = b` (and `∃ m ≤ n, Aop (gmres A b x₀ m) = b`).
-- **Backbone item.** 3.4 `IsMinResIterate.apply_eq_of_grade_le` + 3.1 `grade_le_finrank` ✓.
+- **Book statement.** "The full GMRES algorithm is guaranteed to converge in at most `n` steps"
+  (nonsingular `A`).
+- **Lean surface statement.** `theorem gmres_exact_of_card_le (hA : IsUnit A) (hm : n ≤ m) : Aop (gmres A b x₀ m) = b`
+  (and `∃ m ≤ n, Aop (gmres A b x₀ m) = b`).
+- **Backbone item.** §3.4 `Krylov.IsMinResIterate.apply_eq_of_grade_le` + §3.1 `Krylov.grade_le_finrank`.
 - **Proof route.** `mEff = min m μ ≥ μ` when `m ≥ n ≥ μ`.
-- **Status.** `direct`.
+- **Classification.** `direct`.
 
 ### R26. (6.50) — DQGMRES residual
-- **Book statement.** For QGMRES/DQGMRES, `b − A x_m = V_{m+1} Q_mᵀ(γ_{m+1} e_{m+1}) ≡ γ_{m+1} z_{m+1}` ((6.41) is still valid since orthogonality was not used); `‖b − A x_m‖ = ‖V_{m+1}(β e_1 − H̄_m y_m)‖` with `y_m` the minimizer of the quasi-residual norm.
-- **Lean surface statement.** `theorem eq_6_50 (hR : IsUnit (RI …)) : b - Aop (qgmres A b x₀ k m) = γI … (Fin.last m) • z A b x₀ k m`.
-- **Backbone item.** none (G1 would give it).
+- **Book statement.** For QGMRES/DQGMRES, `b − A x_m = V_{m+1} Q_mᵀ(γ_{m+1} e_{m+1}) ≡ γ_{m+1} z_{m+1}`
+  ((6.41) is still valid since orthogonality was not used); `‖b − A x_m‖ = ‖V_{m+1}(β e_1 − H̄_m y_m)‖`
+  with `y_m` the minimizer of the quasi-residual norm.
+- **Lean surface statement.** `theorem eq_6_50 (hR : IsUnit (R (iopCoeff …) m)) :
+  b - Aop (qgmres A b x₀ k m) = γ (iopCoeff …) β m • z A b x₀ k m`.
+- **Backbone item.** `Krylov.HessenbergRelation.residual_eq` (through `iop_hessenbergRelation`, D6),
+  `Krylov.givensQ_mem_unitaryGroup`, `Krylov.givensQ_mulVec_firstVec`, `Rbar_eq`/`gbar_eq` at
+  `h = iopCoeff A v₁ k` (D8–D9).
 - **Proof route.** R22(3)'s computation with `VI` in place of `V` (no orthogonality used).
-- **Status.** `surface-only` (→ `direct` with G1).
+- **Classification.** `needs-equivalence` (`iop_hessenbergRelation`).
 
 ### R27. (6.51)
-- **Book statement.** `‖b − A x_m‖ ≤ √(m − k + 1) |γ_{m+1}|` (with `k := m` when `m ≤ k`): the quasi-residual overestimates the residual by at most `√(m−k+1)`.
-- **Lean surface statement.** `theorem eq_6_51 (hR) (hnb : IOP no breakdown up to m) : ‖b - Aop (qgmres A b x₀ k m)‖ ≤ Real.sqrt (m - min k m + 1) * ‖γI … (Fin.last m)‖`.
+- **Book statement.** `‖b − A x_m‖ ≤ √(m − k + 1) |γ_{m+1}|` (with `k := m` when `m ≤ k`): the
+  quasi-residual overestimates the residual by at most `√(m−k+1)`.
+- **Lean surface statement.** `theorem eq_6_51 (hR) (hnb : IOP no breakdown up to m) :
+  ‖b - Aop (qgmres A b x₀ k m)‖ ≤ Real.sqrt (m - min k m + 1) * ‖γ (iopCoeff …) β m‖`.
 - **Backbone item.** none.
-- **Proof route.** The book's: split `q = Q_mᵀ e_{m+1}` into the first `k+1` (orthonormal `v_i`) and remaining components; triangle inequality, Cauchy–Schwarz twice, `‖q‖ = 1`.
-- **Status.** `surface-only`.
+- **Proof route.** The book's: split `q = Q_mᵀ e_{m+1}` into the first `k+1` (orthonormal `v_i`) and
+  remaining components; triangle inequality, Cauchy–Schwarz twice, `‖q‖ = 1`.
+- **Classification.** `surface-only`.
 
 ### R28. (6.53)–(6.54) (and P-6.25)
-- **Book statement.** `Z_{m+1} = [Z_m, v_{m+1}] Ω_mᵀ`, so `z_{m+1} = −s_m z_m + c_m v_{m+1}` (6.53) and `ζ_{m+1} ≤ |s_m| ζ_m + |c_m|` (6.54). P-6.25: (6.54) implies `ζ_{m+1} ≤ √(m − k + 1)` for `m ≥ k`, so (6.54) is sharper than (6.51).
-- **Lean surface statement.** `theorem eq_6_53 : z A b x₀ k (m+1) = -(sI … m : 𝕜) • z … m + cI … m • vI m`; `theorem eq_6_54 : ζ … (m+1) ≤ |sI … m| * ζ … m + ‖cI … m‖`; `theorem p_6_25 (hk : k ≤ m) : ζ … (m+1) ≤ Real.sqrt (m - k + 1)`.
-- **Backbone item.** none.
-- **Proof route.** Last column of `[Z_m, v_{m+1}] Ω_mᵀ`; norm triangle inequality; P-6.25 by induction and Cauchy–Schwarz as hinted.
-- **Status.** `surface-only`.
+- **Book statement.** `Z_{m+1} = [Z_m, v_{m+1}] Ω_mᵀ`, so `z_{m+1} = −s_m z_m + c_m v_{m+1}` (6.53)
+  and `ζ_{m+1} ≤ |s_m| ζ_m + |c_m|` (6.54). P-6.25: (6.54) implies `ζ_{m+1} ≤ √(m − k + 1)` for
+  `m ≥ k`, so (6.54) is sharper than (6.51).
+- **Lean surface statement.** `theorem eq_6_53 : z A b x₀ k (m+1) = -(s (iopCoeff …) m) • z … m + c (iopCoeff …) m • vI m`;
+  `theorem eq_6_54 : ζ … (m+1) ≤ ‖s … m‖ * ζ … m + ‖c … m‖`;
+  `theorem p_6_25 (hk : k ≤ m) : ζ … (m+1) ≤ Real.sqrt (m - k + 1)`.
+- **Backbone item.** the entries of `Krylov.givensMatrix` (D8).
+- **Proof route.** Last column of `[Z_m, v_{m+1}] Ω_mᵀ`; norm triangle inequality; P-6.25 by
+  induction and Cauchy–Schwarz as hinted.
+- **Classification.** `surface-only`.
 
 ### R29. (6.55) — two successive DQGMRES residuals
 - **Book statement.** `r_m = γ_{m+1} z_{m+1} = γ_{m+1}[−s_m z_m + c_m v_{m+1}] = s_m² r_{m−1} + c_m γ_{m+1} v_{m+1}`.
-- **Lean surface statement.** `theorem eq_6_55 (hR) : rQ m = (sI … m)^2 • rQ (m-1) + (cI … m * γI … (Fin.last m)) • vI m` (`rQ j := b - Aop (qgmres A b x₀ k j)`).
-- **Backbone item.** 3.5 lists the Lanczos/MINRES form "`r_k = s_k² r_{k−1} − φ_k c_k v_{k+1}` (Choi Lemma 2.18, Saad (6.55))" — for the *orthonormal* case; the DQGMRES case needs G1.
-- **Proof route.** R26 + R28 + (6.47) (`γ_{m+1} = −s_m γ_m`).
-- **Status.** `surface-only` for DQGMRES; `direct` for the `k ≥ m` (GMRES) instance via 3.5.
+- **Lean surface statement.** `theorem eq_6_55 (hR) : rQ m = (s … m)^2 • rQ (m-1) + (c … m * γ … m) • vI m`
+  (`rQ j := b - Aop (qgmres A b x₀ k j)`).
+- **Backbone item.** R26 + R28 + `Krylov.gamma_succ` (6.47).
+- **Proof route.** Substitute (6.53) into (6.50) and use (6.47).
+- **Classification.** `surface-only` (the `k ≥ m` GMRES instance is the same proof after
+  `qgmres_eq_gmres`).
 
 ### R30. (6.56)–(6.58) — DQGMRES versus IOM
-- **Book statement.** `r_m^I = −h_{m+1,m}(e_mᵀ y_m) v_{m+1} = (h_{m+1,m}/(s_m h_mm^{(m−1)})) γ_{m+1} v_{m+1}`; since `h_{m+1,m}/h_mm^{(m)} = tan θ_m`: `γ_{m+1} v_{m+1} = c_m r_m^I` (6.56), `ρ_m^Q = |c_m| ρ_m` with `ρ_m = ‖r_m^I‖` (6.57), and `r_m = s_m² r_{m−1} + c_m² r_m^I` (6.58).
-- **Lean surface statement.** `theorem eq_6_56 (hI : IsUnit (HI …)) (hR) : γI … (Fin.last m) • vI m = cI … m • rI m`; `theorem eq_6_57 : ‖γI … (Fin.last m)‖ = ‖cI … m‖ * ‖rI m‖`; `theorem eq_6_58 : rQ m = (sI … m)^2 • rQ (m-1) + (cI … m)^2 • rI m`.
-- **Backbone item.** none (the orthonormal instance is 3.5/3.6 (6.75)).
-- **Proof route.** R13 for `r^I_m`, the FOM-`y` last component `γ_m/h_mm^{(m−1)}` (as in R33), (6.37) and (6.47).
-- **Status.** `surface-only`.
+- **Book statement.** `r_m^I = −h_{m+1,m}(e_mᵀ y_m) v_{m+1} = (h_{m+1,m}/(s_m h_mm^{(m−1)})) γ_{m+1} v_{m+1}`;
+  since `h_{m+1,m}/h_mm^{(m)} = tan θ_m`: `γ_{m+1} v_{m+1} = c_m r_m^I` (6.56), `ρ_m^Q = |c_m| ρ_m`
+  with `ρ_m = ‖r_m^I‖` (6.57), and `r_m = s_m² r_{m−1} + c_m² r_m^I` (6.58).
+- **Lean surface statement.** `theorem eq_6_56 (hI : IsUnit (HI …)) (hR) : γ … m • vI m = c … m • rI m`;
+  `theorem eq_6_57 : ‖γ … m‖ = ‖c … m‖ * ‖rI m‖`;
+  `theorem eq_6_58 : rQ m = (s … m)^2 • rQ (m-1) + (c … m)^2 • rI m`.
+- **Backbone item.** none beyond R13 and the D8 data (the orthonormal instance is §3.5/§3.6,
+  R33/R38).
+- **Proof route.** R13 for `r^I_m`, the FOM-`y` last component `γ_m/h_mm^{(m−1)}` (as in R33),
+  (6.37) and (6.47).
+- **Classification.** `surface-only`.
 
 ### R31. Theorem 6.11 (Freund–Nachtigal bound for DQGMRES)
-- **Book statement.** Assume `V_{m+1}` (the IOP basis) has full rank. Let `r_m^Q`, `r_m^G` be the DQGMRES and GMRES residuals after `m` steps. Then `‖r_m^Q‖₂ ≤ κ₂(V_{m+1}) ‖r_m^G‖₂` (6.59). (Proof in `ℂ^m`.)
-- **Lean surface statement.** Over `ℂ`: `theorem thm_6_11 (hV : (VI A v₁ k (m+1)).rank = m + 1) (S : Matrix (Fin (m+1)) (Fin (m+1)) ℂ) (hS : IsUnit S) (hW : (VI … (m+1) * S)ᴴ * (VI … (m+1) * S) = 1) : ‖rQ m‖ ≤ ‖S‖₂ * ‖S⁻¹‖₂ * ‖b - Aop (gmresFixed A b x₀ m)‖` (`‖·‖₂` = `Matrix.Norms.L2Operator`), together with `theorem exists_S (hV) : ∃ S, IsUnit S ∧ (VI * S)ᴴ (VI * S) = 1` and the remark `κ₂(V_{m+1}) = ‖S‖‖S⁻¹‖` for any such `S` (which is how `κ₂` of a rectangular matrix is defined here).
-- **Backbone item.** 3.4 `IsMinResIterate` (for `r^G`); 2.1.2 `NormedRing.condNumber` ✓ under the L2 operator norm.
-- **Proof route.** The book's: `r = W S⁻¹ t`, `t = S Wᴴ r`; minimality of `t_m` over the set `ℛ` of residuals of `x₀ + span(V_m) = x₀ + 𝒦_m`, and `r^G ∈ ℛ`.
-- **Status.** `surface-only` (Gram–Schmidt `S` from `hV`; ~60 lines; would become `direct` with G1).
+- **Book statement.** Assume `V_{m+1}` (the IOP basis) has full rank. Let `r_m^Q`, `r_m^G` be the
+  DQGMRES and GMRES residuals after `m` steps. Then `‖r_m^Q‖₂ ≤ κ₂(V_{m+1}) ‖r_m^G‖₂` (6.59). (Proof
+  in `ℂ^m`.)
+- **Lean surface statement.** Over `ℂ`: `theorem thm_6_11 (hV : (VI A v₁ k (m+1)).rank = m + 1)
+  (S : Matrix (Fin (m+1)) (Fin (m+1)) ℂ) (hS : IsUnit S) (hW : (VI … (m+1) * S)ᴴ * (VI … (m+1) * S) = 1) :
+  ‖rQ m‖ ≤ ‖S‖₂ * ‖S⁻¹‖₂ * ‖b - Aop (gmresFixed A b x₀ m)‖` (`‖·‖₂` = `Matrix.Norms.L2Operator`),
+  together with `theorem exists_S (hV) : ∃ S, IsUnit S ∧ (VI * S)ᴴ (VI * S) = 1` and the remark
+  `κ₂(V_{m+1}) = ‖S‖‖S⁻¹‖` for any such `S` (which is how `κ₂` of a rectangular matrix is defined
+  here).
+- **Backbone item.** §3.4 `Krylov.IsMinResIterate` (for `r^G`); §2.1.2 `NormedRing.condNumber`
+  (`Numlib/Analysis/NormedRing/CondNumber.lean`) under the L2 operator norm.
+- **Proof route.** The book's: `r = W S⁻¹ t`, `t = S Wᴴ r`; minimality of `t_m` over the set `ℛ` of
+  residuals of `x₀ + span(V_m) = x₀ + 𝒦_m`, and `r^G ∈ ℛ`.
+- **Classification.** `surface-only` (Gram–Schmidt `S` from `hV`; ~60 lines).
 
 ### R32. (6.62)
-- **Book statement.** `ρ_m^G = |s_m| ρ_{m−1}^G`, hence `ρ_m^G = |s_1 s_2 ⋯ s_m| β` (the `s_i` of (6.37) are nonnegative).
-- **Lean surface statement.** `theorem eq_6_62 (hm : m ≤ μ) (hR) : ρG A b x₀ m = (∏ i : Fin m, s A b x₀ m i) * β` and `theorem ρG_succ : ρG … m = s … m (Fin.last _) * ρG … (m-1)`.
-- **Backbone item.** 3.5 "`‖r_m^G‖ = |s_m| ‖r_{m−1}^G‖` (Saad Prop 6.9, (6.62))" (planned).
-- **Proof route.** (6.42) + (6.47) + prefix stability (R23).
-- **Status.** `direct` (with G7), else `needs-equivalence` via R23.
+- **Book statement.** `ρ_m^G = |s_m| ρ_{m−1}^G`, hence `ρ_m^G = |s_1 s_2 ⋯ s_m| β` (the `s_i` of (6.37)
+  are nonnegative).
+- **Lean surface statement.** `theorem eq_6_62 (hm : m ≤ μ) (hR) : ρG A b x₀ m = (∏ i ∈ range m, ‖s h i‖) * β`
+  and `theorem ρG_succ (hm : m + 1 ≤ μ) : ρG … (m+1) = ‖s h m‖ * ρG … m`.
+- **Backbone item.** §3.5 `Krylov.IsMinResIterate.norm_residual_succ_eq` (`‖r^G_{m+1}‖ = |s_m| ‖r^G_m‖`),
+  `Krylov.norm_gamma_eq_prod` with `Krylov.IsMinResIterate.norm_residual_eq_norm_gamma`
+  (`Numlib/Krylov/Hessenberg.lean`).
+- **Proof route.** `isGMRESIterate_iff` then the backbone lemmas.
+- **Classification.** `direct`.
 
 ### R33. Proposition 6.12 (Brown), (6.63)
-- **Book statement.** Assume `m` Arnoldi steps taken and `H_m` nonsingular; `ξ = (Q_{m−1} H̄_m)_{mm}`, `h = h_{m+1,m}`. Then `ρ_m^F = ρ_m^G/|c_m| = ρ_m^G √(1 + h²/ξ²)`.
-- **Lean surface statement.** `theorem prop_6_12 (hm : m ≤ μ) (hH : FOMDefined A b x₀ m) : c A b x₀ m (Fin.last _) ≠ 0 ∧ ρF A b x₀ m = ρG A b x₀ m / |c …| ∧ ρF … = ρG … * Real.sqrt (1 + (h m (m-1))^2 / (ξ A b x₀ m)^2)`.
-- **Backbone item.** 3.5 "FOM residual `‖r_m^F‖ = ‖r_m^G‖/|c_m|` (Prop 6.12)" (planned); R12, R32.
-- **Proof route.** The book's: `e_mᵀ y_m^F = e_mᵀ g^{(m−1)}/h_mm^{(m−1)}`, `|e_mᵀ g^{(m−1)}| = |s_1 ⋯ s_{m−1}| β`, and `h/|ξ| = |s_m|/|c_m|` from (6.37). (`H_m` nonsingular ⟺ `ξ ≠ 0` given `R_{m−1}` nonsingular; ⟹ `c_m ≠ 0`.)
-- **Status.** `direct` (with G7 identifying `c_m`), else `needs-equivalence`.
+- **Book statement.** Assume `m` Arnoldi steps taken and `H_m` nonsingular; `ξ = (Q_{m−1} H̄_m)_{mm}`,
+  `h = h_{m+1,m}`. Then `ρ_m^F = ρ_m^G/|c_m| = ρ_m^G √(1 + h²/ξ²)`.
+- **Lean surface statement.** `theorem prop_6_12 (hm : m ≤ μ) (hm0 : 0 < m) (hH : FOMDefined A b x₀ m) :
+  c h (m-1) ≠ 0 ∧ ρF A b x₀ m = ρG A b x₀ m / ‖c h (m-1)‖ ∧ ρF … = ρG … * Real.sqrt (1 + (h m (m-1))^2 / ‖ξ h m‖^2)`.
+- **Backbone item.** §3.5 `Krylov.IsGalerkinIterate.norm_residual_eq_div_norm_givensC`
+  (`‖r^F_{m+1}‖ = ‖r^G_{m+1}‖/|c_m|`), `Krylov.isUnit_hessenbergSq_iff_givensC_ne_zero` (`c_m ≠ 0`);
+  R12, R32.
+- **Proof route.** The first two claims are the backbone lemmas after `fom_isGalerkinIterate` and
+  `isGMRESIterate_iff`; the `√(1 + h²/ξ²)` form from `c_{m−1} = ξ_m/ρ_{m−1}` (`Krylov.givensC`),
+  `ρ_{m−1}² = |ξ_m|² + h²` (`Krylov.givensRho`, with `Krylov.rotated_eq_of_le` showing `h_{m+1,m}` is
+  untouched by the first `m − 1` rotations).
+- **Classification.** `direct` (plus a few lines of real algebra for the second form).
 
 ### R34. Proposition 6.13 (Cullum–Greenbaum), (6.64)–(6.65)
-- **Book statement.** Assume `m` Arnoldi steps and `H_m` nonsingular. Then `ρ_m^F = ρ_m^G/√(1 − (ρ_m^G/ρ_{m−1}^G)²)` (6.64), i.e. `1/(ρ_m^F)² + 1/(ρ_{m−1}^G)² = 1/(ρ_m^G)²` (6.65).
-- **Lean surface statement.** `theorem prop_6_13 (hm : m ≤ μ) (hm0 : 0 < m) (hH : FOMDefined A b x₀ m) (hG : ρG A b x₀ m ≠ 0) : ρF … m = ρG … m / Real.sqrt (1 - (ρG … m / ρG … (m-1))^2)` and `theorem eq_6_65 … : 1 / (ρF … m)^2 + 1 / (ρG … (m-1))^2 = 1 / (ρG … m)^2`.
-- **Backbone item.** 3.6 `Krylov.inv_sq_norm_residual_minRes` ✓(proto) (spec form with `r^G_{m} ≠ 0`).
-- **Proof route.** R11/R18 turn `fomFixed`/`gmresFixed` into the specs; apply the backbone identity; (6.64) is algebra from (6.65). (The extra hypothesis `ρ_m^G ≠ 0` is implicit in the book's divisions.)
-- **Status.** `direct`.
+- **Book statement.** Assume `m` Arnoldi steps and `H_m` nonsingular. Then
+  `ρ_m^F = ρ_m^G/√(1 − (ρ_m^G/ρ_{m−1}^G)²)` (6.64), i.e. `1/(ρ_m^F)² + 1/(ρ_{m−1}^G)² = 1/(ρ_m^G)²` (6.65).
+- **Lean surface statement.** `theorem prop_6_13 (hm : m ≤ μ) (hm0 : 0 < m) (hH : FOMDefined A b x₀ m) (hG : ρG A b x₀ m ≠ 0) :
+  ρF … m = ρG … m / Real.sqrt (1 - (ρG … m / ρG … (m-1))^2)` and
+  `theorem eq_6_65 … : 1 / (ρF … m)^2 + 1 / (ρG … (m-1))^2 = 1 / (ρG … m)^2`.
+- **Backbone item.** §3.6 `Krylov.inv_sq_norm_residual_minRes` (`Numlib/Krylov/Relations.lean`; spec
+  form with `r^G_m ≠ 0`).
+- **Proof route.** R11/R18 turn `fomFixed`/`gmresFixed` into the specs; apply the backbone identity;
+  (6.64) is algebra from (6.65). (The extra hypothesis `ρ_m^G ≠ 0` is implicit in the book's
+  divisions.)
+- **Classification.** `direct`.
 
 ### R35. (6.66) and Corollary 6.14, (6.67)
-- **Book statement.** Summing (6.65) for `m, m−1, …, 1` (with `ρ_0^G = ρ_0^F = β`): `∑_{i=0}^m 1/(ρ_i^F)² = 1/(ρ_m^G)²` (6.66), i.e. `ρ_m^G = 1/√(∑_{i=0}^m (1/ρ_i^F)²)` (6.67).
-- **Lean surface statement.** `theorem eq_6_66 (hm : m ≤ μ) (hH : ∀ i ≤ m, FOMDefined A b x₀ i) (hG : ρG … m ≠ 0) : ∑ i ∈ Finset.range (m+1), 1 / (ρF … i)^2 = 1 / (ρG … m)^2`; `cor_6_14 : ρG … m = 1 / Real.sqrt (∑ …)`. (With singular `H_i` skipped, as in Prop 6.15: replace `1/(ρF i)^2` by `if FOMDefined … i then … else 0`; the sum identity still holds because `c_i = 0` contributes `0`.)
-- **Backbone item.** 3.6 "Cor 6.14: `1/‖r_m^G‖² = ∑_{i≤m} 1/‖r_i^F‖²`" (planned).
-- **Proof route.** Telescoping induction on R34 (`ρG (m-1) ≠ 0` follows from `ρG m ≠ 0` by monotonicity `IsMinRes.norm_residual_le` ✓).
-- **Status.** `direct`.
+- **Book statement.** Summing (6.65) for `m, m−1, …, 1` (with `ρ_0^G = ρ_0^F = β`):
+  `∑_{i=0}^m 1/(ρ_i^F)² = 1/(ρ_m^G)²` (6.66), i.e. `ρ_m^G = 1/√(∑_{i=0}^m (1/ρ_i^F)²)` (6.67).
+- **Lean surface statement.** `theorem eq_6_66 (hm : m ≤ μ) (hH : ∀ i ≤ m, FOMDefined A b x₀ i) (hG : ρG … m ≠ 0) :
+  ∑ i ∈ Finset.range (m+1), 1 / (ρF … i)^2 = 1 / (ρG … m)^2`; `cor_6_14 : ρG … m = 1 / Real.sqrt (∑ …)`.
+  (With singular `H_i` skipped, as in Prop 6.15: replace `1/(ρF i)^2` by
+  `if FOMDefined … i then … else 0`; the sum identity still holds because `c_i = 0` contributes `0`.)
+- **Backbone item.** §3.6 `Krylov.inv_sq_norm_residual_minRes_eq_sum` (all Galerkin iterates `i ≤ m`
+  exist).
+- **Proof route.** Backbone; for the skipped-steps form, telescoping induction on R34
+  (`ρG (m-1) ≠ 0` follows from `ρG m ≠ 0` by monotonicity `IsMinRes.norm_residual_le`).
+- **Classification.** `direct` (all `H_i` nonsingular); `surface-only` telescoping for the
+  skipped-steps form.
 
 ### R36. Proposition 6.15, (6.68)
-- **Book statement.** Assume `m` steps of GMRES and FOM (FOM steps with singular `H_i` skipped). Let `ρ^F_{m*}` be the smallest FOM residual norm in the first `m` steps. Then `ρ_m^G ≤ ρ^F_{m*} ≤ √(m+1) ρ_m^G` (OCR prints `√m`; the derivation `1/(ρ_m^G)² ≤ (m+1)/(ρ^F_{m*})²` gives `√(m+1)`, see §6).
-- **Lean surface statement.** `theorem prop_6_15 (hm : m ≤ μ) (hG : ρG … m ≠ 0) : ρG A b x₀ m ≤ ρFmin A b x₀ m ∧ ρFmin A b x₀ m ≤ Real.sqrt (m + 1) * ρG A b x₀ m`.
-- **Backbone item.** 3.6 "Prop 6.15" (planned), from R35.
-- **Proof route.** Lower bound: every FOM iterate lies in `x₀ + 𝒦_i ⊆ x₀ + 𝒦_m` (`IsMinRes.min`); upper bound: at most `m+1` terms in (6.66), each `≤ 1/(ρ^F_{m*})²`.
-- **Status.** `direct`.
+- **Book statement.** Assume `m` steps of GMRES and FOM (FOM steps with singular `H_i` skipped). Let
+  `ρ^F_{m*}` be the smallest FOM residual norm in the first `m` steps. Then
+  `ρ_m^G ≤ ρ^F_{m*} ≤ √(m+1) ρ_m^G` (the constant is discussed in §6).
+- **Lean surface statement.** `theorem prop_6_15 (hm : m ≤ μ) (hG : ρG … m ≠ 0) :
+  ρG A b x₀ m ≤ ρFmin A b x₀ m ∧ ρFmin A b x₀ m ≤ Real.sqrt (m + 1) * ρG A b x₀ m`.
+- **Backbone item.** §3.6 `Krylov.norm_residual_minRes_le_galerkin`, `Krylov.exists_norm_residual_galerkin_le`
+  (`min_{i ≤ m} ‖r_i^F‖ ≤ √(m+1) ‖r_m^G‖`, all Galerkin iterates existing); §2.4.1
+  `IsMinRes.norm_residual_le` (nested subspaces).
+- **Proof route.** Lower bound: every FOM iterate lies in `x₀ + 𝒦_i ⊆ x₀ + 𝒦_m`; upper bound:
+  backbone when all `H_i` are nonsingular, otherwise at most `m+1` terms in the skipped form of
+  (6.66), each `≤ 1/(ρ^F_{m*})²`.
+- **Classification.** `direct`; `surface-only` for the skipped-steps form (from R35).
 
 ### R37. Lemma 6.16 (Freund), (6.69)–(6.73)
-- **Book statement.** `R̃_m` = top `m×m` part of `Q_{m−1} H̄_m`, `R_m` = top part of `Q_m H̄_m`, `g̃_m`, `g_m` the first `m` components of `Q_{m−1}(β e_1)`, `Q_m(β e_1)`; `ỹ_m = R̃_m^{-1} g̃_m` (FOM), `y_m = R_m^{-1} g_m` (GMRES). Then `y_m − (y_{m−1}; 0) = c_m²(ỹ_m − (y_{m−1}; 0))` (6.69), where `γ_m = c_m γ̃_m` (6.70) and `ξ_m = ξ̃_m/c_m` (6.71).
-- **Lean surface statement.** `theorem lemma_6_16 (hm : m ≤ μ) (hm0 : 0 < m) (hR : IsUnit (R … m)) (hRt : IsUnit (Rtilde … m)) : gmresY A b x₀ m - Fin.snoc (gmresY A b x₀ (m-1)) 0 = (c … m (Fin.last _))^2 • (ytilde A b x₀ m - Fin.snoc (gmresY … (m-1)) 0)`; `theorem eq_6_70 : γ … m (Fin.last _ - 1) = c … * γtilde`; `theorem eq_6_71 : ξ_m = ξ̃_m / c_m`.
-- **Backbone item.** 3.6 (iterate relation, spec level) with `c_m² = ‖r_m^G‖²/‖r_m^F‖²`; 2.1.10 (G7).
-- **Proof route.** The book's block computation (6.72)–(6.73) (`Matrix.inv` of a block upper triangular matrix — `Matrix.fromBlocks` lemmas).
-- **Status.** `needs-equivalence` (Givens-level statement; ~80 lines of block bookkeeping unless G7 provides the block form).
+- **Book statement.** `R̃_m` = top `m×m` part of `Q_{m−1} H̄_m`, `R_m` = top part of `Q_m H̄_m`,
+  `g̃_m`, `g_m` the first `m` components of `Q_{m−1}(β e_1)`, `Q_m(β e_1)`; `ỹ_m = R̃_m^{-1} g̃_m`
+  (FOM), `y_m = R_m^{-1} g_m` (GMRES). Then `y_m − (y_{m−1}; 0) = c_m²(ỹ_m − (y_{m−1}; 0))` (6.69),
+  where `γ_m = c_m γ̃_m` (6.70) and `ξ_m = ξ̃_m/c_m` (6.71).
+- **Lean surface statement.** `theorem lemma_6_16 (hm : m ≤ μ) (hm0 : 0 < m) (hR : IsUnit (R h m)) (hRt : IsUnit (Rtilde h m)) :
+  gmresY A b x₀ m - Fin.snoc (gmresY A b x₀ (m-1)) 0 = (c h (m-1))^2 • (ytilde h β m - Fin.snoc (gmresY … (m-1)) 0)`;
+  `theorem eq_6_70 : g h β m (Fin.last _) = c h (m-1) * γ h β (m-1)`; `theorem eq_6_71 : R h m (last) (last) = ξ h m / c h (m-1)`.
+- **Backbone item.** `Krylov.rotated_succ_eq_of_lt` (`R̃_m` and `R_m` differ only in the last row),
+  `Krylov.givensQ_mulVec_firstVec`, `Krylov.gamma_succ`, `Krylov.rotated_succ_self`
+  (`r_mm = ρ_{m−1}`), `Krylov.givensC` (D8, D10); §3.5 `Krylov.isUnit_hessenbergSq_iff_givensC_ne_zero`.
+- **Proof route.** The book's block computation (6.72)–(6.73) (`Matrix.inv` of a block upper
+  triangular matrix — `Matrix.fromBlocks` lemmas); (6.70) is `gvec = c̄ γ` (real case), (6.71) is
+  `ρ_{m−1} = ξ_m / c_{m−1}`.
+- **Classification.** `surface-only` (~80 lines of block bookkeeping from the D8 lemmas).
 
 ### R38. (6.74)–(6.75)
 - **Book statement.** `x_m^G = s_m² x_{m−1}^G + c_m² x_m^F` (6.74) and `r_m^G = s_m² r_{m−1}^G + c_m² r_m^F` (6.75).
-- **Lean surface statement.** `theorem eq_6_74 (hm) (hm0) (hH : FOMDefined A b x₀ m) : gmresFixed A b x₀ m = (s …)^2 • gmresFixed … (m-1) + (c …)^2 • fomFixed … m`; `theorem eq_6_75 : rG m = (s …)^2 • rG (m-1) + (c …)^2 • rF m`.
-- **Backbone item.** 3.6 "Iterate relation `x_m^G = s_m² x_{m−1}^G + c_m² x_m^F`, residual relation (6.74)–(6.75), with `c_m² = ‖r_m^G‖²/‖r_m^F‖²`" (planned, spec level).
-- **Proof route.** Either R37 + `x = x₀ + V_m y` (Givens route), or the spec-level backbone statement + R33 (`|c_m| = ρ^G/ρ^F`).
-- **Status.** `direct` (spec route), given R33 to identify `c_m`.
+- **Lean surface statement.** `theorem eq_6_74 (hm) (hm0) (hA : IsUnit A) (hH : FOMDefined A b x₀ m) :
+  gmresFixed A b x₀ m = (s h (m-1))^2 • gmresFixed … (m-1) + (c h (m-1))^2 • fomFixed … m`;
+  `theorem eq_6_75 : rG m = (s h (m-1))^2 • rG (m-1) + (c h (m-1))^2 • rF m`.
+- **Backbone item.** §3.6 `Krylov.minRes_eq_combination` (spec level: `x^G_{m+1} = (1 − c²) x^G_m + c² x^F_{m+1}`
+  with `c² = ‖r^G_{m+1}‖²/‖r^F_{m+1}‖²`, for injective `A` and `r^F_{m+1} ≠ 0`); R33 identifies `c_m`;
+  `Krylov.norm_givensC_sq_add_norm_givensS_sq` gives `s_m² = 1 − c_m²`.
+- **Proof route.** The spec-level statement with R33; apply `b − A ·` for (6.75). (Alternatively R37
+  and `x = x₀ + V_m y`.)
+- **Classification.** `direct`.
 
 ### R39. Proposition 6.17 (Brown; stated without proof; P-6.9)
-- **Book statement.** If GMRES makes no progress at step `m` (`x_m^G = x_{m−1}^G`) then `H_m` is singular and `x_m^F` is undefined. Conversely, if `H_m` is singular (FOM breaks down at step `m`) and `A` is nonsingular, then `x_m^G = x_{m−1}^G`.
-- **Lean surface statement.** `theorem prop_6_17 (hm : m ≤ μ) (hm0 : 0 < m) : (gmresFixed A b x₀ m = gmresFixed A b x₀ (m-1) → ¬ FOMDefined A b x₀ m) ∧ (IsUnit A → ¬ FOMDefined A b x₀ m → gmresFixed A b x₀ m = gmresFixed A b x₀ (m-1))`.
-- **Backbone item.** 3.6 "Brown (Prop 6.17, L3)" (planned) + G6 (`FOMDefined ↔ ∃! Galerkin iterate`).
-- **Proof route.** Givens: stagnation ⟺ `c_m = 0` ⟺ `ξ_m = 0` ⟺ `H_m` singular (R37/R33), using `r_mm ≠ 0` for nonsingular `A` (R22(1)); or the backbone's spec-level proof.
-- **Status.** `direct` (via 3.6 + G6).
+- **Book statement.** If GMRES makes no progress at step `m` (`x_m^G = x_{m−1}^G`) then `H_m` is
+  singular and `x_m^F` is undefined. Conversely, if `H_m` is singular (FOM breaks down at step `m`)
+  and `A` is nonsingular, then `x_m^G = x_{m−1}^G`.
+- **Lean surface statement.** `theorem prop_6_17 (hm : m ≤ μ) (hm0 : 0 < m) (hA : IsUnit A) (hG : ρG … m ≠ 0) :
+  gmresFixed A b x₀ m = gmresFixed A b x₀ (m-1) ↔ ¬ FOMDefined A b x₀ m`.
+- **Backbone item.** §3.6 `Krylov.norm_residual_minRes_eq_iff_not_exists_galerkin` (stagnation
+  `‖r^G_m‖ = ‖r^G_{m−1}‖ ≠ 0` iff no Galerkin iterate exists at step `m`); §3.5
+  `Krylov.existsUnique_isGalerkinIterate_iff_isUnit`, `Krylov.isUnit_hessenbergSq_iff_givensC_ne_zero`,
+  `Krylov.IsGalerkinIterate.norm_residual_eq_div_norm_givensC`; §3.4
+  `Krylov.existsUnique_isMinResIterate_of_injective`, `Krylov.grade_le_of_apply_eq`.
+- **Proof route.** `x^G_m = x^G_{m−1} ↔ ‖r^G_m‖ = ‖r^G_{m−1}‖` (⇐ by uniqueness of the minimal-residual
+  iterate, `x^G_{m−1}` competing in `x₀ + 𝒦_m`); then the backbone equivalence, and
+  `(∃ xF) ↔ FOMDefined` for nonsingular `A` and `m ≤ μ`: `⇐` is `existsUnique_isGalerkinIterate_iff_isUnit`;
+  `⇒`: a Galerkin iterate with `c_{m−1} = 0` has zero residual (`norm_residual_eq_div_norm_givensC`),
+  so `μ ≤ m` (`grade_le_of_apply_eq`), and at `m = μ` the matrix `H_m` of the injective
+  `A|_{𝒦_μ}` (`Arnoldi.hessenbergSq_eq_toMatrix_compression`, `compression.apply_of_invt`) is a unit.
+  The hypothesis `ρ^G_m ≠ 0` is implicit in the book's "makes no progress".
+- **Classification.** `direct` (with the short bridge above).
 
 ### R40. Lemma 6.18 (Weiss), (6.76)–(6.77)
-- **Book statement.** In Alg 6.14, if `r_m^O ⟂ r_{m−1}^S` at each step `m ≥ 1`, then `1/‖r_m^S‖² = 1/‖r_{m−1}^S‖² + 1/‖r_m^O‖²` (6.76) and `η_m = ‖r_{m−1}^S‖²/(‖r_{m−1}^S‖² + ‖r_m^O‖²)` (6.77).
-- **Lean surface statement.** `theorem lemma_6_18 (xO rO : ℕ → 𝔼) (hr : ∀ j, rO j = b - Aop (xO j)) (horth : ∀ m ≥ 1, inner (rS (m-1)) (rO m) = 0) (m ≥ 1) (h0 : rS (m-1) ≠ 0) (h1 : rO m ≠ 0) : 1 / ‖rS m‖^2 = 1 / ‖rS (m-1)‖^2 + 1 / ‖rO m‖^2 ∧ mrsEta xO rO m = ‖rS (m-1)‖^2 / (‖rS (m-1)‖^2 + ‖rO m‖^2)` where `rS := (mrs xO rO ·).2`.
-- **Backbone item.** 3.6 "Weiss's residual smoothing (Lemma 6.18)" (planned).
-- **Proof route.** Pythagoras as in the book (the nonvanishing hypotheses are implicit in the book's divisions).
-- **Status.** `direct`.
+- **Book statement.** In Alg 6.14, if `r_m^O ⟂ r_{m−1}^S` at each step `m ≥ 1`, then
+  `1/‖r_m^S‖² = 1/‖r_{m−1}^S‖² + 1/‖r_m^O‖²` (6.76) and `η_m = ‖r_{m−1}^S‖²/(‖r_{m−1}^S‖² + ‖r_m^O‖²)` (6.77).
+- **Lean surface statement.** `theorem lemma_6_18 (xO rO : ℕ → 𝔼) (hr : ∀ j, rO j = b - Aop (xO j))
+  (horth : ∀ m ≥ 1, inner (rS (m-1)) (rO m) = 0) (m ≥ 1) (h0 : rS (m-1) ≠ 0) (h1 : rO m ≠ 0) :
+  1 / ‖rS m‖^2 = 1 / ‖rS (m-1)‖^2 + 1 / ‖rO m‖^2 ∧ mrsEta xO rO m = ‖rS (m-1)‖^2 / (‖rS (m-1)‖^2 + ‖rO m‖^2)`
+  where `rS := (mrs xO rO ·).2`.
+- **Backbone item.** §3.6 `Krylov.inv_sq_norm_smoothing`, `Krylov.smoothingCoeff`
+  (`Numlib/Krylov/Relations.lean`); `mrs_eq` (D11).
+- **Proof route.** Backbone (Pythagoras); (6.77) expands `smoothingCoeff` with `⟪r^O, r^S⟫ = 0`. (The
+  nonvanishing hypotheses are implicit in the book's divisions.)
+- **Classification.** `direct`.
 
 ### R41. (6.78)–(6.79)
-- **Book statement.** Under the hypotheses of Lemma 6.18, with `ρ_j = ‖r_j^O‖`, `τ_j = ‖r_j^S‖`: `r_m^S = (ρ_m²/(ρ_m²+τ_{m−1}²)) r_{m−1}^S + (τ_{m−1}²/(ρ_m²+τ_{m−1}²)) r_m^O` (6.78), `1/τ_j² = ∑_{i=0}^j 1/ρ_i²`, and `r_m^S = (∑_{j=0}^m r_j^O/ρ_j²)/(∑_{j=0}^m 1/ρ_j²)` (6.79) (OCR prints the sums from `j = 1`; see §6).
-- **Lean surface statement.** `theorem eq_6_78 …`, `theorem inv_tau_sq_eq_sum …`, `theorem eq_6_79 … : rS m = (∑ j ∈ range (m+1), (1/ρ j^2 : ℝ) • rO j) / (∑ j ∈ range (m+1), 1/ρ j^2)` (scalar division as `(∑ …)⁻¹ • ∑ …`).
-- **Backbone item.** 3.6 (Weiss) — the convex-combination form should be added there (G9).
-- **Proof route.** (6.78) from (6.77); induction for (6.79).
-- **Status.** `direct` with G9; else `surface-only` (short).
+- **Book statement.** Under the hypotheses of Lemma 6.18, with `ρ_j = ‖r_j^O‖`, `τ_j = ‖r_j^S‖`:
+  `r_m^S = (ρ_m²/(ρ_m²+τ_{m−1}²)) r_{m−1}^S + (τ_{m−1}²/(ρ_m²+τ_{m−1}²)) r_m^O` (6.78),
+  `1/τ_j² = ∑_{i=0}^j 1/ρ_i²`, and `r_m^S = (∑_{j=0}^m r_j^O/ρ_j²)/(∑_{j=0}^m 1/ρ_j²)` (6.79) (index
+  ranges as in §6).
+- **Lean surface statement.** `theorem eq_6_78 …`, `theorem inv_tau_sq_eq_sum …`,
+  `theorem eq_6_79 … : rS m = (∑ j ∈ range (m+1), 1/ρ j^2)⁻¹ • ∑ j ∈ range (m+1), (1/ρ j^2 : ℝ) • rO j`.
+- **Backbone item.** §3.6 `Krylov.residual_mrs_eq` ((6.79) for a Galerkin sequence `xO`, injective
+  `A`), `Krylov.inv_sq_norm_smoothing`.
+- **Proof route.** (6.78) from (6.77); the `τ` sum by induction on `inv_sq_norm_smoothing`; (6.79)
+  for FOM is the backbone theorem through `mrs_eq`, and under the book's bare orthogonality
+  hypothesis it is the same induction.
+- **Classification.** `direct` for the FOM sequence ((6.79) via `residual_mrs_eq`); `surface-only`
+  (short inductions) for (6.78), the `τ` sum and the general-orthogonality form.
 
 ### R42. §6.5.8 — minimal residual smoothing of FOM gives GMRES (and P-6.26)
-- **Book statement.** If the original residuals are mutually orthogonal (as for FOM), Lemma 6.18 applies at every step, the smoothed residual norms satisfy (6.67), hence coincide with GMRES's, and since GMRES minimizes over the same subspace the smoothed iterates are the GMRES iterates. P-6.26: alternatively, the vectors `r_j^O − r_{j−1}^S = −A(x_j^O − x_{j−1}^S)` are mutually orthogonal, and Lemma 6.21 shows the MRS iterates coincide with ORTHOMIN/GMRES.
-- **Lean surface statement.** `theorem mrs_isMinResIterate (xO : ℕ → 𝔼) (hO : ∀ m, Krylov.IsGalerkinIterate Aop b x₀ m (xO m)) (m) : Krylov.IsMinResIterate Aop b x₀ m ((mrs xO (fun j => b - Aop (xO j)) m).1)`; corollary `mrs_fom_eq_gmres (hH : ∀ i ≤ m, FOMDefined …) (hm) : (mrs (fomFixed A b x₀) _ m).1 = gmresFixed A b x₀ m`; `p_6_26 : ∀ i ≠ j, inner (Aop (pS i)) (Aop (pS j)) = 0` with `pS j := xO j - xS (j-1)`.
-- **Backbone item.** 3.6 D7 construction (request G9 to expose it as a theorem); 3.8 `Krylov.isMinResIterate_of_orthogonal_directions` for the P-6.26 route.
-- **Proof route.** Backbone (G9).
-- **Status.** `needs-equivalence` (G9).
+- **Book statement.** If the original residuals are mutually orthogonal (as for FOM), Lemma 6.18
+  applies at every step, the smoothed residual norms satisfy (6.67), hence coincide with GMRES's, and
+  since GMRES minimizes over the same subspace the smoothed iterates are the GMRES iterates. P-6.26:
+  alternatively, the vectors `r_j^O − r_{j−1}^S = −A(x_j^O − x_{j−1}^S)` are mutually orthogonal, and
+  Lemma 6.21 shows the MRS iterates coincide with ORTHOMIN/GMRES.
+- **Lean surface statement.** `theorem mrs_isMinResIterate (hA : IsUnit A) (xO : ℕ → 𝔼)
+  (hO : ∀ m, Krylov.IsGalerkinIterate Aop b x₀ m (xO m)) (m) :
+  Krylov.IsMinResIterate Aop b x₀ m ((mrs xO (fun j => b - Aop (xO j)) m).1)`; corollary
+  `mrs_fom_eq_gmres (hA) (hH : ∀ i ≤ m, FOMDefined …) (hm) : (mrs (fomFixed A b x₀) _ m).1 = gmresFixed A b x₀ m`;
+  `p_6_26 : ∀ i ≠ j, inner (Aop (pS i)) (Aop (pS j)) = 0` with `pS j := xO j - xS (j-1)`.
+- **Backbone item.** §3.6 `Krylov.IsGalerkinIterate.mrs_isMinResIterate` (injective `A`),
+  `Krylov.mrs` (`Numlib/Krylov/Relations.lean`); §3.8 `Krylov.isMinResIterate_of_orthogonal_directions`
+  for the P-6.26 route; `Krylov.existsUnique_isMinResIterate_of_injective` for the corollary.
+- **Proof route.** `mrs_eq` (D11), then the backbone theorem; the corollary by uniqueness.
+- **Classification.** `direct` (after `mrs_eq`).
 
 ### R43. §6.5.8 — QMRS identities
-- **Book statement.** With `η_m = τ_{m−1}²/(τ_{m−1}² + ρ_m²)` and `1/τ_m² = 1/τ_{m−1}² + 1/ρ_m²` (no orthogonality assumed), (6.78) holds with `‖r_j^S‖²` replaced by `τ_j²`, and (6.79) holds.
-- **Lean surface statement.** `theorem qmrs_eq_6_78 …`, `theorem qmrs_eq_6_79 (xO rO) (m) : (qmrs xO rO m).2.1 = (∑ …)⁻¹ • ∑ j ∈ range (m+1), (1/ρ j^2) • rO j`.
+- **Book statement.** With `η_m = τ_{m−1}²/(τ_{m−1}² + ρ_m²)` and `1/τ_m² = 1/τ_{m−1}² + 1/ρ_m²` (no
+  orthogonality assumed), (6.78) holds with `‖r_j^S‖²` replaced by `τ_j²`, and (6.79) holds.
+- **Lean surface statement.** `theorem qmrs_eq_6_78 …`,
+  `theorem qmrs_eq_6_79 (xO rO) (m) : (qmrs xO rO m).2.1 = (∑ …)⁻¹ • ∑ j ∈ range (m+1), (1/ρ j^2) • rO j`.
 - **Backbone item.** none.
 - **Proof route.** Same induction as R41 (purely algebraic).
-- **Status.** `surface-only`. (The further claim "QMRS applied to IOM/DIOM yields QGMRES/DQGMRES" is left out, §5.)
+- **Classification.** `surface-only`. (The further claim "QMRS applied to IOM/DIOM yields
+  QGMRES/DQGMRES" is left out, §5.)
 
 ### R44. Theorem 6.19, (6.82)–(6.83)
-- **Book statement.** Arnoldi applied to a real symmetric `A`: `h_ij = 0` for `1 ≤ i < j − 1` (6.82) and `h_{j,j+1} = h_{j+1,j}` (6.83); `H_m` is symmetric tridiagonal.
-- **Lean surface statement.** `theorem thm_6_19 (hA : A.IsSymm) (hv) : (∀ i j, i + 1 < j → h i j = 0) ∧ (∀ j, h j (j+1) = h (j+1) j) ∧ (H A v₁ m).IsTridiagonal ∧ (H A v₁ m).IsSymm`.
-- **Backbone item.** 3.3 `Arnoldi.coeff_eq_zero_of_isSymmetric` ✓(proto), `Arnoldi.coeff_conj_of_isSymmetric`; 2.1.10 `Matrix.IsTridiagonal` ✓; `Matrix.isSymm` of `toEuclideanLin` ↔ `LinearMap.IsSymmetric` (glue G12).
+- **Book statement.** Arnoldi applied to a real symmetric `A`: `h_ij = 0` for `1 ≤ i < j − 1` (6.82)
+  and `h_{j,j+1} = h_{j+1,j}` (6.83); `H_m` is symmetric tridiagonal.
+- **Lean surface statement.** `theorem thm_6_19 (hA : A.IsSymm) (hv) :
+  (∀ i j, i + 1 < j → h i j = 0) ∧ (∀ j, h j (j+1) = h (j+1) j) ∧ (H A v₁ m).IsTridiagonal ∧ (H A v₁ m).IsSymm`.
+- **Backbone item.** §3.3 `Arnoldi.coeff_eq_zero_of_isSymmetric`, `Arnoldi.coeff_conj_of_isSymmetric`,
+  `Lanczos.hessenbergSq_eq_map_tridiag`, `Lanczos.tridiag_isTridiagonal`, `Lanczos.tridiag_isSymm`
+  (`Numlib/Krylov/Lanczos.lean`); §2.1.10 `Matrix.IsTridiagonal` (`Numlib/Matrix/Hessenberg.lean`);
+  Mathlib `Matrix.isHermitian_iff_isSymmetric` for `A.IsSymm → (op A).IsSymmetric` over `ℝ`.
 - **Proof route.** Backbone.
-- **Status.** `direct`.
+- **Classification.** `direct`.
 
 ### R45. §6.6.1 — Algorithm 6.15 is the MGS Arnoldi algorithm for symmetric `A`; `T_m = H_m`
-- **Book statement.** "This leads to the following form of the Modified Gram–Schmidt variant of Arnoldi's method" — Alg 6.15 produces the same `v_j`, with `α_j = h_jj`, `β_{j+1} = h_{j+1,j}` and `T_m = H_m` (6.84).
-- **Lean surface statement.** `theorem lanczosV_eq (hA : A.IsSymm) (hv) : lanczosV A v₁ j = arnoldiCGS A v₁ j`, `lanczosAlpha_eq : lanczosAlpha A v₁ j = h j j`, `lanczosBeta_eq : lanczosBeta A v₁ (j+1) = h (j+1) j`, `T_eq_H : T A v₁ m = H A v₁ m`.
-- **Backbone item.** 3.3 `Lanczos.apply_vec`, `Lanczos.alpha`, `Lanczos.beta`, `Lanczos.tridiag`, `Lanczos.hessenberg_eq_tridiagExt` (planned).
+- **Book statement.** "This leads to the following form of the Modified Gram–Schmidt variant of
+  Arnoldi's method" — Alg 6.15 produces the same `v_j`, with `α_j = h_jj`, `β_{j+1} = h_{j+1,j}` and
+  `T_m = H_m` (6.84).
+- **Lean surface statement.** `theorem lanczosV_eq (hA : A.IsSymm) (hv) : lanczosV A v₁ j = arnoldiCGS A v₁ j`,
+  `lanczosAlpha_eq : lanczosAlpha A v₁ j = h j j`, `lanczosBeta_eq : lanczosBeta A v₁ (j+1) = h (j+1) j`,
+  `T_eq_H : T A v₁ m = H A v₁ m`.
+- **Backbone item.** §3.3 `Lanczos.apply_vec`, `Lanczos.apply_vec_zero`, `Lanczos.w_succ_eq`,
+  `Lanczos.alpha`, `Lanczos.beta`, `Lanczos.coe_alpha`, `Lanczos.coe_beta`, `Lanczos.tridiag`,
+  `Lanczos.hessenbergSq_eq_map_tridiag`, `Lanczos.hessenberg_eq_map_tridiagExt`.
 - **Proof route.** D12.
-- **Status.** `needs-equivalence` (this is the equivalence lemma).
+- **Classification.** `needs-equivalence` (this is the equivalence lemma).
 
 ### R46. §6.6.2 — the inner product (6.85) and orthogonal polynomials
-- **Book statement.** If the grade of `v_1` is `≥ m`: (a) `q ↦ q(A) v_1` is an isomorphism `P_{m−1} → 𝒦_m`; (b) `⟨p, q⟩_{v_1} = (p(A) v_1, q(A) v_1)` (6.85) is a nondegenerate bilinear form on `P_{m−1}` (for `m ≤ μ`); (c) `v_i = q_{i−1}(A) v_1` and the `q_i` are orthogonal for (6.85); (d) [cited] the characteristic polynomial of `T_m` minimizes `‖·‖_{v_1}` over monic polynomials of degree `m`; (e) Lanczos computes `p_{T_m}(A) v_1` (up to the scaling `β_2 ⋯ β_{m+1}`).
-- **Lean surface statement.** (a) `theorem polyEval_bijective (hm : m ≤ μ) : Function.Bijective ((Krylov.polyEval Aop v₁).domRestrict (degreeLT ℝ m) codRestricted to krylov)`; (b) `theorem polyInner_nondegenerate (hm) : ∀ p ∈ degreeLT ℝ m, (∀ q ∈ degreeLT ℝ m, polyInner A v₁ p q = 0) → p = 0`; (c) `theorem lanczosPoly_spec (i < μ) : (lanczosPoly A v₁ i).degree = i ∧ aeval Aop (lanczosPoly A v₁ i) v₁ = v i` and `polyInner … (lanczosPoly i) (lanczosPoly j) = 0` for `i ≠ j`; (d) `theorem charpoly_T_isMinOn (hm) : IsMinOn (fun p => ‖aeval Aop p v₁‖) {p | p.Monic ∧ p.natDegree = m} (T A v₁ m).charpoly`; (e) `theorem lanczos_charpoly : aeval Aop (T A v₁ m).charpoly v₁ = (∏ j ∈ range m, lanczosBeta A v₁ (j+1)) • v m`.
-- **Backbone item.** (a)–(c): 3.1 ✓ + 3.2 ✓; (d): 4.2 `Arnoldi.charpoly_compression_isMinOn` (Saad-eig Thm 6.1, planned); (e): 3.12 `Krylov/OrthogonalPolynomials.lean` (phase 2).
-- **Proof route.** (a)–(c) from `subspace_eq_map_degreeLT`, `linearIndependent_of_le_grade`, `Arnoldi.vec_mem_subspace`, `inner_vec_eq_zero`; (d)–(e) phase 2.
-- **Status.** (a)–(c) `direct`; (d) `GAP` (backbone 4.2, phase 2 — cited without proof in the book anyway); (e) `GAP` (3.12, phase 2).
+- **Book statement.** If the grade of `v_1` is `≥ m`: (a) `q ↦ q(A) v_1` is an isomorphism
+  `P_{m−1} → 𝒦_m`; (b) `⟨p, q⟩_{v_1} = (p(A) v_1, q(A) v_1)` (6.85) is a nondegenerate bilinear form
+  on `P_{m−1}` (for `m ≤ μ`); (c) `v_i = q_{i−1}(A) v_1` and the `q_i` are orthogonal for (6.85);
+  (d) [cited] the characteristic polynomial of `T_m` minimizes `‖·‖_{v_1}` over monic polynomials of
+  degree `m`; (e) Lanczos computes `p_{T_m}(A) v_1` (up to the scaling `β_2 ⋯ β_{m+1}`).
+- **Lean surface statement.** (a) `theorem polyEval_bijective (hm : m ≤ μ) : Function.Bijective
+  ((Krylov.polyEval Aop v₁).domRestrict (degreeLT ℝ m) codRestricted to krylov)`;
+  (b) `theorem polyInner_nondegenerate (hm) : ∀ p ∈ degreeLT ℝ m, (∀ q ∈ degreeLT ℝ m, polyInner A v₁ p q = 0) → p = 0`;
+  (c) `theorem lanczosPoly_spec (i < μ) : (lanczosPoly A v₁ i).degree = i ∧ aeval Aop (lanczosPoly A v₁ i) v₁ = v i`
+  and `polyInner … (lanczosPoly i) (lanczosPoly j) = 0` for `i ≠ j`;
+  (d) `theorem charpoly_T_isMinOn (hm) : IsMinOn (fun p => ‖aeval Aop p v₁‖) {p | p.Monic ∧ p.natDegree = m} (T A v₁ m).charpoly`;
+  (e) `theorem lanczos_charpoly : aeval Aop (T A v₁ m).charpoly v₁ = (∏ j ∈ range m, lanczosBeta A v₁ (j+1)) • v m`.
+- **Backbone item.** (a)–(c): §3.1 `Krylov.subspace_eq_map_degreeLT`, `Krylov.linearIndependent_of_le_grade`
+  + §3.2 `Arnoldi.vec_mem_subspace`, `Arnoldi.inner_vec_eq_zero`; (d): `Arnoldi.charpoly_compression_isMinOn`
+  (§4.2, deferred); (e): `Krylov/OrthogonalPolynomials.lean` (§3.12, deferred).
+- **Proof route.** (a)–(c) from the listed lemmas; (d)–(e) with the deferred items.
+- **Classification.** (a)–(c) `direct`; (d), (e) `deferred` (§4, Ritz-value and orthogonal-polynomial
+  items; the book cites (d) without proof).
 
 ### R47. (6.86)–(6.87) — the Lanczos method for linear systems (Alg 6.16) and its residual
-- **Book statement.** For symmetric `A`, the orthogonal projection method onto `𝒦_m` gives `x_m = x_0 + V_m y_m`, `y_m = T_m^{-1}(β e_1)` (6.86); `b − A x_m = −β_{m+1}(e_mᵀ y_m) v_{m+1}` (6.87).
-- **Lean surface statement.** `theorem lanczosMethod_eq_fom (hA : A.IsSymm) : lanczosMethod A b x₀ m = fom A b x₀ m`; `theorem lanczosMethod_isGalerkinIterate (hA) (hT : IsUnit (T …)) (hm) : Krylov.IsGalerkinIterate Aop b x₀ m (lanczosMethod A b x₀ m)`; `theorem eq_6_87 … : b - Aop (lanczosMethod …) = -(lanczosBeta A v₁ m * y_m (Fin.last _)) • lanczosV A v₁ m`.
-- **Backbone item.** R11, R12, R45; 3.5 "Galerkin residual in Lanczos terms … `‖r_k‖ = β_{k+1}|e_kᵀ y_k|` (Saad (6.87))" (planned).
+- **Book statement.** For symmetric `A`, the orthogonal projection method onto `𝒦_m` gives
+  `x_m = x_0 + V_m y_m`, `y_m = T_m^{-1}(β e_1)` (6.86); `b − A x_m = −β_{m+1}(e_mᵀ y_m) v_{m+1}` (6.87).
+- **Lean surface statement.** `theorem lanczosMethod_eq_fom (hA : A.IsSymm) : lanczosMethod A b x₀ m = fom A b x₀ m`;
+  `theorem lanczosMethod_isGalerkinIterate (hA) (hT : IsUnit (T …)) (hm) : Krylov.IsGalerkinIterate Aop b x₀ m (lanczosMethod A b x₀ m)`;
+  `theorem eq_6_87 … : b - Aop (lanczosMethod …) = -(lanczosBeta A v₁ m * y_m (Fin.last _)) • lanczosV A v₁ m`.
+- **Backbone item.** R11, R12, R45; §3.5 `Krylov.residual_galerkin_eq` with §3.3 `Lanczos.coe_beta`
+  (`h_{m+1,m} = β_{m+1}`).
 - **Proof route.** Rewrite with `T_eq_H`, `lanczosV_eq`, then R11/R12.
-- **Status.** `direct` (given R45).
+- **Classification.** `direct` (given R45).
 
 ### R48. §6.7.1 — D-Lanczos (Alg 6.17) is mathematically equivalent to Alg 6.16; (6.88)–(6.89)
-- **Book statement.** With `T_m = L_m U_m` (`L_m` unit lower bidiagonal with `λ_m = β_m/η_{m−1}`, `U_m` upper bidiagonal with diagonal `η_m = α_m − λ_m β_m` and superdiagonal `β_{m+1}`), `P_m = V_m U_m^{-1}`, `z_m = L_m^{-1} β e_1`: `p_m = η_m^{-1}(v_m − β_m p_{m−1})`, `ζ_m = −λ_m ζ_{m−1}`, `x_m = x_{m−1} + ζ_m p_m`; the two algorithms deliver the same `x_m` when both are executable.
-- **Lean surface statement.** `theorem dLanczos_eq_diom2 (hA : A.IsSymm) : (dLanczos A b x₀ m).x = (diom A b x₀ 2 m).x` (the book's remark "CG is a variation of DIOM(2)"); `theorem dLanczos_x_eq (hA) (hη : ∀ j ≤ m, (dLanczos A b x₀ j).η ≠ 0) : (dLanczos A b x₀ m).x = lanczosMethod A b x₀ m`; `theorem tridiag_LU (hη) : T A v₁ m = L * U` with the stated shapes.
-- **Backbone item.** none (3.7: "D-Lanczos / `LDLᵀ` derivation is surface").
+- **Book statement.** With `T_m = L_m U_m` (`L_m` unit lower bidiagonal with `λ_m = β_m/η_{m−1}`, `U_m`
+  upper bidiagonal with diagonal `η_m = α_m − λ_m β_m` and superdiagonal `β_{m+1}`), `P_m = V_m U_m^{-1}`,
+  `z_m = L_m^{-1} β e_1`: `p_m = η_m^{-1}(v_m − β_m p_{m−1})`, `ζ_m = −λ_m ζ_{m−1}`, `x_m = x_{m−1} + ζ_m p_m`;
+  the two algorithms deliver the same `x_m` when both are executable.
+- **Lean surface statement.** `theorem dLanczos_eq_diom2 (hA : A.IsSymm) : (dLanczos A b x₀ m).x = (diom A b x₀ 2 m).x`
+  (the book's remark "CG is a variation of DIOM(2)");
+  `theorem dLanczos_x_eq (hA) (hη : ∀ j ≤ m, (dLanczos A b x₀ j).η ≠ 0) : (dLanczos A b x₀ m).x = lanczosMethod A b x₀ m`;
+  `theorem tridiag_LU (hη) : T A v₁ m = L * U` with the stated shapes.
+- **Backbone item.** none (§3.7: "D-Lanczos / `LDLᵀ` derivation is surface").
 - **Proof route.** R14 specialized to the tridiagonal band (`k = 2`).
-- **Status.** `surface-only`.
+- **Classification.** `surface-only`.
 
 ### R49. Proposition 6.20
-- **Book statement.** Let `r_m` be the residuals of Alg 6.16/6.17 and `p_m` the auxiliary vectors of Alg 6.17. (1) `r_m = σ_m v_{m+1}` for a scalar `σ_m`; hence the residuals are mutually orthogonal. (2) The `p_i` are `A`-conjugate: `(A p_i, p_j) = 0` for `i ≠ j`.
-- **Lean surface statement.** `theorem prop_6_20_1 (hA : A.IsSymm) (hT) (hm) : ∃ σ : ℝ, b - Aop (lanczosMethod A b x₀ m) = σ • lanczosV A v₁ m` and `inner (rL i) (rL j) = 0` for `i ≠ j`; `theorem prop_6_20_2 (hA) (hη) (hij : i ≠ j) : inner (Aop (pDL i)) (pDL j) = 0`.
-- **Backbone item.** 3.4 `IsGalerkinIterate.residual_mem_span` (planned) + `Arnoldi.inner_vec_eq_zero` ✓ for (1); for (2) 3.7 `CG.inner_apply_direction_eq_zero` via the CG ≡ D-Lanczos equivalence (R50), or the book's `P_mᵀ A P_m = U_m^{-T} L_m` argument.
-- **Proof route.** (1) backbone; (2) either route; the book's own proof is 6 lines of matrix algebra once `T_m = L_m U_m` (R48) is available.
-- **Status.** (1) `direct`; (2) `needs-equivalence` (through R50) or `surface-only` (book's proof).
+- **Book statement.** Let `r_m` be the residuals of Alg 6.16/6.17 and `p_m` the auxiliary vectors of
+  Alg 6.17. (1) `r_m = σ_m v_{m+1}` for a scalar `σ_m`; hence the residuals are mutually orthogonal.
+  (2) The `p_i` are `A`-conjugate: `(A p_i, p_j) = 0` for `i ≠ j`.
+- **Lean surface statement.** `theorem prop_6_20_1 (hA : A.IsSymm) (hT) (hm) :
+  ∃ σ : ℝ, b - Aop (lanczosMethod A b x₀ m) = σ • lanczosV A v₁ m` and `inner (rL i) (rL j) = 0` for
+  `i ≠ j`; `theorem prop_6_20_2 (hA) (hη) (hij : i ≠ j) : inner (Aop (pDL i)) (pDL j) = 0`.
+- **Backbone item.** §3.4 `Krylov.IsGalerkinIterate.residual_mem_span`,
+  `Krylov.IsGalerkinIterate.inner_residual_eq_zero` (`Numlib/Krylov/Iterate.lean`) for (1); for (2)
+  §3.7 `CG.inner_apply_direction_eq_zero` via the CG ≡ D-Lanczos equivalence (R50), or the book's
+  `P_mᵀ A P_m = U_m^{-T} L_m` argument.
+- **Proof route.** (1) backbone; (2) either route; the book's own proof is 6 lines of matrix algebra
+  once `T_m = L_m U_m` (R48) is available.
+- **Classification.** (1) `direct`; (2) `needs-equivalence` (through R50) or `surface-only` (book's
+  proof).
 
 ### R50. §6.7.1 — CG (Alg 6.18) from the orthogonality/conjugacy conditions: (6.90)–(6.94); CG ≡ D-Lanczos
-- **Book statement.** Imposing `x_{j+1} = x_j + α_j p_j` (6.90), `r_{j+1} = r_j − α_j A p_j` (6.91), orthogonal residuals and `p_{j+1} = r_{j+1} + β_j p_j` (6.93) with `A`-conjugate `p`'s forces `α_j = (r_j,r_j)/(A p_j, r_j) = (r_j,r_j)/(A p_j,p_j)` (6.92), `β_j = −(r_{j+1}, A p_j)/(p_j, A p_j) = (r_{j+1},r_{j+1})/(r_j,r_j)`, using `A p_j = −(r_{j+1} − r_j)/α_j` (6.94). The `p_j` of Alg 6.18 are multiples of those of Alg 6.17.
-- **Lean surface statement.** `theorem cg_eq_CG (hA : A.IsSymm) : cg A b x₀ j = ((CG.iterate Aop b x₀ j).x, .r, .p)`; `theorem cg_residual : (cg A b x₀ j).2.1 = b - Aop (cg A b x₀ j).1`; `theorem cg_alpha_eq (hA : A.PosDef) : cgAlpha A b x₀ j = inner r r / inner (Aop p) r` (6.92) and `cg_beta_eq : cgBeta … j = -(inner (Aop p_j) r_{j+1}) / inner (Aop p_j) p_j`; `theorem cg_x_eq_dLanczos (hA : A.PosDef) : (cg A b x₀ j).1 = (dLanczos A b x₀ j).x`; `theorem cg_p_smul (hA) (hr : r_j ≠ 0) : ∃ c ≠ 0, (cg A b x₀ j).2.2 = c • (dLanczos A b x₀ (j+1)).p`.
-- **Backbone item.** 3.7 `CG.iterate` ✓(proto), `CG.residual_eq`, `CG.isGalerkinIterate`, `CG.inner_residual_eq_zero`, `CG.inner_apply_direction_eq_zero`; 2.4.1 `existsUnique_isGalerkin_of_isCoercive` ✓; 2.1.4 `Matrix.posDef_iff_isSymmetricCoercive` ✓.
-- **Proof route.** `cg_eq_CG` is definitional; the coefficient identities follow from the backbone invariants; `cg_x_eq_dLanczos` from uniqueness of the Galerkin iterate (both R47/R48 and `CG.isGalerkinIterate` produce it); `cg_p_smul` from `x_{j+1} − x_j = α_j p_j = ζ_{j+1} p^{DL}_{j+1}` with `α_j ≠ 0`.
-- **Status.** `direct` (`cg_eq_CG`, invariants); `needs-equivalence` (D-Lanczos link).
+- **Book statement.** Imposing `x_{j+1} = x_j + α_j p_j` (6.90), `r_{j+1} = r_j − α_j A p_j` (6.91),
+  orthogonal residuals and `p_{j+1} = r_{j+1} + β_j p_j` (6.93) with `A`-conjugate `p`'s forces
+  `α_j = (r_j,r_j)/(A p_j, r_j) = (r_j,r_j)/(A p_j,p_j)` (6.92),
+  `β_j = −(r_{j+1}, A p_j)/(p_j, A p_j) = (r_{j+1},r_{j+1})/(r_j,r_j)`, using
+  `A p_j = −(r_{j+1} − r_j)/α_j` (6.94). The `p_j` of Alg 6.18 are multiples of those of Alg 6.17.
+- **Lean surface statement.** `theorem cg_eq_CG (hA : A.IsSymm) : cg A b x₀ j = ((CG.iterate Aop b x₀ j).x, .r, .p)`;
+  `theorem cg_residual : (cg A b x₀ j).2.1 = b - Aop (cg A b x₀ j).1`;
+  `theorem cg_alpha_eq (hA : A.PosDef) : cgAlpha A b x₀ j = inner r r / inner (Aop p) r` (6.92) and
+  `cg_beta_eq : cgBeta … j = -(inner (Aop p_j) r_{j+1}) / inner (Aop p_j) p_j`;
+  `theorem cg_x_eq_dLanczos (hA : A.PosDef) : (cg A b x₀ j).1 = (dLanczos A b x₀ j).x`;
+  `theorem cg_p_smul (hA) (hr : r_j ≠ 0) : ∃ c ≠ 0, (cg A b x₀ j).2.2 = c • (dLanczos A b x₀ (j+1)).p`.
+- **Backbone item.** §3.7 `CG.iterate`, `CG.residual_eq`, `CG.isGalerkinIterate`,
+  `CG.inner_residual_eq_zero`, `CG.inner_apply_direction_eq_zero`, `CG.inner_residual_direction_eq`
+  (`Numlib/Krylov/CG.lean`); §3.4 `Krylov.existsUnique_isGalerkinIterate_of_isCoercive`; §2.1.4
+  `Matrix.posDef_iff_isSymmetricCoercive` (`Numlib/InnerProductSpace/Coercive.lean`).
+- **Proof route.** `cg_eq_CG` is definitional; the coefficient identities follow from the backbone
+  invariants; `cg_x_eq_dLanczos` from uniqueness of the Galerkin iterate (both R47/R48 and
+  `CG.isGalerkinIterate` produce it); `cg_p_smul` from `x_{j+1} − x_j = α_j p_j = ζ_{j+1} p^{DL}_{j+1}`
+  with `α_j ≠ 0`.
+- **Classification.** `direct` (`cg_eq_CG`, invariants); `needs-equivalence` (D-Lanczos link).
 
 ### R51. §6.7.2 — three-term recurrence variant (Alg 6.19), (6.95)–(6.98); (6.97) from (6.96) (P-6.17)
-- **Book statement.** The CG residual polynomials satisfy `r_{m+1}(t) = ρ_m(r_m(t) − γ_m t r_m(t)) + (1 − ρ_m) r_{m−1}(t)` (6.95), i.e. `r_{m+1} = ρ_m(r_m − γ_m A r_m) + (1 − ρ_m) r_{m−1}` (6.96) with `γ_m = (r_m,r_m)/(A r_m,r_m)` and `ρ_m` given by (6.97); the iterates satisfy `x_{m+1} = ρ_m(x_m − γ_m r_m) + (1 − ρ_m) x_{m−1}` (6.98), started with `x_{−1} = 0`, `ρ_0 = 1`. Alg 6.19 computes the CG iterates.
-- **Lean surface statement.** `theorem cg3_eq_cg (hA : A.PosDef) (hr : ∀ i ≤ j, (cg A b x₀ i).2.1 ≠ 0) : (cg3 A b x₀ j).x = (cg A b x₀ j).1 ∧ (cg3 A b x₀ j).r = (cg A b x₀ j).2.1`; `theorem eq_6_96 (hA) (hr) : r_{m+1} = ρ_m • (r_m - γ_m • Aop r_m) + (1 - ρ_m) • r_{m-1}` for the CG residuals with `γ_m, ρ_m` as in the book; `theorem eq_6_97_of_6_96 : (6.96) ∧ orthogonality ⟹ ρ_m = (1 - (γ_m/γ_{m-1}) * (‖r_m‖²/‖r_{m-1}‖²) / ρ_{m-1})⁻¹` (P-6.17).
-- **Backbone item.** 3.7 "Three-term residual recurrence (Saad Alg 6.19 / Meurant (3.3))" (planned) — request G10 for the book's coefficient form.
-- **Proof route.** From `CG.arnoldi_vec_eq` (residuals are scaled Lanczos vectors) and the Lanczos three-term recurrence, or directly from the CG invariants (take the inner product of (6.96) with `r_{m−1}` to get (6.97)).
-- **Status.** `needs-equivalence` (G10).
+- **Book statement.** The CG residual polynomials satisfy
+  `r_{m+1}(t) = ρ_m(r_m(t) − γ_m t r_m(t)) + (1 − ρ_m) r_{m−1}(t)` (6.95), i.e.
+  `r_{m+1} = ρ_m(r_m − γ_m A r_m) + (1 − ρ_m) r_{m−1}` (6.96) with `γ_m = (r_m,r_m)/(A r_m,r_m)` and
+  `ρ_m` given by (6.97); the iterates satisfy `x_{m+1} = ρ_m(x_m + γ_m r_m) + (1 − ρ_m) x_{m−1}` (6.98),
+  started with `x_{−1} = 0`, `ρ_0 = 1`. Alg 6.19 computes the CG iterates.
+- **Lean surface statement.** `theorem cg3_eq_cg (hA : A.PosDef) (hr : ∀ i ≤ j, (cg A b x₀ i).2.1 ≠ 0) :
+  (cg3 A b x₀ j).x = (cg A b x₀ j).1 ∧ (cg3 A b x₀ j).r = (cg A b x₀ j).2.1`;
+  `theorem eq_6_96 (hA) (hr) : r_{m+1} = ρ_m • (r_m - γ_m • Aop r_m) + (1 - ρ_m) • r_{m-1}` and
+  `theorem eq_6_98 (hA) (hr) : x_{m+1} = ρ_m • (x_m + γ_m • r_m) + (1 - ρ_m) • x_{m-1}` for the CG
+  iterates with `γ_m, ρ_m` as in the book;
+  `theorem eq_6_97_of_6_96 : (6.96) ∧ orthogonality ⟹ ρ_m = (1 - (γ_m/γ_{m-1}) * (‖r_m‖²/‖r_{m-1}‖²) / ρ_{m-1})⁻¹` (P-6.17).
+- **Backbone item.** §3.7 `CG.gamma`, `CG.rho` (the book's coefficients, `ρ_0 = 1`),
+  `CG.residual_succ_eq_three_term` (6.96), `CG.iterate_succ_eq_three_term` (6.98), valid while
+  `r_j ≠ 0` for `j ≤ m` (`Numlib/Krylov/CG.lean`); `CG.inner_residual_eq_zero` for P-6.17.
+- **Proof route.** (6.96)/(6.98) are the backbone theorems after `cg_eq_CG`; `cg3_eq_cg` by induction
+  on `j` (D14); P-6.17: take the inner product of (6.96) with `r_{m−1}` and use orthogonality.
+- **Classification.** `direct` ((6.96)–(6.98)); `needs-equivalence` (`cg3_eq_cg`); `surface-only`
+  (P-6.17, short).
 
 ### R52. §6.7.3 — eigenvalue estimates: (6.99)–(6.103)
-- **Book statement.** With `T_m = tridiag[η_j, δ_j, η_{j+1}]` the Lanczos matrix and `α_j, β_j` the CG coefficients: `r_j = scalar × v_{j+1}` (6.99), `r_j = p_j − β_{j−1} p_{j−1}` (6.100), `δ_{j+1} = 1/α_j + β_{j−1}/α_{j−1}` for `j > 0` (6.101), `δ_1 = 1/α_0` (6.102), `η_{j+1} = √β_{j−1}/α_{j−1}` (6.103).
-- **Lean surface statement.** `theorem eq_6_99 (hA : A.PosDef) (hr) : ∃ σ : ℝ, (cg A b x₀ j).2.1 = σ • lanczosV A v₁ j`; `theorem eq_6_100 (hj : 0 < j) : r_j = p_j - β_{j-1} • p_{j-1}`; `theorem eq_6_102 : lanczosAlpha A v₁ 0 = 1 / cgAlpha … 0` and `theorem eq_6_101 (hj : 0 < j) : lanczosAlpha A v₁ j = 1 / cgAlpha … j + cgBeta … (j-1) / cgAlpha … (j-1)`; `theorem eq_6_103 (hj : 0 < j) : lanczosBeta A v₁ (j+1)… = Real.sqrt (cgBeta … (j-1)) / cgAlpha … (j-1)` (indices per D12/D14), and `T A v₁ m = tridiag of these`.
-- **Backbone item.** 3.7 `CG.arnoldi_vec_eq`, `CG.lanczos_alpha_eq`, `CG.lanczos_beta_eq` (planned).
-- **Proof route.** Backbone + R45 (`T_m` in terms of `Lanczos.alpha/beta`).
-- **Status.** `direct`.
+- **Book statement.** With `T_m = tridiag[η_j, δ_j, η_{j+1}]` the Lanczos matrix and `α_j, β_j` the CG
+  coefficients: `r_j = scalar × v_{j+1}` (6.99), `r_j = p_j − β_{j−1} p_{j−1}` (6.100),
+  `δ_{j+1} = 1/α_j + β_{j−1}/α_{j−1}` for `j > 0` (6.101), `δ_1 = 1/α_0` (6.102),
+  `η_{j+1} = √β_{j−1}/α_{j−1}` (6.103).
+- **Lean surface statement.** `theorem eq_6_99 (hA : A.PosDef) (hr) : ∃ σ : ℝ, (cg A b x₀ j).2.1 = σ • lanczosV A v₁ j`;
+  `theorem eq_6_100 (hj : 0 < j) : r_j = p_j - β_{j-1} • p_{j-1}`;
+  `theorem eq_6_102 : lanczosAlpha A v₁ 0 = 1 / cgAlpha … 0` and
+  `theorem eq_6_101 (hj : 0 < j) : lanczosAlpha A v₁ j = 1 / cgAlpha … j + cgBeta … (j-1) / cgAlpha … (j-1)`;
+  `theorem eq_6_103 (hj : 0 < j) : lanczosBeta A v₁ (j+1)… = Real.sqrt (cgBeta … (j-1)) / cgAlpha … (j-1)`
+  (indices per D12/D14), and `T A v₁ m = tridiag of these`.
+- **Backbone item.** §3.7 `CG.arnoldi_vec_eq` (6.99: `v_k = (−1)^k r_k/‖r_k‖`), `CG.step_r`,
+  `CG.inner_residual_direction_eq`, `CG.inner_apply_direction_eq_zero`, `CG.inner_residual_eq_zero`;
+  §3.3 `Lanczos.alpha`, `Lanczos.beta`, `Lanczos.coe_alpha`, `Lanczos.coe_beta`; R45.
+- **Proof route.** (6.99) backbone; (6.100) unfolds `CG.step`; (6.101)–(6.103):
+  `α^L_j = ⟪v_j, A v_j⟫ = ⟪r_j, A r_j⟫/‖r_j‖²` with `A r_j = A p_j − β_{j−1} A p_{j−1}`,
+  `A p_j = (r_j − r_{j+1})/α_j` (6.94) and the orthogonality invariants; `β^L_{j+1} = ‖w_j‖` from
+  `⟪v_{j+1}, A v_j⟫` by the same substitutions (the signs `(−1)^k` of `arnoldi_vec_eq` cancel).
+- **Classification.** `surface-only` for (6.101)–(6.103) (~40 lines from the CG invariants);
+  `direct` for (6.99)–(6.100).
 
 ### R53. §6.8 — Conjugate Residual invariants; CR = GMRES for Hermitian positive definite `A`
-- **Book statement.** For Hermitian `A`, CR (Alg 6.20) produces `A`-orthogonal (conjugate) residuals `(r_i, A r_j) = 0` (`i ≠ j`) and orthogonal `A p_i`'s `(A p_i, A p_j) = 0` (`i ≠ j`); it is the GMRES analogue of CG for Hermitian `A` ("derived from GMRES for the particular case where `A` is Hermitian"; §6.10: "the full GMRES algorithm gives rise to the Conjugate Residual algorithm").
-- **Lean surface statement.** (over `ℝ`, SPD `A`, as the backbone provides) `theorem cr_eq_CR : cr A b x₀ j = (CR.iterate Aop b x₀ j).(x, r, p, q)`; `theorem cr_Ap_orth (hA : A.PosDef) (hij : i ≠ j) : inner (Aop (crP i)) (Aop (crP j)) = 0`; `theorem cr_res_conj (hA) (hij) : inner (crR i) (Aop (crR j)) = 0`; `theorem cr_isMinResIterate (hA) : Krylov.IsMinResIterate Aop b x₀ j (crX j)`; `theorem cr_eq_gmres (hA) (hj : j ≤ μ) : crX j = gmresFixed A b x₀ j`. (Hermitian *indefinite* `A` with explicit no-breakdown hypotheses: request G14.)
-- **Backbone item.** 3.8 `CR.iterate` ✓(proto), `CR.isMinResIterate`, Fong–Saunders Thm 2.1 invariants (`⟪A p_i, A p_j⟫ = 0`, `⟪r_i, A p_j⟫ = 0` for `j < i`); 2.4.1 uniqueness ✓.
-- **Proof route.** `cr_eq_CR` definitional; `(r_i, A r_j) = 0` for `j < i` from `⟪r_i, A p_j⟫ = 0` and `A r_j = A p_j − β_{j−1} A p_{j−1}`, symmetric for `j > i`; `cr_eq_gmres` by uniqueness of the minimal-residual iterate (R18).
-- **Status.** `direct` (SPD); the book's "Hermitian" generality needs G14.
+- **Book statement.** For Hermitian `A`, CR (Alg 6.20) produces `A`-orthogonal (conjugate) residuals
+  `(r_i, A r_j) = 0` (`i ≠ j`) and orthogonal `A p_i`'s `(A p_i, A p_j) = 0` (`i ≠ j`); it is the GMRES
+  analogue of CG for Hermitian `A` ("derived from GMRES for the particular case where `A` is
+  Hermitian"; §6.10: "the full GMRES algorithm gives rise to the Conjugate Residual algorithm").
+- **Lean surface statement.** (over `ℝ`, symmetric `A`) `theorem cr_eq_CR : cr A b x₀ j = (CR.iterate Aop b x₀ j).(x, r, p, q)`;
+  `theorem cr_Ap_orth (hA : A.PosDef) (hij : i ≠ j) : inner (Aop (crP i)) (Aop (crP j)) = 0`;
+  `theorem cr_res_conj (hA) (hij) : inner (crR i) (Aop (crR j)) = 0`;
+  `theorem cr_isMinResIterate (hA : A.PosDef) : Krylov.IsMinResIterate Aop b x₀ j (crX j)`;
+  `theorem cr_isMinResIterate_of_no_breakdown (hA : A.IsSymm) (h1 : ∀ i < j, inner (crR i) (Aop (crR i)) ≠ 0)
+  (h2 : ∀ i < j, Aop (crP i) ≠ 0) : Krylov.IsMinResIterate Aop b x₀ j (crX j)` (the book's Hermitian
+  generality); `theorem cr_eq_gmres (hA : A.PosDef) (hj : j ≤ μ) : crX j = gmresFixed A b x₀ j`.
+- **Backbone item.** §3.8 `CR.iterate`, `CR.isMinResIterate` (symmetric coercive),
+  `CR.isMinResIterate_of_no_breakdown` (symmetric, no-breakdown hypotheses),
+  `CR.inner_apply_direction_eq_zero`, `CR.inner_residual_apply_direction_eq_zero`,
+  `CR.inner_residual_apply_residual_eq_zero` (`Numlib/Krylov/CR.lean`); §3.4
+  `Krylov.existsUnique_isMinResIterate_of_injective`.
+- **Proof route.** `cr_eq_CR` definitional; the invariants are the backbone lemmas; `cr_eq_gmres` by
+  uniqueness of the minimal-residual iterate (R18).
+- **Classification.** `direct`.
 
 ### R54. Lemma 6.21, (6.104)–(6.105)
-- **Book statement.** Let `p_0, …, p_{m−1}` be such that each `{p_0, …, p_{j−1}}` (`j ≤ m`) is a basis of `𝒦_j(A, r_0)` and `(A p_i, A p_k) = 0` for `i ≠ k`. Then the minimal-residual approximation in `x_0 + 𝒦_m(A, r_0)` is `x_m = x_0 + ∑_{i<m} ((r_0, A p_i)/(A p_i, A p_i)) p_i` (6.104), and `x_m = x_{m−1} + ((r_{m−1}, A p_{m−1})/(A p_{m−1}, A p_{m−1})) p_{m−1}` (6.105).
-- **Lean surface statement.** `theorem lemma_6_21 (p : Fin m → 𝔼) (hbasis : ∀ j ≤ m, Submodule.span ℝ (Set.range fun i : Fin j => p (Fin.castLE _ i)) = krylov A r₀ j) (hlin : LinearIndependent ℝ p) (horth : ∀ i k, i ≠ k → inner (Aop (p i)) (Aop (p k)) = 0) (hne : ∀ i, Aop (p i) ≠ 0) : Krylov.IsMinResIterate Aop b x₀ m (x₀ + ∑ i, (inner (Aop (p i)) r₀ / inner (Aop (p i)) (Aop (p i))) • p i) ∧ (∀ x', Krylov.IsMinResIterate Aop b x₀ (m-1) x' → Krylov.IsMinResIterate Aop b x₀ m (x' + (inner (Aop (p (last))) (b - Aop x') / inner (Aop (p last)) (Aop (p last))) • p last))`. (The nonvanishing of `(A p_i, A p_i)` is implicit in the book's divisions; it is automatic for nonsingular `A`.)
-- **Backbone item.** 3.8 `Krylov.isMinResIterate_of_orthogonal_directions` (planned).
-- **Proof route.** Backbone (the book's proof via Prop 5.3 = 2.4.2 `IsMinRes.iff_isPetrovGalerkin` ✓).
-- **Status.** `direct`.
+- **Book statement.** Let `p_0, …, p_{m−1}` be such that each `{p_0, …, p_{j−1}}` (`j ≤ m`) is a basis
+  of `𝒦_j(A, r_0)` and `(A p_i, A p_k) = 0` for `i ≠ k`. Then the minimal-residual approximation in
+  `x_0 + 𝒦_m(A, r_0)` is `x_m = x_0 + ∑_{i<m} ((r_0, A p_i)/(A p_i, A p_i)) p_i` (6.104), and
+  `x_m = x_{m−1} + ((r_{m−1}, A p_{m−1})/(A p_{m−1}, A p_{m−1})) p_{m−1}` (6.105).
+- **Lean surface statement.** `theorem lemma_6_21 (p : ℕ → 𝔼)
+  (horth : ∀ i < m, ∀ k < m, i ≠ k → inner (Aop (p i)) (Aop (p k)) = 0) (hne : ∀ i < m, Aop (p i) ≠ 0)
+  (hspan : Submodule.span ℝ (Set.range fun i : Fin m => p i) = krylov A r₀ m) (x : ℕ → 𝔼) (hx0 : x 0 = x₀)
+  (hstep : ∀ j, x (j+1) = x j + (inner (Aop (p j)) (b - Aop (x j)) / inner (Aop (p j)) (Aop (p j))) • p j) :
+  Krylov.IsMinResIterate Aop b x₀ m (x m) ∧ x m = x₀ + ∑ i : Fin m, (inner (Aop (p i)) r₀ / inner (Aop (p i)) (Aop (p i))) • p i`.
+  (The nonvanishing of `(A p_i, A p_i)` is implicit in the book's divisions; it is automatic for
+  nonsingular `A`. The book's nested-basis hypothesis for every `j ≤ m` follows from `hspan` at `m`
+  together with the recurrence, which only uses `p_0..p_{j−1}` up to step `j`.)
+- **Backbone item.** §3.8 `Krylov.isMinResIterate_of_orthogonal_directions` (`Numlib/Krylov/CR.lean`;
+  exactly the hypotheses above, no symmetry assumption).
+- **Proof route.** (6.105) is the backbone theorem; (6.104) by unfolding the recurrence and
+  `(r_j, A p_j) = (r_0, A p_j)` (`r_j − r_0 ∈ span{A p_i : i < j} ⟂ A p_j`); the book's own proof goes
+  through Prop 5.3 = §2.4.1 `IsMinRes.iff_isPetrovGalerkin`.
+- **Classification.** `direct` ((6.105)); the closed form (6.104) is a short surface computation.
 
 ### R55. §6.9 — GCR and ORTHODIR are mathematically equivalent to full GMRES; ORTHOMIN(k) = GCR for `k ≥ m`
-- **Book statement.** Lemma 6.21 "opens up many different ways to obtain algorithms that are mathematically equivalent to the full GMRES": GCR (Alg 6.21), and ORTHODIR (6.107) (both build `AᵀA`-orthogonal bases of the Krylov subspaces and update by (6.105)). ORTHOMIN(k) truncates lines 6–7; GCR(m) restarts.
-- **Lean surface statement.** `theorem gcr_isMinResIterate (h : ∀ i < m, Aop (gcrP i) ≠ 0) (hm : m ≤ μ) : Krylov.IsMinResIterate Aop b x₀ m (gcr A b x₀ m).x` and `gcr_eq_gmres … : (gcr A b x₀ m).x = gmresFixed A b x₀ m`; `theorem orthodir_isMinResIterate (h : ∀ i < m, Aop (odP i) ≠ 0) (hm) : …`; `theorem orthomin_eq_gcr (hk : m ≤ k) : orthomin A b x₀ k m = gcr A b x₀ m`; `theorem gcr_Ap_orth (h) : ∀ i j < m, i ≠ j → inner (Aop (gcrP i)) (Aop (gcrP j)) = 0`.
-- **Backbone item.** R54 (3.8); no backbone recurrence for GCR/ORTHODIR (1.2).
-- **Proof route.** Induction: `p_j ∈ 𝒦_{j+1}`, `AᵀA`-orthogonality by construction of `β_ij`, nonzero `A p_i` ⇒ linear independence ⇒ basis of `𝒦_{j+1}` for `j + 1 ≤ μ`; then R54 (6.105) step by step (`α_j` of Alg 6.21 is exactly the coefficient in (6.105)).
-- **Status.** `needs-equivalence` (surface induction + R54).
+- **Book statement.** Lemma 6.21 "opens up many different ways to obtain algorithms that are
+  mathematically equivalent to the full GMRES": GCR (Alg 6.21), and ORTHODIR (6.107) (both build
+  `AᵀA`-orthogonal bases of the Krylov subspaces and update by (6.105)). ORTHOMIN(k) truncates lines
+  6–7; GCR(m) restarts.
+- **Lean surface statement.** `theorem gcr_isMinResIterate (h : ∀ i < m, Aop (gcrP i) ≠ 0) (hm : m ≤ μ) :
+  Krylov.IsMinResIterate Aop b x₀ m (gcr A b x₀ m).x` and `gcr_eq_gmres … : (gcr A b x₀ m).x = gmresFixed A b x₀ m`;
+  `theorem orthodir_isMinResIterate (h : ∀ i < m, Aop (odP i) ≠ 0) (hm) : …`;
+  `theorem orthomin_eq_gcr (hk : m ≤ k) : orthomin A b x₀ k m = gcr A b x₀ m`;
+  `theorem gcr_Ap_orth (h) : ∀ i j < m, i ≠ j → inner (Aop (gcrP i)) (Aop (gcrP j)) = 0`.
+- **Backbone item.** R54 (§3.8 `Krylov.isMinResIterate_of_orthogonal_directions`); no backbone
+  recurrence for GCR/ORTHODIR (§1.2).
+- **Proof route.** Induction: `p_j ∈ 𝒦_{j+1}`, `AᵀA`-orthogonality by construction of `β_ij`, nonzero
+  `A p_i` ⇒ linear independence ⇒ basis of `𝒦_{j+1}` for `j + 1 ≤ μ`; then R54 (`α_j` of Alg 6.21 is
+  exactly the coefficient in (6.105)).
+- **Classification.** `needs-equivalence` (surface induction + R54).
 
 ### R56. Proposition 6.22
-- **Book statement.** If `Aᵀ v ∈ 𝒦_s(A, v)` for every `v`, then DIOM(s) is mathematically equivalent to FOM (because then `h_ij = (v_j, Aᵀ v_i) = 0` for `i < j − s + 1` (6.108)).
-- **Lean surface statement.** `theorem prop_6_22 (hs : ∀ v : 𝔼, Aop.adjoint v ∈ krylov A v s) : (∀ v₁ i j, i + s ≤ j → arnoldiCoeff A v₁ i j = 0) ∧ ∀ b x₀ m, iop A v₁ s = arnoldiMGS A v₁ ∧ iom A b x₀ s m = fom A b x₀ m ∧ (diom A b x₀ s m).x = fom A b x₀ m` (the last under the DIOM no-breakdown hypothesis of R14).
-- **Backbone item.** request G2: `Arnoldi.coeff_eq_zero_of_adjoint_mem (hs : ∀ v, A† v ∈ 𝒦_s(A, v)) (h : i + s ≤ j) : coeff A b i j = 0` (the `s = 2` case is `coeff_eq_zero_of_isSymmetric`).
-- **Proof route.** (6.108): `h_ij = ⟪v_i, A v_j⟫ = ⟪A† v_i, v_j⟫`, `A† v_i ∈ 𝒦_s(A, v_i) ⊆ 𝒦_{i+s}(A, v_1) = span{v_1..v_{i+s−1}} ⟂ v_j` for `j ≥ i + s`. Then the IOP loop subtracts exactly the nonzero terms, so IOP = MGS Arnoldi (D6 (vii) generalized to "band condition").
-- **Status.** `needs-equivalence` (G2 + D6).
+- **Book statement.** If `Aᵀ v ∈ 𝒦_s(A, v)` for every `v`, then DIOM(s) is mathematically equivalent
+  to FOM (because then `h_ij = (v_j, Aᵀ v_i) = 0` for `i < j − s + 1` (6.108)).
+- **Lean surface statement.** `theorem prop_6_22 (hs : ∀ v : 𝔼, Aop.adjoint v ∈ krylov A v s) :
+  (∀ v₁ i j, i + s ≤ j → arnoldiCoeff A v₁ i j = 0) ∧ ∀ b x₀ m, iop A v₁ s = arnoldiMGS A v₁ ∧
+  iom A b x₀ s m = fom A b x₀ m ∧ (diom A b x₀ s m).x = fom A b x₀ m` (the last under the DIOM
+  no-breakdown hypothesis of R14).
+- **Backbone item.** §3.2 `Arnoldi.coeff_eq_zero_of_adjoint_mem` (`Numlib/Krylov/Arnoldi.lean`;
+  hypotheses `hB : ∀ x y, ⟪A x, y⟫ = ⟪x, B y⟫` and `hs : ∀ v, B v ∈ 𝒦_s(A, v)`, conclusion
+  `coeff A b i j = 0` for `i + s ≤ j`; its `s = 2` case is Lanczos tridiagonality), with `B := op Aᵀ`
+  through `Matrix.toEuclideanLin_conjTranspose` and `LinearMap.adjoint_inner_right`.
+- **Proof route.** (6.108) is the backbone lemma; then the IOP loop subtracts exactly the nonzero
+  terms, so IOP = MGS Arnoldi (D6 (vii) generalized to the band condition).
+- **Classification.** `direct` ((6.108)); `needs-equivalence` (the algorithmic consequences, D6).
 
 ### R57. §6.10 text — `Aᵀ = q(A)` implies normal; normal implies `A^H = q(A)` for some `q` of degree `≤ n − 1`
-- **Book statement.** If `Aᵀ = q(A)` then `A` is normal (since `A q(A) = q(A) A`); conversely, if `A` is normal (`A = Q Λ Q^H`), choosing `q` with `q(λ_j) = λ̄_j` gives `q(A) = A^H` (degree `≤ n − 1`).
-- **Lean surface statement.** Over `ℂ`: `theorem isStarNormal_of_exists_aeval (h : ∃ q : ℂ[X], aeval A q = Aᴴ) : IsStarNormal A`; `theorem exists_aeval_eq_conjTranspose (hA : IsStarNormal A) : ∃ q : ℂ[X], q.natDegree ≤ n - 1 ∧ aeval A q = Aᴴ`.
-- **Backbone item.** none (phase 3, `Eigen/Normal.lean` per 3.12); Mathlib `IsStarNormal`, `Matrix.schur_triangulation`, `Lagrange.interpolate`.
-- **Proof route.** First: `Aᴴ A = q(A) A = A q(A) = A Aᴴ`. Second: spectral theorem for normal matrices (Schur form is diagonal for normal matrices) + Lagrange interpolation at the distinct eigenvalues.
-- **Status.** first `direct` (Mathlib only); second `GAP` (spectral theorem for normal matrices is not in Mathlib in the needed form; phase 3).
+- **Book statement.** If `Aᵀ = q(A)` then `A` is normal (since `A q(A) = q(A) A`); conversely, if `A`
+  is normal (`A = Q Λ Q^H`), choosing `q` with `q(λ_j) = λ̄_j` gives `q(A) = A^H` (degree `≤ n − 1`).
+- **Lean surface statement.** Over `ℂ`: `theorem isStarNormal_of_exists_aeval (h : ∃ q : ℂ[X], aeval A q = Aᴴ) : IsStarNormal A`;
+  `theorem exists_aeval_eq_conjTranspose (hA : IsStarNormal A) : ∃ q : ℂ[X], q.natDegree ≤ n - 1 ∧ aeval A q = Aᴴ`.
+- **Backbone item.** none for the first; the second needs the normal-matrix theory deferred to
+  `Eigen/Normal.lean` (§4); Mathlib `IsStarNormal`, `Matrix.schur_triangulation`, `Lagrange.interpolate`.
+- **Proof route.** First: `Aᴴ A = q(A) A = A q(A) = A Aᴴ`. Second: spectral theorem for normal matrices
+  (Schur form is diagonal for normal matrices) + Lagrange interpolation at the distinct eigenvalues.
+- **Classification.** first `direct` (Mathlib only); second `deferred` (§4, normal-matrix theory).
 
 ### R58. Lemma 6.23 (Faber–Manteuffel)
-- **Book statement.** A nonsingular `A` satisfies `A^H v ∈ 𝒦_s(A, v)` for every `v` iff `A` is normal and `ν(A) ≤ s − 1` (`ν(A)` = least degree of `q` with `A^H = q(A)`).
-- **Lean surface statement.** `theorem lemma_6_23 (hA : IsUnit A) : (∀ v : EuclideanSpace ℂ (Fin n), (Aop.adjoint) v ∈ krylov A v s) ↔ IsStarNormal A ∧ ν A ≤ s - 1`.
-- **Backbone item.** none (3.12: phase 3, candidate `Eigen/Normal.lean`); uses Saad Lemma 1.15 (`Ch01/Spectral.lean` in 8.1: normal ⟺ every eigenvector of `A` is an eigenvector of `A^H`) and R57.
-- **Proof route.** The book's: shared eigenvectors ⇒ normal (Lemma 1.15); interpolation gives `ν ≤ μ − 1` with `μ = deg minpoly A` = number of distinct eigenvalues; a vector `w` of grade `μ` and the uniqueness of coordinates in `w, Aw, …, A^{μ−1} w` (3.1 `linearIndependent_of_le_grade` ✓) force `μ ≤ s`.
-- **Status.** `GAP` (phase 3; needs normal-matrix theory: Lemma 1.15, `minpoly` degree = number of distinct eigenvalues for normal `A`).
+- **Book statement.** A nonsingular `A` satisfies `A^H v ∈ 𝒦_s(A, v)` for every `v` iff `A` is normal
+  and `ν(A) ≤ s − 1` (`ν(A)` = least degree of `q` with `A^H = q(A)`).
+- **Lean surface statement.** `theorem lemma_6_23 (hA : IsUnit A) :
+  (∀ v : EuclideanSpace ℂ (Fin n), (Aop.adjoint) v ∈ krylov A v s) ↔ IsStarNormal A ∧ ν A ≤ s - 1`.
+- **Backbone item.** the deferred normal-matrix theory (§4: Saad Lemma 1.15, normal ⟺ every
+  eigenvector of `A` is an eigenvector of `A^H`, in `Ch01/Spectral.lean` per `plans/backbone.md` §8.1;
+  `minpoly` degree = number of distinct eigenvalues for normal `A`) and R57; §3.1
+  `Krylov.linearIndependent_of_le_grade`.
+- **Proof route.** The book's: shared eigenvectors ⇒ normal (Lemma 1.15); interpolation gives
+  `ν ≤ μ − 1` with `μ = deg minpoly A` = number of distinct eigenvalues; a vector `w` of grade `μ`
+  and the uniqueness of coordinates in `w, Aw, …, A^{μ−1} w` force `μ ≤ s`.
+- **Classification.** `deferred` (§4, normal-matrix theory).
 
 ### R59. Theorem 6.24 (Faber–Manteuffel; stated without proof)
-- **Book statement.** `A ∈ CG(s)` iff the minimal polynomial of `A` has degree `≤ s`, or `A` is normal and `ν(A) ≤ s − 1`.
-- **Lean surface statement.** `theorem thm_6_24 (A : Matrix (Fin n) (Fin n) ℂ) : IsCGs A s ↔ (minpoly ℂ A).natDegree ≤ s ∨ (IsStarNormal A ∧ ν A ≤ s - 1)`.
-- **Backbone item.** none.
-- **Proof route.** Not in the book (reference [121]; a short proof is Liesen–Strakoš 2008 / Faber–Manteuffel 1984). Would be a genuine research-level formalization.
-- **Status.** `GAP` (recommend stating only as a documented `sorry`-free *conjecture-style* docstring, i.e. leave out of phase 1; see §5).
+- **Book statement.** `A ∈ CG(s)` iff the minimal polynomial of `A` has degree `≤ s`, or `A` is normal
+  and `ν(A) ≤ s − 1`.
+- **Lean surface statement.** `theorem thm_6_24 (A : Matrix (Fin n) (Fin n) ℂ) :
+  IsCGs A s ↔ (minpoly ℂ A).natDegree ≤ s ∨ (IsStarNormal A ∧ ν A ≤ s - 1)`.
+- **Backbone item.** the deferred normal-matrix theory (§4).
+- **Proof route.** Not in the book (reference [121]; a short proof is Liesen–Strakoš 2008 /
+  Faber–Manteuffel 1984). A research-level formalization; until the deferred items exist the surface
+  carries only a docstring mention (§5).
+- **Classification.** `deferred` (§4).
 
 ### R60. (6.109)–(6.112) — real Chebyshev polynomials
-- **Book statement.** `C_k(t) = cos(k cos⁻¹ t)` on `[−1, 1]` (6.109); `C_{k+1} = 2t C_k − C_{k−1}`, `C_0 = 1`, `C_1 = t`; `C_k(t) = cosh(k cosh⁻¹ t)` for `|t| ≥ 1` (6.110); `C_k(t) = ½[(t + √(t²−1))^k + (t + √(t²−1))^{−k}]` for `|t| ≥ 1` (6.111); `C_k(t) ≳ ½(t + √(t²−1))^k` (6.112) (we state the inequality `≥`).
-- **Lean surface statement.** `theorem eq_6_109 (ht : t ∈ Icc (-1) 1) : (C k).eval t = Real.cos (k * Real.arccos t)`; `theorem C_rec : C (k+2) = 2 * X * C (k+1) - C k`; `theorem eq_6_110 (ht : 1 ≤ t) : (C k).eval t = Real.cosh (k * Real.arcosh t)`; `theorem eq_6_111 (ht : 1 ≤ t) : (C k).eval t = ((t + √(t^2-1))^k + (t + √(t^2-1))⁻¹^k)/2`; `theorem eq_6_112 (ht : 1 ≤ t) : (t + √(t^2-1))^k / 2 ≤ (C k).eval t`.
-- **Backbone item.** Mathlib `Polynomial.Chebyshev.T_real_cos`, `T_add_two`; 2.1.9 `eval_T_eq_half_add_pow` ✓ (with `(t − √(t²−1))^k`; equal since `(t+√)(t−√) = 1`), `half_pow_le_eval_T` ✓.
-- **Proof route.** Mathlib/backbone; (6.110) from (6.111) and `Real.cosh (k * arcosh t) = ½(e^{k·} + e^{−k·})` with `exp(arcosh t) = t + √(t²−1)` (if Mathlib lacks `T_real_cosh`, this is a 15-line surface lemma).
-- **Status.** `direct` ((6.110): `needs-equivalence`, small).
+- **Book statement.** `C_k(t) = cos(k cos⁻¹ t)` on `[−1, 1]` (6.109); `C_{k+1} = 2t C_k − C_{k−1}`,
+  `C_0 = 1`, `C_1 = t`; `C_k(t) = cosh(k cosh⁻¹ t)` for `|t| ≥ 1` (6.110);
+  `C_k(t) = ½[(t + √(t²−1))^k + (t + √(t²−1))^{−k}]` for `|t| ≥ 1` (6.111); `C_k(t) ≳ ½(t + √(t²−1))^k`
+  (6.112) (we state the inequality `≥`).
+- **Lean surface statement.** `theorem eq_6_109 (ht : t ∈ Icc (-1) 1) : (C k).eval t = Real.cos (k * Real.arccos t)`;
+  `theorem C_rec : C (k+2) = 2 * X * C (k+1) - C k`;
+  `theorem eq_6_110 (ht : 1 ≤ t) : (C k).eval t = Real.cosh (k * Real.arcosh t)`;
+  `theorem eq_6_111 (ht : 1 ≤ t) : (C k).eval t = ((t + √(t^2-1))^k + (t + √(t^2-1))⁻¹^k)/2`;
+  `theorem eq_6_112 (ht : 1 ≤ t) : (t + √(t^2-1))^k / 2 ≤ (C k).eval t`.
+- **Backbone item.** Mathlib `Polynomial.Chebyshev.T_real_cos`, `T_real_cosh`, `T_add_two`; §2.1.9
+  `Polynomial.Chebyshev.eval_T_eq_half_add_pow` (with `(t − √(t²−1))^k`; equal since
+  `(t+√)(t−√) = 1`), `half_pow_le_eval_T`.
+- **Proof route.** Mathlib/backbone; (6.110) from `T_real_cosh` with `cosh (arcosh t) = t`.
+- **Classification.** `direct`.
 
 ### R61. Theorem 6.25 (Chebyshev min–max) and its corollary formula
-- **Book statement.** For a (nondegenerate) interval `[α, β]` and real `γ ∉ [α, β]`, `min_{p ∈ P_k, p(γ)=1} max_{t ∈ [α,β]} |p(t)|` is attained by `Ĉ_k(t) = C_k(1 + 2(t−β)/(β−α)) / C_k(1 + 2(γ−β)/(β−α))` (6.113); the minimum equals `1/|C_k(1 + 2(γ−β)/(β−α))| = 1/|C_k(2(γ−μ)/(β−α))|`, `μ = (α+β)/2`.
-- **Lean surface statement.** ✓(statement) `theorem thm_6_25 (k) (hαβ : α < β) (hγ : γ ∉ Set.Icc α β) : IsLeast {M | ∃ p : ℝ[X], p.degree ≤ k ∧ p.eval γ = 1 ∧ M = sSup ((fun t => |p.eval t|) '' Set.Icc α β)} (sSup ((fun t => |(Chat k α β γ).eval t|) '' Set.Icc α β))` together with `theorem thm_6_25_value : sSup (… Chat …) = 1 / |(C k).eval (1 + 2 * (γ - β) / (β - α))| = 1 / |(C k).eval (2 * (γ - (α + β)/2) / (β - α))|` and `Chat_degree_le`, `Chat_eval_γ : (Chat k α β γ).eval γ = 1`.
-- **Backbone item.** 2.1.9 `one_div_eval_T_le_sSup_abs_eval` ✓ (general `γ`), `sSup_abs_eval_shifted` ✓, `shifted_degree_le` ✓, `shifted_eval_self` ✓.
-- **Proof route.** `Chat_eq_shifted` (D17) then the four backbone lemmas; the second form of the value is algebra (`1 + 2(γ−β)/(β−α) = 2(γ−μ)/(β−α)`).
-- **Status.** `direct`.
+- **Book statement.** For a (nondegenerate) interval `[α, β]` and real `γ ∉ [α, β]`,
+  `min_{p ∈ P_k, p(γ)=1} max_{t ∈ [α,β]} |p(t)|` is attained by
+  `Ĉ_k(t) = C_k(1 + 2(t−β)/(β−α)) / C_k(1 + 2(γ−β)/(β−α))` (6.113); the minimum equals
+  `1/|C_k(1 + 2(γ−β)/(β−α))| = 1/|C_k(2(γ−μ)/(β−α))|`, `μ = (α+β)/2`.
+- **Lean surface statement.** `theorem thm_6_25 (k) (hαβ : α < β) (hγ : γ ∉ Set.Icc α β) :
+  IsLeast {M | ∃ p : ℝ[X], p.degree ≤ k ∧ p.eval γ = 1 ∧ M = sSup ((fun t => |p.eval t|) '' Set.Icc α β)}
+  (sSup ((fun t => |(Chat k α β γ).eval t|) '' Set.Icc α β))` together with
+  `theorem thm_6_25_value : sSup (… Chat …) = 1 / |(C k).eval (1 + 2 * (γ - β) / (β - α))| = 1 / |(C k).eval (2 * (γ - (α + β)/2) / (β - α))|`
+  and `Chat_degree_le`, `Chat_eval_γ : (Chat k α β γ).eval γ = 1`.
+- **Backbone item.** §2.1.9 `Polynomial.Chebyshev.one_div_eval_T_le_sSup_abs_eval` (general `γ`),
+  `sSup_abs_eval_shifted`, `shifted_degree_le`, `shifted_eval_self`
+  (`Numlib/Polynomial/ChebyshevMinimax.lean`).
+- **Proof route.** `Chat_eq_shifted` (D17) then the four backbone lemmas; the second form of the value
+  is algebra (`1 + 2(γ−β)/(β−α) = 2(γ−μ)/(β−α)`).
+- **Classification.** `direct`.
 
 ### R62. Lemma 6.26 (Zarantonello; proof by reference)
-- **Book statement.** For the circle `C(0, ρ)` and `γ ∈ ℂ` not enclosed by it, `min_{p ∈ P_k, p(γ)=1} max_{|z|=ρ} |p(z)| = (ρ/|γ|)^k`, attained by `(z/γ)^k`; by translation the same for `C(c, ρ)` with `|γ − c| > ρ`.
-- **Lean surface statement.** `theorem lemma_6_26 (hγ : ρ < ‖γ‖) : IsLeast {M | ∃ p : ℂ[X], p.degree ≤ k ∧ p.eval γ = 1 ∧ M = sSup ((fun z => ‖p.eval z‖) '' Metric.sphere 0 ρ)} ((ρ / ‖γ‖)^k)`.
-- **Backbone item.** none (2.1.9: "complex ellipse results (Saad Lemma 6.26, Thm 6.27) are phase 3").
-- **Proof route.** Not in the book (ref. [232]); standard proof via the maximum principle / Bernstein-type argument for `w ↦ p(γ w)`.
-- **Status.** `GAP` (phase 3).
+- **Book statement.** For the circle `C(0, ρ)` and `γ ∈ ℂ` not enclosed by it,
+  `min_{p ∈ P_k, p(γ)=1} max_{|z|=ρ} |p(z)| = (ρ/|γ|)^k`, attained by `(z/γ)^k`; by translation the
+  same for `C(c, ρ)` with `|γ − c| > ρ`.
+- **Lean surface statement.** `theorem lemma_6_26 (hγ : ρ < ‖γ‖) :
+  IsLeast {M | ∃ p : ℂ[X], p.degree ≤ k ∧ p.eval γ = 1 ∧ M = sSup ((fun z => ‖p.eval z‖) '' Metric.sphere 0 ρ)} ((ρ / ‖γ‖)^k)`.
+- **Backbone item.** the deferred complex Chebyshev / ellipse results of §2.1.9 (§4).
+- **Proof route.** Not in the book (ref. [232]); standard proof via the maximum principle /
+  Bernstein-type argument for `w ↦ p(γ w)`.
+- **Classification.** `deferred` (§4).
 
 ### R63. Theorem 6.27 and the ellipse bound (6.117), (6.119)–(6.120)
-- **Book statement.** For the ellipse `E_ρ = J(C(0, ρ))`, `ρ ≥ 1`, and `γ` not enclosed by it, with `w_γ` the dominant root of `J(w) = γ`: `ρ^k/|w_γ|^k ≤ min_{p ∈ P_k, p(γ)=1} max_{z ∈ E_ρ} |p(z)| ≤ (ρ^k + ρ^{−k})/|w_γ^k + w_γ^{−k}|` (6.117). For `E(c, d, a)`: `max_{z ∈ E(c,d,a)} |Ĉ_k(z)| = C_k(a/d)/|C_k((c−γ)/d)|` with `Ĉ_k` as in (6.119); the explicit form (6.120).
-- **Lean surface statement.** `theorem thm_6_27 (hρ : 1 ≤ ρ) (hγ : γ ∉ closed ellipse) : ρ^k / ‖wγ‖^k ≤ sInf {…} ∧ sInf {…} ≤ (ρ^k + ρ⁻¹^k) / ‖wγ^k + wγ⁻¹^k‖`; `theorem ellipse_max_Chat : sSup ((fun z => ‖(Chat_ℂ k c d γ).eval z‖) '' ellipse c d a) = (C k).eval (a/d) / ‖(Ccomplex k).eval ((c - γ)/d)‖` (for real `a/d`).
-- **Backbone item.** none (phase 3).
-- **Proof route.** Upper bound: the explicit polynomial and `max |w^k + w^{−k}|` on `|w| = ρ` at `w = ρ`; lower bound: Lemma 6.26 applied to a degree-`2k` polynomial in `w`.
-- **Status.** `GAP` (phase 3; depends on R62).
+- **Book statement.** For the ellipse `E_ρ = J(C(0, ρ))`, `ρ ≥ 1`, and `γ` not enclosed by it, with
+  `w_γ` the dominant root of `J(w) = γ`:
+  `ρ^k/|w_γ|^k ≤ min_{p ∈ P_k, p(γ)=1} max_{z ∈ E_ρ} |p(z)| ≤ (ρ^k + ρ^{−k})/|w_γ^k + w_γ^{−k}|` (6.117).
+  For `E(c, d, a)`: `max_{z ∈ E(c,d,a)} |Ĉ_k(z)| = C_k(a/d)/|C_k((c−γ)/d)|` with `Ĉ_k` as in (6.119);
+  the explicit form (6.120).
+- **Lean surface statement.** `theorem thm_6_27 (hρ : 1 ≤ ρ) (hγ : γ ∉ closed ellipse) :
+  ρ^k / ‖wγ‖^k ≤ sInf {…} ∧ sInf {…} ≤ (ρ^k + ρ⁻¹^k) / ‖wγ^k + wγ⁻¹^k‖`;
+  `theorem ellipse_max_Chat : sSup ((fun z => ‖(Chat_ℂ k c d γ).eval z‖) '' ellipse c d a) = (C k).eval (a/d) / ‖(Ccomplex k).eval ((c - γ)/d)‖`
+  (for real `a/d`).
+- **Backbone item.** the deferred complex Chebyshev / ellipse results of §2.1.9 (§4).
+- **Proof route.** Upper bound: the explicit polynomial and `max |w^k + w^{−k}|` on `|w| = ρ` at
+  `w = ρ`; lower bound: Lemma 6.26 applied to a degree-`2k` polynomial in `w`.
+- **Classification.** `deferred` (§4; depends on R62).
 
 ### R64. Lemma 6.28
-- **Book statement.** Let `x_m` be the `m`-th CG iterate, `d_m = x_* − x_m`. Then `x_m = x_0 + q_m(A) r_0` with `deg q_m ≤ m − 1` and `‖(I − A q_m(A)) d_0‖_A = min_{q ∈ P_{m−1}} ‖(I − A q(A)) d_0‖_A`.
-- **Lean surface statement.** `theorem lemma_6_28 (hA : A.PosDef) (hstar : Aop xstar = b) (m) : ∃ q : ℝ[X], q.degree < m ∧ (cg A b x₀ m).1 = x₀ + aeval Aop q r₀ ∧ ∀ q' : ℝ[X], q'.degree < m → anorm A ((1 - Aop ∘ₗ aeval Aop q) (xstar - x₀)) ≤ anorm A ((1 - Aop ∘ₗ aeval Aop q') (xstar - x₀))`.
-- **Backbone item.** 3.4 `Krylov.IsGalerkinIterate.energyNorm_error_eq_iInf` (planned; via 2.4.2 `IsGalerkin.iff_energyNorm_min` ✓ and 3.1 `mem_subspace_iff_exists_aeval` ✓); 3.7 `CG.isGalerkinIterate`.
-- **Proof route.** `cg_eq_CG` + `CG.isGalerkinIterate` + `Matrix.posDef_iff_isSymmetricCoercive` ✓; the polynomial form is `mem_subspace_iff_exists_aeval` on `x_m − x_0` and on any competitor; `(1 − A q(A)) d_0 = x_* − (x_0 + q(A) r_0)`.
-- **Status.** `direct`.
+- **Book statement.** Let `x_m` be the `m`-th CG iterate, `d_m = x_* − x_m`. Then
+  `x_m = x_0 + q_m(A) r_0` with `deg q_m ≤ m − 1` and
+  `‖(I − A q_m(A)) d_0‖_A = min_{q ∈ P_{m−1}} ‖(I − A q(A)) d_0‖_A`.
+- **Lean surface statement.** `theorem lemma_6_28 (hA : A.PosDef) (hstar : Aop xstar = b) (m) :
+  ∃ q : ℝ[X], q.degree < m ∧ (cg A b x₀ m).1 = x₀ + aeval Aop q r₀ ∧ ∀ q' : ℝ[X], q'.degree < m →
+  anorm A ((1 - Aop ∘ₗ aeval Aop q) (xstar - x₀)) ≤ anorm A ((1 - Aop ∘ₗ aeval Aop q') (xstar - x₀))`.
+- **Backbone item.** §3.4 `Krylov.IsGalerkinIterate.energyNorm_error_eq_iInf` (`Numlib/Krylov/Iterate.lean`;
+  the `min_{deg p ≤ m, p 0 = 1} ‖p(A)(x* − x₀)‖_A` form), `IsGalerkinIterate.energyNorm_error_le_energyNorm_aeval`;
+  §3.7 `CG.isGalerkinIterate`; §2.1.4 `Matrix.posDef_iff_isSymmetricCoercive`; §3.1
+  `Krylov.mem_subspace_iff_exists_aeval`; §2.4.2 `IsGalerkin.iff_energyNorm_min` behind the backbone
+  proof.
+- **Proof route.** `cg_eq_CG` + `CG.isGalerkinIterate` + `posDef_iff_isSymmetricCoercive`; the
+  polynomial form is `mem_subspace_iff_exists_aeval` on `x_m − x_0` and on any competitor;
+  `(1 − A q(A)) d_0 = x_* − (x_0 + q(A) r_0)` and `p = 1 − X q` translates to the backbone's form.
+- **Classification.** `direct`.
 
 ### R65. Theorem 6.29, (6.122)–(6.123)
-- **Book statement.** For SPD `A` with extreme eigenvalues `λ_min, λ_max`, `η = λ_min/(λ_max − λ_min)`: `‖x_* − x_m‖_A ≤ ‖x_* − x_0‖_A / C_m(1 + 2η)` (6.123).
-- **Lean surface statement.** ✓(statement, in the (6.128) form) `theorem thm_6_29 [NeZero n] (A : Matrix (Fin n) (Fin n) ℝ) (hA : A.PosDef) (b x₀ xstar) (hstar : Aop xstar = b) (m) : anorm A (xstar - (cg A b x₀ m).1) ≤ anorm A (xstar - x₀) / (C m).eval (1 + 2 * η (⨅ i, hA.1.eigenvalues i) (⨆ i, hA.1.eigenvalues i))` (when `λ_min = λ_max` the bound reads `‖d_m‖_A ≤ ‖d_0‖_A/C_m(∞)`; state under `λ_min < λ_max`, or note that `η` is `+∞` — the book tacitly assumes at least two distinct eigenvalues).
-- **Backbone item.** 3.10 `Krylov.IsGalerkinIterate.energyNorm_error_le` ✓(proto, (6.128) form) and the "sharper form `‖ε_m‖_A ≤ ‖ε₀‖_A / T_m(1 + 2η)`" (planned); 3.9 `energyNorm_aeval_apply_le`; 2.1.9 ✓.
-- **Proof route.** R64 + 3.9 spectral bound + Thm 6.25 with `[α, β] = [λ_min, λ_max]`, `γ = 0` (`one_div_eval_T_le_sSup_abs_eval_of_eval_zero` ✓); bridge `Module.End.HasEigenvalue Aop μ → μ ∈ Icc λ_min λ_max` from `Matrix.IsHermitian.eigenvalues` (glue G12).
-- **Status.** `direct`.
+- **Book statement.** For SPD `A` with extreme eigenvalues `λ_min, λ_max`, `η = λ_min/(λ_max − λ_min)`:
+  `‖x_* − x_m‖_A ≤ ‖x_* − x_0‖_A / C_m(1 + 2η)` (6.123).
+- **Lean surface statement.**
+  ```lean
+  theorem thm_6_29 [NeZero n] (A : Matrix (Fin n) (Fin n) ℝ) (hA : A.PosDef) (b x₀ xstar : 𝔼)
+      (hstar : Aop xstar = b) (hl : ⨅ i, hA.1.eigenvalues i < ⨆ i, hA.1.eigenvalues i) (m : ℕ) :
+      anorm A (xstar - (cg A b x₀ m).1) ≤
+        anorm A (xstar - x₀) / (C m).eval (1 + 2 * η (⨅ i, hA.1.eigenvalues i) (⨆ i, hA.1.eigenvalues i))
+  ```
+  (when `λ_min = λ_max` the book's `η` is `+∞`; the book tacitly assumes at least two distinct
+  eigenvalues, hence `hl`).
+- **Backbone item.** §3.10 `Krylov.IsGalerkinIterate.energyNorm_error_le_div_eval_T`
+  (`Numlib/Krylov/Convergence/CG.lean`; hypotheses `0 < lmin`, `lmin < lmax`,
+  `hA : A.IsSymmetricBoundedBy lmin lmax`, `hx : IsGalerkinIterate A b x₀ m x`, `hstar : A xstar = b`;
+  conclusion `energyNorm A (xstar - x) ≤ energyNorm A (xstar - x₀) / (T ℝ m).eval ((lmax + lmin) / (lmax - lmin))`);
+  the glue `Matrix.IsHermitian.isSymmetricBoundedBy_toEuclideanLin` (`Numlib/Matrix/ToEuclideanLin.lean`)
+  with `lmin = ⨅ i, eigenvalues i`, `lmax = ⨆ i, eigenvalues i` (`ciInf_le`, `le_ciSup`) and Mathlib
+  `Matrix.PosDef.eigenvalues_pos` for `0 < lmin`; behind the backbone proof: §3.9
+  `LinearMap.IsSymmetricBoundedBy.energyNorm_aeval_map_apply_le`, §2.1.9
+  `one_div_eval_T_le_sSup_abs_eval_of_eval_zero` (Thm 6.25 with `[α, β] = [λ_min, λ_max]`, `γ = 0`).
+- **Proof route.** `cg_eq_CG`, `CG.isGalerkinIterate` (through `posDef_iff_isSymmetricCoercive`), the
+  glue, then the backbone bound with `one_add_two_mul_η` (D17).
+- **Classification.** `direct`.
 
 ### R66. (6.124)–(6.128)
-- **Book statement.** `C_m(1+2η) ≥ ½(1 + 2η + √((1+2η)²−1))^m = ½(1 + 2η + 2√(η(η+1)))^m`; `1 + 2η + 2√(η(η+1)) = (√η + √(η+1))² = (√λ_min + √λ_max)²/(λ_max − λ_min) = (√λ_max + √λ_min)/(√λ_max − √λ_min) = (√κ + 1)/(√κ − 1)` (6.124)–(6.127), `κ = λ_max/λ_min`; hence `‖x_* − x_m‖_A ≤ 2[(√κ − 1)/(√κ + 1)]^m ‖x_* − x_0‖_A` (6.128).
-- **Lean surface statement.** `theorem eq_6_124_127 (h : 0 < lmin) (h' : lmin < lmax) : 1 + 2 * η lmin lmax + 2 * √(η (η + 1)) = (√η + √(η+1))^2 ∧ … = (√(κ lmin lmax) + 1) / (√κ - 1)`; ✓ `theorem eq_6_128 … : anorm A (xstar - (cg A b x₀ m).1) ≤ 2 * ((√κ - 1)/(√κ + 1))^m * anorm A (xstar - x₀)`.
-- **Backbone item.** 2.1.9 `one_div_eval_T_le_two_mul_pow` ✓ (`1/T_m((κ+1)/(κ−1)) ≤ 2((√κ−1)/(√κ+1))^m`; note `(κ+1)/(κ−1) = 1 + 2η`), `half_pow_le_eval_T` ✓; 3.10 ✓(proto).
-- **Proof route.** (6.128) is the backbone theorem after `cg_eq_CG`; (6.124)–(6.127) are real-algebra identities (surface, `field_simp`/`nlinarith` with `Real.sq_sqrt`).
-- **Status.** `direct` ((6.128)); `surface-only` (the identity chain, 20 lines).
+- **Book statement.** `C_m(1+2η) ≥ ½(1 + 2η + √((1+2η)²−1))^m = ½(1 + 2η + 2√(η(η+1)))^m`;
+  `1 + 2η + 2√(η(η+1)) = (√η + √(η+1))² = (√λ_min + √λ_max)²/(λ_max − λ_min) = (√λ_max + √λ_min)/(√λ_max − √λ_min) = (√κ + 1)/(√κ − 1)`
+  (6.124)–(6.127), `κ = λ_max/λ_min`; hence `‖x_* − x_m‖_A ≤ 2[(√κ − 1)/(√κ + 1)]^m ‖x_* − x_0‖_A` (6.128).
+- **Lean surface statement.** `theorem eq_6_124_127 (h : 0 < lmin) (h' : lmin < lmax) :
+  1 + 2 * η lmin lmax + 2 * √(η (η + 1)) = (√η + √(η+1))^2 ∧ … = (√(κ lmin lmax) + 1) / (√κ - 1)`;
+  `theorem eq_6_128 … : anorm A (xstar - (cg A b x₀ m).1) ≤ 2 * ((√κ - 1)/(√κ + 1))^m * anorm A (xstar - x₀)`.
+- **Backbone item.** §3.10 `Krylov.IsGalerkinIterate.energyNorm_error_le` ((6.128) with the same
+  hypotheses as R65, `κ = lmax / lmin`); §2.1.9 `one_div_eval_T_le_two_mul_pow`
+  (`1/T_m((κ+1)/(κ−1)) ≤ 2((√κ−1)/(√κ+1))^m`; note `(κ+1)/(κ−1) = 1 + 2η`), `half_pow_le_eval_T`.
+- **Proof route.** (6.128) is the backbone theorem after `cg_eq_CG` and the R65 glue;
+  (6.124)–(6.127) are real-algebra identities (surface, `field_simp`/`nlinarith` with `Real.sq_sqrt`).
+- **Classification.** `direct` ((6.128)); `surface-only` (the identity chain, 20 lines).
 
 ### R67. Theorem 6.30
-- **Book statement.** If `A` is (real) positive definite (`(Ax, x) > 0` for all real `x ≠ 0`, equivalently `(A + Aᵀ)/2` SPD), then GMRES(m) converges for any `m ≥ 1`. (Proof: each outer iteration reduces the residual at least as much as one MR step, so (5.15) `‖r_{k+1}‖ ≤ (1 − μ²/σ²)^{1/2} ‖r_k‖` holds with `μ = λ_min((A+Aᵀ)/2)`, `σ = ‖A‖₂`.)
-- **Lean surface statement.** `theorem thm_6_30 (A : Matrix (Fin n) (Fin n) ℝ) (hA : ∀ x ≠ 0, 0 < inner (Aop x) x) (b x₀) (m) (hm : 1 ≤ m) : Filter.Tendsto (fun k => gmresRestarted A b m x₀ k) Filter.atTop (nhds (Aop.symm b))` (`Aop` invertible from `hA`), with the rate `theorem thm_6_30_rate : ‖b - Aop (gmresRestarted A b m x₀ (k+1))‖ ≤ Real.sqrt (1 - μ^2/σ^2) * ‖b - Aop (gmresRestarted A b m x₀ k)‖` where `μ = ⨅ i, (symmPart A).eigenvalues i`, `σ = ‖A‖₂`.
-- **Backbone item.** 3.10 `Krylov.restarted_minRes_tendsto` (planned, with constants `c, ‖A‖`); 2.4.3 `norm_residual_minResStep_le` ✓ (Thm 5.10); 2.1.4 `isCoercive_iff_forall_pos` ✓, `coercive_const_eq_iInf_eigenvalues` (planned, for `μ`).
-- **Proof route.** Backbone: `gmres A b x₀ m` is a minimal-residual iterate over `𝒦_m ⊇ span{r₀}` (R18, `mEff ≥ 1` when `r₀ ≠ 0`), so its residual is `≤` that of `minResStep`; contraction factor `< 1`; geometric convergence. Identification of `μ` with the coercivity constant of the symmetric part: G11.
-- **Status.** `direct` (convergence); `needs-equivalence` (G11, for the book's `μ, σ` in the rate).
+- **Book statement.** If `A` is (real) positive definite (`(Ax, x) > 0` for all real `x ≠ 0`,
+  equivalently `(A + Aᵀ)/2` SPD), then GMRES(m) converges for any `m ≥ 1`. (Proof: each outer
+  iteration reduces the residual at least as much as one MR step, so (5.15)
+  `‖r_{k+1}‖ ≤ (1 − μ²/σ²)^{1/2} ‖r_k‖` holds with `μ = λ_min((A+Aᵀ)/2)`, `σ = ‖A‖₂`.)
+- **Lean surface statement.** `theorem thm_6_30 (A : Matrix (Fin n) (Fin n) ℝ) (hA : ∀ x ≠ 0, 0 < inner (Aop x) x)
+  (b x₀) (m) (hm : 1 ≤ m) : Filter.Tendsto (fun k => gmresRestarted A b m x₀ k) Filter.atTop (nhds (Aop.symm b))`
+  (`Aop` invertible from `hA`), with the rate
+  `theorem thm_6_30_rate : ‖b - Aop (gmresRestarted A b m x₀ (k+1))‖ ≤ Real.sqrt (1 - μ^2/σ^2) * ‖b - Aop (gmresRestarted A b m x₀ k)‖`
+  where `μ = ⨅ i, (symmPart A).eigenvalues i`, `σ = ‖A‖₂`.
+- **Backbone item.** §3.10 `Krylov.restarted_minRes_tendsto`, `Krylov.IsMinResIterate.norm_residual_le_of_isCoerciveWith`
+  (`Numlib/Krylov/Convergence/CG.lean`; for `A : E →L[𝕜] E` with `(A : E →ₗ E).IsCoerciveWith c`,
+  `0 < c`, `1 ≤ m`: contraction factor `√(1 − c²/‖A‖²)` per cycle); §2.4.3
+  `Projection.norm_residual_minResStep_le` behind it; the constants (`Numlib/InnerProductSpace/Coercive.lean`):
+  `LinearMap.isCoercive_iff_forall_pos` (the book's hypothesis), `ContinuousLinearMap.isCoerciveWith_iff_hermitianPart`
+  and `LinearMap.IsSymmetric.isCoerciveWith_iff_forall_hasEigenvalue` (best constant
+  `c = λ_min(½(A + Aᵀ))`), with `Matrix.IsHermitian.hasEigenvalue_toEuclideanLin_iff`,
+  `Matrix.toEuclideanLin_conjTranspose` and `Matrix.l2_opNorm_eq_norm_toEuclideanLin`
+  (`Numlib/Matrix/ToEuclideanLin.lean`) identifying `μ` and `σ`.
+- **Proof route.** `gmres A b x₀ m` is a minimal-residual iterate over `𝒦_m ⊇ span{r₀}` (R18,
+  `mEff ≥ 1` when `r₀ ≠ 0`), so the backbone contraction applies to
+  `LinearMap.toContinuousLinearMap Aop`; `Tendsto` of the iterates from that of the residuals via
+  `‖x − x*‖ ≤ ‖Aop⁻¹‖ ‖r‖`.
+- **Classification.** `direct` (convergence); `needs-equivalence` (the glue above identifying the
+  book's `μ, σ` in the rate).
 
 ### R68. Lemma 6.31
-- **Book statement.** The `m`-th GMRES iterate is `x_m = x_0 + q_m(A) r_0` with `deg q_m ≤ m − 1`, and `‖r_m‖₂ = ‖(I − A q_m(A)) r_0‖₂ = min_{q ∈ P_{m−1}} ‖(I − A q(A)) r_0‖₂`.
-- **Lean surface statement.** `theorem lemma_6_31 (hm : m ≤ μ) (hR) : ∃ q : ℝ[X], q.degree < m ∧ gmresFixed A b x₀ m = x₀ + aeval Aop q r₀ ∧ ‖b - Aop (gmresFixed …)‖ = ‖(1 - Aop ∘ₗ aeval Aop q) r₀‖ ∧ ∀ q', q'.degree < m → ‖(1 - Aop ∘ₗ aeval Aop q) r₀‖ ≤ ‖(1 - Aop ∘ₗ aeval Aop q') r₀‖`.
-- **Backbone item.** 3.4 `Krylov.IsMinResIterate.norm_residual_eq_iInf` ✓(proto) (`min_{deg p ≤ m, p(0) = 1} ‖p(A) r₀‖` form), 3.1 `mem_subspace_iff_exists_aeval` ✓.
+- **Book statement.** The `m`-th GMRES iterate is `x_m = x_0 + q_m(A) r_0` with `deg q_m ≤ m − 1`, and
+  `‖r_m‖₂ = ‖(I − A q_m(A)) r_0‖₂ = min_{q ∈ P_{m−1}} ‖(I − A q(A)) r_0‖₂`.
+- **Lean surface statement.** `theorem lemma_6_31 (hm : m ≤ μ) (hR) : ∃ q : ℝ[X], q.degree < m ∧
+  gmresFixed A b x₀ m = x₀ + aeval Aop q r₀ ∧ ‖b - Aop (gmresFixed …)‖ = ‖(1 - Aop ∘ₗ aeval Aop q) r₀‖ ∧
+  ∀ q', q'.degree < m → ‖(1 - Aop ∘ₗ aeval Aop q) r₀‖ ≤ ‖(1 - Aop ∘ₗ aeval Aop q') r₀‖`.
+- **Backbone item.** §3.4 `Krylov.IsMinResIterate.norm_residual_eq_iInf`
+  (`min_{deg p ≤ m, p(0) = 1} ‖p(A) r₀‖` form), `Krylov.IsMinResIterate.norm_residual_le_norm_aeval`,
+  `Krylov.exists_residual_poly` (`Numlib/Krylov/Iterate.lean`); §3.1 `Krylov.mem_subspace_iff_exists_aeval`.
 - **Proof route.** R18 + `p = 1 − X q` translation between the two polynomial forms.
-- **Status.** `direct`.
+- **Classification.** `direct`.
 
 ### R69. Proposition 6.32
-- **Book statement.** Let `A = X Λ X^{-1}` be diagonalizable, `Λ = diag(λ_1, …, λ_n)`, `ε^{(m)} = min_{p ∈ P_m, p(0)=1} max_i |p(λ_i)|`. Then the `m`-th GMRES residual satisfies `‖r_m‖₂ ≤ κ₂(X) ε^{(m)} ‖r_0‖₂`, `κ₂(X) = ‖X‖₂ ‖X^{-1}‖₂`.
-- **Lean surface statement.** Over `ℂ`, `open scoped Matrix.Norms.L2Operator`: `theorem prop_6_32 (X : Matrix (Fin n) (Fin n) ℂ) (hX : IsUnit X) (lam : Fin n → ℂ) (hA : A = X * Matrix.diagonal lam * X⁻¹) (hm : m ≤ μ) (hR) : ‖b - Aop (gmresFixed A b x₀ m)‖ ≤ ‖X‖ * ‖X⁻¹‖ * epsMin lam m * ‖r₀‖`.
-- **Backbone item.** 3.9 "Saad Prop 6.32: for `A = X Λ X⁻¹`, `‖r_m‖ ≤ κ₂(X) ε^{(m)} ‖r₀‖` (L4)" (planned); 3.4 `norm_residual_eq_iInf` ✓(proto); 2.1.2 `NormedRing.condNumber` ✓.
-- **Proof route.** Backbone (the book's three lines: `‖X p(Λ) X⁻¹ r₀‖ ≤ ‖X‖‖X⁻¹‖‖p(Λ)‖‖r₀‖` and `‖p(Λ)‖₂ = max_i |p(λ_i)|` — Mathlib `Matrix.l2_opNorm_diagonal`?), then the `iInf` over consistent polynomials.
-- **Status.** `direct`.
+- **Book statement.** Let `A = X Λ X^{-1}` be diagonalizable, `Λ = diag(λ_1, …, λ_n)`,
+  `ε^{(m)} = min_{p ∈ P_m, p(0)=1} max_i |p(λ_i)|`. Then the `m`-th GMRES residual satisfies
+  `‖r_m‖₂ ≤ κ₂(X) ε^{(m)} ‖r_0‖₂`, `κ₂(X) = ‖X‖₂ ‖X^{-1}‖₂`.
+- **Lean surface statement.** Over `ℂ`, `open scoped Matrix.Norms.L2Operator`:
+  `theorem prop_6_32 (X : Matrix (Fin n) (Fin n) ℂ) (hX : IsUnit X) (lam : Fin n → ℂ)
+  (hA : A = X * Matrix.diagonal lam * X⁻¹) (hm : m ≤ μ) (hR) :
+  ‖b - Aop (gmresFixed A b x₀ m)‖ ≤ ‖X‖ * ‖X⁻¹‖ * epsMin lam m * ‖r₀‖`.
+- **Backbone item.** §3.4 `Krylov.IsMinResIterate.norm_residual_le_norm_aeval` /
+  `norm_residual_eq_iInf` (the minimization over consistent polynomials); §3.9
+  `norm_aeval_apply_le_of_conj` (`Numlib/Krylov/Convergence/Polynomial.lean`) is the same bound for
+  a *symmetric* `D` (real spectrum) and covers that case directly; §2.1.2 `NormedRing.condNumber`;
+  Mathlib `Matrix.l2_opNorm_diagonal`.
+- **Proof route.** For complex `Λ` the surface proves `‖p(Λ) y‖ ≤ max_i |p(λ_i)| ‖y‖` entrywise
+  (`aeval` of a diagonal matrix is diagonal) and conjugates:
+  `‖X p(Λ) X⁻¹ r₀‖ ≤ ‖X‖ ‖X⁻¹‖ max_i |p(λ_i)| ‖r₀‖`, then `norm_residual_le_norm_aeval` and the
+  `iInf` over `p` with `p(0) = 1`, `deg p ≤ m`.
+- **Classification.** `needs-equivalence` (surface diagonal bound `norm_aeval_diagonal_mulVec_le`;
+  the minimization is backbone).
 
 ### R70. Corollary 6.33
-- **Book statement.** With `A = X Λ X^{-1}` diagonalizable and all eigenvalues in the ellipse `E(c, d, a)` excluding the origin, `‖r_m‖₂ ≤ κ₂(X) (C_m(a/d)/|C_m(c/d)|) ‖r_0‖₂`.
-- **Lean surface statement.** `theorem cor_6_33 (hX) (hA) (hE : ∀ i, lam i ∈ closedEllipse c d a) (h0 : 0 ∉ closedEllipse c d a) : ‖b - Aop (gmresFixed …)‖ ≤ ‖X‖ * ‖X⁻¹‖ * ((C m).eval (a/d).re / ‖(Ccomplex m).eval (c/d)‖) * ‖r₀‖`.
-- **Backbone item.** R69 + R63 (phase 3); Mathlib `Complex.norm_le_of_forall_mem_frontier_norm_le` (maximum modulus) for "the maximum on the ellipse is on its boundary".
+- **Book statement.** With `A = X Λ X^{-1}` diagonalizable and all eigenvalues in the ellipse
+  `E(c, d, a)` excluding the origin, `‖r_m‖₂ ≤ κ₂(X) (C_m(a/d)/|C_m(c/d)|) ‖r_0‖₂`.
+- **Lean surface statement.** `theorem cor_6_33 (hX) (hA) (hE : ∀ i, lam i ∈ closedEllipse c d a) (h0 : 0 ∉ closedEllipse c d a) :
+  ‖b - Aop (gmresFixed …)‖ ≤ ‖X‖ * ‖X⁻¹‖ * ((C m).eval (a/d).re / ‖(Ccomplex m).eval (c/d)‖) * ‖r₀‖`.
+- **Backbone item.** R69 + R63 (deferred, §4); Mathlib `Complex.norm_le_of_forall_mem_frontier_norm_le`
+  (maximum modulus) for "the maximum on the ellipse is on its boundary".
 - **Proof route.** `ε^{(m)} ≤ max_{E} |Ĉ_m|` with `γ = 0`, then R63's ellipse maximum.
-- **Status.** `GAP` (phase 3, needs R63).
+- **Classification.** `deferred` (§4; needs R63).
 
 ### R71. (6.129) — block Arnoldi relation
-- **Book statement.** For Alg 6.22 (blocks `V_1, …, V_{m+1}` of size `n × p`, `H_ij` `p × p`, `U_m = [V_1 … V_m]`, `H_m = (H_ij)` band-Hessenberg, `E_m` the last `p` columns of `I_{mp}`): `A U_m = U_m H_m + V_{m+1} H_{m+1,m} E_mᵀ`; the blocks are orthonormal and mutually orthogonal.
-- **Lean surface statement.** `theorem eq_6_129 (hV₁ : V₁ᴴ * V₁ = 1) (hfull : ∀ j ≤ m, (W j).rank = p) : A * U m = U m * Hblock m + Vb (m+1) * Hsub m * (E m)ᵀ ∧ ∀ i j, (Vb i)ᴴ * Vb j = if i = j then 1 else 0`.
-- **Backbone item.** none (3.12: `Krylov/Block.lean` surface/phase 3); Mathlib `gramSchmidtNormed` for the block QR.
-- **Proof route.** Column-block form of the defining recurrence; orthogonality by induction as in Prop 6.4.
-- **Status.** `surface-only` (phase 3 priority).
+- **Book statement.** For Alg 6.22 (blocks `V_1, …, V_{m+1}` of size `n × p`, `H_ij` `p × p`,
+  `U_m = [V_1 … V_m]`, `H_m = (H_ij)` band-Hessenberg, `E_m` the last `p` columns of `I_{mp}`):
+  `A U_m = U_m H_m + V_{m+1} H_{m+1,m} E_mᵀ`; the blocks are orthonormal and mutually orthogonal.
+- **Lean surface statement.** `theorem eq_6_129 (hV₁ : V₁ᴴ * V₁ = 1) (hfull : ∀ j ≤ m, (W j).rank = p) :
+  A * U m = U m * Hblock m + Vb (m+1) * Hsub m * (E m)ᵀ ∧ ∀ i j, (Vb i)ᴴ * Vb j = if i = j then 1 else 0`.
+- **Backbone item.** the deferred `Krylov/Block.lean` (§3.12, §4); Mathlib `gramSchmidtNormed` for
+  the block QR.
+- **Proof route.** Column-block form of the defining recurrence; orthogonality by induction as in
+  Prop 6.4.
+- **Classification.** `deferred` (§4, block Krylov methods).
 
 ### R72. §6.12 — Algorithms 6.23 and 6.24 are mathematically equivalent when `m` is a multiple of `p`
-- **Book statement.** "The mathematical equivalence of Algorithms 6.23 and 6.24 when `m` is a multiple of `p` is straightforward to show" (same vectors up to the block-QR sign/phase convention).
-- **Lean surface statement.** `theorem ruhe_eq_blockArnoldiMGS (hm : p ∣ m) (hfull) : ∀ j < m, ruhe A p v j = column (j % p) of (blockArnoldiMGS A p V₁ (j / p)).1` (with the Gram–Schmidt QR convention of D18; otherwise up to a unitary diagonal).
-- **Backbone item.** none; G8 (flag uniqueness) for the "up to phase" form.
-- **Proof route.** Both produce orthonormal bases of the same nested flag `span{v_1, …, v_j}`; with the Gram–Schmidt QR they coincide exactly.
-- **Status.** `surface-only` (phase 3).
+- **Book statement.** "The mathematical equivalence of Algorithms 6.23 and 6.24 when `m` is a
+  multiple of `p` is straightforward to show" (same vectors up to the block-QR sign/phase
+  convention).
+- **Lean surface statement.** `theorem ruhe_eq_blockArnoldiMGS (hm : p ∣ m) (hfull) :
+  ∀ j < m, ruhe A p v j = column (j % p) of (blockArnoldiMGS A p V₁ (j / p)).1` (with the
+  Gram–Schmidt QR convention of D18; otherwise up to a unitary diagonal).
+- **Backbone item.** the deferred `Krylov/Block.lean` (§4);
+  `InnerProductSpace.exists_norm_eq_one_smul_gramSchmidtNormed` (flag uniqueness) for the "up to
+  phase" form.
+- **Proof route.** Both produce orthonormal bases of the same nested flag `span{v_1, …, v_j}`; with
+  the Gram–Schmidt QR they coincide exactly.
+- **Classification.** `deferred` (§4, block Krylov methods).
 
 ### R73. (6.130) — Ruhe's variant relation
-- **Book statement.** For Alg 6.24, `w = A v_k − ∑_{i=1}^{j} h_ik v_i` with `k = j − p + 1` and line 9 gives `A v_k = ∑_{i=1}^{k+p} h_ik v_i`; hence `A V_m = V_{m+p} H̄_m` with `H̄_m` of size `(m+p) × m`.
-- **Lean surface statement.** `theorem ruhe_apply (k) : Aop (ruhe A p v k) = ∑ i ∈ Finset.range (k + p + 1), ruheCoeff A p v i k • ruhe A p v i`; `theorem eq_6_130 : A * Vruhe m = Vruhe (m + p) * HbarBlock A p v m`.
-- **Backbone item.** none (the `p = 1` case is `Arnoldi.apply_vec` ✓ / (6.7)).
-- **Proof route.** Definition of `ruhe` (MGS loop) and orthonormality of the previous `v_i`.
-- **Status.** `surface-only` (phase 3); `ruhe A 1 v = arnoldiMGS A (v 0)` is a bonus equivalence.
+- **Book statement.** For Alg 6.24, `w = A v_k − ∑_{i=1}^{j} h_ik v_i` with `k = j − p + 1` and line 9
+  gives `A v_k = ∑_{i=1}^{k+p} h_ik v_i`; hence `A V_m = V_{m+p} H̄_m` with `H̄_m` of size `(m+p) × m`.
+- **Lean surface statement.** `theorem ruhe_apply (k) : Aop (ruhe A p v k) = ∑ i ∈ Finset.range (k + p + 1), ruheCoeff A p v i k • ruhe A p v i`;
+  `theorem eq_6_130 : A * Vruhe m = Vruhe (m + p) * HbarBlock A p v m`.
+- **Backbone item.** the deferred `Krylov/Block.lean` (§4); the `p = 1` case is `Arnoldi.apply_vec` /
+  (6.7).
+- **Proof route.** Definition of `ruhe` (MGS loop) and orthonormality of the previous `v_i`;
+  `ruhe A 1 v = arnoldiMGS A (v 0)` is a bonus equivalence.
+- **Classification.** `deferred` (§4, block Krylov methods).
 
 ### R74. (6.135)–(6.136) — block residuals; block-FOM and block-GMRES
-- **Book statement.** With `R_0 = [v_1 … v_p] R` (QR), `X = X_0 + V_m Y` (6.134), `E_1` the `(m+p) × p` matrix with identity top block: `B − A X = V_{m+p}(E_1 R − H̄_m Y)` (6.135); with `ḡ^{(i)} = E_1 R e_i`: `‖b^{(i)} − A x^{(i)}‖₂ = ‖ḡ^{(i)} − H̄_m y^{(i)}‖₂` (6.136). Block-FOM solves `H_m y^{(i)} = g^{(i)}`; block-GMRES minimizes (6.136) over `y^{(i)}` (unique minimizer); the residual norm is the 2-norm of components `m+1..m+i` of the transformed right-hand side.
-- **Lean surface statement.** `theorem eq_6_135 (Y : Matrix (Fin m) (Fin p) 𝕜) : B - A * (X₀ + Vruhe m * Y) = Vruhe (m+p) * (E₁ * Rqr - HbarBlock … * Y)`; `theorem eq_6_136 (y : Fin m → 𝕜) (i) : ‖col B i - Aop (col X₀ i + Vruhe m *ᵥ y)‖ = ‖gbar i - HbarBlock … *ᵥ y‖`; `theorem blockGMRES_iff (i) : IsBlockGMRES A B X₀ m i x ↔ ∃ y, IsMinOn (fun y => ‖gbar i - HbarBlock *ᵥ y‖) univ y ∧ x = col X₀ i + Vruhe m *ᵥ y`; `theorem blockFOM_iff : IsBlockFOM … x ↔ ∃ y, Hblock *ᵥ y = g i ∧ x = …`.
-- **Backbone item.** 2.4.1 `IsMinRes` ✓, `IsGalerkin` ✓, `isPetrovGalerkin_iff_mulVec` ✓ (general subspaces).
-- **Proof route.** Same as R17/R18/R11 with `span{v_1..v_m}` (block Krylov space) in place of `𝒦_m` and `E_1 R e_i` in place of `β e_1`; the Givens elimination with `p` rotations per column is not formalized (no result is stated about it).
-- **Status.** `direct` for the specification statements (2.4.1 is basis-agnostic); `surface-only` for (6.135)–(6.136) (phase 3).
+- **Book statement.** With `R_0 = [v_1 … v_p] R` (QR), `X = X_0 + V_m Y` (6.134), `E_1` the
+  `(m+p) × p` matrix with identity top block: `B − A X = V_{m+p}(E_1 R − H̄_m Y)` (6.135); with
+  `ḡ^{(i)} = E_1 R e_i`: `‖b^{(i)} − A x^{(i)}‖₂ = ‖ḡ^{(i)} − H̄_m y^{(i)}‖₂` (6.136). Block-FOM
+  solves `H_m y^{(i)} = g^{(i)}`; block-GMRES minimizes (6.136) over `y^{(i)}` (unique minimizer); the
+  residual norm is the 2-norm of components `m+1..m+i` of the transformed right-hand side.
+- **Lean surface statement.** `theorem eq_6_135 (Y : Matrix (Fin m) (Fin p) 𝕜) : B - A * (X₀ + Vruhe m * Y) = Vruhe (m+p) * (E₁ * Rqr - HbarBlock … * Y)`;
+  `theorem eq_6_136 (y : Fin m → 𝕜) (i) : ‖col B i - Aop (col X₀ i + Vruhe m *ᵥ y)‖ = ‖gbar i - HbarBlock … *ᵥ y‖`;
+  `theorem blockGMRES_iff (i) : IsBlockGMRES A B X₀ m i x ↔ ∃ y, IsMinOn (fun y => ‖gbar i - HbarBlock *ᵥ y‖) univ y ∧ x = col X₀ i + Vruhe m *ᵥ y`;
+  `theorem blockFOM_iff : IsBlockFOM … x ↔ ∃ y, Hblock *ᵥ y = g i ∧ x = …`.
+- **Backbone item.** §2.4.1 `IsMinRes`, `IsGalerkin`, `isPetrovGalerkin_iff_mulVec` (general
+  subspaces) for the specification statements; the deferred `Krylov/Block.lean` (§4) for the
+  relations.
+- **Proof route.** Same as R17/R18/R11 with `span{v_1..v_m}` (block Krylov space) in place of `𝒦_m`
+  and `E_1 R e_i` in place of `β e_1`; the Givens elimination with `p` rotations per column is not
+  formalized (no result is stated about it).
+- **Classification.** `direct` for the specification statements (§2.4.1 is basis-agnostic);
+  `deferred` for (6.135)–(6.136) (§4, block Krylov methods).
 
 ### R75. P-6.5 — GMRES from (5.7) with `V = V_m`, `W = A V_m`
-- **Book statement.** Derive GMRES from `x = x_0 + V (Wᵀ A V)^{-1} Wᵀ r_0` with `V = V_m`, `W = A V_m`: `y_m = (H̄_mᵀ H̄_m)^{-1} H̄_mᵀ (β e_1)` (normal equations).
-- **Lean surface statement.** `theorem p_6_5 (hm : m ≤ μ) (hR) : gmresY A b x₀ m = ((Hbar …)ᵀ * Hbar …)⁻¹ *ᵥ ((Hbar …)ᵀ *ᵥ (β • e₁ (m+1)))` and `gmresFixed A b x₀ m = x₀ + V *ᵥ ((V ᵀ Aᵀ A V)⁻¹ *ᵥ (Vᵀ Aᵀ r₀))`.
-- **Backbone item.** 2.4.1 `isPetrovGalerkin_iff_mulVec` ✓ + 2.4.2 `IsMinRes.iff_isPetrovGalerkin` ✓ (Prop 5.3).
+- **Book statement.** Derive GMRES from `x = x_0 + V (Wᵀ A V)^{-1} Wᵀ r_0` with `V = V_m`, `W = A V_m`:
+  `y_m = (H̄_mᵀ H̄_m)^{-1} H̄_mᵀ (β e_1)` (normal equations).
+- **Lean surface statement.** `theorem p_6_5 (hm : m ≤ μ) (hR) : gmresY A b x₀ m = ((Hbar …)ᵀ * Hbar …)⁻¹ *ᵥ ((Hbar …)ᵀ *ᵥ (β • e₁ (m+1)))`
+  and `gmresFixed A b x₀ m = x₀ + V *ᵥ ((V ᵀ Aᵀ A V)⁻¹ *ᵥ (Vᵀ Aᵀ r₀))`.
+- **Backbone item.** §2.4.1 `isPetrovGalerkin_iff_mulVec` + §2.4.2 `IsMinRes.iff_isPetrovGalerkin`
+  (Prop 5.3).
 - **Proof route.** `L = A 𝒦_m` with basis `A v_j`; `(A V_m)ᵀ A V_m = H̄_mᵀ H̄_m` by (6.7).
-- **Status.** `direct`.
+- **Classification.** `direct`.
 
 ### R76. P-6.13 — if `H_m` is nonsingular and `x_m^G = x_m^F` then both are exact
 - **Book statement.** If `H_m` nonsingular and `x_m^G = x_m^F`, then `r_m^G = r_m^F = 0`.
-- **Lean surface statement.** `theorem p_6_13 (hm) (hH : FOMDefined A b x₀ m) (heq : gmresFixed A b x₀ m = fomFixed A b x₀ m) : b - Aop (gmresFixed …) = 0 ∧ b - Aop (fomFixed …) = 0`.
+- **Lean surface statement.** `theorem p_6_13 (hm) (hH : FOMDefined A b x₀ m) (heq : gmresFixed A b x₀ m = fomFixed A b x₀ m) :
+  b - Aop (gmresFixed …) = 0 ∧ b - Aop (fomFixed …) = 0`.
 - **Backbone item.** R33/R34 (`ρ^F = ρ^G/|c_m|` with `|c_m| < 1` unless `s_m = 0`), or R38.
-- **Proof route.** (6.74): `x^G_m = x^F_m` and `c_m ≠ 0` give `s_m²(x^G_{m−1} − x^F_m) = 0`; if `s_m = 0` then `r^G_m = 0` (R23) and `r^F_m = r^G_m/|c_m| = 0`; if `s_m ≠ 0` then `x^G_{m−1} = x^F_m ∈ x₀ + 𝒦_{m−1}` ⇒ … ⇒ `r^F_m ⟂ 𝒦_m` and `r^F_m ∈ 𝒦_m` (Galerkin residual at step `m−1` lies in `𝒦_m`), so `r^F_m = 0`.
-- **Status.** `direct` (from R33–R38).
+- **Proof route.** (6.74): `x^G_m = x^F_m` and `c_m ≠ 0` give `s_m²(x^G_{m−1} − x^F_m) = 0`; if
+  `s_m = 0` then `r^G_m = 0` (R23) and `r^F_m = r^G_m/|c_m| = 0`; if `s_m ≠ 0` then
+  `x^G_{m−1} = x^F_m ∈ x₀ + 𝒦_{m−1}` ⇒ … ⇒ `r^F_m ⟂ 𝒦_m` and `r^F_m ∈ 𝒦_m` (Galerkin residual at
+  step `m−1` lies in `𝒦_m`), so `r^F_m = 0`.
+- **Classification.** `direct` (from R33–R38).
 
 ### R77. P-6.14 — Prop 6.12 from (6.75)
-- **Book statement.** Derive (6.63) from `r_m^G = s_m² r_{m−1}^G + c_m² r_m^F` using orthogonality of the two vectors on the right.
-- **Lean surface statement.** `theorem p_6_14 (hm) (hH) : inner (rG (m-1)) (rF m) = 0 ∧ (ρG m)^2 = s^4 (ρG (m-1))^2 + c^4 (ρF m)^2` and hence `ρF m = ρG m / |c_m|`.
-- **Backbone item.** 3.6 (6.75) spec form; 3.4 `IsGalerkinIterate.residual_mem_span`, `IsMinRes.residual_eq` ✓.
-- **Proof route.** `r^F_m ∈ span{v_{m+1}} ⟂ 𝒦_m` and `r^G_{m−1} ∈ 𝒦_m`; Pythagoras plus `c_m² + s_m² = 1` and R32.
-- **Status.** `direct`.
+- **Book statement.** Derive (6.63) from `r_m^G = s_m² r_{m−1}^G + c_m² r_m^F` using orthogonality of
+  the two vectors on the right.
+- **Lean surface statement.** `theorem p_6_14 (hm) (hH) : inner (rG (m-1)) (rF m) = 0 ∧ (ρG m)^2 = s^4 (ρG (m-1))^2 + c^4 (ρF m)^2`
+  and hence `ρF m = ρG m / |c_m|`.
+- **Backbone item.** §3.6 `Krylov.minRes_eq_combination` (R38); §3.4
+  `Krylov.IsGalerkinIterate.residual_mem_span`, §2.4.1 `IsMinRes.residual_eq`.
+- **Proof route.** `r^F_m ∈ span{v_{m+1}} ⟂ 𝒦_m` and `r^G_{m−1} ∈ 𝒦_m`; Pythagoras plus
+  `c_m² + s_m² = 1` and R32.
+- **Classification.** `direct`.
 
 ### R78. P-6.22 — see R16.
 
@@ -1064,118 +1748,48 @@ plan (§1.2) deliberately leaves the object there; `GAP` = no backbone route in 
 ### R80. P-6.26 — see R42.
 
 ### R81. P-6.29 — Hessenberg matrices of IOP and Arnoldi
-- **Book statement.** Let `S_m` be the unit upper triangular matrix of the Gram–Schmidt process applied to the IOP basis `V_m` (as in the proof of Thm 6.11). Then `H̄_m^G = S_{m+1}^{-1} H̄_m^Q S_m`.
-- **Lean surface statement.** `theorem p_6_29 (hV : (VI … (m+1)).rank = m + 1) : Hbar A v₁ m = (S (m+1))⁻¹ * HbarI A v₁ k m * S m` where `S j` is the (unit upper triangular) change of basis with `VI j = V j * S j`.
-- **Backbone item.** 3.2 `Arnoldi.span_vec` ✓ (both bases span the same flag); G8.
-- **Proof route.** `A V^Q_m = V^Q_{m+1} H̄^Q_m` and `V^Q_j = V^G_j S_j` (same flag, both leading coefficients positive) give `A V^G_m S_m = V^G_{m+1} S_{m+1} H̄^Q_m`, and `A V^G_m = V^G_{m+1} H̄^G_m` with `V^G_{m+1}` injective.
-- **Status.** `surface-only`.
+- **Book statement.** Let `S_m` be the unit upper triangular matrix of the Gram–Schmidt process
+  applied to the IOP basis `V_m` (as in the proof of Thm 6.11). Then `H̄_m^G = S_{m+1}^{-1} H̄_m^Q S_m`.
+- **Lean surface statement.** `theorem p_6_29 (hV : (VI … (m+1)).rank = m + 1) : Hbar A v₁ m = (S (m+1))⁻¹ * HbarI A v₁ k m * S m`
+  where `S j` is the (unit upper triangular) change of basis with `VI j = V j * S j`.
+- **Backbone item.** §3.2 `Arnoldi.span_vec` (both bases span the same flag);
+  `InnerProductSpace.eq_gramSchmidtNormed_of_re_inner_pos` (`Numlib/InnerProductSpace/GramSchmidt.lean`)
+  for the identification of the Gram–Schmidt basis of the IOP flag with `Arnoldi.vec`.
+- **Proof route.** `A V^Q_m = V^Q_{m+1} H̄^Q_m` and `V^Q_j = V^G_j S_j` (same flag, both leading
+  coefficients positive) give `A V^G_m S_m = V^G_{m+1} S_{m+1} H̄^Q_m`, and `A V^G_m = V^G_{m+1} H̄^G_m`
+  with `V^G_{m+1}` injective.
+- **Classification.** `surface-only`.
 
 ### R82. P-6.9 — see R39 (the surface proves Prop 6.17 via the backbone; P-6.9 asks for exactly this proof).
 
 ### R83. P-6.17 — see R51. P-6.19 (Lanczos coefficients from Alg 6.19) — left out (§5).
 
-## Gaps and requests to the backbone
+## 4. Deferred backbone items
 
-Numbered `G1`–`G14`; each says why the current backbone item cannot be specialized and proposes the
-change. `G1`–`G12` are phase-1 requests (small unless noted); `G13`–`G14` are phase-2/3 gaps.
+Backbone items scheduled for later phases of `plans/backbone.md` (§7) on which some Chapter 6
+results depend. Each is stated as a plan; the affected results are classified `deferred` above and
+the corresponding surface theorems are written once the item exists.
 
-1. **G1 — transport for a general "Hessenberg relation" basis (3.5).** The book proves (6.6)/(6.7),
-   Prop 6.7/(6.18), (6.27), (6.41)/(6.50) and (6.55) *without orthogonality* and then reuses them
-   for IOP/IOM/DIOM (§6.4.2), QGMRES/DQGMRES (§6.5.6) and — in Ch. 7 — for the bi-Lanczos basis of
-   QMR (backbone 3.12 already anticipates "instances of 3.5–3.6 with a non-orthonormal basis").
-   3.5 as planned is stated for `Arnoldi.vec` only, so R13, R26, R29, R30 cannot be specialized.
-   Proposal: `structure Krylov.HessenbergRelation (A : E →ₗ[𝕜] E) (v : ℕ → E) (h : ℕ → ℕ → 𝕜) : Prop`
-   with fields `apply_eq : ∀ j, A (v j) = ∑ i ∈ range (j+2), h i j • v i`, `h_zero : j+1 < i → h i j = 0`,
-   `norm_one`, `h_succ_self_nonneg`; state `residual_eq_of_mulVec_eq` (Galerkin-type residual
-   `= −h_{m+1,m} y_m v_{m+1}`), `residual_eq_mulVec` ((6.27) form), and the Givens residual
-   `= γ_{m+1} · (V_{m+1} Q_mᴴ e_{m+1})` for it; `Arnoldi.hessenbergRelation` is the instance, and the
-   orthonormal corollaries (`‖·‖ = |γ_{m+1}|`, (6.28)) follow by adding `Orthonormal`.
-2. **G2 — band structure from `A† v ∈ 𝒦_s(A, v)` (3.2/3.3).** Prop 6.22 needs
-   `Arnoldi.coeff_eq_zero_of_adjoint_mem (hs : ∀ v, A† v ∈ 𝒦[A, v] s) (h : i + s ≤ j) : coeff A b i j = 0`
-   (`A†` = `LinearMap.adjoint` in finite dimension, or a hypothesis `∀ x y, ⟪A x, y⟫ = ⟪x, B y⟫` at L1).
-   Its `s = 2` case is `coeff_eq_zero_of_isSymmetric`, so it should *replace* that lemma's proof
-   (Lanczos tridiagonality becomes a corollary); it is also the hook for Saad Ch. 9's skew-symmetric CG.
-3. **G3 — Prop 6.3 for an arbitrary projector (2.1.6).** `aeval_compression_krylov` is planned for the
-   orthogonal compression; the book's Prop 6.3 (and Saad-eig Prop 4.3/6.4 for oblique Rayleigh–Ritz)
-   uses *any* projector `Q` onto `𝒦_m`. Proposal: state it for `Q : E →ₗ[𝕜] E`, `IsIdempotentElem Q`,
-   `range Q = K` (the proof only uses `Q x = x` on `K` and `A 𝒦_m ⊆ 𝒦_{m+1}`), with the
-   `starProjection` and `obliqueProjection` (2.1.7) instances as corollaries.
-4. **G4 — grade = degree of the minimal polynomial (3.1, promised for phase 2, needed now).** The
-   book *defines* the grade as the minimal-polynomial degree; the surface `grade` is `Nat.find` over
-   monic annihilators. Request `Krylov.pow_apply_mem_subspace_iff_exists_monic :
-   (A ^ m) v ∈ 𝒦[A, v] m ↔ ∃ p : K[X], p.Monic ∧ p.natDegree = m ∧ aeval A p v = 0` (from
-   `mem_subspace_iff_exists_aeval` ✓), hence `grade_eq_natDegree_minpolyVec`; the bundled
-   `Krylov.minpolyVec` (monic generator of the annihilator in `Module.AEval'`) can stay in phase 2.
-5. **G5 — converse of lucky breakdown (3.4).** Prop 6.10 (⇐) and P-6.13 need
-   `Krylov.grade_le_of_apply_eq (hx : x - x₀ ∈ 𝒦[A, b - A x₀] m) (hAx : A x = b) : grade A (b - A x₀) ≤ m`
-   (no injectivity needed: `r₀ = A q(A) r₀` gives the annihilator `1 − X q`). Ten lines next to
-   `IsMinResIterate.apply_eq_of_grade_le`.
-6. **G6 — FOM well-definedness ⇔ `H_m` nonsingular (3.5).** The plan has `isGalerkinIterate_of_mulVec_eq`
-   (one direction). Props 6.12–6.17 and Lemma 6.16 carry the hypothesis "`H_m` nonsingular"
-   (`FOMDefined`), and Brown's Prop 6.17 is stated with it. Request, for `m ≤ grade`:
-   `(∃! x, IsGalerkinIterate A b x₀ m x) ↔ IsUnit (Arnoldi.hessenbergSq A r₀ m)`,
-   `IsGalerkinIterate A b x₀ m x ↔ ∃ y, hessenbergSq.mulVec y = ‖r₀‖ • e₁ ∧ x = x₀ + ∑ y_j v_j`, and the
-   residual formula `b − A x = −(coeff (m+1) m * y (last)) • vec m` (Prop 6.7) as a backbone lemma
-   (it is the `Arnoldi` instance of G1). Brown's theorem in 3.6 should be phrased with `IsUnit (hessenbergSq …)`.
-7. **G7 — explicit, prefix-stable Givens constructor (2.1.10).** `HessenbergQR` is a bundle "some
-   rotations with `Q H = R`"; Saad's `c_m, s_m, γ_m` (and Choi §2.2.3, Fong–Saunders §4.2) are the
-   *specific* ones of (6.37)/(6.81), and every relation of §6.5.7 (`ρ^F_m = ρ^G_m/|c_m|`, Lemma 6.16,
-   (6.74)–(6.75)) and of §6.5.6 (DQGMRES) mixes rotations of `H̄_m` and `H̄_{m+1}`. Request:
-   `HessenbergQR.givens (H : Matrix (Fin (m+1)) (Fin m) 𝕜) : HessenbergQR H` defined by the
-   progressive recursion, with `c i, s i` (`s` real `≥ 0`, degenerate case `c = 1, s = 0`),
-   `γ_{i+1} = −s_i γ_i`, `‖g − R y‖` (6.43), and the **prefix lemma**: the rotations/`γ_i` (`i ≤ m`)
-   computed for `H̄_{m+1}` restricted to its first `m` columns equal those of `H̄_m`. Also the
-   identification `|c_m| = ‖r_m^G‖/‖r_m^F‖`, `|s_m| = ‖r_m^G‖/‖r_{m−1}^G‖` so that the spec-level
-   3.6 relations and the Givens-level book statements meet (R32–R39). Reality/nonnegativity of
-   `s_i`, diag `R`, `γ_i` for the complex convention (6.80) should be part of it (§6.5.9).
-8. **G8 — uniqueness of orthonormal bases of a flag (`ForMathlib/InnerProductSpace/GramSchmidt.lean`).**
-   MGS (R9), Householder Arnoldi (R10, P-6.1(f)), block-Arnoldi variants (R72) and P-6.29 all reduce
-   to: if `u` is orthonormal and `span{u_0..u_j} = span{f_0..f_j}` for all `j`, then
-   `u_j = ε_j • gramSchmidtNormed 𝕜 f j` with `‖ε_j‖ = 1`; and if moreover `⟪u_j, f_j⟫ > 0`
-   (`= ‖w_j‖`-normalization) then `ε_j = 1`. Mathlib has `span_gramSchmidt_Iic` and
-   `gramSchmidt_of_orthogonal` but not this characterization. Serves Choi/Fong–Saunders "same method,
-   different implementation" arguments too.
-9. **G9 — residual smoothing as theorems (3.6).** The D7 proof of Cullum–Greenbaum constructs the
-   minimal-residual smoothing of a Galerkin sequence and shows it *is* the minimal-residual sequence;
-   R42 (and P-6.26) need that statement exported:
-   `Krylov.IsGalerkinIterate.mrs_isMinResIterate (hO : ∀ m, IsGalerkinIterate A b x₀ m (xO m)) : ∀ m, IsMinResIterate A b x₀ m (mrs xO m)`
-   with `mrs` = Alg 6.14 (Weiss's `η_m`), plus the convex-combination formula (6.79)
-   `r^S_m = (∑_{j≤m} r^O_j/ρ_j²)/(∑_{j≤m} 1/ρ_j²)` for pairwise-orthogonal `r^O_j`.
-10. **G10 — three-term CG with the book's coefficients (3.7).** The plan lists "three-term residual
-    recurrence (Saad Alg 6.19 / Meurant (3.3))" without fixing the coefficient form. R51 needs
-    exactly (6.96)–(6.98): `r_{m+1} = ρ_m(r_m − γ_m A r_m) + (1 − ρ_m) r_{m−1}` with
-    `γ_m = ⟪r_m, r_m⟫/⟪A r_m, r_m⟫` and `ρ_m = (1 − (γ_m/γ_{m−1})(‖r_m‖²/‖r_{m−1}‖²)/ρ_{m−1})⁻¹`,
-    `ρ_0 = 1`, and the same recurrence for `x`. Request the backbone theorem in this form (Meurant's
-    form can be a corollary), valid while `r_j ≠ 0`.
-11. **G11 — constants of Thm 6.30 / (5.15) (2.1.4, 2.4.3).** `restarted_minRes_tendsto` and
-    `norm_residual_minResStep_le` are stated with an abstract coercivity constant `c` and `‖A‖`.
-    The book's rate uses `μ = λ_min((A + Aᵀ)/2)` and `σ = ‖A‖₂`. Request
-    `LinearMap.IsSymmetricCoercive.coercive_const_eq_iInf_eigenvalues` (planned) *for the symmetric
-    part* `½(A + A†)`: `re⟪A x, x⟫ = ⟪½(A + A†) x, x⟫ ≥ λ_min(½(A+A†)) ‖x‖²`, and the matrix glue
-    `‖toEuclideanLin A‖ = ‖A‖₂` (`Matrix.Norms.L2Operator`, Mathlib `Matrix.l2_opNorm_def`).
-12. **G12 — matrix ↔ `EuclideanSpace` glue (`ForMathlib/Matrix/ToEuclideanLin.lean`).** Every surface
-    file needs: `toEuclideanLin_pow`, `toEuclideanLin_mul`, `toEuclideanLin_conjTranspose = adjoint`,
-    `Krylov.subspace (toEuclideanLin A) v m = span (range fun i => toEuclideanLin (A^i) v)`,
-    `(toEuclideanLin A).IsSymmetric ↔ A.IsHermitian`, `Matrix.posDef_iff_isSymmetricCoercive` ✓,
-    `Module.End.HasEigenvalue (toEuclideanLin A) μ ↔ ∃ i, hA.eigenvalues i = μ` for Hermitian `A`
-    (Mathlib `Matrix.IsHermitian.eigenvalues_eq`, `mulVec_eigenvectorBasis`), and column/vector
-    conversions `Matrix.toEuclideanLin V (toLp y) = ∑ y_j • col_j` used to move between the book's
-    `V_m y` and the backbone's `∑ y_j • vec j`. Saad Ch. 1/4/5 surfaces need the same file.
-13. **G13 — phase-2/3 gaps (no phase-1 request).** Lemma 6.26, Thm 6.27, Cor 6.33 and the ellipse
-    maximum (2.1.9 "complex ellipse results … phase 3"); §6.6.2 (d)–(e) (4.2
-    `Arnoldi.charpoly_compression_isMinOn`, 3.12 `OrthogonalPolynomials`); Lemma 6.23 / R57(second
-    half) / Thm 6.24 (normal-matrix theory: Saad Lemma 1.15 and "minpoly degree = number of distinct
-    eigenvalues for normal `A`", candidate `Eigen/Normal.lean`); §6.12 block relations (3.12
-    `Krylov/Block.lean`). Thm 6.24 is stated without proof in the book and has no backbone route at
-    all (§5).
-14. **G14 — CR/GCR beyond SPD (3.8).** The book's CR is for *Hermitian* `A` and GCR/ORTHODIR for
-    general `A`; the backbone's `CR.isMinResIterate` assumes `IsSymmetricCoercive`. Request the
-    "no-breakdown" form (3.11 mentions it for Steihaug): for symmetric `A`, if `⟪r_j, A r_j⟫ ≠ 0`
-    and `A p_j ≠ 0` for `j < k`, then the invariants and `IsMinResIterate … k` hold; and for
-    `Krylov.isMinResIterate_of_orthogonal_directions` (Lemma 6.21) make the hypotheses exactly the
-    book's (basis of each `𝒦_j`, `⟪A p_i, A p_k⟫ = 0`, `A p_i ≠ 0`), with no symmetry assumption.
+1. **Complex Chebyshev polynomials on ellipses** (§2.1.9, phase 3): Zarantonello's circle lemma
+   (Lemma 6.26, R62), the ellipse bound (Thm 6.27, R63) with the maximum of the shifted Chebyshev
+   polynomial on `E(c, d, a)`, and their GMRES consequence (Cor 6.33, R70). Natural home:
+   `Numlib/Polynomial/ChebyshevMinimax.lean` (complex part) or a sibling `ChebyshevEllipse.lean`.
+2. **Normal-matrix theory** (§3.12 candidate `Eigen/Normal.lean`, phase 3): normal ⟺ every
+   eigenvector of `A` is an eigenvector of `A^H` (Saad Lemma 1.15), the spectral theorem for normal
+   matrices in the form "Schur form is diagonal", and `natDegree (minpoly ℂ A)` = number of distinct
+   eigenvalues for normal `A`. Needed by R57 (second half), Lemma 6.23 (R58) and Thm 6.24 (R59; the
+   book states it without proof, and the known proofs are research-level, so it stays a
+   docstring-only mention until the theory exists).
+3. **Ritz values and orthogonal polynomials** (phase 2): `Arnoldi.charpoly_compression_isMinOn`
+   (§4.2, the characteristic polynomial of `H_m`/`T_m` minimizes `‖p(A) v₁‖` over monic `p` of
+   degree `m`) and `Krylov/OrthogonalPolynomials.lean` (§3.12, Lanczos polynomials and
+   `p_{T_m}(A) v_1 = β_2 ⋯ β_{m+1} v_{m+1}`). Needed by §6.6.2 (d)–(e) (R46).
+4. **Block Krylov methods** (§3.12 `Krylov/Block.lean`, phase 3): block Arnoldi (Alg 6.22–6.24) with
+   the block Hessenberg relation (6.129)–(6.130), the equivalence of the block and Ruhe variants,
+   and the block-FOM/GMRES coordinate forms (6.135)–(6.136). Needed by R71–R74; the specification
+   statements of R74 do not wait for it.
 
-## Left out
+## 5. Left out
 
 * Operation counts and storage tables: §6.3.2 table (GS/MGS/MGSR/HO flops), FOM cost/storage
   (§6.4), Householder-GMRES cost remarks (§6.5.2), DQGMRES `4n`/`2n` remarks, GCR "50% higher",
@@ -1187,45 +1801,47 @@ change. `G1`–`G12` are phase-1 requests (small unless noted); `G13`–`G14` ar
 * (6.112) as an approximation `≳` and (6.121) `≈`: only the inequality/identity parts are stated
   (R60, R63); the asymptotic remarks after Thm 6.27 ("Chebyshev polynomials are asymptotically
   optimal") are not theorems in the book.
-* Theorem 6.24 (Faber–Manteuffel): stated without proof; formalizing it is a research-level task
-  (G13). Recommend a docstring-only mention in `FaberManteuffel.lean`, no `sorry` in the library.
+* Theorem 6.24 (Faber–Manteuffel): stated without proof; formalizing it is a research-level task on
+  top of the deferred normal-matrix theory (§4). It appears in `FaberManteuffel.lean` as a docstring
+  mention only, with no `sorry` in the library.
 * The final remark of §6.10 (`ν(A) ≤ 1` iff `A` has minimal degree `≤ 1`, or is Hermitian, or
-  `A = e^{iθ}(ρI + B)` with `B` skew-Hermitian): "easy to show", not numbered; phase 3 with G13.
+  `A = e^{iθ}(ρI + B)` with `B` skew-Hermitian): "easy to show", not numbered; belongs with the
+  normal-matrix items of §4.
 * "QMRS applied to IOM/DIOM yields QGMRES/DQGMRES" (§6.5.8, "can easily be shown"): unnumbered,
-  heavy bookkeeping across D6/D9/D11; defer until DQGMRES is needed by a second source.
+  heavy bookkeeping across D6/D9/D11; postponed until DQGMRES is needed by a second source.
 * §6.5.9 alternatives for complex rotations (P-6.27) and the complex Householder GMRES (P-6.28):
   only the book's convention (6.80)–(6.81) is formalized (R20).
 * Problems not cited by the text: P-6.2 (defining `w_j`: absorbed into D4), P-6.4 (variant GMRES with
   triangular least squares), P-6.8, P-6.10–6.12 (step counts for specific `A`; nice exercises on
   `grade`, optional), P-6.18 (`det T_m = 1/∏ α_i`), P-6.19 (Lanczos coefficients from Alg 6.19),
-  P-6.20–6.21 (skew-symmetric `A`; P-6.21(b) is an instance of G2 with `s = 2`, Saad Ch. 9), P-6.23
-  (`|c_m| ≥ c > 0` ⇒ convergence of GMRES/DQGMRES/FOM), P-6.24 (residual in the basis `v_1..v_{m+1}`),
-  P-6.16(1)–(2) (alternative accumulation in Householder GMRES). None is required by a numbered result.
+  P-6.20–6.21 (skew-symmetric `A`; P-6.21(b) is `Arnoldi.coeff_eq_zero_of_adjoint_mem` with `s = 2`,
+  Saad Ch. 9), P-6.23 (`|c_m| ≥ c > 0` ⇒ convergence of GMRES/DQGMRES/FOM), P-6.24 (residual in the
+  basis `v_1..v_{m+1}`), P-6.16(1)–(2) (alternative accumulation in Householder GMRES). None is
+  required by a numbered result.
 * Notes and References.
 
-## OCR uncertainties
+## 6. Statement conventions
 
-* **(6.68), Prop 6.15:** OCR reads `ρ_m^G ≤ ρ^F_{m*} ≤ √m ρ_m^G`; the derivation just above
-  (`1/(ρ_m^G)² = ∑_{i=0}^m 1/(ρ_i^F)² ≤ (m+1)/(ρ^F_{m*})²`) gives `√(m+1)`. The plan states
-  `√(m+1)` (R36); check the printed page (no page image is available in `images/`, only figures).
-* **(6.79) and the display before it:** the sum `1/τ_j² = ∑_{i=0}^j 1/ρ_j²` should read `1/ρ_i²`,
-  and (6.79)'s sums should start at `j = 0` (they include `r_0^S = r_0^O`); the plan uses `j = 0`
-  (R41). The book's own printed text may have the `j = 1` typo.
-* **(6.103):** the displayed tridiagonal matrix is garbled (first row shows `γ_0/α_1` and repeated
-  `√β_1/α_1` entries). The plan uses the entrywise formulas (6.101)–(6.102) and
-  `η_{j+1} = √β_{j−1}/α_{j−1}` from the text (R52).
+Places where the formal statement fixes a detail the printed text leaves loose or states
+differently; the choice is recorded here so that the semantic-alignment check has a reference.
+
+* **(6.68), Prop 6.15:** stated with the constant `√(m+1)` (R36): the derivation
+  `1/(ρ_m^G)² = ∑_{i=0}^m 1/(ρ_i^F)² ≤ (m+1)/(ρ^F_{m*})²` gives `√(m+1)`, which is also the constant
+  of the backbone's `Krylov.exists_norm_residual_galerkin_le`.
+* **(6.79) and the display before it:** the sums run over `j = 0, …, m` (they include
+  `r_0^S = r_0^O`) and `1/τ_j² = ∑_{i=0}^j 1/ρ_i²` (R41), matching `Krylov.residual_mrs_eq`.
+* **(6.103):** the plan uses the entrywise formulas (6.101)–(6.102) and `η_{j+1} = √β_{j−1}/α_{j−1}`
+  from the text rather than the displayed matrix (R52).
+* **Alg 6.19 / (6.98):** the iterate recurrence is `x_{j+1} = ρ_j(x_j + γ_j r_j) + (1 − ρ_j) x_{j−1}`,
+  the form forced by (6.96) and `r = b − A x` (`CG.iterate_succ_eq_three_term`).
 * **Prop 6.22 / Lemma 6.23:** Prop 6.22 is stated with `Aᵀ` (real) and Lemma 6.23 with `A^H`
   (complex); the paragraph between them switches from `Aᵀ = q(A)` to `A^H = q(A)`. The plan states
   Prop 6.22 over `ℝ` with `adjoint` (= transpose) and Lemma 6.23 over `ℂ` (R56–R58).
-* **Lemma 6.21:** `{p_0, p_1, − …, p_{j−1}}` has a stray dash; read as `{p_0, …, p_{j−1}}`.
-* **Thm 6.25:** "non-empty interval `[α, β]`" must mean nondegenerate (`α < β`), since (6.113)
-  divides by `β − α`; stated with `α < β` (R61).
-* **Alg 6.2/6.6/6.7 headers** (`mD`, `jDo`), Alg 6.3 "line 6/8" references, and the DQGMRES proof
-  line "1. `a + √(m−k)·b ≤ …`" (stray "1.") are formatting noise.
-* **Block example in §6.12:** the displayed `H̄_6` has duplicated `h_{56}` entries in row 6; irrelevant
-  to the statements.
-* **P-6.1(c):** says `Q_{j+1}ᵀ e_i = v_i` for `i < j`, while (6.13) has `i ≤ j + 1`; the plan uses (6.13).
-* **§6.5.8, (6.78):** the last displayed equality in the proof of Lemma 6.18 has
-  `‖r^S_{m−1}‖₂ ‖r^O_m‖₂²` in the numerator where `‖r^S_{m−1}‖₂² ‖r^O_m‖₂²` is meant (harmless).
-* **Prop 6.9:** hypothesis "`m ≤ n`" is printed; the proof also needs `m` Arnoldi steps to have been
-  completed (`m ≤ grade`), which the plan makes explicit.
+* **Thm 6.25:** "non-empty interval `[α, β]`" is read as nondegenerate (`α < β`), since (6.113)
+  divides by `β − α` (R61).
+* **P-6.1(c):** the plan uses the range `i ≤ j + 1` of (6.13) rather than the `i < j` printed in the
+  problem (R10).
+* **Prop 6.9:** the printed hypothesis "`m ≤ n`" is supplemented by "`m` Arnoldi steps completed"
+  (`m ≤ grade`), which the proof uses (R22).
+* **Prop 6.17:** the hypothesis `‖r^G_m‖ ≠ 0` ("makes no progress" at a nonzero residual) is made
+  explicit (R39), as is `H_m` nonsingular in Props 6.12–6.13 and Lemma 6.16 (`FOMDefined`).
