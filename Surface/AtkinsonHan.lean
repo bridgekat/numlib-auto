@@ -1,11 +1,16 @@
+import AtkinsonHan.Ch05.Calculus
+import AtkinsonHan.Ch05.ConjugateGradient
+import AtkinsonHan.Ch05.FixedPoint
+import AtkinsonHan.Ch05.LinearIteration
+import AtkinsonHan.Ch05.Newton
 import AtkinsonHan.Ch08.BilinearForms
 import AtkinsonHan.Ch08.Existence
-import AtkinsonHan.Ch08.LaxMilgram
 import AtkinsonHan.Ch08.GeneralizedLaxMilgram
+import AtkinsonHan.Ch08.LaxMilgram
+import AtkinsonHan.Ch09.CG
 import AtkinsonHan.Ch09.Galerkin
 import AtkinsonHan.Ch09.PetrovGalerkin
 import AtkinsonHan.Ch09.Strang
-import AtkinsonHan.Ch09.CG
 
 /-!
 # Surface library: Atkinson–Han, *Theoretical Numerical Analysis* (3rd ed.)
