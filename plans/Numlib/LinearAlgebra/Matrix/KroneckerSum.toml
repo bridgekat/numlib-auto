@@ -1,0 +1,57 @@
+namespace = "Matrix"
+desc = '''
+The Kronecker sum `A ⊗ I + I ⊗ B` and its spectrum, an upstreaming candidate (natural home:
+`Mathlib.LinearAlgebra.Matrix.Kronecker`, which has the Kronecker product with its ring and
+determinant lemmas but nothing about eigenvalues).
+
+Its consumer is the two-dimensional model problem: the five-point Laplacian on a rectangular grid
+with the natural ordering, Saad, *Iterative Methods for Sparse Linear Systems*, §2.2.5 and (2.26),
+is exactly the Kronecker sum of two one-dimensional discrete Laplacians of
+`Numlib/LinearAlgebra/Matrix/TridiagonalToeplitz`, and its eigenvalues are the pairwise sums of
+theirs. The book never writes either fact - it displays the block matrix and, in §2.2.6, only the
+spectrum of the diagonal block - so this module supplies what the surface needs to state that the
+displayed matrix and the Kronecker sum agree.
+
+Nothing here is hard. `(A ⊗ I + I ⊗ B) (u ⊗ v) = (A u) ⊗ v + u ⊗ (B v)` is
+`Matrix.mul_kronecker_mul` read on vectors; the eigenvalue statement is one line from it; and the
+orthonormal-basis statement for symmetric `A` and `B` is the observation that a tensor product of
+orthonormal families is orthonormal. The only friction is index bookkeeping between
+`Matrix (m × n) (m × n)` and the surface's `Fin (n₁ * n₂)`, which the surface handles with a
+`Fin`-product equivalence and `Matrix.reindex`.
+'''
+
+[[node]]
+id = "kroneckerSum"
+kind = "definition"
+desc = '''`Matrix.kroneckerSum A B : Matrix (m × n) (m × n) R := A ⊗ₖ 1 + 1 ⊗ₖ B`, with scoped notation
+`A ⊕ₖ B`, and the entry lemma `kroneckerSum_apply`. Symmetry, Hermitianness and the transpose are
+inherited entrywise (`kroneckerSum_isSymm`, `kroneckerSum_transpose`).'''
+
+[[node]]
+id = "kroneckerSum_mulVec_kron"
+kind = "theorem"
+desc = '''`kroneckerSum A B *ᵥ (fun p => u p.1 * v p.2) = (fun p => (A *ᵥ u) p.1 * v p.2) +
+(fun p => u p.1 * (B *ᵥ v) p.2)`, the action of the Kronecker sum on an elementary tensor. One
+`Finset.sum_product` away from `Matrix.mul_kronecker_mul`.'''
+deps = ["kroneckerSum"]
+
+[[node]]
+id = "kroneckerSum_mulVec_kron_of_eigenvector"
+kind = "theorem"
+desc = '''Eigenvalues of a Kronecker sum add: from `A *ᵥ u = lam • u` and `B *ᵥ v = mu • v`,
+`kroneckerSum A B *ᵥ (fun p => u p.1 * v p.2) = (lam + mu) • (fun p => u p.1 * v p.2)`; with
+`u ≠ 0` and `v ≠ 0` the tensor is nonzero, so `lam + mu` is an eigenvalue. Applied to
+`Numlib/LinearAlgebra/Matrix/TridiagonalToeplitz` this is the spectrum
+`λ_{k,l} = b + 2a cos θ_k + b'' + 2a'' cos θ_l` of the two-dimensional five-point Laplacian.'''
+deps = ["kroneckerSum_mulVec_kron"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 2.2.5 (the matrix displayed there)"
+
+[[node]]
+id = "kroneckerSum_orthonormalBasis"
+kind = "theorem"
+desc = '''For real symmetric `A` and `B` with orthonormal eigenbases `u_k` and `v_l`, the tensors
+`p ↦ u_k p.1 * v_l p.2` form an orthonormal eigenbasis of `kroneckerSum A B`, so its spectrum is
+exactly the set of pairwise sums and `kroneckerSum A B` is positive definite as soon as `A` and
+`B` are. This is what turns the eigenvalue statement above into the *complete* spectrum, which
+the surface needs for the condition number of the two-dimensional model problem.'''
+deps = ["kroneckerSum_mulVec_kron_of_eigenvector"]

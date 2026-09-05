@@ -1345,3 +1345,87 @@ states it.
    every `x₀` although `A` is not positive definite (R-4.21).
 8. **Prop 5.1 proof** cites "see Chapter 1" for "`A` positive definite ⇒ `VᵀAV` positive definite";
    no numbered statement there covers the non-symmetric case — R-5.5 supplies it.
+
+---
+
+## 6. Extension: §1.1–1.10, Chapter 2, Chapter 3 and §4.3
+
+Added with the plan of the rest of Saad Ch. 1–4. The result-by-result tables live in
+`plans/proposals/saadlow.md` §4 and the per-file reasoning in the group descriptions of
+`plans/NumlibSurface/SaadSparse/Chapter01/{Basics,Section07,Section08,Section09,Section10}.toml`,
+`Chapter02/{Section02,Section05}.toml`, `Chapter03/{Section02,Section03}.toml` and
+`Chapter04/Section03.toml`. What follows is only what those files cannot hold: the readings of
+ambiguous statements, and the shape of the new surface.
+
+### 6.1 New files
+
+| File | Book |
+|---|---|
+| `Chapter01/Basics.lean` | §1.1–1.6: Prop 1.2–1.4, (1.2), (1.5), (1.13)–(1.16), (1.18), Example 1.1 |
+| `Chapter01/Section07.lean` | §1.7: Gram–Schmidt, (1.19) QR, (1.20)–(1.28) Householder, Alg 1.3 |
+| `Chapter01/Section08.lean` | §1.8: Def 1.5, Thm 1.6–1.12 (Thm 1.8 left out) |
+| `Chapter01/Section09.lean` | §1.9: Lemma 1.13–Thm 1.22, the field of values, the numerical radius |
+| `Chapter01/Section10.lean` | §1.10: Def 1.23–Thm 1.33 |
+| `Chapter02/Section02.lean` | §2.2: truncation errors, the model matrices, upwind, the fast Poisson spectra |
+| `Chapter02/Section05.lean` | §2.5: the finite volume sign structure |
+| `Chapter03/Section02.lean` | §3.2: the adjacency graph, patterns of products |
+| `Chapter03/Section03.lean` | §3.3: Def 3.1, Prop 3.2, relabelling, the three reorderings, irreducibility |
+| `Chapter04/Section03.lean` | §4.3: Alg 4.3, (4.50)–(4.52), the convergence theorem |
+
+`Chapter01/Basics.lean` is named for its range rather than a section number because §1.1–1.6
+contribute three propositions between them and do not deserve six files; the group description
+lists what is a bare Mathlib citation and therefore has no node.
+
+### 6.2 Readings of the book's statements (continuing §5)
+
+9. **(1.18)** is printed as `ℂⁿ = Ran(A) ⊕ Null(Aᵀ)` in a complex setting. The transpose is a slip
+   for the conjugate transpose; the surface states it with `Aᴴ`, which is what the proof needs and
+   what `LinearMap.orthogonal_range` gives.
+10. **§1.5 (1.11)** is a display number with no equation attached — an artefact of the printing.
+    Nothing is stated as (1.11) and nothing cites it.
+11. **§1.3 "orthogonal matrix"** means, in this book, a matrix `Q` with `Qᴴ Q` *diagonal*, not the
+    identity. No other source in the corpus uses the word that way, and Problem P-1.4 depends on
+    it. The surface never uses the word; where the book says "orthogonal" in this sense the
+    statement is spelled out.
+12. **§1.7's Householder derivation** prints `‖x‖₁²` where `‖x‖₂²` is meant, and (1.25) prints
+    `z_i = β + x_ii` where `β + x_kk` is meant. Both are transcription errors and the surface uses
+    the correct forms, which are the ones Algorithm 1.3 needs.
+13. **Theorem 1.25** says the Perron eigenvalue is "simple". Only geometric simplicity is planned;
+    the book states the theorem without proof, and the algebraic statement has no consumer.
+14. **Proposition 1.18** asserts the convexity of the field of values (Toeplitz–Hausdorff) as a
+    known result. Only the containment half and the normal-matrix equality (Theorem 1.17) are
+    planned; see `plans/proposals/saadlow.md` §3.
+15. **§2.2.5's interior index range** is printed `0 < i < n₁`, off by one; the surface uses
+    `1 ≤ i ≤ n₁`. **§2.2.3's `1/h²` scaling** sits on the right-hand side in the scalar equation
+    and on the matrix in the display; only the matrix convention is used, and (2.26) scales it
+    away, which `laplacian2D_smul` relates. **(2.29)** is printed with its two indices transposed,
+    giving systems of the wrong size; the surface follows Algorithm 2.1 and states `p` systems of
+    size `m`. **(2.36)** writes `A` for `B`.
+16. **§2.5's (2.49)** is derived by integrating by parts against the indicator function of a cell,
+    which is not a valid test function for (2.39). The honest statement is the divergence theorem
+    on the cell, and the surface does not state (2.49) at all: it starts from the coefficients
+    (2.54)–(2.55), whose sign structure is the section's only theorem.
+17. **§3.2.1's claim about the pattern of `A^k`** is true only in the absence of numerical
+    cancellation, which Problem P-3.4 assumes and the text does not. The surface states the
+    unconditional implication and cites Mathlib for the equivalence on nonnegative matrices.
+18. **§3.3.3's level-set claim** ("at the exception of the first and the last levels, they are
+    graph separators") needs the graph to be undirected and connected; without connectedness the
+    traversal does not exhaust the vertices. Both hypotheses are added.
+19. **§3.3.3's second multicolouring claim** ("the algorithm will find two colours for any
+    traversal which, at a given step, visits an unmarked node adjacent to at least one visited
+    node") needs the graph connected, or the condition restated per component, and is false for an
+    arbitrary traversal — which is the point of Problem P-3.11(a). The surface states the
+    hypothesis explicitly, as Problem P-3.11(b) does.
+20. **§3.3.4** never says "strongly connected", but its "path" is directed and its "connected" is
+    "there is a path between any pair", so its notion *is* strong connectivity. Its block
+    triangular claim is stated without the topological-ordering condition that would make it the
+    Frobenius normal form; the surface states the two-block characterization, which is what the
+    word "reducible" means and what Chapter 4 uses.
+21. **§4.3's convergence claim** ("when `H` and `V` are symmetric positive definite, the stationary
+    iteration converges") is read as `ρ(G) < 1` for the `G` of (4.50), together with convergence of
+    the iterates for every `x₀` and every right-hand side. Commutativity of `H` and `V` is *not* a
+    hypothesis: it appears in §4.3 only in the sentence about the optimal parameter sequence, which
+    is not planned.
+22. **§4.3's time-stepping pair** after (4.56) is not the image of Algorithm 4.3 under `r = 2/Δt`;
+    the sign patterns differ. It is the standard alternating scheme for the semi-discretized
+    parabolic problem, and neither it nor (4.53)–(4.56) is planned.

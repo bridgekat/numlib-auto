@@ -1,0 +1,54 @@
+namespace = "SimpleGraph"
+desc = '''
+Distance spheres around a root and their separating property, an upstreaming candidate (natural
+home: `Mathlib.Combinatorics.SimpleGraph.Metric`, which has `dist`, `edist` and the triangle
+inequality but nothing about the spheres as separators).
+
+Serves Saad, *Iterative Methods for Sparse Linear Systems*, §3.3.3 - the level sets of a
+breadth-first traversal - and §3.6.2, where the same fact is the source of separators for nested
+dissection. Saad states it as "at the exception of the first and the last levels, they are graph
+separators ... this is easy to prove by contradiction", and leaves the hypotheses implicit; they
+are that the graph is undirected and that the vertices concerned are reachable from the root.
+
+The whole content is that an edge changes the distance to the root by at most one. The book's
+algorithmic level sets - the sets a breadth-first search marks at step `k` - are exactly the
+distance spheres, so no algorithm needs to be formalized; that identification is the reason the
+statements below are about `dist` and not about a traversal.
+'''
+
+[[node]]
+id = "dist_le_dist_add_one_of_adj"
+kind = "theorem"
+desc = '''`G.Adj u w → G.Reachable v u → G.dist v w ≤ G.dist v u + 1`: append the edge to a geodesic
+from `v` to `u`. With the symmetric consequence
+`SimpleGraph.abs_dist_sub_dist_le_one_of_adj`, `|dist v u - dist v w| ≤ 1` as integers, when both
+are reachable from `v`.'''
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 3.3.3"
+
+[[node]]
+id = "sphere"
+kind = "definition"
+desc = '''`SimpleGraph.sphere G v k : Set V := {u | G.Reachable v u ∧ G.dist v u = k}`, the `k`-th level
+set of a breadth-first traversal from `v`. With `sphere_zero`, the pairwise disjointness of the
+spheres, and `iUnion_sphere_eq` (they cover the connected component of `v`).'''
+
+[[node]]
+id = "not_adj_of_two_le_dist_sub_dist"
+kind = "theorem"
+desc = '''No edge joins two level sets whose indices differ by at least two: if `u ∈ sphere G v k` and
+`w ∈ sphere G v l` with `k + 2 ≤ l` then `¬ G.Adj u w`. One line from
+`dist_le_dist_add_one_of_adj`.'''
+deps = ["dist_le_dist_add_one_of_adj", "sphere"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 3.3.3"
+
+[[node]]
+id = "isSeparator_sphere"
+kind = "theorem"
+desc = '''Saad's separator statement: for `0 < k`, removing `sphere G v k` from the connected component
+of `v` leaves the union of the spheres of index below `k` and the union of those above with no
+edge between them. Stated as
+`∀ u ∈ ⋃ i < k, sphere G v i, ∀ w ∈ ⋃ i, sphere G v (k + 1 + i), ¬ G.Adj u w`, from
+`not_adj_of_two_le_dist_sub_dist`. Saad §3.6.2 restates this as the supply of separators for
+nested dissection.'''
+deps = ["not_adj_of_two_le_dist_sub_dist"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Sections 3.3.3 and 3.6.2"

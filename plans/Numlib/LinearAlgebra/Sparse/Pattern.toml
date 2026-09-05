@@ -1,0 +1,106 @@
+namespace = "Matrix"
+desc = '''
+The pattern of a matrix and the graph it defines: Saad, *Iterative Methods for Sparse Linear
+Systems*, §3.2 and §3.3.2, §3.3.4.
+
+Saad's adjacency graph has an arrow `i ⟶ j` when `a i j ≠ 0`; it is *directed* and it *has
+self-loops* at the nonzero diagonal entries, so `SimpleGraph` is the wrong carrier for it and
+Mathlib's `Digraph` is the right one. The undirected graph that the reorderings of §3.3.3 act on
+is a second object, obtained by symmetrizing and deleting the diagonal, and both are defined here
+so that no downstream statement has to choose.
+
+Two design points that a formalizer must get right:
+
+* Every statement of the book about the pattern of a *product* is only true up to numerical
+  cancellation. The honest form, and the one stated here, is the implication
+  `(A * B) i j ≠ 0 → ∃ k, A i k ≠ 0 ∧ B k j ≠ 0`, which needs no hypothesis; the converse holds
+  over an ordered semiring with entrywise nonnegative entries and is Mathlib's
+  `Matrix.pow_apply_pos_iff_nonempty_path`. Saad makes the assumption explicit only in Problem
+  P-3.4.
+* Saad's irreducibility is defined for arbitrary matrices, while Mathlib's `Matrix.IsIrreducible`
+  is only for nonnegative ones. The bridge is `A.map ‖·‖`, whose quiver has an arrow exactly where
+  `A` has a nonzero entry; `Matrix.IsPatternIrreducible` below is that composite, and the surface
+  plan of Saad §4.2.3 already uses it under the name of its D15.
+
+The one real theorem here is the reducibility characterization: a matrix is pattern-reducible
+exactly when a symmetric permutation puts it in block upper triangular form. The full Frobenius
+normal form - the diagonal blocks are the strongly connected components, in a topological order -
+is not planned: it needs a strongly-connected-component and topological-sort API for digraphs
+which Mathlib does not have, Saad states it without proof, and nothing in the corpus uses more
+than the two-block case.
+'''
+
+[[node]]
+id = "adjDigraph"
+kind = "definition"
+desc = '''`Matrix.adjDigraph A : Digraph n` with `Adj i j ↔ A i j ≠ 0`, Saad's adjacency graph (§3.2.1):
+directed, with a self-loop at every nonzero diagonal entry. With `adjDigraph_transpose`
+(`Aᵀ` reverses the arrows) and `adjDigraph_map` (the graph is unchanged by an entrywise injective
+map that fixes zero, in particular by `‖·‖` and by `Complex.ofReal`).'''
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 3.2.1"
+
+[[node]]
+id = "adjGraph"
+kind = "definition"
+desc = '''`Matrix.adjGraph A : SimpleGraph n := SimpleGraph.fromRel fun i j => A i j ≠ 0`, the
+undirected loopless graph of the pattern: `i` and `j` are adjacent when `i ≠ j` and one of
+`A i j`, `A j i` is nonzero. This is the graph the reorderings of Saad §3.3.3 act on, and for a
+matrix with a symmetric pattern it carries the same information as `adjDigraph` off the diagonal
+(`adjGraph_adj_iff_of_isSymm`).'''
+deps = ["adjDigraph"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 3.2.1"
+
+[[node]]
+id = "adjDigraph_submatrix_adj"
+kind = "theorem"
+desc = '''Saad §3.3.2, the reason symmetric permutations are relabellings: for `σ : Equiv.Perm n`,
+`(A.submatrix σ σ).adjDigraph.Adj i j ↔ A.adjDigraph.Adj (σ i) (σ j)`, which is definitional, and
+its packaged form `Matrix.adjGraphIso : (A.submatrix σ σ).adjGraph ≃g A.adjGraph` (a `def`, not a
+theorem). Corollaries worth stating alongside: a symmetric permutation preserves pattern symmetry,
+degrees, connectivity and colourability, and Saad's `A.submatrix σ σ = σ.permMatrix * A *
+(σ.permMatrix)ᵀ` through Mathlib's `PEquiv.toMatrix_toPEquiv_mul` and `mul_toMatrix_toPEquiv`.
+A *nonsymmetric* permutation does not preserve the graph, which is the book's warning and is
+recorded as a counterexample, not a theorem.'''
+deps = ["adjDigraph", "adjGraph"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 3.3.2"
+
+[[node]]
+id = "exists_apply_ne_zero_of_mul_apply_ne_zero"
+kind = "theorem"
+desc = '''The pattern of a product is contained in the composite of the patterns:
+`(A * B) i j ≠ 0 → ∃ k, A i k ≠ 0 ∧ B k j ≠ 0`, and by induction
+`(A ^ k) i j ≠ 0 → ∃ p : Quiver.Path i j, p.length = k` in `adjDigraph A`. No hypothesis is
+needed for this direction; the converse fails by cancellation (Saad's §3.2.1 claim, and his
+Problem P-3.4, assume it away) and holds for entrywise nonnegative matrices by Mathlib's
+`Matrix.pow_apply_pos_iff_nonempty_path`. Saad Problem P-3.5, `E_A ∪ E_B ⊆ E_{A B}` for matrices
+with nonzero diagonal, is the companion `subset_pattern_mul_of_diag_ne_zero`.'''
+deps = ["adjDigraph"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 3.2.1 and Problems P-3.4, P-3.5"
+
+[[node]]
+id = "IsPatternIrreducible"
+kind = "definition"
+desc = '''`Matrix.IsPatternIrreducible A : Prop := Matrix.IsIrreducible (A.map ‖·‖)`, Saad's
+irreducibility (§3.3.4) for a matrix over a normed ring: the adjacency digraph is strongly
+connected. The map to `‖·‖` is what lets Mathlib's `Matrix.IsIrreducible`, which is stated for
+nonnegative matrices only, carry an arbitrary pattern; `isPatternIrreducible_iff_nonempty_path`
+unfolds it back to `∀ i j, Nonempty (Quiver.Path i j)` in `adjDigraph A`, and
+`IsPatternIrreducible.submatrix` is its invariance under symmetric permutations. For an entrywise
+nonnegative real matrix it agrees with `Matrix.IsIrreducible`
+(`isPatternIrreducible_iff_isIrreducible`).'''
+deps = ["adjDigraph"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 3.3.4"
+
+[[node]]
+id = "isPatternIrreducible_iff_forall_submatrix_not_blockTriangular"
+kind = "theorem"
+desc = '''Saad §3.3.4: a matrix fails to be pattern-irreducible exactly when a symmetric permutation
+puts it in block upper triangular form, `¬ A.IsPatternIrreducible ↔ ∃ (σ : Equiv.Perm n) (s :
+Finset n), s.Nonempty ∧ s ≠ univ ∧ ∀ i ∈ s, ∀ j ∉ s, (A.submatrix σ σ) i j = 0` (indices split into
+a proper nonempty prefix and its complement, with the lower-left block zero). Forward: take `s` to
+be the set reachable from a vertex whose reachable set is not everything. Backward: no arrow
+leaves the complement of `s`, so no path returns. The full Frobenius normal form - the diagonal
+blocks are the strongly connected components in a topological order - is not planned; see the
+group description.'''
+deps = ["IsPatternIrreducible", "adjDigraph_submatrix_adj"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 3.3.4"

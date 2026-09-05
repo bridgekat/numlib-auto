@@ -1385,3 +1385,105 @@ value decomposition that Saad §8.1's `±σ_i` spectrum needs
 (`LinearAlgebra/Matrix/SVD` is phase 3).
 
 ---
+
+---
+
+## 12. The sparse-matrix and model-problem layers (Saad Ch. 1-4, the parts phase 1 left out)
+
+Added with the plan of Saad §1.1-§1.10, Ch. 2, Ch. 3 and §4.3 (`plans/proposals/saadlow.md` holds
+the coverage table and the skip list). Five arguments are worth keeping here, because they decided
+where the new modules sit.
+
+### 12.1 Nonnegative matrices are one theory in two places, on purpose
+
+`Numlib/LinearAlgebra/Matrix/PerronFrobenius` holds the order-monotonicity results (Saad
+Prop 1.24 clause 5, Cor 1.27, Thm 1.28) and the *irreducible* Perron-Frobenius theorem (Thm 1.25);
+`Numlib/LinearSolve/Stationary/RegularSplitting` keeps the *weak* Perron theorem, Thm 1.29 and
+`Matrix.IsMMatrix`. That split is not tidy and §1 of the proposal asks for it to be undone by
+moving the latter three up. It is nevertheless sound as it stands, and the reason is worth
+recording: the irreducible theorem does **not** imply the reducible one cheaply. Perturbing to
+`A + εJ` and letting `ε → 0` needs continuity of the spectral radius in the entries, which nothing
+in the library has; the resolvent argument planned in `RegularSplitting` (`(r - B)⁻¹ ≥ 0` for
+`r > ρ(B)`, normalize, extract a convergent subsequence) is a genuinely different proof. Neither
+module is redundant. What is *not* acceptable is a `LinearAlgebra/Matrix` module importing
+`LinearSolve`, which is why `PerronFrobenius` was written to depend on `Matrix/Order` and
+`Matrix/Complexify` alone.
+
+The Perron eigenvector is proved by Collatz-Wielandt maximization rather than by the resolvent,
+because the positivity of the eigenvector - which is the whole content of the irreducible case -
+comes out of `(1 + A) ^ (n - 1) > 0`, and that same lemma is the kernel of Saad's Problem P-3.12
+about structural inverses.
+
+### 12.2 The model problem is a Kronecker sum of tridiagonal Toeplitz matrices
+
+`Numlib/LinearAlgebra/Matrix/TridiagonalToeplitz` and `KroneckerSum` exist because the matrices of
+Saad Ch. 2 are cited by every later chapter and by every other book in the corpus, while the book
+states almost nothing about them: it gives the spectrum of the block `tridiag(-1, 4, -1)` of (2.27)
+and of nothing else - not of the one-dimensional Laplacian, not of the two-dimensional five-point
+matrix. Both follow from one trigonometric identity and one tensor argument, and the payoff is out
+of proportion to the cost: the `O(h⁻²)` condition number that motivates preconditioning, the
+spectral bounds every Chebyshev estimate of Ch. 6 is instantiated at, and the positive definiteness
+that Ch. 4's SPD theorems need, all become computations rather than assumptions.
+
+The two modules are separate because the Kronecker sum is a general construction with a general
+statement ("eigenvalues of a Kronecker sum add") whose natural Mathlib home is beside
+`Matrix.Kronecker`, while the sine basis is specific to the tridiagonal Toeplitz family. Neither
+module knows what a partial differential equation is; the claim that these matrices *discretize*
+anything is surface material, and Saad's derivation of them is not formalized at all.
+
+### 12.3 Graph theory is entered through Mathlib's vocabulary, not through matrices
+
+Saad Ch. 3's reorderings rest on three facts about a finite simple graph that Mathlib does not
+have: greedy colouring uses at most `maxDegree + 1` colours, a maximal independent set has at least
+`card V / (1 + maxDegree)` vertices, and the distance spheres around a root separate the graph.
+They are stated in `Numlib/Combinatorics/SimpleGraph/{Coloring,IndepSet,LevelSet}` with no matrix
+in sight, so that each can be upstreamed on its own; the matrix consequences - block
+tridiagonality of a level-set ordering, diagonal diagonal blocks of a multicolour ordering, the
+form (3.3) of an independent-set ordering - are `Numlib/LinearAlgebra/Sparse/Reordering`, and they
+are stated for the *labelling*, never for the algorithm that computes it. No traversal is
+formalized anywhere, and none needs to be: Algorithms 3.1-3.6 produce labellings with the stated
+property, and the theorems are about the property.
+
+Two modelling points the book forces, both settled in `Numlib/LinearAlgebra/Sparse/Pattern`. Saad's
+adjacency graph is directed and has self-loops at the nonzero diagonal entries, so it is a
+`Digraph`; `SimpleGraph` carries only the symmetrized loopless graph that §3.3.3 acts on, and both
+are defined so that no downstream statement has to choose. And every claim about the pattern of a
+product assumes away numerical cancellation: the unconditional half is what is stated, and the
+converse is cited from Mathlib for entrywise nonnegative matrices. Saad's irreducibility, which
+applies to arbitrary matrices unlike Mathlib's, is `Matrix.IsPatternIrreducible`, defined once here
+rather than inline in two surfaces.
+
+### 12.4 ADI is a Cayley transform, and needs no commutativity
+
+Saad §4.3 states no numbered result and asserts its convergence claim in one sentence. The claim is
+a theorem, and `Numlib/LinearSolve/Stationary/ADI` proves it from a single inequality: for `A`
+symmetric with `re ⟪A x, x⟫ ≥ c ‖x‖²` and `r > 0`,
+
+  `‖A x - r x‖² + 4 r c ‖x‖² ≤ ‖A x + r x‖²`,
+
+which is the expansion of both sides. It says the Cayley transform `(A - r)(A + r)⁻¹` is a strict
+contraction with an explicit factor, and the Peaceman-Rachford operator (4.50) is conjugate to a
+product of two of them. Three things fall out that the literature's framing obscures: the
+commutativity of `H` and `V` is not used anywhere (it belongs to the theory of the optimal
+parameter *sequence*, which the book only cites); the splitting identity (4.52) `M - N = H + V`
+needs no commutativity either, the `H V` terms cancelling; and the statement holds in any inner
+product space, matrices entering only through `Matrix.toEuclideanCLM`. The Cayley inequality is an
+upstreaming candidate in its own right and should move to
+`Numlib/Analysis/InnerProductSpace/Coercive` as soon as a second consumer appears.
+
+### 12.5 Where the corpus stops being numerical analysis
+
+Saad Ch. 2 is the sharpest test of the scope rule, and the answer is cleaner than expected. The
+chapter's finite element section states no Céa lemma, no Lax-Milgram theorem, no Poincaré
+inequality, no trace theorem and no convergence result, and it uses no property of `H¹(Ω)`: the
+Sobolev framing is decorative, and **no Sobolev theory is needed to formalize anything the chapter
+proves**. Its algebraic content - bilinearity, the nodal basis, the Galerkin reduction, the
+symmetry and positive definiteness of the stiffness matrix, the assembly `A = ∑ P_e A_{K_e} P_eᵀ` -
+is already in `Numlib/Variational/{Forms,Galerkin}` in abstract form, where the stiffness matrix is
+the Gram matrix of a basis in the energy inner product. What is missing is only the concrete space:
+a triangulation of a planar domain, piecewise-affine functions on it, integration over triangles,
+and Green's formula on a domain with a smooth boundary. That is plane geometry and measure theory,
+not numerical analysis, and it is where the chapter is left. The same line puts §2.1 (the partial
+differential equations), §2.4 (mesh refinement) and §3.4-§3.7 (storage formats, sparse
+matrix-vector products, direct-method heuristics) outside; the last group for a different reason,
+that it states no theorem at all.

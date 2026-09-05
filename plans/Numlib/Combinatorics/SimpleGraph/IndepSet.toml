@@ -1,0 +1,36 @@
+namespace = "SimpleGraph"
+desc = '''
+How large a maximal independent set must be, an upstreaming candidate (natural home:
+`Mathlib.Combinatorics.SimpleGraph.Clique`, beside `IsIndepSet` and `indepNum`).
+
+Serves Saad, *Iterative Methods for Sparse Linear Systems*, §3.3.3, where the bound is the whole
+justification for independent-set orderings: an independent set of size `s` gives a leading
+diagonal block of size `s` in the reordered matrix, so the bound says how much of the matrix a
+single elimination step can clear.
+
+Saad states the bound for the set his greedy algorithm produces. The argument he gives proves more
+and needs no algorithm: for *any* maximal independent set `S`, every vertex outside `S` is
+adjacent to a vertex of `S`, so the complement of `S` is covered by the neighbourhoods of the
+`|S|` vertices of `S`, and `card V - |S| ≤ (max degree) * |S|`. The module therefore states it for
+`Maximal G.IsIndepSet`, with the sharpening in which the degree bound is taken over `S` only,
+which is the second inequality Saad gives.
+'''
+
+[[node]]
+id = "card_le_mul_card_of_maximal_isIndepSet"
+kind = "theorem"
+desc = '''For a finite simple graph and a maximal independent set `s`,
+`Fintype.card V ≤ (G.maxDegree + 1) * s.card`, that is `|s| ≥ card V / (1 + maxDegree)`.
+Maximality gives `∀ v ∉ s, ∃ w ∈ s, G.Adj w v`, so `univ ⊆ s ∪ ⋃ w ∈ s, neighborFinset w` and the
+union is counted by `Finset.card_biUnion_le`.'''
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 3.3.3"
+
+[[node]]
+id = "card_le_mul_card_of_maximal_isIndepSet_of_forall_degree_le"
+kind = "theorem"
+desc = '''Saad's sharpening: if in addition `∀ w ∈ s, G.degree w ≤ nu` then
+`Fintype.card V ≤ (nu + 1) * s.card`, the degree bound being needed only on the members of the
+independent set. The same counting argument, with `nu` in place of `G.maxDegree`; it is what makes
+the heuristic "visit the low-degree vertices first" a statement rather than advice.'''
+deps = ["card_le_mul_card_of_maximal_isIndepSet"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 3.3.3"

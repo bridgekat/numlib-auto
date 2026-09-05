@@ -1,0 +1,50 @@
+namespace = "SaadSparse.Ch03"
+desc = '''
+Saad §3.2: the adjacency graph of a sparse matrix, and the relation between matrix products and
+paths.
+
+Two modelling decisions the book forces, both made in the backbone module
+`Numlib/LinearAlgebra/Sparse/Pattern` and only cited here. Saad's adjacency graph is *directed* and
+has a self-loop wherever a diagonal entry is nonzero - he says so explicitly in Problems P-3.4 and
+P-3.10 - so it is a `Digraph`, and `SimpleGraph` is used only for the symmetrized loopless graph
+that the reorderings of §3.3.3 act on. And every claim about the pattern of a product silently
+assumes no numerical cancellation; the unconditional half is stated, and the converse is recorded
+as holding for entrywise nonnegative matrices, where it is Mathlib's
+`Matrix.pow_apply_pos_iff_nonempty_path`.
+
+§3.2.2, the graphs of matrices arising from partial differential equations, states nothing: the
+claim that the adjacency graph is "often" the mesh graph is hedged and is set as Problem P-3.1, and
+the quotient-graph storage saving is a counting remark. It gets no node.
+'''
+
+[[node]]
+id = "adjDigraph_eq"
+kind = "theorem"
+desc = '''§3.2.1, the definition read at matrix level: the adjacency graph of `A` has an arrow from `i` to
+`j` exactly when `A i j ≠ 0`, and it is undirected - the symmetrization loses nothing off the
+diagonal - exactly when the pattern is symmetric, `A i j ≠ 0 ↔ A j i ≠ 0`. `Matrix.adjDigraph` and
+`Matrix.adjGraph` of `Numlib/LinearAlgebra/Sparse/Pattern` with
+`Matrix.adjGraph_adj_iff_of_isSymm`; a restatement in the book's words.'''
+deps = ["_root_.Matrix.adjDigraph", "_root_.Matrix.adjGraph"]
+
+[[node]]
+id = "pattern_pow"
+kind = "theorem"
+desc = '''§3.2.1 and Problem P-3.4: an edge of the graph of `A ^ k` is a path of length `k` in the graph of
+`A`. Unconditionally, `(A ^ k) i j ≠ 0 → ∃ p : Quiver.Path i j, p.length = k`; the converse needs
+the absence of numerical cancellation, which Problem P-3.4 assumes and which holds automatically
+for entrywise nonnegative matrices, where the equivalence is Mathlib's
+`Matrix.pow_apply_pos_iff_nonempty_path`. Problem P-3.2, that the pattern of `A + B` is contained
+in the union of the patterns with equality under the same assumption, is the companion
+`pattern_add`.'''
+deps = ["_root_.Matrix.exists_apply_ne_zero_of_mul_apply_ne_zero"]
+
+[[node]]
+id = "problem_3_5"
+kind = "theorem"
+desc = '''Problem P-3.5: if `A` and `B` are square with all diagonal entries nonzero, the pattern of
+`A * B` contains the union of the patterns of `A` and of `B`, again under the no-cancellation
+convention; a nonzero `A i j` pairs with `B j j`, and `A i i` with `B i j`. The book's practical
+point, that it is better to store `A` and `B` than their product, is a remark and gets no
+statement.'''
+deps = ["pattern_pow"]

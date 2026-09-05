@@ -1,0 +1,121 @@
+namespace = "SaadSparse.Ch01"
+desc = '''
+Saad §1.10: nonnegative matrices, the Perron-Frobenius theorem, and M-matrices (Definition 1.23,
+Proposition 1.24, Theorem 1.25, Proposition 1.26, Corollary 1.27, Theorems 1.28-1.29, Definition
+1.30, Theorems 1.31-1.33).
+
+Every statement here is about the entrywise order, which is `Matrix.EntrywiseLE` and
+`Matrix.EntrywiseNonneg` of `Numlib/LinearAlgebra/Matrix/Order` - **not** Mathlib's `≤` on
+`Matrix`, which is the Loewner order. The surface therefore states Definition 1.23 as an alias and
+spells the order out entrywise in every theorem, exactly as the Chapter 4 surface already does for
+Definition 4.3.
+
+The backbone carries the work: `Numlib/LinearAlgebra/Matrix/Order` has Proposition 1.24 clauses 2
+and 3 and Proposition 1.26; `Numlib/LinearAlgebra/Matrix/PerronFrobenius` has clause 5, Corollary
+1.27, Theorem 1.28 and the irreducible Perron-Frobenius theorem; and
+`Numlib/LinearSolve/Stationary/RegularSplitting` has the weak Perron theorem, Theorem 1.29 and
+`Matrix.IsMMatrix`, which is Definition 1.30 verbatim, so the surface introduces no M-matrix
+definition of its own. All of those are open nodes, so this whole file is blocked until they
+exist.
+
+Two honest limitations, both recorded on the nodes. Theorem 1.25 says the Perron eigenvalue is
+*simple*; only geometric simplicity is planned, algebraic simplicity needing an adjugate argument
+no other result in the corpus wants. And Proposition 1.24 clauses 1 and 4 - reflexivity,
+antisymmetry, transitivity of the order, and its compatibility with the transpose - are not yet
+nodes of `Matrix/Order`; `plans/proposals/saadlow.md` asks for them there rather than restating
+them here.
+'''
+
+[[node]]
+id = "proposition_1_24"
+kind = "theorem"
+desc = '''Proposition 1.24, the five clauses of the entrywise order, as a bundle of surface restatements
+of `Numlib/LinearAlgebra/Matrix/Order` and `Numlib/LinearAlgebra/Matrix/PerronFrobenius`: (1) the
+order is reflexive, antisymmetric and transitive; (2) sums and products of nonnegative matrices
+are nonnegative (`Matrix.EntrywiseNonneg.mul`); (3) powers of a nonnegative matrix are nonnegative
+(`Matrix.EntrywiseNonneg.pow`); (4) `A ≤ B → Aᵀ ≤ Bᵀ`; (5) `O ≤ A ≤ B → ‖A‖₁ ≤ ‖B‖₁` and
+`‖A‖_∞ ≤ ‖B‖_∞` (`Matrix.EntrywiseLE.linfty_opNorm_le`), with the `2`-norm form of Problem P-1.28
+(`Matrix.EntrywiseLE.l2_opNorm_le`). Clauses 1 and 4 are proposed additions to `Matrix/Order`.'''
+deps = ["_root_.Matrix.EntrywiseNonneg.mul", "_root_.Matrix.EntrywiseNonneg.pow", "_root_.Matrix.EntrywiseLE.linfty_opNorm_le"]
+
+[[node]]
+id = "theorem_1_25"
+kind = "theorem"
+desc = '''Theorem 1.25, the Perron-Frobenius theorem, which the book states without proof: a real
+nonnegative irreducible matrix has `ρ(A)` as an eigenvalue with an eigenvector of positive
+entries. `Matrix.IsIrreducible.exists_pos_hasEigenvector_complexSpectralRadius` of
+`Numlib/LinearAlgebra/Matrix/PerronFrobenius`, with the geometric simplicity of the eigenvalue as
+the companion `theorem_1_25_simple`; algebraic simplicity is not planned. The relaxed form the
+book invokes in the proof of Theorem 1.29 - a merely nonnegative eigenvector, without
+irreducibility - is a different theorem,
+`Matrix.EntrywiseNonneg.exists_hasEigenvector_complexSpectralRadius` of
+`Numlib/LinearSolve/Stationary/RegularSplitting`, and neither implies the other cheaply.'''
+deps = ["_root_.Matrix.IsIrreducible.exists_pos_hasEigenvector_complexSpectralRadius", "_root_.Matrix.IsIrreducible.finrank_eigenspace_complexSpectralRadius_eq_one"]
+
+[[node]]
+id = "proposition_1_26"
+kind = "theorem"
+desc = '''Proposition 1.26: for nonnegative `A, B, C` with `A ≤ B` entrywise, `A * C ≤ B * C` and
+`C * A ≤ C * B`. `Matrix.EntrywiseLE.mul_of_entrywiseNonneg_left` and its right twin of
+`Numlib/LinearAlgebra/Matrix/Order`; a restatement.'''
+deps = ["_root_.Matrix.EntrywiseLE.mul_of_entrywiseNonneg_left"]
+
+[[node]]
+id = "corollary_1_27"
+kind = "theorem"
+desc = '''Corollary 1.27, (1.42): for nonnegative `A, B` with `A ≤ B` entrywise, `A ^ k ≤ B ^ k` for all
+`k`. `Matrix.EntrywiseLE.pow` of `Numlib/LinearAlgebra/Matrix/PerronFrobenius`; a restatement,
+whose backbone proof is the book's induction (1.43)-(1.44).'''
+deps = ["_root_.Matrix.EntrywiseLE.pow"]
+
+[[node]]
+id = "theorem_1_28"
+kind = "theorem"
+desc = '''Theorem 1.28, (1.45)-(1.46): `O ≤ A ≤ B` entrywise implies `ρ(A) ≤ ρ(B)`.
+`Matrix.complexSpectralRadius_le_of_entrywiseLE` of
+`Numlib/LinearAlgebra/Matrix/PerronFrobenius`; the proof is the book's, Gelfand's formula in the
+`1`-norm with Corollary 1.27 and Proposition 1.24 clause 5. Cited by Theorem 1.33.'''
+deps = ["_root_.Matrix.complexSpectralRadius_le_of_entrywiseLE"]
+
+[[node]]
+id = "theorem_1_29"
+kind = "theorem"
+desc = '''Theorem 1.29, with (1.47): for an entrywise nonnegative `B`, `ρ(B) < 1` if and only if `1 - B`
+is nonsingular with entrywise nonnegative inverse.
+`Matrix.EntrywiseNonneg.complexSpectralRadius_lt_one_iff` of
+`Numlib/LinearSolve/Stationary/RegularSplitting`, which is open; a restatement. This is the
+theorem Theorem 4.4 and the M-matrix characterizations rest on.'''
+deps = ["_root_.Matrix.EntrywiseNonneg.complexSpectralRadius_lt_one_iff"]
+
+[[node]]
+id = "theorem_1_31"
+kind = "theorem"
+desc = '''Theorem 1.31: for a real matrix with positive diagonal and nonpositive off-diagonal entries,
+`A.IsMMatrix ↔ complexSpectralRadius (1 - (diagPart A)⁻¹ * A) < 1`, the spectral radius being that
+of the Jacobi iteration matrix `B = 1 - D⁻¹ A`. Theorem 1.29 applied to `B`, which is nonnegative
+exactly under the two sign hypotheses, together with the factorization `A = D * (1 - B)` and the
+observation that `A` is nonsingular with `A⁻¹ ≥ 0` if and only if `1 - B` is. It is Definition
+1.30 read through the Jacobi splitting of `Numlib/LinearSolve/Stationary/Splitting`, which is what
+makes the M-matrix hypothesis of Chapter 4 checkable.'''
+deps = ["theorem_1_29", "_root_.Matrix.IsMMatrix", "_root_.Matrix.jacobiSplitting_iterationOperator"]
+
+[[node]]
+id = "theorem_1_32"
+kind = "theorem"
+desc = '''Theorem 1.32: clause (1) of Definition 1.30 is implied by the other three - a nonsingular real
+matrix with nonpositive off-diagonal entries and entrywise nonnegative inverse has positive
+diagonal entries, hence is an M-matrix, hence satisfies `ρ(1 - D⁻¹ A) < 1`. The book's proof, from
+`(A * A⁻¹) i i = 1`: `a_ii c_ii = 1 - ∑ k ≠ i, a_ik c_ki ≥ 1` because every term of the sum is
+nonpositive, and `c_ii ≥ 0`, so `a_ii > 0`. Problem P-1.33 asks whether clause (4) is likewise
+redundant; it is not, and the surface records the question rather than an answer.'''
+deps = ["theorem_1_31"]
+
+[[node]]
+id = "theorem_1_33"
+kind = "theorem"
+desc = '''Theorem 1.33: if `A ≤ B` entrywise, `B` has nonpositive off-diagonal entries and `A` is an
+M-matrix, then so is `B`. The book's chain
+`1 - D_A⁻¹ A ≥ D_A⁻¹ (D_B - B) ≥ D_B⁻¹ (D_B - B) = 1 - D_B⁻¹ B ≥ O`, then Theorem 1.28 and Theorem
+1.31 twice. The middle step uses `0 < D_A ≤ D_B` entrywise on the diagonal, hence
+`D_A⁻¹ ≥ D_B⁻¹`.'''
+deps = ["theorem_1_28", "theorem_1_31"]

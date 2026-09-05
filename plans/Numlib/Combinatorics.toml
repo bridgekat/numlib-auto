@@ -1,0 +1,9 @@
+desc = '''
+Combinatorics, entered only where a numerical-analysis chapter needs a graph theorem that Mathlib
+does not have. Today that is Saad, *Iterative Methods for Sparse Linear Systems*, Ch. 3, whose
+matrix reorderings rest on three facts about a finite simple graph: greedy colouring uses at most
+`maxDegree + 1` colours, a maximal independent set has at least `card V / (maxDegree + 1)`
+vertices, and the distance spheres around a root separate the graph. All three are stated in
+`Numlib/Combinatorics/SimpleGraph` in Mathlib's own vocabulary, with no matrix in sight, so that
+they can be upstreamed; the matrix consequences are in `Numlib/LinearAlgebra/Sparse/Reordering`.
+'''

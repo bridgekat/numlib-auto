@@ -1,0 +1,13 @@
+desc = '''
+The structure of a sparse matrix: its pattern, the graph the pattern defines, and what a symmetric
+permutation does to both. This is the algebraic half of Saad, *Iterative Methods for Sparse Linear
+Systems*, Ch. 3; the purely graph-theoretic half - the greedy colouring bound, the size of a
+maximal independent set, the separating property of the distance spheres - is stated for
+`SimpleGraph` in `Numlib/Combinatorics/SimpleGraph`, so that it can be upstreamed on its own.
+
+`Sparse/Pattern` defines the graph of a matrix and proves the permutation invariance;
+`Sparse/Reordering` turns a graph ordering into a block structure of the permuted matrix. Nothing
+in this directory is about storage formats, sparse matrix-vector products or sparse direct
+solvers: Saad's §3.4-§3.7 state no theorem, and they are not planned (see
+`plans/proposals/saadlow.md`).
+'''

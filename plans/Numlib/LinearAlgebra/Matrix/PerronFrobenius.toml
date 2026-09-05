@@ -1,0 +1,119 @@
+namespace = "Matrix"
+desc = '''
+The spectral theory of entrywise nonnegative matrices, an upstreaming candidate (natural home:
+`Mathlib.LinearAlgebra.Matrix.PerronFrobenius`). It supplies what Saad, *Iterative Methods for
+Sparse Linear Systems*, §1.10 states and uses: the monotonicity of powers, of the induced norms
+and of the spectral radius under the entrywise order (Prop 1.24 clause 5, Cor 1.27, Thm 1.28), and
+the Perron-Frobenius theorem for an irreducible nonnegative matrix (Thm 1.25), which the book
+states without proof.
+
+The entrywise order is the predicate `Matrix.EntrywiseLE` of `Numlib/LinearAlgebra/Matrix/Order`
+(Mathlib's order on `Matrix` is the Loewner one and must not be used here); the spectral radius of
+a real matrix is `Matrix.complexSpectralRadius` of `Numlib/LinearAlgebra/Matrix/Complexify`
+(`spectralRadius ℝ` is not the spectral radius); irreducibility is Mathlib's
+`Matrix.IsIrreducible` (nonnegative matrices, quiver strongly connected).
+
+What this module must **not** do: it must not restate the weak Perron theorem for a general
+nonnegative matrix, `Matrix.EntrywiseNonneg.exists_hasEigenvector_complexSpectralRadius`, nor
+Saad Thm 1.29, nor `Matrix.IsMMatrix` - those are planned in
+`Numlib/LinearSolve/Stationary/RegularSplitting`, whose resolvent proof is independent of the
+irreducible theorem here (the irreducible case does *not* imply the reducible one without a
+continuity-of-the-spectral-radius argument that nothing in the library has). See
+`plans/proposals/saadlow.md` for the recommendation that those three move here, which would make
+`RegularSplitting` purely a statement about splittings; the plan is correct either way.
+
+The difficult proof is the Perron eigenvector. Route (Wielandt): for an irreducible nonnegative
+`A` on a nonempty index type, `(1 + A) ^ (card n - 1)` is entrywise *positive*, because a positive
+entry of `(1 + A) ^ k` follows a path of length at most `k` in the quiver and strong connectivity
+supplies one of length `< card n`. Then maximize the Collatz-Wielandt functional
+`r x = min { (A *ᵥ x) i / x i : x i ≠ 0 }` over the compact set of entrywise nonnegative `x` with
+`‖x‖ = 1`; the maximizer `x₀` satisfies `A *ᵥ x₀ = r x₀ • x₀` (else `(1 + A) ^ (card n - 1)` applied
+to the nonzero, nonnegative slack `A *ᵥ x₀ - r x₀ • x₀` would be strictly positive and contradict
+maximality), it is positive by the same positivity, and `r x₀ = ρ(A)` because any eigenvalue `μ`
+with eigenvector `y` satisfies `|μ| |y| ≤ A *ᵥ |y|` entrywise, hence `|μ| ≤ r |y| ≤ r x₀`.
+Geometric simplicity follows from positivity of `x₀`: a second real eigenvector `z` for `ρ(A)`
+independent of `x₀` gives a combination `x₀ - t • z` that is nonnegative with a zero entry and is
+still an eigenvector, contradicting positivity. *Algebraic* simplicity, which is what Saad's word
+"simple" means, is not planned: it needs the derivative of the characteristic polynomial through
+the adjugate, and nothing in the corpus uses it.
+'''
+
+[[node]]
+id = "EntrywiseLE.pow"
+kind = "theorem"
+desc = '''Saad Corollary 1.27: `EntrywiseNonneg A → EntrywiseLE A B → EntrywiseLE (A ^ k) (B ^ k)` for
+every `k`. Induction on `k` through `A ^ (k+1) ≤ A * B ^ k ≤ B ^ (k+1)`, each step being
+`EntrywiseLE.mul_of_entrywiseNonneg_left` / `_right` of `Numlib/LinearAlgebra/Matrix/Order`.'''
+deps = ["EntrywiseLE", "EntrywiseNonneg", "EntrywiseNonneg.pow", "EntrywiseLE.mul_of_entrywiseNonneg_left"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Corollary 1.27"
+
+[[node]]
+id = "EntrywiseLE.linfty_opNorm_le"
+kind = "theorem"
+desc = '''Saad Proposition 1.24 clause 5: for real matrices, `EntrywiseNonneg A → EntrywiseLE A B →
+‖A‖ ≤ ‖B‖` under the scoped `Matrix.Norms.Operator` instance (the infinity-operator norm, the
+largest absolute row sum), by `Matrix.linfty_opNorm_def` and monotonicity of finite sums; with the
+transposed form `EntrywiseLE.linfty_opNorm_transpose_le` for Saad's `‖·‖₁`, since
+`‖A‖₁ = ‖Aᵀ‖_∞`.'''
+deps = ["EntrywiseLE", "EntrywiseNonneg"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 1.24 (5)"
+
+[[node]]
+id = "EntrywiseLE.l2_opNorm_le"
+kind = "theorem"
+desc = '''Saad Problem P-1.28: `EntrywiseNonneg A → EntrywiseLE A B → ‖A‖ ≤ ‖B‖` under the scoped
+`Matrix.Norms.L2Operator` instance, via `EntrywiseLE (Aᵀ * A) (Bᵀ * B)` and
+`Matrix.l2_opNorm_conjTranspose_mul_self`. Not needed by Theorem 1.28, which uses the
+infinity-norm, but it is the form a spectral argument reaches for.'''
+deps = ["EntrywiseLE", "EntrywiseNonneg"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Problem P-1.28"
+
+[[node]]
+id = "complexSpectralRadius_le_of_entrywiseLE"
+kind = "theorem"
+desc = '''Saad Theorem 1.28: `EntrywiseNonneg A → EntrywiseLE A B → complexSpectralRadius A ≤
+complexSpectralRadius B` for real matrices. Gelfand's formula for the infinity-operator norm,
+`ρ(X) = lim ‖X ^ k‖ ^ (1 / k)`, together with `EntrywiseLE.pow` and
+`EntrywiseLE.linfty_opNorm_le`. It therefore waits on the real-matrix Gelfand transport
+`Matrix.tendsto_pow_rpow_complexSpectralRadius` of `Numlib/LinearAlgebra/Matrix/Complexify`.'''
+deps = ["EntrywiseLE.pow", "EntrywiseLE.linfty_opNorm_le", "complexSpectralRadius", "tendsto_pow_rpow_complexSpectralRadius"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.28"
+
+[[node]]
+id = "IsIrreducible.entrywisePos_one_add_pow"
+kind = "theorem"
+desc = '''For an irreducible nonnegative real matrix on a nonempty finite index type,
+`0 < ((1 + A) ^ (Fintype.card n - 1)) i j` for all `i j`: expanding the binomial, the `(i, j)`
+entry dominates the corresponding entry of `A ^ k` for every `k ≤ card n - 1`, and strong
+connectivity of `Matrix.toQuiver A` supplies a path of length below `card n` from `i` to `j`,
+which is a positive entry by Mathlib's `Matrix.pow_apply_pos_iff_nonempty_path`. This is the
+combinatorial core both of the Perron theorem below and of Saad Problem P-3.12, that the
+structural inverse of an irreducible matrix is dense.'''
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.25 (the combinatorial step)"
+
+[[node]]
+id = "IsIrreducible.exists_pos_hasEigenvector_complexSpectralRadius"
+kind = "theorem"
+desc = '''The Perron-Frobenius theorem for an irreducible matrix (Saad Theorem 1.25, which the book
+states without proof): a real irreducible matrix `A` on a nonempty index type has an entrywise
+*positive* eigenvector for its spectral radius,
+`∃ x, (∀ i, 0 < x i) ∧ A *ᵥ x = (complexSpectralRadius A).toReal • x`. Collatz-Wielandt
+maximization plus `IsIrreducible.entrywisePos_one_add_pow`, as set out in the group description.
+Strictly stronger than the weak Perron theorem
+`Matrix.EntrywiseNonneg.exists_hasEigenvector_complexSpectralRadius` of
+`Numlib/LinearSolve/Stationary/RegularSplitting`, which drops irreducibility and gets only a
+nonnegative eigenvector; neither implies the other cheaply.'''
+deps = ["IsIrreducible.entrywisePos_one_add_pow", "complexSpectralRadius", "complexSpectralRadius_ne_top", "EntrywiseNonneg"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.25"
+
+[[node]]
+id = "IsIrreducible.finrank_eigenspace_complexSpectralRadius_eq_one"
+kind = "theorem"
+desc = '''The Perron eigenvalue of an irreducible matrix is geometrically simple: the real eigenspace of
+`A` at `(complexSpectralRadius A).toReal` has rank one. From the positivity of the Perron vector
+`x`: a second eigenvector `z` independent of it yields, at the extremal `t`, a nonnegative
+eigenvector `x - t • z` with a zero entry, which positivity of the Perron vector forbids. Saad
+Theorem 1.25 says "simple", meaning algebraically simple; that stronger statement is not planned
+(see the group description).'''
+deps = ["IsIrreducible.exists_pos_hasEigenvector_complexSpectralRadius"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.25 (geometric simplicity)"

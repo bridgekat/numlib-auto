@@ -1,0 +1,70 @@
+namespace = "SaadSparse.Ch01"
+desc = '''
+Saad §1.7: orthogonal vectors and subspaces, Gram-Schmidt (Algorithms 1.1 and 1.2), the QR
+decomposition (1.19), and Householder orthogonalization ((1.20)-(1.28), Algorithm 1.3).
+
+The definitions of the section - orthogonal and orthonormal sets, the orthogonal complement, the
+orthogonal projector, and the existence of an orthonormal basis of a subspace - are Mathlib
+(`Orthonormal`, `Submodule.orthogonal`, `Submodule.starProjection`, `stdOrthonormalBasis`) and get
+no node. What is left is the QR factorization and the reflectors, and both come from the backbone
+module `Numlib/LinearAlgebra/Matrix/QR`, which this file specializes.
+
+Two alignment points. First, Algorithm 1.1 is Mathlib's `gramSchmidtNormed` of the columns, so the
+surface states its breakdown criterion ("the algorithm completes if and only if the vectors are
+linearly independent") rather than reimplementing the recursion. Second, the surface library
+already has Householder reflectors as operators on `EuclideanSpace` in
+`NumlibSurface/SaadSparse/Chapter06/Section03`, written for Algorithm 6.3; those are the same
+objects as the backbone's `Matrix.householder` and should be identified rather than duplicated.
+Because the import order runs from Chapter 1 to Chapter 6, the identification lemma belongs in
+Chapter 6, and `plans/proposals/saadlow.md` asks for it there.
+'''
+
+[[node]]
+id = "gramSchmidt_completes_iff"
+kind = "theorem"
+desc = '''The §1.7 claim about Algorithm 1.1: the Gram-Schmidt process applied to `x₁, …, x_r` completes
+all `r` steps - that is, `gramSchmidtNormed 𝕜 x j ≠ 0` for every `j` - if and only if the family is
+linearly independent, and then `x j = ∑ i ≤ j, r i j • q i` with `r i j = ⟪q i, x j⟫`. Mathlib's
+`gramSchmidtNormed_ne_zero_iff` and `gramSchmidt_triangular` restated for the columns of a
+matrix.'''
+
+[[node]]
+id = "equation_1_19"
+kind = "theorem"
+desc = '''(1.19): a matrix `X : Matrix (Fin n) (Fin r) 𝕜` with linearly independent columns factors as
+`X = Q * R` with `Qᴴ * Q = 1` and `R` upper triangular with positive diagonal; the factorization is
+unique. `Matrix.exists_qr` and `Matrix.qr_unique` of `Numlib/LinearAlgebra/Matrix/QR`.'''
+deps = ["_root_.Matrix.exists_qr", "_root_.Matrix.qr_unique"]
+
+[[node]]
+id = "algorithm_1_2_eq"
+kind = "theorem"
+desc = '''§1.7: modified Gram-Schmidt (Algorithm 1.2) computes, in exact arithmetic, the same `Q` and `R`
+as Algorithm 1.1. Stated as an equality of the two recursions on linearly independent columns; the
+proof is the induction that the running vector at inner step `i` is `x j - ∑ k < i, r k j • q k`.
+The book's point that the two differ in floating point has no statement here: that is the
+floating-point layer.'''
+deps = ["gramSchmidt_completes_iff"]
+
+[[node]]
+id = "equation_1_22"
+kind = "theorem"
+desc = '''(1.20)-(1.22) and (1.23)-(1.26): the Householder reflector `P = 1 - 2 w wᵀ` with `‖w‖ = 1` is
+unitary and involutive, and the choice `w = (x + sign(ξ₁) ‖x‖ e₁) / ‖x + sign(ξ₁) ‖x‖ e₁‖` gives
+`P x = - sign(ξ₁) ‖x‖ • e₁`, with the `k`-th reflector of (1.23)-(1.26) acting only on the
+entries from `k` on. `Matrix.householder` and `Matrix.householder_mulVec_eq_smul_single` of
+`Numlib/LinearAlgebra/Matrix/QR`. The book's derivation of `α = ± ‖x‖₂` from
+`2 (x - α e₁)ᵀ x = ‖x - α e₁‖₂²` is the same computation, and the printed `‖x‖₁²` there is an
+error for `‖x‖₂²`.'''
+deps = ["_root_.Matrix.householder", "_root_.Matrix.householder_mulVec_eq_smul_single"]
+
+[[node]]
+id = "equation_1_28"
+kind = "theorem"
+desc = '''(1.27)-(1.28) and Algorithm 1.3: the product `P = P_{m-1} ⋯ P₁` of the Householder reflectors
+is unitary with `P * X` upper triangular, so `X = Pᴴ * E_m * R` and `Q = Pᴴ * E_m` has orthonormal
+columns with `X = Q * R`; the columns of `Q` are `Q e_j = P₁ ⋯ P_{m-1} e_j`.
+`Matrix.exists_unitary_mul_upperTriangular` of `Numlib/LinearAlgebra/Matrix/QR`, with
+`Matrix.qr_unique` identifying the result with the Gram-Schmidt factorization of `equation_1_19`
+when the diagonal signs are normalized.'''
+deps = ["_root_.Matrix.exists_unitary_mul_upperTriangular", "equation_1_19"]

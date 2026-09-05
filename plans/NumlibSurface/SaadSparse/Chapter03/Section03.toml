@@ -1,0 +1,132 @@
+namespace = "SaadSparse.Ch03"
+desc = '''
+Saad §3.3: permutations and reorderings - Definition 3.1 and Proposition 3.2 (§3.3.1), the relation
+with the adjacency graph (§3.3.2), the three common reorderings (§3.3.3) and irreducibility
+(§3.3.4).
+
+§3.3.1 is Mathlib. Saad's row and column `π`-permutations are `A.submatrix π id` and
+`A.submatrix id π`, his interchange matrices are `(Equiv.swap i j).permMatrix`, his `P_π` is
+`π.permMatrix`, and Proposition 3.2 is `PEquiv.toMatrix_toPEquiv_mul` and
+`PEquiv.mul_toMatrix_toPEquiv`; even the anti-homomorphism convention of (3.1) matches Mathlib's
+`(σ * τ).permMatrix = τ.permMatrix * σ.permMatrix`. The surface states them once, as the bridge,
+and adds the symmetric permutation `A.submatrix σ σ = σ.permMatrix * A * (σ.permMatrix)ᵀ`, which is
+the form every later chapter uses.
+
+The reorderings of §3.3.3 are algorithms (Algorithms 3.1-3.6) whose theorems are about the
+*labelling* they produce, not about the recursion, so nothing here formalizes a traversal: the
+level-set statement is about `SimpleGraph.dist`, the multicolour statement about a proper
+colouring, the independent-set statement about a maximal independent set. That is how
+`Numlib/LinearAlgebra/Sparse/Reordering` and `Numlib/Combinatorics/SimpleGraph` state them, and
+this file specializes them to a matrix. The exception is greedy colouring itself, which the book
+does make claims about (Algorithm 3.6 finds two colours on a bipartite graph under a suitable
+traversal, and never more than `maxDegree + 1`); those are
+`SimpleGraph.greedyColoring_le_one_of_isBipartite` and `greedyColoring_le_maxDegree`.
+
+Reverse Cuthill-McKee (§3.3.3) gets no node: the book gives it as an observation of George's, with
+a picture and no statement, and this edition proves no bandwidth or profile bound to compare
+against.
+'''
+
+[[node]]
+id = "proposition_3_2"
+kind = "theorem"
+desc = '''Definition 3.1 and Proposition 3.2, with the symmetric permutation of §3.3.1: the row
+`π`-permutation of `A` is `A.submatrix π id = π.permMatrix * A`, the column `π`-permutation is
+`A.submatrix id π = A * (π⁻¹).permMatrix = A * (π.permMatrix)ᵀ`, permutation matrices are unitary
+with `(π.permMatrix)⁻¹ = (π.permMatrix)ᵀ`, and the symmetric permutation is
+`A.submatrix π π = π.permMatrix * A * (π.permMatrix)ᵀ`, a similarity transformation. Mathlib's
+`PEquiv.toMatrix_toPEquiv_mul`, `PEquiv.mul_toMatrix_toPEquiv`,
+`Equiv.Perm.transpose_permMatrix` and `Matrix.submatrix_mul_equiv`; a restatement, and Problem
+P-3.3 is the same lemmas read in the direction `P_π = I_{π,*}`.'''
+
+[[node]]
+id = "adjGraph_submatrix"
+kind = "theorem"
+desc = '''§3.3.2: a symmetric permutation relabels the adjacency graph without changing it,
+`(A.submatrix σ σ).adjDigraph.Adj i j ↔ A.adjDigraph.Adj (σ i) (σ j)`, packaged as the graph
+isomorphism `Matrix.adjGraphIso`; hence pattern symmetry, degrees, connectivity, colourability and
+irreducibility are invariants of a symmetric permutation. `Matrix.adjDigraph_submatrix_adj` of
+`Numlib/LinearAlgebra/Sparse/Pattern`. The book's warning that a *nonsymmetric* permutation does
+not preserve the graph, and can turn an undirected graph into a directed one, is recorded as a
+two-by-two counterexample rather than a theorem, the book giving none.'''
+deps = ["_root_.Matrix.adjDigraph_submatrix_adj", "proposition_3_2"]
+
+[[node]]
+id = "levelSet_blockTridiagonal"
+kind = "theorem"
+desc = '''§3.3.3, the main property of level sets: for a matrix with a symmetric pattern whose adjacency
+graph is connected and a root `v`, adjacent indices lie in consecutive level sets, so
+`A i j ≠ 0 → i ≠ j → |dist v i - dist v j| ≤ 1`, and any ordering that is monotone in the distance
+to `v` - in particular breadth-first search (Algorithm 3.1) and Cuthill-McKee (Algorithms 3.2 and
+3.3) - makes `A.submatrix σ σ` block tridiagonal with the level sets as blocks.
+`Matrix.abs_dist_sub_dist_le_one_of_apply_ne_zero` and `Matrix.apply_eq_zero_of_dist_lt` of
+`Numlib/LinearAlgebra/Sparse/Reordering`. The separator formulation - removing an intermediate
+level set disconnects the graph, which §3.6.2 reuses for nested dissection - is
+`SimpleGraph.isSeparator_sphere` of `Numlib/Combinatorics/SimpleGraph/LevelSet`. The book leaves
+the connectedness hypothesis implicit; without it the traversal does not exhaust the vertices.'''
+deps = ["_root_.Matrix.apply_eq_zero_of_dist_lt", "_root_.SimpleGraph.isSeparator_sphere"]
+
+[[node]]
+id = "indepSet_card_ge"
+kind = "theorem"
+desc = '''§3.3.3, the size of an independent set: for a matrix with a symmetric pattern whose adjacency
+graph has at most `nu` neighbours per vertex, a maximal independent set `S` of indices satisfies
+`Fintype.card ι ≤ (nu + 1) * S.card`, and the sharper form in which `nu` bounds the degrees of the
+members of `S` only. `SimpleGraph.card_le_mul_card_of_maximal_isIndepSet` of
+`Numlib/Combinatorics/SimpleGraph/IndepSet`. Saad states the bound for the set Algorithm 3.4
+produces; the argument he gives proves it for any maximal independent set, which is how it is
+stated. The heuristic recurrence `n_i = n_{i-1} - ν_i - 1` after it is a rule of thumb, as the book
+says, and gets no node.'''
+deps = ["_root_.SimpleGraph.card_le_mul_card_of_maximal_isIndepSet"]
+
+[[node]]
+id = "equation_3_3"
+kind = "theorem"
+desc = '''§3.3.3, the form (3.3) an independent-set ordering produces: if the first block of indices is an
+independent set of the adjacency graph, then in the reordered matrix the leading diagonal block is
+*diagonal*, `i ≠ j → S i → S j → A i j = 0`, so `A.submatrix σ σ` has the shape
+`[[D, E], [F, C]]` with `D` diagonal. `Matrix.apply_eq_zero_of_isIndepSet` of
+`Numlib/LinearAlgebra/Sparse/Reordering`.'''
+deps = ["_root_.Matrix.apply_eq_zero_of_coloring_eq", "indepSet_card_ge"]
+
+[[node]]
+id = "multicoloring_blocks"
+kind = "theorem"
+desc = '''§3.3.3, multicolour orderings: for a proper colouring `c` of the adjacency graph,
+`i ≠ j → c i = c j → A i j = 0`, so grouping the indices by colour makes every diagonal block of
+`A.submatrix σ σ` diagonal; and such a colouring with `nu + 1` colours always exists when every
+vertex has at most `nu` neighbours. `Matrix.apply_eq_zero_of_coloring_eq` and
+`Matrix.exists_coloring_of_le_maxDegree` of `Numlib/LinearAlgebra/Sparse/Reordering`. With two
+colours this is Saad's Property A of Definition 4.11 and the block form (4.42); the bridge
+`SaadSparse.Ch04.hasPropertyA_iff_colorable_two` is requested against `Chapter04/Section02` in
+`plans/proposals/saadlow.md`, since Chapter 4 imports Chapter 3 and not the other way round.'''
+deps = ["_root_.Matrix.apply_eq_zero_of_coloring_eq", "_root_.Matrix.exists_coloring_of_le_maxDegree"]
+
+[[node]]
+id = "greedy_coloring_bounds"
+kind = "theorem"
+desc = '''§3.3.3 and Problems P-3.9, P-3.10, P-3.11: Algorithm 3.6 applied to the adjacency graph of `A`
+never uses more than `nu + 1` colours, where `nu` bounds the number of off-diagonal nonzeros in a
+row (Problem P-3.10, note the exclusion of the diagonal self-loops from the count); and on a
+matrix whose adjacency graph is bipartite it uses exactly two, provided the traversal visits, after
+the first index of each component, only indices adjacent to an already-visited one - the hypothesis
+of Problem P-3.11(b), which breadth-first search satisfies and an arbitrary traversal does not
+(Problem P-3.11(a)). `SimpleGraph.greedyColoring_le_maxDegree` and
+`greedyColoring_le_one_of_isBipartite` of `Numlib/Combinatorics/SimpleGraph/Coloring`; Problem
+P-3.9, that the five-point grid is two-coloured, is the corollary at the graph of
+`SaadSparse.Ch02.laplacian2D`.'''
+deps = ["_root_.SimpleGraph.greedyColoring_le_maxDegree", "_root_.SimpleGraph.greedyColoring_le_one_of_isBipartite", "multicoloring_blocks"]
+
+[[node]]
+id = "isPatternIrreducible_iff"
+kind = "theorem"
+desc = '''§3.3.4: a matrix is *reducible* when a symmetric permutation puts it in block upper triangular
+form, and irreducible otherwise; equivalently, its adjacency graph is strongly connected - which is
+what Saad's "connected", read for a directed graph with directed paths, means.
+`Matrix.IsPatternIrreducible` and
+`Matrix.isPatternIrreducible_iff_forall_submatrix_not_blockTriangular` of
+`Numlib/LinearAlgebra/Sparse/Pattern`. This is the definition Definition 4.5, Theorem 4.7,
+Corollary 4.8 and Theorem 4.9 of the Chapter 4 surface use, and the surface plan of Chapter 4
+already names it in its D15; the full Frobenius normal form is not planned (see the chapter
+group).'''
+deps = ["_root_.Matrix.IsPatternIrreducible", "_root_.Matrix.isPatternIrreducible_iff_forall_submatrix_not_blockTriangular", "adjGraph_submatrix"]

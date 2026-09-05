@@ -1,0 +1,11 @@
+desc = '''
+Upstreaming candidates for `Mathlib.Combinatorics.SimpleGraph`: three facts about finite simple
+graphs that the sparse-matrix reorderings of Saad, *Iterative Methods for Sparse Linear Systems*,
+§3.3.3 rest on and that Mathlib does not have. `Coloring` has the greedy colouring and its
+`maxDegree + 1` bound (Mathlib's `Coloring` files mention no degree bound at all, and there is no
+Brooks theorem); `IndepSet` has the lower bound on the size of a maximal independent set;
+`LevelSet` has the separating property of the distance spheres around a root.
+
+Each module names its natural Mathlib home in a comment and is written in Mathlib style, free of
+any dependency on the rest of `Numlib`.
+'''

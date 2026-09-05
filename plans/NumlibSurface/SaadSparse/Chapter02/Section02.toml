@@ -1,0 +1,213 @@
+namespace = "SaadSparse.Ch02"
+desc = '''
+Saad §2.2, finite difference methods: the truncation errors of §2.2.1-§2.2.2, the one-dimensional
+model matrix of §2.2.3, the exactly solvable convection-diffusion problem of §2.2.4, the
+two-dimensional five-point matrix of §2.2.5, and the spectral facts of §2.2.6 that the fast Poisson
+solvers rest on.
+
+This file is where the model problems of the whole book are defined, so the definitions matter more
+than the theorems: `laplacian1D`, `laplacian2D` and the block `B` of (2.27) are cited by Chapters
+4, 6, 10 and 12, and every numerical experiment in the book runs on them. They are stated with the
+`1/h²` scaling on the matrix, as the displays of §2.2.3 and §2.2.5 do; §2.2.6 scales it away, and
+`laplacian2D_smul` relates the two conventions.
+
+The backbone carries the spectral work: `Numlib/LinearAlgebra/Matrix/TridiagonalToeplitz` has the
+eigenpairs of `tridiag(a, b, a)` and the orthogonality of the discrete sine basis, and
+`Numlib/LinearAlgebra/Matrix/KroneckerSum` has the eigenvalues of a Kronecker sum. Saad states the
+eigenvalues only for the block `B = tridiag(-1, 4, -1)` of (2.27); the corresponding statements for
+the one-dimensional Laplacian and for the full two-dimensional matrix are not in the book at all,
+and are recorded here as what the backbone supplies.
+
+Textual points fixed here rather than reproduced: the interior index range of §2.2.5 is printed as
+`0 < i < n₁`, which is off by one; the decoupled systems (2.29) are printed with the two indices
+transposed, and are stated here as `p` systems of size `m`, which is what Algorithm 2.1 line 2
+says; the `1/h²` scaling of §2.2.3 appears on the right-hand side in the scalar equation and on
+the matrix in the display, and only the matrix convention is used.
+'''
+
+[[node]]
+id = "equation_2_10"
+kind = "theorem"
+desc = '''(2.9)-(2.10): for `u` of class `C⁴` near `x` and `h > 0`, the forward difference is first order,
+`|(u (x + h) - u x) / h - deriv u x - (h / 2) * iteratedDeriv 2 u x| ≤ C * h ^ 2` with an explicit
+`C` bounding `‖iteratedDeriv 3 u‖` on the interval. Mathlib's `taylor_mean_remainder_lagrange` on
+`[x, x + h]`; the backward form (2.11) is the same statement on `[x - h, x]`.'''
+
+[[node]]
+id = "equation_2_12"
+kind = "theorem"
+desc = '''(2.12), the centered second difference: for `u` of class `C⁴` on a neighbourhood of `x` there
+is `ξ ∈ [x - h, x + h]` with
+`(u (x + h) - 2 * u x + u (x - h)) / h ^ 2 = iteratedDeriv 2 u x + (h ^ 2 / 12) * iteratedDeriv 4 u ξ`.
+Two Lagrange remainders at order four, added; the fourth-order terms combine through the
+intermediate value theorem applied to `iteratedDeriv 4 u`, which is the step the book flags. This
+is the truncation error of the model problem and the reason it is second order.'''
+
+[[node]]
+id = "equation_2_13"
+kind = "theorem"
+desc = '''(2.13): the centered first difference `(u (x + h) - u (x - h)) / (2 * h)` approximates
+`deriv u x` to second order for `u` of class `C³`, while the forward difference (2.8) is only first
+order (`equation_2_10`). Saad calls this "easy to show" and gives no proof; it is the difference of
+two Lagrange remainders at order three.'''
+deps = ["equation_2_10"]
+
+[[node]]
+id = "equation_2_16"
+kind = "theorem"
+desc = '''(2.16) and Problem P-2.7: for `a` and `u` of class `C⁴`, the conservative difference
+`(a (x + h/2) * (u (x + h) - u x) - a (x - h/2) * (u x - u (x - h))) / h ^ 2` approximates
+`deriv (fun t => a t * deriv u t) x` to second order. Problem P-2.6, that the same expression is
+`δ⁻ (a_{i+1/2} δ⁺ u) / h ^ 2`, is the operator identity `equation_2_16_symm`.'''
+deps = ["equation_2_12"]
+
+[[node]]
+id = "equation_2_17"
+kind = "theorem"
+desc = '''(2.17), the five-point centered approximation of the Laplacian on a uniform mesh, with its
+truncation error: for `u` of class `C⁴` in two variables,
+`(u (x₁ + h, x₂) + u (x₁ - h, x₂) + u (x₁, x₂ + h) + u (x₁, x₂ - h) - 4 * u (x₁, x₂)) / h ^ 2`
+differs from `Δu (x₁, x₂)` by `(h ^ 2 / 12) * (∂⁴₁ u + ∂⁴₂ u) + O(h ^ 3)`. Two applications of
+`equation_2_12`, one in each variable. The anisotropic form with `h₁ ≠ h₂` is the same statement
+with the two errors weighted separately.'''
+deps = ["equation_2_12"]
+
+[[node]]
+id = "laplacian1D"
+kind = "definition"
+desc = '''§2.2.3: the one-dimensional model matrix,
+`laplacian1D n h : Matrix (Fin n) (Fin n) ℝ := (h ^ 2)⁻¹ • Matrix.symmTridiagonalToeplitz n (-1) 2`,
+from `-u'' = f` on `(0, 1)` with homogeneous Dirichlet conditions and `h = 1 / (n + 1)`, together
+with the statement that its rows are the difference equations
+`(-u_{i-1} + 2 u_i - u_{i+1}) / h ^ 2 = f_i` (`laplacian1D_mulVec_apply`). Saad displays the matrix
+without an equation number.'''
+deps = ["_root_.Matrix.symmTridiagonalToeplitz"]
+
+[[node]]
+id = "laplacian1D_posDef"
+kind = "theorem"
+desc = '''The one-dimensional model matrix is symmetric positive definite, its eigenvalues are
+`4 sin²(kπ / (2 (n + 1))) / h ^ 2` for `k = 1, …, n` with the discrete sine eigenvectors, and its
+`2`-norm condition number is `cot²(π / (2 (n + 1)))`, of order `h⁻²`.
+`Matrix.symmTridiagonalToeplitz_mulVec_sineVec` and `Matrix.symmTridiagonalToeplitz_posDef` of
+`Numlib/LinearAlgebra/Matrix/TridiagonalToeplitz` at `a = -1, b = 2`. Not stated in Chapter 2 -
+Saad gives the spectrum only for the block `B` of (2.27) - but cited throughout Chapters 4, 6 and
+10, and the source of every "the condition number grows like `h⁻²`" remark in the book.'''
+deps = ["laplacian1D", "_root_.Matrix.symmTridiagonalToeplitz_mulVec_sineVec", "_root_.Matrix.symmTridiagonalToeplitz_posDef"]
+
+[[node]]
+id = "equation_2_20"
+kind = "theorem"
+desc = '''(2.20): the two-point boundary value problem `-a u'' + b u' = 0` on `(0, 1)` with `u 0 = 0`,
+`u 1 = 1`, for constants `a ≠ 0`, `b` with Péclet number `R = b / a ≠ 0`, has the unique solution
+`u x = (1 - exp (R * x)) / (1 - exp R)`, which is positive and monotone on `[0, 1]` when `R > 0`.
+A direct verification plus uniqueness from the two-dimensional solution space of the linear
+equation.'''
+
+[[node]]
+id = "equation_2_21"
+kind = "theorem"
+desc = '''(2.21): the centered difference scheme `-(1 - c) u_{i+1} + 2 u_i - (1 + c) u_{i-1} = 0` with
+`c = R h / 2 ≠ 1`, `u_0 = 0`, `u_{n+1} = 1`, has the exact solution
+`u_i = (1 - σ ^ i) / (1 - σ ^ (n + 1))` with `σ = (1 + c) / (1 - c)`, provided `σ ≠ 1`. The
+characteristic equation `(1 - c) r ^ 2 - 2 r + (1 + c) = 0` has roots `1` and `σ`, and the boundary
+conditions fix the coefficients; the book's own derivation.'''
+
+[[node]]
+id = "equation_2_21_oscillates"
+kind = "theorem"
+desc = '''The oscillation criterion of §2.2.4: with the notation of `equation_2_21` and `R > 0`, if
+`h > 2 / R` then `σ < 0` and the discrete solution alternates in sign, `u_i * u_{i+1} < 0` for the
+relevant `i`, whereas the exact solution of `equation_2_20` is positive and monotone; if `h < 2 / R`
+then `σ > 1` and the discrete solution is positive and increasing. The book's remark that the
+oscillations disappear when `b < 0` is the same computation with the sign of `c` reversed.'''
+deps = ["equation_2_20", "equation_2_21"]
+
+[[node]]
+id = "convDiffCentered"
+kind = "definition"
+desc = '''§2.2.4: the tridiagonal matrix of the centered scheme,
+`convDiffCentered n h c := (h ^ 2)⁻¹ • Matrix.of fun i j => …` with diagonal `2`, subdiagonal
+`-1 - c` and superdiagonal `-1 + c`, together with the upwind matrix `convDiffUpwind n h c` with
+diagonal `2 + c`, subdiagonal `-1 - c` and superdiagonal `-1`. Saad displays both without equation
+numbers.'''
+
+[[node]]
+id = "convDiffCentered_not_isMMatrix"
+kind = "theorem"
+desc = '''§2.2.4: for `1 < c` the centered matrix has a positive off-diagonal entry, so it is not a
+Z-matrix and hence not an M-matrix, and it is not weakly diagonally dominant; while the upwind
+matrix `convDiffUpwind n h c` for `0 < c` has nonnegative diagonal, nonpositive off-diagonal
+entries and is weakly diagonally dominant by rows. This is the structural point of the section and
+the reason Chapter 4's convergence theorems apply to the upwind discretization and not to the
+centered one.'''
+deps = ["convDiffCentered", "_root_.Matrix.IsMMatrix"]
+
+[[node]]
+id = "equation_2_23"
+kind = "theorem"
+desc = '''(2.22)-(2.23): with `(z)⁺ = (z + |z|) / 2` and `(z)⁻ = (z - |z|) / 2`, the upwind approximation
+of `b(x) u'(x_i)` is `(- b_i⁺ u_{i-1} + |b_i| u_i + b_i⁻ u_{i+1}) / h`, whatever the sign of `b_i`,
+and the resulting tridiagonal operator has nonnegative diagonal, nonpositive off-diagonal entries
+and zero row sums - the property the book says characterizes upwind schemes. The identity behind
+it, `(a + b) / 2 * z - |z| / 2 * (b - a) = a * z⁺ + b * z⁻`, is shared with the finite volume
+statement of §2.5 and is proved once, as `SaadSparse.Ch02.posPart_negPart_combination`.'''
+deps = ["convDiffCentered"]
+
+[[node]]
+id = "laplacian2D"
+kind = "definition"
+desc = '''§2.2.5: the two-dimensional five-point matrix on an `n₁ × n₂` interior grid with the natural
+row-wise ordering, `laplacian2D n₁ n₂ h₁ h₂ : Matrix (Fin n₁ × Fin n₂) (Fin n₁ × Fin n₂) ℝ`, and
+the block `B` of (2.27), `blockB p := Matrix.symmTridiagonalToeplitz p (-1) 4`, with the block form
+(2.26). Saad displays the matrix without an equation number in §2.2.5 and numbers the scaled copy
+(2.26)-(2.27) in §2.2.6.'''
+deps = ["_root_.Matrix.kroneckerSum", "_root_.Matrix.symmTridiagonalToeplitz"]
+
+[[node]]
+id = "laplacian2D_eq_kroneckerSum"
+kind = "theorem"
+desc = '''The two-dimensional five-point matrix is the Kronecker sum of two one-dimensional ones,
+`laplacian2D n₁ n₂ h₁ h₂ = Matrix.kroneckerSum (laplacian1D n₁ h₁) (laplacian1D n₂ h₂)`, and
+therefore has eigenvalues `4 sin²(kπ/(2(n₁+1)))/h₁² + 4 sin²(lπ/(2(n₂+1)))/h₂²` with the
+tensor sine eigenvectors, and is symmetric positive definite. The identity is entrywise; the
+spectrum is `Matrix.kroneckerSum_orthonormalBasis` applied to `laplacian1D_posDef`. Saad writes
+neither the Kronecker form nor this spectrum, and both are what a reader of the block display
+needs.'''
+deps = ["laplacian2D", "laplacian1D_posDef", "_root_.Matrix.kroneckerSum_orthonormalBasis"]
+
+[[node]]
+id = "equation_2_27_spectrum"
+kind = "theorem"
+desc = '''§2.2.6, the only spectral statement the book makes: the block `B = tridiag(-1, 4, -1)` of
+(2.27) has eigenvalues `λ_j = 4 - 2 cos (j π / (p + 1))` for `j = 1, …, p` with eigenvectors
+`q_j = √(2 / (p + 1)) • sineVec p (j - 1)`, and `Q = [q₁, …, q_p]` is orthogonal with
+`Qᵀ * B * Q = diagonal λ`. `Matrix.symmTridiagonalToeplitz_mulVec_sineVec` and
+`Matrix.dotProduct_sineVec` at `a = -1, b = 4`; the book states it without proof.'''
+deps = ["laplacian2D", "_root_.Matrix.symmTridiagonalToeplitz_mulVec_sineVec", "_root_.Matrix.dotProduct_sineVec"]
+
+[[node]]
+id = "equation_2_29"
+kind = "theorem"
+desc = '''(2.28)-(2.29) and Algorithm 2.1: conjugating each block of (2.26) by the orthogonal `Q` of
+`equation_2_27_spectrum` replaces `B` by `diagonal λ`, and reading the `i`-th row of every block
+decouples the system into `p` independent tridiagonal systems `tridiag(-1, λ_i, -1) ū_i = b̄_i` of
+size `m`. This is the whole content of the fast Poisson solver; the fast Fourier transform that
+computes `Qᵀ u` and the operation count are implementation, not statements. The book prints the
+indices of (2.29) transposed, giving systems of the wrong size; the statement here follows
+Algorithm 2.1.'''
+deps = ["equation_2_27_spectrum"]
+
+[[node]]
+id = "equation_2_33"
+kind = "theorem"
+desc = '''(2.33) and (2.36), the block cyclic reduction recurrence and its Chebyshev form: with
+`B^{(0)} = B` and `B^{(r+1)} = (B^{(r)}) ^ 2 - 2`, one has
+`B^{(r)} = 2 * Polynomial.Chebyshev.T ℝ (2 ^ r) (B / 2)` and hence the factorization
+`B^{(r)} = ∏ i ∈ Finset.range (2 ^ r), (B - (2 * Real.cos ((2 * i + 1) * π / 2 ^ (r + 1))) • 1)`.
+Induction on `r` from the Chebyshev duplication formula `T_{2k} = 2 T_k ^ 2 - 1`, with Mathlib's
+`Polynomial.Chebyshev.T` and its real roots. The elimination step
+`-u_{(2j-2)h} + B^{(r+1)} u_{2jh} - u_{(2j+2)h} = B^{(r)} b_{2jh} + b_{(2j-1)h} + b_{(2j+1)h}` is
+the block algebra that motivates it and is stated alongside; the Buneman variant and the stability
+claim are not planned (see the chapter group).'''
+deps = ["equation_2_27_spectrum"]

@@ -1,0 +1,52 @@
+desc = '''
+Saad, Chapter 2: the discretization of partial differential equations.
+
+The chapter has **no numbered definition, theorem, proposition, corollary or lemma** - everything
+of theorem character is asserted in running prose - so the surface is organized around what is
+actually provable and what the rest of the book actually cites. Two files:
+
+* `Section02` covers §2.2, finite differences: the Taylor truncation errors of §2.2.1, the model
+  matrices of §2.2.3 and §2.2.5, the exactly solvable convection-diffusion problem of §2.2.4 with
+  its oscillation criterion and its sign structure, and the spectral facts of §2.2.6 on which the
+  fast Poisson solvers rest. These are the model problems the whole book runs its experiments on,
+  and they are elementary linear algebra and one-variable calculus.
+* `Section05` covers §2.5, the finite volume method, whose one substantive claim - the
+  semi-discrete operator is a weakly diagonally dominant Z-matrix - is a finite sum identity
+  resting on the vanishing of the sum of the outward edge vectors of a polygon.
+
+**Not planned, with reasons.**
+
+* §2.1 (elliptic operators, boundary conditions, the convection-diffusion equation) is modelling:
+  the definitions of the Laplacian, of Dirichlet, Neumann and Cauchy conditions and of the general
+  elliptic operator, and the observations that Neumann conditions are a special case of Cauchy
+  ones and that they do not determine the solution up to a constant. Formalizing them means
+  building partial differential equations on a planar domain, which is not numerical-analysis
+  work and which nothing later in the book uses: Chapters 4-13 use only the matrices.
+* §2.2.2's nine-point stencils and the claim that one of them is sixth order for harmonic
+  functions. The stencils appear only in Figure 2.4, an image; Problem P-2.4 gives the recipe that
+  would reconstruct them, and nothing in the corpus cites the result.
+* §2.2.6's Buneman recurrences (2.31)-(2.35) and the claim that block cyclic reduction is unstable
+  while Buneman's variant is stable. The recurrences are an algorithm; the stability claim is made
+  without any analysis anywhere in the book, so there is nothing to state. The operation counts
+  are not mathematical statements.
+* §2.3, the finite element method. This is the honest casualty of the chapter. Its algebraic
+  content - the bilinearity of `a`, the nodal basis, the Galerkin reduction to a linear system,
+  the symmetry and positive definiteness of the stiffness matrix, the assembly
+  `A = ∑ P_e A_{K_e} P_eᵀ`, and the singularity of the pure-Neumann system - is already in the
+  library in abstract form, as `Numlib/Variational/Forms` and `Numlib/Variational/Galerkin` with
+  the Atkinson-Han Chapter 9 surface, where the stiffness matrix is the Gram matrix of a basis in
+  the energy inner product and is positive definite for exactly Saad's reason. What is missing is
+  only the *concrete* finite element space: a triangulation of a planar domain, piecewise-affine
+  functions on it, and integration over triangles. That is a substantial build in plane geometry
+  and measure theory with no numerical-analysis content, and the one place the chapter really
+  needs analysis - Green's formula (2.40) on a domain with a smooth boundary, which also carries
+  §2.3's Neumann equation (2.47) and §2.5's (2.49) - would need the divergence theorem with a
+  boundary measure and an outward normal field, which Mathlib has only for boxes. Note for the
+  record that the chapter never states a Céa lemma, a Lax-Milgram theorem, an interpolation
+  estimate or any convergence result, and never uses a property of `H¹(Ω)`: the Sobolev framing of
+  §2.3 is decorative, and no Sobolev theory is needed to formalize anything the chapter proves.
+* §2.4, mesh generation and refinement. Its one claim with content - connecting the midpoints of a
+  triangle preserves the angles - is the midsegment theorem of elementary Euclidean geometry, with
+  no numerical-analysis content and no consumer; the rest of the section is descriptive text
+  around figures, and it states no shape-regularity condition to formalize.
+'''
