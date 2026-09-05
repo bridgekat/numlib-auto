@@ -29,11 +29,13 @@ definite in the sense of (5.6.3), `√m ‖v‖ ≤ ‖v‖_A ≤ √M ‖v‖` 
 per-step Kantorovich contraction in the backbone's own vocabulary, shared with §9.4, and belongs
 in `Numlib/Krylov/Convergence/CG.lean`.
 
-Deferred or out of scope (`plans/atkinsonhan-ch5.md` §3 item 3 and §4).  Theorem 5.6.2
-(Winther's superlinear convergence) is phase 2 (`plans/backbone.md` §3.10): it is blocked by the
-spectral theorem for compact self-adjoint operators, which Mathlib does not have.  For the same
-reason (5.6.7)–(5.6.9), the specialization (5.6.10) to `A = I - K`, and Theorem 5.6.3 (rates for
-Hilbert–Schmidt and `Cᵖ` kernels) are out of scope.
+Deferred (`plans/atkinsonhan-ch5.md` §3 item 3 and §4).  Theorem 5.6.2, Winther's superlinear
+convergence, is proved in the backbone as `Krylov.winther`, with the eigen-decomposition of `K`
+taken as data; the surface statement is still to be written, and so are (5.6.7)–(5.6.9), the
+specialization (5.6.10) to `A = I - K`, and Theorem 5.6.3 (rates for Hilbert–Schmidt and `Cᵖ`
+kernels).  What stands in the way is not the spectral theorem for compact self-adjoint operators,
+which Mathlib has, but the decreasing enumeration of the eigenvalues of a compact operator as an
+`ℕ`-sequence, which it does not.
 -/
 
 open Filter Topology

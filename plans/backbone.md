@@ -710,8 +710,16 @@ quadratic-form bounds (`compression.isSymmetricBoundedBy`), and the spectral the
 there. Phase 2: the minimal-residual (MINRES) bound for symmetric indefinite `A`
 via Chebyshev on two intervals (`Krylov/Convergence/MinRes.toml`, at the finite-dimensional rung,
 with the two-interval polynomial as a node of `ChebyshevMinimax.toml`); Winther's superlinear
-convergence for `A = 1 − K`, `K` compact self-adjoint (AH Thm 5.6.2; needs the compact spectral
-theorem, not in Mathlib, so `Krylov/Convergence/Superlinear.toml` takes the eigenbasis as data).
+convergence for `A = 1 − K`, `K` compact self-adjoint (AH Thm 5.6.2). *Done*, with the eigenbasis
+taken as data and a sharper constant than the book's — `(Δ/δ)^{1/(2k)}` rather than `(Δ/δ)^{3/(2k)}`,
+the exponent `3/2` being an artefact of routing through the residual. The reason once given for
+taking the eigenbasis as data — that Mathlib lacks the compact spectral theorem — **was wrong**: it
+has `ContinuousLinearMap.orthogonalComplement_iSup_eigenspaces_eq_bot` and
+`ContinuousLinearMap.finite_dimensional_eigenspace`. What it lacks is the decreasing *enumeration*
+of the eigenvalues in infinite dimension, which needs the accumulation-at-`0` fact
+(`{μ | HasEigenvalue T μ ∧ ε ≤ ‖μ‖}` is finite) and separability of the space. Supplying those
+three would turn the hypotheses `hlam`, `hanti` and `hlim` of `Krylov.winther` into conclusions
+with no change to its proof.
 
 ### 3.11 `Krylov/Monotonicity.lean` (Fong–Saunders; L3)
 Serves Fong–Saunders §2–3 and Table 5.1; Choi Lemma 2.14, 2.20; Steihaug.

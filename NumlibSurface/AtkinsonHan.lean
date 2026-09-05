@@ -140,9 +140,12 @@ each section module names the results it leaves out.
   of the setting as can be stated without it; the finite-dimensional and Hilbert cases of the same
   material are proved in full.
 * **Winther's theorem.** Theorem 5.6.2, the superlinear convergence of conjugate gradients for
-  `A = I - K` with `K` compact, is blocked by the spectral theorem for compact self-adjoint
-  operators, which Mathlib does not have. The displays (5.6.7)–(5.6.10) and Theorem 5.6.3 (rates
-  for Hilbert–Schmidt and `Cᵖ` kernels) are out of scope for the same reason.
+  `A = I - K` with `K` compact, is proved in the backbone as `Krylov.winther`, with the
+  eigen-decomposition of `K` taken as data. The surface statement, the displays (5.6.7)–(5.6.10)
+  and Theorem 5.6.3 (rates for Hilbert–Schmidt and `Cᵖ` kernels) are still to be written. This
+  was long recorded as blocked by the spectral theorem for compact self-adjoint operators; Mathlib
+  has that theorem. What it lacks is the decreasing enumeration of the eigenvalues as an
+  `ℕ`-sequence, and the fact that they accumulate only at zero.
 
 Smaller omissions all have the same shape — an object the backbone has not built yet — and each is
 listed in the module it belongs to: the `C[a, b]` integral-operator toolkit (Examples 2.3.2, 2.3.6

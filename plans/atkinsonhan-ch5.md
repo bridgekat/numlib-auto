@@ -674,9 +674,12 @@ Classification: `direct`.
 
 **(5.6.7)–(5.6.9)** (eigen-decomposition of the compact self-adjoint `K`, `λ_j → 0`, `δ = inf(1−λ_j) > 0 ⇔ A` positive definite,
 `Δ = sup(1−λ_j)`, `‖A‖ = Δ`, `‖A⁻¹‖ = 1/δ`).
-Classification: `out-of-scope` — relies on AH Thm 2.8.15/2.8.12 (spectral theorem for compact self-adjoint operators), absent from
-Mathlib (only `Mathlib/Analysis/InnerProductSpace/Spectrum.lean` (finite-dimensional) and the Fredholm alternative). (5.6.9)
-becomes `surface-only` if the eigenbasis is taken as a hypothesis (see Thm 5.6.2 variant).
+Classification: `deferred`, and the reason recorded here was wrong. Mathlib **does** have the spectral theorem for compact
+self-adjoint operators (`ContinuousLinearMap.orthogonalComplement_iSup_eigenspaces_eq_bot` and
+`ContinuousLinearMap.finite_dimensional_eigenspace`, both in `Mathlib/Analysis/InnerProductSpace/Spectrum.lean`). What is absent
+is the decreasing *enumeration* of the eigenvalues as an `ℕ`-sequence — the accumulation-at-`0` fact it rests on is nowhere in
+`Mathlib/Analysis/Normed/Operator/Compact/*` — and indexing by `ℕ` additionally wants separability. (5.6.9) is `surface-only`
+today with the eigenbasis as a hypothesis, and becomes unconditional once that enumeration exists.
 
 **(5.6.10)** `‖u* − u_{k+1}‖_A ≤ (Δ−δ)/(Δ+δ) ‖u* − u_k‖_A` for `A = I − K`.
 Route: (5.6.4) with `(m, M) = (δ, Δ)`; the bounds `δ‖v‖² ≤ (Av,v) ≤ Δ‖v‖²` from Parseval in the eigenbasis
@@ -739,9 +742,11 @@ recommends); the surface results are `theorem_5_2_2`–`theorem_5_2_4`, `theorem
    `Newton.kantorovich` with existence in `B̄(u₁, t* − b)` under the domain hypothesis `B̄(u₁, t* − b) ⊂ D(F)`,
    uniqueness in `B̄(u₀, t**)` with `t** = (1 + √(1−2h))/(aL)`, and the sharp a priori bound
    `‖u_n − u*‖ ≤ (1 − √(1−2h))^{2ⁿ}/(2ⁿ a L)` (majorant-sequence argument; Ortega–Rheinboldt §12.6, Zeidler).
-3. **Winther's theorem (Thm 5.6.2)** — phase 2 (`backbone.md` §3.10, §8.3): blocked by the spectral theorem
-   for compact self-adjoint operators (AH Thm 2.8.15; absent from Mathlib). The surface-only variant above takes the
-   eigenbasis as a hypothesis and needs only `Krylov.exists_residual_poly` and `CG.iterate_sub_mem`.
+3. **Winther's theorem (Thm 5.6.2)** — **done** in the backbone as `Krylov.winther` and
+   `Krylov.winther_rate_tendsto_zero` (`Numlib/Krylov/Convergence/Superlinear.lean`), with the eigenbasis as data and a
+   *sharper* constant than the book's, `(Δ/δ)^{1/(2k)}`. It was listed here as blocked by the compact self-adjoint spectral
+   theorem; that theorem is in Mathlib, and what is really missing is the decreasing enumeration of the eigenvalues in
+   infinite dimension. The surface `theorem_5_6_2` can be stated now, in the same eigenbasis-as-hypothesis form.
 
 Surface items that a later backbone phase may absorb (no phase assigned; each becomes worthwhile with a second
 consumer): a Gâteaux-derivative API (`HasGateauxDerivAt`, Prop 5.3.4 (iii); Kress Ch. 6, AH Ch. 11); convexity
