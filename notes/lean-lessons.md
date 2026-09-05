@@ -142,6 +142,13 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   is not type correct".
 * `open scoped Matrix` is required for `*ᵥ`; without it the error blames
   `Mathlib.Tactic.subscriptTerm` and says nothing about the missing scope.
+* The `|a|` notation is a *hygienic* macro for `abs a`, so declaring `Matrix.abs` inside
+  `namespace Matrix` does not break `|x|` anywhere. What it does break is any *bare* `abs`,
+  `abs_zero`, `abs_nonneg`, … written inside `namespace Matrix` in a file that imports it: those
+  now resolve to the `Matrix.`-prefixed names first. `Numlib/LinearAlgebra/Matrix/Order.lean`
+  therefore declares only `Matrix.abs` and `Matrix.abs_apply`, and gives every other entrywise
+  absolute-value lemma a name that cannot shadow a root one (`entrywiseNonneg_abs`,
+  `abs_add_entrywiseLE`, `abs_mul_entrywiseLE`).
 
 ## Tactics
 
@@ -313,6 +320,21 @@ Structural facts worth knowing before planning a proof:
   `Matrix.IsHermitian.hasEigenvalue_toEuclideanLin_iff` gets there in four lines and no new import.
 * `IsCompact.exists_isGreatest` with `IsGreatest.csSup_eq` beats `BddAbove` bookkeeping.
 * `LinearMap.injective_iff_surjective` is the workhorse for solvability of a compressed system.
+* **There is no `Abs` class.** `abs` is `def abs [Lattice α] [AddGroup α] (a : α) : α`, the
+  `to_additive` image of `mabs a = a ⊔ a⁻¹`, so a binder `[Abs α]` fails with "type is not a class
+  instance". `abs_nonneg` and `abs_zero` need order compatibility on top (`IsOrderedAddMonoid`, or
+  the unbundled `AddLeftMono`/`AddRightMono`), and the triangle inequality is `abs_add_le`, not
+  `abs_add` — the latter does not exist.
+* `Matrix` has **no order instances at all** outside the Loewner ones scoped in `MatrixOrder`
+  (`Mathlib/Analysis/Matrix/Order.lean`), because `Matrix m n α` is an opaque `def` for
+  `m → n → α`. So `A ≤ B` on matrices simply does not elaborate by default, while `x ≤ y` and `|x|`
+  on *vectors* are the `Pi` ones and are entrywise already. That asymmetry is why
+  `Numlib/LinearAlgebra/Matrix/Order.lean` states `A ≤ₑ B` for matrices and plain `≤`/`|·|` for
+  vectors in the same theorem.
+* Before proving entrywise facts by hand: `Matrix.pow_apply_nonneg` (in `Mathlib.Data.Matrix.Mul`)
+  already gives `0 ≤ (A ^ k) i j` from `0 ≤ A i j`, and `Matrix.mulVec_apply_eq_sum` is the `rfl`
+  lemma for `(A *ᵥ x) i`. `Matrix.sum_apply` is in `Mathlib.Data.Matrix.Basic`, *not* in
+  `.Mul` — importing only the latter makes it an unknown constant.
 
 ## Design conventions of this library
 
