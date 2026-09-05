@@ -137,9 +137,12 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   happens on an `IsIdempotentElem` hypothesis, which resolves into `Eq`, on `Matrix.PosDef`
   (`hA.eigenvalues_pos` looks up `And.eigenvalues_pos`), and on `Algebra.commutes c A`, which is an
   `Eq`, so `.mul_left` is `Eq.mul_left` — bind `have _ : Commute … := Algebra.commutes c A` first.
-* For an equation whose left side mentions a structure parameter (`s.eq : A = s.N - s.M` with
-  `s : BookSplitting A`), only `rw [← s.eq]` type-checks; the forward direction fails with "motive
-  is not type correct".
+* **The index of a structure cannot be rewritten, in either direction.** With `s : Splitting A`,
+  the `A` occurs in the *type* of `s`, so any `rw` whose result replaces `A` fails with "motive is
+  not type correct" — `rw [← s.m_sub_n]` on a goal mentioning `A`, and equally `rw [s.eq]` for
+  `s.eq : A = s.N - s.M`. Which direction happens to work is a symptom, not the rule. Restate the
+  identity so that it rewrites a *field* instead: `sub_eq_iff_eq_add.mp s.m_sub_n : s.m = A + s.n`
+  replaces `s.m`, which appears in no type, and goes through.
 * `open scoped Matrix` is required for `*ᵥ`; without it the error blames
   `Mathlib.Tactic.subscriptTerm` and says nothing about the missing scope.
 * The `|a|` notation is a *hygienic* macro for `abs a`, so declaring `Matrix.abs` inside

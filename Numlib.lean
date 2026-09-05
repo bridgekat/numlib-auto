@@ -36,6 +36,7 @@ import Numlib.LinearSolve.Projection.OneDimensional
 import Numlib.LinearSolve.Projection.Optimality
 import Numlib.LinearSolve.Stationary.Basic
 import Numlib.LinearSolve.Stationary.DiagDominant
+import Numlib.LinearSolve.Stationary.RegularSplitting
 import Numlib.LinearSolve.Stationary.Splitting
 import Numlib.Nonlinear.FixedPoint
 import Numlib.Nonlinear.Newton
