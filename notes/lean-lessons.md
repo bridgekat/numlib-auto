@@ -77,6 +77,9 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   (`linter.style.longLine` and friends) without taking the build lock or touching the shared
   tracker cache, so parallel agents in one worktree can each meet a "no warnings" bar before the
   merging agent runs the real build.
+* The scratchpad directory is shared between concurrently running sub-agents. Give every patch
+  script a name of your own (`sor-patch3.py`, not `patch1.py`) or a sibling agent will overwrite it
+  between the moment you write it and the moment you run it.
 
 ## Correctness traps
 
@@ -505,6 +508,29 @@ Structural facts worth knowing before planning a proof:
   `natDegree_divByMonic` do take one. `natDegree_C_le` does not exist — use `(natDegree_C _).le`.
 * `integral_finset_sum_measure` is deprecated in favour of `integral_finsetSum_measure`;
   `integrable_dirac (by simp)` supplies its integrability side conditions for a scaled Dirac sum.
+* `Matrix.inv_diagonal` reads `(diagonal v)⁻¹ = diagonal v⁻¹ʳ`, and `v⁻¹ʳ` is `Ring.inverse`
+  applied to the whole *Pi* element, which does not reduce entrywise. For
+  `(diagPart A)⁻¹ = diagonal fun i => (A i i)⁻¹` you need `IsUnit (diagPart A)` and
+  `Matrix.inv_eq_left_inv`; without it the statement is false, since a singular diagonal inverts
+  to `0`.
+* `Matrix.finite_spectrum` (in `Mathlib.LinearAlgebra.Eigenspace.Minpoly`, not in the spectrum
+  files) turns "every eigenvalue has modulus `< 1`" into `ρ < 1` in five lines through
+  `Finset.sup'` over `hfin.toFinset`; there is no need for a norm on `Matrix n n ℂ` and hence no
+  instance-mixing hazard. `Finset.sup_lt_iff` wants `⊥ < a`, `Finset.sup'_lt_iff` wants nothing.
+* Nonemptiness of the spectrum of a complex matrix is `Matrix.mem_spectrum_iff_isRoot_charpoly`
+  plus `Matrix.charpoly_degree_eq_dim` plus `IsAlgClosed.exists_root` — again with no Banach
+  algebra instance in sight.
+* `spectrum.units_conjugate` is stated as `spectrum R (↑u * a * ↑u⁻¹)`. Write both coercions with
+  explicit type ascriptions: `↑u⁻¹` on matrices otherwise elaborates as the *matrix* inverse of
+  `↑u`, and the `rw` then silently fails to match.
+* `Complex.sq_norm : ‖z‖ ^ 2 = normSq z` with `Complex.normSq_apply` is the route from a norm to
+  `re² + im²`; `Complex.abs` is gone.
+* `mul_lt_mul_left` now asks for a `MulRightStrictMono` instance that `ℝ` does not have in that
+  form; `mul_lt_mul_of_pos_left` is the usable name.
+* For an identity between complex numbers that is really an identity between reals, do the algebra
+  in `ℝ` and cast once inside a `calc` with `push_cast; ring` at each step. Rewriting with
+  `Complex.ofReal_add`/`_sub`/`_mul` in the middle of a goal loses to the first `↑(a - b)` that is
+  not literally in that shape.
 
 ## Design conventions of this library
 

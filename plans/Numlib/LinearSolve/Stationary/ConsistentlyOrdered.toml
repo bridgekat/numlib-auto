@@ -1,96 +1,43 @@
 namespace = "Matrix"
-desc = '''
-Young's theory of the SOR iteration for consistently ordered matrices, shared by Saad, *Iterative
-Methods for Sparse Linear Systems*, §4.2.5 (Def 4.11, Def 4.13, Prop 4.12, Prop 4.14, Prop 4.15,
-Thm 4.16, (4.47)) and Kress, *Numerical Analysis*, Def 4.13–Cor 4.16. Matrix-combinatorial and
-last in priority among the stationary modules; in the backbone because two books state it.
-
-Kress's definition of *consistently ordered* is the one adopted, because it is the property the
-proofs use: the spectrum of `C(α) = α L + α⁻¹ U` is independent of `α ≠ 0`, where `L = D⁻¹ E`
-and `U = D⁻¹ F` are the strict parts of the Jacobi matrix `B = L + U`. Saad's Def 4.13 (a labelling
-with the neighbour condition) implies it (Saad Prop 4.14–4.15), and Property A (Saad Def 4.11) is
-the block anti-diagonal special case (Saad Prop 4.12), so the two books meet at the eigenvalue
-relation `(λ + ω - 1)² = λ ω² μ²` (Saad Thm 4.16, Kress (4.8)). The determinant identity
-`det ((λ + ω - 1) 1 - ω (λ L + U)) = 0` with `α = λ^{1/2}` proves it in both directions;
-Saad (4.47) / Kress Thm 4.15 then minimize `ρ(G_ω)` under "Jacobi eigenvalues real, `ρ(B) < 1`",
-and Kress Cor 4.16 reads off `ρ_GS = ρ_J²` at `ω = 1`.
-
-Everything is stated over `ℂ`; real matrices enter through `Matrix.complexify`.
-'''
 
 [[node]]
 id = "IsConsistentlyOrdered"
-kind = "definition"
-desc = '''Kress Def 4.13: a matrix `A` with invertible diagonal is *consistently ordered* when
-`spectrum ℂ (α • L + α⁻¹ • U)` does not depend on `α ≠ 0`, with `L = D⁻¹ E`, `U = D⁻¹ F` the strict
-lower and upper parts of the Jacobi matrix.'''
-deps = ["jacobiSplitting", "diagPart", "strictLower", "strictUpper"]
-source = "Kress, Numerical Analysis, Definition 4.13; Saad, Iterative Methods for Sparse Linear Systems, Proposition 4.15"
 
 [[node]]
 id = "IsTridiagonal.isConsistentlyOrdered"
-kind = "theorem"
-desc = '''Kress Remark 4.14: a tridiagonal matrix with nonzero diagonal is consistently ordered, by the
-similarity `S(α) C(1) S(α)⁻¹ = C(α)` with `S(α) = diag (1, α, α², …)`.'''
-deps = ["IsConsistentlyOrdered", "IsTridiagonal"]
-source = "Kress, Numerical Analysis, Remark 4.14"
 
 [[node]]
 id = "isConsistentlyOrdered_of_labelling"
-kind = "theorem"
-desc = '''Saad Def 4.13 implies Kress's: if a labelling `c : n → ℕ` has `c j = c i - 1` for every nonzero
-entry `A i j` below the diagonal and `c j = c i + 1` above it, then `A` is consistently ordered, by
-the similarity with `diag (α ^ c i)` (Saad Prop 4.14–4.15, without the detour through a T-matrix
-permutation).'''
-deps = ["IsConsistentlyOrdered"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, Definition 4.13, Propositions 4.14 and 4.15"
 
 [[node]]
 id = "neg_mem_spectrum_fromBlocks_zero_zero"
-kind = "theorem"
-desc = '''Saad Prop 4.12 (1): for a block anti-diagonal `B = fromBlocks 0 B₁₂ B₂₁ 0`, `μ ∈ spectrum ℂ B →
--μ ∈ spectrum ℂ B`; and (2) such a matrix with an invertible diagonal added is consistently ordered
-(Property A matrices are consistently ordered, `isConsistentlyOrdered_fromBlocks`). Similarity by
-`fromBlocks 1 0 0 (α • 1)`.'''
-deps = ["IsConsistentlyOrdered"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 4.12"
 
 [[node]]
 id = "IsConsistentlyOrdered.mem_spectrum_jacobi_iff_sor"
-kind = "theorem"
-desc = '''Saad Thm 4.16 / Kress (4.8): for a consistently ordered `A` and `ω ≠ 0`, if `λ ≠ 0` is an eigenvalue
-of the SOR iteration matrix `G_ω` and `(λ + ω - 1)² = λ ω² μ²`, then `μ` is an eigenvalue of the
-Jacobi matrix `B`; conversely `μ ∈ spectrum B` and `(λ + ω - 1)² = λ ω² μ²` give
-`λ ∈ spectrum G_ω`. Proof: `det ((λ + ω - 1) 1 - ω (λ L + U)) = det (λ (1 - ω L) - ((1 - ω) 1 + ω U))`
-and the `α`-independence at `α = λ^{1/2}`.'''
-deps = ["IsConsistentlyOrdered", "sorSplitting", "sorSplitting_iterationOperator", "jacobiSplitting_iterationOperator"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 4.16; Kress, Numerical Analysis, Theorem 4.15"
 
 [[node]]
-id = "IsConsistentlyOrdered.complexSpectralRadius_sor_eq"
-kind = "theorem"
-desc = '''Young's formula: if `A` is consistently ordered, the Jacobi matrix has real eigenvalues and
-`ρ(B) < 1`, then for `0 < ω < 2` the SOR spectral radius is `ω - 1` when `ω ≥ ω_opt` and
-`(ω ρ(B)/2 + √((ω ρ(B)/2)² - (ω - 1)))²` when `ω ≤ ω_opt`, where `ω_opt = 2/(1 + √(1 - ρ(B)²))`
-(Kress Thm 4.15; Saad (4.47)). Each SOR eigenvalue is a root of the quadratic of
-`mem_spectrum_jacobi_iff_sor` for some Jacobi eigenvalue.'''
-deps = ["IsConsistentlyOrdered.mem_spectrum_jacobi_iff_sor", "complexSpectralRadius"]
-source = "Kress, Numerical Analysis, Theorem 4.15 (Young); Saad, Iterative Methods for Sparse Linear Systems, (4.47)"
+id = "IsConsistentlyOrdered.exists_mem_spectrum_jacobi"
+
+[[node]]
+id = "IsConsistentlyOrdered.spectralRadius_gaussSeidel_eq_sq"
+
+[[node]]
+id = "sorIterationMatrix"
+
+[[node]]
+id = "youngRadius"
+
+[[node]]
+id = "optimalRelaxation"
+
+[[node]]
+id = "IsConsistentlyOrdered.spectralRadius_sor_eq"
 
 [[node]]
 id = "IsConsistentlyOrdered.isMinOn_complexSpectralRadius_sor"
-kind = "theorem"
-desc = '''The optimal relaxation parameter (Saad (4.47), Kress Thm 4.15): under the hypotheses of
-`complexSpectralRadius_sor_eq`, `ω_opt = 2/(1 + √(1 - ρ(B)²))` minimizes `ω ↦ ρ(G_ω)` on `(0, 2)`,
-`ρ(G_{ω_opt}) = ω_opt - 1`, and SOR converges for every `0 < ω < 2`.'''
-deps = ["IsConsistentlyOrdered.complexSpectralRadius_sor_eq"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, (4.47); Kress, Numerical Analysis, Theorem 4.15"
 
 [[node]]
-id = "IsConsistentlyOrdered.complexSpectralRadius_gaussSeidel_eq_sq"
-kind = "theorem"
-desc = '''Kress Cor 4.16: for a consistently ordered `A`, `ρ(G_GS) = ρ(B)²`, so Gauss–Seidel converges
-twice as fast as Jacobi. The case `ω = 1` of `mem_spectrum_jacobi_iff_sor`, where the relation
-reads `λ = μ²`.'''
-deps = ["IsConsistentlyOrdered.mem_spectrum_jacobi_iff_sor", "gaussSeidelSplitting", "sorSplitting_one"]
-source = "Kress, Numerical Analysis, Corollary 4.16"
+id = "IsConsistentlyOrdered.spectralRadius_sor_optimalRelaxation"
+
+[[node]]
+id = "IsConsistentlyOrdered.spectralRadius_sor_lt_one"
