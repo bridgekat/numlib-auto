@@ -15,10 +15,35 @@ In a complex unital Banach algebra, `ρ(a) < 1 ↔ aⁿ → 0`, the Neumann seri
 `ρ(a) < 1`, and powers decay geometrically at any rate above the spectral radius. All three are
 classical consequences of Gelfand's formula for the spectral radius, which Mathlib provides as
 `spectrum.pow_nnnorm_pow_one_div_tendsto_nhds_spectralRadius`.
+
+`spectralRadius_smul` records the absolute homogeneity `ρ(c • a) = ‖c‖ ρ(a)`, which needs no
+analytic input and holds in any algebra over a normed field.
 -/
 
 open Filter Topology
 open scoped ENNReal NNReal
+
+section Homogeneous
+
+open scoped Pointwise
+
+variable {𝕜 B : Type*} [NormedField 𝕜] [Ring B] [Algebra 𝕜 B]
+
+/-- The spectral radius is absolutely homogeneous: `ρ(c • a) = ‖c‖ ρ(a)`.
+
+This is purely algebraic, a restatement of `spectrum.unit_smul_eq_smul`
+(`spectrum 𝕜 (c • a) = c • spectrum 𝕜 a` for `c ≠ 0`); neither completeness of the algebra nor
+submultiplicativity of its norm is used. -/
+theorem spectralRadius_smul (c : 𝕜) (a : B) :
+    spectralRadius 𝕜 (c • a) = ‖c‖₊ * spectralRadius 𝕜 a := by
+  rcases eq_or_ne c 0 with rfl | hc
+  · simp
+  · have hset : spectrum 𝕜 (c • a) = c • spectrum 𝕜 a := by
+      simpa [Units.smul_def] using spectrum.unit_smul_eq_smul a (Units.mk0 c hc)
+    simp only [spectralRadius, hset, ← Set.image_smul, iSup_image, smul_eq_mul, nnnorm_mul,
+      ENNReal.coe_mul, ENNReal.mul_iSup]
+
+end Homogeneous
 
 variable {A : Type*} [NormedRing A] [NormedAlgebra ℂ A] [CompleteSpace A] [NormOneClass A]
 
