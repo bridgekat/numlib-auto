@@ -18,7 +18,7 @@ Table 2.1, the minimization characterizations of CG and MINRES, the CR sign lemm
 the monotonicity theorems Thm 2.3–2.5 for CR (hence MINRES); (§3) normwise relative backward error
 (3.1)–(3.6), the stopping rule (3.4), Thm 3.1; (§4.1.1) the FOM/GMRES-type relation (4.1); (§4.2)
 Steihaug's indefinite-case monotonicity and its CR analogue; (§5) Table 5.1.
-Lean files: `Surface/FongSaunders/Sec1.lean` (setting), `Sec2.lean`, `Sec3.lean`, `Sec4.lean`
+Lean files: `Numlib/Surface/FongSaunders/Section1.lean` (setting), `Sec2.lean`, `Sec3.lean`, `Sec4.lean`
 (only (4.1), the telescoping identity, §4.2), `Sec5.lean` (Table 5.1 as a structure). Numerical-only
 material (§4 experiments, Figures 4.1–4.8, the MINRES-QLP heuristic in §4.2, Table 5.2, §5 prose) is
 left out (section "Left out" below). Count: 26 result blocks; two deferred backbone items (both

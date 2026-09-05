@@ -10,7 +10,7 @@ deliberately left out.
 
 # Surface plan: Saad, Iterative Methods — Chapter 6
 
-Surface library `SaadSparse`, chapter file set `Surface/SaadSparse/Ch06/*.lean`, importing only the
+Surface library `SaadSparse`, chapter file set `Numlib/Surface/SaadSparse/Chapter06/*.lean`, importing only the
 backbone `Numlib` (backbone references are to `plans/backbone.md` § numbers and to declarations
 under `Numlib/`, cited with their module). Chapter 6 is the book's presentation of the Krylov
 spine: every numbered result is either a statement about *the* Galerkin / minimal-residual iterate

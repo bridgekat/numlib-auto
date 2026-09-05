@@ -1,9 +1,10 @@
 # Open proof obligations
 
-Every declaration under `Numlib/` is proved: `grep -rn sorry Numlib` is empty and
-`lake build Numlib` reports no `declaration uses 'sorry'`.
+The backbone is proved entire. One `sorry` remains, on the surface, and it is deferred backbone
+material rather than an unfinished proof: `lake build` reports exactly one
+`declaration uses 'sorry'`, at the declaration below.
 
-## `Surface/SaadSparse/Ch06/FaberManteuffel.lean` (1)
+## `Numlib/Surface/SaadSparse/Chapter06/Section10.lean` (1)
 
 `exists_aeval_eq_conjTranspose_of_isStarNormal`: a normal `A` satisfies `A^H = q(A)` for some
 polynomial `q`. Writing `A = Q Λ Q^H`, any `q` interpolating `z ↦ conj z` at the eigenvalues

@@ -39,14 +39,14 @@ Files (library `AtkinsonHan`, `srcDir = "Surface"`, importing only `Numlib`; thi
 
 | File | Content |
 |---|---|
-| `Surface/AtkinsonHan/Ch08/Existence.lean` | §8.2: closed operators, Thm 8.2.1, 8.2.4, Ex 8.2.5, Hilbert case of 8.2.7, Thm 8.2.8 |
-| `Surface/AtkinsonHan/Ch08/BilinearForms.lean` | §8.3 start: `BilinForm` predicates, `toCLM`/`ofCLM`, Thm 8.3.1 and the dictionary, `toOperator`, energy norm |
-| `Surface/AtkinsonHan/Ch08/LaxMilgram.lean` | Thm 8.3.2, 8.3.3, 8.3.4 (both proofs' ingredients), Ex 8.3.1 |
-| `Surface/AtkinsonHan/Ch08/GeneralizedLaxMilgram.lean` | Thm 8.7.1, (8.7.5), Ex 8.7.1, inf–sup ↔ operator-norm lemmas |
-| `Surface/AtkinsonHan/Ch09/Galerkin.lean` | §9.1: Galerkin problem, stiffness matrix (9.1.5), Ex 9.1.1–9.1.2, Ritz, Céa, Cor 9.1.4 |
-| `Surface/AtkinsonHan/Ch09/PetrovGalerkin.lean` | §9.2: Petrov–Galerkin problem, discrete inf–sup, Thm 9.2.1, Rem 9.2.2, Cor 9.2.3, (9.2.13)–(9.2.14) |
-| `Surface/AtkinsonHan/Ch09/Strang.lean` | §9.3: generalized Galerkin problem, Thm 9.3.1, Ex 9.3.1 |
-| `Surface/AtkinsonHan/Ch09/CG.lean` | §9.4: `A`, `f`, Algorithm 1 = backbone `CG.iterate`, convergence via Thm 5.6.1, energy derivative |
+| `Numlib/Surface/AtkinsonHan/Chapter08/Section02.lean` | §8.2: closed operators, Thm 8.2.1, 8.2.4, Ex 8.2.5, Hilbert case of 8.2.7, Thm 8.2.8 |
+| `Numlib/Surface/AtkinsonHan/Chapter08/Section03.lean` | §8.3 start: `BilinForm` predicates, `toCLM`/`ofCLM`, Thm 8.3.1 and the dictionary, `toOperator`, energy norm |
+| `Numlib/Surface/AtkinsonHan/Chapter08/Section03.lean` | Thm 8.3.2, 8.3.3, 8.3.4 (both proofs' ingredients), Ex 8.3.1 |
+| `Numlib/Surface/AtkinsonHan/Chapter08/Section07.lean` | Thm 8.7.1, (8.7.5), Ex 8.7.1, inf–sup ↔ operator-norm lemmas |
+| `Numlib/Surface/AtkinsonHan/Chapter09/Section01.lean` | §9.1: Galerkin problem, stiffness matrix (9.1.5), Ex 9.1.1–9.1.2, Ritz, Céa, Cor 9.1.4 |
+| `Numlib/Surface/AtkinsonHan/Chapter09/Section02.lean` | §9.2: Petrov–Galerkin problem, discrete inf–sup, Thm 9.2.1, Rem 9.2.2, Cor 9.2.3, (9.2.13)–(9.2.14) |
+| `Numlib/Surface/AtkinsonHan/Chapter09/Section03.lean` | §9.3: generalized Galerkin problem, Thm 9.3.1, Ex 9.3.1 |
+| `Numlib/Surface/AtkinsonHan/Chapter09/Section04.lean` | §9.4: `A`, `f`, Algorithm 1 = backbone `CG.iterate`, convergence via Thm 5.6.1, energy derivative |
 
 Naming: namespace `AtkinsonHan`, book numbers in names (`AtkinsonHan.Ch08.theorem_8_2_4`,
 `AtkinsonHan.Ch09.proposition_9_1_3`, …) as in `plans/backbone.md` §1.4; definitions get descriptive names.

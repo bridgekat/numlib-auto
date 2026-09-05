@@ -28,7 +28,7 @@ the surface file from Mathlib with moderate work, no backbone item warranted. `d
 backbone item scheduled for a later phase (`plans/backbone.md` §7; the item is listed in §3).
 `out-of-scope`: not planned (reason given).
 
-Proposed files (`Surface/AtkinsonHan/Ch05/`, namespace `AtkinsonHan.Ch05`, one section per file):
+Proposed files (`Numlib/Surface/AtkinsonHan/Chapter05/`, namespace `AtkinsonHan.Ch05`, one section per file):
 
 | File | Book | Backbone modules used |
 |---|---|---|

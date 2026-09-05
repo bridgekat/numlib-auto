@@ -23,7 +23,7 @@ by section number) through an equivalence lemma for the book-specific definition
 definitions and their equivalences, §2 the results, §3 the backbone items deferred to later phases,
 §4 what is left out, §5 how ambiguous book statements are read.
 
-Conventions (shared file `Surface/SaadSparse/Basic.lean`):
+Conventions (shared file `Numlib/Surface/SaadSparse/Common.lean`):
 * `n : ℕ`; vectors of ℝⁿ/ℂⁿ are `EuclideanSpace 𝕜 (Fin n)` (Mathlib's ℝⁿ with the Euclidean norm),
   abbreviated `E𝕜 n`; matrices `Matrix (Fin n) (Fin n) 𝕜`; the action `A x` is `toEuclideanLin A x`
   (local notation `A ⬝ x`); componentwise statements use `Fin n → 𝕜`, `A *ᵥ x`, `x ⬝ᵥ y`, and the
@@ -51,17 +51,17 @@ Proposed files:
 
 | File | Book |
 |---|---|
-| `Surface/SaadSparse/Basic.lean` | conventions, notation, glue lemmas (`toEuclideanLin`, `dotProduct`, `complexify`) |
-| `Surface/SaadSparse/Ch01/PositiveDefinite.lean` | §1.11: (1.48)–(1.57), Thm 1.34, Thm 1.35 |
-| `Surface/SaadSparse/Ch01/Projectors.lean` | §1.12: (1.58)–(1.72), Lemma 1.36, Prop 1.37, Thm 1.38, Cor 1.39 |
-| `Surface/SaadSparse/Ch01/LinearSystems.lean` | §1.13: existence cases, (1.74)–(1.76), `κ`, `κ_p`, residual–error relation, Example 1.5 |
-| `Surface/SaadSparse/Ch04/Splittings.lean` | §4.1: (4.2)–(4.27), Alg 4.1–4.2 as functions |
-| `Surface/SaadSparse/Ch04/Convergence.lean` | §4.2–4.2.2: (4.29)–(4.30), Thm 4.1, Cor 4.2, convergence factors, Ex 4.1, Def 4.3, Thm 4.4 |
-| `Surface/SaadSparse/Ch04/DiagDominant.lean` | §4.2.3: Def 4.5, Thm 4.6–4.9, Cor 4.8 |
-| `Surface/SaadSparse/Ch04/SPD.lean` | §4.2.4–4.2.5: Thm 4.10, Def 4.11–4.13, Prop 4.12–4.15, Thm 4.16, (4.47) |
-| `Surface/SaadSparse/Ch05/Projection.lean` | §5.1–5.2: (5.2)–(5.11), Prop 5.1–5.6, Thm 5.7 |
-| `Surface/SaadSparse/Ch05/OneDimensional.lean` | §5.3: (5.12)–(5.21), Alg 5.2–5.4, Lemma 5.8, Thm 5.9–5.10 |
-| `Surface/SaadSparse/Ch05/Additive.lean` | §5.4: (5.22)–(5.23), Alg 5.5–5.6 |
+| `Numlib/Surface/SaadSparse/Common.lean` | conventions, notation, glue lemmas (`toEuclideanLin`, `dotProduct`, `complexify`) |
+| `Numlib/Surface/SaadSparse/Chapter01/Section11.lean` | §1.11: (1.48)–(1.57), Thm 1.34, Thm 1.35 |
+| `Numlib/Surface/SaadSparse/Chapter01/Section12.lean` | §1.12: (1.58)–(1.72), Lemma 1.36, Prop 1.37, Thm 1.38, Cor 1.39 |
+| `Numlib/Surface/SaadSparse/Chapter01/Section13.lean` | §1.13: existence cases, (1.74)–(1.76), `κ`, `κ_p`, residual–error relation, Example 1.5 |
+| `Numlib/Surface/SaadSparse/Chapter04/Section01.lean` | §4.1: (4.2)–(4.27), Alg 4.1–4.2 as functions |
+| `Numlib/Surface/SaadSparse/Chapter04/Section02.lean` | §4.2–4.2.2: (4.29)–(4.30), Thm 4.1, Cor 4.2, convergence factors, Ex 4.1, Def 4.3, Thm 4.4 |
+| `Numlib/Surface/SaadSparse/Chapter04/Section02.lean` | §4.2.3: Def 4.5, Thm 4.6–4.9, Cor 4.8 |
+| `Numlib/Surface/SaadSparse/Chapter04/Section02.lean` | §4.2.4–4.2.5: Thm 4.10, Def 4.11–4.13, Prop 4.12–4.15, Thm 4.16, (4.47) |
+| `Numlib/Surface/SaadSparse/Chapter05/Section01.lean` | §5.1–5.2: (5.2)–(5.11), Prop 5.1–5.6, Thm 5.7 |
+| `Numlib/Surface/SaadSparse/Chapter05/Section03.lean` | §5.3: (5.12)–(5.21), Alg 5.2–5.4, Lemma 5.8, Thm 5.9–5.10 |
+| `Numlib/Surface/SaadSparse/Chapter05/Section04.lean` | §5.4: (5.22)–(5.23), Alg 5.5–5.6 |
 
 ## 1. Book-specific definitions
 
