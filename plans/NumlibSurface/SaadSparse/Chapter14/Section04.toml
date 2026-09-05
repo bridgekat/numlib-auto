@@ -1,0 +1,17 @@
+namespace = "SaadSparse.Ch14"
+desc = '''
+§14.4.1, induced preconditioners. One node: Proposition 14.10.
+
+§14.4.2 (probing: approximate `S` by a tridiagonal matrix reconstructed from a few matrix–vector
+products) and §14.4.3 (preconditioning vertex-based Schur complements) are heuristics with no
+stated result and are not planned.
+'''
+
+[[node]]
+id = "proposition_14_10"
+kind = "theorem"
+desc = '''Proposition 14.10: if `M_A = L_A U_A` is an ILU preconditioner for `A`, the preconditioner it
+induces on the Schur complement, `M_S⁻¹ = R_y M_A⁻¹ R_yᵀ` (14.46), is `M_S = L_S U_S` with
+`L_S = R_y L_A R_yᵀ` and `U_S = R_y U_A R_yᵀ` — the trailing diagonal blocks of the `L` and `U`
+factors. Block-triangular inversion: `R_y M_A⁻¹ R_yᵀ = U_S⁻¹ L_S⁻¹`.'''
+deps = ["schurComplement", "Matrix.IsILU", "DomainDecomposition.inducedPreconditioner_eq"]

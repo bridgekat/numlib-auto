@@ -1,0 +1,33 @@
+namespace = "SaadSparse.Ch10"
+desc = '''
+§10.2, the Jacobi, SOR and SSOR preconditioners. Nothing is constructed: these are the splittings
+of `Numlib/LinearSolve/Stationary/Splitting` (already used by the Ch. 4 surface) read as
+preconditioners, so the file is the dictionary between the two readings plus the two identities
+Saad draws in the section — that the SGS preconditioner is a product `L U` of matrices with the
+sparsity of the triangular parts of `A`, and that its error matrix is `-E D⁻¹ F`. The second is
+what motivates ILU(0), so it is worth stating even though it is unnumbered.
+'''
+
+[[node]]
+id = "M_sgs"
+kind = "definition"
+desc = '''Saad (10.9): the symmetric Gauss–Seidel preconditioner `M_SGS = (D - E) D⁻¹ (D - F)`, that is
+`Matrix.ssorSplitting A hD 1 |>.m`, with `M_sgs_eq_ssorSplitting` identifying the two and
+`equation_10_4` recording `G = I - M⁻¹ A` for a general splitting (Saad (10.4)) together with the
+Jacobi and Gauss–Seidel instances (10.5)–(10.6).'''
+deps = ["Matrix.ssorSplitting", "Stationary.Splitting.iterationOperator", "Stationary.Splitting.iterationOperator_eq"]
+
+[[node]]
+id = "M_sgs_eq_mul"
+kind = "theorem"
+desc = '''`M_SGS = L * U` with `L = 1 - E D⁻¹` unit lower triangular and `U = D - F` upper triangular, `L`
+and `U` having the sparsity of the lower and upper parts of `A`.'''
+deps = ["M_sgs", "Matrix.diagPart", "Matrix.strictLower", "Matrix.strictUpper"]
+
+[[node]]
+id = "sub_M_sgs_eq"
+kind = "theorem"
+desc = '''The error matrix of the SGS preconditioner, the display before Example 10.1:
+`A - L * U = -E * D⁻¹ * F`, which is generally nonzero in the positions where `A` is nonzero — the
+observation that motivates asking for a factorization whose error vanishes there, i.e. ILU(0).'''
+deps = ["M_sgs_eq_mul", "Matrix.diagPart_sub_neg_strictLower_sub_neg_strictUpper"]

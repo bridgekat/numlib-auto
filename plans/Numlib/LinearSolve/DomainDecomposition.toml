@@ -1,0 +1,28 @@
+desc = '''
+Domain decomposition: Saad, *Iterative Methods for Sparse Linear Systems*, Ch. 14.
+
+Two mechanisms, and the chapter's theorems belong to one or the other.
+
+`Schwarz` holds the abstract Schwarz theory of §14.3: a finite family of subspaces of a Hilbert
+space, the energy-orthogonal projectors onto them, the additive operator `A_J = ∑ P_i` and the
+multiplicative error operator `Q_s = (1 - P_s) ⋯ (1 - P_1)`, and the four convergence results
+(Thm 14.5–14.7, Lemma 14.8, Thm 14.9) under the two named hypotheses — a stable decomposition and a
+strengthened Cauchy–Schwarz inequality. Not one line of the theory mentions a domain, a mesh or a
+restriction matrix; the subdomains enter only through the subspaces, exactly as in the
+finite-element literature that generalized it. This is the same object as
+`Numlib/LinearSolve/Projection/Additive`, seen in the energy inner product: the additive and
+multiplicative *projection processes* of Saad §5.4 act on residuals, the Schwarz projectors act on
+errors, and the two are conjugate by `A`. That correspondence is proved here rather than
+duplicated.
+
+`Schur` holds the reduction to the interface system of §14.2 and §14.5: with the Schur complement
+of `Numlib/LinearAlgebra/Matrix/SchurComplement`, a Krylov method applied to the full system with
+the block preconditioners (14.49)/(14.55) *is* the same Krylov method applied to the reduced system
+(Saad Prop 14.11–14.12), and an ILU factorization of the full matrix induces one of the Schur
+complement (Prop 14.10).
+
+What is not here, and why, is in `plans/proposals/plan-saad10.md`: the vertex-based partitioning
+bookkeeping of §14.2.3–14.2.5 and Theorem 14.2, probing (§14.4.2), and the graph-partitioning
+heuristics of §14.6, of which only the spectral-bisection identity has a theorem attached and that
+one is a Mathlib graph-Laplacian corollary stated in the Saad surface.
+'''

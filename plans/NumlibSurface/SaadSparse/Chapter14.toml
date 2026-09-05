@@ -1,0 +1,14 @@
+desc = '''
+Saad, Chapter 14: domain decomposition methods. §14.2 (the Schur complement and its properties,
+Prop 14.1), §14.3 (Schwarz alternating procedures, Prop 14.3, Lemma 14.4, Thm 14.5–14.9 and
+Lemma 14.8), §14.4.1 (induced preconditioners, Prop 14.10), §14.5 (full matrix methods,
+Prop 14.11–14.12) and the spectral-bisection identity of §14.6.3 are surfaced.
+
+Skipped, with reasons in `plans/saadsparse-ch10-14.md`: §14.1 (notation and taxonomy), §14.2.3–14.2.5
+and Theorem 14.2 (the vertex-based partitioning bookkeeping, and the equivalence of the Schwarz
+`y`-iterates with block Gauss–Seidel on the Schur complement, which needs that bookkeeping and
+contributes no reusable mathematics), §14.4.2 (probing, a heuristic), §14.4.3, §14.6.1–14.6.2 and
+§14.6.4 (graph-partitioning definitions and algorithms; Theorem 14.16, the geometric separator
+theorem of Miller–Teng–Thurston–Vavasis, is quoted without proof and is a substantial piece of
+computational geometry).
+'''

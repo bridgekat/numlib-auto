@@ -1,0 +1,13 @@
+desc = '''
+Saad, Chapter 10: preconditioning techniques. Sections with theorem content only — §10.2 (the
+Jacobi/SOR/SSOR preconditioners as splittings), §10.3 (ILU, Thm 10.1–10.2, Prop 10.4, MILU),
+§10.4 (ILUT, Thm 10.8), §10.5 (approximate inverses, Prop 10.9–10.14, Lemma 10.15) and §10.8
+(preconditioners for the normal equations, Prop 10.17).
+
+Not covered, with reasons in `plans/saadsparse-ch10-14.md`: §10.3.3 (levels of fill and the
+fill-path theorems 10.6–10.7, one of which the book does not prove), §10.3.4 (stencil recurrences
+for regularly structured matrices), §10.4.3–10.4.6 (ILUT implementation, ILUTP, ILUS, Crout ILU),
+§10.5.6–10.5.8 (bordering, AINV, preconditioner improvement — algorithms), §10.6 (reordering, no
+theorem), §10.7 (block preconditioners: Theorem 10.16 is stated without proof) and §10.8.3's
+Theorem 10.18 (also stated without proof).
+'''

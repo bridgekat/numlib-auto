@@ -1,0 +1,74 @@
+namespace = "SaadSparse.Ch10"
+desc = '''
+§10.3, incomplete `LU` factorizations: the general static-pattern ILU and its existence for
+M-matrices (Thm 10.1, Thm 10.2), the residual identity (Prop 10.4), ILU(0) and modified ILU.
+
+The surface adds nothing to the backbone here except the book's real-matrix reading and its names.
+Saad's `ILU_P` is `Matrix.IsILU`, his Thm 10.1 is
+`Matrix.IsMMatrix.isMMatrix_schurComplementSingle`, and his Thm 10.2 is
+`Matrix.IsMMatrix.exists_isILU`, whose conclusion "which is a regular splitting of `A`" is
+`Matrix.IsILU.isRegular`.
+
+Two results of the section are not planned. Proposition 10.3 (the `KIJ` and `IKJ` loop orders give
+the same factors) is a statement about two *algorithms*, and neither is written down anywhere in
+the library — the declarative `Matrix.IsILU` deliberately abstracts from the loop order, so the
+proposition has no content to state. Theorems 10.6 and 10.7 (fill-in entries correspond to
+fill-paths in the adjacency graph, of length `p + 1` for level-of-fill `p`) need a symbolic model
+of Gaussian elimination on a graph that nothing else in the library would use, and Thm 10.6 is
+quoted from the literature without proof. Definition 10.5 (the level-of-fill recurrence) is
+recorded so that ILU(p) can be named, but the graph characterization is skipped.
+'''
+
+[[node]]
+id = "iluPattern"
+kind = "definition"
+desc = '''Saad (10.11): a zero pattern is a set `P ⊆ {(i,j) : i ≠ j}`; `SaadSparse.Ch10.IsZeroPattern P`
+and the reading of Saad's `ILU_P` as `Matrix.IsILU P A L U` for real matrices.'''
+deps = ["Matrix.IsILU"]
+
+[[node]]
+id = "theorem_10_1"
+kind = "theorem"
+desc = '''Ky Fan's theorem: if `A` is an M-matrix and `A₁` is obtained from `A` by the first step of
+Gaussian elimination, then `A₁` is an M-matrix.'''
+deps = ["Matrix.IsMMatrix.isMMatrix_schurComplementSingle", "Matrix.schurComplementSingle"]
+
+[[node]]
+id = "theorem_10_2"
+kind = "theorem"
+desc = '''For an M-matrix `A` and a zero pattern `P` as in (10.11), Algorithm 10.1 does not break down and
+produces an incomplete factorization `A = L U - R` which is a regular splitting of `A`.'''
+deps = ["theorem_10_1", "Matrix.IsMMatrix.exists_isILU", "Matrix.IsILU.isRegular", "iluPattern"]
+
+[[node]]
+id = "proposition_10_4"
+kind = "theorem"
+desc = '''Algorithm 10.3 produces `L` and `U` with `A = L U - R`, where `-R` is the matrix of the elements
+dropped during the elimination: `R i j = 0` off the pattern.'''
+deps = ["Matrix.IsILU.sub_eq_zero_of_notMem", "iluPattern"]
+
+[[node]]
+id = "ilu0"
+kind = "definition"
+desc = '''§10.3.2: ILU(0), the incomplete factorization with `P` the off-diagonal zero pattern of `A`
+(`Matrix.IsILU0`), with `theorem_10_2_ilu0` specializing Thm 10.2 to it, and the observation that
+the constraints do not determine `L` and `U` uniquely (Saad's remark before Algorithm 10.4) stated
+as a non-uniqueness example on a small matrix.'''
+deps = ["Matrix.IsILU.zeroPattern", "theorem_10_2"]
+
+[[node]]
+id = "definition_10_5"
+kind = "definition"
+desc = '''Saad Definition 10.5 and (10.17): the level of fill, `lev i j = 0` if `A i j ≠ 0` or `i = j` and
+`⊤` otherwise, updated by `lev i j := min (lev i j) (lev i k + lev k j + 1)`, as a function
+`ℕ → Fin n → Fin n → ℕ∞`; and the ILU(p) pattern `P_p = {(i,j) : lev i j > p}` (Algorithm 10.5),
+with `P_0 = ` the zero pattern of `A` recovering ILU(0). The characterization of `lev` by fill-paths
+(Thm 10.6–10.7) is not planned; see the group description.'''
+
+[[node]]
+id = "milu"
+kind = "definition"
+desc = '''§10.3.5: the modified ILU factorization, `Matrix.IsMILU`, in which the sum of the entries dropped
+in a row is subtracted from the diagonal of `U`, and `milu_mulVec_one` (Saad (10.21)):
+`A e = L U e` for `e` the vector of ones, so that MILU is exact on constants.'''
+deps = ["Matrix.IsMILU", "Matrix.IsILU.dropStrategy_rowSum"]

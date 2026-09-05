@@ -1,0 +1,119 @@
+namespace = "SaadSparse.Ch14"
+desc = '''
+§14.3, the Schwarz alternating procedures: the multiplicative and additive procedures written with
+restriction matrices, their preconditioner forms, and the convergence theory of §14.3.4.
+
+The setting is Saad's own: index sets `S_i ⊆ {1, …, n}` covering `{1, …, n}` and not necessarily
+disjoint, the boolean restriction matrices `R_i` of §14.3.1, the local matrices `A_i = R_i A R_iᵀ`
+and the projectors `P_i = R_iᵀ A_i⁻¹ R_i A` of (14.24). Every theorem specializes
+`Numlib/LinearSolve/DomainDecomposition/Schwarz`, whose statements are about the `A`-orthogonal
+projectors onto the subspaces `Ran(R_iᵀ) = span {e_j : j ∈ S_i}`; the surface's job is the
+identification `P_i = ` that projector, which is
+`Schwarz.energyProjection_eq_of_galerkinCoarse`, and the real-matrix reading of the rest.
+
+Theorem 14.2 (Chan–Goovaerts: with a consistent initial guess, the `y`-iterates of the
+multiplicative Schwarz sweep are those of a Gauss–Seidel sweep on the Schur complement system) is
+*not* planned. It is stated for the vertex-based partitioning of §14.2.3, whose block structure
+(14.8)–(14.14) — `s` subdomains, each with its own interior/interface splitting and inter-subdomain
+couplings `E_ij` — is several definitions of pure bookkeeping that nothing else in the chapter or
+the library uses, and the theorem itself is a translation statement rather than an estimate.
+'''
+
+[[node]]
+id = "restrictSubset"
+kind = "definition"
+desc = '''§14.3.1: for an index set `S : Finset (Fin n)`, the boolean restriction matrix `R_S` whose rows are
+the `e_jᵀ` for `j ∈ S`, the local matrix `A_S = R_S A R_Sᵀ`, and the projector
+`P_S = R_Sᵀ A_S⁻¹ R_S A` of (14.24), with `T_S = R_Sᵀ A_S⁻¹ R_S` of (14.31). Comes with
+`range_restrictSubset_transpose` (`= span {e_j : j ∈ S}`), `isIdempotent_P` (Saad's computation
+that `P_S² = P_S`) and `P_eq_energyProjection`, which identifies `P_S` with the `A`-orthogonal
+projector onto that span and is what carries the whole section to the backbone.'''
+deps = ["Schwarz.energyProjection", "Matrix.posDef_iff_isSymmetricCoercive"]
+
+[[node]]
+id = "Q_s"
+kind = "definition"
+desc = '''(14.25)–(14.26): the multiplicative Schwarz sweep `x ← x + R_iᵀ A_i⁻¹ R_i (b - A x)` for
+`i = 1, …, s`, its error operator `Q_s = (I - P_s) ⋯ (I - P_1)`, and the additive procedure of
+§14.3.3 with `x_new = x + ∑ T_i (b - A x)`; `Q_s_eq_errorOp` identifies `Q_s` with
+`Schwarz.errorOp`.'''
+deps = ["restrictSubset", "Schwarz.errorOp"]
+
+[[node]]
+id = "proposition_14_3"
+kind = "theorem"
+desc = '''Proposition 14.3: the multiplicative Schwarz procedure is a fixed-point iteration for the
+preconditioned problem `M⁻¹ A x = M⁻¹ b` with `M⁻¹ A = I - Q_s` (14.27) and
+`M⁻¹ b = (I - Q_s) A⁻¹ b` (14.28); and the additive counterpart of §14.3.3,
+`M⁻¹ A = ∑ P_i = A_J`, `M⁻¹ = ∑ T_i`.'''
+deps = ["Q_s", "Schwarz.one_sub_errorOp_eq_sum", "Schwarz.additiveOperator"]
+
+[[node]]
+id = "lemma_14_4"
+kind = "theorem"
+desc = '''Lemma 14.4: with `Z_i = I - Q_i`, `M_i = Z_i A⁻¹` and `T_i = P_i A⁻¹ = R_iᵀ A_i⁻¹ R_i`, one has
+`M⁻¹ = M_s`, `M⁻¹ A = Z_s`, and the recurrences `Z_i = Z_{i-1} + P_i (I - Z_{i-1})` (14.32),
+`M_i = M_{i-1} + T_i (I - A M_{i-1})` (14.33), whence (14.35) `Z_i = ∑_{j ≤ i} P_j Q_{j-1}`; these
+are Algorithms 14.4 and 14.5, which apply `M⁻¹` and `M⁻¹ A` without ever forming `A⁻¹`.'''
+deps = ["proposition_14_3", "Schwarz.one_sub_errorOp_eq_sum"]
+
+[[node]]
+id = "A_J"
+kind = "definition"
+desc = '''(14.37): the additive Schwarz operator `A_J = ∑_{i=1}^s P_i`, `A`-self-adjoint (Saad's
+computation at the head of §14.3.4, which is `Submodule.starProjection`'s self-adjointness in the
+energy inner product) and hence with real eigenvalues.'''
+deps = ["restrictSubset", "Schwarz.additiveOperator"]
+
+[[node]]
+id = "theorem_14_5"
+kind = "theorem"
+desc = '''Theorem 14.5: `λmax(A_J) ≤ s`, since each `P_i` has `A`-norm one.'''
+deps = ["A_J", "Schwarz.re_inner_additiveOperator_le", "Schwarz.isSymmetricBoundedBy_additiveOperator"]
+
+[[node]]
+id = "theorem_14_6"
+kind = "theorem"
+desc = '''Theorem 14.6: if the subdomains can be coloured with `c` colours so that two subdomains of the
+same colour share no node, then `λmax(A_J) ≤ c`, because the sum of the projectors over one colour
+class is again an orthogonal projector.'''
+deps = ["theorem_14_5", "Schwarz.re_inner_additiveOperator_le"]
+
+[[node]]
+id = "assumption_1"
+kind = "definition"
+desc = '''Assumption 1 of §14.3.4: there is `K₀` such that every `u` admits a decomposition
+`u = ∑ u_i` with `u_i ∈ Ω_i` and `∑ (A u_i, u_i) ≤ K₀ (A u, u)`; and Assumption 2, (14.40).
+Both read into `Schwarz.IsStableDecompositionWith` and
+`Schwarz.IsStrengthenedCauchySchwarzWith` through the energy inner product.'''
+deps = ["restrictSubset", "Schwarz.IsStableDecompositionWith", "Schwarz.IsStrengthenedCauchySchwarzWith"]
+
+[[node]]
+id = "theorem_14_7"
+kind = "theorem"
+desc = '''Theorem 14.7: if Assumption 1 holds then `λmin(A_J) ≥ 1/K₀`, so with Theorem 14.5 the additive
+Schwarz preconditioned operator has condition number at most `s K₀` and additive Schwarz
+preconditioned CG converges at the corresponding rate.'''
+deps = ["A_J", "assumption_1", "Schwarz.le_re_inner_additiveOperator", "Schwarz.isSymmetricBoundedBy_additiveOperator"]
+
+[[node]]
+id = "equation_14_39"
+kind = "theorem"
+desc = '''(14.39): `‖Q_s v‖_A² = ‖v‖_A² - ∑_{i=1}^s ‖P_i Q_{i-1} v‖_A²`, so the `A`-norm of the error does
+not increase at any substep of a multiplicative sweep.'''
+deps = ["Q_s", "Schwarz.norm_errorOp_sq_eq"]
+
+[[node]]
+id = "lemma_14_8"
+kind = "theorem"
+desc = '''Lemma 14.8: if Assumptions 1 and 2 hold then
+`∑_i ‖P_i v‖_A² ≤ (1 + K₁)² ∑_i ‖P_i Q_{i-1} v‖_A²` (14.41), whence (14.43).'''
+deps = ["assumption_1", "equation_14_39", "Schwarz.sum_norm_starProjection_sq_le"]
+
+[[node]]
+id = "theorem_14_9"
+kind = "theorem"
+desc = '''Theorem 14.9: under Assumptions 1 and 2,
+`‖Q_s‖_A ≤ (1 - 1/(K₀ (1 + K₁)²))^{1/2}`, so the multiplicative Schwarz sweep converges at a rate
+depending only on the two constants.'''
+deps = ["lemma_14_8", "theorem_14_7", "Schwarz.norm_errorOp_le"]

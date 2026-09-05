@@ -1,0 +1,36 @@
+namespace = "SaadSparse.Ch14"
+desc = '''
+§14.6, graph partitioning. Only §14.6.3's spectral bisection has a theorem attached, and it is a
+short one over Mathlib's graph Laplacian.
+
+Definitions 14.13 (a map of a vertex set), 14.14 (`k`-ply neighborhood systems) and 14.15
+(`(α, k)`-overlap graphs) exist only to state Theorem 14.16, the geometric separator theorem of
+Miller, Teng, Thurston and Vavasis, which Saad quotes without proof; it is a substantial result in
+computational geometry with no other consumer in the library, and it is not planned. §14.6.2
+(coordinate bisection and inertial bisection), §14.6.4 (level-set expansion, the pseudo-peripheral
+node heuristic, recursive graph bisection, the multinode expansion algorithm) and Algorithms
+14.7–14.10 are heuristics: none of them comes with a claim.
+'''
+
+[[node]]
+id = "lapMatrix_quadratic_partition"
+kind = "theorem"
+desc = '''§14.6.3: for a partition vector `p` with entries `±1` and `∑ p_i = 0`, the graph Laplacian `L` of
+the adjacency graph satisfies `(L p, p) = 4 n_c`, where `n_c` is the number of edges cut by the
+partition; from Mathlib's `SimpleGraph.lapMatrix_toLinearMap₂'`
+(`(L x, x) = ½ ∑_{i ~ j} (x_i - x_j)²`), since a cut edge contributes `(±2)² = 4` and an uncut one
+`0`, and each edge is counted twice in the double sum. Minimizing the number of edge cuts subject
+to `(p, e) = 0` is therefore the discrete relaxation of minimizing the Rayleigh quotient
+`(L x, x)/(x, x)` subject to `(x, e) = 0`.'''
+
+[[node]]
+id = "fiedlerVector"
+kind = "theorem"
+desc = '''The continuous relaxation, and the reason for Algorithm 14.7 (recursive spectral bisection): `L`
+is positive semidefinite with `0` as its smallest eigenvalue and the constant vector `e` as an
+eigenvector, and the minimum of the Rayleigh quotient over `{x : (x, e) = 0, x ≠ 0}` is the second
+smallest eigenvalue of `L`, attained at the Fiedler vector. Courant–Fischer
+(`Numlib/Eigen/MinMax`) with `Mathlib`'s `SimpleGraph.posSemidef_lapMatrix` and
+`SimpleGraph.lapMatrix_mulVec_const_eq_zero`; the sorting-and-splitting step of the algorithm
+itself has no theorem attached.'''
+deps = ["lapMatrix_quadratic_partition", "LinearMap.IsSymmetric.isGreatest_rayleighQuotient_orthogonal", "LinearMap.IsSymmetric.eigenvalues_eq_iInf_iSup"]

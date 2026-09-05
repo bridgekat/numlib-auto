@@ -1,0 +1,32 @@
+namespace = "SaadSparse.Ch13"
+desc = '''
+§13.6, algebraic multigrid. One node, because there is one theorem.
+
+The section's reasoning is explicitly heuristic — Saad writes "it cannot be rigorously argued that
+the bracketed term must be of the order 2ε, but one can say that on average this will be true" —
+and the interpolation formula (13.74) is derived by successive approximations that are not
+inequalities. What *is* exact, and worth having, is the quadratic-form expansion (13.68)–(13.69)
+that the argument starts from: for a symmetric matrix,
+`(A s, s) = ½ ∑_{i,j} -a_ij (s_j - s_i)² + ∑_i (∑_j a_ij) s_i²`, so for a matrix with zero row sums
+and nonpositive off-diagonal entries `(A s, s) = ½ ∑ |a_ij| (s_j - s_i)²`. That is the graph
+Laplacian identity, and Mathlib proves it (`SimpleGraph.lapMatrix_toLinearMap₂'`) for the
+unweighted case; the weighted version needed here is the same computation.
+
+The rest of §13.6 — the smoothness criterion (13.70), the C/F splitting, the interpolation weights
+(13.74), the coarsening heuristics of §13.6.3 and the multilevel-ILU construction of §13.6.4 — is
+not planned. Once an AMG prolongation is given, its analysis is Theorem 13.3 with the coarse space
+`Ran(I_H^h)`, which the surface already has; what AMG contributes is a way of *choosing* that space,
+and no theorem about the choice is stated.
+'''
+
+[[node]]
+id = "equation_13_68"
+kind = "theorem"
+desc = '''(13.68)–(13.69), the expansion the AMG smoothness argument starts from: for a symmetric real
+matrix, `(A s, s) = ½ ∑_{i,j} (-a_ij) (s_j - s_i)² + ∑_i (rowSum A i) s_i²`; hence for a matrix
+with zero row sums and nonpositive off-diagonal entries, `(A s, s) = ½ ∑_{i,j} |a_ij| (s_j - s_i)²`,
+which is the weighted graph-Laplacian quadratic form (Mathlib's
+`SimpleGraph.lapMatrix_toLinearMap₂'` in the unweighted case). Also the Cauchy–Schwarz consequence
+`(A s, s) ≤ ‖A s‖_{D⁻¹} ‖s‖_D`, which is why a smooth error in the sense of the smoothing property
+has a small Rayleigh quotient for `D^{-1/2} A D^{-1/2}`.'''
+deps = ["normD", "Multigrid.IsDualSeminormPair"]

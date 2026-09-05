@@ -171,10 +171,10 @@ desc = '''The two-dimensional five-point matrix is the Kronecker sum of two one-
 `laplacian2D n₁ n₂ h₁ h₂ = Matrix.kroneckerSum (laplacian1D n₁ h₁) (laplacian1D n₂ h₂)`, and
 therefore has eigenvalues `4 sin²(kπ/(2(n₁+1)))/h₁² + 4 sin²(lπ/(2(n₂+1)))/h₂²` with the
 tensor sine eigenvectors, and is symmetric positive definite. The identity is entrywise; the
-spectrum is `Matrix.kroneckerSum_orthonormalBasis` applied to `laplacian1D_posDef`. Saad writes
+spectrum is `Matrix.kroneckerOrthonormalBasis` applied to `laplacian1D_posDef`. Saad writes
 neither the Kronecker form nor this spectrum, and both are what a reader of the block display
 needs.'''
-deps = ["laplacian2D", "laplacian1D_posDef", "_root_.Matrix.kroneckerSum_orthonormalBasis"]
+deps = ["laplacian2D", "laplacian1D_posDef", "_root_.Matrix.kroneckerOrthonormalBasis"]
 
 [[node]]
 id = "equation_2_27_spectrum"

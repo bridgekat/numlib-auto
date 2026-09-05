@@ -1,0 +1,17 @@
+desc = '''
+Preconditioners: the ways of manufacturing an operator `M` for which `M⁻¹ A` is better conditioned
+than `A`, and the theorems that say when the manufacture succeeds. Saad, *Iterative Methods for
+Sparse Linear Systems*, Ch. 10 and §12.3.
+
+The directory is deliberately thin, because most of Saad Ch. 10 and Ch. 12 is algorithm and data
+structure with no theorem attached. What is here is the material with mathematical content:
+incomplete `LU` factorization and its existence for M-matrices (`ILU`), polynomial preconditioning
+and its optimality criteria (`Polynomial`, `Chebyshev`), and the approximate-inverse theory
+(`ApproximateInverse`).
+
+Two things are deliberately *not* here. The Jacobi/SOR/SSOR preconditioners of Saad §10.2 are the
+splittings of `Numlib/LinearSolve/Stationary/Splitting` seen from the other side, so §10.2 is a
+surface chapter over that module and nothing new is defined. The preconditioned Krylov methods
+themselves (PCG, left/right preconditioned GMRES, flexible GMRES) are `Numlib/Krylov/Preconditioned`
+— this directory produces `M`, that module consumes it.
+'''

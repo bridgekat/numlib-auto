@@ -1,0 +1,13 @@
+desc = '''
+Saad, Chapter 13: multigrid methods. §13.2 (the model problems and their spectra), §13.3
+(inter-grid operations), §13.4 (coarse problems, the two-grid cycle, Lemma 13.1, full multigrid and
+Theorem 13.2) and §13.5 (the two subspaces and Theorem 13.3) are surfaced. §13.6 (algebraic
+multigrid) contributes one algebraic identity and is otherwise heuristic; §13.7 is a discussion.
+
+The chapter is stated for the *discrete* problems throughout, which is what makes it tractable:
+the matrices are the discrete Laplaceans of `Numlib/LinearAlgebra/Matrix/TridiagonalToeplitz` and
+`Numlib/LinearAlgebra/Matrix/KroneckerSum`, and no differential equation is ever solved. The one
+place where the continuous problem genuinely enters is the discretization-error assumption (13.48)
+of the FMG analysis, which Saad also takes as an assumption; Example 13.6, which verifies it for
+the 1-D model problem from a bound on the fourth derivative of the exact solution, is not planned.
+'''

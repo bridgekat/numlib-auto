@@ -1,0 +1,64 @@
+namespace = "Preconditioner"
+desc = '''
+Polynomial preconditioning: `M⁻¹ = s(A)` for a low-degree polynomial `s`, so that the
+preconditioned operator is `s(A) A` and applying `M⁻¹` costs only matrix–vector products.
+Saad, *Iterative Methods for Sparse Linear Systems*, §12.3, whose §12.3.1 (Neumann polynomials)
+and the general optimality criterion (12.4)–(12.5) live here; the two ways of choosing `s`
+optimally are `Numlib/LinearSolve/Preconditioner/Chebyshev` (uniform norm) and
+`Numlib/RingTheory/Polynomial/KernelPolynomial` (weighted least squares).
+
+Nothing here is analytic. The Neumann identity is a geometric sum in a ring, and the spectral
+criterion is `Numlib/Krylov/Convergence/Polynomial` read backwards: what a polynomial preconditioner
+controls is `sup_{[α,β]} |1 - λ s(λ)|`, which bounds `‖1 - s(A) A‖` by the compression trick, in
+any inner product space and with no functional calculus. The self-adjointness of `s(A) A` in the
+`D`-inner product (Saad's Exercise 12.1) is the reason a nonsymmetric preconditioned operator can
+still be used with CG, and it is a `WithEnergy` statement.
+'''
+
+[[node]]
+id = "neumannPoly"
+kind = "definition"
+desc = '''`Preconditioner.neumannPoly s ω = ∑_{i ≤ s} (1 - ω • X)^i`, the truncated Neumann series of
+Saad §12.3.1, and the split form `neumannPolyOf N s = ∑_{i ≤ s} N^i` in a ring. The general
+preconditioner of Saad (12.3) is `M⁻¹ = (∑_{i ≤ s} N^i) D⁻¹` with `N = 1 - ω D⁻¹ A`; the definition
+is kept at the ring level so that the block-diagonal `D` costs nothing extra.'''
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 12.3.1"
+
+[[node]]
+id = "neumannPoly_mul_eq"
+kind = "theorem"
+desc = '''Saad (12.3): in any ring, for `n = 1 - ω * a` with `ω` invertible,
+`(∑_{i ≤ s} n^i) * (ω * a) = 1 - n^(s+1)`, hence `M⁻¹ A = ω⁻¹ (1 - N^{s+1})` for the Neumann
+preconditioner. A geometric sum (`geom_sum_mul` in Mathlib) after `ω a = 1 - n`; the point of
+naming it is that it turns every bound on the preconditioned operator into a bound on `‖N^{s+1}‖`,
+so a Neumann preconditioner is exactly `s + 1` steps of the underlying stationary iteration
+(`Numlib/LinearSolve/Stationary/Basic`).'''
+deps = ["neumannPoly"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, (12.3)"
+
+[[node]]
+id = "isSymmetric_withEnergy_aeval_mul"
+kind = "theorem"
+desc = '''Saad's Exercise 12.1 and the reason polynomial preconditioning is compatible with CG: for a
+symmetric coercive `D` and a symmetric `A` commuting with `D⁻¹ A` in the relevant sense — concretely
+for `A` symmetric coercive and any real polynomial `s`, the operator `s(D⁻¹ A) D⁻¹ A` is symmetric
+in the `D`-inner product, i.e. its transport along `WithEnergy.equiv D hD` is
+`LinearMap.IsSymmetric`. In the unpreconditioned case `D = 1` this is the statement that `s(A) A`
+is symmetric.'''
+deps = ["WithEnergy", "WithEnergy.equiv", "WithEnergy.inner_equiv", "LinearMap.IsSymmetricCoercive"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 12.3.1 and Exercise 12.1"
+
+[[node]]
+id = "norm_sub_aeval_mul_apply_le"
+kind = "theorem"
+desc = '''The optimality criterion of Saad (12.4)–(12.5) made into a bound. For `A` symmetric with
+quadratic form in `[α, β]` and a real polynomial `s`,
+`‖x - s(A) (A x)‖ ≤ (sup_{t ∈ [α, β]} |1 - t s(t)|) ‖x‖` in any inner product space, so choosing
+`s` to make `sup |1 - t s t|` small makes `s(A) A` close to the identity. Immediate from
+`LinearMap.IsSymmetricBoundedBy.norm_aeval_map_apply_le` applied to the residual polynomial
+`1 - X * s`; the energy-norm twin comes from
+`LinearMap.IsSymmetricBoundedBy.energyNorm_aeval_map_apply_le`. The corresponding statement over
+the *spectrum* rather than an enclosing interval, Saad's (12.4), is
+`LinearMap.IsSymmetric.norm_aeval_apply_le`.'''
+deps = ["LinearMap.IsSymmetricBoundedBy", "LinearMap.IsSymmetricBoundedBy.norm_aeval_map_apply_le", "LinearMap.IsSymmetric.norm_aeval_apply_le"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, (12.4)–(12.5)"

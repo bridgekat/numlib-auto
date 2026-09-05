@@ -1,0 +1,15 @@
+desc = '''
+Saad, Chapter 12: parallel preconditioners. Only §12.3 (polynomial preconditioners) is surfaced,
+because it is the only section of the chapter with theorem content; the chapter contains no
+numbered result at all.
+
+Skipped, with reasons in `plans/saadsparse-ch10-14.md`: §12.2 (block-Jacobi preconditioners — the
+block splittings of `Numlib/LinearSolve/Stationary/Block`, already planned for Ch. 4/5, with no
+new claim here), §12.4 (multicoloring and red-black ordering — a permutation and the resulting
+`2 × 2` block system, whose only mathematical content is the Schur complement of
+`Numlib/LinearAlgebra/Matrix/SchurComplement` and Property A of
+`Numlib/LinearSolve/Stationary/ConsistentlyOrdered`), §12.5 (multi-elimination ILU / ILUM — a
+recursive independent-set reduction, again a Schur complement, stated as an algorithm), §12.6
+(distributed ILU and SSOR — a data distribution) and §12.7 (approximate inverses,
+element-by-element techniques, parallel row projection — pointers to other chapters).
+'''

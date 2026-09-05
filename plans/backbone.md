@@ -1755,3 +1755,106 @@ machinery, and would bring the trapezoidal rule for periodic integrands (Prop 7.
 trigonometric interpolation error (Thm 7.5.7) with them.
 
 ---
+
+## 15. Preconditioning, multigrid and domain decomposition (Saad Ch. 10–14)
+
+*(Appended by the Saad Ch. 10–14 planning pass. The bare "§11" in §7's opening sentence points at an
+earlier module inventory that has since moved into the TOML plan, not at this section.)*
+
+Three layers are added by Saad, *Iterative Methods for Sparse Linear Systems*, Ch. 10, 12, 13 and 14.
+The per-result alignment is `saadsparse-ch10-14.md`; the skip list and the coverage table are
+`proposals/plan-saad10.md`. Chapter 11, and §12.1–12.2 and §12.4–12.7, contain no theorem and add
+nothing.
+
+### 15.1 What the layers are
+
+* `LinearSolve/Preconditioner/` — the *manufacture* of `M`, as opposed to `Krylov/Preconditioned`,
+  which consumes it. `ILU` (L4) holds the declarative predicate `Matrix.IsILU P A L U` and the
+  existence theorem for M-matrices (Saad Thm 10.1–10.2, D22 below); `Polynomial` and `Chebyshev`
+  (L1, L3 for the spectral bounds) hold polynomial preconditioning, the Neumann identity and
+  Chebyshev acceleration; `ApproximateInverse` (L2 ring-level, L4 for the sparsity estimate) holds
+  the Frobenius least-squares theory of Saad §10.5.
+* `LinearSolve/Multigrid/` (L1, with `FiniteDimensional` for the adjoint) — the Galerkin coarse
+  operator, the coarse-grid correction as an energy-orthogonal projector, the two-grid convergence
+  theorem from a smoothing and an approximation property, and the FMG error bound.
+* `LinearSolve/DomainDecomposition/` (L1 / L4) — the abstract Schwarz theory (a finite family of
+  subspaces, `A_J = ∑ P_i`, `Q_s = ∏ (1 − P_i)`, Saad Thm 14.5–14.9) and the Schur complement
+  reduction of §14.2 and §14.5.
+
+Supporting upstreaming candidates, all L4: `LinearAlgebra/Matrix/SchurComplement` (the Schur
+complement, its inverse block and the block LDU factorization; Mathlib has the determinant formulas
+and the positive *semi*definite criterion but names no Schur complement),
+`LinearAlgebra/Matrix/TridiagonalToeplitz` (the symmetric Toeplitz tridiagonal matrix and its sine
+eigenbasis) and `LinearAlgebra/Matrix/KroneckerSum` (`A ⊗ 1 + 1 ⊗ B` and its spectrum). One more
+sits beside the Chebyshev min–max module: `RingTheory/Polynomial/KernelPolynomial`, the `L²`
+counterpart of 2.1.9.
+
+### 15.2 The three decisions worth recording
+
+* **Multigrid and Schwarz are one theory in the energy inner product.** Saad's coarse-grid
+  correction `I − I_H^h A_H⁻¹ I_h^H A_h` (13.43) and his Schwarz projector `R_iᵀ A_i⁻¹ R_i A`
+  (14.24) are both the `A`-orthogonal projector onto a subspace, so both are
+  `Submodule.starProjection` in `WithEnergy A hA` (2.1.5). Lemma 13.1 and the self-adjointness
+  computation opening §14.3.4 are then `starProjection`'s own properties, the subspace decomposition
+  (13.59)–(13.61) is its range/kernel API, and Thm 13.3 and Thm 14.9 are four inequalities each.
+  It is also why neither module mentions a mesh: the meshes are in the surface, where they
+  instantiate the subspaces. A shared `WithEnergy.projection` is proposed for 2.1.5 so that the
+  projector is defined once (`proposals/plan-saad10.md` §1.4).
+* **The model problems are theorems, not folklore.** Saad §13.2's claims — that the spectral radius
+  of a relaxation on the discrete Laplacean is `1 − O(h²)` while the oscillatory half of the
+  spectrum is damped by a mesh-independent factor — rest on the eigen-decomposition of
+  `tridiag(−1, 2, −1)`. That is elementary trigonometry (`sin((j−1)θ) + sin((j+1)θ) =
+  2 sin(jθ) cos θ`, with the endpoint conditions supplying `θ_k = kπ/(n+1)`), and the 2-D case is
+  the Kronecker sum. Mathlib has neither, so both are new modules; without them §13.2 would be a
+  page of definitions with nothing behind them. No PDE theory is used anywhere in Ch. 13.
+* **Hypotheses that cannot be verified algebraically are named, not proved.** Saad's smoothing and
+  approximation properties (13.62)–(13.63), his FMG assumptions (13.49)–(13.51), and the Schwarz
+  Assumptions 1 and 2 of §14.3.4 are all of this kind — they hold for finite-element discretizations
+  of elliptic problems and are proved there, not here. Each becomes a `Prop`-valued bundle
+  (`Multigrid.IsSmootherWith`, `Multigrid.IsApproximationWith`,
+  `Schwarz.IsStableDecompositionWith`, `Schwarz.IsStrengthenedCauchySchwarzWith`), following 1.3.
+  The one concrete verification the book gives, weighted Jacobi's smoothing property with
+  `α = ω(2 − ωγ)` (Example 13.8), is a node.
+
+  A subsidiary decision: Saad states (13.62)–(13.63) with the pair `‖·‖_{D⁻¹}`, `‖·‖_D` for the
+  diagonal `D`. Carrying `D⁻¹` costs an invertibility hypothesis and buys nothing, so the backbone
+  abstracts the only property the proof uses, `|⟪u, w⟫| ≤ q u · p w`, into
+  `Multigrid.IsDualSeminormPair`, with the `D`/`D⁻¹` pair as an instance. `p = q = ‖·‖` then covers
+  the textbook variants that measure the smoothing property in the Euclidean norm.
+
+### 15.3 Additions to the difficult-proof index (§9)
+
+| # | Result | Where | Approach / reference |
+|---|---|---|---|
+| D22 | ILU exists for an M-matrix and gives a regular splitting | 11.1 `Preconditioner/ILU` | Induction over the index set: one elimination step is the `1 × 1`-pivot Schur complement, Ky Fan's theorem (Saad Thm 10.1) keeps the M-matrix property, and dropping a nonpositive off-diagonal entry moves the matrix *up* in the entrywise order, where Saad Thm 1.33 recovers it. Needs `LinearAlgebra/Matrix/Order` and three M-matrix characterizations proposed for `Stationary/RegularSplitting`. Saad Thm 10.2; Meijerink–van der Vorst 1977 |
+| D23 | `λmin(A_J) ≥ 1/K₀`, and the multiplicative Schwarz rate | 11.1 `DomainDecomposition/Schwarz` | Both rest on the vector-valued Cauchy–Schwarz inequality `∑ ⟪x_i, y_i⟫ ≤ (∑‖x_i‖²)^{1/2} (∑‖y_i‖²)^{1/2}`, which should be proved first; then `‖u‖² = ∑ ⟪u_i, P_i u⟫` and the stable decomposition. Saad Thm 14.7, Lemma 14.8, Thm 14.9; Dryja–Widlund, Xu |
+| D24 | Eigen-decomposition of `tridiag(a, b, a)` | 11.1 `Matrix/Tridiagonal` | `sin((j−1)θ) + sin((j+1)θ) = 2 sin(jθ) cos θ`, with `sin 0 = sin((n+1)θ_k) = 0` supplying the boundary rows; orthogonality of the sine vectors makes the eigenpairs exhaustive. Saad (13.5)–(13.9) |
+
+### 15.4 Phasing
+
+Phase 2, alongside the rest of Saad Ch. 7–9: `LinearAlgebra/Matrix/{SchurComplement,Tridiagonal,
+KroneckerSum}` and `RingTheory/Polynomial/KernelPolynomial` first (no dependency inside the slice,
+ready now), then `LinearSolve/Multigrid/*` and `LinearSolve/DomainDecomposition/*`, then
+`LinearSolve/Preconditioner/{Polynomial,Chebyshev,ApproximateInverse}`.
+`LinearSolve/Preconditioner/ILU` waits on `LinearAlgebra/Matrix/Order` and
+`LinearSolve/Stationary/RegularSplitting` and should be scheduled last. Estimated 2.5 k lines of
+backbone and 1.5 k of surface.
+
+### 15.5 Extensibility (adds to §10)
+
+* **A domain-decomposition or finite-element book** (Toselli–Widlund, Smith–Bjørstad–Gropp,
+  Brenner–Scott Ch. 7): the Schwarz module is stated for a family of subspaces of a Hilbert space,
+  so such a book supplies only the two assumptions for its own discretization and inherits
+  Thm 14.5–14.9. Its "the additive Schwarz preconditioner is spectrally equivalent to `A`" is
+  `Schwarz.isSymmetricBoundedBy_additiveOperator`.
+* **A multigrid book** (Briggs–Henson–McCormick, Trottenberg–Oosterlee–Schüller, Hackbusch): the
+  two-grid theorem and the FMG bound are stated for an arbitrary coarse subspace, a smoother given
+  by its error operator and an abstract dual pair of seminorms, so a new book contributes its own
+  smoothing and approximation estimates and nothing else. The V- and W-cycle recursions stay in the
+  surface until a second book proves something about them.
+* **A sparse-direct book** (Davis, Duff–Erisman–Reid): `Matrix.IsILU` with `P = ∅` is exact `LU`,
+  and `Matrix.schurComplementSingle` is one elimination step, so the elimination-tree and fill-path
+  theory would attach there — that is the natural home for Saad Thm 10.6–10.7, which are skipped
+  here for want of a second consumer.
+
+---

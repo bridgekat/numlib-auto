@@ -1,0 +1,82 @@
+namespace = "SaadSparse.Ch10"
+desc = '''
+§10.5, approximate inverse preconditioners: the Frobenius objective `F(M) = ‖I - A M‖_F²` and the
+five results about it (Prop 10.9–10.14, Lemma 10.15).
+
+The Frobenius norm is Mathlib's, under `open scoped Matrix.Norms.Frobenius`; the Frobenius inner
+product `⟨X, Y⟩ = tr(Yᵀ X)` of Saad (10.48) is a surface definition here, with the equivalence
+`frobeniusInner_self = ‖·‖_F ^ 2` and the identification with the Euclidean inner product of
+`EuclideanSpace ℝ (n × n)` under `Matrix.of`, which is how Proposition 10.9 reaches the backbone's
+`Preconditioner.hasFDerivAt_normSq_sub_apply`.
+
+Proposition 10.13's first half — one self-preconditioned MR step reduces the residual of a column
+by `sin ∠(r, C r) ≤ ‖I - A M‖₂` — is `Projection.norm_residual_minResStep_sq_eq` of
+`Numlib/LinearSolve/Projection/OneDimensional` (an open node of that group) with `A` replaced by
+`A M`; its second half (10.60) and Proposition 10.14 are the same one-line minimization argument,
+`Preconditioner.norm_le_norm_sq_of_isMinOn`.
+'''
+
+[[node]]
+id = "frobeniusInner"
+kind = "definition"
+desc = '''Saad (10.43) and (10.48): the objective `F M = ‖1 - A * M‖_F ^ 2` and the Frobenius inner product
+`⟨X, Y⟩ = trace (Yᵀ * X)`, with `frobeniusInner_self` (`= ‖X‖_F ^ 2`), the column decomposition
+(10.46) `F M = ∑ j, ‖e j - A *ᵥ M.col j‖ ^ 2`, and the isometry to
+`EuclideanSpace ℝ (n × n)` that carries the backbone statements over.'''
+
+[[node]]
+id = "proposition_10_9"
+kind = "theorem"
+desc = '''The array representation of the gradient of `F` with respect to `M` is `G = -2 Aᵀ R` with
+`R = I - A M`: `HasFDerivAt F (fun E => -2 * frobeniusInner (Aᵀ * R) E) M`.'''
+deps = ["frobeniusInner", "Preconditioner.hasFDerivAt_normSq_sub_apply"]
+
+[[node]]
+id = "proposition_10_10"
+kind = "theorem"
+desc = '''If `A` is nonsingular and `‖I - A M‖ < 1` for a consistent matrix norm (in particular the
+Frobenius norm), then `M` is nonsingular; and the scaled version (10.54), `‖I - D₁ A M D₂‖ < 1`
+with `D₁, D₂` nonsingular diagonal matrices.'''
+deps = ["Preconditioner.isUnit_of_norm_one_sub_mul_lt_one"]
+
+[[node]]
+id = "proposition_10_11"
+kind = "theorem"
+desc = '''If `M` satisfies `‖e j - A *ᵥ M.col j‖₁ ≤ τ j` for each column and `B = A⁻¹` has
+`|B i j| > τ j * max_k |B i k|`, then `M i j ≠ 0`.'''
+deps = ["Preconditioner.abs_sub_inv_apply_le"]
+
+[[node]]
+id = "corollary_10_12"
+kind = "theorem"
+desc = '''With `τ = max_j τ j`, if the nonzero entries of `B = A⁻¹` are `τ`-equimodular
+(`|B i j| > τ * max_{k,l} |B l k|` for every nonzero `B i j`), then the nonzero pattern of `M`
+contains that of `A⁻¹`; in particular a dense `A⁻¹` with equimodular entries forces a dense `M`.'''
+deps = ["proposition_10_11"]
+
+[[node]]
+id = "proposition_10_13"
+kind = "theorem"
+desc = '''Self-preconditioned MR with one inner step and no dropping: (10.59) the 2-norm of each column
+residual `e j - A *ᵥ m j` is reduced by a factor of at least `‖I - A M‖₂`, and (10.60) the outer
+residual matrices satisfy `‖R_{k+1}‖_F ≤ ‖R_k‖_F ^ 2`, so convergence, when it occurs, is
+quadratic.'''
+deps = ["frobeniusInner", "Projection.norm_residual_minResStep_sq_eq", "Preconditioner.norm_le_norm_sq_of_isMinOn"]
+
+[[node]]
+id = "proposition_10_14"
+kind = "theorem"
+desc = '''The global self-preconditioned MR iteration without dropping satisfies
+`‖R_{k+1}‖_F ≤ ‖R_k ^ 2‖_F ≤ ‖R_k‖_F ^ 2`, with (10.61)–(10.63): `R_{k+1} = (1 - α_k) R_k +
+α_k R_k²`, so `R_k` is a polynomial of degree `2^{k-1}` in `R_0` and a symmetric `B_0 = A M_0`
+(as when `M_0 = α_0 Aᵀ`) keeps every `B_k` symmetric.'''
+deps = ["frobeniusInner", "Preconditioner.norm_le_norm_sq_of_isMinOn", "Preconditioner.residual_selfPreconditionedStep"]
+
+[[node]]
+id = "lemma_10_15"
+kind = "theorem"
+desc = '''§10.5.6, the bordering algorithm: for `A` symmetric positive definite, the scalar `δ_{k+1}`
+computed by (10.70) is positive, being the `(k+1, k+1)` entry of `L_{k+1} A_{k+1} L_{k+1}ᵀ` with
+`L_{k+1}` unit lower triangular — hence `⟪A_{k+1} v, v⟫` for the nonzero `v = L_{k+1}ᵀ e_{k+1}` —
+independently of how accurately the systems (10.67)–(10.68) are solved.'''
+deps = ["Matrix.posDef_iff_isSymmetricCoercive"]

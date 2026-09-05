@@ -1,0 +1,64 @@
+namespace = "SaadSparse.Ch13"
+desc = '''
+§13.5, the analysis of the two-grid cycle: the two subspaces (13.57)–(13.61), the smoothing and
+approximation properties (13.62)–(13.63), Theorem 13.3, and the verification of the smoothing
+property for weighted Jacobi (Example 13.8).
+
+This is the theorem-bearing section of the chapter, and everything in it specializes
+`Numlib/LinearSolve/Multigrid/TwoGrid`. The surface supplies Saad's concrete pair of norms,
+`‖x‖_D = (D x, x)^{1/2}` and `‖A e‖_{D⁻¹} = (D⁻¹ A e, A e)^{1/2}` for `D` the diagonal of `A`, and
+the fact that they form a dual pair in the sense of `Multigrid.IsDualSeminormPair`, which is the
+Cauchy–Schwarz inequality in the `D`-inner product.
+'''
+
+[[node]]
+id = "equation_13_59"
+kind = "theorem"
+desc = '''(13.57)–(13.61): `Ω_h = 𝒮_h ⊕ 𝒯_h` with `𝒮_h = Ran(Q_h) = Null(T_h) = Ran(I_H^h)` and
+`𝒯_h = Null(Q_h) = Ran(T_h) = Null(I_h^H)`, the "smooth" and "oscillatory" subspaces of the
+two-grid analysis.'''
+deps = ["lemma_13_1", "Multigrid.range_coarseCorrection"]
+
+[[node]]
+id = "example_13_7"
+kind = "theorem"
+desc = '''Example 13.7: in 1-D with full weighting, `I_h^H w_k^h = cos²(θ_k/2) · w_k^{2h}`, so a fine-grid
+sine mode restricts to the corresponding coarse mode scaled by `cos²(θ_k/2)` — close to `1` for
+smooth `k` and close to `0` for `k` near `n`. This is the sense in which the oscillatory modes are
+nearly in `Null(I_h^H) = 𝒯_h` and the smooth ones nearly in `Ran(I_H^h) = 𝒮_h`, and it is the only
+place in the chapter where "smooth" and "oscillatory" are given a quantitative meaning.'''
+deps = ["restriction1D", "equation_13_7", "equation_13_59"]
+
+[[node]]
+id = "normD"
+kind = "definition"
+desc = '''The two norms of §13.5.2: `‖x‖_D = (D x, x)^{1/2}` and `‖A e‖_{D⁻¹} = (D⁻¹ A e, A e)^{1/2}` for
+`D` the diagonal of `A`, with `isDualSeminormPair_normD` proving they form a
+`Multigrid.IsDualSeminormPair` (Cauchy–Schwarz in the `D`-inner product) — the only property of
+the pair that Theorem 13.3 uses.'''
+deps = ["Multigrid.IsDualSeminormPair", "energyNorm", "Matrix.diagPart"]
+
+[[node]]
+id = "equation_13_62"
+kind = "definition"
+desc = '''The smoothing property (13.62), `‖S e‖_A² ≤ ‖e‖_A² - α ‖A e‖_{D⁻¹}²`, and the approximation
+property (13.63), `min_{u_H} ‖e - I_H^h u_H‖_D² ≤ β ‖e‖_A²`, as
+`Multigrid.IsSmootherWith` and `Multigrid.IsApproximationWith` for the pair of `normD`.'''
+deps = ["normD", "Multigrid.IsSmootherWith", "Multigrid.IsApproximationWith"]
+
+[[node]]
+id = "theorem_13_3"
+kind = "theorem"
+desc = '''Theorem 13.3: if (13.62) and (13.63) hold with `α, β > 0`, then `α ≤ β`, the two-level iteration
+converges, and `‖S_h T_h^H‖_{A_h} ≤ √(1 - α/β)`.'''
+deps = ["equation_13_62", "lemma_13_1", "Multigrid.energyNorm_twoGrid_le", "Multigrid.energyNorm_le_of_isApproximationWith"]
+
+[[node]]
+id = "example_13_8"
+kind = "theorem"
+desc = '''Example 13.8: the weighted Jacobi smoother `S(ω) = I - ω D⁻¹ A` of a symmetric positive definite
+`A` satisfies the smoothing property (13.62) with `α = ω(2 - ω γ)`, where
+`γ = ρ(D^{-1/2} A D^{-1/2}) = ρ(D⁻¹ A)`, for every `0 < ω < 2/γ`; the computation (13.65) is the
+expansion of `‖S(ω) e‖_A²` and the bound by the smallest eigenvalue of
+`ω(2 I - ω D^{-1/2} A D^{-1/2})`.'''
+deps = ["equation_13_62", "Multigrid.isSmootherWith_richardson", "Matrix.jacobiSplitting_iterationOperator"]

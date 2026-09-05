@@ -1,0 +1,74 @@
+namespace = "DomainDecomposition"
+desc = '''
+The interface (Schur complement) reduction: Saad, *Iterative Methods for Sparse Linear Systems*,
+§14.2.1, §14.4.1 and §14.5.
+
+The algebra of the Schur complement itself is
+`Numlib/LinearAlgebra/Matrix/SchurComplement`; what is here is what domain decomposition does with
+it. Two results, both of them cheap once the block factorization
+`A = L_A (1 ⊕ S) U_A` of (14.52) is available:
+
+* **Prop 14.11–14.12.** A Krylov method run on the full system `A x = b`, preconditioned on the
+  left by `L_A` and on the right by `U_A` of (14.49) (or (14.55), which additionally preconditions
+  `S` by `L_S`, `U_S`), and started from a *consistent* initial guess `x₀ = B⁻¹(f - E y₀)`,
+  produces iterates whose second block is exactly the iterate of the same method on the reduced
+  system `S y = g'` from `y₀`, and whose first block is `B⁻¹(f - E y_m)`. Stated at the level of the
+  specifications of `Numlib/LinearSolve/Projection/Basic` rather than of any particular algorithm:
+  the preconditioned operator is block diagonal, the preconditioned initial residual lies in the
+  second block, so the Krylov subspace lies in the second block and a minimal-residual (or
+  Galerkin) iterate there is a minimal-residual (Galerkin) iterate for `S`. That is the honest
+  reading of Saad's "the same Krylov subspace method", and it makes the result a theorem about
+  invariant subspaces rather than about GMRES.
+* **Prop 14.10.** If `M_A = L_A U_A` is an ILU factorization of `A` (in the sense of
+  `Matrix.IsILU`), the preconditioner it induces on `S`, `M_S := (R_y M_A⁻¹ R_yᵀ)⁻¹`, factors as
+  `L_S U_S` with `L_S`, `U_S` the trailing diagonal blocks of `L_A`, `U_A`. Block-triangular inverse
+  arithmetic (`Matrix.invOf_fromBlocks_zero₂₁_eq`), nothing more.
+'''
+
+[[node]]
+id = "restrict"
+kind = "definition"
+desc = '''`DomainDecomposition.restrict : EuclideanSpace 𝕜 (m ⊕ n) →ₗ[𝕜] EuclideanSpace 𝕜 n`, Saad's `R_y`,
+and its adjoint the prolongation `R_yᵀ`, with `restrict_comp_adjoint = 1` and
+`range (adjoint restrict) = ` the second block of coordinates. Also
+`consistentGuess B E f y = (B⁻¹ *ᵥ (f - E *ᵥ y)) ⊕ᵥ y`, Saad's (14.50): the initial guesses whose
+first-block residual vanishes.'''
+source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 14.1, (14.50)"
+
+[[node]]
+id = "krylov_subspace_eq_map_of_consistent"
+kind = "theorem"
+desc = '''The Krylov content of Saad Proposition 14.11, (14.53)–(14.54): the operator
+`L_A⁻¹ A U_A⁻¹` is `fromBlocks 1 0 0 S`, the residual of a consistent initial guess is
+`0 ⊕ᵥ (g' - S y₀)`, and therefore
+`Krylov.subspace (L_A⁻¹ A U_A⁻¹) (0 ⊕ᵥ r₀) m = (Krylov.subspace S r₀ m).map (adjoint restrict)`.
+From `Matrix.fromBlocks_eq_mul_schurComplement` and `Krylov.subspace_eq_of_pow_apply_mem`, since
+the second block of coordinates is invariant.'''
+deps = ["restrict", "Matrix.schurComplement", "Matrix.fromBlocks_eq_mul_schurComplement", "Krylov.subspace", "Krylov.subspace_eq_of_pow_apply_mem"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 14.11, (14.52)–(14.54)"
+
+[[node]]
+id = "isMinRes_iff_isMinRes_schurComplement"
+kind = "theorem"
+desc = '''Saad Propositions 14.11 and 14.12: `x` is a minimal-residual iterate for the block-preconditioned
+full system over `x₀ + 𝒦_m` iff its second block `y` is a minimal-residual iterate for the reduced
+system `S y = g'` over `y₀ + 𝒦_m(S, r₀)`, and then the first block of `x` is `B⁻¹(f - E y)`; with
+the Galerkin twin `isGalerkin_iff_isGalerkin_schurComplement`. Prop 14.12, which preconditions `S`
+by `L_S, U_S`, is the same statement for the factorization (14.58) and follows by applying this one
+to `L_S⁻¹ S U_S⁻¹`. Both directions come from `krylov_subspace_eq_map_of_consistent` and the fact
+that `adjoint restrict` is an isometry onto its range, so the two minimizations are the same
+minimization.'''
+deps = ["krylov_subspace_eq_map_of_consistent", "IsMinRes", "IsGalerkin", "restrict"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Propositions 14.11 and 14.12"
+
+[[node]]
+id = "inducedPreconditioner_eq"
+kind = "theorem"
+desc = '''Saad Proposition 14.10: for an ILU factorization `M_A = L_A U_A` of the full matrix (with the
+block structure of §14.4.1: `L_A` block lower with trailing block `L_S`, `U_A` block upper with
+trailing block `U_S`), the induced preconditioner `M_S` for the Schur complement, defined by
+`M_S⁻¹ = R_y M_A⁻¹ R_yᵀ` (14.46), is `L_S U_S` with `L_S = R_y L_A R_yᵀ`, `U_S = R_y U_A R_yᵀ` —
+the trailing diagonal blocks of the factors. `R_y M_A⁻¹ R_yᵀ = U_S⁻¹ L_S⁻¹` by block-triangular
+inversion.'''
+deps = ["restrict", "Matrix.IsILU"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 14.10, (14.46)"

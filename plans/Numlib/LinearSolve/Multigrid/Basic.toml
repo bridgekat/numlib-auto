@@ -1,0 +1,102 @@
+namespace = "Multigrid"
+desc = '''
+The Galerkin coarse problem and the coarse-grid correction operator: Saad, *Iterative Methods for
+Sparse Linear Systems*, §13.4.1–13.4.2 and §13.5.1.
+
+Given a symmetric coercive `A` on a finite-dimensional inner product space `E` and an injective
+*prolongation* `Pr : F →ₗ E` from a coarse space, the Galerkin coarse operator is
+`A_H = Pr† A Pr` (Saad (13.39)); Saad's restriction `I_h^H` is `Pr†` up to the positive factor
+`2^d` of (13.37), which cancels out of every formula below, so the plan takes `Pr†` as the
+restriction and records the scaling as a surface lemma. The coarse-grid correction is
+`T = 1 - Pr A_H⁻¹ Pr† A` of (13.43).
+
+Lemma 13.1 says `T` is the `A`-orthogonal projector onto the `A`-orthogonal complement of
+`range Pr`. Stating it that way — rather than as "`T` is idempotent and `A`-self-adjoint" — is the
+whole design decision of the module: it puts the coarse-grid correction inside the projection
+theory the library already has (`WithEnergy`, `Submodule.starProjection`,
+`Numlib/LinearSolve/Projection/Optimality`), so that §13.5.1's subspace decomposition
+(13.59)–(13.61) is `Submodule.starProjection`'s range/kernel API and Saad's Thm 13.3 needs no
+projector reasoning of its own. It also makes the coarse-grid correction literally the Galerkin
+step of `Numlib/LinearSolve/Projection/Basic` on the subspace `range Pr`, which is worth recording
+(`isGalerkin_coarseSolve`) because it is the same observation that identifies multigrid with the
+Schwarz methods of `Numlib/LinearSolve/DomainDecomposition/Schwarz`.
+
+Finite dimension is assumed throughout, for `LinearMap.adjoint`; nothing else needs it.
+'''
+
+[[node]]
+id = "galerkinCoarse"
+kind = "definition"
+desc = '''`Multigrid.galerkinCoarse A Pr = LinearMap.adjoint Pr ∘ₗ A ∘ₗ Pr : F →ₗ[𝕜] F`, the coarse
+operator `A_H = I_h^H A_h I_H^h` of Saad (13.39) for a prolongation `Pr : F →ₗ[𝕜] E` between
+finite-dimensional inner product spaces.'''
+source = "Saad, Iterative Methods for Sparse Linear Systems, (13.39)"
+
+[[node]]
+id = "galerkinCoarse_isSymmetricCoercive"
+kind = "theorem"
+desc = '''For symmetric coercive `A` and injective `Pr`, `galerkinCoarse A Pr` is symmetric coercive, hence
+invertible: symmetry is `⟪Pr† A Pr u, v⟫ = ⟪A (Pr u), Pr v⟫`, and coercivity uses that an injective
+linear map between finite-dimensional spaces is bounded below. This is what makes the coarse solve
+of Algorithm 13.2 well posed.'''
+deps = ["galerkinCoarse", "LinearMap.IsSymmetricCoercive", "LinearMap.IsCoerciveWith"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 13.4.1"
+
+[[node]]
+id = "coarseProjection"
+kind = "definition"
+desc = '''`Multigrid.coarseProjection A hA Pr : E →ₗ[𝕜] E`, Saad's `Q_h = I_H^h A_H⁻¹ I_h^H A_h`, defined as
+the transport of `(WithEnergy.submoduleMap A hA (range Pr)).starProjection` along
+`WithEnergy.equiv` — that is, *defined* to be the `A`-orthogonal projector onto `range Pr`, with
+the formula `Pr A_H⁻¹ Pr† A` proved as `coarseProjection_apply_eq` rather than taken as the
+definition. `Multigrid.coarseCorrection A hA Pr = 1 - coarseProjection A hA Pr` is Saad's `T_h^H`
+of (13.43).'''
+deps = ["galerkinCoarse", "WithEnergy", "WithEnergy.equiv", "WithEnergy.submoduleMap"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, (13.43)"
+
+[[node]]
+id = "coarseProjection_apply_eq"
+kind = "theorem"
+desc = '''Saad Lemma 13.1: the Galerkin coarse-grid correction is the `A`-orthogonal projector. Concretely,
+if `galerkinCoarse A Pr y = Pr† (A x)` then `coarseProjection A hA Pr x = Pr y`; equivalently
+`coarseProjection A hA Pr = Pr ∘ₗ (galerkinCoarse A Pr)⁻¹ ∘ₗ Pr† ∘ₗ A`. The proof is that `Pr y`
+lies in `range Pr` and `x - Pr y` is `A`-orthogonal to it, which is exactly the defining property of
+the energy projection. Stated in the hypothesis form so that no inverse operator appears in
+downstream statements.'''
+deps = ["coarseProjection", "galerkinCoarse_isSymmetricCoercive"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Lemma 13.1"
+
+[[node]]
+id = "isGalerkin_coarseProjection"
+kind = "theorem"
+desc = '''The coarse solve is a Galerkin step: with `r = b - A x` and `δ` the solution of
+`galerkinCoarse A Pr δ' = Pr† r`, `IsGalerkin A b x (LinearMap.range Pr) (x + Pr δ')`. So a
+coarse-grid correction is the projection method of `Numlib/LinearSolve/Projection/Basic` on
+`range Pr`, and `IsGalerkin.energyNorm_le` says it minimizes the energy norm of the error over
+`x + range Pr` — the statement the two-grid analysis actually uses.'''
+deps = ["coarseProjection_apply_eq", "IsGalerkin", "IsGalerkin.error_eq_starProjection"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Algorithm 13.2, Lemma 13.1"
+
+[[node]]
+id = "range_coarseCorrection"
+kind = "theorem"
+desc = '''Saad (13.59)–(13.61): `E` splits as `range (coarseProjection) ⊕ range (coarseCorrection)`, the
+first summand is `range Pr` and is the kernel of the correction, the second is the kernel of the
+projection and equals `ker (Pr† ∘ₗ A)` — Saad's `𝒮_h` and `𝒯_h`, the "smooth" and "oscillatory"
+subspaces. Everything is `Submodule.starProjection`'s range/kernel API transported along
+`WithEnergy.equiv`; the identification of `ker (coarseProjection)` with `ker (Pr† A)` is the one
+step that uses `range Pr ⊕ ker Pr† = E`.'''
+deps = ["coarseProjection", "coarseProjection_apply_eq"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, (13.57)–(13.61)"
+
+[[node]]
+id = "twoGridOperator"
+kind = "definition"
+desc = '''`Multigrid.twoGridOperator A hA Pr S ν₁ ν₂ = S^ν₂ ∘ₗ coarseCorrection A hA Pr ∘ₗ S^ν₁`, the error
+propagation operator `M_H^h` of the two-grid cycle (Saad Algorithm 13.2), for a smoother given by
+its error propagation operator `S = 1 - B A`. `twoGridOperator_zero_zero` records that with no
+smoothing it is the coarse-grid correction itself, and
+`Multigrid.smootherOperator (s : Stationary.Splitting a) = s.iterationOperator` records that the
+classical smoothers of `Numlib/LinearSolve/Stationary/Splitting` are instances.'''
+deps = ["coarseProjection", "Stationary.Splitting.iterationOperator"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Algorithm 13.2, (13.43)"

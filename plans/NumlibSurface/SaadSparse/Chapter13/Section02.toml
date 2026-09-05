@@ -1,0 +1,82 @@
+namespace = "SaadSparse.Ch13"
+desc = '''
+§13.2, the model problems and the spectra of the classical smoothers on them. Everything here is
+explicit linear algebra and every statement is proved, not merely displayed: the 1-D and 2-D
+discrete Laplaceans, their eigenvalues and eigenvectors, and the eigenvalues of the Richardson,
+weighted Jacobi and Gauss–Seidel iteration matrices on them, with the two conclusions the chapter
+is built on — that the spectral radius is `1 - O(h²)` (slow convergence) while the *high-frequency*
+half of the spectrum is damped by a factor bounded away from `1` independently of `h` (the
+smoothing property).
+
+The Gauss–Seidel spectrum `cos²(kπ/(n+1))` is obtained the short way, from Young's theorem
+(Saad Thm 4.16, `Numlib/LinearSolve/Stationary/ConsistentlyOrdered`), which says the SOR
+eigenvalues at `ω = 1` are the squares of the Jacobi ones for a consistently ordered matrix — a
+tridiagonal matrix is consistently ordered. The difference-equation derivation of §13.2.3 and the
+eigenvector formula (13.29) are recorded as a separate node; note that (13.29) degenerates at
+`λ_k = 0` (`k = (n+1)/2`), where the eigenvector is `e₁`, which the surface has to state.
+'''
+
+[[node]]
+id = "laplacian1D"
+kind = "definition"
+desc = '''Saad (13.4): the 1-D model matrix `tridiag(-1, 2, -1)` of size `n`, that is
+`Matrix.symmTridiagonalToeplitz n (-1) 2`, with the grid `x_i = i h`, `h = 1/(n+1)`.'''
+deps = ["Matrix.symmTridiagonalToeplitz"]
+
+[[node]]
+id = "equation_13_7"
+kind = "theorem"
+desc = '''The eigenvalues and eigenvectors of the 1-D model matrix, (13.6)–(13.9):
+`λ_k = 2(1 - cos θ_k) = 4 sin²(θ_k/2)` with `θ_k = kπ/(n+1)`, and `w_k` with components
+`sin(j θ_k) = sin(k π x_j)`; and that they form an orthogonal basis, so these are all the
+eigenpairs.'''
+deps = ["laplacian1D", "Matrix.symmTridiagonalToeplitz_mulVec_sineVec", "Matrix.sineOrthonormalBasis", "Matrix.isSymmetricBoundedBy_symmTridiagonalToeplitz"]
+
+[[node]]
+id = "laplacian2D"
+kind = "definition"
+desc = '''The 2-D model matrix, block tridiagonal with `B = tridiag(-1, 4, -1)` on the diagonal and `-I`
+off it, written as the tensor sum (13.12) `A = I ⊗ T_x + T_y ⊗ I = kroneckerSum T_y T_x`, with
+`laplacian2D_eq_kroneckerSum` proving the two descriptions agree.'''
+deps = ["laplacian1D", "Matrix.kroneckerSum"]
+
+[[node]]
+id = "equation_13_14"
+kind = "theorem"
+desc = '''The eigenvalues of the 2-D model matrix, (13.13)–(13.14):
+`λ_{k,l} = 4(sin²(kπ/2(n+1)) + sin²(lπ/2(m+1)))` with eigenvectors `z_{k,l} = v_l ⊗ w_k`, whose
+values at the grid points are `sin(k π x_i) sin(l π y_j)`; and that the `v_l ⊗ w_k` are an
+orthogonal system, so these are all the eigenpairs even when the sums `σ_k + μ_l` coincide.'''
+deps = ["laplacian2D", "Matrix.kroneckerSum_mulVec_kroneckerVec", "Matrix.kroneckerOrthonormalBasis", "Matrix.isSymmetricBoundedBy_kroneckerSum"]
+
+[[node]]
+id = "richardson_reduction"
+kind = "theorem"
+desc = '''§13.2.1: for Richardson's iteration `M_ω = I - ω A` with `ω = 1/γ`, `γ ≥ ρ(A)`, the error
+component along `w_k` is multiplied by `1 - λ_k/γ` at each step; for the 1-D model problem with
+`γ = 4` from Gershgorin, the slowest factor is `1 - sin²(π/2(n+1)) = 1 - O(h²)`, while the
+oscillatory half `k > n/2` has `η_k = cos²(kπ/2(n+1)) ≤ 1/2` independently of `h`.'''
+deps = ["equation_13_7", "Stationary.step_iterate_sub", "Matrix.jacobiSplitting"]
+
+[[node]]
+id = "equation_13_21"
+kind = "theorem"
+desc = '''§13.2.2: the weighted Jacobi iteration matrix `J_ω = I - ω D⁻¹ A` (13.19)–(13.20) has eigenvalues
+`μ_k(ω) = 1 - 2ω sin²(kπ/2(n+1))` in 1-D and `μ_{k,l}(ω) = 1 - ω(sin² + sin²)` in 2-D; hence the
+bounds (13.22)–(13.25), `ρ(J_ω) = 1 - 2ω s² ≈ 1 - ω π² h²/2` for `0 < ω ≤ 1` (so `ω = 1` is
+optimal as an iteration), while on the oscillatory modes `k > n/2` the factor lies in
+`(1 - 2ω, 1 - ω/2]`, giving the mesh-independent smoothing factors `3/4` at `ω = 1/2` and `1/3` at
+`ω = 2/3` in 1-D, and `4/5` at `ω = 4/5` in 2-D.'''
+deps = ["equation_13_7", "equation_13_14", "Matrix.jacobiSplitting", "Matrix.jacobiSplitting_iterationOperator"]
+
+[[node]]
+id = "gaussSeidel_eigenvalues"
+kind = "theorem"
+desc = '''§13.2.3: the Gauss–Seidel iteration matrix `G = (D - E)⁻¹ F` of the 1-D model problem has
+eigenvalues `cos²(kπ/(n+1))`, the squares of the Jacobi eigenvalues (Saad's own shortcut through
+Theorem 4.16, a tridiagonal matrix being consistently ordered), and eigenvectors
+`u_k = (|cos θ_k|^j sin(j θ_k))_j` of (13.29) — except at `λ_k = 0`, where the formula degenerates
+and the eigenvector is `e₁`. The smallest eigenvalues are those with `k` near `n/2`, so
+Gauss–Seidel damps the *middle* of the spectrum fastest, which is not the same thing as damping the
+oscillatory modes.'''
+deps = ["equation_13_7", "Matrix.gaussSeidelSplitting", "Matrix.IsTridiagonal.isConsistentlyOrdered", "Matrix.IsConsistentlyOrdered.mem_spectrum_jacobi_iff_sor", "Stationary.Splitting.iterationOperator"]

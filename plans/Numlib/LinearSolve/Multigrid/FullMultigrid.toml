@@ -1,0 +1,52 @@
+namespace = "Multigrid"
+desc = '''
+The full multigrid (FMG) error bound: Saad, *Iterative Methods for Sparse Linear Systems*, §13.4.4,
+Theorem 13.2.
+
+FMG sweeps once from the coarsest level upwards, taking as initial guess on each level the
+interpolant of the previous level's approximation and applying `μ` multigrid cycles. The theorem
+says that if the interpolation is `O(h^κ)`-accurate (13.49), the cycle operator is uniformly
+contractive (13.50), the interpolation is bounded by `c₂ 2^{-κ}` (13.51), and `c₂ ξ^μ < 1`, then the
+FMG approximation is accurate to the discretization order on *every* level, with the explicit
+constant `c₃ = ξ^μ/(1 - c₂ ξ^μ)`.
+
+There is no analysis in the proof: it is an induction on the level whose whole content is a scalar
+recursion, `a_{l+1} ≤ ξ^μ (c₁ h_{l+1}^κ + c₂ 2^{-κ} a_l)` with `h_{l+1} = h_l/2` implies
+`a_l ≤ c₃ c₁ h_l^κ`. The module therefore states the recursion lemma first, in `ℝ`, and then the
+statement over a family of normed spaces — one per level, with continuous linear interpolations
+between consecutive ones — as a corollary. Both are worth having: the scalar lemma is what a second
+book's FMG or nested-iteration analysis will reuse, and the normed-space form is what makes the
+surface statement of Thm 13.2 faithful rather than a restatement of arithmetic.
+
+The hypotheses (13.49)–(13.51) are *not* proved here for any concrete discretization; they cannot
+be, since (13.49) is a statement about the solution of a differential equation. Saad's Example 13.6
+verifies (13.48) for the 1-D model problem using a bound on the fourth derivative of the exact
+solution; that is out of scope for the same reason the rest of the PDE material is (see
+`plans/proposals/plan-saad10.md`).
+'''
+
+[[node]]
+id = "le_of_rec_of_half"
+kind = "theorem"
+desc = '''The scalar recursion behind Saad Theorem 13.2: if `h (l+1) = h l / 2` with `h l > 0`, `a 0 = 0`,
+`c₁, c₂, ξ ≥ 0`, `c₂ * ξ^μ < 1` and
+`a (l+1) ≤ ξ^μ * (c₁ * h (l+1)^κ + c₂ * 2^(-κ) * a l)` for every `l`, then
+`a l ≤ ξ^μ / (1 - c₂ * ξ^μ) * c₁ * h l ^ κ` for every `l`. Induction on `l`, using
+`h (l+1)^κ = 2^(-κ) * h l ^ κ` and the identity `ξ^μ = c₃/(1 + c₂ c₃)` for
+`c₃ = ξ^μ/(1 - c₂ ξ^μ)`. Real exponents throughout (`Real.rpow`), because `κ` is an order of
+accuracy and need not be an integer.'''
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 13.2"
+
+[[node]]
+id = "norm_sub_fullMultigrid_le"
+kind = "theorem"
+desc = '''Saad Theorem 13.2. Over a family of normed spaces `E : ℕ → Type*` (one per level, finest last),
+exact solutions `u l : E l`, FMG approximations `ũ l`, interpolations `Î l : E l →L[ℝ] E (l+1)` and
+mesh sizes `h l` with `h (l+1) = h l/2`, assume: `ũ 0 = u 0` (the coarsest problem is solved
+exactly); `‖u (l+1) - Î l (u l)‖ ≤ c₁ * h (l+1)^κ` (13.49); the `μ` cycles applied on level `l+1`
+from the initial guess `Î l (ũ l)` contract the error by `ξ^μ`, `‖u (l+1) - ũ (l+1)‖ ≤ ξ^μ *
+‖u (l+1) - Î l (ũ l)‖` (13.50); and `‖Î l‖ ≤ c₂ * 2^(-κ)` (13.51). If `c₂ * ξ^μ < 1` then
+`‖u l - ũ l‖ ≤ (ξ^μ/(1 - c₂ ξ^μ)) * c₁ * h l ^ κ` on every level. Triangle inequality plus
+`le_of_rec_of_half`.'''
+deps = ["le_of_rec_of_half"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 13.2, (13.49)–(13.54)"

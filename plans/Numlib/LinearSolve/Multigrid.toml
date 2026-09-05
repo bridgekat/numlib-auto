@@ -1,0 +1,23 @@
+desc = '''
+Multigrid: Saad, *Iterative Methods for Sparse Linear Systems*, Ch. 13.
+
+The chapter has two halves, and only one of them is mathematics the backbone can hold. The half
+that is: the coarse-grid correction operator is an energy-orthogonal projector (Saad Lemma 13.1),
+the two subspaces it splits the space into (§13.5.1), and the convergence of the two-grid cycle
+from a *smoothing property* and an *approximation property* (Saad Thm 13.3), together with the
+error bound for the full multigrid cycle (Saad Thm 13.2). None of that mentions a mesh: it is
+linear algebra about a subspace `Vc ≤ E`, an operator `S` and two constants, and it is stated here
+in exactly that generality. The half that is not: the grids, the stencils, the specific
+prolongation and restriction matrices, the V- and W-cycle recursions and all of algebraic
+multigrid, which are model-problem constructions and heuristics; those stay in the Saad surface,
+where they instantiate what is proved here (see `plans/saadsparse-ch10-14.md`).
+
+The spectra of the model problems, which is what makes the constants of §13.2 concrete, are
+`Numlib/LinearAlgebra/Matrix/TridiagonalToeplitz` and `Numlib/LinearAlgebra/Matrix/KroneckerSum`: no PDE
+theory is used or needed, only the eigen-decomposition of the discrete Laplacean.
+
+The recurring convention: a smoother is given by its *error propagation operator* `S = 1 - B A`
+(Saad (13.40)–(13.42)), never by the iteration itself, because every statement of the chapter is
+about the error. `Numlib/LinearSolve/Stationary/Splitting` supplies the classical examples
+(`S = Splitting.iterationOperator`).
+'''

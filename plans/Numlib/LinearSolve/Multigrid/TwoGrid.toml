@@ -1,0 +1,93 @@
+namespace = "Multigrid"
+desc = '''
+Convergence of the two-grid cycle: Saad, *Iterative Methods for Sparse Linear Systems*, §13.5.2,
+Theorem 13.3.
+
+The theorem is a clean piece of Hilbert-space linear algebra once the two hypotheses are named. The
+*smoothing property* says the smoother contracts the energy norm by an amount controlled by a
+second seminorm of the residual, `‖S e‖_A² ≤ ‖e‖_A² - α q(A e)²` (Saad (13.62)); the
+*approximation property* says the coarse space approximates in the dual seminorm,
+`min_{c ∈ Vc} p(e - c)² ≤ β ‖e‖_A²` (Saad (13.63)). Then `α ≤ β` and
+`‖S T e‖_A ≤ √(1 - α/β) ‖e‖_A`.
+
+Saad states the two hypotheses with `p = ‖·‖_D` and `q = ‖·‖_{D⁻¹}` for the diagonal `D` of `A`.
+Carrying `D` and `D⁻¹` through the statements costs an invertibility hypothesis and buys nothing,
+so the plan abstracts the only property of the pair that the proof uses — the duality
+`|⟪u, w⟫| ≤ q u * p w` — into `IsDualSeminormPair`, and records the `D`/`D⁻¹` instance as a lemma.
+That is not generalization for its own sake: with `p = q = ‖·‖` (the Cauchy–Schwarz pair) the same
+theorem covers the textbook variants that measure the smoothing property in the Euclidean norm, and
+the finite-element literature's `H¹`/`L²` pair is the same shape.
+
+The proof, following the book: for `e` in the range of the coarse-grid correction — where, by
+`Multigrid.range_coarseCorrection`, `e` is `A`-orthogonal to `range Pr` — the identity
+`‖e‖_A² = ⟪A e, e - c⟫` for any `c ∈ Vc` plus the duality and the approximation property give
+`‖e‖_A ≤ √β q(A e)`; feed that into the smoothing property. The last step uses that the coarse-grid
+correction is an `A`-orthogonal projector, hence `A`-norm nonexpansive.
+'''
+
+[[node]]
+id = "IsDualSeminormPair"
+kind = "definition"
+desc = '''`Multigrid.IsDualSeminormPair 𝕜 p q : Prop := ∀ u w, ‖⟪u, w⟫‖ ≤ q u * p w`, the only relation
+between the two seminorms of Saad (13.62)–(13.63) that the two-grid theorem uses. Instances:
+`isDualSeminormPair_norm` (`p = q = ‖·‖`, Cauchy–Schwarz) and `isDualSeminormPair_energy`
+(`p = energyNorm D`, `q = energyNorm D⁻¹` for a symmetric coercive invertible `D`, which is Saad's
+`‖·‖_D` and `‖·‖_{D⁻¹}`), by Cauchy–Schwarz in the `D`-inner product.'''
+deps = ["energyNorm"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 13.5.2"
+
+[[node]]
+id = "IsSmootherWith"
+kind = "definition"
+desc = '''Saad (13.62), the smoothing property: `Multigrid.IsSmootherWith A q S α : Prop :=
+∀ e, energyNorm A (S e) ^ 2 ≤ energyNorm A e ^ 2 - α * q (A e) ^ 2`, for the error propagation
+operator `S` of the smoother. It says the smoother is `A`-nonexpansive and that what it removes is
+measured by `q` of the residual.'''
+deps = ["energyNorm"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, (13.62)"
+
+[[node]]
+id = "IsApproximationWith"
+kind = "definition"
+desc = '''Saad (13.63), the approximation property of the coarse space:
+`Multigrid.IsApproximationWith A p Vc β : Prop := ∀ e, ∃ c ∈ Vc, p (e - c) ^ 2 ≤ β * energyNorm A e ^ 2`.
+Stated with an existential rather than an infimum, which is what the proof consumes and what a
+concrete interpolation estimate provides.'''
+deps = ["energyNorm"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, (13.63)"
+
+[[node]]
+id = "energyNorm_le_of_isApproximationWith"
+kind = "theorem"
+desc = '''The half of Saad Thm 13.3 that carries the geometry: for `e` in the range of the coarse-grid
+correction (equivalently, `A`-orthogonal to `range Pr`), `energyNorm A e ≤ √β * q (A e)`. Because
+`⟪A e, c⟫ = 0` for `c ∈ range Pr`, `‖e‖_A² = ⟪A e, e - c⟫ ≤ q(A e) p(e - c)`, and the approximation
+property bounds `p(e - c)`. Stated separately because it is also the statement that `α ≤ β` follows
+from, and because the algebraic-multigrid discussion of Saad §13.6.1 uses it on its own.'''
+deps = ["IsDualSeminormPair", "IsApproximationWith", "range_coarseCorrection", "coarseProjection"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 13.3"
+
+[[node]]
+id = "energyNorm_twoGrid_le"
+kind = "theorem"
+desc = '''Saad Theorem 13.3: under a smoothing property with `α > 0` and an approximation property with
+`β > 0` for the same dual pair, `α ≤ β` and
+`energyNorm A (S (coarseCorrection A hA (range Pr) v)) ≤ √(1 - α/β) * energyNorm A v` for every
+`v`, so the two-grid iteration with one post-smoothing step converges at a rate independent of
+anything but `α` and `β`. The general form with `ν₁` pre- and `ν₂` post-smoothing steps
+(`energyNorm_twoGridOperator_le`) follows because each smoothing step is `A`-nonexpansive.'''
+deps = ["IsSmootherWith", "IsApproximationWith", "IsDualSeminormPair", "energyNorm_le_of_isApproximationWith", "twoGridOperator", "coarseProjection_apply_eq"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 13.3"
+
+[[node]]
+id = "isSmootherWith_richardson"
+kind = "theorem"
+desc = '''Saad Example 13.8 and its Richardson twin (Exercise 13.15), the only concrete verification of a
+smoothing property in the book: for symmetric coercive `A`, symmetric coercive invertible `D`, and
+`S = 1 - ω D⁻¹ A` with `0 < ω < 2/γ` where `γ` bounds the quadratic form of `D⁻¹ᐟ² A D⁻¹ᐟ²` (that
+is, `⟪A x, x⟫ ≤ γ ⟪D x, x⟫` for all `x`), the smoothing property holds with
+`α = ω (2 - ω γ)` and `q = energyNorm D⁻¹`. The computation is
+`‖S e‖_A² = ‖e‖_A² - ⟪ω (2 - ω D⁻¹ A) D⁻¹ A e, A e⟫_{D⁻¹}`, bounded below by the smallest value of
+the bracketed quadratic form. Richardson is `D = 1`; weighted Jacobi is `D = diagPart A`.'''
+deps = ["IsSmootherWith", "LinearMap.IsSymmetricBoundedBy", "Stationary.Splitting.iterationOperator"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Example 13.8, (13.65)"

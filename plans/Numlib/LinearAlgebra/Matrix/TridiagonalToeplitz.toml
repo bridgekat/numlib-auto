@@ -84,3 +84,23 @@ form bounds of `Numlib/Analysis/InnerProductSpace/Coercive` and hence the condit
 `cot²(π / (2(n+1)))`, the standard `O(h⁻²)` growth.'''
 deps = ["symmTridiagonalToeplitz_mulVec_sineVec", "dotProduct_sineVec", "LinearMap.IsSymmetricBoundedBy"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, Section 2.2.3"
+
+[[node]]
+id = "sineOrthonormalBasis"
+kind = "definition"
+desc = '''The normalized sine vectors as an `OrthonormalBasis (Fin n) ℝ (EuclideanSpace ℝ (Fin n))`,
+diagonalizing every `symmTridiagonalToeplitz n a b` at once (`symmTridiagonalToeplitz` is a Toeplitz family with a
+common eigenbasis). `sineOrthonormalBasis_hasEigenvector` records the eigenpairs.'''
+deps = ["dotProduct_sineVec", "symmTridiagonalToeplitz_mulVec_sineVec"]
+
+[[node]]
+id = "isSymmetricBoundedBy_symmTridiagonalToeplitz"
+kind = "theorem"
+desc = '''The spectrum in quadratic-form form, which is how every convergence bound consumes it:
+`toEuclideanLin (symmTridiagonalToeplitz n a b)` is `LinearMap.IsSymmetricBoundedBy` by
+`b - 2|a| cos(π/(n+1))` and `b + 2|a| cos(π/(n+1))` — more sharply, by the minimum and maximum of
+`b + 2 a cos((k+1) π/(n+1))` over `k : Fin n`. With it, `posDef_tridiagToeplitz_neg_one_two`: the
+model Laplacean `symmTridiagonalToeplitz n (-1) 2` is positive definite with eigenvalues
+`4 sin²((k+1) π/2(n+1)) ∈ (0, 4)`.'''
+deps = ["sineOrthonormalBasis", "Matrix.IsHermitian.isSymmetricBoundedBy_toEuclideanLin", "Matrix.posDef_iff_isSymmetricCoercive"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 13.2"

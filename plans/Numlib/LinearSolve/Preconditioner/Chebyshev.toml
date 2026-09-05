@@ -1,0 +1,84 @@
+namespace = "Preconditioner.Chebyshev"
+desc = '''
+Chebyshev acceleration: the parameter-free three-term iteration whose residuals are the shifted
+Chebyshev polynomials of an interval `[α, β]` enclosing the spectrum. Saad, *Iterative Methods for
+Sparse Linear Systems*, §12.3.2 and Algorithm 12.1; the same method is Kress, *Numerical Analysis*,
+§4.4 and appears in every treatment of semi-iterative methods, which is why it is backbone rather
+than surface.
+
+The residual polynomial `T_k` of Saad §12.3.2 is *already* in the library: it is
+`Polynomial.Chebyshev.shifted k α β 0` of `Numlib/RingTheory/Polynomial/ChebyshevMinimax`, since
+`shifted m a b γ` is `t ↦ T_m((b + a - 2t)/(b - a)) / T_m((b + a - 2γ)/(b - a))` and at `γ = 0`
+that is `C_k((θ - t)/δ)/C_k(θ/δ)` with `θ = (β + α)/2`, `δ = (β - α)/2`. So this module has three
+jobs: name the iteration (Algorithm 12.1) as a `State`/`step`/`iterate` triple in the convention of
+`Numlib/Krylov`; prove that its residuals are `shifted k α β 0` applied to `r₀`; and read off the
+rate from the two facts already proved about `shifted`. The scalar recurrences (12.6)–(12.8) come
+from the three-term recurrence of `Polynomial.Chebyshev.T`, which has to be added to
+`ChebyshevMinimax` as `Polynomial.Chebyshev.shifted_succ` (see `plans/proposals/plan-saad10.md`).
+
+Chebyshev acceleration is *not* a Krylov-optimal method: its iterate lies in the same affine space
+as GMRES/CG but does not minimize anything, which is exactly why `norm_residual_iterate_le` is a
+one-sided bound and why a minimal-residual method beats it — a comparison worth recording, because
+it is the standard argument for preferring CG when inner products are affordable.
+'''
+
+[[node]]
+id = "State"
+kind = "definition"
+desc = '''The state `(x, r, d, ρ)` of Saad Algorithm 12.1: iterate, residual, direction and the scalar
+`ρ_k = σ_k/σ_{k+1}` of (12.6). A structure, in the convention of `CG.State` and `Lanczos.State`.'''
+source = "Saad, Iterative Methods for Sparse Linear Systems, Algorithm 12.1"
+
+[[node]]
+id = "step"
+kind = "definition"
+desc = '''One step of Saad Algorithm 12.1: `x' = x + d`, `r' = r - A d`, `ρ' = (2 σ₁ - ρ)⁻¹`,
+`d' = ρ' ρ • d + (2 ρ'/δ) • r'`, for `σ₁ = θ/δ`. Real scalars act through `RCLike.ofReal`; no
+inner product is computed, which is the practical point of the method.'''
+deps = ["State"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Algorithm 12.1"
+
+[[node]]
+id = "iterate"
+kind = "definition"
+desc = '''`Chebyshev.iterate A b x₀ θ δ k`, the `k`-th state started from `r₀ = b - A x₀`,
+`d₀ = θ⁻¹ • r₀`, `ρ₀ = δ/θ`, and `Chebyshev.rho`, `Chebyshev.sigma` for the scalar sequences of
+(12.6)–(12.7) with `rho_eq_div_sigma : ρ_k = σ_k/σ_{k+1}` and
+`sigma_succ : σ_{k+1} = 2 σ₁ σ_k - σ_{k-1}`.'''
+deps = ["step"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Algorithm 12.1"
+
+[[node]]
+id = "residual_iterate_eq"
+kind = "theorem"
+desc = '''The residual of the `k`-th Chebyshev step is the shifted Chebyshev polynomial of `[α, β]`
+applied to the initial residual: `(iterate A b x₀ θ δ k).r = (shifted k α β 0)(A) r₀` for
+`θ = (β + α)/2`, `δ = (β - α)/2`, and correspondingly
+`x_k - x₀ ∈ 𝒦_k(A, r₀)` so that the iterate is a Krylov iterate. Induction on `k` from the
+three-term recurrence (12.8) of `Polynomial.Chebyshev.shifted`; the identity
+`1 = (2 σ₁ - ρ_{k-1}) ρ_k` is what turns the polynomial recurrence into the vector recurrence for
+`d_k`.'''
+deps = ["iterate", "Polynomial.Chebyshev.shifted", "Krylov.subspace", "Krylov.mem_subspace_iff_exists_aeval"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, (12.8)–(12.9), Algorithm 12.1"
+
+[[node]]
+id = "norm_residual_iterate_le"
+kind = "theorem"
+desc = '''The convergence rate. For a symmetric `A` with quadratic form in `[α, β]`, `0 < α < β` and
+`κ = β/α`, `‖r_k‖ ≤ (1 / T_k((β + α)/(β - α))) ‖r₀‖ ≤ 2 ((√κ - 1)/(√κ + 1))^k ‖r₀‖`, with the
+energy-norm twin for the error. From `residual_iterate_eq`,
+`LinearMap.IsSymmetricBoundedBy.norm_aeval_map_apply_le`,
+`Polynomial.Chebyshev.sSup_abs_eval_shifted` and
+`Polynomial.Chebyshev.one_div_eval_T_le_two_mul_pow`; no new estimate is needed.'''
+deps = ["residual_iterate_eq", "LinearMap.IsSymmetricBoundedBy.norm_aeval_map_apply_le", "Polynomial.Chebyshev.sSup_abs_eval_shifted", "Polynomial.Chebyshev.one_div_eval_T_le_two_mul_pow"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 12.3.2"
+
+[[node]]
+id = "norm_residual_minRes_le_norm_residual_iterate"
+kind = "theorem"
+desc = '''A minimal-residual Krylov iterate is never worse than the Chebyshev iterate of the same degree:
+`Krylov.IsMinResIterate A b x₀ k y → ‖b - A y‖ ≤ ‖(iterate A b x₀ θ δ k).r‖`, because the Chebyshev
+iterate is a competitor in the minimization. The reason the method is used only where inner
+products are expensive, and the reason its analysis is a one-sided bound.'''
+deps = ["residual_iterate_eq", "Krylov.IsMinResIterate", "Krylov.IsMinResIterate.norm_residual_le_norm_aeval"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 12.3.2"
