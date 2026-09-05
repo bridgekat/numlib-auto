@@ -1,0 +1,26 @@
+desc = '''
+Elliptic variational inequalities: the nonlinear half of the variational layer.
+
+An elliptic variational inequality is the problem of finding `u` in a nonempty closed convex set
+`K` of a real Hilbert space with
+
+  `inner f (v - u) ≤ inner (A u) (v - u) + j v - j u`  for all `v` in `K`,
+
+for a strongly monotone Lipschitz operator `A` and a convex lower semicontinuous `j`. It
+generalizes the Lax–Milgram lemma of `Numlib/Variational/LaxMilgram` in two independent
+directions — a convex constraint set instead of a subspace, and a non-differentiable convex term
+in the functional — and it is the abstract form of the obstacle problem, the elasto-plastic
+torsion problem and the friction problems of contact mechanics.
+
+`Basic` holds the theory (existence, uniqueness, stability, Minty's lemma, the reduction to a
+constrained minimization problem when the operator comes from a symmetric form) and
+`Approximation` the numerical analysis (the generalized Céa lemma of Falk, convergence of internal
+approximations, and the error of replacing the non-differentiable term by a numerical
+approximation of it). Source: Atkinson–Han, *Theoretical Numerical Analysis*, Sections 11.2–11.4;
+Glowinski–Lions–Trémolières and Han–Reddy are the second consumers.
+
+What stays out of these modules: everything in Atkinson–Han Chapter 11 that is stated over a
+Sobolev space (the obstacle problem itself, the friction and Signorini problems of Section 11.5,
+the regularity theorem 11.3.12), and the Lagrange-multiplier reformulation of Theorem 11.4.5,
+which lives on the trace space of a Lipschitz domain.
+'''

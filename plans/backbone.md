@@ -1597,3 +1597,149 @@ under a book number would compete with Mathlib's name for a future agent's atten
 of real content is Thm 1.3.13, which is 11.1's `trigBasis`.
 
 ---
+
+## 14. Tree of contents, part V: variational inequalities, second-kind equations, finite differences
+
+Added when Atkinson–Han Chapters 5 onward were planned out. Everything here is phase 3, and all of
+it is stated in the Banach or Hilbert generality the sources use; the per-result alignment is in
+`atkinsonhan-ch6-12.md` and the decisions that could not go into a group file are in
+`proposals/atkinsonhan-ch5-onward.md`.
+
+### 14.1 `Numlib/Analysis/Convex/` — convexity through directional derivatives, saddle points
+
+`Analysis/Convex/Gateaux.lean` (upstreaming candidate, natural home `Mathlib.Analysis.Convex.Deriv`,
+which today has only the one-dimensional statements). For `f : V → ℝ` on a convex set whose
+directional derivatives are represented by `f' : V → V →L[ℝ] ℝ`: convexity, the gradient inequality
+and monotonicity of the gradient are equivalent, with their strict forms, and a constrained
+minimizer is characterized by a variational inequality — including the version with a second,
+non-differentiable convex term (AH Thm 5.3.17–5.3.19 and Thm 11.2.1). The bounded-linear
+representation is data, not derived: `HasLineDerivAt` gives one scalar per direction and does not
+bundle it, and the book's Gâteaux derivative is required to be bounded linear. **These statements
+already exist, proved, inside `NumlibSurface/AtkinsonHan/Chapter05/Section03.lean`**; the module is
+their promotion, and the surface lemmas must be restated as its specializations in the same task
+that writes it. That is the single largest duplication risk in this part of the plan.
+
+`Analysis/Convex/SaddlePoint.lean`. `IsSaddlePoint L A B u p` for `L : α → β → ℝ` on bare sets, and
+the minimax equality: the primal functional attains its least value at `u`, the dual functional its
+greatest at `p`, and the two agree with `L u p` (AH Def 8.6.1, Prop 8.6.2, (8.6.11)–(8.6.14)). No
+convexity anywhere; the only trap is the junk value of `sSup`/`sInf`, so both extremal statements
+carry explicit boundedness hypotheses.
+
+### 14.2 `Numlib/Analysis/InnerProductSpace/WeakCompactness.lean` — the one analysis prerequisite
+
+Two statements Mathlib lacks: a bounded sequence in a Hilbert space has a weakly convergent
+subsequence, and a closed convex set is sequentially weakly closed (Mazur). They are what AH
+Thm 11.4.1 and 11.4.6 need, and they are reachable: the pinned Mathlib has the sequential
+Banach–Alaoglu theorem `WeakDual.isSeqCompact_closedBall` for a **separable** normed space, and the
+separability is removed by working in the closed span of the sequence and pushing the limit back
+with the orthogonal projection. The **general Banach-space forms stay out of scope**: Mathlib has no
+reflexivity class for Banach spaces and no Eberlein–Šmulian, so AH Thm 2.7.5, Thm 3.3.8, 3.3.10,
+3.3.12, 3.3.14 and Thm 8.6.3 remain unplanned, as `Variational/Minimization.toml` already says. The
+boundary is deliberate: everything the corpus needs happens in a Hilbert space.
+
+### 14.3 `Numlib/Variational/Inequality/` — elliptic variational inequalities (AH Ch. 11)
+
+`Inequality/Basic.lean`: `IsVariationalInequalitySolution A j f K u`, uniqueness and Lipschitz
+dependence from strong monotonicity alone, existence for a strongly monotone Lipschitz `A` and a
+convex lower semicontinuous `j` on a nonempty closed convex `K` (AH Thm 11.3.1), Stampacchia's
+theorem as the case `j = 0`, the bilinear-form version, Minty's lemma, and the equivalence with a
+constrained minimization problem when the operator comes from a symmetric form (AH Thm 11.2.2).
+This generalizes §5.2.2 in two independent directions — a convex set instead of a subspace, and a
+non-differentiable term — and `SesqForm.laxMilgram` is the corner where both degenerate.
+
+The existence engine is `existsUnique_isMinOn_energy_add`: the unique minimizer of
+`½ a(v,v) + j v − ℓ v` over a nonempty closed convex set of a Hilbert space. The book derives it
+from its reflexive-space Thm 3.3.12; that route is unavailable and is not needed, because the
+parallelogram law makes any minimizing sequence Cauchy — the argument behind Mathlib's
+`exists_norm_eq_iInf_of_complete_convex` — and the convex lower semicontinuous `j` only needs an
+affine minorant, which Mathlib has as `ConvexOn.exists_affine_le_of_lt` (AH Lemma 11.3.5).
+
+`Inequality/Approximation.lean`: Falk's generalized Céa lemma (AH Thm 11.4.2), which is pure
+algebra — strong monotonicity, Lipschitz continuity, Young's inequality, no topology and no limit —
+and everything else in the module specializes it. Convergence of *internal* approximations needs no
+weak compactness (AH Ex 11.4.2) and should be proved first; the general external case (AH Thm
+11.4.1) is the only consumer of 11.2.
+
+**Hypothesis shape.** Strong monotonicity and Lipschitz continuity are taken unbundled, in exactly
+the form `Nonlinear/FixedPoint`'s `zarantonello` takes them, so that the two compose without a
+translation lemma. A bundled `IsStronglyMonotoneWith` is now worth adding to `Nonlinear/FixedPoint`
+(seven consumers); when it lands, both modules switch in one task.
+
+### 14.4 `Numlib/Variational/AubinNitsche.lean` — duality error estimates
+
+The Aubin–Nitsche argument (AH Thm 10.4.3) stated for two inner product spaces and a continuous
+linear `ι : V →L[𝕜] H`, with no infimum, no supremum and no existence claim: given a Galerkin error
+`e` orthogonal to `K` and a solution `φ` of the dual problem, `‖ι e‖² ≤ M ‖e‖ ‖φ − w‖` for every
+`w ∈ K`. That is the whole content, and it is the one result of AH Chapter 10 that survives the
+absence of Sobolev spaces. It belongs inside `Variational/Galerkin` and is a separate module only
+because that group file was owned elsewhere when it was planned.
+
+### 14.5 `Numlib/FiniteDifference/` — the Lax equivalence theorem (AH Ch. 6)
+
+`FiniteDifference/LaxEquivalence.lean`: the abstract initial value problem `u' = L u` for a densely
+defined `L : V →ₗ.[𝕜] V`, its solutions and well-posedness, the solution operators and the
+generalized solution, consistency, stability, convergence, the equivalence theorem and the
+convergence-order corollary. The theorem uses only `S 0 = 1`, a uniform bound on `‖S t‖` and strong
+continuity, so it is stated for a family `S` rather than reconstructed from `L`, and the bridge from
+the initial value problem is a separate node; **the semigroup property is recorded but is not a
+hypothesis anywhere**. Both directions rest on `Analysis/Normed/Operator/BanachSteinhaus`: forward
+through the density argument, backward through uniform boundedness.
+
+`FiniteDifference/TwoLevel.lean`: one theorem, the error accumulation `‖u^m − v^m‖ ≤ M₀ T δ` for a
+two-level recursion whose exact values carry a local truncation error (AH Thm 6.3.2). It is a
+geometric-sum estimate with explicit constants; no mesh family, no limit, no order symbol.
+
+The specific difference schemes are **not** planned, in either layer: the forward, backward and
+Crank–Nicolson schemes for the heat equation are Taylor expansions of a solution assumed smooth plus
+the maximum principle, they exercise nothing in the theory above, and formalizing them would be
+partial differential equations.
+
+### 14.6 Second-kind equations: `IntegralEquations/SecondKind`, `Operator/CollectivelyCompact`
+
+The abstract theory of `(λ − K) u = f` and its approximations (AH Ch. 12), which is operator theory
+in a Banach space with no kernel and no quadrature in sight. Two independent perturbation theorems:
+
+* the **norm-convergent** case, where `‖K − K_n‖ → 0` and the geometric series theorem of §2.1.1
+  suffices. This covers projection methods, because `‖K − P_n K‖ → 0` for compact `K` and pointwise
+  convergent projections. AH Thm 12.1.2, with the two-sided estimate that makes `‖u − u_n‖` and
+  `‖u − P_n u‖` tend to zero at exactly the same rate.
+* the **collectively compact** case (Anselone), where `‖K − K_n‖` does not tend to zero but
+  `‖(K − K_n) K_n‖` does. AH Thm 12.4.3; the geometric series is applied to a correction term and
+  injectivity is upgraded to invertibility by the Fredholm alternative for the compact operator.
+  This is the difficult item, and it is what makes the Nyström method analysable at all.
+
+Also: Jacobson's identity for units (`λ − AB` invertible iff `λ − BA` is, AH Lemma 12.3.1), Sloan's
+iterated projection solution with its error equation, and the two-grid iteration with its
+contraction factor. `Analysis/Normed/Operator/CollectivelyCompact.lean` carries
+`IsCollectivelyCompact` in the shape of Mathlib's `IsCompactOperator`, the Banach–Steinhaus fact
+that a pointwise convergent family converges uniformly on compact sets, and the single composition
+lemma `‖A_n ∘ M‖ → 0` for `A_n → 0` pointwise and `M` compact — which is AH Lemma 12.1.4 and
+Lemma 12.4.7(3) at once, and which `Variational/ProjectionMethod` should import rather than
+rederive.
+
+### 14.7 `Numlib/Nonlinear/CompletelyContinuous.lean`
+
+`IsCompactMap` for a nonlinear map, and one theorem: the Fréchet derivative of a completely
+continuous operator is a **compact linear** operator (AH Prop 5.5.5). It is the bridge from a
+nonlinear fixed point problem to §14.6, and AH §12.7 is its consumer. Brouwer, Schauder and the
+rotation of a completely continuous vector field are not planned: Mathlib has none of them, the book
+quotes all of them without proof, and building degree theory is algebraic topology.
+
+### 14.8 What Chapter 7 does and does not change
+
+§0.2 and §1.7 say Sobolev spaces are out of scope until Mathlib has them. That was re-checked
+against the pinned Mathlib rather than repeated. The pinned version **does** have
+`Mathlib/Analysis/Distribution/Sobolev.lean` — but that is `TemperedDistribution.MemSobolev`, the
+Bessel potential spaces `H^{s,p}` on a finite-dimensional space, a predicate on tempered
+distributions defined through the Fourier transform, together with the Gagliardo–Nirenberg–Sobolev
+inequalities for compactly supported `C¹` functions. It has **no** weak derivative of an `L¹_loc`
+function on an open set, no `W^{k,p}(Ω)` as a normed space, no `W^{k,p}_0`, no `H^{-s}`, no density
+of smooth functions, no extension operator, no embedding or compact embedding theorem, no trace
+operator, no Poincaré or Friedrichs inequality, and no divergence theorem beyond boxes. The scope
+decision stands, and its reason is now precise. One item is closer than the rest and belongs with
+`Approximation/Trigonometric` when that is written: the **periodic** Sobolev spaces `H^s(2π)` of AH
+§7.5 are a weighted `ℓ²` space over the Fourier basis of `AddCircle`, need none of the domain
+machinery, and would bring the trapezoidal rule for periodic integrands (Prop 7.5.6) and the
+trigonometric interpolation error (Thm 7.5.7) with them.
+
+---

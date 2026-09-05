@@ -1,0 +1,143 @@
+namespace = "FiniteDifference"
+desc = '''
+The Lax equivalence theorem: for a consistent one-step approximation of a well-posed abstract
+initial value problem in a Banach space, stability and convergence are the same thing.
+Atkinson–Han, *Theoretical Numerical Analysis*, Section 6.2 (Definitions 6.2.1, 6.2.2, 6.2.3,
+6.2.7, 6.2.9, 6.2.10, Propositions 6.2.5 and 6.2.6, Theorem 6.2.11 and Corollary 6.2.12); Lax and
+Richtmyer 1956, Richtmyer–Morton Chapter 3.
+
+**The data.** `L : V →ₗ.[𝕜] V` is a densely defined, generally unbounded operator; a *solution* of
+the initial value problem on `[0, T]` is a curve taking values in the domain of `L` whose
+derivative there is `L` applied to it (Definition 6.2.1, in Lean `HasDerivWithinAt` on `Icc 0 T`,
+which is also the book's one-sided convention at the two ends). The problem is *well posed* when
+each initial value in the domain gives exactly one solution and the solution map is bounded
+(Definition 6.2.2, (6.2.3)); the solution map then extends to bounded operators `S t : V →L[𝕜] V`
+on the whole space by the dense-extension theorem, and `S t u₀` for `u₀` outside the domain is the
+*generalized solution* (Definition 6.2.3).
+
+**What the theorem actually uses** is only `S 0 = 1`, a uniform bound `‖S t‖ ≤ c₀` on `[0, T]`, and
+strong continuity of `t ↦ S t u`; the theorem below therefore takes those as hypotheses on a family
+`S` rather than reconstructing them from `L`, and the bridge from the initial value problem is the
+separate node `exists_solutionOperator`. That keeps the equivalence usable for any evolution family
+and avoids making the `LinearPMap` machinery a prerequisite for the interesting proof.
+
+**The two directions.** Stability implies convergence by the telescoping identity
+`C(Δt)^m u₀ - u(mΔt) = Σ_{j<m} C(Δt)^j (C(Δt) u((m-1-j)Δt) - u((m-j)Δt))`, whose sum is bounded by
+`M₀ · mΔt · sup_t ‖(C(Δt) u(t) - u(t+Δt))/Δt‖`, plus continuity of `u` to pass from `mΔt` to `t`,
+and then a density argument for general initial values. Convergence implies stability by uniform
+boundedness (`banach_steinhaus`), the uniform bound on `‖C(Δt)‖` disposing of the bounded-`m` case.
+So both directions rest on `Numlib/Analysis/Normed/Operator/BanachSteinhaus`, and the module needs
+`[CompleteSpace V]` for that reason alone.
+
+Definitions are `Prop`-valued predicates on the pair `(S, C)` rather than structures, following the
+specification style of the Krylov layer; a scheme is consistent, stable or convergent, it is not a
+bundle of data.
+'''
+
+[[node]]
+id = "IsSolution"
+kind = "definition"
+desc = '''`FiniteDifference.IsSolution L T u₀ u : Prop` — for a densely defined `L : V →ₗ.[𝕜] V`,
+`u : ℝ → V` takes values in the domain of `L` on `Icc 0 T`, satisfies
+`HasDerivWithinAt u (L (u t)) (Icc 0 T) t` there, and `u 0 = u₀`. Atkinson–Han, *Theoretical
+Numerical Analysis*, Definition 6.2.1, (6.2.2); the one-sided limits the book takes at the two
+endpoints are what `HasDerivWithinAt` on a closed interval gives.'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 6.2.1"
+
+[[node]]
+id = "IsWellPosed"
+kind = "definition"
+desc = '''`FiniteDifference.IsWellPosed L T c₀ : Prop` — every initial value in the domain of `L`
+has a solution on `Icc 0 T`, unique as a function on `Icc 0 T`, and two solutions satisfy
+`sup_{t ∈ Icc 0 T} ‖u t - ū t‖ ≤ c₀ ‖u₀ - ū₀‖`. Atkinson–Han Definition 6.2.2, (6.2.3).'''
+deps = ["IsSolution"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 6.2.2"
+
+[[node]]
+id = "exists_solutionOperator"
+kind = "theorem"
+desc = '''For a well-posed problem there is a family `S : ℝ → V →L[𝕜] V` with `‖S t‖ ≤ c₀` on
+`Icc 0 T`, `S 0 = 1`, and `S t u₀` the value at `t` of the solution with initial value `u₀`
+whenever `u₀` lies in the domain of `L`. The solution map is linear and bounded on the dense
+domain, so it extends uniquely to the whole space; `S t u₀` for other `u₀` is the *generalized
+solution* of Atkinson–Han Definition 6.2.3, and its being well defined is the content of the
+extension theorem the book cites as its Theorem 2.4.1.'''
+deps = ["IsWellPosed"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 6.2.3"
+
+[[node]]
+id = "continuousOn_of_dense"
+kind = "theorem"
+desc = '''Atkinson–Han Proposition 6.2.5: a uniformly bounded family `S : ℝ → V →L[𝕜] V` that is
+strongly continuous on a dense set of vectors is strongly continuous everywhere, so the generalized
+solution is continuous in `t` even though only the genuine solutions were assumed differentiable.
+An instance of the Banach–Steinhaus density criterion
+`ContinuousLinearMap.tendsto_of_tendsto_on_dense_of_bounded`; state it for an arbitrary set of
+parameters rather than for `Icc 0 T` only.'''
+deps = ["ContinuousLinearMap.tendsto_of_tendsto_on_dense_of_bounded"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Proposition 6.2.5"
+
+[[node]]
+id = "solutionOperator_add"
+kind = "theorem"
+desc = '''Atkinson–Han Proposition 6.2.6, the semigroup property `S (t₁ + t₀) = S t₁ ∘L S t₀` for
+`t₀, t₁ ≥ 0` with `t₁ + t₀ ≤ T`, from uniqueness of solutions and time-translation invariance of
+the equation. Recorded because it is the book's statement; **the Lax equivalence theorem does not
+use it**, so it must not become a hypothesis of the theorems below.'''
+deps = ["IsWellPosed", "exists_solutionOperator"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Proposition 6.2.6"
+
+[[node]]
+id = "IsConsistent"
+kind = "definition"
+desc = '''`FiniteDifference.IsConsistent S C T Δ₀ D : Prop` — `D` is dense and for every `u₀ ∈ D`
+the local error satisfies `‖C Δt (S t u₀) - S (t + Δt) u₀‖ / Δt → 0` as `Δt → 0` in `(0, Δ₀]`,
+uniformly for `t ∈ Icc 0 T`. Atkinson–Han Definition 6.2.7. Written with the division cleared —
+`‖C Δt (S t u₀) - S (t + Δt) u₀‖ ≤ ε * Δt` — so that no `Δt⁻¹` appears in the statement.'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 6.2.7"
+
+[[node]]
+id = "IsStable"
+kind = "definition"
+desc = '''`FiniteDifference.IsStable C T Δ₀ : Prop` — there is `M₀` with `‖(C Δt) ^ m‖ ≤ M₀` for
+every `Δt ∈ (0, Δ₀]` and every `m` with `m * Δt ≤ T`. Atkinson–Han Definition 6.2.10; the power is
+taken in the monoid of bounded operators.'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 6.2.10"
+
+[[node]]
+id = "IsConvergent"
+kind = "definition"
+desc = '''`FiniteDifference.IsConvergent S C T Δ₀ : Prop` — for every `t ∈ Icc 0 T`, every `u₀`, and
+every pair of sequences `Δt i ∈ (0, Δ₀]` and `m i : ℕ` with `Δt i → 0` and `m i * Δt i → t`, the
+norm of `((C (Δt i)) ^ (m i) - S t) u₀` tends to `0`. Atkinson–Han Definition 6.2.9; the sequences
+are quantified over because the book's limit is along an arbitrary refinement with `m Δt → t`, not
+along a single sequence of step sizes.'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 6.2.9"
+
+[[node]]
+id = "isStable_iff_isConvergent"
+kind = "theorem"
+desc = '''**The Lax equivalence theorem.** Atkinson–Han, *Theoretical Numerical Analysis*,
+Theorem 6.2.11: for a well-posed problem — `S 0 = 1`, `‖S t‖ ≤ c₀` on `Icc 0 T`, `t ↦ S t u`
+continuous for every `u` — and a uniformly bounded family `C` that is consistent on a dense set,
+`IsStable C T Δ₀ ↔ IsConvergent S C T Δ₀`. Forward: telescope the error, bound it by
+`M₀ (m Δt) sup_t ‖(C Δt (S t u₀) - S (t+Δt) u₀)‖/Δt + ‖S (m Δt) u₀ - S t u₀‖`, and pass from the
+dense set to all initial values with the uniform bounds. Backward: convergence makes
+`sup_k ‖(C (Δt k))^{m k} u₀‖` finite for every `u₀`, so `banach_steinhaus` bounds the operator
+norms, contradicting instability; the case of a bounded sequence `m k` is settled by the uniform
+bound on `‖C Δt‖` alone.'''
+deps = ["IsConsistent", "IsStable", "IsConvergent", "continuousOn_of_dense",
+  "ContinuousLinearMap.tendsto_of_tendsto_on_dense_of_bounded"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 6.2.11"
+
+[[node]]
+id = "norm_iterate_sub_le"
+kind = "theorem"
+desc = '''Atkinson–Han Corollary 6.2.12, the order of convergence: if the scheme is stable with
+constant `M₀` and the local error of a particular initial value satisfies
+`‖C Δt (S t u₀) - S (t + Δt) u₀‖ ≤ c Δt^{k+1}` uniformly on `Icc 0 T`, then
+`‖((C Δt) ^ m) u₀ - S T u₀‖ ≤ M₀ * T * c * Δt ^ k` whenever `m * Δt = T`. Read off the telescoping
+estimate of the previous theorem; no limit is taken, so the statement is an inequality with
+explicit constants.'''
+deps = ["IsStable", "isStable_iff_isConvergent"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Corollary 6.2.12"

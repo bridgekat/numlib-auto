@@ -1,0 +1,90 @@
+namespace = "AtkinsonHan.Ch06"
+desc = '''
+Atkinson–Han Section 6.2, the Lax equivalence theorem. The book works over a real or complex Banach
+space `V` with a dense subspace `V₀` and a linear, generally unbounded `L : V₀ ⊆ V → V`; the
+surface takes `L : V →ₗ.[ℝ] V` (Mathlib's `LinearPMap`, as Section 8.2 of this surface already
+does) with `L.domain` dense.
+
+Every node is a direct specialization of `Numlib/FiniteDifference/LaxEquivalence`, which is stated
+in the same generality; the surface exists to state the book's numbering, to pick the real scalars,
+and to record the definitions under the book's names. The one place where the surface does work of
+its own is the passage from the book's `lim_{Δt→0}` phrasing of Definitions 6.2.1 and 6.2.7 to the
+`HasDerivWithinAt` and epsilon–delta forms of the backbone predicates.
+'''
+
+[[node]]
+id = "IsSolution"
+kind = "definition"
+desc = '''Definition 6.2.1: `u : [0,T] → V` is a solution of `u' = L u`, `u 0 = u₀`, when `u t` lies
+in the domain of `L` for every `t` and the difference quotient of `u` at `t` tends to `L (u t)`
+((6.2.2)), one-sidedly at the two endpoints. Stated in the book's limit form, with the equivalence
+to `FiniteDifference.IsSolution`.'''
+deps = ["FiniteDifference.IsSolution"]
+
+[[node]]
+id = "IsWellPosed"
+kind = "definition"
+desc = '''Definition 6.2.2: the initial value problem is well posed when every `u₀` in the domain of
+`L` has a unique solution and the solutions depend continuously on the initial value, (6.2.3).'''
+deps = ["IsSolution", "FiniteDifference.IsWellPosed"]
+
+[[node]]
+id = "solutionOperator"
+kind = "definition"
+desc = '''The solution operators `S t : V →L[ℝ] V` of a well-posed problem, `sup_{0 ≤ t ≤ T} ‖S t‖ ≤
+c₀`, and the generalized solution `S t u₀` for `u₀ ∉ V₀` of Definition 6.2.3, obtained by extending
+the solution map from the dense domain (the book's appeal to its Theorem 2.4.1, which this surface
+proves as `AtkinsonHan.Ch02.theorem_2_4_1`).'''
+deps = ["IsWellPosed", "FiniteDifference.exists_solutionOperator"]
+
+[[node]]
+id = "proposition_6_2_5"
+kind = "theorem"
+desc = '''Proposition 6.2.5: for every `u₀ ∈ V` the generalized solution `t ↦ S t u₀` is continuous
+on `[0, T]`.'''
+deps = ["solutionOperator", "FiniteDifference.continuousOn_of_dense"]
+
+[[node]]
+id = "proposition_6_2_6"
+kind = "theorem"
+desc = '''Proposition 6.2.6: the solution operators of a well-posed problem form a semigroup,
+`S (t₁ + t₀) = S t₁ ∘ S t₀` whenever `t₀, t₁ ≥ 0` and `t₁ + t₀ ≤ T`.'''
+deps = ["solutionOperator", "FiniteDifference.solutionOperator_add"]
+
+[[node]]
+id = "IsConsistent"
+kind = "definition"
+desc = '''Definition 6.2.7: the difference method `{C Δt}` is consistent when there is a dense
+subspace `V_c` such that for every `u₀ ∈ V_c` the local error `(C Δt (u t) - u (t + Δt))/Δt` tends
+to `0` as `Δt → 0`, uniformly on `[0, T]`; with the book's derived remark that
+`(C Δt - I)/Δt` is then a convergent approximation of `L` on solutions.'''
+deps = ["FiniteDifference.IsConsistent"]
+
+[[node]]
+id = "IsConvergent"
+kind = "definition"
+desc = '''Definition 6.2.9: the method is convergent when `‖(C (Δt i)^{m i} - S t) u₀‖ → 0` for
+every `t ∈ [0, T]`, every `u₀ ∈ V`, and all sequences with `m i * Δt i → t`.'''
+deps = ["FiniteDifference.IsConvergent"]
+
+[[node]]
+id = "IsStable"
+kind = "definition"
+desc = '''Definition 6.2.10: the method is stable when the operators `C(Δt)^m` with `m Δt ≤ T`,
+`0 < Δt ≤ Δ₀`, are uniformly bounded.'''
+deps = ["FiniteDifference.IsStable"]
+
+[[node]]
+id = "theorem_6_2_11"
+kind = "theorem"
+desc = '''Theorem 6.2.11, the Lax equivalence theorem: for a well-posed initial value problem and a
+consistent difference method, stability is equivalent to convergence.'''
+deps = ["IsWellPosed", "IsConsistent", "IsStable", "IsConvergent",
+  "FiniteDifference.isStable_iff_isConvergent"]
+
+[[node]]
+id = "corollary_6_2_12"
+kind = "theorem"
+desc = '''Corollary 6.2.12: if in addition the local error of a solution with initial value in `V_c`
+is `O(Δt^k)` uniformly on `[0, T]`, then `‖C(Δt)^m u₀ - u t‖ ≤ c Δt^k` for `m Δt = t`.'''
+deps = ["theorem_6_2_11", "FiniteDifference.norm_iterate_sub_le"]

@@ -1,0 +1,26 @@
+desc = '''
+The convergence theory of one-step discretizations of evolution problems: consistency, stability
+and convergence, and the theorems that relate them.
+
+Two modules, corresponding to the two levels at which the theory is usually stated.
+`LaxEquivalence` is the Banach-space theory of Lax and Richtmyer: a well-posed abstract initial
+value problem `u' = L u`, `u 0 = u₀`, its solution operators `S t`, a one-parameter family of
+uniformly bounded difference operators `C Δt`, and the equivalence of stability with convergence
+for a consistent family. `TwoLevel` is the elementary form used in practice: a fixed two-level
+recursion `v^{m+1} = Q v^m + h g^m` in one normed space, where consistency and stability give
+convergence with an explicit order.
+
+The chapter this serves is Atkinson–Han, *Theoretical Numerical Analysis*, Chapter 6. What lives
+here is only the abstract half; **the specific difference schemes are not planned in the backbone
+and mostly not in the surface either**. The forward, backward and Crank–Nicolson schemes for the
+heat equation are approximations of a partial differential equation, and analysing them means
+Taylor expansions of a function of two variables that is assumed smooth by hypothesis, plus the
+maximum principle for the heat equation; that is partial differential equations, not numerical
+functional analysis, and none of it exercises the theory below. The two abstract theorems are
+exactly what a second source (Richtmyer–Morton, Strikwerda, Thomée) would also state.
+
+Nothing here needs a semigroup: the solution operators are given as data, and the only structural
+facts used are `S 0 = 1`, a uniform bound on `‖S t‖` and strong continuity in `t`. Mathlib's
+one-parameter semigroup material is therefore not a prerequisite, and if it grows, this layer
+instantiates it rather than the other way round.
+'''

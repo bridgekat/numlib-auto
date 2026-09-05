@@ -1,0 +1,52 @@
+desc = '''
+Weak sequential compactness in Hilbert spaces (upstreaming candidate; natural home
+`Mathlib.Analysis.InnerProductSpace.Dual` or `Mathlib.Analysis.Normed.Module.WeakDual`).
+
+Two facts, both missing from Mathlib and both needed by the convergence analysis of numerical
+methods for variational inequalities (Atkinson–Han, *Theoretical Numerical Analysis*,
+Theorem 11.4.1 and Theorem 11.4.6) and by the direct method of the calculus of variations:
+
+* every bounded sequence in a Hilbert space has a weakly convergent subsequence;
+* a closed convex set is closed under weak limits of sequences (Mazur).
+
+Mathlib has the ingredients but not the statements. The pinned version has the sequential
+Banach–Alaoglu theorem `WeakDual.isSeqCompact_closedBall` for the dual of a **separable** normed
+space, and the Riesz isometry `InnerProductSpace.toDual`; the separability hypothesis is removed by
+working inside the closed span of the sequence (which is separable) and pushing the resulting weak
+limit back with the orthogonal projection onto that span — for `v` outside the span,
+`inner (u n) v = inner (u n) (P v)`. Mazur is the Hahn–Banach separation
+`geometric_hahn_banach_closed_point` applied to the closed convex set and a point outside it.
+
+The general Banach-space forms — reflexivity, Eberlein–Smulian, weak sequential compactness of
+bounded sets in a reflexive space (Atkinson–Han Theorem 2.7.5) — are **not** planned: Mathlib has
+no reflexivity class for Banach spaces, and building one is functional analysis rather than
+numerical analysis. `Numlib/Variational/Minimization.toml` records the same boundary. Everything
+this project needs happens in a Hilbert space, where the two nodes below suffice.
+
+Weak convergence is stated in the sequential form `∀ v, Tendsto (fun n => inner (u n) v) atTop
+(nhds (inner w v))` rather than through `WeakSpace`, matching the predicate the Atkinson–Han
+surface already uses (`AtkinsonHan.Ch03.WeakSeqTendsto`) and the Banach-space lower semicontinuity
+node of `Numlib/Analysis/Normed/Module/WeakDual.toml`.
+'''
+
+[[node]]
+id = "exists_subseq_weak_tendsto"
+kind = "theorem"
+desc = '''Every norm-bounded sequence `u : ℕ → V` in a complete inner product space has a
+subsequence converging weakly: there are a strictly monotone `σ : ℕ → ℕ` and `w : V` with
+`Tendsto (fun k => inner (u (σ k)) v) atTop (nhds (inner w v))` for every `v`. Proof: reduce to the
+separable closed span of the range, transport to the dual by `InnerProductSpace.toDual`, apply
+`WeakDual.isSeqCompact_closedBall`, and extend to the whole space through the orthogonal
+projection onto the span.'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 2.7.5 (Hilbert case)"
+
+[[node]]
+id = "mem_of_weak_tendsto_of_convex"
+kind = "theorem"
+desc = '''A closed convex subset of a normed space is sequentially weakly closed: if `u n` lies in
+`K` for all `n` and `u n` tends to `w` weakly, then `w` is in `K`. Hahn–Banach separation of `w`
+from `K` (`geometric_hahn_banach_closed_point`) contradicts the convergence of the separating
+functional. Stated for a real normed space, which is where the variational-inequality applications
+use it; it is what makes hypothesis (b) of Atkinson–Han Theorem 11.4.1 automatic for internal
+approximations with the discrete constraint sets contained in the continuous one.'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.11 (Mazur), consequence"

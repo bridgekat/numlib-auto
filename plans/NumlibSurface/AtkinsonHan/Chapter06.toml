@@ -1,0 +1,20 @@
+desc = '''
+Atkinson–Han, Chapter 6: the finite difference method. Two of the three sections are formalized,
+and only their abstract halves.
+
+* Section 6.2, the Lax equivalence theorem, is Banach-space functional analysis from beginning to
+  end and is formalized in full: the initial value problem and its solutions, well-posedness, the
+  solution operators and the generalized solution, consistency, stability, convergence, the
+  equivalence theorem and the convergence-order corollary.
+* Section 6.3 contributes Theorem 6.3.2, the elementary two-level convergence theorem, together
+  with the definitions of consistency, order, stability and convergence for a family of schemes
+  (Definition 6.3.1) that give it its meaning.
+* Section 6.1 introduces the forward, backward and Crank–Nicolson schemes for the heat equation
+  and contains no numbered result; it is not formalized.
+
+Everything tied to a particular partial differential equation is left out: Examples 6.2.4, 6.2.8
+and 6.2.13, Examples 6.3.3 and 6.3.4, and all the exercises of the chapter. They are Taylor
+expansions of a solution assumed smooth by hypothesis together with the maximum principle for the
+heat equation, they exercise nothing in the theory, and formalizing them would be partial
+differential equations rather than numerical functional analysis.
+'''

@@ -1,0 +1,60 @@
+desc = '''
+Saddle points of a function of two variables and the minimax equality (upstreaming candidate;
+natural home `Mathlib.Analysis.Convex.SaddlePoint`).  For `L : α → β → ℝ` and sets `A ⊆ α`,
+`B ⊆ β`, a pair `(u, p)` is a saddle point when `L u q ≤ L u p ≤ L v p` for all `v ∈ A`, `q ∈ B`.
+This module records the definition and the equivalence with
+`max_{q ∈ B} inf_{v ∈ A} L v q = min_{v ∈ A} sup_{q ∈ B} L v q`, the common value being `L u p` —
+the duality statement behind primal and dual formulations of boundary value problems
+(Atkinson–Han, *Theoretical Numerical Analysis*, Definition 8.6.1, Proposition 8.6.2, (8.6.12)
+and (8.6.13)).
+
+Nothing here is convex analysis: `A` and `B` are bare sets and `L` an arbitrary real function, and
+the proofs are order arithmetic.  The one trap is the junk value of `sSup`/`sInf` on unbounded
+sets, so the two extremal statements carry explicit `BddAbove`/`BddBelow` hypotheses rather than
+being phrased with `⨆`/`⨅` over subtypes.
+
+Not planned here: the existence theorem for saddle points of a convex–concave `L` on closed convex
+subsets of reflexive Banach spaces (Atkinson–Han Theorem 8.6.3, quoted there from Ekeland–Temam).
+It needs weak compactness of bounded sets in a reflexive space, which Mathlib does not have; see
+`Numlib/Variational/Minimization.toml` for the same obstruction.
+'''
+
+[[node]]
+id = "IsSaddlePoint"
+kind = "definition"
+desc = '''`IsSaddlePoint L A B u p : Prop` — `u ∈ A`, `p ∈ B`, `L u q ≤ L u p` for all `q ∈ B` and
+`L u p ≤ L v p` for all `v ∈ A`. Atkinson–Han, *Theoretical Numerical Analysis*, Definition 8.6.1,
+(8.6.10).'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 8.6.1"
+
+[[node]]
+id = "IsSaddlePoint.le"
+kind = "theorem"
+desc = '''Weak duality at a saddle point: `L u q ≤ L v p` for every `v ∈ A` and `q ∈ B`, so the
+dual value never exceeds the primal value.'''
+deps = ["IsSaddlePoint"]
+
+[[node]]
+id = "IsSaddlePoint.isLeast_sSup"
+kind = "theorem"
+desc = '''At a saddle point the primal functional `v ↦ sSup (L v '' B)` attains its least value on
+`A` at `u`, and that value is `L u p`: `IsLeast ((fun v => sSup (L v '' B)) '' A) (L u p)`.
+Requires `∀ v ∈ A, BddAbove (L v '' B)`, without which `sSup` is junk.'''
+deps = ["IsSaddlePoint"]
+
+[[node]]
+id = "IsSaddlePoint.isGreatest_sInf"
+kind = "theorem"
+desc = '''Dually, the dual functional `q ↦ sInf ((fun v => L v q) '' A)` attains its greatest value
+on `B` at `p`, again equal to `L u p`. Requires `∀ q ∈ B, BddBelow ((fun v => L v q) '' A)`.
+Together with `IsSaddlePoint.isLeast_sSup` this is the minimax equality of Atkinson–Han
+Proposition 8.6.2, (8.6.11), and the equality (8.6.14) of the primal and dual values.'''
+deps = ["IsSaddlePoint"]
+
+[[node]]
+id = "isSaddlePoint_of_isLeast_of_isGreatest"
+kind = "theorem"
+desc = '''The converse half of Atkinson–Han Proposition 8.6.2: if `u ∈ A` minimizes
+`v ↦ sSup (L v '' B)` over `A`, `p ∈ B` maximizes `q ↦ sInf ((fun v => L v q) '' A)` over `B`, and
+the two extremal values agree, then `(u, p)` is a saddle point of `L`.'''
+deps = ["IsSaddlePoint"]

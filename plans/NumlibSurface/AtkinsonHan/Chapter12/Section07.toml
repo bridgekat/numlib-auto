@@ -1,0 +1,49 @@
+namespace = "AtkinsonHan.Ch12"
+desc = '''
+Atkinson–Han Section 12.7, projection methods for nonlinear fixed point problems `u = T u` with `T`
+completely continuous: the linearization analysis of Section 12.7.1.
+
+Formalized: Lemma 12.7.1, the Taylor bounds for a twice continuously differentiable `T` on a
+bounded convex set, and the error estimate for the projection solutions of `u_n = P_n T u_n` that
+the linearization yields, in the weaker form of Exercise 12.7.3. The linearization route is
+`Numlib/IntegralEquations/SecondKind` applied to `I - T'(u*)`, which is invertible with compact
+`T'(u*)` by `proposition_5_5_5` of `Chapter05/Section05`; from there Theorem 12.1.2 gives the
+uniform invertibility of `I - P_n T'(u*)` and the Banach fixed point theorem gives a unique
+solution near `u*`.
+
+Not formalized: Section 12.7.2, the homotopy argument, which computes the index of `Φ_n(v) = v -
+P_n T v` from that of `Φ(v) = v - T v` using the rotation of a completely continuous vector field
+(properties P1–P5 of Section 5.5.1) — Mathlib has no degree theory and the book quotes those
+properties without proof. Also not formalized: (12.7.13), the sharp error bound with `γ_n → 0`,
+quoted from Atkinson's paper rather than proved; Section 12.7.3, the nonlinear systems (12.7.21)
+and (12.7.24) for the Urysohn and Hammerstein equations, which are implementation; and Exercises
+12.7.4–12.7.7.
+'''
+
+[[node]]
+id = "lemma_12_7_1"
+kind = "theorem"
+desc = '''Lemma 12.7.1: for `T` twice continuously differentiable on an open `H` with `T''` bounded
+by `M` on a closed bounded convex `B ⊆ H`, the linearization remainder
+`R(v; v₀) = T v - T v₀ - T'(v₀)(v - v₀)` satisfies `‖R(v₂; v₁)‖ ≤ ½ M ‖v₁ - v₂‖²` ((12.7.5)),
+`‖T'(v₂) - T'(v₁)‖ ≤ M ‖v₂ - v₁‖` ((12.7.6)), and
+`‖R(v₁; v₀) - R(v₂; v₀)‖ ≤ M (‖v₁ - v₀‖ + ½ ‖v₁ - v₂‖) ‖v₁ - v₂‖` ((12.7.7), Exercise 12.7.1).
+The first is the sharp second-order mean value inequality
+`Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le`, the second is Mathlib's first-order mean
+value inequality applied to `T'`, and the third follows from the two.'''
+deps = ["Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le"]
+
+[[node]]
+id = "exercise_12_7_3"
+kind = "theorem"
+desc = '''The linearization analysis of Section 12.7.1 with the error bound of Exercise 12.7.3: if
+`T` is completely continuous and twice continuously differentiable near an isolated fixed point
+`u*` at which `I - T'(u*)` is bijective, and `P_n u → u` for every `u`, then for `n` large the
+projection equation `u_n = P_n T u_n` has a unique solution in a fixed ball about `u*` and
+`‖u* - u_n‖ ≤ c ‖u* - P_n u*‖`. Route: `proposition_5_5_5` makes `T'(u*)` compact, `lemma_12_1_4`
+gives `‖T'(u*) - P_n T'(u*)‖ → 0`, `theorem_12_1_2` makes `(I - P_n T'(u*))⁻¹` exist and be
+uniformly bounded, and `lemma_12_7_1` makes `u ↦ u + (I - P_n T'(u*))⁻¹ (P_n T u - u)` a
+contraction of a small ball, so Theorem 5.1.3 applies. The sharp constant of (12.7.13) is not
+claimed.'''
+deps = ["lemma_12_7_1", "theorem_12_1_2", "lemma_12_1_4",
+  "_root_.AtkinsonHan.Ch05.proposition_5_5_5", "_root_.AtkinsonHan.Ch05.theorem_5_1_3"]

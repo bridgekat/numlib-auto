@@ -1,0 +1,91 @@
+desc = '''
+Convexity of a functional on a normed space through its directional (Gâteaux) derivatives
+(upstreaming candidate; natural home `Mathlib.Analysis.Convex.Deriv`, which today has only the
+one-dimensional statements `MonotoneOn.convexOn_of_deriv`, `ConvexOn.slope_mono`).
+
+For `f : V → ℝ` on a convex `K ⊆ V` whose directional derivatives are represented by
+`f' : V → V →L[ℝ] ℝ` (`∀ h, HasLineDerivAt ℝ f (f' u h) u h`), this module proves the three
+classical equivalences — convexity, the gradient inequality `f u + ⟪f' u, v - u⟫ ≤ f v`, and
+monotonicity of the gradient — their strict forms, and the characterization of a constrained
+minimizer by a variational inequality, including the version with an extra non-differentiable
+convex term.
+
+Sources: Atkinson–Han, *Theoretical Numerical Analysis*, Thm 5.3.17–5.3.19 (the differentiable
+case) and Thm 11.2.1 (the `f + j` case that the elliptic-variational-inequality chapter is built
+on); the same statements are the entry point of any convex-optimization text.
+
+The bounded-linear representation `f' : V → V →L[ℝ] ℝ` is data, not derived: Mathlib's
+`HasLineDerivAt` gives one scalar per direction and does not bundle it into a functional, and the
+book's Gâteaux derivative is required to be bounded linear. Do not restate the equivalences for
+`fderiv`: `HasFDerivAt.hasLineDerivAt` specializes them, and the Gâteaux hypothesis is the weaker
+one the applications actually have. The difficult direction is "monotone gradient implies the
+gradient inequality", which goes through `exists_hasDerivAt_eq_slope` on the restriction
+`t ↦ f (u + t • (v - u))`.
+'''
+
+[[node]]
+id = "ConvexOn.add_lineDeriv_le"
+kind = "theorem"
+desc = '''If `f` is convex on a convex set `K` and has the directional derivatives `f' u`, then
+`f u + f' u (v - u) ≤ f v` for all `u, v ∈ K`: the tangent functional at `u` is a global minorant
+of `f` on `K`. Proof: `ConvexOn.slope_mono` on the one-dimensional restriction, then
+`HasLineDerivAt.tendsto_slope_zero_right` and `ge_of_tendsto`.'''
+
+[[node]]
+id = "convexOn_iff_forall_add_lineDeriv_le"
+kind = "theorem"
+desc = '''For a convex `K` and `f` with directional derivatives `f'` on `K`, `f` is convex on `K` if
+and only if `∀ u ∈ K, ∀ v ∈ K, f u + f' u (v - u) ≤ f v`. Atkinson–Han, *Theoretical Numerical
+Analysis*, Theorem 5.3.17 (a) ⇔ (b).'''
+deps = ["ConvexOn.add_lineDeriv_le"]
+
+[[node]]
+id = "convexOn_iff_monotone_lineDeriv"
+kind = "theorem"
+desc = '''For a convex `K` and `f` with directional derivatives `f'` on `K`, `f` is convex on `K` if
+and only if the gradient is monotone, `∀ u ∈ K, ∀ v ∈ K, 0 ≤ (f' v - f' u) (v - u)`. Atkinson–Han,
+*Theoretical Numerical Analysis*, Theorem 5.3.17 (a) ⇔ (c); the hard direction (c) ⇒ (b) uses
+`exists_hasDerivAt_eq_slope` on `t ↦ f (u + t • (v - u))`.'''
+deps = ["convexOn_iff_forall_add_lineDeriv_le"]
+
+[[node]]
+id = "strictConvexOn_iff_forall_add_lineDeriv_lt"
+kind = "theorem"
+desc = '''The strict form of `convexOn_iff_forall_add_lineDeriv_le`: `f` is strictly convex on the
+convex set `K` if and only if `f u + f' u (v - u) < f v` for all distinct `u, v ∈ K`. Atkinson–Han,
+*Theoretical Numerical Analysis*, Theorem 5.3.18.'''
+deps = ["convexOn_iff_forall_add_lineDeriv_le"]
+
+[[node]]
+id = "strictConvexOn_iff_forall_lineDeriv_sub_pos"
+kind = "theorem"
+desc = '''The strict form of `convexOn_iff_monotone_lineDeriv`: `f` is strictly convex on the convex
+set `K` if and only if `0 < (f' v - f' u) (v - u)` for all distinct `u, v ∈ K`. Atkinson–Han,
+*Theoretical Numerical Analysis*, Theorem 5.3.18.'''
+deps = ["strictConvexOn_iff_forall_add_lineDeriv_lt", "convexOn_iff_monotone_lineDeriv"]
+
+[[node]]
+id = "isMinOn_iff_forall_lineDeriv_nonneg"
+kind = "theorem"
+desc = '''For `f` convex with directional derivatives `f'` on a convex `K` and `u ∈ K`, `u` minimizes
+`f` on `K` if and only if `0 ≤ f' u (v - u)` for all `v ∈ K` (the variational inequality of a
+constrained minimizer). Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 5.3.19.'''
+deps = ["ConvexOn.add_lineDeriv_le"]
+
+[[node]]
+id = "isMinOn_iff_forall_lineDeriv_eq_zero"
+kind = "theorem"
+desc = '''When the constraint set is a subspace the variational inequality of
+`isMinOn_iff_forall_lineDeriv_nonneg` collapses to the equation `f' u v = 0` for all `v` in the
+subspace. Atkinson–Han, *Theoretical Numerical Analysis*, (5.3.11).'''
+deps = ["isMinOn_iff_forall_lineDeriv_nonneg"]
+
+[[node]]
+id = "isMinOn_add_iff_forall_le"
+kind = "theorem"
+desc = '''The non-smooth extension: for `f` convex with directional derivatives `f'` and `j` convex
+on a convex set `K`, and `u ∈ K`, `u` minimizes `f + j` on `K` if and only if
+`0 ≤ f' u (v - u) + j v - j u` for all `v ∈ K`. Atkinson–Han, *Theoretical Numerical Analysis*,
+Theorem 11.2.1; `isMinOn_iff_forall_lineDeriv_nonneg` is the case `j = 0`, and this is the
+statement that turns constrained convex minimization into an elliptic variational inequality.'''
+deps = ["ConvexOn.add_lineDeriv_le", "isMinOn_iff_forall_lineDeriv_nonneg"]

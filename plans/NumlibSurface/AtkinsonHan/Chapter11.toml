@@ -1,0 +1,21 @@
+desc = '''
+Atkinson–Han, Chapter 11: elliptic variational inequalities and their numerical approximations.
+
+The chapter splits cleanly. Sections 11.2, 11.3 and 11.4 are abstract Hilbert-space theory —
+convex minimization, existence and uniqueness for a family of variational inequalities, Minty's
+lemma, convergence and error estimates for their approximations — and are formalized here, one
+file per section. Sections 11.1 and 11.5 are the applications: the obstacle problem, the
+simplified friction problem, the elasto-plastic torsion problem, the Signorini problem, and the
+contact problems of elasticity. They live in `H¹₀(Ω)` and `H¹(Ω)^d` with pointwise constraints and
+boundary integrals, and are out of scope for want of Sobolev spaces; the pointwise complementarity
+relations (11.1.9) additionally need the regularity theory of elliptic equations.
+
+Also out of scope: Theorem 11.3.12, the `W^{2,p}` regularity of the obstacle problem, quoted by the
+book from Brezis–Stampacchia; Theorem 11.4.5, the Lagrange-multiplier form of the friction problem,
+which lives on the trace space `H^{1/2}(Γ)` and uses `(L¹(Γ))' = L^∞(Γ)`; and every exercise of the
+chapter that names a domain (11.3.4–11.3.9, 11.3.11, 11.3.12, 11.4.1, 11.4.4, 11.4.5).
+
+The surface works over a real Hilbert space `V` throughout, with a real bilinear form
+`a : BilinForm V` where the book uses one, reusing the vocabulary of `Chapter08/Section03`
+(`IsBoundedWith`, `IsEllipticWith`, `IsSymm`) and its bridges to `SesqForm ℝ V`.
+'''

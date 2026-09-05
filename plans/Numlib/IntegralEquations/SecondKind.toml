@@ -1,0 +1,159 @@
+namespace = "SecondKind"
+desc = '''
+The abstract theory of equations of the second kind `(λ - K) u = f` and of their approximations:
+what makes a projection method, a Nyström method or a two-grid iteration for such an equation
+stable and convergent. Atkinson–Han, *Theoretical Numerical Analysis*, Sections 12.1.3, 12.3,
+12.4.3 and 12.6.2; Kress, *Numerical Analysis*, Chapter 12; Anselone, *Collectively Compact
+Operator Approximation Theory*.
+
+Everything here is operator theory in a Banach space — no kernel, no quadrature, no function
+space — even though the consumers are integral equations, which is why it sits beside
+`Numlib/IntegralEquations/Basic` rather than inside `Numlib/Variational`. Two independent
+perturbation theorems are the heart of it:
+
+* the **norm-convergent** case, where `‖K - K_n‖ → 0` and the geometric series theorem
+  (`Numlib/Analysis/Normed/Ring/Inverse`) does the work. This covers projection methods, because
+  `‖K - P_n K‖ → 0` for a compact `K` and pointwise convergent projections
+  (`tendsto_opNorm_comp_of_isCompactOperator`). Atkinson–Han Theorem 12.1.2.
+* the **collectively compact** case, where `‖K - K_n‖` does *not* tend to zero but
+  `‖(K - K_n) K_n‖` does. The geometric series is then applied not to `λ - K_n` but to the
+  correction in the identity `(1/λ)(1 + (λ - K)⁻¹ K_n)(λ - K_n) = 1 + (1/λ)(λ - K)⁻¹(K - K_n)K_n`,
+  and injectivity is upgraded to invertibility by the Fredholm alternative for the compact `K_n`
+  (Mathlib's `IsCompactOperator.hasEigenvalue_or_mem_resolventSet`). Atkinson–Han Theorem 12.4.3.
+  This is Anselone's theorem and it is the difficult item of the module.
+
+Invertible operators are carried as `ContinuousLinearEquiv` together with an equation identifying
+the coercion, as `Numlib/Nonlinear/Newton` and `ContinuousLinearEquiv.exists_symm_norm_le_of_add`
+already do; `Ring.inverse` is not used, so that the bounds are about a genuine inverse.
+
+Overlap to respect: `Numlib/Variational/ProjectionMethod` owns the *definition* of a projection
+method solution and Kress's qualitative stability theorem. This module owns the quantitative
+two-sided error estimate, the iterated (Sloan) solution, Anselone's theorem and the two-grid
+iteration. Nothing may be restated across the two.
+'''
+
+[[node]]
+id = "sub_projection_eq"
+kind = "theorem"
+desc = '''The error equation of a projection method, Atkinson–Han (12.1.27): if `(λ - K) u = f` and
+`(λ - P K) u_n = P f` with `P` idempotent, then `(λ - P K) (u - u_n) = λ (u - P u)`. Apply `P` to
+the first equation and subtract. Purely algebraic — no boundedness, compactness or invertibility —
+and it is the source of both bounds in the next node.'''
+deps = ["IsProjectionMethodSolution"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, (12.1.27)"
+
+[[node]]
+id = "norm_sub_le_of_projection"
+kind = "theorem"
+desc = '''Atkinson–Han Theorem 12.1.2, the two-sided estimate (12.1.24): with `λ - K` invertible
+and `‖(λ - K)⁻¹‖ ‖K - P K‖ < 1`, the operator `λ - P K` is invertible with
+`‖(λ - P K)⁻¹‖ ≤ ‖(λ - K)⁻¹‖ / (1 - ‖(λ - K)⁻¹‖ ‖K - P K‖)`, and the errors satisfy
+
+  `|λ| ‖u - P u‖ / ‖λ - P K‖ ≤ ‖u - u_n‖ ≤ |λ| ‖(λ - P K)⁻¹‖ ‖u - P u‖`,
+
+so `‖u - u_n‖` and the approximation error `‖u - P u‖` tend to zero at exactly the same rate. Both
+bounds come from `sub_projection_eq`, the invertibility from the factorization
+`λ - P K = (λ - K) (1 + (λ - K)⁻¹ (K - P K))` and `Units.isUnit_add_of_norm_lt`. Combined with
+`tendsto_opNorm_comp_of_isCompactOperator` (`‖K - P_n K‖ → 0` for compact `K` and pointwise
+convergent projections, Atkinson–Han Lemma 12.1.4) this is the complete convergence analysis of
+collocation and Galerkin methods for second-kind equations.'''
+deps = ["sub_projection_eq", "Units.isUnit_add_of_norm_lt", "Units.norm_inverse_add_le",
+  "tendsto_opNorm_comp_of_isCompactOperator", "IsProjectionMethodSolution"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 12.1.2"
+
+[[node]]
+id = "isUnit_smul_sub_comp_comm"
+kind = "theorem"
+desc = '''Atkinson–Han Lemma 12.3.1: for bounded `A`, `B` on a Banach space and `λ ≠ 0`, `λ - A B`
+is invertible if and only if `λ - B A` is, and
+`(λ - B A)⁻¹ = (1/λ) (1 + B (λ - A B)⁻¹ A)`. A two-line computation (the algebraic Jacobson
+identity, which Mathlib does not have for units of a Banach algebra). With `A = P` and `B = K` it
+says that the projection equations `(λ - P K) u_n = P f` and the iterated equations
+`(λ - K P) û_n = f` are solvable together and gives bounds on each inverse in terms of the other,
+which is what makes the iterated projection method analysable at all.'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, Lemma 12.3.1"
+
+[[node]]
+id = "iterated"
+kind = "definition"
+desc = '''Sloan's iterated projection solution `û_n = (f + K u_n) / λ` of Atkinson–Han (12.3.1),
+together with `P û_n = u_n` (12.3.2) and the equation `(λ - K P) û_n = f` (12.3.3) it satisfies:
+one fixed-point sweep applied to the projection solution, which is an improvement on it whatever
+the size of `‖K‖`.'''
+deps = ["IsProjectionMethodSolution"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, (12.3.1)"
+
+[[node]]
+id = "iterated_error_eq"
+kind = "theorem"
+desc = '''Atkinson–Han (12.3.11), the error equation of the iterated projection solution:
+`(λ - K P) (u - û_n) = K (1 - P) u`. The right-hand side carries an extra factor `(1 - P)` inside
+`K`, which is the source of Sloan superconvergence: for an orthogonal projection
+`(1 - P)² = 1 - P`, so the error is bounded by `‖K (1 - P)‖ ‖(1 - P) u‖`, one power of the
+approximation error better than `‖u - u_n‖`.'''
+deps = ["iterated", "isUnit_smul_sub_comp_comm"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, (12.3.11)"
+
+[[node]]
+id = "exists_equiv_of_isCompactOperator"
+kind = "theorem"
+desc = '''**Anselone's perturbation theorem**, Atkinson–Han *Theoretical Numerical Analysis*
+Theorem 12.4.3. Let `S`, `T` be bounded operators on a Banach space with `S` compact, let `λ ≠ 0`
+with `λ - T` invertible, and assume `‖(λ - T)⁻¹‖ ‖(T - S) S‖ < |λ|`. Then `λ - S` is invertible and
+
+  `‖(λ - S)⁻¹‖ ≤ (1 + ‖(λ - T)⁻¹‖ ‖S‖) / (|λ| - ‖(λ - T)⁻¹‖ ‖(T - S) S‖)`.
+
+The hypothesis is on `(T - S) S`, not on `T - S`, which is why the theorem applies to quadrature
+approximations of an integral operator, where `‖T - S‖` does not tend to zero. Proof: the candidate
+`(1/λ)(1 + (λ - T)⁻¹ S)` satisfies `(1/λ)(1 + (λ - T)⁻¹ S)(λ - S) = 1 + (1/λ)(λ - T)⁻¹ (T - S) S`,
+whose right-hand side is invertible by the geometric series theorem; hence `λ - S` is injective,
+and the Fredholm alternative for the compact `S` promotes injectivity to invertibility. Compactness
+is used **only** for that promotion.'''
+deps = ["ContinuousLinearEquiv.exists_symm_norm_le_of_add", "Units.isUnit_add_of_norm_lt",
+  "NormedRing.norm_inverse_one_sub_le"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 12.4.3"
+
+[[node]]
+id = "norm_sub_le"
+kind = "theorem"
+desc = '''Atkinson–Han (12.4.24): under the hypotheses of `exists_equiv_of_isCompactOperator`, if
+`(λ - T) u = f` and `(λ - S) z = f` then `‖u - z‖ ≤ ‖(λ - S)⁻¹‖ ‖T u - S u‖`, the error being
+controlled by the *consistency error at the exact solution* rather than by an operator norm.
+Together with `IsCollectivelyCompact.tendsto_opNorm_sub_comp` this gives the complete convergence
+analysis of the Nyström method (Atkinson–Han Theorem 12.4.4) once the quadrature operators are
+known to form a collectively compact pointwise convergent family.'''
+deps = ["exists_equiv_of_isCompactOperator"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, (12.4.24)"
+
+[[node]]
+id = "twoGridStep"
+kind = "definition"
+desc = '''The two-grid residual correction step of Atkinson–Han (12.6.20)–(12.6.22): for a coarse
+index `m` and a fine index `n`, `u ↦ u + (1/λ) (r + (λ - K_m)⁻¹ (K_n r))` with `r = f - (λ - K_n) u`
+the residual, together with its iterate. The coarse inverse `(λ - K_m)⁻¹` plays the role of the
+approximate inverse `C_n` of the residual correction method, and is the only inverse that is ever
+formed.'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, (12.6.20)–(12.6.22)"
+
+[[node]]
+id = "twoGrid_error_eq"
+kind = "theorem"
+desc = '''Atkinson–Han (12.6.27)–(12.6.28): the error of the two-grid iteration is multiplied at
+each step by the operator `M = (1/λ) (λ - K_m)⁻¹ (K_n - K_m) K_n`. An algebraic identity, proved by
+expanding the step.'''
+deps = ["twoGridStep"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, (12.6.27)"
+
+[[node]]
+id = "tendsto_twoGridIterate"
+kind = "theorem"
+desc = '''Atkinson–Han Theorem 12.6.1, abstract form: for a collectively compact pointwise
+convergent family `K_p` with `λ - K` invertible, `‖(1/λ) (λ - K_m)⁻¹ (K_n - K_m) K_n‖ < 1` for all
+`n` once the coarse index `m` is large enough, so the two-grid iterates converge to the fine
+solution geometrically. The uniform bound on the coarse inverses is
+`exists_equiv_of_isCompactOperator`, and the smallness of `(K_n - K_m) K_n` uniformly in `n` is
+`IsCollectivelyCompact.tendsto_opNorm_sub_comp`; convergence itself is the contraction estimate of
+`Numlib/LinearSolve/Stationary/Basic`.'''
+deps = ["twoGrid_error_eq", "exists_equiv_of_isCompactOperator",
+  "IsCollectivelyCompact.tendsto_opNorm_sub_comp", "Stationary.tendsto_of_spectralRadius_lt_one"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 12.6.1"

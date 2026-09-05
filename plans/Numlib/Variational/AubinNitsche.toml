@@ -1,0 +1,47 @@
+desc = '''
+The Aubin–Nitsche duality argument: an error bound for a Galerkin approximation in a norm weaker
+than the one the form is coercive in. Atkinson–Han, *Theoretical Numerical Analysis*,
+Theorem 10.4.3 and Corollary 10.4.4.
+
+The setting is two inner product spaces `V` and `H` and a continuous linear `ι : V →L[𝕜] H` — the
+embedding of the energy space into the pivot space, which in the finite-element application is
+`H¹(Ω) ⊆ L²(Ω)` but which needs no Sobolev theory to state. Given a Galerkin error `e` orthogonal
+to a subspace `K` in the form `a`, and the solution `φ` of the *dual* problem `a v φ = inner (ι v)
+(ι e)`, orthogonality lets `φ` be replaced by `φ - w` for any `w ∈ K`, which gains a factor of the
+approximation error of the dual solution:
+
+  `‖ι e‖² ≤ M ‖e‖ ‖φ - w‖`.
+
+That is the whole content of the argument, and it is stated pointwise, without an infimum, a
+supremum, or an existence claim for `φ`. The book's (10.4.5), with a supremum over the data `g` and
+an infimum over `K`, is the surface reading; the `h`-power it yields in a finite element space
+comes from the regularity bound (10.4.9), which is elliptic regularity theory and is out of scope.
+
+This module is the one part of Atkinson–Han Chapter 10 that is formalizable without Sobolev
+spaces. It belongs beside `Numlib/Variational/Galerkin` and could be absorbed into it when that
+module is next touched.
+'''
+
+[[node]]
+id = "norm_map_sq_le_of_dual"
+kind = "theorem"
+desc = '''Aubin–Nitsche, pointwise form. Let `a : SesqForm 𝕜 V` be bounded with constant `M`,
+`K : Submodule 𝕜 V`, `ι : V →L[𝕜] H` continuous linear into an inner product space `H`, and let
+`e : V` satisfy the Galerkin orthogonality `a e v = 0` for all `v ∈ K`. If `φ : V` solves the dual
+problem `a v φ = inner (ι v) (ι e)` for all `v : V`, then `‖ι e‖ ^ 2 ≤ M * ‖e‖ * ‖φ - w‖` for every
+`w ∈ K`. Test the dual problem at `v = e`, replace `φ` by `φ - w` using orthogonality, and apply
+boundedness. Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 10.4.3.'''
+deps = ["SesqForm", "SesqForm.IsBoundedWith", "IsGalerkinSolution.apply_sub_eq_zero"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 10.4.3"
+
+[[node]]
+id = "norm_map_le_of_dual_approx"
+kind = "theorem"
+desc = '''Aubin–Nitsche with a uniform bound on the approximation of the dual solutions: if for
+every datum `g : H` the dual problem has a solution `φ g` with
+`inf_{w ∈ K} ‖φ g - w‖ ≤ δ * ‖g‖`, then a Galerkin error `e` satisfies `‖ι e‖ ≤ M * δ * ‖e‖`.
+Atkinson–Han Corollary 10.4.4: the duality argument gains exactly the approximation power of the
+dual problem, which is where the extra factor `h` in the `L²` error estimate (10.4.11) comes
+from.'''
+deps = ["norm_map_sq_le_of_dual", "SesqForm.laxMilgram"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Corollary 10.4.4"

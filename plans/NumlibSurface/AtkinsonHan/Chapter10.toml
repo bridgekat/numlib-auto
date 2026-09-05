@@ -1,0 +1,13 @@
+desc = '''
+Atkinson–Han, Chapter 10: finite element analysis. Almost the whole chapter is out of scope for
+want of Sobolev spaces in Mathlib — affine-equivalent finite elements and the scaling of Sobolev
+norms under an affine map (Section 10.2, Lemma 10.2.2, Theorem 10.3.4), the interpolation error
+estimates on the reference element and their transport (Theorems 10.3.3, 10.3.5, Corollary 10.3.7,
+Theorem 10.3.9), which rest on the Bramble–Hilbert lemma and hence on Theorem 7.3.12, and the
+convergence and order results of Section 10.4 (Theorem 10.4.1, Corollary 10.4.4, (10.4.11)), which
+combine them with the elliptic regularity bound (10.4.9).
+
+One result survives: the Aubin–Nitsche lemma, Theorem 10.4.3, whose duality argument uses only two
+inner product spaces and a continuous embedding of one into the other. It is formalized in
+`Chapter10/Section04`, and it is the only file of this chapter.
+'''

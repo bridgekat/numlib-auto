@@ -1,0 +1,40 @@
+namespace = "AtkinsonHan.Ch12"
+desc = '''
+Atkinson–Han Section 12.3, iterated projection methods: Sloan's observation that one fixed-point
+sweep applied to a projection solution improves it regardless of the size of `‖K‖`.
+
+Formalized: the definition of the iterated solution `û_n = (f + K u_n)/λ` (12.3.1) with the
+identities `P_n û_n = u_n` (12.3.2) and `(λ - K P_n) û_n = f` (12.3.3); Lemma 12.3.1, the
+interchange `(λ - A B)⁻¹ ↔ (λ - B A)⁻¹` with the formula (12.3.9), giving (12.3.6)–(12.3.8); and
+the error equation (12.3.11) `(λ - K P_n)(u - û_n) = K (I - P_n) u`, together with the Galerkin
+consequence that for an orthogonal `P_n` the error is bounded by `‖K (I - P_n)‖ ‖(I - P_n) u‖`,
+which is Sloan superconvergence.
+
+Not formalized: Theorem 12.3.3 (a piecewise quadratic collocation error estimate on `C[a, b]`
+requiring `u ∈ C⁴` and an interpolation error bound), Section 12.3.2 in its concrete parts, and the
+linear system for the iterated collocation solution.
+'''
+
+[[node]]
+id = "iteratedSolution"
+kind = "definition"
+desc = '''(12.3.1): the iterated projection solution `û_n = (f + K u_n)/λ` of a projection solution
+`u_n`, with `P_n û_n = u_n` (12.3.2) and `(λ - K P_n) û_n = f` (12.3.3).'''
+deps = ["IsProjectionSolution", "SecondKind.iterated"]
+
+[[node]]
+id = "lemma_12_3_1"
+kind = "theorem"
+desc = '''Lemma 12.3.1: for bounded `A`, `B` on a Banach space and `λ ≠ 0`, if `(λ - A B)⁻¹` exists
+then so does `(λ - B A)⁻¹`, and `(λ - B A)⁻¹ = (1/λ) [I + B (λ - A B)⁻¹ A]` (12.3.9); hence
+(12.3.6), (12.3.7) and the commutation (12.3.8) relating `(λ - P_n K)⁻¹` and `(λ - K P_n)⁻¹`.'''
+deps = ["SecondKind.isUnit_smul_sub_comp_comm"]
+
+[[node]]
+id = "equation_12_3_11"
+kind = "theorem"
+desc = '''(12.3.11): `(λ - K P_n)(u - û_n) = K (I - P_n) u`, and for an orthogonal projection in a
+Hilbert space, using `(I - P_n)² = I - P_n`, the bound
+`‖u - û_n‖ ≤ ‖(λ - K P_n)⁻¹‖ ‖K (I - P_n)‖ ‖(I - P_n) u‖` — one factor of the approximation error
+better than the projection solution itself.'''
+deps = ["iteratedSolution", "SecondKind.iterated_error_eq", "lemma_12_3_1"]

@@ -1,0 +1,105 @@
+desc = '''
+Numerical approximation of elliptic variational inequalities: the generalized Céa lemma, its
+consequences for internal approximations, convergence for approximating families of constraint
+sets, and the effect of replacing the non-differentiable term by a computable approximation of it.
+Atkinson–Han, *Theoretical Numerical Analysis*, Section 11.4 (Theorems 11.4.1, 11.4.2, 11.4.6,
+11.4.7 and Exercises 11.4.2, 11.4.3); the error bound is due to Falk.
+
+The discrete problem is the *same* predicate `IsVariationalInequalitySolution` with a different
+constraint set (and possibly a different `j`), so nothing here defines a new notion of discrete
+solution: `K_h` is any nonempty closed convex set, not necessarily contained in `K`, and the
+existence and uniqueness of the discrete solution is
+`existsUnique_isVariationalInequalitySolution` again.
+
+`norm_sub_le_of_isVariationalInequalitySolution` is the only theorem of the module that carries the
+error analysis; everything else specializes it. It is purely algebraic — strong monotonicity,
+Lipschitz continuity and Young's inequality, no topology — so keep it free of hypotheses on the
+family and of any limit. The convergence statements are corollaries: the internal case
+(`K_h ⊆ K`, `j` continuous, the union of the discrete sets dense in `K`) needs no weak
+compactness and is Atkinson–Han Exercise 11.4.2, whereas the general external case is
+Theorem 11.4.1 and does need `exists_subseq_weak_tendsto` and Minty's lemma. Prove the internal
+case first and do not let the external one hold it up.
+'''
+
+[[node]]
+id = "norm_sub_le_of_isVariationalInequalitySolution"
+kind = "theorem"
+desc = '''Falk's generalized Céa lemma, Atkinson–Han *Theoretical Numerical Analysis*
+Theorem 11.4.2, (11.4.7): if `u` solves the variational inequality over `K` and `u_h` solves it
+over `K_h` with the same operator, functional and convex term, then for all `v ∈ K` and
+`v_h ∈ K_h`
+
+  `(c/2) ‖u - u_h‖² ≤ R v u_h + R v_h u + (L²/(2c)) ‖u - v_h‖²`,
+
+where `R v w = inner (A u) (v - w) + j v - j w - inner f (v - w)` is the residual of the continuous
+solution, `c` the strong monotonicity constant and `L` the Lipschitz constant of `A`. Add the two
+inequalities to the strong monotonicity inequality and bound the cross term by Young's inequality.
+Purely algebraic: no closedness, convexity, topology or limit is used. For a variational equation
+(`K` a subspace, `j = 0`, `K_h ⊆ K`) the residual vanishes and this is Céa's lemma
+`IsGalerkinSolution.norm_sub_le`.'''
+deps = ["IsVariationalInequalitySolution"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 11.4.2"
+
+[[node]]
+id = "norm_sub_le_of_isVariationalInequalitySolution_of_subset"
+kind = "theorem"
+desc = '''The internal-approximation form of Falk's lemma: when `K_h ⊆ K` the first residual term of
+`norm_sub_le_of_isVariationalInequalitySolution` vanishes (take `v = u_h`), leaving
+`‖u - u_h‖ ≤ C inf_{v_h ∈ K_h} (‖u - v_h‖ + |R v_h u|^{1/2})` with `C` depending only on `c` and
+`L`. Atkinson–Han, the display following Theorem 11.4.2.'''
+deps = ["norm_sub_le_of_isVariationalInequalitySolution"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Section 11.4"
+
+[[node]]
+id = "tendsto_of_isVariationalInequalitySolution_of_subset"
+kind = "theorem"
+desc = '''Convergence of internal approximations, Atkinson–Han Exercise 11.4.2: if `K_h n ⊆ K` is a
+family of nonempty closed convex sets such that every point of `K` is a limit of points of the
+`K_h n`, and `j` is continuous on `K`, then the discrete solutions converge to `u` in norm.
+Straight from `norm_sub_le_of_isVariationalInequalitySolution_of_subset`, since the residual
+`R v_h u` tends to `0` along an approximating sequence; **no weak compactness is needed**, which is
+why this and not Theorem 11.4.1 is the statement a finite-element chapter should cite.'''
+deps = ["norm_sub_le_of_isVariationalInequalitySolution_of_subset"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 11.4.2"
+
+[[node]]
+id = "tendsto_of_isVariationalInequalitySolution"
+kind = "theorem"
+desc = '''Atkinson–Han Theorem 11.4.1, the general (external) convergence theorem: if `j` is convex
+and continuous on the whole space, every point of `K` is a limit of points of the `K_h n`, and
+every weak limit of a sequence with `v_n ∈ K_h n` lies in `K`, then the discrete solutions converge
+to `u` in norm. Three steps: the discrete solutions are bounded (test at an approximation of a
+fixed point of `K` and use the affine minorant of `j`); a weakly convergent subsequence
+(`exists_subseq_weak_tendsto`) has its limit in `K` and, by Minty's lemma in its discrete and
+continuous forms, solves the continuous inequality, hence equals `u`; strong monotonicity plus
+lower semicontinuity of `j` upgrade weak convergence to norm convergence. For internal
+approximations the second hypothesis is `mem_of_weak_tendsto_of_convex`.'''
+deps = ["IsVariationalInequalitySolution", "IsVariationalInequalitySolution.iff_minty",
+  "exists_subseq_weak_tendsto", "mem_of_weak_tendsto_of_convex",
+  "existsUnique_isVariationalInequalitySolution"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 11.4.1"
+
+[[node]]
+id = "norm_sub_le_of_isVariationalInequalitySolution_of_le"
+kind = "theorem"
+desc = '''Atkinson–Han Theorem 11.4.7: the error of a method that replaces `j` on the discrete
+space by a larger functional `j_h` (`j v_h ≤ j_h v_h` for `v_h ∈ V_h`, the property enjoyed by the
+numerical-integration construction (11.4.28)) is bounded by
+`‖u - u_h‖ ≤ C inf_{v_h ∈ V_h} (‖u - v_h‖ + |R_h v_h u|^{1/2})` with
+`R_h v_h u = inner (A u) (v_h - u) + j_h v_h - j u - inner f (v_h - u)`. Same algebra as Falk's
+lemma with the inequality `j u_h ≤ j_h u_h` inserted once.'''
+deps = ["IsVariationalInequalitySolution",
+  "norm_sub_le_of_isVariationalInequalitySolution"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 11.4.7"
+
+[[node]]
+id = "norm_sub_le_of_regularization"
+kind = "theorem"
+desc = '''Atkinson–Han Exercise 11.4.3: if the regularized functional satisfies `|j_ε v - j v| ≤ c₁ ε`
+for all `v`, then the solution of the regularized inequality obeys `‖u - u_ε‖ ≤ √(2 c₁ ε / c)`,
+where `c` is the strong monotonicity constant. This is the a priori bound (11.4.20) with the
+exponent `β = 1/2`, and it is the special case of
+`norm_sub_le_of_isVariationalInequalitySolution` in which both problems are posed on the whole
+space and the residuals are bounded by `c₁ ε` each.'''
+deps = ["norm_sub_le_of_isVariationalInequalitySolution"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 11.4.3, (11.4.20)"

@@ -1,0 +1,122 @@
+namespace = "AtkinsonHan.Ch11"
+desc = '''
+Atkinson–Han Section 11.3, existence and uniqueness for a family of elliptic variational
+inequalities: the theorems that do not go through a minimization problem, so that the operator need
+not come from a symmetric form.
+
+Every result of the section except the regularity theorem is formalized, as a specialization of
+`Numlib/Variational/Inequality/Basic`. The surface names the book's notions — strongly monotone
+(11.3.1), Lipschitz continuous (11.3.2), proper, lower semicontinuous — and states the three
+inequalities the book distinguishes: of the first kind (11.3.8) on a convex set, of the second kind
+(11.3.9) on the whole space, and the general form (11.3.3).
+
+`StronglyMonotoneWith` is already defined in this surface, in `Chapter05/Section01` for
+Theorem 5.1.4, and must be reused rather than restated; the corresponding Lipschitz condition is
+`LipschitzWith` up to `Real.toNNReal`, through the bridge `lipschitzWith_toNNReal_iff` of that
+file.
+
+Not formalized: Theorem 11.3.12 (`W^{2,p}` regularity of the obstacle problem, quoted from
+Brezis–Stampacchia and needing elliptic regularity theory), Examples 11.3.10 and 11.3.11 and the
+one-dimensional solution formula that follows them, and Exercises 11.3.1 (a local Lipschitz
+condition, an exercise with a four-step proof and no consumer), 11.3.4–11.3.9, 11.3.11 and
+11.3.12, all of which name a domain.
+'''
+
+[[node]]
+id = "IsVariationalInequalitySolution"
+kind = "definition"
+desc = '''The variational inequality (11.3.3): `u ∈ K` with
+`(A u, v - u) + j v - j u ≥ (f, v - u)` for all `v ∈ K`, in the book's real Hilbert space form,
+with the identification with the backbone predicate. The first kind (11.3.8) is `j = 0`, the second
+kind (11.3.9) is `K = V`, and (11.3.12)–(11.3.14) are the same three with `A` linear.'''
+deps = ["_root_.IsVariationalInequalitySolution"]
+
+[[node]]
+id = "lemma_11_3_5"
+kind = "theorem"
+desc = '''Lemma 11.3.5: a proper, convex, lower semicontinuous `j : V → ℝ ∪ {+∞}` on a normed space
+is bounded below by a continuous affine functional, `j v ≥ ℓ_j v + c_j`. The book proves it by
+separating the epigraph from a point below the graph; Mathlib has exactly that argument as
+`ConvexOn.exists_affine_le_of_lt`, so the surface statement is a restatement of it with the book's
+hypotheses (the extended-real `j` of the book being a real `j` on a closed convex set here).'''
+
+[[node]]
+id = "theorem_11_3_1"
+kind = "theorem"
+desc = '''Theorem 11.3.1: for `K` nonempty closed convex in a real Hilbert space, `A` strongly
+monotone with constant `c₀` and Lipschitz with constant `M`, and `j : K → ℝ` convex and lower
+semicontinuous, the variational inequality (11.3.3) has a unique solution for every `f ∈ V`, and
+the solution depends Lipschitz continuously on `f` with constant `M / c₀`.'''
+deps = ["IsVariationalInequalitySolution", "existsUnique_isVariationalInequalitySolution",
+  "IsVariationalInequalitySolution.norm_sub_le", "_root_.AtkinsonHan.Ch05.StronglyMonotoneWith"]
+
+[[node]]
+id = "theorem_11_3_6"
+kind = "theorem"
+desc = '''Theorem 11.3.6, the inequality of the first kind: with `j = 0`, (11.3.8) has a unique
+solution depending Lipschitz continuously on `f`. This is Stampacchia's theorem.'''
+deps = ["theorem_11_3_1", "stampacchia"]
+
+[[node]]
+id = "exercise_11_3_2"
+kind = "theorem"
+desc = '''Exercise 11.3.2: Theorem 11.3.6 generalizes the Lax–Milgram lemma — taking `K = V` and
+`A` the operator of a bounded `V`-elliptic bilinear form recovers `theorem_8_3_4`.'''
+deps = ["theorem_11_3_6", "SesqForm.laxMilgram"]
+
+[[node]]
+id = "theorem_11_3_7"
+kind = "theorem"
+desc = '''Theorem 11.3.7, the inequality of the second kind: for `j : V → ℝ ∪ {+∞}` proper, convex
+and lower semicontinuous on the whole space, (11.3.9) has a unique solution for every `f`.'''
+deps = ["theorem_11_3_1", "lemma_11_3_5"]
+
+[[node]]
+id = "lemma_11_3_8"
+kind = "theorem"
+desc = '''Minty's lemma, Lemma 11.3.8: under the hypotheses of Theorem 11.3.1 with the Lipschitz
+condition weakened to continuity on finite-dimensional subspaces, `u` solves (11.3.3) if and only
+if `(A v, v - u) + j v - j u ≥ (f, v - u)` for all `v ∈ K`, that is (11.3.10).'''
+deps = ["IsVariationalInequalitySolution", "IsVariationalInequalitySolution.iff_minty"]
+
+[[node]]
+id = "theorem_11_3_9"
+kind = "theorem"
+desc = '''Theorem 11.3.9: for a continuous `V`-elliptic bilinear form `a`, `ℓ ∈ V'` and `j` convex
+and lower semicontinuous, each of the three inequalities (11.3.12), (11.3.13) and (11.3.14) has a
+unique solution, depending Lipschitz continuously on `ℓ`.'''
+deps = ["theorem_11_3_1", "existsUnique_isVariationalInequalitySolution_of_isCoercive",
+  "_root_.AtkinsonHan.BilinForm.IsEllipticWith"]
+
+[[node]]
+id = "isBestApprox_energy_of_theorem_11_3_9"
+kind = "theorem"
+desc = '''The remark following Example 11.3.11: for a symmetric `a` and `j = 0`, the solution of
+(11.3.13) is the best approximation in `K` to the solution `w` of the variational equation
+`a(w, v) = ℓ(v)`, measured in the energy norm `‖·‖_a`; so the inequality can be solved by solving
+the equation and then projecting onto `K` in the energy inner product.'''
+deps = ["theorem_11_3_9", "IsVariationalInequalitySolution.isBestApprox_energy",
+  "_root_.AtkinsonHan.BilinForm.energyNorm"]
+
+[[node]]
+id = "exercise_11_3_3"
+kind = "theorem"
+desc = '''Exercise 11.3.3: when `K` is a closed convex cone, (11.3.13) is equivalent to the pair
+`a(u, v) ≥ ℓ(v)` for all `v ∈ K` and `a(u, u) = ℓ(u)`.'''
+deps = ["theorem_11_3_9", "IsVariationalInequalitySolution.iff_of_isCone"]
+
+[[node]]
+id = "exercise_11_3_10"
+kind = "theorem"
+desc = '''Exercise 11.3.10: when `j` is positively homogeneous, the inequality of the second kind
+(11.3.14) is equivalent to the pair `a(u, v) + j v ≥ ℓ(v)` for all `v` and
+`a(u, u) + j u = ℓ(u)`.'''
+deps = ["theorem_11_3_7", "IsVariationalInequalitySolution.iff_of_isPositiveHomogeneous"]
+
+[[node]]
+id = "exercise_11_3_13"
+kind = "theorem"
+desc = '''Exercise 11.3.13: for `A` strongly monotone and Lipschitz on a Hilbert space, the equation
+`A u = f` has a unique solution depending Lipschitz continuously on `f` — the case `K = V`, `j = 0`
+of Theorem 11.3.1, and the same statement as Theorem 5.1.4 of Chapter 5.'''
+deps = ["theorem_11_3_6", "_root_.AtkinsonHan.Ch05.theorem_5_1_4"]

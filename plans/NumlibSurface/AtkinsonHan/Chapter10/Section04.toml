@@ -1,0 +1,35 @@
+namespace = "AtkinsonHan.Ch10"
+desc = '''
+Atkinson–Han Section 10.4, the Aubin–Nitsche lemma. The book states it for `V ⊆ H¹(Ω)` and
+`H = L²(Ω)`; the surface states it for a real Hilbert space `V`, a real inner product space `H`,
+and a continuous linear `ι : V →L[ℝ] H` standing for the embedding, which is the whole of what the
+proof uses. The supremum over the data `g ∈ H` and the infimum over the finite element space are
+kept, since they are the book's statement (10.4.5); both are junk-free because the quantities
+involved are nonnegative and bounded, and the boundedness comes from the Lax–Milgram bound on the
+dual solution.
+
+Left out of this file: Theorem 10.4.1 (the convergence order of the finite element method, which
+needs the interpolation error estimate of Section 10.3), Corollary 10.4.4 in its stated form (its
+hypothesis (10.4.9) is an elliptic regularity bound), and (10.4.11). The abstract half of
+Corollary 10.4.4, in which the approximation power of the dual solutions is a hypothesis, is
+`corollary_10_4_4_abstract`.
+'''
+
+[[node]]
+id = "theorem_10_4_3"
+kind = "theorem"
+desc = '''Theorem 10.4.3, the Aubin–Nitsche lemma, (10.4.5): for `a` bounded with constant `M` and
+`V`-elliptic, `u` the solution of (10.4.1), `u_h` the Galerkin solution on `V_h ⊆ V`, and `φ_g` the
+solution of the dual problem `a(v, φ_g) = (g, ι v)_H` for `g ∈ H`,
+
+  `‖ι (u - u_h)‖_H ≤ M ‖u - u_h‖_V sup_{g ≠ 0} (1/‖g‖_H) inf_{v_h ∈ V_h} ‖φ_g - v_h‖_V`.'''
+deps = ["norm_map_sq_le_of_dual", "IsGalerkinSolution.apply_sub_eq_zero"]
+
+[[node]]
+id = "corollary_10_4_4_abstract"
+kind = "theorem"
+desc = '''Corollary 10.4.4 with its regularity hypothesis made abstract: if the dual solutions
+satisfy `inf_{v_h ∈ V_h} ‖φ_g - v_h‖_V ≤ δ ‖g‖_H` for every `g ∈ H`, then
+`‖ι (u - u_h)‖_H ≤ M δ ‖u - u_h‖_V`. In the book `δ = c h` follows from the `H²` regularity bound
+(10.4.9) together with the interpolation error estimate, neither of which is available here.'''
+deps = ["theorem_10_4_3", "norm_map_le_of_dual_approx"]

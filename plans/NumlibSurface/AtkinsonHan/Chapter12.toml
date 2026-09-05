@@ -1,0 +1,27 @@
+desc = '''
+Atkinson–Han, Chapter 12: numerical solution of Fredholm integral equations of the second kind.
+
+The chapter has an abstract spine and a concrete body, and the spine is formalized. The abstract
+results are Theorem 12.1.2 with Lemmas 12.1.3 and 12.1.4 (projection methods), Lemma 12.3.1 with
+the iterated projection solution of Section 12.3, Theorem 12.4.3 with the collectively compact
+framework A1–A3 and Lemma 12.4.7 of Section 12.4.3, the two-grid iteration of Section 12.6.2, and
+Lemma 12.7.1 in Section 12.7. They are all statements about bounded and compact operators on a
+Banach space, they do not mention a kernel or a quadrature rule, and they are what the whole
+chapter rests on.
+
+The concrete body is not formalized. It is the estimation, for a particular family of subspaces,
+of the approximation error `‖u - P_n u‖` or the quadrature error `‖(K - K_n) u‖`: Section 12.2
+(piecewise linear and trigonometric collocation, piecewise linear and trigonometric Galerkin),
+Theorem 12.3.3 and the superconvergence results of Section 12.3, Lemma 12.4.2 and Theorem 12.4.4
+(the Nyström operators, whose properties are the `C(D)` integral-operator toolkit of
+`Numlib/IntegralEquations/Basic` plus a convergent quadrature rule), and Section 12.5 (product
+integration for weakly singular kernels, Theorems 12.5.1, 12.5.4, 12.5.6, Lemma 12.5.5, graded
+meshes). Those need the interpolation and quadrature branches of the approximation layer
+(`Numlib/Approximation/{Interpolation,Quadrature,Trigonometric}`, phase 3) and, for Section 12.5,
+Hölder spaces and singular kernels that nothing else in the corpus asks for.
+
+Also left out: Section 12.7.2, the homotopy argument, which needs the rotation and index of a
+completely continuous vector field (Section 5.5.1) — no Mathlib degree theory, and the book quotes
+the properties without proof; and Section 12.7.3 and Section 12.6.3–12.6.4, which are the
+translation into linear systems and an operation count.
+'''
