@@ -71,6 +71,18 @@ theorem eq_4_1 (hA : A.PosDef) (k : ℕ) (hk : (cr A b (k + 1)).r ≠ 0) :
   rw [hval, Real.sqrt_sq (by positivity)]
   field_simp
 
+/-- (4.1) for an arbitrary sequence of MINRES iterates, whose residual is `r_k^M = b − A x_k`. -/
+theorem eq_4_1_minres (hA : A.PosDef) {x : ℕ → Vec n} (hx : ∀ k, IsMinresIterate A b k (x k))
+    (k : ℕ) (hk : b - A ⬝ x (k + 1) ≠ 0) :
+    ‖(cg A b (k + 1)).r‖
+      = ‖b - A ⬝ x (k + 1)‖ /
+        Real.sqrt (1 - ‖b - A ⬝ x (k + 1)‖ ^ 2 / ‖b - A ⬝ x k‖ ^ 2) := by
+  have hres : ∀ j, b - A ⬝ x j = (cr A b j).r := fun j => by
+    rw [(isMinresIterate_iff_eq_cr hA j (x j)).1 (hx j), ← cr_residual_eq]
+  rw [hres] at hk
+  rw [hres, hres]
+  exact eq_4_1 hA k hk
+
 /-! ### R4.2: the telescoping product of residual ratios (§4.1.1) -/
 
 /-- §4.1.1: if the residuals `r_0 = b, r_1, …, r_{l−1}` are nonzero then

@@ -31,12 +31,14 @@ The backbone (`Numlib/LinearSolve/Perturbation.lean`) proves the Rigal–Gaches 
 *operator* norm on `E →L[𝕜] E`.  The paper uses the Frobenius norm, so the surface reproves the
 two norm facts the argument needs; everything else is the same computation. -/
 
+/-- The product is additive in the matrix, as needed for the perturbed system `(A + E) x`. -/
 theorem add_mulVecE (E F : Matrix (Fin n) (Fin n) ℝ) (x : Vec n) :
     (E + F) ⬝ x = E ⬝ x + F ⬝ x := by
   change Matrix.toEuclideanLin (E + F) x
     = Matrix.toEuclideanLin E x + Matrix.toEuclideanLin F x
   rw [map_add, LinearMap.add_apply]
 
+/-- The product is homogeneous in the matrix. -/
 theorem smul_mulVecE (c : ℝ) (E : Matrix (Fin n) (Fin n) ℝ) (x : Vec n) :
     (c • E) ⬝ x = c • (E ⬝ x) := by
   change Matrix.toEuclideanLin (c • E) x = c • Matrix.toEuclideanLin E x
@@ -115,6 +117,7 @@ noncomputable def nrbePertb (A : Matrix (Fin n) (Fin n) ℝ) (b : Vec n) (α β 
     Vec n :=
   -nrbePhi A b α β x • (b - A ⬝ x)
 
+/-- `0 ≤ φ_k`. -/
 theorem nrbePhi_nonneg (x : Vec n) (hβ : 0 ≤ β) (hden : 0 ≤ α * ‖A‖ * ‖x‖ + β * ‖b‖) :
     0 ≤ nrbePhi A b α β x :=
   div_nonneg (mul_nonneg hβ (norm_nonneg b)) hden
@@ -125,6 +128,7 @@ theorem one_sub_nrbePhi {x : Vec n} (hden : 0 < α * ‖A‖ * ‖x‖ + β * �
   rw [nrbePhi, eq_div_iff hden.ne', sub_mul, one_mul, div_mul_cancel₀ _ hden.ne']
   ring
 
+/-- `0 ≤ 1 − φ_k`, the coefficient of the optimal matrix perturbation `E_k`. -/
 theorem one_sub_nrbePhi_nonneg (hα : 0 ≤ α) {x : Vec n}
     (hden : 0 < α * ‖A‖ * ‖x‖ + β * ‖b‖) : 0 ≤ 1 - nrbePhi A b α β x := by
   rw [one_sub_nrbePhi hden]
@@ -318,11 +322,13 @@ theorem nrbe_minres_antitoneOn (hA : A.PosDef) (hb : b ≠ 0) (hα : 0 < α) (h�
   · exact (nrbe_minres_antitone hA hb hα.le hβ0 hx).antitoneOn _
 
 /-- Theorem 3.1 for MINRES: for `α, β > 0` the relative backward errors `‖E_k‖/‖A‖` and
-`‖f_k‖/‖b‖` decrease monotonically. -/
-theorem thm_3_1_minres (hA : A.PosDef) (hA0 : A ≠ 0) (hb : b ≠ 0) (hα : 0 < α) (hβ : 0 < β)
+`‖f_k‖/‖b‖` decrease monotonically.  The row for `‖E_k‖/‖A‖` starts at `k = 1`: at `k = 0` the
+paper's `E_0` is undefined and Lean's is `0`. -/
+theorem thm_3_1_minres (hA : A.PosDef) (hb : b ≠ 0) (hα : 0 < α) (hβ : 0 < β)
     {x : ℕ → Vec n} (hx : ∀ k, IsMinresIterate A b k (x k)) :
     AntitoneOn (fun k => ‖nrbePertA A b α β (x k)‖ / ‖A‖) (Set.Ici 1) ∧
       Antitone fun k => ‖nrbePertb A b α β (x k)‖ / ‖b‖ := by
+  have hA0 : A ≠ 0 := ne_zero_of_posDef hA hb
   have hbn : (0 : ℝ) < ‖b‖ := norm_pos_iff.2 hb
   have hden : ∀ y : Vec n, 0 < α * ‖A‖ * ‖y‖ + β * ‖b‖ := fun y => by
     have h1 : 0 ≤ α * ‖A‖ * ‖y‖ := by positivity
@@ -341,10 +347,10 @@ theorem thm_3_1_minres (hA : A.PosDef) (hA0 : A ≠ 0) (hb : b ≠ 0) (hα : 0 <
     exact mul_le_mul_of_nonneg_left (nrbe_minres_antitone hA hb hα.le hβ hx hij) hβ.le
 
 /-- Theorem 3.1 for CR. -/
-theorem thm_3_1_cr (hA : A.PosDef) (hA0 : A ≠ 0) (hb : b ≠ 0) (hα : 0 < α) (hβ : 0 < β) :
+theorem thm_3_1_cr (hA : A.PosDef) (hb : b ≠ 0) (hα : 0 < α) (hβ : 0 < β) :
     AntitoneOn (fun k => ‖nrbePertA A b α β (cr A b k).x‖ / ‖A‖) (Set.Ici 1) ∧
       Antitone fun k => ‖nrbePertb A b α β (cr A b k).x‖ / ‖b‖ :=
-  thm_3_1_minres hA hA0 hb hα hβ (cr_isMinresIterate hA)
+  thm_3_1_minres hA hb hα hβ (cr_isMinresIterate hA)
 
 /-! ### R3.7: MINRES stops no later than CG under the rule (3.4) with `α = 0` -/
 

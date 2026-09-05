@@ -40,13 +40,22 @@ section Glue
 
 variable {A} {x y : Vec n} {c : ℝ}
 
+/-- The product is additive in the vector. -/
 theorem mulVecE_add : A ⬝ (x + y) = A ⬝ x + A ⬝ y := map_add _ _ _
 
+/-- The product is homogeneous in the vector. -/
 theorem mulVecE_smul : A ⬝ (c • x) = c • (A ⬝ x) := map_smul _ _ _
 
+/-- The product distributes over a difference of vectors. -/
 theorem mulVecE_sub : A ⬝ (x - y) = A ⬝ x - A ⬝ y := map_sub _ _ _
 
+/-- `A 0 = 0`. -/
 @[simp] theorem mulVecE_zero : A ⬝ (0 : Vec n) = 0 := map_zero _
+
+/-- `0 x = 0`. -/
+@[simp] theorem zero_mulVecE (x : Vec n) : (0 : Matrix (Fin n) (Fin n) ℝ) ⬝ x = 0 := by
+  change Matrix.toEuclideanLin 0 x = 0
+  rw [map_zero, LinearMap.zero_apply]
 
 /-- The paper's product is the backbone's operator applied to `x`.  `mulVecE` is reducible, so
 this is `rfl`; it is stated so that `rw` and `simp only` can normalise towards the backbone. -/
@@ -111,6 +120,12 @@ theorem eq_zero_of_inner_mulVecE_self_eq_zero (hA : A.PosDef) {x : Vec n}
   by_contra h
   exact absurd hx (inner_mulVecE_self_pos hA h).ne'
 
+/-- A positive definite matrix on a space with a nonzero vector is itself nonzero.  This makes
+`‖A‖ ≠ 0` free in §3, where the paper's ratios `‖E‖/‖A‖` are otherwise degenerate. -/
+theorem ne_zero_of_posDef (hA : A.PosDef) {x : Vec n} (hx : x ≠ 0) : A ≠ 0 := by
+  rintro rfl
+  exact absurd (by rw [zero_mulVecE, inner_zero_right]) (inner_mulVecE_self_pos hA hx).ne'
+
 end Glue
 
 /-! ### D2: Krylov subspaces and the Lanczos objects -/
@@ -139,10 +154,12 @@ noncomputable abbrev lanczosTerm : ℕ := Krylov.grade (Matrix.toEuclideanLin A)
 theorem krylov_eq (k : ℕ) : krylov A b k = Krylov.subspace (Matrix.toEuclideanLin A) b k :=
   (Matrix.krylov_subspace_toEuclideanLin A b k).symm
 
+/-- The Krylov subspaces are nested. -/
 theorem krylov_mono {k l : ℕ} (h : k ≤ l) : krylov A b k ≤ krylov A b l := by
   rw [krylov_eq, krylov_eq]
   exact Krylov.subspace_mono _ _ h
 
+/-- The zeroth Krylov subspace is trivial, which is the paper's `x_0 = 0`. -/
 @[simp] theorem krylov_zero : krylov A b 0 = ⊥ := by rw [krylov_eq, Krylov.subspace_zero]
 
 /-- R1.2: the elements of `𝒦_k(A, b)` are exactly the vectors `V_k y`. -/

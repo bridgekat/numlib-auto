@@ -90,10 +90,7 @@ quantities fail to be monotonic; both witnesses below are diagonal.
 
 section Counterexamples
 
-/-- The squared norm in coordinates. -/
-private theorem norm_sq_eq (v : Vec n) : ‖v‖ ^ 2 = ∑ i, WithLp.ofLp v i ^ 2 := by
-  rw [EuclideanSpace.norm_eq, Real.sq_sqrt (by positivity)]
-  simp [Real.norm_eq_abs, sq_abs]
+open EuclideanSpace
 
 /-- The inner product in coordinates. -/
 private theorem inner_eq (u v : Vec n) :
@@ -112,14 +109,15 @@ private theorem posDef_A2 : A2.PosDef := by
   fin_cases i <;> norm_num
 
 private theorem rho2_zero : (cg A2 b2 0).ρ = 10 := by
-  simp only [cg_zero, cgInit, norm_sq_eq, b2, Fin.sum_univ_two, cons_val_zero, cons_val_one]
+  simp only [cg_zero, cgInit, real_norm_sq_eq, b2, Fin.sum_univ_two, cons_val_zero,
+    cons_val_one]
   norm_num
 
 private theorem rho2_one : (cg A2 b2 1).ρ = 160 / 9 := by
   rw [cg_succ, cg_zero]
-  simp only [cgStep, cgInit, inner_eq, norm_sq_eq, WithLp.ofLp_sub, WithLp.ofLp_smul,
-    ofLp_mulVecE, Pi.sub_apply, Pi.smul_apply, smul_eq_mul, b2, A2, Fin.sum_univ_two,
-    mulVec_diagonal, cons_val_zero, cons_val_one]
+  simp only [cgStep, cgInit, inner_eq, real_norm_sq_eq, WithLp.ofLp_sub,
+    WithLp.ofLp_smul, ofLp_mulVecE, Pi.sub_apply, Pi.smul_apply, smul_eq_mul, b2, A2,
+    Fin.sum_univ_two, mulVec_diagonal, cons_val_zero, cons_val_one]
   norm_num
 
 /-- R5.2, first entry: the CG residual norm is not monotonic.  On `A = diag(1, 9)` with
@@ -147,16 +145,18 @@ private theorem posDef_A3 : A3.PosDef := by
 
 private theorem cg3_one_x : WithLp.ofLp (cg A3 b3 1).x = ![3 / 38, 15 / 38, 3 / 38] := by
   rw [cg_succ, cg_zero]
-  simp only [cgStep, cgInit, inner_eq, norm_sq_eq, WithLp.ofLp_add, WithLp.ofLp_sub,
-    WithLp.ofLp_smul, ofLp_mulVecE, Pi.sub_apply, Pi.smul_apply, smul_eq_mul, b3, A3,
+  simp only [cgStep, cgInit, inner_eq, real_norm_sq_eq, WithLp.ofLp_add,
+    WithLp.ofLp_sub, WithLp.ofLp_smul, ofLp_mulVecE, Pi.sub_apply, Pi.smul_apply, smul_eq_mul,
+    b3, A3,
     Fin.sum_univ_three, mulVec_diagonal, cons_val_two, tail_cons, head_cons]
   funext i
   fin_cases i <;> norm_num [mulVec_diagonal, cons_val_two, tail_cons, head_cons]
 
 private theorem cg3_one_r : WithLp.ofLp (cg A3 b3 1).r = ![35 / 38, -5 / 38, -5 / 19] := by
   rw [cg_succ, cg_zero]
-  simp only [cgStep, cgInit, inner_eq, norm_sq_eq, WithLp.ofLp_sub, WithLp.ofLp_smul,
-    ofLp_mulVecE, Pi.sub_apply, Pi.smul_apply, smul_eq_mul, b3, A3, Fin.sum_univ_three,
+  simp only [cgStep, cgInit, inner_eq, real_norm_sq_eq, WithLp.ofLp_sub,
+    WithLp.ofLp_smul, ofLp_mulVecE, Pi.sub_apply, Pi.smul_apply, smul_eq_mul, b3, A3,
+    Fin.sum_univ_three,
     mulVec_diagonal, cons_val_two, tail_cons, head_cons]
   funext i
   fin_cases i <;> norm_num [mulVec_diagonal, cons_val_two, tail_cons, head_cons]
@@ -164,7 +164,7 @@ private theorem cg3_one_r : WithLp.ofLp (cg A3 b3 1).r = ![35 / 38, -5 / 38, -5 
 private theorem cg3_one_p :
     WithLp.ofLp (cg A3 b3 1).p = ![345 / 361, 15 / 361, -165 / 722] := by
   rw [cg_succ, cg_zero]
-  simp only [cgStep, cgInit, inner_eq, norm_sq_eq, WithLp.ofLp_add, WithLp.ofLp_sub,
+  simp only [cgStep, cgInit, inner_eq, real_norm_sq_eq, WithLp.ofLp_add, WithLp.ofLp_sub,
     WithLp.ofLp_smul, ofLp_mulVecE, Pi.sub_apply, Pi.smul_apply, smul_eq_mul,
     b3, A3, Fin.sum_univ_three, mulVec_diagonal, cons_val_two, tail_cons, head_cons]
   funext i
@@ -173,8 +173,9 @@ private theorem cg3_one_p :
 
 private theorem cg3_one_rho : (cg A3 b3 1).ρ = 675 / 722 := by
   rw [cg_succ, cg_zero]
-  simp only [cgStep, cgInit, inner_eq, norm_sq_eq, WithLp.ofLp_sub, WithLp.ofLp_smul,
-    ofLp_mulVecE, Pi.sub_apply, Pi.smul_apply, smul_eq_mul, b3, A3, Fin.sum_univ_three,
+  simp only [cgStep, cgInit, inner_eq, real_norm_sq_eq, WithLp.ofLp_sub,
+    WithLp.ofLp_smul, ofLp_mulVecE, Pi.sub_apply, Pi.smul_apply, smul_eq_mul, b3, A3,
+    Fin.sum_univ_three,
     mulVec_diagonal, cons_val_two, tail_cons, head_cons]
   norm_num
 
@@ -208,16 +209,16 @@ theorem cg_backwardError_not_antitoneOn :
       ¬ AntitoneOn (fun k => ‖(cg A b k).r‖ / ‖(cg A b k).x‖) (Set.Ici 1) := by
   refine ⟨3, A3, b3, posDef_A3, fun h => ?_⟩
   have hx1 : ‖(cg A3 b3 1).x‖ ^ 2 = 243 / 1444 := by
-    rw [norm_sq_eq, cg3_one_x]
+    rw [real_norm_sq_eq, cg3_one_x]
     norm_num [Fin.sum_univ_three, cons_val_two, tail_cons, head_cons]
   have hr1 : ‖(cg A3 b3 1).r‖ ^ 2 = 675 / 722 := by
-    rw [norm_sq_eq, cg3_one_r]
+    rw [real_norm_sq_eq, cg3_one_r]
     norm_num [Fin.sum_univ_three, cons_val_two, tail_cons, head_cons]
   have hx2 : ‖(cg A3 b3 2).x‖ ^ 2 = 33 / 64 := by
-    rw [norm_sq_eq, cg3_two_x]
+    rw [real_norm_sq_eq, cg3_two_x]
     norm_num [Fin.sum_univ_three, cons_val_two, tail_cons, head_cons]
   have hr2 : ‖(cg A3 b3 2).r‖ ^ 2 = 25 / 8 := by
-    rw [norm_sq_eq, cg3_two_r]
+    rw [real_norm_sq_eq, cg3_two_r]
     norm_num [Fin.sum_univ_three, cons_val_two, tail_cons, head_cons]
   have hx1p : 0 < ‖(cg A3 b3 1).x‖ := by nlinarith [norm_nonneg (cg A3 b3 1).x]
   have hx2p : 0 < ‖(cg A3 b3 2).x‖ := by nlinarith [norm_nonneg (cg A3 b3 2).x]

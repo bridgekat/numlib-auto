@@ -38,6 +38,7 @@ theorem energyNorm_eq (A : Matrix (Fin n) (Fin n) ℝ) (v : Vec n) :
     energyNorm A v = _root_.energyNorm (toEuclideanLin A) v := by
   rw [energyNorm, _root_.energyNorm, RCLike.re_to_real, real_inner_comm]
 
+/-- The energy norm is nonnegative, being a square root. -/
 theorem energyNorm_nonneg (A : Matrix (Fin n) (Fin n) ℝ) (v : Vec n) : 0 ≤ energyNorm A v :=
   Real.sqrt_nonneg _
 
@@ -82,8 +83,10 @@ termination (`r = 0 ⇒ ρ = 0 ⇒ α = β = 0 ⇒ p = 0`), which is exactly the
 noncomputable def cg (A : Matrix (Fin n) (Fin n) ℝ) (b : Vec n) (k : ℕ) : CGState n :=
   (cgStep A)^[k] (cgInit b)
 
+/-- Algorithm CG starts at its initialization. -/
 @[simp] theorem cg_zero : cg A b 0 = cgInit b := rfl
 
+/-- One more CG iteration is one more `cgStep`. -/
 theorem cg_succ (k : ℕ) : cg A b (k + 1) = cgStep A (cg A b k) :=
   Function.iterate_succ_apply' _ _ _
 
@@ -138,8 +141,10 @@ stationary after termination. -/
 noncomputable def cr (A : Matrix (Fin n) (Fin n) ℝ) (b : Vec n) (k : ℕ) : CRState n :=
   (crStep A)^[k] (crInit A b)
 
+/-- Algorithm CR starts at its initialization. -/
 @[simp] theorem cr_zero : cr A b 0 = crInit A b := rfl
 
+/-- One more CR iteration is one more `crStep`. -/
 theorem cr_succ (k : ℕ) : cr A b (k + 1) = crStep A (cr A b k) :=
   Function.iterate_succ_apply' _ _ _
 
@@ -211,12 +216,15 @@ theorem cr_eq_backbone (A : Matrix (Fin n) (Fin n) ℝ) (b : Vec n) (k : ℕ) :
 
 /-! ### The projections of the two identifications -/
 
+/-- The paper's `x_k^C` is the backbone CG iterate. -/
 @[simp] theorem cg_x (k : ℕ) : (cg A b k).x = (CG.iterate (toEuclideanLin A) b 0 k).x := by
   rw [cg_eq_backbone]
 
+/-- The paper's `r_k^C` is the backbone CG residual. -/
 @[simp] theorem cg_r (k : ℕ) : (cg A b k).r = (CG.iterate (toEuclideanLin A) b 0 k).r := by
   rw [cg_eq_backbone]
 
+/-- The paper's `p_k^C` is the backbone CG direction. -/
 @[simp] theorem cg_p (k : ℕ) : (cg A b k).p = (CG.iterate (toEuclideanLin A) b 0 k).p := by
   rw [cg_eq_backbone]
 
@@ -224,15 +232,19 @@ theorem cr_eq_backbone (A : Matrix (Fin n) (Fin n) ℝ) (b : Vec n) (k : ℕ) :
 theorem cg_rho (k : ℕ) : (cg A b k).ρ = ‖(cg A b k).r‖ ^ 2 := by
   rw [cg_eq_backbone]
 
+/-- The paper's `x_k` of Algorithm CR is the backbone CR iterate. -/
 @[simp] theorem cr_x (k : ℕ) : (cr A b k).x = (CR.iterate (toEuclideanLin A) b 0 k).x := by
   rw [cr_eq_backbone]
 
+/-- The paper's `r_k` of Algorithm CR is the backbone CR residual. -/
 @[simp] theorem cr_r (k : ℕ) : (cr A b k).r = (CR.iterate (toEuclideanLin A) b 0 k).r := by
   rw [cr_eq_backbone]
 
+/-- The paper's `p_k` of Algorithm CR is the backbone CR direction. -/
 @[simp] theorem cr_p (k : ℕ) : (cr A b k).p = (CR.iterate (toEuclideanLin A) b 0 k).p := by
   rw [cr_eq_backbone]
 
+/-- The paper's `q_k` of Algorithm CR is the backbone `q_k`. -/
 @[simp] theorem cr_q (k : ℕ) : (cr A b k).q = (CR.iterate (toEuclideanLin A) b 0 k).q := by
   rw [cr_eq_backbone]
 
@@ -259,15 +271,18 @@ theorem cr_residual_eq (k : ℕ) : (cr A b k).r = b - A ⬝ (cr A b k).x := by
   rw [cr_r, cr_x]
   exact CR.residual_eq _ _ _ k
 
+/-- The paper's `α_{k+1}` for CG is the backbone's `CG.alpha` at step `k`. -/
 theorem cgAlpha_eq (k : ℕ) :
     cgAlpha A b (k + 1) = CG.alpha (toEuclideanLin A) (CG.iterate (toEuclideanLin A) b 0 k) := by
   rw [cgAlpha, cg_rho, cg_r, cg_p, CG.alpha, real_inner_self_eq_norm_sq, real_inner_comm]
 
+/-- The paper's `β_{k+1}` for CG is the backbone's `CG.beta` at step `k`. -/
 theorem cgBeta_eq (k : ℕ) :
     cgBeta A b (k + 1) = CG.beta (toEuclideanLin A) (CG.iterate (toEuclideanLin A) b 0 k) := by
   rw [cgBeta, cg_rho, cg_rho, cg_r, cg_r, CG.beta, real_inner_self_eq_norm_sq,
     real_inner_self_eq_norm_sq, CG.iterate_succ]
 
+/-- The paper's `α_{k+1}` for CR is the backbone's `CR.alpha` at step `k`. -/
 theorem crAlpha_eq (k : ℕ) :
     crAlpha A b (k + 1) = CR.alpha (toEuclideanLin A) (CR.iterate (toEuclideanLin A) b 0 k) := by
   rw [crAlpha, cr_rho, cr_r, cr_q, CR.alpha, real_inner_self_eq_norm_sq]
@@ -297,35 +312,44 @@ theorem minres_norm_residual_le {k : ℕ} {x y : Vec n} (hx : IsMinresIterate A 
 
 /-! ### One-step unfoldings of the two recurrences -/
 
+/-- The unused junk value `α_0 = 0`. -/
 @[simp] theorem cgAlpha_zero : cgAlpha A b 0 = 0 := rfl
 
+/-- The unused junk value `β_0 = 0`. -/
 @[simp] theorem cgBeta_zero : cgBeta A b 0 = 0 := rfl
 
+/-- The unused junk value `α_0 = 0`. -/
 @[simp] theorem crAlpha_zero : crAlpha A b 0 = 0 := rfl
 
+/-- The unused junk value `β_0 = 0`. -/
 @[simp] theorem crBeta_zero : crBeta A b 0 = 0 := rfl
 
+/-- `α_{k+1} = ρ_k / ‖q_k‖²`, the CR step length of Table 2.1. -/
 theorem crAlpha_succ (k : ℕ) : crAlpha A b (k + 1) = (cr A b k).ρ / ‖(cr A b k).q‖ ^ 2 := rfl
 
 /-- `β_k = ρ_k / ρ_{k−1}`: the backbone keeps this quotient inline in `CR.step`, so the sign of
 `β_k` is a surface corollary (Theorem 2.2 (b)). -/
 theorem crBeta_succ (k : ℕ) : crBeta A b (k + 1) = (cr A b (k + 1)).ρ / (cr A b k).ρ := rfl
 
+/-- Table 2.1: `x_{k+1} = x_k + α_{k+1} p_k`. -/
 theorem cr_succ_x (k : ℕ) :
     (cr A b (k + 1)).x = (cr A b k).x + crAlpha A b (k + 1) • (cr A b k).p := by
   rw [cr_succ, crAlpha]
   rfl
 
+/-- Table 2.1: `r_{k+1} = r_k − α_{k+1} q_k`. -/
 theorem cr_succ_r (k : ℕ) :
     (cr A b (k + 1)).r = (cr A b k).r - crAlpha A b (k + 1) • (cr A b k).q := by
   rw [cr_succ, crAlpha]
   rfl
 
+/-- Table 2.1: `p_{k+1} = r_{k+1} + β_{k+1} p_k`. -/
 theorem cr_succ_p (k : ℕ) :
     (cr A b (k + 1)).p = (cr A b (k + 1)).r + crBeta A b (k + 1) • (cr A b k).p := by
   rw [crBeta, cr_succ]
   rfl
 
+/-- Table 2.1: `q_{k+1} = s_{k+1} + β_{k+1} q_k`. -/
 theorem cr_succ_q (k : ℕ) :
     (cr A b (k + 1)).q = (cr A b (k + 1)).s + crBeta A b (k + 1) • (cr A b k).q := by
   rw [crBeta, cr_succ]
@@ -339,6 +363,7 @@ theorem cg_isGalerkinIterate (hA : A.PosDef) (k : ℕ) :
   rw [cg_x]
   exact CG.isGalerkinIterate b 0 (isSymmetricCoercive_of_posDef hA) k
 
+/-- §2.1: the CG iterate lies in the `k`-th Krylov subspace. -/
 theorem cg_mem_krylov (hA : A.PosDef) (k : ℕ) : (cg A b k).x ∈ krylov A b k :=
   sub_zero_mem_subspace_iff.1 (cg_isGalerkinIterate hA k).mem
 
@@ -484,12 +509,14 @@ theorem cr_residual_eq_zero_iff (hA : A.PosDef) (k : ℕ) :
     exact CR.residual_eq_zero_of_grade_le b 0 (isSymmetricCoercive_of_posDef hA)
       (by rwa [sub_mulVecE_zero])
 
+/-- The CR termination index is attained: `r_ℓ = 0`. -/
 theorem cr_residual_crTerm (hA : A.PosDef) : (cr A b (crTerm A b)).r = 0 := by
   have hne : {k | (cr A b k).r = 0}.Nonempty :=
     ⟨lanczosTerm A b, (cr_residual_eq_zero_iff hA _).2 le_rfl⟩
   rw [crTerm]
   exact Nat.sInf_mem hne
 
+/-- The CG termination index is attained: `r_ℓ = 0`. -/
 theorem cg_residual_cgTerm (hA : A.PosDef) : (cg A b (cgTerm A b)).r = 0 := by
   have hne : {k | (cg A b k).r = 0}.Nonempty :=
     ⟨lanczosTerm A b, (cg_residual_eq_zero_iff hA _).2 le_rfl⟩
@@ -501,10 +528,12 @@ theorem crTerm_eq_grade (hA : A.PosDef) : crTerm A b = lanczosTerm A b :=
   le_antisymm (Nat.sInf_le ((cr_residual_eq_zero_iff hA _).2 le_rfl))
     ((cr_residual_eq_zero_iff hA _).1 (cr_residual_crTerm (b := b) hA))
 
+/-- CG terminates at the Lanczos termination index `ℓ` (§2.3). -/
 theorem cgTerm_eq_grade (hA : A.PosDef) : cgTerm A b = lanczosTerm A b :=
   le_antisymm (Nat.sInf_le ((cg_residual_eq_zero_iff hA _).2 le_rfl))
     ((cg_residual_eq_zero_iff hA _).1 (cg_residual_cgTerm (b := b) hA))
 
+/-- CG and CR terminate at the same index (§2.3). -/
 theorem cgTerm_eq_crTerm (hA : A.PosDef) : cgTerm A b = crTerm A b :=
   (cgTerm_eq_grade hA).trans (crTerm_eq_grade hA).symm
 
@@ -512,6 +541,7 @@ theorem cgTerm_eq_crTerm (hA : A.PosDef) : cgTerm A b = crTerm A b :=
 theorem crTerm_le (hA : A.PosDef) : crTerm A b ≤ n :=
   (crTerm_eq_grade hA).le.trans (lanczosTerm_le A b)
 
+/-- CG terminates in at most `n` steps. -/
 theorem cgTerm_le (hA : A.PosDef) : cgTerm A b ≤ n :=
   (cgTerm_eq_grade hA).le.trans (lanczosTerm_le A b)
 
@@ -624,6 +654,7 @@ theorem thm_2_2_f (hA : A.PosDef) (i j : ℕ) : 0 ≤ ⟪(cr A b i).r, (cr A b j
   have h := CR.re_inner_residual_direction_nonneg b 0 (isSymmetricCoercive_of_posDef hA) i j
   rwa [RCLike.re_to_real] at h
 
+/-- The CR denominator vector `q_k` is nonzero until termination, so `α_{k+1}` is well defined. -/
 theorem cr_q_ne_zero (hA : A.PosDef) {k : ℕ} (hk : (cr A b k).r ≠ 0) : (cr A b k).q ≠ 0 := by
   intro h
   have hρ := cr_inner_residual_q (b := b) hA k
