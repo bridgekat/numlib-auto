@@ -1,4 +1,4 @@
-import SaadSparse.Ch06.Arnoldi
+import SaadSparse.Ch06.Residual
 
 /-!
 # Saad, §6.4: the Full Orthogonalization Method
@@ -22,6 +22,10 @@ Hessenberg relation `iop_hessenbergRelation`, which is exactly the backbone inte
 `Krylov.HessenbergRelation` — the book's "(6.6) is still valid, since orthogonality was never
 used".
 
+The data `r_0`, `β`, `v_1`, `e_1`, `mEff` of the system and the bridge lemmas translating the
+book's unit starting vector `v_1` to the backbone's residual-indexed Arnoldi data are shared
+with `Ch06/GMRES.lean` and live in `Ch06/Residual.lean`.
+
 Indices are `0`-based as in `Ch06/Arnoldi.lean`: `iop A v₁ k j` is the book's `v_{j+1}`, and
 `iopCoeff A v₁ k i j` is `h_{i+1,j+1}`. Division by a vanishing norm is `0`, which reproduces
 the book's "if `h_{j+1,j} = 0` then Stop", and the book's "set `m := j`" is `mEff` for FOM and
@@ -41,69 +45,7 @@ variable {n : ℕ} {𝕜 : Type*} [RCLike 𝕜]
 
 local notation "𝔼" => EuclideanSpace 𝕜 (Fin n)
 
-/-! ### The data of a linear system
-
-The book's `r_0 = b - A x_0`, `β = ‖r_0‖₂` and `v_1 = r_0/β`. The backbone indexes the Arnoldi
-process by `r_0` itself; the `*_v₁` lemmas below are the translation, and they are the reason
-`Ch06/Arnoldi.lean` provides the normalization family `arnoldiCGS_normalize` and friends. -/
-
-/-- The initial residual `r_0 = b - A x_0` (§6.4, Algorithm 6.4, line 1). -/
-def r₀ (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) : 𝔼 := b - op A x₀
-
-/-- `β = ‖r_0‖₂` (Algorithm 6.4, line 1). -/
-noncomputable def β (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) : ℝ := ‖r₀ A b x₀‖
-
-/-- `v_1 = r_0/β`, the starting vector of the Arnoldi process (Algorithm 6.4, line 1). -/
-noncomputable def v₁ (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) : 𝔼 :=
-  (β A b x₀ : 𝕜)⁻¹ • r₀ A b x₀
-
-/-- The first coordinate vector `e_1 ∈ 𝕜^m`. -/
-def e₁ (m : ℕ) : Fin m → 𝕜 := fun i => if (i : ℕ) = 0 then 1 else 0
-
-/-- `β e_1` is the backbone's `Krylov.firstVec β`. -/
-theorem smul_e₁_eq_firstVec (c : 𝕜) (m : ℕ) : c • e₁ m = Krylov.firstVec c m := by
-  funext i
-  by_cases h : (i : ℕ) = 0 <;> simp [e₁, Krylov.firstVec, h]
-
 variable (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : EuclideanSpace 𝕜 (Fin n))
-
-theorem r₀_def : r₀ A b x₀ = b - op A x₀ := rfl
-
-theorem β_def : (β A b x₀ : 𝕜) = (‖b - op A x₀‖ : 𝕜) := rfl
-
-theorem v₁_def : v₁ A b x₀ = (‖b - op A x₀‖ : 𝕜)⁻¹ • (b - op A x₀) := rfl
-
-/-- `‖v_1‖ = 1` unless `x_0` already solves the system. -/
-theorem norm_v₁ (hr : b - op A x₀ ≠ 0) : ‖v₁ A b x₀‖ = 1 := by
-  rw [v₁_def]
-  exact norm_norm_inv_smul hr
-
-/-- Algorithm 6.4 runs Algorithm 6.1 on `v_1 = r_0/β`; the backbone runs it on `r_0`. -/
-theorem arnoldiCGS_v₁ (hr : b - op A x₀ ≠ 0) :
-    arnoldiCGS A (v₁ A b x₀) = Arnoldi.vec (op A) (b - op A x₀) := by
-  rw [v₁_def]
-  exact funext (arnoldiCGS_normalize A hr)
-
-theorem arnoldiCoeff_v₁ (hr : b - op A x₀ ≠ 0) (i j : ℕ) :
-    arnoldiCoeff A (v₁ A b x₀) i j = Arnoldi.coeff (op A) (b - op A x₀) i j := by
-  rw [v₁_def]
-  exact arnoldiCoeff_normalize A hr i j
-
-theorem H_v₁ (hr : b - op A x₀ ≠ 0) (m : ℕ) :
-    H A (v₁ A b x₀) m = Arnoldi.hessenbergSq (op A) (b - op A x₀) m := by
-  rw [v₁_def]
-  exact H_normalize A hr m
-
-theorem Hbar_v₁ (hr : b - op A x₀ ≠ 0) (m : ℕ) :
-    Hbar A (v₁ A b x₀) m = Arnoldi.hessenberg (op A) (b - op A x₀) m := by
-  rw [v₁_def]
-  exact Hbar_normalize A hr m
-
-/-- The grade of `v_1` is the grade of `r_0`: the two starting vectors are proportional. -/
-theorem grade_v₁ : grade A (v₁ A b x₀) = Krylov.grade (op A) (b - op A x₀) := by
-  rcases eq_or_ne (b - op A x₀) 0 with h | h
-  · rw [v₁_def, h, smul_zero, grade_eq]
-  · rw [v₁_def, grade_smul A _ (inv_ne_zero (by simpa using norm_ne_zero_iff.2 h)), grade_eq]
 
 /-! ### (6.16)–(6.17) and Algorithm 6.4 -/
 
@@ -116,11 +58,6 @@ noncomputable def fomY (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (m : �
 noncomputable def fomFixed (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (m : ℕ) : 𝔼 :=
   x₀ + Matrix.toEuclideanLin (V A (v₁ A b x₀) m) (WithLp.toLp 2 (fomY A b x₀ m))
 
-/-- The number of Arnoldi steps Algorithm 6.4 actually performs: the book's "if `h_{j+1,j} = 0`
-then set `m := j`" stops the Arnoldi process at the grade of `v_1`. -/
-noncomputable def mEff (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (m : ℕ) : ℕ :=
-  min m (grade A (v₁ A b x₀))
-
 /-- **Algorithm 6.4** (FOM). -/
 noncomputable def fom (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (m : ℕ) : 𝔼 :=
   fomFixed A b x₀ (mEff A b x₀ m)
@@ -129,25 +66,16 @@ noncomputable def fom (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (m : ℕ
 def FOMDefined (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (m : ℕ) : Prop :=
   IsUnit (H A (v₁ A b x₀) m)
 
-theorem mEff_le (m : ℕ) : mEff A b x₀ m ≤ grade A (v₁ A b x₀) := min_le_right _ _
-
 /-- Nothing happens at step `0`. -/
 theorem fomFixed_zero : fomFixed A b x₀ 0 = x₀ := by
   rw [fomFixed, toEuclideanLin_V_apply]
   simp
 
-/-- Below the grade of `v_1` the system is not yet solved. -/
-private theorem residual_ne_zero_of_lt_grade {m : ℕ} (hm0 : 0 < m)
-    (hm : m ≤ grade A (v₁ A b x₀)) : b - op A x₀ ≠ 0 := by
-  intro hr
-  rw [grade_v₁, hr, Krylov.grade_zero] at hm
-  omega
-
 /-- `x_m - x_0 = V_m y_m = ∑_j (y_m)_j v_j`, the form the backbone uses. -/
-theorem fomFixed_eq_add_sum (hr : b - op A x₀ ≠ 0) (m : ℕ) :
+theorem fomFixed_eq_add_sum (m : ℕ) :
     fomFixed A b x₀ m
       = x₀ + ∑ j, fomY A b x₀ m j • Arnoldi.vec (op A) (b - op A x₀) (j : ℕ) := by
-  rw [fomFixed, toEuclideanLin_V_apply, arnoldiCGS_v₁ A b x₀ hr]
+  rw [fomFixed, toEuclideanLin_V_apply, arnoldiCGS_v₁ A b x₀]
 
 /-- `H_m y_m = β e_1` whenever `H_m` is nonsingular: `y_m` really solves (6.17). -/
 theorem H_mulVec_fomY {m : ℕ} (hH : FOMDefined A b x₀ m) :
@@ -161,18 +89,17 @@ orthogonal projection method (6.15) of §6.4.1. -/
 theorem fomFixed_isGalerkinIterate {m : ℕ} (hH : FOMDefined A b x₀ m)
     (hm : m ≤ grade A (v₁ A b x₀)) :
     Krylov.IsGalerkinIterate (op A) b x₀ m (fomFixed A b x₀ m) := by
-  rcases Nat.eq_zero_or_pos m with rfl | hm0
+  rcases Nat.eq_zero_or_pos m with rfl | -
   · rw [fomFixed_zero]
     exact ⟨by simp, by
       rw [Krylov.subspace_zero, Submodule.bot_orthogonal_eq_top]; exact Submodule.mem_top⟩
-  · have hr : b - op A x₀ ≠ 0 := residual_ne_zero_of_lt_grade A b x₀ hm0 hm
-    have hgr : m ≤ Krylov.grade (op A) (b - op A x₀) := by rwa [← grade_v₁]
+  · have hgr : m ≤ Krylov.grade (op A) (b - op A x₀) := by rwa [← grade_v₁]
     have hy : Arnoldi.hessenbergSq (op A) (b - op A x₀) m *ᵥ fomY A b x₀ m
         = Krylov.firstVec (‖b - op A x₀‖ : 𝕜) m := by
-      rw [← H_v₁ A b x₀ hr]
+      rw [← H_v₁ A b x₀]
       exact H_mulVec_fomY A b x₀ hH
     have h := (Krylov.isGalerkinIterate_iff_mulVec_eq hgr (fomY A b x₀ m)).2 hy
-    rwa [← fomFixed_eq_add_sum A b x₀ hr m] at h
+    rwa [← fomFixed_eq_add_sum A b x₀ m] at h
 
 /-- Algorithm 6.4 with its own stopping rule always produces a Galerkin iterate. -/
 theorem fom_isGalerkinIterate {m : ℕ} (hH : FOMDefined A b x₀ (mEff A b x₀ m)) :
@@ -183,14 +110,13 @@ theorem fom_isGalerkinIterate {m : ℕ} (hH : FOMDefined A b x₀ (mEff A b x₀
 theorem eq_fomFixed_of_isGalerkinIterate {m : ℕ} {x : 𝔼} (hH : FOMDefined A b x₀ m)
     (hm : m ≤ grade A (v₁ A b x₀)) (hx : Krylov.IsGalerkinIterate (op A) b x₀ m x) :
     x = fomFixed A b x₀ m := by
-  rcases Nat.eq_zero_or_pos m with rfl | hm0
+  rcases Nat.eq_zero_or_pos m with rfl | -
   · have hmem := hx.mem
     rw [Krylov.subspace_zero, Submodule.mem_bot, sub_eq_zero] at hmem
     rw [hmem, fomFixed_zero]
-  · have hr : b - op A x₀ ≠ 0 := residual_ne_zero_of_lt_grade A b x₀ hm0 hm
-    have hgr : m ≤ Krylov.grade (op A) (b - op A x₀) := by rwa [← grade_v₁]
+  · have hgr : m ≤ Krylov.grade (op A) (b - op A x₀) := by rwa [← grade_v₁]
     obtain ⟨z, -, huniq⟩ := (Krylov.existsUnique_isGalerkinIterate_iff_isUnit hgr).2
-      (by rw [← H_v₁ A b x₀ hr]; exact hH)
+      (by rw [← H_v₁ A b x₀]; exact hH)
     rw [huniq x hx, huniq _ (fomFixed_isGalerkinIterate A b x₀ hH hm)]
 
 /-- `V_mᴴ r_0 = β e_1` (§6.4.1): the book's `V_mᵀ r_0 = β e_1` for real matrices. -/
@@ -207,7 +133,7 @@ theorem conjTranspose_V_mulVec_r₀ (m : ℕ) :
   · rw [show r₀ A b x₀ = 0 from hr, inner_zero_right, hr, norm_zero, RCLike.ofReal_zero,
       zero_mul]
   · have hne : ((‖b - op A x₀‖ : 𝕜)) ≠ 0 := by simpa using norm_ne_zero_iff.2 hr
-    rw [arnoldiCGS_v₁ A b x₀ hr, show r₀ A b x₀ = b - op A x₀ from rfl]
+    rw [arnoldiCGS_v₁ A b x₀, r₀_def]
     by_cases h0 : (i : ℕ) = 0
     · have hif : (if (i : ℕ) = 0 then (1 : 𝕜) else 0) = 1 := by simp [h0]
       rw [hif, mul_one, h0, Arnoldi.vec_zero _ _ hr, inner_smul_left,
@@ -222,23 +148,23 @@ theorem conjTranspose_V_mulVec_r₀ (m : ℕ) :
 
 /-! ### Proposition 6.7 and (6.18) -/
 
+set_option linter.unusedVariables false in
 /-- **Proposition 6.7** (field-agnostic form): the FOM residual is
-`b - A x_m = -h_{m+1,m} (e_mᵀ y_m) v_{m+1}` (`0`-based indices). -/
+`b - A x_m = -h_{m+1,m} (e_mᵀ y_m) v_{m+1}` (`0`-based indices). The book's no-breakdown
+hypothesis `hm` is kept, so that the numbered statement `prop_6_7` reads as in the book; the
+identity itself needs only `H_m` nonsingular, since past the grade of `v_1` both sides
+vanish. -/
 theorem residual_fomFixed {m : ℕ} (hH : FOMDefined A b x₀ m) (hm : m ≤ grade A (v₁ A b x₀))
     (hm0 : 0 < m) :
     b - op A (fomFixed A b x₀ m)
       = -(arnoldiCoeff A (v₁ A b x₀) m (m - 1) * fomY A b x₀ m ⟨m - 1, by omega⟩) •
           arnoldiCGS A (v₁ A b x₀) m := by
-  have hr : b - op A x₀ ≠ 0 := by
-    intro hr
-    rw [grade_v₁, hr, Krylov.grade_zero] at hm
-    omega
   have hy : Arnoldi.hessenbergSq (op A) (b - op A x₀) m *ᵥ fomY A b x₀ m
       = Krylov.firstVec (‖b - op A x₀‖ : 𝕜) m := by
-    rw [← H_v₁ A b x₀ hr]
+    rw [← H_v₁ A b x₀]
     exact H_mulVec_fomY A b x₀ hH
-  rw [fomFixed_eq_add_sum A b x₀ hr m, Krylov.residual_galerkin_eq hm0 _ hy,
-    arnoldiCoeff_v₁ A b x₀ hr, arnoldiCGS_v₁ A b x₀ hr]
+  rw [fomFixed_eq_add_sum A b x₀ m, Krylov.residual_galerkin_eq hm0 _ hy,
+    arnoldiCoeff_v₁ A b x₀, arnoldiCGS_v₁ A b x₀]
 
 /-- **(6.18)** (field-agnostic form): `‖b - A x_m‖₂ = h_{m+1,m} |e_mᵀ y_m|`. Both sides vanish
 at `m = μ`, where the Arnoldi process has already stopped. -/
@@ -246,7 +172,7 @@ theorem norm_residual_fomFixed {m : ℕ} (hH : FOMDefined A b x₀ m)
     (hm : m ≤ grade A (v₁ A b x₀)) (hm0 : 0 < m) :
     ‖b - op A (fomFixed A b x₀ m)‖
       = ‖arnoldiCoeff A (v₁ A b x₀) m (m - 1)‖ * ‖fomY A b x₀ m ⟨m - 1, by omega⟩‖ := by
-  have hr : b - op A x₀ ≠ 0 := by
+  have hr : r₀ A b x₀ ≠ 0 := by
     intro hr
     rw [grade_v₁, hr, Krylov.grade_zero] at hm
     omega
@@ -296,7 +222,8 @@ theorem iopW_eq_sub_sum (v : ℕ → 𝔼) (lo : ℕ) (w₀ : 𝔼) (N : ℕ) :
   | zero => simp [iopW]
   | succ N ih => rw [iopW_succ, ih, Finset.sum_range_succ]; abel
 
-private theorem iopW_congr {v v' : ℕ → 𝔼} (lo : ℕ) (w₀ : 𝔼) {N : ℕ} (h : ∀ i < N, v i = v' i) :
+/-- The truncated loop only looks at the first `N` vectors. -/
+theorem iopW_congr {v v' : ℕ → 𝔼} (lo : ℕ) (w₀ : 𝔼) {N : ℕ} (h : ∀ i < N, v i = v' i) :
     iopW v lo w₀ N = iopW v' lo w₀ N := by
   induction N with
   | zero => rfl
@@ -483,11 +410,6 @@ theorem HI_apply {m : ℕ} (i j : Fin m) : HI A v k m i j = iopCoeff A v k i j :
 /-- **(6.7) for incomplete orthogonalization**: `A V_m = V_{m+1} H̄_m` still holds. -/
 theorem mul_VI_eq (m : ℕ) : A * VI A v k m = VI A v k (m + 1) * HbarI A v k m :=
   mul_colMatrix_eq A (iop_hessenbergRelation A v k) m
-
-private theorem toEuclideanLin_colMatrix_apply (u : ℕ → 𝔼) {m : ℕ} (y : Fin m → 𝕜) :
-    Matrix.toEuclideanLin (colMatrix u m) (WithLp.toLp 2 y) = ∑ j, y j • u (j : ℕ) := by
-  rw [Matrix.toEuclideanLin_apply_eq_sum]
-  exact Finset.sum_congr rfl fun j _ => rfl
 
 /-- The number of steps Algorithm 6.7 actually performs: the book's "if `h_{j+1,j} = 0` then
 set `m := j`" stops at the first breakdown of Algorithm 6.6. -/
@@ -1159,8 +1081,7 @@ theorem existsUnique_isGalerkinIterate_iff {m : ℕ} (hm : m ≤ grade A (v₁ A
     · have hmem := hy.mem
       rw [Krylov.subspace_zero, Submodule.mem_bot, sub_eq_zero] at hmem
       exact hmem
-  · have hr : b - op A x₀ ≠ 0 := residual_ne_zero_of_lt_grade A b x₀ hm0 hm
-    rw [FOMDefined, H_v₁ A b x₀ hr]
+  · rw [FOMDefined, H_v₁ A b x₀]
     exact Krylov.existsUnique_isGalerkinIterate_iff_isUnit (by rwa [← grade_v₁])
 
 /-- §6.4.1: `V_mᵀ r_0 = β e_1`. -/

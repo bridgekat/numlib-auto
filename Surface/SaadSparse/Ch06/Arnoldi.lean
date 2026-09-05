@@ -265,11 +265,17 @@ theorem H_eq (hv : ‖v₁‖ = 1) (m : ℕ) : H A v₁ m = Arnoldi.hessenbergSq
   rw [H_apply, arnoldiCoeff_eq A v₁ hv]
   rfl
 
-/-- `V_m y = ∑_j y_j v_j`: the book's `V_m y` in the expansion form used by the backbone. -/
-theorem toEuclideanLin_V_apply {m : ℕ} (y : Fin m → 𝕜) :
-    Matrix.toEuclideanLin (V A v₁ m) (WithLp.toLp 2 y) = ∑ j, y j • arnoldiCGS A v₁ (j : ℕ) := by
+/-- `V_m y = ∑_j y_j u_j` for the matrix of any `0`-based family of vectors (Arnoldi,
+incomplete orthogonalization, Householder Arnoldi, …). -/
+theorem toEuclideanLin_colMatrix_apply (u : ℕ → 𝔼) {m : ℕ} (y : Fin m → 𝕜) :
+    Matrix.toEuclideanLin (colMatrix u m) (WithLp.toLp 2 y) = ∑ j, y j • u (j : ℕ) := by
   rw [Matrix.toEuclideanLin_apply_eq_sum]
   exact Finset.sum_congr rfl fun j _ => rfl
+
+/-- `V_m y = ∑_j y_j v_j`: the book's `V_m y` in the expansion form used by the backbone. -/
+theorem toEuclideanLin_V_apply {m : ℕ} (y : Fin m → 𝕜) :
+    Matrix.toEuclideanLin (V A v₁ m) (WithLp.toLp 2 y) = ∑ j, y j • arnoldiCGS A v₁ (j : ℕ) :=
+  toEuclideanLin_colMatrix_apply _ y
 
 /-! ### Starting from an unnormalized vector
 
