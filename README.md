@@ -38,7 +38,7 @@ The evolution of the backbone is driven by demands from the surface (the textboo
 
 To start a formalization project, write a plan specifying the overall shape of the backbone part.
 
-Plans are structured TOML files in the `plans/` directory, with format specified by the [tracker tool](https://github.com/bridgekat/tracker/). They should contain:
+Plans are structured TOML files in the `tracker/` directory, with format specified by the [tracker tool](https://github.com/bridgekat/tracker/). They should contain:
 
 - Overall design notes. If too long, the reasoning can be placed in a separate Markdown file in prose.
 - A list of key items (Lean definitions and theorem statements) in logical progression order. Each item should be placed carefully within the module and namespace hierarchies.

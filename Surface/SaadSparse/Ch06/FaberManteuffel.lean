@@ -269,25 +269,28 @@ theorem isStarNormal_of_exists_aeval {A : Matrix (Fin n) (Fin n) ℂ}
   rw [Matrix.star_eq_conjTranspose, ← hq]
   exact commute_aeval_self A q
 
-/-! ### The converse, deferred
+-- BACKBONE DEMAND: `exists_aeval_eq_conjTranspose_of_isStarNormal` needs the spectral theorem
+-- for normal matrices — a normal `A` is unitarily diagonalizable, and any `q` interpolating
+-- `z ↦ z̄` at its distinct eigenvalues satisfies `q(A) = A^H`. Mathlib has `IsStarNormal` and
+-- `Lagrange.interpolate` but neither Schur triangulation nor unitary diagonalization of normal
+-- matrices, and this is deferred backbone material
+-- (`plans/surface/SaadSparse-Ch6.md` §4, item 2, a candidate `Numlib/Eigen/Normal.lean`), not
+-- surface material: proving it here would be new mathematics in the surface layer. Lemma 6.23
+-- and Theorem 6.24 wait on the same item. Only the existence of `q` is demanded; the degree
+-- bound of the text is derived from it in `exists_aeval_eq_conjTranspose` below.
+/-- **§6.10**: conversely, a normal `A` satisfies `A^H = q(A)` for some polynomial `q`: writing
+`A = Q Λ Q^H`, any `q` with `q(λ_j) = conj λ_j` at the eigenvalues does. -/
+theorem exists_aeval_eq_conjTranspose_of_isStarNormal {A : Matrix (Fin n) (Fin n) ℂ}
+    (hA : IsStarNormal A) : ∃ q : ℂ[X], aeval A q = Aᴴ := by
+  sorry
 
-The converse half of the characterisation, `A^H = q(A)` for a normal `A`, is **deferred**:
-writing `A = Q Λ Q^H`, any `q` interpolating `z ↦ conj z` at the eigenvalues works, but that needs
-unitary diagonalization of a normal matrix, which Mathlib does not have (it has `IsStarNormal` and
-`Lagrange.interpolate`, but neither Schur triangulation nor the normal spectral theorem). It is
-backbone material for a future `Numlib/Eigen/Normal.lean`, listed as deferred in
-`plans/surface/SaadSparse-Ch6.md`, and Lemma 6.23 and Theorem 6.24 wait on the same item.
-
-Rather than assume it, the degree bound below takes the existence of `q` as a hypothesis, so that
-what is proved here — the reduction of the degree — is separated from what is still owed. -/
-
-/-- **§6.10**: if `A^H = q(A)` for some polynomial at all, then for one of degree at most `n - 1`.
-Reducing modulo the characteristic polynomial, which is monic of degree `n` and annihilates `A` by
-the Cayley–Hamilton theorem, lowers the degree below `n` without changing `q(A)`. Together with the
-deferred converse above this is the book's "normal implies `A^H = q(A)` with `deg q ≤ n - 1`". -/
-theorem exists_aeval_eq_conjTranspose_of_exists {A : Matrix (Fin n) (Fin n) ℂ}
-    (hA : ∃ q : ℂ[X], aeval A q = Aᴴ) : ∃ q : ℂ[X], q.natDegree ≤ n - 1 ∧ aeval A q = Aᴴ := by
-  obtain ⟨q, hq⟩ := hA
+/-- **§6.10**: a normal `A` satisfies `A^H = q(A)` for a polynomial `q` of degree at most
+`n - 1`. Reducing any polynomial with `q(A) = A^H` modulo the characteristic polynomial, which
+is monic of degree `n` and annihilates `A` by the Cayley–Hamilton theorem, lowers its degree
+below `n` without changing `q(A)`. -/
+theorem exists_aeval_eq_conjTranspose {A : Matrix (Fin n) (Fin n) ℂ} (hA : IsStarNormal A) :
+    ∃ q : ℂ[X], q.natDegree ≤ n - 1 ∧ aeval A q = Aᴴ := by
+  obtain ⟨q, hq⟩ := exists_aeval_eq_conjTranspose_of_isStarNormal hA
   have hmonic := A.charpoly_monic
   have hlt : (q %ₘ A.charpoly).degree < A.charpoly.degree := degree_modByMonic_lt q hmonic
   have hcd : A.charpoly.degree = (n : WithBot ℕ) := by
