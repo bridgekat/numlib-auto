@@ -1,0 +1,75 @@
+namespace = "SaadSparse.Ch08"
+desc = '''
+Saad §8.3: CGNR (Algorithm 8.4) and CGNE, Craig's method (Algorithm 8.5).
+
+Both are the conjugate gradient algorithm on a normal-equations system, rearranged so that only
+products with `A` and `Aᴴ` occur; `Numlib/Krylov/NormalEquations` states the rearrangement and
+the two optimality properties, so this file is the book-exact algorithms plus four equivalences.
+The point the section makes is the last one: CGNR and CGNE draw their approximations from the
+*same* affine subspace `x₀ + 𝒦_m(Aᴴ A, Aᴴ r₀)` and differ only in what they minimize over it —
+`‖b - A x‖₂` for CGNR, `‖x_* - x‖₂` for CGNE.
+'''
+
+[[node]]
+id = "cgnr"
+kind = "definition"
+desc = '''**Algorithm 8.4** (CGNR): `z_i = Aᴴ r_i`, `w_i = A p_i`, `α_i = ‖z_i‖²/‖w_i‖²`,
+`x_{i+1} = x_i + α_i p_i`, `r_{i+1} = r_i - α_i w_i`, `β_i = ‖z_{i+1}‖²/‖z_i‖²`,
+`p_{i+1} = z_{i+1} + β_i p_i`.'''
+deps = ["Krylov.CGNR.iterate"]
+
+[[node]]
+id = "cgnr_eq"
+kind = "theorem"
+desc = '''Algorithm 8.4 computes the conjugate gradient iterates for `Aᴴ A x = Aᴴ b`:
+`(cgnr A b x₀ i).x = (CG.iterate (op Aᴴ ∘ₗ op A) (Aᴴ *ᵥ b) x₀ i).x`, through
+`Krylov.CGNR.iterate` and `Krylov.CGNR.iterate_x_eq`.'''
+deps = ["cgnr", "Krylov.CGNR.iterate", "CG.iterate"]
+
+[[node]]
+id = "cgnr_isMinRes"
+kind = "theorem"
+desc = '''The optimality of CGNR: `x_m` minimizes `f(x) = (Aᴴ A (x_* - x), x_* - x) = ‖b - A x‖₂²`
+over `x₀ + 𝒦_m(Aᴴ A, Aᴴ r₀)`, i.e. `IsMinRes (op A) b x₀ (𝒦_m(Aᴴ A, Aᴴ r₀)) x_m` — the same
+minimization as GMRES over a different subspace.'''
+deps = ["cgnr_eq", "Krylov.isGalerkinIterate_adjoint_comp_iff_isMinRes", "IsMinRes"]
+
+[[node]]
+id = "cgne"
+kind = "definition"
+desc = '''**Algorithm 8.5** (CGNE, Craig): `α_i = (r_i, r_i)/(p_i, p_i)`, `x_{i+1} = x_i + α_i p_i`,
+`r_{i+1} = r_i - α_i A p_i`, `β_i = (r_{i+1}, r_{i+1})/(r_i, r_i)`,
+`p_{i+1} = Aᴴ r_{i+1} + β_i p_i`, the CG iteration for `A Aᴴ u = b` written in `x = Aᴴ u`.'''
+deps = ["Krylov.CGNR.iterate"]
+
+[[node]]
+id = "cgne_eq"
+kind = "theorem"
+desc = '''Algorithm 8.5 computes `x_i = x₀ + Aᴴ (u_i - u₀)` for the conjugate gradient iterates `u_i`
+of `A Aᴴ u = b`, with `p_i = Aᴴ q_i`; the residuals of the `x`- and `u`-iterations agree.'''
+deps = ["cgne", "Krylov.CGNR.iterate", "CG.iterate"]
+
+[[node]]
+id = "cgne_isMinError"
+kind = "theorem"
+desc = '''The optimality of CGNE: `x_m` minimizes `‖x_* - x‖₂` over
+`x₀ + Aᴴ 𝒦_m(A Aᴴ, r₀) = x₀ + 𝒦_m(Aᴴ A, Aᴴ r₀)`, i.e.
+`IsMinError x_* x₀ (𝒦_m(Aᴴ A, Aᴴ r₀)) x_m` — the minimal-error property, against CGNR's minimal
+residual over the same space.'''
+deps = ["cgne_eq", "Krylov.isMinErrorIterate_of_isGalerkinIterate_comp_adjoint", "IsMinError"]
+
+[[node]]
+id = "subspace_adjoint_eq"
+kind = "theorem"
+desc = '''`Aᴴ 𝒦_m(A Aᴴ, r₀) = 𝒦_m(Aᴴ A, Aᴴ r₀)`: CGNR and CGNE search the same affine subspace, which
+is the section's closing observation. Immediate from `Aᴴ (A Aᴴ)^k = (Aᴴ A)^k Aᴴ`.'''
+deps = ["Krylov.subspace", "Matrix.krylov_subspace_toEuclideanLin"]
+
+[[node]]
+id = "cgnr_norm_residual_le"
+kind = "theorem"
+desc = '''The CG convergence bound transported to CGNR: with `σ_min`, `σ_max` the extreme singular
+values of `A`, `‖b - A x_m‖₂ ≤ 2 ((κ - 1)/(κ + 1))^m ‖b - A x₀‖₂` with `κ = σ_max/σ_min = κ₂(A)`,
+because the condition number of `Aᴴ A` is `κ₂(A)²`. The book's warning of (8.8) made
+quantitative.'''
+deps = ["cgnr_isMinRes", "Krylov.IsMinRes.norm_residual_le_of_adjoint_comp", "equation_8_8"]

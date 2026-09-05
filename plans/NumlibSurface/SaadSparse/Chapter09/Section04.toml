@@ -1,0 +1,95 @@
+namespace = "SaadSparse.Ch09"
+desc = '''
+Saad §9.4: flexible variants — FGMRES (Algorithm 9.6, Propositions 9.2 and 9.3) and flexible
+DQGMRES (§9.4.2).
+
+FGMRES is the first method in the book whose search space is not a Krylov subspace: the
+preconditioner may change at every step, so the iterate is expanded in the arbitrary vectors
+`z_j = M_j⁻¹ v_j` while the residual is still expanded in the orthonormal Arnoldi basis `v_i`.
+That is exactly a `Krylov.HessenbergRelation₂` with two families (9.22), and the whole of §9.4
+follows from `Numlib/Krylov/QuasiMinRes`:
+
+* Proposition 9.2 is `Krylov.IsQuasiMinResIterate.isMinOn_norm_residual` — with an orthonormal
+  residual basis the quasi-residual is the residual, so FGMRES minimizes `‖b - A x‖₂` over
+  `x₀ + span {z_1, …, z_m}`;
+* Proposition 9.3 is `Krylov.FGMRES.apply_eq_iff_coeff_eq_zero`, whose proof needs the second
+  form (9.23) `A Z_j = V_j H_j + v̂_{j+1} e_jᵀ`, valid also when `h_{j+1,j} = 0`, and the extra
+  hypothesis "`H_j` nonsingular" that the flexible case cannot derive from nonsingularity of `A`;
+  the book's remark that `H_m` *is* nonsingular when the `z_j` are independent and `A` is
+  nonsingular is `hessenbergSq_isUnit_of_linearIndependent`.
+
+Flexible DQGMRES (9.28) is the same principle with a truncated orthogonalization: the vector
+`M_j⁻¹ v_j` is consumed immediately in the update of `p_j` and need not be stored. It is
+algorithm-only — the book states nothing about it that is not `SaadSparse.Ch06.dqgmres` with a
+varying preconditioner — so it is planned as a definition and one equivalence.
+
+Not planned: the book's remark that FGMRES converges when one `z_j` per cycle is a steepest
+descent direction for `F(x) = ‖b - A x‖₂²`. It is true and provable from Proposition 9.2 plus
+the one-dimensional residual-norm steepest-descent step
+(`Projection.residualNormSDStep`, Saad §5.3.3) but the book gives no statement to be faithful to;
+see `plans/saadsparse-ch7-9.md` §4.
+'''
+
+[[node]]
+id = "fgmres"
+kind = "definition"
+desc = '''**Algorithm 9.6** (FGMRES): `z_j = M_j⁻¹ v_j` for a step-dependent family of preconditioners
+(or, as the book notes, for arbitrary chosen `z_j`), `w = A z_j` orthogonalized against
+`v_1, …, v_j` to give `v_{j+1}` and the column `h_{·,j}`, and
+`x_m = x₀ + Z_m y_m` with `y_m` minimizing `‖β e₁ - H̄_m y‖₂`.'''
+deps = ["SaadSparse.Ch06.arnoldiCGS", "SaadSparse.Ch06.gmresY", "leftPreconditioned"]
+
+[[node]]
+id = "equation_9_22"
+kind = "theorem"
+desc = '''(9.22)-(9.23): `A Z_m = V_{m+1} H̄_m`, i.e.
+`Krylov.HessenbergRelation₂ (op A) (fgmresZ …) (fgmresV …) (fgmresCoeff …)`, and the form
+`A Z_m = V_m H_m + v̂_{m+1} e_mᵀ` valid even when `h_{m+1,m} = 0`. The two-family relation that
+replaces `(A M⁻¹) V_m = V_{m+1} H̄_m` of the fixed-preconditioner case.'''
+deps = ["fgmres", "Krylov.HessenbergRelation₂"]
+
+[[node]]
+id = "proposition_9_2"
+kind = "theorem"
+desc = '''**Proposition 9.2**, (9.24)-(9.26): the FGMRES iterate `x_m` minimizes the residual norm
+`‖b - A x‖₂` over `x₀ + span {z_1, …, z_m}`;
+`Krylov.IsQuasiMinResIterate.isMinOn_norm_residual` at (9.22), the residual basis `V_{m+1}` being
+orthonormal.'''
+deps = ["equation_9_22", "Krylov.IsQuasiMinResIterate.isMinOn_norm_residual",
+  "Krylov.FGMRES.isMinRes"]
+
+[[node]]
+id = "proposition_9_3"
+kind = "theorem"
+desc = '''**Proposition 9.3**: if `β ≠ 0`, `h_{i+1,i} ≠ 0` for `i < j` and `H_j` is nonsingular, then
+`x_j` is exact iff `h_{j+1,j} = 0`; the converse direction uses (9.23) and back-substitution in
+`H_j y_j = β e₁`. Together with `hessenbergSq_isUnit_of_linearIndependent` (the book's remark:
+`H_m` is nonsingular when `z_1, …, z_m` are independent and `A` is nonsingular) and the corollary
+that an "exact" preconditioning step `A z_j = v_j` makes `x_j` exact.'''
+deps = ["equation_9_22", "Krylov.FGMRES.apply_eq_iff_coeff_eq_zero",
+  "Krylov.HessenbergRelation₂.residual_eq_of_mulVec_eq"]
+
+[[node]]
+id = "hessenbergSq_isUnit_of_linearIndependent"
+kind = "theorem"
+desc = '''The remark after Proposition 9.3: if `A` is nonsingular, `z_1, …, z_m` are linearly
+independent and `h_{m+1,m} = 0`, then `H_m` is nonsingular — so the extra hypothesis of
+Proposition 9.3 is not vacuous. The modification of the first part of Proposition 6.9: the rank
+of `A Z_m` equals the rank of `H̄_m`.'''
+deps = ["equation_9_22", "SaadSparse.Ch06.proposition_6_9_2"]
+
+[[node]]
+id = "fgmres_eq_gmresRight"
+kind = "theorem"
+desc = '''If `M_j = M` for all `j` then FGMRES and Algorithm 9.5 produce the same iterates: the
+flexible algorithm is a genuine generalization and nothing more.'''
+deps = ["fgmres", "gmresRight"]
+
+[[node]]
+id = "fdqgmres"
+kind = "definition"
+desc = '''§9.4.2, (9.28): flexible DQGMRES — `SaadSparse.Ch06.dqgmres` with `M_j⁻¹ v_j` in place of
+`v_j` in the direction update `p_j = (M_j⁻¹ v_j - ∑_{i=j-k+1}^{j-1} r_ij p_i)/r_jj`, so that the
+preconditioned vector is discarded at once. Algorithm-only: `fdqgmres_eq_dqgmres` for `M_j = 1`
+is all that is stated.'''
+deps = ["SaadSparse.Ch06.dqgmres", "fgmres"]

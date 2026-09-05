@@ -1,0 +1,154 @@
+namespace = "SaadSparse.Ch07"
+desc = '''
+Saad §7.4: the transpose-free variants CGS (Algorithm 7.6), BICGSTAB (Algorithm 7.7) and TFQMR
+(Algorithm 7.8).
+
+The book proves no numbered result about them, and the plan's rule (`plans/backbone.md` §1.2)
+keeps recurrences out of the backbone until a second source needs them, so all three are surface
+definitions. What *is* theorem content, and what this file states, is the polynomial
+identification that gives each method its meaning:
+
+* `bcgResidualPoly` `φ_j` and `bcgDirectionPoly` `π_j` of (7.32)-(7.33), defined by the
+  recurrences (7.35)-(7.36) from the BCG coefficients, with `r_j = φ_j(A) r₀`, `p_j = π_j(A) r₀`,
+  `r*_j = φ_j(Aᴴ) r₀*`, `p*_j = π_j(Aᴴ) r₀*` (`bcg_residual_eq_aeval`). Every scalar of §7.4 is
+  computed by moving a polynomial across the inner product with this.
+* CGS: `r_j = φ_j(A)² r₀`, `p_j = π_j(A)² r₀`, `q_j = φ_{j+1}(A) π_j(A) r₀` — (7.40)-(7.42), the
+  content of Sonneveld's method, from the squared recurrences (7.37)-(7.39).
+* BICGSTAB: `r_j = ψ_j(A) φ_j(A) r₀` with `ψ_{j+1} = (1 - ω_j t) ψ_j` — (7.46)-(7.52) — plus the
+  computable coefficient formulas (7.53), (7.54) and the steepest-descent characterization
+  (7.55) of `ω_j` as the minimizer of `‖(1 - ω A) s_j‖₂`, which is
+  `Projection.minResStep` in the direction `s_j`.
+* TFQMR: the relation (7.70) `A U_m = R_{m+1} B̄_m` is a `Krylov.HessenbergRelation₂` — a
+  *two-family* Hessenberg relation, the iterates expanded in the `u`-vectors and the residuals in
+  the `r`-vectors — so (7.76) identifies the (half-step) CGS iterates as its FOM iterates and
+  TFQMR as its quasi-minimal-residual iterate, whence (7.83)
+  `‖b - A x_m‖ ≤ √(m+1) τ_m` from `Krylov.IsQuasiMinResIterate.norm_residual_le`.
+
+The one substantial proof here is `tfqmr_isQuasiMinResIterate`: that Algorithm 7.8's
+`θ, c, τ, η, d` recurrence computes the least-squares solution for `H̄_m = Δ_{m+1} B̄_m`. It is
+DQGMRES with `k = 1` on a bidiagonal matrix, so it can be read off
+`SaadSparse.Ch06.dqgmres_eq_qgmres` once (7.70) is available.
+'''
+
+[[node]]
+id = "bcgResidualPoly"
+kind = "definition"
+desc = '''(7.32)-(7.33), (7.35)-(7.36): the BCG residual polynomial `φ_j` and direction polynomial
+`π_j`, defined from the BCG coefficients by `φ_0 = π_0 = 1`,
+`φ_{j+1} = φ_j - α_j X π_j`, `π_{j+1} = φ_{j+1} + β_j π_j`; `φ_j(0) = 1` for all `j`.'''
+deps = ["bcg"]
+
+[[node]]
+id = "bcg_residual_eq_aeval"
+kind = "theorem"
+desc = '''(7.32)-(7.33): `r_j = φ_j(A) r₀`, `p_j = π_j(A) r₀`, and the dual sequences
+`r*_j = φ_j(Aᴴ) r₀*`, `p*_j = π_j(Aᴴ) r₀*` — the observation that the starred recurrences are the
+unstarred ones with `A` replaced by `Aᴴ`. With Proposition 7.2 this turns
+`α_j = (φ_j(A) r₀, φ_j(Aᴴ) r₀*)/(A π_j(A) r₀, π_j(Aᴴ) r₀*)` into
+`(φ_j²(A) r₀, r₀*)/(A π_j²(A) r₀, r₀*)`.'''
+deps = ["bcgResidualPoly", "bcg_eq", "Krylov.mem_subspace_iff_exists_aeval"]
+
+[[node]]
+id = "cgs"
+kind = "definition"
+desc = '''**Algorithm 7.6** (CGS, Sonneveld): the state `(x, r, u, p, q)` with
+`α_j = (r_j, r₀*)/(A p_j, r₀*)`, `q_j = u_j - α_j A p_j`, `x_{j+1} = x_j + α_j (u_j + q_j)`,
+`β_j = (r_{j+1}, r₀*)/(r_j, r₀*)`, `u_{j+1} = r_{j+1} + β_j q_j`,
+`p_{j+1} = u_{j+1} + β_j (q_j + β_j p_j)`.'''
+deps = ["bcg"]
+
+[[node]]
+id = "cgs_residual_eq"
+kind = "theorem"
+desc = '''(7.40)-(7.45): the CGS vectors are `r_j = φ_j(A)² r₀`, `p_j = π_j(A)² r₀`,
+`q_j = φ_{j+1}(A) π_j(A) r₀` and `u_j = φ_j(A) π_j(A) r₀` for the BCG polynomials of the *same*
+run, and the CGS coefficients `α_j`, `β_j` equal the BCG ones. This is the theorem that makes
+Algorithm 7.6 a method: it computes the squared BCG residual polynomial without touching
+`Aᴴ`.'''
+deps = ["cgs", "bcg_residual_eq_aeval", "proposition_7_2"]
+
+[[node]]
+id = "bicgstabPoly"
+kind = "definition"
+desc = '''(7.47): the stabilizing polynomial `ψ_j` of BICGSTAB, `ψ_0 = 1`,
+`ψ_{j+1} = (1 - ω_j X) ψ_j`, with `ω_j` the coefficient computed in Algorithm 7.7.'''
+deps = ["bicgstab"]
+
+[[node]]
+id = "bicgstab"
+kind = "definition"
+desc = '''**Algorithm 7.7** (BICGSTAB, van der Vorst): the state `(x, r, p)` with
+`α_j = (r_j, r₀*)/(A p_j, r₀*)`, `s_j = r_j - α_j A p_j`, `ω_j = (A s_j, s_j)/(A s_j, A s_j)`,
+`x_{j+1} = x_j + α_j p_j + ω_j s_j`, `r_{j+1} = s_j - ω_j A s_j`,
+`β_j = ((r_{j+1}, r₀*)/(r_j, r₀*)) (α_j/ω_j)`,
+`p_{j+1} = r_{j+1} + β_j (p_j - ω_j A p_j)`.'''
+deps = ["bcg"]
+
+[[node]]
+id = "bicgstab_residual_eq"
+kind = "theorem"
+desc = '''(7.46), (7.52): the BICGSTAB vectors are `r_j = ψ_j(A) φ_j(A) r₀` and
+`p_j = ψ_j(A) π_j(A) r₀`, with `φ_j`, `π_j` the BCG polynomials of the same run.'''
+deps = ["bicgstab", "bicgstabPoly", "bcgResidualPoly", "bcg_residual_eq_aeval"]
+
+[[node]]
+id = "equation_7_53"
+kind = "theorem"
+desc = '''(7.53)-(7.54): the BCG coefficients are computable from the BICGSTAB vectors,
+`β_j = (ρ̃_{j+1}/ρ̃_j)(α_j/ω_j)` and `α_j = ρ̃_j/(A p_j, r₀*)` with `ρ̃_j = (r_j, r₀*)`. The proof
+replaces `ψ_j(Aᴴ) r₀*` and `φ_j(Aᴴ) r₀*` by their leading terms, using that `φ_j(A) r₀` is
+orthogonal to `(Aᴴ)^k r₀*` for `k < j`, and compares leading coefficients:
+`η_1^{(j+1)} = -ω_j η_1^{(j)}`, `γ_1^{(j+1)} = -α_j γ_1^{(j)}`.'''
+deps = ["bicgstab_residual_eq", "proposition_7_2"]
+
+[[node]]
+id = "equation_7_55"
+kind = "theorem"
+desc = '''(7.55): `ω_j = (A s_j, s_j)/(A s_j, A s_j)` is the minimizer of `‖(1 - ω A) s_j‖₂`, so the
+BICGSTAB half-step is the one-dimensional minimal-residual step
+`Projection.minResStep` along `s_j`.'''
+deps = ["bicgstab", "Projection.minResStep", "Projection.minResStep_isMinRes"]
+
+[[node]]
+id = "tfqmr"
+kind = "definition"
+desc = '''**Algorithm 7.8** (TFQMR, Freund): the doubled-index CGS vectors `u_m` of (7.65), the
+auxiliary `w_m`, `v_m`, `d_m` and the scalars `θ_m`, `c_m`, `τ_m`, `η_m` of (7.82) and the
+recurrences before it, with `x_{m+1} = x_m + η_{m+1} d_{m+1}`.'''
+deps = ["cgs"]
+
+[[node]]
+id = "equation_7_70"
+kind = "theorem"
+desc = '''(7.68)-(7.73): `A u_i = (r_i - r_{i+1})/α_i`, so `A U_m = R_{m+1} B̄_m` with `B̄_m` the
+bidiagonal matrix (7.72); equivalently
+`Krylov.HessenbergRelation₂ (op A) u r (Δ_{m+1} B̄_m)` after the column scaling
+`δ_i = ‖w_i‖₂` of (7.73). A genuinely two-family Hessenberg relation: the iterates live in the
+span of the `u`-vectors, the residuals in the span of the `r`-vectors.'''
+deps = ["tfqmr", "Krylov.HessenbergRelation₂"]
+
+[[node]]
+id = "equation_7_76"
+kind = "theorem"
+desc = '''(7.74)-(7.76) and **P-7.9**: the CGS iterates (extended to half steps) satisfy
+`x_m = x₀ + U_m H_m⁻¹ (δ_0 e₁)`, the FOM formula for the relation (7.70); the identity is
+independent of the scaling `Δ_{m+1}`.'''
+deps = ["equation_7_70", "Krylov.HessenbergRelation₂.residual_eq_of_mulVec_eq"]
+
+[[node]]
+id = "tfqmr_isQuasiMinResIterate"
+kind = "theorem"
+desc = '''Algorithm 7.8 computes the quasi-minimal-residual iterate of the relation (7.70):
+`Krylov.IsQuasiMinResIterate u (Δ B̄) δ_0 x₀ m (tfqmr … m).x`. The `θ_m, c_m, τ_m, η_m, d_m`
+recurrence is DQGMRES with `k = 1` applied to the bidiagonal `H̄_m`, so this is
+`SaadSparse.Ch06.dqgmres_eq_qgmres` once (7.70) is available; `τ_m = γ_{m+1}` identifies the
+book's `τ` with the backbone `Krylov.gamma`.'''
+deps = ["equation_7_70", "Krylov.IsQuasiMinResIterate", "SaadSparse.Ch06.dqgmres",
+  "Krylov.gamma"]
+
+[[node]]
+id = "equation_7_83"
+kind = "theorem"
+desc = '''(7.83): `‖b - A x_m‖₂ ≤ √(m+1) τ_m`, since the residual basis `R_{m+1} Δ_{m+1}⁻¹` has unit
+columns; `Krylov.IsQuasiMinResIterate.norm_residual_le` with `C = √(m+1)`.'''
+deps = ["tfqmr_isQuasiMinResIterate", "Krylov.IsQuasiMinResIterate.norm_residual_le"]

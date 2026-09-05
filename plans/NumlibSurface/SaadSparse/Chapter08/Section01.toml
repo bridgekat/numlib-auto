@@ -1,0 +1,48 @@
+namespace = "SaadSparse.Ch08"
+desc = '''
+Saad §8.1: the normal equations (8.1)-(8.8).
+
+Four statements, all elementary once the backbone is in place: the NR system `AᴴA x = Aᴴb`
+characterizes the least-squares solutions of `‖b - A x‖₂`; the NE system `A Aᴴ u = b` with
+`x = Aᴴ u` characterizes the minimum-norm solution of an underdetermined system; the augmented
+system (8.5) is equivalent to both; and `κ₂(AᴴA) = κ₂(A)²`, which is the chapter's warning.
+
+The eigenvalue claim about `[[0, A], [Aᴴ, 0]]` (its spectrum is `±σ_i(A)`) and P-8.4 are not
+planned: they need a singular value decomposition, which Mathlib does not have and which is
+phase 3 (`Numlib/LinearAlgebra/Matrix/SVD`).
+'''
+
+[[node]]
+id = "equation_8_1"
+kind = "theorem"
+desc = '''(8.1)-(8.2): for `A : Matrix (Fin n) (Fin m) 𝕜`, `x` solves `Aᴴ A x = Aᴴ b` iff `x`
+minimizes `‖b - A x‖₂`; the normal equations of the least-squares problem. `Aᴴ A` is symmetric
+positive definite when `A` is injective, so the solution is then unique
+(`Krylov.adjoint_comp_isSymmetricCoercive`).'''
+deps = ["Krylov.adjoint_comp_isSymmetricCoercive", "IsMinRes", "Matrix.toEuclideanLin_conjTranspose"]
+
+[[node]]
+id = "equation_8_3"
+kind = "theorem"
+desc = '''(8.3)-(8.4): if `A Aᴴ u = b` and `x = Aᴴ u` then `A x = b` and `x` has least `‖·‖₂` among
+the solutions of `A x = b`; equivalently `x` minimizes `‖x_* - Aᴴ u‖₂` over `u` for any
+solution `x_*`, and the minimizer does not depend on `x_*`. The "NE" companion of (8.1), and
+the finite-dimensional case of `Krylov.norm_le_of_apply_eq`.'''
+deps = ["Krylov.adjoint_comp_isSymmetricCoercive", "IsMinError"]
+
+[[node]]
+id = "equation_8_5"
+kind = "theorem"
+desc = '''(8.5)-(8.7): `(r, x)` solves the augmented system `[[1, A], [Aᴴ, 0]] (r, x) = (b, 0)` iff
+`r = b - A x` and `Aᴴ A x = Aᴴ b`; `x` is the vector of Lagrange multipliers of the constrained
+problem "minimize `½‖r - b‖₂²` subject to `Aᴴ r = 0`" (P-8.1), the case `A := 1`, `B := A` of
+`equation_8_30` in §8.4.'''
+deps = ["equation_8_1"]
+
+[[node]]
+id = "equation_8_8"
+kind = "theorem"
+desc = '''(8.8): `κ₂(Aᴴ A) = κ₂(A)²` for nonsingular `A`, since `‖Aᴴ A‖₂ = ‖A‖₂²` and
+`‖(Aᴴ A)⁻¹‖₂ = ‖A⁻¹‖₂²` (Mathlib's `Matrix.l2_opNorm_conjTranspose_mul_self`). The chapter's
+reason for preferring the direct equations.'''
+deps = ["NormedRing.condNumber", "Matrix.l2_opNorm_eq_norm_toEuclideanLin"]

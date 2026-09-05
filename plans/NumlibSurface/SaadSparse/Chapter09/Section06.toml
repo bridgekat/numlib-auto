@@ -1,0 +1,82 @@
+namespace = "SaadSparse.Ch09"
+desc = '''
+Saad §9.6: the Concus-Golub-Widlund algorithm.
+
+For a nearly symmetric `A`, precondition with its Hermitian part `M = (A + Aᴴ)/2` and write
+`A = M - N`, `N = -(A - Aᴴ)/2`. Then `M⁻¹ A = 1 - M⁻¹ N` where `M⁻¹ N` is *skew*-adjoint for the
+`M`-inner product (`isSkewAdjoint_energy`), so the Arnoldi process for `M⁻¹ A` in `WithEnergy M`
+has a Hessenberg matrix that is tridiagonal with `1` on the diagonal and `η_{j+1}`, `-η_{j+1}`
+off it — the matrix (9.29) — hence a three-term recurrence and an algorithm with the shape of
+Algorithm 9.1 but a sign change in `β_j`.
+
+The tridiagonality is not a new proof: `Arnoldi.coeff_eq_zero_of_adjoint_mem` (Saad Prop 6.22,
+the Faber-Manteuffel band structure) applies with `s = 2`, since the adjoint of `M⁻¹A` in the
+`M`-inner product is `2 - M⁻¹A`, which sends `v` into `span {v, M⁻¹A v}`. What is new is the
+value of the entries, `h_ij + conj (h_ji) = 2 δ_ij`, proposed as a backbone lemma for
+`Numlib/Krylov/Arnoldi` in `plans/proposals/saad-ch7-9.md`; both parts were prototyped and each
+is five lines.
+
+CGW is thus the *Galerkin* (FOM) method for `M⁻¹ A` in the `M`-inner product — not an energy
+method, since `M⁻¹A` is not `M`-self-adjoint — implemented with short recurrences because the
+Hessenberg matrix is tridiagonal. That is what `cgw_isGalerkinIterate` records, and it is the
+only optimality property CGW has.
+
+Not planned: the inner-outer variants of Golub and Overton mentioned in the notes, for which the
+book states nothing.
+'''
+
+[[node]]
+id = "cgwM"
+kind = "definition"
+desc = '''§9.6: the splitting `A = M - N` with `M = (A + Aᴴ)/2` the Hermitian part and
+`N = -(A - Aᴴ)/2`, under the hypothesis that `M` is positive definite; `Matrix.symmPart` and
+`Matrix.skewPart` of `Chapter01/Section11.lean`.'''
+deps = ["Matrix.posDef_iff_isSymmetricCoercive", "LinearMap.IsSymmetricCoercive"]
+
+[[node]]
+id = "isSkewAdjoint_energy"
+kind = "theorem"
+desc = '''§9.6: `M⁻¹ N` is skew-adjoint for the `M`-inner product, `(M⁻¹ N x, y)_M = -(x, M⁻¹ N y)_M`,
+because `Nᴴ = -N`; equivalently the adjoint of `M⁻¹ A = 1 - M⁻¹ N` in that inner product is
+`2 - M⁻¹ A`.'''
+deps = ["cgwM", "WithEnergy", "WithEnergy.inner_equiv", "isSymmetric_energy"]
+
+[[node]]
+id = "equation_9_29"
+kind = "theorem"
+desc = '''(9.29): the Hessenberg matrix of the Arnoldi process for `M⁻¹ A` in the `M`-inner product is
+tridiagonal with unit diagonal, `T_m` having `1` on the diagonal, `η_{j+1}` on the subdiagonal
+and `-conj η_{j+1}` on the superdiagonal. Tridiagonality is
+`Arnoldi.coeff_eq_zero_of_adjoint_mem` with `s = 2`; the entries come from
+`isSkewAdjoint_energy` through `h_ij + conj (h_ji) = 2 δ_ij`.'''
+deps = ["isSkewAdjoint_energy", "Arnoldi.coeff_eq_zero_of_adjoint_mem", "SaadSparse.Ch06.T"]
+
+[[node]]
+id = "cgw"
+kind = "definition"
+desc = '''The Concus-Golub-Widlund algorithm: `z_j = M⁻¹ r_j`, `x_{j+1} = x_j + α_j p_j`,
+`r_{j+1} = r_j - α_j A p_j`, `p_{j+1} = z_{j+1} + β_j p_j` with
+`α_j = (r_j, z_j)/(A p_j, p_j)` and `β_j = -(z_{j+1}, r_{j+1})/(z_j, r_j)` — Algorithm 9.1 with
+the sign of `β_j` reversed.'''
+deps = ["pcg", "cgwM"]
+
+[[node]]
+id = "cgw_alpha"
+kind = "theorem"
+desc = '''§9.6: the coefficients of the algorithm are forced by `M`-orthogonality of the preconditioned
+residuals and `M⁻¹A`-orthogonality of the directions:
+`α_j = (z_j, z_j)_M/(M⁻¹ A p_j, z_j)_M = (r_j, z_j)/(A p_j, p_j)` (using
+`(A p_j, z_j) = (A p_j, p_j)`, from `M⁻¹ A p_j ⟂_M 𝒦_{j-1}`), and
+`β_j = -(z_{j+1}, r_{j+1})/(z_j, r_j)`, the sign coming from skew-adjointness through
+`(M⁻¹ A z_{j+1}, p_j)_M = -(z_{j+1}, M⁻¹ A p_j)_M`.'''
+deps = ["cgw", "isSkewAdjoint_energy", "equation_9_29"]
+
+[[node]]
+id = "cgw_isGalerkinIterate"
+kind = "theorem"
+desc = '''The CGW iterate is the Galerkin iterate of `M⁻¹ A x = M⁻¹ b` in the `M`-inner product:
+`Krylov.IsGalerkinIterate` for `M⁻¹A` on `𝒦_j(M⁻¹A, M⁻¹ r₀)` in `WithEnergy M`, i.e. the
+preconditioned residual `z_j` is `M`-orthogonal to the preconditioned Krylov space. The FOM
+iterate of the tridiagonal relation (9.29); no minimization property is claimed, because `M⁻¹A`
+is not `M`-self-adjoint.'''
+deps = ["cgw", "cgw_alpha", "Krylov.IsGalerkinIterate", "equation_9_29", "WithEnergy"]

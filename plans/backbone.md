@@ -1324,3 +1324,64 @@ Surface-specific definitions: real bilinear forms `a : V → V → ℝ` with `Is
 
 ---
 
+
+## 11. Addendum: the quasi-minimal-residual layer (`Numlib/Krylov/QuasiMinRes`, phase 2)
+
+Added when Saad Ch. 7–9 were planned (`plans/saadsparse-ch7-9.md`,
+`plans/proposals/saad-ch7-9.md`). It is the only backbone module that slice needed beyond
+`Krylov/{BiLanczos,NormalEquations,Preconditioned}` and `LinearSolve/Projection/Additive`, and it
+exists for two reasons.
+
+**A Hessenberg relation needs two families.** `Krylov.HessenbergRelation A v h` (3.5) says
+`A v_j = ∑_{i ≤ j+1} h_ij v_i` with one sequence. Flexible GMRES satisfies `A z_j = ∑ h_ij v_i`
+with `z_j = M_j⁻¹ v_j` an unrelated sequence (Saad (9.22)), and TFQMR satisfies
+`A u_j = ∑ r_i (B̄)_ij` with the residual vectors on the right (Saad (7.70)); neither is an
+instance of the one-family structure. `Krylov.HessenbergRelation₂ A z v h` — iterate basis on the
+left, residual basis on the right — covers both, and `HessenbergRelation` is its diagonal case.
+The natural home for it is `Krylov/Hessenberg`, and moving it there (redefining
+`HessenbergRelation` as `HessenbergRelation₂ A v v`) is a restatement task that must run alone;
+until then it lives in the new module.
+
+**Quasi-minimal residual is a specification, not an implementation.**
+`Krylov.IsQuasiMinResIterate z h β x₀ m x` — "`x = x₀ + Z_m y` with `y` minimizing
+`‖β e₁ − H̄_m y‖₂`" — is what `Krylov.IsMinResIterate` (3.4) becomes when the residual basis is
+not orthonormal, and it is satisfied by QMR (Saad Alg. 7.4), TFQMR (Alg. 7.8), QGMRES/DQGMRES
+(Alg. 6.12–6.13) and FGMRES (Alg. 9.6). It is the one place where §1.2's rule "specifications are
+backbone" applies to a method that minimizes *the wrong thing*: the theorems say how wrong. Three
+of them are each proved twice in the book:
+
+* `‖b − A x‖ ≤ C ‖γ_m‖` when `‖∑ w_i v_i‖ ≤ C ‖w‖₂` (so `C = √(m+1)` for unit vectors) — Saad
+  Prop 7.3, (6.51), (7.83);
+* `‖r^Q_m‖ ≤ (C/c) ‖r_m‖` when also `c ‖w‖₂ ≤ ‖∑ w_i v_i‖` — Saad Thm 7.4 and Thm 6.11, with
+  `C/c = κ₂(V_{m+1})`. The proof is `‖V t^Q‖ ≤ C‖t^Q‖ ≤ C‖t‖ ≤ (C/c)‖V t‖`; the Gram–Schmidt
+  factorization of `V_{m+1}` that the book's proof builds, and the full-rank hypothesis it
+  assumes, are both unnecessary. This is why the module pays for itself: Theorem 6.11 was
+  estimated at 60 lines of surface work in `saadsparse-ch6.md` §R31 and left unformalized;
+  through this lemma it and Theorem 7.4 are corollaries.
+* with an orthonormal residual basis and an arbitrary iterate basis, the quasi-minimal-residual
+  iterate minimizes the true residual over `x₀ + span z` — Saad Prop 9.2 (FGMRES).
+
+The harmonic relations (Saad (7.23)–(7.24), Prop 7.5, the analogues of (6.65)–(6.67) and Prop
+6.15) are stated here in pure Givens form, about `Krylov.gamma` and `Krylov.givensC` alone, since
+the versions in `Krylov/Relations` (3.6) are about true residuals and assume orthonormality.
+
+Phase 2 accordingly gains one group, `Krylov/QuasiMinRes`, and the following open nodes appended
+to finished groups (see `plans/proposals/saad-ch7-9.md` §1 for the statements): the three
+`WithEnergy` self-adjointness facts of Saad §9.2.1 in `Analysis/InnerProductSpace/Energy`
+(`M⁻¹A` symmetric for `⟪·,·⟫_M` and for `⟪·,·⟫_A`, `A M⁻¹` for `⟪·,·⟫_{M⁻¹}`); the shifted-skew
+Arnoldi identity `h_ij + conj h_ji = c δ_ij` in `Krylov/Arnoldi`, which with the existing
+`Arnoldi.coeff_eq_zero_of_adjoint_mem` (`s = 2`) is the whole of Saad (9.29) and the
+Concus–Golub–Widlund tridiagonal; the Schur-complement coercivity
+`Bᴴ ∘ A⁻¹ ∘ B` symmetric coercive in `Analysis/InnerProductSpace/Coercive`, which is the
+mathematical content of Saad Cor 8.1 (Uzawa) and the hook for a later Stokes or finite-element
+source; and the split/right preconditioned CG equivalences of Saad §9.2.1 in
+`Krylov/Preconditioned`.
+
+Not planned, for want of a second consumer or of Mathlib support: a saddle-point module
+(`LinearSolve/SaddlePoint`) — Saad §8.4 is the corpus's only source for Uzawa and Arrow–Hurwicz,
+so by §1.2 the recurrences stay in the Saad surface and only the Schur-complement lemma is
+backbone; a perturbed fixed-point theorem for inexact Uzawa (Saad P-8.9); and the singular
+value decomposition that Saad §8.1's `±σ_i` spectrum needs
+(`LinearAlgebra/Matrix/SVD` is phase 3).
+
+---

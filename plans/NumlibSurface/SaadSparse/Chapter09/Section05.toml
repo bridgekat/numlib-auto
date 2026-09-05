@@ -1,0 +1,51 @@
+namespace = "SaadSparse.Ch09"
+desc = '''
+Saad §9.5: preconditioned CG for the normal equations — the left-preconditioned CGNR
+(Algorithm 9.7) and CGNE (Algorithm 9.8).
+
+Two algorithms and two equivalences: Algorithm 9.7 is Algorithm 9.1 for `Aᴴ A x = Aᴴ b` with
+preconditioner `M`, rearranged through `w_j = A p_j` so that
+`α_j = (z_j, r̃_j)/‖w_j‖₂²`; Algorithm 9.8 is Algorithm 9.1 for `A Aᴴ u = b` written in
+`x = Aᴴ u` with `p_j` denoting `Aᴴ p_j`. Both inherit the Galerkin property and the Chebyshev
+bound of `Numlib/Krylov/Preconditioned` composed with the optimality statements of
+`Numlib/Krylov/NormalEquations`: Algorithm 9.7 minimizes `‖b - A x‖₂` and Algorithm 9.8
+minimizes `‖x_* - x‖₂` over `x₀ + 𝒦_m(M⁻¹ Aᴴ A, M⁻¹ Aᴴ r₀)`.
+
+The right, split and centered variants of P-9.4 and P-9.5 are the same derivation in other inner
+products and are not planned.
+'''
+
+[[node]]
+id = "pcgnr"
+kind = "definition"
+desc = '''**Algorithm 9.7** (left-preconditioned CGNR): `r̃_j = Aᴴ r_j`, `z_j = M⁻¹ r̃_j`,
+`w_j = A p_j`, `α_j = (z_j, r̃_j)/‖w_j‖₂²`, `x_{j+1} = x_j + α_j p_j`,
+`r_{j+1} = r_j - α_j w_j`, `β_j = (z_{j+1}, r̃_{j+1})/(z_j, r̃_j)`,
+`p_{j+1} = z_{j+1} + β_j p_j`.'''
+deps = ["pcg", "SaadSparse.Ch08.cgnr"]
+
+[[node]]
+id = "pcgnr_eq"
+kind = "theorem"
+desc = '''Algorithm 9.7 is Algorithm 9.1 applied to `Aᴴ A x = Aᴴ b` with preconditioner `M`, hence the
+Galerkin iterate of `Aᴴ A` on `x₀ + 𝒦_j(M⁻¹ Aᴴ A, M⁻¹ Aᴴ r₀)`, which by
+`Krylov.isGalerkinIterate_adjoint_comp_iff_isMinRes` minimizes `‖b - A x‖₂` over that space.'''
+deps = ["pcgnr", "pcg_eq", "Krylov.isGalerkinIterate_adjoint_comp_iff_isMinRes"]
+
+[[node]]
+id = "pcgne"
+kind = "definition"
+desc = '''**Algorithm 9.8** (left-preconditioned CGNE): `z_j = M⁻¹ r_j`, `p_0 = Aᴴ z_0`,
+`w_j = A p_j`, `α_j = (z_j, r_j)/(p_j, p_j)`, `x_{j+1} = x_j + α_j p_j`,
+`r_{j+1} = r_j - α_j w_j`, `β_j = (z_{j+1}, r_{j+1})/(z_j, r_j)`,
+`p_{j+1} = Aᴴ z_{j+1} + β_j p_j` — Algorithm 9.1 for `A Aᴴ u = b`, the direction vectors carrying
+the extra `Aᴴ`.'''
+deps = ["pcg", "SaadSparse.Ch08.cgne"]
+
+[[node]]
+id = "pcgne_eq"
+kind = "theorem"
+desc = '''Algorithm 9.8 is Algorithm 9.1 applied to `A Aᴴ u = b` with preconditioner `M`, read in
+`x = Aᴴ u`; hence, by `Krylov.isMinErrorIterate_of_isGalerkinIterate_comp_adjoint`, its iterates
+minimize `‖x_* - x‖₂` over the preconditioned affine space.'''
+deps = ["pcgne", "pcg_eq", "Krylov.isMinErrorIterate_of_isGalerkinIterate_comp_adjoint"]

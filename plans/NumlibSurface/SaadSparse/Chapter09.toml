@@ -1,0 +1,32 @@
+desc = '''
+Saad, Chapter 9: preconditioned iterations.
+
+The chapter's thesis is that preconditioning adds no new theory: each preconditioned method is an
+existing method for another operator, in another inner product, and its properties are inherited
+by transport. `Numlib/Krylov/Preconditioned` is that statement at the backbone
+(PCG is `CG.iterate` for `M⁻¹A` in `WithEnergy M`; Prop 9.1, 9.2, 9.3), and these files are the
+book's algorithms with the equivalences that make the transport explicit.
+
+Three numbered results (Propositions 9.1, 9.2, 9.3), eight algorithms, and a handful of
+identities that the book states in the running text and that are worth having because they are
+what "preserving symmetry" means:
+
+* `M⁻¹A` is self-adjoint for the `M`-inner product, and also for the `A`-inner product; `A M⁻¹`
+  is self-adjoint for the `M⁻¹`-inner product (§9.2.1, P-9.2). These are `WithEnergy` facts and
+  are proposed as backbone additions in `plans/proposals/saad-ch7-9.md`.
+* Algorithm 9.1 (PCG) and Algorithm 9.2 (split PCG for `M = L Lᴴ`) produce *identical* iterates,
+  and so does right-preconditioned CG in the `M⁻¹` inner product (§9.2.1). Three algorithms, one
+  sequence of iterates.
+* The three preconditioned operators `M⁻¹A`, `A M⁻¹`, `L⁻¹ A U⁻¹` are similar, hence isospectral
+  (P-9.1, P-9.10).
+
+Eisenstat's implementation (§9.2.2) is planned only as far as it is mathematics: the algebraic
+identity (9.8) for `Â` and the fact that Algorithm 9.3 computes `Â v`. Its operation counts, and
+the exercises about them (P-9.7 to P-9.9), are not planned. Neither are the four remaining
+preconditioned normal-equation variants of P-9.4 and the centered variants of P-9.5, which are
+the same derivation with different inner products.
+
+The Concus-Golub-Widlund method of §9.6 is the one place in the chapter with genuinely new
+structure — `M⁻¹A = 1 + (skew-adjoint)` in the `M` inner product, hence a three-term Arnoldi
+recurrence — and it gets its own file.
+'''

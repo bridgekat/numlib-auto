@@ -1,0 +1,21 @@
+desc = '''
+Saad, Chapter 7: Krylov subspace methods, part II — the methods built on Lanczos
+biorthogonalization.
+
+The chapter has exactly five numbered results (Propositions 7.1, 7.2, 7.3, 7.5 and Theorem 7.4)
+and eight algorithms; the rest is derivation. The backbone carries the two-sided Lanczos process
+and BCG (`Numlib/Krylov/BiLanczos`) and the quasi-minimal-residual layer
+(`Numlib/Krylov/QuasiMinRes`), so the work here is the book-exact algorithms and the equivalence
+lemmas that connect them.
+
+Two economies shape these files. First, QMR is *the same code* as QGMRES: Algorithm 7.4 is
+Algorithm 6.13 run on the two-sided Lanczos basis, so §7.3.2 reuses `SaadSparse.Ch06.qgmres`,
+`quasiResidualNorm`, `z`, `ζ`, `c`, `s`, `γ` and `qmrs` of `Chapter06/Section05.lean` rather than
+repeating them. Second, the transpose-free variants of §7.4 have no theorem of their own in the
+book, and what makes them meaningful is a *polynomial identity* — the CGS residual is
+`φ_j(A)² r₀` and the BICGSTAB residual is `ψ_j(A) φ_j(A) r₀`, where `φ_j` is the BCG residual
+polynomial. Those identities, not the recurrences, are what §7.4 states.
+
+Vocabulary (`r₀`, `β`, `v₁`, `e₁`, `mEff`, `op`) is `Chapter06/Common.lean`; the dual starting
+vector `w₁` and the dual residual `r₀*` are introduced in `Chapter07/Section01.lean`.
+'''

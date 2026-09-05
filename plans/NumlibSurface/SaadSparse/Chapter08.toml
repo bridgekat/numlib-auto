@@ -1,0 +1,26 @@
+desc = '''
+Saad, Chapter 8: methods related to the normal equations.
+
+The shortest chapter of the book, and the one with the fewest theorems: one numbered result
+(Corollary 8.1, Uzawa's convergence), five algorithms and a sequence of identifications. Almost
+all of it is *recognition* — the chapter's content is that familiar objects reappear on the
+normal equations:
+
+* §8.2 row projection methods are projection processes on `AᴴA x = Aᴴb` and `A Aᴴ u = b`, so
+  Cimmino is `SaadSparse.Ch05.additiveStep` of §5.4 and the NE/NR-SOR sweeps are
+  `SaadSparse.Ch05.multiplicativeSweep`, both with the coordinate subspaces `K_i = span {e_i}`;
+  Cimmino with normalized columns is the Richardson iteration of §4.1, and its convergence
+  interval `0 < ω < 2/λ_max` is Example 4.1;
+* §8.3 CGNR and CGNE are `Numlib/Krylov/NormalEquations` rewritten in the original variable, with
+  the two optimality properties (minimal residual, minimal error) over the same affine subspace
+  `x₀ + 𝒦_m(AᴴA, Aᴴ r₀)`;
+* §8.4 Uzawa's method is the Richardson iteration for the Schur complement `S = Bᴴ A⁻¹ B`, so
+  Corollary 8.1 is `Stationary.tendsto_of_spectralRadius_lt_one` once `S` is known to be
+  symmetric positive definite.
+
+There is therefore no new backbone here beyond the Schur-complement coercivity lemma proposed in
+`plans/proposals/saad-ch7-9.md`. `A` is a square nonsingular real or complex matrix throughout
+these files: the book's rectangular least-squares reading of (8.1)-(8.4) is stated once, in
+§8.1, in the form the surface can carry (`Matrix (Fin n) (Fin m)`), and the algorithms are stated
+for square `A`, as the book's algorithm listings are.
+'''
