@@ -1,6 +1,6 @@
 import Numlib.Krylov.Iterate
 import Numlib.Krylov.Convergence.Polynomial
-import Numlib.Polynomial.ChebyshevMinimax
+import Numlib.RingTheory.Polynomial.ChebyshevMinimax
 import Numlib.LinearSolve.Projection.OneDimensional
 
 /-!

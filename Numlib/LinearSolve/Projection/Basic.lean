@@ -1,4 +1,4 @@
-import Numlib.InnerProductSpace.Coercive
+import Numlib.Analysis.InnerProductSpace.Coercive
 import Mathlib.Analysis.InnerProductSpace.Projection.Basic
 import Mathlib.Analysis.InnerProductSpace.Projection.FiniteDimensional
 import Mathlib.LinearAlgebra.Eigenspace.Minpoly

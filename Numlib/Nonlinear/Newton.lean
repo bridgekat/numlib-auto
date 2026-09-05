@@ -1,5 +1,5 @@
 import Numlib.Nonlinear.FixedPoint
-import Numlib.Analysis.NormedRing.Inverse
+import Numlib.Analysis.Normed.Ring.Inverse
 import Mathlib.Analysis.Calculus.FDeriv.Basic
 import Mathlib.Analysis.Calculus.MeanValue
 

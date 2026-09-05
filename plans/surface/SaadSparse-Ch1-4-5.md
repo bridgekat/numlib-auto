@@ -18,7 +18,7 @@ Conventions (shared file `Surface/SaadSparse/Basic.lean`):
   abbreviated `E𝕜 n`; matrices `Matrix (Fin n) (Fin n) 𝕜`; the action `A x` is `toEuclideanLin A x`
   (local notation `A ⬝ x`); componentwise statements use `Fin n → 𝕜`, `A *ᵥ x`, `x ⬝ᵥ y`, and the
   glue `toEuclideanLin A x = WithLp.toLp 2 (A *ᵥ x.ofLp)` (`rfl`). The backbone's own glue is
-  `Numlib/Matrix/ToEuclideanLin.lean` (`toEuclideanLin_mul/pow/conjTranspose`,
+  `Numlib/Analysis/Matrix/ToEuclideanLin.lean` (`toEuclideanLin_mul/pow/conjTranspose`,
   `hasEigenvalue_toEuclideanLin_iff`, `toEuclideanLin_apply_eq_sum`,
   `l2_opNorm_eq_norm_toEuclideanLin`).
 * Saad's inner product `(x, y) = Σ x_i ȳ_i` is `inner 𝕜 y x` (Mathlib's is conjugate-linear in the
@@ -28,10 +28,10 @@ Conventions (shared file `Surface/SaadSparse/Basic.lean`):
   (`Matrix.IsHermitian.eigenvalues`), so `[Nonempty (Fin n)]` (`n ≥ 1`) appears where the book
   uses them. They are the `lmin`, `lmax` of the backbone's quadratic-form hypothesis
   `LinearMap.IsSymmetricBoundedBy` through `Matrix.IsHermitian.isSymmetricBoundedBy_toEuclideanLin`
-  (`Numlib/Matrix/ToEuclideanLin.lean`; its hypothesis `∀ i, eigenvalues i ∈ Icc lmin lmax` is
+  (`Numlib/Analysis/Matrix/ToEuclideanLin.lean`; its hypothesis `∀ i, eigenvalues i ∈ Icc lmin lmax` is
   trivial for the extremes).
 * Real matrices as complex ones: `Matrix.complexify` and `Matrix.complexSpectralRadius`
-  (`Numlib/Matrix/Complexify.lean`); `Basic.lean` adds the glue `complexify_sub`,
+  (`Numlib/LinearAlgebra/Matrix/Complexify.lean`); `Basic.lean` adds the glue `complexify_sub`,
   `complexify_diagPart/strictLower/strictUpper/inv` (`Matrix.map` of a ring hom) and
   `norm_complexify_mulVec : ‖complexify A *ᵥ (ofReal ∘ x)‖ = ‖A *ᵥ x‖`.
 * Names: `SaadSparse.Ch01.thm_1_34`, `SaadSparse.Ch05.prop_5_3`, `eq_1_76`, …, plus descriptive
@@ -66,7 +66,7 @@ def Matrix.IsPositiveReal (A : Matrix (Fin n) (Fin n) ℝ) : Prop :=
 abbrev Matrix.IsSPD (A : Matrix (Fin n) (Fin n) ℝ) : Prop := A.IsSymm ∧ A.IsPositiveReal
 ```
 Backbone: `LinearMap.IsCoercive`, `LinearMap.IsCoerciveWith`, `LinearMap.IsSymmetricCoercive`,
-`Matrix.posDef_iff_isSymmetricCoercive` (`Numlib/InnerProductSpace/Coercive.lean`); Mathlib
+`Matrix.posDef_iff_isSymmetricCoercive` (`Numlib/Analysis/InnerProductSpace/Coercive.lean`); Mathlib
 `Matrix.PosDef`. Equivalences: `isPositiveReal_iff_isCoercive : A.IsPositiveReal ↔
 (toEuclideanLin A).IsCoercive` (via `LinearMap.isCoercive_iff_forall_pos` and the glue
 `inner ℝ x (A ⬝ x) = (A *ᵥ x) ⬝ᵥ x`); `isSPD_iff_posDef : A.IsSPD ↔ A.PosDef` (Mathlib
@@ -83,8 +83,8 @@ noncomputable def Matrix.skewPart (A : Matrix (Fin n) (Fin n) ℂ) := (2 * Compl
 over `𝕜`.) Backbone/Mathlib: `selfAdjointPart 𝕜`, `skewAdjointPart 𝕜` (`Mathlib/Algebra/Star/Module`)
 with `⅟2`; the operator form `(2⁻¹ : 𝕜) • (A + adjoint A)` of
 `ContinuousLinearMap.re_inner_hermitianPart_apply` and `isCoerciveWith_iff_hermitianPart`
-(`Numlib/InnerProductSpace/Coercive.lean`), reached through `Matrix.toEuclideanLin_conjTranspose`
-(`Numlib/Matrix/ToEuclideanLin.lean`). Equivalence:
+(`Numlib/Analysis/InnerProductSpace/Coercive.lean`), reached through `Matrix.toEuclideanLin_conjTranspose`
+(`Numlib/Analysis/Matrix/ToEuclideanLin.lean`). Equivalence:
 `hermitianPart_eq_selfAdjointPart : A.hermitianPart = (selfAdjointPart 𝕜 A : Matrix _ _ 𝕜)`;
 `toEuclideanLin_hermitianPart : toEuclideanLin A.hermitianPart = (2⁻¹ : 𝕜) • (toEuclideanLin A +
 adjoint (toEuclideanLin A))`; `hermitianPart_isHermitian`, `skewPart_isHermitian`,
@@ -101,7 +101,7 @@ def Matrix.IsSelfAdjointWrt (B A : Matrix (Fin n) (Fin n) 𝕜) : Prop :=
 ```
 Backbone: `energyInner`, `energyNorm`, `WithEnergy A hA` with its `InnerProductSpace` instance
 `WithEnergy.instInnerProductSpace`, `WithEnergy.equiv`, `inner_equiv`, `norm_equiv`
-(`Numlib/InnerProductSpace/Energy.lean`). Equivalence:
+(`Numlib/Analysis/InnerProductSpace/Energy.lean`). Equivalence:
 `energyInner_eq : B.energyInner x y = starRingEnd 𝕜 (energyInner (toEuclideanLin B) x y)` (equal
 over ℝ); "(1.57) is a proper inner product" is the `InnerProductSpace 𝕜 (WithEnergy _ hB)` instance,
 transported through `Matrix.posDef_iff_isSymmetricCoercive`.
@@ -124,7 +124,7 @@ noncomputable def obliqueProjection (M L : Submodule 𝕜 (E𝕜 n)) (hd : finra
     (h : M ⊓ Lᗮ = ⊥) : E𝕜 n →ₗ[𝕜] E𝕜 n :=
   (LinearMap.existsUnique_isIdempotentElem_of_inf_orthogonal_eq_bot hd h).exists.choose
 ```
-Backbone (`Numlib/InnerProductSpace/ObliqueProjection.lean`):
+Backbone (`Numlib/Analysis/InnerProductSpace/Projection/ObliqueProjection.lean`):
 `LinearMap.existsUnique_isIdempotentElem_of_inf_orthogonal_eq_bot (hdim) (hKL : K ⊓ Lᗮ = ⊥) :
 ∃! P, IsIdempotentElem P ∧ range P = K ∧ ker P = Lᗮ` (finite-dimensional `K, L` of equal
 dimension), the characterization `LinearMap.IsIdempotentElem.apply_eq_iff (hP) (hr : range P = K)
@@ -147,7 +147,7 @@ noncomputable def obliqueProj (V W : Matrix (Fin n) (Fin m) 𝕜) : Matrix (Fin 
   V * (Wᴴ * V)⁻¹ * Wᴴ
 ```
 `hV.toBasis : Module.Basis (Fin m) 𝕜 M` (`Basis.mk`) is how bases reach backbone statements
-phrased with `Module.Basis`. Backbone (`Numlib/InnerProductSpace/ObliqueProjection.lean`): the
+phrased with `Module.Basis`. Backbone (`Numlib/Analysis/InnerProductSpace/Projection/ObliqueProjection.lean`): the
 cross-Gram matrix `LinearMap.crossGram 𝕜 V W : Matrix ι ι 𝕜` (entries `⟪W i, V j⟫`) and the
 projector from families `LinearMap.obliqueProjectionOfBases 𝕜 V W : E →ₗ[𝕜] E`
 (`x ↦ Σ_j ((crossGram 𝕜 V W)⁻¹ *ᵥ (fun i => ⟪W i, x⟫)) j • V j`), with, under
@@ -185,7 +185,7 @@ noncomputable def Matrix.lpOpNorm (p : ℝ≥0∞) [Fact (1 ≤ p)] (A : Matrix 
 noncomputable def Matrix.condNumberLp (p) [Fact (1 ≤ p)] (A) : ℝ := lpOpNorm p A * lpOpNorm p A⁻¹
 ```
 Backbone: `NormedRing.condNumber` (`‖a‖ ‖Ring.inverse a‖`, scoped notation `κ`),
-`ContinuousLinearEquiv.condNumber_eq` (`Numlib/Analysis/NormedRing/CondNumber.lean`), scoped
+`ContinuousLinearEquiv.condNumber_eq` (`Numlib/Analysis/Normed/Ring/CondNumber.lean`), scoped
 `Matrix.Norms.L2Operator` (`κ₂`) and `Matrix.Norms.Operator` (`κ_∞`); the perturbation bounds of
 `Numlib/LinearSolve/Perturbation.lean` on `E ≃L[𝕜] E`. Mathlib `Matrix.toLpLin p q`,
 `Matrix.toLpLinAlgEquiv` (`Mathlib/Analysis/Normed/Lp/Matrix`). Equivalences:
@@ -200,7 +200,7 @@ Backbone: `NormedRing.condNumber` (`‖a‖ ‖Ring.inverse a‖`, scoped notati
 **D9. The splitting `A = D − E − F` (4.2) and the point relaxations (4.4)–(4.9).** `D` diagonal,
 `−E` strict lower, `−F` strict upper part; diagonal entries nonzero.
 ```lean
-def D (A : Matrix (Fin n) (Fin n) ℝ) := Matrix.diagPart A      -- `Numlib/Matrix/Hessenberg.lean`
+def D (A : Matrix (Fin n) (Fin n) ℝ) := Matrix.diagPart A      -- `Numlib/LinearAlgebra/Matrix/Hessenberg.lean`
 def E (A) := -Matrix.strictLower A
 def F (A) := -Matrix.strictUpper A
 /-- (4.4) componentwise Jacobi step. -/
@@ -213,7 +213,7 @@ noncomputable def symmetricGsStep (A) (b) := backwardGsStep A b ∘ gsStep A b
 ```
 Backbone: `Matrix.diagPart/strictLower/strictUpper` and
 `Matrix.diagPart_sub_neg_strictLower_sub_neg_strictUpper : D − (−L) − (−U) = A`
-(`Numlib/Matrix/Hessenberg.lean`); `Matrix.isUnit_diagPart_iff : IsUnit (diagPart A) ↔ ∀ i, A i i ≠ 0`,
+(`Numlib/LinearAlgebra/Matrix/Hessenberg.lean`); `Matrix.isUnit_diagPart_iff : IsUnit (diagPart A) ↔ ∀ i, A i i ≠ 0`,
 `Matrix.jacobiSplitting A h`, `gaussSeidelSplitting A h`, `backwardGaussSeidelSplitting A h`
 (all with `h : IsUnit (diagPart A)`; `m = D`, `D + strictLower = D − E`, `D + strictUpper = D − F`),
 `jacobiSplitting_iterationOperator`, `gaussSeidelSplitting_n`
@@ -315,8 +315,8 @@ noncomputable def generalFactor (G) : ℝ :=
   limsup (fun k => (⨆ d₀ : {d // d ≠ 0}, ‖(G^k) ⬝ d₀‖ / ‖d₀‖) ^ (1/k : ℝ)) atTop
 ```
 Backbone: `Matrix.complexify`, `complexSpectralRadius`, `tendsto_pow_iff_complexSpectralRadius_lt_one`,
-`mem_spectrum_complexify_iff` (`Numlib/Matrix/Complexify.lean`);
-`exists_norm_pow_le_of_spectralRadius_lt` (`Numlib/Analysis/SpectralRadius.lean`); Mathlib's
+`mem_spectrum_complexify_iff` (`Numlib/LinearAlgebra/Matrix/Complexify.lean`);
+`exists_norm_pow_le_of_spectralRadius_lt` (`Numlib/Analysis/Normed/Algebra/SpectralRadius.lean`); Mathlib's
 Gelfand formula `spectrum.pow_nnnorm_pow_one_div_tendsto_nhds_spectralRadius` on `Matrix n n ℂ`
 under the scoped `L2Operator` normed-algebra instance. Equivalence:
 `iSup_norm_div_eq_opNorm : ⨆ d₀ ≠ 0, ‖G^k d₀‖/‖d₀‖ = ‖G^k‖₂` (Mathlib `opNorm` characterization).
@@ -427,7 +427,7 @@ noncomputable def R_A (A) (b) (x : E n) : ℝ := ‖b - A ⬝ x‖
 ```
 Backbone (`Numlib/LinearSolve/Projection/OneDimensional.lean`): `Projection.step1 A b v w x =
 x + (⟪w, b − A x⟫ / ⟪w, A v⟫) • v`, `steepestDescentStep`, `minResStep`, `residualNormSDStep`
-(the last on `A : E →L[𝕜] E`, complete `E`); `energyNorm` (`Numlib/InnerProductSpace/Energy.lean`).
+(the last on `A : E →L[𝕜] E`, complete `E`); `energyNorm` (`Numlib/Analysis/InnerProductSpace/Energy.lean`).
 Equivalences: `step1_eq : step1 A b v w x = Projection.step1 (toEuclideanLin A) b v w x` (`rfl`),
 `sdStep_eq`, `mrStep_eq` (`rfl`), `rnsdStep_eq : rnsdStep A b x = Projection.residualNormSDStep
 (toEuclideanCLM A) b x` (`Matrix.toEuclideanLin_conjTranspose` and
@@ -468,7 +468,7 @@ equals `H + iS` with `H = (A+Aᴴ)/2`, `S = (A−Aᴴ)/(2i)` both Hermitian, `iS
 Lean: `hermitianPart_isHermitian`, `skewPart_isHermitian`, `eq_hermitianPart_add_I_smul_skewPart`,
 `mulVec_dotProduct_eq_hermitianPart (A : Matrix _ _ ℝ) (u) : (A *ᵥ u) ⬝ᵥ u = (A.hermitianPart *ᵥ u) ⬝ᵥ u`.
 Backbone: Mathlib `selfAdjointPart`; the operator identity
-`ContinuousLinearMap.re_inner_hermitianPart_apply` (`Numlib/InnerProductSpace/Coercive.lean`).
+`ContinuousLinearMap.re_inner_hermitianPart_apply` (`Numlib/Analysis/InnerProductSpace/Coercive.lean`).
 Route: `conjTranspose` algebra. Class: `surface-only` (definitional algebra; acceptable).
 
 **R-1.2 Theorem 1.34.** Book: `A` real positive definite ⇒ `A` nonsingular and
@@ -476,8 +476,8 @@ Route: `conjTranspose` algebra. Class: `surface-only` (definitional algebra; acc
 Lean: `thm_1_34 (hA : A.IsPositiveReal) : IsUnit A ∧ ∃ α > 0, ∀ u, α * (u ⬝ᵥ u) ≤ (A *ᵥ u) ⬝ᵥ u`;
 `thm_1_34' [Nonempty (Fin n)] (hA) (u) : lambdaMin (hermitianPart_isHermitian A) * (u ⬝ᵥ u) ≤ (A *ᵥ u) ⬝ᵥ u`.
 Backbone: `LinearMap.isCoercive_iff_forall_pos`, `LinearMap.IsCoercive.injective`
-(`Numlib/InnerProductSpace/Coercive.lean`); `Matrix.IsHermitian.isSymmetricBoundedBy_toEuclideanLin`
-(`Numlib/Matrix/ToEuclideanLin.lean`) applied to `hermitianPart A` with `lmin = λ_min(H)`, whose
+(`Numlib/Analysis/InnerProductSpace/Coercive.lean`); `Matrix.IsHermitian.isSymmetricBoundedBy_toEuclideanLin`
+(`Numlib/Analysis/Matrix/ToEuclideanLin.lean`) applied to `hermitianPart A` with `lmin = λ_min(H)`, whose
 field `le_re_inner` is the bound. Route: D1 equivalence gives coercivity, injective ⇒ `IsUnit`
 (`Matrix.mulVec_injective_iff_isUnit`); the constant via R-1.1 and the quadratic-form bound for
 the Hermitian `H`. Class: `needs-equivalence`.
@@ -499,7 +499,7 @@ Class: `needs-equivalence`.
 product on ℂⁿ (Saad §1.4 axioms). Lean: `energyInner_conj_symm`, `energyInner_add_left/smul_left`,
 `energyInner_self_nonneg`, `energyInner_self_eq_zero_iff` for `hB : B.PosDef`; alternatively an
 `InnerProductSpace.Core` instance. Backbone: `WithEnergy.core`, `WithEnergy.instInnerProductSpace`
-(`Numlib/InnerProductSpace/Energy.lean`). Route: D3 equivalence +
+(`Numlib/Analysis/InnerProductSpace/Energy.lean`). Route: D3 equivalence +
 `Matrix.posDef_iff_isSymmetricCoercive`. Class: `needs-equivalence`.
 
 **R-1.5 `B`-self-adjoint examples.** Book: `A = B⁻¹C`, `A = CB` (`C` Hermitian, `B` HPD) are
@@ -515,14 +515,14 @@ Lean: `isProjector_one_sub`, `ker_eq_range_one_sub`, `isCompl_ker_range : IsComp
 `existsUnique_projector (h : IsCompl M S) : ∃! P, IsIdempotentElem P ∧ range P = M ∧ ker P = S`,
 `finrank_ker_eq`. Backbone/Mathlib: `IsIdempotentElem.isCompl`, `Submodule.projection`,
 `IsIdempotentElem.eq_projection`, `LinearMap.finrank_range_add_finrank_ker`; uniqueness is
-`LinearMap.IsIdempotentElem.ext_of_range_eq_of_ker_eq` (`Numlib/InnerProductSpace/ObliqueProjection.lean`).
+`LinearMap.IsIdempotentElem.ext_of_range_eq_of_ker_eq` (`Numlib/Analysis/InnerProductSpace/Projection/ObliqueProjection.lean`).
 Route: transport through `toEuclideanLin`. Class: `direct`.
 
 **R-1.7 Lemma 1.36.** Book: `M, L ⊂ ℂⁿ` of the same dimension `m`: (i) no nonzero vector of `M`
 is orthogonal to `L` ⟺ (ii) for every `x` there is a unique `u` with `u ∈ M`, `x − u ⟂ L`.
 Lean: `lemma_1_36 (hdim : finrank 𝕜 M = finrank 𝕜 L) : (∀ v ∈ M, v ∈ Lᗮ → v = 0) ↔ ∀ x, ∃! u, IsProjOnto M L x u`.
 Backbone: `LinearMap.existsUnique_isIdempotentElem_of_inf_orthogonal_eq_bot` and
-`IsIdempotentElem.apply_eq_iff` (`Numlib/InnerProductSpace/ObliqueProjection.lean`). Route: (i) ⟺
+`IsIdempotentElem.apply_eq_iff` (`Numlib/Analysis/InnerProductSpace/Projection/ObliqueProjection.lean`). Route: (i) ⟺
 `M ⊓ Lᗮ = ⊥`; (⇒) the unique `u` is `P x` for the backbone's projector; (⇐) for
 `x ∈ M ⊓ Lᗮ` both `u = x` and `u = 0` qualify, so `x = 0` (three lines). Class: `direct` (⇒),
 `surface-only` (⇐).
@@ -541,14 +541,14 @@ Lean: `obliqueProj_isProjOnto (hV : V.IsBasisOf M) (hW : W.IsBasisOf L) (h : IsU
 `isUnit_conjTranspose_mul_of_inf_eq_bot : (∀ v ∈ M, v ∈ Lᗮ → v = 0) → IsUnit (Wᴴ * V)` (the
 converse too); `isProjOnto_iff_conjTranspose_mul_eq (hV) : IsProjOnto M L x (V ⬝ y) ↔ Wᴴ *ᵥ (x − V *ᵥ y) = 0` (1.64).
 Backbone: `LinearMap.obliqueProjectionOfBases`, `crossGram`, `range_obliqueProjectionOfBases`,
-`sub_obliqueProjectionOfBases_apply_mem_orthogonal` (`Numlib/InnerProductSpace/ObliqueProjection.lean`),
+`sub_obliqueProjectionOfBases_apply_mem_orthogonal` (`Numlib/Analysis/InnerProductSpace/Projection/ObliqueProjection.lean`),
 through D6's `toEuclideanLin_obliqueProj` and `crossGram_cols`. Route: `y ↦ V y` is injective with
 image `M`; `Wᴴ z = 0 ↔ z ∈ Lᗮ` (columns of `W` span `L`). Class: `needs-equivalence` (D6).
 
 **R-1.10 Adjoint projector (1.68)–(1.70).** Book: `Pᴴ` is a projector; `Null Pᴴ = (Ran P)ᗮ`,
 `Null P = (Ran Pᴴ)ᗮ`. Lean: `isIdempotentElem_conjTranspose`, `ker_conjTranspose_eq_orthogonal_range`,
 `ker_eq_orthogonal_range_conjTranspose`. Backbone/Mathlib: `LinearMap.orthogonal_range`
-(`T.rangeᗮ = T.adjoint.ker`), `Matrix.toEuclideanLin_conjTranspose` (`Numlib/Matrix/ToEuclideanLin.lean`:
+(`T.rangeᗮ = T.adjoint.ker`), `Matrix.toEuclideanLin_conjTranspose` (`Numlib/Analysis/Matrix/ToEuclideanLin.lean`:
 the adjoint of `toEuclideanLin A` is `toEuclideanLin Aᴴ`). Class: `direct`.
 
 **R-1.11 Proposition 1.37.** Book: a projector is orthogonal iff it is Hermitian.
@@ -561,7 +561,7 @@ spanning `M` ⇒ `P = VVᴴ` is the orthogonal projector onto `M`; two orthonorm
 `M` give `V₁V₁ᴴ = V₂V₂ᴴ`. Lean: `isOrthogonalProjector_mul_conjTranspose (hV : Vᴴ * V = 1) (hV' : V.IsBasisOf M) : (V * Vᴴ).IsOrthogonalProjector ∧ range … = M`,
 `mul_conjTranspose_eq_of_isBasisOf : V₁ * V₁ᴴ = V₂ * V₂ᴴ`. Backbone:
 `LinearMap.obliqueProjectionOfBases_self_eq_starProjection (hV : Orthonormal 𝕜 V)`
-(`Numlib/InnerProductSpace/ObliqueProjection.lean`) through D6 (`Vᴴ * V = 1 ↔ Orthonormal 𝕜 V.cols`,
+(`Numlib/Analysis/InnerProductSpace/Projection/ObliqueProjection.lean`) through D6 (`Vᴴ * V = 1 ↔ Orthonormal 𝕜 V.cols`,
 `obliqueProj V V = V * Vᴴ`); both sides of the non-uniqueness are `M.starProjection`. Class:
 `needs-equivalence` (D6, D7).
 
@@ -572,7 +572,7 @@ for `1`, null-space vectors for `0`). Lean: `norm_sq_eq_add (hP : P.IsOrthogonal
 `spectrum_subset_pair (hP : IsIdempotentElem P) : spectrum ℂ P ⊆ {0, 1}`, `mem_range_iff_eigen_one`.
 Backbone/Mathlib: `Submodule.norm_sq_eq_add_norm_sq_starProjection`, `starProjection_norm_le`;
 `ContinuousLinearMap.IsIdempotentElem.norm_eq_one_iff_isSymmetric (hP) (h0 : P ≠ 0)`
-(`Numlib/InnerProductSpace/ObliqueProjection.lean`) with `Matrix.l2_opNorm_eq_norm_toEuclideanLin`
+(`Numlib/Analysis/InnerProductSpace/Projection/ObliqueProjection.lean`) with `Matrix.l2_opNorm_eq_norm_toEuclideanLin`
 for `‖P‖₂ = 1`. Route: `starProjection` API; `‖P‖₂ = 1` needs `P ≠ 0` (book says "for any
 orthogonal projector"; `P = 0` is a counterexample — see §5). Class: `direct` for the norm facts,
 `surface-only` for the eigenvalue facts (idempotent ⇒ `μ² = μ`).
@@ -605,7 +605,7 @@ Lean: `isUnit_add_smul_of_small (hA : IsUnit A) (E) : ∀ᶠ ε in 𝓝 (0:𝕜)
 `delta_eq (hA) (hε : IsUnit (A + ε • E)) (hx : A *ᵥ x = b) : (A + ε • E)⁻¹ *ᵥ (b + ε • e) - x = ε • (A + ε • E)⁻¹ *ᵥ (e - E *ᵥ x)`;
 `hasDerivAt_perturbed_solution (hA) (hx) : HasDerivAt (fun ε : ℝ => (A + ε • E)⁻¹ *ᵥ (b + ε • e)) (A⁻¹ *ᵥ (e - E *ᵥ x)) 0`
 (matrices over ℝ; `𝕜` version with `HasDerivAt` over `𝕜`). Backbone: `Units.isUnit_add_of_norm_lt`,
-`Units.norm_inverse_add_le` (`Numlib/Analysis/NormedRing/Inverse.lean`; the eventual invertibility,
+`Units.norm_inverse_add_le` (`Numlib/Analysis/Normed/Ring/Inverse.lean`; the eventual invertibility,
 under the scoped `Matrix.Norms.Operator` normed-ring structure); Mathlib `hasFDerivAt_ringInverse`
 (`Matrix.nonsing_inv_eq_ringInverse`). Route: algebra for `δ(ε)`; chain rule for the derivative.
 Class: `surface-only` (Mathlib calculus; the derivative of the solution map is a candidate for
@@ -634,7 +634,7 @@ first (`‖A⁻¹‖`) form is the same specialization before using `‖b‖ ≤
 norms while `det(αI) = αⁿ`; `κ_p(A)` labelled by the norm. Lean: `condNumberLp_smul (hc : c ≠ 0) : condNumberLp p (c • A) = condNumberLp p A`,
 `condNumberLp_smul_one (hc) : condNumberLp p (c • 1) = 1`, `one_le_condNumberLp (hA : IsUnit A)`,
 `det_smul_one : det (c • (1 : Matrix (Fin n) (Fin n) 𝕜)) = c ^ n`. Backbone:
-`NormedRing.condNumber_smul`, `one_le_condNumber` (`Numlib/Analysis/NormedRing/CondNumber.lean`).
+`NormedRing.condNumber_smul`, `one_le_condNumber` (`Numlib/Analysis/Normed/Ring/CondNumber.lean`).
 Class: `direct` (via D8), `det` fact Mathlib `det_smul`.
 
 **R-1.20 Example 1.5.** Book: `A_n = I + α e₁ eₙᵀ`, `A_n⁻¹ = I − α e₁ eₙᵀ`,
@@ -760,8 +760,8 @@ theorem thm_4_1_mpr (h : ∀ f x₀, ∃ x, Tendsto (fun k => (affineStep G f)^[
     Matrix.complexSpectralRadius G < 1
 ```
 Backbone: `Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one : Tendsto (G ^ k) (𝓝 0) ↔
-complexSpectralRadius G < 1`, `isUnit_complexify_iff`, `complexify_one` (`Numlib/Matrix/Complexify.lean`);
-`isUnit_one_sub_of_spectralRadius_lt_one` (`Numlib/Analysis/SpectralRadius.lean`); the operator
+complexSpectralRadius G < 1`, `isUnit_complexify_iff`, `complexify_one` (`Numlib/LinearAlgebra/Matrix/Complexify.lean`);
+`isUnit_one_sub_of_spectralRadius_lt_one` (`Numlib/Analysis/Normed/Algebra/SpectralRadius.lean`); the operator
 forms `Stationary.tendsto_of_spectralRadius_lt_one`, `spectralRadius_lt_one_of_forall_tendsto`,
 `forall_tendsto_iff_spectralRadius_lt_one` (`Stationary/Basic.lean`, `F →L[ℂ] F`) are the same
 theorem for complex vectors. Route (⇒): `IsUnit (1 − complexify G)` from
@@ -777,7 +777,7 @@ gives `x_{k+1} − x_k = Gᵏ v → 0` for all `v` (R-4.10), hence `Gᵏ → 0` 
 `x₀` (and `f`). Lean: `cor_4_2 (N : AlgebraNorm ℝ (Matrix (Fin n) (Fin n) ℝ)) (hG : N G < 1) : IsUnit (1 - G) ∧ ∀ f x₀, Tendsto … (𝓝 ((1 - G)⁻¹ *ᵥ f))`;
 instances `cor_4_2_lp (p) (hG : lpOpNorm p G < 1)` and the scoped `‖G‖ < 1` forms for `p = 2, ∞`.
 Backbone: `Stationary.contractingWith (‖G‖ < 1)` (`Stationary/Basic.lean`);
-`spectralRadius_lt_one_of_norm_lt_one` (`Numlib/Analysis/SpectralRadius.lean`) for the scoped
+`spectralRadius_lt_one_of_norm_lt_one` (`Numlib/Analysis/Normed/Algebra/SpectralRadius.lean`) for the scoped
 complex normed-algebra instances. Route for `lpOpNorm p`: `lpOpNorm p (G^k) ≤ (lpOpNorm p G)^k → 0`
 ⇒ `Gᵏx → 0` ⇒ R-4.11 (⇐)+(⇒). Route for an arbitrary `AlgebraNorm`: needs "all norms on the
 finite-dimensional space `Matrix` are equivalent" to get `Gᵏ → 0` from `N(Gᵏ) ≤ N(G)ᵏ`. Class:
@@ -790,7 +790,7 @@ Lean: `limsup_specific_le : limsup (fun k => (‖(G^k) ⬝ d₀‖/‖d₀‖)^(
 `iSup_eq_opNorm : (⨆ d₀ : {d // d ≠ 0}, ‖(G^k) ⬝ d₀‖/‖d₀‖) = ‖G^k‖₂`;
 `tendsto_generalFactor : Tendsto (fun k => ‖G^k‖₂ ^ (1/k:ℝ)) atTop (𝓝 (complexSpectralRadius G).toReal)` (Gelfand);
 `exists_specific_eq : ∃ d₀ ≠ 0, limsup … = ρ(G)`. Backbone: `exists_norm_pow_le_of_spectralRadius_lt`
-(`Numlib/Analysis/SpectralRadius.lean`) on `complexify G` under the scoped `L2Operator` norm, with
+(`Numlib/Analysis/Normed/Algebra/SpectralRadius.lean`) on `complexify G` under the scoped `L2Operator` norm, with
 the vector glue `norm_complexify_mulVec` (`Basic.lean`), gives `limsup_specific_le`; Mathlib's
 Gelfand formula gives `tendsto_generalFactor` once `‖complexify (G^k)‖₂ = ‖G^k‖₂` is available
 (§3 item 1), and `exists_specific_eq` needs the eigenvector argument of the same item. The book's
@@ -942,7 +942,7 @@ Lean: `isProjectionApprox_iff_isPetrovGalerkin` (D17), `isProjectionApprox_add_i
 `projStep_isProjectionApprox`. Backbone: `IsPetrovGalerkin`,
 `isPetrovGalerkin_iff_mulVec (V : Module.Basis ι 𝕜 K) (W : Module.Basis ι 𝕜 L) (y)`,
 `IsPetrovGalerkin.eq_of_forall` (`Numlib/LinearSolve/Projection/Basic.lean`);
-`Matrix.toEuclideanLin_apply_eq_sum` (`Numlib/Matrix/ToEuclideanLin.lean`). Route: instantiate the
+`Matrix.toEuclideanLin_apply_eq_sum` (`Numlib/Analysis/Matrix/ToEuclideanLin.lean`). Route: instantiate the
 bases form with `hV.toBasis`, `hW.toBasis`; its matrix `(⟪W i, A (V j)⟫)` is `Wᵀ A V` and
 `Σ_j y j • V j = V ⬝ y` by `toEuclideanLin_apply_eq_sum`; when `Wᵀ A V` is a unit the system has the
 unique solution `y = (WᵀAV)⁻¹ Wᵀ r₀`. Class: `needs-equivalence` (D6/D17).
@@ -970,7 +970,7 @@ Lean: `prop_5_1_i (hA : A.IsPositiveReal) (hV : V.IsBasisOf K) (hW : W.IsBasisOf
 `prop_5_1_ii (hA : IsUnit A) (hV : V.IsBasisOf K) (hW : W.IsBasisOf (K.map (toEuclideanLin A))) : IsUnit (Wᵀ * A * V)`.
 Backbone: `existsUnique_isGalerkin_of_isCoercive (hA : A.IsCoercive)`,
 `existsUnique_isMinRes_of_injOn` (`Projection/Basic.lean`), `LinearMap.IsCoercive.inner_self_pos`
-(`Numlib/InnerProductSpace/Coercive.lean`). Route: R-5.3: (i) `u ∈ K`, `u ≠ 0` ⇒ `(Au, u) > 0` ⇒
+(`Numlib/Analysis/InnerProductSpace/Coercive.lean`). Route: R-5.3: (i) `u ∈ K`, `u ≠ 0` ⇒ `(Au, u) > 0` ⇒
 `Au ∉ Kᗮ`; (ii) `Au ≠ 0`, `Au ∈ AK = L` ⇒ `Au ∉ Lᗮ`. Class: `needs-equivalence` (via R-5.3; the
 book's own proof through `VᵀAV` positive definite / `(AV)ᵀAV` full rank is R-5.5).
 
@@ -1017,13 +1017,13 @@ rewritten), `prop_5_5 : WithEnergy.equiv A' hA' (xstar - x) = (WithEnergy.submod
 `energyNorm_le : E_A A xstar x ≤ E_A A xstar x₀`. Backbone: `IsGalerkin.energyInner_error_eq_zero`,
 `IsGalerkin.error_eq_starProjection`, `IsGalerkin.energyNorm_le` (with `y = x₀`;
 `Numlib/LinearSolve/Projection/Optimality.lean`); `WithEnergy.equiv`, `WithEnergy.submoduleMap`
-(`Numlib/InnerProductSpace/Energy.lean`). Class: `needs-equivalence` (D3).
+(`Numlib/Analysis/InnerProductSpace/Energy.lean`). Class: `needs-equivalence` (D3).
 
 **R-5.10 §5.2.3 reformulation `A_m x̃ = Q b`.** Book: with `x₀ = 0` and `Q = Q_K^L` defined
 (`K ∩ Lᗮ = {0}`), (5.5)–(5.6) ⟺ `x̃ ∈ K ∧ Q(b − Ax̃) = 0` ⟺ `x̃ ∈ K ∧ A_m x̃ = Qb`, `A_m = QAP_K`.
 Lean: `isProjectionApprox_zero_iff_Q (hd) (h : K ⊓ Lᗮ = ⊥) : IsProjectionApprox A b 0 K L x ↔ x ∈ K ∧ Q K L hd h (b - A ⬝ x) = 0`,
 `… ↔ x ∈ K ∧ A_m A K L hd h x = Q K L hd h b`. Backbone: `LinearMap.IsIdempotentElem.apply_eq_iff`
-with `y = 0` (`Q x = 0 ↔ x ∈ Lᗮ`, R-1.8; `Numlib/InnerProductSpace/ObliqueProjection.lean`),
+with `y = 0` (`Q x = 0 ↔ x ∈ Lᗮ`, R-1.8; `Numlib/Analysis/InnerProductSpace/Projection/ObliqueProjection.lean`),
 Mathlib `starProjection_eq_self_iff`. Class: `direct`.
 
 **R-5.11 Proposition 5.6 (and its `x₀ ≠ 0` extension).** Book: `K` invariant under `A`, `x₀ = 0`,
@@ -1049,7 +1049,7 @@ Backbone: none needed — `Q b = b` for `b ∈ K` (`IsIdempotentElem.apply_eq_if
 `b = VVᵀb` and (5.11) reads `‖Vᵀb − (VᵀAV)Vᵀx*‖₂ ≤ γ ‖(I − P_K)x*‖₂` (since
 `‖V(Vᵀb − (VᵀAV)Vᵀx*)‖₂ = ‖Vᵀb − (VᵀAV)Vᵀx*‖₂`). Lean: `thm_5_7_matrix (hV : Vᵀ * V = 1) (hV' : V.IsBasisOf K) (hb : b ∈ K) (hstar) : ‖Vᵀ *ᵥ b - (Vᵀ * A * V) *ᵥ (Vᵀ *ᵥ xstar)‖ ≤ γ * ‖(1 - K.starProjection) xstar‖`.
 Backbone: R-1.12 (`VVᵀ = P_K`), `compression.toMatrix_orthonormalBasis`
-(`Numlib/InnerProductSpace/Compression.lean`: `VᵀAV` is the matrix of
+(`Numlib/Analysis/InnerProductSpace/Projection/Compression.lean`: `VᵀAV` is the matrix of
 `compression (toEuclideanLin A) K` in the orthonormal basis `V.cols`), `‖V y‖ = ‖y‖` for isometric
 `V`. Class: `needs-equivalence`.
 
@@ -1080,7 +1080,7 @@ Backbone: `Projection.kantorovich_inequality (hl : 0 < lmin) (hA : A.IsSymmetric
 (x) (hy : A y = x) : re ⟪A x, x⟫ * re ⟪y, x⟫ ≤ (lmax + lmin)² / (4 lmax lmin) * ‖x‖⁴`
 (`Numlib/LinearSolve/Projection/OneDimensional.lean`, inverse-free). Route:
 `hA` from `Matrix.IsHermitian.isSymmetricBoundedBy_toEuclideanLin hB.1` with the extreme
-eigenvalues (`Numlib/Matrix/ToEuclideanLin.lean`), `0 < λ_min` from `Matrix.PosDef.eigenvalues_pos`,
+eigenvalues (`Numlib/Analysis/Matrix/ToEuclideanLin.lean`), `0 < λ_min` from `Matrix.PosDef.eigenvalues_pos`,
 `y := B⁻¹ *ᵥ x` with `hy` from `Matrix.mul_nonsing_inv`; divide by `(x ⬝ᵥ x)² = ‖x‖⁴`. No inverse
 glue is needed. Class: `needs-equivalence`.
 
@@ -1090,7 +1090,7 @@ satisfy `‖d_{k+1}‖_A ≤ ((λ_max − λ_min)/(λ_max + λ_min)) ‖d_k‖_A
 `thm_5_9_tendsto : Tendsto (fun k => (sdStep A b)^[k] x₀) atTop (𝓝 xstar)`. Backbone:
 `Projection.energyNorm_steepestDescentStep_le (hl : 0 < lmin) (hA : IsSymmetricBoundedBy lmin lmax) (hstar) (x)`
 (`OneDimensional.lean`); `LinearMap.IsCoerciveWith.norm_le_energyNorm` (`√c ‖x‖ ≤ ‖x‖_A`,
-`Numlib/InnerProductSpace/Energy.lean`) for the convergence. Route: contraction factor `< 1`
+`Numlib/Analysis/InnerProductSpace/Energy.lean`) for the convergence. Route: contraction factor `< 1`
 (since `λ_min > 0`), geometric decay `E_A(x_k) ≤ ρ^k E_A(x₀)`, then `‖x* − x_k‖ ≤ E_A(x_k)/√λ_min`
 (surface `Tendsto` corollary, `tendsto_pow_atTop_nhds_zero_of_lt_one`). Class:
 `needs-equivalence`.
@@ -1109,7 +1109,7 @@ any `x₀`. Lean (scoped `Matrix.Norms.L2Operator`):
 `thm_5_10_tendsto : Tendsto (fun k => (mrStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ ⬝ b))`. Backbone:
 `Projection.norm_residual_minResStep_le {A : E →L[𝕜] E} (hc : 0 < c) (hA : IsCoerciveWith c) (b x)`
 (`OneDimensional.lean`; `‖r'‖ ≤ √(1 − c²/‖A‖²) ‖r‖`), R-1.2 (`c = μ`, i.e. `IsCoerciveWith μ`
-from `thm_1_34'`), `Matrix.l2_opNorm_eq_norm_toEuclideanLin` (`Numlib/Matrix/ToEuclideanLin.lean`),
+from `thm_1_34'`), `Matrix.l2_opNorm_eq_norm_toEuclideanLin` (`Numlib/Analysis/Matrix/ToEuclideanLin.lean`),
 `Matrix.toEuclideanCLM`. Route: `0 < μ ≤ σ` so the factor is `< 1`; `r_k → 0` and
 `x_k = A⁻¹(b − r_k)`. Class: `needs-equivalence`.
 
@@ -1125,7 +1125,7 @@ Lean: `norm_sq_mrStep (hr : A ⬝ r ≠ 0) : ‖b - A ⬝ mrStep A b x‖^2 = �
 `ρ := ⨆ x : {x // x ≠ 0}, Real.sin (InnerProductGeometry.angle x (A ⬝ x))` (compactness of the unit
 sphere for `ρ < 1`). Backbone: only the bound (5.15) (`norm_residual_minResStep_le`, and the
 damped-Richardson estimate `ContinuousLinearMap.norm_sub_smul_apply_sq_le` in
-`Numlib/InnerProductSpace/Coercive.lean` behind it); the exact identity (5.18) and (5.20) are
+`Numlib/Analysis/InnerProductSpace/Coercive.lean` behind it); the exact identity (5.18) and (5.20) are
 two-line inner-product identities. Class: `surface-only` (§3 item 7 notes (5.18) as a candidate
 for `OneDimensional.lean`).
 
@@ -1179,7 +1179,7 @@ Backbone items this chapter needs that are scheduled for later phases (`plans/ba
 with the exact statements the surface will specialize. Everything else in §2 is available in the
 phase-1 modules under `Numlib/`.
 
-1. **Real-matrix Gelfand transport (`Numlib/Matrix/Complexify.lean`, phase 2).**
+1. **Real-matrix Gelfand transport (`Numlib/LinearAlgebra/Matrix/Complexify.lean`, phase 2).**
    `l2_opNorm_complexify : ‖complexify A‖ = ‖A‖` under the scoped `Matrix.Norms.L2Operator`
    norms (and the `Operator`/Frobenius analogues), so that Mathlib's Gelfand formula on
    `Matrix n n ℂ` yields `Tendsto (fun k => ‖G^k‖₂ ^ (1/k)) atTop (𝓝 ρ(G))` for real `G`
@@ -1188,7 +1188,7 @@ phase-1 modules under `Numlib/`.
    `≥` by real vectors; `≤` by `‖A(x + iy)‖² = ‖Ax‖² + ‖Ay‖² ≤ ‖A‖² (‖x‖² + ‖y‖²)`. An alternative
    that avoids norm identities: "Gelfand's limit does not depend on the norm" (`C^{1/k} → 1` for
    equivalent norms).
-2. **Arbitrary consistent matrix norms (`Numlib/Analysis/SpectralRadius.lean`, phase 2).** Saad's
+2. **Arbitrary consistent matrix norms (`Numlib/Analysis/Normed/Algebra/SpectralRadius.lean`, phase 2).** Saad's
    Cor 4.2 and the remark `|λ| ≤ ‖A‖` quantify over *any* matrix norm (Saad §1.5: a vector norm on
    `ℂ^{n×n}` with `‖AB‖ ≤ ‖A‖‖B‖`), i.e. an `AlgebraNorm ℝ (Matrix n n ℝ)` /
    `AlgebraNorm ℂ (Matrix n n ℂ)` (Mathlib `Mathlib/Analysis/Normed/Unbundled/AlgebraNorm`).
@@ -1265,7 +1265,7 @@ Algorithms without theorems, examples, exercises (with the reason), and the Chap
   `(Au,u)` on ℂⁿ forces Hermitian — remark in §1.11, not used), P-1.17 (PD ⟺ Hermitian part PD —
   this is R-1.1/R-1.2), P-1.18 (`B`-self-adjoint examples — optional R-1.5), P-1.30
   (`V₁V₁ᴴ = V₂V₂ᴴ` — R-1.12), P-1.37 (`A + εE` nonsingular for small `ε` — R-1.17), P-1.10
-  (Gelfand — Mathlib, `Numlib/Analysis/SpectralRadius.lean`), P-5.1 (Exercise 1 referenced in
+  (Gelfand — Mathlib, `Numlib/Analysis/Normed/Algebra/SpectralRadius.lean`), P-5.1 (Exercise 1 referenced in
   Example 5.1), P-5.15 (referenced after (5.23)). None is a theorem prerequisite beyond what the
   results in §2 state.
 * The `B`-inner-product remark "sometimes an HPD `B` makes `A` Hermitian" (R-1.5): kept optional.
@@ -1274,17 +1274,17 @@ Chapter 1 black boxes cited by the selected sections (where the backbone provide
 
 | Cited fact | Used by | Provided by |
 |---|---|---|
-| Thm 1.10 (`Aᵏ → 0 ⟺ ρ(A) < 1`), Thm 1.11 (Neumann series, `I − A` nonsingular), Thm 1.12 / P-1.10 (Gelfand `lim ‖Aᵏ‖^{1/k} = ρ`) | Thm 4.1, Cor 4.2, §4.2.1 convergence factors | `spectralRadius_lt_one_iff_tendsto_pow`, `summable_pow_iff_spectralRadius_lt_one`, `isUnit_one_sub_of_spectralRadius_lt_one` (`Numlib/Analysis/SpectralRadius.lean`); `Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one` (`Numlib/Matrix/Complexify.lean`) for real matrices; Gelfand via Mathlib (§3 item 1 for real matrices) |
+| Thm 1.10 (`Aᵏ → 0 ⟺ ρ(A) < 1`), Thm 1.11 (Neumann series, `I − A` nonsingular), Thm 1.12 / P-1.10 (Gelfand `lim ‖Aᵏ‖^{1/k} = ρ`) | Thm 4.1, Cor 4.2, §4.2.1 convergence factors | `spectralRadius_lt_one_iff_tendsto_pow`, `summable_pow_iff_spectralRadius_lt_one`, `isUnit_one_sub_of_spectralRadius_lt_one` (`Numlib/Analysis/Normed/Algebra/SpectralRadius.lean`); `Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one` (`Numlib/LinearAlgebra/Matrix/Complexify.lean`) for real matrices; Gelfand via Mathlib (§3 item 1 for real matrices) |
 | `ρ(A) ≤ ‖A‖` for any matrix norm (§1.5/§1.8.4) | Cor 4.2, `|λ| ≤ ‖A‖` | Mathlib `spectrum.spectralRadius_le_nnnorm` for the induced `p`-norms; general consistent norms: §3 item 2 |
 | Jordan canonical form (Thm 1.8) | §4.2.1 specific convergence factor | not provided (deliberately, `plans/backbone.md` §1.1); left out |
 | Schur form (Thm 1.9) | not cited in the selected sections | not in Mathlib; a phase-3 backbone item |
 | Normal matrices / spectral theorem for Hermitian matrices (Thm 1.14, 1.19–1.20: "unitarily similar to a real diagonal matrix") | Lemma 5.8 proof, Thm 1.34/1.35 proofs | Mathlib `Matrix.IsHermitian.spectral_theorem`, `eigenvalues`, `eigenvectorBasis` |
-| Min–max / Rayleigh-quotient bounds (Thm 1.21, (1.40)) | Thm 1.34 (`α = λ_min(H)`), Thm 1.35, Thm 5.10 | `Matrix.IsHermitian.isSymmetricBoundedBy_toEuclideanLin` (`Numlib/Matrix/ToEuclideanLin.lean`), `LinearMap.IsSymmetricBoundedBy.rayleigh_mem_Icc` (`Numlib/InnerProductSpace/Coercive.lean`); Mathlib `hasEigenvalue_iInf/iSup_of_finiteDimensional` |
+| Min–max / Rayleigh-quotient bounds (Thm 1.21, (1.40)) | Thm 1.34 (`α = λ_min(H)`), Thm 1.35, Thm 5.10 | `Matrix.IsHermitian.isSymmetricBoundedBy_toEuclideanLin` (`Numlib/Analysis/Matrix/ToEuclideanLin.lean`), `LinearMap.IsSymmetricBoundedBy.rayleigh_mem_Icc` (`Numlib/Analysis/InnerProductSpace/Coercive.lean`); Mathlib `hasEigenvalue_iInf/iSup_of_finiteDimensional` |
 | Perron–Frobenius (Thm 1.25), Thm 1.29 (`B ≥ 0`: `ρ(B) < 1 ⟺ (I−B)⁻¹ ≥ 0`) | Thm 4.4 | `plans/backbone.md` §2.3.4 phase 2 (weak Perron; §3 item 3) |
 | M-matrices (Def 1.30; Thm 1.31–1.33 not needed) | remark after Thm 4.4 | D14 (definition only) |
 | Irreducibility (§1.10 / §3 adjacency graph) | Def 4.5, Thm 4.7, Cor 4.8, Thm 4.9 | Mathlib `Matrix.IsIrreducible` via `A.map ‖·‖` (§3 item 4) |
 | (1.13.1) existence theory | §1.13 | Mathlib |
-| Exercise 37 (`A + εE` invertible for small `ε`) | §1.13.2 | `Units.isUnit_add_of_norm_lt` (`Numlib/Analysis/NormedRing/Inverse.lean`) |
+| Exercise 37 (`A + εE` invertible for small `ε`) | §1.13.2 | `Units.isUnit_add_of_norm_lt` (`Numlib/Analysis/Normed/Ring/Inverse.lean`) |
 
 ## 5. Readings of the book's statements
 

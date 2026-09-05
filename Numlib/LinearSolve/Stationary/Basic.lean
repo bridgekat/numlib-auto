@@ -1,5 +1,5 @@
-import Numlib.Analysis.SpectralRadius
-import Numlib.Analysis.NormedRing.Inverse
+import Numlib.Analysis.Normed.Algebra.SpectralRadius
+import Numlib.Analysis.Normed.Ring.Inverse
 import Mathlib.Topology.MetricSpace.Contracting
 import Mathlib.Analysis.Normed.Operator.NormedSpace
 import Mathlib.Analysis.Normed.Module.FiniteDimension

@@ -1,5 +1,5 @@
 import Numlib.LinearSolve.Projection.Basic
-import Numlib.InnerProductSpace.Energy
+import Numlib.Analysis.InnerProductSpace.Energy
 
 /-!
 # Optimality properties of projection methods

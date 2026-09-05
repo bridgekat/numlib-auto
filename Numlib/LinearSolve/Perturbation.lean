@@ -1,5 +1,5 @@
-import Numlib.Analysis.NormedRing.Inverse
-import Numlib.Analysis.NormedRing.CondNumber
+import Numlib.Analysis.Normed.Ring.Inverse
+import Numlib.Analysis.Normed.Ring.CondNumber
 import Mathlib.Analysis.InnerProductSpace.Basic
 import Mathlib.Analysis.InnerProductSpace.LinearMap
 

@@ -1,5 +1,5 @@
 import Numlib.Krylov.Arnoldi
-import Numlib.InnerProductSpace.Coercive
+import Numlib.Analysis.InnerProductSpace.Coercive
 
 /-!
 # The symmetric Lanczos process

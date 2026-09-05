@@ -117,7 +117,7 @@ given; collected in §6).
   theorem norm_toCLM_le (hM0 : 0 ≤ M) (hM) : ‖a.toCLM hM‖ ≤ M   -- `LinearMap.mkContinuous₂_norm_le`
   ```
 * Mathlib / backbone counterparts and equivalence lemmas (backbone predicates in
-  `Numlib/Variational/Forms.lean` and `Numlib/InnerProductSpace/Coercive.lean`, `plans/backbone.md`
+  `Numlib/Variational/Forms.lean` and `Numlib/Analysis/InnerProductSpace/Coercive.lean`, `plans/backbone.md`
   §5.2.1 and §2.1.4):
   * bounded ↔ `IsBoundedBilinearMap ℝ (fun p : V × V => a p.1 p.2)`
     (`isBounded_iff_isBoundedBilinearMap`; ⇐ from `IsBoundedBilinearMap.bound`, ⇒ the four
@@ -183,7 +183,7 @@ given; collected in §6).
   `SesqForm.sqrt_mul_norm_le_energyNorm (hc : 0 ≤ c) (h : a.IsCoerciveWith c)`,
   `SesqForm.energyNorm_le_sqrt_mul_norm (h : a.IsBoundedWith M)` (`Numlib/Variational/Forms.lean`);
   operator-level `energyInner`, `energyNorm A x = √(re ⟪A x, x⟫)`, `WithEnergy A hA`,
-  `LinearMap.IsCoerciveWith.norm_le_energyNorm` (`Numlib/InnerProductSpace/Energy.lean`, §2.1.5).
+  `LinearMap.IsCoerciveWith.norm_le_energyNorm` (`Numlib/Analysis/InnerProductSpace/Energy.lean`, §2.1.5).
 * Equivalence lemmas: `energy_eq : energy a ℓ v = (a.toCLM hM).energy ℓ v` (`simp [SesqForm.energy]`
   with `RCLike.re_to_real`); `energyNorm_eq : energyNorm a v = (a.toCLM hM).energyNorm v` and
   `= _root_.energyNorm (toOperator a hM : V →ₗ[ℝ] V) v` (`energyNorm_eq_energyNorm_toOperator`);
@@ -478,7 +478,7 @@ theorem gives the solution.
   `contractingWith_pTheta (hθ : θ ∈ Set.Ioo 0 (2*α/M^2)) : ContractingWith _ (fun u => u - θ • (toOperator a hM u - rieszRep ℓ))`.
 * Backbone: `ContinuousLinearMap.norm_sub_smul_apply_sq_le (hA : (A : E →ₗ[𝕜] E).IsCoerciveWith c)
   (hθ : 0 ≤ θ) (x) : ‖x - (θ : 𝕜) • A x‖ ^ 2 ≤ (1 - 2 * θ * c + θ ^ 2 * ‖A‖ ^ 2) * ‖x‖ ^ 2`
-  (`Numlib/InnerProductSpace/Coercive.lean`, §2.1.4) and
+  (`Numlib/Analysis/InnerProductSpace/Coercive.lean`, §2.1.4) and
   `SesqForm.contractingWith_damped_toOperator (hc) (ha : a.IsCoerciveWith c) (ha0 : 0 < ‖a‖)
   (hθ : 0 < θ) (hθ' : θ < 2 * c / ‖a‖ ^ 2)` (`Numlib/Variational/LaxMilgram.lean`), both with `‖a‖`
   in place of `M`; the book's `M`-form follows from `‖a.toCLM hM‖ ≤ M` and monotonicity of the
@@ -681,7 +681,7 @@ Classification: **needs-equivalence**.
   ‖P_N‖ ‖u − w_N‖`).
 * Backbone: Kato's lemma is `ContinuousLinearMap.IsIdempotentElem.norm_one_sub_eq
   (hP : IsIdempotentElem P) (h0 : P ≠ 0) (h1 : P ≠ 1) : ‖1 - P‖ = ‖P‖`
-  (`Numlib/InnerProductSpace/ObliqueProjection.lean`, §2.1.7; proof reference D. Szyld, "The many
+  (`Numlib/Analysis/InnerProductSpace/Projection/ObliqueProjection.lean`, §2.1.7; proof reference D. Szyld, "The many
   proofs of an identity on the norm of oblique projections", Numer. Algorithms 42 (2006)). The
   Xu–Zikatanov sharpening of Babuška's bound to `M/α_N` is the phase-2 item of
   `plans/backbone.md` §5.2.3 (see §5 below).
@@ -818,9 +818,9 @@ All backbone declarations used above, by module (section numbers refer to `plans
 | `Numlib/Variational/Forms.lean` (§5.2.1) | `SesqForm`, `IsBoundedWith`, `IsCoerciveWith`, `IsHermitian`, `isBoundedWith_opNorm`, `opNorm_le_of_isBoundedWith`, `IsCoerciveWith.norm_le_norm_apply`, `isCoerciveWith_real_iff`, `isHermitian_real_iff`, `innerSL_isCoerciveWith`, `innerSL_isHermitian`, `toOperator`, `inner_toOperator`, `rieszRep`, `inner_rieszRep`, `norm_rieszRep`, `ofOperator`, `isCoerciveWith_iff_toOperator`, `isHermitian_iff_toOperator_isSymmetric`, `norm_toOperator`, `forall_apply_eq_iff_toOperator_eq`, `energy`, `energyNorm`, `energyNorm_eq_energyNorm_toOperator`, `sqrt_mul_norm_le_energyNorm`, `energyNorm_le_sqrt_mul_norm`; `SesqForm₂`, `InfSupWith`, `IsNondegenerate`, `iSup_norm_div_eq_norm`, `SesqForm.IsCoerciveWith.infSupWith` |
 | `Numlib/Variational/LaxMilgram.lean` (§5.2.2) | `SesqForm.laxMilgram`, `norm_le_of_forall_apply_eq`, `norm_sub_le_of_forall_apply_eq`, `exists_solutionEquiv`, `contractingWith_damped_toOperator`, `isMinOn_energy_iff`, `isMinOn_energy_iff_forall_le`, `existsUnique_isMinOn_energy`, `energy_sub_energy_eq`; `SesqForm₂.babuska_necas`, `norm_le_of_infSupWith`, `infSupWith_of_forall_exists`; `ContinuousLinearMap.isClosed_range_of_le_norm`, `bijective_of_le_norm_of_orthogonal_range_eq_bot`, `norm_le_of_le_norm`, `LinearPMap.isClosed_range_of_isClosed_of_le_norm` |
 | `Numlib/Variational/Galerkin.lean` (§5.2.3) | `IsGalerkinSolution` with `iff_isGalerkin`, `existsUnique`, `apply_sub_eq_zero`, `norm_sub_le`, `norm_sub_le_infDist`, `energyNorm_sub_le`, `norm_sub_le_sqrt`, `iff_mulVec`, `tendsto`; `tendsto_infDist_of_monotone_dense`; `IsPetrovGalerkinSolution` with `DiscreteInfSup`, `existsUnique`, `norm_sub_le`, `tendsto`; `isGalerkinSolution_iff_isPetrovGalerkinSolution`; `IsGeneralizedGalerkinSolution`, `strang_first`, `existsUnique_isGeneralizedGalerkinSolution` |
-| `Numlib/InnerProductSpace/Coercive.lean` (§2.1.4) | `LinearMap.IsCoerciveWith`, `IsCoercive`, `IsSymmetricCoercive`, `IsSymmetricBoundedBy`, `isCoercive_iff_forall_pos`, `ContinuousLinearMap.norm_sub_smul_apply_sq_le`, `Matrix.posDef_iff_isSymmetricCoercive` |
-| `Numlib/InnerProductSpace/Energy.lean` (§2.1.5) | `energyInner`, `energyNorm`, `WithEnergy`, `LinearMap.IsCoerciveWith.norm_le_energyNorm` |
-| `Numlib/InnerProductSpace/ObliqueProjection.lean` (§2.1.7) | `ContinuousLinearMap.IsIdempotentElem.norm_one_sub_eq` (Kato) |
+| `Numlib/Analysis/InnerProductSpace/Coercive.lean` (§2.1.4) | `LinearMap.IsCoerciveWith`, `IsCoercive`, `IsSymmetricCoercive`, `IsSymmetricBoundedBy`, `isCoercive_iff_forall_pos`, `ContinuousLinearMap.norm_sub_smul_apply_sq_le`, `Matrix.posDef_iff_isSymmetricCoercive` |
+| `Numlib/Analysis/InnerProductSpace/Energy.lean` (§2.1.5) | `energyInner`, `energyNorm`, `WithEnergy`, `LinearMap.IsCoerciveWith.norm_le_energyNorm` |
+| `Numlib/Analysis/InnerProductSpace/Projection/ObliqueProjection.lean` (§2.1.7) | `ContinuousLinearMap.IsIdempotentElem.norm_one_sub_eq` (Kato) |
 | `Numlib/Nonlinear/FixedPoint.lean` (§5.3.1) | `zarantonello`, `contractingWith_damped` |
 | `Numlib/LinearSolve/Projection/Basic.lean`, `Optimality.lean` (§2.4.1–2.4.2) | `IsGalerkin`, `isPetrovGalerkin_iff_mulVec`, `IsGalerkin.energyNorm_le`, `iff_energyNorm_min`, `quadratic_le`, `error_eq_starProjection` |
 | `Numlib/Krylov/CG.lean` (§3.7) | `CG.State`, `alpha`, `step`, `step_r`, `init`, `iterate`, `residual_eq`, `iterate_eq_of_residual_eq_zero`, `isGalerkinIterate`, `inner_residual_eq_zero`, `inner_apply_direction_eq_zero`, `energyNorm_error_antitone` |
@@ -837,7 +837,7 @@ Surface bridging lemmas (all in §2): `isClosed_iff_seq`, `stabilityEstimate_iff
 * **Xu–Zikatanov sharpening of Babuška's bound** (Rem 9.2.2, (9.2.10)): `‖u − u_N‖ ≤ (M/α_N)
   inf_{w_N ∈ U_N} ‖u − w_N‖`, obtained from Kato's lemma applied to the Petrov–Galerkin projector
   `P_N : u ↦ u_N` (bounded idempotent with `‖P_N‖ ≤ M/α_N`, `range = U_N`); `plans/backbone.md`
-  §5.2.3, phase 2 (§7). Kato's lemma itself is in `Numlib/InnerProductSpace/ObliqueProjection.lean`;
+  §5.2.3, phase 2 (§7). Kato's lemma itself is in `Numlib/Analysis/InnerProductSpace/Projection/ObliqueProjection.lean`;
   the deferred part is the projector construction and the sharpened Galerkin estimate.
 
 ## 6. Left out

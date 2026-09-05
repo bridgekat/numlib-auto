@@ -22,12 +22,12 @@ Proposed files (`Surface/AtkinsonHan/Ch05/`, namespace `AtkinsonHan.Ch05`, one s
 
 | File | Book | Backbone modules used |
 |---|---|---|
-| `FixedPoint.lean` | Def 5.1.2, Thm 5.1.3 (5.1.4)–(5.1.6), Ex 5.1.2, Thm 5.1.4 (5.1.8)–(5.1.11) | `Numlib/Nonlinear/FixedPoint.lean`; `Numlib/InnerProductSpace/Coercive.lean` (linear case); Mathlib `ContractingWith` |
-| `LinearIteration.lean` | Thm 5.2.1 + derivative criterion; §5.2.2 (5.2.4)–(5.2.6), relations 1–3, Jacobi/GS/SOR | `Numlib/Nonlinear/FixedPoint.lean` (derivative criterion); `Numlib/LinearSolve/Stationary/{Basic,Splitting}.lean`; `Numlib/Matrix/{Hessenberg,Complexify}.lean`; `Numlib/Analysis/SpectralRadius.lean`; Mathlib MVT |
+| `FixedPoint.lean` | Def 5.1.2, Thm 5.1.3 (5.1.4)–(5.1.6), Ex 5.1.2, Thm 5.1.4 (5.1.8)–(5.1.11) | `Numlib/Nonlinear/FixedPoint.lean`; `Numlib/Analysis/InnerProductSpace/Coercive.lean` (linear case); Mathlib `ContractingWith` |
+| `LinearIteration.lean` | Thm 5.2.1 + derivative criterion; §5.2.2 (5.2.4)–(5.2.6), relations 1–3, Jacobi/GS/SOR | `Numlib/Nonlinear/FixedPoint.lean` (derivative criterion); `Numlib/LinearSolve/Stationary/{Basic,Splitting}.lean`; `Numlib/Matrix/{Hessenberg,Complexify}.lean`; `Numlib/Analysis/Normed/Algebra/SpectralRadius.lean`; Mathlib MVT |
 | `IntegralEquations.lean` (phase 3) | §5.2.3 (5.2.7)–(5.2.9), Thm 5.2.2–5.2.3, §5.2.4 Thm 5.2.4 | Mathlib `IsPicardLindelof`, `ODE_solution_unique_of_mem_Icc`; the `C[a,b]` integral-operator toolkit (§3 item 1) |
 | `Calculus.lean` | Def 5.3.1–5.3.2, Prop 5.3.3–5.3.7, Ex 5.3.8, Prop 5.3.11–5.3.13, Def 5.3.14–Cor 5.3.16, Thm 5.3.17–5.3.19 | Mathlib `HasFDerivAt`, `HasLineDerivAt`, `Convex.norm_image_sub_le_of_norm_hasFDerivWithin_le`, `FDeriv/Partial.lean` |
-| `Newton.lean` | (5.4.2), Thm 5.4.1 (5.4.3)–(5.4.5), Thm 5.4.2, (5.4.7) | `Numlib/Nonlinear/Newton.lean`; `Numlib/Analysis/NormedRing/Inverse.lean` |
-| `ConjugateGradient.lean` | (5.6.2)–(5.6.6), (5.6.10), Thm 5.6.1; Thm 5.6.2 with (5.6.12)–(5.6.21) as a surface-only variant | `Numlib/Krylov/{Subspace,Iterate,CG}.lean`; `Numlib/Krylov/Convergence/{Polynomial,CG}.lean`; `Numlib/LinearSolve/Projection/{Basic,Optimality,OneDimensional}.lean`; `Numlib/InnerProductSpace/{Coercive,Energy}.lean`; `Numlib/Polynomial/ChebyshevMinimax.lean` |
+| `Newton.lean` | (5.4.2), Thm 5.4.1 (5.4.3)–(5.4.5), Thm 5.4.2, (5.4.7) | `Numlib/Nonlinear/Newton.lean`; `Numlib/Analysis/Normed/Ring/Inverse.lean` |
+| `ConjugateGradient.lean` | (5.6.2)–(5.6.6), (5.6.10), Thm 5.6.1; Thm 5.6.2 with (5.6.12)–(5.6.21) as a surface-only variant | `Numlib/Krylov/{Subspace,Iterate,CG}.lean`; `Numlib/Krylov/Convergence/{Polynomial,CG}.lean`; `Numlib/LinearSolve/Projection/{Basic,Optimality,OneDimensional}.lean`; `Numlib/InnerProductSpace/{Coercive,Energy}.lean`; `Numlib/RingTheory/Polynomial/ChebyshevMinimax.lean` |
 
 §5.5 gets no file (a module docstring in `Calculus.lean` records the summary). `IntegralEquations.lean`
 belongs to phase 3 (`plans/backbone.md` §7, §8.3); its Mathlib-only parts (existence and uniqueness
@@ -69,7 +69,7 @@ Lipschitz as `∀ v₁ v₂, ‖T v₁ - T v₂‖ ≤ c₂ * ‖v₁ - v₂‖`
 *Counterpart.* Backbone `zarantonello` (`Numlib/Nonlinear/FixedPoint.lean`) takes the hypotheses as
 `hmono : ∀ x y, c * ‖x - y‖ ^ 2 ≤ RCLike.re (inner 𝕜 (T x - T y) (x - y))` and
 `hlip : LipschitzWith (Real.toNNReal L) T`; the linear case is `LinearMap.IsCoerciveWith A c`
-(`Numlib/InnerProductSpace/Coercive.lean`).
+(`Numlib/Analysis/InnerProductSpace/Coercive.lean`).
 *Equivalence.* `stronglyMonotoneWith_iff : StronglyMonotoneWith T c ↔ ∀ x y, c * ‖x - y‖ ^ 2 ≤ RCLike.re (inner ℝ (T x - T y) (x - y))`
 (`RCLike.re_to_real`); `stronglyMonotoneWith_iff_isCoerciveWith (A : V →L[ℝ] V) : StronglyMonotoneWith A c ↔ (A : V →ₗ[ℝ] V).IsCoerciveWith c`
 (`map_sub`); `lipschitzWith_toNNReal_iff (hc : 0 ≤ c₂) : (∀ v₁ v₂, ‖T v₁ - T v₂‖ ≤ c₂ * ‖v₁ - v₂‖) ↔ LipschitzWith (Real.toNNReal c₂) T`
@@ -88,7 +88,7 @@ fields `m`, `isUnit : IsUnit m`, with `n := m - a` and `iterationOperator := 1 -
 `a = m − n` with `IsUnit m` versus the book's `A = N − M` with `N` nonsingular. `Stationary.step G f x = G x + f`
 (`Numlib/LinearSolve/Stationary/Basic.lean`, `G : E →L[𝕜] E`). Spectral radius of real matrices:
 `Matrix.complexify A = A.map Complex.ofReal` and `Matrix.complexSpectralRadius A = spectralRadius ℂ (complexify A)`
-(`Numlib/Matrix/Complexify.lean`, with `complexify_pow`, `tendsto_pow_iff_complexSpectralRadius_lt_one`).
+(`Numlib/LinearAlgebra/Matrix/Complexify.lean`, with `complexify_pow`, `tendsto_pow_iff_complexSpectralRadius_lt_one`).
 Operator norm (5.2.6): Mathlib `ContinuousLinearMap.opNorm` via `Matrix.toLin'`; the ∞-norm instance
 `Matrix.Norms.Operator` (`linfty_opNorm_*`).
 *Equivalence.* `BookSplitting.toSplitting (s) : Stationary.Splitting A := ⟨s.N, s.hN⟩`;
@@ -189,7 +189,7 @@ versus the backbone's `r_k − α_k A p_k`) and `real_inner_self_eq_norm_sq` for
 *Book.* `(v,u)_A = (Av, u)`, `‖v‖_A = √(v,v)_A`. *Lean.* `innerA A v u := inner ℝ (A v) u`,
 `normA A v := Real.sqrt (innerA A v v)`.
 *Counterpart.* Backbone `energyInner (A : E →ₗ[𝕜] E) x y = inner 𝕜 (A x) y`, `energyNorm A x = √(re ⟪A x, x⟫)`
-(`Numlib/InnerProductSpace/Energy.lean`, scoped notation `⟪x, y⟫_[A]`, `‖x‖_[A]` in `Energy`).
+(`Numlib/Analysis/InnerProductSpace/Energy.lean`, scoped notation `⟪x, y⟫_[A]`, `‖x‖_[A]` in `Energy`).
 *Equivalence.* `innerA_eq : innerA A v u = energyInner (A : V →ₗ[ℝ] V) v u` (`rfl`),
 `normA_eq : normA A v = energyNorm (A : V →ₗ[ℝ] V) v` (`RCLike.re_to_real`).
 
@@ -199,7 +199,7 @@ Thm 5.1.4 applies, i.e. `(Av,v) ≥ c₁‖v‖²` (the book's (5.6.8) confirms:
 (5.6.3): `√m ‖v‖ ≤ ‖v‖_A ≤ √M ‖v‖`, `m, M > 0`.
 *Lean.* `IsSelfAdjoint (A : V →L[ℝ] V)` (Mathlib, needs `[CompleteSpace V]`), hypothesis
 `hbound : ∀ v, √m * ‖v‖ ≤ normA A v ∧ normA A v ≤ √M * ‖v‖`.
-*Counterpart.* Backbone `LinearMap.IsSymmetricBoundedBy A m M` (`Numlib/InnerProductSpace/Coercive.lean`:
+*Counterpart.* Backbone `LinearMap.IsSymmetricBoundedBy A m M` (`Numlib/Analysis/InnerProductSpace/Coercive.lean`:
 fields `isSymmetric`, `le_re_inner : m ‖x‖² ≤ re ⟪A x, x⟫`, `re_inner_le`), the hypothesis of every
 Chebyshev-type bound; `LinearMap.IsSymmetricCoercive` via `IsSymmetricBoundedBy.isSymmetricCoercive (hm : 0 < m)`,
 `LinearMap.IsCoerciveWith A m` via `IsSymmetricBoundedBy.isCoerciveWith`.
@@ -290,7 +290,7 @@ Backbone (`Numlib/Nonlinear/FixedPoint.lean`): `zarantonello (hc : 0 < c) (hmono
 — (5.1.10); `norm_sub_le_of_strongly_monotone (hc) (hmono) (h₁ : T x₁ = b₁) (h₂ : T x₂ = b₂) : ‖x₁ - x₂‖ ≤ ‖b₁ - b₂‖ / c`
 — (5.1.11); the proof's damped map `x ↦ x − θ (T x − b)` contracts with factor `√(1 − 2θc + θ²L²)` for
 `0 < θ < 2c/L²` (`contractingWith_damped`; then Thm 5.1.3 with `K = V`). Linear special case:
-`ContinuousLinearMap.exists_equiv_of_isCoerciveWith` (`Numlib/InnerProductSpace/Coercive.lean`).
+`ContinuousLinearMap.exists_equiv_of_isCoerciveWith` (`Numlib/Analysis/InnerProductSpace/Coercive.lean`).
 Route: D3's `stronglyMonotoneWith_iff` and `lipschitzWith_toNNReal_iff`; `(1/c₁) ‖b₁ − b₂‖ = ‖b₁ − b₂‖ / c₁`.
 Classification: `needs-equivalence` (D3). The book's proof swaps the constants — see §5.
 
@@ -325,8 +325,8 @@ Classification: `needs-equivalence` (D4).
 
 **§5.2.2 (c)** "`Aⁿ → 0` iff `r_σ(A) < 1`" (square matrices).
 Backbone: `Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one (A : Matrix n n ℝ) : Tendsto (fun k => A ^ k) atTop (𝓝 0) ↔ complexSpectralRadius A < 1`
-(`Numlib/Matrix/Complexify.lean`) — literally the book's statement with `rσ = complexSpectralRadius` (D4).
-For complex Banach algebras: `spectralRadius_lt_one_iff_tendsto_pow` (`Numlib/Analysis/SpectralRadius.lean`).
+(`Numlib/LinearAlgebra/Matrix/Complexify.lean`) — literally the book's statement with `rσ = complexSpectralRadius` (D4).
+For complex Banach algebras: `spectralRadius_lt_one_iff_tendsto_pow` (`Numlib/Analysis/Normed/Algebra/SpectralRadius.lean`).
 Classification: `direct`.
 
 **§5.2.2 (d)** "converges for every `x₀` iff `(N⁻¹M)ⁿ → 0`", hence iff `r_σ(N⁻¹M) < 1`.
@@ -337,7 +337,7 @@ Lean: `(∀ x₀, Tendsto … (𝓝 x)) ↔ Tendsto (fun n => (s.N⁻¹ * s.M) ^
 
 **§5.2.2 relation 1** `r_σ(A) ≤ ‖A‖` for any operator norm.
 Mathlib: `spectrum.spectralRadius_le_nnnorm` (`Mathlib/Analysis/Normed/Algebra/Spectrum.lean`) for the
-Banach-algebra norm; real matrices: `Matrix.complexSpectralRadius_le_of_norm` (`Numlib/Matrix/Complexify.lean`,
+Banach-algebra norm; real matrices: `Matrix.complexSpectralRadius_le_of_norm` (`Numlib/LinearAlgebra/Matrix/Complexify.lean`,
 any submultiplicative `NormOneClass` norm on `Matrix n n ℝ`, i.e. any scoped matrix norm).
 Classification: `direct` (for the norm instance in scope), `surface-only` for "any" induced norm (quantify over a
 `NormedAlgebra ℂ (Matrix n n ℂ)` instance — awkward; state for the three Mathlib norms).
@@ -347,13 +347,13 @@ Classification: `out-of-scope` (no Mathlib support; the backbone replaces it by 
 
 **§5.2.2 relation 3** Gelfand `r_σ(A) = lim ‖Aⁿ‖^{1/n}` for any matrix norm.
 Mathlib: `spectrum.pow_nnnorm_pow_one_div_tendsto_nhds_spectralRadius` (ℂ, Banach-algebra norm). Real matrices:
-`Matrix.complexify_pow` (`Numlib/Matrix/Complexify.lean`) and `‖complexify B‖ = ‖B‖` for the norm instance in
+`Matrix.complexify_pow` (`Numlib/LinearAlgebra/Matrix/Complexify.lean`) and `‖complexify B‖ = ‖B‖` for the norm instance in
 scope (entrywise for the three Mathlib norms), then the complex formula.
 Classification: `direct` (complex matrices, algebra norm); `surface-only` (real matrices; the "any matrix norm"
 generality via norm equivalence, `LinearEquiv.toContinuousLinearEquiv` constants).
 
 **§5.2.2 Jacobi / Gauss–Seidel / SOR** (definitions `A = D + L + U`, `N = D`, `N = D + L`, `N = D/ω + L`).
-Lean: `Matrix.diagPart`, `strictLower`, `strictUpper` (`Numlib/Matrix/Hessenberg.lean`, `[LinearOrder n]`;
+Lean: `Matrix.diagPart`, `strictLower`, `strictUpper` (`Numlib/LinearAlgebra/Matrix/Hessenberg.lean`, `[LinearOrder n]`;
 `A = D + L + U` is `diagPart_add_strictLower_add_strictUpper`), the three `BookSplitting`s and the componentwise
 formulas as `Matrix.mulVec` lemmas.
 Backbone: `Matrix.jacobiSplitting A h`, `gaussSeidelSplitting A h`, `sorSplitting A h hω`
@@ -538,7 +538,7 @@ Route: take `M := max C 1` and shrink `δ` so that `M δ < 1`; then `‖u − u*
 so the iterates stay in the ball and (5.4.3) holds along the sequence; (5.4.4) by induction
 (`‖u_{n+1} − u*‖ ≤ M ((Mδ)^{2ⁿ}/M)² = (Mδ)^{2^{n+1}}/M`). Well-definedness (and the uniform bound `c₀` on
 `‖F'(u)⁻¹‖` used by (5.4.5)): `ContinuousLinearEquiv.exists_symm_norm_le_of_add`
-(`Numlib/Analysis/NormedRing/Inverse.lean`, AH Thm 2.3.5) applied to `F' u = F' u* + (F' u − F' u*)` with
+(`Numlib/Analysis/Normed/Ring/Inverse.lean`, AH Thm 2.3.5) applied to `F' u = F' u* + (F' u − F' u*)` with
 `‖F' u − F' u*‖ ≤ Lδ < ‖F'(u*)⁻¹‖⁻¹`.
 Classification: `direct` (well-definedness, convergence, (5.4.3)); `surface-only` ((5.4.4) induction).
 
@@ -599,7 +599,7 @@ alternative `IsCompactOperator.hasEigenvalue_or_mem_resolventSet` — linear onl
 **Setting: `Au = f` uniquely solvable, `A⁻¹` bounded** (book: by Thm 5.1.4).
 Lean: `theorem existsUnique_solution (hA : IsSelfAdjoint A) (hbound) (f) : ∃! u, A u = f` and `‖A⁻¹‖ ≤ 1/m`.
 Backbone: `ContinuousLinearMap.exists_equiv_of_isCoerciveWith (hc : 0 < c) (hA : (A : V →ₗ[ℝ] V).IsCoerciveWith c) : ∃ e : V ≃L[ℝ] V, ↑e = A ∧ ‖(e.symm : V →L[ℝ] V)‖ ≤ 1 / c`
-(`Numlib/InnerProductSpace/Coercive.lean`) with `c := m`, via D13's `isSymmetricBoundedBy_iff` and
+(`Numlib/Analysis/InnerProductSpace/Coercive.lean`) with `c := m`, via D13's `isSymmetricBoundedBy_iff` and
 `IsSymmetricBoundedBy.isCoerciveWith`. Classification: `needs-equivalence` (D13).
 
 **(5.6.2) CG recurrences** — D11; equivalence `cg_eq_CG_iterate` with backbone `CG.iterate` (`Numlib/Krylov/CG.lean`).
@@ -630,10 +630,10 @@ gives `‖e_{k+1}‖_A ≤ ‖u* − SD(u_k)‖_A ≤ (M − m)/(M + m) ‖e_k�
 `LinearMap.IsSymmetricBoundedBy.energyNorm_aeval_map_apply_le` (`Numlib/Krylov/Convergence/Polynomial.lean`) with
 `p = 1 − 2X/(M+m)` on `e_k`, whose sup over `[m, M]` is `(M−m)/(M+m)`.) Convergence: (5.6.4) iterated,
 `(M−m)/(M+m) < 1`, and `√m ‖·‖ ≤ ‖·‖_A` (`LinearMap.IsCoerciveWith.norm_le_energyNorm`,
-`Numlib/InnerProductSpace/Energy.lean`).
+`Numlib/Analysis/InnerProductSpace/Energy.lean`).
 Difficult-proof note (backbone side, not repeated in the surface): the Hilbert-space bounds are proved by compressing
 `A` to the finite-dimensional Krylov space generated by the *error* `x* − x₀` (`compression.aeval_apply_of_forall_pow_mem`,
-`compression.isSymmetricBoundedBy`, `compression.energyNorm_apply` in `Numlib/InnerProductSpace/Compression.lean` and
+`compression.isSymmetricBoundedBy`, `compression.energyNorm_apply` in `Numlib/Analysis/InnerProductSpace/Projection/Compression.lean` and
 `Numlib/Krylov/Convergence/Polynomial.lean`), not by the residual: with generator `r₀` the compressed problem's
 solution `A_K⁻¹ r₀` differs from `e₀ ∉ K`, and the compressed bound controls the wrong quantity.
 Classification: `needs-equivalence` (D11, D13).
@@ -642,7 +642,7 @@ Classification: `needs-equivalence` (D11, D13).
 Lean (`eq_5_6_5`, under `m < M`). Backbone: `Krylov.IsGalerkinIterate.energyNorm_error_le (hl : 0 < lmin) (hll : lmin < lmax) (hA : A.IsSymmetricBoundedBy lmin lmax) (hx : IsGalerkinIterate A b x₀ m x) (hstar : A xstar = b) : energyNorm A (xstar - x) ≤ 2 * ((√(lmax / lmin) - 1) / (√(lmax / lmin) + 1)) ^ m * energyNorm A (xstar - x₀)`
 (`Numlib/Krylov/Convergence/CG.lean`, any inner product space; the sharp Chebyshev form
 `energyNorm_error_le_div_eval_T` alongside; ingredient `Polynomial.Chebyshev.one_div_eval_T_le_two_mul_pow`,
-`Numlib/Polynomial/ChebyshevMinimax.lean`) with `CG.isGalerkinIterate`.
+`Numlib/RingTheory/Polynomial/ChebyshevMinimax.lean`) with `CG.isGalerkinIterate`.
 Route: `(√(M/m) − 1)/(√(M/m) + 1) = (√M − √m)/(√M + √m)` (`Real.sqrt_div`, `div_sub_one`, `div_add_one`,
 `div_div_div_cancel_right`). The backbone assumes `m < M`; for `m = M`, `A = m • 1` and CG is exact after one step.
 Classification: `needs-equivalence` (D11, D13; ratio identity).
@@ -680,7 +680,7 @@ conclusion (5.6.11) with `c_k` as in (5.6.21). Proof steps:
 - **(5.6.15)** `Q_k(λ) = ∏_{j≤k} (λ−λ_j)/(1−λ_j)`, `Q_k(1) = 1`, `Q_k = 1 − (1−λ)P_{k−1}`: `Polynomial` algebra
   (`Polynomial.X_sub_C_dvd`-style factorisation of `Q_k − 1` at `1`). Classification: `surface-only`.
 - **(5.6.16)** `‖u* − u_k‖ ≤ (1/δ)√(Δ/δ) ‖r̃_k‖`: `LinearMap.IsCoerciveWith.norm_le_energyNorm`
-  (`Numlib/InnerProductSpace/Energy.lean`), the upper bound `‖v‖_A ≤ √Δ ‖v‖` (one line from
+  (`Numlib/Analysis/InnerProductSpace/Energy.lean`), the upper bound `‖v‖_A ≤ √Δ ‖v‖` (one line from
   `IsSymmetricBoundedBy.re_inner_le` and `Real.sqrt_le_sqrt`), `‖A⁻¹‖ ≤ 1/δ` from `exists_equiv_of_isCoerciveWith`.
   Classification: `direct`.
 - **(5.6.17)** `r̃_k = Q_k(A) r₀`: `Krylov.exists_residual_poly (hx : x - x₀ ∈ Krylov.subspace A r₀ m) : ∃ p, p.degree ≤ m ∧ p.eval 0 = 1 ∧ b - A x = aeval A p (b - A x₀)`

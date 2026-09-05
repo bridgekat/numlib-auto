@@ -1,5 +1,5 @@
 import Numlib.LinearSolve.Stationary.Basic
-import Numlib.Matrix.Hessenberg
+import Numlib.LinearAlgebra.Matrix.Hessenberg
 import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 import Mathlib.Analysis.RCLike.Basic
 

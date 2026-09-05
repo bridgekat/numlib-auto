@@ -1,5 +1,5 @@
-import Numlib.Analysis.NormedRing.CondNumber
-import Numlib.InnerProductSpace.Coercive
+import Numlib.Analysis.Normed.Ring.CondNumber
+import Numlib.Analysis.InnerProductSpace.Coercive
 import Mathlib.Analysis.InnerProductSpace.Spectrum
 import Mathlib.Analysis.InnerProductSpace.Rayleigh
 import Mathlib.Analysis.CStarAlgebra.Matrix

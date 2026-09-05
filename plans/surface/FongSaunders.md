@@ -41,11 +41,11 @@ Each block: paper formulation → Lean surface definition → backbone counterpa
 * Lean: `abbrev Vec (n : ℕ) := EuclideanSpace ℝ (Fin n)`;
   `noncomputable abbrev mulVecE (A : Matrix (Fin n) (Fin n) ℝ) (x : Vec n) : Vec n := Matrix.toEuclideanLin A x`,
   `scoped infixr:73 " ⬝ " => mulVecE`; `A ≻ 0` is `A.PosDef`.
-* Backbone: `LinearMap.IsSymmetricCoercive` (`Numlib/InnerProductSpace/Coercive.lean`, §2.1.4);
+* Backbone: `LinearMap.IsSymmetricCoercive` (`Numlib/Analysis/InnerProductSpace/Coercive.lean`, §2.1.4);
   matrix glue `Matrix.toEuclideanLin_one`, `Matrix.toEuclideanLin_mul`, `Matrix.toEuclideanLin_pow`,
-  `Matrix.l2_opNorm_eq_norm_toEuclideanLin` (`Numlib/Matrix/ToEuclideanLin.lean`).
+  `Matrix.l2_opNorm_eq_norm_toEuclideanLin` (`Numlib/Analysis/Matrix/ToEuclideanLin.lean`).
 * Equivalence: `Matrix.posDef_iff_isSymmetricCoercive (M) : M.PosDef ↔ (toEuclideanLin M).IsSymmetricCoercive`
-  (`Numlib/InnerProductSpace/Coercive.lean`). Surface glue lemmas (trivial `simp`/`rfl`, in `Sec1.lean`):
+  (`Numlib/Analysis/InnerProductSpace/Coercive.lean`). Surface glue lemmas (trivial `simp`/`rfl`, in `Sec1.lean`):
   `mulVecE_add`, `mulVecE_smul`, `mulVecE_zero`,
   `inner_mulVecE : ⟪x, A ⬝ y⟫_ℝ = x.ofLp ⬝ᵥ (A *ᵥ y.ofLp)` (unfold `Matrix.toEuclideanLin`,
   `EuclideanSpace.inner_eq_star_dotProduct`),
@@ -68,7 +68,7 @@ Each block: paper formulation → Lean surface definition → backbone counterpa
   (`Numlib/Krylov/Subspace.lean`, §3.1); `Arnoldi.vec`, `Arnoldi.span_vec`, `Arnoldi.apply_sum`,
   `Arnoldi.orthonormal` (`Numlib/Krylov/Arnoldi.lean`, §3.2); `Lanczos.tridiag`, `Lanczos.tridiagExt`,
   `Lanczos.hessenberg_eq_map_tridiagExt`, `Lanczos.apply_sum_grade` (`Numlib/Krylov/Lanczos.lean`, §3.3);
-  `Matrix.krylov_subspace_toEuclideanLin` (`Numlib/Matrix/ToEuclideanLin.lean`).
+  `Matrix.krylov_subspace_toEuclideanLin` (`Numlib/Analysis/Matrix/ToEuclideanLin.lean`).
 * Equivalence: `krylov_eq : krylov A b k = Krylov.subspace (toEuclideanLin A) b k` is
   `Matrix.krylov_subspace_toEuclideanLin` read backwards (`mulVecE` unfolds to `toEuclideanLin (A ^ i) b`);
   `mem_krylov_iff_exists_lanczos (k) : x ∈ krylov A b k ↔ ∃ y : Fin k → ℝ, x = ∑ j, y j • lanczosVec A b j`
@@ -81,7 +81,7 @@ Each block: paper formulation → Lean surface definition → backbone counterpa
   `noncomputable def xstar (A) (b) : Vec n := A⁻¹ ⬝ b` with `mulVecE_xstar (hA) : A ⬝ xstar A b = b`
   and `xstar_unique (hA) (h : A ⬝ x = b) : x = xstar A b`.
 * Backbone: none needed (Mathlib `Matrix.PosDef.isUnit`, `Matrix.mulVec_mulVec`, `Matrix.nonsing_inv_mul`;
-  alternatively `LinearMap.IsCoercive.injective` of `Numlib/InnerProductSpace/Coercive.lean` plus
+  alternatively `LinearMap.IsCoercive.injective` of `Numlib/Analysis/InnerProductSpace/Coercive.lean` plus
   finite dimension).
 * Equivalence: `xstar_unique` as above.
 
@@ -91,7 +91,7 @@ Each block: paper formulation → Lean surface definition → backbone counterpa
 * Lean: `noncomputable def phi (A) (b) (x : Vec n) : ℝ := (1/2) * ⟪x, A ⬝ x⟫_ℝ - ⟪b, x⟫_ℝ`;
   `noncomputable def energyNorm (A) (v : Vec n) : ℝ := Real.sqrt ⟪v, A ⬝ v⟫_ℝ` (scoped notation `‖v‖_A`).
 * Backbone: `energyNorm (A : E →ₗ[𝕜] E) x = √(re ⟪A x, x⟫)` and
-  `LinearMap.IsSymmetricCoercive.energyNorm_sq` (`Numlib/InnerProductSpace/Energy.lean`, §2.1.5); the
+  `LinearMap.IsSymmetricCoercive.energyNorm_sq` (`Numlib/Analysis/InnerProductSpace/Energy.lean`, §2.1.5); the
   quadratic `re⟪A x, x⟫/2 − re⟪b, x⟫` of `IsGalerkin.quadratic_le`
   (`Numlib/LinearSolve/Projection/Optimality.lean`, §2.4.2).
 * Equivalence: `energyNorm_eq : energyNorm A v = _root_.energyNorm (toEuclideanLin A) v`
@@ -288,7 +288,7 @@ Numbering: `R<section>.<item>`; the paper's own labels are in the `Book statemen
 * Book statement: `A x = b` has a unique solution `x*` (`A` spd).
 * Lean surface statement: `theorem existsUnique_solution (hA) : ∃! x : Vec n, A ⬝ x = b`.
 * Backbone item: none needed (Mathlib `Matrix.PosDef.isUnit`); alternatively `LinearMap.IsCoercive.injective`
-  (`Numlib/InnerProductSpace/Coercive.lean`) with `LinearMap.injective_iff_surjective`.
+  (`Numlib/Analysis/InnerProductSpace/Coercive.lean`) with `LinearMap.injective_iff_surjective`.
 * Proof route: `posDef_iff_isSymmetricCoercive`, `IsCoercive.injective`, finite dimension.
 * Classification: `direct`.
 
@@ -333,7 +333,7 @@ Numbering: `R<section>.<item>`; the paper's own labels are in the `Book statemen
   ```
 * Backbone item: `CR.isMinResIterate` (`Numlib/Krylov/CR.lean`); `Krylov.IsMinResIterate.eq_CR_iterate`
   (`Numlib/Krylov/Monotonicity.lean`); `Krylov.existsUnique_isMinResIterate_of_injective`
-  (`Numlib/Krylov/Iterate.lean`); `LinearMap.IsCoercive.injective` (`Numlib/InnerProductSpace/Coercive.lean`).
+  (`Numlib/Krylov/Iterate.lean`); `LinearMap.IsCoercive.injective` (`Numlib/Analysis/InnerProductSpace/Coercive.lean`).
 * Proof route: `cr_eq_backbone` + `CR.isMinResIterate`; the ⇒ direction of `isMinresIterate_iff_eq_cr`
   is `eq_CR_iterate` through `isMinresIterate_iff`; uniqueness follows.
 * Classification: `direct` (after D6/D7 equivalences).
@@ -357,7 +357,7 @@ Numbering: `R<section>.<item>`; the paper's own labels are in the `Book statemen
   `CG.residual_ne_zero_of_lt_grade`, `CG.iterate_eq_of_residual_eq_zero'` (`Numlib/Krylov/CG.lean`);
   `CR.residual_eq_zero_of_grade_le`, `CR.isMinResIterate` (`Numlib/Krylov/CR.lean`);
   `Krylov.grade_le_of_apply_eq` (`Numlib/Krylov/Iterate.lean`); `Krylov.grade_le_finrank`
-  (`Numlib/Krylov/Subspace.lean`); `LinearMap.IsCoercive.inner_self_pos` (`Numlib/InnerProductSpace/Coercive.lean`).
+  (`Numlib/Krylov/Subspace.lean`); `LinearMap.IsCoercive.inner_self_pos` (`Numlib/Analysis/InnerProductSpace/Coercive.lean`).
 * Proof route: CG: `⇐` is `residual_eq_zero_of_grade_le`, `⇒` is the contrapositive of
   `residual_ne_zero_of_lt_grade`. CR: `⇐` is `CR.residual_eq_zero_of_grade_le`; for `⇒`, `r_k = 0`
   means `A x_k = b` with `x_k ∈ 𝒦_k` (`(CR.isMinResIterate …).mem`), so `Krylov.grade_le_of_apply_eq`.
@@ -398,7 +398,7 @@ Numbering: `R<section>.<item>`; the paper's own labels are in the `Book statemen
   `CR.re_inner_direction_apply_direction_nonneg` (c), `CR.re_inner_direction_nonneg` (d),
   `CR.re_inner_iterate_direction_nonneg` (e, for `x₀ = 0`), `CR.re_inner_residual_direction_nonneg` (f),
   `CR.inner_residual_apply_direction_eq_zero` (Thm 2.1 (b)); `LinearMap.IsCoercive.inner_self_pos`
-  (`Numlib/InnerProductSpace/Coercive.lean`) for (2.2).
+  (`Numlib/Analysis/InnerProductSpace/Coercive.lean`) for (2.2).
 * Proof route: (a), (c)–(f) through `cr_eq_backbone`, `crAlpha_eq`, `cr_q_eq` and `RCLike.re_to_real`.
   (2.2): `ρ_i = ⟪r_i, A r_i⟫ ≥ 0` by coercivity, `> 0` for `r_i ≠ 0`. (b): `β_i = ρ_i/ρ_{i−1}`
   (`crBeta_succ`) is a quotient of nonnegative reals (`div_nonneg`). Strict (a), the surface lemma

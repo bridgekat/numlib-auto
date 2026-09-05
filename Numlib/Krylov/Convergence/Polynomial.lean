@@ -1,5 +1,5 @@
-import Numlib.InnerProductSpace.Energy
-import Numlib.InnerProductSpace.Compression
+import Numlib.Analysis.InnerProductSpace.Energy
+import Numlib.Analysis.InnerProductSpace.Projection.Compression
 import Mathlib.Analysis.InnerProductSpace.Spectrum
 import Mathlib.Algebra.Polynomial.Module.AEval
 import Mathlib.Topology.Algebra.Polynomial

@@ -1,6 +1,6 @@
 import Numlib.Krylov.Subspace
-import Numlib.Matrix.Hessenberg
-import Numlib.InnerProductSpace.Compression
+import Numlib.LinearAlgebra.Matrix.Hessenberg
+import Numlib.Analysis.InnerProductSpace.Projection.Compression
 import Mathlib.Analysis.InnerProductSpace.GramSchmidtOrtho
 import Mathlib.Analysis.InnerProductSpace.Projection.FiniteDimensional
 

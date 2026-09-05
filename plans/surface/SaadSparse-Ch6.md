@@ -33,12 +33,12 @@ are defined faithfully and only the properties the book actually proves about th
 * "Stop" semantics: a division by a vanishing norm yields `0` (Lean), which reproduces the book's
   "if `h_{j+1,j} = 0` then Stop" for the vectors (all later vectors are `0`); for FOM/GMRES the
   book's "set `m := j`" is implemented as `m' := min m (grade A r₀)`.
-* Matrix ↔ operator glue is `Numlib/Matrix/ToEuclideanLin.lean` (`Matrix.toEuclideanLin_pow`,
+* Matrix ↔ operator glue is `Numlib/Analysis/Matrix/ToEuclideanLin.lean` (`Matrix.toEuclideanLin_pow`,
   `toEuclideanLin_mul`, `toEuclideanLin_conjTranspose`, `krylov_subspace_toEuclideanLin`,
   `toEuclideanLin_apply_eq_sum` for `V_m y = ∑ y_j • v_j`,
   `IsHermitian.hasEigenvalue_toEuclideanLin_iff`, `IsHermitian.isSymmetricBoundedBy_toEuclideanLin`,
   `l2_opNorm_eq_norm_toEuclideanLin`), together with Mathlib's `Matrix.isSymmetric_toEuclideanLin_iff`
-  and `Matrix.posDef_iff_isSymmetricCoercive` (`Numlib/InnerProductSpace/Coercive.lean`).
+  and `Matrix.posDef_iff_isSymmetricCoercive` (`Numlib/Analysis/InnerProductSpace/Coercive.lean`).
 
 Proposed files (in dependency order):
 
@@ -153,7 +153,7 @@ noncomputable def arnoldiMGSCoeff (A) (v₁) (i j : ℕ) : 𝕜   -- the `h_ij` 
 
 Backbone: none (§1.2: MGS is surface material); the flag-uniqueness lemmas
 `InnerProductSpace.exists_norm_eq_one_smul_gramSchmidtNormed` and
-`InnerProductSpace.eq_gramSchmidtNormed_of_re_inner_pos` (`Numlib/InnerProductSpace/GramSchmidt.lean`)
+`InnerProductSpace.eq_gramSchmidtNormed_of_re_inner_pos` (`Numlib/Analysis/InnerProductSpace/GramSchmidt.lean`)
 are the general tool.
 Equivalence: `arnoldiMGS_eq_arnoldiCGS (hv : ‖v₁‖ = 1) : arnoldiMGS A v₁ = arnoldiCGS A v₁` and
 `arnoldiMGSCoeff = arnoldiCoeff` ("in exact arithmetic … mathematically equivalent"): induction,
@@ -569,13 +569,13 @@ noncomputable def epsMin (lam : Fin n → ℂ) (m : ℕ) : ℝ :=
 noncomputable def ellipse (c d a : ℂ) : Set ℂ                                -- `E(c, d, a)`, deferred (§4)
 ```
 
-Backbone (§2.1.9, `Numlib/Polynomial/ChebyshevMinimax.lean`): `Polynomial.Chebyshev.eval_T_eq_half_add_pow`,
+Backbone (§2.1.9, `Numlib/RingTheory/Polynomial/ChebyshevMinimax.lean`): `Polynomial.Chebyshev.eval_T_eq_half_add_pow`,
 `half_pow_le_eval_T`, `one_le_eval_T`, `shifted`, `shifted_degree_le`, `shifted_eval_self`,
 `one_div_eval_T_le_sSup_abs_eval` (general `γ`), `sSup_abs_eval_shifted`,
 `one_div_eval_T_le_sSup_abs_eval_of_eval_zero`, `one_div_eval_T_le_two_mul_pow`; §2.1.5 `energyNorm`
-(`Numlib/InnerProductSpace/Energy.lean`); §3.9–3.10 (`Numlib/Krylov/Convergence/Polynomial.lean`,
+(`Numlib/Analysis/InnerProductSpace/Energy.lean`); §3.9–3.10 (`Numlib/Krylov/Convergence/Polynomial.lean`,
 `Numlib/Krylov/Convergence/CG.lean`), whose hypothesis `A.IsSymmetricBoundedBy lmin lmax`
-(`Numlib/InnerProductSpace/Coercive.lean`) replaces the book's eigenvalue list.
+(`Numlib/Analysis/InnerProductSpace/Coercive.lean`) replaces the book's eigenvalue list.
 Equivalence: `Chat_eq_shifted : Chat k α β γ = Polynomial.Chebyshev.shifted k α β γ` (the arguments differ by a
 sign, `T_k(−x) = (−1)^k T_k(x)` cancels in the quotient); `anorm_eq : anorm A x = energyNorm (op A) x` (rfl);
 `one_add_two_mul_η : 1 + 2 * η lmin lmax = (lmax + lmin) / (lmax - lmin)`.
@@ -664,7 +664,7 @@ item scheduled for a later phase (listed in §4); `out-of-scope` = not formalize
   `Q : E →ₗ[𝕜] K` with `∀ x : K, Q x = x`), `compressionBy.aeval_apply_of_forall_pow_mem` (first
   part), `compressionBy.apply_aeval_of_forall_pow_lt_mem` (second part); the orthogonal case is
   `compression` with `compression.aeval_apply_of_forall_pow_mem` and `compression.eq_compressionBy`
-  (`Numlib/InnerProductSpace/Compression.lean`).
+  (`Numlib/Analysis/InnerProductSpace/Projection/Compression.lean`).
 - **Proof route.** `Q x = x` on `𝒦_m` from `hQ` and `hrange`; the membership hypotheses
   `A^i v ∈ 𝒦_m` for `i ≤ natDegree q < m` (resp. `i < natDegree q ≤ m`) are
   `Krylov.pow_apply_mem_subspace` through `krylov_eq`.
@@ -750,7 +750,7 @@ item scheduled for a later phase (listed in §4); `out-of-scope` = not formalize
   `theorem hh_eq_arnoldi_up_to_sign : ∃ ε, (∀ j, ε j = 1 ∨ ε j = -1) ∧ ∀ j ≤ m, vHH j = ε j • arnoldiCGS A (‖v‖⁻¹ • v) j`.
 - **Backbone item.** none (§3.2: Householder is surface); Mathlib `reflection`,
   `reflection_orthogonal`; `InnerProductSpace.exists_norm_eq_one_smul_gramSchmidtNormed`
-  (`Numlib/InnerProductSpace/GramSchmidt.lean`) for the sign statement.
+  (`Numlib/Analysis/InnerProductSpace/GramSchmidt.lean`) for the sign statement.
 - **Proof route.** `P_j` is an orthogonal involution fixing `e_i` (`i < j`) (`(w_j)_i = 0`); the
   triangular structure comes from the zero pattern of `h_j`; (6.13) by `P_k e_i = e_i` for `i < k`;
   orthonormality from (6.13) and orthogonality of `Q_{j+1}`; `A V_m = V_{m+1} H̄_m` by transporting
@@ -1039,7 +1039,7 @@ item scheduled for a later phase (listed in §4); `out-of-scope` = not formalize
   `κ₂(V_{m+1}) = ‖S‖‖S⁻¹‖` for any such `S` (which is how `κ₂` of a rectangular matrix is defined
   here).
 - **Backbone item.** §3.4 `Krylov.IsMinResIterate` (for `r^G`); §2.1.2 `NormedRing.condNumber`
-  (`Numlib/Analysis/NormedRing/CondNumber.lean`) under the L2 operator norm.
+  (`Numlib/Analysis/Normed/Ring/CondNumber.lean`) under the L2 operator norm.
 - **Proof route.** The book's: `r = W S⁻¹ t`, `t = S Wᴴ r`; minimality of `t_m` over the set `ℛ` of
   residuals of `x₀ + span(V_m) = x₀ + 𝒦_m`, and `r^G ∈ ℛ`.
 - **Classification.** `surface-only` (Gram–Schmidt `S` from `hV`; ~60 lines).
@@ -1220,7 +1220,7 @@ item scheduled for a later phase (listed in §4); `out-of-scope` = not formalize
   (∀ i j, i + 1 < j → h i j = 0) ∧ (∀ j, h j (j+1) = h (j+1) j) ∧ (H A v₁ m).IsTridiagonal ∧ (H A v₁ m).IsSymm`.
 - **Backbone item.** §3.3 `Arnoldi.coeff_eq_zero_of_isSymmetric`, `Arnoldi.coeff_conj_of_isSymmetric`,
   `Lanczos.hessenbergSq_eq_map_tridiag`, `Lanczos.tridiag_isTridiagonal`, `Lanczos.tridiag_isSymm`
-  (`Numlib/Krylov/Lanczos.lean`); §2.1.10 `Matrix.IsTridiagonal` (`Numlib/Matrix/Hessenberg.lean`);
+  (`Numlib/Krylov/Lanczos.lean`); §2.1.10 `Matrix.IsTridiagonal` (`Numlib/LinearAlgebra/Matrix/Hessenberg.lean`);
   Mathlib `Matrix.isSymmetric_toEuclideanLin_iff` for `A.IsSymm → (op A).IsSymmetric` over `ℝ`.
 - **Proof route.** Backbone.
 - **Classification.** `direct`.
@@ -1313,7 +1313,7 @@ item scheduled for a later phase (listed in §4); `out-of-scope` = not formalize
 - **Backbone item.** §3.7 `CG.iterate`, `CG.residual_eq`, `CG.isGalerkinIterate`,
   `CG.inner_residual_eq_zero`, `CG.inner_apply_direction_eq_zero`, `CG.inner_residual_direction_eq`
   (`Numlib/Krylov/CG.lean`); §3.4 `Krylov.existsUnique_isGalerkinIterate_of_isCoercive`; §2.1.4
-  `Matrix.posDef_iff_isSymmetricCoercive` (`Numlib/InnerProductSpace/Coercive.lean`).
+  `Matrix.posDef_iff_isSymmetricCoercive` (`Numlib/Analysis/InnerProductSpace/Coercive.lean`).
 - **Proof route.** `cg_eq_CG` is definitional; the coefficient identities follow from the backbone
   invariants; `cg_x_eq_dLanczos` from uniqueness of the Galerkin iterate (both R47/R48 and
   `CG.isGalerkinIterate` produce it); `cg_p_smul` from `x_{j+1} − x_j = α_j p_j = ζ_{j+1} p^{DL}_{j+1}`
@@ -1498,7 +1498,7 @@ item scheduled for a later phase (listed in §4); `out-of-scope` = not formalize
   and `Chat_degree_le`, `Chat_eval_γ : (Chat k α β γ).eval γ = 1`.
 - **Backbone item.** §2.1.9 `Polynomial.Chebyshev.one_div_eval_T_le_sSup_abs_eval` (general `γ`),
   `sSup_abs_eval_shifted`, `shifted_degree_le`, `shifted_eval_self`
-  (`Numlib/Polynomial/ChebyshevMinimax.lean`).
+  (`Numlib/RingTheory/Polynomial/ChebyshevMinimax.lean`).
 - **Proof route.** `Chat_eq_shifted` (D17) then the four backbone lemmas; the second form of the value
   is algebra (`1 + 2(γ−β)/(β−α) = 2(γ−μ)/(β−α)`).
 - **Classification.** `direct`.
@@ -1562,7 +1562,7 @@ item scheduled for a later phase (listed in §4); `out-of-scope` = not formalize
   (`Numlib/Krylov/Convergence/CG.lean`; hypotheses `0 < lmin`, `lmin < lmax`,
   `hA : A.IsSymmetricBoundedBy lmin lmax`, `hx : IsGalerkinIterate A b x₀ m x`, `hstar : A xstar = b`;
   conclusion `energyNorm A (xstar - x) ≤ energyNorm A (xstar - x₀) / (T ℝ m).eval ((lmax + lmin) / (lmax - lmin))`);
-  the glue `Matrix.IsHermitian.isSymmetricBoundedBy_toEuclideanLin` (`Numlib/Matrix/ToEuclideanLin.lean`)
+  the glue `Matrix.IsHermitian.isSymmetricBoundedBy_toEuclideanLin` (`Numlib/Analysis/Matrix/ToEuclideanLin.lean`)
   with `lmin = ⨅ i, eigenvalues i`, `lmax = ⨆ i, eigenvalues i` (`ciInf_le`, `le_ciSup`) and Mathlib
   `Matrix.PosDef.eigenvalues_pos` for `0 < lmin`; behind the backbone proof: §3.9
   `LinearMap.IsSymmetricBoundedBy.energyNorm_aeval_map_apply_le`, §2.1.9
@@ -1598,12 +1598,12 @@ item scheduled for a later phase (listed in §4); `out-of-scope` = not formalize
 - **Backbone item.** §3.10 `Krylov.restarted_minRes_tendsto`, `Krylov.IsMinResIterate.norm_residual_le_of_isCoerciveWith`
   (`Numlib/Krylov/Convergence/CG.lean`; for `A : E →L[𝕜] E` with `(A : E →ₗ E).IsCoerciveWith c`,
   `0 < c`, `1 ≤ m`: contraction factor `√(1 − c²/‖A‖²)` per cycle); §2.4.3
-  `Projection.norm_residual_minResStep_le` behind it; the constants (`Numlib/InnerProductSpace/Coercive.lean`):
+  `Projection.norm_residual_minResStep_le` behind it; the constants (`Numlib/Analysis/InnerProductSpace/Coercive.lean`):
   `LinearMap.isCoercive_iff_forall_pos` (the book's hypothesis), `ContinuousLinearMap.isCoerciveWith_iff_hermitianPart`
   and `LinearMap.IsSymmetric.isCoerciveWith_iff_forall_hasEigenvalue` (best constant
   `c = λ_min(½(A + Aᵀ))`), with `Matrix.IsHermitian.hasEigenvalue_toEuclideanLin_iff`,
   `Matrix.toEuclideanLin_conjTranspose` and `Matrix.l2_opNorm_eq_norm_toEuclideanLin`
-  (`Numlib/Matrix/ToEuclideanLin.lean`) identifying `μ` and `σ`.
+  (`Numlib/Analysis/Matrix/ToEuclideanLin.lean`) identifying `μ` and `σ`.
 - **Proof route.** `gmres A b x₀ m` is a minimal-residual iterate over `𝒦_m ⊇ span{r₀}` (R18,
   `mEff ≥ 1` when `r₀ ≠ 0`), so the backbone contraction applies to
   `LinearMap.toContinuousLinearMap Aop`; `Tendsto` of the iterates from that of the residuals via
@@ -1753,7 +1753,7 @@ item scheduled for a later phase (listed in §4); `out-of-scope` = not formalize
 - **Lean surface statement.** `theorem p_6_29 (hV : (VI … (m+1)).rank = m + 1) : Hbar A v₁ m = (S (m+1))⁻¹ * HbarI A v₁ k m * S m`
   where `S j` is the (unit upper triangular) change of basis with `VI j = V j * S j`.
 - **Backbone item.** §3.2 `Arnoldi.span_vec` (both bases span the same flag);
-  `InnerProductSpace.eq_gramSchmidtNormed_of_re_inner_pos` (`Numlib/InnerProductSpace/GramSchmidt.lean`)
+  `InnerProductSpace.eq_gramSchmidtNormed_of_re_inner_pos` (`Numlib/Analysis/InnerProductSpace/GramSchmidt.lean`)
   for the identification of the Gram–Schmidt basis of the IOP flag with `Arnoldi.vec`.
 - **Proof route.** `A V^Q_m = V^Q_{m+1} H̄^Q_m` and `V^Q_j = V^G_j S_j` (same flag, both leading
   coefficients positive) give `A V^G_m S_m = V^G_{m+1} S_{m+1} H̄^Q_m`, and `A V^G_m = V^G_{m+1} H̄^G_m`
@@ -1773,7 +1773,7 @@ the corresponding surface theorems are written once the item exists.
 1. **Complex Chebyshev polynomials on ellipses** (§2.1.9, phase 3): Zarantonello's circle lemma
    (Lemma 6.26, R62), the ellipse bound (Thm 6.27, R63) with the maximum of the shifted Chebyshev
    polynomial on `E(c, d, a)`, and their GMRES consequence (Cor 6.33, R70). Natural home:
-   `Numlib/Polynomial/ChebyshevMinimax.lean` (complex part) or a sibling `ChebyshevEllipse.lean`.
+   `Numlib/RingTheory/Polynomial/ChebyshevMinimax.lean` (complex part) or a sibling `ChebyshevEllipse.lean`.
 2. **Normal-matrix theory** (§3.12 candidate `Eigen/Normal.lean`, phase 3): normal ⟺ every
    eigenvector of `A` is an eigenvector of `A^H` (Saad Lemma 1.15), the spectral theorem for normal
    matrices in the form "Schur form is diagonal", and `natDegree (minpoly ℂ A)` = number of distinct

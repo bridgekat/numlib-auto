@@ -4,7 +4,7 @@ to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.LinearAlgebra.Matrix`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
-import Numlib.Analysis.SpectralRadius
+import Numlib.Analysis.Normed.Algebra.SpectralRadius
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Eigs
 import Mathlib.Analysis.Normed.Algebra.Spectrum
 import Mathlib.Analysis.Normed.Module.FiniteDimension
@@ -20,7 +20,7 @@ spectral radius of a real matrix *defined as* the spectral radius of its complex
 (`Matrix.complexSpectralRadius`). This is the only meaningful notion for real matrices:
 `spectralRadius ℝ` of the rotation `![![0, -1], ![1, 0]]` is `0` (empty real spectrum) although
 its powers do not tend to `0`, so `spectralRadius ℝ G < 1 → Gᵏ → 0` is **false** over `ℝ`; all
-Gelfand-formula results (`Numlib/Analysis/SpectralRadius.lean`) are used over `ℂ` and
+Gelfand-formula results (`Numlib/Analysis/Normed/Algebra/SpectralRadius.lean`) are used over `ℂ` and
 transported through `complexify`.
 -/
 

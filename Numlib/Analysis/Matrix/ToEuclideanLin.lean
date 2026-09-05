@@ -5,7 +5,7 @@ Natural home: `Mathlib.Analysis.Matrix`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
 import Numlib.Krylov.Subspace
-import Numlib.InnerProductSpace.Coercive
+import Numlib.Analysis.InnerProductSpace.Coercive
 import Mathlib.Analysis.CStarAlgebra.Matrix
 import Mathlib.Analysis.Matrix.Spectrum
 import Mathlib.Analysis.InnerProductSpace.Spectrum

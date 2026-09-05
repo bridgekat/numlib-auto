@@ -1,5 +1,5 @@
-import Numlib.InnerProductSpace.Coercive
-import Numlib.InnerProductSpace.Energy
+import Numlib.Analysis.InnerProductSpace.Coercive
+import Numlib.Analysis.InnerProductSpace.Energy
 import Mathlib.Analysis.InnerProductSpace.Dual
 import Mathlib.Analysis.InnerProductSpace.Adjoint
 

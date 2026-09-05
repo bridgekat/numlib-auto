@@ -17,7 +17,7 @@ Conventions used below.
   `V'` = `StrongDual 𝕜 V`; `Vᗮ` = `Submodule.orthogonal`.
 * Naming: `AtkinsonHan.Ch02.thm_2_3_1`, `cor_2_3_3`, `lem_3_4_1`, `prop_3_6_9_a`, `example_3_6_7`, `exercise_3_6_7`,
   `eq_2_3_13` (numbered inequalities); book numbers appear only in the surface, per `plans/backbone.md` §1.4.
-* Backbone results in a normed ring `R` (`Numlib/Analysis/NormedRing/Inverse.lean`, `CondNumber.lean`) assume
+* Backbone results in a normed ring `R` (`Numlib/Analysis/Normed/Ring/Inverse.lean`, `CondNumber.lean`) assume
   `[NormOneClass R]`; for `R = V →L[𝕜] V` this is the instance `ContinuousLinearMap.normOneClass`, available for
   nontrivial `V`. Surface statements that go through them either assume `[Nontrivial V]` or treat the trivial space
   separately (every bound below holds trivially there).
@@ -44,12 +44,12 @@ Each entry: book formulation → surface definition → Mathlib/backbone counter
    Surface: no new def; conclusions are phrased as `∃ e : V ≃L[𝕜] W, (e : V →L[𝕜] W) = M`. Mathlib: `ContinuousLinearEquiv`,
    `ContinuousLinearEquiv.ofBijective`, `ContinuousLinearMap.isUnit_iff_bijective` (V = W), `ContinuousLinearEquiv.unitsEquiv`.
    Equivalence: `isUnit_iff_exists_continuousLinearEquiv (L : V →L[𝕜] V) : IsUnit L ↔ ∃ e : V ≃L[𝕜] V, ↑e = L` (from
-   `ContinuousLinearEquiv.unitsEquiv`), so the ring-level backbone results of `Numlib/Analysis/NormedRing/` transfer, with
+   `ContinuousLinearEquiv.unitsEquiv`), so the ring-level backbone results of `Numlib/Analysis/Normed/Ring/` transfer, with
    `Ring.inverse (e : V →L[𝕜] V) = (e.symm : V →L[𝕜] V)` (`Ring.inverse_unit`).
 
 2. **Condition number** `cond(L) ≡ ‖L⁻¹‖‖L‖` (§2.4.2, for `L : V → W`).
    Surface: `noncomputable def cond (L : V ≃L[𝕜] W) : ℝ := ‖(L.symm : W →L[𝕜] V)‖ * ‖(L : V →L[𝕜] W)‖`.
-   Backbone (`Numlib/Analysis/NormedRing/CondNumber.lean`): `NormedRing.condNumber (a : R) := ‖a‖ * ‖Ring.inverse a‖`
+   Backbone (`Numlib/Analysis/Normed/Ring/CondNumber.lean`): `NormedRing.condNumber (a : R) := ‖a‖ * ‖Ring.inverse a‖`
    (single space) and `ContinuousLinearEquiv.condNumber_eq (e : E ≃L[𝕜] E) : condNumber ↑e = ‖↑e‖ * ‖↑e.symm‖`.
    Equivalence: `cond_eq_condNumber (L : V ≃L[𝕜] V) : cond L = NormedRing.condNumber (L : V →L[𝕜] V)`
    (`ContinuousLinearEquiv.condNumber_eq`; `mul_comm`). The two-space `cond` has no backbone counterpart (see Deferred item 10).
@@ -83,7 +83,7 @@ Each entry: book formulation → surface definition → Mathlib/backbone counter
 8. **Coercive functional over `K`** (Def 3.3.9): `f(v) → ∞ as ‖v‖ → ∞, v ∈ K`.
    Surface: `IsCoerciveFunctionalOn (f : V → ℝ) (K : Set V) : Prop := ∀ M : ℝ, ∃ R, ∀ v ∈ K, R ≤ ‖v‖ → M ≤ f v`
    (equivalently `Tendsto (fun v : K => f v) (comap (‖·‖) atTop) atTop`). No Mathlib/backbone counterpart.
-   **Naming rule**: the backbone's `LinearMap.IsCoercive` (`Numlib/InnerProductSpace/Coercive.lean`, `plans/backbone.md` §2.1.4)
+   **Naming rule**: the backbone's `LinearMap.IsCoercive` (`Numlib/Analysis/InnerProductSpace/Coercive.lean`, `plans/backbone.md` §2.1.4)
    is `re⟪Ax,x⟫ ≥ c‖x‖²` for operators (the book's "strongly monotone"); the surface must not reuse `IsCoercive` for Def 3.3.9.
 
 9. **Finite-dimensional subset** (after Thm 3.3.13): subset of a finite-dimensional subspace.
@@ -130,7 +130,7 @@ Each entry: book formulation → surface definition → Mathlib/backbone counter
 16. **Projection operator on a Banach space** (Def 3.6.3): `P ∈ 𝓛(V)`, `P² = P`; projection space `P(V)`; topological direct sum.
     Surface: `def IsProjectionOperator [CompleteSpace V] (P : V →L[𝕜] V) : Prop := IsIdempotentElem P` (the choice recorded in
     `plans/backbone.md` §8.3; the backbone's projector lemmas in `Numlib/Approximation/BestApprox.lean` and
-    `Numlib/InnerProductSpace/ObliqueProjection.lean` are all stated for `IsIdempotentElem`).
+    `Numlib/Analysis/InnerProductSpace/Projection/ObliqueProjection.lean` are all stated for `IsIdempotentElem`).
     Mathlib: `IsIdempotentElem`, `LinearMap.IsProj`, `isProj_range_iff_isIdempotentElem`, `Submodule.projection`,
     `IsIdempotentElem.ker_eq_range_one_sub`, `ContinuousLinearMap.IsIdempotentElem.eq_projectionL`. No further equivalence needed
     (definitional); "topological direct sum" = `IsCompl P.range (1 - P).range` with both ranges closed (Mathlib's closed-range lemma for
@@ -157,7 +157,7 @@ Each entry: book formulation → surface definition → Mathlib/backbone counter
 
 21. **§3.5 black boxes** (only cited, never proved here): Legendre `Lₙ` (3.5.4)–(3.5.6) — not in Mathlib (only `Polynomial.shiftedLegendre`);
     Chebyshev `Tₙ` (3.5.8)–(3.5.9) — `Polynomial.Chebyshev.T`, `Polynomial.Chebyshev.T_add_two`, `Polynomial.Chebyshev.T_real_cos`
-    (the backbone's `Numlib/Polynomial/ChebyshevMinimax.lean` covers min–max properties on intervals, not orthogonality);
+    (the backbone's `Numlib/RingTheory/Polynomial/ChebyshevMinimax.lean` covers min–max properties on intervals, not orthogonality);
     weighted `L²_w(−1,1)` and Gram–Schmidt orthogonal polynomials — Mathlib `InnerProductSpace.gramSchmidtNormed` on `MeasureTheory.Lp` (not planned).
 
 ---
@@ -184,7 +184,7 @@ theorem thm_2_3_1 [CompleteSpace V] (L : V →L[𝕜] V) (hL : ‖L‖ < 1) :
 *Backbone/Mathlib.* `Units.oneSub`, `NormedRing.inverse_one_sub`, `hasSum_geom_series_inverse`, `isUnit_one_sub_of_norm_lt_one`
 (`Mathlib/Analysis/SpecificLimits/Normed.lean`, instance `HasSummableGeomSeries` from `CompleteSpace (V →L[𝕜] V)`),
 `ContinuousLinearEquiv.unitsEquiv`; bound: `NormedRing.norm_inverse_one_sub_le {t : R} (h : ‖t‖ < 1) : ‖Ring.inverse (1 - t)‖ ≤ 1 / (1 - ‖t‖)`
-(`Numlib/Analysis/NormedRing/Inverse.lean`; `[NormOneClass R]`, i.e. nontrivial `V`), or Mathlib
+(`Numlib/Analysis/Normed/Ring/Inverse.lean`; `[NormOneClass R]`, i.e. nontrivial `V`), or Mathlib
 `tsum_geometric_le_of_norm_lt_one` (`‖∑ xⁿ‖ ≤ ‖1‖ − 1 + (1 − ‖x‖)⁻¹`, which is (2.3.2) once `‖1‖ = 1`;
 the trivial space satisfies (2.3.2) trivially).
 *Proof route.* `Units.oneSub L hL` → `unitsEquiv`; `HasSum` from `hasSum_geom_series_inverse`; bound from `norm_inverse_one_sub_le`
@@ -211,7 +211,7 @@ via item 1's `Ring.inverse_unit`.
 *Lean:* `theorem cor_2_3_3 [CompleteSpace V] (L) {m : ℕ} (hm : 1 ≤ m) (hL : ‖L ^ m‖ < 1) : ∃ e : V ≃L[𝕜] V, ↑e = 1 - L ∧ ‖(e.symm : V →L[𝕜] V)‖ ≤ (∑ i ∈ Finset.range m, ‖L ^ i‖) / (1 - ‖L ^ m‖)`.
 *Backbone.* `NormedRing.isUnit_one_sub_of_norm_pow_lt_one {t : R} {m : ℕ} (h : ‖t ^ m‖ < 1) : IsUnit (1 - t)` and
 `NormedRing.norm_inverse_one_sub_le_of_norm_pow_lt_one (h : ‖t ^ m‖ < 1) : ‖Ring.inverse (1 - t)‖ ≤ (∑ i ∈ Finset.range m, ‖t ^ i‖) / (1 - ‖t ^ m‖)`
-(`Numlib/Analysis/NormedRing/Inverse.lean`), exactly the book's (2.3.11); the backbone needs no `1 ≤ m` (for `m = 0` the hypothesis
+(`Numlib/Analysis/Normed/Ring/Inverse.lean`), exactly the book's (2.3.11); the backbone needs no `1 ≤ m` (for `m = 0` the hypothesis
 `‖1‖ < 1` is false), the surface keeps `hm` for faithfulness. The weaker `∑ ‖t‖ ^ i` form follows from `norm_pow_le'`.
 *Proof route.* item 1 to turn `IsUnit (1 - L)` into `e`, then `Ring.inverse_unit` and the backbone bound.
 *Classification:* direct.
@@ -238,7 +238,7 @@ theorem thm_2_3_5 (hc : CompleteSpace V ∨ CompleteSpace W) (L : V ≃L[𝕜] W
       ∀ w v₁ v₂, L v₁ = w → M v₂ = w → ‖v₁ - v₂‖ ≤ ‖(e.symm : W →L[𝕜] V)‖ * ‖((L : V →L[𝕜] W) - M) v₁‖
 ```
 (`1 / ‖L.symm‖` with `‖L.symm‖ = 0` only in the trivial case, where `1/0 = 0` makes the hypothesis false — harmless.)
-*Backbone/Mathlib.* Two-space (`Numlib/Analysis/NormedRing/Inverse.lean`, namespace `ContinuousLinearEquiv`):
+*Backbone/Mathlib.* Two-space (`Numlib/Analysis/Normed/Ring/Inverse.lean`, namespace `ContinuousLinearEquiv`):
 ```lean
 theorem exists_symm_norm_le_of_add [CompleteSpace E] (e : E ≃L[𝕜] F) (t : E →L[𝕜] F)
     (h : ‖(e.symm : F →L[𝕜] E)‖ * ‖t‖ < 1) :
@@ -310,7 +310,7 @@ planned in any phase, `plans/backbone.md` §7).
 `theorem one_le_cond [Nontrivial V] (L : V ≃L[𝕜] W) : 1 ≤ cond L`.
 *Backbone/Mathlib.* `relative_error_le_condNumber_mul_relative_residual (A : E ≃L[𝕜] E) {b x y : E} (hx : A x = b) (hb : b ≠ 0)`
 (`Numlib/LinearSolve/Perturbation.lean`, single space) and `NormedRing.one_le_condNumber [NormOneClass R] (ha : IsUnit a)`
-(`Numlib/Analysis/NormedRing/CondNumber.lean`); two spaces: Mathlib `ContinuousLinearEquiv.one_le_norm_mul_norm_symm [Nontrivial V]`
+(`Numlib/Analysis/Normed/Ring/CondNumber.lean`); two spaces: Mathlib `ContinuousLinearEquiv.one_le_norm_mul_norm_symm [Nontrivial V]`
 gives `1 ≤ cond L` directly.
 *Proof route.* `‖v − v̂‖ ≤ ‖L⁻¹‖‖w − ŵ‖`, `‖w‖ ≤ ‖L‖‖v‖`, `div_le_div`; for `V = W`, `eq_2_4_1` is the backbone lemma with `b := L v`
 through item 2's `cond_eq_condNumber`.
@@ -571,7 +571,7 @@ The book's intermediate identity `f(b) = ‖u‖² − ∑|(u,φᵢ)|² + ∑|b�
 (the decomposition clause `v₁ = Pv, v₂ = (I − P)v` follows from uniqueness; add it to the `∃` if desired).
 *Mathlib.* `isDirectSum_iff_isCompl` (item 15), `Submodule.projection`, `Submodule.isIdempotentElem_projection`, `Submodule.range_projection`, `Submodule.ker_projection`,
 `IsIdempotentElem.isProj_range`, `LinearMap.IsProj.isCompl`, `IsIdempotentElem.ker_eq_range_one_sub`; the backbone's
-`LinearMap.IsIdempotentElem.ext_of_range_eq_of_ker_eq` (`Numlib/InnerProductSpace/ObliqueProjection.lean`) gives uniqueness of `P`. *Classification:* needs-equivalence.
+`LinearMap.IsIdempotentElem.ext_of_range_eq_of_ker_eq` (`Numlib/Analysis/InnerProductSpace/Projection/ObliqueProjection.lean`) gives uniqueness of `P`. *Classification:* needs-equivalence.
 
 **Definition 3.6.3** — see items 16–17 (no theorem). "Easy to see" (3.6.2) equivalence: `isOrthogonalProjectionOperator_iff` (item 17), needs-equivalence.
 
@@ -591,7 +591,7 @@ property are not; Deferred item 4). **Example 3.6.8 (Fourier projection)** — d
 *Lean:* `theorem prop_3_6_9_b [CompleteSpace H] (P) (hP : IsOrthogonalProjectionOperator P) : ‖P‖ ≤ 1 ∧ (P ≠ 0 → ‖P‖ = 1)` (continuity is built into `H →L[𝕜] H`; for the
 `E →ₗ` reading, `LinearMap.isSymmetricProjection_iff_eq_coe_starProjection_range` supplies continuity).
 *Backbone/Mathlib.* `ContinuousLinearMap.IsIdempotentElem.norm_eq_one_iff_isSymmetric [CompleteSpace E] (hP : IsIdempotentElem P) (h0 : P ≠ 0) : ‖P‖ = 1 ↔ (P : E →ₗ[𝕜] E).IsSymmetric`
-(`Numlib/InnerProductSpace/ObliqueProjection.lean`) with (a); `‖P‖ ≤ 1` follows (`P = 0` is trivial). Alternatively
+(`Numlib/Analysis/InnerProductSpace/Projection/ObliqueProjection.lean`) with (a); `‖P‖ ≤ 1` follows (`P = 0` is trivial). Alternatively
 `LinearMap.isSymmetricProjection_iff_eq_coe_starProjection_range`, `Submodule.starProjection_norm_le`, `Submodule.norm_starProjection`. *Classification:* direct.
 (c) *Book.* `V = V₁ ⊕ V₁ᗮ`. *Lean:* `theorem prop_3_6_9_c (V₁ : Submodule 𝕜 H) (h : IsClosed (V₁ : Set H)) : IsCompl V₁ V₁ᗮ` via `h.completeSpace_coe` and `Submodule.isCompl_orthogonal`. *Classification:* direct.
 (d) *Book.* exactly one orthogonal projection onto `V₁`; `‖v − Pv‖ = inf_{w∈V₁} ‖v − w‖`; `I − P` is the orthogonal projection onto `V₁ᗮ`.

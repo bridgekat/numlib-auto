@@ -180,11 +180,12 @@ Mathlib bundles reused as is: `LinearMap.IsSymmetric`, `IsSelfAdjoint`, `LinearM
 ```
 Numlib.lean                     -- imports all backbone modules
 Numlib/                         -- backbone (this plan, §2–§6)
-  Analysis/…                    -- upstreaming candidates: Neumann-series bounds, κ, spectral radius
-  InnerProductSpace/…           -- upstreaming candidates: coercivity, energy norm, compression,
+  Analysis/Normed/…             -- upstreaming candidates: Neumann-series bounds, κ, spectral radius
+  Analysis/InnerProductSpace/…  -- upstreaming candidates: coercivity, energy norm, compression,
                                 --   Gram–Schmidt flags, oblique projections
-  Matrix/…                      -- upstreaming candidates: Hessenberg parts, complexify, toEuclideanLin
-  Polynomial/…                  -- upstreaming candidates: Chebyshev min–max
+  Analysis/Matrix/…             -- upstreaming candidate: matrices as operators on EuclideanSpace
+  LinearAlgebra/Matrix/…        -- upstreaming candidates: Hessenberg parts, complexification
+  RingTheory/Polynomial/…       -- upstreaming candidate: Chebyshev min–max
   LinearSolve/…                 -- perturbation, stationary, projection methods
   Krylov/…                      -- Krylov subspaces and methods
   Eigen/…                       -- eigenvalue perturbation and projection methods
@@ -279,12 +280,15 @@ difficult proof. Rung labels (L0–L4) refer to §1.1. Phases refer to §7.
 
 ### 2.1 Mathlib-shaped upstreaming candidates
 
-These live in the topical folders `Numlib/Analysis/`, `Numlib/InnerProductSpace/`,
-`Numlib/Matrix/`, `Numlib/Polynomial/` (§1.5) and are stated in Mathlib's own vocabulary so that
-they can be upstreamed; the numerical-analysis layers below use them only through their
-Mathlib-style names.
+These are stated in Mathlib's own vocabulary so that they can be upstreamed, and each one names
+its natural home in Mathlib in a comment at the top of the module. Their paths mirror Mathlib's
+own: a module destined for `Mathlib.Analysis.InnerProductSpace.Positive` sits in
+`Numlib/Analysis/InnerProductSpace/`, one destined for the directory
+`Mathlib.Analysis.InnerProductSpace.Projection` sits in
+`Numlib/Analysis/InnerProductSpace/Projection/`, and so on (§1.5). The numerical-analysis layers
+below use them only through their Mathlib-style names.
 
-#### 2.1.1 `Analysis/NormedRing/Inverse.lean` (L2) — explicit Neumann-series and perturbation bounds
+#### 2.1.1 `Analysis/Normed/Ring/Inverse.lean` (L2) — explicit Neumann-series and perturbation bounds
 Serves AH Thm 2.3.1, Cor 2.3.3, Thm 2.3.5 (bounds (2.3.13)–(2.3.16)), Saad §1.13, Kress Thm 3.48
 (Neumann series with a priori/a posteriori bounds), Saad-eig (3.14)/Prop 3.2 (resolvent Neumann
 expansion), Higham Thm 7.2. Mathlib has the qualitative facts (`Units.oneSub`, `Units.ofNearby`,
@@ -330,7 +334,7 @@ Proofs: the first bound is a corollary of `NormedRing.tsum_geometric_of_norm_lt_
 `x + t = x (1 + x⁻¹ t)` and apply the `1 − t` bounds; the two-space version needs `L⁻¹` on the
 complete side. Nothing difficult.
 
-#### 2.1.2 `Analysis/NormedRing/CondNumber.lean` (L2)
+#### 2.1.2 `Analysis/Normed/Ring/CondNumber.lean` (L2)
 Serves Saad §1.13, AH §2.4.3, Kress §5.1, Higham Ch. 6–7, Choi §2.4.5.
 
 ```lean
@@ -350,7 +354,7 @@ Matrix versions are the same definition under the scoped norm instances
 `LinearMap.singularValues`) is phase 2; Saad Example 1.5 (`κ_∞(I + α e₁ eₙᵀ) = (1+|α|)²`) is
 surface.
 
-#### 2.1.3 `Analysis/SpectralRadius.lean` (L2, complex; L4 real matrices)
+#### 2.1.3 `Analysis/Normed/Algebra/SpectralRadius.lean` (L2, complex; L4 real matrices)
 Serves Saad Thm 1.10–1.12, 4.1; Kress §5.2.2/AH §5.2.2; Higham Ch. 18.
 
 ```lean
@@ -383,7 +387,7 @@ powers do not tend to `0`). Every statement about the spectral radius of a real 
 with `Matrix.complexSpectralRadius A := spectralRadius ℂ (Matrix.complexify A)` (2.1.11) and
 proved by transporting the complex results through `complexify`.
 
-#### 2.1.4 `InnerProductSpace/Coercive.lean` (L1/L2/L3)
+#### 2.1.4 `Analysis/InnerProductSpace/Coercive.lean` (L1/L2/L3)
 Serves Saad §1.11 (Thm 1.34), §1.8.3 (Hermitian part), Prop 5.1, Thm 5.10, 6.30; AH 5.1.4
 (linear case), 8.3, 9.4; Kress Thm 3.29, 4.12.
 
@@ -459,7 +463,7 @@ Mathlib's real Lax–Milgram applied to the real part of `⟪A x, y⟫` (see 5.2
 also gives the complex Lax–Milgram), or via closed range: `‖A x‖ ≥ c‖x‖` ⇒ closed range, coercivity
 ⇒ `range ᗮ = ⊥`.
 
-#### 2.1.5 `InnerProductSpace/Energy.lean` (L1)
+#### 2.1.5 `Analysis/InnerProductSpace/Energy.lean` (L1)
 Serves Saad Prop 5.2, 5.5, Thm 5.9, Lemma 6.28, PCG; AH §5.6, §9.4; Fong–Saunders; Meurant §3.
 
 ```lean
@@ -510,7 +514,7 @@ Saad Prop 5.5 ("the Galerkin error is `(I − P^A_K) d₀`") is `starProjection`
 (`IsGalerkin.error_eq_starProjection`, 2.4.2), and Céa with constant 1 (5.2.3) is
 `starProjection_minimal` there.
 
-#### 2.1.6 `InnerProductSpace/Compression.lean` (L1)
+#### 2.1.6 `Analysis/InnerProductSpace/Projection/Compression.lean` (L1)
 Serves Saad Prop 6.3, 6.5 (`V_mᴴ A V_m = H_m`), Saad-eig Ch. 4 (Rayleigh–Ritz), Meurant §2, and
 the compression trick of 3.9.
 
@@ -554,7 +558,7 @@ The lemmas that make the compression the carrier of Chebyshev bounds in any inne
 (`compression.isSymmetricBoundedBy`, `isSymmetricCoercive`, `energyInner_apply`,
 `energyNorm_apply`) live in `Krylov/Convergence/Polynomial.lean` (3.9).
 
-#### 2.1.7 `InnerProductSpace/ObliqueProjection.lean` (L1; Kato L2)
+#### 2.1.7 `Analysis/InnerProductSpace/Projection/ObliqueProjection.lean` (L1; Kato L2)
 Serves Saad §1.12 (Lemma 1.36, Prop 1.37, (1.39)–(1.44)), Saad-eig §3.1, Saad §5.2.2 (`Q_K^L`),
 AH Rem 9.2.2 (Xu–Zikatanov). Mathlib has `LinearMap.IsSymmetricProjection` and
 `IsIdempotentElem.isSymmetric_iff_isOrtho_range_ker` (= Saad Prop 1.37).
@@ -615,7 +619,7 @@ theorem Krylov.exists_mem_of_residual_poly (p : 𝕜[X]) (hp : p.degree ≤ m) (
     ∃ x, x - x₀ ∈ subspace A (b - A x₀) m ∧ b - A x = aeval A p (b - A x₀)
 ```
 
-#### 2.1.9 `Polynomial/ChebyshevMinimax.lean` (analysis)
+#### 2.1.9 `RingTheory/Polynomial/ChebyshevMinimax.lean` (analysis)
 Serves Saad Thm 6.25/6.29, AH (5.6.5), Meurant (3.9), Saad-eig Thm 4.8, Ch. 6 (Kaniel–Paige–Saad).
 
 ```lean
@@ -656,7 +660,7 @@ derived. Difficult proof (moderate): Mathlib's `eval_iterate_derivative_le_of_fo
 bookkeeping for `Polynomial.comp` and `sSup` of a continuous image of a compact interval are the
 only frictions. The complex ellipse results (Saad Lemma 6.26, Thm 6.27, Cor 6.33) are phase 3.
 
-#### 2.1.10 `Matrix/Hessenberg.lean` (L4)
+#### 2.1.10 `LinearAlgebra/Matrix/Hessenberg.lean` (L4)
 Serves Saad §4.1 (`A = D − E − F`), §6.3–6.5, Choi §2.2, Fong–Saunders §4.2, Kress §7.5.
 
 ```lean
@@ -680,7 +684,7 @@ Only predicates and triangular parts are matrix-level; the Givens QR of the Hess
 coefficients is `ℕ`-indexed and lives with the Krylov transport layer (3.5). Keep this minimal —
 no general QR theory.
 
-#### 2.1.11 `Matrix/Complexify.lean` (L4)
+#### 2.1.11 `LinearAlgebra/Matrix/Complexify.lean` (L4)
 Serves every real-matrix statement about spectral radii (Saad Thm 1.10–1.12, 4.1; Kress Thm 4.1).
 
 ```lean
@@ -710,7 +714,7 @@ instance in `Analysis/Matrix/Order.lean` is the *Loewner* order; the entrywise o
 scoped instance or go through `Matrix.of`/`Pi`. Needed by regular splittings (2.3.4) and by the
 floating-point layer (§6).
 
-#### 2.1.13 `InnerProductSpace/GramSchmidt.lean` (L1) — uniqueness of orthonormal bases of a flag
+#### 2.1.13 `Analysis/InnerProductSpace/GramSchmidt.lean` (L1) — uniqueness of orthonormal bases of a flag
 Serves Saad §6.3.2 (MGS and Householder Arnoldi agree with Alg 6.1 up to signs), P-6.1(f), Choi
 and Fong–Saunders' identifications of Lanczos with CG/CR quantities, and block variants.
 
@@ -725,7 +729,7 @@ theorem InnerProductSpace.eq_gramSchmidtNormed_of_re_inner_pos {f u : ℕ → E}
     (hpos : 0 < RCLike.re (inner 𝕜 (u j) (f j))) : u j = gramSchmidtNormed 𝕜 f j
 ```
 
-#### 2.1.14 `Matrix/ToEuclideanLin.lean` (L4) — matrices as operators on `EuclideanSpace`
+#### 2.1.14 `Analysis/Matrix/ToEuclideanLin.lean` (L4) — matrices as operators on `EuclideanSpace`
 The glue every matrix-level surface statement uses to reach the operator-level backbone.
 Symmetric ↔ Hermitian is Mathlib's `Matrix.isSymmetric_toEuclideanLin_iff`; `Matrix.PosDef` ↔
 symmetric coercive is `Matrix.posDef_iff_isSymmetricCoercive` (2.1.4).
@@ -2543,10 +2547,10 @@ modules are exactly the modules under `Numlib/` (§11).
 
 | Module | Items | Size | Difficulty | Blocking |
 |---|---|---|---|---|
-| `Analysis/NormedRing/{Inverse,CondNumber}` | 2.1.1–2.1.2 | 250 | ★ | — |
-| `Analysis/SpectralRadius` | 2.1.3 | 200 | ★★ (ENNReal bookkeeping) | — |
+| `Analysis/Normed/Ring/{Inverse,CondNumber}` | 2.1.1–2.1.2 | 250 | ★ | — |
+| `Analysis/Normed/Algebra/SpectralRadius` | 2.1.3 | 200 | ★★ (ENNReal bookkeeping) | — |
 | `InnerProductSpace/{Coercive,Energy,Compression,ObliqueProjection,GramSchmidt}` | 2.1.4–2.1.7, 2.1.13 | 700 | ★★ (`WithEnergy` instance) | — |
-| `Polynomial/ChebyshevMinimax` | 2.1.9 | 300 | ★★ | — |
+| `RingTheory/Polynomial/ChebyshevMinimax` | 2.1.9 | 300 | ★★ | — |
 | `Matrix/{Hessenberg,Complexify,ToEuclideanLin}` | 2.1.10–2.1.11, 2.1.14 | 400 | ★★ | — |
 | `LinearSolve/Perturbation` | 2.2 | 200 | ★ | 2.1.1–2.1.2 |
 | `LinearSolve/Stationary/{Basic,Splitting,DiagDominant}` | 2.3.1–2.3.3 | 450 | ★★ (GS convergence) | 2.1.3, 2.1.11 |
@@ -2750,15 +2754,15 @@ Surface-specific definitions: real bilinear forms `a : V → V → ℝ` with `Is
 ## 11. Module map
 
 The backbone modules under `Numlib/`, all imported by `Numlib.lean`, and the plan items they
-implement. Modules in `Analysis/`, `InnerProductSpace/`, `Matrix/`, `Polynomial/` are the
-upstreaming candidates of 2.1 (1.5).
+implement. The modules under `Analysis/`, `LinearAlgebra/` and `RingTheory/` are the upstreaming
+candidates of 2.1; their paths mirror the Mathlib directories they are destined for (1.5).
 
 | Module | Plan items |
 |---|---|
-| `Analysis/NormedRing/Inverse`, `Analysis/NormedRing/CondNumber`, `Analysis/SpectralRadius` | 2.1.1–2.1.3 |
-| `InnerProductSpace/Coercive`, `Energy`, `Compression`, `ObliqueProjection`, `GramSchmidt` | 2.1.4–2.1.7, 2.1.13 (`IsSymmetricBoundedBy`, `WithEnergy`, `compressionBy`, projectors from bases, Kato's lemma, flag uniqueness) |
-| `Polynomial/ChebyshevMinimax` | 2.1.9 |
-| `Matrix/Hessenberg`, `Matrix/Complexify`, `Matrix/ToEuclideanLin` | 2.1.10–2.1.11, 2.1.14 |
+| `Analysis/Normed/Ring/Inverse`, `Analysis/Normed/Ring/CondNumber`, `Analysis/Normed/Algebra/SpectralRadius` | 2.1.1–2.1.3 |
+| `Analysis/InnerProductSpace/Coercive`, `Energy`, `Compression`, `ObliqueProjection`, `GramSchmidt` | 2.1.4–2.1.7, 2.1.13 (`IsSymmetricBoundedBy`, `WithEnergy`, `compressionBy`, projectors from bases, Kato's lemma, flag uniqueness) |
+| `RingTheory/Polynomial/ChebyshevMinimax` | 2.1.9 |
+| `LinearAlgebra/Matrix/Hessenberg`, `LinearAlgebra/Matrix/Complexify`, `Analysis/Matrix/ToEuclideanLin` | 2.1.10–2.1.11, 2.1.14 |
 | `LinearSolve/Perturbation` | 2.2 |
 | `LinearSolve/Stationary/Basic`, `Splitting`, `DiagDominant` | 2.3.1–2.3.3 |
 | `LinearSolve/Projection/Basic`, `Optimality`, `OneDimensional` | 2.4.1–2.4.3 |
