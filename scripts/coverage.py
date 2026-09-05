@@ -53,7 +53,15 @@ def book_results(key: str) -> set[str]:
     if not path.exists():
         sys.exit(f"missing OCR text: {path}")
     text = path.read_text(encoding="utf-8", errors="replace")
-    return {m.group(2) for m in re.finditer(pattern, text)}
+    # A citation to another work -- "[10, Lemma 5.4.1]" -- is not a result of this book, and a
+    # two-component pattern would otherwise read it as "Lemma 5.4". Drop anything inside a
+    # bracketed reference, and anything that is the prefix of a longer number.
+    return {
+        m.group(2)
+        for m in re.finditer(pattern, text)
+        if not re.search(r"\[\d+,\s*$", text[max(0, m.start() - 24):m.start()])
+        and not re.match(r"\.\d", text[m.end():m.end() + 2])
+    }
 
 
 def surface_numbers(key: str) -> set[str]:
