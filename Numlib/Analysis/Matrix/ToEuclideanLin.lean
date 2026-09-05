@@ -18,6 +18,11 @@ used by every matrix-level surface statement: multiplicativity, powers, adjoint 
 transpose, eigenvalues, Krylov subspaces as spans of columns, and the `‖A‖₂ = ‖toEuclideanLin A‖`
 identification. (Symmetric ↔ Hermitian is Mathlib's `Matrix.isSymmetric_toEuclideanLin_iff`,
 `Matrix.PosDef` ↔ symmetric coercive is `Matrix.posDef_iff_isSymmetricCoercive`.)
+
+It also contains the fact that a unitary matrix acts as an isometry of `EuclideanSpace`,
+`‖U *ᵥ v‖₂ = ‖v‖₂`: transport `U` along the star algebra equivalence `Matrix.toEuclideanCLM`
+and use that a unitary continuous linear endomorphism of a Hilbert space preserves the norm
+(`ContinuousLinearMap.norm_map_of_mem_unitary`).
 -/
 
 namespace Matrix
@@ -83,5 +88,40 @@ open scoped Matrix.Norms.L2Operator in
 theorem l2_opNorm_eq_norm_toEuclideanLin (A : Matrix n n 𝕜) :
     ‖A‖ = ‖LinearMap.toContinuousLinearMap (toEuclideanLin A)‖ :=
   l2_opNorm_def A
+
+section Unitary
+
+variable {U : Matrix n n 𝕜}
+
+/-- A unitary matrix becomes a unitary operator on `EuclideanSpace 𝕜 n`. -/
+theorem toEuclideanCLM_mem_unitary (hU : U ∈ Matrix.unitaryGroup n 𝕜) :
+    toEuclideanCLM (n := n) (𝕜 := 𝕜) U ∈
+      unitary (EuclideanSpace 𝕜 n →L[𝕜] EuclideanSpace 𝕜 n) := by
+  rw [Unitary.mem_iff] at hU ⊢
+  refine ⟨?_, ?_⟩
+  · rw [← map_star, ← map_mul, hU.1, map_one]
+  · rw [← map_star, ← map_mul, hU.2, map_one]
+
+/-- A unitary matrix acts as an isometry of `EuclideanSpace 𝕜 n`. -/
+theorem norm_toEuclideanCLM_apply_of_mem_unitaryGroup (hU : U ∈ Matrix.unitaryGroup n 𝕜)
+    (x : EuclideanSpace 𝕜 n) : ‖toEuclideanCLM (n := n) (𝕜 := 𝕜) U x‖ = ‖x‖ :=
+  ContinuousLinearMap.norm_map_of_mem_unitary (toEuclideanCLM_mem_unitary hU) x
+
+/-- A unitary matrix preserves the Euclidean norm: `‖U *ᵥ v‖₂ = ‖v‖₂`. -/
+theorem norm_toLp_mulVec_of_mem_unitaryGroup (hU : U ∈ Matrix.unitaryGroup n 𝕜) (v : n → 𝕜) :
+    ‖(WithLp.toLp 2 (U *ᵥ v) : EuclideanSpace 𝕜 n)‖ =
+      ‖(WithLp.toLp 2 v : EuclideanSpace 𝕜 n)‖ := by
+  rw [← toEuclideanCLM_toLp U v]
+  exact norm_toEuclideanCLM_apply_of_mem_unitaryGroup hU _
+
+/-- A unitary matrix preserves Euclidean inner products. -/
+theorem inner_toLp_mulVec_of_mem_unitaryGroup (hU : U ∈ Matrix.unitaryGroup n 𝕜) (v w : n → 𝕜) :
+    inner 𝕜 (WithLp.toLp 2 (U *ᵥ v) : EuclideanSpace 𝕜 n)
+        (WithLp.toLp 2 (U *ᵥ w) : EuclideanSpace 𝕜 n) =
+      inner 𝕜 (WithLp.toLp 2 v : EuclideanSpace 𝕜 n) (WithLp.toLp 2 w : EuclideanSpace 𝕜 n) := by
+  rw [← toEuclideanCLM_toLp U v, ← toEuclideanCLM_toLp U w]
+  exact ContinuousLinearMap.inner_map_map_of_mem_unitary (toEuclideanCLM_mem_unitary hU) _ _
+
+end Unitary
 
 end Matrix
