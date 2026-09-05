@@ -219,6 +219,17 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   discharge the denominator, since it ignores hypotheses; pass `(mul_pos h1 h2).le` by hand.
 * Whether `field_simp` leaves a goal for a trailing `ring` is unpredictable; `ring` on no goals is
   an error. Run the `field_simp` once and look before committing the `ring`.
+* `liminf_le_liminf` does not auto-discharge its `IsCoboundedUnder (≥)` side goal.  Neither does
+  `Filter.limsup_le_of_le` in `ℝ`: its `isBoundedDefault` autotactic only knows `OrderTop`/
+  `OrderBot`.  For a nonnegative sequence it is three lines,
+  `⟨0, fun a ha => (hnn k).trans hk⟩` with `k` obtained from `(Filter.eventually_map.mp ha).exists`.
+* A lemma applied to `_` placeholders inside a `simp only` list can silently fail to fire, because
+  the argument is elaborated before simp sees the goal:
+  `simp only [pow_lt_one_iff_of_nonneg (abs_nonneg _) hn]` left the goal untouched where the same
+  term in a following `rw` closed it.  Split such a step out of the `simp only`.
+* `linarith`/`nlinarith` treat `RCLike.re z` and `z.re` as different atoms although they are
+  `rfl`-equal at `𝕜 = ℂ`.  Give each `have` the spelling you want as an explicit type annotation;
+  the transfer is then a defeq check that `exact` performs silently.
 
 ## Mathlib names and API
 
@@ -386,6 +397,25 @@ Structural facts worth knowing before planning a proof:
   `(isometry_f.isUniformInducing.completeSpace_congr f_surjective).2 inferInstance`.
 * There is no `ContinuousLinearMap.coe_pow`; `hom_coe_pow _ rfl (fun _ _ => rfl) L n` proves
   `⇑(L ^ n) = (⇑L)^[n]` in one line.
+* From a spectral value of a *continuous* operator to an eigenvector: `ContinuousLinearMap.spectrum_eq`
+  (`spectrum 𝕜 f = spectrum 𝕜 (f : Module.End 𝕜 E)`, needs `CompleteSpace`) and then
+  `Module.End.hasEigenvalue_iff_mem_spectrum` in finite dimension.  In the other direction,
+  `spectrum.spectralRadius_lt_of_forall_lt` turns "every spectral value has modulus `< r`" into
+  `ρ < r` with no finiteness of the spectrum; it needs `Nontrivial (E →L[ℂ] E)`, so split on
+  `subsingleton_or_nontrivial E` first, exactly as `Stationary/Basic.lean` already does.
+* `Matrix.det_zero` takes `Nonempty n` as an *instance*, not an explicit argument.
+* `le_of_forall_pos_le_add` exists only for `ℝ≥0∞`.  Over `ℝ` the tool is
+  `le_of_forall_gt_imp_ge_of_dense`.
+* `ℝ≥0∞` is notation from `open scoped ENNReal`; in a file without it, write `ENNReal` — the error
+  is an unhelpful `expected token`.
+* `Matrix.PosDef` over `ℂ` needs `open scoped ComplexOrder`, and `Matrix.posDef_diagonal_iff` needs
+  a `StarOrderedRing`, whose instance for `ℝ` lives in `Mathlib.Algebra.Order.Star.Real`, which
+  `Numlib` does not otherwise import.  `Matrix.PosDef`'s *statement* no longer mentions `Fintype` or
+  `DecidableEq`, so a lemma about it whose proof goes through `toEuclideanLin` trips
+  `linter.unusedFintypeInType` and `linter.unusedDecidableInType`.
+* There is no `abs_le_max_abs_abs`; `p ≤ x → x ≤ q → |x| ≤ max |p| |q|` is one `abs_le.2` with
+  `neg_abs_le` and `le_abs_self`.  Nor is there a `c ^ (1/k) → 1` for a constant `c > 0` indexed by
+  `ℕ`: `Real.rpow_def_of_pos` with `tendsto_one_div_atTop_nhds_zero_nat` is four lines.
 
 ## Design conventions of this library
 

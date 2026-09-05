@@ -3,6 +3,9 @@ import Numlib.Analysis.Normed.Ring.Inverse
 import Mathlib.Topology.MetricSpace.Contracting
 import Mathlib.Analysis.Normed.Operator.NormedSpace
 import Mathlib.Analysis.Normed.Module.FiniteDimension
+import Mathlib.Analysis.Normed.Operator.Banach
+import Mathlib.Analysis.SpecialFunctions.Pow.Real
+import Mathlib.LinearAlgebra.Eigenspace.Basic
 
 /-!
 # Stationary (affine) iterations
@@ -12,6 +15,12 @@ import Mathlib.Analysis.Normed.Module.FiniteDimension
 dimension for `⇐`; Kress[^kress] Thm 4.1), the contraction case `‖G‖ < 1` with a priori /
 a posteriori bounds (Kress Thm 3.48, Atkinson–Han[^atkinson-han] §5.2.2), and the error
 propagation `x_k - x* = G^k (x₀ - x*)`.
+
+The spectral radius is also the *sharp* asymptotic convergence factor: no starting vector decays
+faster than `ρ(G)` in the sense of the limsup of `(‖G^k d₀‖/‖d₀‖)^{1/k}`
+(`Stationary.limsup_norm_pow_apply_rpow_le_spectralRadius`), and in finite dimension an
+eigenvector of a dominant eigenvalue attains it
+(`Stationary.exists_limsup_norm_pow_apply_rpow_eq_spectralRadius`).
 
 ## References
 
@@ -219,6 +228,103 @@ theorem exists_norm_iterate_sub_le [CompleteSpace F] (G : F →L[ℂ] F) {r : NN
     rw [step_iterate_sub G f hfix]
     calc ‖(G ^ k) (x₀ - x')‖ ≤ ‖G ^ k‖ * ‖x₀ - x'‖ := (G ^ k).le_opNorm _
       _ ≤ C * (r : ℝ) ^ k * ‖x₀ - x'‖ := by gcongr; exact hC k
+
+/-- `C ^ (1/k) → 1` for a positive constant `C`, because the exponent tends to `0`.  This is what
+turns the geometric bound `‖G^k‖ ≤ C r^k` into the asymptotic rate `r`. -/
+private theorem tendsto_const_rpow_one_div {C : ℝ} (hC : 0 < C) :
+    Tendsto (fun k : ℕ => C ^ (1 / k : ℝ)) atTop (𝓝 1) := by
+  have h0 : Tendsto (fun k : ℕ => Real.log C * (1 / k : ℝ)) atTop (𝓝 0) := by
+    simpa using (tendsto_one_div_atTop_nhds_zero_nat (𝕜 := ℝ)).const_mul (Real.log C)
+  have h1 := (Real.continuous_exp.tendsto 0).comp h0
+  rw [Real.exp_zero] at h1
+  refine h1.congr fun k => ?_
+  rw [Function.comp_apply, ← Real.rpow_def_of_pos hC]
+
+/-- **No starting vector beats the spectral radius.**  The limsup of the `k`-th root of the
+relative growth `‖G^k d₀‖ / ‖d₀‖` is at most `ρ(G)`, for every `d₀`: the geometric bound
+`‖G^k‖ ≤ C r^k` valid for each `r > ρ(G)` gives `(‖G^k d₀‖/‖d₀‖)^{1/k} ≤ C^{1/k} r → r`.
+
+`Stationary.exists_limsup_norm_pow_apply_rpow_eq_spectralRadius` exhibits a `d₀` attaining the
+bound, so `ρ(G)` is the sharp asymptotic convergence factor of the stationary iteration. -/
+theorem limsup_norm_pow_apply_rpow_le_spectralRadius [CompleteSpace F] (G : F →L[ℂ] F) (d₀ : F) :
+    limsup (fun k : ℕ => (‖(G ^ k) d₀‖ / ‖d₀‖) ^ (1 / k : ℝ)) atTop
+      ≤ (spectralRadius ℂ G).toReal := by
+  have hnn : ∀ k : ℕ, 0 ≤ (‖(G ^ k) d₀‖ / ‖d₀‖) ^ (1 / k : ℝ) :=
+    fun k => Real.rpow_nonneg (by positivity) _
+  have hcob : IsCoboundedUnder (· ≤ ·) atTop
+      fun k : ℕ => (‖(G ^ k) d₀‖ / ‖d₀‖) ^ (1 / k : ℝ) :=
+    ⟨0, fun a ha => by
+      obtain ⟨k, hk⟩ := (Filter.eventually_map.mp ha).exists
+      exact (hnn k).trans hk⟩
+  have hρtop : spectralRadius ℂ G ≠ ⊤ := by
+    rcases subsingleton_or_nontrivial F with hF | hF
+    · have := subsingleton_clm (F := F)
+      simp [spectralRadius]
+    · exact ((spectrum.spectralRadius_le_nnnorm G).trans_lt ENNReal.coe_lt_top).ne
+  refine le_of_forall_gt_imp_ge_of_dense fun c hc => ?_
+  have hc0 : (0 : ℝ) < c := lt_of_le_of_lt ENNReal.toReal_nonneg hc
+  obtain ⟨r, hρr, hrc⟩ : ∃ r : NNReal, spectralRadius ℂ G < r ∧ (r : ENNReal) < ENNReal.ofReal c :=
+    ENNReal.lt_iff_exists_nnreal_btwn.mp (by
+      rw [← ENNReal.ofReal_toReal hρtop]
+      exact (ENNReal.ofReal_lt_ofReal_iff hc0).mpr hc)
+  have hrc' : (r : ℝ) < c := by
+    simpa using (ENNReal.lt_ofReal_iff_toReal_lt (a := (r : ENNReal)) (by simp)).mp hrc
+  obtain ⟨C, hC0, hC⟩ := exists_norm_pow_le_of_spectralRadius_lt G hρr
+  have hC1 : (0 : ℝ) < max C 1 := lt_of_lt_of_le one_pos (le_max_right _ _)
+  have hbound : ∀ k : ℕ, 1 ≤ k →
+      (‖(G ^ k) d₀‖ / ‖d₀‖) ^ (1 / k : ℝ) ≤ max C 1 ^ (1 / k : ℝ) * r := by
+    intro k hk
+    have h1 : ‖(G ^ k) d₀‖ / ‖d₀‖ ≤ max C 1 * (r : ℝ) ^ k := by
+      rcases eq_or_ne d₀ 0 with rfl | hd
+      · simp only [map_zero, norm_zero, zero_div]
+        positivity
+      · rw [div_le_iff₀ (norm_pos_iff.mpr hd)]
+        calc ‖(G ^ k) d₀‖ ≤ ‖G ^ k‖ * ‖d₀‖ := (G ^ k).le_opNorm _
+          _ ≤ max C 1 * (r : ℝ) ^ k * ‖d₀‖ := by
+              gcongr
+              exact (hC k).trans (by gcongr; exact le_max_left _ _)
+    calc (‖(G ^ k) d₀‖ / ‖d₀‖) ^ (1 / k : ℝ)
+        ≤ (max C 1 * (r : ℝ) ^ k) ^ (1 / k : ℝ) :=
+          Real.rpow_le_rpow (by positivity) h1 (by positivity)
+      _ = max C 1 ^ (1 / k : ℝ) * ((r : ℝ) ^ k) ^ (1 / k : ℝ) :=
+          Real.mul_rpow hC1.le (by positivity)
+      _ = max C 1 ^ (1 / k : ℝ) * r := by
+          rw [one_div, Real.pow_rpow_inv_natCast r.coe_nonneg (by omega)]
+  have hlim : Tendsto (fun k : ℕ => max C 1 ^ (1 / k : ℝ) * (r : ℝ)) atTop (𝓝 ((1 : ℝ) * r)) :=
+    (tendsto_const_rpow_one_div hC1).mul_const _
+  refine Filter.limsup_le_of_le hcob ?_
+  filter_upwards [eventually_ge_atTop 1,
+    hlim.eventually_lt_const (by rw [one_mul]; exact hrc')] with k hk1 hk2
+  exact (hbound k hk1).trans hk2.le
+
+/-- **The sharp convergence factor of a stationary iteration.**  In finite dimension the bound of
+`Stationary.limsup_norm_pow_apply_rpow_le_spectralRadius` is attained: an eigenvector of a
+dominant eigenvalue is a starting error whose asymptotic decay rate is exactly `ρ(G)`.  Together
+the two say that the spectral radius *is* the worst-case asymptotic convergence factor of the
+iteration. -/
+theorem exists_limsup_norm_pow_apply_rpow_eq_spectralRadius [FiniteDimensional ℂ F] [Nontrivial F]
+    (G : F →L[ℂ] F) :
+    ∃ d₀ : F, d₀ ≠ 0 ∧
+      limsup (fun k : ℕ => (‖(G ^ k) d₀‖ / ‖d₀‖) ^ (1 / k : ℝ)) atTop
+        = (spectralRadius ℂ G).toReal := by
+  have : CompleteSpace F := FiniteDimensional.complete ℂ F
+  obtain ⟨μ, hμ, hμρ⟩ := spectrum.exists_nnnorm_eq_spectralRadius G
+  rw [ContinuousLinearMap.spectrum_eq] at hμ
+  obtain ⟨d₀, hd, hd0⟩ := (Module.End.hasEigenvalue_iff_mem_spectrum.mpr hμ).exists_hasEigenvector
+  rw [Module.End.mem_eigenspace_iff] at hd
+  have hd' : G d₀ = μ • d₀ := hd
+  refine ⟨d₀, hd0, ?_⟩
+  have hpow : ∀ k : ℕ, (G ^ k) d₀ = μ ^ k • d₀ := by
+    intro k
+    induction k with
+    | zero => simp
+    | succ k ih => rw [pow_succ' G, mul_apply_eq_comp, ih, map_smul, hd', smul_smul, ← pow_succ]
+  have hconst : ∀ᶠ k : ℕ in atTop, (‖(G ^ k) d₀‖ / ‖d₀‖) ^ (1 / k : ℝ) = ‖μ‖ := by
+    filter_upwards [eventually_ge_atTop 1] with k hk
+    rw [hpow, norm_smul, norm_pow, mul_div_assoc, div_self (norm_ne_zero_iff.mpr hd0), mul_one,
+      one_div, Real.pow_rpow_inv_natCast (norm_nonneg μ) (by omega)]
+  rw [Filter.limsup_congr (v := fun _ : ℕ => ‖μ‖) hconst, limsup_const, ← hμρ]
+  simp
 
 end Complex
 

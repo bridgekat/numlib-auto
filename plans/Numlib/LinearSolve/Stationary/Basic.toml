@@ -32,13 +32,6 @@ id = "tendsto_of_spectralRadius_lt_one"
 
 [[node]]
 id = "exists_limsup_norm_pow_apply_rpow_eq_spectralRadius"
-kind = "theorem"
-desc = '''The sharp convergence factor of a stationary iteration (Saad §4.2.1, the general factor
-attained): for `G : F →L[ℂ] F` on a finite-dimensional space there is `d₀ ≠ 0` with
-`limsup (fun k => (‖G ^ k d₀‖ / ‖d₀‖) ^ (1 / k : ℝ)) atTop = (spectralRadius ℂ G).toReal`, namely an
-eigenvector of a dominant eigenvalue, and for every `d₀` the limsup is at most `ρ(G)`
-(`limsup_norm_pow_apply_rpow_le_spectralRadius`, from `exists_norm_pow_le_of_spectralRadius_lt`).
-The real-matrix reading is `Matrix.exists_limsup_norm_pow_mulVec_rpow_eq` in
-`Numlib/LinearAlgebra/Matrix/Complexify`.'''
-deps = ["exists_norm_pow_le_of_spectralRadius_lt", "exists_norm_iterate_sub_le"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, Section 4.2.1"
+
+[[node]]
+id = "limsup_norm_pow_apply_rpow_le_spectralRadius"
