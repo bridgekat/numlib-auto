@@ -271,59 +271,15 @@ theorem cor_5_3_12 {F : V → W} {K : Set V} (hK : IsOpen K) (hKc : IsPreconnect
 
 /-- The `L/2` Taylor estimate for an operator with an `L`-Lipschitz derivative:
 `‖F y - F x - F'(x)(y - x)‖ ≤ (L/2) ‖y - x‖²`.  It is the sharp form of Proposition 5.3.13 and
-the analytic core of (5.4.5) in §5.4; the proof integrates the bound `‖F'(x + t(y-x)) - F'(x)‖ ≤
-L t ‖y - x‖` along the segment with Mathlib's
-`image_norm_le_of_norm_deriv_right_le_deriv_boundary`. -/
+the analytic core of (5.4.5) in §5.4.
+
+This is the backbone's `Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le` with the
+two-sided Lipschitz hypothesis the book states, specialised at `w = x`. -/
 theorem norm_sub_sub_fderiv_le_half_mul_sq {s : Set V} (hs : Convex ℝ s) {F : V → W}
     {F' : V → V →L[ℝ] W} {L : ℝ} (hF : ∀ z ∈ s, HasFDerivAt F (F' z) z)
     (hL : ∀ z ∈ s, ∀ w ∈ s, ‖F' z - F' w‖ ≤ L * ‖z - w‖) {x y : V} (hx : x ∈ s) (hy : y ∈ s) :
-    ‖F y - F x - F' x (y - x)‖ ≤ L / 2 * ‖y - x‖ ^ 2 := by
-  set v : V := y - x with hvdef
-  have hmem : ∀ t ∈ Icc (0 : ℝ) 1, x + t • v ∈ s := by
-    intro t ht
-    have hxy : x + t • v = (1 - t) • x + t • y := by rw [hvdef]; module
-    rw [hxy]
-    exact hs hx hy (by linarith [ht.2]) ht.1 (by ring)
-  have hline : ∀ t : ℝ, HasDerivAt (fun t : ℝ => x + t • v) v t := fun t => by
-    simpa using ((hasDerivAt_id t).smul_const v).const_add x
-  have hg : ∀ t ∈ Icc (0 : ℝ) 1,
-      HasDerivAt (fun t : ℝ => F (x + t • v) - F x - t • F' x v)
-        (F' (x + t • v) v - F' x v) t := by
-    intro t ht
-    have h1 : HasDerivAt (fun t : ℝ => F (x + t • v)) (F' (x + t • v) v) t :=
-      (hF _ (hmem t ht)).comp_hasDerivAt t (hline t)
-    have h2 : HasDerivAt (fun t : ℝ => t • F' x v) (F' x v) t := by
-      simpa using (hasDerivAt_id t).smul_const (F' x v)
-    exact (h1.sub_const (F x)).sub h2
-  have hbound : ∀ t ∈ Ico (0 : ℝ) 1, ‖F' (x + t • v) v - F' x v‖ ≤ L * ‖v‖ ^ 2 * t := by
-    intro t ht
-    have hmt : x + t • v ∈ s := hmem t ⟨ht.1, ht.2.le⟩
-    have h1 : ‖F' (x + t • v) - F' x‖ ≤ L * (t * ‖v‖) := by
-      have h := hL _ hmt x hx
-      simpa [norm_smul, abs_of_nonneg ht.1] using h
-    calc ‖F' (x + t • v) v - F' x v‖ = ‖(F' (x + t • v) - F' x) v‖ := by simp
-      _ ≤ ‖F' (x + t • v) - F' x‖ * ‖v‖ := ContinuousLinearMap.le_opNorm _ _
-      _ ≤ L * (t * ‖v‖) * ‖v‖ := mul_le_mul_of_nonneg_right h1 (norm_nonneg _)
-      _ = L * ‖v‖ ^ 2 * t := by ring
-  have hB : ∀ t : ℝ, HasDerivAt (fun t : ℝ => L * ‖v‖ ^ 2 / 2 * t ^ 2) (L * ‖v‖ ^ 2 * t) t := by
-    intro t
-    have h : HasDerivAt (fun t : ℝ => t ^ 2) (2 * t) t := by simpa using hasDerivAt_pow 2 t
-    have h2 : HasDerivAt (fun t : ℝ => L * ‖v‖ ^ 2 / 2 * t ^ 2) (L * ‖v‖ ^ 2 / 2 * (2 * t)) t :=
-      h.const_mul (L * ‖v‖ ^ 2 / 2)
-    have heq : L * ‖v‖ ^ 2 / 2 * (2 * t) = L * ‖v‖ ^ 2 * t := by ring
-    rwa [heq] at h2
-  have hcont : ContinuousOn (fun t : ℝ => F (x + t • v) - F x - t • F' x v) (Icc 0 1) :=
-    fun t ht => (hg t ht).continuousAt.continuousWithinAt
-  have hzero : ‖F (x + (0 : ℝ) • v) - F x - (0 : ℝ) • F' x v‖ ≤ L * ‖v‖ ^ 2 / 2 * (0 : ℝ) ^ 2 := by
-    simp
-  have hfin := image_norm_le_of_norm_deriv_right_le_deriv_boundary hcont
-    (fun t ht => (hg t ⟨ht.1, ht.2.le⟩).hasDerivWithinAt) hzero hB hbound
-    (right_mem_Icc.2 zero_le_one)
-  have hone : F (x + (1 : ℝ) • v) - F x - (1 : ℝ) • F' x v = F y - F x - F' x (y - x) := by
-    rw [one_smul, one_smul, hvdef, add_sub_cancel]
-  rw [hone] at hfin
-  calc ‖F y - F x - F' x (y - x)‖ ≤ L * ‖v‖ ^ 2 / 2 * (1 : ℝ) ^ 2 := hfin
-    _ = L / 2 * ‖y - x‖ ^ 2 := by rw [hvdef]; ring
+    ‖F y - F x - F' x (y - x)‖ ≤ L / 2 * ‖y - x‖ ^ 2 :=
+  hs.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le hF hx hy fun z hz => hL z hz x hx
 
 /-- **Proposition 5.3.13**: for a twice differentiable `F` with `‖F''‖ ≤ C` on the segment,
 `‖F(u₀ + h) - F(u₀) - F'(u₀) h‖ ≤ ½ C ‖h‖²`. -/
