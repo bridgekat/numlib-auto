@@ -44,7 +44,7 @@ def antiDiagU (B₁₂ : Matrix (Fin n₁) (Fin n₂) ℂ) : Matrix (I n₁, n�
   fromBlocks 0 B₁₂ 0 0
 
 /-- `B = L + U`: a block anti-diagonal matrix is the sum of its strictly lower and strictly upper
-blocks, so the family `B(α) = α L + α⁻¹ U` of `prop_4_12_alpha` passes through `B` at `α = 1`. -/
+blocks, so the family `B(α) = α L + α⁻¹ U` of `proposition_4_12_alpha` passes through `B` at `α = 1`. -/
 theorem antiDiag_eq_add (B₁₂ : Matrix (Fin n₁) (Fin n₂) ℂ) (B₂₁ : Matrix (Fin n₂) (Fin n₁) ℂ) :
     antiDiag B₁₂ B₂₁ = antiDiagL B₂₁ + antiDiagU B₁₂ := by
   rw [antiDiag, antiDiagL, antiDiagU, fromBlocks_add]
@@ -66,7 +66,7 @@ private def signFlipUnit (n₁ n₂ : ℕ) : (Matrix (I n₁, n₂) (I n₁, n�
 
 /-- Saad, Proposition 4.12 (1): the spectrum of a block anti-diagonal matrix is symmetric under
 negation. -/
-theorem prop_4_12_neg (B₁₂ : Matrix (Fin n₁) (Fin n₂) ℂ) (B₂₁ : Matrix (Fin n₂) (Fin n₁) ℂ)
+theorem proposition_4_12_neg (B₁₂ : Matrix (Fin n₁) (Fin n₂) ℂ) (B₂₁ : Matrix (Fin n₂) (Fin n₁) ℂ)
     {μ : ℂ} (hμ : μ ∈ spectrum ℂ (antiDiag B₁₂ B₂₁)) :
     -μ ∈ spectrum ℂ (antiDiag B₁₂ B₂₁) := by
   have hconj : ((signFlipUnit n₁ n₂ : (Matrix (I n₁, n₂) (I n₁, n₂) ℂ)ˣ) :
@@ -105,7 +105,7 @@ private noncomputable def scaleBlockUnit (n₁ n₂ : ℕ) {α : ℂ} (hα : α 
 
 /-- Saad, Proposition 4.12 (2): the eigenvalues of `B(α) = α L + α⁻¹ U` do not depend on
 `α ≠ 0`. -/
-theorem prop_4_12_alpha (B₁₂ : Matrix (Fin n₁) (Fin n₂) ℂ) (B₂₁ : Matrix (Fin n₂) (Fin n₁) ℂ)
+theorem proposition_4_12_alpha (B₁₂ : Matrix (Fin n₁) (Fin n₂) ℂ) (B₂₁ : Matrix (Fin n₂) (Fin n₁) ℂ)
     {α : ℂ} (hα : α ≠ 0) :
     spectrum ℂ (α • antiDiagL B₂₁ + α⁻¹ • antiDiagU B₁₂) =
       spectrum ℂ (antiDiag B₁₂ B₂₁) := by

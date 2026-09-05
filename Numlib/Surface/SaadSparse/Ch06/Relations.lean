@@ -219,7 +219,7 @@ theorem isUnit_Rtilde_of_fomDefined {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b 
 theorem ρG_eq_norm_gamma {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀))
     (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m)) :
     ρG A b x₀ m = ‖γ (arnoldiCoeff A (v₁ A b x₀)) (β A b x₀ : 𝕜) m‖ :=
-  eq_6_42 A b x₀ hm hR
+  equation_6_42 A b x₀ hm hR
 
 /-- Algorithm 6.9 computes the minimal-residual iterate at every step below the grade. -/
 theorem gmresFixed_isMinResIterate_of_lt {m : ℕ} (hm : m < grade A (v₁ A b x₀)) :
@@ -312,7 +312,7 @@ theorem ρG_succ {m : ℕ} (hm : m + 1 < grade A (v₁ A b x₀)) :
     (gmresFixed_isMinResIterate_of_lt A b x₀ hm)
 
 /-- **(6.62)**: `ρ_m^G = |s_1 s_2 ⋯ s_m| β`. -/
-theorem eq_6_62 {m : ℕ} (hm : m < grade A (v₁ A b x₀)) :
+theorem equation_6_62 {m : ℕ} (hm : m < grade A (v₁ A b x₀)) :
     ρG A b x₀ m
       = (∏ i ∈ Finset.range m, ‖s (arnoldiCoeff A (v₁ A b x₀)) i‖) * β A b x₀ := by
   rw [ρG_eq_norm_gamma A b x₀ hm.le (isUnit_R_of_lt_grade A b x₀ hm), norm_gamma_eq_prod,
@@ -335,7 +335,7 @@ private theorem rotated_succ_row (h : ℕ → ℕ → ℝ) (m : ℕ) :
   Krylov.rotated_eq_of_le h m (m + 1) m le_rfl
 
 /-- **(6.63)**: `ρ_{m+1}^F = ρ_{m+1}^G √(1 + h_{m+2,m+1}²/ξ²)`. -/
-theorem eq_6_63 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀))
+theorem equation_6_63 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀))
     (hH : FOMDefined A b x₀ (m + 1)) :
     ρF A b x₀ (m + 1) = ρG A b x₀ (m + 1) *
       Real.sqrt (1 + arnoldiCoeff A (v₁ A b x₀) (m + 1) m ^ 2 /
@@ -370,7 +370,7 @@ theorem eq_6_63 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀))
 /-- **Proposition 6.12** (Brown), as stated in the book: if `m ≥ 1` Arnoldi steps have been
 taken and `H_m` is nonsingular, then `c_m ≠ 0` and
 `ρ_m^F = ρ_m^G/|c_m| = ρ_m^G √(1 + h_{m+1,m}²/ξ²)`. -/
-theorem prop_6_12 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) (hm0 : 0 < m)
+theorem proposition_6_12 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) (hm0 : 0 < m)
     (hH : FOMDefined A b x₀ m) :
     c (arnoldiCoeff A (v₁ A b x₀)) (m - 1) ≠ 0 ∧
       ρF A b x₀ m = ρG A b x₀ m / ‖c (arnoldiCoeff A (v₁ A b x₀)) (m - 1)‖ ∧
@@ -380,12 +380,12 @@ theorem prop_6_12 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) (hm0 : 0 < m)
   obtain ⟨k, rfl⟩ : ∃ k, m = k + 1 := ⟨m - 1, by omega⟩
   simp only [Nat.add_sub_cancel]
   exact ⟨givensC_ne_zero_of_fomDefined A b x₀ hm hH, ρF_eq_div_norm_c A b x₀ hm hH,
-    eq_6_63 A b x₀ hm hH⟩
+    equation_6_63 A b x₀ hm hH⟩
 
 /-! #### Proposition 6.13 (Cullum–Greenbaum), (6.64)–(6.65) -/
 
 /-- **(6.65)**: `1/(ρ_{m+1}^F)² + 1/(ρ_m^G)² = 1/(ρ_{m+1}^G)²`. -/
-theorem eq_6_65 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀)) (hH : FOMDefined A b x₀ (m + 1))
+theorem equation_6_65 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀)) (hH : FOMDefined A b x₀ (m + 1))
     (h0 : ρG A b x₀ (m + 1) ≠ 0) :
     1 / ρF A b x₀ (m + 1) ^ 2 + 1 / ρG A b x₀ m ^ 2 = 1 / ρG A b x₀ (m + 1) ^ 2 := by
   have hkey := Krylov.inv_sq_norm_residual_minRes
@@ -395,12 +395,12 @@ theorem eq_6_65 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀)) (hH : FOMDefi
   linarith
 
 /-- **(6.64)** (Cullum–Greenbaum): `ρ_{m+1}^F = ρ_{m+1}^G/√(1 - (ρ_{m+1}^G/ρ_m^G)²)`. -/
-theorem prop_6_13 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀)) (hH : FOMDefined A b x₀ (m + 1))
+theorem proposition_6_13 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀)) (hH : FOMDefined A b x₀ (m + 1))
     (h0 : ρG A b x₀ (m + 1) ≠ 0) :
     ρF A b x₀ (m + 1)
       = ρG A b x₀ (m + 1) /
         Real.sqrt (1 - (ρG A b x₀ (m + 1) / ρG A b x₀ m) ^ 2) := by
-  have h65 := eq_6_65 A b x₀ hm hH h0
+  have h65 := equation_6_65 A b x₀ hm hH h0
   have hRm1 := isUnit_R_of_fomDefined A b x₀ hm hH
   have hGF := ρG_le_ρF A b x₀ hm hH hRm1
   have hGG := ρG_succ_le A b x₀ hm hRm1
@@ -440,7 +440,7 @@ theorem prop_6_13 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀)) (hH : FOMDe
 /-! #### (6.66) and Corollary 6.14, (6.67) -/
 
 /-- **(6.66)**: `∑_{i=0}^m 1/(ρ_i^F)² = 1/(ρ_m^G)²`. -/
-theorem eq_6_66 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) (hH : ∀ i ≤ m, FOMDefined A b x₀ i)
+theorem equation_6_66 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) (hH : ∀ i ≤ m, FOMDefined A b x₀ i)
     (h0 : ρG A b x₀ m ≠ 0) :
     ∑ i ∈ Finset.range (m + 1), 1 / ρF A b x₀ i ^ 2 = 1 / ρG A b x₀ m ^ 2 :=
   (Krylov.inv_sq_norm_residual_minRes_eq_sum (xF := fun i => fomFixed A b x₀ i)
@@ -449,18 +449,18 @@ theorem eq_6_66 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) (hH : ∀ i ≤ m
     (norm_ne_zero_iff.1 h0)).symm
 
 /-- **Corollary 6.14**, (6.67): `ρ_m^G = 1/√(∑_{i=0}^m (1/ρ_i^F)²)`. -/
-theorem cor_6_14 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) (hH : ∀ i ≤ m, FOMDefined A b x₀ i)
+theorem corollary_6_14 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) (hH : ∀ i ≤ m, FOMDefined A b x₀ i)
     (h0 : ρG A b x₀ m ≠ 0) :
     ρG A b x₀ m = 1 / Real.sqrt (∑ i ∈ Finset.range (m + 1), 1 / ρF A b x₀ i ^ 2) := by
   have ha : 0 < ρG A b x₀ m := lt_of_le_of_ne (norm_nonneg _) (Ne.symm h0)
-  rw [eq_6_66 A b x₀ hm hH h0,
+  rw [equation_6_66 A b x₀ hm hH h0,
     show (1 : ℝ) / ρG A b x₀ m ^ 2 = (1 / ρG A b x₀ m) ^ 2 by rw [div_pow, one_pow],
     Real.sqrt_sq (by positivity), one_div_one_div]
 
 /-! #### Proposition 6.15, (6.68) -/
 
 /-- **Proposition 6.15**, (6.68): `ρ_m^G ≤ ρ^F_{m*} ≤ √(m+1) ρ_m^G`. -/
-theorem prop_6_15 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) (hH : ∀ i ≤ m, FOMDefined A b x₀ i) :
+theorem proposition_6_15 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) (hH : ∀ i ≤ m, FOMDefined A b x₀ i) :
     ρG A b x₀ m ≤ ρFmin A b x₀ m ∧
       ρFmin A b x₀ m ≤ Real.sqrt (m + 1) * ρG A b x₀ m := by
   have hG := gmresFixed_isMinResIterate A b x₀ hm
@@ -478,7 +478,7 @@ theorem prop_6_15 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) (hH : ∀ i ≤
 /-! #### (6.74)–(6.75) -/
 
 /-- **(6.74)**: `x_{m+1}^G = s_{m+1}² x_m^G + c_{m+1}² x_{m+1}^F`. -/
-theorem eq_6_74 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀)) (hA : IsUnit A)
+theorem equation_6_74 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀)) (hA : IsUnit A)
     (hH : FOMDefined A b x₀ (m + 1)) (h0 : ρG A b x₀ (m + 1) ≠ 0) :
     gmresFixed A b x₀ (m + 1)
       = s (arnoldiCoeff A (v₁ A b x₀)) m ^ 2 • gmresFixed A b x₀ m +
@@ -495,7 +495,7 @@ theorem eq_6_74 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀)) (hA : IsUnit 
     rw [show ‖c h m‖ ^ 2 = c h m ^ 2 by rw [Real.norm_eq_abs, sq_abs]]
     field_simp
   have hcs : 1 - c h m ^ 2 = s h m ^ 2 := by
-    have := eq_6_35 h (givensRho_ne_zero_of_fomDefined A b x₀ hm hH)
+    have := equation_6_35 h (givensRho_ne_zero_of_fomDefined A b x₀ hm hH)
     linarith
   have hcomb := Krylov.minRes_eq_combination
     (gmresFixed_isMinResIterate_of_lt A b x₀ (by omega))
@@ -513,21 +513,21 @@ private theorem residual_combination {N : ℕ}
   match_scalars <;> linarith
 
 /-- **(6.75)**: `r_{m+1}^G = s_{m+1}² r_m^G + c_{m+1}² r_{m+1}^F`. -/
-theorem eq_6_75 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀)) (hA : IsUnit A)
+theorem equation_6_75 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀)) (hA : IsUnit A)
     (hH : FOMDefined A b x₀ (m + 1)) (h0 : ρG A b x₀ (m + 1) ≠ 0) :
     b - op A (gmresFixed A b x₀ (m + 1))
       = s (arnoldiCoeff A (v₁ A b x₀)) m ^ 2 • (b - op A (gmresFixed A b x₀ m)) +
         c (arnoldiCoeff A (v₁ A b x₀)) m ^ 2 • (b - op A (fomFixed A b x₀ (m + 1))) := by
-  have hcs := eq_6_35 (arnoldiCoeff A (v₁ A b x₀))
+  have hcs := equation_6_35 (arnoldiCoeff A (v₁ A b x₀))
     (givensRho_ne_zero_of_fomDefined A b x₀ hm hH)
-  rw [eq_6_74 A b x₀ hm hA hH h0]
+  rw [equation_6_74 A b x₀ hm hA hH h0]
   exact residual_combination (op A) b _ _ (by linarith)
 
 /-! #### P-6.14: Proposition 6.12 from (6.75) -/
 
 /-- **P-6.14**: the two residuals on the right of (6.75) are orthogonal, so
 `(ρ_{m+1}^G)² = s⁴ (ρ_m^G)² + c⁴ (ρ_{m+1}^F)²`. -/
-theorem p_6_14 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀)) (hA : IsUnit A)
+theorem problem_6_14 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀)) (hA : IsUnit A)
     (hH : FOMDefined A b x₀ (m + 1)) (h0 : ρG A b x₀ (m + 1) ≠ 0) :
     inner ℝ (b - op A (gmresFixed A b x₀ m)) (b - op A (fomFixed A b x₀ (m + 1))) = 0 ∧
       ρG A b x₀ (m + 1) ^ 2
@@ -545,7 +545,7 @@ theorem p_6_14 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀)) (hA : IsUnit A
       = (0 : ℝ) := by
     rw [real_inner_smul_left, real_inner_smul_right, horth, mul_zero, mul_zero]
   have hpy := norm_add_sq_eq_norm_sq_add_norm_sq_of_inner_eq_zero _ _ horth'
-  rw [← eq_6_75 A b x₀ hm hA hH h0, norm_smul, norm_smul,
+  rw [← equation_6_75 A b x₀ hm hA hH h0, norm_smul, norm_smul,
     Real.norm_of_nonneg (sq_nonneg (s (arnoldiCoeff A (v₁ A b x₀)) m)),
     Real.norm_of_nonneg (sq_nonneg (c (arnoldiCoeff A (v₁ A b x₀)) m))] at hpy
   nlinarith [hpy]
@@ -553,7 +553,7 @@ theorem p_6_14 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀)) (hA : IsUnit A
 /-! #### P-6.13: `x_m^G = x_m^F` forces both to be exact -/
 
 /-- **P-6.13**: if `H_m` is nonsingular and the two approximations coincide, both are exact. -/
-theorem p_6_13 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀)) (hH : FOMDefined A b x₀ (m + 1))
+theorem problem_6_13 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀)) (hH : FOMDefined A b x₀ (m + 1))
     (heq : gmresFixed A b x₀ (m + 1) = fomFixed A b x₀ (m + 1)) :
     b - op A (gmresFixed A b x₀ (m + 1)) = 0 ∧ b - op A (fomFixed A b x₀ (m + 1)) = 0 := by
   have hRm1 := isUnit_R_of_fomDefined A b x₀ hm hH
@@ -568,7 +568,7 @@ theorem p_6_13 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀)) (hH : FOMDefin
     have hc1 : ‖c (arnoldiCoeff A (v₁ A b x₀)) m‖ = 1 :=
       mul_left_cancel₀ h0 (by rw [mul_one]; exact hdiv)
     have hs0 : s (arnoldiCoeff A (v₁ A b x₀)) m = 0 := by
-      have hcs := eq_6_35 (arnoldiCoeff A (v₁ A b x₀))
+      have hcs := equation_6_35 (arnoldiCoeff A (v₁ A b x₀))
         (givensRho_ne_zero_of_fomDefined A b x₀ hm hH)
       have hc2 : c (arnoldiCoeff A (v₁ A b x₀)) m ^ 2 = 1 := by
         rw [show c (arnoldiCoeff A (v₁ A b x₀)) m ^ 2
@@ -601,7 +601,7 @@ private theorem exists_galerkin_iff {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b 
 
 /-- **Proposition 6.17** (Brown) and **P-6.9**: GMRES makes no progress at step `m + 1` exactly
 when FOM breaks down there (`H_{m+1}` singular). -/
-theorem prop_6_17 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀)) (hA : IsUnit A)
+theorem proposition_6_17 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀)) (hA : IsUnit A)
     (h0 : ρG A b x₀ (m + 1) ≠ 0) :
     gmresFixed A b x₀ (m + 1) = gmresFixed A b x₀ m ↔ ¬ FOMDefined A b x₀ (m + 1) := by
   have hG := gmresFixed_isMinResIterate_of_lt A b x₀ (show m < grade A (v₁ A b x₀) by omega)
@@ -624,13 +624,13 @@ theorem prop_6_17 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀)) (hA : IsUni
 /-! #### Lemma 6.16 (Freund), (6.69)–(6.73) -/
 
 /-- **(6.70)**: the last entry of `g_{m+1}` is `c_{m+1} γ_{m+1}`. -/
-theorem eq_6_70 (h : ℕ → ℕ → ℝ) (t : ℝ) (m : ℕ) :
+theorem equation_6_70 (h : ℕ → ℕ → ℝ) (t : ℝ) (m : ℕ) :
     g h t (m + 1) (Fin.last m) = c h m * γ h t m := by
   rw [g_apply, Fin.val_last, Krylov.gvec]
   simp
 
 /-- **(6.71)**: the last diagonal entry of `R_{m+1}` is `ξ_{m+1}/c_{m+1}`. -/
-theorem eq_6_71 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀)) (hH : FOMDefined A b x₀ (m + 1)) :
+theorem equation_6_71 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀)) (hH : FOMDefined A b x₀ (m + 1)) :
     R (arnoldiCoeff A (v₁ A b x₀)) (m + 1) (Fin.last m) (Fin.last m)
       = ξ (arnoldiCoeff A (v₁ A b x₀)) (m + 1) / c (arnoldiCoeff A (v₁ A b x₀)) m := by
   have hξ : ξ (arnoldiCoeff A (v₁ A b x₀)) (m + 1)

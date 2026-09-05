@@ -44,7 +44,7 @@ Conventions (shared file `Surface/SaadSparse/Basic.lean`):
   (`Numlib/LinearAlgebra/Matrix/Complexify.lean`); `Basic.lean` adds the glue `complexify_sub`,
   `complexify_diagPart/strictLower/strictUpper/inv` (`Matrix.map` of a ring hom) and
   `norm_complexify_mulVec : ‖complexify A *ᵥ (ofReal ∘ x)‖ = ‖A *ᵥ x‖`.
-* Names: `SaadSparse.Ch01.thm_1_34`, `SaadSparse.Ch05.prop_5_3`, `eq_1_76`, …, plus descriptive
+* Names: `SaadSparse.Ch01.thm_1_34`, `SaadSparse.Ch05.prop_5_3`, `equation_1_76`, …, plus descriptive
   aliases; docstrings carry the book statement verbatim.
 
 Proposed files:
@@ -483,8 +483,8 @@ Route: `conjTranspose` algebra. Class: `surface-only` (definitional algebra; acc
 
 **R-1.2 Theorem 1.34.** Book: `A` real positive definite ⇒ `A` nonsingular and
 `∃ α > 0, (Au, u) ≥ α ‖u‖₂² ∀ u ∈ ℝⁿ`; the proof takes `α = λ_min(H)`.
-Lean: `thm_1_34 (hA : A.IsPositiveReal) : IsUnit A ∧ ∃ α > 0, ∀ u, α * (u ⬝ᵥ u) ≤ (A *ᵥ u) ⬝ᵥ u`;
-`thm_1_34' [Nonempty (Fin n)] (hA) (u) : lambdaMin (hermitianPart_isHermitian A) * (u ⬝ᵥ u) ≤ (A *ᵥ u) ⬝ᵥ u`.
+Lean: `theorem_1_34 (hA : A.IsPositiveReal) : IsUnit A ∧ ∃ α > 0, ∀ u, α * (u ⬝ᵥ u) ≤ (A *ᵥ u) ⬝ᵥ u`;
+`theorem_1_34' [Nonempty (Fin n)] (hA) (u) : lambdaMin (hermitianPart_isHermitian A) * (u ⬝ᵥ u) ≤ (A *ᵥ u) ⬝ᵥ u`.
 Backbone: `LinearMap.isCoercive_iff_forall_pos`, `LinearMap.IsCoercive.injective`
 (`Numlib/Analysis/InnerProductSpace/Coercive.lean`); `Matrix.IsHermitian.isSymmetricBoundedBy_toEuclideanLin`
 (`Numlib/Analysis/Matrix/ToEuclideanLin.lean`) applied to `hermitianPart A` with `lmin = λ_min(H)`, whose
@@ -494,7 +494,7 @@ the Hermitian `H`. Class: `needs-equivalence`.
 
 **R-1.3 Theorem 1.35 (Bendixson).** Book: any square complex `A`, `H`, `S` as above: every
 eigenvalue `λ` of `A` satisfies `λ_min(H) ≤ Re λ ≤ λ_max(H)` and `λ_min(S) ≤ Im λ ≤ λ_max(S)`.
-Lean: `thm_1_35 [Nonempty (Fin n)] (A : Matrix _ _ ℂ) (hμ : μ ∈ spectrum ℂ A) : lambdaMin hH ≤ μ.re ∧ μ.re ≤ lambdaMax hH ∧ lambdaMin hS ≤ μ.im ∧ μ.im ≤ lambdaMax hS`.
+Lean: `theorem_1_35 [Nonempty (Fin n)] (A : Matrix _ _ ℂ) (hμ : μ ∈ spectrum ℂ A) : lambdaMin hH ≤ μ.re ∧ μ.re ≤ lambdaMax hH ∧ lambdaMin hS ≤ μ.im ∧ μ.im ≤ lambdaMax hS`.
 Backbone: `re_hasEigenvalue_mem_Icc_of_symmetricPart {A H} (hH : H.IsSymmetricBoundedBy lmin lmax)
 (hHA : ∀ x, re ⟪H x, x⟫ = re ⟪A x, x⟫) (hμ : HasEigenvalue A μ) : re μ ∈ Icc lmin lmax`
 (`Numlib/Eigen/Perturbation.lean`). Route: `H := toEuclideanLin (hermitianPart A)` with
@@ -562,7 +562,7 @@ image `M`; `Wᴴ z = 0 ↔ z ∈ Lᗮ` (columns of `W` span `L`). Class: `needs-
 the adjoint of `toEuclideanLin A` is `toEuclideanLin Aᴴ`). Class: `direct`.
 
 **R-1.11 Proposition 1.37.** Book: a projector is orthogonal iff it is Hermitian.
-Lean: `prop_1_37 (hP : IsIdempotentElem P) : (ker (toEuclideanLin P) = (range (toEuclideanLin P))ᗮ) ↔ P.IsHermitian`.
+Lean: `proposition_1_37 (hP : IsIdempotentElem P) : (ker (toEuclideanLin P) = (range (toEuclideanLin P))ᗮ) ↔ P.IsHermitian`.
 Backbone/Mathlib: `IsIdempotentElem.isSymmetric_iff_orthogonal_range`;
 `Matrix.isSymmetric_toEuclideanLin_iff` (`toEuclideanLin`). Class: `direct`.
 
@@ -588,12 +588,12 @@ orthogonal projector"; `P = 0` is a counterexample — see §5). Class: `direct`
 `surface-only` for the eigenvalue facts (idempotent ⇒ `μ² = μ`).
 
 **R-1.14 Theorem 1.38.** Book: `P` the orthogonal projector onto `M`, `x ∈ ℂⁿ`:
-`min_{y ∈ M} ‖x − y‖₂ = ‖x − Px‖₂`. Lean: `thm_1_38 (M) (x) : IsLeast ((fun y => ‖x - y‖) '' (M : Set _)) ‖x - M.starProjection x‖`.
+`min_{y ∈ M} ‖x − y‖₂ = ‖x − Px‖₂`. Lean: `theorem_1_38 (M) (x) : IsLeast ((fun y => ‖x - y‖) '' (M : Set _)) ‖x - M.starProjection x‖`.
 Backbone/Mathlib: `Submodule.starProjection_minimal` (as `⨅`), `starProjection_apply_mem`.
 Class: `direct`.
 
 **R-1.15 Corollary 1.39.** Book: `M`, `x` given: `min_{y ∈ M} ‖x − y‖₂ = ‖x − y*‖₂` iff
-`y* ∈ M` and `x − y* ⟂ M`. Lean: `cor_1_39 (M) (x y) : IsLeast ((fun y => ‖x - y‖) '' M) ‖x - y‖ ↔ y ∈ M ∧ x - y ∈ Mᗮ`
+`y* ∈ M` and `x − y* ⟂ M`. Lean: `corollary_1_39 (M) (x y) : IsLeast ((fun y => ‖x - y‖) '' M) ‖x - y‖ ↔ y ∈ M ∧ x - y ∈ Mᗮ`
 (`IsLeast` includes membership, which is how the book's "min over `y ∈ M`" is read — see §5).
 Backbone/Mathlib: `Submodule.norm_eq_iInf_iff_inner_eq_zero (hv : v ∈ K)`. Class: `direct`.
 
@@ -626,10 +626,10 @@ matrix norm, `‖x(ε) − x‖/‖x‖ ≤ ε ‖A⁻¹‖ (‖e‖/‖x‖ + �
 `‖x(ε) − x‖/‖x‖ ≤ ε κ(A)(‖e‖/‖b‖ + ‖E‖/‖A‖) + o(ε)`, `κ(A) = ‖A‖‖A⁻¹‖`.
 Lean (for each `p`, via D8, with `x ≠ 0`, `b ≠ 0`, `IsUnit A`):
 ```lean
-theorem eq_1_76_exact (hε : |ε| * lpOpNorm p A⁻¹ * lpOpNorm p E < 1) :
+theorem equation_1_76_exact (hε : |ε| * lpOpNorm p A⁻¹ * lpOpNorm p E < 1) :
     ‖x ε - x‖_p / ‖x‖_p ≤ condNumberLp p A / (1 - |ε| * lpOpNorm p A⁻¹ * lpOpNorm p E) *
       (|ε| * (lpOpNorm p E / lpOpNorm p A + ‖e‖_p / ‖b‖_p))
-theorem eq_1_76 : ∃ g : ℝ → ℝ, g =o[𝓝 0] (fun ε => ε) ∧ ∀ᶠ ε in 𝓝 0,
+theorem equation_1_76 : ∃ g : ℝ → ℝ, g =o[𝓝 0] (fun ε => ε) ∧ ∀ᶠ ε in 𝓝 0,
     ‖x ε - x‖_p / ‖x‖_p ≤ |ε| * condNumberLp p A * (‖e‖_p / ‖b‖_p + lpOpNorm p E / lpOpNorm p A) + g ε
 ```
 (`x ε := (A + ε • E)⁻¹ *ᵥ (b + ε • e)`; `‖·‖_p` the `PiLp p` norm). Backbone:
@@ -764,9 +764,9 @@ through D10's `affineStep_eq_step`. Class: `direct`; the second identity `surfac
 converges for any `f` and `x₀`; conversely, if (4.28) converges for any `f` and `x₀` then `ρ(G) < 1`.
 Lean:
 ```lean
-theorem thm_4_1_mp (hG : Matrix.complexSpectralRadius G < 1) : IsUnit (1 - G) ∧
+theorem theorem_4_1_mp (hG : Matrix.complexSpectralRadius G < 1) : IsUnit (1 - G) ∧
     ∀ f x₀, Tendsto (fun k => (affineStep G f)^[k] x₀) atTop (𝓝 ((1 - G)⁻¹ *ᵥ f))
-theorem thm_4_1_mpr (h : ∀ f x₀, ∃ x, Tendsto (fun k => (affineStep G f)^[k] x₀) atTop (𝓝 x)) :
+theorem theorem_4_1_mpr (h : ∀ f x₀, ∃ x, Tendsto (fun k => (affineStep G f)^[k] x₀) atTop (𝓝 x)) :
     Matrix.complexSpectralRadius G < 1
 ```
 Backbone: `Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one : Tendsto (G ^ k) (𝓝 0) ↔
@@ -784,8 +784,8 @@ gives `x_{k+1} − x_k = Gᵏ v → 0` for all `v` (R-4.10), hence `Gᵏ → 0` 
 
 **R-4.12 Corollary 4.2.** Book: `‖G‖ < 1` for *some matrix norm* (Saad §1.5: a norm on
 `ℂ^{n×n}` that is consistent, `‖AB‖ ≤ ‖A‖‖B‖`) ⇒ `I − G` nonsingular and (4.28) converges for any
-`x₀` (and `f`). Lean: `cor_4_2 (N : AlgebraNorm ℝ (Matrix (Fin n) (Fin n) ℝ)) (hG : N G < 1) : IsUnit (1 - G) ∧ ∀ f x₀, Tendsto … (𝓝 ((1 - G)⁻¹ *ᵥ f))`;
-instances `cor_4_2_lp (p) (hG : lpOpNorm p G < 1)` and the scoped `‖G‖ < 1` forms for `p = 2, ∞`.
+`x₀` (and `f`). Lean: `corollary_4_2 (N : AlgebraNorm ℝ (Matrix (Fin n) (Fin n) ℝ)) (hG : N G < 1) : IsUnit (1 - G) ∧ ∀ f x₀, Tendsto … (𝓝 ((1 - G)⁻¹ *ᵥ f))`;
+instances `corollary_4_2_lp (p) (hG : lpOpNorm p G < 1)` and the scoped `‖G‖ < 1` forms for `p = 2, ∞`.
 Backbone: `Stationary.contractingWith (‖G‖ < 1)` (`Stationary/Basic.lean`);
 `spectralRadius_lt_one_of_norm_lt_one` (`Numlib/Analysis/Normed/Algebra/SpectralRadius.lean`) for the scoped
 complex normed-algebra instances. Route for `lpOpNorm p`: `lpOpNorm p (G^k) ≤ (lpOpNorm p G)^k → 0`
@@ -830,7 +830,7 @@ Class: `direct` for the step form; `deferred` (§3 item 5) for the spectral anal
 **R-4.15 Definition 4.3 / Theorem 4.4 (regular splittings).** Book: `M, N` regular splitting of
 `A` (`M` nonsingular, `M⁻¹ ≥ 0`, `N ≥ 0`): `ρ(M⁻¹N) < 1` iff `A` nonsingular and `A⁻¹ ≥ 0`;
 consequently the iteration (4.34) converges whenever `A` is an M-matrix.
-Lean: `thm_4_4 (h : A.IsRegularSplitting M N) : complexSpectralRadius (M⁻¹ * N) < 1 ↔ IsUnit A ∧ ∀ i j, 0 ≤ A⁻¹ i j`;
+Lean: `theorem_4_4 (h : A.IsRegularSplitting M N) : complexSpectralRadius (M⁻¹ * N) < 1 ↔ IsUnit A ∧ ∀ i j, 0 ≤ A⁻¹ i j`;
 `converges_of_isMMatrix (hA : A.IsMMatrix) (h : A.IsRegularSplitting M N) : ∀ b x₀, Tendsto (iterates of M⁻¹N x + M⁻¹b) atTop (𝓝 (A⁻¹ *ᵥ b))`.
 Backbone: `plans/backbone.md` §2.3.4 (phase 2; Thm 1.29 and the weak Perron theorem), §2.1.12;
 R-4.11. Class: `deferred` (§3 item 3). The M-matrix corollary is `direct` from Thm 4.4 + R-4.11
@@ -852,22 +852,22 @@ general consistent norm that is not one of the scoped instances.
 
 **R-4.17 Theorem 4.6 (Gershgorin).** Book: every eigenvalue `λ` of `A` lies in some closed disc
 `|λ − a_ii| ≤ ρ_i = Σ_{j≠i} |a_ij|`; the column-sum version holds too (transpose). Lean:
-`thm_4_6 (A : Matrix _ _ ℂ) (hμ : μ ∈ spectrum ℂ A) : ∃ i, ‖μ - A i i‖ ≤ ∑ j ∈ univ.erase i, ‖A i j‖`;
-`thm_4_6_col`. Backbone/Mathlib: `eigenvalue_mem_ball` (on `HasEigenvalue (toLin' A)`),
+`theorem_4_6 (A : Matrix _ _ ℂ) (hμ : μ ∈ spectrum ℂ A) : ∃ i, ‖μ - A i i‖ ≤ ∑ j ∈ univ.erase i, ‖A i j‖`;
+`theorem_4_6_col`. Backbone/Mathlib: `eigenvalue_mem_ball` (on `HasEigenvalue (toLin' A)`),
 `Module.End.hasEigenvalue_iff_mem_spectrum`, `Matrix.spectrum_toLin'`, `charpoly_transpose`; the
 union form `Matrix.spectrum_subset_iUnion_closedBall` (`Numlib/Eigen/Perturbation.lean`).
 Class: `direct`.
 
 **R-4.18 Theorem 4.7.** Book: `A` irreducible, eigenvalue `λ` on the boundary of the union of the
 `n` Gershgorin discs ⇒ `λ` lies on the boundary of every disc, `|λ − a_ii| = ρ_i ∀ i`.
-Lean: `thm_4_7 (hA : IsIrreducible A) (hμ : μ ∈ spectrum ℂ A) (hb : μ ∈ frontier (⋃ i, closedBall (A i i) (ρ i))) : ∀ i, ‖μ - A i i‖ = ρ i`.
+Lean: `theorem_4_7 (hA : IsIrreducible A) (hμ : μ ∈ spectrum ℂ A) (hb : μ ∈ frontier (⋃ i, closedBall (A i i) (ρ i))) : ∀ i, ‖μ - A i i‖ = ρ i`.
 Backbone: `plans/backbone.md` §2.3.3 (irreducible dominance is phase 2). Route: the book's path
 argument along the strongly connected quiver of `A.map ‖·‖` (`Matrix.isIrreducible_iff_exists_pow_pos`
 or the `IsSStronglyConnected` paths). Class: `deferred` (§3 item 4).
 
 **R-4.19 Corollary 4.8.** Book: strictly diagonally dominant or irreducibly diagonally dominant ⇒
-nonsingular. Lean: `cor_4_8_strict (h : A.IsStrictDiagDominant) : IsUnit A` (+ column form),
-`cor_4_8_irred (h : IsIrreduciblyRowDiagDominant A) : IsUnit A`. Backbone:
+nonsingular. Lean: `corollary_4_8_strict (h : A.IsStrictDiagDominant) : IsUnit A` (+ column form),
+`corollary_4_8_irred (h : IsIrreduciblyRowDiagDominant A) : IsUnit A`. Backbone:
 `Matrix.IsStrictDiagDominant.isUnit`, `IsStrictColDiagDominant.transpose_iff`
 (`Numlib/LinearSolve/Stationary/DiagDominant.lean`); Mathlib `det_ne_zero_of_sum_row_lt_diag`,
 `det_ne_zero_of_sum_col_lt_diag`. Class: `direct` (strict), `deferred` (§3 item 4; irreducible, via
@@ -875,8 +875,8 @@ R-4.18).
 
 **R-4.20 Theorem 4.9.** Book: `A` strictly diagonally dominant or irreducibly diagonally dominant
 ⇒ the Jacobi and Gauss–Seidel iterations converge for any `x₀`.
-Lean: `thm_4_9_jacobi (h : A.IsStrictDiagDominant ∨ IsIrreduciblyRowDiagDominant A) (b x₀) : Tendsto (fun k => (jacobiStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b))`,
-`thm_4_9_gs` likewise; column-dominance versions (`Matrix.IsStrictColDiagDominant`) as separate
+Lean: `theorem_4_9_jacobi (h : A.IsStrictDiagDominant ∨ IsIrreduciblyRowDiagDominant A) (b x₀) : Tendsto (fun k => (jacobiStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b))`,
+`theorem_4_9_gs` likewise; column-dominance versions (`Matrix.IsStrictColDiagDominant`) as separate
 theorems (see §5 on Def 4.5). Backbone: `Matrix.jacobi_spectralRadius_lt_one`,
 `gaussSeidel_spectralRadius_lt_one`, `jacobi_spectralRadius_lt_one_of_col` (over ℂ;
 `DiagDominant.lean`), `linfty_opNorm_jacobi_iterMatrix`; `Matrix.complexify` and the glue
@@ -890,7 +890,7 @@ R-4.11 (⇒) with `x* = A⁻¹b`. Class: `needs-equivalence` (strict row; strict
 any `x₀` iff `A` is positive definite. (As printed, "converges" must mean convergence to the
 solution for every right-hand side, equivalently `ρ(G_ω) < 1`: for singular positive
 semidefinite `A` and `b = 0` the iterates converge for every `x₀` — see §5.)
-Lean: `thm_4_10 (hs : A.IsSymm) (hd : ∀ i, 0 < A i i) (hω : 0 < ω) (hω2 : ω < 2) : complexSpectralRadius (sorSplitting A h hω').iterationOperator < 1 ↔ A.IsPositiveReal`
+Lean: `theorem_4_10 (hs : A.IsSymm) (hd : ∀ i, 0 < A i i) (hω : 0 < ω) (hω2 : ω < 2) : complexSpectralRadius (sorSplitting A h hω').iterationOperator < 1 ↔ A.IsPositiveReal`
 (`h : IsUnit (diagPart A)` from `hd`, `hω' : ω ≠ 0` from `hω`) and, via R-4.11,
 `(∀ f x₀, ∃ x, Tendsto …) ↔ A.PosDef`. Backbone: `plans/backbone.md` §2.3.5
 (phase 2) Householder–John / Ostrowski–Reich (`A` symmetric coercive, `M + Mᴴ − A` coercive ⇒
@@ -900,8 +900,8 @@ Lean: `thm_4_10 (hs : A.IsSymm) (hd : ∀ i, 0 < A i i) (hω : 0 < ω) (hω2 : �
 **R-4.22 Proposition 4.12.** Book: `B = [[0, B₁₂],[B₂₁, 0]]`, `L`, `U` its strict lower/upper
 parts: (1) `μ` eigenvalue ⇒ `−μ` eigenvalue; (2) the eigenvalues of `B(α) = αL + α⁻¹U` (`α ≠ 0`)
 are independent of `α`. Lean (index type `Fin n₁ ⊕ Fin n₂`, `B := fromBlocks 0 B₁₂ B₂₁ 0`):
-`prop_4_12_neg (hμ : μ ∈ spectrum ℂ B) : -μ ∈ spectrum ℂ B`,
-`prop_4_12_alpha (hα : α ≠ 0) : spectrum ℂ (α • fromBlocks 0 0 B₂₁ 0 + α⁻¹ • fromBlocks 0 B₁₂ 0 0) = spectrum ℂ B`.
+`proposition_4_12_neg (hμ : μ ∈ spectrum ℂ B) : -μ ∈ spectrum ℂ B`,
+`proposition_4_12_alpha (hα : α ≠ 0) : spectrum ℂ (α • fromBlocks 0 0 B₂₁ 0 + α⁻¹ • fromBlocks 0 B₁₂ 0 0) = spectrum ℂ B`.
 Backbone: §2.3.5 (phase 2) may absorb it. Route: similarity by `fromBlocks 1 0 0 (α • 1)`
 (`spectrum` invariant under conjugation, `Matrix.charpoly_units_conj`). Class: `surface-only`
 (similarity argument).
@@ -917,13 +917,13 @@ item is harder and optional).
 
 **R-4.24 Proposition 4.14.** Book: `A` consistently ordered ⇒ there is a permutation `P` with
 `PᵀAP` a T-matrix and `(PᵀAP)_L = PᵀA_LP`, `(PᵀAP)_U = PᵀA_UP`.
-Lean: `prop_4_14 (h : IsConsistentlyOrdered A) : ∃ σ : Equiv.Perm (Fin n), IsTMatrix (A.reindex σ σ) ∧ strictLower (A.reindex σ σ) = (strictLower A).reindex σ σ ∧ strictUpper … `.
+Lean: `proposition_4_14 (h : IsConsistentlyOrdered A) : ∃ σ : Equiv.Perm (Fin n), IsTMatrix (A.reindex σ σ) ∧ strictLower (A.reindex σ σ) = (strictLower A).reindex σ σ ∧ strictUpper … `.
 Backbone: §2.3.5 (phase 2). Route: sort indices by label, stably (order-preserving within a label
 class). Class: `deferred` (§3 item 5).
 
 **R-4.25 Proposition 4.15.** Book: `B` the Jacobi matrix of a consistently ordered `A`, `L, U`
 its strict lower/upper parts: eigenvalues of `αL + α⁻¹U` (`α ≠ 0`) do not depend on `α`.
-Lean: `prop_4_15 (h : IsConsistentlyOrdered A) (hd : ∀ i, A i i ≠ 0) (hα : α ≠ 0) : spectrum ℂ (Bα (complexify (jacobiSplitting A h').iterationOperator) α) = spectrum ℂ (complexify (jacobiSplitting A h').iterationOperator)`.
+Lean: `proposition_4_15 (h : IsConsistentlyOrdered A) (hd : ∀ i, A i i ≠ 0) (hα : α ≠ 0) : spectrum ℂ (Bα (complexify (jacobiSplitting A h').iterationOperator) α) = spectrum ℂ (complexify (jacobiSplitting A h').iterationOperator)`.
 Backbone: §2.3.5 (phase 2). Route: R-4.24 then similarity by `diag(α^{c i})`. Class: `deferred`
 (§3 item 5).
 
@@ -931,8 +931,8 @@ Backbone: §2.3.5 (phase 2). Route: R-4.24 then similarity by `diag(α^{c i})`. 
 the SOR *iteration matrix* `(I − ωL)⁻¹(ωU + (1−ω)I)` with `L = D⁻¹E`, `U = D⁻¹F`, `B = L + U`
 Jacobi: if `λ ≠ 0` is an eigenvalue of `M_SOR` and `(λ + ω − 1)² = λω²μ²` then `μ` is an eigenvalue
 of `B`; conversely `μ ∈ σ(B)` and (4.46) ⇒ `λ ∈ σ(M_SOR)`.
-Lean: `thm_4_16_mp (h) (hd) (hω : ω ≠ 0) (hλ : λ ≠ 0) (hλG : λ ∈ spectrum ℂ G_ω) (hμ : (λ + ω - 1)^2 = λ * ω^2 * μ^2) : μ ∈ spectrum ℂ B`,
-`thm_4_16_mpr (h) (hd) (hω) (hμB : μ ∈ spectrum ℂ B) (hλ : (λ + ω - 1)^2 = λ * ω^2 * μ^2) : λ ∈ spectrum ℂ G_ω`
+Lean: `theorem_4_16_mp (h) (hd) (hω : ω ≠ 0) (hλ : λ ≠ 0) (hλG : λ ∈ spectrum ℂ G_ω) (hμ : (λ + ω - 1)^2 = λ * ω^2 * μ^2) : μ ∈ spectrum ℂ B`,
+`theorem_4_16_mpr (h) (hd) (hω) (hμB : μ ∈ spectrum ℂ B) (hλ : (λ + ω - 1)^2 = λ * ω^2 * μ^2) : λ ∈ spectrum ℂ G_ω`
 (`G_ω := complexify (sorSplitting A h' hω).iterationOperator`,
 `B := complexify (jacobiSplitting A h').iterationOperator`).
 Backbone: §2.3.5 (phase 2). Route: determinant identity `det((λ+ω−1)I − ω(λL + U)) = 0` and R-4.25
@@ -979,8 +979,8 @@ also `↔ ∀ b x₀, ∃! x, IsProjectionApprox A b x₀ K L x`. Backbone: the 
 
 **R-5.4 Proposition 5.1.** Book: (i) `A` positive definite (Saad's sense) and `L = K`, or (ii) `A`
 nonsingular and `L = AK` ⇒ `B = WᵀAV` is nonsingular for any bases `V` of `K`, `W` of `L`.
-Lean: `prop_5_1_i (hA : A.IsPositiveReal) (hV : V.IsBasisOf K) (hW : W.IsBasisOf K) : IsUnit (Wᵀ * A * V)`,
-`prop_5_1_ii (hA : IsUnit A) (hV : V.IsBasisOf K) (hW : W.IsBasisOf (K.map (toEuclideanLin A))) : IsUnit (Wᵀ * A * V)`.
+Lean: `proposition_5_1_i (hA : A.IsPositiveReal) (hV : V.IsBasisOf K) (hW : W.IsBasisOf K) : IsUnit (Wᵀ * A * V)`,
+`proposition_5_1_ii (hA : IsUnit A) (hV : V.IsBasisOf K) (hW : W.IsBasisOf (K.map (toEuclideanLin A))) : IsUnit (Wᵀ * A * V)`.
 Backbone: `existsUnique_isGalerkin_of_isCoercive (hA : A.IsCoercive)`,
 `existsUnique_isMinRes_of_injOn` (`Projection/Basic.lean`), `LinearMap.IsCoercive.inner_self_pos`
 (`Numlib/Analysis/InnerProductSpace/Coercive.lean`). Route: R-5.3: (i) `u ∈ K`, `u ≠ 0` ⇒ `(Au, u) > 0` ⇒
@@ -1001,7 +1001,7 @@ Lean: `isSymm_conjTranspose_mul_mul`, `posDef_transpose_mul_mul (hA : A.PosDef) 
 
 **R-5.6 Proposition 5.2.** Book: `A` SPD, `L = K`: `x̃` is the result of the orthogonal projection
 method onto `K` with starting vector `x₀` iff it minimizes `E(x) = (A(x* − x), x* − x)^{1/2}` over
-`x₀ + K`. Lean: `prop_5_2 (hA : A.PosDef) (hstar : A ⬝ xstar = b) : IsProjectionApprox A b x₀ K K x ↔ (x - x₀ ∈ K ∧ IsMinOn (E_A A xstar) {y | y - x₀ ∈ K} x)`.
+`x₀ + K`. Lean: `proposition_5_2 (hA : A.PosDef) (hstar : A ⬝ xstar = b) : IsProjectionApprox A b x₀ K K x ↔ (x - x₀ ∈ K ∧ IsMinOn (E_A A xstar) {y | y - x₀ ∈ K} x)`.
 Backbone: `IsGalerkin.iff_energyNorm_min (hA : A.IsSymmetricCoercive) (hstar) [FiniteDimensional 𝕜 K]`
 (both directions; `Numlib/LinearSolve/Projection/Optimality.lean`). Route: D1/D17/D19
 equivalences (`Matrix.posDef_iff_isSymmetricCoercive`, `E_A_eq_energyNorm`). Class:
@@ -1010,13 +1010,13 @@ equivalences (`Matrix.posDef_iff_isSymmetricCoercive`, `E_A_eq_energyNorm`). Cla
 **R-5.7 Proposition 5.3.** Book: `A` an arbitrary square matrix, `L = AK`: `x̃` is the result of the
 oblique projection method onto `K` orthogonally to `L` with starting vector `x₀` iff it minimizes
 `R(x) = ‖b − Ax‖₂` over `x₀ + K` (`A` need not be nonsingular). Lean:
-`prop_5_3 : IsProjectionApprox A b x₀ K (K.map (toEuclideanLin A)) x ↔ (x - x₀ ∈ K ∧ IsMinOn (R_A A b) {y | y - x₀ ∈ K} x)`.
+`proposition_5_3 : IsProjectionApprox A b x₀ K (K.map (toEuclideanLin A)) x ↔ (x - x₀ ∈ K ∧ IsMinOn (R_A A b) {y | y - x₀ ∈ K} x)`.
 Backbone: `IsMinRes.iff_isPetrovGalerkin [FiniteDimensional 𝕜 K]` (`Projection/Basic.lean`).
 Class: `direct`.
 
 **R-5.8 Proposition 5.4 and `‖r̃‖₂ ≤ ‖r₀‖₂`.** Book: `L = AK`: `r̃ = b − Ax̃ = (I − P)r₀` with `P` the
 orthogonal projector onto `AK`; hence `‖r̃‖₂ ≤ ‖r₀‖₂`. Lean:
-`prop_5_4 (hx : IsProjectionApprox A b x₀ K (K.map A') x) : b - A ⬝ x = (b - A ⬝ x₀) - (K.map A').starProjection (b - A ⬝ x₀)`,
+`proposition_5_4 (hx : IsProjectionApprox A b x₀ K (K.map A') x) : b - A ⬝ x = (b - A ⬝ x₀) - (K.map A').starProjection (b - A ⬝ x₀)`,
 `norm_residual_le_of_prop_5_4 : ‖b - A ⬝ x‖ ≤ ‖b - A ⬝ x₀‖`. Backbone: `IsMinRes.residual_eq`,
 `IsMinRes.norm_residual_le_norm_residual_zero` (`Projection/Basic.lean`) with R-5.7. Class:
 `direct`.
@@ -1024,9 +1024,9 @@ orthogonal projector onto `AK`; hence `‖r̃‖₂ ≤ ‖r₀‖₂`. Lean:
 **R-5.9 Proposition 5.5 and `‖d̃‖_A ≤ ‖d₀‖_A`.** Book: `A` SPD, orthogonal projection onto `K`:
 `d̃ = x* − x̃ = (I − P_A)d₀`, `P_A` the projector onto `K` orthogonal w.r.t. the `A`-inner product
 (`δ = x̃ − x₀` is the `A`-orthogonal projection of `d₀` onto `K`); hence `‖d̃‖_A ≤ ‖d₀‖_A`.
-Lean: `prop_5_5_char (hA : A.PosDef) (hstar) (hx : IsProjectionApprox A b x₀ K K x) : (x - x₀) ∈ K ∧ ∀ w ∈ K, A.energyInner (xstar - x) w = 0`
+Lean: `proposition_5_5_char (hA : A.PosDef) (hstar) (hx : IsProjectionApprox A b x₀ K K x) : (x - x₀) ∈ K ∧ ∀ w ∈ K, A.energyInner (xstar - x) w = 0`
 (the (1.59)–(1.60) characterization in the `A`-inner product; this is the Galerkin condition
-rewritten), `prop_5_5 : WithEnergy.equiv A' hA' (xstar - x) = (WithEnergy.submoduleMap A' hA' K)ᗮ.starProjection (WithEnergy.equiv A' hA' (xstar - x₀))`,
+rewritten), `proposition_5_5 : WithEnergy.equiv A' hA' (xstar - x) = (WithEnergy.submoduleMap A' hA' K)ᗮ.starProjection (WithEnergy.equiv A' hA' (xstar - x₀))`,
 `energyNorm_le : E_A A xstar x ≤ E_A A xstar x₀`. Backbone: `IsGalerkin.energyInner_error_eq_zero`,
 `IsGalerkin.error_eq_starProjection`, `IsGalerkin.energyNorm_le` (with `y = x₀`;
 `Numlib/LinearSolve/Projection/Optimality.lean`); `WithEnergy.equiv`, `WithEnergy.submoduleMap`
@@ -1043,7 +1043,7 @@ Mathlib `starProjection_eq_self_iff`. Class: `direct`.
 `b ∈ K` ⇒ the approximate solution of any (oblique or orthogonal) projection method onto `K` is
 exact; for `x₀ ≠ 0` the assumption is `r₀ = b − Ax₀ ∈ K`. The proof uses `Q_K^L`, so the implicit
 hypothesis `K ∩ Lᗮ = {0}` is needed (see §5). Lean:
-`prop_5_6 (hK : K ∈ Module.End.invtSubmodule (toEuclideanLin A)) (hKL : ∀ z ∈ K, z ∈ Lᗮ → z = 0) (hb : b - A ⬝ x₀ ∈ K) (hx : IsProjectionApprox A b x₀ K L x) : A ⬝ x = b`
+`proposition_5_6 (hK : K ∈ Module.End.invtSubmodule (toEuclideanLin A)) (hKL : ∀ z ∈ K, z ∈ Lᗮ → z = 0) (hb : b - A ⬝ x₀ ∈ K) (hx : IsProjectionApprox A b x₀ K L x) : A ⬝ x = b`
 (the book's case is `x₀ = 0`). Backbone: `IsPetrovGalerkin.eq_of_invt (hx) (hK) (hr) (hKL)`
 (`Projection/Basic.lean`, the same hypotheses). Class: `direct`.
 
@@ -1053,14 +1053,14 @@ Backbone/Mathlib: `starProjection_minimal`. Class: `direct`.
 
 **R-5.13 Theorem 5.7.** Book: `γ = ‖Q_K^L A (I − P_K)‖₂`, `b ∈ K`, `x₀ = 0`: the exact solution
 `x*` satisfies `‖b − A_m x*‖₂ ≤ γ ‖(I − P_K)x*‖₂`. Lean:
-`thm_5_7 (hd) (h : K ⊓ Lᗮ = ⊥) (hb : b ∈ K) (hstar : A ⬝ xstar = b) : ‖b - A_m A K L hd h xstar‖ ≤ ‖(Q ∘L A' ∘L (1 - K.starProjection) : E n →L[ℝ] E n)‖ * ‖(1 - K.starProjection) xstar‖`.
+`theorem_5_7 (hd) (h : K ⊓ Lᗮ = ⊥) (hb : b ∈ K) (hstar : A ⬝ xstar = b) : ‖b - A_m A K L hd h xstar‖ ≤ ‖(Q ∘L A' ∘L (1 - K.starProjection) : E n →L[ℝ] E n)‖ * ‖(1 - K.starProjection) xstar‖`.
 Backbone: none needed — `Q b = b` for `b ∈ K` (`IsIdempotentElem.apply_eq_iff`) gives
 `b − A_m x* = Q A (x* − P_K x*) = (Q A (1 − P_K)) x*`, then `‖T x‖ ≤ ‖T‖ ‖x‖`
 (`ContinuousLinearMap.le_opNorm`). Class: `surface-only` (two lines).
 
 **R-5.14 Matrix interpretation of Thm 5.7.** Book: `L = K`, `V` orthonormal basis, `W = V`:
 `b = VVᵀb` and (5.11) reads `‖Vᵀb − (VᵀAV)Vᵀx*‖₂ ≤ γ ‖(I − P_K)x*‖₂` (since
-`‖V(Vᵀb − (VᵀAV)Vᵀx*)‖₂ = ‖Vᵀb − (VᵀAV)Vᵀx*‖₂`). Lean: `thm_5_7_matrix (hV : Vᵀ * V = 1) (hV' : V.IsBasisOf K) (hb : b ∈ K) (hstar) : ‖Vᵀ *ᵥ b - (Vᵀ * A * V) *ᵥ (Vᵀ *ᵥ xstar)‖ ≤ γ * ‖(1 - K.starProjection) xstar‖`.
+`‖V(Vᵀb − (VᵀAV)Vᵀx*)‖₂ = ‖Vᵀb − (VᵀAV)Vᵀx*‖₂`). Lean: `theorem_5_7_matrix (hV : Vᵀ * V = 1) (hV' : V.IsBasisOf K) (hb : b ∈ K) (hstar) : ‖Vᵀ *ᵥ b - (Vᵀ * A * V) *ᵥ (Vᵀ *ᵥ xstar)‖ ≤ γ * ‖(1 - K.starProjection) xstar‖`.
 Backbone: R-1.12 (`VVᵀ = P_K`), `compression.toMatrix_orthonormalBasis`
 (`Numlib/Analysis/InnerProductSpace/Projection/Compression.lean`: `VᵀAV` is the matrix of
 `compression (toEuclideanLin A) K` in the orthonormal basis `V.cols`), `‖V y‖ = ‖y‖` for isometric
@@ -1099,8 +1099,8 @@ glue is needed. Class: `needs-equivalence`.
 
 **R-5.18 Theorem 5.9.** Book: `A` SPD: the `A`-norms of the errors `d_k = x* − x_k` of Alg 5.2
 satisfy `‖d_{k+1}‖_A ≤ ((λ_max − λ_min)/(λ_max + λ_min)) ‖d_k‖_A`, and Alg 5.2 converges for any
-`x₀`. Lean: `thm_5_9 [Nonempty (Fin n)] (hA : A.PosDef) (hstar : A ⬝ xstar = b) (k) : E_A A xstar ((sdStep A b)^[k+1] x₀) ≤ (lambdaMax hA.1 - lambdaMin hA.1) / (lambdaMax hA.1 + lambdaMin hA.1) * E_A A xstar ((sdStep A b)^[k] x₀)`;
-`thm_5_9_tendsto : Tendsto (fun k => (sdStep A b)^[k] x₀) atTop (𝓝 xstar)`. Backbone:
+`x₀`. Lean: `theorem_5_9 [Nonempty (Fin n)] (hA : A.PosDef) (hstar : A ⬝ xstar = b) (k) : E_A A xstar ((sdStep A b)^[k+1] x₀) ≤ (lambdaMax hA.1 - lambdaMin hA.1) / (lambdaMax hA.1 + lambdaMin hA.1) * E_A A xstar ((sdStep A b)^[k] x₀)`;
+`theorem_5_9_tendsto : Tendsto (fun k => (sdStep A b)^[k] x₀) atTop (𝓝 xstar)`. Backbone:
 `Projection.energyNorm_steepestDescentStep_le (hl : 0 < lmin) (hA : IsSymmetricBoundedBy lmin lmax) (hstar) (x)`
 (`OneDimensional.lean`); `LinearMap.IsCoerciveWith.norm_le_energyNorm` (`√c ‖x‖ ≤ ‖x‖_A`,
 `Numlib/Analysis/InnerProductSpace/Energy.lean`) for the convergence. Route: contraction factor `< 1`
@@ -1118,11 +1118,11 @@ each step minimizes `f(x) = ‖b − Ax‖₂²` in the direction `r`. Lean: `mr
 **R-5.20 Theorem 5.10.** Book: `A` real positive definite, `μ = λ_min((A + Aᵀ)/2)`, `σ = ‖A‖₂`:
 the residuals of Alg 5.3 satisfy `‖r_{k+1}‖₂ ≤ (1 − μ²/σ²)^{1/2} ‖r_k‖₂`, and Alg 5.3 converges for
 any `x₀`. Lean (scoped `Matrix.Norms.L2Operator`):
-`thm_5_10 [Nonempty (Fin n)] (hA : A.IsPositiveReal) (k) : ‖b - A ⬝ ((mrStep A b)^[k+1] x₀)‖ ≤ Real.sqrt (1 - lambdaMin (hermitianPart_isHermitian A) ^ 2 / ‖A‖ ^ 2) * ‖b - A ⬝ ((mrStep A b)^[k] x₀)‖`;
-`thm_5_10_tendsto : Tendsto (fun k => (mrStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ ⬝ b))`. Backbone:
+`theorem_5_10 [Nonempty (Fin n)] (hA : A.IsPositiveReal) (k) : ‖b - A ⬝ ((mrStep A b)^[k+1] x₀)‖ ≤ Real.sqrt (1 - lambdaMin (hermitianPart_isHermitian A) ^ 2 / ‖A‖ ^ 2) * ‖b - A ⬝ ((mrStep A b)^[k] x₀)‖`;
+`theorem_5_10_tendsto : Tendsto (fun k => (mrStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ ⬝ b))`. Backbone:
 `Projection.norm_residual_minResStep_le {A : E →L[𝕜] E} (hc : 0 < c) (hA : IsCoerciveWith c) (b x)`
 (`OneDimensional.lean`; `‖r'‖ ≤ √(1 − c²/‖A‖²) ‖r‖`), R-1.2 (`c = μ`, i.e. `IsCoerciveWith μ`
-from `thm_1_34'`), `Matrix.l2_opNorm_eq_norm_toEuclideanLin` (`Numlib/Analysis/Matrix/ToEuclideanLin.lean`),
+from `theorem_1_34'`), `Matrix.l2_opNorm_eq_norm_toEuclideanLin` (`Numlib/Analysis/Matrix/ToEuclideanLin.lean`),
 `Matrix.toEuclideanCLM`. Route: `0 < μ ≤ σ` so the factor is `< 1`; `r_k → 0` and
 `x_k = A⁻¹(b − r_k)`. Class: `needs-equivalence`.
 
@@ -1133,7 +1133,7 @@ from `thm_1_34'`), `Matrix.l2_opNorm_eq_norm_toEuclideanLin` (`Numlib/Analysis/M
 bounded by `ρ = max_{x≠0} sin∠(x, Ax) < 1`.
 Lean: `norm_sq_mrStep (hr : A ⬝ r ≠ 0) : ‖b - A ⬝ mrStep A b x‖^2 = ‖r‖^2 * (1 - inner (A ⬝ r) r / inner r r * (inner (A ⬝ r) r / inner (A ⬝ r) (A ⬝ r)))`,
 `isPositiveReal_inv (hA : A.IsPositiveReal) : A⁻¹.IsPositiveReal`,
-`eq_5_20 : ‖r_{k+1}‖^2 ≤ (1 - lambdaMin (hermitianPart_isHermitian A) * lambdaMin (hermitianPart_isHermitian A⁻¹)) * ‖r_k‖^2`,
+`equation_5_20 : ‖r_{k+1}‖^2 ≤ (1 - lambdaMin (hermitianPart_isHermitian A) * lambdaMin (hermitianPart_isHermitian A⁻¹)) * ‖r_k‖^2`,
 `norm_sq_mrStep_eq_sin_sq`, `norm_mrStep_le_sup_sin (hA) : ‖r_{k+1}‖ ≤ ρ * ‖r_k‖ ∧ ρ < 1` with
 `ρ := ⨆ x : {x // x ≠ 0}, Real.sin (InnerProductGeometry.angle x (A ⬝ x))` (compactness of the unit
 sphere for `ρ < 1`). Backbone: only the bound (5.15) (`norm_residual_minResStep_le`, and the

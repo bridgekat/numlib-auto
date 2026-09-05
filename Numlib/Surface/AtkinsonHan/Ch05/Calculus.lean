@@ -65,12 +65,12 @@ theorem hasFDerivWithinAt_iff_of_mem_nhds {f : V₁ → V₂} {A : V₁ →L[ℝ
   ⟨fun h => h.hasFDerivAt hK, fun h => h.hasFDerivWithinAt⟩
 
 /-- **Proposition 5.3.3**: a Fréchet differentiable operator is continuous. -/
-theorem prop_5_3_3 {f : V₁ → V₂} {A : V₁ →L[ℝ] V₂} {u₀ : V₁} (hf : HasFDerivAt f A u₀) :
+theorem proposition_5_3_3 {f : V₁ → V₂} {A : V₁ →L[ℝ] V₂} {u₀ : V₁} (hf : HasFDerivAt f A u₀) :
     ContinuousAt f u₀ :=
   hf.continuousAt
 
 /-- **Proposition 5.3.5** (sum rule) for Fréchet derivatives. -/
-theorem prop_5_3_5 {f g : V₁ → V₂} {A B : V₁ →L[ℝ] V₂} {u₀ : V₁} (hf : HasFDerivAt f A u₀)
+theorem proposition_5_3_5 {f g : V₁ → V₂} {A B : V₁ →L[ℝ] V₂} {u₀ : V₁} (hf : HasFDerivAt f A u₀)
     (hg : HasFDerivAt g B u₀) (c : ℝ) :
     HasFDerivAt (fun u => f u + c • g u) (A + c • B) u₀ :=
   hf.add (hg.const_smul c)
@@ -78,7 +78,7 @@ theorem prop_5_3_5 {f g : V₁ → V₂} {A B : V₁ →L[ℝ] V₂} {u₀ : V�
 /-- **Proposition 5.3.6** (product rule): if `b` is a bounded bilinear map then
 `B(u) = b(f₁ u, f₂ u)` is differentiable with `B'(u₀) h = b(f₁'(u₀) h, f₂(u₀)) +
 b(f₁(u₀), f₂'(u₀) h)`. -/
-theorem prop_5_3_6 {V W : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [NormedAddCommGroup W]
+theorem proposition_5_3_6 {V W : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [NormedAddCommGroup W]
     [NormedSpace ℝ W] (b : V₁ →L[ℝ] V₂ →L[ℝ] W) {f₁ : V → V₁} {f₂ : V → V₂} {A₁ : V →L[ℝ] V₁}
     {A₂ : V →L[ℝ] V₂} {u₀ : V} (h₁ : HasFDerivAt f₁ A₁ u₀) (h₂ : HasFDerivAt f₂ A₂ u₀) :
     HasFDerivAt (fun u => b (f₁ u) (f₂ u))
@@ -89,13 +89,13 @@ theorem prop_5_3_6 {V W : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [Nor
   simp [ContinuousLinearMap.precompR, ContinuousLinearMap.precompL, add_comm]
 
 /-- **Proposition 5.3.7** (chain rule). -/
-theorem prop_5_3_7 {f : V₁ → V₂} {g : V₂ → V₃} {A : V₁ →L[ℝ] V₂} {B : V₂ →L[ℝ] V₃} {u₀ : V₁}
+theorem proposition_5_3_7 {f : V₁ → V₂} {g : V₂ → V₃} {A : V₁ →L[ℝ] V₂} {B : V₂ →L[ℝ] V₃} {u₀ : V₁}
     (hg : HasFDerivAt g B (f u₀)) (hf : HasFDerivAt f A u₀) :
     HasFDerivAt (fun u => g (f u)) (B.comp A) u₀ :=
   hg.comp u₀ hf
 
 /-- **Example 5.3.8**: an affine map `f v = L v + b` has the constant derivative `L`. -/
-theorem ex_5_3_8 (L : V₁ →L[ℝ] V₂) (b : V₂) (u₀ : V₁) :
+theorem example_5_3_8 (L : V₁ →L[ℝ] V₂) (b : V₂) (u₀ : V₁) :
     HasFDerivAt (fun v => L v + b) L u₀ :=
   L.hasFDerivAt.add_const b
 
@@ -241,7 +241,7 @@ variable {V W : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [NormedAddComm
 
 /-- **Proposition 5.3.11**, the mean value inequality (5.3.7), with an explicit bound on the
 derivative along the segment: `‖F u - F w‖ ≤ C ‖u - w‖`. -/
-theorem prop_5_3_11 {F : V → W} {F' : V → V →L[ℝ] W} {u w : V} {C : ℝ}
+theorem proposition_5_3_11 {F : V → W} {F' : V → V →L[ℝ] W} {u w : V} {C : ℝ}
     (hF : ∀ z ∈ segment ℝ u w, HasFDerivAt F (F' z) z)
     (hC : ∀ z ∈ segment ℝ u w, ‖F' z‖ ≤ C) : ‖F u - F w‖ ≤ C * ‖u - w‖ :=
   (convex_segment u w).norm_image_sub_le_of_norm_hasFDerivWithin_le
@@ -250,21 +250,21 @@ theorem prop_5_3_11 {F : V → W} {F' : V → V →L[ℝ] W} {u w : V} {C : ℝ}
 
 /-- **Proposition 5.3.11** in the book's form (5.3.7), with the supremum of `‖F'‖` over the
 segment.  Continuity of `F'` (a hypothesis of the book) makes the supremum finite. -/
-theorem prop_5_3_11_iSup {F : V → W} {F' : V → V →L[ℝ] W} {u w : V}
+theorem proposition_5_3_11_iSup {F : V → W} {F' : V → V →L[ℝ] W} {u w : V}
     (hF : ∀ z ∈ segment ℝ u w, HasFDerivAt F (F' z) z) (hF' : Continuous F') :
     ‖F u - F w‖ ≤ (⨆ θ : Icc (0 : ℝ) 1, ‖F' ((1 - (θ : ℝ)) • u + (θ : ℝ) • w)‖) * ‖u - w‖ := by
   set c : Icc (0 : ℝ) 1 → ℝ := fun θ => ‖F' ((1 - (θ : ℝ)) • u + (θ : ℝ) • w)‖ with hc
   have hcont : Continuous c := by
     fun_prop
   have hbdd : BddAbove (range c) := (isCompact_range hcont).bddAbove
-  refine prop_5_3_11 hF fun z hz => ?_
+  refine proposition_5_3_11 hF fun z hz => ?_
   rw [segment_eq_image ℝ u w] at hz
   obtain ⟨θ, hθ, rfl⟩ := hz
   exact le_ciSup hbdd ⟨θ, hθ⟩
 
 /-- **Corollary 5.3.12**: an operator with vanishing derivative on a connected open set is
 constant there. -/
-theorem cor_5_3_12 {F : V → W} {K : Set V} (hK : IsOpen K) (hKc : IsPreconnected K)
+theorem corollary_5_3_12 {F : V → W} {K : Set V} (hK : IsOpen K) (hKc : IsPreconnected K)
     (hF : DifferentiableOn ℝ F K) (hF' : K.EqOn (fderiv ℝ F) 0) {u v : V} (hu : u ∈ K)
     (hv : v ∈ K) : F u = F v :=
   hK.is_const_of_fderiv_eq_zero hKc hF hF' hu hv
@@ -283,7 +283,7 @@ theorem norm_sub_sub_fderiv_le_half_mul_sq {s : Set V} (hs : Convex ℝ s) {F : 
 
 /-- **Proposition 5.3.13**: for a twice differentiable `F` with `‖F''‖ ≤ C` on the segment,
 `‖F(u₀ + h) - F(u₀) - F'(u₀) h‖ ≤ ½ C ‖h‖²`. -/
-theorem prop_5_3_13 {F : V → W} {F' : V → V →L[ℝ] W} {F'' : V → V →L[ℝ] V →L[ℝ] W} {u₀ h : V}
+theorem proposition_5_3_13 {F : V → W} {F' : V → V →L[ℝ] W} {F'' : V → V →L[ℝ] V →L[ℝ] W} {u₀ h : V}
     {C : ℝ} (hF : ∀ z ∈ segment ℝ u₀ (u₀ + h), HasFDerivAt F (F' z) z)
     (hF' : ∀ z ∈ segment ℝ u₀ (u₀ + h), HasFDerivAt F' (F'' z) z)
     (hC : ∀ z ∈ segment ℝ u₀ (u₀ + h), ‖F'' z‖ ≤ C) :
@@ -306,18 +306,18 @@ variable {U V W : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [NormedAddCo
 
 /-- **Definition 5.3.14** and **Proposition 5.3.15**(⇒): Fréchet differentiability of
 `f : U × V → W` gives the partial derivative in the first variable. -/
-theorem prop_5_3_15_fst {f : U × V → W} {A : U × V →L[ℝ] W} {p : U × V} (hf : HasFDerivAt f A p) :
+theorem proposition_5_3_15_fst {f : U × V → W} {A : U × V →L[ℝ] W} {p : U × V} (hf : HasFDerivAt f A p) :
     HasFDerivAt (fun u => f (u, p.2)) (A.comp (ContinuousLinearMap.inl ℝ U V)) p.1 :=
   hf.comp p.1 (hasFDerivAt_prodMk_left p.1 p.2)
 
 /-- **Definition 5.3.14** and **Proposition 5.3.15**(⇒), second variable. -/
-theorem prop_5_3_15_snd {f : U × V → W} {A : U × V →L[ℝ] W} {p : U × V} (hf : HasFDerivAt f A p) :
+theorem proposition_5_3_15_snd {f : U × V → W} {A : U × V →L[ℝ] W} {p : U × V} (hf : HasFDerivAt f A p) :
     HasFDerivAt (fun v => f (p.1, v)) (A.comp (ContinuousLinearMap.inr ℝ U V)) p.2 :=
   hf.comp p.2 (hasFDerivAt_prodMk_right p.1 p.2)
 
 /-- **(5.3.8)**: the total derivative is the sum of the two partial derivatives,
 `f'(u₀, v₀)(h, k) = f_u(u₀, v₀) h + f_v(u₀, v₀) k`. -/
-theorem eq_5_3_8 (A : U × V →L[ℝ] W) (h : U) (k : V) :
+theorem equation_5_3_8 (A : U × V →L[ℝ] W) (h : U) (k : V) :
     A (h, k) = A.comp (ContinuousLinearMap.inl ℝ U V) h
       + A.comp (ContinuousLinearMap.inr ℝ U V) k := by
   have hsum : ((h, k) : U × V) = (h, 0) + (0, k) := by simp
@@ -327,7 +327,7 @@ theorem eq_5_3_8 (A : U × V →L[ℝ] W) (h : U) (k : V) :
 /-- **Proposition 5.3.15**(⇐): continuous partial derivatives near `(u₀, v₀)` imply Fréchet
 differentiability, with derivative the coproduct of the partials (Mathlib's
 `hasStrictFDerivAt_uncurry_coprod`). -/
-theorem prop_5_3_15_of_partial {f : U → V → W} {f₁ : U → V → U →L[ℝ] W} {f₂ : U → V → V →L[ℝ] W}
+theorem proposition_5_3_15_of_partial {f : U → V → W} {f₁ : U → V → U →L[ℝ] W} {f₂ : U → V → V →L[ℝ] W}
     {p : U × V} (df₁ : ∀ᶠ q in 𝓝 p, HasFDerivAt (f · q.2) (↿f₁ q) q.1)
     (df₂ : ∀ᶠ q in 𝓝 p, HasFDerivAt (f q.1 ·) (↿f₂ q) q.2) (cf₁ : ContinuousAt (↿f₁) p)
     (cf₂ : ContinuousAt (↿f₂) p) : HasFDerivAt (↿f) ((↿f₁ p).coprod (↿f₂ p)) p :=
@@ -439,7 +439,7 @@ theorem add_lineDeriv_le_of_monotone (hK : Convex ℝ K)
 /-- **Theorem 5.3.17**: for a Gâteaux differentiable `f : V → ℝ` on a convex set `K`, the
 following are equivalent: (a) `f` is convex on `K`; (b) `f u + ⟨f'(u), v - u⟩ ≤ f v` for all
 `u, v ∈ K`; (c) the derivative is monotone, `⟨f'(v) - f'(u), v - u⟩ ≥ 0`. -/
-theorem thm_5_3_17 (hK : Convex ℝ K) (hG : ∀ u ∈ K, HasGateauxDerivAt f (f' u) u) :
+theorem theorem_5_3_17 (hK : Convex ℝ K) (hG : ∀ u ∈ K, HasGateauxDerivAt f (f' u) u) :
     (ConvexOn ℝ K f ↔ ∀ u ∈ K, ∀ v ∈ K, f u + f' u (v - u) ≤ f v) ∧
       (ConvexOn ℝ K f ↔ ∀ u ∈ K, ∀ v ∈ K, 0 ≤ (f' v - f' u) (v - u)) := by
   have hab : ConvexOn ℝ K f ↔ ∀ u ∈ K, ∀ v ∈ K, f u + f' u (v - u) ≤ f v :=
@@ -537,7 +537,7 @@ theorem add_lineDeriv_lt_of_strictMonotone (hK : Convex ℝ K)
   linarith
 
 /-- **Theorem 5.3.18**: the strict version of Theorem 5.3.17. -/
-theorem thm_5_3_18 (hK : Convex ℝ K) (hG : ∀ u ∈ K, HasGateauxDerivAt f (f' u) u) :
+theorem theorem_5_3_18 (hK : Convex ℝ K) (hG : ∀ u ∈ K, HasGateauxDerivAt f (f' u) u) :
     (StrictConvexOn ℝ K f ↔ ∀ u ∈ K, ∀ v ∈ K, u ≠ v → f u + f' u (v - u) < f v) ∧
       (StrictConvexOn ℝ K f ↔ ∀ u ∈ K, ∀ v ∈ K, u ≠ v → 0 < (f' v - f' u) (v - u)) := by
   have hab : StrictConvexOn ℝ K f ↔ ∀ u ∈ K, ∀ v ∈ K, u ≠ v → f u + f' u (v - u) < f v :=
@@ -550,7 +550,7 @@ theorem thm_5_3_18 (hK : Convex ℝ K) (hG : ∀ u ∈ K, HasGateauxDerivAt f (f
 `f` over `K` if and only if it solves the variational inequality (5.3.10),
 `⟨f'(u), v - u⟩ ≥ 0` for all `v ∈ K`.  The book states the two existence problems to be
 equivalent; the proof gives this stronger pointwise form. -/
-theorem thm_5_3_19 (hK : Convex ℝ K) (hG : ∀ u ∈ K, HasGateauxDerivAt f (f' u) u)
+theorem theorem_5_3_19 (hK : Convex ℝ K) (hG : ∀ u ∈ K, HasGateauxDerivAt f (f' u) u)
     (hcvx : ConvexOn ℝ K f) {u : V} (hu : u ∈ K) :
     IsMinOn f K u ↔ ∀ v ∈ K, 0 ≤ f' u (v - u) := by
   rw [isMinOn_iff]
@@ -571,10 +571,10 @@ theorem thm_5_3_19 (hK : Convex ℝ K) (hG : ∀ u ∈ K, HasGateauxDerivAt f (f
 
 /-- **Theorem 5.3.19**, formula (5.3.11): when `K` is a subspace the variational inequality
 becomes the variational equation `⟨f'(u), v⟩ = 0` for all `v ∈ K`. -/
-theorem thm_5_3_19_submodule (K : Submodule ℝ V)
+theorem theorem_5_3_19_submodule (K : Submodule ℝ V)
     (hG : ∀ u ∈ (K : Set V), HasGateauxDerivAt f (f' u) u) (hcvx : ConvexOn ℝ (K : Set V) f)
     {u : V} (hu : u ∈ K) : IsMinOn f (K : Set V) u ↔ ∀ v ∈ K, f' u v = 0 := by
-  rw [thm_5_3_19 K.convex hG hcvx hu]
+  rw [theorem_5_3_19 K.convex hG hcvx hu]
   constructor
   · intro h v hv
     have h1 := h (u + v) (K.add_mem hu hv)

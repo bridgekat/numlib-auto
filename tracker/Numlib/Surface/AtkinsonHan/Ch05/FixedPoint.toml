@@ -13,13 +13,13 @@ id = "NonExpansiveOn"
 id = "StronglyMonotoneWith"
 
 [[node]]
-id = "ex_5_1_1"
+id = "example_5_1_1"
 
 [[node]]
-id = "ex_5_1_2"
+id = "example_5_1_2"
 
 [[node]]
-id = "thm_5_1_3"
+id = "theorem_5_1_3"
 
 [[node]]
-id = "thm_5_1_4"
+id = "theorem_5_1_4"

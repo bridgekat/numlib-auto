@@ -147,7 +147,7 @@ theorem tendsto_affineStep_of_complexSpectralRadius_lt_one (hG : complexSpectral
 
 /-- Saad, Theorem 4.1 (⇒): `ρ(G) < 1` implies that `I - G` is nonsingular and that (4.28)
 converges to `(I - G)⁻¹ f` for every `f` and every `x₀`. -/
-theorem thm_4_1_mp (hG : complexSpectralRadius G < 1) :
+theorem theorem_4_1_mp (hG : complexSpectralRadius G < 1) :
     IsUnit (1 - G) ∧ ∀ f x₀ : Fin n → ℝ,
       Tendsto (fun k => (affineStep G f)^[k] x₀) atTop (𝓝 ((1 - G)⁻¹ *ᵥ f)) := by
   have hu := isUnit_one_sub_of_complexSpectralRadius_lt_one hG
@@ -156,7 +156,7 @@ theorem thm_4_1_mp (hG : complexSpectralRadius G < 1) :
   exact mulVec_inv_mulVec hu f
 
 /-- Saad, Theorem 4.1 (⇐): if (4.28) converges for every `f` and every `x₀` then `ρ(G) < 1`. -/
-theorem thm_4_1_mpr (h : ∀ f x₀ : Fin n → ℝ,
+theorem theorem_4_1_mpr (h : ∀ f x₀ : Fin n → ℝ,
     ∃ x, Tendsto (fun k => (affineStep G f)^[k] x₀) atTop (𝓝 x)) :
     complexSpectralRadius G < 1 := by
   rw [← tendsto_pow_iff_complexSpectralRadius_lt_one]
@@ -171,10 +171,10 @@ theorem thm_4_1_mpr (h : ∀ f x₀ : Fin n → ℝ,
 
 /-- Saad, Theorem 4.1: the iteration (4.28) converges for every `f` and every `x₀` iff
 `ρ(G) < 1`. -/
-theorem thm_4_1 (G : Matrix (Fin n) (Fin n) ℝ) :
+theorem theorem_4_1 (G : Matrix (Fin n) (Fin n) ℝ) :
     (∀ f x₀ : Fin n → ℝ, ∃ x, Tendsto (fun k => (affineStep G f)^[k] x₀) atTop (𝓝 x)) ↔
       complexSpectralRadius G < 1 :=
-  ⟨thm_4_1_mpr, fun hG f x₀ => ⟨_, (thm_4_1_mp hG).2 f x₀⟩⟩
+  ⟨theorem_4_1_mpr, fun hG f x₀ => ⟨_, (theorem_4_1_mp hG).2 f x₀⟩⟩
 
 /-- Saad §4.2: a splitting whose iteration matrix has spectral radius `< 1` converges to the
 solution `A⁻¹ b` from every starting vector. -/
@@ -243,10 +243,10 @@ theorem complexSpectralRadius_lt_one_of_lpOpNorm_lt_one {G : Matrix (Fin n) (Fin
   simpa [Function.comp_def] using (hc.tendsto 0).comp hL
 
 /-- Saad, Corollary 4.2 for `‖·‖_p`. -/
-theorem cor_4_2_lp {G : Matrix (Fin n) (Fin n) ℝ} (hG : lpOpNorm p G < 1) :
+theorem corollary_4_2_lp {G : Matrix (Fin n) (Fin n) ℝ} (hG : lpOpNorm p G < 1) :
     IsUnit (1 - G) ∧ ∀ f x₀ : Fin n → ℝ,
       Tendsto (fun k => (affineStep G f)^[k] x₀) atTop (𝓝 ((1 - G)⁻¹ *ᵥ f)) :=
-  thm_4_1_mp (complexSpectralRadius_lt_one_of_lpOpNorm_lt_one p hG)
+  theorem_4_1_mp (complexSpectralRadius_lt_one_of_lpOpNorm_lt_one p hG)
 
 /-- Saad §4.2, the remark before Theorem 4.6: every eigenvalue is bounded by any induced matrix
 norm, `|λ| ≤ ‖A‖_p`. -/
@@ -302,13 +302,13 @@ theorem richardson_tendsto_iff (A : Matrix (Fin n) (Fin n) ℝ) {α : ℝ} (hα 
       complexSpectralRadius (1 - α • A) < 1 := by
   constructor
   · intro h
-    refine thm_4_1_mpr fun f x₀ => ?_
+    refine theorem_4_1_mpr fun f x₀ => ?_
     obtain ⟨x, hx⟩ := h (α⁻¹ • f) x₀
     refine ⟨x, ?_⟩
     rw [richardsonStep_eq_affine, smul_smul, mul_inv_cancel₀ hα, one_smul] at hx
     exact hx
   · intro hG b x₀
     rw [richardsonStep_eq_affine]
-    exact ⟨_, (thm_4_1_mp hG).2 (α • b) x₀⟩
+    exact ⟨_, (theorem_4_1_mp hG).2 (α • b) x₀⟩
 
 end SaadSparse.Ch04

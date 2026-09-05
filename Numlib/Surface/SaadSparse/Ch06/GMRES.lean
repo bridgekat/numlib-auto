@@ -73,7 +73,7 @@ theorem J_eq (m : ℕ) :
   rw [J, smul_e₁_eq_firstVec, Hbar_v₁, β_eq_norm_r₀]
 
 /-- (6.27): `b - A(x_0 + V_m y) = V_{m+1}(β e_1 - H̄_m y)`. -/
-theorem eq_6_27 {m : ℕ} (y : Fin m → 𝕜) :
+theorem equation_6_27 {m : ℕ} (y : Fin m → 𝕜) :
     b - op A (krylovIterate A b x₀ m y) =
       Matrix.toEuclideanLin (V A (v₁ A b x₀) (m + 1))
         (WithLp.toLp 2 ((β A b x₀ : 𝕜) • e₁ (m + 1) - Hbar A (v₁ A b x₀) m *ᵥ y)) := by
@@ -84,7 +84,7 @@ theorem eq_6_27 {m : ℕ} (y : Fin m → 𝕜) :
   exact Finset.sum_congr rfl fun j _ => by rw [arnoldiCGS_v₁_apply]
 
 /-- (6.28): `‖b - A(x_0 + V_m y)‖₂ = J(y)`, for as many steps as Arnoldi can take. -/
-theorem eq_6_28 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) (y : Fin m → 𝕜) :
+theorem equation_6_28 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) (y : Fin m → 𝕜) :
     ‖b - op A (krylovIterate A b x₀ m y)‖ = J A b x₀ m y := by
   rw [krylovIterate_eq_sum, J_eq]
   exact Krylov.norm_residual_eq_norm_firstVec_sub_mulVec (by rwa [← grade_v₁]) y
@@ -188,7 +188,7 @@ theorem mulVec_R_gmresY {m : ℕ} (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀
   mulVec_R_inv_mulVec_g _ _ hR
 
 /-- **Proposition 6.9(2)**: `y_m = R_m⁻¹ g_m` is the minimizer of `J`, and it is the only one. -/
-theorem prop_6_9_2 {m : ℕ} (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m)) :
+theorem proposition_6_9_2 {m : ℕ} (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m)) :
     IsMinOn (J A b x₀ m) Set.univ (gmresY A b x₀ m) ∧
       ∀ y, IsMinOn (J A b x₀ m) Set.univ y → y = gmresY A b x₀ m := by
   rw [J_eq_lsq]
@@ -197,7 +197,7 @@ theorem prop_6_9_2 {m : ℕ} (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m)
 /-- Algorithm 6.9 computes a GMRES approximation. -/
 theorem gmresFixed_isGMRESIterate {m : ℕ} (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m)) :
     IsGMRESIterate A b x₀ m (gmresFixed A b x₀ m) :=
-  ⟨gmresY A b x₀ m, (prop_6_9_2 A b x₀ hR).1, rfl⟩
+  ⟨gmresY A b x₀ m, (proposition_6_9_2 A b x₀ hR).1, rfl⟩
 
 /-- Algorithm 6.9 computes the minimal-residual Krylov iterate. -/
 theorem gmresFixed_isMinResIterate {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀))
@@ -236,7 +236,7 @@ theorem isUnit_R_of_isUnit {m : ℕ} (hA : IsUnit A) (hm : m ≤ grade A (v₁ A
       fun h0 => hc ((Krylov.givensC_eq_zero_iff _ k).2 h0)
 
 /-- **(6.41)**: `b - A x_m = V_{m+1} Q_mᴴ (γ_{m+1} e_{m+1})`. -/
-theorem eq_6_41 {m : ℕ} (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m)) :
+theorem equation_6_41 {m : ℕ} (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m)) :
     b - op A (gmresFixed A b x₀ m) =
       Matrix.toEuclideanLin (V A (v₁ A b x₀) (m + 1))
         (WithLp.toLp 2 ((Qrot (arnoldiCoeff A (v₁ A b x₀)) m)ᴴ *ᵥ
@@ -246,7 +246,7 @@ theorem eq_6_41 {m : ℕ} (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m)) :
   have h1 : (Qrot (arnoldiCoeff A (v₁ A b x₀)) m)ᴴ * Qrot (arnoldiCoeff A (v₁ A b x₀)) m = 1 := by
     have h := (Matrix.mem_unitaryGroup_iff' (A := Qrot (arnoldiCoeff A (v₁ A b x₀)) m)).1 hQ
     rwa [Matrix.star_eq_conjTranspose] at h
-  rw [gmresFixed, eq_6_27, smul_e₁_eq_firstVec, Hbar_eq_hessenbergOf]
+  rw [gmresFixed, equation_6_27, smul_e₁_eq_firstVec, Hbar_eq_hessenbergOf]
   congr 2
   conv_lhs => rw [← Matrix.one_mulVec (Krylov.firstVec (β A b x₀ : 𝕜) (m + 1) -
     Krylov.hessenbergOf (arnoldiCoeff A (v₁ A b x₀)) m *ᵥ gmresY A b x₀ m), ← h1]
@@ -255,7 +255,7 @@ theorem eq_6_41 {m : ℕ} (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m)) :
 
 /-- **(6.42)**: `‖b - A x_m‖₂ = |γ_{m+1}|`, the residual norm read off the rotated right-hand
 side. -/
-theorem eq_6_42 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀))
+theorem equation_6_42 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀))
     (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m)) :
     ‖b - op A (gmresFixed A b x₀ m)‖ =
       ‖γ (arnoldiCoeff A (v₁ A b x₀)) (β A b x₀ : 𝕜) m‖ := by
@@ -268,7 +268,7 @@ theorem eq_6_42 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀))
 theorem apply_eq_of_s_eq_zero {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀))
     (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) (m + 1)))
     (hs : s (arnoldiCoeff A (v₁ A b x₀)) m = 0) : op A (gmresFixed A b x₀ (m + 1)) = b := by
-  have h1 := eq_6_42 A b x₀ hm hR
+  have h1 := equation_6_42 A b x₀ hm hR
   rw [gamma_succ, hs, neg_zero, zero_mul, norm_zero] at h1
   exact (sub_eq_zero.1 (norm_le_zero_iff.1 h1.le)).symm
 
@@ -285,7 +285,7 @@ theorem normalEquations_gmresY {m : ℕ} (hR : IsUnit (R (arnoldiCoeff A (v₁ A
   exact normalEquations _ _ (hessenberg_coeffs A b x₀) hρ (mulVec_R_gmresY A b x₀ hR)
 
 /-- **P-6.5**: `y_m = (H̄_mᴴ H̄_m)⁻¹ H̄_mᴴ (β e_1)`. -/
-theorem p_6_5 {m : ℕ} (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m)) :
+theorem problem_6_5 {m : ℕ} (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m)) :
     gmresY A b x₀ m = ((Hbar A (v₁ A b x₀) m)ᴴ * Hbar A (v₁ A b x₀) m)⁻¹ *ᵥ
       ((Hbar A (v₁ A b x₀) m)ᴴ *ᵥ ((β A b x₀ : 𝕜) • e₁ (m + 1))) := by
   have hρ := (isUnit_R_iff _ (hessenberg_coeffs A b x₀)).1 hR
@@ -299,7 +299,7 @@ theorem p_6_5 {m : ℕ} (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m)) :
 
 /-- **Proposition 6.10**: for nonsingular `A`, GMRES breaks down at step `j` — that is,
 `h_{j+1,j} = 0` — exactly when the approximation `x_j` is already exact. -/
-theorem prop_6_10 (hA : IsUnit A) {j : ℕ} (hj : 0 < j) (hjg : j ≤ grade A (v₁ A b x₀)) :
+theorem proposition_6_10 (hA : IsUnit A) {j : ℕ} (hj : 0 < j) (hjg : j ≤ grade A (v₁ A b x₀)) :
     arnoldiCoeff A (v₁ A b x₀) j (j - 1) = 0 ↔ op A (gmresFixed A b x₀ j) = b := by
   have hj1 : j - 1 + 1 = j := by omega
   have hbd : arnoldiCoeff A (v₁ A b x₀) j (j - 1) = 0 ↔
@@ -492,12 +492,12 @@ theorem residual_eq_6_27 {m : ℕ} (y : Fin m → ℝ) :
     b - op A (krylovIterate A b x₀ m y) =
       Matrix.toEuclideanLin (V A (v₁ A b x₀) (m + 1))
         (WithLp.toLp 2 ((β A b x₀ : ℝ) • e₁ (m + 1) - Hbar A (v₁ A b x₀) m *ᵥ y)) :=
-  eq_6_27 A b x₀ y
+  equation_6_27 A b x₀ y
 
 /-- (6.28): `J(y) = ‖b - A(x_0 + V_m y)‖₂ = ‖β e_1 - H̄_m y‖₂`. -/
 theorem residual_eq_6_28 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) (y : Fin m → ℝ) :
     ‖b - op A (krylovIterate A b x₀ m y)‖ = J A b x₀ m y :=
-  eq_6_28 A b x₀ hm y
+  equation_6_28 A b x₀ hm y
 
 /-- **(6.29)–(6.30)**: the GMRES approximation is the unique vector of `x_0 + 𝒦_m` minimizing
 `‖b - A x‖₂`; equivalently, it is the backbone's minimal-residual Krylov iterate. -/
@@ -516,37 +516,37 @@ theorem gmres_unique {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) (hA : IsUnit
 /-- **Proposition 6.9**(1)–(3), the parts the book uses: for nonsingular `A` the triangular
 factor `R_m` is nonsingular (so a vanishing `r_{mm}` forces `A` singular); `y_m = R_m⁻¹ g_m` is
 the unique minimizer of `J`; and the residual satisfies (6.41) and (6.42). -/
-theorem prop_6_9 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) (hA : IsUnit A) :
+theorem proposition_6_9 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) (hA : IsUnit A) :
     IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m) ∧
       (IsMinOn (J A b x₀ m) Set.univ (gmresY A b x₀ m) ∧
         ∀ y, IsMinOn (J A b x₀ m) Set.univ y → y = gmresY A b x₀ m) ∧
       ‖b - op A (gmresFixed A b x₀ m)‖ =
         ‖γ (arnoldiCoeff A (v₁ A b x₀)) (β A b x₀ : ℝ) m‖ :=
-  ⟨isUnit_R_of_isUnit A b x₀ hA hm, prop_6_9_2 A b x₀ (isUnit_R_of_isUnit A b x₀ hA hm),
-    eq_6_42 A b x₀ hm (isUnit_R_of_isUnit A b x₀ hA hm)⟩
+  ⟨isUnit_R_of_isUnit A b x₀ hA hm, proposition_6_9_2 A b x₀ (isUnit_R_of_isUnit A b x₀ hA hm),
+    equation_6_42 A b x₀ hm (isUnit_R_of_isUnit A b x₀ hA hm)⟩
 
 /-- **Proposition 6.10**: GMRES breaks down at step `j` if and only if `x_j` is exact
 (`A` nonsingular). The hypothesis "the first `j` steps were taken" is the book's implicit one. -/
-theorem prop_6_10_book (hA : IsUnit A) (hr : r₀ A b x₀ ≠ 0) {j : ℕ} (hj : 0 < j)
+theorem proposition_6_10_book (hA : IsUnit A) (hr : r₀ A b x₀ ≠ 0) {j : ℕ} (hj : 0 < j)
     (hnb : NoBreakdownBefore A (v₁ A b x₀) j) :
     arnoldiCoeff A (v₁ A b x₀) j (j - 1) = 0 ↔ op A (gmresFixed A b x₀ j) = b :=
-  prop_6_10 A b x₀ hA hj ((noBreakdownBefore_iff A _ (norm_v₁ A b x₀ hr) j).1 hnb)
+  proposition_6_10 A b x₀ hA hj ((noBreakdownBefore_iff A _ (norm_v₁ A b x₀ hr) j).1 hnb)
 
 /-- **P-6.5**: GMRES is Saad (5.7) with `V = V_m`, `W = A V_m`: the coordinates `y_m` solve the
 normal equations, `y_m = (H̄_mᵀ H̄_m)⁻¹ H̄_mᵀ (β e_1)`. -/
-theorem p_6_5_book {m : ℕ} (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m)) :
+theorem problem_6_5_book {m : ℕ} (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m)) :
     gmresY A b x₀ m = ((Hbar A (v₁ A b x₀) m)ᵀ * Hbar A (v₁ A b x₀) m)⁻¹ *ᵥ
       ((Hbar A (v₁ A b x₀) m)ᵀ *ᵥ ((β A b x₀ : ℝ) • e₁ (m + 1))) := by
   have hT : (Hbar A (v₁ A b x₀) m)ᴴ = (Hbar A (v₁ A b x₀) m)ᵀ := by
     ext i j
     simp [Matrix.conjTranspose_apply]
   rw [← hT]
-  exact p_6_5 A b x₀ hR
+  exact problem_6_5 A b x₀ hR
 
 /-- §6.5.2: **Algorithm 6.10** (Householder GMRES). Its scalar `β = e_1ᵀ h_0` is `±‖r_0‖₂`,
 the accumulation (6.31)–(6.33) computes `x_0 + ∑_j η_j v_j` in the Householder Arnoldi basis, and
 the result is the GMRES approximation of Algorithm 6.9. -/
-theorem alg_6_10 {m : ℕ} (hn : m + 1 ≤ n) (hm : m ≤ grade A (v₁ A b x₀)) (hA : IsUnit A)
+theorem algorithm_6_10 {m : ℕ} (hn : m + 1 ≤ n) (hm : m ≤ grade A (v₁ A b x₀)) (hA : IsUnit A)
     (hR : IsUnit (R (hhCoeff A (r₀ A b x₀)) m)) :
     |βHH A b x₀| = ‖r₀ A b x₀‖ ∧
       gmresHH A b x₀ m = x₀ + ∑ j : Fin m, gmresHHY A b x₀ m j • hhV A (r₀ A b x₀) (j : ℕ) ∧

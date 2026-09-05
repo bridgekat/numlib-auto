@@ -14,9 +14,9 @@ linear in its second, so the book's `ℓ(v) = (v, u)` is written `ℓ v = inner 
 ## Main results
 
 * `IsSublinear`, `isSublinear_iff` — Definition 2.5.4 and its bridge to Mathlib's hypotheses.
-* `thm_2_5_2`, `thm_2_5_5` — the Hahn–Banach theorem and its generalized (sublinear) form.
-* `cor_2_5_6`, `cor_2_5_7` — norming functionals and the dual description (2.5.4) of the norm.
-* `thm_2_5_8` — the Riesz representation theorem, (2.5.5) and (2.5.6).
+* `theorem_2_5_2`, `theorem_2_5_5` — the Hahn–Banach theorem and its generalized (sublinear) form.
+* `corollary_2_5_6`, `corollary_2_5_7` — norming functionals and the dual description (2.5.4) of the norm.
+* `theorem_2_5_8` — the Riesz representation theorem, (2.5.5) and (2.5.6).
 
 ## Not formalized here
 
@@ -34,7 +34,7 @@ variable {𝕜 V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜
 
 /-- **Hahn–Banach theorem** (Theorem 2.5.2). A bounded linear functional on a subspace `V₀` of a
 normed space extends to a bounded linear functional on the whole space with the same norm. -/
-theorem thm_2_5_2 (V₀ : Submodule 𝕜 V) (ℓ : StrongDual 𝕜 V₀) :
+theorem theorem_2_5_2 (V₀ : Submodule 𝕜 V) (ℓ : StrongDual 𝕜 V₀) :
     ∃ ℓhat : StrongDual 𝕜 V, (∀ v : V₀, ℓhat v = ℓ v) ∧ ‖ℓhat‖ = ‖ℓ‖ :=
   exists_extension_norm_eq V₀ ℓ
 
@@ -64,7 +64,7 @@ theorem isSublinear_iff {E : Type*} [AddCommGroup E] [Module ℝ E] (p : E → �
 /-- **Generalized Hahn–Banach theorem** (Theorem 2.5.5). On a real vector space, a linear
 functional on a subspace dominated by a sublinear functional `p` extends to the whole space,
 still dominated by `p`. -/
-theorem thm_2_5_5 {E : Type*} [AddCommGroup E] [Module ℝ E] (V₀ : Submodule ℝ E) (p : E → ℝ)
+theorem theorem_2_5_5 {E : Type*} [AddCommGroup E] [Module ℝ E] (V₀ : Submodule ℝ E) (p : E → ℝ)
     (hp : IsSublinear p) (ℓ : V₀ →ₗ[ℝ] ℝ) (hℓ : ∀ v : V₀, ℓ v ≤ p v) :
     ∃ ℓhat : E →ₗ[ℝ] ℝ, (∀ v : V₀, ℓhat v = ℓ v) ∧ ∀ v, ℓhat v ≤ p v := by
   obtain ⟨hadd, hhom⟩ := (isSublinear_iff p).1 hp
@@ -74,12 +74,12 @@ theorem thm_2_5_5 {E : Type*} [AddCommGroup E] [Module ℝ E] (V₀ : Submodule 
 
 /-- **Norming functional** (Corollary 2.5.6). For every nonzero `v` there is a functional of norm
 one attaining `‖v‖` at `v`. -/
-theorem cor_2_5_6 (v : V) (hv : v ≠ 0) : ∃ ℓ : StrongDual 𝕜 V, ‖ℓ‖ = 1 ∧ ℓ v = ‖v‖ :=
+theorem corollary_2_5_6 (v : V) (hv : v ≠ 0) : ∃ ℓ : StrongDual 𝕜 V, ‖ℓ‖ = 1 ∧ ℓ v = ‖v‖ :=
   exists_dual_vector 𝕜 v (norm_ne_zero_iff.mpr hv)
 
 /-- **(2.5.4)** (Corollary 2.5.7): the norm of `v` is the supremum of `|ℓ(v)|` over the unit
 sphere of the dual space. -/
-theorem cor_2_5_7 (v : V) : ‖v‖ = sSup {r : ℝ | ∃ ℓ : StrongDual 𝕜 V, ‖ℓ‖ = 1 ∧ r = ‖ℓ v‖} := by
+theorem corollary_2_5_7 (v : V) : ‖v‖ = sSup {r : ℝ | ∃ ℓ : StrongDual 𝕜 V, ‖ℓ‖ = 1 ∧ r = ‖ℓ v‖} := by
   have hbdd : ∀ r ∈ {r : ℝ | ∃ ℓ : StrongDual 𝕜 V, ‖ℓ‖ = 1 ∧ r = ‖ℓ v‖}, r ≤ ‖v‖ := by
     rintro r ⟨ℓ, hℓ, rfl⟩
     simpa [hℓ] using ℓ.le_opNorm v
@@ -87,7 +87,7 @@ theorem cor_2_5_7 (v : V) : ‖v‖ = sSup {r : ℝ | ∃ ℓ : StrongDual 𝕜 
   rcases eq_or_ne v 0 with rfl | hv
   · rw [norm_zero]
     exact Real.sSup_nonneg (by rintro r ⟨ℓ, -, rfl⟩; exact norm_nonneg _)
-  · obtain ⟨ℓ, hℓ, hval⟩ := cor_2_5_6 (𝕜 := 𝕜) v hv
+  · obtain ⟨ℓ, hℓ, hval⟩ := corollary_2_5_6 (𝕜 := 𝕜) v hv
     refine le_csSup ⟨‖v‖, fun r hr => hbdd r hr⟩ ⟨ℓ, hℓ, ?_⟩
     rw [hval, RCLike.norm_ofReal, abs_of_nonneg (norm_nonneg v)]
 
@@ -97,7 +97,7 @@ theorem cor_2_5_7 (v : V) : ‖v‖ = sSup {r : ℝ | ∃ ℓ : StrongDual 𝕜 
 Hilbert space is `ℓ(v) = (v, u)` for a unique `u` (2.5.5), and `‖ℓ‖ = ‖u‖` (2.5.6). In Mathlib's
 convention the book's `(v, u)` is `inner 𝕜 u v`, and the representer `u` is
 `(InnerProductSpace.toDual 𝕜 H).symm ℓ`. -/
-theorem thm_2_5_8 {H : Type*} [NormedAddCommGroup H] [InnerProductSpace 𝕜 H] [CompleteSpace H]
+theorem theorem_2_5_8 {H : Type*} [NormedAddCommGroup H] [InnerProductSpace 𝕜 H] [CompleteSpace H]
     (ℓ : StrongDual 𝕜 H) :
     (∃! u : H, ∀ v, ℓ v = inner 𝕜 u v) ∧ ‖ℓ‖ = ‖(InnerProductSpace.toDual 𝕜 H).symm ℓ‖ := by
   constructor

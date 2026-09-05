@@ -1,13 +1,13 @@
 namespace = "AtkinsonHan.Ch02"
 
 [[node]]
-id = "cor_2_3_3"
+id = "corollary_2_3_3"
 
 [[node]]
-id = "eq_2_3_16"
+id = "equation_2_3_16"
 
 [[node]]
-id = "eq_2_3_5"
+id = "equation_2_3_5"
 
 [[node]]
 id = "example_2_3_2"
@@ -16,10 +16,10 @@ id = "example_2_3_2"
 id = "example_2_3_4"
 
 [[node]]
-id = "stability_2_3_4"
+id = "equation_2_3_4"
 
 [[node]]
-id = "thm_2_3_1"
+id = "theorem_2_3_1"
 
 [[node]]
-id = "thm_2_3_5"
+id = "theorem_2_3_5"

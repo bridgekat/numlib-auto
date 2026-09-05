@@ -10,8 +10,8 @@ In §9.3 the discrete space `V_N` need no longer be a subspace of `V`, and the f
 functional are themselves approximated by `a_N` and `ℓ_N`.  The book carries out the analysis on
 `V + V_N` equipped with the discretization-dependent norm `‖·‖_N`; since the theorem is stated
 for one `N` at a time, that space is here simply an abstract real normed space `W`, which is also
-how the backbone states it.  `thm_9_3_1` is Theorem 9.3.1 (Strang's first lemma) with the error
-bound (9.3.2), and `thm_9_3_1'` re-attaches the book's data (`V` Hilbert, the exact solution
+how the backbone states it.  `theorem_9_3_1` is Theorem 9.3.1 (Strang's first lemma) with the error
+bound (9.3.2), and `theorem_9_3_1'` re-attaches the book's data (`V` Hilbert, the exact solution
 `u ∈ V` of (9.1.1), an injection `ι : V → W`), which the proof never uses.
 -/
 
@@ -75,7 +75,7 @@ solvable, and its error obeys (9.3.2)
   |a_N(u,v_N) − ℓ_N(v_N)|/‖v_N‖_N`,
 
 the sum of an approximation term of Céa type and a consistency term. -/
-theorem thm_9_3_1 (aN : W →ₗ[ℝ] W →ₗ[ℝ] ℝ) (ℓN : W →ₗ[ℝ] ℝ) (VN : Submodule ℝ W)
+theorem theorem_9_3_1 (aN : W →ₗ[ℝ] W →ₗ[ℝ] ℝ) (ℓN : W →ₗ[ℝ] ℝ) (VN : Submodule ℝ W)
     [FiniteDimensional ℝ VN] (hM0 : 0 ≤ M) (hα₀ : 0 < α₀)
     (hM : ∀ w, ∀ v ∈ VN, |aN w v| ≤ M * ‖w‖ * ‖v‖)
     (hcoer : ∀ v ∈ VN, α₀ * ‖v‖ ^ 2 ≤ aN v v) (hℓ : ∀ v ∈ VN, |ℓN v| ≤ c₀ * ‖v‖) (u : W) :
@@ -108,7 +108,7 @@ set_option linter.unusedVariables false in
 /-- Theorem 9.3.1 in the book's setting: `V` is the Hilbert space of (9.1.1) with its exact
 solution `u`, and `ι` embeds it into the space `W = V + V_N` carrying the norm `‖·‖_N`.  Neither
 `V` nor `ι` enters the proof: the estimate is entirely about `W`. -/
-theorem thm_9_3_1' {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] [CompleteSpace V]
+theorem theorem_9_3_1' {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] [CompleteSpace V]
     (a : BilinForm V) (ℓ : StrongDual ℝ V) {u : V} (hu : ∀ v, a u v = ℓ v)
     (ι : V →ₗ[ℝ] W) (hι : Function.Injective ι) (aN : W →ₗ[ℝ] W →ₗ[ℝ] ℝ) (ℓN : W →ₗ[ℝ] ℝ)
     (VN : Submodule ℝ W) [FiniteDimensional ℝ VN] (hM0 : 0 ≤ M) (hα₀ : 0 < α₀)
@@ -118,14 +118,14 @@ theorem thm_9_3_1' {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] 
       ∀ uN, GeneralizedGalerkinProblem aN ℓN VN uN →
         ‖ι u - uN‖ ≤ (1 + M / α₀) * (⨅ w : VN, ‖ι u - (w : W)‖)
           + 1 / α₀ * consistencyError aN ℓN VN (ι u) :=
-  thm_9_3_1 aN ℓN VN hM0 hα₀ hM hcoer hℓ (ι u)
+  theorem_9_3_1 aN ℓN VN hM0 hα₀ hM hcoer hℓ (ι u)
 
 end Strang
 
 /-- Exercise 9.3.1, the conforming case `V_N ⊂ V`, `a_N = a`, `ℓ_N = ℓ`: the consistency term of
 (9.3.2) vanishes, and Strang's estimate becomes an inequality of the form (9.1.11),
 `‖u − u_N‖ ≤ (1 + M/c₀) ‖u − v‖`. -/
-theorem ex_9_3_1 {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] (a : BilinForm V)
+theorem exercise_9_3_1 {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] (a : BilinForm V)
     (ℓ : StrongDual ℝ V) (VN : Submodule ℝ V) {M c₀ : ℝ} (hM0 : 0 ≤ M) (hc₀ : 0 < c₀)
     (hM : a.IsBoundedWith M) (ha : a.IsEllipticWith c₀) {u uN : V} (hu : ∀ v, a u v = ℓ v)
     (huN : GalerkinProblem a ℓ VN uN) {v : V} (hv : v ∈ VN) :

@@ -279,7 +279,7 @@ theorem nrbePhi_cg_antitone (hA : A.PosDef) (hα : 0 ≤ α) (hβ : 0 ≤ β) :
 /-- R3.5 for MINRES: `φ_k` decreases monotonically. -/
 theorem nrbePhi_minres_antitone (hA : A.PosDef) (hα : 0 ≤ α) (hβ : 0 ≤ β) {x : ℕ → Vec n}
     (hx : ∀ k, IsMinresIterate A b k (x k)) : Antitone fun k => nrbePhi A b α β (x k) :=
-  nrbePhi_antitone_of_monotone hα hβ (thm_2_3_minres hA hx)
+  nrbePhi_antitone_of_monotone hα hβ (theorem_2_3_minres hA hx)
 
 /-! ### R3.6: Theorem 3.1 -/
 
@@ -291,7 +291,7 @@ theorem minres_iterate_ne_zero (hA : A.PosDef) (hb : b ≠ 0) {x : ℕ → Vec n
     rw [Krylov.IsMinResIterate.eq_CR_iterate (isSymmetricCoercive_of_posDef hA)
       (isMinresIterate_iff.1 (hx 1))]
     exact CR.iterate_one_x_ne_zero b (isSymmetricCoercive_of_posDef hA) hb
-  have hmono := thm_2_3_minres hA hx hk
+  have hmono := theorem_2_3_minres hA hx hk
   simp only at hmono
   exact norm_pos_iff.1 (lt_of_lt_of_le (norm_pos_iff.2 h1) hmono)
 
@@ -324,7 +324,7 @@ theorem nrbe_minres_antitoneOn (hA : A.PosDef) (hb : b ≠ 0) (hα : 0 < α) (h�
 /-- Theorem 3.1 for MINRES: for `α, β > 0` the relative backward errors `‖E_k‖/‖A‖` and
 `‖f_k‖/‖b‖` decrease monotonically.  The row for `‖E_k‖/‖A‖` starts at `k = 1`: at `k = 0` the
 paper's `E_0` is undefined and Lean's is `0`. -/
-theorem thm_3_1_minres (hA : A.PosDef) (hb : b ≠ 0) (hα : 0 < α) (hβ : 0 < β)
+theorem theorem_3_1_minres (hA : A.PosDef) (hb : b ≠ 0) (hα : 0 < α) (hβ : 0 < β)
     {x : ℕ → Vec n} (hx : ∀ k, IsMinresIterate A b k (x k)) :
     AntitoneOn (fun k => ‖nrbePertA A b α β (x k)‖ / ‖A‖) (Set.Ici 1) ∧
       Antitone fun k => ‖nrbePertb A b α β (x k)‖ / ‖b‖ := by
@@ -347,10 +347,10 @@ theorem thm_3_1_minres (hA : A.PosDef) (hb : b ≠ 0) (hα : 0 < α) (hβ : 0 < 
     exact mul_le_mul_of_nonneg_left (nrbe_minres_antitone hA hb hα.le hβ hx hij) hβ.le
 
 /-- Theorem 3.1 for CR. -/
-theorem thm_3_1_cr (hA : A.PosDef) (hb : b ≠ 0) (hα : 0 < α) (hβ : 0 < β) :
+theorem theorem_3_1_cr (hA : A.PosDef) (hb : b ≠ 0) (hα : 0 < α) (hβ : 0 < β) :
     AntitoneOn (fun k => ‖nrbePertA A b α β (cr A b k).x‖ / ‖A‖) (Set.Ici 1) ∧
       Antitone fun k => ‖nrbePertb A b α β (cr A b k).x‖ / ‖b‖ :=
-  thm_3_1_minres hA hb hα hβ (cr_isMinresIterate hA)
+  theorem_3_1_minres hA hb hα hβ (cr_isMinresIterate hA)
 
 /-! ### R3.7: MINRES stops no later than CG under the rule (3.4) with `α = 0` -/
 

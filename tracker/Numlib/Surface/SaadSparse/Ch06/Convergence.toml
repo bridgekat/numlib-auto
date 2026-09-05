@@ -7,13 +7,13 @@ id = "anorm"
 id = "epsMin"
 
 [[node]]
-id = "eq_6_128"
+id = "equation_6_128"
 
 [[node]]
-id = "thm_6_29"
+id = "theorem_6_29"
 
 [[node]]
-id = "thm_6_30_rate"
+id = "theorem_6_30_rate"
 
 [[node]]
 id = "η"

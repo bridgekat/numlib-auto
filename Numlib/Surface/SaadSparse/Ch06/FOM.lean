@@ -151,7 +151,7 @@ theorem conjTranspose_V_mulVec_r₀ (m : ℕ) :
 set_option linter.unusedVariables false in
 /-- **Proposition 6.7** (field-agnostic form): the FOM residual is
 `b - A x_m = -h_{m+1,m} (e_mᵀ y_m) v_{m+1}` (`0`-based indices). The book's no-breakdown
-hypothesis `hm` is kept, so that the numbered statement `prop_6_7` reads as in the book; the
+hypothesis `hm` is kept, so that the numbered statement `proposition_6_7` reads as in the book; the
 identity itself needs only `H_m` nonsingular, since past the grade of `v_1` both sides
 vanish. -/
 theorem residual_fomFixed {m : ℕ} (hH : FOMDefined A b x₀ m) (hm : m ≤ grade A (v₁ A b x₀))
@@ -1058,13 +1058,13 @@ variable {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : EuclideanSpace ℝ
 /-- **(6.16)–(6.17)**. The Full Orthogonalization Method — Arnoldi's method started at
 `v_1 = r_0/β` followed by `y_m = H_m^{-1}(β e_1)`, `x_m = x_0 + V_m y_m` — is exactly the
 orthogonal projection method (6.15) onto `𝒦_m(A, r_0)`. -/
-theorem eq_6_16_17 {m : ℕ} (hH : FOMDefined A b x₀ m) (hm : m ≤ grade A (v₁ A b x₀)) :
+theorem equation_6_16_17 {m : ℕ} (hH : FOMDefined A b x₀ m) (hm : m ≤ grade A (v₁ A b x₀)) :
     Krylov.IsGalerkinIterate (op A) b x₀ m (fomFixed A b x₀ m) :=
   fomFixed_isGalerkinIterate A b x₀ hH hm
 
 /-- **(6.16)–(6.17)**, converse: the orthogonal projection method onto `𝒦_m(A, r_0)` has no
 other solution than the FOM iterate. -/
-theorem eq_6_16_17_unique {m : ℕ} {x : EuclideanSpace ℝ (Fin n)} (hH : FOMDefined A b x₀ m)
+theorem equation_6_16_17_unique {m : ℕ} {x : EuclideanSpace ℝ (Fin n)} (hH : FOMDefined A b x₀ m)
     (hm : m ≤ grade A (v₁ A b x₀)) (hx : Krylov.IsGalerkinIterate (op A) b x₀ m x) :
     x = fomFixed A b x₀ m :=
   eq_fomFixed_of_isGalerkinIterate A b x₀ hH hm hx
@@ -1092,7 +1092,7 @@ theorem Vt_r₀ (m : ℕ) :
 
 /-- **Proposition 6.7**. The residual vector of the FOM iterate is
 `b - A x_m = -h_{m+1,m} (e_mᵀ y_m) v_{m+1}`. -/
-theorem prop_6_7 {m : ℕ} (hH : FOMDefined A b x₀ m) (hm : m ≤ grade A (v₁ A b x₀))
+theorem proposition_6_7 {m : ℕ} (hH : FOMDefined A b x₀ m) (hm : m ≤ grade A (v₁ A b x₀))
     (hm0 : 0 < m) :
     b - op A (fomFixed A b x₀ m)
       = -(arnoldiCoeff A (v₁ A b x₀) m (m - 1) * fomY A b x₀ m ⟨m - 1, by omega⟩) •
@@ -1100,7 +1100,7 @@ theorem prop_6_7 {m : ℕ} (hH : FOMDefined A b x₀ m) (hm : m ≤ grade A (v�
   residual_fomFixed A b x₀ hH hm hm0
 
 /-- **(6.18)**: `‖b - A x_m‖₂ = h_{m+1,m} |e_mᵀ y_m|`. -/
-theorem eq_6_18 {m : ℕ} (hH : FOMDefined A b x₀ m) (hm : m ≤ grade A (v₁ A b x₀)) (hm0 : 0 < m) :
+theorem equation_6_18 {m : ℕ} (hH : FOMDefined A b x₀ m) (hm : m ≤ grade A (v₁ A b x₀)) (hm0 : 0 < m) :
     ‖b - op A (fomFixed A b x₀ m)‖
       = |arnoldiCoeff A (v₁ A b x₀) m (m - 1)| * |fomY A b x₀ m ⟨m - 1, by omega⟩| := by
   rw [← Real.norm_eq_abs, ← Real.norm_eq_abs]
@@ -1114,14 +1114,14 @@ theorem iop_eq_6_7 (m : ℕ) : A * VI A v k m = VI A v k (m + 1) * HbarI A v k m
   mul_VI_eq A v k m
 
 /-- §6.4.2: **Proposition 6.7 for IOM**. -/
-theorem prop_6_7_iom {m : ℕ} (hH : IsUnit (HI A (v₁ A b x₀) k m)) (hm0 : 0 < m) :
+theorem proposition_6_7_iom {m : ℕ} (hH : IsUnit (HI A (v₁ A b x₀) k m)) (hm0 : 0 < m) :
     b - op A (iomFixed A b x₀ k m)
       = -(iopCoeff A (v₁ A b x₀) k m (m - 1) * iomY A b x₀ k m ⟨m - 1, by omega⟩) •
           iop A (v₁ A b x₀) k m :=
   residual_iomFixed A b x₀ k hH hm0
 
 /-- §6.4.2: **(6.18) for IOM**. -/
-theorem eq_6_18_iom {m : ℕ} (hH : IsUnit (HI A (v₁ A b x₀) k m)) (hm0 : 0 < m)
+theorem equation_6_18_iom {m : ℕ} (hH : IsUnit (HI A (v₁ A b x₀) k m)) (hm0 : 0 < m)
     (hv : ‖v₁ A b x₀‖ = 1) :
     ‖b - op A (iomFixed A b x₀ k m)‖
       = |iopCoeff A (v₁ A b x₀) k m (m - 1)| * |iomY A b x₀ k m ⟨m - 1, by omega⟩| := by
@@ -1152,14 +1152,14 @@ theorem hessLU_spec (h : ℕ → ℕ → ℝ) (hh : ∀ a c, c + 1 < a → h a c
 
 /-- §6.4.2, **(6.20)–(6.21)**: Algorithm 6.8 (DIOM) is mathematically equivalent to
 Algorithm 6.7 (IOM). -/
-theorem alg_6_8_eq_alg_6_7 {m : ℕ}
+theorem algorithm_6_8_eq_alg_6_7 {m : ℕ}
     (hpiv : ∀ l, l < m → dioU (iopCoeff A (v₁ A b x₀) k) l l ≠ 0) :
     diom A b x₀ k m = iomFixed A b x₀ k m :=
   diom_eq_iomFixed A b x₀ k hpiv
 
 /-- **Proposition 6.8**. IOM and DIOM are mathematically equivalent to a projection process
 onto `𝒦_m` orthogonally to `L_m = span {z_1, …, z_m}`, `z_i = v_i - (v_i, v_{m+1}) v_{m+1}`. -/
-theorem prop_6_8 {m : ℕ} (hH : IsUnit (HI A (v₁ A b x₀) k m)) (hm0 : 0 < m)
+theorem proposition_6_8 {m : ℕ} (hH : IsUnit (HI A (v₁ A b x₀) k m)) (hm0 : 0 < m)
     (hnorm : ‖iop A (v₁ A b x₀) k m‖ = 1)
     (hspan : Submodule.span ℝ (Set.range fun i : Fin m => iop A (v₁ A b x₀) k (i : ℕ))
       = krylov A (r₀ A b x₀) m) :
@@ -1172,14 +1172,14 @@ theorem prop_6_8 {m : ℕ} (hH : IsUnit (HI A (v₁ A b x₀) k m)) (hm0 : 0 < m
   iomFixed_isPetrovGalerkin A b x₀ k hH hm0 hnorm hspan
 
 /-- **(6.22)** (P-6.22): the DIOM residuals are orthogonal within a window of `k` steps. -/
-theorem eq_6_22 {m : ℕ} (hv : ‖v₁ A b x₀‖ = 1)
+theorem equation_6_22 {m : ℕ} (hv : ‖v₁ A b x₀‖ = 1)
     (hpiv : ∀ l, l < m → dioU (iopCoeff A (v₁ A b x₀) k) l l ≠ 0) {i j : ℕ} (hi : i ≤ m)
     (hj : j ≤ m) (hij : i ≠ j) (hk : |(i : ℤ) - (j : ℤ)| ≤ (k : ℤ)) :
     inner ℝ (b - op A (diom A b x₀ k i)) (b - op A (diom A b x₀ k j)) = 0 :=
   inner_residual_diom_eq_zero A b x₀ k hv hpiv hi hj hij hk
 
 /-- **(6.23)** (P-6.22): `(A p_j, v_i) = 0` for `j - k + 1 < i < j`. -/
-theorem eq_6_23 {m : ℕ} (hv : ‖v₁ A b x₀‖ = 1)
+theorem equation_6_23 {m : ℕ} (hv : ‖v₁ A b x₀‖ = 1)
     (hpiv : ∀ l, l < m → dioU (iopCoeff A (v₁ A b x₀) k) l l ≠ 0) {i j : ℕ} (hj : j + 1 ≤ m)
     (hζ : diomZeta (iopCoeff A (v₁ A b x₀) k) (β A b x₀ : ℝ) j ≠ 0) (h₁ : j + 1 < i + k)
     (h₂ : i < j) :
@@ -1188,7 +1188,7 @@ theorem eq_6_23 {m : ℕ} (hv : ‖v₁ A b x₀‖ = 1)
 
 /-- **(6.24)** (P-6.22): for full orthogonalization (`k ≥ m`) the `p_i` are semi-conjugate,
 `(A p_j, p_i) = 0` for `i < j`. -/
-theorem eq_6_24 {m : ℕ} (hv : ‖v₁ A b x₀‖ = 1) (hk : m ≤ k)
+theorem equation_6_24 {m : ℕ} (hv : ‖v₁ A b x₀‖ = 1) (hk : m ≤ k)
     (hpiv : ∀ l, l < m → dioU (iopCoeff A (v₁ A b x₀) k) l l ≠ 0) {i j : ℕ} (hj : j + 1 ≤ m)
     (hζ : diomZeta (iopCoeff A (v₁ A b x₀) k) (β A b x₀ : ℝ) j ≠ 0) (hij : i < j) :
     inner ℝ (diomP A (v₁ A b x₀) k i) (op A (diomP A (v₁ A b x₀) k j)) = 0 :=
@@ -1196,7 +1196,7 @@ theorem eq_6_24 {m : ℕ} (hv : ‖v₁ A b x₀‖ = 1) (hk : m ≤ k)
 
 /-- §6.4.2: with a full band Algorithm 6.6 is Algorithm 6.2 — incomplete orthogonalization
 degenerates to Arnoldi's method. -/
-theorem alg_6_6_eq_alg_6_2 {j : ℕ} (hjk : j ≤ k) : iop A v k j = arnoldiMGS A v j :=
+theorem algorithm_6_6_eq_alg_6_2 {j : ℕ} (hjk : j ≤ k) : iop A v k j = arnoldiMGS A v j :=
   iop_eq_arnoldiMGS_of_le A v k j hjk
 
 end BookResults

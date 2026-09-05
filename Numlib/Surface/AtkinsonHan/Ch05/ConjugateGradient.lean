@@ -215,7 +215,7 @@ section KantorovichStep
 /-- One conjugate gradient step is at least as good as one steepest-descent step, so the energy
 norm of the error contracts by the Kantorovich factor `(lmax - lmin) / (lmax + lmin)`.
 
-Stated in the backbone's vocabulary because both §5.6 (`eq_5_6_4`) and §9.4
+Stated in the backbone's vocabulary because both §5.6 (`equation_5_6_4`) and §9.4
 (`AtkinsonHan.Ch09.cg_energy_rate`) specialize it.  It is a two-line assembly of
 `IsGalerkin.energyNorm_le` (the conjugate gradient iterate is optimal in the energy norm over
 `x₀ + 𝒦_{k+1}`) and the Kantorovich bound for one steepest-descent step, which the backbone
@@ -237,7 +237,7 @@ variable [CompleteSpace V] {A : V →L[ℝ] V} {m M : ℝ} {f u₀ ustar : V}
 set_option linter.unusedSectionVars false in
 /-- **(5.6.6)** (Exercise 5.6.1): the Chebyshev rate of (5.6.5) is at least as good as the
 steepest-descent rate of (5.6.4). -/
-theorem eq_5_6_6 (hm : 0 < m) (hmM : m ≤ M) :
+theorem equation_5_6_6 (hm : 0 < m) (hmM : m ≤ M) :
     (Real.sqrt M - Real.sqrt m) / (Real.sqrt M + Real.sqrt m) ≤ (M - m) / (M + m) := by
   have hM : 0 < M := lt_of_lt_of_le hm hmM
   obtain ⟨s, hs0, rfl⟩ : ∃ s : ℝ, 0 < s ∧ m = s ^ 2 :=
@@ -265,7 +265,7 @@ theorem normA_error_min (hA : IsSelfAdjoint A) (hm : 0 < m)
 /-- **(5.6.4)**: one conjugate gradient step contracts the `A`-norm of the error by the factor
 `(M - m)/(M + m)`.  This is `cg_energyNorm_error_step_le` read through the identification
 `cg_u` of the book's iteration with the backbone's. -/
-theorem eq_5_6_4 (hA : IsSelfAdjoint A) (hm : 0 < m)
+theorem equation_5_6_4 (hA : IsSelfAdjoint A) (hm : 0 < m)
     (hbound : ∀ v, Real.sqrt m * ‖v‖ ≤ normA A v ∧ normA A v ≤ Real.sqrt M * ‖v‖)
     (hstar : A ustar = f) (k : ℕ) :
     normA A (ustar - (cg A f u₀ (k + 1)).u)
@@ -275,13 +275,13 @@ theorem eq_5_6_4 (hA : IsSelfAdjoint A) (hm : 0 < m)
 
 /-- **Theorem 5.6.1** (Patterson): the conjugate gradient iterates converge to the solution of
 `A u = f`, at the linear rate (5.6.4). -/
-theorem thm_5_6_1 (hA : IsSelfAdjoint A) (hm : 0 < m) (hM : 0 < M)
+theorem theorem_5_6_1 (hA : IsSelfAdjoint A) (hm : 0 < m) (hM : 0 < M)
     (hbound : ∀ v, Real.sqrt m * ‖v‖ ≤ normA A v ∧ normA A v ≤ Real.sqrt M * ‖v‖)
     (hstar : A ustar = f) :
     Tendsto (fun k => (cg A f u₀ k).u) atTop (𝓝 ustar) ∧
       ∀ k, normA A (ustar - (cg A f u₀ (k + 1)).u)
         ≤ (M - m) / (M + m) * normA A (ustar - (cg A f u₀ k).u) := by
-  refine ⟨?_, fun k => eq_5_6_4 hA hm hbound hstar k⟩
+  refine ⟨?_, fun k => equation_5_6_4 hA hm hbound hstar k⟩
   obtain ⟨ρ, hρ0, hρ1, hρle⟩ : ∃ ρ : ℝ, 0 ≤ ρ ∧ ρ < 1 ∧ (M - m) / (M + m) ≤ ρ := by
     refine ⟨max ((M - m) / (M + m)) 0, le_max_right _ _, max_lt ?_ one_pos, le_max_left _ _⟩
     rw [div_lt_one (by linarith)]
@@ -293,7 +293,7 @@ theorem thm_5_6_1 (hA : IsSelfAdjoint A) (hm : 0 < m) (hM : 0 < M)
       rw [pow_zero, one_mul]
       exact le_of_eq rfl
     | succ k ih =>
-      have h1 := eq_5_6_4 (u₀ := u₀) hA hm hbound hstar k
+      have h1 := equation_5_6_4 (u₀ := u₀) hA hm hbound hstar k
       have h2 : (M - m) / (M + m) * normA A (ustar - (cg A f u₀ k).u)
           ≤ ρ * normA A (ustar - (cg A f u₀ k).u) :=
         mul_le_mul_of_nonneg_right hρle (normA_nonneg _ _)
@@ -320,7 +320,7 @@ theorem thm_5_6_1 (hA : IsSelfAdjoint A) (hm : 0 < m) (hM : 0 < M)
 `‖u* - u_k‖_A ≤ 2 ((√M - √m)/(√M + √m))ᵏ ‖u* - u₀‖_A`.  This is the backbone's
 `Krylov.IsGalerkinIterate.energyNorm_error_le` (`Numlib/Krylov/Convergence/CG.lean`), whose rate
 is written with the condition number `κ = M/m`. -/
-theorem eq_5_6_5 (hA : IsSelfAdjoint A) (hm : 0 < m) (hmM : m ≤ M)
+theorem equation_5_6_5 (hA : IsSelfAdjoint A) (hm : 0 < m) (hmM : m ≤ M)
     (hbound : ∀ v, Real.sqrt m * ‖v‖ ≤ normA A v ∧ normA A v ≤ Real.sqrt M * ‖v‖)
     (hstar : A ustar = f) (k : ℕ) :
     normA A (ustar - (cg A f u₀ k).u)

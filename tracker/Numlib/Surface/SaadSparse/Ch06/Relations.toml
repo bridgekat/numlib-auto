@@ -4,25 +4,25 @@ namespace = "SaadSparse.Ch06"
 id = "Rtilde"
 
 [[node]]
-id = "eq_6_62"
+id = "equation_6_62"
 
 [[node]]
-id = "eq_6_65"
+id = "equation_6_65"
 
 [[node]]
-id = "eq_6_70"
+id = "equation_6_70"
 
 [[node]]
-id = "eq_6_71"
+id = "equation_6_71"
 
 [[node]]
-id = "eq_6_75"
+id = "equation_6_75"
 
 [[node]]
 id = "gtilde"
 
 [[node]]
-id = "p_6_14"
+id = "problem_6_14"
 
 [[node]]
 id = "ytilde"

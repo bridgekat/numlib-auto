@@ -13,7 +13,7 @@ strongly positive (= `V`-elliptic), symmetric -- is the list of predicates below
 
 `BilinForm.toCLM` bundles a bounded form as a `V →L[ℝ] V →L[ℝ] ℝ`, which *is* the backbone's
 `SesqForm ℝ V`, so the `Numlib.Variational` API applies to it verbatim; `BilinForm.ofCLM` is the
-inverse direction and `thm_8_3_1` packages the two as the one-to-one correspondence of
+inverse direction and `theorem_8_3_1` packages the two as the one-to-one correspondence of
 Theorem 8.3.1 between `A ∈ L(V, V')` and the bounded bilinear forms on `V`.  On a Hilbert space
 `BilinForm.toOperator` is the Riesz operator `A : V → V` of (9.4.5), with `(A u, v) = a(u,v)`,
 and `BilinForm.energy` is the energy functional `E(v) = ½ a(v,v) − ℓ(v)` of Theorem 8.3.3.
@@ -122,7 +122,7 @@ theorem toCLM_ofCLM (A : V →L[ℝ] StrongDual ℝ V) {M : ℝ} (hM : (ofCLM A)
 one-to-one with the bounded bilinear forms on `V`, via `⟨A u, v⟩ = a(u,v)`.  The quantitative half
 of the theorem is `isBoundedWith_opNorm` (`|a(u,v)| ≤ ‖A‖ ‖u‖ ‖v‖`) together with `norm_toCLM_le`
 (`‖A‖ ≤ M`). -/
-noncomputable def thm_8_3_1 : (V →L[ℝ] StrongDual ℝ V) ≃ {a : BilinForm V // a.IsBounded} where
+noncomputable def theorem_8_3_1 : (V →L[ℝ] StrongDual ℝ V) ≃ {a : BilinForm V // a.IsBounded} where
   toFun A := ⟨ofCLM A, isBounded_ofCLM A⟩
   invFun a := a.1.toCLM a.2.choose_spec.2
   left_inv A := toCLM_ofCLM A _

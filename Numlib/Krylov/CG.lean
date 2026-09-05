@@ -507,7 +507,7 @@ private theorem subspace_le_dirSpan (k : ℕ) : subspace A (b - A x₀) k ≤ di
       rw [h']
       exact pow_apply_mem_dirSpan b x₀ hA k ih
 
-/-- `span {p_0, …, p_{k-1}} = 𝒦_k(A, r₀)`. -/
+/-- `span {problem_0, …, p_{k-1}} = 𝒦_k(A, r₀)`. -/
 theorem span_direction_eq (k : ℕ) :
     Submodule.span 𝕜 (Set.range fun i : Fin k => (iterate A b x₀ i).p) =
       subspace A (b - A x₀) k :=

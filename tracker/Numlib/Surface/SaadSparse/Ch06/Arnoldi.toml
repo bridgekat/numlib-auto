@@ -34,25 +34,25 @@ id = "arnoldiMGSCoeff"
 id = "arnoldiW"
 
 [[node]]
-id = "eq_6_11"
+id = "equation_6_11"
 
 [[node]]
-id = "eq_6_12"
+id = "equation_6_12"
 
 [[node]]
-id = "eq_6_13"
+id = "equation_6_13"
 
 [[node]]
-id = "eq_6_6"
+id = "equation_6_6"
 
 [[node]]
-id = "eq_6_7"
+id = "equation_6_7"
 
 [[node]]
-id = "eq_6_8"
+id = "equation_6_8"
 
 [[node]]
-id = "eq_6_9"
+id = "equation_6_9"
 
 [[node]]
 id = "hh_arnoldi_relation"
@@ -70,4 +70,4 @@ id = "householder"
 id = "householderVec"
 
 [[node]]
-id = "prop_6_6'"
+id = "proposition_6_6'"

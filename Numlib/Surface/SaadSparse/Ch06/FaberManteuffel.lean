@@ -208,7 +208,7 @@ Then DIOM(s) is mathematically equivalent to FOM: the Arnoldi coefficients satis
 `h_{ij} = 0` for `i + s ≤ j` (6.108), so the incomplete orthogonalization process of Algorithm
 6.6 with window `s` coincides with the full process of Algorithm 6.2, IOM(s) computes the FOM
 iterate, and so does DIOM(s). -/
-theorem prop_6_22 {s : ℕ} (hs : ∀ w : EuclideanSpace ℝ (Fin n), op Aᵀ w ∈ krylov A w s)
+theorem proposition_6_22 {s : ℕ} (hs : ∀ w : EuclideanSpace ℝ (Fin n), op Aᵀ w ∈ krylov A w s)
     (b x₀ : EuclideanSpace ℝ (Fin n)) (hr : r₀ A b x₀ ≠ 0) {m : ℕ}
     (hpiv : ∀ l, l < m → dioU (iopCoeff A (v₁ A b x₀) s) l l ≠ 0) :
     (∀ v : EuclideanSpace ℝ (Fin n), ‖v‖ = 1 → ∀ i j : ℕ, i + s ≤ j →

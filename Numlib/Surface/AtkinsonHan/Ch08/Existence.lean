@@ -16,7 +16,7 @@ states it.
 
 Theorem 8.2.7 is out of scope in the Banach generality of the book (Mathlib has no continuous
 Banach dual of an unbounded densely defined operator); its Hilbert-space bounded case is recorded
-as `thm_8_2_7_hilbert`.
+as `theorem_8_2_7_hilbert`.
 -/
 
 open Filter Topology
@@ -87,7 +87,7 @@ theorem stabilityEstimate_iff_antilipschitz (L : V →L[ℝ] W) {c : ℝ} (hc : 
     linarith
 
 /-- The linear case of Theorem 8.2.8 (a) *is* the stability estimate (8.2.2). -/
-theorem thm_8_2_8a_linear (L : V →L[ℝ] W) {c : ℝ} :
+theorem theorem_8_2_8a_linear (L : V →L[ℝ] W) {c : ℝ} :
     (∀ u v : V, c * ‖u - v‖ ≤ ‖L u - L v‖) ↔ ∀ v, c * ‖v‖ ≤ ‖L v‖ := by
   constructor
   · intro h v
@@ -104,7 +104,7 @@ variable {V W : Type*} [NormedAddCommGroup V] [NormedAddCommGroup W]
 
 /-- Theorem 8.2.8 (a): if `‖T u − T v‖ ≥ c ‖u − v‖` on `D(T)` with `c > 0`, the (possibly
 nonlinear) equation `T u = w` has at most one solution in `D(T)`. -/
-theorem thm_8_2_8a {D : Set V} (T : V → W) {c : ℝ} (hc : 0 < c)
+theorem theorem_8_2_8a {D : Set V} (T : V → W) {c : ℝ} (hc : 0 < c)
     (hstab : ∀ u ∈ D, ∀ v ∈ D, c * ‖u - v‖ ≤ ‖T u - T v‖) (w : W) :
     ∀ u₁ ∈ D, ∀ u₂ ∈ D, T u₁ = w → T u₂ = w → u₁ = u₂ := by
   intro u₁ h₁ u₂ h₂ hw₁ hw₂
@@ -115,7 +115,7 @@ theorem thm_8_2_8a {D : Set V} (T : V → W) {c : ℝ} (hc : 0 < c)
 
 /-- Theorem 8.2.8 (b): if `‖(T u − u) − (T v − v)‖ < ‖u − v‖` for distinct `u, v ∈ D(T)`, the
 equation `T u = w` has at most one solution in `D(T)`. -/
-theorem thm_8_2_8b {D : Set V} (T : V → V)
+theorem theorem_8_2_8b {D : Set V} (T : V → V)
     (hstab : ∀ u ∈ D, ∀ v ∈ D, u ≠ v → ‖(T u - u) - (T v - v)‖ < ‖u - v‖) (w : V) :
     ∀ u₁ ∈ D, ∀ u₂ ∈ D, T u₁ = w → T u₂ = w → u₁ = u₂ := by
   intro u₁ h₁ u₂ h₂ hw₁ hw₂
@@ -137,7 +137,7 @@ variable {V W : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
 is closed and its orthogonal complement is trivial.  (The book separates the two directions with
 the Hahn–Banach theorem; the proof here uses orthogonal projections, and needs completeness only
 of `W`.) -/
-theorem thm_8_2_1 [CompleteSpace W] (L : V →ₗ.[ℝ] W) :
+theorem theorem_8_2_1 [CompleteSpace W] (L : V →ₗ.[ℝ] W) :
     LinearMap.range L.toFun = ⊤ ↔
       IsClosed (LinearMap.range L.toFun : Set W) ∧ (LinearMap.range L.toFun)ᗮ = ⊥ := by
   constructor
@@ -152,11 +152,11 @@ theorem thm_8_2_1 [CompleteSpace W] (L : V →ₗ.[ℝ] W) :
 range is uniquely solvable.  The closed-range half is the backbone's
 `LinearPMap.isClosed_range_of_isClosed_of_le_norm`; Theorem 8.2.1 turns it into surjectivity, and
 (8.2.2) gives uniqueness. -/
-theorem thm_8_2_4 [CompleteSpace V] [CompleteSpace W] (L : V →ₗ.[ℝ] W) (hL : L.IsClosed) {c : ℝ}
+theorem theorem_8_2_4 [CompleteSpace V] [CompleteSpace W] (L : V →ₗ.[ℝ] W) (hL : L.IsClosed) {c : ℝ}
     (hc : 0 < c) (hstab : ∀ v : L.domain, c * ‖(v : V)‖ ≤ ‖L v‖)
     (horth : (LinearMap.range L.toFun)ᗮ = ⊥) (f : W) : ∃! u : L.domain, L u = f := by
   have hclosed := LinearPMap.isClosed_range_of_isClosed_of_le_norm L hL hc hstab
-  have htop : LinearMap.range L.toFun = ⊤ := (thm_8_2_1 L).mpr ⟨hclosed, horth⟩
+  have htop : LinearMap.range L.toFun = ⊤ := (theorem_8_2_1 L).mpr ⟨hclosed, horth⟩
   have hmem : f ∈ LinearMap.range L.toFun := htop ▸ Submodule.mem_top
   obtain ⟨u, hu⟩ := hmem
   refine ⟨u, hu, fun y hy => ?_⟩
@@ -172,7 +172,7 @@ theorem thm_8_2_4 [CompleteSpace V] [CompleteSpace W] (L : V →ₗ.[ℝ] W) (hL
 
 /-- The remark after Theorem 8.2.4: for a *continuous* operator, closedness is automatic, and the
 stability estimate together with dense range gives bijectivity. -/
-theorem thm_8_2_4_continuous [CompleteSpace V] [CompleteSpace W] (L : V →L[ℝ] W) {c : ℝ}
+theorem theorem_8_2_4_continuous [CompleteSpace V] [CompleteSpace W] (L : V →L[ℝ] W) {c : ℝ}
     (hc : 0 < c) (hstab : ∀ v, c * ‖v‖ ≤ ‖L v‖)
     (horth : (LinearMap.range (L : V →ₗ[ℝ] W))ᗮ = ⊥) : Function.Bijective L :=
   ContinuousLinearMap.bijective_of_le_norm_of_orthogonal_range_eq_bot L hc hstab horth
@@ -196,7 +196,7 @@ duality sense, and is therefore a bijection of `V` onto `V'`.
 Over `ℝ` such an `L` *is* a bounded sesquilinear form, and the hypothesis is the backbone's
 `SesqForm.IsCoerciveWith`, so the three conclusions are `IsCoerciveWith.norm_le_norm_apply`,
 a one-line computation, and `SesqForm.laxMilgram`. -/
-theorem ex_8_2_5 (L : V →L[ℝ] StrongDual ℝ V) {c : ℝ} (hc : 0 < c)
+theorem exercise_8_2_5 (L : V →L[ℝ] StrongDual ℝ V) {c : ℝ} (hc : 0 < c)
     (hmono : ∀ v, c * ‖v‖ ^ 2 ≤ L v v) :
     (∀ v, c * ‖v‖ ≤ ‖L v‖) ∧ (∀ v, (∀ w, L w v = 0) → v = 0) ∧ Function.Bijective L := by
   have hcoer : SesqForm.IsCoerciveWith (𝕜 := ℝ) L c := hmono
@@ -227,7 +227,7 @@ closed then `R(T) = N(T*)^⊥`, so `T u = f` is solvable exactly when `f` is ort
 kernel of the adjoint.  The book states the theorem for densely defined closed operators between
 Banach spaces, which is out of scope here (Mathlib has no continuous Banach dual for unbounded
 operators). -/
-theorem thm_8_2_7_hilbert (T : V →L[ℝ] W)
+theorem theorem_8_2_7_hilbert (T : V →L[ℝ] W)
     (hclosed : IsClosed (LinearMap.range (T : V →ₗ[ℝ] W) : Set W)) (f : W) :
     f ∈ LinearMap.range (T : V →ₗ[ℝ] W) ↔
       ∀ w, ContinuousLinearMap.adjoint T w = 0 → ⟪w, f⟫_ℝ = 0 := by

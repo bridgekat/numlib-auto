@@ -13,7 +13,7 @@ id = "antiDiagU"
 id = "antiDiag_eq_add"
 
 [[node]]
-id = "prop_4_12_alpha"
+id = "proposition_4_12_alpha"
 
 [[node]]
-id = "prop_4_12_neg"
+id = "proposition_4_12_neg"

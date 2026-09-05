@@ -67,9 +67,9 @@ theorem cg_profile (hA : A.PosDef) {xstar : Vec n} (hstar : A ⬝ xstar = b) :
 /-- Table 5.1, MINRES column (all five rows). -/
 theorem minres_profile (hA : A.PosDef) (hb : b ≠ 0) {xstar : Vec n} (hstar : A ⬝ xstar = b)
     {x : ℕ → Vec n} (hx : ∀ k, IsMinresIterate A b k (x k)) : MinresProfile A b xstar x where
-  norm_iterate := thm_2_3_minres hA hx
-  norm_error := thm_2_4_minres hA hstar hx
-  energyNorm_error := thm_2_5_minres_antitone hA hstar hx
+  norm_iterate := theorem_2_3_minres hA hx
+  norm_error := theorem_2_4_minres hA hstar hx
+  energyNorm_error := theorem_2_5_minres_antitone hA hstar hx
   norm_residual :=
     Krylov.IsMinResIterate.norm_residual_antitone fun k => isMinresIterate_iff.1 (hx k)
   backwardError :=

@@ -589,14 +589,14 @@ theorem cr_stationary (hA : A.PosDef) {k : ℕ} (h : crTerm A b ≤ k) :
 /-! ### R2.4: Theorem 2.1 -/
 
 /-- Theorem 2.1 (a): `q_iᵀ q_j = 0` for `i ≠ j`. -/
-theorem thm_2_1_a (hA : A.PosDef) {i j : ℕ} (hij : i ≠ j) :
+theorem theorem_2_1_a (hA : A.PosDef) {i j : ℕ} (hij : i ≠ j) :
     ⟪(cr A b i).q, (cr A b j).q⟫_ℝ = 0 := by
   rw [cr_q_eq, cr_q_eq]
   simp only [cr_p, mulVecE_eq]
   exact CR.inner_apply_direction_eq_zero b 0 (isSymmetricCoercive_of_posDef hA) hij
 
 /-- Theorem 2.1 (b): `r_iᵀ q_j = 0` for `i ≥ j + 1`. -/
-theorem thm_2_1_b (hA : A.PosDef) {i j : ℕ} (hij : j + 1 ≤ i) :
+theorem theorem_2_1_b (hA : A.PosDef) {i j : ℕ} (hij : j + 1 ≤ i) :
     ⟪(cr A b i).r, (cr A b j).q⟫_ℝ = 0 := by
   rw [cr_q_eq]
   simp only [cr_p, cr_r, mulVecE_eq]
@@ -612,24 +612,24 @@ theorem cr_inner_residual_q (hA : A.PosDef) (k : ℕ) :
 /-! ### R2.5: Theorem 2.2 and (2.2) -/
 
 /-- (2.2): `ρ_i = r_iᵀ A r_i ≥ 0`. -/
-theorem eq_2_2 (hA : A.PosDef) (i : ℕ) : 0 ≤ (cr A b i).ρ := by
+theorem equation_2_2 (hA : A.PosDef) (i : ℕ) : 0 ≤ (cr A b i).ρ := by
   rw [cr_rho]
   exact inner_mulVecE_self_nonneg hA _
 
 /-- Theorem 2.2 (a): `α_i ≥ 0`. -/
-theorem thm_2_2_a (hA : A.PosDef) (i : ℕ) : 0 ≤ crAlpha A b i := by
+theorem theorem_2_2_a (hA : A.PosDef) (i : ℕ) : 0 ≤ crAlpha A b i := by
   cases i with
   | zero => simp
-  | succ k => rw [crAlpha_succ]; exact div_nonneg (eq_2_2 hA k) (sq_nonneg _)
+  | succ k => rw [crAlpha_succ]; exact div_nonneg (equation_2_2 hA k) (sq_nonneg _)
 
 /-- Theorem 2.2 (b): `β_i ≥ 0`. -/
-theorem thm_2_2_b (hA : A.PosDef) (i : ℕ) : 0 ≤ crBeta A b i := by
+theorem theorem_2_2_b (hA : A.PosDef) (i : ℕ) : 0 ≤ crBeta A b i := by
   cases i with
   | zero => simp
-  | succ k => rw [crBeta_succ]; exact div_nonneg (eq_2_2 hA (k + 1)) (eq_2_2 hA k)
+  | succ k => rw [crBeta_succ]; exact div_nonneg (equation_2_2 hA (k + 1)) (equation_2_2 hA k)
 
 /-- Theorem 2.2 (c): `p_iᵀ q_j ≥ 0`. -/
-theorem thm_2_2_c (hA : A.PosDef) (i j : ℕ) : 0 ≤ ⟪(cr A b i).p, (cr A b j).q⟫_ℝ := by
+theorem theorem_2_2_c (hA : A.PosDef) (i j : ℕ) : 0 ≤ ⟪(cr A b i).p, (cr A b j).q⟫_ℝ := by
   rw [cr_q_eq]
   simp only [cr_p, mulVecE_eq]
   have h := CR.re_inner_direction_apply_direction_nonneg b 0
@@ -637,19 +637,19 @@ theorem thm_2_2_c (hA : A.PosDef) (i j : ℕ) : 0 ≤ ⟪(cr A b i).p, (cr A b j
   rwa [RCLike.re_to_real] at h
 
 /-- Theorem 2.2 (d): `p_iᵀ p_j ≥ 0`. -/
-theorem thm_2_2_d (hA : A.PosDef) (i j : ℕ) : 0 ≤ ⟪(cr A b i).p, (cr A b j).p⟫_ℝ := by
+theorem theorem_2_2_d (hA : A.PosDef) (i j : ℕ) : 0 ≤ ⟪(cr A b i).p, (cr A b j).p⟫_ℝ := by
   simp only [cr_p]
   have h := CR.re_inner_direction_nonneg b 0 (isSymmetricCoercive_of_posDef hA) i j
   rwa [RCLike.re_to_real] at h
 
 /-- Theorem 2.2 (e): `x_iᵀ p_j ≥ 0` (for `x₀ = 0`). -/
-theorem thm_2_2_e (hA : A.PosDef) (i j : ℕ) : 0 ≤ ⟪(cr A b i).x, (cr A b j).p⟫_ℝ := by
+theorem theorem_2_2_e (hA : A.PosDef) (i j : ℕ) : 0 ≤ ⟪(cr A b i).x, (cr A b j).p⟫_ℝ := by
   simp only [cr_x, cr_p]
   have h := CR.re_inner_iterate_direction_nonneg b (isSymmetricCoercive_of_posDef hA) i j
   rwa [RCLike.re_to_real] at h
 
 /-- Theorem 2.2 (f): `r_iᵀ p_j ≥ 0`. -/
-theorem thm_2_2_f (hA : A.PosDef) (i j : ℕ) : 0 ≤ ⟪(cr A b i).r, (cr A b j).p⟫_ℝ := by
+theorem theorem_2_2_f (hA : A.PosDef) (i j : ℕ) : 0 ≤ ⟪(cr A b i).r, (cr A b j).p⟫_ℝ := by
   simp only [cr_r, cr_p]
   have h := CR.re_inner_residual_direction_nonneg b 0 (isSymmetricCoercive_of_posDef hA) i j
   rwa [RCLike.re_to_real] at h
@@ -672,7 +672,7 @@ theorem crAlpha_pos (hA : A.PosDef) {k : ℕ} (hk : (cr A b k).r ≠ 0) :
   exact div_pos (cr_rho_pos hA hk) (pow_pos (norm_pos_iff.2 (cr_q_ne_zero hA hk)) 2)
 
 /-- Theorem 2.2 (a), strict form in the paper's indexing: `α_i > 0` for `1 ≤ i ≤ ℓ`. -/
-theorem thm_2_2_a_strict (hA : A.PosDef) {i : ℕ} (hi : 1 ≤ i) (hℓ : i ≤ crTerm A b) :
+theorem theorem_2_2_a_strict (hA : A.PosDef) {i : ℕ} (hi : 1 ≤ i) (hℓ : i ≤ crTerm A b) :
     0 < crAlpha A b i := by
   obtain ⟨k, rfl⟩ : ∃ k, i = k + 1 := ⟨i - 1, by omega⟩
   refine crAlpha_pos hA fun h => ?_
@@ -682,23 +682,23 @@ theorem thm_2_2_a_strict (hA : A.PosDef) {i : ℕ} (hi : 1 ≤ i) (hℓ : i ≤ 
 /-! ### R2.6: Theorem 2.3 -/
 
 /-- Theorem 2.3 for CR: `‖x_k‖` increases monotonically. -/
-theorem thm_2_3_cr (hA : A.PosDef) : Monotone fun k => ‖(cr A b k).x‖ := by
+theorem theorem_2_3_cr (hA : A.PosDef) : Monotone fun k => ‖(cr A b k).x‖ := by
   simp only [cr_x]
   exact CR.norm_iterate_monotone b (isSymmetricCoercive_of_posDef hA)
 
 /-- Theorem 2.3 for MINRES: `‖x_k‖` increases monotonically. -/
-theorem thm_2_3_minres (hA : A.PosDef) {x : ℕ → Vec n}
+theorem theorem_2_3_minres (hA : A.PosDef) {x : ℕ → Vec n}
     (hx : ∀ k, IsMinresIterate A b k (x k)) : Monotone fun k => ‖x k‖ :=
   Krylov.IsMinResIterate.norm_monotone (isSymmetricCoercive_of_posDef hA)
     fun k => isMinresIterate_iff.1 (hx k)
 
 /-- Theorem 2.3, strict form: `‖x_k‖ < ‖x_{k+1}‖` while `r_k ≠ 0`. -/
-theorem thm_2_3_strict (hA : A.PosDef) {k : ℕ} (hk : (cr A b k).r ≠ 0) :
+theorem theorem_2_3_strict (hA : A.PosDef) {k : ℕ} (hk : (cr A b k).r ≠ 0) :
     ‖(cr A b k).x‖ < ‖(cr A b (k + 1)).x‖ := by
   have hα := crAlpha_pos hA hk
   have hpn : 0 < ‖(cr A b k).p‖ := norm_pos_iff.2 (cr_direction_ne_zero hA hk)
   have h1 : 0 ≤ crAlpha A b (k + 1) * ⟪(cr A b k).x, (cr A b k).p⟫_ℝ :=
-    mul_nonneg hα.le (thm_2_2_e hA k k)
+    mul_nonneg hα.le (theorem_2_2_e hA k k)
   have h2 : 0 < crAlpha A b (k + 1) ^ 2 * ‖(cr A b k).p‖ ^ 2 :=
     mul_pos (pow_pos hα 2) (pow_pos hpn 2)
   have hsq : ‖(cr A b k).x‖ ^ 2 < ‖(cr A b (k + 1)).x‖ ^ 2 := by
@@ -710,13 +710,13 @@ theorem thm_2_3_strict (hA : A.PosDef) {k : ℕ} (hk : (cr A b k).r ≠ 0) :
 /-! ### R2.7: Theorem 2.4 -/
 
 /-- Theorem 2.4 for CR: `‖x* − x_k‖` decreases monotonically. -/
-theorem thm_2_4_cr (hA : A.PosDef) {xstar : Vec n} (hstar : A ⬝ xstar = b) :
+theorem theorem_2_4_cr (hA : A.PosDef) {xstar : Vec n} (hstar : A ⬝ xstar = b) :
     Antitone fun k => ‖xstar - (cr A b k).x‖ := by
   simp only [cr_x]
   exact CR.norm_error_antitone b 0 (isSymmetricCoercive_of_posDef hA) hstar
 
 /-- Theorem 2.4 for MINRES: `‖x* − x_k‖` decreases monotonically. -/
-theorem thm_2_4_minres (hA : A.PosDef) {xstar : Vec n} (hstar : A ⬝ xstar = b) {x : ℕ → Vec n}
+theorem theorem_2_4_minres (hA : A.PosDef) {xstar : Vec n} (hstar : A ⬝ xstar = b) {x : ℕ → Vec n}
     (hx : ∀ k, IsMinresIterate A b k (x k)) : Antitone fun k => ‖xstar - x k‖ :=
   Krylov.IsMinResIterate.norm_error_antitone (isSymmetricCoercive_of_posDef hA)
     (fun k => isMinresIterate_iff.1 (hx k)) hstar
@@ -724,13 +724,13 @@ theorem thm_2_4_minres (hA : A.PosDef) {xstar : Vec n} (hstar : A ⬝ xstar = b)
 /-! ### R2.8: Theorem 2.5 -/
 
 /-- Theorem 2.5 for CR, nonstrict form: `‖x* − x_k‖_A` decreases monotonically. -/
-theorem thm_2_5_cr_antitone (hA : A.PosDef) {xstar : Vec n} (hstar : A ⬝ xstar = b) :
+theorem theorem_2_5_cr_antitone (hA : A.PosDef) {xstar : Vec n} (hstar : A ⬝ xstar = b) :
     Antitone fun k => energyNorm A (xstar - (cr A b k).x) := by
   simp only [energyNorm_eq, cr_x]
   exact CR.energyNorm_error_antitone b 0 (isSymmetricCoercive_of_posDef hA) hstar
 
 /-- Theorem 2.5 for MINRES, nonstrict form. -/
-theorem thm_2_5_minres_antitone (hA : A.PosDef) {xstar : Vec n} (hstar : A ⬝ xstar = b)
+theorem theorem_2_5_minres_antitone (hA : A.PosDef) {xstar : Vec n} (hstar : A ⬝ xstar = b)
     {x : ℕ → Vec n} (hx : ∀ k, IsMinresIterate A b k (x k)) :
     Antitone fun k => energyNorm A (xstar - x k) := by
   simp only [energyNorm_eq]
@@ -738,14 +738,14 @@ theorem thm_2_5_minres_antitone (hA : A.PosDef) {xstar : Vec n} (hstar : A ⬝ x
     (fun k => isMinresIterate_iff.1 (hx k)) hstar
 
 /-- Theorem 2.5 for CR, strict form: `‖x* − x_{k+1}‖_A < ‖x* − x_k‖_A` while `r_k ≠ 0`. -/
-theorem thm_2_5_cr (hA : A.PosDef) {xstar : Vec n} (hstar : A ⬝ xstar = b) {k : ℕ}
+theorem theorem_2_5_cr (hA : A.PosDef) {xstar : Vec n} (hstar : A ⬝ xstar = b) {k : ℕ}
     (hk : (cr A b k).r ≠ 0) :
     energyNorm A (xstar - (cr A b (k + 1)).x) < energyNorm A (xstar - (cr A b k).x) := by
   have hα := crAlpha_pos hA hk
   have hpp : 0 < ⟪(cr A b k).p, A ⬝ (cr A b k).p⟫_ℝ :=
     inner_mulVecE_self_pos hA (cr_direction_ne_zero hA hk)
   have h1 : 0 ≤ 2 * crAlpha A b (k + 1) * ⟪(cr A b (k + 1)).r, (cr A b k).p⟫_ℝ := by
-    have := mul_nonneg hα.le (thm_2_2_f (b := b) hA (k + 1) k)
+    have := mul_nonneg hα.le (theorem_2_2_f (b := b) hA (k + 1) k)
     linarith
   have h2 : 0 < crAlpha A b (k + 1) ^ 2 * ⟪(cr A b k).p, A ⬝ (cr A b k).p⟫_ℝ :=
     mul_pos (pow_pos hα 2) hpp
@@ -763,12 +763,12 @@ theorem thm_2_5_cr (hA : A.PosDef) {xstar : Vec n} (hstar : A ⬝ xstar = b) {k 
     energyNorm_nonneg A (xstar - (cr A b (k + 1)).x)]
 
 /-- Theorem 2.5 for MINRES, strict form. -/
-theorem thm_2_5_minres (hA : A.PosDef) {xstar : Vec n} (hstar : A ⬝ xstar = b) {x : ℕ → Vec n}
+theorem theorem_2_5_minres (hA : A.PosDef) {xstar : Vec n} (hstar : A ⬝ xstar = b) {x : ℕ → Vec n}
     (hx : ∀ k, IsMinresIterate A b k (x k)) {k : ℕ} (hk : b - A ⬝ x k ≠ 0) :
     energyNorm A (xstar - x (k + 1)) < energyNorm A (xstar - x k) := by
   have he : ∀ j, x j = (cr A b j).x := fun j => (isMinresIterate_iff_eq_cr hA j (x j)).1 (hx j)
   rw [he, he]
-  refine thm_2_5_cr hA hstar (k := k) ?_
+  refine theorem_2_5_cr hA hstar (k := k) ?_
   rw [cr_residual_eq]
   rwa [he k] at hk
 

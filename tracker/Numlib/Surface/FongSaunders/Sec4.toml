@@ -1,7 +1,7 @@
 namespace = "FongSaunders"
 
 [[node]]
-id = "eq_4_1"
+id = "equation_4_1"
 
 [[node]]
 id = "minres_coeff_unique"

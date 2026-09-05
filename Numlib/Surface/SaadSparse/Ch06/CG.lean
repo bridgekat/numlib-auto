@@ -61,7 +61,7 @@ noncomputable def cgStep (A : Matrix (Fin n) (Fin n) 𝕜) (s : 𝔼 × 𝔼 × 
   (s.1 + cgStepAlpha A s • s.2.2, cgStepR A s, cgStepR A s + cgStepBeta A s • s.2.2)
 
 /-- **Algorithm 6.18** (conjugate gradient) run for `j` steps: the triple `(x_j, r_j, p_j)`,
-started from `r_0 = b - A x_0` and `p_0 = r_0`. -/
+started from `r_0 = b - A x_0` and `problem_0 = r_0`. -/
 noncomputable def cg (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (j : ℕ) : 𝔼 × 𝔼 × 𝔼 :=
   (cgStep A)^[j] (x₀, b - op A x₀, b - op A x₀)
 
@@ -98,7 +98,7 @@ theorem cg_succ (j : ℕ) : cg A b x₀ (j + 1) = cgStep A (cg A b x₀ j) :=
 
 @[simp] theorem cgR_zero : cgR A b x₀ 0 = b - op A x₀ := rfl
 
-/-- Algorithm 6.18, line 1: `p_0 = r_0`. -/
+/-- Algorithm 6.18, line 1: `problem_0 = r_0`. -/
 @[simp] theorem cgP_zero : cgP A b x₀ 0 = cgR A b x₀ 0 := rfl
 
 /-- (6.92): `α_j = (r_j, r_j)/(A p_j, p_j)`. -/
@@ -366,7 +366,7 @@ variable {A b x₀}
 
 /-- (6.98): `x_{m+1} = ρ_m (x_m + γ_m r_m) + (1 - ρ_m) x_{m-1}`, with `x_{-1}` read as `x_0`
 (harmless because `ρ_0 = 1`). -/
-theorem eq_6_98 (hA : A.PosDef) {m : ℕ} (hr : ∀ j ≤ m, cgR A b x₀ j ≠ 0) :
+theorem equation_6_98 (hA : A.PosDef) {m : ℕ} (hr : ∀ j ≤ m, cgR A b x₀ j ≠ 0) :
     cgX A b x₀ (m + 1) = cgRho A b x₀ m • (cgX A b x₀ m + cgGamma A b x₀ m • cgR A b x₀ m) +
       (1 - cgRho A b x₀ m) • cgX A b x₀ (m - 1) := by
   have hs := (isSymmetricCoercive_op_of_posDef hA).isSymmetric
@@ -376,7 +376,7 @@ theorem eq_6_98 (hA : A.PosDef) {m : ℕ} (hr : ∀ j ≤ m, cgR A b x₀ j ≠ 
     fun j hj => by rw [← cgR_eq_CG A b x₀ hs]; exact hr j hj
 
 /-- (6.96): `r_{m+1} = ρ_m (r_m - γ_m A r_m) + (1 - ρ_m) r_{m-1}`. -/
-theorem eq_6_96 (hA : A.PosDef) {m : ℕ} (hr : ∀ j ≤ m, cgR A b x₀ j ≠ 0) :
+theorem equation_6_96 (hA : A.PosDef) {m : ℕ} (hr : ∀ j ≤ m, cgR A b x₀ j ≠ 0) :
     cgR A b x₀ (m + 1) =
       cgRho A b x₀ m • (cgR A b x₀ m - cgGamma A b x₀ m • op A (cgR A b x₀ m)) +
         (1 - cgRho A b x₀ m) • cgR A b x₀ (m - 1) := by
@@ -487,17 +487,17 @@ theorem cg3_eq (hA : A.PosDef) {j : ℕ} (hr : ∀ i ≤ j, cgR A b x₀ i ≠ 0
   induction j with
   | zero =>
     rw [cg3_succ, cg3_zero, cg3Step_def, cg3StepRho_init, cg3StepGamma_init,
-      eq_6_98 hA (m := 0) hr, eq_6_96 hA (m := 0) hr]
+      equation_6_98 hA (m := 0) hr, equation_6_96 hA (m := 0) hr]
     simp [cg3Init]
   | succ j ih =>
     rw [cg3_succ, ih (fun i hi => hr i (by omega)), cg3Step_state,
-      eq_6_98 hA (m := j + 1) hr, eq_6_96 hA (m := j + 1) hr]
+      equation_6_98 hA (m := j + 1) hr, equation_6_96 hA (m := j + 1) hr]
     simp
 
 /-- **P-6.17**: (6.97) is forced by (6.96) and the orthogonality of the residuals. Any scalar
 `ρ` for which the three-term residual recurrence holds at step `m + 1` is the `ρ_{m+1}` of
 (6.97). -/
-theorem eq_6_97_of_eq_6_96 (hA : A.PosDef) {m : ℕ} (hr : ∀ j ≤ m + 1, cgR A b x₀ j ≠ 0) {ρ : 𝕜}
+theorem equation_6_97_of_eq_6_96 (hA : A.PosDef) {m : ℕ} (hr : ∀ j ≤ m + 1, cgR A b x₀ j ≠ 0) {ρ : 𝕜}
     (h96 : cgR A b x₀ (m + 2) =
       ρ • (cgR A b x₀ (m + 1) - cgGamma A b x₀ (m + 1) • op A (cgR A b x₀ (m + 1))) +
         (1 - ρ) • cgR A b x₀ m) :
@@ -516,7 +516,7 @@ theorem eq_6_97_of_eq_6_96 (hA : A.PosDef) {m : ℕ} (hr : ∀ j ≤ m + 1, cgR 
       inner_cgR_eq_zero hA (show m ≠ m + 1 by omega)] at h
     rw [hX]
     linear_combination h
-  have hcX := key c (eq_6_96 hA (m := m + 1) hr)
+  have hcX := key c (equation_6_96 hA (m := m + 1) hr)
   have hρX := key ρ h96
   have hXne : X ≠ 0 := by
     intro h0
@@ -615,7 +615,7 @@ theorem lanczosMethodAt_isGalerkinIterate (hA : A.IsSymm) (hb : b - op A x₀ �
     (mulVec_hessenbergSq hA hb hT)
 
 /-- (6.87): `b - A x_m = -β_{m+1}(e_m^T y_m) v_{m+1}`. -/
-theorem eq_6_87 (hA : A.IsSymm) (hb : b - op A x₀ ≠ 0) {m : ℕ} (hm : 0 < m)
+theorem equation_6_87 (hA : A.IsSymm) (hb : b - op A x₀ ≠ 0) {m : ℕ} (hm : 0 < m)
     (hT : IsUnit (T A (unitResidual A b x₀) m).det) :
     b - op A (lanczosMethodAt A b x₀ m) =
       -(lanczosBeta A (unitResidual A b x₀) m * lanczosMethodY A b x₀ m ⟨m - 1, by omega⟩) •
@@ -626,10 +626,10 @@ theorem eq_6_87 (hA : A.IsSymm) (hb : b - op A x₀ ≠ 0) {m : ℕ} (hm : 0 < m
     (mulVec_hessenbergSq hA hb hT)
 
 /-- **Proposition 6.20** (1) for Algorithm 6.16: the residual is a multiple of `v_{m+1}`. -/
-theorem prop_6_20_1 (hA : A.IsSymm) (hb : b - op A x₀ ≠ 0) {m : ℕ} (hm : 0 < m)
+theorem proposition_6_20_1 (hA : A.IsSymm) (hb : b - op A x₀ ≠ 0) {m : ℕ} (hm : 0 < m)
     (hT : IsUnit (T A (unitResidual A b x₀) m).det) :
     ∃ σ : ℝ, b - op A (lanczosMethodAt A b x₀ m) = σ • lanczosV A (unitResidual A b x₀) m :=
-  ⟨_, eq_6_87 hA hb hm hT⟩
+  ⟨_, equation_6_87 hA hb hm hT⟩
 
 /-- **Proposition 6.20** (1), second half: the residuals of Algorithm 6.16 are mutually
 orthogonal, because each is a multiple of a Lanczos vector. -/
@@ -638,7 +638,7 @@ theorem inner_residual_lanczosMethodAt_eq_zero (hA : A.IsSymm) (hb : b - op A x�
     (hTi : IsUnit (T A (unitResidual A b x₀) i).det)
     (hTj : IsUnit (T A (unitResidual A b x₀) j).det) :
     inner ℝ (b - op A (lanczosMethodAt A b x₀ i)) (b - op A (lanczosMethodAt A b x₀ j)) = 0 := by
-  rw [eq_6_87 hA hb hi hTi, eq_6_87 hA hb hj hTj, inner_smul_left, inner_smul_right,
+  rw [equation_6_87 hA hb hi hTi, equation_6_87 hA hb hj hTj, inner_smul_left, inner_smul_right,
     lanczosV_unitResidual hA hb, lanczosV_unitResidual hA hb,
     Arnoldi.inner_vec_eq_zero (op A) (b - op A x₀) hij]
   simp
@@ -664,7 +664,7 @@ noncomputable def dlZeta (A : Matrix (Fin n) (Fin n) ℝ) (v₁ : 𝔼) (β : �
   | 0 => β
   | m + 1 => -dlLambda A v₁ (m + 1) * dlZeta A v₁ β m
 
-/-- `p_1 = η_1^{-1} v_1` and `p_{m+1} = η_{m+1}^{-1}(v_{m+1} - β_{m+1} p_m)`, the columns of
+/-- `problem_1 = η_1^{-1} v_1` and `p_{m+1} = η_{m+1}^{-1}(v_{m+1} - β_{m+1} p_m)`, the columns of
 `P_m = V_m U_m^{-1}`. -/
 noncomputable def dlP (A : Matrix (Fin n) (Fin n) ℝ) (v₁ : 𝔼) : ℕ → 𝔼
   | 0 => (dlEta A v₁ 0)⁻¹ • lanczosV A v₁ 0
@@ -887,7 +887,7 @@ theorem inner_lanczosV_dlP_eq_zero (hA : A.IsSymm) {v₁ : 𝔼} (hv : ‖v₁�
 
 /-- **Proposition 6.20** (2): the auxiliary vectors `p_i` of Algorithm 6.17 are `A`-conjugate,
 `(A p_i, p_j) = 0` for `i ≠ j`. -/
-theorem prop_6_20_2 (hA : A.IsSymm) {v₁ : 𝔼} (hv : ‖v₁‖ = 1) {i j : ℕ} (hij : i ≠ j)
+theorem proposition_6_20_2 (hA : A.IsSymm) {v₁ : 𝔼} (hv : ‖v₁‖ = 1) {i j : ℕ} (hij : i ≠ j)
     (hη : ∀ k ≤ max i j, dlEta A v₁ k ≠ 0) :
     inner ℝ (op A (dlP A v₁ i)) (dlP A v₁ j) = 0 := by
   have key : ∀ a c : ℕ, c < a → (∀ k ≤ a, dlEta A v₁ k ≠ 0) →
@@ -926,7 +926,7 @@ theorem lanczosV_eq_smul_cgR (hA : A.PosDef) {k : ℕ} (hr : cgR A b x₀ k ≠ 
   simpa using h
 
 /-- (6.99): the CG residual `r_j` is a nonzero multiple of the Lanczos vector `v_{j+1}`. -/
-theorem eq_6_99 (hA : A.PosDef) {k : ℕ} (hr : cgR A b x₀ k ≠ 0) :
+theorem equation_6_99 (hA : A.PosDef) {k : ℕ} (hr : cgR A b x₀ k ≠ 0) :
     ∃ σ : ℝ, σ ≠ 0 ∧ cgR A b x₀ k = σ • lanczosV A (unitResidual A b x₀) k := by
   have hn : ‖cgR A b x₀ k‖ ≠ 0 := norm_ne_zero_iff.2 hr
   have hpow : ((-1 : ℝ) ^ k) * ((-1 : ℝ) ^ k) = 1 := by
@@ -941,7 +941,7 @@ theorem eq_6_99 (hA : A.PosDef) {k : ℕ} (hr : cgR A b x₀ k ≠ 0) :
   rw [lanczosV_eq_smul_cgR hA hr, smul_smul, hone, one_smul]
 
 /-- (6.100): `r_j = p_j - β_{j-1} p_{j-1}`. -/
-theorem eq_6_100 (j : ℕ) :
+theorem equation_6_100 (j : ℕ) :
     cgR A b x₀ (j + 1) = cgP A b x₀ (j + 1) - cgBeta A b x₀ j • cgP A b x₀ j := by
   rw [cgP_succ]
   abel
@@ -986,7 +986,7 @@ private theorem apply_cgR_succ' (hA : A.PosDef) {k : ℕ} (hr : cgR A b x₀ (k 
       (cgAlpha A b x₀ (k + 1))⁻¹ • (cgR A b x₀ (k + 1) - cgR A b x₀ (k + 1 + 1)) -
         (cgBeta A b x₀ k * (cgAlpha A b x₀ k)⁻¹) • (cgR A b x₀ k - cgR A b x₀ (k + 1)) := by
   have hrk : cgR A b x₀ k ≠ 0 := cgR_ne_zero_of_le hA hr (by omega)
-  have h100 := eq_6_100 (A := A) (b := b) (x₀ := x₀) k
+  have h100 := equation_6_100 (A := A) (b := b) (x₀ := x₀) k
   conv_lhs => rw [h100]
   rw [map_sub, map_smul, apply_cgP_eq' hA hr, apply_cgP_eq' hA hrk, smul_smul]
 
@@ -1047,7 +1047,7 @@ private theorem sign_norm_mul (k : ℕ) (s t : ℝ) :
     _ = -(s * t)⁻¹ := by rw [h, ← mul_inv]; ring
 
 /-- (6.102): `δ_1 = 1/α_0`. -/
-theorem eq_6_102 (hA : A.PosDef) (hr : cgR A b x₀ 0 ≠ 0) :
+theorem equation_6_102 (hA : A.PosDef) (hr : cgR A b x₀ 0 ≠ 0) :
     lanczosAlpha A (unitResidual A b x₀) 0 = 1 / cgAlpha A b x₀ 0 := by
   have hb : b - op A x₀ ≠ 0 := hr
   have hn : ‖cgR A b x₀ 0‖ ≠ 0 := norm_ne_zero_iff.2 hr
@@ -1057,7 +1057,7 @@ theorem eq_6_102 (hA : A.PosDef) (hr : cgR A b x₀ 0 ≠ 0) :
   field_simp
 
 /-- (6.101): `δ_{j+1} = 1/α_j + β_{j-1}/α_{j-1}`. -/
-theorem eq_6_101 (hA : A.PosDef) {k : ℕ} (hr : cgR A b x₀ (k + 1) ≠ 0) :
+theorem equation_6_101 (hA : A.PosDef) {k : ℕ} (hr : cgR A b x₀ (k + 1) ≠ 0) :
     lanczosAlpha A (unitResidual A b x₀) (k + 1) =
       1 / cgAlpha A b x₀ (k + 1) + cgBeta A b x₀ k / cgAlpha A b x₀ k := by
   have hb : b - op A x₀ ≠ 0 := cgR_ne_zero_of_le hA hr (Nat.zero_le _)
@@ -1068,7 +1068,7 @@ theorem eq_6_101 (hA : A.PosDef) {k : ℕ} (hr : cgR A b x₀ (k + 1) ≠ 0) :
   field_simp
 
 /-- (6.103): `η_{j+1} = √(β_{j-1})/α_{j-1}`. -/
-theorem eq_6_103 (hA : A.PosDef) {k : ℕ} (hr : cgR A b x₀ (k + 1) ≠ 0) :
+theorem equation_6_103 (hA : A.PosDef) {k : ℕ} (hr : cgR A b x₀ (k + 1) ≠ 0) :
     lanczosBeta A (unitResidual A b x₀) (k + 1) =
       Real.sqrt (cgBeta A b x₀ k) / cgAlpha A b x₀ k := by
   have hb : b - op A x₀ ≠ 0 := cgR_ne_zero_of_le hA hr (Nat.zero_le _)

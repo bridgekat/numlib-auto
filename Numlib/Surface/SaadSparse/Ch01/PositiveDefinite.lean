@@ -256,7 +256,7 @@ variable {n : ℕ}
 
 /-- **Theorem 1.34**.  A real positive definite matrix (Saad (1.48)) is nonsingular, and there is
 an `α > 0` with `(A u, u) ≥ α ‖u‖₂²` for every `u ∈ ℝⁿ`. -/
-theorem thm_1_34 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsPositiveReal) :
+theorem theorem_1_34 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsPositiveReal) :
     IsUnit A ∧ ∃ α > 0, ∀ u : Fin n → ℝ, α * (u ⬝ᵥ u) ≤ (A *ᵥ u) ⬝ᵥ u := by
   obtain ⟨c, hc, hcA⟩ := (isPositiveReal_iff_isCoercive A).mp hA
   refine ⟨?_, c, hc, fun u => ?_⟩
@@ -271,7 +271,7 @@ theorem thm_1_34 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsPositiveReal) :
     simpa [RCLike.re_to_real] using h
 
 /-- **Theorem 1.34**, with the book's constant `α = λ_min(H)`, `H` the Hermitian part of `A`. -/
-theorem thm_1_34' [NeZero n] (A : Matrix (Fin n) (Fin n) ℝ) (u : Fin n → ℝ) :
+theorem theorem_1_34' [NeZero n] (A : Matrix (Fin n) (Fin n) ℝ) (u : Fin n → ℝ) :
     SaadSparse.lambdaMin (hermitianPart_isHermitian A) * (u ⬝ᵥ u) ≤ (A *ᵥ u) ⬝ᵥ u := by
   have hb := SaadSparse.isSymmetricBoundedBy_toEuclideanLin (hermitianPart_isHermitian A)
   have h := hb.le_re_inner (WithLp.toLp 2 u)
@@ -283,7 +283,7 @@ theorem thm_1_34' [NeZero n] (A : Matrix (Fin n) (Fin n) ℝ) (u : Fin n → ℝ
 theorem isCoerciveWith_lambdaMin [NeZero n] (A : Matrix (Fin n) (Fin n) ℝ) :
     (toEuclideanLin A).IsCoerciveWith (SaadSparse.lambdaMin (hermitianPart_isHermitian A)) := by
   intro x
-  have h := thm_1_34' A (WithLp.ofLp x)
+  have h := theorem_1_34' A (WithLp.ofLp x)
   rw [SaadSparse.real_inner_apply_self]
   simpa [RCLike.re_to_real, SaadSparse.real_norm_sq_eq_dotProduct] using h
 
@@ -291,7 +291,7 @@ theorem isCoerciveWith_lambdaMin [NeZero n] (A : Matrix (Fin n) (Fin n) ℝ) :
 
 /-- **Theorem 1.35** (Bendixson), real part: every eigenvalue `μ` of a complex matrix `A`
 satisfies `λ_min(H) ≤ Re μ ≤ λ_max(H)` with `H` the Hermitian part of `A`. -/
-theorem thm_1_35_re [NeZero n] {A : Matrix (Fin n) (Fin n) ℂ} {μ : ℂ} (hμ : μ ∈ spectrum ℂ A) :
+theorem theorem_1_35_re [NeZero n] {A : Matrix (Fin n) (Fin n) ℂ} {μ : ℂ} (hμ : μ ∈ spectrum ℂ A) :
     μ.re ∈ Set.Icc (SaadSparse.lambdaMin (hermitianPart_isHermitian A))
       (SaadSparse.lambdaMax (hermitianPart_isHermitian A)) :=
   re_hasEigenvalue_mem_Icc_of_symmetricPart
@@ -310,7 +310,7 @@ private theorem hasEigenvalue_smul {c : ℂ} {A : Matrix (Fin n) (Fin n) ℂ} {�
 
 /-- **Theorem 1.35** (Bendixson), imaginary part: every eigenvalue `μ` of a complex matrix `A`
 satisfies `λ_min(S) ≤ Im μ ≤ λ_max(S)` with `S = (A - Aᴴ)/(2i)`. -/
-theorem thm_1_35_im [NeZero n] {A : Matrix (Fin n) (Fin n) ℂ} {μ : ℂ} (hμ : μ ∈ spectrum ℂ A) :
+theorem theorem_1_35_im [NeZero n] {A : Matrix (Fin n) (Fin n) ℂ} {μ : ℂ} (hμ : μ ∈ spectrum ℂ A) :
     μ.im ∈ Set.Icc (SaadSparse.lambdaMin (skewPart_isHermitian A))
       (SaadSparse.lambdaMax (skewPart_isHermitian A)) := by
   have hev : Module.End.HasEigenvalue (toEuclideanLin ((-Complex.I) • A)) (-Complex.I * μ) :=
@@ -327,11 +327,11 @@ theorem thm_1_35_im [NeZero n] {A : Matrix (Fin n) (Fin n) ℂ} {μ : ℂ} (hμ 
 
 /-- **Theorem 1.35** (Bendixson): every eigenvalue of `A` lies in the rectangle
 `[λ_min(H), λ_max(H)] × [λ_min(S), λ_max(S)]`. -/
-theorem thm_1_35 [NeZero n] {A : Matrix (Fin n) (Fin n) ℂ} {μ : ℂ} (hμ : μ ∈ spectrum ℂ A) :
+theorem theorem_1_35 [NeZero n] {A : Matrix (Fin n) (Fin n) ℂ} {μ : ℂ} (hμ : μ ∈ spectrum ℂ A) :
     SaadSparse.lambdaMin (hermitianPart_isHermitian A) ≤ μ.re ∧
       μ.re ≤ SaadSparse.lambdaMax (hermitianPart_isHermitian A) ∧
       SaadSparse.lambdaMin (skewPart_isHermitian A) ≤ μ.im ∧
       μ.im ≤ SaadSparse.lambdaMax (skewPart_isHermitian A) :=
-  ⟨(thm_1_35_re hμ).1, (thm_1_35_re hμ).2, (thm_1_35_im hμ).1, (thm_1_35_im hμ).2⟩
+  ⟨(theorem_1_35_re hμ).1, (theorem_1_35_re hμ).2, (theorem_1_35_im hμ).1, (theorem_1_35_im hμ).2⟩
 
 end SaadSparse.Ch01

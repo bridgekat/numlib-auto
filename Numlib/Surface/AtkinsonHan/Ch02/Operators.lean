@@ -13,11 +13,11 @@ The book's `cond(L) = ‖L⁻¹‖ ‖L‖` is defined here as `AtkinsonHan.Ch02
 
 ## Main results
 
-* `thm_2_4_1` — the extension theorem, for the completion of a normed space.
-* `thm_2_4_3` — the bounded inverse theorem (a corollary of the open mapping theorem).
-* `stability_2_4`, `eq_2_4_1`, `one_le_cond` — the conditioning bounds (2.4.1).
-* `thm_2_4_4` — the principle of uniform boundedness.
-* `thm_2_4_5` — the Banach–Steinhaus theorem on a dense subspace.
+* `theorem_2_4_1` — the extension theorem, for the completion of a normed space.
+* `theorem_2_4_3` — the bounded inverse theorem (a corollary of the open mapping theorem).
+* `stability_of_isomorphism`, `equation_2_4_1`, `one_le_cond` — the conditioning bounds (2.4.1).
+* `theorem_2_4_4` — the principle of uniform boundedness.
+* `theorem_2_4_5` — the Banach–Steinhaus theorem on a dense subspace.
 * `tendsto_of_tendsto_on_dense_of_bounded` — its ε/3 half, in the generality it is proved in.
 
 ## Not formalized here
@@ -41,7 +41,7 @@ variable {𝕜 V W : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace �
 /-- **Extension theorem** (Theorem 2.4.1). A bounded linear operator `L ∈ 𝓛(V, W)` from a normed
 space `V` into a Banach space `W` extends uniquely to a bounded linear operator on the completion
 `V̂` of `V`, and the extension has the same norm. -/
-theorem thm_2_4_1 [CompleteSpace W] (L : V →L[𝕜] W) :
+theorem theorem_2_4_1 [CompleteSpace W] (L : V →L[𝕜] W) :
     ∃ Lhat : UniformSpace.Completion V →L[𝕜] W, (∀ v : V, Lhat ↑v = L v) ∧ ‖Lhat‖ = ‖L‖ ∧
       ∀ L' : UniformSpace.Completion V →L[𝕜] W, (∀ v : V, L' ↑v = L v) → L' = Lhat := by
   have hdense : DenseRange (UniformSpace.Completion.toComplL : V →L[𝕜] UniformSpace.Completion V) :=
@@ -69,7 +69,7 @@ theorem thm_2_4_1 [CompleteSpace W] (L : V →L[𝕜] W) :
 
 /-- **Bounded inverse theorem** (Theorem 2.4.3). A bounded linear bijection between Banach spaces
 has a bounded inverse; equivalently, it is a continuous linear equivalence. -/
-theorem thm_2_4_3 [CompleteSpace V] [CompleteSpace W] (L : V →L[𝕜] W)
+theorem theorem_2_4_3 [CompleteSpace V] [CompleteSpace W] (L : V →L[𝕜] W)
     (hL : Function.Bijective L) : ∃ e : V ≃L[𝕜] W, (e : V →L[𝕜] W) = L := by
   refine ⟨ContinuousLinearEquiv.ofBijective L ?_ ?_, ContinuousLinearEquiv.coe_ofBijective _ _ _⟩
   · exact LinearMap.ker_eq_bot.2 hL.1
@@ -77,7 +77,7 @@ theorem thm_2_4_3 [CompleteSpace V] [CompleteSpace W] (L : V →L[𝕜] W)
 
 /-- Stability of a well-posed linear problem (the remark after Theorem 2.4.3): the solution of
 `L v = w` depends Lipschitz-continuously on the data, with constant `‖L⁻¹‖`. -/
-theorem stability_2_4 (L : V ≃L[𝕜] W) (v vhat : V) :
+theorem stability_of_isomorphism (L : V ≃L[𝕜] W) (v vhat : V) :
     ‖v - vhat‖ ≤ ‖(L.symm : W →L[𝕜] V)‖ * ‖L v - L vhat‖ := by
   have hv : (L.symm : W →L[𝕜] V) (L v - L vhat) = v - vhat := by simp
   calc ‖v - vhat‖ = ‖(L.symm : W →L[𝕜] V) (L v - L vhat)‖ := by rw [hv]
@@ -104,11 +104,11 @@ theorem one_le_cond [Nontrivial V] (L : V ≃L[𝕜] W) : 1 ≤ cond L := by
 /-- **Relative error bound (2.4.1).** The relative error in the solution is bounded by `cond(L)`
 times the relative error in the data: with `w = L v` and `ŵ = L v̂`,
 `‖v - v̂‖ / ‖v‖ ≤ cond(L) ‖w - ŵ‖ / ‖w‖`. -/
-theorem eq_2_4_1 (L : V ≃L[𝕜] W) {v vhat : V} (hv : v ≠ 0) :
+theorem equation_2_4_1 (L : V ≃L[𝕜] W) {v vhat : V} (hv : v ≠ 0) :
     ‖v - vhat‖ / ‖v‖ ≤ cond L * (‖L v - L vhat‖ / ‖L v‖) := by
   have ha : 0 < ‖v‖ := norm_pos_iff.2 hv
   have hb : 0 < ‖L v‖ := norm_pos_iff.2 fun h => hv (by simpa using congrArg L.symm h)
-  have hd : ‖v - vhat‖ ≤ ‖(L.symm : W →L[𝕜] V)‖ * ‖L v - L vhat‖ := stability_2_4 L v vhat
+  have hd : ‖v - vhat‖ ≤ ‖(L.symm : W →L[𝕜] V)‖ * ‖L v - L vhat‖ := stability_of_isomorphism L v vhat
   have hq : ‖L v‖ ≤ ‖(L : V →L[𝕜] W)‖ * ‖v‖ := (L : V →L[𝕜] W).le_opNorm v
   rw [cond, mul_div_assoc', div_le_div_iff₀ ha hb]
   have hp : 0 ≤ ‖(L.symm : W →L[𝕜] V)‖ := norm_nonneg _
@@ -119,7 +119,7 @@ theorem eq_2_4_1 (L : V ≃L[𝕜] W) {v vhat : V} (hv : v ≠ 0) :
 
 /-- **Principle of uniform boundedness** (Theorem 2.4.4). A family of bounded operators from a
 Banach space that is pointwise bounded is uniformly bounded in norm. -/
-theorem thm_2_4_4 [CompleteSpace V] (Ln : ℕ → V →L[𝕜] W) (h : ∀ v, ∃ C, ∀ n, ‖Ln n v‖ ≤ C) :
+theorem theorem_2_4_4 [CompleteSpace V] (Ln : ℕ → V →L[𝕜] W) (h : ∀ v, ∃ C, ∀ n, ‖Ln n v‖ ≤ C) :
     ∃ C, ∀ n, ‖Ln n‖ ≤ C :=
   banach_steinhaus h
 
@@ -174,7 +174,7 @@ theorem tendsto_of_tendsto_on_dense_of_bounded {s : Set V} (hs : Dense s) {L : V
 /-- **Banach–Steinhaus theorem** (Theorem 2.4.5). For bounded operators `L, Lₙ` from a Banach
 space `V` and a dense subspace `V₀ ⊆ V`, one has `Lₙ v → L v` for every `v ∈ V` if and only if
 (a) `Lₙ v → L v` for every `v ∈ V₀` and (b) the norms `‖Lₙ‖` are uniformly bounded. -/
-theorem thm_2_4_5 [CompleteSpace V] (L : V →L[𝕜] W) (Ln : ℕ → V →L[𝕜] W) (V₀ : Submodule 𝕜 V)
+theorem theorem_2_4_5 [CompleteSpace V] (L : V →L[𝕜] W) (Ln : ℕ → V →L[𝕜] W) (V₀ : Submodule 𝕜 V)
     (hV₀ : Dense (V₀ : Set V)) :
     (∀ v, Tendsto (fun n => Ln n v) atTop (𝓝 (L v))) ↔
       (∀ v ∈ V₀, Tendsto (fun n => Ln n v) atTop (𝓝 (L v))) ∧ ∃ C, ∀ n, ‖Ln n‖ ≤ C := by
@@ -193,7 +193,7 @@ approximating `L v = ∫₀¹ w v`, and proves
 * (Exercise 2.4.3) if in addition `wᵢ⁽ⁿ⁾ ≥ 0`, convergence always holds.
 
 These are deferred to the quadrature phase (`tracker/backbone.md` §5.1.4, Deferred backbone item 2):
-the criterion follows from `thm_2_4_5` and the density of polynomials
+the criterion follows from `theorem_2_4_5` and the density of polynomials
 (`polynomialFunctions_closure_eq_top`), but (2.4.4) needs the construction of a norm-one
 continuous function taking prescribed signs at the nodes, which is genuinely new material.
 -/

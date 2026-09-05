@@ -105,7 +105,7 @@ section ScalarExample
 
 /-- Example 5.1.1: the affine iteration `x ↦ a x + b` on `ℝ` has the closed form
 `x_n = aⁿ x₀ + (1 - aⁿ)/(1 - a) b` when `a ≠ 1`. -/
-theorem ex_5_1_1 {a : ℝ} (ha : a ≠ 1) (b x₀ : ℝ) (n : ℕ) :
+theorem example_5_1_1 {a : ℝ} (ha : a ≠ 1) (b x₀ : ℝ) (n : ℕ) :
     (fun x => a * x + b)^[n] x₀ = a ^ n * x₀ + (1 - a ^ n) / (1 - a) * b := by
   have h1 : (1 : ℝ) - a ≠ 0 := sub_ne_zero.2 (Ne.symm ha)
   induction n with
@@ -117,7 +117,7 @@ theorem ex_5_1_1 {a : ℝ} (ha : a ≠ 1) (b x₀ : ℝ) (n : ℕ) :
 
 /-- Example 5.1.1: for `a ≠ 1` the affine iteration converges from every starting point if and
 only if `|a| < 1`. -/
-theorem ex_5_1_1_tendsto_iff {a : ℝ} (ha : a ≠ 1) (b : ℝ) :
+theorem example_5_1_1_tendsto_iff {a : ℝ} (ha : a ≠ 1) (b : ℝ) :
     (∀ x₀ : ℝ, ∃ x, Tendsto (fun n => (fun x => a * x + b)^[n] x₀) atTop (𝓝 x)) ↔ |a| < 1 := by
   have h1 : (1 : ℝ) - a ≠ 0 := sub_ne_zero.2 (Ne.symm ha)
   constructor
@@ -127,7 +127,7 @@ theorem ex_5_1_1_tendsto_iff {a : ℝ} (ha : a ≠ 1) (b : ℝ) :
     have heq : (fun n : ℕ => (fun x => a * x + b)^[n] 1 - (fun x => a * x + b)^[n] 0)
         = fun n => a ^ n := by
       funext n
-      rw [ex_5_1_1 ha, ex_5_1_1 ha]
+      rw [example_5_1_1 ha, example_5_1_1 ha]
       ring
     have hd : Tendsto (fun n : ℕ => a ^ n) atTop (𝓝 (x - y)) := heq ▸ hx.sub hy
     have hs : Tendsto (fun n : ℕ => a ^ (n + 1)) atTop (𝓝 (x - y)) :=
@@ -150,7 +150,7 @@ theorem ex_5_1_1_tendsto_iff {a : ℝ} (ha : a ≠ 1) (b : ℝ) :
         (1 - a) |>.mul_const b)
     have hgoal : b / (1 - a) = 0 * x₀ + (1 - 0) / (1 - a) * b := by ring
     rw [hgoal]
-    simp only [ex_5_1_1 ha]
+    simp only [example_5_1_1 ha]
     exact hlim
 
 end ScalarExample
@@ -161,12 +161,12 @@ variable [CompleteSpace V]
 
 /-- Theorem 5.1.3(a): a contractive self-map of a nonempty closed subset of a Banach space has a
 unique fixed point there. -/
-theorem thm_5_1_3_existsUnique (hK : IsClosed K) (hne : K.Nonempty) (hT : MapsTo T K K)
+theorem theorem_5_1_3_existsUnique (hK : IsClosed K) (hne : K.Nonempty) (hT : MapsTo T K K)
     (hα : ContractiveOn T K α) : ∃! u, u ∈ K ∧ T u = u :=
   exists_unique_fixedPoint_of_mapsTo hK hne hT hα.nonneg hα.lt_one hα.dist_le
 
 /-- (5.1.4): the a priori bound `‖u_n - u‖ ≤ αⁿ/(1 - α) ‖u₀ - u₁‖`. -/
-theorem eq_5_1_4 (hK : IsClosed K) (hT : MapsTo T K K) (hα : ContractiveOn T K α) {u : V}
+theorem equation_5_1_4 (hK : IsClosed K) (hT : MapsTo T K K) (hα : ContractiveOn T K α) {u : V}
     (hu : u ∈ K) (hfix : T u = u) {u₀ : V} (hu₀ : u₀ ∈ K) (n : ℕ) :
     ‖T^[n] u₀ - u‖ ≤ α ^ n / (1 - α) * ‖u₀ - T u₀‖ := by
   have h := dist_iterate_le_of_mapsTo hK hT hα.nonneg hα.lt_one hα.dist_le hu hfix hu₀ n
@@ -187,14 +187,14 @@ private theorem norm_step_sub_fixed_le (hα : ContractiveOn T K α) {u : V} (hu 
   linarith
 
 /-- (5.1.5): the a posteriori bound `‖u_{n+1} - u‖ ≤ α/(1 - α) ‖u_n - u_{n+1}‖`. -/
-theorem eq_5_1_5 (hT : MapsTo T K K) (hα : ContractiveOn T K α) {u : V} (hu : u ∈ K)
+theorem equation_5_1_5 (hT : MapsTo T K K) (hα : ContractiveOn T K α) {u : V} (hu : u ∈ K)
     (hfix : T u = u) {u₀ : V} (hu₀ : u₀ ∈ K) (n : ℕ) :
     ‖T^[n + 1] u₀ - u‖ ≤ α / (1 - α) * ‖T^[n] u₀ - T^[n + 1] u₀‖ := by
   rw [Function.iterate_succ_apply']
   exact norm_step_sub_fixed_le hα hu hfix (hT.iterate n hu₀) (hT (hT.iterate n hu₀))
 
 /-- (5.1.6): the linear rate `‖u_{n+1} - u‖ ≤ α ‖u_n - u‖`. -/
-theorem eq_5_1_6 (hT : MapsTo T K K) (hα : ContractiveOn T K α) {u : V} (hu : u ∈ K)
+theorem equation_5_1_6 (hT : MapsTo T K K) (hα : ContractiveOn T K α) {u : V} (hu : u ∈ K)
     (hfix : T u = u) {u₀ : V} (hu₀ : u₀ ∈ K) (n : ℕ) :
     ‖T^[n + 1] u₀ - u‖ ≤ α * ‖T^[n] u₀ - u‖ := by
   have h := hα.norm_sub_le (hT.iterate n hu₀) hu
@@ -203,11 +203,11 @@ theorem eq_5_1_6 (hT : MapsTo T K K) (hα : ContractiveOn T K α) {u : V} (hu : 
 
 /-- Theorem 5.1.3(b): the fixed-point iteration converges to the fixed point from every starting
 point of `K`. -/
-theorem thm_5_1_3_tendsto (hK : IsClosed K) (hT : MapsTo T K K) (hα : ContractiveOn T K α) {u : V}
+theorem theorem_5_1_3_tendsto (hK : IsClosed K) (hT : MapsTo T K K) (hα : ContractiveOn T K α) {u : V}
     (hu : u ∈ K) (hfix : T u = u) {u₀ : V} (hu₀ : u₀ ∈ K) :
     Tendsto (fun n => T^[n] u₀) atTop (𝓝 u) := by
   refine tendsto_iff_norm_sub_tendsto_zero.2 ?_
-  refine squeeze_zero (fun n => norm_nonneg _) (fun n => eq_5_1_4 hK hT hα hu hfix hu₀ n) ?_
+  refine squeeze_zero (fun n => norm_nonneg _) (fun n => equation_5_1_4 hK hT hα hu hfix hu₀ n) ?_
   have h1 : Tendsto (fun n : ℕ => α ^ n) atTop (𝓝 0) :=
     tendsto_pow_atTop_nhds_zero_of_lt_one hα.nonneg hα.lt_one
   simpa using (h1.div_const (1 - α)).mul_const ‖u₀ - T u₀‖
@@ -216,23 +216,23 @@ theorem thm_5_1_3_tendsto (hK : IsClosed K) (hT : MapsTo T K K) (hα : Contracti
 Banach space `V` and let `T : K → K` be contractive with constant `α ∈ [0, 1)`.  Then `T` has a
 unique fixed point in `K`, the iteration `u_{n+1} = T u_n` converges to it from every `u₀ ∈ K`,
 and the errors obey (5.1.4), (5.1.5) and (5.1.6). -/
-theorem thm_5_1_3 (hK : IsClosed K) (hne : K.Nonempty) (hT : MapsTo T K K)
+theorem theorem_5_1_3 (hK : IsClosed K) (hne : K.Nonempty) (hT : MapsTo T K K)
     (hα : ContractiveOn T K α) :
     (∃! u, u ∈ K ∧ T u = u) ∧
       ∀ u₀ ∈ K, ∃ u ∈ K, T u = u ∧ Tendsto (fun n => T^[n] u₀) atTop (𝓝 u) ∧
         (∀ n, ‖T^[n] u₀ - u‖ ≤ α ^ n / (1 - α) * ‖u₀ - T u₀‖) ∧
         (∀ n, ‖T^[n + 1] u₀ - u‖ ≤ α / (1 - α) * ‖T^[n] u₀ - T^[n + 1] u₀‖) ∧
         (∀ n, ‖T^[n + 1] u₀ - u‖ ≤ α * ‖T^[n] u₀ - u‖) := by
-  obtain ⟨u, ⟨hu, hfix⟩, -⟩ := thm_5_1_3_existsUnique hK hne hT hα
-  exact ⟨thm_5_1_3_existsUnique hK hne hT hα, fun u₀ hu₀ =>
-    ⟨u, hu, hfix, thm_5_1_3_tendsto hK hT hα hu hfix hu₀,
-      fun n => eq_5_1_4 hK hT hα hu hfix hu₀ n, fun n => eq_5_1_5 hT hα hu hfix hu₀ n,
-      fun n => eq_5_1_6 hT hα hu hfix hu₀ n⟩⟩
+  obtain ⟨u, ⟨hu, hfix⟩, -⟩ := theorem_5_1_3_existsUnique hK hne hT hα
+  exact ⟨theorem_5_1_3_existsUnique hK hne hT hα, fun u₀ hu₀ =>
+    ⟨u, hu, hfix, theorem_5_1_3_tendsto hK hT hα hu hfix hu₀,
+      fun n => equation_5_1_4 hK hT hα hu hfix hu₀ n, fun n => equation_5_1_5 hT hα hu hfix hu₀ n,
+      fun n => equation_5_1_6 hT hα hu hfix hu₀ n⟩⟩
 
 /-- **Example 5.1.2** (cited by Theorem 5.2.3): if `T : K → K` is continuous and some iterate
 `T^[m]`, `m ≥ 1`, is contractive on `K`, then `T` still has a unique fixed point in `K` and
 `u_{n+1} = T u_n` converges to it from every `u₀ ∈ K`. -/
-theorem ex_5_1_2 (hK : IsClosed K) (hne : K.Nonempty) (hT : MapsTo T K K) (hc : ContinuousOn T K)
+theorem example_5_1_2 (hK : IsClosed K) (hne : K.Nonempty) (hT : MapsTo T K K) (hc : ContinuousOn T K)
     {m : ℕ} (hm : 0 < m) (hα : ContractiveOn T^[m] K α) :
     (∃! u, u ∈ K ∧ T u = u) ∧
       ∀ u₀ ∈ K, ∃ u ∈ K, T u = u ∧ Tendsto (fun n => T^[n] u₀) atTop (𝓝 u) := by
@@ -298,7 +298,7 @@ theorem lipschitzWith_toNNReal_iff {T : V → V} {c : ℝ} (hc : 0 ≤ c) :
 with constant `c₁ > 0` and Lipschitz (5.1.9) with constant `c₂ > 0`.  Then `T` is a bijection —
 (5.1.10) `T u = b` has a unique solution for every `b` — and the solution depends Lipschitz
 continuously on the data, (5.1.11) `‖u₁ - u₂‖ ≤ (1/c₁) ‖b₁ - b₂‖`. -/
-theorem thm_5_1_4 {T : V → V} {c₁ c₂ : ℝ} (hc₁ : 0 < c₁) (hc₂ : 0 < c₂)
+theorem theorem_5_1_4 {T : V → V} {c₁ c₂ : ℝ} (hc₁ : 0 < c₁) (hc₂ : 0 < c₂)
     (hmono : StronglyMonotoneWith T c₁) (hlip : ∀ v₁ v₂, ‖T v₁ - T v₂‖ ≤ c₂ * ‖v₁ - v₂‖) :
     (∀ b, ∃! u, T u = b) ∧
       ∀ u₁ u₂ b₁ b₂, T u₁ = b₁ → T u₂ = b₂ → ‖u₁ - u₂‖ ≤ 1 / c₁ * ‖b₁ - b₂‖ := by

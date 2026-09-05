@@ -52,7 +52,7 @@ id = "nrbe_minres_antitone"
 id = "nrbe_minres_antitoneOn"
 
 [[node]]
-id = "thm_3_1_cr"
+id = "theorem_3_1_cr"
 
 [[node]]
-id = "thm_3_1_minres"
+id = "theorem_3_1_minres"

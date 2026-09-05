@@ -38,7 +38,7 @@ private theorem cg_res (k : ℕ) : b - Matrix.toEuclideanLin A (cg A b k).x = (c
 /-- (4.1): `‖r_k^C‖ = ‖r_k^M‖ / √(1 − ‖r_k^M‖²/‖r_{k−1}^M‖²)` (Greenbaum Lemma 5.4.1 /
 Titley-Péloquin), for `k ≥ 1` and `r_k^M ≠ 0`.  It is the harmonic identity
 `1/‖r_{k}^M‖² = 1/‖r_{k-1}^M‖² + 1/‖r_k^C‖²` of `Numlib/Krylov/Relations.lean` rearranged. -/
-theorem eq_4_1 (hA : A.PosDef) (k : ℕ) (hk : (cr A b (k + 1)).r ≠ 0) :
+theorem equation_4_1 (hA : A.PosDef) (k : ℕ) (hk : (cr A b (k + 1)).r ≠ 0) :
     ‖(cg A b (k + 1)).r‖
       = ‖(cr A b (k + 1)).r‖ /
         Real.sqrt (1 - ‖(cr A b (k + 1)).r‖ ^ 2 / ‖(cr A b k).r‖ ^ 2) := by
@@ -72,7 +72,7 @@ theorem eq_4_1 (hA : A.PosDef) (k : ℕ) (hk : (cr A b (k + 1)).r ≠ 0) :
   field_simp
 
 /-- (4.1) for an arbitrary sequence of MINRES iterates, whose residual is `r_k^M = b − A x_k`. -/
-theorem eq_4_1_minres (hA : A.PosDef) {x : ℕ → Vec n} (hx : ∀ k, IsMinresIterate A b k (x k))
+theorem equation_4_1_minres (hA : A.PosDef) {x : ℕ → Vec n} (hx : ∀ k, IsMinresIterate A b k (x k))
     (k : ℕ) (hk : b - A ⬝ x (k + 1) ≠ 0) :
     ‖(cg A b (k + 1)).r‖
       = ‖b - A ⬝ x (k + 1)‖ /
@@ -81,7 +81,7 @@ theorem eq_4_1_minres (hA : A.PosDef) {x : ℕ → Vec n} (hx : ∀ k, IsMinresI
     rw [(isMinresIterate_iff_eq_cr hA j (x j)).1 (hx j), ← cr_residual_eq]
   rw [hres] at hk
   rw [hres, hres]
-  exact eq_4_1 hA k hk
+  exact equation_4_1 hA k hk
 
 /-! ### R4.2: the telescoping product of residual ratios (§4.1.1) -/
 

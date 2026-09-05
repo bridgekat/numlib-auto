@@ -33,7 +33,7 @@ variable {U W : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [NormedAddComm
   [NormedSpace ℝ W]
 
 /-- **(5.4.2)**: one step of Newton's method. -/
-theorem eq_5_4_2 (F : U → W) (F' : U → U →L[ℝ] W) (u₀ : U) (n : ℕ) :
+theorem equation_5_4_2 (F : U → W) (F' : U → U →L[ℝ] W) (u₀ : U) (n : ℕ) :
     Newton.iterate F F' u₀ (n + 1) = Newton.step F F' (Newton.iterate F F' u₀ n) :=
   Newton.iterate_succ F F' u₀ n
 
@@ -74,7 +74,7 @@ omit [CompleteSpace U] [CompleteSpace W] in
 /-- **(5.4.5)**: with `T u = u - [F'(u)]⁻¹ F(u)`, `‖T u - u*‖ ≤ (c₀ L / 2) ‖u - u*‖²` where
 `c₀` bounds `‖[F'(u)]⁻¹‖` and `L` is the Lipschitz constant of `F'`.  Proved from the `L/2`
 Taylor estimate `norm_sub_sub_fderiv_le_half_mul_sq` of §5.3. -/
-theorem eq_5_4_5 {F : U → W} {F' : U → U →L[ℝ] W} {ustar : U} (hroot : F ustar = 0) {r L c₀ : ℝ}
+theorem equation_5_4_5 {F : U → W} {F' : U → U →L[ℝ] W} {ustar : U} (hroot : F ustar = 0) {r L c₀ : ℝ}
     (hF : ∀ z ∈ ball ustar r, HasFDerivAt F (F' z) z)
     (hL : ∀ z ∈ ball ustar r, ∀ w ∈ ball ustar r, ‖F' z - F' w‖ ≤ L * ‖z - w‖) {u : U}
     (hu : u ∈ ball ustar r) (e : U ≃L[ℝ] W) (he : (e : U →L[ℝ] W) = F' u)
@@ -111,7 +111,7 @@ iteration is well defined, converges to `u*`, and satisfies (5.4.3)
 `‖u_{n+1} - u*‖ ≤ M ‖u_n - u*‖²` and (5.4.4) `‖u_n - u*‖ ≤ (M δ)^{2ⁿ}/M`.  The backbone supplies
 the quadratic step estimate (`Newton.exists_ball_norm_step_sub_le`) and the convergence
 (`Newton.tendsto_iterate`); `0 < M` is added so that (5.4.4) is meaningful. -/
-theorem thm_5_4_1 {F : U → W} {F' : U → U →L[ℝ] W} {ustar : U} (hroot : F ustar = 0)
+theorem theorem_5_4_1 {F : U → W} {F' : U → U →L[ℝ] W} {ustar : U} (hroot : F ustar = 0)
     (e : U ≃L[ℝ] W) (he : (e : U →L[ℝ] W) = F' ustar) {r L : ℝ} (hr : 0 < r)
     (hF : ∀ u ∈ ball ustar r, HasFDerivAt F (F' u) u)
     (hL : ∀ u ∈ ball ustar r, ∀ v ∈ ball ustar r, ‖F' u - F' v‖ ≤ L * ‖u - v‖) :
@@ -228,7 +228,7 @@ ball and converge to it, with the a priori bound of the last conjunct.  This is 
 
 `[CompleteSpace W]` is kept because the book states the theorem for Banach spaces, although it is
 redundant: `e : U ≃L[ℝ] W` transports completeness from `U`. -/
-theorem thm_5_4_2 {F : U → W} {F' : U → U →L[ℝ] W} {u₀ : U} {r a b L : ℝ} (ha : 0 < a)
+theorem theorem_5_4_2 {F : U → W} {F' : U → U →L[ℝ] W} {u₀ : U} {r a b L : ℝ} (ha : 0 < a)
     (hLpos : 0 < L) (hb : 0 ≤ b) (e : U ≃L[ℝ] W) (he : (e : U →L[ℝ] W) = F' u₀)
     (ha' : ‖(e.symm : W →L[ℝ] U)‖ ≤ a) (hb' : ‖e.symm (F u₀)‖ ≤ b)
     (hF : ∀ u ∈ closedBall u₀ r, HasFDerivAt F (F' u) u)
@@ -251,7 +251,7 @@ section System
 
 /-- **(5.4.7)**: Newton's method for a nonlinear system `F(x) = 0` in `ℝᵈ`.  Each step solves the
 linear system `F'(x_n) δ_n = -F(x_n)` and sets `x_{n+1} = x_n + δ_n`. -/
-theorem eq_5_4_7 {d : ℕ} {F : EuclideanSpace ℝ (Fin d) → EuclideanSpace ℝ (Fin d)}
+theorem equation_5_4_7 {d : ℕ} {F : EuclideanSpace ℝ (Fin d) → EuclideanSpace ℝ (Fin d)}
     {F' : EuclideanSpace ℝ (Fin d) → EuclideanSpace ℝ (Fin d) →L[ℝ] EuclideanSpace ℝ (Fin d)}
     {x : EuclideanSpace ℝ (Fin d)} (e : EuclideanSpace ℝ (Fin d) ≃L[ℝ] EuclideanSpace ℝ (Fin d))
     (he : (e : EuclideanSpace ℝ (Fin d) →L[ℝ] EuclideanSpace ℝ (Fin d)) = F' x) :

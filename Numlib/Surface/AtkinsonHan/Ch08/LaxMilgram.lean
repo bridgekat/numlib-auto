@@ -57,7 +57,7 @@ private theorem innerSL_coercive : SesqForm.IsCoerciveWith (innerSL ℝ : SesqFo
 /-- Theorem 8.3.2: on a nonempty closed convex subset `K` of a Hilbert space the functional
 `E(v) = ½‖v‖² − ℓ(v)` has a unique minimizer, and `u ∈ K` is that minimizer exactly when it
 satisfies the variational inequality `(u, v − u) ≥ ℓ(v − u)` for all `v ∈ K`. -/
-theorem thm_8_3_2 [CompleteSpace V] {K : Set V} (hne : K.Nonempty) (hcl : IsClosed K)
+theorem theorem_8_3_2 [CompleteSpace V] {K : Set V} (hne : K.Nonempty) (hcl : IsClosed K)
     (hconv : Convex ℝ K) (ℓ : StrongDual ℝ V) :
     (∃! u, u ∈ K ∧ IsMinOn (fun v => (1 / 2 : ℝ) * ‖v‖ ^ 2 - ℓ v) K u) ∧
       ∀ u ∈ K, (IsMinOn (fun v => (1 / 2 : ℝ) * ‖v‖ ^ 2 - ℓ v) K u ↔
@@ -70,7 +70,7 @@ theorem thm_8_3_2 [CompleteSpace V] {K : Set V} (hne : K.Nonempty) (hcl : IsClos
 
 /-- Theorem 8.3.2, subspace case: `u ∈ K` minimizes `E(v) = ½‖v‖² − ℓ(v)` over the subspace `K`
 iff `(u, v) = ℓ(v)` for all `v ∈ K`. -/
-theorem thm_8_3_2_subspace [CompleteSpace V] (K : Submodule ℝ V) (ℓ : StrongDual ℝ V) {u : V}
+theorem theorem_8_3_2_subspace [CompleteSpace V] (K : Submodule ℝ V) (ℓ : StrongDual ℝ V) {u : V}
     (hu : u ∈ K) :
     IsMinOn (fun v => (1 / 2 : ℝ) * ‖v‖ ^ 2 - ℓ v) (K : Set V) u ↔ ∀ v ∈ K, ⟪u, v⟫_ℝ = ℓ v := by
   rw [energy_innerSL_eq]
@@ -82,7 +82,7 @@ variable {a : BilinForm V} {M α : ℝ}
 
 /-- Theorem 8.3.3, existence and uniqueness: the energy `E(v) = ½ a(v,v) − ℓ(v)` of a bounded,
 symmetric, `V`-elliptic form has a unique minimizer on any nonempty closed convex set. -/
-theorem thm_8_3_3 [CompleteSpace V] (hM : a.IsBoundedWith M) (hα : 0 < α)
+theorem theorem_8_3_3 [CompleteSpace V] (hM : a.IsBoundedWith M) (hα : 0 < α)
     (ha : a.IsEllipticWith α) (hs : LinearMap.BilinForm.IsSymm a) (ℓ : StrongDual ℝ V)
     {K : Set V} (hne : K.Nonempty) (hcl : IsClosed K) (hconv : Convex ℝ K) :
     ∃! u, u ∈ K ∧ IsMinOn (a.energy ℓ) K u := by
@@ -91,7 +91,7 @@ theorem thm_8_3_3 [CompleteSpace V] (hM : a.IsBoundedWith M) (hα : 0 < α)
 
 /-- Theorem 8.3.3, characterization (8.3.3): on a convex set the minimizer of the energy is the
 solution of the variational inequality `a(u, v − u) ≥ ℓ(v − u)` for all `v ∈ K`. -/
-theorem thm_8_3_3_iff [CompleteSpace V] (hM : a.IsBoundedWith M) (hα : 0 < α)
+theorem theorem_8_3_3_iff [CompleteSpace V] (hM : a.IsBoundedWith M) (hα : 0 < α)
     (ha : a.IsEllipticWith α) (hs : LinearMap.BilinForm.IsSymm a) (ℓ : StrongDual ℝ V)
     {K : Set V} (hconv : Convex ℝ K) {u : V} (hu : u ∈ K) :
     IsMinOn (a.energy ℓ) K u ↔ ∀ v ∈ K, ℓ (v - u) ≤ a u (v - u) := by
@@ -101,7 +101,7 @@ theorem thm_8_3_3_iff [CompleteSpace V] (hM : a.IsBoundedWith M) (hα : 0 < α)
 /-- Theorem 8.3.3, characterization (8.3.4): on a subspace the minimizer of the energy is the
 solution of the variational equation `a(u,v) = ℓ(v)` for all `v ∈ K`.  Neither closedness of `K`
 nor finite dimension is needed. -/
-theorem thm_8_3_3_subspace [CompleteSpace V] (hM : a.IsBoundedWith M) (hα : 0 < α)
+theorem theorem_8_3_3_subspace [CompleteSpace V] (hM : a.IsBoundedWith M) (hα : 0 < α)
     (ha : a.IsEllipticWith α) (hs : LinearMap.BilinForm.IsSymm a) (ℓ : StrongDual ℝ V)
     (K : Submodule ℝ V) {u : V} (hu : u ∈ K) :
     IsMinOn (a.energy ℓ) (K : Set V) u ↔ ∀ v ∈ K, a u v = ℓ v := by
@@ -123,19 +123,19 @@ theorem energy_sub_energy_eq [CompleteSpace V] (hM : a.IsBoundedWith M) (hα : 0
 
 /-- Theorem 8.3.4 (Lax–Milgram): a bounded `V`-elliptic bilinear form on a Hilbert space makes
 the variational problem (8.3.5) `a(u,v) = ℓ(v) ∀ v ∈ V` uniquely solvable. -/
-theorem thm_8_3_4 [CompleteSpace V] (hM : a.IsBoundedWith M) (hα : 0 < α)
+theorem theorem_8_3_4 [CompleteSpace V] (hM : a.IsBoundedWith M) (hα : 0 < α)
     (ha : a.IsEllipticWith α) (ℓ : StrongDual ℝ V) : ∃! u, ∀ v, a u v = ℓ v :=
   SesqForm.laxMilgram (a.toCLM hM) ℓ hα ha
 
 /-- The stability estimate `‖u‖ ≤ ‖ℓ‖ / α` accompanying Theorem 8.3.4; it is the one-space case
 of (8.7.5). -/
-theorem thm_8_3_4_norm_le [CompleteSpace V] (hM : a.IsBoundedWith M) (hα : 0 < α)
+theorem theorem_8_3_4_norm_le [CompleteSpace V] (hM : a.IsBoundedWith M) (hα : 0 < α)
     (ha : a.IsEllipticWith α) (ℓ : StrongDual ℝ V) {u : V} (hu : ∀ v, a u v = ℓ v) :
     ‖u‖ ≤ ‖ℓ‖ / α :=
   SesqForm.norm_le_of_forall_apply_eq (a.toCLM hM) ℓ hα ha hu
 
 /-- The solution depends Lipschitz-continuously on the data, with constant `1/α`. -/
-theorem thm_8_3_4_norm_sub_le [CompleteSpace V] (hM : a.IsBoundedWith M) (hα : 0 < α)
+theorem theorem_8_3_4_norm_sub_le [CompleteSpace V] (hM : a.IsBoundedWith M) (hα : 0 < α)
     (ha : a.IsEllipticWith α) {ℓ₁ ℓ₂ : StrongDual ℝ V} {u₁ u₂ : V} (h₁ : ∀ v, a u₁ v = ℓ₁ v)
     (h₂ : ∀ v, a u₂ v = ℓ₂ v) : ‖u₁ - u₂‖ ≤ ‖ℓ₁ - ℓ₂‖ / α :=
   SesqForm.norm_sub_le_of_forall_apply_eq (a.toCLM hM) hα ha h₁ h₂
@@ -218,7 +218,7 @@ theorem bijective_toOperator [CompleteSpace V] (hM : a.IsBoundedWith M) (hα : 0
 /-- Exercise 8.3.1: Lax–Milgram follows from the theory of strongly monotone Lipschitz operators
 of §5.1 (the backbone's `zarantonello`), applied to `T = A` with `c₁ = α`, `c₂ = M` and `b = f`
 the Riesz representative of `ℓ`. -/
-theorem ex_8_3_1 [CompleteSpace V] (hM0 : 0 ≤ M) (hM : a.IsBoundedWith M) (hα : 0 < α)
+theorem exercise_8_3_1 [CompleteSpace V] (hM0 : 0 ≤ M) (hM : a.IsBoundedWith M) (hα : 0 < α)
     (ha : a.IsEllipticWith α) (ℓ : StrongDual ℝ V) : ∃! u, ∀ v, a u v = ℓ v := by
   obtain ⟨u, hu, huniq⟩ := zarantonello (𝕜 := ℝ) hα (stronglyMonotone_toOperator hM ha)
     (lipschitzWith_toOperator hM0 hM) (SesqForm.rieszRep ℓ)

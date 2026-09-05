@@ -135,7 +135,7 @@ theorem inner_mrsR_eq_zero (xO rO : ℕ → 𝔼) (w : 𝔼) :
 
 /-- **(6.76)** (Lemma 6.18, Weiss): if `r^O_{m+1} ⟂ r^S_m` then
 `1/‖r^S_{m+1}‖² = 1/‖r^S_m‖² + 1/‖r^O_{m+1}‖²`. -/
-theorem eq_6_76 (xO rO : ℕ → 𝔼) {m : ℕ} (h0 : mrsR xO rO m ≠ 0) (h1 : rO (m + 1) ≠ 0)
+theorem equation_6_76 (xO rO : ℕ → 𝔼) {m : ℕ} (h0 : mrsR xO rO m ≠ 0) (h1 : rO (m + 1) ≠ 0)
     (horth : inner ℝ (rO (m + 1)) (mrsR xO rO m) = 0) :
     1 / ‖mrsR xO rO (m + 1)‖ ^ 2 = 1 / ‖mrsR xO rO m‖ ^ 2 + 1 / ‖rO (m + 1)‖ ^ 2 := by
   have hkey := Krylov.inv_sq_norm_smoothing (𝕜 := ℝ) h0 h1 horth
@@ -144,7 +144,7 @@ theorem eq_6_76 (xO rO : ℕ → 𝔼) {m : ℕ} (h0 : mrsR xO rO m ≠ 0) (h1 :
 
 /-- **(6.77)** (Lemma 6.18, Weiss): if `r^O_{m+1} ⟂ r^S_m` then
 `η_{m+1} = ‖r^S_m‖²/(‖r^S_m‖² + ‖r^O_{m+1}‖²)`. -/
-theorem eq_6_77 (xO rO : ℕ → 𝔼) {m : ℕ}
+theorem equation_6_77 (xO rO : ℕ → 𝔼) {m : ℕ}
     (horth : inner ℝ (rO (m + 1)) (mrsR xO rO m) = 0) :
     mrsEta xO rO m
       = ‖mrsR xO rO m‖ ^ 2 / (‖mrsR xO rO m‖ ^ 2 + ‖rO (m + 1)‖ ^ 2) := by
@@ -291,7 +291,7 @@ theorem inv_sq_norm_mrsR (xO rO : ℕ → 𝔼) {m : ℕ} (hr : ∀ j ≤ m, rO 
       have hpos : (0 : ℝ) < 1 / ‖mrsR xO rO k‖ ^ 2 := hk ▸ sum_inv_sq_pos hrk
       rw [h0, norm_zero] at hpos
       norm_num at hpos
-    rw [eq_6_76 xO rO hne (hr (k + 1) le_rfl) (horth k (by omega)), hk,
+    rw [equation_6_76 xO rO hne (hr (k + 1) le_rfl) (horth k (by omega)), hk,
       Finset.sum_range_succ (fun j => 1 / ‖rO j‖ ^ 2) (k + 1)]
 
 /-- Under the hypothesis of Lemma 6.18 the smoothed residual norms are exactly the QMRS scale
@@ -324,7 +324,7 @@ theorem mrs_eq_qmrs (xO rO : ℕ → 𝔼) {m : ℕ} (hr : ∀ j ≤ m, rO j ≠
     have hrk : ∀ j ≤ k, rO j ≠ 0 := fun j hj => hr j (by omega)
     have hk := ih hrk fun j hj => horth j (by omega)
     have hη : mrsEta xO rO k = qmrsEta rO k := by
-      rw [eq_6_77 xO rO (horth k (by omega)), qmrsEta,
+      rw [equation_6_77 xO rO (horth k (by omega)), qmrsEta,
         norm_mrsR_eq_qmrsTau xO rO hrk fun j hj => horth j (by omega)]
     rw [qmrs_succ, ← hk]
     have hx : mrs xO rO (k + 1) =
@@ -334,7 +334,7 @@ theorem mrs_eq_qmrs (xO rO : ℕ → 𝔼) {m : ℕ} (hr : ∀ j ≤ m, rO j ≠
 
 /-- **(6.78)**: `r^S_{m+1} = (ρ²/(ρ² + τ_m²)) r^S_m + (τ_m²/(ρ² + τ_m²)) r^O_{m+1}` with
 `τ_m = ‖r^S_m‖`. -/
-theorem eq_6_78 (xO rO : ℕ → 𝔼) {m : ℕ} (hr : ∀ j ≤ m + 1, rO j ≠ 0)
+theorem equation_6_78 (xO rO : ℕ → 𝔼) {m : ℕ} (hr : ∀ j ≤ m + 1, rO j ≠ 0)
     (horth : ∀ j < m + 1, inner ℝ (rO (j + 1)) (mrsR xO rO j) = 0) :
     mrsR xO rO (m + 1)
       = (‖rO (m + 1)‖ ^ 2 / (‖rO (m + 1)‖ ^ 2 + ‖mrsR xO rO m‖ ^ 2)) • mrsR xO rO m +
@@ -350,7 +350,7 @@ theorem eq_6_78 (xO rO : ℕ → 𝔼) {m : ℕ} (hr : ∀ j ≤ m + 1, rO j ≠
 
 /-- **(6.79)**: the smoothed residual is the weighted average
 `r^S_m = (∑_{j ≤ m} r^O_j/ρ_j²)/(∑_{j ≤ m} 1/ρ_j²)`. -/
-theorem eq_6_79 (xO rO : ℕ → 𝔼) {m : ℕ} (hr : ∀ j ≤ m, rO j ≠ 0)
+theorem equation_6_79 (xO rO : ℕ → 𝔼) {m : ℕ} (hr : ∀ j ≤ m, rO j ≠ 0)
     (horth : ∀ j < m, inner ℝ (rO (j + 1)) (mrsR xO rO j) = 0) :
     mrsR xO rO m = (∑ j ∈ Finset.range (m + 1), 1 / ‖rO j‖ ^ 2)⁻¹ •
       ∑ j ∈ Finset.range (m + 1), (1 / ‖rO j‖ ^ 2) • rO j := by
@@ -366,7 +366,7 @@ theorem lemma_6_18 (xO rO : ℕ → 𝔼) {m : ℕ} (h0 : mrsR xO rO m ≠ 0)
     1 / ‖mrsR xO rO (m + 1)‖ ^ 2 = 1 / ‖mrsR xO rO m‖ ^ 2 + 1 / ‖rO (m + 1)‖ ^ 2 ∧
       mrsEta xO rO m
         = ‖mrsR xO rO m‖ ^ 2 / (‖mrsR xO rO m‖ ^ 2 + ‖rO (m + 1)‖ ^ 2) :=
-  ⟨eq_6_76 xO rO h0 h1 horth, eq_6_77 xO rO horth⟩
+  ⟨equation_6_76 xO rO h0 h1 horth, equation_6_77 xO rO horth⟩
 
 end Smoothing
 
@@ -428,7 +428,7 @@ theorem mrs_fom_eq_gmres (hA : IsUnit A) (rO : ℕ → 𝔼)
     inner_mrsR_eq_zero (fomFixed A b x₀) rO _ j fun i hi =>
       hpair (j + 1) (by omega) i (by omega) (by omega)
   have hsum := inv_sq_norm_mrsR (fomFixed A b x₀) rO hrne horth
-  have h66 := eq_6_66 A b x₀ hm hH h0
+  have h66 := equation_6_66 A b x₀ hm hH h0
   have heq := mrs_eq A b (fomFixed A b x₀) rO hr m
   have hres : mrsR (fomFixed A b x₀) rO m
       = b - op A (mrsX (fomFixed A b x₀) rO m) := by rw [heq.1]; exact heq.2
@@ -469,7 +469,7 @@ theorem residual_mrs_eq (hA : IsUnit A) (xO rO : ℕ → 𝔼) (hr : ∀ j, rO j
 
 /-- **P-6.26**: the directions `x^O_{j+1} - x^S_j` produced by Algorithm 6.14 from a sequence of
 Galerkin iterates are `AᵀA`-orthogonal, the hypothesis of Lemma 6.21 (GCR / ORTHOMIN). -/
-theorem p_6_26 (hA : IsUnit A) (xO rO : ℕ → 𝔼) (hr : ∀ j, rO j = b - op A (xO j))
+theorem problem_6_26 (hA : IsUnit A) (xO rO : ℕ → 𝔼) (hr : ∀ j, rO j = b - op A (xO j))
     (hO : ∀ m, Krylov.IsGalerkinIterate (op A) b x₀ m (xO m)) {i j : ℕ} (hij : i ≠ j) :
     inner ℝ (op A (xO (i + 1) - mrsX xO rO i)) (op A (xO (j + 1) - mrsX xO rO j)) = 0 := by
   have hmemS : ∀ k, mrsX xO rO k - x₀ ∈ Krylov.subspace (op A) (b - op A x₀) k :=

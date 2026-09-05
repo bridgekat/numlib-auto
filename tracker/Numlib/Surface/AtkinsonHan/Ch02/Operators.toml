@@ -4,22 +4,22 @@ namespace = "AtkinsonHan.Ch02"
 id = "cond"
 
 [[node]]
-id = "eq_2_4_1"
+id = "equation_2_4_1"
 
 [[node]]
 id = "one_le_cond"
 
 [[node]]
-id = "stability_2_4"
+id = "stability_of_isomorphism"
 
 [[node]]
-id = "thm_2_4_1"
+id = "theorem_2_4_1"
 
 [[node]]
-id = "thm_2_4_3"
+id = "theorem_2_4_3"
 
 [[node]]
-id = "thm_2_4_4"
+id = "theorem_2_4_4"
 
 [[node]]
-id = "thm_2_4_5"
+id = "theorem_2_4_5"

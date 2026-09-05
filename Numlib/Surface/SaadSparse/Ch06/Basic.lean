@@ -236,17 +236,17 @@ variable {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (v : EuclideanSpace ℝ (Fin
 
 /-- **Proposition 6.1**. Let `μ` be the grade of `v`. Then `𝒦_μ` is invariant under `A`, and
 `𝒦_m = 𝒦_μ` for all `m ≥ μ`. -/
-theorem prop_6_1 : krylov A v (grade A v) ∈ Module.End.invtSubmodule (op A) ∧
+theorem proposition_6_1 : krylov A v (grade A v) ∈ Module.End.invtSubmodule (op A) ∧
     ∀ m, grade A v ≤ m → krylov A v m = krylov A v (grade A v) :=
   ⟨krylov_grade_mem_invtSubmodule A v, fun _ h => krylov_eq_of_grade_le A v h⟩
 
 /-- **Proposition 6.2**, (6.3): the Krylov subspace `𝒦_m` has dimension `m` if and only if the
 grade of `v` with respect to `A` is not less than `m`. -/
-theorem prop_6_2 {m : ℕ} : Module.finrank ℝ (krylov A v m) = m ↔ m ≤ grade A v :=
+theorem proposition_6_2 {m : ℕ} : Module.finrank ℝ (krylov A v m) = m ↔ m ≤ grade A v :=
   finrank_krylov_eq_iff A v
 
 /-- (6.4): `dim 𝒦_m = min {m, μ}`. -/
-theorem eq_6_4 (m : ℕ) : Module.finrank ℝ (krylov A v m) = min m (grade A v) :=
+theorem equation_6_4 (m : ℕ) : Module.finrank ℝ (krylov A v m) = min m (grade A v) :=
   finrank_krylov A v m
 
 /-- §6.2: the grade of `v` does not exceed `n`, by the Cayley–Hamilton theorem. -/
@@ -258,7 +258,7 @@ variable {A v}
 /-- **Proposition 6.3**. Let `Q_m` be any projector onto `𝒦_m` and `A_m = Q_m A|_{𝒦_m}` the
 section of `A` in `𝒦_m`. Then `q(A) v = q(A_m) v` for every polynomial `q` of degree at most
 `m - 1`, and `Q_m q(A) v = q(A_m) v` for every polynomial `q` of degree at most `m`. -/
-theorem prop_6_3 {m : ℕ} (hm : 0 < m)
+theorem proposition_6_3 {m : ℕ} (hm : 0 < m)
     {Q : EuclideanSpace ℝ (Fin n) →ₗ[ℝ] EuclideanSpace ℝ (Fin n)} (hidem : IsIdempotentElem Q)
     (hQ : LinearMap.range Q = krylov A v m) (q : ℝ[X]) :
     (q.degree < m →

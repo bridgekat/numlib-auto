@@ -234,7 +234,7 @@ Numbered results in book order. Each block: **Book statement** / **Lean surface 
 **Ex 5.1.1** (affine map on ℝ).
 Book: `T x = a x + b`; `x_n = x₀ + n b` if `a = 1`, `x_n = aⁿ x₀ + (1 − aⁿ)/(1 − a) b` if `a ≠ 1`; for `a ≠ 1`
 the iteration converges iff `|a| < 1`.
-Lean: `theorem ex_5_1_1 (a b x₀ : ℝ) (h : a ≠ 1) : (fun x => a * x + b)^[n] x₀ = a ^ n * x₀ + (1 - a ^ n) / (1 - a) * b`
+Lean: `theorem example_5_1_1 (a b x₀ : ℝ) (h : a ≠ 1) : (fun x => a * x + b)^[n] x₀ = a ^ n * x₀ + (1 - a ^ n) / (1 - a) * b`
 and `(∀ x₀, ∃ x, Tendsto (fun n => (fun x => a*x+b)^[n] x₀) atTop (𝓝 x)) ↔ |a| < 1`.
 Mathlib: `tendsto_pow_atTop_nhds_zero_iff`, `geom_sum_eq`. Route: induction + geometric series.
 Classification: `surface-only` (trivial; optional).
@@ -249,7 +249,7 @@ Book: `K` nonempty closed in a Banach space `V`, `T : K → K` contractive with 
 (5.1.4) `‖u_n − u‖ ≤ αⁿ/(1−α) ‖u₀ − u₁‖`, (5.1.5) `‖u_n − u‖ ≤ α/(1−α) ‖u_{n−1} − u_n‖`, (5.1.6) `‖u_n − u‖ ≤ α ‖u_{n−1} − u‖`.
 Lean:
 ```lean
-theorem thm_5_1_3 [CompleteSpace V] {K : Set V} (hK : IsClosed K) (hne : K.Nonempty)
+theorem theorem_5_1_3 [CompleteSpace V] {K : Set V} (hK : IsClosed K) (hne : K.Nonempty)
     {T : V → V} (hT : Set.MapsTo T K K) {α : ℝ} (hα : ContractiveOn T K α) :
     (∃! u, u ∈ K ∧ T u = u) ∧
     ∀ u₀ ∈ K, ∃ u ∈ K, T u = u ∧ Tendsto (fun n => T^[n] u₀) atTop (𝓝 u) ∧
@@ -274,7 +274,7 @@ for `n ≥ 1`).
 **Ex 5.1.2** (`Tᵐ` contractive; cited by Thm 5.2.3).
 Book: `K` nonempty closed, `T : K → K` continuous, `Tᵐ` a contraction for some `m ≥ 1` ⇒ `T` has a unique fixed
 point in `K` and `u_{n+1} = T u_n` converges.
-Lean: `theorem ex_5_1_2 … (hc : ContinuousOn T K) {m : ℕ} (hm : 0 < m) {α : ℝ} (hα : ContractiveOn (T^[m]) K α) : (∃! u, u ∈ K ∧ T u = u) ∧ ∀ u₀ ∈ K, ∃ u ∈ K, T u = u ∧ Tendsto (fun n => T^[n] u₀) atTop (𝓝 u)`.
+Lean: `theorem example_5_1_2 … (hc : ContinuousOn T K) {m : ℕ} (hm : 0 < m) {α : ℝ} (hα : ContractiveOn (T^[m]) K α) : (∃! u, u ∈ K ∧ T u = u) ∧ ∀ u₀ ∈ K, ∃ u ∈ K, T u = u ∧ Tendsto (fun n => T^[n] u₀) atTop (𝓝 u)`.
 Backbone (`Numlib/Nonlinear/FixedPoint.lean`, whole space):
 `exists_unique_fixedPoint_of_iterate_contractingWith [Nonempty α] [CompleteSpace α] (hT : Continuous T) (hm : 0 < m) (hK : ContractingWith K T^[m]) : ∃! x, T x = x`
 (`[Nonempty α]` is needed: the empty metric space is complete and every self-map of it is a
@@ -295,7 +295,7 @@ Book: `V` Hilbert, `T : V → V` with (5.1.8) `(T v₁ − T v₂, v₁ − v₂
 `‖u₁ − u₂‖ ≤ (1/c₁)‖b₁ − b₂‖` when `T u_i = b_i`.
 Lean:
 ```lean
-theorem thm_5_1_4 {T : V → V} {c₁ c₂ : ℝ} (hc₁ : 0 < c₁) (hc₂ : 0 < c₂)
+theorem theorem_5_1_4 {T : V → V} {c₁ c₂ : ℝ} (hc₁ : 0 < c₁) (hc₂ : 0 < c₂)
     (hmono : StronglyMonotoneWith T c₁) (hlip : ∀ v₁ v₂, ‖T v₁ - T v₂‖ ≤ c₂ * ‖v₁ - v₂‖) :
     (∀ b, ∃! u, T u = b) ∧ ∀ u₁ u₂ b₁ b₂, T u₁ = b₁ → T u₂ = b₂ → ‖u₁ - u₂‖ ≤ (1 / c₁) * ‖b₁ - b₂‖
 ```
@@ -311,11 +311,11 @@ Classification: `needs-equivalence` (D3). The book's proof swaps the constants �
 
 **Thm 5.2.1** (scalar contraction on `[a,b]`).
 Book: `T : [a,b] → [a,b]` contractive with `α ∈ [0,1)`: unique fixed point, convergence, the three bounds.
-Lean (`thm_5_2_1`): Thm 5.1.3 with `V = ℝ`, `K = Icc a b`, `|·|` for `‖·‖`.
-Mathlib: `isClosed_Icc`, `Set.nonempty_Icc`. Classification: `direct` (specialisation of `thm_5_1_3`).
+Lean (`theorem_5_2_1`): Thm 5.1.3 with `V = ℝ`, `K = Icc a b`, `|·|` for `‖·‖`.
+Mathlib: `isClosed_Icc`, `Set.nonempty_Icc`. Classification: `direct` (specialisation of `theorem_5_1_3`).
 
 **Thm 5.2.1, derivative criterion** ("`sup_{[a,b]} |T'| < 1` ⇒ contractive with that constant").
-Lean: `thm_5_2_1_deriv (hT : ∀ x ∈ Icc a b, HasDerivWithinAt T (T' x) (Icc a b) x) (hα : ∀ x ∈ Icc a b, |T' x| ≤ α) (h1 : α < 1) : ∀ x ∈ Icc a b, ∀ y ∈ Icc a b, |T x - T y| ≤ α * |x - y|`.
+Lean: `theorem_5_2_1_deriv (hT : ∀ x ∈ Icc a b, HasDerivWithinAt T (T' x) (Icc a b) x) (hα : ∀ x ∈ Icc a b, |T' x| ≤ α) (h1 : α < 1) : ∀ x ∈ Icc a b, ∀ y ∈ Icc a b, |T x - T y| ≤ α * |x - y|`.
 Backbone: `lipschitzOnWith_of_hasFDerivWithinAt (hs : Convex ℝ s) (hT : ∀ x ∈ s, HasFDerivWithinAt T (T' x) s x) (hT' : ∀ x ∈ s, ‖T' x‖₊ ≤ q) : LipschitzOnWith q T s`
 (`Numlib/Nonlinear/FixedPoint.lean`), applied with `T' x := (1 : ℝ →L[ℝ] ℝ).smulRight (T' x)`
 (`hasDerivWithinAt_iff_hasFDerivWithinAt`, `ContinuousLinearMap.norm_smulRight_apply`); or Mathlib
@@ -323,7 +323,7 @@ Backbone: `lipschitzOnWith_of_hasFDerivWithinAt (hs : Convex ℝ s) (hT : ∀ x 
 Classification: `direct`.
 
 **§5.2.2 (a)** error equation (5.2.5) `x − x_n = (N⁻¹M)ⁿ (x − x₀)`.
-Lean: `theorem eq_5_2_5 (s : BookSplitting A) (hx : A *ᵥ x = b) (x₀) (n) : x - (iterStep s b)^[n] x₀ = (s.N⁻¹ * s.M) ^ n *ᵥ (x - x₀)`.
+Lean: `theorem equation_5_2_5 (s : BookSplitting A) (hx : A *ᵥ x = b) (x₀) (n) : x - (iterStep s b)^[n] x₀ = (s.N⁻¹ * s.M) ^ n *ᵥ (x - x₀)`.
 Backbone: `Stationary.step_iterate_sub (hfix : G x' + f = x') (x₀) (k) : (step G f)^[k] x₀ - x' = (G ^ k) (x₀ - x')`
 (`Numlib/LinearSolve/Stationary/Basic.lean`) through D4's `iterStep_eq_stationary_step` and `Matrix.toLin'_pow`;
 otherwise a five-line induction. Classification: `needs-equivalence` (D4).
@@ -333,7 +333,7 @@ Lean: `theorem tendsto_of_opNorm_lt_one (hG : ‖toLin' (s.N⁻¹ * s.M)‖ < 1)
 Backbone: `Stationary.contractingWith (hG : ‖G‖ < 1) : ContractingWith ⟨‖G‖, _⟩ (step G f)` with the a priori /
 a posteriori bounds `Stationary.norm_iterate_sub_le`, `norm_iterate_sub_le'` and the fixed-point
 identification `Stationary.step_fixed_iff` (`Numlib/LinearSolve/Stationary/Basic.lean`); convergence by
-`ContractingWith.tendsto_iterate_fixedPoint`. Alternatively `thm_5_1_3` with `K = univ`.
+`ContractingWith.tendsto_iterate_fixedPoint`. Alternatively `theorem_5_1_3` with `K = univ`.
 Classification: `needs-equivalence` (D4).
 
 **§5.2.2 (c)** "`Aⁿ → 0` iff `r_σ(A) < 1`" (square matrices).
@@ -385,9 +385,9 @@ Classification: `deferred` (phase 3, `C[a,b]` integral-operator toolkit — §3 
 **Thm 5.2.2 (Urysohn equation)**.
 Book: `f ∈ C[a,b]`, `k ∈ C([a,b]²×ℝ)` (5.2.11), uniform Lipschitz in the third argument with constant `M` (5.2.12),
 `|μ| M (b − a) < 1` ⇒ unique solution `u ∈ C[a,b]` of (5.2.10), approximated by (5.2.13).
-Lean (`thm_5_2_2`, operator supplied as a bundled map agreeing with `urysohnFun`):
+Lean (`theorem_5_2_2`, operator supplied as a bundled map agreeing with `urysohnFun`):
 `(∃! u, T u = u) ∧ ∀ u₀, ∃ u, T u = u ∧ Tendsto (fun n => T^[n] u₀) atTop (𝓝 u)`.
-Route: `thm_5_1_3` with `K = univ`; Lipschitz bound `‖T u − T v‖ ≤ |μ| M (b−a) ‖u − v‖` from
+Route: `theorem_5_1_3` with `K = univ`; Lipschitz bound `‖T u − T v‖ ≤ |μ| M (b−a) ‖u − v‖` from
 `intervalIntegral.norm_integral_le_of_norm_le_const` and `ContinuousMap.norm_coe_le_norm`.
 Classification: `deferred` (phase 3: bundling `T` into `C(Icc a b, ℝ)` and its Lipschitz bound are the
 toolkit's first lemmas — §3 item 1).
@@ -395,7 +395,7 @@ toolkit's first lemmas — §3 item 1).
 **Thm 5.2.3 (nonlinear Volterra equation)**.
 Book: `k` continuous on `{a ≤ s ≤ t ≤ b} × ℝ`, `f ∈ C[a,b]`, Lipschitz in `u` with constant `M` (no smallness) ⇒ unique
 solution in `C[a,b]`, iteration (5.2.16) converges for every `u₀`.
-Lean: same shape as `thm_5_2_2` with `volterraFun hab k f u x := ∫ y in a..x, k x y (u (projIcc y)) + f x` and no `μ`-hypothesis.
+Lean: same shape as `theorem_5_2_2` with `volterraFun hab k f u x := ∫ y in a..x, k x y (u (projIcc y)) + f x` and no `μ`-hypothesis.
 Route (book Approach 1): `|Tᵐu(t) − Tᵐv(t)| ≤ (M(t−a))ᵐ/m! ‖u−v‖_∞` by induction (`intervalIntegral.integral_mono`,
 `integral_pow`), so `T^[m]` contracts for large `m` (`Real.tendsto_pow_div_factorial_atTop`), then Ex 5.1.2 — the
 backbone's `tendsto_iterate_of_iterate_contractingWith` is the engine. Approach 2 (Bielecki):
@@ -409,9 +409,9 @@ Book: `V` Banach, `Q_b = {(t,u) : |t − t₀| ≤ a, ‖u − z‖ ≤ b}`, `f 
 `L`, `M = max_{Q_b} ‖f‖`, `a₀ = min(a, b/M)`. Then (5.2.18) has a unique `C¹` solution on `[t₀ − a₀, t₀ + a₀]`;
 the Picard iteration (5.2.20) converges for any `u₀` with `‖z − u₀‖ < b`; with `α = 1 − e^{−L a₀}` the weighted error
 `max_{|t−t₀|≤a₀} ‖u_n(t) − u(t)‖ e^{−L|t−t₀|}` satisfies the three bounds (5.1.4)–(5.1.6) in the weighted norm.
-Lean (existence/uniqueness part, `thm_5_2_4_exists_unique`):
+Lean (existence/uniqueness part, `theorem_5_2_4_exists_unique`):
 ```lean
-theorem thm_5_2_4_exists_unique {t₀ a b L M : ℝ} (ha : 0 < a) (hb : 0 < b) (hM : 0 < M) {z : V} {f : ℝ → V → V}
+theorem theorem_5_2_4_exists_unique {t₀ a b L M : ℝ} (ha : 0 < a) (hb : 0 < b) (hM : 0 < M) {z : V} {f : ℝ → V → V}
     (hcont : ContinuousOn (Function.uncurry f) (Icc (t₀ - a) (t₀ + a) ×ˢ Metric.closedBall z b))
     (hlip : ∀ t ∈ Icc (t₀ - a) (t₀ + a), LipschitzOnWith (Real.toNNReal L) (f t) (Metric.closedBall z b))
     (hbound : ∀ t ∈ Icc (t₀ - a) (t₀ + a), ∀ u ∈ Metric.closedBall z b, ‖f t u‖ ≤ M) :
@@ -476,7 +476,7 @@ phase-3 integral-operator toolkit and differentiation under the integral sign, M
 **Prop 5.3.11 (mean value inequality)**.
 Book: `U, V` real Banach, `K` open, `F` differentiable on `K` with `F'` continuous, segment `[u,w] ⊂ K` ⇒
 (5.3.7) `‖F u − F w‖ ≤ sup_{θ∈[0,1]} ‖F'((1−θ)u + θw)‖ ‖u − w‖`.
-Lean (`prop_5_3_11`): `‖F u - F w‖ ≤ (⨆ θ : Icc (0:ℝ) 1, ‖F' ((1 - θ) • u + θ • w)‖) * ‖u - w‖`.
+Lean (`proposition_5_3_11`): `‖F u - F w‖ ≤ (⨆ θ : Icc (0:ℝ) 1, ‖F' ((1 - θ) • u + θ • w)‖) * ‖u - w‖`.
 Mathlib: `Convex.norm_image_sub_le_of_norm_hasFDerivWithin_le` with `s := segment ℝ u w` (`convex_segment`), bound `C := ⨆ …`
 (`le_ciSup` needs `BddAbove`, from continuity of `F'` on the compact segment: `isCompact_segment`, `IsCompact.bddAbove_image`);
 `segment_eq_image_lineMap`. Completeness and continuity of `F'` are only used to make the `sup` finite.
@@ -489,7 +489,7 @@ Mathlib: `IsOpen.is_const_of_fderiv_eq_zero (hs : IsOpen s) (hs' : IsPreconnecte
 **Prop 5.3.13 (Taylor remainder)**.
 Book: `F` twice continuously differentiable on open `K`, segment `[u₀, u₀+h] ⊂ K` ⇒
 `‖F(u₀+h) − F(u₀) − F'(u₀)h‖ ≤ ½ sup_{θ} ‖F''(u₀+θh)‖ ‖h‖²`.
-Lean (`prop_5_3_13`, `F'' : V → V →L[ℝ] V →L[ℝ] W`).
+Lean (`proposition_5_3_13`, `F'' : V → V →L[ℝ] V →L[ℝ] W`).
 Route: `φ(t) := F(u₀ + t h) − F u₀ − t • F' u₀ h` on `[0,1]`, `φ'(t) = (F'(u₀+th) − F' u₀) h`, `‖φ'(t)‖ ≤ C t ‖h‖²` by the
 MVT for `F'` on the sub-segment (`Convex.norm_image_sub_le_of_norm_hasFDerivWithin_le` applied to `F'`), then
 `image_norm_le_of_norm_deriv_right_le_deriv_boundary` (`MeanValue.lean`) with boundary `B t = C ‖h‖² t²/2`.
@@ -510,7 +510,7 @@ continuity of `coprod`/`comp inl` in the operator norm (`Continuous.clm_comp`;
 `coprod f g = f.comp (fst ℝ U V) + g.comp (snd ℝ U V)`). Classification: `surface-only`.
 
 **Thm 5.3.17** (Gâteaux-differentiable `f : K → ℝ`, `K` convex: convex ⇔ (b) `f v ≥ f u + ⟨f' u, v − u⟩` ⇔ (c) monotone gradient).
-Lean (`thm_5_3_17`): `(ConvexOn ℝ K f ↔ ∀ u ∈ K, ∀ v ∈ K, f u + f' u (v - u) ≤ f v) ∧ (ConvexOn ℝ K f ↔ ∀ u ∈ K, ∀ v ∈ K, 0 ≤ (f' v - f' u) (v - u))`.
+Lean (`theorem_5_3_17`): `(ConvexOn ℝ K f ↔ ∀ u ∈ K, ∀ v ∈ K, f u + f' u (v - u) ≤ f v) ∧ (ConvexOn ℝ K f ↔ ∀ u ∈ K, ∀ v ∈ K, 0 ≤ (f' v - f' u) (v - u))`.
 Route: (a)⇒(b): `ConvexOn.slope_mono` on the 1D restriction `t ↦ f (u + t • (v − u))` (`ConvexOn.comp_affineMap`) +
 `HasLineDerivAt.tendsto_slope_zero_right`; (b)⇒(a), (b)⇒(c) algebra; (c)⇒(b): `exists_hasDerivAt_eq_slope`
 (`Deriv/MeanValue.lean`) for `φ(t) = f(u + t(v−u))` on `(0,1)`. Mathlib only has the 1D versions
@@ -520,7 +520,7 @@ candidate for the backbone — §3).
 **Thm 5.3.18** (strict version). Classification: `surface-only` (same file as 5.3.17; `StrictConvexOn`).
 
 **Thm 5.3.19** (minimiser ⇔ variational inequality (5.3.10); subspace case (5.3.11)).
-Lean (`thm_5_3_19`): `IsMinOn f K u ↔ ∀ v ∈ K, 0 ≤ f' u (v - u)` given convexity; plus
+Lean (`theorem_5_3_19`): `IsMinOn f K u ↔ ∀ v ∈ K, 0 ≤ f' u (v - u)` given convexity; plus
 `(K : Submodule) : IsMinOn f K u ↔ ∀ v ∈ K, f' u v = 0`. Route: (⇒) one-sided slope limit
 (`HasLineDerivAt.tendsto_slope_zero_right`, `ge_of_tendsto`); (⇐) Thm 5.3.17 (b). Classification: `surface-only` (given 5.3.17).
 
@@ -536,7 +536,7 @@ Book: `U, W` Banach, `F : U → W` Fréchet differentiable, `F u* = 0`, `[F'(u*)
 Lean (`0 < M` added so that (5.4.4) is meaningful — harmless, `M = c₀L/2 > 0`; the neighbourhood `N(u*)` is
 `Metric.ball ustar r`):
 ```lean
-theorem thm_5_4_1 [CompleteSpace U] [CompleteSpace W] {F : U → W} {F' : U → U →L[ℝ] W} {ustar : U}
+theorem theorem_5_4_1 [CompleteSpace U] [CompleteSpace W] {F : U → W} {F' : U → U →L[ℝ] W} {ustar : U}
     (hroot : F ustar = 0) (e : U ≃L[ℝ] W) (he : (e : U →L[ℝ] W) = F' ustar) {r L : ℝ} (hr : 0 < r)
     (hF : ∀ u ∈ Metric.ball ustar r, HasFDerivAt F (F' u) u)
     (hL : ∀ u ∈ Metric.ball ustar r, ∀ v ∈ Metric.ball ustar r, ‖F' u - F' v‖ ≤ L * ‖u - v‖) :
@@ -561,7 +561,7 @@ so the iterates stay in the ball and (5.4.3) holds along the sequence; (5.4.4) b
 Classification: `direct` (well-definedness, convergence, (5.4.3)); `surface-only` ((5.4.4) induction).
 
 **(5.4.5)** `‖T u − T u*‖ ≤ (c₀ L/2) ‖u − u*‖²` for `T u = u − F'(u)⁻¹ F u`, `u ∈ N(u*)`, `‖F'(u)⁻¹‖ ≤ c₀`.
-Lean: `theorem eq_5_4_5 (hroot : F ustar = 0) (hF) (hL) (hu : u ∈ Metric.ball ustar r) (e : U ≃L[ℝ] W) (he : ↑e = F' u) (hc₀ : ‖(e.symm : W →L[ℝ] U)‖ ≤ c₀) : ‖Newton.step F F' u - ustar‖ ≤ c₀ * L / 2 * ‖u - ustar‖ ^ 2`.
+Lean: `theorem equation_5_4_5 (hroot : F ustar = 0) (hF) (hL) (hu : u ∈ Metric.ball ustar r) (e : U ≃L[ℝ] W) (he : ↑e = F' u) (hc₀ : ‖(e.symm : W →L[ℝ] U)‖ ≤ c₀) : ‖Newton.step F F' u - ustar‖ ≤ c₀ * L / 2 * ‖u - ustar‖ ^ 2`.
 Backbone: `Newton.norm_step_sub_le (hstar) (hF) (hL) (hx : x ∈ Metric.ball xstar r) (e) (he : ↑e = F' x) : ‖step Fn F' x - xstar‖ ≤ L * ‖(e.symm : F →L[𝕜] E)‖ / 2 * ‖x - xstar‖ ^ 2`
 (`Numlib/Nonlinear/Newton.lean`) — the exact constant, via `T u − u* = F'(u)⁻¹ [F u* − F u − F'(u)(u* − u)]` and
 the `L/2` Taylor bound (`image_norm_le_of_norm_deriv_right_le_deriv_boundary`, see Prop 5.3.13).
@@ -575,7 +575,7 @@ exists, bounded, `h = abL ≤ ½` with `a ≥ ‖F'(u₀)⁻¹‖`, `b ≥ ‖F'
 Lean (all constants written out; `0 < a`, `0 < L` added so that `t*` is meaningful — with `L = 0` the book's `t*`
 is `0/0`; the domain is taken as `Metric.closedBall u₀ r` with `t* ≤ r`):
 ```lean
-theorem thm_5_4_2 [CompleteSpace U] [CompleteSpace W] {F : U → W} {F' : U → U →L[ℝ] W} {u₀ : U}
+theorem theorem_5_4_2 [CompleteSpace U] [CompleteSpace W] {F : U → W} {F' : U → U →L[ℝ] W} {u₀ : U}
     {r a b L : ℝ} (ha : 0 < a) (hL : 0 < L) (hb : 0 ≤ b)
     (e : U ≃L[ℝ] W) (he : (e : U →L[ℝ] W) = F' u₀)
     (ha' : ‖(e.symm : W →L[ℝ] U)‖ ≤ a) (hb' : ‖e.symm (F u₀)‖ ≤ b)
@@ -628,7 +628,7 @@ Book: `A` bounded self-adjoint with (5.6.3) `√m‖v‖ ≤ ‖v‖_A ≤ √M�
 (5.6.4) `‖u* − u_{k+1}‖_A ≤ (M−m)/(M+m) ‖u* − u_k‖_A`.
 Lean:
 ```lean
-theorem thm_5_6_1 {A : V →L[ℝ] V} (hA : IsSelfAdjoint A) {m M : ℝ} (hm : 0 < m) (hM : 0 < M)
+theorem theorem_5_6_1 {A : V →L[ℝ] V} (hA : IsSelfAdjoint A) {m M : ℝ} (hm : 0 < m) (hM : 0 < M)
     (hbound : ∀ v, Real.sqrt m * ‖v‖ ≤ normA A v ∧ normA A v ≤ Real.sqrt M * ‖v‖)
     {f u₀ ustar : V} (hstar : A ustar = f) :
     Tendsto (fun k => (cg A f u₀ k).u) atTop (𝓝 ustar) ∧
@@ -657,7 +657,7 @@ solution `A_K⁻¹ r₀` differs from `e₀ ∉ K`, and the compressed bound con
 Classification: `needs-equivalence` (D11, D13).
 
 **(5.6.5)** `‖u* − u_k‖_A ≤ 2 ((√M − √m)/(√M + √m))^k ‖u* − u₀‖_A` (Patterson; quoted).
-Lean (`eq_5_6_5`, under `m < M`). Backbone: `Krylov.IsGalerkinIterate.energyNorm_error_le (hl : 0 < lmin) (hll : lmin < lmax) (hA : A.IsSymmetricBoundedBy lmin lmax) (hx : IsGalerkinIterate A b x₀ m x) (hstar : A xstar = b) : energyNorm A (xstar - x) ≤ 2 * ((√(lmax / lmin) - 1) / (√(lmax / lmin) + 1)) ^ m * energyNorm A (xstar - x₀)`
+Lean (`equation_5_6_5`, under `m < M`). Backbone: `Krylov.IsGalerkinIterate.energyNorm_error_le (hl : 0 < lmin) (hll : lmin < lmax) (hA : A.IsSymmetricBoundedBy lmin lmax) (hx : IsGalerkinIterate A b x₀ m x) (hstar : A xstar = b) : energyNorm A (xstar - x) ≤ 2 * ((√(lmax / lmin) - 1) / (√(lmax / lmin) + 1)) ^ m * energyNorm A (xstar - x₀)`
 (`Numlib/Krylov/Convergence/CG.lean`, any inner product space; the sharp Chebyshev form
 `energyNorm_error_le_div_eval_T` alongside; ingredient `Polynomial.Chebyshev.one_div_eval_T_le_two_mul_pow`,
 `Numlib/RingTheory/Polynomial/ChebyshevMinimax.lean`) with `CG.isGalerkinIterate`.
@@ -666,7 +666,7 @@ Route: `(√(M/m) − 1)/(√(M/m) + 1) = (√M − √m)/(√M + √m)` (`Real.
 Classification: `needs-equivalence` (D11, D13; ratio identity).
 
 **(5.6.6)** `(√M − √m)/(√M + √m) ≤ (M − m)/(M + m)` (Ex 5.6.1).
-Lean (`eq_5_6_6 (hm : 0 < m) (hmM : m ≤ M)`). Backbone: `Krylov.sqrt_ratio_le_ratio (hκ : 1 ≤ κ) : (√κ - 1) / (√κ + 1) ≤ (κ - 1) / (κ + 1)`
+Lean (`equation_5_6_6 (hm : 0 < m) (hmM : m ≤ M)`). Backbone: `Krylov.sqrt_ratio_le_ratio (hκ : 1 ≤ κ) : (√κ - 1) / (√κ + 1) ≤ (κ - 1) / (κ + 1)`
 (`Numlib/Krylov/Convergence/CG.lean`) with `κ = M/m`; or directly: with `s = √m`, `t = √M`,
 `(t−s)(t²+s²) ≤ (t+s)(t²−s²)` ⇔ `0 ≤ 2st`; `div_le_div_iff`,
 `nlinarith [Real.sq_sqrt hm.le, Real.sq_sqrt (hm.le.trans hmM), Real.sqrt_nonneg m, Real.sqrt_nonneg M]`.

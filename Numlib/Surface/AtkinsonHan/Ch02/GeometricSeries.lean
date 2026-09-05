@@ -13,12 +13,12 @@ ring-theoretic `IsUnit` used by the backbone is `isUnit_iff_exists_continuousLin
 
 ## Main results
 
-* `thm_2_3_1` — geometric series theorem, with `(I - L)⁻¹ = ∑ Lⁿ` and (2.3.2).
-* `stability_2_3_4`, `eq_2_3_5` — stability of, and partial-sum approximation for, `(I - L)u = f`.
+* `theorem_2_3_1` — geometric series theorem, with `(I - L)⁻¹ = ∑ Lⁿ` and (2.3.2).
+* `equation_2_3_4`, `equation_2_3_5` — stability of, and partial-sum approximation for, `(I - L)u = f`.
 * `example_2_3_2` — the second-kind equation `(λI - K)u = f` (abstract part).
-* `cor_2_3_3`, `example_2_3_4` — the variants under `‖Lᵐ‖ < 1`.
-* `thm_2_3_5` — the perturbation theorem, with (2.3.13), (2.3.14), (2.3.15).
-* `eq_2_3_16`, `convergence_of_consistent_stable` — consistency plus stability gives convergence.
+* `corollary_2_3_3`, `example_2_3_4` — the variants under `‖Lᵐ‖ < 1`.
+* `theorem_2_3_5` — the perturbation theorem, with (2.3.13), (2.3.14), (2.3.15).
+* `equation_2_3_16`, `convergence_of_consistent_stable` — consistency plus stability gives convergence.
 
 ## Not formalized here
 
@@ -79,7 +79,7 @@ end Units
 /-- **Geometric series theorem** (Theorem 2.3.1). If `V` is a Banach space and `L ∈ 𝓛(V)` has
 `‖L‖ < 1`, then `I - L` is a bijection of `V` onto `V` with bounded inverse, the inverse is the
 sum of the Neumann series `∑ₙ Lⁿ`, and `‖(I - L)⁻¹‖ ≤ 1 / (1 - ‖L‖)`, which is (2.3.2). -/
-theorem thm_2_3_1 [CompleteSpace V] (L : V →L[𝕜] V) (hL : ‖L‖ < 1) :
+theorem theorem_2_3_1 [CompleteSpace V] (L : V →L[𝕜] V) (hL : ‖L‖ < 1) :
     ∃ e : V ≃L[𝕜] V, (e : V →L[𝕜] V) = 1 - L ∧
       HasSum (fun n : ℕ => L ^ n) (e.symm : V →L[𝕜] V) ∧
       ‖(e.symm : V →L[𝕜] V)‖ ≤ 1 / (1 - ‖L‖) := by
@@ -94,10 +94,10 @@ theorem thm_2_3_1 [CompleteSpace V] (L : V →L[𝕜] V) (hL : ‖L‖ < 1) :
 
 /-- Stability of `(I - L)u = f` (the remark (2.3.4) after Theorem 2.3.1): the solution depends
 Lipschitz-continuously on the data, with constant `1 / (1 - ‖L‖)`. -/
-theorem stability_2_3_4 [CompleteSpace V] (L : V →L[𝕜] V) (hL : ‖L‖ < 1) {u₁ u₂ f₁ f₂ : V}
+theorem equation_2_3_4 [CompleteSpace V] (L : V →L[𝕜] V) (hL : ‖L‖ < 1) {u₁ u₂ f₁ f₂ : V}
     (h₁ : (1 - L) u₁ = f₁) (h₂ : (1 - L) u₂ = f₂) :
     ‖u₁ - u₂‖ ≤ 1 / (1 - ‖L‖) * ‖f₁ - f₂‖ := by
-  obtain ⟨e, he, -, hb⟩ := thm_2_3_1 L hL
+  obtain ⟨e, he, -, hb⟩ := theorem_2_3_1 L hL
   have hu : u₁ - u₂ = (e.symm : V →L[𝕜] V) (f₁ - f₂) := by
     rw [map_sub]
     have k₁ : (e.symm : V →L[𝕜] V) f₁ = u₁ := by
@@ -111,10 +111,10 @@ theorem stability_2_3_4 [CompleteSpace V] (L : V →L[𝕜] V) (hL : ‖L‖ < 1
 
 /-- Approximation of the solution of `(I - L)u = f` by the partial sums of the Neumann series
 (2.3.5): `uₙ = ∑_{j ≤ n} Lʲ f → u`. -/
-theorem eq_2_3_5 [CompleteSpace V] (L : V →L[𝕜] V) (hL : ‖L‖ < 1) {u f : V}
+theorem equation_2_3_5 [CompleteSpace V] (L : V →L[𝕜] V) (hL : ‖L‖ < 1) {u f : V}
     (hu : (1 - L) u = f) :
     Tendsto (fun n : ℕ => ∑ j ∈ Finset.range (n + 1), (L ^ j) f) atTop (𝓝 u) := by
-  obtain ⟨e, he, hsum, -⟩ := thm_2_3_1 L hL
+  obtain ⟨e, he, hsum, -⟩ := theorem_2_3_1 L hL
   have hu' : (e.symm : V →L[𝕜] V) f = u := by
     rw [← hu, ← he]; exact e.symm_apply_apply u
   have happ : HasSum (fun n : ℕ => (L ^ n) f) u := by
@@ -137,7 +137,7 @@ theorem example_2_3_2 [CompleteSpace V] (K : V →L[𝕜] V) {lam : 𝕜} (h : �
   have hLnorm : ‖lam⁻¹ • K‖ < 1 := by
     rw [norm_smul, norm_inv, inv_mul_lt_one₀ hlampos]
     exact h
-  obtain ⟨e₀, he₀, -, hb₀⟩ := thm_2_3_1 (lam⁻¹ • K) hLnorm
+  obtain ⟨e₀, he₀, -, hb₀⟩ := theorem_2_3_1 (lam⁻¹ • K) hLnorm
   have hcancel : (e₀ : V →L[𝕜] V) * (e₀.symm : V →L[𝕜] V) = 1 := by
     ext x; exact e₀.apply_symm_apply x
   have hcancel' : (e₀.symm : V →L[𝕜] V) * (e₀ : V →L[𝕜] V) = 1 := by
@@ -186,7 +186,7 @@ set_option linter.unusedVariables false in
 bijection with bounded inverse, and `‖(I - L)⁻¹‖ ≤ (∑_{i<m} ‖Lⁱ‖) / (1 - ‖Lᵐ‖)`, which is
 (2.3.11). The hypothesis `1 ≤ m` is kept for faithfulness; the backbone does not need it, since
 `‖L⁰‖ = ‖1‖ < 1` is impossible in a nontrivial space. -/
-theorem cor_2_3_3 [CompleteSpace V] (L : V →L[𝕜] V) {m : ℕ} (hm : 1 ≤ m) (hL : ‖L ^ m‖ < 1) :
+theorem corollary_2_3_3 [CompleteSpace V] (L : V →L[𝕜] V) {m : ℕ} (hm : 1 ≤ m) (hL : ‖L ^ m‖ < 1) :
     ∃ e : V ≃L[𝕜] V, (e : V →L[𝕜] V) = 1 - L ∧
       ‖(e.symm : V →L[𝕜] V)‖ ≤ (∑ i ∈ Finset.range m, ‖L ^ i‖) / (1 - ‖L ^ m‖) := by
   have hden : 0 < 1 - ‖L ^ m‖ := by linarith
@@ -207,7 +207,7 @@ theorem example_2_3_4 [CompleteSpace V] (L : V →L[𝕜] V)
     (h : Tendsto (fun k : ℕ => ‖L ^ k‖) atTop (𝓝 0)) :
     ∃ e : V ≃L[𝕜] V, (e : V →L[𝕜] V) = 1 - L := by
   obtain ⟨m, hm⟩ := ((h.eventually (gt_mem_nhds one_pos)).and (eventually_ge_atTop 1)).exists
-  obtain ⟨e, he, -⟩ := cor_2_3_3 L hm.2 hm.1
+  obtain ⟨e, he, -⟩ := corollary_2_3_3 L hm.2 hm.1
   exact ⟨e, he⟩
 
 /-! ### Theorem 2.3.5 -/
@@ -223,7 +223,7 @@ bijection with bounded inverse, and
 `‖M⁻¹‖ ≤ ‖L⁻¹‖ / (1 - ‖L⁻¹‖ ‖L - M‖)` (2.3.13),
 `‖L⁻¹ - M⁻¹‖ ≤ ‖L⁻¹‖² ‖L - M‖ / (1 - ‖L⁻¹‖ ‖L - M‖)` (2.3.14),
 `‖v₁ - v₂‖ ≤ ‖M⁻¹‖ ‖(L - M) v₁‖` whenever `L v₁ = w = M v₂` (2.3.15). -/
-theorem thm_2_3_5 (hc : CompleteSpace V ∨ CompleteSpace W) (L : V ≃L[𝕜] W) (M : V →L[𝕜] W)
+theorem theorem_2_3_5 (hc : CompleteSpace V ∨ CompleteSpace W) (L : V ≃L[𝕜] W) (M : V →L[𝕜] W)
     (hM : ‖M - (L : V →L[𝕜] W)‖ < 1 / ‖(L.symm : W →L[𝕜] V)‖) :
     ∃ e : V ≃L[𝕜] W, (e : V →L[𝕜] W) = M ∧
       ‖(e.symm : W →L[𝕜] V)‖ ≤
@@ -265,7 +265,7 @@ the error obeys `‖v - vₙ‖ ≤ ‖Lₙ⁻¹‖ ‖(L - Lₙ) v‖`.
 
 The inverses are produced as a family `eₙ`, which is exactly the data
 `convergence_of_consistent_stable` consumes, so the two halves of (2.3.16) compose. -/
-theorem eq_2_3_16 (hc : CompleteSpace V ∨ CompleteSpace W) (L : V ≃L[𝕜] W)
+theorem equation_2_3_16 (hc : CompleteSpace V ∨ CompleteSpace W) (L : V ≃L[𝕜] W)
     (Ln : ℕ → V →L[𝕜] W)
     (hLn : Tendsto (fun n => ‖(L : V →L[𝕜] W) - Ln n‖) atTop (𝓝 0)) :
     ∃ N : ℕ, ∃ en : ∀ n, N ≤ n → (V ≃L[𝕜] W),
@@ -297,12 +297,12 @@ theorem eq_2_3_16 (hc : CompleteSpace V ∨ CompleteSpace W) (L : V ≃L[𝕜] W
     have hlt : ‖Ln n - (L : V →L[𝕜] W)‖ < 1 / ‖(L.symm : W →L[𝕜] V)‖ := by
       rw [norm_sub_rev]
       exact hN n hn
-    obtain ⟨e, he, -, -, hb⟩ := thm_2_3_5 hc L (Ln n) hlt
+    obtain ⟨e, he, -, -, hb⟩ := theorem_2_3_5 hc L (Ln n) hlt
     exact ⟨e, he, hb⟩
 
 /-- **(2.3.16), second part.** Consistency (`‖(L - Lₙ) v‖ → 0`) together with stability (a uniform
 bound on `‖Lₙ⁻¹‖`) implies convergence `vₙ → v` of the approximate solutions. The families `eₙ`
-and `vₙ` are only defined for `n ≥ N`, as `eq_2_3_16` provides them, and the conclusion is indexed
+and `vₙ` are only defined for `n ≥ N`, as `equation_2_3_16` provides them, and the conclusion is indexed
 accordingly. -/
 theorem convergence_of_consistent_stable (hc : CompleteSpace V ∨ CompleteSpace W)
     (L : V ≃L[𝕜] W) (Ln : ℕ → V →L[𝕜] W) (N : ℕ) (en : ∀ n, N ≤ n → (V ≃L[𝕜] W))

@@ -7,16 +7,16 @@ id = "Z"
 id = "dqgmres"
 
 [[node]]
-id = "eq_6_53"
+id = "equation_6_53"
 
 [[node]]
-id = "eq_6_54"
+id = "equation_6_54"
 
 [[node]]
-id = "eq_6_55"
+id = "equation_6_55"
 
 [[node]]
-id = "p_6_25"
+id = "problem_6_25"
 
 [[node]]
 id = "qgmres"

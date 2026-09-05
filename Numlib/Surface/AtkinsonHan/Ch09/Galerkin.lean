@@ -143,7 +143,7 @@ theorem galerkin_orthogonality (hM : a.IsBoundedWith M) (hu : ∀ v, a u v = ℓ
 
 /-- Céa's inequality (9.1.11), pointwise form: `‖u − u_N‖ ≤ (M/c₀) ‖u − v‖` for every
 `v ∈ V_N`. -/
-theorem prop_9_1_3_le (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀) (ha : a.IsEllipticWith c₀)
+theorem proposition_9_1_3_le (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀) (ha : a.IsEllipticWith c₀)
     (hu : ∀ v, a u v = ℓ v) (huN : GalerkinProblem a ℓ VN uN) {v : V} (hv : v ∈ VN) :
     ‖u - uN‖ ≤ M / c₀ * ‖u - v‖ :=
   IsGalerkinSolution.norm_sub_le hc₀ (BilinForm.isBoundedWith_toCLM hM) ha huN hu hv
@@ -154,7 +154,7 @@ private theorem iInf_norm_sub_eq_infDist (u : V) (K : Submodule ℝ V) :
 
 /-- Proposition 9.1.3, Céa's inequality (9.1.11): the Galerkin error is quasi-optimal, with the
 constant `c = M/c₀`.  Neither finite-dimensionality of `V_N` nor completeness of `V` is used. -/
-theorem prop_9_1_3 (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀) (ha : a.IsEllipticWith c₀)
+theorem proposition_9_1_3 (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀) (ha : a.IsEllipticWith c₀)
     (hu : ∀ v, a u v = ℓ v) (huN : GalerkinProblem a ℓ VN uN) :
     ‖u - uN‖ ≤ M / c₀ * ⨅ v : VN, ‖u - (v : V)‖ := by
   rw [iInf_norm_sub_eq_infDist]
@@ -209,7 +209,7 @@ theorem galerkin_eq_energyProjection [CompleteSpace V] (hM : a.IsBoundedWith M)
 
 /-- The symmetric sharpening of Céa's inequality: the constant improves from `M/c₀` to
 `√(M/c₀)`. -/
-theorem prop_9_1_3_sqrt (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀) (ha : a.IsEllipticWith c₀)
+theorem proposition_9_1_3_sqrt (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀) (ha : a.IsEllipticWith c₀)
     (hs : LinearMap.BilinForm.IsSymm a) (hu : ∀ v, a u v = ℓ v)
     (huN : GalerkinProblem a ℓ VN uN) {v : V} (hv : v ∈ VN) :
     ‖u - uN‖ ≤ Real.sqrt (M / c₀) * ‖u - v‖ :=
@@ -220,7 +220,7 @@ theorem prop_9_1_3_sqrt (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀) (ha : a.IsEl
 
 /-- Corollary 9.1.4, (9.1.13)–(9.1.14): if the trial spaces increase and their union is dense,
 the Galerkin solutions converge to the exact solution. -/
-theorem cor_9_1_4 (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀) (ha : a.IsEllipticWith c₀)
+theorem corollary_9_1_4 (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀) (ha : a.IsEllipticWith c₀)
     (ℓ : StrongDual ℝ V) (VN : ℕ → Submodule ℝ V) (hmono : Monotone VN)
     (hdense : Dense (⋃ n, (VN n : Set V))) (hu : ∀ v, a u v = ℓ v) (uN : ℕ → V)
     (huN : ∀ n, GalerkinProblem a ℓ (VN n) (uN n)) :

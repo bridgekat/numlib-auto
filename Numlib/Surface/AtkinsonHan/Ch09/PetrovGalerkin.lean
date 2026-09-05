@@ -98,7 +98,7 @@ theorem petrovGalerkin_orthogonality (hu : ∀ v, a u v = ℓ v)
 /-- Theorem 9.2.1 (Babuška), part 1: with `dim U_N = dim V_N` and the discrete inf–sup condition
 (9.2.6), the Petrov–Galerkin problem (9.2.5) has a unique solution.  Completeness of `U` and `V`
 and the continuous conditions (9.2.3)–(9.2.4) are not used here. -/
-theorem thm_9_2_1_existsUnique [FiniteDimensional ℝ UN] [FiniteDimensional ℝ VN]
+theorem theorem_9_2_1_existsUnique [FiniteDimensional ℝ UN] [FiniteDimensional ℝ VN]
     (hM : a.IsBoundedWith M) (hdim : Module.finrank ℝ UN = Module.finrank ℝ VN) (hαN : 0 < αN)
     (hinfsup : DiscreteInfSup a UN VN αN) (ℓ : StrongDual ℝ V) :
     ∃! uN, PetrovGalerkinProblem a ℓ UN VN uN :=
@@ -107,7 +107,7 @@ theorem thm_9_2_1_existsUnique [FiniteDimensional ℝ UN] [FiniteDimensional ℝ
 
 /-- Theorem 9.2.1 (Babuška), estimate (9.2.7), pointwise form:
 `‖u − u_N‖ ≤ (1 + M/α_N) ‖u − w_N‖` for every `w_N ∈ U_N`. -/
-theorem thm_9_2_1_le [FiniteDimensional ℝ UN] [FiniteDimensional ℝ VN] (hM0 : 0 ≤ M)
+theorem theorem_9_2_1_le [FiniteDimensional ℝ UN] [FiniteDimensional ℝ VN] (hM0 : 0 ≤ M)
     (hM : a.IsBoundedWith M) (hdim : Module.finrank ℝ UN = Module.finrank ℝ VN) (hαN : 0 < αN)
     (hinfsup : DiscreteInfSup a UN VN αN) (huN : PetrovGalerkinProblem a ℓ UN VN uN)
     (hu : ∀ v, a u v = ℓ v) {w : U} (hw : w ∈ UN) :
@@ -117,7 +117,7 @@ theorem thm_9_2_1_le [FiniteDimensional ℝ UN] [FiniteDimensional ℝ VN] (hM0 
 
 /-- Theorem 9.2.1 (Babuška): unique solvability of (9.2.5) together with the quasi-optimal error
 bound (9.2.7) `‖u − u_N‖_U ≤ (1 + M/α_N) inf_{w_N ∈ U_N} ‖u − w_N‖_U`. -/
-theorem thm_9_2_1 [FiniteDimensional ℝ UN] [FiniteDimensional ℝ VN] (hM0 : 0 ≤ M)
+theorem theorem_9_2_1 [FiniteDimensional ℝ UN] [FiniteDimensional ℝ VN] (hM0 : 0 ≤ M)
     (hM : a.IsBoundedWith M) (hdim : Module.finrank ℝ UN = Module.finrank ℝ VN) (hαN : 0 < αN)
     (hinfsup : DiscreteInfSup a UN VN αN) (ℓ : StrongDual ℝ V) (hu : ∀ v, a u v = ℓ v) :
     (∃! uN, PetrovGalerkinProblem a ℓ UN VN uN) ∧
@@ -126,10 +126,10 @@ theorem thm_9_2_1 [FiniteDimensional ℝ UN] [FiniteDimensional ℝ VN] (hM0 : 0
   have hC : 0 < 1 + M / αN := by
     have : 0 ≤ M / αN := div_nonneg hM0 hαN.le
     linarith
-  refine ⟨thm_9_2_1_existsUnique hM hdim hαN hinfsup ℓ, fun uN huN => ?_⟩
+  refine ⟨theorem_9_2_1_existsUnique hM hdim hαN hinfsup ℓ, fun uN huN => ?_⟩
   have hkey : ∀ w : UN, ‖u - uN‖ / (1 + M / αN) ≤ ‖u - (w : U)‖ := fun w => by
     rw [div_le_iff₀ hC, mul_comm]
-    exact thm_9_2_1_le hM0 hM hdim hαN hinfsup huN hu w.2
+    exact theorem_9_2_1_le hM0 hM hdim hαN hinfsup huN hu w.2
   have hle := le_ciInf hkey
   rw [div_le_iff₀ hC] at hle
   linarith [hle]
@@ -146,7 +146,7 @@ theorem one_add_div_le (hM0 : 0 ≤ M) :
 
 /-- Corollary 9.2.3, (9.2.11)–(9.2.12): under a uniform discrete inf–sup condition and with trial
 spaces that increase and have dense union, the Petrov–Galerkin solutions converge. -/
-theorem cor_9_2_3 (a : BilinForm₂ U V) (ℓ : StrongDual ℝ V) {M α₀ : ℝ} (hM0 : 0 ≤ M)
+theorem corollary_9_2_3 (a : BilinForm₂ U V) (ℓ : StrongDual ℝ V) {M α₀ : ℝ} (hM0 : 0 ≤ M)
     (hM : a.IsBoundedWith M) (hα₀ : 0 < α₀) (UN : ℕ → Submodule ℝ U) (VN : ℕ → Submodule ℝ V)
     [∀ i, FiniteDimensional ℝ (UN i)] [∀ i, FiniteDimensional ℝ (VN i)]
     (hdim : ∀ i, Module.finrank ℝ (UN i) = Module.finrank ℝ (VN i)) (αN : ℕ → ℝ)

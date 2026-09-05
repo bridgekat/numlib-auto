@@ -474,7 +474,7 @@ private theorem subspace_le_dirSpan (k : ℕ)
       exact pow_apply_mem_dirSpan b x₀ k (fun i hi => hmem i (by omega)) ih
 
 /-- The first `k` conjugate residual directions span the Krylov space:
-`span {p_0, …, p_{k-1}} = 𝒦_k(A, r₀)`. This is what turns the orthogonality relations — which only
+`span {problem_0, …, p_{k-1}} = 𝒦_k(A, r₀)`. This is what turns the orthogonality relations — which only
 say that `r_k` is `A`-orthogonal to the earlier directions — into the minimal-residual property
 `CR.isMinResIterate`, since orthogonality to the span is what the specification asks for.
 Degenerate steps cost nothing: a direction whose image under `A` dies contributes no new
@@ -751,7 +751,7 @@ end CR
 
 namespace Krylov
 
-/-- Saad, *Iterative Methods*, Lemma 6.21 (GCR / ORTHOMIN / ORTHODIR): if `p_0, …, p_{m-1}` are
+/-- Saad, *Iterative Methods*, Lemma 6.21 (GCR / ORTHOMIN / ORTHODIR): if `problem_0, …, p_{m-1}` are
 `AᴴA`-orthogonal and
 span `𝒦_m(A, r₀)`, then `x_m = x₀ + ∑_j (⟪r_j, A p_j⟫ / ‖A p_j‖²) p_j` (with `r_j` the
 successive residuals) is the minimal-residual iterate. -/

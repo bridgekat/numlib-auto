@@ -1,7 +1,7 @@
 namespace = "SaadSparse.Ch04"
 
 [[node]]
-id = "thm_4_1_mp"
+id = "theorem_4_1_mp"
 
 [[node]]
-id = "thm_4_1_mpr"
+id = "theorem_4_1_mpr"

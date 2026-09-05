@@ -94,7 +94,7 @@ theorem sdStep_min (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b) (x 
   have hpr : A.IsPositiveReal := by
     rw [Matrix.isPositiveReal_iff_isCoercive]
     exact ((Matrix.posDef_iff_isSymmetricCoercive A).mp hA).isCoercive
-  exact ((prop_5_2 hA hstar).mp (sdStep_isProjectionApprox hpr b x)).2 y hy
+  exact ((proposition_5_2 hA hstar).mp (sdStep_isProjectionApprox hpr b x)).2 y hy
 
 /-- Saad, Algorithm 5.3: each minimal-residual step minimizes the residual norm along the
 residual line. -/
@@ -138,7 +138,7 @@ theorem lemma_5_8 {B : Matrix (Fin n) (Fin n) ℝ} (hB : B.PosDef) (x : Fin n �
 
 /-- Saad, Theorem 5.9: the steepest-descent step contracts the energy norm of the error by the
 factor `(λ_max - λ_min)/(λ_max + λ_min)`. -/
-theorem thm_5_9_step (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b) (x : E n) :
+theorem theorem_5_9_step (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b) (x : E n) :
     E_A A xstar (sdStep A b x) ≤
       (lambdaMax hA.1 - lambdaMin hA.1) / (lambdaMax hA.1 + lambdaMin hA.1) *
         E_A A xstar x := by
@@ -149,7 +149,7 @@ theorem thm_5_9_step (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b) (
     hstar x
 
 /-- The contraction factor of Theorem 5.9 lies in `[0, 1)`. -/
-theorem thm_5_9_factor_lt_one {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.PosDef) :
+theorem theorem_5_9_factor_lt_one {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.PosDef) :
     0 ≤ (lambdaMax hH.1 - lambdaMin hH.1) / (lambdaMax hH.1 + lambdaMin hH.1) ∧
       (lambdaMax hH.1 - lambdaMin hH.1) / (lambdaMax hH.1 + lambdaMin hH.1) < 1 := by
   have hl : 0 < lambdaMin hH.1 := by
@@ -162,16 +162,16 @@ theorem thm_5_9_factor_lt_one {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.PosDef) :
   linarith
 
 /-- Saad, Theorem 5.9: geometric decay of the energy norm of the error along Algorithm 5.2. -/
-theorem thm_5_9 (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b) (x₀ : E n) (k : ℕ) :
+theorem theorem_5_9 (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b) (x₀ : E n) (k : ℕ) :
     E_A A xstar ((sdStep A b)^[k] x₀) ≤
       ((lambdaMax hA.1 - lambdaMin hA.1) / (lambdaMax hA.1 + lambdaMin hA.1)) ^ k *
         E_A A xstar x₀ := by
-  obtain ⟨hnn, -⟩ := thm_5_9_factor_lt_one hA
+  obtain ⟨hnn, -⟩ := theorem_5_9_factor_lt_one hA
   induction k with
   | zero => simp
   | succ k ih =>
     rw [Function.iterate_succ_apply', pow_succ]
-    refine (thm_5_9_step hA hstar _).trans ?_
+    refine (theorem_5_9_step hA hstar _).trans ?_
     calc (lambdaMax hA.1 - lambdaMin hA.1) / (lambdaMax hA.1 + lambdaMin hA.1) *
             E_A A xstar ((sdStep A b)^[k] x₀)
         ≤ (lambdaMax hA.1 - lambdaMin hA.1) / (lambdaMax hA.1 + lambdaMin hA.1) *
@@ -182,12 +182,12 @@ theorem thm_5_9 (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b) (x₀ 
             E_A A xstar x₀ := by ring
 
 /-- Saad, Theorem 5.9: Algorithm 5.2 converges to the solution from every starting vector. -/
-theorem thm_5_9_tendsto (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b) (x₀ : E n) :
+theorem theorem_5_9_tendsto (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b) (x₀ : E n) :
     Tendsto (fun k => (sdStep A b)^[k] x₀) atTop (𝓝 xstar) := by
   have hl : 0 < lambdaMin hA.1 := by
     rw [lambdaMin, Finset.lt_inf'_iff]
     exact fun i _ => Matrix.PosDef.eigenvalues_pos hA i
-  obtain ⟨hnn, hlt⟩ := thm_5_9_factor_lt_one hA
+  obtain ⟨hnn, hlt⟩ := theorem_5_9_factor_lt_one hA
   set ρ := (lambdaMax hA.1 - lambdaMin hA.1) / (lambdaMax hA.1 + lambdaMin hA.1) with hρ
   have hs : 0 < Real.sqrt (lambdaMin hA.1) := Real.sqrt_pos.mpr hl
   have hcoer : (toEuclideanLin A).IsCoerciveWith (lambdaMin hA.1) :=
@@ -197,7 +197,7 @@ theorem thm_5_9_tendsto (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b
     intro k
     have h1 := hcoer.norm_le_energyNorm hl.le (xstar - (sdStep A b)^[k] x₀)
     have h2 : energyNorm (toEuclideanLin A) (xstar - (sdStep A b)^[k] x₀)
-        ≤ ρ ^ k * E_A A xstar x₀ := thm_5_9 hA hstar x₀ k
+        ≤ ρ ^ k * E_A A xstar x₀ := theorem_5_9 hA hstar x₀ k
     rw [← norm_neg, neg_sub, inv_mul_eq_div, le_div_iff₀ hs, mul_comm]
     exact h1.trans h2
   rw [← tendsto_sub_nhds_zero_iff]
@@ -228,7 +228,7 @@ theorem lambdaMin_hermitianPart_pos (hA : A.IsPositiveReal) :
 open scoped Matrix.Norms.L2Operator in
 /-- Saad, Theorem 5.10: the minimal-residual step contracts the residual by the factor
 `(1 - μ²/σ²)^{1/2}` with `μ = λ_min((A + Aᵀ)/2)` and `σ = ‖A‖₂`. -/
-theorem thm_5_10_step (hA : A.IsPositiveReal) (b x : E n) :
+theorem theorem_5_10_step (hA : A.IsPositiveReal) (b x : E n) :
     ‖b - (A ⬝ mrStep A b x)‖ ≤
       Real.sqrt (1 - lambdaMin (Matrix.hermitianPart_isHermitian A) ^ 2 / ‖A‖ ^ 2) *
         ‖b - (A ⬝ x)‖ := by

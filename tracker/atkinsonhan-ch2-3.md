@@ -25,8 +25,8 @@ Conventions used below.
   book `(v, u)` = Mathlib `inner 𝕜 u v`. All surface statements are written in Mathlib's convention with this swap.
 * Operators: `𝓛(V, W)` = `V →L[𝕜] W`; "bijection with bounded inverse" = `∃ e : V ≃L[𝕜] W, (e : V →L[𝕜] W) = L`;
   `V'` = `StrongDual 𝕜 V`; `Vᗮ` = `Submodule.orthogonal`.
-* Naming: `AtkinsonHan.Ch02.thm_2_3_1`, `cor_2_3_3`, `lem_3_4_1`, `prop_3_6_9_a`, `example_3_6_7`, `exercise_3_6_7`,
-  `eq_2_3_13` (numbered inequalities); book numbers appear only in the surface, per `plans/backbone.md` §1.4.
+* Naming: `AtkinsonHan.Ch02.thm_2_3_1`, `corollary_2_3_3`, `lemma_3_4_1`, `proposition_3_6_9_a`, `example_3_6_7`, `exercise_3_6_7`,
+  `equation_2_3_13` (numbered inequalities); book numbers appear only in the surface, per `plans/backbone.md` §1.4.
 * Backbone results in a normed ring `R` (`Numlib/Analysis/Normed/Ring/Inverse.lean`, `CondNumber.lean`) assume
   `[NormOneClass R]`; for `R = V →L[𝕜] V` this is the instance `ContinuousLinearMap.normOneClass`, available for
   nontrivial `V`. Surface statements that go through them either assume `[Nontrivial V]` or treat the trivial space
@@ -121,7 +121,7 @@ Each entry: book formulation → surface definition → Mathlib/backbone counter
     is the nearest. Their theory is Deferred items 3 and 6.
 
 13. **Projection onto a closed convex set `P_K`** (after Thm 3.4.3; nonlinear).
-    Surface: `noncomputable def projConvex (K) (hne : K.Nonempty) (hcl : IsClosed K) (hK : Convex ℝ K) : H → H := fun u => (thm_3_4_3 hne hcl hK u).choose`,
+    Surface: `noncomputable def projConvex (K) (hne : K.Nonempty) (hcl : IsClosed K) (hK : Convex ℝ K) : H → H := fun u => (theorem_3_4_3 hne hcl hK u).choose`,
     spec `isBestApprox_projConvex`. Backbone: none (`Numlib/Approximation/BestApprox.lean` works with the predicate `IsBestApprox` only);
     Mathlib: none (only the existence theorem).
     Equivalence: for a complete subspace, `projConvex K … u = K.starProjection u` (backbone `IsBestApprox.eq_starProjection`).
@@ -187,7 +187,7 @@ any phase; reason given).
 `(I − L)⁻¹ = ∑ₙ Lⁿ` (in `𝓛(V)`), and `‖(I − L)⁻¹‖ ≤ 1/(1 − ‖L‖)` (2.3.2).
 *Lean surface statement:*
 ```lean
-theorem thm_2_3_1 [CompleteSpace V] (L : V →L[𝕜] V) (hL : ‖L‖ < 1) :
+theorem theorem_2_3_1 [CompleteSpace V] (L : V →L[𝕜] V) (hL : ‖L‖ < 1) :
     ∃ e : V ≃L[𝕜] V, (e : V →L[𝕜] V) = 1 - L ∧
       HasSum (fun n : ℕ => L ^ n) (e.symm : V →L[𝕜] V) ∧ ‖(e.symm : V →L[𝕜] V)‖ ≤ 1 / (1 - ‖L‖)
 ```
@@ -203,8 +203,8 @@ via item 1's `Ring.inverse_unit`.
 
 **(2.3.4)–(2.3.5) Stability and partial-sum approximation** (remarks after Thm 2.3.1, stated as results).
 *Book.* Under Thm 2.3.1, `(I − L)u = f` has a unique solution, `‖u₁ − u₂‖ ≤ ‖f₁ − f₂‖/(1 − ‖L‖)`, and `uₙ := ∑_{j≤n} Lʲ f → u`.
-*Lean.* `theorem eq_2_3_5 … (hu : (1 - L) u = f) : Tendsto (fun n => ∑ j ∈ Finset.range (n + 1), (L ^ j) f) atTop (𝓝 u)` and
-`theorem stability_2_3_4 … : ‖u₁ - u₂‖ ≤ (1 / (1 - ‖L‖)) * ‖f₁ - f₂‖`.
+*Lean.* `theorem equation_2_3_5 … (hu : (1 - L) u = f) : Tendsto (fun n => ∑ j ∈ Finset.range (n + 1), (L ^ j) f) atTop (𝓝 u)` and
+`theorem equation_2_3_4 … : ‖u₁ - u₂‖ ≤ (1 / (1 - ‖L‖)) * ‖f₁ - f₂‖`.
 *Backbone/Mathlib.* `HasSum.tendsto_sum_nat` applied to `(fun n => L ^ n)` composed with evaluation at `f` (`ContinuousLinearMap.apply`), `ContinuousLinearMap.le_opNorm`.
 *Classification:* direct.
 
@@ -218,7 +218,7 @@ via item 1's `Ring.inverse_unit`.
 **Corollary 2.3.3 (`‖Lᵐ‖ < 1`).**
 *Book.* `V` Banach, `L ∈ 𝓛(V)`, `m ≥ 1`, `‖Lᵐ‖ < 1` (2.3.10). Then `I − L` bijective with bounded inverse and
 `‖(I − L)⁻¹‖ ≤ (∑_{i=0}^{m−1} ‖Lⁱ‖)/(1 − ‖Lᵐ‖)` (2.3.11).
-*Lean:* `theorem cor_2_3_3 [CompleteSpace V] (L) {m : ℕ} (hm : 1 ≤ m) (hL : ‖L ^ m‖ < 1) : ∃ e : V ≃L[𝕜] V, ↑e = 1 - L ∧ ‖(e.symm : V →L[𝕜] V)‖ ≤ (∑ i ∈ Finset.range m, ‖L ^ i‖) / (1 - ‖L ^ m‖)`.
+*Lean:* `theorem corollary_2_3_3 [CompleteSpace V] (L) {m : ℕ} (hm : 1 ≤ m) (hL : ‖L ^ m‖ < 1) : ∃ e : V ≃L[𝕜] V, ↑e = 1 - L ∧ ‖(e.symm : V →L[𝕜] V)‖ ≤ (∑ i ∈ Finset.range m, ‖L ^ i‖) / (1 - ‖L ^ m‖)`.
 *Backbone.* `NormedRing.isUnit_one_sub_of_norm_pow_lt_one {t : R} {m : ℕ} (h : ‖t ^ m‖ < 1) : IsUnit (1 - t)` and
 `NormedRing.norm_inverse_one_sub_le_of_norm_pow_lt_one (h : ‖t ^ m‖ < 1) : ‖Ring.inverse (1 - t)‖ ≤ (∑ i ∈ Finset.range m, ‖t ^ i‖) / (1 - ‖t ^ m‖)`
 (`Numlib/Analysis/Normed/Ring/Inverse.lean`), exactly the book's (2.3.11); the backbone needs no `1 ≤ m` (for `m = 0` the hypothesis
@@ -239,7 +239,7 @@ via item 1's `Ring.inverse_unit`.
 and for `Lv₁ = w = Mv₂`: `‖v₁ − v₂‖ ≤ ‖M⁻¹‖‖(L − M)v₁‖` (2.3.15).
 *Lean:*
 ```lean
-theorem thm_2_3_5 (hc : CompleteSpace V ∨ CompleteSpace W) (L : V ≃L[𝕜] W) (M : V →L[𝕜] W)
+theorem theorem_2_3_5 (hc : CompleteSpace V ∨ CompleteSpace W) (L : V ≃L[𝕜] W) (M : V →L[𝕜] W)
     (hM : ‖M - L‖ < 1 / ‖(L.symm : W →L[𝕜] V)‖) :
     ∃ e : V ≃L[𝕜] W, (e : V →L[𝕜] W) = M ∧
       ‖(e.symm : W →L[𝕜] V)‖ ≤ ‖(L.symm : W →L[𝕜] V)‖ / (1 - ‖(L.symm : W →L[𝕜] V)‖ * ‖(L : V →L[𝕜] W) - M‖) ∧
@@ -274,7 +274,7 @@ to `e := ContinuousLinearEquiv.refl 𝕜 W` (`‖(refl).symm‖ ≤ 1`, `Continu
 *Book.* `Lv = w` exact, `Lₙ → L` in `𝓛(V,W)`; for `n` large `Lₙvₙ = w` uniquely solvable and
 `‖v − vₙ‖ ≤ ‖Lₙ⁻¹‖‖(L − Lₙ)v‖`; if `‖(L − Lₙ)v‖ → 0` (consistency) and `sup ‖Lₙ⁻¹‖ < ∞` (stability) then `vₙ → v`.
 Dual reading: a posteriori bound `‖v − vₙ‖ ≤ ‖M⁻¹‖‖(M − Mₙ)vₙ‖`.
-*Lean* (first part): `theorem eq_2_3_16 (hc) (L : V ≃L[𝕜] W) (Ln : ℕ → V →L[𝕜] W) (hLn : Tendsto (fun n => ‖(L : V →L[𝕜] W) - Ln n‖) atTop (𝓝 0)) : ∃ N, ∃ en : ∀ n ≥ N, V ≃L[𝕜] W, (∀ n hn, (en n hn : V →L[𝕜] W) = Ln n) ∧ ∀ w v (vn : ∀ n ≥ N, V), L v = w → (∀ n hn, Ln n (vn n hn) = w) → ∀ n hn, ‖v - vn n hn‖ ≤ ‖((en n hn).symm : W →L[𝕜] V)‖ * ‖((L : V →L[𝕜] W) - Ln n) v‖`;
+*Lean* (first part): `theorem equation_2_3_16 (hc) (L : V ≃L[𝕜] W) (Ln : ℕ → V →L[𝕜] W) (hLn : Tendsto (fun n => ‖(L : V →L[𝕜] W) - Ln n‖) atTop (𝓝 0)) : ∃ N, ∃ en : ∀ n ≥ N, V ≃L[𝕜] W, (∀ n hn, (en n hn : V →L[𝕜] W) = Ln n) ∧ ∀ w v (vn : ∀ n ≥ N, V), L v = w → (∀ n hn, Ln n (vn n hn) = w) → ∀ n hn, ‖v - vn n hn‖ ≤ ‖((en n hn).symm : W →L[𝕜] V)‖ * ‖((L : V →L[𝕜] W) - Ln n) v‖`;
 second part `convergence_of_consistent_stable`: add `(hcons : Tendsto (fun n => ‖((L : V →L[𝕜] W) - Ln n) v‖) atTop (𝓝 0)) (hstab : ∃ C, ∀ n hn, ‖((en n hn).symm : W →L[𝕜] V)‖ ≤ C)` and conclude `Tendsto (fun n => ‖v - vn n‖) atTop (𝓝 0)` (indexing via `n + N`).
 *Backbone.* `ContinuousLinearEquiv.norm_sub_le_of_apply_eq` (the pointwise bound) and Thm 2.3.5 for the invertibility of `Ln n`.
 *Proof route.* `hLn` eventually `< 1/‖L.symm‖`; Thm 2.3.5 pointwise in `n`; squeeze.
@@ -289,7 +289,7 @@ second part `convergence_of_consistent_stable`: add `(hcons : Tendsto (fun n => 
 *Book.* `V` normed, `V̂` its completion, `W` Banach, `L ∈ 𝓛(V,W)`. There is a unique `L̂ ∈ 𝓛(V̂,W)` with `L̂v = Lv` on `V` and `‖L̂‖ = ‖L‖`.
 *Lean* (with `V̂ := UniformSpace.Completion V`):
 ```lean
-theorem thm_2_4_1 [CompleteSpace W] (L : V →L[𝕜] W) :
+theorem theorem_2_4_1 [CompleteSpace W] (L : V →L[𝕜] W) :
     ∃ Lhat : UniformSpace.Completion V →L[𝕜] W, (∀ v : V, Lhat v = L v) ∧ ‖Lhat‖ = ‖L‖ ∧
       ∀ L' : UniformSpace.Completion V →L[𝕜] W, (∀ v : V, L' v = L v) → L' = Lhat
 ```
@@ -306,37 +306,37 @@ planned in any phase, `plans/backbone.md` §7).
 
 **Theorem 2.4.3 (open mapping / bounded inverse).**
 *Book.* `V, W` Banach, `L ∈ 𝓛(V,W)` bijective ⇒ `L⁻¹ ∈ 𝓛(W,V)`.
-*Lean:* `theorem thm_2_4_3 [CompleteSpace V] [CompleteSpace W] (L : V →L[𝕜] W) (hL : Function.Bijective L) : ∃ e : V ≃L[𝕜] W, (e : V →L[𝕜] W) = L`.
+*Lean:* `theorem theorem_2_4_3 [CompleteSpace V] [CompleteSpace W] (L : V →L[𝕜] W) (hL : Function.Bijective L) : ∃ e : V ≃L[𝕜] W, (e : V →L[𝕜] W) = L`.
 *Mathlib.* `ContinuousLinearEquiv.ofBijective` (`hinj : L.ker = ⊥`, `hsurj : L.range = ⊤`; `LinearMap.ker_eq_bot`, `LinearMap.range_eq_top`),
 `coe_ofBijective`; also `ContinuousLinearMap.isOpenMap`, `LinearEquiv.toContinuousLinearEquivOfContinuous`, `ContinuousLinearMap.isUnit_iff_bijective`.
 *Classification:* direct.
 
 **Stability bound after Thm 2.4.3** (`Lv = w`, `Lv̂ = ŵ` ⇒ `‖v − v̂‖ ≤ ‖L⁻¹‖‖w − ŵ‖`).
-*Lean.* `theorem stability_2_4 (L : V ≃L[𝕜] W) (v vhat : V) : ‖v - vhat‖ ≤ ‖(L.symm : W →L[𝕜] V)‖ * ‖L v - L vhat‖`. *Mathlib:* `ContinuousLinearMap.le_opNorm`, `map_sub`. *Classification:* direct.
+*Lean.* `theorem stability_of_isomorphism (L : V ≃L[𝕜] W) (v vhat : V) : ‖v - vhat‖ ≤ ‖(L.symm : W →L[𝕜] V)‖ * ‖L v - L vhat‖`. *Mathlib:* `ContinuousLinearMap.le_opNorm`, `map_sub`. *Classification:* direct.
 
 **(2.4.1) Relative error bound and `cond(L) ≥ 1`.**
 *Book.* `‖v − v̂‖/‖v‖ ≤ ‖L⁻¹‖‖L‖ · ‖w − ŵ‖/‖w‖`; `cond(L) ≡ ‖L⁻¹‖‖L‖ ≥ 1` (since `‖L⁻¹L‖ = ‖I‖ = 1`).
-*Lean:* `theorem eq_2_4_1 (L : V ≃L[𝕜] W) {v vhat : V} (hv : v ≠ 0) : ‖v - vhat‖ / ‖v‖ ≤ cond L * (‖L v - L vhat‖ / ‖L v‖)`;
+*Lean:* `theorem equation_2_4_1 (L : V ≃L[𝕜] W) {v vhat : V} (hv : v ≠ 0) : ‖v - vhat‖ / ‖v‖ ≤ cond L * (‖L v - L vhat‖ / ‖L v‖)`;
 `theorem one_le_cond [Nontrivial V] (L : V ≃L[𝕜] W) : 1 ≤ cond L`.
 *Backbone/Mathlib.* `relative_error_le_condNumber_mul_relative_residual (A : E ≃L[𝕜] E) {b x y : E} (hx : A x = b) (hb : b ≠ 0)`
 (`Numlib/LinearSolve/Perturbation.lean`, single space) and `NormedRing.one_le_condNumber [NormOneClass R] (ha : IsUnit a)`
 (`Numlib/Analysis/Normed/Ring/CondNumber.lean`); two spaces: Mathlib `ContinuousLinearEquiv.one_le_norm_mul_norm_symm [Nontrivial V]`
 gives `1 ≤ cond L` directly.
-*Proof route.* `‖v − v̂‖ ≤ ‖L⁻¹‖‖w − ŵ‖`, `‖w‖ ≤ ‖L‖‖v‖`, `div_le_div`; for `V = W`, `eq_2_4_1` is the backbone lemma with `b := L v`
+*Proof route.* `‖v − v̂‖ ≤ ‖L⁻¹‖‖w − ŵ‖`, `‖w‖ ≤ ‖L‖‖v‖`, `div_le_div`; for `V = W`, `equation_2_4_1` is the backbone lemma with `b := L v`
 through item 2's `cond_eq_condNumber`.
-*Classification:* `one_le_cond` direct; `eq_2_4_1` surface-only (the backbone's residual bound is single-space; its two-space form
+*Classification:* `one_le_cond` direct; `equation_2_4_1` surface-only (the backbone's residual bound is single-space; its two-space form
 with a `ContinuousLinearEquiv.condNumber` is Deferred item 10).
 
 **Ill-posed / well-posed remark** — definitions only; left out (no theorem).
 
 **Theorem 2.4.4 (principle of uniform boundedness).**
 *Book.* `V` Banach, `W` normed, `Lₙ ∈ 𝓛(V,W)`, `{Lₙv}` bounded for each `v` ⇒ `sup ‖Lₙ‖ < ∞`.
-*Lean:* `theorem thm_2_4_4 [CompleteSpace V] (Ln : ℕ → V →L[𝕜] W) (h : ∀ v, ∃ C, ∀ n, ‖Ln n v‖ ≤ C) : ∃ C, ∀ n, ‖Ln n‖ ≤ C := banach_steinhaus h`.
+*Lean:* `theorem theorem_2_4_4 [CompleteSpace V] (Ln : ℕ → V →L[𝕜] W) (h : ∀ v, ∃ C, ∀ n, ‖Ln n v‖ ≤ C) : ∃ C, ∀ n, ‖Ln n‖ ≤ C := banach_steinhaus h`.
 *Mathlib.* `banach_steinhaus`, `banach_steinhaus_iSup_nnnorm` (`Mathlib/Analysis/Normed/Operator/BanachSteinhaus.lean`). *Classification:* direct.
 
 **Theorem 2.4.5 (Banach–Steinhaus).**
 *Book.* `V` complete, `W` normed, `L, Lₙ ∈ 𝓛(V,W)`, `V₀ ⊂ V` a dense subspace. `Lₙv → Lv ∀v ∈ V` iff (a) `Lₙv → Lv ∀v ∈ V₀` and (b) `sup ‖Lₙ‖ < ∞`.
-*Lean:* `theorem thm_2_4_5 [CompleteSpace V] (L) (Ln : ℕ → V →L[𝕜] W) (V₀ : Submodule 𝕜 V) (hV₀ : Dense (V₀ : Set V)) : (∀ v, Tendsto (fun n => Ln n v) atTop (𝓝 (L v))) ↔ (∀ v ∈ V₀, Tendsto (fun n => Ln n v) atTop (𝓝 (L v))) ∧ ∃ C, ∀ n, ‖Ln n‖ ≤ C`.
+*Lean:* `theorem theorem_2_4_5 [CompleteSpace V] (L) (Ln : ℕ → V →L[𝕜] W) (V₀ : Submodule 𝕜 V) (hV₀ : Dense (V₀ : Set V)) : (∀ v, Tendsto (fun n => Ln n v) atTop (𝓝 (L v))) ↔ (∀ v ∈ V₀, Tendsto (fun n => Ln n v) atTop (𝓝 (L v))) ∧ ∃ C, ∀ n, ‖Ln n‖ ≤ C`.
 *Mathlib.* `⇒`: `banach_steinhaus` + `Metric.isBounded_range_of_tendsto`. `⇐`: no Mathlib lemma (`Equicontinuity.lean`,
 `UniformConvergence.lean` do not contain it); `ContinuousLinearMap.ofTendstoOfBoundedRange` only builds the limit operator.
 *Proof route.* ε/3 argument of the book (`Dense.exists_dist_lt`, `le_opNorm`).
@@ -349,7 +349,7 @@ from which the surface theorem will then specialize.
 (i) `‖Lₙ‖ = ∑|wᵢ⁽ⁿ⁾|` (2.4.4; Exercise 2.4.2); (ii) if `Lₙ = L` on `𝒫_{d(n)}` with `d(n) → ∞`, then `Lₙv → Lv ∀v ∈ C[0,1]` iff `sup_n ∑|wᵢ⁽ⁿ⁾| < ∞`;
 (iii) (Exercise 2.4.3) under (ii) with `wᵢ⁽ⁿ⁾ ≥ 0`, convergence holds.
 *Lean* (definition and (i)): `noncomputable def quadFunctional {n} (w : Fin (n+1) → ℝ) (x : Fin (n+1) → Set.Icc (0:ℝ) 1) : C(Set.Icc (0:ℝ) 1, ℝ) →L[ℝ] ℝ := ∑ i, w i • ContinuousMap.evalCLM ℝ (x i)`;
-`theorem eq_2_4_4 (w) (x) (hx : Function.Injective x) : ‖quadFunctional w x‖ = ∑ i, |w i|`.
+`theorem equation_2_4_4 (w) (x) (hx : Function.Injective x) : ‖quadFunctional w x‖ = ∑ i, |w i|`.
 (ii): `theorem quadrature_convergence (L : C(Icc 0 1, ℝ) →L[ℝ] ℝ) (w x d) (hd : Tendsto d atTop atTop) (hexact : ∀ n, ∀ p : Polynomial ℝ, p.natDegree ≤ d n → quadFunctional (w n) (x n) (p.toContinuousMapOn _) = L (p.toContinuousMapOn _)) : (∀ v, Tendsto (fun n => quadFunctional (w n) (x n) v) atTop (𝓝 (L v))) ↔ ∃ C, ∀ n, ∑ i, |w n i| ≤ C`
 (with `L` any bounded functional; the book's weighted integral is one instance, `∫₀¹ w v` bounded by `‖w‖_{L¹}`).
 (iii): add `(hw : ∀ n i, 0 ≤ w n i)` and `0 ≤ d n`; conclude convergence.
@@ -371,26 +371,26 @@ functions (dense); `⇒`: `banach_steinhaus` + (i). (iii) `∑ wᵢ = Lₙ 1 = L
 
 **Theorem 2.5.2 (Hahn–Banach).**
 *Book.* `V₀` subspace of a normed `V` (𝕂 = ℝ or ℂ), `ℓ : V₀ → 𝕂` linear bounded ⇒ ∃ `ℓ̂ ∈ V'` extending `ℓ` with `‖ℓ̂‖ = ‖ℓ‖`.
-*Lean:* `theorem thm_2_5_2 (V₀ : Submodule 𝕜 V) (ℓ : StrongDual 𝕜 V₀) : ∃ ℓhat : StrongDual 𝕜 V, (∀ v : V₀, ℓhat v = ℓ v) ∧ ‖ℓhat‖ = ‖ℓ‖ := exists_extension_norm_eq V₀ ℓ`.
+*Lean:* `theorem theorem_2_5_2 (V₀ : Submodule 𝕜 V) (ℓ : StrongDual 𝕜 V₀) : ∃ ℓhat : StrongDual 𝕜 V, (∀ v : V₀, ℓhat v = ℓ v) ∧ ‖ℓhat‖ = ‖ℓ‖ := exists_extension_norm_eq V₀ ℓ`.
 *Mathlib.* `exists_extension_norm_eq` (`Mathlib/Analysis/Normed/Module/HahnBanach.lean`, `[IsRCLikeNormedField 𝕜]`, instance from `RCLike`). *Classification:* direct.
 
 **Example 2.5.3** (point evaluation on `L^∞(0,1)` via Hahn–Banach, properties of `ℓ̂_c`) — *Classification:* out-of-scope (`L^∞` cosets, measure theory).
 
 **Definition 2.5.4 / Theorem 2.5.5 (generalized Hahn–Banach).**
 *Book.* `V` real linear space, `V₀ ⊂ V` subspace, `p : V → ℝ` sublinear, `ℓ : V₀ → ℝ` linear with `ℓ ≤ p` on `V₀` ⇒ `ℓ` extends to `V` with `ℓ ≤ p`.
-*Lean:* `theorem thm_2_5_5 {E} [AddCommGroup E] [Module ℝ E] (V₀ : Submodule ℝ E) (p : E → ℝ) (hp : IsSublinear p) (ℓ : V₀ →ₗ[ℝ] ℝ) (hℓ : ∀ v : V₀, ℓ v ≤ p v) : ∃ ℓhat : E →ₗ[ℝ] ℝ, (∀ v : V₀, ℓhat v = ℓ v) ∧ ∀ v, ℓhat v ≤ p v`.
+*Lean:* `theorem theorem_2_5_5 {E} [AddCommGroup E] [Module ℝ E] (V₀ : Submodule ℝ E) (p : E → ℝ) (hp : IsSublinear p) (ℓ : V₀ →ₗ[ℝ] ℝ) (hℓ : ∀ v : V₀, ℓ v ≤ p v) : ∃ ℓhat : E →ₗ[ℝ] ℝ, (∀ v : V₀, ℓhat v = ℓ v) ∧ ∀ v, ℓhat v ≤ p v`.
 *Mathlib.* `exists_extension_of_le_sublinear (f : E →ₗ.[ℝ] ℝ) (N) (N_hom) (N_add) (hf)` (`Mathlib/Analysis/Convex/Cone/Extension.lean`), packaged through `LinearPMap.mk V₀ ℓ`.
 *Proof route.* `isSublinear_iff` (item 4) + `LinearPMap` glue. *Classification:* needs-equivalence.
 Remark (book): with `p = ‖ℓ‖‖·‖` this yields Thm 2.5.2 (Exercise 2.5.1) — over ℝ only; not formalized separately.
 
 **Corollary 2.5.6 (norming functional).**
 *Book.* `V` normed, `0 ≠ v ∈ V` ⇒ ∃ `ℓ_v ∈ V'`, `‖ℓ_v‖ = 1`, `ℓ_v(v) = ‖v‖`.
-*Lean:* `theorem cor_2_5_6 (v : V) (hv : v ≠ 0) : ∃ ℓ : StrongDual 𝕜 V, ‖ℓ‖ = 1 ∧ ℓ v = ‖v‖ := exists_dual_vector 𝕜 v (norm_ne_zero_iff.mpr hv)`.
+*Lean:* `theorem corollary_2_5_6 (v : V) (hv : v ≠ 0) : ∃ ℓ : StrongDual 𝕜 V, ‖ℓ‖ = 1 ∧ ℓ v = ‖v‖ := exists_dual_vector 𝕜 v (norm_ne_zero_iff.mpr hv)`.
 *Mathlib.* `exists_dual_vector`, `exists_dual_vector'`, `exists_dual_vector''`. *Classification:* direct.
 
 **Corollary 2.5.7, (2.5.4) (norm via the dual).**
 *Book.* `‖v‖ = sup{|ℓ(v)| : ℓ ∈ V', ‖ℓ‖ = 1}`.
-*Lean:* `theorem cor_2_5_7 (v : V) : ‖v‖ = sSup {r | ∃ ℓ : StrongDual 𝕜 V, ‖ℓ‖ = 1 ∧ r = ‖ℓ v‖}`.
+*Lean:* `theorem corollary_2_5_7 (v : V) : ‖v‖ = sSup {r | ∃ ℓ : StrongDual 𝕜 V, ‖ℓ‖ = 1 ∧ r = ‖ℓ v‖}`.
 *Mathlib.* `NormedSpace.inclusionInDoubleDualLi` (`norm_map`), `ContinuousLinearMap.sSup_sphere_eq_norm` applied to
 `inclusionInDoubleDual 𝕜 V v : StrongDual 𝕜 (StrongDual 𝕜 V)`; also `NormedSpace.norm_le_dual_bound`.
 *Proof route.* rewrite the set as `(fun ℓ => ‖(inclusionInDoubleDual 𝕜 V v) ℓ‖) '' sphere 0 1` (`Set.ext`), then the two lemmas. *Classification:* direct.
@@ -399,7 +399,7 @@ Remark (book): with `p = ‖ℓ‖‖·‖` this yields Thm 2.5.2 (Exercise 2.5.
 *Book.* `V` real or complex Hilbert, `ℓ ∈ V'` ⇒ ∃! `u ∈ V` with `ℓ(v) = (v, u) ∀v` (2.5.5), and `‖ℓ‖ = ‖u‖` (2.5.6).
 *Lean:*
 ```lean
-theorem thm_2_5_8 {H} [NormedAddCommGroup H] [InnerProductSpace 𝕜 H] [CompleteSpace H] (ℓ : StrongDual 𝕜 H) :
+theorem theorem_2_5_8 {H} [NormedAddCommGroup H] [InnerProductSpace 𝕜 H] [CompleteSpace H] (ℓ : StrongDual 𝕜 H) :
     (∃! u : H, ∀ v, ℓ v = inner 𝕜 u v) ∧ ‖ℓ‖ = ‖(InnerProductSpace.toDual 𝕜 H).symm ℓ‖
 ```
 (book's `(v, u)` = `inner 𝕜 u v`; the `∃!`-bundled form `∃! u, (∀ v, ℓ v = inner 𝕜 u v) ∧ ‖ℓ‖ = ‖u‖` also elaborates).
@@ -421,7 +421,7 @@ The book's second proof (via Thm 3.3.12 minimization) is not reproduced (Thm 3.3
 
 **Theorem 3.3.7 (strict separation of a compact and a closed convex set).**
 *Book.* `V` real normed, `A, B` nonempty disjoint convex, one compact, the other closed ⇒ strictly separated (Def 3.3.6).
-*Lean:* `theorem thm_3_3_7 {E} [NormedAddCommGroup E] [NormedSpace ℝ E] {A B : Set E} (hA : Convex ℝ A) (hB : Convex ℝ B) (hAne) (hBne) (hdisj : Disjoint A B) (hAc : IsCompact A) (hBc : IsClosed B) : ∃ (ℓ : StrongDual ℝ E) (α : ℝ), ℓ ≠ 0 ∧ (∀ u ∈ A, ℓ u < α) ∧ ∀ v ∈ B, α < ℓ v`
+*Lean:* `theorem theorem_3_3_7 {E} [NormedAddCommGroup E] [NormedSpace ℝ E] {A B : Set E} (hA : Convex ℝ A) (hB : Convex ℝ B) (hAne) (hBne) (hdisj : Disjoint A B) (hAc : IsCompact A) (hBc : IsClosed B) : ∃ (ℓ : StrongDual ℝ E) (α : ℝ), ℓ ≠ 0 ∧ (∀ u ∈ A, ℓ u < α) ∧ ∀ v ∈ B, α < ℓ v`
 (plus the symmetric case `A` closed, `B` compact by swapping and negating `ℓ`).
 *Mathlib.* `geometric_hahn_banach_compact_closed` (`Mathlib/Analysis/LocallyConvex/Separation.lean`; normed spaces are `LocallyConvexSpace ℝ`), `geometric_hahn_banach_closed_compact`.
 *Proof route.* take `α := (u+v)/2`; `ℓ ≠ 0` because `A` nonempty and `ℓ a < u < v < ℓ b`. *Classification:* direct (via item 7's equivalence).
@@ -438,8 +438,8 @@ sequential compactness (Thm 2.7.5); Deferred item 8). Record the statements as d
 
 **Theorem 3.3.13 (finite-dimensional existence of minimizers).**
 *Book.* `V` normed, `K` convex, closed, finite-dimensional subset, `f : K → ℝ` convex l.s.c.; (a) `K` bounded or (b) `f` coercive on `K` ⇒ minimizer exists; unique if `f` strictly convex.
-*Lean.* `theorem thm_3_3_13 [NormedSpace ℝ V] [IsScalarTower ℝ 𝕜 V] (K : Set V) (S : Submodule 𝕜 V) [FiniteDimensional 𝕜 S] (hKS : K ⊆ S) (hcl : IsClosed K) (hconv : Convex ℝ K) (hne : K.Nonempty) (f : V → ℝ) (hf : ConvexOn ℝ K f) (hlsc : LowerSemicontinuousOn f K) (h : Bornology.IsBounded K ∨ IsCoerciveFunctionalOn f K) : ∃ u ∈ K, IsMinOn f K u`
-and `theorem thm_3_3_13_unique … (hf : StrictConvexOn ℝ K f) (hu₁ : IsMinOn f K u₁) (hu₂ : IsMinOn f K u₂) (h₁ : u₁ ∈ K) (h₂ : u₂ ∈ K) : u₁ = u₂`.
+*Lean.* `theorem theorem_3_3_13 [NormedSpace ℝ V] [IsScalarTower ℝ 𝕜 V] (K : Set V) (S : Submodule 𝕜 V) [FiniteDimensional 𝕜 S] (hKS : K ⊆ S) (hcl : IsClosed K) (hconv : Convex ℝ K) (hne : K.Nonempty) (f : V → ℝ) (hf : ConvexOn ℝ K f) (hlsc : LowerSemicontinuousOn f K) (h : Bornology.IsBounded K ∨ IsCoerciveFunctionalOn f K) : ∃ u ∈ K, IsMinOn f K u`
+and `theorem theorem_3_3_13_unique … (hf : StrictConvexOn ℝ K f) (hu₁ : IsMinOn f K u₁) (hu₂ : IsMinOn f K u₂) (h₁ : u₁ ∈ K) (h₂ : u₂ ∈ K) : u₁ = u₂`.
 *Mathlib.* `LowerSemicontinuousOn.exists_isMinOn` (lsc on compact attains its minimum), `FiniteDimensional.proper`,
 `Submodule.closed_of_finiteDimensional` (`Mathlib/Topology/Algebra/Module/FiniteDimension.lean`), `Metric.isCompact_of_isClosed_isBounded` inside `S`,
 `StrictConvexOn.eq_of_isMinOn`. Convexity of `f`/`K` is not needed for existence (the book's proof does not use it either at this rung).
@@ -450,7 +450,7 @@ and `theorem thm_3_3_13_unique … (hf : StrictConvexOn ℝ K f) (hu₁ : IsMinO
 
 **Theorem 3.3.15 (existence from a closed convex finite-dimensional subset).**
 *Book.* `K ⊂ V` convex, closed, finite-dimensional subset of a normed `V` ⇒ ∀ `u` ∃ `û ∈ K` with `‖u − û‖ = inf_K ‖u − v‖`.
-*Lean:* `theorem thm_3_3_15 [NormedSpace ℝ V] [IsScalarTower ℝ 𝕜 V] (K : Set V) (S : Submodule 𝕜 V) [FiniteDimensional 𝕜 S] (hKS : K ⊆ S) (hK : IsClosed K) (hconv : Convex ℝ K) (hne : K.Nonempty) (u : V) : ∃ uhat, IsBestApprox K u uhat`
+*Lean:* `theorem theorem_3_3_15 [NormedSpace ℝ V] [IsScalarTower ℝ 𝕜 V] (K : Set V) (S : Submodule 𝕜 V) [FiniteDimensional 𝕜 S] (hKS : K ⊆ S) (hK : IsClosed K) (hconv : Convex ℝ K) (hne : K.Nonempty) (u : V) : ∃ uhat, IsBestApprox K u uhat`
 (the convexity hypothesis is kept for faithfulness; unused).
 *Backbone.* `exists_isBestApprox_of_isClosed_of_finiteDimensional [CompleteSpace 𝕜] [LocallyCompactSpace 𝕜] {K : Set V} (hK : IsClosed K) (hne : K.Nonempty) (S : Submodule 𝕜 V) [FiniteDimensional 𝕜 S] (hKS : K ⊆ S) (u : V) : ∃ v, IsBestApprox K u v`
 (`Numlib/Approximation/BestApprox.lean`). Both scalar hypotheses hold for `RCLike 𝕜`, so no surface
@@ -461,7 +461,7 @@ then `Metric.infDist_le_dist_of_mem`.
 *Classification:* direct.
 
 **Theorem 3.3.16 (existence from a finite-dimensional subspace).**
-*Lean:* `theorem thm_3_3_16 (K : Submodule 𝕜 V) [FiniteDimensional 𝕜 K] (u : V) : ∃ uhat, IsBestApprox (K : Set V) u uhat`.
+*Lean:* `theorem theorem_3_3_16 (K : Submodule 𝕜 V) [FiniteDimensional 𝕜 K] (u : V) : ∃ uhat, IsBestApprox (K : Set V) u uhat`.
 *Backbone.* `exists_isBestApprox_of_finiteDimensional [CompleteSpace 𝕜] [LocallyCompactSpace 𝕜] (K : Submodule 𝕜 V) [FiniteDimensional 𝕜 K] (u : V)`
 (`Numlib/Approximation/BestApprox.lean`; the special case `K = S` of Thm 3.3.15). *Classification:* direct.
 (Exercise 3.3.7's Heine–Borel proof is the backbone proof.)
@@ -473,7 +473,7 @@ with `polyLE` from item 12 (`FiniteDimensional` via `Module.Finite.map`).
 
 **Theorem 3.3.18 (uniqueness under strict convexity of `‖·‖ᵖ`).**
 *Book.* `V` normed, `‖·‖ᵖ` strictly convex for some `p ≥ 1`, `K` convex ⇒ best approximations are unique.
-*Lean:* `theorem thm_3_3_18 [NormedSpace ℝ V] {p : ℝ} (hp : 1 ≤ p) (hconv : StrictConvexOn ℝ Set.univ (fun v : V => ‖v‖ ^ p)) {K : Set V} (hK : Convex ℝ K) {u v₁ v₂} (h₁ : IsBestApprox K u v₁) (h₂ : IsBestApprox K u v₂) : v₁ = v₂`.
+*Lean:* `theorem theorem_3_3_18 [NormedSpace ℝ V] {p : ℝ} (hp : 1 ≤ p) (hconv : StrictConvexOn ℝ Set.univ (fun v : V => ‖v‖ ^ p)) {K : Set V} (hK : Convex ℝ K) {u v₁ v₂} (h₁ : IsBestApprox K u v₁) (h₂ : IsBestApprox K u v₂) : v₁ = v₂`.
 *Backbone/Mathlib.* `IsBestApprox.unique [StrictConvexSpace ℝ V] (hK : Convex ℝ K) (h₁ : IsBestApprox K u v₁) (h₂ : IsBestApprox K u v₂) : v₁ = v₂`
 (`Numlib/Approximation/BestApprox.lean`); `StrictConvexSpace.of_norm_combo_lt_one` / `of_norm_add_ne_two`.
 *Proof route.* surface bridging lemma `strictConvexSpace_of_strictConvexOn_norm_rpow (hp) (hconv) : StrictConvexSpace ℝ V`
@@ -492,7 +492,7 @@ or compute directly in the `StrictConvexOn` definition.
 
 **Theorem 3.3.21 (uniqueness in strictly normed spaces).**
 *Book.* `V` strictly normed, `K` nonempty convex ⇒ at most one best approximation.
-*Lean:* `theorem thm_3_3_21 [NormedSpace ℝ V] (hV : IsStrictlyNormed V) {K : Set V} (hne : K.Nonempty) (hK : Convex ℝ K) {u v₁ v₂} (h₁ : IsBestApprox K u v₁) (h₂ : IsBestApprox K u v₂) : v₁ = v₂`.
+*Lean:* `theorem theorem_3_3_21 [NormedSpace ℝ V] (hV : IsStrictlyNormed V) {K : Set V} (hne : K.Nonempty) (hK : Convex ℝ K) {u v₁ v₂} (h₁ : IsBestApprox K u v₁) (h₂ : IsBestApprox K u v₂) : v₁ = v₂`.
 *Backbone.* `IsBestApprox.unique [StrictConvexSpace ℝ V]` via item 11's `isStrictlyNormed_iff_strictConvexSpace` (`haveI := ….mp hV`).
 *Classification:* needs-equivalence.
 
@@ -505,18 +505,18 @@ or compute directly in the `StrictConvexOn` definition.
 
 **Lemma 3.4.1, (3.4.1) (variational characterization).**
 *Book.* `K` convex in a real inner product space; `û ∈ K` is a best approximation of `u` iff `(u − û, v − û) ≤ 0 ∀ v ∈ K`.
-*Lean:* `theorem lem_3_4_1 {K : Set H} (hK : Convex ℝ K) {u uhat : H} (hu : uhat ∈ K) : IsBestApprox K u uhat ↔ ∀ v ∈ K, inner ℝ (u - uhat) (v - uhat) ≤ 0`.
+*Lean:* `theorem lemma_3_4_1 {K : Set H} (hK : Convex ℝ K) {u uhat : H} (hu : uhat ∈ K) : IsBestApprox K u uhat ↔ ∀ v ∈ K, inner ℝ (u - uhat) (v - uhat) ≤ 0`.
 *Backbone.* `isBestApprox_iff_inner_le_zero {K : Set V} (hK : Convex ℝ K) {u v : V} (hv : v ∈ K) : IsBestApprox K u v ↔ ∀ w ∈ K, inner ℝ (u - v) (w - v) ≤ 0`
 (`Numlib/Approximation/BestApprox.lean`, real inner product spaces; from Mathlib `norm_eq_iInf_iff_real_inner_le_zero`).
 *Classification:* direct.
 
 **Corollary 3.4.2 (uniqueness in inner product spaces).**
-*Lean:* `theorem cor_3_4_2 {K : Set H} (hK : Convex ℝ K) {u v₁ v₂ : H} (h₁ : IsBestApprox K u v₁) (h₂ : IsBestApprox K u v₂) : v₁ = v₂`.
+*Lean:* `theorem corollary_3_4_2 {K : Set H} (hK : Convex ℝ K) {u v₁ v₂ : H} (h₁ : IsBestApprox K u v₁) (h₂ : IsBestApprox K u v₂) : v₁ = v₂`.
 *Proof route.* backbone `IsBestApprox.unique` with the `StrictConvexSpace ℝ H` instance of an inner product space; or the book's proof
 from Lem 3.4.1 (add the two inequalities). *Classification:* direct.
 
 **Theorem 3.4.3 (projection onto a closed convex set), real Hilbert space.**
-*Lean:* `theorem thm_3_4_3 [CompleteSpace H] {K : Set H} (hne : K.Nonempty) (hcl : IsClosed K) (hK : Convex ℝ K) (u : H) : ∃! uhat, IsBestApprox K u uhat`
+*Lean:* `theorem theorem_3_4_3 [CompleteSpace H] {K : Set H} (hne : K.Nonempty) (hcl : IsClosed K) (hK : Convex ℝ K) (u : H) : ∃! uhat, IsBestApprox K u uhat`
 (+ characterization by (3.4.1) = Lem 3.4.1).
 *Mathlib.* `exists_norm_eq_iInf_of_complete_convex` (`IsComplete K` from `hcl.isComplete`) gives `‖u − û‖ = ⨅ w : K, ‖u − w‖`, turned into
 `IsBestApprox` by item 10's `isBestApprox_iff_norm_eq_iInf`; uniqueness Cor 3.4.2. *Classification:* needs-equivalence (item 10).
@@ -524,22 +524,22 @@ The book's direct parallelogram-law proof is Mathlib's proof.
 
 **Proposition 3.4.4 (`P_K` monotone and non-expansive).**
 *Book.* `K` nonempty closed convex in a real Hilbert `V`: `(P_K u − P_K v, u − v) ≥ 0`, `‖P_K u − P_K v‖ ≤ ‖u − v‖`.
-*Lean* (pairs form): `theorem prop_3_4_4 {K : Set H} (hK : Convex ℝ K) {u v uhat vhat : H} (hu : IsBestApprox K u uhat) (hv : IsBestApprox K v vhat) : 0 ≤ inner ℝ (uhat - vhat) (u - v) ∧ ‖uhat - vhat‖ ≤ ‖u - v‖`;
-book form via item 13: `prop_3_4_4' [CompleteSpace H] (hne hcl hK) (u v) : 0 ≤ inner ℝ (projConvex K … u - projConvex K … v) (u - v) ∧ ‖projConvex … u - projConvex … v‖ ≤ ‖u - v‖`.
+*Lean* (pairs form): `theorem proposition_3_4_4 {K : Set H} (hK : Convex ℝ K) {u v uhat vhat : H} (hu : IsBestApprox K u uhat) (hv : IsBestApprox K v vhat) : 0 ≤ inner ℝ (uhat - vhat) (u - v) ∧ ‖uhat - vhat‖ ≤ ‖u - v‖`;
+book form via item 13: `proposition_3_4_4' [CompleteSpace H] (hne hcl hK) (u v) : 0 ≤ inner ℝ (projConvex K … u - projConvex K … v) (u - v) ∧ ‖projConvex … u - projConvex … v‖ ≤ ‖u - v‖`.
 (No completeness needed in the pairs form.)
 *Backbone.* `IsBestApprox.dist_le_dist {K : Set V} (hK : Convex ℝ K) {u₁ u₂ v₁ v₂ : V} (h₁ : IsBestApprox K u₁ v₁) (h₂ : IsBestApprox K u₂ v₂) : 0 ≤ inner ℝ (v₁ - v₂) (u₁ - u₂) ∧ ‖v₁ - v₂‖ ≤ ‖u₁ - u₂‖`
-(`Numlib/Approximation/BestApprox.lean`), which is `prop_3_4_4` verbatim; Mathlib has only the subspace case (`Submodule.lipschitzWith_starProjection`).
+(`Numlib/Approximation/BestApprox.lean`), which is `proposition_3_4_4` verbatim; Mathlib has only the subspace case (`Submodule.lipschitzWith_starProjection`).
 Its proof: Lem 3.4.1 twice, add: `‖û − v̂‖² ≤ ⟪u − v, û − v̂⟫ ≤ ‖u − v‖‖û − v̂‖` (`real_inner_le_norm`).
 *Classification:* direct.
 
 **Theorem 3.4.5 (finite-dimensional closed convex subset of an inner product space).**
-*Lean:* `theorem thm_3_4_5 {K : Set H} (S : Submodule ℝ H) [FiniteDimensional ℝ S] (hKS : K ⊆ S) (hcl : IsClosed K) (hK : Convex ℝ K) (hne : K.Nonempty) (u : H) : ∃! uhat, IsBestApprox K u uhat`.
+*Lean:* `theorem theorem_3_4_5 {K : Set H} (S : Submodule ℝ H) [FiniteDimensional ℝ S] (hKS : K ⊆ S) (hcl : IsClosed K) (hK : Convex ℝ K) (hne : K.Nonempty) (u : H) : ∃! uhat, IsBestApprox K u uhat`.
 *Proof route.* `exists_isBestApprox_of_isClosed_of_finiteDimensional` (existence, as in Thm 3.3.15) + Cor 3.4.2. *Classification:* direct.
 
 **Theorem 3.4.6 (complete subspace; (3.4.2) orthogonality characterization).**
 *Book.* `K` complete subspace of an inner product space ⇒ ∃! best approximation `û`, characterized by `(u − û, v) = 0 ∀ v ∈ K`.
 *Lean* (stated over `RCLike 𝕜`, which contains the book's real case; book `(u − û, v)` = Mathlib `inner 𝕜 v (u − û)`):
-`theorem thm_3_4_6 (K : Submodule 𝕜 H) [CompleteSpace K] (u : H) : (∃! uhat, IsBestApprox (K : Set H) u uhat) ∧ ∀ uhat ∈ K, IsBestApprox (K : Set H) u uhat ↔ ∀ v ∈ K, inner 𝕜 v (u - uhat) = 0`.
+`theorem theorem_3_4_6 (K : Submodule 𝕜 H) [CompleteSpace K] (u : H) : (∃! uhat, IsBestApprox (K : Set H) u uhat) ∧ ∀ uhat ∈ K, IsBestApprox (K : Set H) u uhat ↔ ∀ v ∈ K, inner 𝕜 v (u - uhat) = 0`.
 *Backbone/Mathlib.* `isBestApprox_iff_mem_orthogonal (K : Submodule 𝕜 V) {u v : V} (hv : v ∈ K) : IsBestApprox (K : Set V) u v ↔ u - v ∈ Kᗮ`,
 `isBestApprox_starProjection (K) [K.HasOrthogonalProjection] (u)`, `IsBestApprox.eq_starProjection` (`Numlib/Approximation/BestApprox.lean`);
 `Submodule.mem_orthogonal (v : E) : v ∈ Kᗮ ↔ ∀ u ∈ K, ⟪u, v⟫ = 0` turns `u - uhat ∈ Kᗮ` into the book's pointwise form;
@@ -556,7 +556,7 @@ Its proof: Lem 3.4.1 twice, add: `‖û − v̂‖² ≤ ⟪u − v, û − v̂�
 *Book.* `K` complete subspace ⇒ `P_K` is linear, self-adjoint `(P_K u, v) = (u, P_K v)`, `‖v‖² = ‖P_K v‖² + ‖v − P_K v‖²`, and `‖P_K‖ = 1`.
 *Lean* (three of four parts closed by name):
 ```lean
-theorem thm_3_4_7 (K : Submodule 𝕜 H) [CompleteSpace K] :
+theorem theorem_3_4_7 (K : Submodule 𝕜 H) [CompleteSpace K] :
     (∀ u v, inner 𝕜 (K.starProjection u) v = inner 𝕜 u (K.starProjection v)) ∧
       (∀ v, ‖v‖ ^ 2 = ‖K.starProjection v‖ ^ 2 + ‖v - K.starProjection v‖ ^ 2) ∧
       ‖K.starProjection‖ ≤ 1 ∧ (K ≠ ⊥ → ‖K.starProjection‖ = 1)
@@ -566,8 +566,8 @@ theorem thm_3_4_7 (K : Submodule 𝕜 H) [CompleteSpace K] :
 *Classification:* direct. **Book imprecision:** (3.4.5) `‖P_K‖ = 1` fails for `K = {0}`; the surface states `≤ 1` and `= 1` under `K ≠ ⊥` (recorded in the docstring).
 
 **(3.4.6) Least-squares approximation from `span{φ₁,…,φₙ}` and the expansion `u = ∑ (u, φᵢ) φᵢ`.**
-*Lean:* `theorem eq_3_4_6 [DecidableEq H] {ι} {φ : ι → H} (hφ : Orthonormal 𝕜 φ) (s : Finset ι) (u : H) : (Submodule.span 𝕜 (s.image φ : Set H)).starProjection u = ∑ i ∈ s, inner 𝕜 (φ i) u • φ i`;
-`theorem expansion_3_4 {ι} (b : HilbertBasis ι 𝕜 H) (u : H) : HasSum (fun i => inner 𝕜 (b i) u • b i) u` (`simpa [b.repr_apply_apply] using b.hasSum_repr u`).
+*Lean:* `theorem equation_3_4_6 [DecidableEq H] {ι} {φ : ι → H} (hφ : Orthonormal 𝕜 φ) (s : Finset ι) (u : H) : (Submodule.span 𝕜 (s.image φ : Set H)).starProjection u = ∑ i ∈ s, inner 𝕜 (φ i) u • φ i`;
+`theorem hilbertBasis_expansion {ι} (b : HilbertBasis ι 𝕜 H) (u : H) : HasSum (fun i => inner 𝕜 (b i) u • b i) u` (`simpa [b.repr_apply_apply] using b.hasSum_repr u`).
 *Backbone/Mathlib.* `OrthonormalBasis.span`, `OrthonormalBasis.orthogonalProjectionOnto_apply_eq_sum`, `OrthonormalBasis.starProjection_eq_sum_rankOne`, `HilbertBasis.hasSum_repr`, `HilbertBasis.repr_apply_apply`;
 the normal-equations reading is the backbone's `isBestApprox_sum_iff` (`Numlib/Approximation/BestApprox.lean`).
 The book's intermediate identity `f(b) = ‖u‖² − ∑|(u,φᵢ)|² + ∑|bᵢ − (u,φᵢ)|²` is `Orthonormal.sum_inner_products_le`-style bookkeeping; optional. *Classification:* direct.
@@ -581,7 +581,7 @@ The book's intermediate identity `f(b) = ‖u‖² − ∑|(u,φᵢ)|² + ∑|b�
 
 **Definition 3.6.1 / Proposition 3.6.2 (direct sums ↔ idempotents).**
 *Book.* `V = V₁ ⊕ V₂` iff ∃ linear `P` with `P² = P`, `v₁ = Pv`, `v₂ = (I − P)v`, `V₁ = P(V)`, `V₂ = (I − P)(V)`.
-*Lean:* `theorem prop_3_6_2 (V₁ V₂ : Submodule 𝕜 V) : IsDirectSum V₁ V₂ ↔ ∃ P : V →ₗ[𝕜] V, P ∘ₗ P = P ∧ LinearMap.range P = V₁ ∧ LinearMap.range (LinearMap.id - P) = V₂`
+*Lean:* `theorem proposition_3_6_2 (V₁ V₂ : Submodule 𝕜 V) : IsDirectSum V₁ V₂ ↔ ∃ P : V →ₗ[𝕜] V, P ∘ₗ P = P ∧ LinearMap.range P = V₁ ∧ LinearMap.range (LinearMap.id - P) = V₂`
 (the decomposition clause `v₁ = Pv, v₂ = (I − P)v` follows from uniqueness; add it to the `∃` if desired).
 *Mathlib.* `isDirectSum_iff_isCompl` (item 15), `Submodule.projection`, `Submodule.isIdempotentElem_projection`, `Submodule.range_projection`, `Submodule.ker_projection`,
 `IsIdempotentElem.isProj_range`, `LinearMap.IsProj.isCompl`, `IsIdempotentElem.ker_eq_range_one_sub`; the backbone's
@@ -599,21 +599,21 @@ property are not; Deferred item 4). **Example 3.6.8 (Fourier projection)** — d
 
 **Proposition 3.6.9 (orthogonal projection), Hilbert `V`, closed subspace `V₁`.**
 (a) *Book.* `P` orthogonal projection iff self-adjoint projection.
-*Lean:* `theorem prop_3_6_9_a [CompleteSpace H] (P : H →L[𝕜] H) (hP : IsIdempotentElem P) : (∀ v w, inner 𝕜 (P v) (((1 : H →L[𝕜] H) - P) w) = 0) ↔ (P : H →ₗ[𝕜] H).IsSymmetric`.
+*Lean:* `theorem proposition_3_6_9_a [CompleteSpace H] (P : H →L[𝕜] H) (hP : IsIdempotentElem P) : (∀ v w, inner 𝕜 (P v) (((1 : H →L[𝕜] H) - P) w) = 0) ↔ (P : H →ₗ[𝕜] H).IsSymmetric`.
 *Mathlib.* `IsIdempotentElem.isSymmetric_iff_isOrtho_range_ker`, `IsIdempotentElem.ker_eq_range_one_sub`; `ContinuousLinearMap.isStarProjection_iff_isSymmetricProjection`. *Classification:* direct.
 (b) *Book.* each orthogonal projection is continuous, `‖P‖ ≤ 1`, `‖P‖ = 1` for `P ≠ 0`.
-*Lean:* `theorem prop_3_6_9_b [CompleteSpace H] (P) (hP : IsOrthogonalProjectionOperator P) : ‖P‖ ≤ 1 ∧ (P ≠ 0 → ‖P‖ = 1)` (continuity is built into `H →L[𝕜] H`; for the
+*Lean:* `theorem proposition_3_6_9_b [CompleteSpace H] (P) (hP : IsOrthogonalProjectionOperator P) : ‖P‖ ≤ 1 ∧ (P ≠ 0 → ‖P‖ = 1)` (continuity is built into `H →L[𝕜] H`; for the
 `E →ₗ` reading, `LinearMap.isSymmetricProjection_iff_eq_coe_starProjection_range` supplies continuity).
 *Backbone/Mathlib.* `ContinuousLinearMap.IsIdempotentElem.norm_eq_one_iff_isSymmetric [CompleteSpace E] (hP : IsIdempotentElem P) (h0 : P ≠ 0) : ‖P‖ = 1 ↔ (P : E →ₗ[𝕜] E).IsSymmetric`
 (`Numlib/Analysis/InnerProductSpace/Projection/ObliqueProjection.lean`) with (a); `‖P‖ ≤ 1` follows (`P = 0` is trivial). Alternatively
 `LinearMap.isSymmetricProjection_iff_eq_coe_starProjection_range`, `Submodule.starProjection_norm_le`, `Submodule.norm_starProjection`. *Classification:* direct.
-(c) *Book.* `V = V₁ ⊕ V₁ᗮ`. *Lean:* `theorem prop_3_6_9_c (V₁ : Submodule 𝕜 H) (h : IsClosed (V₁ : Set H)) : IsCompl V₁ V₁ᗮ` via `h.completeSpace_coe` and `Submodule.isCompl_orthogonal`. *Classification:* direct.
+(c) *Book.* `V = V₁ ⊕ V₁ᗮ`. *Lean:* `theorem proposition_3_6_9_c (V₁ : Submodule 𝕜 H) (h : IsClosed (V₁ : Set H)) : IsCompl V₁ V₁ᗮ` via `h.completeSpace_coe` and `Submodule.isCompl_orthogonal`. *Classification:* direct.
 (d) *Book.* exactly one orthogonal projection onto `V₁`; `‖v − Pv‖ = inf_{w∈V₁} ‖v − w‖`; `I − P` is the orthogonal projection onto `V₁ᗮ`.
-*Lean:* `theorem prop_3_6_9_d (V₁) (h : IsClosed (V₁ : Set H)) : (∃! P : H →L[𝕜] H, IsOrthogonalProjectionOperator P ∧ P.range = V₁) ∧ ∀ P, IsOrthogonalProjectionOperator P → P.range = V₁ → (∀ v, ‖v - P v‖ = ⨅ w : V₁, ‖v - w‖) ∧ IsOrthogonalProjectionOperator ((1 : H →L[𝕜] H) - P) ∧ ((1 : H →L[𝕜] H) - P).range = V₁ᗮ`.
+*Lean:* `theorem proposition_3_6_9_d (V₁) (h : IsClosed (V₁ : Set H)) : (∃! P : H →L[𝕜] H, IsOrthogonalProjectionOperator P ∧ P.range = V₁) ∧ ∀ P, IsOrthogonalProjectionOperator P → P.range = V₁ → (∀ v, ‖v - P v‖ = ⨅ w : V₁, ‖v - w‖) ∧ IsOrthogonalProjectionOperator ((1 : H →L[𝕜] H) - P) ∧ ((1 : H →L[𝕜] H) - P).range = V₁ᗮ`.
 *Backbone/Mathlib.* `LinearMap.isSymmetricProjection_iff_eq_coe_starProjection_range` (uniqueness), `isBestApprox_starProjection` + item 10 (the infimum clause),
 `Submodule.starProjection_orthogonal_val`, `IsIdempotentElem.one_sub`, `IsIdempotentElem.ker_eq_range_one_sub`. *Classification:* direct.
 (e) *Book.* `P(V)` closed, `V = P(V) ⊕ (I − P)(V)` orthogonal.
-*Lean:* `theorem prop_3_6_9_e (P) (hP : IsOrthogonalProjectionOperator P) : IsClosed (P.range : Set H) ∧ IsCompl P.range ((1 : H →L[𝕜] H) - P).range ∧ ((1 : H →L[𝕜] H) - P).range = P.rangeᗮ`.
+*Lean:* `theorem proposition_3_6_9_e (P) (hP : IsOrthogonalProjectionOperator P) : IsClosed (P.range : Set H) ∧ IsCompl P.range ((1 : H →L[𝕜] H) - P).range ∧ ((1 : H →L[𝕜] H) - P).range = P.rangeᗮ`.
 *Mathlib.* the closed-range lemma for bounded idempotents (namespace to confirm), `ContinuousLinearMap.IsIdempotentElem.hasOrthogonalProjection_range`, `Submodule.isCompl_orthogonal`, `LinearMap.IsSymmetric.orthogonal_range`. *Classification:* direct.
 
 **Exercise 3.6.1 (`I − P` is a projection; range/kernel swap)** — used implicitly by 3.6.9(d). *Mathlib.* `IsIdempotentElem.one_sub`, `IsIdempotentElem.ker_eq_range`, `IsIdempotentElem.ker_eq_range_one_sub`. *Classification:* direct.
@@ -628,7 +628,7 @@ and `ContinuousLinearMap.IsIdempotentElem.norm_eq_one_iff_isSymmetric` for the e
 
 **(3.7.1)–(3.7.2) transfer `f(cos θ)` / even trigonometric best approximation; Theorem 3.7.1, Theorem 3.7.2 (Jackson).**
 *Book.* `g ∈ C_p^{k,α}(2π)` ⇒ `‖g − qₙ‖_∞ ≤ c^{k+1} M_k / n^{k+α}`, `c = 1 + π²/2`; polynomial version with `d_k`.
-*Lean* (statement sketch only, using item 19): `theorem thm_3_7_1 (g) (hg : HolderClass k α M g) (n : ℕ) (hn : 1 ≤ n) : ρ_trig n g ≤ (1 + π ^ 2 / 2) ^ (k + 1) * M / n ^ (k + α)`.
+*Lean* (statement sketch only, using item 19): `theorem theorem_3_7_1 (g) (hg : HolderClass k α M g) (n : ℕ) (hn : 1 ≤ n) : ρ_trig n g ≤ (1 + π ^ 2 / 2) ^ (k + 1) * M / n ^ (k + α)`.
 *Classification:* deferred (phase 3; `plans/backbone.md` §8.3 schedules Thm 3.7.1–3.7.3 there, as material absent from Mathlib; no trigonometric polynomial machinery; Deferred item 6).
 
 **(3.7.5)** `‖f − 𝓕ₙf‖₂ ≤ √(2π)‖f − 𝓕ₙf‖_∞` — out-of-scope (`L²`; trivial once `𝓕ₙ` exists).

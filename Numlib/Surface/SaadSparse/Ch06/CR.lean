@@ -62,7 +62,7 @@ noncomputable def crStep (A : Matrix (Fin n) (Fin n) 𝕜) (s : 𝔼 × 𝔼 × 
     op A (crStepR A s) + crStepBeta A s • s.2.2.2)
 
 /-- **Algorithm 6.20** (conjugate residual) run for `j` steps: the quadruple
-`(x_j, r_j, p_j, A p_j)`, started from `r_0 = b - A x_0` and `p_0 = r_0`. -/
+`(x_j, r_j, p_j, A p_j)`, started from `r_0 = b - A x_0` and `problem_0 = r_0`. -/
 noncomputable def cr (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (j : ℕ) : 𝔼 × 𝔼 × 𝔼 × 𝔼 :=
   (crStep A)^[j] (x₀, b - op A x₀, b - op A x₀, op A (b - op A x₀))
 
@@ -103,7 +103,7 @@ theorem cr_succ (j : ℕ) : cr A b x₀ (j + 1) = crStep A (cr A b x₀ j) :=
 
 @[simp] theorem crR_zero : crR A b x₀ 0 = b - op A x₀ := rfl
 
-/-- Algorithm 6.20, line 1: `p_0 = r_0`. -/
+/-- Algorithm 6.20, line 1: `problem_0 = r_0`. -/
 @[simp] theorem crP_zero : crP A b x₀ 0 = crR A b x₀ 0 := rfl
 
 @[simp] theorem crAp_zero : crAp A b x₀ 0 = op A (crP A b x₀ 0) := rfl
@@ -279,7 +279,7 @@ variable {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} {b x₀ : EuclideanSpace ℝ
 /-- **§6.8**, the invariants of **Algorithm 6.20** for a symmetric positive definite `A`: the
 residuals are `A`-orthogonal, `(r_i, A r_j) = 0` for `i ≠ j`, and the vectors `A p_i` are
 orthogonal, `(A p_i, A p_j) = 0` for `i ≠ j`. -/
-theorem alg_6_20_orthogonality (hA : A.PosDef) {i j : ℕ} (h : i ≠ j) :
+theorem algorithm_6_20_orthogonality (hA : A.PosDef) {i j : ℕ} (h : i ≠ j) :
     inner ℝ (crR A b x₀ i) (op A (crR A b x₀ j)) = 0 ∧
       inner ℝ (op A (crP A b x₀ i)) (op A (crP A b x₀ j)) = 0 := by
   have hs := (isSymmetricCoercive_op_of_posDef hA).isSymmetric
@@ -289,13 +289,13 @@ theorem alg_6_20_orthogonality (hA : A.PosDef) {i j : ℕ} (h : i ≠ j) :
 
 /-- **§6.8**: Algorithm 6.20 is the Hermitian case of GMRES — its iterate minimizes the residual
 norm over `x_0 + 𝒦_j(A, r_0)`. -/
-theorem alg_6_20_isMinResIterate (hA : A.PosDef) (j : ℕ) :
+theorem algorithm_6_20_isMinResIterate (hA : A.PosDef) (j : ℕ) :
     Krylov.IsMinResIterate (op A) b x₀ j (crX A b x₀ j) :=
   crX_isMinResIterate hA j
 
 /-- **§6.8**: for Hermitian, possibly indefinite, `A` the conjugate residual iterate still
 minimizes the residual, as long as the algorithm does not break down. -/
-theorem alg_6_20_isMinResIterate_of_no_breakdown (hA : A.IsSymm) {j : ℕ}
+theorem algorithm_6_20_isMinResIterate_of_no_breakdown (hA : A.IsSymm) {j : ℕ}
     (h1 : ∀ i < j, inner ℝ (op A (crR A b x₀ i)) (crR A b x₀ i) ≠ 0)
     (h2 : ∀ i < j, crAp A b x₀ i ≠ 0) :
     Krylov.IsMinResIterate (op A) b x₀ j (crX A b x₀ j) :=
@@ -303,7 +303,7 @@ theorem alg_6_20_isMinResIterate_of_no_breakdown (hA : A.IsSymm) {j : ℕ}
 
 /-- **§6.8**: the conjugate residual algorithm and full GMRES compute the same approximations
 for a symmetric positive definite `A`. -/
-theorem alg_6_20_eq_alg_6_9 (hA : A.PosDef) {j : ℕ} (hj : j ≤ grade A (v₁ A b x₀)) :
+theorem algorithm_6_20_eq_alg_6_9 (hA : A.PosDef) {j : ℕ} (hj : j ≤ grade A (v₁ A b x₀)) :
     crX A b x₀ j = gmresFixed A b x₀ j :=
   crX_eq_gmresFixed hA hj
 

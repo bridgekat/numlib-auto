@@ -312,7 +312,7 @@ given; collected in §6).
 ### §8.2 General existence and uniqueness
 
 **Thm 8.2.1.** `V, W` Hilbert, `L : D(L) ⊂ V → W` linear: `R(L) = W` iff `R(L)` is closed and `R(L)^⊥ = {0}`.
-* Lean: `theorem thm_8_2_1 [CompleteSpace W] (L : V →ₗ.[ℝ] W) : LinearMap.range L.toFun = ⊤ ↔
+* Lean: `theorem theorem_8_2_1 [CompleteSpace W] (L : V →ₗ.[ℝ] W) : LinearMap.range L.toFun = ⊤ ↔
   IsClosed (LinearMap.range L.toFun : Set W) ∧ (LinearMap.range L.toFun)ᗮ = ⊥` (only `W` complete is
   used; `V` needs no completeness or inner product).
 * Mathlib: `Submodule.topologicalClosure_eq_top_iff` (`K.topologicalClosure = ⊤ ↔ Kᗮ = ⊥`,
@@ -330,7 +330,7 @@ Mathlib's lemmas only).
 
 **Thm 8.2.4.** `V, W` Hilbert, `L : D(L) ⊂ V → W` linear closed, (8.2.2) with `c > 0`, `R(L)^⊥ = {0}`.
 Then for each `f ∈ W` the equation `L u = f` has a unique solution `u ∈ D(L)`.
-* Lean: `theorem thm_8_2_4 [CompleteSpace V] [CompleteSpace W] (L : V →ₗ.[ℝ] W)
+* Lean: `theorem theorem_8_2_4 [CompleteSpace V] [CompleteSpace W] (L : V →ₗ.[ℝ] W)
   (hL : L.IsClosed) {c} (hc : 0 < c) (hstab : ∀ v : L.domain, c * ‖(v : V)‖ ≤ ‖L v‖)
   (horth : (LinearMap.range L.toFun)ᗮ = ⊥) (f : W) : ∃! u : L.domain, L u = f`.
 * Backbone: `LinearPMap.isClosed_range_of_isClosed_of_le_norm (L : V →ₗ.[𝕜] W) (hL : L.IsClosed)
@@ -340,9 +340,9 @@ Then for each `f ∈ W` the equation `L u = f` has a unique solution `u ∈ D(L)
   (`IsClosed.completeSpace_coe`); `Prod.snd : G → W` is antilipschitz with constant `max 1 c⁻¹`
   (`‖(v, L v)‖ = max ‖v‖ ‖L v‖ ≤ max 1 c⁻¹ · ‖L v‖`), so `AntilipschitzWith.isClosed_range` gives
   `R(L)` closed.
-* Surface proof: closed range + `horth` ⇒ `thm_8_2_1` ⇒ `R(L) = ⊤`; uniqueness from `hstab`.
+* Surface proof: closed range + `horth` ⇒ `theorem_8_2_1` ⇒ `R(L) = ⊤`; uniqueness from `hstab`.
 * Classification: **needs-equivalence** (closed range from the backbone, assembled with
-  `thm_8_2_1`).
+  `theorem_8_2_1`).
 
 **Remark after 8.2.4 (continuity replaces closedness).** `L : V →L[ℝ] W`, stability, `(range L)ᗮ = ⊥`
 ⇒ `Function.Bijective L`.
@@ -354,7 +354,7 @@ Then for each `f ∈ W` the equation `L u = f` has a unique solution `u ∈ D(L)
 
 **Ex 8.2.5.** `V` Hilbert, `L ∈ L(V, V')` strongly monotone (`⟨L v, v⟩ ≥ c‖v‖²`) ⇒ (8.2.2) with the
 same `c`, `R(L)^⊥ = {0}` (in the duality sense), hence `L u = f` uniquely solvable for all `f ∈ V'`.
-* Lean: `theorem ex_8_2_5 [CompleteSpace V] (L : V →L[ℝ] StrongDual ℝ V) {c} (hc : 0 < c)
+* Lean: `theorem exercise_8_2_5 [CompleteSpace V] (L : V →L[ℝ] StrongDual ℝ V) {c} (hc : 0 < c)
   (hmono : ∀ v, c * ‖v‖ ^ 2 ≤ L v v) : (∀ v, c * ‖v‖ ≤ ‖L v‖) ∧ (∀ v, (∀ w, L w v = 0) → v = 0) ∧
   Function.Bijective L`.
 * Backbone: `L` is a `SesqForm ℝ V` by defeq and `hmono` is `L.IsCoerciveWith c`
@@ -373,12 +373,12 @@ same `c`, `R(L)^⊥ = {0}` (in the duality sense), hence `L u = f` uniquely solv
   not in Mathlib, see D3 and §6). The Hilbert-space, bounded specialisation is **direct**: for
   `T : V →L[ℝ] W`, `T.rangeᗮ = T†.ker` (`ContinuousLinearMap.orthogonal_range`) and
   `Submodule.orthogonal_orthogonal_eq_closure` give `IsClosed (range T) → range T = (ker T†)ᗮ`,
-  i.e. `f ∈ range T ↔ ∀ w, T† w = 0 → ⟪w, f⟫ = 0` — record as `thm_8_2_7_hilbert` with a docstring.
+  i.e. `f ∈ range T ↔ ∀ w, T† w = 0 → ⟪w, f⟫ = 0` — record as `theorem_8_2_7_hilbert` with a docstring.
 
 **Thm 8.2.8.** `T : D(T) ⊂ V → W` (nonlinear), `w ∈ W`: at most one solution of `T u = w` if
 (a) `‖T u − T v‖ ≥ c‖u − v‖` on `D(T)` (`c > 0`), or (b) `‖(T u − u) − (T v − v)‖ < ‖u − v‖` for `u ≠ v`
 (here `W = V`).
-* Lean: `theorem thm_8_2_8a (D : Set V) (T : V → W) {c} (hc : 0 < c)
+* Lean: `theorem theorem_8_2_8a (D : Set V) (T : V → W) {c} (hc : 0 < c)
   (hstab : ∀ u ∈ D, ∀ v ∈ D, c * ‖u - v‖ ≤ ‖T u - T v‖) (w : W) :
   ∀ u₁ ∈ D, ∀ u₂ ∈ D, T u₁ = w → T u₂ = w → u₁ = u₂`; (b) analogous with `T : V → V`.
   Remark: linear case (a) = (8.2.2) — `Iff.rfl` after `map_sub`.
@@ -398,7 +398,7 @@ same `c`, `R(L)^⊥ = {0}` (in the duality sense), hence `L u = f` uniquely solv
 `a : V × V → ℝ` via `⟨A u, v⟩ = a(u, v)`; `|a(u,v)| ≤ ‖A‖‖u‖‖v‖` and `‖A‖ ≤ M`.
 * Lean (`[NormedSpace ℝ V]`, no completeness):
   ```lean
-  noncomputable def thm_8_3_1 : (V →L[ℝ] StrongDual ℝ V) ≃ {a : BilinForm V // a.IsBounded}   -- ofCLM / toCLM
+  noncomputable def theorem_8_3_1 : (V →L[ℝ] StrongDual ℝ V) ≃ {a : BilinForm V // a.IsBounded}   -- ofCLM / toCLM
   theorem isBoundedWith_opNorm (A) : (ofCLM A).IsBoundedWith ‖A‖
   theorem norm_toCLM_le (a) (hM0 : 0 ≤ M) (hM : a.IsBoundedWith M) : ‖a.toCLM hM‖ ≤ M
   theorem ofCLM_toCLM : ofCLM (a.toCLM hM) = a ; theorem toCLM_ofCLM : (ofCLM A).toCLM _ = A
@@ -425,11 +425,11 @@ with `E(u) = inf_K E`; `u` is characterised by `u ∈ K, (u, v − u) ≥ ℓ(v 
 subspace, by `u ∈ K, (u, v) = ℓ(v) ∀ v ∈ K`.
 * Lean:
   ```lean
-  theorem thm_8_3_2 [CompleteSpace V] {K : Set V} (hne : K.Nonempty) (hcl : IsClosed K) (hconv : Convex ℝ K)
+  theorem theorem_8_3_2 [CompleteSpace V] {K : Set V} (hne : K.Nonempty) (hcl : IsClosed K) (hconv : Convex ℝ K)
       (ℓ : StrongDual ℝ V) :
       (∃! u, u ∈ K ∧ IsMinOn (fun v => (1/2 : ℝ) * ‖v‖ ^ 2 - ℓ v) K u) ∧
       (∀ u ∈ K, IsMinOn (fun v => (1/2 : ℝ) * ‖v‖ ^ 2 - ℓ v) K u ↔ ∀ v ∈ K, ℓ (v - u) ≤ ⟪u, v - u⟫_ℝ)
-  theorem thm_8_3_2_subspace … (K : Submodule ℝ V) (hK : IsClosed (K : Set V)) (hu : u ∈ K) :
+  theorem theorem_8_3_2_subspace … (K : Submodule ℝ V) (hK : IsClosed (K : Set V)) (hu : u ∈ K) :
       IsMinOn … K u ↔ ∀ v ∈ K, ⟪u, v⟫_ℝ = ℓ v
   ```
   (`IsMinOn` ⇔ `E u = ⨅ v : K, E v` for `u ∈ K`: surface helper `isMinOn_iff_eq_ciInf` for `f`
@@ -507,7 +507,7 @@ Classification: **direct**.
 
 **Ex 8.3.1.** Deduce Lax–Milgram from Thm 5.1.4 (`T : V → V` strongly monotone and Lipschitz ⇒
 `T u = b` uniquely solvable).
-* Lean: `theorem ex_8_3_1 … : ∃! u, ∀ v, a u v = ℓ v` proved by applying the surface `Ch05.thm_5_1_4`
+* Lean: `theorem exercise_8_3_1 … : ∃! u, ∀ v, a u v = ℓ v` proved by applying the surface `Ch05.thm_5_1_4`
   (`plans/surface/AtkinsonHan-Ch5.md`; backbone `zarantonello`, `Numlib/Nonlinear/FixedPoint.lean`)
   to `T := toOperator a hM`, `c₁ = α` (`inner_toOperator`, `ha`), `c₂ = M` (`‖toOperator a hM‖ ≤ M`),
   `b := rieszRep ℓ`; then (9.4.7)⟺(9.4.4) (`SesqForm.forall_apply_eq_iff_toOperator_eq`).
@@ -522,7 +522,7 @@ solution and (8.7.5) `‖u‖_U ≤ ‖ℓ‖_{V'}/α`.
 * Lean ((8.7.3) is formalised as `∃ u, 0 < a u v`, since as a real `iSup` the unbounded linear sup
   would be junk):
   ```lean
-  theorem thm_8_7_1 [CompleteSpace U] [CompleteSpace V] (a : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (ℓ : StrongDual ℝ V)
+  theorem theorem_8_7_1 [CompleteSpace U] [CompleteSpace V] (a : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (ℓ : StrongDual ℝ V)
       {M α : ℝ} (hM : 0 < M) (hα : 0 < α)
       (h871 : ∀ u v, |a u v| ≤ M * ‖u‖ * ‖v‖)
       (h872 : ∀ u, α * ‖u‖ ≤ ⨆ v : {v : V // v ≠ 0}, a u v / ‖(v : V)‖)
@@ -556,7 +556,7 @@ Classification: **needs-equivalence** (the one genuinely fiddly `Real.iSup` lemm
 * Lean: `theorem IsEllipticWith.infSup (ha : a.IsEllipticWith α) (hα : 0 < α) (hM) :
   ∀ u, α * ‖u‖ ≤ ⨆ v : {v // v ≠ 0}, a u v / ‖v‖` (needs `le_ciSup` with the bound from (8.7.1));
   `theorem IsEllipticWith.exists_pos (ha) (hα) : ∀ v ≠ 0, ∃ u, 0 < a u v`;
-  `theorem ex_8_7_1 : … := thm_8_7_1 …`.
+  `theorem exercise_8_7_1 : … := theorem_8_7_1 …`.
 * Backbone: `SesqForm.IsCoerciveWith.infSupWith (h : a.IsCoerciveWith c) :
   SesqForm₂.InfSupWith (a : SesqForm₂ 𝕜 V V) c` (`Numlib/Variational/Forms.lean`) is the
   operator-norm form of the first claim.
@@ -618,7 +618,7 @@ is `laxMilgram`. Classification: **direct** (`SesqForm.laxMilgram`).
   ```lean
   theorem galerkin_orthogonality (hu : ∀ v, a u v = ℓ v) (huN : GalerkinProblem a ℓ VN uN) :
       ∀ v ∈ VN, a (u - uN) v = 0                                                       -- (9.1.12)
-  theorem prop_9_1_3 [CompleteSpace V] (a) {M c₀} (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀)
+  theorem proposition_9_1_3 [CompleteSpace V] (a) {M c₀} (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀)
       (ha : a.IsEllipticWith c₀) (ℓ) (VN : Submodule ℝ V) {u uN} (hu : ∀ v, a u v = ℓ v)
       (huN : GalerkinProblem a ℓ VN uN) : ‖u - uN‖ ≤ M / c₀ * ⨅ v : VN, ‖u - v‖              -- (9.1.11)
   ```
@@ -651,7 +651,7 @@ is `laxMilgram`. Classification: **direct** (`SesqForm.laxMilgram`).
 `‖u − u_n‖ → 0`.
 * Lean:
   ```lean
-  theorem cor_9_1_4 [CompleteSpace V] (a) {M c₀} (hM) (hc₀) (ha) (ℓ) (VN : ℕ → Submodule ℝ V)
+  theorem corollary_9_1_4 [CompleteSpace V] (a) {M c₀} (hM) (hc₀) (ha) (ℓ) (VN : ℕ → Submodule ℝ V)
       [∀ n, FiniteDimensional ℝ (VN n)] (hmono : Monotone VN) (hdense : Dense (⋃ n, (VN n : Set V)))
       {u} (hu : ∀ v, a u v = ℓ v) (uN : ℕ → V) (huN : ∀ n, GalerkinProblem a ℓ (VN n) (uN n)) :
       Tendsto (fun n => ‖u - uN n‖) atTop (𝓝 0)
@@ -666,7 +666,7 @@ is `laxMilgram`. Classification: **direct** (`SesqForm.laxMilgram`).
 
 ### §9.2 The Petrov–Galerkin method
 
-**(9.2.1) well-posedness under (9.2.2)–(9.2.4).** = `thm_8_7_1`.
+**(9.2.1) well-posedness under (9.2.2)–(9.2.4).** = `theorem_8_7_1`.
 Classification: **needs-equivalence**.
 
 **Thm 9.2.1 (Babuška), (9.2.6)–(9.2.9).** `U_N ⊂ U`, `V_N ⊂ V`, `dim U_N = dim V_N = N`, discrete inf–sup
@@ -674,7 +674,7 @@ Classification: **needs-equivalence**.
 (9.2.9) triangle inequality, and (9.2.7) `‖u − u_N‖_U ≤ (1 + M/α_N) inf_{w_N∈U_N} ‖u − w_N‖_U`.
 * Lean:
   ```lean
-  theorem thm_9_2_1 (a : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (ℓ) {M αN : ℝ} (h922 : ∀ u v, |a u v| ≤ M * ‖u‖ * ‖v‖)
+  theorem theorem_9_2_1 (a : U →ₗ[ℝ] V →ₗ[ℝ] ℝ) (ℓ) {M αN : ℝ} (h922 : ∀ u v, |a u v| ≤ M * ‖u‖ * ‖v‖)
       (UN : Submodule ℝ U) (VN : Submodule ℝ V) [FiniteDimensional ℝ UN] [FiniteDimensional ℝ VN]
       (hdim : Module.finrank ℝ UN = Module.finrank ℝ VN) (hαN : 0 < αN)
       (hinfsup : DiscreteInfSup a UN VN αN) {u : U} (hu : ∀ v, a u v = ℓ v) :
@@ -706,7 +706,7 @@ Classification: **needs-equivalence**.
 * Lean: `theorem kato {H} [NormedAddCommGroup H] [InnerProductSpace ℝ H] [CompleteSpace H]
   (P : H →L[ℝ] H) (hP : IsIdempotentElem P) (h0 : P ≠ 0) (h1 : P ≠ 1) : ‖P‖ = ‖1 - P‖`;
   `theorem rem_9_2_2 … : ‖u - uN‖ ≤ M / αN * ⨅ wN : UN, ‖u - wN‖` (needs `u ↦ u_N` to be a bounded
-  idempotent `P_N : U →L[ℝ] U` — build it from `thm_9_2_1`'s `∃!` with `Classical.choose`, linear by
+  idempotent `P_N : U →L[ℝ] U` — build it from `theorem_9_2_1`'s `∃!` with `Classical.choose`, linear by
   uniqueness, bounded by `‖P_N u‖ ≤ (M/α_N)‖u‖`; then `‖u − u_N‖ = ‖(1 − P_N)(u − w_N)‖ ≤
   ‖P_N‖ ‖u − w_N‖`).
 * Backbone: Kato's lemma is `ContinuousLinearMap.IsIdempotentElem.norm_one_sub_eq
@@ -720,7 +720,7 @@ Classification: **needs-equivalence**.
 
 **Cor 9.2.3, (9.2.11)–(9.2.12).** `α_N ≥ α_0 > 0` uniformly, `U_{N_1} ⊂ U_{N_2} ⊂ ⋯` with dense union
 ⇒ `‖u − u_{N_i}‖_U → 0`.
-* Lean: as `cor_9_1_4` with `UN VN : ℕ → Submodule`, `hdim : ∀ i, finrank (UN i) = finrank (VN i)`,
+* Lean: as `corollary_9_1_4` with `UN VN : ℕ → Submodule`, `hdim : ∀ i, finrank (UN i) = finrank (VN i)`,
   `hinfsup : ∀ i, DiscreteInfSup a (UN i) (VN i) (αN i)`, `hα : ∀ i, α₀ ≤ αN i`, `Monotone UN`,
   `Dense (⋃ i, (UN i : Set U))`; conclusion `Tendsto (fun i => ‖u - uN i‖) atTop (𝓝 0)`.
 * Backbone: `IsPetrovGalerkinSolution.tendsto` (uniform constant `α`, hypotheses `hdim`, `hα`,
@@ -748,7 +748,7 @@ lower bound `0` for the `ciInf` from sign symmetry).
 `‖u − u_N‖_N ≤ (1 + M/α₀) inf_{w_N∈V_N} ‖u − w_N‖_N + (1/α₀) sup_{v_N∈V_N} |a_N(u,v_N) − ℓ_N(v_N)|/‖v_N‖_N`.
 * Lean (abstract `W`, D10):
   ```lean
-  theorem thm_9_3_1 {W} [NormedAddCommGroup W] [NormedSpace ℝ W] (aN : W →ₗ[ℝ] W →ₗ[ℝ] ℝ) (ℓN : W →ₗ[ℝ] ℝ)
+  theorem theorem_9_3_1 {W} [NormedAddCommGroup W] [NormedSpace ℝ W] (aN : W →ₗ[ℝ] W →ₗ[ℝ] ℝ) (ℓN : W →ₗ[ℝ] ℝ)
       (VN : Submodule ℝ W) [FiniteDimensional ℝ VN] {M α₀ c₀ : ℝ} (hα₀ : 0 < α₀)
       (hM : ∀ w, ∀ v ∈ VN, |aN w v| ≤ M * ‖w‖ * ‖v‖) (hcoer : ∀ v ∈ VN, α₀ * ‖v‖ ^ 2 ≤ aN v v)
       (hℓ : ∀ v ∈ VN, |ℓN v| ≤ c₀ * ‖v‖) (u : W) :
@@ -757,7 +757,7 @@ lower bound `0` for the `ciInf` from sign symmetry).
         ‖u - uN‖ ≤ (1 + M / α₀) * (⨅ w : VN, ‖u - w‖) +
           1 / α₀ * ⨆ v : {v : VN // v ≠ 0}, |aN u v - ℓN v| / ‖(v : W)‖
   ```
-  Surface wrapper `thm_9_3_1'` adds the book's data: `V` Hilbert, `a, ℓ` on `V`, `ι : V →ₗ[ℝ] W`
+  Surface wrapper `theorem_9_3_1'` adds the book's data: `V` Hilbert, `a, ℓ` on `V`, `ι : V →ₗ[ℝ] W`
   injective, `u : V` solving (9.1.1), conclusion for `ι u` — a one-line instance of the above.
 * Backbone (`Numlib/Variational/Galerkin.lean`, section `Strang`):
   `existsUnique_isGeneralizedGalerkinSolution aN ℓN K [FiniteDimensional 𝕜 K] (hc : 0 < c)
@@ -777,7 +777,7 @@ lower bound `0` for the `ciInf` from sign symmetry).
 
 **Ex 9.3.1.** Conforming case (`V_N ⊂ V`, `a_N = a`, `ℓ_N = ℓ`): the consistency term vanishes and
 (9.3.2) becomes `‖u − u_N‖ ≤ (1 + M/α₀) inf ‖u − v‖` (an inequality of the form (9.1.11)).
-* Lean: `theorem ex_9_3_1 (W := V) … (hu : ∀ v, a u v = ℓ v) : ‖u - uN‖ ≤ (1 + M / c₀) * ⨅ v : VN, ‖u - v‖`
+* Lean: `theorem exercise_9_3_1 (W := V) … (hu : ∀ v, a u v = ℓ v) : ‖u - uN‖ ≤ (1 + M / c₀) * ⨅ v : VN, ‖u - v‖`
   (sup term `= 0` by `hu`; `strang_first` with `δ = 0`).
 * Classification: **needs-equivalence** (trivial).
 
@@ -891,7 +891,7 @@ them):
 Out of scope for other reasons:
 * Thm 8.2.7 in its Banach generality (closed range theorem): Mathlib has no Banach dual of
   unbounded densely defined operators (D3); the Hilbert bounded case is recorded as
-  `thm_8_2_7_hilbert` (§3).
+  `theorem_8_2_7_hilbert` (§3).
 * Ex 8.2.1 (finite-dimensional exercise), Ex 9.1.4 (Galerkin as an existence proof via weak
   compactness — needs weak sequential compactness of bounded sets, not cited by any theorem).
 * Algorithm 2 (nonlinear CG for strictly convex `J`) and its convergence claim from [92]: no proof in

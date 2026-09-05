@@ -1,7 +1,7 @@
 namespace = "SaadSparse.Ch06"
 
 [[node]]
-id = "eq_6_4"
+id = "equation_6_4"
 
 [[node]]
 id = "grade"
@@ -19,7 +19,7 @@ id = "minpolyVec"
 id = "op"
 
 [[node]]
-id = "prop_6_2"
+id = "proposition_6_2"
 
 [[node]]
-id = "prop_6_3"
+id = "proposition_6_3"

@@ -4,16 +4,16 @@ namespace = "AtkinsonHan.Ch02"
 id = "IsSublinear"
 
 [[node]]
-id = "cor_2_5_6"
+id = "corollary_2_5_6"
 
 [[node]]
-id = "cor_2_5_7"
+id = "corollary_2_5_7"
 
 [[node]]
-id = "thm_2_5_2"
+id = "theorem_2_5_2"
 
 [[node]]
-id = "thm_2_5_5"
+id = "theorem_2_5_5"
 
 [[node]]
-id = "thm_2_5_8"
+id = "theorem_2_5_8"

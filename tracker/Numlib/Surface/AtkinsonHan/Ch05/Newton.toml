@@ -1,10 +1,10 @@
 namespace = "AtkinsonHan.Ch05"
 
 [[node]]
-id = "eq_5_4_5"
+id = "equation_5_4_5"
 
 [[node]]
-id = "thm_5_4_1"
+id = "theorem_5_4_1"
 
 [[node]]
-id = "thm_5_4_2"
+id = "theorem_5_4_2"

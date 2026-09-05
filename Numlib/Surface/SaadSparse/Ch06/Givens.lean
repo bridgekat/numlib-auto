@@ -456,12 +456,12 @@ section BookResultsReal
 variable (h : ℕ → ℕ → ℝ) (β : ℝ) (hh : ∀ i j : ℕ, j + 1 < i → h i j = 0)
 
 /-- (6.35): `c_i² + s_i² = 1`. -/
-theorem eq_6_35 {i : ℕ} (hρ : Krylov.givensRho h i ≠ 0) : c h i ^ 2 + s h i ^ 2 = 1 := by
+theorem equation_6_35 {i : ℕ} (hρ : Krylov.givensRho h i ≠ 0) : c h i ^ 2 + s h i ^ 2 = 1 := by
   have := norm_c_sq_add_norm_s_sq h hρ
   rwa [Real.norm_eq_abs, Real.norm_eq_abs, sq_abs, sq_abs] at this
 
 /-- (6.36), (6.38): the rotations `Ω_i` and their product `Q_m` are orthogonal. -/
-theorem eq_6_38 (m : ℕ) (hρ : ∀ i < m, Krylov.givensRho h i ≠ 0) :
+theorem equation_6_38 (m : ℕ) (hρ : ∀ i < m, Krylov.givensRho h i ≠ 0) :
     (∀ i < m, Ω h i m ∈ Matrix.unitaryGroup (Fin (m + 1)) ℝ) ∧
       Qrot h m ∈ Matrix.unitaryGroup (Fin (m + 1)) ℝ :=
   ⟨fun i hi => Ω_mem_unitaryGroup h hi (hρ i hi), Qrot_mem_unitaryGroup h m hρ⟩
@@ -469,13 +469,13 @@ theorem eq_6_38 (m : ℕ) (hρ : ∀ i < m, Krylov.givensRho h i ≠ 0) :
 include hh
 
 /-- (6.39): `R̄_m = Q_m H̄_m` is upper triangular with vanishing last row. -/
-theorem eq_6_39 (m : ℕ) :
+theorem equation_6_39 (m : ℕ) :
     (∀ (i : Fin (m + 1)) (j : Fin m), (j : ℕ) < (i : ℕ) → Rbar h m i j = 0) ∧
       ∀ j : Fin m, Rbar h m (Fin.last m) j = 0 :=
   ⟨fun _ _ hij => Rbar_eq_zero_of_lt h hh hij, fun j => Rbar_last_row h hh j⟩
 
 /-- (6.43): `‖β e_1 - H̄_m y‖₂² = |γ_{m+1}|² + ‖g_m - R_m y‖₂²`. -/
-theorem eq_6_43 {m : ℕ} (hρ : ∀ k < m, Krylov.givensRho h k ≠ 0) (y : Fin m → ℝ) :
+theorem equation_6_43 {m : ℕ} (hρ : ∀ k < m, Krylov.givensRho h k ≠ 0) (y : Fin m → ℝ) :
     ‖(WithLp.toLp 2 (Krylov.firstVec β (m + 1) - Krylov.hessenbergOf h m *ᵥ y) :
         EuclideanSpace ℝ (Fin (m + 1)))‖ ^ 2 =
       ‖γ h β m‖ ^ 2 +
@@ -485,7 +485,7 @@ theorem eq_6_43 {m : ℕ} (hρ : ∀ k < m, Krylov.givensRho h k ≠ 0) (y : Fin
 /-- (6.44)–(6.46): appending a column changes neither the earlier columns of `R̄` nor the
 earlier entries of `ḡ`; the two new entries of `ḡ_{m+1}` are `c_{m+1} γ_{m+1}` and
 `-s_{m+1} γ_{m+1}`. -/
-theorem eq_6_44 {m : ℕ} :
+theorem equation_6_44 {m : ℕ} :
     (Rbar h (m + 1)).submatrix Fin.castSucc Fin.castSucc = Rbar h m ∧
       (∀ i : Fin m, g h β (m + 1) i.castSucc = g h β m i) ∧
         gbar h β (m + 1) (Fin.last m).castSucc = c h m * γ h β m ∧
@@ -498,7 +498,7 @@ theorem eq_6_44 {m : ℕ} :
 omit hh
 
 /-- (6.47): `γ_{j+2} = -s_{j+1} γ_{j+1}`. -/
-theorem eq_6_47 (j : ℕ) : γ h β (j + 1) = -(s h j) * γ h β j :=
+theorem equation_6_47 (j : ℕ) : γ h β (j + 1) = -(s h j) * γ h β j :=
   gamma_succ h β j
 
 end BookResultsReal
@@ -511,7 +511,7 @@ variable {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) (v₁ : EuclideanSpace ℂ (
 
 /-- (6.80): the complex rotation `Ω_i` has row `i` equal to `(c̄_i, s̄_i)`, row `i+1` equal to
 `(-s_i, c_i)`, and agrees with the identity elsewhere. -/
-theorem eq_6_80 (h : ℕ → ℕ → ℂ) (i m : ℕ) (p q : Fin (m + 1)) :
+theorem equation_6_80 (h : ℕ → ℕ → ℂ) (i m : ℕ) (p q : Fin (m + 1)) :
     Ω h i m p q =
       if (p : ℕ) = i ∧ (q : ℕ) = i then starRingEnd ℂ (c h i)
       else if (p : ℕ) = i ∧ (q : ℕ) = i + 1 then starRingEnd ℂ (s h i)
@@ -520,14 +520,14 @@ theorem eq_6_80 (h : ℕ → ℕ → ℂ) (i m : ℕ) (p q : Fin (m + 1)) :
       else if p = q then 1 else 0 := rfl
 
 /-- (6.80): `|c_i|² + |s_i|² = 1`, so the complex rotations are unitary. -/
-theorem eq_6_80_unitary (h : ℕ → ℕ → ℂ) {i m : ℕ} (hi : i < m)
+theorem equation_6_80_unitary (h : ℕ → ℕ → ℂ) {i m : ℕ} (hi : i < m)
     (hρ : Krylov.givensRho h i ≠ 0) :
     ‖c h i‖ ^ 2 + ‖s h i‖ ^ 2 = 1 ∧ Ω h i m ∈ Matrix.unitaryGroup (Fin (m + 1)) ℂ :=
   ⟨norm_c_sq_add_norm_s_sq h hρ, Ω_mem_unitaryGroup h hi hρ⟩
 
 /-- (6.81), §6.5.9: for the Arnoldi coefficients `s_i` is real and nonnegative, the diagonal of
 `R_m` is real and nonnegative, and all the `γ_i` are real. -/
-theorem eq_6_81 (hv : ‖v₁‖ = 1) (t : ℝ) (m : ℕ) :
+theorem equation_6_81 (hv : ‖v₁‖ = 1) (t : ℝ) (m : ℕ) :
     (∀ i, ∃ u : ℝ, 0 ≤ u ∧ s (arnoldiCoeff A v₁) i = (u : ℂ)) ∧
       (∀ i : Fin m, R (arnoldiCoeff A v₁) m i i =
         ((Krylov.givensRho (arnoldiCoeff A v₁) i : ℝ) : ℂ)) ∧

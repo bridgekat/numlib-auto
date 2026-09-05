@@ -91,7 +91,7 @@ id = "energyNorm"
 id = "energyNorm_sq_eq_two_phi_add"
 
 [[node]]
-id = "eq_2_2"
+id = "equation_2_2"
 
 [[node]]
 id = "isMinOn_phi_iff_energyNorm_min"
@@ -109,55 +109,55 @@ id = "minres_norm_residual_le"
 id = "phi"
 
 [[node]]
-id = "thm_2_1_a"
+id = "theorem_2_1_a"
 
 [[node]]
-id = "thm_2_1_b"
+id = "theorem_2_1_b"
 
 [[node]]
-id = "thm_2_2_a"
+id = "theorem_2_2_a"
 
 [[node]]
-id = "thm_2_2_a_strict"
+id = "theorem_2_2_a_strict"
 
 [[node]]
-id = "thm_2_2_b"
+id = "theorem_2_2_b"
 
 [[node]]
-id = "thm_2_2_c"
+id = "theorem_2_2_c"
 
 [[node]]
-id = "thm_2_2_d"
+id = "theorem_2_2_d"
 
 [[node]]
-id = "thm_2_2_e"
+id = "theorem_2_2_e"
 
 [[node]]
-id = "thm_2_2_f"
+id = "theorem_2_2_f"
 
 [[node]]
-id = "thm_2_3_cr"
+id = "theorem_2_3_cr"
 
 [[node]]
-id = "thm_2_3_minres"
+id = "theorem_2_3_minres"
 
 [[node]]
-id = "thm_2_3_strict"
+id = "theorem_2_3_strict"
 
 [[node]]
-id = "thm_2_4_cr"
+id = "theorem_2_4_cr"
 
 [[node]]
-id = "thm_2_4_minres"
+id = "theorem_2_4_minres"
 
 [[node]]
-id = "thm_2_5_cr"
+id = "theorem_2_5_cr"
 
 [[node]]
-id = "thm_2_5_cr_antitone"
+id = "theorem_2_5_cr_antitone"
 
 [[node]]
-id = "thm_2_5_minres"
+id = "theorem_2_5_minres"
 
 [[node]]
 id = "two_phi_eq"

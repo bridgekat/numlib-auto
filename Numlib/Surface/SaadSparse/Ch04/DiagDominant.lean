@@ -29,7 +29,7 @@ variable {n : ℕ}
 
 /-- Saad, Theorem 4.6 (rows): every eigenvalue lies in one of the discs
 `|λ - a_ii| ≤ ∑_{j ≠ i} |a_ij|`. -/
-theorem thm_4_6 (A : Matrix (Fin n) (Fin n) ℂ) {μ : ℂ} (hμ : μ ∈ spectrum ℂ A) :
+theorem theorem_4_6 (A : Matrix (Fin n) (Fin n) ℂ) {μ : ℂ} (hμ : μ ∈ spectrum ℂ A) :
     ∃ i, ‖μ - A i i‖ ≤ ∑ j ∈ univ.erase i, ‖A i j‖ := by
   obtain ⟨i, hi⟩ := Set.mem_iUnion.mp (spectrum_subset_iUnion_closedBall A hμ)
   exact ⟨i, by simpa [Metric.mem_closedBall, dist_eq_norm] using hi⟩
@@ -46,21 +46,21 @@ theorem spectrum_transpose (A : Matrix (Fin n) (Fin n) ℂ) : spectrum ℂ Aᵀ 
 
 /-- Saad, Theorem 4.6 (columns): the same statement for the column sums, obtained by
 transposing. -/
-theorem thm_4_6_col (A : Matrix (Fin n) (Fin n) ℂ) {μ : ℂ} (hμ : μ ∈ spectrum ℂ A) :
+theorem theorem_4_6_col (A : Matrix (Fin n) (Fin n) ℂ) {μ : ℂ} (hμ : μ ∈ spectrum ℂ A) :
     ∃ j, ‖μ - A j j‖ ≤ ∑ i ∈ univ.erase j, ‖A i j‖ := by
-  obtain ⟨j, hj⟩ := thm_4_6 Aᵀ (by rwa [spectrum_transpose])
+  obtain ⟨j, hj⟩ := theorem_4_6 Aᵀ (by rwa [spectrum_transpose])
   exact ⟨j, hj⟩
 
 /-! ### Corollary 4.8 -/
 
 /-- Saad, Corollary 4.8 (strict row dominance): a strictly diagonally dominant matrix is
 nonsingular. -/
-theorem cor_4_8_strict {𝕜 : Type*} [RCLike 𝕜] {A : Matrix (Fin n) (Fin n) 𝕜}
+theorem corollary_4_8_strict {𝕜 : Type*} [RCLike 𝕜] {A : Matrix (Fin n) (Fin n) 𝕜}
     (h : A.IsStrictDiagDominant) : IsUnit A :=
   h.isUnit
 
 /-- Saad, Corollary 4.8 (strict column dominance). -/
-theorem cor_4_8_col {𝕜 : Type*} [RCLike 𝕜] {A : Matrix (Fin n) (Fin n) 𝕜}
+theorem corollary_4_8_col {𝕜 : Type*} [RCLike 𝕜] {A : Matrix (Fin n) (Fin n) 𝕜}
     (h : A.IsStrictColDiagDominant) : IsUnit A := by
   have hT : IsUnit Aᵀ := ((IsStrictColDiagDominant.transpose_iff A).mpr h).isUnit
   rwa [isUnit_iff_isUnit_det, det_transpose, ← isUnit_iff_isUnit_det] at hT
@@ -133,7 +133,7 @@ theorem gaussSeidel_complexSpectralRadius_lt_one (h : A.IsStrictDiagDominant)
 
 /-- Saad, Theorem 4.9 (Jacobi): for a strictly diagonally dominant `A` the Jacobi iteration
 converges to the solution from every starting vector. -/
-theorem thm_4_9_jacobi (h : A.IsStrictDiagDominant) (b x₀ : Fin n → ℝ) :
+theorem theorem_4_9_jacobi (h : A.IsStrictDiagDominant) (b x₀ : Fin n → ℝ) :
     Tendsto (fun k => (jacobiStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b)) := by
   have hd := h.isUnit_diagPart
   rw [jacobiStep_eq hd]
@@ -141,7 +141,7 @@ theorem thm_4_9_jacobi (h : A.IsStrictDiagDominant) (b x₀ : Fin n → ℝ) :
 
 /-- Saad, Theorem 4.9 (Gauss–Seidel): for a strictly diagonally dominant `A` the Gauss–Seidel
 iteration converges to the solution from every starting vector. -/
-theorem thm_4_9_gs (h : A.IsStrictDiagDominant) (b x₀ : Fin n → ℝ) :
+theorem theorem_4_9_gs (h : A.IsStrictDiagDominant) (b x₀ : Fin n → ℝ) :
     Tendsto (fun k => (gsStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b)) := by
   have hd := h.isUnit_diagPart
   rw [gsStep_eq hd]
@@ -149,7 +149,7 @@ theorem thm_4_9_gs (h : A.IsStrictDiagDominant) (b x₀ : Fin n → ℝ) :
 
 /-- Saad, Theorem 4.9 (Jacobi, strict column dominance): Kress's variant, from
 `Matrix.jacobi_spectralRadius_lt_one_of_col`. -/
-theorem thm_4_9_jacobi_col (h : A.IsStrictColDiagDominant) (hd : IsUnit (diagPart A))
+theorem theorem_4_9_jacobi_col (h : A.IsStrictColDiagDominant) (hd : IsUnit (diagPart A))
     (b x₀ : Fin n → ℝ) : Tendsto (fun k => (jacobiStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b)) := by
   have h' := isUnit_diagPart_complexify hd
   have hcol : (complexify A).IsStrictColDiagDominant := by

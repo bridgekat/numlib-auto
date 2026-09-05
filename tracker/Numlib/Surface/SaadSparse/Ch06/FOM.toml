@@ -16,19 +16,19 @@ id = "diom"
 id = "diom_residual"
 
 [[node]]
-id = "eq_6_16_17"
+id = "equation_6_16_17"
 
 [[node]]
-id = "eq_6_18"
+id = "equation_6_18"
 
 [[node]]
-id = "eq_6_22"
+id = "equation_6_22"
 
 [[node]]
-id = "eq_6_23"
+id = "equation_6_23"
 
 [[node]]
-id = "eq_6_24"
+id = "equation_6_24"
 
 [[node]]
 id = "fom"

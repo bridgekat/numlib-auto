@@ -13,16 +13,16 @@ id = "Ccomplex"
 id = "Chat"
 
 [[node]]
-id = "eq_6_109"
+id = "equation_6_109"
 
 [[node]]
-id = "eq_6_110"
+id = "equation_6_110"
 
 [[node]]
-id = "eq_6_111"
+id = "equation_6_111"
 
 [[node]]
-id = "eq_6_112"
+id = "equation_6_112"
 
 [[node]]
-id = "thm_6_25_value"
+id = "theorem_6_25_value"

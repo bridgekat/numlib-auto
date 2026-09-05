@@ -195,8 +195,8 @@ variable {A}
 `‖x_* - x_m‖_A ≤ ‖x_* - x_0‖_A / C_m(1 + 2η)`.
 
 The book's `η` is `+∞` when `λ_min = λ_max`, so the hypothesis `hl` — at least two distinct
-extreme eigenvalues — is the book's tacit assumption; without it use (6.128), `eq_6_128`. -/
-theorem thm_6_29 [NeZero n] (hA : A.PosDef) (hstar : op A xstar = b)
+extreme eigenvalues — is the book's tacit assumption; without it use (6.128), `equation_6_128`. -/
+theorem theorem_6_29 [NeZero n] (hA : A.PosDef) (hstar : op A xstar = b)
     (hl : ⨅ i, hA.1.eigenvalues i < ⨆ i, hA.1.eigenvalues i) (m : ℕ) :
     anorm A (xstar - cgX A b x₀ m) ≤
       anorm A (xstar - x₀) /
@@ -206,15 +206,15 @@ theorem thm_6_29 [NeZero n] (hA : A.PosDef) (hstar : op A xstar = b)
     (isSymmetricBoundedBy_op A hA) (cgX_isGalerkinIterate hA m) hstar
 
 /-- **(6.124)**: `½ (1 + 2η + √((1+2η)² - 1))^m ≤ C_m(1 + 2η)`. -/
-theorem eq_6_124 {lmin lmax : ℝ} (hl : 0 < lmin) (hll : lmin < lmax) (m : ℕ) :
+theorem equation_6_124 {lmin lmax : ℝ} (hl : 0 < lmin) (hll : lmin < lmax) (m : ℕ) :
     (1 + 2 * η lmin lmax + Real.sqrt ((1 + 2 * η lmin lmax) ^ 2 - 1)) ^ m / 2 ≤
       (C m).eval (1 + 2 * η lmin lmax) := by
-  refine eq_6_112 m ?_
+  refine equation_6_112 m ?_
   rw [one_add_two_mul_η hll.ne, le_div_iff₀ (by linarith)]
   linarith
 
 /-- **(6.125)**: `√((1 + 2η)² - 1) = 2√(η(η+1))`. -/
-theorem eq_6_125 {lmin lmax : ℝ} (hl : 0 < lmin) (hll : lmin < lmax) :
+theorem equation_6_125 {lmin lmax : ℝ} (hl : 0 < lmin) (hll : lmin < lmax) :
     Real.sqrt ((1 + 2 * η lmin lmax) ^ 2 - 1) =
       2 * Real.sqrt (η lmin lmax * (η lmin lmax + 1)) := by
   have hη : 0 ≤ η lmin lmax := div_nonneg hl.le (by linarith)
@@ -222,7 +222,7 @@ theorem eq_6_125 {lmin lmax : ℝ} (hl : 0 < lmin) (hll : lmin < lmax) :
     Real.sqrt_mul (by positivity), Real.sqrt_sq (by norm_num)]
 
 /-- **(6.126)**: `1 + 2η + 2√(η(η+1)) = (√η + √(η+1))²`. -/
-theorem eq_6_126 {lmin lmax : ℝ} (hl : 0 < lmin) (hll : lmin < lmax) :
+theorem equation_6_126 {lmin lmax : ℝ} (hl : 0 < lmin) (hll : lmin < lmax) :
     1 + 2 * η lmin lmax + 2 * Real.sqrt (η lmin lmax * (η lmin lmax + 1)) =
       (Real.sqrt (η lmin lmax) + Real.sqrt (η lmin lmax + 1)) ^ 2 := by
   have hη : 0 ≤ η lmin lmax := div_nonneg hl.le (by linarith)
@@ -232,7 +232,7 @@ theorem eq_6_126 {lmin lmax : ℝ} (hl : 0 < lmin) (hll : lmin < lmax) :
   ring
 
 /-- **(6.127)**: `(√η + √(η+1))² = (√κ + 1)/(√κ - 1)`, with `κ = λ_max/λ_min`. -/
-theorem eq_6_127 {lmin lmax : ℝ} (hl : 0 < lmin) (hll : lmin < lmax) :
+theorem equation_6_127 {lmin lmax : ℝ} (hl : 0 < lmin) (hll : lmin < lmax) :
     (Real.sqrt (η lmin lmax) + Real.sqrt (η lmin lmax + 1)) ^ 2 =
       (Real.sqrt (κ lmin lmax) + 1) / (Real.sqrt (κ lmin lmax) - 1) := by
   have hd : (0 : ℝ) < lmax - lmin := by linarith
@@ -260,7 +260,7 @@ theorem eq_6_127 {lmin lmax : ℝ} (hl : 0 < lmin) (hll : lmin < lmax) :
 
 /-- **(6.128)**: `‖x_* - x_m‖_A ≤ 2 ((√κ - 1)/(√κ + 1))^m ‖x_* - x_0‖_A`, `κ = λ_max/λ_min`.
 Unlike (6.123) this needs no strict spectral gap. -/
-theorem eq_6_128 [NeZero n] (hA : A.PosDef) (hstar : op A xstar = b) (m : ℕ) :
+theorem equation_6_128 [NeZero n] (hA : A.PosDef) (hstar : op A xstar = b) (m : ℕ) :
     anorm A (xstar - cgX A b x₀ m) ≤
       2 * ((Real.sqrt (κ (⨅ i, hA.1.eigenvalues i) (⨆ i, hA.1.eigenvalues i)) - 1) /
         (Real.sqrt (κ (⨅ i, hA.1.eigenvalues i) (⨆ i, hA.1.eigenvalues i)) + 1)) ^ m *
@@ -392,7 +392,7 @@ private theorem restarted_isMinResIterate (hAu : IsUnit A) (b x₀ : 𝔼) (m k 
 /-- **Theorem 6.30**, the rate: each cycle of GMRES(m) reduces the residual by at least the
 factor `√(1 - μ²/σ²)`, with `μ = λ_min((A + Aᵀ)/2)` and `σ = ‖A‖₂` — the book's (5.15), since one
 cycle is at least as good as one minimal-residual step. -/
-theorem thm_6_30_rate [NeZero n] (hA : ∀ x : 𝔼, x ≠ 0 → 0 < inner ℝ (op A x) x) (b x₀ : 𝔼)
+theorem theorem_6_30_rate [NeZero n] (hA : ∀ x : 𝔼, x ≠ 0 → 0 < inner ℝ (op A x) x) (b x₀ : 𝔼)
     {m : ℕ} (hm : 1 ≤ m) (k : ℕ) :
     ‖b - op A (gmresRestarted A b m x₀ (k + 1))‖ ≤
       Real.sqrt (1 - (⨅ i, (symmPart_isHermitian A).eigenvalues i) ^ 2 / ‖A‖ ^ 2) *
@@ -410,7 +410,7 @@ the solution for every `m ≥ 1`.
 This is the backbone's `Krylov.restarted_minRes_tendsto`: a cycle of Algorithm 6.11 satisfies the
 per-cycle minimal-residual specification (`gmres_isMinResIterate`), and coercivity turns the
 convergence of the residuals into convergence of the iterates. -/
-theorem thm_6_30 [NeZero n] (hA : ∀ x : 𝔼, x ≠ 0 → 0 < inner ℝ (op A x) x) (b x₀ xstar : 𝔼)
+theorem theorem_6_30 [NeZero n] (hA : ∀ x : 𝔼, x ≠ 0 → 0 < inner ℝ (op A x) x) (b x₀ xstar : 𝔼)
     (hstar : op A xstar = b) {m : ℕ} (hm : 1 ≤ m) :
     Filter.Tendsto (fun k => gmresRestarted A b m x₀ k) Filter.atTop (nhds xstar) := by
   have hc := iInf_eigenvalues_symmPart_pos A hA
@@ -549,7 +549,7 @@ theorem norm_aeval_diagonal_mulVec_le {A : Matrix (Fin n) (Fin n) ℂ}
 
 /-- **Proposition 6.32**: for a diagonalizable `A = X Λ X⁻¹` with `Λ = diag(λ_1, …, λ_n)`, the
 `m`-th GMRES residual satisfies `‖r_m‖₂ ≤ κ₂(X) ε^{(m)} ‖r_0‖₂`, `κ₂(X) = ‖X‖₂ ‖X⁻¹‖₂`. -/
-theorem prop_6_32 {A : Matrix (Fin n) (Fin n) ℂ} (b x₀ : 𝔼) (X : Matrix (Fin n) (Fin n) ℂ)
+theorem proposition_6_32 {A : Matrix (Fin n) (Fin n) ℂ} (b x₀ : 𝔼) (X : Matrix (Fin n) (Fin n) ℂ)
     (hX : IsUnit X) (lam : Fin n → ℂ) (hA : A = X * Matrix.diagonal lam * X⁻¹) {m : ℕ}
     (hm : m ≤ grade A (v₁ A b x₀)) (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m)) :
     ‖b - op A (gmresFixed A b x₀ m)‖ ≤ ‖X‖ * ‖X⁻¹‖ * epsMin lam m * ‖r₀ A b x₀‖ := by

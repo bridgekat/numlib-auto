@@ -338,7 +338,7 @@ theorem apply_arnoldiCGS (hv : ‖v₁‖ = 1) (j : ℕ) :
       = ∑ i ∈ Finset.range (j + 2), arnoldiCoeff A v₁ i j • arnoldiCGS A v₁ i :=
   (hessenbergRelation A v₁ hv).apply_eq j
 
-private theorem eq_6_9_range (hv : ‖v₁‖ = 1) {j N : ℕ} (h : j + 2 ≤ N) :
+private theorem equation_6_9_range (hv : ‖v₁‖ = 1) {j N : ℕ} (h : j + 2 ≤ N) :
     op A (arnoldiCGS A v₁ j)
       = ∑ i ∈ Finset.range N, arnoldiCoeff A v₁ i j • arnoldiCGS A v₁ i := by
   simp only [arnoldiCGS_eq_vec A v₁ hv, arnoldiCoeff_eq A v₁ hv]
@@ -390,7 +390,7 @@ theorem mul_V_eq_add_vecMulVec (hv : ‖v₁‖ = 1) (m : ℕ) :
       rw [arnoldiCoeff_eq_zero_of_lt A v₁ hv (by omega), zero_smul]
       simp [Fin.ext_iff, hne]
   ext i j
-  rw [mul_V_apply, eq_6_9_range A v₁ hv (N := m + 2) (by omega), Finset.sum_range_succ, hlast j,
+  rw [mul_V_apply, equation_6_9_range A v₁ hv (N := m + 2) (by omega), Finset.sum_range_succ, hlast j,
     PiLp.add_apply, sum_coord, Matrix.add_apply, Matrix.mul_apply, Matrix.vecMulVec_apply,
     ← Fin.sum_univ_eq_sum_range
       (fun l => (arnoldiCoeff A v₁ l (j : ℕ) • arnoldiCGS A v₁ l) i) (m + 1)]
@@ -877,7 +877,7 @@ theorem inner_QhhT (j : ℕ) (x y : 𝔼) :
       householder_householder (norm_hhW A v (j + 1))]
 
 /-- (6.13), P-6.1(c): `Q_{j+1}ᵀ e_i = v_i` for `i ≤ j + 1`. -/
-theorem eq_6_13 {i j : ℕ} (h : i ≤ j) : QhhT A v j (stdVec i) = hhV A v i := by
+theorem equation_6_13 {i j : ℕ} (h : i ≤ j) : QhhT A v j (stdVec i) = hhV A v i := by
   induction j with
   | zero =>
     obtain rfl : i = 0 := Nat.le_zero.1 h
@@ -900,21 +900,21 @@ theorem householder_hhW_hhH {i j : ℕ} (h : j < i) :
   householder_hhW_apply_of_supported A v fun _ hi => hhH_coord_of_lt A v j (by omega)
 
 /-- (6.11): `h_j = Q_{j+1} A v_j`. -/
-theorem eq_6_11 (j : ℕ) : hhH A v (j + 1) = Qhh A v (j + 1) (op A (hhV A v j)) := by
+theorem equation_6_11 (j : ℕ) : hhH A v (j + 1) = Qhh A v (j + 1) (op A (hhV A v j)) := by
   rw [hhH, hhZ_succ, Qhh_succ, LinearMap.comp_apply]
 
 /-- (6.12): `Q_m [v, A v_1, …, A v_m] = [h_0, h_1, …, h_m]`, first column. -/
-theorem eq_6_12_zero (m : ℕ) : Qhh A v m v = hhH A v 0 := by
+theorem equation_6_12_zero (m : ℕ) : Qhh A v m v = hhH A v 0 := by
   induction m with
   | zero => rw [Qhh_zero, hhH, hhZ_zero]
   | succ m ih => rw [Qhh_succ, LinearMap.comp_apply, ih, householder_hhW_hhH A v (by omega)]
 
 /-- (6.12): `Q_m [v, A v_1, …, A v_m] = [h_0, h_1, …, h_m]`, the later columns. Together with
 `hhH_coord_of_lt` this says that the factorization is upper triangular. -/
-theorem eq_6_12 {j m : ℕ} (h : j + 1 ≤ m) :
+theorem equation_6_12 {j m : ℕ} (h : j + 1 ≤ m) :
     Qhh A v m (op A (hhV A v j)) = hhH A v (j + 1) := by
   induction m, h using Nat.le_induction with
-  | base => exact (eq_6_11 A v j).symm
+  | base => exact (equation_6_11 A v j).symm
   | succ m hm ih =>
     rw [Qhh_succ, LinearMap.comp_apply, ih, householder_hhW_hhH A v (by omega)]
 
@@ -935,10 +935,10 @@ theorem hh_hessenbergRelation :
   have hzero : ∀ i : Fin n, j + 2 ≤ (i : ℕ) → hhH A v (j + 1) i = 0 :=
     fun i hi => hhH_coord_of_lt A v (j + 1) (by omega)
   have hAv : op A (hhV A v j) = QhhT A v (j + 1) (hhH A v (j + 1)) := by
-    rw [eq_6_11, QhhT_Qhh]
+    rw [equation_6_11, QhhT_Qhh]
   rw [hAv, eq_sum_coordAt_smul_stdVec hzero, map_sum]
   refine Finset.sum_congr rfl fun i hi => ?_
-  rw [map_smul, eq_6_13 A v (Nat.lt_succ_iff.1 (Finset.mem_range.1 hi))]
+  rw [map_smul, equation_6_13 A v (Nat.lt_succ_iff.1 (Finset.mem_range.1 hi))]
   rfl
 
 /-- `V^{HH}_m`, the matrix of the first `m` Householder Arnoldi vectors. -/
@@ -956,7 +956,7 @@ theorem hh_arnoldi_relation (m : ℕ) : A * VHH A v m = VHH A v (m + 1) * HbarHH
 theorem inner_hhV {i j : ℕ} (hi : i < n) :
     (inner ℝ (hhV A v i) (hhV A v j) : ℝ) = if i = j then 1 else 0 := by
   have h := inner_QhhT A v (max i j) (stdVec i) (stdVec j)
-  rw [eq_6_13 A v (le_max_left i j), eq_6_13 A v (le_max_right i j)] at h
+  rw [equation_6_13 A v (le_max_left i j), equation_6_13 A v (le_max_right i j)] at h
   rw [h, inner_stdVec_left]
   simp [coordAt, hi]
 
@@ -1111,45 +1111,45 @@ variable {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (v₁ : EuclideanSpace ℝ (
 
 /-- **Proposition 6.4**. If Algorithm 6.1 does not break down before step `m`, then the vectors
 `v_1, …, v_m` form an orthonormal basis of `𝒦_m = span {v_1, A v_1, …, A^{m-1} v_1}`. -/
-theorem prop_6_4 (hv : ‖v₁‖ = 1) {m : ℕ} (h : NoBreakdownBefore A v₁ m) :
+theorem proposition_6_4 (hv : ‖v₁‖ = 1) {m : ℕ} (h : NoBreakdownBefore A v₁ m) :
     Orthonormal ℝ (fun i : Fin m => arnoldiCGS A v₁ (i : ℕ)) ∧
       Submodule.span ℝ (Set.range fun i : Fin m => arnoldiCGS A v₁ (i : ℕ)) = krylov A v₁ m :=
   ⟨orthonormal_arnoldiCGS A v₁ hv ((noBreakdownBefore_iff A v₁ hv m).1 h),
     span_arnoldiCGS A v₁ hv m⟩
 
 /-- (6.9): `A v_j = ∑_{i=1}^{j+1} h_{ij} v_i`. -/
-theorem eq_6_9 (hv : ‖v₁‖ = 1) (j : ℕ) :
+theorem equation_6_9 (hv : ‖v₁‖ = 1) (j : ℕ) :
     op A (arnoldiCGS A v₁ j)
       = ∑ i ∈ Finset.range (j + 2), arnoldiCoeff A v₁ i j • arnoldiCGS A v₁ i :=
   apply_arnoldiCGS A v₁ hv j
 
 /-- (6.7), **Proposition 6.5**: `A V_m = V_{m+1} H̄_m`. -/
-theorem eq_6_7 (hv : ‖v₁‖ = 1) (m : ℕ) : A * V A v₁ m = V A v₁ (m + 1) * Hbar A v₁ m :=
+theorem equation_6_7 (hv : ‖v₁‖ = 1) (m : ℕ) : A * V A v₁ m = V A v₁ (m + 1) * Hbar A v₁ m :=
   mul_V_eq A v₁ hv m
 
 /-- (6.6), **Proposition 6.5**: `A V_m = V_m H_m + w_m e_mᵀ`. -/
-theorem eq_6_6 (hv : ‖v₁‖ = 1) (m : ℕ) :
+theorem equation_6_6 (hv : ‖v₁‖ = 1) (m : ℕ) :
     A * V A v₁ (m + 1) = V A v₁ (m + 1) * H A v₁ (m + 1) +
       Matrix.vecMulVec (WithLp.ofLp (arnoldiW A v₁ m)) (Pi.single (Fin.last m) 1) :=
   mul_V_eq_add_vecMulVec A v₁ hv m
 
 /-- (6.8), **Proposition 6.5**: `V_mᵀ A V_m = H_m`. -/
-theorem eq_6_8 (m : ℕ) : (V A v₁ m)ᵀ * A * V A v₁ m = H A v₁ m := by
+theorem equation_6_8 (m : ℕ) : (V A v₁ m)ᵀ * A * V A v₁ m = H A v₁ m := by
   rw [← Matrix.conjTranspose_eq_transpose_of_trivial]
   exact conjTranspose_V_mul_mul_V A v₁ m
 
 /-- **Proposition 6.6**. Arnoldi's method breaks down at step `j`, that is `h_{j+1,j} = 0` while
 no earlier step broke down, if and only if the minimal polynomial of `v_1` has degree `j`. -/
-theorem prop_6_6 (hv : ‖v₁‖ = 1) {j : ℕ} (hj : 0 < j) :
+theorem proposition_6_6 (hv : ‖v₁‖ = 1) {j : ℕ} (hj : 0 < j) :
     (NoBreakdownBefore A v₁ j ∧ arnoldiCoeff A v₁ j (j - 1) = 0) ↔ grade A v₁ = j :=
   breakdown_iff_grade_eq A v₁ hv hj
 
 /-- **Proposition 6.6**, second part: at a breakdown at step `j` the subspace `𝒦_j` is
 invariant under `A`. -/
-theorem prop_6_6' (hv : ‖v₁‖ = 1) {j : ℕ} (hj : 0 < j)
+theorem proposition_6_6' (hv : ‖v₁‖ = 1) {j : ℕ} (hj : 0 < j)
     (h : NoBreakdownBefore A v₁ j ∧ arnoldiCoeff A v₁ j (j - 1) = 0) :
     krylov A v₁ j ∈ Module.End.invtSubmodule (op A) :=
-  krylov_mem_invtSubmodule_of_breakdown A v₁ ((prop_6_6 A v₁ hv hj).1 h).le
+  krylov_mem_invtSubmodule_of_breakdown A v₁ ((proposition_6_6 A v₁ hv hj).1 h).le
 
 variable {A}
 
@@ -1168,7 +1168,7 @@ variable (A)
 
 /-- §6.3.2: **Algorithm 6.2 is mathematically equivalent to Algorithm 6.1** — in exact
 arithmetic the two produce the same vectors and the same coefficients. -/
-theorem alg_6_2_eq_alg_6_1 (hv : ‖v₁‖ = 1) :
+theorem algorithm_6_2_eq_alg_6_1 (hv : ‖v₁‖ = 1) :
     arnoldiMGS A v₁ = arnoldiCGS A v₁ ∧ arnoldiMGSCoeff A v₁ = arnoldiCoeff A v₁ :=
   ⟨funext (arnoldiMGS_eq_arnoldiCGS A v₁ hv),
     funext fun i => funext fun j => arnoldiMGSCoeff_eq_arnoldiCoeff A v₁ hv i j⟩

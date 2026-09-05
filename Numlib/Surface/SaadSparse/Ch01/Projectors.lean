@@ -355,7 +355,7 @@ theorem ker_eq_orthogonal_range_conjTranspose (P : Matrix (Fin n) (Fin n) 𝕜) 
 /-! ### Proposition 1.37 -/
 
 /-- **Proposition 1.37**.  A projector is orthogonal if and only if it is Hermitian. -/
-theorem prop_1_37 {P : Matrix (Fin n) (Fin n) 𝕜} (hP : P.IsProjector) :
+theorem proposition_1_37 {P : Matrix (Fin n) (Fin n) 𝕜} (hP : P.IsProjector) :
     P.IsOrthogonalProjector ↔ P.IsHermitian := by
   have hidem : IsIdempotentElem (toEuclideanLin P) :=
     (isProjector_iff_isIdempotentElem_toEuclideanLin P).mp hP
@@ -479,7 +479,7 @@ theorem mem_range_iff_eigen_one {P : Matrix (Fin n) (Fin n) 𝕜} (hP : P.IsProj
 
 /-- **Theorem 1.38**.  For a subspace `M` and `x ∈ ℂⁿ`, `min_{y ∈ M} ‖x - y‖₂ = ‖x - P x‖₂` with
 `P` the orthogonal projector onto `M`. -/
-theorem thm_1_38 (M : Submodule 𝕜 (EuclideanSpace 𝕜 (Fin n))) (x : EuclideanSpace 𝕜 (Fin n)) :
+theorem theorem_1_38 (M : Submodule 𝕜 (EuclideanSpace 𝕜 (Fin n))) (x : EuclideanSpace 𝕜 (Fin n)) :
     IsLeast ((fun y => ‖x - y‖) '' (M : Set (EuclideanSpace 𝕜 (Fin n))))
       ‖x - M.starProjection x‖ := by
   refine ⟨⟨M.starProjection x, M.starProjection_apply_mem x, rfl⟩, ?_⟩
@@ -490,7 +490,7 @@ theorem thm_1_38 (M : Submodule 𝕜 (EuclideanSpace 𝕜 (Fin n))) (x : Euclide
 /-- **Corollary 1.39**.  For `y ∈ M`, the distance `‖x - y‖₂` is minimal over `M` if and only if
 `x - y ⟂ M`.  (The book's "`min_{y ∈ M}`" is read as ranging over `M`, so membership is a
 hypothesis rather than part of the conclusion.) -/
-theorem cor_1_39 (M : Submodule 𝕜 (EuclideanSpace 𝕜 (Fin n)))
+theorem corollary_1_39 (M : Submodule 𝕜 (EuclideanSpace 𝕜 (Fin n)))
     {x y : EuclideanSpace 𝕜 (Fin n)} (hy : y ∈ M) :
     IsLeast ((fun z => ‖x - z‖) '' (M : Set (EuclideanSpace 𝕜 (Fin n)))) ‖x - y‖ ↔
       x - y ∈ Mᗮ := by

@@ -40,20 +40,20 @@ theorem contractiveOn_real_iff {K : Set ℝ} :
 /-- **Theorem 5.2.1**: the scalar case of the Banach fixed-point theorem.  A contractive
 `T : [a, b] → [a, b]` has a unique fixed point in `[a, b]`, the iteration converges to it from
 every starting point, and the three error bounds (5.1.4)–(5.1.6) hold. -/
-theorem thm_5_2_1 (hab : a ≤ b) (hT : MapsTo T (Icc a b) (Icc a b))
+theorem theorem_5_2_1 (hab : a ≤ b) (hT : MapsTo T (Icc a b) (Icc a b))
     (hα : ContractiveOn T (Icc a b) α) :
     (∃! u, u ∈ Icc a b ∧ T u = u) ∧
       ∀ u₀ ∈ Icc a b, ∃ u ∈ Icc a b, T u = u ∧ Tendsto (fun n => T^[n] u₀) atTop (𝓝 u) ∧
         (∀ n, ‖T^[n] u₀ - u‖ ≤ α ^ n / (1 - α) * ‖u₀ - T u₀‖) ∧
         (∀ n, ‖T^[n + 1] u₀ - u‖ ≤ α / (1 - α) * ‖T^[n] u₀ - T^[n + 1] u₀‖) ∧
         (∀ n, ‖T^[n + 1] u₀ - u‖ ≤ α * ‖T^[n] u₀ - u‖) :=
-  thm_5_1_3 isClosed_Icc (nonempty_Icc.2 hab) hT hα
+  theorem_5_1_3 isClosed_Icc (nonempty_Icc.2 hab) hT hα
 
 /-- The derivative criterion accompanying Theorem 5.2.1: if `|T'| ≤ α < 1` on `[a, b]` then `T` is
 contractive there with constant `α`.  This is the scalar case of the backbone's
 `lipschitzOnWith_of_hasFDerivWithinAt` (`Numlib/Nonlinear/FixedPoint.lean`), i.e. Mathlib's
 `Convex.lipschitzOnWith_of_nnnorm_hasDerivWithin_le`. -/
-theorem thm_5_2_1_deriv {T' : ℝ → ℝ} (hα0 : 0 ≤ α) (hα1 : α < 1)
+theorem theorem_5_2_1_deriv {T' : ℝ → ℝ} (hα0 : 0 ≤ α) (hα1 : α < 1)
     (hT : ∀ x ∈ Icc a b, HasDerivWithinAt T (T' x) (Icc a b) x)
     (hbound : ∀ x ∈ Icc a b, |T' x| ≤ α) : ContractiveOn T (Icc a b) α :=
   (contractiveOn_iff hα0).2
@@ -166,7 +166,7 @@ theorem step_fixed {x b : ι → ℝ} (hx : A *ᵥ x = b) :
   simp [hb]
 
 /-- **(5.2.5)**: the error equation `x - x_n = (N⁻¹M)ⁿ (x - x₀)`. -/
-theorem eq_5_2_5 {x b : ι → ℝ} (hx : A *ᵥ x = b) (x₀ : ι → ℝ) (k : ℕ) :
+theorem equation_5_2_5 {x b : ι → ℝ} (hx : A *ᵥ x = b) (x₀ : ι → ℝ) (k : ℕ) :
     x - (s.iterStep b)^[k] x₀ = s.iterMatrix ^ k *ᵥ (x - x₀) := by
   have h := Stationary.step_iterate_sub (mulVecCLM s.iterMatrix) (s.N⁻¹ *ᵥ b) (s.step_fixed hx)
     x₀ k

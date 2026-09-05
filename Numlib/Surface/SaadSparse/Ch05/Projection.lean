@@ -126,7 +126,7 @@ end Bases
 
 /-- Saad, Proposition 5.1 (i): for positive real `A` and `L = K`, the projected system is
 nonsingular; equivalently the Galerkin approximation exists and is unique. -/
-theorem prop_5_1_i (hA : A.IsPositiveReal) (K : Submodule ℝ (E n)) (b x₀ : E n) :
+theorem proposition_5_1_i (hA : A.IsPositiveReal) (K : Submodule ℝ (E n)) (b x₀ : E n) :
     ∃! x, IsProjectionApprox A b x₀ K K x := by
   have hc : (toEuclideanLin A).IsCoercive := (Matrix.isPositiveReal_iff_isCoercive A).mp hA
   obtain ⟨x, hx, huniq⟩ := existsUnique_isGalerkin_of_isCoercive (A := toEuclideanLin A) b x₀ K hc
@@ -140,7 +140,7 @@ theorem injective_toEuclideanLin (hA : IsUnit A) : Function.Injective (toEuclide
 
 /-- Saad, Proposition 5.1 (ii): for nonsingular `A` and `L = A K`, the projected system is
 nonsingular. -/
-theorem prop_5_1_ii (hA : IsUnit A) (K : Submodule ℝ (E n)) (b x₀ : E n) :
+theorem proposition_5_1_ii (hA : IsUnit A) (K : Submodule ℝ (E n)) (b x₀ : E n) :
     ∃! x, IsProjectionApprox A b x₀ K (K.map (toEuclideanLin A)) x := by
   have hinj : Set.InjOn (toEuclideanLin A) K :=
     fun u _ v _ huv => injective_toEuclideanLin hA huv
@@ -176,7 +176,7 @@ theorem E_A_eq_energyNorm (A : Matrix (Fin n) (Fin n) ℝ) (xstar x : E n) :
 
 /-- Saad, Proposition 5.2: for SPD `A` and `L = K`, the projection approximation is exactly the
 minimizer of the energy norm of the error over `x₀ + K`. -/
-theorem prop_5_2 (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b) :
+theorem proposition_5_2 (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b) :
     IsProjectionApprox A b x₀ K K x ↔
       (x - x₀ ∈ K ∧ ∀ y, y - x₀ ∈ K → E_A A xstar x ≤ E_A A xstar y) := by
   have hsc : (toEuclideanLin A).IsSymmetricCoercive :=
@@ -188,7 +188,7 @@ theorem prop_5_2 (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b) :
 
 /-- Saad, Proposition 5.3: for `L = A K` the projection approximation is exactly the minimizer of
 the residual norm over `x₀ + K`. -/
-theorem prop_5_3 :
+theorem proposition_5_3 :
     IsProjectionApprox A b x₀ K (K.map (toEuclideanLin A)) x ↔
       (x - x₀ ∈ K ∧ ∀ y, y - x₀ ∈ K → R_A A b x ≤ R_A A b y) := by
   rw [isProjectionApprox_iff, ← IsMinRes.iff_isPetrovGalerkin]
@@ -196,7 +196,7 @@ theorem prop_5_3 :
 
 /-- Saad, Proposition 5.4: for `L = A K` the residual is `(I - P) r₀` with `P` the orthogonal
 projector onto `A K`. -/
-theorem prop_5_4 (hx : IsProjectionApprox A b x₀ K (K.map (toEuclideanLin A)) x) :
+theorem proposition_5_4 (hx : IsProjectionApprox A b x₀ K (K.map (toEuclideanLin A)) x) :
     b - (A ⬝ x) =
       (b - (A ⬝ x₀)) - (K.map (toEuclideanLin A)).starProjection (b - (A ⬝ x₀)) :=
   (IsMinRes.iff_isPetrovGalerkin.mpr (isProjectionApprox_iff.mp hx)).residual_eq
@@ -209,7 +209,7 @@ theorem norm_residual_le (hx : IsProjectionApprox A b x₀ K (K.map (toEuclidean
 
 /-- Saad, Proposition 5.5 (characterization): for `L = K` the error `x* - x̃` is `A`-orthogonal
 to `K`. -/
-theorem prop_5_5_char {xstar : E n} (hstar : (A ⬝ xstar) = b)
+theorem proposition_5_5_char {xstar : E n} (hstar : (A ⬝ xstar) = b)
     (hx : IsProjectionApprox A b x₀ K K x) :
     x - x₀ ∈ K ∧ ∀ w ∈ K, A.energyInner (xstar - x) w = 0 := by
   refine ⟨hx.1, fun w hw => ?_⟩
@@ -257,7 +257,7 @@ theorem isProjectionApprox_zero_iff_A_m (hd : finrank ℝ K = finrank ℝ L) (h 
 
 /-- Saad, Proposition 5.6: if `K` is invariant under `A`, the initial residual lies in `K` and
 `K ∩ Lᗮ = 0`, then the projection approximation is exact. -/
-theorem prop_5_6 (hK : K ∈ Module.End.invtSubmodule (toEuclideanLin A))
+theorem proposition_5_6 (hK : K ∈ Module.End.invtSubmodule (toEuclideanLin A))
     (hKL : ∀ z ∈ K, z ∈ Lᗮ → z = 0) (hr : b - (A ⬝ x₀) ∈ K)
     (hx : IsProjectionApprox A b x₀ K L x) : (A ⬝ x) = b :=
   (isProjectionApprox_iff.mp hx).eq_of_invt hK hr hKL
@@ -273,7 +273,7 @@ theorem norm_sub_ge_of_mem {xstar : E n} (hx : x ∈ K) :
 /-- Saad, Theorem 5.7 (the underlying identity): with `b ∈ K` and `x₀ = 0`, the exact solution
 `x*` satisfies `b - A_m x* = Q A (I - P_K) x*`, whence
 `‖b - A_m x*‖ ≤ ‖Q A (I - P_K)‖ ‖(I - P_K) x*‖`. -/
-theorem thm_5_7 (hd : finrank ℝ K = finrank ℝ L) (h : K ⊓ Lᗮ = ⊥) (hb : b ∈ K)
+theorem theorem_5_7 (hd : finrank ℝ K = finrank ℝ L) (h : K ⊓ Lᗮ = ⊥) (hb : b ∈ K)
     {xstar : E n} (hstar : (A ⬝ xstar) = b) :
     b - A_m A K L hd h xstar =
       SaadSparse.obliqueProjection K L hd h (A ⬝ (xstar - K.starProjection xstar)) := by

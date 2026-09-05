@@ -21,11 +21,11 @@ Contents: `qgmresY`, `qgmres` (Algorithm 6.12), `Z`, `z`, `ζ` of (6.52), `quasi
 `= |γ_{m+1}|`, (6.49)–(6.50), and Algorithm 6.13 (`dqgmresP`, `dqgmres`) with its equivalence
 `dqgmres_eq_qgmres` to Algorithm 6.12.
 
-Also (6.53)–(6.55) and P-6.25 (`eq_6_53`, `eq_6_54`, `eq_6_55`, `p_6_25`, `p_6_25_le`); the
+Also (6.53)–(6.55) and P-6.25 (`equation_6_53`, `equation_6_54`, `equation_6_55`, `problem_6_25`, `problem_6_25_le`); the
 size-compatibility lemmas for `Krylov.givensQAux` that (6.53) needs are private here and are a
 backbone demand.
 
-(6.51) is `eq_6_51`, derived from P-6.25. Its hypothesis `ζ_{k+1} ≤ 1`, like P-6.25's, is what
+(6.51) is `equation_6_51`, derived from P-6.25. Its hypothesis `ζ_{k+1} ≤ 1`, like P-6.25's, is what
 the truncation supplies through the orthonormality of the first `k + 1` vectors of the
 incomplete orthogonalization process, which lives in `Ch06/FOM.lean`.
 
@@ -91,7 +91,7 @@ theorem qgmresY_isMinOn (h : ℕ → ℕ → 𝕜) (β : 𝕜) (hh : ∀ i j : �
 
 /-- (6.50): `b - A x_m = γ_{m+1} z_{m+1}`. Equation (6.41) survives the loss of orthogonality
 because its proof uses only the Hessenberg relation and the unitarity of the rotations. -/
-theorem eq_6_50 {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ : 𝔼} {u : ℕ → 𝔼} {h : ℕ → ℕ → 𝕜} {β : 𝕜}
+theorem equation_6_50 {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ : 𝔼} {u : ℕ → 𝔼} {h : ℕ → ℕ → 𝕜} {β : 𝕜}
     (hu : Krylov.HessenbergRelation (op A) u h) (hr : b - op A x₀ = β • u 0) {m : ℕ}
     (hR : IsUnit (R h m)) :
     b - op A (qgmres x₀ u h β m) = γ h β m • z u h m := by
@@ -187,7 +187,7 @@ private theorem givensQ_succ_last_last (h : ℕ → ℕ → 𝕜) (m : ℕ) :
 /-- (6.53): `z_{m+2} = -conj(s_{m+1}) z_{m+1} + conj(c_{m+1}) v_{m+2}`. Over `ℝ`, and over `ℂ`
 for the Arnoldi and IOP coefficients (where `s` is real and nonnegative), this is the book's
 `z_{m+1} = -s_m z_m + c_m v_{m+1}`. -/
-theorem eq_6_53 (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (m : ℕ) :
+theorem equation_6_53 (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (m : ℕ) :
     z u h (m + 1) = starRingEnd 𝕜 (-(s h m)) • z u h m
       + starRingEnd 𝕜 (c h m) • u (m + 1) := by
   rw [z_eq_sum, z_eq_sum, Fin.sum_univ_castSucc, Finset.smul_sum]
@@ -198,9 +198,9 @@ theorem eq_6_53 (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (m : ℕ) :
 
 /-- (6.54): `ζ_{m+2} ≤ |s_{m+1}| ζ_{m+1} + |c_{m+1}| ‖v_{m+2}‖`; with unit basis vectors this is
 the book's `ζ_{m+1} ≤ |s_m| ζ_m + |c_m|`. -/
-theorem eq_6_54 (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (m : ℕ) :
+theorem equation_6_54 (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (m : ℕ) :
     ζ u h (m + 1) ≤ ‖s h m‖ * ζ u h m + ‖c h m‖ * ‖u (m + 1)‖ := by
-  rw [ζ, ζ, eq_6_53]
+  rw [ζ, ζ, equation_6_53]
   refine le_trans (norm_add_le _ _) (add_le_add ?_ ?_)
   · rw [norm_smul, RCLike.norm_conj, norm_neg]
   · rw [norm_smul, RCLike.norm_conj]
@@ -208,7 +208,7 @@ theorem eq_6_54 (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (m : ℕ) :
 /-- (6.55): two successive quasi-residuals,
 `r_{m+1} = |s_{m+1}|² r_m + conj(c_{m+1}) γ_{m+2} v_{m+2}`. Over `ℝ`, where the Arnoldi and IOP
 `s_i` are nonnegative reals, this is the book's `r_m = s_m² r_{m−1} + c_m γ_{m+1} v_{m+1}`. -/
-theorem eq_6_55 {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ : 𝔼} {u : ℕ → 𝔼} {h : ℕ → ℕ → 𝕜} {β : 𝕜}
+theorem equation_6_55 {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ : 𝔼} {u : ℕ → 𝔼} {h : ℕ → ℕ → 𝕜} {β : 𝕜}
     (hu : Krylov.HessenbergRelation (op A) u h) (hr : b - op A x₀ = β • u 0) {m : ℕ}
     (hR : IsUnit (R h m)) (hR' : IsUnit (R h (m + 1))) :
     b - op A (qgmres x₀ u h β (m + 1))
@@ -219,7 +219,7 @@ theorem eq_6_55 {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ : 𝔼} {u : ℕ → �
     ring
   have h2 : γ h β (m + 1) * starRingEnd 𝕜 (c h m)
       = starRingEnd 𝕜 (c h m) * γ h β (m + 1) := mul_comm _ _
-  rw [eq_6_50 hu hr hR', eq_6_50 hu hr hR, eq_6_53, smul_add, smul_smul, smul_smul, smul_smul,
+  rw [equation_6_50 hu hr hR', equation_6_50 hu hr hR, equation_6_53, smul_add, smul_smul, smul_smul, smul_smul,
     h1, h2]
 
 /-- **P-6.25**: (6.54) bounds the growth of `ζ` by one square root per step, so from
@@ -227,7 +227,7 @@ theorem eq_6_55 {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ : 𝔼} {u : ℕ → �
 `ζ_{k+1} ≤ 1` is what the truncation supplies: the first `k + 1` incomplete-orthogonalization
 vectors are orthonormal, so `z_{k+1}`, a unit vector of `Q_k` combined with them, has norm `1`.
 This is sharper than (6.51). -/
-theorem p_6_25 (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (hu : ∀ i, ‖u i‖ ≤ 1)
+theorem problem_6_25 (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (hu : ∀ i, ‖u i‖ ≤ 1)
     (hρ : ∀ i, Krylov.givensRho h i ≠ 0) {k : ℕ} (hbase : ζ u h k ≤ 1) (j : ℕ) :
     ζ u h (k + j) ≤ Real.sqrt ((j : ℝ) + 1) := by
   induction j with
@@ -254,29 +254,29 @@ theorem p_6_25 (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (hu : ∀ i, ‖u i
       rw [hab, one_mul] at hC
       have hnn : 0 ≤ a * zz + bb * w := by positivity
       have hkey : (a * zz + bb * w) ^ 2 ≤ ((j : ℝ) + 1) + 1 := by linarith
-      calc ζ u h (k + (j + 1)) ≤ a * zz + bb * w := eq_6_54 u h (k + j)
+      calc ζ u h (k + (j + 1)) ≤ a * zz + bb * w := equation_6_54 u h (k + j)
         _ = Real.sqrt ((a * zz + bb * w) ^ 2) := (Real.sqrt_sq hnn).symm
         _ ≤ Real.sqrt (((j : ℝ) + 1) + 1) := Real.sqrt_le_sqrt hkey
         _ = Real.sqrt (((j + 1 : ℕ) : ℝ) + 1) := by push_cast; ring_nf
 
 /-- **P-6.25** in the book's indexing: `ζ_{m+1} ≤ √(m − k + 1)` for `m ≥ k`. -/
-theorem p_6_25_le (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (hu : ∀ i, ‖u i‖ ≤ 1)
+theorem problem_6_25_le (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (hu : ∀ i, ‖u i‖ ≤ 1)
     (hρ : ∀ i, Krylov.givensRho h i ≠ 0) {k m : ℕ} (hbase : ζ u h k ≤ 1) (hkm : k ≤ m) :
     ζ u h m ≤ Real.sqrt (((m - k : ℕ) : ℝ) + 1) := by
   obtain ⟨j, rfl⟩ := Nat.exists_eq_add_of_le hkm
-  simpa using p_6_25 u h hu hρ hbase j
+  simpa using problem_6_25 u h hu hρ hbase j
 
 /-- (6.51): `‖b − A x_m‖ ≤ √(m − k + 1) |γ_{m+1}|` — the quasi-residual norm overestimates the
 true residual norm by at most `√(m − k + 1)`. Here it is derived from the sharper P-6.25 rather
 than from the book's direct splitting of `Q_mᵀ e_{m+1}`. -/
-theorem eq_6_51 {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ : 𝔼} {u : ℕ → 𝔼} {h : ℕ → ℕ → 𝕜} {β : 𝕜}
+theorem equation_6_51 {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ : 𝔼} {u : ℕ → 𝔼} {h : ℕ → ℕ → 𝕜} {β : 𝕜}
     (hA : Krylov.HessenbergRelation (op A) u h) (hr : b - op A x₀ = β • u 0)
     (hu : ∀ i, ‖u i‖ ≤ 1) (hρ : ∀ i, Krylov.givensRho h i ≠ 0) {k m : ℕ}
     (hbase : ζ u h k ≤ 1) (hkm : k ≤ m) (hR : IsUnit (R h m)) :
     ‖b - op A (qgmres x₀ u h β m)‖
       ≤ Real.sqrt (((m - k : ℕ) : ℝ) + 1) * quasiResidualNorm h β m := by
-  have hzz : ζ u h m ≤ Real.sqrt (((m - k : ℕ) : ℝ) + 1) := p_6_25_le u h hu hρ hbase hkm
-  rw [eq_6_50 hA hr hR, norm_smul, quasiResidualNorm]
+  have hzz : ζ u h m ≤ Real.sqrt (((m - k : ℕ) : ℝ) + 1) := problem_6_25_le u h hu hρ hbase hkm
+  rw [equation_6_50 hA hr hR, norm_smul, quasiResidualNorm]
   calc ‖γ h β m‖ * ‖z u h m‖
       ≤ ‖γ h β m‖ * Real.sqrt (((m - k : ℕ) : ℝ) + 1) :=
         mul_le_mul_of_nonneg_left hzz (norm_nonneg _)

@@ -10,10 +10,10 @@ id = "complexify_jacobi_iterationOperator"
 id = "complexify_one_sub_inverse_mul"
 
 [[node]]
-id = "cor_4_8_col"
+id = "corollary_4_8_col"
 
 [[node]]
-id = "cor_4_8_strict"
+id = "corollary_4_8_strict"
 
 [[node]]
 id = "gaussSeidel_complexSpectralRadius_lt_one"
@@ -31,16 +31,16 @@ id = "jacobi_complexSpectralRadius_lt_one"
 id = "spectrum_transpose"
 
 [[node]]
-id = "thm_4_6"
+id = "theorem_4_6"
 
 [[node]]
-id = "thm_4_6_col"
+id = "theorem_4_6_col"
 
 [[node]]
-id = "thm_4_9_gs"
+id = "theorem_4_9_gs"
 
 [[node]]
-id = "thm_4_9_jacobi"
+id = "theorem_4_9_jacobi"
 
 [[node]]
-id = "thm_4_9_jacobi_col"
+id = "theorem_4_9_jacobi_col"

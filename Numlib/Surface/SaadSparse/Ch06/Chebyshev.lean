@@ -46,7 +46,7 @@ which are deferred to the later phase (`tracker/saadsparse-ch6.md` §4). -/
 noncomputable abbrev Ccomplex (k : ℕ) : ℂ[X] := T ℂ (k : ℤ)
 
 /-- **(6.109)**: `C_k(t) = cos(k cos⁻¹ t)` on `[-1, 1]`. -/
-theorem eq_6_109 (k : ℕ) (ht : t ∈ Set.Icc (-1 : ℝ) 1) :
+theorem equation_6_109 (k : ℕ) (ht : t ∈ Set.Icc (-1 : ℝ) 1) :
     (C k).eval t = Real.cos (k * Real.arccos t) := by
   have h : Real.cos (Real.arccos t) = t := Real.cos_arccos ht.1 ht.2
   have hT := T_real_cos (Real.arccos t) (k : ℤ)
@@ -68,14 +68,14 @@ theorem C_zero : C 0 = 1 := Polynomial.Chebyshev.T_zero ℝ
 theorem C_one : C 1 = Polynomial.X := Polynomial.Chebyshev.T_one ℝ
 
 /-- **(6.110)**: `C_k(t) = cosh(k cosh⁻¹ t)` for `t ≥ 1`. -/
-theorem eq_6_110 (k : ℕ) (ht : 1 ≤ t) : (C k).eval t = Real.cosh (k * Real.arcosh t) := by
+theorem equation_6_110 (k : ℕ) (ht : 1 ≤ t) : (C k).eval t = Real.cosh (k * Real.arcosh t) := by
   have h : Real.cosh (Real.arcosh t) = t := Real.cosh_arcosh ht
   have hT := T_real_cosh (Real.arcosh t) (k : ℤ)
   rw [h] at hT
   exact hT.trans (by norm_cast)
 
 /-- **(6.111)**: `C_k(t) = ½[(t + √(t²-1))^k + (t + √(t²-1))^{-k}]` for `t ≥ 1`. -/
-theorem eq_6_111 (k : ℕ) (ht : 1 ≤ t) :
+theorem equation_6_111 (k : ℕ) (ht : 1 ≤ t) :
     (C k).eval t =
       ((t + Real.sqrt (t ^ 2 - 1)) ^ k + ((t + Real.sqrt (t ^ 2 - 1))⁻¹) ^ k) / 2 := by
   rw [Real.add_sqrt_self_sq_sub_one_inv ht]
@@ -83,7 +83,7 @@ theorem eq_6_111 (k : ℕ) (ht : 1 ≤ t) :
 
 /-- **(6.112)**: `½ (t + √(t²-1))^k ≤ C_k(t)` for `t ≥ 1`; the book writes this growth estimate
 as the approximation `C_k(t) ≳ ½ (t + √(t²-1))^k`. -/
-theorem eq_6_112 (k : ℕ) (ht : 1 ≤ t) :
+theorem equation_6_112 (k : ℕ) (ht : 1 ≤ t) :
     (t + Real.sqrt (t ^ 2 - 1)) ^ k / 2 ≤ (C k).eval t :=
   half_pow_le_eval_T ht k
 
@@ -166,7 +166,7 @@ attained by `Ĉ_k` of (6.113).
 
 The book says "non-empty interval `[α, β]`", read here as nondegenerate (`α < β`), since (6.113)
 divides by `β - α`. -/
-theorem thm_6_25 (k : ℕ) (hαβ : α < β) (hγ : γ ∉ Set.Icc α β) :
+theorem theorem_6_25 (k : ℕ) (hαβ : α < β) (hγ : γ ∉ Set.Icc α β) :
     IsLeast {M : ℝ | ∃ p : ℝ[X], p.degree ≤ k ∧ p.eval γ = 1 ∧
         M = sSup ((fun t => |p.eval t|) '' Set.Icc α β)}
       (sSup ((fun t => |(Chat k α β γ).eval t|) '' Set.Icc α β)) := by
@@ -176,7 +176,7 @@ theorem thm_6_25 (k : ℕ) (hαβ : α < β) (hγ : γ ∉ Set.Icc α β) :
   exact one_div_eval_T_le_sSup_abs_eval k hαβ hγ p hp hpγ
 
 /-- **Theorem 6.25**, the value of the minimum: `1 / |C_k(1 + 2(γ - β)/(β - α))|`. -/
-theorem thm_6_25_value (k : ℕ) (hαβ : α < β) (hγ : γ ∉ Set.Icc α β) :
+theorem theorem_6_25_value (k : ℕ) (hαβ : α < β) (hγ : γ ∉ Set.Icc α β) :
     sSup ((fun t => |(Chat k α β γ).eval t|) '' Set.Icc α β) =
       1 / |(C k).eval (1 + 2 * (γ - β) / (β - α))| := by
   rw [Chat_eq_shifted k hαβ γ, sSup_abs_eval_shifted k hαβ hγ,
@@ -185,11 +185,11 @@ theorem thm_6_25_value (k : ℕ) (hαβ : α < β) (hγ : γ ∉ Set.Icc α β) 
 
 /-- **Theorem 6.25**, the corollary formula: with `μ = (α + β)/2` the midpoint of the interval,
 the minimum is `1 / |C_k(2(γ - μ)/(β - α))|`. -/
-theorem thm_6_25_value_mid (k : ℕ) (hαβ : α < β) (hγ : γ ∉ Set.Icc α β) :
+theorem theorem_6_25_value_mid (k : ℕ) (hαβ : α < β) (hγ : γ ∉ Set.Icc α β) :
     sSup ((fun t => |(Chat k α β γ).eval t|) '' Set.Icc α β) =
       1 / |(C k).eval (2 * (γ - (α + β) / 2) / (β - α))| := by
   have h : β - α ≠ 0 := sub_ne_zero.mpr hαβ.ne'
-  rw [thm_6_25_value k hαβ hγ,
+  rw [theorem_6_25_value k hαβ hγ,
     show (1 : ℝ) + 2 * (γ - β) / (β - α) = 2 * (γ - (α + β) / 2) / (β - α) by field_simp; ring]
 
 end SaadSparse.Ch06

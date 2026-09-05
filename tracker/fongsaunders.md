@@ -141,7 +141,7 @@ Each block: paper formulation → Lean surface definition → backbone counterpa
   and `cgBeta_eq` likewise with `CG.beta`.
 
 ### D6. Algorithm CR (Table 2.1, columns 2–3)
-* Paper (indexed form): `x_0 = 0, r_0 = b, s_0 = A r_0, ρ_0 = r_0ᵀ s_0, p_0 = r_0, q_0 = s_0`; for
+* Paper (indexed form): `x_0 = 0, r_0 = b, s_0 = A r_0, ρ_0 = r_0ᵀ s_0, problem_0 = r_0, q_0 = s_0`; for
   `k = 1, 2, …`: `(q_{k−1} = A p_{k−1})`, `α_k = ρ_{k−1}/‖q_{k−1}‖²`, `x_k = x_{k−1} + α_k p_{k−1}`,
   `r_k = r_{k−1} − α_k q_{k−1}`, `s_k = A r_k`, `ρ_k = r_kᵀ s_k`, `β_k = ρ_k/ρ_{k−1}`, `p_k = r_k + β_k p_{k−1}`,
   `q_k = s_k + β_k q_{k−1}`. Termination at `k = ℓ ≤ n` with `r_ℓ = 0` (`⇒ ρ_ℓ = β_ℓ = 0`, `r_ℓ = s_ℓ = p_ℓ = q_ℓ = 0`).
@@ -234,7 +234,7 @@ Each block: paper formulation → Lean surface definition → backbone counterpa
 * Paper: CG applied to a symmetric, possibly indefinite `A x = b` (notation of Table 2.1); the
   hypothesis is `p_jᵀ A p_j > 0` for all iterations `1 ≤ j ≤ k`; for CR/MINRES additionally `r_jᵀ A r_j > 0`.
 * Lean: no new definition — the same `cg`/`cr` (D5–D6) with `hA' : A.IsSymm` instead of `A.PosDef`;
-  the hypotheses are `∀ j < k, 0 < ⟪(cg A b j).p, A ⬝ (cg A b j).p⟫_ℝ` (directions `p_0, …, p_{k−1}` used
+  the hypotheses are `∀ j < k, 0 < ⟪(cg A b j).p, A ⬝ (cg A b j).p⟫_ℝ` (directions `problem_0, …, p_{k−1}` used
   in iterations `1..k`; see C5) and, for CR, also `∀ j < k, 0 < (cr A b j).ρ` (`ρ_j = r_jᵀ A r_j`).
 * Backbone: `CG.norm_iterate_monotone` (`Numlib/Krylov/CG.lean`; spd, nonstrict) and
   `CR.isMinResIterate_of_no_breakdown (hA : A.IsSymmetric) (k) (h1 : ∀ j < k, ⟪r_j, A r_j⟫ ≠ 0) (h2 : ∀ j < k, q_j ≠ 0)`
@@ -381,8 +381,8 @@ Numbering: `R<section>.<item>`; the paper's own labels are in the `Book statemen
 ### R2.4 — Theorem 2.1 (a), (b)
 * Book statement: For Algorithm CR (spd `A`): (a) `q_iᵀ q_j = 0` for `i ≠ j`; (b) `r_iᵀ q_j = 0` for `i ≥ j + 1`.
 * Lean surface statement:
-  `theorem thm_2_1_a (hA) {i j : ℕ} (hij : i ≠ j) : ⟪(cr A b i).q, (cr A b j).q⟫_ℝ = 0`;
-  `theorem thm_2_1_b (hA) {i j : ℕ} (hij : j + 1 ≤ i) : ⟪(cr A b i).r, (cr A b j).q⟫_ℝ = 0`.
+  `theorem theorem_2_1_a (hA) {i j : ℕ} (hij : i ≠ j) : ⟪(cr A b i).q, (cr A b j).q⟫_ℝ = 0`;
+  `theorem theorem_2_1_b (hA) {i j : ℕ} (hij : j + 1 ≤ i) : ⟪(cr A b i).r, (cr A b j).q⟫_ℝ = 0`.
 * Backbone item: `CR.inner_apply_direction_eq_zero (h : i ≠ j) : ⟪A p_i, A p_j⟫ = 0`,
   `CR.inner_residual_apply_direction_eq_zero (h : j < i) : ⟪r_i, A p_j⟫ = 0`, `CR.q_eq` (`Numlib/Krylov/CR.lean`).
 * Proof route: rewrite `q_i = A p_i` (`cr_q_eq`) and apply the backbone lemmas through `cr_eq_backbone`.
@@ -394,15 +394,15 @@ Numbering: `R<section>.<item>`; the paper's own labels are in the `Book statemen
   (e) `x_iᵀ p_j ≥ 0`; (f) `r_iᵀ p_j ≥ 0` (all `i, j`; readings C4, C6).
 * Lean surface statement:
   ```lean
-  theorem eq_2_2 (hA) (i) : 0 ≤ (cr A b i).ρ
-  theorem eq_2_2_strict (hA) (hi : (cr A b i).r ≠ 0) : 0 < (cr A b i).ρ   -- = `cr_rho_pos`
-  theorem thm_2_2_a (hA) (i) : 0 ≤ crAlpha A b i
-  theorem thm_2_2_a_strict (hA) (hi : 1 ≤ i) (hℓ : i ≤ crTerm A b) : 0 < crAlpha A b i
-  theorem thm_2_2_b (hA) (i) : 0 ≤ crBeta A b i
-  theorem thm_2_2_c (hA) (i j) : 0 ≤ ⟪(cr A b i).p, (cr A b j).q⟫_ℝ
-  theorem thm_2_2_d (hA) (i j) : 0 ≤ ⟪(cr A b i).p, (cr A b j).p⟫_ℝ
-  theorem thm_2_2_e (hA) (i j) : 0 ≤ ⟪(cr A b i).x, (cr A b j).p⟫_ℝ
-  theorem thm_2_2_f (hA) (i j) : 0 ≤ ⟪(cr A b i).r, (cr A b j).p⟫_ℝ
+  theorem equation_2_2 (hA) (i) : 0 ≤ (cr A b i).ρ
+  theorem equation_2_2_strict (hA) (hi : (cr A b i).r ≠ 0) : 0 < (cr A b i).ρ   -- = `cr_rho_pos`
+  theorem theorem_2_2_a (hA) (i) : 0 ≤ crAlpha A b i
+  theorem theorem_2_2_a_strict (hA) (hi : 1 ≤ i) (hℓ : i ≤ crTerm A b) : 0 < crAlpha A b i
+  theorem theorem_2_2_b (hA) (i) : 0 ≤ crBeta A b i
+  theorem theorem_2_2_c (hA) (i j) : 0 ≤ ⟪(cr A b i).p, (cr A b j).q⟫_ℝ
+  theorem theorem_2_2_d (hA) (i j) : 0 ≤ ⟪(cr A b i).p, (cr A b j).p⟫_ℝ
+  theorem theorem_2_2_e (hA) (i j) : 0 ≤ ⟪(cr A b i).x, (cr A b j).p⟫_ℝ
+  theorem theorem_2_2_f (hA) (i j) : 0 ≤ ⟪(cr A b i).r, (cr A b j).p⟫_ℝ
   ```
 * Backbone item (`Numlib/Krylov/CR.lean`): `CR.re_alpha_nonneg` (a),
   `CR.re_inner_direction_apply_direction_nonneg` (c), `CR.re_inner_direction_nonneg` (d),
@@ -416,29 +416,29 @@ Numbering: `R<section>.<item>`; the paper's own labels are in the `Book statemen
   `ρ_k > 0`, and `q_k ≠ 0` because `⟪r_k, q_k⟫ = ⟪r_k, A r_k⟫ + β_k ⟪r_k, A p_{k−1}⟫ = ρ_k > 0`
   (Thm 2.1 (b)). Its companion `cr_direction_ne_zero (hk : r_k ≠ 0) : p_k ≠ 0` follows from `q_k = A p_k`.
 * Classification: `direct` for (a), (c)–(f); `needs-equivalence` for (2.2), (b) and the strict form
-  (surface corollaries `eq_2_2`, `thm_2_2_b`, `crAlpha_pos` of coercivity and Thm 2.1 (b)).
+  (surface corollaries `equation_2_2`, `theorem_2_2_b`, `crAlpha_pos` of coercivity and Thm 2.1 (b)).
 
 ### R2.6 — Theorem 2.3
 * Book statement: For CR (and hence MINRES) on an spd system, `‖x_k‖` increases monotonically
   (the proof gives `‖x_i‖² − ‖x_{i−1}‖² ≥ 0`, i.e. nondecreasing; reading C1).
 * Lean surface statement:
-  `theorem thm_2_3_cr (hA) : Monotone fun k => ‖(cr A b k).x‖`;
-  `theorem thm_2_3_minres (hA) (x : ℕ → Vec n) (hx : ∀ k, IsMinresIterate A b k (x k)) : Monotone fun k => ‖x k‖`;
-  strict form `theorem thm_2_3_strict (hA) (hk : (cr A b k).r ≠ 0) : ‖(cr A b k).x‖ < ‖(cr A b (k+1)).x‖`.
+  `theorem theorem_2_3_cr (hA) : Monotone fun k => ‖(cr A b k).x‖`;
+  `theorem theorem_2_3_minres (hA) (x : ℕ → Vec n) (hx : ∀ k, IsMinresIterate A b k (x k)) : Monotone fun k => ‖x k‖`;
+  strict form `theorem theorem_2_3_strict (hA) (hk : (cr A b k).r ≠ 0) : ‖(cr A b k).x‖ < ‖(cr A b (k+1)).x‖`.
 * Backbone item: `CR.norm_iterate_monotone` (`Numlib/Krylov/CR.lean`);
   `Krylov.IsMinResIterate.norm_monotone` (`Numlib/Krylov/Monotonicity.lean`).
 * Proof route: `cr_eq_backbone` resp. `isMinresIterate_iff` + `posDef_iff_isSymmetricCoercive`; the
   strict form from `‖x_{k+1}‖² − ‖x_k‖² = 2 α_{k+1} ⟪x_k, p_k⟫ + α_{k+1}² ‖p_k‖²` with Thm 2.2 (e),
   `crAlpha_pos` and `cr_direction_ne_zero` (R2.5).
 * Classification: `direct` (nonstrict); `needs-equivalence` for the strict form (surface corollary
-  `thm_2_3_strict`).
+  `theorem_2_3_strict`).
 
 ### R2.7 — Theorem 2.4
 * Book statement: For CR (and hence MINRES) on an spd system, `‖x* − x_k‖` decreases monotonically
   (nonincreasing; the proof shows the difference of squares is `≥ 0`; reading C2).
 * Lean surface statement:
-  `theorem thm_2_4_cr (hA) (hstar : A ⬝ xstar = b) : Antitone fun k => ‖xstar - (cr A b k).x‖`;
-  `theorem thm_2_4_minres (hA) (hstar) (x) (hx : ∀ k, IsMinresIterate A b k (x k)) : Antitone fun k => ‖xstar - x k‖`.
+  `theorem theorem_2_4_cr (hA) (hstar : A ⬝ xstar = b) : Antitone fun k => ‖xstar - (cr A b k).x‖`;
+  `theorem theorem_2_4_minres (hA) (hstar) (x) (hx : ∀ k, IsMinresIterate A b k (x k)) : Antitone fun k => ‖xstar - x k‖`.
 * Backbone item: `CR.norm_error_antitone` (`Numlib/Krylov/CR.lean`);
   `Krylov.IsMinResIterate.norm_error_antitone` (`Numlib/Krylov/Monotonicity.lean`).
 * Proof route: as R2.6.
@@ -449,10 +449,10 @@ Numbering: `R<section>.<item>`; the paper's own labels are in the `Book statemen
   (the proof gives `> 0` using Thm 2.2 (a), (c); strictness needs `α_k > 0`, i.e. `k ≤ ℓ`).
 * Lean surface statement:
   ```lean
-  theorem thm_2_5_cr (hA) (hstar) (k) (hk : (cr A b k).r ≠ 0) :
+  theorem theorem_2_5_cr (hA) (hstar) (k) (hk : (cr A b k).r ≠ 0) :
       energyNorm A (xstar - (cr A b (k+1)).x) < energyNorm A (xstar - (cr A b k).x)
-  theorem thm_2_5_cr_antitone (hA) (hstar) : Antitone fun k => energyNorm A (xstar - (cr A b k).x)
-  theorem thm_2_5_minres (hA) (hstar) (x) (hx) (hk : b - A ⬝ x k ≠ 0) :
+  theorem theorem_2_5_cr_antitone (hA) (hstar) : Antitone fun k => energyNorm A (xstar - (cr A b k).x)
+  theorem theorem_2_5_minres (hA) (hstar) (x) (hx) (hk : b - A ⬝ x k ≠ 0) :
       energyNorm A (xstar - x (k+1)) < energyNorm A (xstar - x k)
   ```
 * Backbone item: `CR.energyNorm_error_antitone` (`Numlib/Krylov/CR.lean`);
@@ -464,7 +464,7 @@ Numbering: `R<section>.<item>`; the paper's own labels are in the `Book statemen
   `> 0` since `α_{k+1} > 0` (`crAlpha_pos`) and `⟪p_k, A p_k⟫ > 0` (`cr_direction_ne_zero` + coercivity).
   The MINRES form is the CR form after `eq_CR_iterate`.
 * Classification: `direct` (nonstrict); `needs-equivalence` for the strict form (surface corollary
-  `thm_2_5_cr` of the sign lemmas).
+  `theorem_2_5_cr` of the sign lemmas).
 
 ### R3.1 — (3.2)–(3.3): the optimal backward-error perturbation
 * Book statement: For tolerances `α, β ≥ 0`, the optimization problem `min ξ` s.t. `(A + E) x_k = b + f`,
@@ -530,10 +530,10 @@ Numbering: `R<section>.<item>`; the paper's own labels are in the `Book statemen
   errors `‖E_k‖/‖A‖` and `‖f_k‖/‖b‖` decrease monotonically. (Implicitly, so does `ξ_k`; Table 5.1 row 5 lists `‖r_k‖/‖x_k‖ ↘ (Thm 3.1)`.)
 * Lean surface statement:
   ```lean
-  theorem thm_3_1_minres (hA) (hb : b ≠ 0) (hα : 0 < α) (hβ : 0 < β) (x) (hx : ∀ k, IsMinresIterate A b k (x k)) :
+  theorem theorem_3_1_minres (hA) (hb : b ≠ 0) (hα : 0 < α) (hβ : 0 < β) (x) (hx : ∀ k, IsMinresIterate A b k (x k)) :
       AntitoneOn (fun k => ‖nrbePertA A b α β (x k)‖ / ‖A‖) (Set.Ici 1) ∧
         Antitone (fun k => ‖nrbePertb A b α β (x k)‖ / ‖b‖)
-  theorem thm_3_1_cr …   -- same with `(cr A b k).x`
+  theorem theorem_3_1_cr …   -- same with `(cr A b k).x`
   theorem nrbe_minres_antitone (hA) (hb) (hα : 0 ≤ α) (hβ : 0 < β) (x) (hx) : Antitone fun k => nrbe A b α β (x k)
   theorem nrbe_minres_antitoneOn (hA) (hb) (hα : 0 < α) (hβ : 0 ≤ β) (x) (hx) :
       AntitoneOn (fun k => nrbe A b α β (x k)) (Set.Ici 1)   -- covers the `β = 0` form `‖r_k‖/‖x_k‖` of §4.1
@@ -570,7 +570,7 @@ Numbering: `R<section>.<item>`; the paper's own labels are in the `Book statemen
 ### R4.1 — Equation (4.1)
 * Book statement: `‖r_k^C‖ = ‖r_k^M‖ / √(1 − ‖r_k^M‖²/‖r_{k−1}^M‖²)` (cited from Greenbaum Lemma 5.4.1 / Titley-Péloquin; implicitly `k ≥ 1`, `r_k^M ≠ 0`).
 * Lean surface statement:
-  `theorem eq_4_1 (hA) (k : ℕ) (hk : (cr A b (k+1)).r ≠ 0) : ‖(cg A b (k+1)).r‖ = ‖(cr A b (k+1)).r‖ / Real.sqrt (1 - ‖(cr A b (k+1)).r‖ ^ 2 / ‖(cr A b k).r‖ ^ 2)`;
+  `theorem equation_4_1 (hA) (k : ℕ) (hk : (cr A b (k+1)).r ≠ 0) : ‖(cg A b (k+1)).r‖ = ‖(cr A b (k+1)).r‖ / Real.sqrt (1 - ‖(cr A b (k+1)).r‖ ^ 2 / ‖(cr A b k).r‖ ^ 2)`;
   also in the `IsMinresIterate` form with `x (k+1)`, `x k`.
 * Backbone item: `Krylov.inv_sq_norm_residual_minRes` (`1/‖r_{m+1}^G‖² = 1/‖r_m^G‖² + 1/‖r_{m+1}^F‖²`
   when `r_{m+1}^G ≠ 0`) and `Krylov.norm_residual_minRes_le_galerkin` (`Numlib/Krylov/Relations.lean`, §3.6);
@@ -723,8 +723,8 @@ was settled by internal consistency with the paper's own proofs).
 * C4. Thm 2.2 (a): "The inequalities are strict until `i = ℓ` (and `r_ℓ = 0`)". Read as `ρ_i > 0` for `i < ℓ` and `α_i > 0` for
   `1 ≤ i ≤ ℓ` (so `β_i > 0` for `i < ℓ`), which is what the proofs of Thm 2.5 and (4.1) use.
 * C5. §4.2 "as long as `p_jᵀ A p_j > 0` for all iterations `1 ≤ j ≤ k`" versus Table 2.1's indexing (iteration `j` uses `p_{j−1}`):
-  interpreted as the directions used in iterations `1..k`, i.e. `p_0, …, p_{k−1}` (D10, R4.3); with the literal `p_1..p_k` the
-  statement would also constrain the unused `p_k` and omit `p_0`, which contradicts Steihaug's original.
+  interpreted as the directions used in iterations `1..k`, i.e. `problem_0, …, p_{k−1}` (D10, R4.3); with the literal `problem_1..p_k` the
+  statement would also constrain the unused `p_k` and omit `problem_0`, which contradicts Steihaug's original.
 * C6. Thm 2.2 (e) is proved only for `x_iᵀ p_i` ("Therefore `x_iᵀ p_i ≥ 0`") but stated for `x_iᵀ p_j`; the general case follows
   from `x_i = ∑ α_k p_{k−1}` and (d), and R2.5 states it for all `i, j`.
 * C7. Table 5.1: the CG entry for `‖x_k‖` is `↗ [21, Thm 2.1]`; the last table row is the legend (`↗` monotonically increasing,

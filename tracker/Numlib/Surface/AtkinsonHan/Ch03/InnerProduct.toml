@@ -1,34 +1,34 @@
 namespace = "AtkinsonHan.Ch03"
 
 [[node]]
-id = "cor_3_4_2"
+id = "corollary_3_4_2"
 
 [[node]]
-id = "eq_3_4_6"
+id = "equation_3_4_6"
 
 [[node]]
 id = "exercise_3_4_8"
 
 [[node]]
-id = "expansion_3_4"
+id = "hilbertBasis_expansion"
 
 [[node]]
-id = "lem_3_4_1"
+id = "lemma_3_4_1"
 
 [[node]]
 id = "projConvex"
 
 [[node]]
-id = "prop_3_4_4"
+id = "proposition_3_4_4"
 
 [[node]]
-id = "thm_3_4_3"
+id = "theorem_3_4_3"
 
 [[node]]
-id = "thm_3_4_5"
+id = "theorem_3_4_5"
 
 [[node]]
-id = "thm_3_4_6"
+id = "theorem_3_4_6"
 
 [[node]]
-id = "thm_3_4_7"
+id = "theorem_3_4_7"

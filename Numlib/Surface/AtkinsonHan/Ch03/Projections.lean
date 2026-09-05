@@ -20,11 +20,11 @@ Analysis Framework* (3rd ed.), §3.6.
 
 ## Main results
 
-* `prop_3_6_2` — direct sums correspond to idempotent linear maps.
+* `proposition_3_6_2` — direct sums correspond to idempotent linear maps.
 * `IsOrthogonalDirectSum` — the orthogonal direct sum of Definition 3.6.1.
 * `example_3_6_7` — `∑ᵢ (·, φᵢ) φᵢ` is an orthogonal projection for an orthonormal family.
-* `prop_3_6_9_a` … `prop_3_6_9_e` — the properties of orthogonal projections;
-  `prop_3_6_9_c'` restates (c) as an orthogonal direct sum.
+* `proposition_3_6_9_a` … `proposition_3_6_9_e` — the properties of orthogonal projections;
+  `proposition_3_6_9_c'` restates (c) as an orthogonal direct sum.
 * `exercise_3_6_1`, `exercise_3_6_7` — `I − P` is a projection; `‖P‖ ≥ 1` for `P ≠ 0`.
 
 ## Not formalized here
@@ -74,7 +74,7 @@ theorem isDirectSum_iff_isCompl (V₁ V₂ : Submodule 𝕜 V) : IsDirectSum V�
 
 /-- **Proposition 3.6.2.** `V = V₁ ⊕ V₂` if and only if there is an idempotent linear map `P` with
 range `V₁` and with `I − P` of range `V₂`; then `v₁ = P v` and `v₂ = (I − P) v`. -/
-theorem prop_3_6_2 (V₁ V₂ : Submodule 𝕜 V) :
+theorem proposition_3_6_2 (V₁ V₂ : Submodule 𝕜 V) :
     IsDirectSum V₁ V₂ ↔ ∃ P : V →ₗ[𝕜] V, P ∘ₗ P = P ∧ LinearMap.range P = V₁ ∧
       LinearMap.range (LinearMap.id - P) = V₂ := by
   rw [isDirectSum_iff_isCompl]
@@ -135,7 +135,7 @@ def IsOrthogonalProjectionOperator (P : H →L[𝕜] H) : Prop :=
 
 /-- **Proposition 3.6.9(a).** A bounded projection is an orthogonal projection in the sense of
 (3.6.2) exactly when it is self-adjoint. -/
-theorem prop_3_6_9_a (P : H →L[𝕜] H) (hP : IsIdempotentElem P) :
+theorem proposition_3_6_9_a (P : H →L[𝕜] H) (hP : IsIdempotentElem P) :
     (∀ v w : H, inner 𝕜 (P v) (((1 : H →L[𝕜] H) - P) w) = 0) ↔ (P : H →ₗ[𝕜] H).IsSymmetric := by
   have hPP : ∀ x : H, P (P x) = P x := fun x => DFunLike.congr_fun hP x
   have hexp : ∀ v w : H, inner 𝕜 (P v) (((1 : H →L[𝕜] H) - P) w)
@@ -169,10 +169,10 @@ theorem isOrthogonalProjectionOperator_iff (P : H →L[𝕜] H) :
     IsOrthogonalProjectionOperator P ↔ (P : H →ₗ[𝕜] H).IsSymmetricProjection := by
   constructor
   · rintro ⟨hP, horth⟩
-    exact ⟨ContinuousLinearMap.IsIdempotentElem.toLinearMap hP, (prop_3_6_9_a P hP).1 horth⟩
+    exact ⟨ContinuousLinearMap.IsIdempotentElem.toLinearMap hP, (proposition_3_6_9_a P hP).1 horth⟩
   · rintro ⟨hidem, hsym⟩
     have hP : IsIdempotentElem P := ContinuousLinearMap.isIdempotentElem_toLinearMap_iff.1 hidem
-    exact ⟨hP, (prop_3_6_9_a P hP).2 hsym⟩
+    exact ⟨hP, (proposition_3_6_9_a P hP).2 hsym⟩
 
 /-- **Example 3.6.7.** For a finite orthonormal family `φ₁, …, φₙ`, the operator
 `v ↦ ∑ᵢ (v, φᵢ) φᵢ` is an orthogonal projection. -/
@@ -189,11 +189,11 @@ theorem example_3_6_7 [CompleteSpace H] {n : ℕ} {u : Fin n → H} (hu : Orthon
 
 /-- **Proposition 3.6.9(b).** An orthogonal projection is bounded with `‖P‖ ≤ 1`, and `‖P‖ = 1`
 unless `P = 0`. -/
-theorem prop_3_6_9_b [CompleteSpace H] (P : H →L[𝕜] H) (hP : IsOrthogonalProjectionOperator P) :
+theorem proposition_3_6_9_b [CompleteSpace H] (P : H →L[𝕜] H) (hP : IsOrthogonalProjectionOperator P) :
     ‖P‖ ≤ 1 ∧ (P ≠ 0 → ‖P‖ = 1) := by
   have hone : P ≠ 0 → ‖P‖ = 1 := fun h0 =>
     (ContinuousLinearMap.IsIdempotentElem.norm_eq_one_iff_isSymmetric hP.1 h0).2
-      ((prop_3_6_9_a P hP.1).1 hP.2)
+      ((proposition_3_6_9_a P hP.1).1 hP.2)
   refine ⟨?_, hone⟩
   rcases eq_or_ne P 0 with h0 | h0
   · rw [h0, norm_zero]; norm_num
@@ -201,16 +201,16 @@ theorem prop_3_6_9_b [CompleteSpace H] (P : H →L[𝕜] H) (hP : IsOrthogonalPr
 
 /-- **Proposition 3.6.9(c).** A closed subspace of a Hilbert space and its orthogonal complement
 form a direct sum. -/
-theorem prop_3_6_9_c [CompleteSpace H] (V₁ : Submodule 𝕜 H) (h : IsClosed (V₁ : Set H)) :
+theorem proposition_3_6_9_c [CompleteSpace H] (V₁ : Submodule 𝕜 H) (h : IsClosed (V₁ : Set H)) :
     IsCompl V₁ V₁ᗮ :=
   have := h.completeSpace_coe
   Submodule.isCompl_orthogonal V₁
 
 /-- **Proposition 3.6.9(c)**, in the book's vocabulary: `H = V₁ ⊕ V₁ᗮ` is an orthogonal direct
 sum in the sense of Definition 3.6.1. -/
-theorem prop_3_6_9_c' [CompleteSpace H] (V₁ : Submodule 𝕜 H) (h : IsClosed (V₁ : Set H)) :
+theorem proposition_3_6_9_c' [CompleteSpace H] (V₁ : Submodule 𝕜 H) (h : IsClosed (V₁ : Set H)) :
     IsOrthogonalDirectSum V₁ V₁ᗮ :=
-  ⟨(isDirectSum_iff_isCompl V₁ V₁ᗮ).2 (prop_3_6_9_c V₁ h), Submodule.isOrtho_orthogonal_right V₁⟩
+  ⟨(isDirectSum_iff_isCompl V₁ V₁ᗮ).2 (proposition_3_6_9_c V₁ h), Submodule.isOrtho_orthogonal_right V₁⟩
 
 /-- An orthogonal projection is Mathlib's orthogonal projection onto its range. -/
 theorem eq_starProjection_of_isOrthogonalProjectionOperator (V₁ : Submodule 𝕜 H)
@@ -225,7 +225,7 @@ theorem eq_starProjection_of_isOrthogonalProjectionOperator (V₁ : Submodule �
 /-- **Proposition 3.6.9(d).** There is exactly one orthogonal projection with a given closed
 range `V₁`; it realizes the distance to `V₁`, and `I − P` is the orthogonal projection onto
 `V₁ᗮ`. -/
-theorem prop_3_6_9_d [CompleteSpace H] (V₁ : Submodule 𝕜 H) (h : IsClosed (V₁ : Set H)) :
+theorem proposition_3_6_9_d [CompleteSpace H] (V₁ : Submodule 𝕜 H) (h : IsClosed (V₁ : Set H)) :
     (∃! P : H →L[𝕜] H,
         IsOrthogonalProjectionOperator P ∧ LinearMap.range (P : H →ₗ[𝕜] H) = V₁) ∧
       ∀ P : H →L[𝕜] H, IsOrthogonalProjectionOperator P →
@@ -256,7 +256,7 @@ theorem prop_3_6_9_d [CompleteSpace H] (V₁ : Submodule 𝕜 H) (h : IsClosed (
 
 /-- **Proposition 3.6.9(e).** The range of an orthogonal projection is closed, and `V` is the
 orthogonal direct sum of `P(V)` and `(I − P)(V) = P(V)ᗮ`. -/
-theorem prop_3_6_9_e [CompleteSpace H] (P : H →L[𝕜] H) (hP : IsOrthogonalProjectionOperator P) :
+theorem proposition_3_6_9_e [CompleteSpace H] (P : H →L[𝕜] H) (hP : IsOrthogonalProjectionOperator P) :
     IsClosed (LinearMap.range (P : H →ₗ[𝕜] H) : Set H) ∧
       IsCompl (LinearMap.range (P : H →ₗ[𝕜] H))
         (LinearMap.range (((1 : H →L[𝕜] H) - P : H →L[𝕜] H) : H →ₗ[𝕜] H)) ∧
@@ -264,7 +264,7 @@ theorem prop_3_6_9_e [CompleteSpace H] (P : H →L[𝕜] H) (hP : IsOrthogonalPr
         = (LinearMap.range (P : H →ₗ[𝕜] H))ᗮ := by
   have hlin : IsIdempotentElem (P : H →ₗ[𝕜] H) :=
     ContinuousLinearMap.IsIdempotentElem.toLinearMap hP.1
-  have hsym : (P : H →ₗ[𝕜] H).IsSymmetric := (prop_3_6_9_a P hP.1).1 hP.2
+  have hsym : (P : H →ₗ[𝕜] H).IsSymmetric := (proposition_3_6_9_a P hP.1).1 hP.2
   have hker : LinearMap.ker (P : H →ₗ[𝕜] H) = LinearMap.range (1 - (P : H →ₗ[𝕜] H)) :=
     LinearMap.IsIdempotentElem.ker_eq_range_one_sub hlin
   have hcoe : (((1 : H →L[𝕜] H) - P : H →L[𝕜] H) : H →ₗ[𝕜] H) = 1 - (P : H →ₗ[𝕜] H) := rfl

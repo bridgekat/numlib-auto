@@ -215,7 +215,7 @@ variable {U V : Type*} [NormedAddCommGroup U] [InnerProductSpace ℝ U] [NormedA
 pair of real Hilbert spaces satisfying the inf–sup condition (8.7.2) and the nondegeneracy
 condition (8.7.3) makes the problem (8.7.4) `a(u,v) = ℓ(v) ∀ v ∈ V` uniquely solvable, with the
 stability estimate (8.7.5) `‖u‖_U ≤ ‖ℓ‖_{V'}/α`. -/
-theorem thm_8_7_1 [CompleteSpace U] [CompleteSpace V] (a : BilinForm₂ U V)
+theorem theorem_8_7_1 [CompleteSpace U] [CompleteSpace V] (a : BilinForm₂ U V)
     (ℓ : StrongDual ℝ V) {M α : ℝ} (hα : 0 < α)
     (h871 : a.IsBoundedWith M)
     (h872 : ∀ u, α * ‖u‖ ≤ ⨆ v : {v : V // v ≠ 0}, a u v / ‖(v : V)‖)
@@ -228,10 +228,10 @@ theorem thm_8_7_1 [CompleteSpace U] [CompleteSpace V] (a : BilinForm₂ U V)
     fun u hu => SesqForm₂.norm_le_of_infSupWith (a.toCLM h871) ℓ hα hinf hu⟩
 
 /-- Exercise 8.7.1: Theorem 8.7.1 contains the Lax–Milgram lemma, Theorem 8.3.4. -/
-theorem ex_8_7_1 [CompleteSpace V] (a : BilinForm V) (ℓ : StrongDual ℝ V) {M α : ℝ}
+theorem exercise_8_7_1 [CompleteSpace V] (a : BilinForm V) (ℓ : StrongDual ℝ V) {M α : ℝ}
     (hM : a.IsBoundedWith M) (hα : 0 < α) (ha : a.IsEllipticWith α) :
     (∃! u, ∀ v, a u v = ℓ v) ∧ ∀ u, (∀ v, a u v = ℓ v) → ‖u‖ ≤ ‖ℓ‖ / α :=
-  thm_8_7_1 a ℓ hα (BilinForm₂.isBoundedWith_of_isBoundedWith hM) (ha.infSup hM)
+  theorem_8_7_1 a ℓ hα (BilinForm₂.isBoundedWith_of_isBoundedWith hM) (ha.infSup hM)
     (fun v hv => ha.exists_pos hα v hv)
 
 end Ch08

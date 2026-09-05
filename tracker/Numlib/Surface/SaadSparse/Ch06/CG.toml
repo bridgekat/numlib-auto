@@ -22,28 +22,28 @@ id = "cg_eq_CG"
 id = "dLanczos_eq_diom2"
 
 [[node]]
-id = "eq_6_100"
+id = "equation_6_100"
 
 [[node]]
-id = "eq_6_101"
+id = "equation_6_101"
 
 [[node]]
-id = "eq_6_102"
+id = "equation_6_102"
 
 [[node]]
-id = "eq_6_103"
+id = "equation_6_103"
 
 [[node]]
-id = "eq_6_87"
+id = "equation_6_87"
 
 [[node]]
-id = "eq_6_96"
+id = "equation_6_96"
 
 [[node]]
-id = "eq_6_98"
+id = "equation_6_98"
 
 [[node]]
-id = "eq_6_99"
+id = "equation_6_99"
 
 [[node]]
 id = "lanczosMethod"
@@ -52,4 +52,4 @@ id = "lanczosMethod"
 id = "lanczosMethod_eq_fom"
 
 [[node]]
-id = "prop_6_20_2"
+id = "proposition_6_20_2"

@@ -32,10 +32,10 @@ sequential and topological lower semicontinuity.
 ## Main results
 
 * `example_3_3_5` — the norm is weakly sequentially lower semicontinuous.
-* `thm_3_3_7` — strict separation of a compact convex set from a disjoint closed convex set.
-* `thm_3_3_13` — existence (and uniqueness) of minimizers on finite-dimensional closed sets.
-* `thm_3_3_15`, `thm_3_3_16`, `example_3_3_17` — existence of best approximations.
-* `thm_3_3_18`, `thm_3_3_21` — uniqueness under strict convexity of `‖·‖ᵖ`, resp. strict normedness.
+* `theorem_3_3_7` — strict separation of a compact convex set from a disjoint closed convex set.
+* `theorem_3_3_13` — existence (and uniqueness) of minimizers on finite-dimensional closed sets.
+* `theorem_3_3_15`, `theorem_3_3_16`, `example_3_3_17` — existence of best approximations.
+* `theorem_3_3_18`, `theorem_3_3_21` — uniqueness under strict convexity of `‖·‖ᵖ`, resp. strict normedness.
 * `exercise_3_3_8`, `exercise_3_3_8_rpow`, `exercise_3_3_9` — inner product spaces satisfy
   both criteria.
 
@@ -203,14 +203,14 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
 /-- **Theorem 3.3.7.** Two nonempty disjoint convex sets in a real normed space, one compact and
 the other closed, are strictly separated in the sense of Definition 3.3.6. -/
-theorem thm_3_3_7 {A B : Set E} (hA : Convex ℝ A) (hB : Convex ℝ B) (hAne : A.Nonempty)
+theorem theorem_3_3_7 {A B : Set E} (hA : Convex ℝ A) (hB : Convex ℝ B) (hAne : A.Nonempty)
     (hBne : B.Nonempty) (hdisj : Disjoint A B) (hAc : IsCompact A) (hBc : IsClosed B) :
     AreStrictlySeparated A B :=
   areStrictlySeparated_of_exists hAne hBne
     (geometric_hahn_banach_compact_closed hA hAc hB hBc hdisj)
 
 /-- **Theorem 3.3.7**, the symmetric case: `A` closed and `B` compact. -/
-theorem thm_3_3_7' {A B : Set E} (hA : Convex ℝ A) (hB : Convex ℝ B) (hAne : A.Nonempty)
+theorem theorem_3_3_7' {A B : Set E} (hA : Convex ℝ A) (hB : Convex ℝ B) (hAne : A.Nonempty)
     (hBne : B.Nonempty) (hdisj : Disjoint A B) (hAc : IsClosed A) (hBc : IsCompact B) :
     AreStrictlySeparated A B :=
   areStrictlySeparated_of_exists hAne hBne
@@ -245,7 +245,7 @@ set_option linter.unusedVariables false in
 finite-dimensional subspace attains its minimum, provided `K` is bounded or `f` is coercive on
 `K`. The book's convexity hypotheses on `K` and `f` are kept for faithfulness; neither the book's
 proof nor this one uses them at this rung. -/
-theorem thm_3_3_13 [NormedSpace ℝ V] [IsScalarTower ℝ 𝕜 V] {K : Set V} (S : Submodule 𝕜 V)
+theorem theorem_3_3_13 [NormedSpace ℝ V] [IsScalarTower ℝ 𝕜 V] {K : Set V} (S : Submodule 𝕜 V)
     [FiniteDimensional 𝕜 S] (hKS : K ⊆ S) (hcl : IsClosed K) (hconv : Convex ℝ K)
     (hne : K.Nonempty) (f : V → ℝ) (hf : ConvexOn ℝ K f) (hlsc : LowerSemicontinuousOn f K)
     (h : IsBounded K ∨ IsCoerciveFunctionalOn f K) : ∃ u ∈ K, IsMinOn f K u := by
@@ -274,7 +274,7 @@ theorem thm_3_3_13 [NormedSpace ℝ V] [IsScalarTower ℝ 𝕜 V] {K : Set V} (S
 
 /-- **Theorem 3.3.13**, uniqueness clause: a strictly convex functional has at most one
 minimizer. -/
-theorem thm_3_3_13_unique [NormedSpace ℝ V] {K : Set V} {f : V → ℝ} (hf : StrictConvexOn ℝ K f)
+theorem theorem_3_3_13_unique [NormedSpace ℝ V] {K : Set V} {f : V → ℝ} (hf : StrictConvexOn ℝ K f)
     {u₁ u₂ : V} (hu₁ : IsMinOn f K u₁) (hu₂ : IsMinOn f K u₂) (h₁ : u₁ ∈ K) (h₂ : u₂ ∈ K) :
     u₁ = u₂ :=
   hf.eq_of_isMinOn hu₁ hu₂ h₁ h₂
@@ -290,14 +290,14 @@ variable {𝕜 V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜
 set_option linter.unusedVariables false in
 /-- **Theorem 3.3.15.** Every point has a best approximation from a nonempty closed convex subset
 of a finite-dimensional subspace. Convexity is kept for faithfulness and is not used. -/
-theorem thm_3_3_15 [NormedSpace ℝ V] [IsScalarTower ℝ 𝕜 V] {K : Set V} (S : Submodule 𝕜 V)
+theorem theorem_3_3_15 [NormedSpace ℝ V] [IsScalarTower ℝ 𝕜 V] {K : Set V} (S : Submodule 𝕜 V)
     [FiniteDimensional 𝕜 S] (hKS : K ⊆ S) (hK : IsClosed K) (hconv : Convex ℝ K)
     (hne : K.Nonempty) (u : V) : ∃ uhat, IsBestApprox K u uhat :=
   exists_isBestApprox_of_isClosed_of_finiteDimensional hK hne S hKS u
 
 /-- **Theorem 3.3.16.** Every point has a best approximation from a finite-dimensional
 subspace. -/
-theorem thm_3_3_16 (K : Submodule 𝕜 V) [FiniteDimensional 𝕜 K] (u : V) :
+theorem theorem_3_3_16 (K : Submodule 𝕜 V) [FiniteDimensional 𝕜 K] (u : V) :
     ∃ uhat, IsBestApprox (K : Set V) u uhat :=
   exists_isBestApprox_of_finiteDimensional K u
 
@@ -363,7 +363,7 @@ private theorem strictConvexSpace_of_strictConvexOn_norm_rpow {p : ℝ} (hp : 1 
 set_option linter.unusedVariables false in
 /-- **Theorem 3.3.18.** If `‖·‖ᵖ` is strictly convex for some `p ≥ 1`, best approximations from a
 convex set are unique. -/
-theorem thm_3_3_18 {p : ℝ} (hp : 1 ≤ p)
+theorem theorem_3_3_18 {p : ℝ} (hp : 1 ≤ p)
     (hconv : StrictConvexOn ℝ (Set.univ : Set E) fun v : E => ‖v‖ ^ p) {K : Set E}
     (hK : Convex ℝ K) {u v₁ v₂ : E} (h₁ : IsBestApprox K u v₁) (h₂ : IsBestApprox K u v₂) :
     v₁ = v₂ :=
@@ -373,7 +373,7 @@ theorem thm_3_3_18 {p : ℝ} (hp : 1 ≤ p)
 set_option linter.unusedVariables false in
 /-- **Theorem 3.3.21.** In a strictly normed space, best approximations from a nonempty convex
 set are unique. -/
-theorem thm_3_3_21 (hV : IsStrictlyNormed E) {K : Set E} (hne : K.Nonempty) (hK : Convex ℝ K)
+theorem theorem_3_3_21 (hV : IsStrictlyNormed E) {K : Set E} (hne : K.Nonempty) (hK : Convex ℝ K)
     {u v₁ v₂ : E} (h₁ : IsBestApprox K u v₁) (h₂ : IsBestApprox K u v₂) : v₁ = v₂ :=
   have : StrictConvexSpace ℝ E := isStrictlyNormed_iff_strictConvexSpace.1 hV
   h₁.unique hK h₂
