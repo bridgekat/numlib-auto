@@ -1,4 +1,12 @@
-import Numlib.Surface.FongSaunders.Sec1
+import Numlib.Analysis.InnerProductSpace.Energy
+import Numlib.Krylov.CG
+import Numlib.Krylov.CR
+import Numlib.Krylov.Iterate
+import Numlib.Krylov.Monotonicity
+import Numlib.Krylov.Subspace
+import Numlib.LinearSolve.Projection.Basic
+import Numlib.LinearSolve.Projection.Optimality
+import Numlib.Surface.FongSaunders.Section1
 
 /-!
 # §2: CG and CR, their minimization properties and the monotonicity theorems

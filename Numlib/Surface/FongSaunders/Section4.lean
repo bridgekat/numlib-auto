@@ -1,4 +1,11 @@
-import Numlib.Surface.FongSaunders.Sec3
+import Numlib.Krylov.Arnoldi
+import Numlib.Krylov.Hessenberg
+import Numlib.Krylov.Iterate
+import Numlib.Krylov.Lanczos
+import Numlib.Krylov.Relations
+import Numlib.Krylov.Subspace
+import Numlib.LinearSolve.Projection.Basic
+import Numlib.Surface.FongSaunders.Section3
 
 /-!
 # §4: the exact relations behind the numerical comparison

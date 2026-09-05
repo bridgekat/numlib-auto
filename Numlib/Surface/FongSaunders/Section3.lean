@@ -1,4 +1,8 @@
-import Numlib.Surface.FongSaunders.Sec2
+import Numlib.Krylov.CG
+import Numlib.Krylov.CR
+import Numlib.Krylov.Iterate
+import Numlib.Krylov.Monotonicity
+import Numlib.Surface.FongSaunders.Section2
 
 /-!
 # §3: normwise relative backward errors and stopping rules

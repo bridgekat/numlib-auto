@@ -1,5 +1,10 @@
 import Mathlib.Algebra.Order.Star.Real
-import Numlib.Surface.FongSaunders.Sec4
+import Numlib.Analysis.InnerProductSpace.Energy
+import Numlib.Krylov.CG
+import Numlib.Krylov.Iterate
+import Numlib.Krylov.Monotonicity
+import Numlib.Krylov.Subspace
+import Numlib.Surface.FongSaunders.Section4
 
 /-!
 # §5: Table 5.1, the summary of monotonicity properties

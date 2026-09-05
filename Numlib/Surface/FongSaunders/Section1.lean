@@ -1,4 +1,8 @@
-import Numlib.Backbone
+import Numlib.Analysis.InnerProductSpace.Coercive
+import Numlib.Analysis.Matrix.ToEuclideanLin
+import Numlib.Krylov.Arnoldi
+import Numlib.Krylov.Lanczos
+import Numlib.Krylov.Subspace
 
 /-!
 # §1: the setting, Krylov subspaces and the Lanczos process
