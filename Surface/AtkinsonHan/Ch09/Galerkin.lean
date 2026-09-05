@@ -182,6 +182,31 @@ theorem energyNorm_sub_eq_iInf (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀)
   refine le_antisymm (le_ciInf fun v => energyNorm_sub_le hM hc₀ ha hs hu huN v.2) ?_
   exact ciInf_le hbdd ⟨uN, huN.1⟩
 
+/-- Céa, symmetric case: the Galerkin solution is the `a`-orthogonal projection of the exact
+solution onto `V_N`, i.e. the orthogonal projection in the energy space `WithEnergy`.  This is the
+statement that makes `energyNorm_sub_eq_iInf` above a best-approximation result.
+
+The operator hypothesis is the backbone's `IsSymmetricCoercive` for `A = toOperator a`; §9.4's
+`isSymmetricBoundedBy_toOperator` produces it from boundedness, symmetry and `V`-ellipticity. -/
+theorem galerkin_eq_energyProjection [CompleteSpace V] (hM : a.IsBoundedWith M)
+    (hA : (BilinForm.toOperator a hM : V →ₗ[ℝ] V).IsSymmetricCoercive) [FiniteDimensional ℝ VN]
+    (hu : ∀ v, a u v = ℓ v) (huN : GalerkinProblem a ℓ VN uN) :
+    WithEnergy.equiv _ hA uN
+      = (WithEnergy.submoduleMap _ hA VN).starProjection (WithEnergy.equiv _ hA u) := by
+  have hstar : (BilinForm.toOperator a hM : V →ₗ[ℝ] V) u = SesqForm.rieszRep ℓ :=
+    (BilinForm.toOperator_eq_rieszRep_iff hM ℓ u).mpr hu
+  have hx : IsGalerkin (BilinForm.toOperator a hM : V →ₗ[ℝ] V) (SesqForm.rieszRep ℓ) 0 VN uN :=
+    IsGalerkinSolution.iff_isGalerkin.mp ((galerkinProblem_iff hM).mp huN)
+  have herr := IsGalerkin.error_eq_starProjection hA hx hstar
+  have hsplit := (WithEnergy.submoduleMap _ hA VN).starProjection_add_starProjection_orthogonal
+    (WithEnergy.equiv _ hA u)
+  rw [sub_zero] at herr
+  have hlin : WithEnergy.equiv _ hA (u - uN)
+      = WithEnergy.equiv _ hA u - WithEnergy.equiv _ hA uN := map_sub _ _ _
+  rw [hlin] at herr
+  rw [eq_sub_of_add_eq hsplit, ← herr]
+  abel
+
 /-- The symmetric sharpening of Céa's inequality: the constant improves from `M/c₀` to
 `√(M/c₀)`. -/
 theorem prop_9_1_3_sqrt (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀) (ha : a.IsEllipticWith c₀)

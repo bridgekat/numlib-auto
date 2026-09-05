@@ -78,7 +78,7 @@ Each entry: book formulation → surface definition → Mathlib/backbone counter
 7. **Separated / strictly separated sets** (Def 3.3.6, real normed `V`).
    Surface: `AreSeparated A B := ∃ (ℓ : StrongDual ℝ V) (α : ℝ), ℓ ≠ 0 ∧ (∀ u ∈ A, ℓ u ≤ α) ∧ ∀ v ∈ B, α ≤ ℓ v`; strict with `<`.
    Mathlib counterpart: conclusion shape of `geometric_hahn_banach_compact_closed` (`∃ f u v, (∀ a ∈ s, f a < u) ∧ u < v ∧ ∀ b ∈ t, v < f b`).
-   Equivalence lemma: **only one direction holds.** `∃ f u v, (∀ a ∈ s, f a < u) ∧ u < v ∧ ∀ b ∈ t, v < f b` implies the book's strict separation (take `α = (u+v)/2`; `f ≠ 0` from nonemptiness of `A`), and that is the direction the consumers need. The converse is false: over `ℝ`, `A = Iio 0` and `B = Ioi 0` are strictly separated in the book's sense by `ℓ = id, α = 0`, but no `u < v` can be inserted, since `sup A = inf B`. State it as `areStrictlySeparated_of_exists_lt`, not an `iff`.
+   Equivalence lemma: **only one direction holds.** `∃ f u v, (∀ a ∈ s, f a < u) ∧ u < v ∧ ∀ b ∈ t, v < f b` implies the book's strict separation (take `α = (u+v)/2`; `f ≠ 0` from nonemptiness of `A`), and that is the direction the consumers need. The converse is false: over `ℝ`, `A = Iio 0` and `B = Ioi 0` are strictly separated in the book's sense by `ℓ = id, α = 0`, but no `u < v` can be inserted, since `sup A = inf B`. State it as `areStrictlySeparated_of_exists`, not an `iff`.
 
 8. **Coercive functional over `K`** (Def 3.3.9): `f(v) → ∞ as ‖v‖ → ∞, v ∈ K`.
    Surface: `IsCoerciveFunctionalOn (f : V → ℝ) (K : Set V) : Prop := ∀ M : ℝ, ∃ R, ∀ v ∈ K, R ≤ ‖v‖ → M ≤ f v`
