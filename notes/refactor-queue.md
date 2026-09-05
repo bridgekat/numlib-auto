@@ -137,6 +137,24 @@ dependants must add is `[Nontrivial n]` wherever they route through the block-tr
   `‖P_X(1−P_W)‖ = ‖(1−P_W)P_X‖`), and the second one-sided bound follows from the first by
   inverting the basis-transport map.
 
+### R10. The `Lp` dilation isometry wants to be general
+
+`MeasureTheory.Lp.dilationₗᵢ` (`Numlib/Analysis/Wavelet/Haar.lean`) is stated for dyadic dilations
+of `L²(ℝ)`, because that is what the Haar system needs. Atkinson-Han's Theorem 4.2.4 is proved in
+`NumlibSurface/AtkinsonHan/Chapter04/Section02.lean` only on the Schwartz space, not as the `L²`
+isometry equivalence in the book's normalization, and the general dilation is the single missing
+piece: with it, that node finishes at `Lp` level in three lines.
+
+The general shape, worked out by the agent that wrote the special case: `Lp F p μ ≃ₗᵢ[ℝ] Lp F p μ`
+for `μ` an additive Haar measure on a finite-dimensional real normed space `E`, `p ≠ ∞`, `F` a real
+normed space, with compensating factor `|c ^ finrank ℝ E| ^ (1 / p.toReal)` — which collapses to the
+existing `|c| ^ (1/2)` at `E = F = ℝ`, `p = 2`, since `finrank ℝ ℝ = 1`. Every step of the existing
+proof carries over with three substitutions: `Real.map_volume_mul_left` becomes
+`Measure.map_addHaar_smul`, `Real.volume_preimage_mul_left` becomes `Measure.addHaar_preimage_smul`,
+and `Measure.quasiMeasurePreserving_smul` is already general. The step expected to need real work is
+`dilationₗ_comp`, where a single `mul_assoc` chain has to split into an outer scalar `smul_smul` and
+an inner argument one. Three call sites in `Haar.lean` then need updating.
+
 ### R7. Plan bookkeeping
 
 * `plans/NumlibSurface/AtkinsonHan/Chapter05/Section03.toml` should gain `theorem_5_3_17`,

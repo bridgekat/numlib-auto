@@ -1607,6 +1607,23 @@ purely algebraic `Polynomial.christoffel_darboux`, which this module reuses rath
 and `Approximation/Chebyshev` (5.1.2) owns the sup-norm min–max theory, which is a different inner
 product. Lowest priority of the group: Atkinson–Han §3.5 states no numbered result.
 
+*Corrected after the module was written.* Two claims here did not survive contact. The Chebyshev
+orthogonality relations are **in Mathlib now** (`Polynomial.Chebyshev.measureT` and its family, and
+Chebyshev–Gauss quadrature with it), so `integral_T_mul_T_div_sqrt` is two lines rather than a
+development. And the reuse of `Polynomial.christoffel_darboux` does not typecheck as planned: that
+node is stated for **orthonormal** polynomials (`p_{n+1} = (a_n X + b_n) p_n - c_n p_{n-1}`) while
+`OrthogonalPolynomial.three_term_recurrence` is the **monic** one, so the two do not meet. Whoever
+writes it should state it in the monic-with-weights form
+`∑_{n ≤ N} p_n(x) p_n(t)/h_n = (p_{N+1}(x) p_N(t) - p_N(x) p_{N+1}(t))/(h_N (x - t))`, which both
+specialize to, or plan the normalization bridge as a node of its own. `AtkinsonHan.Ch03.theorem_3_7_3`
+is blocked on this and on nothing else.
+
+One thing this module was expected to supply and does not: **the zeros of the orthogonal
+polynomials**, which `Approximation/Quadrature`'s `exists_gauss` needs. They belong here; the
+argument is the classical sign-change one against `integral_family_mul_of_degree_lt`, and its Lean
+cost sits in "a real polynomial all of whose roots have even multiplicity has constant sign", for
+which Mathlib appears to have nothing.
+
 ### 13.5 Surface
 
 `NumlibSurface/AtkinsonHan/` gains `Chapter01/{Section01,02,03,05,06}`,
