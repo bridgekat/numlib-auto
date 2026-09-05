@@ -26,8 +26,9 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   write to a temp file and rename so a crash cannot destroy the original.
 * In a Python patch script, `𝕜` must be written `\U0001d55c`. A surrogate pair `𝕜`
   silently fails to match and, on Windows, raises on write.
-* The Lean sources here use CRLF. The Write tool emits LF, which makes the whole file show as
-  changed; round-trip through `io.open(p, 'w', encoding='utf-8', newline='')`.
+* The Lean sources here use LF, and every writer must keep it that way. A Python patch script has
+  to open with `io.open(p, 'w', encoding='utf-8', newline='')`, or it silently converts the file to
+  CRLF and the whole file shows as changed.
 * Line length: the only authority is `linter.style.longLine`. Counting with `awk length>100`
   over-reports, because it counts bytes and the mathematical symbols are multi-byte.
 
