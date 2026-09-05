@@ -285,9 +285,6 @@ theorem norm_smul_add_smul_eq_norm_add {s t : ℝ} (hs : 0 < s) (hst : s * t = 1
 
 namespace ContinuousLinearMap
 
-variable [CompleteSpace E]
-
-omit [CompleteSpace E] in
 /-- A nonzero bounded idempotent has norm at least `1`. -/
 private theorem one_le_norm_of_isIdempotentElem {P : E →L[𝕜] E} (hP : IsIdempotentElem P)
     (h0 : P ≠ 0) : 1 ≤ ‖P‖ := by
@@ -297,7 +294,6 @@ private theorem one_le_norm_of_isIdempotentElem {P : E →L[𝕜] E} (hP : IsIde
     exact norm_mul_le P P
   nlinarith
 
-omit [CompleteSpace E] in
 /-- For a norm-one projector the range is orthogonal to the kernel. -/
 private theorem inner_eq_zero_of_norm_eq_one {P : E →L[𝕜] E} (hnorm : ‖P‖ = 1) {y z : E}
     (hy : P y = y) (hz : P z = 0) : inner 𝕜 y z = (0 : 𝕜) := by
@@ -361,7 +357,6 @@ theorem IsIdempotentElem.norm_eq_one_iff_isSymmetric {P : E →L[𝕜] E} (hP : 
       (RCLike.re_le_norm _).trans (norm_inner_le_norm _ _)
     nlinarith [norm_nonneg (P x), norm_nonneg x]
 
-omit [CompleteSpace E] in
 /-- The exchange estimate of `ContinuousLinearMap.norm_le_opNorm_mul_norm_add`, with the two
 rescaling factors supplied explicitly. -/
 private theorem norm_le_opNorm_mul_norm_add_aux {Q : E →L[𝕜] E} {s t : ℝ} (hs : 0 < s)
@@ -375,7 +370,6 @@ private theorem norm_le_opNorm_mul_norm_add_aux {Q : E →L[𝕜] E} {s t : ℝ}
     _ ≤ ‖Q‖ * ‖(s : 𝕜) • u + (t : 𝕜) • v‖ := Q.le_opNorm _
     _ = ‖Q‖ * ‖u + v‖ := by rw [norm_smul_add_smul_eq_norm_add hs hst u v huv]
 
-omit [CompleteSpace E] in
 /-- Kato's exchange estimate: if a bounded operator `Q` annihilates `u` and fixes `v`, both
 nonzero, then `‖u‖ ≤ ‖Q‖ * ‖u + v‖`, even though `Q (u + v) = v` carries no information about
 `u`. Indeed `Q` maps the rescaled vector `(‖v‖/‖u‖) • u + (‖u‖/‖v‖) • v`, which by
@@ -389,7 +383,6 @@ theorem norm_le_opNorm_mul_norm_add {Q : E →L[𝕜] E} {u v : E} (hu : u ≠ 0
   · field_simp
   · field_simp
 
-omit [CompleteSpace E] in
 /-- Half of Kato's lemma: a bounded projector `P ≠ 1` satisfies `‖P‖ ≤ ‖1 - P‖`. Applied to
 `1 - P` as well, this gives the equality `ContinuousLinearMap.IsIdempotentElem.norm_one_sub_eq`. -/
 private theorem norm_le_norm_one_sub {P : E →L[𝕜] E} (hP : IsIdempotentElem P) (h1 : P ≠ 1) :
@@ -415,8 +408,7 @@ private theorem norm_le_norm_one_sub {P : E →L[𝕜] E} (hP : IsIdempotentElem
     calc ‖P x‖ ≤ ‖1 - P‖ * ‖P x + (1 - P) x‖ := norm_le_opNorm_mul_norm_add hu hv hQu hQv
       _ = ‖1 - P‖ * ‖x‖ := by rw [hsum]
 
-set_option linter.unusedSectionVars false in
-/-- Kato's lemma: for a bounded projector `P ≠ 0, 1` on a Hilbert space, `‖P‖ = ‖1 - P‖`
+/-- Kato's lemma: for a bounded projector `P ≠ 0, 1` on an inner product space, `‖P‖ = ‖1 - P‖`
 (Szyld, *The many proofs of an identity on the norm of oblique projections*, 2006).
 
 The proof is the exchange trick `ContinuousLinearMap.norm_le_opNorm_mul_norm_add` applied to the

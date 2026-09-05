@@ -61,6 +61,9 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   `change`. It also rejects a leading bare `show` and `haveI` on a `Prop`.
 * A goal containing a beta redex, typical after `rintro _ ⟨i, rfl⟩` or after rewriting with a lemma
   whose statement is a literal lambda, defeats `rw`. Clear it with `dsimp only` or `change`.
+* `rw [← h]` where the right-hand side of `h` is a bare local, as in `h : P x + (1 - P) x = x`,
+  rewrites the `x` inside `P x` as well and silently generalises the goal. Aim it with
+  `conv_rhs => rw [← h]`.
 * `rw [h]` rewrites *all* occurrences, including inside `‖a‖` and inside `diagPart A`. Use
   `nth_rewrite`, restate the equation in a form that does not loop, or go entrywise.
 * Avoid `set` when you will `rw` with library lemmas afterwards: the abbreviation is definitionally
@@ -95,6 +98,9 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
 * Well-founded induction along a finite linear order: `induction i using WellFoundedLT.induction`.
 
 ## Mathlib names and API
+
+`pow_left_inj₀ ha hb hn : a ^ n = b ^ n ↔ a = b` is the way to cancel the squares after comparing
+two norms through `norm_add_sq`.
 
 Deprecated or renamed in this toolchain: `if_pos`/`if_neg` to `ite_eq_left`/`ite_eq_right`;
 `push_neg` to `push Not`; `Matrix.dotProduct` to root-level `dotProduct`; `LinearMap.mul_apply` to
@@ -179,3 +185,8 @@ Decided in `plans/backbone.md` §1.7; the short version for a proof author:
 * Build an induction on a single invariant record and derive the named lemmas from it, and let the
   private lemmas take the *fact* they need rather than the strong hypothesis. Retrofitting either
   choice is painful.
+* The plan's difficulty estimates and suggested routes are guesses made before the proof was found.
+  A ★★★ item can have a two-screen proof: Kato's lemma (2.1.7) was budgeted for a gap/angle API
+  and fell to a rescaling trick with no adjoints and no completeness. Before building infrastructure
+  the plan asks for, spend a little while looking for the elementary argument, and report back when
+  the plan overestimated — the estimate is worth correcting for the next reader.

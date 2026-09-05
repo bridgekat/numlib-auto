@@ -1,6 +1,6 @@
 # Open proof obligations
 
-The nine `sorry` placeholders left in `Numlib/`, with the obstruction for each. Every one is marked
+The eight `sorry` placeholders left in `Numlib/`, with the obstruction for each. Every one is marked
 with an explanatory comment at the declaration itself. Remove an entry here when its proof lands.
 
 ## `Numlib/Krylov/Hessenberg.lean` (5, all in `section GivensArnoldi`)
@@ -24,20 +24,6 @@ product, since `givensQ_mul_hessenbergOf` only gives the rectangular identity.
 method breaks down and Lean's division by zero makes the right-hand side vanish while the residual
 need not. A hypothesis `c_m ≠ 0`, equivalently that the Hessenberg block is a unit, is very likely
 the right minimal correction, but no counterexample was constructed.
-
-## `Numlib/Analysis/InnerProductSpace/Projection/ObliqueProjection.lean` (1)
-
-`ContinuousLinearMap.IsIdempotentElem.norm_one_sub_eq`, Kato's `‖1 − P‖ = ‖P‖`.
-
-Every route goes through the minimal-gap characterisation `1/‖P‖² = 1 − ‖P_N P_M‖²` with
-`M = range P` and `N = ker P`, plus the symmetry `‖P_M P_N‖ = ‖P_N P_M‖`. Mathlib has none of the
-three ingredients, so this is 150 to 250 lines of supremum and infimum bookkeeping.
-
-Dead ends already tried, recorded at the `sorry`: setting `T := P + P⋆ − 1` gives
-`T² = P P⋆ + Q⋆Q = P⋆P + Q Q⋆`, where in each decomposition the two positive summands annihilate
-each other, hence `‖T‖² = max(‖P‖², ‖Q‖²)` and `‖P‖, ‖Q‖ ≤ ‖T‖`, but not equality. The direct
-estimate `‖Qx‖ ≤ ‖P‖‖x‖` reduces to a circular identity. The statement itself was checked true on a
-two-by-two example.
 
 ## `Numlib/Nonlinear/Newton.lean` (2)
 

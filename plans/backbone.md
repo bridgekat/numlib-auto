@@ -603,19 +603,32 @@ theorem LinearMap.sub_obliqueProjectionOfBases_apply_mem_orthogonal (hVW) (x : E
 theorem LinearMap.obliqueProjectionOfBases_self_eq_starProjection (hV : Orthonormal 𝕜 V) :
     obliqueProjectionOfBases 𝕜 V V = ((Submodule.span 𝕜 (Set.range V)).starProjection : E →ₗ[𝕜] E)
 /-- Saad Thm 1.36 / AH Ex 3.6.7: a nonzero projector has norm `≥ 1`, `= 1` iff orthogonal. -/
-theorem ContinuousLinearMap.IsIdempotentElem.norm_eq_one_iff_isSymmetric [CompleteSpace E]
-    {P : E →L[𝕜] E} (hP : IsIdempotentElem P) (h0 : P ≠ 0) : ‖P‖ = 1 ↔ (P : E →ₗ[𝕜] E).IsSymmetric
+theorem ContinuousLinearMap.IsIdempotentElem.norm_eq_one_iff_isSymmetric {P : E →L[𝕜] E}
+    (hP : IsIdempotentElem P) (h0 : P ≠ 0) : ‖P‖ = 1 ↔ (P : E →ₗ[𝕜] E).IsSymmetric
+/-- Rescaling two vectors so as to exchange their norms leaves the norm of their sum unchanged. -/
+theorem norm_smul_add_smul_eq_norm_add {s t : ℝ} (hs : 0 < s) (hst : s * t = 1) (u v : E)
+    (huv : s * ‖u‖ = ‖v‖) : ‖(s : 𝕜) • u + (t : 𝕜) • v‖ = ‖u + v‖
+/-- Kato's exchange estimate: if `Q` kills `u` and fixes `v`, both nonzero, then
+`‖u‖ ≤ ‖Q‖ ‖u + v‖`, although `Q (u + v) = v` says nothing about `u`. -/
+theorem ContinuousLinearMap.norm_le_opNorm_mul_norm_add {Q : E →L[𝕜] E} {u v : E} (hu : u ≠ 0)
+    (hv : v ≠ 0) (hQu : Q u = 0) (hQv : Q v = v) : ‖u‖ ≤ ‖Q‖ * ‖u + v‖
 /-- Kato's lemma `‖1 − P‖ = ‖P‖` (Szyld 2006; consumer: Xu–Zikatanov, phase 2). -/
-theorem ContinuousLinearMap.IsIdempotentElem.norm_one_sub_eq [CompleteSpace E] {P : E →L[𝕜] E}
+theorem ContinuousLinearMap.IsIdempotentElem.norm_one_sub_eq {P : E →L[𝕜] E}
     (hP : IsIdempotentElem P) (h0 : P ≠ 0) (h1 : P ≠ 1) : ‖1 - P‖ = ‖P‖
 ```
-Kato's lemma is the deep item of this module. Every route to it goes through the minimal-gap
-characterisation `1/‖P‖² = 1 − ‖P_N P_M‖²` with `M = range P`, `N = ker P`, together with the
-symmetry `‖P_M P_N‖ = ‖P_N P_M‖`; Mathlib has none of the three ingredients, so this is supremum
-and infimum bookkeeping from scratch. The tempting shortcut through `T := P + P⋆ − 1` stops short:
-`T² = P P⋆ + Q⋆Q = P⋆P + Q Q⋆` with `Q = 1 − P`, in each decomposition the two positive summands
-annihilate each other, so `‖T‖² = max(‖P‖², ‖Q‖²)` and `‖P‖, ‖Q‖ ≤ ‖T‖` — inequalities, not the
-equality. The direct estimate `‖Qx‖ ≤ ‖P‖‖x‖` closes into a circular identity.
+Kato's lemma looked like the deep item of this module and is not: it needs neither the minimal-gap
+characterisation `1/‖P‖² = 1 − ‖P_N P_M‖²`, nor the symmetry `‖P_M P_N‖ = ‖P_N P_M‖`, nor adjoints,
+nor completeness, so both theorems above sit at L1 rather than L2. The proof is the exchange trick.
+Decompose `x = u + v` with `u = P x`, `v = (1 − P) x`, and feed `1 − P` the rescaled vector
+`(‖v‖/‖u‖) • u + (‖u‖/‖v‖) • v`: the two scalars multiply to `1`, so the cross term
+`2 re ⟪u, v⟫` survives untouched while the two squared norms are exchanged, and the rescaled vector
+still has norm `‖x‖` (`norm_smul_add_smul_eq_norm_add`). Since `1 − P` kills `u` and fixes `v`, its
+value there has norm exactly `‖P x‖`, giving `‖P‖ ≤ ‖1 − P‖`; the reverse inequality is the same
+statement for `1 − P`. The degenerate `x` (either component zero) fall to `1 ≤ ‖1 − P‖`.
+What does *not* work, for the record: `T := P + P⋆ − 1` satisfies
+`T² = P P⋆ + Q⋆Q = P⋆P + Q Q⋆` with `Q = 1 − P`, and in each decomposition the two positive
+summands annihilate each other, so `‖T‖² = max(‖P‖², ‖Q‖²)` and `‖P‖, ‖Q‖ ≤ ‖T‖` — inequalities,
+not the equality. The unrescaled estimate `‖Q x‖ ≤ ‖P‖‖x‖` closes into a circular identity.
 
 #### 2.1.8 Polynomial glue (L0; in `Krylov/Subspace.lean` and `Krylov/Iterate.lean`)
 Glue between `Polynomial.degreeLT`, `Polynomial.aeval` at an endomorphism and spans of iterates;
@@ -2715,7 +2728,7 @@ modules are exactly the modules under `Numlib/` (§11).
 |---|---|---|---|---|
 | `Analysis/Normed/Ring/{Inverse,CondNumber}` | 2.1.1–2.1.2 | 250 | ★ | — |
 | `Analysis/Normed/Algebra/SpectralRadius` | 2.1.3 | 200 | ★★ (ENNReal bookkeeping) | — |
-| `InnerProductSpace/{Coercive,Energy,Compression,ObliqueProjection,GramSchmidt}` | 2.1.4–2.1.7, 2.1.13 | 700 | ★★★ (Kato's lemma D20; `WithEnergy` instance D17) | — |
+| `InnerProductSpace/{Coercive,Energy,Compression,ObliqueProjection,GramSchmidt}` | 2.1.4–2.1.7, 2.1.13 | 700 | ★★ (`WithEnergy` instance D17; Kato's lemma D20 turned out routine) | — |
 | `RingTheory/Polynomial/ChebyshevMinimax` | 2.1.9 | 300 | ★★ | — |
 | `Matrix/{Hessenberg,Complexify,ToEuclideanLin}` | 2.1.10–2.1.11, 2.1.14 | 400 | ★★ | — |
 | `LinearSolve/Perturbation` | 2.2 | 200 | ★ | 2.1.1–2.1.2 |
@@ -2889,7 +2902,7 @@ Surface-specific definitions: real bilinear forms `a : V → V → ℝ` with `Is
 | D17 | `WithEnergy` inner-product instance and its completeness | 2.1.5 | `InnerProductSpace.Core` on a type synonym, following Mathlib's `Matrix.toInnerProductSpace`: the plain `AddCommGroup`/`Module` instances are local to the defining section, only the core-derived normed instances are global, `WithEnergy.equiv` is defined afterwards with `rfl` fields; norm equivalence and `continuous_equiv` need `A : E →L[𝕜] E` |
 | D18 | Subspace iteration in Saad-eig's generality (Thm 5.2) | 4.3 | spectral projector onto the dominant generalized eigenspaces + Gelfand on the complement; gap between subspaces needs a `Submodule` gap/angle API (not in Mathlib). Kress Lemma 7.18 (diagonalizable) as a warm-up |
 | D19 | Householder–John / Ostrowski–Reich in operator form | 2.3.5 | Rayleigh-quotient identity for an eigenpair of `M⁻¹N` (Kress Thm 4.12 proof) generalizes verbatim with `M + Mᴴ − A` coercive; Saad Thm 4.10 |
-| D20 | Kato's lemma `‖1 − P‖ = ‖P‖` | 2.1.7 | the minimal-gap characterisation `1/‖P‖² = 1 − ‖P_N P_M‖²` (`M = range P`, `N = ker P`) with `‖P_M P_N‖ = ‖P_N P_M‖`; Mathlib has none of the three, so it is sup/inf bookkeeping from scratch, and the `T = P + P⋆ − 1` shortcut yields only `‖P‖, ‖Q‖ ≤ ‖T‖`. Szyld 2006 |
+| D20 | Kato's lemma `‖1 − P‖ = ‖P‖` | 2.1.7 | **not difficult after all**: the exchange trick on `x = P x + (1 − P) x`, rescaling the two components so as to swap their norms (`norm_smul_add_smul_eq_norm_add`). No gap API, no adjoints, no completeness. The minimal-gap route and the `T = P + P⋆ − 1` shortcut are both unnecessary; 2.1.7 records why the latter stops at inequalities. Szyld 2006 |
 | D21 | Givens residual identities (the `γ_m`, `s_m`, `c_m` formulas for `‖r^G_m‖`) | 3.5 | all rest on "a unitary matrix is a Euclidean isometry", `‖U *ᵥ v‖₂ = ‖v‖₂`, which Mathlib lacks; prove it in `Analysis/Matrix/` (2.1.14) through `Matrix.toEuclideanCLM`, then add the residual splitting from `rotated_last_row` and `det R_m = ∏ ρ_k ≠ 0`. Saad §6.5.3 |
 
 ---
