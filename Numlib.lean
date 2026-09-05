@@ -1,4 +1,5 @@
 import Numlib.Analysis.Calculus.MeanValue
+import Numlib.Analysis.Convex.StrictConvexSpace
 import Numlib.Analysis.InnerProductSpace.Coercive
 import Numlib.Analysis.InnerProductSpace.Energy
 import Numlib.Analysis.InnerProductSpace.GramSchmidt
@@ -42,6 +43,7 @@ import Numlib.LinearAlgebra.Matrix.Hessenberg
 import Numlib.LinearAlgebra.Matrix.MMatrix
 import Numlib.LinearAlgebra.Matrix.Order
 import Numlib.LinearSolve.Perturbation
+import Numlib.LinearSolve.Projection.Additive
 import Numlib.LinearSolve.Projection.Basic
 import Numlib.LinearSolve.Projection.OneDimensional
 import Numlib.LinearSolve.Projection.Optimality
@@ -57,6 +59,8 @@ import Numlib.RingTheory.Polynomial.ChebyshevEllipse
 import Numlib.RingTheory.Polynomial.ChebyshevMinimax
 import Numlib.Variational.Forms
 import Numlib.Variational.Galerkin
+import Numlib.Variational.Minimization
+import Numlib.Variational.ProjectionMethod
 import Numlib.Variational.LaxMilgram
 
 /-!

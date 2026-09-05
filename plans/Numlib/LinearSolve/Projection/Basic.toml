@@ -60,13 +60,8 @@ id = "isPetrovGalerkin_iff_mulVec"
 
 [[node]]
 id = "IsPetrovGalerkin.norm_residual_projected_le"
-kind = "theorem"
-desc = '''Saad Thm 5.7: for the projected operator `A_m = P_K A P_K` restricted to `K` — the oblique
-compression through the projector `Q = Q_K^L` onto `K` along `Lᗮ` — and the exact solution
-`xstar`, the residual of `xstar` for the projected problem satisfies
-`‖b - A_m xstar‖ ≤ ‖Q A (1 - P_K)‖ ‖(1 - P_K) xstar‖` (with `x₀ = 0`): the Petrov–Galerkin iterate
-solves a problem whose data is `xstar` perturbed by the part `K` misses, times the coupling
-constant `γ = ‖Q A (1 - P_K)‖`. The eigenvalue twin is `Krylov.compression_residual_le` of
-`Numlib/Eigen/RayleighRitz`, and the Galerkin and minimal-residual cases are in `Optimality`.'''
-deps = ["IsPetrovGalerkin", "IsPetrovGalerkin.inner_residual_eq_zero", "compressionBy"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 5.7"
+
+[[node]]
+id = "existsUnique_isPetrovGalerkin_of_finrank_eq"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 5.1"

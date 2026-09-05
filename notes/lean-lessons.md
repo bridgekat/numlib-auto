@@ -92,6 +92,10 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
 * Never end a Bash call with a command that reads standard input (`cat > file`, a bare `python`):
   it blocks for the full timeout and is then backgrounded, and the session's working directory
   reverts to the *main* checkout — after which an un-`cd`-ed command would edit the wrong tree.
+* In a Python patch script, `\u1d3e` is the superscript **P** and `\u15ee` is the orthogonal
+  complement `ᴾ`/`ᗮ` — they look identical in most fonts. Getting it wrong either makes the
+  script's `assert s.count(old) == 1` fail for no visible reason, or writes Lean that fails to
+  parse with `unexpected token 'ᴾ'`. The same pair of confusables: `ℓ` (script l) vs `l`.
 
 ## Correctness traps
 
@@ -161,6 +165,14 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
 * `linter.unusedDecidableInType` fires on a `[DecidableEq ι]` binder absent from the statement;
   drop it and open the proof with `classical`.
 * `ExistsUnique` goals arrive beta-unreduced; prefix the uniqueness branch with `show ∀ v, …`.
+  Better still, when the `∃!` you want differs from one you have only by an `iff` on the body,
+  transport it whole: `simpa only [hiff] using existsUnique_…` with `hiff : ∀ y, P y ↔ Q y` never
+  produces the beta-redex at all.
+* `Ring.inverse`/`Units` perturbation over `E →L[𝕜] E` drags in `NormOneClass`, which holds only
+  for `Nontrivial E`, so `Units.norm_inverse_add_le` forces a `Subsingleton` case split. The
+  two-space form `ContinuousLinearEquiv.exists_symm_norm_le_of_add` of
+  `Numlib/Analysis/Normed/Ring/Inverse.lean` needs no such class and gives the invertible
+  perturbation *and* the bound `‖(e + t)⁻¹‖ ≤ ‖e⁻¹‖ / (1 - ‖e⁻¹‖‖t‖)` in one call.
 * A `local notation` used inside a `variable` binder silently breaks section-variable inclusion:
   the variable becomes an unknown identifier in term-mode bodies. Write the type out in binders.
 * Dot notation resolves through the *unfolded* head, which bites on `def`s that unfold to a
@@ -613,6 +625,32 @@ More structural facts:
   rather than building a `C(↥s, ℝ)` from scratch — that avoids needing `DiscreteTopology ↥s`.
 * `Lagrange.degree_interpolate_lt` and `_le` take `r` explicitly and `s` implicitly, and
   `Lagrange.eval_basis_of_ne` needs `(v := …)` because `rw` cannot solve `?v j` for a lambda.
+* `inner_self_eq_norm_sq_to_K` produces `(↑‖v‖) ^ 2`, not `↑(‖v‖ ^ 2)`. Bridging the two costs a
+  `RCLike.ofReal_pow`, and forgetting it makes an `exact` fail with two identical-looking terms.
+* **Mathlib now has the Fredholm alternative for compact operators**, in
+  `Mathlib.Analysis.Normed.Operator.Compact.FredholmAlternative`:
+  `IsCompactOperator.hasEigenvalue_or_mem_resolventSet` gives `IsUnit (1 - T)` from injectivity of
+  `1 - T` in three lines. `IsCompactOperator` unfolds to an `Exists`, so dot notation on it
+  resolves into `Exists`; write the full name.
+* `FiniteDimensional 𝕜 ↑(K.map A)` is found by `infer_instance` from `FiniteDimensional 𝕜 ↑K`;
+  no helper lemma is needed.
+* To prove that orthogonal projectors onto pairwise orthogonal subspaces sum to `1`, do **not**
+  build a `DirectSum.IsInternal` decomposition (Mathlib has no `finrank (⨆ M i) = ∑ finrank (M i)`
+  for an independent family). The map `x ↦ (P i x)ᵢ` into `∀ i, M i` is surjective by
+  orthogonality alone, `Module.finrank_pi_fintype` matches the dimensions, so it is injective, and
+  it annihilates `x - ∑ P i x`. That is `Projection.sum_starProjection_eq_one_of_orthogonal`.
+* Kato's lemma is `ContinuousLinearMap.IsIdempotentElem.norm_one_sub_eq`, and it lives in
+  `Numlib/Analysis/InnerProductSpace/Projection/ObliqueProjection.lean`, which most modules do not
+  import. `IsIdempotentElem` unfolds to `Eq`, so `hP.norm_one_sub_eq` and `hP.toLinearMap` look up
+  `Eq.…`; write the full names.
+* Mathlib has no "pointwise convergence is uniform on compacta" lemma for an equicontinuous family
+  of operators. `‖P n ∘L T - T‖ → 0` for compact `T` is an `ε/3` argument written out by hand in
+  `Numlib/Variational/ProjectionMethod.lean`: `banach_steinhaus` for the uniform bound,
+  `IsCompactOperator.image_closedBall_subset_compact` and `Metric.totallyBounded_iff` for the
+  finite net, `Set.Finite.eventually_all` to make the finitely many limits simultaneous. Turning
+  a constant bound on the unit ball into an operator-norm bound needs an explicit rescaling by
+  `((‖x‖ : ℝ) : 𝕜)⁻¹`; `opNorm_le_of_ball` does *not* apply, since it wants the homogeneous
+  bound `‖f x‖ ≤ C ‖x‖` already.
 
 ## Design conventions of this library
 

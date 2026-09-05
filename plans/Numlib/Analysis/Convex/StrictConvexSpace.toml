@@ -1,24 +1,11 @@
-desc = '''
-Strict convexity of a normed space from strict convexity of a power of the norm (upstreaming
-candidate, natural home: `Mathlib.Analysis.Convex.StrictConvexSpace`): Atkinson–Han, *Theoretical
-Numerical Analysis*, Thm 3.3.18 assumes `‖·‖^p` strictly convex for some `p ≥ 1` to get uniqueness
-of best approximations, and Mathlib's uniqueness (`Numlib/Approximation/BestApprox`'s
-`IsBestApprox.unique`) assumes `StrictConvexSpace ℝ V`; this module is the bridge, together with
-the fact that `‖·‖²` is strictly convex on an inner product space (Atkinson–Han Ex 3.3.8). Both
-are proved in the Atkinson–Han surface today; they move here as the phase-2 promotion the surface
-plan requests.
-'''
-
 [[node]]
 id = "StrictConvexSpace.of_strictConvexOn_norm_rpow"
-kind = "theorem"
-desc = '''If `fun v => ‖v‖ ^ p` is strictly convex on `V` for some real `p ≥ 1`, then `StrictConvexSpace ℝ V`;
-for unit vectors `x ≠ y`, `‖(x + y)/2‖^p < 1`, then `StrictConvexSpace.of_norm_combo_lt_one`.'''
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.18"
 
 [[node]]
 id = "strictConvexOn_norm_sq"
-kind = "theorem"
-desc = '''`StrictConvexOn ℝ univ (fun v : H => ‖v‖ ^ 2)` on a real inner product space (Atkinson–Han Ex 3.3.8),
-in both the `npow` and the `rpow` form; from the parallelogram law.'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 3.3.8"
+
+[[node]]
+id = "strictConvexOn_norm_rpow_two"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 3.3.8"

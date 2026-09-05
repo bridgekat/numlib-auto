@@ -1,3 +1,4 @@
+import Numlib.Analysis.InnerProductSpace.Projection.ObliqueProjection
 import Numlib.Variational.LaxMilgram
 import Numlib.LinearSolve.Projection.Optimality
 import Numlib.Approximation.BestApprox
@@ -18,6 +19,10 @@ import Mathlib.Topology.MetricSpace.HausdorffDistance
 * `IsPetrovGalerkinSolution a ℓ K L u` for two-space forms, Babuška's theorem
   `‖u - u_N‖ ≤ (1 + M / α_N) inf ‖u - v‖` under the discrete inf–sup condition (Atkinson–Han
   Thm 9.2.1), and the convergence corollary it yields (Atkinson–Han Cor 9.2.3).
+* The Petrov–Galerkin projector `IsPetrovGalerkinSolution.projection` (`P_N : u ↦ u_N`, a bounded
+  idempotent with range `K` and `‖P_N‖ ≤ M / α_N`) and the Xu–Zikatanov sharpening
+  `‖u - u_N‖ ≤ (M / α_N) inf ‖u - v‖` of Babuška's bound it yields through Kato's identity
+  `‖1 - P‖ = ‖P‖` (Atkinson–Han Rem 9.2.2).
 * Strang's first lemma for the generalized Galerkin method on an abstract normed space `W`
   (Atkinson–Han Thm 9.3.1).
 
@@ -428,6 +433,204 @@ theorem tendsto {K : ℕ → Submodule 𝕜 U} {L : ℕ → Submodule 𝕜 V} [�
       _ = ε := by field_simp
   rw [dist_eq_norm, norm_sub_rev]
   linarith
+
+
+/-! ### The Petrov–Galerkin projector and the Xu–Zikatanov bound -/
+
+section Projector
+
+/-- A bound `M` on the form bounds the restricted functional `a u ·` on the test space. -/
+private theorem norm_comp_subtypeL_le {M : ℝ} (hM0 : 0 ≤ M)
+    (hM : ∀ w v, ‖a w v‖ ≤ M * ‖w‖ * ‖v‖) (u : U) :
+    ‖(a u).comp L.subtypeL‖ ≤ M * ‖u‖ :=
+  ContinuousLinearMap.opNorm_le_bound _ (mul_nonneg hM0 (norm_nonneg _)) fun v => hM u (v : V)
+
+variable [FiniteDimensional 𝕜 K] [FiniteDimensional 𝕜 L]
+
+/-- The Petrov–Galerkin approximation of an arbitrary `u : U`: the unique solution in `K` of the
+Petrov–Galerkin problem whose data is `ℓ = a u ·`, which exists by `existsUnique`. -/
+private noncomputable def projFun (a : SesqForm₂ 𝕜 U V) (K : Submodule 𝕜 U) (L : Submodule 𝕜 V)
+    [FiniteDimensional 𝕜 K] [FiniteDimensional 𝕜 L]
+    (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) {α : ℝ} (hα : 0 < α)
+    (hinf : DiscreteInfSup a K L α) (u : U) : U :=
+  (existsUnique (a := a) (ℓ := a u) (K := K) (L := L) hdim hα hinf).choose
+
+private theorem projFun_spec (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) {α : ℝ}
+    (hα : 0 < α) (hinf : DiscreteInfSup a K L α) (u : U) :
+    IsPetrovGalerkinSolution a (a u) K L (projFun a K L hdim hα hinf u) :=
+  (existsUnique (a := a) (ℓ := a u) (K := K) (L := L) hdim hα hinf).choose_spec.1
+
+private theorem eq_projFun (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) {α : ℝ}
+    (hα : 0 < α) (hinf : DiscreteInfSup a K L α) {u w : U}
+    (hw : IsPetrovGalerkinSolution a (a u) K L w) : w = projFun a K L hdim hα hinf u :=
+  (existsUnique (a := a) (ℓ := a u) (K := K) (L := L) hdim hα hinf).choose_spec.2 w hw
+
+private theorem norm_projFun_le (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) {α : ℝ}
+    (hα : 0 < α) (hinf : DiscreteInfSup a K L α) {M : ℝ} (hM0 : 0 ≤ M)
+    (hM : ∀ w v, ‖a w v‖ ≤ M * ‖w‖ * ‖v‖) (u : U) :
+    ‖projFun a K L hdim hα hinf u‖ ≤ M / α * ‖u‖ := by
+  have hspec := projFun_spec hdim hα hinf u
+  have heq : (a (projFun a K L hdim hα hinf u)).comp L.subtypeL = (a u).comp L.subtypeL := by
+    ext v
+    exact hspec.2 (v : V) v.2
+  have h1 : α * ‖projFun a K L hdim hα hinf u‖ ≤ M * ‖u‖ := by
+    calc α * ‖projFun a K L hdim hα hinf u‖
+        ≤ ‖(a (projFun a K L hdim hα hinf u)).comp L.subtypeL‖ := hinf _ hspec.1
+      _ = ‖(a u).comp L.subtypeL‖ := by rw [heq]
+      _ ≤ M * ‖u‖ := norm_comp_subtypeL_le hM0 hM u
+  rw [div_mul_eq_mul_div, le_div_iff₀ hα, mul_comm]
+  exact h1
+
+/-- **The Petrov–Galerkin projector** `P_N : u ↦ u_N` (Atkinson–Han, *Theoretical Numerical
+Analysis*, Rem 9.2.2).  Under the hypotheses of `IsPetrovGalerkinSolution.existsUnique` — finite
+dimensional trial and test spaces of equal dimension and the discrete inf–sup condition with
+constant `α > 0` — the map sending `u` to the unique `u_N ∈ K` with `a u_N v = a u v` for every
+`v ∈ L` is a bounded idempotent operator with range `K`.
+
+The map itself does not depend on `α`, which enters through the well-posedness proof and through
+the bound `‖P_N‖ ≤ M / α` of `norm_projection_le`.  Boundedness is not automatic: `U` is not
+assumed finite dimensional, and the discrete inf–sup condition is exactly what makes the solution
+operator continuous. -/
+noncomputable def projection (a : SesqForm₂ 𝕜 U V) (K : Submodule 𝕜 U) (L : Submodule 𝕜 V)
+    [FiniteDimensional 𝕜 K] [FiniteDimensional 𝕜 L]
+    (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) {α : ℝ} (hα : 0 < α)
+    (hinf : DiscreteInfSup a K L α) : U →L[𝕜] U :=
+  LinearMap.mkContinuous
+    { toFun := projFun a K L hdim hα hinf
+      map_add' := fun x y => by
+        refine (eq_projFun hdim hα hinf ?_).symm
+        refine ⟨K.add_mem (projFun_spec hdim hα hinf x).1 (projFun_spec hdim hα hinf y).1,
+          fun v hv => ?_⟩
+        simp only [map_add, add_apply, (projFun_spec hdim hα hinf x).2 v hv,
+          (projFun_spec hdim hα hinf y).2 v hv]
+      map_smul' := fun r x => by
+        simp only [RingHom.id_apply]
+        refine (eq_projFun hdim hα hinf ?_).symm
+        refine ⟨K.smul_mem r (projFun_spec hdim hα hinf x).1, fun v hv => ?_⟩
+        simp only [map_smulₛₗ, smul_apply, (projFun_spec hdim hα hinf x).2 v hv] }
+    (‖a‖ / α)
+    (norm_projFun_le hdim hα hinf (norm_nonneg a) fun w v =>
+      ((a w).le_opNorm v).trans (mul_le_mul_of_nonneg_right (a.le_opNorm w) (norm_nonneg v)))
+
+/-- The defining property of the Petrov–Galerkin projector: `P_N u` solves the Petrov–Galerkin
+problem whose data is `a u ·`. -/
+theorem projection_spec
+    (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) {α : ℝ} (hα : 0 < α)
+    (hinf : DiscreteInfSup a K L α) (u : U) :
+    IsPetrovGalerkinSolution a (a u) K L (projection a K L hdim hα hinf u) :=
+  projFun_spec hdim hα hinf u
+
+/-- The Petrov–Galerkin projector maps into the trial space. -/
+theorem projection_apply_mem (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) {α : ℝ}
+    (hα : 0 < α) (hinf : DiscreteInfSup a K L α) (u : U) :
+    projection a K L hdim hα hinf u ∈ K :=
+  (projection_spec hdim hα hinf u).1
+
+/-- The Petrov–Galerkin projector fixes the trial space: an element of `K` solves its own
+problem. -/
+theorem projection_apply_of_mem (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) {α : ℝ}
+    (hα : 0 < α) (hinf : DiscreteInfSup a K L α) {w : U} (hw : w ∈ K) :
+    projection a K L hdim hα hinf w = w :=
+  (eq_projFun hdim hα hinf ⟨hw, fun _ _ => rfl⟩).symm
+
+/-- The Petrov–Galerkin projector is idempotent. -/
+theorem isIdempotentElem_projection (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) {α : ℝ}
+    (hα : 0 < α) (hinf : DiscreteInfSup a K L α) :
+    IsIdempotentElem (projection a K L hdim hα hinf) :=
+  ContinuousLinearMap.ext fun u =>
+    projection_apply_of_mem hdim hα hinf (projection_apply_mem hdim hα hinf u)
+
+/-- The range of the Petrov–Galerkin projector is the trial space. -/
+theorem range_projection (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) {α : ℝ}
+    (hα : 0 < α) (hinf : DiscreteInfSup a K L α) :
+    LinearMap.range (projection a K L hdim hα hinf : U →ₗ[𝕜] U) = K := by
+  refine le_antisymm ?_ fun w hw => ⟨w, projection_apply_of_mem hdim hα hinf hw⟩
+  rintro _ ⟨v, rfl⟩
+  exact projection_apply_mem hdim hα hinf v
+
+/-- The Petrov–Galerkin iterate is the projection of the exact solution, which is what turns the
+error `u* - u_N` into a value of `1 - P_N`. -/
+theorem projection_apply_eq_of_isPetrovGalerkinSolution
+    (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) {α : ℝ} (hα : 0 < α)
+    (hinf : DiscreteInfSup a K L α) (hN : IsPetrovGalerkinSolution a ℓ K L u) {ustar : U}
+    (hstar : ∀ v, a ustar v = ℓ v) : projection a K L hdim hα hinf ustar = u :=
+  (eq_projFun hdim hα hinf ⟨hN.1, fun v hv => by rw [hN.2 v hv, hstar v]⟩).symm
+
+/-- `‖P_N‖ ≤ M / α` (Atkinson–Han, *Theoretical Numerical Analysis*, Rem 9.2.2): the
+Petrov–Galerkin projector is bounded by the ratio of the boundedness constant of the form to the
+discrete inf–sup constant. -/
+theorem norm_projection_le (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) {α : ℝ}
+    (hα : 0 < α) (hinf : DiscreteInfSup a K L α) {M : ℝ} (hM0 : 0 ≤ M)
+    (hM : ∀ w v, ‖a w v‖ ≤ M * ‖w‖ * ‖v‖) : ‖projection a K L hdim hα hinf‖ ≤ M / α :=
+  ContinuousLinearMap.opNorm_le_bound _ (div_nonneg hM0 hα.le)
+    (norm_projFun_le hdim hα hinf hM0 hM)
+
+/-- **The Xu–Zikatanov sharpening of Babuška's bound** (Atkinson–Han, *Theoretical Numerical
+Analysis*, Rem 9.2.2, their estimate (9.2.10)): `‖u* - u_N‖ ≤ (M / α) inf_{w ∈ K} ‖u* - w‖`, which
+improves the factor `1 + M / α` of `norm_sub_le` to `M / α`.
+
+The proof is the identity `u* - u_N = (1 - P_N)(u* - w)`, valid for every `w ∈ K`, together with
+Kato's identity `‖1 - P‖ = ‖P‖` for a nontrivial idempotent
+(`ContinuousLinearMap.IsIdempotentElem.norm_one_sub_eq`).
+
+The hypothesis `K ≠ ⊥` is needed and not decorative: with `K = ⊥` the projector is `0` and the
+bound reads `‖u*‖ ≤ (M / α) ‖u*‖`, which fails for `a = 0`, `M = 0`, `α = 1`, where every other
+hypothesis holds vacuously.  When `K ≠ ⊥` the two constants automatically satisfy `α ≤ M`, so
+`M / α ≥ 1` and the bound is indeed stronger than Babuška's. -/
+theorem norm_sub_le_div_mul_infDist (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) {α : ℝ}
+    (hα : 0 < α) (hinf : DiscreteInfSup a K L α) (hK : K ≠ ⊥) {M : ℝ} (hM0 : 0 ≤ M)
+    (hM : ∀ w v, ‖a w v‖ ≤ M * ‖w‖ * ‖v‖) (hN : IsPetrovGalerkinSolution a ℓ K L u) {ustar : U}
+    (hstar : ∀ v, a ustar v = ℓ v) :
+    ‖ustar - u‖ ≤ M / α * Metric.infDist ustar (K : Set U) := by
+  have hMa : 0 ≤ M / α := div_nonneg hM0 hα.le
+  have hPu : projection a K L hdim hα hinf ustar = u :=
+    projection_apply_eq_of_isPetrovGalerkinSolution hdim hα hinf hN hstar
+  -- every `w ∈ K` gives the pointwise bound; the infimum follows
+  have hstep : ∀ w ∈ K, ‖ustar - u‖ ≤ M / α * ‖ustar - w‖ := by
+    rcases eq_or_ne (projection a K L hdim hα hinf) 1 with h1 | h1
+    · have hu : ustar = u := by rw [← hPu, h1, one_apply_eq_self]
+      intro w _
+      rw [hu, sub_self, norm_zero]
+      exact mul_nonneg hMa (norm_nonneg _)
+    have h0 : projection a K L hdim hα hinf ≠ 0 := by
+      intro h
+      refine hK (le_antisymm (fun w hw => ?_) bot_le)
+      have hw' := projection_apply_of_mem hdim hα hinf hw
+      rw [h] at hw'
+      simpa using hw'.symm
+    have hnorm : ‖1 - projection a K L hdim hα hinf‖ = ‖projection a K L hdim hα hinf‖ :=
+      ContinuousLinearMap.IsIdempotentElem.norm_one_sub_eq
+        (isIdempotentElem_projection hdim hα hinf) h0 h1
+    intro w hw
+    have hid : ustar - u = (1 - projection a K L hdim hα hinf) (ustar - w) := by
+      rw [sub_apply, one_apply_eq_self, map_sub, hPu, projection_apply_of_mem hdim hα hinf hw]
+      abel
+    calc ‖ustar - u‖ = ‖(1 - projection a K L hdim hα hinf) (ustar - w)‖ := by rw [hid]
+      _ ≤ ‖1 - projection a K L hdim hα hinf‖ * ‖ustar - w‖ := ContinuousLinearMap.le_opNorm _ _
+      _ = ‖projection a K L hdim hα hinf‖ * ‖ustar - w‖ := by rw [hnorm]
+      _ ≤ M / α * ‖ustar - w‖ :=
+          mul_le_mul_of_nonneg_right (norm_projection_le hdim hα hinf hM0 hM) (norm_nonneg _)
+  have hKne : (K : Set U).Nonempty := ⟨0, K.zero_mem⟩
+  rcases eq_or_lt_of_le hMa with hM0' | hMpos
+  · have h := hstep u hN.1
+    rw [← hM0', zero_mul] at h
+    rw [← hM0', zero_mul]
+    exact h
+  have hMne : M ≠ 0 := by
+    have h := mul_pos hMpos hα
+    rw [div_mul_cancel₀ M hα.ne'] at h
+    exact h.ne'
+  refine le_of_forall_pos_le_add fun ε hε => ?_
+  obtain ⟨w, hw, hwd⟩ :=
+    (Metric.infDist_lt_iff hKne).mp
+      (lt_add_of_pos_right (Metric.infDist ustar (K : Set U)) (div_pos hε hMpos))
+  calc ‖ustar - u‖ ≤ M / α * ‖ustar - w‖ := hstep w hw
+    _ = M / α * dist ustar w := by rw [dist_eq_norm]
+    _ ≤ M / α * (Metric.infDist ustar (K : Set U) + ε / (M / α)) :=
+        mul_le_mul_of_nonneg_left hwd.le hMpos.le
+    _ = M / α * Metric.infDist ustar (K : Set U) + ε := by field_simp
+
+end Projector
 
 end IsPetrovGalerkinSolution
 

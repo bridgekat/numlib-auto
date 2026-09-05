@@ -1,4 +1,5 @@
 import Numlib.Analysis.InnerProductSpace.Coercive
+import Numlib.Analysis.InnerProductSpace.Projection.Compression
 import Mathlib.Analysis.InnerProductSpace.Projection.Basic
 import Mathlib.Analysis.InnerProductSpace.Projection.FiniteDimensional
 import Mathlib.LinearAlgebra.Eigenspace.Minpoly
@@ -15,8 +16,8 @@ Fong–Saunders[^fong-saunders] §2, Choi[^choi] Table 2.5, Atkinson–Han[^atki
 * `IsMinError xstar x₀ K x`: `x ∈ x₀ + K` minimizes `‖xstar - x‖` (SYMMLQ, CGNE).
 
 Well-posedness (Saad Prop 5.1), the residual formula (Saad Prop 5.4), exactness on invariant
-subspaces (Saad Prop 5.6) and the matrix representation (Saad (5.7)) are stated here; optimality
-characterizations are in `Optimality.lean`.
+subspaces (Saad Prop 5.6), the matrix representation (Saad (5.7)) and the general error bound
+(Saad Thm 5.7) are stated here; optimality characterizations are in `Optimality.lean`.
 
 ## References
 
@@ -277,6 +278,33 @@ theorem exists_isMinRes [FiniteDimensional 𝕜 K] : ∃ x, IsMinRes A b x₀ K 
   rw [h]
   exact Submodule.sub_starProjection_mem_orthogonal _
 
+/-- **Well-posedness of the general Petrov–Galerkin step** (Saad, *Iterative Methods*, Prop 5.1):
+if the trial and test spaces have the same finite dimension and `A` maps `K` injectively modulo
+`Lᗮ`, then the Petrov–Galerkin problem has exactly one solution.
+
+The nondegeneracy hypothesis is the one of `IsPetrovGalerkin.eq_of_forall`, which gives
+uniqueness; what the equal dimensions add is existence, by turning the injectivity of
+`z ↦ P_L (A z)` on `K` into surjectivity onto `L`. -/
+theorem existsUnique_isPetrovGalerkin_of_finrank_eq {A : E →ₗ[𝕜] E} (b x₀ : E)
+    (K L : Submodule 𝕜 E) [FiniteDimensional 𝕜 K] [FiniteDimensional 𝕜 L]
+    (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L)
+    (hKL : ∀ z ∈ K, A z ∈ Lᗮ → z = 0) : ∃! x, IsPetrovGalerkin A b x₀ K L x := by
+  set F : ↥K →ₗ[𝕜] ↥L := (L.orthogonalProjectionOnto : E →ₗ[𝕜] ↥L).comp (A.comp K.subtype) with hF
+  have hinj : Function.Injective F := by
+    rw [← LinearMap.ker_eq_bot, Submodule.eq_bot_iff]
+    intro z hz
+    refine Subtype.ext (hKL (z : E) z.2 ?_)
+    exact Submodule.orthogonalProjectionOnto_eq_zero_iff.1 (LinearMap.mem_ker.1 hz)
+  obtain ⟨δ, hδ⟩ := (LinearMap.injective_iff_surjective_of_finrank_eq_finrank hdim).1 hinj
+    (L.orthogonalProjectionOnto (b - A x₀))
+  have hPG : IsPetrovGalerkin A b x₀ K L (x₀ + δ) := by
+    refine ⟨by simp, Submodule.orthogonalProjectionOnto_eq_zero_iff.1 ?_⟩
+    have hres : b - A (x₀ + (δ : E)) = (b - A x₀) - A (δ : E) := by rw [map_add]; abel
+    rw [hres, map_sub]
+    change L.orthogonalProjectionOnto (b - A x₀) - F δ = 0
+    rw [hδ, sub_self]
+  exact ⟨x₀ + δ, hPG, fun y hy => hy.eq_of_forall hPG hKL⟩
+
 /-- Saad, *Iterative Methods*, Prop 5.1 (ii): minimal residual with `A` injective on `K` is
 uniquely solvable. -/
 theorem existsUnique_isMinRes_of_injOn [FiniteDimensional 𝕜 K] (hinj : Set.InjOn A K) :
@@ -345,3 +373,52 @@ theorem isPetrovGalerkin_iff_mulVec (V : Module.Basis ι 𝕜 K) (W : Module.Bas
     rw [hinner i, congrFun h i, sub_self]
 
 end MatrixForm
+
+section Projected
+
+/-! ### The general error bound
+
+The projection step with `x₀ = 0` is the equation `A_m x = Q b` on `K`, where `Q` is a projector
+of `E` onto `K` and `A_m = compressionBy Q A` is the compression of `A` through it: in Saad,
+*Iterative Methods*, §5.2.3, `Q = Q_K^L` is the oblique projector onto `K` along `Lᗮ`, which
+exists exactly under the nondegeneracy of Saad, *Iterative Methods*, Prop 5.1.  The bound below
+says that the exact solution `x*` almost solves that equation, with a defect governed by the part
+of `x*` that `K` misses.
+-/
+
+namespace IsPetrovGalerkin
+
+/-- **The general error bound** (Saad, *Iterative Methods*, Thm 5.7).  Let `Q` be a projector of
+`E` onto `K`, let `A_m = compressionBy Q A` be the compression of `A` through it, and let
+`γ` bound the coupling `Q A` on `Kᗮ`.  If `b ∈ K` and `A x* = b`, then the residual of `x*` for
+the projected equation obeys
+`‖b - A_m (P_K x*)‖ ≤ γ ‖(1 - P_K) x*‖`, with the identity
+`b - A_m (P_K x*) = Q A (1 - P_K) x*` behind it.  So the projected problem is the exact problem
+perturbed only by what `K` fails to capture, times the coupling constant; in Saad's setting
+`γ = ‖Q A (1 - P_K)‖`.
+
+The hypothesis `b ∈ K` is Saad's, and is what makes `Q b = b`; it holds for the Krylov choice
+`K = 𝒦ₘ(A, b)` with `x₀ = 0`.  The eigenvalue twin of this bound is
+`Krylov.compression_residual_le` in `Numlib.Eigen.RayleighRitz`, with the same shape of
+hypothesis on `γ`: taking the coupling constant as a hypothesis rather than as an operator norm
+keeps the statement available for an unbounded `A` and for the sharper values of `γ` that a
+particular `K` provides. -/
+theorem norm_residual_projected_le {A : E →ₗ[𝕜] E} {b : E} {K : Submodule 𝕜 E}
+    [K.HasOrthogonalProjection] {Q : E →ₗ[𝕜] K} (hQ : ∀ z : K, Q z = z) (hb : b ∈ K) {γ : ℝ}
+    (hγ : ∀ z ∈ Kᗮ, ‖(Q (A z) : E)‖ ≤ γ * ‖z‖) {xstar : E} (hstar : A xstar = b) :
+    ‖b - (compressionBy Q A (K.orthogonalProjectionOnto xstar) : E)‖
+      ≤ γ * ‖xstar - K.starProjection xstar‖ := by
+  have hQb : (Q b : E) = b := congrArg Subtype.val (hQ ⟨b, hb⟩)
+  have key : b - (compressionBy Q A (K.orthogonalProjectionOnto xstar) : E)
+      = (Q (A (xstar - K.starProjection xstar)) : E) := by
+    have h1 : (Q (A (xstar - K.starProjection xstar)) : E)
+        = (Q (A xstar) : E) - (Q (A (K.starProjection xstar)) : E) := by
+      rw [map_sub, map_sub, Submodule.coe_sub]
+    rw [h1, hstar, hQb]
+    rfl
+  rw [key]
+  exact hγ _ (K.sub_starProjection_mem_orthogonal xstar)
+
+end IsPetrovGalerkin
+
+end Projected

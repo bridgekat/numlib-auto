@@ -422,4 +422,122 @@ theorem norm_residual_minResStep_le {A : E →L[𝕜] E} {c : ℝ} (hc : 0 < c)
     have hfin := Real.sqrt_le_sqrt hsq
     rwa [Real.sqrt_sq (norm_nonneg _), Real.sqrt_mul hknn, Real.sqrt_sq (norm_nonneg _)] at hfin
 
+/-- The exact one-step identity for the minimal residual iteration (Saad, *Iterative Methods*,
+(5.18)): with the residual `r = b - A x` and the new residual `r′ = b - A x′`,
+`‖r′‖² = ‖r‖² (1 - ‖⟪A r, r⟫‖² / (‖r‖² ‖A r‖²))`, the book’s `‖r′‖ = ‖r‖ sin ∠(r, A r)`.
+No hypothesis is needed: at a breakdown (`r = 0` or `A r = 0`) the step does nothing and both
+sides read `‖r‖²`, because division by zero is zero.  Bounding the quotient below is what turns
+this identity into the contraction of `norm_residual_minResStep_le`. -/
+theorem norm_residual_minResStep_sq_eq (x : E) :
+    ‖b - A (minResStep A b x)‖ ^ 2
+      = ‖b - A x‖ ^ 2 *
+        (1 - ‖inner 𝕜 (A (b - A x)) (b - A x)‖ ^ 2
+              / (‖b - A x‖ ^ 2 * ‖A (b - A x)‖ ^ 2)) := by
+  rcases eq_or_ne (b - A x) 0 with h1 | h1
+  · rw [minResStep, step1_of_residual_eq_zero h1 rfl, h1]
+    simp
+  rcases eq_or_ne (A (b - A x)) 0 with h0 | h0
+  · simp [minResStep, step1, h0]
+  have hApos : (0 : ℝ) < ‖A (b - A x)‖ ^ 2 := by positivity
+  have hrpos : (0 : ℝ) < ‖b - A x‖ ^ 2 := by positivity
+  have hden : inner 𝕜 (A (b - A x)) (A (b - A x)) = ((‖A (b - A x)‖ ^ 2 : ℝ) : 𝕜) := by
+    rw [inner_self_eq_norm_sq_to_K, RCLike.ofReal_pow]
+  have hstep : b - A (minResStep A b x)
+      = (b - A x)
+        - (inner 𝕜 (A (b - A x)) (b - A x) / ((‖A (b - A x)‖ ^ 2 : ℝ) : 𝕜)) • A (b - A x) := by
+    rw [minResStep, step1, hden, map_add, map_smul]
+    abel
+  have hkey : (inner 𝕜 (A (b - A x)) (b - A x) / ((‖A (b - A x)‖ ^ 2 : ℝ) : 𝕜))
+        * (starRingEnd 𝕜) (inner 𝕜 (A (b - A x)) (b - A x))
+      = ((‖inner 𝕜 (A (b - A x)) (b - A x)‖ ^ 2 / ‖A (b - A x)‖ ^ 2 : ℝ) : 𝕜) := by
+    rw [div_mul_eq_mul_div, RCLike.mul_conj]
+    push_cast
+    ring
+  have hinner : RCLike.re (inner 𝕜 (b - A x)
+        ((inner 𝕜 (A (b - A x)) (b - A x) / ((‖A (b - A x)‖ ^ 2 : ℝ) : 𝕜)) • A (b - A x)))
+      = ‖inner 𝕜 (A (b - A x)) (b - A x)‖ ^ 2 / ‖A (b - A x)‖ ^ 2 := by
+    rw [inner_smul_right, ← inner_conj_symm (b - A x) (A (b - A x)), hkey, RCLike.ofReal_re]
+  have hnorm : ‖(inner 𝕜 (A (b - A x)) (b - A x) / ((‖A (b - A x)‖ ^ 2 : ℝ) : 𝕜))
+        • A (b - A x)‖ ^ 2
+      = ‖inner 𝕜 (A (b - A x)) (b - A x)‖ ^ 2 / ‖A (b - A x)‖ ^ 2 := by
+    rw [norm_smul, norm_div, RCLike.norm_ofReal, abs_of_pos hApos, mul_pow, div_pow]
+    field_simp
+  rw [hstep, norm_sub_sq (𝕜 := 𝕜), hinner, hnorm]
+  field_simp
+  ring
+
+/-- The exact one-step identity for steepest descent (Saad, *Iterative Methods*, the display
+preceding Lemma 5.8, that is (5.20)): for the error `d = xstar - x` and the residual
+`r = A d = b - A x`, `‖d′‖_A² = ‖d‖_A² (1 - ⟪r, r⟫² / (⟪A r, r⟫ ⟪A⁻¹ r, r⟫))`, where
+`⟪r, r⟫ = ‖r‖²` and `⟪A⁻¹ r, r⟫ = ⟪d, A d⟫ = ‖d‖_A²`.  Bounding the quotient below by
+Kantorovich’s inequality is exactly the proof of `energyNorm_steepestDescentStep_le`. -/
+theorem energyNorm_steepestDescentStep_sq_eq (hA : A.IsSymmetricCoercive) {xstar : E}
+    (hstar : A xstar = b) (x : E) :
+    energyNorm A (xstar - steepestDescentStep A b x) ^ 2
+      = energyNorm A (xstar - x) ^ 2 *
+        (1 - ‖b - A x‖ ^ 4
+              / (RCLike.re (inner 𝕜 (A (b - A x)) (b - A x))
+                  * energyNorm A (xstar - x) ^ 2)) := by
+  have hAd : A (xstar - x) = b - A x := by rw [map_sub, hstar]
+  rcases eq_or_ne (b - A x) 0 with h0 | h0
+  · have hd0 : xstar - x = 0 := hA.isCoercive.injective (by rw [hAd, h0, map_zero])
+    rw [steepestDescentStep, step1_of_residual_eq_zero h0 rfl, hd0, h0]
+    simp [energyNorm]
+  have hd0 : xstar - x ≠ 0 := fun h => h0 (by rw [← hAd, h, map_zero])
+  set q : ℝ := RCLike.re (inner 𝕜 (A (b - A x)) (b - A x)) with hq
+  have hqpos : 0 < q := hA.isCoercive.inner_self_pos h0
+  have hqne : q ≠ 0 := ne_of_gt hqpos
+  have hene : energyNorm A (xstar - x) ≠ 0 := ne_of_gt (hA.energyNorm_pos hd0)
+  have hself : inner 𝕜 (A (b - A x)) (b - A x) = (q : 𝕜) := by
+    refine (RCLike.conj_eq_iff_re.1 ?_).symm
+    rw [inner_conj_symm]
+    exact (hA.isSymmetric (b - A x) (b - A x)).symm
+  set a : ℝ := ‖b - A x‖ ^ 2 / q with ha
+  have hstep : steepestDescentStep A b x = x + (a : 𝕜) • (b - A x) := by
+    rw [steepestDescentStep, step1]
+    congr 2
+    rw [inner_self_eq_norm_sq_to_K, ← hA.isSymmetric (b - A x) (b - A x), hself,
+      ← RCLike.ofReal_pow, ← RCLike.ofReal_div]
+  have herr : xstar - steepestDescentStep A b x = (xstar - x) - (a : 𝕜) • A (xstar - x) := by
+    rw [hstep, hAd]; abel
+  have hexp := energyNorm_sub_smul_apply_sq hA (xstar - x) a
+  rw [← herr, hAd, ← hq] at hexp
+  rw [hexp, ha]
+  field_simp
+  ring
+
+/-- The contraction corollary shared by the convergence theorems of this file: if the errors of a
+sequence of iterates contract by a factor `ρ < 1` in some functional `N` that dominates the norm
+up to a constant — any norm equivalent to the norm of `E`, an energy norm, or the residual norm of
+a coercive operator — then the iterates converge to `xstar`. -/
+theorem tendsto_of_forall_norm_succ_le {N : E → ℝ} {C ρ : ℝ} {xseq : ℕ → E} {xstar : E}
+    (hN : ∀ v : E, ‖v‖ ≤ C * N v) (hN0 : ∀ v : E, 0 ≤ N v) (hρ0 : 0 ≤ ρ) (hρ1 : ρ < 1)
+    (h : ∀ k, N (xstar - xseq (k + 1)) ≤ ρ * N (xstar - xseq k)) :
+    Filter.Tendsto xseq Filter.atTop (nhds xstar) := by
+  have hC : ∀ v : E, ‖v‖ ≤ max C 0 * N v := fun v =>
+    (hN v).trans (mul_le_mul_of_nonneg_right (le_max_left _ _) (hN0 v))
+  have hgeom : ∀ k, N (xstar - xseq k) ≤ ρ ^ k * N (xstar - xseq 0) := by
+    intro k
+    induction k with
+    | zero => simp
+    | succ k ih =>
+        calc N (xstar - xseq (k + 1)) ≤ ρ * N (xstar - xseq k) := h k
+          _ ≤ ρ * (ρ ^ k * N (xstar - xseq 0)) := mul_le_mul_of_nonneg_left ih hρ0
+          _ = ρ ^ (k + 1) * N (xstar - xseq 0) := by ring
+  have hbound : ∀ k, ‖xstar - xseq k‖ ≤ max C 0 * N (xstar - xseq 0) * ρ ^ k := by
+    intro k
+    calc ‖xstar - xseq k‖ ≤ max C 0 * N (xstar - xseq k) := hC _
+      _ ≤ max C 0 * (ρ ^ k * N (xstar - xseq 0)) :=
+          mul_le_mul_of_nonneg_left (hgeom k) (le_max_right _ _)
+      _ = max C 0 * N (xstar - xseq 0) * ρ ^ k := by ring
+  have hpow : Filter.Tendsto (fun k : ℕ => ρ ^ k) Filter.atTop (nhds 0) :=
+    tendsto_pow_atTop_nhds_zero_of_lt_one hρ0 hρ1
+  have hlim : Filter.Tendsto (fun k : ℕ => max C 0 * N (xstar - xseq 0) * ρ ^ k)
+      Filter.atTop (nhds 0) := by
+    simpa using hpow.const_mul (max C 0 * N (xstar - xseq 0))
+  have hzero : Filter.Tendsto (fun k : ℕ => ‖xstar - xseq k‖) Filter.atTop (nhds 0) :=
+    squeeze_zero (fun k => norm_nonneg _) hbound hlim
+  rw [tendsto_iff_norm_sub_tendsto_zero]
+  simpa only [norm_sub_rev] using hzero
+
 end Projection

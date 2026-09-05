@@ -42,28 +42,12 @@ id = "Projection.step1_isPetrovGalerkin"
 
 [[node]]
 id = "Projection.norm_residual_minResStep_sq_eq"
-kind = "theorem"
-desc = '''The exact one-step identity for the minimal-residual step (Saad (5.18)):
-`‖b - A (minResStep A b x)‖² = ‖r‖² (1 - ⟪A r, r⟫² / (‖r‖² ‖A r‖²))` for `r = b - A x ≠ 0`, `A r ≠ 0`
-(real case; with `re` in general), from the one-dimensional minimization — Pythagoras along
-`A r`. The book's `sin ∠(r, A r)` reading.'''
-deps = ["Projection.minResStep", "Projection.minResStep_isMinRes"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, (5.16)–(5.18)"
 
 [[node]]
 id = "Projection.energyNorm_steepestDescentStep_sq_eq"
-kind = "theorem"
-desc = '''The exact one-step identity for steepest descent (Saad (5.20), the display before Lemma 5.8):
-`‖d'‖_A² = ‖d‖_A² (1 - ⟪r, r⟫² / (⟪A r, r⟫ ⟪A⁻¹ r, r⟫))` for the error `d = xstar - x`, `r = A d ≠ 0`
-and symmetric coercive `A`; from `IsGalerkin.energyNorm_le` on the line `span {r}`. Kantorovich's
-inequality then bounds the factor by `((λmax - λmin)/(λmax + λmin))²`, which is how Thm 5.9 follows.'''
-deps = ["Projection.steepestDescentStep", "Projection.steepestDescentStep_isGalerkin", "IsGalerkin.energyInner_error_eq_zero", "Projection.kantorovich_inequality"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, (5.20) and Theorem 5.9"
 
 [[node]]
 id = "Projection.tendsto_of_forall_norm_succ_le"
-kind = "theorem"
-desc = '''The generic contraction corollary used by Thm 5.9, Thm 5.10 and RNSD: if a sequence of iterates
-satisfies `‖xstar - x (k+1)‖ ≤ ρ ‖xstar - x k‖` (in any norm equivalent to the norm of `E`) with
-`ρ < 1`, then `x k → xstar`; geometric decay plus norm equivalence, stated once.'''
 source = "Saad, Iterative Methods for Sparse Linear Systems, Theorems 5.9 and 5.10"
