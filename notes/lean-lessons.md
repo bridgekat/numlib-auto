@@ -72,6 +72,11 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   `Analysis.Calculus.Deriv.MeanValue`, where the one-dimensional `exists_hasDerivAt_eq_slope` lives.
 * Renaming a file invalidates the Read/Edit tools' file-state tracking: an edit prepared before a
   `git mv` fails with "File has not been read yet". Re-read after the move.
+* **An agent forbidden to run `lake build` can still see the style linters.**
+  `lake env lean -D weak.linter.mathlibStandardSet=true F.lean` applies Mathlib's standard set
+  (`linter.style.longLine` and friends) without taking the build lock or touching the shared
+  tracker cache, so parallel agents in one worktree can each meet a "no warnings" bar before the
+  merging agent runs the real build.
 
 ## Correctness traps
 
@@ -87,6 +92,12 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   testing. Check the breakdown case explicitly.
 * Statements about an algorithm at the boundary `m = grade` usually need the strict form
   `m < grade`; the padded recurrences degenerate there.
+* A three-term relation `A v_j = β_j v_{j-1} + α_j v_j + δ_{j+1} v_{j+1}` written with a *normalized*
+  `v_{j+1}` is false exactly at a serious breakdown, where `δ_{j+1} = 0` but the unnormalized
+  vector is not. "No breakdown for all `j`" is the wrong repair: in finite dimension it never
+  holds, because the process terminates. The right hypothesis is the local one, `δ_{j+1} = 0 →
+  v̂_{j+1} = 0`, which holds generically *and* at a regular termination
+  (`BiLanczos.NoSeriousBreakdown`).
 
 ## Syntax and elaboration
 
@@ -163,6 +174,39 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   namespace, which then fails with a type mismatch against your own lemma. Name it `refl`.
 * `set x := e with h` does not make `x`-applications reducible to `e` for `rw`; add
   `have hx : ∀ y, x y = … := fun _ => rfl` and rewrite with that.
+* `inner_conj_symm x y : conj ⟪ y, x ⟫ = ⟪ x, y ⟫` — the arguments are in the *opposite* order to
+  the inner product being conjugated, so `rw [← inner_conj_symm a b]` rewrites `⟪ a, b ⟫` into
+  `conj ⟪ b, a ⟫`. Aiming it at the wrong pair silently rewrites the other factor of a product.
+* A bare `map_mul` in a `rw` chain whose goal is headed by `RCLike.re` unifies against `re`, an
+  `AddMonoidHom`, and fails with `failed to synthesize MulHomClass (𝕜 →+ ℝ)` rather than with
+  anything about the multiplication meant. Name the hom: `map_mul (starRingEnd 𝕜)`.
+* `Nat.mul_add_mod` and `Nat.mul_add_div` cancel against the *left* factor (`(?m * ?x + ?y) % ?m`),
+  so for a block enumeration `j * p + i` the rewrite is `rw [mul_comm, Nat.mul_add_mod]`; without
+  the `mul_comm` the error shows the pattern but not which factor is meant.
+* **Pad a `Fin p`-indexed family into `ℕ` with its own `def`, never with an inline `dite`.**
+  `f k = (A ^ (k / p)) (if h : k % p < p then v ⟨k % p, h⟩ else 0)` makes every later index rewrite
+  fail with "motive is not type correct", because the `Fin.mk` proof mentions the term being
+  rewritten. A separate `def pad v i := if h : i < p then v ⟨i, h⟩ else 0` moves the dependency out
+  of sight.
+* `Submodule.subset_span` passed directly as an argument to
+  `Submodule.inner_right_of_mem_orthogonal` fails with "the expected type of this term could not be
+  determined": the generating set is fixed only by the *other* argument. Bind the membership as a
+  `have` with its type written out.
+* `Submodule.mem_span_range_iff_exists_fun` takes the ring `R` as an *explicit* argument, so
+  `h.1 hmem` fails with "Projections cannot be used on functions"; write
+  `(Submodule.mem_span_range_iff_exists_fun 𝕜).1 hmem`.
+* **A missing import can masquerade as broken dot notation.** `LinearMap.IsSymmetric` is a `def`
+  that unfolds to a `∀`, so when the module defining `LinearMap.IsSymmetric.foo` is not imported,
+  `hA.foo` does not say "unknown identifier": it says *"the environment does not contain
+  `Function.foo`, so it is not possible to project the field `foo`"*, and prints the type of `hA`
+  as `∀ x y, ⟪ A x, y ⟫ = ⟪ x, A y ⟫`. Nothing in the message mentions the name written. Check the
+  import list before believing the notation is at fault.
+* `have h : p.degree < (m : ℕ)` fails with "`p.degree` has type `WithBot ℕ`": under `<` the
+  ascription on the right fixes the type first, so write `(m : WithBot ℕ)`. The same ascription is
+  fine under `=`, which makes the failure look arbitrary.
+* A two-step recurrence is easiest to define by carrying the pair `(f j, f (j+1))` through a plain
+  structural recursion and projecting: every equation, the one at `j + 2` included, is then `rfl`.
+  `Lanczos.polyPair` in `Numlib/Krylov/OrthogonalPolynomials.lean` does this.
 
 ## Tactics
 
@@ -230,6 +274,26 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
 * `linarith`/`nlinarith` treat `RCLike.re z` and `z.re` as different atoms although they are
   `rfl`-equal at `𝕜 = ℂ`.  Give each `have` the spelling you want as an explicit type annotation;
   the transfer is then a defeq check that `exact` performs silently.
+* **`simp` normalizes `ℕ` literals, so a disequality handed to it may not match.** After
+  `rw [h : i + 1 = m]` the goal can contain `j + 1 + 1`, which `simp` rewrites to `j + 2`; a
+  `(by omega : ¬(j + 1 + 1 = j))` passed as a simp argument is then reported *unused* while the
+  goal it was meant to close survives as an implication. Evaluate `ite`s deterministically with
+  `ite_eq_left h` / `ite_eq_right h` instead, one per occurrence (`rw` rewrites only the first
+  instantiation, so a condition shared by two `ite`s with different branches needs two rewrites).
+* `hk : k ∈ Set.Iio m` is not an arithmetic hypothesis as far as `omega` is concerned; re-bind it
+  with `have hk' : k < m := hk` first.
+* `gcongr` often closes the whole subgoal including the side conditions, so a following `exact …`
+  errors with "No goals to be solved" — the same trap as `field_simp`.
+* `rw [← Finset.sum_map …]` does not fire against `∑ j, F (Fin.castLE h j)`: the higher-order
+  pattern `?f (?e x)` will not unify. State the collapse as a `have` with all three arguments
+  explicit, `(Finset.sum_map Finset.univ (Fin.castLEEmb h) F).symm`, and `rw` with that.
+* `rw [← one_pow 2]` to introduce a square rewrites the `1` inside every `m + 1` in the goal and
+  then fails with "motive is not type correct" on the `Fin`/`castLE` proofs that depend on it.
+  Compute the sum forward into a named `have` and rewrite with that.
+* `positivity` does not know `0 ≤ Lanczos.beta A b j`; write
+  `mul_nonneg (beta_nonneg A b m) (abs_nonneg _)`.
+* `induction n using Nat.twoStepInduction` names its cases `zero`, `one`, `more`, and `more` binds
+  `n`, `P n`, `P (n+1)` — not `H1/H2/H3`.
 
 ## Mathlib names and API
 
@@ -416,6 +480,31 @@ Structural facts worth knowing before planning a proof:
 * There is no `abs_le_max_abs_abs`; `p ≤ x → x ≤ q → |x| ≤ max |p| |q|` is one `abs_le.2` with
   `neg_abs_le` and `le_abs_self`.  Nor is there a `c ^ (1/k) → 1` for a constant `c > 0` indexed by
   `ℕ`: `Real.rpow_def_of_pos` with `tendsto_one_div_atTop_nhds_zero_nat` is four lines.
+* `abs_sub` and `div_le_div_of_nonneg_right` do not exist in this toolchain: for
+  `|a - b| ≤ |a| + |b|` use `abs_sub_le a 0 b` and `simpa`, and for `a/c ≤ b/c` use `gcongr`.
+* **Real parts of an infinite sum.** `HasSum.map (RCLike.re : 𝕜 →+ ℝ) RCLike.continuous_re` takes
+  real parts of a `HasSum`; with `HilbertBasis.hasSum_inner_mul_inner b v v` it gives Parseval as
+  `HasSum (fun i => ‖⟪ b i, v ⟫‖ ^ 2) (‖v‖ ^ 2)`, which Mathlib does not state.
+* **A diagonal operator needs no continuity.** For symmetric `T` with `T (φ i) = ν i • φ i` in a
+  `HilbertBasis`, do *not* push `T` through `HilbertBasis.hasSum_repr` — that would need `T`
+  bounded, i.e. Hellinger–Toeplitz and `[CompleteSpace E]`. Compute the coefficient directly,
+  `⟪ φ i, T v ⟫ = ⟪ T (φ i), v ⟫ = ν i ⟪ φ i, v ⟫`, then apply Parseval to `v` and `T v` separately.
+  This gives `‖T v‖ ≤ (sup |ν|) ‖v‖` and `IsSymmetricBoundedBy` with no completeness anywhere.
+* AM–GM in the `(∏ b)^{1/k} ≤ (∑ b)/k` form is `Real.geom_mean_le_arith_mean` with all weights `1`;
+  `Real.rpow_inv_natCast_pow` raises it back to `∏ b ≤ ((∑ b)/k)^k`, and
+  `Real.continuous_const_rpow (h : a ≠ 0)` is what makes `a^{1/(2k)} → 1`.
+* `Filter.Tendsto.div` produces the `Pi.div` form `f / g`, which `simpa` will not turn back into
+  `fun j => f j / g j`; rewrite the limit value in the hypothesis and close with `exact` instead.
+* Ritz values as matrix eigenvalues is four names deep and no more: `LinearMap.charpoly_toMatrix`,
+  `Matrix.charpoly_map` (`(M.map f).charpoly = M.charpoly.map f`),
+  `Matrix.mem_spectrum_iff_isRoot_charpoly` and `LinearMap.spectrum_toMatrix` — the last lives in
+  `Mathlib.LinearAlgebra.Eigenspace.Matrix`, which `Numlib` does not otherwise import.
+  `Polynomial.eval_map` with `Polynomial.eval₂_hom` moves a real root across `algebraMap ℝ 𝕜`.
+* `Polynomial.modByMonic_add_div p q : p %ₘ q + q * (p /ₘ q) = p` takes **no** monic hypothesis
+  (both sides are junk-defined so that it holds anyway); `degree_modByMonic_lt` and
+  `natDegree_divByMonic` do take one. `natDegree_C_le` does not exist — use `(natDegree_C _).le`.
+* `integral_finset_sum_measure` is deprecated in favour of `integral_finsetSum_measure`;
+  `integrable_dirac (by simp)` supplies its integrability side conditions for a scaled Dirac sum.
 
 ## Design conventions of this library
 

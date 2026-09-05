@@ -1,66 +1,107 @@
-desc = '''
-Block Krylov subspaces and the block Arnoldi process: Saad, *Iterative Methods for Sparse Linear
-Systems*, §6.12 (Algorithms 6.22–6.24, the block Hessenberg relation (6.129), Ruhe's variant
-(6.130), block FOM and block GMRES with (6.135)–(6.136)), and the block methods of Saad, *Numerical
-Methods for Large Eigenvalue Problems*, Ch. 6. Phase 3 in the plan; here so that the two books'
-block material has one home.
-
-The block Krylov subspace of a finite family `v : Fin p → E` is
-`Krylov.blockSubspace A v m = ⨆ i, subspace A (v i) m`, and the block Arnoldi vectors are the
-Gram–Schmidt orthonormalization of the family `A^j (v i)` in the order `(j, i)`, so that Ruhe's
-variant (one vector at a time) and the block variant (a block QR per step) produce the same
-vectors up to the uniqueness of orthonormal bases of a flag
-(`InnerProductSpace.exists_norm_eq_one_smul_gramSchmidtNormed`,
-`Numlib/Analysis/InnerProductSpace/GramSchmidt`), which is Saad's "mathematical equivalence"
-of Algorithms 6.23 and 6.24. Block FOM and block GMRES are then `IsGalerkin` and `IsMinRes` on the
-block subspace, one right-hand side at a time, and (6.135)–(6.136) are the Hessenberg-relation
-residual formulas of `Numlib/Krylov/Hessenberg` with the block Hessenberg matrix.
-'''
+[[node]]
+id = "BlockArnoldi.blockVec_eq_vec"
 
 [[node]]
-id = "Krylov.blockSubspace"
-kind = "definition"
-desc = '''`Krylov.blockSubspace A v m := ⨆ i, Krylov.subspace A (v i) m` for `v : Fin p → E`, with
-`blockSubspace_mono`, `map_blockSubspace_le` and `blockSubspace_eq_span` (the span of the `A^j (v i)`,
-`j < m`).'''
-deps = ["Krylov.subspace", "Krylov.subspace_mono"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, Section 6.12"
+id = "BlockArnoldi.coeff"
 
 [[node]]
-id = "BlockArnoldi.vec"
-kind = "definition"
-desc = '''Ruhe's variant (Algorithm 6.24) as the primary definition: `BlockArnoldi.vec A v k` is the
-`gramSchmidtNormed` of the sequence `A^j (v i)` enumerated by `k = j * p + i`, with the coefficient
-function `BlockArnoldi.coeff` and the band-Hessenberg `BlockArnoldi.hessenberg`; the blockwise
-Algorithms 6.22–6.23 are `BlockArnoldi.blockVec`, defined by a Gram–Schmidt QR per step.'''
-deps = ["Arnoldi.vec", "Krylov.blockSubspace", "InnerProductSpace.eq_gramSchmidtNormed_of_re_inner_pos"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, Algorithms 6.22–6.24"
+id = "BlockArnoldi.coeff_eq_zero_of_lt"
+
+[[node]]
+id = "BlockArnoldi.coeff_one"
+
+[[node]]
+id = "BlockArnoldi.hessenberg"
 
 [[node]]
 id = "BlockArnoldi.hessenbergRelation"
-kind = "theorem"
-desc = '''Saad (6.129)–(6.130): `A v_k = ∑_{i ≤ k + p} h_{ik} v_i`, i.e. `Krylov.HessenbergRelation`
-generalized to bandwidth `p` (`A V_m = V_{m+p} H̄_m`), with the vectors orthonormal and spanning
-the block subspace; the `p = 1` case is `Arnoldi.hessenbergRelation`.'''
-deps = ["BlockArnoldi.vec", "Krylov.HessenbergRelation", "Arnoldi.hessenbergRelation"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, (6.129)–(6.130)"
 
 [[node]]
-id = "BlockArnoldi.blockVec_eq_vec"
-kind = "theorem"
-desc = '''Saad §6.12: Algorithms 6.23 and 6.24 are mathematically equivalent when `m` is a multiple of `p`
-— with the Gram–Schmidt QR convention the vectors coincide exactly, and with any other QR they
-agree up to unimodular scalars, by the flag-uniqueness lemmas of
-`Numlib/Analysis/InnerProductSpace/GramSchmidt`.'''
-deps = ["BlockArnoldi.vec", "InnerProductSpace.exists_norm_eq_one_smul_gramSchmidtNormed"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, Section 6.12"
+id = "BlockArnoldi.hessenbergRelation_one"
+
+[[node]]
+id = "BlockArnoldi.hessenbergSq"
+
+[[node]]
+id = "BlockArnoldi.isGalerkin_blockSubspace_iff"
+
+[[node]]
+id = "BlockArnoldi.isGalerkin_iff_mulVec_eq"
+
+[[node]]
+id = "BlockArnoldi.isMinRes_blockSubspace_iff"
+
+[[node]]
+id = "BlockArnoldi.isMinRes_iff"
+
+[[node]]
+id = "BlockArnoldi.norm_residual_eq"
+
+[[node]]
+id = "BlockArnoldi.orthonormal_vec"
 
 [[node]]
 id = "BlockArnoldi.residual_eq"
-kind = "theorem"
-desc = '''Saad (6.135)–(6.136): for `X = X₀ + V_m Y` and `R₀ = V_p R` (the block QR of the initial
-residuals), `B - A X = V_{m+p} (E₁ R - H̄_m Y)` column by column, so the residual norm of the
-`i`-th right-hand side is `‖ḡ^{(i)} - H̄_m y^{(i)}‖`; block FOM (`IsGalerkin` on the block subspace)
-solves `H_m y = g` and block GMRES (`IsMinRes` on the block subspace) minimizes (6.136).'''
-deps = ["BlockArnoldi.hessenbergRelation", "Krylov.HessenbergRelation.residual_eq", "IsGalerkin", "IsMinRes"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, (6.135)–(6.136)"
+
+[[node]]
+id = "BlockArnoldi.span_vec"
+
+[[node]]
+id = "BlockArnoldi.span_vec_eq_blockSubspace"
+
+[[node]]
+id = "BlockArnoldi.vec"
+
+[[node]]
+id = "BlockArnoldi.vec_one"
+
+[[node]]
+id = "IsBlockArnoldiBasis"
+
+[[node]]
+id = "IsBlockArnoldiBasis.exists_norm_eq_one_smul_vec"
+
+[[node]]
+id = "IsBlockArnoldiBasis.span_eq_blockSubspace"
+
+[[node]]
+id = "Krylov.BandRelation"
+
+[[node]]
+id = "Krylov.BandRelation.apply_sum"
+
+[[node]]
+id = "Krylov.BandRelation.residual_eq"
+
+[[node]]
+id = "Krylov.bandOf"
+
+[[node]]
+id = "Krylov.bandRelation_one_iff"
+
+[[node]]
+id = "Krylov.blockSeq"
+
+[[node]]
+id = "Krylov.blockSeq_mul_add"
+
+[[node]]
+id = "Krylov.blockSubspace"
+
+[[node]]
+id = "Krylov.blockSubspace_eq_span"
+
+[[node]]
+id = "Krylov.blockSubspace_eq_span_image_Iio"
+
+[[node]]
+id = "Krylov.blockSubspace_mono"
+
+[[node]]
+id = "Krylov.firstBlockVec"
+
+[[node]]
+id = "Krylov.map_blockSubspace_le"
+
+[[node]]
+id = "Krylov.subspace_le_blockSubspace"
