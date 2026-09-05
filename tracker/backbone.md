@@ -713,9 +713,10 @@ Hilbert spaces (infinite orthonormal expansions, `x_k → x*`) is a phase-3 impr
   non-orthonormal basis (quasi-residual); CGS/BiCGSTAB/TFQMR are surface.
 * `Krylov/Block.lean` — Saad §6.12 block Krylov methods: phase 3, together with the eigenvalue
   book's block methods.
-* Faber–Manteuffel (Saad §6.10, L3, unique to Saad) — Saad surface; its Lemma 6.23 ("`Aᴴ v ∈ 𝒦_s(A,v)`
-  for all `v` iff `A` normal with `ν(A) ≤ s−1`") and the normal-matrix theory behind Thm 6.24 move
-  to `Eigen/Normal.lean` (phase 3) if the eigenvalue book needs them.
+* Faber–Manteuffel (Saad §6.10, L3, unique to Saad) — Saad surface; the normal-matrix theory it
+  rests on is `Eigen/Normal.lean`, which is where a second book's normal-operator statements should
+  also go. Lemma 6.23 ("`Aᴴ v ∈ 𝒦_s(A,v)` for all `v` iff `A` normal with `ν(A) ≤ s−1`") stays in
+  the Saad surface.
 
 ---
 
@@ -814,37 +815,76 @@ Serves Saad-eig Thm 4.1 (power method with a semi-simple dominant eigenvalue), �
 deflation), Thm 5.1–5.2 (subspace iteration), Kress §7.2 (power method for diagonalizable `A`,
 Lemma 7.18 subspace iteration, Thm 7.19 orthogonal iteration, Thm 7.20 QR algorithm).
 
+The power method and subspace iteration are written; the module doc comment is the description.
+Three corrections to what was planned here, kept because the reasons matter.
+
+*Gelfand is not needed, and neither is the spectrum of a restriction.* The plan proposed to bound
+`‖(A|_W)^k‖` by Gelfand's formula (2.1.3) after computing `spectrum (A|_W) = σ(A) ∖ {λ₁}`. The
+elementary route is shorter and far more general: for a single generalized eigenvector,
+`(A − μ)^N w = 0` and `‖μ‖ < r` give `‖A^k w‖ ≤ C r^k` by induction on `N`, because
+`A^{k+1} w = μ A^k w + A^k (A − μ) w` turns a bound for `(A − μ) w` into the scalar recursion
+`a_{k+1} ≤ ‖μ‖ a_k + C r^k`, whose solution is `(‖w‖ + C/(r − ‖μ‖)) r^k`. The vectors obeying such
+a bound form a submodule, so the supremum of the subdominant generalized eigenspaces inherits it
+with no finiteness argument and no uniform gap. The result holds over any `RCLike` field, in any
+normed space, with `A` neither continuous nor acting on a complete space; finite dimension and
+algebraic closedness are used only to split `x₀` at all.
+
+*Semi-simplicity is a hypothesis on `x₀`, not on `A`.* The book assumes the dominant eigenvalue
+semi-simple (not simple, as an earlier reading had it). The statement here takes the splitting
+`x₀ = u + w` with `A u = λ₁ u` and `w ∈ W` as hypotheses rather than a spectral projector, which
+is weaker still — only the `λ₁`-component of *this* `x₀` has to be an eigenvector — and recovers
+the semi-simple and simple forms as corollaries. This avoids a projector API entirely; where a
+projector is wanted it is `Krylov.spectralProjector` below, which is `Submodule.projection` of the
+splitting and is the correct *oblique* projector — `starProjection` is wrong here, the
+decomposition being non-orthogonal for non-normal `A`. On the direction: Saad's algorithm normalizes by the entry of
+largest modulus, so it converges outright, while a norm-normalized iterate can only converge up to
+a unimodular factor; the book's own notion for that case, "converges essentially", is what the
+module states, with the factor `(λ₁/‖λ₁‖)^k` made explicit.
+
+*Subspace iteration is not a gap statement, and it is cheap.* Saad-eig Thm 5.2 bounds
+`‖(I − P_k) u_i‖`, the distance from a dominant eigenvector to `S_k = A^k S₀`, which
+`Submodule.starProjection` already expresses; the plan's name `subspaceIterate_gap_le` came from a
+paraphrase, and the module now states what the book proves, as
+`Krylov.exists_norm_sub_starProjection_subspaceIterate_le`. Two estimates were budgeted for it and
+neither was needed. The analytic core is the decay estimate above plus *one candidate vector*:
+`λ^{-k} A^k s` lies in `S_k` and its error is `λ^{-k} A^k (s − u)`, so the best approximation from
+`S_k` does at least as well — that is `Krylov.norm_sub_starProjection_subspaceIterate_le`, which
+mentions no spectrum, no projector and no finite dimension of the ambient space. The linear algebra
+is `Krylov.isCompl_iSup_maxGenEigenspace` (the splitting for a *set* of eigenvalues, from
+`iSupIndep.disjoint_biSup_biSup` and `iSup_split`, with the one-eigenvalue case now a corollary),
+`Krylov.spectralProjector` (`Submodule.projection` of that splitting — Mathlib's `projection` is
+already the endomorphism form, and supplies `ker`, `range`, idempotence and the fixed-point lemma)
+and `Krylov.existsUnique_mem_spectralProjector_eq` (rank–nullity plus
+`Submodule.eq_of_le_of_finrank_le`). The book's hypothesis that the `P x_i` be linearly independent
+is `Disjoint S₀ W`, which is `Krylov.injOn_spectralProjector_iff`.
+
+*The gap form is Kress's theorem, not Saad's, and its obstruction is elsewhere.* The gap statement
+is genuinely different and strictly stronger — `Submodule.sinAngle_le_gap` derives the per-vector
+bound *from* a gap bound, for every vector of the invariant subspace and not only for its
+eigenvectors — and it is **Kress Lemma 7.18**, `‖P_{A^k S} − P_T‖ ≤ M |λ_{m+1}/λ_m|^k` for
+diagonalizable `A`, on which his Thm 7.19 (orthogonal iteration) and Thm 7.20 (QR) rest. It is
+`Krylov.gap_subspaceIterate_le`, still open. Kress's proof does **not** use Saad-eig (3.8), a
+uniform decay estimate on `W`, or the decay of `(A|_M)^{−k}`: it applies the per-vector decay to
+the `m` vectors of one basis and then compares the two orthogonal projections through their normal
+equations. So the one missing brick is a *quantitative continuity of the projector in its spanning
+family* — from `‖w_j − x_j‖ ≤ δ` conclude `‖P_{span w} − P_{span x}‖ ≤ M δ` — which Mathlib does
+not have in any form, there being no Gram-matrix formula for `Submodule.starProjection`. The node
+records both Kress's route (perturbation of the Gram system, his Thm 5.3) and a two-sided
+alternative that ends in the `≤` half of Saad-eig (3.8); that half needs `[CompleteSpace E]`, which
+is why `Projection/Angle` left it out, but is free here because the statement already assumes
+finite dimension. "A projector family with `‖P − Q‖ < 1` has constant rank" (Saad-eig Thm 3.2) is
+done, as `Submodule.finrank_eq_of_gap_lt_one`.
+
+The rest of the module is still to write:
+
 ```lean
-noncomputable def powerIterate (A : E →ₗ[𝕜] E) (x₀ : E) (k : ℕ) : E :=
-  (‖(A ^ k) x₀‖)⁻¹ • (A ^ k) x₀
-/-- If `λ₁` is a simple eigenvalue of strictly largest modulus and `x₀` has a nonzero component in
-its spectral projector, then `A^k x₀ / λ₁^k → P₁ x₀` (hence `powerIterate` converges in direction)
-at rate `|λ₂/λ₁|^k`. -/
-theorem powerIterate_tendsto [FiniteDimensional ℂ F] (A : F →ₗ[ℂ] F) {l₁ : ℂ}
-    (h₁ : Module.End.HasEigenvalue A l₁) (hsimple : finrank (A.maxGenEigenspace l₁) = 1)
-    (hdom : ∀ l ∈ spectrum ℂ A, l ≠ l₁ → ‖l‖ < ‖l₁‖) (x₀ : F) (hx₀ : P₁ x₀ ≠ 0) :
-    Tendsto (fun k => (l₁ ^ k)⁻¹ • (A ^ k) x₀) atTop (nhds (P₁ x₀)) ∧
-      (geometric rate for every `r > max_{l ≠ l₁} |l|/|l₁|`)
 /-- Inverse iteration / shift-and-invert: the power method for `(A − σ)⁻¹` (a `simp` lemma
 reusing the above with the spectrum mapped by `(· − σ)⁻¹`). -/
-/-- Subspace iteration (Saad-eig Thm 5.2; Kress Lemma 7.18 is the diagonalizable case): if
-`|λ_m| > |λ_{m+1}|` and the spectral projector `P_m` onto the dominant invariant subspace is
-injective on `S₀`, then `gap(A^k S₀, range P_m) ≤ C (|λ_{m+1}/λ_m| + ε)^k`; the power method is
-`m = 1`. -/
-theorem subspaceIterate_gap_le …
 /-- Wielandt deflation (Saad-eig Thm 4.2): `σ(A − σ u₁ vᴴ) = {λ₁ − σ, λ₂, …}` when `vᴴ u₁ = 1`. -/
 /-- QR algorithm = orthogonal iteration on the canonical flag (Kress Thm 7.20, algebraic part);
-convergence (Kress Thm 7.19) from subspace iteration. -/
+convergence (Kress Thm 7.19) from the *gap* form `Krylov.gap_subspaceIterate_le`, applied to the
+canonical flag one dimension at a time — the per-eigenvector bound is not enough for it. -/
 ```
-Difficult proof: use the generalized-eigenspace decomposition (Mathlib
-`Module.End.iSup_maxGenEigenspace_eq_top` and `independent_maxGenEigenspace` over `ℂ`) to split
-`x₀ = P₁ x₀ + w`, with `w` in the complementary `A`-invariant subspace
-`W = ⨆_{μ ≠ λ₁} maxGenEigenspace μ` on which `spectrum (A|_W) = σ(A) ∖ {λ₁}`; Gelfand (2.1.3)
-gives `‖(A|_W)^k‖ ≤ C r^k` for `r > max |λ|`, so `λ₁^{−k} A^k w → 0`. No Jordan form needed.
-Subspace iteration follows the same pattern with `Submodule.map` and the gap between subspaces
-(`‖P₁ − P₂‖`, Saad-eig §3.1; not in Mathlib: canonical angles / `Submodule` gap metric, deferred
-with this module); it also needs "a projector family with `‖P − Q‖ < 1` has constant rank"
-(Saad-eig Thm 3.2, easy).
 
 ### 4.4 `Eigen/KrylovEigen.lean` (L3; phase 2)
 Serves Saad-eig §6.6 (Lemma 6.1, Thm 6.3 angle bound, Thm 6.4 Kaniel–Paige–Saad, §6.6.3 Ritz
@@ -882,9 +922,12 @@ give Thm 3.3 algebraically), deflation (Saad-eig §4.2), subspace iteration (Ch.
 filtering/Chebyshev iteration (Ch. 7), Davidson/Jacobi–Davidson (Ch. 8), generalized/quadratic
 problems (Ch. 9), Jacobi's method (Kress Thm 7.11–7.14: Frobenius-norm descent, independent of the
 Krylov core), Hessenberg reduction (Kress Thm 7.22) and the QR algorithm (Kress Thm 7.19–7.20),
-Higham Ch. 18 (matrix powers in finite precision, phase 4), the normal-matrix theory behind
-Saad Lemma 6.23/Thm 6.24 (`Eigen/Normal.lean`, see 3.12). Schur form is not in Mathlib: a phase-3
-upstreaming candidate under `Numlib/Matrix/`. Jordan form is not in Mathlib either and is avoided:
+Higham Ch. 18 (matrix powers in finite precision, phase 4). The normal-matrix theory behind
+Saad Lemma 6.23/Thm 6.24 is no longer phase 3: `Eigen/Normal.lean` is written (see 3.12), and it
+gets diagonalizability of a normal operator from `ker N² = ker N` and
+`Module.End.iSup_maxGenEigenspace_eq_top` rather than from a triangulation theorem. Schur form is
+still not in Mathlib and is still a phase-3 upstreaming candidate under `Numlib/Matrix/`, but
+nothing here waits on it. Jordan form is not in Mathlib either and is avoided:
 every use here is replaced by Gelfand's formula or by generalized eigenspaces; Saad-eig
 Thm 3.7/Cor 3.2 and P-5.6 are the only results that need the Jordan index and stay in the surface.
 
@@ -1176,8 +1219,9 @@ Hilbert-space consumers; the CFC form is for statements about `A` itself).
 ### Phase 3 — Meurant–Strakoš exact part, Kress, remaining Saad-eig
 3.12 `OrthogonalPolynomials` (Gauss quadrature, error identities), `Krylov/Block` (Saad §6.12),
 Saad §6.6.2 (d)–(e), complex Chebyshev polynomials on ellipses (Saad Lemma 6.26, Thm 6.27,
-Cor 6.33; Saad-eig Thm 4.9, 6.8), normal-matrix theory (`Eigen/Normal.lean`: Saad Lemma 6.23,
-Thm 6.24, Faber–Manteuffel), 4.3 power/subspace iteration with the gap metric between subspaces,
+Cor 6.33; Saad-eig Thm 4.9, 6.8), 4.3 inverse iteration, Wielandt deflation and the QR algorithm (the
+power method and subspace iteration are done; the gap form of the latter,
+`Krylov.gap_subspaceIterate_le`, stays open),
 4.5 (Schur form as an upstreaming candidate under `Numlib/Matrix/`, Jacobi, QR algorithm,
 analytic perturbation theory), 5.1.2–5.1.4 (equioscillation, interpolation, quadrature
 convergence), AH Thm 3.3.14 (reflexive spaces), AH 6.2 Lax equivalence, AH 5.2.3–5.2.4 (Bielecki
@@ -1308,7 +1352,7 @@ Surface-specific definitions: real bilinear forms `a : V → V → ℝ` with `Is
 | D15 | Newton local quadratic convergence | 5.3.2 | The sharp constant `L/2` needs the integral form, `image_norm_le_of_norm_deriv_right_le_deriv_boundary` with boundary `B t = C‖y−x‖²t²/2`, packaged as `Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le` in `Analysis/Calculus/MeanValue`. It costs **no** extra instance arguments: introduce `NormedSpace ℝ F` inside the proof by `restrictScalars`, as Mathlib's own mean value lemmas do. `Convex.norm_image_sub_le_of_norm_hasFDerivWithin_le'` takes only a constant bound and loses the `1/2`. AH Thm 5.4.1; Ortega–Rheinboldt 10.2.2 |
 | D16 | Courant–Fischer | 4.2 | dimension counting on `S ⊓ span{u_k..u_n}`; Horn–Johnson Thm 4.2.6 |
 | D17 | `WithEnergy` inner-product instance and its completeness | 2.1.5 | `InnerProductSpace.Core` on a type synonym, following Mathlib's `Matrix.toInnerProductSpace`: the plain `AddCommGroup`/`Module` instances are local to the defining section, only the core-derived normed instances are global, `WithEnergy.equiv` is defined afterwards with `rfl` fields; norm equivalence and `continuous_equiv` need `A : E →L[𝕜] E` |
-| D18 | Subspace iteration in Saad-eig's generality (Thm 5.2) | 4.3 | spectral projector onto the dominant generalized eigenspaces + Gelfand on the complement; gap between subspaces needs a `Submodule` gap/angle API (not in Mathlib). Kress Lemma 7.18 (diagonalizable) as a warm-up |
+| D18 | Subspace iteration in Saad-eig's generality (Thm 5.2) | 4.3 | **done, and overestimated twice over**: no Gelfand (the elementary decay estimate of D14 covers it) and no gap API (the theorem is per-eigenvector). Spectral projector onto the dominant generalized eigenspaces + one candidate vector in `A^k S₀`. The gap form is a separate, strictly stronger theorem, `Krylov.gap_subspaceIterate_le`, still open |
 | D19 | Householder–John / Ostrowski–Reich in operator form | 2.3.5 | Rayleigh-quotient identity for an eigenpair of `M⁻¹N` (Kress Thm 4.12 proof) generalizes verbatim with `M + Mᴴ − A` coercive; Saad Thm 4.10 |
 | D20 | Kato's lemma `‖1 − P‖ = ‖P‖` | 2.1.7 | **not difficult after all**: the exchange trick on `x = P x + (1 − P) x`, rescaling the two components so as to swap their norms (`norm_smul_add_smul_eq_norm_add`). No gap API, no adjoints, no completeness. The minimal-gap route and the `T = P + P⋆ − 1` shortcut are both unnecessary; 2.1.7 records why the latter stops at inequalities. Szyld 2006 |
 | D21 | Givens residual identities (the `γ_m`, `s_m`, `c_m` formulas for `‖r^G_m‖`) | 3.5 | All rest on "a unitary matrix is a Euclidean isometry", `‖U *ᵥ v‖₂ = ‖v‖₂`, which Mathlib lacks; it is three lines through `Matrix.toEuclideanCLM` as a star-algebra equiv (2.1.14). Then the residual splitting from `rotated_last_row` and the diagonal of the triangular factor. No block decomposition of the rotation product is needed, and `norm_residual_eq_div_norm_givensC` needs no `c_m ≠ 0`: at `c_m = 0` its Galerkin hypothesis is contradictory. Saad §6.5.3 |

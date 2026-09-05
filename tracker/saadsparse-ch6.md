@@ -1480,38 +1480,52 @@ item scheduled for a later phase (listed in §4); `out-of-scope` = not formalize
   is normal (`A = Q Λ Q^H`), choosing `q` with `q(λ_j) = λ̄_j` gives `q(A) = A^H` (degree `≤ n − 1`).
 - **Lean surface statement.** Over `ℂ`: `theorem isStarNormal_of_exists_aeval (h : ∃ q : ℂ[X], aeval A q = Aᴴ) : IsStarNormal A`;
   `theorem exists_aeval_eq_conjTranspose (hA : IsStarNormal A) : ∃ q : ℂ[X], q.natDegree ≤ n - 1 ∧ aeval A q = Aᴴ`.
-- **Backbone item.** none for the first; the second needs the normal-matrix theory deferred to
-  `Eigen/Normal.lean` (§4). Mathlib supplies `IsStarNormal` and `Lagrange.interpolate` but has no
-  Schur triangulation and no unitary diagonalization of normal matrices (only the Hermitian
-  `Matrix.IsHermitian.spectral_theorem`), so that decomposition is part of the deferred item.
-- **Proof route.** First: `Aᴴ A = q(A) A = A q(A) = A Aᴴ`. Second: spectral theorem for normal matrices
-  (Schur form is diagonal for normal matrices) + Lagrange interpolation at the distinct eigenvalues.
-- **Classification.** first `direct` (Mathlib only); second `deferred` (§4, normal-matrix theory).
+- **Backbone item.** none for the first; the second is
+  `Matrix.IsStarNormal.exists_aeval_eq_conjTranspose` in `Eigen/Normal.lean` (§4 item 2, written).
+  Mathlib supplies `IsStarNormal` and `Lagrange.interpolate` but has no Schur triangulation and no
+  unitary diagonalization of normal matrices (only the Hermitian
+  `Matrix.IsHermitian.spectral_theorem`); the backbone item needs neither.
+- **Proof route.** First: `Aᴴ A = q(A) A = A q(A) = A Aᴴ`. Second: a normal operator has no
+  generalized eigenvectors (`ker N² = ker N`), so over `ℂ` its eigenspaces span, and they are the
+  eigenspaces of `Aᴴ` at the conjugate eigenvalues; Lagrange interpolation of `z ↦ conj z` at the
+  distinct eigenvalues then gives `q(A) = Aᴴ`, whose degree is lowered below `n` by reduction
+  modulo the characteristic polynomial.
+- **Classification.** both `direct` (the first on Mathlib, the second on the backbone's
+  normal-matrix theory).
 
 ### R58. Lemma 6.23 (Faber–Manteuffel)
 - **Book statement.** A nonsingular `A` satisfies `A^H v ∈ 𝒦_s(A, v)` for every `v` iff `A` is normal
   and `ν(A) ≤ s − 1` (`ν(A)` = least degree of `q` with `A^H = q(A)`).
-- **Lean surface statement.** `theorem lemma_6_23 (hA : IsUnit A) :
-  (∀ v : EuclideanSpace ℂ (Fin n), (Aop.adjoint) v ∈ krylov A v s) ↔ IsStarNormal A ∧ ν A ≤ s - 1`.
-- **Backbone item.** the deferred normal-matrix theory (§4: Saad Lemma 1.15, normal ⟺ every
-  eigenvector of `A` is an eigenvector of `A^H`, in `Ch01/Spectral.lean` per `plans/backbone.md` §8.1;
-  `minpoly` degree = number of distinct eigenvalues for normal `A`) and R57; §3.1
-  `Krylov.linearIndependent_of_le_grade`.
-- **Proof route.** The book's: shared eigenvectors ⇒ normal (Lemma 1.15); interpolation gives
-  `ν ≤ μ − 1` with `μ = deg minpoly A` = number of distinct eigenvalues; a vector `w` of grade `μ`
-  and the uniqueness of coordinates in `w, Aw, …, A^{μ−1} w` force `μ ≤ s`.
-- **Classification.** `deferred` (§4, normal-matrix theory).
+- **Lean surface statement.** `theorem lemma_6_23 (hs : 0 < s) :
+  (∀ v : EuclideanSpace ℂ (Fin n), op Aᴴ v ∈ krylov A v s) ↔ IsStarNormal A ∧ ν A ≤ s - 1`.
+  The book's `IsUnit A` is absent (the proof does not use it) and `0 < s` is present (the printed
+  statement is false without it); both are recorded in §6.
+- **Backbone item.** `Eigen/Normal.lean` (§4 item 2): `isStarNormal_of_adjoint_apply_eq_smul`
+  (Saad Lemma 1.15, shared eigenvectors ⇒ normal), `IsStarNormal.eigenspace_adjoint`,
+  `IsStarNormal.inner_eq_zero_of_ne`, `IsStarNormal.aeval_eq_adjoint_of_eval_eq`,
+  `Matrix.isStarNormal_toEuclideanLin_iff` and `Matrix.aeval_eq_conjTranspose_iff`; also R57.
+  `Krylov.linearIndependent_of_le_grade` is not needed — see the proof route.
+- **Proof route.** Not the book's. `Aᴴ v ∈ 𝒦_s(A, v)` at an eigenvector `v` of `A` forces
+  `Aᴴ v ∈ span{v}`, so shared eigenvectors ⇒ normal (Lemma 1.15). Then, instead of the book's
+  maximal vector `w` of grade `μ = deg minpoly A`, take `w = ∑ x_i` with one nonzero `x_i` from each
+  eigenspace: the `x_i` are pairwise orthogonal, so the coordinates of `Aᴴ w = ∑ conj(λ_i) x_i` are
+  unique, and a polynomial `q` of degree `≤ s − 1` with `Aᴴ w = q(A) w` must satisfy
+  `q(λ_i) = conj λ_i`; hence `q(A) = Aᴴ` on every eigenspace, hence everywhere, hence
+  `ν(A) ≤ s − 1`. This needs neither a maximal vector nor `deg minpoly` = number of distinct
+  eigenvalues.
+- **Classification.** `direct` (on the backbone's normal-matrix theory).
 
 ### R59. Theorem 6.24 (Faber–Manteuffel; stated without proof)
 - **Book statement.** `A ∈ CG(s)` iff the minimal polynomial of `A` has degree `≤ s`, or `A` is normal
   and `ν(A) ≤ s − 1`.
 - **Lean surface statement.** `theorem theorem_6_24 (A : Matrix (Fin n) (Fin n) ℂ) :
   IsCGs A s ↔ (minpoly ℂ A).natDegree ≤ s ∨ (IsStarNormal A ∧ ν A ≤ s - 1)`.
-- **Backbone item.** the deferred normal-matrix theory (§4).
+- **Backbone item.** none missing: `Eigen/Normal.lean` (§4 item 2) is written, and R58 is proved on
+  it. What is missing is the proof itself.
 - **Proof route.** Not in the book (reference [121]; a short proof is Liesen–Strakoš 2008 /
-  Faber–Manteuffel 1984). A research-level formalization; until the deferred items exist the surface
-  carries only a docstring mention (§5).
-- **Classification.** `deferred` (§4).
+  Faber–Manteuffel 1984). A research-level formalization; the surface carries only the module doc
+  comment's mention (§5).
+- **Classification.** `out-of-scope` (§5, no printed proof; research-level).
 
 ### R60. (6.109)–(6.112) — real Chebyshev polynomials
 - **Book statement.** `C_k(t) = cos(k cos⁻¹ t)` on `[−1, 1]` (6.109); `C_{k+1} = 2t C_k − C_{k−1}`,
@@ -1818,12 +1832,22 @@ the corresponding surface theorems are written once the item exists.
    (Lemma 6.26, R62), the ellipse bound (Thm 6.27, R63) with the maximum of the shifted Chebyshev
    polynomial on `E(c, d, a)`, and their GMRES consequence (Cor 6.33, R70). Natural home:
    `Numlib/RingTheory/Polynomial/ChebyshevMinimax.lean` (complex part) or a sibling `ChebyshevEllipse.lean`.
-2. **Normal-matrix theory** (§3.12 candidate `Eigen/Normal.lean`, phase 3): normal ⟺ every
-   eigenvector of `A` is an eigenvector of `A^H` (Saad Lemma 1.15), the spectral theorem for normal
-   matrices in the form "Schur form is diagonal", and `natDegree (minpoly ℂ A)` = number of distinct
-   eigenvalues for normal `A`. Needed by R57 (second half), Lemma 6.23 (R58) and Thm 6.24 (R59; the
-   book states it without proof, and the known proofs are research-level, so it stays a
-   docstring-only mention until the theory exists).
+2. **Normal-matrix theory** — **written**, as `Numlib/Eigen/Normal.lean`, so R57's second half is
+   now `direct` on it. The module proves that a normal operator has no generalized eigenvectors and
+   hence, over an algebraically closed field, that its eigenspaces span
+   (`LinearMap.IsStarNormal.iSup_eigenspace_eq_top`); that they are the eigenspaces of the adjoint
+   at the conjugate eigenvalues (`…eigenspace_adjoint`, the easy half of Saad Lemma 1.15); that they
+   are pairwise orthogonal and decompose the space (`…orthogonalFamily_eigenspaces`,
+   `…direct_sum_isInternal`); and that the adjoint is a polynomial in the operator
+   (`…exists_aeval_eq_adjoint`, matrix form `Matrix.IsStarNormal.exists_aeval_eq_conjTranspose`).
+   It also proves the hard half of Saad Lemma 1.15 — an operator sharing its eigenvectors with its
+   adjoint is normal (`LinearMap.isStarNormal_of_adjoint_apply_eq_smul`) — which is what Lemma 6.23
+   (R58) needed, so R58 is proved too and nothing in §6.10 is deferred any longer.
+   It reaches all of that without Schur triangulation, which Mathlib does not have, and
+   `natDegree (minpoly ℂ A)` = number of distinct eigenvalues turned out not to be needed at all
+   (see R58's proof route), so it is not in the module.
+   Thm 6.24 (R59) stays out regardless (§5): the book states it without proof and the known proofs
+   are research-level.
 3. **Ritz values and orthogonal polynomials** (phase 2): `Arnoldi.charpoly_compression_isMinOn`
    (§4.2, the characteristic polynomial of `H_m`/`T_m` minimizes `‖p(A) v₁‖` over monic `p` of
    degree `m`) and `Krylov/OrthogonalPolynomials.lean` (§3.12, Lanczos polynomials and
@@ -1845,12 +1869,14 @@ the corresponding surface theorems are written once the item exists.
 * (6.112) as an approximation `≳` and (6.121) `≈`: only the inequality/identity parts are stated
   (R60, R63); the asymptotic remarks after Thm 6.27 ("Chebyshev polynomials are asymptotically
   optimal") are not theorems in the book.
-* Theorem 6.24 (Faber–Manteuffel): stated without proof; formalizing it is a research-level task on
-  top of the deferred normal-matrix theory (§4). It appears in `FaberManteuffel.lean` as a docstring
-  mention only, with no `sorry` in the library.
+* Theorem 6.24 (Faber–Manteuffel): stated without proof. The normal-matrix theory it would rest on
+  now exists (§4 item 2), so what is left is the proof, and the known proofs (Faber–Manteuffel 1984,
+  Liesen–Strakoš 2008) are research-level. It appears in `Chapter06/Section10.lean` as a module doc
+  comment mention only, with no `sorry` in the library.
 * The final remark of §6.10 (`ν(A) ≤ 1` iff `A` has minimal degree `≤ 1`, or is Hermitian, or
   `A = e^{iθ}(ρI + B)` with `B` skew-Hermitian): "easy to show", not numbered; belongs with the
-  normal-matrix items of §4.
+  normal-matrix items of §4, which now exist, so it is reachable if a second source ever cites
+  it.
 * "QMRS applied to IOM/DIOM yields QGMRES/DQGMRES" (§6.5.8, "can easily be shown"): unnumbered,
   heavy bookkeeping across D6/D9/D11; postponed until DQGMRES is needed by a second source.
 * §6.5.9 alternatives for complex rotations (P-6.27) and the complex Householder GMRES (P-6.28):
@@ -1881,6 +1907,15 @@ differently; the choice is recorded here so that the semantic-alignment check ha
 * **Prop 6.22 / Lemma 6.23:** Prop 6.22 is stated with `Aᵀ` (real) and Lemma 6.23 with `A^H`
   (complex); the paragraph between them switches from `Aᵀ = q(A)` to `A^H = q(A)`. The plan states
   Prop 6.22 over `ℝ` with `adjoint` (= transpose) and Lemma 6.23 over `ℂ` (R56–R58).
+* **Lemma 6.23, `0 < s`:** the printed statement is false at `s = 0`, because `ℕ` truncates `s - 1`:
+  for `A = I` the right-hand side holds (`ν(I) = 0 ≤ 0 - 1 = 0`) while the left-hand side fails
+  (`𝒦_0(A, v) = ⊥`). `lemma_6_23` therefore assumes `0 < s`, which the book assumes implicitly —
+  an `s`-term recurrence has `s ≥ 1`.
+* **Lemma 6.23, nonsingularity:** the book assumes `A` nonsingular, and its proof uses that in the
+  final step (a vector `w` of maximal grade with `A^H w = 0` would have to be zero). The proof of
+  `lemma_6_23` reaches `ν(A) ≤ s - 1` from the uniqueness of coordinates in an orthogonal family of
+  eigenvectors instead, which needs no such hypothesis, so the formal statement omits it and is
+  strictly stronger than the printed one.
 * **Thm 6.25:** "non-empty interval `[α, β]`" is read as nondegenerate (`α < β`), since (6.113)
   divides by `β − α` (R61).
 * **P-6.1(c):** the plan uses the range `i ≤ j + 1` of (6.13) rather than the `i < j` printed in the

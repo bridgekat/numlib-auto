@@ -1,13 +1,14 @@
-desc = '''
-Phase 2. The Rayleigh-Ritz layer over the compression of `InnerProductSpace/Projection/Compression`:
-Ritz pairs are the eigenpairs of `compression A K`, so the definitions need only an inner product
-and it is the sharp bounds that need finite dimension.
+[[node]]
+id = "Submodule.norm_sub_sq_eq_add_of_mem"
 
-The sharp Hermitian bounds rest on Courant-Fischer, which lives one module down in
-`Eigen/MinMax`: it mentions no compression and no Ritz pair, and the Weyl inequalities of the
-perturbation layer want it too. The definitions and the residual bound here need neither it nor
-finite dimension. See §4.2 of `backbone.md`.
-'''
+[[node]]
+id = "Submodule.starProjection_span_singleton_eq_self"
+
+[[node]]
+id = "Submodule.cosAngle_span_singleton"
+
+[[node]]
+id = "Submodule.sinAngle_span_singleton_comm"
 
 [[node]]
 id = "Krylov.IsObliqueRitzPair"
@@ -28,6 +29,21 @@ id = "Krylov.IsObliqueRitzPair.hasEigenvector_of_invt"
 id = "Krylov.IsRitzPair.hasEigenvector_of_invt"
 
 [[node]]
+id = "Krylov.IsRitzPair.inner_self_apply"
+
+[[node]]
+id = "Krylov.IsRitzPair.rayleighQuotient_eq"
+
+[[node]]
+id = "Krylov.IsRitzPair.conj_eq"
+
+[[node]]
+id = "Krylov.rayleighQuotient_compression"
+
+[[node]]
+id = "Krylov.IsRitzPair.mem_Icc"
+
+[[node]]
 id = "Krylov.norm_starProjection_apply_le_opNorm"
 
 [[node]]
@@ -37,26 +53,31 @@ id = "Krylov.compression_residual_le"
 id = "Krylov.compression_residual_le'"
 
 [[node]]
-id = "Krylov.IsRitzPair.mem_Icc"
-kind = "theorem"
-desc = '''For symmetric `A` the Ritz values are min-max values over subspaces of `K`, so they
-interlace from below and lie in `[lmin, lmax]`.'''
-deps = ["Krylov.IsRitzPair", "LinearMap.IsSymmetric.eigenvalues_eq_iSup_iInf"]
-source = "Saad, Numerical Methods for Large Eigenvalue Problems, Proposition 4.4"
+id = "Krylov.abs_re_inner_sub_le_opNorm"
+
+[[node]]
+id = "LinearMap.IsSymmetric.isGreatest_eigenvalues_compression"
+
+[[node]]
+id = "LinearMap.IsSymmetric.eigenvalues_compression_le"
+
+[[node]]
+id = "LinearMap.IsSymmetric.mul_norm_sub_starProjection_le"
+
+[[node]]
+id = "LinearMap.IsSymmetric.mul_norm_le_norm_sub_smul"
+
+[[node]]
+id = "LinearMap.IsSymmetric.abs_sub_rayleighQuotient_starProjection_le"
 
 [[node]]
 id = "LinearMap.IsSymmetric.ritz_value_error_le"
-kind = "theorem"
-desc = '''`0 ≤ λ₁ - θ₁ ≤ ‖A - λ₁‖ tan²θ(u₁, K)`, from
-`|λ - ⟪A P_K u, P_K u⟫/‖P_K u‖²| ≤ ‖A - λ‖ ‖(1 - P_K) u‖²/‖P_K u‖²`.'''
-source = "Saad, Numerical Methods for Large Eigenvalue Problems, Lemma 4.1 and Theorem 4.5"
 
 [[node]]
 id = "LinearMap.IsSymmetric.sin_angle_ritzVector_le"
-kind = "theorem"
-desc = '''`sin θ(u, ũ) ≤ √(1 + γ²/δ²) sin θ(u, K)` for the Ritz vector of the closest Ritz value,
-with `|λ - θ| ≤ ‖A - λ‖ sin²θ(u, ũ)`.'''
-source = "Saad, Numerical Methods for Large Eigenvalue Problems, Theorem 4.6 and Proposition 4.5"
+
+[[node]]
+id = "LinearMap.IsSymmetric.abs_ritz_value_sub_le"
 
 [[node]]
 id = "Arnoldi.aeval_charpoly_mem_orthogonal"

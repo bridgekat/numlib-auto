@@ -1,6 +1,8 @@
+import Numlib.Eigen.Normal
 import Numlib.Krylov.Arnoldi
 import Numlib.Krylov.Subspace
 import Numlib.Surface.SaadSparse.Chapter06.Section09
+import Mathlib.Analysis.Complex.Polynomial.Basic
 
 /-!
 # Saad, §6.10: optimality and the Faber–Manteuffel condition
@@ -23,14 +25,18 @@ Arnoldi process is an `s`-term recurrence for every starting vector. The text's 
 about normality are `isStarNormal_of_exists_aeval` (if `A^H = q(A)` then `A` is normal, since
 `A` commutes with every polynomial in `A`) and `exists_aeval_eq_conjTranspose` (the converse).
 
-**Deferred to a later phase** (`tracker/saadsparse-ch6.md` §4, item 2, the normal-matrix
-theory of the backbone: normal ⟺ every eigenvector of `A` is an eigenvector of `A^H`, the
-spectral theorem for normal matrices, and `natDegree (minpoly ℂ A)` = the number of distinct
-eigenvalues): **Lemma 6.23** (`A` nonsingular satisfies `A^H v ∈ 𝒦_s(A, v)` for every `v` iff
-`A` is normal with `ν(A) ≤ s - 1`) and **Theorem 6.24** (Faber–Manteuffel: `A ∈ CG(s)` iff the
-minimal polynomial of `A` has degree `≤ s`, or `A` is normal with `ν(A) ≤ s - 1`), which the
-book itself states without proof. The converse half of the text's normality remark
-(`exists_aeval_eq_conjTranspose`) belongs to the same deferred item.
+The converse is the backbone's `Matrix.IsStarNormal.exists_aeval_eq_conjTranspose`
+(`Numlib/Eigen/Normal.lean`): a normal operator is diagonalizable and shares its eigenvectors
+with its adjoint, so Lagrange interpolation of `z ↦ conj z` at its eigenvalues produces `q`.
+
+**Lemma 6.23** (Faber and Manteuffel) is `lemma_6_23`: `A^H v ∈ 𝒦_s(A, v)` for every `v` iff `A`
+is normal with `ν(A) ≤ s - 1`. Its proof departs from the book's twice, and both departures are
+recorded on the declaration: the eigenvector-sum argument replaces the book's maximal vector, and
+the book's nonsingularity hypothesis is not needed, while a missing `0 < s` is.
+
+**Left out**: **Theorem 6.24** (Faber–Manteuffel: `A ∈ CG(s)` iff the minimal polynomial of `A` has
+degree `≤ s`, or `A` is normal with `ν(A) ≤ s - 1`), which the book itself states without proof; the
+known proofs are research-level (`tracker/saadsparse-ch6.md` §5).
 
 Proposition 6.22 is stated over `ℝ` with `Aᵀ`, and §6.10's normality material over `ℂ` with
 `A^H`, following the book. The band lemmas are polymorphic in `𝕜`.
@@ -271,20 +277,13 @@ theorem isStarNormal_of_exists_aeval {A : Matrix (Fin n) (Fin n) ℂ}
   rw [Matrix.star_eq_conjTranspose, ← hq]
   exact commute_aeval_self A q
 
--- BACKBONE DEMAND: `exists_aeval_eq_conjTranspose_of_isStarNormal` needs the spectral theorem
--- for normal matrices — a normal `A` is unitarily diagonalizable, and any `q` interpolating
--- `z ↦ z̄` at its distinct eigenvalues satisfies `q(A) = A^H`. Mathlib has `IsStarNormal` and
--- `Lagrange.interpolate` but neither Schur triangulation nor unitary diagonalization of normal
--- matrices, and this is deferred backbone material
--- (`tracker/saadsparse-ch6.md` §4, item 2, a candidate `Numlib/Eigen/Normal.lean`), not
--- surface material: proving it here would be new mathematics in the surface layer. Lemma 6.23
--- and Theorem 6.24 wait on the same item. Only the existence of `q` is demanded; the degree
--- bound of the text is derived from it in `exists_aeval_eq_conjTranspose` below.
 /-- **§6.10**: conversely, a normal `A` satisfies `A^H = q(A)` for some polynomial `q`: writing
-`A = Q Λ Q^H`, any `q` with `q(λ_j) = conj λ_j` at the eigenvalues does. -/
+`A = Q Λ Q^H`, any `q` with `q(λ_j) = conj λ_j` at the eigenvalues does. This is the backbone's
+`Matrix.IsStarNormal.exists_aeval_eq_conjTranspose`, which builds `q` by Lagrange interpolation
+of `z ↦ conj z` at the eigenvalues without ever forming `Q`. -/
 theorem exists_aeval_eq_conjTranspose_of_isStarNormal {A : Matrix (Fin n) (Fin n) ℂ}
-    (hA : IsStarNormal A) : ∃ q : ℂ[X], aeval A q = Aᴴ := by
-  sorry
+    (hA : IsStarNormal A) : ∃ q : ℂ[X], aeval A q = Aᴴ :=
+  Matrix.IsStarNormal.exists_aeval_eq_conjTranspose hA
 
 /-- **§6.10**: a normal `A` satisfies `A^H = q(A)` for a polynomial `q` of degree at most
 `n - 1`. Reducing any polynomial with `q(A) = A^H` modulo the characteristic polynomial, which
@@ -305,6 +304,106 @@ theorem exists_aeval_eq_conjTranspose {A : Matrix (Fin n) (Fin n) ℂ} (hA : IsS
       have hn : (q %ₘ A.charpoly).natDegree < n := by exact_mod_cast hlt
       omega
   · rw [aeval_modByMonic_eq_self_of_root (by rw [Matrix.aeval_self_charpoly]), hq]
+
+/-! ### Lemma 6.23 -/
+
+/-- For a normal `A` the set of degrees whose infimum is `ν(A)` is nonempty, so the infimum is
+attained: some `q` of degree exactly `ν(A)` satisfies `q(A) = A^H`. -/
+theorem exists_natDegree_eq_nu {A : Matrix (Fin n) (Fin n) ℂ} (hA : IsStarNormal A) :
+    ∃ q : ℂ[X], q.natDegree = ν A ∧ aeval A q = Aᴴ := by
+  have hne : {d : ℕ | ∃ q : ℂ[X], q.natDegree = d ∧ aeval A q = Aᴴ}.Nonempty := by
+    obtain ⟨q, hq⟩ := exists_aeval_eq_conjTranspose_of_isStarNormal hA
+    exact ⟨q.natDegree, q, rfl, hq⟩
+  exact Nat.sInf_mem hne
+
+/-- `ν(A)` is a lower bound: any `q` with `q(A) = A^H` has degree at least `ν(A)`. -/
+theorem nu_le_natDegree {A : Matrix (Fin n) (Fin n) ℂ} {q : ℂ[X]} (hq : aeval A q = Aᴴ) :
+    ν A ≤ q.natDegree :=
+  Nat.sInf_le ⟨q, rfl, hq⟩
+
+/-- **Lemma 6.23** (Faber and Manteuffel). `A` satisfies `A^H v ∈ 𝒦_s(A, v)` for every vector `v`
+if and only if `A` is normal and `ν(A) ≤ s - 1`.
+
+The proof of `→` is not the book's. At an eigenvector `v` of `A` the subspace `𝒦_s(A, v)` sits
+inside `span {v}`, so `A^H v` is a multiple of `v`: every eigenvector of `A` is an eigenvector of
+`A^H`, and `A` is normal by Saad's Lemma 1.15
+(`LinearMap.isStarNormal_of_adjoint_apply_eq_smul`). Where the book then takes a vector `w` whose
+grade is the degree `μ` of the minimal polynomial and argues that `μ ≤ s`, we take
+`w = ∑ x_i` with one nonzero `x_i` from each eigenspace: the `x_i` are pairwise orthogonal, so the
+polynomial `q` of degree `≤ s - 1` supplied by `A^H w ∈ 𝒦_s(A, w)` must satisfy
+`q(λ_i) = conj λ_i` at every eigenvalue, whence `q(A) = A^H` and `ν(A) ≤ s - 1`. That route needs
+neither a maximal vector nor the identity `deg (minpoly A)` = number of distinct eigenvalues, and
+it does not use the book's hypothesis that `A` is nonsingular, which is therefore omitted.
+
+The hypothesis `0 < s` is not in the book, and is not optional: `ℕ` truncates `s - 1`, so at
+`s = 0` the right-hand side holds for `A = 1` (`ν(1) = 0`) while the left-hand side fails
+(`𝒦_0(A, v) = ⊥`). -/
+theorem lemma_6_23 {A : Matrix (Fin n) (Fin n) ℂ} {s : ℕ} (hs : 0 < s) :
+    (∀ v : ℂ𝔼, op Aᴴ v ∈ krylov A v s) ↔ IsStarNormal A ∧ ν A ≤ s - 1 := by
+  have hadj : op Aᴴ = LinearMap.adjoint (op A) := Matrix.toEuclideanLin_conjTranspose_eq_adjoint A
+  constructor
+  · intro h
+    classical
+    have hev : ∀ (μ : ℂ) (y : ℂ𝔼), op A y = μ • y →
+        ∃ ν : ℂ, LinearMap.adjoint (op A) y = ν • y := by
+      intro μ y hy
+      obtain ⟨p, _, hpy⟩ := (mem_krylov_iff_exists_aeval A y).1 (h y)
+      exact ⟨p.eval μ, by rw [← hadj, ← hpy]; exact Module.End.aeval_apply_of_mem_apply_eq_smul hy⟩
+    have hT : IsStarNormal (op A) := LinearMap.isStarNormal_of_adjoint_apply_eq_smul hev
+    refine ⟨Matrix.isStarNormal_toEuclideanLin_iff.1 hT, ?_⟩
+    obtain ⟨S, hS⟩ : ∃ S : Finset ℂ, ∀ μ : ℂ, μ ∈ S ↔ Module.End.HasEigenvalue (op A) μ :=
+      ⟨(Module.End.finite_hasEigenvalue (op A)).toFinset, fun _ => Set.Finite.mem_toFinset _⟩
+    have hexists : ∀ μ : ℂ, ∃ y : ℂ𝔼, μ ∈ S →
+        y ∈ Module.End.eigenspace (op A) μ ∧ y ≠ 0 := by
+      intro μ
+      by_cases hμ : μ ∈ S
+      · obtain ⟨y, hy⟩ := Module.End.HasEigenvalue.exists_hasEigenvector ((hS μ).1 hμ)
+        exact ⟨y, fun _ => ⟨hy.1, hy.2⟩⟩
+      · exact ⟨0, fun hc => absurd hc hμ⟩
+    choose x hx using hexists
+    obtain ⟨w, hw⟩ : ∃ w : ℂ𝔼, w = ∑ μ ∈ S, x μ := ⟨_, rfl⟩
+    obtain ⟨p, hpdeg, hpw⟩ := (mem_krylov_iff_exists_aeval A w).1 (h w)
+    have hAdjw : LinearMap.adjoint (op A) w = ∑ μ ∈ S, starRingEnd ℂ μ • x μ := by
+      rw [hw, map_sum]
+      refine Finset.sum_congr rfl fun μ hμ => Module.End.mem_eigenspace_iff.1 ?_
+      rw [LinearMap.IsStarNormal.eigenspace_adjoint hT μ]
+      exact (hx μ hμ).1
+    have hEvalw : aeval (op A) p w = ∑ μ ∈ S, p.eval μ • x μ := by
+      rw [hw, map_sum]
+      exact Finset.sum_congr rfl fun μ hμ => Module.End.aeval_apply_of_mem_apply_eq_smul
+        (Module.End.mem_eigenspace_iff.1 (hx μ hμ).1)
+    have hsum : ∑ μ ∈ S, (p.eval μ - starRingEnd ℂ μ) • x μ = 0 := by
+      simp only [sub_smul, Finset.sum_sub_distrib]
+      rw [← hEvalw, ← hAdjw, hpw, hadj, sub_self]
+    have hcoef : ∀ ν ∈ S, p.eval ν = starRingEnd ℂ ν := by
+      intro ν hν
+      have hsingle : (∑ μ ∈ S, (inner ℂ (x ν) ((p.eval μ - starRingEnd ℂ μ) • x μ) : ℂ))
+          = inner ℂ (x ν) ((p.eval ν - starRingEnd ℂ ν) • x ν) := by
+        refine Finset.sum_eq_single_of_mem ν hν fun μ hμ hμν => ?_
+        rw [inner_smul_right, LinearMap.IsStarNormal.inner_eq_zero_of_ne hT
+          (Ne.symm hμν) (hx ν hν).1 (hx μ hμ).1, mul_zero]
+      have hj : (0 : ℂ) = (p.eval ν - starRingEnd ℂ ν) * inner ℂ (x ν) (x ν) := by
+        rw [← inner_smul_right, ← hsingle, ← inner_sum, hsum, inner_zero_right]
+      have hxx : (inner ℂ (x ν) (x ν) : ℂ) ≠ 0 :=
+        fun hc => (hx ν hν).2 (inner_self_eq_zero.1 hc)
+      exact sub_eq_zero.1 ((mul_eq_zero.1 hj.symm).resolve_right hxx)
+    have hqM : aeval A p = Aᴴ :=
+      Matrix.aeval_eq_conjTranspose_iff.1
+        (LinearMap.IsStarNormal.aeval_eq_adjoint_of_eval_eq hT
+          fun μ hμ => hcoef μ ((hS μ).2 hμ))
+    refine le_trans (nu_le_natDegree hqM) ?_
+    rcases eq_or_ne p 0 with rfl | hp0
+    · simp
+    · have hlt : p.natDegree < s := (Polynomial.natDegree_lt_iff_degree_lt hp0).2 hpdeg
+      omega
+  · rintro ⟨hn, hν⟩ v
+    obtain ⟨q, hqd, hq⟩ := exists_natDegree_eq_nu hn
+    have hdeg : q.degree < (s : ℕ) := by
+      rcases eq_or_ne q 0 with rfl | hq0
+      · simp
+      · exact (Polynomial.natDegree_lt_iff_degree_lt hq0).1 (by omega)
+    rw [← hq, op_aeval]
+    exact aeval_mem_krylov A v hdeg
 
 end Normal
 
