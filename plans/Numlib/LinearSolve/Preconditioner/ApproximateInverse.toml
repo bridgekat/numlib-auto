@@ -1,84 +1,16 @@
 namespace = "Preconditioner"
-desc = '''
-Approximate inverse preconditioners: instead of factoring `A`, minimize `‖1 - A M‖_F` over sparse
-`M` and use `M` itself as the preconditioner. Saad, *Iterative Methods for Sparse Linear Systems*,
-§10.5.
-
-Only the theory is here; the algorithms of §10.5.1–10.5.3 and §10.5.6–10.5.8 (global MR, column MR,
-bordering, AINV) are dropping strategies with no theorem attached. What has content is:
-
-* the derivative of the least-squares objective (Saad Prop 10.9), which is stated here in the
-  general Hilbert-space form `d/dm ‖c - T m‖² = -2 ⟪c - T m, T ·⟫`, so that Saad's
-  `G = -2 Aᵀ R` for the Frobenius inner product is the instance and nothing about matrices is
-  needed for the proof;
-* nonsingularity from a small residual (Saad Prop 10.10), which is Neumann's series;
-* the sparsity bound (Saad Prop 10.11 and Cor 10.12), a Hölder estimate on `M = A⁻¹ - A⁻¹ R`;
-* quadratic convergence of the self-preconditioned minimal-residual iteration (Saad Prop 10.13
-  second half and Prop 10.14), which is a statement about a normed *ring*: if the next residual
-  minimizes `‖(1 - t) R + t R²‖` over `t`, then it is at most `‖R²‖ ≤ ‖R‖²`. That one-line argument
-  is the entire content of both propositions, and it holds with no reference to matrices, to the
-  Frobenius norm, or to sparsity.
-
-The first half of Prop 10.13 — one self-preconditioned MR step reduces the residual by
-`sin ∠(r, C r) ≤ ‖1 - A M‖` — is the one-dimensional minimal-residual step of
-`Numlib/LinearSolve/Projection/OneDimensional` and is proved there
-(`Projection.norm_residual_minResStep_sq_eq`, still open); nothing is restated here.
-'''
 
 [[node]]
 id = "hasFDerivAt_normSq_sub_apply"
-kind = "theorem"
-desc = '''The derivative of a least-squares objective in a real inner product space: for
-`T : F →L[ℝ] G` and `c : G`, the map `m ↦ ‖c - T m‖²` has derivative
-`e ↦ -2 * ⟪c - T m, T e⟫` at `m`, i.e. gradient `-2 T† (c - T m)`. Saad Proposition 10.9 is the
-instance `F = G = ` matrices with the Frobenius inner product, `T = (A * ·)`, `c = 1`, whose
-gradient is `-2 Aᵀ (1 - A M)`; stating it here in the general form keeps the proof free of the
-Frobenius structure, which Mathlib does not carry as an inner product space.'''
-source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 10.9"
 
 [[node]]
 id = "isUnit_of_norm_one_sub_mul_lt_one"
-kind = "theorem"
-desc = '''Saad Proposition 10.10: in a normed ring (in particular for matrices under any submultiplicative
-norm, the Frobenius norm included), if `‖1 - a * m‖ < 1` then `a * m` is a unit, hence `m` is
-injective and, in finite dimension, invertible. Neumann's series
-(`Numlib/Analysis/Normed/Ring/Inverse`, or Mathlib's `Units.oneSub`). The two-sided scaling variant
-(Saad (10.54)), `‖1 - d₁ a m d₂‖ < 1` with `d₁, d₂` units, is a corollary.'''
-source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 10.10"
 
 [[node]]
 id = "abs_sub_inv_apply_le"
-kind = "theorem"
-desc = '''The estimate behind Saad Proposition 10.11 and Corollary 10.12. With `B = A⁻¹`, `R = 1 - A * M`
-and hence `M = B - B * R`, every entry satisfies
-`|B i j| - (⨆ k, |B i k|) * (∑ k, |R k j|) ≤ |M i j|`. Consequently, if
-`∑ k, |R k j| ≤ τ_j` and `|B i j| > τ_j * ⨆ k, |B i k|`, then `M i j ≠ 0`: the nonzero pattern of a
-sufficiently accurate approximate inverse contains the large entries of `A⁻¹`, and if those entries
-are all comparable then `M` must be as dense as `A⁻¹`. A Hölder estimate on the row of `B` against
-the column of `R`, with the entrywise absolute value of
-`Numlib/LinearAlgebra/Matrix/Order`.'''
-deps = ["Matrix.abs", "Matrix.abs_mul_entrywiseLE"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 10.11 and Corollary 10.12"
 
 [[node]]
 id = "norm_le_norm_sq_of_isMinOn"
-kind = "theorem"
-desc = '''Saad Propositions 10.13 (10.60) and 10.14, in a normed ring that is also a real normed space:
-if `r'` satisfies `‖r'‖ ≤ ‖(1 - t) • r + t • r ^ 2‖` for every real `t` — which is what a
-minimal-residual step in the direction `M R` achieves, since
-`R(t) = (1 - t) R + t R²` is the residual after a step of size `t` — then
-`‖r'‖ ≤ ‖r ^ 2‖ ≤ ‖r‖ ^ 2`. Take `t = 1`. This is the whole of Saad's quadratic-convergence claim
-for the self-preconditioned MR iteration, in both the global and the column-oriented form, and it
-says nothing about *whether* the iteration converges — only how fast it does once it does.'''
-source = "Saad, Iterative Methods for Sparse Linear Systems, Propositions 10.13 and 10.14"
 
 [[node]]
 id = "residual_selfPreconditionedStep"
-kind = "theorem"
-desc = '''The recurrence that makes the previous node applicable, Saad (10.61)–(10.63): for the
-self-preconditioned global MR step `M' = M + α • (M * R)` with `R = 1 - A * M`, the new residual is
-`R' = (1 - α) • R + α • R ^ 2`, and the preconditioned matrix satisfies
-`B' = B + α • (B * (1 - B))` for `B = A * M`. In particular `R_k` is a polynomial of degree `2^k`
-in `R₀` and `B_k` in `B₀`, so a symmetric `B₀` (as when `M₀ = α₀ Aᵀ`) keeps every `B_k`
-symmetric.'''
-source = "Saad, Iterative Methods for Sparse Linear Systems, (10.61)–(10.63)"

@@ -1,82 +1,16 @@
 namespace = "Polynomial"
-desc = '''
-Kernel polynomials: the least-squares counterpart of the Chebyshev min–max problem of
-`Numlib/RingTheory/Polynomial/ChebyshevMinimax`. Both minimize over `{p : deg p ≤ k, p γ = 1}`;
-Chebyshev minimizes the sup norm on an interval, the kernel polynomial minimizes an `L²` norm
-against a weight. Saad, *Iterative Methods for Sparse Linear Systems*, §12.3.3, whose motivation is
-that the least-squares problem stays well posed when the enclosing interval `[α, β]` has `α ≤ 0`,
-where the min–max problem does not.
-
-The module is stated for an arbitrary positive semidefinite symmetric bilinear form `B` on
-`Polynomial ℝ` and a family `q` orthonormal for it with `deg q_i = i`. No measure theory appears:
-the weighted form `B p q = ∫ p q w` of Saad (12.10) is one instance, but nothing in the proofs uses
-the integral, and the finite (discrete) forms that arise from a spectral measure — the same form as
-`Krylov.polyInner` of `Numlib/Krylov/OrthogonalPolynomials` — are covered by the same statements.
-That generality is deliberate: it is what lets a second book's orthogonal-polynomial chapter reuse
-this module.
-
-The proof is Cauchy–Schwarz in disguise. Minimizing `‖p‖` over the affine hyperplane
-`{ℓ p = 1}` of a finite-dimensional inner product space gives `p = ℓ*/‖ℓ*‖²` for the Riesz
-representative `ℓ*` of `ℓ`; and for `ℓ = ` evaluation at `0` on the span of `q_0, …, q_k`, Parseval
-makes `ℓ* = ∑_{i ≤ k} q_i(0) q_i`, which is Saad's formula (12.12). Everything else — the
-orthogonality of the residual polynomials with respect to `λ w(λ)`, and the geometric bound — is a
-two-line consequence.
-
-Saad's explicit Jacobi-weight formula (12.16) and the Gamma-function evaluation of `‖R_k‖_{w'}` are
-*not* here: they need Jacobi polynomials, which Mathlib does not have.
-'''
 
 [[node]]
 id = "kernelPolynomial"
-kind = "definition"
-desc = '''`Polynomial.kernelPolynomial q γ k = (∑_{i ≤ k} (q i).eval γ ^ 2)⁻¹ • ∑_{i ≤ k} (q i).eval γ • q i`,
-Saad (12.12) for `γ = 0`. Comes with `kernelPolynomial_eval` (`= 1` at `γ`, when the normalizing sum
-is nonzero) and `kernelPolynomial_degree_le` (`≤ k`, from `deg q_i = i`), the two conditions that
-make it an admissible competitor.'''
-source = "Saad, Iterative Methods for Sparse Linear Systems, (12.12)"
 
 [[node]]
-id = "isLeast_of_inner_eq_one"
-kind = "theorem"
-desc = '''The minimum-norm point of an affine hyperplane in an inner product space: for `y ≠ 0`,
-`1 / ‖y‖ ≤ ‖x‖` whenever `⟪y, x⟫ = 1`, with equality exactly at `x = ‖y‖⁻² • y`, so
-`IsLeast {r | ∃ x, ⟪y, x⟫ = 1 ∧ ‖x‖ = r} (1 / ‖y‖)`. Cauchy–Schwarz and its equality case; stated
-separately because it is the whole mathematical content of the kernel-polynomial formula and is
-worth having on its own (an upstreaming candidate in its own right).'''
+id = "_root_.isLeast_of_inner_eq_one"
 
 [[node]]
 id = "bilinForm_kernelPolynomial_le"
-kind = "theorem"
-desc = '''Saad's optimality claim for (12.12): for a symmetric positive semidefinite
-`B : LinearMap.BilinForm ℝ (Polynomial ℝ)`, a family `q` with `B (q i) (q j) = if i = j then 1
-else 0` and `(q i).degree = i`, and `γ` with `∑_{i ≤ k} (q i).eval γ ^ 2 ≠ 0`, the kernel
-polynomial minimizes `B p p` among the `p` with `p.degree ≤ k` and `p.eval γ = 1`, with minimum
-value `(∑_{i ≤ k} (q i).eval γ ^ 2)⁻¹`. Expand `p` in the orthonormal family (`degree ≤ k` and
-`deg q_i = i` make `q_0, …, q_k` a basis of the competitors), apply
-`isLeast_of_inner_eq_one` with `y = ∑ (q i).eval γ • q i`.'''
-deps = ["kernelPolynomial", "isLeast_of_inner_eq_one"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, (12.11)–(12.12)"
 
 [[node]]
 id = "bilinForm_kernelPolynomial_mul_X"
-kind = "theorem"
-desc = '''The residual polynomials are orthogonal for the shifted form: `R_k = kernelPolynomial q 0 k`
-satisfies `B (X * p) R_k = 0` for every `p` of degree `< k`, that is, the `R_k` are orthogonal with
-respect to `λ w(λ)` when `B` comes from the weight `w`. The normal equations of the least-squares
-problem (Saad's third route to `s_{k-1}`), read off the optimality of `bilinForm_kernelPolynomial_le`
-by differentiating along the admissible directions `X * p`.'''
-deps = ["bilinForm_kernelPolynomial_le"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, Section 12.3.3"
 
 [[node]]
 id = "bilinForm_kernelPolynomial_le_pow"
-kind = "theorem"
-desc = '''The geometric bound of Saad §12.3.3 for `0 < α < β`: since `(1 - X/θ)^k` with `θ = (α + β)/2` is
-an admissible competitor and `|1 - t/θ| ≤ (β - α)/(β + α)` on `[α, β]`, the least-squares residual
-polynomial satisfies `B R_k R_k ≤ ((β - α)/(β + α))^{2k} * B 1 1` for any `B` supported on
-`[α, β]` (concretely, for `B p q = ∫_α^β p q w` with `w ≥ 0`), so its norm decays geometrically.
-The hypothesis is stated as `∀ p, B p p ≤ (sup_{[α,β]} |p|)^2 * B 1 1`, which is what
-"supported on `[α, β]`" means for these purposes and which the weighted form satisfies by
-monotonicity of the integral.'''
-deps = ["bilinForm_kernelPolynomial_le"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, Section 12.3.3"

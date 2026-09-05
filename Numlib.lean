@@ -58,6 +58,9 @@ import Numlib.LinearAlgebra.Matrix.SVD
 import Numlib.LinearAlgebra.Matrix.Schur
 import Numlib.LinearAlgebra.Sparse.Pattern
 import Numlib.LinearSolve.Perturbation
+import Numlib.LinearSolve.Preconditioner.ApproximateInverse
+import Numlib.LinearSolve.Preconditioner.Chebyshev
+import Numlib.LinearSolve.Preconditioner.Polynomial
 import Numlib.LinearSolve.Projection.Additive
 import Numlib.LinearSolve.Projection.Basic
 import Numlib.LinearSolve.Projection.OneDimensional
@@ -72,6 +75,7 @@ import Numlib.Nonlinear.FixedPoint
 import Numlib.Nonlinear.Newton
 import Numlib.RingTheory.Polynomial.ChebyshevEllipse
 import Numlib.RingTheory.Polynomial.ChebyshevMinimax
+import Numlib.RingTheory.Polynomial.KernelPolynomial
 import Numlib.Variational.AubinNitsche
 import Numlib.Variational.Forms
 import Numlib.Variational.Galerkin

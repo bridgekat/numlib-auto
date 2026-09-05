@@ -151,6 +151,11 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   starting at `1 + u = βL t**`; below it the normalized error `τ_k/(u + s_k)` squares to zero,
   at it nothing moves. The closed ball of radius `t*` is a uniqueness domain, and that is the
   form that survives the critical case `h = 1/2`.
+* **`Matrix.inv_diagonal` inverts the diagonal *as an element of the Pi ring*.** `v⁻¹ʳ` there is
+  `Ring.inverse v` in `n → α`, not `fun i => (v i)⁻¹`: if one entry of `v` vanishes then `v` is not
+  a unit and the whole thing is `0`. So `(diagPart A)⁻¹ i j = if i = j then (A i i)⁻¹ else 0` is
+  **false** without `IsUnit (diagPart A)`. Prove the invertible case with `Matrix.inv_eq_right_inv`
+  and `Matrix.diagonal_mul_diagonal` instead.
 
 ## Syntax and elaboration
 
@@ -324,6 +329,10 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
 
 * A **type ascription can capture an implicit type argument**. `(hV.subordinateOrthonormalBasisIndex hn i hV' : 𝕜)` was meant to coerce the returned eigenvalue to `𝕜`, but Lean unified the *index type* `ι` of the direct sum with `𝕜` instead and then asked for `Fintype 𝕜`. Ascribe to the real return type first, `(… : Module.End.Eigenvalues A)`, and coerce from there.
 * `Finset.le_sup (mem_univ j)` cannot infer the function; pass `(f := fun j => …)`.
+* Redeclaring a section `variable` name changes the binder of every later declaration silently:
+  `variable {θ δ : ℝ}` followed later by `variable (θ δ : ℝ)` makes them *explicit* from there on, and
+  every earlier-style call site then fails with "application type mismatch: `hδ` … expected `ℝ`". Pick
+  one binder style per name per file, and write binders out rather than reusing a section name.
 
 ## Tactics
 
@@ -476,6 +485,15 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
 
 * **`push_cast; ring` fails where `norm_cast` succeeds** whenever `𝕜` is the *concrete* `ℂ`: `((‖z‖ ^ 2 : ℝ) : ℂ)` uses `Complex.ofReal` while `RCLike.conj_mul` produces `(↑‖z‖) ^ 2` with `RCLike.ofReal`, and the two print identically. The symptom is `ring` failing on a goal whose two sides look character-for-character equal. Over an abstract `[RCLike 𝕜]` the problem does not arise.
 * `inner_conj_symm` is a `simp` lemma, so `rw [← inner_conj_symm]` followed by `simpa` is silently undone. Do the conjugation in a `have` with an explicit type and finish with `rw`.
+* **`Polynomial.funext` is the cheap route to a polynomial identity with `C`-coefficients.** `ring`
+  and `linear_combination` treat `C a` as an atom, so `C a * C b = C (a * b)` has to be fed in by
+  hand; evaluating instead (`refine Polynomial.funext fun t => ?_`, then `simp only [eval_…]` and
+  `field_simp`) turns the whole thing into one scalar goal. That is how the Chebyshev three-term
+  recurrence for `Polynomial.Chebyshev.shifted` is proved in
+  `LinearSolve/Preconditioner/Chebyshev.lean`. Needs `[Infinite R]`, so it is fine over `ℝ`.
+* `rw` with an equation whose right-hand side contains its own left-hand side loops the goal into
+  nonsense: `rw [h]` for `h : A * M = 1 - (1 - A * M)` rewrites the `A * M` inside the replacement
+  too. Put the identity in an auxiliary `have` proved by `noncomm_ring` and rewrite with *that*.
 
 ## Mathlib names and API
 
@@ -896,6 +914,24 @@ invariant subspaces as a TODO.
   syntactically even for `n = Fin m`. For matrices over `Fin m` the backbone's
   `LinearMap.IsSymmetric.eigenvalues … finrank_euclideanSpace_fin` is indexed by `Fin m` directly
   and is already antitone; that is what `SaadSparse.Ch01.eigenvaluesDesc` uses.
+`HasFDerivAt.norm_sq` (`Mathlib.Analysis.InnerProductSpace.Calculus`) already gives
+`HasFDerivAt (‖f ·‖ ^ 2) (2 • (innerSL ℝ (f x)).comp f')`, so a least-squares gradient is two lines;
+finish with `HasFDerivAt.congr_fderiv` rather than `convert`.
+
+`isUnit_one_sub_of_norm_lt_one` needs `[HasSummableGeomSeries R]`, not `[CompleteSpace R]`, and is
+the whole of "a small residual makes `a * m` a unit" once `sub_sub_cancel` is applied.
+
+`Order.add_one_le_of_lt` wants `SuccAddOrder`, which `WithBot ℕ` does not have. Cast the inequality
+down to `ℕ` with `exact_mod_cast` first; `k < m` in `ℕ` *is* `k + 1 ≤ m` definitionally.
+
+`Finset.sum_ite_eq` and `Finset.sum_ite_eq'` differ by the orientation of the `ite` condition
+(`b = x` versus `x = b`), and which one fires after a `simp only` that rewrote an orthogonality
+hypothesis is not predictable — pass both.
+
+`rw` cannot match a lemma stated as `f (WithLp.toLp 2 fun i : Fin n => g ↑i)` against a goal whose
+function is already beta-reduced: that is higher-order unification, and `rw` does not do it. Apply
+the lemma with its function argument given explicitly and combine with `.trans` / `exact`, which
+check up to defeq.
 
 ## Design conventions of this library
 
