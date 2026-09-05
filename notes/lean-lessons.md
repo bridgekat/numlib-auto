@@ -112,6 +112,12 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   is not enough; introduce the cast with an explicit `have` first.
 * `simp only [f]` makes no progress on a partially applied `f`. Prove `f = fun v => …` by `funext`
   and rewrite with it.
+* Never put a definition's unfolding lemma in the same `simp only` set as lemmas stated *about* that
+  definition: the unfolding fires first and the others no longer match.
+* `refine ⟨y, by …⟩` leaves the inner goal beta-unreduced, so `rw` fails inside it. Hoist the
+  component to a `have` with an explicit type.
+* `Orthonormal.comp` with `_` for the index embedding times out in `whnf`; pass the embedding
+  explicitly.
 * `simp only [map_sub, …]` can dissolve an opaque term you are mid-argument about; abstract the
   algebra into a `have` so the tactic cannot see inside.
 * `rw` rewrites only the first instantiation of a lemma like `ite_eq_left`; with several `ite`s
@@ -230,7 +236,11 @@ Structural facts worth knowing before planning a proof:
   `LinearMap.IsSymmetric.hasEigenvalue_iInf_of_finiteDimensional` says the extreme Rayleigh quotient
   *is* an eigenvalue. Needs `[Nontrivial E]`; split on `subsingleton_or_nontrivial E` first.
 * `WithLp` is a structure now, not a type synonym. `EuclideanSpace.norm_sq_eq` avoids the square
-  root and is handier than `norm_eq`.
+  root and is handier than `norm_eq`. In the literal notation `!₂[…]` the subscript is the `Lp`
+  exponent, not the dimension. `Matrix.cons_val_two` is not `@[simp]`, and `vecHead`/`vecTail` need
+  unfolding when a `smul` sits under them.
+* `Krylov.firstVec ‖b‖` keeps an `RCLike.ofReal` coercion even at `𝕜 = ℝ`; clear it with
+  `simp [RCLike.ofReal_real_eq_id, id_eq]`.
 * Chebyshev: `Trigonometric.Chebyshev.RootsExtrema` has the extremal facts, and `T_real_cosh` with
   `Real.arcosh` gives the closed form in five lines. For `x ≤ -1` use `P.comp (-X)`, not a parity
   argument.
