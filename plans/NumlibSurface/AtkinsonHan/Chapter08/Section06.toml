@@ -1,39 +1,16 @@
 namespace = "AtkinsonHan.Ch08"
-desc = '''
-Atkinson–Han Section 8.6, mixed and dual formulations. Almost all of the section is a worked
-derivation for the model Dirichlet problem for the Poisson equation and needs `H¹₀(Ω)`,
-`L²(Ω)^d` and `H(div; Ω)`; two items are abstract and are formalized here.
-
-* Definition 8.6.1 and Proposition 8.6.2: a saddle point of `L : A × B → ℝ` and the equivalence
-  with the minimax equality `max_{q ∈ B} inf_{v ∈ A} L(v, q) = min_{v ∈ A} sup_{q ∈ B} L(v, q)`,
-  the common value being `L(u, p)`. `A` and `B` are bare sets and `L` an arbitrary real function,
-  so nothing here needs a function space; (8.6.12)–(8.6.14) are the primal problem, the dual
-  problem and the equality of their values.
-* Theorem 8.6.3 (Ekeland–Temam) is **not** formalized: the existence of a saddle point for a
-  convex–concave lower/upper semicontinuous `L` on closed convex subsets of reflexive Banach
-  spaces needs weak compactness of bounded sets in a reflexive space, which Mathlib does not have.
-  See `Numlib/Variational/Minimization.toml` and
-  `Numlib/Analysis/InnerProductSpace/WeakCompactness.toml` for the same boundary.
-
-Also left out: the abstract mixed formulation (8.6.21)–(8.6.22), because the book states the
-problem and refers to Brezzi for every theorem about it, so there is nothing to formalize; the
-model-problem computations (8.6.1)–(8.6.20); and Exercises 8.6.1–8.6.4, all of which are about
-`H¹₀(Ω)`, `H(div; Ω)` or the Stokes equations.
-'''
 
 [[node]]
 id = "IsSaddlePoint"
-kind = "definition"
-desc = '''Definition 8.6.1, (8.6.10): `(u, p) ∈ A × B` is a saddle point of `L : A × B → ℝ` when
-`L u q ≤ L u p ≤ L v p` for all `(v, q) ∈ A × B`.'''
-deps = ["_root_.IsSaddlePoint"]
+
+[[node]]
+id = "primalObjective"
+
+[[node]]
+id = "dualObjective"
 
 [[node]]
 id = "proposition_8_6_2"
-kind = "theorem"
-desc = '''Proposition 8.6.2, (8.6.11): `(u, p)` is a saddle point of `L` if and only if
-`max_{q ∈ B} inf_{v ∈ A} L(v, q) = min_{v ∈ A} sup_{q ∈ B} L(v, q)`, the maximum being attained at
-`p`, the minimum at `u`, and the common value being `L(u, p)`. With the reading of (8.6.12) and
-(8.6.13) as the primal and the dual problem and (8.6.14) as the equality of their values.'''
-deps = ["IsSaddlePoint", "IsSaddlePoint.isLeast_sSup", "IsSaddlePoint.isGreatest_sInf",
-  "isSaddlePoint_of_isLeast_of_isGreatest"]
+
+[[node]]
+id = "equation_8_6_14"

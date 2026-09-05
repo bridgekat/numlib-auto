@@ -4,6 +4,7 @@ import NumlibSurface.AtkinsonHan.Chapter01.Section02
 import NumlibSurface.AtkinsonHan.Chapter01.Section05
 import NumlibSurface.AtkinsonHan.Chapter01.Section06
 import NumlibSurface.AtkinsonHan.Chapter02.Section01
+import NumlibSurface.AtkinsonHan.Chapter02.Section02
 import NumlibSurface.AtkinsonHan.Chapter02.Section03
 import NumlibSurface.AtkinsonHan.Chapter02.Section04
 import NumlibSurface.AtkinsonHan.Chapter02.Section05
@@ -21,11 +22,13 @@ import NumlibSurface.AtkinsonHan.Chapter05.Section04
 import NumlibSurface.AtkinsonHan.Chapter05.Section06
 import NumlibSurface.AtkinsonHan.Chapter08.Section02
 import NumlibSurface.AtkinsonHan.Chapter08.Section03
+import NumlibSurface.AtkinsonHan.Chapter08.Section06
 import NumlibSurface.AtkinsonHan.Chapter08.Section07
 import NumlibSurface.AtkinsonHan.Chapter09.Section01
 import NumlibSurface.AtkinsonHan.Chapter09.Section02
 import NumlibSurface.AtkinsonHan.Chapter09.Section03
 import NumlibSurface.AtkinsonHan.Chapter09.Section04
+import NumlibSurface.AtkinsonHan.Chapter10.Section04
 import NumlibSurface.FongSaunders
 import NumlibSurface.FongSaunders.Section1
 import NumlibSurface.FongSaunders.Section2

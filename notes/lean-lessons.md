@@ -652,6 +652,20 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   `have h : additiveStep … = x + ∑ i, ω i • (pairStep … x - x) := rfl` is the way to open them;
   `rw [Projection.additiveStep]` fails with "Failed to rewrite using equation theorems".
 
+* **`exact` sees through a `def`; `rw` does not.** With `primalObjective L B v := sSup (L v '' B)`,
+  a backbone lemma about `(fun v => sSup (L v '' B)) '' A` and a surface goal about
+  `primalObjective L B '' A` are defeq, so `exact h` closes it, while `rw [h.csInf_eq]` fails to
+  match and `▸` reports "the equality does not contain the expected result type". Reach for
+  `exact`/`.trans` rather than adding an unfolding lemma.
+* `Finset.le_sup (Finset.mem_univ j)` cannot infer its `f` from the expected type when the goal's
+  sup is over a lambda; pass `(f := fun j => …)`.
+* `Real.iSup_nonneg` and `Real.iInf_nonneg` cover the empty index type too, since `sSup ∅ = 0` in
+  `ℝ`. That is what makes a book statement written with a `sup` over `{g ≠ 0}` junk-free on a
+  trivial space without a case split.
+* `sInf ∅ = 0` in `ℕ` is the same trick one level down: a statement quantified as `∀ i < sInf S`
+  needs no "the set is nonempty" hypothesis, because `i < 0` is false. `FongSaunders.steihaug_cr`
+  drops the termination hypothesis this way.
+
 ## Mathlib names and API
 
 `pow_left_inj₀ ha hb hn : a ^ n = b ^ n ↔ a = b` is the way to cancel the squares after comparing
@@ -1228,6 +1242,26 @@ no spectral theory.
 lemmas that make "the QR factor with a positive diagonal is unique" a matrix-level argument:
 `R₂ R₁⁻¹` is then unitary, upper triangular and of positive diagonal, and such a matrix is `1` by
 a strong induction on the columns. No flag or span machinery is needed.
+
+* **There is no `LinearMap.continuous_of_bound`.** "Bounded implies continuous" for an unbundled
+  linear map is `AddMonoidHomClass.continuous_of_bound f C h`; the converse is
+  `ContinuousLinearMap.bound (⟨L, hcont⟩ : V →L[𝕜] W)`, which gives `∃ C, 0 < C ∧ ∀ x, ‖f x‖ ≤ C‖x‖`
+  and is defeq to the statement about `L`. `LinearMap.bound_of_ball_bound r_pos c f h` turns
+  "bounded on a ball" into `∃ C, ∀ z, ‖f z‖ ≤ C * ‖z‖` — with **no** `0 ≤ C`, so take `max C 0`.
+* Mathlib has **no `ℓ¹` operator norm on matrices**. `Matrix.Norms.Operator` is the `ℓ∞` one
+  (`linfty_opNorm_def`, max absolute row sum) and `Matrix.Norms.L2Operator` the `ℓ²` one
+  (`l2_opNorm_def`); both are scoped instances on the *same* type, so they conflict and each
+  statement needs its own section with its own `open scoped`. For the `ℓ¹` case, state
+  `IsLeast {γ | 0 ≤ γ ∧ ∀ x, ∑ i, ‖(A *ᵥ x) i‖ ≤ γ * ∑ j, ‖x j‖} (max column sum)` and stay with
+  plain `Finset.sum` — going through `WithLp 1` buys nothing.
+* `IsSelfAdjoint.spectralRadius_eq_nnnorm` lives in `Mathlib/Analysis/CStarAlgebra/Spectrum.lean`
+  and is stated for a `CStarAlgebra`, hence only over `ℂ`; `Matrix.instCStarAlgebra` is likewise
+  `Matrix n n ℂ`, while `Matrix.instCStarRing` is `RCLike`-polymorphic. So `‖A‖₂ = √(ρ(Aᴴ A))` is a
+  statement about complex matrices, and `spectralRadius` is root-level, not `spectrum.…`.
+* `IsSelfAdjoint.star_mul_self` is about `star a * a` for a single type and does not apply to a
+  *rectangular* `Aᴴ * A`; prove that one by `simp [IsSelfAdjoint, Matrix.star_eq_conjTranspose,
+  Matrix.conjTranspose_mul]`. `IsSelfAdjoint` also unfolds to `Eq`, so `hsa.spectralRadius_eq_nnnorm`
+  looks up `Eq.spectralRadius_eq_nnnorm`; write the full name.
 
 ## Design conventions of this library
 

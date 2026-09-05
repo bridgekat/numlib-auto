@@ -2,6 +2,7 @@ import Numlib.Analysis.InnerProductSpace.Coercive
 import Numlib.Analysis.InnerProductSpace.Energy
 import Numlib.Krylov.CG
 import Numlib.Krylov.Convergence.CG
+import Numlib.Krylov.Convergence.Superlinear
 import Numlib.Krylov.Subspace
 import Numlib.LinearSolve.Projection.Optimality
 
@@ -29,13 +30,16 @@ definite in the sense of (5.6.3), `√m ‖v‖ ≤ ‖v‖_A ≤ √M ‖v‖` 
 per-step Kantorovich contraction in the backbone's own vocabulary, shared with §9.4, and belongs
 in `Numlib/Krylov/Convergence/CG.lean`.
 
-Deferred (`plans/atkinsonhan-ch5.md` §3 item 3 and §4).  Theorem 5.6.2, Winther's superlinear
-convergence, is proved in the backbone as `Krylov.winther`, with the eigen-decomposition of `K`
-taken as data; the surface statement is still to be written, and so are (5.6.7)–(5.6.9), the
-specialization (5.6.10) to `A = I - K`, and Theorem 5.6.3 (rates for Hilbert–Schmidt and `Cᵖ`
-kernels).  What stands in the way is not the spectral theorem for compact self-adjoint operators,
-which Mathlib has, but the decreasing enumeration of the eigenvalues of a compact operator as an
-`ℕ`-sequence, which it does not.
+Theorem 5.6.2, Winther's superlinear convergence, is `theorem_5_6_2`, a specialization of the
+backbone's `Krylov.winther`; the setting (5.6.7)–(5.6.9) is `isSymmetricBoundedBy_of_one_sub` and
+the linear rate (5.6.10) for `A = I - K` is `equation_5_6_10`.  The eigen-decomposition of `K` is
+taken as *data* rather than produced from compactness: what Mathlib lacks is not the spectral
+theorem for compact self-adjoint operators, which it has, but the decreasing enumeration of the
+eigenvalues of a compact operator as an `ℕ`-sequence.
+
+Deferred (`plans/atkinsonhan-ch5.md` §3 item 3 and §4): Theorem 5.6.3, the rates for
+Hilbert–Schmidt and `Cᵖ` kernels, which needs that same enumeration together with kernel
+regularity.
 -/
 
 open Filter Topology
@@ -349,5 +353,59 @@ theorem equation_5_6_5 (hA : IsSelfAdjoint A) (hm : 0 < m) (hmM : m ≤ M)
   exact hmain
 
 end Convergence
+
+section Superlinear
+
+variable [CompleteSpace V] {A K : V →L[ℝ] V} {lam : ℕ → ℝ} {δ Δ : ℝ} {f u₀ ustar : V}
+
+/-- **(5.6.7)–(5.6.9)**: the setting of Theorem 5.6.2.  `A = I − K` with `K` self-adjoint and
+diagonal in a Hilbert basis `φ` with eigenvalues `λ`, and `0 < δ ≤ 1 − λ_j ≤ Δ` for every `j`.
+Then `A` satisfies (5.6.3) with `m = δ` and `M = Δ`, which is the backbone's
+`LinearMap.IsSymmetricBoundedBy δ Δ`; the derivation is Parseval in the eigenbasis
+(`Krylov.isSymmetricBoundedBy_of_eq_one_sub`). -/
+theorem isSymmetricBoundedBy_of_one_sub (hAK : (A : V →ₗ[ℝ] V) = 1 - (K : V →ₗ[ℝ] V))
+    (hK : IsSelfAdjoint K) (φ : HilbertBasis ℕ ℝ V) (hlam : ∀ j, K (φ j) = lam j • φ j)
+    (hlow : ∀ j, δ ≤ 1 - lam j) (hupp : ∀ j, 1 - lam j ≤ Δ) :
+    (A : V →ₗ[ℝ] V).IsSymmetricBoundedBy δ Δ :=
+  Krylov.isSymmetricBoundedBy_of_eq_one_sub hAK
+    (ContinuousLinearMap.isSelfAdjoint_iff_isSymmetric.mp hK) φ
+    (fun j => by simpa using hlam j) hlow hupp
+
+/-- **(5.6.10)**: for `A = I − K` with `δ ≤ 1 − λ_j ≤ Δ`, the linear rate of (5.6.4) reads
+`(Δ − δ)/(Δ + δ)`.  It is (5.6.4) with `m = δ` and `M = Δ`, the eigenvalue enclosure of `A`. -/
+theorem equation_5_6_10 (hAK : (A : V →ₗ[ℝ] V) = 1 - (K : V →ₗ[ℝ] V)) (hK : IsSelfAdjoint K)
+    (φ : HilbertBasis ℕ ℝ V) (hlam : ∀ j, K (φ j) = lam j • φ j) (hδ : 0 < δ)
+    (hlow : ∀ j, δ ≤ 1 - lam j) (hupp : ∀ j, 1 - lam j ≤ Δ) (hstar : A ustar = f) (k : ℕ) :
+    normA A (ustar - (cg A f u₀ (k + 1)).u)
+      ≤ (Δ - δ) / (Δ + δ) * normA A (ustar - (cg A f u₀ k).u) := by
+  rw [cg_u, cg_u, normA_eq, normA_eq]
+  exact cg_energyNorm_error_step_le hδ
+    (isSymmetricBoundedBy_of_one_sub hAK hK φ hlam hlow hupp) hstar k
+
+/-- **Theorem 5.6.2** (Winther): superlinear convergence of the conjugate gradient method for a
+second-kind equation `A u = f` with `A = I − K`.  The compact self-adjoint `K` is given through
+its eigen-decomposition — a Hilbert basis `φ` of eigenvectors with eigenvalues `λ_j` enumerated so
+that `|λ|` is antitone and `λ_j → 0`, which is what compactness supplies — together with the
+enclosure `0 < δ ≤ 1 − λ_j ≤ Δ`.
+Then (5.6.11) `‖u* − u_k‖ ≤ c_k^k ‖u* − u₀‖` with the rate `c_k` of (5.6.21), and `c_k → 0`.
+
+Two departures from the book's statement, both recorded in `Numlib/Krylov/Convergence/Superlinear`:
+the eigen-decomposition is taken as data rather than produced from compactness of `K`, because
+Mathlib has no decreasing enumeration of the eigenvalues of a compact operator as an `ℕ`-sequence;
+and the constant is `Krylov.wintherRate λ δ Δ k = (Δ/δ)^{1/(2k)} (2/k) ∑_{j<k} |λ_j|/(1 − λ_j)`,
+which is sharper than the book's `(Δ/δ)^{3/(2k)}` prefactor and has the same limit `0`. -/
+theorem theorem_5_6_2 (hAK : (A : V →ₗ[ℝ] V) = 1 - (K : V →ₗ[ℝ] V)) (hK : IsSelfAdjoint K)
+    (φ : HilbertBasis ℕ ℝ V) (hlam : ∀ j, K (φ j) = lam j • φ j)
+    (hanti : Antitone fun j => |lam j|) (hlim : Tendsto lam atTop (𝓝 0)) (hδ : 0 < δ)
+    (hlow : ∀ j, δ ≤ 1 - lam j) (hupp : ∀ j, 1 - lam j ≤ Δ) (hstar : A ustar = f) :
+    (∀ k, ‖ustar - (cg A f u₀ k).u‖ ≤ Krylov.wintherRate lam δ Δ k ^ k * ‖ustar - u₀‖) ∧
+      Tendsto (Krylov.wintherRate lam δ Δ) atTop (𝓝 0) := by
+  have hΔ : 0 < Δ := hδ.trans_le ((hlow 0).trans (hupp 0))
+  refine ⟨fun k => ?_, Krylov.winther_rate_tendsto_zero hδ hΔ hlim⟩
+  rw [cg_u]
+  exact Krylov.winther hAK (ContinuousLinearMap.isSelfAdjoint_iff_isSymmetric.mp hK) φ
+    (fun j => by simpa using hlam j) hanti hδ hlow hupp hstar k
+
+end Superlinear
 
 end AtkinsonHan.Ch05

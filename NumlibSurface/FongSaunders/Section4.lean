@@ -23,9 +23,10 @@ figures and the percentages of monotone steps, the "cumulative minimum" heuristi
 MINRES-QLP relationship.
 
 The two indefinite-case results of §4.2 (Steihaug's theorem for CG and its CR analogue) are
-*deferred*: they rest on strict, symmetric-indefinite monotonicity statements that the backbone
-does not yet provide (`plans/backbone.md` §3.11, "Steihaug's generalization", phase 2), and the
-surface layer may not invent them.
+`steihaug_cg` and `steihaug_cr`, specializations of the backbone's strict, symmetric-indefinite
+monotonicity theorems `CG.norm_iterate_lt_of_re_inner_apply_direction_pos` and
+`CR.norm_iterate_lt_of_pos`.  The latter carries its positivity hypothesis up to the termination
+index rather than up to `k`, for the reason explained at `steihaug_cr` below.
 -/
 
 namespace FongSaunders
@@ -150,5 +151,44 @@ theorem minres_coeff_unique (hA : A.PosDef) (k : ℕ) (hk : k ≤ lanczosTerm A 
   funext j
   have := Fintype.linearIndependent_iff.1 hli (z - y) hzero j
   simpa [sub_eq_zero] using this
+
+/-! ### R4.3, R4.4: Steihaug's theorem on indefinite systems (§4.2) -/
+
+/-- §4.2, Steihaug's theorem: for CG on a symmetric, possibly indefinite `A x = b` from `x₀ = 0`,
+the solution norms `‖x₁‖, …, ‖x_k‖` are strictly increasing as long as `p_jᵀ A p_j > 0` for the
+directions `p₀, …, p_{k-1}` used in iterations `1..k`. -/
+theorem steihaug_cg (hA : A.IsSymm) {k : ℕ}
+    (hpos : ∀ j < k, 0 < ⟪(cg A b j).p, A ⬝ (cg A b j).p⟫_ℝ) {i : ℕ} (hi : i < k) :
+    ‖(cg A b i).x‖ < ‖(cg A b (i + 1)).x‖ := by
+  simp only [cg_x]
+  refine CG.norm_iterate_lt_of_re_inner_apply_direction_pos b (isSymmetric_toEuclideanLin hA)
+    (fun j hj => ?_) hi
+  rw [RCLike.re_to_real, real_inner_comm]
+  simpa only [cg_p] using hpos j hj
+
+/-- §4.2, the CR/MINRES analogue of Steihaug's theorem: the CR solution norms are strictly
+increasing as long as `ρ_j = r_jᵀ A r_j > 0` at every iteration before termination.
+
+The paper states the property "as long as both `p_jᵀ A p_j > 0` and `r_jᵀ A r_j > 0` for all
+iterations `1 ≤ j ≤ k`", a *local* hypothesis.  Its proof of Theorem 2.2 (d) expands `r_i` over
+*all* the remaining steps, so a single negative `ρ_m` beyond `k` breaks the argument; the
+hypothesis is therefore imposed up to the termination index `ℓ = crTerm A b`, which is how the
+paper's condition reads when it is read globally.  The second condition `p_jᵀ A p_j > 0` is then
+redundant, since `r_jᵀ A p_j = ρ_j ≠ 0` already forces `A p_j ≠ 0` (see
+`CR.norm_iterate_lt_of_pos`).  Under these hypotheses `CR.isMinResIterate_of_no_breakdown`
+identifies `x_k` with the MINRES iterate, so the property transfers to MINRES. -/
+theorem steihaug_cr (hA : A.IsSymm) (hpos : ∀ j < crTerm A b, 0 < (cr A b j).ρ) {i : ℕ}
+    (hi : i < crTerm A b) : ‖(cr A b i).x‖ < ‖(cr A b (i + 1)).x‖ := by
+  have hne : {k | (cr A b k).r = 0}.Nonempty := by
+    by_contra h
+    rw [Set.not_nonempty_iff_eq_empty] at h
+    rw [crTerm, h, Nat.sInf_empty] at hi
+    exact Nat.not_lt_zero i hi
+  have hstop : (CR.iterate (toEuclideanLin A) b 0 (crTerm A b)).r = 0 := by
+    rw [← cr_r]; exact Nat.sInf_mem hne
+  simp only [cr_x]
+  refine CR.norm_iterate_lt_of_pos b (isSymmetric_toEuclideanLin hA) hstop (fun j hj => ?_) hi
+  rw [RCLike.re_to_real]
+  simpa only [cr_rho, cr_r] using hpos j hj
 
 end FongSaunders

@@ -21,8 +21,7 @@ Steihaug's indefinite-case monotonicity and its CR analogue; (§5) Table 5.1.
 Lean files: `NumlibSurface/FongSaunders/Section1.lean` (setting), `Sec2.lean`, `Sec3.lean`, `Sec4.lean`
 (only (4.1), the telescoping identity, §4.2), `Sec5.lean` (Table 5.1 as a structure). Numerical-only
 material (§4 experiments, Figures 4.1–4.8, the MINRES-QLP heuristic in §4.2, Table 5.2, §5 prose) is
-left out (section "Left out" below). Count: 26 result blocks; two deferred backbone items (both
-from §4.2). Backbone dependencies: `backbone.md` §2.1.4–2.1.5, §2.2, §2.4, §3.1–3.8, §3.11,
+left out (section "Left out" below). Count: 26 result blocks, all formalized. Backbone dependencies: `backbone.md` §2.1.4–2.1.5, §2.2, §2.4, §3.1–3.8, §3.11,
 §8.2.
 
 Conventions used below. `n : ℕ`; `Vec n := EuclideanSpace ℝ (Fin n)`; `A : Matrix (Fin n) (Fin n) ℝ`
@@ -239,8 +238,9 @@ Each block: paper formulation → Lean surface definition → backbone counterpa
 * Backbone: `CG.norm_iterate_monotone` (`Numlib/Krylov/CG.lean`; spd, nonstrict) and
   `CR.isMinResIterate_of_no_breakdown (hA : A.IsSymmetric) (k) (h1 : ∀ j < k, ⟪r_j, A r_j⟫ ≠ 0) (h2 : ∀ j < k, q_j ≠ 0)`
   (`Numlib/Krylov/CR.lean`), which identifies the CR iterates with the MINRES iterates on symmetric
-  indefinite systems while no breakdown occurs. The strict indefinite-case statements are the two
-  deferred backbone items (R4.3, R4.4).
+  indefinite systems while no breakdown occurs. The strict indefinite-case statements are
+  `CG.norm_iterate_lt_of_re_inner_apply_direction_pos` and `CR.norm_iterate_lt_of_pos` (R4.3, R4.4);
+  the latter needs `ρ_j > 0` up to the termination index, not only for `j < k`.
 * Equivalence: `cg_eq_backbone` and `cr_eq_backbone` hold for every matrix (no `PosDef` needed), so
   the same lemmas serve.
 
@@ -600,18 +600,18 @@ Numbering: `R<section>.<item>`; the paper's own labels are in the `Book statemen
 * Lean surface statement:
   `theorem steihaug_cg (A' : Matrix (Fin n) (Fin n) ℝ) (hA' : A'.IsSymm) (b) (k) (hpos : ∀ j < k, 0 < ⟪(cg A' b j).p, A' ⬝ (cg A' b j).p⟫_ℝ) : ∀ i < k, ‖(cg A' b i).x‖ < ‖(cg A' b (i+1)).x‖`
   (indexing per C5; strictness is justified since `p_iᵀ A p_i > 0 ⇒ p_i ≠ 0 ⇒ r_i ≠ 0 ⇒ α_{i+1} > 0`).
-* Backbone item: deferred item 1 (`CG.norm_iterate_lt_of_re_inner_apply_direction_pos`, symmetric `A`);
+* Backbone item: `CG.norm_iterate_lt_of_re_inner_apply_direction_pos` (symmetric `A`);
   `CG.norm_iterate_monotone` (`Numlib/Krylov/CG.lean`) is the spd nonstrict case.
 * Proof route (for the backbone item): `⟪r_i, p_j⟫ = ‖r_j‖²` for `i ≤ j`, hence `⟪p_i, p_j⟫ ≥ 0`, hence
   `⟪x_i, p_i⟫ ≥ 0`; a local argument needing only symmetry and the positivity of the denominators used so far.
-* Classification: `deferred` (backbone item 1).
+* Classification: `direct` (the backbone theorem after `cg_x`, `cg_p` and `real_inner_comm`).
 
 ### R4.4 — The CR/MINRES analogue on indefinite systems (§4.2)
 * Book statement: "From our proof of Theorem 2.2, we see that the same property holds for CR and MINRES as long as
   both `p_jᵀ A p_j > 0` and `r_jᵀ A r_j > 0` for all iterations `1 ≤ j ≤ k`."
 * Lean surface statement (with the no-breakdown hypothesis discussed below):
   `theorem steihaug_cr (hA' : A'.IsSymm) (k) (hℓ : ∀ j < crTerm A' b, (cr A' b j).ρ ≠ 0) (hp : ∀ j < k, 0 < ⟪(cr A' b j).p, A' ⬝ (cr A' b j).p⟫_ℝ) (hr : ∀ j < k, 0 < (cr A' b j).ρ) : ∀ i < k, ‖(cr A' b i).x‖ < ‖(cr A' b (i+1)).x‖`.
-* Backbone item: deferred item 2; `CR.isMinResIterate_of_no_breakdown` (`Numlib/Krylov/CR.lean`)
+* Backbone item: `CR.norm_iterate_lt_of_pos`; `CR.isMinResIterate_of_no_breakdown` (`Numlib/Krylov/CR.lean`)
   identifies the CR iterates with the MINRES iterates under exactly these hypotheses, so the statement
   transfers to MINRES on indefinite systems.
 * Proof route: **the paper's local formulation is not supported by its proof sketch.** The proof of
@@ -621,7 +621,12 @@ Numbering: `R<section>.<item>`; the paper's own labels are in the `Book statemen
   exist (the component of `p_i` orthogonal to `span{q_0..q_{k−1}}` has no controlled sign). The surface
   therefore states the version with the global no-breakdown hypothesis `hℓ` (equivalently, both
   positivity conditions for all `j < ℓ`).
-* Classification: `deferred` (backbone item 2).
+* Classification: `direct`.  The surface node `steihaug_cr` therefore reads
+  `theorem steihaug_cr (hA : A.IsSymm) (hpos : ∀ j < crTerm A b, 0 < (cr A b j).ρ) {i} (hi : i < crTerm A b) : ‖(cr A b i).x‖ < ‖(cr A b (i+1)).x‖`:
+  the positivity runs to the termination index, and the second hypothesis `0 < ⟪p_j, A p_j⟫` is
+  dropped because `⟪r_j, A p_j⟫ = ρ_j ≠ 0` already forces `A p_j ≠ 0`.  The termination hypothesis is
+  not needed as a separate assumption: if `{k | r_k = 0}` is empty then `crTerm A b = 0` and the
+  conclusion is vacuous.
 
 ### R4.5 — MINRES subproblem in Lanczos coordinates (§4.2, unnumbered)
 * Book statement: MINRES (and MINRES-QLP) compute `x_k^M = V_k y_k^M` with `y_k^M = argmin_{y ∈ ℝ^k} ‖T̲_k y − β_1 e_1‖`
@@ -674,26 +679,20 @@ Numbering: `R<section>.<item>`; the paper's own labels are in the `Book statemen
 * Proof route: unfold two steps of `cg`; `EuclideanSpace.norm_eq`, `Fin.sum_univ_two`.
 * Classification: `surface-only`.
 
-## Deferred backbone items
+## Backbone items this paper asked for
 
-Now the open nodes `CG.norm_iterate_lt_of_re_inner_apply_direction_pos`
-(`Numlib/Krylov/CG.toml`) and `CR.norm_iterate_lt_of_pos` (`Numlib/Krylov/CR.toml`), with the
-surface nodes `steihaug_cg` and `steihaug_cr` in `NumlibSurface/FongSaunders/Section4.toml`.
-
-Both items are the strict, symmetric-indefinite forms of the monotonicity theorems that
-`backbone.md` §3.11 lists under "Steihaug's generalization"; they are scheduled for phase 2
-(`backbone.md` §7). The surface states R4.3–R4.4 against them.
+The two strict, symmetric-indefinite monotonicity theorems that `backbone.md` §3.11 lists under
+"Steihaug's generalization" were written for R4.3–R4.4 and are now proved:
 
 1. **Steihaug for symmetric indefinite `A` (strict), `Numlib/Krylov/CG.lean` (§3.7/§3.11).**
-   `theorem CG.norm_iterate_lt_of_re_inner_apply_direction_pos (hA : A.IsSymmetric) (b) (k) (h : ∀ j < k, 0 < re ⟪A p_j, p_j⟫) : ∀ i < k, ‖x_i‖ < ‖x_{i+1}‖`
-   for the iterates from `x₀ = 0`; the spd `Monotone` statement `CG.norm_iterate_monotone` becomes its
-   corollary through `CG.re_inner_apply_direction_pos`. Proof: the local argument of R4.3. Serves R4.3
-   and the strict CG entry of Table 5.1.
-2. **The CR/MINRES analogue, `Numlib/Krylov/CR.lean` or `Numlib/Krylov/Monotonicity.lean` (§3.8/§3.11).**
-   `theorem CR.norm_iterate_lt_of_pos (hA : A.IsSymmetric) (hℓ : ∀ j < ℓ, ⟪r_j, A r_j⟫ ≠ 0) (h : ∀ j < k, 0 < ⟪A p_j, p_j⟫ ∧ 0 < ⟪r_j, A r_j⟫) : ∀ i < k, ‖x_i‖ < ‖x_{i+1}‖`
-   with `ℓ` the termination index (global no-breakdown), the version supported by the paper's proof of
-   Thm 2.2 (d); or a counterexample showing that the paper's local version (hypotheses for `j ≤ k`
-   only) fails. Serves R4.4; the MINRES transfer is `CR.isMinResIterate_of_no_breakdown`.
+   `CG.norm_iterate_lt_of_re_inner_apply_direction_pos (b) (hAs : A.IsSymmetric) (h : ∀ j < k, 0 < re ⟪A p_j, p_j⟫) (hi : i < k) : ‖x_i‖ < ‖x_{i+1}‖`
+   for the iterates from `x₀ = 0`. Serves R4.3 and the strict CG entry of Table 5.1.
+2. **The CR/MINRES analogue, `Numlib/Krylov/CR.lean` (§3.8/§3.11).**
+   `CR.norm_iterate_lt_of_pos (b) (hAs : A.IsSymmetric) (hstop : r_ℓ = 0) (hpos : ∀ j < ℓ, 0 < re ⟪r_j, A r_j⟫) (hi : i < ℓ) : ‖x_i‖ < ‖x_{i+1}‖`.
+   The hypothesis runs to the termination index `ℓ`, not to `k`: the paper's proof of Thm 2.2 (d)
+   expands `r_i = A (x_ℓ - x_i) = ∑_{m ≥ i} α_m A p_m`, so a single negative `ρ_m` beyond `k` can
+   turn `re ⟪r_i, p_j⟫` negative and the chain (f) ⇒ (d) ⇒ (e) breaks; the paper's local reading is
+   not supported by its own proof. The MINRES transfer is `CR.isMinResIterate_of_no_breakdown`.
 
 ## Left out
 

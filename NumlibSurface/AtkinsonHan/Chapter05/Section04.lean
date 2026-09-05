@@ -19,12 +19,18 @@ The book's iteration (5.4.2), `u_{n+1} = u_n - [F'(u_n)]⁻¹ F(u_n)`, is the ba
 * Theorem 5.4.2, the Newton–Kantorovich theorem;
 * (5.4.7), Newton's method for a nonlinear system in `ℝᵈ`.
 
-Deferred (`plans/atkinsonhan-ch5.md` §3 item 2, `plans/backbone.md` §7 "5.3.2
-Kantorovich", phase 2): the book's finer form of Theorem 5.4.2 — existence localized to
-`B̄(u₁, t* - b)`, uniqueness in `B̄(u₀, t**)` with `t** = (1 + √(1-2h))/(aL)`, and the sharper a
-priori bound `[1 - √(1-2h)]^{2ⁿ}/(2ⁿ a L)`.  Out of scope (§4 of the plan): the applications
-(5.4.8)–(5.4.12), which need the phase-3 `C[a,b]` integral-operator toolkit, and the modified
-Newton (chord) method of Exercise 5.4.5.
+* the book's finer form of Theorem 5.4.2: existence localized to `B̄(u₁, t* - b)`
+  (`theorem_5_4_2_step`), uniqueness within `t** = (1 + √(1-2h))/(aL)` of `u₀`
+  (`theorem_5_4_2_unique`), and the sharp a priori bound `[1 - √(1-2h)]^{2ⁿ}/(2ⁿ a L)`
+  (`theorem_5_4_2_sharp`);
+* (5.4.11) and Exercise 5.4.5, the modified Newton (chord) method with a frozen derivative, whose
+  convergence is linear rather than quadratic.
+
+The uniqueness domain of Theorem 5.4.2 is the **open** ball of radius `t**`, not the closed one as
+the book prints it; `theorem_5_4_2_unique` explains why the closed form is false for `h < ½`.
+
+Out of scope (§4 of `plans/atkinsonhan-ch5.md`): the applications (5.4.8)–(5.4.10) and (5.4.12),
+which need the phase-3 `C[a,b]` integral-operator toolkit.
 -/
 
 open Filter Metric Topology
@@ -248,7 +254,107 @@ theorem theorem_5_4_2 {F : U → W} {F' : U → U →L[ℝ] W} {u₀ : U} {r a b
     (by rw [hcomm]; exact hr)
   rwa [hcomm] at hkey
 
+set_option linter.unusedSectionVars false in
+/-- **Theorem 5.4.2**, the book's localized existence clause: the root is found in
+`B̄(u₁, t* − b)`, the ball around the *first* Newton iterate `u₁ = T u₀`, and the domain of `F`
+need only be a convex set containing `u₀` and that ball.  This is the shape in which the theorem
+is applied when no a priori ball around `u₀` is known. -/
+theorem theorem_5_4_2_step {F : U → W} {F' : U → U →L[ℝ] W} {u₀ : U} {D : Set U} {a b L : ℝ}
+    (ha : 0 < a) (hLpos : 0 < L) (hb : 0 ≤ b) (e : U ≃L[ℝ] W) (he : (e : U →L[ℝ] W) = F' u₀)
+    (ha' : ‖(e.symm : W →L[ℝ] U)‖ ≤ a) (hb' : ‖e.symm (F u₀)‖ ≤ b) (hD : Convex ℝ D)
+    (hu₀ : u₀ ∈ D)
+    (hsub : closedBall (Newton.step F F' u₀)
+      ((1 - Real.sqrt (1 - 2 * (a * b * L))) / (a * L) - b) ⊆ D)
+    (hF : ∀ u ∈ D, HasFDerivAt F (F' u) u)
+    (hLip : ∀ u ∈ D, ∀ v ∈ D, ‖F' u - F' v‖ ≤ L * ‖u - v‖) (hh : a * b * L ≤ 1 / 2) :
+    ∃ ustar ∈ closedBall (Newton.step F F' u₀)
+        ((1 - Real.sqrt (1 - 2 * (a * b * L))) / (a * L) - b),
+      F ustar = 0 ∧ Tendsto (Newton.iterate F F' u₀) atTop (𝓝 ustar) := by
+  have hcomm : a * L * b = a * b * L := by ring
+  have hkey := Newton.kantorovich_of_closedBall_step ha hLpos hb e he ha' hb' hD hu₀
+    (by rw [hcomm]; exact hsub) hF hLip (by rw [hcomm]; exact hh)
+  rwa [hcomm] at hkey
+
+set_option linter.unusedSectionVars false in
+/-- **Theorem 5.4.2**, the uniqueness clause: the root produced by the Newton–Kantorovich theorem
+is the *only* root of `F` in the domain, within distance `t** = (1 + √(1 − 2h))/(aL)` of `u₀`.
+
+Statement correction: the book, and the plan taken from it, put uniqueness on the *closed* ball of
+radius `t**`.  That is false whenever `h < ½`.  The scalar majorant `p t = (L/2)t² − t/a + b/a`
+satisfies every hypothesis at `u₀ = 0` and has a second root at distance exactly `t**`, so the
+closed ball of radius `t**` contains a second zero; the open ball is the correct domain, and it is
+what the backbone's `Newton.kantorovich_unique` proves.  (The closed ball of radius `t*` is also a
+uniqueness domain, and that is the form that survives the critical case `h = ½`.) -/
+theorem theorem_5_4_2_unique {F : U → W} {F' : U → U →L[ℝ] W} {u₀ : U} {r a b L : ℝ} (ha : 0 < a)
+    (hLpos : 0 < L) (hb : 0 ≤ b) (e : U ≃L[ℝ] W) (he : (e : U →L[ℝ] W) = F' u₀)
+    (ha' : ‖(e.symm : W →L[ℝ] U)‖ ≤ a) (hb' : ‖e.symm (F u₀)‖ ≤ b)
+    (hF : ∀ u ∈ closedBall u₀ r, HasFDerivAt F (F' u) u)
+    (hLip : ∀ u ∈ closedBall u₀ r, ∀ v ∈ closedBall u₀ r, ‖F' u - F' v‖ ≤ L * ‖u - v‖)
+    (hh : a * b * L ≤ 1 / 2)
+    (hr : (1 - Real.sqrt (1 - 2 * (a * b * L))) / (a * L) ≤ r) {ustar : U}
+    (hustar : Tendsto (Newton.iterate F F' u₀) atTop (𝓝 ustar)) {v : U} (hv : F v = 0)
+    (hvr : v ∈ closedBall u₀ r)
+    (hvt : ‖v - u₀‖ < (1 + Real.sqrt (1 - 2 * (a * b * L))) / (a * L)) :
+    v = ustar := by
+  have hcomm : a * L * b = a * b * L := by ring
+  exact Newton.kantorovich_unique ha hLpos hb e he ha' hb' hF hLip (by rw [hcomm]; exact hh)
+    (by rw [hcomm]; exact hr) hustar hv hvr (by rw [hcomm]; exact hvt)
+
+set_option linter.unusedSectionVars false in
+/-- **Theorem 5.4.2**, the sharp a priori bound: under the hypotheses of the Newton–Kantorovich
+theorem,
+
+  `‖u_n − u*‖ ≤ [1 − √(1 − 2h)]^{2ⁿ} / (2ⁿ a L)`,
+
+which is the book's finer form of the last conjunct of `theorem_5_4_2`.  Together with
+`theorem_5_4_2_step` and `theorem_5_4_2_unique` this is Theorem 5.4.2 as the book states it. -/
+theorem theorem_5_4_2_sharp {F : U → W} {F' : U → U →L[ℝ] W} {u₀ : U} {r a b L : ℝ} (ha : 0 < a)
+    (hLpos : 0 < L) (hb : 0 ≤ b) (e : U ≃L[ℝ] W) (he : (e : U →L[ℝ] W) = F' u₀)
+    (ha' : ‖(e.symm : W →L[ℝ] U)‖ ≤ a) (hb' : ‖e.symm (F u₀)‖ ≤ b)
+    (hF : ∀ u ∈ closedBall u₀ r, HasFDerivAt F (F' u) u)
+    (hLip : ∀ u ∈ closedBall u₀ r, ∀ v ∈ closedBall u₀ r, ‖F' u - F' v‖ ≤ L * ‖u - v‖)
+    (hh : a * b * L ≤ 1 / 2)
+    (hr : (1 - Real.sqrt (1 - 2 * (a * b * L))) / (a * L) ≤ r) {ustar : U}
+    (hustar : Tendsto (Newton.iterate F F' u₀) atTop (𝓝 ustar)) (n : ℕ) :
+    ‖Newton.iterate F F' u₀ n - ustar‖
+      ≤ (1 - Real.sqrt (1 - 2 * (a * b * L))) ^ 2 ^ n / (2 ^ n * (a * L)) := by
+  have hcomm : a * L * b = a * b * L := by ring
+  have hkey := Newton.kantorovich_norm_sub_le ha hLpos hb e he ha' hb' hF hLip
+    (by rw [hcomm]; exact hh) (by rw [hcomm]; exact hr) hustar n
+  rwa [hcomm] at hkey
+
 end Complete
+
+section Chord
+
+variable {U W : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [NormedAddCommGroup W]
+  [NormedSpace ℝ W]
+
+/-- **(5.4.11)**: one step of the modified Newton method, in which the derivative is frozen at a
+single invertible operator `A` (in the book, `A = F'(u₀)`): `u_{n+1} = u_n − A⁻¹ F(u_n)`. -/
+theorem equation_5_4_11 (F : U → W) (A : U ≃L[ℝ] W) (u₀ : U) (n : ℕ) :
+    Newton.chordIterate F A u₀ (n + 1) = Newton.chordStep F A (Newton.chordIterate F A u₀ n) :=
+  Newton.chordIterate_succ F A u₀ n
+
+/-- **Exercise 5.4.5**, the modified Newton (chord) method (5.4.11).  If `F` is differentiable near
+a root `u*`, `F'` is Lipschitz there, and the frozen operator `A` is close enough to `F'(u*)` that
+`‖I − A⁻¹ F'(u*)‖ < 1`, then from every sufficiently close start the iteration converges to `u*`,
+*linearly*: `‖u_n − u*‖ ≤ qⁿ ‖u₀ − u*‖` with a rate `q < 1`.  The book's choice `A = F'(u₀)`
+satisfies the hypothesis once `u₀` is close enough to `u*`, by the perturbation theorem.
+
+The rate is linear and not quadratic, which is exactly the point of the exercise: freezing the
+derivative costs an order of convergence. -/
+theorem exercise_5_4_5 {F : U → W} {F' : U → U →L[ℝ] W} {ustar : U} (hroot : F ustar = 0)
+    {r L : ℝ} (hr : 0 < r) (A : U ≃L[ℝ] W)
+    (hF : ∀ u ∈ closedBall ustar r, HasFDerivAt F (F' u) u)
+    (hLip : ∀ u ∈ closedBall ustar r, ‖F' u - F' ustar‖ ≤ L * ‖u - ustar‖)
+    (hA : ‖1 - (A.symm : W →L[ℝ] U) ∘L F' ustar‖ < 1) :
+    ∃ δ > 0, ∃ q, 0 ≤ q ∧ q < 1 ∧ ∀ u₀ ∈ closedBall ustar δ,
+      (∀ n, ‖Newton.chordIterate F A u₀ n - ustar‖ ≤ q ^ n * ‖u₀ - ustar‖) ∧
+        Tendsto (Newton.chordIterate F A u₀) atTop (𝓝 ustar) :=
+  Newton.tendsto_chordIterate hroot hr A hF hLip hA
+
+end Chord
 
 section System
 

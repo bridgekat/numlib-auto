@@ -19,9 +19,11 @@ The book's supremum in (9.2.6) is taken without absolute values; `iSup_div_eq_op
 backbone's `IsPetrovGalerkinSolution.DiscreteInfSup`.
 
 Remark 9.2.2 -- the Xu–Zikatanov sharpening `‖u − u_N‖ ≤ (M/α_N) inf_{w_N} ‖u − w_N‖` -- is
-**deferred**: it needs the Petrov–Galerkin projector `P_N : u ↦ u_N` as a bounded idempotent
-operator with `‖P_N‖ ≤ M/α_N`, which is a phase-2 item of `plans/backbone.md` §5.2.3.  Kato's
-lemma, the analytic ingredient, is already available and is recorded below as `kato`.
+`remark_9_2_2`, a specialization of the backbone's
+`IsPetrovGalerkinSolution.norm_sub_le_div_mul_infDist`, which builds the Petrov–Galerkin projector
+`P_N : u ↦ u_N` and bounds `‖P_N‖ ≤ M/α_N` by Kato's lemma; the analytic ingredient is recorded
+below as `kato`.  The hypothesis `U_N ≠ ⊥` is not decoration: at `U_N = ⊥` the projector is zero,
+every other hypothesis holds vacuously, and the bound is false.
 -/
 
 open Filter Topology
@@ -207,6 +209,28 @@ theorem discreteInfSup_iff_le_infSupValue (hM : a.IsBoundedWith M) (hUN : UN ≠
     · have hx := h ⟨⟨w, hw⟩, fun hz => hw0 (congrArg Subtype.val hz)⟩
       rw [iSup_div_mul_eq a VN hw0, le_div_iff₀ (norm_pos_iff.mpr hw0)] at hx
       exact hx
+
+/-- Remark 9.2.2, (9.2.10), the Xu–Zikatanov sharpening of (9.2.7): the quasi-optimality constant
+`1 + M/α_N` may be replaced by `M/α_N`,
+
+  `‖u − u_N‖_U ≤ (M/α_N) inf_{w_N ∈ U_N} ‖u − w_N‖_U`.
+
+The proof reads the Petrov–Galerkin map `u ↦ u_N` as a bounded idempotent operator and applies
+Kato's lemma to it; both are in the backbone's
+`IsPetrovGalerkinSolution.norm_sub_le_div_mul_infDist`.  The extra hypothesis `U_N ≠ ⊥` is
+necessary: on the trivial trial space the projector is `0`, so `‖I − P_N‖ = 1` rather than
+`‖P_N‖`, and the sharpened bound fails while (9.2.7) still holds. -/
+theorem remark_9_2_2 [FiniteDimensional ℝ UN] [FiniteDimensional ℝ VN] (hM0 : 0 ≤ M)
+    (hM : a.IsBoundedWith M) (hdim : Module.finrank ℝ UN = Module.finrank ℝ VN) (hαN : 0 < αN)
+    (hinfsup : DiscreteInfSup a UN VN αN) (hUN : UN ≠ ⊥)
+    (huN : PetrovGalerkinProblem a ℓ UN VN uN) (hu : ∀ v, a u v = ℓ v) :
+    ‖u - uN‖ ≤ M / αN * ⨅ wN : UN, ‖u - (wN : U)‖ := by
+  have hdist : Metric.infDist u (UN : Set U) = ⨅ wN : UN, ‖u - (wN : U)‖ := by
+    rw [Metric.infDist_eq_iInf]
+    exact iInf_congr fun w => dist_eq_norm u (w : U)
+  have h := IsPetrovGalerkinSolution.norm_sub_le_div_mul_infDist (a := a.toCLM hM) (ℓ := ℓ)
+    hdim hαN ((discreteInfSup_iff hM).mp hinfsup) hUN hM0 (a.isBoundedWith_toCLM hM) huN hu
+  rwa [hdist] at h
 
 /-! ### Kato's lemma -/
 

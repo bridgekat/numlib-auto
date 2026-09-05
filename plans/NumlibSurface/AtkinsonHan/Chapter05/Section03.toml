@@ -8,5 +8,14 @@ id = "example_5_3_10"
 kind = "theorem"
 desc = '''Example 5.3.10: the Fréchet derivative of the Urysohn operator `u ↦ ∫ k(t, s, u(s)) ds` on
 `C[a, b]` is the Fredholm operator with kernel `∂_u k(t, s, u(s))`, by differentiation under the
-integral sign.'''
+integral sign.
+
+Not attempted. `Numlib/IntegralEquations/Basic` now has `IntegralOperator.urysohn` and
+`IntegralOperator.fredholm` with their norms and Lipschitz constants, so the two *operators* in the
+statement exist; what is missing is the analytic step. Showing
+`‖urysohn k (u + h) - urysohn k u - fredholm K_u h‖_∞ = o(‖h‖_∞)` needs the uniform continuity of
+`∂_u k` on the compact tube `Icc a b × Icc a b × [-R, R]` around the graph of `u`, and Mathlib has no
+differentiation-under-the-integral-sign lemma in the sup norm to specialize; the estimate has to be
+written out. That belongs in the backbone beside `lipschitzWith_urysohn`, as
+`IntegralOperator.hasFDerivAt_urysohn`, not in the surface.'''
 deps = ["IntegralOperator.fredholm"]
