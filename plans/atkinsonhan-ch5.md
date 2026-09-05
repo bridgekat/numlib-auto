@@ -430,7 +430,13 @@ Picard-iteration convergence and the three weighted bounds: not exposed by Mathl
 `FunSpace.next` with iterate-contraction, not the Bielecki norm) — needs the `Bielecki`-norm type synonym on
 `C(Icc (t₀−a₀) (t₀+a₀), V)`, the contraction `|||T u − T v||| ≤ (1 − e^{−L a₀}) |||u − v|||` and Thm 5.1.3 on the closed
 ball `{u : ‖u(t) − z‖ ≤ b}`.
-Classification: `direct` (existence, uniqueness, `C¹`); `deferred` (iteration + weighted bounds — phase 3, §3 item 1).
+Classification, corrected against what was actually written: the **iteration half is done** — `theorem_5_2_4` in
+`NumlibSurface/AtkinsonHan/Chapter05/Section02.lean` proves existence, uniqueness, convergence of the Picard iterates
+and the three bounds (5.1.4)–(5.1.6) in the weighted norm, for the *integral* equation on `Bielecki`, one-sided and
+real-valued, which is what the `C[a,b]` toolkit supports. The book's **differential** form in a Banach space with the
+ball constraint `Q_b` is not re-derived: it is Mathlib's `IsPicardLindelof`, and the surface module says so under
+"Not formalized here". So `direct` (existence, uniqueness, `C¹`) remains an accurate reading of the differential half
+and an unwritten one; nothing here is `deferred` on a missing backbone any more.
 
 ### §5.3 Differential calculus for nonlinear operators
 
