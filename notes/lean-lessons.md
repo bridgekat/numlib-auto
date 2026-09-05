@@ -152,6 +152,17 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   therefore declares only `Matrix.abs` and `Matrix.abs_apply`, and gives every other entrywise
   absolute-value lemma a name that cannot shadow a root one (`entrywiseNonneg_abs`,
   `abs_add_entrywiseLE`, `abs_mul_entrywiseLE`).
+* A module that imports only the pieces of Mathlib it needs must import `Mathlib.Tactic.Ring`
+  explicitly. Without it `ring` fails as **`unknown tactic`**, not as an unknown identifier, and
+  `field_simp` still works (it calls `ring_nf` through its own import), so the diagnosis looks like
+  a syntax error in a proof that is fine.
+* A **phantom type parameter** — `def Bielecki (a b β : ℝ) : Type := C(Icc a b, ℝ)`, where `β` only
+  selects the norm — trips `linter.unusedVariables`. Silence it with
+  `set_option linter.unusedVariables false in` placed *before* the docstring.
+* Inside `namespace Foo`, naming a lemma `Foo.Bar.rfl` shadows `rfl` for every later proof in the
+  namespace, which then fails with a type mismatch against your own lemma. Name it `refl`.
+* `set x := e with h` does not make `x`-applications reducible to `e` for `rw`; add
+  `have hx : ∀ y, x y = … := fun _ => rfl` and rewrite with that.
 
 ## Tactics
 
@@ -196,6 +207,18 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
 * `positivity` ignores hypotheses: `S + s ≠ 0` from `0 < s` and `s < S` needs
   `ne_of_gt (by linarith)`.
 * `liminf_le_liminf` does not auto-discharge its `IsCoboundedUnder (≥)` side goal.
+* `fun_prop` does **not** prove `IntervalIntegrable`. Write
+  `Continuous.intervalIntegrable (by fun_prop) _ _` in the integrability slots of
+  `intervalIntegral.integral_add`, `integral_sub` and `integral_mono_on`.
+* Feeding `simp` a hypothesis about `⟪x, x⟫` is useless when an `@[simp]` lemma rewrites the inner
+  product first: `inner_self_eq_norm_sq_to_K` turns `⟪v i, v i⟫` into `(‖v i‖ : 𝕜) ^ 2` before
+  `h : ⟪v i, v i⟫ = 1` can fire. Give `simp` the *norm* fact `‖v i‖ = 1` instead.
+* To show `a⁻¹ - b ≥ 0` or `a⁻¹ - c⁻¹ ≥ 0` without hunting for the current name of the
+  monotonicity lemma, `rw [← sub_nonneg]`, prove the difference equals an explicit quotient by
+  `field_simp` (sometimes `field_simp; ring`), and finish with `div_nonneg`. `positivity` will not
+  discharge the denominator, since it ignores hypotheses; pass `(mul_pos h1 h2).le` by hand.
+* Whether `field_simp` leaves a goal for a trailing `ring` is unpredictable; `ring` on no goals is
+  an error. Run the `field_simp` once and look before committing the `ring`.
 
 ## Mathlib names and API
 
@@ -338,6 +361,31 @@ Structural facts worth knowing before planning a proof:
   already gives `0 ≤ (A ^ k) i j` from `0 ≤ A i j`, and `Matrix.mulVec_apply_eq_sum` is the `rfl`
   lemma for `(A *ᵥ x) i`. `Matrix.sum_apply` is in `Mathlib.Data.Matrix.Basic`, *not* in
   `.Mul` — importing only the latter makes it an unknown constant.
+* `abs_add` does not exist; the triangle inequality for `|·|` is **`abs_add_le`**, and `abs_sub`
+  is not the `|a - b| ≤ |a| + |b|` one either — go through `sub_eq_add_neg` and `abs_neg`.
+  `add_le_add_right h c` adds `c` on the *left* of both sides here, so prefer `add_le_add h le_rfl`.
+* `Finset.prod_le_prod` (the ordered-semiring one, with a nonnegativity side condition) lives in
+  `Mathlib.Algebra.Order.BigOperators.GroupWithZero.Finset`, not in the `Ring` directory.
+* `FloorSemiring.tendsto_pow_div_factorial_atTop x : Tendsto (fun n => x ^ n / n !) atTop (𝓝 0)`
+  is in `Mathlib.Topology.Algebra.Order.Floor`. It is what turns a factorial bound into "some
+  power of this map is a contraction".
+* `inv_anti₀ (ha : 0 < a) (h : a ≤ b) : b⁻¹ ≤ a⁻¹`; `RCLike.abs_re_le_norm z : |re z| ≤ ‖z‖`;
+  `RCLike.conj_mul z : conj z * z = ‖z‖ ^ 2`; `one_add_mul_le_pow (H : -2 ≤ a) n` is Bernoulli.
+* `IsCompact.exists_isMaxOn hs hne hf : ∃ x ∈ s, IsMaxOn f s x` is the extreme value theorem to
+  reach for on a `CompactSpace`: `isCompact_univ.exists_isMaxOn Set.univ_nonempty f.continuous.continuousOn`,
+  then `isMaxOn_iff.1`. `Continuous.exists_forall_ge` is about cocompact behaviour, not this.
+* Parametric interval integrals over `C(Set.Icc a b, ℝ)`: clamp the real integration variable with
+  `Set.projIcc a b hab` (continuous, and `projIcc_of_mem` evaluates it on the interval), then
+  `intervalIntegral.continuous_parametric_intervalIntegral_of_continuous'` for fixed endpoints and
+  `…_of_continuous` for a variable upper limit. Both live in
+  `Mathlib.MeasureTheory.Integral.DominatedConvergence` and need only `[TopologicalSpace X]`.
+* To renorm a type with a weight, do not build a `NormedAddCommGroup` by hand: make the type a
+  plain `def` synonym, copy `AddCommGroup`/`Module` with `inferInstanceAs`, and take
+  `NormedAddCommGroup.induced E F f hinj` along the weighting `LinearMap`'s `toAddMonoidHom`. Then
+  `‖x‖ = ‖f x‖` is `rfl`, `NormedSpace` is one `le_of_eq`, and completeness transfers by
+  `(isometry_f.isUniformInducing.completeSpace_congr f_surjective).2 inferInstance`.
+* There is no `ContinuousLinearMap.coe_pow`; `hom_coe_pow _ rfl (fun _ _ => rfl) L n` proves
+  `⇑(L ^ n) = (⇑L)^[n]` in one line.
 
 ## Design conventions of this library
 

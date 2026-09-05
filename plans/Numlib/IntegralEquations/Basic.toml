@@ -1,82 +1,43 @@
 namespace = "IntegralOperator"
-desc = '''
-The `C[a, b]` integral-operator toolkit that Atkinson–Han's Chapter 5 applications of the fixed
-point theorem need (Thm 5.2.2 Fredholm, Thm 5.2.3 Volterra, Thm 5.2.4 Picard–Lindelöf via
-Bielecki's norm) and that Chapter 2 and 3 cite for norm formulas (Ex 2.3.2, Ex 2.3.4, (2.2.8),
-(3.7.9), (3.7.17)): bundled Fredholm/Volterra/Urysohn operators `C(Icc a b, ℝ) → C(Icc a b, ℝ)`,
-continuous by `intervalIntegral.continuous_parametric_intervalIntegral_of_continuous'`; the norm
-formula `‖K‖ = max_x ∫ |k(x, y)| dy` for a continuous kernel (Atkinson–Han (2.2.8)); the Lipschitz
-bound `|μ| M (b - a)` of a Urysohn operator with a Lipschitz nonlinearity; the Volterra factorial
-estimate `‖Tᵐ u - Tᵐ v‖ ≤ (M (b - a))ᵐ/m! ‖u - v‖`; and the Bielecki norm
-`‖u‖_β = sup e^{-β (t - a)} |u t|`, equivalent to the sup norm, in which a Volterra operator with
-Lipschitz constant `M` is a contraction with constant `M/β`.
-
-With these, Atkinson–Han Thm 5.2.2 is the Banach fixed point theorem on `C(Icc a b, ℝ)`,
-Thm 5.2.3 is `tendsto_iterate_of_iterate_contractingWith` of `Numlib/Nonlinear/FixedPoint` with
-the factorial bound, and the iteration part of Thm 5.2.4 is the fixed point theorem on a closed
-ball of the Bielecki space (Mathlib's `IsPicardLindelof` gives existence and uniqueness of the
-solution but not the convergence of Picard's iterates in this norm).
-'''
 
 [[node]]
 id = "fredholm"
-kind = "definition"
-desc = '''The Fredholm operator with continuous kernel `k : Icc a b × Icc a b → ℝ`:
-`fredholm k : C(Icc a b, ℝ) →L[ℝ] C(Icc a b, ℝ)`, `(fredholm k u) x = ∫ y in a..b, k (x, y) * u y`,
-with `fredholm_apply` and the Urysohn (nonlinear) version `urysohn k : C(Icc a b, ℝ) → C(Icc a b, ℝ)`
-for a continuous `k : Icc a b × Icc a b × ℝ → ℝ`.'''
-source = "Atkinson–Han, Theoretical Numerical Analysis, (5.2.7), (5.2.9)"
+
+[[node]]
+id = "urysohn"
 
 [[node]]
 id = "norm_fredholm"
-kind = "theorem"
-desc = '''Atkinson–Han (2.2.8): `‖fredholm k‖ = ⨆ x, ∫ y in a..b, |k (x, y)|`; `≤` by the triangle
-inequality, `≥` by testing against continuous approximations of `sign (k (x₀, ·))` at a maximizing
-`x₀` (dominated convergence).'''
-deps = ["fredholm"]
-source = "Atkinson–Han, Theoretical Numerical Analysis, (2.2.8)"
 
 [[node]]
 id = "lipschitzWith_urysohn"
-kind = "theorem"
-desc = '''If `k (x, y, ·)` is `L`-Lipschitz uniformly in `(x, y)`, then `urysohn k` is Lipschitz with
-constant `L (b - a)` in the sup norm; hence `u ↦ f + μ • urysohn k u` is a contraction when
-`|μ| L (b - a) < 1`, the hypothesis of Atkinson–Han Thm 5.2.2 (Fredholm case with `α = max_x ∫ |k| / |λ|`
-for the linear kernel).'''
-deps = ["fredholm"]
-source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 5.2.2"
 
 [[node]]
 id = "volterra"
-kind = "definition"
-desc = '''The Volterra operator `(volterra k u) t = ∫ s in a..t, k (t, s, u s)` on `C(Icc a b, ℝ)`, and
-the linear version with kernel `k (t, s)`.'''
-source = "Atkinson–Han, Theoretical Numerical Analysis, Section 5.2.3"
+
+[[node]]
+id = "volterraCLM"
 
 [[node]]
 id = "norm_iterate_volterra_sub_le"
-kind = "theorem"
-desc = '''The factorial estimate (Atkinson–Han proof of Thm 5.2.3; Ex 2.3.4 for the linear case): for `k`
-`M`-Lipschitz in its last argument, `|(volterra k)^[m] u t - (volterra k)^[m] v t| ≤ (M (t - a))^m/m! ‖u - v‖`,
-hence `‖(volterra k)^[m]‖_Lip ≤ (M (b - a))^m/m! < 1` for `m` large — the hypothesis of
-`tendsto_iterate_of_iterate_contractingWith`.'''
-deps = ["volterra", "tendsto_iterate_of_iterate_contractingWith"]
-source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 5.2.3 and Exercise 2.3.4"
+
+[[node]]
+id = "exists_contractingWith_iterate_volterra"
+
+[[node]]
+id = "norm_volterraCLM_pow_le"
 
 [[node]]
 id = "Bielecki"
-kind = "definition"
-desc = '''The Bielecki space `Bielecki a b β`, a type synonym of `C(Icc a b, ℝ)` with the norm
-`‖u‖_β = ⨆ t, exp (-β (t - a)) * |u t|`, with `Bielecki.equiv`, the norm equivalence
-`exp (-β (b - a)) ‖u‖ ≤ ‖u‖_β ≤ ‖u‖` and hence completeness.'''
-source = "Atkinson–Han, Theoretical Numerical Analysis, proof of Theorem 5.2.4"
+
+[[node]]
+id = "Bielecki.norm_le_norm_equiv"
+
+[[node]]
+id = "Bielecki.exp_mul_norm_equiv_le_norm"
+
+[[node]]
+id = "volterraBielecki"
 
 [[node]]
 id = "contractingWith_volterra_bielecki"
-kind = "theorem"
-desc = '''A Volterra operator with an `M`-Lipschitz nonlinearity is a contraction on `Bielecki a b β`
-with constant `M/β` (Atkinson–Han's `α = 1 - e^{-L a₀}`-computation in Thm 5.2.4 with `β = L`),
-because `∫_a^t e^{β (s - t)} ds ≤ 1/β`; with it, Picard's iterates for `u' = f(t, u)`, `u(t₀) = z`
-converge in `C` on the whole interval on which `f` is Lipschitz in `u`.'''
-deps = ["Bielecki", "volterra"]
-source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 5.2.4"

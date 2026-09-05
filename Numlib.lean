@@ -16,6 +16,8 @@ import Numlib.Eigen.Normal
 import Numlib.Eigen.Perturbation
 import Numlib.Eigen.PowerMethod
 import Numlib.Eigen.RayleighRitz
+import Numlib.FloatingPoint.Model
+import Numlib.IntegralEquations.Basic
 import Numlib.Krylov.Arnoldi
 import Numlib.Krylov.CG
 import Numlib.Krylov.CR
@@ -25,6 +27,7 @@ import Numlib.Krylov.Hessenberg
 import Numlib.Krylov.Iterate
 import Numlib.Krylov.Lanczos
 import Numlib.Krylov.Monotonicity
+import Numlib.Krylov.Perturbed
 import Numlib.Krylov.Relations
 import Numlib.Krylov.Subspace
 import Numlib.LinearAlgebra.Matrix.Complexify
