@@ -43,7 +43,7 @@ variable {s r : E}
 
 /-- For orthogonal `s`, `r` the smoothing coefficient is the real number
 `‖s‖² / (‖r‖² + ‖s‖²)`. -/
-private theorem smoothingCoeff_eq (horth : inner 𝕜 r s = 0) :
+theorem smoothingCoeff_eq (horth : inner 𝕜 r s = 0) :
     (smoothingCoeff s r : 𝕜) = ((‖s‖ ^ 2 / (‖r‖ ^ 2 + ‖s‖ ^ 2) : ℝ) : 𝕜) := by
   have hnum : inner 𝕜 (r - s) (-s) = ((‖s‖ ^ 2 : ℝ) : 𝕜) := by
     rw [inner_neg_right, inner_sub_left, horth, inner_self_eq_norm_sq_to_K]
@@ -55,7 +55,7 @@ private theorem smoothingCoeff_eq (horth : inner 𝕜 r s = 0) :
   rw [smoothingCoeff, hnum, hden, ← RCLike.ofReal_div]
 
 /-- The smoothed vector `s + η (r - s)` in barycentric form. -/
-private theorem smoothing_eq (horth : inner 𝕜 r s = 0) :
+theorem smoothing_eq (horth : inner 𝕜 r s = 0) :
     s + (smoothingCoeff s r : 𝕜) • (r - s)
       = ((1 - ‖s‖ ^ 2 / (‖r‖ ^ 2 + ‖s‖ ^ 2) : ℝ) : 𝕜) • s +
         ((‖s‖ ^ 2 / (‖r‖ ^ 2 + ‖s‖ ^ 2) : ℝ) : 𝕜) • r := by
@@ -125,7 +125,7 @@ private theorem inner_residual_minRes_galerkin (hG : IsMinResIterate A b x₀ m 
   IsPetrovGalerkin.inner_residual_eq_zero hF (residual_mem_subspace_succ hG.mem)
 
 /-- The residual of the smoothing step. -/
-private theorem residual_smoothing_step (η : 𝕜) (xG xF : E) :
+theorem residual_smoothing_step (η : 𝕜) (xG xF : E) :
     b - A (xG + η • (xF - xG)) = (b - A xG) + η • ((b - A xF) - (b - A xG)) := by
   simp only [map_add, map_smul, map_sub]
   module
@@ -547,13 +547,13 @@ set_option linter.unusedVariables false in
 /-- Saad, *Iterative Methods*, §6.5.8 (Weiss; Zhou–Walker, *Residual smoothing techniques for
 iterative methods*): minimal-residual smoothing of the Galerkin (FOM) iterates produces the
 minimal-residual (GMRES) iterates. -/
-theorem IsGalerkinIterate.mrs_isMinResIterate {xO : ℕ → E}
-    (hO : ∀ m, IsGalerkinIterate A b x₀ m (xO m)) (hinj : Function.Injective A) (m : ℕ) :
+theorem IsGalerkinIterate.mrs_isMinResIterate {xO : ℕ → E} (hinj : Function.Injective A) (m : ℕ)
+    (hO : ∀ i ≤ m, IsGalerkinIterate A b x₀ i (xO i)) :
     IsMinResIterate A b x₀ m (mrs A b xO m) := by
   induction m with
   | zero =>
     have hx0 : xO 0 = x₀ := by
-      have h := (hO 0).mem
+      have h := (hO 0 le_rfl).mem
       rw [subspace_zero] at h
       exact sub_eq_zero.1 (by simpa using h)
     refine ⟨?_, fun y hy => ?_⟩
@@ -563,19 +563,21 @@ theorem IsGalerkinIterate.mrs_isMinResIterate {xO : ℕ → E}
       have hyx : y = x₀ := sub_eq_zero.1 (by simpa using hy)
       rw [hyx, mrs, hx0]
   | succ n ih =>
+    have hOn : ∀ i ≤ n, IsGalerkinIterate A b x₀ i (xO i) :=
+      fun i hi => hO i (hi.trans (Nat.le_succ n))
     rcases eq_or_ne (b - A (mrs A b xO n)) 0 with h0 | h0
     · have hz : mrs A b xO (n + 1) = mrs A b xO n := by
         rw [mrs, h0, smoothingCoeff_zero_left, zero_smul, add_zero]
       rw [hz]
       exact isMinRes_of_residual_eq_zero
-        (subspace_mono A (b - A x₀) (Nat.le_succ n) ih.mem) h0
+        (subspace_mono A (b - A x₀) (Nat.le_succ n) (ih hOn).mem) h0
     · rw [mrs]
-      exact smoothing_isMinResIterate ih (hO (n + 1)) h0
+      exact smoothing_isMinResIterate (ih hOn) (hO (n + 1) le_rfl) h0
 
 /-- Saad, *Iterative Methods*, (6.79): for pairwise orthogonal residuals `r^O_j` (Galerkin
 residuals), the smoothed residual is the weighted average
 `r^S_m = (∑_{j ≤ m} r^O_j / ρ_j²) / (∑_{j ≤ m} 1 / ρ_j²)`. -/
-private theorem smul_combination_eq {S rho : ℝ} (hS : 0 < S) (hr : 0 < rho) (u v : E) :
+theorem smul_combination_eq {S rho : ℝ} (hS : 0 < S) (hr : 0 < rho) (u v : E) :
     ((1 - S⁻¹ / (rho + S⁻¹) : ℝ) : 𝕜) • (((S⁻¹ : ℝ) : 𝕜) • u) +
         ((S⁻¹ / (rho + S⁻¹) : ℝ) : 𝕜) • v
       = (((S + 1 / rho)⁻¹ : ℝ) : 𝕜) • (u + ((1 / rho : ℝ) : 𝕜) • v) := by
@@ -590,8 +592,8 @@ private theorem smul_combination_eq {S rho : ℝ} (hS : 0 < S) (hr : 0 < rho) (u
     field_simp
   rw [smul_smul, ← RCLike.ofReal_mul, e1, smul_add, smul_smul, ← RCLike.ofReal_mul, e2]
 
-theorem residual_mrs_eq {xO : ℕ → E} (hO : ∀ m, IsGalerkinIterate A b x₀ m (xO m))
-    (hinj : Function.Injective A) (m : ℕ) (h0 : ∀ j ≤ m, b - A (xO j) ≠ 0) :
+theorem residual_mrs_eq {xO : ℕ → E} (hinj : Function.Injective A) (m : ℕ)
+    (hO : ∀ i ≤ m, IsGalerkinIterate A b x₀ i (xO i)) (h0 : ∀ j ≤ m, b - A (xO j) ≠ 0) :
     b - A (mrs A b xO m) =
       (((∑ j ∈ Finset.range (m + 1), 1 / ‖b - A (xO j)‖ ^ 2)⁻¹ : ℝ) : 𝕜) •
         ∑ j ∈ Finset.range (m + 1), ((1 / ‖b - A (xO j)‖ ^ 2 : ℝ) : 𝕜) • (b - A (xO j)) := by
@@ -603,25 +605,27 @@ theorem residual_mrs_eq {xO : ℕ → E} (hO : ∀ m, IsGalerkinIterate A b x₀
       RCLike.ofReal_one, one_smul]
   | succ n ih =>
     have hOn : ∀ j ≤ n, b - A (xO j) ≠ 0 := fun j hj => h0 j (hj.trans (Nat.le_succ n))
+    have hGn : ∀ i ≤ n, IsGalerkinIterate A b x₀ i (xO i) :=
+      fun i hi => hO i (hi.trans (Nat.le_succ n))
     have hSpos : (0 : ℝ) < ∑ j ∈ Finset.range (n + 1), 1 / ‖b - A (xO j)‖ ^ 2 :=
       Finset.sum_pos (fun j hj => by
         have hj' : j ≤ n := Nat.lt_succ_iff.1 (Finset.mem_range.1 hj)
         exact one_div_pos.2 (pow_pos (norm_pos_iff.2 (hOn j hj')) 2)) ⟨0, by simp⟩
     have hrpos : (0 : ℝ) < ‖b - A (xO (n + 1))‖ ^ 2 :=
       pow_pos (norm_pos_iff.2 (h0 (n + 1) le_rfl)) 2
-    have hmres := IsGalerkinIterate.mrs_isMinResIterate hO hinj n
+    have hmres := IsGalerkinIterate.mrs_isMinResIterate hinj n hGn
     have hSne : b - A (mrs A b xO n) ≠ 0 := fun h =>
-      hOn n le_rfl (galerkin_residual_eq_zero_of_minRes hmres h (hO n))
-    have hsum := inv_sq_norm_residual_minRes_eq_sum hmres (fun i _ => hO i) hSne
+      hOn n le_rfl (galerkin_residual_eq_zero_of_minRes hmres h (hO n (Nat.le_succ n)))
+    have hsum := inv_sq_norm_residual_minRes_eq_sum hmres (fun i hi => hO i (hi.trans (Nat.le_succ n))) hSne
     have hsn : ‖b - A (mrs A b xO n)‖ ^ 2
         = (∑ j ∈ Finset.range (n + 1), 1 / ‖b - A (xO j)‖ ^ 2)⁻¹ := by
       rw [← hsum, one_div, inv_inv]
     have horth : inner 𝕜 (b - A (xO (n + 1))) (b - A (mrs A b xO n)) = 0 :=
-      inner_eq_zero_symm.1 (inner_residual_minRes_galerkin hmres (hO (n + 1)))
+      inner_eq_zero_symm.1 (inner_residual_minRes_galerkin hmres (hO (n + 1) le_rfl))
     rw [Finset.sum_range_succ (fun j => 1 / ‖b - A (xO j)‖ ^ 2) (n + 1),
       Finset.sum_range_succ
         (fun j => ((1 / ‖b - A (xO j)‖ ^ 2 : ℝ) : 𝕜) • (b - A (xO j))) (n + 1),
-      mrs, residual_smoothing_step, smoothing_eq horth, hsn, ih hOn]
+      mrs, residual_smoothing_step, smoothing_eq horth, hsn, ih hGn hOn]
     exact smul_combination_eq (𝕜 := 𝕜) (E := E) hSpos hrpos _ _
 
 end Krylov

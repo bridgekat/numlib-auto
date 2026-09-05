@@ -516,7 +516,7 @@ noncomputable def gvec (β : 𝕜) (k : ℕ) : 𝕜 := starRingEnd 𝕜 (givensC
 theorem gamma_succ (β : 𝕜) (k : ℕ) : gamma h β (k + 1) = -givensS h k * gamma h β k := rfl
 
 /-- Unfolding of `rotated` at a successor, in terms of `givensC` and `givensS`. -/
-private theorem rotated_succ_apply (k i j : ℕ) :
+theorem rotated_succ_apply (k i j : ℕ) :
     rotated h (k + 1) i j =
       if i = k then
         starRingEnd 𝕜 (givensC h k) * rotated h k k j +
@@ -902,22 +902,22 @@ theorem givensQAux_apply_of_lt (n m : ℕ) (i j : Fin (m + 1)) (hj : n < (j : �
   exact key n hj i
 
 /-- The right-hand side after `n` rotations: `(g_0, …, g_{n-1}, γ_n, 0, …)`. -/
-private noncomputable def gvecTrunc (β : 𝕜) (n i : ℕ) : 𝕜 :=
+noncomputable def gvecTrunc (β : 𝕜) (n i : ℕ) : 𝕜 :=
   if i < n then gvec h β i else if i = n then gamma h β n else 0
 
-private theorem gvecTrunc_self (β : 𝕜) (n : ℕ) : gvecTrunc h β n n = gamma h β n := by
+theorem gvecTrunc_self (β : 𝕜) (n : ℕ) : gvecTrunc h β n n = gamma h β n := by
   simp [gvecTrunc]
 
-private theorem gvecTrunc_succ (β : 𝕜) (n : ℕ) : gvecTrunc h β n (n + 1) = 0 := by
+theorem gvecTrunc_succ (β : 𝕜) (n : ℕ) : gvecTrunc h β n (n + 1) = 0 := by
   simp [gvecTrunc]
 
-private theorem gvecTrunc_of_lt (β : 𝕜) {n i : ℕ} (hi : i < n) :
+theorem gvecTrunc_of_lt (β : 𝕜) {n i : ℕ} (hi : i < n) :
     gvecTrunc h β n i = gvec h β i := by simp [gvecTrunc, hi]
 
-private theorem gvecTrunc_of_gt (β : 𝕜) {n i : ℕ} (hi : n < i) : gvecTrunc h β n i = 0 := by
+theorem gvecTrunc_of_gt (β : 𝕜) {n i : ℕ} (hi : n < i) : gvecTrunc h β n i = 0 := by
   simp [gvecTrunc, Nat.not_lt.mpr hi.le, hi.ne']
 
-private theorem givensQAux_mulVec_firstVec (β : 𝕜) (m : ℕ) : ∀ n, n ≤ m →
+theorem givensQAux_mulVec_firstVec (β : 𝕜) (m : ℕ) : ∀ n, n ≤ m →
     (givensQAux h n m).mulVec (firstVec β (m + 1)) =
       fun i : Fin (m + 1) => gvecTrunc h β n (i : ℕ) := by
   intro n
