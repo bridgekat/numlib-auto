@@ -23,8 +23,8 @@ import SaadSparse.Ch06.GMRES
 import SaadSparse.Ch06.Givens
 import SaadSparse.Ch06.Lanczos
 import SaadSparse.Ch06.Relations
-import SaadSparse.Ch06.Smoothing
 import SaadSparse.Ch06.Residual
+import SaadSparse.Ch06.Smoothing
 
 /-!
 # Surface library: Saad, *Iterative Methods for Sparse Linear Systems* (2nd ed.)
