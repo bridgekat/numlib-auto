@@ -107,6 +107,18 @@ dependants must add is `[Nontrivial n]` wherever they route through the block-tr
   `Approximation/Interpolation`; if `Quadrature` or `Trigonometric` also want it, its home is
   `Approximation/BestApprox`.
 
+### R9. `ChebyshevMinimax` owes two things to the preconditioner modules
+
+* **`Polynomial.Chebyshev.shifted_add_two`.** The plan called it `shifted_succ` and expected a
+  two-term recurrence; it is a *three*-term one. With `σ_m := eval ((b+a-2γ)/(b-a)) (T ℝ m)` and
+  `L := C ((b+a)/(b-a)) - C (2/(b-a)) * X`, for `a < b` and `γ ∉ Icc a b`,
+  `shifted (m+2) a b γ = C (2 σ_{m+1}/σ_{m+2}) * (L * shifted (m+1) a b γ) - C (σ_m/σ_{m+2}) * shifted m a b γ`.
+  The instance needed for Chebyshev acceleration is proved privately as
+  `Preconditioner.Chebyshev.resPoly_add_two` (the `γ = 0`, `[θ-δ, θ+δ]` case) and should move.
+* **Make `eval_shifted` public.** It is `private`, so `Preconditioner/Chebyshev` re-derives the
+  evaluation of `shifted` by unfolding the definition. One public lemma removes that and makes
+  `shifted_add_two` a five-line proof by `Polynomial.funext`.
+
 ### R6. Interfaces several modules now want
 
 * **`WithEnergy.projection`** in `Analysis/InnerProductSpace/Energy` — the `A`-orthogonal projector
