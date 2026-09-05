@@ -9,6 +9,7 @@ import Numlib.Analysis.Normed.Algebra.SpectralRadius
 import Numlib.Analysis.Normed.Ring.CondNumber
 import Numlib.Analysis.Normed.Ring.Inverse
 import Numlib.Approximation.BestApprox
+import Numlib.Eigen.MinMax
 import Numlib.Eigen.Perturbation
 import Numlib.Krylov.Arnoldi
 import Numlib.Krylov.CG
