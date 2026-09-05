@@ -53,8 +53,10 @@ private theorem repr_pow_apply {n : ℕ} (hn : Module.finrank 𝕜 E = n) (k : �
       rw [pow_succ, Module.End.mul_apply, ih, hA.eigenvectorBasis_apply_self_apply hn]
       ring
 
-/-- In the eigenvector basis, `p(A)` acts diagonally by `p(λ)`. -/
-private theorem repr_aeval_apply {n : ℕ} (hn : Module.finrank 𝕜 E = n) (p : 𝕜[X]) (x : E)
+/-- In the eigenvector basis, `p(A)` acts diagonally by `p(λ)`.  This is the expansion behind
+every bound on `p(A)` in terms of the values of `p` on the spectrum, here and in the Krylov
+eigenvalue estimates. -/
+theorem repr_aeval_apply {n : ℕ} (hn : Module.finrank 𝕜 E = n) (p : 𝕜[X]) (x : E)
     (i : Fin n) :
     (hA.eigenvectorBasis hn).repr (aeval A p x) i =
       p.eval (hA.eigenvalues hn i : 𝕜) * (hA.eigenvectorBasis hn).repr x i := by
