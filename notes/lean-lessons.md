@@ -101,6 +101,12 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   holds, because the process terminates. The right hypothesis is the local one, `δ_{j+1} = 0 →
   v̂_{j+1} = 0`, which holds generically *and* at a regular termination
   (`BiLanczos.NoSeriousBreakdown`).
+* **A textbook bound stated for “the” eigenvector is usually false at a multiple eigenvalue.**
+  Saad's Thm 3.9 bounds `sin ∠(x, 𝕜 ∙ u)` by `‖r‖/δ` with `δ` the distance from the Rayleigh
+  quotient to the *other* eigenvalues; `A = diag(1, 1, 5)` and `x = e₂` give `r = 0`, `δ = 4` and a
+  right angle. The correct subspace is the whole eigenspace, and the printed form is the
+  simple-eigenvalue corollary. Check every "the eigenvector" against a repeated eigenvalue before
+  transcribing.
 
 ## Syntax and elaboration
 
@@ -297,6 +303,11 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   `mul_nonneg (beta_nonneg A b m) (abs_nonneg _)`.
 * `induction n using Nat.twoStepInduction` names its cases `zero`, `one`, `more`, and `more` binds
   `n`, `P n`, `P (n+1)` — not `H1/H2/H3`.
+* Dot notation on a `HasDerivAt` hypothesis resolves into `HasFDerivAtFilter`, which owns none of
+  the algebra: `hu.smul hf` reports "the environment does not contain `HasFDerivAtFilter.smul`".
+  Write `HasDerivAt.smul hu hf`. And `HasDerivAt.add h1 h2` displays its function as `f + g`, so no
+  `rw`/`simp only` reaches inside it — move a derivative along a pointwise equality with
+  `HasDerivAt.congr_of_eventuallyEq h (Filter.Eventually.of_forall …)`.
 
 ## Mathlib names and API
 
@@ -415,6 +426,14 @@ Structural facts worth knowing before planning a proof:
   unfolding when a `smul` sits under them.
 * `Krylov.firstVec ‖b‖` keeps an `RCLike.ofReal` coercion even at `𝕜 = ℝ`; clear it with
   `simp [RCLike.ofReal_real_eq_id, id_eq]`.
+* **The inner-product files do not import the derivative algebra.** `HasDerivAt` elaborates
+  (it arrives transitively) but `HasDerivAt.add`, `HasDerivAt.smul` and
+  `HasFDerivAt.comp_hasDerivAt` are unknown constants until
+  `Mathlib.Analysis.Calculus.Deriv.{Add,Mul,Comp}` are imported; the error reads like a rename.
+* `LinearMap.det_eq_det_mul_det (W) (e) (he : W ≤ W.comap e) : e.det = (e.restrict he).det *
+  (W.mapQ W e he).det` exists and is the tool for "invariant line plus quotient" determinant
+  arguments; `W` is an explicit first argument. There is no charpoly analogue — evaluate and use
+  `Polynomial.funext`, which finds `Infinite 𝕜` for an `RCLike` field through `CharZero`.
 * Chebyshev: `Trigonometric.Chebyshev.RootsExtrema` has the extremal facts, and `T_real_cosh` with
   `Real.arcosh` gives the closed form in five lines. For `x ≤ -1` use `P.comp (-X)`, not a parity
   argument. `Polynomial.Chebyshev.C` exists, so a local `C` clashes — use a selective

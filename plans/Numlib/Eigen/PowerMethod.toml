@@ -130,7 +130,22 @@ left out for want of `[CompleteSpace E]`; here it is free, since the statement i
 `[FiniteDimensional 𝕜 E]`. Either way the work is the projector's dependence on its spanning
 family, not anything about `A`.
 
-Nothing above was attempted; it is an assessment of Kress's printed proof.'''
+Nothing above was attempted; it is an assessment of Kress's printed proof.
+
+Re-checked while the inverse-iteration nodes were proved, and still accurate. Two Mathlib
+ingredients the alternative route would use do exist, which narrows what is missing to the
+projector bound alone: the coordinate bound `kappa` for a basis of a finite-dimensional subspace is
+`Basis.coord` composed with `LinearMap.continuous_of_finiteDimensional`, and
+`|| P_X (1 - P_W) || = || (1 - P_W) P_X ||` is `ContinuousLinearMap.adjoint` plus
+`Submodule.starProjection` being self-adjoint, free here because finite dimension gives
+completeness. A concrete way to get the second one-sided bound from the first, also not attempted:
+the map `T : X -> W` sending `sum c_j x_j` to `sum c_j w_j` satisfies `|| T y - y || <= kappa m
+delta || y ||`, so for `kappa m delta < 1` it is injective, hence bijective onto `W` by equality of
+dimensions, with `|| T inverse || <= 1/(1 - kappa m delta)`; the distance from `z in W` to `X` is
+then at most `kappa m delta / (1 - kappa m delta)` times `|| z ||`. That would make the missing
+brick one statement -- from `|| w_j - x_j || <= delta` and a coordinate bound for `x`, conclude
+`|| P_X - P_W || <= M delta` -- whose natural home is
+`Numlib/Analysis/InnerProductSpace/Projection/Angle`.'''
 deps = [
   "Krylov.exists_norm_sub_starProjection_subspaceIterate_le",
   "Krylov.exists_norm_inv_pow_smul_pow_apply_sub_le",
@@ -142,21 +157,18 @@ source = "Kress, Numerical Analysis, Lemma 7.18; Saad, Numerical Methods for Lar
 
 [[node]]
 id = "Krylov.inverseIterate"
-kind = "definition"
-desc = '''Inverse iteration with shift `σ` (Saad-eig §4.1.2–4.1.3, the shift-and-invert power method):
-`Krylov.inverseIterate A σ x₀ k := powerIterate (A - σ)⁻¹ x₀ k` for `σ ∉ spectrum A`, with the
-`simp` lemma `inverseIterate_eq_powerIterate`; the Rayleigh quotient iteration, which updates
-`σ`, is stated by the book without a theorem and is not planned.'''
-deps = ["Krylov.powerIterate"]
-source = "Saad, Numerical Methods for Large Eigenvalue Problems, Section 4.1.2"
+
+[[node]]
+id = "Krylov.inverse_apply_eq_smul"
+
+[[node]]
+id = "Krylov.maxGenEigenspace_eq_bot_of_isUnit"
+
+[[node]]
+id = "Krylov.maxGenEigenspace_le_maxGenEigenspace_inverse"
+
+[[node]]
+id = "Krylov.hasEigenvalue_of_hasEigenvalue_inverse"
 
 [[node]]
 id = "Krylov.tendsto_smul_inverseIterate"
-kind = "theorem"
-desc = '''Inverse iteration converges to the eigenvector of the eigenvalue closest to the shift: if `λ` is
-an eigenvalue with `|λ - σ| < |μ - σ|` for every other eigenvalue `μ`, the eigenvalues of
-`(A - σ)⁻¹` are the `(μ - σ)⁻¹` (spectral mapping, `spectrum.inv` and `spectrum.sub_singleton`)
-and `(λ - σ)⁻¹` is dominant, so `Krylov.tendsto_smul_powerIterate` applies with the rate
-`|λ - σ|/|μ₂ - σ|`.'''
-deps = ["Krylov.inverseIterate", "Krylov.tendsto_smul_powerIterate", "Krylov.exists_eq_add_tendsto"]
-source = "Saad, Numerical Methods for Large Eigenvalue Problems, Section 4.1.3"

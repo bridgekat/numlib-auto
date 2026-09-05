@@ -96,34 +96,21 @@ id = "Arnoldi.norm_ritz_residual_eq"
 
 [[node]]
 id = "LinearMap.IsSymmetric.eigenvalues_compression_mono"
-kind = "theorem"
-desc = '''Ritz values increase with the subspace (the monotonicity behind Saad-eig Thm 8.1, Davidson's
-method): for symmetric `A` and `K ≤ K'`, the `i`-th Ritz value on `K` is at most the `i`-th Ritz
-value on `K'`, both sorted decreasingly; from the max–min characterization
-`isGreatest_eigenvalues_compression`, since the competitors over `K` are competitors over `K'`.
-With `eigenvalues_compression_le` (`K' = ⊤`) as the extreme case.'''
-deps = ["LinearMap.IsSymmetric.isGreatest_eigenvalues_compression", "LinearMap.IsSymmetric.eigenvalues_compression_le"]
-source = "Saad, Numerical Methods for Large Eigenvalue Problems, Theorem 8.1"
+
+[[node]]
+id = "Submodule.norm_sub_sub_starProjection_sq"
+
+[[node]]
+id = "LinearMap.IsSymmetric.abs_sub_rayleighQuotient_le"
 
 [[node]]
 id = "LinearMap.IsSymmetric.ritz_value_error_le_of_forall_inner_eq_zero"
-kind = "theorem"
-desc = '''Saad-eig Thm 4.5 for every index: with `Q̃_i` the projector onto the span of the first `i - 1`
-Ritz vectors, `0 ≤ λ_i - θ_i ≤ C (‖Q̃_i u_i‖² + ‖(1 - P_K) u_i‖²) / ‖(1 - Q̃_i) P_K u_i‖²` for a unit
-eigenvector `u_i` of `λ_i` and `C` a bound on the quadratic form of `A - λ_i`; the case `i = 1`
-is `ritz_value_error_le`. The competitor `(1 - Q̃_i) P_K u_i` lies in `K` and is orthogonal to the
-first `i - 1` Ritz vectors, so its Rayleigh quotient is at most `θ_i` by
-`isGreatest_rayleighQuotient_orthogonal` for the compression.'''
-deps = ["LinearMap.IsSymmetric.ritz_value_error_le", "LinearMap.IsSymmetric.abs_sub_rayleighQuotient_starProjection_le", "LinearMap.IsSymmetric.isGreatest_rayleighQuotient_orthogonal", "Krylov.rayleighQuotient_compression"]
-source = "Saad, Numerical Methods for Large Eigenvalue Problems, Theorem 4.5"
+
+[[node]]
+id = "Krylov.compressionBy_apply_sub_smul_orthogonalProjection"
 
 [[node]]
 id = "Krylov.compressionBy_residual_le"
-kind = "theorem"
-desc = '''Saad-eig Thm 4.7, the oblique residual bounds: for the oblique projector `Q = Q_K^L` onto `K`
-along `Lᗮ`, `γ = ‖Q (A - λ) (1 - P_K)‖` and an exact unit eigenpair `(λ, u)`,
-`‖(A_m - λ) P_K u‖ ≤ γ ‖(1 - P_K) u‖` and `‖(A_m - λ) u‖ ≤ √(|λ|² + γ²) ‖(1 - P_K) u‖` for the
-oblique compression `A_m = compressionBy Q A`; the twin of `compression_residual_le` with the
-constant as a hypothesis in the same style.'''
-deps = ["Krylov.compression_residual_le", "compressionBy", "Krylov.IsObliqueRitzPair"]
-source = "Saad, Numerical Methods for Large Eigenvalue Problems, Theorem 4.7"
+
+[[node]]
+id = "Krylov.compressionBy_residual_le'"

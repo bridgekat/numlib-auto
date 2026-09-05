@@ -63,6 +63,27 @@ sequence `c_k` of scalars of modulus one. That is what holds here, with the sequ
 alternative is `Krylov.tendsto_norm_sub_smul_powerIterate`: the eigenvalue residual
 `‖A x_k - λ x_k‖` tends to `0`, so the iterates are approximate eigenvectors for `λ`.
 
+## Inverse iteration
+
+`Krylov.inverseIterate A σ x₀ k` is the power method run on `(A - σ)⁻¹`, the shift-and-invert
+iteration of Saad, *Numerical Methods for Large Eigenvalue Problems*[^saad-eigenvalue],
+§4.1.2–4.1.3.
+Its point is that the map `μ ↦ (μ - σ)⁻¹` makes the eigenvalue of `A` *nearest the shift* the
+dominant one, so `Krylov.tendsto_smul_inverseIterate` converges under a hypothesis about distances
+to `σ` rather than about moduli, at the rate `(‖λ - σ‖/‖μ₂ - σ‖)^k` — which a shift close to `λ`
+makes as fast as one likes.
+
+The inverse is `Ring.inverse`, so `inverseIterate` is total, and `IsUnit (A - σ)` — in finite
+dimension, `σ ∉ spectrum 𝕜 A` — is a hypothesis of the theorems rather than of the definition.
+The spectral correspondence is proved by hand and needs no spectral mapping theorem: an eigenvector
+of `A` for `μ ≠ σ` is an eigenvector of the shifted inverse for `(μ - σ)⁻¹`
+(`Krylov.inverse_apply_eq_smul`), a *generalized* eigenvector likewise and with the same index
+(`Krylov.maxGenEigenspace_le_maxGenEigenspace_inverse`, from the factorization
+`(A - σ)⁻¹ - (μ - σ)⁻¹ = -(μ - σ)⁻¹ (A - σ)⁻¹ (A - μ)` and the commutation of the two factors),
+and every eigenvalue of the shifted inverse arises this way
+(`Krylov.hasEigenvalue_of_hasEigenvalue_inverse`). Rayleigh quotient iteration, which updates the
+shift at every step, is described by the book without a theorem and is not formalized.
+
 ## Subspace iteration
 
 `Krylov.subspaceIterate A S₀ k = A^k S₀` is the block form of the same iteration. Bauer's
@@ -677,6 +698,174 @@ theorem exists_eq_add_tendsto [IsAlgClosed 𝕜] [FiniteDimensional 𝕜 E] (hl 
   obtain ⟨u, hu, w, hw, huw⟩ := exists_eq_add_mem_maxGenEigenspace A l x₀
   rw [hss, Module.End.mem_eigenspace_iff] at hu
   exact ⟨u, w, hu, hw, huw, powerIterate_tendsto hl hu hw hdom huw⟩
+
+/-! ### Inverse iteration
+
+Shift and invert: the power method run on `(A - σ)⁻¹`, whose eigenvalues are the `(μ - σ)⁻¹`, so
+that the eigenvalue of `A` *closest to the shift* is the dominant one. -/
+
+section InverseIteration
+
+variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
+
+/-- **Inverse iteration** (shift-and-invert power method) with shift `σ`: the power iteration of
+the inverse of the shifted operator `A - σ`.
+
+The inverse is `Ring.inverse`, so the definition is total: at a shift belonging to the spectrum
+the shifted operator is not invertible, `Ring.inverse` returns `0`, and the iteration is the power
+iteration of `0`. Every statement about convergence assumes `IsUnit (A - σ)`, which in finite
+dimension is exactly `σ ∉ spectrum 𝕜 A`. -/
+noncomputable def inverseIterate (A : Module.End 𝕜 E) (σ : 𝕜) (x₀ : E) (k : ℕ) : E :=
+  powerIterate (Ring.inverse (A - σ • (1 : Module.End 𝕜 E))) x₀ k
+
+/-- Inverse iteration is the power method applied to the inverse of the shifted operator. -/
+@[simp]
+theorem inverseIterate_eq_powerIterate (A : Module.End 𝕜 E) (σ : 𝕜) (x₀ : E) (k : ℕ) :
+    inverseIterate A σ x₀ k
+      = powerIterate (Ring.inverse (A - σ • (1 : Module.End 𝕜 E))) x₀ k := rfl
+
+variable {A : Module.End 𝕜 E} {σ : 𝕜}
+
+private theorem sub_smul_one_apply (μ : 𝕜) (x : E) :
+    (A - μ • (1 : Module.End 𝕜 E)) x = A x - μ • x := by
+  simp
+
+private theorem eq_zero_of_isUnit_apply_eq_zero {M : Module.End 𝕜 E} (hM : IsUnit M) {y : E}
+    (hy : M y = 0) : y = 0 := by
+  obtain ⟨v, rfl⟩ := hM
+  have h : ((v⁻¹ : (Module.End 𝕜 E)ˣ) : Module.End 𝕜 E) ((v : Module.End 𝕜 E) y) = y := by
+    rw [← Module.End.mul_apply, v.inv_mul, Module.End.one_apply]
+  rw [hy, map_zero] at h
+  exact h.symm
+
+private theorem commute_inverse_sub_smul_one
+    (hσ : IsUnit (A - σ • (1 : Module.End 𝕜 E))) (μ : 𝕜) :
+    Commute (Ring.inverse (A - σ • (1 : Module.End 𝕜 E))) (A - μ • (1 : Module.End 𝕜 E)) := by
+  have hT : Commute (Ring.inverse (A - σ • (1 : Module.End 𝕜 E)))
+      (A - σ • (1 : Module.End 𝕜 E)) :=
+    (Ring.inverse_mul_cancel _ hσ).trans (Ring.mul_inverse_cancel _ hσ).symm
+  have hone := (Commute.one_right (Ring.inverse (A - σ • (1 : Module.End 𝕜 E)))).smul_right (μ - σ)
+  have := hT.sub_right hone
+  have heq : A - σ • (1 : Module.End 𝕜 E) - (μ - σ) • (1 : Module.End 𝕜 E)
+      = A - μ • (1 : Module.End 𝕜 E) := by module
+  rwa [heq] at this
+
+/-- **The eigenvectors are unchanged and the eigenvalues are inverted.** An eigenvector of `A`
+for an eigenvalue `μ` other than the shift is an eigenvector of the shifted inverse for
+`(μ - σ)⁻¹`. -/
+theorem inverse_apply_eq_smul {μ : 𝕜} {x : E} (hσ : IsUnit (A - σ • (1 : Module.End 𝕜 E)))
+    (hμ : μ ≠ σ) (hx : A x = μ • x) :
+    Ring.inverse (A - σ • (1 : Module.End 𝕜 E)) x = (μ - σ)⁻¹ • x := by
+  have hT : (A - σ • (1 : Module.End 𝕜 E)) x = (μ - σ) • x := by
+    rw [sub_smul_one_apply, hx, sub_smul]
+  have h := congrArg (fun f : Module.End 𝕜 E => f x) (Ring.inverse_mul_cancel _ hσ)
+  simp only [Module.End.mul_apply, Module.End.one_apply, hT, map_smul] at h
+  conv_rhs => rw [← h]
+  rw [smul_smul, inv_mul_cancel₀ (sub_ne_zero.2 hμ), one_smul]
+
+/-- Nothing generalized survives at the shift: the shifted operator is invertible there. -/
+theorem maxGenEigenspace_eq_bot_of_isUnit (hσ : IsUnit (A - σ • (1 : Module.End 𝕜 E))) :
+    A.maxGenEigenspace σ = ⊥ := by
+  refine le_bot_iff.1 fun x hx => ?_
+  obtain ⟨N, hN⟩ := (Module.End.mem_maxGenEigenspace A σ x).1 hx
+  exact Submodule.mem_bot _ |>.2 (eq_zero_of_isUnit_apply_eq_zero (hσ.pow N) hN)
+
+/-- The generalized eigenspaces are carried along too: a generalized eigenvector of `A` for
+`μ ≠ σ` is a generalized eigenvector of the shifted inverse for `(μ - σ)⁻¹`, of the same index. -/
+theorem maxGenEigenspace_le_maxGenEigenspace_inverse {μ : 𝕜}
+    (hσ : IsUnit (A - σ • (1 : Module.End 𝕜 E))) (hμ : μ ≠ σ) :
+    A.maxGenEigenspace μ ≤
+      (Ring.inverse (A - σ • (1 : Module.End 𝕜 E))).maxGenEigenspace (μ - σ)⁻¹ := by
+  have hμσ : μ - σ ≠ 0 := sub_ne_zero.2 hμ
+  have hkey : Ring.inverse (A - σ • (1 : Module.End 𝕜 E)) - (μ - σ)⁻¹ • (1 : Module.End 𝕜 E)
+      = (-(μ - σ)⁻¹) •
+        (Ring.inverse (A - σ • (1 : Module.End 𝕜 E)) * (A - μ • (1 : Module.End 𝕜 E))) := by
+    have heq : A - μ • (1 : Module.End 𝕜 E)
+        = (A - σ • (1 : Module.End 𝕜 E)) - (μ - σ) • (1 : Module.End 𝕜 E) := by module
+    rw [heq, mul_sub, Ring.inverse_mul_cancel _ hσ, mul_smul_comm, mul_one, smul_sub, smul_smul,
+      show (-(μ - σ)⁻¹) * (μ - σ) = -1 by rw [neg_mul, inv_mul_cancel₀ hμσ]]
+    module
+  intro x hx
+  obtain ⟨N, hN⟩ := (Module.End.mem_maxGenEigenspace A μ x).1 hx
+  refine (Module.End.mem_maxGenEigenspace _ _ x).2 ⟨N, ?_⟩
+  rw [hkey, smul_pow, (commute_inverse_sub_smul_one hσ μ).mul_pow]
+  simp [Module.End.mul_apply, hN]
+
+/-- An eigenvalue of the shifted inverse comes from an eigenvalue of `A`: it is nonzero, and
+`σ + ν⁻¹` is an eigenvalue of `A`. -/
+theorem hasEigenvalue_of_hasEigenvalue_inverse {ν : 𝕜}
+    (hσ : IsUnit (A - σ • (1 : Module.End 𝕜 E)))
+    (hν : (Ring.inverse (A - σ • (1 : Module.End 𝕜 E))).HasEigenvalue ν) :
+    ν ≠ 0 ∧ A.HasEigenvalue (σ + ν⁻¹) := by
+  obtain ⟨x, hx, hx0⟩ := hν.exists_hasEigenvector
+  rw [Module.End.mem_eigenspace_iff] at hx
+  have hround := congrArg (fun f : Module.End 𝕜 E => f x) (Ring.mul_inverse_cancel _ hσ)
+  simp only [Module.End.mul_apply, Module.End.one_apply, hx, map_smul] at hround
+  have hν0 : ν ≠ 0 := by
+    rintro rfl
+    simp only [zero_smul] at hround
+    exact hx0 hround.symm
+  refine ⟨hν0, Module.End.hasEigenvalue_of_hasEigenvector
+    ⟨Module.End.mem_eigenspace_iff.2 ?_, hx0⟩⟩
+  have hT : (A - σ • (1 : Module.End 𝕜 E)) x = ν⁻¹ • x := by
+    conv_rhs => rw [← hround]
+    rw [smul_smul, inv_mul_cancel₀ hν0, one_smul]
+  rw [sub_smul_one_apply] at hT
+  rw [add_smul, ← hT]
+  abel
+
+/-- **Convergence of inverse iteration.** If `l` is an eigenvalue of `A` strictly closer to the
+shift `σ` than every other eigenvalue, and the starting vector splits as `x₀ = u + w` with `u` an
+eigenvector for `l` and `w` in the span of the other generalized eigenspaces, then the iterates
+converge essentially — up to the unimodular factor `((l - σ)/‖l - σ‖)^k` — to the normalized
+eigenvector `‖u‖⁻¹ u`.
+
+The eigenvalue of the shifted inverse that this exhibits as dominant is `(l - σ)⁻¹`; the rate of
+`Krylov.exists_norm_inv_pow_smul_pow_apply_sub_le` reads `(‖l - σ‖/‖μ₂ - σ‖)^k`, so the closer
+the shift is to `l` relative to the rest of the spectrum, the faster the convergence. That is
+what makes shifting worth its cost, since the dominance hypothesis here is about *distances to
+the shift* and not about moduli. -/
+theorem tendsto_smul_inverseIterate {l : 𝕜} {u w x₀ : E}
+    (hσ : IsUnit (A - σ • (1 : Module.End 𝕜 E))) (hu : A u = l • u) (hu0 : u ≠ 0)
+    (hw : w ∈ ⨆ μ, ⨆ _ : μ ≠ l, A.maxGenEigenspace μ)
+    (hdom : ∀ μ, μ ≠ l → A.HasEigenvalue μ → ‖l - σ‖ < ‖μ - σ‖) (hx₀ : x₀ = u + w) :
+    Tendsto (fun k => (((l - σ) / (‖l - σ‖ : 𝕜)) ^ k) • inverseIterate A σ x₀ k) atTop
+      (𝓝 ((‖u‖ : 𝕜)⁻¹ • u)) := by
+  set B : Module.End 𝕜 E := Ring.inverse (A - σ • (1 : Module.End 𝕜 E)) with hB
+  have hlσ : l ≠ σ := by
+    rintro rfl
+    refine hu0 (eq_zero_of_isUnit_apply_eq_zero hσ ?_)
+    rw [sub_smul_one_apply, hu, sub_self]
+  have hlσ0 : l - σ ≠ 0 := sub_ne_zero.2 hlσ
+  have hl' : (l - σ)⁻¹ ≠ 0 := inv_ne_zero hlσ0
+  have hu' : B u = (l - σ)⁻¹ • u := inverse_apply_eq_smul hσ hlσ hu
+  have hw' : w ∈ ⨆ ν, ⨆ _ : ν ≠ (l - σ)⁻¹, B.maxGenEigenspace ν := by
+    refine (iSup₂_le fun μ hμ => ?_ : (⨆ μ, ⨆ _ : μ ≠ l, A.maxGenEigenspace μ) ≤ _) hw
+    rcases eq_or_ne μ σ with rfl | hμσ
+    · rw [maxGenEigenspace_eq_bot_of_isUnit hσ]; exact bot_le
+    · refine le_trans (maxGenEigenspace_le_maxGenEigenspace_inverse hσ hμσ) ?_
+      exact le_iSup₂ (f := fun ν (_ : ν ≠ (l - σ)⁻¹) => B.maxGenEigenspace ν) _
+        (fun h => hμ (by simpa [sub_left_inj] using inv_inj.1 h))
+  have hdom' : ∀ ν, ν ≠ (l - σ)⁻¹ → B.HasEigenvalue ν → ‖ν‖ < ‖(l - σ)⁻¹‖ := by
+    intro ν hν hνe
+    obtain ⟨hν0, hA⟩ := hasEigenvalue_of_hasEigenvalue_inverse hσ hνe
+    have hμ : σ + ν⁻¹ ≠ l := by
+      rintro rfl
+      exact hν (by rw [add_sub_cancel_left, inv_inv])
+    have hlt := hdom _ hμ hA
+    rw [add_sub_cancel_left, norm_inv] at hlt
+    have h1 : (0 : ℝ) < ‖ν‖ := norm_pos_iff.2 hν0
+    have h2 : (0 : ℝ) < ‖l - σ‖ := norm_pos_iff.2 hlσ0
+    rw [inv_eq_one_div, lt_div_iff₀ h1] at hlt
+    rw [norm_inv, inv_eq_one_div, lt_div_iff₀ h2, mul_comm]
+    exact hlt
+  have hfac : ((‖(l - σ)⁻¹‖ : 𝕜)) / (l - σ)⁻¹ = (l - σ) / (‖l - σ‖ : 𝕜) := by
+    rw [norm_inv, RCLike.ofReal_inv, inv_div_inv]
+  have hlim := tendsto_smul_powerIterate hl' hu' hu0 hw' hdom' hx₀
+  rw [hfac, hB] at hlim
+  exact hlim
+
+end InverseIteration
 
 /-! ### Subspace iteration
 

@@ -31,6 +31,12 @@ Two consequences need nothing beyond the definitions.
   compressed to a Krylov subspace `γ` is the single Hessenberg entry `h_{m+1,m}`. When `A` is
   bounded and `γ` really is the operator norm,
   `Krylov.norm_starProjection_apply_le_opNorm` supplies the hypothesis.
+* The same bound for an *oblique* compression `A_m = Q A P_K`
+  (`Krylov.compressionBy_residual_le` and `Krylov.compressionBy_residual_le'`): the search space
+  `K` is projected onto by an arbitrary projector `Q`, while the distance to `u` is still measured
+  orthogonally, which is what keeps the right-hand side `‖(1 - P_K) u‖`. The constant is a bound
+  on `Q (A - μ)` and not on `Q A`: unlike `P_K (1 - P_K)`, the composite `Q (1 - P_K)` need not
+  vanish, so the shift does not drop out of the residual identity.
 
 When `A` is symmetric the picture sharpens, and this is where the module meets Courant–Fischer in
 `Numlib.Eigen.MinMax` and the angle vocabulary of
@@ -52,7 +58,9 @@ and with `(𝕜 ∙ ũ).sinAngle u` for the angle between `u` and a Ritz vector 
 * **Cauchy interlacing** (`LinearMap.IsSymmetric.eigenvalues_compression_le`): the `i`-th Ritz
   value is at most the `i`-th eigenvalue of `A`, both sorted decreasingly, because the max–min
   over the subspaces of `K` ranges over fewer competitors than the max–min over all subspaces
-  of `E`.
+  of `E`. `LinearMap.IsSymmetric.eigenvalues_compression_mono` is the same argument between two
+  nested approximation spaces: every Ritz value increases when the space grows, which is why
+  expanding the space in Davidson's method can only help.
 * **The error of the largest Ritz value** (`LinearMap.IsSymmetric.ritz_value_error_le`):
   `0 ≤ λ₁ - θ₁ ≤ C tan²θ(u₁, K)` for an eigenvector `u₁` of the largest eigenvalue `λ₁`. The left
   inequality is interlacing; the right one combines
@@ -60,6 +68,16 @@ and with `(𝕜 ∙ ũ).sinAngle u` for the angle between `u` and a Ritz vector 
   the Rayleigh quotient at `P_K u₁` alone, with the fact that this quotient is at most the largest
   Ritz value. The constant `C` bounds the quadratic form of `A - λ₁`, which is the house form of
   `‖A - λ₁‖` in this library; `Krylov.abs_re_inner_sub_le_opNorm` is the operator-norm reading.
+* **The error of the `i`-th Ritz value**
+  (`LinearMap.IsSymmetric.ritz_value_error_le_of_forall_inner_eq_zero`): the same statement at a
+  general index, `0 ≤ λ_i - θ_i ≤ C (‖u_i - y‖/‖y‖)²` for any nonzero `y ∈ K` orthogonal to the
+  first `i` Ritz vectors. What replaces the projection `P_K u₁` of the leading case is a
+  competitor for Rayleigh's *recursive* characterization of the `i`-th eigenvalue of the
+  compression, and the underlying estimate,
+  `LinearMap.IsSymmetric.abs_sub_rayleighQuotient_le`, holds for an arbitrary competitor. Saad's
+  own display is the case `y = P_K u_i - P_W u_i` with `W` the span of the leading Ritz vectors,
+  where `Submodule.norm_sub_sub_starProjection_sq` evaluates the numerator as
+  `‖(1 - P_K) u_i‖² + ‖P_W u_i‖²`.
 * **The error of the Ritz vector** (`LinearMap.IsSymmetric.sin_angle_ritzVector_le`): there is a
   Ritz vector `ũ` for a given Ritz value `θ` with
   `sin θ(u, ũ) ≤ √(1 + γ²/δ²) sin θ(u, K)`, where `γ` is the coupling constant above and `δ`
@@ -101,11 +119,13 @@ value (Thm 4.6 and Prop 4.5); §6.1–6.2 for the optimality of the characterist
 residual (Prop 6.8). The Courant–Fischer theorem the Hermitian bounds rest on is Thm 1.9 of the
 same book, proved in `Numlib.Eigen.MinMax`.
 
-Saad states Thm 4.5 for every index, with the leading Ritz vectors projected out; only the case
-`i = 1` is formalized here, where that projection is the identity. Thm 4.6 is stated as Saad
-states it, as the existence of *some* Ritz vector for the given Ritz value — the one produced is
-the projection of `P_K u` onto the `θ`-eigenspace of the compression, and when that projection
-vanishes the bound is vacuous, its right-hand side being then at least `1`.
+Saad states Thm 4.5 for every index, with the leading Ritz vectors projected out; the general
+index is `LinearMap.IsSymmetric.ritz_value_error_le_of_forall_inner_eq_zero`, which takes the
+competitor as data rather than constructing it from a spectral projector, and the case `i = 1`
+is `LinearMap.IsSymmetric.ritz_value_error_le`, where the projection is the identity. Thm 4.6 is
+stated as Saad states it, as the existence of *some* Ritz vector for the given Ritz value — the
+one produced is the projection of `P_K u` onto the `θ`-eigenspace of the compression, and when
+that projection vanishes the bound is vacuous, its right-hand side being then at least `1`.
 
 [^saad-eigenvalue]: Yousef Saad, *Numerical Methods for Large Eigenvalue Problems*, 2nd edition,
   SIAM, 2011.
@@ -170,6 +190,25 @@ theorem sinAngle_span_singleton_comm {v w : E} (hv : v ≠ 0) (hw : w ≠ 0) :
   have h2 := (𝕜 ∙ w).cosAngle_sq_add_sinAngle_sq hv
   rw [hcos] at h1
   exact (pow_left_inj₀ (sinAngle_nonneg _ _) (sinAngle_nonneg _ _) two_ne_zero).1 (by linarith)
+
+/-- Stripping from `u` its best approximation from `K` *outside* a subspace `W ≤ K` splits the
+error orthogonally: `‖u - (P_K u - P_W u)‖² = ‖u - P_K u‖² + ‖P_W u‖²`.
+
+This is the estimate behind Saad's Theorem 4.5 for a general index, where `W` is the span of the
+Ritz vectors already computed and `P_K u - P_W u` is the competitor orthogonal to them.  Saad
+states it as an inequality; it is an equality, because `P_W` annihilates `u - P_K u`. -/
+theorem norm_sub_sub_starProjection_sq (W K : Submodule 𝕜 E) [W.HasOrthogonalProjection]
+    [K.HasOrthogonalProjection] (hWK : W ≤ K) (u : E) :
+    ‖u - (K.starProjection u - W.starProjection u)‖ ^ 2
+      = ‖u - K.starProjection u‖ ^ 2 + ‖W.starProjection u‖ ^ 2 := by
+  have hsplit : u - (K.starProjection u - W.starProjection u)
+      = (u - K.starProjection u) + W.starProjection u := by module
+  have horth : inner 𝕜 (u - K.starProjection u) (W.starProjection u) = (0 : 𝕜) :=
+    Submodule.inner_left_of_mem_orthogonal (hWK (W.starProjection_apply_mem u))
+      (K.sub_starProjection_mem_orthogonal u)
+  rw [hsplit]
+  simp only [pow_two]
+  rw [norm_add_sq_eq_norm_sq_add_norm_sq_of_inner_eq_zero _ _ horth]
 
 end Submodule
 
@@ -441,6 +480,90 @@ theorem compression_residual_le' {A : E →ₗ[𝕜] E} {K : Submodule 𝕜 E} [
   have h := Real.sqrt_le_sqrt hsq
   rwa [Real.sqrt_sq (norm_nonneg _), Real.sqrt_sq (by positivity)] at h
 
+/-! ### The oblique residual bounds
+
+An oblique projection method takes a search subspace `K` and a test subspace `L`, and its
+compression is `A_m = Q_K^L A P_K` for the projector `Q_K^L` onto `K` along `Lᗮ`
+(Saad, *Numerical Methods for Large Eigenvalue Problems*, §4.3.3).  Composing with the
+*orthogonal* `P_K` on the right is what makes `A_m` vanish on `Kᗮ`, so that the a priori bounds
+are again in terms of `‖(1 - P_K) u‖`.  Only the projector `Q` is oblique here; the distance from
+`u` to `K` is still measured orthogonally. -/
+
+/-- The oblique residual identity: for any projector `Q` onto `K` and an exact eigenpair
+`(μ, u)`, `(A_m - μ) P_K u = -Q (A - μ) (1 - P_K) u`.
+
+Unlike the orthogonal case (`compression.apply_sub_smul_orthogonalProjection`) the shift `μ` does
+not drop out of the right-hand side, because `Q (1 - P_K)` need not vanish when `Q` is oblique.
+That is why the constant of `Krylov.compressionBy_residual_le` is a bound on `Q (A - μ)` and not
+on `Q A`. -/
+theorem compressionBy_apply_sub_smul_orthogonalProjection {A : E →ₗ[𝕜] E} {K : Submodule 𝕜 E}
+    [K.HasOrthogonalProjection] {Q : E →ₗ[𝕜] K} (hQ : ∀ x : K, Q x = x) {μ : 𝕜} {u : E}
+    (hu : A u = μ • u) :
+    (compressionBy Q A (K.orthogonalProjectionOnto u) - μ • K.orthogonalProjectionOnto u : E)
+      = -(Q (A (u - K.starProjection u) - μ • (u - K.starProjection u)) : E) := by
+  have hQP : (Q (K.starProjection u) : E) = K.starProjection u :=
+    congrArg Subtype.val (hQ ⟨_, K.starProjection_apply_mem u⟩)
+  have harg : A (u - K.starProjection u) - μ • (u - K.starProjection u)
+      = -(A (K.starProjection u) - μ • K.starProjection u) := by
+    rw [map_sub, hu]; module
+  rw [harg]
+  simp only [map_neg, map_sub, map_smul, Submodule.coe_neg, Submodule.coe_sub,
+    Submodule.coe_smul, hQP, neg_neg]
+  rfl
+
+/-- **The oblique residual bound** (Saad, *Numerical Methods for Large Eigenvalue Problems*,
+Thm 4.7, first inequality): with `Q` a projector onto `K` and `γ` bounding `Q (A - μ)` on `Kᗮ`,
+the Ritz pair `(μ, P_K u)` of the oblique compression `A_m = Q A P_K` has residual
+`‖(A_m - μ) P_K u‖ ≤ γ ‖(1 - P_K) u‖`.
+
+The twin of `Krylov.compression_residual_le`, with the constant supplied as a hypothesis in the
+same style; taking `Q = P_K` recovers that theorem, since `P_K (A - μ) x = P_K (A x)` for
+`x ∈ Kᗮ`. -/
+theorem compressionBy_residual_le {A : E →ₗ[𝕜] E} {K : Submodule 𝕜 E}
+    [K.HasOrthogonalProjection] {Q : E →ₗ[𝕜] K} (hQ : ∀ x : K, Q x = x) {γ : ℝ} {μ : 𝕜}
+    (hγ : ∀ x ∈ Kᗮ, ‖(Q (A x - μ • x) : E)‖ ≤ γ * ‖x‖) {u : E} (hu : A u = μ • u) :
+    ‖(compressionBy Q A (K.orthogonalProjectionOnto u) - μ • K.orthogonalProjectionOnto u : E)‖
+      ≤ γ * ‖u - K.starProjection u‖ := by
+  rw [compressionBy_apply_sub_smul_orthogonalProjection hQ hu, norm_neg]
+  exact hγ _ (K.sub_starProjection_mem_orthogonal u)
+
+/-- **The oblique residual bound for the whole eigenvector** (Saad, *Numerical Methods for Large
+Eigenvalue Problems*, Thm 4.7, second inequality): `‖(A_m - μ) u‖ ≤ √(|μ|² + γ²) ‖(1 - P_K) u‖`.
+
+`A_m = Q A P_K` kills `Kᗮ`, so `(A_m - μ) u = (A_m - μ) P_K u - μ (1 - P_K) u`, and the two terms
+lie in `K` and in `Kᗮ`; Pythagoras gives the constant, exactly as in
+`Krylov.compression_residual_le'`. -/
+theorem compressionBy_residual_le' {A : E →ₗ[𝕜] E} {K : Submodule 𝕜 E}
+    [K.HasOrthogonalProjection] {Q : E →ₗ[𝕜] K} (hQ : ∀ x : K, Q x = x) {γ : ℝ} {μ : 𝕜}
+    (hγ : ∀ x ∈ Kᗮ, ‖(Q (A x - μ • x) : E)‖ ≤ γ * ‖x‖) {u : E} (hu : A u = μ • u) :
+    ‖(compressionBy Q A (K.orthogonalProjectionOnto u) : E) - μ • u‖
+      ≤ Real.sqrt (‖μ‖ ^ 2 + γ ^ 2) * ‖u - K.starProjection u‖ := by
+  set v : E := (compressionBy Q A (K.orthogonalProjectionOnto u) : E) with hv
+  have hcoe : (compressionBy Q A (K.orthogonalProjectionOnto u)
+      - μ • K.orthogonalProjectionOnto u : E) = v - μ • K.starProjection u := rfl
+  have hle : ‖v - μ • K.starProjection u‖ ≤ γ * ‖u - K.starProjection u‖ := by
+    rw [← hcoe]; exact compressionBy_residual_le hQ hγ hu
+  have hrmem : v - μ • K.starProjection u ∈ K :=
+    Submodule.sub_mem _ (compressionBy Q A (K.orthogonalProjectionOnto u)).2
+      (Submodule.smul_mem _ _ (K.starProjection_apply_mem u))
+  have hqmem : (-μ) • (u - K.starProjection u) ∈ Kᗮ :=
+    Submodule.smul_mem _ _ (K.sub_starProjection_mem_orthogonal u)
+  have hsplit : v - μ • u
+      = (v - μ • K.starProjection u) + (-μ) • (u - K.starProjection u) := by module
+  have hpyth : ‖v - μ • u‖ ^ 2
+      = ‖v - μ • K.starProjection u‖ ^ 2 + ‖μ‖ ^ 2 * ‖u - K.starProjection u‖ ^ 2 := by
+    rw [hsplit]
+    simp only [pow_two]
+    rw [norm_add_sq_eq_norm_sq_add_norm_sq_of_inner_eq_zero _ _
+      (Submodule.inner_right_of_mem_orthogonal hrmem hqmem), norm_smul, norm_neg]
+    ring
+  have hsq : ‖v - μ • u‖ ^ 2 ≤ (Real.sqrt (‖μ‖ ^ 2 + γ ^ 2) * ‖u - K.starProjection u‖) ^ 2 := by
+    rw [mul_pow, Real.sq_sqrt (by positivity)]
+    nlinarith [hpyth, hle, norm_nonneg (v - μ • K.starProjection u),
+      norm_nonneg (u - K.starProjection u)]
+  have h := Real.sqrt_le_sqrt hsq
+  rwa [Real.sqrt_sq (norm_nonneg _), Real.sqrt_sq (by positivity)] at h
+
 /-! ### The shifted quadratic form
 
 The Hermitian bounds all read a difference of an eigenvalue and a Rayleigh quotient as the
@@ -571,6 +694,25 @@ theorem eigenvalues_compression_le [FiniteDimensional 𝕜 E] {A : E →ₗ[𝕜
   obtain ⟨⟨S, -, hS, hb⟩, -⟩ := hA.isGreatest_eigenvalues_compression K hm i
   exact (hA.isGreatest_eigenvalues hn (Fin.castLE hmn i)).2 ⟨S, hS, hb⟩
 
+/-- **The Ritz values increase with the subspace**, which is the mechanism behind the
+convergence of Davidson's method (Saad, *Numerical Methods for Large Eigenvalue Problems*,
+Thm 8.1): enlarging the approximation space can only improve every Ritz value, both families
+being sorted decreasingly.
+
+It is `isGreatest_eigenvalues_compression` twice: the max–min for `K` ranges over the
+`(i + 1)`-dimensional subspaces of `K`, that for `K'` over those of `K'`, and the first family is
+contained in the second, so a bound witnessed inside `K` is a competitor inside `K'`.  Cauchy
+interlacing `eigenvalues_compression_le` is the extreme case `K' = ⊤`, proved the same way. -/
+theorem eigenvalues_compression_mono [FiniteDimensional 𝕜 E] {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric)
+    {K K' : Submodule 𝕜 E} (hKK' : K ≤ K') {m m' : ℕ} (hm : Module.finrank 𝕜 K = m)
+    (hm' : Module.finrank 𝕜 K' = m') (hmm' : m ≤ m') (i : Fin m) :
+    (compression.isSymmetric A K hA).eigenvalues hm i
+      ≤ (compression.isSymmetric A K' hA).eigenvalues hm' (Fin.castLE hmm' i) := by
+  obtain ⟨⟨S, hSK, hS, hb⟩, -⟩ := hA.isGreatest_eigenvalues_compression K hm i
+  refine (hA.isGreatest_eigenvalues_compression K' hm' (Fin.castLE hmm' i)).2
+    ⟨S, hSK.trans hKK', ?_, hb⟩
+  simpa using hS
+
 /-- If `W` sits inside the `θ`-eigenspace of a symmetric `T` and `T - lam` is bounded below by
 `δ` on `Wᗮ`, then `δ ‖y - P_W y‖ ≤ ‖(T - lam) y‖` for *every* `y`, not only for `y ∈ Wᗮ`.
 
@@ -656,6 +798,33 @@ theorem mul_norm_le_norm_sub_smul [FiniteDimensional 𝕜 E] {n : ℕ} {T : E �
   have hstep := Real.sqrt_le_sqrt hsq
   rwa [Real.sqrt_sq (mul_nonneg hδ0 (norm_nonneg z)), Real.sqrt_sq (norm_nonneg _)] at hstep
 
+/-- **Saad's Lemma 4.2**: for a symmetric `A`, an eigenpair `(lam, u)` and any nonzero competitor
+`y`, the Rayleigh quotient at `y` differs from `lam` by at most `C (‖u - y‖/‖y‖)²`, where `C`
+bounds the quadratic form of `A - lam` (Saad, *Numerical Methods for Large Eigenvalue Problems*,
+Lemma 4.1 for `y = P_K u` and Lemma 4.2 in general).
+
+The mechanism is that the quadratic form of `A - lam` has `u` in its kernel and is symmetric, so
+it takes the same value at `y` as at `u - y`:
+`⟪(A - lam) y, y⟫ = ⟪(A - lam)(u - y), (u - y)⟫`.  Dividing by `‖y‖²` gives the ratio.  Nothing
+here is special to a projection: the whole Rayleigh–Ritz eigenvalue analysis is this lemma
+applied to a competitor chosen inside the approximation space. -/
+theorem abs_sub_rayleighQuotient_le {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric) {lam C : ℝ}
+    (hC : ∀ x : E, |RCLike.re (inner 𝕜 (A x) x) - lam * ‖x‖ ^ 2| ≤ C * ‖x‖ ^ 2)
+    {u : E} (hu : A u = (lam : 𝕜) • u) {y : E} (hy : y ≠ 0) :
+    |lam - A.rayleighQuotient y| ≤ C * (‖u - y‖ / ‖y‖) ^ 2 := by
+  have hy0 : ‖y‖ ≠ 0 := norm_ne_zero_iff.2 hy
+  have hvpos : (0 : ℝ) < ‖y‖ ^ 2 := by positivity
+  have key : RCLike.re (inner 𝕜 (A y) y) - lam * ‖y‖ ^ 2
+      = RCLike.re (inner 𝕜 (A (u - y)) (u - y)) - lam * ‖u - y‖ ^ 2 := by
+    rw [← re_inner_sub A lam y, ← re_inner_sub A lam (u - y), inner_sub_shift hA hu y]
+  have hrw : lam - A.rayleighQuotient y
+      = (lam * ‖y‖ ^ 2 - RCLike.re (inner 𝕜 (A y) y)) / ‖y‖ ^ 2 := by
+    rw [LinearMap.rayleighQuotient, sub_div, mul_div_assoc, div_self (ne_of_gt hvpos), mul_one]
+  have hcancel : C * (‖u - y‖ / ‖y‖) ^ 2 * ‖y‖ ^ 2 = C * ‖u - y‖ ^ 2 := by
+    field_simp
+  rw [hrw, abs_div, abs_of_pos hvpos, div_le_iff₀ hvpos, hcancel, abs_sub_comm, key]
+  exact hC _
+
 /-- The error of the Rayleigh quotient at the projection of an eigenvector: for a symmetric `A`,
 an eigenpair `(lam, u)` and a subspace `K` that captures some of `u`,
 `|lam - μ_A(P_K u)| ≤ C tan²θ(u, K)`, where `C` bounds the quadratic form of `A - lam`.
@@ -673,25 +842,8 @@ theorem abs_sub_rayleighQuotient_starProjection_le {A : E →ₗ[𝕜] E} (hA : 
     (hC : ∀ x : E, |RCLike.re (inner 𝕜 (A x) x) - lam * ‖x‖ ^ 2| ≤ C * ‖x‖ ^ 2)
     {u : E} (hu : A u = (lam : 𝕜) • u) (hPu : K.starProjection u ≠ 0) :
     |lam - A.rayleighQuotient (K.starProjection u)| ≤ C * K.tanAngle u ^ 2 := by
-  have hvpos : (0 : ℝ) < ‖K.starProjection u‖ ^ 2 := by
-    have := hPu
-    positivity
-  have key : RCLike.re (inner 𝕜 (A (K.starProjection u)) (K.starProjection u))
-      - lam * ‖K.starProjection u‖ ^ 2
-      = RCLike.re (inner 𝕜 (A (u - K.starProjection u)) (u - K.starProjection u))
-        - lam * ‖u - K.starProjection u‖ ^ 2 := by
-    rw [← re_inner_sub A lam (K.starProjection u), ← re_inner_sub A lam (u - K.starProjection u)]
-    conv_lhs => rw [← sub_sub_cancel u (K.starProjection u)]
-    rw [inner_sub_shift hA hu (u - K.starProjection u)]
-  have hrw : lam - A.rayleighQuotient (K.starProjection u)
-      = (lam * ‖K.starProjection u‖ ^ 2
-        - RCLike.re (inner 𝕜 (A (K.starProjection u)) (K.starProjection u)))
-        / ‖K.starProjection u‖ ^ 2 := by
-    rw [LinearMap.rayleighQuotient, sub_div, mul_div_assoc, div_self (ne_of_gt hvpos), mul_one]
-  have htan : K.tanAngle u ^ 2 * ‖K.starProjection u‖ ^ 2 = ‖u - K.starProjection u‖ ^ 2 := by
-    rw [← mul_pow, K.tanAngle_mul_norm hPu]
-  rw [hrw, abs_div, abs_of_pos hvpos, div_le_iff₀ hvpos, mul_assoc, htan, abs_sub_comm, key]
-  exact hC _
+  have h := hA.abs_sub_rayleighQuotient_le hC hu hPu
+  rwa [← K.tanAngle_mul_norm hPu, mul_div_assoc, div_self (norm_ne_zero_iff.2 hPu), mul_one] at h
 
 /-- The error of the largest Ritz value: for a symmetric `A` with largest eigenvalue `λ₁` and an
 eigenvector `u` for it, the largest Ritz value `θ₁` on `K` satisfies
@@ -722,6 +874,42 @@ theorem ritz_value_error_le [FiniteDimensional 𝕜 E] {A : E →ₗ[𝕜] E} (h
   have h2 := (abs_le.1 (hA.abs_sub_rayleighQuotient_starProjection_le K hC hu hPu)).2
   have h3 := hA.eigenvalues_compression_le K hn hm hmn 0
   rw [hz] at h3
+  exact ⟨by linarith, by linarith⟩
+
+/-- **The error of the `i`-th Ritz value** (Saad, *Numerical Methods for Large Eigenvalue
+Problems*, Thm 4.5): if `y` is a nonzero vector of `K` orthogonal to the first `i` Ritz vectors,
+then `0 ≤ λ_i - θ_i ≤ C (‖u_i - y‖/‖y‖)²`, with `u_i` an eigenvector of `A` for `λ_i` and `C`
+bounding the quadratic form of `A - λ_i`.
+
+The lower bound is Cauchy interlacing.  For the upper bound, `y` competes in Rayleigh's recursive
+characterization of the `i`-th eigenvalue of the compression
+(`isGreatest_rayleighQuotient_orthogonal`), so its Rayleigh quotient is at most `θ_i`, and
+`abs_sub_rayleighQuotient_le` bounds `λ_i` minus that quotient.  Only the orthogonality to the
+previous Ritz vectors is used, which is what the name records; `ritz_value_error_le` is the case
+`i = 0`, where the condition is empty and `y = P_K u` is the natural competitor.
+
+Saad's own display is the case `y = P_K u_i - P_W u_i` for `W` the span of the Ritz vectors
+already computed: `Submodule.norm_sub_sub_starProjection_sq` evaluates the numerator there as
+`‖(1 - P_K) u_i‖² + ‖P_W u_i‖²`, which is his `‖(I - P_K)u_i‖² + ‖Q̃_i u_i‖²`. -/
+theorem ritz_value_error_le_of_forall_inner_eq_zero [FiniteDimensional 𝕜 E]
+    {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric) {K : Submodule 𝕜 E} {n m : ℕ}
+    (hn : Module.finrank 𝕜 E = n) (hm : Module.finrank 𝕜 K = m) (hmn : m ≤ n) (i : Fin m)
+    {C : ℝ}
+    (hC : ∀ x : E, |RCLike.re (inner 𝕜 (A x) x)
+      - hA.eigenvalues hn (Fin.castLE hmn i) * ‖x‖ ^ 2| ≤ C * ‖x‖ ^ 2)
+    {u : E} (hu : A u = ((hA.eigenvalues hn (Fin.castLE hmn i) : ℝ) : 𝕜) • u)
+    {y : E} (hyK : y ∈ K) (hy0 : y ≠ 0)
+    (hyorth : ∀ j : Fin m, j < i →
+      inner 𝕜 ((((compression.isSymmetric A K hA).eigenvectorBasis hm j : K) : E)) y = (0 : 𝕜)) :
+    hA.eigenvalues hn (Fin.castLE hmn i) - (compression.isSymmetric A K hA).eigenvalues hm i
+      ∈ Set.Icc 0 (C * (‖u - y‖ / ‖y‖) ^ 2) := by
+  have hysub : (⟨y, hyK⟩ : K) ≠ 0 := fun h => hy0 (congrArg Subtype.val h)
+  have h1 : A.rayleighQuotient y ≤ (compression.isSymmetric A K hA).eigenvalues hm i := by
+    have hmem := ((compression.isSymmetric A K hA).isGreatest_rayleighQuotient_orthogonal hm i).2
+      ⟨⟨y, hyK⟩, hysub, fun j hj => hyorth j hj, rfl⟩
+    rwa [rayleighQuotient_compression A K ⟨y, hyK⟩] at hmem
+  have h2 := (abs_le.1 (hA.abs_sub_rayleighQuotient_le hC hu hy0)).2
+  have h3 := hA.eigenvalues_compression_le K hn hm hmn i
   exact ⟨by linarith, by linarith⟩
 
 /-- The error of the Ritz vector: for a symmetric `A`, an eigenpair `(lam, u)` and a Ritz value
