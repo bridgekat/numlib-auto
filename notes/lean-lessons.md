@@ -62,6 +62,16 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   style linters are silent under it. Always run a real `lake build` before committing, or the long
   lines and unused variables only surface at merge time.
 * Imports must precede the module doc comment, not follow it.
+* **A missing *import* fails mutely where a missing lemma does not.** Dependencies computed from
+  the compiled environment cover definitions only; tactic extensions and instances are invisible to
+  that analysis and, when absent, give no hint that an import is what is wanted. Dropping
+  `Mathlib.Tactic.Positivity.Finset` makes `positivity` report "failed to prove positivity" as if
+  the goal were false; a missing `Normed.Module.Completion` or `SpecialFunctions.Pow.Real` surfaces
+  only as "failed to synthesize instance". Suspect the import list before the proof.
+* `Numlib.Analysis.Calculus.MeanValue` imports Mathlib's `Analysis.Calculus.MeanValue` but not
+  `Analysis.Calculus.Deriv.MeanValue`, where the one-dimensional `exists_hasDerivAt_eq_slope` lives.
+* Renaming a file invalidates the Read/Edit tools' file-state tracking: an edit prepared before a
+  `git mv` fails with "File has not been read yet". Re-read after the move.
 
 ## Correctness traps
 
