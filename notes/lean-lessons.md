@@ -8,6 +8,11 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
 
 ## Working in this repository
 
+* **Commit as you go**, one commit per module or per coherent group of proofs. A session rate limit
+  once terminated fourteen sub-agents at the same instant, mid-edit. The ones who had been
+  committing resumed having lost minutes; the ones holding a batch of finished proofs in an
+  uncommitted working tree were the ones at risk. An incomplete module with a `sorry` in it is
+  worth committing.
 * Build one module with `lake build Numlib.Krylov.CG`, everything with `lake build`.
 * **`lake update` is a global operation when sub-agents are running, and will stall all of them.**
   `scripts/mkwt.ps1` makes a worktree cheap by junctioning its `.lake/packages` to the main
