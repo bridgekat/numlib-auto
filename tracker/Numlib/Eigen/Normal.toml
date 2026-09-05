@@ -1,0 +1,57 @@
+desc = '''
+Phase 3. Normal operators in finite dimension over an algebraically closed field: a normal operator
+is diagonalizable, its eigenspaces are the eigenspaces of its adjoint at conjugate eigenvalues, and
+its adjoint is a polynomial in it.
+
+No Schur form and no Jordan form, neither of which Mathlib has. Mathlib's `isStarNormal_iff` gives
+`‖N x‖ = ‖N* x‖`, which makes `ker N² = ker N`, which makes every generalized eigenspace an
+eigenspace; `Module.End.iSup_maxGenEigenspace_eq_top` over `ℂ` then makes the eigenspaces span, and
+that is diagonalizability without a triangulation theorem. Lagrange interpolation of `z ↦ conj z`
+at the finitely many eigenvalues turns it into `A^H = q(A)`.
+
+This is the item Saad §6.10 records as backbone debt: `notes/open-obligations.md` and §4 item 2 of
+`tracker/saadsparse-ch6.md`. See §4.5 of `backbone.md`.
+'''
+
+[[node]]
+id = "LinearMap.IsStarNormal.maxGenEigenspace_eq_eigenspace"
+kind = "theorem"
+desc = '''A normal operator has no generalized eigenvectors: `ker (A - μ)^k = ker (A - μ)`, because
+a shift of a normal operator is normal and a normal `N` has `ker N² = ker N`.'''
+
+[[node]]
+id = "LinearMap.IsStarNormal.iSup_eigenspace_eq_top"
+kind = "theorem"
+desc = '''A normal operator on a finite-dimensional inner product space over an algebraically closed
+field is diagonalizable: its eigenspaces span.'''
+deps = ["LinearMap.IsStarNormal.maxGenEigenspace_eq_eigenspace"]
+
+[[node]]
+id = "LinearMap.IsStarNormal.eigenspace_adjoint"
+kind = "theorem"
+desc = '''The eigenspace of a normal `A` at `μ` is the eigenspace of `A.adjoint` at `conj μ`: the
+two operators share their eigenvectors.'''
+source = "Saad, Iterative Methods for Sparse Linear Systems, Lemma 1.15"
+
+[[node]]
+id = "LinearMap.IsStarNormal.exists_aeval_eq_adjoint"
+kind = "theorem"
+desc = '''A normal operator's adjoint is a polynomial in it: `∃ q, aeval A q = A.adjoint`, with `q`
+interpolating `z ↦ conj z` at the eigenvalues.'''
+deps = ["LinearMap.IsStarNormal.iSup_eigenspace_eq_top",
+  "LinearMap.IsStarNormal.eigenspace_adjoint"]
+
+[[node]]
+id = "Matrix.IsStarNormal.exists_aeval_eq_conjTranspose"
+kind = "theorem"
+desc = '''The matrix form: a normal `A` over `ℂ` satisfies `A^H = q(A)` for some polynomial `q`.
+This is what `Numlib/Surface/SaadSparse/Chapter06/Section10` has been waiting for.'''
+deps = ["LinearMap.IsStarNormal.exists_aeval_eq_adjoint"]
+
+[[node]]
+id = "LinearMap.IsStarNormal.orthogonalFamily_eigenspaces"
+kind = "theorem"
+desc = '''The eigenspaces of a normal operator are pairwise orthogonal, so with
+`iSup_eigenspace_eq_top` they decompose the space orthogonally: the spectral theorem for normal
+operators, in the internal-direct-sum form Mathlib states the Hermitian one in.'''
+deps = ["LinearMap.IsStarNormal.eigenspace_adjoint"]

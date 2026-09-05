@@ -3,11 +3,10 @@ Phase 2. The Rayleigh-Ritz layer over the compression of `InnerProductSpace/Proj
 Ritz pairs are the eigenpairs of `compression A K`, so the definitions need only an inner product
 and it is the sharp bounds that need finite dimension.
 
-Courant-Fischer is the missing Mathlib brick — Mathlib has only the extreme eigenvalues, through
-`hasEigenvalue_iSup_of_finiteDimensional`. The dimension-counting proof, `S ⊓ span{u_k, …, u_n} ≠ ⊥`
-with `Submodule.finrank_sup_add_finrank_inf_eq`, is about a hundred lines and also yields Weyl's
-inequalities and the interlacing that Lanczos and the Ritz-value estimates want. Do it first;
-everything else here rests on it. See §4.2 of `backbone.md`.
+The sharp Hermitian bounds rest on Courant-Fischer, which lives one module down in
+`Eigen/MinMax`: it mentions no compression and no Ritz pair, and the Weyl inequalities of the
+perturbation layer want it too. The definitions and the residual bound here need neither it nor
+finite dimension. See §4.2 of `backbone.md`.
 '''
 
 [[node]]
@@ -62,13 +61,6 @@ kind = "theorem"
 desc = '''`sin θ(u, ũ) ≤ √(1 + γ²/δ²) sin θ(u, K)` for the Ritz vector of the closest Ritz value,
 with `|λ - θ| ≤ ‖A - λ‖ sin²θ(u, ũ)`.'''
 source = "Saad, Numerical Methods for Large Eigenvalue Problems, Theorem 4.6 and Proposition 4.5"
-
-[[node]]
-id = "LinearMap.IsSymmetric.eigenvalues_eq_iSup_iInf"
-kind = "theorem"
-desc = '''Courant-Fischer: `λ_k = max_{dim S = k} min_{x ∈ S} R(x)`, with Rayleigh's recursive
-form. Not in Mathlib, and the prerequisite for everything else in this module.'''
-source = "Saad, Numerical Methods for Large Eigenvalue Problems, Theorem 1.9"
 
 [[node]]
 id = "Krylov.Arnoldi.charpoly_compression_isMinOn"

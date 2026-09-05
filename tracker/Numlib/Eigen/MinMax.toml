@@ -1,0 +1,40 @@
+desc = '''
+Phase 2. The variational characterization of the eigenvalues of a symmetric operator in finite
+dimension, and what follows from it directly.
+
+Mathlib has the two extreme eigenvalues (`hasEigenvalue_iSup_of_finiteDimensional`) and the whole
+decreasing list with its orthonormal eigenvector basis
+(`LinearMap.IsSymmetric.eigenvalues`, `eigenvectorBasis`, `eigenvalues_antitone` in
+`Analysis.InnerProductSpace.Spectrum`), but not the min-max. The dimension-counting proof —
+`S ⊓ span {u_k, ..., u_n} ≠ ⊥` through `Submodule.finrank_sup_add_finrank_inf_eq` — turns the list
+into the characterization, and everything sharp about Ritz values rests on it.
+
+It is its own module rather than a part of `Eigen/RayleighRitz` because nothing in it mentions a
+compression or a Ritz pair: it is a statement about one symmetric operator, wanted by
+`Eigen/RayleighRitz`, by `Eigen/KrylovEigen` and by the Weyl inequalities that belong with the
+perturbation bounds. See §4.2 of `backbone.md`.
+'''
+
+[[node]]
+id = "LinearMap.IsSymmetric.eigenvalues_eq_iSup_iInf"
+kind = "theorem"
+desc = '''Courant-Fischer, max-min form: the `k`-th eigenvalue in decreasing order is the maximum
+over subspaces of dimension `k + 1` of the minimum Rayleigh quotient on the subspace. Stated
+against Mathlib's `LinearMap.IsSymmetric.eigenvalues`, which is sorted decreasing.'''
+source = "Saad, Numerical Methods for Large Eigenvalue Problems, Theorem 1.9"
+
+[[node]]
+id = "LinearMap.IsSymmetric.eigenvalues_eq_iInf_iSup"
+kind = "theorem"
+desc = '''Courant-Fischer, min-max form: the `k`-th eigenvalue is the minimum over subspaces of
+codimension `k` of the maximum Rayleigh quotient. The dual of the max-min form, obtained from it
+by negating the operator.'''
+source = "Saad, Numerical Methods for Large Eigenvalue Problems, Theorem 1.9"
+
+[[node]]
+id = "LinearMap.IsSymmetric.abs_eigenvalues_sub_le"
+kind = "theorem"
+desc = '''Weyl: `|λ_k(A) - λ_k(B)| ≤ ‖A - B‖` for symmetric `A` and `B`, one eigenvalue index at a
+time. Immediate from the min-max, and the reason the min-max sits below the perturbation layer.'''
+deps = ["LinearMap.IsSymmetric.eigenvalues_eq_iSup_iInf"]
+source = "Kress, Numerical Analysis, Corollary 7.5"
