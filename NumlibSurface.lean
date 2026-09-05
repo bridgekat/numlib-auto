@@ -44,6 +44,7 @@ import NumlibSurface.SaadSparse.Chapter06.Section08
 import NumlibSurface.SaadSparse.Chapter06.Section09
 import NumlibSurface.SaadSparse.Chapter06.Section10
 import NumlibSurface.SaadSparse.Chapter06.Section11
+import NumlibSurface.SaadSparse.Chapter09.Section01
 import NumlibSurface.SaadSparse.Common
 
 /-!

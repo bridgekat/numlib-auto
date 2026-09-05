@@ -1,34 +1,22 @@
 namespace = "SaadSparse.Ch09"
-desc = '''
-Saad §9.1: the three ways of applying a preconditioner — left (9.1), right (9.2) and split (9.3).
-
-Five short declarations fixing the chapter's vocabulary: the three preconditioned systems, the
-statement that they have the same solution set (with `x = M⁻¹ u` resp. `x = M_R⁻¹ u`), and
-P-9.1/P-9.10, that `M⁻¹ A`, `A M⁻¹` and `M_L⁻¹ A M_R⁻¹` are similar and therefore have the same
-spectrum — the chapter's reason for expecting the three options to behave alike, and the setting
-for §9.3.4, which shows they nevertheless minimize different quantities.
-'''
 
 [[node]]
 id = "leftPreconditioned"
-kind = "definition"
-desc = '''(9.1)-(9.3): the left-preconditioned operator `M⁻¹ A` with right-hand side `M⁻¹ b`, the
-right-preconditioned operator `A M⁻¹` with the change of variables `u = M x`, and the
-split-preconditioned operator `M_L⁻¹ A M_R⁻¹` with `x = M_R⁻¹ u`, for a nonsingular
-preconditioner `M` (resp. `M = M_L M_R`).'''
-deps = ["Matrix.toEuclideanLin_mul"]
-
-[[node]]
-id = "solution_iff"
-kind = "theorem"
-desc = '''The three preconditioned systems have the same solutions as `A x = b`: `M⁻¹ A x = M⁻¹ b` iff
-`A x = b`; `A M⁻¹ u = b` with `x = M⁻¹ u` iff `A x = b`; likewise for the split form.'''
-deps = ["leftPreconditioned"]
 
 [[node]]
 id = "problem_9_1"
-kind = "theorem"
-desc = '''**P-9.1** and **P-9.10**: `A M⁻¹ = M (M⁻¹ A) M⁻¹` and `M_L⁻¹ A M_R⁻¹ = M_L⁻¹ (M⁻¹ A) M_L`, so
-the three preconditioned matrices are similar and have the same spectrum (and the same
-characteristic polynomial).'''
-deps = ["leftPreconditioned"]
+
+[[node]]
+id = "problem_9_1_charpoly"
+
+[[node]]
+id = "problem_9_1_spectrum"
+
+[[node]]
+id = "rightPreconditioned"
+
+[[node]]
+id = "solution_iff"
+
+[[node]]
+id = "splitPreconditioned"

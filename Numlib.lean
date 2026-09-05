@@ -36,6 +36,7 @@ import Numlib.Krylov.Lanczos
 import Numlib.Krylov.Monotonicity
 import Numlib.Krylov.OrthogonalPolynomials
 import Numlib.Krylov.Perturbed
+import Numlib.Krylov.QuasiMinRes
 import Numlib.Krylov.Relations
 import Numlib.Krylov.Subspace
 import Numlib.LinearAlgebra.Matrix.Complexify
@@ -59,9 +60,9 @@ import Numlib.RingTheory.Polynomial.ChebyshevEllipse
 import Numlib.RingTheory.Polynomial.ChebyshevMinimax
 import Numlib.Variational.Forms
 import Numlib.Variational.Galerkin
+import Numlib.Variational.LaxMilgram
 import Numlib.Variational.Minimization
 import Numlib.Variational.ProjectionMethod
-import Numlib.Variational.LaxMilgram
 
 /-!
 # Numlib

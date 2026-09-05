@@ -651,6 +651,22 @@ More structural facts:
   a constant bound on the unit ball into an operator-norm bound needs an explicit rescaling by
   `((‖x‖ : ℝ) : 𝕜)⁻¹`; `opNorm_le_of_ball` does *not* apply, since it wants the homogeneous
   bound `‖f x‖ ≤ C ‖x‖` already.
+* `Submodule.mem_span_range_iff_exists_fun` takes the ring **explicitly**, so the natural
+  `Submodule.mem_span_range_iff_exists_fun.mp h` fails with "unknown constant …`.mp`" rather than
+  with a missing-argument error; write `(Submodule.mem_span_range_iff_exists_fun 𝕜).mp h`. Its
+  equation is oriented `∑ i, c i • v i = x`, not `x = ∑ …`.
+* `RCLike.conj_mul z : conj z * z = ↑‖z‖ ^ 2` puts the cast **inside** the square: the right-hand
+  side is `((‖z‖ : 𝕜)) ^ 2`, not `((‖z‖ ^ 2 : ℝ) : 𝕜)`. A statement written with the latter (the
+  readable form for a real coefficient) therefore does not match `rw [← RCLike.conj_mul]`; bridge
+  it with a `have … := by rw [RCLike.conj_mul]; push_cast; ring`.
+* `sq_sum_le_card_mul_sum_sq` (`Mathlib.Algebra.Order.Chebyshev`, not imported by `Numlib`) is the
+  Cauchy–Schwarz step `(∑ f)² ≤ #s ∑ f²`; it is what turns "`‖v i‖ ≤ 1` for all `i`" into the
+  `√(m+1)` conditioning constant of a non-orthonormal basis.
+* Under `open Matrix`, a bare `mul_inv_rev` is ambiguous between the group lemma and
+  `Matrix.mul_inv_rev`; qualify it.
+* A `noncomputable abbrev` wrapping a product of matrices is reducible enough that `rw [mul_assoc]`
+  and friends rewrite *through* it, so a proof written against the folded statement will find its
+  goal already unfolded. Open such a proof with `change` to the unfolded form and stay there.
 
 ## Design conventions of this library
 

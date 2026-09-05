@@ -1,179 +1,67 @@
 namespace = "Krylov"
-desc = '''
-Quasi-minimal residual methods: what a Krylov method can still prove when the basis it expands
-the residual in is **not** orthonormal. Saad, *Iterative Methods for Sparse Linear Systems*,
-§7.3.2 (QMR), §7.4.3 (TFQMR), §6.5.6 (QGMRES/DQGMRES) and §9.4.1 (FGMRES) are the four
-consumers, and they are one theory: a Hessenberg relation, a least-squares problem in the
-coefficients, and a comparison of the true residual with the *quasi*-residual through the
-conditioning of the basis.
-
-Two generalizations of `Numlib/Krylov/Hessenberg` live here.
-
-* `HessenbergRelation₂ A z v h`, `A z_j = ∑_{i ≤ j+1} h_ij v_i`, with **two** families: the
-  iterate is expanded in `z`, the residual in `v`. `Krylov.HessenbergRelation` is the diagonal
-  case `z = v` (`HessenbergRelation₂.of_hessenbergRelation`), and the genuinely two-family
-  instances are FGMRES (`A Z_m = V_{m+1} H̄_m`, Saad (9.22)) and TFQMR
-  (`A U_m = R_{m+1} B̄_m`, Saad (7.70)), neither of which the one-family structure can state.
-* `IsQuasiMinResIterate z h β x₀ m x`, "`x = x₀ + Z_m y` with `y` minimizing `‖β e₁ - H̄_m y‖₂`".
-  This is the specification `Krylov.IsMinResIterate` degenerates to when the residual basis is
-  orthonormal (`isQuasiMinResIterate_iff_isMinResIterate`); in general it minimizes something
-  else, and the theorems below say by how much.
-
-The three results that make the module worth its existence, each of which the book proves twice:
-
-* `‖b - A x‖ ≤ C ‖γ_m‖` whenever the residual basis satisfies `‖∑ w_i v_i‖ ≤ C ‖w‖₂`, so
-  `C = √(m+1)` for unit vectors — Saad Prop 7.3, (6.51) and (7.83) at once.
-* `‖r^Q_m‖ ≤ (C/c) ‖r_m‖` for every `r_m` from the same affine space, where `c ‖w‖₂ ≤ ‖∑ w_i v_i‖`
-  — Saad Thm 7.4 and Thm 6.11, with `C/c` the conditioning `κ₂(V_{m+1})` of the basis. The proof
-  is four inequalities (`‖V t^Q‖ ≤ C‖t^Q‖ ≤ C‖t‖ ≤ (C/c)‖V t‖`) and needs neither a
-  Gram–Schmidt factorization of `V_{m+1}` nor its full rank as a separate hypothesis.
-* With an orthonormal residual basis and an arbitrary `z`, the quasi-minimal-residual iterate
-  minimizes the true residual over `x₀ + span {z_0, …, z_{m-1}}` — Saad Prop 9.2 (FGMRES).
-
-The harmonic relations `1/(ρ^Q_m)² = 1/(ρ^Q_{m-1})² + 1/(ρ^F_m)²` and
-`ρ^Q_m ≤ min_{i ≤ m} ρ^F_i ≤ √(m+1) ρ^Q_m` are here in their pure Givens form, as statements
-about `Krylov.gamma` and `Krylov.givensC` alone: that is what the quasi-residual case needs,
-since the corresponding statements of `Numlib/Krylov/Relations` are about true residuals and
-assume orthonormality. Indices are `0`-based as in the rest of the Krylov layer.
-'''
 
 [[node]]
 id = "HessenbergRelation₂"
-kind = "definition"
-desc = '''The two-family Hessenberg relation `A z_j = ∑_{i ∈ range (j+2)} h i j • v i` with `h` upper
-Hessenberg (`h i j = 0` for `j + 1 < i`): the iterate basis `z` on the left, the residual basis
-`v` on the right. `HessenbergRelation₂.of_hessenbergRelation` embeds
-`Krylov.HessenbergRelation A v h` as the case `z = v`.'''
-deps = ["HessenbergRelation"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, (9.22) and (7.70)"
+
+[[node]]
+id = "HessenbergRelation₂.apply_sum"
+
+[[node]]
+id = "HessenbergRelation₂.norm_residual_le"
+
+[[node]]
+id = "HessenbergRelation₂.of_hessenbergRelation"
 
 [[node]]
 id = "HessenbergRelation₂.residual_eq"
-kind = "theorem"
-desc = '''With `b - A x₀ = β • v 0`, the residual of `x₀ + ∑ j, y j • z j` is
-`∑ i, (firstVec β (m+1) - hessenbergOf h m *ᵥ y) i • v i`. The two-family form of
-`Krylov.HessenbergRelation.residual_eq`; it is Saad (7.16) for QMR, (7.75) for TFQMR and
-(9.25) for FGMRES.'''
-deps = ["HessenbergRelation₂", "hessenbergOf", "firstVec"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, (7.16), (7.75), (9.25)"
 
 [[node]]
 id = "HessenbergRelation₂.residual_eq_of_mulVec_eq"
-kind = "theorem"
-desc = '''If `hessenbergSqOf h m *ᵥ y = firstVec β m` then the residual of `x₀ + ∑ j, y j • z j` is
-`-(h m (m-1) * y (m-1)) • v m`: the FOM-shaped iterate of a two-family relation. Saad (7.76)
-identifies the CGS iterates this way, and Saad Prop 9.3 (FGMRES exactness) is its consequence.'''
-deps = ["HessenbergRelation₂.residual_eq", "hessenbergSqOf"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, (7.76), (9.23)"
-
-[[node]]
-id = "quasiResidual"
-kind = "definition"
-desc = '''The quasi-residual `quasiResidual h β m y = ‖β e₁ - H̄_m y‖₂`, the Euclidean norm of
-`firstVec β (m+1) - hessenbergOf h m *ᵥ y` in `EuclideanSpace 𝕜 (Fin (m+1))`. It is the true
-residual norm exactly when the residual basis is orthonormal.'''
-deps = ["hessenbergOf", "firstVec"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, Section 7.3.2"
 
 [[node]]
 id = "IsQuasiMinResIterate"
-kind = "definition"
-desc = '''The quasi-minimal-residual specification:
-`IsQuasiMinResIterate z h β x₀ m x := ∃ y, IsMinOn (quasiResidual h β m) univ y ∧
-x = x₀ + ∑ j, y j • z j`. QMR (Saad Alg. 7.4), TFQMR (Alg. 7.8), QGMRES/DQGMRES (Alg. 6.12-6.13)
-and FGMRES (Alg. 9.6) all satisfy it, for their own `z`, `v` and `h`.'''
-deps = ["quasiResidual"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, Section 7.3.2 and Algorithm 7.4"
-
-[[node]]
-id = "quasiResidual_eq_norm_gamma"
-kind = "theorem"
-desc = '''The value of the quasi-residual at its minimizer is `‖gamma h β m‖`, which by
-`Krylov.norm_gamma_eq_prod` is `|s_1 ⋯ s_m| ‖β‖` — Saad (7.18). Proved from
-`Krylov.norm_sq_firstVec_sub_mulVec_eq` and `Krylov.rotated_last_row`, with no reference to any
-basis; the companion `quasiResidual_isMinOn_iff` characterizes the minimizer as the solution of
-the rotated triangular system.'''
-deps = ["quasiResidual", "gamma", "rotated", "norm_gamma_eq_prod", "rotated_last_row"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, (7.18), (6.43)"
-
-[[node]]
-id = "IsQuasiMinResIterate.norm_residual_le"
-kind = "theorem"
-desc = '''Saad Prop 7.3, and (6.51) and (7.83): if `‖∑ i, w i • v i‖ ≤ C ‖w‖₂` for all `w` — for unit
-basis vectors `C = √(m+1)` by Cauchy-Schwarz — then a quasi-minimal-residual iterate satisfies
-`‖b - A x‖ ≤ C ‖gamma h β m‖`, the quasi-residual norm times the conditioning of the basis.'''
-deps = ["IsQuasiMinResIterate", "HessenbergRelation₂.residual_eq", "quasiResidual_eq_norm_gamma"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 7.3, (6.51), (7.83)"
-
-[[node]]
-id = "IsQuasiMinResIterate.norm_residual_le_mul"
-kind = "theorem"
-desc = '''Saad Thm 7.4 (and Thm 6.11): if `c ‖w‖₂ ≤ ‖∑ i, w i • v i‖ ≤ C ‖w‖₂` with `0 < c`, then for
-*every* `w : Fin m → 𝕜` the quasi-minimal-residual iterate `x` satisfies
-`‖b - A x‖ ≤ (C/c) ‖b - A (x₀ + ∑ j, w j • z j)‖`; applied to the coordinates of the
-minimal-residual iterate this is `‖r^Q_m‖ ≤ κ₂(V_{m+1}) ‖r^G_m‖`. The whole proof is
-`‖V t^Q‖ ≤ C ‖t^Q‖ ≤ C ‖t^w‖ ≤ (C/c) ‖V t^w‖`, the middle step being minimality of the
-quasi-residual.'''
-deps = ["IsQuasiMinResIterate", "HessenbergRelation₂.residual_eq"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 7.4 and Theorem 6.11"
-
-[[node]]
-id = "IsQuasiMinResIterate.isMinOn_norm_residual"
-kind = "theorem"
-desc = '''Saad Prop 9.2: when the residual basis `v` is orthonormal (the iterate basis `z` staying
-arbitrary), the quasi-residual *is* the residual norm, so the quasi-minimal-residual iterate
-minimizes `‖b - A x‖` over `x₀ + span {z_0, …, z_{m-1}}`. This is the optimality of FGMRES, and
-the case `z = v` is `isQuasiMinResIterate_iff_isMinResIterate`.'''
-deps = ["IsQuasiMinResIterate", "HessenbergRelation₂.residual_eq"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 9.2"
-
-[[node]]
-id = "isQuasiMinResIterate_iff_isMinResIterate"
-kind = "theorem"
-desc = '''For the Arnoldi basis (`z = v` orthonormal, `h = Arnoldi.coeff`, `m ≤ grade`) the
-quasi-minimal-residual specification is the minimal-residual specification:
-`IsQuasiMinResIterate (Arnoldi.vec A r₀) (Arnoldi.coeff A r₀) ‖r₀‖ x₀ m x ↔
-IsMinResIterate A b x₀ m x`. This is the book's "QGMRES = GMRES when the orthogonalization is
-complete", and it is what makes `IsQuasiMinResIterate` a generalization rather than a new
-object.'''
-deps = ["IsQuasiMinResIterate", "IsMinResIterate", "isMinResIterate_iff_isMinOn"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, Section 6.5.6"
-
-[[node]]
-id = "inv_sq_norm_gamma"
-kind = "theorem"
-desc = '''The harmonic relation between successive quasi-residual norms, in Givens form: with
-`ρ^Q_k := ‖gamma h β k‖` and `ρ^F_k := ρ^Q_k / ‖givensC h (k-1)‖`,
-`1/(ρ^Q_m)² = 1/(ρ^Q_{m-1})² + 1/(ρ^F_m)²`. It is `‖c_m‖² + ‖s_m‖² = 1` together with
-`gamma_succ`, and with a unit residual basis it is Saad (7.23) for QMR against BCG, as
-`Krylov.inv_sq_norm_residual_minRes` is (6.65) for GMRES against FOM.'''
-deps = ["gamma", "givensC", "gamma_succ", "norm_givensC_sq_add_norm_givensS_sq"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, (7.23) and (6.65)"
-
-[[node]]
-id = "inv_sq_norm_gamma_eq_sum"
-kind = "theorem"
-desc = '''Saad (7.24): `1/(ρ^Q_m)² = ∑_{i ≤ m} 1/(ρ^F_i)²`, the quasi-residual norm as a harmonic
-average of the Galerkin ones; the induction on `inv_sq_norm_gamma`.'''
-deps = ["inv_sq_norm_gamma"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, (7.24)"
-
-[[node]]
-id = "exists_norm_gamma_div_givensC_le"
-kind = "theorem"
-desc = '''Saad Prop 7.5 (the analogue of Prop 6.15): `ρ^Q_m ≤ ρ^F_i` for every `i ≤ m`, and
-`min_{i ≤ m} ρ^F_i ≤ √(m+1) ρ^Q_m`; from `inv_sq_norm_gamma_eq_sum` by bounding a sum of `m+1`
-terms below by `m+1` times its smallest.'''
-deps = ["inv_sq_norm_gamma_eq_sum"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 7.5"
 
 [[node]]
 id = "IsQuasiMinResIterate.eq_combination"
-kind = "theorem"
-desc = '''Saad (7.29)-(7.30) (and (6.58)): successive quasi-minimal-residual iterates and their
-residuals are the smoothing combinations `x^Q_m = ‖s_m‖² x^Q_{m-1} + ‖c_m‖² x^F_m` and
-`r^Q_m = ‖s_m‖² r^Q_{m-1} + ‖c_m‖² r^F_m` of the previous quasi-minimal-residual iterate and the
-Galerkin (BCG/CGS/FOM) iterate at the current step — the identity that lets QMR be implemented as
-quasi-minimal residual smoothing of BCG (Zhou-Walker, Saad Alg. 7.5).'''
-deps = ["IsQuasiMinResIterate", "HessenbergRelation₂.residual_eq_of_mulVec_eq", "givensC", "givensS"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, (7.29)-(7.30) and (6.58)"
+
+[[node]]
+id = "IsQuasiMinResIterate.isMinOn_norm_residual"
+
+[[node]]
+id = "IsQuasiMinResIterate.norm_residual_le"
+
+[[node]]
+id = "IsQuasiMinResIterate.norm_residual_le_mul"
+
+[[node]]
+id = "IsQuasiMinResIterate.residual_eq_combination"
+
+[[node]]
+id = "exists_norm_gamma_div_givensC_le"
+
+[[node]]
+id = "givensRho_ne_zero_of_subdiag_ne_zero"
+
+[[node]]
+id = "inv_sq_norm_gamma"
+
+[[node]]
+id = "inv_sq_norm_gamma_eq_sum"
+
+[[node]]
+id = "isQuasiMinResIterate_iff_isMinResIterate"
+
+[[node]]
+id = "norm_gamma_le"
+
+[[node]]
+id = "norm_sum_smul_le_sqrt_mul"
+
+[[node]]
+id = "quasiResidual"
+
+[[node]]
+id = "quasiResidual_eq_norm_gamma"
+
+[[node]]
+id = "quasiResidual_isMinOn_iff"
