@@ -25,10 +25,10 @@ Classification of each book item. `direct`: proof is a direct use of Mathlib or 
 declaration (named). `needs-equivalence`: same, modulo a surface lemma identifying the book's
 definition with the Mathlib/backbone notion (the lemma is named in §1). `surface-only`: provable in
 the surface file from Mathlib with moderate work, no backbone item warranted. `deferred`: needs a
-backbone item scheduled for a later phase (`plans/backbone.md` §7; the item is listed in §3).
+backbone item scheduled for a later phase (`backbone.md` §7; the item is listed in §3).
 `out-of-scope`: not planned (reason given).
 
-Proposed files (`Numlib/Surface/AtkinsonHan/Chapter05/`, namespace `AtkinsonHan.Ch05`, one section per file):
+Proposed files (`NumlibSurface/AtkinsonHan/Chapter05/`, namespace `AtkinsonHan.Ch05`, one section per file):
 
 | File | Book | Backbone modules used |
 |---|---|---|
@@ -40,7 +40,7 @@ Proposed files (`Numlib/Surface/AtkinsonHan/Chapter05/`, namespace `AtkinsonHan.
 | `ConjugateGradient.lean` | (5.6.2)–(5.6.6), (5.6.10), Thm 5.6.1; Thm 5.6.2 with (5.6.12)–(5.6.21) as a surface-only variant | `Numlib/Krylov/{Subspace,Iterate,CG}.lean`; `Numlib/Krylov/Convergence/{Polynomial,CG}.lean`; `Numlib/LinearSolve/Projection/{Basic,Optimality,OneDimensional}.lean`; `Numlib/InnerProductSpace/{Coercive,Energy}.lean`; `Numlib/RingTheory/Polynomial/ChebyshevMinimax.lean` |
 
 §5.5 gets no file (a module docstring in `Calculus.lean` records the summary). `IntegralEquations.lean`
-belongs to phase 3 (`plans/backbone.md` §7, §8.3); its Mathlib-only parts (existence and uniqueness
+belongs to phase 3 (`backbone.md` §7, §8.3); its Mathlib-only parts (existence and uniqueness
 in Thm 5.2.4) can be stated earlier.
 
 ## 1. Book-specific definitions
@@ -119,7 +119,7 @@ bundled to `C(Icc a b, ℝ)` with `intervalIntegral.continuous_parametric_interv
 Volterra (`∫ y in a..x`, use `..._of_continuous` with `s x = x`) and Picard (values in `V`).
 Bielecki norm: type synonym `Bielecki (β : ℝ) (X)` of `C(Icc a b, V)` with `‖v‖ = ⨆ t, exp (−β t) ‖v t‖`.
 *Counterpart.* None in Mathlib or the backbone; the bundled operators, their Lipschitz bounds and the
-Bielecki norm form the phase-3 integral-operator toolkit (`plans/backbone.md` §7, §8.3; §3 item 1).
+Bielecki norm form the phase-3 integral-operator toolkit (`backbone.md` §7, §8.3; §3 item 1).
 Mathlib's `IsPicardLindelof.FunSpace` (`Mathlib/Analysis/ODE/PicardLindelof.lean`) is an internal
 instance of the same construction (iterate-contraction, `exists_contractingWith_iterate_next`).
 
@@ -358,7 +358,7 @@ Classification: `direct` (for the norm instance in scope), `surface-only` for "a
 `NormedAlgebra ℂ (Matrix n n ℂ)` instance — awkward; state for the three Mathlib norms).
 
 **§5.2.2 relation 2** (`∀ ε ∃` operator norm with `‖A‖ ≤ r_σ + ε`; `r_σ = inf` over operator norms).
-Classification: `out-of-scope` (no Mathlib support; the backbone replaces it by Gelfand, `plans/backbone.md` §2.3.1).
+Classification: `out-of-scope` (no Mathlib support; the backbone replaces it by Gelfand, `backbone.md` §2.3.1).
 
 **§5.2.2 relation 3** Gelfand `r_σ(A) = lim ‖Aⁿ‖^{1/n}` for any matrix norm.
 Mathlib: `spectrum.pow_nnnorm_pow_one_div_tendsto_nhds_spectralRadius` (ℂ, Banach-algebra norm). Real matrices:
@@ -591,7 +591,7 @@ theorem theorem_5_4_2 [CompleteSpace U] [CompleteSpace W] {F : U → W} {F' : U 
 Backbone: `Newton.kantorovich` (`Numlib/Nonlinear/Newton.lean`) with `β = a`, `η = b`, `h = β L η`,
 `t* = (1 − √(1−2h))/(βL) ≤ r` — the statement above up to the order of the factors in `a * b * L`.
 Classification: `direct`.
-The book's finer form is a `deferred` refinement (phase 2, `plans/backbone.md` §7 "5.3.2 Kantorovich"; §3 item 2):
+The book's finer form is a `deferred` refinement (phase 2, `backbone.md` §7 "5.3.2 Kantorovich"; §3 item 2):
 existence localised to `B̄(u₁, t* − b) ⊂ B̄(u₀, t*)` under the weaker domain hypothesis `B̄(u₁, t* − b) ⊂ D(F)`;
 uniqueness in `B̄(u₀, t**) ∩ D(F)`; and the sharper bound `(1 − √(1−2h))^{2ⁿ}/(2ⁿ a L)` — the backbone's
 `(2h)^{2ⁿ} b/(2ⁿ h) = (2h)^{2ⁿ}/(2ⁿ aL)` is weaker since `1 − √(1−2h) ≤ 2h`; the two agree at `h = ½`, where both
@@ -686,7 +686,7 @@ eigenbasis hypothesis).
 **Thm 5.6.2 (Winther, superlinear convergence)**.
 Book: `K` compact self-adjoint, `A = I − K` self-adjoint positive definite ⇒ `‖u* − u_k‖ ≤ c_k^k ‖u* − u₀‖` with
 `c_k = (Δ/δ)^{3/(2k)} (2/k) Σ_{j≤k} |λ_j|/(1−λ_j) → 0` (5.6.21).
-Faithful statement: `deferred` (phase 2, `plans/backbone.md` §3.10 and §8.3; needs the compact self-adjoint spectral
+Faithful statement: `deferred` (phase 2, `backbone.md` §3.10 and §8.3; needs the compact self-adjoint spectral
 theorem, absent from Mathlib — §3 item 3). Surface-only variant (recommended if wanted): hypotheses
 `(φ : HilbertBasis ℕ ℝ V) (λ : ℕ → ℝ) (hK : ∀ j, K (φ j) = λ j • φ j) (hanti : Antitone fun j => |λ j|) (hlim : Tendsto λ atTop (𝓝 0)) (hδ : 0 < δ) (hδ' : ∀ j, δ ≤ 1 − λ j) (hΔ : ∀ j, 1 − λ j ≤ Δ)`,
 conclusion (5.6.11) with `c_k` as in (5.6.21). Proof steps:
@@ -720,7 +720,7 @@ Classification: `needs-equivalence` (D11, D13).
 
 ## 3. Deferred backbone items
 
-1. **`C[a,b]` integral-operator toolkit** — phase 3 (`plans/backbone.md` §7 "AH 5.2.3–5.2.4 (Bielecki norms,
+1. **`C[a,b]` integral-operator toolkit** — phase 3 (`backbone.md` §7 "AH 5.2.3–5.2.4 (Bielecki norms,
    Picard–Lindelöf)", §8.3). Proposed `Numlib/IntegralEquations/Basic.lean`: bundled Fredholm/Urysohn/Volterra
    operators `C(Icc a b, ℝ) → C(Icc a b, ℝ)` (continuity from
    `intervalIntegral.continuous_parametric_intervalIntegral_of_continuous'`), Lipschitz bounds (`|μ|·M·(b−a)`;
@@ -729,11 +729,11 @@ Classification: `needs-equivalence` (D11, D13).
    `C(Icc a b, ℝ)`, Thm 5.2.3 is `tendsto_iterate_of_iterate_contractingWith` + the factorial bound, and the
    iteration part of Thm 5.2.4 is Thm 5.1.3 on the closed ball in `Bielecki L`. Consumers beyond this chapter:
    AH Ch. 12, Kress Ch. 10–12.
-2. **Newton–Kantorovich in Atkinson–Han's form** — phase 2 (`plans/backbone.md` §7 "5.3.2 Kantorovich"): refine
+2. **Newton–Kantorovich in Atkinson–Han's form** — phase 2 (`backbone.md` §7 "5.3.2 Kantorovich"): refine
    `Newton.kantorovich` with existence in `B̄(u₁, t* − b)` under the domain hypothesis `B̄(u₁, t* − b) ⊂ D(F)`,
    uniqueness in `B̄(u₀, t**)` with `t** = (1 + √(1−2h))/(aL)`, and the sharp a priori bound
    `‖u_n − u*‖ ≤ (1 − √(1−2h))^{2ⁿ}/(2ⁿ a L)` (majorant-sequence argument; Ortega–Rheinboldt §12.6, Zeidler).
-3. **Winther's theorem (Thm 5.6.2)** — phase 2 (`plans/backbone.md` §3.10, §8.3): blocked by the spectral theorem
+3. **Winther's theorem (Thm 5.6.2)** — phase 2 (`backbone.md` §3.10, §8.3): blocked by the spectral theorem
    for compact self-adjoint operators (AH Thm 2.8.15; absent from Mathlib). The surface-only variant above takes the
    eigenbasis as a hypothesis and needs only `Krylov.exists_residual_poly` and `CG.iterate_sub_mem`.
 
@@ -748,7 +748,7 @@ bound `‖v‖_A ≤ √M ‖v‖` for `IsSymmetricBoundedBy` (a one-liner; the 
 ## 4. Left out
 
 - Ex 5.1.1 (kept optional), Ex 5.1.3, Ex 5.1.4 (not cited by theorems; Ex 5.1.4 is the local version of the
-  fixed-point theorem mentioned in `plans/backbone.md` §5.3.1).
+  fixed-point theorem mentioned in `backbone.md` §5.3.1).
 - §5.2.1 remarks on `T x = x − c₀ f(x)` and Newton's scalar form (motivation only).
 - §5.2.2 componentwise Jacobi/GS/SOR formulas and the optimal-`ω` discussion; Ex 5.2.2 (diagonal dominance —
   backbone `Numlib/LinearSolve/Stationary/DiagDominant.lean`), Ex 5.2.3 (Richardson; `0 < θ < 2/λ_max`).

@@ -18,11 +18,11 @@ Table 2.1, the minimization characterizations of CG and MINRES, the CR sign lemm
 the monotonicity theorems Thm 2.3–2.5 for CR (hence MINRES); (§3) normwise relative backward error
 (3.1)–(3.6), the stopping rule (3.4), Thm 3.1; (§4.1.1) the FOM/GMRES-type relation (4.1); (§4.2)
 Steihaug's indefinite-case monotonicity and its CR analogue; (§5) Table 5.1.
-Lean files: `Numlib/Surface/FongSaunders/Section1.lean` (setting), `Sec2.lean`, `Sec3.lean`, `Sec4.lean`
+Lean files: `NumlibSurface/FongSaunders/Section1.lean` (setting), `Sec2.lean`, `Sec3.lean`, `Sec4.lean`
 (only (4.1), the telescoping identity, §4.2), `Sec5.lean` (Table 5.1 as a structure). Numerical-only
 material (§4 experiments, Figures 4.1–4.8, the MINRES-QLP heuristic in §4.2, Table 5.2, §5 prose) is
 left out (section "Left out" below). Count: 26 result blocks; two deferred backbone items (both
-from §4.2). Backbone dependencies: `plans/backbone.md` §2.1.4–2.1.5, §2.2, §2.4, §3.1–3.8, §3.11,
+from §4.2). Backbone dependencies: `backbone.md` §2.1.4–2.1.5, §2.2, §2.4, §3.1–3.8, §3.11,
 §8.2.
 
 Conventions used below. `n : ℕ`; `Vec n := EuclideanSpace ℝ (Fin n)`; `A : Matrix (Fin n) (Fin n) ℝ`
@@ -31,7 +31,7 @@ and `xᵀ A x > 0` for `x ≠ 0`"); `b : Vec n`; `A ⬝ x := Matrix.toEuclideanL
 surface's matrix–vector product on Euclidean vectors); `⟪x, y⟫_ℝ` is `xᵀ y`; `‖x‖` on `Vec n` is the
 2-norm; `‖A‖` is the Frobenius norm via `open scoped Matrix.Norms.Frobenius`. Backbone declarations
 are cited by name together with their module under `Numlib/`; parenthesized section numbers refer
-to `plans/backbone.md`. Backbone statements are about an operator `A : E →ₗ[𝕜] E`; the surface
+to `backbone.md`. Backbone statements are about an operator `A : E →ₗ[𝕜] E`; the surface
 instantiates `𝕜 = ℝ`, `E = Vec n`, `A := toEuclideanLin A`, `x₀ = 0`, so the backbone's instance
 hypotheses `[FiniteDimensional 𝕜 E]` and `[FiniteDimensional 𝕜 (Krylov.fullSubspace …)]` are
 automatic and `RCLike.re` disappears (`RCLike.re_to_real`).
@@ -677,8 +677,8 @@ Numbering: `R<section>.<item>`; the paper's own labels are in the `Book statemen
 ## Deferred backbone items
 
 Both items are the strict, symmetric-indefinite forms of the monotonicity theorems that
-`plans/backbone.md` §3.11 lists under "Steihaug's generalization"; they are scheduled for phase 2
-(`plans/backbone.md` §7). The surface states R4.3–R4.4 against them.
+`backbone.md` §3.11 lists under "Steihaug's generalization"; they are scheduled for phase 2
+(`backbone.md` §7). The surface states R4.3–R4.4 against them.
 
 1. **Steihaug for symmetric indefinite `A` (strict), `Numlib/Krylov/CG.lean` (§3.7/§3.11).**
    `theorem CG.norm_iterate_lt_of_re_inner_apply_direction_pos (hA : A.IsSymmetric) (b) (k) (h : ∀ j < k, 0 < re ⟪A p_j, p_j⟫) : ∀ i < k, ‖x_i‖ < ‖x_{i+1}‖`
@@ -701,7 +701,7 @@ Both items are the strict, symmetric-indefinite forms of the monotonicity theore
   (`¬ Monotone ‖x_k^M‖` for MINRES on an indefinite system), but the paper only reports it graphically; optional surface exercise.
 * §4.2: the MINRES-QLP relationship (`Q_k [T̲_k β_1 e_1]`, `R_k P_k = L_k`, `W_k = V_k P_k`, `‖x_k^M‖ = ‖u_k‖`, the `χ²`
   update and "approximately monotonic") — a heuristic built on Choi–Paige–Saunders [3]; the identities belong to the Choi
-  surface / backbone phase 2 (`Krylov/Singular.lean`, `plans/backbone.md` §3.12), and the paper draws no theorem from them.
+  surface / backbone phase 2 (`Krylov/Singular.lean`, `backbone.md` §3.12), and the paper draws no theorem from them.
 * Table 5.2 (LSQR/LSMR properties) and the §5 discussion of least-squares solvers — results of other papers ([7], [8], [19]); the
   reduction "LSQR/LSMR = CG/MINRES on the normal equations" is a definition-level remark about other algorithms.
 * §5 conclusions, acknowledgements, references, footnotes, key words.

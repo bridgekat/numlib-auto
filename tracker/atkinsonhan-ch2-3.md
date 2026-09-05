@@ -12,7 +12,7 @@ deliberately left out.
 
 Source: Atkinson–Han, *Theoretical Numerical Analysis* (3rd ed.): §2.3 (geometric series theorem), §2.4 (operators),
 §2.5 (linear functionals), §3.3–3.4 (best approximation), §3.5 (orthogonal polynomials, cited as black boxes only),
-§3.6 (projection operators), §3.7 (uniform error bounds). Backbone references are to `plans/backbone.md`
+§3.6 (projection operators), §3.7 (uniform error bounds). Backbone references are to `backbone.md`
 (§1.4, §2.1.1–2.1.2, §2.1.4, §2.1.7, §2.2, §3.12, §5.1, §7, §8.3) and to the modules under `Numlib/`.
 
 Conventions used below.
@@ -26,7 +26,7 @@ Conventions used below.
 * Operators: `𝓛(V, W)` = `V →L[𝕜] W`; "bijection with bounded inverse" = `∃ e : V ≃L[𝕜] W, (e : V →L[𝕜] W) = L`;
   `V'` = `StrongDual 𝕜 V`; `Vᗮ` = `Submodule.orthogonal`.
 * Naming: `AtkinsonHan.Ch02.theorem_2_3_1`, `corollary_2_3_3`, `lemma_3_4_1`, `proposition_3_6_9_a`, `example_3_6_7`, `exercise_3_6_7`,
-  `equation_2_3_13` (numbered inequalities); book numbers appear only in the surface, per `plans/backbone.md` §1.4.
+  `equation_2_3_13` (numbered inequalities); book numbers appear only in the surface, per `backbone.md` §1.4.
 * Backbone results in a normed ring `R` (`Numlib/Analysis/Normed/Ring/Inverse.lean`, `CondNumber.lean`) assume
   `[NormOneClass R]`; for `R = V →L[𝕜] V` this is the instance `ContinuousLinearMap.normOneClass`, available for
   nontrivial `V`. Surface statements that go through them either assume `[Nontrivial V]` or treat the trivial space
@@ -93,7 +93,7 @@ Each entry: book formulation → surface definition → Mathlib/backbone counter
 8. **Coercive functional over `K`** (Def 3.3.9): `f(v) → ∞ as ‖v‖ → ∞, v ∈ K`.
    Surface: `IsCoerciveFunctionalOn (f : V → ℝ) (K : Set V) : Prop := ∀ M : ℝ, ∃ R, ∀ v ∈ K, R ≤ ‖v‖ → M ≤ f v`
    (equivalently `Tendsto (fun v : K => f v) (comap (‖·‖) atTop) atTop`). No Mathlib/backbone counterpart.
-   **Naming rule**: the backbone's `LinearMap.IsCoercive` (`Numlib/Analysis/InnerProductSpace/Coercive.lean`, `plans/backbone.md` §2.1.4)
+   **Naming rule**: the backbone's `LinearMap.IsCoercive` (`Numlib/Analysis/InnerProductSpace/Coercive.lean`, `backbone.md` §2.1.4)
    is `re⟪Ax,x⟫ ≥ c‖x‖²` for operators (the book's "strongly monotone"); the surface must not reuse `IsCoercive` for Def 3.3.9.
 
 9. **Finite-dimensional subset** (after Thm 3.3.13): subset of a finite-dimensional subspace.
@@ -139,7 +139,7 @@ Each entry: book formulation → surface definition → Mathlib/backbone counter
 
 16. **Projection operator on a Banach space** (Def 3.6.3): `P ∈ 𝓛(V)`, `P² = P`; projection space `P(V)`; topological direct sum.
     Surface: `def IsProjectionOperator [CompleteSpace V] (P : V →L[𝕜] V) : Prop := IsIdempotentElem P` (the choice recorded in
-    `plans/backbone.md` §8.3; the backbone's projector lemmas in `Numlib/Approximation/BestApprox.lean` and
+    `backbone.md` §8.3; the backbone's projector lemmas in `Numlib/Approximation/BestApprox.lean` and
     `Numlib/Analysis/InnerProductSpace/Projection/ObliqueProjection.lean` are all stated for `IsIdempotentElem`).
     Mathlib: `IsIdempotentElem`, `LinearMap.IsProj`, `isProj_range_iff_isIdempotentElem`, `Submodule.projection`,
     `IsIdempotentElem.ker_eq_range_one_sub`, `ContinuousLinearMap.IsIdempotentElem.eq_projectionL`. No further equivalence needed
@@ -163,7 +163,7 @@ Each entry: book formulation → surface definition → Mathlib/backbone counter
 20. **Fourier projection `𝓕ₙ`, Dirichlet kernel `Dₙ`, Lebesgue constants `Lₙ`, interpolatory projection `𝓘ₙ`, orthonormal polynomials `pₙ`, `P_N`, kernel `K(x,t)`** (§3.7).
     Surface: not defined in this phase (all consumers are deferred); Mathlib has `fourierCoeff`, `fourierBasis`, `hasSum_fourier_series_L2` on
     `AddCircle` (complex-valued, `L²`), no Dirichlet kernel, no Lebesgue constants, no real trig-polynomial projection on `C_p(2π)`.
-    `plans/backbone.md` §3.12 (`Krylov/OrthogonalPolynomials.lean`) and §5.1.2–5.1.4 (phase 3) are the intended homes.
+    `backbone.md` §3.12 (`Krylov/OrthogonalPolynomials.lean`) and §5.1.2–5.1.4 (phase 3) are the intended homes.
 
 21. **§3.5 black boxes** (only cited, never proved here): Legendre `Lₙ` (3.5.4)–(3.5.6) — not in Mathlib (only `Polynomial.shiftedLegendre`);
     Chebyshev `Tₙ` (3.5.8)–(3.5.9) — `Polynomial.Chebyshev.T`, `Polynomial.Chebyshev.T_add_two`, `Polynomial.Chebyshev.T_real_cos`
@@ -302,7 +302,7 @@ Also `LinearMap.extendOfNorm`, `opNorm_extendOfNorm_le` (`Mathlib/Analysis/Norme
 *Classification:* direct.
 
 **Example 2.4.2** — extension of `D : C¹[0,1] → L²(0,1)` to `H¹(0,1)`. *Classification:* out-of-scope (Sobolev spaces are not
-planned in any phase, `plans/backbone.md` §7).
+planned in any phase, `backbone.md` §7).
 
 **Theorem 2.4.3 (open mapping / bounded inverse).**
 *Book.* `V, W` Banach, `L ∈ 𝓛(V,W)` bijective ⇒ `L⁻¹ ∈ 𝓛(W,V)`.
@@ -353,13 +353,13 @@ from which the surface theorem will then specialize.
 (ii): `theorem quadrature_convergence (L : C(Icc 0 1, ℝ) →L[ℝ] ℝ) (w x d) (hd : Tendsto d atTop atTop) (hexact : ∀ n, ∀ p : Polynomial ℝ, p.natDegree ≤ d n → quadFunctional (w n) (x n) (p.toContinuousMapOn _) = L (p.toContinuousMapOn _)) : (∀ v, Tendsto (fun n => quadFunctional (w n) (x n) v) atTop (𝓝 (L v))) ↔ ∃ C, ∀ n, ∑ i, |w n i| ≤ C`
 (with `L` any bounded functional; the book's weighted integral is one instance, `∫₀¹ w v` bounded by `‖w‖_{L¹}`).
 (iii): add `(hw : ∀ n i, 0 ≤ w n i)` and `0 ≤ d n`; conclude convergence.
-*Backbone/Mathlib.* `plans/backbone.md` §5.1.4 `Approximation/Quadrature.lean` (phase 3) is the designated home; Mathlib
+*Backbone/Mathlib.* `backbone.md` §5.1.4 `Approximation/Quadrature.lean` (phase 3) is the designated home; Mathlib
 `polynomialFunctions_closure_eq_top` (density of polynomials in `C(Icc a b, ℝ)`), `ContinuousMap.evalCLM`, `Polynomial.toContinuousMapOn`;
 Thm 2.4.5 for the criterion.
 *Proof route.* (i) `≤` by `norm_sum_le`/`evalCLM` norm ≤ 1; `≥` by evaluating on a continuous `v` with `v(xᵢ) = sign wᵢ`, `‖v‖ ≤ 1`
 (piecewise-linear interpolation between distinct nodes — the only real work). (ii) `⇐`: (i)-upper bound + Thm 2.4.5 `⇐` with `V₀ =` polynomial
 functions (dense); `⇒`: `banach_steinhaus` + (i). (iii) `∑ wᵢ = Lₙ 1 = L 1` bounded.
-*Classification:* deferred (phase 3, `plans/backbone.md` §5.1.4; Deferred item 2). The statements above are recorded as docstring stubs in
+*Classification:* deferred (phase 3, `backbone.md` §5.1.4; Deferred item 2). The statements above are recorded as docstring stubs in
 `Ch02/Operators.lean`; (ii)–(iii) need only Thm 2.4.5 and Weierstrass, (i) is the piecewise-linear construction.
 
 **Exercise 2.4.4** (pointwise limit of bounded operators is bounded, `‖L‖ ≤ liminf ‖Lₙ‖`) — not cited by an in-scope theorem; Mathlib
@@ -428,7 +428,7 @@ The book's second proof (via Thm 3.3.12 minimization) is not reproduced (Thm 3.3
 
 **Theorem 3.3.8, Theorem 3.3.10 (existence of minimizers in reflexive spaces; coercive variant).**
 *Book.* `V` reflexive Banach, `K` bounded (resp. arbitrary) weakly closed, `f` w.l.s.c. (resp. + coercive) ⇒ `inf_K f` attained.
-*Classification:* deferred (phase 3, reflexive-space existence of `plans/backbone.md` §5.1.1: Mathlib has no reflexivity / weak
+*Classification:* deferred (phase 3, reflexive-space existence of `backbone.md` §5.1.1: Mathlib has no reflexivity / weak
 sequential compactness (Thm 2.7.5); Deferred item 8). Record the statements as docstring stubs only.
 
 **Theorem 3.3.11 (Mazur lemma)** and its corollaries (Exercise 3.3.6). *Classification:* deferred (phase 3, with Deferred item 8; absent from Mathlib).
@@ -488,7 +488,7 @@ or compute directly in the `StrictConvexOn` definition.
 *Classification:* surface-only.
 
 **Theorem 3.3.19 (Chebyshev equioscillation), Theorem 3.3.20 (trigonometric case).** *Classification:* deferred (phase 3,
-`plans/backbone.md` §5.1.2 `Approximation/Chebyshev.lean`: Haar condition / de la Vallée-Poussin; Deferred item 3).
+`backbone.md` §5.1.2 `Approximation/Chebyshev.lean`: Haar condition / de la Vallée-Poussin; Deferred item 3).
 
 **Theorem 3.3.21 (uniqueness in strictly normed spaces).**
 *Book.* `V` strictly normed, `K` nonempty convex ⇒ at most one best approximation.
@@ -575,7 +575,7 @@ The book's intermediate identity `f(b) = ‖u‖² − ∑|(u,φᵢ)|² + ∑|b�
 **Example 3.4.8 (Legendre least squares, Parseval), Example 3.4.9 (Fourier series in `L²(0,2π)`).** *Classification:* out-of-scope (`L²` function spaces; Mathlib's `fourierBasis`/`hasSum_fourier_series_L2` covers the complex `L²` Fourier case if wanted later).
 
 ### §3.5 Orthogonal polynomials — black boxes only (see item 21). No results planned; (3.5.2) `P_N u = ∑ ξₙ pₙ` is an instance of (3.4.6).
-*Classification:* deferred (phase 3, `plans/backbone.md` §3.12 `Krylov/OrthogonalPolynomials.lean`; Deferred item 5); the weighted `L²_w` function spaces themselves are not planned.
+*Classification:* deferred (phase 3, `backbone.md` §3.12 `Krylov/OrthogonalPolynomials.lean`; Deferred item 5); the weighted `L²_w` function spaces themselves are not planned.
 
 ### §3.6 Projection operators
 
@@ -590,7 +590,7 @@ The book's intermediate identity `f(b) = ‖u‖² − ∑|(u,φᵢ)|² + ∑|b�
 **Definition 3.6.3** — see items 16–17 (no theorem). "Easy to see" (3.6.2) equivalence: `isOrthogonalProjectionOperator_iff` (item 17), needs-equivalence.
 
 **Example 3.6.4** (`ℝ²`) — left out (trivial). **Example 3.6.5 (Lagrange interpolation projection), Example 3.6.6 (piecewise linear interpolation)** — *Classification:* deferred
-(phase 3, `plans/backbone.md` §5.1.3 `Approximation/Interpolation.lean`; Mathlib `Lagrange.interpolate` exists but the operator on `C[a,b]` and its projection
+(phase 3, `backbone.md` §5.1.3 `Approximation/Interpolation.lean`; Mathlib `Lagrange.interpolate` exists but the operator on `C[a,b]` and its projection
 property are not; Deferred item 4). **Example 3.6.8 (Fourier projection)** — deferred (phase 3, Deferred item 6).
 
 **Example 3.6.7 (orthonormal-basis formula defines an orthogonal projection).**
@@ -629,7 +629,7 @@ and `ContinuousLinearMap.IsIdempotentElem.norm_eq_one_iff_isSymmetric` for the e
 **(3.7.1)–(3.7.2) transfer `f(cos θ)` / even trigonometric best approximation; Theorem 3.7.1, Theorem 3.7.2 (Jackson).**
 *Book.* `g ∈ C_p^{k,α}(2π)` ⇒ `‖g − qₙ‖_∞ ≤ c^{k+1} M_k / n^{k+α}`, `c = 1 + π²/2`; polynomial version with `d_k`.
 *Lean* (statement sketch only, using item 19): `theorem theorem_3_7_1 (g) (hg : HolderClass k α M g) (n : ℕ) (hn : 1 ≤ n) : ρ_trig n g ≤ (1 + π ^ 2 / 2) ^ (k + 1) * M / n ^ (k + α)`.
-*Classification:* deferred (phase 3; `plans/backbone.md` §8.3 schedules Thm 3.7.1–3.7.3 there, as material absent from Mathlib; no trigonometric polynomial machinery; Deferred item 6).
+*Classification:* deferred (phase 3; `backbone.md` §8.3 schedules Thm 3.7.1–3.7.3 there, as material absent from Mathlib; no trigonometric polynomial machinery; Deferred item 6).
 
 **(3.7.5)** `‖f − 𝓕ₙf‖₂ ≤ √(2π)‖f − 𝓕ₙf‖_∞` — out-of-scope (`L²`; trivial once `𝓕ₙ` exists).
 
@@ -667,11 +667,11 @@ theorem norm_sub_apply_le_of_isIdempotentElem' (P : V →L[𝕜] V) (hP : IsIdem
 
 **Theorem 3.7.3 (Christoffel–Darboux identity).**
 *Book.* orthonormal `pₙ` w.r.t. weight `w ≥ 0`: `∑_{n≤N} pₙ(x)pₙ(t) = (p_{N+1}(x)p_N(t) − p_N(x)p_{N+1}(t))/(a_N(x − t))`, `a_N = A_{N+1}/A_N`; confluent form at `x = t`.
-*Classification:* deferred (phase 3, `plans/backbone.md` §3.12 `Krylov/OrthogonalPolynomials.lean`; Deferred item 5). The identity is purely algebraic
+*Classification:* deferred (phase 3, `backbone.md` §3.12 `Krylov/OrthogonalPolynomials.lean`; Deferred item 5). The identity is purely algebraic
 from the three-term recurrence (Exercises 3.5.5–3.5.6) and should be stated there for any sequence of polynomials satisfying
 `p_{n+1} = (aₙx + bₙ)pₙ + cₙp_{n−1}` with `cₙ = −aₙ/a_{n−1}`.
 
-**Example 3.7.4 (Chebyshev kernel, `‖P_N‖ = (4/π²) log N + O(1)`)** — deferred (phase 3, `plans/backbone.md` §5.1.2 lists it; Deferred item 6).
+**Example 3.7.4 (Chebyshev kernel, `‖P_N‖ = (4/π²) log N + O(1)`)** — deferred (phase 3, `backbone.md` §5.1.2 lists it; Deferred item 6).
 
 **§3.7.3 (3.7.19) trigonometric Lagrange formula, (3.7.20) `‖𝓘ₙ‖ ≤ 1 + (2/π) log n`** — deferred (phase 3, trigonometric interpolation, Rivlin's bound; Deferred items 4 and 6).
 
@@ -679,7 +679,7 @@ from the three-term recurrence (Exercises 3.5.5–3.5.6) and should be stated th
 
 ## Deferred backbone items
 
-Items this chapter needs from later phases of `plans/backbone.md` §7, phrased as the backbone statements to be added there.
+Items this chapter needs from later phases of `backbone.md` §7, phrased as the backbone statements to be added there.
 
 1. **Banach–Steinhaus density criterion** (phase 3, alongside §5.1.4). The `⇐` half of Thm 2.4.5 in its natural generality:
    `ContinuousLinearMap.tendsto_of_tendsto_on_dense_of_bounded {L : V →L[𝕜] W} {Ln : ι → V →L[𝕜] W} {s : Set V} (hs : Dense s)
@@ -698,7 +698,7 @@ Items this chapter needs from later phases of `plans/backbone.md` §7, phrased a
 6. **Trigonometric approximation on `C_p(2π)`** (phase 3; §8.3 schedules Thm 3.7.1–3.7.3 there, as material absent from Mathlib): `C_p(2π)` and the Hölder classes (item 19),
    the Fourier projection `𝓕ₙ`, Dirichlet kernel and Lebesgue constants (3.7.6)–(3.7.10), Jackson's theorems 3.7.1–3.7.2 with (3.7.1)–(3.7.2),
    the consequences (3.7.11)–(3.7.12), (3.7.22), Ex 3.6.8, Ex 3.7.4.
-7. **Integral operators on `C[a,b]`** (phase 3; §8.3 `Ch05/IntegralEquations.lean`, see `plans/surface/AtkinsonHan-Ch5.md`): the operator with continuous
+7. **Integral operators on `C[a,b]`** (phase 3; §8.3 `Ch05/IntegralEquations.lean`, see `AtkinsonHan-Ch5.md`): the operator with continuous
    kernel, its norm formula (2.2.8) `‖K‖ = max_x ∫|k(x,y)|dy`, iterated Volterra kernels `‖Lᵏ‖ ≤ (MB)ᵏ/k!` (Ex 2.3.4); consumers Ex 2.3.2(ii), (3.7.9), (3.7.17).
 8. **Minimizers in reflexive spaces** (phase 3, the reflexive-space existence theorem of §5.1.1): weak (sequential) closedness and l.s.c. as
    general definitions, Thm 3.3.8, 3.3.10–3.3.12, 3.3.14 and Mazur's lemma (3.3.11). Needs reflexivity and weak sequential compactness (AH Thm 2.7.5), absent from Mathlib.

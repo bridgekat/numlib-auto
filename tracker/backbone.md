@@ -20,7 +20,7 @@ The Lean modules under `Numlib/` (imported by `Numlib.lean`) implement the phase
 plan (§7): every phase-1 statement is stated there with its final name and hypotheses, and the Lean
 blocks of §2–§5 for phase-1 modules give the main statements with those names and hypotheses
 (`variable` declarations and repeated hypotheses abbreviated, routine API lemmas omitted). Where a
-Lean block describes a later phase it is a sketch. The per-book surface plans in `plans/surface/`
+Lean block describes a later phase it is a sketch. The per-book surface plans in ``
 cite the section numbers §1–§10 of this file; their code goes into the `Surface/` libraries of §8.
 
 ---
@@ -68,7 +68,7 @@ Atkinson–Han, and it would leave the Banach-space layer untested if taken earl
 The backbone modules listed as phase 1 in §7 proved without `sorry`; surface libraries
 `SaadSparse`, `FongSaunders`, `AtkinsonHan` with chapter files for the ranges above, each
 theorem proved by specializing the backbone (with equivalence lemmas for book-specific
-definitions), following the surface plans in `plans/surface/`.
+definitions), following the surface plans in ``.
 
 ---
 
@@ -204,13 +204,13 @@ Numlib/                         -- backbone (this plan, §2–§6)
   Variational/…                 -- forms, Lax–Milgram, Galerkin
   Nonlinear/…                   -- fixed point, Newton
   FloatingPoint/…               -- reserved (phase 4)
-Surface/
-  SaadSparse/ChNN/….lean        -- one Lake library per book, srcDir = "Surface"
-  FongSaunders/SecN.lean
-  AtkinsonHan/ChNN/….lean
-plans/
+NumlibSurface/                  -- the second Lake library, one directory per book
+  SaadSparse/ChapterNN/SectionNN.lean
+  FongSaunders/SectionN.lean
+  AtkinsonHan/ChapterNN/SectionNN.lean
+tracker/                        -- the plan: a copy of both trees, `.lean` replaced by `.toml`
   backbone.md                   -- this file
-  surface/…                     -- per-book surface plans
+  <book>.md                     -- per-book surface alignment
 ```
 
 Upstreaming candidates are not segregated into a separate directory: they live in the topical
@@ -219,9 +219,12 @@ each module starting with a comment "Upstreaming candidate … natural home: `Ma
 in Mathlib conventions and free of dependencies on the numerical-analysis layers. The
 numerical-analysis layers use them only through their Mathlib-style names.
 
-`lakefile.toml` registers four libraries: `Numlib` (the default target) and the surface libraries
-`SaadSparse`, `FongSaunders`, `AtkinsonHan` with `srcDir = "Surface"`. Surface libraries import
-`Numlib` only (never each other).
+`lakefile.toml` registers two libraries, both default targets: `Numlib`, the backbone, and
+`NumlibSurface`, holding every book's surface. The books share one library rather than getting one
+each, because they share vocabulary — `NumlibSurface.SaadSparse.Common` and the like — and a
+library boundary between them would have to be paid for in duplication. The boundary that earns its
+keep is the one between the layers: `NumlibSurface` imports `Numlib`, and Lake makes the reverse
+impossible rather than merely discouraged.
 
 ### 1.6 Mathlib reuse table (Mathlib `v4.34.0-rc2`, the pinned version)
 
@@ -1253,7 +1256,7 @@ methods for `I − K`), a form-based energy space for non-complete `V` (1.7).
 Rules (README): chapter-to-chapter files; statements in the book's generality (real matrices,
 `ℝⁿ`, real bilinear forms); each proof a specialization of a backbone result, through equivalence
 lemmas for book-specific definitions; no new mathematics — anything that does not specialize is a
-demand on the backbone and goes into this plan. The per-book surface plans in `plans/surface/`
+demand on the backbone and goes into this plan. The per-book surface plans in ``
 refine the tables below theorem by theorem.
 
 ### 8.1 `SaadSparse` (Surface/SaadSparse/ChNN/*.lean)

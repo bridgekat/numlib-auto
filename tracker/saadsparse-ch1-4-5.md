@@ -10,7 +10,8 @@ deliberately left out.
 
 # Surface plan: Saad, Iterative Methods — §1.11–1.13, §4.1–4.2, Ch. 5
 
-Surface library `SaadSparse` (Lake lib, `srcDir = "Surface"`, imports only `Numlib`) for the second
+The surface `NumlibSurface.SaadSparse` (in the `NumlibSurface` library, which imports only
+`Numlib`) for the second
 edition of Saad, *Iterative Methods for Sparse Linear Systems*, sections §1.11 (positive-definite
 matrices), §1.12 (projectors), §1.13 (linear systems, conditioning), §4.1 (Jacobi/GS/SOR/SSOR,
 block variants), §4.2 (convergence: Thm 4.1–4.16) and Ch. 5 (projection methods, Prop 5.1–Thm 5.10,
@@ -18,12 +19,12 @@ block variants), §4.2 (convergence: Thm 4.1–4.16) and Ch. 5 (projection metho
 (Thm 1.35 complex), complex in §1.12, `RCLike 𝕜` in §1.13 — with the book's own definitions
 (Saad's non-symmetric "positive definite", projectors given by bases `V, W`, the splitting
 `A = D − E − F`, matrix `p`-norms). Every proof is a specialization of a backbone item (a
-declaration under `Numlib/`, cited with its module; design rationale in `plans/backbone.md`, cited
+declaration under `Numlib/`, cited with its module; design rationale in `backbone.md`, cited
 by section number) through an equivalence lemma for the book-specific definition. §1 lists the
 definitions and their equivalences, §2 the results, §3 the backbone items deferred to later phases,
 §4 what is left out, §5 how ambiguous book statements are read.
 
-Conventions (shared file `Numlib/Surface/SaadSparse/Common.lean`):
+Conventions (shared file `NumlibSurface/SaadSparse/Common.lean`):
 * `n : ℕ`; vectors of ℝⁿ/ℂⁿ are `EuclideanSpace 𝕜 (Fin n)` (Mathlib's ℝⁿ with the Euclidean norm),
   abbreviated `E𝕜 n`; matrices `Matrix (Fin n) (Fin n) 𝕜`; the action `A x` is `toEuclideanLin A x`
   (local notation `A ⬝ x`); componentwise statements use `Fin n → 𝕜`, `A *ᵥ x`, `x ⬝ᵥ y`, and the
@@ -51,22 +52,22 @@ Proposed files:
 
 | File | Book |
 |---|---|
-| `Numlib/Surface/SaadSparse/Common.lean` | conventions, notation, glue lemmas (`toEuclideanLin`, `dotProduct`, `complexify`) |
-| `Numlib/Surface/SaadSparse/Chapter01/Section11.lean` | §1.11: (1.48)–(1.57), Thm 1.34, Thm 1.35 |
-| `Numlib/Surface/SaadSparse/Chapter01/Section12.lean` | §1.12: (1.58)–(1.72), Lemma 1.36, Prop 1.37, Thm 1.38, Cor 1.39 |
-| `Numlib/Surface/SaadSparse/Chapter01/Section13.lean` | §1.13: existence cases, (1.74)–(1.76), `κ`, `κ_p`, residual–error relation, Example 1.5 |
-| `Numlib/Surface/SaadSparse/Chapter04/Section01.lean` | §4.1: (4.2)–(4.27), Alg 4.1–4.2 as functions |
-| `Numlib/Surface/SaadSparse/Chapter04/Section02.lean` | §4.2–4.2.2: (4.29)–(4.30), Thm 4.1, Cor 4.2, convergence factors, Ex 4.1, Def 4.3, Thm 4.4 |
-| `Numlib/Surface/SaadSparse/Chapter04/Section02.lean` | §4.2.3: Def 4.5, Thm 4.6–4.9, Cor 4.8 |
-| `Numlib/Surface/SaadSparse/Chapter04/Section02.lean` | §4.2.4–4.2.5: Thm 4.10, Def 4.11–4.13, Prop 4.12–4.15, Thm 4.16, (4.47) |
-| `Numlib/Surface/SaadSparse/Chapter05/Section01.lean` | §5.1–5.2: (5.2)–(5.11), Prop 5.1–5.6, Thm 5.7 |
-| `Numlib/Surface/SaadSparse/Chapter05/Section03.lean` | §5.3: (5.12)–(5.21), Alg 5.2–5.4, Lemma 5.8, Thm 5.9–5.10 |
-| `Numlib/Surface/SaadSparse/Chapter05/Section04.lean` | §5.4: (5.22)–(5.23), Alg 5.5–5.6 |
+| `NumlibSurface/SaadSparse/Common.lean` | conventions, notation, glue lemmas (`toEuclideanLin`, `dotProduct`, `complexify`) |
+| `NumlibSurface/SaadSparse/Chapter01/Section11.lean` | §1.11: (1.48)–(1.57), Thm 1.34, Thm 1.35 |
+| `NumlibSurface/SaadSparse/Chapter01/Section12.lean` | §1.12: (1.58)–(1.72), Lemma 1.36, Prop 1.37, Thm 1.38, Cor 1.39 |
+| `NumlibSurface/SaadSparse/Chapter01/Section13.lean` | §1.13: existence cases, (1.74)–(1.76), `κ`, `κ_p`, residual–error relation, Example 1.5 |
+| `NumlibSurface/SaadSparse/Chapter04/Section01.lean` | §4.1: (4.2)–(4.27), Alg 4.1–4.2 as functions |
+| `NumlibSurface/SaadSparse/Chapter04/Section02.lean` | §4.2–4.2.2: (4.29)–(4.30), Thm 4.1, Cor 4.2, convergence factors, Ex 4.1, Def 4.3, Thm 4.4 |
+| `NumlibSurface/SaadSparse/Chapter04/Section02.lean` | §4.2.3: Def 4.5, Thm 4.6–4.9, Cor 4.8 |
+| `NumlibSurface/SaadSparse/Chapter04/Section02.lean` | §4.2.4–4.2.5: Thm 4.10, Def 4.11–4.13, Prop 4.12–4.15, Thm 4.16, (4.47) |
+| `NumlibSurface/SaadSparse/Chapter05/Section01.lean` | §5.1–5.2: (5.2)–(5.11), Prop 5.1–5.6, Thm 5.7 |
+| `NumlibSurface/SaadSparse/Chapter05/Section03.lean` | §5.3: (5.12)–(5.21), Alg 5.2–5.4, Lemma 5.8, Thm 5.9–5.10 |
+| `NumlibSurface/SaadSparse/Chapter05/Section04.lean` | §5.4: (5.22)–(5.23), Alg 5.5–5.6 |
 
 ## 1. Book-specific definitions
 
 Each entry: book formulation; proposed Lean surface definition; backbone counterpart (module under
-`Numlib/`, or `plans/backbone.md` section for phase-2 material); equivalence lemma.
+`Numlib/`, or `backbone.md` section for phase-2 material); equivalence lemma.
 
 **D1. Positive definite / positive real (1.48).** Real `A` with `(Au, u) > 0 ∀ u ∈ ℝⁿ, u ≠ 0`
 (no symmetry). SPD = symmetric + (1.48); HPD = Hermitian + `(Au,u) > 0` on ℂⁿ.
@@ -308,7 +309,7 @@ noncomputable def blockJacobiStep (P) (A) (b x : Fin n → ℝ) : Fin n → ℝ 
 noncomputable def blockGsSweep (P) (A) (b) : (Fin n → ℝ) → (Fin n → ℝ) :=
   Fin.foldl-style composition of the `p` single-block corrections in order       -- Alg 4.2
 ```
-Backbone: none in phase 1; block splittings and Alg 4.1–4.2 are phase 2 via `plans/backbone.md`
+Backbone: none in phase 1; block splittings and Alg 4.1–4.2 are phase 2 via `backbone.md`
 §2.4.4 (`Projection/Additive.lean`, §3 item 6). The definitions are `surface-only`; the
 equivalence `blockJacobiStep = additiveProjectionStep` with `K_i = span (V_i)`, `L_i = span (W_i)`
 is `deferred`. The non-overlapping identity "(4.17) is `x_{k+1} = D⁻¹(E+F)x_k + D⁻¹b` with block
@@ -346,7 +347,7 @@ structure Matrix.IsMMatrix (A : Matrix (Fin n) (Fin n) ℝ) : Prop where
   isUnit : IsUnit A
   inv_nonneg : ∀ i j, 0 ≤ A⁻¹ i j
 ```
-Backbone: none in phase 1 — `plans/backbone.md` §2.3.4 (`Stationary/RegularSplitting.lean`,
+Backbone: none in phase 1 — `backbone.md` §2.3.4 (`Stationary/RegularSplitting.lean`,
 phase 2) and §2.1.12 (entrywise order, phase 2); see §3 item 3, which asks §2.3.4 to adopt these
 two definitions verbatim (the surface spells out `∀ i j, 0 ≤ …` to avoid Mathlib's Loewner `≤` on
 `Matrix`). Equivalence: `isRegularSplitting_iff` with the bundle §2.3.4 introduces.
@@ -387,7 +388,7 @@ def IsTMatrix (A) : Prop := ∃ (p : ℕ) (c : Fin n → Fin p), Monotone c ∧
 def Bα (B : Matrix (Fin n) (Fin n) ℂ) (α : ℂ) := α • strictLower B + α⁻¹ • strictUpper B   -- Prop 4.12/4.15
 ```
 Backbone: none in phase 1 — Young's SOR theory (Prop 4.12–Thm 4.16, Kress Def 4.13–Cor 4.16) is
-`plans/backbone.md` §2.3.5 (phase 2), and §8.1 marks these definitions surface-only. §3 item 5
+`backbone.md` §2.3.5 (phase 2), and §8.1 marks these definitions surface-only. §3 item 5
 asks §2.3.5 to reuse them verbatim; the equivalence is then `Iff.rfl`.
 
 **D17. Projection step (5.2)/(5.3), (5.5)–(5.6); matrix form (5.7); Alg 5.1.** "Find
@@ -457,7 +458,7 @@ noncomputable def P_i (𝒱) (A) (i) : Matrix (Fin n) (Fin n) ℝ := A * 𝒱.V 
   -- = obliqueProj (A * V i) (V i)  (D6)
 noncomputable def multiplicativeSweep (𝒱) (A) (b) : E n → E n := composition over `i` of `projStep A b (V i) (V i)`   -- Alg 5.6
 ```
-Backbone: `plans/backbone.md` §2.4.4 (`Projection/Additive.lean`, phase 2): residual
+Backbone: `backbone.md` §2.4.4 (`Projection/Additive.lean`, phase 2): residual
 `r_{k+1} = (1 − Σ P_i) r_k` with `P_i` the projector onto `A K_i` orthogonal to `K_i` (§3 item 6).
 Available now: `P_i = obliqueProj (A * V_i) V_i` (`rfl`) and
 `toEuclideanLin (P_i) = obliqueProjectionOfBases ℝ (A * V_i).cols (V_i).cols` (D6); the equivalence
@@ -650,7 +651,7 @@ Class: `direct` (via D8), `det` fact Mathlib `det_smul`.
 **R-1.20 Example 1.5.** Book: `A_n = I + α e₁ eₙᵀ`, `A_n⁻¹ = I − α e₁ eₙᵀ`,
 `‖A_n‖_∞ = ‖A_n⁻¹‖_∞ = 1 + |α|`, `κ_∞(A_n) = (1 + |α|)²` (for `n ≥ 2`), all eigenvalues `1`.
 Lean: `example_1_5 (hn : 2 ≤ n) : condNumberLp ⊤ (1 + α • vecMulVec (Pi.single 0 1) (Pi.single (Fin.last _) 1)) = (1 + |α|) ^ 2`
-plus `spectrum ℂ A_n = {1}`. Backbone: `plans/backbone.md` §2.1.2 assigns this example to the
+plus `spectrum ℂ A_n = {1}`. Backbone: `backbone.md` §2.1.2 assigns this example to the
 surface. Route: `linfty_opNorm_def` (row sums), `charpoly` of a unipotent matrix. Class:
 `surface-only` (explicit computation; optional).
 
@@ -729,7 +730,7 @@ projector onto `K_i = span(V_i)`; `x = Σ V_i ξ_i`.
 Lean: `V_W_biorthogonal (P) (h : weights chosen) : (P.W i)ᵀ * P.V i = 1`,
 `isProjector_V_mul_Wᵀ`, `sum_V_mulVec_Wᵀ (P : partition, no overlap) : ∑ i, P.V i *ᵥ ((P.W i)ᵀ *ᵥ x) = x`,
 `blockJacobiStep_eq_of_partition : blockJacobiStep P A b x = (blockD)⁻¹ *ᵥ ((blockE + blockF) *ᵥ x) + (blockD)⁻¹ *ᵥ b`,
-`blockJacobiStep_component (4.17)`. Backbone: `plans/backbone.md` §2.4.4 (phase 2). Class:
+`blockJacobiStep_component (4.17)`. Backbone: `backbone.md` §2.4.4 (phase 2). Class:
 `surface-only` for the definitions and identities (definitional); `deferred` (§3 item 6) for the
 equivalence with the additive projection step.
 
@@ -821,7 +822,7 @@ Lean: `richardsonStep A α b x := x + α • (b - A *ᵥ x)`,
 `richardson_converges_iff (hpos : 0 < λ_min) : ρ(G_α) < 1 ↔ 0 < α ∧ α < 2/λ_max`,
 `richardson_opt : IsLeast/argmin … = 2/(λ_min+λ_max)`, `ρ_opt` value. Backbone:
 `Stationary.Splitting.richardson a hα` (`m = α⁻¹ • 1`), `richardson_iterationOperator : G = 1 − α • a`
-(`Splitting.lean`); the optimal-parameter analysis is `plans/backbone.md` §2.3.5 (phase 2,
+(`Splitting.lean`); the optimal-parameter analysis is `backbone.md` §2.3.5 (phase 2,
 "Richardson with optimal parameter (Saad Ex 4.1, AH Ex 5.2.3)"). Route: spectral mapping for
 affine polynomials (Mathlib `spectrum.sub_singleton`/`smul`), elementary real optimization.
 Class: `direct` for the step form; `deferred` (§3 item 5) for the spectral analysis, optional as
@@ -832,7 +833,7 @@ Class: `direct` for the step form; `deferred` (§3 item 5) for the spectral anal
 consequently the iteration (4.34) converges whenever `A` is an M-matrix.
 Lean: `theorem_4_4 (h : A.IsRegularSplitting M N) : complexSpectralRadius (M⁻¹ * N) < 1 ↔ IsUnit A ∧ ∀ i j, 0 ≤ A⁻¹ i j`;
 `converges_of_isMMatrix (hA : A.IsMMatrix) (h : A.IsRegularSplitting M N) : ∀ b x₀, Tendsto (iterates of M⁻¹N x + M⁻¹b) atTop (𝓝 (A⁻¹ *ᵥ b))`.
-Backbone: `plans/backbone.md` §2.3.4 (phase 2; Thm 1.29 and the weak Perron theorem), §2.1.12;
+Backbone: `backbone.md` §2.3.4 (phase 2; Thm 1.29 and the weak Perron theorem), §2.1.12;
 R-4.11. Class: `deferred` (§3 item 3). The M-matrix corollary is `direct` from Thm 4.4 + R-4.11
 (only Def 1.30 is used, not Thm 1.31–1.32).
 
@@ -861,7 +862,7 @@ Class: `direct`.
 **R-4.18 Theorem 4.7.** Book: `A` irreducible, eigenvalue `λ` on the boundary of the union of the
 `n` Gershgorin discs ⇒ `λ` lies on the boundary of every disc, `|λ − a_ii| = ρ_i ∀ i`.
 Lean: `theorem_4_7 (hA : IsIrreducible A) (hμ : μ ∈ spectrum ℂ A) (hb : μ ∈ frontier (⋃ i, closedBall (A i i) (ρ i))) : ∀ i, ‖μ - A i i‖ = ρ i`.
-Backbone: `plans/backbone.md` §2.3.3 (irreducible dominance is phase 2). Route: the book's path
+Backbone: `backbone.md` §2.3.3 (irreducible dominance is phase 2). Route: the book's path
 argument along the strongly connected quiver of `A.map ‖·‖` (`Matrix.isIrreducible_iff_exists_pow_pos`
 or the `IsSStronglyConnected` paths). Class: `deferred` (§3 item 4).
 
@@ -892,7 +893,7 @@ solution for every right-hand side, equivalently `ρ(G_ω) < 1`: for singular po
 semidefinite `A` and `b = 0` the iterates converge for every `x₀` — see §5.)
 Lean: `theorem_4_10 (hs : A.IsSymm) (hd : ∀ i, 0 < A i i) (hω : 0 < ω) (hω2 : ω < 2) : complexSpectralRadius (sorSplitting A h hω').iterationOperator < 1 ↔ A.IsPositiveReal`
 (`h : IsUnit (diagPart A)` from `hd`, `hω' : ω ≠ 0` from `hω`) and, via R-4.11,
-`(∀ f x₀, ∃ x, Tendsto …) ↔ A.PosDef`. Backbone: `plans/backbone.md` §2.3.5
+`(∀ f x₀, ∃ x, Tendsto …) ↔ A.PosDef`. Backbone: `backbone.md` §2.3.5
 (phase 2) Householder–John / Ostrowski–Reich (`A` symmetric coercive, `M + Mᴴ − A` coercive ⇒
 `ρ(M⁻¹N) < 1`) gives (⇐) with `M = ω⁻¹D − E`, `M + Mᵀ − A = (2/ω − 1)D`; the converse (⇒) is
 §3 item 5. Class: `deferred`.
@@ -912,7 +913,7 @@ consistently ordered; Property A is invariant under symmetric permutations; Prop
 symmetric permutation is consistently ordered. Lean: `hasPropertyA_iff_reindex : HasPropertyA A ↔ ∃ (σ : Equiv.Perm (Fin n)) (k : ℕ), ∀ i j, (A.reindex σ σ) i j ≠ 0 → i ≠ j → ((i : ℕ) < k ↔ ¬ ((j : ℕ) < k))`,
 `hasPropertyA_of_isConsistentlyOrdered`, `isConsistentlyOrdered_of_isTMatrix`,
 `hasPropertyA_reindex`, `hasPropertyA_iff_exists_reindex_isConsistentlyOrdered`. Backbone: none
-(`plans/backbone.md` §8.1: surface-only). Class: `surface-only` (combinatorics of labels; the last
+(`backbone.md` §8.1: surface-only). Class: `surface-only` (combinatorics of labels; the last
 item is harder and optional).
 
 **R-4.24 Proposition 4.14.** Book: `A` consistently ordered ⇒ there is a permutation `P` with
@@ -1167,7 +1168,7 @@ with `P_i = AV_i(V_iᵀAV_i)⁻¹V_iᵀ`; with parameters `ω_i`, `r_{k+1} = (I 
 is the projector onto `span(AV_i)` orthogonal to `span(V_i)`.
 Lean: `residual_additiveStep (h : ∀ i, IsUnit ((V i)ᵀ * A * V i)) : b - A ⬝ additiveStep 𝒱 ω A b x = (1 - ∑ i, ω i • toEuclideanLin (P_i 𝒱 A i)) (b - A ⬝ x)`,
 `P_i_isProjOnto (hV : (V i).IsBasisOf K_i) (h) : ∀ z, IsProjOnto (K_i.map A') K_i z (P_i ⬝ z)`.
-Backbone: `plans/backbone.md` §2.4.4 (phase 2) for the abstract residual formula; D6/R-1.9 now
+Backbone: `backbone.md` §2.4.4 (phase 2) for the abstract residual formula; D6/R-1.9 now
 (`P_i = obliqueProj (A * V i) (V i)`, `range_obliqueProjectionOfBases`,
 `sub_obliqueProjectionOfBases_apply_mem_orthogonal`; `IsBasisOf (A * V i) (K_i.map A')` follows
 from `IsUnit (V_iᵀAV_i)`). Class: `surface-only` for the identity (one line of algebra),
@@ -1188,7 +1189,7 @@ Backbone/Mathlib: D7; `OrthogonalFamily`/`DirectSum.IsInternal` for the sum. Cla
 
 ## 3. Deferred backbone items
 
-Backbone items this chapter needs that are scheduled for later phases (`plans/backbone.md` §7),
+Backbone items this chapter needs that are scheduled for later phases (`backbone.md` §7),
 with the exact statements the surface will specialize. Everything else in §2 is available in the
 phase-1 modules under `Numlib/`.
 
@@ -1213,7 +1214,7 @@ phase-1 modules under `Numlib/`.
    covers; an `AlgebraNorm` carries neither the `NormedRing` nor the `NormedAlgebra ℝ` instance that
    lemma needs, hence the separate statement.
 3. **Regular splittings and M-matrices (`Stationary/RegularSplitting.lean`, `Matrix/Order.lean`;
-   `plans/backbone.md` §2.3.4, §2.1.12, phase 2).** Thm 4.4 exactly as
+   `backbone.md` §2.3.4, §2.1.12, phase 2).** Thm 4.4 exactly as
    `IsRegularSplitting A M N → (complexSpectralRadius (M⁻¹ * N) < 1 ↔ IsUnit A ∧ ∀ i j, 0 ≤ A⁻¹ i j)`
    with the entrywise order spelled out (or with the §2.1.12 order plus an unfolding lemma), via
    Thm 1.29 and the weak Perron theorem; the M-matrix definition should follow Saad Def 1.30
@@ -1259,7 +1260,7 @@ Algorithms without theorems, examples, exercises (with the reason), and the Chap
 
 * Figures 1.1–1.2, 4.1–4.5, 5.1–5.4: illustrations.
 * Example 1.3 (`A = [[1, 1],[10⁴, 1]]` eigenvalue rectangle), Example 1.4 (2×2 existence cases):
-  numerical examples; Example 1.5 is kept as optional R-1.20 because `plans/backbone.md` §2.1.2
+  numerical examples; Example 1.5 is kept as optional R-1.20 because `backbone.md` §2.1.2
   assigns it to the surface.
 * Example 5.2 (`A = [[0, I],[I, I]]`, `WᵀAV` singular although `A` is nonsingular): a
   counterexample; could be a one-line `surface-only` sanity check, not required.
@@ -1290,11 +1291,11 @@ Chapter 1 black boxes cited by the selected sections (where the backbone provide
 |---|---|---|
 | Thm 1.10 (`Aᵏ → 0 ⟺ ρ(A) < 1`), Thm 1.11 (Neumann series, `I − A` nonsingular), Thm 1.12 / P-1.10 (Gelfand `lim ‖Aᵏ‖^{1/k} = ρ`) | Thm 4.1, Cor 4.2, §4.2.1 convergence factors | `spectralRadius_lt_one_iff_tendsto_pow`, `summable_pow_iff_spectralRadius_lt_one`, `isUnit_one_sub_of_spectralRadius_lt_one` (`Numlib/Analysis/Normed/Algebra/SpectralRadius.lean`); `Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one` (`Numlib/LinearAlgebra/Matrix/Complexify.lean`) for real matrices; Gelfand via Mathlib (§3 item 1 for real matrices) |
 | `ρ(A) ≤ ‖A‖` for any matrix norm (§1.5/§1.8.4) | Cor 4.2, `|λ| ≤ ‖A‖` | Mathlib `spectrum.spectralRadius_le_nnnorm` for the induced `p`-norms; general consistent norms: §3 item 2 |
-| Jordan canonical form (Thm 1.8) | §4.2.1 specific convergence factor | not provided (deliberately, `plans/backbone.md` §1.1); left out |
+| Jordan canonical form (Thm 1.8) | §4.2.1 specific convergence factor | not provided (deliberately, `backbone.md` §1.1); left out |
 | Schur form (Thm 1.9) | not cited in the selected sections | not in Mathlib; a phase-3 backbone item |
 | Normal matrices / spectral theorem for Hermitian matrices (Thm 1.14, 1.19–1.20: "unitarily similar to a real diagonal matrix") | Lemma 5.8 proof, Thm 1.34/1.35 proofs | Mathlib `Matrix.IsHermitian.spectral_theorem`, `eigenvalues`, `eigenvectorBasis` |
 | Min–max / Rayleigh-quotient bounds (Thm 1.21, (1.40)) | Thm 1.34 (`α = λ_min(H)`), Thm 1.35, Thm 5.10 | `Matrix.IsHermitian.isSymmetricBoundedBy_toEuclideanLin` (`Numlib/Analysis/Matrix/ToEuclideanLin.lean`), `LinearMap.IsSymmetricBoundedBy.rayleigh_mem_Icc` (`Numlib/Analysis/InnerProductSpace/Coercive.lean`); Mathlib `hasEigenvalue_iInf/iSup_of_finiteDimensional` |
-| Perron–Frobenius (Thm 1.25), Thm 1.29 (`B ≥ 0`: `ρ(B) < 1 ⟺ (I−B)⁻¹ ≥ 0`) | Thm 4.4 | `plans/backbone.md` §2.3.4 phase 2 (weak Perron; §3 item 3) |
+| Perron–Frobenius (Thm 1.25), Thm 1.29 (`B ≥ 0`: `ρ(B) < 1 ⟺ (I−B)⁻¹ ≥ 0`) | Thm 4.4 | `backbone.md` §2.3.4 phase 2 (weak Perron; §3 item 3) |
 | M-matrices (Def 1.30; Thm 1.31–1.33 not needed) | remark after Thm 4.4 | D14 (definition only) |
 | Irreducibility (§1.10 / §3 adjacency graph) | Def 4.5, Thm 4.7, Cor 4.8, Thm 4.9 | Mathlib `Matrix.IsIrreducible` via `A.map ‖·‖` (§3 item 4) |
 | (1.13.1) existence theory | §1.13 | Mathlib |

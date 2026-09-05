@@ -4,7 +4,7 @@
 `declaration uses 'sorry'` anywhere.
 
 The single entry this file used to carry was
-`Numlib/Surface/SaadSparse/Chapter06/Section10.lean`'s
+`NumlibSurface/SaadSparse/Chapter06/Section10.lean`'s
 `exists_aeval_eq_conjTranspose_of_isStarNormal` — a normal `A` satisfies `A^H = q(A)` for some
 polynomial `q` — held open for normal-matrix theory the backbone did not have. That theory is now
 `Numlib/Eigen/Normal.lean`, and the surface theorem is one line of it.

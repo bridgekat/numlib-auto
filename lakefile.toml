@@ -1,13 +1,13 @@
 name = "numlib"
 version = "0.1.0"
 keywords = ["math"]
-defaultTargets = ["Numlib"]
+defaultTargets = ["Numlib", "NumlibSurface"]
 
 [leanOptions]
-pp.unicode.fun = true # pretty-prints `fun a ↦ b`
+pp.unicode.fun = true                 # pretty-prints `fun a ↦ b`
 relaxedAutoImplicit = false
 weak.linter.mathlibStandardSet = true
-weak.linter.style.header = false # no Mathlib copyright headers in this project
+weak.linter.style.header = false      # no Mathlib copyright headers in this project
 maxSynthPendingDepth = 3
 
 # Progress tracker: the plan in `tracker/` is checked against the compiled library.
@@ -23,3 +23,6 @@ rev = "v4.34.0-rc2"
 
 [[lean_lib]]
 name = "Numlib"
+
+[[lean_lib]]
+name = "NumlibSurface"

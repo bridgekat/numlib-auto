@@ -1,6 +1,6 @@
 """Resolve a conflicted surface root module.
 
-    python scripts/mergeroot.py Surface/SaadSparse.lean
+    python scripts/mergeroot.py NumlibSurface/SaadSparse.lean
 
 Every surface agent adds its chapter files to its book's root module, so each merge conflicts
 there and always in the same harmless way: two disjoint sets of `import` lines. Rewrite the file

@@ -34,22 +34,22 @@ the book — sups of `a(u,v)/‖v‖` without absolute value, `V`-ellipticity wi
 rather than Hermitian forms — are handled once, in D4 and D9; nothing in §8.2–8.3, 8.7, Ch. 9
 requires complex scalars.
 
-Files (library `AtkinsonHan`, `srcDir = "Surface"`, importing only `Numlib`; this refines the
-`Ch08`/`Ch09` rows of `plans/backbone.md` §8.3):
+Files (under `NumlibSurface/AtkinsonHan/`, in the `NumlibSurface` library, which imports only
+`Numlib`; this refines the `Ch08`/`Ch09` rows of `backbone.md` §8.3):
 
 | File | Content |
 |---|---|
-| `Numlib/Surface/AtkinsonHan/Chapter08/Section02.lean` | §8.2: closed operators, Thm 8.2.1, 8.2.4, Ex 8.2.5, Hilbert case of 8.2.7, Thm 8.2.8 |
-| `Numlib/Surface/AtkinsonHan/Chapter08/Section03.lean` | §8.3 start: `BilinForm` predicates, `toCLM`/`ofCLM`, Thm 8.3.1 and the dictionary, `toOperator`, energy norm |
-| `Numlib/Surface/AtkinsonHan/Chapter08/Section03.lean` | Thm 8.3.2, 8.3.3, 8.3.4 (both proofs' ingredients), Ex 8.3.1 |
-| `Numlib/Surface/AtkinsonHan/Chapter08/Section07.lean` | Thm 8.7.1, (8.7.5), Ex 8.7.1, inf–sup ↔ operator-norm lemmas |
-| `Numlib/Surface/AtkinsonHan/Chapter09/Section01.lean` | §9.1: Galerkin problem, stiffness matrix (9.1.5), Ex 9.1.1–9.1.2, Ritz, Céa, Cor 9.1.4 |
-| `Numlib/Surface/AtkinsonHan/Chapter09/Section02.lean` | §9.2: Petrov–Galerkin problem, discrete inf–sup, Thm 9.2.1, Rem 9.2.2, Cor 9.2.3, (9.2.13)–(9.2.14) |
-| `Numlib/Surface/AtkinsonHan/Chapter09/Section03.lean` | §9.3: generalized Galerkin problem, Thm 9.3.1, Ex 9.3.1 |
-| `Numlib/Surface/AtkinsonHan/Chapter09/Section04.lean` | §9.4: `A`, `f`, Algorithm 1 = backbone `CG.iterate`, convergence via Thm 5.6.1, energy derivative |
+| `NumlibSurface/AtkinsonHan/Chapter08/Section02.lean` | §8.2: closed operators, Thm 8.2.1, 8.2.4, Ex 8.2.5, Hilbert case of 8.2.7, Thm 8.2.8 |
+| `NumlibSurface/AtkinsonHan/Chapter08/Section03.lean` | §8.3 start: `BilinForm` predicates, `toCLM`/`ofCLM`, Thm 8.3.1 and the dictionary, `toOperator`, energy norm |
+| `NumlibSurface/AtkinsonHan/Chapter08/Section03.lean` | Thm 8.3.2, 8.3.3, 8.3.4 (both proofs' ingredients), Ex 8.3.1 |
+| `NumlibSurface/AtkinsonHan/Chapter08/Section07.lean` | Thm 8.7.1, (8.7.5), Ex 8.7.1, inf–sup ↔ operator-norm lemmas |
+| `NumlibSurface/AtkinsonHan/Chapter09/Section01.lean` | §9.1: Galerkin problem, stiffness matrix (9.1.5), Ex 9.1.1–9.1.2, Ritz, Céa, Cor 9.1.4 |
+| `NumlibSurface/AtkinsonHan/Chapter09/Section02.lean` | §9.2: Petrov–Galerkin problem, discrete inf–sup, Thm 9.2.1, Rem 9.2.2, Cor 9.2.3, (9.2.13)–(9.2.14) |
+| `NumlibSurface/AtkinsonHan/Chapter09/Section03.lean` | §9.3: generalized Galerkin problem, Thm 9.3.1, Ex 9.3.1 |
+| `NumlibSurface/AtkinsonHan/Chapter09/Section04.lean` | §9.4: `A`, `f`, Algorithm 1 = backbone `CG.iterate`, convergence via Thm 5.6.1, energy derivative |
 
 Naming: namespace `AtkinsonHan`, book numbers in names (`AtkinsonHan.Ch08.theorem_8_2_4`,
-`AtkinsonHan.Ch09.proposition_9_1_3`, …) as in `plans/backbone.md` §1.4; definitions get descriptive names.
+`AtkinsonHan.Ch09.proposition_9_1_3`, …) as in `backbone.md` §1.4; definitions get descriptive names.
 
 Common preamble (all files): `variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]`
 (+ `[CompleteSpace V]` = "Hilbert"), `ℓ : StrongDual ℝ V` (`= V →L[ℝ] ℝ`), `open InnerProductSpace`.
@@ -127,7 +127,7 @@ given; collected in §6).
   theorem norm_toCLM_le (hM0 : 0 ≤ M) (hM) : ‖a.toCLM hM‖ ≤ M   -- `LinearMap.mkContinuous₂_norm_le`
   ```
 * Mathlib / backbone counterparts and equivalence lemmas (backbone predicates in
-  `Numlib/Variational/Forms.lean` and `Numlib/Analysis/InnerProductSpace/Coercive.lean`, `plans/backbone.md`
+  `Numlib/Variational/Forms.lean` and `Numlib/Analysis/InnerProductSpace/Coercive.lean`, `backbone.md`
   §5.2.1 and §2.1.4):
   * bounded ↔ `IsBoundedBilinearMap ℝ (fun p : V × V => a p.1 p.2)`
     (`isBounded_iff_isBoundedBilinearMap`; ⇐ from `IsBoundedBilinearMap.bound`, ⇒ the four
@@ -508,7 +508,7 @@ Classification: **direct**.
 **Ex 8.3.1.** Deduce Lax–Milgram from Thm 5.1.4 (`T : V → V` strongly monotone and Lipschitz ⇒
 `T u = b` uniquely solvable).
 * Lean: `theorem exercise_8_3_1 … : ∃! u, ∀ v, a u v = ℓ v` proved by applying the surface `Ch05.theorem_5_1_4`
-  (`plans/surface/AtkinsonHan-Ch5.md`; backbone `zarantonello`, `Numlib/Nonlinear/FixedPoint.lean`)
+  (`AtkinsonHan-Ch5.md`; backbone `zarantonello`, `Numlib/Nonlinear/FixedPoint.lean`)
   to `T := toOperator a hM`, `c₁ = α` (`inner_toOperator`, `ha`), `c₂ = M` (`‖toOperator a hM‖ ≤ M`),
   `b := rieszRep ℓ`; then (9.4.7)⟺(9.4.4) (`SesqForm.forall_apply_eq_iff_toOperator_eq`).
 * Classification: **needs-equivalence** (imports `Ch05/FixedPoint.lean` within the same library).
@@ -714,7 +714,7 @@ Classification: **needs-equivalence**.
   (`Numlib/Analysis/InnerProductSpace/Projection/ObliqueProjection.lean`, §2.1.7; proof reference D. Szyld, "The many
   proofs of an identity on the norm of oblique projections", Numer. Algorithms 42 (2006)). The
   Xu–Zikatanov sharpening of Babuška's bound to `M/α_N` is the phase-2 item of
-  `plans/backbone.md` §5.2.3 (see §5 below).
+  `backbone.md` §5.2.3 (see §5 below).
 * Classification: `kato` **direct**; `rem_9_2_2` **deferred** (backbone §5.2.3 Xu–Zikatanov
   sharpening, phase 2).
 
@@ -816,7 +816,7 @@ lower bound `0` for the `ciInf` from sign symmetry).
   `theorem cg_energy_rate … : energyNorm a (u - (cgIterate a hM ℓ u₀ (k+1)).x) ≤ (M - α) / (M + α) * energyNorm a (u - (cgIterate a hM ℓ u₀ k).x)`,
   `theorem cg_energy_bound … : energyNorm a (u - (cgIterate a hM ℓ u₀ k).x) ≤ 2 * ((√M - √α)/(√M + √α)) ^ k * energyNorm a (u - u₀)`.
 * Route: transport Thm 5.6.1 from `Ch05/ConjugateGradient.lean`
-  (`plans/surface/AtkinsonHan-Ch5.md`) via `cgIterate_eq`, `energyNorm_eq` (D6) and
+  (`AtkinsonHan-Ch5.md`) via `cgIterate_eq`, `energyNorm_eq` (D6) and
   `(toOperator a hM : V →ₗ[ℝ] V).IsSymmetricBoundedBy α M` (from symmetry, ellipticity and `hM`
   through `inner_toOperator`). The backbone supplies (5.6.5) in any inner product space as
   `Krylov.IsGalerkinIterate.energyNorm_error_le` (`Numlib/Krylov/Convergence/CG.lean`, §3.10,
@@ -845,7 +845,7 @@ monotone on bounded sets, [92]).** Classification: **out-of-scope** (quoted with
 
 ## 4. Backbone dependencies
 
-All backbone declarations used above, by module (section numbers refer to `plans/backbone.md`):
+All backbone declarations used above, by module (section numbers refer to `backbone.md`):
 
 | Module | Declarations |
 |---|---|
@@ -870,13 +870,13 @@ Surface bridging lemmas (all in §2): `isClosed_iff_seq`, `stabilityEstimate_iff
 
 * **Xu–Zikatanov sharpening of Babuška's bound** (Rem 9.2.2, (9.2.10)): `‖u − u_N‖ ≤ (M/α_N)
   inf_{w_N ∈ U_N} ‖u − w_N‖`, obtained from Kato's lemma applied to the Petrov–Galerkin projector
-  `P_N : u ↦ u_N` (bounded idempotent with `‖P_N‖ ≤ M/α_N`, `range = U_N`); `plans/backbone.md`
+  `P_N : u ↦ u_N` (bounded idempotent with `‖P_N‖ ≤ M/α_N`, `range = U_N`); `backbone.md`
   §5.2.3, phase 2 (§7). Kato's lemma itself is in `Numlib/Analysis/InnerProductSpace/Projection/ObliqueProjection.lean`;
   the deferred part is the projector construction and the sharpened Galerkin estimate.
 
 ## 6. Left out
 
-Out of scope for lack of Sobolev spaces in Mathlib (no phase of `plans/backbone.md` §7 schedules
+Out of scope for lack of Sobolev spaces in Mathlib (no phase of `backbone.md` §7 schedules
 them):
 * §8.1 model problem (8.1.1)–(8.1.4), Ex 8.2.3, Ex 8.2.6, Ex 8.3.5, Ex 8.7.2, Examples 9.1.1–9.1.2,
   Table 9.1, Ex 9.1.3: need `H¹₀(Ω)`, `H⁻¹(Ω)`, `L²`, weak derivatives, Green's kernels.
@@ -899,7 +899,7 @@ Out of scope for other reasons:
 
 Placed elsewhere:
 * Thm 5.6.1/5.6.2 themselves belong to `Ch05/ConjugateGradient.lean`
-  (`plans/surface/AtkinsonHan-Ch5.md`; Winther's superlinear rate 5.6.2 is a later phase); §9.4
+  (`AtkinsonHan-Ch5.md`; Winther's superlinear rate 5.6.2 is a later phase); §9.4
   only transports them through `cgIterate_eq`.
 
 ## 7. Reading notes on the book text

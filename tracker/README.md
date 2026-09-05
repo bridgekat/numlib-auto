@@ -36,7 +36,7 @@ the proof passed through helpers on the way.
 
 Surface nodes carry no `source` field, unlike some plans, because the name already is one: a
 surface declaration is named for the result it states, so `theorem_6_29` in
-`Numlib/Surface/SaadSparse/Chapter06/Section11` is Saad's Theorem 6.29 and nothing else. The group's
+`NumlibSurface/SaadSparse/Chapter06/Section11` is Saad's Theorem 6.29 and nothing else. The group's
 path says which book; the name says which result.
 
 Almost everything here is proved, so the nodes carry nothing but their ids: kind, description and
@@ -46,23 +46,29 @@ exist yet and so carry `kind`, `desc` and `deps` until they do.
 
 ## Shape
 
-A group *is* a module, named by the module's path, so this directory is a copy of `Numlib/` with
-`.lean` replaced by `.toml`: `tracker/Numlib/Krylov/CG.toml` is the plan for `Numlib.Krylov.CG`,
-and the group is `Numlib/Krylov/CG`. That name is the whole of the correspondence — there is no
-field pointing at the module — and `lint` reports a declaration that lands in a module other than
-its group's.
+A group *is* a module, named by the module's path, so this directory is a copy of the source tree
+with `.lean` replaced by `.toml`: `tracker/Numlib/Krylov/CG.toml` is the plan for
+`Numlib.Krylov.CG`, and the group is `Numlib/Krylov/CG`. That name is the whole of the
+correspondence — there is no field pointing at the module — and `lint` reports a declaration that
+lands in a module other than its group's.
 
-There is one root, `Numlib`, because that is where the module tree has its root. The two layers are
-`Numlib` outside `Numlib/Surface`, and `Numlib/Surface`; a surface depends on the backbone and
-never the other way round, and `graph` shows that as a one-way flow. That direction is the library's
-central claim, and it is checkable: a surface node whose real dependencies include no backbone node
-is a surface proof that did not specialize anything, which is what the README forbids.
+There are two roots, `Numlib` and `NumlibSurface`, because the project is two Lake libraries and
+each has its own module tree. `check` imports the `lean_lib` names of `lakefile.toml`, so a new
+library becomes a new root by being registered there and nowhere else.
 
-A group standing for a module that is only a directory — `Numlib/Krylov`, `Numlib/Surface`, the
-chapter directories of each book — has no nodes, and exists to roll counts up and to carry a
-description of what the directory is for. Those descriptions are the only ones the plan writes:
-every other group has a real module whose `/-! … -/` doc comment describes it, and a plan copy would
-only be superseded.
+The split is the layering. A surface depends on the backbone and never the other way round, and
+`graph` shows that as a one-way flow — but since the move to two libraries the direction is no
+longer only a convention the graph displays: `Numlib` cannot import `NumlibSurface`, and Lake
+refuses the attempt. What the plan still adds is the finer claim, which no build system can check:
+a surface node whose real dependencies include no backbone node is a surface proof that did not
+specialize anything, which is what the README forbids.
+
+A group standing for a module that is only a directory — `Numlib/Krylov`, the chapter directories of
+each book — has no nodes, and exists to roll counts up and to carry a description of what the
+directory is for. Those descriptions are the only ones the plan writes: every other group has a real
+module whose `/-! … -/` doc comment describes it, and a plan copy would only be superseded. Both
+roots are of that second kind, so `Numlib.toml` and `NumlibSurface.toml` are empty files, kept
+because a directory must have its group file beside it.
 
 A group is addressed by its path or by an unambiguous trailing part of it, so `tracker show
 Krylov/CG` works, but `tracker show CG` does not — three modules end in `CG`.
@@ -83,7 +89,7 @@ tool can recover from a compiled environment.
 ## Building on it
 
 A later project appends its own groups — a backbone one, or a surface per book under
-`Numlib/Surface` — one per module it intends to write, and names ids from these groups in the
+`NumlibSurface` — one per module it intends to write, and names ids from these groups in the
 `deps` of its open nodes. `tracker show <id>` then prints the signature the new work has to meet,
 and `tracker ready` lists the modules that can be worked on now, never one whose dependencies here
 are unproved. Only `Numlib` is tracked, so Mathlib and core never appear as nodes.

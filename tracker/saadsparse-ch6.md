@@ -10,8 +10,8 @@ deliberately left out.
 
 # Surface plan: Saad, Iterative Methods — Chapter 6
 
-Surface library `SaadSparse`, chapter file set `Numlib/Surface/SaadSparse/Chapter06/*.lean`, importing only the
-backbone `Numlib` (backbone references are to `plans/backbone.md` § numbers and to declarations
+Surface library `SaadSparse`, chapter file set `NumlibSurface/SaadSparse/Chapter06/*.lean`, importing only the
+backbone `Numlib` (backbone references are to `backbone.md` § numbers and to declarations
 under `Numlib/`, cited with their module). Chapter 6 is the book's presentation of the Krylov
 spine: every numbered result is either a statement about *the* Galerkin / minimal-residual iterate
 (backbone specs `Krylov.IsGalerkinIterate`, `Krylov.IsMinResIterate`, §3.4) transported to a
@@ -1824,7 +1824,7 @@ item scheduled for a later phase (listed in §4); `out-of-scope` = not formalize
 
 ## 4. Deferred backbone items
 
-Backbone items scheduled for later phases of `plans/backbone.md` (§7) on which some Chapter 6
+Backbone items scheduled for later phases of `backbone.md` (§7) on which some Chapter 6
 results depend. Each is stated as a plan; the affected results are classified `deferred` above and
 the corresponding surface theorems are written once the item exists.
 
