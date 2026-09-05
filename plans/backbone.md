@@ -741,16 +741,37 @@ noncomputable def Matrix.complexSpectralRadius (A : Matrix n n ℝ) : ENNReal :=
 /-- `Aᵏ → 0 ↔ ρ(A) < 1` for real matrices (via 2.1.3). -/
 theorem Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one (A : Matrix n n ℝ) :
     Tendsto (fun k => A ^ k) atTop (𝓝 0) ↔ complexSpectralRadius A < 1
-theorem Matrix.complexSpectralRadius_le_of_norm {A : Matrix n n ℝ} [NormedRing (Matrix n n ℝ)]
-    [NormOneClass (Matrix n n ℝ)] [NormedAlgebra ℝ (Matrix n n ℝ)] :
-    complexSpectralRadius A ≤ ‖A‖₊
+theorem Matrix.complexify_neg / complexify_sub / complexify_transpose / complexify_conjTranspose
+theorem Matrix.det_complexify / isHermitian_complexify_iff
+theorem Matrix.complexSpectralRadius_smul / complexSpectralRadius_zero / complexSpectralRadius_pow_le
+theorem Matrix.isUnit_one_sub_of_complexSpectralRadius_lt_one (A : Matrix n n ℝ)
+    (h : complexSpectralRadius A < 1) : IsUnit (1 - A)
+/-- The norm is an explicit function, *not* an instance argument: see below. -/
+theorem Matrix.complexSpectralRadius_le_of_norm (f : Matrix n n ℝ → ℝ≥0) (A : Matrix n n ℝ)
+    (hmul : ∀ B C, f (B * C) ≤ f B * f C) (hsmul : ∀ (r : ℝ) B, f (r • B) = ‖r‖₊ * f B)
+    (hzero : ∀ B, f B = 0 → B = 0) : complexSpectralRadius A ≤ f A
+theorem Matrix.complexSpectralRadius_le_linfty_opNNNorm / _le_frobenius_nnnorm / _le_l2_opNNNorm
+theorem Matrix.complexSpectralRadius_ne_top (A : Matrix n n ℝ) : complexSpectralRadius A ≠ ⊤
 ```
-The norm hypothesis is "submultiplicative with `‖1‖ = 1` *and* real-homogeneous". The algebra
-instance is not decoration: transporting `‖x‖ = |x|^(1/2)` from `ℝ` to one-by-one matrices gives a
-`NormedRing` with `‖1‖ = 1` for which `ρ(!![4]) = 4 > 2 = ‖!![4]‖`. Every scoped matrix norm
-(`Matrix.Norms.L2Operator`, `Operator`, `Frobenius`) satisfies all three. Norm preservation under
-`complexify` for the scoped `l∞`/Frobenius norms is added when a surface statement needs it
-(phase 2).
+The norm must be passed as a *function*. Stating the bound with `[NormedRing (Matrix n n ℝ)]` and
+friends makes it **false**: a class argument on a concrete type quantifies over every structure of
+that class on the type, and a `NormedRing` instance argument carries its own `Ring` structure, which
+need not be `Matrix.instRing`. Transporting `ℝ`'s normed-field structure along any bijection
+`Matrix n n ℝ ≃ ℝ` that fixes `1` satisfies all three classes at once — `NormedAlgebra ℝ` does not
+rule this out, since `ℝ` is an `ℝ`-algebra — while leaving `‖·‖` unrelated to
+`complexSpectralRadius`, which is computed from the canonical structures. Concretely one gets
+`‖A‖ = 0` with `ρ(A) = 2`.
+
+The three hypotheses on `f` are exactly what the proof needs and none is removable.
+Submultiplicativity and homogeneity turn the matrix-unit identity
+`single i i 1 * B * single j j 1 = B i j • single i j 1` into a uniform entrywise bound
+`‖B i j‖ ≤ c * f B`, where positive definiteness is what makes the constant finite; the powers of
+`t⁻¹ • A` then decay entrywise for `f A < t`, so `ρ(t⁻¹ • A) < 1` by
+`tendsto_pow_iff_complexSpectralRadius_lt_one` and `complexSpectralRadius_smul` undoes the scaling.
+Subadditivity is never used. Positive definiteness cannot be dropped: `B ↦ |det B|^(1/2)` on
+two-by-two matrices is submultiplicative and absolutely homogeneous with `f 1 = 1`, and kills
+`!![1,0;0,0]`, whose spectral radius is `1`. Norm preservation under `complexify` for the scoped
+`l∞`/Frobenius norms is added when a surface statement needs it (phase 2).
 
 #### 2.1.12 `Matrix/Order.lean` (L4, phase 2)
 Entrywise order and absolute value (`|A| ≤ |B|`, `|A * B| ≤ |A| * |B|`, monotonicity of products by

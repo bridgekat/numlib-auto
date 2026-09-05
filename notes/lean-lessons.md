@@ -122,8 +122,20 @@ Structural facts worth knowing before planning a proof:
   `NormOneClass`, so state Neumann helpers with an explicit `‖(1:R)‖ ≤ 1` and they also apply to
   `E →L[𝕜] E`, which is `NormOneClass` only for nontrivial `E`. `NormOneClass` does not give
   `Nontrivial` by instance search; it is the theorem `NormOneClass.nontrivial`.
-* `NormedRing` plus `NormOneClass` do **not** imply `ρ(a) ≤ ‖a‖`: they permit `‖x‖ = |x|^(1/2)`
-  transported from `ℝ`. Ask for `NormedAlgebra`.
+* **A class argument on a concrete type is a quantifier, not a request for the canonical
+  instance.** `[NormedRing (Matrix n n ℝ)]` in a statement ranges over *every* normed ring structure
+  on that type, and it carries its own `Ring` structure, unrelated to `Matrix.instRing`; the
+  structure transported along a bare bijection `Matrix n n ℝ ≃ ℝ` satisfies it. So such a hypothesis
+  says nothing about the canonical algebra and can make a statement false while looking reasonable —
+  `Matrix.complexSpectralRadius_le_of_norm` was false this way for a while. Anything the statement
+  needs from the canonical structures must be said with a plain function argument, or with classes
+  that take the algebraic operations as instance parameters. Check with `set_option pp.explicit`
+  before trusting such a signature.
+* Adding `NormedAlgebra ℝ` does not repair it: `ℝ` is an `ℝ`-algebra, so the transported structure
+  is one too. And even against the canonical structures, submultiplicativity plus absolute
+  homogeneity plus `‖1‖ = 1` do **not** bound the spectral radius — `B ↦ |det B|^(1/2)` satisfies
+  all three and vanishes on a rank-one two-by-two matrix of spectral radius `1`. Positive
+  definiteness is the missing third hypothesis.
 * `Matrix.BlockTriangular M b` unfolds to `b j < b i → M i j = 0`, so `BlockTriangular · id` is
   *upper* triangularity and `· OrderDual.toDual` is lower. Getting this backwards makes both
   statements false.

@@ -1,6 +1,6 @@
 # Open proof obligations
 
-The eight `sorry` placeholders left in `Numlib/`, with the obstruction for each. Every one is marked
+The seven `sorry` placeholders left in `Numlib/`, with the obstruction for each. Every one is marked
 with an explanatory comment at the declaration itself. Remove an entry here when its proof lands.
 
 ## `Numlib/Krylov/Hessenberg.lean` (5, all in `section GivensArnoldi`)
@@ -41,14 +41,3 @@ needs the blocked second-order Taylor estimate above. Reduction to `ContractingW
 the Newton map is not a contraction on the ball, only the error sequence is dominated by the
 majorant. Reduction to `tendsto_iterate` gives neither the a priori radius nor root existence,
 which is the whole content.
-
-## `Numlib/LinearAlgebra/Matrix/Complexify.lean` (1)
-
-`Matrix.complexSpectralRadius_le_of_norm`. The statement is true as now stated, with
-`[NormedRing]`, `[NormOneClass]` and `[NormedAlgebra ℝ]`, but the proof does not go through
-mechanically. Those hypotheses are instance *arguments*, so they carry their own
-`Module ℝ (Matrix n n ℝ)` structure, which local instance search prefers over `Matrix.instModule`;
-Mathlib's `FiniteDimensional` and norm-equivalence lemmas therefore do not apply without explicit
-instance surgery. Opening a scoped matrix norm inside the declaration does not help, since that
-re-elaborates `‖A‖₊` against a different instance than the hypothesis provides. Granting the norm
-comparison, the finish is a separate `ENNReal.rpow` limit as `k → ∞`.
