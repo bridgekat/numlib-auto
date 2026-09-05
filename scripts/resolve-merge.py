@@ -70,13 +70,11 @@ def keep_both(path: pathlib.Path) -> None:
 
 def main() -> None:
     files = conflicted()
-    if not files:
-        sys.exit("no conflicted files")
     left = []
-    # Regenerate both roots every time, not only when git reports them as conflicting: a branch
-    # that adds a module to one library and touches nothing else merges *cleanly* into a root file
-    # that another branch has already rewritten, and the new import is then silently absent. A
-    # module nobody imports is invisible to the tracker, which reports its nodes as `open`.
+    # Regenerate both roots every time, conflict or no conflict: a branch that adds a module to one
+    # library and touches nothing else merges *cleanly* into a root file another branch has already
+    # rewritten, and the new import is then silently absent. A module nobody imports still builds
+    # and is invisible to the tracker, which reports its nodes as `open` with no explanation.
     for lib in LIBS:
         regenerate_root(lib)
     for f in files:
