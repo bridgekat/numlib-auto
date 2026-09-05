@@ -794,6 +794,63 @@ theorem givensQAux_succ (n m : ℕ) :
   rw [givensQAux, givensQAux, List.range_succ, List.map_append, List.reverse_append]
   simp
 
+theorem givensMatrix_castSucc (k m : ℕ) (i j : Fin (m + 1)) :
+    givensMatrix h k (m + 1) i.castSucc j.castSucc = givensMatrix h k m i j := by
+  simp only [givensMatrix, Matrix.of_apply, Fin.val_castSucc, Fin.castSucc_inj]
+
+/-- The last row of `Ω_m`, seen inside `Fin (m + 2)`. -/
+theorem givensMatrix_last_row (m : ℕ) (p : Fin (m + 2)) :
+    givensMatrix h m (m + 1) (Fin.last (m + 1)) p
+      = if (p : ℕ) = m then -givensS h m
+        else if (p : ℕ) = m + 1 then givensC h m else 0 := by
+  have hi : ((Fin.last (m + 1) : Fin (m + 2)) : ℕ) = m + 1 := rfl
+  by_cases h1 : (p : ℕ) = m
+  · simp [givensMatrix, h1]
+  by_cases h2 : (p : ℕ) = m + 1
+  · simp [givensMatrix, h2]
+  · have hne : (Fin.last (m + 1) : Fin (m + 2)) ≠ p := fun hc => h2 (by rw [← hc, hi])
+    simp [givensMatrix, h1, h2, hne]
+
+/-- Rows beyond the first `n` are rows of the identity in `Q^{(n)}_m`. -/
+theorem givensQAux_apply_of_row_lt (m : ℕ) (j : Fin (m + 1)) :
+    ∀ (n : ℕ) (i : Fin (m + 1)), n < (i : ℕ) →
+      givensQAux h n m i j = if i = j then 1 else 0 := by
+  intro n
+  induction n with
+  | zero => intro i _; simp [Matrix.one_apply]
+  | succ n ih =>
+      intro i hi
+      have h1 : (i : ℕ) ≠ n := by omega
+      have h2 : (i : ℕ) ≠ n + 1 := by omega
+      rw [givensQAux_succ, Matrix.mul_apply]
+      have hrow : ∀ p : Fin (m + 1),
+          givensMatrix h n m i p = if i = p then 1 else 0 := fun p => by
+        simp [givensMatrix, h1, h2]
+      simp only [hrow, ite_mul, one_mul, zero_mul, Finset.sum_ite_eq, Finset.mem_univ, ite_true]
+      exact ih i (by omega)
+
+/-- The leading block of `Q^{(n)}_{m+1}` is `Q^{(n)}_m`, for `n ≤ m`. -/
+theorem givensQAux_castSucc (m : ℕ) :
+    ∀ (n : ℕ), n ≤ m → ∀ (i j : Fin (m + 1)),
+      givensQAux h n (m + 1) i.castSucc j.castSucc = givensQAux h n m i j := by
+  intro n
+  induction n with
+  | zero => intro _ i j; simp [Matrix.one_apply, Fin.castSucc_inj]
+  | succ n ih =>
+      intro hn i j
+      rw [givensQAux_succ, givensQAux_succ, Matrix.mul_apply, Matrix.mul_apply,
+        Fin.sum_univ_castSucc]
+      have hne : (Fin.last (m + 1) : Fin (m + 2)) ≠ j.castSucc := by
+        have := j.isLt
+        simp only [Ne, Fin.ext_iff, Fin.val_last, Fin.val_castSucc]
+        omega
+      have hlast : givensQAux h n (m + 1) (Fin.last (m + 1)) j.castSucc = 0 := by
+        rw [givensQAux_apply_of_row_lt h (m + 1) j.castSucc n (Fin.last (m + 1))
+          (by rw [Fin.val_last]; omega), ite_eq_right hne]
+      rw [hlast, mul_zero, add_zero]
+      exact Finset.sum_congr rfl fun p _ => by
+        rw [givensMatrix_castSucc, ih (by omega) p j]
+
 /-- `Q^{(n)}_m H̄_m = H̄^{(n)}_m` for `n ≤ m`. -/
 theorem givensQAux_mul_hessenbergOf {n m : ℕ} (hn : n ≤ m) :
     givensQAux h n m * hessenbergOf h m = hessenbergOf (rotated h n) m := by

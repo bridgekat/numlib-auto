@@ -132,62 +132,6 @@ theorem z_eq_sum (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (m : ℕ) :
     mul_one, mul_zero, Finset.sum_ite_eq', Finset.mem_univ, ite_true]
   exact (starRingEnd_apply _).symm
 
-private theorem givensMatrix_castSucc (h : ℕ → ℕ → 𝕜) (k m : ℕ) (i j : Fin (m + 1)) :
-    Krylov.givensMatrix h k (m + 1) i.castSucc j.castSucc = Krylov.givensMatrix h k m i j := by
-  simp only [Krylov.givensMatrix, Matrix.of_apply, Fin.val_castSucc, Fin.castSucc_inj]
-
-/-- The last row of `Ω_m`, seen inside `Fin (m + 2)`. -/
-private theorem givensMatrix_last_row (h : ℕ → ℕ → 𝕜) (m : ℕ) (p : Fin (m + 2)) :
-    Krylov.givensMatrix h m (m + 1) (Fin.last (m + 1)) p
-      = if (p : ℕ) = m then -Krylov.givensS h m
-        else if (p : ℕ) = m + 1 then Krylov.givensC h m else 0 := by
-  have hi : ((Fin.last (m + 1) : Fin (m + 2)) : ℕ) = m + 1 := rfl
-  by_cases h1 : (p : ℕ) = m
-  · simp [Krylov.givensMatrix, h1]
-  by_cases h2 : (p : ℕ) = m + 1
-  · simp [Krylov.givensMatrix, h2]
-  · have hne : (Fin.last (m + 1) : Fin (m + 2)) ≠ p := fun hc => h2 (by rw [← hc, hi])
-    simp [Krylov.givensMatrix, h1, h2, hne]
-
-/-- Rows beyond the first `n` are rows of the identity in `Q^{(n)}_m`. -/
-private theorem givensQAux_apply_of_row_lt (h : ℕ → ℕ → 𝕜) (m : ℕ) (j : Fin (m + 1)) :
-    ∀ (n : ℕ) (i : Fin (m + 1)), n < (i : ℕ) →
-      Krylov.givensQAux h n m i j = if i = j then 1 else 0 := by
-  intro n
-  induction n with
-  | zero => intro i _; simp [Matrix.one_apply]
-  | succ n ih =>
-      intro i hi
-      have h1 : (i : ℕ) ≠ n := by omega
-      have h2 : (i : ℕ) ≠ n + 1 := by omega
-      rw [Krylov.givensQAux_succ, Matrix.mul_apply]
-      have hrow : ∀ p : Fin (m + 1),
-          Krylov.givensMatrix h n m i p = if i = p then 1 else 0 := fun p => by
-        simp [Krylov.givensMatrix, h1, h2]
-      simp only [hrow, ite_mul, one_mul, zero_mul, Finset.sum_ite_eq, Finset.mem_univ, ite_true]
-      exact ih i (by omega)
-
-/-- The leading block of `Q^{(n)}_{m+1}` is `Q^{(n)}_m`, for `n ≤ m`. -/
-private theorem givensQAux_castSucc (h : ℕ → ℕ → 𝕜) (m : ℕ) :
-    ∀ (n : ℕ), n ≤ m → ∀ (i j : Fin (m + 1)),
-      Krylov.givensQAux h n (m + 1) i.castSucc j.castSucc = Krylov.givensQAux h n m i j := by
-  intro n
-  induction n with
-  | zero => intro _ i j; simp [Matrix.one_apply, Fin.castSucc_inj]
-  | succ n ih =>
-      intro hn i j
-      rw [Krylov.givensQAux_succ, Krylov.givensQAux_succ, Matrix.mul_apply, Matrix.mul_apply,
-        Fin.sum_univ_castSucc]
-      have hne : (Fin.last (m + 1) : Fin (m + 2)) ≠ j.castSucc := by
-        have := j.isLt
-        simp only [Ne, Fin.ext_iff, Fin.val_last, Fin.val_castSucc]
-        omega
-      have hlast : Krylov.givensQAux h n (m + 1) (Fin.last (m + 1)) j.castSucc = 0 := by
-        rw [givensQAux_apply_of_row_lt h (m + 1) j.castSucc n (Fin.last (m + 1))
-          (by rw [Fin.val_last]; omega), ite_eq_right hne]
-      rw [hlast, mul_zero, add_zero]
-      exact Finset.sum_congr rfl fun p _ => by
-        rw [givensMatrix_castSucc, ih (by omega) p j]
 
 private theorem givensQ_succ_last_castSucc (h : ℕ → ℕ → 𝕜) (m : ℕ) (k : Fin (m + 1)) :
     Qrot h (m + 1) (Fin.last (m + 1)) k.castSucc = -(s h m) * Qrot h m (Fin.last m) k := by
@@ -200,7 +144,7 @@ private theorem givensQ_succ_last_castSucc (h : ℕ → ℕ → 𝕜) (m : ℕ) 
     omega
   have hlast : Krylov.givensMatrix h m (m + 1) (Fin.last (m + 1)) (Fin.last (m + 1)) *
       Krylov.givensQAux h m (m + 1) (Fin.last (m + 1)) k.castSucc = 0 := by
-    rw [givensQAux_apply_of_row_lt h (m + 1) k.castSucc m (Fin.last (m + 1))
+    rw [Krylov.givensQAux_apply_of_row_lt h (m + 1) k.castSucc m (Fin.last (m + 1))
       (by rw [Fin.val_last]; omega), ite_eq_right hne, mul_zero]
   rw [hlast, add_zero]
   have hterm : ∀ p : Fin (m + 1),
@@ -211,7 +155,7 @@ private theorem givensQ_succ_last_castSucc (h : ℕ → ℕ → 𝕜) (m : ℕ) 
     have hp : (p : ℕ) ≠ m + 1 := by
       have := p.isLt
       omega
-    rw [givensMatrix_last_row, givensQAux_castSucc h m m le_rfl p k, Fin.val_castSucc,
+    rw [Krylov.givensMatrix_last_row, Krylov.givensQAux_castSucc h m m le_rfl p k, Fin.val_castSucc,
       ite_eq_right hp]
   rw [Finset.sum_congr rfl fun p _ => hterm p, Finset.sum_eq_single (Fin.last m)]
   · rw [Fin.val_last, ite_eq_left rfl]
@@ -236,8 +180,8 @@ private theorem givensQ_succ_last_last (h : ℕ → ℕ → 𝕜) (m : ℕ) :
     rw [Krylov.givensQAux_apply_of_lt h m (m + 1) p.castSucc (Fin.last (m + 1))
       (by rw [Fin.val_last]; omega), ite_eq_right hne, mul_zero]
   rw [Finset.sum_congr rfl fun p _ => hz p, Finset.sum_const_zero, zero_add,
-    givensQAux_apply_of_row_lt h (m + 1) (Fin.last (m + 1)) m (Fin.last (m + 1))
-      (by rw [Fin.val_last]; omega), ite_eq_left rfl, mul_one, givensMatrix_last_row]
+    Krylov.givensQAux_apply_of_row_lt h (m + 1) (Fin.last (m + 1)) m (Fin.last (m + 1))
+      (by rw [Fin.val_last]; omega), ite_eq_left rfl, mul_one, Krylov.givensMatrix_last_row]
   simp
 
 /-- (6.53): `z_{m+2} = -conj(s_{m+1}) z_{m+1} + conj(c_{m+1}) v_{m+2}`. Over `ℝ`, and over `ℂ`
