@@ -616,7 +616,8 @@ theorem residual_mrs_eq {xO : ℕ → E} (hinj : Function.Injective A) (m : ℕ)
     have hmres := IsGalerkinIterate.mrs_isMinResIterate hinj n hGn
     have hSne : b - A (mrs A b xO n) ≠ 0 := fun h =>
       hOn n le_rfl (galerkin_residual_eq_zero_of_minRes hmres h (hO n (Nat.le_succ n)))
-    have hsum := inv_sq_norm_residual_minRes_eq_sum hmres (fun i hi => hO i (hi.trans (Nat.le_succ n))) hSne
+    have hsum := inv_sq_norm_residual_minRes_eq_sum hmres
+      (fun i hi => hO i (hi.trans (Nat.le_succ n))) hSne
     have hsn : ‖b - A (mrs A b xO n)‖ ^ 2
         = (∑ j ∈ Finset.range (n + 1), 1 / ‖b - A (xO j)‖ ^ 2)⁻¹ := by
       rw [← hsum, one_div, inv_inv]
