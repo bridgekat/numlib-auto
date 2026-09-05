@@ -1,4 +1,4 @@
-import Numlib.Surface.SaadSparse.Ch05.Projection
+import Numlib.Surface.SaadSparse.Chapter05.Section01
 
 /-!
 # §5.4 Additive and multiplicative projection processes

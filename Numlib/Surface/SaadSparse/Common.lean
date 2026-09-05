@@ -1,4 +1,7 @@
-import Numlib.Backbone
+import Numlib.Analysis.InnerProductSpace.Coercive
+import Numlib.Analysis.Matrix.ToEuclideanLin
+import Numlib.LinearAlgebra.Matrix.Complexify
+import Numlib.LinearAlgebra.Matrix.Hessenberg
 
 /-!
 # Conventions for the `SaadSparse` surface library

@@ -1,4 +1,6 @@
-import Numlib.Surface.SaadSparse.Ch06.GCR
+import Numlib.Krylov.Arnoldi
+import Numlib.Krylov.Subspace
+import Numlib.Surface.SaadSparse.Chapter06.Section09
 
 /-!
 # Saad, §6.10: optimality and the Faber–Manteuffel condition
@@ -13,7 +15,7 @@ computes the FOM approximation. The band condition itself is the backbone's
 `Arnoldi.coeff_eq_zero_of_adjoint_mem` (`Numlib/Krylov/Arnoldi.lean`); the algorithmic
 consequence is `iop_eq_arnoldiMGS_of_band` (IOP(s) is Algorithm 6.2) together with
 `iomFixed_eq_fomFixed_of_band` and `diom_eq_fomFixed_of_band`, which use the IOP/DIOM layer of
-`Ch06/FOM.lean`.
+`Chapter06/Section04.lean`.
 
 The section's two objects are here: `ν A`, the least degree of a polynomial `q` with
 `A^H = q(A)`, and `IsCGs A s`, Faber and Manteuffel's class `CG(s)` of matrices for which the

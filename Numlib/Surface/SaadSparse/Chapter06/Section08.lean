@@ -1,5 +1,9 @@
-import Numlib.Surface.SaadSparse.Ch06.CG
-import Numlib.Surface.SaadSparse.Ch06.GMRES
+import Numlib.Analysis.InnerProductSpace.Coercive
+import Numlib.Krylov.CR
+import Numlib.Krylov.Iterate
+import Numlib.Krylov.Subspace
+import Numlib.Surface.SaadSparse.Chapter06.Section05
+import Numlib.Surface.SaadSparse.Chapter06.Section07
 
 /-!
 # Saad, §6.8: the conjugate residual method
@@ -18,7 +22,7 @@ is Hermitian, which is the standing hypothesis of the section.
 Everything else follows: the residuals are `A`-orthogonal (conjugate) and the vectors `A p_i`
 are orthogonal, and — this is the sense in which §6.8 derives the algorithm "from GMRES for the
 particular case where `A` is Hermitian" — the iterate `x_j` is the minimal-residual iterate on
-`𝒦_j(A, r_0)`, hence equals the GMRES approximation `gmresFixed` of `Ch06/GMRES.lean`.
+`𝒦_j(A, r_0)`, hence equals the GMRES approximation `gmresFixed` of `Chapter06/Section05.lean`.
 
 Indices are `0`-based, as in the book. Division by a vanishing quantity is `0` in Lean, which
 reproduces the book's breakdown behaviour; the indefinite case is covered by

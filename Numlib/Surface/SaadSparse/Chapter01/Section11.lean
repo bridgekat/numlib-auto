@@ -1,4 +1,8 @@
-import Numlib.Surface.SaadSparse.Basic
+import Numlib.Analysis.InnerProductSpace.Coercive
+import Numlib.Analysis.InnerProductSpace.Energy
+import Numlib.Analysis.Matrix.ToEuclideanLin
+import Numlib.Eigen.Perturbation
+import Numlib.Surface.SaadSparse.Common
 
 /-!
 # §1.11 Positive-definite matrices

@@ -1,4 +1,8 @@
-import Numlib.Surface.SaadSparse.Ch06.Arnoldi
+import Numlib.Krylov.Arnoldi
+import Numlib.Krylov.Lanczos
+import Numlib.Krylov.Subspace
+import Numlib.LinearAlgebra.Matrix.Hessenberg
+import Numlib.Surface.SaadSparse.Chapter06.Section03
 
 /-!
 # Saad, §6.6: the symmetric Lanczos algorithm
@@ -16,8 +20,8 @@ observation that Algorithm 6.15 *is* Arnoldi's method for a symmetric matrix: `l
 identifies its vectors with those of Algorithm 6.1 (hence with Algorithm 6.2, the modified
 Gram–Schmidt form the book actually derives it from), `lanczosAlpha_eq` and `lanczosBeta_eq`
 identify its coefficients with `h_{jj}` and `h_{j+1,j}`, and `T_eq_H` gives `T_m = H_m` (6.84).
-Everything else in §6.6 and §6.7 is then inherited from the Arnoldi theory of `Ch06/Arnoldi.lean`
-rather than redeveloped.
+Everything else in §6.6 and §6.7 is then inherited from the Arnoldi theory of
+`Chapter06/Section03.lean` rather than redeveloped.
 
 §6.6.2 contributes the inner product (6.85), `polyInner`, the isomorphism `p ↦ p(A) v_1` from
 `P_{m-1}` onto `𝒦_m` (`polyToKrylov`, `polyToKrylov_bijective`), its nondegeneracy
@@ -27,7 +31,7 @@ polynomial of `T_m` minimizes `‖·‖_{v_1}` among monic polynomials of degree
 Lanczos process computes `p_{T_m}(A) v_1` — need the Ritz-value and orthogonal-polynomial
 material that the backbone plan defers to a later phase, and are not stated here.
 
-Indices are `0`-based as in `Ch06/Arnoldi.lean`: `lanczosV A v₁ j` is the book's `v_{j+1}`,
+Indices are `0`-based as in `Chapter06/Section03.lean`: `lanczosV A v₁ j` is the book's `v_{j+1}`,
 `lanczosAlpha A v₁ j` is `α_{j+1}` and `lanczosBeta A v₁ j` is `β_{j+1}`. Definitions are
 polymorphic in `𝕜`; the numbered results are stated over `ℝ` with `A` symmetric, the book's
 generality in §6.6.
@@ -163,7 +167,7 @@ private theorem lanczosState_succ_eq (hA : (op A).IsSymmetric) (hv : ‖v₁‖ 
     rw [Lanczos.w_succ_eq v₁ hA j, ← Lanczos.coe_alpha v₁ hA (j + 1)]
     abel
 
-/-- §6.6.1: the vectors of **Algorithm 6.15** are the Arnoldi vectors of `Ch06/Arnoldi.lean`.
+/-- §6.6.1: the vectors of **Algorithm 6.15** are the Arnoldi vectors of `Chapter06/Section03.lean`.
 This is the sentence "this leads to the following form of the modified Gram–Schmidt variant of
 Arnoldi's method": for symmetric `A` the inner loop of Algorithm 6.2 subtracts only the two
 terms `α_j v_j` and `β_j v_{j-1}`. -/

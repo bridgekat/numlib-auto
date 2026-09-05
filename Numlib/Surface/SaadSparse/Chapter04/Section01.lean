@@ -1,4 +1,6 @@
-import Numlib.Surface.SaadSparse.Basic
+import Numlib.LinearAlgebra.Matrix.Hessenberg
+import Numlib.LinearSolve.Stationary.Splitting
+import Numlib.Surface.SaadSparse.Common
 
 /-!
 # §4.1 Jacobi, Gauss–Seidel and SOR

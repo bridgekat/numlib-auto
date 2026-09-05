@@ -1,4 +1,9 @@
-import Numlib.Surface.SaadSparse.Ch06.Residual
+import Numlib.Krylov.Arnoldi
+import Numlib.Krylov.Hessenberg
+import Numlib.Krylov.Iterate
+import Numlib.Krylov.Subspace
+import Numlib.LinearSolve.Projection.Basic
+import Numlib.Surface.SaadSparse.Chapter06.Common
 
 /-!
 # Saad, §6.4: the Full Orthogonalization Method
@@ -24,9 +29,9 @@ used".
 
 The data `r_0`, `β`, `v_1`, `e_1`, `mEff` of the system and the bridge lemmas translating the
 book's unit starting vector `v_1` to the backbone's residual-indexed Arnoldi data are shared
-with `Ch06/GMRES.lean` and live in `Ch06/Residual.lean`.
+with `Chapter06/Section05.lean` and live in `Chapter06/Common.lean`.
 
-Indices are `0`-based as in `Ch06/Arnoldi.lean`: `iop A v₁ k j` is the book's `v_{j+1}`, and
+Indices are `0`-based as in `Chapter06/Section03.lean`: `iop A v₁ k j` is the book's `v_{j+1}`, and
 `iopCoeff A v₁ k i j` is `h_{i+1,j+1}`. Division by a vanishing norm is `0`, which reproduces
 the book's "if `h_{j+1,j} = 0` then Stop", and the book's "set `m := j`" is `mEff` for FOM and
 `iomSteps` for IOM.

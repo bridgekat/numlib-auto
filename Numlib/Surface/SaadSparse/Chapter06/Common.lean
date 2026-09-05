@@ -1,4 +1,7 @@
-import Numlib.Surface.SaadSparse.Ch06.Arnoldi
+import Numlib.Krylov.Arnoldi
+import Numlib.Krylov.Hessenberg
+import Numlib.Krylov.Subspace
+import Numlib.Surface.SaadSparse.Chapter06.Section03
 
 /-!
 # Saad, Chapter 6: the data of a linear system
@@ -10,8 +13,8 @@ Every Krylov method of the chapter starts from the same three quantities: the in
 `r₀ = b - A x₀`, its norm `β = ‖r₀‖₂` and the unit vector `v₁ = r₀/β` on which Algorithm 6.1 is
 run. The backbone indexes the Arnoldi process by the residual `r₀` itself, so each algorithm
 needs the same translation between the book's `v₁`-indexed data and the backbone's `r₀`-indexed
-data; that translation is the `*_v₁` family below, shared by `Ch06/FOM.lean`, `Ch06/GMRES.lean`
-and everything downstream of them.
+data; that translation is the `*_v₁` family below, shared by
+`Chapter06/Section04.lean`, `Chapter06/Section05.lean` and everything downstream of them.
 
 The bridge lemmas need no hypothesis on `r₀`: when `r₀ = 0` both sides vanish, because Lean's
 `(0 : ℝ)⁻¹ = 0` makes `v₁ = 0` and the backbone Arnoldi data of `0` is `0` as well.

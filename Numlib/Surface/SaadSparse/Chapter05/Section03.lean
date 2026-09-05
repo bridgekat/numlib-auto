@@ -1,5 +1,10 @@
 import Mathlib.Analysis.Matrix.PosDef
-import Numlib.Surface.SaadSparse.Ch05.Projection
+import Numlib.Analysis.InnerProductSpace.Coercive
+import Numlib.Analysis.InnerProductSpace.Energy
+import Numlib.Analysis.Matrix.ToEuclideanLin
+import Numlib.LinearSolve.Projection.Basic
+import Numlib.LinearSolve.Projection.OneDimensional
+import Numlib.Surface.SaadSparse.Chapter05.Section01
 
 /-!
 # §5.3 One-dimensional projection processes

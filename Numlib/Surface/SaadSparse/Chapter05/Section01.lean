@@ -1,5 +1,10 @@
-import Numlib.Surface.SaadSparse.Ch01.Projectors
-import Numlib.Surface.SaadSparse.Ch01.PositiveDefinite
+import Numlib.Analysis.InnerProductSpace.Coercive
+import Numlib.Analysis.InnerProductSpace.Energy
+import Numlib.Analysis.Matrix.ToEuclideanLin
+import Numlib.LinearSolve.Projection.Basic
+import Numlib.LinearSolve.Projection.Optimality
+import Numlib.Surface.SaadSparse.Chapter01.Section11
+import Numlib.Surface.SaadSparse.Chapter01.Section12
 
 /-!
 # §5.1–§5.2 Projection methods

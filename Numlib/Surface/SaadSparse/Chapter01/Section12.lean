@@ -1,4 +1,7 @@
-import Numlib.Surface.SaadSparse.Basic
+import Numlib.Analysis.InnerProductSpace.Projection.ObliqueProjection
+import Numlib.Analysis.Matrix.ToEuclideanLin
+import Numlib.LinearSolve.Projection.Basic
+import Numlib.Surface.SaadSparse.Common
 
 /-!
 # §1.12 Projection operators

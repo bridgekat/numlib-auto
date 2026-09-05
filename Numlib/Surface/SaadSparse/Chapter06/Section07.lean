@@ -1,5 +1,13 @@
-import Numlib.Surface.SaadSparse.Ch06.FOM
-import Numlib.Surface.SaadSparse.Ch06.Lanczos
+import Numlib.Analysis.InnerProductSpace.Coercive
+import Numlib.Krylov.Arnoldi
+import Numlib.Krylov.CG
+import Numlib.Krylov.Hessenberg
+import Numlib.Krylov.Iterate
+import Numlib.Krylov.Lanczos
+import Numlib.Krylov.Subspace
+import Numlib.LinearSolve.Projection.Basic
+import Numlib.Surface.SaadSparse.Chapter06.Section04
+import Numlib.Surface.SaadSparse.Chapter06.Section06
 
 /-!
 # Saad, §6.7: the conjugate gradient method
@@ -25,7 +33,7 @@ the three-term algorithm produces the CG iterates (`cg3_eq`).
 Indices are `0`-based: `cgX A b x₀ j` is the book's `x_j` and `cgAlpha A b x₀ j` its `α_j`
 (the book already numbers the conjugate gradient iterates from `0`), while
 `lanczosV A v₁ j` is the book's `v_{j+1}` and `lanczosBeta A v₁ j` its `β_{j+1}`, as in
-`Ch06/Lanczos.lean`. Division by a vanishing quantity is `0`, which reproduces the book's
+`Chapter06/Section06.lean`. Division by a vanishing quantity is `0`, which reproduces the book's
 breakdown behaviour.
 
 Definitions are polymorphic in `𝕜`; the numbered results are stated over `ℝ` with `A`

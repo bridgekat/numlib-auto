@@ -1,4 +1,9 @@
-import Numlib.Surface.SaadSparse.Ch06.Basic
+import Numlib.Analysis.Matrix.ToEuclideanLin
+import Numlib.Krylov.Arnoldi
+import Numlib.Krylov.Hessenberg
+import Numlib.Krylov.Subspace
+import Numlib.LinearSolve.Projection.Basic
+import Numlib.Surface.SaadSparse.Chapter06.Section02
 
 /-!
 # Saad, §6.3: Arnoldi's method

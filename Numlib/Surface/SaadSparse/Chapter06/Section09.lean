@@ -1,4 +1,7 @@
-import Numlib.Surface.SaadSparse.Ch06.CR
+import Numlib.Krylov.CR
+import Numlib.Krylov.Iterate
+import Numlib.Krylov.Subspace
+import Numlib.Surface.SaadSparse.Chapter06.Section08
 
 /-!
 # Saad, §6.9: GCR, ORTHOMIN and ORTHODIR
