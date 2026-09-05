@@ -2,6 +2,7 @@ import Numlib.Analysis.Calculus.MeanValue
 import Numlib.Analysis.InnerProductSpace.Coercive
 import Numlib.Analysis.InnerProductSpace.Energy
 import Numlib.Analysis.InnerProductSpace.GramSchmidt
+import Numlib.Analysis.InnerProductSpace.Projection.Angle
 import Numlib.Analysis.InnerProductSpace.Projection.Compression
 import Numlib.Analysis.InnerProductSpace.Projection.ObliqueProjection
 import Numlib.Analysis.Matrix.ToEuclideanLin

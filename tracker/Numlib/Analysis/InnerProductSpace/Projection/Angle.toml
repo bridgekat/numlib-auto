@@ -1,66 +1,86 @@
-desc = '''
-How far a vector is from a subspace, and how far two subspaces are from each other, in the
-vocabulary the eigenvalue literature states its bounds in.
+[[node]]
+id = "Submodule.angle"
 
-Every sharp Rayleigh-Ritz bound is an inequality about `θ(u, K)`, the angle between an eigenvector
-and the subspace it is being approximated from, and every subspace-iteration bound is one about the
-gap between subspaces. Mathlib has `InnerProductGeometry.angle` between two vectors of a *real*
-inner product space and nothing about a subspace, so the names `sin θ(u, K)`, `tan θ(u, K)` and
-`gap K L` are defined here, over `RCLike`, as what they are: quotients of the norms that
-`Submodule.starProjection` produces, and the operator norm of a difference of projections.
+[[node]]
+id = "Submodule.angle_eq_angle_starProjection"
 
-Defining them earns its keep only if the names are honest, so the trigonometric identities are
-proved, not assumed: `Real.cos (K.angle u) = K.cosAngle u` and its siblings, out of the Pythagorean
-identity `‖u‖² = ‖P_K u‖² + ‖u - P_K u‖²` (`Submodule.norm_sq_eq_add_norm_sq_starProjection`).
+[[node]]
+id = "Submodule.angle_le_of_le"
 
-Wanted by `Eigen/RayleighRitz` (the Ritz-value and Ritz-vector error bounds), by `Eigen/KrylovEigen`
-(the Lanczos angle bound and Kaniel-Paige-Saad) and by `Eigen/PowerMethod` (subspace iteration).
-See §4.2 to §4.4 of `backbone.md`.
-'''
+[[node]]
+id = "Submodule.angle_mem_Icc"
 
 [[node]]
 id = "Submodule.cosAngle"
-kind = "definition"
-desc = '`cos θ(u, K) = ‖P_K u‖ / ‖u‖`.'
 
 [[node]]
-id = "Submodule.sinAngle"
-kind = "definition"
-desc = '`sin θ(u, K) = ‖u - P_K u‖ / ‖u‖`, the relative distance from `u` to `K`.'
+id = "Submodule.cosAngle_le_of_le"
 
 [[node]]
-id = "Submodule.tanAngle"
-kind = "definition"
-desc = '`tan θ(u, K) = ‖u - P_K u‖ / ‖P_K u‖`, which is what the Ritz-value bounds are stated in.'
-
-[[node]]
-id = "Submodule.angle"
-kind = "definition"
-desc = 'The angle itself, `arccos (cos θ(u, K))`, in `[0, π/2]`.'
-
-[[node]]
-id = "Submodule.cos_angle"
-kind = "theorem"
-desc = '''`Real.cos (K.angle u) = K.cosAngle u`, with the `sin` and `tan` companions: the identities
-that make the three names above mean what they say.'''
-deps = ["Submodule.angle", "Submodule.cosAngle"]
+id = "Submodule.cosAngle_mul_norm"
 
 [[node]]
 id = "Submodule.cosAngle_sq_add_sinAngle_sq"
-kind = "theorem"
-desc = 'Pythagoras: `cos²θ(u, K) + sin²θ(u, K) = 1` for `u ≠ 0`.'
-deps = ["Submodule.cosAngle", "Submodule.sinAngle"]
 
 [[node]]
-id = "Submodule.gap"
-kind = "definition"
-desc = '''The gap between two subspaces, `‖P_K - P_L‖`: a metric on the closed subspaces, and the
-one the subspace-iteration bounds are measured in.'''
+id = "Submodule.cos_angle"
 
 [[node]]
 id = "Submodule.finrank_eq_of_gap_lt_one"
-kind = "theorem"
-desc = '''Two subspaces at gap less than one have the same dimension, so a continuously varying
-family of projectors has constant rank.'''
-deps = ["Submodule.gap"]
-source = "Saad, Numerical Methods for Large Eigenvalue Problems, Theorem 3.2"
+
+[[node]]
+id = "Submodule.gap"
+
+[[node]]
+id = "Submodule.gap_bot_eq_one"
+
+[[node]]
+id = "Submodule.gap_comm"
+
+[[node]]
+id = "Submodule.gap_eq_zero_iff"
+
+[[node]]
+id = "Submodule.gap_le_one"
+
+[[node]]
+id = "Submodule.gap_self"
+
+[[node]]
+id = "Submodule.norm_starProjection_sq_add_norm_sub_sq"
+
+[[node]]
+id = "Submodule.norm_starProjection_sub_apply_le"
+
+[[node]]
+id = "Submodule.sinAngle"
+
+[[node]]
+id = "Submodule.sinAngle_eq_inv_norm_mul_infDist"
+
+[[node]]
+id = "Submodule.sinAngle_eq_zero_iff"
+
+[[node]]
+id = "Submodule.sinAngle_le_gap"
+
+[[node]]
+id = "Submodule.sinAngle_le_of_le"
+
+[[node]]
+id = "Submodule.sinAngle_mul_norm"
+
+[[node]]
+id = "Submodule.sin_angle"
+
+[[node]]
+id = "Submodule.tanAngle"
+
+[[node]]
+id = "Submodule.tanAngle_le_of_le"
+
+[[node]]
+id = "Submodule.tanAngle_mul_norm"
+
+[[node]]
+id = "Submodule.tan_angle"
