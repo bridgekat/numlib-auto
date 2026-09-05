@@ -301,6 +301,21 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   elaborates. Write `⊤` for the `ℝ≥0∞` one.
 * `α →ᵇ β` is `scoped[BoundedContinuousFunction]`; importing `Topology.ContinuousMap.Bounded.*` is
   not enough, and the parse error points at the `ᵇ` with "expected token".
+* **The `|a|` notation needs its own import.** It is a macro in
+  `Mathlib.Algebra.Order.Group.Unbundled.Abs`, and a file that does not (transitively) import it
+  fails on `|x - y| ≤ 1` with a bare `unexpected token '|'; expected term`, which reads like a
+  syntax error and is a missing import. `Mathlib.Combinatorics.SimpleGraph.Metric` is one such
+  file.
+* **A `termination_by` measure sees only the declaration's own binders.** Section instance
+  variables are auto-included from the *type and body*, not from the measure, so a `[Fintype V]`
+  used only in `termination_by #{x ∈ univ | x < v}` is absent and the measure fails to elaborate
+  with "failed to synthesize Fintype ?m". `include inst in` does not fix it: write the instance as
+  an explicit binder on the declaration (`def f [Fintype V] (v : V) : ℕ`).
+* Inside the body of a well-founded `def` written against section variables, the recursive call
+  takes only the declaration's *own* arguments: in `def greedyColoring (v : V)` with `G` a section
+  variable, the call is `greedyColoring w`, not `greedyColoring G w`.
+* `{w ∈ univ | p w}.image f` leaves the type of `univ` a metavariable and reports "typeclass
+  instance problem is stuck: Fintype ?m"; write `{w ∈ (univ : Finset V) | p w}`.
 
 ## Tactics
 
@@ -437,6 +452,19 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   `(c²u + 2csw + s²v)² + (s²u − 2csw + c²v)² = u² + v² + 2w²` from `c² + s² = 1` and the
   annihilation `(c²−s²)w + cs(v−u) = 0` in one line, with the *square* of the annihilation
   expression as the coefficient of that hypothesis; `nlinarith` does not find it.
+* **With two `Quiver` structures on the same type, nothing elaborates by unification.** Dot
+  notation (`p.length`), `rw` and even `Prefunctor.mapPath` synthesize the `[Quiver V]` argument
+  rather than reading it off the term, so with both `A.adjQuiver` and `(A.submatrix σ σ).adjQuiver`
+  in play every use has to be `@`-applied. The workable pattern is: keep *one* of them ambient by
+  writing `letI := A.adjQuiver;` inside the *statement* of the `have`/theorem (as Mathlib's
+  `Matrix.pow_apply_pos_iff_nonempty_path` does), and spell the other out with `@`. A local
+  `let _ : Quiver n := …` in the tactic context is worse than nothing: it gets synthesized where
+  the other quiver was meant, and the error is "synthesized type class instance is not
+  definitionally equal".
+* `linter.unusedDecidableInType` fires on `[DecidableRel G.Adj]` carried only by the proof. When a
+  *definition* is what needs the decidability, put `open scoped Classical in` on the definition;
+  every lemma about it is then free of the binder, and the one lemma that really needs
+  `G.neighborFinset` keeps it.
 
 ## Mathlib names and API
 
@@ -831,6 +859,18 @@ decomposition**; `Matrix.singularValues` and `Matrix.pinv` in `Numlib/LinearAlge
 this project's. Mathlib also has no Schur triangulation and no plane-rotation matrix in dimension
 `n`, and `Mathlib/LinearAlgebra/Eigenspace/Triangularizable.lean` lists a maximal chain of
 invariant subspaces as a TODO.
+* Mathlib's `Matrix.IsIrreducible` (`Mathlib.LinearAlgebra.Matrix.Irreducible.Defs`) bundles
+  *entrywise nonnegativity* with `Quiver.IsSStronglyConnected` of `Matrix.toQuiver`, and the latter
+  asks for a path of **positive** length between every pair — so it is strictly stronger than
+  "strongly connected" on a one-element index type, and every characterization of reducibility by a
+  block triangular form needs `[Nontrivial n]`.
+* `SimpleGraph.Adj.diff_dist_adj` already says that an edge changes the distance to a root by at
+  most one, and `SimpleGraph.Reachable.dist_triangle_right` gives the one-sided form with **no**
+  reachability hypothesis (the unreachable case is `dist = 0` on both sides).
+  `SimpleGraph.ball` exists in `Mathlib.Combinatorics.SimpleGraph.Metric`; the spheres do not.
+* `Set.pairwise_insert_of_symmetric` is deprecated in favour of `Set.pairwise_insert_of_symm`,
+  which takes the symmetry as a `[Std.Symm r]` *instance*, so the old call site no longer applies.
+  For `SimpleGraph.IsIndepSet (insert v s)` it is shorter to `intro`/`rcases` the four cases.
 
 ## Design conventions of this library
 

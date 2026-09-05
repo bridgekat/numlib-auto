@@ -1,66 +1,16 @@
 namespace = "SimpleGraph"
-desc = '''
-Greedy sequential colouring of a finite simple graph, an upstreaming candidate (natural home:
-`Mathlib.Combinatorics.SimpleGraph.Coloring`, which today has `Coloring`, `Colorable` and
-`chromaticNumber` but no bound in terms of the degree).
-
-Serves Saad, *Iterative Methods for Sparse Linear Systems*, §3.3.3 (Algorithm 3.6 and the three
-claims after it) and Problems P-3.9, P-3.10, P-3.11.
-
-The greedy colouring is defined along a linear order on the vertices, as the least colour not used
-by an already-coloured neighbour, by strong recursion; `Nat.sInf` of the complement of a finite
-set of colours makes the recursion total without a well-foundedness argument, and the bound
-follows because at most `maxDegree` colours are excluded at each vertex. The bipartite statement
-is the substantive one, and the hypothesis Saad omits has to be supplied: the traversal must visit,
-after the first vertex of each connected component, only vertices adjacent to an already-visited
-one. That makes every visited prefix induce a connected subgraph, whose proper two-colouring is
-unique up to a swap, so all already-coloured neighbours of the next vertex carry the same colour
-and the greedy choice is forced. Without connectivity of the prefix the claim is false, which is
-the negative half of Problem P-3.11(a) and is recorded as a counterexample rather than a theorem.
-'''
 
 [[node]]
 id = "greedyColoring"
-kind = "definition"
-desc = '''`SimpleGraph.greedyColoring G : V → ℕ` for a finite simple graph on a linearly ordered vertex
-type: `greedyColoring G v = sInf {k | ∀ w, w < v → G.Adj w v → greedyColoring G w ≠ k}`, Saad's
-Algorithm 3.6 with colours numbered from `0`. Defined by strong recursion on `v`; with
-`greedyColoring_ne_of_adj`, so that it really is a `SimpleGraph.Coloring G ℕ`
-(`greedyColoring_isColoring`).'''
-source = "Saad, Iterative Methods for Sparse Linear Systems, Algorithm 3.6"
+
+[[node]]
+id = "greedyColoring_isColoring"
 
 [[node]]
 id = "greedyColoring_le_maxDegree"
-kind = "theorem"
-desc = '''Saad Problem P-3.10: `greedyColoring G v ≤ G.maxDegree` for every `v`, so the greedy
-colouring uses at most `maxDegree + 1` colours. At `v` the excluded colours are the values at the
-earlier neighbours of `v`, at most `G.degree v ≤ G.maxDegree` of them, so the least non-excluded
-natural number is at most `G.maxDegree`.'''
-deps = ["greedyColoring"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, Section 3.3.3 and Problem P-3.10"
 
 [[node]]
 id = "colorable_maxDegree_add_one"
-kind = "theorem"
-desc = '''`G.Colorable (G.maxDegree + 1)` for a finite simple graph. Immediate from
-`greedyColoring_le_maxDegree` after transporting the colouring along `Fin.mk`; stated separately
-because it is the form a consumer wants and the form Mathlib would take. This is the missing
-Mathlib brick that `Numlib/LinearAlgebra/Sparse/Reordering` needs.'''
-deps = ["greedyColoring_le_maxDegree"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, Section 3.3.3"
 
 [[node]]
 id = "greedyColoring_le_one_of_isBipartite"
-kind = "theorem"
-desc = '''Saad §3.3.3 claim 2 and Problem P-3.11(b): if `G` is bipartite (`G.Colorable 2`) and the
-linear order on the vertices is such that every vertex other than the least of its connected
-component has an earlier neighbour, then `greedyColoring G v ≤ 1` for every `v`, so greedy finds
-the optimal two-colouring. Proof: by strong induction the set of vertices below `v` in the same
-component induces a connected subgraph, so its greedy colouring agrees with the bipartition up to
-a swap; all earlier neighbours of `v` therefore share one colour and the greedy choice is the
-other. Saad states the claim without the traversal hypothesis in one place and with it in Problem
-P-3.11(b); the hypothesis is necessary, and Problem P-3.11(a) is the counterexample without it.
-Saad's breadth-first case (claim 1) and Problem P-3.9, the two-colouring of a five-point grid,
-are corollaries.'''
-deps = ["greedyColoring"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, Section 3.3.3 and Problem P-3.11"

@@ -17,6 +17,9 @@ import Numlib.Analysis.Normed.Ring.Inverse
 import Numlib.Approximation.BestApprox
 import Numlib.Approximation.Chebyshev
 import Numlib.Approximation.Interpolation
+import Numlib.Combinatorics.SimpleGraph.Coloring
+import Numlib.Combinatorics.SimpleGraph.IndepSet
+import Numlib.Combinatorics.SimpleGraph.LevelSet
 import Numlib.Eigen.Deflation
 import Numlib.Eigen.Jacobi
 import Numlib.Eigen.KrylovEigen
@@ -53,6 +56,7 @@ import Numlib.LinearAlgebra.Matrix.MMatrix
 import Numlib.LinearAlgebra.Matrix.Order
 import Numlib.LinearAlgebra.Matrix.SVD
 import Numlib.LinearAlgebra.Matrix.Schur
+import Numlib.LinearAlgebra.Sparse.Pattern
 import Numlib.LinearSolve.Perturbation
 import Numlib.LinearSolve.Projection.Additive
 import Numlib.LinearSolve.Projection.Basic
