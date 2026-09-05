@@ -80,6 +80,8 @@ The user can prompt an agent to formalize a plan. In such cases, the agent shoul
 - Proceed to fill in the proofs, optionally by spawning parallel sub-agents to work on different files in the skeleton. If any of them proves difficult to complete, identify the cause, report back and stop for a restructure of the plan if necessary.
 - Verify the formalization by compiling the Lean files, or use MCP tools when available.
 
+Keep in mind the backbone-surface split. Everything in the backbone (including doc comments) should be self-contained. To reference material from the books, state the source book explicitly (full name in the references section, using Markdown footnote syntax), instead of a mere number like "Theorem 3.7".
+
 ### Reviewing a formalization
 
 The review of a formalization may be done at any time after the formalization has begun. This can be prompted by a user, or initiated by a formalizer agent if it thinks the existing formalization needs improvement during the process. Reviews should be done by a fresh agent or an independent sub-agent that inherits little context, better with "adversarial" goals.
