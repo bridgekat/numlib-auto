@@ -85,7 +85,7 @@ theorem skewPart_apply (A : Matrix (Fin n) (Fin n) ℂ) (i j : Fin n) :
 /-- Saad (1.52): the Hermitian part is Hermitian. -/
 theorem hermitianPart_isHermitian (A : Matrix (Fin n) (Fin n) 𝕜) :
     (hermitianPart A).IsHermitian := by
-  show ((2⁻¹ : 𝕜) • (A + Aᴴ))ᴴ = (2⁻¹ : 𝕜) • (A + Aᴴ)
+  change ((2⁻¹ : 𝕜) • (A + Aᴴ))ᴴ = (2⁻¹ : 𝕜) • (A + Aᴴ)
   rw [conjTranspose_smul, show star (2⁻¹ : 𝕜) = 2⁻¹ by simp, conjTranspose_add,
     conjTranspose_conjTranspose, add_comm Aᴴ A]
 
@@ -149,7 +149,7 @@ theorem re_inner_hermitianPart (A : Matrix (Fin n) (Fin n) 𝕜) (x : EuclideanS
     rw [hH]
     simp only [LinearMap.smul_apply, LinearMap.add_apply, inner_smul_left, inner_add_left, hadj,
       map_inv₀, RCLike.conj_ofNat]
-  show RCLike.re (inner 𝕜 (toEuclideanLin (hermitianPart A) x) x) = _
+  change RCLike.re (inner 𝕜 (toEuclideanLin (hermitianPart A) x) x) = _
   rw [key, RCLike.add_conj, ← mul_assoc, show (2⁻¹ : 𝕜) * 2 = 1 by norm_num, one_mul,
     RCLike.ofReal_re]
 
@@ -238,7 +238,7 @@ theorem isSelfAdjointWrt_inv_mul {C : Matrix (Fin n) (Fin n) ℝ} (hB : B.IsSPD)
 theorem isSelfAdjointWrt_mul {C : Matrix (Fin n) (Fin n) ℝ} (hB : B.IsSymm) (hC : C.IsSymm) :
     B.IsSelfAdjointWrt (C * B) := by
   refine isSelfAdjointWrt_of_isSymm_mul hB ?_
-  show (B * (C * B))ᵀ = B * (C * B)
+  change (B * (C * B))ᵀ = B * (C * B)
   rw [transpose_mul, transpose_mul, hB, hC]
   exact mul_assoc B C B
 

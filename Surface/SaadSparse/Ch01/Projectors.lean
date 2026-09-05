@@ -31,7 +31,7 @@ theorem isProjector_iff_isIdempotentElem_toEuclideanLin (P : Matrix (Fin n) (Fin
     P.IsProjector ↔ IsIdempotentElem (toEuclideanLin P) := by
   constructor
   · intro h
-    show toEuclideanLin P ∘ₗ toEuclideanLin P = toEuclideanLin P
+    change toEuclideanLin P ∘ₗ toEuclideanLin P = toEuclideanLin P
     rw [← toEuclideanLin_mul, h]
   · intro h
     refine toEuclideanLin.injective ?_
@@ -50,6 +50,7 @@ def IsOrthogonalProjector (P : Matrix (Fin n) (Fin n) 𝕜) : Prop :=
 def cols (V : Matrix (Fin n) (Fin m) 𝕜) : Fin m → EuclideanSpace 𝕜 (Fin n) :=
   fun j => WithLp.toLp 2 (Vᵀ j)
 
+omit [RCLike 𝕜] in
 @[simp]
 theorem ofLp_cols_apply (V : Matrix (Fin n) (Fin m) 𝕜) (j : Fin m) (i : Fin n) :
     WithLp.ofLp (V.cols j) i = V i j := rfl
@@ -102,12 +103,12 @@ theorem toEuclideanLin_obliqueProj (V W : Matrix (Fin n) (Fin m) 𝕜) :
   refine LinearMap.ext fun x => ?_
   have hrhs : LinearMap.obliqueProjectionOfBases 𝕜 V.cols W.cols x
       = ∑ j, ((Wᴴ * V)⁻¹ *ᵥ (Wᴴ *ᵥ WithLp.ofLp x)) j • V.cols j := by
-    show ∑ j, (LinearMap.crossGram 𝕜 V.cols W.cols)⁻¹.mulVec
+    change ∑ j, (LinearMap.crossGram 𝕜 V.cols W.cols)⁻¹.mulVec
       (fun i => inner 𝕜 (W.cols i) x) j • V.cols j = _
     rw [crossGram_cols, ← conjTranspose_mulVec_eq_inner]
   have hlhs : toEuclideanLin (obliqueProj V W) x
       = toEuclideanLin V (WithLp.toLp 2 ((Wᴴ * V)⁻¹ *ᵥ (Wᴴ *ᵥ WithLp.ofLp x))) := by
-    show WithLp.toLp 2 ((V * (Wᴴ * V)⁻¹ * Wᴴ) *ᵥ WithLp.ofLp x) = _
+    change WithLp.toLp 2 ((V * (Wᴴ * V)⁻¹ * Wᴴ) *ᵥ WithLp.ofLp x) = _
     rw [← mulVec_mulVec, ← mulVec_mulVec]
     rfl
   rw [hlhs, hrhs, toEuclideanLin_apply_eq_sum]
@@ -338,7 +339,7 @@ end Bases
 /-- Saad (1.68): `Pᴴ` is a projector. -/
 theorem isProjector_conjTranspose {P : Matrix (Fin n) (Fin n) 𝕜} (hP : P.IsProjector) :
     Pᴴ.IsProjector := by
-  show Pᴴ * Pᴴ = Pᴴ
+  change Pᴴ * Pᴴ = Pᴴ
   rw [← conjTranspose_mul, show P * P = P from hP]
 
 /-- Saad (1.69): `Null Pᴴ = (Ran P)ᗮ`. -/
@@ -430,7 +431,7 @@ theorem norm_sq_eq_add {P : Matrix (Fin n) (Fin n) 𝕜} (hP : P.IsOrthogonalPro
       rw [map_sub, toEuclideanLin_one]; rfl
     have h2 := eq_sub_of_add_eq' hadd
     rw [h2, ← hPx]
-    show toEuclideanLin (1 - P) x = _
+    change toEuclideanLin (1 - P) x = _
     rw [h1, LinearMap.sub_apply, Module.End.one_apply]
   rw [hPx, hQx]
   exact (LinearMap.range (toEuclideanLin P)).norm_sq_eq_add_norm_sq_starProjection x
@@ -451,7 +452,7 @@ theorem spectrum_subset_pair {P : Matrix (Fin n) (Fin n) ℂ} (hP : P.IsProjecto
   have hidem := (isProjector_iff_isIdempotentElem_toEuclideanLin P).mp hP
   have h2 : μ • v = (μ * μ) • v := by
     conv_lhs => rw [← hPv, ← DFunLike.congr_fun hidem v]
-    show toEuclideanLin P (toEuclideanLin P v) = _
+    change toEuclideanLin P (toEuclideanLin P v) = _
     rw [hPv, map_smul, hPv, smul_smul]
   have hμ2 : μ * μ = μ := by
     by_contra hne

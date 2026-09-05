@@ -252,7 +252,7 @@ theorem posDef_transpose_mul_self (hA : IsUnit A) : (Aᵀ * A).PosDef := by
   have hinj : Function.Injective A.mulVec := mulVec_injective_iff_isUnit.mpr hA
   rw [← Matrix.isSPD_iff_posDef]
   refine ⟨?_, fun u hu => ?_⟩
-  · show (Aᵀ * A)ᵀ = Aᵀ * A
+  · change (Aᵀ * A)ᵀ = Aᵀ * A
     rw [transpose_mul, transpose_transpose]
   · have hAu : A *ᵥ u ≠ 0 := fun h => hu (hinj (by rw [h, mulVec_zero]))
     have hkey : ((Aᵀ * A) *ᵥ u) ⬝ᵥ u = (A *ᵥ u) ⬝ᵥ (A *ᵥ u) := by

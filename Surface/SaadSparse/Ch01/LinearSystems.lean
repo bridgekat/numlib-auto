@@ -33,7 +33,7 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n : ℕ}
 theorem existsUnique_mulVec_eq (A : Matrix (Fin n) (Fin n) 𝕜) (hA : IsUnit A) (b : Fin n → 𝕜) :
     ∃! x, A *ᵥ x = b := by
   refine ⟨A⁻¹ *ᵥ b, ?_, fun y hy => ?_⟩
-  · show A *ᵥ (A⁻¹ *ᵥ b) = b
+  · change A *ᵥ (A⁻¹ *ᵥ b) = b
     rw [mulVec_mulVec, mul_nonsing_inv _ ((isUnit_iff_isUnit_det A).mp hA), one_mulVec]
   · rw [← hy, mulVec_mulVec, nonsing_inv_mul _ ((isUnit_iff_isUnit_det A).mp hA), one_mulVec]
 
@@ -41,7 +41,7 @@ theorem existsUnique_mulVec_eq (A : Matrix (Fin n) (Fin n) 𝕜) (hA : IsUnit A)
 theorem setOf_mulVec_eq (A : Matrix (Fin n) (Fin n) 𝕜) {b x₀ : Fin n → 𝕜} (hx₀ : A *ᵥ x₀ = b) :
     {x | A *ᵥ x = b} = (fun z => x₀ + z) '' {z | A *ᵥ z = 0} := by
   ext x
-  simp only [Set.mem_setOf_eq, Set.mem_image]
+  simp only [Set.mem_ofPred_eq, Set.mem_image]
   constructor
   · intro hx
     exact ⟨x - x₀, by rw [mulVec_sub, hx, hx₀, sub_self], by abel⟩
@@ -63,7 +63,7 @@ theorem infinite_setOf_mulVec_eq (A : Matrix (Fin n) (Fin n) 𝕜) (hA : ¬ IsUn
     · exact sub_eq_zero.mp h
     · exact absurd h hne0
   · intro c
-    simp only [Set.mem_setOf_eq, mulVec_add, hx₀, mulVec_smul, hker, smul_zero, add_zero]
+    simp only [Set.mem_ofPred_eq, mulVec_add, hx₀, mulVec_smul, hker, smul_zero, add_zero]
 
 /-- Saad §1.13.1, Case 3: no solution when `b ∉ Ran A`. -/
 theorem not_exists_mulVec_eq (A : Matrix (Fin n) (Fin n) 𝕜) {b : Fin n → 𝕜}
@@ -121,7 +121,7 @@ theorem lpOpNorm_two (A : Matrix (Fin n) (Fin n) 𝕜) : lpOpNorm 2 A = ‖A‖ 
 noncomputable def lpEquiv {A : Matrix (Fin n) (Fin n) 𝕜} (hA : IsUnit A) :
     PiLp p (fun _ : Fin n => 𝕜) ≃L[𝕜] PiLp p (fun _ : Fin n => 𝕜) :=
   LinearEquiv.toContinuousLinearEquiv
-    (LinearEquiv.ofLinear (toLpLin p p A) (toLpLin p p A⁻¹)
+    (LinearEquiv.ofLinearMap (toLpLin p p A) (toLpLin p p A⁻¹)
       (by rw [← toLpLin_mul_same, mul_nonsing_inv _ ((isUnit_iff_isUnit_det A).mp hA),
         toLpLin_one])
       (by rw [← toLpLin_mul_same, nonsing_inv_mul _ ((isUnit_iff_isUnit_det A).mp hA),

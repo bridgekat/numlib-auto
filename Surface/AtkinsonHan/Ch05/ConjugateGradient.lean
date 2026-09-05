@@ -318,7 +318,7 @@ theorem thm_5_6_1 (hA : IsSelfAdjoint A) (hm : 0 < m) (hM : 0 < M)
 `‖u* - u_k‖_A ≤ 2 ((√M - √m)/(√M + √m))ᵏ ‖u* - u₀‖_A`.  This is the backbone's
 `Krylov.IsGalerkinIterate.energyNorm_error_le` (`Numlib/Krylov/Convergence/CG.lean`), whose rate
 is written with the condition number `κ = M/m`. -/
-theorem eq_5_6_5 (hA : IsSelfAdjoint A) (hm : 0 < m) (hmM : m < M)
+theorem eq_5_6_5 (hA : IsSelfAdjoint A) (hm : 0 < m) (hmM : m ≤ M)
     (hbound : ∀ v, Real.sqrt m * ‖v‖ ≤ normA A v ∧ normA A v ≤ Real.sqrt M * ‖v‖)
     (hstar : A ustar = f) (k : ℕ) :
     normA A (ustar - (cg A f u₀ k).u)
@@ -326,7 +326,7 @@ theorem eq_5_6_5 (hA : IsSelfAdjoint A) (hm : 0 < m) (hmM : m < M)
         normA A (ustar - u₀) := by
   have hA' := isSymmetricBoundedBy_of_bound hA hm hbound
   have hAc := hA'.isSymmetricCoercive hm
-  have hM : 0 < M := lt_trans hm hmM
+  have hM : 0 < M := lt_of_lt_of_le hm hmM
   have hs : 0 < Real.sqrt m := Real.sqrt_pos.2 hm
   have ht : 0 < Real.sqrt M := Real.sqrt_pos.2 hM
   have hid : (Real.sqrt (M / m) - 1) / (Real.sqrt (M / m) + 1)

@@ -71,7 +71,7 @@ theorem prop_4_12_neg (B₁₂ : Matrix (Fin n₁) (Fin n₂) ℂ) (B₂₁ : Ma
         Matrix (I n₁, n₂) (I n₁, n₂) ℂ) * antiDiag B₁₂ B₂₁ *
       (((signFlipUnit n₁ n₂)⁻¹ : (Matrix (I n₁, n₂) (I n₁, n₂) ℂ)ˣ) :
         Matrix (I n₁, n₂) (I n₁, n₂) ℂ) = -antiDiag B₁₂ B₂₁ := by
-    show signFlip n₁ n₂ * antiDiag B₁₂ B₂₁ * signFlip n₁ n₂ = _
+    change signFlip n₁ n₂ * antiDiag B₁₂ B₂₁ * signFlip n₁ n₂ = _
     rw [signFlip, antiDiag, fromBlocks_multiply, fromBlocks_multiply]
     simp [fromBlocks_neg]
   have hspec : spectrum ℂ (-antiDiag B₁₂ B₂₁) = spectrum ℂ (antiDiag B₁₂ B₂₁) := by
@@ -112,7 +112,7 @@ theorem prop_4_12_alpha (B₁₂ : Matrix (Fin n₁) (Fin n₂) ℂ) (B₂₁ : 
       (((scaleBlockUnit n₁ n₂ hα)⁻¹ : (Matrix (I n₁, n₂) (I n₁, n₂) ℂ)ˣ) :
         Matrix (I n₁, n₂) (I n₁, n₂) ℂ)
       = α • antiDiagL B₂₁ + α⁻¹ • antiDiagU B₁₂ := by
-    show scaleBlock n₁ n₂ α * antiDiag B₁₂ B₂₁ * scaleBlock n₁ n₂ α⁻¹ = _
+    change scaleBlock n₁ n₂ α * antiDiag B₁₂ B₂₁ * scaleBlock n₁ n₂ α⁻¹ = _
     rw [scaleBlock, scaleBlock, antiDiag, antiDiagL, antiDiagU, fromBlocks_multiply,
       fromBlocks_multiply, fromBlocks_smul, fromBlocks_smul, fromBlocks_add]
     simp [Matrix.smul_mul, Matrix.mul_smul]
