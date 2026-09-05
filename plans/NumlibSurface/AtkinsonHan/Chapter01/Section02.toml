@@ -1,57 +1,22 @@
 namespace = "AtkinsonHan.Ch01"
-desc = '''
-Atkinson-Han §1.2: normed spaces, convergence, equivalence of norms, Banach spaces, and the
-completion of a normed space, together with the two facts from measure theory (§1.2.3) the book
-records for later use.
-
-The definitions of the section — norm, seminorm, ball, open and closed set, convergence, dense
-subset, Schauder basis, Cauchy sequence, completeness — are Mathlib's and are not restated.
-Theorem 1.2.14 is stated in the only shape Lean allows: two *types* carrying norms and a linear
-equivalence between them, since two norms on one type cannot be quantified over.
-'''
 
 [[node]]
 id = "proposition_1_2_10"
-kind = "theorem"
-desc = '''Proposition 1.2.10 with (1.2.5): the norm is continuous, by the backward triangle inequality
-`|‖u‖ - ‖v‖| ≤ ‖u - v‖`. Mathlib's `abs_norm_sub_norm_le` and `continuous_norm`; state the
-sequential form the book gives, `uₙ → u → ‖uₙ‖ → ‖u‖`.'''
-
-[[node]]
-id = "theorem_1_2_14"
-kind = "theorem"
-desc = '''Theorem 1.2.14: over a finite-dimensional space any two norms are equivalent. Stated as: for
-normed `𝕜`-spaces `V`, `W` with `V` finite-dimensional and `e : V ≃ₗ[𝕜] W` a linear equivalence,
-there are `c₁, c₂ > 0` with `c₁ ‖v‖ ≤ ‖e v‖ ≤ c₂ ‖v‖`. Both bounds come from
-`LinearMap.continuous_of_finiteDimensional` applied to `e` and to `e.symm`, whose finite
-dimensionality is `e.finiteDimensional`; the constants are the operator norms.'''
 
 [[node]]
 id = "proposition_1_2_23"
-kind = "theorem"
-desc = '''Proposition 1.2.23: a Cauchy sequence with a convergent subsequence converges to the same limit.
-Mathlib's `CauchySeq.tendsto_of_subseq_tendsto` (or `cauchySeq_tendsto_of_subseq_tendsto`).'''
+
+[[node]]
+id = "theorem_1_2_14"
 
 [[node]]
 id = "theorem_1_2_25"
-kind = "theorem"
-desc = '''Theorem 1.2.25: every normed space `V` has a completion — a Banach space `W`, a linear isometry
-`I : V →ₗᵢ[𝕜] W` with dense range, and uniqueness up to isometric isomorphism. Mathlib's
-`UniformSpace.Completion` with its `NormedAddCommGroup` and `NormedSpace` instances,
-`UniformSpace.Completion.coeₗᵢ`, `UniformSpace.Completion.denseRange_coe` and
-`UniformSpace.Completion.completeSpace`; the uniqueness clause is
-`UniformSpace.Completion.extension` applied in both directions.'''
+
+[[node]]
+id = "theorem_1_2_25_uniqueness"
 
 [[node]]
 id = "theorem_1_2_26"
-kind = "theorem"
-desc = '''Theorem 1.2.26, the Lebesgue dominated convergence theorem, in the book's statement: an a.e.
-convergent sequence of integrable functions dominated by an integrable `g` has an integrable limit
-and the integrals converge. Mathlib's `MeasureTheory.tendsto_integral_of_dominated_convergence`.'''
 
 [[node]]
 id = "theorem_1_2_27"
-kind = "theorem"
-desc = '''Theorem 1.2.27, Fubini's theorem for a function integrable on a product of measurable sets in `ℝ^d`.
-Mathlib's `MeasureTheory.integral_integral_swap` and `MeasureTheory.Integrable.integral_prod_left`
-for a `SFinite` product measure.'''

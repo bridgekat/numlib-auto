@@ -282,6 +282,15 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   `(alpha s : 𝕜)` in every statement about it.
 * `induction j, hij using Nat.le_induction` refuses to generalize a hypothesis that mentions `j`,
   such as a bound `hj : j ≤ k`. `revert hj` first and `intro` it in each branch.
+* **Never `set` a *type*.** `set A := V →L[𝕜] V` rewrites the abbreviation into the *types* of the
+  hypotheses already in context, so a section variable `L : V →L[𝕜] V` becomes an inaccessible
+  `L✝` and a fresh `L : A` appears; every later `rw` then fails against the shadowed one. Write the
+  type out, or introduce a `local notation`. `set` on a *term* is fine.
+* `∞` is overloaded, and two scopes that both define it do not always disambiguate: with
+  `open scoped ENNReal ContDiff`, `(p : ℝ≥0∞) ≠ ∞` is rejected as ambiguous while `ContDiff ℝ ∞ f`
+  elaborates. Write `⊤` for the `ℝ≥0∞` one.
+* `α →ᵇ β` is `scoped[BoundedContinuousFunction]`; importing `Topology.ContinuousMap.Bounded.*` is
+  not enough, and the parse error points at the `ᵇ` with "expected token".
 
 ## Tactics
 
@@ -404,6 +413,11 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
 * `field_simp` can stop one step short, leaving `a / a = 1` with `a ≠ 0` in context. Either finish
   with `div_self`, or avoid it: `div_mul_cancel₀ e hne : e / a * a = e` is the cancellation for
   `a * (e / a)` after `mul_comm`.
+* `rw [neg_pow]` also fires on `(-1) ^ k`, turning it into `(-1) ^ k * 1 ^ k`, so a goal that has
+  both `(-1) ^ k` and `(-a) ^ k` in it is rewritten in the wrong place. Use
+  `rw [mul_pow, neg_one_mul]` in the other direction instead.
+* After `rintro _ ⟨v, rfl⟩` inside a `BddAbove (Set.range f)` goal the residual is the beta-redex
+  `(fun v => …) v ≤ c`; `dsimp only` first, or every `rw` misses.
 
 ## Mathlib names and API
 

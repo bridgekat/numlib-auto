@@ -1,18 +1,4 @@
 namespace = "AtkinsonHan.Ch01"
-desc = '''
-Atkinson-Han §1.1: linear spaces, subspaces, linear independence, bases, dimension, linear maps,
-isomorphism, Cartesian products.
-
-Definitions 1.1.1, 1.1.3, 1.1.5, 1.1.8, 1.1.9, 1.1.13, 1.1.14 and 1.1.16 are Mathlib's `Module`,
-`Submodule`, `LinearIndependent`, `Submodule.span`, `Module.Basis`/`FiniteDimensional`,
-`LinearMap`, `LinearEquiv` and `Prod`, and are not restated. The section's only numbered result is
-Theorem 1.1.10.
-'''
 
 [[node]]
 id = "theorem_1_1_10"
-kind = "theorem"
-desc = '''Theorem 1.1.10: every basis of a finite-dimensional linear space has the same number of elements,
-which is `dim V`. Mathlib's `Module.Basis.indexEquiv` / `Module.finrank_eq_card_basis`; state it as
-`Nat.card ι = Module.finrank 𝕜 V` for any basis `b : Module.Basis ι 𝕜 V` of a finite-dimensional
-`V`.'''

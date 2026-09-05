@@ -1,31 +1,10 @@
 namespace = "AtkinsonHan.Ch01"
-desc = '''
-Atkinson-Han §1.6: compact and precompact sets, the Heine-Borel theorem, and the Arzelà-Ascoli
-theorem. Definition 1.6.1 is Mathlib's `IsCompact`, `IsSeqCompact` and "closure is compact"; the
-equivalence of (a) and (b) in a metric space is `UniformSpace.isCompact_iff_isSeqCompact`.
-
-These are the two compactness facts §2.8 uses: Heine-Borel is what makes a bounded finite-rank
-operator compact (Prop 2.8.4), and Arzelà-Ascoli is what makes an integral operator with a
-continuous kernel compact (§2.8.1) and is the engine of Schauder's theorem
-(`IsCompactOperator.adjoint`).
-'''
 
 [[node]]
 id = "theorem_1_6_2"
-kind = "theorem"
-desc = '''Theorem 1.6.2, Heine-Borel: in a finite-dimensional normed space a set is compact if and only if it
-is closed and bounded. `FiniteDimensional.proper_rclike` makes the space proper, and then
-`Metric.isCompact_iff_isClosed_bounded`. The converse remark — that a normed space in which every
-closed bounded set is compact is finite-dimensional — is
-`FiniteDimensional.of_isCompact_closedBall₀`, and is worth stating alongside as
-`theorem_1_6_2_converse`.'''
+
+[[node]]
+id = "theorem_1_6_2_converse"
 
 [[node]]
 id = "theorem_1_6_3"
-kind = "theorem"
-desc = '''Theorem 1.6.3, Arzelà-Ascoli: a uniformly bounded, equicontinuous set of continuous functions on a
-compact `D ⊆ ℝ^d` is precompact in `C(D)` with the uniform norm. Mathlib's
-`BoundedContinuousFunction.arzela_ascoli` or the general
-`ContinuousMap.isCompact_closure_of_equicontinuous_of_pointwise` in
-`Mathlib.Topology.UniformSpace.Ascoli`; the book's modulus-of-continuity hypothesis
-`|f x - f y| ≤ c_S ε` for `‖x - y‖ ≤ ε` with `c_S ε → 0` is `UniformEquicontinuous`.'''
