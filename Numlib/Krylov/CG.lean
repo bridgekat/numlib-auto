@@ -39,9 +39,13 @@ variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpac
 namespace CG
 
 /-- State of the CG iteration: iterate, residual, search direction. -/
+@[ext]
 structure State (E : Type*) where
+  /-- The iterate `x_k`. -/
   x : E
+  /-- The residual `r_k = b - A x_k` (see `CG.residual_eq`). -/
   r : E
+  /-- The search direction `p_k`. -/
   p : E
 
 /-- The CG step length `α = ⟪r, r⟫ / ⟪A p, p⟫`. -/
@@ -68,6 +72,12 @@ noncomputable def iterate (A : E →ₗ[𝕜] E) (b x₀ : E) (k : ℕ) : State 
   (step A)^[k] (init A b x₀)
 
 variable (A : E →ₗ[𝕜] E) (b x₀ : E)
+
+@[simp] theorem init_x : (init A b x₀).x = x₀ := rfl
+
+@[simp] theorem init_r : (init A b x₀).r = b - A x₀ := rfl
+
+@[simp] theorem init_p : (init A b x₀).p = b - A x₀ := rfl
 
 @[simp] theorem iterate_zero : iterate A b x₀ 0 = init A b x₀ := rfl
 

@@ -223,6 +223,7 @@ theorem norm_step_sub_le {Fn : E → F} {F' : E → E →L[𝕜] F} {xstar : E} 
     _ = L * ‖(e.symm : F →L[𝕜] E)‖ / 2 * ‖x - xstar‖ ^ 2 := by
         rw [norm_sub_rev xstar x]; ring
 
+omit [CompleteSpace F] in
 /-- Local convergence: from every `x₀` in a small ball, the Newton iterates converge to `x*`. -/
 theorem tendsto_iterate {Fn : E → F} {F' : E → E →L[𝕜] F} {xstar : E} (hstar : Fn xstar = 0)
     (e : E ≃L[𝕜] F) (he : (e : E →L[𝕜] F) = F' xstar) {r L : ℝ} (hr : 0 < r)

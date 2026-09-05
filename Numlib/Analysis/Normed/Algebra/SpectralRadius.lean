@@ -61,6 +61,7 @@ private theorem eventually_norm_pow_le_of_spectralRadius_lt (a : A) {r : NNReal}
   rw [← ENNReal.coe_pow, ENNReal.coe_lt_coe] at key
   exact_mod_cast key.le
 
+omit [NormOneClass A] in
 /-- Geometric decay of powers at any rate `r > ρ(a)`. -/
 theorem exists_norm_pow_le_of_spectralRadius_lt (a : A) {r : NNReal}
     (hr : spectralRadius ℂ a < r) : ∃ C : ℝ, 0 ≤ C ∧ ∀ n, ‖a ^ n‖ ≤ C * (r : ℝ) ^ n := by

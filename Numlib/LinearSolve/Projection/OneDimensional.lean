@@ -112,6 +112,27 @@ theorem norm_apply_sq_add_le {B : F →ₗ[𝕜] F} {lmin lmax : ℝ}
     RCLike.norm_ofReal, mul_pow, sq_abs] at hsq
   linarith
 
+/-- **Degenerate spectral interval**: a symmetric operator whose quadratic form is exactly
+`l ‖u‖²` is the scalar `l`. This is the `lmin = lmax` case of `LinearMap.IsSymmetricBoundedBy`,
+and it is what makes the Chebyshev convergence bounds true (indeed trivial) without a strict
+spectral gap. -/
+theorem apply_eq_smul {B : F →ₗ[𝕜] F} {l : ℝ} (hB : B.IsSymmetricBoundedBy l l) (u : F) :
+    B u = (l : 𝕜) • u := by
+  have hre : RCLike.re (inner 𝕜 (B u) u) = l * ‖u‖ ^ 2 :=
+    le_antisymm (hB.re_inner_le u) (hB.le_re_inner u)
+  have hexp : ‖B u - (l : 𝕜) • u‖ ^ 2
+      = ‖B u‖ ^ 2 - 2 * (l * RCLike.re (inner 𝕜 (B u) u)) + l ^ 2 * ‖u‖ ^ 2 := by
+    rw [norm_sub_sq (𝕜 := 𝕜), inner_smul_right, RCLike.re_ofReal_mul, norm_smul,
+      RCLike.norm_ofReal, mul_pow, sq_abs]
+  have hkey : ‖B u‖ ^ 2 + l * l * ‖u‖ ^ 2 ≤ (l + l) * (l * ‖u‖ ^ 2) := by
+    have h := hB.norm_apply_sq_add_le u
+    rwa [hre] at h
+  have hzero : ‖B u - (l : 𝕜) • u‖ ^ 2 ≤ 0 := by
+    rw [hexp, hre]
+    nlinarith [hkey]
+  rw [← sub_eq_zero, ← norm_eq_zero, ← sq_eq_zero_iff]
+  exact le_antisymm hzero (sq_nonneg _)
+
 /-- `lmin ⟪B u, u⟫ ≤ ‖B u‖²` (the operator inequality `lmin B ≤ B²`). -/
 theorem le_norm_apply_sq {B : F →ₗ[𝕜] F} {lmin lmax : ℝ} (hl : 0 ≤ lmin)
     (hB : B.IsSymmetricBoundedBy lmin lmax) (u : F) :

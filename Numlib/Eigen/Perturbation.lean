@@ -167,6 +167,12 @@ theorem rayleigh_gap_le_norm_residual_sq {x : E} (hx : ‖x‖ = 1) {α β : ℝ
     · exact mul_nonneg (by linarith) (by linarith)
   nlinarith [h]
 
+-- `hμ` says that `μ` is an eigenvalue, which is what makes this Kato–Temple and is part of the
+-- stated interface; the proof does not use it, because `hunique` and `hμab` already force every
+-- eigenvalue in `(a, b)` to be `μ` and the estimate then holds for `re μ` whether or not `μ` is
+-- one. Keeping it makes the statement faithful, and it is what the caller
+-- `abs_sub_rayleigh_le_norm_residual_sq_div` has to hand anyway.
+set_option linter.unusedVariables false in
 /-- Kato–Temple (Saad, *Large Eigenvalue Problems*, Thm 3.8): if `(a, b)` contains the Rayleigh
 quotient `θ = re⟪A x, x⟫` of a unit vector `x` and exactly one eigenvalue `λ`, then
 `-‖r‖²/(b - θ) ≤ λ - θ ≤ ‖r‖²/(θ - a)` for the residual `r = A x - θ x`.

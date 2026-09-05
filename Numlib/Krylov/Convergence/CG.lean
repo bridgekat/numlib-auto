@@ -13,10 +13,14 @@ sequence of Galerkin iterates (CG, D-Lanczos, …):
 (Saad, *Iterative Methods*[^saad-iterative] Thm 6.29, (6.123)–(6.128);
 Atkinson–Han[^atkinson-han] Thm 5.6.1; Meurant–Strakoš[^meurant-strakos] (3.9)). The
 minimal-residual analogue for the residual norm, and Saad Thm 6.30 (restarted minimal-residual
-iterations converge for coercive `A`).
+iterations converge for coercive `A`). Also the one-step Kantorovich contraction
+`‖x* - x_{m+1}‖_A ≤ ((λmax - λmin)/(λmax + λmin)) ‖x* - x_m‖_A` (Atkinson–Han (5.6.4)), which
+compares a Galerkin step with a steepest-descent step.
 
 Here `κ = λmax / λmin` is the spectral condition number and `T_m` the degree-`m` Chebyshev
-polynomial of the first kind.
+polynomial of the first kind. Only the sharp Chebyshev form needs a strict spectral gap
+`λmin < λmax`, because it divides by `λmax - λmin`; the geometric forms hold for `λmin ≤ λmax`,
+the degenerate case being one where `A` is a scalar and the iterates are exact from step `1`.
 
 ## References
 
@@ -97,13 +101,53 @@ private theorem chebPoly_eval_zero (m : ℕ) : (chebPoly 𝕜 m lmin lmax).eval 
 
 end Chebyshev
 
-section Symmetric
+section OneStep
+
+/-! ### The one-step contraction
+
+A Galerkin step is at least as good as a steepest-descent step taken from the previous iterate,
+because the steepest-descent point lies in the next Krylov space. -/
+
+variable {lmin lmax : ℝ} (hl : 0 < lmin) (hA : A.IsSymmetricBoundedBy lmin lmax)
+include hl hA
+
+/-- One step of a Galerkin iteration (CG, FOM, D-Lanczos) contracts the energy norm of the error
+by the Kantorovich factor `(λmax - λmin)/(λmax + λmin)`:
+`‖x* - x_{m+1}‖_A ≤ ((λmax - λmin)/(λmax + λmin)) ‖x* - x_m‖_A`.
+
+The Galerkin iterate over `𝒦_{m+1}` minimizes the energy norm of the error there
+(`IsGalerkin.energyNorm_le`), and the steepest-descent point taken from `x_m` is a competitor in
+that affine space, so the steepest-descent rate (Saad, *Iterative Methods*, Thm 5.9, proved from
+Kantorovich's inequality) applies. Together with `sqrt_ratio_le_ratio` this is the weaker,
+one-step form of the Chebyshev bound `IsGalerkinIterate.energyNorm_error_le`
+(Atkinson–Han, (5.6.4) versus (5.6.5)). -/
+theorem IsGalerkinIterate.energyNorm_error_succ_le {m : ℕ} {x y xstar : E}
+    (hx : IsGalerkinIterate A b x₀ m x) (hy : IsGalerkinIterate A b x₀ (m + 1) y)
+    (hstar : A xstar = b) :
+    energyNorm A (xstar - y) ≤ (lmax - lmin) / (lmax + lmin) * energyNorm A (xstar - x) := by
+  have hmem : Projection.steepestDescentStep A b x - x₀ ∈ subspace A (b - A x₀) (m + 1) := by
+    have hsplit : Projection.steepestDescentStep A b x - x₀ = (x - x₀) +
+        (inner 𝕜 (b - A x) (b - A x) / inner 𝕜 (b - A x) (A (b - A x))) • (b - A x) := by
+      rw [Projection.steepestDescentStep, Projection.step1]
+      abel
+    rw [hsplit]
+    exact Submodule.add_mem _ (subspace_mono A (b - A x₀) (Nat.le_succ m) hx.mem)
+      (Submodule.smul_mem _ _ (residual_mem_subspace_succ hx.mem))
+  exact (IsGalerkin.energyNorm_le (hA.isSymmetricCoercive hl) hy hstar hmem).trans
+    (Projection.energyNorm_steepestDescentStep_le hl hA hstar x)
+
+end OneStep
+
+section StrictGap
 
 variable {lmin lmax : ℝ} (hl : 0 < lmin) (hll : lmin < lmax) (hA : A.IsSymmetricBoundedBy lmin lmax)
 include hl hll hA
 
 /-- Sharp Chebyshev form (Saad, *Iterative Methods*, (6.123)):
-`‖x* - x_m‖_A ≤ ‖x* - x₀‖_A / T_m((λmax+λmin)/(λmax-λmin))`. -/
+`‖x* - x_m‖_A ≤ ‖x* - x₀‖_A / T_m((λmax+λmin)/(λmax-λmin))`.
+
+Unlike the geometric bound `IsGalerkinIterate.energyNorm_error_le`, this one genuinely needs the
+strict spectral gap `λmin < λmax`: its right-hand side divides by `λmax - λmin`. -/
 theorem IsGalerkinIterate.energyNorm_error_le_div_eval_T {m : ℕ} {x xstar : E}
     (hx : IsGalerkinIterate A b x₀ m x) (hstar : A xstar = b) :
     energyNorm A (xstar - x) ≤
@@ -116,30 +160,103 @@ theorem IsGalerkinIterate.energyNorm_error_le_div_eval_T {m : ℕ} {x xstar : E}
   rw [div_eq_inv_mul, ← one_div]
   exact h1.trans h2
 
+end StrictGap
+
+section Degenerate
+
+/-! ### The degenerate spectral interval `λmin = λmax`
+
+`A.IsSymmetricBoundedBy l l` says that the quadratic form of `A` is exactly `l ‖x‖²`, which for a
+symmetric operator forces `A` to be the scalar `l`
+(`LinearMap.IsSymmetricBoundedBy.apply_eq_smul`). The solution then already lies in `x₀ + 𝒦_1`, so
+every Krylov iterate from step `1` on is exact and the geometric bounds below hold with a
+vanishing right-hand side. This is why they need no strict spectral gap. -/
+
+variable {l : ℝ} (hl : 0 < l) (hA : A.IsSymmetricBoundedBy l l)
+include hl hA
+
+/-- If the quadratic form of `A` is exactly `l ‖x‖²` with `l > 0` then `A` is the invertible
+scalar `l`, so the solution of `A x = b` lies in `x₀ + 𝒦_m(A, b - A x₀)` already for `m = 1`. -/
+theorem sub_mem_subspace_of_isSymmetricBoundedBy_self {xstar : E} (hstar : A xstar = b) {m : ℕ}
+    (hm : 1 ≤ m) : xstar - x₀ ∈ subspace A (b - A x₀) m := by
+  have hl0 : (l : 𝕜) ≠ 0 := RCLike.ofReal_ne_zero.2 hl.ne'
+  have hres : b - A x₀ = (l : 𝕜) • (xstar - x₀) := by
+    rw [← hstar, ← map_sub, hA.apply_eq_smul]
+  have hsol : xstar - x₀ = (l : 𝕜)⁻¹ • (b - A x₀) := by
+    rw [hres, smul_smul, inv_mul_cancel₀ hl0, one_smul]
+  rw [hsol]
+  exact Submodule.smul_mem _ _ (self_mem_subspace A (b - A x₀) hm)
+
+/-- The scalar operator `A = l` with `l > 0` is invertible, so `A x = b` is solvable. -/
+theorem exists_apply_eq_of_isSymmetricBoundedBy_self : ∃ xstar : E, A xstar = b := by
+  have hl0 : (l : 𝕜) ≠ 0 := RCLike.ofReal_ne_zero.2 hl.ne'
+  exact ⟨(l : 𝕜)⁻¹ • b, by rw [hA.apply_eq_smul, smul_smul, mul_inv_cancel₀ hl0, one_smul]⟩
+
+end Degenerate
+
+section Symmetric
+
+variable {lmin lmax : ℝ} (hl : 0 < lmin) (hll : lmin ≤ lmax) (hA : A.IsSymmetricBoundedBy lmin lmax)
+include hl hll hA
+
 /-- Saad, *Iterative Methods*, Thm 6.29 / Atkinson–Han (5.6.5): with `κ = λmax / λmin`,
-`‖x* - x_m‖_A ≤ 2 ((√κ - 1)/(√κ + 1))^m ‖x* - x₀‖_A`. -/
+`‖x* - x_m‖_A ≤ 2 ((√κ - 1)/(√κ + 1))^m ‖x* - x₀‖_A`.
+
+No strict spectral gap is needed. When `λmin = λmax` the operator is a scalar
+(`sub_mem_subspace_of_isSymmetricBoundedBy_self`), `κ = 1` makes the factor `0`, and the iterate
+is exact for `m ≥ 1`; for `m = 0` the bound reads `‖x* - x₀‖_A ≤ 2 ‖x* - x₀‖_A`. -/
 theorem IsGalerkinIterate.energyNorm_error_le {m : ℕ} {x xstar : E}
     (hx : IsGalerkinIterate A b x₀ m x) (hstar : A xstar = b) :
     energyNorm A (xstar - x) ≤
       2 * ((Real.sqrt (lmax / lmin) - 1) / (Real.sqrt (lmax / lmin) + 1)) ^ m *
         energyNorm A (xstar - x₀) := by
-  have h1 := Krylov.IsGalerkinIterate.energyNorm_error_le_energyNorm_aeval
-    (hA.isSymmetricCoercive hl) hx hstar (chebPoly 𝕜 m lmin lmax) (chebPoly_degree_le m)
-    (chebPoly_eval_zero hl hll m)
-  have h2 := hA.energyNorm_aeval_map_apply_le hl (shifted m lmin lmax 0) (xstar - x₀)
-  exact h1.trans (h2.trans
-    (mul_le_mul_of_nonneg_right (sSup_abs_eval_shifted_le hl hll m) (Real.sqrt_nonneg _)))
+  rcases hll.lt_or_eq with hlt | rfl
+  · have h1 := Krylov.IsGalerkinIterate.energyNorm_error_le_energyNorm_aeval
+      (hA.isSymmetricCoercive hl) hx hstar (chebPoly 𝕜 m lmin lmax) (chebPoly_degree_le m)
+      (chebPoly_eval_zero hl hlt m)
+    have h2 := hA.energyNorm_aeval_map_apply_le hl (shifted m lmin lmax 0) (xstar - x₀)
+    exact h1.trans (h2.trans
+      (mul_le_mul_of_nonneg_right (sSup_abs_eval_shifted_le hl hlt m) (Real.sqrt_nonneg _)))
+  rcases Nat.eq_zero_or_pos m with rfl | hm
+  · have hx0 : x = x₀ := by
+      have h := hx.mem
+      rw [subspace_zero, Submodule.mem_bot] at h
+      exact sub_eq_zero.1 h
+    rw [hx0, pow_zero, mul_one]
+    linarith [energyNorm_nonneg A (xstar - x₀)]
+  · have hzero : (Real.sqrt (lmin / lmin) - 1) / (Real.sqrt (lmin / lmin) + 1) = 0 := by
+      rw [div_self hl.ne', Real.sqrt_one]
+      norm_num
+    rw [hzero, zero_pow hm.ne', mul_zero, zero_mul]
+    refine le_trans (IsGalerkin.energyNorm_le (hA.isSymmetricCoercive hl) hx hstar
+      (sub_mem_subspace_of_isSymmetricBoundedBy_self hl hA hstar hm)) ?_
+    simp [energyNorm]
 
 /-- Minimal-residual iterates on symmetric coercive systems: the same Chebyshev bound for the
-residual norm. -/
+residual norm, again with no strict spectral gap. -/
 theorem IsMinResIterate.norm_residual_le {m : ℕ} {x : E} (hx : IsMinResIterate A b x₀ m x) :
     ‖b - A x‖ ≤
       2 * ((Real.sqrt (lmax / lmin) - 1) / (Real.sqrt (lmax / lmin) + 1)) ^ m * ‖b - A x₀‖ := by
-  have h1 := Krylov.IsMinResIterate.norm_residual_le_norm_aeval hx (chebPoly 𝕜 m lmin lmax)
-    (chebPoly_degree_le m) (chebPoly_eval_zero hl hll m)
-  have h2 := hA.norm_aeval_map_apply_le (shifted m lmin lmax 0) (b - A x₀)
-  exact h1.trans (h2.trans
-    (mul_le_mul_of_nonneg_right (sSup_abs_eval_shifted_le hl hll m) (norm_nonneg _)))
+  rcases hll.lt_or_eq with hlt | rfl
+  · have h1 := Krylov.IsMinResIterate.norm_residual_le_norm_aeval hx (chebPoly 𝕜 m lmin lmax)
+      (chebPoly_degree_le m) (chebPoly_eval_zero hl hlt m)
+    have h2 := hA.norm_aeval_map_apply_le (shifted m lmin lmax 0) (b - A x₀)
+    exact h1.trans (h2.trans
+      (mul_le_mul_of_nonneg_right (sSup_abs_eval_shifted_le hl hlt m) (norm_nonneg _)))
+  rcases Nat.eq_zero_or_pos m with rfl | hm
+  · have hx0 : x = x₀ := by
+      have h := hx.mem
+      rw [subspace_zero, Submodule.mem_bot] at h
+      exact sub_eq_zero.1 h
+    rw [hx0, pow_zero, mul_one]
+    linarith [norm_nonneg (b - A x₀)]
+  · obtain ⟨xstar, hstar⟩ := exists_apply_eq_of_isSymmetricBoundedBy_self (b := b) hl hA
+    have hzero : (Real.sqrt (lmin / lmin) - 1) / (Real.sqrt (lmin / lmin) + 1) = 0 := by
+      rw [div_self hl.ne', Real.sqrt_one]
+      norm_num
+    rw [hzero, zero_pow hm.ne', mul_zero, zero_mul]
+    have h := hx.min xstar (sub_mem_subspace_of_isSymmetricBoundedBy_self hl hA hstar hm)
+    rwa [hstar, sub_self, norm_zero] at h
 
 end Symmetric
 

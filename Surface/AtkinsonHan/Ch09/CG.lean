@@ -188,53 +188,21 @@ theorem cg_energyNorm_error_antitone (hM : a.IsBoundedWith M) (hs : LinearMap.Bi
 
 /-! ### Convergence (Theorem 5.6.1 transported through `cgIterate_eq`) -/
 
-omit [CompleteSpace V] in
-/-- One step of Algorithm 1 is at least as good as one steepest-descent step, so the energy norm
-of the error contracts by the Kantorovich factor `(M − α)/(M + α)`.
-
-This is a two-line assembly of backbone results -- `IsGalerkin.energyNorm_le` (the CG iterate is
-optimal in the energy norm over `u₀ + 𝒦_{k+1}`) and
-`Projection.energyNorm_steepestDescentStep_le` (Saad Thm 5.9) -- and would be a natural addition
-to `Numlib/Krylov/Convergence/CG.lean`. -/
-private theorem cg_energyNorm_error_step_le' {A : V →ₗ[ℝ] V} {b x₀ : V} {lmin lmax : ℝ}
-    (hl : 0 < lmin) (hA : A.IsSymmetricBoundedBy lmin lmax) {xstar : V} (hstar : A xstar = b)
-    (k : ℕ) :
-    energyNorm A (xstar - (CG.iterate A b x₀ (k + 1)).x)
-      ≤ (lmax - lmin) / (lmax + lmin) * energyNorm A (xstar - (CG.iterate A b x₀ k).x) := by
-  have hAc := hA.isSymmetricCoercive hl
-  have hres : b - A (CG.iterate A b x₀ k).x = (CG.iterate A b x₀ k).r :=
-    (CG.residual_eq A b x₀ k).symm
-  have hy : Projection.steepestDescentStep A b (CG.iterate A b x₀ k).x - x₀
-      ∈ Krylov.subspace A (b - A x₀) (k + 1) := by
-    have hsplit : Projection.steepestDescentStep A b (CG.iterate A b x₀ k).x - x₀
-        = ((CG.iterate A b x₀ k).x - x₀)
-          + (inner ℝ (b - A (CG.iterate A b x₀ k).x) (b - A (CG.iterate A b x₀ k).x) /
-              inner ℝ (b - A (CG.iterate A b x₀ k).x) (A (b - A (CG.iterate A b x₀ k).x)))
-            • (b - A (CG.iterate A b x₀ k).x) := by
-      rw [Projection.steepestDescentStep, Projection.step1]
-      abel
-    rw [hsplit]
-    refine Submodule.add_mem _ ?_ (Submodule.smul_mem _ _ ?_)
-    · exact Krylov.subspace_mono A (b - A x₀) (Nat.le_succ k) (CG.iterate_sub_mem b x₀ hAc k)
-    · rw [hres]
-      exact CG.residual_mem_subspace A b x₀ k
-  refine le_trans (IsGalerkin.energyNorm_le hAc (CG.isGalerkinIterate b x₀ hAc (k + 1)) hstar hy)
-    (Projection.energyNorm_steepestDescentStep_le hl hA hstar _)
-
 /-- (5.6.4) for Algorithm 1: `‖u − u_{k+1}‖_a ≤ ((M − α)/(M + α)) ‖u − u_k‖_a`. -/
 theorem cg_energy_rate (hM : a.IsBoundedWith M) (hs : LinearMap.BilinForm.IsSymm a) (hα : 0 < α)
     (ha : a.IsEllipticWith α) (ℓ : StrongDual ℝ V) {u : V} (hu : ∀ v, a u v = ℓ v) (u₀ : V)
     (k : ℕ) :
     a.energyNorm (u - (cgIterate a hM ℓ u₀ (k + 1)).x)
       ≤ (M - α) / (M + α) * a.energyNorm (u - (cgIterate a hM ℓ u₀ k).x) := by
+  have hAc := (isSymmetricBoundedBy_toOperator hM hs ha).isSymmetricCoercive hα
   simp only [BilinForm.energyNorm_eq_energyNorm_toOperator hM, cgIterate_eq hM ℓ u₀]
-  exact cg_energyNorm_error_step_le' hα (isSymmetricBoundedBy_toOperator hM hs ha)
-    (toOperator_eq_rieszRep hM ℓ hu) k
+  exact Krylov.IsGalerkinIterate.energyNorm_error_succ_le hα
+    (isSymmetricBoundedBy_toOperator hM hs ha) (CG.isGalerkinIterate _ _ hAc k)
+    (CG.isGalerkinIterate _ _ hAc (k + 1)) (toOperator_eq_rieszRep hM ℓ hu)
 
 /-- (5.6.5) for Algorithm 1: `‖u − u_k‖_a ≤ 2 ((√κ − 1)/(√κ + 1))^k ‖u − u_0‖_a` with
-`κ = M/α`.  The strict inequality `α < M` is the hypothesis under which the backbone's Chebyshev
-bound is stated; when `α = M` the form is a multiple of the inner product and Algorithm 1
-terminates after one step. -/
+`κ = M/α`.  The hypothesis `α < M` is not needed for this bound (the backbone states it for
+`α ≤ M`); it is kept here only because `cg_converges` below uses it. -/
 theorem cg_energy_bound (hM : a.IsBoundedWith M) (hs : LinearMap.BilinForm.IsSymm a) (hα : 0 < α)
     (hαM : α < M) (ha : a.IsEllipticWith α) (ℓ : StrongDual ℝ V) {u : V} (hu : ∀ v, a u v = ℓ v)
     (u₀ : V) (k : ℕ) :
@@ -242,7 +210,7 @@ theorem cg_energy_bound (hM : a.IsBoundedWith M) (hs : LinearMap.BilinForm.IsSym
       ≤ 2 * ((Real.sqrt (M / α) - 1) / (Real.sqrt (M / α) + 1)) ^ k *
           a.energyNorm (u - u₀) := by
   simp only [BilinForm.energyNorm_eq_energyNorm_toOperator hM, cgIterate_eq hM ℓ u₀]
-  exact Krylov.IsGalerkinIterate.energyNorm_error_le hα hαM
+  exact Krylov.IsGalerkinIterate.energyNorm_error_le hα hαM.le
     (isSymmetricBoundedBy_toOperator hM hs ha)
     (CG.isGalerkinIterate _ _ ((isSymmetricBoundedBy_toOperator hM hs ha).isSymmetricCoercive hα) k)
     (toOperator_eq_rieszRep hM ℓ hu)

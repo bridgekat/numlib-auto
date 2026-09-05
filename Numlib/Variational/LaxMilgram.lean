@@ -43,6 +43,7 @@ file. -/
 variable {U W : Type*} [NormedAddCommGroup U] [InnerProductSpace 𝕜 U] [CompleteSpace U]
   [NormedAddCommGroup W] [InnerProductSpace 𝕜 W] [CompleteSpace W]
 
+omit [CompleteSpace W] in
 private theorem isClosed_range_aux (L : U →L[𝕜] W) {c : ℝ} (hc : 0 < c)
     (h : ∀ v, c * ‖v‖ ≤ ‖L v‖) : IsClosed (LinearMap.range (L : U →ₗ[𝕜] W) : Set W) := by
   have hanti : AntilipschitzWith (Real.toNNReal c⁻¹) L := by
@@ -52,6 +53,7 @@ private theorem isClosed_range_aux (L : U →L[𝕜] W) {c : ℝ} (hc : 0 < c)
   rw [LinearMap.coe_range]
   exact hanti.isClosed_range L.uniformContinuous
 
+omit [CompleteSpace U] [CompleteSpace W] in
 private theorem injective_aux (L : U →L[𝕜] W) {c : ℝ} (hc : 0 < c) (h : ∀ v, c * ‖v‖ ≤ ‖L v‖) :
     Function.Injective L := by
   intro x y hxy
@@ -98,6 +100,7 @@ theorem laxMilgram {c : ℝ} (hc : 0 < c) (ha : a.IsCoerciveWith c) : ∃! u, �
     rw [a.forall_apply_eq_iff_toOperator_eq, hEq] at hy
     rw [← hy, e.symm_apply_apply]
 
+omit [CompleteSpace V] in
 /-- The stability estimate `‖u‖ ≤ ‖ℓ‖ / c`. -/
 theorem norm_le_of_forall_apply_eq {c : ℝ} (hc : 0 < c) (ha : a.IsCoerciveWith c) {u : V}
     (hu : ∀ v, a u v = ℓ v) : ‖u‖ ≤ ‖ℓ‖ / c := by
@@ -111,6 +114,7 @@ theorem norm_le_of_forall_apply_eq {c : ℝ} (hc : 0 < c) (ha : a.IsCoerciveWith
       _ ≤ ‖ℓ u‖ := RCLike.re_le_norm _
       _ ≤ ‖ℓ‖ * ‖u‖ := ℓ.le_opNorm u
 
+omit [CompleteSpace V] in
 /-- Lipschitz dependence on the data: the solution map `ℓ ↦ u` is `1 / c`-Lipschitz
 (Atkinson–Han, *Theoretical Numerical Analysis*, (5.1.11), stated there for strongly monotone
 maps). -/
@@ -228,6 +232,7 @@ section Energy
 variable {a} (ha : a.IsHermitian)
 include ha
 
+omit [CompleteSpace V] in
 /-- Atkinson–Han, *Theoretical Numerical Analysis*, Thm 8.3.3 (subspace / whole-space case): for a
 Hermitian coercive form, `u` solves `a u v = ℓ v` for all `v ∈ K` iff `u ∈ K` minimizes the energy
 on the subspace `K`.  Taking `K = ⊤` recovers the equivalence of the variational problem with
@@ -417,6 +422,7 @@ theorem existsUnique_isMinOn_energy {V : Type*} [NormedAddCommGroup V] [InnerPro
     have h2 : ‖y - ustar‖ ^ 2 = 0 := le_antisymm h1 (sq_nonneg _)
     exact sub_eq_zero.mp (norm_eq_zero.mp (pow_eq_zero_iff two_ne_zero |>.mp h2))
 
+omit [CompleteSpace V] in
 /-- The energy identity `E(v) - E(u) = ½ ‖v - u‖_a²` at the solution `u`: completing the square
 turns minimizing `E` into minimizing the energy-norm distance to `u`, which is why the two
 formulations agree.  This is the computation inside the proof of Atkinson–Han, *Theoretical
@@ -448,12 +454,15 @@ case. Both factors are conjugate-linear, so `B` is linear. -/
 private noncomputable def toOperator₂ : U →L[𝕜] V :=
   (InnerProductSpace.toDual 𝕜 V).symm.toContinuousLinearEquiv.toContinuousLinearMap.comp a
 
+omit [CompleteSpace U] in
 private theorem inner_toOperator₂ (u : U) (v : V) : inner 𝕜 (toOperator₂ a u) v = a u v := by
   simp [toOperator₂]
 
+omit [CompleteSpace U] in
 private theorem norm_toOperator₂_apply (u : U) : ‖toOperator₂ a u‖ = ‖a u‖ :=
   (InnerProductSpace.toDual 𝕜 V).symm.norm_map (a u)
 
+omit [CompleteSpace U] in
 private theorem forall_apply_eq_iff_toOperator₂_eq (u : U) :
     (∀ v, a u v = ℓ v) ↔ toOperator₂ a u = SesqForm.rieszRep ℓ := by
   constructor
@@ -482,6 +491,7 @@ theorem babuska_necas {α : ℝ} (hα : 0 < α) (hinf : a.InfSupWith α) (hnd : 
   refine ⟨u, (forall_apply_eq_iff_toOperator₂_eq a ℓ u).mpr hu, fun y hy => ?_⟩
   exact hinj (((forall_apply_eq_iff_toOperator₂_eq a ℓ y).mp hy).trans hu.symm)
 
+omit [CompleteSpace V] [CompleteSpace U] in
 /-- The stability estimate `‖u‖ ≤ ‖ℓ‖ / α` for the two-space problem, with `α` the inf–sup
 constant (Atkinson–Han, *Theoretical Numerical Analysis*, (8.7.5)). -/
 theorem norm_le_of_infSupWith {α : ℝ} (hα : 0 < α) (hinf : a.InfSupWith α) {u : U}
@@ -490,6 +500,7 @@ theorem norm_le_of_infSupWith {α : ℝ} (hα : 0 < α) (hinf : a.InfSupWith α)
   calc α * ‖u‖ ≤ ‖a u‖ := hinf u
     _ = ‖ℓ‖ := by rw [ContinuousLinearMap.ext hu]
 
+omit [CompleteSpace V] [CompleteSpace U] in
 /-- The inf–sup condition is necessary: if the problem is well posed with `‖u‖ ≤ C ‖ℓ‖` for all
 `ℓ`, then `a.InfSupWith (1 / C)`.  This is the converse of Atkinson–Han, *Theoretical Numerical
 Analysis*, Thm 8.7.1 (they state only the forward direction, and attribute the theorem to Nečas).
@@ -523,6 +534,7 @@ delivers injectivity and closed range, and hence solvability once the range is d
 
 variable {W : Type*} [NormedAddCommGroup W] [InnerProductSpace 𝕜 W] [CompleteSpace W]
 
+omit [CompleteSpace W] in
 /-- Atkinson–Han, *Theoretical Numerical Analysis*, Thm 8.2.1 and Thm 8.2.4 (bounded case): a
 bounded-below operator `c ‖v‖ ≤ ‖L v‖` has closed range; if moreover its range is dense
 (`(range L)ᗮ = ⊥`) it is bijective. -/
@@ -535,6 +547,7 @@ theorem ContinuousLinearMap.bijective_of_le_norm_of_orthogonal_range_eq_bot (L :
     (hdense : (LinearMap.range (L : V →ₗ[𝕜] W))ᗮ = ⊥) : Function.Bijective L :=
   bijective_aux L hc h hdense
 
+omit [CompleteSpace W] in
 /-- Atkinson–Han, *Theoretical Numerical Analysis*, Thm 8.2.4 (closed-operator version): a closed,
 bounded-below, densely defined operator `L : V →ₗ.[𝕜] W` has closed range.  Closedness of the graph
 replaces continuity: it is what lets the limit of a convergent sequence of images be recognized as
@@ -569,6 +582,7 @@ theorem LinearPMap.isClosed_range_of_isClosed_of_le_norm (L : V →ₗ.[𝕜] W)
   obtain ⟨y, -, hy⟩ := hgraph
   exact ⟨y, hy⟩
 
+omit [CompleteSpace V] [CompleteSpace W] in
 /-- The a priori (stability) estimate `‖v‖ ≤ C ‖L v‖` of Atkinson–Han, *Theoretical Numerical
 Analysis*, (8.2.2), is equivalent to injectivity with continuous inverse on the range; here the
 quantitative form `‖L⁻¹ w‖ ≤ C ‖w‖`. -/

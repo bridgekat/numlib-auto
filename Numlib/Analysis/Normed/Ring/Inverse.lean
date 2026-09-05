@@ -77,6 +77,7 @@ private theorem commute_one_sub_geom_sum (t : R) (m : ℕ) :
   Commute.sum_right _ _ _ fun i _ =>
     (Commute.one_left (t ^ i)).sub_left ((Commute.refl t).pow_right i)
 
+omit [NormOneClass R] in
 /-- `‖t ^ m‖ < 1` for a single `m` already suffices for `1 - t` to be a unit. -/
 theorem isUnit_one_sub_of_norm_pow_lt_one {t : R} {m : ℕ} (h : ‖t ^ m‖ < 1) : IsUnit (1 - t) := by
   have hprod : IsUnit ((1 - t) * ∑ i ∈ Finset.range m, t ^ i) := by
@@ -115,6 +116,7 @@ namespace Units
 
 variable {R : Type*} [NormedRing R] [NormOneClass R] [CompleteSpace R]
 
+omit [NormOneClass R] in
 /-- Perturbation of a unit: `x + t` is a unit when `‖t‖ < ‖x⁻¹‖⁻¹` (Mathlib's `Units.add`). -/
 theorem isUnit_add_of_norm_lt (x : Rˣ) (t : R) (h : ‖t‖ < ‖(↑x⁻¹ : R)‖⁻¹) :
     IsUnit ((x : R) + t) :=
@@ -246,6 +248,7 @@ theorem exists_symm_norm_le_of_add (e : E ≃L[𝕜] F) (t : E →L[𝕜] F)
             (div_one_sub_le_div_one_sub (by rwa [norm_neg]) h)
       _ = ‖(e.symm : F →L[𝕜] E)‖ ^ 2 * ‖t‖ / (1 - ‖(e.symm : F →L[𝕜] E)‖ * ‖t‖) := by ring
 
+omit [CompleteSpace E] in
 /-- Consistency plus stability gives convergence: `‖v - vₙ‖ ≤ ‖Lₙ⁻¹‖ ‖(L - Lₙ) v‖` when
 `L v = Lₙ vₙ`, so a uniform bound on `‖Lₙ⁻¹‖` (stability) turns the consistency error
 `‖(L - Lₙ) v‖ → 0` into `vₙ → v`. -/
