@@ -69,15 +69,3 @@ id = "Krylov.isMinResIterate_of_orthogonal_directions"
 
 [[node]]
 id = "CR.norm_iterate_lt_of_pos"
-kind = "theorem"
-desc = '''The CR/MINRES analogue of Steihaug's theorem (Fong–Saunders, *CG versus MINRES*, §4.2, "the same
-property holds for CR and MINRES as long as both `p_jᵀ A p_j > 0` and `r_jᵀ A r_j > 0`"): for
-symmetric `A` and the CR iterates from `x₀ = 0`, under the *global* no-breakdown hypothesis
-`∀ j < ℓ, ⟪r_j, A r_j⟫ ≠ 0` up to the termination index `ℓ` and `0 < re ⟪A p_j, p_j⟫`,
-`0 < re ⟪r_j, A r_j⟫` for `j < k`, `‖x_i‖ < ‖x_{i+1}‖` for all `i < k`. The paper's proof of
-Thm 2.2 (d) expands `p_i` in the complete orthogonal basis `{A p_j}_{j<ℓ}`, which is why the
-hypothesis is global; whether the paper's local formulation (hypotheses for `j ≤ k` only) is
-true is open, and a counterexample would be the alternative deliverable. Transfers to MINRES
-through `isMinResIterate_of_no_breakdown`.'''
-deps = ["CR.iterate", "CR.norm_iterate_monotone", "CR.isMinResIterate_of_no_breakdown", "CR.re_inner_iterate_direction_nonneg", "CR.re_inner_direction_nonneg"]
-source = "Fong–Saunders, CG versus MINRES, Section 4.2 and Theorem 2.2"

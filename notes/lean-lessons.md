@@ -265,6 +265,23 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
 * An `@[simp]` unfolding lemma for a wrapper `def` makes a later `by_cases h : 0 ≤ wrapper …`
   useless: `simp` rewrites the goal past the wrapper while `h` still mentions it, and the two no
   longer match. Leave such a lemma unmarked and pass it explicitly where it is wanted.
+* **A section variable used only in a proof body is not auto-included.** Only the *statement*
+  counts, so a term-mode proof that mentions `hM` and a statement that does not gives
+  `Unknown identifier hM.foo` — the whole dotted chain, which reads like a missing lemma. Write
+  `include hM` after the `variable` line, as the rest of this project does.
+* `rw` does not see through an `abbrev` in a hypothesis. `Krylov.IsGalerkinIterate A b x₀ m x`
+  elaborates with `IsGalerkinIterate` as the head, so `rw [thatSubspaceLemma] at hgal` finds
+  nothing. Restate it first — `have hgal' : IsGalerkin A b x₀ (subspace …) x := hgal` type-checks
+  by reducibility — and rewrite in `hgal'`.
+* `rw [someDef]` fails with "Failed to rewrite using equation theorems" for a plain `def` whose
+  body is an application (`WithEnergy.submoduleMap K = K.map …`). A local
+  `have h : … = … := rfl` and `rw [h]` is the fix, and is cheaper than an unfolding lemma.
+* A `def` whose scalar field appears only in the *return* type leaves it undetermined at use
+  sites: `def alpha (s : State E) : 𝕜` makes `alpha s • s.p` an unsolved `InnerProductSpace ?𝕜 E`.
+  Either take the operators as arguments, as the other iteration states do, or write
+  `(alpha s : 𝕜)` in every statement about it.
+* `induction j, hij using Nat.le_induction` refuses to generalize a hypothesis that mentions `j`,
+  such as a bound `hj : j ≤ k`. `revert hj` first and `intro` it in each branch.
 
 ## Tactics
 
@@ -730,6 +747,17 @@ More structural facts:
   `Mathlib.Analysis.Normed.Operator.Basic` (`ContinuousLinearMap.le_opNorm`). There is no
   `Mathlib.Analysis.Normed.Operator.ContinuousLinearMap`, and the failure mode is a cascade of
   "failed to synthesize `TopologicalSpace E`" on the *statement*, not a missing-import message.
+
+`Polynomial.annIdeal` and `annIdealGenerator` are about an element of an *algebra*, not a vector,
+so the minimal polynomial of a vector is not an instance of them; `Krylov.annIdealVec` and
+`Krylov.minpolyVec` in `Krylov/Subspace.lean` are the vector version, hand-rolled along the same
+lines. Building them needs `IsPrincipalIdealRing K[X]`, which arrives only with
+`Mathlib.RingTheory.EuclideanDomain` *and* `Mathlib.Algebra.Polynomial.FieldDivision` imported —
+`Mathlib.RingTheory.PrincipalIdealDomain` alone leaves `Submodule.IsPrincipal` unsynthesizable.
+
+`WithEnergy.equiv_mem_submoduleMap_iff`, `norm_equiv` and `inner_equiv` all take the operator and
+its symmetry-coercivity proof as *explicit* arguments, so `(WithEnergy.equiv_mem_submoduleMap_iff
+M hM).2 hw`, not `.2 hw` alone.
 
 ## Design conventions of this library
 

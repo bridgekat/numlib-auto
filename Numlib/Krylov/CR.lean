@@ -8,8 +8,10 @@ Alg 6.20, Fong–Saunders[^fong-saunders] Table 2.1, Choi[^choi] Table 2.12), wi
 carried in the state. Main theorems: CR realises the minimal-residual specification
 (`CR.isMinResIterate`), the orthogonality relations (Fong–Saunders Thm 2.1 / Luenberger), the
 sign properties on SPD systems (Fong–Saunders Thm 2.2), and the resulting monotonicity of
-`‖x_k‖` (Fong–Saunders Thm 2.3). Also the general GCR lemma (Saad Lemma 6.21) that any
-`AᴴA`-orthogonal direction sequence spanning the Krylov spaces yields minimal-residual iterates.
+`‖x_k‖` (Fong–Saunders Thm 2.3, with Steihaug's strict form for a symmetric but possibly
+indefinite `A` in `CR.norm_iterate_lt_of_pos`). Also the general GCR lemma (Saad Lemma 6.21)
+that any `AᴴA`-orthogonal direction sequence spanning the Krylov spaces yields minimal-residual
+iterates.
 
 ## References
 
@@ -252,15 +254,27 @@ private theorem re_inner_self_nonneg (x : E) : 0 ≤ RCLike.re (inner 𝕜 x (A 
   rw [← hA.isSymmetric]
   exact le_trans (by positivity) (h x)
 
-private theorem inner_self_ofReal (x : E) :
+omit hA in
+private theorem inner_self_ofReal (hAs : A.IsSymmetric) (x : E) :
     ((RCLike.re (inner 𝕜 x (A x)) : ℝ) : 𝕜) = inner 𝕜 x (A x) :=
-  RCLike.conj_eq_iff_re.1 (by rw [inner_conj_symm, hA.isSymmetric])
+  RCLike.conj_eq_iff_re.1 (by rw [inner_conj_symm, hAs])
 
 private theorem eq_zero_of_inner_self_eq_zero {x : E} (h : inner 𝕜 x (A x) = 0) : x = 0 := by
   by_contra hx
   have hpos := hA.isCoercive.inner_self_pos hx
   rw [hA.isSymmetric, h, map_zero] at hpos
   exact lt_irrefl 0 hpos
+
+/-- The first fact coercivity supplies to the sign theory below. -/
+private theorem re_inner_residual_self_nonneg :
+    ∀ j, 0 ≤ RCLike.re (inner 𝕜 (iterate A b x₀ j).r (A (iterate A b x₀ j).r)) :=
+  fun _ => re_inner_self_nonneg hA _
+
+/-- The second fact coercivity supplies to the sign theory below. -/
+private theorem residual_eq_zero_of_inner_self :
+    ∀ j, inner 𝕜 (iterate A b x₀ j).r (A (iterate A b x₀ j).r) = 0 →
+      (iterate A b x₀ j).r = 0 :=
+  fun _ h => eq_zero_of_inner_self_eq_zero hA h
 
 omit hA in
 private theorem conj_alpha (hAs : A.IsSymmetric) (s : State E) :
@@ -284,21 +298,26 @@ private theorem alpha_mul_inner_apply_direction' (k : ℕ)
   · rw [h, mul_zero, ← hdiag, inner_self_eq_zero.1 h, inner_zero_right]
   · rw [alpha, q_eq, div_mul_cancel₀ _ h]
 
+omit hA in
 /-- `β_k ⟪r_k, A r_k⟫ = ⟪r_{k+1}, A r_{k+1}⟫`, valid also at a breakdown. -/
-private theorem beta_mul_inner_self (k : ℕ) :
+private theorem beta_mul_inner_self
+    (hz : ∀ j,
+      inner 𝕜 (iterate A b x₀ j).r (A (iterate A b x₀ j).r) = 0 → (iterate A b x₀ j).r = 0)
+    (k : ℕ) :
     beta A (iterate A b x₀ k) * inner 𝕜 (iterate A b x₀ k).r (A (iterate A b x₀ k).r) =
       inner 𝕜 (iterate A b x₀ (k + 1)).r (A (iterate A b x₀ (k + 1)).r) := by
   by_cases h : inner 𝕜 (iterate A b x₀ k).r (A (iterate A b x₀ k).r) = 0
-  · rw [h, mul_zero, residual_succ_eq_zero_of_eq_zero A b x₀
-      (eq_zero_of_inner_self_eq_zero hA h), inner_zero_left]
+  · rw [h, mul_zero, residual_succ_eq_zero_of_eq_zero A b x₀ (hz k h), inner_zero_left]
   · rw [beta_iterate, div_mul_cancel₀ _ h]
 
+omit hA in
 /-- `A p_k = 0` when the step length degenerates. -/
-private theorem apply_direction_eq_zero_of_alpha_eq_zero {k : ℕ}
+private theorem apply_direction_eq_zero_of_alpha_eq_zero
+    (hz : ∀ j,
+      inner 𝕜 (iterate A b x₀ j).r (A (iterate A b x₀ j).r) = 0 → (iterate A b x₀ j).r = 0) {k : ℕ}
     (h : alpha A (iterate A b x₀ k) = 0) : A (iterate A b x₀ k).p = 0 := by
   rcases div_eq_zero_iff.1 h with h' | h'
-  · rw [direction_eq_zero_of_residual_eq_zero A b x₀ (eq_zero_of_inner_self_eq_zero hA h'),
-      map_zero]
+  · rw [direction_eq_zero_of_residual_eq_zero A b x₀ (hz k h'), map_zero]
   · rw [← q_eq]
     exact inner_self_eq_zero.1 h'
 
@@ -377,10 +396,18 @@ private theorem invariant_of (hAs : A.IsSymmetric) (k : ℕ) :
     · rw [iterate_succ_p, map_add, map_smul, inner_add_right, inner_smul_right,
         rq k (Nat.lt_succ_self k), mul_zero, add_zero]
 
+omit hA in
+/-- The invariant under symmetry and the nondegeneracy hypothesis alone. -/
+private theorem invariant' (hAs : A.IsSymmetric)
+    (hz : ∀ j,
+      inner 𝕜 (iterate A b x₀ j).r (A (iterate A b x₀ j).r) = 0 → (iterate A b x₀ j).r = 0)
+    (k : ℕ) : Invariant A b x₀ k :=
+  invariant_of b x₀ hAs k
+    (fun _ _ h => apply_direction_eq_zero_of_alpha_eq_zero b x₀ hz h)
+    (fun j _ => beta_mul_inner_self b x₀ hz j)
+
 private theorem invariant (k : ℕ) : Invariant A b x₀ k :=
-  invariant_of b x₀ hA.isSymmetric k
-    (fun _ _ h => apply_direction_eq_zero_of_alpha_eq_zero b x₀ hA h)
-    (fun j _ => beta_mul_inner_self b x₀ hA j)
+  invariant' b x₀ hA.isSymmetric (residual_eq_zero_of_inner_self b x₀ hA) k
 
 /-! ### The named orthogonality relations -/
 
@@ -397,27 +424,48 @@ theorem inner_residual_apply_direction_eq_zero {i j : ℕ} (h : j < i) :
     inner 𝕜 (iterate A b x₀ i).r (A (iterate A b x₀ j).p) = 0 :=
   (invariant b x₀ hA i).rq j h
 
-/-- Residuals are `A`-orthogonal: `⟪r_i, A r_j⟫ = 0` for `i ≠ j`. -/
-theorem inner_residual_apply_residual_eq_zero {i j : ℕ} (h : i ≠ j) :
+omit hA in
+/-- Residuals are `A`-orthogonal under symmetry and nondegeneracy alone. -/
+private theorem inner_residual_apply_residual_eq_zero' (hAs : A.IsSymmetric)
+    (hz : ∀ j,
+      inner 𝕜 (iterate A b x₀ j).r (A (iterate A b x₀ j).r) = 0 → (iterate A b x₀ j).r = 0)
+    {i j : ℕ} (h : i ≠ j) :
     inner 𝕜 (iterate A b x₀ i).r (A (iterate A b x₀ j).r) = 0 := by
   have key : ∀ m n : ℕ, n < m →
       inner 𝕜 (iterate A b x₀ m).r (A (iterate A b x₀ n).r) = 0 :=
     fun m n hmn => inner_eq_zero_of_inner_direction A b x₀
-      fun l hl => (invariant b x₀ hA m).rq l (by omega)
+      fun l hl => (invariant' b x₀ hAs hz m).rq l (by omega)
   rcases lt_or_gt_of_ne h with h' | h'
-  · rw [← hA.isSymmetric, ← inner_conj_symm, key j i h', map_zero]
+  · rw [← hAs, ← inner_conj_symm, key j i h', map_zero]
   · exact key i j h'
+
+/-- Residuals are `A`-orthogonal: `⟪r_i, A r_j⟫ = 0` for `i ≠ j`. -/
+theorem inner_residual_apply_residual_eq_zero {i j : ℕ} (h : i ≠ j) :
+    inner 𝕜 (iterate A b x₀ i).r (A (iterate A b x₀ j).r) = 0 :=
+  inner_residual_apply_residual_eq_zero' b x₀ hA.isSymmetric
+    (residual_eq_zero_of_inner_self b x₀ hA) h
+
+omit hA in
+/-- `⟪r_i, A p_j⟫ = ⟪r_j, A r_j⟫` under symmetry and nondegeneracy alone. -/
+private theorem inner_residual_apply_direction_eq' (hAs : A.IsSymmetric)
+    (hz : ∀ j,
+      inner 𝕜 (iterate A b x₀ j).r (A (iterate A b x₀ j).r) = 0 → (iterate A b x₀ j).r = 0)
+    {i j : ℕ} (h : i ≤ j) :
+    inner 𝕜 (iterate A b x₀ i).r (A (iterate A b x₀ j).p) =
+      inner 𝕜 (iterate A b x₀ j).r (A (iterate A b x₀ j).r) := by
+  induction j, h using Nat.le_induction with
+  | base => exact (invariant' b x₀ hAs hz i).diag
+  | succ j hij ih =>
+    rw [iterate_succ_p, map_add, map_smul, inner_add_right, inner_smul_right, ih,
+      inner_residual_apply_residual_eq_zero' b x₀ hAs hz (show i ≠ j + 1 by omega), zero_add,
+      beta_mul_inner_self b x₀ hz j]
 
 /-- `⟪r_i, A p_j⟫ = ⟪r_j, A r_j⟫` for `i ≤ j` (the CR analogue of `⟪r_i, p_j⟫ = ‖r_j‖²`). -/
 theorem inner_residual_apply_direction_eq {i j : ℕ} (h : i ≤ j) :
     inner 𝕜 (iterate A b x₀ i).r (A (iterate A b x₀ j).p) =
-      inner 𝕜 (iterate A b x₀ j).r (A (iterate A b x₀ j).r) := by
-  induction j, h using Nat.le_induction with
-  | base => exact (invariant b x₀ hA i).diag
-  | succ j hij ih =>
-    rw [iterate_succ_p, map_add, map_smul, inner_add_right, inner_smul_right, ih,
-      inner_residual_apply_residual_eq_zero b x₀ hA (show i ≠ j + 1 by omega), zero_add,
-      beta_mul_inner_self b x₀ hA j]
+      inner 𝕜 (iterate A b x₀ j).r (A (iterate A b x₀ j).r) :=
+  inner_residual_apply_direction_eq' b x₀ hA.isSymmetric
+    (residual_eq_zero_of_inner_self b x₀ hA) h
 
 /-! ### Spans and the minimal-residual property -/
 
@@ -484,7 +532,8 @@ theorem span_direction_eq (k : ℕ) :
       subspace A (b - A x₀) k :=
   le_antisymm (dirSpan_le_subspace A b x₀ k) (subspace_le_dirSpan b x₀ k
     fun i _ => apply_direction_mem_dirSpan b x₀ i
-      fun h => apply_direction_eq_zero_of_alpha_eq_zero b x₀ hA h)
+      fun h => apply_direction_eq_zero_of_alpha_eq_zero b x₀
+        (residual_eq_zero_of_inner_self b x₀ hA) h)
 
 /-- CR realises the minimal-residual specification (`= MINRES = GMRES` on symmetric systems). -/
 theorem isMinResIterate (k : ℕ) : IsMinResIterate A b x₀ k (iterate A b x₀ k).x := by
@@ -504,6 +553,13 @@ theorem residual_eq_zero_of_grade_le [FiniteDimensional 𝕜 (fullSubspace A (b 
   exact ((isMinResIterate b x₀ hA k).apply_eq_of_grade_le hk
     hA.isCoercive.injective.injOn).symm
 
+/-- The third fact coercivity supplies: the iteration terminates, so every index is passed by
+a step whose residual has died. -/
+private theorem exists_residual_eq_zero [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))] :
+    ∀ n, ∃ m, n ≤ m ∧ (iterate A b x₀ m).r = 0 :=
+  fun n => ⟨max n (grade A (b - A x₀)), le_max_left _ _,
+    residual_eq_zero_of_grade_le b x₀ hA (le_max_right _ _)⟩
+
 /-- For `x₀ = 0` and `b ≠ 0` the first CR iterate `x₁ = α₀ b` is nonzero, so the backward-error
 ratio `‖r_k‖ / ‖x_k‖` is well defined from step `1` on. -/
 theorem iterate_one_x_ne_zero (hb : b ≠ 0) : (iterate A b 0 1).x ≠ 0 := by
@@ -518,38 +574,60 @@ theorem iterate_one_x_ne_zero (hb : b ≠ 0) : (iterate A b 0 1).x ≠ 0 := by
 
 /-! ### Signs (Fong–Saunders, *CG versus MINRES*, Thm 2.2) -/
 
-private theorem alpha_eq_ofReal (k : ℕ) : alpha A (iterate A b x₀ k) =
+omit hA in
+private theorem alpha_eq_ofReal (hAs : A.IsSymmetric) (k : ℕ) : alpha A (iterate A b x₀ k) =
     ((RCLike.re (inner 𝕜 (iterate A b x₀ k).r (A (iterate A b x₀ k).r)) /
       ‖(iterate A b x₀ k).q‖ ^ 2 : ℝ) : 𝕜) := by
-  rw [RCLike.ofReal_div, inner_self_ofReal hA, ← inner_self_eq_ofReal_norm_sq, alpha]
+  rw [RCLike.ofReal_div, inner_self_ofReal hAs, ← inner_self_eq_ofReal_norm_sq, alpha]
+
+omit hA in
+private theorem re_alpha_nonneg' (hAs : A.IsSymmetric)
+    (hnn : ∀ j,
+      0 ≤ RCLike.re (inner 𝕜 (iterate A b x₀ j).r (A (iterate A b x₀ j).r))) (k : ℕ) :
+    0 ≤ RCLike.re (alpha A (iterate A b x₀ k)) := by
+  rw [alpha_eq_ofReal b x₀ hAs k, RCLike.ofReal_re]
+  exact div_nonneg (hnn k) (sq_nonneg _)
 
 /-- Fong–Saunders, *CG versus MINRES*, Thm 2.2 (a)–(b): `α_i ≥ 0`, `β_i ≥ 0` (real,
 nonnegative). -/
-theorem re_alpha_nonneg (k : ℕ) : 0 ≤ RCLike.re (alpha A (iterate A b x₀ k)) := by
-  rw [alpha_eq_ofReal b x₀ hA k, RCLike.ofReal_re]
-  exact div_nonneg (re_inner_self_nonneg hA _) (sq_nonneg _)
+theorem re_alpha_nonneg (k : ℕ) : 0 ≤ RCLike.re (alpha A (iterate A b x₀ k)) :=
+  re_alpha_nonneg' b x₀ hA.isSymmetric (re_inner_residual_self_nonneg b x₀ hA) k
 
-private theorem beta_eq_ofReal (k : ℕ) : beta A (iterate A b x₀ k) =
+omit hA in
+private theorem beta_eq_ofReal (hAs : A.IsSymmetric) (k : ℕ) : beta A (iterate A b x₀ k) =
     ((RCLike.re (inner 𝕜 (iterate A b x₀ (k + 1)).r (A (iterate A b x₀ (k + 1)).r)) /
       RCLike.re (inner 𝕜 (iterate A b x₀ k).r (A (iterate A b x₀ k).r)) : ℝ) : 𝕜) := by
-  rw [RCLike.ofReal_div, inner_self_ofReal hA, inner_self_ofReal hA, beta_iterate]
+  rw [RCLike.ofReal_div, inner_self_ofReal hAs, inner_self_ofReal hAs, beta_iterate]
 
-private theorem re_beta_nonneg (k : ℕ) : 0 ≤ RCLike.re (beta A (iterate A b x₀ k)) := by
-  rw [beta_eq_ofReal b x₀ hA k, RCLike.ofReal_re]
-  exact div_nonneg (re_inner_self_nonneg hA _) (re_inner_self_nonneg hA _)
+omit hA in
+private theorem re_beta_nonneg (hAs : A.IsSymmetric)
+    (hnn : ∀ j,
+      0 ≤ RCLike.re (inner 𝕜 (iterate A b x₀ j).r (A (iterate A b x₀ j).r))) (k : ℕ) :
+    0 ≤ RCLike.re (beta A (iterate A b x₀ k)) := by
+  rw [beta_eq_ofReal b x₀ hAs k, RCLike.ofReal_re]
+  exact div_nonneg (hnn (k + 1)) (hnn k)
 
-private theorem re_alpha_mul (k : ℕ) (z : 𝕜) :
+omit hA in
+private theorem re_alpha_mul (hAs : A.IsSymmetric) (k : ℕ) (z : 𝕜) :
     RCLike.re (alpha A (iterate A b x₀ k) * z) =
       RCLike.re (alpha A (iterate A b x₀ k)) * RCLike.re z := by
-  rw [alpha_eq_ofReal b x₀ hA k, RCLike.re_ofReal_mul, RCLike.ofReal_re]
+  rw [alpha_eq_ofReal b x₀ hAs k, RCLike.re_ofReal_mul, RCLike.ofReal_re]
 
-private theorem re_beta_mul (k : ℕ) (z : 𝕜) :
+omit hA in
+private theorem re_beta_mul (hAs : A.IsSymmetric) (k : ℕ) (z : 𝕜) :
     RCLike.re (beta A (iterate A b x₀ k) * z) =
       RCLike.re (beta A (iterate A b x₀ k)) * RCLike.re z := by
-  rw [beta_eq_ofReal b x₀ hA k, RCLike.re_ofReal_mul, RCLike.ofReal_re]
+  rw [beta_eq_ofReal b x₀ hAs k, RCLike.re_ofReal_mul, RCLike.ofReal_re]
 
-/-- Fong–Saunders, *CG versus MINRES*, Thm 2.2 (c): `re ⟪p_i, A p_j⟫ ≥ 0`. -/
-theorem re_inner_direction_apply_direction_nonneg (i j : ℕ) :
+omit hA in
+/-- Fong–Saunders, *CG versus MINRES*, Thm 2.2 (c) under symmetry, the sign hypothesis and
+nondegeneracy alone. -/
+private theorem re_inner_direction_apply_direction_nonneg' (hAs : A.IsSymmetric)
+    (hnn : ∀ j,
+      0 ≤ RCLike.re (inner 𝕜 (iterate A b x₀ j).r (A (iterate A b x₀ j).r)))
+    (hz : ∀ j,
+      inner 𝕜 (iterate A b x₀ j).r (A (iterate A b x₀ j).r) = 0 → (iterate A b x₀ j).r = 0)
+    (i j : ℕ) :
     0 ≤ RCLike.re (inner 𝕜 (iterate A b x₀ i).p (A (iterate A b x₀ j).p)) := by
   have key : ∀ m n : ℕ, m ≤ n →
       0 ≤ RCLike.re (inner 𝕜 (iterate A b x₀ m).p (A (iterate A b x₀ n).p)) := by
@@ -557,21 +635,34 @@ theorem re_inner_direction_apply_direction_nonneg (i j : ℕ) :
     induction m with
     | zero =>
       intro n _
-      rw [direction_zero, inner_residual_apply_direction_eq b x₀ hA (Nat.zero_le n)]
-      exact re_inner_self_nonneg hA _
+      rw [direction_zero, inner_residual_apply_direction_eq' b x₀ hAs hz (Nat.zero_le n)]
+      exact hnn n
     | succ m ih =>
       intro n hn
-      rw [iterate_succ_p, inner_add_left, inner_smul_left, conj_beta hA.isSymmetric, map_add,
-        inner_residual_apply_direction_eq b x₀ hA (show m + 1 ≤ n by omega), re_beta_mul b x₀ hA]
-      exact add_nonneg (re_inner_self_nonneg hA _)
-        (mul_nonneg (re_beta_nonneg b x₀ hA m) (ih n (by omega)))
+      rw [iterate_succ_p, inner_add_left, inner_smul_left, conj_beta hAs, map_add,
+        inner_residual_apply_direction_eq' b x₀ hAs hz (show m + 1 ≤ n by omega),
+        re_beta_mul b x₀ hAs]
+      exact add_nonneg (hnn n)
+        (mul_nonneg (re_beta_nonneg b x₀ hAs hnn m) (ih n (by omega)))
   rcases le_total i j with h | h
   · exact key i j h
-  · rw [← hA.isSymmetric, ← inner_conj_symm, RCLike.conj_re]
+  · rw [← hAs, ← inner_conj_symm, RCLike.conj_re]
     exact key j i h
 
+/-- Fong–Saunders, *CG versus MINRES*, Thm 2.2 (c): `re ⟪p_i, A p_j⟫ ≥ 0`. -/
+theorem re_inner_direction_apply_direction_nonneg (i j : ℕ) :
+    0 ≤ RCLike.re (inner 𝕜 (iterate A b x₀ i).p (A (iterate A b x₀ j).p)) :=
+  re_inner_direction_apply_direction_nonneg' b x₀ hA.isSymmetric
+    (re_inner_residual_self_nonneg b x₀ hA) (residual_eq_zero_of_inner_self b x₀ hA) i j
+
+omit hA in
 /-- `re ⟪A (x_m - x_i), p_j⟫ ≥ 0` for `i ≤ m`: the telescoping sum `∑ α_l A p_l`. -/
-private theorem re_inner_apply_sub_direction_nonneg {i m : ℕ} (him : i ≤ m) (j : ℕ) :
+private theorem re_inner_apply_sub_direction_nonneg (hAs : A.IsSymmetric)
+    (hnn : ∀ j,
+      0 ≤ RCLike.re (inner 𝕜 (iterate A b x₀ j).r (A (iterate A b x₀ j).r)))
+    (hz : ∀ j,
+      inner 𝕜 (iterate A b x₀ j).r (A (iterate A b x₀ j).r) = 0 → (iterate A b x₀ j).r = 0)
+    {i m : ℕ} (him : i ≤ m) (j : ℕ) :
     0 ≤ RCLike.re (inner 𝕜 (A ((iterate A b x₀ m).x - (iterate A b x₀ i).x))
       (iterate A b x₀ j).p) := by
   induction m, him using Nat.le_induction with
@@ -582,41 +673,70 @@ private theorem re_inner_apply_sub_direction_nonneg {i m : ℕ} (him : i ≤ m) 
           alpha A (iterate A b x₀ m) • (iterate A b x₀ m).p := by
       rw [iterate_succ_x]; abel
     have h2 : inner 𝕜 (A (iterate A b x₀ m).p) (iterate A b x₀ j).p =
-        inner 𝕜 (iterate A b x₀ m).p (A (iterate A b x₀ j).p) := hA.isSymmetric _ _
-    rw [h, map_add, map_smul, inner_add_left, inner_smul_left, conj_alpha hA.isSymmetric, map_add,
-      re_alpha_mul b x₀ hA, h2]
-    exact add_nonneg ih (mul_nonneg (re_alpha_nonneg b x₀ hA m)
-      (re_inner_direction_apply_direction_nonneg b x₀ hA m j))
+        inner 𝕜 (iterate A b x₀ m).p (A (iterate A b x₀ j).p) := hAs _ _
+    rw [h, map_add, map_smul, inner_add_left, inner_smul_left, conj_alpha hAs, map_add,
+      re_alpha_mul b x₀ hAs, h2]
+    exact add_nonneg ih (mul_nonneg (re_alpha_nonneg' b x₀ hAs hnn m)
+      (re_inner_direction_apply_direction_nonneg' b x₀ hAs hnn hz m j))
+
+omit hA in
+/-- Fong–Saunders, *CG versus MINRES*, Thm 2.2 (f) under symmetry, the sign hypothesis,
+nondegeneracy and termination alone. -/
+private theorem re_inner_residual_direction_nonneg' (hAs : A.IsSymmetric)
+    (hnn : ∀ j,
+      0 ≤ RCLike.re (inner 𝕜 (iterate A b x₀ j).r (A (iterate A b x₀ j).r)))
+    (hz : ∀ j,
+      inner 𝕜 (iterate A b x₀ j).r (A (iterate A b x₀ j).r) = 0 → (iterate A b x₀ j).r = 0)
+    (hterm : ∀ n, ∃ m, n ≤ m ∧ (iterate A b x₀ m).r = 0) (i j : ℕ) :
+    0 ≤ RCLike.re (inner 𝕜 (iterate A b x₀ i).r (iterate A b x₀ j).p) := by
+  obtain ⟨m, him, hr⟩ := hterm i
+  rw [residual_eq, sub_eq_zero] at hr
+  have hri : (iterate A b x₀ i).r = A ((iterate A b x₀ m).x - (iterate A b x₀ i).x) := by
+    rw [map_sub, ← hr, ← residual_eq]
+  rw [hri]
+  exact re_inner_apply_sub_direction_nonneg b x₀ hAs hnn hz him j
 
 /-- Fong–Saunders, *CG versus MINRES*, Thm 2.2 (f): `re ⟪r_i, p_j⟫ ≥ 0`. -/
 theorem re_inner_residual_direction_nonneg [FiniteDimensional 𝕜 E] (i j : ℕ) :
-    0 ≤ RCLike.re (inner 𝕜 (iterate A b x₀ i).r (iterate A b x₀ j).p) := by
-  have hr : (iterate A b x₀ (max i (grade A (b - A x₀)))).r = 0 :=
-    residual_eq_zero_of_grade_le b x₀ hA (le_max_right i (grade A (b - A x₀)))
-  rw [residual_eq, sub_eq_zero] at hr
-  have hri : (iterate A b x₀ i).r =
-      A ((iterate A b x₀ (max i (grade A (b - A x₀)))).x - (iterate A b x₀ i).x) := by
-    rw [map_sub, ← hr, ← residual_eq]
-  rw [hri]
-  exact re_inner_apply_sub_direction_nonneg b x₀ hA (le_max_left i _) j
+    0 ≤ RCLike.re (inner 𝕜 (iterate A b x₀ i).r (iterate A b x₀ j).p) :=
+  re_inner_residual_direction_nonneg' b x₀ hA.isSymmetric (re_inner_residual_self_nonneg b x₀ hA)
+    (residual_eq_zero_of_inner_self b x₀ hA) (exists_residual_eq_zero b x₀ hA) i j
 
-/-- Fong–Saunders, *CG versus MINRES*, Thm 2.2 (d): `re ⟪p_i, p_j⟫ ≥ 0` (uses finite
-termination). -/
-theorem re_inner_direction_nonneg [FiniteDimensional 𝕜 E] (i j : ℕ) :
+omit hA in
+/-- Fong–Saunders, *CG versus MINRES*, Thm 2.2 (d) under the same hypotheses. -/
+private theorem re_inner_direction_nonneg' (hAs : A.IsSymmetric)
+    (hnn : ∀ j,
+      0 ≤ RCLike.re (inner 𝕜 (iterate A b x₀ j).r (A (iterate A b x₀ j).r)))
+    (hz : ∀ j,
+      inner 𝕜 (iterate A b x₀ j).r (A (iterate A b x₀ j).r) = 0 → (iterate A b x₀ j).r = 0)
+    (hterm : ∀ n, ∃ m, n ≤ m ∧ (iterate A b x₀ m).r = 0) (i j : ℕ) :
     0 ≤ RCLike.re (inner 𝕜 (iterate A b x₀ i).p (iterate A b x₀ j).p) := by
   induction i with
   | zero =>
     rw [direction_zero]
-    exact re_inner_residual_direction_nonneg b x₀ hA 0 j
+    exact re_inner_residual_direction_nonneg' b x₀ hAs hnn hz hterm 0 j
   | succ i ih =>
-    rw [iterate_succ_p, inner_add_left, inner_smul_left, conj_beta hA.isSymmetric, map_add,
-      re_beta_mul b x₀ hA]
-    exact add_nonneg (re_inner_residual_direction_nonneg b x₀ hA (i + 1) j)
-      (mul_nonneg (re_beta_nonneg b x₀ hA i) ih)
+    rw [iterate_succ_p, inner_add_left, inner_smul_left, conj_beta hAs, map_add,
+      re_beta_mul b x₀ hAs]
+    exact add_nonneg (re_inner_residual_direction_nonneg' b x₀ hAs hnn hz hterm (i + 1) j)
+      (mul_nonneg (re_beta_nonneg b x₀ hAs hnn i) ih)
 
+/-- Fong–Saunders, *CG versus MINRES*, Thm 2.2 (d): `re ⟪p_i, p_j⟫ ≥ 0` (uses finite
+termination). -/
+theorem re_inner_direction_nonneg [FiniteDimensional 𝕜 E] (i j : ℕ) :
+    0 ≤ RCLike.re (inner 𝕜 (iterate A b x₀ i).p (iterate A b x₀ j).p) :=
+  re_inner_direction_nonneg' b x₀ hA.isSymmetric (re_inner_residual_self_nonneg b x₀ hA)
+    (residual_eq_zero_of_inner_self b x₀ hA) (exists_residual_eq_zero b x₀ hA) i j
+
+omit hA in
 /-- `re ⟪x_m - x_i, p_j⟫ ≥ 0` for `i ≤ m`. -/
-private theorem re_inner_sub_direction_nonneg [FiniteDimensional 𝕜 E] {i m : ℕ} (him : i ≤ m)
-    (j : ℕ) : 0 ≤ RCLike.re (inner 𝕜 ((iterate A b x₀ m).x - (iterate A b x₀ i).x)
+private theorem re_inner_sub_direction_nonneg (hAs : A.IsSymmetric)
+    (hnn : ∀ j,
+      0 ≤ RCLike.re (inner 𝕜 (iterate A b x₀ j).r (A (iterate A b x₀ j).r)))
+    (hz : ∀ j,
+      inner 𝕜 (iterate A b x₀ j).r (A (iterate A b x₀ j).r) = 0 → (iterate A b x₀ j).r = 0)
+    (hterm : ∀ n, ∃ m, n ≤ m ∧ (iterate A b x₀ m).r = 0) {i m : ℕ} (him : i ≤ m) (j : ℕ) :
+    0 ≤ RCLike.re (inner 𝕜 ((iterate A b x₀ m).x - (iterate A b x₀ i).x)
       (iterate A b x₀ j).p) := by
   induction m, him using Nat.le_induction with
   | base => simp
@@ -625,17 +745,26 @@ private theorem re_inner_sub_direction_nonneg [FiniteDimensional 𝕜 E] {i m : 
         ((iterate A b x₀ m).x - (iterate A b x₀ i).x) +
           alpha A (iterate A b x₀ m) • (iterate A b x₀ m).p := by
       rw [iterate_succ_x]; abel
-    rw [h, inner_add_left, inner_smul_left, conj_alpha hA.isSymmetric, map_add,
-      re_alpha_mul b x₀ hA]
-    exact add_nonneg ih (mul_nonneg (re_alpha_nonneg b x₀ hA m)
-      (re_inner_direction_nonneg b x₀ hA m j))
+    rw [h, inner_add_left, inner_smul_left, conj_alpha hAs, map_add, re_alpha_mul b x₀ hAs]
+    exact add_nonneg ih (mul_nonneg (re_alpha_nonneg' b x₀ hAs hnn m)
+      (re_inner_direction_nonneg' b x₀ hAs hnn hz hterm m j))
+
+omit hA in
+/-- Fong–Saunders, *CG versus MINRES*, Thm 2.2 (e) under the same hypotheses. -/
+private theorem re_inner_iterate_direction_nonneg' (hAs : A.IsSymmetric)
+    (hnn : ∀ j, 0 ≤ RCLike.re (inner 𝕜 (iterate A b 0 j).r (A (iterate A b 0 j).r)))
+    (hz : ∀ j, inner 𝕜 (iterate A b 0 j).r (A (iterate A b 0 j).r) = 0 →
+      (iterate A b 0 j).r = 0)
+    (hterm : ∀ n, ∃ m, n ≤ m ∧ (iterate A b 0 m).r = 0) (i j : ℕ) :
+    0 ≤ RCLike.re (inner 𝕜 (iterate A b 0 i).x (iterate A b 0 j).p) := by
+  have h := re_inner_sub_direction_nonneg b 0 hAs hnn hz hterm (Nat.zero_le i) j
+  rwa [show (iterate A b 0 0).x = 0 from rfl, sub_zero] at h
 
 /-- Fong–Saunders, *CG versus MINRES*, Thm 2.2 (e): `re ⟪x_i, p_j⟫ ≥ 0` for `x₀ = 0`. -/
 theorem re_inner_iterate_direction_nonneg [FiniteDimensional 𝕜 E] (i j : ℕ) :
-    0 ≤ RCLike.re (inner 𝕜 (iterate A b 0 i).x (iterate A b 0 j).p) := by
-  have h0 : (iterate A b 0 0).x = 0 := rfl
-  have h := re_inner_sub_direction_nonneg b 0 hA (Nat.zero_le i) j
-  rwa [h0, sub_zero] at h
+    0 ≤ RCLike.re (inner 𝕜 (iterate A b 0 i).x (iterate A b 0 j).p) :=
+  re_inner_iterate_direction_nonneg' b hA.isSymmetric (re_inner_residual_self_nonneg b 0 hA)
+    (residual_eq_zero_of_inner_self b 0 hA) (exists_residual_eq_zero b 0 hA) i j
 
 /-- Fong–Saunders, *CG versus MINRES*, Thm 2.3: `‖x_k‖` is nondecreasing for `x₀ = 0`. -/
 theorem norm_iterate_monotone [FiniteDimensional 𝕜 E] :
@@ -643,7 +772,7 @@ theorem norm_iterate_monotone [FiniteDimensional 𝕜 E] :
   refine monotone_nat_of_le_succ fun k => ?_
   have hnn : 0 ≤ RCLike.re (inner 𝕜 (iterate A b 0 k).x
       (alpha A (iterate A b 0 k) • (iterate A b 0 k).p)) := by
-    rw [inner_smul_right, re_alpha_mul b 0 hA]
+    rw [inner_smul_right, re_alpha_mul b 0 hA.isSymmetric]
     exact mul_nonneg (re_alpha_nonneg b 0 hA k) (re_inner_iterate_direction_nonneg b hA k k)
   have hsq : ‖(iterate A b 0 k).x‖ ^ 2 ≤ ‖(iterate A b 0 (k + 1)).x‖ ^ 2 := by
     rw [iterate_succ_x, norm_add_sq (𝕜 := 𝕜)]
@@ -664,10 +793,12 @@ theorem norm_error_antitone [FiniteDimensional 𝕜 E] {xstar : E} (hstar : A xs
     rw [iterate_succ_x]; abel
   have hnn : 0 ≤ RCLike.re (inner 𝕜 (xstar - (iterate A b x₀ (k + 1)).x)
       (alpha A (iterate A b x₀ k) • (iterate A b x₀ k).p)) := by
-    rw [inner_smul_right, re_alpha_mul b x₀ hA]
+    rw [inner_smul_right, re_alpha_mul b x₀ hA.isSymmetric]
     refine mul_nonneg (re_alpha_nonneg b x₀ hA k) ?_
     rw [hxm]
-    exact re_inner_sub_direction_nonneg b x₀ hA (le_max_left (k + 1) _) k
+    exact re_inner_sub_direction_nonneg b x₀ hA.isSymmetric
+      (re_inner_residual_self_nonneg b x₀ hA) (residual_eq_zero_of_inner_self b x₀ hA)
+      (exists_residual_eq_zero b x₀ hA) (le_max_left (k + 1) _) k
   have hsq : ‖xstar - (iterate A b x₀ (k + 1)).x‖ ^ 2 ≤ ‖xstar - (iterate A b x₀ k).x‖ ^ 2 := by
     rw [hexp, norm_add_sq (𝕜 := 𝕜)]
     nlinarith [sq_nonneg ‖alpha A (iterate A b x₀ k) • (iterate A b x₀ k).p‖]
@@ -697,7 +828,7 @@ theorem energyNorm_error_antitone [FiniteDimensional 𝕜 E] {xstar : E} (hstar 
     rw [map_sub, hstar, ← residual_eq]
   have hcross : 0 ≤ RCLike.re (inner 𝕜 (A (xstar - (iterate A b x₀ (k + 1)).x))
       (alpha A (iterate A b x₀ k) • (iterate A b x₀ k).p)) := by
-    rw [hAe, inner_smul_right, re_alpha_mul b x₀ hA]
+    rw [hAe, inner_smul_right, re_alpha_mul b x₀ hA.isSymmetric]
     exact mul_nonneg (re_alpha_nonneg b x₀ hA k)
       (re_inner_residual_direction_nonneg b x₀ hA (k + 1) k)
   have hself : 0 ≤ RCLike.re (inner 𝕜 (A (alpha A (iterate A b x₀ k) • (iterate A b x₀ k).p))
@@ -710,6 +841,69 @@ theorem energyNorm_error_antitone [FiniteDimensional 𝕜 E] {xstar : E} (hstar 
     linarith
   nlinarith [energyNorm_nonneg A (xstar - (iterate A b x₀ k).x),
     energyNorm_nonneg A (xstar - (iterate A b x₀ (k + 1)).x)]
+
+omit hA in
+/-- The CR/MINRES analogue of Steihaug's theorem (Fong–Saunders, *CG versus MINRES*, §4.2): for
+a symmetric, possibly indefinite `A` and the CR iterates from `x₀ = 0`, if the iteration
+terminates at step `ℓ` and `0 < re ⟪r_j, A r_j⟫` for every `j < ℓ`, then `‖x_i‖ < ‖x_{i+1}‖` for
+every `i < ℓ`.
+
+Statement correction: the plan asked only for `⟪r_j, A r_j⟫ ≠ 0` for `j < ℓ` together with
+positivity for `j < k`.  That is not enough.  The paper's proof of Thm 2.2 (d) expands `r_i` as
+`A (x_ℓ - x_i) = ∑_{m ≥ i} α_m A p_m`, so a single negative `α_m` beyond `k` — that is, a single
+`re ⟪r_m, A r_m⟫ < 0` — can turn `re ⟪r_i, p_j⟫` negative, and the chain (f) ⇒ (d) ⇒ (e) breaks.
+Positivity is therefore assumed up to the termination index, which is how the paper's hypothesis
+reads when it is read globally.  The plan's second hypothesis `0 < re ⟪A p_j, p_j⟫` is then
+redundant: `⟪r_j, A p_j⟫ = ⟪r_j, A r_j⟫ ≠ 0` already forces `A p_j ≠ 0`.
+
+Transfers to MINRES through `CR.isMinResIterate_of_no_breakdown`. -/
+theorem norm_iterate_lt_of_pos (hAs : A.IsSymmetric) {ℓ : ℕ}
+    (hstop : (iterate A b 0 ℓ).r = 0)
+    (hpos : ∀ j < ℓ, 0 < RCLike.re (inner 𝕜 (iterate A b 0 j).r (A (iterate A b 0 j).r)))
+    {i : ℕ} (hi : i < ℓ) :
+    ‖(iterate A b 0 i).x‖ < ‖(iterate A b 0 (i + 1)).x‖ := by
+  have hzero : ∀ j, ℓ ≤ j → (iterate A b 0 j).r = 0 := fun j hj => by
+    rw [iterate_eq_of_residual_eq_zero A b 0 hstop j hj]; exact hstop
+  have hnn : ∀ j, 0 ≤ RCLike.re (inner 𝕜 (iterate A b 0 j).r (A (iterate A b 0 j).r)) := by
+    intro j
+    rcases lt_or_ge j ℓ with h | h
+    · exact le_of_lt (hpos j h)
+    · rw [hzero j h, inner_zero_left, map_zero]
+  have hz : ∀ j, inner 𝕜 (iterate A b 0 j).r (A (iterate A b 0 j).r) = 0 →
+      (iterate A b 0 j).r = 0 := by
+    intro j h
+    rcases lt_or_ge j ℓ with hj | hj
+    · exact absurd (hpos j hj) (by rw [h, map_zero]; exact lt_irrefl 0)
+    · exact hzero j hj
+  have hterm : ∀ n, ∃ m, n ≤ m ∧ (iterate A b 0 m).r = 0 :=
+    fun n => ⟨max n ℓ, le_max_left _ _, hzero _ (le_max_right _ _)⟩
+  have hri := hpos i hi
+  -- `⟪r_i, A p_i⟫ = ⟪r_i, A r_i⟫ ≠ 0`, so neither `A p_i` nor `p_i` can vanish
+  have hqne : (iterate A b 0 i).q ≠ 0 := by
+    intro h
+    have hd := (invariant' b 0 hAs hz i).diag
+    rw [q_eq] at h
+    rw [h, inner_zero_right] at hd
+    rw [← hd, map_zero] at hri
+    exact lt_irrefl 0 hri
+  have hpne : (iterate A b 0 i).p ≠ 0 := fun h => hqne (by rw [q_eq, h, map_zero])
+  have hαpos : 0 < RCLike.re (alpha A (iterate A b 0 i)) := by
+    rw [alpha_eq_ofReal b 0 hAs i, RCLike.ofReal_re]
+    exact div_pos hri (pow_pos (norm_pos_iff.2 hqne) 2)
+  have hαne : alpha A (iterate A b 0 i) ≠ 0 := fun h => by
+    rw [h, map_zero] at hαpos; exact lt_irrefl 0 hαpos
+  have hcross : 0 ≤ RCLike.re (inner 𝕜 (iterate A b 0 i).x
+      (alpha A (iterate A b 0 i) • (iterate A b 0 i).p)) := by
+    rw [inner_smul_right, re_alpha_mul b 0 hAs]
+    exact mul_nonneg (le_of_lt hαpos)
+      (re_inner_iterate_direction_nonneg' b hAs hnn hz hterm i i)
+  have hnz : 0 < ‖alpha A (iterate A b 0 i) • (iterate A b 0 i).p‖ := by
+    rw [norm_smul]
+    exact mul_pos (norm_pos_iff.2 hαne) (norm_pos_iff.2 hpne)
+  have hsq : ‖(iterate A b 0 i).x‖ ^ 2 < ‖(iterate A b 0 (i + 1)).x‖ ^ 2 := by
+    rw [iterate_succ_x, norm_add_sq (𝕜 := 𝕜)]
+    nlinarith [hnz]
+  nlinarith [norm_nonneg (iterate A b 0 i).x, norm_nonneg (iterate A b 0 (i + 1)).x]
 
 omit hA in
 /-- CR on a symmetric, possibly indefinite or singular, operator

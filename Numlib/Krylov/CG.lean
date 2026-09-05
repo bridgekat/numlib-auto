@@ -11,7 +11,8 @@ Choi[^choi] Table 2.7). The main theorems: CG realises the Galerkin specificatio
 (`CG.isGalerkinIterate`), the orthogonality invariants (Saad Prop 6.20), the identification of
 CG residuals with Lanczos vectors (Saad (6.101)–(6.103), Meurant–Strakoš (3.4)), and the
 Hestenes–Stiefel[^hestenes-stiefel] error identities and monotonicity results
-(Hestenes–Stiefel Thm 6:1, 6:3; Steihaug[^steihaug]).
+(Hestenes–Stiefel Thm 6:1, 6:3; Steihaug[^steihaug], including his form for a symmetric but
+possibly indefinite `A`).
 
 ## References
 
@@ -302,9 +303,10 @@ private theorem re_inner_apply_self_nonneg (x : E) : 0 ≤ RCLike.re (inner 𝕜
   obtain ⟨c, hc, h⟩ := hA.isCoercive
   exact le_trans (by positivity) (h x)
 
-private theorem inner_apply_self_ofReal (x : E) :
+omit hA in
+private theorem inner_apply_self_ofReal (hAs : A.IsSymmetric) (x : E) :
     ((RCLike.re (inner 𝕜 (A x) x) : ℝ) : 𝕜) = inner 𝕜 (A x) x :=
-  RCLike.conj_eq_iff_re.1 (by rw [inner_conj_symm, ← hA.isSymmetric])
+  RCLike.conj_eq_iff_re.1 (by rw [inner_conj_symm, ← hAs])
 
 private theorem eq_zero_of_inner_apply_self_eq_zero {x : E} (h : inner 𝕜 (A x) x = 0) : x = 0 := by
   by_contra hx
@@ -312,33 +314,45 @@ private theorem eq_zero_of_inner_apply_self_eq_zero {x : E} (h : inner 𝕜 (A x
   rw [h, map_zero] at this
   exact lt_irrefl 0 this
 
-private theorem conj_alpha (s : State E) : (starRingEnd 𝕜) (alpha A s) = alpha A s := by
-  rw [alpha, map_div₀, inner_self_conj, inner_conj_symm, ← hA.isSymmetric]
+omit hA in
+private theorem conj_alpha (hAs : A.IsSymmetric) (s : State E) :
+    (starRingEnd 𝕜) (alpha A s) = alpha A s := by
+  rw [alpha, map_div₀, inner_self_conj, inner_conj_symm, ← hAs]
 
-/-- `α_k ⟪A p_k, p_k⟫ = ⟪r_k, r_k⟫`, valid also at a breakdown. -/
+omit hA in
+/-- `α_k ⟪A p_k, p_k⟫ = ⟪r_k, r_k⟫`, valid also at a breakdown.  `hdeg` is the only thing
+coercivity is used for here, so any nondegeneracy hypothesis that supplies it will do. -/
 private theorem alpha_mul_inner_apply_direction' (k : ℕ)
+    (hdeg : inner 𝕜 (A (iterate A b x₀ k).p) (iterate A b x₀ k).p = 0 →
+      (iterate A b x₀ k).p = 0)
     (hdiag : inner 𝕜 (iterate A b x₀ k).r (iterate A b x₀ k).p =
       inner 𝕜 (iterate A b x₀ k).r (iterate A b x₀ k).r) :
     alpha A (iterate A b x₀ k) * inner 𝕜 (A (iterate A b x₀ k).p) (iterate A b x₀ k).p =
       inner 𝕜 (iterate A b x₀ k).r (iterate A b x₀ k).r := by
   by_cases h : inner 𝕜 (A (iterate A b x₀ k).p) (iterate A b x₀ k).p = 0
-  · rw [h, mul_zero, ← hdiag, eq_zero_of_inner_apply_self_eq_zero hA h, inner_zero_right]
+  · rw [h, mul_zero, ← hdiag, hdeg h, inner_zero_right]
   · rw [alpha, div_mul_cancel₀ _ h]
 
+omit hA in
 /-- `A p_k = 0` when the step length degenerates. -/
 private theorem apply_direction_eq_zero_of_alpha_eq_zero {k : ℕ}
+    (hdeg : inner 𝕜 (A (iterate A b x₀ k).p) (iterate A b x₀ k).p = 0 →
+      (iterate A b x₀ k).p = 0)
     (h : alpha A (iterate A b x₀ k) = 0) : A (iterate A b x₀ k).p = 0 := by
   rcases div_eq_zero_iff.1 h with h' | h'
   · rw [direction_eq_zero_of_residual_eq_zero A b x₀ (inner_self_eq_zero.1 h'), map_zero]
-  · rw [eq_zero_of_inner_apply_self_eq_zero hA h', map_zero]
+  · rw [hdeg h', map_zero]
 
+omit hA in
 /-- `⟪v, A p_j⟫ = 0` whenever `v` is orthogonal to `r_j` and to `r_{j+1}`. -/
 private theorem inner_apply_direction_eq_zero_of {j : ℕ} {v : E}
+    (hdeg : inner 𝕜 (A (iterate A b x₀ j).p) (iterate A b x₀ j).p = 0 →
+      (iterate A b x₀ j).p = 0)
     (h1 : inner 𝕜 v (iterate A b x₀ j).r = 0)
     (h2 : inner 𝕜 v (iterate A b x₀ (j + 1)).r = 0) :
     inner 𝕜 v (A (iterate A b x₀ j).p) = 0 := by
   by_cases hα : alpha A (iterate A b x₀ j) = 0
-  · rw [apply_direction_eq_zero_of_alpha_eq_zero b x₀ hA hα, inner_zero_right]
+  · rw [apply_direction_eq_zero_of_alpha_eq_zero b x₀ hdeg hα, inner_zero_right]
   · have h : alpha A (iterate A b x₀ j) * inner 𝕜 v (A (iterate A b x₀ j).p) = 0 := by
       rw [← inner_smul_right, alpha_smul_apply_direction, inner_sub_right, h1, h2, sub_zero]
     exact (mul_eq_zero.1 h).resolve_left hα
@@ -356,34 +370,42 @@ private structure Invariant (A : E →ₗ[𝕜] E) (b x₀ : E) (k : ℕ) : Prop
   diag : inner 𝕜 (iterate A b x₀ k).r (iterate A b x₀ k).p =
     inner 𝕜 (iterate A b x₀ k).r (iterate A b x₀ k).r
 
-private theorem invariant (k : ℕ) : Invariant A b x₀ k := by
+omit hA in
+/-- The invariant under the one fact coercivity is used for: a direction whose `A`-norm
+degenerates is itself zero.  Besides that only symmetry of `A` enters, which is what lets
+Steihaug's indefinite theorem below reuse the whole induction. -/
+private theorem invariant_of (hAs : A.IsSymmetric) (k : ℕ) :
+    (∀ j < k, inner 𝕜 (A (iterate A b x₀ j).p) (iterate A b x₀ j).p = 0 →
+      (iterate A b x₀ j).p = 0) → Invariant A b x₀ k := by
   induction k with
   | zero =>
-    exact ⟨fun j hj => absurd hj (Nat.not_lt_zero j), fun j hj => absurd hj (Nat.not_lt_zero j),
-      by rw [direction_zero]⟩
-  | succ k ih =>
+    exact fun _ => ⟨fun j hj => absurd hj (Nat.not_lt_zero j),
+      fun j hj => absurd hj (Nat.not_lt_zero j), by rw [direction_zero]⟩
+  | succ k ihk =>
+    intro hdeg
+    have ih := ihk fun j hj => hdeg j (by omega)
     -- Step 1: `r_{k+1} ⟂ p_j` for `j ≤ k`.
     have rp : ∀ j < k + 1, inner 𝕜 (iterate A b x₀ (k + 1)).r (iterate A b x₀ j).p = 0 := by
       intro j hj
-      rw [iterate_succ_r, inner_sub_left, inner_smul_left, conj_alpha hA]
+      rw [iterate_succ_r, inner_sub_left, inner_smul_left, conj_alpha hAs]
       rcases Nat.lt_or_ge j k with h | h
       · rw [ih.rp j h, ih.pp j h, mul_zero, sub_zero]
       · obtain rfl : j = k := le_antisymm (Nat.lt_succ_iff.1 hj) h
-        rw [ih.diag, alpha_mul_inner_apply_direction' b x₀ hA j ih.diag, sub_self]
+        rw [ih.diag, alpha_mul_inner_apply_direction' b x₀ j (hdeg j (by omega)) ih.diag, sub_self]
     -- Step 2: `r_{k+1} ⟂ r_j` for `j ≤ k`.
     have rr : ∀ j < k + 1, inner 𝕜 (iterate A b x₀ (k + 1)).r (iterate A b x₀ j).r = 0 :=
       fun j hj => inner_residual_eq_zero_of_inner_direction A b x₀ fun l hl => rp l (by omega)
     refine ⟨rp, fun j hj => ?_, ?_⟩
     · -- Step 3: `p_{k+1}` is `A`-conjugate to `p_j` for `j ≤ k`.
-      rw [iterate_succ_p, map_add, map_smul, inner_add_left, inner_smul_left, conj_beta,
-        hA.isSymmetric]
+      rw [iterate_succ_p, map_add, map_smul, inner_add_left, inner_smul_left, conj_beta, hAs]
       rcases Nat.lt_or_ge j k with h | h
       · rw [ih.pp j h, mul_zero, add_zero,
-          inner_apply_direction_eq_zero_of b x₀ hA (rr j (by omega)) (rr (j + 1) (by omega))]
+          inner_apply_direction_eq_zero_of b x₀ (hdeg j (by omega)) (rr j (by omega))
+            (rr (j + 1) (by omega))]
       · obtain rfl : j = k := le_antisymm (Nat.lt_succ_iff.1 hj) h
         by_cases hα : alpha A (iterate A b x₀ j) = 0
-        · rw [apply_direction_eq_zero_of_alpha_eq_zero b x₀ hA hα, inner_zero_right,
-            inner_zero_left, mul_zero, add_zero]
+        · rw [apply_direction_eq_zero_of_alpha_eq_zero b x₀ (hdeg j (by omega)) hα,
+            inner_zero_right, inner_zero_left, mul_zero, add_zero]
         · have key : alpha A (iterate A b x₀ j) *
               (inner 𝕜 (iterate A b x₀ (j + 1)).r (A (iterate A b x₀ j).p) +
                 beta A (iterate A b x₀ j) *
@@ -394,20 +416,24 @@ private theorem invariant (k : ℕ) : Invariant A b x₀ k := by
                 inner 𝕜 (A (iterate A b x₀ j).p) (iterate A b x₀ j).p) =
                 beta A (iterate A b x₀ j) * (alpha A (iterate A b x₀ j) *
                   inner 𝕜 (A (iterate A b x₀ j).p) (iterate A b x₀ j).p) by ring,
-              alpha_mul_inner_apply_direction' b x₀ hA j ih.diag, beta_mul_inner_self A b x₀ j,
-              inner_self_eq_ofReal_norm_sq]
+              alpha_mul_inner_apply_direction' b x₀ j (hdeg j (by omega)) ih.diag,
+              beta_mul_inner_self A b x₀ j, inner_self_eq_ofReal_norm_sq]
             ring
           exact (mul_eq_zero.1 key).resolve_left hα
     · -- Step 4: `⟪r_{k+1}, p_{k+1}⟫ = ⟪r_{k+1}, r_{k+1}⟫`.
       rw [iterate_succ_p, inner_add_right, inner_smul_right, rp k (Nat.lt_succ_self k), mul_zero,
         add_zero]
 
+private theorem invariant (k : ℕ) : Invariant A b x₀ k :=
+  invariant_of b x₀ hA.isSymmetric k fun _ _ h => eq_zero_of_inner_apply_self_eq_zero hA h
+
 /-! ### The named orthogonality relations -/
 
 private theorem alpha_mul_inner_apply_direction (k : ℕ) :
     alpha A (iterate A b x₀ k) * inner 𝕜 (A (iterate A b x₀ k).p) (iterate A b x₀ k).p =
       inner 𝕜 (iterate A b x₀ k).r (iterate A b x₀ k).r :=
-  alpha_mul_inner_apply_direction' b x₀ hA k (invariant b x₀ hA k).diag
+  alpha_mul_inner_apply_direction' b x₀ k
+    (fun h => eq_zero_of_inner_apply_self_eq_zero hA h) (invariant b x₀ hA k).diag
 
 /-- Well-definedness: `⟪A p_k, p_k⟫ > 0` as long as `r_k ≠ 0`. -/
 theorem re_inner_apply_direction_pos {k : ℕ} (hr : (iterate A b x₀ k).r ≠ 0) :
@@ -466,7 +492,8 @@ theorem inner_residual_direction_eq {i j : ℕ} (h : i ≤ j) :
 private theorem apply_direction_mem_dirSpan (i : ℕ) :
     A (iterate A b x₀ i).p ∈ dirSpan A b x₀ (i + 2) := by
   by_cases hα : alpha A (iterate A b x₀ i) = 0
-  · rw [apply_direction_eq_zero_of_alpha_eq_zero b x₀ hA hα]
+  · rw [apply_direction_eq_zero_of_alpha_eq_zero b x₀
+      (fun h => eq_zero_of_inner_apply_self_eq_zero hA h) hα]
     exact Submodule.zero_mem _
   · have h : A (iterate A b x₀ i).p = (alpha A (iterate A b x₀ i))⁻¹ •
         ((iterate A b x₀ i).r - (iterate A b x₀ (i + 1)).r) := by
@@ -558,7 +585,8 @@ private theorem alpha_eq_ofReal_pos {k : ℕ} (hr : (iterate A b x₀ k).r ≠ 0
   refine ⟨‖(iterate A b x₀ k).r‖ ^ 2 /
       RCLike.re (inner 𝕜 (A (iterate A b x₀ k).p) (iterate A b x₀ k).p),
     div_pos (pow_pos (norm_pos_iff.2 hr) 2) (re_inner_apply_direction_pos b x₀ hA hr), ?_⟩
-  rw [RCLike.ofReal_div, ← inner_self_eq_ofReal_norm_sq, inner_apply_self_ofReal hA, alpha]
+  rw [RCLike.ofReal_div, ← inner_self_eq_ofReal_norm_sq,
+    inner_apply_self_ofReal hA.isSymmetric, alpha]
 
 /-- `∏_{j<k} (-α_j) = (-1)^k · (positive real)`. -/
 private theorem prod_neg_alpha (k : ℕ) (hr : (iterate A b x₀ k).r ≠ 0) :
@@ -764,37 +792,47 @@ theorem residual_ne_zero_of_lt_grade [FiniteDimensional 𝕜 (fullSubspace A (b 
 
 /-! ### Real coefficients and their signs -/
 
-private theorem alpha_eq_ofReal (k : ℕ) : alpha A (iterate A b x₀ k) =
+omit hA in
+private theorem alpha_eq_ofReal (hAs : A.IsSymmetric) (k : ℕ) : alpha A (iterate A b x₀ k) =
     ((‖(iterate A b x₀ k).r‖ ^ 2 /
       RCLike.re (inner 𝕜 (A (iterate A b x₀ k).p) (iterate A b x₀ k).p) : ℝ) : 𝕜) := by
-  rw [RCLike.ofReal_div, ← inner_self_eq_ofReal_norm_sq, inner_apply_self_ofReal hA, alpha]
+  rw [RCLike.ofReal_div, ← inner_self_eq_ofReal_norm_sq, inner_apply_self_ofReal hAs, alpha]
 
-theorem re_alpha_nonneg (k : ℕ) : 0 ≤ RCLike.re (alpha A (iterate A b x₀ k)) := by
-  rw [alpha_eq_ofReal b x₀ hA k, RCLike.ofReal_re]
-  exact div_nonneg (sq_nonneg _) (re_inner_apply_self_nonneg hA _)
+omit hA in
+/-- The step length is nonnegative as soon as the current direction has nonnegative `A`-norm,
+which for a coercive `A` is automatic (`CG.re_alpha_nonneg`). -/
+private theorem re_alpha_nonneg' (hAs : A.IsSymmetric) {k : ℕ}
+    (h : 0 ≤ RCLike.re (inner 𝕜 (A (iterate A b x₀ k).p) (iterate A b x₀ k).p)) :
+    0 ≤ RCLike.re (alpha A (iterate A b x₀ k)) := by
+  rw [alpha_eq_ofReal b x₀ hAs k, RCLike.ofReal_re]
+  exact div_nonneg (sq_nonneg _) h
 
-set_option linter.unusedSectionVars false in
+theorem re_alpha_nonneg (k : ℕ) : 0 ≤ RCLike.re (alpha A (iterate A b x₀ k)) :=
+  re_alpha_nonneg' b x₀ hA.isSymmetric (re_inner_apply_self_nonneg hA _)
+
+omit hA in
 private theorem beta_eq_ofReal (k : ℕ) : beta A (iterate A b x₀ k) =
     ((‖(iterate A b x₀ (k + 1)).r‖ ^ 2 / ‖(iterate A b x₀ k).r‖ ^ 2 : ℝ) : 𝕜) := by
   rw [beta_iterate, RCLike.ofReal_div, ← inner_self_eq_ofReal_norm_sq,
     ← inner_self_eq_ofReal_norm_sq]
 
-set_option linter.unusedSectionVars false in
+omit hA in
 private theorem re_beta_nonneg (k : ℕ) : 0 ≤ RCLike.re (beta A (iterate A b x₀ k)) := by
-  rw [beta_eq_ofReal b x₀ hA k, RCLike.ofReal_re]
+  rw [beta_eq_ofReal b x₀ k, RCLike.ofReal_re]
   positivity
 
+omit hA in
 /-- `re (α_k z) = re α_k * re z`: the step length is real. -/
-private theorem re_alpha_mul (k : ℕ) (z : 𝕜) :
+private theorem re_alpha_mul (hAs : A.IsSymmetric) (k : ℕ) (z : 𝕜) :
     RCLike.re (alpha A (iterate A b x₀ k) * z) =
       RCLike.re (alpha A (iterate A b x₀ k)) * RCLike.re z := by
-  rw [alpha_eq_ofReal b x₀ hA k, RCLike.re_ofReal_mul, RCLike.ofReal_re]
+  rw [alpha_eq_ofReal b x₀ hAs k, RCLike.re_ofReal_mul, RCLike.ofReal_re]
 
-set_option linter.unusedSectionVars false in
+omit hA in
 private theorem re_beta_mul (k : ℕ) (z : 𝕜) :
     RCLike.re (beta A (iterate A b x₀ k) * z) =
       RCLike.re (beta A (iterate A b x₀ k)) * RCLike.re z := by
-  rw [beta_eq_ofReal b x₀ hA k, RCLike.re_ofReal_mul, RCLike.ofReal_re]
+  rw [beta_eq_ofReal b x₀ k, RCLike.re_ofReal_mul, RCLike.ofReal_re]
 
 /-- `⟪p_i, p_j⟫ ≥ 0` for CG on SPD systems (ingredient of Steihaug's theorem). -/
 theorem re_inner_direction_nonneg (i j : ℕ) :
@@ -811,9 +849,9 @@ theorem re_inner_direction_nonneg (i j : ℕ) :
       intro n hn
       rw [iterate_succ_p, inner_add_left, inner_smul_left, conj_beta, map_add,
         inner_residual_direction_eq b x₀ hA (show m + 1 ≤ n by omega), RCLike.ofReal_re,
-        re_beta_mul b x₀ hA]
+        re_beta_mul b x₀]
       exact add_nonneg (by positivity)
-        (mul_nonneg (re_beta_nonneg b x₀ hA m) (ih n (by omega)))
+        (mul_nonneg (re_beta_nonneg b x₀ m) (ih n (by omega)))
   rcases le_total i j with h | h
   · exact key i j h
   · rw [← inner_conj_symm, RCLike.conj_re]
@@ -830,7 +868,8 @@ private theorem re_inner_sub_iterate_direction_nonneg {k m : ℕ} (hkm : k ≤ m
         ((iterate A b x₀ m).x - (iterate A b x₀ k).x) +
           alpha A (iterate A b x₀ m) • (iterate A b x₀ m).p := by
       rw [iterate_succ_x]; abel
-    rw [h, inner_add_left, inner_smul_left, conj_alpha hA, map_add, re_alpha_mul b x₀ hA]
+    rw [h, inner_add_left, inner_smul_left, conj_alpha hA.isSymmetric, map_add,
+      re_alpha_mul b x₀ hA.isSymmetric]
     exact add_nonneg ih (mul_nonneg (re_alpha_nonneg b x₀ hA m)
       (re_inner_direction_nonneg b x₀ hA m j))
 
@@ -870,9 +909,10 @@ theorem energyNorm_error_sq_sub (k : ℕ) :
       alpha A (iterate A b x₀ k) * inner 𝕜 (iterate A b x₀ k).r (iterate A b x₀ k).r) =
       RCLike.re (inner 𝕜 (A (xstar - (iterate A b x₀ k).x)) (xstar - (iterate A b x₀ k).x)) -
         RCLike.re (alpha A (iterate A b x₀ k)) * ‖(iterate A b x₀ k).r‖ ^ 2 := by
-    rw [map_sub, re_alpha_mul b x₀ hA, inner_self_eq_norm_sq]
+    rw [map_sub, re_alpha_mul b x₀ hA.isSymmetric, inner_self_eq_norm_sq]
   rw [hA.energyNorm_sq, hA.energyNorm_sq, hsub,
-    alg _ _ _ _ hup hpu (conj_alpha hA _) (alpha_mul_inner_apply_direction b x₀ hA k), hre]
+    alg _ _ _ _ hup hpu (conj_alpha hA.isSymmetric _)
+      (alpha_mul_inner_apply_direction b x₀ hA k), hre]
   ring
 
 /-- `‖ε_k‖_A² = ∑_{j ≥ k} α_j ‖r_j‖²` (finite sum up to the grade). -/
@@ -926,7 +966,7 @@ theorem norm_error_antitone [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀)
     rw [iterate_succ_x]; abel
   have hnn : 0 ≤ RCLike.re (inner 𝕜 (xstar - (iterate A b x₀ (k + 1)).x)
       (alpha A (iterate A b x₀ k) • (iterate A b x₀ k).p)) := by
-    rw [inner_smul_right, re_alpha_mul b x₀ hA]
+    rw [inner_smul_right, re_alpha_mul b x₀ hA.isSymmetric]
     refine mul_nonneg (re_alpha_nonneg b x₀ hA k) ?_
     rw [hxm]
     exact re_inner_sub_iterate_direction_nonneg b x₀ hA (le_max_left (k + 1) _) k
@@ -951,20 +991,156 @@ theorem energyNorm_error_antitone :
 
 end Errors
 
-/-- Steihaug: `‖x_k‖` is nondecreasing for CG started at `x₀ = 0`. -/
+/-! ### Steihaug's theorem, for a symmetric but possibly indefinite operator
+
+Coercivity enters the sign lemmas above only through `0 ≤ re ⟪A p_j, p_j⟫` and the
+nondegeneracy it gives.  Assuming that quantity *positive* at the steps taken so far — which is
+precisely what a trust-region method monitors — runs the same chain on a symmetric, possibly
+indefinite `A`, and makes the conclusion strict. -/
+
+omit hA in
+/-- The invariant at every step up to `k`, when the directions taken so far have positive
+`A`-norm. -/
+private theorem invariant_le (hAs : A.IsSymmetric) {k : ℕ}
+    (hpos : ∀ j < k, 0 < RCLike.re (inner 𝕜 (A (iterate A b x₀ j).p) (iterate A b x₀ j).p))
+    {m : ℕ} (hm : m ≤ k) : Invariant A b x₀ m := by
+  refine invariant_of b x₀ hAs m fun j hj h => ?_
+  have hj' := hpos j (lt_of_lt_of_le hj hm)
+  rw [h, map_zero] at hj'
+  exact absurd hj' (lt_irrefl 0)
+
+omit hA in
+/-- `⟪r_i, r_j⟫ = 0` for `i ≠ j` up to step `k` (`CG.inner_residual_eq_zero` localized). -/
+private theorem inner_residual_eq_zero' (hAs : A.IsSymmetric) {k : ℕ}
+    (hpos : ∀ j < k, 0 < RCLike.re (inner 𝕜 (A (iterate A b x₀ j).p) (iterate A b x₀ j).p))
+    {i j : ℕ} (hi : i ≤ k) (hj : j ≤ k) (h : i ≠ j) :
+    inner 𝕜 (iterate A b x₀ i).r (iterate A b x₀ j).r = 0 := by
+  have key : ∀ m, m ≤ k → ∀ n, n < m →
+      inner 𝕜 (iterate A b x₀ m).r (iterate A b x₀ n).r = 0 := by
+    intro m hm n hnm
+    exact inner_residual_eq_zero_of_inner_direction A b x₀
+      fun l hl => (invariant_le b x₀ hAs hpos hm).rp l (by omega)
+  rcases lt_or_gt_of_ne h with h' | h'
+  · rw [← inner_conj_symm, key j hj i h', map_zero]
+  · exact key i hi j h'
+
+omit hA in
+/-- `⟪r_i, p_j⟫ = ‖r_j‖²` for `i ≤ j ≤ k` (`CG.inner_residual_direction_eq` localized). -/
+private theorem inner_residual_direction_eq' (hAs : A.IsSymmetric) {k : ℕ}
+    (hpos : ∀ j < k, 0 < RCLike.re (inner 𝕜 (A (iterate A b x₀ j).p) (iterate A b x₀ j).p))
+    {i j : ℕ} (hij : i ≤ j) (hjk : j ≤ k) :
+    inner 𝕜 (iterate A b x₀ i).r (iterate A b x₀ j).p =
+      ((‖(iterate A b x₀ j).r‖ ^ 2 : ℝ) : 𝕜) := by
+  revert hjk
+  induction j, hij using Nat.le_induction with
+  | base =>
+    intro hjk
+    rw [(invariant_le b x₀ hAs hpos hjk).diag, inner_self_eq_ofReal_norm_sq]
+  | succ j hij ih =>
+    intro hjk
+    rw [iterate_succ_p, inner_add_right, inner_smul_right, ih (by omega),
+      inner_residual_eq_zero' b x₀ hAs hpos (by omega) hjk (show i ≠ j + 1 by omega), zero_add,
+      ← inner_self_eq_ofReal_norm_sq, ← inner_self_eq_ofReal_norm_sq, beta_mul_inner_self A b x₀ j]
+
+omit hA in
+/-- `re ⟪p_i, p_j⟫ ≥ 0` up to step `k` (`CG.re_inner_direction_nonneg` localized). -/
+private theorem re_inner_direction_nonneg' (hAs : A.IsSymmetric) {k : ℕ}
+    (hpos : ∀ j < k, 0 < RCLike.re (inner 𝕜 (A (iterate A b x₀ j).p) (iterate A b x₀ j).p))
+    {i j : ℕ} (hi : i ≤ k) (hj : j ≤ k) :
+    0 ≤ RCLike.re (inner 𝕜 (iterate A b x₀ i).p (iterate A b x₀ j).p) := by
+  have key : ∀ m, m ≤ k → ∀ n, n ≤ k → m ≤ n →
+      0 ≤ RCLike.re (inner 𝕜 (iterate A b x₀ m).p (iterate A b x₀ n).p) := by
+    intro m
+    induction m with
+    | zero =>
+      intro _ n hn _
+      rw [direction_zero, inner_residual_direction_eq' b x₀ hAs hpos (Nat.zero_le n) hn,
+        RCLike.ofReal_re]
+      positivity
+    | succ m ih =>
+      intro hm n hn hmn
+      rw [iterate_succ_p, inner_add_left, inner_smul_left, conj_beta, map_add,
+        inner_residual_direction_eq' b x₀ hAs hpos (show m + 1 ≤ n by omega) hn, RCLike.ofReal_re,
+        re_beta_mul b x₀]
+      exact add_nonneg (by positivity)
+        (mul_nonneg (re_beta_nonneg b x₀ m) (ih (by omega) n hn (by omega)))
+  rcases le_total i j with h | h
+  · exact key i hi j hj h
+  · rw [← inner_conj_symm, RCLike.conj_re]
+    exact key j hj i hi h
+
+omit hA in
+/-- `re ⟪x_m - x_l, p_j⟫ ≥ 0` up to step `k`
+(`CG.re_inner_sub_iterate_direction_nonneg` localized). -/
+private theorem re_inner_sub_iterate_direction_nonneg' (hAs : A.IsSymmetric) {k : ℕ}
+    (hpos : ∀ j < k, 0 < RCLike.re (inner 𝕜 (A (iterate A b x₀ j).p) (iterate A b x₀ j).p))
+    {l m : ℕ} (hlm : l ≤ m) (hm : m ≤ k) {j : ℕ} (hj : j ≤ k) :
+    0 ≤ RCLike.re (inner 𝕜 ((iterate A b x₀ m).x - (iterate A b x₀ l).x)
+      (iterate A b x₀ j).p) := by
+  revert hm
+  induction m, hlm using Nat.le_induction with
+  | base => intro _; simp
+  | succ m hlm ih =>
+    intro hm
+    have h : (iterate A b x₀ (m + 1)).x - (iterate A b x₀ l).x =
+        ((iterate A b x₀ m).x - (iterate A b x₀ l).x) +
+          alpha A (iterate A b x₀ m) • (iterate A b x₀ m).p := by
+      rw [iterate_succ_x]; abel
+    rw [h, inner_add_left, inner_smul_left, conj_alpha hAs, map_add, re_alpha_mul b x₀ hAs]
+    exact add_nonneg (ih (by omega))
+      (mul_nonneg (re_alpha_nonneg' b x₀ hAs (le_of_lt (hpos m (by omega))))
+        (re_inner_direction_nonneg' b x₀ hAs hpos (by omega) hj))
+
+omit hA in
+/-- Steihaug's theorem for a symmetric, possibly indefinite `A`: started at `x₀ = 0`, the CG
+iterates grow in norm at every step whose direction has positive `A`-norm,
+`‖x_i‖ < ‖x_{i+1}‖` for `i < k` whenever `0 < re ⟪A p_j, p_j⟫` for all `j < k`.  This is the
+hypothesis a trust-region method can check as it goes, and it is what makes the CG path leave
+the trust region monotonically.  The coercive `CG.norm_iterate_monotone` is the corollary in
+which the hypothesis holds at every step the iteration moves at all. -/
+theorem norm_iterate_lt_of_re_inner_apply_direction_pos (hAs : A.IsSymmetric) {k : ℕ}
+    (hpos : ∀ j < k, 0 < RCLike.re (inner 𝕜 (A (iterate A b 0 j).p) (iterate A b 0 j).p))
+    {i : ℕ} (hi : i < k) : ‖(iterate A b 0 i).x‖ < ‖(iterate A b 0 (i + 1)).x‖ := by
+  have hp := hpos i hi
+  have hpne : (iterate A b 0 i).p ≠ 0 := by
+    intro h
+    rw [h, map_zero, inner_zero_left, map_zero] at hp
+    exact lt_irrefl 0 hp
+  have hrne : (iterate A b 0 i).r ≠ 0 := fun h =>
+    hpne (direction_eq_zero_of_residual_eq_zero A b 0 h)
+  have hαpos : 0 < RCLike.re (alpha A (iterate A b 0 i)) := by
+    rw [alpha_eq_ofReal b 0 hAs i, RCLike.ofReal_re]
+    exact div_pos (pow_pos (norm_pos_iff.2 hrne) 2) hp
+  have hαne : alpha A (iterate A b 0 i) ≠ 0 := fun h => by
+    rw [h, map_zero] at hαpos; exact lt_irrefl 0 hαpos
+  have hxp : 0 ≤ RCLike.re (inner 𝕜 (iterate A b 0 i).x (iterate A b 0 i).p) := by
+    have h := re_inner_sub_iterate_direction_nonneg' b 0 hAs hpos (Nat.zero_le i)
+      (le_of_lt hi) (le_of_lt hi)
+    rwa [show (iterate A b 0 0).x = 0 from rfl, sub_zero] at h
+  have hcross : 0 ≤ RCLike.re (inner 𝕜 (iterate A b 0 i).x
+      (alpha A (iterate A b 0 i) • (iterate A b 0 i).p)) := by
+    rw [inner_smul_right, re_alpha_mul b 0 hAs]
+    exact mul_nonneg (le_of_lt hαpos) hxp
+  have hnz : 0 < ‖alpha A (iterate A b 0 i) • (iterate A b 0 i).p‖ := by
+    rw [norm_smul]
+    exact mul_pos (norm_pos_iff.2 hαne) (norm_pos_iff.2 hpne)
+  have hsq : ‖(iterate A b 0 i).x‖ ^ 2 < ‖(iterate A b 0 (i + 1)).x‖ ^ 2 := by
+    rw [iterate_succ_x, norm_add_sq (𝕜 := 𝕜)]
+    nlinarith [hnz]
+  nlinarith [norm_nonneg (iterate A b 0 i).x, norm_nonneg (iterate A b 0 (i + 1)).x]
+
+/-- Steihaug: `‖x_k‖` is nondecreasing for CG started at `x₀ = 0`.  A coercive `A` makes
+`0 < re ⟪A p_j, p_j⟫` hold at every step before the residual dies
+(`CG.re_inner_apply_direction_pos`), and once it dies the iterate stops moving. -/
 theorem norm_iterate_monotone : Monotone fun k => ‖(iterate A b 0 k).x‖ := by
   refine monotone_nat_of_le_succ fun k => ?_
-  have h0 : (iterate A b 0 0).x = 0 := rfl
-  have hnn : 0 ≤ RCLike.re (inner 𝕜 (iterate A b 0 k).x
-      (alpha A (iterate A b 0 k) • (iterate A b 0 k).p)) := by
-    rw [inner_smul_right, re_alpha_mul b 0 hA]
-    refine mul_nonneg (re_alpha_nonneg b 0 hA k) ?_
-    have := re_inner_sub_iterate_direction_nonneg b 0 hA (Nat.zero_le k) k
-    rwa [h0, sub_zero] at this
-  have hsq : ‖(iterate A b 0 k).x‖ ^ 2 ≤ ‖(iterate A b 0 (k + 1)).x‖ ^ 2 := by
-    rw [iterate_succ_x, norm_add_sq (𝕜 := 𝕜)]
-    nlinarith [sq_nonneg ‖alpha A (iterate A b 0 k) • (iterate A b 0 k).p‖]
-  nlinarith [norm_nonneg (iterate A b 0 k).x, norm_nonneg (iterate A b 0 (k + 1)).x]
+  by_cases hr : (iterate A b 0 k).r = 0
+  · have h : (iterate A b 0 (k + 1)).x = (iterate A b 0 k).x := by
+      rw [iterate_succ_x, direction_eq_zero_of_residual_eq_zero A b 0 hr, smul_zero, add_zero]
+    exact le_of_eq (congrArg norm h.symm)
+  · exact le_of_lt (norm_iterate_lt_of_re_inner_apply_direction_pos b hA.isSymmetric
+      (k := k + 1) (fun j hj => re_inner_apply_direction_pos b 0 hA
+        (residual_ne_zero_of_le b 0 hr (by omega))) (Nat.lt_succ_self k))
 
 section ThreeTerm
 
@@ -993,10 +1169,10 @@ variable {A}
 
 /-! #### Scalar identities behind the three-term form -/
 
-private theorem rho_succ (hA : A.IsSymmetricCoercive) (m : ℕ) : rho A b x₀ (m + 1) =
+private theorem rho_succ (m : ℕ) : rho A b x₀ (m + 1) =
     (1 - gamma A b x₀ (m + 1) / gamma A b x₀ m * beta A (iterate A b x₀ m) /
       rho A b x₀ m)⁻¹ := by
-  rw [beta_eq_ofReal b x₀ hA m, rho]
+  rw [beta_eq_ofReal b x₀ m, rho]
 
 private theorem inner_apply_residual_self_ne_zero (hA : A.IsSymmetricCoercive) {k : ℕ}
     (hk : (iterate A b x₀ k).r ≠ 0) :
@@ -1044,7 +1220,8 @@ private theorem alpha_mul_inner_apply_direction_succ (hA : A.IsSymmetricCoercive
   have hT' : alpha A (iterate A b x₀ m) *
       inner 𝕜 (A (iterate A b x₀ m).p) (iterate A b x₀ (m + 1)).r =
         -inner 𝕜 (iterate A b x₀ (m + 1)).r (iterate A b x₀ (m + 1)).r := by
-    rw [← conj_alpha hA (iterate A b x₀ m), ← inner_smul_left, alpha_smul_apply_direction,
+    rw [← conj_alpha hA.isSymmetric (iterate A b x₀ m), ← inner_smul_left,
+      alpha_smul_apply_direction,
       inner_sub_left, inner_residual_eq_zero b x₀ hA (show m ≠ m + 1 by omega), zero_sub]
   have hQ := alpha_mul_inner_apply_direction b x₀ hA m
   have hB := beta_mul_inner_self A b x₀ m
@@ -1074,7 +1251,7 @@ private theorem rho_succ_eq_div (hA : A.IsSymmetricCoercive) (m : ℕ)
           inner 𝕜 (A (iterate A b x₀ (m + 1)).r) (iterate A b x₀ (m + 1)).r from rfl]
     field_simp
     linear_combination -hK
-  rw [rho_succ b x₀ hA m, hX, inv_div]
+  rw [rho_succ b x₀ m, hX, inv_div]
 
 /-- `α_m = ρ_m γ_m` (Saad, *Iterative Methods*, (6.97)–(6.98)). -/
 private theorem alpha_eq_rho_mul_gamma (hA : A.IsSymmetricCoercive) (m : ℕ)

@@ -63,6 +63,29 @@ theorem energyNorm_error_antitone {x₀ : E} {x : ℕ → E}
   have h : ∀ k, x k = (CR.iterate A b x₀ k).x := fun k => eq_CR_iterate hA (hx k)
   simpa only [h] using CR.energyNorm_error_antitone b x₀ hA hstar
 
+omit hA [FiniteDimensional 𝕜 E] in
+/-- Choi, *Iterative Methods for Singular Linear Equations and Least-Squares Problems*,
+Lemma 2.20: for minimal-residual iterates from `x₀ = 0`, `‖A x_k‖` is nondecreasing in `k`.
+Indeed `A x_k ∈ A 𝒦_k` while `r_k = b - A x_k ⟂ A 𝒦_k`, so `‖A x_k‖² = ‖b‖² - ‖r_k‖²`, and
+`‖r_k‖` is nonincreasing (`Krylov.IsMinResIterate.norm_residual_antitone`).  Neither symmetry
+nor coercivity of `A` is used. -/
+theorem norm_apply_monotone {x : ℕ → E} (hx : ∀ k, IsMinResIterate A b 0 k (x k)) :
+    Monotone fun k => ‖A (x k)‖ := by
+  have key : ∀ k, ‖A (x k)‖ ^ 2 + ‖b - A (x k)‖ ^ 2 = ‖b‖ ^ 2 := by
+    intro k
+    have hmem : A (x k) ∈ (subspace A (b - A 0) k).map A :=
+      Submodule.mem_map_of_mem (by simpa using (hx k).mem)
+    have h0 : inner 𝕜 (A (x k)) (b - A (x k)) = (0 : 𝕜) :=
+      (Submodule.mem_orthogonal _ _).1 (hx k).residual_mem_orthogonal _ hmem
+    have h := norm_add_sq_eq_norm_sq_add_norm_sq_of_inner_eq_zero _ _ h0
+    rw [show A (x k) + (b - A (x k)) = b by abel] at h
+    nlinarith [h]
+  intro i j hij
+  have hr : ‖b - A (x j)‖ ≤ ‖b - A (x i)‖ := norm_residual_antitone hx hij
+  have hsq : ‖A (x i)‖ ^ 2 ≤ ‖A (x j)‖ ^ 2 := by
+    nlinarith [key i, key j, norm_nonneg (b - A (x i)), norm_nonneg (b - A (x j))]
+  nlinarith [norm_nonneg (A (x i)), norm_nonneg (A (x j))]
+
 /-- Fong–Saunders, *CG versus MINRES*, Thm 3.1: the normwise relative backward error
 `‖r_k‖ / (α ‖A‖ ‖x_k‖ + β ‖b‖)` is nonincreasing (`x₀ = 0`, `α ≥ 0`, `β > 0`). The
 denominator is positive at every step, so no junk division occurs. -/

@@ -39,8 +39,10 @@ import Numlib.Krylov.Hessenberg
 import Numlib.Krylov.Iterate
 import Numlib.Krylov.Lanczos
 import Numlib.Krylov.Monotonicity
+import Numlib.Krylov.NormalEquations
 import Numlib.Krylov.OrthogonalPolynomials
 import Numlib.Krylov.Perturbed
+import Numlib.Krylov.Preconditioned
 import Numlib.Krylov.QuasiMinRes
 import Numlib.Krylov.Relations
 import Numlib.Krylov.Subspace

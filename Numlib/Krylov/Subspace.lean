@@ -1,6 +1,9 @@
 import Mathlib.Algebra.Polynomial.Module.AEval
 import Mathlib.LinearAlgebra.Eigenspace.Minpoly
 import Mathlib.RingTheory.Polynomial.Basic
+import Mathlib.RingTheory.PrincipalIdealDomain
+import Mathlib.RingTheory.EuclideanDomain
+import Mathlib.Algebra.Polynomial.FieldDivision
 import Mathlib.LinearAlgebra.FiniteDimensional.Defs
 import Mathlib.LinearAlgebra.Dimension.Finrank
 
@@ -9,7 +12,8 @@ import Mathlib.LinearAlgebra.Dimension.Finrank
 
 `Krylov.subspace A v m = span {v, A v, …, A^(m-1) v}` for an endomorphism `A` of a module over
 a commutative ring, the full Krylov space, the polynomial description
-`𝒦_m = {p(A) v | deg p < m}`, and — over a field — the grade of `v`
+`𝒦_m = {p(A) v | deg p < m}`, and — over a field — the grade of `v` together with its
+minimal polynomial, the monic generator of the annihilator ideal `{p | p(A) v = 0}`
 (Saad, *Iterative Methods*[^saad-iterative] §6.2, Prop 6.1–6.2;
 Saad, *Large Eigenvalue Problems*[^saad-eigenvalue] Prop 6.1–6.3; Choi[^choi] Def 2.1;
 Meurant–Strakoš[^meurant-strakos] §2.1).
@@ -227,6 +231,31 @@ theorem subspace_smul (c : R) (m : ℕ) : subspace A (c • v) m ≤ subspace A 
   rintro _ ⟨i, rfl⟩
   simpa using Submodule.smul_mem _ c (pow_apply_mem_subspace A v i.2)
 
+/-- Swapping a composition through one of its factors: `N ((A N)^i v) = (N A)^i (N v)`. -/
+theorem pow_comp_apply (B N : Module.End R M) (i : ℕ) (u : M) :
+    N (((B ∘ₗ N) ^ i) u) = ((N ∘ₗ B) ^ i) (N u) := by
+  induction i with
+  | zero => rfl
+  | succ i ih =>
+    rw [pow_succ', pow_succ', Module.End.mul_apply, Module.End.mul_apply, LinearMap.comp_apply,
+      LinearMap.comp_apply, ← ih]
+
+/-- `N` carries the Krylov space of `B N` to the Krylov space of `N B`:
+`N 𝒦_m(B N, v) = 𝒦_m(N B, N v)`.  This is the identity behind every "change of variables"
+in a Krylov method — CGNE's `x = Aᴴ u`, right preconditioning's `x = M⁻¹ u` — which is why the
+two variants search the same affine space. -/
+theorem map_subspace_comp (B N : Module.End R M) (u : M) (m : ℕ) :
+    (subspace (B ∘ₗ N) u m).map N = subspace (N ∘ₗ B) (N u) m := by
+  rw [subspace, subspace, Submodule.map_span]
+  congr 1
+  ext z
+  simp only [Set.mem_image, Set.mem_range]
+  constructor
+  · rintro ⟨_, ⟨i, rfl⟩, rfl⟩
+    exact ⟨i, (pow_comp_apply B N i u).symm⟩
+  · rintro ⟨i, rfl⟩
+    exact ⟨((B ∘ₗ N) ^ (i : ℕ)) u, ⟨i, rfl⟩, pow_comp_apply B N i u⟩
+
 end CommRing
 
 section Field
@@ -299,6 +328,64 @@ theorem pow_apply_mem_subspace_iff_exists_monic (m : ℕ) :
     have hlt := degree_sub_lt_left (p := (X : K[X]) ^ m) (q := p) (by rw [degree_X_pow, hdp])
       (monic_X_pow m).ne_zero (by simp [hp.leadingCoeff])
     rwa [degree_X_pow] at hlt
+
+/-! ### The minimal polynomial of a vector -/
+
+/-- The annihilator ideal of `v`: the polynomials `p` with `p(A) v = 0`.  It is an ideal of
+`K[X]` and not merely a `K`-subspace, because it is the annihilator of `v` for the
+`K[X]`-module structure that `A` puts on `V` (Mathlib's `Module.AEval'`). -/
+def annIdealVec : Ideal K[X] where
+  carrier := {p | aeval A p v = 0}
+  add_mem' {p q} (hp : aeval A p v = 0) (hq : aeval A q v = 0) := by
+    change aeval A (p + q) v = 0
+    rw [map_add, LinearMap.add_apply, hp, hq, add_zero]
+  zero_mem' := by
+    change aeval A (0 : K[X]) v = 0
+    rw [map_zero, LinearMap.zero_apply]
+  smul_mem' c p (hp : aeval A p v = 0) := by
+    change aeval A (c • p) v = 0
+    rw [smul_eq_mul, map_mul, Module.End.mul_apply, hp, map_zero]
+
+@[simp]
+theorem mem_annIdealVec {p : K[X]} : p ∈ annIdealVec A v ↔ aeval A p v = 0 := Iff.rfl
+
+/-- The minimal polynomial of `v` with respect to `A`: the monic generator of the annihilator
+ideal `{p | p(A) v = 0}`, and `0` when that ideal is trivial, which happens exactly when the
+cyclic subspace `𝒦_∞(A, v)` is infinite-dimensional.  Its degree is the grade of `v`
+(`natDegree_minpolyVec`), which is how Saad, *Iterative Methods*, §6.2 defines the grade. -/
+noncomputable def minpolyVec : K[X] :=
+  let g := Submodule.IsPrincipal.generator (annIdealVec A v)
+  g * C g.leadingCoeff⁻¹
+
+@[simp]
+theorem minpolyVec_eq_zero_iff : minpolyVec A v = 0 ↔ annIdealVec A v = ⊥ := by
+  simp only [minpolyVec, mul_eq_zero, Submodule.IsPrincipal.eq_bot_iff_generator_eq_zero,
+    C_eq_zero, inv_eq_zero, leadingCoeff_eq_zero, or_self_iff]
+
+/-- `minpolyVec` generates the annihilator ideal. -/
+@[simp]
+theorem span_singleton_minpolyVec : Ideal.span {minpolyVec A v} = annIdealVec A v := by
+  by_cases h : minpolyVec A v = 0
+  · rw [h, (minpolyVec_eq_zero_iff A v).1 h, Set.singleton_zero, Ideal.span_zero]
+  · rw [minpolyVec, Ideal.span_singleton_mul_right_unit, Ideal.span_singleton_generator]
+    exact isUnit_C.2 (IsUnit.mk0 _ (inv_eq_zero.not.2
+      (leadingCoeff_eq_zero.not.2 (mul_ne_zero_iff.1 h).1)))
+
+theorem minpolyVec_mem : minpolyVec A v ∈ annIdealVec A v :=
+  Ideal.mul_mem_right _ _ (Submodule.IsPrincipal.generator_mem _)
+
+/-- The minimal polynomial of `v` annihilates `v`. -/
+theorem aeval_minpolyVec : aeval A (minpolyVec A v) v = 0 := minpolyVec_mem A v
+
+/-- The defining property of the minimal polynomial of a vector: it divides exactly the
+polynomials that annihilate `v`. -/
+theorem minpolyVec_dvd_iff {p : K[X]} : minpolyVec A v ∣ p ↔ aeval A p v = 0 := by
+  rw [← Ideal.mem_span_singleton, span_singleton_minpolyVec, mem_annIdealVec]
+
+/-- The minimal polynomial of `v` is monic whenever it is nonzero, that is, whenever `v` has
+finite grade (`minpolyVec_ne_zero`). -/
+theorem minpolyVec_monic (h : minpolyVec A v ≠ 0) : (minpolyVec A v).Monic :=
+  monic_mul_leadingCoeff_inv (mul_ne_zero_iff.1 h).1
 
 /-- The grade of a vector never exceeds the dimension of the ambient space, so a Krylov method
 in finite dimension terminates in at most `dim V` steps. -/
@@ -383,6 +470,24 @@ theorem finrank_subspace (m : ℕ) : Module.finrank K (subspace A v m) = min m (
     simpa using finrank_span_eq_card (linearIndependent_of_le_grade A v h)
   · rw [min_eq_right h, subspace_eq_of_grade_le A v h, subspace]
     simpa using finrank_span_eq_card (linearIndependent_of_le_grade A v le_rfl)
+
+/-- A vector of finite grade has a nonzero minimal polynomial: the monic annihilator of degree
+`grade A v` supplied by `pow_apply_mem_subspace_iff_exists_monic` is a nonzero member of the
+annihilator ideal. -/
+theorem minpolyVec_ne_zero : minpolyVec A v ≠ 0 := by
+  obtain ⟨p, hp, -, hpv⟩ :=
+    (pow_apply_mem_subspace_iff_exists_monic A v (grade A v)).1 (pow_grade_apply_mem A v)
+  intro h
+  exact hp.ne_zero (Ideal.mem_bot.1 (((minpolyVec_eq_zero_iff A v).1 h) ▸ hpv))
+
+/-- Saad, *Iterative Methods*, §6.2: the grade of `v` is the degree of its minimal polynomial. -/
+theorem natDegree_minpolyVec : (minpolyVec A v).natDegree = grade A v := by
+  refine le_antisymm ?_ ?_
+  · obtain ⟨p, hp, hpd, hpv⟩ :=
+      (pow_apply_mem_subspace_iff_exists_monic A v (grade A v)).1 (pow_grade_apply_mem A v)
+    exact hpd ▸ natDegree_le_of_dvd ((minpolyVec_dvd_iff A v).2 hpv) hp.ne_zero
+  · exact (grade_le_iff A v).2 ((pow_apply_mem_subspace_iff_exists_monic A v _).2
+      ⟨minpolyVec A v, minpolyVec_monic A v (minpolyVec_ne_zero A v), rfl, aeval_minpolyVec A v⟩)
 
 theorem subspace_strictMono_of_le_grade {m : ℕ} (h : m + 1 ≤ grade A v) :
     subspace A v m < subspace A v (m + 1) :=
