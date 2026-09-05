@@ -83,6 +83,13 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
 * **A surface wrapper of backbone data wants `noncomputable abbrev`, not `def`**, whenever the
   backbone lemmas about it are stated unwrapped: a `def` is opaque to unification, so
   `rw [backboneLemma]` stops matching. This bit the Saad Chapter 6 files on `r₀` and `β`.
+  Conversely `rw` will not see through an `abbrev` when the lemma's head is `DFunLike.coe`
+  (`map_smul`, `map_add`) — there `simp only` works, or state the unfolded equation as a `have`.
+* **A `termination_by` definition does not reduce definitionally**, so `rfl` fails on its
+  `_zero`/`_succ` companions: every one needs `rw [f, fAux]`, and a right-hand side mentioning the
+  function at `j + 1` must first be rewritten down to `≤ j`. Factoring the recursion *body* into a
+  separate plain `def` restores `rfl` for the projections, and lets variant algorithms that share a
+  body be compared by a single lemma — that is how ORTHOMIN(k) reduces to GCR in four lines.
 * At `𝕜 = ℝ` an `RCLike.ofReal` coercion silently blocks `rw` against an `RCLike`-polymorphic
   lemma. Write the scalar as `((‖x‖ : 𝕜))⁻¹` in the polymorphic layer and `simpa` when specializing.
 * Structure-instance continuation lines must indent past the `{`.
@@ -96,7 +103,9 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
 * Dot notation resolves through the *unfolded* head, which bites on `def`s that unfold to a
   connective: `ConvexOn`/`StrictConvexOn` unfold to `And`, so `h.foo` on such a hypothesis looks up
   `And.foo`, and a project lemma named `ConvexOn.foo` must be applied by its full name. The same
-  happens on an `IsIdempotentElem` hypothesis, which resolves into `Eq`.
+  happens on an `IsIdempotentElem` hypothesis, which resolves into `Eq`, on `Matrix.PosDef`
+  (`hA.eigenvalues_pos` looks up `And.eigenvalues_pos`), and on `Algebra.commutes c A`, which is an
+  `Eq`, so `.mul_left` is `Eq.mul_left` — bind `have _ : Commute … := Algebra.commutes c A` first.
 * For an equation whose left side mentions a structure parameter (`s.eq : A = s.N - s.M` with
   `s : BookSplitting A`), only `rw [← s.eq]` type-checks; the forward direction fails with "motive
   is not type correct".
@@ -141,7 +150,10 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   `HasDerivAt.scomp` when the inner function is applied at a point. Bind the composite with a
   `have` whose type you state, then `exact` it.
 * `Filter.Tendsto.const_mul` takes the constant as a leading *explicit* argument, so it will not
-  elaborate inline inside `squeeze_zero`.
+  elaborate inline inside `squeeze_zero`; nor can `squeeze_zero` infer its `g` from
+  `refine … (fun k => ?_) ?_`. Bind the bound as a named `have` first.
+* `positivity` ignores hypotheses: `S + s ≠ 0` from `0 < s` and `s < S` needs
+  `ne_of_gt (by linarith)`.
 * `liminf_le_liminf` does not auto-discharge its `IsCoboundedUnder (≥)` side goal.
 
 ## Mathlib names and API
@@ -168,7 +180,9 @@ names and `ContinuousLinearMap.one_apply` to `one_apply_eq_self`; `Matrix.det_of
 `LinearMap.coe_range`; `linearIndependent_fin_succ'` to `linearIndependent_finSucc'`;
 `Polynomial.degree_sub_lt` to `degree_sub_lt_left`; `Set.mem_setOf_eq` to `Set.mem_ofPred_eq`;
 `RCLike.conj_conj` is only an alias, prefer `starRingEnd_self_apply`.
-`sub_eq_sub_iff_add_eq_add`, `div_add_div_same` and `PiLp.sum_apply` do not exist.
+`sub_eq_sub_iff_add_eq_add`, `div_add_div_same`, `PiLp.sum_apply`, `Finset.range_subset` as an
+`iff` and `LinearMap.one_apply` do not exist; for the last two use `Module.End.one_apply` and, for
+`div_add_div_same`, `← add_div`.
 `RCLike.inner_apply` orients as `⟪x, y⟫ = y * conj x`.
 
 Structural facts worth knowing before planning a proof:
@@ -261,7 +275,11 @@ Structural facts worth knowing before planning a proof:
   `simp [RCLike.ofReal_real_eq_id, id_eq]`.
 * Chebyshev: `Trigonometric.Chebyshev.RootsExtrema` has the extremal facts, and `T_real_cosh` with
   `Real.arcosh` gives the closed form in five lines. For `x ≤ -1` use `P.comp (-X)`, not a parity
-  argument.
+  argument. `Polynomial.Chebyshev.C` exists, so a local `C` clashes — use a selective
+  `open Ns (a b c)`; and `T ℝ k` is noncomputable, so a wrapper needs `noncomputable abbrev`.
+* `Matrix.PosDef.eigenvalues_pos` lives in `Mathlib.Analysis.Matrix.PosDef`, which `Numlib` does not
+  import. `IsSymmetricCoercive.re_pos_of_hasEigenvalue` with
+  `Matrix.IsHermitian.hasEigenvalue_toEuclideanLin_iff` gets there in four lines and no new import.
 * `IsCompact.exists_isGreatest` with `IsGreatest.csSup_eq` beats `BddAbove` bookkeeping.
 * `LinearMap.injective_iff_surjective` is the workhorse for solvability of a compressed system.
 
