@@ -45,14 +45,30 @@ noncomputable def step (A : E →ₗ[𝕜] E) (s : State E) : State E :=
   let β : 𝕜 := inner 𝕜 r' (A r') / inner 𝕜 s.r (A s.r)
   { x := s.x + α • s.p, r := r', p := r' + β • s.p, q := A r' + β • s.q }
 
+/-- The starting state of the conjugate residual iteration at `x₀`: the residual and the first
+search direction are both `r₀ = b - A x₀`, and `q₀ = A p₀` is stored alongside them so that each
+later step applies `A` only once, to the new residual. -/
 def init (A : E →ₗ[𝕜] E) (b x₀ : E) : State E :=
   { x := x₀, r := b - A x₀, p := b - A x₀, q := A (b - A x₀) }
 
+/-- The `k`-th state of the conjugate residual iteration for `A x = b` started at `x₀`: `k`
+applications of `CR.step` to `CR.init`. The approximate solution is `(iterate A b x₀ k).x`.
+
+On a symmetric coercive `A` this state realises the minimal-residual specification over
+`x₀ + 𝒦_k(A, r₀)` (`CR.isMinResIterate`). The specification, not this recurrence, is the canonical
+object: everything proved of it holds of any method that meets it. On an indefinite `A` the
+recurrence can break down while the minimal-residual iterate still exists, and
+`CR.isMinResIterate_of_no_breakdown` is what survives there. The definition is total either way,
+since Lean's `x / 0 = 0` gives the degenerate steps a value; once the residual vanishes the state
+stops moving. -/
 noncomputable def iterate (A : E →ₗ[𝕜] E) (b x₀ : E) (k : ℕ) : State E :=
   (step A)^[k] (init A b x₀)
 
 variable (A : E →ₗ[𝕜] E) (b x₀ : E)
 
+/-- The recurrence: state `k + 1` is one `CR.step` applied to state `k`. This is the orientation
+the algorithm is read in; `Function.iterate` reduces by peeling a step off the front instead, so
+unfolding `(step A)^[k+1]` directly gives an extra step applied to the *initial* state. -/
 theorem iterate_succ (k : ℕ) : iterate A b x₀ (k + 1) = step A (iterate A b x₀ k) :=
   Function.iterate_succ_apply' _ _ _
 
@@ -457,6 +473,12 @@ private theorem subspace_le_dirSpan (k : ℕ)
       rw [h']
       exact pow_apply_mem_dirSpan b x₀ k (fun i hi => hmem i (by omega)) ih
 
+/-- The first `k` conjugate residual directions span the Krylov space:
+`span {p_0, …, p_{k-1}} = 𝒦_k(A, r₀)`. This is what turns the orthogonality relations — which only
+say that `r_k` is `A`-orthogonal to the earlier directions — into the minimal-residual property
+`CR.isMinResIterate`, since orthogonality to the span is what the specification asks for.
+Degenerate steps cost nothing: a direction whose image under `A` dies contributes no new
+dimension, and the residuals, which lie in the same span, still fill the Krylov space out. -/
 theorem span_direction_eq (k : ℕ) :
     Submodule.span 𝕜 (Set.range fun i : Fin k => (iterate A b x₀ i).p) =
       subspace A (b - A x₀) k :=
@@ -472,6 +494,10 @@ theorem isMinResIterate (k : ℕ) : IsMinResIterate A b x₀ k (iterate A b x₀
   rintro _ ⟨_, ⟨i, rfl⟩, rfl⟩
   rw [← inner_conj_symm, inner_residual_apply_direction_eq_zero b x₀ hA i.2, map_zero]
 
+/-- Finite termination: on a symmetric coercive `A` the conjugate residual iteration is exact once
+`k` reaches the grade of `r₀`, so it is a direct method in at most `grade A r₀` steps. The iterate
+minimizes the residual over `x₀ + 𝒦_k`, and at the grade that space already contains the exact
+correction. -/
 theorem residual_eq_zero_of_grade_le [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))] {k : ℕ}
     (hk : grade A (b - A x₀) ≤ k) : (iterate A b x₀ k).r = 0 := by
   rw [residual_eq, sub_eq_zero]

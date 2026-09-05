@@ -378,6 +378,12 @@ theorem isGalerkinIterate_iff_mulVec_eq {m : ℕ} (hm : m ≤ grade A (b - A x�
     rw [hres]
     exact (mem_orthogonal_iff_mulVec_eq A (b - A x₀) hm y).mpr hy
 
+/-- FOM in coordinates, in point form: for `m ≤ grade`, a point is the Galerkin iterate over
+`x₀ + 𝒦_m` exactly when it is `x₀ + V_m y` for some solution `y` of the small square system
+`H_m y = β e₁`, with `β = ‖r₀‖`. The companion `Krylov.isGalerkinIterate_iff_mulVec_eq` starts
+from a given coordinate vector; quantifying it away here is what lets solvability of the
+Hessenberg system be traded for existence and uniqueness of the iterate
+(`Krylov.existsUnique_isGalerkinIterate_iff_isUnit`). -/
 theorem isGalerkinIterate_iff_exists_mulVec_eq {m : ℕ} (hm : m ≤ grade A (b - A x₀)) (x : E) :
     IsGalerkinIterate A b x₀ m x ↔
       ∃ y : Fin m → 𝕜, (Arnoldi.hessenbergSq A (b - A x₀) m).mulVec y =
@@ -513,6 +519,11 @@ noncomputable def gamma (β : 𝕜) : ℕ → 𝕜
 /-- `g_k = c̄_k γ_k`: the `k`-th entry of `Q_m (β e₁)` for `k < m`. -/
 noncomputable def gvec (β : 𝕜) (k : ℕ) : 𝕜 := starRingEnd 𝕜 (givensC h k) * gamma h β k
 
+/-- Saad, *Iterative Methods*, (6.47): the last entry of the rotated right-hand side obeys
+`γ_{k+1} = -s_k γ_k`. This is the second defining clause of `Krylov.gamma` stated as a rewritable
+equation. Since `‖r_m‖ = |γ_m|` (`Krylov.IsMinResIterate.norm_residual_eq_norm_gamma`), it is the
+residual recurrence of the minimal-residual iteration, and the induction step behind
+`‖γ_m‖ = ∏_{k<m} |s_k| ‖β‖`. -/
 theorem gamma_succ (β : 𝕜) (k : ℕ) : gamma h β (k + 1) = -givensS h k * gamma h β k := rfl
 
 /-- Unfolding of `rotated` at a successor, in terms of `givensC` and `givensS`. -/
@@ -550,6 +561,9 @@ theorem norm_gamma_eq_prod (β : 𝕜) (m : ℕ) :
       rw [gamma_succ, norm_mul, norm_neg, ih, Finset.prod_range_succ]
       ring
 
+/-- `|c_k|² + |s_k|² = 1`: the parameters of rotation `k` are those of a genuine rotation, so long
+as the two entries it mixes are not both zero. That proviso is the content of `ρ_k ≠ 0`: at a
+breakdown both `c_k` and `s_k` are `0 / 0 = 0` and the identity fails. -/
 theorem norm_givensC_sq_add_norm_givensS_sq (k : ℕ) (hρ : givensRho h k ≠ 0) :
     ‖givensC h k‖ ^ 2 + ‖givensS h k‖ ^ 2 = 1 := by
   have habs : ‖((givensRho h k : ℝ) : 𝕜)‖ = givensRho h k := by
@@ -704,6 +718,9 @@ private theorem givensMatrix_apply_of_col_ne (k m : ℕ) (p q : Fin (m + 1)) (h1
     (h2 : (q : ℕ) ≠ k + 1) : givensMatrix h k m p q = if p = q then 1 else 0 := by
   simp [givensMatrix, h1, h2]
 
+/-- A Givens rotation is unitary, provided the pair of entries it acts on does not vanish. It
+differs from the identity only in the four entries indexed by rows and columns `k` and `k + 1`,
+and `|c_k|² + |s_k|² = 1` makes that two-by-two block unitary. -/
 theorem givensMatrix_mem_unitaryGroup (k m : ℕ) (hk : k < m) (hρ : givensRho h k ≠ 0) :
     givensMatrix h k m ∈ Matrix.unitaryGroup (Fin (m + 1)) 𝕜 := by
   have hkm : k < m + 1 := by omega
@@ -875,6 +892,10 @@ theorem givensQAux_mem_unitaryGroup {n m : ℕ} (hn : n ≤ m) (hρ : ∀ k < n,
   rw [List.mem_range] at hk
   exact givensMatrix_mem_unitaryGroup h k m (by omega) (hρ k hk)
 
+/-- The accumulated rotation `Q_m = Ω_{m-1} ⋯ Ω_0` is unitary as long as no single rotation
+degenerates. This is what makes `Q_m` a Euclidean isometry, so that the least-squares quantity
+`‖β e₁ - H̄_m y‖` may be read off the triangular factor `R̄_m = Q_m H̄_m` instead — the route to
+`‖r_m‖ = |γ_m|`. -/
 theorem givensQ_mem_unitaryGroup (m : ℕ) (hρ : ∀ k < m, givensRho h k ≠ 0) :
     givensQ h m ∈ Matrix.unitaryGroup (Fin (m + 1)) 𝕜 :=
   givensQAux_mem_unitaryGroup h le_rfl hρ

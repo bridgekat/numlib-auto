@@ -287,6 +287,13 @@ theorem IsMinResIterate.norm_residual_le_of_isCoerciveWith {A : E →L[𝕜] E} 
     exact Submodule.smul_mem _ _ (self_mem_subspace _ _ hm)
   exact (hx.min _ hmem).trans (Projection.norm_residual_minResStep_le hc hA b x₀)
 
+/-- Saad, *Iterative Methods*, Thm 6.30: restarted minimal-residual iteration converges for a
+bounded coercive `A`. Each cycle of `m ≥ 1` steps restarts from the previous cycle's output and
+contracts the residual by the factor `√(1 - c²/‖A‖²) < 1` of
+`Krylov.IsMinResIterate.norm_residual_le_of_isCoerciveWith`, so the residual norms tend to `0`
+geometrically. Coercivity alone is what does this: it keeps `r` and `A r` from becoming
+orthogonal, so a single step of the cycle already gains a fixed fraction. No spectral hypothesis
+and no finite dimension are needed. -/
 theorem restarted_minRes_tendsto {A : E →L[𝕜] E} {c : ℝ} (hc : 0 < c)
     (hA : (A : E →ₗ[𝕜] E).IsCoerciveWith c) {b : E} {m : ℕ} (hm : 1 ≤ m) (x : ℕ → E)
     (hx : ∀ k, IsMinResIterate (A : E →ₗ[𝕜] E) b (x k) m (x (k + 1))) :

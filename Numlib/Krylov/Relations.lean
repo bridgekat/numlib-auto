@@ -592,6 +592,12 @@ theorem smul_combination_eq {S rho : ℝ} (hS : 0 < S) (hr : 0 < rho) (u v : E) 
     field_simp
   rw [smul_smul, ← RCLike.ofReal_mul, e1, smul_add, smul_smul, ← RCLike.ofReal_mul, e2]
 
+/-- Saad, *Iterative Methods*, (6.79): the residual produced by minimal-residual smoothing of the
+Galerkin (FOM) iterates is the weighted average of their residuals, each weighted by `1/‖r^F_j‖²`
+and the whole normalised by the sum of the weights. Read together with
+`Krylov.IsGalerkinIterate.mrs_isMinResIterate`, which identifies the smoothed sequence with the
+minimal-residual (GMRES) iterates, it exhibits `r^G_m` as that average — the vector form of the
+Cullum–Greenbaum relation `1/‖r^G_m‖² = ∑_{j ≤ m} 1/‖r^F_j‖²`. -/
 theorem residual_mrs_eq {xO : ℕ → E} (hinj : Function.Injective A) (m : ℕ)
     (hO : ∀ i ≤ m, IsGalerkinIterate A b x₀ i (xO i)) (h0 : ∀ j ≤ m, b - A (xO j) ≠ 0) :
     b - A (mrs A b xO m) =

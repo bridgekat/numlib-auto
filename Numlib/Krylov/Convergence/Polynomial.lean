@@ -181,6 +181,10 @@ theorem isSymmetricBoundedBy {lmin lmax : ℝ} (hA : A.IsSymmetricBoundedBy lmin
   hA.of_inner_eq (compression.isSymmetric A K hA.isSymmetric) K.subtypeₗᵢ
     fun x => compression.inner_apply A K x x
 
+/-- Coercivity passes to compressions, with the same constant: the compression of a symmetric
+coercive `A` to `K` is symmetric coercive on `K`. Its quadratic form is the restriction of that of
+`A` (`compression.inner_apply`), so the defining inequality is inherited verbatim, and the
+finite-dimensional energy-norm bounds may be applied inside `K`. -/
 theorem isSymmetricCoercive (hA : A.IsSymmetricCoercive) :
     (compression A K).IsSymmetricCoercive := by
   obtain ⟨c, hc, hcA⟩ := hA.isCoercive
@@ -191,6 +195,9 @@ theorem isSymmetricCoercive (hA : A.IsSymmetricCoercive) :
 theorem energyInner_apply (x y : K) : energyInner (compression A K) x y = energyInner A x y :=
   compression.inner_apply A K x y
 
+/-- Measuring a vector of `K` in the energy norm of the compression gives the same number as
+measuring it in the energy norm of `A`. This is what lets the compression trick carry an
+energy-norm bound proved in the finite-dimensional `K` back to `E` with no constant lost. -/
 theorem energyNorm_apply (x : K) : energyNorm (compression A K) x = energyNorm A x := by
   rw [energyNorm, energyNorm, compression.inner_apply A K x x]
 

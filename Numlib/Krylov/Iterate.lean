@@ -134,12 +134,21 @@ theorem exists_isMinResIterate (A : E →ₗ[𝕜] E) (b x₀ : E) (m : ℕ) :
     ∃ x, IsMinResIterate A b x₀ m x :=
   exists_isMinRes b x₀ _
 
+/-- With `A` injective the minimal-residual iterate at step `m` exists and is unique. Existence
+holds for every `A` (`exists_isMinResIterate`), since the minimal residual is the part of `r₀`
+orthogonal to `A 𝒦_m`; injectivity is what makes the *iterate* unique and not merely its
+residual. -/
 theorem existsUnique_isMinResIterate_of_injective (hA : Function.Injective A) (b x₀ : E)
     (m : ℕ) : ∃! x, IsMinResIterate A b x₀ m x :=
   existsUnique_isMinRes_of_injOn b x₀ _ hA.injOn
 
 namespace IsMinResIterate
 
+/-- The minimal-residual iterate beats every competitor polynomial: `‖b - A x‖ ≤ ‖p(A) r₀‖` for
+each `p` of degree at most `m` with `p 0 = 1`. Every such `p` is the residual polynomial of some
+point of `x₀ + 𝒦_m` (`exists_mem_of_residual_poly`), over which `x` minimizes. This is the half of
+`norm_residual_eq_iInf` that convergence proofs use: exhibit one polynomial small on the spectrum
+and its bound transfers to the residual. -/
 theorem norm_residual_le_norm_aeval (hx : IsMinResIterate A b x₀ m x) (p : 𝕜[X])
     (hp : p.degree ≤ m) (hp0 : p.eval 0 = 1) : ‖b - A x‖ ≤ ‖aeval A p (b - A x₀)‖ := by
   obtain ⟨y, hy, hres⟩ := exists_mem_of_residual_poly (A := A) (b := b) (x₀ := x₀) p hp hp0
@@ -239,6 +248,10 @@ theorem exists_isMinErrorIterate (A : E →ₗ[𝕜] E) (xstar x₀ : E) (m : �
     ∃ x, IsMinErrorIterate A xstar x₀ m x :=
   exists_isMinError x₀ _ xstar
 
+/-- The minimal-error iterate is unique, with no hypothesis on `A` at all: it is the nearest point
+of the affine space `x₀ + A 𝒦_m` to `x*`, and nearest points are unique by the parallelogram law
+however degenerate `A` is. Contrast `existsUnique_isMinResIterate_of_injective`, where uniqueness
+of the *iterate* costs an injectivity assumption. -/
 theorem IsMinErrorIterate.unique {xstar x' : E} (hx : IsMinErrorIterate A xstar x₀ m x)
     (hx' : IsMinErrorIterate A xstar x₀ m x') : x = x' :=
   IsMinError.unique hx hx'
@@ -253,6 +266,12 @@ end MinError
 
 section Galerkin
 
+/-- For coercive `A` the Galerkin iterate over `𝒦_m` exists and is unique at every step, so FOM
+and CG are well defined with no further hypothesis. Coercivity excludes the one obstruction: a
+nonzero `z ∈ 𝒦_m` with `A z ⟂ 𝒦_m`, which would leave the Galerkin condition underdetermined.
+Without it the iterate can genuinely fail to exist;
+`Krylov.existsUnique_isGalerkinIterate_iff_isUnit` ties existence and uniqueness to invertibility
+of the compressed Hessenberg matrix. -/
 theorem existsUnique_isGalerkinIterate_of_isCoercive (hA : A.IsCoercive) (b x₀ : E) (m : ℕ) :
     ∃! x, IsGalerkinIterate A b x₀ m x :=
   existsUnique_isGalerkin_of_isCoercive b x₀ _ hA
@@ -268,6 +287,12 @@ private theorem error_eq_aeval (hA : A.IsSymmetricCoercive) {xstar y : E} (hstar
   have hl : b - A y = A (xstar - y) := by rw [map_sub, hstar]
   rw [← hl, hres, hr, aeval_apply_comm]
 
+/-- Energy-norm counterpart of `Krylov.IsMinResIterate.norm_residual_le_norm_aeval`, for symmetric
+coercive `A`: `‖x* - x‖_A ≤ ‖p(A) (x* - x₀)‖_A` for each `p` of degree at most `m` with `p 0 = 1`.
+A competitor's residual polynomial doubles as its error polynomial, because `A` commutes with
+`p(A)`, so the energy-optimality of the Galerkin iterate turns each such `p` into a bound. This is
+the half of `energyNorm_error_eq_iInf` (Saad, *Iterative Methods*, Lemma 6.28) that the Chebyshev
+convergence bounds consume. -/
 theorem energyNorm_error_le_energyNorm_aeval (hA : A.IsSymmetricCoercive)
     (hx : IsGalerkinIterate A b x₀ m x) {xstar : E} (hstar : A xstar = b) (p : 𝕜[X])
     (hp : p.degree ≤ m) (hp0 : p.eval 0 = 1) :

@@ -81,6 +81,9 @@ variable (A : E →ₗ[𝕜] E) (b x₀ : E)
 
 @[simp] theorem iterate_zero : iterate A b x₀ 0 = init A b x₀ := rfl
 
+/-- The recurrence: state `k + 1` is one `CG.step` applied to state `k`. This is the orientation
+the algorithm is read in; `Function.iterate` reduces by peeling a step off the front instead, so
+unfolding `(step A)^[k+1]` directly gives an extra step applied to the *initial* state. -/
 theorem iterate_succ (k : ℕ) : iterate A b x₀ (k + 1) = step A (iterate A b x₀ k) :=
   Function.iterate_succ_apply' _ _ _
 
@@ -518,6 +521,10 @@ theorem span_residual_eq (k : ℕ) :
     ((subspace_le_dirSpan b x₀ hA k).trans (dirSpan_le_resSpan A b x₀ k))
 
 set_option linter.unusedSectionVars false in
+/-- CG stays in the affine Krylov space: `x_k ∈ x₀ + 𝒦_k(A, r₀)`. This is the membership half of
+the Galerkin specification `CG.isGalerkinIterate`, and it follows from the recurrence alone —
+each correction is a multiple of a direction `p_j ∈ 𝒦_{j+1}`. The section's symmetry and
+coercivity hypothesis appears in the signature but is not used by the proof. -/
 theorem iterate_sub_mem (k : ℕ) : (iterate A b x₀ k).x - x₀ ∈ subspace A (b - A x₀) k := by
   induction k with
   | zero => simp [init]
@@ -745,6 +752,10 @@ theorem residual_eq_zero_of_grade_le [FiniteDimensional 𝕜 (fullSubspace A (b 
   rw [residual_eq, sub_eq_zero]
   exact ((isGalerkinIterate b x₀ hA k).apply_eq_of_grade_le hk).symm
 
+/-- Sharpness of `CG.residual_eq_zero_of_grade_le`: before the grade the residual is still
+nonzero, so CG takes exactly `grade A r₀` steps, never fewer. A vanishing `r_k` would make `x_k`
+an exact solution inside `x₀ + 𝒦_k`, and an exact Krylov solution at step `k` forces the grade
+down to `k` (`Krylov.grade_le_of_apply_eq`). -/
 theorem residual_ne_zero_of_lt_grade [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))] {k : ℕ}
     (hk : k < grade A (b - A x₀)) : (iterate A b x₀ k).r ≠ 0 := by
   intro h
@@ -925,6 +936,10 @@ theorem norm_error_antitone [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀)
   nlinarith [norm_nonneg (xstar - (iterate A b x₀ (k + 1)).x),
     norm_nonneg (xstar - (iterate A b x₀ k).x)]
 
+/-- The energy norm of the CG error never increases: one step subtracts the nonnegative amount
+`α_k ‖r_k‖²` from its square (`CG.energyNorm_error_sq_sub`). Unlike the Euclidean statement
+`CG.norm_error_antitone`, this needs no finite-dimensionality, because the identity behind it is
+local to a single step rather than an expansion of the whole remaining error. -/
 theorem energyNorm_error_antitone :
     Antitone fun k => energyNorm A (xstar - (iterate A b x₀ k).x) := by
   refine antitone_nat_of_succ_le fun k => ?_
