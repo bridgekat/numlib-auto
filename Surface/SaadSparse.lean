@@ -11,6 +11,7 @@ import SaadSparse.Ch05.OneDimensional
 import SaadSparse.Ch05.Projection
 import SaadSparse.Ch06.Arnoldi
 import SaadSparse.Ch06.Basic
+import SaadSparse.Ch06.FOM
 
 /-!
 # Surface library: Saad, *Iterative Methods for Sparse Linear Systems* (2nd ed.)
