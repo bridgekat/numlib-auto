@@ -29,6 +29,8 @@ noncomputable def energyNorm (A : E →ₗ[𝕜] E) (x : E) : ℝ :=
 scoped[Energy] notation "⟪" x ", " y "⟫_[" A "]" => energyInner A x y
 scoped[Energy] notation "‖" x "‖_[" A "]" => energyNorm A x
 
+/-- The energy norm is nonnegative for every `A`, symmetric coercive or not, being a square
+root. Keep it at hand: `positivity` does not see through `energyNorm`. -/
 theorem energyNorm_nonneg (A : E →ₗ[𝕜] E) (x : E) : 0 ≤ energyNorm A x := Real.sqrt_nonneg _
 
 namespace LinearMap
@@ -48,10 +50,14 @@ private noncomputable def energyPreCore (hA : A.IsSymmetricCoercive) :
   add_left x y z := by show inner 𝕜 (A (x + y)) z = _; simp [inner_add_left]
   smul_left x y r := by show inner 𝕜 (A (r • x)) y = _; simp [inner_smul_left]
 
+/-- Squaring undoes the square root: `‖x‖_A² = re ⟪A x, x⟫`. This is the form to rewrite with,
+since the quadratic form is what every estimate actually manipulates. -/
 theorem IsSymmetricCoercive.energyNorm_sq (hA : A.IsSymmetricCoercive) (x : E) :
     energyNorm A x ^ 2 = RCLike.re (inner 𝕜 (A x) x) :=
   Real.sq_sqrt (hA.isPositive.re_inner_nonneg_left x)
 
+/-- The energy norm is definite: it vanishes only at `0`. This is where coercivity is used —
+positivity alone would leave a seminorm. -/
 theorem IsSymmetricCoercive.energyNorm_eq_zero_iff (hA : A.IsSymmetricCoercive) {x : E} :
     energyNorm A x = 0 ↔ x = 0 := by
   refine ⟨fun h => ?_, fun h => by simp [h, energyNorm]⟩
@@ -60,6 +66,7 @@ theorem IsSymmetricCoercive.energyNorm_eq_zero_iff (hA : A.IsSymmetricCoercive) 
   rw [← hA.energyNorm_sq, h] at hpos
   simp at hpos
 
+/-- The energy norm is strictly positive away from the origin. -/
 theorem IsSymmetricCoercive.energyNorm_pos (hA : A.IsSymmetricCoercive) {x : E} (hx : x ≠ 0) :
     0 < energyNorm A x :=
   (energyNorm_nonneg A x).lt_of_ne fun h => hx (hA.energyNorm_eq_zero_iff.1 h.symm)
@@ -175,9 +182,13 @@ def equiv : E ≃ₗ[𝕜] WithEnergy A hA where
   left_inv _ := rfl
   right_inv _ := rfl
 
+/-- The inner product of the energy space is the energy inner product of `E`: this is what makes
+`equiv` the bridge along which Mathlib's inner product theory is imported. -/
 @[simp]
 theorem inner_equiv (x y : E) : inner 𝕜 (equiv A hA x) (equiv A hA y) = energyInner A x y := rfl
 
+/-- The norm of the energy space is the energy norm of `E`, so distances measured there are
+`A`-energy distances. -/
 @[simp]
 theorem norm_equiv (x : E) : ‖equiv A hA x‖ = energyNorm A x := rfl
 
@@ -193,6 +204,7 @@ instance (K : Submodule 𝕜 E) [FiniteDimensional 𝕜 K] :
     FiniteDimensional 𝕜 (submoduleMap A hA K) := by
   unfold submoduleMap; infer_instance
 
+/-- Transporting a submodule does not change what belongs to it. -/
 theorem equiv_mem_submoduleMap_iff {K : Submodule 𝕜 E} {x : E} :
     equiv A hA x ∈ submoduleMap A hA K ↔ x ∈ K := by
   rw [submoduleMap, Submodule.mem_map]

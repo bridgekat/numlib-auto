@@ -86,16 +86,20 @@ end Aux
 
 variable {A : E →ₗ[𝕜] E}
 
+/-- The quadratic form of a coercive operator is strictly positive away from the origin. -/
 theorem IsCoercive.inner_self_pos (hA : A.IsCoercive) {x : E} (hx : x ≠ 0) :
     0 < RCLike.re (inner 𝕜 (A x) x) := by
   obtain ⟨c, hc, h⟩ := hA
   exact lt_of_lt_of_le (mul_pos hc (pow_pos (norm_pos_iff.2 hx) 2)) (h x)
 
+/-- A coercive operator is injective: it cannot annihilate a nonzero vector, whose quadratic
+form is strictly positive. No completeness or finite dimension is needed. -/
 theorem IsCoercive.injective (hA : A.IsCoercive) : Function.Injective A := by
   refine (injective_iff_map_eq_zero A).2 fun x hx => ?_
   by_contra hx0
   simpa [hx] using hA.inner_self_pos hx0
 
+/-- A coercive operator has trivial kernel, the submodule form of `IsCoercive.injective`. -/
 theorem IsCoercive.ker_eq_bot (hA : A.IsCoercive) : LinearMap.ker A = ⊥ :=
   LinearMap.ker_eq_bot.2 hA.injective
 
@@ -125,6 +129,9 @@ theorem isCoercive_iff_forall_pos [FiniteDimensional 𝕜 E] (A : E →ₗ[𝕜]
   refine ⟨_, h x₀ fun hz => by simp [hz] at hx₀1, isCoerciveWith_of_forall_sphere fun x hx1 => ?_⟩
   exact isMinOn_iff.1 hmin x (by simpa using hx1)
 
+/-- A symmetric coercive operator is positive in Mathlib's sense, `LinearMap.IsPositive`, so
+the whole positive-operator API applies to it. The converse fails: a positive operator need not
+have a strictly positive coercivity constant. -/
 theorem IsSymmetricCoercive.isPositive (hA : A.IsSymmetricCoercive) : A.IsPositive :=
   ⟨hA.isSymmetric, fun x => by
     rcases eq_or_ne x 0 with rfl | hx
@@ -219,8 +226,11 @@ namespace IsSymmetricBoundedBy
 variable {lmin lmax : ℝ} (hA : A.IsSymmetricBoundedBy lmin lmax)
 include hA
 
+/-- The lower bound of the enclosing interval is a coercivity constant. -/
 theorem isCoerciveWith : A.IsCoerciveWith lmin := hA.le_re_inner
 
+/-- An operator whose quadratic form is enclosed in `[lmin, lmax]` with `lmin > 0` is symmetric
+coercive, i.e. symmetric positive definite. -/
 theorem isSymmetricCoercive (hl : 0 < lmin) : A.IsSymmetricCoercive :=
   ⟨hA.isSymmetric, lmin, hl, hA.le_re_inner⟩
 
@@ -239,6 +249,9 @@ theorem re_mem_Icc_of_hasEigenvalue {μ : 𝕜} (hμ : Module.End.HasEigenvalue 
   rwa [re_inner_apply_self_of_eq_smul hx, mul_div_assoc,
     div_self (pow_pos (norm_pos_iff.2 hx0) 2).ne', mul_one] at h
 
+/-- The enclosing interval may be widened: bounds valid on `[lmin, lmax]` hold on any larger
+interval. Convergence estimates stated for a wider interval are therefore weaker, which is what
+makes `lmin`, `lmax` usable as computable estimates of the extreme eigenvalues. -/
 theorem mono {lmin' lmax' : ℝ} (h₁ : lmin' ≤ lmin) (h₂ : lmax ≤ lmax') :
     A.IsSymmetricBoundedBy lmin' lmax' :=
   ⟨hA.isSymmetric,

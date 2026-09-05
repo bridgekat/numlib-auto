@@ -112,6 +112,10 @@ theorem spectralRadius_lt_one_iff_tendsto_pow (a : A) :
     obtain ⟨n, hn⟩ := (hnorm.eventually_lt_const one_pos).exists
     exact spectralRadius_lt_one_of_norm_pow_lt_one hn
 
+/-- A contraction has spectral radius `< 1`. The converse fails — a nilpotent matrix of large
+norm has spectral radius `0` — and the right converse is
+`spectralRadius_lt_one_iff_exists_norm_pow_lt_one`, which asks only for *some* power to be a
+contraction. -/
 theorem spectralRadius_lt_one_of_norm_lt_one {a : A} (h : ‖a‖ < 1) : spectralRadius ℂ a < 1 :=
   spectralRadius_lt_one_of_norm_pow_lt_one (n := 1) (by rwa [pow_one])
 

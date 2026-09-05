@@ -51,6 +51,8 @@ theorem half_pow_le_eval_T {x : ℝ} (hx : 1 ≤ x) (m : ℕ) :
   have := pow_nonneg (by linarith : (0:ℝ) ≤ x - Real.sqrt (x ^ 2 - 1)) m
   linarith
 
+/-- To the right of the oscillation interval `T_m` is at least `1`, so the min–max value
+`1 / T_m(·)` is a genuine contraction factor and no absolute value is needed around it. -/
 theorem one_le_eval_T {x : ℝ} (hx : 1 ≤ x) (m : ℕ) : 1 ≤ (T ℝ m).eval x :=
   one_le_eval_T_real _ hx
 
@@ -60,6 +62,8 @@ noncomputable def shifted (m : ℕ) (a b γ : ℝ) : ℝ[X] :=
   Polynomial.C (1 / (T ℝ m).eval ((b + a - 2 * γ) / (b - a))) *
     (T ℝ m).comp (Polynomial.C ((b + a) / (b - a)) - Polynomial.C (2 / (b - a)) * X)
 
+/-- `shifted m a b γ` has degree at most `m`: the affine change of variable does not raise the
+degree. Half of what makes it an admissible competitor in the min–max problem. -/
 theorem shifted_degree_le (m : ℕ) (a b γ : ℝ) : (shifted m a b γ).degree ≤ m := by
   have hlin : (Polynomial.C ((b + a) / (b - a)) -
       Polynomial.C (2 / (b - a)) * X : ℝ[X]).natDegree ≤ 1 := by
@@ -106,6 +110,9 @@ private theorem abs_eval_T_neg (m : ℕ) (z : ℝ) :
     |(T ℝ (m : ℤ)).eval (-z)| = |(T ℝ (m : ℤ)).eval z| := by
   simp [T_eval_neg, abs_mul]
 
+/-- `shifted m a b γ` takes the value `1` at the normalization point `γ`, the other half of what
+makes it admissible. The hypothesis `γ ∉ [a, b]` is what keeps the normalizing denominator
+`T_m((b + a - 2γ)/(b - a))` away from zero. -/
 theorem shifted_eval_self (m : ℕ) {a b γ : ℝ} (hab : a < b) (hγ : γ ∉ Set.Icc a b) :
     (shifted m a b γ).eval γ = 1 := by
   have hTne : (T ℝ (m : ℤ)).eval ((b + a - 2 * γ) / (b - a)) ≠ 0 := by

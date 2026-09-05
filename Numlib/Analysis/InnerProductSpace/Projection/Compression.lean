@@ -97,6 +97,8 @@ namespace compression
 
 variable (A : E →ₗ[𝕜] E) (K : Submodule 𝕜 E) [K.HasOrthogonalProjection]
 
+/-- The orthogonal compression is the oblique one taken through the orthogonal projector, so
+every result about `compressionBy` applies to it. -/
 theorem eq_compressionBy :
     compression A K = compressionBy (K.orthogonalProjectionOnto : E →ₗ[𝕜] K) A := rfl
 
@@ -112,14 +114,20 @@ theorem aeval_apply_of_forall_pow_mem (p : 𝕜[X]) {x : K}
     (aeval (compression A K) p x : E) = aeval A p (x : E) :=
   compressionBy.aeval_apply_of_forall_pow_mem _ (orthogonalProjectionOnto_eq_self K) A p hx
 
+/-- On `K` the compression carries the same sesquilinear form as `A`: the projection is
+invisible against a test vector taken from `K`. This is the Galerkin (Rayleigh–Ritz)
+characterization of the compression, and the source of its symmetry and its bounds. -/
 theorem inner_apply (x y : K) : inner 𝕜 (compression A K x) y = inner 𝕜 (A x) (y : E) := by
   have h := K.starProjection_inner_eq_zero (A (x : E)) (y : E) y.2
   rw [inner_sub_left, sub_eq_zero] at h
   exact h.symm
 
+/-- `compression.inner_apply` with the compression in the second argument. -/
 theorem inner_apply' (x y : K) : inner 𝕜 x (compression A K y) = inner 𝕜 (x : E) (A y) := by
   rw [← inner_conj_symm x (compression A K y), inner_apply, inner_conj_symm]
 
+/-- The compression of a symmetric operator is symmetric: the Rayleigh–Ritz matrix of a
+Hermitian operator is Hermitian. -/
 theorem isSymmetric (hA : A.IsSymmetric) : (compression A K).IsSymmetric := fun x y => by
   rw [inner_apply, inner_apply', hA]
 

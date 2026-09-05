@@ -29,14 +29,19 @@ namespace Matrix
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]
 
+/-- The identity matrix acts as the identity operator. -/
 @[simp]
 theorem toEuclideanLin_one : toEuclideanLin (1 : Matrix n n 𝕜) = LinearMap.id :=
   toLpLin_one 2
 
+/-- Matrix multiplication is composition of the operators, so `toEuclideanLin` is a morphism of
+algebras and not merely a linear map. -/
 theorem toEuclideanLin_mul (A B : Matrix n n 𝕜) :
     toEuclideanLin (A * B) = toEuclideanLin A ∘ₗ toEuclideanLin B :=
   toLpLin_mul_same 2 A B
 
+/-- Powers of a matrix act as powers of the operator; this is what lets a Krylov subspace of a
+matrix be read as a Krylov subspace of `toEuclideanLin A`. -/
 theorem toEuclideanLin_pow (A : Matrix n n 𝕜) (k : ℕ) :
     toEuclideanLin (A ^ k) = toEuclideanLin A ^ k :=
   toLpLin_pow 2 A k

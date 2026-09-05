@@ -55,27 +55,40 @@ private theorem inverse_smul {c : 𝕜} (hc : c ≠ 0) (a : R) :
 
 end Smul
 
+/-- The junk value: a singular `a` gets condition number `0`, not `∞`. Guard against it with
+`IsUnit a` rather than with a positivity test on `κ`. -/
 theorem condNumber_of_not_isUnit {a : R} (ha : ¬ IsUnit a) : condNumber a = 0 := by
   rw [condNumber, Ring.inverse_non_unit _ ha, norm_zero, mul_zero]
 
+/-- The condition number is nonnegative, junk value included. -/
 theorem condNumber_nonneg (a : R) : 0 ≤ condNumber a :=
   mul_nonneg (norm_nonneg _) (norm_nonneg _)
 
+/-- A unit is at best perfectly conditioned: `1 ≤ κ a`, by submultiplicativity applied to
+`a * a⁻¹ = 1`. The bound needs `‖1‖ = 1`, and it fails for a non-unit, where `κ` is the junk
+value `0`. -/
 theorem one_le_condNumber [NormOneClass R] {a : R} (ha : IsUnit a) : 1 ≤ condNumber a :=
   calc (1 : ℝ) = ‖a * Ring.inverse a‖ := by rw [Ring.mul_inverse_cancel a ha, norm_one]
     _ ≤ condNumber a := norm_mul_le _ _
 
+/-- Inverting does not change the conditioning: solving `a x = b` and applying `a⁻¹` are equally
+sensitive problems. -/
 theorem condNumber_inverse (a : R) : condNumber (Ring.inverse a) = condNumber a := by
   by_cases ha : IsUnit a
   · rw [condNumber, condNumber, Ring.inverse_inverse ha, mul_comm]
   · rw [condNumber, condNumber, Ring.inverse_non_unit _ ha, norm_zero, zero_mul, mul_zero]
 
+/-- The condition number is scale invariant, `κ (c • a) = κ a` for `c ≠ 0`: rescaling the
+equation `a x = b` does not make it easier or harder to solve. This is why `κ` and not `‖a⁻¹‖`
+measures the sensitivity of the solution to a *relative* perturbation of the data. -/
 theorem condNumber_smul {𝕜 : Type*} [NormedField 𝕜] [NormedAlgebra 𝕜 R] {c : 𝕜} (hc : c ≠ 0)
     (a : R) : condNumber (c • a) = condNumber a := by
   have hc' : ‖c‖ ≠ 0 := norm_ne_zero_iff.mpr hc
   rw [condNumber, condNumber, inverse_smul hc, norm_smul, norm_smul, norm_inv]
   field_simp
 
+/-- Conditioning is submultiplicative: a product is no worse conditioned than the product of the
+conditionings of its factors. -/
 theorem condNumber_mul_le [NormOneClass R] {a b : R} (ha : IsUnit a) (hb : IsUnit b) :
     condNumber (a * b) ≤ condNumber a * condNumber b := by
   obtain ⟨u, rfl⟩ := ha
@@ -98,6 +111,8 @@ theorem ring_inverse_coe (e : E ≃L[𝕜] E) :
     Ring.inverse (e : E →L[𝕜] E) = (e.symm : E →L[𝕜] E) :=
   NormedRing.inverse_eq_of_mul_eq_one (by ext x; simp) (by ext x; simp)
 
+/-- For an invertible operator presented as a continuous linear equivalence the condition number
+is `‖e‖ ‖e⁻¹‖` with the genuine inverse map: the junk value of `Ring.inverse` never arises. -/
 theorem condNumber_eq (e : E ≃L[𝕜] E) :
     NormedRing.condNumber (e : E →L[𝕜] E) = ‖(e : E →L[𝕜] E)‖ * ‖(e.symm : E →L[𝕜] E)‖ := by
   rw [NormedRing.condNumber, ring_inverse_coe]

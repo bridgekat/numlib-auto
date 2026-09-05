@@ -27,12 +27,17 @@ variable {V : Type*} [SeminormedAddCommGroup V]
 /-- `v ∈ K` is a best approximation of `u` from `K`. -/
 def IsBestApprox (K : Set V) (u v : V) : Prop := v ∈ K ∧ ∀ w ∈ K, ‖u - v‖ ≤ ‖u - w‖
 
+/-- A best approximation attains the distance from `u` to `K`: the infimum defining
+`Metric.infDist` is a minimum, realized at `v`. -/
 theorem IsBestApprox.norm_sub_eq_infDist {K : Set V} {u v : V} (h : IsBestApprox K u v) :
     ‖u - v‖ = Metric.infDist u K := by
   refine le_antisymm ((Metric.le_infDist ⟨v, h.1⟩).2 fun w hw => ?_) ?_
   · rw [dist_eq_norm]; exact h.2 w hw
   · rw [← dist_eq_norm]; exact Metric.infDist_le_dist_of_mem h.1
 
+/-- Conversely, an element of `K` sitting at distance `Metric.infDist u K` from `u` is a best
+approximation. So the pointwise minimality of `IsBestApprox` and the metric description agree,
+and either may be used as the definition. -/
 theorem isBestApprox_iff_norm_sub_eq_infDist {K : Set V} {u v : V} (hv : v ∈ K) :
     IsBestApprox K u v ↔ ‖u - v‖ = Metric.infDist u K := by
   refine ⟨IsBestApprox.norm_sub_eq_infDist, fun h => ⟨hv, fun w hw => ?_⟩⟩
@@ -199,6 +204,9 @@ theorem isBestApprox_starProjection (K : Submodule 𝕜 V) [K.HasOrthogonalProje
   (isBestApprox_iff_mem_orthogonal K (K.starProjection_apply_mem u)).2
     (K.sub_starProjection_mem_orthogonal u)
 
+/-- Uniqueness in a subspace with an orthogonal projection: the orthogonal projection is the
+*only* best approximation from `K`. With `isBestApprox_starProjection` this identifies the
+metric projection onto a closed subspace of a Hilbert space with `Submodule.starProjection`. -/
 theorem IsBestApprox.eq_starProjection (K : Submodule 𝕜 V) [K.HasOrthogonalProjection] {u v : V}
     (h : IsBestApprox (K : Set V) u v) : v = K.starProjection u :=
   (Submodule.eq_starProjection_of_mem_orthogonal h.1

@@ -197,6 +197,8 @@ private theorem inner_apply_eq (x : E) (i : ι) :
   rw [obliqueProjectionOfBases_apply, h, Matrix.mulVec_mulVec, crossGram_mul_inv V W hVW,
     Matrix.one_mulVec]
 
+/-- `V (Wᴴ V)⁻¹ Wᴴ` really is a projector, as soon as the cross Gram matrix `Wᴴ V` is
+invertible; it fixes every `V`-combination, and its own values are `V`-combinations. -/
 theorem obliqueProjectionOfBases_isIdempotentElem :
     IsIdempotentElem (obliqueProjectionOfBases 𝕜 V W) := by
   refine LinearMap.ext fun x => ?_
@@ -206,6 +208,8 @@ theorem obliqueProjectionOfBases_isIdempotentElem :
       = fun i => inner 𝕜 (W i) x from funext fun i => inner_apply_eq V W hVW x i]
   rfl
 
+/-- `V (Wᴴ V)⁻¹ Wᴴ` projects *onto* `span V`: its range is exactly the space spanned by the
+columns of `V`. -/
 theorem range_obliqueProjectionOfBases :
     LinearMap.range (obliqueProjectionOfBases 𝕜 V W) = Submodule.span 𝕜 (Set.range V) := by
   refine le_antisymm ?_ ?_
@@ -217,6 +221,9 @@ theorem range_obliqueProjectionOfBases :
     obtain ⟨c, rfl⟩ := Submodule.mem_span_range_iff_exists_fun 𝕜 |>.1 hy
     exact ⟨∑ k, c k • V k, apply_sum_smul V W hVW c⟩
 
+/-- `V (Wᴴ V)⁻¹ Wᴴ` projects *along* `(span W)ᗮ`: a vector is annihilated exactly when it is
+orthogonal to every column of `W`. Together with `range_obliqueProjectionOfBases` this pins the
+projector down, by `LinearMap.IsIdempotentElem.ext_of_range_eq_of_ker_eq`. -/
 theorem ker_obliqueProjectionOfBases :
     LinearMap.ker (obliqueProjectionOfBases 𝕜 V W) = (Submodule.span 𝕜 (Set.range W))ᗮ := by
   ext x
@@ -231,6 +238,8 @@ theorem ker_obliqueProjectionOfBases :
       show (fun i => inner 𝕜 (W i) x) = 0 from funext h, Matrix.mulVec_zero]
     simp
 
+/-- The Petrov–Galerkin condition satisfied by the projector: the error `x - P x` is orthogonal
+to `span W`, the test space. -/
 theorem sub_obliqueProjectionOfBases_apply_mem_orthogonal (x : E) :
     x - obliqueProjectionOfBases 𝕜 V W x ∈ (Submodule.span 𝕜 (Set.range W))ᗮ := by
   rw [mem_orthogonal_span_range_iff]
