@@ -15,7 +15,8 @@ linear in its second, so the book's `ℓ(v) = (v, u)` is written `ℓ v = inner 
 
 * `IsSublinear`, `isSublinear_iff` — Definition 2.5.4 and its bridge to Mathlib's hypotheses.
 * `theorem_2_5_2`, `theorem_2_5_5` — the Hahn–Banach theorem and its generalized (sublinear) form.
-* `corollary_2_5_6`, `corollary_2_5_7` — norming functionals and the dual description (2.5.4) of the norm.
+* `corollary_2_5_6`, `corollary_2_5_7` — norming functionals and the dual description (2.5.4) of
+  the norm.
 * `theorem_2_5_8` — the Riesz representation theorem, (2.5.5) and (2.5.6).
 
 ## Not formalized here
@@ -79,7 +80,8 @@ theorem corollary_2_5_6 (v : V) (hv : v ≠ 0) : ∃ ℓ : StrongDual 𝕜 V, �
 
 /-- **(2.5.4)** (Corollary 2.5.7): the norm of `v` is the supremum of `|ℓ(v)|` over the unit
 sphere of the dual space. -/
-theorem corollary_2_5_7 (v : V) : ‖v‖ = sSup {r : ℝ | ∃ ℓ : StrongDual 𝕜 V, ‖ℓ‖ = 1 ∧ r = ‖ℓ v‖} := by
+theorem corollary_2_5_7 (v : V) :
+    ‖v‖ = sSup {r : ℝ | ∃ ℓ : StrongDual 𝕜 V, ‖ℓ‖ = 1 ∧ r = ‖ℓ v‖} := by
   have hbdd : ∀ r ∈ {r : ℝ | ∃ ℓ : StrongDual 𝕜 V, ‖ℓ‖ = 1 ∧ r = ‖ℓ v‖}, r ≤ ‖v‖ := by
     rintro r ⟨ℓ, hℓ, rfl⟩
     simpa [hℓ] using ℓ.le_opNorm v

@@ -4,7 +4,7 @@ namespace = "AtkinsonHan.Ch05"
 id = "BookSplitting"
 
 [[node]]
-id = "BookSplitting.eq_5_2_5"
+id = "BookSplitting.equation_5_2_5"
 
 [[node]]
 id = "BookSplitting.tendsto_of_opNorm_lt_one"

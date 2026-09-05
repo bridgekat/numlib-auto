@@ -189,7 +189,8 @@ theorem example_3_6_7 [CompleteSpace H] {n : ℕ} {u : Fin n → H} (hu : Orthon
 
 /-- **Proposition 3.6.9(b).** An orthogonal projection is bounded with `‖P‖ ≤ 1`, and `‖P‖ = 1`
 unless `P = 0`. -/
-theorem proposition_3_6_9_b [CompleteSpace H] (P : H →L[𝕜] H) (hP : IsOrthogonalProjectionOperator P) :
+theorem proposition_3_6_9_b [CompleteSpace H] (P : H →L[𝕜] H)
+    (hP : IsOrthogonalProjectionOperator P) :
     ‖P‖ ≤ 1 ∧ (P ≠ 0 → ‖P‖ = 1) := by
   have hone : P ≠ 0 → ‖P‖ = 1 := fun h0 =>
     (ContinuousLinearMap.IsIdempotentElem.norm_eq_one_iff_isSymmetric hP.1 h0).2
@@ -210,7 +211,8 @@ theorem proposition_3_6_9_c [CompleteSpace H] (V₁ : Submodule 𝕜 H) (h : IsC
 sum in the sense of Definition 3.6.1. -/
 theorem proposition_3_6_9_c' [CompleteSpace H] (V₁ : Submodule 𝕜 H) (h : IsClosed (V₁ : Set H)) :
     IsOrthogonalDirectSum V₁ V₁ᗮ :=
-  ⟨(isDirectSum_iff_isCompl V₁ V₁ᗮ).2 (proposition_3_6_9_c V₁ h), Submodule.isOrtho_orthogonal_right V₁⟩
+  ⟨(isDirectSum_iff_isCompl V₁ V₁ᗮ).2 (proposition_3_6_9_c V₁ h),
+    Submodule.isOrtho_orthogonal_right V₁⟩
 
 /-- An orthogonal projection is Mathlib's orthogonal projection onto its range. -/
 theorem eq_starProjection_of_isOrthogonalProjectionOperator (V₁ : Submodule 𝕜 H)
@@ -256,7 +258,8 @@ theorem proposition_3_6_9_d [CompleteSpace H] (V₁ : Submodule 𝕜 H) (h : IsC
 
 /-- **Proposition 3.6.9(e).** The range of an orthogonal projection is closed, and `V` is the
 orthogonal direct sum of `P(V)` and `(I − P)(V) = P(V)ᗮ`. -/
-theorem proposition_3_6_9_e [CompleteSpace H] (P : H →L[𝕜] H) (hP : IsOrthogonalProjectionOperator P) :
+theorem proposition_3_6_9_e [CompleteSpace H] (P : H →L[𝕜] H)
+    (hP : IsOrthogonalProjectionOperator P) :
     IsClosed (LinearMap.range (P : H →ₗ[𝕜] H) : Set H) ∧
       IsCompl (LinearMap.range (P : H →ₗ[𝕜] H))
         (LinearMap.range (((1 : H →L[𝕜] H) - P : H →L[𝕜] H) : H →ₗ[𝕜] H)) ∧

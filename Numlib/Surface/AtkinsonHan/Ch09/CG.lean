@@ -297,6 +297,6 @@ theorem inner_residual_eq_neg_fderiv (hM : a.IsBoundedWith M) (ℓ : StrongDual 
 theorem energy_isMinOn_iff (hM : a.IsBoundedWith M) (hα : 0 < α) (ha : a.IsEllipticWith α)
     (hs : LinearMap.BilinForm.IsSymm a) (ℓ : StrongDual ℝ V) (u : V) :
     IsMinOn (a.energy ℓ) Set.univ u ↔ ∀ v, a u v = ℓ v := by
-  simpa using Ch08.thm_8_3_3_subspace hM hα ha hs ℓ ⊤ Submodule.mem_top
+  simpa using Ch08.theorem_8_3_3_subspace hM hα ha hs ℓ ⊤ Submodule.mem_top
 
 end AtkinsonHan.Ch09

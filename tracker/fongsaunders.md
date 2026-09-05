@@ -141,7 +141,7 @@ Each block: paper formulation → Lean surface definition → backbone counterpa
   and `cgBeta_eq` likewise with `CG.beta`.
 
 ### D6. Algorithm CR (Table 2.1, columns 2–3)
-* Paper (indexed form): `x_0 = 0, r_0 = b, s_0 = A r_0, ρ_0 = r_0ᵀ s_0, problem_0 = r_0, q_0 = s_0`; for
+* Paper (indexed form): `x_0 = 0, r_0 = b, s_0 = A r_0, ρ_0 = r_0ᵀ s_0, p_0 = r_0, q_0 = s_0`; for
   `k = 1, 2, …`: `(q_{k−1} = A p_{k−1})`, `α_k = ρ_{k−1}/‖q_{k−1}‖²`, `x_k = x_{k−1} + α_k p_{k−1}`,
   `r_k = r_{k−1} − α_k q_{k−1}`, `s_k = A r_k`, `ρ_k = r_kᵀ s_k`, `β_k = ρ_k/ρ_{k−1}`, `p_k = r_k + β_k p_{k−1}`,
   `q_k = s_k + β_k q_{k−1}`. Termination at `k = ℓ ≤ n` with `r_ℓ = 0` (`⇒ ρ_ℓ = β_ℓ = 0`, `r_ℓ = s_ℓ = p_ℓ = q_ℓ = 0`).
@@ -234,7 +234,7 @@ Each block: paper formulation → Lean surface definition → backbone counterpa
 * Paper: CG applied to a symmetric, possibly indefinite `A x = b` (notation of Table 2.1); the
   hypothesis is `p_jᵀ A p_j > 0` for all iterations `1 ≤ j ≤ k`; for CR/MINRES additionally `r_jᵀ A r_j > 0`.
 * Lean: no new definition — the same `cg`/`cr` (D5–D6) with `hA' : A.IsSymm` instead of `A.PosDef`;
-  the hypotheses are `∀ j < k, 0 < ⟪(cg A b j).p, A ⬝ (cg A b j).p⟫_ℝ` (directions `problem_0, …, p_{k−1}` used
+  the hypotheses are `∀ j < k, 0 < ⟪(cg A b j).p, A ⬝ (cg A b j).p⟫_ℝ` (directions `p_0, …, p_{k−1}` used
   in iterations `1..k`; see C5) and, for CR, also `∀ j < k, 0 < (cr A b j).ρ` (`ρ_j = r_jᵀ A r_j`).
 * Backbone: `CG.norm_iterate_monotone` (`Numlib/Krylov/CG.lean`; spd, nonstrict) and
   `CR.isMinResIterate_of_no_breakdown (hA : A.IsSymmetric) (k) (h1 : ∀ j < k, ⟪r_j, A r_j⟫ ≠ 0) (h2 : ∀ j < k, q_j ≠ 0)`
@@ -723,8 +723,8 @@ was settled by internal consistency with the paper's own proofs).
 * C4. Thm 2.2 (a): "The inequalities are strict until `i = ℓ` (and `r_ℓ = 0`)". Read as `ρ_i > 0` for `i < ℓ` and `α_i > 0` for
   `1 ≤ i ≤ ℓ` (so `β_i > 0` for `i < ℓ`), which is what the proofs of Thm 2.5 and (4.1) use.
 * C5. §4.2 "as long as `p_jᵀ A p_j > 0` for all iterations `1 ≤ j ≤ k`" versus Table 2.1's indexing (iteration `j` uses `p_{j−1}`):
-  interpreted as the directions used in iterations `1..k`, i.e. `problem_0, …, p_{k−1}` (D10, R4.3); with the literal `problem_1..p_k` the
-  statement would also constrain the unused `p_k` and omit `problem_0`, which contradicts Steihaug's original.
+  interpreted as the directions used in iterations `1..k`, i.e. `p_0, …, p_{k−1}` (D10, R4.3); with the literal `p_1..p_k` the
+  statement would also constrain the unused `p_k` and omit `p_0`, which contradicts Steihaug's original.
 * C6. Thm 2.2 (e) is proved only for `x_iᵀ p_i` ("Therefore `x_iᵀ p_i ≥ 0`") but stated for `x_iᵀ p_j`; the general case follows
   from `x_i = ∑ α_k p_{k−1}` and (d), and R2.5 states it for all `i, j`.
 * C7. Table 5.1: the CG entry for `‖x_k‖` is `↗ [21, Thm 2.1]`; the last table row is the legend (`↗` monotonically increasing,

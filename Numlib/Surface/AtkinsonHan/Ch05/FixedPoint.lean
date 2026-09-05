@@ -203,7 +203,8 @@ theorem equation_5_1_6 (hT : MapsTo T K K) (hα : ContractiveOn T K α) {u : V} 
 
 /-- Theorem 5.1.3(b): the fixed-point iteration converges to the fixed point from every starting
 point of `K`. -/
-theorem theorem_5_1_3_tendsto (hK : IsClosed K) (hT : MapsTo T K K) (hα : ContractiveOn T K α) {u : V}
+theorem theorem_5_1_3_tendsto (hK : IsClosed K) (hT : MapsTo T K K) (hα : ContractiveOn T K α)
+    {u : V}
     (hu : u ∈ K) (hfix : T u = u) {u₀ : V} (hu₀ : u₀ ∈ K) :
     Tendsto (fun n => T^[n] u₀) atTop (𝓝 u) := by
   refine tendsto_iff_norm_sub_tendsto_zero.2 ?_
@@ -232,7 +233,8 @@ theorem theorem_5_1_3 (hK : IsClosed K) (hne : K.Nonempty) (hT : MapsTo T K K)
 /-- **Example 5.1.2** (cited by Theorem 5.2.3): if `T : K → K` is continuous and some iterate
 `T^[m]`, `m ≥ 1`, is contractive on `K`, then `T` still has a unique fixed point in `K` and
 `u_{n+1} = T u_n` converges to it from every `u₀ ∈ K`. -/
-theorem example_5_1_2 (hK : IsClosed K) (hne : K.Nonempty) (hT : MapsTo T K K) (hc : ContinuousOn T K)
+theorem example_5_1_2 (hK : IsClosed K) (hne : K.Nonempty) (hT : MapsTo T K K)
+    (hc : ContinuousOn T K)
     {m : ℕ} (hm : 0 < m) (hα : ContractiveOn T^[m] K α) :
     (∃! u, u ∈ K ∧ T u = u) ∧
       ∀ u₀ ∈ K, ∃ u ∈ K, T u = u ∧ Tendsto (fun n => T^[n] u₀) atTop (𝓝 u) := by

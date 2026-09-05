@@ -6,7 +6,7 @@ import Numlib.Surface.SaadSparse.Ch06.CR
 Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
 SIAM, 2003, §6.9.
 
-**Lemma 6.21** with (6.104)–(6.105) says that *any* sequence of directions `problem_0, …, p_{m-1}`
+**Lemma 6.21** with (6.104)–(6.105) says that *any* sequence of directions `p_0, …, p_{m-1}`
 that is `AᴴA`-orthogonal and spans `𝒦_m(A, r_0)` produces the minimal-residual approximation by
 the one-line update (6.105); it is `isMinResIterate_of_orthogonalDirections` below, a direct
 specialization of the backbone `Krylov.isMinResIterate_of_orthogonal_directions`
@@ -60,7 +60,7 @@ private theorem apply_mem_krylov_succ {v x : 𝔼} {m : ℕ} (h : x ∈ krylov A
 
 /-! ### Lemma 6.21 and (6.104)–(6.105) -/
 
-/-- **Lemma 6.21** with **(6.105)**: if the directions `problem_0, …, p_{m-1}` are `AᴴA`-orthogonal
+/-- **Lemma 6.21** with **(6.105)**: if the directions `p_0, …, p_{m-1}` are `AᴴA`-orthogonal
 with `A p_i ≠ 0` and span `𝒦_m(A, r_0)`, then the sequence produced by the update (6.105)
 `x_{j+1} = x_j + ((r_j, A p_j)/(A p_j, A p_j)) p_j` reaches the minimal-residual approximation
 of `x_0 + 𝒦_m(A, r_0)` at step `m`. -/
@@ -268,7 +268,7 @@ private theorem residual_eq_of_recur (x r p : ℕ → 𝔼) (c : ℕ → 𝕜) (
 /-! ### Algorithm 6.21: GCR -/
 
 /-- **Algorithm 6.21** (GCR) run for `j` steps: the triple `(x_j, r_j, p_j)`, started from
-`r_0 = b - A x_0` and `problem_0 = r_0`. -/
+`r_0 = b - A x_0` and `p_0 = r_0`. -/
 noncomputable def gcrAux (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) : ℕ → 𝔼 × 𝔼 × 𝔼
   | 0 => (x₀, b - op A x₀, b - op A x₀)
   | j + 1 => gcrBody A fun i : Fin (j + 1) => gcrAux A b x₀ (i : ℕ)
@@ -296,7 +296,7 @@ noncomputable def gcrBeta (i j : ℕ) : 𝕜 :=
 
 @[simp] theorem gcrR_zero : gcrR A b x₀ 0 = b - op A x₀ := by rw [gcrR, gcrAux]
 
-/-- Algorithm 6.21, line 1: `problem_0 = r_0`. -/
+/-- Algorithm 6.21, line 1: `p_0 = r_0`. -/
 @[simp] theorem gcrP_zero : gcrP A b x₀ 0 = gcrR A b x₀ 0 := by rw [gcrP, gcrR, gcrAux]
 
 theorem gcrAlpha_eq (j : ℕ) : gcrAlpha A b x₀ j =
@@ -555,8 +555,8 @@ section BookResults
 
 variable {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : EuclideanSpace ℝ (Fin n))
 
-/-- **Lemma 6.21** with **(6.104)** and **(6.105)**. Let `problem_0, problem_1, …, p_{m-1}` be a sequence of
-vectors such that `{problem_0, …, p_{j-1}}` is a basis of `𝒦_j(A, r_0)` for each `j ≤ m` — here: they
+/-- **Lemma 6.21** with **(6.104)** and **(6.105)**. Let `p_0, p_1, …, p_{m-1}` be a sequence of
+vectors such that `{p_0, …, p_{j-1}}` is a basis of `𝒦_j(A, r_0)` for each `j ≤ m` — here: they
 span `𝒦_m` and are `AᴴA`-orthogonal with `A p_i ≠ 0` — and let `x_j` be the sequence produced by
 `x_{j+1} = x_j + ((r_j, A p_j)/(A p_j, A p_j)) p_j` (6.105) from `x_0`. Then `x_m` minimizes the
 residual norm over `x_0 + 𝒦_m(A, r_0)`, and it is given in closed form by

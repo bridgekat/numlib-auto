@@ -23,7 +23,8 @@ case) and its `(u − û, v)` is `inner 𝕜 v (u - uhat)`.
 * `theorem_3_4_5` — the finite-dimensional case.
 * `theorem_3_4_6`, `exercise_3_4_8` — subspaces: the orthogonality characterization (3.4.2).
 * `theorem_3_4_7` — the orthogonal projection operator, (3.4.3)–(3.4.5).
-* `equation_3_4_6`, `hilbertBasis_expansion` — least squares from an orthonormal family and the expansion of `u`.
+* `equation_3_4_6`, `hilbertBasis_expansion` — least squares from an orthonormal family and the
+  expansion of `u`.
 
 ## Not formalized here
 
@@ -93,7 +94,8 @@ theorem proposition_3_4_4' [CompleteSpace H] {K : Set H} (hne : K.Nonempty) (hcl
     (hK : Convex ℝ K) (u v : H) :
     0 ≤ inner ℝ (projConvex K hne hcl hK u - projConvex K hne hcl hK v) (u - v) ∧
       ‖projConvex K hne hcl hK u - projConvex K hne hcl hK v‖ ≤ ‖u - v‖ :=
-  proposition_3_4_4 hK (isBestApprox_projConvex K hne hcl hK u) (isBestApprox_projConvex K hne hcl hK v)
+  proposition_3_4_4 hK (isBestApprox_projConvex K hne hcl hK u)
+    (isBestApprox_projConvex K hne hcl hK v)
 
 /-- **Theorem 3.4.5.** A nonempty closed convex subset of a finite-dimensional subspace of an
 inner product space admits a unique best approximation to every point; no completeness of the

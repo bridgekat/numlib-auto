@@ -78,7 +78,8 @@ theorem proposition_5_3_5 {f g : V₁ → V₂} {A B : V₁ →L[ℝ] V₂} {u�
 /-- **Proposition 5.3.6** (product rule): if `b` is a bounded bilinear map then
 `B(u) = b(f₁ u, f₂ u)` is differentiable with `B'(u₀) h = b(f₁'(u₀) h, f₂(u₀)) +
 b(f₁(u₀), f₂'(u₀) h)`. -/
-theorem proposition_5_3_6 {V W : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [NormedAddCommGroup W]
+theorem proposition_5_3_6 {V W : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V]
+    [NormedAddCommGroup W]
     [NormedSpace ℝ W] (b : V₁ →L[ℝ] V₂ →L[ℝ] W) {f₁ : V → V₁} {f₂ : V → V₂} {A₁ : V →L[ℝ] V₁}
     {A₂ : V →L[ℝ] V₂} {u₀ : V} (h₁ : HasFDerivAt f₁ A₁ u₀) (h₂ : HasFDerivAt f₂ A₂ u₀) :
     HasFDerivAt (fun u => b (f₁ u) (f₂ u))
@@ -306,12 +307,14 @@ variable {U V W : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [NormedAddCo
 
 /-- **Definition 5.3.14** and **Proposition 5.3.15**(⇒): Fréchet differentiability of
 `f : U × V → W` gives the partial derivative in the first variable. -/
-theorem proposition_5_3_15_fst {f : U × V → W} {A : U × V →L[ℝ] W} {p : U × V} (hf : HasFDerivAt f A p) :
+theorem proposition_5_3_15_fst {f : U × V → W} {A : U × V →L[ℝ] W} {p : U × V}
+    (hf : HasFDerivAt f A p) :
     HasFDerivAt (fun u => f (u, p.2)) (A.comp (ContinuousLinearMap.inl ℝ U V)) p.1 :=
   hf.comp p.1 (hasFDerivAt_prodMk_left p.1 p.2)
 
 /-- **Definition 5.3.14** and **Proposition 5.3.15**(⇒), second variable. -/
-theorem proposition_5_3_15_snd {f : U × V → W} {A : U × V →L[ℝ] W} {p : U × V} (hf : HasFDerivAt f A p) :
+theorem proposition_5_3_15_snd {f : U × V → W} {A : U × V →L[ℝ] W} {p : U × V}
+    (hf : HasFDerivAt f A p) :
     HasFDerivAt (fun v => f (p.1, v)) (A.comp (ContinuousLinearMap.inr ℝ U V)) p.2 :=
   hf.comp p.2 (hasFDerivAt_prodMk_right p.1 p.2)
 
@@ -327,7 +330,8 @@ theorem equation_5_3_8 (A : U × V →L[ℝ] W) (h : U) (k : V) :
 /-- **Proposition 5.3.15**(⇐): continuous partial derivatives near `(u₀, v₀)` imply Fréchet
 differentiability, with derivative the coproduct of the partials (Mathlib's
 `hasStrictFDerivAt_uncurry_coprod`). -/
-theorem proposition_5_3_15_of_partial {f : U → V → W} {f₁ : U → V → U →L[ℝ] W} {f₂ : U → V → V →L[ℝ] W}
+theorem proposition_5_3_15_of_partial {f : U → V → W} {f₁ : U → V → U →L[ℝ] W}
+    {f₂ : U → V → V →L[ℝ] W}
     {p : U × V} (df₁ : ∀ᶠ q in 𝓝 p, HasFDerivAt (f · q.2) (↿f₁ q) q.1)
     (df₂ : ∀ᶠ q in 𝓝 p, HasFDerivAt (f q.1 ·) (↿f₂ q) q.2) (cf₁ : ContinuousAt (↿f₁) p)
     (cf₂ : ContinuousAt (↿f₂) p) : HasFDerivAt (↿f) ((↿f₁ p).coprod (↿f₂ p)) p :=

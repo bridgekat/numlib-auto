@@ -25,7 +25,7 @@ Conventions used below.
   book `(v, u)` = Mathlib `inner 𝕜 u v`. All surface statements are written in Mathlib's convention with this swap.
 * Operators: `𝓛(V, W)` = `V →L[𝕜] W`; "bijection with bounded inverse" = `∃ e : V ≃L[𝕜] W, (e : V →L[𝕜] W) = L`;
   `V'` = `StrongDual 𝕜 V`; `Vᗮ` = `Submodule.orthogonal`.
-* Naming: `AtkinsonHan.Ch02.thm_2_3_1`, `corollary_2_3_3`, `lemma_3_4_1`, `proposition_3_6_9_a`, `example_3_6_7`, `exercise_3_6_7`,
+* Naming: `AtkinsonHan.Ch02.theorem_2_3_1`, `corollary_2_3_3`, `lemma_3_4_1`, `proposition_3_6_9_a`, `example_3_6_7`, `exercise_3_6_7`,
   `equation_2_3_13` (numbered inequalities); book numbers appear only in the surface, per `plans/backbone.md` §1.4.
 * Backbone results in a normed ring `R` (`Numlib/Analysis/Normed/Ring/Inverse.lean`, `CondNumber.lean`) assume
   `[NormOneClass R]`; for `R = V →L[𝕜] V` this is the instance `ContinuousLinearMap.normOneClass`, available for

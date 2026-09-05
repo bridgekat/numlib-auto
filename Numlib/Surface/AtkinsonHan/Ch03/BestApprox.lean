@@ -35,7 +35,8 @@ sequential and topological lower semicontinuity.
 * `theorem_3_3_7` — strict separation of a compact convex set from a disjoint closed convex set.
 * `theorem_3_3_13` — existence (and uniqueness) of minimizers on finite-dimensional closed sets.
 * `theorem_3_3_15`, `theorem_3_3_16`, `example_3_3_17` — existence of best approximations.
-* `theorem_3_3_18`, `theorem_3_3_21` — uniqueness under strict convexity of `‖·‖ᵖ`, resp. strict normedness.
+* `theorem_3_3_18`, `theorem_3_3_21` — uniqueness under strict convexity of `‖·‖ᵖ`, resp. strict
+  normedness.
 * `exercise_3_3_8`, `exercise_3_3_8_rpow`, `exercise_3_3_9` — inner product spaces satisfy
   both criteria.
 

@@ -45,7 +45,7 @@ theorem galerkinProblem_iff (hM : a.IsBoundedWith M) :
 Lax–Milgram. -/
 theorem existsUnique_solution [CompleteSpace V] (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀)
     (ha : a.IsEllipticWith c₀) (ℓ : StrongDual ℝ V) : ∃! u, ∀ v, a u v = ℓ v :=
-  Ch08.thm_8_3_4 hM hc₀ ha ℓ
+  Ch08.theorem_8_3_4 hM hc₀ ha ℓ
 
 /-- (9.1.4) is uniquely solvable on any finite-dimensional subspace `V_N`: the form restricted to
 `V_N` is still bounded and `V_N`-elliptic with the same constants, so Lax–Milgram applies there.
@@ -130,9 +130,9 @@ theorem galerkinProblem_iff_isMinOn [CompleteSpace V] (hM : a.IsBoundedWith M) (
     GalerkinProblem a ℓ VN uN ↔ uN ∈ VN ∧ IsMinOn (a.energy ℓ) (VN : Set V) uN := by
   constructor
   · rintro ⟨h1, h2⟩
-    exact ⟨h1, (Ch08.thm_8_3_3_subspace hM hc₀ ha hs ℓ VN h1).mpr h2⟩
+    exact ⟨h1, (Ch08.theorem_8_3_3_subspace hM hc₀ ha hs ℓ VN h1).mpr h2⟩
   · rintro ⟨h1, h2⟩
-    exact ⟨h1, (Ch08.thm_8_3_3_subspace hM hc₀ ha hs ℓ VN h1).mp h2⟩
+    exact ⟨h1, (Ch08.theorem_8_3_3_subspace hM hc₀ ha hs ℓ VN h1).mp h2⟩
 
 /-! ### Céa's inequality (Proposition 9.1.3) -/
 

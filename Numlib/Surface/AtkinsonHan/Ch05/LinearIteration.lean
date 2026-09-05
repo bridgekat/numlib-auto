@@ -199,14 +199,14 @@ theorem forall_tendsto_iff {x b : ι → ℝ} (hx : A *ᵥ x = b) :
     rw [sub_self] at hv
     have heq : (fun k => x - (s.iterStep b)^[k] (x - v)) = fun k => s.iterMatrix ^ k *ᵥ v := by
       funext k
-      simpa using s.eq_5_2_5 hx (x - v) k
+      simpa using s.equation_5_2_5 hx (x - v) k
     rwa [heq] at hv
   · intro h x₀
     refine tendsto_iff_norm_sub_tendsto_zero.2 ?_
     have heq : (fun k => ‖(s.iterStep b)^[k] x₀ - x‖)
         = fun k => ‖s.iterMatrix ^ k *ᵥ (x - x₀)‖ := by
       funext k
-      rw [← norm_neg, neg_sub, s.eq_5_2_5 hx x₀]
+      rw [← norm_neg, neg_sub, s.equation_5_2_5 hx x₀]
     rw [heq]
     simpa using (h (x - x₀)).norm
 

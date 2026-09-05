@@ -14,11 +14,13 @@ ring-theoretic `IsUnit` used by the backbone is `isUnit_iff_exists_continuousLin
 ## Main results
 
 * `theorem_2_3_1` — geometric series theorem, with `(I - L)⁻¹ = ∑ Lⁿ` and (2.3.2).
-* `equation_2_3_4`, `equation_2_3_5` — stability of, and partial-sum approximation for, `(I - L)u = f`.
+* `equation_2_3_4`, `equation_2_3_5` — stability of, and partial-sum approximation for, `(I - L)u =
+  f`.
 * `example_2_3_2` — the second-kind equation `(λI - K)u = f` (abstract part).
 * `corollary_2_3_3`, `example_2_3_4` — the variants under `‖Lᵐ‖ < 1`.
 * `theorem_2_3_5` — the perturbation theorem, with (2.3.13), (2.3.14), (2.3.15).
-* `equation_2_3_16`, `convergence_of_consistent_stable` — consistency plus stability gives convergence.
+* `equation_2_3_16`, `convergence_of_consistent_stable` — consistency plus stability gives
+  convergence.
 
 ## Not formalized here
 
@@ -302,7 +304,8 @@ theorem equation_2_3_16 (hc : CompleteSpace V ∨ CompleteSpace W) (L : V ≃L[�
 
 /-- **(2.3.16), second part.** Consistency (`‖(L - Lₙ) v‖ → 0`) together with stability (a uniform
 bound on `‖Lₙ⁻¹‖`) implies convergence `vₙ → v` of the approximate solutions. The families `eₙ`
-and `vₙ` are only defined for `n ≥ N`, as `equation_2_3_16` provides them, and the conclusion is indexed
+and `vₙ` are only defined for `n ≥ N`, as `equation_2_3_16` provides them, and the conclusion is
+indexed
 accordingly. -/
 theorem convergence_of_consistent_stable (hc : CompleteSpace V ∨ CompleteSpace W)
     (L : V ≃L[𝕜] W) (Ln : ℕ → V →L[𝕜] W) (N : ℕ) (en : ∀ n, N ≤ n → (V ≃L[𝕜] W))

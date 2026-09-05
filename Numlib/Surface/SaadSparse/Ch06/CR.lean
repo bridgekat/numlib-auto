@@ -62,7 +62,7 @@ noncomputable def crStep (A : Matrix (Fin n) (Fin n) 𝕜) (s : 𝔼 × 𝔼 × 
     op A (crStepR A s) + crStepBeta A s • s.2.2.2)
 
 /-- **Algorithm 6.20** (conjugate residual) run for `j` steps: the quadruple
-`(x_j, r_j, p_j, A p_j)`, started from `r_0 = b - A x_0` and `problem_0 = r_0`. -/
+`(x_j, r_j, p_j, A p_j)`, started from `r_0 = b - A x_0` and `p_0 = r_0`. -/
 noncomputable def cr (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (j : ℕ) : 𝔼 × 𝔼 × 𝔼 × 𝔼 :=
   (crStep A)^[j] (x₀, b - op A x₀, b - op A x₀, op A (b - op A x₀))
 
@@ -103,7 +103,7 @@ theorem cr_succ (j : ℕ) : cr A b x₀ (j + 1) = crStep A (cr A b x₀ j) :=
 
 @[simp] theorem crR_zero : crR A b x₀ 0 = b - op A x₀ := rfl
 
-/-- Algorithm 6.20, line 1: `problem_0 = r_0`. -/
+/-- Algorithm 6.20, line 1: `p_0 = r_0`. -/
 @[simp] theorem crP_zero : crP A b x₀ 0 = crR A b x₀ 0 := rfl
 
 @[simp] theorem crAp_zero : crAp A b x₀ 0 = op A (crP A b x₀ 0) := rfl

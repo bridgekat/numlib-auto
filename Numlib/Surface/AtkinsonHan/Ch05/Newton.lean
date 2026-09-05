@@ -74,7 +74,8 @@ omit [CompleteSpace U] [CompleteSpace W] in
 /-- **(5.4.5)**: with `T u = u - [F'(u)]⁻¹ F(u)`, `‖T u - u*‖ ≤ (c₀ L / 2) ‖u - u*‖²` where
 `c₀` bounds `‖[F'(u)]⁻¹‖` and `L` is the Lipschitz constant of `F'`.  Proved from the `L/2`
 Taylor estimate `norm_sub_sub_fderiv_le_half_mul_sq` of §5.3. -/
-theorem equation_5_4_5 {F : U → W} {F' : U → U →L[ℝ] W} {ustar : U} (hroot : F ustar = 0) {r L c₀ : ℝ}
+theorem equation_5_4_5 {F : U → W} {F' : U → U →L[ℝ] W} {ustar : U} (hroot : F ustar = 0)
+    {r L c₀ : ℝ}
     (hF : ∀ z ∈ ball ustar r, HasFDerivAt F (F' z) z)
     (hL : ∀ z ∈ ball ustar r, ∀ w ∈ ball ustar r, ‖F' z - F' w‖ ≤ L * ‖z - w‖) {u : U}
     (hu : u ∈ ball ustar r) (e : U ≃L[ℝ] W) (he : (e : U →L[ℝ] W) = F' u)

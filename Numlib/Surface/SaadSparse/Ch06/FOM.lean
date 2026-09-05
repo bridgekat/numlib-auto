@@ -1100,7 +1100,8 @@ theorem proposition_6_7 {m : ℕ} (hH : FOMDefined A b x₀ m) (hm : m ≤ grade
   residual_fomFixed A b x₀ hH hm hm0
 
 /-- **(6.18)**: `‖b - A x_m‖₂ = h_{m+1,m} |e_mᵀ y_m|`. -/
-theorem equation_6_18 {m : ℕ} (hH : FOMDefined A b x₀ m) (hm : m ≤ grade A (v₁ A b x₀)) (hm0 : 0 < m) :
+theorem equation_6_18 {m : ℕ} (hH : FOMDefined A b x₀ m) (hm : m ≤ grade A (v₁ A b x₀))
+    (hm0 : 0 < m) :
     ‖b - op A (fomFixed A b x₀ m)‖
       = |arnoldiCoeff A (v₁ A b x₀) m (m - 1)| * |fomY A b x₀ m ⟨m - 1, by omega⟩| := by
   rw [← Real.norm_eq_abs, ← Real.norm_eq_abs]

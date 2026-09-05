@@ -44,7 +44,7 @@ Conventions (shared file `Surface/SaadSparse/Basic.lean`):
   (`Numlib/LinearAlgebra/Matrix/Complexify.lean`); `Basic.lean` adds the glue `complexify_sub`,
   `complexify_diagPart/strictLower/strictUpper/inv` (`Matrix.map` of a ring hom) and
   `norm_complexify_mulVec : ‖complexify A *ᵥ (ofReal ∘ x)‖ = ‖A *ᵥ x‖`.
-* Names: `SaadSparse.Ch01.thm_1_34`, `SaadSparse.Ch05.prop_5_3`, `equation_1_76`, …, plus descriptive
+* Names: `SaadSparse.Ch01.theorem_1_34`, `SaadSparse.Ch05.proposition_5_3`, `equation_1_76`, …, plus descriptive
   aliases; docstrings carry the book statement verbatim.
 
 Proposed files:

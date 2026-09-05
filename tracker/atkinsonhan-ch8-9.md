@@ -48,8 +48,8 @@ Files (library `AtkinsonHan`, `srcDir = "Surface"`, importing only `Numlib`; thi
 | `Surface/AtkinsonHan/Ch09/Strang.lean` | §9.3: generalized Galerkin problem, Thm 9.3.1, Ex 9.3.1 |
 | `Surface/AtkinsonHan/Ch09/CG.lean` | §9.4: `A`, `f`, Algorithm 1 = backbone `CG.iterate`, convergence via Thm 5.6.1, energy derivative |
 
-Naming: namespace `AtkinsonHan`, book numbers in names (`AtkinsonHan.Ch08.thm_8_2_4`,
-`AtkinsonHan.Ch09.prop_9_1_3`, …) as in `plans/backbone.md` §1.4; definitions get descriptive names.
+Naming: namespace `AtkinsonHan`, book numbers in names (`AtkinsonHan.Ch08.theorem_8_2_4`,
+`AtkinsonHan.Ch09.proposition_9_1_3`, …) as in `plans/backbone.md` §1.4; definitions get descriptive names.
 
 Common preamble (all files): `variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]`
 (+ `[CompleteSpace V]` = "Hilbert"), `ℓ : StrongDual ℝ V` (`= V →L[ℝ] ℝ`), `open InnerProductSpace`.
@@ -507,7 +507,7 @@ Classification: **direct**.
 
 **Ex 8.3.1.** Deduce Lax–Milgram from Thm 5.1.4 (`T : V → V` strongly monotone and Lipschitz ⇒
 `T u = b` uniquely solvable).
-* Lean: `theorem exercise_8_3_1 … : ∃! u, ∀ v, a u v = ℓ v` proved by applying the surface `Ch05.thm_5_1_4`
+* Lean: `theorem exercise_8_3_1 … : ∃! u, ∀ v, a u v = ℓ v` proved by applying the surface `Ch05.theorem_5_1_4`
   (`plans/surface/AtkinsonHan-Ch5.md`; backbone `zarantonello`, `Numlib/Nonlinear/FixedPoint.lean`)
   to `T := toOperator a hM`, `c₁ = α` (`inner_toOperator`, `ha`), `c₂ = M` (`‖toOperator a hM‖ ≤ M`),
   `b := rieszRep ℓ`; then (9.4.7)⟺(9.4.4) (`SesqForm.forall_apply_eq_iff_toOperator_eq`).

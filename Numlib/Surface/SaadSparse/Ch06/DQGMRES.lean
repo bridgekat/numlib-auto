@@ -21,7 +21,8 @@ Contents: `qgmresY`, `qgmres` (Algorithm 6.12), `Z`, `z`, `ζ` of (6.52), `quasi
 `= |γ_{m+1}|`, (6.49)–(6.50), and Algorithm 6.13 (`dqgmresP`, `dqgmres`) with its equivalence
 `dqgmres_eq_qgmres` to Algorithm 6.12.
 
-Also (6.53)–(6.55) and P-6.25 (`equation_6_53`, `equation_6_54`, `equation_6_55`, `problem_6_25`, `problem_6_25_le`); the
+Also (6.53)–(6.55) and P-6.25 (`equation_6_53`, `equation_6_54`, `equation_6_55`, `problem_6_25`,
+`problem_6_25_le`); the
 size-compatibility lemmas for `Krylov.givensQAux` that (6.53) needs are private here and are a
 backbone demand.
 
@@ -219,7 +220,8 @@ theorem equation_6_55 {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ : 𝔼} {u : ℕ
     ring
   have h2 : γ h β (m + 1) * starRingEnd 𝕜 (c h m)
       = starRingEnd 𝕜 (c h m) * γ h β (m + 1) := mul_comm _ _
-  rw [equation_6_50 hu hr hR', equation_6_50 hu hr hR, equation_6_53, smul_add, smul_smul, smul_smul, smul_smul,
+  rw [equation_6_50 hu hr hR', equation_6_50 hu hr hR, equation_6_53, smul_add,
+    smul_smul, smul_smul, smul_smul,
     h1, h2]
 
 /-- **P-6.25**: (6.54) bounds the growth of `ζ` by one square root per step, so from

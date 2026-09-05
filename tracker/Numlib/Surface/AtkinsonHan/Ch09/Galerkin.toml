@@ -1,7 +1,7 @@
 namespace = "AtkinsonHan"
 
 [[node]]
-id = "Ch09.cor_9_1_4"
+id = "Ch09.corollary_9_1_4"
 
 [[node]]
 id = "Ch09.existsUnique_solution"
@@ -13,7 +13,7 @@ id = "Ch09.galerkin_eq_energyProjection"
 id = "Ch09.galerkin_orthogonality"
 
 [[node]]
-id = "Ch09.prop_9_1_3"
+id = "Ch09.proposition_9_1_3"
 
 [[node]]
 id = "Ch09.stiffnessMatrix_isSymm"

@@ -108,7 +108,8 @@ theorem equation_2_4_1 (L : V ≃L[𝕜] W) {v vhat : V} (hv : v ≠ 0) :
     ‖v - vhat‖ / ‖v‖ ≤ cond L * (‖L v - L vhat‖ / ‖L v‖) := by
   have ha : 0 < ‖v‖ := norm_pos_iff.2 hv
   have hb : 0 < ‖L v‖ := norm_pos_iff.2 fun h => hv (by simpa using congrArg L.symm h)
-  have hd : ‖v - vhat‖ ≤ ‖(L.symm : W →L[𝕜] V)‖ * ‖L v - L vhat‖ := stability_of_isomorphism L v vhat
+  have hd : ‖v - vhat‖ ≤ ‖(L.symm : W →L[𝕜] V)‖ * ‖L v - L vhat‖
+    := stability_of_isomorphism L v vhat
   have hq : ‖L v‖ ≤ ‖(L : V →L[𝕜] W)‖ * ‖v‖ := (L : V →L[𝕜] W).le_opNorm v
   rw [cond, mul_div_assoc', div_le_div_iff₀ ha hb]
   have hp : 0 ≤ ‖(L.symm : W →L[𝕜] V)‖ := norm_nonneg _

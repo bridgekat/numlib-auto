@@ -390,7 +390,8 @@ theorem mul_V_eq_add_vecMulVec (hv : ‖v₁‖ = 1) (m : ℕ) :
       rw [arnoldiCoeff_eq_zero_of_lt A v₁ hv (by omega), zero_smul]
       simp [Fin.ext_iff, hne]
   ext i j
-  rw [mul_V_apply, equation_6_9_range A v₁ hv (N := m + 2) (by omega), Finset.sum_range_succ, hlast j,
+  rw [mul_V_apply, equation_6_9_range A v₁ hv (N := m + 2) (by omega), Finset.sum_range_succ,
+    hlast j,
     PiLp.add_apply, sum_coord, Matrix.add_apply, Matrix.mul_apply, Matrix.vecMulVec_apply,
     ← Fin.sum_univ_eq_sum_range
       (fun l => (arnoldiCoeff A v₁ l (j : ℕ) • arnoldiCGS A v₁ l) i) (m + 1)]

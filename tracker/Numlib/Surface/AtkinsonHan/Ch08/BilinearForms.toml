@@ -46,7 +46,7 @@ id = "BilinForm.ofCLM_apply"
 id = "BilinForm.ofCLM_toCLM"
 
 [[node]]
-id = "BilinForm.thm_8_3_1"
+id = "BilinForm.theorem_8_3_1"
 
 [[node]]
 id = "BilinForm.toCLM"

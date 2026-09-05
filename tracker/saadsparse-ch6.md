@@ -500,7 +500,7 @@ The two claims the book cites without proof ((d), (e) of R46) belong to the defe
 
 Book: (6.86) `x_m = x_0 + V_m y_m`, `y_m = T_m^{-1}(β e_1)`; D-Lanczos: `T_m = L_m U_m` with
 `λ_m = β_m/η_{m−1}` (6.88), `η_m = α_m − λ_m β_m` (6.89), `ζ_m = −λ_m ζ_{m−1}` (`ζ_1 = β`),
-`p_m = η_m^{-1}(v_m − β_m p_{m−1})`, `x_m = x_{m−1} + ζ_m p_m`; CG (Alg 6.18): `problem_0 = r_0`,
+`p_m = η_m^{-1}(v_m − β_m p_{m−1})`, `x_m = x_{m−1} + ζ_m p_m`; CG (Alg 6.18): `p_0 = r_0`,
 `α_j = (r_j,r_j)/(A p_j,p_j)`, `x_{j+1} = x_j + α_j p_j`, `r_{j+1} = r_j − α_j A p_j`,
 `β_j = (r_{j+1},r_{j+1})/(r_j,r_j)`, `p_{j+1} = r_{j+1} + β_j p_j`; three-term CG (Alg 6.19):
 `x_{−1} = 0`, `ρ_0 = 1`, `γ_j = (r_j,r_j)/(A r_j,r_j)`,
@@ -542,7 +542,7 @@ for symmetric `A`, as the book remarks; reuse D6's LU argument);
 
 ### D15. Algorithm 6.20 (CR), Algorithm 6.21 (GCR), ORTHOMIN(k), ORTHODIR, GCR(m) (§6.8–6.9)
 
-Book: CR: `problem_0 = r_0`; `α_j = (r_j, A r_j)/(A p_j, A p_j)`, `x_{j+1} = x_j + α_j p_j`, `r_{j+1} = r_j − α_j A p_j`,
+Book: CR: `p_0 = r_0`; `α_j = (r_j, A r_j)/(A p_j, A p_j)`, `x_{j+1} = x_j + α_j p_j`, `r_{j+1} = r_j − α_j A p_j`,
 `β_j = (r_{j+1}, A r_{j+1})/(r_j, A r_j)`, `p_{j+1} = r_{j+1} + β_j p_j`, `A p_{j+1} = A r_{j+1} + β_j A p_j`.
 GCR: same `α_j`, `x, r` updates, `β_ij = −(A r_{j+1}, A p_i)/(A p_i, A p_i)` for `i = 0..j`,
 `p_{j+1} = r_{j+1} + ∑_{i≤j} β_ij p_i`; ORTHOMIN(k): `i = j−k+1..j`; ORTHODIR: `p_{j+1} = A p_j + ∑_{i≤j} β_ij p_i`,
@@ -1424,7 +1424,7 @@ item scheduled for a later phase (listed in §4); `out-of-scope` = not formalize
 - **Classification.** `direct`.
 
 ### R54. Lemma 6.21, (6.104)–(6.105)
-- **Book statement.** Let `problem_0, …, p_{m−1}` be such that each `{problem_0, …, p_{j−1}}` (`j ≤ m`) is a basis
+- **Book statement.** Let `p_0, …, p_{m−1}` be such that each `{p_0, …, p_{j−1}}` (`j ≤ m`) is a basis
   of `𝒦_j(A, r_0)` and `(A p_i, A p_k) = 0` for `i ≠ k`. Then the minimal-residual approximation in
   `x_0 + 𝒦_m(A, r_0)` is `x_m = x_0 + ∑_{i<m} ((r_0, A p_i)/(A p_i, A p_i)) p_i` (6.104), and
   `x_m = x_{m−1} + ((r_{m−1}, A p_{m−1})/(A p_{m−1}, A p_{m−1})) p_{m−1}` (6.105).
@@ -1435,7 +1435,7 @@ item scheduled for a later phase (listed in §4); `out-of-scope` = not formalize
   Krylov.IsMinResIterate Aop b x₀ m (x m) ∧ x m = x₀ + ∑ i : Fin m, (inner (Aop (p i)) r₀ / inner (Aop (p i)) (Aop (p i))) • p i`.
   (The nonvanishing of `(A p_i, A p_i)` is implicit in the book's divisions; it is automatic for
   nonsingular `A`. The book's nested-basis hypothesis for every `j ≤ m` follows from `hspan` at `m`
-  together with the recurrence, which only uses `problem_0..p_{j−1}` up to step `j`.)
+  together with the recurrence, which only uses `p_0..p_{j−1}` up to step `j`.)
 - **Backbone item.** §3.8 `Krylov.isMinResIterate_of_orthogonal_directions` (`Numlib/Krylov/CR.lean`;
   exactly the hypotheses above, no symmetry assumption).
 - **Proof route.** (6.105) is the backbone theorem; (6.104) by unfolding the recurrence and

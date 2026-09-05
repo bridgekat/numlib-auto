@@ -1,7 +1,7 @@
 namespace = "AtkinsonHan"
 
 [[node]]
-id = "Ch09.thm_9_2_1"
+id = "Ch09.theorem_9_2_1"
 
 [[node]]
 id = "DiscreteInfSup"

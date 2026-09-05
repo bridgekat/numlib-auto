@@ -61,7 +61,7 @@ noncomputable def cgStep (A : Matrix (Fin n) (Fin n) 𝕜) (s : 𝔼 × 𝔼 × 
   (s.1 + cgStepAlpha A s • s.2.2, cgStepR A s, cgStepR A s + cgStepBeta A s • s.2.2)
 
 /-- **Algorithm 6.18** (conjugate gradient) run for `j` steps: the triple `(x_j, r_j, p_j)`,
-started from `r_0 = b - A x_0` and `problem_0 = r_0`. -/
+started from `r_0 = b - A x_0` and `p_0 = r_0`. -/
 noncomputable def cg (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (j : ℕ) : 𝔼 × 𝔼 × 𝔼 :=
   (cgStep A)^[j] (x₀, b - op A x₀, b - op A x₀)
 
@@ -98,7 +98,7 @@ theorem cg_succ (j : ℕ) : cg A b x₀ (j + 1) = cgStep A (cg A b x₀ j) :=
 
 @[simp] theorem cgR_zero : cgR A b x₀ 0 = b - op A x₀ := rfl
 
-/-- Algorithm 6.18, line 1: `problem_0 = r_0`. -/
+/-- Algorithm 6.18, line 1: `p_0 = r_0`. -/
 @[simp] theorem cgP_zero : cgP A b x₀ 0 = cgR A b x₀ 0 := rfl
 
 /-- (6.92): `α_j = (r_j, r_j)/(A p_j, p_j)`. -/
@@ -497,7 +497,8 @@ theorem cg3_eq (hA : A.PosDef) {j : ℕ} (hr : ∀ i ≤ j, cgR A b x₀ i ≠ 0
 /-- **P-6.17**: (6.97) is forced by (6.96) and the orthogonality of the residuals. Any scalar
 `ρ` for which the three-term residual recurrence holds at step `m + 1` is the `ρ_{m+1}` of
 (6.97). -/
-theorem equation_6_97_of_eq_6_96 (hA : A.PosDef) {m : ℕ} (hr : ∀ j ≤ m + 1, cgR A b x₀ j ≠ 0) {ρ : 𝕜}
+theorem equation_6_97_of_eq_6_96 (hA : A.PosDef) {m : ℕ} (hr : ∀ j ≤ m + 1, cgR A b x₀ j ≠ 0)
+    {ρ : 𝕜}
     (h96 : cgR A b x₀ (m + 2) =
       ρ • (cgR A b x₀ (m + 1) - cgGamma A b x₀ (m + 1) • op A (cgR A b x₀ (m + 1))) +
         (1 - ρ) • cgR A b x₀ m) :
@@ -664,7 +665,7 @@ noncomputable def dlZeta (A : Matrix (Fin n) (Fin n) ℝ) (v₁ : 𝔼) (β : �
   | 0 => β
   | m + 1 => -dlLambda A v₁ (m + 1) * dlZeta A v₁ β m
 
-/-- `problem_1 = η_1^{-1} v_1` and `p_{m+1} = η_{m+1}^{-1}(v_{m+1} - β_{m+1} p_m)`, the columns of
+/-- `p_1 = η_1^{-1} v_1` and `p_{m+1} = η_{m+1}^{-1}(v_{m+1} - β_{m+1} p_m)`, the columns of
 `P_m = V_m U_m^{-1}`. -/
 noncomputable def dlP (A : Matrix (Fin n) (Fin n) ℝ) (v₁ : 𝔼) : ℕ → 𝔼
   | 0 => (dlEta A v₁ 0)⁻¹ • lanczosV A v₁ 0

@@ -460,7 +460,8 @@ theorem corollary_6_14 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) (hH : ∀ 
 /-! #### Proposition 6.15, (6.68) -/
 
 /-- **Proposition 6.15**, (6.68): `ρ_m^G ≤ ρ^F_{m*} ≤ √(m+1) ρ_m^G`. -/
-theorem proposition_6_15 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) (hH : ∀ i ≤ m, FOMDefined A b x₀ i) :
+theorem proposition_6_15 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀))
+    (hH : ∀ i ≤ m, FOMDefined A b x₀ i) :
     ρG A b x₀ m ≤ ρFmin A b x₀ m ∧
       ρFmin A b x₀ m ≤ Real.sqrt (m + 1) * ρG A b x₀ m := by
   have hG := gmresFixed_isMinResIterate A b x₀ hm
