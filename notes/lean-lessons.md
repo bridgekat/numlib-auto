@@ -24,13 +24,23 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   script that opens the target for writing before it fails will truncate it: one agent lost 600
   lines this way. Write the patch script with the Write tool, run `python file.py`, and have it
   write to a temp file and rename so a crash cannot destroy the original.
-* In a Python patch script, `𝕜` must be written `\U0001d55c`. A surrogate pair `𝕜`
-  silently fails to match and, on Windows, raises on write.
+* In a Python patch script every non-BMP character must be written as a `\U…` escape: `\U0001d55c`
+  for `𝕜`, `\U0001d4ab` for `𝒫`, `\U0001d4dd` for `𝓝`. A raw surrogate pair silently fails to match
+  and, on Windows, raises `UnicodeEncodeError` *on write* — after the file has already been
+  truncated. Two agents have destroyed a file this way; the temp-file-and-`os.replace` discipline
+  above is what makes such a failure harmless.
+* The same trap applies to the *script itself*: a bash heredoc mangles non-BMP characters in the
+  Python source you are feeding it, so a patch whose search string contains one silently fails to
+  match. Write such a patch with the Write tool, or use the Edit tool directly.
 * The Lean sources here use LF, and every writer must keep it that way. A Python patch script has
   to open with `io.open(p, 'w', encoding='utf-8', newline='')`, or it silently converts the file to
   CRLF and the whole file shows as changed.
 * Line length: the only authority is `linter.style.longLine`. Counting with `awk length>100`
   over-reports, because it counts bytes and the mathematical symbols are multi-byte.
+* **`lake env lean F.lean` does not apply the `leanOptions` of `lakefile.toml`**, so the Mathlib
+  style linters are silent under it. Always run a real `lake build` before committing, or the long
+  lines and unused variables only surface at merge time.
+* Imports must precede the module doc comment, not follow it.
 
 ## Correctness traps
 
@@ -74,6 +84,17 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
 * `linter.unusedDecidableInType` fires on a `[DecidableEq ι]` binder absent from the statement;
   drop it and open the proof with `classical`.
 * `ExistsUnique` goals arrive beta-unreduced; prefix the uniqueness branch with `show ∀ v, …`.
+* A `local notation` used inside a `variable` binder silently breaks section-variable inclusion:
+  the variable becomes an unknown identifier in term-mode bodies. Write the type out in binders.
+* Dot notation resolves through the *unfolded* head, which bites on `def`s that unfold to a
+  connective: `ConvexOn`/`StrictConvexOn` unfold to `And`, so `h.foo` on such a hypothesis looks up
+  `And.foo`, and a project lemma named `ConvexOn.foo` must be applied by its full name. The same
+  happens on an `IsIdempotentElem` hypothesis, which resolves into `Eq`.
+* For an equation whose left side mentions a structure parameter (`s.eq : A = s.N - s.M` with
+  `s : BookSplitting A`), only `rw [← s.eq]` type-checks; the forward direction fails with "motive
+  is not type correct".
+* `open scoped Matrix` is required for `*ᵥ`; without it the error blames
+  `Mathlib.Tactic.subscriptTerm` and says nothing about the missing scope.
 
 ## Tactics
 
@@ -96,11 +117,23 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
 * `rw` rewrites only the first instantiation of a lemma like `ite_eq_left`; with several `ite`s
   sharing a condition use `simp only`.
 * Well-founded induction along a finite linear order: `induction i using WellFoundedLT.induction`.
+* Higher-order unification defeats several composition lemmas when the expected type is written as
+  an explicit lambda: `HasFDerivAt.comp_hasDerivAt` against `fun t => f (g t)`, and
+  `HasDerivAt.scomp` when the inner function is applied at a point. Bind the composite with a
+  `have` whose type you state, then `exact` it.
+* `Filter.Tendsto.const_mul` takes the constant as a leading *explicit* argument, so it will not
+  elaborate inline inside `squeeze_zero`.
+* `liminf_le_liminf` does not auto-discharge its `IsCoboundedUnder (≥)` side goal.
 
 ## Mathlib names and API
 
 `pow_left_inj₀ ha hb hn : a ^ n = b ^ n ↔ a = b` is the way to cancel the squares after comparing
 two norms through `norm_add_sq`.
+
+A real `V →L[ℝ] V →L[ℝ] ℝ` *is* a `SesqForm ℝ V` by definition, so bridges between them are
+`Iff.rfl` — and `simp` cannot prove them, because the two coercion paths differ. Unification of
+`starRingEnd ℝ` against `RingHom.id ℝ` also gets stuck, so pass `(𝕜 := ℝ)` explicitly.
+`NormOneClass (E →L[𝕜] E)` now needs `NontrivialTopology`.
 
 Deprecated or renamed in this toolchain: `if_pos`/`if_neg` to `ite_eq_left`/`ite_eq_right`;
 `push_neg` to `push Not`; `Matrix.dotProduct` to root-level `dotProduct`; `LinearMap.mul_apply` to
@@ -109,8 +142,10 @@ Deprecated or renamed in this toolchain: `if_pos`/`if_neg` to `ite_eq_left`/`ite
 names and `ContinuousLinearMap.one_apply` to `one_apply_eq_self`; `Matrix.det_of_lowerTriangular` to
 `det_of_isLowerTriangular`; `div_le_div_iff` to `div_le_div_iff₀`; `LinearMap.range_coe` to
 `LinearMap.coe_range`; `linearIndependent_fin_succ'` to `linearIndependent_finSucc'`;
-`Polynomial.degree_sub_lt` to `degree_sub_lt_left`; `RCLike.conj_conj` is only an alias, prefer
-`starRingEnd_self_apply`. `sub_eq_sub_iff_add_eq_add` and `div_add_div_same` do not exist.
+`Polynomial.degree_sub_lt` to `degree_sub_lt_left`; `Set.mem_setOf_eq` to `Set.mem_ofPred_eq`;
+`RCLike.conj_conj` is only an alias, prefer `starRingEnd_self_apply`.
+`sub_eq_sub_iff_add_eq_add`, `div_add_div_same` and `PiLp.sum_apply` do not exist.
+`RCLike.inner_apply` orients as `⟪x, y⟫ = y * conj x`.
 
 Structural facts worth knowing before planning a proof:
 
