@@ -47,8 +47,9 @@ Proposed files (in dependency order):
 | `Ch06/Basic.lean` | §6.1–6.2 | `op`, `krylov`, `grade` (minimal-polynomial degree), equivalence with `Krylov.subspace`/`Krylov.grade`; Prop 6.1–6.3 |
 | `Ch06/Arnoldi.lean` | §6.3 | Alg 6.1–6.3, `V_m, H_m, H̄_m, w_m`; Prop 6.4–6.6, (6.6)–(6.13); P-6.1 |
 | `Ch06/FOM.lean` | §6.4 | (6.16)–(6.18), Alg 6.4 (FOM), 6.5 (FOM(m)), 6.6 (IOP), 6.7 (IOM), 6.8 (DIOM); Prop 6.7–6.8, (6.19)–(6.24); P-6.22 |
-| `Ch06/GMRES.lean` | §6.5.1–6.5.2, 6.5.5 | (6.25)–(6.33), Alg 6.9 (GMRES), 6.10 (Householder GMRES), 6.11 (GMRES(m)); P-6.5 |
-| `Ch06/Givens.lean` | §6.5.3–6.5.4, 6.5.9 | (6.34)–(6.47), (6.80)–(6.81), Prop 6.9–6.10, "at most `n` steps" remark |
+| `Ch06/Residual.lean` | §6.4–6.5 preliminaries | `r₀`, `β`, `v₁`, `e₁`, `mEff` and the bridges from the book's unit starting vector to the backbone's residual-indexed Arnoldi data; shared by FOM, GMRES, Givens and DQGMRES |
+| `Ch06/Givens.lean` | §6.5.3–6.5.4, 6.5.9 | (6.34)–(6.47), (6.80)–(6.81), the rotation data; **precedes `GMRES.lean`**, since `y_m = R⁻¹ g` needs D8 |
+| `Ch06/GMRES.lean` | §6.5.1–6.5.2, 6.5.5 | (6.25)–(6.33), Alg 6.9 (GMRES), 6.10 (Householder GMRES), 6.11 (GMRES(m)); Prop 6.9–6.10; P-6.5 |
 | `Ch06/DQGMRES.lean` | §6.5.6 | Alg 6.12 (QGMRES), 6.13 (DQGMRES), (6.48)–(6.58), Thm 6.11; P-6.25 |
 | `Ch06/Relations.lean` | §6.5.7 | (6.62)–(6.75), Prop 6.12–6.17, Lemma 6.16, Cor 6.14; P-6.9, P-6.13, P-6.14 |
 | `Ch06/Smoothing.lean` | §6.5.8 | Alg 6.14 (MRS), QMRS, Lemma 6.18, (6.76)–(6.79); P-6.26 |
@@ -928,11 +929,9 @@ item scheduled for a later phase (listed in §4); `out-of-scope` = not formalize
   (J A b x₀ m y)^2 = ‖γ h β m‖^2 + ‖g h β m - R h m *ᵥ y‖^2` (Euclidean norms on `Fin m → 𝕜` via
   `WithLp.toLp 2`).
 - **Backbone item.** `Krylov.givensQ_mem_unitaryGroup`, `Rbar_eq`, `gbar_eq` (D8),
-  `Krylov.rotated_last_row`; and the Euclidean-norm invariance of a unitary matrix,
-  `‖U.mulVec v‖₂ = ‖v‖₂` for `U ∈ Matrix.unitaryGroup (Fin (m+1)) 𝕜`, which is in neither Mathlib
-  nor the backbone yet — the natural proof transports `U` along `Matrix.toEuclideanCLM` and uses
-  that a unitary element of a C⋆-algebra is an isometry, and it belongs in
-  `Numlib/Analysis/Matrix/`, not in the surface.
+  `Krylov.rotated_last_row`, and the Euclidean-norm invariance of a unitary matrix, which now
+  exists as `Matrix.norm_toLp_mulVec_of_mem_unitaryGroup` in
+  `Numlib/Analysis/Matrix/ToEuclideanLin.lean`.
 - **Proof route.** `Q_m` unitary preserves the norm (the lemma just named); split the last
   coordinate (last row of `R̄_m` is `0`, last entry of `ḡ_m` is `γ_{m+1}`).
 - **Classification.** `surface-only` once the unitary-invariance lemma exists (ten lines from the

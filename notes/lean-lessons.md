@@ -78,7 +78,14 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   `nth_rewrite`, restate the equation in a form that does not loop, or go entrywise.
 * Avoid `set` when you will `rw` with library lemmas afterwards: the abbreviation is definitionally
   but not syntactically equal to what the rewrite produces.
-* To `rw` with a `def`, add a private `foo_def : foo x = … := rfl` companion.
+* To `rw` with a `def`, add a private `foo_def : foo x = … := rfl` companion. This is not optional
+  for a body shaped like `Function.iterate`, where `rw [thatDef]` simply fails.
+* **A surface wrapper of backbone data wants `noncomputable abbrev`, not `def`**, whenever the
+  backbone lemmas about it are stated unwrapped: a `def` is opaque to unification, so
+  `rw [backboneLemma]` stops matching. This bit the Saad Chapter 6 files on `r₀` and `β`.
+* At `𝕜 = ℝ` an `RCLike.ofReal` coercion silently blocks `rw` against an `RCLike`-polymorphic
+  lemma. Write the scalar as `((‖x‖ : 𝕜))⁻¹` in the polymorphic layer and `simpa` when specializing.
+* Structure-instance continuation lines must indent past the `{`.
 * Lemmas whose statement does not mention the scalar field need it supplied, as in
   `norm_sub_sq (𝕜 := 𝕜)`; otherwise the instance problem is stuck on `InnerProductSpace ?m E`.
 * `linter.unusedDecidableInType` fires on a `[DecidableEq ι]` binder absent from the statement;
@@ -122,6 +129,12 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   algebra into a `have` so the tactic cannot see inside.
 * `rw` rewrites only the first instantiation of a lemma like `ite_eq_left`; with several `ite`s
   sharing a condition use `simp only`.
+* `split_ifs` silently *discards* a branch whose condition contradicts a hypothesis already in
+  context, so the number of goals depends on the context. Do not guess the bullet count; write the
+  `ite` rewrites explicitly, or check first.
+* `rw [Nat.add_sub_cancel]` fails with "motive is not type correct" whenever the goal carries a
+  `Fin` index such as `⟨m - 1, proof⟩`. Do the arithmetic in a `have` first.
+* `rw […, add_comm]` followed by `congr 1` is fragile; factor the reordering into a `have`.
 * Well-founded induction along a finite linear order: `induction i using WellFoundedLT.induction`.
 * Higher-order unification defeats several composition lemmas when the expected type is written as
   an explicit lambda: `HasFDerivAt.comp_hasDerivAt` against `fun t => f (g t)`, and
@@ -140,6 +153,11 @@ A real `V →L[ℝ] V →L[ℝ] ℝ` *is* a `SesqForm ℝ V` by definition, so b
 `Iff.rfl` — and `simp` cannot prove them, because the two coercion paths differ. Unification of
 `starRingEnd ℝ` against `RingHom.id ℝ` also gets stuck, so pass `(𝕜 := ℝ)` explicitly.
 `NormOneClass (E →L[𝕜] E)` now needs `NontrivialTopology`.
+
+`if_pos`/`if_neg` are deprecated *and so is the replacement the deprecation warning suggests*
+(`ite_cond_eq_true`). The live names are `ite_eq_left_of_eq_true a b (eq_true h)` and
+`ite_eq_right_of_eq_false a b (eq_false h)`. `Finset.range_subset` is not the `↔` one expects;
+supply the subset pointwise.
 
 Deprecated or renamed in this toolchain: `if_pos`/`if_neg` to `ite_eq_left`/`ite_eq_right`;
 `push_neg` to `push Not`; `Matrix.dotProduct` to root-level `dotProduct`; `LinearMap.mul_apply` to
