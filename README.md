@@ -38,15 +38,13 @@ The evolution of the backbone is driven by demands from the surface (the textboo
 
 To start a formalization project, write a plan specifying the overall shape of the backbone part.
 
-Plans are structured prose in Markdown, which should contain:
+Plans are structured TOML files in the `plans/` directory, with format specified by the [tracker tool](https://github.com/bridgekat/tracker/). They should contain:
 
-- A tree of contents, in logical progression order.
-- For each item, its best placement within the module hierarchy.
-- Proposed key definitions and key theorem statements in Lean.
+- Overall design notes. If too long, the reasoning can be placed in a separate Markdown file in prose.
+- A list of key items (Lean definitions and theorem statements) in logical progression order. Each item should be placed carefully within the module and namespace hierarchies.
 - Brief descriptions of difficult proofs, optionally with references to relevant literature.
-- The parts left out to the surface.
 
-Plans can be split into a tree of sub-plans if necessary.
+Each plan is a [group](https://github.com/bridgekat/tracker/#groups), and can be split into a tree of sub-groups. The backbone-surface split is reflected as different root groups.
 
 Plans may be automatically extracted from textbooks. In such cases, the agent should:
 
@@ -69,16 +67,17 @@ In such cases, the agent should:
 - Make sure everything is carefully named, so that a future uninformed agent can find things using intuitive candidate names.
 - Consider typical future demands, e.g. integrating another textbook on the same topic into this project, or formalizing another research paper in the same area using this project. Adjust the plan to reduce anticipated amount of work needed to accommodate for such demands.
 
-Treat the review process as a search for better (structures of) proofs. Think hard on plans, as this may save time and effort in the actual formalization process, and reduce the need for later refactoring when new demands arise.
+Treat the review process as a search for better (structures of) proofs. Think hard on plans, as this may save time and effort in the actual formalization process, and reduce the need for later refactoring when new demands arise. Make sure `lake exe tracker lint` passes on the plan.
 
 ### Formalizing
 
 The user can prompt an agent to formalize a plan. In such cases, the agent should:
 
-- Estimate the amount of work, focus on one part of the plan at a time.
+- Estimate the amount of work, focus on one part of the plan at a time. `lake exe tracker ready` lists the groups whose dependencies are all proved, which are the best next steps of formalization.
 - Write a Lean skeleton of definitions and theorem statements, with `sorry` placeholders. The skeleton can be split into modular files, and make use of notations and namespaces to organize the structure.
-- Proceed to fill in the proofs, optionally by spawning parallel sub-agents to work on different files in the skeleton. If any of them proves difficult to complete, identify the cause, report back and stop for a restructure of the plan if necessary.
-- Verify the formalization by compiling the Lean files, or use MCP tools when available.
+- Run `lake exe tracker lint` and remove superseded entries in the plan: the Lean files now become the source of truth.
+- Proceed to fill in the proofs, optionally by spawning parallel sub-agents to work on different files in the skeleton. Start each with the output of `tracker show <group>`, tell them to mark `wrong` on problematic plan items and allow them to write their own items. If any of them proves difficult to complete, identify the cause, report back and stop for a restructure of the plan if necessary.
+- Verify the formalization by compiling the Lean files and running `lake exe tracker check`.
 
 Keep in mind the backbone-surface split. Everything in the backbone (including doc comments) should be self-contained; to reference material from the books, state the source book explicitly (full name in the references section, using Markdown footnote syntax), instead of a mere number like "Theorem 3.7". Mere numbers may be used in surface only.
 
@@ -101,6 +100,7 @@ Finally, check for semantic alignment:
 
 ### General instructions for agents
 
+- Always run `lake build` before `lake exe tracker check`: the tracker reads the compiled `.olean` files, so an unbuilt change is invisible to it.
 - If Lean LSP or LeanSearch are available via MCP, use them; otherwise, use CLI as a fallback. LeanSearch is accessible via `curl` at `https://leansearch.net/?q=` (followed by query), which provides semantic search across Mathlib that complements local `grep`-like pattern matching; use both to reduce the possibility of duplication.
 - For context-clearing operations (including launching sub-agents and context compaction), make sure to link to README.md in the new context, so that the new session or sub-agent reads this file as well.
 - If a single task is too large (e.g. analyzing a whole book), break it down into smaller, self-contained tasks and spawn sub-agents to work on them. Give clear instructions on the expected input and output formats to sub-agents, and designate a different working directory for each (so they do not interfere with each other).
