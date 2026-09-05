@@ -8,7 +8,18 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
 
 ## Working in this repository
 
-* Build one module with `lake build Numlib.Krylov.CG`, everything with `lake build Numlib`.
+* Build one module with `lake build Numlib.Krylov.CG`, everything with `lake build`.
+* **`lake update` is a global operation when sub-agents are running, and will stall all of them.**
+  `scripts/mkwt.ps1` makes a worktree cheap by junctioning its `.lake/packages` to the main
+  checkout's, so every worktree shares one copy of Mathlib and of every other dependency. Changing
+  a dependency there invalidates the build cache in all of them at once, and five worktrees then
+  start full rebuilds that contend for the same cores. The isolation a worktree gives you covers
+  source files, not packages: never touch the dependency set while agents are working.
+* A `lake update` interrupted partway leaves the package checkout and `lake-manifest.json`
+  disagreeing — the manifest records the new revision while the working tree sits at the old one,
+  and the built binary is then silently the old one. Check with
+  `git -C .lake/packages/<dep> log --oneline -1` against the manifest's `rev`, not with the
+  manifest alone.
 * **`lake env lean F.lean` type-checks against the built oleans of its imports.** After editing a
   dependency you must `lake build` that dependency, or every lemma you just added to it reads as
   `unknown identifier`. This was the single biggest time sink across the proof agents.
