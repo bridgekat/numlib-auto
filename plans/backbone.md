@@ -2921,13 +2921,13 @@ Surface-specific definitions: real bilinear forms `a : V → V → ℝ` with `Is
 | D12 | Rigal–Gaches optimal perturbation | 2.2 | rank-one construction `r ⊗ y/‖y‖²`; Higham Thm 7.1 |
 | D13 | Minimum-norm Krylov solution | 3.4 | `range A ≤ (ker A)ᗮ` for symmetric `A`; Choi Thm 2.25 |
 | D14 | Power method via generalized eigenspaces + Gelfand | 4.3 | `Module.End.iSup_maxGenEigenspace_eq_top`; avoids Jordan form. Saad-eig Thm 4.1 |
-| D15 | Newton local quadratic convergence | 5.3.2 | `Convex.norm_image_sub_le_of_norm_hasFDerivWithin_le'` for the Taylor remainder, 2.1.1 for `(F' x)⁻¹`; only over a real or complex scalar field. The *sharp* constant `L/2` is out of reach of the inequality form (which gives `L`, and `2L` inside one ball) and needs `image_norm_le_of_norm_deriv_right_le_deriv_boundary` with boundary `B t = L‖v‖²(t − t²/2)`. AH Thm 5.4.1; Ortega–Rheinboldt 10.2.2 |
+| D15 | Newton local quadratic convergence | 5.3.2 | The sharp constant `L/2` needs the integral form, `image_norm_le_of_norm_deriv_right_le_deriv_boundary` with boundary `B t = C‖y−x‖²t²/2`, packaged as `Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le` in `Analysis/Calculus/MeanValue`. It costs **no** extra instance arguments: introduce `NormedSpace ℝ F` inside the proof by `restrictScalars`, as Mathlib's own mean value lemmas do. `Convex.norm_image_sub_le_of_norm_hasFDerivWithin_le'` takes only a constant bound and loses the `1/2`. AH Thm 5.4.1; Ortega–Rheinboldt 10.2.2 |
 | D16 | Courant–Fischer | 4.2 | dimension counting on `S ⊓ span{u_k..u_n}`; Horn–Johnson Thm 4.2.6 |
 | D17 | `WithEnergy` inner-product instance and its completeness | 2.1.5 | `InnerProductSpace.Core` on a type synonym, following Mathlib's `Matrix.toInnerProductSpace`: the plain `AddCommGroup`/`Module` instances are local to the defining section, only the core-derived normed instances are global, `WithEnergy.equiv` is defined afterwards with `rfl` fields; norm equivalence and `continuous_equiv` need `A : E →L[𝕜] E` |
 | D18 | Subspace iteration in Saad-eig's generality (Thm 5.2) | 4.3 | spectral projector onto the dominant generalized eigenspaces + Gelfand on the complement; gap between subspaces needs a `Submodule` gap/angle API (not in Mathlib). Kress Lemma 7.18 (diagonalizable) as a warm-up |
 | D19 | Householder–John / Ostrowski–Reich in operator form | 2.3.5 | Rayleigh-quotient identity for an eigenpair of `M⁻¹N` (Kress Thm 4.12 proof) generalizes verbatim with `M + Mᴴ − A` coercive; Saad Thm 4.10 |
 | D20 | Kato's lemma `‖1 − P‖ = ‖P‖` | 2.1.7 | **not difficult after all**: the exchange trick on `x = P x + (1 − P) x`, rescaling the two components so as to swap their norms (`norm_smul_add_smul_eq_norm_add`). No gap API, no adjoints, no completeness. The minimal-gap route and the `T = P + P⋆ − 1` shortcut are both unnecessary; 2.1.7 records why the latter stops at inequalities. Szyld 2006 |
-| D21 | Givens residual identities (the `γ_m`, `s_m`, `c_m` formulas for `‖r^G_m‖`) | 3.5 | all rest on "a unitary matrix is a Euclidean isometry", `‖U *ᵥ v‖₂ = ‖v‖₂`, which Mathlib lacks; prove it in `Analysis/Matrix/` (2.1.14) through `Matrix.toEuclideanCLM`, then add the residual splitting from `rotated_last_row` and `det R_m = ∏ ρ_k ≠ 0`. Saad §6.5.3 |
+| D21 | Givens residual identities (the `γ_m`, `s_m`, `c_m` formulas for `‖r^G_m‖`) | 3.5 | All rest on "a unitary matrix is a Euclidean isometry", `‖U *ᵥ v‖₂ = ‖v‖₂`, which Mathlib lacks; it is three lines through `Matrix.toEuclideanCLM` as a star-algebra equiv (2.1.14). Then the residual splitting from `rotated_last_row` and the diagonal of the triangular factor. No block decomposition of the rotation product is needed, and `norm_residual_eq_div_norm_givensC` needs no `c_m ≠ 0`: at `c_m = 0` its Galerkin hypothesis is contradictory. Saad §6.5.3 |
 
 ---
 
@@ -2965,6 +2965,7 @@ candidates of 2.1; their paths mirror the Mathlib directories they are destined 
 | Module | Plan items |
 |---|---|
 | `Analysis/Normed/Ring/Inverse`, `Analysis/Normed/Ring/CondNumber`, `Analysis/Normed/Algebra/SpectralRadius` | 2.1.1–2.1.3 |
+| `Analysis/Calculus/MeanValue` | the sharp second-order mean value inequality (D15) |
 | `Analysis/InnerProductSpace/Coercive`, `Energy`, `Compression`, `ObliqueProjection`, `GramSchmidt` | 2.1.4–2.1.7, 2.1.13 (`IsSymmetricBoundedBy`, `WithEnergy`, `compressionBy`, projectors from bases, Kato's lemma, flag uniqueness) |
 | `RingTheory/Polynomial/ChebyshevMinimax` | 2.1.9 |
 | `LinearAlgebra/Matrix/Hessenberg`, `LinearAlgebra/Matrix/Complexify`, `Analysis/Matrix/ToEuclideanLin` | 2.1.10–2.1.11, 2.1.14 |

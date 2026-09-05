@@ -150,10 +150,28 @@ Structural facts worth knowing before planning a proof:
 * `Matrix.isSymmetric_toEuclideanLin_iff` is the current symmetric-versus-Hermitian bridge;
   `isHermitian_iff_isSymmetric` is deprecated. `Matrix.IsHermitian.spectrum_eq_image_range`
   converts Mathlib `eigenvalues` to `HasEigenvalue`.
-* **Mathlib has no lemma that a unitary matrix preserves the Euclidean norm** (`‖U.mulVec v‖₂ = ‖v‖₂`).
-  Any Givens or QR development needs it built first, via `Matrix.toEuclideanCLM`.
+* Mathlib has no lemma that a unitary matrix preserves the Euclidean norm; this project now does,
+  as `Matrix.norm_toLp_mulVec_of_mem_unitaryGroup` and friends in `Analysis/Matrix/ToEuclideanLin`.
+  The route is three lines: `Matrix.toEuclideanCLM` is a star-algebra equiv, so it carries
+  `unitaryGroup` into `unitary`, and then `ContinuousLinearMap.norm_map_of_mem_unitary` applies.
+* `Fin.snoc` is dependently typed and its motive is not inferred at use sites from a plain
+  `Fin (n+1) → 𝕜`. Package the extension once as
+  `∃ z, (∀ j, z j.castSucc = y j) ∧ z (Fin.last n) = 0` and never mention `snoc` again.
+* `rw [Finset.sum_eq_single a]` closes the main goal itself when the residual equation is `rfl`, so
+  the number of remaining goals varies; check before writing three bullets.
+* `unitary.mem_iff` is spelled `Unitary.mem_iff`. After `EuclideanSpace.norm_sq_eq` a bare
+  `simp only []` is what beta-reduces `(toLp 2 f).ofLp i` to `f i`.
 * `FiniteDimensional.proper` needs `[LocallyCompactSpace 𝕜]`, not `[CompleteSpace 𝕜]`. Proximinality
   of finite-dimensional subspaces genuinely fails over a complete but non-locally-compact field.
+* To run a real-segment mean value argument over an `IsRCLikeNormedField 𝕜` you do **not** need
+  `[NormedSpace ℝ F]`, `[IsScalarTower ℝ 𝕜 E]` or `[IsScalarTower ℝ 𝕜 F]` as binders, which is what
+  makes the sharp Newton constant free. Inside the proof write
+  `let _ : RCLike 𝕜 := IsRCLikeNormedField.rclike 𝕜` and
+  `let _ : NormedSpace ℝ F := .restrictScalars ℝ 𝕜 F`; both towers then come from the global
+  `Real.isScalarTower` and `HasFDerivAt.restrictScalars ℝ` applies. Mathlib's own
+  `Convex.norm_image_sub_le_of_norm_hasFDerivWithin_le` does exactly this.
+* `HasFDerivAt.comp_hasDerivAt` fails to elaborate against an expected `fun t => f (g t)` (the
+  higher-order unification against `f ∘ g`). Bind it with `have h := …` first, then `exact h`.
 * Fréchet mean value theorems need `[IsRCLikeNormedField 𝕜]` and `[NormedSpace ℝ E]`, and give only
   a *constant* bound on the derivative difference. The statements really are false over a general
   nontrivially normed field: in characteristic `p`, `x ↦ x + xᵖ` has derivative 1 everywhere.
