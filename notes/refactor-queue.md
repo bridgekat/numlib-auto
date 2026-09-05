@@ -53,6 +53,23 @@ Thm 7.4 is `IsQuasiMinResIterate.norm_residual_le_mul`, whose hypotheses are *we
   *complement*. Both are correct and the pair is confusable; if a third Schur arrives, rename the
   first to `Triangulation`.
 
+### R8. One irreducibility, not two
+
+`Matrix.IsIrreducibleAbs` (`Numlib/LinearSolve/Stationary/DiagDominant.lean`) and
+`Matrix.IsPatternIrreducible` (`Numlib/LinearAlgebra/Sparse/Pattern.lean`) are the same definition
+character for character — `Matrix.IsIrreducible (A.map (‖·‖))` over `[Norm R]`. They were written
+by two agents in the same hour. Delete `IsIrreducibleAbs` rather than aliasing it, and restate its
+four dependants (`IsIrreduciblyDiagDominant`, `IsIrreducibleAbs.norm_sub_eq_of_mem_frontier`, and
+the Saad Cor 4.8 and Thm 4.9 nodes) over `IsPatternIrreducible`. The spectral one keeps its home:
+`IsPatternIrreducible.norm_sub_eq_of_mem_frontier` stays in `DiagDominant`, because it is spectral
+theory and not pattern theory.
+
+The import direction is already right — `Sparse/Pattern` depends only on Mathlib, so
+`LinearSolve/Stationary/DiagDominant` may import it. What `Pattern` then supplies for free is
+permutation invariance, agreement with Mathlib's `IsIrreducible` on entrywise nonnegative reals,
+the positive-length path form, and the block-triangular characterization. The one thing the
+dependants must add is `[Nontrivial n]` wherever they route through the block-triangular form.
+
 ## Additive — can run in any batch that touches the target module
 
 ### R4. Private copies that want one home
