@@ -10,6 +10,8 @@ import Numlib.Analysis.Normed.Algebra.SpectralRadius
 import Numlib.Analysis.Normed.Ring.CondNumber
 import Numlib.Analysis.Normed.Ring.Inverse
 import Numlib.Approximation.BestApprox
+import Numlib.Approximation.Chebyshev
+import Numlib.Approximation.Interpolation
 import Numlib.Eigen.Deflation
 import Numlib.Eigen.KrylovEigen
 import Numlib.Eigen.MinMax
@@ -51,6 +53,7 @@ import Numlib.LinearSolve.Stationary.SPD
 import Numlib.LinearSolve.Stationary.Splitting
 import Numlib.Nonlinear.FixedPoint
 import Numlib.Nonlinear.Newton
+import Numlib.RingTheory.Polynomial.ChebyshevEllipse
 import Numlib.RingTheory.Polynomial.ChebyshevMinimax
 import Numlib.Variational.Forms
 import Numlib.Variational.Galerkin

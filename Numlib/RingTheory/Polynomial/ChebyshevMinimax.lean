@@ -302,4 +302,108 @@ theorem one_div_eval_T_le_two_mul_pow {κ : ℝ} (hκ : 1 < κ) (m : ℕ) :
         rw [one_div_div, div_pow, div_pow]
         field_simp
 
+/-- The pointwise form of the min–max bound: on `[a, b]` the normalized Chebyshev polynomial
+`shifted m a b γ` is bounded by `1 / |T_m((b + a - 2γ)/(b - a))|`. -/
+theorem abs_eval_shifted_le (m : ℕ) {a b γ t : ℝ} (hab : a < b) (ht : t ∈ Set.Icc a b) :
+    |(shifted m a b γ).eval t| ≤ 1 / |(T ℝ m).eval ((b + a - 2 * γ) / (b - a))| := by
+  rw [eval_shifted m hab, abs_div, div_eq_mul_inv, one_div]
+  exact mul_le_of_le_one_left (inv_nonneg.mpr (abs_nonneg _))
+    (abs_eval_T_real_le_one _ (abs_shift_le_one hab ht))
+
+/-- The two-interval Chebyshev polynomial. For `a < b < 0 < c < d` with equal interval lengths
+`b - a = d - c` there is, for every `k`, a real polynomial of degree at most `2k` taking the
+value `1` at the origin whose modulus on `[a, b] ∪ [c, d]` is at most
+`2 ((√|ad| - √|bc|)/(√|ad| + √|bc|))^k`.
+
+It is `shifted k |b c| |a d| 0` composed with the quadratic `t ↦ t² - (a + d) t`, which fixes the
+origin and maps each of the two intervals onto `[|b c|, |a d|]`: the equal lengths make
+`a + d = b + c`, so the quadratic is `t² - (b + c) t` as well and the two images coincide.
+This is the polynomial behind the convergence bound of a minimal-residual Krylov method for a
+symmetric operator whose spectrum is split into two intervals on either side of the origin. -/
+theorem exists_eval_zero_eq_one_abs_le_of_union_Icc {a b c d : ℝ} (hab : a < b) (hb : b < 0)
+    (hc : 0 < c) (hcd : c < d) (hlen : b - a = d - c) (k : ℕ) :
+    ∃ p : ℝ[X], p.degree ≤ (2 * k : ℕ) ∧ p.eval 0 = 1 ∧
+      ∀ t ∈ Set.Icc a b ∪ Set.Icc c d,
+        |p.eval t| ≤ 2 * ((Real.sqrt |a * d| - Real.sqrt |b * c|) /
+          (Real.sqrt |a * d| + Real.sqrt |b * c|)) ^ k := by
+  have ha : a < 0 := hab.trans hb
+  have hd : 0 < d := hc.trans hcd
+  have hbc : b * c < 0 := mul_neg_of_neg_of_pos hb hc
+  have had : a * d < 0 := mul_neg_of_neg_of_pos ha hd
+  have hαv : |b * c| = -(b * c) := abs_of_neg hbc
+  have hβv : |a * d| = -(a * d) := abs_of_neg had
+  have hα0 : 0 < |b * c| := by rw [hαv]; linarith
+  have hβ0 : 0 < |a * d| := by rw [hβv]; linarith
+  have hαβ : |b * c| < |a * d| := by
+    rw [hαv, hβv]
+    nlinarith
+  have hsum : a + d = b + c := by linarith
+  have h0 : (0 : ℝ) ∉ Set.Icc |b * c| |a * d| := fun h => absurd h.1 (not_le.mpr hα0)
+  refine ⟨(shifted k |b * c| |a * d| 0).comp (X ^ 2 - Polynomial.C (a + d) * X), ?_, ?_, ?_⟩
+  · refine Polynomial.degree_le_of_natDegree_le (Polynomial.natDegree_comp_le.trans ?_)
+    have h1 : (shifted k |b * c| |a * d| 0).natDegree ≤ k :=
+      Polynomial.natDegree_le_of_degree_le (shifted_degree_le k _ _ _)
+    have h2 : ((X : ℝ[X]) ^ 2 - Polynomial.C (a + d) * X).natDegree ≤ 2 := by compute_degree
+    calc (shifted k |b * c| |a * d| 0).natDegree *
+          ((X : ℝ[X]) ^ 2 - Polynomial.C (a + d) * X).natDegree ≤ k * 2 := Nat.mul_le_mul h1 h2
+      _ = 2 * k := by ring
+  · rw [Polynomial.eval_comp]
+    simp only [Polynomial.eval_sub, Polynomial.eval_pow, Polynomial.eval_X, Polynomial.eval_mul,
+      Polynomial.eval_C]
+    rw [show (0 : ℝ) ^ 2 - (a + d) * 0 = 0 by ring]
+    exact shifted_eval_self k hαβ h0
+  · intro t ht
+    have hq : ∀ s : ℝ,
+        ((X : ℝ[X]) ^ 2 - Polynomial.C (a + d) * X).eval s = s ^ 2 - (a + d) * s := by
+      intro s
+      simp
+    have hmem : (((X : ℝ[X]) ^ 2 - Polynomial.C (a + d) * X).eval t) ∈
+        Set.Icc |b * c| |a * d| := by
+      rw [hq]
+      have hfac1 : t ^ 2 - (a + d) * t = |b * c| + (t - b) * (t - c) := by
+        rw [hαv]; linear_combination (-t) * hsum
+      have hfac2 : t ^ 2 - (a + d) * t = |a * d| + (t - a) * (t - d) := by
+        rw [hβv]; ring
+      constructor
+      · rw [hfac1]
+        rcases ht with ht | ht
+        · nlinarith [ht.1, ht.2]
+        · nlinarith [ht.1, ht.2]
+      · rw [hfac2]
+        rcases ht with ht | ht
+        · nlinarith [ht.1, ht.2]
+        · nlinarith [ht.1, ht.2]
+    set κ : ℝ := |a * d| / |b * c| with hκ
+    have hκ1 : 1 < κ := (one_lt_div hα0).mpr hαβ
+    have harg : (|a * d| + |b * c| - 2 * 0) / (|a * d| - |b * c|) = (κ + 1) / (κ - 1) := by
+      have hden : |a * d| - |b * c| ≠ 0 := sub_ne_zero.mpr hαβ.ne'
+      have hκ' : κ - 1 ≠ 0 := sub_ne_zero.mpr hκ1.ne'
+      rw [mul_zero, sub_zero, div_eq_div_iff hden hκ', hκ]
+      field_simp
+    have hTge : 1 ≤ (T ℝ k).eval ((κ + 1) / (κ - 1)) := by
+      refine one_le_eval_T ?_ k
+      rw [le_div_iff₀ (by linarith : (0 : ℝ) < κ - 1)]
+      linarith
+    have hsqrtα : 0 < Real.sqrt |b * c| := Real.sqrt_pos.mpr hα0
+    have hsqrtκ : Real.sqrt κ = Real.sqrt |a * d| / Real.sqrt |b * c| := by
+      rw [hκ, Real.sqrt_div hβ0.le]
+    have hratio : (Real.sqrt κ - 1) / (Real.sqrt κ + 1)
+        = (Real.sqrt |a * d| - Real.sqrt |b * c|) /
+          (Real.sqrt |a * d| + Real.sqrt |b * c|) := by
+      have h1 : Real.sqrt κ + 1 ≠ 0 := by positivity
+      have h2 : Real.sqrt |a * d| + Real.sqrt |b * c| ≠ 0 := by positivity
+      rw [div_eq_div_iff h1 h2, hsqrtκ]
+      field_simp
+    rw [Polynomial.eval_comp]
+    calc |(shifted k |b * c| |a * d| 0).eval
+            (((X : ℝ[X]) ^ 2 - Polynomial.C (a + d) * X).eval t)|
+        ≤ 1 / |(T ℝ k).eval ((|a * d| + |b * c| - 2 * 0) / (|a * d| - |b * c|))| :=
+          abs_eval_shifted_le k hαβ hmem
+      _ = 1 / (T ℝ k).eval ((κ + 1) / (κ - 1)) := by
+          rw [harg, abs_of_nonneg (by linarith : (0 : ℝ) ≤ (T ℝ k).eval ((κ + 1) / (κ - 1)))]
+      _ ≤ 2 * ((Real.sqrt κ - 1) / (Real.sqrt κ + 1)) ^ k :=
+          one_div_eval_T_le_two_mul_pow hκ1 k
+      _ = 2 * ((Real.sqrt |a * d| - Real.sqrt |b * c|) /
+            (Real.sqrt |a * d| + Real.sqrt |b * c|)) ^ k := by rw [hratio]
+
 end Polynomial.Chebyshev

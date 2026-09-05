@@ -81,6 +81,18 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   script a name of your own (`sor-patch3.py`, not `patch1.py`) or a sibling agent will overwrite it
   between the moment you write it and the moment you run it.
 
+* The Python-patch discipline above exists because of a real failure mode, and it is easy to
+  half-follow. `io.open(target, 'w')` truncates the target *before* the encode error fires, so
+  writing directly to it destroys the file: open a temp file and `os.replace` it over the target.
+  A 250-line module was lost this way to a raw surrogate pair for `𝕜` inside a bash heredoc.
+* A `<<'EOF'` bash heredoc is not reliable for text containing an apostrophe either: one such
+  heredoc silently failed to start, and bash then parsed `Chebyshev's` as an unterminated quote
+  (`unexpected EOF while looking for matching '`). Write the script, or the Lean fragment to be
+  appended, with the Write tool instead.
+* Never end a Bash call with a command that reads standard input (`cat > file`, a bare `python`):
+  it blocks for the full timeout and is then backgrounded, and the session's working directory
+  reverts to the *main* checkout — after which an un-`cd`-ed command would edit the wrong tree.
+
 ## Correctness traps
 
 * **`include h` makes every later declaration in scope carry `h`.** A theorem that re-binds a
@@ -217,6 +229,18 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   structural recursion and projecting: every equation, the one at `j + 2` included, is then `rfl`.
   `Lanczos.polyPair` in `Numlib/Krylov/OrthogonalPolynomials.lean` does this.
 
+* `∀ i, … (i : ℕ) …` in a statement whose other components force `i : Fin m` still elaborates the
+  binder as `ℕ`, and the rest of the statement silently becomes `x sorry`. Annotate the binder:
+  `∀ i : Fin m, …`.
+* `Finset.orderEmbOfFin s h` is an `↪o`, not a function; write `⇑(s.orderEmbOfFin h)` where a
+  `Fin k → α` is wanted. `Finset.orderEmbOfFin_mem` and `.strictMono` are the two facts about it.
+* `compute_degree` on a goal `degree p ≤ (k : WithBot ℕ)` leaves a `WithBot` cast side goal that
+  `exact_mod_cast` will not close. Go through `Polynomial.degree_le_of_natDegree_le` first, so the
+  residue is a `ℕ` inequality and `omega` finishes it.
+* An `@[simp]` unfolding lemma for a wrapper `def` makes a later `by_cases h : 0 ≤ wrapper …`
+  useless: `simp` rewrites the goal past the wrapper while `h` still mentions it, and the two no
+  longer match. Leave such a lemma unmarked and pass it explicitly where it is wanted.
+
 ## Tactics
 
 * `module` is the right tactic for vector identities with symbolic scalars; `abel` cannot move
@@ -308,6 +332,16 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   Write `HasDerivAt.smul hu hf`. And `HasDerivAt.add h1 h2` displays its function as `f + g`, so no
   `rw`/`simp only` reaches inside it — move a derivative along a pointwise equality with
   `HasDerivAt.congr_of_eventuallyEq h (Filter.Eventually.of_forall …)`.
+
+* `exists_hasDerivAt_eq_zero` cannot infer its `f`, because only `f'` occurs in the conclusion.
+  Pass `(f := …)`.
+* `push Not` on `¬∃ S, P S ∧ ∀ t ∈ S, Q t` produces `∀ S, P S → ∃ t ∈ S, ¬Q t`, which is then
+  awkward to apply. Often it is shorter to keep the negation and close the branch with
+  `exact hbig ⟨S, hcard, fun t ht => …⟩`.
+* Naming a deprecated lemma explicitly (`if_pos`, `if_true`, `Set.mem_setOf_eq`) raises a warning
+  that `lake build` reports; a plain `simp [h]` reduces the same `ite` without one.
+* A beta-redex goal — after `rintro _ ⟨w, hw, rfl⟩` on an image set, or in the `rfl` component of
+  `refine ⟨_, …, rfl⟩` — defeats `rw`. `dsimp only` clears it.
 
 ## Mathlib names and API
 
@@ -550,6 +584,35 @@ Structural facts worth knowing before planning a proof:
   in `ℝ` and cast once inside a `calc` with `push_cast; ring` at each step. Rewriting with
   `Complex.ofReal_add`/`_sub`/`_mul` in the middle of a goal loses to the first `↑(a - b)` that is
   not literally in that shape.
+
+Renamed in this toolchain, on top of the list above: `abs_add` to `abs_add_le`;
+`Set.mem_setOf_eq` to `Set.mem_ofPred_eq`; `continuous_finset_sum` to `continuous_finsetSum`;
+`Polynomial.eval_finset_sum` to `Polynomial.eval_finsetSum`.
+
+More structural facts:
+
+* **Maximum modulus for a polynomial on a disc** is `Complex.norm_le_of_forall_mem_frontier_norm_le`
+  with `U = Metric.ball 0 r`, plus `frontier_ball` and `closure_ball` — both root-namespace, in
+  `Analysis/Normed/Module/RCLike/Real.lean`. That plus the reversed polynomial `∑_{j ≤ k} p_j X^{k-j}`
+  is the whole of Zarantonello's lemma.
+* `Polynomial.Chebyshev.T_complex_cosh` at `θ = Complex.log w` gives
+  `T_k((w + w⁻¹)/2) = (w^k + w^{-k})/2` in three lines. Mathlib has no `C_n(x + x⁻¹) = x^n + x^{-n}`
+  lemma for the Vieta–Lucas polynomials, and none is needed.
+* `Polynomial.deriv` is `protected`, needs both `(𝕜 := ℝ)` and its polynomial explicitly, and lives
+  in `Analysis/Calculus/Deriv/Polynomial`, which `Analysis/Calculus/IteratedDeriv/Lemmas` does not
+  import. There is no `Polynomial.iterate_derivative_add` (only `_sub`, `_neg`, `_C_mul`, `_smul`),
+  and no `ContDiff` lemma for `fun x => p.eval x`: use `Polynomial.contDiff_aeval` together with
+  `Polynomial.coe_aeval_eq_eval`.
+* `Polynomial.iterate_derivative_prod_X_sub_C` at `k = #S` computes the `(n+1)`-st derivative of a
+  nodal polynomial as `(n+1)!`, once the product over `Fin (n+1)` is rewritten as a product over a
+  `Finset ℝ` by `Finset.prod_image`.
+* **Tietze** in the form that is actually usable is
+  `ContinuousMap.exists_restrict_eq_forall_mem_of_closed` (needs `import Mathlib.Topology.TietzeExtension`),
+  which extends a `C(s, ℝ)` to a `C(Y, ℝ)` with values in a prescribed `OrdConnected` set. To
+  prescribe values on a *finite* set, restrict a map that is already continuous on the whole space
+  rather than building a `C(↥s, ℝ)` from scratch — that avoids needing `DiscreteTopology ↥s`.
+* `Lagrange.degree_interpolate_lt` and `_le` take `r` explicitly and `s` implicitly, and
+  `Lagrange.eval_basis_of_ne` needs `(v := …)` because `rw` cannot solve `?v j` for a lambda.
 
 ## Design conventions of this library
 
