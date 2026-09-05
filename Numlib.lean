@@ -26,6 +26,8 @@ import Numlib.Approximation.BestApprox
 import Numlib.Approximation.Chebyshev
 import Numlib.Approximation.Interpolation
 import Numlib.Approximation.OrthogonalPolynomial
+import Numlib.Approximation.Quadrature
+import Numlib.Approximation.Unisolvent
 import Numlib.Combinatorics.SimpleGraph.Coloring
 import Numlib.Combinatorics.SimpleGraph.IndepSet
 import Numlib.Combinatorics.SimpleGraph.LevelSet

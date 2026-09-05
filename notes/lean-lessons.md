@@ -137,6 +137,17 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   can never refresh and every node of the new module reads as `open`. `lake exe tracker check
   --force` prints the *real* error — the dangling `deps` entry — and fixing that one line unblocks
   everything.
+* **`lake env lean` drops `maxSynthPendingDepth = 3` too, not only the linters.** A file that
+  compiles under `lake build` can then fail with "Application type mismatch … `norm_nonneg ?m`" or
+  "Type of … is not known; cannot resolve field `smulRight`" in a *pre-existing* declaration you
+  did not touch. The full incantation for checking one file is
+  `lake env lean -D weak.linter.mathlibStandardSet=true -D weak.linter.style.header=false
+  -D maxSynthPendingDepth=3 -D relaxedAutoImplicit=false F.lean`; without the header option every
+  file in this project reports `Copyright too short!`, which `lakefile.toml` turns off.
+* A Python patch script that ends with a `print` of Lean source dies with
+  `UnicodeEncodeError: 'gbk' codec` on Windows *after* `os.replace` has already run, so the patch
+  succeeded and the traceback is about stdout. Check the file before re-running the script — a
+  second run will fail its `assert s.count(old) == 1`.
 
 ## Correctness traps
 
@@ -1262,6 +1273,39 @@ a strong induction on the columns. No flag or span machinery is needed.
   *rectangular* `Aᴴ * A`; prove that one by `simp [IsSelfAdjoint, Matrix.star_eq_conjTranspose,
   Matrix.conjTranspose_mul]`. `IsSelfAdjoint` also unfolds to `Eq`, so `hsa.spectralRadius_eq_nnnorm`
   looks up `Eq.spectralRadius_eq_nnnorm`; write the full name.
+
+* `ContinuousMap.evalCLM R x` leaves its *codomain* undetermined, since only `x : α` appears in the
+  arguments. `(evalCLM ℝ p - evalCLM ℝ q).smulRight g` therefore fails with "Type of … is not known;
+  cannot resolve field `smulRight`" — the subtraction has no expected type. Ascribe one factor:
+  `((ContinuousMap.evalCLM ℝ p : C(X, ℝ) →L[ℝ] ℝ) - ContinuousMap.evalCLM ℝ q)`.
+* **A finite subset of a T1 space is discrete by instance search**, so
+  `⟨fun u => σ (Classical.choose u.2), continuous_of_discreteTopology⟩` builds a
+  `C(↥(Set.range x), ℝ)` out of nothing; with
+  `ContinuousMap.exists_restrict_eq_forall_mem_of_closed` and `t = Set.Icc (-1) 1` that is a
+  continuous function of norm at most one with prescribed values at finitely many distinct points,
+  which is what every "the operator norm is the sum of the weights" lower bound needs.
+* `Basis` is `Module.Basis` now, and a bare `Basis` is a different constant that is not a function:
+  the error is "Function expected at Basis". `Module.Basis.equivFun`, `Module.Basis.constr`,
+  `Module.Basis.constr_basis`, `Module.finBasisOfFinrankEq`. `Module.Basis.constr` leaves its
+  target module `M'` undetermined when the expected type does not fix it, and the failure is a
+  stuck `SMulCommClass 𝕜 𝕜 ?m`; pass `(M' := 𝕜)`.
+* `Module.Basis.sum_repr` is a `simp` lemma, so `simp` proves `↑(∑ i, b.repr u i • b i) = ↑u` by
+  collapsing the sum *before* pushing the coercion, and then cannot prove the same statement with
+  the coercion already distributed. To get `(u : V) = ∑ j, b.equivFun u j • (b j : V)` for a
+  submodule, go through `map_sum Vₙ.subtype …` and rewrite with `sum_equivFun` inside.
+* To turn a linear map between spaces of equal finite dimension from injective to bijective, the
+  name is `LinearMap.injective_iff_surjective_of_finrank_eq_finrank`; the dimension of the target
+  `Fin d → 𝕜` is `Module.finrank_fin_fun`.
+* `Matrix.mulVec_injective_iff_isUnit` and `Matrix.mulVec_surjective_iff_isUnit` (plus
+  `Matrix.isUnit_iff_isUnit_det`) are the shortest route from "the interpolation problem is
+  uniquely solvable" to "the determinant is nonzero": write the map as
+  `M.mulVec ∘ v.equivFun` and strip the equivalence with `Function.Bijective.of_comp_iff`.
+  `Matrix.linearIndependent_rows_iff_isUnit` does the linear-independence clause the same way.
+* A piecewise-linear function on a partition needs **no gluing**: it is
+  `f (x 0) + ∑ i, (divided difference) • ramp i` with `ramp i t = min (max (t - x i) 0)
+  (x (i+1) - x i)`, so the interpolation operator is visibly a bounded linear map and the local
+  affine description is one `Finset.sum_Ico_consecutive` plus `Finset.sum_range_sub` away. Indexing
+  the nodes by `ℕ` rather than by `Fin (n + 2)` is what keeps that telescoping painless.
 
 ## Design conventions of this library
 

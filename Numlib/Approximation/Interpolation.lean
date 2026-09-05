@@ -457,3 +457,230 @@ theorem norm_interpolateCLM [Nonempty X] {x : Fin (n + 1) → X} (hx : Function.
   (isGreatest_norm_interpolateCLM hx).csSup_eq.symm
 
 end Lagrange
+
+/-! ### Piecewise-linear interpolation -/
+
+/-- The **clamped ramp** of `[u, v]`: the continuous function that vanishes below `u`, rises with
+slope `1` on `[u, v]` and is constant equal to `v - u` above `v`.
+
+A continuous piecewise-linear function on a partition is a combination of the ramps of its
+subintervals, which is what lets the piecewise-linear interpolation operator be written without
+gluing anything. -/
+noncomputable def piecewiseLinearRamp (a b u v : ℝ) : C(Set.Icc a b, ℝ) :=
+  ⟨fun t => min (max ((t : ℝ) - u) 0) (v - u),
+    ((continuous_subtype_val.sub continuous_const).max continuous_const).min continuous_const⟩
+
+@[simp]
+theorem piecewiseLinearRamp_apply (a b u v : ℝ) (t : Set.Icc a b) :
+    piecewiseLinearRamp a b u v t = min (max ((t : ℝ) - u) 0) (v - u) := rfl
+
+/-- **Piecewise-linear interpolation** on the partition `a = x 0 < x 1 < ⋯ < x (n + 1) = b` of
+`[a, b]`: the bounded operator on `C([a, b], ℝ)` sending `f` to the continuous function that
+agrees with `f` at every node and is affine on every subinterval.
+
+The operator is written as the value at the first node plus the ramps of the subintervals scaled
+by the divided differences of `f`, which makes linearity, boundedness and continuity immediate;
+`piecewiseLinearInterpCLM_apply_of_mem` is the equivalent local description on one subinterval.
+The nodes are given as a sequence, of which only `x 0, …, x (n + 1)` are used, so that the index
+arithmetic of the subintervals stays in `ℕ`.
+
+Reference: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §3.2.3 and Exercise 3.6.6; Rainer Kress,
+*Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998, §8.3. -/
+noncomputable def piecewiseLinearInterpCLM {a b : ℝ} (n : ℕ) (x : ℕ → Set.Icc a b) :
+    C(Set.Icc a b, ℝ) →L[ℝ] C(Set.Icc a b, ℝ) :=
+  (ContinuousMap.evalCLM ℝ (x 0)).smulRight 1 +
+    ∑ i ∈ Finset.range (n + 1),
+      (((x (i + 1) : ℝ) - (x i : ℝ))⁻¹ •
+        ContinuousLinearMap.smulRight
+          ((ContinuousMap.evalCLM ℝ (x (i + 1)) : C(Set.Icc a b, ℝ) →L[ℝ] ℝ) -
+            ContinuousMap.evalCLM ℝ (x i))
+          (piecewiseLinearRamp a b (x i) (x (i + 1))))
+
+section PiecewiseLinear
+
+variable {a b : ℝ} {n : ℕ} {x : ℕ → Set.Icc a b}
+
+theorem piecewiseLinearInterpCLM_apply (n : ℕ) (x : ℕ → Set.Icc a b) (f : C(Set.Icc a b, ℝ))
+    (t : Set.Icc a b) :
+    piecewiseLinearInterpCLM n x f t = f (x 0) + ∑ i ∈ Finset.range (n + 1),
+      (f (x (i + 1)) - f (x i)) / ((x (i + 1) : ℝ) - (x i : ℝ)) *
+        min (max ((t : ℝ) - (x i : ℝ)) 0) ((x (i + 1) : ℝ) - (x i : ℝ)) := by
+  simp [piecewiseLinearInterpCLM, div_eq_inv_mul, mul_assoc]
+
+/-- The nodes of a partition increase along the used range. -/
+theorem le_node_of_le (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ)) {i j : ℕ} (hij : i ≤ j)
+    (hj : j ≤ n + 1) : (x i : ℝ) ≤ (x j : ℝ) := by
+  revert hj
+  induction j, hij using Nat.le_induction with
+  | base => exact fun _ => le_rfl
+  | succ k hk ih => exact fun hk1 => (ih (by omega)).trans (hstep k (by omega)).le
+
+/-- Every point of `[a, b]` lies in one of the subintervals of the partition. -/
+theorem exists_mem_subinterval (hfirst : (x 0 : ℝ) = a) (hlast : (x (n + 1) : ℝ) = b)
+    (t : Set.Icc a b) :
+    ∃ j ≤ n, (x j : ℝ) ≤ (t : ℝ) ∧ (t : ℝ) ≤ (x (j + 1) : ℝ) := by
+  classical
+  set S : Finset ℕ := (Finset.range (n + 1)).filter fun i => (x i : ℝ) ≤ (t : ℝ) with hS
+  have h0 : 0 ∈ S := by
+    refine Finset.mem_filter.mpr ⟨Finset.mem_range.mpr (by omega), ?_⟩
+    rw [hfirst]
+    exact t.2.1
+  set j := S.max' ⟨0, h0⟩ with hj
+  have hjS : j ∈ S := S.max'_mem ⟨0, h0⟩
+  have hjmem := Finset.mem_filter.mp hjS
+  have hjrange : j ≤ n := Nat.lt_succ_iff.mp (Finset.mem_range.mp hjmem.1)
+  refine ⟨j, hjrange, hjmem.2, ?_⟩
+  by_contra hcon
+  push Not at hcon
+  have hjn : j + 1 ≤ n := by
+    by_contra hjn
+    have hje : j = n := by omega
+    rw [hje, hlast] at hcon
+    exact absurd t.2.2 (not_le.mpr hcon)
+  have hmem : j + 1 ∈ S :=
+    Finset.mem_filter.mpr ⟨Finset.mem_range.mpr (by omega), hcon.le⟩
+  have := S.le_max' _ hmem
+  omega
+
+/-- **The local description of the piecewise-linear interpolant.** On the subinterval
+`[x j, x (j + 1)]` it is the affine function through `(x j, f (x j))` and
+`(x (j + 1), f (x (j + 1)))`. -/
+theorem piecewiseLinearInterpCLM_apply_of_mem (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ))
+    (f : C(Set.Icc a b, ℝ)) {j : ℕ} (hj : j ≤ n) {t : Set.Icc a b}
+    (h1 : (x j : ℝ) ≤ (t : ℝ)) (h2 : (t : ℝ) ≤ (x (j + 1) : ℝ)) :
+    piecewiseLinearInterpCLM n x f t = f (x j) +
+      (f (x (j + 1)) - f (x j)) * (((t : ℝ) - (x j : ℝ)) / ((x (j + 1) : ℝ) - (x j : ℝ))) := by
+  classical
+  set F : ℕ → ℝ := fun i => (f (x (i + 1)) - f (x i)) / ((x (i + 1) : ℝ) - (x i : ℝ)) *
+    min (max ((t : ℝ) - (x i : ℝ)) 0) ((x (i + 1) : ℝ) - (x i : ℝ)) with hF
+  -- the terms before `j` are the full increments
+  have hbefore : ∀ i < j, F i = f (x (i + 1)) - f (x i) := by
+    intro i hi
+    have hd : (0 : ℝ) < (x (i + 1) : ℝ) - (x i : ℝ) := sub_pos.mpr (hstep i (by omega))
+    have hle : (x (i + 1) : ℝ) ≤ (t : ℝ) := (le_node_of_le hstep (by omega) (by omega)).trans h1
+    have hmax : max ((t : ℝ) - (x i : ℝ)) 0 = (t : ℝ) - (x i : ℝ) := by
+      refine max_eq_left ?_
+      have : (x i : ℝ) ≤ (t : ℝ) := (le_node_of_le hstep (by omega) (by omega)).trans h1
+      linarith
+    have hmin : min ((t : ℝ) - (x i : ℝ)) ((x (i + 1) : ℝ) - (x i : ℝ))
+        = (x (i + 1) : ℝ) - (x i : ℝ) := min_eq_right (by linarith)
+    rw [hF]
+    simp only [hmax, hmin]
+    field_simp
+  -- the terms after `j` vanish
+  have hafter : ∀ i, j < i → i ≤ n → F i = 0 := by
+    intro i hi hin
+    have hd : (0 : ℝ) < (x (i + 1) : ℝ) - (x i : ℝ) := sub_pos.mpr (hstep i hin)
+    have hge : (t : ℝ) ≤ (x i : ℝ) := h2.trans (le_node_of_le hstep (by omega) (by omega))
+    have hmax : max ((t : ℝ) - (x i : ℝ)) 0 = 0 := max_eq_right (by linarith)
+    rw [hF]
+    simp only [hmax]
+    rw [min_eq_left hd.le, mul_zero]
+  have hat : F j = (f (x (j + 1)) - f (x j)) *
+      (((t : ℝ) - (x j : ℝ)) / ((x (j + 1) : ℝ) - (x j : ℝ))) := by
+    have hmax : max ((t : ℝ) - (x j : ℝ)) 0 = (t : ℝ) - (x j : ℝ) := max_eq_left (by linarith)
+    have hmin : min ((t : ℝ) - (x j : ℝ)) ((x (j + 1) : ℝ) - (x j : ℝ))
+        = (t : ℝ) - (x j : ℝ) := min_eq_left (by linarith)
+    rw [hF]
+    simp only [hmax, hmin]
+    ring
+  rw [piecewiseLinearInterpCLM_apply]
+  have hsum : ∑ i ∈ Finset.range (n + 1), F i = f (x j) - f (x 0) + F j := by
+    have hsplit : ∑ i ∈ Finset.range (n + 1), F i
+        = ∑ i ∈ Finset.range j, F i + ∑ i ∈ Finset.Ico j (n + 1), F i := by
+      simp only [Finset.range_eq_Ico]
+      exact (Finset.sum_Ico_consecutive F (Nat.zero_le j) (by omega)).symm
+    have htail : ∑ i ∈ Finset.Ico j (n + 1), F i = F j := by
+      rw [Finset.sum_eq_sum_Ico_succ_bot (by omega)]
+      have : ∑ i ∈ Finset.Ico (j + 1) (n + 1), F i = 0 :=
+        Finset.sum_eq_zero fun i hi => by
+          rw [Finset.mem_Ico] at hi
+          exact hafter i (by omega) (by omega)
+      rw [this, add_zero]
+    have hhead : ∑ i ∈ Finset.range j, F i = f (x j) - f (x 0) := by
+      rw [Finset.sum_congr rfl fun i hi => hbefore i (Finset.mem_range.mp hi)]
+      exact Finset.sum_range_sub (fun i => f (x i)) j
+    rw [hsplit, htail, hhead]
+  rw [hsum, hat]
+  ring
+
+/-- The piecewise-linear interpolant agrees with the function at every node. -/
+theorem piecewiseLinearInterpCLM_apply_node (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ))
+    (f : C(Set.Icc a b, ℝ)) {j : ℕ} (hj : j ≤ n + 1) :
+    piecewiseLinearInterpCLM n x f (x j) = f (x j) := by
+  rcases Nat.lt_or_ge j (n + 1) with h | h
+  · rw [piecewiseLinearInterpCLM_apply_of_mem hstep f (Nat.lt_succ_iff.mp h) le_rfl
+      (hstep j (Nat.lt_succ_iff.mp h)).le]
+    simp
+  · have hje : j = n + 1 := le_antisymm hj h
+    subst hje
+    have hd : (0 : ℝ) < (x (n + 1) : ℝ) - (x n : ℝ) := sub_pos.mpr (hstep n le_rfl)
+    rw [piecewiseLinearInterpCLM_apply_of_mem hstep f (le_refl n) (hstep n le_rfl).le le_rfl]
+    field_simp
+    ring
+
+/-- The piecewise-linear interpolation operator is a projection. -/
+theorem isIdempotentElem_piecewiseLinearInterpCLM
+    (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ)) (hfirst : (x 0 : ℝ) = a)
+    (hlast : (x (n + 1) : ℝ) = b) : IsIdempotentElem (piecewiseLinearInterpCLM n x) := by
+  have h : ∀ f, piecewiseLinearInterpCLM n x (piecewiseLinearInterpCLM n x f)
+      = piecewiseLinearInterpCLM n x f := by
+    intro f
+    refine ContinuousMap.ext fun t => ?_
+    obtain ⟨j, hj, h1, h2⟩ := exists_mem_subinterval hfirst hlast t
+    rw [piecewiseLinearInterpCLM_apply_of_mem hstep _ hj h1 h2,
+      piecewiseLinearInterpCLM_apply_of_mem hstep f hj h1 h2,
+      piecewiseLinearInterpCLM_apply_node hstep f (by omega),
+      piecewiseLinearInterpCLM_apply_node hstep f (by omega)]
+  exact ContinuousLinearMap.ext h
+
+/-- The piecewise-linear interpolant never exceeds the function in sup norm: on each subinterval
+its value is a convex combination of two values of the function. -/
+theorem norm_piecewiseLinearInterpCLM_apply_le
+    (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ)) (hfirst : (x 0 : ℝ) = a)
+    (hlast : (x (n + 1) : ℝ) = b) (f : C(Set.Icc a b, ℝ)) :
+    ‖piecewiseLinearInterpCLM n x f‖ ≤ ‖f‖ := by
+  refine (ContinuousMap.norm_le _ (norm_nonneg f)).mpr fun t => ?_
+  obtain ⟨j, hj, h1, h2⟩ := exists_mem_subinterval hfirst hlast t
+  have hd : (0 : ℝ) < (x (j + 1) : ℝ) - (x j : ℝ) := sub_pos.mpr (hstep j hj)
+  set θ : ℝ := ((t : ℝ) - (x j : ℝ)) / ((x (j + 1) : ℝ) - (x j : ℝ)) with hθ
+  have hθ0 : 0 ≤ θ := div_nonneg (by linarith) hd.le
+  have hθ1 : θ ≤ 1 := (div_le_one hd).mpr (by linarith)
+  have hval : piecewiseLinearInterpCLM n x f t = (1 - θ) * f (x j) + θ * f (x (j + 1)) := by
+    rw [piecewiseLinearInterpCLM_apply_of_mem hstep f hj h1 h2, ← hθ]
+    ring
+  have hb1 : |f (x j)| ≤ ‖f‖ := by simpa using f.norm_coe_le_norm (x j)
+  have hb2 : |f (x (j + 1))| ≤ ‖f‖ := by simpa using f.norm_coe_le_norm (x (j + 1))
+  rw [Real.norm_eq_abs, hval]
+  calc |(1 - θ) * f (x j) + θ * f (x (j + 1))|
+      ≤ |(1 - θ) * f (x j)| + |θ * f (x (j + 1))| := abs_add_le _ _
+    _ = (1 - θ) * |f (x j)| + θ * |f (x (j + 1))| := by
+        rw [abs_mul, abs_mul, abs_of_nonneg (by linarith : (0:ℝ) ≤ 1 - θ), abs_of_nonneg hθ0]
+    _ ≤ (1 - θ) * ‖f‖ + θ * ‖f‖ := by gcongr
+    _ = ‖f‖ := by ring
+
+/-- **The piecewise-linear interpolation operator has norm one.** It is a projection of norm one
+onto the continuous piecewise-linear functions of the partition, which is what makes its Lebesgue
+constant the best possible.
+
+Reference: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, Exercise 3.6.6. -/
+theorem norm_piecewiseLinearInterpCLM (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ))
+    (hfirst : (x 0 : ℝ) = a) (hlast : (x (n + 1) : ℝ) = b) :
+    ‖piecewiseLinearInterpCLM n x‖ = 1 := by
+  have hne : Nonempty (Set.Icc a b) := ⟨x 0⟩
+  have hone : ‖(1 : C(Set.Icc a b, ℝ))‖ = 1 := by simp
+  refine le_antisymm (ContinuousLinearMap.opNorm_le_bound _ zero_le_one fun f => ?_) ?_
+  · rw [one_mul]
+    exact norm_piecewiseLinearInterpCLM_apply_le hstep hfirst hlast f
+  · have hfix : piecewiseLinearInterpCLM n x 1 = 1 := by
+      refine ContinuousMap.ext fun t => ?_
+      obtain ⟨j, hj, h1, h2⟩ := exists_mem_subinterval hfirst hlast t
+      rw [piecewiseLinearInterpCLM_apply_of_mem hstep 1 hj h1 h2]
+      simp
+    have := (piecewiseLinearInterpCLM n x).le_opNorm (1 : C(Set.Icc a b, ℝ))
+    rw [hfix, hone, mul_one] at this
+    exact this
+
+end PiecewiseLinear

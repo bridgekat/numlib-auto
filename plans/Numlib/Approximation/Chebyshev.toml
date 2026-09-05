@@ -23,6 +23,14 @@ id = "IsBestApprox.exists_card_eq_of_polyLE"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.19"
 
 [[node]]
+id = "HaarCondition.exists_forall_apply_eq"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Section 3.3.4"
+
+[[node]]
+id = "IsBestApprox.exists_card_eq_of_interpolation"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.19"
+
+[[node]]
 id = "IsBestApprox.unique_of_polyLE"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.19"
 
@@ -33,30 +41,19 @@ desc = '''Chebyshev's equioscillation theorem (Atkinson–Han Thm 3.3.19): for `
 `X ⊆ ℝ` and `p ∈ polyLE X n`, `IsBestApprox (polyLE X n) f p ↔ Equioscillates (f - p) (n + 2)`;
 more generally for any Haar subspace satisfying `HaarCondition V (n + 1)`. The `←` direction is
 `isBestApprox_of_equioscillates`, already proved from `le_infDist_of_alternates`; what is left is
-the `→` direction, the classical exchange argument. `IsBestApprox.exists_card_eq_of_polyLE`
+the `→` direction, the classical exchange argument. `IsBestApprox.exists_card_eq_of_interpolation`
 already gives `n + 1` points at which the error attains `± ‖f - p‖` by exactly the perturbation
-argument the exchange proof uses; what it does not give is the *alternation*, and that is the
-remaining work: the extreme set splits into maximal groups of constant sign, a bounding point is
-chosen in each gap, and if there are at most `n + 1` groups the polynomial vanishing at those
-bounding points is a direction of improvement. None of that bookkeeping is in Mathlib.'''
+argument the exchange proof uses, and it is stated for any subspace that interpolates at fewer than
+`d` points, so the general Haar case costs nothing extra here; what it does not give is the
+*alternation*, and that is the remaining work: the extreme set splits into maximal groups of
+constant sign, a bounding point is chosen in each gap, and if there are at most `n + 1` groups the
+polynomial vanishing at those bounding points is a direction of improvement. None of that
+bookkeeping is in Mathlib.'''
 deps = ["Equioscillates", "HaarCondition", "le_infDist_of_alternates", "isBestApprox_of_equioscillates", "IsBestApprox.exists_card_eq_of_polyLE", "IsBestApprox", "IsBestApprox.norm_sub_eq_infDist"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.19"
 
 [[node]]
 id = "IsBestApprox.unique_of_haarCondition"
-kind = "theorem"
-desc = '''Uniqueness of the best uniform approximation from a general Haar subspace `V` with
-`HaarCondition V d` (the uniqueness clause of Atkinson–Han Thm 3.3.19 and of Kress's version).
-The polynomial case is proved, as `IsBestApprox.unique_of_polyLE`, without going through
-equioscillation: the midpoint of two best approximations is one too, its error attains the
-minimal norm at `d` points by `IsBestApprox.exists_card_eq_of_polyLE`, and at each of those the
-two errors coincide. What the general case needs on top of that is the *interpolation* property
-of a Haar system — that `V` takes prescribed values at `d` distinct points — which is where a
-rank enters: the evaluation map `V →ₗ[ℝ] (Fin d → ℝ)` is injective by `HaarCondition`, so it is
-onto exactly when `Module.finrank ℝ V = d`. Add that hypothesis, redo
-`IsBestApprox.exists_card_eq_of_polyLE` with it in place of `Lagrange.interpolate`, and the
-uniqueness proof is unchanged.'''
-deps = ["IsBestApprox.unique_of_polyLE", "IsBestApprox.exists_card_eq_of_polyLE", "HaarCondition", "IsBestApprox", "convex_setOf_isBestApprox"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.19"
 
 [[node]]
@@ -68,6 +65,11 @@ theorem on the circle. Needs both a subspace of `C(AddCircle (2π), ℝ)` of tri
 polynomials with its Haar property — the trigonometric analogue of `haarCondition_polyLE`, which
 is the statement that a nonzero trigonometric polynomial of degree `≤ n` has at most `2n` zeros
 on a period — and the exchange argument of `isBestApprox_iff_equioscillates` restated for a
-circle, where the alternation is cyclic.'''
+circle, where the alternation is cyclic.
+
+The subspace is wanted by `Numlib/Approximation/Trigonometric` and by `trigInterpCLM` of
+`Numlib/Approximation/Interpolation` as well, so define it once — in
+`Numlib/Analysis/Fourier/TrigonometricBasis`, beside the real trigonometric system — rather than
+here. Its Haar property is the only part specific to this node.'''
 deps = ["isBestApprox_iff_equioscillates", "HaarCondition", "Equioscillates"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.20"

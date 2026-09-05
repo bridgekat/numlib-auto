@@ -16,15 +16,24 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Section 3.7.3; Kress, 
 
 [[node]]
 id = "piecewiseLinearInterpCLM"
-kind = "definition"
-desc = '''Piecewise-linear interpolation on a partition of `[a, b]` as a projection
-`C(Icc a b, ℝ) →L[ℝ] C(Icc a b, ℝ)` of norm `1` onto the continuous piecewise-linear functions
-(Atkinson–Han Ex 3.6.6, Kress §8.3): `isIdempotentElem_piecewiseLinearInterpCLM`,
-`norm_piecewiseLinearInterpCLM`, and the error bound `‖f - P f‖ ≤ h²/8 ‖f''‖` for `C²` functions.
-Mathlib has no piecewise-linear interpolant on a partition, so the definition itself is the work;
-the error bound is `Lagrange.exists_sub_interpolate_eq` at `n = 1` on each subinterval together
-with `max_{[u,v]} |(t-u)(t-v)| = (v-u)²/4`.'''
 source = "Atkinson–Han, Theoretical Numerical Analysis, Example 3.6.6; Kress, Numerical Analysis, Section 8.3"
+
+[[node]]
+id = "norm_sub_piecewiseLinearInterpCLM_le"
+kind = "theorem"
+desc = '''The error of piecewise-linear interpolation on a partition of mesh `h`: `‖f - P f‖ ≤ ω(f, h)` for
+a continuous `f` (Atkinson–Han (3.2.8)) and `‖f - P f‖ ≤ h²/8 ‖f''‖` for a `C²` one
+(Atkinson–Han (3.2.9), Kress §8.3). Split off from `piecewiseLinearInterpCLM`, whose operator and
+projection properties are proved.
+
+The route is `piecewiseLinearInterpCLM_apply_of_mem`, which says that on `[x j, x (j+1)]` the
+interpolant is the affine function through the two node values: identify that with
+`Lagrange.interpolate` at those two nodes, apply `Lagrange.exists_sub_interpolate_eq` at `n = 1`
+on the subinterval, and bound `|(t - u)(t - v)| ≤ (v - u)²/4`. The `C²` hypothesis has to be on a
+function `ℝ → ℝ` restricted to `[a, b]`, as it is in `Lagrange.exists_sub_interpolate_eq`, since
+`C(Icc a b, ℝ)` carries no derivative.'''
+deps = ["piecewiseLinearInterpCLM", "Lagrange.exists_sub_interpolate_eq"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, (3.2.8)–(3.2.9); Kress, Numerical Analysis, Section 8.3"
 
 [[node]]
 id = "trigInterpCLM"
@@ -34,6 +43,11 @@ desc = '''Trigonometric interpolation at the `2n + 1` equispaced nodes of a peri
 Rivlin's bound `‖trigInterpCLM n‖ ≤ 1 + (2/π) log n` (Atkinson–Han (3.7.20)) as
 `norm_trigInterpCLM_le`. The last item of the module: the bound is a real estimate on the
 Lebesgue function of the Dirichlet kernel, and needs the Dirichlet kernel on `AddCircle (2π)`
-together with the comparison of `∑ |sin| / k` with `∫ dt/t`.'''
+together with the comparison of `∑ |sin| / k` with `∫ dt/t`.
+
+Blocked in the same way as `Numlib/Approximation/Trigonometric`: it needs `dirichletKernel` and
+its closed form from `Numlib/Analysis/Fourier/Dirichlet`, and a space of trigonometric polynomials
+on `AddCircle (2π)` to project onto. Do it after that module lands, and with the same subspace
+that `PeriodicCont.fourierProj` ranges over.'''
 deps = ["Lagrange.norm_interpolateCLM"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, (3.7.19)–(3.7.20)"

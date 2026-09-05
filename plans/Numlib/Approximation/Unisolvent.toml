@@ -1,68 +1,21 @@
 namespace = "Approximation"
-desc = '''
-The abstract interpolation problem: given an `n`-dimensional subspace `Vₙ` of a normed space `V`
-and `n` bounded linear functionals `L i`, when does `L i u = b i` have exactly one solution
-`u ∈ Vₙ` for every datum `b`? Atkinson–Han, *Theoretical Numerical Analysis*, §3.2 (Def 3.2.1,
-Lemma 3.2.2, Thm 3.2.3). Not in Mathlib.
-
-This is the frame in which Atkinson–Han settle Lagrange interpolation (§3.2.1), Hermite
-interpolation (§3.2.2), trigonometric interpolation (§3.2.4) and the moment problem (Exercise
-3.2.2) uniformly, and it is worth having separately from `Numlib/Approximation/Interpolation`,
-which is about the Lagrange *operator* and its Lebesgue constant. The mathematics is the
-statement that a square matrix over a field is invertible iff its determinant is nonzero,
-transported through a basis; the value is that the transport is done once.
-
-The relation to the Haar condition of `Numlib/Approximation/Chebyshev` is one lemma: a subspace
-satisfies the Haar condition exactly when every family of `n` distinct point evaluations is
-unisolvent over it. Keep that lemma here rather than there, so that the equioscillation module
-does not have to import this one.
-'''
 
 [[node]]
 id = "IsUnisolvent"
-kind = "definition"
-desc = '''`Approximation.IsUnisolvent Vₙ L`, for a submodule `Vₙ` of a `𝕜`-normed space and
-`L : Fin n → StrongDual 𝕜 V`: the interpolation problem `L i u = b i` has a unique solution
-`u ∈ Vₙ` for every `b : Fin n → 𝕜`. Atkinson–Han state it as linear independence of the
-functionals over `Vₙ` (Def 3.2.1); `isUnisolvent_iff_linearIndependent` is that reading and
-`isUnisolvent_iff_forall_eq_zero` is the homogeneous one, the two remaining clauses of Thm 3.2.3.'''
 source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 3.2.1, Theorem 3.2.3"
 
 [[node]]
 id = "isUnisolvent_iff_det_ne_zero"
-kind = "theorem"
-desc = '''Atkinson–Han Lemma 3.2.2: for a basis `v` of `Vₙ`, `IsUnisolvent Vₙ L ↔ det (fun i j => L i (v j)) ≠ 0`,
-and the determinant condition does not depend on the basis. The interpolation map
-`Vₙ →ₗ[𝕜] (Fin n → 𝕜)`, `u ↦ (L i u)`, has that matrix, and a square matrix is bijective iff its
-determinant is a unit.'''
-deps = ["IsUnisolvent"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, Lemma 3.2.2"
 
 [[node]]
 id = "isUnisolvent_tfae"
-kind = "theorem"
-desc = '''Atkinson–Han Thm 3.2.3, the four equivalent forms: unique solvability, linear independence of the
-functionals over `Vₙ`, triviality of the homogeneous problem, and solvability for every datum.
-The `tfae` form, with the individual implications available as the `iff` lemmas of `IsUnisolvent`.'''
-deps = ["IsUnisolvent", "isUnisolvent_iff_det_ne_zero"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.2.3"
 
 [[node]]
 id = "IsUnisolvent.interpolate"
-kind = "definition"
-desc = '''The interpolation operator of a unisolvent problem: `h.interpolate : (Fin n → 𝕜) ≃ₗ[𝕜] Vₙ`, with
-`IsUnisolvent.apply_interpolate : L i (h.interpolate b) = b i` and the uniqueness lemma
-`IsUnisolvent.eq_interpolate`. Lagrange's formula (Atkinson–Han (3.2.3)) is this map written in
-the dual basis of `L`.'''
-deps = ["IsUnisolvent"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, (3.2.3)"
 
 [[node]]
 id = "haarCondition_iff_isUnisolvent"
-kind = "theorem"
-desc = '''The bridge to the Haar condition of `Numlib/Approximation/Chebyshev`: a finite-dimensional
-subspace `Vₙ` of `C(X, ℝ)` of dimension `n` satisfies `HaarCondition` if and only if for every
-family of `n` distinct points the evaluation functionals are unisolvent over `Vₙ`. Both sides say
-that a nonzero element of `Vₙ` has fewer than `n` zeros.'''
-deps = ["IsUnisolvent", "HaarCondition"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, Section 3.3.4"
