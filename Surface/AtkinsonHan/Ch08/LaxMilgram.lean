@@ -63,9 +63,9 @@ theorem thm_8_3_2 [CompleteSpace V] {K : Set V} (hne : K.Nonempty) (hcl : IsClos
       ∀ u ∈ K, (IsMinOn (fun v => (1 / 2 : ℝ) * ‖v‖ ^ 2 - ℓ v) K u ↔
         ∀ v ∈ K, ℓ (v - u) ≤ ⟪u, v - u⟫_ℝ) := by
   rw [energy_innerSL_eq]
-  refine ⟨SesqForm.existsUnique_isMinOn_energy (innerSL_hermitian (V := V)) innerSL_hermitian ℓ
+  refine ⟨SesqForm.existsUnique_isMinOn_energy (innerSL_hermitian (V := V)) ℓ
       one_pos innerSL_coercive hconv hcl hne, fun u hu => ?_⟩
-  exact SesqForm.isMinOn_energy_iff_forall_le (innerSL_hermitian (V := V)) innerSL_hermitian ℓ
+  exact SesqForm.isMinOn_energy_iff_forall_le (innerSL_hermitian (V := V)) ℓ
     one_pos innerSL_coercive hconv hu
 
 /-- Theorem 8.3.2, subspace case: `u ∈ K` minimizes `E(v) = ½‖v‖² − ℓ(v)` over the subspace `K`
@@ -87,7 +87,7 @@ theorem thm_8_3_3 [CompleteSpace V] (hM : a.IsBoundedWith M) (hα : 0 < α)
     {K : Set V} (hne : K.Nonempty) (hcl : IsClosed K) (hconv : Convex ℝ K) :
     ∃! u, u ∈ K ∧ IsMinOn (a.energy ℓ) K u := by
   have hh := (BilinForm.isSymm_iff_isHermitian hM).mp hs
-  exact SesqForm.existsUnique_isMinOn_energy (a := a.toCLM hM) hh hh ℓ hα ha hconv hcl hne
+  exact SesqForm.existsUnique_isMinOn_energy (a := a.toCLM hM) hh ℓ hα ha hconv hcl hne
 
 /-- Theorem 8.3.3, characterization (8.3.3): on a convex set the minimizer of the energy is the
 solution of the variational inequality `a(u, v − u) ≥ ℓ(v − u)` for all `v ∈ K`. -/
@@ -96,7 +96,7 @@ theorem thm_8_3_3_iff [CompleteSpace V] (hM : a.IsBoundedWith M) (hα : 0 < α)
     {K : Set V} (hconv : Convex ℝ K) {u : V} (hu : u ∈ K) :
     IsMinOn (a.energy ℓ) K u ↔ ∀ v ∈ K, ℓ (v - u) ≤ a u (v - u) := by
   have hh := (BilinForm.isSymm_iff_isHermitian hM).mp hs
-  exact SesqForm.isMinOn_energy_iff_forall_le (a := a.toCLM hM) hh hh ℓ hα ha hconv hu
+  exact SesqForm.isMinOn_energy_iff_forall_le (a := a.toCLM hM) hh ℓ hα ha hconv hu
 
 /-- Theorem 8.3.3, characterization (8.3.4): on a subspace the minimizer of the energy is the
 solution of the variational equation `a(u,v) = ℓ(v)` for all `v ∈ K`.  Neither closedness of `K`

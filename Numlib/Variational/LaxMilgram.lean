@@ -266,6 +266,7 @@ theorem isMinOn_energy_iff {c : ℝ} (hc : 0 < c) (hcoer : a.IsCoerciveWith c) (
       le_trans (mul_nonneg hc.le (sq_nonneg _)) (hcoer (v - u))
     linarith
 
+omit ha in
 /-- On a nonempty closed convex set `K` (real scalars), the energy minimizer is characterized by
 the variational inequality `re (a u (v - u)) ≥ re (ℓ (v - u))` for all `v ∈ K` (Atkinson–Han,
 *Theoretical Numerical Analysis*, (8.3.3)).  On a subspace the inequality can be applied to both
@@ -312,6 +313,7 @@ theorem isMinOn_energy_iff_forall_le {V : Type*} [NormedAddCommGroup V] [InnerPr
     simp only [RCLike.re_to_real] at heq
     linarith
 
+omit ha in
 /-- Existence and uniqueness of the energy minimizer on a nonempty closed convex set
 (Atkinson–Han, *Theoretical Numerical Analysis*, Thm 8.3.3, which routes through their Thm 3.3.12
 on minimizing a coercive, convex, lower semicontinuous functional; compare Mathlib's
