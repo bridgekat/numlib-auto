@@ -22,6 +22,8 @@ import SaadSparse.Ch06.GCR
 import SaadSparse.Ch06.GMRES
 import SaadSparse.Ch06.Givens
 import SaadSparse.Ch06.Lanczos
+import SaadSparse.Ch06.Relations
+import SaadSparse.Ch06.Smoothing
 import SaadSparse.Ch06.Residual
 
 /-!
