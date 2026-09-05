@@ -13,6 +13,8 @@ import SaadSparse.Ch06.Arnoldi
 import SaadSparse.Ch06.Basic
 import SaadSparse.Ch06.CG
 import SaadSparse.Ch06.CR
+import SaadSparse.Ch06.Chebyshev
+import SaadSparse.Ch06.Convergence
 import SaadSparse.Ch06.DQGMRES
 import SaadSparse.Ch06.FOM
 import SaadSparse.Ch06.FaberManteuffel
