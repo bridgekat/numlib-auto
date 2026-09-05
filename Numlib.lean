@@ -18,6 +18,7 @@ import Numlib.Approximation.BestApprox
 import Numlib.Approximation.Chebyshev
 import Numlib.Approximation.Interpolation
 import Numlib.Eigen.Deflation
+import Numlib.Eigen.Jacobi
 import Numlib.Eigen.KrylovEigen
 import Numlib.Eigen.MinMax
 import Numlib.Eigen.Normal
@@ -50,6 +51,8 @@ import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.LinearAlgebra.Matrix.Hessenberg
 import Numlib.LinearAlgebra.Matrix.MMatrix
 import Numlib.LinearAlgebra.Matrix.Order
+import Numlib.LinearAlgebra.Matrix.SVD
+import Numlib.LinearAlgebra.Matrix.Schur
 import Numlib.LinearSolve.Perturbation
 import Numlib.LinearSolve.Projection.Additive
 import Numlib.LinearSolve.Projection.Basic

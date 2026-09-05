@@ -1,62 +1,52 @@
 namespace = "Matrix"
-desc = '''
-Jacobi's method for the eigenvalues of a Hermitian matrix, Kress, *Numerical Analysis*, §7.3:
-the plane rotation that annihilates one off-diagonal pair (Lemma 7.12–7.13), the decrease of the
-off-diagonal Frobenius mass `N(B)² = N(A)² - 2 |a_jk|²` (Lemma 7.13), and the convergence of the
-classical method, which annihilates the largest off-diagonal entry at each step (Thm 7.14):
-`N(A_ν)² ≤ (1 - 2/(n² - n))^ν N(A)²`, so `A_ν` tends to a diagonal matrix carrying the
-eigenvalues. Independent of the Krylov layer; phase 3, Kress only.
-'''
 
 [[node]]
 id = "offDiagNormSq"
-kind = "definition"
-desc = '''`offDiagNormSq A := ∑_{i ≠ j} ‖A i j‖²`, Kress's `N(A)²`, with
-`offDiagNormSq_add_sum_diag_sq : offDiagNormSq A + ∑ i, ‖A i i‖² = ‖A‖_F²` (his Lemma 7.8, the
-unitary invariance of the Frobenius norm).'''
 source = "Kress, Numerical Analysis, Section 7.3"
 
 [[node]]
+id = "planeRotation"
+source = "Kress, Numerical Analysis, Lemma 7.12"
+
+[[node]]
 id = "jacobiRotation"
-kind = "definition"
-desc = '''The plane rotation `U(j, k, φ)` in the `(j, k)`-plane, unitary, with the angle
-`jacobiAngle A j k` chosen by `cot 2φ = (a_jj - a_kk)/(2 a_jk)` (Kress Lemma 7.13, `φ = π/4` when
-`a_jj = a_kk`), and `jacobiStep A j k := Uᴴ A U`.'''
-deps = ["offDiagNormSq"]
 source = "Kress, Numerical Analysis, Lemmas 7.12 and 7.13"
 
 [[node]]
+id = "jacobiStep"
+source = "Kress, Numerical Analysis, Lemma 7.13"
+
+[[node]]
 id = "offDiagNormSq_jacobiStep"
-kind = "theorem"
-desc = '''Kress Lemma 7.13: `(jacobiStep A j k) j k = 0` and
-`offDiagNormSq (jacobiStep A j k) = offDiagNormSq A - 2 ‖A j k‖²` for Hermitian `A` and `j ≠ k`.'''
-deps = ["jacobiRotation", "offDiagNormSq"]
 source = "Kress, Numerical Analysis, Lemma 7.13"
 
 [[node]]
 id = "classicalJacobiIterate"
-kind = "definition"
-desc = '''The classical Jacobi method: `classicalJacobiIterate A (ν + 1) = jacobiStep (classicalJacobiIterate A ν) j k`
-for a pair `(j, k)` of largest `‖a_jk‖` off the diagonal (chosen by `Finset.exists_max_image`).'''
-deps = ["jacobiRotation"]
 source = "Kress, Numerical Analysis, Section 7.3"
 
 [[node]]
 id = "offDiagNormSq_classicalJacobiIterate_le"
-kind = "theorem"
-desc = '''`offDiagNormSq (classicalJacobiIterate A ν) ≤ (1 - 2/(n² - n))^ν * offDiagNormSq A` for
-Hermitian `A` of size `n ≥ 2`: the largest entry carries at least `N(A)²/(n² - n)` of the mass.'''
-deps = ["classicalJacobiIterate", "offDiagNormSq_jacobiStep"]
 source = "Kress, Numerical Analysis, proof of Theorem 7.14"
+
+[[node]]
+id = "charpoly_classicalJacobiIterate"
+source = "Kress, Numerical Analysis, Theorem 7.14"
+
+[[node]]
+id = "tendsto_offDiagNormSq_classicalJacobiIterate"
+source = "Kress, Numerical Analysis, Theorem 7.14"
 
 [[node]]
 id = "tendsto_classicalJacobiIterate"
 kind = "theorem"
-desc = '''Kress Thm 7.14: the classical Jacobi iterates converge to a diagonal matrix whose diagonal
-entries are the eigenvalues of `A` (as a multiset): the off-diagonal mass tends to `0`, all
-iterates are unitarily similar to `A`, and the diagonal converges because the diagonal entries of
-a Hermitian matrix with off-diagonal mass `ε` are within `√ε`-distances of the eigenvalues
-(Gershgorin, `Matrix.spectrum_subset_iUnion_closedBall`, together with a compactness argument for
-the ordering).'''
-deps = ["offDiagNormSq_classicalJacobiIterate_le", "spectrum_subset_iUnion_closedBall"]
+desc = '''Kress Thm 7.14, the half that is still open: the classical Jacobi iterates converge to a
+*diagonal matrix* whose diagonal entries are the eigenvalues of `A` as a multiset. The
+off-diagonal mass tends to `0` (`tendsto_offDiagNormSq_classicalJacobiIterate`) and every iterate
+carries the characteristic polynomial of `A` (`charpoly_classicalJacobiIterate`), so what is
+missing is the passage from those two to convergence of the diagonal itself: the diagonal entries
+of a symmetric matrix with off-diagonal mass `ε` are within `√ε` of the eigenvalues (Gershgorin,
+`Matrix.spectrum_subset_iUnion_closedBall`), and a compactness argument is needed to pin down the
+ordering, since the diagonal converges only up to a permutation.'''
+deps = ["tendsto_offDiagNormSq_classicalJacobiIterate", "charpoly_classicalJacobiIterate",
+  "spectrum_subset_iUnion_closedBall"]
 source = "Kress, Numerical Analysis, Theorem 7.14"

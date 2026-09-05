@@ -102,6 +102,16 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   write to `p + '.tmp'` and `os.replace`. Recovery is `git checkout -- <file>`, which loses every
   uncommitted edit to it, so commit before running a patch script.
 
+* The scratchpad directory handed to a sub-agent is **shared between all of them**: another agent
+  overwrote a `patch1.py` mid-run. Prefix every scratch file with your branch name.
+* Git Bash rewrites a command-line argument that starts with `/` into a Windows path, so a python
+  script called with a marker string like `/-- Foo` receives `C:/Program Files/Git/-- Foo`. Pass
+  markers that do not start with a slash.
+* Writing a Lean fragment as a python string means escaping every non-BMP character by hand, and
+  a macro-substitution scheme for the symbols will silently corrupt tokens (`SMUL` contains `MU`).
+  Write the fragment to a `.lean` file with the Write tool and have a small python script splice it
+  into the target by a marker; then the Lean text is never inside a python literal.
+
 ## Correctness traps
 
 * **`include h` makes every later declaration in scope carry `h`.** A theorem that re-binds a
@@ -418,6 +428,15 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   `rw [mul_pow, neg_one_mul]` in the other direction instead.
 * After `rintro _ ⟨v, rfl⟩` inside a `BddAbove (Set.range f)` goal the residual is the beta-redex
   `(fun v => …) v ≤ c`; `dsimp only` first, or every `rw` misses.
+
+* `simp` cannot discharge `if k = j` from `hjk : j ≠ k`: a `Ne` hypothesis rewrites only the
+  equation with that exact orientation. Put `have hkj : k ≠ j := hjk.symm` in the context before any
+  `simp_all` over a matrix built from `if p = j`/`if p = k`. Adding `ne_comm` to the simp set fixes
+  the `≠` goals but not the `if` conditions.
+* `linear_combination` proves the two-by-two rotation identity
+  `(c²u + 2csw + s²v)² + (s²u − 2csw + c²v)² = u² + v² + 2w²` from `c² + s² = 1` and the
+  annihilation `(c²−s²)w + cs(v−u) = 0` in one line, with the *square* of the annihilation
+  expression as the coefficient of that hypothesis; `nlinarith` does not find it.
 
 ## Mathlib names and API
 
@@ -772,6 +791,46 @@ lines. Building them needs `IsPrincipalIdealRing K[X]`, which arrives only with
 `WithEnergy.equiv_mem_submoduleMap_iff`, `norm_equiv` and `inner_equiv` all take the operator and
 its symmetry-coercivity proof as *explicit* arguments, so `(WithEnergy.equiv_mem_submoduleMap_iff
 M hM).2 hw`, not `.2 hw` alone.
+
+**Rectangular matrix products do not use `Mul`.** `A * M` for `A : Matrix m n R` and
+`M : Matrix n k R` is an `HMul` instance, not a `Mul` on one type, so `mul_assoc`, `mul_one`,
+`mul_zero`, `mul_sub`, `noncomm_ring` and `linear_combination` all fail on them. The named
+replacements are `Matrix.mul_assoc`, `Matrix.mul_one`, `Matrix.mul_zero`, `Matrix.mul_sub`; for a
+chain of rewrites, `simp only [Matrix.mul_assoc]` normalizes both sides to right-associated form,
+which is the cheapest way to match two differently-bracketed products.
+
+`Matrix.rank_conjTranspose_mul_self` and `Matrix.conjTranspose_mul_self_eq_zero` are stated over a
+`StarOrderedRing`, which for a general `RCLike 𝕜` means `open scoped ComplexOrder` — the
+`PartialOrder`, `StarOrderedRing` and friends on `RCLike` are all scoped instances there. One
+`open scoped ComplexOrder in` before the declaration is enough and changes nothing else.
+
+`Matrix.toEuclideanLin` is an `abbrev` for `Matrix.toLpLin 2 2`, and **`Matrix.toEuclideanLin_apply`
+no longer exists**: use `Matrix.toLpLin_apply : toLpLin p q M v = toLp _ (M *ᵥ ofLp v)`,
+`Matrix.toLpLin_mul_same` for `toEuclideanLin (A * B) = toEuclideanLin A ∘ₗ toEuclideanLin B`, and
+`WithLp.ofLp_injective p` (the `p` is explicit) with `WithLp.ofLp_smul` to move an equation between
+`EuclideanSpace` and plain functions. `Matrix.IsHermitian.mulVec_eigenvectorBasis` is stated on
+`⇑(hA.eigenvectorBasis j) = (hA.eigenvectorBasis j).ofLp`, so that is the bridge to the eigenvector
+basis.
+
+Mathlib's Frobenius norm (`Matrix.frobenius_norm_def`, scoped in `Matrix.Norms.Frobenius`) is
+defined with **real** exponents, `(∑ ‖A i j‖ ^ (2:ℝ)) ^ (1/2 : ℝ)`, and there is no unitary
+invariance for it and no bridge to `trace (Aᴴ A)`. For anything about the Frobenius mass, work with
+`∑ i, ∑ j, ‖A i j‖ ^ 2` and prove invariance through `trace (Aᵀ * A)` and `Matrix.trace_mul_cycle`.
+
+`Matrix.spectrum_subset_iUnion_closedBall` is **this project's**, in `Numlib/Eigen/Perturbation`;
+Mathlib's Gershgorin is the root-level `eigenvalue_mem_ball` in
+`Mathlib/LinearAlgebra/Matrix/Gershgorin.lean`, phrased with `Module.End.HasEigenvalue (toLin' A)`.
+
+`Orthonormal.inner_sum (hv) (l₁ l₂) (s) : ⟪∑ i ∈ s, l₁ i • v i, ∑ i ∈ s, l₂ i • v i⟫ = ∑ i ∈ s,
+conj (l₁ i) * l₂ i` is the expansion lemma to reach for; `Orthonormal.inner_left_right_finset` is a
+different statement, about a double sum of weighted inner products.
+
+Mathlib gained `Mathlib/Analysis/InnerProductSpace/SingularValues.lean` (`LinearMap.singularValues`,
+a descending `ℕ →₀ ℝ`), but it has **no SVD factorization, no pseudoinverse and no polar
+decomposition**; `Matrix.singularValues` and `Matrix.pinv` in `Numlib/LinearAlgebra/Matrix/SVD` are
+this project's. Mathlib also has no Schur triangulation and no plane-rotation matrix in dimension
+`n`, and `Mathlib/LinearAlgebra/Eigenspace/Triangularizable.lean` lists a maximal chain of
+invariant subspaces as a TODO.
 
 ## Design conventions of this library
 

@@ -1,68 +1,48 @@
 namespace = "Matrix"
-desc = '''
-The singular value decomposition as a factorization, the pseudoinverse and Tikhonov
-regularization, after Kress, *Numerical Analysis*, §5.2–5.3 (Thm 5.4–5.10), together with the
-`κ₂ = σmax/σmin` formula that Saad, *Iterative Methods for Sparse Linear Systems*, §1.13 and
-Choi, *Iterative Methods for Singular Linear Equations and Least-Squares Problems*, §2.4.5 use.
-Upstreaming candidate (natural home: `Mathlib.Analysis.InnerProductSpace.SingularValues`, where
-Mathlib already has `LinearMap.singularValues` and the singular-value expansion for compact
-operators on Hilbert spaces, but no matrix factorization, no pseudoinverse and no Tikhonov
-theory).
 
-Kress's *singular system* `(μ_j, u_j, v_j)` is the pair of orthonormal families with
-`A u_j = μ_j v_j`, `Aᴴ v_j = μ_j u_j`; Thm 5.4 constructs it from the eigen-decomposition of
-`Aᴴ A`, Thm 5.5 is Picard's solvability criterion and the pseudoinverse solution
-`A† y = ∑ μ_j⁻¹ ⟪y, v_j⟫ u_j`, Thm 5.7 and 5.9 identify Tikhonov's regularized solution
-`(α + Aᴴ A)⁻¹ Aᴴ y` with the minimizer of `‖A x - y‖² + α ‖x‖²` and give its singular-system
-form, and Thm 5.6, 5.10 are the discrepancy principles for spectral cut-off and for Tikhonov,
-which choose the regularization parameter from the noise level `δ`. Phase 3, Kress only apart
-from the condition-number formula.
-'''
+[[node]]
+id = "singularValues"
+source = "Kress, Numerical Analysis, Theorem 5.4"
+
+[[node]]
+id = "rightSingularBasis"
+source = "Kress, Numerical Analysis, Theorem 5.4"
 
 [[node]]
 id = "exists_singularSystem"
-kind = "theorem"
-desc = '''Kress Thm 5.4: for `A : Matrix m n 𝕜` of rank `r` there are `μ₁ ≥ ⋯ ≥ μ_r > 0` and
-orthonormal families `u : Fin n → EuclideanSpace 𝕜 n`, `v : Fin m → EuclideanSpace 𝕜 m` with
-`A u_j = μ_j v_j`, `Aᴴ v_j = μ_j u_j` for `j < r`, `A u_j = 0` and `Aᴴ v_j = 0` beyond, hence
-`A = U Σ Vᴴ` (`exists_svd`). From `Matrix.IsHermitian.eigenvectorBasis` of `Aᴴ A`; the `μ_j` are
-`LinearMap.singularValues` of `toEuclideanLin A`.'''
 source = "Kress, Numerical Analysis, Theorem 5.4"
 
 [[node]]
 id = "pinv"
-kind = "definition"
-desc = '''The Moore–Penrose pseudoinverse `Matrix.pinv A := V Σ⁺ Uᴴ`, characterized by the four Penrose
-conditions (`pinv_unique`), with `pinv_mulVec_eq_iInf_norm`: `A† y` is the least-norm least-squares
-solution of `A x = y` — Kress Thm 5.5's formula `∑_{j<r} μ_j⁻¹ ⟪y, v_j⟫ u_j` together with his
-solvability criterion `∀ z, Aᴴ z = 0 → ⟪y, z⟫ = 0`.'''
-deps = ["exists_singularSystem"]
+source = "Kress, Numerical Analysis, Theorem 5.5"
+
+[[node]]
+id = "pinv_unique"
 source = "Kress, Numerical Analysis, Theorem 5.5"
 
 [[node]]
 id = "condNumber_l2_eq_div_singularValues"
-kind = "theorem"
-desc = '''`κ₂(A) = σmax/σmin` for a nonsingular `A` under the scoped `Matrix.Norms.L2Operator` norm:
-`NormedRing.condNumber A = μ₁/μ_n` (Saad §1.13, Choi §2.4.5, Kress Cor 5.8-style), from
-`‖A‖₂ = μ₁` and `‖A⁻¹‖₂ = μ_n⁻¹` (`l2_opNorm_eq_singularValues_max`).'''
-deps = ["exists_singularSystem", "NormedRing.condNumber", "l2_opNorm_eq_norm_toEuclideanLin"]
 source = "Kress, Numerical Analysis, Section 5.2; Saad, Iterative Methods for Sparse Linear Systems, Section 1.13"
 
 [[node]]
 id = "tikhonov"
-kind = "definition"
-desc = '''Kress Thm 5.7 and Thm 5.9: for `α > 0`, `tikhonov A α y := (α • 1 + Aᴴ A)⁻¹ Aᴴ y` is the unique
-solution of `α x + Aᴴ A x = Aᴴ y`, equals `∑_j μ_j/(α + μ_j²) ⟪y, v_j⟫ u_j`, and is the unique
-minimizer of `x ↦ ‖A x - y‖² + α ‖x‖²` (`isMinOn_tikhonov`, `tikhonov_unique`).'''
-deps = ["exists_singularSystem"]
 source = "Kress, Numerical Analysis, Theorems 5.7 and 5.9"
 
 [[node]]
 id = "exists_discrepancy_tikhonov"
 kind = "theorem"
-desc = '''Kress Thm 5.10 (the discrepancy principle for Tikhonov regularization): for `y ∈ range A` and
+desc = '''Kress Thm 5.10, the discrepancy principle for Tikhonov regularization: for `y ∈ range A` and
 `‖yδ - y‖ ≤ δ < ‖yδ‖`, there is a unique `α(δ) > 0` with `‖A (tikhonov A (α δ) yδ) - yδ‖ = δ`, and
 `tikhonov A (α δ) yδ → A† y` as `δ → 0`; with Thm 5.6, the same principle for the spectral cut-off
-`∑_{j<p} μ_j⁻¹ ⟪yδ, v_j⟫ u_j` (`exists_discrepancy_cutoff`).'''
+`∑_{j<p} μ_j⁻¹ ⟪yδ, v_j⟫ u_j` (`exists_discrepancy_cutoff`).
+
+Not attempted. The Tikhonov machinery this file has is enough for the *algebra*, but the
+discrepancy equation is an analytic statement about the residual as a function of α: one needs the
+expansion of `A (tikhonov A α) y` in the **left** singular vectors, which this file does not build
+(only `rightSingularBasis` is a definition; the left vectors appear existentially in
+`exists_singularSystem`), and from it the continuity and strict monotonicity of
+`α ↦ ‖A (tikhonov A α yδ) - yδ‖`, its limit `dist(yδ, range A)` at `0` and `‖yδ‖` at `∞`, an
+intermediate value argument, and then a separate compactness argument for the `δ → 0` convergence.
+A first step would be a `Matrix.leftSingularVector` definition beside `rightSingularBasis`.'''
 deps = ["tikhonov", "pinv"]
 source = "Kress, Numerical Analysis, Theorems 5.6 and 5.10"
