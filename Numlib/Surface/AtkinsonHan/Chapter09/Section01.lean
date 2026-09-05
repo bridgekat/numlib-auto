@@ -1,4 +1,10 @@
-import Numlib.Surface.AtkinsonHan.Ch08.LaxMilgram
+import Numlib.Analysis.InnerProductSpace.Coercive
+import Numlib.Analysis.InnerProductSpace.Energy
+import Numlib.LinearSolve.Projection.Basic
+import Numlib.LinearSolve.Projection.Optimality
+import Numlib.Variational.Forms
+import Numlib.Variational.Galerkin
+import Numlib.Surface.AtkinsonHan.Chapter08.Section03
 
 /-!
 # The Galerkin method (§9.1)

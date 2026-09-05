@@ -1,4 +1,5 @@
-import Numlib.Surface.AtkinsonHan.Ch02.Operators
+import Numlib.Approximation.BestApprox
+import Numlib.Surface.AtkinsonHan.Chapter02.Section04
 import Mathlib.Topology.Instances.AddCircle.Defs
 import Mathlib.Topology.MetricSpace.Holder
 import Mathlib.Analysis.Calculus.IteratedDeriv.Defs

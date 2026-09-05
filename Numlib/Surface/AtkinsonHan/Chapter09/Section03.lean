@@ -1,4 +1,5 @@
-import Numlib.Surface.AtkinsonHan.Ch09.Galerkin
+import Numlib.Variational.Galerkin
+import Numlib.Surface.AtkinsonHan.Chapter09.Section01
 
 /-!
 # The generalized Galerkin method and Strang's first lemma (§9.3)

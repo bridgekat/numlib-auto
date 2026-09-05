@@ -1,4 +1,5 @@
-import Numlib.Backbone
+import Numlib.Variational.Forms
+import Numlib.Variational.LaxMilgram
 
 /-!
 # General existence and uniqueness for operator equations (§8.2)

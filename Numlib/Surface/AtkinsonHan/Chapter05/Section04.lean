@@ -1,4 +1,6 @@
-import Numlib.Surface.AtkinsonHan.Ch05.Calculus
+import Numlib.Analysis.Normed.Ring.Inverse
+import Numlib.Nonlinear.Newton
+import Numlib.Surface.AtkinsonHan.Chapter05.Section03
 
 /-!
 # Atkinson–Han §5.4: Newton's method

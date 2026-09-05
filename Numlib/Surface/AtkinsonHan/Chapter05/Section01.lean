@@ -1,4 +1,5 @@
-import Numlib.Backbone
+import Numlib.Analysis.InnerProductSpace.Coercive
+import Numlib.Nonlinear.FixedPoint
 
 /-!
 # Atkinson–Han §5.1: the Banach fixed-point theorem

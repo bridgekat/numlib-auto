@@ -1,4 +1,6 @@
-import Numlib.Surface.AtkinsonHan.Ch08.BilinearForms
+import Numlib.Variational.Forms
+import Numlib.Variational.LaxMilgram
+import Numlib.Surface.AtkinsonHan.Chapter08.Section03
 
 /-!
 # The generalized Lax–Milgram lemma (§8.7)

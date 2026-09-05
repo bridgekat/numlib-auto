@@ -1,4 +1,8 @@
-import Numlib.Surface.AtkinsonHan.Ch05.FixedPoint
+import Numlib.LinearAlgebra.Matrix.Complexify
+import Numlib.LinearAlgebra.Matrix.Hessenberg
+import Numlib.LinearSolve.Stationary.Basic
+import Numlib.LinearSolve.Stationary.Splitting
+import Numlib.Surface.AtkinsonHan.Chapter05.Section01
 
 /-!
 # Atkinson–Han §5.2: applications of the fixed-point theorem to iterative methods

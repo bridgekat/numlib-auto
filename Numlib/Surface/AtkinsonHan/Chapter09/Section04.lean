@@ -1,5 +1,11 @@
-import Numlib.Surface.AtkinsonHan.Ch05.ConjugateGradient
-import Numlib.Surface.AtkinsonHan.Ch09.Galerkin
+import Numlib.Analysis.InnerProductSpace.Coercive
+import Numlib.Analysis.InnerProductSpace.Energy
+import Numlib.Krylov.CG
+import Numlib.Krylov.Convergence.CG
+import Numlib.Krylov.Iterate
+import Numlib.Variational.Forms
+import Numlib.Surface.AtkinsonHan.Chapter05.Section06
+import Numlib.Surface.AtkinsonHan.Chapter09.Section01
 
 /-!
 # The conjugate gradient method: variational formulation (§9.4)

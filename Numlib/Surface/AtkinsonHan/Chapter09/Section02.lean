@@ -1,4 +1,7 @@
-import Numlib.Surface.AtkinsonHan.Ch08.GeneralizedLaxMilgram
+import Numlib.Analysis.InnerProductSpace.Projection.ObliqueProjection
+import Numlib.Variational.Forms
+import Numlib.Variational.Galerkin
+import Numlib.Surface.AtkinsonHan.Chapter08.Section07
 
 /-!
 # The Petrov–Galerkin method (§9.2)

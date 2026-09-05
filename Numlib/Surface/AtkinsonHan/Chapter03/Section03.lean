@@ -1,8 +1,11 @@
-import Numlib.Surface.AtkinsonHan.Ch02.Operators
+import Numlib.Approximation.BestApprox
+import Numlib.Surface.AtkinsonHan.Chapter02.Section04
 import Mathlib.Analysis.Normed.Module.DoubleDual
 import Mathlib.Analysis.InnerProductSpace.Convex
 import Mathlib.RingTheory.Polynomial.DegreeLT
 import Mathlib.Topology.ContinuousMap.Polynomial
+import Mathlib.Analysis.SpecialFunctions.Pow.Real
+import Mathlib.Topology.ContinuousMap.Compact
 
 /-!
 # Atkinson–Han §3.3: best approximation

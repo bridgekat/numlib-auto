@@ -1,5 +1,6 @@
-import Numlib.Backbone
-import Numlib.Surface.AtkinsonHan.Ch03.BestApprox
+import Numlib.Analysis.InnerProductSpace.Projection.ObliqueProjection
+import Numlib.Approximation.BestApprox
+import Numlib.Surface.AtkinsonHan.Chapter03.Section03
 import Mathlib.Analysis.InnerProductSpace.PiL2
 
 /-!

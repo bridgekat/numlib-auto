@@ -1,8 +1,9 @@
-import Numlib.Backbone
+import Numlib.Analysis.Calculus.MeanValue
 import Mathlib.Analysis.Calculus.LineDeriv.Basic
 import Mathlib.Analysis.Calculus.FDeriv.Bilinear
 import Mathlib.Analysis.Calculus.FDeriv.Partial
 import Mathlib.Analysis.Calculus.Deriv.Pow
+import Mathlib.Analysis.Calculus.Deriv.MeanValue
 
 /-!
 # Atkinson–Han §5.3: differential calculus for nonlinear operators
