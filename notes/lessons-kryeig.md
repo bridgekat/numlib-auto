@@ -111,7 +111,7 @@ The angle API is all quotients, so the degenerate points have to be checked one 
 
 ## On the plan's estimate
 
-`tracker/backbone.md` §4.4 calls this "the direct analogue of `Krylov/Convergence/CG`", and that
+`plans/backbone.md` §4.4 calls this "the direct analogue of `Krylov/Convergence/CG`", and that
 is exactly right about the *shape*: a min–max, a polynomial norm bound, a variational
 characterization. What it does not say is that the eigenvalue side needs one more ingredient that
 the linear-solve side does not — a polynomial with prescribed roots, to remove the eigenvalues

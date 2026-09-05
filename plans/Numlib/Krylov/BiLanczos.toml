@@ -1,0 +1,83 @@
+desc = '''
+The two-sided Lanczos process and the methods built on it: Saad, *Iterative Methods for Sparse
+Linear Systems*, Ch. 7 — the biorthogonalization (Algorithm 7.1, Proposition 7.1), the
+biconjugate gradient algorithm (Algorithm 7.3, Proposition 7.2) and QMR (Algorithm 7.4,
+Proposition 7.3, Theorem 7.4). CGS, BiCGSTAB and TFQMR (§7.4) have no theorem in the book beyond
+their derivations and are Saad-surface material.
+
+The organizing fact is that the Lanczos basis `v_1, …, v_{m+1}` satisfies
+`A V_m = V_{m+1} T̄_m` with a tridiagonal `T̄_m` — a `Krylov.HessenbergRelation` of
+`Numlib/Krylov/Hessenberg` with a basis that is *not* orthonormal — so the residual formula
+`r_m = V_{m+1} (β e₁ - T̄_m y)` holds verbatim and QMR is the minimization of the *quasi-residual*
+`‖β e₁ - T̄_m y‖` in that relation. Theorem 7.4 then compares the QMR residual to the GMRES
+residual through the conditioning of `V_{m+1}`: `‖r_m^Q‖ ≤ κ₂(V_{m+1}) ‖r_m^G‖`. BCG is the
+Petrov–Galerkin iterate with `L = 𝒦_m(Aᴴ, w_1)`, an instance of `IsPetrovGalerkin`. Indices are
+`0`-based as in the rest of the Krylov layer; a breakdown (`⟪v_{j+1}, w_{j+1}⟫ = 0`) is a
+hypothesis of every statement, as it is in the book.
+'''
+
+[[node]]
+id = "BiLanczos.vec"
+kind = "definition"
+desc = '''Algorithm 7.1: the two sequences `BiLanczos.vec A v₁ w₁ j` and `BiLanczos.dualVec A v₁ w₁ j` with
+the coefficients `alpha`, `beta`, `delta`, defined by recursion with the book's normalization
+`⟪v_{j+1}, w_{j+1}⟫ = 1` (so `δ_{j+1} = |⟪v̂, ŵ⟫|^{1/2}`, `β_{j+1} = ⟪v̂, ŵ⟫/δ_{j+1}`), the recursion
+returning `0` after a breakdown.'''
+deps = ["Krylov.subspace"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Algorithm 7.1"
+
+[[node]]
+id = "BiLanczos.inner_vec_dualVec"
+kind = "theorem"
+desc = '''Saad Prop 7.1: if no breakdown occurs before step `m`, `⟪v_i, w_j⟫ = δ_{ij}` for `i, j ≤ m`,
+the `v_i` span `𝒦_m(A, v₁)`, the `w_j` span `𝒦_m(Aᴴ, w₁)`, and `A V_m = V_m T_m + δ_{m+1} v_{m+1} e_mᵀ`,
+`Aᴴ W_m = W_m T_mᴴ + β_{m+1} w_{m+1} e_mᵀ`, `W_mᴴ A V_m = T_m`, with `T_m` tridiagonal.'''
+deps = ["BiLanczos.vec", "Krylov.subspace"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 7.1"
+
+[[node]]
+id = "BiLanczos.hessenbergRelation"
+kind = "theorem"
+desc = '''The two-sided Lanczos basis satisfies `Krylov.HessenbergRelation A (BiLanczos.vec A v₁ w₁) T̄`
+with the tridiagonal coefficient function, so the residual formula
+`Krylov.HessenbergRelation.residual_eq` applies with the non-orthonormal basis.'''
+deps = ["BiLanczos.inner_vec_dualVec", "Krylov.HessenbergRelation"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, (7.3)"
+
+[[node]]
+id = "BCG.iterate"
+kind = "definition"
+desc = '''Algorithm 7.3, the biconjugate gradient state `(x, r, r*, p, p*)` with
+`α = ⟪r, r*⟫/⟪A p, p*⟫`, `β = ⟪r', r*'⟫/⟪r, r*⟫`.'''
+deps = ["CG.State", "CG.step"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Algorithm 7.3"
+
+[[node]]
+id = "BCG.inner_residual_dualResidual_eq_zero"
+kind = "theorem"
+desc = '''Saad Prop 7.2: the BCG residuals are biorthogonal, `⟪r_i, r*_j⟫ = 0` for `i ≠ j`, and the
+directions are `A`-biconjugate, `⟪A p_i, p*_j⟫ = 0` for `i ≠ j`; hence `x_m` is the
+Petrov–Galerkin iterate `IsPetrovGalerkin A b x₀ (𝒦_m(A, r₀)) (𝒦_m(Aᴴ, r*₀)) x_m`
+(`BCG.isPetrovGalerkin`).'''
+deps = ["BCG.iterate", "IsPetrovGalerkin", "BiLanczos.inner_vec_dualVec"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 7.2"
+
+[[node]]
+id = "QMR.IsQuasiMinRes"
+kind = "definition"
+desc = '''The QMR specification: `x = x₀ + V_m y` where `y` minimizes the quasi-residual
+`‖β e₁ - T̄_m y‖` of the two-sided Lanczos relation (Saad (7.12)–(7.14)); `QMR.iterate` is
+Algorithm 7.4 and satisfies it (`QMR.iterate_isQuasiMinRes`).'''
+deps = ["BiLanczos.hessenbergRelation", "Krylov.isMinResIterate_iff_isMinOn"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Algorithm 7.4, (7.12)–(7.14)"
+
+[[node]]
+id = "QMR.norm_residual_le"
+kind = "theorem"
+desc = '''Saad Prop 7.3 and Thm 7.4: the QMR residual is `r_m = V_{m+1} (β e₁ - T̄_m y_m)`, so
+`‖r_m‖ ≤ ‖V_{m+1}‖ ‖β e₁ - T̄_m y_m‖` (Prop 7.3, with the Givens form `|s_m| ⋯ |s_1| β` of the
+quasi-residual), and `‖r_m^Q‖ ≤ κ₂(V_{m+1}) ‖r_m^G‖` against the GMRES residual (Thm 7.4), because
+the GMRES iterate lies in the same affine space and its coordinate vector `z` has
+`‖z‖ ≥ ‖V_{m+1} z‖/‖V_{m+1}‖ = ‖r^G_m‖/‖V_{m+1}‖`, while the QMR coordinate vector minimizes `‖z‖`.'''
+deps = ["QMR.IsQuasiMinRes", "Krylov.HessenbergRelation.residual_eq", "Krylov.IsMinResIterate", "Krylov.norm_gamma_eq_prod"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 7.3 and Theorem 7.4"

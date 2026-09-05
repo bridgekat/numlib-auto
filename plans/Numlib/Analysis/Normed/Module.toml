@@ -1,0 +1,4 @@
+desc = '''
+Facts about normed modules and their duals that Mathlib lacks (natural home:
+`Mathlib.Analysis.Normed.Module`).
+'''

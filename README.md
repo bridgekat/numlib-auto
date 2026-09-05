@@ -1,6 +1,10 @@
 # numlib-auto
 
+[![Lean Action CI](https://github.com/bridgekat/numlib-auto/actions/workflows/lean_action_ci.yml/badge.svg)](https://github.com/bridgekat/numlib-auto/actions/workflows/lean_action_ci.yml)
+
 An LLM-generated numerical analysis library, with two layers: a general **backbone** and a textbook-matching **surface**.
+
+[Read the full documentation here.](https://bridgekat.github.io/numlib-auto/docs/Numlib.html)
 
 ## The backbone
 
@@ -38,13 +42,13 @@ The evolution of the backbone is driven by demands from the surface (the textboo
 
 To start a formalization project, write a plan specifying the overall shape of the backbone part.
 
-Plans are structured TOML files in the `tracker/` directory, with format specified by the [tracker tool](https://github.com/bridgekat/tracker/). They should contain:
+Plans are structured TOML files in the `plans/` directory, with format specified by the [tracker tool](tools/tracker/README.md). They should contain:
 
 - Overall design notes. If too long, the reasoning can be placed in a separate Markdown file in prose.
 - A list of key items (Lean definitions and theorem statements) in logical progression order. Each item should be placed carefully within the module and namespace hierarchies.
 - Brief descriptions of difficult proofs, optionally with references to relevant literature.
 
-Each TOML file is a [group](https://github.com/bridgekat/tracker/#groups), corresponding exactly to one Lean module, and a group splits into sub-groups exactly as a module splits into sub-modules. A group's design notes are its `desc` until the corresponding module is written; from then on the module's own doc comment is the description, and the group's copy should be deleted.
+Each TOML file is a [group](tools/tracker/README.md#groups), corresponding exactly to one Lean module, and a group splits into sub-groups exactly as a module splits into sub-modules. A group's design notes are its `desc` until the corresponding module is written; from then on the module's own doc comment is the description, and the group's copy should be deleted.
 
 Plans may be automatically extracted from textbooks. In such cases, the agent should:
 

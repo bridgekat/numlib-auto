@@ -1,0 +1,40 @@
+namespace = "AtkinsonHan.Ch02"
+
+[[node]]
+id = "corollary_2_3_3"
+
+[[node]]
+id = "equation_2_3_16"
+
+[[node]]
+id = "equation_2_3_4"
+
+[[node]]
+id = "equation_2_3_5"
+
+[[node]]
+id = "example_2_3_2"
+
+[[node]]
+id = "example_2_3_4"
+
+[[node]]
+id = "theorem_2_3_1"
+
+[[node]]
+id = "theorem_2_3_5"
+
+[[node]]
+id = "example_2_3_2_integral"
+kind = "theorem"
+desc = '''Example 2.3.2 (ii), the concrete instance: for the Fredholm integral operator with continuous
+kernel `k` and `|λ| ‖K‖ < 1` (`‖K‖ = max_x ∫ |k(x, y)| dy`), the equation `λ u - K u = f` has a
+unique solution with the geometric-series bound.'''
+deps = ["IntegralOperator.fredholm", "IntegralOperator.norm_fredholm", "example_2_3_2"]
+
+[[node]]
+id = "example_2_3_4_volterra"
+kind = "theorem"
+desc = '''Example 2.3.4, the kernel estimate: for the Volterra operator with continuous kernel bounded by
+`M` on `C[0, B]`, `‖L^k‖ ≤ (M B)^k/k!`, so `λ - L` is invertible for every `λ ≠ 0`.'''
+deps = ["IntegralOperator.volterra", "IntegralOperator.norm_iterate_volterra_sub_le", "example_2_3_4"]

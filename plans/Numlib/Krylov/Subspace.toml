@@ -1,0 +1,90 @@
+namespace = "Krylov"
+
+[[node]]
+id = "aeval_apply_mem_subspace"
+
+[[node]]
+id = "finiteDimensional_fullSubspace_iff"
+
+[[node]]
+id = "finrank_subspace"
+
+[[node]]
+id = "fullSubspace"
+
+[[node]]
+id = "fullSubspace_eq_of_pow_apply_mem"
+
+[[node]]
+id = "fullSubspace_mem_invtSubmodule"
+
+[[node]]
+id = "grade"
+
+[[node]]
+id = "grade_eq_sInf"
+
+[[node]]
+id = "grade_le_finrank"
+
+[[node]]
+id = "grade_le_iff"
+
+[[node]]
+id = "linearIndependent_of_le_grade"
+
+[[node]]
+id = "mem_subspace_iff_exists_aeval"
+
+[[node]]
+id = "polyEval"
+
+[[node]]
+id = "pow_apply_mem_subspace"
+
+[[node]]
+id = "pow_apply_mem_subspace_iff_exists_monic"
+
+[[node]]
+id = "subspace"
+
+[[node]]
+id = "subspace_eq_map_degreeLT"
+
+[[node]]
+id = "subspace_eq_of_grade_le"
+
+[[node]]
+id = "subspace_eq_of_pow_apply_mem"
+
+[[node]]
+id = "subspace_grade_eq_fullSubspace"
+
+[[node]]
+id = "subspace_grade_mem_invtSubmodule"
+
+[[node]]
+id = "subspace_mono"
+
+[[node]]
+id = "subspace_succ_eq_iff"
+
+[[node]]
+id = "minpolyVec"
+kind = "definition"
+desc = '''The minimal polynomial of a vector: `Krylov.minpolyVec A v` is the monic generator of the
+annihilator ideal `{p | aeval A p v = 0}` of `v` in `Module.AEval' A` (`Ideal.span` of a principal
+ideal of `K[X]`), with `minpolyVec_monic`, `aeval_minpolyVec` and `minpolyVec_dvd_iff`; `0` when
+the annihilator is trivial (infinite grade). Saad's "minimal polynomial of `v`" in §6.2, and
+Choi's Thm 2.4 speaks in it.'''
+deps = ["fullSubspace", "polyEval"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 6.2"
+
+[[node]]
+id = "natDegree_minpolyVec"
+kind = "theorem"
+desc = '''`(minpolyVec A v).natDegree = grade A v` when the cyclic subspace is finite-dimensional (Saad
+§6.2: the grade is the degree of the minimal polynomial of `v`); from
+`pow_apply_mem_subspace_iff_exists_monic` and `grade_eq_sInf`.'''
+deps = ["minpolyVec", "grade", "grade_eq_sInf", "pow_apply_mem_subspace_iff_exists_monic"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 6.2"

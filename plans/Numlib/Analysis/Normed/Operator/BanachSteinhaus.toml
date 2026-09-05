@@ -1,0 +1,38 @@
+namespace = "ContinuousLinearMap"
+desc = '''
+The convergence half of the Banach–Steinhaus theorem, in its natural generality (upstreaming
+candidate, natural home: `Mathlib.Analysis.Normed.Operator.BanachSteinhaus`): a uniformly
+bounded family of operators that converges pointwise on a dense subset to a bounded operator
+converges pointwise everywhere — the ε/3 argument, needing neither completeness nor a subspace,
+for any filter. Atkinson–Han, *Theoretical Numerical Analysis*, Thm 2.4.5 is the iff on a complete
+space with a dense subspace (the other half is Mathlib's `banach_steinhaus`), and §2.4.4, §3.7.1
+and Kress Thm 9.10 (Szegő) are its uses; the Atkinson–Han surface currently proves the ε/3 half
+itself and will specialize once this exists. With it, the contrapositive of `banach_steinhaus`
+in the form "unbounded norms give a vector whose images do not converge", which the surface also
+proves for itself in §3.7.
+'''
+
+[[node]]
+id = "tendsto_of_tendsto_on_dense_of_bounded"
+kind = "theorem"
+desc = '''For `L : V →L[𝕜] W`, `Ln : ι → V →L[𝕜] W`, a filter `l`, a dense `s : Set V`, `∃ C, ∀ n, ‖Ln n‖ ≤ C`
+and `∀ v ∈ s, Tendsto (fun n => Ln n v) l (𝓝 (L v))`: `∀ v, Tendsto (fun n => Ln n v) l (𝓝 (L v))`.
+The ε/3 argument with `Dense.exists_dist_lt` and `le_opNorm`.'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 2.4.5"
+
+[[node]]
+id = "tendsto_iff_tendsto_on_dense_of_completeSpace"
+kind = "theorem"
+desc = '''Atkinson–Han Thm 2.4.5 as an iff: on a complete `V`, with `V₀` a dense subspace,
+`(∀ v, Tendsto (Ln · v) atTop (𝓝 (L v))) ↔ (∀ v ∈ V₀, Tendsto …) ∧ ∃ C, ∀ n, ‖Ln n‖ ≤ C`; `→` by
+`banach_steinhaus` and `Metric.isBounded_range_of_tendsto`.'''
+deps = ["tendsto_of_tendsto_on_dense_of_bounded"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 2.4.5"
+
+[[node]]
+id = "exists_not_tendsto_of_not_bddAbove"
+kind = "theorem"
+desc = '''On a complete `V`, if `¬ BddAbove (range fun n => ‖P n‖)` then `∃ f, ¬ Tendsto (fun n => P n f) atTop (𝓝 f)`;
+the contrapositive of `banach_steinhaus`, the abstract form of the divergence of Fourier series for
+some continuous function (Atkinson–Han §3.7.1).'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, Section 3.7.1"

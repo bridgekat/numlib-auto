@@ -1,0 +1,82 @@
+[[node]]
+id = "IsGalerkinSolution"
+
+[[node]]
+id = "IsGalerkinSolution.apply_sub_eq_zero"
+
+[[node]]
+id = "IsGalerkinSolution.energyNorm_sub_le"
+
+[[node]]
+id = "IsGalerkinSolution.existsUnique"
+
+[[node]]
+id = "IsGalerkinSolution.iff_isGalerkin"
+
+[[node]]
+id = "IsGalerkinSolution.iff_mulVec"
+
+[[node]]
+id = "IsGalerkinSolution.norm_sub_le"
+
+[[node]]
+id = "IsGalerkinSolution.norm_sub_le_infDist"
+
+[[node]]
+id = "IsGalerkinSolution.norm_sub_le_sqrt"
+
+[[node]]
+id = "IsGalerkinSolution.tendsto"
+
+[[node]]
+id = "IsGeneralizedGalerkinSolution"
+
+[[node]]
+id = "IsPetrovGalerkinSolution"
+
+[[node]]
+id = "IsPetrovGalerkinSolution.DiscreteInfSup"
+
+[[node]]
+id = "IsPetrovGalerkinSolution.existsUnique"
+
+[[node]]
+id = "IsPetrovGalerkinSolution.norm_sub_le"
+
+[[node]]
+id = "IsPetrovGalerkinSolution.tendsto"
+
+[[node]]
+id = "existsUnique_isGeneralizedGalerkinSolution"
+
+[[node]]
+id = "isGalerkinSolution_iff_isPetrovGalerkinSolution"
+
+[[node]]
+id = "strang_first"
+
+[[node]]
+id = "tendsto_infDist_of_monotone_dense"
+
+[[node]]
+id = "IsPetrovGalerkinSolution.projection"
+kind = "definition"
+desc = '''The Petrov–Galerkin projector `P_N : u ↦ u_N` (Atkinson–Han Rem 9.2.2): for a bounded form
+`a : SesqForm₂ 𝕜 U V`, finite-dimensional `K ≤ U`, `L ≤ V` of equal dimension satisfying the
+discrete inf–sup condition with constant `α > 0`, the map sending `u` to the unique
+`u_N ∈ K` with `a u_N v = a u v` for all `v ∈ L` (the solution of the Petrov–Galerkin problem with
+data `ℓ = a u ·`), a bounded idempotent `U →L[𝕜] U` with `range = K` and `‖P_N‖ ≤ M/α`
+(`norm_projection_le`).'''
+deps = ["IsPetrovGalerkinSolution", "IsPetrovGalerkinSolution.DiscreteInfSup", "IsPetrovGalerkinSolution.existsUnique", "IsPetrovGalerkinSolution.norm_sub_le"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Remark 9.2.2"
+
+[[node]]
+id = "IsPetrovGalerkinSolution.norm_sub_le_div_mul_infDist"
+kind = "theorem"
+desc = '''The Xu–Zikatanov sharpening of Babuška's bound (Atkinson–Han Rem 9.2.2, (9.2.10)):
+`‖u - u_N‖ ≤ (M/α_N) infDist u K`, improving the `1 + M/α_N` of `norm_sub_le`; from
+`u - u_N = (1 - P_N)(u - w_N)` for `w_N ∈ K` and Kato's lemma
+`ContinuousLinearMap.IsIdempotentElem.norm_one_sub_eq` (`‖1 - P_N‖ = ‖P_N‖` when `P_N ≠ 0, 1`;
+the excluded cases are trivial).'''
+deps = ["IsPetrovGalerkinSolution.projection", "IsPetrovGalerkinSolution.norm_sub_le", "ContinuousLinearMap.IsIdempotentElem.norm_one_sub_eq"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Remark 9.2.2 (Xu–Zikatanov)"

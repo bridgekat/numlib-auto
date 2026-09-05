@@ -1,0 +1,65 @@
+desc = '''
+Trigonometric approximation of continuous periodic functions: the Fourier projection `𝓕_n` on
+`C_p(2π)`, the Dirichlet kernel and the Lebesgue constants `L_n = ‖𝓕_n‖` with Zygmund's
+asymptotics `L_n = (4/π²) log n + O(1)`, and Jackson's theorems (Atkinson–Han, *Theoretical
+Numerical Analysis*, §3.7.1–3.7.2: Thm 3.7.1 for `C_p^{k,α}(2π)` and Thm 3.7.2 for `C^{k,α}[-1, 1]`
+through `x = cos θ`), with the consequences (3.7.11)–(3.7.12) and (3.7.22) through the Lebesgue
+lemma of `Numlib/Approximation/BestApprox`. Phase 3; none of these objects exist in Mathlib, which
+has Fourier series on `AddCircle` in `L²` (`fourierBasis`, `hasSum_fourier_series_L2`) but not the
+uniform theory.
+
+Jackson's theorem is the hard item: the standard proof convolves with the Jackson kernel
+`(sin(nθ/2)/sin(θ/2))⁴` normalized, and estimates moduli of continuity. Everything downstream
+(the `log n / n^{k+α}` bounds, Atkinson–Han Ex 3.7.4 on the Chebyshev kernel, and the
+non-convergence of Fourier series for some continuous function, whose abstract Banach–Steinhaus
+half is already `exists_not_tendsto_of_not_bddAbove` in the Atkinson–Han surface) is bookkeeping
+on top of it and of `‖𝓕_n‖ = L_n`, which needs the integral-operator norm formula of
+`Numlib/IntegralEquations/Basic`.
+'''
+
+[[node]]
+id = "PeriodicCont.fourierProj"
+kind = "definition"
+desc = '''The Fourier projection `𝓕_n : C_p(2π) →L[ℝ] C_p(2π)` onto the trigonometric polynomials of
+degree `≤ n`, `𝓕_n f (x) = (1/π) ∫ f(t) D_n(x - t) dt` with the Dirichlet kernel
+`D_n(θ) = 1/2 + ∑_{j≤n} cos jθ = sin((n + 1/2)θ)/(2 sin(θ/2))` (Atkinson–Han (3.7.6)–(3.7.8));
+`isIdempotentElem_fourierProj` and `range_fourierProj`.'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, (3.7.6)–(3.7.8)"
+
+[[node]]
+id = "PeriodicCont.norm_fourierProj"
+kind = "theorem"
+desc = '''`‖𝓕_n‖ = L_n := (1/π) ∫_{-π}^{π} |D_n(θ)| dθ` (Atkinson–Han (3.7.9), the equality through the
+integral-operator norm formula), and Zygmund's asymptotics `L_n = (4/π²) log n + O(1)`
+(Atkinson–Han (3.7.10)), at least in the form `L_n ≥ (4/π²) log n`, which is what the
+non-convergence argument needs.'''
+deps = ["PeriodicCont.fourierProj", "IntegralOperator.norm_fredholm"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, (3.7.9)–(3.7.10)"
+
+[[node]]
+id = "jackson_trig"
+kind = "theorem"
+desc = '''Jackson's theorem (Atkinson–Han Thm 3.7.1): for `g ∈ C_p^{k,α}(2π)`, `k ≥ 0`, `0 < α ≤ 1`, with
+Hölder constant `M_k` of `g^{(k)}`, the best uniform trigonometric approximation of degree `n ≥ 1`
+satisfies `ρ_n(g) ≤ (1 + π²/2)^{k+1} M_k / n^{k+α}`; by the Jackson kernel and induction on `k`.'''
+deps = ["PeriodicCont.fourierProj"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.7.1"
+
+[[node]]
+id = "jackson_poly"
+kind = "theorem"
+desc = '''Atkinson–Han Thm 3.7.2: for `f ∈ C^{k,α}[-1, 1]`, the best uniform polynomial approximation of
+degree `n` satisfies `ρ_n(f) ≤ d_k M_k / n^{k+α}` with `d_k = (1 + π²/2)^{k+1} ...` as in the book,
+through `g(θ) = f(cos θ)` and `jackson_trig` ((3.7.1)–(3.7.2)).'''
+deps = ["jackson_trig"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.7.2"
+
+[[node]]
+id = "PeriodicCont.norm_sub_fourierProj_le"
+kind = "theorem"
+desc = '''Atkinson–Han (3.7.11)–(3.7.12): `‖f - 𝓕_n f‖ ≤ (1 + L_n) ρ_n(f) ≤ c_k log n / n^{k+α}` for
+`f ∈ C_p^{k,α}(2π)`; the Lebesgue lemma `norm_sub_apply_le_of_isIdempotentElem` with
+`norm_fourierProj` and `jackson_trig`; likewise (3.7.22) for trigonometric interpolation with
+Rivlin's bound.'''
+deps = ["PeriodicCont.norm_fourierProj", "jackson_trig", "norm_sub_apply_le_of_isIdempotentElem"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, (3.7.11)–(3.7.12), (3.7.22)"

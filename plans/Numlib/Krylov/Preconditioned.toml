@@ -1,0 +1,85 @@
+namespace = "Krylov"
+desc = '''
+Preconditioned Krylov methods as instances of the unpreconditioned theory: Saad, *Iterative
+Methods for Sparse Linear Systems*, Ch. 9 — the preconditioned conjugate gradient (Algorithm 9.1,
+§9.2.1), which is CG for `M⁻¹ A` in the inner product `⟪M x, y⟫`, i.e. in `WithEnergy M` of
+`Numlib/Analysis/InnerProductSpace/Energy`; left and right preconditioned GMRES (§9.3.1–9.3.2,
+Proposition 9.1) as minimal-residual specifications in two different norms on the same affine
+space; flexible GMRES (§9.4.1, Propositions 9.2–9.3); and Atkinson–Han §9.4, whose "residual" is
+the Riesz representative of `ℓ - a(u_k, ·)`, which is PCG with `M` the Gram operator of `V`.
+
+The structural point is that nothing is re-proved: the PCG iterate *is* `CG.iterate` for another
+operator on another inner product space, so its invariants, its Galerkin property and the
+Chebyshev bound with `κ(M⁻¹ A)` are inherited by transport along `WithEnergy.equiv`. The
+Concus–Golub–Widlund algorithm (Saad §9.6) is the same transport with an indefinite splitting and
+is left to a Saad Ch. 9 surface.
+'''
+
+[[node]]
+id = "PCG.iterate"
+kind = "definition"
+desc = '''Saad Algorithm 9.1: the preconditioned CG state `(x, r, z, p)` with `z = M⁻¹ r`,
+`α = ⟪r, z⟫/⟪A p, p⟫`, `β = ⟪r', z'⟫/⟪r, z⟫`, as `PCG.State`, `PCG.step`, `PCG.iterate A M b x₀ k` for
+`M` symmetric coercive.'''
+deps = ["CG.State", "CG.step", "CG.iterate", "LinearMap.IsSymmetricCoercive"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Algorithm 9.1"
+
+[[node]]
+id = "PCG.iterate_eq_CG_iterate_withEnergy"
+kind = "theorem"
+desc = '''PCG is CG for `M⁻¹ A` in `WithEnergy M hM`: transporting `PCG.iterate A M b x₀ k` along
+`WithEnergy.equiv` gives `CG.iterate (M⁻¹ ∘ A) (M⁻¹ b) x₀ k` there, because `⟪M⁻¹ A x, y⟫_M = ⟪A x, y⟫`
+and `⟪M⁻¹ r, z⟫_M = ⟪r, z⟫`. This is Saad's derivation in §9.2.1.'''
+deps = ["PCG.iterate", "CG.iterate", "WithEnergy", "WithEnergy.equiv", "WithEnergy.inner_equiv"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 9.2.1"
+
+[[node]]
+id = "PCG.isGalerkinIterate"
+kind = "theorem"
+desc = '''The PCG iterate is the Galerkin iterate of `A x = b` on the preconditioned Krylov space:
+`IsGalerkin A b x₀ (subspace (M⁻¹ ∘ A) (M⁻¹ r₀) k) x_k` in the original inner product, hence it
+minimizes the `A`-norm of the error over `x₀ + 𝒦_k(M⁻¹ A, M⁻¹ r₀)`; from `CG.isGalerkinIterate`
+through the transport and `⟪M⁻¹ A x, y⟫_M = ⟪A x, y⟫`.'''
+deps = ["PCG.iterate_eq_CG_iterate_withEnergy", "CG.isGalerkinIterate", "IsGalerkin"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 9.2.1"
+
+[[node]]
+id = "PCG.energyNorm_error_le"
+kind = "theorem"
+desc = '''The Chebyshev bound for PCG: with `M⁻¹ A` symmetric bounded by `[λmin, λmax]` in the `M`-inner
+product, `‖xstar - x_k‖_A ≤ 2 ((√κ - 1)/(√κ + 1))^k ‖xstar - x₀‖_A`, `κ = λmax/λmin`;
+`Krylov.IsGalerkinIterate.energyNorm_error_le` transported, since the energy norm of `M⁻¹ A` on
+`WithEnergy M` is the `A`-norm on `E`.'''
+deps = ["PCG.iterate_eq_CG_iterate_withEnergy", "IsGalerkinIterate.energyNorm_error_le", "LinearMap.IsSymmetricBoundedBy"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 9.2"
+
+[[node]]
+id = "exists_aeval_of_isMinResIterate_preconditioned"
+kind = "theorem"
+desc = '''Saad Prop 9.1: both the left-preconditioned minimal-residual iterate (`IsMinResIterate (M⁻¹ ∘ A)
+(M⁻¹ b) x₀ m x`) and the right-preconditioned one (the iterate for `A M⁻¹ u = b` mapped back by
+`x = M⁻¹ u`) have the form `x = x₀ + s(M⁻¹ A) M⁻¹ r₀` with `deg s < m`; the left one minimizes
+`‖M⁻¹ (b - A x)‖` and the right one minimizes `‖b - A x‖` over that affine space, i.e. it is
+`IsMinRes A b x₀ (subspace (M⁻¹ ∘ A) (M⁻¹ r₀) m) x`.'''
+deps = ["IsMinResIterate", "IsMinRes", "subspace", "mem_subspace_iff_exists_aeval"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 9.1"
+
+[[node]]
+id = "FGMRES.isMinRes"
+kind = "theorem"
+desc = '''Saad Prop 9.2: the flexible GMRES iterate, which minimizes `‖β e₁ - H̄_m y‖` and sets
+`x_m = x₀ + Z_m y` for arbitrary preconditioned directions `z_j` satisfying the Arnoldi-like
+relation `A Z_m = V_{m+1} H̄_m`, is `IsMinRes A b x₀ (span {z_1, …, z_m}) x_m`; from
+`Krylov.HessenbergRelation.residual_eq` applied with the basis `Z_m` on the left and the
+orthonormal `V_{m+1}` on the right.'''
+deps = ["IsMinRes", "HessenbergRelation", "HessenbergRelation.residual_eq"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 9.2"
+
+[[node]]
+id = "FGMRES.apply_eq_iff_coeff_eq_zero"
+kind = "theorem"
+desc = '''Saad Prop 9.3: if `β ≠ 0`, `h_{i+1,i} ≠ 0` for `i < j` and `H_j` is nonsingular, then the FGMRES
+iterate `x_j` is exact iff `h_{j+1,j} = 0`; the flexible counterpart of the lucky-breakdown
+corollary of `Krylov.HessenbergRelation`.'''
+deps = ["FGMRES.isMinRes", "HessenbergRelation.residual_eq_of_mulVec_eq"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 9.3"

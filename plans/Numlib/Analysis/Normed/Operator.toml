@@ -1,0 +1,4 @@
+desc = '''
+Mathlib-shaped facts about bounded operators between normed spaces that the project needed
+(natural home: `Mathlib.Analysis.Normed.Operator`).
+'''

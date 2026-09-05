@@ -1,0 +1,109 @@
+[[node]]
+id = "LinearMap.IsSymmetric.abs_sub_rayleigh_le_norm_residual_sq_div"
+
+[[node]]
+id = "LinearMap.IsSymmetric.exists_hasEigenvalue_dist_le"
+
+[[node]]
+id = "LinearMap.IsSymmetric.kato_temple"
+
+[[node]]
+id = "LinearMap.IsSymmetric.rayleigh_gap_le_norm_residual_sq"
+
+[[node]]
+id = "LinearMap.IsSymmetric.rayleigh_mem_Icc"
+
+[[node]]
+id = "Matrix.bauer_fike"
+
+[[node]]
+id = "Matrix.bauer_fike_residual"
+
+[[node]]
+id = "Matrix.spectrum_subset_iUnion_closedBall"
+
+[[node]]
+id = "isLeast_eigen_backwardError"
+
+[[node]]
+id = "re_hasEigenvalue_mem_Icc_of_symmetricPart"
+
+[[node]]
+id = "LinearMap.IsSymmetric.sin_angle_le_norm_residual_div"
+kind = "theorem"
+desc = '''The eigenvector residual bound (Saad, *Numerical Methods for Large Eigenvalue Problems*, Thm 3.9):
+for symmetric `A`, a unit vector `x` with Rayleigh quotient `θ` and residual `r = A x - θ x`, an
+eigenpair `(λ, u)` and `δ > 0` with `|μ - θ| ≥ δ` for every other eigenvalue `μ ≠ λ`,
+`(𝕜 ∙ u).sinAngle x ≤ ‖r‖/δ`. Write `x = cos ϑ u + sin ϑ z` with `z ⟂ u` in the invariant
+complement, where `‖(A - θ) z‖ ≥ δ ‖z‖`.'''
+deps = ["Submodule.sinAngle", "Submodule.sinAngle_mul_norm", "LinearMap.IsSymmetric.exists_hasEigenvalue_dist_le"]
+source = "Saad, Numerical Methods for Large Eigenvalue Problems, Theorem 3.9"
+
+[[node]]
+id = "Matrix.spectrum_subset_iUnion_closedBall_col"
+kind = "theorem"
+desc = '''The column-sum Gershgorin theorem: `spectrum ℂ A ⊆ ⋃ j, closedBall (A j j) (∑_{i ≠ j} ‖A i j‖)`,
+from `spectrum_subset_iUnion_closedBall` for the transpose (Saad-eig Thm 3.11; Saad, *Iterative
+Methods*, Thm 4.6, column form).'''
+deps = ["Matrix.spectrum_subset_iUnion_closedBall"]
+source = "Saad, Numerical Methods for Large Eigenvalue Problems, Theorem 3.11"
+
+[[node]]
+id = "Matrix.card_spectrum_of_disjoint_gershgorin"
+kind = "theorem"
+desc = '''Gershgorin disc counting (Saad-eig Thm 3.12): if the union `S` of `m` of the discs is disjoint
+from the other discs, `S` contains exactly `m` eigenvalues with multiplicity. Needs the continuity
+of the roots of `charpoly (D + t H)` in `t ∈ [0, 1]` — the continuity of eigenvalues, which
+Mathlib does not have in a usable form (Rouché, or `Polynomial.roots` continuity); phase 3 and
+blocked on that.'''
+deps = ["Matrix.spectrum_subset_iUnion_closedBall"]
+source = "Saad, Numerical Methods for Large Eigenvalue Problems, Theorem 3.12"
+
+[[node]]
+id = "Module.End.eigenvalueCondNumber"
+kind = "definition"
+desc = '''The condition number of a simple eigenvalue (Saad-eig Def 3.1): `1/|⟪u, w⟫|` for unit right and
+left eigenvectors `u`, `w` (`A u = λ u`, `adjoint A w = conj λ w`), `1/cos θ(u, w)`; with
+`eigenvalueCondNumber_eq_one_of_isStarNormal` (normal operators, `w = u`) and the
+`≥ 1` bound.'''
+source = "Saad, Numerical Methods for Large Eigenvalue Problems, Definition 3.1"
+
+[[node]]
+id = "Module.End.hasDerivAt_eigenvalue_perturbation"
+kind = "theorem"
+desc = '''First-order perturbation of a simple eigenvalue (Saad-eig §3.2.1, the display before Def 3.1,
+and Prop 3.5's first-order statement): for a simple eigenvalue `λ` of `A` with unit right and left
+eigenvectors `u, w`, there is a differentiable branch `λ(ε)` of eigenvalues of `A + ε E` near `0`
+with `λ'(0) = ⟪E u, w⟫/⟪u, w⟫`, so `|λ'(0)| ≤ ‖E‖ eigenvalueCondNumber`. Implicit function theorem
+on `(ε, μ) ↦ det (A + ε E - μ)`, whose `μ`-derivative at `(0, λ)` is nonzero for a simple root
+(`HasStrictDerivAt` of `Polynomial.eval`).'''
+deps = ["Module.End.eigenvalueCondNumber"]
+source = "Saad, Numerical Methods for Large Eigenvalue Problems, Section 3.2.1"
+
+[[node]]
+id = "Module.End.eigenvectorCondNumber"
+kind = "definition"
+desc = '''The condition number of an eigenvector (Saad-eig Def 3.2): `‖S(λ) (1 - P)‖` for the reduced
+resolvent `S(λ)` and the spectral projector `P` of `λ`; and its Hermitian value
+`1/dist (λ, σ(A) \ {λ})` (his (3.45), `eigenvectorCondNumber_eq_inv_dist_of_isSymmetric`), which
+is the `1/δ` of `sin_angle_le_norm_residual_div`.'''
+deps = ["LinearMap.IsSymmetric.sin_angle_le_norm_residual_div"]
+source = "Saad, Numerical Methods for Large Eigenvalue Problems, Definition 3.2"
+
+[[node]]
+id = "Matrix.pseudospectrum"
+kind = "definition"
+desc = '''The `ε`-pseudospectrum (Saad-eig Def 3.3): `pseudospectrum ε A := {z | ‖(A - z)⁻¹‖ > ε⁻¹}` (with
+`spectrum ⊆` by the convention `‖(A - z)⁻¹‖ = ∞` there, i.e. `IsUnit (A - z) → ε⁻¹ < ‖(A - z)⁻¹‖`),
+in the operator norm of `E →L[ℂ] E` on a Hilbert space.'''
+source = "Saad, Numerical Methods for Large Eigenvalue Problems, Definition 3.3"
+
+[[node]]
+id = "Matrix.mem_pseudospectrum_iff"
+kind = "theorem"
+desc = '''Saad-eig Prop 3.7, the equivalences: `z ∈ pseudospectrum ε A` iff there is a unit `w` with
+`‖(A - z) w‖ < ε` iff there is `E'` with `‖E'‖ ≤ ε` (indeed `< ε`) and `z ∈ spectrum (A - E')`; the
+last through the backward-error construction `isLeast_eigen_backwardError`. The
+smallest-singular-value form `σ_min (A - z) < ε` is the finite-dimensional reading.'''
+deps = ["Matrix.pseudospectrum", "isLeast_eigen_backwardError"]
+source = "Saad, Numerical Methods for Large Eigenvalue Problems, Proposition 3.7"

@@ -1,0 +1,69 @@
+namespace = "Polynomial"
+desc = '''
+Complex Chebyshev polynomials on circles and ellipses: Zarantonello's lemma (Saad, *Iterative
+Methods for Sparse Linear Systems*, Lemma 6.26; Saad, *Numerical Methods for Large Eigenvalue
+Problems*, Lemma 4.3), the two-sided estimate of the min–max value on an ellipse `E_ρ`, the image
+of the circle `C(0, ρ)` under the Joukowski map `J(w) = (w + w⁻¹)/2` (Saad Thm 6.27 / Saad-eig
+Thm 4.9), and the maximum of the shifted Chebyshev polynomial on the ellipse `E(c, d, a)` with
+centre `c`, focal distance `d` and semi-major axis `a` (Saad (6.119)–(6.120)). These feed the
+GMRES bound for a spectrum enclosed in an ellipse (Saad Cor 6.33) and the Arnoldi eigenvalue
+bounds (Saad-eig Prop 6.10, Thm 6.8). Phase 3.
+
+The upper bound in Thm 6.27 is the explicit polynomial `T_k` composed with the affine map onto
+`E_ρ`, whose modulus on `E_ρ` is `max_{|w| = ρ} |w^k + w^{-k}|/2 = (ρ^k + ρ^{-k})/2` at `w = ρ`; the
+lower bound is Zarantonello's lemma applied to the degree-`2k` polynomial `w^k p(J(w))`. The
+book proves Zarantonello by reference; the standard proof is the maximum principle for `p(γ w)`
+on the disc `|w| ≤ ρ/|γ|` (Mathlib: `Complex.norm_le_of_forall_mem_frontier_norm_le`), which
+also supplies "the maximum of a polynomial over the filled ellipse is attained on its boundary".
+'''
+
+[[node]]
+id = "zarantonello"
+kind = "theorem"
+desc = '''Zarantonello's lemma: for `0 < ρ < ‖γ‖`,
+`IsLeast {M | ∃ p : ℂ[X], p.degree ≤ k ∧ p.eval γ = 1 ∧ M = sSup ((‖p.eval ·‖) '' Metric.sphere 0 ρ)} ((ρ/‖γ‖)^k)`,
+attained by `(X/γ)^k`; by translation the same for the circle `C(c, ρ)` and `‖γ - c‖ > ρ`. Proof:
+for `p` of degree `≤ k` with `p γ = 1`, the reversed polynomial `q(w) = w^k p(γ/w)` has `q 0 = 1`,
+so by the maximum principle on the disc `‖w‖ ≤ ‖γ‖/ρ` some `w` on its boundary has `‖q w‖ ≥ 1`,
+that is `‖p z‖ ≥ (ρ/‖γ‖)^k` at the point `z = γ/w` of the circle.'''
+source = "Saad, Iterative Methods for Sparse Linear Systems, Lemma 6.26; Saad, Numerical Methods for Large Eigenvalue Problems, Lemma 4.3"
+
+[[node]]
+id = "_root_.Complex.joukowski"
+kind = "definition"
+desc = '''`Complex.joukowski w := (w + w⁻¹)/2` and the ellipses `Set.ellipse c d a`, the image of the circle
+`C(0, ρ)` under `z ↦ c + d • joukowski`, with semi-axes `d (ρ ± ρ⁻¹)/2`; `E_ρ := ellipse 0 1 ((ρ + ρ⁻¹)/2)`
+(Saad (6.115)–(6.116)).'''
+source = "Saad, Iterative Methods for Sparse Linear Systems, (6.115)–(6.116)"
+
+[[node]]
+id = "Chebyshev.sSup_norm_eval_T_ellipse"
+kind = "theorem"
+desc = '''The maximum of `|T_k|` on the ellipse `E_ρ`, `ρ ≥ 1`, is `(ρ^k + ρ^{-k})/2`, attained at the
+vertex `J(ρ)`: `T_k (J w) = (w^k + w^{-k})/2` (Mathlib's `Polynomial.Chebyshev.T_complex_cos`
+in disguise) and the triangle inequality on `|w| = ρ`.'''
+deps = ["Complex.joukowski"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, (6.117), upper bound"
+
+[[node]]
+id = "Chebyshev.ellipse_minimax_bounds"
+kind = "theorem"
+desc = '''Saad Thm 6.27 / Saad-eig Thm 4.9: for `ρ ≥ 1` and `γ` not enclosed by `E_ρ`, with `w_γ` the root
+of `J(w) = γ` of larger modulus,
+`ρ^k/‖w_γ‖^k ≤ ⨅ {p | deg p ≤ k, p γ = 1} sup_{E_ρ} |p| ≤ (ρ^k + ρ^{-k})/‖w_γ^k + w_γ^{-k}‖`.
+Upper bound from `sSup_norm_eval_T_ellipse` with the normalized `T_k(z)/T_k(γ)`; lower bound from
+`zarantonello` applied to `w ↦ w^k p(J(w))`, a polynomial of degree `2k` in `w` with value
+`w_γ^k` at `w_γ`.'''
+deps = ["zarantonello", "Chebyshev.sSup_norm_eval_T_ellipse", "Complex.joukowski"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 6.27; Saad, Numerical Methods for Large Eigenvalue Problems, Theorem 4.9"
+
+[[node]]
+id = "Chebyshev.sSup_norm_eval_shiftedComplex_ellipse"
+kind = "theorem"
+desc = '''Saad (6.119)–(6.120): for the ellipse `E(c, d, a)` and `γ` outside it, the shifted, normalized
+complex Chebyshev polynomial `Ĉ_k(z) = C_k((c - z)/d)/C_k((c - γ)/d)` satisfies
+`sSup ((‖Ĉ_k.eval ·‖) '' ellipse c d a) = C_k(a/d)/‖C_k((c - γ)/d)‖` for real `a/d ≥ 1` (the ellipse
+has real semi-axes), with the explicit form (6.120) through `eval_T_eq_half_add_pow`. The
+ingredient of Saad Cor 6.33 and Saad-eig Thm 6.8.'''
+deps = ["Chebyshev.sSup_norm_eval_T_ellipse", "Complex.joukowski", "Chebyshev.eval_T_eq_half_add_pow"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, (6.119)–(6.120)"

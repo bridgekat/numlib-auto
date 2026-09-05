@@ -19,7 +19,7 @@ All three steps are the backbone's `Projection.step1` for `Matrix.toEuclideanLin
 `Numlib/LinearSolve/Projection/OneDimensional.lean`.
 
 Left open here: the exact one-step identities (5.16)–(5.18) and (5.20) and the `sin ∠`
-reformulation (R-5.21 of the plan; `tracker/saadsparse-ch1-4-5.md` §3 item 7 lists them as
+reformulation (R-5.21 of the plan; `plans/saadsparse-ch1-4-5.md` §3 item 7 lists them as
 candidates for the backbone), and the state-machine bookkeeping of Algorithms 5.2–5.4 (their
 recursive residual updates).
 -/

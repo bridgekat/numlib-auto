@@ -1,0 +1,37 @@
+namespace = "FloatingPoint"
+desc = '''
+Rounding-error bounds for inner products and matrix products in the standard model (Higham,
+*Accuracy and Stability of Numerical Algorithms*, §3.1–3.5): recursive summation, the
+componentwise inner-product bound `|fl(xᵀy) - xᵀy| ≤ γ_n |x|ᵀ|y|` ((3.4)–(3.5)), matrix–vector and
+matrix–matrix products ((3.12)–(3.13)) with the normwise corollaries through
+`Numlib/LinearAlgebra/Matrix/Order`. Each result is about an explicit evaluation order — a fold
+over a list, or a `SumTree` — and quantifies over every admissible sequence of roundings.
+'''
+
+[[node]]
+id = "RoundsSum"
+kind = "definition"
+desc = '''`RoundsSum m l s`: `s` is an admissible floating-point value of the left-to-right recursive sum of
+the list `l` in the model `m` (an inductive relation: each partial sum is a rounding of the exact
+sum of the previous partial sum and the next term); with `RoundsDot m x y s` for the inner product
+computed as the recursive sum of the rounded products.'''
+deps = ["RoundingModel"]
+source = "Higham, Accuracy and Stability of Numerical Algorithms, Section 3.1, Chapter 4"
+
+[[node]]
+id = "abs_sub_le_of_roundsDot"
+kind = "theorem"
+desc = '''Higham (3.4)–(3.5): `RoundsDot m x y s → |s - x ⬝ᵥ y| ≤ gamma u n * (|x| ⬝ᵥ |y|)` for vectors of
+length `n` with `n u < 1`; the backward form, `s = (x + Δx) ⬝ᵥ y` with `|Δx| ≤ γ_n |x|`
+(`exists_roundsDot_eq_dotProduct_add`).'''
+deps = ["RoundsSum", "IsRelPert", "abs_prod_one_add_sub_one_le_gamma"]
+source = "Higham, Accuracy and Stability of Numerical Algorithms, (3.4)–(3.5)"
+
+[[node]]
+id = "abs_sub_le_of_roundsMulVec"
+kind = "theorem"
+desc = '''Higham (3.12)–(3.13): a computed matrix–vector product satisfies `|ŷ - A x| ≤ γ_n |A| |x|`
+entrywise (`Matrix.EntrywiseLE`), and a computed matrix product `|Ĉ - A B| ≤ γ_n |A| |B|`; the
+normwise corollaries `‖ŷ - A x‖_∞ ≤ γ_n ‖A‖_∞ ‖x‖_∞` through the entrywise order.'''
+deps = ["abs_sub_le_of_roundsDot", "Matrix.EntrywiseLE", "Matrix.abs", "Matrix.abs_mulVec_le"]
+source = "Higham, Accuracy and Stability of Numerical Algorithms, (3.12)–(3.13)"

@@ -13,7 +13,7 @@ Same rules as `notes/lean-lessons.md`: symptom, cause, fix. The coordinator fold
   overlapping section numbers and incompatible result numbers — Saad-eig's Prop 6.2 is
   Saad-iterative's Prop 6.1 — so a bare number is worthless without the title, which is exactly
   why the backbone forbids one.
-* `tracker/backbone.md` §4.2 had it right: everything it lists after "Serves Saad-eig §4.3" is
+* `plans/backbone.md` §4.2 had it right: everything it lists after "Serves Saad-eig §4.3" is
   Saad-eig, including the "§6.1–6.2" items. It was the `source` fields of the TOML that had drifted.
 * The books are on disk at `D:\Users\bridgecat\Documents\Projects\numlib-books\`. Three have an
   OCR'd Markdown twin in a subdirectory; the rest are PDF. `numerical-methods-for-large-eigenvalue-problems-saad.pdf`

@@ -1,0 +1,34 @@
+namespace = "AtkinsonHan.Ch05"
+
+[[node]]
+id = "BookSplitting"
+
+[[node]]
+id = "BookSplitting.equation_5_2_5"
+
+[[node]]
+id = "BookSplitting.tendsto_of_opNorm_lt_one"
+
+[[node]]
+id = "theorem_5_2_2"
+kind = "theorem"
+desc = '''Theorem 5.2.2: the Fredholm (5.2.7) and Urysohn (5.2.9) integral equations of the second kind have
+a unique solution in `C[a, b]` when the Lipschitz–kernel constant is below `|λ|`, by Theorem 5.1.3
+on `C(Icc a b, ℝ)`, and the fixed-point iterates converge with the bounds of Theorem 5.1.3.'''
+deps = ["theorem_5_1_3", "IntegralOperator.fredholm", "IntegralOperator.lipschitzWith_urysohn", "IntegralOperator.norm_fredholm"]
+
+[[node]]
+id = "theorem_5_2_3"
+kind = "theorem"
+desc = '''Theorem 5.2.3: the Volterra equation of the second kind has a unique solution in `C[a, b]` for
+every continuous data and every Lipschitz kernel, and the fixed-point iterates converge, because
+some power of the Volterra operator is a contraction (the factorial estimate).'''
+deps = ["IntegralOperator.volterra", "IntegralOperator.norm_iterate_volterra_sub_le", "tendsto_iterate_of_iterate_contractingWith"]
+
+[[node]]
+id = "theorem_5_2_4"
+kind = "theorem"
+desc = '''Theorem 5.2.4 (Picard–Lindelöf): existence, uniqueness and the convergence of Picard's iterates for
+`u' = f(t, u)`, `u(t₀) = z` on `|t - t₀| ≤ a₀`, with the iteration part through the Bielecki norm
+and Theorem 5.1.3 on a closed ball.'''
+deps = ["theorem_5_1_3", "IntegralOperator.Bielecki", "IntegralOperator.contractingWith_volterra_bielecki"]

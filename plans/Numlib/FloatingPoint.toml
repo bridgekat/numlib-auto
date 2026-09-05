@@ -1,0 +1,11 @@
+desc = '''
+The floating-point layer, phase 4, after Higham, *Accuracy and Stability of Numerical
+Algorithms*, with the finite-precision Lanczos theory of Paige and Greenbaum (Meurant–Strakoš
+§4–5) and Higham Ch. 17–18 as consumers. Only the interface is fixed: a *relational* rounding
+model with unit roundoff `u`, never a rounding function; the `γ_n` calculus; componentwise
+statements first, with normwise corollaries through the entrywise order of
+`Numlib/LinearAlgebra/Matrix/Order`; results about algorithms stated for an explicit evaluation
+order, never for "the" floating-point sum; and the scalar field kept abstract, so that a concrete
+IEEE model (flean, FloatSpec) can instantiate the model later. Gaussian elimination, Cholesky and
+QR error analysis (Higham Ch. 8–10, 19) are surface material over this backbone.
+'''

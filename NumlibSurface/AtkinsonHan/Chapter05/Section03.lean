@@ -30,7 +30,7 @@ the variational inequality (5.3.10) and, over a subspace, the variational equati
 Left out, with the reason: Examples 5.3.9 (Jacobian) and 5.3.10 (the Fréchet derivative of the
 Urysohn operator; needs the phase-3 `C[a,b]` integral-operator toolkit and differentiation under
 the integral sign), Corollary 5.3.16 (the `C¹` form of Proposition 5.3.15; a restatement, not
-used downstream), and the exercises — see `tracker/atkinsonhan-ch5.md` §4.
+used downstream), and the exercises — see `plans/atkinsonhan-ch5.md` §4.
 
 §5.5 (completely continuous vector fields) is summarized rather than formalized: Theorem 5.5.1
 (Brouwer), Example 5.5.2, Definition 5.5.3 (compact and completely continuous nonlinear

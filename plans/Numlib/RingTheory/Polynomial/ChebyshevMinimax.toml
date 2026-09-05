@@ -1,0 +1,46 @@
+namespace = "Polynomial.Chebyshev"
+
+[[node]]
+id = "eval_T_eq_half_add_pow"
+
+[[node]]
+id = "half_pow_le_eval_T"
+
+[[node]]
+id = "one_div_eval_T_le_sSup_abs_eval"
+
+[[node]]
+id = "one_div_eval_T_le_sSup_abs_eval_of_eval_zero"
+
+[[node]]
+id = "one_div_eval_T_le_two_mul_pow"
+
+[[node]]
+id = "one_le_eval_T"
+
+[[node]]
+id = "sSup_abs_eval_shifted"
+
+[[node]]
+id = "shifted"
+
+[[node]]
+id = "shifted_degree_le"
+
+[[node]]
+id = "shifted_eval_self"
+
+[[node]]
+id = "exists_eval_zero_eq_one_abs_le_of_union_Icc"
+kind = "theorem"
+desc = '''The two-interval Chebyshev polynomial: for `a < b < 0 < c < d` with `b - a = d - c` and every `k`,
+there is a real polynomial `p` of degree `≤ 2 k` with `p.eval 0 = 1` and
+`|p.eval t| ≤ 2 ((√(a d) - √(b c))/(√(a d) + √(b c)))^k` for all `t ∈ Set.Icc a b ∪ Set.Icc c d`,
+where `a d` and `b c` denote the positive numbers `|a d| ≥ |b c|`. Take `shifted k |b c| |a d| 0`
+composed with the quadratic `q t = t² - (a + d) t`: `q 0 = 0`, `q` decreases on `[a, b]` from
+`|a d|` to `|b c|` and increases on `[c, d]` from `|b c|` to `|a d|` (the equal lengths give
+`a + d - b = c`, which makes the two images coincide), so the composite is bounded on the union
+by the sup of the shifted polynomial on `[|b c|, |a d|]`, and `one_div_eval_T_le_two_mul_pow` with
+`κ = |a d|/|b c|` gives the constant. Serves `Numlib/Krylov/Convergence/MinRes`.'''
+deps = ["shifted", "shifted_degree_le", "shifted_eval_self", "sSup_abs_eval_shifted", "one_div_eval_T_le_two_mul_pow"]
+source = "Greenbaum, Iterative Methods for Solving Linear Systems, Section 3.1"

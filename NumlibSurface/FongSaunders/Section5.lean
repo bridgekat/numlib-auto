@@ -18,7 +18,7 @@ system.  `MonotoneProfile` and `MinresProfile` package the rows of the table; `c
 "not monotonic" entries of the CG column are read as the existence of counterexamples and proved
 by explicit computation on diagonal matrices.
 
-Left out (see `tracker/fongsaunders.md`): Table 5.2 and the §5 discussion of the
+Left out (see `plans/fongsaunders.md`): Table 5.2 and the §5 discussion of the
 least-squares solvers LSQR and LSMR, which are results of other papers.
 
 The extra import `Mathlib.Algebra.Order.Star.Real` provides the instance `StarOrderedRing ℝ`

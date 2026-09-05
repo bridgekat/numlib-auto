@@ -1,0 +1,114 @@
+desc = '''
+Stationary iterations for symmetric positive definite systems, at the operator level where the
+proof allows: Richardson's iteration with its optimal parameter (Saad, *Iterative Methods for
+Sparse Linear Systems*, Example 4.1; Atkinson–Han Ex 5.2.3), Jacobi over-relaxation (Kress,
+*Numerical Analysis*, Thm 4.9), Kahan's necessary condition for SOR (Kress Thm 4.11), and the
+Householder–John / Ostrowski–Reich theorem in operator form together with its converse (Saad
+Thm 4.10 in both directions; Kress Thm 4.12 is the case `M = D/ω + E`).
+
+Ostrowski–Reich is proved by the Rayleigh-quotient identity for an eigenpair of `M⁻¹ N` (Kress's
+proof of Thm 4.12), which generalizes verbatim from `M = D/ω + E` to any `M` with `M + Mᴴ - A`
+coercive: an eigenpair `M⁻¹ N x = μ x`, `x ≠ 0`, gives `A x = (1 - μ) M x`, and taking the real
+part of the inner product with `x` and with `M x` yields
+`(1 - |μ|²) ⟪A x, x⟫ = |1 - μ|² ⟪(M + Mᴴ - A) x, x⟫`; with both quadratic forms positive and
+`μ ≠ 1` (else `A x = 0`) this forces `|μ| < 1`. The converse
+(Saad's "only if"): with `Q = M + Mᴴ - A` positive definite and `ρ(M⁻¹ N) < 1`, the error identity
+`⟪A e_k, e_k⟫ - ⟪A e_{k+1}, e_{k+1}⟫ = ⟪Q (e_k - e_{k+1}), e_k - e_{k+1}⟫ ≥ 0` with `e_k → 0` forces
+`⟪A e₀, e₀⟫ ≥ 0`, and equality with `e₀ ≠ 0` would force `e₁ = e₀`, contradicting `e_k → 0`.
+
+Young's theory of consistently ordered matrices is the sibling `Stationary/ConsistentlyOrdered`.
+'''
+
+[[node]]
+id = "Stationary.Splitting.richardson_complexSpectralRadius_eq"
+kind = "theorem"
+desc = '''Richardson's iteration `G_α = 1 - α A` for a real symmetric `A` whose eigenvalues lie in
+`[λmin, λmax]` with both ends attained: `ρ(G_α) = max |1 - α λmin| |1 - α λmax|` (Saad Example 4.1).
+Spectral mapping for the affine polynomial `1 - α t` on a Hermitian matrix.'''
+deps = ["Stationary.Splitting.richardson", "Stationary.Splitting.richardson_iterationOperator", "Matrix.complexSpectralRadius"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Example 4.1"
+
+[[node]]
+id = "Stationary.Splitting.richardson_complexSpectralRadius_lt_one_iff"
+kind = "theorem"
+desc = '''For `0 < λmin`, Richardson converges iff `0 < α < 2/λmax` (Saad Example 4.1; Atkinson–Han
+Ex 5.2.3): `complexSpectralRadius (richardson A hα).iterationOperator < 1 ↔ 0 < α ∧ α < 2/λmax`.'''
+deps = ["Stationary.Splitting.richardson_complexSpectralRadius_eq"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Example 4.1"
+
+[[node]]
+id = "Stationary.Splitting.isMinOn_richardson_complexSpectralRadius"
+kind = "theorem"
+desc = '''The optimal Richardson parameter: `α_opt = 2/(λmin + λmax)` minimizes `α ↦ ρ(G_α)` over
+`α > 0`, with value `(λmax - λmin)/(λmax + λmin)` (Saad Example 4.1). Elementary real optimization
+of `max |1 - α λmin| |1 - α λmax|`.'''
+deps = ["Stationary.Splitting.richardson_complexSpectralRadius_eq"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Example 4.1"
+
+[[node]]
+id = "Matrix.jorSplitting"
+kind = "definition"
+desc = '''Jacobi over-relaxation (Kress §4.2): the splitting with `M = ω⁻¹ D` of a matrix with invertible
+diagonal, whose iteration operator is `(1 - ω) • 1 + ω • B` for the Jacobi matrix `B`
+(`jorSplitting_iterationOperator`).'''
+deps = ["Matrix.jacobiSplitting", "Matrix.diagPart"]
+source = "Kress, Numerical Analysis, Section 4.2"
+
+[[node]]
+id = "Matrix.jorSplitting_isMinOn_complexSpectralRadius"
+kind = "theorem"
+desc = '''Kress Thm 4.9: if the Jacobi matrix `B` has real eigenvalues and `ρ(B) < 1`, the spectral radius
+of the JOR iteration operator is minimal at `ω_opt = 2/(2 - λmax(B) - λmin(B))`. Spectral mapping
+for `t ↦ 1 - ω + ω t` and a one-variable minimization.'''
+deps = ["Matrix.jorSplitting", "Stationary.Splitting.iterationOperator", "Matrix.complexSpectralRadius"]
+source = "Kress, Numerical Analysis, Theorem 4.9"
+
+[[node]]
+id = "Matrix.det_sorSplitting_iterationOperator"
+kind = "theorem"
+desc = '''`det (sorSplitting A h hω).iterationOperator = (1 - ω) ^ Fintype.card n`: the SOR iteration matrix
+is `(D - ω E)⁻¹ ((1 - ω) D + ω F)`, the inverse of a lower-triangular factor with diagonal `D`
+times an upper-triangular factor with diagonal `(1 - ω) D`.'''
+deps = ["Matrix.sorSplitting", "Matrix.sorSplitting_iterationOperator", "Matrix.strictLower_blockTriangular", "Matrix.strictUpper_blockTriangular"]
+source = "Kress, Numerical Analysis, proof of Theorem 4.11"
+
+[[node]]
+id = "Matrix.lt_two_of_sorSplitting_complexSpectralRadius_lt_one"
+kind = "theorem"
+desc = '''Kahan's necessary condition (Kress Thm 4.11): if the SOR iteration converges,
+`complexSpectralRadius (sorSplitting A h hω).iterationOperator < 1` for a real `A`, then
+`0 < ω ∧ ω < 2`. From the determinant identity, `|1 - ω|^n = |∏ μ_j| ≤ ρ^n < 1`.'''
+deps = ["Matrix.det_sorSplitting_iterationOperator", "Matrix.complexSpectralRadius", "Matrix.det_complexify"]
+source = "Kress, Numerical Analysis, Theorem 4.11 (Kahan)"
+
+[[node]]
+id = "Stationary.Splitting.spectralRadius_lt_one_of_isSymmetricCoercive"
+kind = "theorem"
+desc = '''Householder–John / Ostrowski–Reich in operator form: `A : E →L[𝕜] E` symmetric coercive on a
+finite-dimensional inner product space, `A = M - N` with `M` invertible, and `M + Mᴴ - A` coercive
+⇒ `spectralRadius ℂ (M⁻¹ N) < 1` (Saad Thm 4.10 "if"; Kress Thm 4.12 is `M = D/ω + E`, where
+`M + Mᴴ - A = (2/ω - 1) D`). Stated over `ℂ` for the operator, with the real case reached through
+the complexification of the matrix representation. Proof by the Rayleigh-quotient identity at an
+eigenpair of `M⁻¹ N`.'''
+deps = ["Stationary.Splitting.iterationOperator", "LinearMap.IsSymmetricCoercive", "LinearMap.IsCoercive"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 4.10; Kress, Numerical Analysis, Theorem 4.12"
+
+[[node]]
+id = "Stationary.Splitting.isCoercive_of_spectralRadius_lt_one"
+kind = "theorem"
+desc = '''The converse half of Saad Thm 4.10: `A` symmetric, `Q := M + Mᴴ - A` coercive and
+`spectralRadius (M⁻¹ N) < 1` ⇒ `A` is coercive (positive definite). Proof by the energy identity
+`⟪A e_k, e_k⟫ - ⟪A e_{k+1}, e_{k+1}⟫ = ⟪Q (e_k - e_{k+1}), e_k - e_{k+1}⟫` along the error sequence
+`e_{k+1} = M⁻¹ N e_k → 0`.'''
+deps = ["Stationary.Splitting.iterationOperator", "LinearMap.IsSymmetricCoercive", "LinearMap.IsCoercive"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 4.10"
+
+[[node]]
+id = "Matrix.sorSplitting_complexSpectralRadius_lt_one_iff_posDef"
+kind = "theorem"
+desc = '''Saad Thm 4.10 assembled for matrices: `A` real symmetric with positive diagonal and
+`0 < ω < 2` ⇒ `complexSpectralRadius (sorSplitting A h hω).iterationOperator < 1 ↔ A.PosDef`. The
+"if" is Ostrowski–Reich with `M = ω⁻¹ D - E`, `M + Mᵀ - A = (2/ω - 1) D`; the "only if" is the
+converse above.'''
+deps = ["Matrix.sorSplitting", "Matrix.sorSplitting_iterationOperator", "Stationary.Splitting.spectralRadius_lt_one_of_isSymmetricCoercive", "Stationary.Splitting.isCoercive_of_spectralRadius_lt_one", "Matrix.posDef_iff_isSymmetricCoercive", "Matrix.complexSpectralRadius"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 4.10; Kress, Numerical Analysis, Theorem 4.12"

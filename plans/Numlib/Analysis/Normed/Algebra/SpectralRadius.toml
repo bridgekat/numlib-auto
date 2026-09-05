@@ -1,0 +1,38 @@
+[[node]]
+id = "exists_norm_pow_le_of_spectralRadius_lt"
+
+[[node]]
+id = "isUnit_one_sub_of_spectralRadius_lt_one"
+
+[[node]]
+id = "spectralRadius_lt_one_iff_exists_norm_pow_lt_one"
+
+[[node]]
+id = "spectralRadius_lt_one_iff_tendsto_pow"
+
+[[node]]
+id = "spectralRadius_lt_one_of_norm_lt_one"
+
+[[node]]
+id = "summable_pow_iff_spectralRadius_lt_one"
+
+[[node]]
+id = "spectralRadius_le_algebraNorm"
+kind = "theorem"
+desc = '''`ρ(a) ≤ N a` for every algebra norm `N : AlgebraNorm ℂ A` (submultiplicative, `N 1 = 1`) on a
+finite-dimensional complex normed algebra `A` — Saad's "for any matrix norm" in Cor 4.2 and in the
+remark `|λ| ≤ ‖A‖` before Thm 4.6, for norms that are not the scoped instances. Proof:
+`ρ(a)^k ≤ ‖a^k‖ ≤ C N (a^k) ≤ C N(a)^k` with `C` from the equivalence of norms on a
+finite-dimensional space, and `C^{1/k} → 1`.'''
+deps = ["spectralRadius_lt_one_iff_tendsto_pow"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Corollary 4.2 and Section 4.2.3"
+
+[[node]]
+id = "tendsto_pow_of_algebraNorm_lt_one"
+kind = "theorem"
+desc = '''`N a < 1 → Tendsto (a ^ ·) atTop (𝓝 0)` for an algebra norm `N` on a finite-dimensional complex
+normed algebra, and the real-matrix corollary through `Matrix.complexify`
+(`Matrix.tendsto_pow_of_algebraNorm_lt_one`), which is Saad Cor 4.2 for an arbitrary consistent
+matrix norm.'''
+deps = ["spectralRadius_le_algebraNorm", "spectralRadius_lt_one_iff_tendsto_pow"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Corollary 4.2"

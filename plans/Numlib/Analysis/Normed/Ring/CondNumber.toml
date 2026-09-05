@@ -1,0 +1,21 @@
+[[node]]
+id = "ContinuousLinearEquiv.condNumber_eq"
+
+[[node]]
+id = "NormedRing.condNumber"
+
+[[node]]
+id = "NormedRing.condNumber_smul"
+
+[[node]]
+id = "NormedRing.one_le_condNumber"
+
+[[node]]
+id = "ContinuousLinearEquiv.condNumber"
+kind = "definition"
+desc = '''The two-space condition number `ContinuousLinearEquiv.condNumber (e : E ≃L[𝕜] F) := ‖(e : E →L[𝕜] F)‖ * ‖(e.symm : F →L[𝕜] E)‖`,
+Atkinson–Han's `cond(L)` of (2.4.1) for `L : V → W`; `ContinuousLinearEquiv.condNumber_eq` is
+the case `E = F` in terms of `NormedRing.condNumber`, and `one_le_condNumber [Nontrivial E]` is
+Mathlib's `ContinuousLinearEquiv.one_le_norm_mul_norm_symm`.'''
+deps = ["NormedRing.condNumber", "ContinuousLinearEquiv.condNumber_eq"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, (2.4.1)"

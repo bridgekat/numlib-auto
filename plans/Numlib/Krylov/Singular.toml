@@ -1,0 +1,109 @@
+desc = '''
+The Krylov spine on singular and incompatible symmetric systems, after Choi, *Iterative Methods
+for Singular Linear Equations and Least-Squares Problems* (PhD thesis, Stanford, 2006), Ch. 2–3:
+the termination index of the Lanczos process against the rank and the number of distinct
+eigenvalues (Prop 2.2, Cor 2.3, Thm 2.4); MINRES on a compatible singular system returns the
+pseudoinverse (minimum-norm) solution at termination (Thm 2.25, whose analytic core
+`Krylov.norm_le_of_apply_eq` is in `Numlib/Krylov/Iterate`); on an incompatible system its last
+iterate is a `{2,3}`-inverse solution (Thm 2.27); MINRES-QLP, specified as the minimum-norm
+element of the minimal-residual set (`Krylov.IsMinNormMinResIterate`, `Numlib/Krylov/Iterate`),
+returns the pseudoinverse solution of the least-squares problem (Thm 3.1); and the
+Lanczos-specialized residual recurrences that the Givens layer of `Numlib/Krylov/Hessenberg`
+yields when the Hessenberg matrix is tridiagonal (Lemmas 2.18–2.20, (2.21)), with the norm
+estimates `‖T_k‖ ≤ ‖T̄_k‖ ≤ ‖A‖` (Lemmas 2.31–2.33).
+
+Everything is stated for a symmetric `A : E →ₗ[𝕜] E` on a finite-dimensional inner product space
+(the rank and the pseudoinverse need finite dimension); the specification-level statements about
+`IsMinResIterate` need none of the recurrences. Choi Thm 2.34 (condition numbers of the two
+problems `b ↦ x`, `x ↦ b`) is a restatement of `Numlib/LinearSolve/Perturbation`.
+'''
+
+[[node]]
+id = "Lanczos.grade_le_finrank_range_add_one"
+kind = "theorem"
+desc = '''Choi Cor 2.3: for symmetric `A`, the Lanczos process on `b` terminates (`β_{k+1} = 0`, i.e.
+`grade A b ≤ k`) for some `k ≤ rank A` when `b ∈ range A`, and for some `k ≤ rank A + 1` in
+general; from Prop 2.2, whose three cases (`b ∈ ker A`, `b ∈ range A`, mixed) are the lemma
+`Lanczos.vec_mem_range_of_mem_range` and the orthogonal decomposition `E = range A ⊕ ker A`.'''
+deps = ["Krylov.grade", "Krylov.grade_le_iff", "Lanczos.beta_eq_zero_iff"]
+source = "Choi, Iterative Methods for Singular Linear Equations and Least-Squares Problems, Proposition 2.2 and Corollary 2.3"
+
+[[node]]
+id = "Lanczos.grade_le_card_eigenvalues"
+kind = "theorem"
+desc = '''Choi Thm 2.4: if `b` has nonzero components along eigenvectors for exactly `t` distinct nonzero
+eigenvalues of the symmetric `A`, then `grade A b ≤ t` when `b ∈ range A` and
+`grade A b ≤ t + 1` otherwise. The minimal polynomial of `b` divides `∏ (X - λ)` over those
+eigenvalues (times `X` in the second case).'''
+deps = ["Krylov.grade", "Krylov.pow_apply_mem_subspace_iff_exists_monic", "Krylov.grade_le_iff"]
+source = "Choi, Iterative Methods for Singular Linear Equations and Least-Squares Problems, Theorem 2.4"
+
+[[node]]
+id = "Krylov.IsMinResIterate.isLeast_norm_of_grade_le"
+kind = "theorem"
+desc = '''Choi Thm 2.25 in specification form: for symmetric `A`, `b ∈ range A` and `grade A b ≤ m`, the
+minimal-residual iterate from `x₀ = 0` solves `A x = b` and has the least norm among all
+solutions — it is the pseudoinverse solution `A† b`. Exactness from
+`Krylov.IsMinResIterate.apply_eq_of_grade_le`, minimality from `Krylov.norm_le_of_apply_eq`.'''
+deps = ["Krylov.IsMinResIterate", "Krylov.IsMinResIterate.apply_eq_of_grade_le", "Krylov.norm_le_of_apply_eq"]
+source = "Choi, Iterative Methods for Singular Linear Equations and Least-Squares Problems, Theorem 2.25"
+
+[[node]]
+id = "Krylov.IsMinNormMinResIterate.isLeast_norm_of_grade_le"
+kind = "theorem"
+desc = '''Choi Thm 3.1 in specification form: for symmetric `A` and `grade A b ≤ m`, the minimum-norm
+minimal-residual iterate from `x₀ = 0` is the pseudoinverse solution of `min ‖A x - b‖`: it
+minimizes the residual over all of `E` (the Krylov space `𝒦_m(A, b)` is `A`-invariant at
+termination, so the residual is `b - P_{range A} b`) and has the least norm among all
+least-squares solutions.'''
+deps = ["Krylov.IsMinNormMinResIterate", "Krylov.IsMinResIterate.apply_eq_of_grade_le", "Krylov.norm_le_of_apply_eq", "Krylov.subspace_grade_mem_invtSubmodule"]
+source = "Choi, Iterative Methods for Singular Linear Equations and Least-Squares Problems, Theorem 3.1"
+
+[[node]]
+id = "Krylov.IsMinResIterate.exists_generalizedInverse_of_grade_le"
+kind = "theorem"
+desc = '''Choi Thm 2.27: for symmetric singular `A`, `b ∉ range A` and the terminating step
+(`β_{k+1} = 0`, `γ_k^{(1)} = 0`), the last well-defined MINRES iterate `x_{k-1}` is `X b` for a
+`{2,3}`-inverse `X` of `A` (a `{1,2,3}`-inverse when `𝒦_k(A, b)` contains `range A`). Stated with
+the Moore–Penrose conditions spelled out; the least concrete result of the module and the last to
+do.'''
+deps = ["Krylov.IsMinResIterate", "Krylov.IsMinResIterate.apply_eq_of_grade_le"]
+source = "Choi, Iterative Methods for Singular Linear Equations and Least-Squares Problems, Theorem 2.27"
+
+[[node]]
+id = "Lanczos.norm_residual_minRes_eq_prod_givensS"
+kind = "theorem"
+desc = '''Choi (2.21): for symmetric `A` the minimal-residual norm after `k` steps is
+`‖r_k‖ = ‖r₀‖ ∏_{j<k} |s_j|`, the Givens sines of the tridiagonal `T̄_k`; the Lanczos reading of
+`Krylov.norm_gamma_eq_prod` and `Krylov.IsMinResIterate.norm_residual_eq_norm_gamma`.'''
+deps = ["Krylov.IsMinResIterate.norm_residual_eq_norm_gamma", "Krylov.norm_gamma_eq_prod", "Lanczos.hessenberg_eq_map_tridiagExt"]
+source = "Choi, Iterative Methods for Singular Linear Equations and Least-Squares Problems, (2.21)"
+
+[[node]]
+id = "Lanczos.residual_minRes_succ_eq"
+kind = "theorem"
+desc = '''Choi Lemma 2.18 (also Saad (6.55) for DQGMRES): the MINRES residuals satisfy
+`r_k = s_k² • r_{k-1} - (φ_k c_k) • v_{k+1}` with `φ_k = ‖r_k‖`, whence `‖r_k‖ = |s_k| ‖r_{k-1}‖`.
+From `Krylov.IsMinResIterate.norm_residual_succ_eq` and the two-term residual expansion in the
+Lanczos basis.'''
+deps = ["Krylov.IsMinResIterate.norm_residual_succ_eq", "Krylov.residual_galerkin_eq", "Lanczos.hessenberg_eq_map_tridiagExt", "Krylov.givensC", "Krylov.givensS"]
+source = "Choi, Iterative Methods for Singular Linear Equations and Least-Squares Problems, Lemma 2.18"
+
+[[node]]
+id = "Lanczos.apply_residual_minRes_eq"
+kind = "theorem"
+desc = '''Choi Lemma 2.19: `A r_k = ‖r_k‖ (γ_{k+1}^{(1)} • v_{k+1} + δ_{k+2}^{(1)} • v_{k+2})` and hence
+`‖A r_k‖ = ‖r_k‖ √((γ_{k+1}^{(1)})² + (δ_{k+2}^{(1)})²)`, in terms of the entries of the rotated
+tridiagonal factor; and Lemma 2.20, `‖A x_k‖² = ‖t_k‖²` for the rotated right-hand side, which
+makes `‖A x_k‖` computable from the small problem.'''
+deps = ["Lanczos.residual_minRes_succ_eq", "Krylov.rotated", "Krylov.gvec"]
+source = "Choi, Iterative Methods for Singular Linear Equations and Least-Squares Problems, Lemmas 2.19 and 2.20"
+
+[[node]]
+id = "Lanczos.norm_tridiag_le_norm"
+kind = "theorem"
+desc = '''Choi Lemma 2.31: `‖T_k‖ ≤ ‖T̄_k‖ ≤ ‖A‖` in the operator norm, since `T̄_k` represents `A` on
+the orthonormal Lanczos basis (`A V_k = V_{k+1} T̄_k`) and `T_k` is a submatrix; with Lemma 2.32,
+`‖A‖ ≥ max_j ‖T̄_j e_j‖`, and the Frobenius analogue `‖T̄_k‖_F ≤ ‖A‖_F` of Lemma 2.33.'''
+deps = ["Lanczos.tridiag", "Lanczos.tridiagExt", "Lanczos.apply_sum", "Arnoldi.orthonormal"]
+source = "Choi, Iterative Methods for Singular Linear Equations and Least-Squares Problems, Lemmas 2.31–2.33"

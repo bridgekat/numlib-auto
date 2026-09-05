@@ -1,0 +1,24 @@
+namespace = "AtkinsonHan.Ch05"
+
+[[node]]
+id = "CGState"
+
+[[node]]
+id = "cg"
+
+[[node]]
+id = "cgStep"
+
+[[node]]
+id = "existsUnique_solution"
+
+[[node]]
+id = "theorem_5_6_1"
+
+[[node]]
+id = "theorem_5_6_2"
+kind = "theorem"
+desc = '''Theorem 5.6.2 (Winther): for `A = I - K` with `K` compact self-adjoint, given through its
+eigenbasis, `‖u* - u_k‖ ≤ c_k^k ‖u* - u₀‖` with `c_k = (Δ/δ)^{3/(2k)} (2/k) ∑_{j≤k} |λ_j|/(1 - λ_j) → 0`
+(5.6.11), (5.6.21); with `equation_5_6_10`, the linear rate `(Δ - δ)/(Δ + δ)` for `A = I - K`.'''
+deps = ["cg", "Krylov.winther"]

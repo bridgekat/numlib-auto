@@ -1,0 +1,29 @@
+namespace = "FloatingPoint"
+desc = '''
+Stationary iterations in finite precision (Higham, *Accuracy and Stability of Numerical
+Algorithms*, Ch. 17): the computed iteration `x̂_{k+1} = fl(M⁻¹ (N x̂_k + b))` is the exact
+iteration of `Numlib/LinearSolve/Stationary/Basic` perturbed at every step by a residual of size
+`γ_n`-controlled, and the forward error is bounded by the perturbation times a condition-like
+quantity of the iteration (Higham Thm 17.1–17.2). Stated as a theorem about *any* sequence
+`x_{k+1} = G x_k + f + ξ_k` with `‖ξ_k‖ ≤ ε` — the perturbed instance of
+`Stationary.step_iterate_sub` — so that the floating-point content is only the bound on `ξ_k`.
+'''
+
+[[node]]
+id = "_root_.Stationary.norm_perturbed_iterate_sub_le"
+kind = "theorem"
+desc = '''The exact-arithmetic core of Higham Thm 17.1: if `x_{k+1} = G x_k + f + ξ_k` with `‖ξ_k‖ ≤ ε`,
+`‖G‖ < 1` and `G x' + f = x'`, then `‖x_k - x'‖ ≤ ‖G‖^k ‖x₀ - x'‖ + ε/(1 - ‖G‖)`; the
+limsup of the error is at most `ε/(1 - ‖G‖)`.'''
+deps = ["Stationary.step", "Stationary.step_iterate_sub", "Stationary.norm_iterate_sub_le"]
+source = "Higham, Accuracy and Stability of Numerical Algorithms, Theorem 17.1"
+
+[[node]]
+id = "exists_roundsSplittingStep_eq_add"
+kind = "theorem"
+desc = '''The floating-point content of Higham Thm 17.1–17.2: one computed step of the splitting iteration
+`M x_{k+1} = N x_k + b` with a triangular or diagonal `M` solved by substitution equals the exact
+step plus a perturbation `ξ_k` with `|ξ_k| ≤ c_n u (|M⁻¹| (|N| |x_k| + |b|) + …)` componentwise
+(Higham (17.5)–(17.6)), from `abs_sub_le_of_roundsMulVec` and the substitution bound.'''
+deps = ["abs_sub_le_of_roundsMulVec", "Stationary.norm_perturbed_iterate_sub_le", "Stationary.Splitting.iterationOperator"]
+source = "Higham, Accuracy and Stability of Numerical Algorithms, Theorems 17.1–17.2"

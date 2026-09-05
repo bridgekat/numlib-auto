@@ -1,0 +1,42 @@
+namespace = "Arnoldi"
+desc = '''
+The perturbed Arnoldi and Lanczos relations, the hook for finite-precision analyses (Paige;
+Greenbaum; Meurant–Strakoš, *The Lanczos and conjugate gradient algorithms in finite precision
+arithmetic*, Thm 14–15): a structure `Arnoldi.IsPerturbedRelation A v h F ε ε'` saying that
+`A v_j = ∑_{i ≤ j+1} h_ij v_i + F_j` with `‖F_j‖ ≤ ε` and an orthogonality defect
+`|⟪v_i, v_j⟫ - δ_ij| ≤ ε'`, of which the exact `Krylov.HessenbergRelation` of
+`Numlib/Krylov/Hessenberg` with an orthonormal basis is the `ε = ε' = 0` instance. Exact results
+are restated so that they follow from the perturbed structure with the perturbation carried
+along; this is phase 4 and only the structure and the first restatements are planned. What
+Meurant–Strakoš Thm 14 supplies, given a rounding model, is that the computed Lanczos quantities
+satisfy the structure with `ε, ε'` of order `u ‖A‖`; that theorem belongs to a future finite
+precision surface over `Numlib/FloatingPoint`.
+'''
+
+[[node]]
+id = "IsPerturbedRelation"
+kind = "definition"
+desc = '''`structure Arnoldi.IsPerturbedRelation (A : E →ₗ[𝕜] E) (v : ℕ → E) (h : ℕ → ℕ → 𝕜) (F : ℕ → E)
+(ε ε' : ℝ) : Prop` with `apply_eq : ∀ j, A (v j) = ∑ i ∈ range (j + 2), h i j • v i + F j`,
+`norm_F_le : ∀ j, ‖F j‖ ≤ ε`, `inner_sub_le : ∀ i j, ‖⟪v i, v j⟫ - if i = j then 1 else 0‖ ≤ ε'`
+and `h` upper Hessenberg (Meurant–Strakoš Thm 14, `A V_k = V_k T_k + β_{k+1} v_{k+1} e_kᵀ + δV_k`).'''
+deps = ["Krylov.HessenbergRelation"]
+source = "Meurant–Strakoš, Theorem 14 (Paige 1976)"
+
+[[node]]
+id = "hessenbergRelation_isPerturbedRelation"
+kind = "theorem"
+desc = '''The exact process is the `ε = ε' = 0` instance: `Arnoldi.hessenbergRelation` together with
+`Arnoldi.orthonormal` gives `IsPerturbedRelation A (vec A b) (coeff A b) 0 0 0`.'''
+deps = ["IsPerturbedRelation", "hessenbergRelation", "orthonormal"]
+source = "Meurant–Strakoš, Section 4"
+
+[[node]]
+id = "IsPerturbedRelation.norm_residual_sub_le"
+kind = "theorem"
+desc = '''The first restatement: for `x = x₀ + ∑ y_i v_i` under a perturbed relation, the residual differs
+from `V_{m+1} (β e₁ - H̄_m y)` by at most `ε ‖y‖₁`, so the small-problem residual norm computed from
+`H̄_m` is within `ε ‖y‖₁ + O(ε')` of the true residual norm — the perturbed form of
+`Krylov.HessenbergRelation.residual_eq` and `Krylov.norm_residual_eq_norm_firstVec_sub_mulVec`.'''
+deps = ["IsPerturbedRelation", "Krylov.HessenbergRelation.residual_eq", "Krylov.norm_residual_eq_norm_firstVec_sub_mulVec"]
+source = "Meurant–Strakoš, Section 4"

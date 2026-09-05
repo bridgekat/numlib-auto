@@ -1,0 +1,23 @@
+namespace = "AtkinsonHan"
+
+[[node]]
+id = "Ch09.theorem_9_2_1"
+
+[[node]]
+id = "DiscreteInfSup"
+
+[[node]]
+id = "InfSupCondition"
+
+[[node]]
+id = "PetrovGalerkinProblem"
+
+[[node]]
+id = "infSupValue"
+
+[[node]]
+id = "remark_9_2_2"
+kind = "theorem"
+desc = '''Remark 9.2.2, (9.2.10), the Xu–Zikatanov sharpening: `‖u - u_N‖ ≤ (M/α_N) inf_{w_N ∈ U_N} ‖u - w_N‖`,
+through the Petrov–Galerkin projector `P_N : u ↦ u_N` and Kato's lemma `kato`.'''
+deps = ["IsPetrovGalerkinSolution.norm_sub_le_div_mul_infDist", "IsPetrovGalerkinSolution.projection"]

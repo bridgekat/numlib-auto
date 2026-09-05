@@ -148,7 +148,7 @@ instantiates, not in the polymorphic one.
 * The source textbooks are on disk under `D:\Users\bridgecat\Documents\Projects\numlib-books\`, with
   OCR'd Markdown for Saad's *Iterative Methods*. Read the printed proof before trusting an
   alignment document's paraphrase of it: Saad's §6.10 proof of Lemma 6.23 uses a maximal vector and
-  the nonsingularity of `A`, and the paraphrase in `tracker/saadsparse-ch6.md` reproduced that
+  the nonsingularity of `A`, and the paraphrase in `plans/saadsparse-ch6.md` reproduced that
   route. A shorter one needs neither — and reading the print is what showed that the book's
   nonsingularity hypothesis is used only by *its* argument, so the formal statement can drop it.
 * Truncated `ℕ` subtraction in a transcribed hypothesis deserves a check at the boundary. Saad's

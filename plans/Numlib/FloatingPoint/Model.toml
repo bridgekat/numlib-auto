@@ -1,0 +1,44 @@
+namespace = "FloatingPoint"
+desc = '''
+The standard model of floating-point arithmetic (Higham, *Accuracy and Stability of Numerical
+Algorithms*, (2.4)): a rounding relation `Rounds x y` on an ordered field `K` with
+`|y - x| ≤ u |x|` for an admissible rounding `y` of `x`, and the calculus of the constants
+`γ_n = n u/(1 - n u)` (Higham Lemma 3.1 and Lemma 3.3), packaged as relative-perturbation
+bookkeeping `IsRelPert u n x y := ∃ θ, |θ| ≤ γ_n ∧ y = x (1 + θ)`. Relational by design: the
+model says which results are admissible, not which one is produced, so every theorem holds for
+any rounding function satisfying the bound and for any evaluation order that is made explicit.
+'''
+
+[[node]]
+id = "RoundingModel"
+kind = "definition"
+desc = '''`structure FloatingPoint.RoundingModel (K) [Field K] [LinearOrder K] [IsStrictOrderedRing K]`
+with `u : K`, `u_nonneg : 0 ≤ u`, `Rounds : K → K → Prop` and `abs_sub_le : Rounds x y → |y - x| ≤ u * |x|`
+(Higham (2.4), `fl(x) = x (1 + δ)`, `|δ| ≤ u`); with the derived `Rounds.exists_delta`.'''
+source = "Higham, Accuracy and Stability of Numerical Algorithms, (2.4)"
+
+[[node]]
+id = "gamma"
+kind = "definition"
+desc = '''`FloatingPoint.gamma u n := n * u / (1 - n * u)`, Higham's `γ_n`, meaningful under `n u < 1`;
+with `gamma_nonneg`, `gamma_mono` and `u ≤ gamma u 1`.'''
+source = "Higham, Accuracy and Stability of Numerical Algorithms, Lemma 3.1"
+
+[[node]]
+id = "abs_prod_one_add_sub_one_le_gamma"
+kind = "theorem"
+desc = '''Higham Lemma 3.1: if `|δ_i| ≤ u` and `ρ_i = ±1` for `i < n`, and `n u < 1`, then
+`∏ (1 + δ_i)^{ρ_i} = 1 + θ_n` with `|θ_n| ≤ γ_n`; by induction, with `(1 + u)^n ≤ 1 + γ_n` and
+`(1 - u)^{-n} ≤ 1 + γ_n`.'''
+deps = ["gamma"]
+source = "Higham, Accuracy and Stability of Numerical Algorithms, Lemma 3.1"
+
+[[node]]
+id = "IsRelPert"
+kind = "definition"
+desc = '''`IsRelPert u n x y := ∃ θ, |θ| ≤ gamma u n ∧ y = x * (1 + θ)`, "`y` is `x` to within a relative
+perturbation of order `n`", with the calculus of Higham Lemma 3.3 as lemmas:
+`IsRelPert.mul : IsRelPert u k x y → IsRelPert u j y z → IsRelPert u (k + j) x z`,
+`IsRelPert.div` (with `k + 2j` for `j > k`), and `gamma_add_gamma_add_mul_le : γ_j + γ_k + γ_j γ_k ≤ γ_{j+k}`.'''
+deps = ["gamma", "abs_prod_one_add_sub_one_le_gamma"]
+source = "Higham, Accuracy and Stability of Numerical Algorithms, Lemma 3.3"

@@ -1,0 +1,126 @@
+desc = '''
+The Lanczos process as orthogonal polynomials and Gauss quadrature, after Meurant and Strakoš,
+*The Lanczos and conjugate gradient algorithms in finite precision arithmetic* (Acta Numerica
+2006), §2.2–2.3 and §3.3, which is also Saad, *Iterative Methods for Sparse Linear Systems*,
+§6.6.2 and the Gauss-quadrature material of Kress, *Numerical Analysis*, §9.3 and of
+Atkinson–Han Thm 3.7.3 (Christoffel–Darboux).
+
+For a symmetric `A` and a vector `v`, the form `⟨p, q⟩_v := ⟪p(A) v, q(A) v⟫` is an inner product
+on polynomials of degree below the grade of `v`, and the Lanczos vectors are `v_j = p_j(A) v` for
+the orthonormal polynomials `p_j` of that inner product; the Ritz values on `𝒦_m(A, v)`, which
+are the eigenvalues of the tridiagonal `T_m` of `Numlib/Krylov/Lanczos`, are the roots of `p_m`,
+and `p_{T_m}(A) v = β₁ ⋯ β_m v_{m+1}` for the characteristic polynomial of `T_m`. In finite
+dimension the inner product is the integral against the discrete spectral measure
+`∑ ω_l δ_{λ_l}` of `(A, v)`, `ω_l = |⟪u_l, v⟫|²`, and the `m`-point Gauss rule of that measure has
+the Ritz values as nodes and the squared first components of the eigenvectors of `T_m`, times
+`‖v‖²`, as weights (Meurant–Strakoš Thm 1). The CG error identity
+`‖ε_k‖_A² = ‖r₀‖² [(T_n⁻¹ e₁, e₁) - (T_k⁻¹ e₁, e₁)]` (Thm 9) is the Gauss remainder for
+`f(λ) = 1/λ`, and the persistence theorem (Thm 5, 7) is a statement about unreduced symmetric
+tridiagonal matrices.
+
+The Christoffel–Darboux identity is stated for any polynomial sequence with a three-term
+recurrence, as Atkinson–Han's §3.7 needs it, and the abstract Gauss rule for any positive measure
+with finite moments is what `Numlib/Approximation/Quadrature` builds on.
+'''
+
+[[node]]
+id = "Krylov.polyInner"
+kind = "definition"
+desc = '''`Krylov.polyInner A v p q := ⟪(aeval A p) v, (aeval A q) v⟫`, Saad's (6.85) and Meurant–Strakoš's
+(2.4): a sesquilinear form on `𝕜[X]`, an inner product on `degreeLT 𝕜 (grade A v)`
+(`polyInner_nondegenerate`), with `polyInner_self_eq_zero_iff`.'''
+deps = ["Krylov.polyEval", "Krylov.subspace_eq_map_degreeLT", "Krylov.linearIndependent_of_le_grade"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, (6.85); Meurant–Strakoš, (2.4)"
+
+[[node]]
+id = "Lanczos.poly"
+kind = "definition"
+desc = '''The Lanczos polynomials: `Lanczos.poly A v j` is the unique polynomial of degree `j` with
+`aeval A (poly A v j) v = Arnoldi.vec A v j` for `j < grade A v` (through the isomorphism
+`degreeLT ↔ 𝒦_m`), with `Lanczos.poly_degree`, `Lanczos.aeval_poly` and the three-term recurrence
+`β_{j+1} p_{j+1} = (X - α_j) p_j - β_j p_{j-1}` read off `Lanczos.w_succ_eq`.'''
+deps = ["Krylov.polyInner", "Arnoldi.vec", "Lanczos.w_succ_eq", "Lanczos.alpha", "Lanczos.beta"]
+source = "Meurant–Strakoš, Section 2.2; Saad, Iterative Methods for Sparse Linear Systems, Section 6.6.2"
+
+[[node]]
+id = "Lanczos.polyInner_poly"
+kind = "theorem"
+desc = '''The Lanczos polynomials are orthonormal for `polyInner A v` below the grade:
+`polyInner A v (poly A v i) (poly A v j) = if i = j then 1 else 0` for `i, j < grade A v`; from
+`Arnoldi.orthonormal`.'''
+deps = ["Lanczos.poly", "Krylov.polyInner", "Arnoldi.orthonormal"]
+source = "Meurant–Strakoš, Section 2.2"
+
+[[node]]
+id = "Lanczos.aeval_charpoly_tridiag"
+kind = "theorem"
+desc = '''`aeval A (tridiag A v m).charpoly v = (∏_{j<m} β_j) • Arnoldi.vec A v m` (Saad §6.6.2 (e);
+Meurant–Strakoš (2.6)): the characteristic polynomial of `T_m` is the monic multiple of `p_m`, by
+the three-term recurrence. Its roots are the Ritz values, and
+`Arnoldi.charpoly_compression_isMinOn` of `Numlib/Eigen/RayleighRitz` is its optimality.'''
+deps = ["Lanczos.poly", "Lanczos.tridiag", "Arnoldi.hessenbergSq_eq_toMatrix_compression", "Lanczos.hessenbergSq_eq_map_tridiag"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 6.6.2; Meurant–Strakoš, (2.6)"
+
+[[node]]
+id = "Lanczos.hasEigenvalue_compression_iff_mem_spectrum_tridiag"
+kind = "theorem"
+desc = '''The Ritz values of `A` on `𝒦_m(A, v)` are the eigenvalues of `T_m`: `Module.End.HasEigenvalue
+(compression A (subspace A v m)) θ ↔ θ ∈ spectrum (tridiag A v m)` for `m ≤ grade A v`, and they are
+the roots of `poly A v m`. Reads `compression.toMatrix_orthonormalBasis` through the Lanczos
+basis.'''
+deps = ["Lanczos.tridiag", "compression", "compression.toMatrix_orthonormalBasis", "Arnoldi.hessenbergSq_eq_toMatrix_compression", "Lanczos.hessenbergSq_eq_map_tridiag", "Krylov.IsRitzPair"]
+source = "Meurant–Strakoš, Section 2.3; Saad, Numerical Methods for Large Eigenvalue Problems, Section 6.3"
+
+[[node]]
+id = "Krylov.spectralMeasure"
+kind = "definition"
+desc = '''The discrete spectral measure of `(A, v)` on a finite-dimensional space: for the eigenbasis
+`u_l` of the symmetric `A`, `spectralMeasure A v := ∑ l, ‖⟪u_l, v⟫‖² • dirac (λ_l)`, a finite
+measure on `ℝ` with `polyInner A v p q = ∫ p q ∂(spectralMeasure A v)` for real polynomials
+(`Krylov.polyInner_eq_integral`, Meurant–Strakoš (2.4)).'''
+deps = ["Krylov.polyInner", "LinearMap.IsSymmetric.repr_aeval_apply"]
+source = "Meurant–Strakoš, Section 2.1, (2.4)"
+
+[[node]]
+id = "Lanczos.gauss_quadrature"
+kind = "theorem"
+desc = '''Meurant–Strakoš Thm 1: for every polynomial `f` of degree at most `2m - 1`,
+`∫ f ∂(spectralMeasure A v) = ‖v‖² ∑_j (z_j)₁² f(θ_j)`, the sum over the eigenpairs `(θ_j, z_j)` of
+`T_m` with `z_j` normalized: the `m`-point Gauss rule of the spectral measure has the Ritz values
+as nodes and `‖v‖² (z_j)₁²` as weights. Divide `f` by `p_m` and use orthogonality for the
+remainder-free part; the weights come from the eigenvector expansion of `e₁`.'''
+deps = ["Krylov.spectralMeasure", "Lanczos.polyInner_poly", "Lanczos.aeval_charpoly_tridiag", "Lanczos.hasEigenvalue_compression_iff_mem_spectrum_tridiag"]
+source = "Meurant–Strakoš, Theorem 1"
+
+[[node]]
+id = "CG.energyNorm_error_sq_eq_sub_inner_inv"
+kind = "theorem"
+desc = '''Meurant–Strakoš Thm 9 (Dahlquist–Golub–Nash): for CG on a symmetric positive definite `A` with
+`grade A r₀ = n`, `‖xstar - x_k‖_A² = ‖r₀‖² ((T_n⁻¹ e₁, e₁) - (T_k⁻¹ e₁, e₁))`, the Gauss remainder
+of `f(λ) = 1/λ`; from `‖ε_k‖_A² = ⟪A⁻¹ r₀, r₀⟫ - 2 ⟪r₀, V_k y_k⟫ + ⟪A V_k y_k, V_k y_k⟫` and
+`T_k y_k = ‖r₀‖ e₁`.'''
+deps = ["CG.iterate", "CG.isGalerkinIterate", "Lanczos.tridiag", "Krylov.isGalerkinIterate_iff_mulVec_eq", "Lanczos.gauss_quadrature"]
+source = "Meurant–Strakoš, Theorem 9"
+
+[[node]]
+id = "Lanczos.persistence"
+kind = "theorem"
+desc = '''The persistence theorem (Meurant–Strakoš Thm 5, Paige 1980): for `t < k` and every Ritz value
+`θ_s^{(t)}` of `T_t` with normalized eigenvector `z`, some Ritz value of `T_k` satisfies
+`|θ_s^{(t)} - θ_j^{(k)}| ≤ β_{t+1} |z_t|` — a Ritz value with small last eigenvector component is
+approximated by a Ritz value at all later steps. From the residual bound
+`LinearMap.IsSymmetric.exists_hasEigenvalue_dist_le` applied to `T_k` and the vector `(z, 0)`,
+whose residual is `β_{t+1} z_t e_{t+1}`. Thm 7's refinement (the product formula
+`(θ_s^{(t)} - θ_j^{(k)}) ⟪(z, 0), z_j^{(k)}⟫ = β_{t+1} z_t (z_j^{(k)})_{t+1}`) is the same computation.'''
+deps = ["Lanczos.tridiag", "Lanczos.beta", "LinearMap.IsSymmetric.exists_hasEigenvalue_dist_le", "Matrix.IsTridiagonal"]
+source = "Meurant–Strakoš, Theorems 5 and 7 (Paige 1980)"
+
+[[node]]
+id = "Polynomial.christoffel_darboux"
+kind = "theorem"
+desc = '''The Christoffel–Darboux identity for any sequence of polynomials satisfying a three-term
+recurrence `p_{n+1} = (a_n X + b_n) p_n - c_n p_{n-1}` with `c_n = a_n/a_{n-1}` (orthonormal
+polynomials): `∑_{n≤N} p_n(x) p_n(t) = (p_{N+1}(x) p_N(t) - p_N(x) p_{N+1}(t)) / (a_N (x - t))`
+for `x ≠ t`, with the confluent form at `x = t` (Atkinson–Han Thm 3.7.3). Purely algebraic, by
+induction on `N`.'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.7.3; Meurant–Strakoš, Section 2.2"

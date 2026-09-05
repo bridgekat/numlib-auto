@@ -1,0 +1,107 @@
+namespace = "CG"
+
+[[node]]
+id = "State"
+
+[[node]]
+id = "alpha"
+
+[[node]]
+id = "arnoldi_vec_eq"
+
+[[node]]
+id = "beta"
+
+[[node]]
+id = "energyNorm_error_antitone"
+
+[[node]]
+id = "energyNorm_error_sq_eq_sum"
+
+[[node]]
+id = "energyNorm_error_sq_sub"
+
+[[node]]
+id = "gamma"
+
+[[node]]
+id = "init"
+
+[[node]]
+id = "inner_apply_direction_eq_zero"
+
+[[node]]
+id = "inner_residual_direction_eq"
+
+[[node]]
+id = "inner_residual_direction_eq_zero"
+
+[[node]]
+id = "inner_residual_eq_zero"
+
+[[node]]
+id = "isGalerkinIterate"
+
+[[node]]
+id = "iterate"
+
+[[node]]
+id = "iterate_eq_of_residual_eq_zero"
+
+[[node]]
+id = "iterate_sub_mem"
+
+[[node]]
+id = "iterate_succ"
+
+[[node]]
+id = "iterate_succ_eq_three_term"
+
+[[node]]
+id = "norm_error_antitone"
+
+[[node]]
+id = "norm_iterate_monotone"
+
+[[node]]
+id = "re_inner_apply_direction_pos"
+
+[[node]]
+id = "re_inner_direction_nonneg"
+
+[[node]]
+id = "residual_eq"
+
+[[node]]
+id = "residual_eq_zero_of_grade_le"
+
+[[node]]
+id = "residual_ne_zero_of_lt_grade"
+
+[[node]]
+id = "residual_succ_eq_three_term"
+
+[[node]]
+id = "rho"
+
+[[node]]
+id = "span_direction_eq"
+
+[[node]]
+id = "span_residual_eq"
+
+[[node]]
+id = "step"
+
+[[node]]
+id = "norm_iterate_lt_of_re_inner_apply_direction_pos"
+kind = "theorem"
+desc = '''Steihaug's theorem for symmetric, possibly indefinite `A` (Steihaug 1983, Thm 2.1; Fong–Saunders,
+*CG versus MINRES*, §4.2): for the CG iterates from `x₀ = 0`, if `0 < re ⟪A p_j, p_j⟫` for all
+`j < k`, then `‖x_i‖ < ‖x_{i+1}‖` for all `i < k`. The local argument: `⟪r_i, p_j⟫ = ‖r_j‖²` for
+`i ≤ j` while the denominators used so far are positive, hence `re ⟪p_i, p_j⟫ ≥ 0`, hence
+`re ⟪x_i, p_i⟫ ≥ 0`, and `‖x_{i+1}‖² - ‖x_i‖² = 2 α_i re ⟪x_i, p_i⟫ + α_i² ‖p_i‖² > 0` with `α_i > 0`.
+The positive definite `norm_iterate_monotone` becomes its corollary through
+`re_inner_apply_direction_pos`.'''
+deps = ["iterate", "step", "norm_iterate_monotone", "re_inner_apply_direction_pos", "inner_residual_direction_eq", "re_inner_direction_nonneg"]
+source = "Steihaug, The conjugate gradient method and trust regions in large scale optimization (1983), Theorem 2.1; Fong–Saunders, CG versus MINRES, Section 4.2"

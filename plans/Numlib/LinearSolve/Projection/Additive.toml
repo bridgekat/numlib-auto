@@ -1,0 +1,75 @@
+namespace = "Projection"
+desc = '''
+Additive and multiplicative projection processes: Saad, *Iterative Methods for Sparse Linear
+Systems*, §5.4 (Algorithms 5.5 and 5.6, the residual identities (5.22)–(5.23), the least-squares
+option) and the block relaxations of §4.1.1 (Algorithms 4.1–4.2) as their instances.
+
+An additive step over a finite family of pairs `(K i, L i)` of finite-dimensional subspaces adds
+the Petrov–Galerkin corrections of all pairs at once, with relaxation weights `ω i`, so its
+residual is `r' = (1 - ∑ ω i • P i) r`, where `P i` is the projector onto `A (K i)` along
+`(L i)ᗮ` — the oblique projector `LinearMap.obliqueProjectionOfBases` of
+`Numlib/Analysis/InnerProductSpace/Projection/ObliqueProjection` when bases are given. The
+multiplicative step applies the corrections in sequence, which is the block Gauss–Seidel pattern.
+With `L i = A (K i)` each `P i` is the orthogonal projector onto `A (K i)`, and if the `A (K i)`
+are mutually orthogonal and together span the space the sum of the projectors is `1`, so one
+outer step is exact (Saad's remark after (5.23)).
+'''
+
+[[node]]
+id = "additiveStep"
+kind = "definition"
+desc = '''One step of Saad Algorithm 5.5 with relaxation parameters: for a finite family
+`K L : ι → Submodule 𝕜 E` of finite-dimensional subspaces with `∀ z ∈ K i, A z ∈ (L i)ᗮ → z = 0`,
+and weights `ω : ι → 𝕜`, `additiveStep A b K L ω x = x + ∑ i, ω i • δ i` where `x + δ i` is the
+Petrov–Galerkin iterate `IsPetrovGalerkin A b x (K i) (L i)` (unique by the nondegeneracy).'''
+deps = ["IsPetrovGalerkin", "IsPetrovGalerkin.eq_of_forall"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Algorithm 5.5"
+
+[[node]]
+id = "additiveProjector"
+kind = "definition"
+desc = '''The projector `P i` onto `A (K i)` along `(L i)ᗮ`, so that the Petrov–Galerkin correction of the
+`i`-th pair satisfies `A δ i = P i r` (Saad (5.22): `P_i = A V_i (W_iᵀ A V_i)⁻¹ W_iᵀ`), with
+`additiveProjector_eq_obliqueProjectionOfBases` when bases `V_i, W_i` are given.'''
+deps = ["IsPetrovGalerkin", "LinearMap.obliqueProjectionOfBases", "LinearMap.range_obliqueProjectionOfBases"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, (5.22)"
+
+[[node]]
+id = "residual_additiveStep"
+kind = "theorem"
+desc = '''Saad (5.22)–(5.23): `b - A (additiveStep A b K L ω x) = (1 - ∑ i, ω i • additiveProjector A K L i) (b - A x)`.'''
+deps = ["additiveStep", "additiveProjector"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, (5.22)–(5.23)"
+
+[[node]]
+id = "additiveProjector_eq_starProjection_of_eq_map"
+kind = "theorem"
+desc = '''The least-squares option: when `L i = (K i).map A`, `additiveProjector A K L i` is the orthogonal
+projector `((K i).map A).starProjection` (Saad's remark after (5.23)).'''
+deps = ["additiveProjector"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, remark after (5.23)"
+
+[[node]]
+id = "sum_starProjection_eq_one_of_orthogonal"
+kind = "theorem"
+desc = '''Orthogonal projectors onto pairwise orthogonal subspaces whose dimensions add up to `finrank E`
+sum to `1`: `(∀ i j, i ≠ j → M i ⟂ M j) → ∑ i, finrank (M i) = finrank E → ∑ i, (M i).starProjection = 1`.
+Saad's exactness criterion for the least-squares additive process; `OrthogonalFamily` and
+`DirectSum.IsInternal` in Mathlib.'''
+source = "Saad, Iterative Methods for Sparse Linear Systems, remark after (5.23)"
+
+[[node]]
+id = "multiplicativeStep"
+kind = "definition"
+desc = '''One sweep of Saad Algorithm 5.6: the Petrov–Galerkin corrections for `(K i, L i)`, `i` in a
+list, applied one after the other, the analogue of block Gauss–Seidel.'''
+deps = ["IsPetrovGalerkin", "IsPetrovGalerkin.eq_of_forall"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Algorithm 5.6"
+
+[[node]]
+id = "residual_multiplicativeStep"
+kind = "theorem"
+desc = '''The residual of a multiplicative sweep is `(∏ i, (1 - additiveProjector A K L i)) (b - A x)`, the
+product taken in the order of the sweep.'''
+deps = ["multiplicativeStep", "additiveProjector"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 5.4"

@@ -1,0 +1,82 @@
+namespace = "Quadrature"
+desc = '''
+Quadrature rules as functionals on `C(Set.Icc a b, ℝ)`: the rule `∑ w_i • eval x_i`, its norm
+`∑ |w_i|` (Atkinson–Han (2.4.4), Ex 2.4.2), the Banach–Steinhaus convergence criterion for
+rules exact on polynomials of growing degree — convergence for every continuous integrand iff
+the weights are uniformly summable (Atkinson–Han §2.4.4; Kress Thm 9.10, Szegő; Pólya) — with the
+nonnegative-weight corollary (Atkinson–Han Ex 2.4.3), interpolatory rules and their degree of
+exactness, Gauss quadrature for a positive weight with the nodes at the roots of the orthogonal
+polynomial and exactness to degree `2n - 1` (Kress §9.3; the Lanczos instance is
+`Lanczos.gauss_quadrature` of `Numlib/Krylov/OrthogonalPolynomials`), and the Peano kernel
+representation of the error (Kress §9.2). Phase 3.
+
+The density argument is `ContinuousLinearMap.tendsto_of_tendsto_on_dense_of_bounded` of
+`Numlib/Analysis/Normed/Operator/BanachSteinhaus` with the polynomials, dense by Weierstrass
+(`polynomialFunctions_closure_eq_top`), and `banach_steinhaus` for the necessity.
+'''
+
+[[node]]
+id = "functional"
+kind = "definition"
+desc = '''`Quadrature.functional w x := ∑ i, w i • ContinuousMap.evalCLM ℝ (x i) : C(Icc a b, ℝ) →L[ℝ] ℝ`,
+the rule `L_n v = ∑ w_i v(x_i)` (Atkinson–Han (2.4.3)); the integral against a nonnegative
+integrable weight is the functional it approximates.'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, (2.4.3)"
+
+[[node]]
+id = "norm_functional"
+kind = "theorem"
+desc = '''Atkinson–Han (2.4.4) / Ex 2.4.2: for distinct nodes, `‖functional w x‖ = ∑ i, |w i|`. `≤` from
+`‖evalCLM‖ ≤ 1`; `≥` by evaluating at a continuous function of norm `1` taking the value
+`sign (w i)` at `x i` (piecewise-linear interpolation between the distinct nodes).'''
+deps = ["functional"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, (2.4.4)"
+
+[[node]]
+id = "tendsto_iff_bddAbove_sum_abs"
+kind = "theorem"
+desc = '''The Szegő–Pólya criterion (Atkinson–Han §2.4.4; Kress Thm 9.10): if the rules `functional (w n) (x n)`
+agree with a bounded functional `L` on all polynomials of degree `≤ d n` with `d n → ∞`, then
+`(∀ v, Tendsto (fun n => functional (w n) (x n) v) atTop (𝓝 (L v))) ↔ ∃ C, ∀ n, ∑ i, |w n i| ≤ C`.
+`←` from the density criterion and Weierstrass, `→` from `banach_steinhaus` and `norm_functional`.'''
+deps = ["functional", "norm_functional", "ContinuousLinearMap.tendsto_of_tendsto_on_dense_of_bounded"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Section 2.4.4; Kress, Numerical Analysis, Theorem 9.10 (Szegő)"
+
+[[node]]
+id = "tendsto_of_nonneg"
+kind = "theorem"
+desc = '''Atkinson–Han Ex 2.4.3: under the exactness hypothesis of `tendsto_iff_bddAbove_sum_abs`, rules
+with nonnegative weights converge for every continuous integrand, because
+`∑ w_i = L_n 1 = L 1` bounds `∑ |w_i|`.'''
+deps = ["tendsto_iff_bddAbove_sum_abs"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 2.4.3"
+
+[[node]]
+id = "IsInterpolatory"
+kind = "definition"
+desc = '''An interpolatory rule integrates the Lagrange interpolant: `w i = ∫ ℓ_i dμ`; equivalently the rule
+is exact on polynomials of degree `≤ n` (`isInterpolatory_iff_exact`), its *degree of exactness*
+`degreeOfExactness` being the largest `d` with exactness on `polyLE d`.'''
+deps = ["functional", "Lagrange.interpolateCLM"]
+source = "Kress, Numerical Analysis, Section 9.1"
+
+[[node]]
+id = "exists_gauss"
+kind = "theorem"
+desc = '''Gauss quadrature (Kress Thm 9.6–9.7-style): for a positive measure `μ` on `[a, b]` with finite
+moments and `n ≥ 1`, the orthogonal polynomial `p_n` of degree `n` has `n` simple real roots in
+`(a, b)`, and the interpolatory rule at these roots has positive weights and degree of exactness
+`2n - 1`; conversely no `n`-point rule is exact to degree `2n`. Division with remainder by `p_n`
+and orthogonality, as in `Lanczos.gauss_quadrature`.'''
+deps = ["IsInterpolatory", "Polynomial.christoffel_darboux"]
+source = "Kress, Numerical Analysis, Section 9.3"
+
+[[node]]
+id = "error_eq_integral_peanoKernel"
+kind = "theorem"
+desc = '''Peano's kernel theorem (Kress Thm 9.2-style): for a rule exact on polynomials of degree `≤ m` and
+`f ∈ C^{m+1}[a, b]`, `∫ f - functional w x f = ∫ K(t) f^{(m+1)}(t) dt` with the Peano kernel
+`K(t) = (1/m!) E_x((· - t)₊^m)`, the error functional applied to the truncated power; and the
+corollary `|E f| ≤ ‖K‖₁ ‖f^{(m+1)}‖_∞`.'''
+deps = ["functional", "IsInterpolatory"]
+source = "Kress, Numerical Analysis, Section 9.2"

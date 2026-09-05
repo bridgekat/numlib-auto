@@ -1,0 +1,69 @@
+desc = '''
+Interpolation as a bounded projection: the Lagrange interpolation operator on `C(Set.Icc a b, ℝ)`
+at `n + 1` distinct nodes, its Lebesgue constant, the error formula
+`f(x) - p(x) = f^{(n+1)}(ξ)/(n+1)! ∏ (x - x_i)` (Atkinson–Han §3.2, Kress §8.1, both through a
+generalized Rolle theorem), piecewise-linear interpolation (Atkinson–Han Ex 3.6.6, Kress §8.3)
+and trigonometric interpolation with Rivlin's bound `‖𝓘_n‖ ≤ 1 + (2/π) log n` (Atkinson–Han
+(3.7.19)–(3.7.20)). Phase 3; Mathlib has `Lagrange.interpolate` as an algebraic map on
+polynomials but no operator on continuous functions and no error formula.
+
+The projections here are the `P` of the Lebesgue lemma `norm_sub_apply_le_of_isIdempotentElem`
+in `Numlib/Approximation/BestApprox`, which is how Atkinson–Han turn a Lebesgue constant and a
+Jackson estimate into a uniform error bound ((3.7.14), (3.7.21)).
+'''
+
+[[node]]
+id = "Lagrange.interpolateCLM"
+kind = "definition"
+desc = '''The Lagrange interpolation operator `Lagrange.interpolateCLM x : C(Icc a b, ℝ) →L[ℝ] C(Icc a b, ℝ)`
+for distinct nodes `x : Fin (n + 1) → Icc a b`, `f ↦ ∑ i, f (x i) • ℓ_i` with the Lagrange basis
+polynomials `Lagrange.basis` as continuous functions; `interpolateCLM_apply_node`,
+`isIdempotentElem_interpolateCLM` and `range_interpolateCLM = polyLE a b n`.'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 3.6.5; Kress, Numerical Analysis, Section 8.1"
+
+[[node]]
+id = "Lagrange.norm_interpolateCLM"
+kind = "theorem"
+desc = '''The Lebesgue constant: `‖interpolateCLM x‖ = sup_t ∑ i, |ℓ_i t|`, the sup norm of the Lebesgue
+function; `≤` by the triangle inequality, `≥` by a continuous `f` of norm `1` with
+`f (x i) = sign (ℓ_i t₀)` at a maximizing `t₀` (piecewise-linear interpolation between the nodes).'''
+deps = ["Lagrange.interpolateCLM"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Section 3.7.3; Kress, Numerical Analysis, Section 8.1"
+
+[[node]]
+id = "exists_iteratedDeriv_eq_zero_of_forall_eq_zero"
+kind = "theorem"
+desc = '''The generalized Rolle theorem: a function `n + 1` times differentiable on `[a, b]` that vanishes at
+`n + 2` distinct points has a zero of its `(n + 1)`-st derivative strictly between the extreme
+points; by induction from `exists_hasDerivAt_eq_zero`.'''
+source = "Kress, Numerical Analysis, proof of Theorem 8.4; Atkinson–Han, Theoretical Numerical Analysis, Section 3.2"
+
+[[node]]
+id = "Lagrange.exists_sub_interpolate_eq"
+kind = "theorem"
+desc = '''The interpolation error formula (Kress Thm 8.4; Atkinson–Han (3.2.6)-style): for `f` `n + 1`
+times differentiable on `[a, b]` and every `t`, there is `ξ ∈ (a, b)` with
+`f t - (interpolateCLM x f) t = iteratedDeriv (n + 1) f ξ / (n + 1)! * ∏ i, (t - x i)`; from the
+generalized Rolle theorem applied to `s ↦ f s - p s - c ∏ (s - x i)` with `c` chosen to vanish at `t`.'''
+deps = ["Lagrange.interpolateCLM", "exists_iteratedDeriv_eq_zero_of_forall_eq_zero"]
+source = "Kress, Numerical Analysis, Theorem 8.4; Atkinson–Han, Theoretical Numerical Analysis, Section 3.2"
+
+[[node]]
+id = "piecewiseLinearInterpCLM"
+kind = "definition"
+desc = '''Piecewise-linear interpolation on a partition of `[a, b]` as a projection
+`C(Icc a b, ℝ) →L[ℝ] C(Icc a b, ℝ)` of norm `1` onto the continuous piecewise-linear functions
+(Atkinson–Han Ex 3.6.6, Kress §8.3): `isIdempotentElem_piecewiseLinearInterpCLM`,
+`norm_piecewiseLinearInterpCLM`, and the error bound `‖f - P f‖ ≤ h²/8 ‖f''‖` for `C²` functions.'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 3.6.6; Kress, Numerical Analysis, Section 8.3"
+
+[[node]]
+id = "trigInterpCLM"
+kind = "definition"
+desc = '''Trigonometric interpolation at the `2n + 1` equispaced nodes of a period, as a projection of
+`C_p(2π)` onto the trigonometric polynomials of degree `≤ n` (Atkinson–Han (3.7.19)), with
+Rivlin's bound `‖trigInterpCLM n‖ ≤ 1 + (2/π) log n` (Atkinson–Han (3.7.20)) as
+`norm_trigInterpCLM_le`. The last item of the module: the bound is a real estimate on the
+Lebesgue function of the Dirichlet kernel.'''
+deps = ["Lagrange.norm_interpolateCLM"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, (3.7.19)–(3.7.20)"

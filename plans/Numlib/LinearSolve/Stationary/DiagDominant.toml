@@ -1,0 +1,114 @@
+namespace = "Matrix"
+
+[[node]]
+id = "IsStrictColDiagDominant"
+
+[[node]]
+id = "IsStrictColDiagDominant.transpose_iff"
+
+[[node]]
+id = "IsStrictDiagDominant"
+
+[[node]]
+id = "IsStrictDiagDominant.diag_ne_zero"
+
+[[node]]
+id = "IsStrictDiagDominant.isUnit"
+
+[[node]]
+id = "IsStrictDiagDominant.isUnit_diagPart"
+
+[[node]]
+id = "IsStrictDiagDominant.jacobiContraction_lt_one"
+
+[[node]]
+id = "gaussSeidel_spectralRadius_lt_one"
+
+[[node]]
+id = "jacobiContraction"
+
+[[node]]
+id = "jacobi_spectralRadius_lt_one"
+
+[[node]]
+id = "jacobi_spectralRadius_lt_one_of_col"
+
+[[node]]
+id = "linfty_opNorm_gaussSeidel_iterMatrix_le"
+
+[[node]]
+id = "linfty_opNorm_jacobi_iterMatrix"
+
+[[node]]
+id = "sassenfeld"
+
+[[node]]
+id = "sassenfeld_eq"
+
+[[node]]
+id = "IsIrreducibleAbs"
+kind = "definition"
+desc = '''Saad's irreducibility for an arbitrary matrix (his §1.10 and Def 4.5): the adjacency graph of the
+nonzero pattern is strongly connected, adopted as `Matrix.IsIrreducibleAbs A := Matrix.IsIrreducible (A.map ‖·‖)`
+so that Mathlib's `Matrix.IsIrreducible` (which requires nonnegative entries) and its
+`isIrreducible_iff_exists_pow_pos` characterization apply.'''
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 1.10 and Definition 4.5"
+
+[[node]]
+id = "IsIrreduciblyDiagDominant"
+kind = "definition"
+desc = '''Saad Def 4.5 (row form): `A` is irreducible, weakly diagonally dominant (`∑_{j ≠ i} |A i j| ≤ |A i i|`
+for all `i`) with strict inequality in at least one row; with the column form
+`IsIrreduciblyColDiagDominant` through the transpose.'''
+deps = ["IsIrreducibleAbs", "IsStrictDiagDominant"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Definition 4.5"
+
+[[node]]
+id = "IsIrreducibleAbs.norm_sub_eq_of_mem_frontier"
+kind = "theorem"
+desc = '''Saad Thm 4.7: for irreducible `A` and an eigenvalue `μ` on the boundary of the union of the
+Gershgorin discs, `‖μ - A i i‖ = ∑_{j ≠ i} ‖A i j‖` for every `i`. The book's argument: at a row
+`i` where `|x_i|` is maximal the disc inequality is an equality, which forces equality at every
+`j` with `A i j ≠ 0` and `|x_j| = |x_i|`, and strong connectivity propagates it along a path to
+every row.'''
+deps = ["IsIrreducibleAbs", "spectrum_subset_iUnion_closedBall"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 4.7"
+
+[[node]]
+id = "IsIrreduciblyDiagDominant.isUnit"
+kind = "theorem"
+desc = '''Saad Cor 4.8, the irreducible half: an irreducibly diagonally dominant matrix is nonsingular —
+`0` on the boundary of the union of the discs would lie on the boundary of every disc, against
+the strict row.'''
+deps = ["IsIrreduciblyDiagDominant", "IsIrreducibleAbs.norm_sub_eq_of_mem_frontier"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Corollary 4.8"
+
+[[node]]
+id = "IsIrreduciblyDiagDominant.jacobi_spectralRadius_lt_one"
+kind = "theorem"
+desc = '''Saad Thm 4.9, the irreducible half for Jacobi: `A` irreducibly diagonally dominant ⇒
+`spectralRadius ℂ (jacobiSplitting A h).iterationOperator < 1`; Gershgorin for `D⁻¹ (E + F)` with
+Thm 4.7 excluding the boundary `|λ| = 1`.'''
+deps = ["IsIrreduciblyDiagDominant", "IsIrreducibleAbs.norm_sub_eq_of_mem_frontier", "jacobi_spectralRadius_lt_one", "jacobiSplitting_iterationOperator"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 4.9"
+
+[[node]]
+id = "IsIrreduciblyDiagDominant.gaussSeidel_spectralRadius_lt_one"
+kind = "theorem"
+desc = '''Saad Thm 4.9, the irreducible half for Gauss–Seidel: `A` irreducibly diagonally dominant ⇒
+`spectralRadius ℂ (gaussSeidelSplitting A h).iterationOperator < 1`; the book's eigenvector
+argument with the split sums `σ₁, σ₂` applied to `N - λ M` for `|λ| ≥ 1`, which is itself
+irreducibly diagonally dominant and hence nonsingular by Cor 4.8.'''
+deps = ["IsIrreduciblyDiagDominant", "IsIrreduciblyDiagDominant.isUnit", "gaussSeidel_spectralRadius_lt_one", "gaussSeidelSplitting"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 4.9"
+
+[[node]]
+id = "gaussSeidel_spectralRadius_lt_one_of_col"
+kind = "theorem"
+desc = '''Gauss–Seidel converges under strict *column* diagonal dominance (Saad Def 4.5 as printed, Thm 4.9
+in the column reading; Kress Problem 4.4): `A.IsStrictColDiagDominant → spectralRadius ℂ
+(gaussSeidelSplitting A h).iterationOperator < 1`, by the Cor 4.8 argument applied to
+`N - λ M` for `|λ| ≥ 1`, which is strictly column dominant. The same argument reproves the row
+case and the irreducible cases, so it may be the one uniform proof.'''
+deps = ["IsStrictColDiagDominant", "gaussSeidelSplitting", "gaussSeidel_spectralRadius_lt_one"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 4.9; Kress, Numerical Analysis, Problem 4.4"

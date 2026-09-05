@@ -1,0 +1,3 @@
+desc = '''
+Convexity facts Mathlib lacks (natural home: `Mathlib.Analysis.Convex`).
+'''

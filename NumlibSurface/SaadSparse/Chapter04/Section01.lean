@@ -17,7 +17,7 @@ componentwise or matrix recurrences with `Splitting.step` of the corresponding s
 
 Block relaxation (§4.1.1, Algorithms 4.1–4.2) is deferred: the plan assigns the block
 splittings and their identification with the additive projection process to phase 2 of the
-backbone (`tracker/backbone.md` §2.4.4).
+backbone (`plans/backbone.md` §2.4.4).
 -/
 
 open Matrix Finset Stationary

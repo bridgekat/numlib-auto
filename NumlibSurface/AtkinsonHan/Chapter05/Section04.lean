@@ -19,7 +19,7 @@ The book's iteration (5.4.2), `u_{n+1} = u_n - [F'(u_n)]⁻¹ F(u_n)`, is the ba
 * Theorem 5.4.2, the Newton–Kantorovich theorem;
 * (5.4.7), Newton's method for a nonlinear system in `ℝᵈ`.
 
-Deferred (`tracker/atkinsonhan-ch5.md` §3 item 2, `tracker/backbone.md` §7 "5.3.2
+Deferred (`plans/atkinsonhan-ch5.md` §3 item 2, `plans/backbone.md` §7 "5.3.2
 Kantorovich", phase 2): the book's finer form of Theorem 5.4.2 — existence localized to
 `B̄(u₁, t* - b)`, uniqueness in `B̄(u₀, t**)` with `t** = (1 + √(1-2h))/(aL)`, and the sharper a
 priori bound `[1 - √(1-2h)]^{2ⁿ}/(2ⁿ a L)`.  Out of scope (§4 of the plan): the applications

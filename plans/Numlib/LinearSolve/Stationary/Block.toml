@@ -1,0 +1,49 @@
+namespace = "Matrix"
+desc = '''
+Block splittings and block relaxation: Saad, *Iterative Methods for Sparse Linear Systems*,
+§4.1.1, (4.15)–(4.17), Algorithms 4.1–4.2 (the non-overlapping case), and the identification of a
+block relaxation sweep with the projection processes of `Numlib/LinearSolve/Projection/Additive`
+(Saad §5.4: each inner step of Algorithm 4.1 is an orthogonal projection step onto the span of the
+block's coordinate vectors, so block Jacobi is the additive process and block Gauss–Seidel the
+multiplicative one with `K i = L i = span (e_j : π j = i)`).
+
+The block structure is a labelling `π : n → ι` of the index set by a linearly ordered type `ι`;
+the block-diagonal, strict block-lower and strict block-upper parts are the entries with
+`π i = π j`, `π j < π i` and `π i < π j`. The point splittings of
+`Numlib/LinearSolve/Stationary/Splitting` are the case `π = id`. Overlapping blocks (Saad's
+general Algorithm 4.1) are not planned; they have no theorem in the book.
+'''
+
+[[node]]
+id = "blockDiagPart"
+kind = "definition"
+desc = '''`blockDiagPart π A i j = if π i = π j then A i j else 0`, with `blockStrictLower` (`π j < π i`)
+and `blockStrictUpper` (`π i < π j`); `A = blockDiagPart - (-blockStrictLower) - (-blockStrictUpper)`
+is Saad (4.15), and `π = id` recovers `diagPart`, `strictLower`, `strictUpper`.'''
+deps = ["diagPart", "strictLower", "strictUpper"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, (4.15)"
+
+[[node]]
+id = "blockJacobiSplitting"
+kind = "definition"
+desc = '''The block Jacobi splitting `M = blockDiagPart π A` (Saad (4.16)), with `blockGaussSeidelSplitting`
+(`M = blockDiagPart π A - E` for the strict block-lower part `-E`) and `blockSorSplitting` alongside,
+each a `Stationary.Splitting A` under the invertibility of the block diagonal.'''
+deps = ["blockDiagPart", "jacobiSplitting"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, (4.16), Algorithms 4.1–4.2"
+
+[[node]]
+id = "blockJacobiSplitting_step_eq_additiveStep"
+kind = "theorem"
+desc = '''Saad's remark in §5.4: one block Jacobi step is the additive projection step with
+`K i = L i = span {e_j | π j = i}` and all weights `1`, so (4.17) is (5.7) with `W = V = V_i`.'''
+deps = ["blockJacobiSplitting", "Projection.additiveStep", "Stationary.Splitting.eq_iterationOperator_mul_add_iff"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 5.4, remark on (4.17)"
+
+[[node]]
+id = "blockGaussSeidelSplitting_step_eq_multiplicativeStep"
+kind = "theorem"
+desc = '''One block Gauss–Seidel sweep is the multiplicative projection sweep over the blocks in
+increasing label order (Saad §5.4, Algorithm 5.6).'''
+deps = ["blockJacobiSplitting", "Projection.multiplicativeStep"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 5.4, Algorithm 5.6"

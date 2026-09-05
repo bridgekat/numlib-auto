@@ -1,0 +1,7 @@
+desc = '''
+Integral operators on spaces of continuous functions and the integral equations built on them:
+the Fredholm, Volterra and Urysohn operators on `C(Set.Icc a b, ℝ)`, their norms and Lipschitz
+bounds, the Bielecki weighted norm, and later the second-kind theory. Serves Atkinson–Han
+§5.2.3–5.2.4 (Thm 5.2.2–5.2.4), §2.3 Ex 2.3.2, 2.3.4, (2.2.8), Ch. 12, and Kress Ch. 10–12.
+Phase 3.
+'''

@@ -1,0 +1,51 @@
+namespace = "LinearMap"
+desc = '''
+Deflation of a computed eigenpair: Saad, *Numerical Methods for Large Eigenvalue Problems*, §4.2
+— Wielandt's deflation with one vector (Thm 4.2: `A - σ u₁ vᴴ` with `vᴴ u₁ = 1` has the spectrum of
+`A` with `λ₁` replaced by `λ₁ - σ`) and the Schur–Wielandt choice `v = u₁` (Prop 4.1–4.2), which
+keeps the Schur vectors.
+
+Stated for `A : E →ₗ[𝕜] E` on a finite-dimensional inner product space through the rank-one
+operator `x ↦ ⟪v, x⟫ u`; the spectrum statement is a characteristic-polynomial identity, so it
+records multiplicities. The left-eigenvector part of Prop 4.1 (the left eigenvectors of `A` for
+`λ_i ≠ λ₁` are left eigenvectors of the deflated operator) is the mechanism of the proof.
+'''
+
+[[node]]
+id = "wielandtDeflate"
+kind = "definition"
+desc = '''`LinearMap.wielandtDeflate A u v σ := A - σ • (toSpanSingleton 𝕜 E u ∘ₗ innerₛₗ 𝕜 v)`, Saad's
+`A₁ = A - σ u₁ vᴴ` (his (4.6)); `wielandtDeflate_apply_self : ⟪v, u⟫ = 1 → A u = λ • u →
+wielandtDeflate A u v σ u = (λ - σ) • u`.'''
+source = "Saad, Numerical Methods for Large Eigenvalue Problems, (4.6)"
+
+[[node]]
+id = "charpoly_wielandtDeflate"
+kind = "theorem"
+desc = '''Wielandt's theorem (Saad Thm 4.2) with multiplicities: if `A u = λ • u`, `u ≠ 0` and `⟪v, u⟫ = 1`,
+then `(wielandtDeflate A u v σ).charpoly * (X - C λ) = A.charpoly * (X - C (λ - σ))`; in
+particular `spectrum (A₁) = {λ - σ} ∪ (spectrum A \ {λ})` when `λ` is simple
+(`hasEigenvalue_wielandtDeflate_iff`). Proof: in a basis starting with `u` the deflation changes
+only the first row, or via the left eigenvectors as in the book.'''
+deps = ["wielandtDeflate"]
+source = "Saad, Numerical Methods for Large Eigenvalue Problems, Theorem 4.2 (Wielandt)"
+
+[[node]]
+id = "wielandtDeflate_adjoint_apply_of_ne"
+kind = "theorem"
+desc = '''Left eigenvectors survive deflation (Saad Prop 4.1, the mechanism of Thm 4.2): if
+`adjoint A w = conj μ • w` with `μ ≠ λ` then `⟪w, u⟫ = 0` and
+`adjoint (wielandtDeflate A u v σ) w = conj μ • w`.'''
+deps = ["wielandtDeflate"]
+source = "Saad, Numerical Methods for Large Eigenvalue Problems, Proposition 4.1"
+
+[[node]]
+id = "schurWielandtDeflate_invtSubmodule"
+kind = "theorem"
+desc = '''Schur–Wielandt deflation (Saad Prop 4.1–4.2): with `v = u₁` a unit eigenvector, every
+`A`-invariant subspace containing `u₁` is invariant for `wielandtDeflate A u₁ u₁ σ`, and more
+generally for `A - Q Σ Qᴴ` with `Q` an orthonormal basis of an invariant subspace (`Prop 4.2`), so
+the Schur vectors are unchanged; the deflated operator's restriction differs from `A`'s by `σ` on
+`span {u₁}` only.'''
+deps = ["wielandtDeflate", "charpoly_wielandtDeflate"]
+source = "Saad, Numerical Methods for Large Eigenvalue Problems, Propositions 4.1 and 4.2"

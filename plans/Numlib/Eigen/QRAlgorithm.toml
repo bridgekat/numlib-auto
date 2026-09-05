@@ -1,0 +1,67 @@
+namespace = "Krylov"
+desc = '''
+Orthogonal (simultaneous) iteration and the QR algorithm, after Kress, *Numerical Analysis*,
+§7.4: Lemma 7.18 (the gap form of subspace iteration, `Krylov.gap_subspaceIterate_le` of
+`Numlib/Eigen/PowerMethod`), Theorem 7.19 (orthogonal iteration: the matrices `Q_νᴴ A Q_ν` tend to
+upper triangular form, with the eigenvalues on the diagonal, when the starting flag is in general
+position), and Theorem 7.20 (the QR algorithm `A_{ν+1} = R_ν Q_ν` is orthogonal iteration on the
+canonical flag, so `A_ν` tends to upper triangular form with `λ_j` on the diagonal). Kress
+Thm 7.22 (Householder reduction to Hessenberg form, so that a QR step costs `O(n²)`) is a
+computation-count remark and is not planned.
+
+The hypotheses are Kress's: `A` diagonalizable with `|λ₁| > |λ₂| > ⋯ > |λ_n|` and the starting
+subspaces `S_m = span {q₁, …, q_m}` satisfying `S_m ∩ U_m = {0}` for the invariant complements
+`U_m`. The whole analytic content is the gap bound applied to every `m` at once; what remains is
+the linear algebra identifying the QR iterates with the orthogonal iteration (Kress's (7.25)–(7.26),
+`A^ν = Q_ν R_ν ⋯ R_1` by induction).
+'''
+
+[[node]]
+id = "orthogonalIterate"
+kind = "definition"
+desc = '''Kress's orthogonal iteration: given an orthonormal basis `q₀`, `orthogonalIterate A q₀ ν` is
+the orthonormal basis obtained by Gram–Schmidt (`gramSchmidtNormed`) of `A^ν q₀`, so that
+`span {q_{1ν}, …, q_{mν}} = subspaceIterate A (span {q_{10}, …, q_{m0}}) ν` for every `m`
+(`span_orthogonalIterate`, Kress (7.14)).'''
+deps = ["subspaceIterate", "subspaceIterate_succ", "InnerProductSpace.eq_gramSchmidtNormed_of_re_inner_pos"]
+source = "Kress, Numerical Analysis, Section 7.4, (7.14)"
+
+[[node]]
+id = "tendsto_orthogonalIterate"
+kind = "theorem"
+desc = '''Kress Thm 7.19: for diagonalizable `A` with `|λ₁| > ⋯ > |λ_n| > 0` and
+`S_m ∩ U_m = {0}` for all `m`, the matrices `B_ν = Q_νᴴ A Q_ν` of the orthogonal iteration satisfy
+`(B_ν)_{jk} → 0` for `j > k` and `(B_ν)_{jj} → λ_j`. From the gap bound
+`Krylov.gap_subspaceIterate_le` for each `m`: the flag `S_{mν}` converges to the flag of the
+dominant invariant subspaces, so the columns of `Q_ν` converge (up to phases) to the Schur
+vectors, and `Q_νᴴ A Q_ν` to the corresponding triangular form.'''
+deps = ["orthogonalIterate", "gap_subspaceIterate_le", "Submodule.gap", "Submodule.sinAngle_le_gap"]
+source = "Kress, Numerical Analysis, Theorem 7.19"
+
+[[node]]
+id = "_root_.Matrix.qrIterate"
+kind = "definition"
+desc = '''The QR algorithm: `qrIterate A 0 = A`, `qrIterate A (ν + 1) = R_ν Q_ν` where `qrIterate A ν = Q_ν R_ν`
+is a QR decomposition (Gram–Schmidt of the columns, with the sign convention that makes it unique
+for a nonsingular matrix). Mathlib has no QR decomposition; the Gram–Schmidt one is built here from
+`gramSchmidtNormed` on the columns, as `Matrix.qrDecomposition` with `Matrix.qr_mul`.'''
+deps = ["orthogonalIterate"]
+source = "Kress, Numerical Analysis, Section 7.4, (7.21)–(7.23)"
+
+[[node]]
+id = "_root_.Matrix.qrIterate_eq_conj_orthogonalIterate"
+kind = "theorem"
+desc = '''Kress (7.25)–(7.26): `A^ν = (Q_1 ⋯ Q_ν) (R_ν ⋯ R_1)` and `qrIterate A ν = Q̃_νᴴ A Q̃_ν` with
+`Q̃_ν = Q_1 ⋯ Q_ν` the orthogonal iteration started at the canonical basis — the QR algorithm *is*
+orthogonal iteration on the canonical flag.'''
+deps = ["Matrix.qrIterate", "orthogonalIterate"]
+source = "Kress, Numerical Analysis, proof of Theorem 7.20"
+
+[[node]]
+id = "_root_.Matrix.tendsto_qrIterate"
+kind = "theorem"
+desc = '''Kress Thm 7.20 (QR algorithm): for diagonalizable `A` with `|λ₁| > ⋯ > |λ_n| > 0` and the
+canonical flag in general position with respect to the invariant complements (his (7.24)), the QR
+iterates satisfy `(A_ν)_{jk} → 0` for `j > k` and `(A_ν)_{jj} → λ_j`.'''
+deps = ["Matrix.qrIterate_eq_conj_orthogonalIterate", "tendsto_orthogonalIterate"]
+source = "Kress, Numerical Analysis, Theorem 7.20"

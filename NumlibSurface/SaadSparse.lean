@@ -29,7 +29,7 @@ proved here that is not proved there: the surface exists to test the backbone ag
 account of the subject, and to give a reader of the book a Lean name for every result in it. This
 module imports the section modules and adds nothing of its own.
 
-Plan and per-result book alignment: `tracker/saadsparse-ch1-4-5.md`, `tracker/saadsparse-ch6.md`.
+Plan and per-result book alignment: `plans/saadsparse-ch1-4-5.md`, `plans/saadsparse-ch6.md`.
 
 ## Naming
 
@@ -115,8 +115,8 @@ the breakdown with no finiteness hypothesis. The book's companion instruction "s
 
 ## Not formalized
 
-Deferred to a later phase of the backbone, with the plans in `tracker/saadsparse-ch1-4-5.md` §3 and
-`tracker/saadsparse-ch6.md` §4:
+Deferred to a later phase of the backbone, with the plans in `plans/saadsparse-ch1-4-5.md` §3 and
+`plans/saadsparse-ch6.md` §4:
 
 * §4.2.1, the convergence factors and rates, which need `‖complexify A‖ = ‖A‖` for the scoped
   operator norms before Gelfand's formula transports to a real matrix; Theorem 4.4 on regular

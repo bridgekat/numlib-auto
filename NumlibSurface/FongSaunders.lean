@@ -68,7 +68,7 @@ disappears.
 ## Where formalizing needs care
 
 Three places where the paper does not transcribe literally. Each is recorded on the declarations
-concerned; `tracker/fongsaunders.md` carries the full discussion.
+concerned; `plans/fongsaunders.md` carries the full discussion.
 
 * **The backward-error results need `A ≠ 0` and `b ≠ 0`** (§3). The paper measures a perturbation
   by the ratios `‖E‖/‖A‖` and `‖f‖/‖b‖`, which presuppose nonzero denominators. Lean's `t / 0 = 0`
@@ -99,7 +99,7 @@ concerned; `tracker/fongsaunders.md` carries the full discussion.
 the solution norms `‖x_1‖, …, ‖x_k‖` increase strictly as long as `p_jᵀ A p_j > 0` — and asserts
 the same for CR and MINRES under the further condition `r_jᵀ A r_j > 0`. Both rest on strict
 monotonicity statements for symmetric indefinite operators that the backbone does not yet provide
-(`tracker/backbone.md` §3.11, "Steihaug's generalization", scheduled for phase 2), and the surface
+(`plans/backbone.md` §3.11, "Steihaug's generalization", scheduled for phase 2), and the surface
 layer may not invent them. The CR analogue would also need restating: the paper's proof of
 Theorem 2.2 (d) expands `p_i` in the complete orthogonal basis `{q_0, …, q_{ℓ−1}}` of `A 𝒦_ℓ`,
 which needs the recurrence to run to termination without breakdown, not merely through iteration

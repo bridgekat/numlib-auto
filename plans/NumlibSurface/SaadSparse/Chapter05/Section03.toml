@@ -1,0 +1,28 @@
+namespace = "SaadSparse.Ch05"
+
+[[node]]
+id = "mrStep"
+
+[[node]]
+id = "rnsdStep"
+
+[[node]]
+id = "sdStep"
+
+[[node]]
+id = "step1"
+
+[[node]]
+id = "equation_5_18"
+kind = "theorem"
+desc = '''(5.16)–(5.18), the exact one-step residual identity of the minimal-residual iteration:
+`‖r_{k+1}‖² = ‖r_k‖² (1 - ⟪A r_k, r_k⟫²/(‖r_k‖² ‖A r_k‖²))`, i.e. `‖r_{k+1}‖ = ‖r_k‖ sin ∠(r_k, A r_k)`.'''
+deps = ["Projection.norm_residual_minResStep_sq_eq"]
+
+[[node]]
+id = "equation_5_20"
+kind = "theorem"
+desc = '''(5.20), the exact one-step identity of steepest descent in the `A`-norm:
+`‖d_{k+1}‖_A² = ‖d_k‖_A² (1 - ⟪r_k, r_k⟫²/(⟪A r_k, r_k⟫ ⟪A⁻¹ r_k, r_k⟫))`, from which Theorem 5.9
+follows by Kantorovich's inequality (Lemma 5.8).'''
+deps = ["Projection.energyNorm_steepestDescentStep_sq_eq"]

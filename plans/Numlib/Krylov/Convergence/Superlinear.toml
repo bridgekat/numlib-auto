@@ -1,0 +1,30 @@
+namespace = "Krylov"
+desc = '''
+Superlinear convergence of the conjugate gradient method for operators of the form
+`A = 1 - K` with `K` compact self-adjoint: Winther's theorem, Atkinson–Han, *Theoretical
+Numerical Analysis*, Thm 5.6.2, with the rate `c_k^k`, `c_k = (Δ/δ)^{3/(2k)} (2/k) ∑_{j≤k} |λ_j|/(1 - λ_j) → 0`
+(their (5.6.21)).
+
+The book's proof uses the spectral theorem for compact self-adjoint operators (its Thm 2.8.15),
+which Mathlib does not have. The statement is therefore taken with the eigen-decomposition as
+data: a Hilbert basis `φ : HilbertBasis ι 𝕜 E` of eigenvectors of `K` with eigenvalues `λ : ι → ℝ`,
+enumerated by `ℕ` with `|λ_j|` antitone and `λ_j → 0`, and `δ ≤ 1 - λ_j ≤ Δ` with `0 < δ`. Every
+step of the proof is then available: the CG iterate is `x₀ + P(A) r₀` (`CG.iterate_sub_mem`), it
+is optimal among all such polynomials in the energy norm (`IsGalerkinIterate.energyNorm_error_le_energyNorm_aeval`),
+the competitor `Q_k(λ) = ∏_{j≤k} (λ - λ_j)/(1 - λ_j)` kills the `k` leading eigencomponents,
+`‖Q_k(A) r₀‖ ≤ sup_{j>k} |Q_k(λ_j)| ‖r₀‖ ≤ ∏_{j≤k} 2|λ_j|/(1 - λ_j) ‖r₀‖` by Parseval, and the
+Cesàro–AM–GM step `(∏ b_j)^{1/k} ≤ (1/k) ∑ b_j → 0` is `Filter.Tendsto.cesaro` and
+`Real.geom_mean_le_arith_mean_weighted`. When Mathlib acquires the compact spectral theorem the
+data becomes a conclusion and the statement specializes.
+'''
+
+[[node]]
+id = "winther"
+kind = "theorem"
+desc = '''Winther's theorem (Atkinson–Han Thm 5.6.2) with the eigenbasis as data: for `A = 1 - K` on a
+Hilbert space, `φ : HilbertBasis ℕ 𝕜 E` with `K (φ j) = λ j • φ j`, `Antitone (|λ ·|)`, `λ → 0`,
+`0 < δ ≤ 1 - λ j ≤ Δ`, and the CG iterates `x_k` from `x₀` for `A x = b`,
+`‖xstar - x_k‖ ≤ c_k^k ‖xstar - x₀‖` with `c_k = (Δ/δ)^{3/(2k)} (2/k) ∑_{j<k} |λ j|/(1 - λ j)`,
+and `c_k → 0` (`Krylov.winther_rate_tendsto_zero`). Proof route in the group description.'''
+deps = ["CG.iterate", "CG.isGalerkinIterate", "CG.iterate_sub_mem", "IsGalerkinIterate.energyNorm_error_le_energyNorm_aeval", "exists_residual_poly", "LinearMap.IsCoerciveWith.norm_le_energyNorm", "LinearMap.IsSymmetricBoundedBy", "Krylov.mem_subspace_iff_exists_aeval"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 5.6.2 (Winther)"

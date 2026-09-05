@@ -20,7 +20,7 @@ statement below specializes a result of `Numlib/LinearSolve/Projection/`.
 
 Left open here: the matrix reading of Theorem 5.7 (R-5.14 of the plan), which needs the
 compression of an operator in an orthonormal basis; and the additive/multiplicative procedures
-of §5.4 (phase 2 of the backbone, `tracker/backbone.md` §2.4.4).
+of §5.4 (phase 2 of the backbone, `plans/backbone.md` §2.4.4).
 -/
 
 open Matrix Module Submodule Finset

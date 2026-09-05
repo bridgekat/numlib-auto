@@ -22,7 +22,7 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
 * `lake exe tracker lint --no-check` prints `ok` and exits 0 when no cache exists at all, which is
   indistinguishable from "zero warnings". Run one full `lake exe tracker check` before trusting any
   later `--no-check` reading.
-* Before demoting a tracked declaration out of the plan, grep `tracker/*.md` for its name. A
+* Before demoting a tracked declaration out of the plan, grep `plans/*.md` for its name. A
   declaration that looks like a throwaway `rfl` companion in Lean can be a numbered equation the
   book prose cites: `Krylov.gamma_succ` is `rfl`, and it is Saad's (6.47).
 * A `lake update` interrupted partway leaves the package checkout and `lake-manifest.json`
@@ -316,7 +316,7 @@ Structural facts worth knowing before planning a proof:
 
 ## Design conventions of this library
 
-Decided in `tracker/backbone.md` §1.7; the short version for a proof author:
+Decided in `plans/backbone.md` §1.7; the short version for a proof author:
 
 * Spectral hypotheses are quadratic-form bounds, `LinearMap.IsSymmetricBoundedBy A lmin lmax`, not
   lists of eigenvalues. Proofs that would use the spectral theorem go through the compression trick:

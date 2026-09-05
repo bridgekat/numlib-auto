@@ -1,0 +1,48 @@
+namespace = "AtkinsonHan.Ch03"
+
+[[node]]
+id = "example_3_3_17"
+
+[[node]]
+id = "example_3_3_5"
+
+[[node]]
+id = "exercise_3_3_8"
+
+[[node]]
+id = "exercise_3_3_9"
+
+[[node]]
+id = "theorem_3_3_13"
+
+[[node]]
+id = "theorem_3_3_13_unique"
+
+[[node]]
+id = "theorem_3_3_15"
+
+[[node]]
+id = "theorem_3_3_16"
+
+[[node]]
+id = "theorem_3_3_18"
+
+[[node]]
+id = "theorem_3_3_21"
+
+[[node]]
+id = "theorem_3_3_7"
+
+[[node]]
+id = "theorem_3_3_19"
+kind = "theorem"
+desc = '''Theorem 3.3.19 (Chebyshev equioscillation): `p ∈ 𝒫_n` is the best uniform approximation of
+`f ∈ C[a, b]` iff `f - p` equioscillates at `n + 2` points; the best approximation is unique.'''
+deps = ["isBestApprox_iff_equioscillates", "IsBestApprox.unique_of_haarCondition"]
+
+[[node]]
+id = "theorem_3_3_20"
+kind = "theorem"
+desc = '''Theorem 3.3.20: the equioscillation characterization for trigonometric polynomials of degree
+`≤ n` on `C_p(2π)`, with `2n + 2` alternation points.'''
+deps = ["isBestApprox_trig_iff_equioscillates"]

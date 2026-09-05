@@ -20,7 +20,7 @@ backbone's `IsPetrovGalerkinSolution.DiscreteInfSup`.
 
 Remark 9.2.2 -- the Xu–Zikatanov sharpening `‖u − u_N‖ ≤ (M/α_N) inf_{w_N} ‖u − w_N‖` -- is
 **deferred**: it needs the Petrov–Galerkin projector `P_N : u ↦ u_N` as a bounded idempotent
-operator with `‖P_N‖ ≤ M/α_N`, which is a phase-2 item of `tracker/backbone.md` §5.2.3.  Kato's
+operator with `‖P_N‖ ≤ M/α_N`, which is a phase-2 item of `plans/backbone.md` §5.2.3.  Kato's
 lemma, the analytic ingredient, is already available and is recorded below as `kato`.
 -/
 

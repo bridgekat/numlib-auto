@@ -1,0 +1,25 @@
+namespace = "AtkinsonHan.Ch05"
+
+[[node]]
+id = "equation_5_4_5"
+
+[[node]]
+id = "theorem_5_4_1"
+
+[[node]]
+id = "theorem_5_4_2"
+
+[[node]]
+id = "theorem_5_4_2_sharp"
+kind = "theorem"
+desc = '''Theorem 5.4.2, the book's finer form: existence localized to `B̄(u₁, t* - b) ⊂ D(F)`
+(`theorem_5_4_2_step`), uniqueness in `B̄(u₀, t**) ∩ D(F)` with `t** = (1 + √(1 - 2h))/(aL)`
+(`theorem_5_4_2_unique`), and the sharp a priori bound `‖u_n - u*‖ ≤ (1 - √(1 - 2h))^{2ⁿ}/(2ⁿ a L)`.'''
+deps = ["theorem_5_4_2", "Newton.kantorovich_norm_sub_le", "Newton.kantorovich_unique", "Newton.kantorovich_of_closedBall_step"]
+
+[[node]]
+id = "exercise_5_4_5"
+kind = "theorem"
+desc = '''Exercise 5.4.5, the modified Newton method (5.4.11) with frozen derivative `F'(u₀)`: linear
+convergence to the solution from a sufficiently close start, by the fixed-point theorem.'''
+deps = ["Newton.chordStep", "Newton.tendsto_chordIterate"]

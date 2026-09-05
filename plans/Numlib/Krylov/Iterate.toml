@@ -1,0 +1,92 @@
+namespace = "Krylov"
+
+[[node]]
+id = "IsGalerkinIterate"
+
+[[node]]
+id = "IsGalerkinIterate.apply_eq_of_grade_le"
+
+[[node]]
+id = "IsGalerkinIterate.energyNorm_error_antitone"
+
+[[node]]
+id = "IsGalerkinIterate.energyNorm_error_eq_iInf"
+
+[[node]]
+id = "IsGalerkinIterate.energyNorm_error_le_energyNorm_aeval"
+
+[[node]]
+id = "IsGalerkinIterate.inner_residual_eq_zero"
+
+[[node]]
+id = "IsGalerkinIterate.residual_mem_span"
+
+[[node]]
+id = "IsMinErrorIterate"
+
+[[node]]
+id = "IsMinErrorIterate.norm_error_antitone"
+
+[[node]]
+id = "IsMinErrorIterate.unique"
+
+[[node]]
+id = "IsMinResIterate"
+
+[[node]]
+id = "IsMinResIterate.apply_eq_of_grade_le"
+
+[[node]]
+id = "IsMinResIterate.norm_residual_antitone"
+
+[[node]]
+id = "IsMinResIterate.norm_residual_eq_iInf"
+
+[[node]]
+id = "IsMinResIterate.norm_residual_le_norm_aeval"
+
+[[node]]
+id = "existsUnique_isGalerkinIterate_of_isCoercive"
+
+[[node]]
+id = "existsUnique_isMinResIterate_of_injective"
+
+[[node]]
+id = "exists_isMinResIterate"
+
+[[node]]
+id = "exists_mem_of_residual_poly"
+
+[[node]]
+id = "exists_residual_poly"
+
+[[node]]
+id = "grade_le_of_apply_eq"
+
+[[node]]
+id = "norm_le_of_apply_eq"
+
+[[node]]
+id = "residual_mem_subspace_succ"
+
+[[node]]
+id = "IsMinNormMinResIterate"
+kind = "definition"
+desc = '''The MINRES-QLP specification: `IsMinNormMinResIterate A b x₀ m x := IsMinResIterate A b x₀ m x ∧
+∀ y, IsMinResIterate A b x₀ m y → ‖x‖ ≤ ‖y‖`, the minimum-norm element of the (affine, hence convex)
+set of minimal-residual iterates. It exists and is unique (`existsUnique_isMinNormMinResIterate`,
+the projection of `0` onto a nonempty finite-dimensional affine subspace), it coincides with the
+minimal-residual iterate whenever that is unique, and on symmetric singular systems it is what
+MINRES-QLP computes (Choi, `Numlib/Krylov/Singular`).'''
+deps = ["IsMinResIterate", "exists_isMinResIterate"]
+source = "Choi, Iterative Methods for Singular Linear Equations and Least-Squares Problems, Chapter 3"
+
+[[node]]
+id = "existsUnique_isMinNormMinResIterate"
+kind = "theorem"
+desc = '''`∃! x, IsMinNormMinResIterate A b x₀ m x`: the minimal-residual iterates form a nonempty
+translate of the finite-dimensional subspace `𝒦_m ⊓ ker A`-ish set (the affine set
+`x₁ + (𝒦_m ⊓ A⁻¹ 0)`), and a nonempty closed convex set in an inner product space has a unique
+element of least norm (`exists_norm_eq_iInf_of_complete_convex`).'''
+deps = ["IsMinNormMinResIterate", "exists_isMinResIterate"]
+source = "Choi, Iterative Methods for Singular Linear Equations and Least-Squares Problems, Chapter 3"

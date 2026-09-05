@@ -1,0 +1,50 @@
+namespace = "SaadSparse.Ch06"
+desc = '''
+Saad §6.12, block Krylov methods: block Arnoldi (Algorithms 6.22–6.23), Ruhe's variant
+(Algorithm 6.24), the block Hessenberg relations (6.129)–(6.130), the equivalence of the two
+variants, and block FOM / block GMRES with the residual formulas (6.135)–(6.136). The
+specification statements (block FOM and GMRES as `IsGalerkin` / `IsMinRes` on the block subspace)
+need only `Numlib/LinearSolve/Projection/Basic`; the relations wait on `Numlib/Krylov/Block`.
+'''
+
+[[node]]
+id = "ruhe"
+kind = "definition"
+desc = '''Algorithm 6.24 (Ruhe's variant), `ruhe A p v : ℕ → 𝔼` with coefficients `ruheCoeff`, and the
+`(m + p) × m` matrix `HbarBlock` of (6.130); Algorithms 6.22–6.23 as `blockArnoldi` and
+`blockArnoldiMGS` with the QR factorization fixed to Gram–Schmidt of the columns.'''
+deps = ["BlockArnoldi.vec"]
+
+[[node]]
+id = "IsBlockGMRES"
+kind = "definition"
+desc = '''The block GMRES and block FOM approximations for the `i`-th right-hand side over
+`x₀^{(i)} + span {v₁, …, v_m}`: `IsMinRes` and `IsGalerkin` of the backbone on the block Krylov
+subspace, `IsBlockFOM` alongside.'''
+deps = ["IsMinRes", "IsGalerkin", "Krylov.blockSubspace"]
+
+[[node]]
+id = "equation_6_129"
+kind = "theorem"
+desc = '''(6.129): `A U_m = U_m H_m + V_{m+1} H_{m+1,m} E_mᵀ` with orthonormal, mutually orthogonal blocks.'''
+deps = ["ruhe", "BlockArnoldi.hessenbergRelation"]
+
+[[node]]
+id = "ruhe_eq_blockArnoldiMGS"
+kind = "theorem"
+desc = '''§6.12: Algorithms 6.23 and 6.24 are mathematically equivalent when `m` is a multiple of `p`.'''
+deps = ["ruhe", "BlockArnoldi.blockVec_eq_vec"]
+
+[[node]]
+id = "equation_6_130"
+kind = "theorem"
+desc = '''(6.130): `A v_k = ∑_{i ≤ k+p} h_ik v_i`, i.e. `A V_m = V_{m+p} H̄_m` for Ruhe's variant.'''
+deps = ["ruhe", "BlockArnoldi.hessenbergRelation"]
+
+[[node]]
+id = "equation_6_136"
+kind = "theorem"
+desc = '''(6.135)–(6.136): `B - A X = V_{m+p} (E₁ R - H̄_m Y)` for `X = X₀ + V_m Y`, hence
+`‖b^{(i)} - A x^{(i)}‖ = ‖ḡ^{(i)} - H̄_m y^{(i)}‖`; with `blockGMRES_iff` and `blockFOM_iff`, the
+coordinate forms of the two specifications.'''
+deps = ["ruhe", "IsBlockGMRES", "BlockArnoldi.residual_eq"]

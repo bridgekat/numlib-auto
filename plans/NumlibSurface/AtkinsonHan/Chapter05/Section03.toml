@@ -1,0 +1,12 @@
+namespace = "AtkinsonHan.Ch05"
+
+[[node]]
+id = "HasGateauxDerivAt"
+
+[[node]]
+id = "example_5_3_10"
+kind = "theorem"
+desc = '''Example 5.3.10: the Fréchet derivative of the Urysohn operator `u ↦ ∫ k(t, s, u(s)) ds` on
+`C[a, b]` is the Fredholm operator with kernel `∂_u k(t, s, u(s))`, by differentiation under the
+integral sign.'''
+deps = ["IntegralOperator.fredholm"]

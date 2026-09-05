@@ -1,0 +1,30 @@
+namespace = "FongSaunders"
+
+[[node]]
+id = "equation_4_1"
+
+[[node]]
+id = "minres_coeff_unique"
+
+[[node]]
+id = "minres_subproblem"
+
+[[node]]
+id = "prod_ratio_residual"
+
+[[node]]
+id = "steihaug_cg"
+kind = "theorem"
+desc = '''§4.2, Steihaug's theorem: for CG on a symmetric, possibly indefinite `A x = b` from `x₀ = 0`, the
+solution norms `‖x₁‖, …, ‖x_k‖` are strictly increasing as long as `p_jᵀ A p_j > 0` for the
+directions `p₀, …, p_{k-1}` used in iterations `1..k`.'''
+deps = ["cg", "CG.norm_iterate_lt_of_re_inner_apply_direction_pos"]
+
+[[node]]
+id = "steihaug_cr"
+kind = "theorem"
+desc = '''§4.2, the CR/MINRES analogue: the same property for CR and MINRES as long as both
+`p_jᵀ A p_j > 0` and `r_jᵀ A r_j > 0`, stated with the global no-breakdown hypothesis
+`∀ j < crTerm, ρ_j ≠ 0` that the paper's proof of Theorem 2.2 (d) uses, and transferred to
+MINRES through `CR.isMinResIterate_of_no_breakdown`.'''
+deps = ["cr", "crTerm", "CR.norm_iterate_lt_of_pos", "CR.isMinResIterate_of_no_breakdown"]

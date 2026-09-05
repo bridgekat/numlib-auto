@@ -1,0 +1,76 @@
+desc = '''
+Regular splittings and M-matrices: Saad, *Iterative Methods for Sparse Linear Systems*, Def 4.3
+and Thm 4.4, resting on Thm 1.29 (a nonnegative `B` has `ρ(B) < 1` iff `I - B` is nonsingular with
+nonnegative inverse) and on Def 1.30 (M-matrix). Everything is stated for real matrices with the
+entrywise order of `Numlib/LinearAlgebra/Matrix/Order`; the spectral radius is
+`Matrix.complexSpectralRadius` of `Numlib/LinearAlgebra/Matrix/Complexify`.
+
+The book proves Thm 1.29 with the Perron–Frobenius theorem, which Mathlib does not have (only
+`Matrix.IsIrreducible` and `IsPrimitive`). The minimal route planned here is the *weak* Perron
+theorem, for a nonnegative matrix and without irreducibility: `ρ(B)` is an eigenvalue with an
+entrywise nonnegative eigenvector. Proof: for `r > ρ(B)` the Neumann series gives
+`(r - B)⁻¹ = ∑ B^k / r^{k+1} ≥ 0`; normalize `(r - B)⁻¹ x` for a fixed `x > 0`, let `r ↓ ρ(B)` and
+extract a convergent subsequence (compactness of the unit sphere); the limit is nonnegative and is
+an eigenvector for `ρ(B)`, because `‖(r - B)⁻¹‖ → ∞` as `r ↓ ρ(B)` (otherwise the resolvent would
+extend across the spectral radius). This suffices for Thm 1.29 and Thm 4.4. Saad Thm 1.31–1.33
+(equivalent characterizations of M-matrices) are not needed by any surface and are not planned.
+'''
+
+[[node]]
+id = "Stationary.Splitting.IsRegular"
+kind = "definition"
+desc = '''A splitting `A = M - N` of a real matrix is *regular* (Saad Def 4.3) when `M⁻¹ ≥ 0` and
+`N ≥ 0` entrywise: `Stationary.Splitting.IsRegular (s : Splitting A) : Prop :=
+Matrix.EntrywiseNonneg (Ring.inverse s.m) ∧ Matrix.EntrywiseNonneg s.n`.'''
+deps = ["Stationary.Splitting.n", "Matrix.EntrywiseNonneg"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Definition 4.3"
+
+[[node]]
+id = "Matrix.IsMMatrix"
+kind = "definition"
+desc = '''Saad Def 1.30 verbatim: a real matrix `A` is an *M-matrix* when its off-diagonal entries are
+nonpositive, `A` is nonsingular and `A⁻¹` is entrywise nonnegative (Saad also lists `A i i > 0`,
+which follows and is kept as a lemma `IsMMatrix.diag_pos`).'''
+deps = ["Matrix.EntrywiseNonneg"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Definition 1.30"
+
+[[node]]
+id = "Matrix.EntrywiseNonneg.exists_hasEigenvector_complexSpectralRadius"
+kind = "theorem"
+desc = '''The weak Perron theorem: a real entrywise nonnegative matrix `B` has `ρ(B)`, read as a real
+number through `Matrix.complexSpectralRadius`, as an eigenvalue, with an eigenvector that is
+entrywise nonnegative and nonzero. No irreducibility. Proof via the resolvent `(r - B)⁻¹ ≥ 0` for
+`r > ρ(B)`, normalization and compactness, as described in the group description.'''
+deps = ["Matrix.EntrywiseNonneg", "Matrix.EntrywiseNonneg.pow", "Matrix.complexSpectralRadius", "Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.25 (the nonnegative, non-irreducible part)"
+
+[[node]]
+id = "Matrix.EntrywiseNonneg.complexSpectralRadius_lt_one_iff"
+kind = "theorem"
+desc = '''Saad Thm 1.29: for an entrywise nonnegative real `B`, `complexSpectralRadius B < 1 ↔ IsUnit (1 - B)
+∧ Matrix.EntrywiseNonneg (1 - B)⁻¹`. `→`: the Neumann series `(1 - B)⁻¹ = ∑ B^k` has nonnegative
+terms (`Matrix.isUnit_one_sub_of_complexSpectralRadius_lt_one` and `EntrywiseNonneg.pow`). `←`:
+take the Perron vector `x ≥ 0` of `B` with eigenvalue `ρ`; then `(1 - B) x = (1 - ρ) x`, so
+`x = (1 - ρ) (1 - B)⁻¹ x` forces `1 - ρ > 0`.'''
+deps = ["Matrix.EntrywiseNonneg", "Matrix.EntrywiseNonneg.exists_hasEigenvector_complexSpectralRadius", "Matrix.isUnit_one_sub_of_complexSpectralRadius_lt_one", "Matrix.EntrywiseNonneg.pow"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.29"
+
+[[node]]
+id = "Stationary.Splitting.IsRegular.complexSpectralRadius_lt_one_iff"
+kind = "theorem"
+desc = '''Saad Thm 4.4: for a regular splitting `A = M - N`,
+`complexSpectralRadius s.iterationOperator < 1 ↔ IsUnit A ∧ Matrix.EntrywiseNonneg A⁻¹`.
+Proof as in the book: `A = M (1 - M⁻¹ N)` and `M⁻¹ N ≥ 0`; apply Thm 1.29 to `B = M⁻¹ N`. For `←`,
+the Perron vector argument with `A⁻¹ N ≥ 0` gives `ρ/(1 - ρ) ≥ 0`, hence `ρ < 1` (the book's
+`A⁻¹ N = (1 - B)⁻¹ B` identity).'''
+deps = ["Stationary.Splitting.IsRegular", "Stationary.Splitting.iterationOperator", "Stationary.Splitting.iterationOperator_eq", "Matrix.EntrywiseNonneg.complexSpectralRadius_lt_one_iff", "Matrix.EntrywiseNonneg.exists_hasEigenvector_complexSpectralRadius", "Matrix.EntrywiseLE.mul_of_entrywiseNonneg_left"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 4.4"
+
+[[node]]
+id = "Stationary.Splitting.IsRegular.complexSpectralRadius_lt_one_of_isMMatrix"
+kind = "theorem"
+desc = '''Every regular splitting of an M-matrix gives a convergent iteration (the sentence after Saad
+Thm 4.4): `A.IsMMatrix → s.IsRegular → complexSpectralRadius s.iterationOperator < 1`. One line
+from the previous theorem.'''
+deps = ["Stationary.Splitting.IsRegular.complexSpectralRadius_lt_one_iff", "Matrix.IsMMatrix"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, remark after Theorem 4.4"

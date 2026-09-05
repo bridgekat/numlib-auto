@@ -1,0 +1,74 @@
+namespace = "Matrix"
+desc = '''
+The entrywise order and absolute value of matrices, as an upstreaming candidate (natural home:
+beside `Mathlib.Data.Matrix.Basic`, or `Mathlib.LinearAlgebra.Matrix.Order`).
+
+Mathlib's order on `Matrix n n 𝕜` (`Mathlib/Analysis/Matrix/Order.lean`, scoped `MatrixOrder`) is
+the **Loewner** order, so the entrywise order cannot be an unscoped instance on `Matrix`. This
+module states it as a predicate, `Matrix.EntrywiseLE A B := ∀ i j, A i j ≤ B i j`, with scoped
+notation, rather than as an instance, and proves the calculus that regular splittings
+(`Numlib/LinearSolve/Stationary/RegularSplitting`) and the floating-point layer
+(`Numlib/FloatingPoint`) need: `|A * B| ≤ |A| * |B|`, and multiplication by an entrywise
+nonnegative matrix preserves the order (Saad, *Iterative Methods for Sparse Linear Systems*,
+Prop 1.24 and Prop 1.26; Higham, *Accuracy and Stability of Numerical Algorithms*, §3.5).
+'''
+
+[[node]]
+id = "EntrywiseLE"
+kind = "definition"
+desc = '''`Matrix.EntrywiseLE A B : Prop := ∀ i j, A i j ≤ B i j`, the entrywise order on `Matrix m n α`
+for an ordered `α`, with scoped notation `A ≤ₑ B`. Not an instance: the scoped instance of
+`Mathlib/Analysis/Matrix/Order.lean` is the Loewner order and the two must not compete.'''
+
+[[node]]
+id = "EntrywiseNonneg"
+kind = "definition"
+desc = '''`Matrix.EntrywiseNonneg A : Prop := EntrywiseLE 0 A`, Saad's `A ≥ 0` (a nonnegative matrix).'''
+deps = ["EntrywiseLE"]
+
+[[node]]
+id = "abs"
+kind = "definition"
+desc = '''`Matrix.abs A := A.map |·|`, the entrywise absolute value, with `abs_apply : |A| i j = |A i j|`
+as a `simp` lemma.'''
+
+[[node]]
+id = "abs_mul_entrywiseLE"
+kind = "theorem"
+desc = '''`EntrywiseLE |A * B| (|A| * |B|)` over an ordered ring with an absolute value (Saad Prop 1.24;
+the matrix form of Higham's componentwise bounds): the triangle inequality summand by summand.'''
+deps = ["EntrywiseLE", "abs"]
+
+[[node]]
+id = "abs_mulVec_le"
+kind = "theorem"
+desc = '''`|A *ᵥ x| ≤ |A| *ᵥ |x|` entrywise, the vector form of `abs_mul_entrywiseLE`.'''
+deps = ["abs"]
+
+[[node]]
+id = "EntrywiseLE.mul_of_entrywiseNonneg_left"
+kind = "theorem"
+desc = '''Multiplication on the left by an entrywise nonnegative matrix is monotone:
+`EntrywiseNonneg C → EntrywiseLE A B → EntrywiseLE (C * A) (C * B)` (Saad Prop 1.26); with the
+right-multiplication twin `EntrywiseLE.mul_of_entrywiseNonneg_right`.'''
+deps = ["EntrywiseLE", "EntrywiseNonneg"]
+
+[[node]]
+id = "EntrywiseNonneg.mul"
+kind = "theorem"
+desc = '''Products of entrywise nonnegative matrices are entrywise nonnegative, and so are their powers
+(`EntrywiseNonneg.pow`).'''
+deps = ["EntrywiseNonneg"]
+
+[[node]]
+id = "EntrywiseNonneg.pow"
+kind = "theorem"
+desc = '''`EntrywiseNonneg A → EntrywiseNonneg (A ^ k)`, by induction from `EntrywiseNonneg.mul`.'''
+deps = ["EntrywiseNonneg.mul"]
+
+[[node]]
+id = "EntrywiseNonneg.mulVec_nonneg"
+kind = "theorem"
+desc = '''An entrywise nonnegative matrix maps entrywise nonnegative vectors to entrywise nonnegative
+vectors: `EntrywiseNonneg A → 0 ≤ x → 0 ≤ A *ᵥ x`.'''
+deps = ["EntrywiseNonneg"]

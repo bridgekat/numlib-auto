@@ -30,8 +30,8 @@ Theorems 4.6 and 4.9 use row sums; both forms are stated here, following the bac
 is proved, by the similarity argument the book uses — for a block anti-diagonal `B` the spectrum
 is symmetric under negation, and the spectrum of `B(α) = α L + α⁻¹ U` does not depend on `α ≠ 0`.
 
-Left open here (each waits on a phase-2 backbone item, see `tracker/backbone.md` §7 and
-`tracker/saadsparse-ch1-4-5.md` §3):
+Left open here (each waits on a phase-2 backbone item, see `plans/backbone.md` §7 and
+`plans/saadsparse-ch1-4-5.md` §3):
 
 * §4.2.1 the convergence factors and rates: the Gelfand limit `‖G^k‖^{1/k} → ρ(G)` for a *real*
   matrix needs `‖complexify A‖ = ‖A‖` for the scoped operator norms (§3 item 1); the "specific"

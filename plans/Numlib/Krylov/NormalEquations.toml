@@ -1,0 +1,63 @@
+namespace = "Krylov"
+desc = '''
+Krylov methods on the normal equations: CGNR (Saad, *Iterative Methods for Sparse Linear
+Systems*, §8.3.1, Algorithm 8.4) is CG on `Aᴴ A x = Aᴴ b` and CGNE, Craig's method (§8.3.2,
+Algorithm 8.5), is CG on `A Aᴴ u = b` with `x = Aᴴ u`; LSQR and LSMR (the least-squares solvers
+that Fong and Saunders, *CG versus MINRES*, Table 5.2 compares) are CG and MINRES on the same
+system in exact arithmetic, and RNSD (Saad §5.3.3) is steepest descent on it.
+
+Nothing here is a new algorithm: the module records that the specifications of
+`Numlib/Krylov/Iterate` applied to `Aᴴ A` on the Krylov space `𝒦_m(Aᴴ A, Aᴴ r₀)` are, read back in
+the original variables, a minimal-residual specification for `A x = b` (CGNR) and a minimal-error
+specification (CGNE), Saad's two optimality properties of §8.3. Every convergence theorem of the
+CG layer then applies with the spectrum of `Aᴴ A`, that is with `κ(A)²` in place of `κ(A)`.
+Stated in an inner product space with `A : E →ₗ[𝕜] E` having an adjoint (`LinearMap.adjoint` in
+finite dimension, or `E →L[𝕜] E` on a Hilbert space).
+'''
+
+[[node]]
+id = "adjoint_comp_isSymmetricCoercive"
+kind = "theorem"
+desc = '''`Aᴴ A` is symmetric, and it is symmetric coercive when `A` is bounded below (`∀ x, c ‖x‖ ≤ ‖A x‖`);
+in finite dimension, when `A` is injective. Likewise `A Aᴴ` when `Aᴴ` is bounded below.'''
+deps = ["LinearMap.IsSymmetricCoercive", "LinearMap.IsCoerciveWith"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 8.1"
+
+[[node]]
+id = "isGalerkinIterate_adjoint_comp_iff_isMinRes"
+kind = "theorem"
+desc = '''CGNR's optimality (Saad §8.3.1, the display before Example 8.1): `x` is the Galerkin iterate
+for `Aᴴ A x = Aᴴ b` on `𝒦_m(Aᴴ A, Aᴴ (b - A x₀))` iff `x` minimizes `‖b - A y‖` over
+`y ∈ x₀ + 𝒦_m(Aᴴ A, Aᴴ (b - A x₀))`, i.e. `IsMinRes A b x₀ (subspace (Aᴴ ∘ A) (Aᴴ r₀) m) x`. The
+energy norm of `Aᴴ A` is the residual norm of `A`.'''
+deps = ["IsGalerkinIterate", "IsMinRes", "IsGalerkinIterate.energyNorm_error_eq_iInf", "adjoint_comp_isSymmetricCoercive"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 8.3.1"
+
+[[node]]
+id = "isMinErrorIterate_of_isGalerkinIterate_comp_adjoint"
+kind = "theorem"
+desc = '''CGNE's optimality (Saad §8.3.2): if `u` is the Galerkin iterate for `A Aᴴ u = b` on
+`𝒦_m(A Aᴴ, r₀)` and `x = x₀ + Aᴴ (u - u₀)`, then `x` minimizes `‖xstar - y‖` over
+`y ∈ x₀ + 𝒦_m(Aᴴ A, Aᴴ r₀)`, i.e. `IsMinErrorIterate (Aᴴ ∘ A) xstar x₀ m x` for the solution
+`xstar` — the same subspace as CGNR with the other optimality.'''
+deps = ["IsGalerkinIterate", "IsMinErrorIterate", "IsMinError", "adjoint_comp_isSymmetricCoercive"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 8.3.2"
+
+[[node]]
+id = "IsMinRes.norm_residual_le_of_adjoint_comp"
+kind = "theorem"
+desc = '''The CG bound transported to CGNR: with `‖A x‖² ∈ [σmin² ‖x‖², σmax² ‖x‖²]`, the CGNR residual
+satisfies `‖r_m‖ ≤ 2 ((κ - 1)/(κ + 1))^m ‖r₀‖` with `κ = σmax/σmin` — `Krylov.IsGalerkinIterate.energyNorm_error_le`
+for `Aᴴ A`, whose condition number is `κ(A)²`, read through `isGalerkinIterate_adjoint_comp_iff_isMinRes`.'''
+deps = ["isGalerkinIterate_adjoint_comp_iff_isMinRes", "IsGalerkinIterate.energyNorm_error_le"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 8.3"
+
+[[node]]
+id = "CGNR.iterate"
+kind = "definition"
+desc = '''Saad Algorithm 8.4 written in the original variables (`z = Aᴴ r`, the direction update
+`p = z + β p`), with the theorem `CGNR.iterate_x_eq` that its `x`-component is the `x`-component
+of `CG.iterate (Aᴴ ∘ A) (Aᴴ b) x₀ k`; and `CGNE.iterate` (Algorithm 8.5, Craig's method) with the
+corresponding identification `CGNE.iterate_x_eq` through `x = Aᴴ u`.'''
+deps = ["CG.iterate", "CG.step"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Algorithms 8.4 and 8.5"

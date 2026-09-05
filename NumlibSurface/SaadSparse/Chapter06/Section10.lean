@@ -36,7 +36,7 @@ the book's nonsingularity hypothesis is not needed, while a missing `0 < s` is.
 
 **Left out**: **Theorem 6.24** (Faber–Manteuffel: `A ∈ CG(s)` iff the minimal polynomial of `A` has
 degree `≤ s`, or `A` is normal with `ν(A) ≤ s - 1`), which the book itself states without proof; the
-known proofs are research-level (`tracker/saadsparse-ch6.md` §5).
+known proofs are research-level (`plans/saadsparse-ch6.md` §5).
 
 Proposition 6.22 is stated over `ℝ` with `Aᵀ`, and §6.10's normality material over `ℂ` with
 `A^H`, following the book. The band lemmas are polymorphic in `𝕜`.

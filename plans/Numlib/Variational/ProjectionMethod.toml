@@ -1,0 +1,45 @@
+desc = '''
+Projection methods for operator equations `A u = f` in a Banach or Hilbert space, after Kress,
+*Numerical Analysis*, Thm 11.17 (Céa's lemma in operator form: for bounded strictly coercive `A`
+the Galerkin equations `P_n A u_n = P_n f` on `X_n` have a unique solution with
+`‖u_n - u‖ ≤ M inf_{v ∈ X_n} ‖v - u‖`) and Ch. 12 (projection methods for equations of the second
+kind `(I - K) u = f` with `K` compact: if the projections `P_n` converge pointwise to the identity
+then the projected operators `P_n (I - K)` are uniformly invertible on `X_n` for large `n`, by a
+Neumann-series perturbation of `I - K`, and the projection solutions converge quasi-optimally).
+Phase 3; the second-kind theory is what Atkinson–Han Ch. 12 and Kress Ch. 12 share.
+
+The Hilbert-space Galerkin case with a coercive form is `Numlib/Variational/Galerkin`; this
+module is the operator-level twin that does not assume a sesquilinear form or a Hilbert space,
+stated for bounded projections `P_n : X →L[𝕜] X` with range `X_n`.
+'''
+
+[[node]]
+id = "IsProjectionMethodSolution"
+kind = "definition"
+desc = '''`IsProjectionMethodSolution A f P u : Prop := u ∈ range P ∧ P (A u) = P f` for a bounded
+projection `P` (Kress (11.30)/(12.1)); for an orthogonal projection onto a closed subspace of a
+Hilbert space it is `IsGalerkin` of `Numlib/LinearSolve/Projection/Basic` with `x₀ = 0`.'''
+deps = ["IsGalerkin"]
+source = "Kress, Numerical Analysis, (11.30) and Section 12.1"
+
+[[node]]
+id = "IsProjectionMethodSolution.norm_sub_le_of_isCoercive"
+kind = "theorem"
+desc = '''Kress Thm 11.17: for `A` bounded and strictly coercive (`LinearMap.IsCoerciveWith c`) on a Hilbert
+space and `P` an orthogonal projection, the projection equations have a unique solution and
+`‖u_n - u‖ ≤ (‖A‖/c) inf_{v ∈ range P} ‖v - u‖` — Céa's lemma with `M = ‖A‖/c`. The operator
+reading of `IsGalerkinSolution.norm_sub_le_infDist`.'''
+deps = ["IsProjectionMethodSolution", "LinearMap.IsCoerciveWith", "IsGalerkinSolution.norm_sub_le_infDist", "existsUnique_isGalerkin_of_isCoercive"]
+source = "Kress, Numerical Analysis, Theorem 11.17"
+
+[[node]]
+id = "exists_isProjectionMethodSolution_of_isCompactOperator"
+kind = "theorem"
+desc = '''Kress Thm 12.3-style stability for equations of the second kind: if `K` is compact, `I - K` is
+injective (hence invertible, by the Fredholm alternative) and `P_n x → x` for every `x`, then for
+`n` large `P_n (I - K)` is invertible on `range P_n` with uniformly bounded inverses; hence the
+projection solutions exist, are unique and satisfy `‖u_n - u‖ ≤ C ‖P_n u - u‖`. Proof: `‖P_n K - K‖ → 0`
+by compactness (pointwise convergence is uniform on the compact closure of the image of the ball),
+then the Neumann-series perturbation `Units.isUnit_add_of_norm_lt`.'''
+deps = ["IsProjectionMethodSolution", "Units.isUnit_add_of_norm_lt", "norm_sub_apply_le_of_isIdempotentElem"]
+source = "Kress, Numerical Analysis, Chapter 12 (Theorems 12.3–12.4)"

@@ -1,0 +1,69 @@
+namespace = "Matrix"
+
+[[node]]
+id = "complexSpectralRadius"
+
+[[node]]
+id = "complexSpectralRadius_le_linfty_opNNNorm"
+
+[[node]]
+id = "complexSpectralRadius_le_of_norm"
+
+[[node]]
+id = "complexSpectralRadius_ne_top"
+
+[[node]]
+id = "complexSpectralRadius_smul"
+
+[[node]]
+id = "complexify"
+
+[[node]]
+id = "det_complexify"
+
+[[node]]
+id = "isUnit_complexify_iff"
+
+[[node]]
+id = "isUnit_one_sub_of_complexSpectralRadius_lt_one"
+
+[[node]]
+id = "mem_spectrum_complexify_iff"
+
+[[node]]
+id = "ofReal_mem_spectrum_complexify_iff"
+
+[[node]]
+id = "tendsto_pow_iff_complexSpectralRadius_lt_one"
+
+[[node]]
+id = "l2_opNorm_complexify"
+kind = "theorem"
+desc = '''Norm preservation under complexification for the scoped `Matrix.Norms.L2Operator` norm:
+`‖complexify A‖ = ‖A‖`. `≥` by real vectors; `≤` by `‖A (x + i y)‖² = ‖A x‖² + ‖A y‖² ≤ ‖A‖² (‖x‖² + ‖y‖²)`.
+With the `Matrix.Norms.Operator` (`l∞`) and Frobenius twins `linfty_opNorm_complexify`,
+`frobenius_norm_complexify`, which are entrywise and immediate.'''
+deps = ["complexify"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 4.2.1"
+
+[[node]]
+id = "tendsto_pow_rpow_complexSpectralRadius"
+kind = "theorem"
+desc = '''Gelfand's formula for a real matrix under any of the scoped norms:
+`Tendsto (fun k => ‖A ^ k‖ ^ (1 / k : ℝ)) atTop (𝓝 (complexSpectralRadius A).toReal)` (Saad's general
+convergence factor of §4.2.1, `φ = lim ‖G^k‖^{1/k} = ρ(G)`); Mathlib's
+`spectrum.pow_nnnorm_pow_one_div_tendsto_nhds_spectralRadius` on `complexify A` and
+`l2_opNorm_complexify`. Alternatively, and norm-free: the Gelfand limit is the same for equivalent
+norms since `C^{1/k} → 1`.'''
+deps = ["complexSpectralRadius", "l2_opNorm_complexify"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 4.2.1"
+
+[[node]]
+id = "exists_limsup_norm_pow_mulVec_rpow_eq"
+kind = "theorem"
+desc = '''The general convergence factor is attained (Saad §4.2.1): for a real matrix `G` there is
+`d₀ ≠ 0` with `limsup (fun k => (‖G ^ k *ᵥ d₀‖ / ‖d₀‖) ^ (1 / k : ℝ)) atTop = (complexSpectralRadius G).toReal`,
+taking the real or the imaginary part of a dominant complex eigenvector; and for every `d₀` the
+limsup is at most `ρ(G)` (`limsup_norm_pow_mulVec_rpow_le`, from `exists_norm_pow_le_of_spectralRadius_lt`).'''
+deps = ["complexSpectralRadius", "exists_norm_pow_le_of_spectralRadius_lt", "mem_spectrum_complexify_iff"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 4.2.1"

@@ -1,0 +1,36 @@
+namespace = "Matrix"
+desc = '''
+The Schur triangulation, an upstreaming candidate (natural home: `Mathlib.LinearAlgebra.Matrix.Schur`
+or `Mathlib.Analysis.InnerProductSpace.Schur`): every square matrix over an algebraically closed
+field with an inner product — every `A : E →ₗ[𝕜] E` on a finite-dimensional inner product space
+over `ℂ` — is unitarily similar to an upper triangular matrix, `A = Q R Qᴴ` (Saad, *Iterative
+Methods for Sparse Linear Systems*, Thm 1.9; Saad, *Numerical Methods for Large Eigenvalue
+Problems*, Thm 1.5; Kress, *Numerical Analysis*, Thm 7.10-style statements).
+
+Nothing in the library waits on it: the normal-operator theory of `Numlib/Eigen/Normal` reaches
+diagonalizability without it, and the QR algorithm of `Numlib/Eigen/QRAlgorithm` needs only the
+existence of the flag of invariant subspaces, which `Module.End.exists_eigenvalue` and induction
+give directly. It is here because the deflation chapter of the eigenvalue book (Saad-eig
+Prop 4.1–4.2) and any future treatment of non-normal matrices speak in Schur vectors. Proof by
+induction on the dimension: an eigenvector, its orthogonal complement (not invariant in general),
+and the compression to the complement.
+'''
+
+[[node]]
+id = "_root_.LinearMap.exists_orthonormalBasis_upperTriangular"
+kind = "theorem"
+desc = '''Schur's theorem, operator form: for `A : E →ₗ[𝕜] E` on a finite-dimensional inner product space
+over an algebraically closed `RCLike 𝕜` (that is, `ℂ`), there is an orthonormal basis `b` indexed
+by `Fin n` such that `A (b i) ∈ span {b j | j ≤ i}` for all `i`, equivalently
+`(LinearMap.toMatrix b b A).BlockTriangular id`. Induction on `n` through an eigenvector and the
+compression of `A` to its orthogonal complement.'''
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.9; Saad, Numerical Methods for Large Eigenvalue Problems, Theorem 1.5"
+
+[[node]]
+id = "exists_unitary_conj_upperTriangular"
+kind = "theorem"
+desc = '''The matrix form: for `A : Matrix n n ℂ` there is `Q ∈ Matrix.unitaryGroup n ℂ` with
+`star Q * A * Q` upper triangular (`BlockTriangular` for a linear order on `n`), whose diagonal is
+the multiset of eigenvalues of `A` (`charpoly` of a triangular matrix is `∏ (X - r_ii)`).'''
+deps = ["LinearMap.exists_orthonormalBasis_upperTriangular"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.9"

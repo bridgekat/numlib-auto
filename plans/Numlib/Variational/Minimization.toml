@@ -1,0 +1,43 @@
+desc = '''
+Existence of minimizers of functionals on closed sets: the finite-dimensional theorem
+(Atkinson–Han, *Theoretical Numerical Analysis*, Thm 3.3.13 — a lower semicontinuous functional on
+a closed subset of a finite-dimensional subspace attains its infimum when the set is bounded or
+the functional is coercive; unique when strictly convex), stated in the generality Atkinson–Han
+Ch. 11 (variational inequalities) and Thm 3.4.5 reuse it, so that the surface's
+`theorem_3_3_13` becomes a specialization. Phase 2; Mathlib has the ingredients
+(`LowerSemicontinuousOn.exists_isMinOn`, `FiniteDimensional.proper`, `StrictConvexOn.eq_of_isMinOn`).
+
+The reflexive-space theorems of the same section (Atkinson–Han Thm 3.3.8, 3.3.10, 3.3.12, 3.3.14,
+Mazur's lemma 3.3.11) are **not** planned here: they need weak sequential compactness of bounded
+sets in reflexive spaces (Atkinson–Han Thm 2.7.5), which Mathlib does not have, and stating them
+with that compactness as an explicit hypothesis would misrepresent them. When Mathlib acquires
+reflexivity, they belong in this module, with `Numlib/Approximation/BestApprox`'s existence
+theorem in reflexive spaces as the first corollary.
+'''
+
+[[node]]
+id = "IsCoerciveFunctionalOn"
+kind = "definition"
+desc = '''`IsCoerciveFunctionalOn f K : Prop := ∀ M, ∃ R, ∀ x ∈ K, R ≤ ‖x‖ → M ≤ f x`, Atkinson–Han
+Def 3.3.9 (`f x → ∞` as `‖x‖ → ∞` in `K`); not the operator coercivity `LinearMap.IsCoercive`.'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 3.3.9"
+
+[[node]]
+id = "exists_isMinOn_of_isClosed_of_finiteDimensional"
+kind = "theorem"
+desc = '''Atkinson–Han Thm 3.3.13, existence: for a nonempty closed `K ⊆ S` with `S` a finite-dimensional
+subspace of a normed space, and `f` lower semicontinuous on `K`, if `K` is bounded or
+`IsCoerciveFunctionalOn f K`, then `∃ u ∈ K, IsMinOn f K u`. Convexity is not needed for existence.
+Case (a): `K` is compact in the proper space `S`; case (b): restrict to a sublevel set, closed by
+lower semicontinuity and bounded by coercivity.'''
+deps = ["IsCoerciveFunctionalOn"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.13"
+
+[[node]]
+id = "IsMinOn.eq_of_strictConvexOn"
+kind = "theorem"
+desc = '''The uniqueness clause of Atkinson–Han Thm 3.3.13 (and 3.3.12): two minimizers of a strictly
+convex functional on a convex set coincide — a restatement of Mathlib's
+`StrictConvexOn.eq_of_isMinOn` in the module's vocabulary, kept so that the module states the
+whole theorem.'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.13"

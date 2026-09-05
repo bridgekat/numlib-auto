@@ -1,0 +1,162 @@
+[[node]]
+id = "Krylov.powerIterate"
+
+[[node]]
+id = "Krylov.norm_powerIterate_of_ne_zero"
+
+[[node]]
+id = "Krylov.powerIterate_ofReal_smul"
+
+[[node]]
+id = "Krylov.powerIterate_succ"
+
+[[node]]
+id = "Krylov.eq_powerIterate_of_recurrence"
+
+[[node]]
+id = "Krylov.exists_norm_pow_apply_le_of_mem_maxGenEigenspace"
+
+[[node]]
+id = "Krylov.exists_norm_pow_apply_le_of_mem_iSup"
+
+[[node]]
+id = "Krylov.powerIterate_tendsto"
+
+[[node]]
+id = "Krylov.exists_norm_inv_pow_smul_pow_apply_sub_le"
+
+[[node]]
+id = "Krylov.tendsto_smul_powerIterate"
+
+[[node]]
+id = "Krylov.exists_norm_eq_one_tendsto_smul_powerIterate"
+
+[[node]]
+id = "Krylov.tendsto_norm_sub_smul_powerIterate"
+
+[[node]]
+id = "Krylov.isCompl_iSup_maxGenEigenspace"
+
+[[node]]
+id = "Krylov.isCompl_maxGenEigenspace"
+
+[[node]]
+id = "Krylov.exists_eq_add_mem_maxGenEigenspace"
+
+[[node]]
+id = "Krylov.eq_of_add_eq_add_mem_maxGenEigenspace"
+
+[[node]]
+id = "Krylov.maxGenEigenspace_eq_eigenspace_of_finrank_eq_one"
+
+[[node]]
+id = "Krylov.spectralProjector"
+
+[[node]]
+id = "Krylov.ker_spectralProjector"
+
+[[node]]
+id = "Krylov.range_spectralProjector"
+
+[[node]]
+id = "Krylov.injOn_spectralProjector_iff"
+
+[[node]]
+id = "Krylov.existsUnique_mem_spectralProjector_eq"
+
+[[node]]
+id = "Krylov.exists_eq_add_tendsto"
+
+[[node]]
+id = "Krylov.subspaceIterate"
+
+[[node]]
+id = "Krylov.subspaceIterate_succ"
+
+[[node]]
+id = "Krylov.norm_sub_starProjection_subspaceIterate_le"
+
+[[node]]
+id = "Krylov.exists_norm_sub_starProjection_subspaceIterate_le"
+
+[[node]]
+id = "Krylov.tendsto_starProjection_subspaceIterate"
+
+[[node]]
+id = "Krylov.gap_subspaceIterate_le"
+kind = "theorem"
+desc = '''The gap form of the subspace-iteration bound:
+`Submodule.gap M (Krylov.subspaceIterate A S k) ≤ C * (r / rho) ^ k`, with
+`M = ⨆ μ, ⨆ _ : p μ, A.maxGenEigenspace μ` the dominant invariant subspace and `rho` the smallest
+modulus among the selected eigenvalues.
+
+This is **not** Saad's Theorem 5.2, which is per-eigenvector and is proved as
+`Krylov.exists_norm_sub_starProjection_subspaceIterate_le`. The gap form is strictly stronger:
+`Submodule.sinAngle_le_gap` derives the distance bound for *every* vector of `M` from a gap bound,
+while Theorem 5.2 supplies it only for the eigenvectors of `M`. It *is* a book result, though not
+Saad's: Kress, *Numerical Analysis*, Lemma 7.18 states exactly `‖P_{A^k S} - P_T‖ ≤ M rho^k` with
+`rho = |lambda_{m+1}/lambda_m|`, for diagonalizable `A`, `T` the span of the `m` dominant
+eigenvectors, `dim S = m` and `S ∩ U = {0}` with `U` the span of the remaining eigenvectors. (The
+display carrying that inequality is an image in the scan and did not survive `pdftotext`; the
+statement is read off the surrounding prose and the proof, which ends by bounding
+`‖P_{A^k S} eta - P_T eta‖`. Treat the constant's exact shape as unconfirmed.) Kress Thm 7.19
+(orthogonal iteration) and Thm 7.20 (QR) are corollaries of it, so this node is on the path to
+both.
+
+**The obstruction is not what the first reading of Saad suggested.** Kress's proof does *not* go
+through Saad's (3.8), does not need a uniform decay estimate on `W`, and does not need the decay
+of `(A|_M)^{-k}`: it only ever applies the per-vector decay to the `m` vectors of one basis. Its
+three steps are
+
+1. a basis `z_1, ..., z_m` of `S` with `z_j = x_j + u_j`, `u_j ∈ U` -- which is
+   `Krylov.existsUnique_mem_spectralProjector_eq`, already proved, applied to each `x_j`;
+2. `w_j(k) := lambda_j^{-k} A^k z_j = x_j + lambda_j^{-k} A^k u_j` is a basis of `A^k S` with
+   `‖w_j(k) - x_j‖ ≤ L rho^k` -- which is
+   `Krylov.exists_norm_inv_pow_smul_pow_apply_sub_le`, already proved, one vector at a time;
+3. **a quantitative continuity of `family ↦ starProjection (span family)`**: from
+   `‖w_j(k) - x_j‖ ≤ delta` conclude `‖P_{span w(k)} - P_{span x}‖ ≤ M delta`. This is the whole
+   of what is missing. Kress does it by writing both projections through their normal equations
+   and treating the second Gram system as a perturbation of the first (his Thm 5.3, a condition
+   number bound). Mathlib has no Gram-matrix formula for `Submodule.starProjection` and no
+   Lipschitz bound for the projector in terms of a basis.
+
+An alternative to step 3, not attempted and therefore a conjecture: bound the two one-sided
+quantities directly by expanding in the two bases -- `‖(1 - P_{span w}) P_{span x}‖ ≤ m * kappa *
+delta` where `kappa` bounds the coordinate functionals, and symmetrically with the conditioning of
+the perturbed basis, which is uniform once `delta` is small -- and then combine them with
+`P_K - P_L = P_K (1 - P_L) - (1 - P_K) P_L` and `‖P_K (1 - P_L)‖ = ‖(1 - P_L) P_K‖`. That last
+step is the `≤` half of Saad's (3.8), the one `Numlib/Analysis/InnerProductSpace/Projection/Angle`
+left out for want of `[CompleteSpace E]`; here it is free, since the statement is already under
+`[FiniteDimensional 𝕜 E]`. Either way the work is the projector's dependence on its spanning
+family, not anything about `A`.
+
+Nothing above was attempted; it is an assessment of Kress's printed proof.'''
+deps = [
+  "Krylov.exists_norm_sub_starProjection_subspaceIterate_le",
+  "Krylov.exists_norm_inv_pow_smul_pow_apply_sub_le",
+  "Krylov.existsUnique_mem_spectralProjector_eq",
+  "Submodule.gap",
+  "Submodule.sinAngle_le_gap",
+]
+source = "Kress, Numerical Analysis, Lemma 7.18; Saad, Numerical Methods for Large Eigenvalue Problems, Section 3.1"
+
+[[node]]
+id = "Krylov.inverseIterate"
+kind = "definition"
+desc = '''Inverse iteration with shift `σ` (Saad-eig §4.1.2–4.1.3, the shift-and-invert power method):
+`Krylov.inverseIterate A σ x₀ k := powerIterate (A - σ)⁻¹ x₀ k` for `σ ∉ spectrum A`, with the
+`simp` lemma `inverseIterate_eq_powerIterate`; the Rayleigh quotient iteration, which updates
+`σ`, is stated by the book without a theorem and is not planned.'''
+deps = ["Krylov.powerIterate"]
+source = "Saad, Numerical Methods for Large Eigenvalue Problems, Section 4.1.2"
+
+[[node]]
+id = "Krylov.tendsto_smul_inverseIterate"
+kind = "theorem"
+desc = '''Inverse iteration converges to the eigenvector of the eigenvalue closest to the shift: if `λ` is
+an eigenvalue with `|λ - σ| < |μ - σ|` for every other eigenvalue `μ`, the eigenvalues of
+`(A - σ)⁻¹` are the `(μ - σ)⁻¹` (spectral mapping, `spectrum.inv` and `spectrum.sub_singleton`)
+and `(λ - σ)⁻¹` is dominant, so `Krylov.tendsto_smul_powerIterate` applies with the rate
+`|λ - σ|/|μ₂ - σ|`.'''
+deps = ["Krylov.inverseIterate", "Krylov.tendsto_smul_powerIterate", "Krylov.exists_eq_add_tendsto"]
+source = "Saad, Numerical Methods for Large Eigenvalue Problems, Section 4.1.3"
