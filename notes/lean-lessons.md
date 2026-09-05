@@ -343,6 +343,19 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   continuous map does *not* elaborate (`LinearMap.ker` wants a `→ₛₗ`). The two spellings differ
   syntactically afterwards: a hypothesis stated as `↑(μ • 1 - K) x = y` will not `rw` into a goal
   written `(μ • 1 - K) x = y`, so restate it with `have h' : … := fun n => h n`.
+* **`∘ₗ` binds looser than `^`.** `S ^ n ∘ₗ T ∘ₗ S ^ m` parses as `S ^ (n ∘ₗ …)` and fails with a
+  type mismatch on the *exponent*. Write `(S ^ n) ∘ₗ T ∘ₗ (S ^ m)`.
+* When a section variable is used by only some declarations — `[FiniteDimensional 𝕜 E]`, needed
+  for `LinearMap.adjoint` but not for `Submodule.starProjection` on a finite-dimensional
+  *sub*space — do not put it in the `variable` block and `omit … in` it half a dozen times. Drop
+  it from the block and write it as an instance binder on the declarations that need it, or open
+  a subsection for them. Instance section variables are auto-included and then warned about, so
+  the linter finds every case for you.
+* Applying a theorem stated for an abstract normed space at a `def` type synonym works by defeq:
+  `theorem_5_1_3_univ (V := IntegralOperator.Bielecki a b β)` typechecks against a
+  `T : C(Icc a b, ℝ) → C(Icc a b, ℝ)`, and the norms in the conclusion are then the synonym's.
+  Beta-redexes left by such an application (`(fun l => ‖u l - v l‖) 0 = 0`) defeat `rw`; pass the
+  higher-order argument explicitly (`(a := fun l => ‖u l - v l‖)`) and discharge with `simp`.
 
 ## Tactics
 
@@ -512,6 +525,17 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
 * `simpa using h` fails and `simpa using! h` succeeds when the two sides differ only by a coercion
   path: `IsClosed.preimage_val` lands in `↑↑p` (the subtype of the *set* `↑p`) where the goal wants
   `↑p` (the subtype of the submodule).
+* `field_simp` does not close `t (1 + c t/(1 - c t)) = t/(1 - c t)` even with `1 - c t ≠ 0` in
+  context, and neither does a trailing `ring`. `rw [div_eq_mul_inv]` and then
+  `linear_combination (-t) * mul_inv_cancel₀ hne` does, with the inverse as an atom.
+* In `first | tacA | tacB`, put the *contradiction* branch first: `norm_num` on `(1 - 1)^2 = 4`
+  "succeeds" by reducing the goal to `False` and leaves it, so `first | norm_num | exact absurd …`
+  silently takes the wrong branch. The reverse order fails cleanly on the good cases and falls
+  through.
+* `Fintype.sum_prod_type : ∑ q : α × β, f q = ∑ a, ∑ b, f (a, b)` rewrites only in that direction;
+  `rw [← Fintype.sum_prod_type]` on a double sum whose body is not literally `f (a, b)` fails the
+  higher-order match. State the product form as the right-hand side of a `have` and rewrite
+  forward, closing the residue with two `Finset.sum_congr`s.
 
 ## Mathlib names and API
 
@@ -972,6 +996,18 @@ Compact operators:
 * `tendsto_one_div_add_atTop_nhds_zero_nat` is polymorphic in the field, so
   `simpa … using tendsto_one_div_add_atTop_nhds_zero_nat.comp h` leaves a stuck
   `ContinuousSMul ℚ≥0 ?m` instance. Pin it with a typed `have` before composing.
+* **`WithLp.toLp_injective` and `WithLp.ofLp_injective` go opposite ways.** To prove an equality
+  *in* `EuclideanSpace ℝ V` use `ofLp_injective` and then `funext`; `toLp_injective` proves
+  equalities in the underlying `V → ℝ`. `ofLp (toEuclideanLin M x) = M *ᵥ ofLp x` and
+  `EuclideanSpace.inner_eq_star_dotProduct` are both `rfl`, so the bridge to
+  `Matrix.toLinearMap₂'` costs nothing once the direction is right.
+* `Mathlib.Combinatorics.SimpleGraph.LapMatrix` switches from `variable (R)` to `variable {R}`
+  halfway down: `isHermitian_lapMatrix`/`posSemidef_lapMatrix` need `ℝ` given explicitly
+  (`G.isHermitian_lapMatrix ℝ`), while `lapMatrix_mulVec_apply` and
+  `lapMatrix_mulVec_eq_zero_iff_forall_reachable` infer it — and the latter takes `G` explicitly,
+  so `….1 h` fails and `(… G).1 h` is wanted.
+* Mathlib's `SimpleGraph.lapMatrix_mulVec_const_eq_zero` resisted `(R := ℝ)`; the fact is two
+  lines from `lapMatrix_mulVec_apply` and `card_neighborFinset_eq_degree` if it does.
 
 ## Design conventions of this library
 

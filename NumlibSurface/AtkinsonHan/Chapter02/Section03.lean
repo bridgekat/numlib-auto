@@ -1,4 +1,5 @@
 import Numlib.Analysis.Normed.Ring.Inverse
+import Numlib.IntegralEquations.Basic
 import Mathlib.Analysis.RCLike.Basic
 import Mathlib.Topology.Algebra.InfiniteSum.Module
 import Mathlib.Tactic.Positivity.Finset
@@ -24,12 +25,13 @@ ring-theoretic `IsUnit` used by the backbone is `isUnit_iff_exists_continuousLin
 * `theorem_2_3_5` — the perturbation theorem, with (2.3.13), (2.3.14), (2.3.15).
 * `equation_2_3_16`, `convergence_of_consistent_stable` — consistency plus stability gives
   convergence.
+* `example_2_3_2_integral`, `example_2_3_4_volterra` — the concrete halves of the two examples,
+  on `C[a, b]`, using the integral operators of `Numlib/IntegralEquations/Basic.lean` and the
+  norm formula (2.2.8).
 
 ## Not formalized here
 
-Example 2.3.6 (a numerical solvability analysis with explicit constants) and the concrete
-halves of Examples 2.3.2 and 2.3.4 rest on integral operators on `C[a, b]` and the norm
-formula (2.2.8), which are scheduled for the integral-equations phase of the backbone.
+Example 2.3.6, a numerical solvability analysis with explicit constants.
 -/
 
 open Filter Topology
@@ -332,5 +334,79 @@ theorem convergence_of_consistent_stable (hc : CompleteSpace V ∨ CompleteSpace
   have hb := ContinuousLinearEquiv.norm_sub_le_of_apply_eq (L : V →L[𝕜] W) (en n hn) happ
   rw [hen n hn] at hb
   exact hb.trans (mul_le_mul_of_nonneg_right (hC n hn) (norm_nonneg _))
+
+/-! ### The integral-operator instances of Examples 2.3.2 and 2.3.4 -/
+
+section IntegralEquations
+
+open Set IntegralOperator
+
+open scoped Nat
+
+/-- Rescaling an invertible operator by a nonzero scalar keeps it invertible. -/
+private theorem exists_smul_equiv {lam : 𝕜} (hlam : lam ≠ 0) (e₀ : V ≃L[𝕜] V) :
+    ∃ e : V ≃L[𝕜] V, (e : V →L[𝕜] V) = lam • (e₀ : V →L[𝕜] V) := by
+  have hcancel : (e₀ : V →L[𝕜] V) * (e₀.symm : V →L[𝕜] V) = 1 := by
+    ext x; exact e₀.apply_symm_apply x
+  have hcancel' : (e₀.symm : V →L[𝕜] V) * (e₀ : V →L[𝕜] V) = 1 := by
+    ext x; exact e₀.symm_apply_apply x
+  refine ⟨ContinuousLinearEquiv.ofUnit
+    ⟨lam • (e₀ : V →L[𝕜] V), lam⁻¹ • (e₀.symm : V →L[𝕜] V), ?_, ?_⟩, coe_ofUnit _⟩
+  · rw [smul_mul_smul_comm, hcancel, mul_inv_cancel₀ hlam, one_smul]
+  · rw [smul_mul_smul_comm, hcancel', inv_mul_cancel₀ hlam, one_smul]
+
+variable {a b : ℝ}
+
+/-- **Example 2.3.2 (ii)**, the concrete instance.  Let `K` be the Fredholm integral operator on
+`C[a, b]` with continuous kernel `k`, so that by (2.2.8) its norm is the largest row integral
+`max_x ∫ₐᵇ |k(x, y)| dy`.  If that number is smaller than `|λ|`, then `λ u - K u = f` is uniquely
+solvable for every `f`, the inverse of `λI - K` is bounded by `1 / (|λ| - ‖K‖)`, and the solution
+obeys `‖u‖ ≤ ‖f‖ / (|λ| - ‖K‖)`. -/
+theorem example_2_3_2_integral (hab : a ≤ b) (k : C(Icc a b × Icc a b, ℝ)) {lam : ℝ}
+    (hk : (⨆ x, ∫ y in a..b, |k (x, projIcc a b hab y)|) < |lam|) :
+    ∃ e : C(Icc a b, ℝ) ≃L[ℝ] C(Icc a b, ℝ),
+      (e : C(Icc a b, ℝ) →L[ℝ] C(Icc a b, ℝ))
+          = lam • (1 : C(Icc a b, ℝ) →L[ℝ] C(Icc a b, ℝ)) - fredholm hab k ∧
+        ‖(e.symm : C(Icc a b, ℝ) →L[ℝ] C(Icc a b, ℝ))‖
+          ≤ 1 / (|lam| - ⨆ x, ∫ y in a..b, |k (x, projIcc a b hab y)|) ∧
+        ∀ u f : C(Icc a b, ℝ), lam • u - fredholm hab k u = f →
+          ‖u‖ ≤ ‖f‖ / (|lam| - ⨆ x, ∫ y in a..b, |k (x, projIcc a b hab y)|) := by
+  have hK : ‖fredholm hab k‖ < ‖lam‖ := by
+    rw [norm_fredholm hab k, Real.norm_eq_abs]; exact hk
+  obtain ⟨e, he, hb⟩ := example_2_3_2 (fredholm hab k) hK
+  rw [norm_fredholm hab k, Real.norm_eq_abs] at hb
+  refine ⟨e, he, hb, fun u f hu => ?_⟩
+  have hu' : (lam • (1 : C(Icc a b, ℝ) →L[ℝ] C(Icc a b, ℝ)) - fredholm hab k) u = f := by
+    simpa using hu
+  have hbound := example_2_3_2_bound (fredholm hab k) hK hu'
+  rwa [norm_fredholm hab k, Real.norm_eq_abs] at hbound
+
+/-- **Example 2.3.4**, the concrete instance.  For the linear Volterra operator `L` on `C[a, b]`
+with continuous kernel `k`, the iterated kernels give `‖Lᵐ‖ ≤ (‖k‖ (b - a))ᵐ / m!`, so (2.3.10)
+holds for all large `m` and `λI - L` is invertible for every `λ ≠ 0`: a Volterra equation of the
+second kind is uniquely solvable however large its kernel. -/
+theorem example_2_3_4_volterra (hab : a ≤ b) (k : C(Icc a b × Icc a b, ℝ)) {lam : ℝ}
+    (hlam : lam ≠ 0) :
+    (∀ m : ℕ, ‖volterraCLM hab k ^ m‖ ≤ (‖k‖ * (b - a)) ^ m / m !) ∧
+      ∃ e : C(Icc a b, ℝ) ≃L[ℝ] C(Icc a b, ℝ),
+        (e : C(Icc a b, ℝ) →L[ℝ] C(Icc a b, ℝ))
+          = lam • (1 : C(Icc a b, ℝ) →L[ℝ] C(Icc a b, ℝ)) - volterraCLM hab k := by
+  refine ⟨norm_volterraCLM_pow_le hab k, ?_⟩
+  have hbound : ∀ m : ℕ, ‖(lam⁻¹ • volterraCLM hab k) ^ m‖
+      ≤ (‖lam⁻¹‖ * (‖k‖ * (b - a))) ^ m / m ! := fun m => by
+    calc ‖(lam⁻¹ • volterraCLM hab k) ^ m‖
+        = ‖lam⁻¹‖ ^ m * ‖volterraCLM hab k ^ m‖ := by
+          rw [smul_pow, norm_smul, norm_pow]
+      _ ≤ ‖lam⁻¹‖ ^ m * ((‖k‖ * (b - a)) ^ m / m !) :=
+          mul_le_mul_of_nonneg_left (norm_volterraCLM_pow_le hab k m) (by positivity)
+      _ = (‖lam⁻¹‖ * (‖k‖ * (b - a))) ^ m / m ! := by rw [← mul_div_assoc, ← mul_pow]
+  have htend : Tendsto (fun m : ℕ => ‖(lam⁻¹ • volterraCLM hab k) ^ m‖) atTop (𝓝 0) :=
+    squeeze_zero (fun _ => norm_nonneg _) hbound
+      (FloorSemiring.tendsto_pow_div_factorial_atTop _)
+  obtain ⟨e₀, he₀⟩ := example_2_3_4 (lam⁻¹ • volterraCLM hab k) htend
+  obtain ⟨e, he⟩ := exists_smul_equiv hlam e₀
+  exact ⟨e, by rw [he, he₀, smul_sub, smul_inv_smul₀ hlam]⟩
+
+end IntegralEquations
 
 end AtkinsonHan.Ch02

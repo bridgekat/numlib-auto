@@ -1,3 +1,4 @@
+import Numlib.IntegralEquations.Basic
 import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.LinearAlgebra.Matrix.Hessenberg
 import Numlib.LinearSolve.Stationary.Basic
@@ -7,8 +8,8 @@ import NumlibSurface.AtkinsonHan.Chapter05.Section01
 /-!
 # Atkinson–Han §5.2: applications of the fixed-point theorem to iterative methods
 
-Surface formalization of §5.2.1 and §5.2.2 of Kendall Atkinson and Weimin Han, *Theoretical
-Numerical Analysis: A Functional Analysis Framework*, 3rd edition, Springer, 2009.
+Surface formalization of §5.2 of Kendall Atkinson and Weimin Han, *Theoretical Numerical
+Analysis: A Functional Analysis Framework*, 3rd edition, Springer, 2009.
 
 * Theorem 5.2.1, the scalar case of Theorem 5.1.3 on an interval `[a, b]`, together with the
   derivative criterion `sup_{[a,b]} |T'| ≤ α < 1` for contractivity.
@@ -16,14 +17,24 @@ Numerical Analysis: A Functional Analysis Framework*, 3rd edition, Springer, 200
   `N⁻¹ M` and iteration `N x_n = M x_{n-1} + b`; the error equation (5.2.5); convergence when
   `‖N⁻¹ M‖ < 1`; `Gᵏ → 0` iff `r_σ(G) < 1`; convergence for every `x₀` iff `(N⁻¹M)ᵏ → 0` iff
   `r_σ(N⁻¹M) < 1`; and the Jacobi, Gauss–Seidel and SOR splittings.
-
-The Fredholm, Urysohn, Volterra and Picard applications of §5.2.3–§5.2.4 (Theorems 5.2.2–5.2.4)
-are deferred: they need the phase-3 `C[a,b]` integral-operator toolkit of `plans/backbone.md` §7
-(bundled integral operators on `C(Icc a b, ℝ)`, their Lipschitz bounds, the Volterra factorial
-estimate and the Bielecki norm); see `plans/atkinsonhan-ch5.md` §3 item 1.
+* §5.2.3: the linear Fredholm equation of the second kind (`theorem_5_2_2_fredholm`) and
+  Theorem 5.2.2, its nonlinear Urysohn form; Theorem 5.2.3, the Volterra equation, where no
+  smallness of the kernel is needed because a power of the operator contracts.
+* §5.2.4: Theorem 5.2.4, the Picard iteration for the initial value problem, in the weighted
+  (Bielecki) norm in which the Picard operator itself contracts.
 
 Proofs specialize `Numlib/LinearSolve/Stationary/{Basic,Splitting}.lean`,
-`Numlib/LinearAlgebra/Matrix/{Complexify,Hessenberg}.lean` and `Numlib/Nonlinear/FixedPoint.lean`.
+`Numlib/LinearAlgebra/Matrix/{Complexify,Hessenberg}.lean`, `Numlib/Nonlinear/FixedPoint.lean`
+and `Numlib/IntegralEquations/Basic.lean`.
+
+## Not formalized here
+
+Theorem 5.2.4 is stated for the integral equation (the fixed-point form of the initial value
+problem) on an interval to the right of `t₀`, for a scalar equation whose right-hand side is
+globally Lipschitz in `u`; that is the part of the book's theorem whose proof is Bielecki's
+contraction argument.  The differential form of the local existence and uniqueness statement, in
+a Banach space and on a two-sided interval around `t₀` with the ball constraint `‖u - z‖ ≤ b`, is
+Mathlib's `IsPicardLindelof` and is not re-derived here.
 -/
 
 open Filter Set Topology
@@ -300,5 +311,223 @@ theorem sor_one (A : Matrix ι ι ℝ) (h : IsUnit A.diagPart) :
 end Classical
 
 end Splittings
+
+/-! ### §5.2.3–§5.2.4: integral equations of the second kind and the Picard iteration -/
+
+section IntegralEquations
+
+open IntegralOperator
+
+open scoped NNReal Nat
+
+variable {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [CompleteSpace V]
+
+/-- Theorem 5.1.3 on the whole space: a contractive self-map of a Banach space has a unique fixed
+point, reached from every starting point, with the error bounds (5.1.4)–(5.1.6). -/
+private theorem theorem_5_1_3_univ {T : V → V} {α : ℝ} (hα : ContractiveOn T univ α) :
+    (∃! u, T u = u) ∧
+      ∀ u₀ : V, ∃ u, T u = u ∧ Tendsto (fun n => T^[n] u₀) atTop (𝓝 u) ∧
+        (∀ n, ‖T^[n] u₀ - u‖ ≤ α ^ n / (1 - α) * ‖u₀ - T u₀‖) ∧
+        (∀ n, ‖T^[n + 1] u₀ - u‖ ≤ α / (1 - α) * ‖T^[n] u₀ - T^[n + 1] u₀‖) ∧
+        (∀ n, ‖T^[n + 1] u₀ - u‖ ≤ α * ‖T^[n] u₀ - u‖) := by
+  obtain ⟨huniq, hconv⟩ :=
+    theorem_5_1_3 isClosed_univ ⟨(0 : V), mem_univ 0⟩ (mapsTo_univ T univ) hα
+  refine ⟨by simpa using huniq, fun u₀ => ?_⟩
+  obtain ⟨u, -, hfix, hlim, h1, h2, h3⟩ := hconv u₀ (mem_univ u₀)
+  exact ⟨u, hfix, hlim, h1, h2, h3⟩
+
+/-- Example 5.1.2 on the whole space: it is enough that some power of `T` be contractive. -/
+private theorem example_5_1_2_univ {T : V → V} {α : ℝ} (hc : Continuous T) {m : ℕ} (hm : 0 < m)
+    (hα : ContractiveOn T^[m] univ α) :
+    (∃! u, T u = u) ∧ ∀ u₀ : V, ∃ u, T u = u ∧ Tendsto (fun n => T^[n] u₀) atTop (𝓝 u) := by
+  obtain ⟨huniq, hconv⟩ := example_5_1_2 isClosed_univ ⟨(0 : V), mem_univ 0⟩ (mapsTo_univ T univ)
+    hc.continuousOn hm hα
+  refine ⟨by simpa using huniq, fun u₀ => ?_⟩
+  obtain ⟨u, -, hfix, hlim⟩ := hconv u₀ (mem_univ u₀)
+  exact ⟨u, hfix, hlim⟩
+
+variable {a b : ℝ}
+
+/-- The kernel that absorbs the inhomogeneity of a Volterra equation of the second kind:
+substituting `v = u - f` turns `u = V u + f`, with `V` the Volterra operator of `k`, into
+`v = V' v` with `V'` the Volterra operator of `shiftKernel k f`. -/
+private def shiftKernel (k : C(Icc a b × Icc a b × ℝ, ℝ)) (f : C(Icc a b, ℝ)) :
+    C(Icc a b × Icc a b × ℝ, ℝ) :=
+  ⟨fun p => k (p.1, p.2.1, p.2.2 + f p.2.1), by fun_prop⟩
+
+private theorem lipschitzWith_shiftKernel {k : C(Icc a b × Icc a b × ℝ, ℝ)} {M : ℝ≥0}
+    (hk : ∀ t s : Icc a b, LipschitzWith M fun z => k (t, s, z)) (f : C(Icc a b, ℝ))
+    (t s : Icc a b) : LipschitzWith M fun z => shiftKernel k f (t, s, z) :=
+  LipschitzWith.of_dist_le_mul fun z w => by
+    have h : dist (k (t, s, z + f s)) (k (t, s, w + f s)) ≤ M * dist (z + f s) (w + f s) :=
+      (hk t s).dist_le_mul _ _
+    rwa [dist_add_right] at h
+
+private theorem volterra_shiftKernel (hab : a ≤ b) (k : C(Icc a b × Icc a b × ℝ, ℝ))
+    (f u : C(Icc a b, ℝ)) : volterra hab (shiftKernel k f) u = volterra hab k (u + f) :=
+  rfl
+
+/-- The inhomogeneous Volterra map `u ↦ V u + f` is conjugate, by the translation `u ↦ u + f`, to
+the Volterra operator of the shifted kernel; so its iterates inherit the factorial estimate. -/
+private theorem iterate_volterra_add (hab : a ≤ b) (k : C(Icc a b × Icc a b × ℝ, ℝ))
+    (f : C(Icc a b, ℝ)) (n : ℕ) (v : C(Icc a b, ℝ)) :
+    (fun u => volterra hab k u + f)^[n] v
+      = (volterra hab (shiftKernel k f))^[n] (v - f) + f := by
+  induction n generalizing v with
+  | zero => simp
+  | succ n ih =>
+    simp only [Function.iterate_succ_apply', ih]
+    rw [volterra_shiftKernel]
+
+/-- **§5.2.3, the linear Fredholm equation of the second kind** `λ u(x) - ∫ₐᵇ k(x, y) u(y) dy =
+f(x)`, written as the fixed-point problem `u = λ⁻¹ (K u + f)` of (5.2.7).  Its contractivity
+constant is `α = |λ|⁻¹ max_x ∫ₐᵇ |k(x, y)| dy` by the norm formula (2.2.8), and (5.2.8) `α < 1` is
+exactly what Theorem 5.1.3 asks for. -/
+theorem theorem_5_2_2_fredholm (hab : a ≤ b) (k : C(Icc a b × Icc a b, ℝ)) (f : C(Icc a b, ℝ))
+    {lam : ℝ} (hlam : |lam|⁻¹ * (⨆ x, ∫ y in a..b, |k (x, projIcc a b hab y)|) < 1)
+    (T : C(Icc a b, ℝ) → C(Icc a b, ℝ))
+    (hT : ∀ (u : C(Icc a b, ℝ)) (x : Icc a b),
+      T u x = lam⁻¹ * ((∫ y in a..b, k (x, projIcc a b hab y) * u (projIcc a b hab y)) + f x)) :
+    (∃! u, T u = u) ∧
+      ∀ u₀, ∃ u, T u = u ∧ Tendsto (fun n => T^[n] u₀) atTop (𝓝 u) ∧
+        ∀ n, ‖T^[n] u₀ - u‖
+          ≤ (|lam|⁻¹ * (⨆ x, ∫ y in a..b, |k (x, projIcc a b hab y)|)) ^ n
+              / (1 - |lam|⁻¹ * (⨆ x, ∫ y in a..b, |k (x, projIcc a b hab y)|)) * ‖u₀ - T u₀‖ := by
+  have hTeq : T = fun u => lam⁻¹ • (fredholm hab k u + f) := by
+    funext u; ext x; rw [hT u x]; simp [mul_add]
+  subst hTeq
+  have hnorm : ‖fredholm hab k‖ = ⨆ x, ∫ y in a..b, |k (x, projIcc a b hab y)| :=
+    norm_fredholm hab k
+  have hα : ContractiveOn (fun u => lam⁻¹ • (fredholm hab k u + f)) univ
+      (|lam|⁻¹ * (⨆ x, ∫ y in a..b, |k (x, projIcc a b hab y)|)) := by
+    refine ⟨by rw [← hnorm]; positivity, hlam, fun u _ v _ => ?_⟩
+    have hsub : lam⁻¹ • (fredholm hab k u + f) - lam⁻¹ • (fredholm hab k v + f)
+        = lam⁻¹ • fredholm hab k (u - v) := by
+      rw [map_sub, ← smul_sub]; congr 1; abel
+    rw [hsub, norm_smul, Real.norm_eq_abs, abs_inv, ← hnorm, mul_assoc]
+    exact mul_le_mul_of_nonneg_left ((fredholm hab k).le_opNorm _) (by positivity)
+  obtain ⟨huniq, hconv⟩ := theorem_5_1_3_univ hα
+  refine ⟨huniq, fun u₀ => ?_⟩
+  obtain ⟨u, hfix, hlim, h1, -, -⟩ := hconv u₀
+  exact ⟨u, hfix, hlim, h1⟩
+
+/-- **Theorem 5.2.2**: the Urysohn integral equation of the second kind
+`u(x) = μ ∫ₐᵇ k(x, y, u(y)) dy + f(x)` (5.2.10).  If the kernel is Lipschitz in its last argument
+with constant `M`, uniformly in the other two (5.2.11)–(5.2.12), and `|μ| M (b - a) < 1`, then the
+equation has a unique solution `u ∈ C[a, b]`, the iteration (5.2.13) converges to it from every
+starting point, and the error bounds (5.1.4)–(5.1.6) hold with `α = |μ| M (b - a)`. -/
+theorem theorem_5_2_2 (hab : a ≤ b) {k : C(Icc a b × Icc a b × ℝ, ℝ)} {M : ℝ≥0}
+    (hk : ∀ x y : Icc a b, LipschitzWith M fun z => k (x, y, z)) (f : C(Icc a b, ℝ)) {mu : ℝ}
+    (hmu : |mu| * ((M : ℝ) * (b - a)) < 1) (T : C(Icc a b, ℝ) → C(Icc a b, ℝ))
+    (hT : ∀ (u : C(Icc a b, ℝ)) (x : Icc a b),
+      T u x = mu * (∫ y in a..b, k (x, projIcc a b hab y, u (projIcc a b hab y))) + f x) :
+    (∃! u, T u = u) ∧
+      ∀ u₀, ∃ u, T u = u ∧ Tendsto (fun n => T^[n] u₀) atTop (𝓝 u) ∧
+        (∀ n, ‖T^[n] u₀ - u‖
+          ≤ (|mu| * ((M : ℝ) * (b - a))) ^ n / (1 - |mu| * ((M : ℝ) * (b - a)))
+              * ‖u₀ - T u₀‖) ∧
+        (∀ n, ‖T^[n + 1] u₀ - u‖
+          ≤ |mu| * ((M : ℝ) * (b - a)) / (1 - |mu| * ((M : ℝ) * (b - a)))
+              * ‖T^[n] u₀ - T^[n + 1] u₀‖) ∧
+        (∀ n, ‖T^[n + 1] u₀ - u‖ ≤ |mu| * ((M : ℝ) * (b - a)) * ‖T^[n] u₀ - u‖) := by
+  have hba : (0 : ℝ) ≤ b - a := sub_nonneg.2 hab
+  have hTeq : T = fun u => mu • urysohn hab k u + f := by
+    funext u; ext x; rw [hT u x]; simp
+  subst hTeq
+  refine theorem_5_1_3_univ ⟨by positivity, hmu, fun u _ v _ => ?_⟩
+  have hlip := (lipschitzWith_urysohn hab hk).dist_le_mul u v
+  rw [dist_eq_norm, dist_eq_norm, NNReal.coe_mul, Real.coe_toNNReal _ hba] at hlip
+  have hsub : mu • urysohn hab k u + f - (mu • urysohn hab k v + f)
+      = mu • (urysohn hab k u - urysohn hab k v) := by rw [smul_sub]; abel
+  rw [hsub, norm_smul, Real.norm_eq_abs, mul_assoc]
+  exact mul_le_mul_of_nonneg_left hlip (abs_nonneg _)
+
+/-- **Theorem 5.2.3**: the Volterra integral equation of the second kind
+`u(t) = ∫ₐᵗ k(t, s, u(s)) ds + f(t)` (5.2.15).  However large the Lipschitz constant of the kernel,
+the equation has a unique solution in `C[a, b]` and the iteration (5.2.16) converges to it from
+every starting point: no smallness hypothesis is needed, because the factorial estimate of
+`IntegralOperator.norm_iterate_volterra_sub_le` makes some power of the operator a contraction,
+and Example 5.1.2 applies. -/
+theorem theorem_5_2_3 (hab : a ≤ b) {k : C(Icc a b × Icc a b × ℝ, ℝ)} {M : ℝ≥0}
+    (hk : ∀ t s : Icc a b, LipschitzWith M fun z => k (t, s, z)) (f : C(Icc a b, ℝ))
+    (T : C(Icc a b, ℝ) → C(Icc a b, ℝ))
+    (hT : ∀ (u : C(Icc a b, ℝ)) (t : Icc a b),
+      T u t = (∫ s in a..(t : ℝ), k (t, projIcc a b hab s, u (projIcc a b hab s))) + f t) :
+    (∃! u, T u = u) ∧ ∀ u₀, ∃ u, T u = u ∧ Tendsto (fun n => T^[n] u₀) atTop (𝓝 u) := by
+  have hTeq : T = fun u => volterra hab k u + f := by
+    funext u; ext t; rw [hT u t]; simp
+  subst hTeq
+  obtain ⟨m, hm, hcw⟩ :=
+    exists_contractingWith_iterate_volterra hab (lipschitzWith_shiftKernel hk f)
+  refine example_5_1_2_univ
+    ((lipschitzWith_volterra hab hk).continuous.add continuous_const) hm
+    ⟨NNReal.coe_nonneg _, by exact_mod_cast hcw.1, fun u _ v _ => ?_⟩
+  rw [iterate_volterra_add hab k f m u, iterate_volterra_add hab k f m v,
+    add_sub_add_right_eq_sub]
+  have h := hcw.2.dist_le_mul (u - f) (v - f)
+  rw [dist_eq_norm, dist_eq_norm] at h
+  have huv : u - f - (v - f) = u - v := by abel
+  rwa [huv] at h
+
+/-- **Theorem 5.2.4** (Picard–Lindelöf), the fixed-point half.  The initial value problem
+`u' = g(t, u)`, `u(t₀) = z` is equivalent to the integral equation
+`u(t) = z + ∫_{t₀}^t g(s, u(s)) ds` (5.2.19), whose right-hand side is a Volterra operator.  If `g`
+is Lipschitz in `u` with constant `L`, then in the **weighted (Bielecki) norm**
+`max_t e^{-β (t - t₀)} |v(t)|` with `β > L` that operator is already a contraction, with constant
+`L / β`; so the equation has a unique solution, Picard's iteration (5.2.20) converges to it from
+every starting function, and the three bounds (5.1.4)–(5.1.6) hold in the weighted norm.  Since
+`IntegralOperator.Bielecki.exp_mul_norm_equiv_le_norm` makes the weighted norm equivalent to the
+supremum norm, that convergence is uniform convergence on `[t₀, t₁]`.
+
+The book states the theorem in a Banach space, on a two-sided interval around `t₀`, and for a
+right-hand side defined and Lipschitz only on `{(t, u) : |t - t₀| ≤ a, ‖u - z‖ ≤ b}`; the local
+existence and uniqueness in that generality is Mathlib's `IsPicardLindelof`. -/
+theorem theorem_5_2_4 {t₀ t₁ : ℝ} (ht : t₀ ≤ t₁) {g : C(Icc t₀ t₁ × ℝ, ℝ)} {L : ℝ≥0}
+    (hg : ∀ s : Icc t₀ t₁, LipschitzWith L fun w => g (s, w)) (z : ℝ) {β : ℝ} (hβ : (L : ℝ) < β)
+    (T : Bielecki t₀ t₁ β → Bielecki t₀ t₁ β)
+    (hT : ∀ (u : Bielecki t₀ t₁ β) (t : Icc t₀ t₁),
+      Bielecki.equiv (T u) t
+        = z + ∫ s in t₀..(t : ℝ), g (projIcc t₀ t₁ ht s, Bielecki.equiv u (projIcc t₀ t₁ ht s))) :
+    (∃! u, T u = u) ∧
+      ∀ u₀, ∃ u, T u = u ∧ Tendsto (fun n => T^[n] u₀) atTop (𝓝 u) ∧
+        (∀ n, ‖T^[n] u₀ - u‖ ≤ ((L : ℝ) / β) ^ n / (1 - (L : ℝ) / β) * ‖u₀ - T u₀‖) ∧
+        (∀ n, ‖T^[n + 1] u₀ - u‖
+          ≤ (L : ℝ) / β / (1 - (L : ℝ) / β) * ‖T^[n] u₀ - T^[n + 1] u₀‖) ∧
+        (∀ n, ‖T^[n + 1] u₀ - u‖ ≤ (L : ℝ) / β * ‖T^[n] u₀ - u‖) := by
+  have hβ0 : (0 : ℝ) < β := lt_of_le_of_lt L.coe_nonneg hβ
+  have hdiv : (0 : ℝ) ≤ (L : ℝ) / β := by positivity
+  -- the Picard operator is the Volterra operator of the kernel `(t, s, w) ↦ g (s, w)`, shifted by
+  -- the constant function `z`
+  set k : C(Icc t₀ t₁ × Icc t₀ t₁ × ℝ, ℝ) := ⟨fun p => g (p.2.1, p.2.2), by fun_prop⟩ with hk
+  set f : C(Icc t₀ t₁, ℝ) := .const _ z with hf
+  have hklip : ∀ t s : Icc t₀ t₁, LipschitzWith L fun w => k (t, s, w) := fun _ s => hg s
+  have hTeq : T = fun u => Bielecki.equiv.symm (volterra ht k (Bielecki.equiv u) + f) := by
+    funext u
+    refine Bielecki.equiv.injective (ContinuousMap.ext fun t => ?_)
+    rw [hT u t]
+    simp [hk, hf, add_comm]
+  subst hTeq
+  have hstep : ∀ w : Bielecki t₀ t₁ β,
+      volterraBielecki ht (shiftKernel k f) β (w - Bielecki.equiv.symm f)
+        = Bielecki.equiv.symm (volterra ht k (Bielecki.equiv w)) := by
+    intro w
+    refine Bielecki.equiv.injective ?_
+    rw [equiv_volterraBielecki, LinearEquiv.apply_symm_apply, volterra_shiftKernel]
+    congr 1
+    rw [map_sub, LinearEquiv.apply_symm_apply]
+    abel
+  obtain ⟨-, hlip⟩ := contractingWith_volterra_bielecki ht (lipschitzWith_shiftKernel hklip f) hβ
+  refine theorem_5_1_3_univ ⟨hdiv, by rwa [div_lt_one hβ0], fun u _ v _ => ?_⟩
+  dsimp only
+  have h := hlip.dist_le_mul (u - Bielecki.equiv.symm f) (v - Bielecki.equiv.symm f)
+  rw [dist_eq_norm, dist_eq_norm, Real.coe_toNNReal _ hdiv, hstep u, hstep v] at h
+  have huv : u - Bielecki.equiv.symm f - (v - Bielecki.equiv.symm f) = u - v := by abel
+  rw [huv, ← map_sub] at h
+  have hcancel : volterra ht k (Bielecki.equiv u) + f - (volterra ht k (Bielecki.equiv v) + f)
+      = volterra ht k (Bielecki.equiv u) - volterra ht k (Bielecki.equiv v) := by abel
+  rw [← map_sub, hcancel]
+  exact h
+
+end IntegralEquations
 
 end AtkinsonHan.Ch05

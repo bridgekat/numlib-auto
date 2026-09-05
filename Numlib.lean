@@ -33,6 +33,7 @@ import Numlib.Eigen.Perturbation
 import Numlib.Eigen.PowerMethod
 import Numlib.Eigen.RayleighRitz
 import Numlib.FiniteDifference.TwoLevel
+import Numlib.FloatingPoint.InnerProduct
 import Numlib.FloatingPoint.Model
 import Numlib.IntegralEquations.Basic
 import Numlib.Krylov.Arnoldi
@@ -61,6 +62,8 @@ import Numlib.LinearAlgebra.Matrix.Order
 import Numlib.LinearAlgebra.Matrix.SVD
 import Numlib.LinearAlgebra.Matrix.Schur
 import Numlib.LinearAlgebra.Sparse.Pattern
+import Numlib.LinearSolve.Multigrid.Basic
+import Numlib.LinearSolve.Multigrid.FullMultigrid
 import Numlib.LinearSolve.Perturbation
 import Numlib.LinearSolve.Preconditioner.ApproximateInverse
 import Numlib.LinearSolve.Preconditioner.Chebyshev
