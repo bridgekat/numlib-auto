@@ -15,9 +15,17 @@ The canonical specifications of Krylov subspace methods for `A x = b` started at
 * `Krylov.IsMinErrorIterate A xstar x₀ m x`: minimal Euclidean error `‖xstar - x‖` over
   `x₀ + A 𝒦_m(A, A (xstar - x₀))` (SYMMLQ; CGNE / Craig on `A Aᵀ`).
 
-Polynomial characterizations (Saad Lemma 6.28, 6.31), residual structure (Prop 6.7), lucky
-breakdown / exactness at the grade (Prop 6.10), and the minimum-norm property of Krylov solutions
-of compatible symmetric systems (core of Choi Thm 2.25).
+Polynomial characterizations (Saad, *Iterative Methods*[^saad-iterative] Lemma 6.28, 6.31),
+residual structure (Saad Prop 6.7), lucky breakdown / exactness at the grade (Saad Prop 6.10),
+and the minimum-norm property of Krylov solutions of compatible symmetric systems
+(core of Choi[^choi] Thm 2.25).
+
+## References
+
+[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
+  SIAM, 2003.
+[^choi]: Sou-Cheng Choi, *Iterative Methods for Singular Linear Equations and Least-Squares
+  Problems*, PhD thesis, Stanford University, 2006.
 -/
 
 open Polynomial Krylov
@@ -138,7 +146,7 @@ theorem norm_residual_le_norm_aeval (hx : IsMinResIterate A b x₀ m x) (p : �
   rw [← hres]
   exact hx.min y hy
 
-/-- Saad Lemma 6.31: `‖r_m‖ = min {‖p(A) r₀‖ : deg p ≤ m, p 0 = 1}`. -/
+/-- Saad, *Iterative Methods*, Lemma 6.31: `‖r_m‖ = min {‖p(A) r₀‖ : deg p ≤ m, p 0 = 1}`. -/
 theorem norm_residual_eq_iInf (hx : IsMinResIterate A b x₀ m x) :
     ‖b - A x‖ = ⨅ p : {p : 𝕜[X] // p.degree ≤ m ∧ p.eval 0 = 1}, ‖aeval A p.1 (b - A x₀)‖ := by
   have : Nonempty {p : 𝕜[X] // p.degree ≤ (m : WithBot ℕ) ∧ p.eval 0 = 1} :=
@@ -159,8 +167,8 @@ theorem norm_residual_antitone {x : ℕ → E} (hx : ∀ k, IsMinResIterate A b 
     Antitone fun k => ‖b - A (x k)‖ :=
   fun k l hkl => (hx k).norm_residual_le (hx l) (subspace_mono A (b - A x₀) hkl)
 
-/-- Lucky breakdown (Saad Prop 6.10): at `m ≥ grade` the minimal-residual iterate is exact
-provided `A` is injective on `𝒦_grade`. -/
+/-- Lucky breakdown (Saad, *Iterative Methods*, Prop 6.10): at `m ≥ grade` the minimal-residual
+iterate is exact provided `A` is injective on `𝒦_grade`. -/
 theorem apply_eq_of_grade_le [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))]
     (hx : IsMinResIterate A b x₀ m x) (hm : grade A (b - A x₀) ≤ m)
     (hinj : Set.InjOn A (subspace A (b - A x₀) (grade A (b - A x₀)))) : A x = b := by
@@ -212,7 +220,8 @@ theorem grade_le_of_aeval_eq_zero {v : E} [FiniteDimensional 𝕜 (fullSubspace 
     omega
   · rw [map_mul, map_mul, Module.End.mul_apply, Module.End.mul_apply, h0, map_zero, map_zero]
 
-/-- Converse of lucky breakdown (Saad Prop 6.10 ⇐, P-6.13): an exact solution in `x₀ + 𝒦_m`
+/-- Converse of lucky breakdown (Saad, *Iterative Methods*, Prop 6.10 ⇐, P-6.13): an exact
+solution in `x₀ + 𝒦_m`
 forces `grade ≤ m` (no injectivity needed: `r₀ = A q(A) r₀` gives the annihilator `1 - X q`). -/
 theorem grade_le_of_apply_eq [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))]
     (hx : x - x₀ ∈ subspace A (b - A x₀) m) (hAx : A x = b) : grade A (b - A x₀) ≤ m := by
@@ -267,7 +276,7 @@ theorem energyNorm_error_le_energyNorm_aeval (hA : A.IsSymmetricCoercive)
   rw [← error_eq_aeval hA hstar hres]
   exact IsGalerkin.energyNorm_le hA hx hstar hy
 
-/-- Saad Lemma 6.28: for symmetric coercive `A`,
+/-- Saad, *Iterative Methods*, Lemma 6.28: for symmetric coercive `A`,
 `‖x* - x_m‖_A = min {‖p(A) (x* - x₀)‖_A : deg p ≤ m, p 0 = 1}`. -/
 theorem energyNorm_error_eq_iInf (hA : A.IsSymmetricCoercive) (hx : IsGalerkinIterate A b x₀ m x)
     {xstar : E} (hstar : A xstar = b) :
@@ -288,7 +297,8 @@ theorem energyNorm_error_eq_iInf (hA : A.IsSymmetricCoercive) (hx : IsGalerkinIt
   rw [error_eq_aeval hA hstar hres]
   exact ciInf_le hbdd ⟨p, hp, hp0⟩
 
-/-- Saad Prop 6.7: the Galerkin residual is a multiple of the next Arnoldi vector. -/
+/-- Saad, *Iterative Methods*, Prop 6.7: the Galerkin residual is a multiple of the next
+Arnoldi vector. -/
 theorem residual_mem_span (hx : IsGalerkinIterate A b x₀ m x) :
     b - A x ∈ 𝕜 ∙ Arnoldi.vec A (b - A x₀) m := by
   have hIio : Set.Iio (m + 1) = Set.Iio m ∪ {m} := by
@@ -325,7 +335,8 @@ theorem inner_residual_eq_zero {m' : ℕ} {x' : E} (hx : IsGalerkinIterate A b x
   · exact key m m' x x' hx hx' hlt
   · rw [← inner_conj_symm, key m' m x' x hx' hx hlt, map_zero]
 
-/-- Galerkin iterates are exact at the grade (Saad Prop 5.6 + Prop 6.10). -/
+/-- Galerkin iterates are exact at the grade (Saad, *Iterative Methods*, Prop 5.6 +
+Saad Prop 6.10). -/
 theorem apply_eq_of_grade_le [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))]
     (hx : IsGalerkinIterate A b x₀ m x) (hm : grade A (b - A x₀) ≤ m) : A x = b := by
   refine hx.eq_of_invt ?_ ?_ ?_
@@ -362,7 +373,8 @@ theorem subspace_le_orthogonal_ker (hA : A.IsSymmetric) {b : E} (hb : b ∈ Line
   rw [hpow, ← hA.pow ((i : ℕ) + 1) z c, hz0, inner_zero_left]
 
 /-- Any exact Krylov solution of a compatible system with symmetric `A` is the minimum-norm
-solution (abstract core of Choi Thm 2.25 / Thm 3.1): `𝒦_m(A, b) ≤ (ker A)ᗮ`. -/
+solution (abstract core of Choi, *Iterative Methods for Singular Linear Equations and
+Least-Squares Problems*, Thm 2.25 / Thm 3.1): `𝒦_m(A, b) ≤ (ker A)ᗮ`. -/
 theorem norm_le_of_apply_eq (hA : A.IsSymmetric) {b x : E} {m : ℕ} (hx : x ∈ subspace A b m)
     (hAx : A x = b) (y : E) (hy : A y = b) : ‖x‖ ≤ ‖y‖ := by
   have hker : y - x ∈ LinearMap.ker A := by

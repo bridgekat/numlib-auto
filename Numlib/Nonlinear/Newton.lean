@@ -7,9 +7,19 @@ import Mathlib.Analysis.Calculus.MeanValue
 # Newton's method in Banach spaces
 
 `Newton.step F F' x = x - (F' x)⁻¹ (F x)` with `ContinuousLinearMap.inverse` (`0` when `F' x` is
-not invertible), local quadratic convergence when `F'(x*)` is invertible and `F'` is Lipschitz
-(Atkinson–Han Thm 5.3.? / Kress Thm 6.? / Saad-style `‖e_{k+1}‖ ≤ (L ‖F'(x*)⁻¹‖ / 2) ‖e_k‖²`), and
-the Newton–Kantorovich theorem with the a priori bound (AH Thm 5.3.?; Kress Thm 6.?).
+not invertible), local quadratic convergence when `F'(x*)` is invertible and `F'` is Lipschitz —
+`‖e_{k+1}‖ ≤ (L ‖F'(x*)⁻¹‖ / 2) ‖e_k‖²` (Atkinson–Han[^atkinson-han] Thm 5.4.1; Kress[^kress]
+Cor 6.15 with Thm 6.20) — and the Newton–Kantorovich theorem with the a priori bound
+(Atkinson–Han Thm 5.4.2; Kress Thm 6.14), whose standard proof goes through the majorant method of
+Ortega–Rheinboldt[^ortega-rheinboldt].
+
+## References
+
+[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+  Analysis Framework*, 3rd edition, Springer, 2009.
+[^kress]: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998.
+[^ortega-rheinboldt]: James M. Ortega and Werner C. Rheinboldt, *Iterative Solution of Nonlinear
+  Equations in Several Variables*, Academic Press, 1970.
 -/
 
 open Filter Topology
@@ -131,9 +141,11 @@ private theorem norm_sub_apply_le {Fn : E → F} {F' : E → E →L[𝕜] F} {xs
   exact Convex.norm_image_sub_le_of_norm_hasFDerivWithin_le' hf hbound
     (convex_closedBall _ _) hxs hxstars
 
-/-- Local quadratic convergence (AH Thm 5.3.?, Kress Thm 6.?): if `F` is differentiable near a
-root `x*` with `F'(x*)` invertible (inverse `e`) and `F'` is `L`-Lipschitz on a ball, then on a
-smaller ball the Newton step satisfies `‖step x - x*‖ ≤ C ‖x - x*‖²`. -/
+/-- Local quadratic convergence (Atkinson–Han, *Theoretical Numerical Analysis*, Thm 5.4.1; Kress,
+*Numerical Analysis*, Cor 6.15 with Thm 6.20): if `F` is differentiable near a root `x*` with
+`F'(x*)` invertible (inverse `e`) and `F'` is `L`-Lipschitz on a ball, then on a smaller ball the
+Newton step satisfies `‖step x - x*‖ ≤ C ‖x - x*‖²`.  The radius is shrunk far enough that `F' x`
+is still invertible, by the Neumann series, with `‖(F' x)⁻¹‖ ≤ 2 ‖(F' x*)⁻¹‖`. -/
 theorem exists_ball_norm_step_sub_le {Fn : E → F} {F' : E → E →L[𝕜] F} {xstar : E}
     (hstar : Fn xstar = 0) (e : E ≃L[𝕜] F) (he : (e : E →L[𝕜] F) = F' xstar) {r L : ℝ}
     (hr : 0 < r) (hF : ∀ x ∈ Metric.ball xstar r, HasFDerivAt Fn (F' x) x)
@@ -259,11 +271,15 @@ theorem tendsto_iterate {Fn : E → F} {F' : E → E →L[𝕜] F} {xstar : E} (
     (tendsto_pow_atTop_nhds_zero_of_lt_one (r := (1 / 2 : ℝ)) (by norm_num)
       (by norm_num)).mul_const ‖x₀ - xstar‖
 
-/-- Newton–Kantorovich (AH Thm 5.3.?, Kress Thm 6.?): if `‖(F' x₀)⁻¹‖ ≤ β`,
+/-- Newton–Kantorovich (Atkinson–Han, *Theoretical Numerical Analysis*, Thm 5.4.2; Kress,
+*Numerical Analysis*, Thm 6.14): if `‖(F' x₀)⁻¹‖ ≤ β`,
 `‖(F' x₀)⁻¹ F x₀‖ ≤ η`, `F'` is `L`-Lipschitz on the ball of radius `r` around `x₀`,
 `h := β L η ≤ 1/2` and `t* := (1 - √(1 - 2h)) / (β L) ≤ r`, then the Newton iterates stay in the
 ball, converge to a root `x*` with `‖x* - x₀‖ ≤ t*`, and
-`‖x_k - x*‖ ≤ (2h)^(2^k) η / (2^k h)` (a priori bound, `h > 0`). -/
+`‖x_k - x*‖ ≤ (2h)^(2^k) η / (2^k h)` (a priori bound, `h > 0`).
+
+Unlike `exists_ball_norm_step_sub_le`, every hypothesis here is checkable at the starting point:
+existence of the root is a conclusion, not an assumption. -/
 theorem kantorovich {Fn : E → F} {F' : E → E →L[𝕜] F} {x₀ : E} {r β η L : ℝ} (hβ : 0 < β)
     (hL : 0 < L) (hη : 0 ≤ η) (e : E ≃L[𝕜] F) (he : (e : E →L[𝕜] F) = F' x₀)
     (hβ' : ‖(e.symm : F →L[𝕜] E)‖ ≤ β) (hη' : ‖e.symm (Fn x₀)‖ ≤ η)
@@ -276,7 +292,8 @@ theorem kantorovich {Fn : E → F} {F' : E → E →L[𝕜] F} {x₀ : E} {r β 
       (∀ k, iterate Fn F' x₀ k ∈ Metric.closedBall x₀ r) ∧
       (0 < β * L * η → ∀ k, ‖iterate Fn F' x₀ k - xstar‖ ≤
         (2 * (β * L * η)) ^ (2 ^ k) * η / (2 ^ k * (β * L * η))) := by
-  -- Obstruction: Newton–Kantorovich needs the *majorant* method.  One builds the scalar Newton
+  -- Obstruction: Newton–Kantorovich needs the *majorant* method of Ortega–Rheinboldt, *Iterative
+  -- Solution of Nonlinear Equations in Several Variables*.  One builds the scalar Newton
   -- sequence `t_{k+1} = t_k - p t_k / p' t_k` for `p t = (L / (2 β)) t ^ 2 - t / β + η`, proves by
   -- simultaneous induction that `‖x_{k+1} - x_k‖ ≤ t_{k+1} - t_k` and that every `F' x_k` is
   -- invertible with `‖(F' x_k)⁻¹‖ ≤ β / (1 - β L (t_k - t_0))`, and only then reads off the a

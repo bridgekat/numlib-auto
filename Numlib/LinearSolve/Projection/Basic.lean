@@ -6,17 +6,28 @@ import Mathlib.LinearAlgebra.Eigenspace.Minpoly
 /-!
 # Projection methods: specifications and well-posedness
 
-The canonical Prop-valued specifications of a projection step (Saad Ch. 5, Fong–Saunders §2,
-Choi Table 2.5, Atkinson–Han Ch. 9):
+The canonical Prop-valued specifications of a projection step (Saad[^saad-iterative] Ch. 5,
+Fong–Saunders[^fong-saunders] §2, Choi[^choi] Table 2.5, Atkinson–Han[^atkinson-han] Ch. 9):
 
 * `IsPetrovGalerkin A b x₀ K L x`: `x ∈ x₀ + K` and `b - A x ⟂ L`;
 * `IsGalerkin A b x₀ K x`: the case `L = K` (FOM, CG, Lanczos method);
 * `IsMinRes A b x₀ K x`: `x ∈ x₀ + K` minimizes `‖b - A x‖` (GMRES, MINRES, CR);
 * `IsMinError xstar x₀ K x`: `x ∈ x₀ + K` minimizes `‖xstar - x‖` (SYMMLQ, CGNE).
 
-Well-posedness (Saad Prop 5.1), the residual formula (Prop 5.4), exactness on invariant
-subspaces (Prop 5.6) and the matrix representation (5.7) are stated here; optimality
+Well-posedness (Saad Prop 5.1), the residual formula (Saad Prop 5.4), exactness on invariant
+subspaces (Saad Prop 5.6) and the matrix representation (Saad (5.7)) are stated here; optimality
 characterizations are in `Optimality.lean`.
+
+## References
+
+[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
+  SIAM, 2003.
+[^fong-saunders]: David Chin-Lung Fong and Michael Saunders, *CG versus MINRES: an empirical
+  comparison*, SQU Journal for Science 17 (2012), 44–62.
+[^choi]: Sou-Cheng Choi, *Iterative Methods for Singular Linear Equations and Least-Squares
+  Problems*, PhD thesis, Stanford University, 2006.
+[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+  Analysis Framework*, 3rd edition, Springer, 2009.
 -/
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
@@ -67,7 +78,8 @@ theorem norm_sub_le_of_forall_inner_eq_zero {u v : E} (hv : v ∈ K)
 
 end Submodule
 
-/-- Petrov–Galerkin specification: `x ∈ x₀ + K` and `b - A x ⟂ L` (Saad (5.1)–(5.2)). -/
+/-- Petrov–Galerkin specification: `x ∈ x₀ + K` and `b - A x ⟂ L`
+(Saad, *Iterative Methods*, (5.1)–(5.2)). -/
 structure IsPetrovGalerkin (A : E →ₗ[𝕜] E) (b x₀ : E) (K L : Submodule 𝕜 E) (x : E) : Prop where
   mem : x - x₀ ∈ K
   orth : b - A x ∈ Lᗮ
@@ -98,7 +110,8 @@ theorem inner_residual_eq_zero (hx : IsPetrovGalerkin A b x₀ K L x) {w : E} (h
   (Submodule.mem_orthogonal _ _).1 hx.orth w hw
 
 /-- Two Petrov–Galerkin solutions differ by an element of `K ⊓ A⁻¹(Lᗮ)`; uniqueness when
-`A` maps `K` injectively "modulo `Lᗮ`" (Saad Prop 5.1's nondegeneracy condition). -/
+`A` maps `K` injectively "modulo `Lᗮ`", the nondegeneracy condition of Saad,
+*Iterative Methods*, Prop 5.1. -/
 theorem eq_of_forall (hx : IsPetrovGalerkin A b x₀ K L x) {x' : E}
     (hx' : IsPetrovGalerkin A b x₀ K L x')
     (hKL : ∀ z ∈ K, A z ∈ Lᗮ → z = 0) : x = x' := by
@@ -110,7 +123,9 @@ theorem eq_of_forall (hx : IsPetrovGalerkin A b x₀ K L x) {x' : E}
     rw [h]; exact Submodule.sub_mem _ hx'.orth hx.orth
   exact sub_eq_zero.1 (hKL _ hmem hAz)
 
-/-- Saad Prop 5.6: exactness on invariant subspaces. -/
+/-- Saad, *Iterative Methods*, Prop 5.6: exactness on invariant subspaces.  If `K` is invariant
+under `A`, the initial residual lies in `K` and `K ⊓ Lᗮ = 0`, then the Petrov–Galerkin iterate
+solves `A x = b` exactly. -/
 theorem eq_of_invt (hx : IsPetrovGalerkin A b x₀ K L x) (hK : K ∈ Module.End.invtSubmodule A)
     (hr : b - A x₀ ∈ K) (hKL : ∀ z ∈ K, z ∈ Lᗮ → z = 0) : A x = b := by
   have h1 : b - A x ∈ K := by
@@ -127,10 +142,10 @@ theorem of_mem (hx : IsPetrovGalerkin A b x₀ K L x) {x₁ : E} (hx₁ : x₁ -
   have h : x - x₁ = (x - x₀) - (x₁ - x₀) := by abel
   rw [h]; exact K.sub_mem hx.mem hx₁
 
-/-- Saad Thm 5.7-type bound for the projected problem: with `r₀ = b - A x₀` and
-`d₀ = x* - x₀`, the Petrov–Galerkin residual is controlled by the distance of `d₀` from `K`.
-Stated via the oblique projector as `‖P (b - A x)‖ = 0` and `‖(1 - P_K) d₀‖`; see
-`Optimality.lean` for the Galerkin/MinRes cases. -/
+/-- The Petrov–Galerkin residual is orthogonal to `L`; a restatement of the defining condition,
+and the input to the quasi-optimality bound of Saad, *Iterative Methods*, Thm 5.7, which with
+`r₀ = b - A x₀` and `d₀ = x* - x₀` controls the error by the distance of `d₀` from `K`.  See
+`Optimality.lean` for the Galerkin / minimal-residual cases. -/
 theorem residual_mem_orthogonal (hx : IsPetrovGalerkin A b x₀ K L x) : b - A x ∈ Lᗮ := hx.orth
 
 end IsPetrovGalerkin
@@ -143,7 +158,8 @@ namespace IsMinRes
 
 variable {A : E →ₗ[𝕜] E} {b x₀ : E} {K : Submodule 𝕜 E} {x : E}
 
-/-- Saad Prop 5.3: minimal residual over `x₀ + K` iff Petrov–Galerkin with `L = A K`. -/
+/-- Saad, *Iterative Methods*, Prop 5.3: minimal residual over `x₀ + K` iff Petrov–Galerkin with
+`L = A K`. -/
 theorem iff_isPetrovGalerkin [FiniteDimensional 𝕜 K] :
     IsMinRes A b x₀ K x ↔ IsPetrovGalerkin A b x₀ K (K.map A) x := by
   constructor
@@ -169,7 +185,8 @@ theorem isPetrovGalerkin [FiniteDimensional 𝕜 K] (hx : IsMinRes A b x₀ K x)
     IsPetrovGalerkin A b x₀ K (K.map A) x :=
   (iff_isPetrovGalerkin).1 hx
 
-/-- Saad Prop 5.4: the residual of every minimal-residual iterate is `(1 - P_{A K}) r₀`. -/
+/-- Saad, *Iterative Methods*, Prop 5.4: the residual of every minimal-residual iterate is
+`(1 - P_{A K}) r₀`, with `r₀ = b - A x₀` and `P_{A K}` the orthogonal projection onto `A K`. -/
 theorem residual_eq [FiniteDimensional 𝕜 K] (hx : IsMinRes A b x₀ K x) :
     b - A x = (b - A x₀) - (K.map A).starProjection (b - A x₀) := by
   have hproj : (K.map A).starProjection (b - A x₀) = A (x - x₀) :=
@@ -205,7 +222,8 @@ section WellPosed
 
 variable {A : E →ₗ[𝕜] E} (b x₀ : E) (K : Submodule 𝕜 E)
 
-/-- Coercivity gives the nondegeneracy condition of Saad Prop 5.1 (i). -/
+/-- Coercivity gives the nondegeneracy condition of Saad, *Iterative Methods*, Prop 5.1 (i):
+no nonzero `z ∈ K` has `A z ⟂ K`. -/
 theorem eq_zero_of_isCoercive_of_apply_mem_orthogonal (hA : A.IsCoercive) {z : E} (hz : z ∈ K)
     (hAz : A z ∈ Kᗮ) : z = 0 := by
   obtain ⟨c, hc, hAc⟩ := hA
@@ -217,7 +235,7 @@ theorem eq_zero_of_isCoercive_of_apply_mem_orthogonal (hA : A.IsCoercive) {z : E
   have hz2 : ‖z‖ ^ 2 = 0 := le_antisymm (by nlinarith) (sq_nonneg _)
   exact norm_eq_zero.1 (pow_eq_zero_iff two_ne_zero |>.1 hz2)
 
-/-- Saad Prop 5.1 (i): Galerkin with coercive `A` is uniquely solvable. -/
+/-- Saad, *Iterative Methods*, Prop 5.1 (i): Galerkin with coercive `A` is uniquely solvable. -/
 theorem existsUnique_isGalerkin_of_isCoercive (hA : A.IsCoercive) [FiniteDimensional 𝕜 K] :
     ∃! x, IsGalerkin A b x₀ K x := by
   have hKL : ∀ z ∈ K, A z ∈ Kᗮ → z = 0 := fun z hz hAz =>
@@ -255,7 +273,8 @@ theorem exists_isMinRes [FiniteDimensional 𝕜 K] : ∃ x, IsMinRes A b x₀ K 
   rw [h]
   exact Submodule.sub_starProjection_mem_orthogonal _
 
-/-- Saad Prop 5.1 (ii): minimal residual with `A` injective on `K` is uniquely solvable. -/
+/-- Saad, *Iterative Methods*, Prop 5.1 (ii): minimal residual with `A` injective on `K` is
+uniquely solvable. -/
 theorem existsUnique_isMinRes_of_injOn [FiniteDimensional 𝕜 K] (hinj : Set.InjOn A K) :
     ∃! x, IsMinRes A b x₀ K x := by
   obtain ⟨x, hx⟩ := exists_isMinRes (A := A) b x₀ K
@@ -285,8 +304,8 @@ section MatrixForm
 variable {ι : Type*} [Fintype ι]
 variable {A : E →ₗ[𝕜] E} {b x₀ : E} {K L : Submodule 𝕜 E}
 
-/-- Saad (5.7): with bases `V` of `K` and `W` of `L`, `x = x₀ + V y` is Petrov–Galerkin iff
-`(Wᴴ A V) y = Wᴴ r₀`. -/
+/-- Saad, *Iterative Methods*, (5.7): with bases `V` of `K` and `W` of `L`, `x = x₀ + V y` is
+Petrov–Galerkin iff `(Wᴴ A V) y = Wᴴ r₀`, where `r₀ = b - A x₀`. -/
 theorem isPetrovGalerkin_iff_mulVec (V : Module.Basis ι 𝕜 K) (W : Module.Basis ι 𝕜 L)
     (y : ι → 𝕜) :
     IsPetrovGalerkin A b x₀ K L (x₀ + ∑ j, y j • (V j : E)) ↔

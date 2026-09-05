@@ -7,10 +7,19 @@ import Mathlib.Analysis.Normed.Module.FiniteDimension
 /-!
 # Stationary (affine) iterations
 
-`Stationary.step G f x = G x + f`. Convergence for all data iff `ρ(G) < 1` (Saad Thm 4.1 in a
-complex Banach space for `⇒`, finite dimension for `⇐`; Kress Thm 4.1), the contraction case
-`‖G‖ < 1` with a priori / a posteriori bounds (Kress Thm 3.48, Atkinson–Han §5.2.2), and the
-error propagation `x_k - x* = G^k (x₀ - x*)`.
+`Stationary.step G f x = G x + f`. Convergence for all data iff the spectral radius satisfies
+`ρ(G) < 1` (Saad[^saad-iterative] Thm 4.1, in a complex Banach space for `⇒` and in finite
+dimension for `⇐`; Kress[^kress] Thm 4.1), the contraction case `‖G‖ < 1` with a priori /
+a posteriori bounds (Kress Thm 3.48, Atkinson–Han[^atkinson-han] §5.2.2), and the error
+propagation `x_k - x* = G^k (x₀ - x*)`.
+
+## References
+
+[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
+  SIAM, 2003.
+[^kress]: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998.
+[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+  Analysis Framework*, 3rd edition, Springer, 2009.
 -/
 
 open Filter Topology
@@ -48,7 +57,9 @@ theorem step_iterate_sub {x' : E} (hfix : G x' + f = x') (x₀ : E) (k : ℕ) :
 theorem step_fixed_iff (x : E) : step G f x = x ↔ (1 - G) x = f := by
   rw [step, sub_apply, one_apply_eq_self, sub_eq_iff_eq_add, eq_comm, add_comm f]
 
-/-- Contraction case `‖G‖ < 1` (Kress Thm 3.48, Atkinson–Han §5.2.2). -/
+/-- Contraction case `‖G‖ < 1`: the affine step is a contraction with constant `‖G‖`
+(Kress, *Numerical Analysis*, Thm 3.48; Atkinson–Han, *Theoretical Numerical Analysis*,
+§5.2.2). -/
 theorem contractingWith (hG : ‖G‖ < 1) :
     ContractingWith ⟨‖G‖, norm_nonneg _⟩ (step G f) := by
   refine ⟨by exact_mod_cast hG, LipschitzWith.of_dist_le_mul fun x y => ?_⟩
@@ -111,8 +122,8 @@ theorem isUnit_one_sub_of_spectralRadius_lt_one [CompleteSpace F] (G : F →L[�
     exact isUnit_of_subsingleton _
   · exact _root_.isUnit_one_sub_of_spectralRadius_lt_one hG
 
-/-- Saad Thm 4.1 (⇒), any complex Banach space: `ρ(G) < 1` gives convergence for every `f, x₀`
-to the unique fixed point `(1 - G)⁻¹ f`. -/
+/-- Saad, *Iterative Methods*, Thm 4.1 (⇒), in any complex Banach space: a spectral radius
+`ρ(G) < 1` gives convergence for every `f, x₀` to the unique fixed point `(1 - G)⁻¹ f`. -/
 theorem tendsto_of_spectralRadius_lt_one [CompleteSpace F] (G : F →L[ℂ] F)
     (hG : spectralRadius ℂ G < 1) (f x₀ : F) :
     Tendsto (fun k => (step G f)^[k] x₀) atTop (𝓝 (Ring.inverse (1 - G) f)) := by
@@ -130,8 +141,8 @@ theorem tendsto_of_spectralRadius_lt_one [CompleteSpace F] (G : F →L[ℂ] F)
     refine squeeze_zero_norm (fun k => (G ^ k).le_opNorm _) ?_
     simpa using hpow.norm.mul_const ‖x₀ - Ring.inverse (1 - G) f‖
 
-/-- Saad Thm 4.1 (⇐), finite dimension: convergence of `G^k x₀ → 0` for all `x₀` forces
-`ρ(G) < 1`. -/
+/-- Saad, *Iterative Methods*, Thm 4.1 (⇐), in finite dimension: convergence of `G^k x₀ → 0`
+for all `x₀` forces the spectral radius to satisfy `ρ(G) < 1`. -/
 theorem spectralRadius_lt_one_of_forall_tendsto [FiniteDimensional ℂ F] (G : F →L[ℂ] F)
     (h : ∀ x₀, Tendsto (fun k => (G ^ k) x₀) atTop (𝓝 0)) : spectralRadius ℂ G < 1 := by
   have : CompleteSpace F := FiniteDimensional.complete ℂ F
@@ -159,7 +170,8 @@ theorem spectralRadius_lt_one_of_forall_tendsto [FiniteDimensional ℂ F] (G : F
     intro i
     simpa [Function.comp_def, hΦ] using h (b i)
 
-/-- Saad Thm 4.1 as an equivalence in finite dimension. -/
+/-- Saad, *Iterative Methods*, Thm 4.1 as an equivalence in finite dimension: the iteration
+converges from every `f` and `x₀` iff the spectral radius satisfies `ρ(G) < 1`. -/
 theorem forall_tendsto_iff_spectralRadius_lt_one [FiniteDimensional ℂ F] (G : F →L[ℂ] F) :
     (∀ f x₀, ∃ x, Tendsto (fun k => (step G f)^[k] x₀) atTop (𝓝 x)) ↔
       spectralRadius ℂ G < 1 := by

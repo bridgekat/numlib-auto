@@ -5,11 +5,26 @@ import Numlib.LinearSolve.Perturbation
 /-!
 # Monotonicity properties of Krylov iterates on SPD systems (Fong–Saunders)
 
-Specification-level versions of Fong–Saunders Thm 2.3–2.5 and Thm 3.1: for *any* sequence of
-minimal-residual Krylov iterates of a symmetric coercive system (MINRES, CR, GMRES, …) started at
-`x₀ = 0`, `‖x_k‖` is nondecreasing, `‖x* - x_k‖` and `‖x* - x_k‖_A` are nonincreasing, and the
-normwise relative backward error is nonincreasing. Proved by identifying the iterates with the CR
-iterates (`CR.isMinResIterate` + uniqueness) and using the sign lemma of `CR.lean`.
+Specification-level versions of Fong–Saunders[^fong-saunders] Thm 2.3–2.5 and Thm 3.1: for *any*
+sequence of minimal-residual Krylov iterates of a symmetric coercive system (MINRES, CR, GMRES, …)
+started at `x₀ = 0`, `‖x_k‖` is nondecreasing, `‖x* - x_k‖` and `‖x* - x_k‖_A` are nonincreasing,
+and the normwise relative backward error is nonincreasing. Proved by identifying the iterates with
+the CR iterates (`CR.isMinResIterate` + uniqueness) and using the sign lemma of `CR.lean`.
+
+The same argument run through the CG iterates gives the Galerkin counterparts, which hold on the
+same SPD systems but are older: `‖x_k‖` is nondecreasing from `x₀ = 0`, due to
+Steihaug[^steihaug] and tabulated as the CG column of Fong–Saunders Table 5.1, and `‖x* - x_k‖`
+is nonincreasing, Hestenes–Stiefel[^hestenes-stiefel] Thm 6:3.
+
+## References
+
+[^fong-saunders]: David Chin-Lung Fong and Michael Saunders, *CG versus MINRES: an empirical
+  comparison*, SQU Journal for Science 17 (2012), 44–62.
+[^steihaug]: Trond Steihaug, *The conjugate gradient method and trust regions in large scale
+  optimization*, SIAM Journal on Numerical Analysis 20 (1983), 626–637.
+[^hestenes-stiefel]: Magnus R. Hestenes and Eduard Stiefel, *Methods of conjugate gradients for
+  solving linear systems*, Journal of Research of the National Bureau of Standards 49 (1952),
+  409–436.
 -/
 
 open Krylov
@@ -29,26 +44,26 @@ theorem eq_CR_iterate {x₀ : E} {k : ℕ} {x : E} (hx : IsMinResIterate A b x�
     existsUnique_isMinResIterate_of_injective hA.isCoercive.injective b x₀ k
   exact (huniq x hx).trans (huniq _ (CR.isMinResIterate b x₀ hA k)).symm
 
-/-- Fong–Saunders Thm 2.3: `‖x_k‖` is nondecreasing (`x₀ = 0`). -/
+/-- Fong–Saunders, *CG versus MINRES*, Thm 2.3: `‖x_k‖` is nondecreasing (`x₀ = 0`). -/
 theorem norm_monotone {x : ℕ → E} (hx : ∀ k, IsMinResIterate A b 0 k (x k)) :
     Monotone fun k => ‖x k‖ := by
   have h : ∀ k, x k = (CR.iterate A b 0 k).x := fun k => eq_CR_iterate hA (hx k)
   simpa only [h] using CR.norm_iterate_monotone b hA
 
-/-- Fong–Saunders Thm 2.4: `‖x* - x_k‖` is nonincreasing. -/
+/-- Fong–Saunders, *CG versus MINRES*, Thm 2.4: `‖x* - x_k‖` is nonincreasing. -/
 theorem norm_error_antitone {x₀ : E} {x : ℕ → E} (hx : ∀ k, IsMinResIterate A b x₀ k (x k))
     {xstar : E} (hstar : A xstar = b) : Antitone fun k => ‖xstar - x k‖ := by
   have h : ∀ k, x k = (CR.iterate A b x₀ k).x := fun k => eq_CR_iterate hA (hx k)
   simpa only [h] using CR.norm_error_antitone b x₀ hA hstar
 
-/-- Fong–Saunders Thm 2.5: `‖x* - x_k‖_A` is nonincreasing. -/
+/-- Fong–Saunders, *CG versus MINRES*, Thm 2.5: `‖x* - x_k‖_A` is nonincreasing. -/
 theorem energyNorm_error_antitone {x₀ : E} {x : ℕ → E}
     (hx : ∀ k, IsMinResIterate A b x₀ k (x k)) {xstar : E} (hstar : A xstar = b) :
     Antitone fun k => energyNorm A (xstar - x k) := by
   have h : ∀ k, x k = (CR.iterate A b x₀ k).x := fun k => eq_CR_iterate hA (hx k)
   simpa only [h] using CR.energyNorm_error_antitone b x₀ hA hstar
 
-/-- Fong–Saunders Thm 3.1: the normwise relative backward error
+/-- Fong–Saunders, *CG versus MINRES*, Thm 3.1: the normwise relative backward error
 `‖r_k‖ / (α ‖A‖ ‖x_k‖ + β ‖b‖)` is nonincreasing (`x₀ = 0`, `α ≥ 0`, `β > 0`). The
 denominator is positive at every step, so no junk division occurs. -/
 theorem backwardError_antitone {x : ℕ → E} (hx : ∀ k, IsMinResIterate A b 0 k (x k))
@@ -68,7 +83,8 @@ theorem backwardError_antitone {x : ℕ → E} (hx : ∀ k, IsMinResIterate A b 
   simp only at this
   nlinarith [mul_nonneg hα hnormA]
 
-/-- The special case `‖r_k‖ / ‖x_k‖` (Fong–Saunders (3.5) with `β = 0`), from step `1` on:
+/-- The special case `‖r_k‖ / ‖x_k‖` (Fong–Saunders, *CG versus MINRES*, (3.5) with `β = 0`),
+from step `1` on:
 at `k = 0` the quotient `‖b‖ / ‖0‖` is a junk value, so the statement is on `Set.Ici 1`. -/
 theorem norm_residual_div_norm_antitoneOn {x : ℕ → E}
     (hx : ∀ k, IsMinResIterate A b 0 k (x k)) (hb : b ≠ 0) :
@@ -97,13 +113,16 @@ theorem eq_CG_iterate {x₀ : E} {k : ℕ} {x : E} (hx : IsGalerkinIterate A b x
   obtain ⟨y, -, huniq⟩ := existsUnique_isGalerkinIterate_of_isCoercive hA.isCoercive b x₀ k
   exact (huniq x hx).trans (huniq _ (CG.isGalerkinIterate b x₀ hA k)).symm
 
-/-- Steihaug (Fong–Saunders Table 5.1, CG column): `‖x_k‖` is nondecreasing (`x₀ = 0`). -/
+/-- Steihaug, *The conjugate gradient method and trust regions in large scale optimization*
+(tabulated as the CG column of Fong–Saunders, *CG versus MINRES*, Table 5.1): `‖x_k‖` is
+nondecreasing (`x₀ = 0`). -/
 theorem norm_monotone {x : ℕ → E} (hx : ∀ k, IsGalerkinIterate A b 0 k (x k)) :
     Monotone fun k => ‖x k‖ := by
   have h : ∀ k, x k = (CG.iterate A b 0 k).x := fun k => eq_CG_iterate hA (hx k)
   simpa only [h] using CG.norm_iterate_monotone b hA
 
-/-- Hestenes–Stiefel Thm 6:3: `‖x* - x_k‖` is nonincreasing. -/
+/-- Hestenes–Stiefel, *Methods of conjugate gradients for solving linear systems*, Thm 6:3:
+`‖x* - x_k‖` is nonincreasing. -/
 theorem norm_error_antitone {x₀ : E} {x : ℕ → E} (hx : ∀ k, IsGalerkinIterate A b x₀ k (x k))
     {xstar : E} (hstar : A xstar = b) : Antitone fun k => ‖xstar - x k‖ := by
   have h : ∀ k, x k = (CG.iterate A b x₀ k).x := fun k => eq_CG_iterate hA (hx k)

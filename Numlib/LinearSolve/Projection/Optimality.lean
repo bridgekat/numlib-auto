@@ -4,11 +4,27 @@ import Numlib.Analysis.InnerProductSpace.Energy
 /-!
 # Optimality properties of projection methods
 
-* Saad Prop 5.2 / Hestenes–Stiefel Thm 4:3: for symmetric coercive `A`, Galerkin iterates are
-  exactly the minimizers of the energy norm of the error over `x₀ + K`.
+* Saad[^saad-iterative] Prop 5.2 / Hestenes–Stiefel[^hestenes-stiefel] Thm 4:3: for symmetric
+  coercive `A`, Galerkin iterates are exactly the minimizers of the energy norm of the error
+  over `x₀ + K`.
 * Saad Prop 5.5: the Galerkin error is the `A`-orthogonal projection of `d₀ = x* - x₀`.
 * Nested subspaces give monotone residual / error norms.
-* Fong–Saunders §2.1: the Galerkin iterate minimizes the quadratic `½⟪A x, x⟫ - re⟪b, x⟫`.
+* Fong–Saunders[^fong-saunders] §2.1: the Galerkin iterate minimizes the quadratic
+  `½⟪A x, x⟫ - re⟪b, x⟫`.
+* Saad §8.3 and Choi[^choi]: the minimal-error method over `x₀ + A† K` is Petrov–Galerkin
+  with `L = K`.
+
+## References
+
+[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
+  SIAM, 2003.
+[^hestenes-stiefel]: Magnus R. Hestenes and Eduard Stiefel, *Methods of conjugate gradients for
+  solving linear systems*, Journal of Research of the National Bureau of Standards 49 (1952),
+  409–436.
+[^fong-saunders]: David Chin-Lung Fong and Michael Saunders, *CG versus MINRES: an empirical
+  comparison*, SQU Journal for Science 17 (2012), 44–62.
+[^choi]: Sou-Cheng Choi, *Iterative Methods for Singular Linear Equations and Least-Squares
+  Problems*, PhD thesis, Stanford University, 2006.
 -/
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
@@ -33,7 +49,8 @@ theorem energyNorm_add_sq (hA : A.IsSymmetricCoercive) {u v : E} (h : energyInne
 
 namespace IsGalerkin
 
--- `hA` is part of the stated interface (Saad Prop 5.2's hypothesis) but the identity
+-- `hA` is part of the stated interface (the hypothesis of Saad, *Iterative Methods*, Prop 5.2)
+-- but the identity
 -- `⟪A (x* - x), z⟫ = ⟪b - A x, z⟫` needs neither symmetry nor coercivity.
 set_option linter.unusedVariables false in
 /-- Galerkin error is energy-orthogonal to `K`. -/
@@ -54,7 +71,8 @@ theorem energyNorm_sq_add (hA : A.IsSymmetricCoercive) (hx : IsGalerkin A b x₀
   rw [hsum]
   exact energyNorm_add_sq hA (energyInner_error_eq_zero hA hx hstar hxy)
 
-/-- Saad Prop 5.2 (⇒): Galerkin iterates minimize the energy norm of the error. -/
+/-- Saad, *Iterative Methods*, Prop 5.2 (⇒): Galerkin iterates minimize the energy norm of the
+error over `x₀ + K`. -/
 theorem energyNorm_le (hA : A.IsSymmetricCoercive) (hx : IsGalerkin A b x₀ K x)
     (hstar : A xstar = b) {y : E} (hy : y - x₀ ∈ K) :
     energyNorm A (xstar - x) ≤ energyNorm A (xstar - y) := by
@@ -62,7 +80,8 @@ theorem energyNorm_le (hA : A.IsSymmetricCoercive) (hx : IsGalerkin A b x₀ K x
   rw [energyNorm_sq_add hA hx hstar hy]
   nlinarith [energyNorm_nonneg A (x - y)]
 
-/-- Saad Prop 5.2 (⇔), finite-dimensional `K`. -/
+/-- Saad, *Iterative Methods*, Prop 5.2 (⇔), for finite-dimensional `K`: an iterate is Galerkin
+iff it lies in `x₀ + K` and minimizes the energy norm of the error there. -/
 theorem iff_energyNorm_min (hA : A.IsSymmetricCoercive) (hstar : A xstar = b)
     [FiniteDimensional 𝕜 K] :
     IsGalerkin A b x₀ K x ↔
@@ -111,8 +130,8 @@ theorem quadratic_le (hA : A.IsSymmetricCoercive) (hx : IsGalerkin A b x₀ K x)
   rw [hsymd, hbd']
   linarith
 
-/-- Saad Prop 5.5: the Galerkin error is the energy-orthogonal projection of `d₀ = x* - x₀`
-onto the energy-orthogonal complement of `K`. -/
+/-- Saad, *Iterative Methods*, Prop 5.5: the Galerkin error is the energy-orthogonal projection
+of `d₀ = x* - x₀` onto the energy-orthogonal complement of `K`. -/
 theorem error_eq_starProjection (hA : A.IsSymmetricCoercive) (hx : IsGalerkin A b x₀ K x)
     (hstar : A xstar = b) [FiniteDimensional 𝕜 K] :
     WithEnergy.equiv A hA (xstar - x) =
@@ -182,7 +201,8 @@ theorem unique {x' : E} (hx : IsMinError xstar x₀ K x) (hx' : IsMinError xstar
   have : ‖x' - x‖ = 0 := by nlinarith [norm_nonneg (x' - x)]
   exact (sub_eq_zero.1 (norm_eq_zero.1 this)).symm
 
-/-- Saad §8.3 / Choi: minimal error over `x₀ + A† K` is Petrov–Galerkin with `L = K`
+/-- Saad, *Iterative Methods*, §8.3, and Choi, *Iterative Methods for Singular Linear
+Equations*: minimal error over `x₀ + A† K` is Petrov–Galerkin with `L = K`
 (CGNE / Craig's method as a Petrov–Galerkin method). -/
 theorem isPetrovGalerkin_of_map_adjoint [FiniteDimensional 𝕜 E] {L : Submodule 𝕜 E}
     (hK : K = L.map (LinearMap.adjoint A)) (hstar : A xstar = b) (hx : IsMinError xstar x₀ K x) :

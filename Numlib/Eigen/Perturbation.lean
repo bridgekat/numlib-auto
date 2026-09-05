@@ -9,10 +9,35 @@ import Mathlib.LinearAlgebra.Eigenspace.Matrix
 /-!
 # Eigenvalue perturbation and a posteriori bounds
 
-Residual bounds for approximate eigenpairs of symmetric operators (Saad-eig Cor 3.3, Lemma 3.2,
-Thm 3.8–3.9 Kato–Temple; Meurant §2.1; Choi §2.4), Bauer–Fike for diagonalizable matrices
-(Saad-eig Thm 3.6, Kress Problem 7.6), the backward error of an approximate eigenpair
-(Saad-eig Prop 3.4), Bendixson (Saad Thm 1.35) and Rayleigh-quotient bounds.
+Residual bounds for approximate eigenpairs of symmetric operators
+(Saad, *Numerical Methods for Large Eigenvalue Problems*[^saad-eigenvalue], Cor 3.3, Lemma 3.2,
+Thm 3.8–3.9 for Kato–Temple; Meurant–Strakoš[^meurant-strakos] §2.1; Choi[^choi] §2.4),
+Bauer–Fike for diagonalizable matrices (Saad, *Large Eigenvalue Problems*, Thm 3.6;
+Kress[^kress] Problem 7.6), the backward error of an approximate eigenpair
+(Saad, *Large Eigenvalue Problems*, Prop 3.4), Bendixson
+(Saad, *Iterative Methods for Sparse Linear Systems*[^saad-iterative], Thm 1.35) and
+Rayleigh-quotient bounds.
+
+Throughout, an approximate eigenpair of `A` is a unit vector `x` together with a scalar `θ`
+(usually the Rayleigh quotient `θ = re⟪A x, x⟫`), and `r = A x - θ x` is its residual; the
+bounds below turn `‖r‖` into a distance from `θ` to the spectrum.
+
+Two books by Saad are cited in this file and are kept apart by their short titles:
+*Large Eigenvalue Problems* and *Iterative Methods*.  Bauer–Fike, Gershgorin, Kato–Temple and
+Bendixson are the classical names of the results; the numbered forms used here are the ones
+proved in the cited texts.
+
+## References
+
+[^saad-eigenvalue]: Yousef Saad, *Numerical Methods for Large Eigenvalue Problems*, 2nd edition,
+  SIAM, 2011.
+[^meurant-strakos]: Gérard Meurant and Zdeněk Strakoš, *The Lanczos and conjugate gradient
+  algorithms in finite precision arithmetic*, Acta Numerica (2006), 471–542.
+[^choi]: Sou-Cheng Choi, *Iterative Methods for Singular Linear Equations and Least-Squares
+  Problems*, PhD thesis, Stanford University, 2006.
+[^kress]: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998.
+[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
+  SIAM, 2003.
 -/
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
@@ -57,8 +82,9 @@ private theorem re_inner_apply_self {n : ℕ} (hn : Module.finrank 𝕜 E = n) (
     OrthonormalBasis.repr_apply_apply]
   simp
 
-/-- The identity behind Saad-eig Lemma 3.2 and Kato–Temple: for a unit vector `x` with Rayleigh
-quotient `θ` and residual `r`, `∑ (λ - u)(λ - v) ‖c‖² = ‖r‖² + (θ - u)(θ - v)`. -/
+/-- The identity behind Saad, *Large Eigenvalue Problems*, Lemma 3.2 and the Kato–Temple bounds:
+for a unit vector `x` with Rayleigh quotient `θ = re⟪A x, x⟫`, residual `r = A x - θ x` and
+eigenbasis coefficients `c`, `∑ (λ - u)(λ - v) ‖c‖² = ‖r‖² + (θ - u)(θ - v)`. -/
 private theorem sum_quadratic {n : ℕ} (hn : Module.finrank 𝕜 E = n) {x : E} (hx : ‖x‖ = 1)
     (u v : ℝ) :
     ∑ i, (hA.eigenvalues hn i - u) * (hA.eigenvalues hn i - v) *
@@ -90,7 +116,8 @@ private theorem quadratic_nonneg {n : ℕ} (hn : Module.finrank 𝕜 E = n) {x :
   rw [← hA.sum_quadratic hn hx u v]
   exact Finset.sum_nonneg fun i _ => mul_nonneg (h i) (sq_nonneg _)
 
-/-- Residual bound (Saad-eig Cor 3.3): some eigenvalue lies within `‖A x - θ x‖ / ‖x‖` of `θ`. -/
+/-- Residual bound (Saad, *Large Eigenvalue Problems*, Cor 3.3): some eigenvalue lies within
+`‖A x - θ x‖ / ‖x‖` of `θ`. -/
 theorem exists_hasEigenvalue_dist_le (θ : ℝ) {x : E} (hx : x ≠ 0) :
     ∃ μ : 𝕜, Module.End.HasEigenvalue A μ ∧ ‖μ - (θ : 𝕜)‖ ≤ ‖A x - (θ : 𝕜) • x‖ / ‖x‖ := by
   set n := Module.finrank 𝕜 E with hn'
@@ -116,8 +143,9 @@ theorem exists_hasEigenvalue_dist_le (θ : ℝ) {x : E} (hx : x ≠ 0) :
   have hsq := Real.sqrt_le_sqrt key
   rwa [Real.sqrt_sq (by positivity), Real.sqrt_sq (norm_nonneg _)] at hsq
 
-/-- Saad-eig Lemma 3.2: with `θ = re⟪A x, x⟫` (`‖x‖ = 1`) and `(α, β) ∋ θ` free of eigenvalues,
-`(β - θ)(θ - α) ≤ ‖r‖²`. -/
+/-- Saad, *Large Eigenvalue Problems*, Lemma 3.2: with `θ = re⟪A x, x⟫` (`‖x‖ = 1`) and an
+interval `(α, β) ∋ θ` free of eigenvalues, `(β - θ)(θ - α) ≤ ‖r‖²` for the residual
+`r = A x - θ x`. -/
 theorem rayleigh_gap_le_norm_residual_sq {x : E} (hx : ‖x‖ = 1) {α β : ℝ}
     (hαβ : α < RCLike.re (inner 𝕜 (A x) x) ∧ RCLike.re (inner 𝕜 (A x) x) < β)
     (hfree : ∀ μ : 𝕜, Module.End.HasEigenvalue A μ → RCLike.re μ ∉ Set.Ioo α β) :
@@ -139,13 +167,14 @@ theorem rayleigh_gap_le_norm_residual_sq {x : E} (hx : ‖x‖ = 1) {α β : ℝ
     · exact mul_nonneg (by linarith) (by linarith)
   nlinarith [h]
 
-/-- Kato–Temple (Saad-eig Thm 3.8): if `(a, b)` contains the Rayleigh quotient `θ` and exactly
-one eigenvalue `λ`, then `-‖r‖²/(b - θ) ≤ λ - θ ≤ ‖r‖²/(θ - a)`.
+/-- Kato–Temple (Saad, *Large Eigenvalue Problems*, Thm 3.8): if `(a, b)` contains the Rayleigh
+quotient `θ = re⟪A x, x⟫` of a unit vector `x` and exactly one eigenvalue `λ`, then
+`-‖r‖²/(b - θ) ≤ λ - θ ≤ ‖r‖²/(θ - a)` for the residual `r = A x - θ x`.
 
 The denominators here are the ones the proof produces: the *lower* bound is controlled by the
 distance from `θ` to the right end `b`, and the *upper* bound by the distance to the left end `a`.
-The version with the two denominators exchanged, which is what the plan (§4.1) wrote down, is
-false: for `A = diag(0, 10)`, `x` with `‖x‖ = 1` and `x₂² = 3/5`, one gets `θ = 6`, `‖r‖² = 24`,
+Exchanging the two denominators gives a false statement: for `A = diag(0, 10)` and `x` with
+`‖x‖ = 1`, `x₂² = 3/5`, one gets `θ = 6`, `‖r‖² = 24`,
 and `(a, b) = (5, 20)` contains only the eigenvalue `10`, yet `10 - 6 = 4 > 24/(20 - 6)`. -/
 theorem kato_temple {x : E} (hx : ‖x‖ = 1) {a b : ℝ} {μ : 𝕜} (hμ : Module.End.HasEigenvalue A μ)
     (hab : a < RCLike.re (inner 𝕜 (A x) x) ∧ RCLike.re (inner 𝕜 (A x) x) < b)
@@ -194,7 +223,9 @@ theorem kato_temple {x : E} (hx : ‖x‖ = 1) {a b : ℝ} {μ : 𝕜} (hμ : Mo
     rw [le_div_iff₀ (by linarith : (0 : ℝ) < θ - a)]
     nlinarith [h]
 
-/-- Saad-eig Cor 3.4: `|λ - θ| ≤ ‖r‖² / δ` with `δ` the gap from `θ` to the other eigenvalues. -/
+/-- Saad, *Large Eigenvalue Problems*, Cor 3.4: `|λ - θ| ≤ ‖r‖² / δ`, where `θ = re⟪A x, x⟫` is
+the Rayleigh quotient of a unit vector `x`, `r = A x - θ x` its residual, and `δ` the gap from
+`θ` to the eigenvalues other than `λ`. -/
 theorem abs_sub_rayleigh_le_norm_residual_sq_div {x : E} (hx : ‖x‖ = 1) {μ : 𝕜}
     (hμ : Module.End.HasEigenvalue A μ) {δ : ℝ} (hδ : 0 < δ)
     (hgap : ∀ μ' : 𝕜, Module.End.HasEigenvalue A μ' → μ' ≠ μ →
@@ -248,8 +279,9 @@ theorem rayleigh_mem_Icc {lmin lmax : ℝ}
 
 end LinearMap.IsSymmetric
 
-/-- Backward error of an approximate eigenpair (Saad-eig Prop 3.4): the least `‖ΔA‖` with
-`(A - ΔA) u = θ u` (`‖u‖ = 1`) is `‖A u - θ u‖`, attained by the rank-one `r uᴴ`. -/
+/-- Backward error of an approximate eigenpair (Saad, *Large Eigenvalue Problems*, Prop 3.4):
+the least `‖ΔA‖` with `(A - ΔA) u = θ u` (`‖u‖ = 1`) is `‖A u - θ u‖`, attained by the rank-one
+perturbation `r uᴴ` built from the residual `r = A u - θ u`. -/
 theorem isLeast_eigen_backwardError (A : E →L[𝕜] E) {u : E} (hu : ‖u‖ = 1) (θ : 𝕜) :
     IsLeast {ε : ℝ | ∃ ΔA : E →L[𝕜] E, (A - ΔA) u = θ • u ∧ ‖ΔA‖ = ε} ‖A u - θ • u‖ := by
   have huu : inner 𝕜 u u = (1 : 𝕜) := by
@@ -268,8 +300,9 @@ theorem isLeast_eigen_backwardError (A : E →L[𝕜] E) {u : E} (hu : ‖u‖ =
       _ ≤ ‖ΔA‖ * ‖u‖ := ΔA.le_opNorm u
       _ = ‖ΔA‖ := by rw [hu, mul_one]
 
-/-- Bendixson (Saad Thm 1.35): the real part of every eigenvalue of a bounded operator lies
-between the extreme eigenvalues of its symmetric part `H = (A + A†)/2`. -/
+/-- Bendixson's theorem (Saad, *Iterative Methods*, Thm 1.35): the real part of every eigenvalue
+of a bounded operator lies between the extreme eigenvalues of its symmetric part
+`H = (A + A†)/2`. -/
 theorem re_hasEigenvalue_mem_Icc_of_symmetricPart {A H : E →ₗ[𝕜] E} {lmin lmax : ℝ}
     (hH : H.IsSymmetricBoundedBy lmin lmax)
     (hHA : ∀ x, RCLike.re (inner 𝕜 (H x) x) = RCLike.re (inner 𝕜 (A x) x)) {μ : 𝕜}
@@ -292,8 +325,9 @@ open scoped Matrix.Norms.L2Operator
 
 variable {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- Bauer–Fike (Saad-eig Thm 3.6, Kress Problem 7.6): for `A = X D X⁻¹` and `μ ∈ σ(A + ΔA)`,
-`dist(μ, σ(A)) ≤ κ₂(X) ‖ΔA‖₂`. -/
+/-- Bauer–Fike (Saad, *Large Eigenvalue Problems*, Thm 3.6; Kress, *Numerical Analysis*,
+Problem 7.6): for a diagonalizable `A = X D X⁻¹` and `μ ∈ σ(A + ΔA)`,
+`dist(μ, σ(A)) ≤ κ₂(X) ‖ΔA‖₂`, where `κ₂(X) = ‖X‖₂ ‖X⁻¹‖₂`. -/
 theorem bauer_fike (X : Matrix n n ℂ) (d : n → ℂ) (hX : IsUnit X) (ΔA : Matrix n n ℂ) {μ : ℂ}
     (hμ : μ ∈ spectrum ℂ (X * Matrix.diagonal d * X⁻¹ + ΔA)) :
     ∃ i, ‖μ - d i‖ ≤ NormedRing.condNumber X * ‖ΔA‖ := by
@@ -384,8 +418,8 @@ theorem bauer_fike (X : Matrix n n ℂ) (d : n → ℂ) (hX : IsUnit X) (ΔA : M
   calc ‖μ - d i₀‖ ≤ ‖X⁻¹‖ * ‖ΔA‖ * ‖X‖ := h3
     _ = ‖X‖ * ‖X⁻¹‖ * ‖ΔA‖ := by ring
 
-/-- Residual form of Bauer–Fike: for a unit approximate eigenpair `(θ, u)` of `A = X D X⁻¹`,
-`dist(θ, σ(A)) ≤ κ₂(X) ‖A u - θ u‖`. -/
+/-- Residual form of Bauer–Fike: for a unit approximate eigenpair `(θ, u)` of a diagonalizable
+`A = X D X⁻¹`, `dist(θ, σ(A)) ≤ κ₂(X) ‖A u - θ u‖`, where `κ₂(X) = ‖X‖₂ ‖X⁻¹‖₂`. -/
 theorem bauer_fike_residual (X : Matrix n n ℂ) (d : n → ℂ) (hX : IsUnit X)
     {u : EuclideanSpace ℂ n} (hu : ‖u‖ = 1) (θ : ℂ) :
     ∃ i, ‖θ - d i‖ ≤ NormedRing.condNumber X *
@@ -427,8 +461,10 @@ theorem bauer_fike_residual (X : Matrix n n ℂ) (d : n → ℂ) (hX : IsUnit X)
   obtain ⟨i, hi⟩ := bauer_fike X d hX (-M) hspec
   exact ⟨i, by rwa [norm_neg, hMnorm] at hi⟩
 
-/-- Gershgorin discs, union form (Saad-eig Thm 3.11, Kress Thm 7.7); Mathlib's
-`eigenvalue_mem_ball` is the pointwise version. -/
+/-- Gershgorin discs, union form (Saad, *Large Eigenvalue Problems*, Thm 3.11; Kress,
+*Numerical Analysis*, Thm 7.7): the spectrum is contained in the union over `i` of the discs
+centred at `a_ii` with radius `∑_{j ≠ i} |a_ij|`.  Mathlib's `eigenvalue_mem_ball` is the
+pointwise version. -/
 theorem spectrum_subset_iUnion_closedBall (A : Matrix n n ℂ) :
     spectrum ℂ A ⊆ ⋃ i, Metric.closedBall (A i i) (∑ j ∈ Finset.univ.erase i, ‖A i j‖) := by
   intro μ hμ

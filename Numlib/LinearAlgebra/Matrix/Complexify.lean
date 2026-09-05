@@ -165,7 +165,7 @@ theorem tendsto_pow_iff_complexSpectralRadius_lt_one (A : Matrix n n ℝ) :
     rw [hR, tendsto_pow_iff_tendsto_pow_toEuclideanCLM,
       ← spectralRadius_lt_one_iff_tendsto_pow, hsr]
 
-/-- `ρ(A) ≤ ‖A‖` for any submultiplicative matrix norm (Saad Cor 4.2): open a norm scope such as
+/-- `ρ(A) ≤ ‖A‖` for any submultiplicative matrix norm: open a norm scope such as
 `Matrix.Norms.LinftyOp`, `Matrix.Norms.L2Operator` or `Matrix.Norms.Frobenius` to supply the
 instances. Submultiplicativity is the operative hypothesis; a *multiplicative* norm
 (`NormMulClass`) does not exist on `Matrix n n ℝ` for `1 < card n`. Proof: `ρ` is unchanged by

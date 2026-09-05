@@ -12,9 +12,9 @@ import Mathlib.Analysis.InnerProductSpace.Projection.Basic
 # Energy inner product and energy norm
 
 For a symmetric coercive `A`, `⟪x, y⟫_A := ⟪A x, y⟫` is an inner product and
-`‖x‖_A := √(re ⟪A x, x⟫)` the associated norm (Saad §5.2, Atkinson–Han §5.6/§9.4, Fong–Saunders,
-Meurant–Strakoš §3). `WithEnergy A hA` is a type synonym of `E` carrying this inner product, so
-that Mathlib's orthogonal projection theory applies to `A`-orthogonal projections.
+`‖x‖_A := √(re ⟪A x, x⟫)` the associated norm, classically called the energy inner product and
+the energy (or `A`-) norm. `WithEnergy A hA` is a type synonym of `E` carrying this inner
+product, so that Mathlib's orthogonal projection theory applies to `A`-orthogonal projections.
 -/
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
@@ -86,7 +86,8 @@ theorem IsSymmetricCoercive.energyNorm_le_norm {A : E →L[𝕜] E}
   have h2 : (0 : ℝ) ≤ Real.sqrt ‖A‖ * ‖x‖ := by positivity
   nlinarith
 
-/-- `‖x* - x‖_A² = re ⟪x* - x, r⟫` with `r = b - A x` (Saad Thm 5.9 proof, Meurant §3.3). -/
+/-- The energy norm of the error against the residual: `‖x* - x‖_A² = re ⟪x* - x, r⟫`, where
+`x*` solves `A x* = b` and `r = b - A x` is the residual at `x`. -/
 theorem IsSymmetricCoercive.energyNorm_error_sq_eq (hA : A.IsSymmetricCoercive) {b xstar x : E}
     (hstar : A xstar = b) :
     energyNorm A (xstar - x) ^ 2 = RCLike.re (inner 𝕜 (xstar - x) (b - A x)) := by

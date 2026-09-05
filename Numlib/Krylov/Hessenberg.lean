@@ -5,20 +5,34 @@ import Numlib.Krylov.Relations
 # Hessenberg relations, FOM/GMRES coordinates and Givens rotations
 
 * `Krylov.HessenbergRelation A v h`: a sequence `v` with `A v_j = ∑_{i ≤ j+1} h i j v_i`
-  (Saad (6.6)–(6.7)), *without* orthogonality, so that the residual formulas (6.18), (6.27)
-  and Prop 6.7 apply verbatim to IOM/DIOM/DQGMRES and (Ch. 7) to the bi-Lanczos basis of QMR;
-  Arnoldi is the instance `Arnoldi.hessenbergRelation`.
+  (Saad, *Iterative Methods*[^saad-iterative] (6.6)–(6.7)), *without* orthogonality, so that the
+  residual formulas Saad (6.18), (6.27) and Prop 6.7 apply verbatim to IOM/DIOM/DQGMRES and
+  (Saad Ch. 7) to the bi-Lanczos basis of QMR; Arnoldi is the instance
+  `Arnoldi.hessenbergRelation`.
 * FOM and GMRES in coordinates (Saad (6.16)–(6.17), (6.28)–(6.30)): for `m ≤ grade`, the
   Galerkin iterate is `x₀ + V_m y` with `H_m y = β e₁`, exists uniquely iff `H_m` is a unit,
   and the minimal-residual iterate is `x₀ + V_m y` with `y` the least-squares solution of
   `H̄_m y ≈ β e₁`.
 * Givens rotations, indexed by `ℕ` (no `Fin` casts): the progressive QR factorization of the
   Hessenberg coefficients `h`, the parameters `c_k, s_k, ρ_k`, the transformed right-hand side
-  `γ_k, g_k` with `γ_{k+1} = -s_k γ_k` (Saad (6.37), (6.44)–(6.47), (6.80)–(6.81); Choi §2.2.3;
-  Fong–Saunders §4.2), `‖r_m‖ = |γ_m|` (6.42), and the spec-level identifications
+  `γ_k, g_k` with `γ_{k+1} = -s_k γ_k` (Saad (6.37), (6.44)–(6.47), (6.80)–(6.81);
+  Choi[^choi] §2.2.3; Fong–Saunders[^fong-saunders] §4.2), `‖r_m‖ = |γ_m|` (Saad (6.42)), and the
+  spec-level identifications
   `|s_m| = ‖r^G_{m+1}‖ / ‖r^G_m‖`, `|c_m| = ‖r^G_{m+1}‖ / ‖r^F_{m+1}‖`, `H_{m+1}` unit iff
   `c_m ≠ 0` (Saad Prop 6.9, (6.75), Lemma 6.16). Because the rotations are computed from the
   infinite coefficient function, prefix stability across `m` is automatic.
+
+Here `r^G_m` is the residual of the minimal-residual (GMRES) iterate and `r^F_m` that of the
+Galerkin (FOM) iterate, both over `x₀ + 𝒦_m`.
+
+## References
+
+[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
+  SIAM, 2003.
+[^choi]: Sou-Cheng Choi, *Iterative Methods for Singular Linear Equations and Least-Squares
+  Problems*, PhD thesis, Stanford University, 2006.
+[^fong-saunders]: David Chin-Lung Fong and Michael Saunders, *CG versus MINRES: an empirical
+  comparison*, SQU Journal for Science 17 (2012), 44–62.
 -/
 
 open Krylov Finset
@@ -39,7 +53,7 @@ def hessenbergSqOf (h : ℕ → ℕ → 𝕜) (m : ℕ) : Matrix (Fin m) (Fin m)
 def firstVec (β : 𝕜) (m : ℕ) : Fin m → 𝕜 := fun i => if (i : ℕ) = 0 then β else 0
 
 /-- A sequence `v` satisfying the Hessenberg relation `A v_j = ∑_{i ≤ j+1} h i j v_i` with `h`
-upper Hessenberg (Saad (6.6)–(6.9) without orthogonality). -/
+upper Hessenberg (Saad, *Iterative Methods*, (6.6)–(6.9) without orthogonality). -/
 structure HessenbergRelation (A : E →ₗ[𝕜] E) (v : ℕ → E) (h : ℕ → ℕ → 𝕜) : Prop where
   apply_eq : ∀ j, A (v j) = ∑ i ∈ range (j + 2), h i j • v i
   eq_zero_of_lt : ∀ i j, j + 1 < i → h i j = 0
@@ -60,7 +74,7 @@ private theorem apply_eq_range (j N : ℕ) (hj : j + 2 ≤ N) :
   rw [Finset.mem_range] at hi'
   rw [hv.eq_zero_of_lt i j (by omega), zero_smul]
 
-/-- `A V_m = V_{m+1} H̄_m` (Saad (6.7)) in coordinates. -/
+/-- `A V_m = V_{m+1} H̄_m` (Saad, *Iterative Methods*, (6.7)) in coordinates. -/
 theorem apply_sum (m : ℕ) (y : Fin m → 𝕜) :
     A (∑ j, y j • v j) = ∑ i : Fin (m + 1), (hessenbergOf h m).mulVec y i • v i := by
   rw [map_sum]
@@ -75,7 +89,8 @@ theorem apply_sum (m : ℕ) (y : Fin m → 𝕜) :
   rw [Finset.sum_smul]
   exact Finset.sum_congr rfl fun j _ => by rw [mul_comm]
 
-/-- Saad (6.27): with `r₀ = β v₀`, the residual of `x₀ + V_m y` is `V_{m+1} (β e₁ - H̄_m y)`. -/
+/-- Saad, *Iterative Methods*, (6.27): with `r₀ = β v₀`, the residual of `x₀ + V_m y` is
+`V_{m+1} (β e₁ - H̄_m y)`. -/
 theorem residual_eq {b x₀ : E} {β : 𝕜} (hr : b - A x₀ = β • v 0) (m : ℕ) (y : Fin m → 𝕜) :
     b - A (x₀ + ∑ j, y j • v j) =
       ∑ i : Fin (m + 1), (firstVec β (m + 1) - (hessenbergOf h m).mulVec y) i • v i := by
@@ -96,8 +111,8 @@ theorem residual_eq {b x₀ : E} {β : 𝕜} (hr : b - A x₀ = β • v 0) (m :
   rw [hsplit, hAx, ← hr]
   abel
 
-/-- Saad Prop 6.7 / (6.18): if `H_m y = β e₁` then the residual of `x₀ + V_m y` is
-`-(h_{m,m-1} y_{m-1}) v_m`. -/
+/-- Saad, *Iterative Methods*, Prop 6.7 / (6.18): if `H_m y = β e₁` then the residual of
+`x₀ + V_m y` is `-(h_{m,m-1} y_{m-1}) v_m`. -/
 theorem residual_eq_of_mulVec_eq {b x₀ : E} {β : 𝕜} (hr : b - A x₀ = β • v 0) {m : ℕ}
     (hm : 0 < m) (y : Fin m → 𝕜) (hy : (hessenbergSqOf h m).mulVec y = firstVec β m) :
     b - A (x₀ + ∑ j, y j • v j) = -(h m (m - 1) * y ⟨m - 1, by omega⟩) • v m := by
@@ -331,7 +346,8 @@ section Coordinates
 
 variable {A : E →ₗ[𝕜] E} {b x₀ : E} [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))]
 
-/-- Saad (6.28): for `m ≤ grade`, `‖b - A (x₀ + V_m y)‖ = ‖β e₁ - H̄_m y‖₂`. -/
+/-- Saad, *Iterative Methods*, (6.28): for `m ≤ grade`,
+`‖b - A (x₀ + V_m y)‖ = ‖β e₁ - H̄_m y‖₂`. -/
 theorem norm_residual_eq_norm_firstVec_sub_mulVec {m : ℕ} (hm : m ≤ grade A (b - A x₀))
     (y : Fin m → 𝕜) :
     ‖b - A (x₀ + ∑ j, y j • Arnoldi.vec A (b - A x₀) j)‖ =
@@ -341,7 +357,8 @@ theorem norm_residual_eq_norm_firstVec_sub_mulVec {m : ℕ} (hm : m ≤ grade A 
     (Arnoldi.smul_vec_zero A (b - A x₀)).symm m y]
   exact norm_sum_smul_vec_eq A (b - A x₀) _ (residual_coeff_eq_zero A (b - A x₀) hm y)
 
-/-- FOM (Saad (6.16)–(6.17)): `x₀ + V_m y` is the Galerkin iterate iff `H_m y = β e₁`. -/
+/-- FOM (Saad, *Iterative Methods*, (6.16)–(6.17)): `x₀ + V_m y` is the Galerkin iterate iff
+`H_m y = β e₁`. -/
 theorem isGalerkinIterate_iff_mulVec_eq {m : ℕ} (hm : m ≤ grade A (b - A x₀)) (y : Fin m → 𝕜) :
     IsGalerkinIterate A b x₀ m (x₀ + ∑ j, y j • Arnoldi.vec A (b - A x₀) j) ↔
       (Arnoldi.hessenbergSq A (b - A x₀) m).mulVec y = firstVec (‖b - A x₀‖ : 𝕜) m := by
@@ -375,7 +392,8 @@ theorem isGalerkinIterate_iff_exists_mulVec_eq {m : ℕ} (hm : m ≤ grade A (b 
   · rintro ⟨y, hy, rfl⟩
     exact (isGalerkinIterate_iff_mulVec_eq hm y).mpr hy
 
-/-- FOM is well defined iff `H_m` is nonsingular (Saad §6.4, Props 6.12–6.17's hypothesis). -/
+/-- FOM is well defined iff `H_m` is nonsingular (Saad, *Iterative Methods*, §6.4,
+Props 6.12–6.17's hypothesis). -/
 theorem existsUnique_isGalerkinIterate_iff_isUnit {m : ℕ} (hm : m ≤ grade A (b - A x₀)) :
     (∃! x, IsGalerkinIterate A b x₀ m x) ↔ IsUnit (Arnoldi.hessenbergSq A (b - A x₀) m) := by
   constructor
@@ -406,7 +424,8 @@ theorem existsUnique_isGalerkinIterate_iff_isUnit {m : ℕ} (hm : m ≤ grade A 
     rw [hx'e, hyy]
 
 omit [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))] in
-/-- Saad Prop 6.7 for Arnoldi: the Galerkin residual is `-(h_{m,m-1} y_{m-1}) v_m`. -/
+/-- Saad, *Iterative Methods*, Prop 6.7 for Arnoldi: the Galerkin residual is
+`-(h_{m,m-1} y_{m-1}) v_m`. -/
 theorem residual_galerkin_eq {m : ℕ} (hm : 0 < m) (y : Fin m → 𝕜)
     (hy : (Arnoldi.hessenbergSq A (b - A x₀) m).mulVec y = firstVec (‖b - A x₀‖ : 𝕜) m) :
     b - A (x₀ + ∑ j, y j • Arnoldi.vec A (b - A x₀) j) =
@@ -415,8 +434,8 @@ theorem residual_galerkin_eq {m : ℕ} (hm : 0 < m) (y : Fin m → 𝕜)
   (Arnoldi.hessenbergRelation A (b - A x₀)).residual_eq_of_mulVec_eq
     (Arnoldi.smul_vec_zero A (b - A x₀)).symm hm y hy
 
-/-- GMRES (Saad (6.29)–(6.30)): `x₀ + V_m y` is the minimal-residual iterate iff `y` minimizes
-`‖β e₁ - H̄_m z‖₂`. -/
+/-- GMRES (Saad, *Iterative Methods*, (6.29)–(6.30)): `x₀ + V_m y` is the minimal-residual
+iterate iff `y` minimizes `‖β e₁ - H̄_m z‖₂`. -/
 theorem isMinResIterate_iff_isMinOn {m : ℕ} (hm : m ≤ grade A (b - A x₀)) (y : Fin m → 𝕜) :
     IsMinResIterate A b x₀ m (x₀ + ∑ j, y j • Arnoldi.vec A (b - A x₀) j) ↔
       IsMinOn (fun z : Fin m → 𝕜 => ‖(WithLp.toLp 2 (firstVec (‖b - A x₀‖ : 𝕜) (m + 1) -
@@ -457,8 +476,8 @@ section Givens
 `rotated h k` is the coefficient function after the first `k` rotations; rotation `k` acts on
 rows `k, k+1` and annihilates the entry `(k+1, k)`. With `a = (rotated h k) k k`,
 `d = (rotated h k) (k+1) k`, `ρ_k = √(|a|² + |d|²)`, `c_k = a / ρ_k`, `s_k = d / ρ_k`, the rotation
-is `[[c̄_k, s̄_k], [-s_k, c_k]]` (Saad (6.80) for complex `𝕜`; `s_k` is real for Arnoldi
-coefficients). -/
+is `[[c̄_k, s̄_k], [-s_k, c_k]]` (Saad, *Iterative Methods*, (6.80) for complex `𝕜`; `s_k` is
+real for Arnoldi coefficients). -/
 
 /-- The Hessenberg coefficients after `k` Givens rotations. -/
 noncomputable def rotated (h : ℕ → ℕ → 𝕜) : ℕ → ℕ → ℕ → 𝕜
@@ -484,8 +503,8 @@ noncomputable def givensC (k : ℕ) : 𝕜 := rotated h k k k / (givensRho h k :
 /-- `s_k = h_{k+1,k} / ρ_k`. -/
 noncomputable def givensS (k : ℕ) : 𝕜 := rotated h k (k + 1) k / (givensRho h k : 𝕜)
 
-/-- `γ_0 = β`, `γ_{k+1} = -s_k γ_k` (Saad (6.47)): the last entry of the rotated right-hand
-side. -/
+/-- `γ_0 = β`, `γ_{k+1} = -s_k γ_k` (Saad, *Iterative Methods*, (6.47)): the last entry of the
+rotated right-hand side. -/
 noncomputable def gamma (β : 𝕜) : ℕ → 𝕜
   | 0 => β
   | k + 1 => -givensS h k * gamma β k
@@ -521,7 +540,7 @@ private theorem rotated_eq_zero_of_givensRho_eq_zero {k : ℕ} (hρ : givensRho 
   exact ⟨norm_eq_zero.mp (pow_eq_zero_iff (two_ne_zero) |>.mp h1),
     norm_eq_zero.mp (pow_eq_zero_iff (two_ne_zero) |>.mp h2)⟩
 
-/-- `‖γ_m‖ = ∏_{k < m} |s_k| ‖β‖` (Saad (6.47)). -/
+/-- `‖γ_m‖ = ∏_{k < m} |s_k| ‖β‖` (Saad, *Iterative Methods*, (6.47)). -/
 theorem norm_gamma_eq_prod (β : 𝕜) (m : ℕ) :
     ‖gamma h β m‖ = (∏ k ∈ range m, ‖givensS h k‖) * ‖β‖ := by
   induction m with
@@ -766,7 +785,8 @@ private theorem givensQ_succ (n m : ℕ) :
   rw [List.range_succ, List.map_append, List.reverse_append]
   simp
 
-/-- `Q_m H̄_m = R̄_m` (Saad (6.38)–(6.39)): the rotated coefficients form the triangular factor. -/
+/-- `Q_m H̄_m = R̄_m` (Saad, *Iterative Methods*, (6.38)–(6.39)): the rotated coefficients form
+the triangular factor. -/
 theorem givensQ_mul_hessenbergOf (m : ℕ) :
     givensQ h m * hessenbergOf h m = hessenbergOf (rotated h m) m := by
   have key : ∀ n, n ≤ m →
@@ -839,7 +859,7 @@ private theorem givensQAux_mulVec_firstVec (β : 𝕜) (m : ℕ) : ∀ n, n ≤ 
         · rw [gvecTrunc_of_lt h β hi, gvecTrunc_of_lt h β (by omega)]
         · rw [gvecTrunc_of_gt h β (by omega), gvecTrunc_of_gt h β (by omega)]
 
-/-- `Q_m (β e₁) = (g_0, …, g_{m-1}, γ_m)` (Saad (6.40), (6.44)–(6.47)). -/
+/-- `Q_m (β e₁) = (g_0, …, g_{m-1}, γ_m)` (Saad, *Iterative Methods*, (6.40), (6.44)–(6.47)). -/
 theorem givensQ_mulVec_firstVec (β : 𝕜) (m : ℕ) :
     (givensQ h m).mulVec (firstVec β (m + 1)) =
       fun i : Fin (m + 1) => if (i : ℕ) < m then gvec h β i else gamma h β m := by
@@ -863,10 +883,10 @@ section GivensArnoldi
 
 variable {A : E →ₗ[𝕜] E} {b x₀ : E} [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))]
 
-/-- Saad (6.42), Prop 6.9(3): `‖r^G_m‖ = |γ_m|`.
+/-- Saad, *Iterative Methods*, (6.42), Prop 6.9(3): `‖r^G_m‖ = |γ_m|`.
 
-The hypothesis is `m < grade`, not `m ≤ grade` as in the plan (§3.10): with `m = grade` the
-statement is **false**.  Counterexample: `𝕜 = E = ℝ`, `A = 0`, `b = 1`, `x₀ = 0`.  Then
+The hypothesis `m < grade` is strict, and cannot be weakened to `m ≤ grade`: with `m = grade`
+the statement is **false**.  Counterexample: `𝕜 = E = ℝ`, `A = 0`, `b = 1`, `x₀ = 0`.  Then
 `r₀ = 1`, `𝒦_∞ = ℝ` so `grade = 1`, and `m = 1 ≤ grade`.  Every `x` is a minimal-residual
 iterate with `‖b - A x‖ = 1`, while `h₀₀ = ⟪v₀, A v₀⟫ = 0` and `h₁₀ = 0` give `ρ₀ = 0`,
 hence `s₀ = 0 / 0 = 0` and `γ₁ = -s₀ γ₀ = 0`.  With `m < grade` one gets
@@ -892,7 +912,8 @@ theorem IsMinResIterate.norm_residual_eq_norm_gamma {m : ℕ} (hm : m < grade A 
   -- least-squares statement above, so nothing is gained without (2)–(4).
   sorry
 
-/-- Saad (6.43)/(6.30): the minimal-residual iterate is `x₀ + V_m y` with `R_m y = g_m`. -/
+/-- Saad, *Iterative Methods*, (6.43)/(6.30): the minimal-residual iterate is `x₀ + V_m y` with
+`R_m y = g_m`. -/
 theorem IsMinResIterate.exists_mulVec_rotated_eq {m : ℕ} (hm : m ≤ grade A (b - A x₀)) {x : E}
     (hx : IsMinResIterate A b x₀ m x) :
     ∃ y : Fin m → 𝕜, (hessenbergSqOf (rotated (Arnoldi.coeff A (b - A x₀)) m) m).mulVec y =
@@ -905,10 +926,10 @@ theorem IsMinResIterate.exists_mulVec_rotated_eq {m : ℕ} (hm : m ≤ grade A (
   -- `hx.mem`), but the two halves must produce the *same* `y`.
   sorry
 
-/-- `|s_m| = ‖r^G_{m+1}‖ / ‖r^G_m‖` (Saad (6.47), Prop 6.9).
+/-- `|s_m| = ‖r^G_{m+1}‖ / ‖r^G_m‖` (Saad, *Iterative Methods*, (6.47), Prop 6.9).
 
-As for `norm_residual_eq_norm_gamma`, the hypothesis is `m + 1 < grade` and not `m + 1 ≤ grade`
-as in the plan (§3.10): the same counterexample (`𝕜 = E = ℝ`, `A = 0`, `b = 1`, `x₀ = 0`,
+As for `norm_residual_eq_norm_gamma`, the hypothesis `m + 1 < grade` is strict: the same
+counterexample (`𝕜 = E = ℝ`, `A = 0`, `b = 1`, `x₀ = 0`,
 `m = 0`, `grade = 1`) has `‖b - A x'‖ = 1` but `‖s₀‖ * ‖b - A x‖ = 0`. -/
 theorem IsMinResIterate.norm_residual_succ_eq {m : ℕ} (hm : m + 1 < grade A (b - A x₀)) {x x' : E}
     (hx : IsMinResIterate A b x₀ m x) (hx' : IsMinResIterate A b x₀ (m + 1) x') :
@@ -918,7 +939,8 @@ theorem IsMinResIterate.norm_residual_succ_eq {m : ℕ} (hm : m + 1 < grade A (b
   --      gamma_succ, norm_mul, norm_neg]`.
   sorry
 
-/-- `H_{m+1}` is nonsingular iff `c_m ≠ 0` (Saad Prop 6.9(1) / Lemma 6.16, `m + 1 ≤ grade`). -/
+/-- `H_{m+1}` is nonsingular iff `c_m ≠ 0` (Saad, *Iterative Methods*, Prop 6.9(1) /
+Lemma 6.16, `m + 1 ≤ grade`). -/
 theorem isUnit_hessenbergSq_iff_givensC_ne_zero {m : ℕ} (hm : m + 1 ≤ grade A (b - A x₀)) :
     IsUnit (Arnoldi.hessenbergSq A (b - A x₀) (m + 1)) ↔
       givensC (Arnoldi.coeff A (b - A x₀)) m ≠ 0 := by
@@ -930,7 +952,7 @@ theorem isUnit_hessenbergSq_iff_givensC_ne_zero {m : ℕ} (hm : m + 1 ≤ grade 
   -- `c_m = r_{mm} / ρ_m`, giving the equivalence.
   sorry
 
-/-- Saad (6.75) / Prop 6.12: `‖r^F_{m+1}‖ = ‖r^G_{m+1}‖ / |c_m|`. -/
+/-- Saad, *Iterative Methods*, (6.75) / Prop 6.12: `‖r^F_{m+1}‖ = ‖r^G_{m+1}‖ / |c_m|`. -/
 theorem IsGalerkinIterate.norm_residual_eq_div_norm_givensC {m : ℕ}
     (hm : m + 1 ≤ grade A (b - A x₀)) {xF xG : E} (hF : IsGalerkinIterate A b x₀ (m + 1) xF)
     (hG : IsMinResIterate A b x₀ (m + 1) xG) :
@@ -946,7 +968,8 @@ theorem IsGalerkinIterate.norm_residual_eq_div_norm_givensC {m : ℕ}
   sorry
 
 omit [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))] in
-/-- The rotation `s_m` is real and nonnegative for Arnoldi coefficients (Saad §6.5.9). -/
+/-- The rotation `s_m` is real and nonnegative for Arnoldi coefficients
+(Saad, *Iterative Methods*, §6.5.9). -/
 theorem givensS_arnoldi_eq (m : ℕ) :
     givensS (Arnoldi.coeff A (b - A x₀)) m =
       (‖Arnoldi.w A (b - A x₀) m‖ / givensRho (Arnoldi.coeff A (b - A x₀)) m : ℝ) := by

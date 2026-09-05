@@ -4,12 +4,28 @@ import Numlib.Analysis.InnerProductSpace.Coercive
 /-!
 # The symmetric Lanczos process
 
-For symmetric `A` the Arnoldi coefficients are real and tridiagonal (Saad Thm 6.19 / Saad-eig
-Thm 6.2), which gives the three-term recurrence
-`A v_j = β_j v_{j-1} + α_j v_j + β_{j+1} v_{j+1}` (Saad Alg 6.15, Choi §2.1, Meurant §2.1,
-Fong–Saunders §1.1). Indexing is `0`-based: `alpha A b j = ⟪v_j, A v_j⟫` and
+For symmetric `A` the Arnoldi coefficients are real and tridiagonal
+(Saad, *Iterative Methods*[^saad-iterative] Thm 6.19 /
+Saad, *Large Eigenvalue Problems*[^saad-eigenvalue] Thm 6.2), which gives the three-term
+recurrence `A v_j = β_j v_{j-1} + α_j v_j + β_{j+1} v_{j+1}`
+(Saad, *Iterative Methods*, Alg 6.15, Choi[^choi] §2.1,
+Meurant–Strakoš[^meurant-strakos] §2.1, Fong–Saunders[^fong-saunders] §1.1). Indexing is
+`0`-based: `alpha A b j = ⟪v_j, A v_j⟫` and
 `beta A b j = h_{j+1,j} = ‖w_j‖ ≥ 0`, so `A v_{j+1} = beta j • v_j + alpha (j+1) • v_{j+1} +
 beta (j+1) • v_{j+2}`.
+
+## References
+
+[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
+  SIAM, 2003.
+[^saad-eigenvalue]: Yousef Saad, *Numerical Methods for Large Eigenvalue Problems*, 2nd edition,
+  SIAM, 2011.
+[^choi]: Sou-Cheng Choi, *Iterative Methods for Singular Linear Equations and Least-Squares
+  Problems*, PhD thesis, Stanford University, 2006.
+[^meurant-strakos]: Gérard Meurant and Zdeněk Strakoš, *The Lanczos and conjugate gradient
+  algorithms in finite precision arithmetic*, Acta Numerica (2006), 471–542.
+[^fong-saunders]: David Chin-Lung Fong and Michael Saunders, *CG versus MINRES: an empirical
+  comparison*, SQU Journal for Science 17 (2012), 44–62.
 -/
 
 open Krylov
@@ -49,7 +65,7 @@ theorem beta_nonneg (j : ℕ) : 0 ≤ beta A b j := norm_nonneg _
 theorem coe_beta (j : ℕ) : (beta A b j : 𝕜) = Arnoldi.coeff A b (j + 1) j :=
   (Arnoldi.coeff_succ_self A b j).symm
 
-/-- The real symmetric tridiagonal Lanczos matrix `T_m` (Saad (6.89)). -/
+/-- The real symmetric tridiagonal Lanczos matrix `T_m` (Saad, *Iterative Methods*, (6.89)). -/
 noncomputable def tridiag (m : ℕ) : Matrix (Fin m) (Fin m) ℝ :=
   Matrix.of fun i j =>
     if (i : ℕ) = j then alpha A b i
@@ -143,7 +159,7 @@ theorem apply_vec_zero :
     Arnoldi.apply_vec_of_le A b (j := 0) (n := 1 + 1) (by omega),
     Finset.sum_range_succ, Finset.sum_range_one]
 
-/-- Three-term recurrence (Saad Alg 6.15, (6.87)):
+/-- Three-term recurrence (Saad, *Iterative Methods*, Alg 6.15, (6.87)):
 `A v_{j+1} = β_j v_j + α_{j+1} v_{j+1} + β_{j+1} v_{j+2}`. -/
 theorem apply_vec (j : ℕ) :
     A (Arnoldi.vec A b (j + 1)) =
@@ -208,7 +224,7 @@ private theorem coeff_eq_ite (i j : ℕ) :
         · exact Arnoldi.coeff_eq_zero_of_isSymmetric hA b (by omega)
         · exact Arnoldi.coeff_eq_zero_of_lt A b (by omega)
 
-/-- `H_m = T_m` for symmetric `A` (Saad Thm 6.19). -/
+/-- `H_m = T_m` for symmetric `A` (Saad, *Iterative Methods*, Thm 6.19). -/
 theorem hessenbergSq_eq_map_tridiag (m : ℕ) :
     Arnoldi.hessenbergSq A b m = (tridiag A b m).map (algebraMap ℝ 𝕜) := by
   ext i j
@@ -219,7 +235,8 @@ theorem hessenberg_eq_map_tridiagExt (m : ℕ) :
   ext i j
   exact coeff_eq_ite b hA i j
 
-/-- `A V_m = V_m T_m + β_m v_m e_mᵀ` (Saad (6.91)), coordinate form, for `m ≥ 1`. -/
+/-- `A V_m = V_m T_m + β_m v_m e_mᵀ` (Saad, *Iterative Methods*, (6.91)), coordinate form,
+for `m ≥ 1`. -/
 theorem apply_sum (m : ℕ) (y : Fin (m + 1) → 𝕜) :
     A (∑ j, y j • Arnoldi.vec A b j) =
       ∑ i : Fin (m + 1), ((tridiag A b (m + 1)).map (algebraMap ℝ 𝕜)).mulVec y i •
@@ -235,7 +252,8 @@ theorem apply_sum (m : ℕ) (y : Fin (m + 1) → 𝕜) :
   rw [Arnoldi.apply_sum A b (m + 1) y, hessenberg_eq_map_tridiagExt b hA (m + 1),
     Fin.sum_univ_castSucc, mulVec_tridiagExt_last A b m y, Fin.val_last, hsum]
 
-/-- Termination (Choi (2.4)): at `ℓ = grade`, `A V_ℓ = V_ℓ T_ℓ` and `𝒦_ℓ` is invariant. -/
+/-- Termination (Choi, *Iterative Methods for Singular Linear Equations and Least-Squares
+Problems*, (2.4)): at `ℓ = grade`, `A V_ℓ = V_ℓ T_ℓ` and `𝒦_ℓ` is invariant. -/
 theorem apply_sum_grade [FiniteDimensional 𝕜 (fullSubspace A b)] (y : Fin (grade A b) → 𝕜) :
     A (∑ j, y j • Arnoldi.vec A b j) =
       ∑ i : Fin (grade A b),

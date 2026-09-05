@@ -15,9 +15,10 @@ import Mathlib.Topology.Order.Compact
 /-!
 # Chebyshev min–max on an interval
 
+The classical Chebyshev min–max theorem on an interval,
 `min {max_{t ∈ [a,b]} |p t| : deg p ≤ m, p γ = 1} = 1 / |T_m(1 + 2(a - γ)/(b - a))|` for
-`γ ∉ [a, b]` (Saad Thm 6.25 / Saad-eig Thm 4.8; Rivlin Thm 1.10), its special case `γ = 0`,
-and the growth estimates that turn it into geometric rates (Saad (6.128)).
+`γ ∉ [a, b]`, its special case `γ = 0`, and the growth estimates for `T_m` that turn it into the
+geometric rates used in Krylov-method error bounds.
 Mathlib supplies `Polynomial.Chebyshev.T` and the extremal inequality
 `Polynomial.Chebyshev.eval_iterate_derivative_le_of_forall_abs_le_one`.
 -/
@@ -242,7 +243,8 @@ theorem sSup_abs_eval_shifted (m : ℕ) {a b γ : ℝ} (hab : a < b) (hγ : γ �
             (div_nonneg zero_le_one (abs_nonneg _))
       _ = 1 / |(T ℝ (m : ℤ)).eval ((b + a - 2 * γ) / (b - a))| := one_mul _
 
-/-- Special case `γ = 0`, `0 < a < b` (Saad Thm 6.29's ingredient):
+/-- Special case `γ = 0`, `0 < a < b`, the form used for the error bound of a Krylov method on a
+positive definite operator with spectrum in `[a, b]`:
 `min_{deg p ≤ m, p 0 = 1} max_{[a,b]} |p| = 1 / T_m((b + a)/(b - a))`. -/
 theorem one_div_eval_T_le_sSup_abs_eval_of_eval_zero (m : ℕ) {a b : ℝ} (ha : 0 < a) (hab : a < b)
     (p : ℝ[X]) (hp : p.degree ≤ m) (hp0 : p.eval 0 = 1) :
@@ -255,7 +257,9 @@ theorem one_div_eval_T_le_sSup_abs_eval_of_eval_zero (m : ℕ) {a b : ℝ} (ha :
     linarith
   rwa [abs_of_nonneg (le_trans zero_le_one (one_le_eval_T hu m))] at h
 
-/-- `1 / T_m((κ + 1)/(κ - 1)) ≤ 2 ((√κ - 1)/(√κ + 1))^m` for `κ > 1` (Saad (6.128)). -/
+/-- `1 / T_m((κ + 1)/(κ - 1)) ≤ 2 ((√κ - 1)/(√κ + 1))^m` for `κ > 1`: the growth estimate that
+turns the min–max value into the classical `√κ` convergence rate for a system of condition
+number `κ`. -/
 theorem one_div_eval_T_le_two_mul_pow {κ : ℝ} (hκ : 1 < κ) (m : ℕ) :
     1 / (T ℝ m).eval ((κ + 1) / (κ - 1)) ≤
       2 * ((Real.sqrt κ - 1) / (Real.sqrt κ + 1)) ^ m := by

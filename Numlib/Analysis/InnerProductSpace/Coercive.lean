@@ -16,15 +16,15 @@ import Mathlib.Analysis.InnerProductSpace.Adjoint
 # Coercive and symmetric coercive operators
 
 * `LinearMap.IsCoerciveWith A c`: `c ‖x‖² ≤ re ⟪A x, x⟫` for all `x`.
-* `LinearMap.IsCoercive A`: `IsCoerciveWith A c` for some `c > 0` — Saad's "positive definite"
-  (no symmetry required), Atkinson–Han's "strongly monotone" (linear case), Kress's positive
-  definiteness for Hermitian matrices.
+* `LinearMap.IsCoercive A`: `IsCoerciveWith A c` for some `c > 0`. This is what the numerical
+  linear algebra literature calls a "positive definite" matrix when no symmetry is required, and
+  the linear case of a "strongly monotone" operator.
 * `LinearMap.IsSymmetricCoercive A`: symmetric and coercive — SPD/HPD in finite dimension
   (`Matrix.PosDef`), strongly positive self-adjoint operators on Hilbert spaces.
 * `LinearMap.IsSymmetricBoundedBy A lmin lmax`: symmetric with
   `lmin ‖x‖² ≤ re ⟪A x, x⟫ ≤ lmax ‖x‖²` — the quadratic-form way of saying "the spectrum lies in
-  `[lmin, lmax]`", the hypothesis of every Chebyshev-type convergence bound (Atkinson–Han
-  Thm 5.6.1, Saad Thm 6.29, Kantorovich).
+  `[lmin, lmax]`", the hypothesis of the Kantorovich inequality and of every Chebyshev-type
+  convergence bound for a symmetric positive definite operator.
 -/
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
@@ -104,7 +104,8 @@ here in the form that only uses the quadratic form. -/
 theorem IsCoerciveWith.re_inner_apply_self (h : A.IsCoerciveWith c) (x : E) :
     c * ‖x‖ ^ 2 ≤ RCLike.re (inner 𝕜 (A x) x) := h x
 
-/-- Saad Thm 1.34 (finite dimension): coercive iff `re ⟪A x, x⟫ > 0` for all `x ≠ 0`. -/
+/-- In finite dimension, coercive iff `re ⟪A x, x⟫ > 0` for all `x ≠ 0`: compactness of the unit
+sphere supplies a uniform constant `c > 0`. -/
 theorem isCoercive_iff_forall_pos [FiniteDimensional 𝕜 E] (A : E →ₗ[𝕜] E) :
     A.IsCoercive ↔ ∀ x ≠ 0, 0 < RCLike.re (inner 𝕜 (A x) x) := by
   refine ⟨fun hA x hx => hA.inner_self_pos hx, fun h => ?_⟩
@@ -203,8 +204,8 @@ theorem IsSymmetricCoercive.re_pos_of_hasEigenvalue (hA : A.IsSymmetricCoercive)
   exact (mul_pos_iff_of_pos_right (pow_pos (norm_pos_iff.2 hx0) 2)).mp h1
 
 /-- `lmin ‖x‖² ≤ re ⟪A x, x⟫ ≤ lmax ‖x‖²` for symmetric `A`: "the spectrum of `A` lies in
-`[lmin, lmax]`" stated through the quadratic form (the hypothesis of Atkinson–Han Thm 5.6.1;
-Saad's `λmin, λmax` of an SPD matrix). In finite dimension it is equivalent to all eigenvalues
+`[lmin, lmax]`" stated through the quadratic form; for a symmetric positive definite matrix one
+may take `lmin = λmin` and `lmax = λmax`. In finite dimension it is equivalent to all eigenvalues
 lying in `[lmin, lmax]` (`IsSymmetric.isSymmetricBoundedBy_iff_forall_hasEigenvalue`); it makes
 sense in any inner product space, passes to compressions, and is the hypothesis of all
 Chebyshev-type convergence bounds. -/
@@ -278,8 +279,9 @@ end LinearMap
 section Richardson
 
 /-- The damped-Richardson contraction estimate for a bounded operator with
-`c ‖x‖² ≤ re ⟪A x, x⟫`: `‖x - θ A x‖² ≤ (1 - 2θc + θ²‖A‖²) ‖x‖²` (Atkinson–Han proof #1 of
-Thm 8.3.4 and of Thm 5.1.4; Saad Thm 5.10 / 6.30 proofs; Kress Richardson iteration). -/
+`c ‖x‖² ≤ re ⟪A x, x⟫`: `‖x - θ A x‖² ≤ (1 - 2θc + θ²‖A‖²) ‖x‖²`. For `0 < θ < 2c/‖A‖²` the
+factor on the right is `< 1`, which is the standard convergence proof for the Richardson
+iteration `x ↦ x - θ (A x - b)`. -/
 theorem ContinuousLinearMap.norm_sub_smul_apply_sq_le {A : E →L[𝕜] E} {c : ℝ}
     (hA : (A : E →ₗ[𝕜] E).IsCoerciveWith c) {θ : ℝ} (hθ : 0 ≤ θ) (x : E) :
     ‖x - (θ : 𝕜) • A x‖ ^ 2 ≤ (1 - 2 * θ * c + θ ^ 2 * ‖A‖ ^ 2) * ‖x‖ ^ 2 := by
@@ -300,8 +302,8 @@ namespace ContinuousLinearMap
 
 variable [CompleteSpace E]
 
-/-- A bounded coercive operator on a Hilbert space is invertible with `‖A⁻¹‖ ≤ 1 / c`
-(linear case of Atkinson–Han Thm 5.1.4; Saad Prop 5.1 in Hilbert spaces). -/
+/-- A bounded coercive operator on a Hilbert space is invertible with `‖A⁻¹‖ ≤ 1 / c`. This is
+the Lax–Milgram theorem, for an operator that need not be symmetric. -/
 theorem exists_equiv_of_isCoerciveWith {A : E →L[𝕜] E} {c : ℝ} (hc : 0 < c)
     (hA : (A : E →ₗ[𝕜] E).IsCoerciveWith c) :
     ∃ e : E ≃L[𝕜] E, (e : E →L[𝕜] E) = A ∧ ‖(e.symm : E →L[𝕜] E)‖ ≤ 1 / c := by
@@ -346,7 +348,7 @@ theorem exists_equiv_of_isCoerciveWith {A : E →L[𝕜] E} {c : ℝ} (hc : 0 < 
   rw [div_mul_eq_mul_div, one_mul, le_div_iff₀ hc]
   linarith [h]
 
-/-- The Hermitian part `½ (A + A†)` has the same quadratic form as `A` (Saad §1.8.3). -/
+/-- The Hermitian part `½ (A + A†)` has the same quadratic form as `A`. -/
 theorem re_inner_hermitianPart_apply (A : E →L[𝕜] E) (x : E) :
     RCLike.re (inner 𝕜 (((2⁻¹ : 𝕜) • (A + adjoint A)) x) x) = RCLike.re (inner 𝕜 (A x) x) := by
   have h2 : (2⁻¹ : 𝕜) = ((2⁻¹ : ℝ) : 𝕜) := by rw [RCLike.ofReal_inv, RCLike.ofReal_ofNat]
@@ -357,7 +359,8 @@ theorem re_inner_hermitianPart_apply (A : E →L[𝕜] E) (x : E) :
   ring
 
 /-- Coercivity of `A` is coercivity of its Hermitian part; in particular the best coercivity
-constant of `A` is `λmin(½ (A + A†))` (the `μ` of Saad Thm 6.30 / (5.15)). -/
+constant of `A` is `λmin(½ (A + A†))`, the constant that governs the convergence rate of the
+Richardson and steepest-descent iterations for a nonsymmetric `A`. -/
 theorem isCoerciveWith_iff_hermitianPart (A : E →L[𝕜] E) (c : ℝ) :
     (A : E →ₗ[𝕜] E).IsCoerciveWith c ↔
       (((2⁻¹ : 𝕜) • (A + adjoint A) : E →L[𝕜] E) : E →ₗ[𝕜] E).IsCoerciveWith c := by

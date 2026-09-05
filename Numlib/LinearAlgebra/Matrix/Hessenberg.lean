@@ -12,7 +12,8 @@ import Mathlib.Analysis.RCLike.Basic
 # Hessenberg and tridiagonal matrices; triangular parts
 
 Basic predicates on matrices indexed by a linearly ordered type, and the strict lower / strict
-upper / diagonal parts used by the classical splittings `A = D - E - F` (Saad §4.1).
+upper / diagonal parts used by the classical splittings `A = D - E - F` behind the Jacobi,
+Gauss–Seidel and SOR iterations.
 -/
 
 namespace Matrix
@@ -87,7 +88,8 @@ theorem diagPart_add_strictLower_add_strictUpper [DecidableEq n] [AddCommMonoid 
   · simp
   · simp [h, h.ne', asymm h]
 
-/-- Saad's convention `A = D - E - F` with `E = -strictLower A`, `F = -strictUpper A`. -/
+/-- The splitting convention `A = D - E - F` of the classical stationary iterations, with
+`E = -strictLower A` and `F = -strictUpper A`. -/
 theorem diagPart_sub_neg_strictLower_sub_neg_strictUpper [DecidableEq n] [AddCommGroup R]
     (A : Matrix n n R) : diagPart A - (-strictLower A) - (-strictUpper A) = A := by
   rw [sub_neg_eq_add, sub_neg_eq_add, diagPart_add_strictLower_add_strictUpper]

@@ -8,8 +8,23 @@ import Mathlib.Analysis.Matrix.Spectrum
 # Diagonal dominance and convergence of Jacobi / Gauss–Seidel
 
 Strict (row / column) diagonal dominance, invertibility, and convergence of the Jacobi and
-Gauss–Seidel iterations (Saad Thm 4.6–4.9, Cor 4.8; Kress Thm 4.2–4.3, Cor 4.4 with the explicit
-`‖·‖_∞` contraction constants; Atkinson–Han Ex 5.2.2).
+Gauss–Seidel iterations (Saad[^saad-iterative] Thm 4.6–4.9, Cor 4.8; Kress[^kress] Thm 4.2–4.3,
+Cor 4.4 with the explicit `‖·‖_∞` contraction constants; Atkinson–Han[^atkinson-han] Ex 5.2.2).
+
+The two explicit constants are Kress's.  The *Jacobi constant*
+`q_∞ = max_i ∑_{j ≠ i} |a_ij| / |a_ii|` is exactly `‖G_J‖_∞`, the `‖·‖_∞` operator norm of the
+Jacobi iteration matrix `G_J`.  The *Sassenfeld numbers* `p_i`, defined by the recursion
+`p_i = (∑_{j < i} |a_ij| p_j + ∑_{j > i} |a_ij|) / |a_ii|`, bound the corresponding norm
+`‖G_GS‖_∞ ≤ max_i p_i` of the Gauss–Seidel iteration matrix `G_GS`.  Under strict row dominance
+both constants are `< 1`, so both iterations converge.
+
+## References
+
+[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
+  SIAM, 2003.
+[^kress]: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998.
+[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+  Analysis Framework*, 3rd edition, Springer, 2009.
 -/
 
 namespace Matrix
@@ -43,13 +58,14 @@ theorem IsStrictDiagDominant.isUnit_diagPart {A : Matrix n n 𝕜} (hA : A.IsStr
   (isUnit_diagPart_iff A).mpr hA.diag_ne_zero
 
 omit [LinearOrder n] in
-/-- Saad Thm 4.6 / Kress: strictly diagonally dominant matrices are invertible
-(Mathlib: `Matrix.det_ne_zero_of_sum_row_lt_diag`). -/
+/-- Strictly diagonally dominant matrices are invertible (Saad, *Iterative Methods*, Thm 4.6;
+also Kress, *Numerical Analysis*).  Mathlib: `Matrix.det_ne_zero_of_sum_row_lt_diag`. -/
 theorem IsStrictDiagDominant.isUnit {A : Matrix n n 𝕜} (hA : A.IsStrictDiagDominant) :
     IsUnit A :=
   (isUnit_iff_isUnit_det A).mpr (isUnit_iff_ne_zero.mpr (det_ne_zero_of_sum_row_lt_diag hA))
 
-/-- The Jacobi contraction constant `q_∞ = max_i ∑_{j ≠ i} |a_ij| / |a_ii|` (Kress Thm 4.2). -/
+/-- The Jacobi contraction constant `q_∞ = max_i ∑_{j ≠ i} |a_ij| / |a_ii|`
+(Kress, *Numerical Analysis*, Thm 4.2). -/
 noncomputable def jacobiContraction [Nonempty n] (A : Matrix n n 𝕜) : ℝ :=
   Finset.univ.sup' Finset.univ_nonempty fun i => (∑ j ∈ Finset.univ.erase i, ‖A i j‖) / ‖A i i‖
 
@@ -70,8 +86,9 @@ theorem jacobiContraction_nonneg [Nonempty n] (A : Matrix n n 𝕜) : 0 ≤ jaco
   refine le_trans ?_ (div_le_jacobiContraction A i)
   positivity
 
-/-- Sassenfeld numbers `p_i = (∑_{j < i} |a_ij| p_j + ∑_{j > i} |a_ij|) / |a_ii|` (Kress Thm 4.3),
-obtained as the solution of the lower-triangular system `(|D| - |L|) p = |U| 𝟙`. -/
+/-- Sassenfeld numbers `p_i = (∑_{j < i} |a_ij| p_j + ∑_{j > i} |a_ij|) / |a_ii|`
+(Kress, *Numerical Analysis*, Thm 4.3), obtained as the solution of the lower-triangular system
+`(|D| - |L|) p = |U| 𝟙`. -/
 noncomputable def sassenfeld (A : Matrix n n 𝕜) : n → ℝ :=
   (Matrix.of fun i j => if i = j then ‖A i i‖ else if j < i then -‖A i j‖ else 0)⁻¹ *ᵥ
     fun i => ∑ j ∈ Finset.univ.filter (i < ·), ‖A i j‖
@@ -124,7 +141,7 @@ theorem sassenfeld_eq {A : Matrix n n 𝕜} (h : IsUnit (diagPart A)) (i : n) :
   rw [eq_div_iff (norm_ne_zero_iff.mpr (hd i))]
   linarith [hi]
 
-/-- Row `i` of `(D + E) x`, with the diagonal term separated off. -/
+/-- Row `i` of `(diagPart A + strictLower A) *ᵥ v`, with the diagonal term separated off. -/
 private theorem diagPart_add_strictLower_mulVec_apply (A : Matrix n n 𝕜) (v : n → 𝕜) (i : n) :
     ((diagPart A + strictLower A) *ᵥ v) i =
       A i i * v i + ∑ j ∈ Finset.univ.filter (· < i), A i j * v j := by
@@ -133,7 +150,7 @@ private theorem diagPart_add_strictLower_mulVec_apply (A : Matrix n n 𝕜) (v :
     ← Finset.sum_filter]
 
 omit [DecidableEq n] in
-/-- Row `i` of `F x`. -/
+/-- Row `i` of `strictUpper A *ᵥ v`. -/
 private theorem strictUpper_mulVec_apply (A : Matrix n n 𝕜) (v : n → 𝕜) (i : n) :
     (strictUpper A *ᵥ v) i = ∑ j ∈ Finset.univ.filter (i < ·), A i j * v j := by
   simp only [mulVec, dotProduct, strictUpper_apply, ite_mul, zero_mul, ← Finset.sum_filter]
@@ -188,7 +205,8 @@ private theorem sum_norm_jacobi_iterationOperator (A : Matrix n n 𝕜) (h : IsU
   exact Finset.sum_congr rfl fun j hj =>
     norm_jacobi_iterationOperator_apply A h (Finset.ne_of_mem_erase hj)
 
-/-- Kress Thm 4.2: `‖G_J‖_∞ = q_∞` for the Jacobi iteration matrix. -/
+/-- Kress, *Numerical Analysis*, Thm 4.2: `‖G_J‖_∞ = q_∞` for the Jacobi iteration matrix, with
+`q_∞` the Jacobi constant `jacobiContraction`. -/
 theorem linfty_opNorm_jacobi_iterMatrix [Nonempty n] (A : Matrix n n 𝕜) (h : IsUnit (diagPart A)) :
     ‖(jacobiSplitting A h).iterationOperator‖ = jacobiContraction A := by
   rw [linfty_opNorm_def, ← Finset.sup'_eq_sup Finset.univ_nonempty,
@@ -216,7 +234,8 @@ theorem sassenfeld_nonneg {A : Matrix n n 𝕜} (h : IsUnit (diagPart A)) (i : n
       (Finset.sum_nonneg fun _ _ => norm_nonneg _)) (norm_nonneg _)
     exact mul_nonneg (norm_nonneg _) (ih j (by simpa using (Finset.mem_filter.mp hj).2))
 
-/-- Kress Thm 4.3 (Sassenfeld): `‖G_GS‖_∞ ≤ max_i p_i`.  For `y = G_GS x` the relation
+/-- Sassenfeld's criterion (Kress, *Numerical Analysis*, Thm 4.3): `‖G_GS‖_∞ ≤ max_i p_i`, with
+`p` the Sassenfeld numbers `sassenfeld`.  For `y = G_GS x` the relation
 `(D - E) y = F x` gives `|y_i| ≤ (∑_{j<i} |a_ij| |y_j| + ∑_{j>i} |a_ij| ‖x‖_∞) / |a_ii|`, so
 `|y_i| ≤ p_i ‖x‖_∞` by induction along the order of the index type. -/
 theorem linfty_opNorm_gaussSeidel_iterMatrix_le [Nonempty n] (A : Matrix n n 𝕜)
@@ -278,7 +297,8 @@ private theorem sum_erase_eq_sum_lt_add_sum_gt (f : n → ℝ) (i : n) :
   refine Finset.sum_congr (Finset.ext fun j => ?_) fun _ _ => rfl
   simp [Finset.mem_erase, lt_or_lt_iff_ne]
 
-/-- Kress Cor 4.4: under strict row dominance the Sassenfeld numbers are `≤ q_∞ < 1`. -/
+/-- Kress, *Numerical Analysis*, Cor 4.4: under strict row dominance the Sassenfeld numbers are
+`≤ q_∞ < 1`, so Gauss–Seidel converges at least as fast as the Jacobi bound. -/
 theorem sassenfeld_le_jacobiContraction [Nonempty n] {A : Matrix n n 𝕜}
     (hA : A.IsStrictDiagDominant) (i : n) :
     sassenfeld A i ≤ jacobiContraction A := by
@@ -332,7 +352,8 @@ private theorem spectralRadius_lt_one_of_isEmpty [IsEmpty n] (M : Matrix n n ℂ
   have : Subsingleton (Matrix n n ℂ) := ⟨fun _ _ => by ext i; exact isEmptyElim i⟩
   exact (iSup₂_le fun _ hk => absurd (isUnit_of_subsingleton _) hk).trans_lt zero_lt_one
 
-/-- Saad Thm 4.9 (Jacobi): `ρ(G_J) < 1` for strictly diagonally dominant `A`. -/
+/-- Saad, *Iterative Methods*, Thm 4.9 (Jacobi): the spectral radius satisfies `ρ(G_J) < 1` for
+strictly diagonally dominant `A`. -/
 theorem jacobi_spectralRadius_lt_one (A : Matrix n n ℂ) (hA : A.IsStrictDiagDominant)
     (h : IsUnit (diagPart A)) : spectralRadius ℂ (jacobiSplitting A h).iterationOperator < 1 := by
   rcases isEmpty_or_nonempty n with _ | _
@@ -347,10 +368,13 @@ theorem jacobi_spectralRadius_lt_one (A : Matrix n n ℂ) (hA : A.IsStrictDiagDo
   exact Finset.sum_congr rfl fun j hj =>
     norm_jacobi_iterationOperator_apply A h (Finset.ne_of_mem_erase hj)
 
-/-- Saad Thm 4.9 (Gauss–Seidel): `ρ(G_GS) < 1` for strictly diagonally dominant `A`.  Saad's
-eigenvector argument: if `G_GS x = μ x` then `-F x = μ (D - E) x`, and comparing the row where
+/-- Saad, *Iterative Methods*, Thm 4.9 (Gauss–Seidel): the spectral radius satisfies
+`ρ(G_GS) < 1` for strictly diagonally dominant `A`.  Saad's
+eigenvector argument: in the letters `A = D - E - F` (diagonal, negated strictly lower, negated
+strictly upper), if `G_GS x = μ x` then `-F x = μ (D - E) x`, and comparing the row where
 `‖x‖_∞` is attained gives `|μ| (|a_ii| - σ₁) ≤ σ₂` with `σ₁ = ∑_{j<i} |a_ij|`,
-`σ₂ = ∑_{j>i} |a_ij|`; strict dominance then forces `|μ| ≤ q_∞ < 1`. -/
+`σ₂ = ∑_{j>i} |a_ij|`; strict dominance then forces `|μ| ≤ q_∞ < 1` for the Jacobi constant
+`q_∞ = jacobiContraction A`. -/
 theorem gaussSeidel_spectralRadius_lt_one (A : Matrix n n ℂ) (hA : A.IsStrictDiagDominant)
     (h : IsUnit (diagPart A)) :
     spectralRadius ℂ (gaussSeidelSplitting A h).iterationOperator < 1 := by
@@ -414,7 +438,8 @@ theorem gaussSeidel_spectralRadius_lt_one (A : Matrix n n ℂ) (hA : A.IsStrictD
   refine le_of_mul_le_mul_right ?_ hpos
   nlinarith [norm_nonneg μ, mul_nonneg (by linarith : (0:ℝ) ≤ 1 - jacobiContraction A) hs1nn]
 
-/-- Column dominance also suffices for Jacobi (Kress Problem 4.4): the Jacobi matrix of `A` is
+/-- Column dominance also suffices for Jacobi (Kress, *Numerical Analysis*, Problem 4.4): the
+Jacobi matrix of `A` is
 similar (via `D`) to the transpose of the Jacobi matrix of `Aᵀ`, which is row dominant. -/
 theorem jacobi_spectralRadius_lt_one_of_col (A : Matrix n n ℂ) (hA : A.IsStrictColDiagDominant)
     (h : IsUnit (diagPart A)) : spectralRadius ℂ (jacobiSplitting A h).iterationOperator < 1 := by

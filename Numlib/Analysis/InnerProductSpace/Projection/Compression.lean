@@ -14,10 +14,10 @@ import Mathlib.Algebra.Polynomial.Module.AEval
 /-!
 # Compression of an operator to a subspace
 
-`compression A K = P_K ∘ A ∘ ι_K : K →ₗ K` (the "section" of `A` on `K`, Saad Prop 6.3 /
-Saad-eig §4.3). Rayleigh–Ritz for eigenproblems and the Arnoldi/Lanczos matrices `H_m`, `T_m`
-for linear systems are both the compression to a Krylov subspace, and Céa's `‖A‖/c` and
-Saad-eig's `γ = ‖P_K A (1 - P_K)‖` are its two error constants.
+`compression A K = P_K ∘ A ∘ ι_K : K →ₗ K`, the "section" of `A` on `K`. Rayleigh–Ritz for
+eigenproblems and the Arnoldi/Lanczos matrices `H_m`, `T_m` for linear systems are both the
+compression to a Krylov subspace, and its two error constants are Céa's `‖A‖/c` and the
+Rayleigh–Ritz constant `γ = ‖P_K A (1 - P_K)‖`.
 -/
 
 open Polynomial
@@ -25,8 +25,8 @@ open Polynomial
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
 /-- Compression through an arbitrary projector `Q : E →ₗ K` onto `K` (`Q x = x` on `K`):
-`Q ∘ A ∘ ι_K` (oblique Rayleigh–Ritz, Saad-eig §4.3; Saad Prop 6.3 for any projector). The
-orthogonal case is `compression` (`compression.eq_compressionBy`). -/
+`Q ∘ A ∘ ι_K`, the oblique Rayleigh–Ritz compression. The orthogonal case is `compression`
+(`compression.eq_compressionBy`). -/
 def compressionBy {K : Submodule 𝕜 E} (Q : E →ₗ[𝕜] K) (A : E →ₗ[𝕜] E) : K →ₗ[𝕜] K :=
   Q.comp (A.comp K.subtype)
 
@@ -65,7 +65,8 @@ private theorem apply_pow (i : ℕ) {x : K} (hx : ∀ j < i, (A ^ j) (x : E) ∈
     change _ = Q (A ((((compressionBy Q A) ^ i) x : K) : E))
     rw [hi, hstep]
 
-/-- Saad Prop 6.3 (first part): if `A^i x ∈ K` for all `i ≤ deg p` then `p(A_K) x = p(A) x`. -/
+/-- Polynomials of the compression agree with polynomials of `A`: if `A^i x ∈ K` for all
+`i ≤ deg p` then `p(A_K) x = p(A) x`. -/
 theorem aeval_apply_of_forall_pow_mem (p : 𝕜[X]) {x : K}
     (hx : ∀ i ≤ p.natDegree, (A ^ i) (x : E) ∈ K) :
     (aeval (compressionBy Q A) p x : E) = aeval A p (x : E) := by
@@ -75,7 +76,8 @@ theorem aeval_apply_of_forall_pow_mem (p : 𝕜[X]) {x : K}
   rw [coe_pow_apply Q hQ A i fun j hj =>
     hx j (hj.trans (Nat.lt_succ_iff.1 (Finset.mem_range.1 hi)))]
 
-/-- Saad Prop 6.3 (second part): if `A^i x ∈ K` for all `i < deg p` then `Q (p(A) x) = p(A_K) x`. -/
+/-- One degree less is enough after projecting: if `A^i x ∈ K` for all `i < deg p` then
+`Q (p(A) x) = p(A_K) x`. -/
 theorem apply_aeval_of_forall_pow_lt_mem (p : 𝕜[X]) {x : K}
     (hx : ∀ i < p.natDegree, (A ^ i) (x : E) ∈ K) :
     Q (aeval A p (x : E)) = aeval (compressionBy Q A) p x := by
@@ -103,8 +105,8 @@ private theorem orthogonalProjectionOnto_eq_self :
     ∀ x : K, (K.orthogonalProjectionOnto : E →ₗ[𝕜] K) x = x :=
   K.orthogonalProjectionOnto_mem_subspace_eq_self
 
-/-- Saad Prop 6.3 for the orthogonal compression: `p(A_K) x = p(A) x` when the Krylov sequence of
-`x` up to degree `deg p` stays in `K` (e.g. `K = 𝒦_{m+1}(A, x)`, `deg p ≤ m`). -/
+/-- The orthogonal compression: `p(A_K) x = p(A) x` when the Krylov sequence of `x` up to
+degree `deg p` stays in `K` (e.g. `K = 𝒦_{m+1}(A, x)`, `deg p ≤ m`). -/
 theorem aeval_apply_of_forall_pow_mem (p : 𝕜[X]) {x : K}
     (hx : ∀ i ≤ p.natDegree, (A ^ i) (x : E) ∈ K) :
     (aeval (compression A K) p x : E) = aeval A p (x : E) :=
@@ -137,11 +139,13 @@ theorem apply_of_invt (hK : K ∈ Module.End.invtSubmodule A) (x : K) :
   congrArg Subtype.val (K.orthogonalProjectionOnto_mem_subspace_eq_self
     ⟨A (x : E), (Module.End.mem_invtSubmodule_iff_forall_mem_of_mem A).1 hK _ x.2⟩)
 
-/-- Residual identity behind Saad-eig Thm 4.3: for `u ∈ E`,
-`(A_K - λ) P_K u = -P_K (A - λ) (1 - P_K) u` whenever `(A - λ) u = 0`.
+/-- Residual identity behind the Rayleigh–Ritz eigenvalue error bounds (Saad, *Numerical Methods
+for Large Eigenvalue Problems*, Thm 4.3): for `u ∈ E`,
+`(A_K - λ) P_K u = -P_K (A - λ) (1 - P_K) u` whenever `(A - λ) u = 0`. It bounds the residual of
+the Ritz pair `(λ, P_K u)` by the part of an exact eigenvector `u` that `K` fails to capture.
 
 Note the sign: `P_K A P_K u - λ P_K u = P_K A (P_K - 1) u`, so the right-hand side of the
-usual textbook display carries a minus sign (it does not matter for the norm estimates that
+display in Saad Thm 4.3 carries a minus sign (it does not matter for the norm estimates that
 use this identity). -/
 theorem apply_sub_smul_orthogonalProjection {u : E} {μ : 𝕜} (hu : A u = μ • u) :
     (compression A K (K.orthogonalProjectionOnto u) - μ • K.orthogonalProjectionOnto u : E) =

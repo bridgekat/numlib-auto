@@ -11,9 +11,23 @@ import Mathlib.Topology.Algebra.Polynomial
 dimension (via `LinearMap.IsSymmetric.eigenvectorBasis`), and the real-interval form used by the
 Chebyshev bounds: for `A.IsSymmetricBoundedBy a b`, `‖p(A) x‖ ≤ sup_{[a,b]} |p| ‖x‖` in *any*
 inner product space, obtained by compressing `A` to the finite-dimensional
-`span {x, A x, …, A^(deg p) x}` (the "compression trick"; Saad Lemma 6.28/6.31 proofs, Saad-eig
-Lemma 6.1, AH (5.6.16)–(5.6.19), Meurant (3.7)–(3.8)). The Hilbert-space version via the
-continuous functional calculus is a phase-2 alternative, not needed for the statements.
+`span {x, A x, …, A^(deg p) x}` (the "compression trick";
+Saad, *Iterative Methods*[^saad-iterative] Lemma 6.28/6.31 proofs,
+Saad, *Large Eigenvalue Problems*[^saad-eigenvalue] Lemma 6.1,
+Atkinson–Han[^atkinson-han] (5.6.16)–(5.6.19), Meurant–Strakoš[^meurant-strakos] (3.7)–(3.8)).
+The Hilbert-space version via the continuous functional calculus is a phase-2 alternative, not
+needed for the statements.
+
+## References
+
+[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
+  SIAM, 2003.
+[^saad-eigenvalue]: Yousef Saad, *Numerical Methods for Large Eigenvalue Problems*, 2nd edition,
+  SIAM, 2011.
+[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+  Analysis Framework*, 3rd edition, Springer, 2009.
+[^meurant-strakos]: Gérard Meurant and Zdeněk Strakoš, *The Lanczos and conjugate gradient
+  algorithms in finite precision arithmetic*, Acta Numerica (2006), 471–542.
 -/
 
 open Polynomial
@@ -122,9 +136,10 @@ theorem im_eq_zero_of_hasEigenvalue {μ : 𝕜} (hμ : Module.End.HasEigenvalue 
 
 end LinearMap.IsSymmetric
 
-/-- Saad Prop 6.32 (diagonalizable `A`): if `A` is conjugate by `X` to an operator `D` whose
-polynomial images satisfy `‖p(D) y‖ ≤ C ‖y‖`, then `‖p(A) x‖ ≤ κ(X) C ‖x‖`. Stated with `D`
-symmetric so that the finite-dimensional bound above applies. -/
+/-- Saad, *Iterative Methods*, Prop 6.32 (diagonalizable `A`): if `A` is conjugate by `X` to an
+operator `D` whose polynomial images satisfy `‖p(D) y‖ ≤ C ‖y‖`, then `‖p(A) x‖ ≤ κ(X) C ‖x‖`,
+where `κ(X) = ‖X‖ ‖X⁻¹‖` is the condition number of `X`. Stated with `D` symmetric so that the
+finite-dimensional bound above applies. -/
 theorem norm_aeval_apply_le_of_conj {A D : E →ₗ[𝕜] E} (X : E ≃L[𝕜] E)
     (hconj : A = (X : E →ₗ[𝕜] E) ∘ₗ D ∘ₗ (X.symm : E →ₗ[𝕜] E)) (hD : D.IsSymmetric) {C : ℝ}
     (p : 𝕜[X]) (hC : ∀ μ : 𝕜, Module.End.HasEigenvalue D μ → ‖p.eval μ‖ ≤ C) (x : E) :

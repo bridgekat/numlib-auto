@@ -14,7 +14,7 @@ An orthonormal family `u` with `span {u_0, …, u_j} = span {f_0, …, f_j}` for
 the Gram–Schmidt orthonormalization of `f` up to unimodular scalars, and equals it under the
 sign normalization `re ⟪u_j, f_j⟫ > 0`. This is the "same method, different implementation"
 principle behind classical/modified Gram–Schmidt Arnoldi, Householder Arnoldi (up to signs),
-and the Lanczos/CG identifications (Saad §6.3.2, P-6.1(f); Choi; Fong–Saunders).
+and the identification of the Lanczos vectors with the normalized conjugate-gradient residuals.
 -/
 
 namespace InnerProductSpace

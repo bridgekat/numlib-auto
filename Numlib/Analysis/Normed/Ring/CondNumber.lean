@@ -13,7 +13,8 @@ import Mathlib.Analysis.Normed.Module.Basic
 
 `NormedRing.condNumber a = ‖a‖ * ‖a⁻¹‖`, with the junk value `0` when `a` is not a unit
 (via `Ring.inverse`). Specializes to operators (`E →L[𝕜] E`) and matrices under any of Mathlib's
-scoped matrix norms (Saad §1.13, Atkinson–Han §2.4.3, Kress Def 5.2, Higham Ch. 6).
+scoped matrix norms. This is the standard condition number of numerical linear algebra, which
+bounds the amplification of a relative perturbation of the data in the solution of `a x = b`.
 -/
 
 namespace NormedRing

@@ -80,7 +80,7 @@ The user can prompt an agent to formalize a plan. In such cases, the agent shoul
 - Proceed to fill in the proofs, optionally by spawning parallel sub-agents to work on different files in the skeleton. If any of them proves difficult to complete, identify the cause, report back and stop for a restructure of the plan if necessary.
 - Verify the formalization by compiling the Lean files, or use MCP tools when available.
 
-Keep in mind the backbone-surface split. Everything in the backbone (including doc comments) should be self-contained. To reference material from the books, state the source book explicitly (full name in the references section, using Markdown footnote syntax), instead of a mere number like "Theorem 3.7".
+Keep in mind the backbone-surface split. Everything in the backbone (including doc comments) should be self-contained; to reference material from the books, state the source book explicitly (full name in the references section, using Markdown footnote syntax), instead of a mere number like "Theorem 3.7". Mere numbers may be used in surface only.
 
 ### Reviewing a formalization
 

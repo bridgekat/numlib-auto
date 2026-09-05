@@ -3,13 +3,22 @@ import Numlib.Krylov.Iterate
 /-!
 # The conjugate residual recurrence (Stiefel)
 
-`CR.step` is one step of the CR recurrence (Saad Alg 6.20, Fong–Saunders Table 2.1, Choi
-Table 2.12), with `q = A p` carried in the state. Main theorems: CR realises the
-minimal-residual specification (`CR.isMinResIterate`), the orthogonality relations
-(Fong–Saunders Thm 2.1 / Luenberger), the sign properties on SPD systems (Fong–Saunders
-Thm 2.2), and the resulting monotonicity of `‖x_k‖` (Fong–Saunders Thm 2.3). Also the general
-GCR lemma (Saad Lemma 6.21) that any `AᴴA`-orthogonal direction sequence spanning the Krylov
-spaces yields minimal-residual iterates.
+`CR.step` is one step of the CR recurrence (Saad, *Iterative Methods*[^saad-iterative]
+Alg 6.20, Fong–Saunders[^fong-saunders] Table 2.1, Choi[^choi] Table 2.12), with `q = A p`
+carried in the state. Main theorems: CR realises the minimal-residual specification
+(`CR.isMinResIterate`), the orthogonality relations (Fong–Saunders Thm 2.1 / Luenberger), the
+sign properties on SPD systems (Fong–Saunders Thm 2.2), and the resulting monotonicity of
+`‖x_k‖` (Fong–Saunders Thm 2.3). Also the general GCR lemma (Saad Lemma 6.21) that any
+`AᴴA`-orthogonal direction sequence spanning the Krylov spaces yields minimal-residual iterates.
+
+## References
+
+[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
+  SIAM, 2003.
+[^fong-saunders]: David Chin-Lung Fong and Michael Saunders, *CG versus MINRES: an empirical
+  comparison*, SQU Journal for Science 17 (2012), 44–62.
+[^choi]: Sou-Cheng Choi, *Iterative Methods for Singular Linear Equations and Least-Squares
+  Problems*, PhD thesis, Stanford University, 2006.
 -/
 
 open Krylov
@@ -220,7 +229,7 @@ private theorem energyNorm_nonneg (x : E) : 0 ≤ energyNorm A x := Real.sqrt_no
 variable {A} (hA : A.IsSymmetricCoercive)
 include hA
 
-/-! ### The joint induction (Fong–Saunders Thm 2.1) -/
+/-! ### The joint induction (Fong–Saunders, *CG versus MINRES*, Thm 2.1) -/
 
 private theorem re_inner_self_nonneg (x : E) : 0 ≤ RCLike.re (inner 𝕜 x (A x)) := by
   obtain ⟨c, hc, h⟩ := hA.isCoercive
@@ -291,7 +300,7 @@ private theorem inner_apply_apply_direction_eq_zero_of {j : ℕ} {v : E}
         h1, h2, sub_zero]
     exact (mul_eq_zero.1 h).resolve_left hα
 
-/-- The joint CR invariant at step `k` (Fong–Saunders Thm 2.1). -/
+/-- The joint CR invariant at step `k` (Fong–Saunders, *CG versus MINRES*, Thm 2.1). -/
 private structure Invariant (A : E →ₗ[𝕜] E) (b x₀ : E) (k : ℕ) : Prop where
   /-- `⟪r_k, A p_j⟫ = 0` for `j < k`. -/
   rq : ∀ j < k, inner 𝕜 (iterate A b x₀ k).r (A (iterate A b x₀ j).p) = 0
@@ -359,14 +368,15 @@ private theorem invariant (k : ℕ) : Invariant A b x₀ k :=
 
 /-! ### The named orthogonality relations -/
 
-/-- Fong–Saunders Thm 2.1 (a) / Luenberger: `⟪A p_i, A p_j⟫ = 0` for `i ≠ j`. -/
+/-- Fong–Saunders, *CG versus MINRES*, Thm 2.1 (a) / Luenberger: `⟪A p_i, A p_j⟫ = 0`
+for `i ≠ j`. -/
 theorem inner_apply_direction_eq_zero {i j : ℕ} (h : i ≠ j) :
     inner 𝕜 (A (iterate A b x₀ i).p) (A (iterate A b x₀ j).p) = 0 := by
   rcases lt_or_gt_of_ne h with h' | h'
   · rw [← inner_conj_symm, (invariant b x₀ hA j).qq i h', map_zero]
   · exact (invariant b x₀ hA i).qq j h'
 
-/-- Fong–Saunders Thm 2.1 (b): `⟪r_i, A p_j⟫ = 0` for `j < i`. -/
+/-- Fong–Saunders, *CG versus MINRES*, Thm 2.1 (b): `⟪r_i, A p_j⟫ = 0` for `j < i`. -/
 theorem inner_residual_apply_direction_eq_zero {i j : ℕ} (h : j < i) :
     inner 𝕜 (iterate A b x₀ i).r (A (iterate A b x₀ j).p) = 0 :=
   (invariant b x₀ hA i).rq j h
@@ -480,14 +490,15 @@ theorem iterate_one_x_ne_zero (hb : b ≠ 0) : (iterate A b 0 1).x ≠ 0 := by
   refine div_ne_zero (fun h => hb (eq_zero_of_inner_self_eq_zero hA h)) fun h => hb ?_
   exact hA.isCoercive.injective (by rw [inner_self_eq_zero.1 h, map_zero])
 
-/-! ### Signs (Fong–Saunders Thm 2.2) -/
+/-! ### Signs (Fong–Saunders, *CG versus MINRES*, Thm 2.2) -/
 
 private theorem alpha_eq_ofReal (k : ℕ) : alpha A (iterate A b x₀ k) =
     ((RCLike.re (inner 𝕜 (iterate A b x₀ k).r (A (iterate A b x₀ k).r)) /
       ‖(iterate A b x₀ k).q‖ ^ 2 : ℝ) : 𝕜) := by
   rw [RCLike.ofReal_div, inner_self_ofReal hA, ← inner_self_eq_ofReal_norm_sq, alpha]
 
-/-- Fong–Saunders Thm 2.2 (a)–(b): `α_i ≥ 0`, `β_i ≥ 0` (real, nonnegative). -/
+/-- Fong–Saunders, *CG versus MINRES*, Thm 2.2 (a)–(b): `α_i ≥ 0`, `β_i ≥ 0` (real,
+nonnegative). -/
 theorem re_alpha_nonneg (k : ℕ) : 0 ≤ RCLike.re (alpha A (iterate A b x₀ k)) := by
   rw [alpha_eq_ofReal b x₀ hA k, RCLike.ofReal_re]
   exact div_nonneg (re_inner_self_nonneg hA _) (sq_nonneg _)
@@ -511,7 +522,7 @@ private theorem re_beta_mul (k : ℕ) (z : 𝕜) :
       RCLike.re (beta A (iterate A b x₀ k)) * RCLike.re z := by
   rw [beta_eq_ofReal b x₀ hA k, RCLike.re_ofReal_mul, RCLike.ofReal_re]
 
-/-- Fong–Saunders Thm 2.2 (c): `re ⟪p_i, A p_j⟫ ≥ 0`. -/
+/-- Fong–Saunders, *CG versus MINRES*, Thm 2.2 (c): `re ⟪p_i, A p_j⟫ ≥ 0`. -/
 theorem re_inner_direction_apply_direction_nonneg (i j : ℕ) :
     0 ≤ RCLike.re (inner 𝕜 (iterate A b x₀ i).p (A (iterate A b x₀ j).p)) := by
   have key : ∀ m n : ℕ, m ≤ n →
@@ -551,7 +562,7 @@ private theorem re_inner_apply_sub_direction_nonneg {i m : ℕ} (him : i ≤ m) 
     exact add_nonneg ih (mul_nonneg (re_alpha_nonneg b x₀ hA m)
       (re_inner_direction_apply_direction_nonneg b x₀ hA m j))
 
-/-- Fong–Saunders Thm 2.2 (f): `re ⟪r_i, p_j⟫ ≥ 0`. -/
+/-- Fong–Saunders, *CG versus MINRES*, Thm 2.2 (f): `re ⟪r_i, p_j⟫ ≥ 0`. -/
 theorem re_inner_residual_direction_nonneg [FiniteDimensional 𝕜 E] (i j : ℕ) :
     0 ≤ RCLike.re (inner 𝕜 (iterate A b x₀ i).r (iterate A b x₀ j).p) := by
   have hr : (iterate A b x₀ (max i (grade A (b - A x₀)))).r = 0 :=
@@ -563,7 +574,8 @@ theorem re_inner_residual_direction_nonneg [FiniteDimensional 𝕜 E] (i j : ℕ
   rw [hri]
   exact re_inner_apply_sub_direction_nonneg b x₀ hA (le_max_left i _) j
 
-/-- Fong–Saunders Thm 2.2 (d): `re ⟪p_i, p_j⟫ ≥ 0` (uses finite termination). -/
+/-- Fong–Saunders, *CG versus MINRES*, Thm 2.2 (d): `re ⟪p_i, p_j⟫ ≥ 0` (uses finite
+termination). -/
 theorem re_inner_direction_nonneg [FiniteDimensional 𝕜 E] (i j : ℕ) :
     0 ≤ RCLike.re (inner 𝕜 (iterate A b x₀ i).p (iterate A b x₀ j).p) := by
   induction i with
@@ -592,14 +604,14 @@ private theorem re_inner_sub_direction_nonneg [FiniteDimensional 𝕜 E] {i m : 
     exact add_nonneg ih (mul_nonneg (re_alpha_nonneg b x₀ hA m)
       (re_inner_direction_nonneg b x₀ hA m j))
 
-/-- Fong–Saunders Thm 2.2 (e): `re ⟪x_i, p_j⟫ ≥ 0` for `x₀ = 0`. -/
+/-- Fong–Saunders, *CG versus MINRES*, Thm 2.2 (e): `re ⟪x_i, p_j⟫ ≥ 0` for `x₀ = 0`. -/
 theorem re_inner_iterate_direction_nonneg [FiniteDimensional 𝕜 E] (i j : ℕ) :
     0 ≤ RCLike.re (inner 𝕜 (iterate A b 0 i).x (iterate A b 0 j).p) := by
   have h0 : (iterate A b 0 0).x = 0 := rfl
   have h := re_inner_sub_direction_nonneg b 0 hA (Nat.zero_le i) j
   rwa [h0, sub_zero] at h
 
-/-- Fong–Saunders Thm 2.3: `‖x_k‖` is nondecreasing for `x₀ = 0`. -/
+/-- Fong–Saunders, *CG versus MINRES*, Thm 2.3: `‖x_k‖` is nondecreasing for `x₀ = 0`. -/
 theorem norm_iterate_monotone [FiniteDimensional 𝕜 E] :
     Monotone fun k => ‖(iterate A b 0 k).x‖ := by
   refine monotone_nat_of_le_succ fun k => ?_
@@ -612,7 +624,7 @@ theorem norm_iterate_monotone [FiniteDimensional 𝕜 E] :
     nlinarith [sq_nonneg ‖alpha A (iterate A b 0 k) • (iterate A b 0 k).p‖]
   nlinarith [norm_nonneg (iterate A b 0 k).x, norm_nonneg (iterate A b 0 (k + 1)).x]
 
-/-- Fong–Saunders Thm 2.4: `‖x* - x_k‖` is nonincreasing. -/
+/-- Fong–Saunders, *CG versus MINRES*, Thm 2.4: `‖x* - x_k‖` is nonincreasing. -/
 theorem norm_error_antitone [FiniteDimensional 𝕜 E] {xstar : E} (hstar : A xstar = b) :
     Antitone fun k => ‖xstar - (iterate A b x₀ k).x‖ := by
   refine antitone_nat_of_succ_le fun k => ?_
@@ -647,7 +659,8 @@ private theorem re_inner_apply_add (u w : E) :
   simp only [map_add, RCLike.conj_re]
   ring
 
-/-- Fong–Saunders Thm 2.5: `‖x* - x_k‖_A` is nonincreasing (strictly while `r_k ≠ 0`). -/
+/-- Fong–Saunders, *CG versus MINRES*, Thm 2.5: `‖x* - x_k‖_A` is nonincreasing (strictly while
+`r_k ≠ 0`). -/
 theorem energyNorm_error_antitone [FiniteDimensional 𝕜 E] {xstar : E} (hstar : A xstar = b) :
     Antitone fun k => energyNorm A (xstar - (iterate A b x₀ k).x) := by
   refine antitone_nat_of_succ_le fun k => ?_
@@ -673,9 +686,10 @@ theorem energyNorm_error_antitone [FiniteDimensional 𝕜 E] {xstar : E} (hstar 
     energyNorm_nonneg A (xstar - (iterate A b x₀ (k + 1)).x)]
 
 omit hA in
-/-- CR on a symmetric, possibly indefinite or singular, operator (Fong–Saunders §2, Choi):
-as long as no breakdown occurs (`⟪r_j, A r_j⟫ ≠ 0` and `A p_j ≠ 0` for `j < k`), the iterate
-`x_k` is the minimal-residual iterate.
+/-- CR on a symmetric, possibly indefinite or singular, operator
+(Fong–Saunders, *CG versus MINRES*, §2; Choi, *Iterative Methods for Singular Linear Equations
+and Least-Squares Problems*): as long as no breakdown occurs (`⟪r_j, A r_j⟫ ≠ 0` and
+`A p_j ≠ 0` for `j < k`), the iterate `x_k` is the minimal-residual iterate.
 
 Statement correction: the skeleton put this theorem inside the `include hA` block, so the
 elaborated statement also carried the ambient `A.IsSymmetricCoercive`, making it a special case
@@ -711,7 +725,8 @@ end CR
 
 namespace Krylov
 
-/-- Saad Lemma 6.21 (GCR / ORTHOMIN / ORTHODIR): if `p_0, …, p_{m-1}` are `AᴴA`-orthogonal and
+/-- Saad, *Iterative Methods*, Lemma 6.21 (GCR / ORTHOMIN / ORTHODIR): if `p_0, …, p_{m-1}` are
+`AᴴA`-orthogonal and
 span `𝒦_m(A, r₀)`, then `x_m = x₀ + ∑_j (⟪r_j, A p_j⟫ / ‖A p_j‖²) p_j` (with `r_j` the
 successive residuals) is the minimal-residual iterate. -/
 theorem isMinResIterate_of_orthogonal_directions {A : E →ₗ[𝕜] E} {b x₀ : E} {m : ℕ}

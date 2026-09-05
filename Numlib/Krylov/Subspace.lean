@@ -9,8 +9,21 @@ import Mathlib.LinearAlgebra.Dimension.Finrank
 
 `Krylov.subspace A v m = span {v, A v, …, A^(m-1) v}` for an endomorphism `A` of a module over
 a commutative ring, the full Krylov space, the polynomial description
-`𝒦_m = {p(A) v | deg p < m}`, and — over a field — the grade of `v` (Saad §6.2, Prop 6.1–6.2;
-Saad-eig Prop 6.1–6.3; Choi Def 2.1; Meurant §2.1).
+`𝒦_m = {p(A) v | deg p < m}`, and — over a field — the grade of `v`
+(Saad, *Iterative Methods*[^saad-iterative] §6.2, Prop 6.1–6.2;
+Saad, *Large Eigenvalue Problems*[^saad-eigenvalue] Prop 6.1–6.3; Choi[^choi] Def 2.1;
+Meurant–Strakoš[^meurant-strakos] §2.1).
+
+## References
+
+[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
+  SIAM, 2003.
+[^saad-eigenvalue]: Yousef Saad, *Numerical Methods for Large Eigenvalue Problems*, 2nd edition,
+  SIAM, 2011.
+[^choi]: Sou-Cheng Choi, *Iterative Methods for Singular Linear Equations and Least-Squares
+  Problems*, PhD thesis, Stanford University, 2006.
+[^meurant-strakos]: Gérard Meurant and Zdeněk Strakoš, *The Lanczos and conjugate gradient
+  algorithms in finite precision arithmetic*, Acta Numerica (2006), 471–542.
 -/
 
 open Polynomial
@@ -116,7 +129,7 @@ theorem fullSubspace_zero : fullSubspace A (0 : M) = ⊥ := by
   rintro _ ⟨i, rfl⟩
   simp
 
-/-- Saad Prop 6.1: `𝒦_m = {p(A) v | deg p < m}`. -/
+/-- Saad, *Iterative Methods*, Prop 6.1: `𝒦_m = {p(A) v | deg p < m}`. -/
 theorem subspace_eq_map_degreeLT (m : ℕ) :
     subspace A v m = (degreeLT R m).map (polyEval A v) := by
   refine le_antisymm ?_ ?_
@@ -180,7 +193,8 @@ theorem pow_apply_mem_subspace_of_le {n : ℕ} (h : (A ^ n) v ∈ subspace A v n
     rw [← Module.End.mul_apply, ← pow_add, Nat.add_comm]
   rwa [hpow] at hk
 
-/-- Saad Prop 6.1: the Krylov subspaces are constant from the first closure onwards. -/
+/-- Saad, *Iterative Methods*, Prop 6.1: the Krylov subspaces are constant from the first
+closure onwards. -/
 theorem subspace_eq_of_pow_apply_mem {n : ℕ} (h : (A ^ n) v ∈ subspace A v n) {m : ℕ}
     (hm : n ≤ m) : subspace A v m = subspace A v n := by
   induction m, hm using Nat.le_induction with
@@ -214,7 +228,9 @@ variable (A : Module.End K V) (v : V)
 
 /-- The grade of `v` w.r.t. `A`: the dimension of the cyclic subspace `𝒦_∞(A, v)` — equivalently
 the least `m` with `A^m v ∈ 𝒦_m` (`grade_eq_sInf`) and the degree of the minimal polynomial of
-`v` (Saad §6.2, Liesen–Strakoš). Junk value `0` when the cyclic subspace is infinite-dimensional
+`v` (Saad, *Iterative Methods*, §6.2; Liesen–Strakoš, *Krylov Subspace Methods: Principles and
+Analysis*).
+Junk value `0` when the cyclic subspace is infinite-dimensional
 (Mathlib's `finrank` convention); the finite-grade hypothesis is
 `[FiniteDimensional K (fullSubspace A v)]`, automatic when `V` is finite-dimensional. -/
 noncomputable def grade : ℕ := Module.finrank K (fullSubspace A v)
@@ -258,8 +274,8 @@ theorem finiteDimensional_fullSubspace_iff :
     rw [fullSubspace_eq_of_pow_apply_mem A v hm]
     infer_instance
 
-/-- `A^m v ∈ 𝒦_m` iff `v` is annihilated by a monic polynomial of degree `m` (Saad §6.2 defines
-the grade through the minimal polynomial of `v`). -/
+/-- `A^m v ∈ 𝒦_m` iff `v` is annihilated by a monic polynomial of degree `m`
+(Saad, *Iterative Methods*, §6.2 defines the grade through the minimal polynomial of `v`). -/
 theorem pow_apply_mem_subspace_iff_exists_monic (m : ℕ) :
     (A ^ m) v ∈ subspace A v m ↔ ∃ p : K[X], p.Monic ∧ p.natDegree = m ∧ aeval A p v = 0 := by
   rw [mem_subspace_iff_exists_aeval]
@@ -303,7 +319,8 @@ variable [FiniteDimensional K (fullSubspace A v)]
 private theorem exists_pow_apply_mem : {m | (A ^ m) v ∈ subspace A v m}.Nonempty :=
   (finiteDimensional_fullSubspace_iff A v).1 ‹_›
 
-/-- The grade is the least `m` with `A^m v ∈ 𝒦_m` (Saad's definition). -/
+/-- The grade is the least `m` with `A^m v ∈ 𝒦_m` (the definition used by Saad,
+*Iterative Methods*, §6.2). -/
 theorem grade_eq_sInf : grade A v = sInf {m | (A ^ m) v ∈ subspace A v m} := by
   set n := sInf {m | (A ^ m) v ∈ subspace A v m} with hn
   have hmem : (A ^ n) v ∈ subspace A v n := Nat.sInf_mem (exists_pow_apply_mem A v)
@@ -324,7 +341,7 @@ theorem grade_le_iff {m : ℕ} : grade A v ≤ m ↔ (A ^ m) v ∈ subspace A v 
 theorem pow_apply_notMem_subspace_of_lt_grade {m : ℕ} (h : m < grade A v) :
     (A ^ m) v ∉ subspace A v m := fun hm => absurd ((grade_le_iff A v).2 hm) (not_le.2 h)
 
-/-- Saad Prop 6.1: `𝒦_m = 𝒦_grade` for `m ≥ grade`. -/
+/-- Saad, *Iterative Methods*, Prop 6.1: `𝒦_m = 𝒦_grade` for `m ≥ grade`. -/
 theorem subspace_eq_of_grade_le {m : ℕ} (h : grade A v ≤ m) :
     subspace A v m = subspace A v (grade A v) :=
   subspace_eq_of_pow_apply_mem A v (pow_grade_apply_mem A v) h
@@ -343,7 +360,7 @@ theorem linearIndependent_of_le_grade {m : ℕ} (h : m ≤ grade A v) :
   (linearIndependent_iff_forall_pow_notMem A v).2 fun _ hk =>
     pow_apply_notMem_subspace_of_lt_grade A v (hk.trans_le h)
 
-/-- Saad Prop 6.2: `dim 𝒦_m = min m (grade)`. -/
+/-- Saad, *Iterative Methods*, Prop 6.2: `dim 𝒦_m = min m (grade)`. -/
 theorem finrank_subspace (m : ℕ) : Module.finrank K (subspace A v m) = min m (grade A v) := by
   rcases le_total m (grade A v) with h | h
   · rw [min_eq_left h, subspace]

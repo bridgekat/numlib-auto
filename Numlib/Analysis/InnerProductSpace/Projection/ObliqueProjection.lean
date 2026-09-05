@@ -13,10 +13,9 @@ import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 # Oblique projectors
 
 Projectors `P` (`P ∘ P = P`) onto `K` and orthogonal to `L` (`ker P = Lᗮ`): uniqueness from
-range and kernel, existence iff `K ⊓ Lᗮ = ⊥` (Saad §1.12, (1.39)–(1.41)), the matrix form
-`P = V (Wᴴ V)⁻¹ Wᴴ` from bases `V` of `K` and `W` of `L` (Saad (1.44)), the norm characterization
-of orthogonal projectors (Saad Thm 1.36), and Kato's lemma `‖P‖ = ‖1 - P‖` (Szyld 2006;
-Atkinson–Han Rem 9.2.2, Xu–Zikatanov).
+range and kernel, existence iff `K ⊓ Lᗮ = ⊥`, the matrix form `P = V (Wᴴ V)⁻¹ Wᴴ` from bases `V`
+of `K` and `W` of `L`, the characterization of the orthogonal projectors as the projectors of
+norm `1`, and Kato's lemma `‖P‖ = ‖1 - P‖`.
 -/
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
@@ -59,8 +58,8 @@ theorem IsIdempotentElem.ext_of_range_eq_of_ker_eq {P Q : E →ₗ[𝕜] E} (hP 
     exact LinearMap.mem_range_self P x
   rw [h2, h3]
 
-/-- Saad (1.41): `P x` is the unique element of `K` with `x - P x ⟂ L`, for a projector `P` with
-range `K` and kernel `Lᗮ`. -/
+/-- `P x` is the unique element of `K` with `x - P x ⟂ L`, for a projector `P` with range `K`
+and kernel `Lᗮ`. -/
 theorem IsIdempotentElem.apply_eq_iff {P : E →ₗ[𝕜] E} (hP : IsIdempotentElem P)
     {K L : Submodule 𝕜 E} (hr : LinearMap.range P = K) (hk : LinearMap.ker P = Lᗮ) (x y : E) :
     P x = y ↔ y ∈ K ∧ x - y ∈ Lᗮ := by
@@ -76,8 +75,8 @@ theorem IsIdempotentElem.apply_eq_iff {P : E →ₗ[𝕜] E} (hP : IsIdempotentE
     rw [map_sub, apply_of_mem_range hP hyr, sub_eq_zero] at h
     exact h
 
-/-- Saad §1.12.1: a projector onto `K` orthogonal to `L` exists (uniquely) iff `K ⊓ Lᗮ = ⊥`,
-for finite-dimensional `K`, `L` of equal dimension. -/
+/-- A projector onto `K` orthogonal to `L` exists (uniquely) iff `K ⊓ Lᗮ = ⊥`, for
+finite-dimensional `K`, `L` of equal dimension. -/
 theorem existsUnique_isIdempotentElem_of_inf_orthogonal_eq_bot {K L : Submodule 𝕜 E}
     [FiniteDimensional 𝕜 K] [FiniteDimensional 𝕜 L]
     (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) (hKL : K ⊓ Lᗮ = ⊥) :
@@ -140,7 +139,7 @@ variable (𝕜)
 noncomputable def crossGram (V W : ι → E) : Matrix ι ι 𝕜 :=
   Matrix.of fun i j => inner 𝕜 (W i) (V j)
 
-/-- Saad (1.44): the projector `V (Wᴴ V)⁻¹ Wᴴ` onto `span V` orthogonally to `span W`
+/-- The projector `V (Wᴴ V)⁻¹ Wᴴ` onto `span V` orthogonally to `span W`
 (as a linear map; junk when `Wᴴ V` is singular). -/
 noncomputable def obliqueProjectionOfBases (V W : ι → E) : E →ₗ[𝕜] E where
   toFun x := ∑ j, (crossGram 𝕜 V W)⁻¹.mulVec (fun i => inner 𝕜 (W i) x) j • V j
@@ -304,8 +303,7 @@ private theorem inner_eq_zero_of_norm_eq_one {P : E →L[𝕜] E} (hnorm : ‖P�
   have hc0 : ‖c‖ = 0 := by nlinarith [norm_nonneg c]
   exact norm_eq_zero.1 hc0
 
-/-- Saad Thm 1.36 / Atkinson–Han Ex 3.6.7: a nonzero projector has norm `≥ 1`, with equality iff
-it is orthogonal (self-adjoint). -/
+/-- A nonzero projector has norm `≥ 1`, with equality iff it is orthogonal (self-adjoint). -/
 theorem IsIdempotentElem.norm_eq_one_iff_isSymmetric {P : E →L[𝕜] E} (hP : IsIdempotentElem P)
     (h0 : P ≠ 0) : ‖P‖ = 1 ↔ (P : E →ₗ[𝕜] E).IsSymmetric := by
   have hPP : ∀ x : E, P (P x) = P x := fun x => DFunLike.congr_fun hP x

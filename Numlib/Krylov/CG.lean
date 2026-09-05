@@ -5,11 +5,31 @@ import Numlib.Krylov.Iterate
 # The conjugate gradient recurrence (Hestenes–Stiefel)
 
 `CG.step` is one step of the two-term CG recurrence
-(Saad Alg 6.18, Atkinson–Han (5.6.2)/§9.4, Fong–Saunders Table 2.1, Meurant–Strakoš (3.2),
-Choi Table 2.7). The main theorems: CG realises the Galerkin specification
+(Saad, *Iterative Methods*[^saad-iterative] Alg 6.18, Atkinson–Han[^atkinson-han] (5.6.2)/§9.4,
+Fong–Saunders[^fong-saunders] Table 2.1, Meurant–Strakoš[^meurant-strakos] (3.2),
+Choi[^choi] Table 2.7). The main theorems: CG realises the Galerkin specification
 (`CG.isGalerkinIterate`), the orthogonality invariants (Saad Prop 6.20), the identification of
-CG residuals with Lanczos vectors (Saad (6.101)–(6.103), Meurant (3.4)), and the
-Hestenes–Stiefel error identities and monotonicity results (HS Thm 6:1, 6:3; Steihaug).
+CG residuals with Lanczos vectors (Saad (6.101)–(6.103), Meurant–Strakoš (3.4)), and the
+Hestenes–Stiefel[^hestenes-stiefel] error identities and monotonicity results
+(Hestenes–Stiefel Thm 6:1, 6:3; Steihaug[^steihaug]).
+
+## References
+
+[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
+  SIAM, 2003.
+[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+  Analysis Framework*, 3rd edition, Springer, 2009.
+[^fong-saunders]: David Chin-Lung Fong and Michael Saunders, *CG versus MINRES: an empirical
+  comparison*, SQU Journal for Science 17 (2012), 44–62.
+[^meurant-strakos]: Gérard Meurant and Zdeněk Strakoš, *The Lanczos and conjugate gradient
+  algorithms in finite precision arithmetic*, Acta Numerica (2006), 471–542.
+[^choi]: Sou-Cheng Choi, *Iterative Methods for Singular Linear Equations and Least-Squares
+  Problems*, PhD thesis, Stanford University, 2006.
+[^hestenes-stiefel]: Magnus R. Hestenes and Eduard Stiefel, *Methods of conjugate gradients for
+  solving linear systems*, Journal of Research of the National Bureau of Standards 49 (1952),
+  409–436.
+[^steihaug]: Trond Steihaug, *The conjugate gradient method and trust regions in large scale
+  optimization*, SIAM Journal on Numerical Analysis 20 (1983), 626–637.
 -/
 
 open Krylov
@@ -263,7 +283,7 @@ private theorem energyNorm_nonneg (x : E) : 0 ≤ energyNorm A x := Real.sqrt_no
 variable {A} (hA : A.IsSymmetricCoercive)
 include hA
 
-/-! ### The joint induction (Saad Prop 6.20) -/
+/-! ### The joint induction (Saad, *Iterative Methods*, Prop 6.20) -/
 
 private theorem re_inner_apply_self_nonneg (x : E) : 0 ≤ RCLike.re (inner 𝕜 (A x) x) := by
   obtain ⟨c, hc, h⟩ := hA.isCoercive
@@ -310,8 +330,9 @@ private theorem inner_apply_direction_eq_zero_of {j : ℕ} {v : E}
       rw [← inner_smul_right, alpha_smul_apply_direction, inner_sub_right, h1, h2, sub_zero]
     exact (mul_eq_zero.1 h).resolve_left hα
 
-/-- The joint CG invariant at step `k` (Saad Prop 6.20): the residual is orthogonal to all
-earlier search directions, the current direction is `A`-conjugate to all earlier ones, and
+/-- The joint CG invariant at step `k` (Saad, *Iterative Methods*, Prop 6.20): the residual is
+orthogonal to all earlier search directions, the current direction is `A`-conjugate to all
+earlier ones, and
 `⟪r_k, p_k⟫ = ⟪r_k, r_k⟫`. -/
 private structure Invariant (A : E →ₗ[𝕜] E) (b x₀ : E) (k : ℕ) : Prop where
   /-- `r_k ⟂ p_j` for `j < k`. -/
@@ -389,7 +410,7 @@ theorem iterate_eq_of_residual_eq_zero {k : ℕ} (hr : (iterate A b x₀ k).r = 
     iterate A b x₀ (k + j) = iterate A b x₀ k :=
   iterate_eq_of_residual_eq_zero' A b x₀ hr (k + j) (Nat.le_add_right k j)
 
-/-- Saad Prop 6.20 (i): residuals are mutually orthogonal. -/
+/-- Saad, *Iterative Methods*, Prop 6.20 (i): residuals are mutually orthogonal. -/
 theorem inner_residual_eq_zero {i j : ℕ} (h : i ≠ j) :
     inner 𝕜 (iterate A b x₀ i).r (iterate A b x₀ j).r = 0 := by
   have key : ∀ m n : ℕ, n < m → inner 𝕜 (iterate A b x₀ m).r (iterate A b x₀ n).r = 0 :=
@@ -399,7 +420,7 @@ theorem inner_residual_eq_zero {i j : ℕ} (h : i ≠ j) :
   · rw [← inner_conj_symm, key j i h', map_zero]
   · exact key i j h'
 
-/-- Saad Prop 6.20 (ii): directions are `A`-conjugate. -/
+/-- Saad, *Iterative Methods*, Prop 6.20 (ii): directions are `A`-conjugate. -/
 theorem inner_apply_direction_eq_zero {i j : ℕ} (h : i ≠ j) :
     inner 𝕜 (A (iterate A b x₀ i).p) (iterate A b x₀ j).p = 0 := by
   rcases lt_or_gt_of_ne h with h' | h'
@@ -614,7 +635,7 @@ private theorem inner_gramSchmidtNormed_self (f : ℕ → E) (n : ℕ) :
     rw [sq, ← mul_assoc, inv_mul_cancel₀ h0, one_mul]
 
 /-- CG residuals are the Lanczos vectors up to sign: `v_k = (-1)^k r_k / ‖r_k‖`
-(Saad (6.101), Meurant (3.4)). -/
+(Saad, *Iterative Methods*, (6.101); Meurant–Strakoš (3.4)). -/
 theorem arnoldi_vec_eq (k : ℕ) (hr : (iterate A b x₀ k).r ≠ 0) :
     Arnoldi.vec A (b - A x₀) k =
       ((-1 : 𝕜) ^ k * (‖(iterate A b x₀ k).r‖⁻¹ : ℝ)) • (iterate A b x₀ k).r := by
@@ -925,19 +946,19 @@ section ThreeTerm
 omit hA
 variable (A)
 
-/-! ### The three-term form (Saad §6.7.2, Alg 6.19)
+/-! ### The three-term form (Saad, *Iterative Methods*, §6.7.2, Alg 6.19)
 
 `γ_m = ⟪r_m, r_m⟫ / ⟪A r_m, r_m⟫`, `ρ_0 = 1`,
 `ρ_m = (1 - (γ_m/γ_{m-1}) (‖r_m‖²/‖r_{m-1}‖²) / ρ_{m-1})⁻¹`, and
 `x_{m+1} = ρ_m (x_m + γ_m r_m) + (1 - ρ_m) x_{m-1}`,
-`r_{m+1} = ρ_m (r_m - γ_m A r_m) + (1 - ρ_m) r_{m-1}` (6.96)–(6.98). -/
+`r_{m+1} = ρ_m (r_m - γ_m A r_m) + (1 - ρ_m) r_{m-1}` (Saad (6.96)–(6.98)). -/
 
-/-- `γ_m = ⟪r_m, r_m⟫ / ⟪A r_m, r_m⟫` (6.97). -/
+/-- `γ_m = ⟪r_m, r_m⟫ / ⟪A r_m, r_m⟫` (Saad, *Iterative Methods*, (6.97)). -/
 noncomputable def gamma (m : ℕ) : 𝕜 :=
   inner 𝕜 (iterate A b x₀ m).r (iterate A b x₀ m).r /
     inner 𝕜 (A (iterate A b x₀ m).r) (iterate A b x₀ m).r
 
-/-- `ρ_m` of (6.98), with `ρ_0 = 1`. -/
+/-- `ρ_m` of Saad, *Iterative Methods*, (6.98), with `ρ_0 = 1`. -/
 noncomputable def rho : ℕ → 𝕜
   | 0 => 1
   | m + 1 => (1 - gamma A b x₀ (m + 1) / gamma A b x₀ m *
@@ -1030,7 +1051,7 @@ private theorem rho_succ_eq_div (hA : A.IsSymmetricCoercive) (m : ℕ)
     linear_combination -hK
   rw [rho_succ b x₀ hA m, hX, inv_div]
 
-/-- `α_m = ρ_m γ_m` (Saad (6.97)–(6.98)). -/
+/-- `α_m = ρ_m γ_m` (Saad, *Iterative Methods*, (6.97)–(6.98)). -/
 private theorem alpha_eq_rho_mul_gamma (hA : A.IsSymmetricCoercive) (m : ℕ)
     (hr : ∀ j ≤ m, (iterate A b x₀ j).r ≠ 0) :
     alpha A (iterate A b x₀ m) = rho A b x₀ m * gamma A b x₀ m := by
@@ -1065,8 +1086,9 @@ private theorem alpha_mul_rho_succ_sub_one (hA : A.IsSymmetricCoercive) (m : ℕ
   field_simp
   linear_combination -hK - beta A (iterate A b x₀ m) * ha'
 
-/-- Saad (6.96): `x_{m+1} = ρ_m (x_m + γ_m r_m) + (1 - ρ_m) x_{m-1}` (with `x_{-1}` read as `x_0`,
-harmless since `1 - ρ_0 = 0`), valid while `r_j ≠ 0` for `j ≤ m`. -/
+/-- Saad, *Iterative Methods*, (6.96): `x_{m+1} = ρ_m (x_m + γ_m r_m) + (1 - ρ_m) x_{m-1}`
+(with `x_{-1}` read as `x_0`, harmless since `1 - ρ_0 = 0`), valid while `r_j ≠ 0` for
+`j ≤ m`. -/
 theorem iterate_succ_eq_three_term (hA : A.IsSymmetricCoercive) (m : ℕ)
     (hr : ∀ j ≤ m, (iterate A b x₀ j).r ≠ 0) :
     (iterate A b x₀ (m + 1)).x =
@@ -1095,7 +1117,8 @@ theorem iterate_succ_eq_three_term (hA : A.IsSymmetricCoercive) (m : ℕ)
     · field_simp
       linear_combination hrho
 
-/-- Saad (6.96) for the residuals: `r_{m+1} = ρ_m (r_m - γ_m A r_m) + (1 - ρ_m) r_{m-1}`. -/
+/-- Saad, *Iterative Methods*, (6.96) for the residuals:
+`r_{m+1} = ρ_m (r_m - γ_m A r_m) + (1 - ρ_m) r_{m-1}`. -/
 theorem residual_succ_eq_three_term (hA : A.IsSymmetricCoercive) (m : ℕ)
     (hr : ∀ j ≤ m, (iterate A b x₀ j).r ≠ 0) :
     (iterate A b x₀ (m + 1)).r =

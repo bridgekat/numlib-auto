@@ -8,10 +8,22 @@ import Mathlib.Analysis.RCLike.Basic
 
 A splitting `a = m - n` with `m` a unit, in any ring (`Stationary.Splitting`, determined by `m`
 alone: `n := m - a`), its iteration operator `G = m⁻¹ n = 1 - m⁻¹ a`, and the matrix
-constructors for Jacobi, Gauss–Seidel, SOR, SSOR and Richardson (Saad §4.1, (4.5)–(4.27); Kress
-§4.1–4.2; Atkinson–Han §5.2.2 — whose convention `A = N - M` swaps the roles of the letters;
-Higham Ch. 17). Saad's `A = D - E - F` corresponds to `D = diagPart A`, `E = -strictLower A`,
+constructors for Jacobi, Gauss–Seidel, SOR, SSOR and Richardson (Saad[^saad-iterative] §4.1,
+(4.5)–(4.27); Kress[^kress] §4.1–4.2; Atkinson–Han[^atkinson-han] §5.2.2 — whose convention
+`A = N - M` swaps the roles of the letters; Higham[^higham] Ch. 17). Saad writes the splitting
+as `A = D - E - F` with `D` the diagonal and `-E`, `-F` the strictly lower and strictly upper
+triangular parts, which corresponds to `D = diagPart A`, `E = -strictLower A`,
 `F = -strictUpper A`.
+
+## References
+
+[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
+  SIAM, 2003.
+[^kress]: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998.
+[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+  Analysis Framework*, 3rd edition, Springer, 2009.
+[^higham]: Nicholas J. Higham, *Accuracy and Stability of Numerical Algorithms*, 2nd edition,
+  SIAM, 2002.
 -/
 
 namespace Stationary
@@ -34,7 +46,8 @@ def n : R := s.m - a
 
 theorem m_sub_n : s.m - s.n = a := sub_sub_cancel _ _
 
-/-- The iteration operator `G = m⁻¹ n = 1 - m⁻¹ a` (Saad (4.28)/(4.30)). -/
+/-- The iteration operator `G = m⁻¹ n = 1 - m⁻¹ a` of the splitting `a = m - n`
+(Saad, *Iterative Methods*, (4.28)/(4.30)). -/
 noncomputable def iterationOperator : R := 1 - Ring.inverse s.m * a
 
 theorem iterationOperator_eq : s.iterationOperator = Ring.inverse s.m * s.n := by
@@ -129,7 +142,8 @@ theorem isUnit_diagPart_add_strictUpper {A : Matrix n n 𝕜} (h : IsUnit (diagP
     IsUnit (diagPart A + strictUpper A) := by
   simpa using isUnit_smul_diagPart_add_smul_strictUpper (d := 1) A one_ne_zero h
 
-/-- Jacobi: `M = D`, `N = E + F` (Saad (4.5)). -/
+/-- Jacobi: `M = D`, `N = E + F`, in Saad's letters `A = D - E - F` for the diagonal and the
+negated strictly lower / strictly upper parts (Saad, *Iterative Methods*, (4.5)). -/
 noncomputable def jacobiSplitting (A : Matrix n n 𝕜) (h : IsUnit (diagPart A)) : Splitting A :=
   ⟨diagPart A, h⟩
 
@@ -139,7 +153,8 @@ theorem jacobiSplitting_n (A : Matrix n n 𝕜) (h : IsUnit (diagPart A)) :
   rw [eq_neg_iff_add_eq_zero, sub_add_eq_add_sub, ← add_assoc,
     diagPart_add_strictLower_add_strictUpper, sub_self]
 
-/-- The Jacobi iteration matrix `-D⁻¹ (E + F)` (Saad (4.7)). -/
+/-- The Jacobi iteration matrix `-D⁻¹ (E + F)`, with `D` the diagonal part of `A` and `-E`, `-F`
+its strictly lower and strictly upper parts (Saad, *Iterative Methods*, (4.7)). -/
 theorem jacobiSplitting_iterationOperator (A : Matrix n n 𝕜) (h : IsUnit (diagPart A)) :
     (jacobiSplitting A h).iterationOperator =
       -(diagPart A)⁻¹ * (strictLower A + strictUpper A) := by
@@ -147,7 +162,8 @@ theorem jacobiSplitting_iterationOperator (A : Matrix n n 𝕜) (h : IsUnit (dia
   rw [Splitting.iterationOperator_eq, jacobiSplitting_n, hm, nonsing_inv_eq_ringInverse, neg_mul,
     mul_neg]
 
-/-- Gauss–Seidel: `M = D - E`, `N = F` (Saad (4.6)). -/
+/-- Gauss–Seidel: `M = D - E`, `N = F`, in Saad's letters `A = D - E - F` (Saad,
+*Iterative Methods*, (4.6)). -/
 noncomputable def gaussSeidelSplitting (A : Matrix n n 𝕜) (h : IsUnit (diagPart A)) :
     Splitting A :=
   ⟨diagPart A + strictLower A, isUnit_diagPart_add_strictLower h⟩
@@ -163,13 +179,16 @@ noncomputable def backwardGaussSeidelSplitting (A : Matrix n n 𝕜) (h : IsUnit
     Splitting A :=
   ⟨diagPart A + strictUpper A, isUnit_diagPart_add_strictUpper h⟩
 
-/-- SOR: `M = ω⁻¹ (D - ω E)` (Saad (4.11)–(4.12)). -/
+/-- SOR (successive over-relaxation) with parameter `ω`: `M = ω⁻¹ (D - ω E)`, in Saad's letters
+`A = D - E - F` (Saad, *Iterative Methods*, (4.11)–(4.12)). -/
 noncomputable def sorSplitting (A : Matrix n n 𝕜) (h : IsUnit (diagPart A)) {ω : 𝕜} (hω : ω ≠ 0) :
     Splitting A :=
   ⟨ω⁻¹ • diagPart A + strictLower A, by
     simpa using isUnit_smul_diagPart_add_smul_strictLower (d := 1) A (inv_ne_zero hω) h⟩
 
-/-- The SOR iteration matrix `(D - ωE)⁻¹ (ωF + (1 - ω) D)` (Saad (4.14)). -/
+/-- The SOR iteration matrix `(D - ωE)⁻¹ (ωF + (1 - ω) D)`, with `D` the diagonal part of `A`
+and `-E`, `-F` its strictly lower and strictly upper parts (Saad, *Iterative Methods*,
+(4.14)). -/
 theorem sorSplitting_iterationOperator (A : Matrix n n 𝕜) (h : IsUnit (diagPart A)) {ω : 𝕜}
     (hω : ω ≠ 0) :
     (sorSplitting A h hω).iterationOperator =
@@ -193,7 +212,9 @@ theorem sorSplitting_iterationOperator (A : Matrix n n 𝕜) (h : IsUnit (diagPa
     one_smul, nonsing_inv_eq_ringInverse]
   rfl
 
-/-- SSOR (Saad (4.27)): `M = (1/(ω(2-ω))) (D - ωE) D⁻¹ (D - ωF)`. -/
+/-- SSOR (symmetric successive over-relaxation), one forward SOR sweep followed by a backward
+one: `M = (1/(ω(2-ω))) (D - ωE) D⁻¹ (D - ωF)`, in Saad's letters `A = D - E - F`
+(Saad, *Iterative Methods*, (4.27)). -/
 noncomputable def ssorSplitting (A : Matrix n n 𝕜) (h : IsUnit (diagPart A)) {ω : 𝕜} (hω : ω ≠ 0)
     (hω2 : ω ≠ 2) : Splitting A :=
   ⟨(ω * (2 - ω))⁻¹ • ((diagPart A + ω • strictLower A) * (diagPart A)⁻¹ *

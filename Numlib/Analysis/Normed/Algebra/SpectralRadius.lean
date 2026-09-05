@@ -11,10 +11,10 @@ import Mathlib.Analysis.SpecificLimits.Normed
 /-!
 # Spectral radius and convergence of powers
 
-In a complex unital Banach algebra, `ρ(a) < 1 ↔ aⁿ → 0` (Saad Thm 1.10, Kress Thm 4.1 /
-Problem 4.3), the Neumann series converges iff `ρ(a) < 1` (Saad Thm 1.11), and powers decay
-geometrically at any rate above the spectral radius (Gelfand's formula, which Mathlib provides as
-`spectrum.pow_nnnorm_pow_one_div_tendsto_nhds_spectralRadius`).
+In a complex unital Banach algebra, `ρ(a) < 1 ↔ aⁿ → 0`, the Neumann series `∑ aⁿ` converges iff
+`ρ(a) < 1`, and powers decay geometrically at any rate above the spectral radius. All three are
+classical consequences of Gelfand's formula for the spectral radius, which Mathlib provides as
+`spectrum.pow_nnnorm_pow_one_div_tendsto_nhds_spectralRadius`.
 -/
 
 open Filter Topology
@@ -97,7 +97,7 @@ theorem spectralRadius_lt_one_iff_exists_norm_pow_lt_one (a : A) :
     simpa using ((spectralRadius_lt_one_iff_tendsto_pow a).mp h).norm
   exact (hnorm.eventually_lt_const one_pos).exists
 
-/-- Saad Thm 1.11: the Neumann series converges iff `ρ(a) < 1`. -/
+/-- The Neumann series `∑ aⁿ` converges iff `ρ(a) < 1`. -/
 theorem summable_pow_iff_spectralRadius_lt_one (a : A) :
     Summable (fun n => a ^ n) ↔ spectralRadius ℂ a < 1 := by
   refine ⟨fun h => (spectralRadius_lt_one_iff_tendsto_pow a).mpr h.tendsto_atTop_zero, fun h => ?_⟩

@@ -7,14 +7,22 @@ import Mathlib.Analysis.InnerProductSpace.Adjoint
 # Bounded sesquilinear forms on Hilbert spaces
 
 A bounded form is `a : V →L⋆[𝕜] V →L[𝕜] 𝕜` (conjugate-linear in the first slot, as `innerSL`):
-boundedness with constant `M`, coercivity `c ‖v‖² ≤ re (a v v)` (Atkinson–Han's
-"`V`-elliptic"/"strongly positive"), Hermitian symmetry, the associated operator
-`SesqForm.toOperator a` (`⟪A u, v⟫ = a u v`, Mathlib's
+boundedness with constant `M`, coercivity `c ‖v‖² ≤ re (a v v)` (what
+Atkinson–Han[^atkinson-han] call "`V`-elliptic" or "strongly positive"), Hermitian symmetry, the
+associated operator `SesqForm.toOperator a` (`⟪A u, v⟫ = a u v`, Mathlib's
 `InnerProductSpace.continuousLinearMapOfBilin`), the Riesz representative of a functional, and
-the energy functional `E(v) = ½ re (a v v) - re (ℓ v)` (AH §8.3, §9.4; Kress §3.?; Saad §5.2
-in the operator language). Over `ℝ` a `V →L[ℝ] V →L[ℝ] ℝ` *is* a `V →L⋆[ℝ] V →L[ℝ] ℝ` (same
-defeq Mathlib's `LaxMilgram.lean` uses), so the real surfaces need no conversion; the `_real`
-lemmas remove the `re`/`conj` decorations.
+the energy functional `E(v) = ½ re (a v v) - re (ℓ v)` (Atkinson–Han §8.3, §9.4;
+Kress[^kress] §11.3; Saad[^saad-iterative] §5.2 in the operator language). Over `ℝ` a
+`V →L[ℝ] V →L[ℝ] ℝ` *is* a `V →L⋆[ℝ] V →L[ℝ] ℝ` (same defeq Mathlib's `LaxMilgram.lean` uses), so
+the real surfaces need no conversion; the `_real` lemmas remove the `re`/`conj` decorations.
+
+## References
+
+[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+  Analysis Framework*, 3rd edition, Springer, 2009.
+[^kress]: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998.
+[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
+  SIAM, 2003.
 -/
 
 variable {𝕜 V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [InnerProductSpace 𝕜 V]
@@ -30,7 +38,8 @@ variable (a : SesqForm 𝕜 V)
 /-- `‖a u v‖ ≤ M ‖u‖ ‖v‖`. -/
 def IsBoundedWith (M : ℝ) : Prop := ∀ u v, ‖a u v‖ ≤ M * ‖u‖ * ‖v‖
 
-/-- `c ‖v‖² ≤ re (a v v)` (AH: `V`-elliptic with constant `c`; strongly positive). -/
+/-- `c ‖v‖² ≤ re (a v v)`.  Atkinson–Han, *Theoretical Numerical Analysis*, call such a form
+`V`-elliptic with constant `c`, or strongly positive. -/
 def IsCoerciveWith (c : ℝ) : Prop := ∀ v, c * ‖v‖ ^ 2 ≤ RCLike.re (a v v)
 
 /-- Coercive for some `c > 0`. -/
@@ -83,8 +92,9 @@ section Operator
 
 variable [CompleteSpace V]
 
-/-- The operator `A` with `⟪A u, v⟫ = a u v` (AH (8.3.1) via Riesz, (9.4.5)); Mathlib's
-`InnerProductSpace.continuousLinearMapOfBilin`. -/
+/-- The operator `A` with `⟪A u, v⟫ = a u v`, obtained by applying the Riesz representation
+theorem to each of the functionals `a u` (Atkinson–Han, *Theoretical Numerical Analysis*, (8.3.1)
+and (9.4.5)); Mathlib's `InnerProductSpace.continuousLinearMapOfBilin`. -/
 noncomputable abbrev toOperator : V →L[𝕜] V := InnerProductSpace.continuousLinearMapOfBilin a
 
 theorem inner_toOperator (u v : V) : inner 𝕜 (toOperator a u) v = a u v :=
@@ -139,7 +149,9 @@ end Operator
 
 section Energy
 
-/-- The energy functional `E(v) = ½ re (a v v) - re (ℓ v)` (AH Thm 8.3.3, (9.1.7)). -/
+/-- The energy functional `E(v) = ½ re (a v v) - re (ℓ v)`.  When `a` is Hermitian and coercive,
+its minimizers are exactly the solutions of `a u v = ℓ v` (Atkinson–Han, *Theoretical Numerical
+Analysis*, Thm 8.3.3 and (9.1.7)); see `SesqForm.isMinOn_energy_iff`. -/
 noncomputable def energy (ℓ : V →L[𝕜] 𝕜) (v : V) : ℝ :=
   (1 / 2 : ℝ) * RCLike.re (a v v) - RCLike.re (ℓ v)
 
@@ -150,7 +162,9 @@ theorem energyNorm_eq_energyNorm_toOperator [CompleteSpace V] (v : V) :
     a.energyNorm v = _root_.energyNorm (toOperator a : V →ₗ[𝕜] V) v := by
   simp only [energyNorm, _root_.energyNorm, ContinuousLinearMap.coe_coe, inner_toOperator]
 
-/-- Norm equivalence `√c ‖v‖ ≤ ‖v‖_a ≤ √M ‖v‖` (AH §9.4, Thm 8.3.3). -/
+/-- Lower half of the norm equivalence `√c ‖v‖ ≤ ‖v‖_a ≤ √M ‖v‖`: for a bounded coercive form the
+energy norm is equivalent to the ambient norm (Atkinson–Han, *Theoretical Numerical Analysis*,
+Thm 8.3.3 and §9.4).  The upper half is `energyNorm_le_sqrt_mul_norm`. -/
 theorem sqrt_mul_norm_le_energyNorm {c : ℝ} (hc : 0 ≤ c) (h : a.IsCoerciveWith c) (v : V) :
     Real.sqrt c * ‖v‖ ≤ a.energyNorm v := by
   have hcv : Real.sqrt c * ‖v‖ = Real.sqrt (c * ‖v‖ ^ 2) := by
@@ -182,13 +196,20 @@ namespace SesqForm₂
 variable {U : Type*} [NormedAddCommGroup U] [InnerProductSpace 𝕜 U] (a : SesqForm₂ 𝕜 U V)
 
 /-- The inf–sup (Babuška–Brezzi) condition with constant `α`, in operator-norm form:
-`α ‖u‖ ≤ ‖a u‖ = sup_{v ≠ 0} |a u v| / ‖v‖` (AH (8.7.2), (9.2.3)). -/
+`α ‖u‖ ≤ ‖a u‖ = sup_{v ≠ 0} |a u v| / ‖v‖` (Atkinson–Han, *Theoretical Numerical Analysis*,
+(8.7.2) and (9.2.3)).  For a one-space form it is weaker than coercivity; together with
+`IsNondegenerate` it is what makes the two-space problem `a u v = ℓ v` uniquely solvable, see
+`SesqForm₂.babuska_necas`. -/
 def InfSupWith (α : ℝ) : Prop := ∀ u, α * ‖u‖ ≤ ‖a u‖
 
-/-- The transposed nondegeneracy condition (AH (8.7.3)): for every `v ≠ 0` some `u` sees it. -/
+/-- The transposed nondegeneracy condition: every `v ≠ 0` is detected by some `u`, in the sense
+that `a u v ≠ 0` (Atkinson–Han, *Theoretical Numerical Analysis*, (8.7.3)).  Equivalently, no
+nonzero `v` is orthogonal to the range of the operator associated with `a`. -/
 def IsNondegenerate : Prop := ∀ v, v ≠ 0 → ∃ u, a u v ≠ 0
 
-/-- `sup_{v ≠ 0} |a u v| / ‖v‖ = ‖a u‖`: the book's inf–sup quantity is an operator norm. -/
+/-- `sup_{v ≠ 0} |a u v| / ‖v‖ = ‖a u‖`: the supremum in which the inf–sup condition is usually
+stated is exactly the operator norm of the functional `a u`, which is why `InfSupWith` may be
+phrased with `‖a u‖`. -/
 theorem iSup_norm_div_eq_norm (u : U) :
     (⨆ v : {v : V // v ≠ 0}, ‖a u v‖ / ‖(v : V)‖) = ‖a u‖ := by
   have hle : ∀ v : {v : V // v ≠ 0}, ‖a u (v : V)‖ / ‖(v : V)‖ ≤ ‖a u‖ := fun v =>
@@ -201,7 +222,9 @@ theorem iSup_norm_div_eq_norm (u : U) :
     exact le_ciSup (f := fun v : {v : V // v ≠ 0} => ‖a u (v : V)‖ / ‖(v : V)‖)
       ⟨‖a u‖, Set.forall_mem_range.2 hle⟩ ⟨v, hv⟩
 
-/-- Coercive one-space forms satisfy the inf–sup condition (AH Ex 8.7.1). -/
+/-- A coercive one-space form satisfies the inf–sup condition with the same constant.  This is why
+the two-space theory contains Lax–Milgram as a special case (Atkinson–Han, *Theoretical Numerical
+Analysis*, Exercise 8.7.1). -/
 theorem _root_.SesqForm.IsCoerciveWith.infSupWith {a : SesqForm 𝕜 V} {c : ℝ}
     (h : a.IsCoerciveWith c) : SesqForm₂.InfSupWith (a : SesqForm₂ 𝕜 V V) c :=
   fun u => SesqForm.IsCoerciveWith.norm_le_norm_apply a h u
