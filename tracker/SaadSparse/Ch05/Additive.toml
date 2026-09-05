@@ -1,0 +1,16 @@
+namespace = "SaadSparse.Ch05"
+
+[[node]]
+id = "P_i"
+
+[[node]]
+id = "ProjFamily"
+
+[[node]]
+id = "ProjFamily.V"
+
+[[node]]
+id = "additiveStep"
+
+[[node]]
+id = "multiplicativeSweep"

@@ -1,0 +1,64 @@
+namespace = "SaadSparse"
+
+[[node]]
+id = "complexify_diagPart"
+
+[[node]]
+id = "complexify_inv"
+
+[[node]]
+id = "complexify_strictLower"
+
+[[node]]
+id = "complexify_strictUpper"
+
+[[node]]
+id = "complexify_sub"
+
+[[node]]
+id = "eigenvalues_le_lambdaMax"
+
+[[node]]
+id = "inner_eq_dotProduct_star"
+
+[[node]]
+id = "isSymmetricBoundedBy_toEuclideanLin"
+
+[[node]]
+id = "lambdaMax"
+
+[[node]]
+id = "lambdaMin"
+
+[[node]]
+id = "lambdaMin_le_eigenvalues"
+
+[[node]]
+id = "lambdaMin_le_lambdaMax"
+
+[[node]]
+id = "norm_complexify_mulVec"
+
+[[node]]
+id = "ofLp_toEuclideanLin"
+
+[[node]]
+id = "real_inner_apply"
+
+[[node]]
+id = "real_inner_apply_self"
+
+[[node]]
+id = "real_inner_toEuclideanLin"
+
+[[node]]
+id = "real_inner_toEuclideanLin'"
+
+[[node]]
+id = "real_norm_sq_eq_dotProduct"
+
+[[node]]
+id = "toEuclideanLin_toLp"
+
+[[node]]
+id = "toLp_injective"

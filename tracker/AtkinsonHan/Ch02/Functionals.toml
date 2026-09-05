@@ -1,0 +1,19 @@
+namespace = "AtkinsonHan.Ch02"
+
+[[node]]
+id = "IsSublinear"
+
+[[node]]
+id = "cor_2_5_6"
+
+[[node]]
+id = "cor_2_5_7"
+
+[[node]]
+id = "thm_2_5_2"
+
+[[node]]
+id = "thm_2_5_5"
+
+[[node]]
+id = "thm_2_5_8"

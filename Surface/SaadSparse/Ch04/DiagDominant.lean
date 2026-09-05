@@ -12,7 +12,7 @@ Saad's Definition 4.5 as printed uses column sums for all three dominance condit
 proofs of Theorems 4.6 and 4.9 use row sums; both forms are stated here, following the backbone's
 `Matrix.IsStrictDiagDominant` (rows) and `Matrix.IsStrictColDiagDominant` (columns).
 
-Left open here (phase 2 of the backbone, `plans/surface/SaadSparse-Ch1-4-5.md` §3 item 4):
+Left open here (phase 2 of the backbone, `tracker/saadsparse-ch1-4-5.md` §3 item 4):
 Theorem 4.7 and the *irreducibly* diagonally dominant halves of Corollary 4.8 and Theorem 4.9,
 which need Saad's irreducibility (`Matrix.IsIrreducible (A.map ‖·‖)`) and the path argument along
 the adjacency graph; and Gauss–Seidel under strict *column* dominance.

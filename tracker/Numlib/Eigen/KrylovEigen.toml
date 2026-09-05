@@ -1,0 +1,30 @@
+desc = '''
+Phase 2, and the direct analogue of `Krylov/Convergence/CG`: do it right after `RayleighRitz`.
+
+The proofs combine the Chebyshev min-max of `RingTheory/Polynomial/ChebyshevMinimax` (in the
+general-`γ` form, which the source states without proof), the polynomial norm bounds of
+`Krylov/Convergence/Polynomial`, and Courant-Fischer on the Krylov subspace. See §4.4 of
+`backbone.md`.
+'''
+
+[[node]]
+id = "Krylov.Lanczos.tan_angle_eq_iInf"
+kind = "theorem"
+desc = '''The tangent of the angle between an eigenvector and the Krylov subspace is an infimum
+over polynomials, which is what turns the angle bound into a Chebyshev estimate.'''
+source = "Saad, Numerical Methods for Large Eigenvalue Problems, Lemma 6.1"
+
+[[node]]
+id = "Krylov.Lanczos.tan_angle_le"
+kind = "theorem"
+desc = 'The Chebyshev bound on that angle.'
+deps = ["Krylov.Lanczos.tan_angle_eq_iInf", "LinearMap.IsSymmetric.eigenvalues_eq_iSup_iInf"]
+source = "Saad, Numerical Methods for Large Eigenvalue Problems, Theorem 6.3"
+
+[[node]]
+id = "Krylov.Lanczos.kaniel_paige_saad"
+kind = "theorem"
+desc = '''The Kaniel-Paige-Saad bound on the error of the Lanczos Ritz values, in terms of the
+Chebyshev polynomial of the shifted spectrum.'''
+deps = ["Krylov.Lanczos.tan_angle_le"]
+source = "Saad, Numerical Methods for Large Eigenvalue Problems, Theorem 6.4"

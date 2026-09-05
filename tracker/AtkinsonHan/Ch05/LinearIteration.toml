@@ -1,0 +1,10 @@
+namespace = "AtkinsonHan.Ch05"
+
+[[node]]
+id = "BookSplitting"
+
+[[node]]
+id = "BookSplitting.eq_5_2_5"
+
+[[node]]
+id = "BookSplitting.tendsto_of_opNorm_lt_one"

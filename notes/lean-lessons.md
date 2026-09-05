@@ -285,7 +285,7 @@ Structural facts worth knowing before planning a proof:
 
 ## Design conventions of this library
 
-Decided in `plans/backbone.md` §1.7; the short version for a proof author:
+Decided in `tracker/backbone.md` §1.7; the short version for a proof author:
 
 * Spectral hypotheses are quadratic-form bounds, `LinearMap.IsSymmetricBoundedBy A lmin lmax`, not
   lists of eigenvalues. Proofs that would use the spectral theorem go through the compression trick:

@@ -32,5 +32,5 @@ import SaadSparse.Ch06.Smoothing
 Covering §1.11–§1.13, §4.1–§4.2, Ch. 5 and Ch. 6.
 
 Chapter-by-chapter statements faithful to the book, proved by specializing the backbone
-(`Numlib`). Plan: `plans/surface/SaadSparse*.md`. Modules are added here as they are written.
+(`Numlib`). Plan: `tracker/saadsparse-*.md`. Modules are added here as they are written.
 -/

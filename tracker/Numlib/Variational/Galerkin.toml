@@ -1,0 +1,59 @@
+[[node]]
+id = "IsGalerkinSolution"
+
+[[node]]
+id = "IsGalerkinSolution.apply_sub_eq_zero"
+
+[[node]]
+id = "IsGalerkinSolution.energyNorm_sub_le"
+
+[[node]]
+id = "IsGalerkinSolution.existsUnique"
+
+[[node]]
+id = "IsGalerkinSolution.iff_isGalerkin"
+
+[[node]]
+id = "IsGalerkinSolution.iff_mulVec"
+
+[[node]]
+id = "IsGalerkinSolution.norm_sub_le"
+
+[[node]]
+id = "IsGalerkinSolution.norm_sub_le_infDist"
+
+[[node]]
+id = "IsGalerkinSolution.norm_sub_le_sqrt"
+
+[[node]]
+id = "IsGalerkinSolution.tendsto"
+
+[[node]]
+id = "IsGeneralizedGalerkinSolution"
+
+[[node]]
+id = "IsPetrovGalerkinSolution"
+
+[[node]]
+id = "IsPetrovGalerkinSolution.DiscreteInfSup"
+
+[[node]]
+id = "IsPetrovGalerkinSolution.existsUnique"
+
+[[node]]
+id = "IsPetrovGalerkinSolution.norm_sub_le"
+
+[[node]]
+id = "IsPetrovGalerkinSolution.tendsto"
+
+[[node]]
+id = "existsUnique_isGeneralizedGalerkinSolution"
+
+[[node]]
+id = "isGalerkinSolution_iff_isPetrovGalerkinSolution"
+
+[[node]]
+id = "strang_first"
+
+[[node]]
+id = "tendsto_infDist_of_monotone_dense"

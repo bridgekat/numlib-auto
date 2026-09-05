@@ -1,0 +1,31 @@
+namespace = "Matrix"
+
+[[node]]
+id = "IsHermitian.hasEigenvalue_toEuclideanLin_iff"
+
+[[node]]
+id = "IsHermitian.isSymmetricBoundedBy_toEuclideanLin"
+
+[[node]]
+id = "hasEigenvalue_toEuclideanLin_iff"
+
+[[node]]
+id = "krylov_subspace_toEuclideanLin"
+
+[[node]]
+id = "l2_opNorm_eq_norm_toEuclideanLin"
+
+[[node]]
+id = "toEuclideanLin_apply_eq_sum"
+
+[[node]]
+id = "toEuclideanLin_conjTranspose"
+
+[[node]]
+id = "toEuclideanLin_mul"
+
+[[node]]
+id = "toEuclideanLin_one"
+
+[[node]]
+id = "toEuclideanLin_pow"

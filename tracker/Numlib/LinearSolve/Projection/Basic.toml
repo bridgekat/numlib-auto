@@ -1,0 +1,59 @@
+[[node]]
+id = "IsGalerkin"
+
+[[node]]
+id = "IsMinError"
+
+[[node]]
+id = "IsMinRes"
+
+[[node]]
+id = "IsMinRes.iff_isPetrovGalerkin"
+
+[[node]]
+id = "IsMinRes.norm_residual_le"
+
+[[node]]
+id = "IsMinRes.norm_residual_le_norm_residual_zero"
+
+[[node]]
+id = "IsMinRes.residual_eq"
+
+[[node]]
+id = "IsMinRes.residual_unique"
+
+[[node]]
+id = "IsPetrovGalerkin"
+
+[[node]]
+id = "IsPetrovGalerkin.eq_of_forall"
+
+[[node]]
+id = "IsPetrovGalerkin.eq_of_invt"
+
+[[node]]
+id = "IsPetrovGalerkin.inner_residual_eq_zero"
+
+[[node]]
+id = "IsPetrovGalerkin.of_mem"
+
+[[node]]
+id = "Submodule.inner_starProjection_right"
+
+[[node]]
+id = "Submodule.mem_orthogonal_span"
+
+[[node]]
+id = "existsUnique_isGalerkin_of_isCoercive"
+
+[[node]]
+id = "existsUnique_isMinRes_of_injOn"
+
+[[node]]
+id = "exists_isMinError"
+
+[[node]]
+id = "exists_isMinRes"
+
+[[node]]
+id = "isPetrovGalerkin_iff_mulVec"

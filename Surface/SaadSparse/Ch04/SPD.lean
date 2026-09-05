@@ -11,7 +11,7 @@ block anti-diagonal `B` the spectrum is symmetric under negation, and the spectr
 `B(α) = α L + α⁻¹ U` does not depend on `α ≠ 0`.
 
 Everything else in these two sections waits on phase 2 of the backbone
-(`plans/backbone.md` §2.3.5, `plans/surface/SaadSparse-Ch1-4-5.md` §3 item 5):
+(`tracker/backbone.md` §2.3.5, `tracker/saadsparse-ch1-4-5.md` §3 item 5):
 
 * Theorem 4.10 (SOR converges for `0 < ω < 2` iff `A` is positive definite): the
   Householder–John / Ostrowski–Reich criterion `M + Mᴴ - A` coercive ⇒ `ρ(M⁻¹N) < 1`, and its

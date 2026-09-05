@@ -1,0 +1,7 @@
+namespace = "SaadSparse.Ch06"
+
+[[node]]
+id = "gcrRestarted"
+
+[[node]]
+id = "orthomin_eq_gcr"

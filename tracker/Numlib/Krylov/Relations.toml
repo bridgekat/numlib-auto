@@ -1,0 +1,37 @@
+namespace = "Krylov"
+
+[[node]]
+id = "IsGalerkinIterate.mrs_isMinResIterate"
+
+[[node]]
+id = "exists_norm_residual_galerkin_le"
+
+[[node]]
+id = "inv_sq_norm_residual_minRes"
+
+[[node]]
+id = "inv_sq_norm_residual_minRes_eq_sum"
+
+[[node]]
+id = "inv_sq_norm_smoothing"
+
+[[node]]
+id = "map_subspace_succ_eq_sup_span"
+
+[[node]]
+id = "minRes_eq_combination"
+
+[[node]]
+id = "mrs"
+
+[[node]]
+id = "norm_residual_minRes_eq_iff_not_exists_galerkin"
+
+[[node]]
+id = "norm_residual_minRes_le_galerkin"
+
+[[node]]
+id = "residual_mrs_eq"
+
+[[node]]
+id = "smoothingCoeff"

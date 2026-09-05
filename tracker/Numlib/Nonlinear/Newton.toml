@@ -1,0 +1,25 @@
+namespace = "Newton"
+
+[[node]]
+id = "exists_ball_norm_step_sub_le"
+
+[[node]]
+id = "iterate"
+
+[[node]]
+id = "iterate_succ"
+
+[[node]]
+id = "kantorovich"
+
+[[node]]
+id = "norm_step_sub_le"
+
+[[node]]
+id = "step"
+
+[[node]]
+id = "step_eq_self_of_eq_zero"
+
+[[node]]
+id = "tendsto_iterate"

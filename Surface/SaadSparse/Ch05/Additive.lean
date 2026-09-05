@@ -12,8 +12,8 @@ Saad's remark that each inner step of the block relaxations of §4.1.1 is an ort
 projection step over `K_i = span(V_i)` is `blockCorrection_eq_projStep`: (4.17) is literally
 (5.7) with `W = V = V_i`.
 
-Left open here (phase 2 of the backbone, `plans/backbone.md` §2.4.4 and
-`plans/surface/SaadSparse-Ch1-4-5.md` §3 item 6): the identification of `additiveStep` with the
+Left open here (phase 2 of the backbone, `tracker/backbone.md` §2.4.4 and
+`tracker/saadsparse-ch1-4-5.md` §3 item 6): the identification of `additiveStep` with the
 abstract additive projection process, the statement that `P_i` is the projector onto `A K_i`
 orthogonally to `K_i`, the least-squares variant with `L_i = A K_i`, and the exactness criterion
 "mutually orthogonal `A V_i` of total rank `n`" (R-5.25).

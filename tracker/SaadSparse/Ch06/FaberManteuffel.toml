@@ -1,0 +1,13 @@
+namespace = "SaadSparse.Ch06"
+
+[[node]]
+id = "IsCGs"
+
+[[node]]
+id = "exists_aeval_eq_conjTranspose"
+
+[[node]]
+id = "isStarNormal_of_exists_aeval"
+
+[[node]]
+id = "ν"

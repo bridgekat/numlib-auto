@@ -30,7 +30,7 @@ Everything here is a specialization of the backbone:
   identification `gmresFixed_isMinResIterate` of `Ch06/GMRES.lean`, and Proposition 6.32 adds the
   surface bound `norm_aeval_diagonal_mulVec_le` for a diagonalizable complex matrix.
 
-Deferred to the later phase (`plans/surface/SaadSparse-Ch6.md` §4, the complex-ellipse results):
+Deferred to the later phase (`tracker/saadsparse-ch6.md` §4, the complex-ellipse results):
 Corollary 6.33, which needs Theorem 6.27 and hence the complex Chebyshev and ellipse theory the
 backbone does not yet have.
 -/

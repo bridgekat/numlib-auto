@@ -1,0 +1,34 @@
+namespace = "AtkinsonHan.Ch03"
+
+[[node]]
+id = "IsDirectSum"
+
+[[node]]
+id = "IsOrthogonalProjectionOperator"
+
+[[node]]
+id = "IsProjectionOperator"
+
+[[node]]
+id = "example_3_6_7"
+
+[[node]]
+id = "exercise_3_6_7"
+
+[[node]]
+id = "prop_3_6_2"
+
+[[node]]
+id = "prop_3_6_9_a"
+
+[[node]]
+id = "prop_3_6_9_b"
+
+[[node]]
+id = "prop_3_6_9_c"
+
+[[node]]
+id = "prop_3_6_9_d"
+
+[[node]]
+id = "prop_3_6_9_e"

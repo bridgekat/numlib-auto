@@ -21,7 +21,7 @@ Arnoldi process is an `s`-term recurrence for every starting vector. The text's 
 about normality are `isStarNormal_of_exists_aeval` (if `A^H = q(A)` then `A` is normal, since
 `A` commutes with every polynomial in `A`) and `exists_aeval_eq_conjTranspose` (the converse).
 
-**Deferred to a later phase** (`plans/surface/SaadSparse-Ch6.md` §4, item 2, the normal-matrix
+**Deferred to a later phase** (`tracker/saadsparse-ch6.md` §4, item 2, the normal-matrix
 theory of the backbone: normal ⟺ every eigenvector of `A` is an eigenvector of `A^H`, the
 spectral theorem for normal matrices, and `natDegree (minpoly ℂ A)` = the number of distinct
 eigenvalues): **Lemma 6.23** (`A` nonsingular satisfies `A^H v ∈ 𝒦_s(A, v)` for every `v` iff
@@ -274,7 +274,7 @@ theorem isStarNormal_of_exists_aeval {A : Matrix (Fin n) (Fin n) ℂ}
 -- `z ↦ z̄` at its distinct eigenvalues satisfies `q(A) = A^H`. Mathlib has `IsStarNormal` and
 -- `Lagrange.interpolate` but neither Schur triangulation nor unitary diagonalization of normal
 -- matrices, and this is deferred backbone material
--- (`plans/surface/SaadSparse-Ch6.md` §4, item 2, a candidate `Numlib/Eigen/Normal.lean`), not
+-- (`tracker/saadsparse-ch6.md` §4, item 2, a candidate `Numlib/Eigen/Normal.lean`), not
 -- surface material: proving it here would be new mathematics in the surface layer. Lemma 6.23
 -- and Theorem 6.24 wait on the same item. Only the existence of `q` is demanded; the degree
 -- bound of the text is derived from it in `exists_aeval_eq_conjTranspose` below.

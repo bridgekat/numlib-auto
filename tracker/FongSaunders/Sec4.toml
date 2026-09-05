@@ -1,0 +1,13 @@
+namespace = "FongSaunders"
+
+[[node]]
+id = "eq_4_1"
+
+[[node]]
+id = "minres_coeff_unique"
+
+[[node]]
+id = "minres_subproblem"
+
+[[node]]
+id = "prod_ratio_residual"

@@ -1,0 +1,70 @@
+namespace = "Krylov"
+
+[[node]]
+id = "IsGalerkinIterate"
+
+[[node]]
+id = "IsGalerkinIterate.apply_eq_of_grade_le"
+
+[[node]]
+id = "IsGalerkinIterate.energyNorm_error_antitone"
+
+[[node]]
+id = "IsGalerkinIterate.energyNorm_error_eq_iInf"
+
+[[node]]
+id = "IsGalerkinIterate.energyNorm_error_le_energyNorm_aeval"
+
+[[node]]
+id = "IsGalerkinIterate.inner_residual_eq_zero"
+
+[[node]]
+id = "IsGalerkinIterate.residual_mem_span"
+
+[[node]]
+id = "IsMinErrorIterate"
+
+[[node]]
+id = "IsMinErrorIterate.norm_error_antitone"
+
+[[node]]
+id = "IsMinErrorIterate.unique"
+
+[[node]]
+id = "IsMinResIterate"
+
+[[node]]
+id = "IsMinResIterate.apply_eq_of_grade_le"
+
+[[node]]
+id = "IsMinResIterate.norm_residual_antitone"
+
+[[node]]
+id = "IsMinResIterate.norm_residual_eq_iInf"
+
+[[node]]
+id = "IsMinResIterate.norm_residual_le_norm_aeval"
+
+[[node]]
+id = "existsUnique_isGalerkinIterate_of_isCoercive"
+
+[[node]]
+id = "existsUnique_isMinResIterate_of_injective"
+
+[[node]]
+id = "exists_isMinResIterate"
+
+[[node]]
+id = "exists_mem_of_residual_poly"
+
+[[node]]
+id = "exists_residual_poly"
+
+[[node]]
+id = "grade_le_of_apply_eq"
+
+[[node]]
+id = "norm_le_of_apply_eq"
+
+[[node]]
+id = "residual_mem_subspace_succ"

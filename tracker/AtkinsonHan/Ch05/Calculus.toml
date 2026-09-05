@@ -1,0 +1,4 @@
+namespace = "AtkinsonHan.Ch05"
+
+[[node]]
+id = "HasGateauxDerivAt"

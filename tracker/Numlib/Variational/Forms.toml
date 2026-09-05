@@ -1,0 +1,98 @@
+[[node]]
+id = "SesqForm"
+
+[[node]]
+id = "SesqForm.IsBoundedWith"
+
+[[node]]
+id = "SesqForm.IsCoercive"
+
+[[node]]
+id = "SesqForm.IsCoerciveWith"
+
+[[node]]
+id = "SesqForm.IsCoerciveWith.mono"
+
+[[node]]
+id = "SesqForm.IsCoerciveWith.norm_le_norm_apply"
+
+[[node]]
+id = "SesqForm.IsHermitian"
+
+[[node]]
+id = "SesqForm.energy"
+
+[[node]]
+id = "SesqForm.energyNorm_eq_energyNorm_toOperator"
+
+[[node]]
+id = "SesqForm.energyNorm_le_sqrt_mul_norm"
+
+[[node]]
+id = "SesqForm.forall_apply_eq_iff_toOperator_eq"
+
+[[node]]
+id = "SesqForm.innerSL_isCoerciveWith"
+
+[[node]]
+id = "SesqForm.innerSL_isHermitian"
+
+[[node]]
+id = "SesqForm.inner_rieszRep"
+
+[[node]]
+id = "SesqForm.inner_toOperator"
+
+[[node]]
+id = "SesqForm.isBoundedWith_opNorm"
+
+[[node]]
+id = "SesqForm.isCoerciveWith_iff_toOperator"
+
+[[node]]
+id = "SesqForm.isCoerciveWith_real_iff"
+
+[[node]]
+id = "SesqForm.isHermitian_iff_toOperator_isSymmetric"
+
+[[node]]
+id = "SesqForm.isHermitian_real_iff"
+
+[[node]]
+id = "SesqForm.norm_rieszRep"
+
+[[node]]
+id = "SesqForm.norm_toOperator"
+
+[[node]]
+id = "SesqForm.ofOperator"
+
+[[node]]
+id = "SesqForm.ofOperator_toOperator"
+
+[[node]]
+id = "SesqForm.opNorm_le_of_isBoundedWith"
+
+[[node]]
+id = "SesqForm.rieszRep"
+
+[[node]]
+id = "SesqForm.sqrt_mul_norm_le_energyNorm"
+
+[[node]]
+id = "SesqForm.toOperator"
+
+[[node]]
+id = "SesqForm.toOperator_ofOperator"
+
+[[node]]
+id = "SesqForm₂"
+
+[[node]]
+id = "SesqForm₂.InfSupWith"
+
+[[node]]
+id = "SesqForm₂.IsNondegenerate"
+
+[[node]]
+id = "SesqForm₂.iSup_norm_div_eq_norm"

@@ -1,0 +1,41 @@
+[[node]]
+id = "ContinuousLinearMap.IsIdempotentElem.norm_eq_one_iff_isSymmetric"
+
+[[node]]
+id = "ContinuousLinearMap.IsIdempotentElem.norm_one_sub_eq"
+
+[[node]]
+id = "ContinuousLinearMap.norm_le_opNorm_mul_norm_add"
+
+[[node]]
+id = "LinearMap.IsIdempotentElem.apply_eq_iff"
+
+[[node]]
+id = "LinearMap.IsIdempotentElem.ext_of_range_eq_of_ker_eq"
+
+[[node]]
+id = "LinearMap.crossGram"
+
+[[node]]
+id = "LinearMap.existsUnique_isIdempotentElem_of_inf_orthogonal_eq_bot"
+
+[[node]]
+id = "LinearMap.ker_obliqueProjectionOfBases"
+
+[[node]]
+id = "LinearMap.obliqueProjectionOfBases"
+
+[[node]]
+id = "LinearMap.obliqueProjectionOfBases_isIdempotentElem"
+
+[[node]]
+id = "LinearMap.obliqueProjectionOfBases_self_eq_starProjection"
+
+[[node]]
+id = "LinearMap.range_obliqueProjectionOfBases"
+
+[[node]]
+id = "LinearMap.sub_obliqueProjectionOfBases_apply_mem_orthogonal"
+
+[[node]]
+id = "norm_smul_add_smul_eq_norm_add"

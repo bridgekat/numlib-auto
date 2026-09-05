@@ -1,0 +1,16 @@
+namespace = "AtkinsonHan.Ch05"
+
+[[node]]
+id = "CGState"
+
+[[node]]
+id = "cg"
+
+[[node]]
+id = "cgStep"
+
+[[node]]
+id = "existsUnique_solution"
+
+[[node]]
+id = "thm_5_6_1"

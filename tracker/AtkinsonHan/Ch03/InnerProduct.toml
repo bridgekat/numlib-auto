@@ -1,0 +1,34 @@
+namespace = "AtkinsonHan.Ch03"
+
+[[node]]
+id = "cor_3_4_2"
+
+[[node]]
+id = "eq_3_4_6"
+
+[[node]]
+id = "exercise_3_4_8"
+
+[[node]]
+id = "expansion_3_4"
+
+[[node]]
+id = "lem_3_4_1"
+
+[[node]]
+id = "projConvex"
+
+[[node]]
+id = "prop_3_4_4"
+
+[[node]]
+id = "thm_3_4_3"
+
+[[node]]
+id = "thm_3_4_5"
+
+[[node]]
+id = "thm_3_4_6"
+
+[[node]]
+id = "thm_3_4_7"

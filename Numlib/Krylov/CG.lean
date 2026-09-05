@@ -900,7 +900,7 @@ Statement correction: the skeleton had no finite-dimensionality hypothesis.  The
 Hestenes–Stiefel argument) needs the expansion `x* - x_k = ∑_{j ≥ k} α_j p_j`, i.e. finite
 termination of the recurrence, so `[FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))]` was added,
 matching `energyNorm_error_sq_eq_sum` above.  (Without it the statement is an infinite-dimensional
-convergence result; see the note in `plans/backbone.md` §3.11 that Hilbert-space extensions are
+convergence result; see the note in `tracker/backbone.md` §3.11 that Hilbert-space extensions are
 phase 3.) -/
 theorem norm_error_antitone [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))] :
     Antitone fun k => ‖xstar - (iterate A b x₀ k).x‖ := by

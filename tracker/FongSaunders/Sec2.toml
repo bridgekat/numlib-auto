@@ -1,0 +1,163 @@
+namespace = "FongSaunders"
+
+[[node]]
+id = "CGState"
+
+[[node]]
+id = "CRState"
+
+[[node]]
+id = "IsMinresIterate"
+
+[[node]]
+id = "cg"
+
+[[node]]
+id = "cgAlpha"
+
+[[node]]
+id = "cgBeta"
+
+[[node]]
+id = "cgInit"
+
+[[node]]
+id = "cgStep"
+
+[[node]]
+id = "cgTerm"
+
+[[node]]
+id = "cg_energyNorm_le"
+
+[[node]]
+id = "cg_inner_p_q_pos"
+
+[[node]]
+id = "cg_isMinOn_phi"
+
+[[node]]
+id = "cg_mem_krylov"
+
+[[node]]
+id = "cg_residual_eq_zero_iff"
+
+[[node]]
+id = "cg_unique_min"
+
+[[node]]
+id = "cr"
+
+[[node]]
+id = "crAlpha"
+
+[[node]]
+id = "crBeta"
+
+[[node]]
+id = "crInit"
+
+[[node]]
+id = "crStep"
+
+[[node]]
+id = "crTerm"
+
+[[node]]
+id = "crTerm_eq_grade"
+
+[[node]]
+id = "crTerm_le"
+
+[[node]]
+id = "cr_isMinresIterate"
+
+[[node]]
+id = "cr_residual_eq_zero_iff"
+
+[[node]]
+id = "cr_rho_pos"
+
+[[node]]
+id = "cr_stationary"
+
+[[node]]
+id = "cr_term_state"
+
+[[node]]
+id = "energyNorm"
+
+[[node]]
+id = "energyNorm_sq_eq_two_phi_add"
+
+[[node]]
+id = "eq_2_2"
+
+[[node]]
+id = "isMinOn_phi_iff_energyNorm_min"
+
+[[node]]
+id = "isMinresIterate_iff_eq_cr"
+
+[[node]]
+id = "isMinresIterate_unique"
+
+[[node]]
+id = "minres_norm_residual_le"
+
+[[node]]
+id = "phi"
+
+[[node]]
+id = "thm_2_1_a"
+
+[[node]]
+id = "thm_2_1_b"
+
+[[node]]
+id = "thm_2_2_a"
+
+[[node]]
+id = "thm_2_2_a_strict"
+
+[[node]]
+id = "thm_2_2_b"
+
+[[node]]
+id = "thm_2_2_c"
+
+[[node]]
+id = "thm_2_2_d"
+
+[[node]]
+id = "thm_2_2_e"
+
+[[node]]
+id = "thm_2_2_f"
+
+[[node]]
+id = "thm_2_3_cr"
+
+[[node]]
+id = "thm_2_3_minres"
+
+[[node]]
+id = "thm_2_3_strict"
+
+[[node]]
+id = "thm_2_4_cr"
+
+[[node]]
+id = "thm_2_4_minres"
+
+[[node]]
+id = "thm_2_5_cr"
+
+[[node]]
+id = "thm_2_5_cr_antitone"
+
+[[node]]
+id = "thm_2_5_minres"
+
+[[node]]
+id = "two_phi_eq"

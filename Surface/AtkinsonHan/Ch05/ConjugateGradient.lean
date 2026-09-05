@@ -24,8 +24,8 @@ definite in the sense of (5.6.3), `√m ‖v‖ ≤ ‖v‖_A ≤ √M ‖v‖` 
 per-step Kantorovich contraction in the backbone's own vocabulary, shared with §9.4, and belongs
 in `Numlib/Krylov/Convergence/CG.lean`.
 
-Deferred or out of scope (`plans/surface/AtkinsonHan-Ch5.md` §3 item 3 and §4).  Theorem 5.6.2
-(Winther's superlinear convergence) is phase 2 (`plans/backbone.md` §3.10): it is blocked by the
+Deferred or out of scope (`tracker/atkinsonhan-ch5.md` §3 item 3 and §4).  Theorem 5.6.2
+(Winther's superlinear convergence) is phase 2 (`tracker/backbone.md` §3.10): it is blocked by the
 spectral theorem for compact self-adjoint operators, which Mathlib does not have.  For the same
 reason (5.6.7)–(5.6.9), the specialization (5.6.10) to `A = I - K`, and Theorem 5.6.3 (rates for
 Hilbert–Schmidt and `Cᵖ` kernels) are out of scope.

@@ -1,0 +1,22 @@
+namespace = "AtkinsonHan"
+
+[[node]]
+id = "BilinForm.IsEllipticWith.exists_pos"
+
+[[node]]
+id = "BilinForm₂.IsBoundedWith"
+
+[[node]]
+id = "BilinForm₂.norm_toCLM_le"
+
+[[node]]
+id = "BilinForm₂.toCLM"
+
+[[node]]
+id = "BilinForm₂.toCLM_apply"
+
+[[node]]
+id = "Ch08.ex_8_7_1"
+
+[[node]]
+id = "Ch08.thm_8_7_1"

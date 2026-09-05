@@ -1,0 +1,32 @@
+[[node]]
+id = "compression"
+
+[[node]]
+id = "compression.aeval_apply_of_forall_pow_mem"
+
+[[node]]
+id = "compression.apply_of_invt"
+
+[[node]]
+id = "compression.apply_sub_smul_orthogonalProjection"
+
+[[node]]
+id = "compression.eq_compressionBy"
+
+[[node]]
+id = "compression.inner_apply"
+
+[[node]]
+id = "compression.isSymmetric"
+
+[[node]]
+id = "compression.toMatrix_orthonormalBasis"
+
+[[node]]
+id = "compressionBy"
+
+[[node]]
+id = "compressionBy.aeval_apply_of_forall_pow_mem"
+
+[[node]]
+id = "compressionBy.apply_aeval_of_forall_pow_lt_mem"

@@ -11,13 +11,13 @@ the FOM/GMRES-type relation (4.1) between the CG and MINRES residual norms, the 
 product of residual ratios of §4.1.1, and the description of the MINRES iterate as the solution
 of a least-squares subproblem in Lanczos coordinates (§4.2).
 
-Left out (see `plans/surface/FongSaunders.md`): the test set, the diagonal preconditioning, the
+Left out (see `tracker/fongsaunders.md`): the test set, the diagonal preconditioning, the
 figures and the percentages of monotone steps, the "cumulative minimum" heuristic, and the
 MINRES-QLP relationship.
 
 The two indefinite-case results of §4.2 (Steihaug's theorem for CG and its CR analogue) are
 *deferred*: they rest on strict, symmetric-indefinite monotonicity statements that the backbone
-does not yet provide (`plans/backbone.md` §3.11, "Steihaug's generalization", phase 2), and the
+does not yet provide (`tracker/backbone.md` §3.11, "Steihaug's generalization", phase 2), and the
 surface layer may not invent them.
 -/
 

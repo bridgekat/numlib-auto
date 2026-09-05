@@ -1,0 +1,7 @@
+namespace = "SaadSparse.Ch06"
+
+[[node]]
+id = "crStep"
+
+[[node]]
+id = "cr_eq_CR"

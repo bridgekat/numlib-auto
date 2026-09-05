@@ -1,0 +1,46 @@
+namespace = "SaadSparse.Ch04"
+
+[[node]]
+id = "complexify_gaussSeidel_iterationOperator"
+
+[[node]]
+id = "complexify_jacobi_iterationOperator"
+
+[[node]]
+id = "complexify_one_sub_inverse_mul"
+
+[[node]]
+id = "cor_4_8_col"
+
+[[node]]
+id = "cor_4_8_strict"
+
+[[node]]
+id = "gaussSeidel_complexSpectralRadius_lt_one"
+
+[[node]]
+id = "isStrictDiagDominant_complexify"
+
+[[node]]
+id = "isUnit_diagPart_complexify"
+
+[[node]]
+id = "jacobi_complexSpectralRadius_lt_one"
+
+[[node]]
+id = "spectrum_transpose"
+
+[[node]]
+id = "thm_4_6"
+
+[[node]]
+id = "thm_4_6_col"
+
+[[node]]
+id = "thm_4_9_gs"
+
+[[node]]
+id = "thm_4_9_jacobi"
+
+[[node]]
+id = "thm_4_9_jacobi_col"

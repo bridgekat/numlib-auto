@@ -1,0 +1,55 @@
+namespace = "SaadSparse.Ch06"
+
+[[node]]
+id = "cg"
+
+[[node]]
+id = "cg3"
+
+[[node]]
+id = "cgAlpha"
+
+[[node]]
+id = "cgGamma"
+
+[[node]]
+id = "cgStep"
+
+[[node]]
+id = "cg_eq_CG"
+
+[[node]]
+id = "dLanczos_eq_diom2"
+
+[[node]]
+id = "eq_6_100"
+
+[[node]]
+id = "eq_6_101"
+
+[[node]]
+id = "eq_6_102"
+
+[[node]]
+id = "eq_6_103"
+
+[[node]]
+id = "eq_6_87"
+
+[[node]]
+id = "eq_6_96"
+
+[[node]]
+id = "eq_6_98"
+
+[[node]]
+id = "eq_6_99"
+
+[[node]]
+id = "lanczosMethod"
+
+[[node]]
+id = "lanczosMethod_eq_fom"
+
+[[node]]
+id = "prop_6_20_2"

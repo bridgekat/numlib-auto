@@ -1,0 +1,7 @@
+namespace = "InnerProductSpace"
+
+[[node]]
+id = "eq_gramSchmidtNormed_of_re_inner_pos"
+
+[[node]]
+id = "exists_norm_eq_one_smul_gramSchmidtNormed"

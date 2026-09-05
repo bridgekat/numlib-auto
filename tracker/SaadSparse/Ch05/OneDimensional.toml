@@ -1,0 +1,13 @@
+namespace = "SaadSparse.Ch05"
+
+[[node]]
+id = "mrStep"
+
+[[node]]
+id = "rnsdStep"
+
+[[node]]
+id = "sdStep"
+
+[[node]]
+id = "step1"

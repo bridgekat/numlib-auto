@@ -1,0 +1,23 @@
+[[node]]
+id = "Matrix.IsBasisOf"
+
+[[node]]
+id = "Matrix.IsBiorthogonal"
+
+[[node]]
+id = "Matrix.IsOrthogonalProjector"
+
+[[node]]
+id = "Matrix.IsProjector"
+
+[[node]]
+id = "Matrix.cols"
+
+[[node]]
+id = "Matrix.obliqueProj"
+
+[[node]]
+id = "SaadSparse.IsProjOnto"
+
+[[node]]
+id = "SaadSparse.obliqueProjection"

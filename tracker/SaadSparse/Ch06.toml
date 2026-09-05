@@ -1,0 +1,5 @@
+desc = '''
+Saad, Chapter 6: Krylov subspace methods. `Ch06/Residual.toml` fixes the
+`r₀`, `β`, `v₁` vocabulary and the bridges to the backbone's residual-indexed Arnoldi data, which
+every other module here uses; the indexing convention is in `saadsparse-ch6.md`.
+'''

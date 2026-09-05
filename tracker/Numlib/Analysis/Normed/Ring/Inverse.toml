@@ -1,0 +1,26 @@
+[[node]]
+id = "ContinuousLinearEquiv.exists_symm_norm_le_of_add"
+
+[[node]]
+id = "ContinuousLinearEquiv.norm_sub_le_of_apply_eq"
+
+[[node]]
+id = "NormedRing.isUnit_one_sub_of_norm_pow_lt_one"
+
+[[node]]
+id = "NormedRing.norm_inverse_one_sub_le"
+
+[[node]]
+id = "NormedRing.norm_inverse_one_sub_le_of_norm_pow_lt_one"
+
+[[node]]
+id = "NormedRing.norm_inverse_one_sub_sub_one_le"
+
+[[node]]
+id = "Units.isUnit_add_of_norm_lt"
+
+[[node]]
+id = "Units.norm_inverse_add_le"
+
+[[node]]
+id = "Units.norm_inverse_add_sub_le"

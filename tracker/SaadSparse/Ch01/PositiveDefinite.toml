@@ -1,0 +1,19 @@
+namespace = "Matrix"
+
+[[node]]
+id = "IsPositiveReal"
+
+[[node]]
+id = "IsSPD"
+
+[[node]]
+id = "IsSelfAdjointWrt"
+
+[[node]]
+id = "energyInner"
+
+[[node]]
+id = "hermitianPart"
+
+[[node]]
+id = "skewPart"

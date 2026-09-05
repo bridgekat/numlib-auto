@@ -1,0 +1,58 @@
+namespace = "SaadSparse.Ch06"
+
+[[node]]
+id = "FOMDefined"
+
+[[node]]
+id = "VI"
+
+[[node]]
+id = "Vt_r₀"
+
+[[node]]
+id = "diom"
+
+[[node]]
+id = "diom_residual"
+
+[[node]]
+id = "eq_6_16_17"
+
+[[node]]
+id = "eq_6_18"
+
+[[node]]
+id = "eq_6_22"
+
+[[node]]
+id = "eq_6_23"
+
+[[node]]
+id = "eq_6_24"
+
+[[node]]
+id = "fom"
+
+[[node]]
+id = "fomCycle"
+
+[[node]]
+id = "fomFixed"
+
+[[node]]
+id = "fomRestarted"
+
+[[node]]
+id = "hessLU"
+
+[[node]]
+id = "iom"
+
+[[node]]
+id = "iop"
+
+[[node]]
+id = "iopCoeff"
+
+[[node]]
+id = "iop_eq_6_7"

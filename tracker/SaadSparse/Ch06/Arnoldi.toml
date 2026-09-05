@@ -1,0 +1,73 @@
+namespace = "SaadSparse.Ch06"
+
+[[node]]
+id = "H"
+
+[[node]]
+id = "Hbar"
+
+[[node]]
+id = "HbarHH"
+
+[[node]]
+id = "NoBreakdownBefore"
+
+[[node]]
+id = "Qhh"
+
+[[node]]
+id = "V"
+
+[[node]]
+id = "arnoldiCGS"
+
+[[node]]
+id = "arnoldiCoeff"
+
+[[node]]
+id = "arnoldiMGS"
+
+[[node]]
+id = "arnoldiMGSCoeff"
+
+[[node]]
+id = "arnoldiW"
+
+[[node]]
+id = "eq_6_11"
+
+[[node]]
+id = "eq_6_12"
+
+[[node]]
+id = "eq_6_13"
+
+[[node]]
+id = "eq_6_6"
+
+[[node]]
+id = "eq_6_7"
+
+[[node]]
+id = "eq_6_8"
+
+[[node]]
+id = "eq_6_9"
+
+[[node]]
+id = "hh_arnoldi_relation"
+
+[[node]]
+id = "hh_eq_arnoldi_up_to_sign"
+
+[[node]]
+id = "hh_orthonormal"
+
+[[node]]
+id = "householder"
+
+[[node]]
+id = "householderVec"
+
+[[node]]
+id = "prop_6_6'"

@@ -1,0 +1,53 @@
+[[node]]
+id = "LinearMap.IsCoerciveWith.norm_le_energyNorm"
+
+[[node]]
+id = "LinearMap.IsSymmetricCoercive.abs_energyInner_le"
+
+[[node]]
+id = "LinearMap.IsSymmetricCoercive.energyNorm_eq_zero_iff"
+
+[[node]]
+id = "LinearMap.IsSymmetricCoercive.energyNorm_error_sq_eq"
+
+[[node]]
+id = "LinearMap.IsSymmetricCoercive.energyNorm_le_norm"
+
+[[node]]
+id = "LinearMap.IsSymmetricCoercive.energyNorm_pos"
+
+[[node]]
+id = "LinearMap.IsSymmetricCoercive.energyNorm_sq"
+
+[[node]]
+id = "WithEnergy"
+
+[[node]]
+id = "WithEnergy.continuous_equiv"
+
+[[node]]
+id = "WithEnergy.core"
+
+[[node]]
+id = "WithEnergy.equiv"
+
+[[node]]
+id = "WithEnergy.inner_equiv"
+
+[[node]]
+id = "WithEnergy.inner_equiv_eq_zero_iff"
+
+[[node]]
+id = "WithEnergy.norm_equiv"
+
+[[node]]
+id = "WithEnergy.submoduleMap"
+
+[[node]]
+id = "energyInner"
+
+[[node]]
+id = "energyNorm"
+
+[[node]]
+id = "energyNorm_nonneg"

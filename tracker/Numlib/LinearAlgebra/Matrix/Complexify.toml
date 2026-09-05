@@ -1,0 +1,43 @@
+namespace = "Matrix"
+
+[[node]]
+id = "complexSpectralRadius"
+
+[[node]]
+id = "complexSpectralRadius_le_linfty_opNNNorm"
+
+[[node]]
+id = "complexSpectralRadius_le_of_norm"
+
+[[node]]
+id = "complexSpectralRadius_ne_top"
+
+[[node]]
+id = "complexSpectralRadius_smul"
+
+[[node]]
+id = "complexify"
+
+[[node]]
+id = "complexify_add"
+
+[[node]]
+id = "complexify_neg"
+
+[[node]]
+id = "det_complexify"
+
+[[node]]
+id = "isUnit_complexify_iff"
+
+[[node]]
+id = "isUnit_one_sub_of_complexSpectralRadius_lt_one"
+
+[[node]]
+id = "mem_spectrum_complexify_iff"
+
+[[node]]
+id = "ofReal_mem_spectrum_complexify_iff"
+
+[[node]]
+id = "tendsto_pow_iff_complexSpectralRadius_lt_one"

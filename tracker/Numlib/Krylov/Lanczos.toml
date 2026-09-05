@@ -1,0 +1,59 @@
+[[node]]
+id = "Arnoldi.coeff_conj_of_isSymmetric"
+
+[[node]]
+id = "Arnoldi.coeff_diag_re_of_isSymmetric"
+
+[[node]]
+id = "Arnoldi.coeff_eq_zero_of_isSymmetric"
+
+[[node]]
+id = "Lanczos.alpha"
+
+[[node]]
+id = "Lanczos.alpha_mem_Icc"
+
+[[node]]
+id = "Lanczos.apply_sum"
+
+[[node]]
+id = "Lanczos.apply_sum_grade"
+
+[[node]]
+id = "Lanczos.apply_vec"
+
+[[node]]
+id = "Lanczos.apply_vec_zero"
+
+[[node]]
+id = "Lanczos.beta"
+
+[[node]]
+id = "Lanczos.beta_eq_zero_iff"
+
+[[node]]
+id = "Lanczos.coe_alpha"
+
+[[node]]
+id = "Lanczos.coe_beta"
+
+[[node]]
+id = "Lanczos.hessenbergSq_eq_map_tridiag"
+
+[[node]]
+id = "Lanczos.hessenberg_eq_map_tridiagExt"
+
+[[node]]
+id = "Lanczos.tridiag"
+
+[[node]]
+id = "Lanczos.tridiagExt"
+
+[[node]]
+id = "Lanczos.tridiag_isSymm"
+
+[[node]]
+id = "Lanczos.tridiag_isTridiagonal"
+
+[[node]]
+id = "Lanczos.w_succ_eq"

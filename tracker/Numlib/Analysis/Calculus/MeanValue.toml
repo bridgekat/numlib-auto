@@ -1,0 +1,4 @@
+namespace = "Convex"
+
+[[node]]
+id = "norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le"

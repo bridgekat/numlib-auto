@@ -1,0 +1,22 @@
+namespace = "SaadSparse.Ch06"
+
+[[node]]
+id = "T"
+
+[[node]]
+id = "Tbar"
+
+[[node]]
+id = "lanczosPoly"
+
+[[node]]
+id = "lanczosV"
+
+[[node]]
+id = "lanczosV_eq"
+
+[[node]]
+id = "polyInner"
+
+[[node]]
+id = "polyInner_nondegenerate"

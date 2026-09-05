@@ -1,0 +1,28 @@
+namespace = "AtkinsonHan"
+
+[[node]]
+id = "Ch09.cor_9_1_4"
+
+[[node]]
+id = "Ch09.existsUnique_solution"
+
+[[node]]
+id = "Ch09.galerkin_eq_energyProjection"
+
+[[node]]
+id = "Ch09.galerkin_orthogonality"
+
+[[node]]
+id = "Ch09.prop_9_1_3"
+
+[[node]]
+id = "Ch09.stiffnessMatrix_isSymm"
+
+[[node]]
+id = "GalerkinProblem"
+
+[[node]]
+id = "loadVector"
+
+[[node]]
+id = "stiffnessMatrix"

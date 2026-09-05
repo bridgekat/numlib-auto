@@ -1,0 +1,16 @@
+namespace = "SaadSparse.Ch05"
+
+[[node]]
+id = "A_m"
+
+[[node]]
+id = "E_A"
+
+[[node]]
+id = "IsProjectionApprox"
+
+[[node]]
+id = "R_A"
+
+[[node]]
+id = "projStep"

@@ -1,0 +1,119 @@
+[[node]]
+id = "Arnoldi.hessenbergRelation"
+
+[[node]]
+id = "Krylov.HessenbergRelation"
+
+[[node]]
+id = "Krylov.HessenbergRelation.apply_sum"
+
+[[node]]
+id = "Krylov.HessenbergRelation.residual_eq"
+
+[[node]]
+id = "Krylov.HessenbergRelation.residual_eq_of_mulVec_eq"
+
+[[node]]
+id = "Krylov.IsGalerkinIterate.norm_residual_eq_div_norm_givensC"
+
+[[node]]
+id = "Krylov.IsMinResIterate.exists_mulVec_rotated_eq"
+
+[[node]]
+id = "Krylov.IsMinResIterate.norm_residual_eq_norm_gamma"
+
+[[node]]
+id = "Krylov.IsMinResIterate.norm_residual_succ_eq"
+
+[[node]]
+id = "Krylov.existsUnique_isGalerkinIterate_iff_isUnit"
+
+[[node]]
+id = "Krylov.firstVec"
+
+[[node]]
+id = "Krylov.gamma"
+
+[[node]]
+id = "Krylov.gamma_succ"
+
+[[node]]
+id = "Krylov.givensC"
+
+[[node]]
+id = "Krylov.givensMatrix"
+
+[[node]]
+id = "Krylov.givensMatrix_mem_unitaryGroup"
+
+[[node]]
+id = "Krylov.givensQ"
+
+[[node]]
+id = "Krylov.givensQ_mem_unitaryGroup"
+
+[[node]]
+id = "Krylov.givensQ_mulVec_firstVec"
+
+[[node]]
+id = "Krylov.givensQ_mul_hessenbergOf"
+
+[[node]]
+id = "Krylov.givensRho"
+
+[[node]]
+id = "Krylov.givensS"
+
+[[node]]
+id = "Krylov.givensS_arnoldi_eq"
+
+[[node]]
+id = "Krylov.gvec"
+
+[[node]]
+id = "Krylov.hessenbergOf"
+
+[[node]]
+id = "Krylov.hessenbergSqOf"
+
+[[node]]
+id = "Krylov.isGalerkinIterate_iff_exists_mulVec_eq"
+
+[[node]]
+id = "Krylov.isGalerkinIterate_iff_mulVec_eq"
+
+[[node]]
+id = "Krylov.isMinResIterate_iff_isMinOn"
+
+[[node]]
+id = "Krylov.isUnit_hessenbergSq_iff_givensC_ne_zero"
+
+[[node]]
+id = "Krylov.norm_gamma_eq_prod"
+
+[[node]]
+id = "Krylov.norm_givensC_sq_add_norm_givensS_sq"
+
+[[node]]
+id = "Krylov.norm_residual_eq_norm_firstVec_sub_mulVec"
+
+[[node]]
+id = "Krylov.residual_galerkin_eq"
+
+[[node]]
+id = "Krylov.rotated"
+
+[[node]]
+id = "Krylov.rotated_eq_of_le"
+
+[[node]]
+id = "Krylov.rotated_eq_zero_of_lt"
+
+[[node]]
+id = "Krylov.rotated_last_row"
+
+[[node]]
+id = "Krylov.rotated_succ_eq_of_lt"
+
+[[node]]
+id = "Krylov.rotated_succ_self"

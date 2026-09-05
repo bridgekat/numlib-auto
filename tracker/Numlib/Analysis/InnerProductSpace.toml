@@ -1,0 +1,4 @@
+desc = '''
+Coercivity, the energy inner product, compressions and
+oblique projections: the inner-product-space vocabulary the Krylov and variational layers share.
+'''

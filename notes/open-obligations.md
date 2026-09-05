@@ -9,7 +9,7 @@ Every declaration under `Numlib/` is proved: `grep -rn sorry Numlib` is empty an
 polynomial `q`. Writing `A = Q Λ Q^H`, any `q` interpolating `z ↦ conj z` at the eigenvalues
 works — but that needs unitary diagonalization of a normal matrix, and Mathlib has `IsStarNormal`
 and `Lagrange.interpolate` yet neither Schur triangulation nor the normal spectral theorem. This is
-backbone material for a future `Numlib/Eigen/Normal.lean` (`plans/backbone.md` §4.2, phase 3), and
+backbone material for a future `Numlib/Eigen/Normal.lean` (`tracker/backbone.md` §4.2, phase 3), and
 Saad's Lemma 6.23 and Theorem 6.24 wait on the same item.
 
 The consumer `exists_aeval_eq_conjTranspose`, which lowers the degree below `n` by reducing modulo

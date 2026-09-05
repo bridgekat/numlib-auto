@@ -1,0 +1,11 @@
+[[node]]
+id = "ContinuousLinearEquiv.condNumber_eq"
+
+[[node]]
+id = "NormedRing.condNumber"
+
+[[node]]
+id = "NormedRing.condNumber_smul"
+
+[[node]]
+id = "NormedRing.one_le_condNumber"

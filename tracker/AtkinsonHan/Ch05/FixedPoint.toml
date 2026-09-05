@@ -1,0 +1,25 @@
+namespace = "AtkinsonHan.Ch05"
+
+[[node]]
+id = "ContractiveOn"
+
+[[node]]
+id = "LipschitzOn"
+
+[[node]]
+id = "NonExpansiveOn"
+
+[[node]]
+id = "StronglyMonotoneWith"
+
+[[node]]
+id = "ex_5_1_1"
+
+[[node]]
+id = "ex_5_1_2"
+
+[[node]]
+id = "thm_5_1_3"
+
+[[node]]
+id = "thm_5_1_4"

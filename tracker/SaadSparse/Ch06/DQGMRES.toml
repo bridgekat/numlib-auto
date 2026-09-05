@@ -1,0 +1,28 @@
+namespace = "SaadSparse.Ch06"
+
+[[node]]
+id = "Z"
+
+[[node]]
+id = "dqgmres"
+
+[[node]]
+id = "eq_6_53"
+
+[[node]]
+id = "eq_6_54"
+
+[[node]]
+id = "eq_6_55"
+
+[[node]]
+id = "p_6_25"
+
+[[node]]
+id = "qgmres"
+
+[[node]]
+id = "quasiResidualNorm"
+
+[[node]]
+id = "z"

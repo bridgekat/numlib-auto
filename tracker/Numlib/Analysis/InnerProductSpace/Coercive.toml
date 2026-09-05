@@ -1,0 +1,65 @@
+[[node]]
+id = "ContinuousLinearMap.exists_equiv_of_isCoerciveWith"
+
+[[node]]
+id = "ContinuousLinearMap.isCoerciveWith_iff_hermitianPart"
+
+[[node]]
+id = "ContinuousLinearMap.norm_sub_smul_apply_sq_le"
+
+[[node]]
+id = "ContinuousLinearMap.re_inner_hermitianPart_apply"
+
+[[node]]
+id = "LinearMap.IsCoercive"
+
+[[node]]
+id = "LinearMap.IsCoercive.injective"
+
+[[node]]
+id = "LinearMap.IsCoercive.inner_self_pos"
+
+[[node]]
+id = "LinearMap.IsCoercive.ker_eq_bot"
+
+[[node]]
+id = "LinearMap.IsCoerciveWith"
+
+[[node]]
+id = "LinearMap.IsSymmetric.isCoerciveWith_iff_forall_hasEigenvalue"
+
+[[node]]
+id = "LinearMap.IsSymmetric.isSymmetricBoundedBy_iff_forall_hasEigenvalue"
+
+[[node]]
+id = "LinearMap.IsSymmetric.isSymmetricBoundedBy_neg_norm_norm"
+
+[[node]]
+id = "LinearMap.IsSymmetricBoundedBy"
+
+[[node]]
+id = "LinearMap.IsSymmetricBoundedBy.isCoerciveWith"
+
+[[node]]
+id = "LinearMap.IsSymmetricBoundedBy.isSymmetricCoercive"
+
+[[node]]
+id = "LinearMap.IsSymmetricBoundedBy.mono"
+
+[[node]]
+id = "LinearMap.IsSymmetricBoundedBy.of_inner_eq"
+
+[[node]]
+id = "LinearMap.IsSymmetricBoundedBy.rayleigh_mem_Icc"
+
+[[node]]
+id = "LinearMap.IsSymmetricCoercive"
+
+[[node]]
+id = "LinearMap.IsSymmetricCoercive.isPositive"
+
+[[node]]
+id = "LinearMap.isCoercive_iff_forall_pos"
+
+[[node]]
+id = "Matrix.posDef_iff_isSymmetricCoercive"

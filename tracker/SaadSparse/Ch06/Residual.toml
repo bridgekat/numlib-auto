@@ -1,0 +1,16 @@
+namespace = "SaadSparse.Ch06"
+
+[[node]]
+id = "e₁"
+
+[[node]]
+id = "mEff"
+
+[[node]]
+id = "r₀"
+
+[[node]]
+id = "v₁"
+
+[[node]]
+id = "β"

@@ -1,0 +1,4 @@
+desc = '''
+The eigenvalue layer: perturbation bounds now, Rayleigh-Ritz, the power
+method and the Krylov eigenvalue bounds in later phases.
+'''

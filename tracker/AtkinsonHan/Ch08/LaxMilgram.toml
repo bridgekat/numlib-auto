@@ -1,0 +1,10 @@
+namespace = "AtkinsonHan.Ch08"
+
+[[node]]
+id = "ex_8_3_1"
+
+[[node]]
+id = "thm_8_3_2"
+
+[[node]]
+id = "thm_8_3_2_subspace"

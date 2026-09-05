@@ -14,8 +14,8 @@ The proofs specialize the backbone's spectral-radius theory
 `Numlib/Analysis/Normed/Algebra/SpectralRadius.lean`,
 `Numlib/LinearSolve/Stationary/Basic.lean`) to real matrices acting on `Fin n → ℝ`.
 
-Left open here (each waits on a phase-2 backbone item, see `plans/backbone.md` §7 and
-`plans/surface/SaadSparse-Ch1-4-5.md` §3):
+Left open here (each waits on a phase-2 backbone item, see `tracker/backbone.md` §7 and
+`tracker/saadsparse-ch1-4-5.md` §3):
 
 * §4.2.1 the convergence factors and rates: the Gelfand limit `‖G^k‖^{1/k} → ρ(G)` for a *real*
   matrix needs `‖complexify A‖ = ‖A‖` for the scoped operator norms (§3 item 1); the "specific"

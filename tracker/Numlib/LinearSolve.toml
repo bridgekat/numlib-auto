@@ -1,0 +1,4 @@
+desc = '''
+Solving `A x = b`: perturbation theory, stationary iterations and
+projection methods.
+'''

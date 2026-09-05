@@ -1,0 +1,58 @@
+namespace = "FongSaunders"
+
+[[node]]
+id = "IsAcceptable"
+
+[[node]]
+id = "isAcceptable_iff_nrbe_le_one"
+
+[[node]]
+id = "minres_norm_residual_le_cg"
+
+[[node]]
+id = "minres_stops_first"
+
+[[node]]
+id = "norm_nrbePertA"
+
+[[node]]
+id = "norm_nrbePertb"
+
+[[node]]
+id = "nrbe"
+
+[[node]]
+id = "nrbePertA"
+
+[[node]]
+id = "nrbePert_attains"
+
+[[node]]
+id = "nrbePertb"
+
+[[node]]
+id = "nrbePhi"
+
+[[node]]
+id = "nrbePhi_cg_antitone"
+
+[[node]]
+id = "nrbePhi_minres_antitone"
+
+[[node]]
+id = "nrbe_isLeast"
+
+[[node]]
+id = "nrbe_le_one_iff"
+
+[[node]]
+id = "nrbe_minres_antitone"
+
+[[node]]
+id = "nrbe_minres_antitoneOn"
+
+[[node]]
+id = "thm_3_1_cr"
+
+[[node]]
+id = "thm_3_1_minres"

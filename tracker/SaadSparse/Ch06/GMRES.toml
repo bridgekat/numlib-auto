@@ -1,0 +1,52 @@
+namespace = "SaadSparse.Ch06"
+
+[[node]]
+id = "IsGMRESIterate"
+
+[[node]]
+id = "J"
+
+[[node]]
+id = "eq_6_28"
+
+[[node]]
+id = "eq_6_41"
+
+[[node]]
+id = "eq_6_42"
+
+[[node]]
+id = "gmres"
+
+[[node]]
+id = "gmresCycle"
+
+[[node]]
+id = "gmresFixed"
+
+[[node]]
+id = "gmresHH"
+
+[[node]]
+id = "gmresHH_eq"
+
+[[node]]
+id = "gmresRestarted"
+
+[[node]]
+id = "gmresY"
+
+[[node]]
+id = "gmres_exact_of_card_le"
+
+[[node]]
+id = "gmres_unique"
+
+[[node]]
+id = "hornerAccumulate"
+
+[[node]]
+id = "p_6_5"
+
+[[node]]
+id = "prop_6_9_2"

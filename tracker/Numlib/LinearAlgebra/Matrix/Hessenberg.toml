@@ -1,0 +1,34 @@
+namespace = "Matrix"
+
+[[node]]
+id = "IsTridiagonal"
+
+[[node]]
+id = "IsTridiagonal.isUpperHessenberg"
+
+[[node]]
+id = "IsUpperHessenberg"
+
+[[node]]
+id = "IsUpperHessenbergRect"
+
+[[node]]
+id = "diagPart"
+
+[[node]]
+id = "diagPart_add_strictLower_add_strictUpper"
+
+[[node]]
+id = "diagPart_sub_neg_strictLower_sub_neg_strictUpper"
+
+[[node]]
+id = "strictLower"
+
+[[node]]
+id = "strictLower_blockTriangular"
+
+[[node]]
+id = "strictUpper"
+
+[[node]]
+id = "strictUpper_blockTriangular"

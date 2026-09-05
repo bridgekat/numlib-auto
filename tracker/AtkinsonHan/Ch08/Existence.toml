@@ -1,0 +1,4 @@
+namespace = "AtkinsonHan.Ch08"
+
+[[node]]
+id = "isClosed_iff_seq"

@@ -1,0 +1,7 @@
+namespace = "Matrix"
+
+[[node]]
+id = "condNumberLp"
+
+[[node]]
+id = "lpOpNorm"

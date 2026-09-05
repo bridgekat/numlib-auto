@@ -1,0 +1,61 @@
+namespace = "AtkinsonHan"
+
+[[node]]
+id = "BilinForm"
+
+[[node]]
+id = "BilinForm.IsBounded"
+
+[[node]]
+id = "BilinForm.IsBoundedWith"
+
+[[node]]
+id = "BilinForm.IsElliptic"
+
+[[node]]
+id = "BilinForm.IsEllipticWith"
+
+[[node]]
+id = "BilinForm.IsPositive"
+
+[[node]]
+id = "BilinForm.IsStrictlyPositive"
+
+[[node]]
+id = "BilinForm.energy"
+
+[[node]]
+id = "BilinForm.energyNorm"
+
+[[node]]
+id = "BilinForm.inner_toOperator"
+
+[[node]]
+id = "BilinForm.isBoundedWith_opNorm"
+
+[[node]]
+id = "BilinForm.norm_toCLM_le"
+
+[[node]]
+id = "BilinForm.ofCLM"
+
+[[node]]
+id = "BilinForm.ofCLM_apply"
+
+[[node]]
+id = "BilinForm.ofCLM_toCLM"
+
+[[node]]
+id = "BilinForm.thm_8_3_1"
+
+[[node]]
+id = "BilinForm.toCLM"
+
+[[node]]
+id = "BilinForm.toCLM_apply"
+
+[[node]]
+id = "BilinForm.toOperator"
+
+[[node]]
+id = "BilinForm.toOperator_eq_rieszRep_iff"

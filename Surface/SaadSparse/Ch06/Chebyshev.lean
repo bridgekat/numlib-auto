@@ -18,7 +18,7 @@ from the backbone min–max pair `one_div_eval_T_le_sSup_abs_eval` / `sSup_abs_e
 The remaining quantities of §6.11 — `η`, `κ`, the `A`-norm and `ε^{(m)}` — belong to §6.11.3
 and §6.11.4 and live in `Ch06/Convergence.lean`.
 
-Deferred to the later phase (`plans/surface/SaadSparse-Ch6.md` §4, the complex-ellipse results):
+Deferred to the later phase (`tracker/saadsparse-ch6.md` §4, the complex-ellipse results):
 Lemma 6.26 (Zarantonello) and Theorem 6.27 with the ellipse bound, that is (6.115)–(6.121) apart
 from the definition (6.114). They need the complex Chebyshev and ellipse theory that the backbone
 does not yet have; only `Ccomplex` is provided here for them.
@@ -42,7 +42,7 @@ noncomputable abbrev C (k : ℕ) : ℝ[X] := T ℝ (k : ℤ)
 
 /-- **(6.114)**: the Chebyshev polynomials of the first kind over `ℂ`. They are used only by the
 complex-ellipse results of §6.11.2 — Lemma 6.26, Theorem 6.27 and (6.117), (6.119)–(6.120) —
-which are deferred to the later phase (`plans/surface/SaadSparse-Ch6.md` §4). -/
+which are deferred to the later phase (`tracker/saadsparse-ch6.md` §4). -/
 noncomputable abbrev Ccomplex (k : ℕ) : ℂ[X] := T ℂ (k : ℤ)
 
 /-- **(6.109)**: `C_k(t) = cos(k cos⁻¹ t)` on `[-1, 1]`. -/

@@ -1,0 +1,56 @@
+[[node]]
+id = "Matrix.backwardGaussSeidelSplitting"
+
+[[node]]
+id = "Matrix.gaussSeidelSplitting"
+
+[[node]]
+id = "Matrix.gaussSeidelSplitting_n"
+
+[[node]]
+id = "Matrix.isUnit_diagPart_add_strictLower"
+
+[[node]]
+id = "Matrix.isUnit_diagPart_iff"
+
+[[node]]
+id = "Matrix.jacobiSplitting"
+
+[[node]]
+id = "Matrix.jacobiSplitting_iterationOperator"
+
+[[node]]
+id = "Matrix.sorSplitting"
+
+[[node]]
+id = "Matrix.sorSplitting_iterationOperator"
+
+[[node]]
+id = "Matrix.sorSplitting_one"
+
+[[node]]
+id = "Matrix.ssorSplitting"
+
+[[node]]
+id = "Stationary.Splitting.eq_iterationOperator_mul_add_iff"
+
+[[node]]
+id = "Stationary.Splitting.iterationOperator"
+
+[[node]]
+id = "Stationary.Splitting.iterationOperator_eq"
+
+[[node]]
+id = "Stationary.Splitting.m_sub_n"
+
+[[node]]
+id = "Stationary.Splitting.n"
+
+[[node]]
+id = "Stationary.Splitting.one_sub_iterationOperator"
+
+[[node]]
+id = "Stationary.Splitting.richardson"
+
+[[node]]
+id = "Stationary.Splitting.richardson_iterationOperator"

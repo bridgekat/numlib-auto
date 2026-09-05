@@ -1,0 +1,22 @@
+namespace = "AtkinsonHan.Ch09"
+
+[[node]]
+id = "cgIterate"
+
+[[node]]
+id = "cgStep"
+
+[[node]]
+id = "cg_converges"
+
+[[node]]
+id = "cg_energy_bound"
+
+[[node]]
+id = "cg_energy_rate"
+
+[[node]]
+id = "inner_residual"
+
+[[node]]
+id = "residual"

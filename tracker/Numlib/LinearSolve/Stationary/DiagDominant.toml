@@ -1,0 +1,46 @@
+namespace = "Matrix"
+
+[[node]]
+id = "IsStrictColDiagDominant"
+
+[[node]]
+id = "IsStrictColDiagDominant.transpose_iff"
+
+[[node]]
+id = "IsStrictDiagDominant"
+
+[[node]]
+id = "IsStrictDiagDominant.diag_ne_zero"
+
+[[node]]
+id = "IsStrictDiagDominant.isUnit"
+
+[[node]]
+id = "IsStrictDiagDominant.isUnit_diagPart"
+
+[[node]]
+id = "IsStrictDiagDominant.jacobiContraction_lt_one"
+
+[[node]]
+id = "gaussSeidel_spectralRadius_lt_one"
+
+[[node]]
+id = "jacobiContraction"
+
+[[node]]
+id = "jacobi_spectralRadius_lt_one"
+
+[[node]]
+id = "jacobi_spectralRadius_lt_one_of_col"
+
+[[node]]
+id = "linfty_opNorm_gaussSeidel_iterMatrix_le"
+
+[[node]]
+id = "linfty_opNorm_jacobi_iterMatrix"
+
+[[node]]
+id = "sassenfeld"
+
+[[node]]
+id = "sassenfeld_eq"

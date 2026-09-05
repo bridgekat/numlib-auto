@@ -1,0 +1,47 @@
+[[node]]
+id = "ContinuousLinearMap.bijective_of_le_norm_of_orthogonal_range_eq_bot"
+
+[[node]]
+id = "ContinuousLinearMap.isClosed_range_of_le_norm"
+
+[[node]]
+id = "ContinuousLinearMap.norm_le_of_le_norm"
+
+[[node]]
+id = "LinearPMap.isClosed_range_of_isClosed_of_le_norm"
+
+[[node]]
+id = "SesqForm.contractingWith_damped_toOperator"
+
+[[node]]
+id = "SesqForm.energy_sub_energy_eq"
+
+[[node]]
+id = "SesqForm.existsUnique_isMinOn_energy"
+
+[[node]]
+id = "SesqForm.exists_solutionEquiv"
+
+[[node]]
+id = "SesqForm.isMinOn_energy_iff"
+
+[[node]]
+id = "SesqForm.isMinOn_energy_iff_forall_le"
+
+[[node]]
+id = "SesqForm.laxMilgram"
+
+[[node]]
+id = "SesqForm.norm_le_of_forall_apply_eq"
+
+[[node]]
+id = "SesqForm.norm_sub_le_of_forall_apply_eq"
+
+[[node]]
+id = "SesqForm₂.babuska_necas"
+
+[[node]]
+id = "SesqForm₂.infSupWith_of_forall_exists"
+
+[[node]]
+id = "SesqForm₂.norm_le_of_infSupWith"

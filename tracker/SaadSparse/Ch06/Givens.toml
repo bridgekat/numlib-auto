@@ -1,0 +1,34 @@
+namespace = "SaadSparse.Ch06"
+
+[[node]]
+id = "Qrot"
+
+[[node]]
+id = "R"
+
+[[node]]
+id = "Rbar"
+
+[[node]]
+id = "Rbar_succ_submatrix"
+
+[[node]]
+id = "c"
+
+[[node]]
+id = "eq_6_47"
+
+[[node]]
+id = "g"
+
+[[node]]
+id = "gbar"
+
+[[node]]
+id = "s"
+
+[[node]]
+id = "Ω"
+
+[[node]]
+id = "γ"

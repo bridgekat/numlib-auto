@@ -1,0 +1,50 @@
+[[node]]
+id = "IsBestApprox"
+
+[[node]]
+id = "IsBestApprox.dist_le_dist"
+
+[[node]]
+id = "IsBestApprox.eq_starProjection"
+
+[[node]]
+id = "IsBestApprox.norm_sub_eq_infDist"
+
+[[node]]
+id = "IsBestApprox.unique"
+
+[[node]]
+id = "convex_setOf_isBestApprox"
+
+[[node]]
+id = "exists_isBestApprox_of_finiteDimensional"
+
+[[node]]
+id = "exists_isBestApprox_of_isClosed_of_finiteDimensional"
+
+[[node]]
+id = "isBestApprox_iff_inner_le_zero"
+
+[[node]]
+id = "isBestApprox_iff_mem_orthogonal"
+
+[[node]]
+id = "isBestApprox_iff_norm_sub_eq_infDist"
+
+[[node]]
+id = "isBestApprox_starProjection"
+
+[[node]]
+id = "isBestApprox_sum_iff"
+
+[[node]]
+id = "norm_sub_apply_le_of_isIdempotentElem"
+
+[[node]]
+id = "norm_sub_apply_le_of_isIdempotentElem'"
+
+[[node]]
+id = "norm_sub_apply_le_of_isIdempotentElem_of_mem"
+
+[[node]]
+id = "one_le_norm_of_isIdempotentElem"

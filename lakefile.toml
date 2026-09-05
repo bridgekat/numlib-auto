@@ -10,6 +10,11 @@ weak.linter.mathlibStandardSet = true
 weak.linter.style.header = false # no Mathlib copyright headers in this project
 maxSynthPendingDepth = 3
 
+# Progress tracker: the plan in `tracker/` is checked against the compiled library.
+[[require]]
+name = "tracker"
+git = "https://github.com/bridgekat/tracker"
+
 [[require]]
 name = "mathlib"
 scope = "leanprover-community"

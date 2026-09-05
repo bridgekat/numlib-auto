@@ -1,0 +1,19 @@
+namespace = "SaadSparse.Ch04"
+
+[[node]]
+id = "antiDiag"
+
+[[node]]
+id = "antiDiagL"
+
+[[node]]
+id = "antiDiagU"
+
+[[node]]
+id = "antiDiag_eq_add"
+
+[[node]]
+id = "prop_4_12_alpha"
+
+[[node]]
+id = "prop_4_12_neg"

@@ -1,0 +1,23 @@
+[[node]]
+id = "LinearMap.IsSymmetric.energyNorm_aeval_apply_le"
+
+[[node]]
+id = "LinearMap.IsSymmetric.norm_aeval_apply_le"
+
+[[node]]
+id = "LinearMap.IsSymmetricBoundedBy.energyNorm_aeval_map_apply_le"
+
+[[node]]
+id = "LinearMap.IsSymmetricBoundedBy.norm_aeval_map_apply_le"
+
+[[node]]
+id = "compression.energyNorm_apply"
+
+[[node]]
+id = "compression.isSymmetricBoundedBy"
+
+[[node]]
+id = "compression.isSymmetricCoercive"
+
+[[node]]
+id = "norm_aeval_apply_le_of_conj"

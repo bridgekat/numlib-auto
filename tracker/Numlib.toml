@@ -1,0 +1,8 @@
+desc = '''
+The backbone: canonical definitions, theorems in their natural and general forms,
+and the actual proofs. A doc comment here names its source in full — never by number.
+
+The reasoning behind the shape of this layer is in `backbone.md` beside this file: the corpus it
+serves, the generality ladder that decides where each item sits, the named hypothesis bundles, the
+phasing, and the difficult-proof index.
+'''

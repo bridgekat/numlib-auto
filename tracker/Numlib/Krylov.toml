@@ -1,0 +1,5 @@
+desc = '''
+The Krylov spine. Iterates are specified by what they optimize, not by the
+algorithm that computes them, so a theorem about "MINRES" is a theorem about any sequence
+satisfying the minimal-residual specification.
+'''

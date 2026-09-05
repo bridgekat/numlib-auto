@@ -25,7 +25,7 @@ The book's `cond(L) = ‖L⁻¹‖ ‖L‖` is defined here as `AtkinsonHan.Ch02
 §2.4.4 (convergence of numerical quadrature) is deferred: it needs the quadrature functional
 `Lₙ v = ∑ᵢ wᵢ v(xᵢ)` on `C[0, 1]` and the norm formula (2.4.4) `‖Lₙ‖ = ∑ᵢ |wᵢ|`, whose proof
 requires a norm-one continuous function with prescribed signs at the nodes. See the section
-`Quadrature` below and `plans/backbone.md` §5.1.4 (phase 3). Example 2.4.2 (extension of the
+`Quadrature` below and `tracker/backbone.md` §5.1.4 (phase 3). Example 2.4.2 (extension of the
 derivative to `H¹`) is out of scope: Sobolev spaces are not planned.
 -/
 
@@ -135,7 +135,7 @@ on a dense *subset*, together with a uniform bound on the operator norms, gives 
 convergence everywhere. Neither completeness of `V` nor linearity of the dense set is used; only
 the boundedness of the limit operator `L`, which the book also assumes. This is the ε/3 argument.
 
-This general form is a candidate for the backbone; see `plans/surface/AtkinsonHan-Ch2-3.md`,
+This general form is a candidate for the backbone; see `tracker/atkinsonhan-ch2-3.md`,
 Deferred backbone item 1. -/
 theorem tendsto_of_tendsto_on_dense_of_bounded {s : Set V} (hs : Dense s) {L : V →L[𝕜] W}
     {Ln : ℕ → V →L[𝕜] W} {C : ℝ} (hC : ∀ n, ‖Ln n‖ ≤ C)
@@ -192,7 +192,7 @@ approximating `L v = ∫₀¹ w v`, and proves
   if `sup_n ∑ᵢ |wᵢ⁽ⁿ⁾| < ∞`;
 * (Exercise 2.4.3) if in addition `wᵢ⁽ⁿ⁾ ≥ 0`, convergence always holds.
 
-These are deferred to the quadrature phase (`plans/backbone.md` §5.1.4, Deferred backbone item 2):
+These are deferred to the quadrature phase (`tracker/backbone.md` §5.1.4, Deferred backbone item 2):
 the criterion follows from `thm_2_4_5` and the density of polynomials
 (`polynomialFunctions_closure_eq_top`), but (2.4.4) needs the construction of a norm-one
 continuous function taking prescribed signs at the nodes, which is genuinely new material.

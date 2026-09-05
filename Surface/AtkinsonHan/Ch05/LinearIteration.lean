@@ -14,9 +14,9 @@ Numerical Analysis: A Functional Analysis Framework*, 3rd edition, Springer, 200
   `r_σ(N⁻¹M) < 1`; and the Jacobi, Gauss–Seidel and SOR splittings.
 
 The Fredholm, Urysohn, Volterra and Picard applications of §5.2.3–§5.2.4 (Theorems 5.2.2–5.2.4)
-are deferred: they need the phase-3 `C[a,b]` integral-operator toolkit of `plans/backbone.md` §7
+are deferred: they need the phase-3 `C[a,b]` integral-operator toolkit of `tracker/backbone.md` §7
 (bundled integral operators on `C(Icc a b, ℝ)`, their Lipschitz bounds, the Volterra factorial
-estimate and the Bielecki norm); see `plans/surface/AtkinsonHan-Ch5.md` §3 item 1.
+estimate and the Bielecki norm); see `tracker/atkinsonhan-ch5.md` §3 item 1.
 
 Proofs specialize `Numlib/LinearSolve/Stationary/{Basic,Splitting}.lean`,
 `Numlib/LinearAlgebra/Matrix/{Complexify,Hessenberg}.lean` and `Numlib/Nonlinear/FixedPoint.lean`.

@@ -1,0 +1,32 @@
+desc = '''
+Phase 3. Power, inverse and subspace iteration.
+
+The proof avoids Jordan form: split `x₀ = P₁ x₀ + w` by the generalized-eigenspace decomposition
+(`Module.End.iSup_maxGenEigenspace_eq_top` and `independent_maxGenEigenspace` over ℂ), with `w` in
+the complementary invariant `W = ⨆_{μ ≠ λ₁} maxGenEigenspace μ`, on which the spectrum is
+`σ(A) ∖ {λ₁}`; Gelfand then gives `‖(A|_W)^k‖ ≤ C r^k` for `r > max |λ|`, so `λ₁^{-k} A^k w → 0`.
+
+Subspace iteration follows the same pattern but needs a gap metric between subspaces (canonical
+angles, `‖P₁ - P₂‖`), which Mathlib does not have; it is deferred with this module. See §4.3 of
+`backbone.md`.
+'''
+
+[[node]]
+id = "Krylov.powerIterate"
+kind = "definition"
+desc = 'The power iteration `x_{k+1} = A x_k / ‖A x_k‖`, as a function of the step index.'
+
+[[node]]
+id = "Krylov.powerIterate_tendsto"
+kind = "theorem"
+desc = '''Convergence of the power method when the dominant eigenvalue is semi-simple, over ℂ and
+in finite dimension.'''
+deps = ["Krylov.powerIterate"]
+source = "Saad, Numerical Methods for Large Eigenvalue Problems, Theorem 4.1"
+
+[[node]]
+id = "Krylov.subspaceIterate_gap_le"
+kind = "theorem"
+desc = '''Subspace iteration converges to the dominant invariant subspace, measured in the gap
+between subspaces. Blocked on a `Submodule` gap metric.'''
+source = "Saad, Numerical Methods for Large Eigenvalue Problems, Theorem 5.2"
