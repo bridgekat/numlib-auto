@@ -892,16 +892,30 @@ vectors), §6.7 (Lemma 6.2, Thm 6.5–6.7 Haar characterization, Prop 6.10, Thm 
 §4.4 (Thm 4.8 min–max with `p(γ) = 1`, Lemma 4.3 Zarantonello, Thm 4.9 ellipses), Saad §6.6,
 Meurant §2.3 (Ritz values as Gauss nodes).
 
+The three §6.6 items are written; the sketch below records what their statements needed beyond
+the book's, since the book leaves the finiteness of its own constants implicit.
+
 ```lean
 /-- Saad-eig Lemma 6.1: `tan θ(u_i, 𝒦_m) = min_{deg p ≤ m−1, p(λ_i)=1} ‖p(A) y_i‖ · tan θ(u_i, v₁)`
-(Hermitian). -/
+(Hermitian), under the book's hypothesis `P_i v₁ ≠ 0`, which reads here as `⟪u_i, v₁⟫ ≠ 0`.  The
+projector is onto the *line* through `u_i`, not the eigenspace of `λ_i`: that is what keeps the
+statement true at a multiple eigenvalue.  Only one eigenpair of a symmetric `A` is needed, so no
+eigenbasis and no finite dimension appear. -/
 theorem Lanczos.tan_angle_eq_iInf …
 /-- Saad-eig Thm 6.3: `tan θ(u_i, 𝒦_m) ≤ κ_i tan θ(v₁, u_i) / T_{m−i}(1 + 2γ_i)`,
-`γ_i = (λ_i − λ_{i+1})/(λ_{i+1} − λ_n)`, `κ_i = ∏_{j<i} (λ_j − λ_n)/(λ_j − λ_i)`. -/
+`γ_i = (λ_i − λ_{i+1})/(λ_{i+1} − λ_n)`, `κ_i = ∏_{j<i} (λ_j − λ_n)/(λ_j − λ_i)`.  Needs
+`λ_n < λ_{i+1} < λ_i` and `λ_i < λ_j` for `j < i`, without which `γ_i` and `κ_i` divide by zero.
+`Lanczos.tan_angle_le_of_mem_Icc` is the general form, over any interval `[lo, hi]` enclosing the
+eigenvalues after the `i`-th. -/
 theorem Lanczos.tan_angle_le …
 /-- Kaniel–Paige–Saad (Saad-eig Thm 6.4):
-`0 ≤ λ_i − θ_i^{(m)} ≤ (λ₁ − λ_n) (κ_i^{(m)} tan θ(v₁, u_i) / T_{m−i}(1 + 2γ_i))²`. -/
-theorem kaniel_paige_saad …
+`0 ≤ λ_i − θ_i^{(m)} ≤ (λ₁ − λ_n) (κ_i^{(m)} tan θ(v₁, u_i) / T_{m−i}(1 + 2γ_i))²`.  Needs
+`dim 𝒦_m = m` and `λ_i < θ_j^{(m)}` for `j < i`; the book proves only `i = 1` and asserts the
+general index through a characterization of `𝒦_m ⊖ {ũ_1, …, ũ_{i−1}}` as the polynomials
+vanishing at the previous Ritz values.  Only the easy inclusion of that characterization is
+needed, and it is one line from the compression acting on `𝒦_m` as `p ↦ p(A) v₁` in low degree.
+The lower bound is `LinearMap.IsSymmetric.eigenvalues_compression_le` of 4.2. -/
+theorem Lanczos.kaniel_paige_saad …
 /-- Ritz-vector bound (§6.6.3): Thm 4.6 with `γ = β_{m+1}` (Saad-eig Prop 6.6 basis-free form
 `‖P_m A (1 − P_m)‖ = h_{m+1,m}`). -/
 /-- Non-Hermitian Arnoldi (Saad-eig Lemma 6.2): `‖(1 − P_m) u₁‖ ≤ ξ₁ ε₁^{(m)}` with

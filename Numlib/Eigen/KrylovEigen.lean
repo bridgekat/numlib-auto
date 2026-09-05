@@ -1,7 +1,6 @@
 import Numlib.Analysis.InnerProductSpace.Projection.Angle
-import Numlib.Eigen.MinMax
+import Numlib.Eigen.RayleighRitz
 import Numlib.Krylov.Convergence.Polynomial
-import Numlib.Krylov.Subspace
 import Numlib.RingTheory.Polynomial.ChebyshevMinimax
 
 /-!
@@ -126,15 +125,10 @@ theorem tanAngle_congr {K L : Submodule 𝕜 E} [K.HasOrthogonalProjection]
 theorem starProjection_span_singleton_starProjection (K : Submodule 𝕜 E)
     [K.HasOrthogonalProjection] (u : E) :
     (𝕜 ∙ K.starProjection u).starProjection u = K.starProjection u := by
-  rcases eq_or_ne (K.starProjection u) 0 with h | h
-  · rw [starProjection_singleton, h, smul_zero]
-  · have hinner : (inner 𝕜 (K.starProjection u) u : 𝕜) = ((‖K.starProjection u‖ ^ 2 : ℝ) : 𝕜) := by
-      have h0 := K.starProjection_inner_eq_zero u _ (K.starProjection_apply_mem u)
-      rw [inner_sub_left, sub_eq_zero] at h0
-      rw [← inner_conj_symm, h0, inner_self_eq_norm_sq_to_K]
-      simp
-    rw [starProjection_singleton, hinner, div_self, one_smul]
-    simpa using pow_ne_zero 2 (norm_ne_zero_iff.2 h)
+  refine starProjection_span_singleton_eq_self ?_
+  have h0 := K.starProjection_inner_eq_zero u _ (K.starProjection_apply_mem u)
+  rw [inner_sub_left, sub_eq_zero] at h0
+  rw [← inner_conj_symm (K.starProjection u) u, h0, inner_conj_symm]
 
 /-- The tangent of the angle between `u` and `K` is the tangent of the angle between `u` and the
 line through its projection: the projection realizes the angle. -/
@@ -665,10 +659,8 @@ theorem eigenvalues_sub_eigenvalues_compression_le_of_mem_Icc {v : E} {m : ℕ}
   -- Courant–Fischer for the compression
   have hrq : (compression A (Krylov.subspace A v m)).rayleighQuotient
       (⟨aeval A (q.map (algebraMap ℝ 𝕜)) v, hxK⟩ : Krylov.subspace A v m) =
-      A.rayleighQuotient (aeval A (q.map (algebraMap ℝ 𝕜)) v) := by
-    simp only [LinearMap.rayleighQuotient]
-    rw [compression.inner_apply]
-    rfl
+      A.rayleighQuotient (aeval A (q.map (algebraMap ℝ 𝕜)) v) :=
+    Krylov.rayleighQuotient_compression A _ _
   have hle : A.rayleighQuotient (aeval A (q.map (algebraMap ℝ 𝕜)) v) ≤
       (compression.isSymmetric A (Krylov.subspace A v m) hA).eigenvalues hm i :=
     ((compression.isSymmetric A (Krylov.subspace A v m) hA).isGreatest_rayleighQuotient_orthogonal
@@ -884,6 +876,52 @@ theorem eigenvalues_sub_eigenvalues_compression_le {v : E} {m : ℕ}
   · refine mul_le_mul_of_nonneg_right ?_ (sq_nonneg _)
     have h1 := hA.eigenvalues_antitone hn (hfirst i')
     linarith
+
+/-- **The Kaniel–Paige–Saad theorem.**  With `λ` the eigenvalues of a symmetric `A` in decreasing
+order and `θ` the eigenvalues of its compression to the Krylov subspace `𝒦_m(A, v)` — the Ritz
+values — again in decreasing order,
+
+`0 ≤ λ_i - θ_i ≤ (λ_1 - λ_n) (κ_i tan θ(u_i, v) / T_k(1 + 2 γ_i))²`
+
+with `γ_i = (λ_i - λ_{i+1}) / (λ_{i+1} - λ_n)` and `κ_i = ∏_{j < i} (θ_j - λ_n) / (θ_j - λ_i)`,
+valid whenever `i + k < m`.  So the Ritz values of the symmetric Lanczos process approach the
+extreme eigenvalues of `A` from below, at a rate governed by the Chebyshev polynomial of the part
+of the spectrum below the sought eigenvalue.
+
+The lower bound is Cauchy interlacing, `LinearMap.IsSymmetric.eigenvalues_compression_le`, which
+has nothing to do with the Krylov structure; the upper bound is
+`Lanczos.eigenvalues_sub_eigenvalues_compression_le`.  The hypothesis `hm` is that `𝒦_m(A, v)`
+really has dimension `m`, that is, that the Lanczos process has not yet broken down. -/
+theorem kaniel_paige_saad {v : E} {m : ℕ}
+    (hm : Module.finrank 𝕜 (Krylov.subspace A v m) = m) (i : Fin m) (i' iS first last : Fin n)
+    (hii : (i : ℕ) = (i' : ℕ)) (hiS : (i' : ℕ) + 1 = (iS : ℕ)) (hfirst : ∀ j : Fin n, first ≤ j)
+    (hlast : ∀ j : Fin n, j ≤ last)
+    (hv : (inner 𝕜 (hA.eigenvectorBasis hn i') v : 𝕜) ≠ 0)
+    (hgap : hA.eigenvalues hn iS < hA.eigenvalues hn i')
+    (hspread : hA.eigenvalues hn last < hA.eigenvalues hn iS)
+    (hθ : ∀ j : Fin m, j < i → hA.eigenvalues hn i' <
+      (compression.isSymmetric A (Krylov.subspace A v m) hA).eigenvalues hm j)
+    {k : ℕ} (hk : (i : ℕ) + k < m) :
+    hA.eigenvalues hn i' -
+        (compression.isSymmetric A (Krylov.subspace A v m) hA).eigenvalues hm i ∈
+      Set.Icc 0 ((hA.eigenvalues hn first - hA.eigenvalues hn last) *
+        ((∏ j ∈ Finset.Iio i,
+            ((compression.isSymmetric A (Krylov.subspace A v m) hA).eigenvalues hm j -
+                hA.eigenvalues hn last) /
+              ((compression.isSymmetric A (Krylov.subspace A v m) hA).eigenvalues hm j -
+                hA.eigenvalues hn i')) *
+            (𝕜 ∙ v).tanAngle (hA.eigenvectorBasis hn i') /
+          (T ℝ k).eval (1 + 2 * ((hA.eigenvalues hn i' - hA.eigenvalues hn iS) /
+            (hA.eigenvalues hn iS - hA.eigenvalues hn last)))) ^ 2) := by
+  have hmn : m ≤ n := by
+    rw [← hm, ← hn]
+    exact Submodule.finrank_le _
+  refine ⟨?_, eigenvalues_sub_eigenvalues_compression_le hA hn hm i i' iS first last hiS hfirst
+    hlast hv hgap hspread hθ hk⟩
+  have h := hA.eigenvalues_compression_le (Krylov.subspace A v m) hn hm hmn i
+  rw [show Fin.castLE hmn i = i' from Fin.ext (by simpa using hii)] at h
+  linarith
+
 end Eigenbasis
 
 end Lanczos

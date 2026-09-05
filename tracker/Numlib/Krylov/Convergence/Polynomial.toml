@@ -5,6 +5,9 @@ id = "LinearMap.IsSymmetric.energyNorm_aeval_apply_le"
 id = "LinearMap.IsSymmetric.norm_aeval_apply_le"
 
 [[node]]
+id = "LinearMap.IsSymmetric.repr_aeval_apply"
+
+[[node]]
 id = "LinearMap.IsSymmetricBoundedBy.energyNorm_aeval_map_apply_le"
 
 [[node]]
