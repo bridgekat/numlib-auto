@@ -1,0 +1,1071 @@
+import Mathlib.Algebra.Polynomial.Sequence
+import Mathlib.Analysis.Calculus.Deriv.Polynomial
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Orthogonality
+import Mathlib.MeasureTheory.Function.L2Space
+import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
+import Numlib.Approximation.BestApprox
+
+/-!
+# Orthogonal polynomials of a measure
+
+The family of monic orthogonal polynomials attached to a measure `μ` on `ℝ`, its three-term
+recurrence, and the truncated expansion as a best `L²(μ)` approximation.
+
+The standing hypothesis is `OrthogonalPolynomial.IsWeight μ`: every moment of `μ` is finite, and
+`μ` is not carried by a finite set. The first makes every polynomial square integrable, the second
+makes `∫ p² ∂μ` strictly positive for `p ≠ 0`, so that the Gram–Schmidt process on the monomials
+never stalls. `OrthogonalPolynomial.family μ n` is the outcome of that process, rescaled to be
+monic; it is defined for every `μ`, but only under `IsWeight μ` is it orthogonal.
+
+The Legendre polynomials `Polynomial.legendre` and the Chebyshev polynomials of Mathlib are the
+two classical instances, with the weights `1` on `(-1, 1)` and `(1 - x²)^{-1/2}` on `(-1, 1)`.
+
+## References
+
+The material is Atkinson–Han[^atkinson-han] §3.5 and Kress[^kress] §9.3.
+
+[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+  Analysis Framework*, 3rd edition, Springer, 2009.
+[^kress]: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998.
+-/
+
+open MeasureTheory Polynomial
+
+open scoped Nat
+
+noncomputable section
+
+namespace OrthogonalPolynomial
+
+variable {μ : Measure ℝ}
+
+/-! ### The standing hypothesis -/
+
+/-- A measure on `ℝ` admitting a family of orthogonal polynomials: all its moments are finite,
+and it is not carried by a finite set. The second condition is what makes `∫ p ^ 2 ∂μ` positive
+for every nonzero polynomial `p`, since a polynomial vanishes only on a finite set. -/
+structure IsWeight (μ : Measure ℝ) : Prop where
+  /-- Every moment of `μ` is finite. -/
+  integrable_pow (n : ℕ) : Integrable (fun x : ℝ => x ^ n) μ
+  /-- `μ` gives positive mass to the complement of every finite set. -/
+  measure_compl_ne_zero {s : Set ℝ} (hs : s.Finite) : μ sᶜ ≠ 0
+
+namespace IsWeight
+
+/-- A weight is a finite measure: it is the moment of order zero that says so. -/
+theorem isFiniteMeasure (hw : IsWeight μ) : IsFiniteMeasure μ := by
+  have h : Integrable (fun _ : ℝ => (1 : ℝ)) μ := by simpa using hw.integrable_pow 0
+  rcases (integrable_const_iff (μ := μ) (c := (1 : ℝ))).1 h with h1 | h1
+  · exact absurd h1 one_ne_zero
+  · exact h1
+
+/-- Every polynomial is `μ`-integrable. -/
+theorem integrable_eval (hw : IsWeight μ) (p : ℝ[X]) :
+    Integrable (fun x => p.eval x) μ := by
+  have h : (fun x => p.eval x) =
+      fun x => ∑ i ∈ Finset.range (p.natDegree + 1), p.coeff i * x ^ i := by
+    funext x; exact p.eval_eq_sum_range x
+  rw [h]
+  exact integrable_finsetSum _ fun i _ => (hw.integrable_pow i).const_mul _
+
+/-- A product of two polynomials is `μ`-integrable. -/
+theorem integrable_eval_mul (hw : IsWeight μ) (p q : ℝ[X]) :
+    Integrable (fun x => p.eval x * q.eval x) μ := by
+  simpa using hw.integrable_eval (p * q)
+
+/-- The square of a polynomial is `μ`-integrable. -/
+theorem integrable_eval_sq (hw : IsWeight μ) (p : ℝ[X]) :
+    Integrable (fun x => p.eval x ^ 2) μ := by
+  simpa [sq] using hw.integrable_eval_mul p p
+
+/-- The `L²(μ)` norm of a nonzero polynomial is positive: this is where the infinitude of the
+support of `μ` is used. -/
+theorem integral_eval_sq_pos (hw : IsWeight μ) {p : ℝ[X]} (hp : p ≠ 0) :
+    0 < ∫ x, p.eval x ^ 2 ∂μ := by
+  refine lt_of_le_of_ne (integral_nonneg fun x => sq_nonneg _) fun h => ?_
+  have hae : (fun x => p.eval x ^ 2) =ᵐ[μ] 0 :=
+    (integral_eq_zero_iff_of_nonneg (fun x => sq_nonneg _) (hw.integrable_eval_sq p)).1 h.symm
+  have hsub : (↑p.roots.toFinset : Set ℝ)ᶜ ⊆ {x | p.eval x ^ 2 ≠ 0} := by
+    intro x hx
+    simp only [Set.mem_compl_iff, Multiset.mem_toFinset, Finset.mem_coe] at hx
+    have : p.eval x ≠ 0 := fun h0 => hx ((mem_roots hp).2 (by simpa [IsRoot] using h0))
+    simpa using pow_ne_zero 2 this
+  refine hw.measure_compl_ne_zero p.roots.toFinset.finite_toSet ?_
+  refine measure_mono_null hsub ?_
+  simpa [Filter.EventuallyEq, ae_iff] using hae
+
+end IsWeight
+
+/-! ### The family -/
+
+/-- The monic orthogonal polynomials of `μ`: Gram–Schmidt applied to the monomials for the inner
+product `⟪p, q⟫ = ∫ p q ∂μ`, rescaled to be monic. `family μ n` is monic of degree `n` for every
+measure `μ`, and orthogonal to `family μ m` for `m ≠ n` as soon as `IsWeight μ` holds. -/
+def family (μ : Measure ℝ) : ℕ → ℝ[X]
+  | n => X ^ n - ∑ k ∈ (Finset.range n).attach,
+      C ((∫ x, x ^ n * (family μ k.1).eval x ∂μ) / ∫ x, (family μ k.1).eval x ^ 2 ∂μ) *
+        family μ k.1
+  termination_by n => n
+  decreasing_by all_goals exact Finset.mem_range.mp k.2
+
+/-- The defining Gram–Schmidt recursion for `family`, with the sum over `Finset.range`. -/
+theorem family_eq (μ : Measure ℝ) (n : ℕ) :
+    family μ n = X ^ n - ∑ k ∈ Finset.range n,
+      C ((∫ x, x ^ n * (family μ k).eval x ∂μ) / ∫ x, (family μ k).eval x ^ 2 ∂μ) * family μ k := by
+  rw [family]
+  congr 1
+  exact Finset.sum_attach _ fun k =>
+    C ((∫ x, x ^ n * (family μ k).eval x ∂μ) / ∫ x, (family μ k).eval x ^ 2 ∂μ) * family μ k
+
+@[simp]
+theorem family_zero (μ : Measure ℝ) : family μ 0 = 1 := by rw [family_eq]; simp
+
+/-- A linear combination of `family μ 0, …, family μ (n-1)` has degree `< n`, provided the degrees
+of those members are already known. -/
+private theorem degree_sum_C_mul_family_lt (μ : Measure ℝ) (c : ℕ → ℝ) (n : ℕ)
+    (h : ∀ k < n, (family μ k).degree = k) :
+    (∑ k ∈ Finset.range n, C (c k) * family μ k).degree < (n : WithBot ℕ) := by
+  refine lt_of_le_of_lt (degree_sum_le _ _) ?_
+  rw [Finset.sup_lt_iff (by exact_mod_cast WithBot.bot_lt_coe n)]
+  intro k hk
+  have hkn : k < n := Finset.mem_range.mp hk
+  refine lt_of_le_of_lt (degree_mul_le _ _) ?_
+  rw [h k hkn]
+  calc (C (c k) : ℝ[X]).degree + (k : WithBot ℕ) ≤ 0 + (k : WithBot ℕ) := by
+        gcongr; exact degree_C_le
+    _ = (k : WithBot ℕ) := zero_add _
+    _ < (n : WithBot ℕ) := by exact_mod_cast hkn
+
+/-- `family μ n` has degree `n`. -/
+@[simp]
+theorem degree_family (μ : Measure ℝ) (n : ℕ) : (family μ n).degree = n := by
+  induction n using Nat.strong_induction_on with
+  | _ n ih =>
+    rw [family_eq, degree_sub_eq_left_of_degree_lt, degree_X_pow]
+    rw [degree_X_pow]
+    exact degree_sum_C_mul_family_lt μ _ n ih
+
+/-- `family μ n` is monic. -/
+theorem monic_family (μ : Measure ℝ) (n : ℕ) : (family μ n).Monic := by
+  have hlt := degree_sum_C_mul_family_lt μ
+    (fun k => (∫ x, x ^ n * (family μ k).eval x ∂μ) / ∫ x, (family μ k).eval x ^ 2 ∂μ) n
+    (fun k _ => degree_family μ k)
+  rw [family_eq, sub_eq_add_neg]
+  refine (monic_X_pow n).add_of_left ?_
+  rw [degree_neg, degree_X_pow]
+  exact hlt
+
+/-- `family μ n` is never zero. -/
+theorem family_ne_zero (μ : Measure ℝ) (n : ℕ) : family μ n ≠ 0 :=
+  (monic_family μ n).ne_zero
+
+/-- A constant multiple of a member of the family of index `< n` has degree `< n`. -/
+private theorem degree_C_mul_family_lt (μ : Measure ℝ) (a : ℝ) {k n : ℕ} (h : k < n) :
+    (C a * family μ k).degree < (n : WithBot ℕ) := by
+  refine lt_of_le_of_lt (degree_mul_le _ _) ?_
+  rw [degree_family]
+  calc (C a : ℝ[X]).degree + (k : WithBot ℕ) ≤ 0 + (k : WithBot ℕ) := by
+        gcongr; exact degree_C_le
+    _ = (k : WithBot ℕ) := zero_add _
+    _ < (n : WithBot ℕ) := by exact_mod_cast h
+
+/-- `X * family μ k` has degree `k + 1`, hence `< n` as soon as `k + 1 < n`. -/
+private theorem degree_X_mul_family_lt (μ : Measure ℝ) {k n : ℕ} (h : k + 1 < n) :
+    (X * family μ k).degree < (n : WithBot ℕ) := by
+  rw [degree_mul, degree_X, degree_family]
+  norm_cast
+  omega
+
+/-- The `family` as a `Polynomial.Sequence`, so that Mathlib's spanning and independence lemmas
+for degree-graded sequences apply to it. -/
+def sequence (μ : Measure ℝ) : Polynomial.Sequence ℝ :=
+  ⟨family μ, degree_family μ⟩
+
+@[simp]
+theorem sequence_apply (μ : Measure ℝ) (n : ℕ) : sequence μ n = family μ n := rfl
+
+/-- The squared `L²(μ)` norm `∫ (family μ n)² ∂μ` of the `n`-th orthogonal polynomial. -/
+def normSq (μ : Measure ℝ) (n : ℕ) : ℝ := ∫ x, (family μ n).eval x ^ 2 ∂μ
+
+theorem normSq_pos (hw : IsWeight μ) (n : ℕ) : 0 < normSq μ n :=
+  hw.integral_eval_sq_pos (family_ne_zero μ n)
+
+theorem normSq_ne_zero (hw : IsWeight μ) (n : ℕ) : normSq μ n ≠ 0 :=
+  (normSq_pos hw n).ne'
+
+/-! ### Orthogonality -/
+
+private theorem integral_family_mul_family_of_lt (hw : IsWeight μ) :
+    ∀ n : ℕ, ∀ j < n, ∫ x, (family μ n).eval x * (family μ j).eval x ∂μ = 0 := by
+  intro n
+  induction n using Nat.strong_induction_on with
+  | _ n ih =>
+    intro j hj
+    have hint : ∀ k, Integrable
+        (fun x => (family μ k).eval x * (family μ j).eval x) μ :=
+      fun k => hw.integrable_eval_mul _ _
+    have hsplit : ∀ x : ℝ, (family μ n).eval x * (family μ j).eval x =
+        x ^ n * (family μ j).eval x - ∑ k ∈ Finset.range n,
+          ((∫ x, x ^ n * (family μ k).eval x ∂μ) / ∫ x, (family μ k).eval x ^ 2 ∂μ) *
+            ((family μ k).eval x * (family μ j).eval x) := by
+      intro x
+      rw [family_eq μ n]
+      simp only [eval_sub, eval_pow, eval_X, eval_finsetSum, eval_mul, eval_C, sub_mul,
+        Finset.sum_mul, mul_assoc]
+    simp only [hsplit]
+    rw [integral_sub (by simpa using hw.integrable_eval_mul (X ^ n) (family μ j))
+      (integrable_finsetSum _ fun k _ => (hint k).const_mul _),
+      integral_finsetSum _ fun k _ => (hint k).const_mul _]
+    simp only [integral_const_mul]
+    rw [Finset.sum_eq_single j]
+    · have hnz : (∫ x, (family μ j).eval x ^ 2 ∂μ) ≠ 0 := normSq_ne_zero hw j
+      have : (∫ x, (family μ j).eval x * (family μ j).eval x ∂μ) =
+          ∫ x, (family μ j).eval x ^ 2 ∂μ := by simp [sq]
+      rw [this, div_mul_cancel₀ _ hnz]
+      simp
+    · intro k hk hkj
+      have hkn : k < n := Finset.mem_range.mp hk
+      rcases lt_or_gt_of_ne hkj with h | h
+      · have := ih j hj k h
+        rw [show (∫ x, (family μ k).eval x * (family μ j).eval x ∂μ) =
+          ∫ x, (family μ j).eval x * (family μ k).eval x ∂μ from
+          integral_congr_ae (Filter.Eventually.of_forall fun x => mul_comm _ _), this, mul_zero]
+      · rw [ih k hkn j h, mul_zero]
+    · intro hj'
+      exact absurd (Finset.mem_range.mpr hj) hj'
+
+/-- Orthogonality of the family, Atkinson–Han[^atkinson-han] §3.5: distinct members are
+orthogonal in `L²(μ)`. -/
+theorem integral_family_mul_family (hw : IsWeight μ) {m n : ℕ} (hmn : m ≠ n) :
+    ∫ x, (family μ m).eval x * (family μ n).eval x ∂μ = 0 := by
+  rcases lt_or_gt_of_ne hmn with h | h
+  · rw [show (∫ x, (family μ m).eval x * (family μ n).eval x ∂μ) =
+      ∫ x, (family μ n).eval x * (family μ m).eval x ∂μ from
+      integral_congr_ae (Filter.Eventually.of_forall fun x => mul_comm _ _)]
+    exact integral_family_mul_family_of_lt hw n m h
+  · exact integral_family_mul_family_of_lt hw m n h
+
+/-- Every polynomial of degree `< n` is a linear combination of `family μ 0, …, family μ (n-1)`. -/
+theorem exists_eq_sum_family (μ : Measure ℝ) {n : ℕ} {q : ℝ[X]} (hq : q.degree < n) :
+    ∃ c : ℕ → ℝ, q = ∑ k ∈ Finset.range n, c k • family μ k := by
+  have hmem : q ∈ Polynomial.degreeLT ℝ n := Polynomial.mem_degreeLT.mpr hq
+  rw [← Polynomial.Sequence.span_degreeLT (sequence μ)
+      (fun i _ => by simp [(monic_family μ i).leadingCoeff]),
+    show Set.Iio n = (↑(Finset.range n) : Set ℕ) by simp,
+    Submodule.mem_span_image_finset_iff_exists_fun'] at hmem
+  obtain ⟨c, hc⟩ := hmem
+  exact ⟨c, by simpa using hc.symm⟩
+
+/-- The family is orthogonal to every polynomial of lower degree. This is the form in which
+orthogonality is used: in the Gauss quadrature and best-approximation arguments the second factor
+is an arbitrary polynomial, not another member of the family. -/
+theorem integral_family_mul_of_degree_lt (hw : IsWeight μ) {n : ℕ} {q : ℝ[X]}
+    (hq : q.degree < n) : ∫ x, (family μ n).eval x * q.eval x ∂μ = 0 := by
+  obtain ⟨c, rfl⟩ := exists_eq_sum_family μ hq
+  have hev : ∀ x : ℝ, (family μ n).eval x * (∑ k ∈ Finset.range n, c k • family μ k).eval x =
+      ∑ k ∈ Finset.range n, c k * ((family μ n).eval x * (family μ k).eval x) := by
+    intro x
+    simp only [eval_finsetSum, eval_smul, smul_eq_mul, Finset.mul_sum, mul_left_comm]
+  simp only [hev]
+  rw [integral_finsetSum _ fun k _ => ((hw.integrable_eval_mul _ _).const_mul _)]
+  refine Finset.sum_eq_zero fun k hk => ?_
+  rw [integral_const_mul, integral_family_mul_family hw (Nat.ne_of_gt (Finset.mem_range.mp hk)),
+    mul_zero]
+
+/-- The expansion of a polynomial of degree `< n` in the orthogonal family, with the
+Fourier coefficients `⟪q, p_k⟫ / ‖p_k‖²` made explicit. -/
+theorem eq_sum_family (hw : IsWeight μ) {n : ℕ} {q : ℝ[X]} (hq : q.degree < n) :
+    q = ∑ k ∈ Finset.range n,
+      ((∫ x, q.eval x * (family μ k).eval x ∂μ) / normSq μ k) • family μ k := by
+  obtain ⟨c, rfl⟩ := exists_eq_sum_family μ hq
+  have hcoeff : ∀ j ∈ Finset.range n,
+      (∫ x, (∑ k ∈ Finset.range n, c k • family μ k).eval x * (family μ j).eval x ∂μ) =
+        c j * normSq μ j := by
+    intro j hj
+    have hev : ∀ x : ℝ, (∑ k ∈ Finset.range n, c k • family μ k).eval x * (family μ j).eval x =
+        ∑ k ∈ Finset.range n, c k * ((family μ k).eval x * (family μ j).eval x) := by
+      intro x
+      simp only [eval_finsetSum, eval_smul, smul_eq_mul, Finset.sum_mul, mul_assoc]
+    simp only [hev]
+    rw [integral_finsetSum _ fun k _ => ((hw.integrable_eval_mul _ _).const_mul _)]
+    rw [Finset.sum_eq_single j]
+    · rw [integral_const_mul, normSq]
+      congr 1
+      exact integral_congr_ae (Filter.Eventually.of_forall fun x => (sq _).symm)
+    · intro k _ hkj
+      rw [integral_const_mul, integral_family_mul_family hw hkj, mul_zero]
+    · intro hj'; exact absurd hj hj'
+  refine Finset.sum_congr rfl fun j hj => ?_
+  rw [hcoeff j hj, mul_div_assoc, div_self (normSq_ne_zero hw j), mul_one]
+
+/-- A polynomial of degree `< n` orthogonal to `family μ 0, …, family μ (n-1)` is zero: those
+`n` polynomials span the polynomials of degree `< n`. -/
+theorem eq_zero_of_degree_lt (hw : IsWeight μ) {n : ℕ} {q : ℝ[X]} (hq : q.degree < n)
+    (h : ∀ k < n, ∫ x, q.eval x * (family μ k).eval x ∂μ = 0) : q = 0 := by
+  rw [eq_sum_family hw hq]
+  refine Finset.sum_eq_zero fun k hk => ?_
+  rw [h k (Finset.mem_range.mp hk), zero_div, zero_smul]
+
+/-! ### The three-term recurrence -/
+
+/-- The coefficient `a_n = ⟪x p_n, p_n⟫ / ‖p_n‖²` of the three-term recurrence. -/
+def alpha (μ : Measure ℝ) (n : ℕ) : ℝ :=
+  (∫ x, x * (family μ n).eval x ^ 2 ∂μ) / normSq μ n
+
+/-- The coefficient `b_n = ‖p_{n+1}‖² / ‖p_n‖²` of the three-term recurrence. -/
+def beta (μ : Measure ℝ) (n : ℕ) : ℝ := normSq μ (n + 1) / normSq μ n
+
+/-- `X * family μ n` agrees with `family μ (n + 1)` up to a polynomial of degree `< n + 1`. -/
+private theorem degree_X_mul_family_sub_lt (μ : Measure ℝ) (n : ℕ) :
+    (X * family μ n - family μ (n + 1)).degree < ((n + 1 : ℕ) : WithBot ℕ) := by
+  have h1 : (X * family μ n).degree = ((n + 1 : ℕ) : WithBot ℕ) := by
+    rw [degree_mul, degree_X, degree_family]
+    push_cast
+    exact add_comm _ _
+  have h2 : (family μ (n + 1)).degree = ((n + 1 : ℕ) : WithBot ℕ) := degree_family μ (n + 1)
+  have hne : X * family μ n ≠ 0 := mul_ne_zero X_ne_zero (family_ne_zero μ n)
+  have hlc : (X * family μ n).leadingCoeff = (family μ (n + 1)).leadingCoeff := by
+    rw [leadingCoeff_mul, monic_X, (monic_family μ n).leadingCoeff,
+      (monic_family μ (n + 1)).leadingCoeff, one_mul]
+  simpa [h1] using degree_sub_lt_left (h1.trans h2.symm) hne hlc
+
+/-- `⟪X p_{n+1}, p_n⟫ = ‖p_{n+1}‖²`, because `X p_n` is `p_{n+1}` plus a polynomial of degree
+`< n + 1`. -/
+private theorem integral_X_mul_family_succ_mul_family (hw : IsWeight μ) (n : ℕ) :
+    ∫ x, x * (family μ (n + 1)).eval x * (family μ n).eval x ∂μ = normSq μ (n + 1) := by
+  have hsplit : ∀ x : ℝ, x * (family μ (n + 1)).eval x * (family μ n).eval x =
+      (family μ (n + 1)).eval x ^ 2 +
+        (family μ (n + 1)).eval x * (X * family μ n - family μ (n + 1)).eval x := by
+    intro x
+    simp only [eval_sub, eval_mul, eval_X]
+    ring
+  simp only [hsplit]
+  rw [integral_add (hw.integrable_eval_sq _) (hw.integrable_eval_mul _ _),
+    integral_family_mul_of_degree_lt hw (degree_X_mul_family_sub_lt μ n), add_zero]
+  rfl
+
+/-- The first step of the three-term recurrence: `p_1 = X - a_0`. It is the Gram–Schmidt step
+itself, so no orthogonality is needed. -/
+theorem family_one (μ : Measure ℝ) : family μ 1 = X - C (alpha μ 0) := by
+  rw [family_eq, alpha, normSq]
+  simp
+
+/-- Multiplication by `X` moves across the inner product. -/
+private theorem integral_X_mul_family_mul_family (μ : Measure ℝ) (m k : ℕ) :
+    ∫ x, x * (family μ m).eval x * (family μ k).eval x ∂μ
+      = ∫ x, (family μ m).eval x * (X * family μ k).eval x ∂μ :=
+  integral_congr_ae (Filter.Eventually.of_forall fun x => by
+    simp only [eval_mul, eval_X]; ring)
+
+private theorem integral_family_mul_self (μ : Measure ℝ) (m : ℕ) :
+    ∫ x, (family μ m).eval x * (family μ m).eval x ∂μ = normSq μ m :=
+  integral_congr_ae (Filter.Eventually.of_forall fun x => (sq ((family μ m).eval x)).symm)
+
+private theorem integral_X_mul_family_mul_self (μ : Measure ℝ) (m : ℕ) :
+    ∫ x, x * (family μ m).eval x * (family μ m).eval x ∂μ
+      = ∫ x, x * (family μ m).eval x ^ 2 ∂μ :=
+  integral_congr_ae (Filter.Eventually.of_forall fun x => by ring)
+
+/-- The three-term recurrence for the monic orthogonal polynomials of `μ`,
+Atkinson–Han[^atkinson-han] Exercises 3.5.5–3.5.6: `p_{n+2} = (X - a_{n+1}) p_{n+1} - b_n p_n`. -/
+theorem three_term_recurrence (hw : IsWeight μ) (n : ℕ) :
+    family μ (n + 2) =
+      (X - C (alpha μ (n + 1))) * family μ (n + 1) - C (beta μ n) * family μ n := by
+  refine sub_eq_zero.mp (eq_zero_of_degree_lt hw (n := n + 2) ?_ ?_)
+  · have hrw : family μ (n + 2) -
+        ((X - C (alpha μ (n + 1))) * family μ (n + 1) - C (beta μ n) * family μ n) =
+        -(X * family μ (n + 1) - family μ (n + 2)) +
+          (C (alpha μ (n + 1)) * family μ (n + 1) + C (beta μ n) * family μ n) := by ring
+    rw [hrw]
+    refine lt_of_le_of_lt (degree_add_le _ _) (max_lt ?_ ?_)
+    · rw [degree_neg]
+      exact degree_X_mul_family_sub_lt μ (n + 1)
+    · refine lt_of_le_of_lt (degree_add_le _ _) (max_lt ?_ ?_)
+      · exact degree_C_mul_family_lt μ _ (by omega)
+      · exact degree_C_mul_family_lt μ _ (by omega)
+  · intro k hk
+    have hi1 : Integrable (fun x => (family μ (n + 2)).eval x * (family μ k).eval x) μ :=
+      hw.integrable_eval_mul _ _
+    have hi2 : Integrable
+        (fun x => x * (family μ (n + 1)).eval x * (family μ k).eval x) μ :=
+      (hw.integrable_eval (X * family μ (n + 1) * family μ k)).congr
+        (Filter.Eventually.of_forall fun x => by simp [mul_assoc])
+    have hi3 : Integrable (fun x => alpha μ (n + 1) *
+        ((family μ (n + 1)).eval x * (family μ k).eval x)) μ :=
+      (hw.integrable_eval_mul _ _).const_mul _
+    have hi4 : Integrable (fun x => beta μ n *
+        ((family μ n).eval x * (family μ k).eval x)) μ :=
+      (hw.integrable_eval_mul _ _).const_mul _
+    have hi12 : Integrable (fun x => (family μ (n + 2)).eval x * (family μ k).eval x -
+        x * (family μ (n + 1)).eval x * (family μ k).eval x) μ := hi1.sub hi2
+    have hi123 : Integrable (fun x => (family μ (n + 2)).eval x * (family μ k).eval x -
+        x * (family μ (n + 1)).eval x * (family μ k).eval x +
+        alpha μ (n + 1) * ((family μ (n + 1)).eval x * (family μ k).eval x)) μ := hi12.add hi3
+    have hev : ∀ x : ℝ,
+        (family μ (n + 2) -
+            ((X - C (alpha μ (n + 1))) * family μ (n + 1) - C (beta μ n) * family μ n)).eval x *
+          (family μ k).eval x =
+          (family μ (n + 2)).eval x * (family μ k).eval x -
+            x * (family μ (n + 1)).eval x * (family μ k).eval x +
+            alpha μ (n + 1) * ((family μ (n + 1)).eval x * (family μ k).eval x) +
+            beta μ n * ((family μ n).eval x * (family μ k).eval x) := by
+      intro x
+      simp only [eval_sub, eval_mul, eval_X, eval_C]
+      ring
+    simp only [hev]
+    rw [integral_add hi123 hi4, integral_add hi12 hi3, integral_sub hi1 hi2,
+      integral_const_mul, integral_const_mul,
+      integral_family_mul_family hw (by omega : n + 2 ≠ k),
+      integral_X_mul_family_mul_family]
+    rcases lt_trichotomy k n with hkn | hkn | hkn
+    · rw [integral_family_mul_of_degree_lt hw (degree_X_mul_family_lt μ (by omega)),
+        integral_family_mul_family hw (by omega : n + 1 ≠ k),
+        integral_family_mul_family hw (by omega : n ≠ k)]
+      ring
+    · rw [hkn, ← integral_X_mul_family_mul_family, integral_X_mul_family_succ_mul_family hw,
+        integral_family_mul_family hw (by omega : n + 1 ≠ n), integral_family_mul_self]
+      simp only [beta]
+      rw [div_mul_cancel₀ _ (normSq_ne_zero hw n)]
+      ring
+    · rw [show k = n + 1 by omega, ← integral_X_mul_family_mul_family,
+        integral_X_mul_family_mul_self, integral_family_mul_self,
+        integral_family_mul_family hw (by omega : n ≠ n + 1)]
+      simp only [alpha]
+      rw [div_mul_cancel₀ _ (normSq_ne_zero hw (n + 1))]
+      ring
+
+/-! ### The truncated expansion as a best approximation -/
+
+namespace IsWeight
+
+/-- Every polynomial lies in `L²(μ)`. -/
+theorem memLp (hw : IsWeight μ) (p : ℝ[X]) : MemLp (fun x => p.eval x) 2 μ :=
+  (memLp_two_iff_integrable_sq p.continuous.aestronglyMeasurable).2 (hw.integrable_eval_sq p)
+
+/-- The polynomials as a subspace of `L²(μ)`. -/
+def toLpₗ (hw : IsWeight μ) : ℝ[X] →ₗ[ℝ] Lp ℝ 2 μ where
+  toFun p := (hw.memLp p).toLp _
+  map_add' p q := by
+    rw [← MemLp.toLp_add]
+    exact MemLp.toLp_congr _ _ (Filter.Eventually.of_forall fun x => by simp)
+  map_smul' c p := by
+    rw [RingHom.id_apply, ← MemLp.toLp_const_smul]
+    exact MemLp.toLp_congr _ _ (Filter.Eventually.of_forall fun x => by simp)
+
+theorem coeFn_toLpₗ (hw : IsWeight μ) (p : ℝ[X]) :
+    ⇑(hw.toLpₗ p) =ᵐ[μ] fun x => p.eval x := (hw.memLp p).coeFn_toLp
+
+/-- The `L²(μ)` inner product of two polynomials is `∫ p q ∂μ`. -/
+theorem inner_toLpₗ (hw : IsWeight μ) (p q : ℝ[X]) :
+    inner ℝ (hw.toLpₗ p) (hw.toLpₗ q) = ∫ x, p.eval x * q.eval x ∂μ := by
+  rw [L2.inner_def]
+  refine integral_congr_ae ?_
+  filter_upwards [hw.coeFn_toLpₗ p, hw.coeFn_toLpₗ q] with x hp hq
+  rw [hp, hq]
+  simp [RCLike.inner_apply, mul_comm]
+
+end IsWeight
+
+/-- The span of `family μ 0, …, family μ N` in `L²(μ)` is the image of the polynomials of
+degree `≤ N`. -/
+theorem map_degreeLE_toLpₗ (hw : IsWeight μ) (N : ℕ) :
+    (Polynomial.degreeLE ℝ N).map hw.toLpₗ =
+      Submodule.span ℝ (Set.range fun k : Fin (N + 1) => hw.toLpₗ (family μ k)) := by
+  rw [← Polynomial.Sequence.span_degreeLE (sequence μ)
+      (fun i _ => by simp [(monic_family μ i).leadingCoeff]), Submodule.map_span]
+  congr 1
+  ext y
+  constructor
+  · rintro ⟨z, ⟨k, hk, rfl⟩, rfl⟩
+    exact ⟨⟨k, Nat.lt_succ_of_le hk⟩, rfl⟩
+  · rintro ⟨k, rfl⟩
+    exact ⟨family μ k, ⟨k, Nat.lt_succ_iff.mp k.2, rfl⟩, rfl⟩
+
+/-- Atkinson–Han[^atkinson-han] (3.5.2): the truncated expansion
+`∑_{k ≤ N} (⟪u, p_k⟫ / ‖p_k‖²) p_k` is the best `L²(μ)` approximation of `u` by polynomials of
+degree at most `N`. -/
+theorem isBestApprox_truncation (hw : IsWeight μ) (N : ℕ) (u : Lp ℝ 2 μ) :
+    IsBestApprox ((Polynomial.degreeLE ℝ N).map hw.toLpₗ : Set (Lp ℝ 2 μ)) u
+      (∑ k : Fin (N + 1),
+        (inner ℝ (hw.toLpₗ (family μ k)) u / normSq μ k) • hw.toLpₗ (family μ k)) := by
+  rw [map_degreeLE_toLpₗ hw N, isBestApprox_sum_iff]
+  intro j
+  rw [Finset.sum_eq_single j]
+  · rw [hw.inner_toLpₗ, integral_family_mul_self, div_mul_cancel₀ _ (normSq_ne_zero hw j)]
+  · intro i _ hij
+    have hne : ((j : ℕ)) ≠ ((i : ℕ)) := fun h => hij (Fin.val_injective h).symm
+    rw [hw.inner_toLpₗ, integral_family_mul_family hw hne, mul_zero]
+  · intro h
+    exact absurd (Finset.mem_univ j) h
+
+end OrthogonalPolynomial
+
+/-! ### The Legendre family -/
+
+namespace Polynomial
+
+/-! ### Leibniz rules for the iterated derivative -/
+
+private lemma iterate_derivative_quad_mul (g : ℝ[X]) (k : ℕ) :
+    derivative^[k + 2] ((X ^ 2 - 1) * g) =
+      (X ^ 2 - 1) * derivative^[k + 2] g + 2 * ((k : ℝ[X]) + 2) * X * derivative^[k + 1] g +
+        ((k : ℝ[X]) + 2) * ((k : ℝ[X]) + 1) * derivative^[k] g := by
+  induction k with
+  | zero =>
+    simp only [Function.iterate_succ_apply', Function.iterate_zero_apply, derivative_add,
+      derivative_mul, derivative_sub, derivative_pow, derivative_X, derivative_one,
+      derivative_ofNat, map_zero, map_natCast, map_ofNat, Nat.cast_ofNat]
+    push_cast
+    ring
+  | succ k ih =>
+    have h1 : derivative (derivative^[k] g) = derivative^[k + 1] g :=
+      (Function.iterate_succ_apply' derivative k g).symm
+    have h2 : derivative (derivative^[k + 1] g) = derivative^[k + 2] g :=
+      (Function.iterate_succ_apply' derivative (k + 1) g).symm
+    have h3 : derivative (derivative^[k + 2] g) = derivative^[k + 3] g :=
+      (Function.iterate_succ_apply' derivative (k + 2) g).symm
+    rw [show k + 1 + 2 = k + 2 + 1 from rfl,
+      Function.iterate_succ_apply' derivative (k + 2) ((X ^ 2 - 1) * g), ih]
+    simp only [derivative_add, derivative_mul, derivative_sub, derivative_pow, derivative_X,
+      derivative_one, derivative_natCast, derivative_ofNat, map_ofNat,
+      Nat.cast_ofNat, h1, h2, h3]
+    push_cast
+    ring
+
+/-! ### The Legendre polynomials -/
+
+/-- The `n`-th Legendre polynomial, defined by Rodrigues' formula
+`Pₙ = (2ⁿ n!)⁻¹ (d/dx)ⁿ (x² - 1)ⁿ`. -/
+def legendre (n : ℕ) : ℝ[X] :=
+  C ((2 ^ n * n ! : ℝ)⁻¹) * derivative^[n] ((X ^ 2 - 1) ^ n)
+
+/-- The normalising constant `2ⁿ n!` of Rodrigues' formula. -/
+private def legFac (n : ℕ) : ℝ := 2 ^ n * n !
+
+private lemma legendre_eq (n : ℕ) :
+    legendre n = C (legFac n)⁻¹ * derivative^[n] ((X ^ 2 - 1) ^ n) := rfl
+
+private lemma legFac_pos (n : ℕ) : 0 < legFac n := by
+  have : 0 < (n ! : ℝ) := by exact_mod_cast n.factorial_pos
+  simpa [legFac] using by positivity
+
+private lemma legFac_ne_zero (n : ℕ) : legFac n ≠ 0 := (legFac_pos n).ne'
+
+private lemma legFac_succ (n : ℕ) : legFac (n + 1) = 2 * ((n : ℝ) + 1) * legFac n := by
+  simp only [legFac, pow_succ, Nat.factorial_succ, Nat.cast_mul, Nat.cast_add, Nat.cast_one]
+  ring
+
+/-- Rodrigues' formula, solved for the iterated derivative. -/
+private lemma iterate_derivative_pow_eq (n : ℕ) :
+    derivative^[n] ((X ^ 2 - 1 : ℝ[X]) ^ n) = C (legFac n) * legendre n := by
+  rw [legendre_eq, ← mul_assoc, ← C_mul, mul_inv_cancel₀ (legFac_ne_zero n), C_1, one_mul]
+
+/-! ### The first two Legendre polynomials -/
+
+/-- `P₀ = 1`. -/
+theorem legendre_zero : legendre 0 = 1 := by
+  simp [legendre_eq, legFac]
+
+private lemma derivative_quad : derivative (X ^ 2 - 1 : ℝ[X]) = 2 * X := by
+  have h : (X ^ 2 - 1 : ℝ[X]) = X * X - 1 := by ring
+  rw [h]
+  simp only [derivative_sub, derivative_mul, derivative_X, derivative_one, sub_zero, mul_one,
+    one_mul]
+  ring
+
+/-- `P₁ = X`. -/
+theorem legendre_one : legendre 1 = X := by
+  have h2 : (C (2 : ℝ)⁻¹ : ℝ[X]) * 2 = 1 := by
+    rw [show (2 : ℝ[X]) = C (2 : ℝ) from (map_ofNat C 2).symm, ← C_mul]
+    norm_num
+  rw [legendre_eq]
+  simp only [legFac, pow_one, Nat.factorial_one, Nat.cast_one, mul_one, Function.iterate_one,
+    derivative_quad]
+  linear_combination (X : ℝ[X]) * h2
+
+/-! ### The two structural identities -/
+
+private lemma quad_mul_derivative_pow (n : ℕ) :
+    (X ^ 2 - 1 : ℝ[X]) * derivative ((X ^ 2 - 1) ^ (n + 1))
+      = C (2 * ((n : ℝ) + 1)) * ((X ^ 2 - 1) ^ (n + 1) * X) := by
+  rw [derivative_pow_succ, derivative_quad]
+  simp only [map_mul, map_add, map_natCast, map_ofNat, map_one]
+  ring
+
+private lemma quad_mul_iterate_derivative_succ (j : ℕ) :
+    (X ^ 2 - 1 : ℝ[X]) * derivative^[j + 3] ((X ^ 2 - 1) ^ (j + 2))
+      = ((j : ℝ[X]) + 3) * (((j : ℝ[X]) + 2) * derivative^[j + 1] ((X ^ 2 - 1) ^ (j + 2))) := by
+  have hkey := congrArg (fun p : ℝ[X] => derivative^[j + 2] p) (quad_mul_derivative_pow (j + 1))
+  simp only [show j + 1 + 1 = j + 2 from rfl] at hkey
+  rw [iterate_derivative_quad_mul, iterate_derivative_C_mul, iterate_derivative_mul_X] at hkey
+  simp only [← Function.iterate_succ_apply, nsmul_eq_mul, show j + 2 - 1 = j + 1 from rfl,
+    map_mul, map_add, map_natCast, map_ofNat, map_one] at hkey
+  push_cast at hkey
+  linear_combination hkey
+
+private lemma quad_mul_iterate_derivative (n : ℕ) :
+    (X ^ 2 - 1 : ℝ[X]) * derivative^[n + 2] ((X ^ 2 - 1) ^ (n + 1))
+      = ((n : ℝ[X]) + 2) * (((n : ℝ[X]) + 1) * derivative^[n] ((X ^ 2 - 1) ^ (n + 1))) := by
+  cases n with
+  | zero =>
+    have hd2 : derivative^[0 + 2] ((X ^ 2 - 1 : ℝ[X]) ^ (0 + 1)) = 2 := by
+      rw [pow_one, show (0 + 2) = 1 + 1 from rfl, Function.iterate_add_apply,
+        Function.iterate_one, derivative_quad]
+      simp
+    rw [hd2]
+    simp only [Nat.cast_zero, zero_add, Function.iterate_zero_apply, pow_one, one_mul]
+    ring
+  | succ j =>
+    have h := quad_mul_iterate_derivative_succ j
+    rw [show j + 1 + 2 = j + 3 from rfl, show j + 1 + 1 = j + 2 from rfl]
+    push_cast
+    linear_combination h
+
+private lemma iterate_derivative_pow_succ_succ (n : ℕ) :
+    derivative^[n + 2] ((X ^ 2 - 1 : ℝ[X]) ^ (n + 2))
+      = 2 * ((n : ℝ[X]) + 2) *
+        (((n : ℝ[X]) + 1) * derivative^[n] ((X ^ 2 - 1) ^ (n + 1))
+          + X * derivative^[n + 1] ((X ^ 2 - 1) ^ (n + 1))) := by
+  have hu : ((X ^ 2 - 1 : ℝ[X]) ^ (n + 2)) = (X ^ 2 - 1) * (X ^ 2 - 1) ^ (n + 1) := by ring
+  rw [hu, iterate_derivative_quad_mul]
+  linear_combination quad_mul_iterate_derivative n
+
+private lemma quad_mul_derivative_iterate (n : ℕ) :
+    (X ^ 2 - 1 : ℝ[X]) * derivative (derivative^[n + 1] ((X ^ 2 - 1) ^ (n + 1)))
+      = ((n : ℝ[X]) + 2) * (((n : ℝ[X]) + 1) * derivative^[n] ((X ^ 2 - 1) ^ (n + 1))) := by
+  rw [← Function.iterate_succ_apply' derivative (n + 1)]
+  exact quad_mul_iterate_derivative n
+
+/-! ### Translation to the Legendre polynomials -/
+
+private lemma natCast_succ_mul_iterate (n : ℕ) :
+    ((n : ℝ[X]) + 1) * derivative^[n] ((X ^ 2 - 1) ^ (n + 1))
+      = C (legFac (n + 1)) * (legendre (n + 2) - X * legendre (n + 1)) := by
+  have hB := iterate_derivative_pow_succ_succ n
+  rw [iterate_derivative_pow_eq (n + 2), iterate_derivative_pow_eq (n + 1)] at hB
+  have hfac : legFac (n + 2) = 2 * ((n : ℝ) + 2) * legFac (n + 1) := by
+    rw [legFac_succ (n + 1)]; push_cast; ring
+  rw [hfac] at hB
+  simp only [map_mul, map_add, map_natCast, map_ofNat] at hB
+  have hpos : (0 : ℝ) < 2 * ((n : ℝ) + 2) := by positivity
+  have hne : (2 * ((n : ℝ[X]) + 2)) ≠ 0 := by
+    have h2 : (2 * ((n : ℝ[X]) + 2)) = C (2 * ((n : ℝ) + 2)) := by
+      simp only [map_mul, map_add, map_natCast, map_ofNat]
+    rw [h2]
+    exact C_ne_zero.mpr hpos.ne'
+  refine mul_left_cancel₀ hne ?_
+  linear_combination -hB
+
+private lemma quad_mul_derivative_legendre_succ (n : ℕ) :
+    (X ^ 2 - 1 : ℝ[X]) * derivative (legendre (n + 1))
+      = ((n : ℝ[X]) + 2) * (legendre (n + 2) - X * legendre (n + 1)) := by
+  have hA := quad_mul_derivative_iterate n
+  rw [iterate_derivative_pow_eq (n + 1), derivative_C_mul, natCast_succ_mul_iterate n] at hA
+  refine mul_left_cancel₀ (C_ne_zero.mpr (legFac_ne_zero (n + 1))) ?_
+  linear_combination hA
+
+/-- The differential identity `(x² - 1) Pₙ' = (n + 1) (Pₙ₊₁ - x Pₙ)`. -/
+theorem quad_mul_derivative_legendre (n : ℕ) :
+    (X ^ 2 - 1 : ℝ[X]) * derivative (legendre n)
+      = ((n : ℝ[X]) + 1) * (legendre (n + 1) - X * legendre n) := by
+  cases n with
+  | zero => simp [legendre_zero, legendre_one]
+  | succ j =>
+    have h := quad_mul_derivative_legendre_succ j
+    rw [show j + 1 + 1 = j + 2 from rfl]
+    push_cast
+    linear_combination h
+
+/-- The differential identity `Pₙ₊₁' = x Pₙ' + (n + 1) Pₙ`. -/
+theorem derivative_legendre_succ (n : ℕ) :
+    derivative (legendre (n + 1))
+      = X * derivative (legendre n) + ((n : ℝ[X]) + 1) * legendre n := by
+  cases n with
+  | zero => simp [legendre_zero, legendre_one]
+  | succ j =>
+    have hbox : derivative (((j : ℝ[X]) + 1) * derivative^[j] ((X ^ 2 - 1) ^ (j + 1)))
+        = derivative (C (legFac (j + 1)) * (legendre (j + 2) - X * legendre (j + 1))) := by
+      rw [natCast_succ_mul_iterate j]
+    simp only [derivative_mul, derivative_sub, derivative_add, derivative_natCast,
+      derivative_one, derivative_C, derivative_X, zero_add, zero_mul, one_mul, add_zero] at hbox
+    rw [← Function.iterate_succ_apply' derivative j, iterate_derivative_pow_eq (j + 1)] at hbox
+    rw [show j + 1 + 1 = j + 2 from rfl]
+    push_cast
+    refine mul_left_cancel₀ (C_ne_zero.mpr (legFac_ne_zero (j + 1))) ?_
+    linear_combination -hbox
+
+/-- The Legendre differential equation
+`(x² - 1) Pₙ'' + 2x Pₙ' = n (n + 1) Pₙ`. -/
+theorem legendre_ode (n : ℕ) :
+    (X ^ 2 - 1 : ℝ[X]) * derivative (derivative (legendre n)) + 2 * X * derivative (legendre n)
+      = (n : ℝ[X]) * ((n : ℝ[X]) + 1) * legendre n := by
+  have h1 : 2 * X * derivative (legendre n)
+        + (X ^ 2 - 1 : ℝ[X]) * derivative (derivative (legendre n))
+      = ((n : ℝ[X]) + 1) * (derivative (legendre (n + 1))
+        - (legendre n + X * derivative (legendre n))) := by
+    rw [← derivative_quad, ← derivative_mul, quad_mul_derivative_legendre n]
+    simp only [derivative_mul, derivative_sub, derivative_add, derivative_natCast,
+      derivative_one, derivative_X, zero_add, zero_mul, one_mul, add_zero]
+  linear_combination h1 + ((n : ℝ[X]) + 1) * derivative_legendre_succ n
+
+/-- The three-term recurrence `(n + 1) Pₙ₊₁ = (2n + 1) x Pₙ - n Pₙ₋₁`, shifted so that no
+natural-number subtraction occurs. -/
+theorem legendre_recurrence (n : ℕ) :
+    ((n : ℝ[X]) + 2) * legendre (n + 2)
+      = (2 * (n : ℝ[X]) + 3) * X * legendre (n + 1) - ((n : ℝ[X]) + 1) * legendre n := by
+  have h1 := quad_mul_derivative_legendre n
+  have h2 := derivative_legendre_succ n
+  have h3 := quad_mul_derivative_legendre (n + 1)
+  rw [show n + 1 + 1 = n + 2 from rfl] at h3
+  push_cast at h3
+  linear_combination (-1 : ℝ[X]) * h3 + (X ^ 2 - 1 : ℝ[X]) * h2 + (X : ℝ[X]) * h1
+
+/-! ### Degree -/
+
+private lemma monic_quad : ((X : ℝ[X]) ^ 2 - 1).Monic := by
+  have h : ((X : ℝ[X]) ^ 2 - 1) = X ^ 2 - C 1 := by rw [C_1]
+  rw [h]
+  exact monic_X_pow_sub_C 1 two_ne_zero
+
+private lemma natDegree_quad_pow (n : ℕ) : (((X : ℝ[X]) ^ 2 - 1) ^ n).natDegree = n * 2 := by
+  have h : ((X : ℝ[X]) ^ 2 - 1) = X ^ 2 - C 1 := by rw [C_1]
+  rw [monic_quad.natDegree_pow, h, natDegree_X_pow_sub_C]
+
+private lemma coeff_iterate_derivative_pow (n : ℕ) :
+    (derivative^[n] ((X ^ 2 - 1 : ℝ[X]) ^ n)).coeff n = ((n + n).descFactorial n : ℝ) := by
+  have hc : (((X : ℝ[X]) ^ 2 - 1) ^ n).coeff (n + n) = 1 := by
+    have h := (monic_quad.pow n).coeff_natDegree
+    rw [natDegree_quad_pow] at h
+    rw [show n + n = n * 2 by ring]
+    exact h
+  rw [coeff_iterate_derivative, hc]
+  simp
+
+private lemma coeff_iterate_derivative_pow_ne_zero (n : ℕ) :
+    (derivative^[n] ((X ^ 2 - 1 : ℝ[X]) ^ n)).coeff n ≠ 0 := by
+  rw [coeff_iterate_derivative_pow]
+  have h : (n + n).descFactorial n ≠ 0 := by
+    rw [Ne, Nat.descFactorial_eq_zero_iff_lt]
+    omega
+  exact_mod_cast h
+
+private lemma natDegree_iterate_derivative_pow (n : ℕ) :
+    (derivative^[n] ((X ^ 2 - 1 : ℝ[X]) ^ n)).natDegree = n := by
+  refine le_antisymm ?_ (le_natDegree_of_ne_zero (coeff_iterate_derivative_pow_ne_zero n))
+  have h := natDegree_iterate_derivative (((X : ℝ[X]) ^ 2 - 1) ^ n) n
+  rw [natDegree_quad_pow] at h
+  omega
+
+/-- `Pₙ` is not the zero polynomial. -/
+theorem legendre_ne_zero (n : ℕ) : legendre n ≠ 0 := by
+  rw [legendre_eq]
+  refine mul_ne_zero (C_ne_zero.mpr (inv_ne_zero (legFac_ne_zero n))) ?_
+  intro h
+  exact coeff_iterate_derivative_pow_ne_zero n (by rw [h, coeff_zero])
+
+/-- `Pₙ` has degree `n`. -/
+theorem natDegree_legendre (n : ℕ) : (legendre n).natDegree = n := by
+  rw [legendre_eq, natDegree_C_mul (inv_ne_zero (legFac_ne_zero n))]
+  exact natDegree_iterate_derivative_pow n
+
+/-- `Pₙ` has degree `n`. -/
+theorem degree_legendre (n : ℕ) : (legendre n).degree = n := by
+  rw [degree_eq_natDegree (legendre_ne_zero n), natDegree_legendre]
+
+/-! ### Value at the right endpoint -/
+
+/-- `Pₙ(1) = 1`. -/
+theorem legendre_eval_one (n : ℕ) : (legendre n).eval 1 = 1 := by
+  have hsplit : ((X : ℝ[X]) ^ 2 - 1) ^ n = (X - C 1) ^ n * (X + C 1) ^ n := by
+    rw [← mul_pow, C_1]; ring
+  rw [legendre_eq, hsplit, iterate_derivative_mul, eval_mul, eval_C, eval_finsetSum,
+    Finset.sum_eq_single 0]
+  · rw [Nat.sub_zero, Nat.choose_zero_right, Function.iterate_zero_apply,
+      iterate_derivative_X_sub_pow_self]
+    have h0 : ((2 : ℝ) ^ n * n !) ≠ 0 := legFac_ne_zero n
+    simp only [one_smul, eval_mul, eval_natCast, eval_pow, eval_add, eval_X, eval_C, legFac]
+    rw [show ((1 : ℝ) + 1) = 2 by norm_num]
+    field_simp
+  · intro k hk hk0
+    rw [Finset.mem_range] at hk
+    rw [iterate_derivative_X_sub_pow, show n - (n - k) = k by omega]
+    simp [hk0]
+  · intro h
+    simp at h
+
+/-! ### Orthogonality -/
+
+/-- The integral of a polynomial over the interval `[-1, 1]`. -/
+private def legInt (p : ℝ[X]) : ℝ := ∫ x in (-1 : ℝ)..1, p.eval x
+
+private lemma legInt_intervalIntegrable (p : ℝ[X]) :
+    IntervalIntegrable (fun x => p.eval x) MeasureTheory.volume (-1) 1 :=
+  (p.differentiable (𝕜 := ℝ)).continuous.intervalIntegrable _ _
+
+private lemma legInt_sub (p q : ℝ[X]) : legInt (p - q) = legInt p - legInt q := by
+  simp only [legInt, eval_sub]
+  exact intervalIntegral.integral_sub (legInt_intervalIntegrable p) (legInt_intervalIntegrable q)
+
+private lemma legInt_C_mul (a : ℝ) (p : ℝ[X]) : legInt (C a * p) = a * legInt p := by
+  simp only [legInt, eval_mul, eval_C]
+  exact intervalIntegral.integral_const_mul a _
+
+private lemma legInt_mul (p q : ℝ[X]) :
+    legInt (p * q) = ∫ x in (-1 : ℝ)..1, p.eval x * q.eval x := by
+  simp only [legInt, eval_mul]
+
+private lemma legInt_one : legInt 1 = 2 := by
+  simp only [legInt, eval_one, intervalIntegral.integral_const, smul_eq_mul, mul_one]
+  norm_num
+
+private lemma legInt_derivative (p : ℝ[X]) : legInt (derivative p) = p.eval 1 - p.eval (-1) :=
+  intervalIntegral.integral_eq_sub_of_hasDerivAt (fun x _ => p.hasDerivAt x)
+    (legInt_intervalIntegrable (derivative p))
+
+private lemma legInt_derivative_quad_mul (p : ℝ[X]) :
+    legInt (derivative ((X ^ 2 - 1) * p)) = 0 := by
+  rw [legInt_derivative]
+  simp
+
+/-- The Wronskian-type identity behind orthogonality: a consequence of the two Legendre
+differential equations. -/
+private lemma derivative_wronskian (m n : ℕ) :
+    derivative ((X ^ 2 - 1 : ℝ[X]) *
+        (derivative (legendre m) * legendre n - legendre m * derivative (legendre n)))
+      = C ((m : ℝ) * ((m : ℝ) + 1) - (n : ℝ) * ((n : ℝ) + 1)) * (legendre m * legendre n) := by
+  have hC : (C ((m : ℝ) * ((m : ℝ) + 1) - (n : ℝ) * ((n : ℝ) + 1)) : ℝ[X])
+      = (m : ℝ[X]) * ((m : ℝ[X]) + 1) - (n : ℝ[X]) * ((n : ℝ[X]) + 1) := by
+    simp only [map_sub, map_mul, map_add, map_natCast, map_one]
+  rw [hC, derivative_mul, derivative_quad]
+  simp only [derivative_sub, derivative_mul]
+  linear_combination legendre n * legendre_ode m - legendre m * legendre_ode n
+
+private lemma legInt_legendre_mul_legendre_of_ne {m n : ℕ} (h : m ≠ n) :
+    legInt (legendre m * legendre n) = 0 := by
+  have key := legInt_derivative_quad_mul
+    (derivative (legendre m) * legendre n - legendre m * derivative (legendre n))
+  rw [derivative_wronskian, legInt_C_mul] at key
+  have hne : ((m : ℝ) * ((m : ℝ) + 1) - (n : ℝ) * ((n : ℝ) + 1)) ≠ 0 := by
+    intro hz
+    apply h
+    have hfac : ((m : ℝ) - (n : ℝ)) * ((m : ℝ) + (n : ℝ) + 1) = 0 := by linear_combination hz
+    rcases mul_eq_zero.mp hfac with h1 | h2
+    · exact_mod_cast sub_eq_zero.mp h1
+    · have hpos : (0 : ℝ) < (m : ℝ) + (n : ℝ) + 1 := by positivity
+      exact absurd h2 hpos.ne'
+  exact (mul_eq_zero.mp key).resolve_left hne
+
+/-- Legendre polynomials of distinct degrees are orthogonal on `[-1, 1]`. -/
+theorem integral_legendre_mul_legendre_of_ne {m n : ℕ} (h : m ≠ n) :
+    ∫ x in (-1 : ℝ)..1, (legendre m).eval x * (legendre n).eval x = 0 := by
+  rw [← legInt_mul]
+  exact legInt_legendre_mul_legendre_of_ne h
+
+/-! ### The `L²` norm -/
+
+private lemma legInt_recurrence (n j : ℕ) :
+    ((n : ℝ) + 2) * legInt (legendre (n + 2) * legendre j)
+      = (2 * (n : ℝ) + 3) * legInt (X * legendre (n + 1) * legendre j)
+        - ((n : ℝ) + 1) * legInt (legendre n * legendre j) := by
+  have hpoly : C ((n : ℝ) + 2) * (legendre (n + 2) * legendre j)
+      = C (2 * (n : ℝ) + 3) * (X * legendre (n + 1) * legendre j)
+        - C ((n : ℝ) + 1) * (legendre n * legendre j) := by
+    simp only [map_add, map_mul, map_natCast, map_ofNat, map_one]
+    linear_combination legendre j * legendre_recurrence n
+  have h := congrArg legInt hpoly
+  rwa [legInt_C_mul, legInt_sub, legInt_C_mul, legInt_C_mul] at h
+
+private lemma legInt_cross (n : ℕ) :
+    (2 * (n : ℝ) + 3) * legInt (X * legendre (n + 1) * legendre n)
+      = ((n : ℝ) + 1) * legInt (legendre n * legendre n) := by
+  have h := legInt_recurrence n n
+  rw [legInt_legendre_mul_legendre_of_ne (by omega : n + 2 ≠ n)] at h
+  linarith
+
+private lemma legInt_cross' (n : ℕ) :
+    ((n : ℝ) + 2) * legInt (legendre (n + 2) * legendre (n + 2))
+      = (2 * (n : ℝ) + 3) * legInt (X * legendre (n + 2) * legendre (n + 1)) := by
+  have h := legInt_recurrence n (n + 2)
+  rw [legInt_legendre_mul_legendre_of_ne (by omega : n ≠ n + 2)] at h
+  have hcomm : legInt (X * legendre (n + 1) * legendre (n + 2))
+      = legInt (X * legendre (n + 2) * legendre (n + 1)) := by
+    congr 1
+    ring
+  rw [hcomm] at h
+  linarith
+
+private lemma legInt_sq_step (n : ℕ) :
+    (2 * (n : ℝ) + 5) * legInt (legendre (n + 2) * legendre (n + 2))
+      = (2 * (n : ℝ) + 3) * legInt (legendre (n + 1) * legendre (n + 1)) := by
+  have h1 := legInt_cross' n
+  have h2 := legInt_cross (n + 1)
+  rw [show n + 1 + 1 = n + 2 from rfl] at h2
+  push_cast at h2
+  have hpos : (0 : ℝ) < (n : ℝ) + 2 := by positivity
+  refine mul_left_cancel₀ hpos.ne' ?_
+  linear_combination (2 * (n : ℝ) + 5) * h1 + (2 * (n : ℝ) + 3) * h2
+
+private lemma legInt_sq_aux (n : ℕ) :
+    legInt (legendre n * legendre n) = 2 / (2 * (n : ℝ) + 1) ∧
+      legInt (legendre (n + 1) * legendre (n + 1)) = 2 / (2 * (n : ℝ) + 3) := by
+  induction n with
+  | zero =>
+    refine ⟨?_, ?_⟩
+    · rw [legendre_zero, mul_one, legInt_one]
+      norm_num
+    · have h := legInt_cross 0
+      simp only [Nat.cast_zero, mul_zero, zero_add, legendre_zero, legendre_one, mul_one,
+        one_mul, legInt_one] at h
+      simp only [Nat.cast_zero, mul_zero, zero_add, legendre_one]
+      linarith
+  | succ j ih =>
+    refine ⟨?_, ?_⟩
+    · rw [ih.2]
+      push_cast
+      ring_nf
+    · have h := legInt_sq_step j
+      rw [ih.2] at h
+      rw [show j + 1 + 1 = j + 2 from rfl]
+      push_cast
+      have h3 : (2 * (j : ℝ) + 3) ≠ 0 := by positivity
+      have h5 : (2 * (j : ℝ) + 5) ≠ 0 := by positivity
+      field_simp at h ⊢
+      linarith
+
+/-- The `L²` norm of `Pₙ` on `[-1, 1]`. -/
+theorem integral_legendre_sq (n : ℕ) :
+    ∫ x in (-1 : ℝ)..1, (legendre n).eval x ^ 2 = 2 / (2 * n + 1) := by
+  have h := (legInt_sq_aux n).1
+  rw [legInt_mul] at h
+  simp only [pow_two]
+  exact h
+
+/-- Orthogonality of the Legendre polynomials on `[-1, 1]`. -/
+theorem integral_legendre_mul_legendre (m n : ℕ) :
+    ∫ x in (-1 : ℝ)..1, (legendre m).eval x * (legendre n).eval x
+      = if m = n then (2 : ℝ) / (2 * n + 1) else 0 := by
+  split_ifs with h
+  · subst h
+    rw [← integral_legendre_sq]
+    simp only [pow_two]
+  · exact integral_legendre_mul_legendre_of_ne h
+
+end Polynomial
+
+/-! ### The Legendre family as an instance of the general theory -/
+
+namespace OrthogonalPolynomial
+
+/-- The Legendre weight: Lebesgue measure on the interval `(-1, 1)`. -/
+def legendreMeasure : Measure ℝ := volume.restrict (Set.Ioo (-1 : ℝ) 1)
+
+/-- An integral against the Legendre weight is an integral over `[-1, 1]`. -/
+theorem integral_legendreMeasure (f : ℝ → ℝ) :
+    ∫ x, f x ∂legendreMeasure = ∫ x in (-1 : ℝ)..1, f x := by
+  rw [intervalIntegral.integral_of_le (by norm_num : (-1 : ℝ) ≤ 1), legendreMeasure,
+    ← MeasureTheory.integral_Ioc_eq_integral_Ioo]
+
+/-- The Legendre weight has finite moments and infinite support. -/
+theorem isWeight_legendreMeasure : IsWeight legendreMeasure := by
+  constructor
+  · intro n
+    exact (((continuous_pow n).continuousOn.integrableOn_Icc
+      (a := (-1 : ℝ)) (b := 1)).mono_set Set.Ioo_subset_Icc_self)
+  · intro s hs hzero
+    rw [legendreMeasure, Measure.restrict_apply hs.measurableSet.compl] at hzero
+    rw [show sᶜ ∩ Set.Ioo (-1 : ℝ) 1 = Set.Ioo (-1 : ℝ) 1 \ s by ext x; simp [and_comm],
+      measure_sdiff_null (hs.measure_zero volume), Real.volume_Ioo] at hzero
+    norm_num at hzero
+
+/-- The Legendre polynomials are orthogonal to every polynomial of lower degree. -/
+theorem integral_legendre_mul_of_degree_lt {n : ℕ} {p : ℝ[X]} (hp : p.degree < n) :
+    ∫ x, (legendre n).eval x * p.eval x ∂legendreMeasure = 0 := by
+  have hmem : p ∈ Polynomial.degreeLT ℝ n := Polynomial.mem_degreeLT.mpr hp
+  rw [← Polynomial.Sequence.span_degreeLT (⟨legendre, degree_legendre⟩ : Polynomial.Sequence ℝ)
+      (fun i _ => isUnit_iff_ne_zero.2 (leadingCoeff_ne_zero.2 (legendre_ne_zero i))),
+    show Set.Iio n = (↑(Finset.range n) : Set ℕ) by simp,
+    Submodule.mem_span_image_finset_iff_exists_fun'] at hmem
+  obtain ⟨c, hc⟩ := hmem
+  have hev : ∀ x : ℝ, (legendre n).eval x * p.eval x =
+      ∑ k ∈ Finset.range n, c k * ((legendre n).eval x * (legendre k).eval x) := by
+    intro x
+    rw [← hc]
+    simp only [eval_finsetSum, eval_smul, smul_eq_mul, Finset.mul_sum, mul_left_comm]
+  simp only [hev]
+  rw [integral_finsetSum _ fun k _ =>
+    ((isWeight_legendreMeasure.integrable_eval_mul _ _).const_mul _)]
+  refine Finset.sum_eq_zero fun k hk => ?_
+  rw [integral_const_mul, integral_legendreMeasure,
+    integral_legendre_mul_legendre_of_ne (Nat.ne_of_gt (Finset.mem_range.mp hk)), mul_zero]
+
+/-- The monic rescaling of `Polynomial.legendre n` is the `n`-th orthogonal polynomial of
+Lebesgue measure on `(-1, 1)`: the Legendre family is an instance of the general theory. -/
+theorem family_eq_legendre (n : ℕ) :
+    family legendreMeasure n = C ((legendre n).leadingCoeff)⁻¹ * legendre n := by
+  have hlc : (legendre n).leadingCoeff ≠ 0 := leadingCoeff_ne_zero.2 (legendre_ne_zero n)
+  have hdeg : (C ((legendre n).leadingCoeff)⁻¹ * legendre n).degree = (n : WithBot ℕ) := by
+    rw [degree_mul, degree_C (inv_ne_zero hlc), zero_add, degree_legendre]
+  have hmonic : (C ((legendre n).leadingCoeff)⁻¹ * legendre n).Monic := by
+    rw [Monic, leadingCoeff_mul, leadingCoeff_C, inv_mul_cancel₀ hlc]
+  refine sub_eq_zero.mp (eq_zero_of_degree_lt isWeight_legendreMeasure (n := n) ?_ ?_)
+  · have h := degree_sub_lt_left (p := family legendreMeasure n)
+      (q := C ((legendre n).leadingCoeff)⁻¹ * legendre n)
+      (by rw [degree_family, hdeg]) (family_ne_zero _ n)
+      (by rw [(monic_family legendreMeasure n).leadingCoeff, hmonic.leadingCoeff])
+    rwa [degree_family] at h
+  · intro k hk
+    have h1 : ∫ x, (family legendreMeasure n).eval x * (family legendreMeasure k).eval x
+        ∂legendreMeasure = 0 :=
+      integral_family_mul_family isWeight_legendreMeasure (Nat.ne_of_gt hk)
+    have h2 : ∫ x, (C ((legendre n).leadingCoeff)⁻¹ * legendre n).eval x *
+        (family legendreMeasure k).eval x ∂legendreMeasure = 0 := by
+      have hev : ∀ x : ℝ, (C ((legendre n).leadingCoeff)⁻¹ * legendre n).eval x *
+          (family legendreMeasure k).eval x =
+          ((legendre n).leadingCoeff)⁻¹ *
+            ((legendre n).eval x * (family legendreMeasure k).eval x) := by
+        intro x
+        simp only [eval_mul, eval_C]
+        ring
+      simp only [hev]
+      rw [integral_const_mul,
+        integral_legendre_mul_of_degree_lt (by rw [degree_family]; exact_mod_cast hk), mul_zero]
+    have hev : ∀ x : ℝ, (family legendreMeasure n -
+        C ((legendre n).leadingCoeff)⁻¹ * legendre n).eval x *
+          (family legendreMeasure k).eval x =
+        (family legendreMeasure n).eval x * (family legendreMeasure k).eval x -
+          (C ((legendre n).leadingCoeff)⁻¹ * legendre n).eval x *
+            (family legendreMeasure k).eval x := by
+      intro x
+      simp only [eval_sub]
+      ring
+    simp only [hev]
+    rw [integral_sub (isWeight_legendreMeasure.integrable_eval_mul _ _)
+      (isWeight_legendreMeasure.integrable_eval_mul _ _), h1, h2, sub_zero]
+
+end OrthogonalPolynomial
+
+/-! ### The Chebyshev family -/
+
+namespace Polynomial.Chebyshev
+
+open Real
+
+/-- Atkinson–Han[^atkinson-han] (3.5.8)–(3.5.9): the Chebyshev polynomials are orthogonal on
+`(-1, 1)` for the weight `(1 - x²)^{-1/2}`. -/
+theorem integral_T_mul_T_div_sqrt (m n : ℕ) :
+    ∫ x in (-1 : ℝ)..1, (T ℝ m).eval x * (T ℝ n).eval x / √(1 - x ^ 2) =
+      if m ≠ n then 0 else if n = 0 then π else π / 2 := by
+  have hmeas : ∫ x in (-1 : ℝ)..1, (T ℝ m).eval x * (T ℝ n).eval x / √(1 - x ^ 2) =
+      ∫ x, (T ℝ m).eval x * (T ℝ n).eval x ∂measureT := by
+    rw [integral_measureT]
+    simp [div_eq_mul_inv]
+  rw [hmeas]
+  rcases eq_or_ne m n with rfl | hmn
+  · rcases eq_or_ne m 0 with rfl | hm
+    · simpa using integral_eval_T_real_mul_self_measureT_zero
+    · simpa [hm] using integral_T_real_mul_self_measureT_of_ne_zero hm
+  · simpa [hmn] using integral_eval_T_real_mul_eval_T_real_measureT_of_ne hmn
+
+end Polynomial.Chebyshev
+
+end

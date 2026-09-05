@@ -125,6 +125,13 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   Write the fragment to a `.lean` file with the Write tool and have a small python script splice it
   into the target by a marker; then the Lean text is never inside a python literal.
 
+* **The orthogonal-complement postfix is ᗮ (`\u15ee`), not ᵕ (`\u1d55`).** They look alike
+  at small sizes, and a Python patch script that writes the wrong escape makes Lean report a
+  bare "expected token" pointing into the middle of a term, with no hint about the character.
+* A Python patch script that asserts before writing is worth the extra line: an `assert old in s`
+  that fires leaves the file untouched, and the whole script can be re-run after the fix. Without
+  it a partially applied multi-step patch is very hard to unwind.
+
 ## Correctness traps
 
 * **`include h` makes every later declaration in scope carry `h`.** A theorem that re-binds a
@@ -377,6 +384,18 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
 * `omega` reads `Fin.isLt` off a `Fin`-valued local only when the goal mentions that local. After
   `rintro rfl` reduces a goal to `False`, `omega` reports "no usable constraints found" even with
   `k : Fin 0` in context; write `exact absurd k.isLt (Nat.not_lt_zero _)`.
+
+* **`Lp E p volume` does not elaborate in a bare signature.** `Lp E p μ` infers the domain type from
+  `μ`, and `volume`'s own `MeasureSpace` instance is then a metavariable, so instance search gets
+  stuck on `MeasureSpace ?m`. Write `Lp ℝ 2 (volume : Measure ℝ)`. It happens to work inside a
+  binder that a later argument pins down, which makes the failure look intermittent.
+* `omit [Inst] in` must come *before* the doc comment, like `set_option … in`; after it the parser
+  reports "unexpected token 'omit'; expected 'lemma'".
+* `Integrable.sub hf hg` has type `Integrable (f - g) μ` — a `Pi.sub`, not `fun x => f x - g x`.
+  Feeding it to `rw [integral_add …]` then produces a pattern with `((fun x => …) - fun x => …) a`
+  in it, which does not match the goal. Bind each integrability fact in a `have` whose type is
+  written out with explicit lambdas; the `.sub`/`.add` proof still typechecks against it, and the
+  rewrite then matches.
 
 ## Tactics
 
@@ -1064,6 +1083,58 @@ Compact operators:
   is stated for an arbitrary character and so applies with no constant chasing; only inversion and
   Plancherel, which are stated for `𝓕` alone, need the rescaling bridge and the Jacobian
   `MeasureTheory.Measure.integral_comp_smul`.
+
+Recently added Mathlib that this project should not duplicate:
+
+* `Mathlib.Algebra.Polynomial.Sequence` has `Polynomial.Sequence R`, a sequence of polynomials with
+  `degree (S i) = i`, together with `Sequence.span_degreeLT`, `span_degreeLE`, `Sequence.basis` and
+  linear independence. It is exactly the scaffolding for "expand a polynomial of degree `< n` in a
+  degree-graded family", and saves writing that induction by hand.
+* `Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Orthogonality` now has the Chebyshev
+  orthogonality relations, against the measure `Polynomial.Chebyshev.measureT` (Lebesgue scaled by
+  `√(1 - x²)⁻¹` and restricted to `Ioc (-1) 1`), with `integral_measureT` converting to an
+  interval integral and `integral_measureT_eq_integral_cos` doing the substitution `x = cos θ`. The
+  `…/ChebyshevGauss.lean` file has the Chebyshev–Gauss quadrature identity. `backbone.md` §13.4 says
+  Mathlib has "no orthogonality relation" for `T`; that is out of date.
+* `MeasureTheory.L2.inner_indicatorConstLp_indicatorConstLp` gives
+  `⟪1_s a, 1_t b⟫ = μ.real (s ∩ t) • ⟪a, b⟫`, which is the whole of the orthonormality of a family
+  of normalised indicators of disjoint sets. `norm_indicatorConstLp` and
+  `indicatorConstLp_disjoint_union` are the other two one needs; there is no `smul` lemma, so a
+  local `c • indicatorConstLp p hs hμs a = indicatorConstLp p hs hμs (c * a)` is worth stating.
+* `indicatorConstLp p hs hμs c` depends on `s` through the two proofs, so an equality of sets cannot
+  be rewritten into it directly; a one-line `subst h; rfl` companion transports it, and proof
+  irrelevance makes the result usable against any other pair of proofs.
+* `MeasureTheory.AEEqFun.compQuasiMeasurePreserving` is the way to precompose an `Lp` element with
+  a map that is only quasi-measure-preserving (a scaling of `ℝ`, say). It is a `Quotient.liftOn'`,
+  so additivity and homogeneity of the induced map are `rintro ⟨⟨_⟩, _⟩ ⟨⟨_⟩, _⟩; rfl`, exactly as in
+  Mathlib's `Lp.compMeasurePreserving`. `eLpNorm_map_measure` plus
+  `eLpNorm_smul_measure_of_ne_top` then computes the norm; note the latter produces the exponent as
+  `(1 / p).toReal`, not `1 / p.toReal`.
+* An `L²` density argument on `ℝ` rests on two Mathlib lemmas and needs nothing else:
+  `MeasureTheory.MemLp.exists_hasCompactSupport_eLpNorm_sub_le` (continuous compactly supported
+  functions are dense) and `HasCompactSupport.uniformContinuous_of_continuous`. Define the
+  approximant through a *floor*, `x ↦ g (2 ^ (-j) * ⌊2 ^ j x⌋)`, not as an infinite sum: the error
+  bound is then pointwise, so `eLpNorm_mono` together with `eLpNorm_indicator_const_le` finishes it
+  with no summation and no rate bookkeeping. `eLpNorm_le_of_ae_bound` is the wrong tool here — it
+  needs a finite measure — while `eLpNorm_indicator_const_le` needs no measurability at all.
+* **`Submodule.iSup_induction` does not exist**; the induction principle for a supremum is there
+  for `AddSubmonoid`, `Subgroup` and `Subalgebra` only. To use a fact about every `V i` on
+  `⨆ i, V i` and its closure, go the other way: `iSup_le` into a *closed* submodule (an orthogonal
+  complement, say) and then `Submodule.topologicalClosure_minimal`.
+* `MeasureTheory.Lp.coeFn_sum` does not exist either; a `Finset.induction_on` with `Lp.coeFn_add`
+  is ten lines.
+* `Finset.sum_eq_single_of_mem` with `_` for the distinguished point leaves `AddCommMonoid ?m`
+  stuck when the summand is an indicator (higher-order unification); pass `(f := fun k => …)`.
+* `MeasureTheory.Lp.compMeasurePreserving` is only an `AddMonoidHom`, but
+  `Lp.compMeasurePreservingₗ` and `Lp.compMeasurePreservingₗᵢ` are right beside it, so
+  precomposition with a measure-preserving map (a translation of `ℝ`, say) is a linear isometry
+  off the shelf. Only the *non*-measure-preserving case (a scaling) needs the `AEEqFun` route.
+* `Submodule.orthogonal_closure : K.topologicalClosureᗮ = Kᗮ` and
+  `Submodule.inf_orthogonal : K₁ᗮ ⊓ K₂ᗮ = (K₁ ⊔ K₂)ᗮ` are what turn "orthogonal to the generators"
+  into "orthogonal to the closed span". With `Submodule.topologicalClosure_minimal` and
+  `IsClosed.completeSpace_coe` (which supplies `Submodule.HasOrthogonalProjection`), the whole
+  "a closed subspace and its orthogonal complement inside a bigger closed subspace" argument needs
+  no Hilbert basis.
 
 ## Design conventions of this library
 
