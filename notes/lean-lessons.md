@@ -75,6 +75,14 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   only as "failed to synthesize instance". Suspect the import list before the proof.
 * `Numlib.Analysis.Calculus.MeanValue` imports Mathlib's `Analysis.Calculus.MeanValue` but not
   `Analysis.Calculus.Deriv.MeanValue`, where the one-dimensional `exists_hasDerivAt_eq_slope` lives.
+* The non-BMP trap above has a second form that is easy to walk into: escaping a non-BMP character
+  in the Python source as its two UTF-16 *surrogate* code units (`\u`-escapes in the D800-DFFF
+  range) rather than as one `\U`-escape. Python accepts the literal and then raises
+  `UnicodeEncodeError: surrogates not allowed` on `write`, by which time `io.open(p, 'w')` has
+  already truncated the target. The single-escape forms are `\U0001d4d5` for `𝓕`, `\U0001d4dd` for
+  `𝓝` and `\U0001d41e` for `𝐞`. Simplest rule: **edit Lean files with the Edit tool, not with a
+  Python script**, whenever the text contains any of `𝓕 𝓝 𝕜 𝒫 𝐞`. A recent commit is what made
+  this recoverable; commit each module as it compiles.
 * Renaming a file invalidates the Read/Edit tools' file-state tracking: an edit prepared before a
   `git mv` fails with "File has not been read yet". Re-read after the move.
 * **An agent forbidden to run `lake build` can still see the style linters.**
@@ -356,6 +364,19 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   `T : C(Icc a b, ℝ) → C(Icc a b, ℝ)`, and the norms in the conclusion are then the synonym's.
   Beta-redexes left by such an application (`(fun l => ‖u l - v l‖) 0 = 0`) defeat `rw`; pass the
   higher-order argument explicitly (`(a := fun l => ‖u l - v l‖)`) and discharge with `simp`.
+* **`MeasureTheory.Integrable` is a `def` for a conjunction**, so dot notation on it resolves
+  through the unfolded head exactly as `ConvexOn` does: `hf.bdd_mul …` can fail with "the
+  environment does not contain `And.bdd_mul`" whenever the elaborator has to unfold `hf`'s type
+  (typically because the measure is still a metavariable). Write `Integrable.bdd_mul hf …`. Also
+  `Integrable.bdd_mul` is `fun x => f x * g x` with `g` the *integrable* factor and `f` the
+  bounded one, and `Integrable.mul_bdd` is the other order.
+* `⟪x, y⟫_ℝ` is a *local* notation inside `Mathlib/Analysis/InnerProductSpace/Basic.lean` and is
+  not available downstream: outside it, `open scoped RealInnerProductSpace` and write `⟪x, y⟫`.
+  Getting this wrong gives "unexpected identifier" pointing at the subscript, after which the
+  parser silently truncates the rest of the term.
+* `omega` reads `Fin.isLt` off a `Fin`-valued local only when the goal mentions that local. After
+  `rintro rfl` reduces a goal to `False`, `omega` reports "no usable constraints found" even with
+  `k : Fin 0` in context; write `exact absurd k.isLt (Nat.not_lt_zero _)`.
 
 ## Tactics
 
@@ -536,6 +557,16 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   `rw [← Fintype.sum_prod_type]` on a double sum whose body is not literally `f (a, b)` fails the
   higher-order match. State the product form as the right-hand side of a `have` and rewrite
   forward, closing the residue with two `Finset.sum_congr`s.
+* **`intervalIntegral.integral_add` and `integral_finset_sum` will not match an integrand that
+  contains a `Finset.sum`**: the higher-order pattern `?f x + (∑ i ∈ ?s, ?g i) x` is not what the
+  goal looks like, and `rw` fails with a `Continuous ?m` side goal that `fun_prop` then cannot
+  prove. Induct on the summation bound instead. In `Numlib/Analysis/Fourier/Dirichlet.lean` that
+  turned three long integral computations (the mean of the Dirichlet kernel, the closed form, the
+  kernel representation of the partial sums) into three two-line inductions on `n`, each using
+  only the `dirichletKernel_succ` recurrence.
+* An `intervalIntegral.integral_congr` or `integral_congr_ae` goal produced by `refine … fun x =>
+  ?_` arrives as `(fun x => …) x = (fun x => …) x`; `rw` then fails to find any pattern. Open
+  such a goal with `dsimp only`.
 
 ## Mathlib names and API
 
@@ -1008,6 +1039,31 @@ Compact operators:
   so `….1 h` fails and `(… G).1 h` is wanted.
 * Mathlib's `SimpleGraph.lapMatrix_mulVec_const_eq_zero` resisted `(R := ℝ)`; the fact is two
   lines from `lapMatrix_mulVec_apply` and `card_neighborFinset_eq_degree` if it does.
+* The `if_pos`/`if_neg` note above is out of date for this toolchain: the deprecation now points
+  at `ite_eq_left` and `ite_eq_right`, and those *are* live and take the hypothesis directly, so
+  `if_pos h ↦ ite_eq_left h` and `if_neg h ↦ ite_eq_right h` is a mechanical substitution.
+* **Mathlib's Fourier transform was refactored and almost every name in older plans is stale.**
+  `Real.fourierIntegral` no longer exists: `𝓕` and `𝓕⁻` are notation for the classes
+  `FourierTransform`/`FourierTransformInv` (`open scoped FourierTransform`), supplied for
+  `V → E` by `Real.instFourierTransform` when `V` is a finite-dimensional real inner product space
+  with `MeasurableSpace` and `BorelSpace`. The unfolding lemmas are `Real.fourier_eq`
+  (`𝓕 f w = ∫ v, 𝐞 (-⟪v, w⟫) • f v`) and `Real.fourierInv_eq`. Renamed or gone:
+  `Real.fourierIntegralInv` → `𝓕⁻`; `VectorFourier.fourierIntegral_smul` →
+  `fourierIntegral_const_smul`; `Real.fourierIntegral_deriv` → `Real.fourier_deriv`;
+  `Real.deriv_fourierIntegral` → `Real.deriv_fourier`; `SchwartzMap.fourierTransformCLE` →
+  `SchwartzMap.fourierTransformCLM 𝕜` (the equivalence is `FourierTransform.fourierCLE ℂ 𝓢(V, E)`);
+  `Real.fourier_inversion` → `MeasureTheory.Integrable.fourierInv_fourier_eq` and
+  `Continuous.fourierInv_fourier_eq`; `bilinFormOfRealInner` → `innerₗ V` (`innerSL ℝ` for the
+  continuous one). Still under the names the plans use: `MeasureTheory.Lp.fourierTransformₗᵢ`,
+  `Lp.norm_fourier_eq`, `SchwartzMap.toLp_fourier_eq`, `TemperedDistribution.fourier_apply`,
+  `MeasureTheory.Lp.toTemperedDistributionCLM`, `ZMod.dft` with `ZMod.dft_dft`.
+* For a book using the `e^{-i x·ξ}` convention rather than Mathlib's `e^{-2πi x·ξ}`, the transform
+  is *exactly* `VectorFourier.fourierIntegral Real.probChar volume (innerₗ V)` — `Real.probChar`
+  is the probabilist character `t ↦ exp (i t)`, and `VectorFourier.fourierIntegral_probChar`
+  unfolds it. Every `VectorFourier` lemma (the `L¹` bound, continuity, the multiplication formula)
+  is stated for an arbitrary character and so applies with no constant chasing; only inversion and
+  Plancherel, which are stated for `𝓕` alone, need the rescaling bridge and the Jacobian
+  `MeasureTheory.Measure.integral_comp_smul`.
 
 ## Design conventions of this library
 

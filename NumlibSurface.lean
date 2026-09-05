@@ -13,6 +13,7 @@ import NumlibSurface.AtkinsonHan.Chapter03.Section03
 import NumlibSurface.AtkinsonHan.Chapter03.Section04
 import NumlibSurface.AtkinsonHan.Chapter03.Section06
 import NumlibSurface.AtkinsonHan.Chapter03.Section07
+import NumlibSurface.AtkinsonHan.Chapter04.Section02
 import NumlibSurface.AtkinsonHan.Chapter05.Section01
 import NumlibSurface.AtkinsonHan.Chapter05.Section02
 import NumlibSurface.AtkinsonHan.Chapter05.Section03

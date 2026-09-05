@@ -1,57 +1,22 @@
 namespace = "Matrix"
-desc = '''
-The discrete Fourier transform in matrix form and the radix-2 identity behind the fast Fourier
-transform (upstreaming candidate, natural home: `Mathlib.Analysis.Fourier.ZMod`). Mathlib has
-`ZMod.dft` with the inversion theorem `ZMod.dft_dft`, but no `Matrix (Fin n) (Fin n) ℂ` form and
-no fast-transform identity, and it is the matrix `F_n` that Atkinson–Han, *Theoretical Numerical
-Analysis*, §4.3 states its results about.
-
-Take the inversion theorem from Mathlib rather than redoing the Gauss-sum computation: prove
-`dft_eq_zmodDft` first, transporting along the equivalence `Fin n ≃ ZMod n`, and read
-`conjTranspose_dft_mul_dft` off `ZMod.dft_dft`. The radix-2 identity is then an elementary
-splitting of the sum on the parity of the index, and it is the only theorem here that Mathlib does
-not already contain in some form.
-
-An implementation of the fast Fourier transform and its operation count are algorithmic and are
-not planned: the theorem content of §4.3 is exactly `conjTranspose_dft_mul_dft` and
-`dft_radix_two`.
-'''
 
 [[node]]
 id = "dft"
-kind = "definition"
-desc = '''`Matrix.dft n : Matrix (Fin n) (Fin n) ℂ`, `dft n j k = ω ^ (j * k)` with `ω = exp (2 π i / n)`
-(Atkinson–Han §4.3): the matrix `F_n`. The discrete Fourier transform of `y` is `(dft n)ᴴ *ᵥ y`
-(Atkinson–Han (4.3.1)); `dft_apply` and `dft_transpose` (the matrix is symmetric) come with it.'''
-source = "Atkinson–Han, Theoretical Numerical Analysis, Section 4.3"
 
 [[node]]
 id = "dft_eq_zmodDft"
-kind = "theorem"
-desc = '''The bridge to Mathlib: for `n ≠ 0`, `((dft n)ᴴ *ᵥ y) k` agrees with `ZMod.dft` of the
-corresponding function `ZMod n → ℂ` under `Fin n ≃ ZMod n`, so that every `ZMod.dft` lemma applies
-to the matrix form.'''
-deps = ["dft"]
-source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 4.3.1"
 
 [[node]]
 id = "conjTranspose_dft_mul_dft"
-kind = "theorem"
-desc = '''Atkinson–Han Thm 4.3.2: `(dft n)ᴴ * dft n = (n : ℂ) • 1`, hence `(dft n)ᴴ` is invertible with
-inverse `(n : ℂ)⁻¹ • dft n` and the inverse transform is `y j = (1/n) * ∑ k, ω ^ (j * k) * ŷ k`
-(Atkinson–Han (4.3.3)–(4.3.4)). The underlying summation formula (Atkinson–Han (4.3.5)) is the
-geometric sum of a root of unity; through `dft_eq_zmodDft` it is `ZMod.dft_dft`.'''
-deps = ["dft", "dft_eq_zmodDft"]
-source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 4.3.2"
+
+[[node]]
+id = "inv_conjTranspose_dft"
+
+[[node]]
+id = "dft_mulVec_conjTranspose_dft_mulVec"
 
 [[node]]
 id = "dft_radix_two"
-kind = "theorem"
-desc = '''The radix-2 (Cooley–Tukey) identity, Atkinson–Han (4.3.8)–(4.3.9): for `y : Fin (2 * n) → ℂ` and
-`k < n`, the length-`2n` transform satisfies `ŷ k = E k + ω⁻ᵏ * O k` and
-`ŷ (k + n) = E k - ω⁻ᵏ * O k`, where `E` and `O` are the length-`n` transforms of the even- and
-odd-indexed subsequences and `ω = exp (2 π i / (2 n))`. Split the sum on parity and use
-`ω ^ 2 = exp (2 π i / n)` and `ω ^ (-(k + n)) = -ω ^ (-k)`. This is the correctness statement of
-the fast Fourier transform; the recursion itself and its cost are not planned.'''
-deps = ["dft", "conjTranspose_dft_mul_dft"]
-source = "Atkinson–Han, Theoretical Numerical Analysis, (4.3.8)–(4.3.9)"
+
+[[node]]
+id = "dft_radix_two_add"

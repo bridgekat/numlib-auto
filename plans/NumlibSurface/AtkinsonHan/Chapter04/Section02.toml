@@ -1,93 +1,43 @@
 namespace = "AtkinsonHan.Ch04"
-desc = '''
-Atkinson-Han §4.2: the Fourier transform on `L¹(ℝ^d)`, the Schwartz space, tempered distributions,
-the extension of the transform to `𝓢'`, the inversion formula and Plancherel's theorem.
 
-Almost all of this is Mathlib, and the section is mostly a matter of normalisation. The book's
-transform is `𝓕_book f ξ = (2π)^{-d/2} ∫ f x e^{-i x·ξ} dx`; Mathlib's `𝓕` is
-`Real.fourierIntegral`/`VectorFourier.fourierIntegral` with the character `e^{-2πi x·ξ}` and no
-prefactor. The two are related by `𝓕_book f ξ = (2π)^{-d/2} • 𝓕 f (ξ/(2π))`, and that single
-lemma — `bookFourier_eq_fourierIntegral` — carries every Mathlib result across. Defining
-`bookFourier` and proving that lemma is the only real work in the section.
-
-Definitions 4.2.1, 4.2.2 and 4.2.3 are Mathlib's `SchwartzMap` (`𝓢(E, F)`), `TemperedDistribution`
-(`𝓢'(E, F)`) and `TemperedDistribution.fourier`, so they are stated as identifications rather than
-as new definitions.
-
-Not planned: the `Lᵖ` extension of the transform for `p ∉ {1, 2}` (the book only remarks that
-Definition 4.2.3 covers it); the Riemann-Lebesgue decay `f̂ (ξ) → 0` in `d` dimensions, since
-Mathlib's `Real.tendsto_integral_exp_smul_cocompact` gives it directly and it is stated as
-`riemann_lebesgue` rather than as a separate node.
-'''
+[[node]]
+id = "bookConst"
 
 [[node]]
 id = "bookFourier"
-kind = "definition"
-desc = '''The book's Fourier transform (4.2.1)/(4.2.3),
-`bookFourier f ξ = (2π)^{-d/2} ∫ f x * exp (-i ⟪x, ξ⟫) dx` on `EuclideanSpace ℝ (Fin d)`, together
-with `bookFourier_eq_fourierIntegral : bookFourier f ξ = (2π)^{-d/2} • 𝓕 f ((2π)⁻¹ • ξ)`, the
-bridge to Mathlib's normalisation, and the same for the inverse transform. Every other node of this
-section goes through this lemma.'''
+
+[[node]]
+id = "bookFourier_eq_fourier"
+
+[[node]]
+id = "bookFourierInv"
+
+[[node]]
+id = "equation_4_2_5"
 
 [[node]]
 id = "equation_4_2_6"
-kind = "theorem"
-desc = '''(4.2.5)-(4.2.6): the transform is linear and `‖f̂‖_{L^∞} ≤ (2π)^{-d/2} ‖f‖_{L¹}`, and `f̂` is
-continuous and tends to `0` at infinity (Riemann-Lebesgue). Mathlib's
-`VectorFourier.fourierIntegral_add`, `VectorFourier.norm_fourierIntegral_le_integral_norm`,
-`VectorFourier.fourierIntegral_continuous` and `Real.tendsto_integral_exp_smul_cocompact`.'''
-deps = ["bookFourier"]
 
 [[node]]
 id = "equation_4_2_8"
-kind = "theorem"
-desc = '''(4.2.7)-(4.2.8), the derivative rules on the Schwartz space: `𝓕(∂^α f) (ξ) = (i ξ)^α 𝓕 f (ξ)` and
-`𝓕(x^α f) = i^{|α|} ∂^α 𝓕 f`. Mathlib's `Real.fourierIntegral_deriv`,
-`Real.deriv_fourierIntegral` and their `iteratedFDeriv` forms in
-`Mathlib.Analysis.Fourier.FourierTransformDeriv`, with the normalisation constants supplied by
-`bookFourier_eq_fourierIntegral`.'''
-deps = ["bookFourier"]
 
 [[node]]
 id = "definition_4_2_1"
-kind = "theorem"
-desc = '''Definition 4.2.1 and (4.2.9): the Schwartz space `𝓢(ℝ^d)` of rapidly decreasing smooth functions
-and the continuity of the Fourier transform on it. Mathlib's `SchwartzMap` and
-`SchwartzMap.fourierTransformCLE`, a continuous linear *equivalence* of `𝓢(E, F)`; the node
-identifies the book's convergence in `𝓢` with Mathlib's topology and states (4.2.9).'''
-deps = ["bookFourier"]
+
+[[node]]
+id = "bookFourierCLM"
 
 [[node]]
 id = "equation_4_2_10"
-kind = "theorem"
-desc = '''(4.2.10), the multiplication formula: `∫ f ĝ = ∫ f̂ g` for `f, g ∈ 𝓢(ℝ^d)`. Mathlib's
-`VectorFourier.integral_fourierIntegral_smul_eq_flip` (Fubini on `f (x) g (y) e^{-i x·y}`); it is
-what makes Definition 4.2.3 consistent with (4.2.3) on `L¹`.'''
-deps = ["bookFourier", "definition_4_2_1"]
 
 [[node]]
 id = "equation_4_2_11"
-kind = "theorem"
-desc = '''(4.2.4) and (4.2.11), the inversion formula: `f (x) = (2π)^{-d/2} ∫ f̂ (ξ) e^{i x·ξ} dξ` for
-`f ∈ 𝓢(ℝ^d)`, and a.e. for `f ∈ L¹` with `f̂ ∈ L¹`. Mathlib's
-`MeasureTheory.Integrable.fourierInv_fourier_eq` and `Continuous.fourierInv_fourier_eq`.'''
-deps = ["bookFourier"]
 
 [[node]]
 id = "definition_4_2_3"
-kind = "theorem"
-desc = '''Definitions 4.2.2 and 4.2.3: the tempered distributions `𝓢'(ℝ^d)` as the continuous functionals on
-`𝓢(ℝ^d)`, the embedding of `Lᵖ` into `𝓢'`, and the Fourier transform on `𝓢'` defined by
-`⟨f̂, φ⟩ = ⟨f, φ̂⟩` (4.2.13), agreeing with (4.2.3) on `L¹`. Mathlib's `TemperedDistribution`,
-`MeasureTheory.Lp.toTemperedDistributionCLM`, `TemperedDistribution.fourier` with
-`fourier_apply` and `fourier_toTemperedDistributionCLM_eq`.'''
-deps = ["definition_4_2_1", "bookFourier"]
+
+[[node]]
+id = "bookFourierTD"
 
 [[node]]
 id = "theorem_4_2_4"
-kind = "theorem"
-desc = '''Theorem 4.2.4 with (4.2.14)-(4.2.18): the Fourier transform maps `L²(ℝ^d)` onto `L²(ℝ^d)` and is an
-isometry (Plancherel). Mathlib's `MeasureTheory.Lp.fourierTransformₗᵢ`, a linear isometry
-*equivalence* of `Lp F 2`, with `Lp.norm_fourier_eq` and `Lp.inner_fourier_eq`; (4.2.14), the
-truncated-integral formula for `f̂` on `L²`, is `SchwartzMap.toLp_fourier_eq` plus density.'''
-deps = ["definition_4_2_3", "bookFourier"]

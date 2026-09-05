@@ -3,6 +3,9 @@ import Numlib.Analysis.Convex.Gateaux
 import Numlib.Analysis.Convex.SaddlePoint
 import Numlib.Analysis.Convex.StrictConvexSpace
 import Numlib.Analysis.Convex.Uniform
+import Numlib.Analysis.Fourier.DFT
+import Numlib.Analysis.Fourier.Dirichlet
+import Numlib.Analysis.Fourier.TrigonometricBasis
 import Numlib.Analysis.InnerProductSpace.Coercive
 import Numlib.Analysis.InnerProductSpace.Energy
 import Numlib.Analysis.InnerProductSpace.GramSchmidt
