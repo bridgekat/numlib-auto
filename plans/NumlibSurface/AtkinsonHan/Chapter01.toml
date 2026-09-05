@@ -1,0 +1,20 @@
+desc = '''
+Atkinson-Han, Chapter 1: linear spaces (§1.1-1.6).
+
+The chapter is the book's review of functional analysis, and Mathlib has essentially all of it. The
+surface therefore states the chapter's numbered *results* — its theorems, propositions, lemmas and
+corollaries — and proves each from Mathlib in a line or two; it does not restate the chapter's
+definitions, because a surface `def IsNorm` or `def IsCauchy` would carry no information and would
+invite a future agent to use it in place of `NormedAddCommGroup` or `CauchySeq`. The one place
+where the book's vocabulary earns a definition is §1.3.2's real trigonometric system, and that is
+backbone (`Numlib/Analysis/Fourier/TrigonometricBasis`), not surface.
+
+Most nodes here specialize Mathlib rather than `Numlib`, which for this chapter is the right
+answer: the chapter contains no numerical analysis. The exception is Theorem 1.3.13, the only
+result of the chapter that Mathlib does not have in the book's form, and it is the backbone node
+`trigBasis`.
+
+§1.4 (spaces of continuously differentiable functions and Hölder spaces) has no numbered result and
+so has no group; the Hölder classes it defines are used only by §3.7, which reaches them through
+Mathlib's `HolderWith` and `HolderOnWith`.
+'''

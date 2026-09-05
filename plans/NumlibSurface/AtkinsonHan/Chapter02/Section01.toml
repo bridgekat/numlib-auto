@@ -1,0 +1,25 @@
+namespace = "AtkinsonHan.Ch02"
+desc = '''
+Atkinson-Han §2.1: operators, their domain, range and null set, injectivity and surjectivity,
+continuity and boundedness.
+
+Definition 2.1.1 is `Function.Injective`, `Function.Surjective` and `Function.Bijective`; the
+domain, range and null set of an operator are `Set.univ`, `Set.range` and `f ⁻¹' {0}`, or for a
+linear map `LinearMap.range` and `LinearMap.ker`. The section's only content that needs a name is
+the book's *boundedness* of an operator (Definition 2.1.6), which is not "the operator norm is
+finite" but "bounded sets have bounded images" — the distinction matters, because for a nonlinear
+operator the two differ, and the whole point of Theorem 2.2.4 is that for a linear operator they
+agree.
+
+Examples 2.1.2-2.1.5 and 2.1.7 concern the differentiation operator on `C¹[0,1]`; that space is
+not in Mathlib as a normed space, and the examples carry no theorem the rest of the book uses, so
+they are not planned.
+'''
+
+[[node]]
+id = "IsBoundedOperator"
+kind = "definition"
+desc = '''Definition 2.1.6, the book's boundedness of an operator `T : V → W` between normed spaces:
+`∀ r > 0, ∃ R, ∀ v, ‖v‖ ≤ r → ‖T v‖ ≤ R`, equivalently `∀ B, IsBounded B → IsBounded (T '' B)`.
+With `isBoundedOperator_iff_image_bounded` (the two readings the book gives) and, for a linear `T`,
+`isBoundedOperator_iff_exists_bound`, which is Proposition 2.2.3.'''

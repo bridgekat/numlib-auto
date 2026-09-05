@@ -1,0 +1,69 @@
+namespace = "AtkinsonHan.Ch02"
+desc = '''
+Atkinson-Han §2.6: adjoint operators between Hilbert spaces, self-adjoint operators, and the
+characterisation `‖L‖ = sup_{‖v‖ = 1} |(L v, v)|` of the norm of a self-adjoint operator.
+
+The book restricts §2.6 to real scalars; the surface states everything over `RCLike 𝕜` because
+Mathlib's `ContinuousLinearMap.adjoint` is, and the real case is the instantiation. The book's
+`(L v, w)` is Mathlib's `inner 𝕜 w (L v)`, so the defining relation (2.6.1) is
+`ContinuousLinearMap.adjoint_inner_left`/`_right` with the arguments swapped.
+
+Theorem 2.6.5 is the only result of the section that is not a Mathlib one-liner about `adjoint`,
+and Mathlib has it too: `ContinuousLinearMap.norm_eq_iSup_rayleighQuotient`, which states
+`‖T‖ = ⨆ x, |T.rayleighQuotient x|` with `rayleighQuotient x = re ⟪T x, x⟫ / ‖x‖²`, so the surface
+form is the supremum over the unit sphere.
+'''
+
+[[node]]
+id = "equation_2_6_1"
+kind = "theorem"
+desc = '''(2.6.1) and the existence and uniqueness of the adjoint: for Hilbert `V`, `W` and `L ∈ 𝓛(V, W)`
+there is a unique `L* ∈ 𝓛(W, V)` with `(L v, w)_W = (v, L* w)_V` for all `v, w`. Mathlib's
+`ContinuousLinearMap.adjoint`, `adjoint_inner_left`, `adjoint_inner_right` and
+`eq_adjoint_iff`; the book's derivation from the Riesz representation theorem (its Thm 2.5.5,
+`theorem_2_5_5` of §2.5) is Mathlib's construction.'''
+
+[[node]]
+id = "equation_2_6_3"
+kind = "theorem"
+desc = '''(2.6.3) and Exercise 2.6.1, the algebra of adjoints: `(L*)* = L`, `(α₁ L₁ + α₂ L₂)* = conj α₁ L₁* + conj α₂ L₂*`
+and `(L₁ L₂)* = L₂* L₁*`. Mathlib's `ContinuousLinearMap.adjoint_adjoint`, `adjoint_add`,
+`adjoint_smul`, `adjoint_comp`.'''
+deps = ["equation_2_6_1"]
+
+[[node]]
+id = "equation_2_6_4"
+kind = "theorem"
+desc = '''(2.6.2) and (2.6.4): `‖L*‖ ≤ ‖L‖` and hence, using `(L*)* = L`, `‖L*‖ = ‖L‖`. Mathlib's
+`ContinuousLinearMap.adjoint_norm` (`norm_adjoint`).'''
+deps = ["equation_2_6_3"]
+
+[[node]]
+id = "proposition_2_6_2"
+kind = "theorem"
+desc = '''Proposition 2.6.2: a real linear combination of self-adjoint operators is self-adjoint. Mathlib's
+`IsSelfAdjoint.add` and `IsSelfAdjoint.smul` for a real scalar (`isSelfAdjoint_smul_of_...`).'''
+deps = ["equation_2_6_3"]
+
+[[node]]
+id = "proposition_2_6_3"
+kind = "theorem"
+desc = '''Proposition 2.6.3: for self-adjoint `L₁`, `L₂`, the product `L₁ L₂` is self-adjoint if and only if
+`L₁ L₂ = L₂ L₁`; because `(L₁ L₂)* = L₂ L₁`.'''
+deps = ["equation_2_6_3"]
+
+[[node]]
+id = "corollary_2_6_4"
+kind = "theorem"
+desc = '''Corollary 2.6.4: powers of a self-adjoint operator are self-adjoint, and so is `p(L)` for a real
+polynomial `p`. `IsSelfAdjoint.pow` and `Polynomial.aeval` over `ℝ`.'''
+deps = ["proposition_2_6_3"]
+
+[[node]]
+id = "theorem_2_6_5"
+kind = "theorem"
+desc = '''Theorem 2.6.5 with (2.6.5): for a self-adjoint `L ∈ 𝓛(V)`, `‖L‖ = sup_{‖v‖ = 1} |(L v, v)|`.
+Mathlib's `ContinuousLinearMap.norm_eq_iSup_rayleighQuotient`, restated over the unit sphere with
+`ContinuousLinearMap.iSup_rayleigh_eq_iSup_rayleigh_sphere`. Exercise 2.6.3, the bound
+`|(L u, v)| ≤ ‖|L|‖ ‖u‖ ‖v‖` for the same quantity attached to a general `L`, is the polarisation
+step inside that proof and is stated as `exercise_2_6_3`.'''

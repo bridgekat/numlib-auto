@@ -1,0 +1,41 @@
+namespace = "AtkinsonHan.Ch04"
+desc = '''
+Atkinson-Han §4.3: the discrete Fourier transform, its inverse, and the identities behind the fast
+Fourier transform.
+
+The book's `F_n` and its transform `ŷ = conj(F_n) y` are the backbone `Matrix.dft`
+(`Numlib/Analysis/Fourier/DFT`), which is Mathlib's `ZMod.dft` in matrix form. The section is
+short and fully covered.
+
+Not planned: the FFT algorithm itself and its `O(n log n)` operation count. There is no theorem
+there — the book's §4.3 derivation is (4.3.8)-(4.3.9) plus a cost recursion — and a recursive
+implementation with a complexity bound is out of scope for this project by the same rule that
+excludes storage formats and parallelisation.
+'''
+
+[[node]]
+id = "definition_4_3_1"
+kind = "theorem"
+desc = '''Definition 4.3.1 with (4.3.1)-(4.3.2) and the matrix form: `ŷ_k = ∑_j ω_n^{-kj} y_j` with
+`ω_n = e^{2πi/n}`, that is `ŷ = conj(F_n) y` for the matrix `F_n` with entries `ω_n^{jk}`. A
+surface abbreviation for the book's `F_n` identified with the backbone `Matrix.dft`, and the
+transform identified with `(Matrix.dft n)ᴴ *ᵥ ·`.'''
+deps = ["Matrix.dft"]
+
+[[node]]
+id = "theorem_4_3_2"
+kind = "theorem"
+desc = '''Theorem 4.3.2 with (4.3.3)-(4.3.5): `conj(F_n)⁻¹ = F_n/n`, hence the inversion formula
+`y_j = n⁻¹ ∑_k ω_n^{jk} ŷ_k`, from the summation formula (4.3.5)
+`∑_k ω_n^{kl} ω_n^{-kj} = n [j = l]`. The backbone `Matrix.conjTranspose_dft_mul_dft`; Exercise
+4.3.1 is the summation formula.'''
+deps = ["Matrix.conjTranspose_dft_mul_dft", "definition_4_3_1"]
+
+[[node]]
+id = "equation_4_3_9"
+kind = "theorem"
+desc = '''(4.3.6)-(4.3.9), the radix-2 splitting on which the fast Fourier transform is built: for
+`y` of length `2n`, `ŷ_k = E_k + ω_{2n}^{-k} O_k` and `ŷ_{k+n} = E_k - ω_{2n}^{-k} O_k` for
+`k < n`, with `E` and `O` the length-`n` transforms of the even- and odd-indexed subsequences. The
+backbone `Matrix.dft_radix_two`.'''
+deps = ["Matrix.dft_radix_two", "definition_4_3_1"]

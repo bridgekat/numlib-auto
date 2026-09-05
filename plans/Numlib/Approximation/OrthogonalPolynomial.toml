@@ -1,0 +1,102 @@
+namespace = "OrthogonalPolynomial"
+desc = '''
+Orthogonal polynomials of a weight on an interval: the family produced by Gram–Schmidt from the
+monomials in `L²(μ)`, its three-term recurrence, the truncated expansion as a best `L²(μ)`
+approximation, and the Legendre and Chebyshev families. Atkinson–Han, *Theoretical Numerical
+Analysis*, §3.5 and (3.7.13)–(3.7.17); Kress, *Numerical Analysis*, §9.3. Mathlib has
+`Polynomial.Chebyshev.T` with its recurrence and its values at `cos θ`, but no orthogonality
+relation for it, no Legendre polynomials (`Polynomial.ShiftedLegendre` is a number-theoretic
+object with a different normalisation and no orthogonality), and no general theory.
+
+Two neighbouring modules must not be duplicated. `Numlib/Krylov/OrthogonalPolynomials` owns the
+Lanczos polynomials of the form `⟪p(A) v, q(A) v⟫` and the *purely algebraic* Christoffel–Darboux
+identity `Polynomial.christoffel_darboux`, which is stated there for any three-term recurrence and
+is reused here rather than restated. `Numlib/Approximation/Chebyshev` owns the min–max and
+equioscillation properties of Chebyshev polynomials, which are about the sup norm, not this inner
+product. What is new here is the family attached to a *measure*, which is what
+`Quadrature.exists_gauss` of `Numlib/Approximation/Quadrature` needs and currently has no source
+for.
+
+The hypothesis throughout is a finite measure `μ` on `ℝ` with all moments finite and infinite
+support, so that the monomials are linearly independent in `L²(μ)` and Gram–Schmidt does not stall.
+Lowest priority of the modules in this slice: Atkinson–Han §3.5 states no numbered result, and the
+whole section is background for §3.7 and for Gauss quadrature.
+'''
+
+[[node]]
+id = "family"
+kind = "definition"
+desc = '''`OrthogonalPolynomial.family μ n : Polynomial ℝ`, the monic orthogonal polynomial of degree `n` for
+a finite measure `μ` on `ℝ` with finite moments and infinite support: Gram–Schmidt applied to the
+monomials in `L²(μ)`, then rescaled to be monic. With `degree_family`, `monic_family` and
+`family_mem_span_monomials`.'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, Section 3.5"
+
+[[node]]
+id = "integral_family_mul_family"
+kind = "theorem"
+desc = '''Orthogonality: `∫ x, (family μ m).eval x * (family μ n).eval x ∂μ = 0` for `m ≠ n`, and more
+usefully `∫ x, (family μ n).eval x * q.eval x ∂μ = 0` for every `q` of degree `< n`
+(`integral_family_mul_of_degree_lt`), which is the form the Gauss-quadrature and
+best-approximation proofs use.'''
+deps = ["family"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Section 3.5"
+
+[[node]]
+id = "three_term_recurrence"
+kind = "theorem"
+desc = '''The three-term recurrence `family μ (n+1) = (X - a n) * family μ n - b n * family μ (n-1)` with
+`a n = ∫ x p_n² / ∫ p_n²` and `b n = ∫ p_n² / ∫ p_{n-1}²`: expand `X * family μ n` in the family
+and note that orthogonality kills every coefficient below `n - 1`. This is the hypothesis of
+`Polynomial.christoffel_darboux` in `Numlib/Krylov/OrthogonalPolynomials`, which then gives
+Atkinson–Han Thm 3.7.3 for these families.'''
+deps = ["family", "integral_family_mul_family"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Exercises 3.5.5–3.5.6, Theorem 3.7.3"
+
+[[node]]
+id = "isBestApprox_truncation"
+kind = "theorem"
+desc = '''Atkinson–Han (3.5.2): the truncated expansion `P_N u = ∑_{n ≤ N} ξ_n p_n` with
+`ξ_n = ⟪u, p_n⟫_μ / ‖p_n‖²_μ` is the best `L²(μ)` approximation of `u` from the polynomials of
+degree `≤ N`, i.e. the orthogonal projection onto that subspace; `isBestApprox_starProjection` of
+`Numlib/Approximation/BestApprox` with the orthogonal family as a basis.'''
+deps = ["family", "integral_family_mul_family", "isBestApprox_starProjection", "IsBestApprox"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, (3.5.2)"
+
+[[node]]
+id = "_root_.Polynomial.legendre"
+kind = "definition"
+desc = '''The Legendre polynomials, Atkinson–Han (3.5.4): `Polynomial.legendre n = (1/(2^n n!)) * d^n/dx^n (X^2 - 1)^n`,
+with `Polynomial.legendre_zero`, `legendre_one`, `Polynomial.degree_legendre`, and
+`Polynomial.legendre_eval_one = 1`.'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, (3.5.4)"
+
+[[node]]
+id = "_root_.Polynomial.integral_legendre_mul_legendre"
+kind = "theorem"
+desc = '''Atkinson–Han (3.5.5): `∫ x in (-1)..1, (legendre m).eval x * (legendre n).eval x = if m = n then 2/(2n+1) else 0`,
+by `n`-fold integration by parts on the Rodrigues formula. With `family_eq_legendre` — that the
+monic rescaling of `legendre` is `family volume.restrict (Ioo (-1) 1)` — it makes the Legendre
+family an instance of the general theory.'''
+deps = ["_root_.Polynomial.legendre", "family", "integral_family_mul_family"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, (3.5.5)"
+
+[[node]]
+id = "_root_.Polynomial.legendre_recurrence"
+kind = "theorem"
+desc = '''Atkinson–Han (3.5.6): `(n+1) * legendre (n+1) = (2n+1) * X * legendre n - n * legendre (n-1)`, and
+the Legendre differential equation `((1 - X^2) * (legendre n)')' + n (n+1) * legendre n = 0`.
+Either from `three_term_recurrence` and the explicit norms, or directly from the Rodrigues
+formula.'''
+deps = ["_root_.Polynomial.legendre", "three_term_recurrence"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, (3.5.6)"
+
+[[node]]
+id = "_root_.Polynomial.Chebyshev.integral_T_mul_T_div_sqrt"
+kind = "theorem"
+desc = '''Atkinson–Han (3.5.8)–(3.5.9): the Chebyshev polynomials are orthogonal for the weight
+`(1 - x²)^{-1/2}`, `∫ x in (-1)..1, T m x * T n x / sqrt (1 - x^2) = if m ≠ n then 0 else if n = 0 then π else π/2`;
+substitute `x = cos θ` (`Polynomial.Chebyshev.T_real_cos`) and integrate `cos (mθ) cos (nθ)`. With
+it, the monic rescaling of `T` is the `family` of the Chebyshev measure.'''
+deps = ["family", "integral_family_mul_family"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, (3.5.8)–(3.5.9)"

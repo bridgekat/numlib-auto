@@ -1,0 +1,76 @@
+namespace = "AtkinsonHan.Ch04"
+desc = '''
+Atkinson-Han §4.1: the Fourier series of an `L¹(-π, π)` function in its real (4.1.1)-(4.1.3) and
+complex (4.1.4)-(4.1.5) forms, sine and cosine series, pointwise convergence (Theorem 4.1.1), `Lᵖ`
+convergence (Theorem 4.1.2), and Parseval's equality (4.1.13).
+
+The real coefficients `a_j`, `b_j` are the backbone `realFourierCoeff`
+(`Numlib/Analysis/Fourier/TrigonometricBasis`) up to the book's normalisation, and (4.1.6) is
+`realFourierCoeff_eq_fourierCoeff`, the bridge to Mathlib's complex `fourierCoeff`. The partial sum
+`S_N` and the pointwise theorem are `Numlib/Analysis/Fourier/Dirichlet`.
+
+Not planned: Examples 4.1.3-4.1.5 (the Fourier series of a step function, of `|x|/π` and of
+`(π² - x²)²/π⁴`) and the Gibbs phenomenon. They are numerical illustrations; the Gibbs constant
+`(2/π) Si(π)` is asserted without proof and referred to the literature, which the surface's
+convention is to leave out. The `Lᵖ` boundedness (4.1.12) for `1 < p < ∞`, on which the book's
+own remark after Theorem 4.1.2 depends, is the M. Riesz theorem, is not in Mathlib and is not
+planned; Theorem 4.1.2 itself is planned, as the equivalence it states, and instantiated at
+`p = 2`, where the bound is Bessel's inequality.
+'''
+
+[[node]]
+id = "equation_4_1_3"
+kind = "theorem"
+desc = '''(4.1.1)-(4.1.3): the Fourier series of `f ∈ L¹(-π, π)` with coefficients
+`a_j = π⁻¹ ∫ f (x) cos (j x)`, `b_j = π⁻¹ ∫ f (x) sin (j x)`. A surface definition of the book's
+`a_j`, `b_j` together with the lemma identifying them with the backbone `realFourierCoeff` at
+`T = 2π` up to the normalising constants.'''
+deps = ["realFourierCoeff"]
+
+[[node]]
+id = "equation_4_1_6"
+kind = "theorem"
+desc = '''(4.1.4)-(4.1.6), the complex form: `F (x) = ∑_{j ∈ ℤ} c_j e^{ijx}` with
+`c_j = (2π)⁻¹ ∫ f (x) e^{-ijx}`, and the dictionary `a₀ = 2c₀`, `a_j = 2 Re c_j`, `b_j = -2 Im c_j`.
+Mathlib's `fourierCoeff` on `AddCircle (2π)` with the backbone
+`realFourierCoeff_eq_fourierCoeff`.'''
+deps = ["realFourierCoeff_eq_fourierCoeff", "equation_4_1_3"]
+
+[[node]]
+id = "equation_4_1_10"
+kind = "theorem"
+desc = '''(4.1.7)-(4.1.10), Exercises 4.1.2-4.1.3: the Fourier series of an odd `L¹` function is a sine
+series with `b_j = (2/π) ∫₀^π f sin (j x)`, and of an even function a cosine series with
+`a_j = (2/π) ∫₀^π f cos (j x)`; hence the sine and cosine series of a function on `(0, π)` via odd
+and even extension. Symmetry of the integrals under `x ↦ -x`
+(`MeasureTheory.integral_comp_neg_Ioc` and `Function.Odd`/`Even`).'''
+deps = ["equation_4_1_3"]
+
+[[node]]
+id = "theorem_4_1_1"
+kind = "theorem"
+desc = '''Theorem 4.1.1: for a `2π`-periodic piecewise continuous `f` and a point `x` at which both
+one-sided derivatives exist, `S_N f x → (f (x-) + f (x+))/2`, and `→ f x` when `f` is continuous at
+`x`. The backbone `tendsto_fourierPartialSum_of_hasDerivAt`, whose hypotheses spell out "piecewise
+continuous" as interval integrability plus the one-sided limits; the underlying criterion is
+Dini's, `tendsto_fourierPartialSum_of_dini`.'''
+deps = ["tendsto_fourierPartialSum_of_hasDerivAt", "fourierPartialSum", "equation_4_1_3"]
+
+[[node]]
+id = "theorem_4_1_2"
+kind = "theorem"
+desc = '''Theorem 4.1.2 with (4.1.11)-(4.1.12): for `1 ≤ p < ∞`, `‖S_N f - f‖_{Lᵖ} → 0` for every
+`f ∈ Lᵖ(-π, π)` if and only if the `S_N` are uniformly bounded on `Lᵖ(-π, π)`. `→` is the
+principle of uniform boundedness (Theorem 2.4.4); `←` is the density of trigonometric polynomials
+(Corollary 3.1.4) with `S_N` fixing them, i.e. the backbone density criterion
+`ContinuousLinearMap.tendsto_of_tendsto_on_dense_of_bounded`.'''
+deps = ["ContinuousLinearMap.tendsto_of_tendsto_on_dense_of_bounded", "AtkinsonHan.Ch02.theorem_2_4_4", "AtkinsonHan.Ch03.corollary_3_1_4", "fourierPartialSum"]
+
+[[node]]
+id = "equation_4_1_13"
+kind = "theorem"
+desc = '''The `L²` case and Parseval's equality (4.1.13):
+`‖f‖²_{L²(-π,π)} = π (|a₀|²/2 + ∑_{j ≥ 1} (|a_j|² + |b_j|²))`, hence `‖f - S_N f‖² = π ∑_{j > N} (|a_j|² + |b_j|²)`
+(4.1.14). The backbone `tsum_sq_realFourierCoeff` and `hasSum_trigSeries`; with Theorem 4.1.2 this
+is the `p = 2` instance, where the uniform bound is Bessel's inequality.'''
+deps = ["tsum_sq_realFourierCoeff", "hasSum_trigSeries", "equation_4_1_3"]

@@ -1,0 +1,19 @@
+desc = '''
+Atkinson-Han, Chapter 4: Fourier analysis and wavelets (§4.1-4.5).
+
+`backbone.md` §0.2 puts this chapter out of scope "until Mathlib has Sobolev spaces". That reason
+does not apply: nothing in Chapter 4 uses a Sobolev space. What the chapter needs is `L¹`, `L²`,
+the Fourier transform, the Schwartz space and tempered distributions, and Mathlib now has all of
+them — `SchwartzMap`, `𝓢'(E, F)` with its Fourier transform, `Lp.fourierTransformₗᵢ` (Plancherel),
+`Integrable.fourierInv_fourier_eq` (inversion) and `ZMod.dft` with its inversion theorem. The
+proposal file asks for §0.2 and §1.7 to be amended accordingly.
+
+Section by section: §4.2 (the Fourier transform) is almost entirely a matter of translating between
+the book's `(2π)^{-d/2} e^{-i x·ξ}` normalisation and Mathlib's `e^{-2πi x·ξ}`; §4.3 (the discrete
+transform) is Mathlib's `ZMod.dft` in matrix clothes plus the radix-2 identity; §4.1 needs the real
+trigonometric system and the Dirichlet kernel, which are the backbone modules
+`Numlib/Analysis/Fourier/TrigonometricBasis` and `.../Dirichlet`; §4.4 needs the Haar system, which
+is elementary but entirely absent from Mathlib and is `Numlib/Analysis/Wavelet/Haar`; §4.5's
+general wavelet construction is the one part of the chapter that is genuinely out of reach, and the
+book states it without proof.
+'''

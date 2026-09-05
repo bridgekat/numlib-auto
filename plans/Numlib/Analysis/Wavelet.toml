@@ -1,0 +1,15 @@
+desc = '''
+Wavelets: the Haar system on `L²(ℝ)` and the multiresolution-analysis framework it is the model
+for, after Atkinson–Han, *Theoretical Numerical Analysis*, §4.4–4.5. Nothing here exists in
+Mathlib.
+
+The scope is deliberately the *elementary* half of the subject: the Haar scaling and wavelet
+functions are explicit indicator functions, so every property of the Haar system in the book —
+orthonormality, scale and shift invariance, nesting, density, separation, the orthogonal
+complement, and the decomposition and reconstruction algorithms — is an elementary computation
+plus one genuine approximation argument (`Haar.topologicalClosure_iSup_V`). The general
+construction of a scaling function from its dilation coefficients, Daubechies' compactly supported
+wavelets and the Fourier-side smoothness theory are *not* planned: Atkinson–Han state those
+without proof and refer to Daubechies, and they would need a substantial piece of harmonic
+analysis that Mathlib does not have.
+'''

@@ -1,0 +1,71 @@
+namespace = "AtkinsonHan.Ch01"
+desc = '''
+Atkinson-Han §1.3: inner product spaces, Hilbert spaces, orthogonality, orthonormal bases and the
+Gram-Schmidt process.
+
+The book's inner product is linear in its *first* slot, Mathlib's in its second, so book `(u, v)`
+is `inner 𝕜 v u`; every statement below is written in Mathlib's convention with that swap, as the
+rest of this surface does. Definitions 1.3.1, 1.3.5, 1.3.8, 1.3.9 and 1.3.10 are `InnerProductSpace`,
+completeness, `⟪x, y⟫ = 0`, `Submodule.orthogonal` and `Orthonormal`, and are not restated.
+
+Theorem 1.3.13 is the one result of Chapter 1 that Mathlib does not have: the *real* trigonometric
+system as an orthonormal basis. It is the backbone node `trigBasis`
+(`Numlib/Analysis/Fourier/TrigonometricBasis`), and this section states it in the book's form for
+`L²(-π, π)`, which is `L²(AddCircle (2π))`.
+'''
+
+[[node]]
+id = "theorem_1_3_2"
+kind = "theorem"
+desc = '''Theorem 1.3.2, the Cauchy-Schwarz inequality with its equality case: `|⟪u, v⟫| ≤ ‖u‖ ‖v‖`, with
+equality if and only if `u` and `v` are linearly dependent. Mathlib's `norm_inner_le_norm` and
+`norm_inner_eq_norm_iff`, the latter giving `y = r • x`; convert to
+`¬ LinearIndependent ![u, v]`.'''
+
+[[node]]
+id = "proposition_1_3_3"
+kind = "theorem"
+desc = '''Proposition 1.3.3: the inner product is continuous in both arguments; `uₙ → u` and `vₙ → v` imply
+`⟪uₙ, vₙ⟫ → ⟪u, v⟫`. Mathlib's `continuous_inner` / `Filter.Tendsto.inner`.'''
+
+[[node]]
+id = "theorem_1_3_4"
+kind = "theorem"
+desc = '''Theorem 1.3.4 (Jordan-von Neumann): a norm is induced by an inner product if and only if it
+satisfies the parallelogram law (1.3.3). The forward direction is `norm_add_sq_add_norm_sub_sq_eq`;
+the converse is Mathlib's `InnerProductSpace.ofNorm`, whose hypothesis class is
+`InnerProductSpaceable`, defined by exactly the parallelogram identity.'''
+
+[[node]]
+id = "theorem_1_3_11"
+kind = "theorem"
+desc = '''Theorem 1.3.11 for an orthonormal system in a Hilbert space: (a) Bessel's inequality
+`∑ |⟪v, vⱼ⟫|² ≤ ‖v‖²`, (b) the series `∑ ⟪v, vⱼ⟫ vⱼ` converges, (c) if `v = ∑ aⱼ vⱼ` then
+`aⱼ = ⟪v, vⱼ⟫`. Mathlib's `Orthonormal.tsum_inner_products_le`,
+`Orthonormal.summable_inner_smul` (via `Orthonormal.inner_products_summable`) and
+`Orthonormal.inner_right_of_hasSum`.'''
+
+[[node]]
+id = "theorem_1_3_12"
+kind = "theorem"
+desc = '''Theorem 1.3.12, the equivalence of (a) being an orthonormal basis, (b) `⟪u, v⟫ = ∑ ⟪u, vⱼ⟫ conj ⟪v, vⱼ⟫`
+and (c) Parseval's equality `‖v‖² = ∑ |⟪v, vⱼ⟫|²`. Mathlib's `HilbertBasis`,
+`HilbertBasis.mk_of_orthogonal_eq_bot`, `HilbertBasis.tsum_inner_mul_inner` and
+`Orthonormal.tsum_sq_inner_eq_norm_sq_iff` (the completeness criterion).'''
+
+[[node]]
+id = "theorem_1_3_13"
+kind = "theorem"
+desc = '''Theorem 1.3.13: the functions `1/√(2π)`, `cos (jx)/√π`, `sin (jx)/√π` for `j ≥ 1` form an
+orthonormal basis of `L²(-π, π)`. The backbone `trigBasis` at `T = 2π`, read on `L²(AddCircle (2π))`,
+which is `L²(-π, π)` for the periodic functions the book means; `coe_trigBasis` names the
+functions.'''
+deps = ["trigBasis", "trigFun", "orthonormal_trigFun"]
+
+[[node]]
+id = "theorem_1_3_16"
+kind = "theorem"
+desc = '''Theorem 1.3.16, the Gram-Schmidt process: a sequence of linearly independent vectors in an inner
+product space admits an orthonormal system with the same initial spans (1.3.11). Mathlib's
+`gramSchmidtNormed`, `gramSchmidtNormed_orthonormal'` and `span_gramSchmidt_Iic`, which the
+backbone's `Numlib/Analysis/InnerProductSpace/GramSchmidt` already uses for the Arnoldi vectors.'''

@@ -1,0 +1,108 @@
+namespace = "AtkinsonHan.Ch02"
+desc = '''
+Atkinson-Han §2.8: compact linear operators, finite-rank operators, the Fredholm alternative for
+equations of the second kind `(λ - K) u = f`, and the spectral theorem for compact self-adjoint
+operators.
+
+Mathlib is strong here: `IsCompactOperator` with its ball characterisations,
+`IsCompactOperator.hasEigenvalue_or_mem_resolventSet` (which is Theorem 2.8.10 exactly),
+`hasEigenvalue_iff_mem_spectrum`, `finite_dimensional_eigenspace` and
+`orthogonalComplement_iSup_eigenspaces_eq_bot` (the compact self-adjoint spectral theorem). The
+elementary closure properties, Schauder's theorem and the closed-range statement are the backbone
+module `Numlib/Analysis/Normed/Operator/Compact`.
+
+Not planned: §2.8.1's sufficient conditions (A₁)-(A₂) for an integral operator with a weakly
+singular kernel to be compact on `C(D)` — the proposal file asks instead for the *continuous*-kernel
+case to be added to `Numlib/IntegralEquations/Basic`, which is what Chapters 5 and 12 use, and
+records the weakly singular case as unplanned; Examples 2.8.2, 2.8.9 and 2.8.16 (log and
+`|x-y|^{-γ}` kernels, spherical harmonics), which are instances of it; §2.8.3's `L²` kernel bound,
+subsumed by Example 2.6.1; and the parts of Theorem 2.8.12 and Theorem 2.8.14 that need the Riesz
+ascent-descent theory, for the reason given in the backbone module.
+'''
+
+[[node]]
+id = "definition_2_8_1"
+kind = "theorem"
+desc = '''Definition 2.8.1 and its second reading: a linear `K : V → W` is compact when the image of the
+closed unit ball has compact closure, equivalently when every bounded sequence has a subsequence
+whose image converges. Mathlib's `IsCompactOperator` with
+`isCompactOperator_iff_isCompact_closure_image_closedBall`; the node is the bridge lemma
+`isCompactOperator_iff_forall_bounded_seq`, the sequential form the book uses.'''
+
+[[node]]
+id = "proposition_2_8_4"
+kind = "theorem"
+desc = '''Proposition 2.8.4: a bounded linear operator of finite rank (Definition 2.8.3) is compact; the
+backbone `IsCompactOperator.of_finiteDimensional_range`. Example 2.8.5, the degenerate kernel
+`k (x, y) = ∑ βᵢ(x) γᵢ(y)`, is the instance on `C[a, b]` and is stated alongside as
+`example_2_8_5`.'''
+deps = ["IsCompactOperator.of_finiteDimensional_range", "definition_2_8_1"]
+
+[[node]]
+id = "proposition_2_8_6"
+kind = "theorem"
+desc = '''Proposition 2.8.6: a composition in which at least one factor is compact is compact. Mathlib's
+`IsCompactOperator.comp_clm` and `IsCompactOperator.clm_comp`.'''
+deps = ["definition_2_8_1"]
+
+[[node]]
+id = "proposition_2_8_7"
+kind = "theorem"
+desc = '''Proposition 2.8.7: with a complete codomain, an operator-norm limit of compact operators is
+compact; the backbone `IsCompactOperator.of_tendsto`. Example 2.8.8, that an integral operator whose
+kernel is a uniform limit of degenerate kernels is compact, is the instance the book uses.'''
+deps = ["IsCompactOperator.of_tendsto", "definition_2_8_1"]
+
+[[node]]
+id = "theorem_2_8_10"
+kind = "theorem"
+desc = '''Theorem 2.8.10, the Fredholm alternative: for compact `K` on a Banach space and `λ ≠ 0`, the
+equation `(λ - K) u = f` has a unique solution for every `f` if and only if the homogeneous
+equation has only the trivial solution, and then `(λ - K)⁻¹` is bounded. Mathlib's
+`IsCompactOperator.hasEigenvalue_or_mem_resolventSet`, read through
+`spectrum.mem_resolventSet_iff` and `ContinuousLinearMap.isUnit_iff_bijective`; the bounded
+inverse is `ContinuousLinearEquiv.ofBijective`, i.e. the open mapping theorem the book cites as
+its own Theorem 2.4.3.'''
+deps = ["definition_2_8_1", "theorem_2_4_3"]
+
+[[node]]
+id = "theorem_2_8_12"
+kind = "theorem"
+desc = '''Theorem 2.8.12, clauses (1), (2) and (4): the eigenvalues of a compact `K` form a discrete set whose
+only possible limit point is `0` (the backbone
+`IsCompactOperator.finite_setOf_hasEigenvalue_norm_le`); each nonzero eigenvalue has a
+finite-dimensional eigenspace (Mathlib's `ContinuousLinearMap.finite_dimensional_eigenspace`); and
+`range (λ - K)` is closed for `λ ≠ 0` (the backbone
+`IsCompactOperator.isClosed_range_smul_sub`). Three declarations, `theorem_2_8_12_1`, `_2`, `_4`.
+Clauses (3) and (5), the finite index and the invariant decomposition, are not planned.'''
+deps = ["IsCompactOperator.finite_setOf_hasEigenvalue_norm_le", "IsCompactOperator.isClosed_range_smul_sub", "definition_2_8_1"]
+
+[[node]]
+id = "lemma_2_8_13"
+kind = "theorem"
+desc = '''Lemma 2.8.13, Schauder's theorem: the adjoint of a compact operator on a Hilbert space is compact;
+the backbone `IsCompactOperator.adjoint`.'''
+deps = ["IsCompactOperator.adjoint", "equation_2_6_1"]
+
+[[node]]
+id = "theorem_2_8_14"
+kind = "theorem"
+desc = '''Theorem 2.8.14 (2) with (2.8.29)-(2.8.30): `(λ - K) u = f` is solvable if and only if `f` is
+orthogonal to `N(conj λ - K*)`, i.e. `range (λ - K) = N(conj λ - K*)ᗮ`, and
+`V = N(conj λ - K*) ⊕ range (λ - K)`. The backbone
+`IsCompactOperator.range_smul_sub_eq_orthogonal_ker_adjoint`. Clause (1), that `conj λ` is an
+eigenvalue of `K*` with an eigenspace of the same dimension, is not planned.'''
+deps = ["IsCompactOperator.range_smul_sub_eq_orthogonal_ker_adjoint", "lemma_2_8_13"]
+
+[[node]]
+id = "theorem_2_8_15"
+kind = "theorem"
+desc = '''Theorem 2.8.15, the spectral theorem for a compact self-adjoint `K` on a Hilbert space: the
+eigenvalues are real, the eigenvectors can be chosen orthonormal, and they form an orthonormal
+basis of the closure of the range. Mathlib's
+`ContinuousLinearMap.orthogonalComplement_iSup_eigenspaces_eq_bot` with
+`LinearMap.IsSymmetric.conj_eigenvalue_eq_self` and `finite_dimensional_eigenspace`; the basis
+clause is `HilbertBasis.mk_of_orthogonal_eq_bot` applied inside `(ker K)ᗮ = closure (range K)`.
+The index `ν(λ) = 1` clause is `LinearMap.IsSymmetric.eigenspace_pow_eq`, which for a symmetric
+operator is elementary and needs none of the Riesz theory.'''
+deps = ["definition_2_8_1", "equation_2_6_1", "theorem_2_6_5"]

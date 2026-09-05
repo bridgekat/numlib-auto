@@ -1,0 +1,50 @@
+namespace = "AtkinsonHan.Ch02"
+desc = '''
+Atkinson-Han §2.9: the resolvent set, the spectrum, the perturbation bound (2.9.2) and the Neumann
+expansion (2.9.3) of the resolvent about a point of the resolvent set.
+
+Definition 2.9.1 is Mathlib's `resolventSet`, `spectrum` and `resolvent`, and Lemma 2.9.2 is
+`spectrum.isOpen_resolventSet` with `spectrum.isClosed`. What the surface adds is the *quantitative*
+content the book actually uses: the radius `1/‖R(λ₀)‖` of the disc that stays in the resolvent set
+and the bound (2.9.2) on `‖R(λ) - R(λ₀)‖`, both of which are the backbone perturbation theorem
+`Numlib/Analysis/Normed/Ring/Inverse` — the book itself derives Lemma 2.9.2 from its Theorem 2.3.5,
+which is `theorem_2_3_5` of §2.3.
+
+Not planned: §2.9's classification of the spectrum into point, continuous and residual parts (a
+definition with no theorem attached in the book), and Theorems 2.9.3 and 2.9.4, the multiplicativity
+of the holomorphic functional calculus and the Riesz spectral projection
+`E(λ₀, L) = (2πi)⁻¹ ∮ (λ - L)⁻¹ dλ`. Both are stated in the book without proof, both need contour
+integrals of operator-valued functions and the Riesz ascent-descent theory, and `backbone.md` §1.7
+already lists analytic perturbation theory by contour integration as out of scope.
+'''
+
+[[node]]
+id = "lemma_2_9_2"
+kind = "theorem"
+desc = '''Lemma 2.9.2 with (2.9.1)-(2.9.2): the resolvent set is open, the spectrum is closed, and for
+`|λ - λ₀| ‖R(λ₀)‖ < 1` one has `λ ∈ ρ(L)` with
+`‖R(λ) - R(λ₀)‖ ≤ |λ - λ₀| ‖R(λ₀)‖² / (1 - |λ - λ₀| ‖R(λ₀)‖)`. The qualitative half is Mathlib's
+`spectrum.isOpen_resolventSet`; the bound is the backbone perturbation theorem
+`Units.norm_inverse_add_sub_le` applied to `λ₀ - L` and the perturbation `(λ - λ₀) • 1`, which is
+how the book derives it from its Theorem 2.3.5.'''
+deps = ["Units.isUnit_add_of_norm_lt", "Units.norm_inverse_add_sub_le", "theorem_2_3_5"]
+
+[[node]]
+id = "equation_2_9_3"
+kind = "theorem"
+desc = '''(2.9.3): for `|λ - λ₀| ‖R(λ₀)‖ < 1`, `R(λ) = ∑_{k ≥ 0} (-1)^k (λ - λ₀)^k R(λ₀)^{k+1}`, a
+convergent power series, so the resolvent is an analytic `𝓛(V)`-valued function on `ρ(L)`. The
+geometric series theorem `NormedRing.tsum_geometric_of_norm_lt_one` applied to
+`(λ - λ₀) R(λ₀)`; the analyticity statement is
+`spectrum.hasDerivAt_resolvent` in Mathlib, and the surface records that the series is its Taylor
+expansion.'''
+deps = ["lemma_2_9_2", "theorem_2_3_1"]
+
+[[node]]
+id = "spectrum_subset_closedBall"
+kind = "theorem"
+desc = '''The remark before Definition 2.9.1: `{λ | ‖L‖ < |λ|} ⊆ ρ(L)`, so the spectrum lies in the closed
+ball of radius `‖L‖`; the geometric series theorem again (Mathlib's
+`spectrum.subset_closedBall_norm`). Stated because §2.9 and Chapter 6 use it as the reason the
+resolvent is defined near infinity.'''
+deps = ["theorem_2_3_1"]

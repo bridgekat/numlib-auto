@@ -1,0 +1,57 @@
+namespace = "AtkinsonHan.Ch01"
+desc = '''
+Atkinson-Han §1.5: the `Lᵖ` spaces, Young's, Hölder's and Minkowski's inequalities, completeness,
+the inclusions on a set of finite measure, and the density of `C₀^∞`.
+
+Everything is Mathlib. The section is stated because it is the book's account of the spaces every
+later chapter integrates over, and because Theorem 1.5.5 (c) — the inclusion `Lq ⊆ Lp` with the
+explicit constant `meas(Ω)^{1/p - 1/q}` — is the one statement whose Mathlib form
+(`MeasureTheory.eLpNorm_le_eLpNorm_mul_rpow_measure_univ`) is not obviously the book's.
+
+The Clarkson inequalities (1.5.5)-(1.5.6), which the book states without proof for Exercise 2.7.4,
+are not in Mathlib and are not planned; see the proposal file.
+'''
+
+[[node]]
+id = "lemma_1_5_1"
+kind = "theorem"
+desc = '''Lemma 1.5.1, Young's inequality: `a b ≤ aᵖ/p + b^q/q` for `a, b ≥ 0` and conjugate exponents
+`p, q > 1`. Mathlib's `Real.young_inequality_of_nonneg` with `Real.HolderConjugate`.'''
+
+[[node]]
+id = "lemma_1_5_2"
+kind = "theorem"
+desc = '''Lemma 1.5.2, the modified Young inequality: `a b ≤ ε aᵖ/p + ε^{1-q} b^q/q` for every `ε > 0`; apply
+Lemma 1.5.1 to `ε^{1/p} a` and `ε^{-1/p} b`.'''
+deps = ["lemma_1_5_1"]
+
+[[node]]
+id = "lemma_1_5_3"
+kind = "theorem"
+desc = '''Lemma 1.5.3, Hölder's inequality: `∫ |u v| ≤ ‖u‖_{Lᵖ} ‖v‖_{L^q}` for conjugate `p, q ∈ [1, ∞]`.
+Mathlib's `MeasureTheory.integral_mul_le_Lp_mul_Lq_of_nonneg` /
+`MeasureTheory.eLpNorm_le_eLpNorm_mul_eLpNorm_of_nnnorm` at the Hölder triple `(p, q, 1)`.'''
+
+[[node]]
+id = "lemma_1_5_4"
+kind = "theorem"
+desc = '''Lemma 1.5.4, Minkowski's inequality: `‖u + v‖_{Lᵖ} ≤ ‖u‖_{Lᵖ} + ‖v‖_{Lᵖ}` for `p ∈ [1, ∞]`.
+Mathlib's `MeasureTheory.eLpNorm_add_le`, which is the triangle inequality of the `Lp` norm.'''
+
+[[node]]
+id = "theorem_1_5_5"
+kind = "theorem"
+desc = '''Theorem 1.5.5 in three clauses: (a) `Lᵖ(Ω)` is a Banach space (`MeasureTheory.Lp.instCompleteSpace`);
+(b) every Cauchy sequence in `Lᵖ(Ω)` has an a.e. pointwise convergent subsequence
+(`MeasureTheory.Lp.tendsto_Lp_iff_tendstoInMeasure` with
+`TendstoInMeasure.exists_seq_tendsto_ae`); (c) for a bounded `Ω` and `1 ≤ p ≤ q ≤ ∞`,
+`Lq(Ω) ⊆ Lᵖ(Ω)` with `‖v‖_{Lᵖ} ≤ meas(Ω)^{1/p - 1/q} ‖v‖_{L^q}`
+(`MeasureTheory.eLpNorm_le_eLpNorm_mul_rpow_measure_univ`). Three declarations,
+`theorem_1_5_5_a`, `_b`, `_c`.'''
+
+[[node]]
+id = "theorem_1_5_6"
+kind = "theorem"
+desc = '''Theorem 1.5.6: `C₀^∞(Ω)` is dense in `Lᵖ(Ω)` for `1 ≤ p < ∞`. Mathlib's
+`MeasureTheory.Lp.smooth_compactlySupported_dense` (or the Schwartz-space version
+`SchwartzMap.denseRange_toLpCLM` composed with the inclusion of test functions).'''

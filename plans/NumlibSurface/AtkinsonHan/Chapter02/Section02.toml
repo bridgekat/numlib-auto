@@ -1,0 +1,80 @@
+namespace = "AtkinsonHan.Ch02"
+desc = '''
+Atkinson-Han §2.2: continuous linear operators, the equivalence of continuity and boundedness, the
+operator norm, and `𝓛(V, W)` as a Banach space.
+
+The book's `𝓛(V, W)` is Mathlib's `V →L[𝕜] W`, so Theorems 2.2.5 and 2.2.10 are instances rather
+than theorems; they are stated anyway, in the shape the book gives them, because they are numbered
+results and because the surface's job is to give a reader of the book a Lean name for each. The
+substance of the section for the rest of the book is Theorem 2.2.4 and the submultiplicativity
+(2.2.6), on which every operator-norm estimate in Chapters 2, 5, 8 and 9 rests.
+
+Example 2.2.9 and the norm formula (2.2.8) for an integral operator with continuous kernel belong
+to `Numlib/IntegralEquations/Basic` (`IntegralOperator.norm_fredholm`), which §2.3 and §3.7 also
+use; only the statement is here.
+'''
+
+[[node]]
+id = "proposition_2_2_2"
+kind = "theorem"
+desc = '''Proposition 2.2.2: a linear operator continuous at `0` is continuous everywhere. Mathlib's
+`continuous_of_continuousAt_zero` for an additive-group hom, or `LinearMap.continuous_of_...`;
+state the sequential form of the book.'''
+
+[[node]]
+id = "proposition_2_2_3"
+kind = "theorem"
+desc = '''Proposition 2.2.3: a linear `L : V → W` is bounded in the sense of Definition 2.1.6 if and only if
+`∃ γ ≥ 0, ∀ v, ‖L v‖ ≤ γ ‖v‖` (2.2.2). The `←` direction is immediate; `→` takes
+`γ = sup_{‖v‖ ≤ 1} ‖L v‖` and rescales.'''
+deps = ["IsBoundedOperator"]
+
+[[node]]
+id = "theorem_2_2_4"
+kind = "theorem"
+desc = '''Theorem 2.2.4: a linear operator between normed spaces is continuous if and only if it is bounded,
+and then it is Lipschitz (2.2.3). Mathlib's `LinearMap.continuous_of_bound` for one direction and
+`ContinuousLinearMap.le_opNorm` for the other; with Proposition 2.2.3 this is the statement the
+book uses everywhere.'''
+deps = ["IsBoundedOperator", "proposition_2_2_3", "proposition_2_2_2"]
+
+[[node]]
+id = "theorem_2_2_5"
+kind = "theorem"
+desc = '''Theorem 2.2.5: `𝓛(V, W)` is a linear space and (2.2.4) `‖L‖ = sup_{v ≠ 0} ‖L v‖/‖v‖` is a norm on
+it, with the equivalent descriptions as a supremum over the unit ball, the unit sphere and the
+sphere of radius `r`. Mathlib's `ContinuousLinearMap.opNorm`, `opNorm_eq_sSup_unitSphere` and
+friends, together with Exercise 2.2.4's `‖L‖ = inf {α | ∀ v, ‖L v‖ ≤ α ‖v‖}`
+(`ContinuousLinearMap.opNorm_eq_sInf` / `opNorm_le_iff`).'''
+
+[[node]]
+id = "theorem_2_2_6"
+kind = "theorem"
+desc = '''Theorem 2.2.6 with (2.2.5)-(2.2.6): `‖L v‖ ≤ ‖L‖ ‖v‖` and `‖L₂ ∘ L₁‖ ≤ ‖L₁‖ ‖L₂‖`, hence
+`‖Lⁿ‖ ≤ ‖L‖ⁿ`. Mathlib's `ContinuousLinearMap.le_opNorm`, `opNorm_comp_le` and `norm_pow_le'`.'''
+
+[[node]]
+id = "example_2_2_8"
+kind = "theorem"
+desc = '''Example 2.2.8: the operator norm of a matrix `A ∈ ℂ^{m×n}` for the vector `∞`-, `1`- and `2`-norms
+is `max_i ∑_j |a_ij|`, `max_j ∑_i |a_ij|` and `√(ρ(Aᴴ A))`. Mathlib's scoped instances
+`Matrix.Norms.Operator` (`Matrix.linfty_opNorm_def`), its transpose form, and
+`Matrix.l2_opNorm_def` with `Matrix.l2_opNorm_conjTranspose_mul_self`; the spectral-radius form of
+the last is `IsSelfAdjoint.spectralRadius_eq_nnnorm` applied to `Aᴴ A` through
+`Matrix.toEuclideanCLM` (`Numlib/Analysis/Matrix/ToEuclideanLin`).'''
+deps = ["Matrix.l2_opNorm_eq_norm_toEuclideanLin"]
+
+[[node]]
+id = "theorem_2_2_10"
+kind = "theorem"
+desc = '''Theorem 2.2.10: if `W` is a Banach space then so is `𝓛(V, W)`. Mathlib's instance
+`ContinuousLinearMap.completeSpace`; state it as `CompleteSpace (V →L[𝕜] W)` so that the book's
+number has a name.'''
+
+[[node]]
+id = "equation_2_2_8"
+kind = "theorem"
+desc = '''Example 2.2.9 and (2.2.8): the integral operator with continuous kernel `k` on `C[a, b]` is bounded
+with `‖K‖ = max_x ∫_a^b |k (x, y)| dy`. The backbone `IntegralOperator.norm_fredholm`; the same
+formula is (3.7.9) and (3.7.17) in Chapter 3.'''
+deps = ["IntegralOperator.fredholm", "IntegralOperator.norm_fredholm"]

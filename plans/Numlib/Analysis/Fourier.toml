@@ -1,0 +1,12 @@
+desc = '''
+Fourier analysis that this project needed and Mathlib lacks (natural home: `Mathlib.Analysis.Fourier`).
+Mathlib supplies a great deal already — the complex exponential Hilbert basis of `L²(AddCircle T)`
+(`fourierBasis`), the Fourier transform on Schwartz space, on tempered distributions and on `L²`
+(`Lp.fourierTransformₗᵢ`, Plancherel), Fourier inversion, and the discrete Fourier transform on
+`ZMod N` (`ZMod.dft`). What is missing, and what these modules add, is the *real* trigonometric
+system with the classical coefficients `a_j`, `b_j`, the Dirichlet kernel and the pointwise
+convergence of Fourier series, and the discrete Fourier transform in its matrix form with the
+radix-2 identity that the fast Fourier transform rests on.
+
+Serves Atkinson–Han, *Theoretical Numerical Analysis*, §1.3.2 (Thm 1.3.13), §3.7 and Chapter 4.
+'''

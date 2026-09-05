@@ -1,0 +1,36 @@
+desc = '''
+The Radon–Riesz property of a uniformly convex space (upstreaming candidate, natural home:
+`Mathlib.Analysis.Convex.Uniform`): weak convergence together with convergence of the norms implies
+norm convergence. Atkinson–Han, *Theoretical Numerical Analysis*, Exercises 2.7.3 and 2.7.4 (c);
+Mathlib has `UniformConvexSpace` and `InnerProductSpace.toUniformConvexSpace` but not this
+consequence.
+
+Weak convergence is written in the hypothesis shape already used by
+`Numlib/Analysis/Normed/Module/WeakDual`, namely `∀ ℓ : StrongDual ℝ V, Tendsto (fun n => ℓ (v n)) atTop (𝓝 (ℓ u))`,
+so that the two modules compose without a conversion. The inner-product case is stated separately
+rather than only as a corollary, because its hypothesis is the more useful
+`∀ w, Tendsto (fun n => ⟪v n, w⟫) atTop (𝓝 ⟪u, w⟫)` and its proof is the two-line expansion of
+`‖v n - u‖²`, not the uniform-convexity argument.
+
+Atkinson–Han Exercise 2.7.4 (b), that `Lᵖ` is uniformly convex for `1 < p < ∞` by Clarkson's
+inequalities, is not planned: Mathlib has neither Clarkson's inequalities nor a
+`UniformConvexSpace` instance for `Lᵖ`, and no other result in the corpus needs one.
+'''
+
+[[node]]
+id = "tendsto_of_forall_dual_tendsto_of_tendsto_norm"
+kind = "theorem"
+desc = '''The Radon–Riesz property (Atkinson–Han Exercise 2.7.4 (c)): in a uniformly convex normed space, if
+`v n ⇀ u` weakly and `‖v n‖ → ‖u‖` then `v n → u` in norm. Reduce to `u ≠ 0`, normalise to
+`v n / ‖v n‖` and `u / ‖u‖`, and apply uniform convexity to `‖v n / ‖v n‖ + u / ‖u‖‖ → 2`, which
+follows from weak convergence tested against a norming functional at `u`
+(`exists_dual_vector''`).'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 2.7.4 (c)"
+
+[[node]]
+id = "tendsto_of_forall_inner_tendsto_of_tendsto_norm"
+kind = "theorem"
+desc = '''The inner-product case (Atkinson–Han Exercise 2.7.3), stated as an iff: in an inner product space,
+`v n → u` in norm if and only if `∀ w, ⟪v n, w⟫ → ⟪u, w⟫` and `‖v n‖ → ‖u‖`. Expand
+`‖v n - u‖² = ‖v n‖² - 2 re ⟪v n, u⟫ + ‖u‖²`; no completeness and no uniform convexity needed.'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 2.7.3"

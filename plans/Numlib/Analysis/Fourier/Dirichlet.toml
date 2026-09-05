@@ -1,0 +1,79 @@
+desc = '''
+The Dirichlet kernel and the pointwise convergence of Fourier series (upstreaming candidate,
+natural home: `Mathlib.Analysis.Fourier.AddCircle`). Mathlib has the `L²` theory and the uniform
+convergence of an absolutely summable series (`hasSum_fourier_series_of_summable`) but no
+Dirichlet kernel and no pointwise convergence criterion. Serves Atkinson–Han, *Theoretical
+Numerical Analysis*, Thm 4.1.1 and Exercise 4.1.4, and supplies the kernel that the Fourier
+projection `PeriodicCont.fourierProj` of `Numlib/Approximation/Trigonometric` is built from: that
+module should define its projection as `fourierPartialSum` restricted to `C_p(2π)` and take
+(3.7.6)–(3.7.8) from the lemmas here rather than repeating them.
+
+The difficult item is `tendsto_fourierPartialSum_of_dini`. The proof is the classical one: write
+`S_n f x - L` as an integral of `g(t) * sin ((n + 1/2) t)` over `[0, π]` for
+`g t = (f (x + t) + f (x - t) - 2 L) / (2 π sin (t/2))`, integrable under the Dini hypothesis
+because `|sin (t/2)| ≥ t/π` on `[0, π]`, and apply the Riemann–Lebesgue lemma. Mathlib states that
+lemma for the Fourier integral over `ℝ` (`Real.tendsto_integral_exp_smul_cocompact`), so the form
+needed here — the integral of `g t * sin (λ t)` over an interval tends to `0` as `λ → ∞` for
+integrable `g` — is obtained by extending `g` by zero. Keep that reduction as a private lemma; it
+is the only fiddly step.
+
+Everything is stated for `f : ℝ → ℝ` periodic and interval-integrable rather than on `AddCircle`,
+because the book's hypotheses are one-sided limits at a real point.
+'''
+
+[[node]]
+id = "dirichletKernel"
+kind = "definition"
+desc = '''`dirichletKernel n t = 1/2 + ∑_{j = 1}^{n} cos (j t)`, the Dirichlet kernel of Atkinson–Han
+(3.7.6), together with `dirichletKernel_eq_sin_div`, the closed form
+`dirichletKernel n t = sin ((n + 1/2) t) / (2 sin (t/2))` for `t` not a multiple of `2π`
+(Atkinson–Han (3.7.8)), and the periodicity and evenness lemmas.'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, (3.7.6)–(3.7.8)"
+
+[[node]]
+id = "integral_dirichletKernel"
+kind = "theorem"
+desc = '''`(1/π) * ∫ t in 0..π, dirichletKernel n t = 1/2`, the same over `[-π, 0]`, and hence
+`(1/π) * ∫ t in -π..π, dirichletKernel n t = 1`: integrate the cosine sum term by term.'''
+deps = ["dirichletKernel"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 4.1.4 (b)"
+
+[[node]]
+id = "fourierPartialSum"
+kind = "definition"
+desc = '''`fourierPartialSum f n x = a₀/2 + ∑_{j = 1}^{n} (a_j cos (j x) + b_j sin (j x))`, the `n`-th
+partial sum of the real Fourier series of a `2π`-periodic interval-integrable `f : ℝ → ℝ`
+(Atkinson–Han (4.1.1)–(4.1.3)); linear in `f`, a trigonometric polynomial of degree `≤ n` in `x`,
+and the identity on those (`fourierPartialSum_eq_self`).'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, Section 4.1"
+
+[[node]]
+id = "fourierPartialSum_eq_integral"
+kind = "theorem"
+desc = '''The kernel representation (Atkinson–Han (3.7.6), Exercise 4.1.4 (a), (c)):
+`fourierPartialSum f n x = (1/π) * ∫ t in -π..π, f (x + t) * dirichletKernel n t`, by
+interchanging the finite sum with the integral and using periodicity to recentre.'''
+deps = ["fourierPartialSum", "dirichletKernel"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, (3.7.6)"
+
+[[node]]
+id = "tendsto_fourierPartialSum_of_dini"
+kind = "theorem"
+desc = '''Dini's criterion. For `f : ℝ → ℝ` `2π`-periodic and interval-integrable, a point `x` and a value
+`L`, if `t ↦ (f (x + t) + f (x - t) - 2 * L) / t` is interval-integrable on `[0, π]` then
+`fourierPartialSum f n x → L`. The kernel representation, the closed form of the kernel and the
+Riemann–Lebesgue lemma; the hard node of this module. Every hypothesis Atkinson–Han uses —
+one-sided derivatives, Hölder continuity at `x`, differentiability at `x` — implies it.'''
+deps = ["fourierPartialSum_eq_integral", "integral_dirichletKernel"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 4.1.1 (proof, Exercise 4.1.4)"
+
+[[node]]
+id = "tendsto_fourierPartialSum_of_hasDerivAt"
+kind = "theorem"
+desc = '''The consumer form of Dini's criterion: if `f` is `2π`-periodic, interval-integrable and
+differentiable at `x`, then `fourierPartialSum f n x → f x`; and the one-sided version, in which
+`f` has one-sided limits and one-sided derivatives at `x` and the limit is the average of the
+one-sided limits. This is Atkinson–Han Thm 4.1.1 once "piecewise continuous" is spelt out as
+interval integrability together with the one-sided limits.'''
+deps = ["tendsto_fourierPartialSum_of_dini"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 4.1.1"

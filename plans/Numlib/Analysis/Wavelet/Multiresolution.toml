@@ -1,0 +1,58 @@
+desc = '''
+Multiresolution analysis: the five axioms of Atkinson–Han, *Theoretical Numerical Analysis*,
+Definition 4.5.1 as a bundled predicate, the immediate consequences (Prop 4.5.2), the scaling
+equation (4.5.1)–(4.5.3), and the Haar system as the example. Not in Mathlib.
+
+The point of the module is to have Definition 4.5.1 as a *named interface*, so that the Haar
+results of `Numlib/Analysis/Wavelet/Haar` become the statement "the Haar system is a
+multiresolution analysis" and any later wavelet family is a second instance rather than a second
+development.
+
+Not planned, and the reason: the construction of a scaling function from a sequence of dilation
+coefficients (Atkinson–Han (4.5.1)–(4.5.6)), the proof that the `ψ` of (4.5.4) generates the
+wavelet spaces, and Daubechies' compactly supported wavelets. Atkinson–Han state these without
+proof and refer to Daubechies; the standard proofs run through conditions on `φ̂` and would need a
+piece of harmonic analysis Mathlib does not have. The scaling equation *for a given* MRA
+(`IsMultiresolutionAnalysis.hasSum_scalingEquation`) is planned, because it is a one-line
+consequence of `φ ∈ V 0 ≤ V 1` and the orthonormal basis of `V 1`.
+'''
+
+[[node]]
+id = "IsMultiresolutionAnalysis"
+kind = "definition"
+desc = '''`IsMultiresolutionAnalysis V φ`, Atkinson–Han Definition 4.5.1, for `V : ℤ → Submodule ℝ (Lp ℝ 2 volume)`
+and a scaling function `φ : Lp ℝ 2 volume`: the integer translates of `φ` are an orthonormal basis
+of `V 0` (shift invariance), `f ∈ V j ↔ Lp.dilationₗᵢ (2 ^ (-j)) f ∈ V 0` (scale invariance),
+`V j ≤ V (j + 1)` (nesting), `(⨆ j, V j).topologicalClosure = ⊤` (density) and `⨅ j, V j = ⊥`
+(separation). A structure, so that each field has a name.'''
+deps = ["_root_.MeasureTheory.Lp.dilationₗᵢ"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 4.5.1"
+
+[[node]]
+id = "IsMultiresolutionAnalysis.orthonormal_scaled"
+kind = "theorem"
+desc = '''Atkinson–Han Prop 4.5.2: in a multiresolution analysis, `{2^{j/2} φ(2^j x - k) | k ∈ ℤ}` is an
+orthonormal basis of `V j` for every `j`; transport the basis of `V 0` along the unitary
+`Lp.dilationₗᵢ (2 ^ j)` using scale invariance.'''
+deps = ["IsMultiresolutionAnalysis"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Proposition 4.5.2"
+
+[[node]]
+id = "IsMultiresolutionAnalysis.hasSum_scalingEquation"
+kind = "theorem"
+desc = '''The scaling equation, Atkinson–Han (4.5.1)–(4.5.3): in a multiresolution analysis the coefficients
+`p k = ⟪φ, √2 φ(2 · - k)⟫` satisfy `HasSum (fun k => p k • (√2 φ(2 · - k))) φ`, and more generally
+`2^{j/2} φ(2^j x - l) = ∑ k, p (k - 2l) 2^{(j+1)/2} φ(2^{j+1} x - k)`. Immediate from `φ ∈ V 0 ≤ V 1`
+and `orthonormal_scaled` for `V 1`.'''
+deps = ["IsMultiresolutionAnalysis", "IsMultiresolutionAnalysis.orthonormal_scaled"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, (4.5.1)–(4.5.3)"
+
+[[node]]
+id = "Haar.isMultiresolutionAnalysis"
+kind = "theorem"
+desc = '''The Haar system is a multiresolution analysis with scaling function `φ = 1_{[0,1)}`
+(Atkinson–Han, the paragraph after Prop 4.5.2): assembles the five clauses of Thm 4.4.1 already
+proved in `Numlib/Analysis/Wavelet/Haar`. Its scaling coefficients are `p 0 = p 1 = 1/√2` and
+`p k = 0` otherwise.'''
+deps = ["IsMultiresolutionAnalysis", "Haar.V", "Haar.orthonormal_scalingFun", "Haar.V_eq_map_dilation", "Haar.V_le_V_succ", "Haar.topologicalClosure_iSup_V", "Haar.iInf_V_eq_bot"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Section 4.5"

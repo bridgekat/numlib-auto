@@ -1487,3 +1487,113 @@ not numerical analysis, and it is where the chapter is left. The same line puts 
 differential equations), §2.4 (mesh refinement) and §3.4-§3.7 (storage formats, sparse
 matrix-vector products, direct-method heuristics) outside; the last group for a different reason,
 that it states no theorem at all.
+
+---
+
+## 13. Fourier, wavelet and interpolation layers (Atkinson–Han Ch. 1–4)
+
+Added when Atkinson–Han Chapters 1–4 were planned. The alignment is in
+`atkinsonhan-ch1-4.md` and the requests against existing groups in
+`proposals/atkinsonhan-ch1-4.md`.
+
+**§0.2 and §1.7 are out of date on two points.** §0.2 says Atkinson–Han "Ch. 4, 7, 10, 13–14
+(Fourier, Sobolev, FEM, BIE) are out of scope until Mathlib has Sobolev spaces". Chapter 4 uses no
+Sobolev space; it uses `L¹`, `L²`, the Schwartz space, tempered distributions and the Fourier
+transform, and Mathlib has all of them. §1.7's out-of-scope bullet lists "distribution theory" for
+the same reason and is likewise false: `Mathlib.Analysis.Distribution.TemperedDistribution` gives
+`𝓢'(E, F)` with its Fourier transform, and `Mathlib.Analysis.Fourier.LpSpace` gives Plancherel as a
+linear isometry equivalence of `L²`. What remains out of scope in Chapter 4 is the Fourier-side
+construction of general wavelets (§4.5 after Prop 4.5.2), which the book itself states without
+proof.
+
+### 13.1 `Analysis/Fourier/` (phase 3)
+
+Three modules, all upstreaming candidates with natural home `Mathlib.Analysis.Fourier`.
+
+`TrigonometricBasis.lean` — the *real* trigonometric system `1`, `√2 cos(2πnx/T)`, `√2 sin(2πnx/T)`
+as a `HilbertBasis ℤ ℝ (Lp ℝ 2 haarAddCircle)`, the real coefficients `a_j`, `b_j`, the dictionary
+to Mathlib's complex `fourierCoeff`, and Parseval in real form. Mathlib has only the complex
+exponentials (`fourierBasis`), and every classical statement in the corpus — Atkinson–Han
+Thm 1.3.13, (1.3.10), §3.7, (4.1.1)–(4.1.3), (4.1.13) — is about the real system. Completeness comes
+from `span_fourier_closure_eq_top` through the real–complex dictionary, not from a second
+Stone–Weierstrass argument.
+
+`Dirichlet.lean` — the Dirichlet kernel with its closed form, the partial-sum operator
+`fourierPartialSum`, its kernel representation, and **Dini's criterion** for pointwise convergence,
+of which Atkinson–Han Thm 4.1.1 is an instance. This is the module that `Approximation/Trigonometric`
+(5.1.5) should build `PeriodicCont.fourierProj` on; two definitions of the Dirichlet kernel would
+be a duplication the plan is meant to prevent.
+
+`DFT.lean` — `Matrix.dft`, the matrix `F_n` of Atkinson–Han §4.3, with `dft_eq_zmodDft` bridging to
+Mathlib's `ZMod.dft` (from which the inversion theorem Thm 4.3.2 is free) and the radix-2 identity
+`dft_radix_two`, which is the correctness statement of the fast Fourier transform. The algorithm
+and its cost are not planned, by the rule that excludes purely algorithmic material.
+
+### 13.2 `Analysis/Wavelet/` (phase 3)
+
+`Haar.lean` and `Multiresolution.lean`: the Haar system on `L²(ℝ)` — scaling functions, scaling
+spaces, wavelet, wavelet spaces, decomposition and reconstruction (Atkinson–Han Thm 4.4.1–4.4.4) —
+and Definition 4.5.1 as a bundled interface with the Haar system as its instance. Nothing here is
+in Mathlib. The unitary dilation `MeasureTheory.Lp.dilationₗᵢ` is defined in `Haar.lean` because
+Mathlib has `Lp.compMeasurePreserving` and nothing for a scaling.
+
+Difficult proof: `Haar.topologicalClosure_iSup_V` (Thm 4.4.1 (4)), density of `⋃ V_j` in `L²(ℝ)`.
+Route: continuous compactly supported functions are dense (Mathlib), then uniform continuity gives
+an explicit `L²` bound for the level-`j` dyadic step approximation. The route through measurable
+sets approximated by dyadic unions is strictly harder and unnecessary.
+
+The general wavelet construction — a scaling function from its dilation coefficients, the wavelet
+of (4.5.4), Daubechies' compactly supported families — is **not planned**: the book states it
+without proof, and the standard arguments need conditions on `φ̂` that would be a harmonic-analysis
+project of their own.
+
+### 13.3 `Analysis/Normed/Operator/Compact.lean` and `Analysis/Convex/Uniform.lean` (phase 2)
+
+The compact-operator facts Atkinson–Han §2.8 needs and Mathlib does not have: a bounded finite-rank
+operator is compact, an operator-norm limit of compact operators is compact, Schauder's theorem
+(the adjoint of a compact operator on a Hilbert space is compact, proved by Arzelà–Ascoli rather
+than by finite-rank approximation), the finiteness of the set of eigenvalues of modulus at least
+`ε`, and the closed range of `λ - K` with the orthogonality `range (λ - K) = (ker (λ̄ - K*))ᗮ`.
+Mathlib supplies the Fredholm alternative itself
+(`IsCompactOperator.hasEigenvalue_or_mem_resolventSet`) and the compact self-adjoint spectral
+theorem. The Riesz ascent–descent theory (Thm 2.8.12 (3), (5), Thm 2.8.14 (1)) is **not planned**:
+its only consumers in the corpus are results the book states without proof, one of which needs
+contour integrals of operator-valued functions anyway.
+
+`Analysis/Convex/Uniform.lean` is the Radon–Riesz property — weak convergence plus convergence of
+norms gives norm convergence — in a uniformly convex space and, separately, in an inner product
+space, Atkinson–Han Exercises 2.7.3 and 2.7.4 (c). The weak-convergence hypothesis is written in
+the same shape as `Analysis/Normed/Module/WeakDual`'s, so that the two compose.
+
+### 13.4 `Approximation/{Unisolvent,Hermite,OrthogonalPolynomial}.lean` (phase 3)
+
+`Unisolvent.lean` is Atkinson–Han's abstract interpolation problem (Def 3.2.1, Lemma 3.2.2,
+Thm 3.2.3): `n` bounded functionals on an `n`-dimensional subspace, unique solvability, the
+determinant criterion, and the interpolation operator. It is the frame in which the book settles
+Lagrange, Hermite, trigonometric and moment interpolation at once, and it carries the bridge
+`haarCondition_iff_isUnisolvent` to `Approximation/Chebyshev`'s Haar condition. It is separate from
+`Approximation/Interpolation` (5.1.3), which is about the Lagrange *operator* and its Lebesgue
+constant.
+
+`Hermite.lean` is Hermite interpolation with multiplicities and its error formula, resting on a
+Rolle theorem with multiplicities that strengthens the one `Interpolation.lean` plans for Lagrange.
+
+`OrthogonalPolynomial.lean` is the family of orthogonal polynomials of a measure with finite
+moments, its three-term recurrence, the truncated expansion as a best `L²(μ)` approximation
+(Atkinson–Han (3.5.2)), and the Legendre and Chebyshev families with their orthogonality relations
+((3.5.4)–(3.5.9)). It is what `Approximation/Quadrature`'s Gauss rules need and had no source for:
+`Krylov/OrthogonalPolynomials` (3.12) owns the Lanczos polynomials of `⟪p(A)v, q(A)v⟫` and the
+purely algebraic `Polynomial.christoffel_darboux`, which this module reuses rather than restates,
+and `Approximation/Chebyshev` (5.1.2) owns the sup-norm min–max theory, which is a different inner
+product. Lowest priority of the group: Atkinson–Han §3.5 states no numbered result.
+
+### 13.5 Surface
+
+`NumlibSurface/AtkinsonHan/` gains `Chapter01/{Section01,02,03,05,06}`,
+`Chapter02/{Section01,02,06,07,08,09}`, `Chapter03/{Section01,02,05}` and
+`Chapter04/{Section01,…,Section05}` — 95 nodes. Chapter 1 is a thin chapter by design: it states
+the book's numbered results and none of its definitions, because restating `NormedAddCommGroup`
+under a book number would compete with Mathlib's name for a future agent's attention. Its one piece
+of real content is Thm 1.3.13, which is 11.1's `trigBasis`.
+
+---

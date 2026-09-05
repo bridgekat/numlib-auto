@@ -1,0 +1,156 @@
+desc = '''
+The Haar system on `L²(ℝ)`: the scaling functions `2^{j/2} φ(2^j x - k)` for the unit step
+`φ = 1_{[0,1)}`, the scaling spaces `V j`, the wavelet `ψ = φ(2·) - φ(2· - 1)`, the wavelet spaces
+`W j`, and the decomposition and reconstruction formulas. Atkinson–Han, *Theoretical Numerical
+Analysis*, §4.4 (Thm 4.4.1–4.4.4). Not in Mathlib.
+
+Two design points fix the shape of the module.
+
+*The spaces are closed subspaces, not spans of finite combinations.* Atkinson–Han's `V_j` is the
+set of *finite* linear combinations, which is not closed and for which "orthonormal basis" and
+`⋂ V_j = {0}` have to be read in the `L²` closure anyway (the book says as much in the paragraph
+after the definition). `Haar.V j` is therefore `(span ℝ (range (scalingFun j))).topologicalClosure`,
+and the surface records that the book's `V_j` is its dense subspace.
+
+*Dilation is a unitary of `L²(ℝ)`, and it is needed before anything else.*
+`MeasureTheory.Lp.dilationₗᵢ c` sends `f` to `x ↦ |c|^{1/2} f (c x)`; it is a linear isometry
+equivalence because `Measure.map (c * ·) volume = |c|⁻¹ • volume`. Mathlib has
+`Lp.compMeasurePreserving` but nothing for a scaling, so this comes first and every scale-invariance
+statement (`V_eq_map_dilation`, Thm 4.4.1 (2)) goes through it.
+
+The hard node is `Haar.topologicalClosure_iSup_V`, Thm 4.4.1 (4). Route: continuous compactly
+supported functions are dense in `L²(ℝ)` (Mathlib, `MeasureTheory.Function.ContinuousMapDense`);
+such an `f` is uniformly continuous with compact support, so its average over each dyadic interval
+of level `j` gives an element of `V j` within `ω(f, 2^{-j}) * (measure of a neighbourhood of the
+support)^{1/2}` of it in `L²`. Do not go through general measurable sets: the uniform-continuity
+route needs no approximation of sets by dyadic unions.
+'''
+
+[[node]]
+id = "_root_.MeasureTheory.Lp.dilationₗᵢ"
+kind = "definition"
+desc = '''For `c ≠ 0`, the unitary dilation `Lp.dilationₗᵢ c : Lp ℝ 2 volume ≃ₗᵢ[ℝ] Lp ℝ 2 volume`
+sending `f` to `x ↦ |c| ^ (1/2) * f (c * x)`, with `dilationₗᵢ_apply`,
+`dilationₗᵢ_trans` (`dilationₗᵢ c ∘ dilationₗᵢ d = dilationₗᵢ (c * d)`) and
+`dilationₗᵢ_symm`. Isometry from `Measure.map (fun x => c * x) volume = |c|⁻¹ • volume`.'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, Section 4.4"
+
+[[node]]
+id = "Haar.scalingFun"
+kind = "definition"
+desc = '''`Haar.scalingFun j k : Lp ℝ 2 volume`, the normalised Haar scaling function
+`2^{j/2} φ(2^j x - k)` for `j k : ℤ`, i.e. `2^{j/2}` times the indicator of the dyadic interval
+`[k 2^{-j}, (k+1) 2^{-j})`; `scalingFun_zero_zero` is the unit step `φ` of Atkinson–Han (4.4.1),
+and `scalingFun_eq_dilation` writes `scalingFun j k` as a dilation of `scalingFun 0 k`.'''
+deps = ["_root_.MeasureTheory.Lp.dilationₗᵢ"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, (4.4.1)"
+
+[[node]]
+id = "Haar.orthonormal_scalingFun"
+kind = "theorem"
+desc = '''Atkinson–Han Thm 4.4.1 (1): for each `j`, `Orthonormal ℝ (Haar.scalingFun j)` — the dyadic
+intervals of a fixed level are disjoint and have measure `2^{-j}`. With
+`Haar.V` this says the family is an orthonormal basis of the scaling space.'''
+deps = ["Haar.scalingFun"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 4.4.1 (1)"
+
+[[node]]
+id = "Haar.V"
+kind = "definition"
+desc = '''`Haar.V j : Submodule ℝ (Lp ℝ 2 volume)`, the level-`j` Haar scaling space: the topological
+closure of the span of `Haar.scalingFun j`. `Haar.isClosed_V` and
+`Haar.hilbertBasis_V : HilbertBasis ℤ ℝ (Haar.V j)` come with it, the latter from
+`orthonormal_scalingFun` and the definition of `V` as a closure.'''
+deps = ["Haar.scalingFun", "Haar.orthonormal_scalingFun"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Section 4.4"
+
+[[node]]
+id = "Haar.V_eq_map_dilation"
+kind = "theorem"
+desc = '''Atkinson–Han Thm 4.4.1 (2), scale invariance: `f ∈ Haar.V j ↔ Lp.dilationₗᵢ (2 ^ (-j)) f ∈ Haar.V 0`,
+equivalently `Haar.V j = (Haar.V 0).map (Lp.dilationₗᵢ (2 ^ j)).toLinearIsometry.toLinearMap`.'''
+deps = ["Haar.V", "_root_.MeasureTheory.Lp.dilationₗᵢ"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 4.4.1 (2)"
+
+[[node]]
+id = "Haar.V_le_V_succ"
+kind = "theorem"
+desc = '''Atkinson–Han Thm 4.4.1 (3), nesting: `Haar.V j ≤ Haar.V (j + 1)`, from the two-scale relation
+`scalingFun j k = (scalingFun (j+1) (2k) + scalingFun (j+1) (2k+1)) / √2`; strict, because
+`scalingFun (j+1) 0 ∉ V j`.'''
+deps = ["Haar.V", "Haar.scalingFun"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 4.4.1 (3)"
+
+[[node]]
+id = "Haar.topologicalClosure_iSup_V"
+kind = "theorem"
+desc = '''Atkinson–Han Thm 4.4.1 (4), density: `(⨆ j : ℤ, Haar.V j).topologicalClosure = ⊤` in
+`Lp ℝ 2 volume`. The hard node of the module: continuous compactly supported functions are dense,
+and for such an `f` the level-`j` dyadic step function taking the value `f` at the left endpoint of
+each interval is in `Haar.V j` and converges to `f` in `L²` by uniform continuity.'''
+deps = ["Haar.V", "Haar.V_le_V_succ"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 4.4.1 (4)"
+
+[[node]]
+id = "Haar.iInf_V_eq_bot"
+kind = "theorem"
+desc = '''Atkinson–Han Thm 4.4.1 (5), separation: `⨅ j : ℤ, Haar.V j = ⊥`. An element of `V (-j)` is constant
+on `[-2^j, 0)` and on `[0, 2^j)`, and a nonzero constant on an interval of length `2^j` has `L²`
+norm growing with `j`, so the only common element is `0`.'''
+deps = ["Haar.V"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 4.4.1 (5)"
+
+[[node]]
+id = "Haar.waveletFun"
+kind = "definition"
+desc = '''`Haar.waveletFun j k : Lp ℝ 2 volume`, the Haar wavelet `2^{j/2} ψ(2^j x - k)` for
+`ψ = φ(2·) - φ(2· - 1)` (Atkinson–Han (4.4.2)), with
+`waveletFun_eq : waveletFun j k = (scalingFun (j+1) (2k) - scalingFun (j+1) (2k+1)) / √2` and
+`Orthonormal ℝ (waveletFun j)`.'''
+deps = ["Haar.scalingFun"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, (4.4.2)"
+
+[[node]]
+id = "Haar.W"
+kind = "definition"
+desc = '''`Haar.W j : Submodule ℝ (Lp ℝ 2 volume)`, the level-`j` Haar wavelet space: the topological
+closure of the span of `Haar.waveletFun j`, with `Haar.hilbertBasis_W`.'''
+deps = ["Haar.waveletFun"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Section 4.4"
+
+[[node]]
+id = "Haar.mem_W_iff"
+kind = "theorem"
+desc = '''Atkinson–Han Thm 4.4.2: an element `∑ a_k scalingFun (j+1) k` of `V (j+1)` is orthogonal to
+`V j` if and only if `a_{2k+1} = -a_{2k}` for every `k`, i.e. `V j ⊓ᗮ V (j+1) = W j`. The
+computation is `⟪f, scalingFun j k⟫ = (a_{2k} + a_{2k+1}) * 2^{-(j+1)/2}`.'''
+deps = ["Haar.W", "Haar.V", "Haar.waveletFun"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 4.4.2"
+
+[[node]]
+id = "Haar.isCompl_V_W"
+kind = "theorem"
+desc = '''`V (j+1) = V j ⊕ W j` orthogonally: `Haar.W j = (Haar.V j)ᗮ ⊓ Haar.V (j+1)`, `IsCompl` inside
+`V (j+1)`, and the iterated form `V j = V i ⊔ (⨆ i ≤ l < j, W l)` for `i < j`; with
+`topologicalClosure_iSup_V` this gives the wavelet decomposition
+`L²(ℝ) = V j ⊕ W j ⊕ W (j+1) ⊕ ⋯` of Atkinson–Han §4.4.'''
+deps = ["Haar.mem_W_iff", "Haar.V_le_V_succ", "Haar.topologicalClosure_iSup_V"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Section 4.4"
+
+[[node]]
+id = "Haar.decomposition"
+kind = "theorem"
+desc = '''Atkinson–Han Thm 4.4.3, the decomposition (analysis) step: `f = ∑ a_k scalingFun j k` in `V j`
+decomposes as `f = g + w` with `g ∈ V (j-1)`, `w ∈ W (j-1)` and coefficients
+`a'_k = (a_{2k} + a_{2k+1})/√2`, `b'_k = (a_{2k} - a_{2k+1})/√2` in the normalised basis.'''
+deps = ["Haar.isCompl_V_W", "Haar.waveletFun"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 4.4.3"
+
+[[node]]
+id = "Haar.reconstruction"
+kind = "theorem"
+desc = '''Atkinson–Han Thm 4.4.4, the reconstruction (synthesis) step, inverse to `Haar.decomposition`:
+`∑ a_k scalingFun j k + ∑ b_k waveletFun j k = ∑ c_k scalingFun (j+1) k` with
+`c_{2k} = (a_k + b_k)/√2` and `c_{2k+1} = (a_k - b_k)/√2`.'''
+deps = ["Haar.decomposition"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 4.4.4"

@@ -1,0 +1,83 @@
+desc = '''
+The real trigonometric system as a Hilbert basis of `L²` on a circle (upstreaming candidate,
+natural home: `Mathlib.Analysis.Fourier.AddCircle`). Mathlib has the complex exponentials
+(`fourierBasis : HilbertBasis ℤ ℂ (Lp ℂ 2 haarAddCircle)`) but nothing real-valued, and every
+classical statement about Fourier series — Atkinson–Han, *Theoretical Numerical Analysis*,
+Thm 1.3.13, Example 1.3.15, (1.3.10), §3.7 and (4.1.1)–(4.1.3), (4.1.13) — is about the real
+system `1/√(2π)`, `cos(jx)/√π`, `sin(jx)/√π`.
+
+Everything is stated on `AddCircle T` with `haarAddCircle`, following Mathlib, and the surface
+reads `L²(-π, π)` as `L²(AddCircle (2π))`: a function on `(-π, π]` and its `2π`-periodic extension
+are the same object, which is exactly how the book uses the space.
+
+The one real proof is completeness of the real system. Do not redo Stone–Weierstrass: take the
+complex `span_fourier_closure_eq_top`, and note that a real `L²` function orthogonal to every
+`cos(jx)` and `sin(jx)` has all complex Fourier coefficients zero, because
+`fourierCoeff f n = (a_n - i b_n)/2` for real `f` (`realFourierCoeff_eq_fourierCoeff`). Then
+`HilbertBasis.mk` of the orthonormal family whose orthogonal complement is trivial.
+'''
+
+[[node]]
+id = "trigFun"
+kind = "definition"
+desc = '''`trigFun T : ℤ → C(AddCircle T, ℝ)`, the normalised real trigonometric system on the circle of
+circumference `T`: `trigFun T 0 = 1`, `trigFun T n = √2 cos (2πn x/T)` for `n > 0` and
+`trigFun T n = √2 sin (-2πn x/T)` for `n < 0`, normalised for the probability measure
+`haarAddCircle`. Indexing by `ℤ` keeps one family where the book has three (Atkinson–Han (1.3.9)).'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, (1.3.9)"
+
+[[node]]
+id = "orthonormal_trigFun"
+kind = "theorem"
+desc = '''The real trigonometric system is orthonormal in `Lp ℝ 2 haarAddCircle`; by the product-to-sum
+formulas and `integral_haarAddCircle`.'''
+deps = ["trigFun"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 1.3.13"
+
+[[node]]
+id = "realFourierCoeff"
+kind = "definition"
+desc = '''`realFourierCoeff T f : ℤ → ℝ`, the coefficients of `f` in the system `trigFun`:
+`realFourierCoeff T f n = ∫ x, trigFun T n x * f x ∂haarAddCircle`. The book's `a_j` and `b_j`
+of Atkinson–Han (4.1.2)–(4.1.3) are `realFourierCoeff` at `j` and `-j` up to the normalising
+constants, which `realFourierCoeff_cos` and `realFourierCoeff_sin` record.'''
+deps = ["trigFun"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, (4.1.2)–(4.1.3)"
+
+[[node]]
+id = "realFourierCoeff_eq_fourierCoeff"
+kind = "theorem"
+desc = '''The bridge to Mathlib's complex coefficients (Atkinson–Han (4.1.6)): for a real-valued `f`,
+`fourierCoeff f n = (a_n - I * b_n)/2` with `a_n`, `b_n` the real coefficients, and conversely
+`a_n = 2 re (fourierCoeff f n)`, `b_n = -2 im (fourierCoeff f n)`. This is what carries every
+Mathlib result about `fourierCoeff` over to the real system.'''
+deps = ["realFourierCoeff"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, (4.1.6)"
+
+[[node]]
+id = "trigBasis"
+kind = "definition"
+desc = '''`trigBasis T : HilbertBasis ℤ ℝ (Lp ℝ 2 haarAddCircle)`, the real trigonometric system as a
+Hilbert basis, with `coe_trigBasis : ⇑(trigBasis T) = fun n => (trigFun T n).toLp 2`. This is
+Atkinson–Han Thm 1.3.13. Completeness comes from `span_fourier_closure_eq_top` through
+`realFourierCoeff_eq_fourierCoeff`, not from a second Stone–Weierstrass argument.'''
+deps = ["trigFun", "orthonormal_trigFun", "realFourierCoeff_eq_fourierCoeff"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 1.3.13"
+
+[[node]]
+id = "hasSum_trigSeries"
+kind = "theorem"
+desc = '''The real Fourier series of an `L²` function converges to it in `L²` (Atkinson–Han Example 1.3.15,
+and the `p = 2` case of Thm 4.1.2): `HasSum (fun n => realFourierCoeff T f n • trigFun T n) f` in
+`Lp ℝ 2 haarAddCircle`; `HilbertBasis.hasSum_repr` for `trigBasis`.'''
+deps = ["trigBasis", "realFourierCoeff"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 1.3.15"
+
+[[node]]
+id = "tsum_sq_realFourierCoeff"
+kind = "theorem"
+desc = '''Parseval's equality in real form (Atkinson–Han (1.3.10) and (4.1.13)):
+`∑' n, (realFourierCoeff T f n)^2 = ‖f‖^2`, so that in the book's normalisation
+`‖f‖²_{L²(-π,π)} = π (|a₀|²/2 + ∑_{j≥1} (|a_j|² + |b_j|²))`; `HilbertBasis.tsum_sq_repr`.'''
+deps = ["trigBasis", "realFourierCoeff"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, (1.3.10), (4.1.13)"
