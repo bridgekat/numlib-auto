@@ -70,121 +70,112 @@ id = "theorem_4_9_jacobi"
 id = "theorem_4_9_jacobi_col"
 
 [[node]]
+id = "complexSpectralRadius_le_algebraNorm"
+
+[[node]]
 id = "corollary_4_2"
-kind = "theorem"
-desc = '''Corollary 4.2 for an arbitrary consistent matrix norm `N : AlgebraNorm ℝ (Matrix (Fin n) (Fin n) ℝ)`:
-`N G < 1 → IsUnit (1 - G) ∧ ∀ f x₀, Tendsto ((affineStep G f)^[·] x₀) atTop (𝓝 ((1 - G)⁻¹ *ᵥ f))`;
-the induced-norm instances are `corollary_4_2_lp`.'''
-deps = ["tendsto_pow_of_algebraNorm_lt_one", "theorem_4_1_mp"]
 
 [[node]]
 id = "tendsto_generalFactor"
-kind = "theorem"
-desc = '''§4.2.1, the general convergence factor: `Tendsto (fun k => ‖G ^ k‖₂ ^ (1 / k : ℝ)) atTop (𝓝 ρ(G))`
-for a real matrix `G` under the scoped `L2Operator` norm, and its attainment
-`exists_specific_eq : ∃ d₀ ≠ 0, limsup (‖G^k d₀‖/‖d₀‖)^{1/k} = ρ(G)`.'''
-deps = ["Matrix.tendsto_pow_rpow_complexSpectralRadius", "Matrix.exists_limsup_norm_pow_mulVec_rpow_eq"]
+
+[[node]]
+id = "exists_specific_eq"
 
 [[node]]
 id = "example_4_1_spectralRadius"
-kind = "theorem"
-desc = '''Example 4.1, the spectral analysis of Richardson's iteration: `ρ(G_α) = max |1 - α λmin| |1 - α λmax|`
-for symmetric `A`, convergence iff `0 < α < 2/λmax` when `λmin > 0` (`example_4_1_tendsto_iff`),
-divergence for some `x₀` whenever `λmin < 0 < λmax`, and the optimal parameter
-`α_opt = 2/(λmin + λmax)` with `ρ_opt = (λmax - λmin)/(λmax + λmin)` (`example_4_1_opt`).'''
-deps = ["Stationary.Splitting.richardson_complexSpectralRadius_eq", "Stationary.Splitting.richardson_complexSpectralRadius_lt_one_iff", "Stationary.Splitting.isMinOn_richardson_complexSpectralRadius"]
+
+[[node]]
+id = "example_4_1_tendsto_iff"
+
+[[node]]
+id = "example_4_1_diverges"
+
+[[node]]
+id = "example_4_1_opt"
 
 [[node]]
 id = "IsRegularSplitting"
-kind = "definition"
-desc = '''Definition 4.3 in the book's triple form, `IsRegularSplitting A M N : Prop := A = M - N ∧ IsUnit M ∧
-(∀ i j, 0 ≤ M⁻¹ i j) ∧ ∀ i j, 0 ≤ N i j`, with `isRegularSplitting_iff` identifying it with the
-backbone's `Stationary.Splitting.IsRegular` of the splitting `⟨M, hM⟩`.'''
-deps = ["Stationary.Splitting.IsRegular"]
+
+[[node]]
+id = "isRegularSplitting_iff"
 
 [[node]]
 id = "theorem_4_4"
-kind = "theorem"
-desc = '''Theorem 4.4: `IsRegularSplitting A M N → (complexSpectralRadius (M⁻¹ * N) < 1 ↔ IsUnit A ∧ ∀ i j, 0 ≤ A⁻¹ i j)`;
-and its corollary `theorem_4_4_mmatrix`, convergence of the iteration (4.34) for every regular
-splitting of an M-matrix (the backbone's `Matrix.IsMMatrix`, Definition 1.30).'''
-deps = ["IsRegularSplitting", "Stationary.Splitting.IsRegular.complexSpectralRadius_lt_one_iff", "Stationary.Splitting.IsRegular.complexSpectralRadius_lt_one_of_isMMatrix", "Matrix.IsMMatrix", "theorem_4_1_mp"]
+
+[[node]]
+id = "theorem_4_4_mmatrix"
 
 [[node]]
 id = "theorem_4_7"
-kind = "theorem"
-desc = '''Theorem 4.7: for irreducible `A` (the backbone's `Matrix.IsIrreducibleAbs`) and an eigenvalue `μ` on
-the boundary of the union of the Gershgorin discs, `‖μ - A i i‖ = ∑_{j ≠ i} ‖A i j‖` for every `i`.'''
-deps = ["Matrix.IsIrreducibleAbs.norm_sub_eq_of_mem_frontier", "theorem_4_6"]
 
 [[node]]
 id = "corollary_4_8_irred"
-kind = "theorem"
-desc = '''Corollary 4.8, the irreducibly diagonally dominant half: `Matrix.IsIrreduciblyDiagDominant A → IsUnit A`
-(row form; the column form through the transpose).'''
-deps = ["Matrix.IsIrreduciblyDiagDominant.isUnit", "corollary_4_8_strict"]
 
 [[node]]
-id = "theorem_4_9_irred"
-kind = "theorem"
-desc = '''Theorem 4.9, the irreducibly diagonally dominant half: the Jacobi and Gauss–Seidel iterations
-converge for every `x₀` (`theorem_4_9_jacobi_irred`, `theorem_4_9_gs_irred`), and Gauss–Seidel under
-strict column dominance (`theorem_4_9_gs_col`), the reading of Definition 4.5 as printed.'''
-deps = ["Matrix.IsIrreduciblyDiagDominant.jacobi_spectralRadius_lt_one", "Matrix.IsIrreduciblyDiagDominant.gaussSeidel_spectralRadius_lt_one", "Matrix.gaussSeidel_spectralRadius_lt_one_of_col", "theorem_4_9_jacobi", "theorem_4_9_gs"]
+id = "corollary_4_8_irred_col"
+
+[[node]]
+id = "isIrreducibleAbs_complexify"
+
+[[node]]
+id = "isIrreduciblyDiagDominant_complexify"
+
+[[node]]
+id = "jacobi_complexSpectralRadius_lt_one_irred"
+
+[[node]]
+id = "gaussSeidel_complexSpectralRadius_lt_one_irred"
+
+[[node]]
+id = "theorem_4_9_jacobi_irred"
+
+[[node]]
+id = "theorem_4_9_gs_irred"
+
+[[node]]
+id = "theorem_4_9_gs_col"
 
 [[node]]
 id = "theorem_4_10"
-kind = "theorem"
-desc = '''Theorem 4.10: for real symmetric `A` with positive diagonal and `0 < ω < 2`,
-`complexSpectralRadius (sorSplitting A h hω).iterationOperator < 1 ↔ A.PosDef`, and through Theorem 4.1
-the book's "SOR converges for any `x₀` (and any right-hand side) iff `A` is positive definite" —
-the reading recorded in the plan, since for singular semidefinite `A` and `b = 0` the iterates
-converge for every `x₀`.'''
-deps = ["Matrix.sorSplitting_complexSpectralRadius_lt_one_iff_posDef"]
+
+[[node]]
+id = "theorem_4_10_tendsto"
 
 [[node]]
 id = "HasPropertyA"
-kind = "definition"
-desc = '''Definition 4.11: `A` has Property A when the index set splits into two parts with every nonzero
-off-diagonal entry coupling the two parts, i.e. a symmetric permutation brings `A` to the block form
-(4.42) with diagonal `D₁, D₂`; with `hasPropertyA_iff_reindex` and `hasPropertyA_reindex`.'''
+
+[[node]]
+id = "hasPropertyA_iff_toBlocks_isDiag"
+
+[[node]]
+id = "hasPropertyA_reindex"
 
 [[node]]
 id = "IsConsistentlyOrdered"
-kind = "definition"
-desc = '''Definition 4.13, the book's labelling form: there is a labelling `c : Fin n → ℕ` with `c j = c i - 1`
-for every nonzero entry below the diagonal and `c j = c i + 1` above it; `IsTMatrix` (the block
-tridiagonal shape) with `isConsistentlyOrdered_of_isTMatrix`, `hasPropertyA_of_isConsistentlyOrdered`,
-and the bridge `IsConsistentlyOrdered.matrix_isConsistentlyOrdered` to the backbone's
-spectral definition `Matrix.IsConsistentlyOrdered` (Kress's), which is Proposition 4.15.'''
-deps = ["HasPropertyA", "Matrix.IsConsistentlyOrdered", "Matrix.isConsistentlyOrdered_of_labelling"]
+
+[[node]]
+id = "IsTMatrix"
+
+[[node]]
+id = "isConsistentlyOrdered_of_isTMatrix"
+
+[[node]]
+id = "hasPropertyA_of_isConsistentlyOrdered"
+
+[[node]]
+id = "IsConsistentlyOrdered.matrix_isConsistentlyOrdered"
 
 [[node]]
 id = "proposition_4_14"
-kind = "theorem"
-desc = '''Proposition 4.14: a consistently ordered `A` is symmetrically permuted to a T-matrix by a stable
-sort of the indices by label, with `(PᵀAP)_L = PᵀA_LP` and `(PᵀAP)_U = PᵀA_UP`.'''
-deps = ["IsConsistentlyOrdered"]
 
 [[node]]
 id = "proposition_4_15"
-kind = "theorem"
-desc = '''Proposition 4.15: for consistently ordered `A` with nonzero diagonal, the eigenvalues of
-`α L + α⁻¹ U` (`α ≠ 0`) do not depend on `α`, `L, U` the strict parts of the Jacobi matrix.'''
-deps = ["IsConsistentlyOrdered", "Matrix.isConsistentlyOrdered_of_labelling"]
 
 [[node]]
-id = "theorem_4_16"
-kind = "theorem"
-desc = '''Theorem 4.16, both directions (`theorem_4_16_mp`, `theorem_4_16_mpr`): for consistently ordered `A`
-with nonzero diagonal and `ω ≠ 0`, `λ ≠ 0` an eigenvalue of the SOR iteration matrix and
-`(λ + ω - 1)² = λ ω² μ²` give `μ ∈ spectrum B`; conversely `μ ∈ spectrum B` and the relation give
-`λ ∈ spectrum G_ω`.'''
-deps = ["IsConsistentlyOrdered", "Matrix.IsConsistentlyOrdered.mem_spectrum_jacobi_iff_sor"]
+id = "theorem_4_16_mp"
+
+[[node]]
+id = "theorem_4_16_mpr"
 
 [[node]]
 id = "equation_4_47"
-kind = "theorem"
-desc = '''(4.47): for consistently ordered `A` whose Jacobi matrix has real eigenvalues and `ρ(B) < 1`,
-`ω_opt = 2/(1 + √(1 - ρ(B)²))` minimizes `ρ(G_ω)` over `(0, 2)`, with `ρ(G_{ω_opt}) = ω_opt - 1`.'''
-deps = ["theorem_4_16", "Matrix.IsConsistentlyOrdered.isMinOn_complexSpectralRadius_sor"]

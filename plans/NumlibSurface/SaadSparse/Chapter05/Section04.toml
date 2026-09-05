@@ -16,38 +16,19 @@ id = "additiveStep"
 id = "multiplicativeSweep"
 
 [[node]]
+id = "ProjFamily.subspace"
+
+[[node]]
 id = "P_i_isProjOnto"
-kind = "theorem"
-desc = '''(5.22)–(5.23), the second half: `P_i = A V_i (V_iᵀ A V_i)⁻¹ V_iᵀ` is the projector onto `span (A V_i)`
-orthogonal to `span V_i`, the backbone's `Projection.additiveProjector` for `K_i = L_i = span V_i`.'''
-deps = ["P_i", "Projection.additiveProjector"]
 
 [[node]]
 id = "additiveStep_eq"
-kind = "theorem"
-desc = '''Algorithm 5.5 is the backbone's additive projection step:
-`additiveStep 𝒱 ω A b x = Projection.additiveStep A' b (span (V i)) (span (V i)) ω x`, so (5.23) is
-`Projection.residual_additiveStep`.'''
-deps = ["additiveStep", "Projection.additiveStep", "Projection.residual_additiveStep"]
 
 [[node]]
 id = "leastSquares_P_i_eq_starProjection"
-kind = "theorem"
-desc = '''The least-squares option: with `L_i = A K_i`, `P_i = A V_i ((A V_i)ᵀ A V_i)⁻¹ (A V_i)ᵀ` is the
-orthogonal projector onto `A K_i`, and `r_{k+1} = (1 - ∑ P_i) r_k`.'''
-deps = ["P_i", "Projection.additiveProjector_eq_starProjection_of_eq_map"]
 
 [[node]]
 id = "sum_P_i_eq_one"
-kind = "theorem"
-desc = '''The exactness remark after (5.23): if the `A V_i` are mutually orthogonal and the ranks of the
-`P_i` add up to `n`, then `∑ P_i = 1` and one outer step of the least-squares additive process is
-exact.'''
-deps = ["leastSquares_P_i_eq_starProjection", "Projection.sum_starProjection_eq_one_of_orthogonal"]
 
 [[node]]
 id = "multiplicativeSweep_eq"
-kind = "theorem"
-desc = '''Algorithm 5.6 is the backbone's multiplicative projection sweep, `multiplicativeSweep 𝒱 A b x =
-Projection.multiplicativeStep …`, so its residual is `∏ (1 - P_i) r_k`.'''
-deps = ["multiplicativeSweep", "Projection.multiplicativeStep", "Projection.residual_multiplicativeStep"]

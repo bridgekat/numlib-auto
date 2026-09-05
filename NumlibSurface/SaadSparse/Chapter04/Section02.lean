@@ -1,7 +1,14 @@
 import Numlib.Eigen.Perturbation
 import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.LinearAlgebra.Matrix.Hessenberg
+import Mathlib.Analysis.Normed.Unbundled.AlgebraNorm
+import Mathlib.Data.Fin.Tuple.Sort
+import Mathlib.LinearAlgebra.Matrix.IsDiag
+import Numlib.LinearAlgebra.Matrix.MMatrix
+import Numlib.LinearSolve.Stationary.ConsistentlyOrdered
 import Numlib.LinearSolve.Stationary.DiagDominant
+import Numlib.LinearSolve.Stationary.RegularSplitting
+import Numlib.LinearSolve.Stationary.SPD
 import Numlib.LinearSolve.Stationary.Splitting
 import NumlibSurface.SaadSparse.Chapter01.Section13
 import NumlibSurface.SaadSparse.Chapter04.Section01
@@ -26,25 +33,21 @@ Definition 4.5 as printed uses column sums for all three dominance conditions, w
 Theorems 4.6 and 4.9 use row sums; both forms are stated here, following the backbone's
 `Matrix.IsStrictDiagDominant` (rows) and `Matrix.IsStrictColDiagDominant` (columns).
 
-**§4.2.4–§4.2.5, symmetric positive definite matrices and Young's theory**: only Proposition 4.12
-is proved, by the similarity argument the book uses — for a block anti-diagonal `B` the spectrum
-is symmetric under negation, and the spectrum of `B(α) = α L + α⁻¹ U` does not depend on `α ≠ 0`.
+**§4.2.4–§4.2.5, symmetric positive definite matrices and Young's theory**: Proposition 4.12,
+by the similarity argument the book uses — for a block anti-diagonal `B` the spectrum is symmetric
+under negation, and the spectrum of `B(α) = α L + α⁻¹ U` does not depend on `α ≠ 0`; Theorem 4.10
+(SOR converges exactly for positive definite `A`), Definitions 4.11 and 4.13 (Property A,
+consistent orderings, T-matrices), Propositions 4.14–4.15, Theorem 4.16 and the optimal relaxation
+parameter (4.47).
 
-Left open here (each waits on a phase-2 backbone item, see `plans/backbone.md` §7 and
-`plans/saadsparse-ch1-4-5.md` §3):
+Saad's Definition 4.13 is a *labelling* of the indices, and it is the labelling that the surface
+takes as `SaadSparse.Ch04.IsConsistentlyOrdered`; the backbone's `Matrix.IsConsistentlyOrdered` is
+Kress's spectral property, which Young's theory actually uses, and
+`SaadSparse.Ch04.IsConsistentlyOrdered.matrix_isConsistentlyOrdered` is the implication between
+them — Saad's Proposition 4.15.
 
-* §4.2.1 the convergence factors and rates: the Gelfand limit `‖G^k‖^{1/k} → ρ(G)` for a *real*
-  matrix needs `‖complexify A‖ = ‖A‖` for the scoped operator norms (§3 item 1); the "specific"
-  factor for a generic `d₀` uses the Jordan form and is left out of the plan altogether.
-* Theorem 4.4 on regular splittings and M-matrices (§3 item 3).
-* Theorem 4.7 and the *irreducibly* diagonally dominant halves of Corollary 4.8 and Theorem 4.9,
-  which need Saad's irreducibility (`Matrix.IsIrreducible (A.map ‖·‖)`) and the path argument along
-  the adjacency graph; and Gauss–Seidel under strict *column* dominance (§3 item 4).
-* Theorem 4.10 (SOR converges for `0 < ω < 2` iff `A` is positive definite), which needs the
-  Householder–John / Ostrowski–Reich criterion and its converse; Definitions 4.11 and 4.13
-  (Property A, consistent ordering, T-matrices) with Propositions 4.14–4.15; Theorem 4.16 (the
-  relation `(λ + ω - 1)² = λ ω² μ²` between the SOR and Jacobi spectra), the optimal parameter
-  (4.47), and the spectral analysis of Example 4.1 (§3 item 5).
+Left out of the plan: the *specific* convergence factor of §4.2.1 for a generic `d₀`, which the
+book derives heuristically from the Jordan form.
 -/
 
 open Matrix
@@ -593,5 +596,581 @@ theorem proposition_4_12_alpha (B₁₂ : Matrix (Fin n₁) (Fin n₂) ℂ) (B�
   exact spectrum.units_conjugate
 
 end SymmetricPositiveDefinite
+
+/-! ### §4.2.1 The convergence factors, and Corollary 4.2 for a general matrix norm -/
+
+section Factors
+
+open Filter Topology Stationary
+
+open scoped SaadSparse ENNReal NNReal
+
+variable {n : ℕ}
+
+/-- Saad §1.5/§4.2: the spectral radius is at most any *consistent* matrix norm, that is any
+submultiplicative, absolutely homogeneous, positive definite `N`.  This is the remark
+`|λ| ≤ ‖A‖` before Theorem 4.6, for a norm that need not be one of the induced `p`-norms. -/
+theorem complexSpectralRadius_le_algebraNorm (N : AlgebraNorm ℝ (Matrix (Fin n) (Fin n) ℝ))
+    (G : Matrix (Fin n) (Fin n) ℝ) : complexSpectralRadius G ≤ ENNReal.ofReal (N G) := by
+  have hnn : ∀ B : Matrix (Fin n) (Fin n) ℝ, 0 ≤ N B := fun B => apply_nonneg N B
+  set f : Matrix (Fin n) (Fin n) ℝ → ℝ≥0 := fun B => ⟨N B, hnn B⟩ with hf
+  have hcoe : ∀ B : Matrix (Fin n) (Fin n) ℝ, ((f B : ℝ≥0) : ℝ) = N B := fun _ => rfl
+  have hmul : ∀ B C : Matrix (Fin n) (Fin n) ℝ, f (B * C) ≤ f B * f C := by
+    intro B C
+    rw [← NNReal.coe_le_coe, NNReal.coe_mul, hcoe, hcoe, hcoe]
+    exact map_mul_le_mul N B C
+  have hsmul : ∀ (r : ℝ) (B : Matrix (Fin n) (Fin n) ℝ), f (r • B) = ‖r‖₊ * f B := by
+    intro r B
+    refine NNReal.coe_injective ?_
+    rw [NNReal.coe_mul, coe_nnnorm, hcoe, hcoe]
+    exact map_smul_eq_mul N r B
+  have hzero : ∀ B : Matrix (Fin n) (Fin n) ℝ, f B = 0 → B = 0 := by
+    intro B hB
+    refine eq_zero_of_map_eq_zero N ?_
+    rw [← hcoe B, hB, NNReal.coe_zero]
+  rw [ENNReal.ofReal_eq_coe_nnreal (hnn G)]
+  exact Matrix.complexSpectralRadius_le_of_norm f G hmul hsmul hzero
+
+/-- Saad, Corollary 4.2: if `N G < 1` for some consistent matrix norm `N`, then `I - G` is
+nonsingular and the iteration (4.28) converges for every `f` and every `x₀`.  The induced-norm
+instances are `corollary_4_2_lp`. -/
+theorem corollary_4_2 (N : AlgebraNorm ℝ (Matrix (Fin n) (Fin n) ℝ))
+    {G : Matrix (Fin n) (Fin n) ℝ} (hG : N G < 1) :
+    IsUnit (1 - G) ∧ ∀ f x₀ : Fin n → ℝ,
+      Tendsto (fun k => (affineStep G f)^[k] x₀) atTop (𝓝 ((1 - G)⁻¹ *ᵥ f)) := by
+  refine theorem_4_1_mp ((complexSpectralRadius_le_algebraNorm N G).trans_lt ?_)
+  exact ENNReal.ofReal_lt_one.mpr hG
+
+open scoped Matrix.Norms.L2Operator in
+/-- Saad §4.2.1: the *general convergence factor* `φ = lim ‖G^k‖^{1/k}` is the spectral radius
+of `G` — Gelfand's formula for a real matrix, under the `l²` operator norm. -/
+theorem tendsto_generalFactor (G : Matrix (Fin n) (Fin n) ℝ) :
+    Tendsto (fun k : ℕ => ‖G ^ k‖ ^ (1 / k : ℝ)) atTop
+      (𝓝 (complexSpectralRadius G).toReal) :=
+  Matrix.tendsto_pow_rpow_complexSpectralRadius G
+
+/-- Saad §4.2.1: the general convergence factor is *attained* — some initial error `d₀` decays
+exactly at the rate `ρ(G)`. -/
+theorem exists_specific_eq [NeZero n] (G : Matrix (Fin n) (Fin n) ℝ) :
+    ∃ d₀ : Fin n → ℝ, d₀ ≠ 0 ∧
+      limsup (fun k : ℕ => (‖(WithLp.toLp 2 ((G ^ k) *ᵥ d₀) : EuclideanSpace ℝ (Fin n))‖ /
+          ‖(WithLp.toLp 2 d₀ : EuclideanSpace ℝ (Fin n))‖) ^ (1 / k : ℝ)) atTop =
+        (complexSpectralRadius G).toReal :=
+  Matrix.exists_limsup_norm_pow_mulVec_rpow_eq G
+
+end Factors
+
+/-! ### Example 4.1: the spectral analysis of Richardson's iteration -/
+
+section Richardson
+
+open Filter Topology Stationary
+
+open scoped SaadSparse ENNReal
+
+variable {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} {lmin lmax : ℝ}
+
+/-- Saad, Example 4.1: for a symmetric `A` whose eigenvalues fill `[λmin, λmax]`, the spectral
+radius of the Richardson iteration matrix `G_α = I - α A` is
+`max |1 - α λmin| |1 - α λmax|`. -/
+theorem example_4_1_spectralRadius (hA : A.IsHermitian) (hsub : spectrum ℝ A ⊆ Set.Icc lmin lmax)
+    (hmin : lmin ∈ spectrum ℝ A) (hmax : lmax ∈ spectrum ℝ A) {α : ℝ} (hα : α ≠ 0) :
+    complexSpectralRadius (1 - α • A) = ENNReal.ofReal (max |1 - α * lmin| |1 - α * lmax|) := by
+  rw [← Splitting.richardson_iterationOperator A hα]
+  exact Splitting.richardson_complexSpectralRadius_eq hA hsub hmin hmax hα
+
+/-- Saad, Example 4.1: for a symmetric positive definite `A`, Richardson's iteration converges
+for every right-hand side and every starting vector exactly when `0 < α < 2/λmax`. -/
+theorem example_4_1_tendsto_iff (hA : A.IsHermitian) (hsub : spectrum ℝ A ⊆ Set.Icc lmin lmax)
+    (hmin : lmin ∈ spectrum ℝ A) (hmax : lmax ∈ spectrum ℝ A) (hpos : 0 < lmin) {α : ℝ}
+    (hα : α ≠ 0) :
+    (∀ b x₀ : Fin n → ℝ, ∃ x, Tendsto (fun k => (richardsonStep A α b)^[k] x₀) atTop (𝓝 x)) ↔
+      0 < α ∧ α < 2 / lmax := by
+  rw [richardson_tendsto_iff A hα, ← Splitting.richardson_iterationOperator A hα]
+  exact Splitting.richardson_complexSpectralRadius_lt_one_iff hA hsub hmin hmax hpos hα
+
+/-- Saad, Example 4.1: when `A` has eigenvalues of both signs, Richardson's iteration diverges
+for some right-hand side and some starting vector, whatever the parameter `α ≠ 0`. -/
+theorem example_4_1_diverges (hA : A.IsHermitian) (hsub : spectrum ℝ A ⊆ Set.Icc lmin lmax)
+    (hmin : lmin ∈ spectrum ℝ A) (hmax : lmax ∈ spectrum ℝ A) (hneg : lmin < 0) (hpos : 0 < lmax)
+    {α : ℝ} (hα : α ≠ 0) :
+    ∃ b x₀ : Fin n → ℝ, ¬ ∃ x, Tendsto (fun k => (richardsonStep A α b)^[k] x₀) atTop (𝓝 x) := by
+  have hge : (1 : ℝ) ≤ max |1 - α * lmin| |1 - α * lmax| := by
+    rcases lt_or_gt_of_ne hα with hlt | hlt
+    · refine le_max_of_le_right ?_
+      rw [le_abs]
+      exact Or.inl (by nlinarith)
+    · refine le_max_of_le_left ?_
+      rw [le_abs]
+      exact Or.inl (by nlinarith)
+  have hρ : ¬ complexSpectralRadius (1 - α • A) < 1 := by
+    rw [example_4_1_spectralRadius hA hsub hmin hmax hα, not_lt, ← ENNReal.ofReal_one]
+    exact ENNReal.ofReal_le_ofReal hge
+  by_contra hcon
+  push Not at hcon
+  exact hρ ((richardson_tendsto_iff A hα).mp fun b x₀ => hcon b x₀)
+
+/-- Saad, Example 4.1: the optimal Richardson parameter is `α_opt = 2/(λmin + λmax)`, where the
+spectral radius is `(λmax - λmin)/(λmax + λmin)`. -/
+theorem example_4_1_opt (hA : A.IsHermitian) (hsub : spectrum ℝ A ⊆ Set.Icc lmin lmax)
+    (hmin : lmin ∈ spectrum ℝ A) (hmax : lmax ∈ spectrum ℝ A) (hpos : 0 < lmin) :
+    IsMinOn (fun α : ℝ => complexSpectralRadius (1 - α • A)) (Set.Ioi 0)
+        (2 / (lmin + lmax)) ∧
+      complexSpectralRadius (1 - (2 / (lmin + lmax)) • A) =
+        ENNReal.ofReal ((lmax - lmin) / (lmax + lmin)) :=
+  ⟨Splitting.isMinOn_richardson_complexSpectralRadius hA hsub hmin hmax hpos,
+    Splitting.richardson_complexSpectralRadius_optimal_eq hA hsub hmin hmax hpos⟩
+
+end Richardson
+
+/-! ### Definition 4.3 and Theorem 4.4: regular splittings -/
+
+section Regular
+
+open Filter Topology Stationary
+
+open scoped SaadSparse ENNReal
+
+variable {n : ℕ} {A M N : Matrix (Fin n) (Fin n) ℝ}
+
+/-- Saad, Definition 4.3: `A = M - N` is a *regular splitting* of `A` when `M` is nonsingular
+with `M⁻¹ ≥ 0` and `N ≥ 0`. -/
+def IsRegularSplitting (A M N : Matrix (Fin n) (Fin n) ℝ) : Prop :=
+  A = M - N ∧ IsUnit M ∧ (∀ i j, 0 ≤ M⁻¹ i j) ∧ ∀ i j, 0 ≤ N i j
+
+/-- The complementary part of the splitting determined by `M` is `N`. -/
+theorem splitting_n_eq (h : IsRegularSplitting A M N) :
+    (⟨M, h.2.1⟩ : Splitting A).n = N := by
+  have h1 : (⟨M, h.2.1⟩ : Splitting A).n = M - A := rfl
+  rw [h1, h.1]
+  abel
+
+/-- Saad, Definition 4.3 is the backbone's `Stationary.Splitting.IsRegular` for the splitting
+determined by `M`. -/
+theorem isRegularSplitting_iff (hMN : A = M - N) (hM : IsUnit M) :
+    IsRegularSplitting A M N ↔ (⟨M, hM⟩ : Splitting A).IsRegular := by
+  have hn : (⟨M, hM⟩ : Splitting A).n = N := by
+    have h1 : (⟨M, hM⟩ : Splitting A).n = M - A := rfl
+    rw [h1, hMN]; abel
+  have hinv : Ring.inverse (⟨M, hM⟩ : Splitting A).m = M⁻¹ :=
+    (nonsing_inv_eq_ringInverse M).symm
+  rw [Stationary.Splitting.IsRegular, hinv, hn]
+  simp only [Matrix.entrywiseNonneg_iff, IsRegularSplitting]
+  exact ⟨fun h => ⟨h.2.2.1, h.2.2.2⟩, fun h => ⟨hMN, hM, h.1, h.2⟩⟩
+
+/-- **Saad, Theorem 4.4**: a regular splitting converges exactly when `A` is nonsingular with a
+nonnegative inverse. -/
+theorem theorem_4_4 (h : IsRegularSplitting A M N) :
+    complexSpectralRadius (M⁻¹ * N) < 1 ↔ IsUnit A ∧ ∀ i j, 0 ≤ A⁻¹ i j := by
+  have hreg : (⟨M, h.2.1⟩ : Splitting A).IsRegular :=
+    (isRegularSplitting_iff h.1 h.2.1).mp h
+  have hiter : (⟨M, h.2.1⟩ : Splitting A).iterationOperator = M⁻¹ * N := by
+    rw [Stationary.Splitting.iterationOperator_eq, splitting_n_eq h,
+      ← nonsing_inv_eq_ringInverse]
+  rw [← hiter, hreg.complexSpectralRadius_lt_one_iff]
+  simp [Matrix.entrywiseNonneg_iff]
+
+/-- Saad, the remark after Theorem 4.4: the iteration (4.34) of *every* regular splitting of an
+M-matrix converges to the solution, from every starting vector. -/
+theorem theorem_4_4_mmatrix (h : IsRegularSplitting A M N) (hA : A.IsMMatrix) (b x₀ : Fin n → ℝ) :
+    Tendsto (fun k => (affineStep (M⁻¹ * N) (M⁻¹ *ᵥ b))^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b)) := by
+  have hreg : (⟨M, h.2.1⟩ : Splitting A).IsRegular :=
+    (isRegularSplitting_iff h.1 h.2.1).mp h
+  have hiter : (⟨M, h.2.1⟩ : Splitting A).iterationOperator = M⁻¹ * N := by
+    rw [Stationary.Splitting.iterationOperator_eq, splitting_n_eq h,
+      ← nonsing_inv_eq_ringInverse]
+  have hstep : affineStep (M⁻¹ * N) (M⁻¹ *ᵥ b) = Splitting.step (⟨M, h.2.1⟩ : Splitting A) b := by
+    rw [Splitting.step, hiter]
+  rw [hstep]
+  exact Splitting.tendsto_step _ (hiter ▸ hreg.complexSpectralRadius_lt_one_of_isMMatrix hA) b x₀
+
+end Regular
+
+/-! ### Theorem 4.7 and the irreducible halves of Corollary 4.8 and Theorem 4.9 -/
+
+section Irreducible
+
+open Filter Topology Finset Stationary
+
+open scoped SaadSparse
+
+variable {n : ℕ}
+
+/-- **Saad, Theorem 4.7**: for an irreducible matrix, an eigenvalue on the boundary of the union
+of the Gershgorin discs lies on the boundary of *every* disc. -/
+theorem theorem_4_7 {A : Matrix (Fin n) (Fin n) ℂ} (hA : A.IsIrreducibleAbs) {μ : ℂ}
+    (hμ : μ ∈ spectrum ℂ A)
+    (hfr : μ ∈ frontier (⋃ i, Metric.closedBall (A i i) (∑ j ∈ univ.erase i, ‖A i j‖)))
+    (i : Fin n) : ‖μ - A i i‖ = ∑ j ∈ univ.erase i, ‖A i j‖ :=
+  hA.norm_sub_eq_of_mem_frontier hμ hfr i
+
+/-- Saad, Corollary 4.8, the irreducibly diagonally dominant half: an irreducibly diagonally
+dominant matrix is nonsingular. -/
+theorem corollary_4_8_irred {𝕜 : Type*} [RCLike 𝕜] {A : Matrix (Fin n) (Fin n) 𝕜}
+    (h : A.IsIrreduciblyDiagDominant) : IsUnit A :=
+  h.isUnit
+
+/-- Saad, Corollary 4.8 for irreducible dominance by *columns*, the reading of Definition 4.5 as
+printed. -/
+theorem corollary_4_8_irred_col {𝕜 : Type*} [RCLike 𝕜] {A : Matrix (Fin n) (Fin n) 𝕜}
+    (h : A.IsIrreduciblyColDiagDominant) : IsUnit A := by
+  have hT : IsUnit Aᵀ := Matrix.IsIrreduciblyDiagDominant.isUnit h
+  rwa [isUnit_iff_isUnit_det, det_transpose, ← isUnit_iff_isUnit_det] at hT
+
+variable {A : Matrix (Fin n) (Fin n) ℝ}
+
+/-- Complexification changes no entrywise absolute value, so it preserves irreducibility. -/
+theorem isIrreducibleAbs_complexify (h : A.IsIrreducibleAbs) :
+    (complexify A).IsIrreducibleAbs := by
+  have hmap : (complexify A).map (fun x : ℂ => ‖x‖) = A.map fun x : ℝ => ‖x‖ := by
+    ext i j; simp [complexify]
+  change Matrix.IsIrreducible ((complexify A).map fun x : ℂ => ‖x‖)
+  rw [hmap]
+  exact h
+
+/-- Complexification preserves irreducible diagonal dominance. -/
+theorem isIrreduciblyDiagDominant_complexify (h : A.IsIrreduciblyDiagDominant) :
+    (complexify A).IsIrreduciblyDiagDominant where
+  irreducible := isIrreducibleAbs_complexify h.irreducible
+  dominant i := by simpa using h.dominant i
+  exists_strict := by
+    obtain ⟨i, hi⟩ := h.exists_strict
+    exact ⟨i, by simpa using hi⟩
+
+/-- Saad, Theorem 4.9 (Jacobi, irreducible dominance): the Jacobi iteration matrix of an
+irreducibly diagonally dominant matrix has spectral radius `< 1`. -/
+theorem jacobi_complexSpectralRadius_lt_one_irred (h : A.IsIrreduciblyDiagDominant) :
+    complexSpectralRadius (jacobiSplitting A h.isUnit_diagPart).iterationOperator < 1 := by
+  have h' := isUnit_diagPart_complexify h.isUnit_diagPart
+  rw [complexSpectralRadius, complexify_jacobi_iterationOperator A h.isUnit_diagPart h']
+  exact (isIrreduciblyDiagDominant_complexify h).jacobi_spectralRadius_lt_one h'
+
+/-- Saad, Theorem 4.9 (Gauss–Seidel, irreducible dominance). -/
+theorem gaussSeidel_complexSpectralRadius_lt_one_irred (h : A.IsIrreduciblyDiagDominant) :
+    complexSpectralRadius (gaussSeidelSplitting A h.isUnit_diagPart).iterationOperator < 1 := by
+  have h' := isUnit_diagPart_complexify h.isUnit_diagPart
+  rw [complexSpectralRadius, complexify_gaussSeidel_iterationOperator A h.isUnit_diagPart h']
+  exact (isIrreduciblyDiagDominant_complexify h).gaussSeidel_spectralRadius_lt_one h'
+
+/-- **Saad, Theorem 4.9** (Jacobi), the irreducibly diagonally dominant half: the Jacobi
+iteration converges to the solution from every starting vector. -/
+theorem theorem_4_9_jacobi_irred (h : A.IsIrreduciblyDiagDominant) (b x₀ : Fin n → ℝ) :
+    Tendsto (fun k => (jacobiStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b)) := by
+  rw [jacobiStep_eq h.isUnit_diagPart]
+  exact Splitting.tendsto_step _ (jacobi_complexSpectralRadius_lt_one_irred h) b x₀
+
+/-- **Saad, Theorem 4.9** (Gauss–Seidel), the irreducibly diagonally dominant half. -/
+theorem theorem_4_9_gs_irred (h : A.IsIrreduciblyDiagDominant) (b x₀ : Fin n → ℝ) :
+    Tendsto (fun k => (gsStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b)) := by
+  rw [gsStep_eq h.isUnit_diagPart]
+  exact Splitting.tendsto_step _ (gaussSeidel_complexSpectralRadius_lt_one_irred h) b x₀
+
+/-- Saad, Theorem 4.9 (Gauss–Seidel) under strict *column* diagonal dominance, the reading of
+Definition 4.5 as printed. -/
+theorem theorem_4_9_gs_col (h : A.IsStrictColDiagDominant) (hd : IsUnit (diagPart A))
+    (b x₀ : Fin n → ℝ) : Tendsto (fun k => (gsStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b)) := by
+  have h' := isUnit_diagPart_complexify hd
+  have hcol : (complexify A).IsStrictColDiagDominant := by
+    intro j
+    simpa using h j
+  have hρ : complexSpectralRadius (gaussSeidelSplitting A hd).iterationOperator < 1 := by
+    rw [complexSpectralRadius, complexify_gaussSeidel_iterationOperator A hd h']
+    exact Matrix.gaussSeidel_spectralRadius_lt_one_of_col _ hcol h'
+  rw [gsStep_eq hd]
+  exact Splitting.tendsto_step _ hρ b x₀
+
+end Irreducible
+
+/-! ### Theorem 4.10: SOR for symmetric positive definite matrices -/
+
+section SOR
+
+open Filter Topology Stationary
+
+open scoped SaadSparse
+
+variable {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
+
+/-- Over `ℝ` a symmetric matrix is Hermitian. -/
+theorem isHermitian_of_isSymm (hA : A.IsSymm) : A.IsHermitian := by
+  change Aᴴ = A
+  rw [conjTranspose_eq_transpose_of_trivial]
+  exact hA
+
+/-- **Saad, Theorem 4.10**: for a real symmetric `A` with positive diagonal and `0 < ω < 2`, the
+SOR iteration matrix has spectral radius `< 1` exactly when `A` is positive definite. -/
+theorem theorem_4_10 (hA : A.IsSymm) (hd : ∀ i, 0 < A i i) (h : IsUnit (diagPart A)) {ω : ℝ}
+    (hω0 : 0 < ω) (hω2 : ω < 2) :
+    complexSpectralRadius (A.sorSplitting h hω0.ne').iterationOperator < 1 ↔ A.PosDef :=
+  Matrix.sorSplitting_complexSpectralRadius_lt_one_iff_posDef (isHermitian_of_isSymm hA) hd h
+    hω0 hω2
+
+/-- **Saad, Theorem 4.10** in the book's words, read through Theorem 4.1: SOR converges for every
+right-hand side and every starting vector exactly when `A` is positive definite.  The quantifier
+over the right-hand side cannot be dropped: for a singular positive semidefinite `A` and `b = 0`
+the iterates converge for every `x₀`. -/
+theorem theorem_4_10_tendsto (hA : A.IsSymm) (hd : ∀ i, 0 < A i i) (h : IsUnit (diagPart A))
+    {ω : ℝ} (hω0 : 0 < ω) (hω2 : ω < 2) :
+    (∀ b x₀ : Fin n → ℝ, ∃ x, Tendsto (fun k => (sorStep A ω b)^[k] x₀) atTop (𝓝 x)) ↔
+      A.PosDef := by
+  rw [← theorem_4_10 hA hd h hω0 hω2]
+  constructor
+  · intro hconv
+    refine theorem_4_1_mpr fun f x₀ => ?_
+    obtain ⟨x, hx⟩ := hconv ((A.sorSplitting h hω0.ne').m *ᵥ f) x₀
+    refine ⟨x, ?_⟩
+    rw [sorStep_eq h hω0.ne', Splitting.step,
+      inv_mulVec_mulVec (A.sorSplitting h hω0.ne').isUnit f] at hx
+    exact hx
+  · intro hρ b x₀
+    rw [sorStep_eq h hω0.ne']
+    exact ⟨_, Splitting.tendsto_step _ hρ b x₀⟩
+
+end SOR
+
+/-! ### §4.2.5 Property A, consistent orderings and Young's theory -/
+
+section Young
+
+open Filter Topology Finset Stationary
+
+open scoped SaadSparse ENNReal
+
+variable {n : ℕ}
+
+/-! #### Definition 4.11: Property A -/
+
+/-- **Saad, Definition 4.11**: `A` has *Property A* when the index set splits into two parts `S`
+and its complement in such a way that every nonzero off-diagonal entry couples the two parts. -/
+def HasPropertyA (A : Matrix (Fin n) (Fin n) ℂ) : Prop :=
+  ∃ S : Finset (Fin n), ∀ i j, A i j ≠ 0 → i ≠ j → (i ∈ S ↔ j ∉ S)
+
+/-- Saad (4.42): Property A says exactly that the symmetric permutation listing `S` before its
+complement brings `A` to the two-by-two block form whose diagonal blocks `D₁` and `D₂` are
+*diagonal* matrices. -/
+theorem hasPropertyA_iff_toBlocks_isDiag (A : Matrix (Fin n) (Fin n) ℂ) :
+    HasPropertyA A ↔ ∃ S : Finset (Fin n),
+      Matrix.IsDiag (A.submatrix (Equiv.sumCompl (· ∈ S))
+          (Equiv.sumCompl (· ∈ S))).toBlocks₁₁ ∧
+        Matrix.IsDiag (A.submatrix (Equiv.sumCompl (· ∈ S))
+          (Equiv.sumCompl (· ∈ S))).toBlocks₂₂ := by
+  have hb₁ : ∀ (S : Finset (Fin n)) (i j : {x : Fin n // x ∈ S}),
+      (A.submatrix (Equiv.sumCompl (· ∈ S)) (Equiv.sumCompl (· ∈ S))).toBlocks₁₁ i j =
+        A (i : Fin n) (j : Fin n) := fun _ _ _ => rfl
+  have hb₂ : ∀ (S : Finset (Fin n)) (i j : {x : Fin n // x ∉ S}),
+      (A.submatrix (Equiv.sumCompl (· ∈ S)) (Equiv.sumCompl (· ∈ S))).toBlocks₂₂ i j =
+        A (i : Fin n) (j : Fin n) := fun _ _ _ => rfl
+  constructor
+  · rintro ⟨S, hS⟩
+    refine ⟨S, fun i j hij => ?_, fun i j hij => ?_⟩
+    · dsimp only
+      rw [hb₁]
+      by_contra hA
+      exact ((hS _ _ hA fun h => hij (Subtype.ext h)).mp i.2) j.2
+    · dsimp only
+      rw [hb₂]
+      by_contra hA
+      exact i.2 ((hS _ _ hA fun h => hij (Subtype.ext h)).mpr j.2)
+  · rintro ⟨S, h₁, h₂⟩
+    refine ⟨S, fun i j hA hij => ?_⟩
+    constructor
+    · intro hi hj
+      refine hA ?_
+      rw [← hb₁ S ⟨i, hi⟩ ⟨j, hj⟩]
+      exact h₁ fun h => hij (congrArg Subtype.val h)
+    · intro hj
+      by_contra hi
+      refine hA ?_
+      rw [← hb₂ S ⟨i, hi⟩ ⟨j, hj⟩]
+      exact h₂ fun h => hij (congrArg Subtype.val h)
+
+/-- Property A is invariant under symmetric permutations of the indices. -/
+theorem hasPropertyA_reindex (A : Matrix (Fin n) (Fin n) ℂ) (σ : Equiv.Perm (Fin n)) :
+    HasPropertyA (A.submatrix σ σ) ↔ HasPropertyA A := by
+  constructor
+  · rintro ⟨S, hS⟩
+    refine ⟨S.map σ.toEmbedding, fun a b hA hab => ?_⟩
+    have h := hS (σ.symm a) (σ.symm b) (by simpa using hA)
+      (fun h => hab (by simpa using congrArg σ h))
+    simpa [Finset.mem_map_equiv] using h
+  · rintro ⟨S, hS⟩
+    refine ⟨S.map σ.symm.toEmbedding, fun i j hA hij => ?_⟩
+    have h := hS (σ i) (σ j) hA fun h => hij (σ.injective h)
+    simpa [Finset.mem_map_equiv] using h
+
+/-! #### Definition 4.13: consistent orderings and T-matrices -/
+
+/-- **Saad, Definition 4.13**: `A` is *consistently ordered* when the indices carry a labelling
+`c` — Saad's partition into the sets `S_k = c⁻¹ {k}` — such that `c j = c i - 1` for every
+nonzero entry `a_ij` below the diagonal and `c j = c i + 1` for every nonzero entry above it. -/
+def IsConsistentlyOrdered (A : Matrix (Fin n) (Fin n) ℂ) : Prop :=
+  ∃ c : Fin n → ℕ, (∀ i j, j < i → A i j ≠ 0 → c i = c j + 1) ∧
+    ∀ i j, i < j → A i j ≠ 0 → c j = c i + 1
+
+/-- **Saad §4.2.5**: `A` is a *T-matrix* — the block tridiagonal form (4.44), whose diagonal
+blocks are diagonal matrices — when the indices carry a *nondecreasing* block labelling under
+which every nonzero off-diagonal entry joins two neighbouring blocks. -/
+def IsTMatrix (A : Matrix (Fin n) (Fin n) ℂ) : Prop :=
+  ∃ c : Fin n → ℕ, Monotone c ∧ ∀ i j, i ≠ j → A i j ≠ 0 → c i = c j + 1 ∨ c j = c i + 1
+
+/-- Saad §4.2.5: a T-matrix is consistently ordered — its block labelling is a consistent
+ordering, precisely because it is nondecreasing along the index order. -/
+theorem isConsistentlyOrdered_of_isTMatrix {A : Matrix (Fin n) (Fin n) ℂ} (h : IsTMatrix A) :
+    IsConsistentlyOrdered A := by
+  obtain ⟨c, hmono, hstep⟩ := h
+  refine ⟨c, fun i j hji hA => ?_, fun i j hij hA => ?_⟩
+  · have hle : c j ≤ c i := hmono hji.le
+    rcases hstep i j hji.ne' hA with h1 | h1
+    · exact h1
+    · omega
+  · have hle : c i ≤ c j := hmono hij.le
+    rcases hstep i j hij.ne hA with h1 | h1
+    · omega
+    · exact h1
+
+/-- Saad §4.2.5: a consistently ordered matrix has Property A — the labelling splits the indices
+by the parity of `c`, and a nonzero off-diagonal entry changes `c` by one. -/
+theorem hasPropertyA_of_isConsistentlyOrdered {A : Matrix (Fin n) (Fin n) ℂ}
+    (h : IsConsistentlyOrdered A) : HasPropertyA A := by
+  classical
+  obtain ⟨c, hlow, hupp⟩ := h
+  refine ⟨Finset.univ.filter fun i => Even (c i), fun i j hA hij => ?_⟩
+  simp only [Finset.mem_filter, Finset.mem_univ, true_and]
+  rcases lt_or_gt_of_ne hij with hlt | hgt
+  · rw [hupp i j hlt hA, Nat.even_add_one]
+    tauto
+  · rw [hlow i j hgt hA, Nat.even_add_one]
+
+/-- **Saad, Proposition 4.15**: the book's labelling definition of a consistent ordering implies
+the spectral one that Young's theory uses — the spectrum of `α L + α⁻¹ U` does not depend on
+`α ≠ 0`, `L` and `U` being the strict parts of the Jacobi iteration matrix. -/
+theorem IsConsistentlyOrdered.matrix_isConsistentlyOrdered {A : Matrix (Fin n) (Fin n) ℂ}
+    (h : IsConsistentlyOrdered A) (hd : IsUnit (diagPart A)) : A.IsConsistentlyOrdered := by
+  obtain ⟨c, hlow, hupp⟩ := h
+  exact Matrix.isConsistentlyOrdered_of_labelling hd c hlow hupp
+
+/-- **Saad, Proposition 4.15**: for a consistently ordered `A` with nonzero diagonal the
+eigenvalues of `B(α) = α L + α⁻¹ U` do not depend on `α ≠ 0`. -/
+theorem proposition_4_15 {A : Matrix (Fin n) (Fin n) ℂ} (h : IsConsistentlyOrdered A)
+    (hd : IsUnit (diagPart A)) {α : ℂ} (hα : α ≠ 0) :
+    spectrum ℂ (α • Matrix.jacobiLower A + α⁻¹ • Matrix.jacobiUpper A) =
+      spectrum ℂ (Matrix.jacobiSplitting A hd).iterationOperator := by
+  have hCO := IsConsistentlyOrdered.matrix_isConsistentlyOrdered h hd
+  rw [← Matrix.jacobiLower_add_jacobiUpper A hd]
+  exact hCO α hα
+
+/-- **Saad, Proposition 4.14**: a consistently ordered matrix is brought to a T-matrix by the
+*stable* sort of the indices by their label, and that permutation commutes with taking the strict
+triangular parts: `(PᵀAP)_L = Pᵀ A_L P` and `(PᵀAP)_U = Pᵀ A_U P`.
+
+The sort is `Tuple.sort`, which is stable; the two commutation identities hold because an entry
+that the sort would move across the diagonal joins two blocks in the wrong order, which the
+monotonicity of the sorted labelling forbids. -/
+theorem proposition_4_14 {A : Matrix (Fin n) (Fin n) ℂ} (h : IsConsistentlyOrdered A) :
+    ∃ σ : Equiv.Perm (Fin n), IsTMatrix (A.submatrix σ σ) ∧
+      strictLower (A.submatrix σ σ) = (strictLower A).submatrix σ σ ∧
+        strictUpper (A.submatrix σ σ) = (strictUpper A).submatrix σ σ := by
+  obtain ⟨c, hlow, hupp⟩ := h
+  refine ⟨Tuple.sort c, ⟨c ∘ Tuple.sort c, Tuple.monotone_sort c, fun i j hij hA => ?_⟩, ?_, ?_⟩
+  · have hne : Tuple.sort c i ≠ Tuple.sort c j := fun hc => hij ((Tuple.sort c).injective hc)
+    rcases lt_or_gt_of_ne hne with hlt | hgt
+    · exact Or.inr (hupp _ _ hlt hA)
+    · exact Or.inl (hlow _ _ hgt hA)
+  · ext i j
+    have hmono := Tuple.monotone_sort c
+    rcases lt_trichotomy j i with hji | rfl | hij
+    · by_cases hσ : Tuple.sort c j < Tuple.sort c i
+      · simp [hji, hσ]
+      · have hne : Tuple.sort c i ≠ Tuple.sort c j :=
+          fun hc => absurd ((Tuple.sort c).injective hc) hji.ne'
+        have hlt : Tuple.sort c i < Tuple.sort c j := lt_of_le_of_ne (not_lt.mp hσ) hne
+        have hz : A (Tuple.sort c i) (Tuple.sort c j) = 0 := by
+          by_contra hA
+          have h1 := hupp _ _ hlt hA
+          have h2 : (c ∘ Tuple.sort c) j ≤ (c ∘ Tuple.sort c) i := hmono hji.le
+          simp only [Function.comp_apply] at h2
+          omega
+        simp [hji, hσ, hz]
+    · simp
+    · by_cases hσ : Tuple.sort c j < Tuple.sort c i
+      · have hz : A (Tuple.sort c i) (Tuple.sort c j) = 0 := by
+          by_contra hA
+          have h1 := hlow _ _ hσ hA
+          have h2 : (c ∘ Tuple.sort c) i ≤ (c ∘ Tuple.sort c) j := hmono hij.le
+          simp only [Function.comp_apply] at h2
+          omega
+        simp [asymm hij, hσ, hz]
+      · simp [asymm hij, hσ]
+  · ext i j
+    have hmono := Tuple.monotone_sort c
+    rcases lt_trichotomy i j with hij | rfl | hji
+    · by_cases hσ : Tuple.sort c i < Tuple.sort c j
+      · simp [hij, hσ]
+      · have hne : Tuple.sort c j ≠ Tuple.sort c i :=
+          fun hc => absurd ((Tuple.sort c).injective hc) hij.ne'
+        have hlt : Tuple.sort c j < Tuple.sort c i := lt_of_le_of_ne (not_lt.mp hσ) hne
+        have hz : A (Tuple.sort c i) (Tuple.sort c j) = 0 := by
+          by_contra hA
+          have h1 := hlow _ _ hlt hA
+          have h2 : (c ∘ Tuple.sort c) i ≤ (c ∘ Tuple.sort c) j := hmono hij.le
+          simp only [Function.comp_apply] at h2
+          omega
+        simp [hij, hσ, hz]
+    · simp
+    · by_cases hσ : Tuple.sort c i < Tuple.sort c j
+      · have hz : A (Tuple.sort c i) (Tuple.sort c j) = 0 := by
+          by_contra hA
+          have h1 := hupp _ _ hσ hA
+          have h2 : (c ∘ Tuple.sort c) j ≤ (c ∘ Tuple.sort c) i := hmono hji.le
+          simp only [Function.comp_apply] at h2
+          omega
+        simp [asymm hji, hσ, hz]
+      · simp [asymm hji, hσ]
+
+/-! #### Theorem 4.16 and the optimal relaxation parameter (4.47) -/
+
+variable {A : Matrix (Fin n) (Fin n) ℂ}
+
+/-- **Saad, Theorem 4.16** (⇒): if `λ ≠ 0` is an eigenvalue of the SOR iteration matrix and
+`(λ + ω - 1)² = λ ω² μ²`, then `μ` is an eigenvalue of the Jacobi iteration matrix. -/
+theorem theorem_4_16_mp (h : IsConsistentlyOrdered A) (hd : IsUnit (diagPart A)) {ω : ℂ}
+    (hω : ω ≠ 0) {l μ : ℂ} (hl : l ≠ 0) (hrel : (l + ω - 1) ^ 2 = l * ω ^ 2 * μ ^ 2)
+    (hlG : l ∈ spectrum ℂ (Matrix.sorSplitting A hd hω).iterationOperator) :
+    μ ∈ spectrum ℂ (Matrix.jacobiSplitting A hd).iterationOperator :=
+  ((IsConsistentlyOrdered.matrix_isConsistentlyOrdered h hd).mem_spectrum_jacobi_iff_sor hd hω hl
+    hrel).mpr hlG
+
+/-- **Saad, Theorem 4.16** (⇐): if `μ` is an eigenvalue of the Jacobi iteration matrix and
+`λ ≠ 0` satisfies `(λ + ω - 1)² = λ ω² μ²`, then `λ` is an eigenvalue of the SOR iteration
+matrix. -/
+theorem theorem_4_16_mpr (h : IsConsistentlyOrdered A) (hd : IsUnit (diagPart A)) {ω : ℂ}
+    (hω : ω ≠ 0) {l μ : ℂ} (hl : l ≠ 0) (hrel : (l + ω - 1) ^ 2 = l * ω ^ 2 * μ ^ 2)
+    (hμB : μ ∈ spectrum ℂ (Matrix.jacobiSplitting A hd).iterationOperator) :
+    l ∈ spectrum ℂ (Matrix.sorSplitting A hd hω).iterationOperator :=
+  ((IsConsistentlyOrdered.matrix_isConsistentlyOrdered h hd).mem_spectrum_jacobi_iff_sor hd hω hl
+    hrel).mp hμB
+
+/-- **Saad (4.47)**: for a consistently ordered `A` whose Jacobi iteration matrix has real
+eigenvalues and spectral radius `ρ(B) < 1`, the relaxation parameter
+`ω_opt = 2/(1 + √(1 - ρ(B)²))` minimizes the SOR spectral radius over `0 < ω < 2`, and the value
+there is `ω_opt - 1`. -/
+theorem equation_4_47 [NeZero n] (h : IsConsistentlyOrdered A) (hd : IsUnit (diagPart A))
+    (hreal : ∀ μ ∈ spectrum ℂ (Matrix.jacobiSplitting A hd).iterationOperator, μ.im = 0)
+    (hlt : spectralRadius ℂ (Matrix.jacobiSplitting A hd).iterationOperator < 1) :
+    IsMinOn (fun ω : ℝ => spectralRadius ℂ (Matrix.sorIterationMatrix A (ω : ℂ)))
+        (Set.Ioo 0 2)
+        (2 / (1 + Real.sqrt (1 -
+          (spectralRadius ℂ (Matrix.jacobiSplitting A hd).iterationOperator).toReal ^ 2))) ∧
+      spectralRadius ℂ (Matrix.sorIterationMatrix A
+          ((2 / (1 + Real.sqrt (1 -
+            (spectralRadius ℂ (Matrix.jacobiSplitting A hd).iterationOperator).toReal ^ 2))
+            : ℝ) : ℂ)) =
+        ENNReal.ofReal (2 / (1 + Real.sqrt (1 -
+          (spectralRadius ℂ (Matrix.jacobiSplitting A hd).iterationOperator).toReal ^ 2)) - 1) := by
+  have hCO := IsConsistentlyOrdered.matrix_isConsistentlyOrdered h hd
+  exact ⟨hCO.isMinOn_complexSpectralRadius_sor hd hreal hlt,
+    hCO.spectralRadius_sor_optimalRelaxation hd hreal hlt⟩
+
+end Young
 
 end SaadSparse.Ch04

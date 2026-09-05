@@ -587,6 +587,43 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   ?_` arrives as `(fun x => …) x = (fun x => …) x`; `rw` then fails to find any pattern. Open
   such a goal with `dsimp only`.
 
+* **`ℝ≥0` is notation from `open scoped NNReal`**, and without that scope it parses as `ℝ ≥ 0`.
+  The errors are `failed to synthesize LE Type` and `OfNat Type 0`, neither of which mentions a
+  missing scope or the symbol. The same trap as the `ℝ≥0∞`/`ENNReal` one above, but the failure
+  is louder and points at the wrong place: a `set f : … → ℝ≥0 := …` line, not the `open`.
+* `Matrix.IsDiag` lives in `Mathlib.LinearAlgebra.Matrix.IsDiag`, which `Numlib` does not import,
+  and **dot notation on it never works**: `Matrix m n α` unfolds to a function type, so `M.IsDiag`
+  reports *"the environment does not contain `Function.IsDiag`"*. Write `Matrix.IsDiag M`. Its body
+  is `Pairwise`, so after `intro i j hij` the goal is a beta redex and every `rw` misses until
+  `dsimp only`.
+* **`Tuple.sort` is the stable sort of `Fin n` by a key** (`Mathlib.Data.Fin.Tuple.Sort`), with
+  `Tuple.monotone_sort f : Monotone (f ∘ sort f)`. That one lemma is the whole of Saad's
+  Proposition 4.14: the permutation to a T-matrix, *and* the two commutation identities
+  `(PᵀAP)_L = Pᵀ A_L P`, `(PᵀAP)_U = Pᵀ A_U P`, because an entry the sort moves across the
+  diagonal would join two blocks in the wrong order, which monotonicity of the sorted labelling
+  forbids. Do not build a second `LinearOrder` on `Fin n`.
+* An **arbitrary consistent matrix norm** — Saad's Cor 4.2 and `|λ| ≤ ‖A‖` — is an
+  `AlgebraNorm ℝ (Matrix n n ℝ)`, and it plugs straight into the *unbundled*
+  `Matrix.complexSpectralRadius_le_of_norm`, whose `f : Matrix n n ℝ → ℝ≥0` takes exactly
+  submultiplicativity, absolute homogeneity and positive definiteness as plain hypotheses. No
+  `NormedRing (Matrix n n ℝ)` instance is involved, so the instance-mixing trap above does not
+  arise, and the conclusion is about the *complex* spectral radius. The `AlgebraNorm` route through
+  `tendsto_pow_of_algebraNorm_lt_one` does not apply: that lemma is stated for a complex algebra.
+* `ENNReal.ofReal_lt_ofReal_of_lt_of_nonneg` does not exist; the live names are
+  `ENNReal.ofReal_lt_one : ENNReal.ofReal p < 1 ↔ p < 1` and
+  `ENNReal.ofReal_eq_coe_nnreal (h : 0 ≤ x) : ENNReal.ofReal x = ((⟨x, h⟩ : ℝ≥0) : ℝ≥0∞)`.
+* `hα.lt_or_lt` on `hα : α ≠ 0` fails, because `Ne` unfolds to `→ False` and the lookup becomes
+  `Function.lt_or_lt`. Write `lt_or_gt_of_ne hα`.
+* A surface wrapper `def` for a subspace (`ProjFamily.subspace 𝒱 i := span ℝ (range (𝒱.V i).cols)`)
+  is defeq to its body but not syntactically equal, so a backbone lemma stated with the body will
+  not `rw` into a goal stated with the wrapper. Restate the bridge once — `theorem foo_subspace …
+  := foo …`, which `exact` accepts by delta — and use the restated form downstream. Proofs of a
+  `Prop`-valued structure argument (`Projection.IsNondegeneratePair`) need no such care: proof
+  irrelevance makes any two of them definitionally equal.
+* `Projection.pairStep`, `additiveStep` and `multiplicativeStep` unfold by `rfl`, so
+  `have h : additiveStep … = x + ∑ i, ω i • (pairStep … x - x) := rfl` is the way to open them;
+  `rw [Projection.additiveStep]` fails with "Failed to rewrite using equation theorems".
+
 ## Mathlib names and API
 
 `pow_left_inj₀ ha hb hn : a ^ n = b ^ n ↔ a = b` is the way to cancel the squares after comparing

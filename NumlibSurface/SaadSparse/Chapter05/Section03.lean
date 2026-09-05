@@ -1,4 +1,5 @@
 import Mathlib.Analysis.Matrix.PosDef
+import Mathlib.Geometry.Euclidean.Angle.Unoriented.Basic
 import Numlib.Analysis.InnerProductSpace.Coercive
 import Numlib.Analysis.InnerProductSpace.Energy
 import Numlib.Analysis.Matrix.ToEuclideanLin
@@ -18,10 +19,12 @@ All three steps are the backbone's `Projection.step1` for `Matrix.toEuclideanLin
 (`step1_eq`, `sdStep_eq`, `mrStep_eq` are `rfl`), so the convergence estimates specialize
 `Numlib/LinearSolve/Projection/OneDimensional.lean`.
 
-Left open here: the exact one-step identities (5.16)–(5.18) and (5.20) and the `sin ∠`
-reformulation (R-5.21 of the plan; `plans/saadsparse-ch1-4-5.md` §3 item 7 lists them as
-candidates for the backbone), and the state-machine bookkeeping of Algorithms 5.2–5.4 (their
-recursive residual updates).
+The exact one-step identities (5.16)–(5.18) and (5.20) specialize the backbone's
+`Projection.norm_residual_minResStep_sq_eq` and `Projection.energyNorm_steepestDescentStep_sq_eq`,
+and `norm_residual_mrStep_eq_sin` is the `sin ∠` reading of (5.18).
+
+Left open here: the state-machine bookkeeping of Algorithms 5.2–5.4 (their recursive residual
+updates).
 -/
 
 open Matrix Module Filter Topology
@@ -288,5 +291,66 @@ theorem rnsdStep_eq_sdStep_normal (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n) :
   rw [rnsdStep, sdStep, hres]
   simp only [step1]
   rw [hres, hAA, hnum, hden]
+
+
+/-! ### The exact one-step identities (5.16)–(5.18) and (5.20) -/
+
+omit [NeZero n] in
+/-- Saad (5.16)–(5.18): the exact one-step residual identity of the minimal-residual iteration,
+`‖r_{k+1}‖² = ‖r_k‖² (1 - (A r_k, r_k)² / ((r_k, r_k) (A r_k, A r_k)))`.
+
+No hypothesis is needed: at a breakdown, where `r_k = 0` or `A r_k = 0`, both sides read `‖r_k‖²`,
+because division by zero is zero. -/
+theorem equation_5_18 (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n) :
+    ‖b - (A ⬝ mrStep A b x)‖ ^ 2 =
+      ‖b - (A ⬝ x)‖ ^ 2 *
+        (1 - inner ℝ (A ⬝ (b - (A ⬝ x))) (b - (A ⬝ x)) ^ 2 /
+          (‖b - (A ⬝ x)‖ ^ 2 * ‖A ⬝ (b - (A ⬝ x))‖ ^ 2)) := by
+  have h := Projection.norm_residual_minResStep_sq_eq (A := toEuclideanLin A) (b := b) x
+  rw [mrStep_eq]
+  simpa only [Real.norm_eq_abs, sq_abs] using h
+
+omit [NeZero n] in
+/-- Saad §5.3.2, the geometric reading of (5.18): `‖r_{k+1}‖ = ‖r_k‖ sin ∠(r_k, A r_k)`, where
+`cos ∠(r_k, A r_k) = (A r_k, r_k) / (‖A r_k‖ ‖r_k‖)`. -/
+theorem norm_residual_mrStep_eq_sin (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n) :
+    ‖b - (A ⬝ mrStep A b x)‖ =
+      ‖b - (A ⬝ x)‖ * Real.sin (InnerProductGeometry.angle (b - (A ⬝ x)) (A ⬝ (b - (A ⬝ x)))) := by
+  set r : E n := b - (A ⬝ x) with hr
+  have hnn : 0 ≤ ‖r‖ * Real.sin (InnerProductGeometry.angle r (A ⬝ r)) :=
+    mul_nonneg (norm_nonneg _) (InnerProductGeometry.sin_angle_nonneg _ _)
+  refine ((pow_left_inj₀ (norm_nonneg _) hnn two_ne_zero).mp ?_)
+  rw [mul_pow, Real.sin_sq, InnerProductGeometry.cos_angle, equation_5_18]
+  rw [real_inner_comm (A ⬝ r) r, div_pow, mul_pow]
+
+omit [NeZero n] in
+/-- Saad (5.20): the exact one-step identity of steepest descent in the `A`-norm,
+`‖d_{k+1}‖_A² = ‖d_k‖_A² (1 - (r_k, r_k)² / ((A r_k, r_k) (A⁻¹ r_k, r_k)))`, from which
+Theorem 5.9 follows by Kantorovich's inequality (Lemma 5.8). -/
+theorem equation_5_20 (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b) (x : E n) :
+    E_A A xstar (sdStep A b x) ^ 2 =
+      E_A A xstar x ^ 2 *
+        (1 - inner ℝ (b - (A ⬝ x)) (b - (A ⬝ x)) ^ 2 /
+          (inner ℝ (A ⬝ (b - (A ⬝ x))) (b - (A ⬝ x)) *
+            inner ℝ (A⁻¹ ⬝ (b - (A ⬝ x))) (b - (A ⬝ x)))) := by
+  have hsc : (toEuclideanLin A).IsSymmetricCoercive :=
+    (Matrix.posDef_iff_isSymmetricCoercive A).mp hA
+  have hdet : IsUnit A.det := (isUnit_iff_isUnit_det A).mp hA.isUnit
+  -- the error is `A⁻¹ r`, so the energy norm of the error is `⟪A⁻¹ r, r⟫`
+  have hAd : (A ⬝ (xstar - x)) = b - (A ⬝ x) := by rw [map_sub, hstar]
+  have hd : xstar - x = (A⁻¹ ⬝ (b - (A ⬝ x))) := by
+    have h1 : A⁻¹ *ᵥ (A *ᵥ WithLp.ofLp (xstar - x)) = WithLp.ofLp (xstar - x) := by
+      rw [mulVec_mulVec, nonsing_inv_mul _ hdet, one_mulVec]
+    have h2 : (A⁻¹ ⬝ (A ⬝ (xstar - x))) = xstar - x := congrArg (WithLp.toLp 2) h1
+    rw [← hAd, h2]
+  have henergy : E_A A xstar x ^ 2 = inner ℝ (A⁻¹ ⬝ (b - (A ⬝ x))) (b - (A ⬝ x)) := by
+    rw [E_A_eq_energyNorm, hsc.energyNorm_sq, hAd, ← hd, RCLike.re_to_real,
+      real_inner_comm (b - (A ⬝ x)) (xstar - x), hd]
+  have hnorm : ‖b - (A ⬝ x)‖ ^ 4 = inner ℝ (b - (A ⬝ x)) (b - (A ⬝ x)) ^ 2 := by
+    rw [real_inner_self_eq_norm_sq]
+    ring
+  have h := Projection.energyNorm_steepestDescentStep_sq_eq (A := toEuclideanLin A) (b := b)
+    hsc hstar x
+  rw [E_A_eq_energyNorm, sdStep_eq, h, ← E_A_eq_energyNorm, henergy, hnorm, RCLike.re_to_real]
 
 end SaadSparse.Ch05
