@@ -68,6 +68,7 @@ theorem subspace_zero : subspace A v 0 = ⊥ := by
 theorem subspace_one : subspace A v 1 = R ∙ v := by
   simp [subspace, Set.range_unique]
 
+/-- The generators of `𝒦_m`: `A^i v` lies in it for every `i < m`. -/
 theorem pow_apply_mem_subspace {i m : ℕ} (h : i < m) : (A ^ i) v ∈ subspace A v m :=
   Submodule.subset_span ⟨⟨i, h⟩, rfl⟩
 
@@ -84,6 +85,7 @@ theorem subspace_eq_span_image_Iio (m : ℕ) :
   simp only [Set.mem_range, Set.mem_image, Set.mem_Iio, Fin.exists_iff]
   tauto
 
+/-- The Krylov subspaces grow with the number of steps: `𝒦_m ≤ 𝒦_n` for `m ≤ n`. -/
 theorem subspace_mono : Monotone (subspace A v) := by
   intro m n h
   simp only [subspace_eq_span_image_Iio]
@@ -115,6 +117,8 @@ theorem pow_apply_mem_subspace_of_mem {x : M} {m : ℕ} (hx : x ∈ subspace A v
     rw [h, ← Nat.add_assoc]
     exact map_subspace_le A v (m + k) ⟨_, ih, rfl⟩
 
+/-- The full Krylov space is `A`-invariant; since it also contains `v`, it is the smallest
+`A`-invariant subspace that does. -/
 theorem fullSubspace_mem_invtSubmodule : fullSubspace A v ∈ Module.End.invtSubmodule A := by
   rw [Module.End.mem_invtSubmodule_iff_map_le, fullSubspace, Submodule.map_span, Submodule.span_le]
   rintro _ ⟨_, ⟨i, rfl⟩, rfl⟩
@@ -148,6 +152,8 @@ theorem subspace_eq_map_degreeLT (m : ℕ) :
     rw [LinearMap.smul_apply]
     exact Submodule.smul_mem _ _ (pow_apply_mem_subspace A v (Finset.mem_range.1 hi))
 
+/-- The polynomial description of `𝒦_m` element by element: `x` lies in it exactly when
+`x = p(A) v` for some polynomial `p` of degree `< m`. -/
 theorem mem_subspace_iff_exists_aeval {x : M} {m : ℕ} :
     x ∈ subspace A v m ↔ ∃ p : R[X], p.degree < m ∧ aeval A p v = x := by
   rw [subspace_eq_map_degreeLT]
@@ -157,6 +163,8 @@ theorem mem_subspace_iff_exists_aeval {x : M} {m : ℕ} :
   · rintro ⟨p, hp, rfl⟩
     exact ⟨p, mem_degreeLT.2 hp, rfl⟩
 
+/-- Every polynomial of degree `< m` in `A`, applied to `v`, lands in `𝒦_m`. This is the
+direction of the polynomial description that the Krylov methods use. -/
 theorem aeval_apply_mem_subspace {p : R[X]} {m : ℕ} (hp : p.degree < m) :
     aeval A p v ∈ subspace A v m :=
   (mem_subspace_iff_exists_aeval A v).2 ⟨p, hp, rfl⟩
@@ -202,6 +210,8 @@ theorem subspace_eq_of_pow_apply_mem {n : ℕ} (h : (A ^ n) v ∈ subspace A v n
   | succ m hm ih =>
     rw [(subspace_succ_eq_iff A v m).2 (pow_apply_mem_subspace_of_le A v h hm), ih]
 
+/-- Once the Krylov sequence closes up at step `n`, that subspace is already everything the
+sequence will ever reach: `𝒦_∞ = 𝒦_n`. -/
 theorem fullSubspace_eq_of_pow_apply_mem {n : ℕ} (h : (A ^ n) v ∈ subspace A v n) :
     fullSubspace A v = subspace A v n := by
   refine le_antisymm ?_ (subspace_le_fullSubspace A v n)
@@ -211,8 +221,7 @@ theorem fullSubspace_eq_of_pow_apply_mem {n : ℕ} (h : (A ^ n) v ∈ subspace A
   · exact pow_apply_mem_subspace A v hi
   · exact subspace_eq_of_pow_apply_mem A v h hi ▸ pow_apply_mem_subspace_of_le A v h hi
 
-/-- The Krylov subspace of a submodule-restricted operator / of a linear map viewed as
-`Module.End` (glue for `E →L[𝕜] E` and matrices). -/
+/-- Rescaling the starting vector does not enlarge the Krylov subspace. -/
 theorem subspace_smul (c : R) (m : ℕ) : subspace A (c • v) m ≤ subspace A v m := by
   rw [subspace, Submodule.span_le]
   rintro _ ⟨i, rfl⟩
@@ -291,6 +300,8 @@ theorem pow_apply_mem_subspace_iff_exists_monic (m : ℕ) :
       (monic_X_pow m).ne_zero (by simp [hp.leadingCoeff])
     rwa [degree_X_pow] at hlt
 
+/-- The grade of a vector never exceeds the dimension of the ambient space, so a Krylov method
+in finite dimension terminates in at most `dim V` steps. -/
 theorem grade_le_finrank [FiniteDimensional K V] : grade A v ≤ Module.finrank K V :=
   Submodule.finrank_le _
 
@@ -334,6 +345,8 @@ theorem pow_grade_apply_mem : (A ^ grade A v) v ∈ subspace A v (grade A v) := 
   rw [grade_eq_sInf]
   exact Nat.sInf_mem (exists_pow_apply_mem A v)
 
+/-- The grade is the exact point at which the Krylov sequence stops growing: `grade ≤ m` iff
+`A^m v` has already fallen into `𝒦_m`. The working form of `grade_eq_sInf`. -/
 theorem grade_le_iff {m : ℕ} : grade A v ≤ m ↔ (A ^ m) v ∈ subspace A v m :=
   ⟨fun h => pow_apply_mem_subspace_of_le A v (pow_grade_apply_mem A v) h, fun h => by
     rw [grade_eq_sInf]; exact Nat.sInf_le h⟩
@@ -346,9 +359,12 @@ theorem subspace_eq_of_grade_le {m : ℕ} (h : grade A v ≤ m) :
     subspace A v m = subspace A v (grade A v) :=
   subspace_eq_of_pow_apply_mem A v (pow_grade_apply_mem A v) h
 
+/-- `grade` steps already exhaust the cyclic subspace: `𝒦_grade = 𝒦_∞`. -/
 theorem subspace_grade_eq_fullSubspace : subspace A v (grade A v) = fullSubspace A v :=
   (fullSubspace_eq_of_pow_apply_mem A v (pow_grade_apply_mem A v)).symm
 
+/-- `𝒦_grade` is `A`-invariant: the invariant subspace a Krylov method has built by the time it
+terminates. -/
 theorem subspace_grade_mem_invtSubmodule :
     subspace A v (grade A v) ∈ Module.End.invtSubmodule A :=
   mem_invtSubmodule_of_subspace_succ_eq A v

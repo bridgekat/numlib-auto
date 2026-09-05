@@ -37,6 +37,8 @@ namespace Arnoldi
 variable {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric) (b : E)
 include hA
 
+/-- For symmetric `A` the Arnoldi coefficient array is Hermitian: `h i j = conj (h j i)`. With
+the Hessenberg structure of `coeff_eq_zero_of_lt` this is what forces tridiagonality. -/
 theorem coeff_conj_of_isSymmetric (i j : ℕ) : coeff A b i j = starRingEnd 𝕜 (coeff A b j i) := by
   rw [coeff, coeff, inner_conj_symm, hA]
 
@@ -44,6 +46,8 @@ theorem coeff_conj_of_isSymmetric (i j : ℕ) : coeff A b i j = starRingEnd 𝕜
 theorem coeff_eq_zero_of_isSymmetric {i j : ℕ} (h : i + 1 < j) : coeff A b i j = 0 := by
   rw [coeff_conj_of_isSymmetric hA b i j, coeff_eq_zero_of_lt A b h, map_zero]
 
+/-- The diagonal Arnoldi coefficients of a symmetric operator are real, which is what lets the
+Lanczos matrix be built over `ℝ`. -/
 theorem coeff_diag_re_of_isSymmetric (j : ℕ) :
     coeff A b j j = (RCLike.re (coeff A b j j) : 𝕜) :=
   (RCLike.conj_eq_iff_re.1 (coeff_conj_of_isSymmetric hA b j j).symm).symm
@@ -57,11 +61,13 @@ variable (A : E →ₗ[𝕜] E) (b : E)
 /-- Diagonal Lanczos coefficient `α_j = ⟪v_j, A v_j⟫` (real for symmetric `A`). -/
 noncomputable def alpha (j : ℕ) : ℝ := RCLike.re (Arnoldi.coeff A b j j)
 
-/-- Off-diagonal Lanczos coefficient `β_{j+1} = h_{j+1,j} = ‖w_j‖ ≥ 0`. -/
+/-- Off-diagonal Lanczos coefficient `β_j = h_{j+1,j} = ‖w_j‖ ≥ 0`. -/
 noncomputable def beta (j : ℕ) : ℝ := ‖Arnoldi.w A b j‖
 
 theorem beta_nonneg (j : ℕ) : 0 ≤ beta A b j := norm_nonneg _
 
+/-- The off-diagonal coefficient is the subdiagonal Arnoldi entry: `β_j = h_{j+1,j}`. Symmetry of
+`A` is not needed — that entry is `‖w_j‖`, real and nonnegative for any operator. -/
 theorem coe_beta (j : ℕ) : (beta A b j : 𝕜) = Arnoldi.coeff A b (j + 1) j :=
   (Arnoldi.coeff_succ_self A b j).symm
 
@@ -81,6 +87,7 @@ noncomputable def tridiagExt (m : ℕ) : Matrix (Fin (m + 1)) (Fin m) ℝ :=
     else if (j : ℕ) + 1 = i then beta A b j
     else 0
 
+/-- `T_m` is tridiagonal: it vanishes outside the diagonal and the two neighbouring diagonals. -/
 theorem tridiag_isTridiagonal (m : ℕ) : (tridiag A b m).IsTridiagonal := by
   intro i j hij
   have h : (j : ℕ) + 1 < (i : ℕ) ∨ (i : ℕ) + 1 < (j : ℕ) := by
@@ -92,6 +99,7 @@ theorem tridiag_isTridiagonal (m : ℕ) : (tridiag A b m).IsTridiagonal := by
   simp only [tridiag, Matrix.of_apply]
   rw [ite_eq_right (by omega), ite_eq_right (by omega), ite_eq_right (by omega)]
 
+/-- `T_m` is symmetric: the same `β_j` sits above and below the diagonal. -/
 theorem tridiag_isSymm (m : ℕ) : (tridiag A b m).IsSymm := by
   refine Matrix.IsSymm.ext_iff.2 fun i j => ?_
   simp only [tridiag, Matrix.of_apply]
@@ -137,6 +145,8 @@ private theorem mulVec_tridiagExt_last (m : ℕ) (y : Fin (m + 1) → 𝕜) :
 variable {A} (hA : A.IsSymmetric)
 include hA
 
+/-- The diagonal coefficient is the diagonal Arnoldi entry: `α_j = h_{j,j}`. The real part taken
+in `alpha` loses nothing, because for symmetric `A` that entry is already real. -/
 theorem coe_alpha (j : ℕ) : (alpha A b j : 𝕜) = Arnoldi.coeff A b j j :=
   (Arnoldi.coeff_diag_re_of_isSymmetric hA b j).symm
 
@@ -181,6 +191,8 @@ theorem w_succ_eq (j : ℕ) :
 
 -- `hA` is not needed here: `beta` is `‖w‖` and `Arnoldi.coeff_succ_self_eq_zero_iff` is general.
 set_option linter.unusedSectionVars false in
+/-- Lanczos breaks down exactly at the grade: `β_j = 0` iff `grade ≤ j + 1`, so the recurrence
+runs with nonzero `β` for as long as there is a new direction to find. -/
 theorem beta_eq_zero_iff [FiniteDimensional 𝕜 (fullSubspace A b)] (j : ℕ) :
     beta A b j = 0 ↔ grade A b ≤ j + 1 := by
   rw [← Arnoldi.coeff_succ_self_eq_zero_iff A b j, ← coe_beta A b j, RCLike.ofReal_eq_zero]
@@ -230,6 +242,8 @@ theorem hessenbergSq_eq_map_tridiag (m : ℕ) :
   ext i j
   exact coeff_eq_ite b hA i j
 
+/-- `H̄_m = T̄_m` for symmetric `A`: the rectangular form of Saad, *Iterative Methods*,
+Thm 6.19. -/
 theorem hessenberg_eq_map_tridiagExt (m : ℕ) :
     Arnoldi.hessenberg A b m = (tridiagExt A b m).map (algebraMap ℝ 𝕜) := by
   ext i j

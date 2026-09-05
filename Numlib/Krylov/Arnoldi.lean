@@ -126,6 +126,7 @@ private theorem gs_eq_zero_iff (j : ℕ) : gs A b j = 0 ↔ (A ^ j) b ∈ subspa
 
 -- `hb` is not needed: for `b = 0` both sides are `0`.
 set_option linter.unusedVariables false in
+/-- The process starts from the normalized right-hand side: `v_0 = b/‖b‖`. -/
 theorem vec_zero (hb : b ≠ 0) : vec A b 0 = (‖b‖⁻¹ : 𝕜) • b := by
   have h0 : gs A b 0 = b := by
     rw [gs_def, show (0 : ℕ) = ⊥ from rfl, InnerProductSpace.gramSchmidt_bot]
@@ -142,6 +143,8 @@ theorem vec_eq_zero_iff_pow_apply_mem (j : ℕ) :
 theorem norm_vec_eq_one_of_ne_zero {j : ℕ} (h : vec A b j ≠ 0) : ‖vec A b j‖ = 1 :=
   InnerProductSpace.gramSchmidtNormed_unit_length' h
 
+/-- `v_j` lies in `𝒦_{j+1}`: orthonormalizing the `j`-th Krylov vector only combines
+`b, A b, …, A^j b`. -/
 theorem vec_mem_subspace (j : ℕ) : vec A b j ∈ subspace A b (j + 1) := by
   rw [vec_eq_smul_gs]
   exact Submodule.smul_mem _ _ (gs_mem_subspace A b j.lt_succ_self)
@@ -149,10 +152,14 @@ theorem vec_mem_subspace (j : ℕ) : vec A b j ∈ subspace A b (j + 1) := by
 theorem vec_mem_subspace_of_lt {i m : ℕ} (h : i < m) : vec A b i ∈ subspace A b m :=
   subspace_mono A b h (vec_mem_subspace A b i)
 
+/-- `v_j` is orthogonal to all of `𝒦_j`, that is, to every earlier Arnoldi vector at once; this
+is what Gram–Schmidt subtracts off. -/
 theorem vec_mem_orthogonal (j : ℕ) : vec A b j ∈ (subspace A b j)ᗮ := by
   rw [vec_eq_smul_gs]
   exact Submodule.smul_mem _ _ (gs_mem_orthogonal A b j)
 
+/-- Distinct Arnoldi vectors are orthogonal, at every pair of indices and with no hypothesis on
+the grade: past breakdown the vectors are `0`, and the inner product vanishes for that reason. -/
 theorem inner_vec_eq_zero {i j : ℕ} (h : i ≠ j) : inner 𝕜 (vec A b i) (vec A b j) = 0 := by
   rw [vec_eq_smul_gs, vec_eq_smul_gs, inner_smul_left, inner_smul_right, gs_orthogonal A b h]
   simp
@@ -170,9 +177,13 @@ variable [FiniteDimensional 𝕜 (fullSubspace A b)]
 theorem vec_eq_zero_iff (j : ℕ) : vec A b j = 0 ↔ grade A b ≤ j := by
   rw [vec_eq_zero_iff_pow_apply_mem, grade_le_iff]
 
+/-- Below the grade the Arnoldi vectors are genuine unit vectors; from the grade onwards they
+are `0`, by `vec_eq_zero_iff`. -/
 theorem norm_vec_eq_one_of_lt_grade {j : ℕ} (h : j < grade A b) : ‖vec A b j‖ = 1 :=
   norm_vec_eq_one_of_ne_zero A b (fun hz => absurd ((vec_eq_zero_iff A b j).1 hz) (not_le.2 h))
 
+/-- Saad, *Iterative Methods*, Prop 6.4: the Arnoldi vectors up to the grade — exactly the ones
+that survive the process — form an orthonormal family. -/
 theorem orthonormal : Orthonormal 𝕜 (fun i : Fin (grade A b) => vec A b i) :=
   ⟨fun i => norm_vec_eq_one_of_lt_grade A b i.2,
     fun _ _ hij => inner_vec_eq_zero A b fun h => hij (Fin.val_injective h)⟩
@@ -237,6 +248,8 @@ noncomputable def orthonormalBasis [FiniteDimensional 𝕜 (fullSubspace A b)] {
     (hm : m ≤ grade A b) : OrthonormalBasis (Fin m) 𝕜 (subspace A b m) :=
   OrthonormalBasis.mk (orthonormal_vecIn A b hm) (span_vecIn A b)
 
+/-- The orthonormal basis of `𝒦_m` is made of the Arnoldi vectors themselves, so any statement
+about it may be read back in terms of `vec`. -/
 @[simp]
 theorem coe_orthonormalBasis_apply [FiniteDimensional 𝕜 (fullSubspace A b)] {m : ℕ}
     (hm : m ≤ grade A b) (i : Fin m) : (orthonormalBasis A b hm i : E) = vec A b i :=
@@ -260,6 +273,8 @@ theorem apply_vec (j : ℕ) :
     map_subspace_le A b (j + 1) ⟨_, vec_mem_subspace A b j, rfl⟩
   simpa [coeff] using eq_sum_inner_smul_vec A b hx
 
+/-- The Arnoldi relation with the sum padded out to any length `n ≥ j + 2`: the extra terms
+carry Hessenberg-zero coefficients, so lengthening the range costs nothing. -/
 theorem apply_vec_of_le {j n : ℕ} (h : j + 2 ≤ n) :
     A (vec A b j) = ∑ i ∈ Finset.range n, coeff A b i j • vec A b i := by
   rw [apply_vec]
@@ -273,6 +288,9 @@ theorem apply_vec_of_le {j n : ℕ} (h : j + 2 ≤ n) :
 noncomputable def w (j : ℕ) : E :=
   A (vec A b j) - ∑ i ∈ Finset.range (j + 1), coeff A b i j • vec A b i
 
+/-- `w_j` is exactly the component of `A v_j` orthogonal to `𝒦_{j+1}`: subtracting the
+coefficients of Saad, *Iterative Methods*, Alg 6.1 is the same as removing the orthogonal
+projection onto the space built so far. -/
 theorem w_eq_sub_starProjection (j : ℕ) :
     w A b j = A (vec A b j) - (subspace A b (j + 1)).starProjection (A (vec A b j)) := by
   rw [w]
@@ -363,6 +381,8 @@ private theorem w_eq_zero_iff (j : ℕ) : w A b j = 0 ↔ vec A b (j + 1) = 0 :=
   by_contra h0
   exact smul_ne_zero (inv_ne_zero (by simpa using norm_ne_zero_iff.2 h0)) h0 h
 
+/-- Breakdown read off the Hessenberg matrix (Saad, *Iterative Methods*, Prop 6.6): the
+subdiagonal entry `h_{j+1,j}` vanishes exactly when the process has stopped by step `j + 1`. -/
 theorem coeff_succ_self_eq_zero_iff [FiniteDimensional 𝕜 (fullSubspace A b)] (j : ℕ) :
     coeff A b (j + 1) j = 0 ↔ grade A b ≤ j + 1 := by
   rw [coeff_succ_self, RCLike.ofReal_eq_zero, norm_eq_zero, w_eq_zero_iff, vec_eq_zero_iff]
@@ -377,6 +397,8 @@ noncomputable def hessenberg (m : ℕ) : Matrix (Fin (m + 1)) (Fin m) 𝕜 :=
 noncomputable def hessenbergSq (m : ℕ) : Matrix (Fin m) (Fin m) 𝕜 :=
   Matrix.of fun i j => coeff A b i j
 
+/-- `H̄_m` is upper Hessenberg: it vanishes more than one place below the diagonal. The matrix
+form of `coeff_eq_zero_of_lt`. -/
 theorem hessenberg_isUpperHessenbergRect (m : ℕ) :
     (hessenberg A b m).IsUpperHessenbergRect := fun _ _ h => coeff_eq_zero_of_lt A b h
 
