@@ -78,6 +78,8 @@ theorem isSymm_iff : LinearMap.BilinForm.IsSymm a ↔ ∀ u v, a u v = a v u :=
 noncomputable def toCLM (a : BilinForm V) (hM : a.IsBoundedWith M) : V →L[ℝ] V →L[ℝ] ℝ :=
   LinearMap.mkContinuous₂ a M fun u v => by rw [Real.norm_eq_abs]; exact hM u v
 
+/-- Bundling a bounded form as an element of `L(V, V')` does not change its values: `a.toCLM hM`
+is the same function of `(u, v)` as `a`. -/
 @[simp]
 theorem toCLM_apply (hM : a.IsBoundedWith M) (u v : V) : a.toCLM hM u v = a u v := rfl
 
@@ -90,6 +92,8 @@ Theorem 8.3.1). -/
 noncomputable def ofCLM (A : V →L[ℝ] StrongDual ℝ V) : BilinForm V :=
   (ContinuousLinearMap.coeLM ℝ).comp (A : V →ₗ[ℝ] StrongDual ℝ V)
 
+/-- The form attached to an operator is `a(u,v) = ⟨A u, v⟩`, the defining relation of
+Theorem 8.3.1. -/
 @[simp]
 theorem ofCLM_apply (A : V →L[ℝ] StrongDual ℝ V) (u v : V) : ofCLM A u v = A u v := rfl
 
@@ -102,6 +106,9 @@ theorem isBounded_ofCLM (A : V →L[ℝ] StrongDual ℝ V) : (ofCLM A).IsBounded
     (isBoundedWith_opNorm A u v).trans
       (by nlinarith [mul_nonneg (norm_nonneg u) (norm_nonneg v)])⟩
 
+/-- A bounded form is recovered from the operator it induces.  With `toCLM_ofCLM` this is the
+one-to-one correspondence of Theorem 8.3.1; note that the recovered form does not depend on which
+bound `M` was used to bundle it. -/
 theorem ofCLM_toCLM (hM : a.IsBoundedWith M) : ofCLM (a.toCLM hM) = a := by
   ext u v
   rfl

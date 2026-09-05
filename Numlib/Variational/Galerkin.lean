@@ -44,6 +44,9 @@ def IsPetrovGalerkinSolution {U : Type*} [NormedAddCommGroup U] [InnerProductSpa
     Prop :=
   u ∈ K ∧ ∀ v ∈ L, a u v = ℓ v
 
+/-- The Galerkin method is the Petrov–Galerkin method with the test space equal to the trial
+space, so every Petrov–Galerkin result specializes to it.  The two definitions are the same
+proposition, not merely equivalent ones. -/
 theorem isGalerkinSolution_iff_isPetrovGalerkinSolution (a : SesqForm 𝕜 V) (ℓ : V →L[𝕜] 𝕜)
     (K : Submodule 𝕜 V) (u : V) :
     IsGalerkinSolution a ℓ K u ↔ IsPetrovGalerkinSolution (a : SesqForm₂ 𝕜 V V) ℓ K K u :=

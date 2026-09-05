@@ -126,9 +126,12 @@ theorem isBoundedWith_of_isBoundedWith {b : BilinForm V} (h : b.IsBoundedWith M)
 noncomputable def toCLM (a : BilinForm₂ U V) (hM : a.IsBoundedWith M) : U →L[ℝ] V →L[ℝ] ℝ :=
   LinearMap.mkContinuous₂ a M fun u v => by rw [Real.norm_eq_abs]; exact hM u v
 
+/-- Bundling a bounded two-space form as an element of `L(U, V')` does not change its values. -/
 @[simp]
 theorem toCLM_apply (hM : a.IsBoundedWith M) (u : U) (v : V) : a.toCLM hM u v = a u v := rfl
 
+/-- Any nonnegative constant `M` of (8.7.1) bounds the operator norm of the bundled form, so the
+book's boundedness constant may be used wherever the backbone asks for `‖a‖`. -/
 theorem norm_toCLM_le (hM0 : 0 ≤ M) (hM : a.IsBoundedWith M) : ‖a.toCLM hM‖ ≤ M :=
   LinearMap.mkContinuous₂_norm_le _ hM0 _
 

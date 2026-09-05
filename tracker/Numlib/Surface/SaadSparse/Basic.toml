@@ -13,9 +13,6 @@ id = "complexify_strictLower"
 id = "complexify_strictUpper"
 
 [[node]]
-id = "complexify_sub"
-
-[[node]]
 id = "eigenvalues_le_lambdaMax"
 
 [[node]]

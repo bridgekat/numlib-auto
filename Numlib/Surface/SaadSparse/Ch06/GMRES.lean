@@ -506,6 +506,9 @@ theorem gmres_isMinResIterate_iff {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀))
     IsGMRESIterate A b x₀ m x ↔ Krylov.IsMinResIterate (op A) b x₀ m x :=
   isGMRESIterate_iff A b x₀ hm
 
+/-- **(6.29)–(6.30)**, uniqueness: for nonsingular `A` there is exactly one GMRES approximation
+at step `m`, so "the" GMRES approximation is well defined; `gmresFixed_isGMRESIterate` identifies
+it with the vector Algorithm 6.9 computes. -/
 theorem gmres_unique {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) (hA : IsUnit A) :
     ∃! x, IsGMRESIterate A b x₀ m x :=
   existsUnique_isGMRESIterate A b x₀ hm hA

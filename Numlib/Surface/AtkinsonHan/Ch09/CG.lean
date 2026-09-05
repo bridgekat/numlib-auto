@@ -53,6 +53,9 @@ noncomputable def cgIterate (a : BilinForm V) (hM : a.IsBoundedWith M) (ℓ : St
 
 /-! ### The residual -/
 
+/-- The defining property of the residual of §9.4: `(r, v) = ℓ(v) − a(u, v)` for every `v`.  So
+`r` vanishes exactly when `u` solves the variational problem, which is what makes it the right
+stopping criterion for Algorithm 1. -/
 theorem inner_residual (hM : a.IsBoundedWith M) (ℓ : StrongDual ℝ V) (u v : V) :
     ⟪residual a hM ℓ u, v⟫_ℝ = ℓ v - a u v := by
   rw [residual, SesqForm.inner_rieszRep]

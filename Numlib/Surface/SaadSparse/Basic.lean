@@ -97,14 +97,19 @@ noncomputable def lambdaMax [NeZero n] {H : Matrix (Fin n) (Fin n) 𝕜} (hH : H
 variable [NeZero n] {H : Matrix (Fin n) (Fin n) 𝕜} (hH : H.IsHermitian)
 
 include hH in
+/-- `λ_min(H)` is a lower bound for the spectrum: no eigenvalue of `H` falls below it. -/
 theorem lambdaMin_le_eigenvalues (i : Fin n) : lambdaMin hH ≤ hH.eigenvalues i :=
   inf'_le _ (mem_univ i)
 
 include hH in
+/-- `λ_max(H)` is an upper bound for the spectrum: no eigenvalue of `H` rises above it. -/
 theorem eigenvalues_le_lambdaMax (i : Fin n) : hH.eigenvalues i ≤ lambdaMax hH :=
   le_sup' _ (mem_univ i)
 
 include hH in
+/-- `λ_min(H) ≤ λ_max(H)`.  The interval `[λ_min, λ_max]` that carries the quadratic-form bounds
+of (1.40) is therefore nonempty; this needs `n ≠ 0`, since there must be an eigenvalue between
+the two. -/
 theorem lambdaMin_le_lambdaMax : lambdaMin hH ≤ lambdaMax hH :=
   (lambdaMin_le_eigenvalues hH ⟨0, Nat.pos_of_ne_zero (NeZero.ne n)⟩).trans
     (eigenvalues_le_lambdaMax hH _)
@@ -123,21 +128,30 @@ section Complexify
 
 variable {n : ℕ}
 
+/-- Complexification is additive; the `simp` form at `Fin n` of `Matrix.complexify_sub`. -/
 @[simp]
 theorem complexify_sub (A B : Matrix (Fin n) (Fin n) ℝ) :
     complexify (A - B) = complexify A - complexify B := by
   ext i j; simp [complexify]
 
+/-- Complexification commutes with taking the diagonal part, so the splitting `A = D - E - F`
+of (4.2) may be formed before or after passing to `ℂ`.  This, with the two companions below, is
+what lets a real iteration matrix be analysed through the spectral radius of its
+complexification. -/
 @[simp]
 theorem complexify_diagPart (A : Matrix (Fin n) (Fin n) ℝ) :
     complexify (diagPart A) = diagPart (complexify A) := by
   ext i j; by_cases h : i = j <;> simp [complexify, diagPart_apply, h]
 
+/-- Complexification commutes with taking the strict lower part, the `-E` of the splitting
+`A = D - E - F` of (4.2). -/
 @[simp]
 theorem complexify_strictLower (A : Matrix (Fin n) (Fin n) ℝ) :
     complexify (strictLower A) = strictLower (complexify A) := by
   ext i j; by_cases h : j < i <;> simp [complexify, strictLower_apply, h]
 
+/-- Complexification commutes with taking the strict upper part, the `-F` of the splitting
+`A = D - E - F` of (4.2). -/
 @[simp]
 theorem complexify_strictUpper (A : Matrix (Fin n) (Fin n) ℝ) :
     complexify (strictUpper A) = strictUpper (complexify A) := by

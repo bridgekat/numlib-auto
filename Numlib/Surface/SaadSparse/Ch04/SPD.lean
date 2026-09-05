@@ -43,6 +43,8 @@ def antiDiagL (B₂₁ : Matrix (Fin n₂) (Fin n₁) ℂ) : Matrix (I n₁, n�
 def antiDiagU (B₁₂ : Matrix (Fin n₁) (Fin n₂) ℂ) : Matrix (I n₁, n₂) (I n₁, n₂) ℂ :=
   fromBlocks 0 B₁₂ 0 0
 
+/-- `B = L + U`: a block anti-diagonal matrix is the sum of its strictly lower and strictly upper
+blocks, so the family `B(α) = α L + α⁻¹ U` of `prop_4_12_alpha` passes through `B` at `α = 1`. -/
 theorem antiDiag_eq_add (B₁₂ : Matrix (Fin n₁) (Fin n₂) ℂ) (B₂₁ : Matrix (Fin n₂) (Fin n₁) ℂ) :
     antiDiag B₁₂ B₂₁ = antiDiagL B₂₁ + antiDiagU B₁₂ := by
   rw [antiDiag, antiDiagL, antiDiagU, fromBlocks_add]

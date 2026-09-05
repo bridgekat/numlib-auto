@@ -48,11 +48,17 @@ def IsCoercive : Prop := ∃ c : ℝ, 0 < c ∧ a.IsCoerciveWith c
 /-- `a u v = conj (a v u)`. -/
 def IsHermitian : Prop := ∀ u v, a u v = starRingEnd 𝕜 (a v u)
 
+/-- Every bounded form is bounded with its own operator norm: `‖a u v‖ ≤ ‖a‖ ‖u‖ ‖v‖`. -/
 theorem isBoundedWith_opNorm : a.IsBoundedWith ‖a‖ := fun u v => a.le_opNorm₂ u v
 
+/-- The operator norm is the *least* boundedness constant: any nonnegative `M` with
+`‖a u v‖ ≤ M ‖u‖ ‖v‖` dominates `‖a‖`.  With `isBoundedWith_opNorm` this identifies `‖a‖` with
+the smallest constant in the definition of boundedness. -/
 theorem opNorm_le_of_isBoundedWith {M : ℝ} (hM : 0 ≤ M) (h : a.IsBoundedWith M) : ‖a‖ ≤ M :=
   a.opNorm_le_bound₂ hM h
 
+/-- Coercivity only weakens as its constant shrinks: a form coercive with constant `c` is
+coercive with every `c' ≤ c`. -/
 theorem IsCoerciveWith.mono {c c' : ℝ} (h : a.IsCoerciveWith c) (hc : c' ≤ c) :
     a.IsCoerciveWith c' := fun v =>
   (mul_le_mul_of_nonneg_right hc (sq_nonneg _)).trans (h v)
@@ -80,6 +86,7 @@ theorem isHermitian_real_iff {V : Type*} [NormedAddCommGroup V] [InnerProductSpa
 theorem innerSL_isCoerciveWith : SesqForm.IsCoerciveWith (innerSL 𝕜 : SesqForm 𝕜 V) 1 := fun v => by
   simp
 
+/-- The inner product is a Hermitian form: this is conjugate symmetry `⟪u, v⟫ = conj ⟪v, u⟫`. -/
 theorem innerSL_isHermitian : SesqForm.IsHermitian (innerSL 𝕜 : SesqForm 𝕜 V) := fun u v =>
   (inner_conj_symm (𝕜 := 𝕜) u v).symm
 
@@ -97,15 +104,19 @@ theorem to each of the functionals `a u` (Atkinson–Han, *Theoretical Numerical
 and (9.4.5)); Mathlib's `InnerProductSpace.continuousLinearMapOfBilin`. -/
 noncomputable abbrev toOperator : V →L[𝕜] V := InnerProductSpace.continuousLinearMapOfBilin a
 
+/-- The defining property of `SesqForm.toOperator`: `⟪A u, v⟫ = a u v`.  Every fact about a form
+is transported to its operator, and back, through this identity. -/
 theorem inner_toOperator (u v : V) : inner 𝕜 (toOperator a u) v = a u v :=
   InnerProductSpace.continuousLinearMapOfBilin_apply a u v
 
 /-- The Riesz representative `f` of a functional, `⟪f, v⟫ = ℓ v`. -/
 noncomputable def rieszRep (ℓ : V →L[𝕜] 𝕜) : V := (InnerProductSpace.toDual 𝕜 V).symm ℓ
 
+/-- The defining property of the Riesz representative: `⟪rieszRep ℓ, v⟫ = ℓ v` for every `v`. -/
 theorem inner_rieszRep (ℓ : V →L[𝕜] 𝕜) (v : V) : inner 𝕜 (rieszRep ℓ) v = ℓ v :=
   InnerProductSpace.toDual_symm_apply
 
+/-- Riesz representation is isometric: the representative of `ℓ` has the same norm as `ℓ`. -/
 theorem norm_rieszRep (ℓ : V →L[𝕜] 𝕜) : ‖rieszRep ℓ‖ = ‖ℓ‖ :=
   (InnerProductSpace.toDual 𝕜 V).symm.norm_map ℓ
 
@@ -113,25 +124,37 @@ theorem norm_rieszRep (ℓ : V →L[𝕜] 𝕜) : ‖rieszRep ℓ‖ = ‖ℓ‖
 `InnerProductSpace.toDual.symm`. -/
 theorem toOperator_apply_eq_rieszRep (u : V) : toOperator a u = rieszRep (a u) := rfl
 
+/-- An operator is recovered from its form.  Together with `ofOperator_toOperator`, `ofOperator`
+and `toOperator` are mutually inverse: on a Hilbert space the bounded sesquilinear forms are
+exactly the forms `⟪A u, v⟫` of bounded operators, with no repetition. -/
 theorem toOperator_ofOperator (A : V →L[𝕜] V) : toOperator (ofOperator A) = A := by
   ext u
   exact ext_inner_right 𝕜 fun v => (inner_toOperator _ u v).trans (ofOperator_apply A u v)
 
+/-- A form is recovered from its operator: the other half of the bijection of
+`toOperator_ofOperator`. -/
 theorem ofOperator_toOperator : ofOperator (toOperator a) = a := by
   ext u v
   exact inner_toOperator a u v
 
+/-- Coercivity is the same condition on a form and on its operator: the two quadratic forms
+`re (a v v)` and `re ⟪A v, v⟫` are literally the same function of `v`. -/
 theorem isCoerciveWith_iff_toOperator (c : ℝ) :
     a.IsCoerciveWith c ↔ (toOperator a : V →ₗ[𝕜] V).IsCoerciveWith c := by
   simp only [IsCoerciveWith, LinearMap.IsCoerciveWith, ContinuousLinearMap.coe_coe,
     inner_toOperator]
 
+/-- A form is Hermitian exactly when its operator is symmetric, `⟪A u, v⟫ = ⟪u, A v⟫`; since `A`
+is bounded and everywhere defined, that is self-adjointness. -/
 theorem isHermitian_iff_toOperator_isSymmetric :
     a.IsHermitian ↔ (toOperator a : V →ₗ[𝕜] V).IsSymmetric := by
   simp only [IsHermitian, LinearMap.IsSymmetric, ContinuousLinearMap.coe_coe]
   refine forall_congr' fun u => forall_congr' fun v => ?_
   rw [← inner_conj_symm (𝕜 := 𝕜) u (toOperator a v), inner_toOperator, inner_toOperator]
 
+/-- The correspondence between forms and operators is isometric, because `A u` is the Riesz
+representative of the functional `a u` and Riesz representation preserves norms.  So a bound `M`
+for the form is a bound for `A`, and conversely. -/
 theorem norm_toOperator : ‖toOperator a‖ = ‖a‖ :=
   ContinuousLinearMap.opNorm_ext _ _ fun u => by
     rw [toOperator_apply_eq_rieszRep, norm_rieszRep]
@@ -158,6 +181,9 @@ noncomputable def energy (ℓ : V →L[𝕜] 𝕜) (v : V) : ℝ :=
 /-- The energy norm of a Hermitian coercive form. -/
 noncomputable def energyNorm (v : V) : ℝ := Real.sqrt (RCLike.re (a v v))
 
+/-- The energy norm of a form is the energy norm `√(re ⟪A v, v⟫)` of its associated operator, so
+everything proved about energy norms of operators — Cauchy–Schwarz, the energy inner product and
+its orthogonal projections — applies verbatim to a form. -/
 theorem energyNorm_eq_energyNorm_toOperator [CompleteSpace V] (v : V) :
     a.energyNorm v = _root_.energyNorm (toOperator a : V →ₗ[𝕜] V) v := by
   simp only [energyNorm, _root_.energyNorm, ContinuousLinearMap.coe_coe, inner_toOperator]
@@ -172,6 +198,8 @@ theorem sqrt_mul_norm_le_energyNorm {c : ℝ} (hc : 0 ≤ c) (h : a.IsCoerciveWi
   rw [energyNorm, hcv]
   exact Real.sqrt_le_sqrt (h v)
 
+/-- Upper half of the norm equivalence `√c ‖v‖ ≤ ‖v‖_a ≤ √M ‖v‖`: a bound `M` on the form bounds
+the energy norm by `√M ‖v‖`.  The lower half is `sqrt_mul_norm_le_energyNorm`. -/
 theorem energyNorm_le_sqrt_mul_norm {M : ℝ} (h : a.IsBoundedWith M) (v : V) :
     a.energyNorm v ≤ Real.sqrt M * ‖v‖ := by
   have hMv : RCLike.re (a v v) ≤ M * ‖v‖ ^ 2 := by

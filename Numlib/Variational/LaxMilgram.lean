@@ -542,6 +542,11 @@ theorem ContinuousLinearMap.isClosed_range_of_le_norm (L : V →L[𝕜] W) {c : 
     (h : ∀ v, c * ‖v‖ ≤ ‖L v‖) : IsClosed (LinearMap.range (L : V →ₗ[𝕜] W) : Set W) :=
   isClosed_range_aux L hc h
 
+/-- Atkinson–Han, *Theoretical Numerical Analysis*, Thm 8.2.4: a bounded-below operator whose
+range is dense is bijective.  The bound `c ‖v‖ ≤ ‖L v‖` gives injectivity and a closed range, and
+the hypothesis `(range L)ᗮ = ⊥` — no nonzero vector is orthogonal to the range — then forces that
+closed range to be all of `W`.  This is the closed-range route to Lax–Milgram and to
+`SesqForm₂.babuska_necas`, where the two hypotheses are coercivity and nondegeneracy. -/
 theorem ContinuousLinearMap.bijective_of_le_norm_of_orthogonal_range_eq_bot (L : V →L[𝕜] W)
     {c : ℝ} (hc : 0 < c) (h : ∀ v, c * ‖v‖ ≤ ‖L v‖)
     (hdense : (LinearMap.range (L : V →ₗ[𝕜] W))ᗮ = ⊥) : Function.Bijective L :=
