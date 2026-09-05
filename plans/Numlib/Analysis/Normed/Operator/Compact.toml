@@ -1,82 +1,17 @@
-desc = '''
-Compact operators: the facts Atkinson–Han, *Theoretical Numerical Analysis*, §2.8 needs that
-Mathlib's `Mathlib.Analysis.Normed.Operator.Compact` does not have (upstreaming candidate, natural
-home: that directory). Mathlib supplies the definition `IsCompactOperator` with its ball
-characterisations, closure under sums, scalar multiples and composition with bounded operators, the
-Fredholm alternative (`IsCompactOperator.hasEigenvalue_or_mem_resolventSet`, Atkinson–Han
-Thm 2.8.10), `hasEigenvalue_iff_mem_spectrum`, and the compact self-adjoint spectral theorem
-(`orthogonalComplement_iSup_eigenspaces_eq_bot`, `finite_dimensional_eigenspace`). What is missing
-is the elementary closure properties (Atkinson–Han Prop 2.8.4, 2.8.7), Schauder's theorem
-(Lemma 2.8.13) and the two Riesz-theory statements the book's §2.8.5 uses about `λ - K`
-(Thm 2.8.12 (1), (4) and Thm 2.8.14 (2)).
-
-Schauder's theorem is stated for Hilbert spaces only, which is all Atkinson–Han needs and all that
-`ContinuousLinearMap.adjoint` is defined for. The proof avoids the finite-rank approximation
-property: for a bounded sequence `y n` in `F`, the functions `x ↦ ⟪y n, x⟫` on the compact set
-`closure (K '' closedBall 0 1)` are bounded and equicontinuous, so Arzelà–Ascoli
-(`Mathlib.Topology.UniformSpace.Ascoli`) gives a uniformly convergent subsequence, and
-`‖K† (y n) - K† (y m)‖ = sup_{‖x‖ ≤ 1} ‖⟪y n - y m, K x⟫‖` is exactly the uniform distance.
-
-Not planned, and why: the Riesz ascent–descent theory (Atkinson–Han Thm 2.8.12 (3), (5) — the
-chain of null spaces stabilises at a finite index and `V = N((λ-K)^ν) ⊕ R((λ-K)^ν)`) and the equal
-dimensions of `N(λ - K)` and `N(λ̄ - K*)` (Thm 2.8.14 (1)). They are a development of their own,
-their only consumers in the corpus are Atkinson–Han Thm 2.9.4 and §2.8.5, which are stated in the
-book without proof, and the holomorphic functional calculus that Thm 2.9.4 needs is out of scope
-anyway (`backbone.md` §1.7).
-'''
-
-[[node]]
-id = "IsCompactOperator.of_finiteDimensional_range"
-kind = "theorem"
-desc = '''Atkinson–Han Prop 2.8.4: a bounded linear operator with finite-dimensional range is compact.
-Corestrict to the range, which is a finite-dimensional and hence locally compact normed space, and
-apply `isCompactOperator_of_locallyCompactSpace_rng` with `IsCompactOperator.codRestrict`.'''
-source = "Atkinson–Han, Theoretical Numerical Analysis, Proposition 2.8.4"
-
-[[node]]
-id = "IsCompactOperator.of_tendsto"
-kind = "theorem"
-desc = '''Atkinson–Han Prop 2.8.7: with a complete codomain, an operator-norm limit of compact operators is
-compact — equivalently `isClosed_compactOperator`, the submodule `compactOperator` of
-`Mathlib.Analysis.Normed.Operator.Compact` is closed. Total boundedness of the image of the unit
-ball by an ε/3 argument against a compact approximant, then `IsCompact` from completeness.'''
-source = "Atkinson–Han, Theoretical Numerical Analysis, Proposition 2.8.7"
-
 [[node]]
 id = "IsCompactOperator.adjoint"
-kind = "theorem"
-desc = '''Schauder's theorem, Atkinson–Han Lemma 2.8.13: for Hilbert spaces `E`, `F` and a compact
-`K : E →L[𝕜] F`, the adjoint `K†` is compact. Arzelà–Ascoli applied to the functions
-`x ↦ ⟪y n, x⟫` on `closure (K '' closedBall 0 1)`, as described in the module note.'''
-source = "Atkinson–Han, Theoretical Numerical Analysis, Lemma 2.8.13"
 
 [[node]]
 id = "IsCompactOperator.finite_setOf_hasEigenvalue_norm_le"
-kind = "theorem"
-desc = '''Atkinson–Han Thm 2.8.12 (1): for a compact `K` on a Banach space and `ε > 0`, the set of
-eigenvalues `μ` with `ε ≤ ‖μ‖` is finite; hence the eigenvalues form a discrete set whose only
-possible limit point is `0`. Riesz's lemma applied to the strictly increasing chain of spans of
-eigenvectors for distinct eigenvalues, exactly as in the private `exists_seq` of Mathlib's
-`FredholmAlternative`.'''
-source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 2.8.12 (1)"
 
 [[node]]
 id = "IsCompactOperator.isClosed_range_smul_sub"
-kind = "theorem"
-desc = '''Atkinson–Han Thm 2.8.12 (4): for a compact `K` on a Banach space and `μ ≠ 0`, the range of
-`μ • 1 - K` is closed. On a complement of the (finite-dimensional) kernel the operator is
-antilipschitz — `IsCompactOperator.antilipschitz_of_not_hasEigenvalue` is the injective case and
-generalises — and an antilipschitz map with complete domain has closed range.'''
-deps = ["IsCompactOperator.of_finiteDimensional_range"]
-source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 2.8.12 (4)"
+
+[[node]]
+id = "IsCompactOperator.of_finiteDimensional_range"
+
+[[node]]
+id = "IsCompactOperator.of_tendsto"
 
 [[node]]
 id = "IsCompactOperator.range_smul_sub_eq_orthogonal_ker_adjoint"
-kind = "theorem"
-desc = '''Atkinson–Han Thm 2.8.14 (2), the solvability criterion: on a Hilbert space, for compact `K` and
-`μ ≠ 0`, `range (μ • 1 - K) = (ker (conj μ • 1 - K†))ᗮ`, so `(μ • 1 - K) u = f` is solvable exactly
-when `f ⟂ ker (conj μ • 1 - K†)`, and `V = ker (conj μ • 1 - K†) ⊕ range (μ • 1 - K)`. The
-inclusion `range ⊆ (ker adjoint)ᗮ` is formal; equality needs the closed range of
-`isClosed_range_smul_sub`.'''
-deps = ["IsCompactOperator.isClosed_range_smul_sub", "IsCompactOperator.adjoint"]
-source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 2.8.14 (2)"

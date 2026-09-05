@@ -334,6 +334,16 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   every earlier-style call site then fails with "application type mismatch: `hδ` … expected `ℝ`". Pick
   one binder style per name per file, and write binders out rather than reusing a section name.
 
+* A `set x := e with h` binding is opaque to `rw`-style lemma matching (`Submodule.span_le` will
+  not fire on `V n` even though `V n` *is* a span) and it can send `linarith` into a `whnf` timeout.
+  `obtain ⟨V, hVdef⟩ : ∃ V : ℕ → Submodule 𝕜 X, ∀ n, V n = … := ⟨_, fun _ => rfl⟩` gives an opaque
+  name plus a rewriting equation and has neither problem.
+* Dot notation `u.ker` and `u.range` on a `ContinuousLinearMap` resolves through the parent
+  `LinearMap` structure and is the way to write those; `LinearMap.ker u` applied to a bundled
+  continuous map does *not* elaborate (`LinearMap.ker` wants a `→ₛₗ`). The two spellings differ
+  syntactically afterwards: a hypothesis stated as `↑(μ • 1 - K) x = y` will not `rw` into a goal
+  written `(μ • 1 - K) x = y`, so restate it with `have h' : … := fun n => h n`.
+
 ## Tactics
 
 * `module` is the right tactic for vector identities with symbolic scalars; `abel` cannot move
@@ -494,6 +504,14 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
 * `rw` with an equation whose right-hand side contains its own left-hand side loops the goal into
   nonsense: `rw [h]` for `h : A * M = 1 - (1 - A * M)` rewrites the `A * M` inside the replacement
   too. Put the identity in an auxiliary `have` proved by `noncomm_ring` and rewrite with *that*.
+
+* `Filter.Tendsto.congr` takes the pointwise equality *first* and the `Tendsto` second, so it is not
+  dot notation on the hypothesis: `Filter.Tendsto.congr (fun k => hid _) h`. Do not try to fix up a
+  limit with `simpa [hid] using h` when `hid` is stated about a compound operator: `simp` expands
+  `(μ • 1 - K) z` into `μ • z - K z` before `hid` can fire.
+* `simpa using h` fails and `simpa using! h` succeeds when the two sides differ only by a coercion
+  path: `IsClosed.preimage_val` lands in `↑↑p` (the subtype of the *set* `↑p`) where the goal wants
+  `↑p` (the subtype of the submodule).
 
 ## Mathlib names and API
 
@@ -932,6 +950,28 @@ hypothesis is not predictable — pass both.
 function is already beta-reduced: that is higher-order unification, and `rw` does not do it. Apply
 the lemma with its function argument given explicitly and combine with `.trans` / `exact`, which
 check up to defeq.
+
+Compact operators:
+
+* **`IsCompactOperator f` is `∃ K, IsCompact K ∧ f ⁻¹' K ∈ 𝓝 0`**, the *preimage* form, not the
+  image form the textbooks use. Destructuring it therefore hands you a set in the **codomain**,
+  which produces bewildering `Set W` versus `Set V` mismatches if you expected a neighbourhood of
+  the origin. `isCompactOperator_iff_exists_mem_nhds_isCompact_closure_image` and
+  `isCompactOperator_iff_isCompact_closure_image_closedBall` are the image forms.
+* `IsCompactOperator.isCompact_closure_image_closedBall` and `image_closedBall_subset_compact` take
+  the radius as an **explicit** argument and no positivity hypothesis; passing `one_pos` instead of
+  `1` type-checks far enough to leave you projecting a field out of an `Exists`. The `iff` lemmas do
+  take `(hr : 0 < r)`.
+* Applying any of those to `hf : IsCompactOperator (fun y => …)` — a lambda rather than a coerced
+  bundled map — sets off a higher-order unification against `⇑(f : M₁ →ₛₗ[σ] M₂)` that runs out of
+  heartbeats with no useful message. State the hypothesis about the bundled map instead:
+  `have hcomp : IsCompactOperator ((K ∘L A : F →L[𝕜] F) : F →ₗ[𝕜] F) := hK.comp_clm A`.
+* `ContinuousLinearMap.finite_dimensional_eigenspace` and the compact self-adjoint spectral theorem
+  `orthogonalComplement_iSup_eigenspaces_eq_bot` are in `Mathlib/Analysis/InnerProductSpace/Spectrum`,
+  and the former needs no self-adjointness.
+* `tendsto_one_div_add_atTop_nhds_zero_nat` is polymorphic in the field, so
+  `simpa … using tendsto_one_div_add_atTop_nhds_zero_nat.comp h` leaves a stuck
+  `ContinuousSMul ℚ≥0 ?m` instance. Pin it with a typed `have` before composing.
 
 ## Design conventions of this library
 

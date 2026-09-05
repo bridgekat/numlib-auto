@@ -1,49 +1,8 @@
-desc = '''
-Compact and completely continuous nonlinear operators between Banach spaces: the definition, and
-the one theorem about them this project can prove.
-
-A map `T : K ⊆ V → W` is *compact* when it takes bounded subsets of `K` to relatively compact sets,
-and *completely continuous* when it is compact and continuous (Atkinson–Han, *Theoretical Numerical
-Analysis*, Definition 5.5.3). For linear maps compactness implies continuity and the notion is
-Mathlib's `IsCompactOperator`; for nonlinear maps continuity is an independent hypothesis, which is
-why the two words are needed.
-
-The single theorem is Atkinson–Han Proposition 5.5.5: the Fréchet derivative of a completely
-continuous operator at an interior point is a **compact linear** operator. It is what licenses the
-Fredholm alternative for `1 - T'(v₀)`, and so it is the bridge from the nonlinear fixed point
-problem `u = T u` to the second-kind linear theory of `Numlib/IntegralEquations/SecondKind`; it is
-used in Atkinson–Han Section 12.7 for the linearized analysis of projection methods for nonlinear
-integral equations. The proof is that the difference quotients `t⁻¹ (T (v₀ + t v) - T v₀)` are
-compact maps of the unit ball, converge to `A` in operator norm, and the compact operators form a
-closed subspace (`isClosed_setOfPred_isCompactOperator`).
-
-**Not planned here, and not anywhere:** Brouwer's fixed point theorem (Atkinson–Han Theorem 5.5.1),
-Schauder's fixed point theorem (Theorem 5.5.4), and the rotation and index of a completely
-continuous vector field (Section 5.5.1, properties P1–P5). Mathlib has no Brouwer theorem and no
-degree theory, and building either is algebraic topology rather than numerical analysis; the book
-itself quotes all of them without proof. The homotopy argument of Atkinson–Han Section 12.7.2,
-which is the only consumer of the rotation, is out of scope for the same reason.
-'''
-
 [[node]]
 id = "IsCompactMap"
-kind = "definition"
-desc = '''`IsCompactMap T K : Prop` — for every bounded `B ⊆ K` the closure of `T '' B` is compact
-(Atkinson–Han, *Theoretical Numerical Analysis*, Definition 5.5.3). A completely continuous
-operator is a continuous compact map; for a linear map on the whole space the predicate is
-equivalent to Mathlib's `IsCompactOperator`, and that equivalence should be a lemma of the
-module.'''
-source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 5.5.3"
 
 [[node]]
 id = "IsCompactMap.isCompactOperator_hasFDerivAt"
-kind = "theorem"
-desc = '''Atkinson–Han Proposition 5.5.5: if `T` is a completely continuous operator on an open set
-`K` of a Banach space and is Fréchet differentiable at `v₀ ∈ K` with derivative `A`, then `A` is a
-compact operator. The maps `v ↦ t⁻¹ (T (v₀ + t v) - T v₀)` send the unit ball into a relatively
-compact set and converge uniformly on it to `A` as `t → 0`, so `A` is a norm limit of compact maps;
-conclude with `isClosed_setOfPred_isCompactOperator`. The point of the statement is that the
-Fredholm alternative then applies to `1 - A`, which is how a nonlinear fixed point problem is
-linearized into a second-kind linear equation.'''
-deps = ["IsCompactMap"]
-source = "Atkinson–Han, Theoretical Numerical Analysis, Proposition 5.5.5"
+
+[[node]]
+id = "isCompactMap_univ_iff_isCompactOperator"

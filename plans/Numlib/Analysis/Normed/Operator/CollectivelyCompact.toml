@@ -1,87 +1,26 @@
-desc = '''
-Collectively compact families of operators, after P. Anselone's theory of collectively compact
-operator approximations (upstreaming candidate; natural home
-`Mathlib.Analysis.Normed.Operator.Compact`).
-
-A family `K : ι → V →L[𝕜] W` is *collectively compact* when the union of the images of one
-neighbourhood of the origin has compact closure — the exact analogue of Mathlib's
-`IsCompactOperator`, so that a one-element family is collectively compact precisely when its
-member is a compact operator. The point of the notion is that a pointwise convergent, collectively
-compact family satisfies `‖(K - K n) ∘L K n‖ → 0` even though `‖K - K n‖` does not tend to zero;
-that is what makes the Nyström method for integral equations of the second kind stable
-(Atkinson–Han, *Theoretical Numerical Analysis*, Section 12.4.3, assumptions A1–A3 and
-Lemma 12.4.7).
-
-The module also carries the Banach–Steinhaus fact that both this theory and the projection-method
-theory rest on: a pointwise convergent sequence of bounded operators converges **uniformly on
-compact sets** (Atkinson–Han Lemma 12.1.3), and hence the operator norm of `A n ∘L M` tends to `0`
-whenever `A n` tends to `0` pointwise and `M` is compact (Atkinson–Han Lemma 12.1.4 with
-`A n = 1 - P n`, and Lemma 12.4.7(3) with `A n = K - K n`). Do not prove the two cases separately:
-the single composition lemma covers the projection methods of Section 12.1 and the quadrature
-methods of Section 12.4 at once, and `Numlib/Variational/ProjectionMethod.toml` should use it
-rather than rederive it.
-
-Completeness of the domain is needed only for the uniform-boundedness step; where an explicit
-uniform bound is available, state the composition lemma with that bound instead of assuming
-`[CompleteSpace V]`.
-'''
-
-[[node]]
-id = "tendstoUniformlyOn_of_tendsto_of_isCompact"
-kind = "theorem"
-desc = '''Atkinson–Han, *Theoretical Numerical Analysis*, Lemma 12.1.3: if a sequence of bounded
-linear operators `A n : V →L[𝕜] W` converges pointwise on a Banach space `V`, the convergence is
-uniform on every compact subset of `V`. Uniform boundedness (`banach_steinhaus`) makes the family
-equicontinuous, and equicontinuity plus pointwise convergence gives uniformity on a compact set.'''
-source = "Atkinson–Han, Theoretical Numerical Analysis, Lemma 12.1.3"
-
-[[node]]
-id = "tendsto_opNorm_comp_of_isCompactOperator"
-kind = "theorem"
-desc = '''If `A n : V →L[𝕜] W` tends to `0` pointwise and `M : U →L[𝕜] V` is a compact operator,
-then `‖A n ∘L M‖` tends to `0`. The operator norm of `A n ∘L M` is the supremum of `‖A n z‖` over
-the relatively compact image of the closed unit ball under `M`, on which the convergence is
-uniform. Atkinson–Han Lemma 12.1.4 (with `A n = 1 - P n` for pointwise convergent projections,
-giving `‖K - P n ∘L K‖ → 0` for compact `K`) and Lemma 12.4.7(3) (with `A n = K - K n`) are the two
-uses.'''
-deps = ["tendstoUniformlyOn_of_tendsto_of_isCompact"]
-source = "Atkinson–Han, Theoretical Numerical Analysis, Lemma 12.1.4 and Lemma 12.4.7"
-
 [[node]]
 id = "IsCollectivelyCompact"
-kind = "definition"
-desc = '''`IsCollectivelyCompact (K : ι → V →L[𝕜] W) : Prop` — there is a neighbourhood `U` of `0`
-in `V` such that the closure of the union over `i` of the images `K i '' U` is compact.
-Atkinson–Han, *Theoretical Numerical Analysis*, assumption A3 of Section 12.4.3, in the shape of
-Mathlib's `IsCompactOperator`, together with the equivalence with `IsCompactOperator` for a
-one-element family and monotonicity in the index family.'''
-source = "Atkinson–Han, Theoretical Numerical Analysis, Section 12.4.3, assumption A3"
 
 [[node]]
-id = "IsCollectivelyCompact.isCompactOperator_of_tendsto"
-kind = "theorem"
-desc = '''Atkinson–Han Lemma 12.4.7(1): the pointwise limit of a collectively compact family is a
-compact operator, because the image of the unit ball under the limit lies in the closure of the
-collectively compact set.'''
-deps = ["IsCollectivelyCompact"]
-source = "Atkinson–Han, Theoretical Numerical Analysis, Lemma 12.4.7"
+id = "IsCollectivelyCompact.comp"
 
 [[node]]
 id = "IsCollectivelyCompact.exists_opNorm_le"
-kind = "theorem"
-desc = '''Atkinson–Han Lemma 12.4.7(2): a collectively compact family is uniformly bounded in
-operator norm, because the compact set of assumption A3 is bounded.'''
-deps = ["IsCollectivelyCompact"]
-source = "Atkinson–Han, Theoretical Numerical Analysis, Lemma 12.4.7"
+
+[[node]]
+id = "IsCollectivelyCompact.isCompactOperator"
+
+[[node]]
+id = "IsCollectivelyCompact.isCompactOperator_of_tendsto"
 
 [[node]]
 id = "IsCollectivelyCompact.tendsto_opNorm_sub_comp"
-kind = "theorem"
-desc = '''Atkinson–Han Lemma 12.4.7(4): for a collectively compact family `K n` converging pointwise
-to `K`, the operator norm of `(K - K n) ∘L K n` tends to `0`, since the supremum defining it is
-taken over the collectively compact set, on which the convergence is uniform. This is the
-hypothesis of Anselone's perturbation theorem in `Numlib/IntegralEquations/SecondKind.toml`, and
-the reason the Nyström method is stable although the operator norm of `K - K n` does not tend to
-zero.'''
-deps = ["IsCollectivelyCompact", "tendstoUniformlyOn_of_tendsto_of_isCompact"]
-source = "Atkinson–Han, Theoretical Numerical Analysis, Lemma 12.4.7"
+
+[[node]]
+id = "isCollectivelyCompact_const_iff"
+
+[[node]]
+id = "tendstoUniformlyOn_of_tendsto_of_isCompact"
+
+[[node]]
+id = "tendsto_opNorm_comp_of_isCompactOperator"
