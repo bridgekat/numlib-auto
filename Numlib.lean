@@ -12,6 +12,7 @@ import Numlib.Analysis.Normed.Ring.Inverse
 import Numlib.Approximation.BestApprox
 import Numlib.Eigen.MinMax
 import Numlib.Eigen.Perturbation
+import Numlib.Eigen.RayleighRitz
 import Numlib.Krylov.Arnoldi
 import Numlib.Krylov.CG
 import Numlib.Krylov.CR

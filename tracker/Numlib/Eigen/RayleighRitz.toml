@@ -10,35 +10,31 @@ finite dimension. See §4.2 of `backbone.md`.
 '''
 
 [[node]]
+id = "Krylov.IsObliqueRitzPair"
+
+[[node]]
 id = "Krylov.IsRitzPair"
-kind = "definition"
-desc = 'Ritz pairs of `A` on `K`: `u ∈ K`, `u ≠ 0`, and `A u - θ • u ∈ Kᗮ`.'
+
+[[node]]
+id = "Krylov.isObliqueRitzPair_iff_hasEigenvector"
 
 [[node]]
 id = "Krylov.isRitzPair_iff_hasEigenvector"
-kind = "theorem"
-desc = 'A Ritz pair is exactly an eigenvector of the compression `compression A K`.'
-deps = ["Krylov.IsRitzPair"]
 
 [[node]]
-id = "Krylov.IsObliqueRitzPair"
-kind = "definition"
-desc = 'Oblique (Petrov-Galerkin) Ritz pairs: `u ∈ K` with `A u - θ • u` orthogonal to `L`.'
+id = "Krylov.IsObliqueRitzPair.hasEigenvector_of_invt"
 
 [[node]]
 id = "Krylov.IsRitzPair.hasEigenvector_of_invt"
-kind = "theorem"
-desc = 'On an `A`-invariant `K` every Ritz pair is an exact eigenpair.'
-deps = ["Krylov.IsRitzPair"]
-source = "Saad, Numerical Methods for Large Eigenvalue Problems, Proposition 4.3"
+
+[[node]]
+id = "Krylov.norm_starProjection_apply_le_opNorm"
 
 [[node]]
 id = "Krylov.compression_residual_le"
-kind = "theorem"
-desc = '''With `γ = ‖P_K A (1 - P_K)‖` and an exact unit eigenpair `(λ, u)`,
-`‖(A_K - λ) P_K u‖ ≤ γ ‖(1 - P_K) u‖` and `‖(A_K - λ) u‖ ≤ √(|λ|² + γ²) ‖(1 - P_K) u‖`. Holds in
-any Hilbert space for bounded `A` and closed `K`.'''
-source = "Saad, Numerical Methods for Large Eigenvalue Problems, Theorem 4.3"
+
+[[node]]
+id = "Krylov.compression_residual_le'"
 
 [[node]]
 id = "Krylov.IsRitzPair.mem_Icc"
@@ -63,15 +59,16 @@ with `|λ - θ| ≤ ‖A - λ‖ sin²θ(u, ũ)`.'''
 source = "Saad, Numerical Methods for Large Eigenvalue Problems, Theorem 4.6 and Proposition 4.5"
 
 [[node]]
-id = "Krylov.Arnoldi.charpoly_compression_isMinOn"
-kind = "theorem"
-desc = '''The characteristic polynomial of the compression to the Krylov subspace minimizes
-`‖p(A) v‖` over monic `p` of that degree.'''
-source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 6.1"
+id = "Arnoldi.aeval_charpoly_mem_orthogonal"
 
 [[node]]
-id = "Krylov.Arnoldi.norm_ritz_residual_eq"
-kind = "theorem"
-desc = '''For a Ritz pair `(θ, V_m y)` of the Arnoldi compression the residual is cheap:
-`‖(A - θ) ũ‖ = h_{m+1,m} |y_m|`.'''
-source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 6.8"
+id = "Arnoldi.charpoly_compression_isMinOn"
+
+[[node]]
+id = "Arnoldi.isRitzPair_of_mulVec_eq_smul"
+
+[[node]]
+id = "Arnoldi.apply_sub_smul_sum_eq"
+
+[[node]]
+id = "Arnoldi.norm_ritz_residual_eq"
