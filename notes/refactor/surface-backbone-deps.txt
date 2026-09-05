@@ -1,0 +1,278 @@
+Numlib.Surface.AtkinsonHan.Ch02.Functionals
+
+Numlib.Surface.AtkinsonHan.Ch02.GeometricSeries
+    import Numlib.Analysis.Normed.Ring.Inverse
+
+Numlib.Surface.AtkinsonHan.Ch02.Operators
+    import Numlib.Analysis.Normed.Ring.CondNumber
+
+Numlib.Surface.AtkinsonHan.Ch03.BestApprox
+    import Numlib.Approximation.BestApprox
+
+Numlib.Surface.AtkinsonHan.Ch03.InnerProduct
+    import Numlib.Approximation.BestApprox
+
+Numlib.Surface.AtkinsonHan.Ch03.Projections
+    import Numlib.Analysis.InnerProductSpace.Projection.ObliqueProjection
+    import Numlib.Approximation.BestApprox
+
+Numlib.Surface.AtkinsonHan.Ch03.UniformBounds
+    import Numlib.Approximation.BestApprox
+
+Numlib.Surface.AtkinsonHan.Ch05.Calculus
+    import Numlib.Analysis.Calculus.MeanValue
+
+Numlib.Surface.AtkinsonHan.Ch05.ConjugateGradient
+    import Numlib.Analysis.InnerProductSpace.Coercive
+    import Numlib.Analysis.InnerProductSpace.Energy
+    import Numlib.Krylov.CG
+    import Numlib.Krylov.Convergence.CG
+    import Numlib.Krylov.Subspace
+    import Numlib.LinearSolve.Projection.Optimality
+
+Numlib.Surface.AtkinsonHan.Ch05.FixedPoint
+    import Numlib.Analysis.InnerProductSpace.Coercive
+    import Numlib.Nonlinear.FixedPoint
+
+Numlib.Surface.AtkinsonHan.Ch05.LinearIteration
+    import Numlib.LinearAlgebra.Matrix.Complexify
+    import Numlib.LinearAlgebra.Matrix.Hessenberg
+    import Numlib.LinearSolve.Stationary.Basic
+    import Numlib.LinearSolve.Stationary.Splitting
+
+Numlib.Surface.AtkinsonHan.Ch05.Newton
+    import Numlib.Analysis.Normed.Ring.Inverse
+    import Numlib.Nonlinear.Newton
+
+Numlib.Surface.AtkinsonHan.Ch08.BilinearForms
+    import Numlib.Analysis.InnerProductSpace.Coercive
+    import Numlib.Analysis.InnerProductSpace.Energy
+    import Numlib.Variational.Forms
+
+Numlib.Surface.AtkinsonHan.Ch08.Existence
+    import Numlib.Variational.Forms
+    import Numlib.Variational.LaxMilgram
+
+Numlib.Surface.AtkinsonHan.Ch08.GeneralizedLaxMilgram
+    import Numlib.Variational.Forms
+    import Numlib.Variational.LaxMilgram
+
+Numlib.Surface.AtkinsonHan.Ch08.LaxMilgram
+    import Numlib.Analysis.InnerProductSpace.Coercive
+    import Numlib.Nonlinear.FixedPoint
+    import Numlib.Variational.Forms
+    import Numlib.Variational.LaxMilgram
+
+Numlib.Surface.AtkinsonHan.Ch09.CG
+    import Numlib.Analysis.InnerProductSpace.Coercive
+    import Numlib.Analysis.InnerProductSpace.Energy
+    import Numlib.Krylov.CG
+    import Numlib.Krylov.Convergence.CG
+    import Numlib.Krylov.Iterate
+    import Numlib.Variational.Forms
+
+Numlib.Surface.AtkinsonHan.Ch09.Galerkin
+    import Numlib.Analysis.InnerProductSpace.Coercive
+    import Numlib.Analysis.InnerProductSpace.Energy
+    import Numlib.LinearSolve.Projection.Basic
+    import Numlib.LinearSolve.Projection.Optimality
+    import Numlib.Variational.Forms
+    import Numlib.Variational.Galerkin
+
+Numlib.Surface.AtkinsonHan.Ch09.PetrovGalerkin
+    import Numlib.Analysis.InnerProductSpace.Projection.ObliqueProjection
+    import Numlib.Variational.Forms
+    import Numlib.Variational.Galerkin
+
+Numlib.Surface.AtkinsonHan.Ch09.Strang
+    import Numlib.Variational.Galerkin
+
+Numlib.Surface.FongSaunders.Sec1
+    import Numlib.Analysis.InnerProductSpace.Coercive
+    import Numlib.Analysis.Matrix.ToEuclideanLin
+    import Numlib.Krylov.Arnoldi
+    import Numlib.Krylov.Lanczos
+    import Numlib.Krylov.Subspace
+
+Numlib.Surface.FongSaunders.Sec2
+    import Numlib.Analysis.InnerProductSpace.Energy
+    import Numlib.Krylov.CG
+    import Numlib.Krylov.CR
+    import Numlib.Krylov.Iterate
+    import Numlib.Krylov.Monotonicity
+    import Numlib.Krylov.Subspace
+    import Numlib.LinearSolve.Projection.Basic
+    import Numlib.LinearSolve.Projection.Optimality
+
+Numlib.Surface.FongSaunders.Sec3
+    import Numlib.Krylov.CG
+    import Numlib.Krylov.CR
+    import Numlib.Krylov.Iterate
+    import Numlib.Krylov.Monotonicity
+
+Numlib.Surface.FongSaunders.Sec4
+    import Numlib.Krylov.Arnoldi
+    import Numlib.Krylov.Hessenberg
+    import Numlib.Krylov.Iterate
+    import Numlib.Krylov.Lanczos
+    import Numlib.Krylov.Relations
+    import Numlib.Krylov.Subspace
+    import Numlib.LinearSolve.Projection.Basic
+
+Numlib.Surface.FongSaunders.Sec5
+    import Numlib.Analysis.InnerProductSpace.Energy
+    import Numlib.Krylov.CG
+    import Numlib.Krylov.Iterate
+    import Numlib.Krylov.Monotonicity
+    import Numlib.Krylov.Subspace
+
+Numlib.Surface.SaadSparse.Basic
+    import Numlib.Analysis.InnerProductSpace.Coercive
+    import Numlib.Analysis.Matrix.ToEuclideanLin
+    import Numlib.LinearAlgebra.Matrix.Complexify
+    import Numlib.LinearAlgebra.Matrix.Hessenberg
+
+Numlib.Surface.SaadSparse.Ch01.LinearSystems
+    import Numlib.Analysis.Normed.Ring.CondNumber
+    import Numlib.LinearSolve.Perturbation
+
+Numlib.Surface.SaadSparse.Ch01.PositiveDefinite
+    import Numlib.Analysis.InnerProductSpace.Coercive
+    import Numlib.Analysis.InnerProductSpace.Energy
+    import Numlib.Analysis.Matrix.ToEuclideanLin
+    import Numlib.Eigen.Perturbation
+
+Numlib.Surface.SaadSparse.Ch01.Projectors
+    import Numlib.Analysis.InnerProductSpace.Projection.ObliqueProjection
+    import Numlib.Analysis.Matrix.ToEuclideanLin
+    import Numlib.LinearSolve.Projection.Basic
+
+Numlib.Surface.SaadSparse.Ch04.Convergence
+    import Numlib.LinearAlgebra.Matrix.Complexify
+    import Numlib.LinearSolve.Stationary.Splitting
+
+Numlib.Surface.SaadSparse.Ch04.DiagDominant
+    import Numlib.Eigen.Perturbation
+    import Numlib.LinearAlgebra.Matrix.Complexify
+    import Numlib.LinearAlgebra.Matrix.Hessenberg
+    import Numlib.LinearSolve.Stationary.DiagDominant
+    import Numlib.LinearSolve.Stationary.Splitting
+
+Numlib.Surface.SaadSparse.Ch04.SPD
+
+Numlib.Surface.SaadSparse.Ch04.Splittings
+    import Numlib.LinearAlgebra.Matrix.Hessenberg
+    import Numlib.LinearSolve.Stationary.Splitting
+
+Numlib.Surface.SaadSparse.Ch05.Additive
+
+Numlib.Surface.SaadSparse.Ch05.OneDimensional
+    import Numlib.Analysis.InnerProductSpace.Coercive
+    import Numlib.Analysis.InnerProductSpace.Energy
+    import Numlib.Analysis.Matrix.ToEuclideanLin
+    import Numlib.LinearSolve.Projection.Basic
+    import Numlib.LinearSolve.Projection.OneDimensional
+
+Numlib.Surface.SaadSparse.Ch05.Projection
+    import Numlib.Analysis.InnerProductSpace.Coercive
+    import Numlib.Analysis.InnerProductSpace.Energy
+    import Numlib.Analysis.Matrix.ToEuclideanLin
+    import Numlib.LinearSolve.Projection.Basic
+    import Numlib.LinearSolve.Projection.Optimality
+
+Numlib.Surface.SaadSparse.Ch06.Arnoldi
+    import Numlib.Analysis.Matrix.ToEuclideanLin
+    import Numlib.Krylov.Arnoldi
+    import Numlib.Krylov.Hessenberg
+    import Numlib.Krylov.Subspace
+    import Numlib.LinearSolve.Projection.Basic
+
+Numlib.Surface.SaadSparse.Ch06.Basic
+    import Numlib.Analysis.InnerProductSpace.Projection.Compression
+    import Numlib.Analysis.Matrix.ToEuclideanLin
+    import Numlib.Krylov.Subspace
+
+Numlib.Surface.SaadSparse.Ch06.CG
+    import Numlib.Analysis.InnerProductSpace.Coercive
+    import Numlib.Krylov.Arnoldi
+    import Numlib.Krylov.CG
+    import Numlib.Krylov.Hessenberg
+    import Numlib.Krylov.Iterate
+    import Numlib.Krylov.Lanczos
+    import Numlib.Krylov.Subspace
+    import Numlib.LinearSolve.Projection.Basic
+
+Numlib.Surface.SaadSparse.Ch06.CR
+    import Numlib.Analysis.InnerProductSpace.Coercive
+    import Numlib.Krylov.CR
+    import Numlib.Krylov.Iterate
+    import Numlib.Krylov.Subspace
+
+Numlib.Surface.SaadSparse.Ch06.Chebyshev
+    import Numlib.RingTheory.Polynomial.ChebyshevMinimax
+
+Numlib.Surface.SaadSparse.Ch06.Convergence
+    import Numlib.Analysis.InnerProductSpace.Coercive
+    import Numlib.Analysis.InnerProductSpace.Energy
+    import Numlib.Analysis.Matrix.ToEuclideanLin
+    import Numlib.Krylov.Convergence.CG
+    import Numlib.Krylov.Iterate
+    import Numlib.Krylov.Subspace
+    import Numlib.LinearSolve.Projection.Basic
+    import Numlib.LinearSolve.Projection.Optimality
+
+Numlib.Surface.SaadSparse.Ch06.DQGMRES
+    import Numlib.Krylov.Hessenberg
+
+Numlib.Surface.SaadSparse.Ch06.FOM
+    import Numlib.Krylov.Arnoldi
+    import Numlib.Krylov.Hessenberg
+    import Numlib.Krylov.Iterate
+    import Numlib.Krylov.Subspace
+    import Numlib.LinearSolve.Projection.Basic
+
+Numlib.Surface.SaadSparse.Ch06.FaberManteuffel
+    import Numlib.Krylov.Arnoldi
+    import Numlib.Krylov.Subspace
+
+Numlib.Surface.SaadSparse.Ch06.GCR
+    import Numlib.Krylov.CR
+    import Numlib.Krylov.Iterate
+    import Numlib.Krylov.Subspace
+
+Numlib.Surface.SaadSparse.Ch06.GMRES
+    import Numlib.Analysis.Matrix.ToEuclideanLin
+    import Numlib.Krylov.Arnoldi
+    import Numlib.Krylov.Hessenberg
+    import Numlib.Krylov.Iterate
+    import Numlib.Krylov.Subspace
+    import Numlib.LinearSolve.Projection.Basic
+
+Numlib.Surface.SaadSparse.Ch06.Givens
+    import Numlib.Analysis.Matrix.ToEuclideanLin
+    import Numlib.Krylov.Hessenberg
+
+Numlib.Surface.SaadSparse.Ch06.Lanczos
+    import Numlib.Krylov.Arnoldi
+    import Numlib.Krylov.Lanczos
+    import Numlib.Krylov.Subspace
+    import Numlib.LinearAlgebra.Matrix.Hessenberg
+
+Numlib.Surface.SaadSparse.Ch06.Relations
+    import Numlib.Krylov.Arnoldi
+    import Numlib.Krylov.Hessenberg
+    import Numlib.Krylov.Iterate
+    import Numlib.Krylov.Relations
+    import Numlib.Krylov.Subspace
+    import Numlib.LinearSolve.Projection.Basic
+
+Numlib.Surface.SaadSparse.Ch06.Residual
+    import Numlib.Krylov.Arnoldi
+    import Numlib.Krylov.Hessenberg
+    import Numlib.Krylov.Subspace
+
+Numlib.Surface.SaadSparse.Ch06.Smoothing
+    import Numlib.Krylov.Iterate
+    import Numlib.Krylov.Relations
+    import Numlib.Krylov.Subspace
+    import Numlib.LinearSolve.Projection.Basic
