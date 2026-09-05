@@ -53,6 +53,19 @@ noncomputable def infSupValue (a : BilinForm₂ U V) (UN : Submodule ℝ U) (VN 
   ⨅ uN : {u : UN // u ≠ 0}, ⨆ vN : {v : VN // v ≠ 0},
     a ((uN : UN) : U) ((vN : VN) : V) / (‖((uN : UN) : U)‖ * ‖((vN : VN) : V)‖)
 
+/-- The discrete inf–sup condition weakens as the constant decreases. -/
+theorem DiscreteInfSup.mono {a : BilinForm₂ U V} {UN : Submodule ℝ U} {VN : Submodule ℝ V}
+    {αN α₀ : ℝ} (h : DiscreteInfSup a UN VN αN) (hα : α₀ ≤ αN) : DiscreteInfSup a UN VN α₀ :=
+  fun w hw => le_trans (mul_le_mul_of_nonneg_right hα (norm_nonneg _)) (h w hw)
+
+/-- (9.2.13): trial/test pairs whose discrete inf–sup constants `α_N` are all at least `α₀`
+satisfy the uniform inf–sup condition with that one constant.  This is how the book's varying
+`α_N ≥ α₀` reduces to `InfSupCondition`. -/
+theorem infSupCondition_of_forall_le {a : BilinForm₂ U V} {UN : ℕ → Submodule ℝ U}
+    {VN : ℕ → Submodule ℝ V} {αN : ℕ → ℝ} {α₀ : ℝ}
+    (h : ∀ i, DiscreteInfSup a (UN i) (VN i) (αN i)) (hα : ∀ i, α₀ ≤ αN i) :
+    InfSupCondition a UN VN α₀ := fun i => (h i).mono (hα i)
+
 namespace Ch09
 
 variable {a : BilinForm₂ U V} {ℓ : StrongDual ℝ V} {M αN α₀ : ℝ} {UN : Submodule ℝ U}
@@ -76,12 +89,6 @@ theorem discreteInfSup_iff (hM : a.IsBoundedWith M) :
       IsPetrovGalerkinSolution.DiscreteInfSup (a.toCLM hM) UN VN αN := by
   refine forall_congr' fun w => forall_congr' fun _ => ?_
   rw [iSup_div_eq_norm_comp hM w VN]
-
-/-- The discrete inf–sup condition weakens as the constant decreases; this is how the book's
-varying `α_N ≥ α₀` reduces to the uniform condition (9.2.13). -/
-theorem DiscreteInfSup.mono (h : DiscreteInfSup a UN VN αN) (hα : α₀ ≤ αN) :
-    DiscreteInfSup a UN VN α₀ := fun w hw =>
-  le_trans (mul_le_mul_of_nonneg_right hα (norm_nonneg _)) (h w hw)
 
 /-- (9.2.8), Galerkin orthogonality for the Petrov–Galerkin method. -/
 theorem petrovGalerkin_orthogonality (hu : ∀ v, a u v = ℓ v)
@@ -148,8 +155,9 @@ theorem cor_9_2_3 (a : BilinForm₂ U V) (ℓ : StrongDual ℝ V) {M α₀ : ℝ
     (hu : ∀ v, a u v = ℓ v) (uN : ℕ → U)
     (huN : ∀ i, PetrovGalerkinProblem a ℓ (UN i) (VN i) (uN i)) :
     Tendsto (fun i => ‖u - uN i‖) atTop (𝓝 0) := by
+  have huniform : InfSupCondition a UN VN α₀ := infSupCondition_of_forall_le hinfsup hαN
   have hunif : ∀ i, IsPetrovGalerkinSolution.DiscreteInfSup (a.toCLM hM) (UN i) (VN i) α₀ :=
-    fun i => (discreteInfSup_iff hM).mp (DiscreteInfSup.mono (hinfsup i) (hαN i))
+    fun i => (discreteInfSup_iff hM).mp (huniform i)
   have h := IsPetrovGalerkinSolution.tendsto (a := a.toCLM hM) (ℓ := ℓ) hdim hα₀ hM0
     (a.isBoundedWith_toCLM hM) hunif hmono hdense huN hu
   rw [tendsto_iff_norm_sub_tendsto_zero] at h

@@ -229,7 +229,12 @@ theorem BookSplitting.forall_tendsto_iff_complexSpectralRadius_lt_one {A : Matri
 
 /-- §5.2.2, relation 1, in the form the book uses it: an operator norm of the iteration matrix
 below `1` forces `r_σ < 1`, hence convergence.  The inequality `r_σ(G) ≤ ‖G‖` for an arbitrary
-submultiplicative matrix norm is the backbone's `Matrix.complexSpectralRadius_le_of_norm`. -/
+submultiplicative, absolutely homogeneous, positive definite matrix norm is the backbone's
+`Matrix.complexSpectralRadius_le_of_norm`, and its instance for the maximum absolute row sum —
+which is `‖mulVecCLM G‖`, by Mathlib's `Matrix.linfty_opNorm_eq_opNorm` — is
+`Matrix.complexSpectralRadius_le_linfty_opNNNorm`.  Both are stated under the scoped norm
+instance on `Matrix ι ι ℝ` that this file deliberately does not open, so the proof below goes
+through `Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one` instead. -/
 theorem complexSpectralRadius_lt_one_of_opNorm_lt_one {G : Matrix ι ι ℝ}
     (hG : ‖mulVecCLM G‖ < 1) : Matrix.complexSpectralRadius G < 1 := by
   rw [← Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one, tendsto_pow_zero_iff_mulVec]

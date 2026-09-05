@@ -261,13 +261,23 @@ theorem thm_2_3_5 (hc : CompleteSpace V ∨ CompleteSpace W) (L : V ≃L[𝕜] W
 
 /-- **(2.3.16), first part.** If `Lₙ → L` in `𝓛(V, W)` and `L` is a bijection with bounded
 inverse, then for all large `n` the approximating equation `Lₙ vₙ = w` is uniquely solvable and
-the error obeys `‖v - vₙ‖ ≤ ‖Lₙ⁻¹‖ ‖(L - Lₙ) v‖`. -/
+the error obeys `‖v - vₙ‖ ≤ ‖Lₙ⁻¹‖ ‖(L - Lₙ) v‖`.
+
+The inverses are produced as a family `eₙ`, which is exactly the data
+`convergence_of_consistent_stable` consumes, so the two halves of (2.3.16) compose. -/
 theorem eq_2_3_16 (hc : CompleteSpace V ∨ CompleteSpace W) (L : V ≃L[𝕜] W)
     (Ln : ℕ → V →L[𝕜] W)
     (hLn : Tendsto (fun n => ‖(L : V →L[𝕜] W) - Ln n‖) atTop (𝓝 0)) :
-    ∃ N : ℕ, ∀ n ≥ N, ∃ e : V ≃L[𝕜] W, (e : V →L[𝕜] W) = Ln n ∧
+    ∃ N : ℕ, ∃ en : ∀ n, N ≤ n → (V ≃L[𝕜] W),
+      (∀ n hn, ((en n hn : V ≃L[𝕜] W) : V →L[𝕜] W) = Ln n) ∧
+        ∀ n hn, ∀ w : W, ∀ v vn : V, L v = w → Ln n vn = w →
+          ‖v - vn‖ ≤ ‖((en n hn).symm : W →L[𝕜] V)‖ * ‖((L : V →L[𝕜] W) - Ln n) v‖ := by
+  suffices h : ∃ N : ℕ, ∀ n, N ≤ n → ∃ e : V ≃L[𝕜] W, (e : V →L[𝕜] W) = Ln n ∧
       ∀ w : W, ∀ v vn : V, L v = w → Ln n vn = w →
-        ‖v - vn‖ ≤ ‖(e.symm : W →L[𝕜] V)‖ * ‖((L : V →L[𝕜] W) - Ln n) v‖ := by
+        ‖v - vn‖ ≤ ‖(e.symm : W →L[𝕜] V)‖ * ‖((L : V →L[𝕜] W) - Ln n) v‖ by
+    obtain ⟨N, hN⟩ := h
+    choose en hen hbound using hN
+    exact ⟨N, en, hen, hbound⟩
   rcases eq_or_lt_of_le (norm_nonneg (L.symm : W →L[𝕜] V)) with h | h
   · -- Degenerate case `‖L⁻¹‖ = 0`: both spaces are trivial and every claim is vacuous.
     have hWz : ∀ z : W, z = 0 := fun z => by

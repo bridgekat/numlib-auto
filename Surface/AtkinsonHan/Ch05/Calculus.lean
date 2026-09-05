@@ -348,6 +348,25 @@ private theorem segment_mem (hK : Convex ℝ K) {u v : V} (hu : u ∈ K) (hv : v
   rw [h]
   exact hK hu hv (by linarith [ht.2]) ht.1 (by ring)
 
+/-- Mean value theorem along the segment `[u, v]` of a convex set: for a Gâteaux differentiable
+`f` there is an interior point `u + c (v - u)` at which the derivative in the direction `v - u`
+is the slope `f v - f u`.  This is the common step of Theorems 5.3.17 and 5.3.18. -/
+private theorem exists_lineDeriv_eq_sub (hK : Convex ℝ K)
+    (hG : ∀ u ∈ K, HasGateauxDerivAt f (f' u) u) {u : V} (hu : u ∈ K) {v : V} (hv : v ∈ K) :
+    ∃ c ∈ Ioo (0 : ℝ) 1, u + c • (v - u) ∈ K ∧ f' (u + c • (v - u)) (v - u) = f v - f u := by
+  have hderiv : ∀ t ∈ Icc (0 : ℝ) 1,
+      HasDerivAt (fun s : ℝ => f (u + s • (v - u))) (f' (u + t • (v - u)) (v - u)) t :=
+    fun t ht => (hG _ (segment_mem hK hu hv ht)).hasDerivAt_line
+  have hcont : ContinuousOn (fun s : ℝ => f (u + s • (v - u))) (Icc 0 1) :=
+    fun t ht => ((hderiv t ht).continuousAt).continuousWithinAt
+  obtain ⟨c, hc, hcslope⟩ := exists_hasDerivAt_eq_slope (fun s : ℝ => f (u + s • (v - u)))
+    (fun t : ℝ => f' (u + t • (v - u)) (v - u)) zero_lt_one hcont
+    (fun t ht => hderiv t ⟨ht.1.le, ht.2.le⟩)
+  have h1v : u + (1 : ℝ) • (v - u) = v := by module
+  have h0v : u + (0 : ℝ) • (v - u) = u := by module
+  simp only [h1v, h0v, sub_zero, div_one] at hcslope
+  exact ⟨c, hc, segment_mem hK hu hv ⟨hc.1.le, hc.2.le⟩, hcslope⟩
+
 /-- **Theorem 5.3.17**, (a) ⇒ (b): a convex Gâteaux differentiable functional lies above each of
 its tangent planes, `f u + ⟨f'(u), v - u⟩ ≤ f v`. -/
 theorem ConvexOn.add_lineDeriv_le (hcvx : ConvexOn ℝ K f)
@@ -410,22 +429,11 @@ theorem add_lineDeriv_le_of_monotone (hK : Convex ℝ K)
     (hG : ∀ u ∈ K, HasGateauxDerivAt f (f' u) u)
     (h : ∀ u ∈ K, ∀ v ∈ K, 0 ≤ (f' v - f' u) (v - u)) {u : V} (hu : u ∈ K) {v : V} (hv : v ∈ K) :
     f u + f' u (v - u) ≤ f v := by
-  have hderiv : ∀ t ∈ Icc (0 : ℝ) 1,
-      HasDerivAt (fun s : ℝ => f (u + s • (v - u))) (f' (u + t • (v - u)) (v - u)) t :=
-    fun t ht => (hG _ (segment_mem hK hu hv ht)).hasDerivAt_line
-  have hcont : ContinuousOn (fun s : ℝ => f (u + s • (v - u))) (Icc 0 1) :=
-    fun t ht => ((hderiv t ht).continuousAt).continuousWithinAt
-  obtain ⟨c, hc, hcslope⟩ := exists_hasDerivAt_eq_slope (fun s : ℝ => f (u + s • (v - u)))
-    (fun t : ℝ => f' (u + t • (v - u)) (v - u)) zero_lt_one hcont
-    (fun t ht => hderiv t ⟨ht.1.le, ht.2.le⟩)
-  have hcmem : u + c • (v - u) ∈ K := segment_mem hK hu hv ⟨hc.1.le, hc.2.le⟩
+  obtain ⟨c, hc, hcmem, hcslope⟩ := exists_lineDeriv_eq_sub hK hG hu hv
   have hmono := h u hu _ hcmem
   rw [show u + c • (v - u) - u = c • (v - u) by abel, sub_apply, map_smul, map_smul, smul_eq_mul,
     smul_eq_mul] at hmono
   have hkey : f' u (v - u) ≤ f' (u + c • (v - u)) (v - u) := by nlinarith [hc.1]
-  have h1v : u + (1 : ℝ) • (v - u) = v := by module
-  have h0v : u + (0 : ℝ) • (v - u) = u := by module
-  simp only [h1v, h0v, sub_zero, div_one] at hcslope
   linarith
 
 /-- **Theorem 5.3.17**: for a Gâteaux differentiable `f : V → ℝ` on a convex set `K`, the
@@ -513,15 +521,7 @@ theorem add_lineDeriv_lt_of_strictMonotone (hK : Convex ℝ K)
     (hG : ∀ u ∈ K, HasGateauxDerivAt f (f' u) u)
     (h : ∀ u ∈ K, ∀ v ∈ K, u ≠ v → 0 < (f' v - f' u) (v - u)) {u : V} (hu : u ∈ K) {v : V}
     (hv : v ∈ K) (huv : u ≠ v) : f u + f' u (v - u) < f v := by
-  have hderiv : ∀ t ∈ Icc (0 : ℝ) 1,
-      HasDerivAt (fun s : ℝ => f (u + s • (v - u))) (f' (u + t • (v - u)) (v - u)) t :=
-    fun t ht => (hG _ (segment_mem hK hu hv ht)).hasDerivAt_line
-  have hcont : ContinuousOn (fun s : ℝ => f (u + s • (v - u))) (Icc 0 1) :=
-    fun t ht => ((hderiv t ht).continuousAt).continuousWithinAt
-  obtain ⟨c, hc, hcslope⟩ := exists_hasDerivAt_eq_slope (fun s : ℝ => f (u + s • (v - u)))
-    (fun t : ℝ => f' (u + t • (v - u)) (v - u)) zero_lt_one hcont
-    (fun t ht => hderiv t ⟨ht.1.le, ht.2.le⟩)
-  have hcmem : u + c • (v - u) ∈ K := segment_mem hK hu hv ⟨hc.1.le, hc.2.le⟩
+  obtain ⟨c, hc, hcmem, hcslope⟩ := exists_lineDeriv_eq_sub hK hG hu hv
   have hne : u ≠ u + c • (v - u) := by
     intro hcon
     have hz : c • (v - u) = 0 := by
@@ -534,9 +534,6 @@ theorem add_lineDeriv_lt_of_strictMonotone (hK : Convex ℝ K)
   rw [show u + c • (v - u) - u = c • (v - u) by abel, sub_apply, map_smul, map_smul, smul_eq_mul,
     smul_eq_mul] at hmono
   have hkey : f' u (v - u) < f' (u + c • (v - u)) (v - u) := by nlinarith [hc.1]
-  have h1v : u + (1 : ℝ) • (v - u) = v := by module
-  have h0v : u + (0 : ℝ) • (v - u) = u := by module
-  simp only [h1v, h0v, sub_zero, div_one] at hcslope
   linarith
 
 /-- **Theorem 5.3.18**: the strict version of Theorem 5.3.17. -/

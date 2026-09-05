@@ -155,29 +155,31 @@ theorem norm_sub_smul_toOperator_sq_le [CompleteSpace V] (hM0 : 0 ≤ M) (hM : a
   have hsq : ‖BilinForm.toOperator a hM‖ ^ 2 ≤ M ^ 2 := by nlinarith
   nlinarith [sq_nonneg θ, hsq]
 
+/-- The operator `A = 𝒥 a` of a `V`-elliptic form is strongly monotone (5.1.8) with the same
+constant, which is what the §5.1 theory (`zarantonello`, `contractingWith_damped`) asks for. -/
+theorem stronglyMonotone_toOperator [CompleteSpace V] (hM : a.IsBoundedWith M)
+    (ha : a.IsEllipticWith α) (x y : V) :
+    α * ‖x - y‖ ^ 2 ≤ RCLike.re (inner ℝ
+      (BilinForm.toOperator a hM x - BilinForm.toOperator a hM y) (x - y)) := by
+  rw [← map_sub]
+  exact BilinForm.isCoerciveWith_toOperator hM ha (x - y)
+
+/-- The operator of a bounded form is Lipschitz with the constant of (9.4.3). -/
+theorem lipschitzWith_toOperator [CompleteSpace V] (hM0 : 0 ≤ M) (hM : a.IsBoundedWith M) :
+    LipschitzWith (Real.toNNReal M) (BilinForm.toOperator a hM) := by
+  refine (BilinForm.toOperator a hM).lipschitzWith.weaken ?_
+  rw [← NNReal.coe_le_coe, coe_nnnorm, Real.coe_toNNReal M hM0]
+  exact BilinForm.norm_toOperator_le hM0 hM
+
 /-- The map `P_θ u = u − θ (A u − f)` of the first proof of Theorem 8.3.4 is a contraction for
 `0 < θ < 2α/M²`, so Banach's fixed point theorem produces the solution of (8.3.5). -/
 theorem contractingWith_damped_sub_smul [CompleteSpace V] (hM0 : 0 < M) (hM : a.IsBoundedWith M)
     (hα : 0 < α) (ha : a.IsEllipticWith α) (ℓ : StrongDual ℝ V) {θ : ℝ} (hθ : 0 < θ)
     (hθ' : θ < 2 * α / M ^ 2) :
     ContractingWith (Real.toNNReal (Real.sqrt (1 - 2 * θ * α + θ ^ 2 * M ^ 2)))
-      (fun u => u - θ • (BilinForm.toOperator a hM u - SesqForm.rieszRep ℓ)) := by
-  have hmono : ∀ x y : V, α * ‖x - y‖ ^ 2 ≤ RCLike.re (inner ℝ
-      (BilinForm.toOperator a hM x - BilinForm.toOperator a hM y) (x - y)) := by
-    intro x y
-    have hsub : BilinForm.toOperator a hM x - BilinForm.toOperator a hM y
-        = BilinForm.toOperator a hM (x - y) := (map_sub _ x y).symm
-    have h1 : RCLike.re (inner ℝ (BilinForm.toOperator a hM x - BilinForm.toOperator a hM y)
-        (x - y)) = a (x - y) (x - y) := by
-      rw [hsub, BilinForm.inner_toOperator]
-      simp
-    rw [h1]
-    exact ha (x - y)
-  have hlip : LipschitzWith (Real.toNNReal M) (BilinForm.toOperator a hM) := by
-    refine (BilinForm.toOperator a hM).lipschitzWith.weaken ?_
-    rw [← NNReal.coe_le_coe, coe_nnnorm, Real.coe_toNNReal M hM0.le]
-    exact BilinForm.norm_toOperator_le hM0.le hM
-  exact contractingWith_damped (𝕜 := ℝ) hα hM0 hmono hlip (SesqForm.rieszRep ℓ) hθ hθ'
+      (fun u => u - θ • (BilinForm.toOperator a hM u - SesqForm.rieszRep ℓ)) :=
+  contractingWith_damped (𝕜 := ℝ) hα hM0 (stronglyMonotone_toOperator hM ha)
+    (lipschitzWith_toOperator hM0.le hM) (SesqForm.rieszRep ℓ) hθ hθ'
 
 /-! ### Second proof of Theorem 8.3.4: closed range plus dense range -/
 
@@ -218,22 +220,8 @@ of §5.1 (the backbone's `zarantonello`), applied to `T = A` with `c₁ = α`, `
 the Riesz representative of `ℓ`. -/
 theorem ex_8_3_1 [CompleteSpace V] (hM0 : 0 ≤ M) (hM : a.IsBoundedWith M) (hα : 0 < α)
     (ha : a.IsEllipticWith α) (ℓ : StrongDual ℝ V) : ∃! u, ∀ v, a u v = ℓ v := by
-  have hmono : ∀ x y : V, α * ‖x - y‖ ^ 2 ≤ RCLike.re (inner ℝ
-      (BilinForm.toOperator a hM x - BilinForm.toOperator a hM y) (x - y)) := by
-    intro x y
-    have hsub : BilinForm.toOperator a hM x - BilinForm.toOperator a hM y
-        = BilinForm.toOperator a hM (x - y) := (map_sub _ x y).symm
-    have h1 : RCLike.re (inner ℝ (BilinForm.toOperator a hM x - BilinForm.toOperator a hM y)
-        (x - y)) = a (x - y) (x - y) := by
-      rw [hsub, BilinForm.inner_toOperator]
-      simp
-    rw [h1]
-    exact ha (x - y)
-  have hlip : LipschitzWith (Real.toNNReal M) (BilinForm.toOperator a hM) := by
-    refine (BilinForm.toOperator a hM).lipschitzWith.weaken ?_
-    rw [← NNReal.coe_le_coe, coe_nnnorm, Real.coe_toNNReal M hM0]
-    exact BilinForm.norm_toOperator_le hM0 hM
-  obtain ⟨u, hu, huniq⟩ := zarantonello (𝕜 := ℝ) hα hmono hlip (SesqForm.rieszRep ℓ)
+  obtain ⟨u, hu, huniq⟩ := zarantonello (𝕜 := ℝ) hα (stronglyMonotone_toOperator hM ha)
+    (lipschitzWith_toOperator hM0 hM) (SesqForm.rieszRep ℓ)
   refine ⟨u, (BilinForm.toOperator_eq_rieszRep_iff hM ℓ u).mp hu, fun y hy => ?_⟩
   exact huniq y ((BilinForm.toOperator_eq_rieszRep_iff hM ℓ y).mpr hy)
 

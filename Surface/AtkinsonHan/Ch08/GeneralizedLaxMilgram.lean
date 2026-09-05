@@ -179,6 +179,30 @@ end Inner
 
 end BilinForm₂
 
+/-! ### Exercise 8.7.1: a `V`-elliptic form satisfies (8.7.2) and (8.7.3)
+
+Stated in the `BilinForm.IsEllipticWith` namespace, so that they are reachable by dot notation
+from an ellipticity hypothesis. -/
+
+section Elliptic
+
+variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] {a : BilinForm V} {M α : ℝ}
+
+/-- Exercise 8.7.1, first half: a `V`-elliptic form satisfies the inf–sup condition (8.7.2) with
+the same constant `α`, because `v = u` already realizes the bound. -/
+theorem BilinForm.IsEllipticWith.infSup (ha : a.IsEllipticWith α) (hM : a.IsBoundedWith M)
+    (u : V) : α * ‖u‖ ≤ ⨆ v : {v : V // v ≠ 0}, a u v / ‖(v : V)‖ := by
+  rw [BilinForm₂.iSup_div_eq_norm_apply (BilinForm₂.isBoundedWith_of_isBoundedWith hM) u]
+  exact SesqForm.IsCoerciveWith.norm_le_norm_apply (a.toCLM hM) ha u
+
+/-- Exercise 8.7.1, second half: a `V`-elliptic form satisfies the nondegeneracy condition
+(8.7.3), because `u = v` gives `a(v,v) ≥ α‖v‖² > 0`. -/
+theorem BilinForm.IsEllipticWith.exists_pos (ha : a.IsEllipticWith α) (hα : 0 < α) (v : V)
+    (hv : v ≠ 0) : ∃ u, 0 < a u v :=
+  ⟨v, lt_of_lt_of_le (by positivity) (ha v)⟩
+
+end Elliptic
+
 namespace Ch08
 
 variable {U V : Type*} [NormedAddCommGroup U] [InnerProductSpace ℝ U] [NormedAddCommGroup V]
@@ -200,26 +224,12 @@ theorem thm_8_7_1 [CompleteSpace U] [CompleteSpace V] (a : BilinForm₂ U V)
   exact ⟨SesqForm₂.babuska_necas (a.toCLM h871) ℓ hα hinf hnd,
     fun u hu => SesqForm₂.norm_le_of_infSupWith (a.toCLM h871) ℓ hα hinf hu⟩
 
-/-- Exercise 8.7.1, first half: a `V`-elliptic form satisfies (8.7.2) with the same constant `α`,
-because `v = u` already realizes the bound. -/
-theorem IsEllipticWith.infSup {a : BilinForm V} {M α : ℝ} (hM : a.IsBoundedWith M)
-    (ha : a.IsEllipticWith α) (u : V) :
-    α * ‖u‖ ≤ ⨆ v : {v : V // v ≠ 0}, a u v / ‖(v : V)‖ := by
-  rw [BilinForm₂.iSup_div_eq_norm_apply (BilinForm₂.isBoundedWith_of_isBoundedWith hM) u]
-  exact SesqForm.IsCoerciveWith.norm_le_norm_apply (a.toCLM hM) ha u
-
-/-- Exercise 8.7.1, second half: a `V`-elliptic form satisfies (8.7.3), because `u = v` gives
-`a(v,v) ≥ α‖v‖² > 0`. -/
-theorem IsEllipticWith.exists_pos {a : BilinForm V} {α : ℝ} (hα : 0 < α)
-    (ha : a.IsEllipticWith α) (v : V) (hv : v ≠ 0) : ∃ u, 0 < a u v :=
-  ⟨v, lt_of_lt_of_le (by positivity) (ha v)⟩
-
 /-- Exercise 8.7.1: Theorem 8.7.1 contains the Lax–Milgram lemma, Theorem 8.3.4. -/
 theorem ex_8_7_1 [CompleteSpace V] (a : BilinForm V) (ℓ : StrongDual ℝ V) {M α : ℝ}
     (hM : a.IsBoundedWith M) (hα : 0 < α) (ha : a.IsEllipticWith α) :
     (∃! u, ∀ v, a u v = ℓ v) ∧ ∀ u, (∀ v, a u v = ℓ v) → ‖u‖ ≤ ‖ℓ‖ / α :=
-  thm_8_7_1 a ℓ hα (BilinForm₂.isBoundedWith_of_isBoundedWith hM)
-    (IsEllipticWith.infSup hM ha) (fun v hv => IsEllipticWith.exists_pos hα ha v hv)
+  thm_8_7_1 a ℓ hα (BilinForm₂.isBoundedWith_of_isBoundedWith hM) (ha.infSup hM)
+    (fun v hv => ha.exists_pos hα v hv)
 
 end Ch08
 

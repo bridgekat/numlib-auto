@@ -1,3 +1,4 @@
+import AtkinsonHan.Ch05.ConjugateGradient
 import AtkinsonHan.Ch09.Galerkin
 
 /-!
@@ -21,7 +22,7 @@ exist in general.
 open Filter Topology
 open scoped InnerProductSpace
 
-namespace AtkinsonHan
+namespace AtkinsonHan.Ch09
 
 variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] [CompleteSpace V]
 variable {a : BilinForm V} {M α : ℝ}
@@ -49,8 +50,6 @@ noncomputable def cgStep (a : BilinForm V) (hM : a.IsBoundedWith M) (ℓ : Stron
 noncomputable def cgIterate (a : BilinForm V) (hM : a.IsBoundedWith M) (ℓ : StrongDual ℝ V)
     (u₀ : V) (k : ℕ) : CG.State V :=
   (cgStep a hM ℓ)^[k] ⟨u₀, residual a hM ℓ u₀, residual a hM ℓ u₀⟩
-
-namespace Ch09
 
 /-! ### The residual -/
 
@@ -188,7 +187,8 @@ theorem cg_energyNorm_error_antitone (hM : a.IsBoundedWith M) (hs : LinearMap.Bi
 
 /-! ### Convergence (Theorem 5.6.1 transported through `cgIterate_eq`) -/
 
-/-- (5.6.4) for Algorithm 1: `‖u − u_{k+1}‖_a ≤ ((M − α)/(M + α)) ‖u − u_k‖_a`. -/
+/-- (5.6.4) for Algorithm 1: `‖u − u_{k+1}‖_a ≤ ((M − α)/(M + α)) ‖u − u_k‖_a`.  The rate is the
+backbone's `Krylov.IsGalerkinIterate.energyNorm_error_succ_le`, read through `cgIterate_eq`. -/
 theorem cg_energy_rate (hM : a.IsBoundedWith M) (hs : LinearMap.BilinForm.IsSymm a) (hα : 0 < α)
     (ha : a.IsEllipticWith α) (ℓ : StrongDual ℝ V) {u : V} (hu : ∀ v, a u v = ℓ v) (u₀ : V)
     (k : ℕ) :
@@ -296,6 +296,4 @@ theorem energy_isMinOn_iff (hM : a.IsBoundedWith M) (hα : 0 < α) (ha : a.IsEll
     IsMinOn (a.energy ℓ) Set.univ u ↔ ∀ v, a u v = ℓ v := by
   simpa using Ch08.thm_8_3_3_subspace hM hα ha hs ℓ ⊤ Submodule.mem_top
 
-end Ch09
-
-end AtkinsonHan
+end AtkinsonHan.Ch09

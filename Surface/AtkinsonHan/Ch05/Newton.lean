@@ -103,6 +103,7 @@ theorem eq_5_4_5 {F : U → W} {F' : U → U →L[ℝ] W} {ustar : U} (hroot : F
         mul_le_mul hc₀ htay (norm_nonneg _) hc₀0
     _ = c₀ * L / 2 * ‖u - ustar‖ ^ 2 := by ring
 
+omit [CompleteSpace W] in
 /-- **Theorem 5.4.1** (local convergence of Newton's method).  If `F` is differentiable near a
 root `u*` with `F'(u*)` invertible and `F'` Lipschitz with constant `L` on a ball, then there are
 `δ > 0` and `M > 0` with `M δ < 1` such that from every `u₀` with `‖u₀ - u*‖ ≤ δ` the Newton
@@ -217,12 +218,16 @@ theorem thm_5_4_1 {F : U → W} {F' : U → U →L[ℝ] W} {ustar : U} (hroot : 
         _ ≤ M * ((M * δ) ^ 2 ^ n / M) ^ 2 := mul_le_mul_of_nonneg_left h2 hM0.le
         _ = (M * δ) ^ 2 ^ (n + 1) / M := h3
 
+set_option linter.unusedSectionVars false in
 /-- **Theorem 5.4.2** (Newton–Kantorovich).  Every hypothesis is checkable at the starting point
 `u₀`: `‖[F'(u₀)]⁻¹‖ ≤ a`, `‖[F'(u₀)]⁻¹ F(u₀)‖ ≤ b`, `F'` is `L`-Lipschitz, and `h = a b L ≤ ½`.
 Then `F` has a root `u*` within `t* = (1 - √(1-2h))/(aL)` of `u₀`, the Newton iterates stay in the
 ball and converge to it, with the a priori bound of the last conjunct.  This is the backbone's
 `Newton.kantorovich` (`Numlib/Nonlinear/Newton.lean`).  The positivity hypotheses `0 < a` and
-`0 < L` are added so that `t*` is not `0/0`. -/
+`0 < L` are added so that `t*` is not `0/0`.
+
+`[CompleteSpace W]` is kept because the book states the theorem for Banach spaces, although it is
+redundant: `e : U ≃L[ℝ] W` transports completeness from `U`. -/
 theorem thm_5_4_2 {F : U → W} {F' : U → U →L[ℝ] W} {u₀ : U} {r a b L : ℝ} (ha : 0 < a)
     (hLpos : 0 < L) (hb : 0 ≤ b) (e : U ≃L[ℝ] W) (he : (e : U →L[ℝ] W) = F' u₀)
     (ha' : ‖(e.symm : W →L[ℝ] U)‖ ≤ a) (hb' : ‖e.symm (F u₀)‖ ≤ b)

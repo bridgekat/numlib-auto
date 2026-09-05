@@ -20,6 +20,10 @@ definite in the sense of (5.6.3), `√m ‖v‖ ≤ ‖v‖_A ≤ √M ‖v‖` 
   (5.6.6) of the two rates, and the closing remark that `u_k` minimizes the `A`-norm of the error
   over `u₀ + 𝒦_k`.
 
+`cg_energyNorm_error_step_le` is the one statement here that is not a book statement: it is the
+per-step Kantorovich contraction in the backbone's own vocabulary, shared with §9.4, and belongs
+in `Numlib/Krylov/Convergence/CG.lean`.
+
 Deferred or out of scope (`plans/surface/AtkinsonHan-Ch5.md` §3 item 3 and §4).  Theorem 5.6.2
 (Winther's superlinear convergence) is phase 2 (`plans/backbone.md` §3.10): it is blocked by the
 spectral theorem for compact self-adjoint operators, which Mathlib does not have.  For the same
@@ -206,6 +210,26 @@ theorem cg_s (A : V →L[ℝ] V) (f u₀ : V) (k : ℕ) :
 
 end Iteration
 
+section KantorovichStep
+
+/-- One conjugate gradient step is at least as good as one steepest-descent step, so the energy
+norm of the error contracts by the Kantorovich factor `(lmax - lmin) / (lmax + lmin)`.
+
+Stated in the backbone's vocabulary because both §5.6 (`eq_5_6_4`) and §9.4
+(`AtkinsonHan.Ch09.cg_energy_rate`) specialize it.  It is a two-line assembly of
+`IsGalerkin.energyNorm_le` (the conjugate gradient iterate is optimal in the energy norm over
+`x₀ + 𝒦_{k+1}`) and the Kantorovich bound for one steepest-descent step, which the backbone
+assembles as `Krylov.IsGalerkinIterate.energyNorm_error_succ_le`. -/
+theorem cg_energyNorm_error_step_le {A : V →ₗ[ℝ] V} {b x₀ xstar : V} {lmin lmax : ℝ}
+    (hl : 0 < lmin) (hA : A.IsSymmetricBoundedBy lmin lmax) (hstar : A xstar = b) (k : ℕ) :
+    energyNorm A (xstar - (CG.iterate A b x₀ (k + 1)).x)
+      ≤ (lmax - lmin) / (lmax + lmin) * energyNorm A (xstar - (CG.iterate A b x₀ k).x) :=
+  have hAc := hA.isSymmetricCoercive hl
+  Krylov.IsGalerkinIterate.energyNorm_error_succ_le hl hA (CG.isGalerkinIterate b x₀ hAc k)
+    (CG.isGalerkinIterate b x₀ hAc (k + 1)) hstar
+
+end KantorovichStep
+
 section Convergence
 
 variable [CompleteSpace V] {A : V →L[ℝ] V} {m M : ℝ} {f u₀ ustar : V}
@@ -239,37 +263,15 @@ theorem normA_error_min (hA : IsSelfAdjoint A) (hm : 0 < m)
   exact (CG.isGalerkinIterate f u₀ hAc k).energyNorm_le hAc hstar hy
 
 /-- **(5.6.4)**: one conjugate gradient step contracts the `A`-norm of the error by the factor
-`(M - m)/(M + m)`.  The rate comes from the backbone's
-`Projection.energyNorm_steepestDescentStep_le`
-(`Numlib/LinearSolve/Projection/OneDimensional.lean`): the steepest-descent point from `u_k` lies
-in the affine space `u₀ + 𝒦_{k+1}`, over which the conjugate gradient iterate is optimal. -/
+`(M - m)/(M + m)`.  This is `cg_energyNorm_error_step_le` read through the identification
+`cg_u` of the book's iteration with the backbone's. -/
 theorem eq_5_6_4 (hA : IsSelfAdjoint A) (hm : 0 < m)
     (hbound : ∀ v, Real.sqrt m * ‖v‖ ≤ normA A v ∧ normA A v ≤ Real.sqrt M * ‖v‖)
     (hstar : A ustar = f) (k : ℕ) :
     normA A (ustar - (cg A f u₀ (k + 1)).u)
       ≤ (M - m) / (M + m) * normA A (ustar - (cg A f u₀ k).u) := by
-  have hA' := isSymmetricBoundedBy_of_bound hA hm hbound
-  have hAc := hA'.isSymmetricCoercive hm
-  set x := (CG.iterate (A : V →ₗ[ℝ] V) f u₀ k).x with hx
-  have hmemk : x - u₀ ∈ Krylov.subspace (A : V →ₗ[ℝ] V) (f - A u₀) k :=
-    CG.iterate_sub_mem f u₀ hAc k
-  have hres : f - (A : V →ₗ[ℝ] V) x ∈ Krylov.subspace (A : V →ₗ[ℝ] V) (f - A u₀) (k + 1) :=
-    Krylov.residual_mem_subspace_succ hmemk
-  have hsd : Projection.steepestDescentStep (A : V →ₗ[ℝ] V) f x - u₀
-      ∈ Krylov.subspace (A : V →ₗ[ℝ] V) (f - A u₀) (k + 1) := by
-    have hsplit : Projection.steepestDescentStep (A : V →ₗ[ℝ] V) f x - u₀
-        = (x - u₀) + (inner ℝ (f - (A : V →ₗ[ℝ] V) x) (f - (A : V →ₗ[ℝ] V) x) /
-            inner ℝ (f - (A : V →ₗ[ℝ] V) x) ((A : V →ₗ[ℝ] V) (f - (A : V →ₗ[ℝ] V) x))) •
-            (f - (A : V →ₗ[ℝ] V) x) := by
-      rw [Projection.steepestDescentStep, Projection.step1]
-      abel
-    rw [hsplit]
-    exact Submodule.add_mem _
-      (Krylov.subspace_mono _ _ (Nat.le_succ k) hmemk) (Submodule.smul_mem _ _ hres)
-  have h1 := (CG.isGalerkinIterate f u₀ hAc (k + 1)).energyNorm_le hAc hstar hsd
-  have h2 := Projection.energyNorm_steepestDescentStep_le hm hA' hstar x
   rw [cg_u, cg_u, normA_eq, normA_eq]
-  exact h1.trans h2
+  exact cg_energyNorm_error_step_le hm (isSymmetricBoundedBy_of_bound hA hm hbound) hstar k
 
 /-- **Theorem 5.6.1** (Patterson): the conjugate gradient iterates converge to the solution of
 `A u = f`, at the linear rate (5.6.4). -/
