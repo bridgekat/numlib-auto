@@ -21,20 +21,60 @@ Atkinson–Han Rem 9.2.2, Xu–Zikatanov).
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
+/-- Membership in the orthogonal complement of a span is orthogonality to the generators. -/
+private theorem mem_orthogonal_span_range_iff {ι : Type*} (W : ι → E) (x : E) :
+    x ∈ (Submodule.span 𝕜 (Set.range W))ᗮ ↔ ∀ j, inner 𝕜 (W j) x = 0 := by
+  rw [Submodule.mem_orthogonal']
+  refine ⟨fun h j => inner_eq_zero_symm.1 (h _ (Submodule.subset_span (Set.mem_range_self j))),
+    fun h y hy => ?_⟩
+  have hle : Submodule.span 𝕜 (Set.range W) ≤
+      LinearMap.ker ((innerSL 𝕜 x : E →L[𝕜] 𝕜) : E →ₗ[𝕜] 𝕜) := by
+    rw [Submodule.span_le, Set.range_subset_iff]
+    exact fun j => inner_eq_zero_symm.2 (h j)
+  exact hle hy
+
 namespace LinearMap
+
+/-- An idempotent linear map fixes its range pointwise. -/
+private theorem apply_of_mem_range {P : E →ₗ[𝕜] E} (hP : IsIdempotentElem P) {y : E}
+    (hy : y ∈ LinearMap.range P) : P y = y := by
+  obtain ⟨z, rfl⟩ := hy
+  exact DFunLike.congr_fun hP z
 
 /-- A projector is determined by its range and its kernel. -/
 theorem IsIdempotentElem.ext_of_range_eq_of_ker_eq {P Q : E →ₗ[𝕜] E} (hP : IsIdempotentElem P)
     (hQ : IsIdempotentElem Q) (hr : LinearMap.range P = LinearMap.range Q)
     (hk : LinearMap.ker P = LinearMap.ker Q) : P = Q := by
-  sorry
+  ext x
+  have hmem : x - P x ∈ LinearMap.ker Q := by
+    rw [← hk, LinearMap.mem_ker, map_sub, apply_of_mem_range hP (LinearMap.mem_range_self P x),
+      sub_self]
+  have h2 : Q x = Q (P x) := by
+    have h := LinearMap.mem_ker.1 hmem
+    rw [map_sub, sub_eq_zero] at h
+    exact h
+  have h3 : Q (P x) = P x := by
+    refine apply_of_mem_range hQ ?_
+    rw [← hr]
+    exact LinearMap.mem_range_self P x
+  rw [h2, h3]
 
 /-- Saad (1.41): `P x` is the unique element of `K` with `x - P x ⟂ L`, for a projector `P` with
 range `K` and kernel `Lᗮ`. -/
 theorem IsIdempotentElem.apply_eq_iff {P : E →ₗ[𝕜] E} (hP : IsIdempotentElem P)
     {K L : Submodule 𝕜 E} (hr : LinearMap.range P = K) (hk : LinearMap.ker P = Lᗮ) (x y : E) :
     P x = y ↔ y ∈ K ∧ x - y ∈ Lᗮ := by
-  sorry
+  constructor
+  · rintro rfl
+    refine ⟨hr ▸ LinearMap.mem_range_self P x, ?_⟩
+    rw [← hk, LinearMap.mem_ker, map_sub,
+      apply_of_mem_range hP (LinearMap.mem_range_self P x), sub_self]
+  · rintro ⟨hy, hxy⟩
+    have hyr : y ∈ LinearMap.range P := by rw [hr]; exact hy
+    have hmem : x - y ∈ LinearMap.ker P := by rw [hk]; exact hxy
+    have h := LinearMap.mem_ker.1 hmem
+    rw [map_sub, apply_of_mem_range hP hyr, sub_eq_zero] at h
+    exact h
 
 /-- Saad §1.12.1: a projector onto `K` orthogonal to `L` exists (uniquely) iff `K ⊓ Lᗮ = ⊥`,
 for finite-dimensional `K`, `L` of equal dimension. -/
@@ -42,7 +82,49 @@ theorem existsUnique_isIdempotentElem_of_inf_orthogonal_eq_bot {K L : Submodule 
     [FiniteDimensional 𝕜 K] [FiniteDimensional 𝕜 L]
     (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) (hKL : K ⊓ Lᗮ = ⊥) :
     ∃! P : E →ₗ[𝕜] E, IsIdempotentElem P ∧ LinearMap.range P = K ∧ LinearMap.ker P = Lᗮ := by
-  sorry
+  set g : E →ₗ[𝕜] L := (L.orthogonalProjectionOnto : E →ₗ[𝕜] L) with hg
+  set f : K →ₗ[𝕜] L := g.comp K.subtype with hf
+  have hinj : Function.Injective f := by
+    rw [← LinearMap.ker_eq_bot, Submodule.eq_bot_iff]
+    intro x hx
+    have hx' : (x : E) ∈ Lᗮ := by
+      rw [← Submodule.orthogonalProjectionOnto_eq_zero_iff]
+      exact LinearMap.mem_ker.1 hx
+    have hmem : (x : E) ∈ K ⊓ Lᗮ := ⟨x.2, hx'⟩
+    rw [hKL] at hmem
+    exact Subtype.ext (Submodule.mem_bot 𝕜 |>.1 hmem)
+  have hsurj : Function.Surjective f :=
+    (LinearMap.injective_iff_surjective_of_finrank_eq_finrank hdim).1 hinj
+  set e : K ≃ₗ[𝕜] L := LinearEquiv.ofBijective f ⟨hinj, hsurj⟩ with he
+  set P : E →ₗ[𝕜] E := K.subtype.comp ((e.symm : L →ₗ[𝕜] K).comp g) with hPdef
+  have hPmem : ∀ x, P x ∈ K := fun x => (e.symm (g x)).2
+  have hPfix : ∀ y ∈ K, P y = y := by
+    intro y hy
+    change ((e.symm (g y) : K) : E) = y
+    have hfy : g y = e ⟨y, hy⟩ := rfl
+    rw [hfy, e.symm_apply_apply]
+  have hidem : IsIdempotentElem P := LinearMap.ext fun x => hPfix (P x) (hPmem x)
+  have hran : LinearMap.range P = K := by
+    refine le_antisymm ?_ fun y hy => ⟨y, hPfix y hy⟩
+    rintro _ ⟨x, rfl⟩
+    exact hPmem x
+  have hker : LinearMap.ker P = Lᗮ := by
+    ext x
+    rw [LinearMap.mem_ker]
+    constructor
+    · intro h
+      have h' : e.symm (g x) = 0 := Subtype.ext h
+      have hgx : g x = 0 := by simpa using congrArg e h'
+      exact Submodule.orthogonalProjectionOnto_eq_zero_iff.1 hgx
+    · intro h
+      have hgx : g x = 0 := Submodule.orthogonalProjectionOnto_eq_zero_iff.2 h
+      change ((e.symm (g x) : K) : E) = 0
+      rw [hgx, map_zero]
+      rfl
+  refine ⟨P, ⟨hidem, hran, hker⟩, ?_⟩
+  rintro Q ⟨hQidem, hQran, hQker⟩
+  exact IsIdempotentElem.ext_of_range_eq_of_ker_eq hQidem hidem (hQran.trans hran.symm)
+    (hQker.trans hker.symm)
 
 section Bases
 
@@ -62,36 +144,111 @@ noncomputable def crossGram (V W : ι → E) : Matrix ι ι 𝕜 :=
 (as a linear map; junk when `Wᴴ V` is singular). -/
 noncomputable def obliqueProjectionOfBases (V W : ι → E) : E →ₗ[𝕜] E where
   toFun x := ∑ j, (crossGram 𝕜 V W)⁻¹.mulVec (fun i => inner 𝕜 (W i) x) j • V j
-  map_add' := by sorry
-  map_smul' := by sorry
+  map_add' := by
+    intro x y
+    have h : (fun i => inner 𝕜 (W i) (x + y))
+        = (fun i => inner 𝕜 (W i) x) + fun i => inner 𝕜 (W i) y := by
+      funext i; simp [inner_add_right]
+    simp only [h, Matrix.mulVec_add, Pi.add_apply, add_smul, Finset.sum_add_distrib]
+  map_smul' := by
+    intro r x
+    have h : (fun i => inner 𝕜 (W i) (r • x)) = r • fun i => inner 𝕜 (W i) x := by
+      funext i; simp [inner_smul_right]
+    simp only [h, Matrix.mulVec_smul, Pi.smul_apply, smul_eq_mul, mul_smul, RingHom.id_apply,
+      Finset.smul_sum]
 
 variable {𝕜}
+
+/-- Unfolding lemma for `obliqueProjectionOfBases`. -/
+private theorem obliqueProjectionOfBases_apply (V W : ι → E) (x : E) :
+    obliqueProjectionOfBases 𝕜 V W x =
+      ∑ j, (crossGram 𝕜 V W)⁻¹.mulVec (fun i => inner 𝕜 (W i) x) j • V j := rfl
+
+omit [DecidableEq ι] in
+/-- The `W`-coordinates of a `V`-combination are `(Wᴴ V) c`. -/
+private theorem inner_sum_smul (V W : ι → E) (c : ι → 𝕜) :
+    (fun i => inner 𝕜 (W i) (∑ k, c k • V k)) = (crossGram 𝕜 V W).mulVec c := by
+  funext i
+  simp only [inner_sum, inner_smul_right, Matrix.mulVec, dotProduct, crossGram, Matrix.of_apply]
+  exact Finset.sum_congr rfl fun k _ => mul_comm _ _
 
 variable (V W : ι → E) (hVW : IsUnit (crossGram 𝕜 V W))
 include hVW
 
+private theorem crossGram_inv_mul : (crossGram 𝕜 V W)⁻¹ * crossGram 𝕜 V W = 1 :=
+  Matrix.nonsing_inv_mul _ (Matrix.isUnit_iff_isUnit_det _ |>.1 hVW)
+
+private theorem crossGram_mul_inv : crossGram 𝕜 V W * (crossGram 𝕜 V W)⁻¹ = 1 :=
+  Matrix.mul_nonsing_inv _ (Matrix.isUnit_iff_isUnit_det _ |>.1 hVW)
+
+/-- The projector fixes every `V`-combination. -/
+private theorem apply_sum_smul (c : ι → 𝕜) :
+    obliqueProjectionOfBases 𝕜 V W (∑ k, c k • V k) = ∑ k, c k • V k := by
+  rw [obliqueProjectionOfBases_apply, inner_sum_smul, Matrix.mulVec_mulVec,
+    crossGram_inv_mul V W hVW, Matrix.one_mulVec]
+
+/-- The projector does not change the `W`-coordinates. -/
+private theorem inner_apply_eq (x : E) (i : ι) :
+    inner 𝕜 (W i) (obliqueProjectionOfBases 𝕜 V W x) = inner 𝕜 (W i) x := by
+  have h := congrFun (inner_sum_smul V W ((crossGram 𝕜 V W)⁻¹.mulVec
+    (fun k => inner 𝕜 (W k) x))) i
+  rw [obliqueProjectionOfBases_apply, h, Matrix.mulVec_mulVec, crossGram_mul_inv V W hVW,
+    Matrix.one_mulVec]
+
 theorem obliqueProjectionOfBases_isIdempotentElem :
     IsIdempotentElem (obliqueProjectionOfBases 𝕜 V W) := by
-  sorry
+  refine LinearMap.ext fun x => ?_
+  change obliqueProjectionOfBases 𝕜 V W (obliqueProjectionOfBases 𝕜 V W x) = _
+  rw [obliqueProjectionOfBases_apply (x := obliqueProjectionOfBases 𝕜 V W x),
+    show (fun i => inner 𝕜 (W i) (obliqueProjectionOfBases 𝕜 V W x))
+      = fun i => inner 𝕜 (W i) x from funext fun i => inner_apply_eq V W hVW x i]
+  rfl
 
 theorem range_obliqueProjectionOfBases :
     LinearMap.range (obliqueProjectionOfBases 𝕜 V W) = Submodule.span 𝕜 (Set.range V) := by
-  sorry
+  refine le_antisymm ?_ ?_
+  · rintro _ ⟨x, rfl⟩
+    rw [obliqueProjectionOfBases_apply]
+    exact Submodule.sum_mem _ fun j _ =>
+      Submodule.smul_mem _ _ (Submodule.subset_span (Set.mem_range_self j))
+  · intro y hy
+    obtain ⟨c, rfl⟩ := Submodule.mem_span_range_iff_exists_fun 𝕜 |>.1 hy
+    exact ⟨∑ k, c k • V k, apply_sum_smul V W hVW c⟩
 
 theorem ker_obliqueProjectionOfBases :
     LinearMap.ker (obliqueProjectionOfBases 𝕜 V W) = (Submodule.span 𝕜 (Set.range W))ᗮ := by
-  sorry
+  ext x
+  rw [LinearMap.mem_ker, mem_orthogonal_span_range_iff]
+  constructor
+  · intro h j
+    have hj := inner_apply_eq V W hVW x j
+    rw [h, inner_zero_right] at hj
+    exact hj.symm
+  · intro h
+    rw [obliqueProjectionOfBases_apply,
+      show (fun i => inner 𝕜 (W i) x) = 0 from funext h, Matrix.mulVec_zero]
+    simp
 
 theorem sub_obliqueProjectionOfBases_apply_mem_orthogonal (x : E) :
     x - obliqueProjectionOfBases 𝕜 V W x ∈ (Submodule.span 𝕜 (Set.range W))ᗮ := by
-  sorry
+  rw [mem_orthogonal_span_range_iff]
+  intro j
+  rw [inner_sub_right, inner_apply_eq V W hVW x j, sub_self]
 
 omit hVW in
 /-- With `W = V` orthonormal, `V (Vᴴ V)⁻¹ Vᴴ = V Vᴴ` is the orthogonal projection. -/
 theorem obliqueProjectionOfBases_self_eq_starProjection (hV : Orthonormal 𝕜 V) :
     obliqueProjectionOfBases 𝕜 V V =
       ((Submodule.span 𝕜 (Set.range V)).starProjection : E →ₗ[𝕜] E) := by
-  sorry
+  have hG : crossGram 𝕜 V V = 1 := by
+    ext i j
+    rw [crossGram, Matrix.of_apply, orthonormal_iff_ite.1 hV i j, Matrix.one_apply]
+  have hunit : IsUnit (crossGram 𝕜 V V) := hG ▸ isUnit_one
+  refine LinearMap.ext fun x => ?_
+  refine (Submodule.eq_starProjection_of_mem_orthogonal ?_ ?_).symm
+  · rw [← range_obliqueProjectionOfBases V V hunit]
+    exact LinearMap.mem_range_self _ x
+  · exact sub_obliqueProjectionOfBases_apply_mem_orthogonal V V hunit x
 
 end Bases
 
@@ -101,16 +258,91 @@ namespace ContinuousLinearMap
 
 variable [CompleteSpace E]
 
+omit [CompleteSpace E] in
+/-- A nonzero bounded idempotent has norm at least `1`. -/
+private theorem one_le_norm_of_isIdempotentElem {P : E →L[𝕜] E} (hP : IsIdempotentElem P)
+    (h0 : P ≠ 0) : 1 ≤ ‖P‖ := by
+  have hpos : 0 < ‖P‖ := norm_pos_iff.2 h0
+  have hle : ‖P‖ ≤ ‖P‖ * ‖P‖ := by
+    conv_lhs => rw [← hP]
+    exact norm_mul_le P P
+  nlinarith
+
+omit [CompleteSpace E] in
+/-- For a norm-one projector the range is orthogonal to the kernel. -/
+private theorem inner_eq_zero_of_norm_eq_one {P : E →L[𝕜] E} (hnorm : ‖P‖ = 1) {y z : E}
+    (hy : P y = y) (hz : P z = 0) : inner 𝕜 y z = (0 : 𝕜) := by
+  rcases eq_or_ne z 0 with rfl | hzne
+  · simp
+  have hz2 : (0 : ℝ) < ‖z‖ ^ 2 := pow_pos (norm_pos_iff.2 hzne) 2
+  set c : 𝕜 := inner 𝕜 y z with hc
+  set θ : ℝ := -(‖z‖ ^ 2)⁻¹ with hθ
+  set t : 𝕜 := (θ : 𝕜) * (starRingEnd 𝕜) c with ht
+  have hPyz : P (y + t • z) = y := by
+    rw [map_add, map_smul, hy, hz, smul_zero, add_zero]
+  have hle : ‖y‖ ≤ ‖y + t • z‖ := by
+    calc ‖y‖ = ‖P (y + t • z)‖ := by rw [hPyz]
+      _ ≤ ‖P‖ * ‖y + t • z‖ := P.le_opNorm _
+      _ = ‖y + t • z‖ := by rw [hnorm, one_mul]
+  have hre : RCLike.re (inner 𝕜 y (t • z)) = θ * ‖c‖ ^ 2 := by
+    rw [inner_smul_right, ht, mul_assoc, RCLike.conj_mul, ← RCLike.ofReal_pow,
+      RCLike.re_ofReal_mul, RCLike.ofReal_re]
+  have hnt : ‖t • z‖ ^ 2 = θ ^ 2 * ‖c‖ ^ 2 * ‖z‖ ^ 2 := by
+    rw [norm_smul, ht, norm_mul, RCLike.norm_ofReal, RCLike.norm_conj, mul_pow, mul_pow, sq_abs]
+  have hexp : ‖y + t • z‖ ^ 2 = ‖y‖ ^ 2 + 2 * (θ * ‖c‖ ^ 2) + θ ^ 2 * ‖c‖ ^ 2 * ‖z‖ ^ 2 := by
+    rw [norm_add_sq (𝕜 := 𝕜), hre, hnt]
+  have hy0 : 0 ≤ ‖y‖ := norm_nonneg y
+  have hsq : ‖y‖ ^ 2 ≤ ‖y + t • z‖ ^ 2 := by nlinarith [norm_nonneg (y + t • z)]
+  rw [hexp] at hsq
+  have hθz : θ * ‖z‖ ^ 2 = -1 := by
+    rw [hθ, neg_mul, inv_mul_cancel₀ hz2.ne']
+  have hθneg : θ < 0 := by rw [hθ]; simpa using inv_pos.2 hz2
+  have hid : θ ^ 2 * ‖c‖ ^ 2 * ‖z‖ ^ 2 = -(θ * ‖c‖ ^ 2) := by
+    rw [show θ ^ 2 * ‖c‖ ^ 2 * ‖z‖ ^ 2 = θ * ‖z‖ ^ 2 * (θ * ‖c‖ ^ 2) by ring, hθz, neg_one_mul]
+  have hkey : 0 ≤ θ * ‖c‖ ^ 2 := by linarith
+  have hcsq : ‖c‖ ^ 2 ≤ 0 := by nlinarith
+  have hc0 : ‖c‖ = 0 := by nlinarith [norm_nonneg c]
+  exact norm_eq_zero.1 hc0
+
 /-- Saad Thm 1.36 / Atkinson–Han Ex 3.6.7: a nonzero projector has norm `≥ 1`, with equality iff
 it is orthogonal (self-adjoint). -/
 theorem IsIdempotentElem.norm_eq_one_iff_isSymmetric {P : E →L[𝕜] E} (hP : IsIdempotentElem P)
     (h0 : P ≠ 0) : ‖P‖ = 1 ↔ (P : E →ₗ[𝕜] E).IsSymmetric := by
-  sorry
+  have hPP : ∀ x : E, P (P x) = P x := fun x => DFunLike.congr_fun hP x
+  constructor
+  · intro hnorm x y
+    have h1 : inner 𝕜 (P x) (y - P y) = (0 : 𝕜) :=
+      inner_eq_zero_of_norm_eq_one hnorm (hPP x) (by rw [map_sub, hPP, sub_self])
+    have h2 : inner 𝕜 (P y) (x - P x) = (0 : 𝕜) :=
+      inner_eq_zero_of_norm_eq_one hnorm (hPP y) (by rw [map_sub, hPP, sub_self])
+    have e1 : inner 𝕜 (P x) y = inner 𝕜 (P x) (P y) := by
+      rw [← sub_eq_zero, ← inner_sub_right]; exact h1
+    have e2 : inner 𝕜 x (P y) = inner 𝕜 (P x) (P y) := by
+      rw [← sub_eq_zero, ← inner_sub_left, ← inner_conj_symm, h2, map_zero]
+    exact e1.trans e2.symm
+  · intro hsym
+    refine le_antisymm (P.opNorm_le_bound zero_le_one fun x => ?_)
+      (one_le_norm_of_isIdempotentElem hP h0)
+    rw [one_mul]
+    have hsq : ‖P x‖ ^ 2 = RCLike.re (inner 𝕜 x (P x)) := by
+      have h : inner 𝕜 ((P : E →ₗ[𝕜] E) x) (P x) = inner 𝕜 x ((P : E →ₗ[𝕜] E) (P x)) :=
+        hsym x (P x)
+      simp only [ContinuousLinearMap.coe_coe, hPP] at h
+      rw [← inner_self_eq_norm_sq (𝕜 := 𝕜), h]
+    have hcs : RCLike.re (inner 𝕜 x (P x)) ≤ ‖x‖ * ‖P x‖ :=
+      (RCLike.re_le_norm _).trans (norm_inner_le_norm _ _)
+    nlinarith [norm_nonneg (P x), norm_nonneg x]
 
 /-- Kato's lemma: for a bounded projector `P ≠ 0, 1` on a Hilbert space, `‖P‖ = ‖1 - P‖`
 (Szyld, *The many proofs of an identity on the norm of oblique projections*, 2006). -/
 theorem IsIdempotentElem.norm_one_sub_eq {P : E →L[𝕜] E} (hP : IsIdempotentElem P) (h0 : P ≠ 0)
     (h1 : P ≠ 1) : ‖1 - P‖ = ‖P‖ := by
+  -- Not proved. The available routes all go through the "minimal gap"/angle characterisation
+  -- `1 / ‖P‖ ^ 2 = 1 - ‖P_N P_M‖ ^ 2` with `M = range P`, `N = ker P` orthogonal projections
+  -- `P_M`, `P_N`, together with `‖P_M P_N‖ = ‖P_N P_M‖` (adjoints).  That needs an operator-norm
+  -- characterisation of `sup {‖P_N m‖ : m ∈ M, ‖m‖ = 1}` and of `inf {dist (m, N) : ‖m‖ = 1}`
+  -- and their reciprocal relation, none of which is available in Mathlib; attempts to shortcut
+  -- it via `‖T‖ = ‖T⋆‖`, the C⋆-identity, or a direct estimate on `‖(1 - P) x‖` did not close.
   sorry
 
 end ContinuousLinearMap

@@ -21,26 +21,32 @@ namespace Krylov.IsMinResIterate
 
 include hA
 
+set_option linter.unusedSectionVars false in
 /-- Minimal-residual iterates of an SPD system coincide with the CR iterates. -/
 theorem eq_CR_iterate {x₀ : E} {k : ℕ} {x : E} (hx : IsMinResIterate A b x₀ k x) :
     x = (CR.iterate A b x₀ k).x := by
-  sorry
+  obtain ⟨y, -, huniq⟩ :=
+    existsUnique_isMinResIterate_of_injective hA.isCoercive.injective b x₀ k
+  exact (huniq x hx).trans (huniq _ (CR.isMinResIterate b x₀ hA k)).symm
 
 /-- Fong–Saunders Thm 2.3: `‖x_k‖` is nondecreasing (`x₀ = 0`). -/
 theorem norm_monotone {x : ℕ → E} (hx : ∀ k, IsMinResIterate A b 0 k (x k)) :
     Monotone fun k => ‖x k‖ := by
-  sorry
+  have h : ∀ k, x k = (CR.iterate A b 0 k).x := fun k => eq_CR_iterate hA (hx k)
+  simpa only [h] using CR.norm_iterate_monotone b hA
 
 /-- Fong–Saunders Thm 2.4: `‖x* - x_k‖` is nonincreasing. -/
 theorem norm_error_antitone {x₀ : E} {x : ℕ → E} (hx : ∀ k, IsMinResIterate A b x₀ k (x k))
     {xstar : E} (hstar : A xstar = b) : Antitone fun k => ‖xstar - x k‖ := by
-  sorry
+  have h : ∀ k, x k = (CR.iterate A b x₀ k).x := fun k => eq_CR_iterate hA (hx k)
+  simpa only [h] using CR.norm_error_antitone b x₀ hA hstar
 
 /-- Fong–Saunders Thm 2.5: `‖x* - x_k‖_A` is nonincreasing. -/
 theorem energyNorm_error_antitone {x₀ : E} {x : ℕ → E}
     (hx : ∀ k, IsMinResIterate A b x₀ k (x k)) {xstar : E} (hstar : A xstar = b) :
     Antitone fun k => energyNorm A (xstar - x k) := by
-  sorry
+  have h : ∀ k, x k = (CR.iterate A b x₀ k).x := fun k => eq_CR_iterate hA (hx k)
+  simpa only [h] using CR.energyNorm_error_antitone b x₀ hA hstar
 
 /-- Fong–Saunders Thm 3.1: the normwise relative backward error
 `‖r_k‖ / (α ‖A‖ ‖x_k‖ + β ‖b‖)` is nonincreasing (`x₀ = 0`, `α ≥ 0`, `β > 0`). The
@@ -48,14 +54,35 @@ denominator is positive at every step, so no junk division occurs. -/
 theorem backwardError_antitone {x : ℕ → E} (hx : ∀ k, IsMinResIterate A b 0 k (x k))
     {normA α β : ℝ} (hα : 0 ≤ α) (hβ : 0 < β) (hnormA : 0 ≤ normA) (hb : b ≠ 0) :
     Antitone fun k => ‖b - A (x k)‖ / (α * normA * ‖x k‖ + β * ‖b‖) := by
-  sorry
+  have hbpos : 0 < ‖b‖ := norm_pos_iff.2 hb
+  have hmono : Monotone fun k => ‖x k‖ := norm_monotone hA hx
+  intro i j hij
+  have hden : ∀ k : ℕ, 0 < α * normA * ‖x k‖ + β * ‖b‖ := by
+    intro k
+    have h1 : 0 ≤ α * normA * ‖x k‖ := by positivity
+    have h2 : 0 < β * ‖b‖ := by positivity
+    linarith
+  rw [div_le_div_iff₀ (hden j) (hden i)]
+  refine mul_le_mul (norm_residual_antitone hx hij) ?_ (le_of_lt (hden i)) (norm_nonneg _)
+  have := hmono hij
+  simp only at this
+  nlinarith [mul_nonneg hα hnormA]
 
 /-- The special case `‖r_k‖ / ‖x_k‖` (Fong–Saunders (3.5) with `β = 0`), from step `1` on:
 at `k = 0` the quotient `‖b‖ / ‖0‖` is a junk value, so the statement is on `Set.Ici 1`. -/
 theorem norm_residual_div_norm_antitoneOn {x : ℕ → E}
     (hx : ∀ k, IsMinResIterate A b 0 k (x k)) (hb : b ≠ 0) :
     AntitoneOn (fun k => ‖b - A (x k)‖ / ‖x k‖) (Set.Ici 1) := by
-  sorry
+  have hmono : Monotone fun k => ‖x k‖ := norm_monotone hA hx
+  have h1 : 0 < ‖x 1‖ := by
+    rw [norm_pos_iff, eq_CR_iterate hA (hx 1)]
+    exact CR.iterate_one_x_ne_zero b hA hb
+  intro i hi j hj hij
+  simp only [Set.mem_Ici] at hi hj
+  have hxi : 0 < ‖x i‖ := lt_of_lt_of_le h1 (hmono hi)
+  have hxj : 0 < ‖x j‖ := lt_of_lt_of_le h1 (hmono hj)
+  rw [div_le_div_iff₀ hxj hxi]
+  exact mul_le_mul (norm_residual_antitone hx hij) (hmono hij) (le_of_lt hxi) (norm_nonneg _)
 
 end Krylov.IsMinResIterate
 
@@ -63,19 +90,23 @@ namespace Krylov.IsGalerkinIterate
 
 include hA
 
+set_option linter.unusedSectionVars false in
 /-- Galerkin iterates of an SPD system coincide with the CG iterates. -/
 theorem eq_CG_iterate {x₀ : E} {k : ℕ} {x : E} (hx : IsGalerkinIterate A b x₀ k x) :
     x = (CG.iterate A b x₀ k).x := by
-  sorry
+  obtain ⟨y, -, huniq⟩ := existsUnique_isGalerkinIterate_of_isCoercive hA.isCoercive b x₀ k
+  exact (huniq x hx).trans (huniq _ (CG.isGalerkinIterate b x₀ hA k)).symm
 
 /-- Steihaug (Fong–Saunders Table 5.1, CG column): `‖x_k‖` is nondecreasing (`x₀ = 0`). -/
 theorem norm_monotone {x : ℕ → E} (hx : ∀ k, IsGalerkinIterate A b 0 k (x k)) :
     Monotone fun k => ‖x k‖ := by
-  sorry
+  have h : ∀ k, x k = (CG.iterate A b 0 k).x := fun k => eq_CG_iterate hA (hx k)
+  simpa only [h] using CG.norm_iterate_monotone b hA
 
 /-- Hestenes–Stiefel Thm 6:3: `‖x* - x_k‖` is nonincreasing. -/
 theorem norm_error_antitone {x₀ : E} {x : ℕ → E} (hx : ∀ k, IsGalerkinIterate A b x₀ k (x k))
     {xstar : E} (hstar : A xstar = b) : Antitone fun k => ‖xstar - x k‖ := by
-  sorry
+  have h : ∀ k, x k = (CG.iterate A b x₀ k).x := fun k => eq_CG_iterate hA (hx k)
+  simpa only [h] using CG.norm_error_antitone b x₀ hA hstar
 
 end Krylov.IsGalerkinIterate

@@ -28,8 +28,7 @@ def IsTridiagonal [Zero R] (T : Matrix n n R) : Prop :=
   ∀ i j, (∃ k, j < k ∧ k < i) ∨ (∃ k, i < k ∧ k < j) → T i j = 0
 
 theorem IsTridiagonal.isUpperHessenberg [Zero R] {T : Matrix n n R} (hT : T.IsTridiagonal) :
-    T.IsUpperHessenberg := by
-  sorry
+    T.IsUpperHessenberg := fun i j h => hT i j (Or.inl h)
 
 /-- Rectangular upper Hessenberg (`(m+1) × m`, as in Arnoldi's `H̄_m`). -/
 def IsUpperHessenbergRect [Zero R] {m : ℕ} (H : Matrix (Fin (m + 1)) (Fin m) R) : Prop :=
@@ -48,23 +47,49 @@ def strictUpper (A : Matrix n n R) : Matrix n n R := Matrix.of fun i j => if i <
 /-- Diagonal part. -/
 def diagPart [DecidableEq n] (A : Matrix n n R) : Matrix n n R := Matrix.diagonal A.diag
 
-theorem strictLower_blockTriangular (A : Matrix n n R) :
-    (strictLower A).BlockTriangular id := by
-  sorry
+@[simp]
+theorem strictLower_apply (A : Matrix n n R) (i j : n) :
+    strictLower A i j = if j < i then A i j else 0 := rfl
 
+@[simp]
+theorem strictUpper_apply (A : Matrix n n R) (i j : n) :
+    strictUpper A i j = if i < j then A i j else 0 := rfl
+
+omit [LinearOrder n] in
+@[simp]
+theorem diagPart_apply [DecidableEq n] (A : Matrix n n R) (i j : n) :
+    diagPart A i j = if i = j then A i i else 0 := diagonal_apply _ _ _
+
+-- Statement corrected: Mathlib's `Matrix.BlockTriangular M b` unfolds to `b j < b i → M i j = 0`,
+-- so `BlockTriangular · id` is *upper* triangularity (`Matrix.IsUpperTriangular`). The strict
+-- lower part is block triangular for `OrderDual.toDual`; with `id` the statement is false as soon
+-- as `A` has a nonzero entry strictly below the diagonal.
+/-- The strict lower part is lower triangular. -/
+theorem strictLower_blockTriangular (A : Matrix n n R) :
+    (strictLower A).BlockTriangular OrderDual.toDual := fun _ _ h => by
+  simp [asymm (OrderDual.toDual_lt_toDual.mp h)]
+
+-- Statement corrected for the same reason as `Matrix.strictLower_blockTriangular`: the strict
+-- upper part is block triangular for `id`, not for `OrderDual.toDual`.
+/-- The strict upper part is upper triangular. -/
 theorem strictUpper_blockTriangular (A : Matrix n n R) :
-    (strictUpper A).BlockTriangular OrderDual.toDual := by
-  sorry
+    (strictUpper A).BlockTriangular id := fun i j h => by
+  simp only [strictUpper_apply, ite_eq_right_iff]
+  exact fun h' => absurd h' (asymm h)
 
 end Parts
 
 theorem diagPart_add_strictLower_add_strictUpper [DecidableEq n] [AddCommMonoid R]
     (A : Matrix n n R) : diagPart A + strictLower A + strictUpper A = A := by
-  sorry
+  ext i j
+  rcases lt_trichotomy i j with h | rfl | h
+  · simp [h, h.ne, asymm h]
+  · simp
+  · simp [h, h.ne', asymm h]
 
 /-- Saad's convention `A = D - E - F` with `E = -strictLower A`, `F = -strictUpper A`. -/
 theorem diagPart_sub_neg_strictLower_sub_neg_strictUpper [DecidableEq n] [AddCommGroup R]
     (A : Matrix n n R) : diagPart A - (-strictLower A) - (-strictUpper A) = A := by
-  sorry
+  rw [sub_neg_eq_add, sub_neg_eq_add, diagPart_add_strictLower_add_strictUpper]
 
 end Matrix

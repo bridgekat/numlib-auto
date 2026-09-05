@@ -8,6 +8,7 @@ import Mathlib.Analysis.InnerProductSpace.Symmetric
 import Mathlib.Analysis.InnerProductSpace.Positive
 import Mathlib.Analysis.InnerProductSpace.Spectrum
 import Mathlib.Analysis.InnerProductSpace.PiL2
+import Mathlib.Analysis.InnerProductSpace.Rayleigh
 import Mathlib.LinearAlgebra.Matrix.PosDef
 import Mathlib.Analysis.InnerProductSpace.Adjoint
 
@@ -42,17 +43,61 @@ structure IsSymmetricCoercive (A : E →ₗ[𝕜] E) : Prop where
   isSymmetric : A.IsSymmetric
   isCoercive : A.IsCoercive
 
+section Aux
+
+/-- The quadratic form of `A` is `2`-homogeneous for real scalars. -/
+private theorem re_inner_apply_smul (A : E →ₗ[𝕜] E) (t : ℝ) (x : E) :
+    RCLike.re (inner 𝕜 (A ((t : 𝕜) • x)) ((t : 𝕜) • x)) = t ^ 2 * RCLike.re (inner 𝕜 (A x) x) := by
+  rw [map_smul, inner_smul_left, inner_smul_right, RCLike.conj_ofReal, RCLike.re_ofReal_mul,
+    RCLike.re_ofReal_mul]
+  ring
+
+/-- The quadratic form of `A` at an eigenvector. -/
+private theorem re_inner_apply_self_of_eq_smul {A : E →ₗ[𝕜] E} {μ : 𝕜} {x : E} (h : A x = μ • x) :
+    RCLike.re (inner 𝕜 (A x) x) = RCLike.re μ * ‖x‖ ^ 2 := by
+  rw [h, inner_smul_left, inner_self_eq_norm_sq_to_K, ← RCLike.ofReal_pow, RCLike.mul_re]
+  simp
+
+/-- Coercivity only has to be checked on the unit sphere. -/
+private theorem isCoerciveWith_of_forall_sphere {A : E →ₗ[𝕜] E} {c : ℝ}
+    (h : ∀ x : E, ‖x‖ = 1 → c ≤ RCLike.re (inner 𝕜 (A x) x)) : A.IsCoerciveWith c := by
+  intro x
+  rcases eq_or_ne x 0 with rfl | hx
+  · simp
+  have hn : (0 : ℝ) < ‖x‖ := norm_pos_iff.2 hx
+  have h1 : ‖((‖x‖⁻¹ : ℝ) : 𝕜) • x‖ = 1 := by
+    rw [norm_smul, RCLike.norm_ofReal, abs_of_pos (inv_pos.2 hn), inv_mul_cancel₀ hn.ne']
+  have h2 := h _ h1
+  rw [re_inner_apply_smul] at h2
+  have h3 := mul_le_mul_of_nonneg_right h2 (sq_nonneg ‖x‖)
+  have h4 : ‖x‖⁻¹ ^ 2 * RCLike.re (inner 𝕜 (A x) x) * ‖x‖ ^ 2
+      = RCLike.re (inner 𝕜 (A x) x) := by field_simp
+  rwa [h4] at h3
+
+/-- `|re ⟪A x, x⟫| ≤ ‖A‖ ‖x‖²` for a bounded operator. -/
+private theorem abs_re_inner_apply_self_le (A : E →L[𝕜] E) (x : E) :
+    |RCLike.re (inner 𝕜 (A x) x)| ≤ ‖A‖ * ‖x‖ ^ 2 :=
+  calc |RCLike.re (inner 𝕜 (A x) x)| ≤ ‖inner 𝕜 (A x) x‖ := RCLike.abs_re_le_norm _
+    _ ≤ ‖A x‖ * ‖x‖ := norm_inner_le_norm _ _
+    _ ≤ ‖A‖ * ‖x‖ * ‖x‖ := by gcongr; exact A.le_opNorm x
+    _ = ‖A‖ * ‖x‖ ^ 2 := by ring
+
+end Aux
+
 variable {A : E →ₗ[𝕜] E}
 
 theorem IsCoercive.inner_self_pos (hA : A.IsCoercive) {x : E} (hx : x ≠ 0) :
     0 < RCLike.re (inner 𝕜 (A x) x) := by
-  sorry
+  obtain ⟨c, hc, h⟩ := hA
+  exact lt_of_lt_of_le (mul_pos hc (pow_pos (norm_pos_iff.2 hx) 2)) (h x)
 
 theorem IsCoercive.injective (hA : A.IsCoercive) : Function.Injective A := by
-  sorry
+  refine (injective_iff_map_eq_zero A).2 fun x hx => ?_
+  by_contra hx0
+  simpa [hx] using hA.inner_self_pos hx0
 
-theorem IsCoercive.ker_eq_bot (hA : A.IsCoercive) : LinearMap.ker A = ⊥ := by
-  sorry
+theorem IsCoercive.ker_eq_bot (hA : A.IsCoercive) : LinearMap.ker A = ⊥ :=
+  LinearMap.ker_eq_bot.2 hA.injective
 
 /-- Coercivity of `A` is coercivity of its symmetric part `(A + A†)/2`, for bounded `A`;
 here in the form that only uses the quadratic form. -/
@@ -62,22 +107,100 @@ theorem IsCoerciveWith.re_inner_apply_self (h : A.IsCoerciveWith c) (x : E) :
 /-- Saad Thm 1.34 (finite dimension): coercive iff `re ⟪A x, x⟫ > 0` for all `x ≠ 0`. -/
 theorem isCoercive_iff_forall_pos [FiniteDimensional 𝕜 E] (A : E →ₗ[𝕜] E) :
     A.IsCoercive ↔ ∀ x ≠ 0, 0 < RCLike.re (inner 𝕜 (A x) x) := by
-  sorry
+  refine ⟨fun hA x hx => hA.inner_self_pos hx, fun h => ?_⟩
+  rcases subsingleton_or_nontrivial E with _ | _
+  · exact ⟨1, one_pos, fun x => by rw [Subsingleton.elim x 0]; simp⟩
+  have : ProperSpace E := FiniteDimensional.proper_rclike 𝕜 E
+  have hcont : Continuous fun x : E => RCLike.re (inner 𝕜 (A x) x) :=
+    RCLike.continuous_re.comp (A.continuous_of_finiteDimensional.inner continuous_id)
+  obtain ⟨v, hv⟩ := exists_ne (0 : E)
+  have hvn : (0 : ℝ) < ‖v‖ := norm_pos_iff.2 hv
+  have hsne : (Metric.sphere (0 : E) 1).Nonempty := by
+    refine ⟨((‖v‖⁻¹ : ℝ) : 𝕜) • v, ?_⟩
+    rw [mem_sphere_zero_iff_norm, norm_smul, RCLike.norm_ofReal, abs_of_pos (inv_pos.2 hvn),
+      inv_mul_cancel₀ hvn.ne']
+  obtain ⟨x₀, hx₀, hmin⟩ := (isCompact_sphere (0 : E) 1).exists_isMinOn hsne hcont.continuousOn
+  have hx₀1 : ‖x₀‖ = 1 := by simpa using hx₀
+  refine ⟨_, h x₀ fun hz => by simp [hz] at hx₀1, isCoerciveWith_of_forall_sphere fun x hx1 => ?_⟩
+  exact isMinOn_iff.1 hmin x (by simpa using hx1)
 
-theorem IsSymmetricCoercive.isPositive (hA : A.IsSymmetricCoercive) : A.IsPositive := by
-  sorry
+theorem IsSymmetricCoercive.isPositive (hA : A.IsSymmetricCoercive) : A.IsPositive :=
+  ⟨hA.isSymmetric, fun x => by
+    rcases eq_or_ne x 0 with rfl | hx
+    · simp
+    · exact (hA.isCoercive.inner_self_pos hx).le⟩
+
+section Rayleigh
+
+variable [FiniteDimensional 𝕜 E]
+
+/-- The Rayleigh quotients of a linear map in finite dimension are bounded. -/
+private theorem bddBelow_rayleigh (A : E →ₗ[𝕜] E) :
+    BddBelow (Set.range fun y : {y : E // y ≠ 0} =>
+      RCLike.re (inner 𝕜 (A y) y) / ‖(y : E)‖ ^ 2) := by
+  refine ⟨-‖LinearMap.toContinuousLinearMap A‖, ?_⟩
+  rintro _ ⟨y, rfl⟩
+  have h := (LinearMap.toContinuousLinearMap A).rayleighQuotient_le_norm (y : E)
+  rw [abs_le] at h
+  simpa [ContinuousLinearMap.rayleighQuotient, ContinuousLinearMap.reApplyInnerSelf] using h.1
+
+private theorem bddAbove_rayleigh (A : E →ₗ[𝕜] E) :
+    BddAbove (Set.range fun y : {y : E // y ≠ 0} =>
+      RCLike.re (inner 𝕜 (A y) y) / ‖(y : E)‖ ^ 2) := by
+  refine ⟨‖LinearMap.toContinuousLinearMap A‖, ?_⟩
+  rintro _ ⟨y, rfl⟩
+  have h := (LinearMap.toContinuousLinearMap A).rayleighQuotient_le_norm (y : E)
+  rw [abs_le] at h
+  simpa [ContinuousLinearMap.rayleighQuotient, ContinuousLinearMap.reApplyInnerSelf] using h.2
+
+/-- A lower eigenvalue bound is a lower quadratic-form bound (Rayleigh, finite dimension). -/
+private theorem le_re_inner_of_forall_hasEigenvalue (hA : A.IsSymmetric) {c : ℝ}
+    (h : ∀ μ : 𝕜, Module.End.HasEigenvalue A μ → c ≤ RCLike.re μ) (x : E) :
+    c * ‖x‖ ^ 2 ≤ RCLike.re (inner 𝕜 (A x) x) := by
+  rcases subsingleton_or_nontrivial E with _ | _
+  · rw [Subsingleton.elim x 0]; simp
+  rcases eq_or_ne x 0 with rfl | hx
+  · simp
+  have hc : c ≤ ⨅ y : {y : E // y ≠ 0}, RCLike.re (inner 𝕜 (A y) y) / ‖(y : E)‖ ^ 2 := by
+    simpa using h _ hA.hasEigenvalue_iInf_of_finiteDimensional
+  rw [← le_div_iff₀ (pow_pos (norm_pos_iff.2 hx) 2)]
+  exact hc.trans (ciInf_le (bddBelow_rayleigh A) ⟨x, hx⟩)
+
+/-- An upper eigenvalue bound is an upper quadratic-form bound (Rayleigh, finite dimension). -/
+private theorem re_inner_le_of_forall_hasEigenvalue (hA : A.IsSymmetric) {c : ℝ}
+    (h : ∀ μ : 𝕜, Module.End.HasEigenvalue A μ → RCLike.re μ ≤ c) (x : E) :
+    RCLike.re (inner 𝕜 (A x) x) ≤ c * ‖x‖ ^ 2 := by
+  rcases subsingleton_or_nontrivial E with _ | _
+  · rw [Subsingleton.elim x 0]; simp
+  rcases eq_or_ne x 0 with rfl | hx
+  · simp
+  have hc : (⨆ y : {y : E // y ≠ 0}, RCLike.re (inner 𝕜 (A y) y) / ‖(y : E)‖ ^ 2) ≤ c := by
+    simpa using h _ hA.hasEigenvalue_iSup_of_finiteDimensional
+  rw [← div_le_iff₀ (pow_pos (norm_pos_iff.2 hx) 2)]
+  exact (le_ciSup (bddAbove_rayleigh A) (⟨x, hx⟩ : {y : E // y ≠ 0})).trans hc
+
+end Rayleigh
 
 /-- For symmetric `A`, coercivity is equivalent to all eigenvalues being `≥ c` (finite
 dimension); the best constant is the smallest eigenvalue. -/
 theorem IsSymmetric.isCoerciveWith_iff_forall_hasEigenvalue [FiniteDimensional 𝕜 E]
     (hA : A.IsSymmetric) (c : ℝ) :
     A.IsCoerciveWith c ↔ ∀ μ : 𝕜, Module.End.HasEigenvalue A μ → c ≤ RCLike.re μ := by
-  sorry
+  refine ⟨fun hc μ hμ => ?_, fun h => le_re_inner_of_forall_hasEigenvalue hA h⟩
+  obtain ⟨x, hx, hx0⟩ := hμ.exists_hasEigenvector
+  rw [Module.End.mem_eigenspace_iff] at hx
+  have h1 := hc x
+  rw [re_inner_apply_self_of_eq_smul hx] at h1
+  exact le_of_mul_le_mul_right (by linarith) (pow_pos (norm_pos_iff.2 hx0) 2)
 
 /-- Symmetric coercive operators have positive real eigenvalues. -/
 theorem IsSymmetricCoercive.re_pos_of_hasEigenvalue (hA : A.IsSymmetricCoercive) {μ : 𝕜}
     (hμ : Module.End.HasEigenvalue A μ) : 0 < RCLike.re μ := by
-  sorry
+  obtain ⟨x, hx, hx0⟩ := hμ.exists_hasEigenvector
+  rw [Module.End.mem_eigenspace_iff] at hx
+  have h1 := hA.isCoercive.inner_self_pos hx0
+  rw [re_inner_apply_self_of_eq_smul hx] at h1
+  exact (mul_pos_iff_of_pos_right (pow_pos (norm_pos_iff.2 hx0) 2)).mp h1
 
 /-- `lmin ‖x‖² ≤ re ⟪A x, x⟫ ≤ lmax ‖x‖²` for symmetric `A`: "the spectrum of `A` lies in
 `[lmin, lmax]`" stated through the quadratic form (the hypothesis of Atkinson–Han Thm 5.6.1;
@@ -103,23 +226,32 @@ theorem isSymmetricCoercive (hl : 0 < lmin) : A.IsSymmetricCoercive :=
 /-- Rayleigh quotients lie in `[lmin, lmax]`. -/
 theorem rayleigh_mem_Icc {x : E} (hx : x ≠ 0) :
     RCLike.re (inner 𝕜 (A x) x) / ‖x‖ ^ 2 ∈ Set.Icc lmin lmax := by
-  sorry
+  have hx2 : (0 : ℝ) < ‖x‖ ^ 2 := pow_pos (norm_pos_iff.2 hx) 2
+  exact ⟨(le_div_iff₀ hx2).2 (hA.le_re_inner x), (div_le_iff₀ hx2).2 (hA.re_inner_le x)⟩
 
 /-- Eigenvalues lie in `[lmin, lmax]`. -/
 theorem re_mem_Icc_of_hasEigenvalue {μ : 𝕜} (hμ : Module.End.HasEigenvalue A μ) :
     RCLike.re μ ∈ Set.Icc lmin lmax := by
-  sorry
+  obtain ⟨x, hx, hx0⟩ := hμ.exists_hasEigenvector
+  rw [Module.End.mem_eigenspace_iff] at hx
+  have h := hA.rayleigh_mem_Icc hx0
+  rwa [re_inner_apply_self_of_eq_smul hx, mul_div_assoc,
+    div_self (pow_pos (norm_pos_iff.2 hx0) 2).ne', mul_one] at h
 
 theorem mono {lmin' lmax' : ℝ} (h₁ : lmin' ≤ lmin) (h₂ : lmax ≤ lmax') :
-    A.IsSymmetricBoundedBy lmin' lmax' := by
-  sorry
+    A.IsSymmetricBoundedBy lmin' lmax' :=
+  ⟨hA.isSymmetric,
+    fun x => (mul_le_mul_of_nonneg_right h₁ (sq_nonneg _)).trans (hA.le_re_inner x),
+    fun x => (hA.re_inner_le x).trans (mul_le_mul_of_nonneg_right h₂ (sq_nonneg _))⟩
 
 /-- The bounds pass to any symmetric `B` on a space isometrically embedded in `E` whose
 quadratic form agrees with that of `A` (restrictions to invariant subspaces, compressions). -/
 theorem of_inner_eq {F : Type*} [NormedAddCommGroup F] [InnerProductSpace 𝕜 F] {B : F →ₗ[𝕜] F}
     (hB : B.IsSymmetric) (ι : F →ₗᵢ[𝕜] E)
     (h : ∀ x, inner 𝕜 (B x) x = inner 𝕜 (A (ι x)) (ι x)) : B.IsSymmetricBoundedBy lmin lmax := by
-  sorry
+  refine ⟨hB, fun x => ?_, fun x => ?_⟩
+  · rw [h x, ← ι.norm_map x]; exact hA.le_re_inner _
+  · rw [h x, ← ι.norm_map x]; exact hA.re_inner_le _
 
 end IsSymmetricBoundedBy
 
@@ -128,13 +260,18 @@ end IsSymmetricBoundedBy
 theorem IsSymmetric.isSymmetricBoundedBy_iff_forall_hasEigenvalue [FiniteDimensional 𝕜 E]
     (hA : A.IsSymmetric) (lmin lmax : ℝ) :
     A.IsSymmetricBoundedBy lmin lmax ↔
-      ∀ μ : 𝕜, Module.End.HasEigenvalue A μ → RCLike.re μ ∈ Set.Icc lmin lmax := by
-  sorry
+      ∀ μ : 𝕜, Module.End.HasEigenvalue A μ → RCLike.re μ ∈ Set.Icc lmin lmax :=
+  ⟨fun h _ hμ => h.re_mem_Icc_of_hasEigenvalue hμ, fun h =>
+    ⟨hA, le_re_inner_of_forall_hasEigenvalue hA fun μ hμ => (h μ hμ).1,
+      re_inner_le_of_forall_hasEigenvalue hA fun μ hμ => (h μ hμ).2⟩⟩
 
 /-- A bounded symmetric operator is bounded by `± ‖A‖`. -/
 theorem IsSymmetric.isSymmetricBoundedBy_neg_norm_norm {A : E →L[𝕜] E}
     (hA : (A : E →ₗ[𝕜] E).IsSymmetric) : (A : E →ₗ[𝕜] E).IsSymmetricBoundedBy (-‖A‖) ‖A‖ := by
-  sorry
+  refine ⟨hA, fun x => ?_, fun x => ?_⟩
+  · rw [neg_mul]
+    exact (abs_le.1 (abs_re_inner_apply_self_le A x)).1
+  · exact (abs_le.1 (abs_re_inner_apply_self_le A x)).2
 
 end LinearMap
 
@@ -146,7 +283,16 @@ Thm 8.3.4 and of Thm 5.1.4; Saad Thm 5.10 / 6.30 proofs; Kress Richardson iterat
 theorem ContinuousLinearMap.norm_sub_smul_apply_sq_le {A : E →L[𝕜] E} {c : ℝ}
     (hA : (A : E →ₗ[𝕜] E).IsCoerciveWith c) {θ : ℝ} (hθ : 0 ≤ θ) (x : E) :
     ‖x - (θ : 𝕜) • A x‖ ^ 2 ≤ (1 - 2 * θ * c + θ ^ 2 * ‖A‖ ^ 2) * ‖x‖ ^ 2 := by
-  sorry
+  have h1 : RCLike.re (inner 𝕜 x ((θ : 𝕜) • A x)) = θ * RCLike.re (inner 𝕜 (A x) x) := by
+    rw [inner_smul_right, RCLike.re_ofReal_mul, ← inner_conj_symm, RCLike.conj_re]
+  have h2 : ‖(θ : 𝕜) • A x‖ ^ 2 = θ ^ 2 * ‖A x‖ ^ 2 := by
+    rw [norm_smul, RCLike.norm_ofReal, mul_pow, sq_abs]
+  have h3 : ‖A x‖ ^ 2 ≤ ‖A‖ ^ 2 * ‖x‖ ^ 2 := by
+    have h := A.le_opNorm x
+    nlinarith [norm_nonneg (A x), norm_nonneg x, norm_nonneg A]
+  have h4 : c * ‖x‖ ^ 2 ≤ RCLike.re (inner 𝕜 (A x) x) := hA x
+  rw [norm_sub_sq (𝕜 := 𝕜), h1, h2]
+  nlinarith [mul_le_mul_of_nonneg_left h4 hθ, mul_le_mul_of_nonneg_left h3 (sq_nonneg θ)]
 
 end Richardson
 
@@ -159,19 +305,64 @@ variable [CompleteSpace E]
 theorem exists_equiv_of_isCoerciveWith {A : E →L[𝕜] E} {c : ℝ} (hc : 0 < c)
     (hA : (A : E →ₗ[𝕜] E).IsCoerciveWith c) :
     ∃ e : E ≃L[𝕜] E, (e : E →L[𝕜] E) = A ∧ ‖(e.symm : E →L[𝕜] E)‖ ≤ 1 / c := by
-  sorry
+  have hlb : ∀ x : E, c * ‖x‖ ≤ ‖A x‖ := by
+    intro x
+    rcases eq_or_ne x 0 with rfl | hx
+    · simp
+    have h1 : c * ‖x‖ ^ 2 ≤ RCLike.re (inner 𝕜 (A x) x) := hA x
+    have h2 : RCLike.re (inner 𝕜 (A x) x) ≤ ‖A x‖ * ‖x‖ :=
+      (RCLike.re_le_norm _).trans (norm_inner_le_norm _ _)
+    have hx' : 0 < ‖x‖ := norm_pos_iff.2 hx
+    nlinarith
+  have hanti : AntilipschitzWith (Real.toNNReal c⁻¹) (A : E → E) := by
+    refine AddMonoidHomClass.antilipschitz_of_bound A fun x => ?_
+    rw [Real.coe_toNNReal _ (by positivity), inv_mul_eq_div, le_div_iff₀ hc]
+    linarith [hlb x]
+  have hker : LinearMap.ker (A : E →ₗ[𝕜] E) = ⊥ := by
+    rw [LinearMap.ker_eq_bot]
+    exact hanti.injective
+  have hclosed : IsClosed (LinearMap.range (A : E →ₗ[𝕜] E) : Set E) := by
+    have h : IsClosed (Set.range (A : E → E)) := hanti.isClosed_range A.uniformContinuous
+    exact h
+  have : CompleteSpace (LinearMap.range (A : E →ₗ[𝕜] E)) := hclosed.completeSpace_coe
+  have hrange : LinearMap.range (A : E →ₗ[𝕜] E) = ⊤ := by
+    rw [← Submodule.orthogonal_eq_bot_iff, Submodule.eq_bot_iff]
+    intro y hy
+    have h0 : inner 𝕜 ((A : E →ₗ[𝕜] E) y) y = 0 := hy _ ⟨y, rfl⟩
+    have h1 := hA y
+    rw [h0, map_zero] at h1
+    have : ‖y‖ ^ 2 ≤ 0 := nonpos_of_mul_nonpos_right (by linarith) hc
+    simpa using pow_eq_zero_iff (n := 2) (by norm_num) |>.1 (le_antisymm this (sq_nonneg _))
+  refine ⟨ContinuousLinearEquiv.ofBijective A hker hrange,
+    ContinuousLinearEquiv.coe_ofBijective A hker hrange, ?_⟩
+  refine ContinuousLinearMap.opNorm_le_bound _ (by positivity) fun y => ?_
+  set e := ContinuousLinearEquiv.ofBijective A hker hrange with he
+  have hAe : A ((e.symm : E →L[𝕜] E) y) = y := by
+    conv_rhs => rw [← e.apply_symm_apply y]
+    rw [he]
+    simp
+  have h := hlb ((e.symm : E →L[𝕜] E) y)
+  rw [hAe] at h
+  rw [div_mul_eq_mul_div, one_mul, le_div_iff₀ hc]
+  linarith [h]
 
 /-- The Hermitian part `½ (A + A†)` has the same quadratic form as `A` (Saad §1.8.3). -/
 theorem re_inner_hermitianPart_apply (A : E →L[𝕜] E) (x : E) :
     RCLike.re (inner 𝕜 (((2⁻¹ : 𝕜) • (A + adjoint A)) x) x) = RCLike.re (inner 𝕜 (A x) x) := by
-  sorry
+  have h2 : (2⁻¹ : 𝕜) = ((2⁻¹ : ℝ) : 𝕜) := by rw [RCLike.ofReal_inv, RCLike.ofReal_ofNat]
+  have h1 : inner 𝕜 ((adjoint A) x) x = starRingEnd 𝕜 (inner 𝕜 (A x) x) := by
+    rw [ContinuousLinearMap.adjoint_inner_left, ← inner_conj_symm]
+  rw [smul_apply, add_apply, inner_smul_left, inner_add_left, h1, h2, RCLike.conj_ofReal,
+    RCLike.re_ofReal_mul, map_add, RCLike.conj_re]
+  ring
 
 /-- Coercivity of `A` is coercivity of its Hermitian part; in particular the best coercivity
 constant of `A` is `λmin(½ (A + A†))` (the `μ` of Saad Thm 6.30 / (5.15)). -/
 theorem isCoerciveWith_iff_hermitianPart (A : E →L[𝕜] E) (c : ℝ) :
     (A : E →ₗ[𝕜] E).IsCoerciveWith c ↔
       (((2⁻¹ : 𝕜) • (A + adjoint A) : E →L[𝕜] E) : E →ₗ[𝕜] E).IsCoerciveWith c := by
-  sorry
+  simp only [LinearMap.IsCoerciveWith, ContinuousLinearMap.coe_coe,
+    re_inner_hermitianPart_apply]
 
 end ContinuousLinearMap
 
@@ -181,9 +372,34 @@ open scoped ComplexOrder
 
 variable {n : Type*} [Fintype n] [DecidableEq n]
 
+/-- The quadratic form of `toEuclideanLin M` is `xᴴ M x`. -/
+private theorem re_inner_toEuclideanLin (M : Matrix n n 𝕜) (x : EuclideanSpace 𝕜 n) :
+    RCLike.re (inner 𝕜 (Matrix.toEuclideanLin M x) x)
+      = RCLike.re (star (WithLp.ofLp x) ⬝ᵥ (M *ᵥ WithLp.ofLp x)) := by
+  have h1 : WithLp.ofLp (Matrix.toEuclideanLin M x) = M *ᵥ WithLp.ofLp x := by
+    simp [Matrix.toEuclideanLin]
+  have h2 : ∀ v w : n → 𝕜, v ⬝ᵥ star w = starRingEnd 𝕜 (star v ⬝ᵥ w) := fun v w => by
+    simp [dotProduct, map_sum, RCLike.star_def, mul_comm]
+  rw [EuclideanSpace.inner_eq_star_dotProduct, h1, h2, RCLike.conj_re]
+
 /-- `Matrix.PosDef` is symmetric coercivity of the Euclidean operator. -/
 theorem posDef_iff_isSymmetricCoercive (M : Matrix n n 𝕜) :
     M.PosDef ↔ (Matrix.toEuclideanLin M).IsSymmetricCoercive := by
-  sorry
+  rw [Matrix.posDef_iff_dotProduct_mulVec]
+  constructor
+  · rintro ⟨hH, hpos⟩
+    refine ⟨isSymmetric_toEuclideanLin_iff.2 hH, ?_⟩
+    rw [LinearMap.isCoercive_iff_forall_pos]
+    intro x hx
+    rw [re_inner_toEuclideanLin]
+    exact (RCLike.pos_iff.1 (hpos (x := WithLp.ofLp x) (by simpa using hx))).1
+  · rintro ⟨hs, hc⟩
+    have hH := isSymmetric_toEuclideanLin_iff.1 hs
+    refine ⟨hH, fun y hy => ?_⟩
+    rw [RCLike.pos_iff]
+    refine ⟨?_, hH.im_star_dotProduct_mulVec_self y⟩
+    have h := (LinearMap.isCoercive_iff_forall_pos _).1 hc (WithLp.toLp 2 y) (by simpa using hy)
+    rw [re_inner_toEuclideanLin] at h
+    simpa using h
 
 end Matrix

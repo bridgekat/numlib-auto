@@ -39,37 +39,40 @@ def IsCoercive : Prop := ∃ c : ℝ, 0 < c ∧ a.IsCoerciveWith c
 /-- `a u v = conj (a v u)`. -/
 def IsHermitian : Prop := ∀ u v, a u v = starRingEnd 𝕜 (a v u)
 
-theorem isBoundedWith_opNorm : a.IsBoundedWith ‖a‖ := by
-  sorry
+theorem isBoundedWith_opNorm : a.IsBoundedWith ‖a‖ := fun u v => a.le_opNorm₂ u v
 
-theorem opNorm_le_of_isBoundedWith {M : ℝ} (hM : 0 ≤ M) (h : a.IsBoundedWith M) : ‖a‖ ≤ M := by
-  sorry
+theorem opNorm_le_of_isBoundedWith {M : ℝ} (hM : 0 ≤ M) (h : a.IsBoundedWith M) : ‖a‖ ≤ M :=
+  a.opNorm_le_bound₂ hM h
 
 theorem IsCoerciveWith.mono {c c' : ℝ} (h : a.IsCoerciveWith c) (hc : c' ≤ c) :
-    a.IsCoerciveWith c' := by
-  sorry
+    a.IsCoerciveWith c' := fun v =>
+  (mul_le_mul_of_nonneg_right hc (sq_nonneg _)).trans (h v)
 
 /-- Coercivity gives the lower bound `c ‖u‖ ≤ ‖a u‖` on the functional `a u`. -/
 theorem IsCoerciveWith.norm_le_norm_apply {c : ℝ} (h : a.IsCoerciveWith c) (u : V) :
     c * ‖u‖ ≤ ‖a u‖ := by
-  sorry
+  rcases eq_or_lt_of_le (norm_nonneg u) with hu | hu
+  · simp [← hu]
+  · refine le_of_mul_le_mul_right ?_ hu
+    calc c * ‖u‖ * ‖u‖ = c * ‖u‖ ^ 2 := by ring
+      _ ≤ RCLike.re (a u u) := h u
+      _ ≤ ‖a u u‖ := RCLike.re_le_norm _
+      _ ≤ ‖a u‖ * ‖u‖ := (a u).le_opNorm u
 
 /-- Real forms: coercivity without `re`. -/
 theorem isCoerciveWith_real_iff {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
-    (a : SesqForm ℝ V) (c : ℝ) : a.IsCoerciveWith c ↔ ∀ v, c * ‖v‖ ^ 2 ≤ a v v := by
-  sorry
+    (a : SesqForm ℝ V) (c : ℝ) : a.IsCoerciveWith c ↔ ∀ v, c * ‖v‖ ^ 2 ≤ a v v := Iff.rfl
 
 /-- Real forms: Hermitian = symmetric. -/
 theorem isHermitian_real_iff {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
-    (a : SesqForm ℝ V) : a.IsHermitian ↔ ∀ u v, a u v = a v u := by
-  sorry
+    (a : SesqForm ℝ V) : a.IsHermitian ↔ ∀ u v, a u v = a v u := Iff.rfl
 
 /-- The inner product as a form. -/
-theorem innerSL_isCoerciveWith : SesqForm.IsCoerciveWith (innerSL 𝕜 : SesqForm 𝕜 V) 1 := by
-  sorry
+theorem innerSL_isCoerciveWith : SesqForm.IsCoerciveWith (innerSL 𝕜 : SesqForm 𝕜 V) 1 := fun v => by
+  simp
 
-theorem innerSL_isHermitian : SesqForm.IsHermitian (innerSL 𝕜 : SesqForm 𝕜 V) := by
-  sorry
+theorem innerSL_isHermitian : SesqForm.IsHermitian (innerSL 𝕜 : SesqForm 𝕜 V) := fun u v =>
+  (inner_conj_symm (𝕜 := 𝕜) u v).symm
 
 /-- The form of an operator: `ofOperator A u v = ⟪A u, v⟫`. -/
 noncomputable def ofOperator (A : V →L[𝕜] V) : SesqForm 𝕜 V := (innerSL 𝕜).comp A
@@ -90,33 +93,47 @@ theorem inner_toOperator (u v : V) : inner 𝕜 (toOperator a u) v = a u v :=
 /-- The Riesz representative `f` of a functional, `⟪f, v⟫ = ℓ v`. -/
 noncomputable def rieszRep (ℓ : V →L[𝕜] 𝕜) : V := (InnerProductSpace.toDual 𝕜 V).symm ℓ
 
-theorem inner_rieszRep (ℓ : V →L[𝕜] 𝕜) (v : V) : inner 𝕜 (rieszRep ℓ) v = ℓ v := by
-  sorry
+theorem inner_rieszRep (ℓ : V →L[𝕜] 𝕜) (v : V) : inner 𝕜 (rieszRep ℓ) v = ℓ v :=
+  InnerProductSpace.toDual_symm_apply
 
-theorem norm_rieszRep (ℓ : V →L[𝕜] 𝕜) : ‖rieszRep ℓ‖ = ‖ℓ‖ := by
-  sorry
+theorem norm_rieszRep (ℓ : V →L[𝕜] 𝕜) : ‖rieszRep ℓ‖ = ‖ℓ‖ :=
+  (InnerProductSpace.toDual 𝕜 V).symm.norm_map ℓ
+
+/-- `toOperator a u` is the Riesz representative of the functional `a u`; both are built from
+`InnerProductSpace.toDual.symm`. -/
+theorem toOperator_apply_eq_rieszRep (u : V) : toOperator a u = rieszRep (a u) := rfl
 
 theorem toOperator_ofOperator (A : V →L[𝕜] V) : toOperator (ofOperator A) = A := by
-  sorry
+  ext u
+  exact ext_inner_right 𝕜 fun v => (inner_toOperator _ u v).trans (ofOperator_apply A u v)
 
 theorem ofOperator_toOperator : ofOperator (toOperator a) = a := by
-  sorry
+  ext u v
+  exact inner_toOperator a u v
 
 theorem isCoerciveWith_iff_toOperator (c : ℝ) :
     a.IsCoerciveWith c ↔ (toOperator a : V →ₗ[𝕜] V).IsCoerciveWith c := by
-  sorry
+  simp only [IsCoerciveWith, LinearMap.IsCoerciveWith, ContinuousLinearMap.coe_coe,
+    inner_toOperator]
 
 theorem isHermitian_iff_toOperator_isSymmetric :
     a.IsHermitian ↔ (toOperator a : V →ₗ[𝕜] V).IsSymmetric := by
-  sorry
+  simp only [IsHermitian, LinearMap.IsSymmetric, ContinuousLinearMap.coe_coe]
+  refine forall_congr' fun u => forall_congr' fun v => ?_
+  rw [← inner_conj_symm (𝕜 := 𝕜) u (toOperator a v), inner_toOperator, inner_toOperator]
 
-theorem norm_toOperator : ‖toOperator a‖ = ‖a‖ := by
-  sorry
+theorem norm_toOperator : ‖toOperator a‖ = ‖a‖ :=
+  ContinuousLinearMap.opNorm_ext _ _ fun u => by
+    rw [toOperator_apply_eq_rieszRep, norm_rieszRep]
 
 /-- `a u v = ℓ v` for all `v` iff `A u = f`. -/
 theorem forall_apply_eq_iff_toOperator_eq (ℓ : V →L[𝕜] 𝕜) (u : V) :
     (∀ v, a u v = ℓ v) ↔ toOperator a u = rieszRep ℓ := by
-  sorry
+  constructor
+  · intro h
+    exact ext_inner_right 𝕜 fun v => by rw [inner_toOperator, inner_rieszRep, h]
+  · intro h v
+    rw [← inner_toOperator, h, inner_rieszRep]
 
 end Operator
 
@@ -131,16 +148,25 @@ noncomputable def energyNorm (v : V) : ℝ := Real.sqrt (RCLike.re (a v v))
 
 theorem energyNorm_eq_energyNorm_toOperator [CompleteSpace V] (v : V) :
     a.energyNorm v = _root_.energyNorm (toOperator a : V →ₗ[𝕜] V) v := by
-  sorry
+  simp only [energyNorm, _root_.energyNorm, ContinuousLinearMap.coe_coe, inner_toOperator]
 
 /-- Norm equivalence `√c ‖v‖ ≤ ‖v‖_a ≤ √M ‖v‖` (AH §9.4, Thm 8.3.3). -/
 theorem sqrt_mul_norm_le_energyNorm {c : ℝ} (hc : 0 ≤ c) (h : a.IsCoerciveWith c) (v : V) :
     Real.sqrt c * ‖v‖ ≤ a.energyNorm v := by
-  sorry
+  have hcv : Real.sqrt c * ‖v‖ = Real.sqrt (c * ‖v‖ ^ 2) := by
+    rw [Real.sqrt_mul hc, Real.sqrt_sq (norm_nonneg v)]
+  rw [energyNorm, hcv]
+  exact Real.sqrt_le_sqrt (h v)
 
 theorem energyNorm_le_sqrt_mul_norm {M : ℝ} (h : a.IsBoundedWith M) (v : V) :
     a.energyNorm v ≤ Real.sqrt M * ‖v‖ := by
-  sorry
+  have hMv : RCLike.re (a v v) ≤ M * ‖v‖ ^ 2 := by
+    calc RCLike.re (a v v) ≤ ‖a v v‖ := RCLike.re_le_norm _
+      _ ≤ M * ‖v‖ * ‖v‖ := h v v
+      _ = M * ‖v‖ ^ 2 := by ring
+  calc a.energyNorm v ≤ Real.sqrt (M * ‖v‖ ^ 2) := Real.sqrt_le_sqrt hMv
+    _ = Real.sqrt M * ‖v‖ := by
+        rw [Real.sqrt_mul' _ (sq_nonneg _), Real.sqrt_sq (norm_nonneg v)]
 
 end Energy
 
@@ -165,11 +191,19 @@ def IsNondegenerate : Prop := ∀ v, v ≠ 0 → ∃ u, a u v ≠ 0
 /-- `sup_{v ≠ 0} |a u v| / ‖v‖ = ‖a u‖`: the book's inf–sup quantity is an operator norm. -/
 theorem iSup_norm_div_eq_norm (u : U) :
     (⨆ v : {v : V // v ≠ 0}, ‖a u v‖ / ‖(v : V)‖) = ‖a u‖ := by
-  sorry
+  have hle : ∀ v : {v : V // v ≠ 0}, ‖a u (v : V)‖ / ‖(v : V)‖ ≤ ‖a u‖ := fun v =>
+    (div_le_iff₀ (norm_pos_iff.mpr v.2)).mpr ((a u).le_opNorm _)
+  refine le_antisymm (Real.iSup_le hle (norm_nonneg _)) ?_
+  refine (a u).opNorm_le_bound (Real.iSup_nonneg fun v => by positivity) fun v => ?_
+  rcases eq_or_ne v 0 with rfl | hv
+  · simp
+  · rw [← div_le_iff₀ (norm_pos_iff.mpr hv)]
+    exact le_ciSup (f := fun v : {v : V // v ≠ 0} => ‖a u (v : V)‖ / ‖(v : V)‖)
+      ⟨‖a u‖, Set.forall_mem_range.2 hle⟩ ⟨v, hv⟩
 
 /-- Coercive one-space forms satisfy the inf–sup condition (AH Ex 8.7.1). -/
 theorem _root_.SesqForm.IsCoerciveWith.infSupWith {a : SesqForm 𝕜 V} {c : ℝ}
-    (h : a.IsCoerciveWith c) : SesqForm₂.InfSupWith (a : SesqForm₂ 𝕜 V V) c := by
-  sorry
+    (h : a.IsCoerciveWith c) : SesqForm₂.InfSupWith (a : SesqForm₂ 𝕜 V V) c :=
+  fun u => SesqForm.IsCoerciveWith.norm_le_norm_apply a h u
 
 end SesqForm₂
