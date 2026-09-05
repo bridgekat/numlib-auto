@@ -1,72 +1,27 @@
 namespace = "Matrix"
-desc = '''
-The Kronecker sum `A ⊕ B = A ⊗ 1 + 1 ⊗ B` and its spectrum, an upstreaming candidate (natural
-home: `Mathlib.LinearAlgebra.Matrix.Kronecker`, which has the Kronecker product `A ⊗ₖ B` and its
-algebra but neither the Kronecker sum nor any spectral statement).
-
-The point is separation of variables, `(A ⊕ B) (v ⊗ w) = (σ + μ) (v ⊗ w)` for eigenpairs `(σ, v)`
-of `A` and `(μ, w)` of `B`, together with the fact that the tensor products of two orthonormal
-eigenbases form an orthonormal eigenbasis, so that the spectrum is the sum set of the two spectra
-with multiplicity. That is what makes the two-dimensional model problem of Saad, *Iterative Methods
-for Sparse Linear Systems*, §13.2 explicitly diagonalizable: the 5-point Laplacean is `T_x ⊕ T_y`
-for the tridiagonal matrices of `Numlib/LinearAlgebra/Matrix/TridiagonalToeplitz`, and it settles Saad's
-remark that repeated sums `σ_k + μ_l` still correspond to independent eigenvectors.
-
-Stated over `RCLike 𝕜` with `Matrix (m × n) (m × n) 𝕜`, matching Mathlib's `kroneckerMap`
-indexing. The only analytic content is the orthonormality, a two-line computation from
-`⟪v ⊗ w, v' ⊗ w'⟫ = ⟪v, v'⟫ ⟪w, w'⟫`.
-
-Two surfaces reach this module from opposite ends of the book -- Saad §2.2.5, where the 5-point
-Laplacean is first displayed as a block matrix, and §13.2, where its spectrum is what keeps the
-multigrid chapter from being vacuous -- and the book states neither identity. The friction both
-times is index bookkeeping between `Matrix (m × n) (m × n)` and the surface's `Fin (n₁ * n₂)`,
-which the surface handles with a `Fin`-product equivalence and `Matrix.reindex`; keep this module
-indexed by the product type and let the surface do the reindexing.
-'''
 
 [[node]]
 id = "kroneckerSum"
-kind = "definition"
-desc = '''`kroneckerSum A B = A ⊗ₖ 1 + 1 ⊗ₖ B : Matrix (m × n) (m × n) 𝕜`, Saad's tensor sum `T_x ⊕ T_y`
-of (13.12), with scoped notation `A ⊕ₖ B`. Comes with the entry formula, bilinearity,
-`conjTranspose_kroneckerSum` and `isHermitian_kroneckerSum`.'''
 source = "Saad, Iterative Methods for Sparse Linear Systems, (13.12)"
 
 [[node]]
 id = "kroneckerVec"
-kind = "definition"
-desc = '''`kroneckerVec v w : m × n → 𝕜`, `kroneckerVec v w (i, j) = v i * w j`, the Kronecker product of
-two vectors, with `kroneckerVec_ne_zero`, `kroneckerVec_inner` and
-`kronecker_mulVec : (A ⊗ₖ B) *ᵥ kroneckerVec v w = kroneckerVec (A *ᵥ v) (B *ᵥ w)`, from which
-everything below follows.'''
 
 [[node]]
 id = "kroneckerSum_mulVec_kroneckerVec"
-kind = "theorem"
-desc = '''Saad (13.13): `kroneckerSum A B *ᵥ kroneckerVec v w =
-kroneckerVec (A *ᵥ v) w + kroneckerVec v (B *ᵥ w)`, with the eigenpair corollary
-`hasEigenvector_kroneckerSum`: if `A *ᵥ v = σ • v` and `B *ᵥ w = μ • w` with `v, w ≠ 0`, then
-`kroneckerSum A B *ᵥ kroneckerVec v w = (σ + μ) • kroneckerVec v w`.'''
-deps = ["kroneckerSum", "kroneckerVec"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, (13.13)"
+
+[[node]]
+id = "hasEigenvector_kroneckerSum"
 source = "Saad, Iterative Methods for Sparse Linear Systems, (13.13)"
 
 [[node]]
 id = "kroneckerOrthonormalBasis"
-kind = "definition"
-desc = '''The tensor product of orthonormal bases of `EuclideanSpace 𝕜 m` and `EuclideanSpace 𝕜 n` as an
-`OrthonormalBasis (m × n) 𝕜 (EuclideanSpace 𝕜 (m × n))`; `kroneckerVec_inner` is the whole proof.
-With `kroneckerSum_mulVec_kroneckerVec` it exhibits *all* eigenpairs of a Kronecker sum of two
-diagonalizable matrices.'''
-deps = ["kroneckerVec"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, Section 13.2"
 
 [[node]]
 id = "isSymmetricBoundedBy_kroneckerSum"
-kind = "theorem"
-desc = '''Quadratic-form bounds add under a Kronecker sum: if `toEuclideanLin A` is
-`LinearMap.IsSymmetricBoundedBy` by `[a₁, b₁]` and `toEuclideanLin B` by `[a₂, b₂]`, then
-`toEuclideanLin (kroneckerSum A B)` is by `[a₁ + a₂, b₁ + b₂]`, and positive definiteness is
-inherited (`posDef_kroneckerSum`). This is the form in which the two-dimensional model problem
-enters every convergence bound, and it avoids naming eigenvalues at all.'''
-deps = ["kroneckerSum", "kroneckerOrthonormalBasis", "kroneckerSum_mulVec_kroneckerVec", "Matrix.IsHermitian.isSymmetricBoundedBy_toEuclideanLin"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, (13.14)"
+
+[[node]]
+id = "posDef_kroneckerSum"

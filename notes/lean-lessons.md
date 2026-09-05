@@ -132,6 +132,12 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   that fires leaves the file untouched, and the whole script can be re-run after the fix. Without
   it a partially applied multi-step patch is very hard to unwind.
 
+* **A rename can deadlock the tracker.** Renaming a node whose old id another group names in
+  `deps` makes `lint` fail; `check` then refuses to run ("the plan has errors"), so the stale cache
+  can never refresh and every node of the new module reads as `open`. `lake exe tracker check
+  --force` prints the *real* error — the dangling `deps` entry — and fixing that one line unblocks
+  everything.
+
 ## Correctness traps
 
 * **`include h` makes every later declaration in scope carry `h`.** A theorem that re-binds a
@@ -396,6 +402,28 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   in it, which does not match the goal. Bind each integrability fact in a `have` whose type is
   written out with explicit lambdas; the `.sub`/`.add` proof still typechecks against it, and the
   rewrite then matches.
+
+* `if_pos h` / `if_neg h` / `dif_pos h` / `dif_neg h` have exact drop-in replacements in this
+  toolchain: `ite_eq_left h` / `ite_eq_right h` / `dite_eq_left h` / `dite_eq_right h`, taking the
+  proof of the condition (resp. of its negation) just as the old ones did. The note further down
+  about `ite_eq_left_of_eq_true` is the harder route and is not needed.
+* **`ring` inside a `first | … | …` can fail without throwing.** On failure it falls back to
+  `ring_nf`, leaves the goal normalized and reports "Try this: ring_nf", so `split_ifs <;> first |
+  ring | (exfalso; omega)` silently strands the contradictory branches. Put the discharging
+  alternative first: `split_ifs <;> first | (exfalso; omega) | ring`. When `ring` is the only
+  tactic and it emits that message while the build still succeeds, write `ring_nf` instead — the
+  message is an `info`, not an error, and would otherwise stay in the build log.
+* **`Matrix.mul_assoc` is `protected`**, so inside `namespace Matrix` a bare `mul_assoc` is the
+  square-matrix `Monoid` one and a rectangular product `A * B * X` fails to match. Worse,
+  `rw [Matrix.mul_assoc]` on a goal shaped `(A * B * X) i j = …` fails with "function expected",
+  because `Matrix` unfolds; use `congrFun₂ (Matrix.mul_assoc A B X) i j` instead.
+* `Pi.single i 1` under a `•` or inside a larger vector expression does not determine its Pi
+  family; write `(Pi.single i 1 : n → 𝕜)`. The error blames the `1`, not the missing ascription.
+* An `Iff` whose two sides were elaborated through different instance *paths* to the same instance
+  cannot be `rw`-ed. `LinearIndependent 𝕜 Xᵀ` picks up `Field.toSemifield.…toSemiring` and
+  `Pi.addCommMonoid`, while `Fintype.linearIndependent_iff` is stated over `Ring`/`AddCommGroup`;
+  `rw [Fintype.linearIndependent_iff] at hX` fails where `Fintype.linearIndependent_iff.1 hX`
+  works, because application unifies up to defeq and `rw` does not.
 
 ## Tactics
 
@@ -1172,6 +1200,34 @@ Recently added Mathlib that this project should not duplicate:
   `IsClosed.completeSpace_coe` (which supplies `Submodule.HasOrthogonalProjection`), the whole
   "a closed subspace and its orthogonal complement inside a bigger closed subspace" argument needs
   no Hilbert basis.
+
+Gram–Schmidt lives in `namespace InnerProductSpace`, so a file in another namespace needs
+`open InnerProductSpace` for `gramSchmidt` to resolve at all — without it the identifier is
+unknown and, under `relaxedAutoImplicit = false`, the error is "function expected". Inside that
+namespace `𝕜` is an **explicit** first argument for everything declared before Mathlib's
+`variable {𝕜}` line (`gramSchmidt_def''`, `gramSchmidt_orthogonal`, `gramSchmidt_inv_triangular`)
+and implicit after it (`gramSchmidt_ne_zero`, `gramSchmidtNormed_orthonormal`,
+`span_gramSchmidtNormed`).
+
+`Matrix.IsHermitian` is in `Mathlib.LinearAlgebra.Matrix.Hermitian`, which
+`Mathlib.LinearAlgebra.UnitaryGroup` does not import. Without that import `(A).IsHermitian`
+resolves through the unfolded type `n → n → α` to a nonexistent `Function.IsHermitian`, and the
+error never mentions the missing import.
+
+`EuclideanSpace.inner_toLp_toLp x y : ⟪toLp x, toLp y⟫ = y ⬝ᵥ star x` — the conjugate is on the
+*first* argument and the arguments are swapped, so a `dotProduct_comm` is usually needed too.
+`inner_self_eq_norm_sq_to_K` gives `⟪x, x⟫ = (↑‖x‖) ^ 2`, the square taken in `𝕜`; the variant
+`((‖x‖ ^ 2 : ℝ) : 𝕜)` is a different term and `rw` will not bridge the two.
+
+`Stationary.tendsto_of_spectralRadius_lt_one` is stated over `ℂ` only. An `RCLike`-polymorphic
+convergence proof should not route through it: if the iteration operator is similar to a norm
+contraction, `‖P ^ k‖ ≤ ‖u⁻¹‖ ‖Q‖ ^ k ‖u‖ → 0` gives the limit directly, over any field and with
+no spectral theory.
+
+`Matrix.blockTriangular_inv_of_blockTriangular` and `Matrix.BlockTriangular.mul` are the two
+lemmas that make "the QR factor with a positive diagonal is unique" a matrix-level argument:
+`R₂ R₁⁻¹` is then unitary, upper triangular and of positive diagonal, and such a matrix is `1` by
+a strong induction on the columns. No flag or span machinery is needed.
 
 ## Design conventions of this library
 

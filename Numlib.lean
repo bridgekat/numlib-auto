@@ -62,10 +62,13 @@ import Numlib.Krylov.Relations
 import Numlib.Krylov.Subspace
 import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.LinearAlgebra.Matrix.Hessenberg
+import Numlib.LinearAlgebra.Matrix.KroneckerSum
 import Numlib.LinearAlgebra.Matrix.MMatrix
 import Numlib.LinearAlgebra.Matrix.Order
+import Numlib.LinearAlgebra.Matrix.QR
 import Numlib.LinearAlgebra.Matrix.SVD
 import Numlib.LinearAlgebra.Matrix.Schur
+import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
 import Numlib.LinearAlgebra.Sparse.Pattern
 import Numlib.LinearSolve.Multigrid.Basic
 import Numlib.LinearSolve.Multigrid.FullMultigrid
@@ -77,6 +80,7 @@ import Numlib.LinearSolve.Projection.Additive
 import Numlib.LinearSolve.Projection.Basic
 import Numlib.LinearSolve.Projection.OneDimensional
 import Numlib.LinearSolve.Projection.Optimality
+import Numlib.LinearSolve.Stationary.ADI
 import Numlib.LinearSolve.Stationary.Basic
 import Numlib.LinearSolve.Stationary.ConsistentlyOrdered
 import Numlib.LinearSolve.Stationary.DiagDominant

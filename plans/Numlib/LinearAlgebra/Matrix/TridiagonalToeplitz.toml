@@ -1,106 +1,38 @@
 namespace = "Matrix"
-desc = '''
-The symmetric tridiagonal Toeplitz matrix and its spectrum, an upstreaming candidate (natural
-home: beside `Mathlib.LinearAlgebra.Matrix.Circulant`, which is the periodic twin of the same
-computation). This is the model problem of Saad, *Iterative Methods for Sparse Linear Systems*,
-§2.2.3 and §2.2.6 - the matrix `tridiag(a, b, a)` produced by the three-point central difference
-stencil - and it is the standard test case of the whole corpus: Saad's fast Poisson solvers
-(§2.2.6), the condition-number and convergence-rate examples of Ch. 4 and Ch. 6, and Kress,
-*Numerical Analysis*, §4.
-
-The content is one trigonometric identity, `sin((j-1)θ) + sin((j+1)θ) = 2 cos θ sin(jθ)`, applied
-to the discrete sine vectors `(sineVec n k) j = sin((j+1)(k+1)π/(n+1))`, whose boundary values
-`sin 0 = 0` and `sin((n+1)θ_k) = 0` are exactly what makes the first and last rows of the
-tridiagonal matrix work out. Everything else - orthogonality of the sine vectors, positive
-definiteness of `tridiag(-1, 2, -1)`, the extreme eigenvalues and hence the condition number -
-follows from it.
-
-Keep this module free of any partial-differential-equation content: the matrix is a matrix, the
-statement that it discretizes `-u''` belongs to the surface. The two-dimensional five-point
-Laplacian is *not* here either; it is the Kronecker sum of two copies of this matrix and lives in
-`Numlib/LinearAlgebra/Matrix/KroneckerSum`.
-'''
 
 [[node]]
 id = "symmTridiagonalToeplitz"
-kind = "definition"
-desc = '''`Matrix.symmTridiagonalToeplitz n a b : Matrix (Fin n) (Fin n) ℝ`, the symmetric tridiagonal
-Toeplitz matrix with `b` on the diagonal and `a` on both off-diagonals:
-`fun i j => if i = j then b else if (i : ℕ) + 1 = j ∨ (j : ℕ) + 1 = i then a else 0`. With
-`symmTridiagonalToeplitz_isSymm`, `symmTridiagonalToeplitz_isTridiagonal` (the predicate of
-`Numlib/LinearAlgebra/Matrix/Hessenberg`) and the entry `simp` lemmas.'''
-deps = ["IsTridiagonal"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, Section 2.2.3 and (2.27)"
 
 [[node]]
 id = "sineVec"
-kind = "definition"
-desc = '''`Matrix.sineVec n k : Fin n → ℝ`, the `k`-th discrete sine vector,
-`fun j => Real.sin ((j + 1) * (k + 1) * π / (n + 1))`, Saad's `q_j` of §2.2.6 before
-normalization.'''
 source = "Saad, Iterative Methods for Sparse Linear Systems, Section 2.2.6"
 
 [[node]]
 id = "symmTridiagonalToeplitz_mulVec_sineVec"
-kind = "theorem"
-desc = '''The eigenpairs: `symmTridiagonalToeplitz n a b *ᵥ sineVec n k =
-(b + 2 * a * Real.cos ((k + 1) * π / (n + 1))) • sineVec n k`. Row by row from
-`Real.sin_add + Real.sin_sub`, i.e. `sin((j-1)θ) + sin((j+1)θ) = 2 cos θ sin (jθ)`; the first and
-last rows are the same identity with the missing neighbour supplied by `sin 0 = 0` and
-`sin((n+1)θ_k) = 0`. Saad states this only for `a = -1, b = 4` (the block `B` of (2.27)); the
-general `a, b` form is the one the corpus needs.'''
-deps = ["symmTridiagonalToeplitz", "sineVec"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, Section 2.2.6"
 
 [[node]]
 id = "sineVec_ne_zero"
-kind = "theorem"
-desc = '''`sineVec n k ≠ 0`: its first entry is `sin(θ_k)` with `0 < θ_k < π`. Together with
-`symmTridiagonalToeplitz_mulVec_sineVec` this makes each `b + 2a cos θ_k` an eigenvalue, and
-`symmTridiagonalToeplitz_hasEigenvalue_iff` (the `n` values exhaust the spectrum, since the
-`sineVec` are a basis) follows from `dotProduct_sineVec`.'''
-deps = ["sineVec"]
 
 [[node]]
 id = "dotProduct_sineVec"
-kind = "theorem"
-desc = '''Orthogonality of the discrete sine basis: `sineVec n k ⬝ᵥ sineVec n l = if k = l then
-(n + 1) / 2 else 0`. Product-to-sum plus the geometric sum of roots of unity; this is what makes
-Saad's `Q = [q₁, …, q_p]` orthogonal after the normalization `√(2/(n+1))`, and hence
-`Qᵀ B Q = Λ`. Stated as `orthonormalBasis_sineVec` in the `EuclideanSpace` form the surface
-needs.'''
-deps = ["sineVec"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, Section 2.2.6"
 
 [[node]]
 id = "symmTridiagonalToeplitz_posDef"
-kind = "theorem"
-desc = '''`(symmTridiagonalToeplitz n a b).PosDef` when `2 * |a| < b`, in particular for the
-one-dimensional discrete Laplacian `tridiag(-1, 2, -1)` and for the diagonal block
-`tridiag(-1, 4, -1)` of Saad (2.27): the eigenvalues `b + 2a cos θ_k` lie in
-`(b - 2|a|, b + 2|a|)`. With `symmTridiagonalToeplitz_isSymmetricBoundedBy` giving the quadratic
-form bounds of `Numlib/Analysis/InnerProductSpace/Coercive` and hence the condition number
-`κ₂ = (b + 2a cos θ_n) / (b + 2a cos θ_1)`, which for `tridiag(-1, 2, -1)` is
-`cot²(π / (2(n+1)))`, the standard `O(h⁻²)` growth.'''
-deps = ["symmTridiagonalToeplitz_mulVec_sineVec", "dotProduct_sineVec", "LinearMap.IsSymmetricBoundedBy"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, Section 2.2.3"
 
 [[node]]
 id = "sineOrthonormalBasis"
-kind = "definition"
-desc = '''The normalized sine vectors as an `OrthonormalBasis (Fin n) ℝ (EuclideanSpace ℝ (Fin n))`,
-diagonalizing every `symmTridiagonalToeplitz n a b` at once (`symmTridiagonalToeplitz` is a Toeplitz family with a
-common eigenbasis). `sineOrthonormalBasis_hasEigenvector` records the eigenpairs.'''
-deps = ["dotProduct_sineVec", "symmTridiagonalToeplitz_mulVec_sineVec"]
 
 [[node]]
 id = "isSymmetricBoundedBy_symmTridiagonalToeplitz"
-kind = "theorem"
-desc = '''The spectrum in quadratic-form form, which is how every convergence bound consumes it:
-`toEuclideanLin (symmTridiagonalToeplitz n a b)` is `LinearMap.IsSymmetricBoundedBy` by
-`b - 2|a| cos(π/(n+1))` and `b + 2|a| cos(π/(n+1))` — more sharply, by the minimum and maximum of
-`b + 2 a cos((k+1) π/(n+1))` over `k : Fin n`. With it, `posDef_tridiagToeplitz_neg_one_two`: the
-model Laplacean `symmTridiagonalToeplitz n (-1) 2` is positive definite with eigenvalues
-`4 sin²((k+1) π/2(n+1)) ∈ (0, 4)`.'''
-deps = ["sineOrthonormalBasis", "Matrix.IsHermitian.isSymmetricBoundedBy_toEuclideanLin", "Matrix.posDef_iff_isSymmetricCoercive"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, Section 13.2"
+
+[[node]]
+id = "symmTridiagonalToeplitz_hasEigenvalue_iff"
+
+[[node]]
+id = "posDef_symmTridiagonalToeplitz_neg_one_two"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 2.2.3"

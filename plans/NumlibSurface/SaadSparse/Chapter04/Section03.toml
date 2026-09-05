@@ -66,11 +66,11 @@ kind = "theorem"
 desc = '''The convergence claim of §4.3, which the book asserts without proof: if `H` and `V` are real
 symmetric positive definite and `0 < r`, then `complexSpectralRadius G < 1` for the `G` of (4.50),
 and the iterates `(adiStep H V r b)^[k] x₀` converge, for every `x₀` and every `b`, to the solution
-of `(H + V) x = b`. `Stationary.norm_peacemanRachford_lt_one` and
+of `(H + V) x = b`. `Stationary.spectralRadius_peacemanRachford_lt_one` and
 `Stationary.tendsto_peacemanRachford` of `Numlib/LinearSolve/Stationary/ADI`, through
 `Matrix.posDef_iff_isSymmetricCoercive` and `Matrix.toEuclideanCLM`. Commutativity of `H` and `V`
 is not needed and is not assumed.'''
-deps = ["equation_4_50", "_root_.Stationary.norm_peacemanRachford_lt_one", "_root_.Stationary.tendsto_peacemanRachford", "_root_.Matrix.posDef_iff_isSymmetricCoercive"]
+deps = ["equation_4_50", "_root_.Stationary.spectralRadius_peacemanRachford_lt_one", "_root_.Stationary.tendsto_peacemanRachford", "_root_.Matrix.posDef_iff_isSymmetricCoercive"]
 
 [[node]]
 id = "adi_model_problem"

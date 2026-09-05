@@ -1,109 +1,31 @@
 namespace = "Stationary"
-desc = '''
-The alternating direction implicit iteration: Saad, *Iterative Methods for Sparse Linear Systems*,
-§4.3, Algorithm 4.3 (Peaceman-Rachford) and the identities (4.50)-(4.52).
-
-Saad's §4.3 states no numbered result. What it asserts, in one sentence and without proof, is the
-one theorem worth having: *when `H` and `V` are symmetric positive definite, the stationary
-iteration with a fixed parameter `r > 0` converges*. That is a clean operator statement and it is
-proved here, in any inner product space, from a single inequality about the Cayley transform of a
-coercive operator:
-
-  for `A` symmetric with `re ⟪A x, x⟫ ≥ c ‖x‖ ^ 2`, `c > 0`, and `r > 0`,
-  `‖A x - r • x‖ ^ 2 + 4 r c ‖x‖ ^ 2 ≤ ‖A x + r • x‖ ^ 2`,
-
-which is the expansion `‖A x ± r x‖² = ‖A x‖² ± 2 r re ⟪A x, x⟫ + r² ‖x‖²`. It says that
-`(A - r)(A + r)⁻¹` is a strict contraction, with an explicit factor; the Peaceman-Rachford operator
-(4.50) is conjugate to a product of two such contractions, so its spectral radius is below one and
-the iteration converges. No commutativity of `H` and `V` is used, and none is needed: the
-commutativity hypothesis of Birkhoff-Varga-Young that Saad mentions belongs to the theory of the
-*optimal parameter sequence*, which the book only cites and which is not planned.
-
-Level of generality: the Cayley inequality is stated for `A : E →ₗ[𝕜] E` with the hypothesis
-bundles of `Numlib/Analysis/InnerProductSpace/Coercive` and needs neither completeness nor finite
-dimension; the iteration operator needs the inverses, hence `E →L[𝕜] E` on a complete space, where
-`ContinuousLinearMap.exists_equiv_of_isCoerciveWith` supplies them. Matrices reach it through
-`Matrix.toEuclideanCLM`.
-
-Not planned, and why: the optimal and the cyclic parameter sequences (Saad cites
-Birkhoff-Varga-Young and Wachspress and states no theorem); the `O(n² log n)` complexity of the
-model problem (cited to Peaceman-Rachford, an operation count, not a theorem); the parabolic
-formulation (4.53)-(4.56), which is a semi-discretization of a partial differential equation and
-carries no algebraic statement; the claim that the optimal-`r` ADI rate equals the optimal-`ω`
-SSOR rate on the model problem, which the book gives as an asymptotic remark.
-'''
 
 [[node]]
 id = "norm_sub_smul_sq_add_le_norm_add_smul_sq"
-kind = "theorem"
-desc = '''The Cayley contraction inequality: for `A : E →ₗ[𝕜] E` with `A.IsCoerciveWith c`, `0 < c` and
-`0 < r`, every `x` satisfies
-`‖A x - (r : 𝕜) • x‖ ^ 2 + 4 * r * c * ‖x‖ ^ 2 ≤ ‖A x + (r : 𝕜) • x‖ ^ 2`. Expand both norms with
-`norm_add_sq_real` style identities; the cross terms are `± 2 r re ⟪A x, x⟫` and coercivity bounds
-the difference below by `4 r c ‖x‖ ^ 2`. No symmetry, no completeness, no finite dimension. With
-the corollary `norm_sub_smul_lt_norm_add_smul` (strict inequality for `x ≠ 0`).'''
-deps = ["LinearMap.IsCoerciveWith", "LinearMap.IsCoercive"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, Section 4.3 (the step his convergence claim needs)"
 
 [[node]]
+id = "norm_cayley_apply_sq_le"
+
+[[node]]
 id = "norm_cayley_lt_one"
-kind = "theorem"
-desc = '''`‖(A - (r : 𝕜) • 1) * Ring.inverse (A + (r : 𝕜) • 1)‖ < 1` for `A : E →L[𝕜] E` on a complete
-space with `(A : E →ₗ[𝕜] E).IsSymmetricCoercive` and `0 < r`, with the explicit bound
-`‖·‖ ^ 2 ≤ 1 - 4 r c / (‖A‖ + r) ^ 2`. From the previous node applied to `y = (A + r)⁻¹ x`,
-together with `‖y‖ ≥ ‖x‖ / (‖A‖ + r)`; invertibility of `A + r` is
-`ContinuousLinearMap.exists_equiv_of_isCoerciveWith` at the constant `c + r`. This is the
-Mathlib-shaped statement of the module and an upstreaming candidate on its own: it says that the
-Cayley transform of a coercive self-adjoint operator is a strict contraction.'''
-deps = ["norm_sub_smul_sq_add_le_norm_add_smul_sq", "LinearMap.IsSymmetricCoercive", "ContinuousLinearMap.exists_equiv_of_isCoerciveWith"]
 
 [[node]]
 id = "peacemanRachford"
-kind = "definition"
-desc = '''Saad (4.50): the iteration operator of one Peaceman-Rachford sweep with parameter `r`,
-`Stationary.peacemanRachford H V r : E →L[𝕜] E :=
-Ring.inverse (V + (r : 𝕜) • 1) * (H - (r : 𝕜) • 1) * Ring.inverse (H + (r : 𝕜) • 1) *
-(V - (r : 𝕜) • 1)`, together with the affine part `peacemanRachfordConst` of (4.51),
-`Ring.inverse (V + r) * (1 - (H - r) * Ring.inverse (H + r)) b`, so that one sweep of Algorithm 4.3
-is `Stationary.step (peacemanRachford H V r) (peacemanRachfordConst H V r b)`
-(`peacemanRachford_step_eq`, the two half-steps composed).'''
-deps = ["step"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, Algorithm 4.3 and (4.50)-(4.51)"
 
 [[node]]
 id = "peacemanRachfordSplitting"
-kind = "definition"
-desc = '''Saad (4.52): the splitting `A = M - N` behind the sweep, with
-`M = (2 r)⁻¹ • ((H + r) * (V + r))` and `N = (2 r)⁻¹ • ((H - r) * (V - r))`, as a
-`Stationary.Splitting (H + V)`. The identity `M - N = H + V` is pure ring algebra and needs no
-commutativity of `H` and `V`, since the `H V` terms cancel; `peacemanRachfordSplitting_m`,
-`_iterationOperator` (it is `peacemanRachford H V r`) and `_const` (Saad Problem P-4.5:
-`peacemanRachfordConst H V r b = Ring.inverse M b`, that is `2 r (V + r)⁻¹ (H + r)⁻¹ b`) tie the
-sweep to the general theory of `Numlib/LinearSolve/Stationary/Splitting`.'''
-deps = ["peacemanRachford", "Splitting.iterationOperator", "Splitting.n"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, (4.52) and Problem P-4.5"
 
 [[node]]
-id = "norm_peacemanRachford_lt_one"
-kind = "theorem"
-desc = '''The convergence theorem Saad asserts in §4.3 without proof: for `H V : E →L[𝕜] E` on a
-complete inner product space, both symmetric coercive, and `0 < r`,
-`‖peacemanRachford H V r‖ < 1`, hence `spectralRadius 𝕜 (peacemanRachford H V r) < 1`. Conjugating
-by `V + r` turns (4.50) into the product of the two Cayley transforms
-`(H - r)(H + r)⁻¹` and `(V - r)(V + r)⁻¹`, each a strict contraction by `norm_cayley_lt_one`, and
-similarity preserves the spectral radius. The norm form is stated for the operator conjugated as
-in (4.50) itself only as a spectral-radius bound, since the unconjugated product need not have
-norm below one.'''
-deps = ["norm_cayley_lt_one", "peacemanRachford"]
+id = "norm_conj_peacemanRachford_lt_one"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 4.3"
+
+[[node]]
+id = "spectralRadius_peacemanRachford_lt_one"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Section 4.3"
 
 [[node]]
 id = "tendsto_peacemanRachford"
-kind = "theorem"
-desc = '''Convergence of Algorithm 4.3 from any starting vector: with the hypotheses of
-`norm_peacemanRachford_lt_one`, the iterates
-`(Stationary.step (peacemanRachford H V r) (peacemanRachfordConst H V r b))^[k] x₀` converge to the
-solution of `(H + V) x = b`. `Stationary.tendsto_of_spectralRadius_lt_one` applied to the
-splitting, with `peacemanRachfordSplitting` identifying the fixed point.'''
-deps = ["norm_peacemanRachford_lt_one", "peacemanRachfordSplitting", "tendsto_of_spectralRadius_lt_one"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, Section 4.3"
