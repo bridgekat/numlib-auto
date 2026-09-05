@@ -103,8 +103,8 @@ theorem IsCoercive.injective (hA : A.IsCoercive) : Function.Injective A := by
 theorem IsCoercive.ker_eq_bot (hA : A.IsCoercive) : LinearMap.ker A = ⊥ :=
   LinearMap.ker_eq_bot.2 hA.injective
 
-/-- Coercivity of `A` is coercivity of its symmetric part `(A + A†)/2`, for bounded `A`;
-here in the form that only uses the quadratic form. -/
+/-- The defining inequality of `IsCoerciveWith`, as a lemma: `c ‖x‖² ≤ re ⟪A x, x⟫`. Useful where
+the bundled hypothesis is more convenient to apply by name than to unfold. -/
 theorem IsCoerciveWith.re_inner_apply_self (h : A.IsCoerciveWith c) (x : E) :
     c * ‖x‖ ^ 2 ≤ RCLike.re (inner 𝕜 (A x) x) := h x
 

@@ -14,6 +14,7 @@ maxSynthPendingDepth = 3
 [[require]]
 name = "tracker"
 git = "https://github.com/bridgekat/tracker"
+rev = "main"
 
 [[require]]
 name = "mathlib"

@@ -15,6 +15,16 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   a dependency there invalidates the build cache in all of them at once, and five worktrees then
   start full rebuilds that contend for the same cores. The isolation a worktree gives you covers
   source files, not packages: never touch the dependency set while agents are working.
+* A shared `.lake/packages` also means a *concurrent* build elsewhere can make yours die with
+  spurious `failed to read file '<mathlib>.olean'` or `failed to open file '….ir'`. That is I/O
+  contention, not your code: retry rather than debug. And `lake` has no `-j`/`--jobs` flag, so
+  there is no way to throttle a build when worktrees contend — stagger them instead.
+* `lake exe tracker lint --no-check` prints `ok` and exits 0 when no cache exists at all, which is
+  indistinguishable from "zero warnings". Run one full `lake exe tracker check` before trusting any
+  later `--no-check` reading.
+* Before demoting a tracked declaration out of the plan, grep `tracker/*.md` for its name. A
+  declaration that looks like a throwaway `rfl` companion in Lean can be a numbered equation the
+  book prose cites: `Krylov.gamma_succ` is `rfl`, and it is Saad's (6.47).
 * A `lake update` interrupted partway leaves the package checkout and `lake-manifest.json`
   disagreeing — the manifest records the new revision while the working tree sits at the old one,
   and the built binary is then silently the old one. Check with
