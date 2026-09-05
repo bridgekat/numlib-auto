@@ -1,3 +1,4 @@
+import Numlib.Analysis.Calculus.MeanValue
 import Numlib.Analysis.InnerProductSpace.Coercive
 import Numlib.Analysis.InnerProductSpace.Energy
 import Numlib.Analysis.InnerProductSpace.GramSchmidt

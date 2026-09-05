@@ -754,9 +754,12 @@ theorem Matrix.complexSpectralRadius_le_linfty_opNNNorm / _le_frobenius_nnnorm /
 theorem Matrix.complexSpectralRadius_ne_top (A : Matrix n n ℝ) : complexSpectralRadius A ≠ ⊤
 ```
 The norm must be passed as a *function*. Stating the bound with `[NormedRing (Matrix n n ℝ)]` and
-friends makes it **false**: a class argument on a concrete type quantifies over every structure of
-that class on the type, and a `NormedRing` instance argument carries its own `Ring` structure, which
-need not be `Matrix.instRing`. Transporting `ℝ`'s normed-field structure along any bijection
+friends makes it **false**, and the reason is not that class arguments quantify — they always do,
+on concrete and variable types alike — but that this statement then mixes two unrelated structures
+on one type: `NormedRing` bundles its own `Ring`, which need not be `Matrix.instRing`, while
+`complexSpectralRadius A` is computed from the canonical one. Only a concrete type can go wrong
+this way, since only there is a canonical instance lying around for the rest of the statement to
+pick up. Transporting `ℝ`'s normed-field structure along any bijection
 `Matrix n n ℝ ≃ ℝ` that fixes `1` satisfies all three classes at once — `NormedAlgebra ℝ` does not
 rule this out, since `ℝ` is an `ℝ`-algebra — while leaving `‖·‖` unrelated to
 `complexSpectralRadius`, which is computed from the canonical structures. Concretely one gets
