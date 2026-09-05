@@ -37,7 +37,7 @@ are defined faithfully and only the properties the book actually proves about th
   `toEuclideanLin_mul`, `toEuclideanLin_conjTranspose`, `krylov_subspace_toEuclideanLin`,
   `toEuclideanLin_apply_eq_sum` for `V_m y = ∑ y_j • v_j`,
   `IsHermitian.hasEigenvalue_toEuclideanLin_iff`, `IsHermitian.isSymmetricBoundedBy_toEuclideanLin`,
-  `l2_opNorm_eq_norm_toEuclideanLin`), together with Mathlib's `Matrix.isHermitian_iff_isSymmetric`
+  `l2_opNorm_eq_norm_toEuclideanLin`), together with Mathlib's `Matrix.isSymmetric_toEuclideanLin_iff`
   and `Matrix.posDef_iff_isSymmetricCoercive` (`Numlib/InnerProductSpace/Coercive.lean`).
 
 Proposed files (in dependency order):
@@ -1221,7 +1221,7 @@ item scheduled for a later phase (listed in §4); `out-of-scope` = not formalize
 - **Backbone item.** §3.3 `Arnoldi.coeff_eq_zero_of_isSymmetric`, `Arnoldi.coeff_conj_of_isSymmetric`,
   `Lanczos.hessenbergSq_eq_map_tridiag`, `Lanczos.tridiag_isTridiagonal`, `Lanczos.tridiag_isSymm`
   (`Numlib/Krylov/Lanczos.lean`); §2.1.10 `Matrix.IsTridiagonal` (`Numlib/Matrix/Hessenberg.lean`);
-  Mathlib `Matrix.isHermitian_iff_isSymmetric` for `A.IsSymm → (op A).IsSymmetric` over `ℝ`.
+  Mathlib `Matrix.isSymmetric_toEuclideanLin_iff` for `A.IsSymm → (op A).IsSymmetric` over `ℝ`.
 - **Proof route.** Backbone.
 - **Classification.** `direct`.
 

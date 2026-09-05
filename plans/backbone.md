@@ -697,8 +697,8 @@ noncomputable def Matrix.complexSpectralRadius (A : Matrix n n ℝ) : ENNReal :=
 /-- `Aᵏ → 0 ↔ ρ(A) < 1` for real matrices (via 2.1.3). -/
 theorem Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one (A : Matrix n n ℝ) :
     Tendsto (fun k => A ^ k) atTop (𝓝 0) ↔ complexSpectralRadius A < 1
-theorem Matrix.complexSpectralRadius_le_of_norm {A : Matrix n n ℝ} [SeminormedAddCommGroup (Matrix n n ℝ)]
-    [NormOneClass (Matrix n n ℝ)] [NormMulClass (Matrix n n ℝ)] : complexSpectralRadius A ≤ ‖A‖₊
+theorem Matrix.complexSpectralRadius_le_of_norm {A : Matrix n n ℝ} [NormedRing (Matrix n n ℝ)]
+    [NormOneClass (Matrix n n ℝ)] : complexSpectralRadius A ≤ ‖A‖₊   -- any submultiplicative matrix norm
 ```
 Norm preservation under `complexify` for the scoped `l∞`/Frobenius norms is added when a
 surface statement needs it (phase 2).

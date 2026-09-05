@@ -90,8 +90,14 @@ theorem tendsto_pow_iff_complexSpectralRadius_lt_one (A : Matrix n n ℝ) :
     Tendsto (fun k => A ^ k) atTop (𝓝 0) ↔ complexSpectralRadius A < 1 := by
   sorry
 
-theorem complexSpectralRadius_le_of_norm {A : Matrix n n ℝ} [SeminormedAddCommGroup (Matrix n n ℝ)]
-    [NormOneClass (Matrix n n ℝ)] [NormMulClass (Matrix n n ℝ)] :
+/-- `ρ(A) ≤ ‖A‖` for any submultiplicative matrix norm (Saad Cor 4.2): open a norm scope such as
+`Matrix.Norms.LinftyOp`, `Matrix.Norms.L2Operator` or `Matrix.Norms.Frobenius` to supply the
+instances. Submultiplicativity is the operative hypothesis; a *multiplicative* norm
+(`NormMulClass`) does not exist on `Matrix n n ℝ` for `1 < card n`. Proof: `ρ` is unchanged by
+powers (`complexSpectralRadius_pow`), and norm equivalence in finite dimension gives
+`ρ (complexify B) ≤ C ‖B‖`; apply it to `A ^ k` and let `k → ∞`. -/
+theorem complexSpectralRadius_le_of_norm {A : Matrix n n ℝ} [NormedRing (Matrix n n ℝ)]
+    [NormOneClass (Matrix n n ℝ)] :
     complexSpectralRadius A ≤ ‖A‖₊ := by
   sorry
 

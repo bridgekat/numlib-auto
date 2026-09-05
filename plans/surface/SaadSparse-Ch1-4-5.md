@@ -554,7 +554,7 @@ the adjoint of `toEuclideanLin A` is `toEuclideanLin Aᴴ`). Class: `direct`.
 **R-1.11 Proposition 1.37.** Book: a projector is orthogonal iff it is Hermitian.
 Lean: `prop_1_37 (hP : IsIdempotentElem P) : (ker (toEuclideanLin P) = (range (toEuclideanLin P))ᗮ) ↔ P.IsHermitian`.
 Backbone/Mathlib: `IsIdempotentElem.isSymmetric_iff_orthogonal_range`;
-`Matrix.isHermitian_iff_isSymmetric` (`toEuclideanLin`). Class: `direct`.
+`Matrix.isSymmetric_toEuclideanLin_iff` (`toEuclideanLin`). Class: `direct`.
 
 **R-1.12 `P = VVᴴ` and its non-uniqueness.** Book: `V` `n × m` with orthonormal columns
 spanning `M` ⇒ `P = VVᴴ` is the orthogonal projector onto `M`; two orthonormal bases `V₁, V₂` of
@@ -831,11 +831,11 @@ R-4.11. Class: `deferred` (§3 item 3). The M-matrix corollary is `direct` from 
 general `AlgebraNorm` version. Backbone/Mathlib: `spectrum.norm_le_norm_of_mem` /
 `spectrum.spectralRadius_le_nnnorm` on `PiLp p _ →L[ℂ] PiLp p _`, with
 `spectrum_toLpLin : spectrum ℂ (toContinuousLinearMap (toLpLin p p A)) = spectrum ℂ A`
-(surface; `Matrix.toLpLinAlgEquiv`, `AlgEquiv.spectrum_eq`). The backbone's
-`Matrix.complexSpectralRadius_le_of_norm` is stated under `NormMulClass` (a *multiplicative* norm,
-`‖AB‖ = ‖A‖‖B‖`), which no operator norm on `Matrix (Fin n) (Fin n) ℝ` with `n ≥ 2` satisfies, so
-it is not used here. Class: `direct` for every `lpOpNorm p` (via `complexify` for real `A`),
-`deferred` (§3 item 2) for a general consistent norm.
+(surface; `Matrix.toLpLinAlgEquiv`, `AlgEquiv.spectrum_eq`). For real `A` the backbone's
+`Matrix.complexSpectralRadius_le_of_norm` applies to whichever scoped matrix norm is open
+(`NormedRing` + `NormOneClass`: submultiplicative with the unit matrix of norm one). Class:
+`direct` for every `lpOpNorm p` (via `complexify` for real `A`), `deferred` (§3 item 2) for a
+general consistent norm that is not one of the scoped instances.
 
 **R-4.17 Theorem 4.6 (Gershgorin).** Book: every eigenvalue `λ` of `A` lies in some closed disc
 `|λ − a_ii| ≤ ρ_i = Σ_{j≠i} |a_ij|`; the column-sum version holds too (transpose). Lean:
@@ -1196,8 +1196,8 @@ phase-1 modules under `Numlib/`.
    spectralRadius ℂ a ≤ N a` (proof: `ρ(a)ᵏ ≤ ‖aᵏ‖_std ≤ C·N(aᵏ) ≤ C·N(a)ᵏ`, `C^{1/k} → 1`, using
    that every seminorm on a finite-dimensional space is bounded by the standard norm) with the
    real-matrix corollary `N G < 1 → Tendsto (G^k) (𝓝 0)`. Until then Cor 4.2 and R-4.16 are
-   stated for the induced `p`-norms (`lpOpNorm p`). Note that `Matrix.complexSpectralRadius_le_of_norm`
-   assumes `NormMulClass` (multiplicative norms) and therefore does not cover operator norms.
+   stated for the induced `p`-norms (`lpOpNorm p`), which `Matrix.complexSpectralRadius_le_of_norm`
+   covers; an `AlgebraNorm` carries no `NormedRing` instance, hence the separate statement.
 3. **Regular splittings and M-matrices (`Stationary/RegularSplitting.lean`, `Matrix/Order.lean`;
    `plans/backbone.md` §2.3.4, §2.1.12, phase 2).** Thm 4.4 exactly as
    `IsRegularSplitting A M N → (complexSpectralRadius (M⁻¹ * N) < 1 ↔ IsUnit A ∧ ∀ i j, 0 ≤ A⁻¹ i j)`

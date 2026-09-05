@@ -338,7 +338,7 @@ Lean: `(∀ x₀, Tendsto … (𝓝 x)) ↔ Tendsto (fun n => (s.N⁻¹ * s.M) ^
 **§5.2.2 relation 1** `r_σ(A) ≤ ‖A‖` for any operator norm.
 Mathlib: `spectrum.spectralRadius_le_nnnorm` (`Mathlib/Analysis/Normed/Algebra/Spectrum.lean`) for the
 Banach-algebra norm; real matrices: `Matrix.complexSpectralRadius_le_of_norm` (`Numlib/Matrix/Complexify.lean`,
-any `NormOneClass`/`NormMulClass` norm on `Matrix n n ℝ`).
+any submultiplicative `NormOneClass` norm on `Matrix n n ℝ`, i.e. any scoped matrix norm).
 Classification: `direct` (for the norm instance in scope), `surface-only` for "any" induced norm (quantify over a
 `NormedAlgebra ℂ (Matrix n n ℂ)` instance — awkward; state for the three Mathlib norms).
 
