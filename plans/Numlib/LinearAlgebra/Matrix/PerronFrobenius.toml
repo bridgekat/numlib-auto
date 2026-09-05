@@ -13,14 +13,15 @@ a real matrix is `Matrix.complexSpectralRadius` of `Numlib/LinearAlgebra/Matrix/
 (`spectralRadius ℝ` is not the spectral radius); irreducibility is Mathlib's
 `Matrix.IsIrreducible` (nonnegative matrices, quiver strongly connected).
 
-What this module must **not** do: it must not restate the weak Perron theorem for a general
-nonnegative matrix, `Matrix.EntrywiseNonneg.exists_hasEigenvector_complexSpectralRadius`, nor
-Saad Thm 1.29, nor `Matrix.IsMMatrix` - those are planned in
-`Numlib/LinearSolve/Stationary/RegularSplitting`, whose resolvent proof is independent of the
-irreducible theorem here (the irreducible case does *not* imply the reducible one without a
-continuity-of-the-spectral-radius argument that nothing in the library has). See
-`plans/proposals/saadlow.md` for the recommendation that those three move here, which would make
-`RegularSplitting` purely a statement about splittings; the plan is correct either way.
+What this module must **not** do: it must not restate Saad Thm 1.29 (the nonnegative Neumann
+criterion) or `Matrix.IsMMatrix`. Those are proved in `Numlib/LinearAlgebra/Matrix/MMatrix`, the
+sibling module this plan's `plans/proposals/saadlow.md` asked for, which
+`Numlib/LinearSolve/Stationary/RegularSplitting` now imports rather than owns. The weak Perron
+theorem the earlier plan budgeted for Thm 1.29 turned out not to be needed at all: the proof there
+is monotone convergence of the Neumann partial sums, entry by entry. So the irreducible theorem
+below has no weak counterpart anywhere in the library, and none is wanted - Thm 1.29's proof does
+not go through an eigenvector, and the irreducible case does *not* imply the reducible one without
+a continuity-of-the-spectral-radius argument that nothing in the library has.
 
 The difficult proof is the Perron eigenvector. Route (Wielandt): for an irreducible nonnegative
 `A` on a nonempty index type, `(1 + A) ^ (card n - 1)` is entrywise *positive*, because a positive

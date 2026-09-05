@@ -1,0 +1,14 @@
+[[node]]
+id = "Matrix.EntrywiseNonneg.of_tendsto"
+
+[[node]]
+id = "Matrix.geom_sum_eq_sub_pow_mul"
+
+[[node]]
+id = "Matrix.EntrywiseNonneg.complexSpectralRadius_lt_one_iff"
+
+[[node]]
+id = "Matrix.IsMMatrix"
+
+[[node]]
+id = "Matrix.IsMMatrix.diag_pos"

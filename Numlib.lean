@@ -29,6 +29,7 @@ import Numlib.Krylov.Relations
 import Numlib.Krylov.Subspace
 import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.LinearAlgebra.Matrix.Hessenberg
+import Numlib.LinearAlgebra.Matrix.MMatrix
 import Numlib.LinearAlgebra.Matrix.Order
 import Numlib.LinearSolve.Perturbation
 import Numlib.LinearSolve.Projection.Basic
