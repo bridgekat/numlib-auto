@@ -30,3 +30,15 @@ id = "Matrix.aeval_eq_conjTranspose_iff"
 
 [[node]]
 id = "Matrix.isStarNormal_toEuclideanLin_iff"
+
+[[node]]
+id = "LinearMap.IsStarNormal.eigenvectorBasis"
+
+[[node]]
+id = "LinearMap.IsStarNormal.eigenvalues"
+
+[[node]]
+id = "LinearMap.IsStarNormal.apply_eigenvectorBasis"
+
+[[node]]
+id = "Matrix.IsStarNormal.spectral_theorem"

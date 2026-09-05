@@ -1,171 +1,82 @@
 namespace = "SaadSparse.Ch01"
-desc = '''
-Saad §1.9: normal matrices (§1.9.1) and Hermitian matrices (§1.9.2), with the field of values, the
-numerical radius, and the min-max theorems.
-
-Most of the section is available. Lemma 1.15 is the backbone's
-`LinearMap.isStarNormal_of_adjoint_apply_eq_smul` together with
-`LinearMap.IsStarNormal.eigenspace_adjoint` (`Numlib/Eigen/Normal`), which is exactly the pair of
-implications the book proves and is what the Faber-Manteuffel section of Chapter 6 already uses.
-Theorems 1.19 and 1.20 are Mathlib's `Matrix.IsHermitian.eigenvalues` and
-`Matrix.IsHermitian.spectral_theorem`. Theorems 1.21 and 1.22 are the backbone's Courant-Fischer,
-`LinearMap.IsSymmetric.eigenvalues_eq_iInf_iSup`, `eigenvalues_eq_iSup_iInf` and
-`isGreatest_rayleighQuotient_orthogonal` (`Numlib/Eigen/MinMax`).
-
-Theorem 1.14 - a matrix is normal if and only if it is unitarily similar to a diagonal matrix - is
-the one gap. `Numlib/Eigen/Normal` proves everything the statement needs (the eigenspaces of a
-normal operator are orthogonal, they span, and they decompose the space) but stops short of
-assembling an orthonormal eigenbasis, which is what "unitarily similar to a diagonal matrix"
-means. `plans/proposals/saadlow.md` asks for that assembly as two nodes in `Eigen/Normal`,
-mirroring `Matrix.IsHermitian.eigenvectorUnitary` and `spectral_theorem`; until they exist,
-`theorem_1_14` and `corollary_1_16` are blocked on them.
-
-**Not planned: the convexity half of Proposition 1.18**, the Toeplitz-Hausdorff theorem that the
-field of values of an arbitrary matrix is convex. Saad states it without proof; the standard proof
-restricts to the two-dimensional subspace spanned by two vectors and computes that the field of
-values of a `2 × 2` matrix is a filled ellipse, which is a self-contained but substantial
-development with no other consumer in the corpus. The containment half - the convex hull of the
-spectrum is contained in the field of values - is planned, and for normal matrices the equality
-(Theorem 1.17) is planned in full, since there it follows from (1.34) alone. **Also not planned:
-the power inequality (1.36)**, `ν(A ^ k) ≤ ν(A) ^ k`, which the book attributes to the literature;
-it is Berger's inequality and its proof is a dilation argument unrelated to anything else here.
-'''
 
 [[node]]
 id = "lemma_1_13"
-kind = "theorem"
-desc = '''Lemma 1.13: a normal triangular matrix is diagonal. `IsStarNormal A → A.BlockTriangular id →
-A.IsDiag`, by induction on the rows: comparing the `(i, i)` entries of `Aᴴ A` and `A Aᴴ` gives
-`∑ j < i, ‖A j i‖ ^ 2 = ∑ j > i, ‖A i j‖ ^ 2`, and the left side vanishes by triangularity and the
-inductive hypothesis. Independent of the rest of the file; the alternative proof through Problem
-P-1.19 (`Aᴴ` is a polynomial in `A`) is the backbone's
-`Matrix.IsStarNormal.exists_aeval_eq_conjTranspose`.'''
 
 [[node]]
 id = "theorem_1_14"
-kind = "theorem"
-desc = '''Theorem 1.14: a complex square matrix is normal if and only if it is unitarily similar to a
-diagonal matrix, `IsStarNormal A ↔ ∃ Q ∈ Matrix.unitaryGroup, ∃ d, Qᴴ * A * Q = Matrix.diagonal d`;
-consequently a normal matrix admits an orthonormal basis of eigenvectors. The reverse implication
-is a computation. The forward one waits on the orthonormal eigenbasis of a normal operator, which
-`plans/proposals/saadlow.md` requests as an addition to `Numlib/Eigen/Normal`; the pieces
-(orthogonality of the eigenspaces, their spanning, the internal direct sum) are all proved
-there.'''
-deps = ["_root_.LinearMap.IsStarNormal.direct_sum_isInternal", "_root_.LinearMap.IsStarNormal.orthogonalFamily_eigenspaces"]
+
+[[node]]
+id = "normalEigenBasis"
+
+[[node]]
+id = "normalEigenvalues"
+
+[[node]]
+id = "apply_normalEigenBasis"
+
+[[node]]
+id = "normalEigenvalues_mem_spectrum"
 
 [[node]]
 id = "lemma_1_15"
-kind = "theorem"
-desc = '''Lemma 1.15: a matrix is normal if and only if each of its eigenvectors is an eigenvector of
-`Aᴴ`. Both halves are in `Numlib/Eigen/Normal`: forward is
-`LinearMap.IsStarNormal.eigenspace_adjoint`, backward is
-`LinearMap.isStarNormal_of_adjoint_apply_eq_smul`, whose proof - the same inner product that
-forces the eigenvalues to be conjugate forbids generalized eigenvectors - is the book's
-contradiction argument (1.31)-(1.32) without the elementary-divisor language. Cited by Lemma 6.23,
-which already uses it.'''
-deps = ["_root_.LinearMap.isStarNormal_of_adjoint_apply_eq_smul", "_root_.LinearMap.IsStarNormal.eigenspace_adjoint"]
 
 [[node]]
 id = "corollary_1_16"
-kind = "theorem"
-desc = '''Corollary 1.16: a normal matrix with real spectrum is Hermitian. From `theorem_1_14`, since
-`Q * diagonal d * Qᴴ` with real `d` is its own conjugate transpose. The converse, that a Hermitian
-matrix has real eigenvalues, is Theorem 1.19.'''
-deps = ["theorem_1_14"]
+
+[[node]]
+id = "rayleigh"
 
 [[node]]
 id = "fieldOfValues"
-kind = "definition"
-desc = '''§1.9.1: the Rayleigh quotient (1.33) `μ x = (A x, x) / (x, x)` for `x ≠ 0` - the backbone's
-`LinearMap.rayleighQuotient` is its real part, and for a complex matrix the book keeps the complex
-value, so the surface defines `SaadSparse.Ch01.rayleigh A x : ℂ` alongside - the *field of values*
-`fieldOfValues A : Set ℂ`, its image over nonzero `x`, and the *numerical radius*
-`numericalRadius A := ⨆ x, ‖rayleigh A x‖`. With `fieldOfValues_bounded`
-(`‖μ x‖ ≤ ‖A‖₂`), `spectrum_subset_fieldOfValues` and
-`complexSpectralRadius_le_numericalRadius_le_l2_opNorm`, the chain `ρ(A) ≤ ν(A) ≤ ‖A‖₂` the book
-states.'''
-deps = ["_root_.LinearMap.rayleighQuotient"]
 
 [[node]]
-id = "equation_1_34"
-kind = "theorem"
-desc = '''(1.34): for a normal `A` with orthonormal eigenbasis `q_k` and `x = ∑ ξ_k q_k`,
-`rayleigh A x = ∑ β_k • λ_k` with `β_k = ‖ξ_k‖ ^ 2 / ∑ ‖ξ_j‖ ^ 2` nonnegative and summing to one:
-the Rayleigh quotient of a normal matrix is a convex combination of its eigenvalues. The expansion
-in the eigenbasis of `theorem_1_14`.'''
-deps = ["theorem_1_14", "fieldOfValues"]
+id = "numericalRadius"
 
 [[node]]
-id = "theorem_1_17"
-kind = "theorem"
-desc = '''Theorem 1.17: the field of values of a normal matrix is the convex hull of its spectrum,
-`fieldOfValues A = convexHull ℝ (spectrum ℂ A)`. The inclusion `⊆` is `equation_1_34`; `⊇` is the
-observation that each convex combination `∑ β_k λ_k` is attained at `x = ∑ √β_k q_k`. Saad states
-it as a consequence of Hausdorff's convex hull theorem; the direct argument above avoids it.'''
-deps = ["equation_1_34"]
+id = "norm_rayleigh_le"
+
+[[node]]
+id = "numericalRadius_le_l2_opNorm"
+
+[[node]]
+id = "spectralRadius_le_numericalRadius"
 
 [[node]]
 id = "proposition_1_18"
-kind = "theorem"
-desc = '''Proposition 1.18, everything in it that does not need Toeplitz-Hausdorff: for an arbitrary
-complex square matrix the field of values contains the spectrum,
-`spectrum ℂ A ⊆ fieldOfValues A` (each eigenvalue is the Rayleigh quotient at an eigenvector), and
-therefore contains the convex hull of the spectrum *as soon as it is convex*,
-`Convex ℝ (fieldOfValues A) → convexHull ℝ (spectrum ℂ A) ⊆ fieldOfValues A`; for a normal matrix
-the two are equal, which is `theorem_1_17` and needs no convexity input. The convexity itself, the
-Toeplitz-Hausdorff theorem, is not planned; see the group description. Stating the conditional form
-rather than the unconditional one is what keeps the file honest about the gap.'''
-deps = ["fieldOfValues", "theorem_1_17"]
+
+[[node]]
+id = "equation_1_34"
+
+[[node]]
+id = "theorem_1_17"
 
 [[node]]
 id = "theorem_1_19"
-kind = "theorem"
-desc = '''Theorem 1.19: the eigenvalues of a Hermitian matrix are real, `A.IsHermitian → spectrum ℂ A ⊆
-Set.range ((↑) : ℝ → ℂ)`. Mathlib's `Matrix.IsHermitian.eigenvalues` is already real-valued, with
-`Matrix.IsHermitian.eigenvalues_eq` and `hasEigenvalue_toEuclideanLin_iff` for the spectrum form; a
-restatement. The remark that a real symmetric matrix has real eigenvectors (Problem P-1.24) is
-`Matrix.IsHermitian.eigenvectorBasis` over `ℝ`.'''
 
 [[node]]
 id = "theorem_1_20"
-kind = "theorem"
-desc = '''Theorem 1.20: a Hermitian matrix is unitarily similar to a real diagonal matrix, and so has an
-orthonormal basis of eigenvectors. Mathlib's `Matrix.IsHermitian.spectral_theorem` and
-`Matrix.IsHermitian.eigenvectorUnitary`; a restatement, and the model for the normal statement
-`theorem_1_14` that is missing.'''
 
 [[node]]
 id = "inner_self_isReal_iff_isHermitian"
-kind = "theorem"
-desc = '''The §1.9.2 remark with its converse (Problem P-1.15): for a complex square matrix,
-`(∀ x, (inner ℂ x (A ⬝ x)).im = 0) ↔ A.IsHermitian`. Forward is one line from
-`Matrix.isHermitian_iff_isSymmetric`; backward is the polarization argument of Problems P-1.14 and
-P-1.16 - `(S y, z) + (S z, y) = 0` from the sum, then `e^{2iθ} s_kj = - s_jk` at `y = e_k`,
-`z = e^{iθ} e_j`. Both halves fail over `ℝ`, which is the point of the remark and is why Saad's
-"positive definite" of §1.11 is not automatically symmetric.'''
+
+[[node]]
+id = "eigenvaluesDesc"
+
+[[node]]
+id = "eigenvectorBasisDesc"
+
+[[node]]
+id = "eigenvaluesDesc_antitone"
 
 [[node]]
 id = "theorem_1_21"
-kind = "theorem"
-desc = '''Theorem 1.21, the Courant-Fischer min-max principle, and its companions (1.37)-(1.40): for a
-Hermitian `A` with eigenvalues in decreasing order,
-`λ_k = ⨅ S, dim S = n - k + 1, ⨆ x ∈ S, x ≠ 0, rayleighQuotient A x`, the dual max-min form
-(1.39), and the extreme cases `λ₁ = ⨆ x, rayleighQuotient A x` (1.38) and
-`λ_n = ⨅ x, rayleighQuotient A x` (1.40). The backbone's
-`LinearMap.IsSymmetric.eigenvalues_eq_iInf_iSup`, `eigenvalues_eq_iSup_iInf`,
-`isGreatest_eigenvalues` and `isLeast_eigenvalues` of `Numlib/Eigen/MinMax`, transported by
-`Matrix.IsHermitian.hasEigenvalue_toEuclideanLin_iff`. Note the index convention: the book orders
-the eigenvalues decreasingly, Mathlib's `Matrix.IsHermitian.eigenvalues` in no particular order,
-so the surface fixes the order with a monotone reindexing lemma.'''
-deps = ["_root_.LinearMap.IsSymmetric.eigenvalues_eq_iInf_iSup", "_root_.LinearMap.IsSymmetric.eigenvalues_eq_iSup_iInf"]
+
+[[node]]
+id = "equation_1_38"
+
+[[node]]
+id = "equation_1_40"
 
 [[node]]
 id = "theorem_1_22"
-kind = "theorem"
-desc = '''Theorem 1.22, the Courant characterization (1.41): for a Hermitian `A` with orthonormal
-eigenvectors `q_k` for the decreasing eigenvalues,
-`λ_k = rayleighQuotient A (q k)` and `λ_k` is the greatest value of the Rayleigh quotient over the
-vectors orthogonal to `q₁, …, q_{k-1}`. The backbone's
-`LinearMap.IsSymmetric.isGreatest_rayleighQuotient_orthogonal` of `Numlib/Eigen/MinMax`, which is
-the same statement with `mem_eigenvectorSpan_Ici_iff` identifying the subspace.'''
-deps = ["_root_.LinearMap.IsSymmetric.isGreatest_rayleighQuotient_orthogonal", "theorem_1_21"]

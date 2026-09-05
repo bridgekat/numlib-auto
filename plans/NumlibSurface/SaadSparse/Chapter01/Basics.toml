@@ -1,129 +1,43 @@
 namespace = "SaadSparse.Ch01"
-desc = '''
-Saad §1.1-§1.6: matrices, eigenvalues, types of matrices, inner products and vector norms, matrix
-norms, subspaces, range and kernel.
-
-Almost all of this is Mathlib restated in the book's notation, and the file should stay thin. The
-following are pure Mathlib citations and get no node of their own: the definitions of §1.1 and
-§1.3 (`Matrix.transpose`, `Matrix.conjTranspose`, `Matrix.IsSymm`, `Matrix.IsHermitian`,
-`IsStarNormal`, `Matrix.IsDiag`, `Matrix.BlockTriangular`, `Matrix.unitaryGroup`,
-`Matrix.IsTridiagonal` and `Matrix.IsUpperHessenberg` of `Numlib/LinearAlgebra/Matrix/Hessenberg`,
-`Equiv.Perm.permMatrix`); Definition 1.1 (`Module.End.HasEigenvalue`, `spectrum`, reached from a
-matrix by `Matrix.hasEigenvalue_toEuclideanLin_iff`); the determinant properties of §1.2; the
-inner-product and norm axioms of §1.4 (`InnerProductSpace`, `Norm`); the p-norms (1.6) (`PiLp`);
-and §1.6 in full (`Submodule.span`, `LinearMap.range`, `LinearMap.ker`, `Submodule.IsCompl`,
-`Module.End.eigenspace`, `Module.End.eigenspace_le_comap` for invariance).
-
-What is left is: three propositions, the two identities every later chapter cites ((1.4)-(1.5)),
-the four matrix-norm formulas (1.13)-(1.16), the range-kernel decomposition (1.18), and one
-counterexample. Saad's own warning about §1.3 is worth a docstring: he calls a matrix *orthogonal*
-when `Qᴴ Q` is merely **diagonal**, not the identity, which no other source in the corpus does.
-
-The book's (1.18) is printed as `ℂⁿ = Ran(A) ⊕ Null(Aᵀ)` in a complex setting; it is stated here
-with `Aᴴ`, which is what the proof needs and what Mathlib's `LinearMap.orthogonal_range` gives.
-'''
 
 [[node]]
 id = "proposition_1_2"
-kind = "theorem"
-desc = '''Proposition 1.2: a square matrix is nonsingular if and only if it has an inverse,
-`A.det ≠ 0 ↔ IsUnit A` (with `Matrix.nonsing_inv_mul` naming the inverse). Mathlib's
-`Matrix.isUnit_iff_isUnit_det`; a restatement, kept because Chapter 4 and Chapter 5 cite it.'''
 
 [[node]]
 id = "proposition_1_3"
-kind = "theorem"
-desc = '''Proposition 1.3: if `μ` is an eigenvalue of `A` then `conj μ` is an eigenvalue of `Aᴴ`, and an
-eigenvector of `Aᴴ` for `conj μ` is a *left eigenvector* of `A`, `star v ᵥ* A = μ • star v`. Over
-`ℂ`; `spectrum (Aᴴ) = star '' spectrum A` through `Matrix.det_conjTranspose`, and the left form by
-transposing `Aᴴ v = conj μ • v`.'''
 
 [[node]]
 id = "proposition_1_4"
-kind = "theorem"
-desc = '''Proposition 1.4 and its corollary: a unitary matrix preserves the Euclidean inner product and
-the Euclidean norm, `inner 𝕜 (Q ⬝ y) (Q ⬝ x) = inner 𝕜 y x` and `‖Q ⬝ x‖ = ‖x‖` for
-`Q ∈ Matrix.unitaryGroup`. The backbone has both, as
-`Matrix.inner_toLp_mulVec_of_mem_unitaryGroup` and
-`Matrix.norm_toEuclideanCLM_apply_of_mem_unitaryGroup` in `Numlib/Analysis/Matrix/ToEuclideanLin`;
-this node is the book-facing restatement.'''
-deps = ["_root_.Matrix.toEuclideanLin_conjTranspose"]
 
 [[node]]
 id = "equation_1_5"
-kind = "theorem"
-desc = '''(1.4)-(1.5): `(x, y) = yᴴ x` and `(A x, y) = (x, Aᴴ y)` in Saad's convention, that is
-`inner 𝕜 y (A ⬝ x) = inner 𝕜 (Aᴴ ⬝ y) x`. `Matrix.toEuclideanLin_conjTranspose_eq_adjoint` of
-`Numlib/Analysis/Matrix/ToEuclideanLin` plus `LinearMap.adjoint_inner_left`; the `(1.4)` half is
-already `SaadSparse.inner_eq_dotProduct_star` of `Common.lean`.'''
-deps = ["_root_.Matrix.toEuclideanLin_conjTranspose"]
 
 [[node]]
 id = "equation_1_2"
-kind = "theorem"
-desc = '''(1.2), the Cauchy-Schwarz inequality for an arbitrary inner product on a complex vector space,
-`‖s x y‖ ^ 2 ≤ RCLike.re (s x x) * RCLike.re (s y y)`, and its Euclidean specialization
-`‖inner 𝕜 y x‖ ≤ ‖x‖ * ‖y‖`. Mathlib's `inner_mul_le_norm_mul_norm`; a restatement.'''
 
 [[node]]
 id = "trace_eq_sum_eigenvalues"
-kind = "theorem"
-desc = '''The §1.2 claim that the trace equals the sum of the eigenvalues counted with their algebraic
-multiplicities: over `ℂ`, `A.trace = (A.charpoly.roots).sum`. Mathlib's
-`Matrix.trace_eq_sum_roots_charpoly`, with the determinant twin
-`Matrix.det_eq_prod_roots_charpoly`; a restatement, kept because §1.13.2's remark about
-determinants and Chapter 6's characteristic-polynomial arguments cite it.'''
+
+[[node]]
+id = "lpOpNorm_one"
 
 [[node]]
 id = "equation_1_14"
-kind = "theorem"
-desc = '''(1.14): `‖A‖_∞` is the largest absolute row sum, and (1.13): `‖A‖₁` is the largest absolute
-column sum, so `‖A‖₁ = ‖Aᵀ‖_∞`. Mathlib's `Matrix.linfty_opNorm_def` under the scoped instance
-`Matrix.Norms.Operator`; the `1`-norm form is the surface's own, since Mathlib carries only the
-infinity-operator norm. Related to the surface's `Matrix.lpOpNorm` of §1.13 by `lpOpNorm_top` and
-`lpOpNorm_one_eq_transpose`.'''
 
 [[node]]
 id = "equation_1_15"
-kind = "theorem"
-desc = '''(1.15): `‖A‖₂ ^ 2 = ρ(Aᴴ A) = ρ(A Aᴴ)` under the scoped `Matrix.Norms.L2Operator` instance,
-and hence `‖A‖₂ = σ₁`, the largest singular value, and `ρ(A) = ‖A‖₂` for Hermitian `A`.
-`Matrix.l2_opNorm_conjTranspose_mul_self` together with the spectral radius of a positive
-semidefinite Hermitian matrix being its largest eigenvalue.'''
+
+[[node]]
+id = "spectralRadius_eq_l2_opNNNorm_of_isHermitian"
 
 [[node]]
 id = "equation_1_16"
-kind = "theorem"
-desc = '''(1.12) and (1.16): the Frobenius norm and `‖A‖_F ^ 2 = (Aᴴ * A).trace = (A * Aᴴ).trace`. Under
-the scoped `Matrix.Norms.Frobenius` instance; `Matrix.trace_conjTranspose_mul_self`, a
-restatement. The consistency of the Frobenius norm (Problem P-1.5) is
-`Matrix.frobenius_norm_mul_le`.'''
 
 [[node]]
 id = "spectralRadius_le_lpOpNorm"
-kind = "theorem"
-desc = '''The §1.5 remark that a consistent matrix norm dominates the spectral radius,
-`complexSpectralRadius A ≤ ENNReal.ofReal ‖A‖` for the induced `p`-norms. The general
-consistent-norm form, quantified over an `AlgebraNorm`, is
-`spectralRadius_le_algebraNorm` in `Numlib/Analysis/Normed/Algebra/SpectralRadius`, still open;
-until it exists this node covers the `p`-norm cases through
-`Matrix.complexSpectralRadius_le_of_norm`.'''
-deps = ["_root_.Matrix.complexSpectralRadius_le_of_norm"]
 
 [[node]]
 id = "example_1_1"
-kind = "theorem"
-desc = '''Example 1.1: the spectral radius is not a matrix norm. For `A = !![0, 1; 0, 0]`,
-`complexSpectralRadius A = 0` although `A ≠ 0`, and with `B = Aᵀ`,
-`complexSpectralRadius (A + B) = 1 > 0 = complexSpectralRadius A + complexSpectralRadius B`. A
-two-line computation; kept because it is the reason every convergence statement of Chapter 4 is
-about `ρ` and not about a norm.'''
 
 [[node]]
 id = "equation_1_18"
-kind = "theorem"
-desc = '''(1.18): `IsCompl (LinearMap.range (toEuclideanLin A)) (LinearMap.ker (toEuclideanLin Aᴴ))`,
-and the same with `A` and `Aᴴ` exchanged. Mathlib's `LinearMap.orthogonal_range` (the kernel of
-the adjoint is the orthogonal complement of the range) plus
-`Submodule.isCompl_orthogonal_of_hasOrthogonalProjection`; the book prints `Aᵀ` where `Aᴴ` is
-meant. Cited by §1.13.1 and by Chapter 5's minimum-norm statements.'''

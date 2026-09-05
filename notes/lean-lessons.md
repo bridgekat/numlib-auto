@@ -317,6 +317,9 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
 * `{w ∈ univ | p w}.image f` leaves the type of `univ` a metavariable and reports "typeclass
   instance problem is stuck: Fintype ?m"; write `{w ∈ (univ : Finset V) | p w}`.
 
+* A **type ascription can capture an implicit type argument**. `(hV.subordinateOrthonormalBasisIndex hn i hV' : 𝕜)` was meant to coerce the returned eigenvalue to `𝕜`, but Lean unified the *index type* `ι` of the direct sum with `𝕜` instead and then asked for `Fintype 𝕜`. Ascribe to the real return type first, `(… : Module.End.Eigenvalues A)`, and coerce from there.
+* `Finset.le_sup (mem_univ j)` cannot infer the function; pass `(f := fun j => …)`.
+
 ## Tactics
 
 * `module` is the right tactic for vector identities with symbolic scalars; `abel` cannot move
@@ -465,6 +468,9 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   *definition* is what needs the decidability, put `open scoped Classical in` on the definition;
   every lemma about it is then free of the binder, and the one lemma that really needs
   `G.neighborFinset` keeps it.
+
+* **`push_cast; ring` fails where `norm_cast` succeeds** whenever `𝕜` is the *concrete* `ℂ`: `((‖z‖ ^ 2 : ℝ) : ℂ)` uses `Complex.ofReal` while `RCLike.conj_mul` produces `(↑‖z‖) ^ 2` with `RCLike.ofReal`, and the two print identically. The symptom is `ring` failing on a goal whose two sides look character-for-character equal. Over an abstract `[RCLike 𝕜]` the problem does not arise.
+* `inner_conj_symm` is a `simp` lemma, so `rw [← inner_conj_symm]` followed by `simpa` is silently undone. Do the conjugation in a `have` with an explicit type and finish with `rw`.
 
 ## Mathlib names and API
 
@@ -871,6 +877,20 @@ invariant subspaces as a TODO.
 * `Set.pairwise_insert_of_symmetric` is deprecated in favour of `Set.pairwise_insert_of_symm`,
   which takes the symmetry as a `[Std.Symm r]` *instance*, so the old call site no longer applies.
   For `SimpleGraph.IsIndepSet (insert v s)` it is shorter to `intro`/`rcases` the four cases.
+
+* `Matrix.IsDiag` lives in `Mathlib.LinearAlgebra.Matrix.IsDiag`, which none of the usual matrix
+  imports pulls in; without it the name is simply unknown. `Matrix.BlockTriangular` has `.add`,
+  `.sub`, `.neg` and `.mul` but **no** `.smul` and no `.pow` — write both by hand (three lines
+  each) when closing triangularity under `Polynomial.aeval`.
+* `ofReal_norm_eq_enorm` is deprecated in favour of `ofReal_norm : ENNReal.ofReal ‖a‖ = ‖a‖ₑ`; a
+  goal stated with `↑‖a‖₊` needs `← enorm_eq_nnnorm` before it.
+* `spectrum_diagonal : spectrum R (diagonal d) = Set.range d` is at the *root*, not in `Matrix`.
+  `Unitary.spectrum_star_left_conjugate` gives `spectrum R (star U * a * U) = spectrum R a`, which
+  is what turns a unitary diagonalization into a statement about the spectrum.
+* `Matrix.IsHermitian.eigenvalues₀` is indexed by `Fin (Fintype.card n)`, which is *not* `Fin n`
+  syntactically even for `n = Fin m`. For matrices over `Fin m` the backbone's
+  `LinearMap.IsSymmetric.eigenvalues … finrank_euclideanSpace_fin` is indexed by `Fin m` directly
+  and is already antitone; that is what `SaadSparse.Ch01.eigenvaluesDesc` uses.
 
 ## Design conventions of this library
 

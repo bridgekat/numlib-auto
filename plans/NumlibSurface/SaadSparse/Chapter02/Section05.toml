@@ -1,62 +1,19 @@
 namespace = "SaadSparse.Ch02"
-desc = '''
-Saad §2.5, the finite volume method. The section derives a cell-centred discretization of a
-conservation law and ends with one structural claim, which is the only thing here worth
-formalizing and is entirely elementary: the semi-discrete operator (2.54)-(2.55) has nonnegative
-diagonal entries, nonpositive off-diagonal entries and zero row sums, hence is a weakly diagonally
-dominant Z-matrix, exactly like the upwind matrices of §2.2.4.
 
-The claim rests on `∑ j, s⃗_j = 0` for the outward edge vectors of a polygon. Saad's Problem P-2.12
-asks for a proof by the divergence theorem, which would need a boundary measure and an outward
-normal field that Mathlib has only for boxes; the elementary proof is used instead: the outward
-normal times the edge length is the edge vector rotated by a quarter turn, and the edge vectors of
-a closed polygon sum to zero because they telescope. That keeps the whole file inside plane linear
-algebra.
-
-The steps before the structural claim are not planned and no node is created for them: the
-conservation law (2.48) and its weak form, the cell integration (2.49) - which the book derives by
-applying integration by parts to the indicator of a cell, a test function for which (2.39) does not
-hold, and which should be read as the divergence theorem on the cell - and the cell-averaging
-approximations (2.50)-(2.51), which the book itself calls crude and for which it states no error
-bound. There is also no time discretization anywhere in the section, so no linear system is ever
-formed; what the section produces is the spatial operator below.
-'''
+[[node]]
+id = "edgeVec"
 
 [[node]]
 id = "sum_edgeVec_eq_zero"
-kind = "theorem"
-desc = '''Saad Problem P-2.12: for a closed polygon in the plane with vertices `p : Fin m → ℝ × ℝ`, the
-outward edge vectors `s⃗_j = s_j • n⃗_j` - the edge `p (j + 1) - p j` rotated by a quarter turn -
-satisfy `∑ j, s⃗ j = 0`, because `∑ j, (p (j + 1) - p j) = 0` telescopes over `Fin m` and the
-rotation is linear. The book asks for the divergence theorem; this proof needs no integration at
-all.'''
 
 [[node]]
 id = "posPart_add_negPart"
-kind = "theorem"
-desc = '''The scalar identity behind (2.53)-(2.55): with `(z)⁺ = (z + |z|) / 2` and
-`(z)⁻ = (z - |z|) / 2`, one has `z⁺ + z⁻ = z`, `0 ≤ z⁺`, `z⁻ ≤ 0`, and
-`(a + b) / 2 * z - |z| / 2 * (b - a) = a * z⁺ + b * z⁻`, which is what turns the upwind edge value
-(2.53) into the coefficients (2.54)-(2.55). Shared with `SaadSparse.Ch02.equation_2_23`, the
-upwind scheme of §2.2.4, and proved once.'''
+
+[[node]]
+id = "equation_2_53"
 
 [[node]]
 id = "equation_2_55"
-kind = "definition"
-desc = '''(2.54)-(2.55): the semi-discrete finite volume operator for the linear flux `F⃗ = λ⃗ u`. Given
-cells indexed by a finite type, a family of outward edge vectors `s⃗ : ι → κ i → ℝ × ℝ` for each
-cell with `∑ j, s⃗ i j = 0`, and the neighbour of cell `i` across edge `j`, the matrix has
-`β_i = ∑ j, (λ⃗ ⬝ᵥ s⃗ i j)⁺` on the diagonal and `α_{i j} = (λ⃗ ⬝ᵥ s⃗ i j)⁻` at the neighbour.
-Stated abstractly in the edge data, so that the geometry enters only through
-`sum_edgeVec_eq_zero`.'''
-deps = ["posPart_add_negPart"]
 
 [[node]]
 id = "equation_2_55_isDiagDominant"
-kind = "theorem"
-desc = '''The structural claim of §2.5: the operator of `equation_2_55` has `0 ≤ β_i`, `α_{i j} ≤ 0` and
-zero row sums, `β_i + ∑ j, α_{i j} = λ⃗ ⬝ᵥ (∑ j, s⃗ i j) = 0`, hence is a Z-matrix that is weakly
-diagonally dominant by rows - "the same desirable property of weak diagonal dominance seen in the
-one-dimensional case". From `posPart_add_negPart` and `sum_edgeVec_eq_zero`. This is what connects
-the chapter to Saad Theorem 4.6 and to the M-matrix hypotheses of Chapter 10.'''
-deps = ["equation_2_55", "sum_edgeVec_eq_zero", "posPart_add_negPart"]

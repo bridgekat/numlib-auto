@@ -332,6 +332,43 @@ theorem IsStarNormal.exists_aeval_eq_adjoint [IsAlgClosed 𝕜] (hA : IsStarNorm
       fun _ hμ => Lagrange.eval_interpolate_at_node _ (Set.injOn_id _) hμ⟩
   exact ⟨q, IsStarNormal.aeval_eq_adjoint_of_eval_eq hA fun μ hμ => hq μ (hsmem μ hμ)⟩
 
+/-! ### The orthonormal eigenbasis of a normal operator -/
+
+section EigenvectorBasis
+
+variable {n : ℕ} [IsAlgClosed 𝕜]
+
+/-- **An orthonormal basis of eigenvectors of a normal operator** on an `n`-dimensional inner
+product space over an algebraically closed field.  The eigenspaces are mutually orthogonal and
+decompose the space (`LinearMap.IsStarNormal.direct_sum_isInternal`), so an orthonormal basis of
+each assembles into one of the whole space, subordinate to the decomposition.  This is the
+counterpart of `LinearMap.IsSymmetric.eigenvectorBasis` for normal rather than self-adjoint
+operators; unlike there the eigenvalues are not real, so
+`LinearMap.IsStarNormal.eigenvalues` takes values in `𝕜` and no ordering is imposed. -/
+noncomputable def IsStarNormal.eigenvectorBasis (hA : IsStarNormal A)
+    (hn : Module.finrank 𝕜 E = n) : OrthonormalBasis (Fin n) 𝕜 E :=
+  (IsStarNormal.direct_sum_isInternal hA).subordinateOrthonormalBasis hn
+    (IsStarNormal.orthogonalFamily_eigenspaces' hA)
+
+/-- The eigenvalue of a normal operator at the `i`-th vector of
+`LinearMap.IsStarNormal.eigenvectorBasis`. -/
+noncomputable def IsStarNormal.eigenvalues (hA : IsStarNormal A) (hn : Module.finrank 𝕜 E = n)
+    (i : Fin n) : 𝕜 :=
+  (((IsStarNormal.direct_sum_isInternal hA).subordinateOrthonormalBasisIndex hn i
+    (IsStarNormal.orthogonalFamily_eigenspaces' hA) : Eigenvalues A) : 𝕜)
+
+/-- `LinearMap.IsStarNormal.eigenvectorBasis` really is a basis of eigenvectors, with
+`LinearMap.IsStarNormal.eigenvalues` naming the eigenvalues. -/
+theorem IsStarNormal.apply_eigenvectorBasis (hA : IsStarNormal A) (hn : Module.finrank 𝕜 E = n)
+    (i : Fin n) :
+    A (IsStarNormal.eigenvectorBasis hA hn i) =
+      IsStarNormal.eigenvalues hA hn i • IsStarNormal.eigenvectorBasis hA hn i :=
+  mem_eigenspace_iff.1
+    ((IsStarNormal.direct_sum_isInternal hA).subordinateOrthonormalBasis_subordinate hn i
+      (IsStarNormal.orthogonalFamily_eigenspaces' hA))
+
+end EigenvectorBasis
+
 end LinearMap
 
 namespace Matrix
@@ -380,5 +417,85 @@ theorem IsStarNormal.exists_aeval_eq_conjTranspose [IsAlgClosed 𝕜] {A : Matri
   obtain ⟨q, hq⟩ :=
     LinearMap.IsStarNormal.exists_aeval_eq_adjoint (isStarNormal_toEuclideanLin_iff.2 hA)
   exact ⟨q, aeval_eq_conjTranspose_iff.1 hq⟩
+
+omit [DecidableEq n] in
+/-- A normal matrix over an algebraically closed field has an orthonormal basis of eigenvectors,
+indexed by the index type of the matrix. -/
+private theorem exists_orthonormalBasis_eigenvector [IsAlgClosed 𝕜] {A : Matrix n n 𝕜}
+    (hA : IsStarNormal A) :
+    ∃ (c : OrthonormalBasis n 𝕜 (EuclideanSpace 𝕜 n)) (d : n → 𝕜),
+      ∀ j, A *ᵥ ⇑(c j) = d j • ⇑(c j) := by
+  classical
+  have hT : IsStarNormal (toEuclideanLin A) := isStarNormal_toEuclideanLin_iff.2 hA
+  set e : Fin (Fintype.card n) ≃ n := Fintype.equivOfCardEq (Fintype.card_fin _)
+  refine ⟨(LinearMap.IsStarNormal.eigenvectorBasis hT finrank_euclideanSpace).reindex e,
+    fun j => LinearMap.IsStarNormal.eigenvalues hT finrank_euclideanSpace (e.symm j),
+    fun j => ?_⟩
+  have h := LinearMap.IsStarNormal.apply_eigenvectorBasis hT finrank_euclideanSpace (e.symm j)
+  rw [OrthonormalBasis.reindex_apply]
+  simpa [toLpLin_apply] using congrArg WithLp.ofLp h
+
+/-- **The spectral theorem for normal matrices**: a square matrix over an algebraically closed
+field is normal exactly when it is unitarily similar to a diagonal matrix.  The forward direction
+assembles the orthonormal eigenbasis `LinearMap.IsStarNormal.eigenvectorBasis` into the
+change-of-basis matrix; the converse is a computation with diagonal matrices, which commute with
+their conjugate transposes.  This is the counterpart of `Matrix.IsHermitian.spectral_theorem` for
+normal rather than Hermitian matrices (Saad, *Iterative Methods for Sparse Linear
+Systems*[^saad-iterative-normal], Theorem 1.14).
+
+[^saad-iterative-normal]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
+  SIAM, 2003. -/
+theorem IsStarNormal.spectral_theorem [IsAlgClosed 𝕜] {A : Matrix n n 𝕜} :
+    IsStarNormal A ↔
+      ∃ U ∈ Matrix.unitaryGroup n 𝕜, ∃ d : n → 𝕜, Uᴴ * A * U = Matrix.diagonal d := by
+  constructor
+  · intro hA
+    obtain ⟨c, d, hcd⟩ := exists_orthonormalBasis_eigenvector hA
+    refine ⟨(EuclideanSpace.basisFun n 𝕜).toBasis.toMatrix c.toBasis,
+      (EuclideanSpace.basisFun n 𝕜).toMatrix_orthonormalBasis_mem_unitary c, d, ?_⟩
+    set U : Matrix n n 𝕜 := (EuclideanSpace.basisFun n 𝕜).toBasis.toMatrix c.toBasis with hU
+    have hUmem : U ∈ Matrix.unitaryGroup n 𝕜 :=
+      (EuclideanSpace.basisFun n 𝕜).toMatrix_orthonormalBasis_mem_unitary c
+    have hentry : ∀ i j, U i j = ⇑(c j) i := fun _ _ => rfl
+    have hAU : A * U = U * Matrix.diagonal d := by
+      ext i j
+      have h1 : (A *ᵥ ⇑(c j)) i = d j * ⇑(c j) i := by rw [hcd j]; rfl
+      calc (A * U) i j = (A *ᵥ ⇑(c j)) i := by
+            rw [Matrix.mul_apply, Matrix.mulVec_apply_eq_sum]
+            exact Finset.sum_congr rfl fun k _ => by rw [hentry k j]
+        _ = d j * ⇑(c j) i := h1
+        _ = U i j * d j := by rw [hentry i j, mul_comm]
+        _ = (U * Matrix.diagonal d) i j := (Matrix.mul_diagonal _ _ _ _).symm
+    rw [Matrix.mul_assoc, hAU, ← Matrix.mul_assoc, ← Matrix.star_eq_conjTranspose,
+      (Unitary.mem_iff.1 hUmem).1, Matrix.one_mul]
+  · rintro ⟨U, hUmem, d, hd⟩
+    have hstar : star U * U = 1 := (Unitary.mem_iff.1 hUmem).1
+    have hstar' : U * star U = 1 := (Unitary.mem_iff.1 hUmem).2
+    have hA : A = U * Matrix.diagonal d * Uᴴ := by
+      rw [← hd, ← Matrix.star_eq_conjTranspose]
+      calc A = U * star U * A * (U * star U) := by
+            rw [hstar', Matrix.one_mul, Matrix.mul_one]
+        _ = U * (star U * A * U) * star U := by simp only [Matrix.mul_assoc]
+    have hAH : Aᴴ = U * Matrix.diagonal (star d) * Uᴴ := by
+      rw [hA, Matrix.conjTranspose_mul, Matrix.conjTranspose_mul,
+        Matrix.conjTranspose_conjTranspose, Matrix.diagonal_conjTranspose, Matrix.mul_assoc]
+    have hdiag : Matrix.diagonal (star d) * Matrix.diagonal d =
+        Matrix.diagonal d * Matrix.diagonal (star d) := by
+      rw [Matrix.diagonal_mul_diagonal, Matrix.diagonal_mul_diagonal]
+      exact congrArg Matrix.diagonal (funext fun i => mul_comm _ _)
+    have key : ∀ X Y : Matrix n n 𝕜, U * X * Uᴴ * (U * Y * Uᴴ) = U * (X * Y) * Uᴴ := by
+      intro X Y
+      rw [← Matrix.star_eq_conjTranspose]
+      simp only [Matrix.mul_assoc]
+      rw [← Matrix.mul_assoc (star U) U, hstar, Matrix.one_mul]
+    refine ⟨?_⟩
+    rw [Matrix.star_eq_conjTranspose]
+    calc Aᴴ * A
+        = U * Matrix.diagonal (star d) * Uᴴ * (U * Matrix.diagonal d * Uᴴ) := by
+          rw [← hAH, ← hA]
+      _ = U * (Matrix.diagonal (star d) * Matrix.diagonal d) * Uᴴ := key _ _
+      _ = U * (Matrix.diagonal d * Matrix.diagonal (star d)) * Uᴴ := by rw [hdiag]
+      _ = U * Matrix.diagonal d * Uᴴ * (U * Matrix.diagonal (star d) * Uᴴ) := (key _ _).symm
+      _ = A * Aᴴ := by rw [← hAH, ← hA]
 
 end Matrix
