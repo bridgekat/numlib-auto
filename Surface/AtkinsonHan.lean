@@ -1,3 +1,10 @@
+import AtkinsonHan.Ch02.Functionals
+import AtkinsonHan.Ch02.GeometricSeries
+import AtkinsonHan.Ch02.Operators
+import AtkinsonHan.Ch03.BestApprox
+import AtkinsonHan.Ch03.InnerProduct
+import AtkinsonHan.Ch03.Projections
+import AtkinsonHan.Ch03.UniformBounds
 import AtkinsonHan.Ch05.Calculus
 import AtkinsonHan.Ch05.ConjugateGradient
 import AtkinsonHan.Ch05.FixedPoint
