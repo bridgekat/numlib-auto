@@ -7,6 +7,9 @@ id = "corollary_2_3_3"
 id = "equation_2_3_16"
 
 [[node]]
+id = "equation_2_3_4"
+
+[[node]]
 id = "equation_2_3_5"
 
 [[node]]
@@ -14,9 +17,6 @@ id = "example_2_3_2"
 
 [[node]]
 id = "example_2_3_4"
-
-[[node]]
-id = "equation_2_3_4"
 
 [[node]]
 id = "theorem_2_3_1"

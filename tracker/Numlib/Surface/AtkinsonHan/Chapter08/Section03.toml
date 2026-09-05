@@ -59,3 +59,12 @@ id = "BilinForm.toOperator"
 
 [[node]]
 id = "BilinForm.toOperator_eq_rieszRep_iff"
+
+[[node]]
+id = "Ch08.exercise_8_3_1"
+
+[[node]]
+id = "Ch08.theorem_8_3_2"
+
+[[node]]
+id = "Ch08.theorem_8_3_2_subspace"

@@ -1,0 +1,175 @@
+namespace = "SaadSparse.Ch06"
+
+[[node]]
+id = "IsGMRESIterate"
+
+[[node]]
+id = "J"
+
+[[node]]
+id = "Qrot"
+
+[[node]]
+id = "R"
+
+[[node]]
+id = "Rbar"
+
+[[node]]
+id = "Rbar_succ_submatrix"
+
+[[node]]
+id = "Rtilde"
+
+[[node]]
+id = "Z"
+
+[[node]]
+id = "c"
+
+[[node]]
+id = "dqgmres"
+
+[[node]]
+id = "equation_6_28"
+
+[[node]]
+id = "equation_6_41"
+
+[[node]]
+id = "equation_6_42"
+
+[[node]]
+id = "equation_6_47"
+
+[[node]]
+id = "equation_6_53"
+
+[[node]]
+id = "equation_6_54"
+
+[[node]]
+id = "equation_6_55"
+
+[[node]]
+id = "equation_6_62"
+
+[[node]]
+id = "equation_6_65"
+
+[[node]]
+id = "equation_6_70"
+
+[[node]]
+id = "equation_6_71"
+
+[[node]]
+id = "equation_6_75"
+
+[[node]]
+id = "equation_6_78"
+
+[[node]]
+id = "equation_6_79"
+
+[[node]]
+id = "g"
+
+[[node]]
+id = "gbar"
+
+[[node]]
+id = "gmres"
+
+[[node]]
+id = "gmresCycle"
+
+[[node]]
+id = "gmresFixed"
+
+[[node]]
+id = "gmresHH"
+
+[[node]]
+id = "gmresHH_eq"
+
+[[node]]
+id = "gmresRestarted"
+
+[[node]]
+id = "gmresY"
+
+[[node]]
+id = "gmres_exact_of_card_le"
+
+[[node]]
+id = "gmres_unique"
+
+[[node]]
+id = "gtilde"
+
+[[node]]
+id = "hornerAccumulate"
+
+[[node]]
+id = "mrs"
+
+[[node]]
+id = "mrsEta"
+
+[[node]]
+id = "problem_6_14"
+
+[[node]]
+id = "problem_6_25"
+
+[[node]]
+id = "problem_6_5"
+
+[[node]]
+id = "proposition_6_9_2"
+
+[[node]]
+id = "qgmres"
+
+[[node]]
+id = "qmrs"
+
+[[node]]
+id = "qmrs_eq_6_78"
+
+[[node]]
+id = "qmrs_eq_6_79"
+
+[[node]]
+id = "quasiResidualNorm"
+
+[[node]]
+id = "s"
+
+[[node]]
+id = "ytilde"
+
+[[node]]
+id = "z"
+
+[[node]]
+id = "Ω"
+
+[[node]]
+id = "γ"
+
+[[node]]
+id = "ξ"
+
+[[node]]
+id = "ρF"
+
+[[node]]
+id = "ρFmin"
+
+[[node]]
+id = "ρG"
+
+[[node]]
+id = "ρG_succ"

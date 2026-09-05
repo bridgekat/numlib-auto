@@ -1,0 +1,5 @@
+desc = '''
+Saad, Chapter 6: Krylov subspace methods.
+`Chapter06/Common` fixes the `r₀`, `β`, `v₁` vocabulary and the bridges to the backbone's
+residual-indexed Arnoldi data, which every section here uses.
+'''
