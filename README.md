@@ -44,7 +44,7 @@ Plans are structured TOML files in the `tracker/` directory, with format specifi
 - A list of key items (Lean definitions and theorem statements) in logical progression order. Each item should be placed carefully within the module and namespace hierarchies.
 - Brief descriptions of difficult proofs, optionally with references to relevant literature.
 
-Each plan is a [group](https://github.com/bridgekat/tracker/#groups), and can be split into a tree of sub-groups. The backbone-surface split is reflected as different root groups.
+Each TOML file is a [group](https://github.com/bridgekat/tracker/#groups), corresponding exactly to one Lean module, and a group splits into sub-groups exactly as a module splits into sub-modules. A group's design notes are its `desc` until the corresponding module is written; from then on the module's own doc comment is the description, and the group's copy should be deleted.
 
 Plans may be automatically extracted from textbooks. In such cases, the agent should:
 

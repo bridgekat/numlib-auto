@@ -1,8 +1,10 @@
 desc = '''
-The backbone: canonical definitions, theorems in their natural and general forms,
-and the actual proofs. A doc comment here names its source in full — never by number.
+An LLM-generated numerical analysis library in two layers. `Numlib.Backbone` gathers the general
+layer — canonical definitions, theorems in their natural and general forms, and the actual proofs,
+whose doc comments name their sources in full and never by number. `Numlib.Surface` holds one
+library per textbook, faithful to each book and proved by specializing the backbone.
 
-The reasoning behind the shape of this layer is in `backbone.md` beside this file: the corpus it
+The reasoning behind the shape of the backbone is in `backbone.md` beside this file: the corpus it
 serves, the generality ladder that decides where each item sits, the named hypothesis bundles, the
-phasing, and the difficult-proof index.
+phasing, and the difficult-proof index. Read it before adding a module.
 '''

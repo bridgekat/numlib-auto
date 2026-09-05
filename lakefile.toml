@@ -22,16 +22,3 @@ rev = "v4.34.0-rc2"
 
 [[lean_lib]]
 name = "Numlib"
-
-# Surface libraries: one per textbook, thin specializations of the backbone (see README).
-[[lean_lib]]
-name = "SaadSparse"
-srcDir = "Surface"
-
-[[lean_lib]]
-name = "FongSaunders"
-srcDir = "Surface"
-
-[[lean_lib]]
-name = "AtkinsonHan"
-srcDir = "Surface"
