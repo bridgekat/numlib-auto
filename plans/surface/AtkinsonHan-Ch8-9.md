@@ -350,7 +350,8 @@ same `c`, `R(L)^⊥ = {0}` (in the duality sense), hence `L u = f` uniquely solv
 * Backbone: `L` is a `SesqForm ℝ V` by defeq and `hmono` is `L.IsCoerciveWith c`
   (`SesqForm.isCoerciveWith_real_iff`); (8.2.2) with the same `c` is
   `SesqForm.IsCoerciveWith.norm_le_norm_apply`; bijectivity from `SesqForm.exists_solutionEquiv`
-  (the solution operator `V' ≃L V`) or `SesqForm.laxMilgram`.
+  (the solution operator `V' ≃L⋆[𝕜] V`, conjugate-linear in general and plainly linear over `ℝ`) or
+  `SesqForm.laxMilgram`.
 * Mathlib alternative: `IsCoercive.bounded_below` (`C * ‖v‖ ≤ ‖B♯ v‖`, and `‖B♯ v‖ = ‖B v‖` by
   `LinearIsometryEquiv.norm_map`), `IsCoercive.continuousLinearEquivOfBilin` (bijective `B♯`;
   transport to `B = toDual ∘ B♯` by `toDual` bijective).
@@ -464,7 +465,9 @@ solution of (8.3.5) `u ∈ V, a(u, v) = ℓ(v) ∀ v ∈ V`.
   `SesqForm ℝ V` by defeq) with `isEllipticWith_iff_isCoerciveWith`;
   `SesqForm.norm_le_of_forall_apply_eq` is the bound `‖u‖ ≤ ‖ℓ‖ / c`,
   `SesqForm.norm_sub_le_of_forall_apply_eq` the Lipschitz dependence on `ℓ`, and
-  `SesqForm.exists_solutionEquiv` the solution operator as `(V →L[ℝ] ℝ) ≃L[ℝ] V` with norm `≤ 1/c`.
+  `SesqForm.exists_solutionEquiv` the solution operator as `(V →L[𝕜] 𝕜) ≃L⋆[𝕜] V` with norm `≤ 1/c`
+  — conjugate-linear, because a sesquilinear form is conjugate-linear in its first slot; over the
+  surface's `𝕜 = ℝ` the star is the identity and this is the ordinary `(V →L[ℝ] ℝ) ≃L[ℝ] V`.
 * Mathlib alternative: `IsCoercive (a.toCLM hM)` from `ha`; `u := coercive.continuousLinearEquivOfBilin.symm
   ((toDual ℝ V).symm ℓ)` and `continuousLinearEquivOfBilin_apply`, `unique_continuousLinearEquivOfBilin`,
   `toDual_symm_apply`.
@@ -519,8 +522,12 @@ solution and (8.7.5) `‖u‖_U ≤ ‖ℓ‖_{V'}/α`.
 * Backbone (`Numlib/Variational/LaxMilgram.lean`, §5.2.2): `SesqForm₂.babuska_necas
   (hα : 0 < α) (hinf : a.InfSupWith α) (hnd : a.IsNondegenerate) : ∃! u, ∀ v, a u v = ℓ v` and
   `SesqForm₂.norm_le_of_infSupWith … (hu : ∀ v, a u v = ℓ v) : ‖u‖ ≤ ‖ℓ‖ / α` (8.7.5), for
-  `a : SesqForm₂ 𝕜 U V` with `U`, `V` complete; `SesqForm₂.infSupWith_of_forall_exists` is the
+  `a : SesqForm₂ 𝕜 U V` with `U`, `V` complete;
+  `SesqForm₂.infSupWith_of_forall_exists (hC : 0 < C) (hinj : ∀ u, (∀ v, a u v = 0) → u = 0)
+  (h : ∀ ℓ, ∃ u, (∀ v, a u v = ℓ v) ∧ ‖u‖ ≤ C * ‖ℓ‖) : a.InfSupWith (1 / C)` is the
   converse (well-posedness with `‖u‖ ≤ C‖ℓ‖` forces `InfSupWith (1 / C)`), not stated in the book.
+  The left-hand nondegeneracy `hinj` is needed: solvability with a norm bound says nothing about
+  vectors the form does not see.
   Backbone proof (the book's): `A : U →L V`, `A u := rieszRep (a u)`; `InfSupWith α` is
   `α‖u‖ ≤ ‖A u‖` ⇒ injective and, with `CompleteSpace U`, closed range
   (`ContinuousLinearMap.isClosed_range_of_le_norm`); nondegeneracy ⇒ `(range A)ᗮ = ⊥`;
@@ -564,8 +571,10 @@ is `laxMilgram`. Classification: **direct** (`SesqForm.laxMilgram`).
   GalerkinProblem a ℓ VN (∑ j, ξ j • (φ j : V)) ↔ (stiffnessMatrix a (fun i => (φ i : V))).mulVec ξ = loadVector ℓ (fun i => (φ i : V))`.
 * Backbone: `IsGalerkinSolution.iff_mulVec (φ : Module.Basis ι 𝕜 K) (ξ : ι → 𝕜) :
   IsGalerkinSolution a ℓ K (∑ j, ξ j • (φ j : V)) ↔
-  (Matrix.of fun i j => a (φ j : V) (φ i)).mulVec ξ = fun i => ℓ (φ i)`
-  (`Numlib/Variational/Galerkin.lean`); `stiffnessMatrix`/`loadVector` unfold to its matrix and
+  (Matrix.of fun i j => a (φ j : V) (φ i)).mulVec (star ξ) = fun i => ℓ (φ i)`
+  (`Numlib/Variational/Galerkin.lean`); the `star ξ` is forced by the form being conjugate-linear in
+  its first slot, and over the surface's `𝕜 = ℝ` it is `ξ` itself, so the statement above is the
+  book's `A ξ = b` verbatim. `stiffnessMatrix`/`loadVector` unfold to its matrix and
   vector (`ι = Fin N`). The operator analogue is `isPetrovGalerkin_iff_mulVec` (§2.4.1, Saad (5.7)).
 * Classification: **needs-equivalence**.
 
@@ -585,7 +594,11 @@ is `laxMilgram`. Classification: **direct** (`SesqForm.laxMilgram`).
 * Backbone: `SesqForm.isMinOn_energy_iff (ha : a.IsHermitian) (hc) (hcoer) (K : Submodule 𝕜 V)
   (hu : u ∈ K) : IsMinOn (a.energy ℓ) K u ↔ ∀ v ∈ K, a u v = ℓ v`
   (`Numlib/Variational/LaxMilgram.lean`; no finite dimension or closedness needed); the energy
-  identity `E(v) − E(u) = ½‖v − u‖_a²` at the solution is `SesqForm.energy_sub_energy_eq`.
+  identity `E(v) − E(u) = ½‖v − u‖_a²` at the solution is
+  `SesqForm.energy_sub_energy_eq (hpos : a.IsCoerciveWith 0) (hu : ∀ v, a u v = ℓ v) (v)`. The
+  positivity hypothesis is not decorative: `a.energyNorm` is a square root, which Lean sends to `0`
+  on negative arguments, so the identity fails for indefinite forms; here it comes free from
+  `V`-ellipticity (`IsCoerciveWith.mono` with `0 ≤ c₀`).
 * Classification: **needs-equivalence**.
 
 **Prop 9.1.3 (Céa), (9.1.11)–(9.1.12).** `V_N ⊂ V` a subspace, `a` bounded (`M`) `V`-elliptic (`c₀`),
@@ -613,9 +626,12 @@ is `laxMilgram`. Classification: **direct** (`SesqForm.laxMilgram`).
 * Lean: `theorem energyNorm_sub_eq_iInf (hs : a.IsSymm) … [FiniteDimensional ℝ VN] :
   energyNorm a (u - uN) = ⨅ v : VN, energyNorm a (u - v)`;
   `theorem galerkin_eq_energyProjection : uN = WithEnergy.equiv.symm ((VN.map WithEnergy.equiv).starProjection (WithEnergy.equiv u))`.
-* Backbone: `IsGalerkinSolution.energyNorm_sub_le (ha : a.IsHermitian) … (hv : v ∈ K) :
-  a.energyNorm (ustar - u) ≤ a.energyNorm (ustar - v)` (pointwise best approximation; the `⨅` form
-  by `le_ciInf`/`ciInf_le`), `IsGalerkinSolution.norm_sub_le_sqrt` (`√(M / c)`); the projection
+* Backbone: `IsGalerkinSolution.energyNorm_sub_le (ha : a.IsHermitian) (hpos : a.IsCoerciveWith 0)
+  (hN) (hstar) (hv : v ∈ K) : a.energyNorm (ustar - u) ≤ a.energyNorm (ustar - v)`
+  (pointwise best approximation; the `⨅` form by `le_ciInf`/`ciInf_le`; `hpos` for the same
+  square-root reason as in (9.1.6)–(9.1.8) — without it the claim fails already for
+  `V = ℝ²`, `a = diag(1, −1)`, `K = span (1, 2)`, and `V`-ellipticity supplies it),
+  `IsGalerkinSolution.norm_sub_le_sqrt` (`√(M / c)`); the projection
   statement through `IsGalerkinSolution.iff_isGalerkin` and `IsGalerkin.error_eq_starProjection`
   (`Numlib/LinearSolve/Projection/Optimality.lean`, §2.4.2) in `WithEnergy` (§2.1.5), with
   `energyNorm_eq` (D6).
@@ -662,8 +678,12 @@ Classification: **needs-equivalence**.
   `existsUnique [FiniteDimensional 𝕜 K] [FiniteDimensional 𝕜 L]
   (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) (hα : 0 < α)
   (hinf : DiscreteInfSup a K L α)` and
-  `norm_sub_le (hdim) (hα) (hM : ∀ w v, ‖a w v‖ ≤ M * ‖w‖ * ‖v‖) (hinf) (hN) (hstar)
-  (hw : w ∈ K) : ‖ustar - u‖ ≤ (1 + M / α) * ‖ustar - w‖` (pointwise; `⨅` form by `le_ciInf`),
+  `norm_sub_le (hdim) (hα) (hM0 : 0 ≤ M) (hM : ∀ w v, ‖a w v‖ ≤ M * ‖w‖ * ‖v‖) (hinf) (hN) (hstar)
+  (hw : w ∈ K) : ‖ustar - u‖ ≤ (1 + M / α) * ‖ustar - w‖` (pointwise; `⨅` form by `le_ciInf`;
+  `hM0` is needed because a boundedness hypothesis quantified over a subspace is vacuous when the
+  subspace is trivial and so does not force its own constant nonnegative — with `K = L = 0`,
+  `a = 0`, `M = −1` the conclusion would read `‖ustar‖ ≤ 0`; at the surface `M` comes from (9.2.2)
+  and is nonnegative),
   through D8 and D9. Backbone proof of solvability: `T : K →ₗ[𝕜] Module.Dual 𝕜 L`,
   `T w := (a w ·)|L`, injective by the discrete inf–sup, `Subspace.dual_finrank_eq` + `hdim` +
   `LinearMap.injective_iff_surjective_of_finrank_eq_finrank` ⇒ surjective; the error bound is the
@@ -694,7 +714,8 @@ Classification: **needs-equivalence**.
   `hinfsup : ∀ i, DiscreteInfSup a (UN i) (VN i) (αN i)`, `hα : ∀ i, α₀ ≤ αN i`, `Monotone UN`,
   `Dense (⋃ i, (UN i : Set U))`; conclusion `Tendsto (fun i => ‖u - uN i‖) atTop (𝓝 0)`.
 * Backbone: `IsPetrovGalerkinSolution.tendsto` (uniform constant `α`, hypotheses `hdim`, `hα`,
-  `hM`, `hinf : ∀ n, DiscreteInfSup a (K n) (L n) α`, `hmono`, `hdense`, `hN`, `hstar`; conclusion
+  `hM0 : 0 ≤ M`, `hM`, `hinf : ∀ n, DiscreteInfSup a (K n) (L n) α`, `hmono`, `hdense`, `hN`,
+  `hstar`; conclusion
   `Tendsto uN atTop (𝓝 ustar)`), `tendsto_infDist_of_monotone_dense`. The book's varying `α_N ≥ α₀`
   reduces to the uniform form by monotonicity of `DiscreteInfSup` in `α` (surface lemma
   `DiscreteInfSup.mono`).
@@ -732,10 +753,13 @@ lower bound `0` for the `ciInf` from sign symmetry).
   `existsUnique_isGeneralizedGalerkinSolution aN ℓN K [FiniteDimensional 𝕜 K] (hc : 0 < c)
   (hcoer : ∀ v ∈ K, c * ‖v‖ ^ 2 ≤ RCLike.re (aN v v))` (unique solvability by injectivity and
   finite dimension, `LinearMap.injective_iff_surjective_of_finrank_eq_finrank` on
-  `K →ₗ Module.Dual 𝕜 K`; no Lax–Milgram) and `strang_first (hc) (hM : ∀ w, ∀ v ∈ K,
+  `K →ₗ Module.Dual 𝕜 K`; no Lax–Milgram) and `strang_first (hc) (hM0 : 0 ≤ M) (hM : ∀ w, ∀ v ∈ K,
   ‖aN w v‖ ≤ M * ‖w‖ * ‖v‖) (hcoer) (hN : IsGeneralizedGalerkinSolution aN ℓN K uN) (u : W)
-  (hδ : ∀ w ∈ K, ‖aN u w - ℓN w‖ ≤ δ * ‖w‖) (hv : v ∈ K) :
-  ‖u - uN‖ ≤ (1 + M / c) * ‖u - v‖ + δ / c` (pointwise, with an explicit consistency bound `δ`).
+  (hδ0 : 0 ≤ δ) (hδ : ∀ w ∈ K, ‖aN u w - ℓN w‖ ≤ δ * ‖w‖) (hv : v ∈ K) :
+  ‖u - uN‖ ≤ (1 + M / c) * ‖u - v‖ + δ / c` (pointwise, with an explicit consistency bound `δ`;
+  both `hM0` and `hδ0` are required for the reason given under Thm 9.2.1 — bounds quantified over a
+  subspace are vacuous on the trivial subspace — and both hold for the surface's constants, `δ`
+  being a supremum of absolute values).
   Bridge: take `δ := ⨆ v : {v : VN // v ≠ 0}, |aN u v - ℓN v| / ‖v‖`, bounded above by `M‖u‖ + c₀`
   (this is the only use of `hℓ`), so `le_ciSup` gives `hδ`; the `⨅` by `le_ciInf`. The estimate
   itself is the book's four-line computation.

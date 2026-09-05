@@ -413,6 +413,7 @@ theorem LinearMap.IsCoercive.inner_self_pos (hA : A.IsCoercive) {x : E} (hx : x 
     0 < RCLike.re (inner 𝕜 (A x) x)
 theorem LinearMap.IsCoercive.injective (hA : A.IsCoercive) : Function.Injective A
 theorem LinearMap.IsCoercive.ker_eq_bot (hA : A.IsCoercive) : LinearMap.ker A = ⊥
+theorem LinearMap.IsSymmetricCoercive.isPositive (hA : A.IsSymmetricCoercive) : A.IsPositive
 /-- Saad Thm 1.34 (finite dimension). -/
 theorem LinearMap.isCoercive_iff_forall_pos [FiniteDimensional 𝕜 E] (A : E →ₗ[𝕜] E) :
     A.IsCoercive ↔ ∀ x ≠ 0, 0 < RCLike.re (inner 𝕜 (A x) x)
@@ -472,8 +473,18 @@ noncomputable def energyInner (A : E →ₗ[𝕜] E) (x y : E) : 𝕜 := inner �
 noncomputable def energyNorm (A : E →ₗ[𝕜] E) (x : E) : ℝ := Real.sqrt (RCLike.re (inner 𝕜 (A x) x))
 scoped[Energy] notation "⟪" x ", " y "⟫_[" A "]" => energyInner A x y
 scoped[Energy] notation "‖" x "‖_[" A "]" => energyNorm A x
+/-- The energy norm is a square root, hence nonnegative for *any* `A` — and, for the same reason,
+identically `0` where the quadratic form is negative. Statements comparing energy norms therefore
+carry a positivity hypothesis even when they look purely algebraic (5.2.2, 5.2.3). -/
+theorem energyNorm_nonneg (A : E →ₗ[𝕜] E) (x : E) : 0 ≤ energyNorm A x
 theorem LinearMap.IsSymmetricCoercive.energyNorm_sq (hA : A.IsSymmetricCoercive) (x : E) :
     energyNorm A x ^ 2 = RCLike.re (inner 𝕜 (A x) x)
+theorem LinearMap.IsSymmetricCoercive.energyNorm_pos (hA : A.IsSymmetricCoercive) {x : E}
+    (hx : x ≠ 0) : 0 < energyNorm A x
+theorem LinearMap.IsSymmetricCoercive.energyNorm_eq_zero_iff (hA : A.IsSymmetricCoercive) {x : E} :
+    energyNorm A x = 0 ↔ x = 0
+theorem LinearMap.IsSymmetricCoercive.abs_energyInner_le (hA : A.IsSymmetricCoercive) (x y : E) :
+    ‖energyInner A x y‖ ≤ energyNorm A x * energyNorm A y
 /-- Norm equivalence `√c ‖x‖ ≤ ‖x‖_A ≤ √‖A‖ ‖x‖` (`A` bounded for the upper bound). -/
 theorem LinearMap.IsCoerciveWith.norm_le_energyNorm {c : ℝ} (hc : 0 ≤ c) (hA : A.IsCoerciveWith c)
     (x : E) : Real.sqrt c * ‖x‖ ≤ energyNorm A x
@@ -491,9 +502,9 @@ noncomputable def WithEnergy.core : InnerProductSpace.Core 𝕜 (WithEnergy A hA
 noncomputable instance : NormedAddCommGroup (WithEnergy A hA)   -- `(core A hA).toNormedAddCommGroup`
 noncomputable instance : InnerProductSpace 𝕜 (WithEnergy A hA)  -- `InnerProductSpace.ofCore`
 def WithEnergy.equiv : E ≃ₗ[𝕜] WithEnergy A hA
-@[simp] theorem WithEnergy.inner_equiv (x y : E) :
+theorem WithEnergy.inner_equiv (x y : E) :
     inner 𝕜 (equiv A hA x) (equiv A hA y) = energyInner A x y   -- `rfl`
-@[simp] theorem WithEnergy.norm_equiv (x : E) : ‖equiv A hA x‖ = energyNorm A x   -- `rfl`
+theorem WithEnergy.norm_equiv (x : E) : ‖equiv A hA x‖ = energyNorm A x   -- `rfl`
 /-- Orthogonality in the energy space is `A`-conjugacy. -/
 theorem WithEnergy.inner_equiv_eq_zero_iff (x y : E) :
     inner 𝕜 (equiv A hA x) (equiv A hA y) = 0 ↔ inner 𝕜 (A x) y = 0
@@ -549,10 +560,12 @@ theorem compression.toMatrix_orthonormalBasis (b : OrthonormalBasis ι 𝕜 K) :
 /-- On an `A`-invariant subspace the compression is the restriction. -/
 theorem compression.apply_of_invt (hK : K ∈ Module.End.invtSubmodule A) (x : K) :
     (compression A K x : E) = A x
-/-- Residual identity behind Saad-eig Thm 4.3. -/
+/-- Residual identity behind Saad-eig Thm 4.3: `(A_K − λ) P_K u = −P_K (A − λ) (1 − P_K) u` for an
+eigenvector `u`. The sign is forced: `P_K A P_K u − λ P_K u = P_K A (P_K − 1) u`, so the textbook
+display of this identity is off by a minus sign (immaterial for the norm estimates that use it). -/
 theorem compression.apply_sub_smul_orthogonalProjection {u : E} {μ : 𝕜} (hu : A u = μ • u) :
     (compression A K (K.orthogonalProjectionOnto u) - μ • K.orthogonalProjectionOnto u : E) =
-      K.starProjection (A (u - K.starProjection u))
+      -K.starProjection (A (u - K.starProjection u))
 ```
 The lemmas that make the compression the carrier of Chebyshev bounds in any inner product space
 (`compression.isSymmetricBoundedBy`, `isSymmetricCoercive`, `energyInner_apply`,
@@ -596,6 +609,13 @@ theorem ContinuousLinearMap.IsIdempotentElem.norm_eq_one_iff_isSymmetric [Comple
 theorem ContinuousLinearMap.IsIdempotentElem.norm_one_sub_eq [CompleteSpace E] {P : E →L[𝕜] E}
     (hP : IsIdempotentElem P) (h0 : P ≠ 0) (h1 : P ≠ 1) : ‖1 - P‖ = ‖P‖
 ```
+Kato's lemma is the deep item of this module. Every route to it goes through the minimal-gap
+characterisation `1/‖P‖² = 1 − ‖P_N P_M‖²` with `M = range P`, `N = ker P`, together with the
+symmetry `‖P_M P_N‖ = ‖P_N P_M‖`; Mathlib has none of the three ingredients, so this is supremum
+and infimum bookkeeping from scratch. The tempting shortcut through `T := P + P⋆ − 1` stops short:
+`T² = P P⋆ + Q⋆Q = P⋆P + Q Q⋆` with `Q = 1 − P`, in each decomposition the two positive summands
+annihilate each other, so `‖T‖² = max(‖P‖², ‖Q‖²)` and `‖P‖, ‖Q‖ ≤ ‖T‖` — inequalities, not the
+equality. The direct estimate `‖Qx‖ ≤ ‖P‖‖x‖` closes into a circular identity.
 
 #### 2.1.8 Polynomial glue (L0; in `Krylov/Subspace.lean` and `Krylov/Iterate.lean`)
 Glue between `Polynomial.degreeLT`, `Polynomial.aeval` at an endomorphism and spans of iterates;
@@ -671,10 +691,17 @@ theorem Matrix.IsTridiagonal.isUpperHessenberg (hT : T.IsTridiagonal) : T.IsUppe
 /-- Rectangular `(m+1) × m` upper Hessenberg (Arnoldi's `H̄_m`). -/
 def Matrix.IsUpperHessenbergRect [Zero R] {m : ℕ} (H : Matrix (Fin (m + 1)) (Fin m) R) : Prop :=
   ∀ (i : Fin (m + 1)) (j : Fin m), (j : ℕ) + 1 < (i : ℕ) → H i j = 0
-/-- Strict lower / strict upper / diagonal parts. -/
-def Matrix.strictLower (A : Matrix n n R) : Matrix n n R
-def Matrix.strictUpper (A : Matrix n n R) : Matrix n n R
+/-- Strict lower / strict upper / diagonal parts, with their `@[simp]` entry lemmas
+`strictLower_apply`, `strictUpper_apply`, `diagPart_apply`. -/
+def Matrix.strictLower (A : Matrix n n R) : Matrix n n R   -- `if j < i then A i j else 0`
+def Matrix.strictUpper (A : Matrix n n R) : Matrix n n R   -- `if i < j then A i j else 0`
 def Matrix.diagPart [DecidableEq n] (A : Matrix n n R) : Matrix n n R := Matrix.diagonal A.diag
+/-- Bridge to Mathlib's block-triangular API. `Matrix.BlockTriangular M b` unfolds to
+`b j < b i → M i j = 0`, so `BlockTriangular · id` is *upper* triangularity and
+`BlockTriangular · OrderDual.toDual` is lower; the pairing is the opposite of what the names
+suggest. -/
+theorem Matrix.strictLower_blockTriangular (A) : (strictLower A).BlockTriangular OrderDual.toDual
+theorem Matrix.strictUpper_blockTriangular (A) : (strictUpper A).BlockTriangular id
 theorem Matrix.diagPart_add_strictLower_add_strictUpper (A) : diagPart A + strictLower A + strictUpper A = A
 /-- Saad's convention `A = D − E − F` with `E = −strictLower A`, `F = −strictUpper A`. -/
 theorem Matrix.diagPart_sub_neg_strictLower_sub_neg_strictUpper (A) :
@@ -702,10 +729,15 @@ noncomputable def Matrix.complexSpectralRadius (A : Matrix n n ℝ) : ENNReal :=
 theorem Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one (A : Matrix n n ℝ) :
     Tendsto (fun k => A ^ k) atTop (𝓝 0) ↔ complexSpectralRadius A < 1
 theorem Matrix.complexSpectralRadius_le_of_norm {A : Matrix n n ℝ} [NormedRing (Matrix n n ℝ)]
-    [NormOneClass (Matrix n n ℝ)] : complexSpectralRadius A ≤ ‖A‖₊   -- any submultiplicative matrix norm
+    [NormOneClass (Matrix n n ℝ)] [NormedAlgebra ℝ (Matrix n n ℝ)] :
+    complexSpectralRadius A ≤ ‖A‖₊
 ```
-Norm preservation under `complexify` for the scoped `l∞`/Frobenius norms is added when a
-surface statement needs it (phase 2).
+The norm hypothesis is "submultiplicative with `‖1‖ = 1` *and* real-homogeneous". The algebra
+instance is not decoration: transporting `‖x‖ = |x|^(1/2)` from `ℝ` to one-by-one matrices gives a
+`NormedRing` with `‖1‖ = 1` for which `ρ(!![4]) = 4 > 2 = ‖!![4]‖`. Every scoped matrix norm
+(`Matrix.Norms.L2Operator`, `Operator`, `Frobenius`) satisfies all three. Norm preservation under
+`complexify` for the scoped `l∞`/Frobenius norms is added when a surface statement needs it
+(phase 2).
 
 #### 2.1.12 `Matrix/Order.lean` (L4, phase 2)
 Entrywise order and absolute value (`|A| ≤ |B|`, `|A * B| ≤ |A| * |B|`, monotonicity of products by
@@ -719,15 +751,20 @@ Serves Saad §6.3.2 (MGS and Householder Arnoldi agree with Alg 6.1 up to signs)
 and Fong–Saunders' identifications of Lanczos with CG/CR quantities, and block variants.
 
 ```lean
+open scoped ComplexOrder
+
 /-- An orthonormal family spanning the same flag as `f` is Gram–Schmidt up to unimodular scalars,
-and equals it under the sign normalization `re ⟪u_j, f_j⟫ > 0`. -/
+and equals it under the sign normalization `⟪u_j, f_j⟫ > 0`. -/
 theorem InnerProductSpace.exists_norm_eq_one_smul_gramSchmidtNormed {f u : ℕ → E} (hu : Orthonormal 𝕜 u)
     (hspan : ∀ j, Submodule.span 𝕜 (u '' Set.Iic j) = Submodule.span 𝕜 (f '' Set.Iic j)) (j : ℕ) :
     ∃ ε : 𝕜, ‖ε‖ = 1 ∧ u j = ε • gramSchmidtNormed 𝕜 f j
 theorem InnerProductSpace.eq_gramSchmidtNormed_of_re_inner_pos {f u : ℕ → E} (hu : Orthonormal 𝕜 u)
     (hspan : ∀ j, Submodule.span 𝕜 (u '' Set.Iic j) = Submodule.span 𝕜 (f '' Set.Iic j)) (j : ℕ)
-    (hpos : 0 < RCLike.re (inner 𝕜 (u j) (f j))) : u j = gramSchmidtNormed 𝕜 f j
+    (hpos : 0 < inner 𝕜 (u j) (f j)) : u j = gramSchmidtNormed 𝕜 f j
 ```
+The normalization is `0 < ⟪u_j, f_j⟫` in the `ComplexOrder` sense: the inner product is a positive
+*real*, not merely of positive real part. Over `ℝ` this is the same hypothesis; over `ℂ` positivity
+of the real part is not enough, since it leaves the phase of `u_j` free.
 
 #### 2.1.14 `Analysis/Matrix/ToEuclideanLin.lean` (L4) — matrices as operators on `EuclideanSpace`
 The glue every matrix-level surface statement uses to reach the operator-level backbone.
@@ -756,6 +793,10 @@ theorem Matrix.toEuclideanLin_apply_eq_sum (V : Matrix n m 𝕜) (y : m → 𝕜
 theorem Matrix.l2_opNorm_eq_norm_toEuclideanLin (A : Matrix n n 𝕜) :
     ‖A‖ = ‖LinearMap.toContinuousLinearMap (toEuclideanLin A)‖   -- scoped `Matrix.Norms.L2Operator`
 ```
+The Euclidean isometry of unitary matrices, `‖U *ᵥ v‖₂ = ‖v‖₂` for `U ∈ Matrix.unitaryGroup`,
+belongs in this module too: Mathlib has the unitary group but no `mulVec` isometry, and the Givens
+residual identities of 3.5 are blocked on it. Route: `Matrix.toEuclideanCLM` and the fact that a
+unitary element of a C⋆-algebra is an isometry.
 
 ### 2.2 `Numlib/LinearSolve/Perturbation.lean` (L2)
 Serves Saad §1.13.2, AH §2.4.3 ((2.4.1) `cond(L)`), Kress Def 5.2/Thm 5.3 (stated for Banach
@@ -958,6 +999,12 @@ Fong–Saunders §2, Choi Table 2.5, AH §9 (bridge in 5.2.3).
 ```lean
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
+-- small `Submodule` lemmas used across the projection and Krylov layers, collected here
+theorem Submodule.mem_orthogonal_span {s : Set E} {v : E} :
+    v ∈ (Submodule.span 𝕜 s)ᗮ ↔ ∀ u ∈ s, inner 𝕜 u v = 0
+theorem Submodule.inner_starProjection_right {K : Submodule 𝕜 E} [K.HasOrthogonalProjection]
+    {w : E} (hw : w ∈ K) (u : E) : inner 𝕜 w (K.starProjection u) = inner 𝕜 w u
+
 /-- Petrov–Galerkin specification: `x ∈ x₀ + K`, `b − A x ⟂ L`. -/
 structure IsPetrovGalerkin (A : E →ₗ[𝕜] E) (b x₀ : E) (K L : Submodule 𝕜 E) (x : E) : Prop where
   mem : x - x₀ ∈ K
@@ -1057,6 +1104,22 @@ Serves Saad §5.3 (Alg 5.2–5.4, Lemma 5.8, Thm 5.9, 5.10), Thm 6.30; AH (5.6.4
 Kress/AH Richardson.
 
 ```lean
+-- operator-norm consequences of the quadratic-form bounds (`LinearMap.IsSymmetricBoundedBy`,
+-- 2.1.4), stated here because Kantorovich and the two one-step estimates are their consumers.
+-- They are stated over an arbitrary inner product space `F`, so that they apply to compressions
+-- (2.1.6) as well as to `A` itself.
+theorem LinearMap.IsSymmetricBoundedBy.norm_apply_le {C : F →ₗ[𝕜] F} {d : ℝ}
+    (hC : C.IsSymmetricBoundedBy (-d) d) (u : F) : ‖C u‖ ≤ d * ‖u‖
+theorem LinearMap.IsSymmetricBoundedBy.norm_apply_sq_add_le {B : F →ₗ[𝕜] F} {lmin lmax : ℝ}
+    (hB : B.IsSymmetricBoundedBy lmin lmax) (u : F) :
+    ‖B u‖ ^ 2 + lmin * lmax * ‖u‖ ^ 2 ≤ (lmin + lmax) * RCLike.re (inner 𝕜 (B u) u)
+theorem LinearMap.IsSymmetricBoundedBy.le_norm_apply_sq {B : F →ₗ[𝕜] F} {lmin lmax : ℝ}
+    (hl : 0 ≤ lmin) (hB : B.IsSymmetricBoundedBy lmin lmax) (u : F) :
+    lmin * RCLike.re (inner 𝕜 (B u) u) ≤ ‖B u‖ ^ 2
+theorem LinearMap.IsSymmetricBoundedBy.norm_apply_sq_le {B : F →ₗ[𝕜] F} {lmin lmax : ℝ}
+    (hl : 0 ≤ lmin) (hB : B.IsSymmetricBoundedBy lmin lmax) (u : F) :
+    ‖B u‖ ^ 2 ≤ lmax * RCLike.re (inner 𝕜 (B u) u)
+
 /-- One projection step with `K = span{v}`, `L = span{w}`: `x + (⟪w, r⟫/⟪w, A v⟫) v` (Saad (5.12)). -/
 noncomputable def Projection.step1 (A : E →ₗ[𝕜] E) (b : E) (v w : E) (x : E) : E :=
   x + (inner 𝕜 w (b - A x) / inner 𝕜 w (A v)) • v
@@ -1128,6 +1191,12 @@ theorem Krylov.subspace_eq_map_degreeLT (m : ℕ) : subspace A v m = (degreeLT R
 /-- `𝒦_{m+1} = 𝒦_m ↔ A^m v ∈ 𝒦_m`, and then `𝒦_m` is `A`-invariant. -/
 theorem Krylov.subspace_succ_eq_iff (m : ℕ) :
     subspace A v (m + 1) = subspace A v m ↔ (A ^ m) v ∈ subspace A v m
+/-- Stabilization, over a commutative ring and without any grade: one instance of `A^n v ∈ 𝒦_n`
+freezes the whole tower. -/
+theorem Krylov.subspace_eq_of_pow_apply_mem {n : ℕ} (h : (A ^ n) v ∈ subspace A v n) {m : ℕ}
+    (hm : n ≤ m) : subspace A v m = subspace A v n
+theorem Krylov.fullSubspace_eq_of_pow_apply_mem {n : ℕ} (h : (A ^ n) v ∈ subspace A v n) :
+    fullSubspace A v = subspace A v n
 
 variable {K V : Type*} [Field K] [AddCommGroup V] [Module K V] (A : Module.End K V) (v : V)
 
@@ -1150,6 +1219,7 @@ theorem Krylov.grade_le_iff {m : ℕ} : grade A v ≤ m ↔ (A ^ m) v ∈ subspa
 /-- Saad Prop 6.1: `𝒦_m = 𝒦_grade` for `m ≥ grade`, and `𝒦_grade = 𝒦_∞` is invariant. -/
 theorem Krylov.subspace_eq_of_grade_le {m : ℕ} (h : grade A v ≤ m) :
     subspace A v m = subspace A v (grade A v)
+theorem Krylov.subspace_grade_eq_fullSubspace : subspace A v (grade A v) = fullSubspace A v
 theorem Krylov.subspace_grade_mem_invtSubmodule : subspace A v (grade A v) ∈ Module.End.invtSubmodule A
 theorem Krylov.linearIndependent_of_le_grade {m : ℕ} (h : m ≤ grade A v) :
     LinearIndependent K (fun i : Fin m => (A ^ (i : ℕ)) v)
@@ -1191,13 +1261,23 @@ theorem Arnoldi.orthonormal [FiniteDimensional 𝕜 (fullSubspace A b)] :
 /-- Saad Prop 6.4. -/
 theorem Arnoldi.span_vec (m : ℕ) : Submodule.span 𝕜 (vec A b '' Set.Iio m) = subspace A b m
 theorem Arnoldi.vec_mem_subspace (j : ℕ) : vec A b j ∈ subspace A b (j + 1)
+theorem Arnoldi.vec_mem_orthogonal (j : ℕ) : vec A b j ∈ (subspace A b j)ᗮ
+/-- Expansion in the Arnoldi basis, valid without any grade hypothesis (past the grade the extra
+vectors are `0` and contribute nothing): the workhorse for the coordinate transport of 3.5. -/
+theorem Arnoldi.eq_sum_inner_smul_vec {x : E} {m : ℕ} (hx : x ∈ subspace A b m) :
+    x = ∑ i ∈ Finset.range m, inner 𝕜 (vec A b i) x • vec A b i
 noncomputable def Arnoldi.orthonormalBasis [FiniteDimensional 𝕜 (fullSubspace A b)] {m : ℕ}
     (hm : m ≤ grade A b) : OrthonormalBasis (Fin m) 𝕜 (subspace A b m)
+theorem Arnoldi.coe_orthonormalBasis_apply [FiniteDimensional 𝕜 (fullSubspace A b)] {m : ℕ}
+    (hm : m ≤ grade A b) (i : Fin m) : (orthonormalBasis A b hm i : E) = vec A b i
 /-- Hessenberg structure. -/
 theorem Arnoldi.coeff_eq_zero_of_lt {i j : ℕ} (h : j + 1 < i) : coeff A b i j = 0
-/-- Arnoldi relation `A v_j = ∑_{i ≤ j+1} h_ij v_i` (Saad (6.9), Prop 6.5). -/
+/-- Arnoldi relation `A v_j = ∑_{i ≤ j+1} h_ij v_i` (Saad (6.9), Prop 6.5), and its padded form
+over any longer range, which is what the matrix statements of 3.5 need. -/
 theorem Arnoldi.apply_vec (j : ℕ) :
     A (vec A b j) = ∑ i ∈ Finset.range (j + 2), coeff A b i j • vec A b i
+theorem Arnoldi.apply_vec_of_le {j n : ℕ} (h : j + 2 ≤ n) :
+    A (vec A b j) = ∑ i ∈ Finset.range n, coeff A b i j • vec A b i
 /-- Algorithmic form (Saad Alg 6.1): `w_j = A v_j − ∑_{i≤j} h_ij v_i`, `h_{j+1,j} = ‖w_j‖`,
 `v_{j+1} = w_j / ‖w_j‖`. -/
 noncomputable def Arnoldi.w (j : ℕ) : E :=
@@ -1445,8 +1525,8 @@ theorem Krylov.rotated_last_row (hh) (m j : ℕ) (hj : j < m) : rotated h m m j 
 /-- `Fin`-matrices built at the end: `Ω_k`, `Q_m = Ω_{m−1} ⋯ Ω_0`, `Q_m H̄_m = R̄_m`, `Q_m (β e₁)`. -/
 noncomputable def Krylov.givensMatrix (h) (k m : ℕ) : Matrix (Fin (m + 1)) (Fin (m + 1)) 𝕜
 noncomputable def Krylov.givensQ (h) (m : ℕ) : Matrix (Fin (m + 1)) (Fin (m + 1)) 𝕜
-theorem Krylov.givensMatrix_mem_unitaryGroup (k m : ℕ) (hρ : givensRho h k ≠ 0) :
-    givensMatrix h k m ∈ Matrix.unitaryGroup (Fin (m + 1)) 𝕜
+theorem Krylov.givensMatrix_mem_unitaryGroup (k m : ℕ) (hk : k < m) (hρ : givensRho h k ≠ 0) :
+    givensMatrix h k m ∈ Matrix.unitaryGroup (Fin (m + 1)) 𝕜   -- `k < m`: rotation `k` touches row `k+1`
 theorem Krylov.givensQ_mul_hessenbergOf (m : ℕ) : givensQ h m * hessenbergOf h m = hessenbergOf (rotated h m) m
 theorem Krylov.givensQ_mem_unitaryGroup (m : ℕ) (hρ : ∀ k < m, givensRho h k ≠ 0) :
     givensQ h m ∈ Matrix.unitaryGroup (Fin (m + 1)) 𝕜
@@ -1455,16 +1535,20 @@ theorem Krylov.givensQ_mulVec_firstVec (β : 𝕜) (m : ℕ) :
       fun i : Fin (m + 1) => if (i : ℕ) < m then gvec h β i else gamma h β m
 
 -- identifications for the Arnoldi coefficients (`β = ‖r₀‖`, `h = Arnoldi.coeff A r₀`)
-/-- Saad (6.42), Prop 6.9(3): `‖r^G_m‖ = |γ_m|`; (6.43)/(6.30): `R_m y = g_m`. -/
-theorem Krylov.IsMinResIterate.norm_residual_eq_norm_gamma {m : ℕ} (hm : m ≤ grade A (b - A x₀)) {x : E}
+/-- Saad (6.42), Prop 6.9(3): `‖r^G_m‖ = |γ_m|`; (6.43)/(6.30): `R_m y = g_m`. The grade
+hypothesis is strict: at `m = grade` the Arnoldi vectors have run out, the padded recurrences
+degenerate and the identity reads `1 = 0`. -/
+theorem Krylov.IsMinResIterate.norm_residual_eq_norm_gamma {m : ℕ} (hm : m < grade A (b - A x₀)) {x : E}
     (hx : IsMinResIterate A b x₀ m x) :
     ‖b - A x‖ = ‖gamma (Arnoldi.coeff A (b - A x₀)) (‖b - A x₀‖ : 𝕜) m‖
-theorem Krylov.IsMinResIterate.exists_mulVec_rotated_eq {m : ℕ} (hm) {x : E} (hx) :
+theorem Krylov.IsMinResIterate.exists_mulVec_rotated_eq {m : ℕ} (hm : m ≤ grade A (b - A x₀)) {x : E}
+    (hx : IsMinResIterate A b x₀ m x) :
     ∃ y : Fin m → 𝕜, (hessenbergSqOf (rotated (Arnoldi.coeff A (b - A x₀)) m) m).mulVec y =
         (fun i : Fin m => gvec (Arnoldi.coeff A (b - A x₀)) (‖b - A x₀‖ : 𝕜) i) ∧
       x = x₀ + ∑ j, y j • Arnoldi.vec A (b - A x₀) j
-/-- `‖r^G_{m+1}‖ = |s_m| ‖r^G_m‖` (Saad (6.47), Prop 6.9). -/
-theorem Krylov.IsMinResIterate.norm_residual_succ_eq {m : ℕ} (hm : m + 1 ≤ grade A (b - A x₀)) {x x' : E}
+/-- `‖r^G_{m+1}‖ = |s_m| ‖r^G_m‖` (Saad (6.47), Prop 6.9), again for `m + 1` strictly below the
+grade. -/
+theorem Krylov.IsMinResIterate.norm_residual_succ_eq {m : ℕ} (hm : m + 1 < grade A (b - A x₀)) {x x' : E}
     (hx : IsMinResIterate A b x₀ m x) (hx' : IsMinResIterate A b x₀ (m + 1) x') :
     ‖b - A x'‖ = ‖givensS (Arnoldi.coeff A (b - A x₀)) m‖ * ‖b - A x‖
 /-- `H_{m+1}` is a unit iff `c_m ≠ 0` (Prop 6.9(1), Lemma 6.16); `‖r^F_{m+1}‖ = ‖r^G_{m+1}‖/|c_m|` (6.75). -/
@@ -1483,7 +1567,20 @@ Because the rotations are computed from the infinite coefficient function, prefi
 `|s_m| = ‖r^G_{m+1}‖/‖r^G_m‖`, `|c_m| = ‖r^G_{m+1}‖/‖r^F_{m+1}‖` make the Givens data
 non-blocking for the Cullum–Greenbaum relations (3.6), which are proved without it. All finite-index
 bookkeeping over an orthonormal family; this is where Saad's, Choi's and Fong–Saunders'
-implementations meet. The Lanczos specializations (Choi (2.21) `‖r_k‖ = φ_k = β₁ s₁ ⋯ s_k`, the
+implementations meet. The FOM/GMRES ratio is the useful form exactly when `c_m ≠ 0`, which by
+`isUnit_hessenbergSq_iff_givensC_ne_zero` is exactly when the Galerkin iterate is unique.
+
+The five Arnoldi identifications, `norm_residual_eq_norm_gamma` through
+`norm_residual_eq_div_norm_givensC`, all pass through one missing brick: *a unitary matrix is a
+Euclidean isometry*, `‖U *ᵥ v‖₂ = ‖v‖₂`. Mathlib has `Matrix.unitaryGroup` but no `mulVec`
+isometry; the route is `Matrix.toEuclideanCLM` plus "a unitary element of a C⋆-algebra is an
+isometry", and the statement belongs in `Analysis/Matrix/` (2.1.14). On top of it they need the
+residual splitting `‖Q(βe₁) − R̄y‖² = ‖g − Ry‖² + |γ_m|²` from `rotated_last_row`, and the
+solvability of `R_m y = g_m` through `det R_m = ∏ ρ_k ≠ 0`;
+`isUnit_hessenbergSq_iff_givensC_ne_zero` also needs a block decomposition of the rotation product,
+since `givensQ_mul_hessenbergOf` gives only the rectangular identity.
+
+The Lanczos specializations (Choi (2.21) `‖r_k‖ = φ_k = β₁ s₁ ⋯ s_k`, the
 MINRES residual recurrence `r_k = s_k² r_{k−1} − φ_k c_k v_{k+1}` of Choi Lemma 2.18 / Saad (6.55),
 and Choi Lemma 2.19) are phase-2 sketches for `Krylov/Singular.lean`; the Galerkin residual in
 Lanczos terms, `r_k = (−1)^k ‖r_k‖ v_{k+1}` (Saad (6.87)), is `CG.arnoldi_vec_eq` (3.7). SYMMLQ's
@@ -1568,15 +1665,21 @@ theorem CG.re_inner_apply_direction_pos {k : ℕ} (hr : (iterate A b x₀ k).r �
 theorem CG.iterate_eq_of_residual_eq_zero {k : ℕ} (hr : (iterate A b x₀ k).r = 0) (j : ℕ) :
     iterate A b x₀ (k + j) = iterate A b x₀ k
 /-- Invariants (Saad Prop 6.20, HS): orthogonal residuals, `A`-conjugate directions,
-`⟪r_i, p_j⟫ = ‖r_i‖²` for `i ≤ j` (`= 0` for `j < i`), `span{p_i} = span{r_i} = 𝒦_k`. -/
+`⟪r_i, p_j⟫ = ‖r_j‖²` for `i ≤ j` (`= 0` for `j < i`), `span{p_i} = span{r_i} = 𝒦_k`. -/
 theorem CG.inner_residual_eq_zero {i j : ℕ} (h : i ≠ j) :
     inner 𝕜 (iterate A b x₀ i).r (iterate A b x₀ j).r = 0
 theorem CG.inner_apply_direction_eq_zero {i j : ℕ} (h : i ≠ j) :
     inner 𝕜 (A (iterate A b x₀ i).p) (iterate A b x₀ j).p = 0
+theorem CG.inner_residual_direction_eq_zero {i j : ℕ} (h : j < i) :
+    inner 𝕜 (iterate A b x₀ i).r (iterate A b x₀ j).p = 0
+/-- The value is `‖r_j‖²`, the norm of the *later* residual: `p_j` absorbs `β_{j−1} p_{j−1}`, so
+`⟪r_i, p_j⟫ = β_{j−1} ⟪r_i, p_{j−1}⟫` telescopes up to `j`, not down to `i`. -/
 theorem CG.inner_residual_direction_eq {i j : ℕ} (h : i ≤ j) :
-    inner 𝕜 (iterate A b x₀ i).r (iterate A b x₀ j).p = (‖(iterate A b x₀ i).r‖ ^ 2 : ℝ)
+    inner 𝕜 (iterate A b x₀ i).r (iterate A b x₀ j).p = (‖(iterate A b x₀ j).r‖ ^ 2 : ℝ)
 theorem CG.span_direction_eq (k : ℕ) :
     Submodule.span 𝕜 (Set.range fun i : Fin k => (iterate A b x₀ i).p) = subspace A (b - A x₀) k
+theorem CG.span_residual_eq (k : ℕ) :
+    Submodule.span 𝕜 (Set.range fun i : Fin k => (iterate A b x₀ i).r) = subspace A (b - A x₀) k
 theorem CG.iterate_sub_mem (k : ℕ) : (iterate A b x₀ k).x - x₀ ∈ subspace A (b - A x₀) k
 /-- CG realises the Galerkin specification. -/
 theorem CG.isGalerkinIterate (k : ℕ) : IsGalerkinIterate A b x₀ k (iterate A b x₀ k).x
@@ -1594,8 +1697,17 @@ theorem CG.residual_ne_zero_of_lt_grade [FiniteDimensional …] {k : ℕ} (hk : 
 theorem CG.energyNorm_error_sq_sub (k : ℕ) :
     energyNorm A (xstar - (iterate A b x₀ k).x) ^ 2 - energyNorm A (xstar - (iterate A b x₀ (k + 1)).x) ^ 2 =
       RCLike.re (alpha A (iterate A b x₀ k)) * ‖(iterate A b x₀ k).r‖ ^ 2
-/-- HS Thm 6:3 (Meurant Thm 12): `‖x* − x_k‖` is nonincreasing; so is `‖x* − x_k‖_A`. -/
-theorem CG.norm_error_antitone : Antitone fun k => ‖xstar - (iterate A b x₀ k).x‖
+/-- Summed form: the remaining energy error is the tail `∑_{j ≥ k} α_j ‖r_j‖²`, the sum being
+finite because the iteration terminates. -/
+theorem CG.energyNorm_error_sq_eq_sum [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))] (k : ℕ) :
+    energyNorm A (xstar - (iterate A b x₀ k).x) ^ 2 =
+      ∑ j ∈ Finset.Ico k (grade A (b - A x₀)),
+        RCLike.re (alpha A (iterate A b x₀ j)) * ‖(iterate A b x₀ j).r‖ ^ 2
+/-- HS Thm 6:3 (Meurant Thm 12): `‖x* − x_k‖` is nonincreasing; so is `‖x* − x_k‖_A`. The
+Euclidean-norm half goes through the summed identity above and hence needs finite termination;
+the energy-norm half is the one-step identity and needs nothing. -/
+theorem CG.norm_error_antitone [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))] :
+    Antitone fun k => ‖xstar - (iterate A b x₀ k).x‖
 theorem CG.energyNorm_error_antitone : Antitone fun k => energyNorm A (xstar - (iterate A b x₀ k).x)
 /-- Steihaug: `‖x_k‖` is nondecreasing from `x₀ = 0`; `re ⟪p_i, p_j⟫ ≥ 0`. -/
 theorem CG.norm_iterate_monotone : Monotone fun k => ‖(iterate A b 0 k).x‖
@@ -1615,8 +1727,8 @@ theorem CG.residual_succ_eq_three_term (hA) (m : ℕ) (hr) :
 ```
 Difficult proofs: the invariants are a joint induction (standard; keep the induction hypothesis
 as a bundled `CG.Invariant k` structure with the four orthogonality facts and the span equalities,
-proved for `k+1` from `k`). Steihaug's monotonicity uses `⟪r_i, p_j⟫ = ‖r_i‖²` for `j ≥ i` and hence
-`⟪p_i, p_j⟫ > 0` — a local argument, no termination needed. The Lanczos coefficients in terms of
+proved for `k+1` from `k`). Steihaug's monotonicity uses `⟪r_i, p_j⟫ = ‖r_j‖²` for `j ≥ i` and hence
+`⟪p_i, p_j⟫ ≥ 0` — a local argument, no termination needed. The Lanczos coefficients in terms of
 the CG coefficients (Saad (6.102)–(6.103)) are surface corollaries of `arnoldi_vec_eq`; the
 D-Lanczos / `LDLᵀ` derivation is surface (Saad Alg 6.17, Choi Table 2.6).
 
@@ -1662,7 +1774,10 @@ theorem CR.energyNorm_error_antitone [FiniteDimensional 𝕜 E] {xstar : E} (hst
     Antitone fun k => energyNorm A (xstar - (iterate A b x₀ k).x)
 theorem CR.residual_eq_zero_of_grade_le [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))] {k : ℕ}
     (hk : grade A (b - A x₀) ≤ k) : (iterate A b x₀ k).r = 0
-/-- Symmetric, possibly indefinite or singular `A`: without breakdown, CR is still minimal-residual. -/
+/-- Symmetric, possibly indefinite or singular `A`: without breakdown, CR is still
+minimal-residual. Stated *outside* the ambient coercivity hypothesis (`omit hA`), which would
+otherwise be carried into the elaborated statement and reduce it to a special case of
+`isMinResIterate`. -/
 theorem CR.isMinResIterate_of_no_breakdown (hA : A.IsSymmetric) (k : ℕ)
     (h1 : ∀ j < k, inner 𝕜 (iterate A b x₀ j).r (A (iterate A b x₀ j).r) ≠ 0)
     (h2 : ∀ j < k, (iterate A b x₀ j).q ≠ 0) : IsMinResIterate A b x₀ k (iterate A b x₀ k).x
@@ -1756,7 +1871,11 @@ theorem Krylov.restarted_minRes_tendsto {A : E →L[𝕜] E} {c : ℝ} (hc : 0 <
     Tendsto (fun k => ‖b - A (x k)‖) atTop (𝓝 0)
 ```
 Proof: 3.4 (energy-norm polynomial characterization) + 3.9 (compression trick) + 2.1.9 with
-`[a, b] = [λmin, λmax]`. Phase 2: the minimal-residual (MINRES) bound for symmetric indefinite `A`
+`[a, b] = [λmin, λmax]`. The Chebyshev-type bounds therefore hold in *any* inner product space,
+with no completeness, no finite-dimensionality and no functional calculus: `m` steps of the method
+live inside the finite-dimensional `𝒦_{m+1}`, the compression of `A` to it inherits the
+quadratic-form bounds (`compression.isSymmetricBoundedBy`), and the spectral theorem is applied
+there. Phase 2: the minimal-residual (MINRES) bound for symmetric indefinite `A`
 via Chebyshev on two intervals; Winther's superlinear convergence for `A = 1 − K`, `K` compact
 self-adjoint (AH Thm 5.6.2; needs the compact spectral theorem, not in Mathlib).
 
@@ -1862,11 +1981,12 @@ theorem rayleigh_gap_le_norm_residual_sq {x : E} (hx : ‖x‖ = 1) {α β : ℝ
     (hfree : ∀ μ : 𝕜, Module.End.HasEigenvalue A μ → RCLike.re μ ∉ Set.Ioo α β) :
     (β - θ) * (θ - α) ≤ ‖r‖ ^ 2
 /-- Kato–Temple (Saad-eig Thm 3.8): if `(a, b) ∋ θ` contains exactly one eigenvalue `μ`, then
-`−‖r‖²/(θ − a) ≤ re μ − θ ≤ ‖r‖²/(b − θ)`. -/
+`−‖r‖²/(b − θ) ≤ re μ − θ ≤ ‖r‖²/(θ − a)`. Each bound is controlled by the distance from `θ` to
+the *far* end of the interval: the lower bound by `b − θ`, the upper bound by `θ − a`. -/
 theorem kato_temple {x : E} (hx : ‖x‖ = 1) {a b : ℝ} {μ : 𝕜} (hμ : Module.End.HasEigenvalue A μ)
     (hab : a < θ ∧ θ < b) (hμab : RCLike.re μ ∈ Set.Ioo a b)
     (hunique : ∀ μ' : 𝕜, Module.End.HasEigenvalue A μ' → RCLike.re μ' ∈ Set.Ioo a b → μ' = μ) :
-    -(‖r‖ ^ 2 / (θ - a)) ≤ RCLike.re μ - θ ∧ RCLike.re μ - θ ≤ ‖r‖ ^ 2 / (b - θ)
+    -(‖r‖ ^ 2 / (b - θ)) ≤ RCLike.re μ - θ ∧ RCLike.re μ - θ ≤ ‖r‖ ^ 2 / (θ - a)
 /-- Saad-eig Cor 3.4: `|re μ − θ| ≤ ‖r‖²/δ` with `δ` the gap from `θ` to the other eigenvalues,
 given that `μ` is the eigenvalue within `‖r‖` of `θ`. -/
 theorem abs_sub_rayleigh_le_norm_residual_sq_div {x : E} (hx : ‖x‖ = 1) {μ : 𝕜}
@@ -2080,10 +2200,11 @@ theorem isBestApprox_iff_norm_sub_eq_infDist (hv : v ∈ K) :
 /-- AH Thm 3.3.12: the set of best approximations from a convex set is convex. -/
 theorem convex_setOf_isBestApprox (hK : Convex ℝ K) (u : V) : Convex ℝ {v | IsBestApprox K u v}
 /-- AH Thm 3.3.16 / Kress Thm 3.50: existence from finite-dimensional subspaces. -/
-theorem exists_isBestApprox_of_finiteDimensional [CompleteSpace 𝕜] (K : Submodule 𝕜 V)
-    [FiniteDimensional 𝕜 K] (u : V) : ∃ v, IsBestApprox (K : Set V) u v
+theorem exists_isBestApprox_of_finiteDimensional [CompleteSpace 𝕜] [LocallyCompactSpace 𝕜]
+    (K : Submodule 𝕜 V) [FiniteDimensional 𝕜 K] (u : V) : ∃ v, IsBestApprox (K : Set V) u v
 /-- AH Thm 3.3.15: existence from a closed subset of a finite-dimensional subspace. -/
-theorem exists_isBestApprox_of_isClosed_of_finiteDimensional [CompleteSpace 𝕜] (hK : IsClosed K)
+theorem exists_isBestApprox_of_isClosed_of_finiteDimensional [CompleteSpace 𝕜]
+    [LocallyCompactSpace 𝕜] (hK : IsClosed K)
     (hne : K.Nonempty) (S : Submodule 𝕜 V) [FiniteDimensional 𝕜 S] (hKS : K ⊆ S) (u : V) :
     ∃ v, IsBestApprox K u v
 /-- AH Thm 3.3.21: uniqueness in strictly convex spaces (Mathlib `StrictConvexSpace`). -/
@@ -2114,9 +2235,16 @@ theorem norm_sub_apply_le_of_isIdempotentElem (P : V →L[𝕜] V) (hP : IsIdemp
     ‖u - P u‖ ≤ (1 + ‖P‖) * Metric.infDist u (LinearMap.range (P : V →ₗ[𝕜] V) : Set V)
 theorem norm_sub_apply_le_of_isIdempotentElem_of_mem (P : V →L[𝕜] V) (hP : IsIdempotentElem P)
     (u : V) (hq : q ∈ LinearMap.range (P : V →ₗ[𝕜] V)) : ‖u - P u‖ ≤ (1 + ‖P‖) * ‖u - q‖
+/-- Sharp form with the constant `‖1 − P‖`; Kato's lemma (2.1.7) turns it back into `‖P‖`. -/
+theorem norm_sub_apply_le_of_isIdempotentElem' (P : V →L[𝕜] V) (hP : IsIdempotentElem P) (u : V) :
+    ‖u - P u‖ ≤ ‖(1 : V →L[𝕜] V) - P‖ * Metric.infDist u (LinearMap.range (P : V →ₗ[𝕜] V) : Set V)
 /-- AH Ex 3.6.7: a nonzero bounded projection has norm `≥ 1`. -/
 theorem one_le_norm_of_isIdempotentElem (hP : IsIdempotentElem P) (h0 : P ≠ 0) : 1 ≤ ‖P‖
 ```
+Existence needs `[LocallyCompactSpace 𝕜]` on top of completeness: proximinality of a
+finite-dimensional subspace is `FiniteDimensional.proper`, which is what makes closed bounded sets
+compact. Instance search supplies it for `ℝ`, `ℂ` and any `RCLike 𝕜`, so no call site sees it.
+
 Orthogonal ⇔ self-adjoint projection (AH Prop 3.6.9) is Mathlib's
 `IsIdempotentElem.isSymmetric_iff_isOrtho_range_ker`. AH Thm 3.3.14 (existence from a closed
 convex set of a reflexive space) is phase 3: Mathlib lacks reflexivity/weak compactness.
@@ -2231,9 +2359,11 @@ theorem norm_le_of_forall_apply_eq (hc : 0 < c) (ha : a.IsCoerciveWith c) (hu : 
 /-- Lipschitz dependence on the data (AH (5.1.11) / (8.3.6)). -/
 theorem norm_sub_le_of_forall_apply_eq (hc : 0 < c) (ha : a.IsCoerciveWith c)
     (h₁ : ∀ v, a u₁ v = ℓ₁ v) (h₂ : ∀ v, a u₂ v = ℓ₂ v) : ‖u₁ - u₂‖ ≤ ‖ℓ₁ - ℓ₂‖ / c
-/-- The solution operator `ℓ ↦ u` is a continuous linear equivalence `V' ≃L V` (AH (8.3.5)). -/
+/-- The solution operator `ℓ ↦ u` is a *conjugate*-linear continuous equivalence `V' ≃L⋆ V`
+(AH (8.3.5)): a sesquilinear form is conjugate-linear in its first slot, so scaling `ℓ` by `c`
+scales the solution by `conj c`. Over `ℝ` this is the plain linear statement. -/
 theorem exists_solutionEquiv (hc : 0 < c) (ha : a.IsCoerciveWith c) :
-    ∃ S : (V →L[𝕜] 𝕜) ≃L[𝕜] V, (∀ ℓ v, a (S ℓ) v = ℓ v) ∧ ‖(S : (V →L[𝕜] 𝕜) →L[𝕜] V)‖ ≤ 1 / c
+    ∃ S : (V →L[𝕜] 𝕜) ≃L⋆[𝕜] V, (∀ ℓ v, a (S ℓ) v = ℓ v) ∧ ‖(S : (V →L[𝕜] 𝕜) →L⋆[𝕜] V)‖ ≤ 1 / c
 /-- AH proof #1: the damped iteration `u ↦ u − θ (A u − f)` is a contraction with factor
 `√(1 − 2θc + θ²‖a‖²)` for `0 < θ < 2c/‖a‖²` (via `contractingWith_damped`, 5.3.1). -/
 theorem contractingWith_damped_toOperator (hc : 0 < c) (ha : a.IsCoerciveWith c) (ha0 : 0 < ‖a‖)
@@ -2253,8 +2383,12 @@ theorem isMinOn_energy_iff_forall_le {a : SesqForm ℝ V} (ha : a.IsHermitian) (
 theorem existsUnique_isMinOn_energy {a : SesqForm ℝ V} (ha : a.IsHermitian) (ℓ : V →L[ℝ] ℝ)
     (hc : 0 < c) (hcoer : a.IsCoerciveWith c) (hK : Convex ℝ K) (hKc : IsClosed K)
     (hne : K.Nonempty) : ∃! u, u ∈ K ∧ IsMinOn (a.energy ℓ) K u
-/-- Energy identity `E(v) − E(u) = ½ ‖v − u‖_a²` at the solution (AH Ex 8.3.5, Saad Prop 5.2). -/
-theorem energy_sub_energy_eq (ha : a.IsHermitian) (hu : ∀ v, a u v = ℓ v) (v : V) :
+/-- Energy identity `E(v) − E(u) = ½ ‖v − u‖_a²` at the solution (AH Ex 8.3.5, Saad Prop 5.2).
+Positivity (`a.IsCoerciveWith 0`) is part of the statement, not of the ambient hypotheses: the
+energy norm is a square root, which Lean sends to zero on negative arguments, so for an indefinite
+Hermitian form the right-hand side collapses while the left-hand side does not. -/
+theorem energy_sub_energy_eq (ha : a.IsHermitian) (hpos : a.IsCoerciveWith 0)
+    (hu : ∀ v, a u v = ℓ v) (v : V) :
     a.energy ℓ v - a.energy ℓ u = (1 / 2 : ℝ) * a.energyNorm (v - u) ^ 2
 end SesqForm
 
@@ -2264,9 +2398,11 @@ theorem babuska_necas (hα : 0 < α) (hinf : a.InfSupWith α) (hnd : a.IsNondege
     ∃! u, ∀ v, a u v = ℓ v
 theorem norm_le_of_infSupWith (hα : 0 < α) (hinf : a.InfSupWith α) (hu : ∀ v, a u v = ℓ v) :
     ‖u‖ ≤ ‖ℓ‖ / α
-/-- The inf–sup condition is necessary (Nečas): well-posedness with `‖u‖ ≤ C ‖ℓ‖` for all `ℓ`
-gives `a.InfSupWith (1 / C)`. -/
-theorem infSupWith_of_forall_exists (hC : 0 < C)
+/-- The inf–sup condition is necessary (Nečas): well-posedness with `‖u‖ ≤ C ‖ℓ‖` for all `ℓ`,
+*plus* nondegeneracy in the first slot, gives `a.InfSupWith (1 / C)`. Solvability with a norm bound
+alone says nothing about the vectors the form does not see: it constrains `a` only on the solutions
+it produces, so a form vanishing identically on a nonzero `u` is not excluded. -/
+theorem infSupWith_of_forall_exists (hC : 0 < C) (hinj : ∀ u : U, (∀ v, a u v = 0) → u = 0)
     (h : ∀ ℓ : V →L[𝕜] 𝕜, ∃ u, (∀ v, a u v = ℓ v) ∧ ‖u‖ ≤ C * ‖ℓ‖) : a.InfSupWith (1 / C)
 end SesqForm₂
 
@@ -2329,16 +2465,22 @@ theorem norm_sub_le (hc : 0 < c) (hM : a.IsBoundedWith M) (ha : a.IsCoerciveWith
     (hN : IsGalerkinSolution a ℓ K u) (hstar : ∀ v, a ustar v = ℓ v) (hv : v ∈ K) :
     ‖ustar - u‖ ≤ M / c * ‖ustar - v‖
 theorem norm_sub_le_infDist … : ‖ustar - u‖ ≤ M / c * Metric.infDist ustar (K : Set V)
-/-- Hermitian case (AH (9.1.7)–(9.1.8)): energy-norm best approximation, hence `√(M/c)`. -/
-theorem energyNorm_sub_le (ha : a.IsHermitian) (hN : IsGalerkinSolution a ℓ K u)
+/-- Hermitian case (AH (9.1.7)–(9.1.8)): energy-norm best approximation, hence `√(M/c)`. Needs
+positivity (`a.IsCoerciveWith 0`) for the same reason as `energy_sub_energy_eq` (5.2.2): for an
+indefinite form the two square roots are not comparable. Counterexample: `V = ℝ²`,
+`a = diag(1, −1)`, `K = span (1, 2)`. -/
+theorem energyNorm_sub_le (ha : a.IsHermitian) (hpos : a.IsCoerciveWith 0)
+    (hN : IsGalerkinSolution a ℓ K u)
     (hstar : ∀ v, a ustar v = ℓ v) (hv : v ∈ K) : a.energyNorm (ustar - u) ≤ a.energyNorm (ustar - v)
 theorem norm_sub_le_sqrt (hc : 0 < c) (hM : a.IsBoundedWith M) (ha : a.IsCoerciveWith c)
     (hh : a.IsHermitian) (hN : IsGalerkinSolution a ℓ K u) (hstar : ∀ v, a ustar v = ℓ v)
     (hv : v ∈ K) : ‖ustar - u‖ ≤ Real.sqrt (M / c) * ‖ustar - v‖
-/-- Stiffness-matrix form (AH (9.1.5)) for a basis `φ` of `K`. -/
+/-- Stiffness-matrix form (AH (9.1.5)) for a basis `φ` of `K`. The unknown enters conjugated,
+`mulVec (star ξ)`, because the form is conjugate-linear in its first slot; over `ℝ` this is the
+textbook system. -/
 theorem iff_mulVec (φ : Module.Basis ι 𝕜 K) (ξ : ι → 𝕜) :
     IsGalerkinSolution a ℓ K (∑ j, ξ j • (φ j : V)) ↔
-      (Matrix.of fun i j => a (φ j : V) (φ i)).mulVec ξ = fun i => ℓ (φ i)
+      (Matrix.of fun i j => a (φ j : V) (φ i)).mulVec (star ξ) = fun i => ℓ (φ i)
 end IsGalerkinSolution
 /-- Distances to a monotone family of subspaces with dense union tend to zero (shared by
 AH Cor 9.1.4, Cor 9.2.3, Kress §11). -/
@@ -2359,11 +2501,12 @@ theorem existsUnique [FiniteDimensional 𝕜 K] [FiniteDimensional 𝕜 L]
     (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) (hα : 0 < α) (hinf : DiscreteInfSup a K L α) :
     ∃! u, IsPetrovGalerkinSolution a ℓ K L u
 theorem norm_sub_le [FiniteDimensional 𝕜 K] [FiniteDimensional 𝕜 L]
-    (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) (hα : 0 < α)
+    (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) (hα : 0 < α) (hM0 : 0 ≤ M)
     (hM : ∀ w v, ‖a w v‖ ≤ M * ‖w‖ * ‖v‖) (hinf : DiscreteInfSup a K L α)
     (hN : IsPetrovGalerkinSolution a ℓ K L u) (hstar : ∀ v, a ustar v = ℓ v) (hw : w ∈ K) :
     ‖ustar - u‖ ≤ (1 + M / α) * ‖ustar - w‖
-theorem tendsto … (hinf : ∀ n, DiscreteInfSup a (K n) (L n) α) (hmono : Monotone K)
+theorem tendsto … (hα : 0 < α) (hM0 : 0 ≤ M) (hM : ∀ w v, ‖a w v‖ ≤ M * ‖w‖ * ‖v‖)
+    (hinf : ∀ n, DiscreteInfSup a (K n) (L n) α) (hmono : Monotone K)
     (hdense : Dense (⋃ n, (K n : Set U))) … : Filter.Tendsto uN Filter.atTop (nhds ustar)
 end IsPetrovGalerkinSolution
 /-- Generalized Galerkin (AH §9.3) on one abstract normed space `W` (the book's `V + V_N` with
@@ -2373,14 +2516,19 @@ def IsGeneralizedGalerkinSolution (aN : W →ₗ[𝕜] W →ₗ[𝕜] 𝕜) (ℓ
   uN ∈ K ∧ ∀ v ∈ K, aN uN v = ℓN v
 /-- Strang's first lemma (AH Thm 9.3.1) in pointwise form with an explicit consistency bound `δ`:
 `‖u − u_N‖ ≤ (1 + M/c) ‖u − v‖ + δ/c`. -/
-theorem strang_first (hc : 0 < c) (hM : ∀ w, ∀ v ∈ K, ‖aN w v‖ ≤ M * ‖w‖ * ‖v‖)
+theorem strang_first (hc : 0 < c) (hM0 : 0 ≤ M) (hM : ∀ w, ∀ v ∈ K, ‖aN w v‖ ≤ M * ‖w‖ * ‖v‖)
     (hcoer : ∀ v ∈ K, c * ‖v‖ ^ 2 ≤ RCLike.re (aN v v)) (hN : IsGeneralizedGalerkinSolution aN ℓN K uN)
-    (u : W) (hδ : ∀ w ∈ K, ‖aN u w - ℓN w‖ ≤ δ * ‖w‖) (hv : v ∈ K) :
+    (u : W) (hδ0 : 0 ≤ δ) (hδ : ∀ w ∈ K, ‖aN u w - ℓN w‖ ≤ δ * ‖w‖) (hv : v ∈ K) :
     ‖u - uN‖ ≤ (1 + M / c) * ‖u - v‖ + δ / c
 theorem existsUnique_isGeneralizedGalerkinSolution (aN ℓN K) [FiniteDimensional 𝕜 K] (hc : 0 < c)
     (hcoer : ∀ v ∈ K, c * ‖v‖ ^ 2 ≤ RCLike.re (aN v v)) :
     ∃! uN, IsGeneralizedGalerkinSolution aN ℓN K uN
 ```
+The Babuška and Strang bounds carry `0 ≤ M` (and `0 ≤ δ`) as explicit hypotheses. A boundedness
+hypothesis quantified over a subspace is vacuous when that subspace is trivial, so unlike
+`SesqForm.IsBoundedWith` on the whole space it does not force its own constant to be nonnegative,
+and the constants `1 + M/α`, `δ/c` in the conclusions would otherwise be meaningless.
+
 Phase 2: the Xu–Zikatanov sharpening of Babuška's bound to `M/α_N` via Kato's lemma (2.1.7).
 
 AH §9.4 (CG in variational form; the "residual" is the Riesz representative of `ℓ − a(u_k, ·)`) is
@@ -2405,6 +2553,9 @@ Thm 6.8–6.9 (`sup ‖f'‖ < 1` criterion, local version), Problem 3.17 (`Aᵐ
 theorem ContractingWith.dist_iterate_succ_fixedPoint_le [Nonempty α] [CompleteSpace α]
     (hf : ContractingWith K f) (x : α) (n : ℕ) :
     dist (f^[n + 1] x) (fixedPoint f hf) ≤ K * dist (f^[n] x) (fixedPoint f hf)
+/-- Banach's theorem in `∃!` form (Mathlib gives only `fixedPoint` and its uniqueness lemma). -/
+theorem ContractingWith.existsUnique_eq_self [Nonempty α] [CompleteSpace α]
+    (hf : ContractingWith K f) : ∃! x, f x = x
 /-- AH Thm 5.1.3 / Kress Thm 3.45 on a closed subset mapped into itself: existence, uniqueness
 and the a priori bound (5.1.4). -/
 theorem exists_unique_fixedPoint_of_mapsTo [CompleteSpace α] (hs : IsClosed s) (hne : s.Nonempty)
@@ -2414,9 +2565,10 @@ theorem dist_iterate_le_of_mapsTo [CompleteSpace α] (hs : IsClosed s) (hmaps : 
     (hK0 : 0 ≤ K) (hK : K < 1) (hf : ∀ x ∈ s, ∀ y ∈ s, dist (f x) (f y) ≤ K * dist x y)
     (hx' : x' ∈ s) (hfix : f x' = x') (hx₀ : x₀ ∈ s) (n : ℕ) :
     dist (f^[n] x₀) x' ≤ K ^ n / (1 - K) * dist (f x₀) x₀
-/-- AH Ex 5.1.2 / Kress Problem 3.17: continuous `T` with `T^[m]` a contraction. -/
-theorem exists_unique_fixedPoint_of_iterate_contractingWith [CompleteSpace α] (hT : Continuous T)
-    (hm : 0 < m) (hK : ContractingWith K T^[m]) : ∃! x, T x = x
+/-- AH Ex 5.1.2 / Kress Problem 3.17: continuous `T` with `T^[m]` a contraction. `[Nonempty α]` is
+needed for existence: the empty metric space is complete and every self-map of it contracts. -/
+theorem exists_unique_fixedPoint_of_iterate_contractingWith [Nonempty α] [CompleteSpace α]
+    (hT : Continuous T) (hm : 0 < m) (hK : ContractingWith K T^[m]) : ∃! x, T x = x
 theorem tendsto_iterate_of_iterate_contractingWith [CompleteSpace α] (hT : Continuous T)
     (hm : 0 < m) (hK : ContractingWith K T^[m]) (x : α) :
     ∃ x', T x' = x' ∧ Tendsto (fun n => T^[n] x) atTop (𝓝 x')
@@ -2456,7 +2608,7 @@ noncomputable def iterate (Fn : E → F) (F' : E → E →L[𝕜] F) (x₀ : E) 
   (step Fn F')^[k] x₀
 theorem iterate_succ (Fn F' x₀ k) : iterate Fn F' x₀ (k + 1) = step Fn F' (iterate Fn F' x₀ k)
 theorem step_eq_self_of_eq_zero (Fn F') (hx : Fn x = 0) : step Fn F' x = x
--- [CompleteSpace E] [CompleteSpace F] from here on
+-- [CompleteSpace E] [CompleteSpace F] [IsRCLikeNormedField 𝕜] [NormedSpace ℝ E] from here on
 /-- Local quadratic convergence (AH Thm 5.4.1, Kress Thm 6.20): `F'(x*)` invertible (inverse `e`)
 and `F'` `L`-Lipschitz on a ball ⇒ `‖step x − x*‖ ≤ C ‖x − x*‖²` on a smaller ball. -/
 theorem exists_ball_norm_step_sub_le (hstar : Fn xstar = 0) (e : E ≃L[𝕜] F)
@@ -2487,17 +2639,31 @@ theorem kantorovich (hβ : 0 < β) (hL : 0 < L) (hη : 0 ≤ η) (e : E ≃L[�
         (2 * (β * L * η)) ^ (2 ^ k) * η / (2 ^ k * (β * L * η)))
 end Newton
 ```
+The scalar field of the quadratic section is real or complex (`[IsRCLikeNormedField 𝕜]`, with
+`[NormedSpace ℝ E]` for the segments), not an arbitrary nontrivially normed field. The estimates go
+through the mean value inequality along the real segment from `x` to `x*`, and they are genuinely
+false without it: in characteristic `p`, `x ↦ x + xᵖ` has derivative `1` everywhere while the
+Newton step does not vanish. The definitions `step` and `iterate` stay over any
+`NontriviallyNormedField`.
+
 Phase 2: AH's stronger Kantorovich statement (uniqueness in `B̄(x₀, t**)`, error
 `(1 − √(1−2h))^{2ⁿ}/(2ⁿ a L)`) and the modified (chord) Newton method with frozen derivative
 (linear convergence via 5.3.1, AH Ex 5.4.5).
 
 Difficult proof: the quadratic estimate uses the integral form of the mean value theorem
-`F(x*) − F(x) − F'(x)(x* − x) = ∫₀¹ (F'(x + t(x* − x)) − F'(x)) (x* − x) dt`; in Mathlib use the
-inequality form `Convex.norm_image_sub_le_of_norm_hasFDerivWithin_le'` (bound of
-`‖F y − F x − F' x (y − x)‖` by `sup ‖F' z − F' x‖ ‖y − x‖`, which is `≤ L‖y − x‖²`) to avoid
-Bochner integrals; invertibility of `F' x` near `x*` with a uniform bound comes from 2.1.1.
-Kantorovich needs the majorant-sequence argument (`t_{n+1} = t_n − p(t_n)/p'(t_n)` for the scalar
-quadratic `p`); Ortega–Rheinboldt §12.6 / Deuflhard's affine-invariant version are the references.
+`F(x*) − F(x) − F'(x)(x* − x) = ∫₀¹ (F'(x + t(x* − x)) − F'(x)) (x* − x) dt`; in Mathlib the
+inequality form `Convex.norm_image_sub_le_of_norm_hasFDerivWithin_le'` avoids Bochner integrals but
+accepts only a *constant* bound on `‖F' z − φ‖`, which costs the sharp constant: it yields `L`, and
+`2L` once both points are required to lie in one ball, where `L/2` is wanted. The sharp form needs
+`image_norm_le_of_norm_deriv_right_le_deriv_boundary` applied to
+`t ↦ F(x + t v) − F x − t F' x v` with boundary `B t = L‖v‖²(t − t²/2)`, at the cost of three
+further instance arguments on a public statement. Invertibility of `F' x` near `x*` with a uniform
+bound comes from 2.1.1. Kantorovich needs the majorant-sequence argument (`t_{n+1} = t_n −
+p(t_n)/p'(t_n)` for `p t = (L/(2β))t² − t/β + η`, with a simultaneous induction bounding
+`‖x_{k+1} − x_k‖` by `t_{k+1} − t_k` and `‖(F' x_k)⁻¹‖` by `β/(1 − βL(t_k − t_0))`, then the closed
+form of `t_k`); reduction to `ContractingWith` does not work, since the Newton map is not a
+contraction on the ball — only the error sequence is dominated by the majorant. Ortega–Rheinboldt
+§12.6 / Deuflhard's affine-invariant version are the references.
 
 ---
 
@@ -2549,21 +2715,21 @@ modules are exactly the modules under `Numlib/` (§11).
 |---|---|---|---|---|
 | `Analysis/Normed/Ring/{Inverse,CondNumber}` | 2.1.1–2.1.2 | 250 | ★ | — |
 | `Analysis/Normed/Algebra/SpectralRadius` | 2.1.3 | 200 | ★★ (ENNReal bookkeeping) | — |
-| `InnerProductSpace/{Coercive,Energy,Compression,ObliqueProjection,GramSchmidt}` | 2.1.4–2.1.7, 2.1.13 | 700 | ★★ (`WithEnergy` instance) | — |
+| `InnerProductSpace/{Coercive,Energy,Compression,ObliqueProjection,GramSchmidt}` | 2.1.4–2.1.7, 2.1.13 | 700 | ★★★ (Kato's lemma D20; `WithEnergy` instance D17) | — |
 | `RingTheory/Polynomial/ChebyshevMinimax` | 2.1.9 | 300 | ★★ | — |
 | `Matrix/{Hessenberg,Complexify,ToEuclideanLin}` | 2.1.10–2.1.11, 2.1.14 | 400 | ★★ | — |
 | `LinearSolve/Perturbation` | 2.2 | 200 | ★ | 2.1.1–2.1.2 |
 | `LinearSolve/Stationary/{Basic,Splitting,DiagDominant}` | 2.3.1–2.3.3 | 450 | ★★ (GS convergence) | 2.1.3, 2.1.11 |
 | `LinearSolve/Projection/{Basic,Optimality,OneDimensional}` | 2.4.1–2.4.3 | 600 | ★★ (Kantorovich) | 2.1.4–2.1.7 |
 | `Krylov/{Subspace,Arnoldi,Lanczos}` | 2.1.8, 3.1–3.3 | 700 | ★★★ (Arnoldi = Gram–Schmidt) | 2.1.13 |
-| `Krylov/{Iterate,Hessenberg,Relations}` | 3.4–3.6 | 800 | ★★ (Givens bookkeeping) | 2.1.10, 2.4 |
+| `Krylov/{Iterate,Hessenberg,Relations}` | 3.4–3.6 | 800 | ★★★ (Givens residual identities D21) | 2.1.10, 2.1.14, 2.4 |
 | `Krylov/{CG,CR}` | 3.7–3.8 | 600 | ★★ (invariant induction) | 3.4 |
 | `Krylov/Convergence/{Polynomial,CG}` | 3.9–3.10 | 350 | ★★ | 2.1.6, 2.1.9, 3.4 |
 | `Krylov/Monotonicity` | 3.11 | 350 | ★★ (finite termination) | 3.7–3.8 |
 | `Eigen/Perturbation` | 4.1 | 250 | ★★ | 2.1.2, 2.1.4 |
 | `Approximation/BestApprox` | 5.1.1 | 200 | ★ | — |
 | `Variational/{Forms,LaxMilgram,Galerkin}` | 5.2 | 600 | ★★ (complex Lax–Milgram) | 2.1.4–2.1.5, 2.4.1 |
-| `Nonlinear/{FixedPoint,Newton}` | 5.3 | 400 | ★★ (Kantorovich majorants) | 2.1.1, 2.3.1 |
+| `Nonlinear/{FixedPoint,Newton}` | 5.3 | 400 | ★★★ (Kantorovich majorants, sharp Newton constant D15) | 2.1.1, 2.3.1 |
 | Surface `SaadSparse` (§1.11–1.13, 4.1–4.2, 5, 6) | §8.1 | 1200 | ★ (if the backbone is right) | all above |
 | Surface `FongSaunders` (complete) | §8.2 | 300 | ★ | 3.7–3.11 |
 | Surface `AtkinsonHan` (selected sections) | §8.3 | 900 | ★ | 2.1, §5 |
@@ -2718,11 +2884,13 @@ Surface-specific definitions: real bilinear forms `a : V → V → ℝ` with `Is
 | D12 | Rigal–Gaches optimal perturbation | 2.2 | rank-one construction `r ⊗ y/‖y‖²`; Higham Thm 7.1 |
 | D13 | Minimum-norm Krylov solution | 3.4 | `range A ≤ (ker A)ᗮ` for symmetric `A`; Choi Thm 2.25 |
 | D14 | Power method via generalized eigenspaces + Gelfand | 4.3 | `Module.End.iSup_maxGenEigenspace_eq_top`; avoids Jordan form. Saad-eig Thm 4.1 |
-| D15 | Newton local quadratic convergence | 5.3.2 | `Convex.norm_image_sub_le_of_norm_hasFDerivWithin_le'` for the Taylor remainder, 2.1.1 for `(F' x)⁻¹`; AH Thm 5.4.1; Ortega–Rheinboldt 10.2.2 |
+| D15 | Newton local quadratic convergence | 5.3.2 | `Convex.norm_image_sub_le_of_norm_hasFDerivWithin_le'` for the Taylor remainder, 2.1.1 for `(F' x)⁻¹`; only over a real or complex scalar field. The *sharp* constant `L/2` is out of reach of the inequality form (which gives `L`, and `2L` inside one ball) and needs `image_norm_le_of_norm_deriv_right_le_deriv_boundary` with boundary `B t = L‖v‖²(t − t²/2)`. AH Thm 5.4.1; Ortega–Rheinboldt 10.2.2 |
 | D16 | Courant–Fischer | 4.2 | dimension counting on `S ⊓ span{u_k..u_n}`; Horn–Johnson Thm 4.2.6 |
 | D17 | `WithEnergy` inner-product instance and its completeness | 2.1.5 | `InnerProductSpace.Core` on a type synonym, following Mathlib's `Matrix.toInnerProductSpace`: the plain `AddCommGroup`/`Module` instances are local to the defining section, only the core-derived normed instances are global, `WithEnergy.equiv` is defined afterwards with `rfl` fields; norm equivalence and `continuous_equiv` need `A : E →L[𝕜] E` |
 | D18 | Subspace iteration in Saad-eig's generality (Thm 5.2) | 4.3 | spectral projector onto the dominant generalized eigenspaces + Gelfand on the complement; gap between subspaces needs a `Submodule` gap/angle API (not in Mathlib). Kress Lemma 7.18 (diagonalizable) as a warm-up |
 | D19 | Householder–John / Ostrowski–Reich in operator form | 2.3.5 | Rayleigh-quotient identity for an eigenpair of `M⁻¹N` (Kress Thm 4.12 proof) generalizes verbatim with `M + Mᴴ − A` coercive; Saad Thm 4.10 |
+| D20 | Kato's lemma `‖1 − P‖ = ‖P‖` | 2.1.7 | the minimal-gap characterisation `1/‖P‖² = 1 − ‖P_N P_M‖²` (`M = range P`, `N = ker P`) with `‖P_M P_N‖ = ‖P_N P_M‖`; Mathlib has none of the three, so it is sup/inf bookkeeping from scratch, and the `T = P + P⋆ − 1` shortcut yields only `‖P‖, ‖Q‖ ≤ ‖T‖`. Szyld 2006 |
+| D21 | Givens residual identities (the `γ_m`, `s_m`, `c_m` formulas for `‖r^G_m‖`) | 3.5 | all rest on "a unitary matrix is a Euclidean isometry", `‖U *ᵥ v‖₂ = ‖v‖₂`, which Mathlib lacks; prove it in `Analysis/Matrix/` (2.1.14) through `Matrix.toEuclideanCLM`, then add the residual splitting from `rotated_last_row` and `det R_m = ∏ ρ_k ≠ 0`. Saad §6.5.3 |
 
 ---
 

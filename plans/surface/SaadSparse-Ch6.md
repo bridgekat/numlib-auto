@@ -152,15 +152,21 @@ noncomputable def arnoldiMGSCoeff (A) (v₁) (i j : ℕ) : 𝕜   -- the `h_ij` 
 ```
 
 Backbone: none (§1.2: MGS is surface material); the flag-uniqueness lemmas
-`InnerProductSpace.exists_norm_eq_one_smul_gramSchmidtNormed` and
-`InnerProductSpace.eq_gramSchmidtNormed_of_re_inner_pos` (`Numlib/Analysis/InnerProductSpace/GramSchmidt.lean`)
-are the general tool.
+`InnerProductSpace.exists_norm_eq_one_smul_gramSchmidtNormed` (an orthonormal family spanning the
+same flag agrees with `gramSchmidtNormed` up to a unimodular factor) and
+`InnerProductSpace.eq_gramSchmidtNormed_of_re_inner_pos (hu : Orthonormal 𝕜 u) (hspan) (j)
+(hpos : 0 < inner 𝕜 (u j) (f j)) : u j = gramSchmidtNormed 𝕜 f j`
+(`Numlib/Analysis/InnerProductSpace/GramSchmidt.lean`) are the general tool. The normalization
+`hpos` is positivity *in `𝕜`* (`open scoped ComplexOrder`: the inner product is a positive real);
+over `ℂ` a unimodular `ε` with `0 < re ε` need not be `1`, so a real-part-only hypothesis does not
+pin the vector down. Over `ℝ` the two readings coincide.
 Equivalence: `arnoldiMGS_eq_arnoldiCGS (hv : ‖v₁‖ = 1) : arnoldiMGS A v₁ = arnoldiCGS A v₁` and
 `arnoldiMGSCoeff = arnoldiCoeff` ("in exact arithmetic … mathematically equivalent"): induction,
 using orthonormality of `v_0..v_j` (`Arnoldi.orthonormal` via D2) to show that the partial
 subtractions do not change `inner (v i) w`. Alternatively: the MGS vectors are orthonormal, span the
-Krylov flag and have positive inner product with `A^j v₁`, so `eq_gramSchmidtNormed_of_re_inner_pos`
-identifies them with `Arnoldi.vec` (which is `gramSchmidtNormed` of the Krylov sequence).
+Krylov flag and satisfy `0 < inner 𝕜 (v j) ((op A ^ j) v₁)` in `𝕜` (not just in real part), so
+`eq_gramSchmidtNormed_of_re_inner_pos` identifies them with `Arnoldi.vec` (which is
+`gramSchmidtNormed` of the Krylov sequence).
 
 ### D4. Algorithm 6.3 (Householder Arnoldi), (6.10)–(6.13)
 
@@ -348,7 +354,9 @@ with zero last row), `rotated_succ_self` (`r_kk = ρ_k ≥ 0`), `rotated_succ_eq
 leaves columns `j < k` unchanged), `rotated_eq_of_le` (rows below `k` untouched), `gamma_succ`,
 `norm_gamma_eq_prod`, `givensS_arnoldi_eq` (`s_k` real nonnegative for Arnoldi coefficients). The
 degenerate case `ρ_k = 0` (only possible when `A` is singular) gives `c_k = s_k = 0` by Lean's
-`x / 0 = 0`; the unitarity lemmas carry the hypothesis `givensRho h k ≠ 0`.
+`x / 0 = 0`; the unitarity lemmas carry the hypothesis `givensRho h k ≠ 0`, and
+`givensMatrix_mem_unitaryGroup` also needs `k < m`, since at `k = m` the rotated row and column
+`k + 1` fall outside `Fin (m + 1)` and the matrix is not unitary.
 Equivalence: `Rbar_eq : Rbar h m = Krylov.hessenbergOf (Krylov.rotated h m) m` (`givensQ_mul_hessenbergOf`)
 and `gbar_eq : gbar h β m = fun i => if (i : ℕ) < m then Krylov.gvec h β i else Krylov.gamma h β m`
 (`givensQ_mulVec_firstVec`), so the book's `R_m`, `g_m`, `γ_{m+1}` are definitionally the backbone's
@@ -399,10 +407,22 @@ Backbone (§3.6, `Numlib/Krylov/Relations.lean`, at the specification level):
 (Cor 6.14), `Krylov.norm_residual_minRes_le_galerkin`, `Krylov.exists_norm_residual_galerkin_le`
 (Prop 6.15), `Krylov.minRes_eq_combination` (6.74), `Krylov.norm_residual_minRes_eq_iff_not_exists_galerkin`
 (Prop 6.17); identifications with the Givens data (§3.5, `Numlib/Krylov/Hessenberg.lean`):
-`Krylov.IsMinResIterate.norm_residual_eq_norm_gamma` (6.42), `Krylov.IsMinResIterate.norm_residual_succ_eq`
-(`‖r^G_{m+1}‖ = |s_m| ‖r^G_m‖`), `Krylov.isUnit_hessenbergSq_iff_givensC_ne_zero` (`H_{m+1}` is a
+`Krylov.IsMinResIterate.norm_residual_eq_norm_gamma` (6.42, hypothesis `m < grade`, strict: at
+`m = grade` the padded recurrence degenerates — `A = 0`, `b = 1`, `x₀ = 0` in `ℝ` has `γ_1 = 0` while
+every residual is `1`), `Krylov.IsMinResIterate.norm_residual_succ_eq`
+(`‖r^G_{m+1}‖ = |s_m| ‖r^G_m‖`, hypothesis `m + 1 < grade`, strict for the same reason),
+`Krylov.isUnit_hessenbergSq_iff_givensC_ne_zero` (`m + 1 ≤ grade`; `H_{m+1}` is a
 unit iff `c_m ≠ 0`), `Krylov.IsGalerkinIterate.norm_residual_eq_div_norm_givensC`
-(`‖r^F_{m+1}‖ = ‖r^G_{m+1}‖/|c_m|`, Prop 6.12).
+(`m + 1 ≤ grade`; `‖r^F_{m+1}‖ = ‖r^G_{m+1}‖/|c_m|`, Prop 6.12 — the identity carries content only
+where `c_m ≠ 0`, since Lean's `x / 0 = 0` makes the right-hand side vanish at a breakdown).
+These four, together with `Krylov.IsMinResIterate.exists_mulVec_rotated_eq` (D8), rest on one
+ingredient Mathlib does not provide: that a unitary matrix preserves the Euclidean norm,
+`‖U.mulVec v‖₂ = ‖v‖₂` for `U ∈ Matrix.unitaryGroup` (the route is `Matrix.toEuclideanCLM` and the
+fact that a unitary element of a C⋆-algebra is an isometry — itself an upstreaming candidate for
+`Numlib/Analysis/Matrix/`), plus the splitting of `‖Q_m(β e₁) − R̄_m y‖²` into
+`‖g_m − R_m y‖² + ‖γ_m‖²` from `rotated_last_row` and the nonsingularity of `R_m`
+(`det R_m = ∏_k ρ_k ≠ 0` by upper-triangularity). Every surface item routed through the Givens
+identities inherits that dependency.
 
 ### D11. Residual smoothing: Algorithm 6.14 (MRS) and QMRS (§6.5.8)
 
@@ -493,7 +513,9 @@ noncomputable def cgGamma ; cgRho                                -- (6.95)–(6.
 
 Backbone (§3.7, `Numlib/Krylov/CG.lean`): `CG.State`, `CG.alpha`, `CG.step`, `CG.beta`, `CG.init`,
 `CG.iterate`, `CG.residual_eq`, `CG.step_x`, `CG.step_r`, `CG.isGalerkinIterate`,
-`CG.inner_residual_eq_zero`, `CG.inner_apply_direction_eq_zero`, `CG.inner_residual_direction_eq`,
+`CG.inner_residual_eq_zero`, `CG.inner_apply_direction_eq_zero`, `CG.inner_residual_direction_eq`
+(`⟪r_i, p_j⟫ = ‖r_j‖²` for `i ≤ j`; the right-hand side carries the *later* index — already
+`⟪r₀, p₁⟫ = β₀‖r₀‖² = ‖r₁‖²`), `CG.inner_residual_direction_eq_zero` (`⟪r_i, p_j⟫ = 0` for `j < i`),
 `CG.span_direction_eq`, `CG.arnoldi_vec_eq`, and the three-term form `CG.gamma`, `CG.rho`
 (the book's (6.97) with `ρ_0 = 1`), `CG.iterate_succ_eq_three_term` (6.98),
 `CG.residual_succ_eq_three_term` (6.96), valid while `r_j ≠ 0` for `j ≤ m`; §3.5
@@ -906,10 +928,15 @@ item scheduled for a later phase (listed in §4); `out-of-scope` = not formalize
   (J A b x₀ m y)^2 = ‖γ h β m‖^2 + ‖g h β m - R h m *ᵥ y‖^2` (Euclidean norms on `Fin m → 𝕜` via
   `WithLp.toLp 2`).
 - **Backbone item.** `Krylov.givensQ_mem_unitaryGroup`, `Rbar_eq`, `gbar_eq` (D8),
-  `Krylov.rotated_last_row`.
-- **Proof route.** `Q_m` unitary preserves the norm; split the last coordinate (last row of `R̄_m`
-  is `0`, last entry of `ḡ_m` is `γ_{m+1}`).
-- **Classification.** `surface-only` (ten lines from the D8 lemmas).
+  `Krylov.rotated_last_row`; and the Euclidean-norm invariance of a unitary matrix,
+  `‖U.mulVec v‖₂ = ‖v‖₂` for `U ∈ Matrix.unitaryGroup (Fin (m+1)) 𝕜`, which is in neither Mathlib
+  nor the backbone yet — the natural proof transports `U` along `Matrix.toEuclideanCLM` and uses
+  that a unitary element of a C⋆-algebra is an isometry, and it belongs in
+  `Numlib/Analysis/Matrix/`, not in the surface.
+- **Proof route.** `Q_m` unitary preserves the norm (the lemma just named); split the last
+  coordinate (last row of `R̄_m` is `0`, last entry of `ḡ_m` is `γ_{m+1}`).
+- **Classification.** `surface-only` once the unitary-invariance lemma exists (ten lines from the
+  D8 lemmas); it is the same ingredient the Givens residual identities of D10 wait on.
 
 ### R22. Proposition 6.9 (1)–(3), (6.41)–(6.42)
 - **Book statement.** Let `m ≤ n`, rotations as above, `R_m, g_m` the top parts. (1) `rank(A V_m) = rank(R_m)`;
@@ -920,7 +947,10 @@ item scheduled for a later phase (listed in §4); `out-of-scope` = not formalize
   `theorem prop_6_9_1 (hm) : (A * V A v₁ m).rank = (R h m).rank ∧ (R h m (Fin.last _) (Fin.last _) = 0 → ¬ IsUnit A)`;
   `theorem prop_6_9_2 (hm) (hR : IsUnit (R h m)) : IsMinOn (J A b x₀ m) univ (gmresY A b x₀ m) ∧ ∀ y, IsMinOn (J …) univ y → y = gmresY …`;
   `theorem eq_6_41 (hm) (hR) : b - Aop (gmresFixed A b x₀ m) = V A v₁ (m+1) *ᵥ ((Qrot h m)ᴴ *ᵥ (γ h β m • e_{m+1}))`;
-  `theorem eq_6_42 (hm) (hR) : ‖b - Aop (gmresFixed A b x₀ m)‖ = ‖γ h β m‖`.
+  `theorem eq_6_42 (hm' : m < μ) (hR) : ‖b - Aop (gmresFixed A b x₀ m)‖ = ‖γ h β m‖`
+  (strict here: `norm_residual_eq_norm_gamma` is false at `m = μ`, where `γ_m` degenerates to `0`
+  while the residual need not vanish; `hR : IsUnit (R h m)` is exactly `∀ k < m, ρ_k ≠ 0`, which is
+  what would rescue the boundary case, but the backbone statement is the `m < μ` one).
 - **Backbone item.** §3.5 `Krylov.IsMinResIterate.norm_residual_eq_norm_gamma` (6.42),
   `Krylov.IsMinResIterate.exists_mulVec_rotated_eq` (the minimal-residual iterate has coordinates
   with `R_m y = g_m`), `Krylov.HessenbergRelation.residual_eq` and `Krylov.givensQ_mulVec_firstVec`
@@ -1047,11 +1077,13 @@ item scheduled for a later phase (listed in §4); `out-of-scope` = not formalize
 ### R32. (6.62)
 - **Book statement.** `ρ_m^G = |s_m| ρ_{m−1}^G`, hence `ρ_m^G = |s_1 s_2 ⋯ s_m| β` (the `s_i` of (6.37)
   are nonnegative).
-- **Lean surface statement.** `theorem eq_6_62 (hm : m ≤ μ) (hR) : ρG A b x₀ m = (∏ i ∈ range m, ‖s h i‖) * β`
-  and `theorem ρG_succ (hm : m + 1 ≤ μ) : ρG … (m+1) = ‖s h m‖ * ρG … m`.
-- **Backbone item.** §3.5 `Krylov.IsMinResIterate.norm_residual_succ_eq` (`‖r^G_{m+1}‖ = |s_m| ‖r^G_m‖`),
-  `Krylov.norm_gamma_eq_prod` with `Krylov.IsMinResIterate.norm_residual_eq_norm_gamma`
-  (`Numlib/Krylov/Hessenberg.lean`).
+- **Lean surface statement.** `theorem eq_6_62 (hm : m < μ) (hR) : ρG A b x₀ m = (∏ i ∈ range m, ‖s h i‖) * β`
+  and `theorem ρG_succ (hm : m + 1 < μ) : ρG … (m+1) = ‖s h m‖ * ρG … m`.
+- **Backbone item.** §3.5 `Krylov.IsMinResIterate.norm_residual_succ_eq` (`‖r^G_{m+1}‖ = |s_m| ‖r^G_m‖`,
+  hypothesis `m + 1 < grade`), `Krylov.norm_gamma_eq_prod` with
+  `Krylov.IsMinResIterate.norm_residual_eq_norm_gamma` (hypothesis `m < grade`)
+  (`Numlib/Krylov/Hessenberg.lean`); both grade hypotheses are strict, which is why the surface
+  statements above stop one step short of the grade.
 - **Proof route.** `isGMRESIterate_iff` then the backbone lemmas.
 - **Classification.** `direct`.
 
@@ -1440,7 +1472,9 @@ item scheduled for a later phase (listed in §4); `out-of-scope` = not formalize
 - **Lean surface statement.** Over `ℂ`: `theorem isStarNormal_of_exists_aeval (h : ∃ q : ℂ[X], aeval A q = Aᴴ) : IsStarNormal A`;
   `theorem exists_aeval_eq_conjTranspose (hA : IsStarNormal A) : ∃ q : ℂ[X], q.natDegree ≤ n - 1 ∧ aeval A q = Aᴴ`.
 - **Backbone item.** none for the first; the second needs the normal-matrix theory deferred to
-  `Eigen/Normal.lean` (§4); Mathlib `IsStarNormal`, `Matrix.schur_triangulation`, `Lagrange.interpolate`.
+  `Eigen/Normal.lean` (§4). Mathlib supplies `IsStarNormal` and `Lagrange.interpolate` but has no
+  Schur triangulation and no unitary diagonalization of normal matrices (only the Hermitian
+  `Matrix.IsHermitian.spectral_theorem`), so that decomposition is part of the deferred item.
 - **Proof route.** First: `Aᴴ A = q(A) A = A q(A) = A Aᴴ`. Second: spectral theorem for normal matrices
   (Schur form is diagonal for normal matrices) + Lagrange interpolation at the distinct eigenvalues.
 - **Classification.** first `direct` (Mathlib only); second `deferred` (§4, normal-matrix theory).
@@ -1754,9 +1788,10 @@ item scheduled for a later phase (listed in §4); `out-of-scope` = not formalize
   where `S j` is the (unit upper triangular) change of basis with `VI j = V j * S j`.
 - **Backbone item.** §3.2 `Arnoldi.span_vec` (both bases span the same flag);
   `InnerProductSpace.eq_gramSchmidtNormed_of_re_inner_pos` (`Numlib/Analysis/InnerProductSpace/GramSchmidt.lean`)
-  for the identification of the Gram–Schmidt basis of the IOP flag with `Arnoldi.vec`.
+  for the identification of the Gram–Schmidt basis of the IOP flag with `Arnoldi.vec` (its
+  normalization hypothesis is positivity of the inner product in `𝕜`, as in D3).
 - **Proof route.** `A V^Q_m = V^Q_{m+1} H̄^Q_m` and `V^Q_j = V^G_j S_j` (same flag, both leading
-  coefficients positive) give `A V^G_m S_m = V^G_{m+1} S_{m+1} H̄^Q_m`, and `A V^G_m = V^G_{m+1} H̄^G_m`
+  coefficients positive in `𝕜`) give `A V^G_m S_m = V^G_{m+1} S_{m+1} H̄^Q_m`, and `A V^G_m = V^G_{m+1} H̄^G_m`
   with `V^G_{m+1}` injective.
 - **Classification.** `surface-only`.
 

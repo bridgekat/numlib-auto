@@ -833,7 +833,10 @@ general `AlgebraNorm` version. Backbone/Mathlib: `spectrum.norm_le_norm_of_mem` 
 `spectrum_toLpLin : spectrum ℂ (toContinuousLinearMap (toLpLin p p A)) = spectrum ℂ A`
 (surface; `Matrix.toLpLinAlgEquiv`, `AlgEquiv.spectrum_eq`). For real `A` the backbone's
 `Matrix.complexSpectralRadius_le_of_norm` applies to whichever scoped matrix norm is open
-(`NormedRing` + `NormOneClass`: submultiplicative with the unit matrix of norm one). Class:
+(`[NormedRing (Matrix n n ℝ)]` + `[NormOneClass (Matrix n n ℝ)]` + `[NormedAlgebra ℝ (Matrix n n ℝ)]`:
+submultiplicative, unit matrix of norm one, and `ℝ`-homogeneous — submultiplicativity with `‖1‖ = 1`
+alone is not enough, as the transported norm `‖M‖ = |M 0 0|^(1/2)` on `Matrix (Fin 1) (Fin 1) ℝ`
+shows; every scoped matrix norm satisfies all three). Class:
 `direct` for every `lpOpNorm p` (via `complexify` for real `A`), `deferred` (§3 item 2) for a
 general consistent norm that is not one of the scoped instances.
 
@@ -1197,7 +1200,8 @@ phase-1 modules under `Numlib/`.
    that every seminorm on a finite-dimensional space is bounded by the standard norm) with the
    real-matrix corollary `N G < 1 → Tendsto (G^k) (𝓝 0)`. Until then Cor 4.2 and R-4.16 are
    stated for the induced `p`-norms (`lpOpNorm p`), which `Matrix.complexSpectralRadius_le_of_norm`
-   covers; an `AlgebraNorm` carries no `NormedRing` instance, hence the separate statement.
+   covers; an `AlgebraNorm` carries neither the `NormedRing` nor the `NormedAlgebra ℝ` instance that
+   lemma needs, hence the separate statement.
 3. **Regular splittings and M-matrices (`Stationary/RegularSplitting.lean`, `Matrix/Order.lean`;
    `plans/backbone.md` §2.3.4, §2.1.12, phase 2).** Thm 4.4 exactly as
    `IsRegularSplitting A M N → (complexSpectralRadius (M⁻¹ * N) < 1 ↔ IsUnit A ∧ ∀ i j, 0 ≤ A⁻¹ i j)`

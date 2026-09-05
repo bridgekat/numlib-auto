@@ -266,9 +266,12 @@ Book: `K` nonempty closed, `T : K → K` continuous, `Tᵐ` a contraction for so
 point in `K` and `u_{n+1} = T u_n` converges.
 Lean: `theorem ex_5_1_2 … (hc : ContinuousOn T K) {m : ℕ} (hm : 0 < m) {α : ℝ} (hα : ContractiveOn (T^[m]) K α) : (∃! u, u ∈ K ∧ T u = u) ∧ ∀ u₀ ∈ K, ∃ u ∈ K, T u = u ∧ Tendsto (fun n => T^[n] u₀) atTop (𝓝 u)`.
 Backbone (`Numlib/Nonlinear/FixedPoint.lean`, whole space):
-`exists_unique_fixedPoint_of_iterate_contractingWith (hT : Continuous T) (hm : 0 < m) (hK : ContractingWith K T^[m]) : ∃! x, T x = x`
-and `tendsto_iterate_of_iterate_contractingWith (hT) (hm) (hK) (x) : ∃ x', T x' = x' ∧ Tendsto (fun n => T^[n] x) atTop (𝓝 x')`
-(the `m` subsequences `T^[k m + j] u₀ = (T^[m])^[k] (T^[j] u₀)` converge to the `T^[m]`-fixed point, glued by
+`exists_unique_fixedPoint_of_iterate_contractingWith [Nonempty α] [CompleteSpace α] (hT : Continuous T) (hm : 0 < m) (hK : ContractingWith K T^[m]) : ∃! x, T x = x`
+(`[Nonempty α]` is needed: the empty metric space is complete and every self-map of it is a
+contraction, so unique existence fails there; on the subtype `↥K` it comes from the book's "`K`
+nonempty") and `tendsto_iterate_of_iterate_contractingWith [CompleteSpace α] (hT) (hm) (hK) (x) : ∃ x', T x' = x' ∧ Tendsto (fun n => T^[n] x) atTop (𝓝 x')`
+(nonemptiness is supplied there by the point `x`; the `m` subsequences
+`T^[k m + j] u₀ = (T^[m])^[k] (T^[j] u₀)` converge to the `T^[m]`-fixed point, glued by
 `Nat.mod_add_div`; continuity of `T` is not needed for the conclusion but is kept for faithfulness).
 Route: work on the subtype `↥K` (complete by `IsClosed.completeSpace_coe`) with the restricted map
 `hT.restrict T K K` (`hc.restrict` continuous), `(hT.restrict T K K)^[m] = (hT.iterate m).restrict …`
@@ -338,7 +341,9 @@ Lean: `(∀ x₀, Tendsto … (𝓝 x)) ↔ Tendsto (fun n => (s.N⁻¹ * s.M) ^
 **§5.2.2 relation 1** `r_σ(A) ≤ ‖A‖` for any operator norm.
 Mathlib: `spectrum.spectralRadius_le_nnnorm` (`Mathlib/Analysis/Normed/Algebra/Spectrum.lean`) for the
 Banach-algebra norm; real matrices: `Matrix.complexSpectralRadius_le_of_norm` (`Numlib/LinearAlgebra/Matrix/Complexify.lean`,
-any submultiplicative `NormOneClass` norm on `Matrix n n ℝ`, i.e. any scoped matrix norm).
+under `[NormedRing (Matrix n n ℝ)]`, `[NormOneClass (Matrix n n ℝ)]` and `[NormedAlgebra ℝ (Matrix n n ℝ)]`;
+submultiplicativity with `‖1‖ = 1` alone does not give `ℝ`-homogeneity and the bound then fails, but
+every scoped matrix norm carries all three).
 Classification: `direct` (for the norm instance in scope), `surface-only` for "any" induced norm (quantify over a
 `NormedAlgebra ℂ (Matrix n n ℂ)` instance — awkward; state for the three Mathlib norms).
 
@@ -531,7 +536,10 @@ theorem thm_5_4_1 [CompleteSpace U] [CompleteSpace W] {F : U → W} {F' : U → 
       (∀ n, ‖Newton.iterate F F' u₀ (n + 1) - ustar‖ ≤ M * ‖Newton.iterate F F' u₀ n - ustar‖ ^ 2) ∧  -- (5.4.3)
       (∀ n, ‖Newton.iterate F F' u₀ n - ustar‖ ≤ (M * δ) ^ (2 ^ n) / M)                             -- (5.4.4)
 ```
-Backbone (`Numlib/Nonlinear/Newton.lean`, same hypotheses `hstar`, `e`, `he`, `hr`, `hF`, `hL`):
+Backbone (`Numlib/Nonlinear/Newton.lean`, same hypotheses `hstar`, `e`, `he`, `hr`, `hF`, `hL`; its
+quadratic-convergence section also carries `[IsRCLikeNormedField 𝕜]` and `[NormedSpace ℝ E]`,
+because the estimates go through the mean value inequality and are false over a general
+nontrivially normed field — both are automatic at the surface's `𝕜 = ℝ`, `E = U`):
 `Newton.exists_ball_norm_step_sub_le : ∃ δ > 0, ∃ C : ℝ, ∀ x ∈ Metric.ball xstar δ, ‖step Fn F' x - xstar‖ ≤ C * ‖x - xstar‖ ^ 2`
 and `Newton.tendsto_iterate : ∃ δ > 0, ∀ x₀ ∈ Metric.ball xstar δ, Tendsto (iterate Fn F' x₀) atTop (𝓝 xstar)`.
 Route: take `M := max C 1` and shrink `δ` so that `M δ < 1`; then `‖u − u*‖ ≤ δ ⇒ ‖T u − u*‖ ≤ M δ ‖u − u*‖ < δ`,
@@ -678,7 +686,7 @@ conclusion (5.6.11) with `c_k` as in (5.6.21). Proof steps:
   `Krylov.aeval_apply_mem_subspace` + `CG.isGalerkinIterate` + rewriting `P(K) = P̂(A)` (`Polynomial.aeval` of
   `1 − A`, `Polynomial.comp`). Classification: `needs-equivalence`.
 - **(5.6.15)** `Q_k(λ) = ∏_{j≤k} (λ−λ_j)/(1−λ_j)`, `Q_k(1) = 1`, `Q_k = 1 − (1−λ)P_{k−1}`: `Polynomial` algebra
-  (`Polynomial.X_sub_C_dvd`-style factorisation of `Q_k − 1` at `1`). Classification: `surface-only`.
+  (`Polynomial.X_sub_C_dvd_sub_C_eval` factorisation of `Q_k − 1` at `1`). Classification: `surface-only`.
 - **(5.6.16)** `‖u* − u_k‖ ≤ (1/δ)√(Δ/δ) ‖r̃_k‖`: `LinearMap.IsCoerciveWith.norm_le_energyNorm`
   (`Numlib/Analysis/InnerProductSpace/Energy.lean`), the upper bound `‖v‖_A ≤ √Δ ‖v‖` (one line from
   `IsSymmetricBoundedBy.re_inner_le` and `Real.sqrt_le_sqrt`), `‖A⁻¹‖ ≤ 1/δ` from `exists_equiv_of_isCoerciveWith`.

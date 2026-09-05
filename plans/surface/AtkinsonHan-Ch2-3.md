@@ -442,14 +442,17 @@ and `theorem thm_3_3_13_unique … (hf : StrictConvexOn ℝ K f) (hu₁ : IsMinO
 *Book.* `K ⊂ V` convex, closed, finite-dimensional subset of a normed `V` ⇒ ∀ `u` ∃ `û ∈ K` with `‖u − û‖ = inf_K ‖u − v‖`.
 *Lean:* `theorem thm_3_3_15 [NormedSpace ℝ V] [IsScalarTower ℝ 𝕜 V] (K : Set V) (S : Submodule 𝕜 V) [FiniteDimensional 𝕜 S] (hKS : K ⊆ S) (hK : IsClosed K) (hconv : Convex ℝ K) (hne : K.Nonempty) (u : V) : ∃ uhat, IsBestApprox K u uhat`
 (the convexity hypothesis is kept for faithfulness; unused).
-*Backbone.* `exists_isBestApprox_of_isClosed_of_finiteDimensional [CompleteSpace 𝕜] {K : Set V} (hK : IsClosed K) (hne : K.Nonempty) (S : Submodule 𝕜 V) [FiniteDimensional 𝕜 S] (hKS : K ⊆ S) (u : V) : ∃ v, IsBestApprox K u v`
-(`Numlib/Approximation/BestApprox.lean`; `CompleteSpace 𝕜` holds for `RCLike 𝕜`). Its proof: `IsCompact.exists_infDist_eq_dist` on
-`K ∩ closedBall u ‖u − k₀‖` (compact in the proper space `S`), then `Metric.infDist_le_dist_of_mem`.
+*Backbone.* `exists_isBestApprox_of_isClosed_of_finiteDimensional [CompleteSpace 𝕜] [LocallyCompactSpace 𝕜] {K : Set V} (hK : IsClosed K) (hne : K.Nonempty) (S : Submodule 𝕜 V) [FiniteDimensional 𝕜 S] (hKS : K ⊆ S) (u : V) : ∃ v, IsBestApprox K u v`
+(`Numlib/Approximation/BestApprox.lean`). Both scalar hypotheses hold for `RCLike 𝕜`, so no surface
+call site changes; `[LocallyCompactSpace 𝕜]` is what makes the finite-dimensional `S` proper
+(`FiniteDimensional.proper`), which is what proximinality rests on. Its proof:
+`IsCompact.exists_infDist_eq_dist` on `K ∩ closedBall u ‖u − k₀‖` (compact in the proper space `S`),
+then `Metric.infDist_le_dist_of_mem`.
 *Classification:* direct.
 
 **Theorem 3.3.16 (existence from a finite-dimensional subspace).**
 *Lean:* `theorem thm_3_3_16 (K : Submodule 𝕜 V) [FiniteDimensional 𝕜 K] (u : V) : ∃ uhat, IsBestApprox (K : Set V) u uhat`.
-*Backbone.* `exists_isBestApprox_of_finiteDimensional [CompleteSpace 𝕜] (K : Submodule 𝕜 V) [FiniteDimensional 𝕜 K] (u : V)`
+*Backbone.* `exists_isBestApprox_of_finiteDimensional [CompleteSpace 𝕜] [LocallyCompactSpace 𝕜] (K : Submodule 𝕜 V) [FiniteDimensional 𝕜 K] (u : V)`
 (`Numlib/Approximation/BestApprox.lean`; the special case `K = S` of Thm 3.3.15). *Classification:* direct.
 (Exercise 3.3.7's Heine–Borel proof is the backbone proof.)
 

@@ -564,9 +564,13 @@ Numbering: `R<section>.<item>`; the paper's own labels are in the `Book statemen
   also in the `IsMinresIterate` form with `x (k+1)`, `x k`.
 * Backbone item: `Krylov.inv_sq_norm_residual_minRes` (`1/‖r_{m+1}^G‖² = 1/‖r_m^G‖² + 1/‖r_{m+1}^F‖²`
   when `r_{m+1}^G ≠ 0`) and `Krylov.norm_residual_minRes_le_galerkin` (`Numlib/Krylov/Relations.lean`, §3.6);
-  `CG.isGalerkinIterate`, `CR.isMinResIterate`. The Givens route `Krylov.IsMinResIterate.norm_residual_succ_eq`,
-  `Krylov.IsGalerkinIterate.norm_residual_eq_div_norm_givensC`, `Krylov.norm_givensC_sq_add_norm_givensS_sq`
-  (`Numlib/Krylov/Hessenberg.lean`, §3.5) gives the same identity through `|s_k|, |c_k|`.
+  `CG.isGalerkinIterate`, `CR.isMinResIterate`. The Givens route
+  `Krylov.IsMinResIterate.norm_residual_succ_eq` (hypothesis `k + 1 < grade`, strict — at the grade
+  the padded recurrence degenerates), `Krylov.IsGalerkinIterate.norm_residual_eq_div_norm_givensC`,
+  `Krylov.norm_givensC_sq_add_norm_givensS_sq` (`Numlib/Krylov/Hessenberg.lean`, §3.5) gives the same
+  identity through `|s_k|, |c_k|`; it needs one ingredient Mathlib does not supply, namely that a
+  unitary matrix preserves the Euclidean norm (`‖U.mulVec v‖₂ = ‖v‖₂` for `U ∈ Matrix.unitaryGroup`),
+  so the surface takes the harmonic identity instead.
 * Proof route: with `r^C = r^F_{k+1}` and `r^M = r^G`, the identity gives
   `1/‖r^C‖² = (1 − ‖r^M_{k+1}‖²/‖r^M_k‖²)/‖r^M_{k+1}‖²`; `‖r^M_{k+1}‖ ≤ ‖r^C‖` and `r^M_{k+1} ≠ 0` give
   `r^C ≠ 0`, so the left side is positive and hence `‖r^M_{k+1}‖ < ‖r^M_k‖` (no separate strict-decrease
@@ -638,7 +642,10 @@ Numbering: `R<section>.<item>`; the paper's own labels are in the `Book statemen
   `theorem minres_profile (hA) (hb) (hstar) (x) (hx : ∀ k, IsMinresIterate A b k (x k)) : MinresProfile A b xstar x`;
   `theorem cr_profile (hA) (hb) (hstar) : MinresProfile A b xstar (fun k => (cr A b k).x)` (D11).
 * Backbone item: CG column: `CG.norm_iterate_monotone`, `CG.norm_error_antitone`, `CG.energyNorm_error_antitone`
-  (`Numlib/Krylov/CG.lean`; specification forms `Krylov.IsGalerkinIterate.norm_monotone`,
+  (`Numlib/Krylov/CG.lean`; `CG.norm_error_antitone` carries the instance hypothesis
+  `[FiniteDimensional 𝕜 (Krylov.fullSubspace A (b - A x₀))]`, since the Hestenes–Stiefel expansion
+  `x* − x_k = ∑_{j ≥ k} α_j p_j` needs finite termination — automatic on `Vec n`; specification forms
+  `Krylov.IsGalerkinIterate.norm_monotone`,
   `Krylov.IsGalerkinIterate.norm_error_antitone` in `Numlib/Krylov/Monotonicity.lean`); MINRES column:
   R2.6–R2.8, `Krylov.IsMinResIterate.norm_residual_antitone` (`Numlib/Krylov/Iterate.lean`), R3.6
   (`norm_residual_div_norm_antitoneOn`).
