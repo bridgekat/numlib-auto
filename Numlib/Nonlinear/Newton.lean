@@ -52,6 +52,29 @@ theorem step_eq_self_of_eq_zero (Fn : E → F) (F' : E → E →L[𝕜] F) {x : 
     step Fn F' x = x := by
   simp [step, hx]
 
+/-- One step of the **modified, or chord, Newton method**, `x ↦ x - A⁻¹ (F x)`, in which the
+derivative is frozen at a single invertible operator `A` instead of being recomputed and inverted
+at every iterate.  The usual choice is `A = F' x₀`.
+
+Unlike `Newton.step`, this never breaks down: `A` is an equivalence, so `A⁻¹` is a genuine inverse
+and no junk value is involved.  The price is that the convergence is only linear
+(`Newton.tendsto_chordIterate`) rather than quadratic. -/
+noncomputable def chordStep (Fn : E → F) (A : E ≃L[𝕜] F) (x : E) : E := x - A.symm (Fn x)
+
+/-- The iterates of the chord method. -/
+noncomputable def chordIterate (Fn : E → F) (A : E ≃L[𝕜] F) (x₀ : E) (k : ℕ) : E :=
+  (chordStep Fn A)^[k] x₀
+
+/-- The chord recurrence `x_{k+1} = x_k - A⁻¹ (F x_k)`. -/
+theorem chordIterate_succ (Fn : E → F) (A : E ≃L[𝕜] F) (x₀ : E) (k : ℕ) :
+    chordIterate Fn A x₀ (k + 1) = chordStep Fn A (chordIterate Fn A x₀ k) :=
+  Function.iterate_succ_apply' _ _ _
+
+/-- A root is a fixed point of the chord step, for every frozen derivative. -/
+theorem chordStep_eq_self_of_eq_zero (Fn : E → F) (A : E ≃L[𝕜] F) {x : E} (hx : Fn x = 0) :
+    chordStep Fn A x = x := by
+  simp [chordStep, hx]
+
 section Quadratic
 
 /-! ### Local quadratic convergence
@@ -379,6 +402,59 @@ theorem majorant_sq_div (u : ℝ) (k : ℕ) :
   field_simp
   ring
 
+/-- The majorant halves at worst, so it stays above `2 ^ (-k)`.  This is what makes the *sharp*
+a priori bound `Newton.majorant_sub_le_pow` come out of the quadratic recursion, and it is an
+equality in the critical case `u = 0`. -/
+theorem inv_two_pow_le_majorant (u : ℝ) (k : ℕ) : (1 / 2 : ℝ) ^ k ≤ majorant u k := by
+  induction k with
+  | zero => simp
+  | succ k ih =>
+    have hs := majorant_pos u k
+    have hhalf : majorant u k / 2 ≤ majorant u (k + 1) := by
+      rw [majorant_succ, le_div_iff₀ (by linarith : (0 : ℝ) < 2 * majorant u k)]
+      nlinarith [sq_nonneg u]
+    calc (1 / 2 : ℝ) ^ (k + 1) = (1 / 2 : ℝ) ^ k / 2 := by ring
+      _ ≤ majorant u k / 2 := by linarith
+      _ ≤ majorant u (k + 1) := hhalf
+
+/-- **The sharp quadratic decay of the majorant**, `majorant u k - u ≤ (1 - u) ^ (2 ^ k) / 2 ^ k`.
+
+Since `1 - u ≤ 1 - u ^ 2` this improves `Newton.majorant_sub_le`, with equality in the critical
+case `u = 0`, and it is the a priori bound Atkinson–Han state.  The proof is the Newton square law
+`Newton.majorant_succ_sub` together with `Newton.inv_two_pow_le_majorant`. -/
+theorem majorant_sub_le_pow {u : ℝ} (hu : 0 ≤ u) (hu1 : u ≤ 1) (k : ℕ) :
+    majorant u k - u ≤ (1 - u) ^ (2 ^ k) / 2 ^ k := by
+  induction k with
+  | zero => simp
+  | succ k ih =>
+    have hs := majorant_pos u k
+    have hx : 0 ≤ majorant u k - u := by linarith [le_majorant hu hu1 k]
+    have hb : (0 : ℝ) ≤ (1 - u) ^ 2 ^ k := pow_nonneg (by linarith) _
+    have hm : (0 : ℝ) < (2 : ℝ) ^ k := by positivity
+    have hlow : (1 / 2 : ℝ) ^ k ≤ majorant u k := inv_two_pow_le_majorant u k
+    have hinv : (1 : ℝ) ≤ (2 : ℝ) ^ k * majorant u k := by
+      have h := mul_le_mul_of_nonneg_left hlow hm.le
+      rwa [div_pow, one_pow, mul_one_div, div_self hm.ne'] at h
+    have ihm : (majorant u k - u) * 2 ^ k ≤ (1 - u) ^ 2 ^ k := (le_div_iff₀ hm).mp ih
+    have hsq : ((majorant u k - u) * 2 ^ k) ^ 2 ≤ ((1 - u) ^ 2 ^ k) ^ 2 := by
+      rw [sq, sq]; exact mul_self_le_mul_self (by positivity) ihm
+    have hsplit : (1 - u) ^ 2 ^ (k + 1) = ((1 - u) ^ 2 ^ k) ^ 2 := by
+      rw [← pow_mul, ← pow_succ]
+    have hexp : (2 : ℝ) ^ (k + 1) = 2 * 2 ^ k := by ring
+    rw [majorant_succ_sub, hsplit, div_le_div_iff₀ (by linarith) (by positivity), hexp]
+    nlinarith [mul_le_mul_of_nonneg_right hsq hs.le,
+      mul_nonneg (mul_nonneg (sq_nonneg (majorant u k - u)) hm.le) (sub_nonneg.2 hinv), hb]
+
+/-- The Kantorovich uniqueness recursion in the majorant variable: the majorant sequence shifted by
+`u` obeys `(u + s_k) ^ 2 / (2 s_k) = u + s_{k+1}`, which is why a second zero at distance
+`t** = (1 + u) / (β L)` from `x₀` is exactly the borderline case. -/
+theorem majorant_add_sq_div (u : ℝ) (k : ℕ) :
+    (u + majorant u k) ^ 2 / (2 * majorant u k) = u + majorant u (k + 1) := by
+  have h0 := majorant_ne_zero u k
+  rw [majorant_succ]
+  field_simp
+  ring
+
 /-- Bernoulli's inequality in the form `1 ≤ 2 ^ k u + (1 - u ^ 2) ^ (2 ^ k)`, the arithmetic heart
 of the a priori bound. -/
 private theorem one_le_two_pow_mul {u : ℝ} (hu : 0 ≤ u) (hu1 : u ≤ 1) (k : ℕ) :
@@ -585,6 +661,58 @@ private theorem kantorovich_invariant {Fn : E → F} {F' : E → E →L[𝕜] F}
           field_simp
       _ = (majorant u (k + 1) - majorant u (k + 2)) / (β * L) := by rw [majorant_sq_div]
 
+/-- Telescoping the Kantorovich increments: any two iterates are within the tail of the scalar
+majorant sequence, which is `(majorant u k - u) / (β L)` from the `k`-th one on. -/
+private theorem norm_iterate_sub_iterate_le {Fn : E → F} {F' : E → E →L[𝕜] F} {x₀ : E}
+    {r β η L u : ℝ} (hβ : 0 < β) (hL : 0 < L) (e : E ≃L[𝕜] F) (he : (e : E →L[𝕜] F) = F' x₀)
+    (hβ' : ‖(e.symm : F →L[𝕜] E)‖ ≤ β) (hη' : ‖e.symm (Fn x₀)‖ ≤ η)
+    (hF : ∀ x ∈ Metric.closedBall x₀ r, HasFDerivAt Fn (F' x) x)
+    (hLip : ∀ x ∈ Metric.closedBall x₀ r, ∀ y ∈ Metric.closedBall x₀ r,
+      ‖F' x - F' y‖ ≤ L * ‖x - y‖)
+    (hu0 : 0 ≤ u) (hu1 : u ≤ 1) (hueta : 2 * (β * L * η) = 1 - u ^ 2)
+    (hr : (1 - u) / (β * L) ≤ r) {k m : ℕ} (hkm : k ≤ m) :
+    ‖iterate Fn F' x₀ m - iterate Fn F' x₀ k‖ ≤ (majorant u k - u) / (β * L) := by
+  have hA : (0 : ℝ) < β * L := mul_pos hβ hL
+  have hd : ∀ j, ‖iterate Fn F' x₀ (j + 1) - iterate Fn F' x₀ j‖
+      ≤ (majorant u j - majorant u (j + 1)) / (β * L) := fun j =>
+    (kantorovich_invariant hβ hL e he hβ' hη' hF hLip hu0 hu1 hueta hr j).2
+  have hchain : ∀ j m : ℕ, j ≤ m → ‖iterate Fn F' x₀ m - iterate Fn F' x₀ j‖
+      ≤ (majorant u j - majorant u m) / (β * L) := by
+    intro j m hjm
+    induction m, hjm using Nat.le_induction with
+    | base => simp
+    | succ m hjm ih =>
+      have hsp : iterate Fn F' x₀ (m + 1) - iterate Fn F' x₀ j
+          = (iterate Fn F' x₀ (m + 1) - iterate Fn F' x₀ m)
+            + (iterate Fn F' x₀ m - iterate Fn F' x₀ j) := by abel
+      rw [hsp]
+      refine (norm_add_le _ _).trans ((add_le_add (hd m) ih).trans (le_of_eq ?_))
+      ring
+  refine (hchain k m hkm).trans ?_
+  gcongr
+  exact le_majorant hu0 hu1 m
+
+/-- Passing to the limit in `Newton.norm_iterate_sub_iterate_le`: the distance from the `k`-th
+iterate to the root is at most `(majorant u k - u) / (β L)`, the corresponding distance in the
+scalar majorant problem.  Every a priori bound of the Newton–Kantorovich theorem is this estimate
+composed with a bound on `majorant u k - u`. -/
+private theorem norm_iterate_sub_le_majorant {Fn : E → F} {F' : E → E →L[𝕜] F} {x₀ : E}
+    {r β η L u : ℝ} (hβ : 0 < β) (hL : 0 < L) (e : E ≃L[𝕜] F) (he : (e : E →L[𝕜] F) = F' x₀)
+    (hβ' : ‖(e.symm : F →L[𝕜] E)‖ ≤ β) (hη' : ‖e.symm (Fn x₀)‖ ≤ η)
+    (hF : ∀ x ∈ Metric.closedBall x₀ r, HasFDerivAt Fn (F' x) x)
+    (hLip : ∀ x ∈ Metric.closedBall x₀ r, ∀ y ∈ Metric.closedBall x₀ r,
+      ‖F' x - F' y‖ ≤ L * ‖x - y‖)
+    (hu0 : 0 ≤ u) (hu1 : u ≤ 1) (hueta : 2 * (β * L * η) = 1 - u ^ 2)
+    (hr : (1 - u) / (β * L) ≤ r) {xstar : E}
+    (hxstar : Tendsto (iterate Fn F' x₀) atTop (𝓝 xstar)) (k : ℕ) :
+    ‖iterate Fn F' x₀ k - xstar‖ ≤ (majorant u k - u) / (β * L) := by
+  have h1 : Tendsto (fun m => ‖iterate Fn F' x₀ m - iterate Fn F' x₀ k‖) atTop
+      (𝓝 ‖xstar - iterate Fn F' x₀ k‖) := (hxstar.sub_const _).norm
+  have h2 : ‖xstar - iterate Fn F' x₀ k‖ ≤ (majorant u k - u) / (β * L) :=
+    le_of_tendsto h1 (Filter.eventually_atTop.2 ⟨k, fun m hm =>
+      norm_iterate_sub_iterate_le hβ hL e he hβ' hη' hF hLip hu0 hu1 hueta hr hm⟩)
+  rwa [norm_sub_rev] at h2
+
 /-- Newton–Kantorovich, stated with the limit `u` of the majorant supplied as a parameter through
 `2 β L η = 1 - u ^ 2`; `Newton.kantorovich` instantiates `u = √(1 - 2 β L η)`. -/
 private theorem kantorovich_of_sq {Fn : E → F} {F' : E → E →L[𝕜] F} {x₀ : E} {r β η L u : ℝ}
@@ -607,24 +735,9 @@ private theorem kantorovich_of_sq {Fn : E → F} {F' : E → E →L[𝕜] F} {x�
       ≤ (majorant u k - majorant u (k + 1)) / (β * L) := fun k => (hinv k).2
   have hstay : ∀ k, iterate Fn F' x₀ k ∈ Metric.closedBall x₀ r := fun k =>
     mem_closedBall_of_le_majorant hA hu0 hu1 hr (hb k)
-  have hchain : ∀ k m : ℕ, k ≤ m → ‖iterate Fn F' x₀ m - iterate Fn F' x₀ k‖
-      ≤ (majorant u k - majorant u m) / (β * L) := by
-    intro k m hkm
-    induction m, hkm using Nat.le_induction with
-    | base => simp
-    | succ m hkm ih =>
-      have hsp : iterate Fn F' x₀ (m + 1) - iterate Fn F' x₀ k
-          = (iterate Fn F' x₀ (m + 1) - iterate Fn F' x₀ m)
-            + (iterate Fn F' x₀ m - iterate Fn F' x₀ k) := by abel
-      rw [hsp]
-      refine (norm_add_le _ _).trans ((add_le_add (hd m) ih).trans (le_of_eq ?_))
-      ring
   have herr : ∀ k m : ℕ, k ≤ m → ‖iterate Fn F' x₀ m - iterate Fn F' x₀ k‖
-      ≤ (majorant u k - u) / (β * L) := by
-    intro k m hkm
-    refine (hchain k m hkm).trans ?_
-    gcongr
-    exact le_majorant hu0 hu1 m
+      ≤ (majorant u k - u) / (β * L) := fun _ _ hkm =>
+    norm_iterate_sub_iterate_le hβ hL e he hβ' hη' hF hLip hu0 hu1 hueta hr hkm
   have herr0 : ∀ k, 0 ≤ (majorant u k - u) / (β * L) := fun k =>
     div_nonneg (by linarith [le_majorant hu0 hu1 k]) hA.le
   have herrle : ∀ k, (majorant u k - u) / (β * L) ≤ ((1 : ℝ) / 2) ^ k / (β * L) := by
@@ -678,13 +791,8 @@ private theorem kantorovich_of_sq {Fn : E → F} {F' : E → E →L[𝕜] F} {x�
     ((hF xstar hxball).continuousAt.tendsto).comp
       (hxstar.comp (Filter.tendsto_add_atTop_nat 1))
   have hroot : Fn xstar = 0 := tendsto_nhds_unique hFtend hFtend0
-  have hapriori : ∀ k, ‖iterate Fn F' x₀ k - xstar‖ ≤ (majorant u k - u) / (β * L) := by
-    intro k
-    have h1 : Tendsto (fun m => ‖iterate Fn F' x₀ m - iterate Fn F' x₀ k‖) atTop
-        (𝓝 ‖xstar - iterate Fn F' x₀ k‖) := (hxstar.sub_const _).norm
-    have h2 : ‖xstar - iterate Fn F' x₀ k‖ ≤ (majorant u k - u) / (β * L) :=
-      le_of_tendsto h1 (Filter.eventually_atTop.2 ⟨k, fun m hm => herr k m hm⟩)
-    rwa [norm_sub_rev] at h2
+  have hapriori : ∀ k, ‖iterate Fn F' x₀ k - xstar‖ ≤ (majorant u k - u) / (β * L) :=
+    norm_iterate_sub_le_majorant hβ hL e he hβ' hη' hF hLip hu0 hu1 hueta hr hxstar
   refine ⟨xstar, ?_, hroot, hxstar, hstay, ?_⟩
   · rw [Metric.mem_closedBall, dist_eq_norm]
     exact hxmem
@@ -732,6 +840,493 @@ theorem kantorovich {Fn : E → F} {F' : E → E →L[𝕜] F} {x₀ : E} {r β 
   have hu1 : Real.sqrt (1 - 2 * (β * L * η)) ≤ 1 := by nlinarith
   exact kantorovich_of_sq hβ hL e he hβ' hη' hF hLip hu0 hu1 (by linarith) hr
 
+/-- **The sharp a priori bound of the Newton–Kantorovich theorem**:
+`‖x_k - x*‖ ≤ (1 - √(1 - 2h))^(2^k) / (2^k β L)` with `h = β L η`.
+
+It improves the bound `(2h)^(2^k) η / (2^k h)` carried by `Newton.kantorovich`, because
+`1 - √(1 - 2h) ≤ 2h`, and the two agree in the critical case `h = 1/2`.  Both are the same
+estimate `‖x_k - x*‖ ≤ (t* - t_k)` against the scalar majorant sequence; only the closed-form
+bound on `t* - t_k` differs, `Newton.majorant_sub_le_pow` here in place of
+`Newton.majorant_sub_le`.
+
+The limit `xstar` is supplied as a hypothesis rather than produced, since `Newton.kantorovich`
+produces it under exactly these hypotheses; any limit of the iterates is that one. -/
+theorem kantorovich_norm_sub_le {Fn : E → F} {F' : E → E →L[𝕜] F} {x₀ : E} {r β η L : ℝ}
+    (hβ : 0 < β) (hL : 0 < L) (hη : 0 ≤ η) (e : E ≃L[𝕜] F) (he : (e : E →L[𝕜] F) = F' x₀)
+    (hβ' : ‖(e.symm : F →L[𝕜] E)‖ ≤ β) (hη' : ‖e.symm (Fn x₀)‖ ≤ η)
+    (hF : ∀ x ∈ Metric.closedBall x₀ r, HasFDerivAt Fn (F' x) x)
+    (hLip : ∀ x ∈ Metric.closedBall x₀ r, ∀ y ∈ Metric.closedBall x₀ r,
+      ‖F' x - F' y‖ ≤ L * ‖x - y‖)
+    (hh : β * L * η ≤ 1 / 2) (hr : (1 - Real.sqrt (1 - 2 * (β * L * η))) / (β * L) ≤ r)
+    {xstar : E} (hxstar : Tendsto (iterate Fn F' x₀) atTop (𝓝 xstar)) (k : ℕ) :
+    ‖iterate Fn F' x₀ k - xstar‖
+      ≤ (1 - Real.sqrt (1 - 2 * (β * L * η))) ^ 2 ^ k / (2 ^ k * (β * L)) := by
+  have hA : (0 : ℝ) < β * L := mul_pos hβ hL
+  have hh0 : (0 : ℝ) ≤ β * L * η := mul_nonneg hA.le hη
+  have hrad : (0 : ℝ) ≤ 1 - 2 * (β * L * η) := by linarith
+  have hu2 : Real.sqrt (1 - 2 * (β * L * η)) ^ 2 = 1 - 2 * (β * L * η) := Real.sq_sqrt hrad
+  have hu0 : (0 : ℝ) ≤ Real.sqrt (1 - 2 * (β * L * η)) := Real.sqrt_nonneg _
+  have hu1 : Real.sqrt (1 - 2 * (β * L * η)) ≤ 1 := by nlinarith
+  refine (norm_iterate_sub_le_majorant hβ hL e he hβ' hη' hF hLip hu0 hu1 (by linarith) hr
+    hxstar k).trans ?_
+  calc (majorant (Real.sqrt (1 - 2 * (β * L * η))) k
+        - Real.sqrt (1 - 2 * (β * L * η))) / (β * L)
+      ≤ (1 - Real.sqrt (1 - 2 * (β * L * η))) ^ 2 ^ k / 2 ^ k / (β * L) := by
+        gcongr
+        exact majorant_sub_le_pow hu0 hu1 k
+    _ = (1 - Real.sqrt (1 - 2 * (β * L * η))) ^ 2 ^ k / (2 ^ k * (β * L)) := div_div _ _ _
+
+/-! ### Uniqueness of the Kantorovich zero
+
+A second zero `y` is compared with the iterates by the same Newton estimate that drives the
+existence proof: if `βL‖y - x_k‖ ≤ ε_k` then `βL‖y - x_{k+1}‖ ≤ ε_k² / (2 majorant u k)`.  The
+trajectory `ε_k = u + majorant u k` is *fixed* by that recursion — `Newton.majorant_add_sq_div` —
+and it starts at `1 + u`, which is `β L t**`.  Starting strictly below it therefore contracts to
+zero at a doubly exponential rate, and starting at it does not move: uniqueness holds in the
+**open** ball of radius `t**`, and fails on its boundary, where the scalar majorant polynomial
+itself has its second root. -/
+
+/-- The uniqueness recursion: a zero `y` of `Fn` at normalized distance `c (1 + u)` from `x₀`
+stays at normalized distance `c ^ (2 ^ k) (u + majorant u k)` from the `k`-th Newton iterate. -/
+private theorem norm_sub_iterate_le_of_eq_zero {Fn : E → F} {F' : E → E →L[𝕜] F} {x₀ : E}
+    {r β η L u c : ℝ} (hβ : 0 < β) (hL : 0 < L) (e : E ≃L[𝕜] F) (he : (e : E →L[𝕜] F) = F' x₀)
+    (hβ' : ‖(e.symm : F →L[𝕜] E)‖ ≤ β) (hη' : ‖e.symm (Fn x₀)‖ ≤ η)
+    (hF : ∀ x ∈ Metric.closedBall x₀ r, HasFDerivAt Fn (F' x) x)
+    (hLip : ∀ x ∈ Metric.closedBall x₀ r, ∀ y ∈ Metric.closedBall x₀ r,
+      ‖F' x - F' y‖ ≤ L * ‖x - y‖)
+    (hu0 : 0 ≤ u) (hu1 : u ≤ 1) (hueta : 2 * (β * L * η) = 1 - u ^ 2)
+    (hr : (1 - u) / (β * L) ≤ r) {y : E} (hy : Fn y = 0) (hyr : y ∈ Metric.closedBall x₀ r)
+    (hy0 : β * L * ‖y - x₀‖ ≤ c * (u + 1)) (k : ℕ) :
+    β * L * ‖y - iterate Fn F' x₀ k‖ ≤ c ^ 2 ^ k * (u + majorant u k) := by
+  have hA : (0 : ℝ) < β * L := mul_pos hβ hL
+  induction k with
+  | zero => simpa [iterate] using hy0
+  | succ k ih =>
+    have hb := (kantorovich_invariant hβ hL e he hβ' hη' hF hLip hu0 hu1 hueta hr k).1
+    have hxk : iterate Fn F' x₀ k ∈ Metric.closedBall x₀ r :=
+      mem_closedBall_of_le_majorant hA hu0 hu1 hr hb
+    obtain ⟨ek, hek, hekn⟩ := exists_equiv_of_le_majorant hβ hL e he hβ' hLip hu0 hu1 hr hb
+    have hs := majorant_pos u k
+    have htay : ‖Fn y - Fn (iterate Fn F' x₀ k)
+        - F' (iterate Fn F' x₀ k) (y - iterate Fn F' x₀ k)‖
+        ≤ L / 2 * ‖y - iterate Fn F' x₀ k‖ ^ 2 :=
+      Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le (convex_closedBall x₀ r) hF hxk hyr
+        fun w hw => hLip w hw _ hxk
+    have hinv : ∀ z : E, ek.symm (F' (iterate Fn F' x₀ k) z) = z := fun z => by
+      simp only [← hek, ContinuousLinearEquiv.coe_coe, ContinuousLinearEquiv.symm_apply_apply]
+    have hstepeq : iterate Fn F' x₀ (k + 1)
+        = iterate Fn F' x₀ k - ek.symm (Fn (iterate Fn F' x₀ k)) := by
+      rw [iterate_succ]
+      have h := step_sub_self (Fn := Fn) (F' := F') (z := iterate Fn F' x₀ k) ek hek
+      rw [sub_eq_iff_eq_add] at h
+      rw [h]
+      abel
+    have hkey : y - iterate Fn F' x₀ (k + 1)
+        = -(ek.symm (Fn y - Fn (iterate Fn F' x₀ k)
+            - F' (iterate Fn F' x₀ k) (y - iterate Fn F' x₀ k))) := by
+      rw [hstepeq, map_sub, map_sub, hinv, hy, map_zero]
+      abel
+    have hnorm : ‖y - iterate Fn F' x₀ (k + 1)‖
+        ≤ ‖(ek.symm : F →L[𝕜] E)‖ * (L / 2 * ‖y - iterate Fn F' x₀ k‖ ^ 2) := by
+      rw [hkey, norm_neg]
+      exact (ContinuousLinearMap.le_opNorm (ek.symm : F →L[𝕜] E) _).trans
+        (mul_le_mul_of_nonneg_left htay (norm_nonneg _))
+    have hY : ‖y - iterate Fn F' x₀ (k + 1)‖
+        ≤ β / majorant u k * (L / 2 * ‖y - iterate Fn F' x₀ k‖ ^ 2) :=
+      hnorm.trans (mul_le_mul_of_nonneg_right hekn
+        (mul_nonneg (by linarith) (sq_nonneg _)))
+    have hstep2 : β * L * ‖y - iterate Fn F' x₀ (k + 1)‖
+        ≤ (β * L * ‖y - iterate Fn F' x₀ k‖) ^ 2 / (2 * majorant u k) := by
+      rw [le_div_iff₀ (by linarith : (0 : ℝ) < 2 * majorant u k)]
+      have h := mul_le_mul_of_nonneg_left hY hA.le
+      have h2 := mul_le_mul_of_nonneg_right h (by linarith : (0 : ℝ) ≤ 2 * majorant u k)
+      refine h2.trans (le_of_eq ?_)
+      field_simp
+    have hX : (0 : ℝ) ≤ β * L * ‖y - iterate Fn F' x₀ k‖ := mul_nonneg hA.le (norm_nonneg _)
+    have hsq : (β * L * ‖y - iterate Fn F' x₀ k‖) ^ 2
+        ≤ (c ^ 2 ^ k * (u + majorant u k)) ^ 2 := by
+      rw [sq, sq]; exact mul_self_le_mul_self hX ih
+    calc β * L * ‖y - iterate Fn F' x₀ (k + 1)‖
+        ≤ (β * L * ‖y - iterate Fn F' x₀ k‖) ^ 2 / (2 * majorant u k) := hstep2
+      _ ≤ (c ^ 2 ^ k * (u + majorant u k)) ^ 2 / (2 * majorant u k) := by gcongr
+      _ = (c ^ 2 ^ k) ^ 2 * ((u + majorant u k) ^ 2 / (2 * majorant u k)) := by ring
+      _ = c ^ 2 ^ (k + 1) * (u + majorant u (k + 1)) := by
+          rw [majorant_add_sq_div, ← pow_mul, ← pow_succ]
+
+/-- Under the uniqueness recursion the Newton iterates converge to the second zero as well, hence
+to the same point.  The two admissible starting positions are `c < 1` (strictly inside the ball of
+radius `t**`) and `c = 1` with `u = 0` (the critical case, where `t** = t*` and the closed ball is
+still a uniqueness domain). -/
+private theorem tendsto_iterate_of_eq_zero {Fn : E → F} {F' : E → E →L[𝕜] F} {x₀ : E}
+    {r β η L u c : ℝ} (hβ : 0 < β) (hL : 0 < L) (e : E ≃L[𝕜] F) (he : (e : E →L[𝕜] F) = F' x₀)
+    (hβ' : ‖(e.symm : F →L[𝕜] E)‖ ≤ β) (hη' : ‖e.symm (Fn x₀)‖ ≤ η)
+    (hF : ∀ x ∈ Metric.closedBall x₀ r, HasFDerivAt Fn (F' x) x)
+    (hLip : ∀ x ∈ Metric.closedBall x₀ r, ∀ y ∈ Metric.closedBall x₀ r,
+      ‖F' x - F' y‖ ≤ L * ‖x - y‖)
+    (hu0 : 0 ≤ u) (hu1 : u ≤ 1) (hueta : 2 * (β * L * η) = 1 - u ^ 2)
+    (hr : (1 - u) / (β * L) ≤ r) {y : E} (hy : Fn y = 0) (hyr : y ∈ Metric.closedBall x₀ r)
+    (hc0 : 0 ≤ c) (hc1 : c ≤ 1) (hcu : c < 1 ∨ u = 0)
+    (hy0 : β * L * ‖y - x₀‖ ≤ c * (u + 1)) :
+    Tendsto (iterate Fn F' x₀) atTop (𝓝 y) := by
+  have hA : (0 : ℝ) < β * L := mul_pos hβ hL
+  have hbound := norm_sub_iterate_le_of_eq_zero hβ hL e he hβ' hη' hF hLip hu0 hu1 hueta hr hy hyr
+    hy0
+  have hnn : ∀ k, (0 : ℝ) ≤ c ^ 2 ^ k * (u + majorant u k) / (β * L) := fun k =>
+    div_nonneg (mul_nonneg (pow_nonneg hc0 _) (by linarith [majorant_pos u k])) hA.le
+  have hlim : Tendsto (fun k => c ^ 2 ^ k * (u + majorant u k) / (β * L)) atTop (𝓝 0) := by
+    rcases hcu with hc | hu
+    · have hg : Tendsto (fun k : ℕ => 2 / (β * L) * c ^ k) atTop (𝓝 0) := by
+        simpa using (tendsto_pow_atTop_nhds_zero_of_lt_one hc0 hc).const_mul (2 / (β * L))
+      refine squeeze_zero hnn (fun k => ?_) hg
+      have hck : c ^ 2 ^ k ≤ c ^ k :=
+        pow_le_pow_of_le_one hc0 hc1 (Nat.le_of_lt Nat.lt_two_pow_self)
+      have hsk : u + majorant u k ≤ 2 := by linarith [majorant_le_one hu0 hu1 k]
+      rw [div_le_iff₀ hA]
+      calc c ^ 2 ^ k * (u + majorant u k) ≤ c ^ k * 2 :=
+            mul_le_mul hck hsk (by linarith [majorant_pos u k]) (pow_nonneg hc0 _)
+        _ = 2 / (β * L) * c ^ k * (β * L) := by field_simp
+    · subst hu
+      have hg : Tendsto (fun k : ℕ => (1 / 2 : ℝ) ^ k / (β * L)) atTop (𝓝 0) := by
+        have h : Tendsto (fun k : ℕ => (1 / 2 : ℝ) ^ k) atTop (𝓝 0) :=
+          tendsto_pow_atTop_nhds_zero_of_lt_one (by norm_num) (by norm_num)
+        simpa using h.div_const (β * L)
+      refine squeeze_zero hnn (fun k => ?_) hg
+      have hsk : majorant (0 : ℝ) k ≤ (1 / 2 : ℝ) ^ k := by
+        have h := majorant_sub_le_pow (le_refl (0 : ℝ)) zero_le_one k
+        simpa [div_pow] using h
+      have hck : c ^ 2 ^ k ≤ 1 := pow_le_one₀ hc0 hc1
+      gcongr
+      calc c ^ 2 ^ k * (0 + majorant (0 : ℝ) k) ≤ 1 * majorant (0 : ℝ) k := by
+            rw [zero_add]
+            gcongr
+            exact (majorant_pos _ _).le
+        _ = majorant (0 : ℝ) k := one_mul _
+        _ ≤ (1 / 2 : ℝ) ^ k := hsk
+  refine tendsto_iff_norm_sub_tendsto_zero.mpr
+    (squeeze_zero (fun k => norm_nonneg _) (fun k => ?_) hlim)
+  rw [norm_sub_rev, le_div_iff₀ hA]
+  nlinarith [hbound k]
+
+/-- **The uniqueness clause of the Newton–Kantorovich theorem.** Under the hypotheses of
+`Newton.kantorovich`, the zero produced is the only one in the *open* ball of radius
+`t** = (1 + √(1 - 2h)) / (β L)` around `x₀` that lies in the region where the hypotheses hold.
+
+The ball cannot be closed when `h < 1/2`: the scalar majorant polynomial
+`p t = (L/2) t² - t/β + η/β` satisfies every hypothesis at `x₀ = 0` and has a second zero at
+distance exactly `t**`.  For the closed ball of radius `t*` — including the critical case
+`h = 1/2`, where `t* = t**` — see `Newton.kantorovich_unique_closedBall`. -/
+theorem kantorovich_unique {Fn : E → F} {F' : E → E →L[𝕜] F} {x₀ : E} {r β η L : ℝ}
+    (hβ : 0 < β) (hL : 0 < L) (hη : 0 ≤ η) (e : E ≃L[𝕜] F) (he : (e : E →L[𝕜] F) = F' x₀)
+    (hβ' : ‖(e.symm : F →L[𝕜] E)‖ ≤ β) (hη' : ‖e.symm (Fn x₀)‖ ≤ η)
+    (hF : ∀ x ∈ Metric.closedBall x₀ r, HasFDerivAt Fn (F' x) x)
+    (hLip : ∀ x ∈ Metric.closedBall x₀ r, ∀ y ∈ Metric.closedBall x₀ r,
+      ‖F' x - F' y‖ ≤ L * ‖x - y‖)
+    (hh : β * L * η ≤ 1 / 2) (hr : (1 - Real.sqrt (1 - 2 * (β * L * η))) / (β * L) ≤ r)
+    {xstar : E} (hxstar : Tendsto (iterate Fn F' x₀) atTop (𝓝 xstar))
+    {y : E} (hy : Fn y = 0) (hyr : y ∈ Metric.closedBall x₀ r)
+    (hyt : ‖y - x₀‖ < (1 + Real.sqrt (1 - 2 * (β * L * η))) / (β * L)) :
+    y = xstar := by
+  have hA : (0 : ℝ) < β * L := mul_pos hβ hL
+  have hh0 : (0 : ℝ) ≤ β * L * η := mul_nonneg hA.le hη
+  have hrad : (0 : ℝ) ≤ 1 - 2 * (β * L * η) := by linarith
+  have hu2 : Real.sqrt (1 - 2 * (β * L * η)) ^ 2 = 1 - 2 * (β * L * η) := Real.sq_sqrt hrad
+  have hu0 : (0 : ℝ) ≤ Real.sqrt (1 - 2 * (β * L * η)) := Real.sqrt_nonneg _
+  have hu1 : Real.sqrt (1 - 2 * (β * L * η)) ≤ 1 := by nlinarith
+  set u := Real.sqrt (1 - 2 * (β * L * η)) with hudef
+  have hupos : (0 : ℝ) < u + 1 := by linarith
+  have hlt : β * L * ‖y - x₀‖ < 1 + u := by
+    rw [lt_div_iff₀ hA] at hyt
+    nlinarith
+  refine tendsto_nhds_unique (tendsto_iterate_of_eq_zero hβ hL e he hβ' hη' hF hLip hu0 hu1
+    (by linarith) hr hy hyr (c := β * L * ‖y - x₀‖ / (u + 1)) ?_ ?_ (Or.inl ?_) ?_) hxstar
+  · exact div_nonneg (mul_nonneg hA.le (norm_nonneg _)) hupos.le
+  · rw [div_le_one hupos]; linarith
+  · rw [div_lt_one hupos]; linarith
+  · rw [div_mul_cancel₀ _ hupos.ne']
+
+/-- **Uniqueness in the closed ball of radius `t*`.** Under the hypotheses of
+`Newton.kantorovich`, the zero produced is the only one in `closedBall x₀ t*`, the ball the
+existence statement puts it in.  This is the form that survives the critical case `h = 1/2`, where
+`t* = t**` and `Newton.kantorovich_unique` only covers the open ball. -/
+theorem kantorovich_unique_closedBall {Fn : E → F} {F' : E → E →L[𝕜] F} {x₀ : E} {r β η L : ℝ}
+    (hβ : 0 < β) (hL : 0 < L) (hη : 0 ≤ η) (e : E ≃L[𝕜] F) (he : (e : E →L[𝕜] F) = F' x₀)
+    (hβ' : ‖(e.symm : F →L[𝕜] E)‖ ≤ β) (hη' : ‖e.symm (Fn x₀)‖ ≤ η)
+    (hF : ∀ x ∈ Metric.closedBall x₀ r, HasFDerivAt Fn (F' x) x)
+    (hLip : ∀ x ∈ Metric.closedBall x₀ r, ∀ y ∈ Metric.closedBall x₀ r,
+      ‖F' x - F' y‖ ≤ L * ‖x - y‖)
+    (hh : β * L * η ≤ 1 / 2) (hr : (1 - Real.sqrt (1 - 2 * (β * L * η))) / (β * L) ≤ r)
+    {xstar : E} (hxstar : Tendsto (iterate Fn F' x₀) atTop (𝓝 xstar))
+    {y : E} (hy : Fn y = 0)
+    (hyt : ‖y - x₀‖ ≤ (1 - Real.sqrt (1 - 2 * (β * L * η))) / (β * L)) :
+    y = xstar := by
+  have hA : (0 : ℝ) < β * L := mul_pos hβ hL
+  have hh0 : (0 : ℝ) ≤ β * L * η := mul_nonneg hA.le hη
+  have hrad : (0 : ℝ) ≤ 1 - 2 * (β * L * η) := by linarith
+  have hu2 : Real.sqrt (1 - 2 * (β * L * η)) ^ 2 = 1 - 2 * (β * L * η) := Real.sq_sqrt hrad
+  have hu0 : (0 : ℝ) ≤ Real.sqrt (1 - 2 * (β * L * η)) := Real.sqrt_nonneg _
+  have hu1 : Real.sqrt (1 - 2 * (β * L * η)) ≤ 1 := by nlinarith
+  set u := Real.sqrt (1 - 2 * (β * L * η)) with hudef
+  have hupos : (0 : ℝ) < u + 1 := by linarith
+  have hyr : y ∈ Metric.closedBall x₀ r := by
+    rw [Metric.mem_closedBall, dist_eq_norm]
+    exact hyt.trans hr
+  have hle : β * L * ‖y - x₀‖ ≤ 1 - u := by
+    rw [le_div_iff₀ hA] at hyt
+    nlinarith
+  refine tendsto_nhds_unique (tendsto_iterate_of_eq_zero hβ hL e he hβ' hη' hF hLip hu0 hu1
+    (by linarith) hr hy hyr (c := (1 - u) / (u + 1)) ?_ ?_ ?_ ?_) hxstar
+  · exact div_nonneg (by linarith) hupos.le
+  · rw [div_le_one hupos]; linarith
+  · rcases eq_or_lt_of_le hu0 with hu | hu
+    · exact Or.inr hu.symm
+    · exact Or.inl (by rw [div_lt_one hupos]; linarith)
+  · rw [div_mul_cancel₀ _ hupos.ne']
+    exact hle
+
+/-- **Newton–Kantorovich localized at the first iterate** (Atkinson–Han's sharper form): the zero
+lies in the small ball `closedBall x₁ (t* - η)` around the *first* Newton iterate
+`x₁ = step Fn F' x₀`, and it is enough for the hypotheses on `F` to hold on a convex set `D`
+containing `x₀` and that small ball — `closedBall x₀ t*`, which `Newton.kantorovich` asks for, is
+in general strictly larger.
+
+The proof restarts the majorant sequence one step later.  At `x₁` the Neumann bound gives
+`‖(F' x₁)⁻¹‖ ≤ β / s₁` and the sharp Taylor estimate gives `‖(F' x₁)⁻¹ F x₁‖ ≤ η₁`, where
+`s₁ = (1 + u²) / 2` is the first majorant value; the Kantorovich number of the restarted problem is
+`((1 - u²) / (1 + u²))² / 2 ≤ 1/2` and its `t*` is exactly `t* - η = (1 - u)² / (2 β L)`, so
+`Newton.kantorovich` applies at `x₁` with no room to spare. -/
+theorem kantorovich_of_closedBall_step {Fn : E → F} {F' : E → E →L[𝕜] F} {x₀ : E} {D : Set E}
+    {β η L : ℝ} (hβ : 0 < β) (hL : 0 < L) (hη : 0 ≤ η) (e : E ≃L[𝕜] F)
+    (he : (e : E →L[𝕜] F) = F' x₀) (hβ' : ‖(e.symm : F →L[𝕜] E)‖ ≤ β)
+    (hη' : ‖e.symm (Fn x₀)‖ ≤ η) (hD : Convex ℝ D) (hx₀ : x₀ ∈ D)
+    (hsub : Metric.closedBall (step Fn F' x₀)
+      ((1 - Real.sqrt (1 - 2 * (β * L * η))) / (β * L) - η) ⊆ D)
+    (hF : ∀ x ∈ D, HasFDerivAt Fn (F' x) x)
+    (hLip : ∀ x ∈ D, ∀ y ∈ D, ‖F' x - F' y‖ ≤ L * ‖x - y‖)
+    (hh : β * L * η ≤ 1 / 2) :
+    ∃ xstar ∈ Metric.closedBall (step Fn F' x₀)
+        ((1 - Real.sqrt (1 - 2 * (β * L * η))) / (β * L) - η),
+      Fn xstar = 0 ∧ Tendsto (iterate Fn F' x₀) atTop (𝓝 xstar) := by
+  have hA : (0 : ℝ) < β * L := mul_pos hβ hL
+  have hh0 : (0 : ℝ) ≤ β * L * η := mul_nonneg hA.le hη
+  have hrad : (0 : ℝ) ≤ 1 - 2 * (β * L * η) := by linarith
+  have hu2 : Real.sqrt (1 - 2 * (β * L * η)) ^ 2 = 1 - 2 * (β * L * η) := Real.sq_sqrt hrad
+  have hu0 : (0 : ℝ) ≤ Real.sqrt (1 - 2 * (β * L * η)) := Real.sqrt_nonneg _
+  have hu1 : Real.sqrt (1 - 2 * (β * L * η)) ≤ 1 := by nlinarith
+  set u := Real.sqrt (1 - 2 * (β * L * η)) with hudef
+  clear_value u
+  have hueta : 2 * (β * L * η) = 1 - u ^ 2 := by linarith
+  have hu2pos : (0 : ℝ) < 1 + u ^ 2 := by positivity
+  have hu2le : u ^ 2 ≤ 1 := by nlinarith
+  set x₁ := step Fn F' x₀ with hx1def
+  have hρ : (1 - u) / (β * L) - η = (1 - u) ^ 2 / (2 * (β * L)) := by
+    field_simp
+    nlinarith [hueta]
+  have hρ0 : (0 : ℝ) ≤ (1 - u) / (β * L) - η := by
+    rw [hρ]; exact div_nonneg (sq_nonneg _) (by linarith)
+  have hx1D : x₁ ∈ D := hsub (Metric.mem_closedBall_self hρ0)
+  have hx1 : ‖x₁ - x₀‖ ≤ η := by
+    rw [hx1def, step_sub_self e he, norm_neg]; exact hη'
+  -- the derivative at `x₁` is invertible, with the majorant bound `β / s₁`
+  set s₁ : ℝ := (1 + u ^ 2) / 2 with hs1def
+  clear_value s₁
+  have hs1pos : (0 : ℝ) < s₁ := by rw [hs1def]; linarith
+  have hlipx1 : ‖F' x₁ - F' x₀‖ ≤ L * η :=
+    (hLip x₁ hx1D x₀ hx₀).trans (mul_le_mul_of_nonneg_left hx1 hL.le)
+  have hsmall : ‖(e.symm : F →L[𝕜] E)‖ * ‖F' x₁ - F' x₀‖ < 1 := by
+    have h1 : ‖(e.symm : F →L[𝕜] E)‖ * ‖F' x₁ - F' x₀‖ ≤ β * (L * η) :=
+      mul_le_mul hβ' hlipx1 (norm_nonneg _) hβ.le
+    nlinarith
+  obtain ⟨e₁, he₁, he₁n, -⟩ := e.exists_symm_norm_le_of_add (F' x₁ - F' x₀) hsmall
+  have he₁' : (e₁ : E →L[𝕜] F) = F' x₁ := by rw [he₁, he]; abel
+  have hβ₁' : ‖(e₁.symm : F →L[𝕜] E)‖ ≤ β / s₁ := by
+    refine he₁n.trans ?_
+    have hden : (0 : ℝ) < 1 - ‖(e.symm : F →L[𝕜] E)‖ * ‖F' x₁ - F' x₀‖ := by linarith
+    have hbnd : ‖(e.symm : F →L[𝕜] E)‖ * ‖F' x₁ - F' x₀‖ ≤ 1 - s₁ := by
+      have h1 : ‖(e.symm : F →L[𝕜] E)‖ * ‖F' x₁ - F' x₀‖ ≤ β * (L * η) :=
+        mul_le_mul hβ' hlipx1 (norm_nonneg _) hβ.le
+      rw [hs1def]
+      nlinarith
+    rw [div_le_div_iff₀ hden hs1pos]
+    nlinarith [norm_nonneg (e.symm : F →L[𝕜] E)]
+  -- the residual at `x₁` is second order
+  have htay : ‖Fn x₁ - Fn x₀ - F' x₀ (x₁ - x₀)‖ ≤ L / 2 * ‖x₁ - x₀‖ ^ 2 :=
+    Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le hD hF hx₀ hx1D
+      fun w hw => hLip w hw x₀ hx₀
+  have hFx1 : ‖Fn x₁‖ ≤ L / 2 * η ^ 2 := by
+    have happ : F' x₀ (x₁ - x₀) = -Fn x₀ := by
+      rw [hx1def, step_sub_self e he, map_neg, ← he]
+      simp
+    rw [happ, show Fn x₁ - Fn x₀ - -Fn x₀ = Fn x₁ from by abel] at htay
+    refine htay.trans (mul_le_mul_of_nonneg_left ?_ (by linarith))
+    nlinarith [norm_nonneg (x₁ - x₀)]
+  set β₁ : ℝ := β / s₁ with hβ₁def
+  set η₁ : ℝ := β₁ * (L / 2 * η ^ 2) with hη₁def
+  have hβ₁pos : (0 : ℝ) < β₁ := div_pos hβ hs1pos
+  have hη₁0 : (0 : ℝ) ≤ η₁ :=
+    mul_nonneg hβ₁pos.le (mul_nonneg (by linarith) (sq_nonneg _))
+  have hη₁ : ‖e₁.symm (Fn x₁)‖ ≤ η₁ :=
+    (ContinuousLinearMap.le_opNorm (e₁.symm : F →L[𝕜] E) _).trans
+      (mul_le_mul hβ₁' hFx1 (norm_nonneg _) hβ₁pos.le)
+  -- the Kantorovich data of the restarted problem
+  have hβ₁Lη : β₁ * L * η = (1 - u ^ 2) / (1 + u ^ 2) := by
+    rw [hβ₁def, hs1def]
+    field_simp
+    linarith [hueta]
+  have hβ₁Lη₁ : β₁ * L * η₁ = (β₁ * L * η) ^ 2 / 2 := by rw [hη₁def]; ring
+  clear_value η₁ β₁
+  have hqle : β₁ * L * η ≤ 1 := by
+    rw [hβ₁Lη, div_le_one hu2pos]
+    linarith [sq_nonneg u]
+  have hq0 : (0 : ℝ) ≤ β₁ * L * η := by
+    rw [hβ₁Lη]
+    exact div_nonneg (by linarith) hu2pos.le
+  have hh₁ : β₁ * L * η₁ ≤ 1 / 2 := by
+    rw [hβ₁Lη₁]
+    have hsq : (β₁ * L * η) ^ 2 ≤ 1 := by
+      rw [sq]
+      calc (β₁ * L * η) * (β₁ * L * η) ≤ 1 * 1 := mul_le_mul hqle hqle hq0 zero_le_one
+        _ = 1 := one_mul 1
+    linarith
+  have hsqrt : Real.sqrt (1 - 2 * (β₁ * L * η₁)) = 2 * u / (1 + u ^ 2) := by
+    have h1 : 1 - 2 * (β₁ * L * η₁) = (2 * u / (1 + u ^ 2)) ^ 2 := by
+      rw [hβ₁Lη₁, hβ₁Lη]
+      field_simp
+      ring
+    rw [h1, Real.sqrt_sq (div_nonneg (by linarith) hu2pos.le)]
+  have hrad₁ : (1 - Real.sqrt (1 - 2 * (β₁ * L * η₁))) / (β₁ * L)
+      = (1 - u) / (β * L) - η := by
+    rw [hsqrt, hρ, hβ₁def, hs1def]
+    field_simp
+    ring
+  obtain ⟨xstar, hxmem, hroot, htend, -, -⟩ :=
+    kantorovich (Fn := Fn) (F' := F') (x₀ := x₁) (r := (1 - u) / (β * L) - η)
+      hβ₁pos hL hη₁0 e₁ he₁' hβ₁' hη₁
+      (fun x hx => hF x (hsub hx)) (fun x hx y hy => hLip x (hsub hx) y (hsub hy)) hh₁
+      (le_of_eq hrad₁)
+  rw [hrad₁] at hxmem
+  refine ⟨xstar, hxmem, hroot, ?_⟩
+  have hshift : ∀ k, iterate Fn F' x₁ k = iterate Fn F' x₀ (k + 1) := fun k => by
+    rw [iterate, iterate, hx1def, Function.iterate_succ_apply]
+  exact (Filter.tendsto_add_atTop_iff_nat 1).mp (htend.congr hshift)
+
 end Kantorovich
+
+section Chord
+
+/-! ### The chord method
+
+Freezing the derivative at a fixed invertible `A` turns the Newton map into
+`x ↦ x - A⁻¹ (F x)`, whose derivative at a root `x*` is `1 - A⁻¹ F'(x*)`.  Convergence is
+therefore linear with the factor `‖1 - A⁻¹ F'(x*)‖`, provided that factor is `< 1`, which is the
+statement that `A` is a good enough approximation of `F'(x*)`.  With `A = F' x₀` and `x₀` close to
+`x*` it is, by continuity of `F'`. -/
+
+variable [IsRCLikeNormedField 𝕜] [NormedSpace ℝ E]
+
+/-- One chord step measured from a root: the frozen-derivative defect `1 - A⁻¹ F'(x*)` acts
+linearly on the error, and what is left is the second-order Taylor remainder. -/
+theorem norm_chordStep_sub_le {Fn : E → F} {F' : E → E →L[𝕜] F} {xstar : E} {r L : ℝ}
+    (hstar : Fn xstar = 0) (A : E ≃L[𝕜] F)
+    (hF : ∀ x ∈ Metric.closedBall xstar r, HasFDerivAt Fn (F' x) x)
+    (hLip : ∀ x ∈ Metric.closedBall xstar r, ‖F' x - F' xstar‖ ≤ L * ‖x - xstar‖)
+    {x : E} (hx : x ∈ Metric.closedBall xstar r) :
+    ‖chordStep Fn A x - xstar‖
+      ≤ ‖(1 : E →L[𝕜] E) - (A.symm : F →L[𝕜] E) ∘L F' xstar‖ * ‖x - xstar‖
+        + ‖(A.symm : F →L[𝕜] E)‖ * (max L 0 / 2) * ‖x - xstar‖ ^ 2 := by
+  have hr : 0 ≤ r := le_trans dist_nonneg (Metric.mem_closedBall.mp hx)
+  have hxs : xstar ∈ Metric.closedBall xstar r := Metric.mem_closedBall_self hr
+  have htay : ‖Fn x - Fn xstar - F' xstar (x - xstar)‖ ≤ max L 0 / 2 * ‖x - xstar‖ ^ 2 :=
+    Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le (convex_closedBall xstar r) hF hxs hx
+      fun z hz => (hLip z hz).trans (mul_le_mul_of_nonneg_right (le_max_left _ _) (norm_nonneg _))
+  have hkey : chordStep Fn A x - xstar
+      = ((1 : E →L[𝕜] E) - (A.symm : F →L[𝕜] E) ∘L F' xstar) (x - xstar)
+        - A.symm (Fn x - Fn xstar - F' xstar (x - xstar)) := by
+    have h1 : ((1 : E →L[𝕜] E) - (A.symm : F →L[𝕜] E) ∘L F' xstar) (x - xstar)
+        = (x - xstar) - A.symm (F' xstar (x - xstar)) := by
+      simp [ContinuousLinearEquiv.coe_coe]
+    have h2 : A.symm (Fn x - Fn xstar - F' xstar (x - xstar))
+        = A.symm (Fn x) - A.symm (F' xstar (x - xstar)) := by
+      rw [hstar, sub_zero, map_sub]
+    rw [chordStep, h1, h2]
+    abel
+  rw [hkey]
+  refine (norm_sub_le _ _).trans
+    (add_le_add (ContinuousLinearMap.le_opNorm _ (x - xstar)) ?_)
+  calc ‖A.symm (Fn x - Fn xstar - F' xstar (x - xstar))‖
+      ≤ ‖(A.symm : F →L[𝕜] E)‖ * ‖Fn x - Fn xstar - F' xstar (x - xstar)‖ :=
+        ContinuousLinearMap.le_opNorm (A.symm : F →L[𝕜] E) _
+    _ ≤ ‖(A.symm : F →L[𝕜] E)‖ * (max L 0 / 2 * ‖x - xstar‖ ^ 2) :=
+        mul_le_mul_of_nonneg_left htay (norm_nonneg _)
+    _ = ‖(A.symm : F →L[𝕜] E)‖ * (max L 0 / 2) * ‖x - xstar‖ ^ 2 := by ring
+
+/-- **Linear convergence of the chord method.** If `F'` is Lipschitz around a root `x*` and the
+frozen derivative `A` satisfies `‖1 - A⁻¹ F'(x*)‖ < 1`, then from every start close enough to `x*`
+the chord iterates converge to `x*`, with the geometric error bound
+`‖x_k - x*‖ ≤ q^k ‖x₀ - x*‖` for a factor `q < 1`.
+
+The factor cannot be improved to a quadratic rate: the error operator `1 - A⁻¹ F'(x*)` is a fixed
+nonzero operator, so the leading term of the error is exactly linear.  The Newton method is the
+case where that operator vanishes at the root, and `Newton.exists_ball_norm_step_sub_le` is the
+corresponding quadratic bound.  No completeness is needed, since the limit `x*` is a hypothesis
+rather than a conclusion. -/
+theorem tendsto_chordIterate {Fn : E → F} {F' : E → E →L[𝕜] F} {xstar : E} {r L : ℝ}
+    (hstar : Fn xstar = 0) (hr : 0 < r) (A : E ≃L[𝕜] F)
+    (hF : ∀ x ∈ Metric.closedBall xstar r, HasFDerivAt Fn (F' x) x)
+    (hLip : ∀ x ∈ Metric.closedBall xstar r, ‖F' x - F' xstar‖ ≤ L * ‖x - xstar‖)
+    (hA : ‖(1 : E →L[𝕜] E) - (A.symm : F →L[𝕜] E) ∘L F' xstar‖ < 1) :
+    ∃ δ > 0, ∃ q : ℝ, 0 ≤ q ∧ q < 1 ∧ ∀ x₀ ∈ Metric.closedBall xstar δ,
+      (∀ k, ‖chordIterate Fn A x₀ k - xstar‖ ≤ q ^ k * ‖x₀ - xstar‖) ∧
+        Tendsto (chordIterate Fn A x₀) atTop (𝓝 xstar) := by
+  set q₀ := ‖(1 : E →L[𝕜] E) - (A.symm : F →L[𝕜] E) ∘L F' xstar‖ with hq₀def
+  set K := ‖(A.symm : F →L[𝕜] E)‖ * (max L 0 / 2) with hKdef
+  have hq00 : 0 ≤ q₀ := norm_nonneg _
+  have hK0 : 0 ≤ K := mul_nonneg (norm_nonneg _) (div_nonneg (le_max_right _ _) (by norm_num))
+  set δ := min r ((1 - q₀) / (2 * (K + 1))) with hδdef
+  have hδ0 : 0 < δ := lt_min hr (div_pos (by linarith) (by linarith))
+  set q := (1 + q₀) / 2 with hqdef
+  have hq0 : 0 ≤ q := by positivity
+  have hq1 : q < 1 := by rw [hqdef]; linarith
+  have hstepbd : ∀ x ∈ Metric.closedBall xstar δ,
+      ‖chordStep Fn A x - xstar‖ ≤ q * ‖x - xstar‖ := by
+    intro x hx
+    have hxr : x ∈ Metric.closedBall xstar r :=
+      Metric.closedBall_subset_closedBall (min_le_left _ _) hx
+    have h := norm_chordStep_sub_le hstar A hF hLip hxr
+    have hd : ‖x - xstar‖ ≤ (1 - q₀) / (2 * (K + 1)) := by
+      rw [← dist_eq_norm]
+      exact (Metric.mem_closedBall.mp hx).trans (min_le_right _ _)
+    have hKx : K * ‖x - xstar‖ ≤ (1 - q₀) / 2 := by
+      have h1 : K * ‖x - xstar‖ ≤ K * ((1 - q₀) / (2 * (K + 1))) := by gcongr
+      have h2 : K * ((1 - q₀) / (2 * (K + 1))) ≤ (1 - q₀) / 2 := by
+        rw [mul_div_assoc', div_le_div_iff₀ (by linarith) (by norm_num)]
+        nlinarith
+      linarith
+    have hXn : (0 : ℝ) ≤ ‖x - xstar‖ := norm_nonneg _
+    nlinarith [mul_le_mul_of_nonneg_right hKx hXn]
+  have hmaps : ∀ x ∈ Metric.closedBall xstar δ, chordStep Fn A x ∈ Metric.closedBall xstar δ := by
+    intro x hx
+    have h := hstepbd x hx
+    have hd : ‖x - xstar‖ ≤ δ := by rw [← dist_eq_norm]; exact hx
+    rw [Metric.mem_closedBall, dist_eq_norm]
+    nlinarith [norm_nonneg (x - xstar)]
+  refine ⟨δ, hδ0, q, hq0, hq1, fun x₀ hx₀ => ?_⟩
+  have hind : ∀ k, chordIterate Fn A x₀ k ∈ Metric.closedBall xstar δ ∧
+      ‖chordIterate Fn A x₀ k - xstar‖ ≤ q ^ k * ‖x₀ - xstar‖ := by
+    intro k
+    induction k with
+    | zero => exact ⟨hx₀, by simp [chordIterate]⟩
+    | succ k ih =>
+      refine ⟨by rw [chordIterate_succ]; exact hmaps _ ih.1, ?_⟩
+      rw [chordIterate_succ]
+      calc ‖chordStep Fn A (chordIterate Fn A x₀ k) - xstar‖
+          ≤ q * ‖chordIterate Fn A x₀ k - xstar‖ := hstepbd _ ih.1
+        _ ≤ q * (q ^ k * ‖x₀ - xstar‖) := mul_le_mul_of_nonneg_left ih.2 hq0
+        _ = q ^ (k + 1) * ‖x₀ - xstar‖ := by ring
+  refine ⟨fun k => (hind k).2, ?_⟩
+  refine tendsto_iff_norm_sub_tendsto_zero.mpr
+    (squeeze_zero (fun k => norm_nonneg _) (fun k => (hind k).2) ?_)
+  simpa using (tendsto_pow_atTop_nhds_zero_of_lt_one hq0 hq1).mul_const ‖x₀ - xstar‖
+
+end Chord
 
 end Newton

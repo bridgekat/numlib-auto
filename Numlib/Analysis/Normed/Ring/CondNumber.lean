@@ -15,6 +15,10 @@ import Mathlib.Analysis.Normed.Module.Basic
 (via `Ring.inverse`). Specializes to operators (`E →L[𝕜] E`) and matrices under any of Mathlib's
 scoped matrix norms. This is the standard condition number of numerical linear algebra, which
 bounds the amplification of a relative perturbation of the data in the solution of `a x = b`.
+
+`ContinuousLinearEquiv.condNumber` is the two-space form `κ e = ‖e‖ ‖e⁻¹‖` for an isomorphism
+`e : E ≃L[𝕜] F` of normed spaces, where no junk value is needed; `condNumber_coe` identifies it
+with `NormedRing.condNumber` when `F = E`.
 -/
 
 namespace NormedRing
@@ -116,5 +120,44 @@ is `‖e‖ ‖e⁻¹‖` with the genuine inverse map: the junk value of `Ring.
 theorem condNumber_eq (e : E ≃L[𝕜] E) :
     NormedRing.condNumber (e : E →L[𝕜] E) = ‖(e : E →L[𝕜] E)‖ * ‖(e.symm : E →L[𝕜] E)‖ := by
   rw [NormedRing.condNumber, ring_inverse_coe]
+
+section TwoSpace
+
+variable {F : Type*} [NormedAddCommGroup F] [NormedSpace 𝕜 F]
+
+/-- The condition number of an isomorphism `e : E ≃L[𝕜] F` of normed spaces,
+`κ e = ‖e‖ ‖e⁻¹‖`.
+
+This is the two-space form: unlike `NormedRing.condNumber`, which lives in one normed ring and
+has to make room for the non-invertible elements with a junk value, an equivalence is invertible
+by construction and its inverse is the genuine one.  For `F = E` the two agree, which is
+`ContinuousLinearEquiv.condNumber_coe`.
+
+It measures the same thing: `‖v - v̂‖ / ‖v‖ ≤ κ e * (‖e v - e v̂‖ / ‖e v‖)`, so the relative error
+of the solution of `e v = w` is at most `κ e` times the relative error of the data. -/
+noncomputable def condNumber (e : E ≃L[𝕜] F) : ℝ :=
+  ‖(e : E →L[𝕜] F)‖ * ‖(e.symm : F →L[𝕜] E)‖
+
+/-- On a single space the two-space condition number is `NormedRing.condNumber` of the underlying
+element of the ring `E →L[𝕜] E`. -/
+theorem condNumber_coe (e : E ≃L[𝕜] E) :
+    NormedRing.condNumber (e : E →L[𝕜] E) = condNumber e :=
+  condNumber_eq e
+
+/-- The condition number of an inverse is that of the map: `e` and `e⁻¹` are equally well
+conditioned problems. -/
+@[simp] theorem condNumber_symm (e : E ≃L[𝕜] F) : condNumber e.symm = condNumber e := by
+  rw [condNumber, condNumber, e.symm_symm, mul_comm]
+
+/-- The condition number is nonnegative. -/
+theorem condNumber_nonneg (e : E ≃L[𝕜] F) : 0 ≤ condNumber e :=
+  mul_nonneg (norm_nonneg _) (norm_nonneg _)
+
+/-- An isomorphism is at best perfectly conditioned: `1 ≤ κ e`, because `e⁻¹ ∘ e` is the identity,
+of norm `1`.  The identity on a trivial space has norm `0`, whence `[Nontrivial E]`. -/
+theorem one_le_condNumber [Nontrivial E] (e : E ≃L[𝕜] F) : 1 ≤ condNumber e :=
+  e.one_le_norm_mul_norm_symm
+
+end TwoSpace
 
 end ContinuousLinearEquiv

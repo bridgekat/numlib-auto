@@ -6,6 +6,8 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 -/
 import Mathlib.Analysis.Normed.Algebra.GelfandFormula
 import Mathlib.Analysis.Normed.Algebra.Spectrum
+import Mathlib.Analysis.Normed.Module.FiniteDimension
+import Mathlib.Analysis.Normed.Unbundled.AlgebraNorm
 import Mathlib.Analysis.SpecificLimits.Normed
 
 /-!
@@ -18,6 +20,10 @@ classical consequences of Gelfand's formula for the spectral radius, which Mathl
 
 `spectralRadius_smul` records the absolute homogeneity `ρ(c • a) = ‖c‖ ρ(a)`, which needs no
 analytic input and holds in any algebra over a normed field.
+
+`spectralRadius_le_algebraNorm` bounds the spectral radius by an *arbitrary* algebra norm on a
+finite-dimensional algebra — "`|λ| ≤ ‖A‖` for any consistent matrix norm" — with no analysis and
+no relation to the norm the algebra already carries.
 -/
 
 open Filter Topology
@@ -97,20 +103,25 @@ private theorem spectralRadius_lt_one_of_norm_pow_lt_one {a : A} {n : ℕ} (h : 
     exact_mod_cast h
   exact absurd (h1.trans_lt (h2.trans_lt h3)) (lt_irrefl 1)
 
+omit [NormOneClass A] in
+/-- Powers of an element of spectral radius `< 1` tend to `0`.  This half of
+`spectralRadius_lt_one_iff_tendsto_pow` needs no `‖1‖ = 1`, which matters for the operator algebra
+`E →L[𝕜] E`, a `NormOneClass` only for nontrivial `E`. -/
+theorem tendsto_pow_of_spectralRadius_lt_one {a : A} (h : spectralRadius ℂ a < 1) :
+    Tendsto (fun n => a ^ n) atTop (𝓝 0) := by
+  obtain ⟨r, hr1, hr2⟩ := ENNReal.lt_iff_exists_nnreal_btwn.mp h
+  obtain ⟨C, _, hC⟩ := exists_norm_pow_le_of_spectralRadius_lt a hr1
+  have hrlt : (r : ℝ) < 1 := by exact_mod_cast ENNReal.coe_lt_one_iff.mp hr2
+  refine squeeze_zero_norm hC ?_
+  simpa using (tendsto_pow_atTop_nhds_zero_of_lt_one r.coe_nonneg hrlt).const_mul C
+
 /-- `ρ(a) < 1 ↔ aⁿ → 0`. -/
 theorem spectralRadius_lt_one_iff_tendsto_pow (a : A) :
     spectralRadius ℂ a < 1 ↔ Tendsto (fun n => a ^ n) atTop (𝓝 0) := by
-  constructor
-  · intro h
-    obtain ⟨r, hr1, hr2⟩ := ENNReal.lt_iff_exists_nnreal_btwn.mp h
-    obtain ⟨C, _, hC⟩ := exists_norm_pow_le_of_spectralRadius_lt a hr1
-    have hrlt : (r : ℝ) < 1 := by exact_mod_cast ENNReal.coe_lt_one_iff.mp hr2
-    refine squeeze_zero_norm hC ?_
-    simpa using (tendsto_pow_atTop_nhds_zero_of_lt_one r.coe_nonneg hrlt).const_mul C
-  · intro h
-    have hnorm : Tendsto (fun n => ‖a ^ n‖) atTop (𝓝 0) := by simpa using h.norm
-    obtain ⟨n, hn⟩ := (hnorm.eventually_lt_const one_pos).exists
-    exact spectralRadius_lt_one_of_norm_pow_lt_one hn
+  refine ⟨tendsto_pow_of_spectralRadius_lt_one, fun h => ?_⟩
+  have hnorm : Tendsto (fun n => ‖a ^ n‖) atTop (𝓝 0) := by simpa using h.norm
+  obtain ⟨n, hn⟩ := (hnorm.eventually_lt_const one_pos).exists
+  exact spectralRadius_lt_one_of_norm_pow_lt_one hn
 
 /-- A contraction has spectral radius `< 1`. The converse fails — a nilpotent matrix of large
 norm has spectral radius `0` — and the right converse is
@@ -141,3 +152,93 @@ theorem isUnit_one_sub_of_spectralRadius_lt_one {a : A} (h : spectralRadius ℂ 
     IsUnit (1 - a) :=
   have hs : Summable (a ^ ·) := (summable_pow_iff_spectralRadius_lt_one a).mpr h
   ⟨⟨1 - a, ∑' n : ℕ, a ^ n, hs.one_sub_mul_tsum_pow, hs.tsum_pow_mul_one_sub⟩, rfl⟩
+
+/-! ### An arbitrary algebra norm bounds the spectral radius
+
+The bound `ρ(a) ≤ N a` holds for *every* algebra norm on a finite-dimensional algebra, not only
+for the norm the algebra carries as a normed algebra.  The norm is bundled as an `AlgebraNorm`
+rather than supplied as an instance, because a second `NormedRing` instance on the same type would
+bring its own ring structure, unrelated to the one the spectrum is computed from.
+
+No analysis enters: in finite dimension an element that is a zero divisor on neither side is a
+unit, and submultiplicativity of `N` makes `μ • 1 - a` such an element as soon as `N a < ‖μ‖`. -/
+
+section AlgebraNorm
+
+variable {𝕜 B : Type*} [NormedField 𝕜] [Ring B] [Algebra 𝕜 B]
+
+/-- In a finite-dimensional algebra an element that is a zero divisor on neither side is a unit:
+both multiplications by it are injective, hence surjective. -/
+private theorem isUnit_of_mul_ne_zero [FiniteDimensional 𝕜 B] {x : B}
+    (hl : ∀ y : B, y ≠ 0 → x * y ≠ 0) (hr : ∀ y : B, y ≠ 0 → y * x ≠ 0) : IsUnit x := by
+  have hL : Function.Surjective (LinearMap.mulLeft 𝕜 x) :=
+    LinearMap.injective_iff_surjective.mp <|
+      (injective_iff_map_eq_zero _).mpr fun y hy => by by_contra hy0; exact hl y hy0 hy
+  have hR : Function.Surjective (LinearMap.mulRight 𝕜 x) :=
+    LinearMap.injective_iff_surjective.mp <|
+      (injective_iff_map_eq_zero _).mpr fun y hy => by by_contra hy0; exact hr y hy0 hy
+  obtain ⟨y, hy⟩ := hL 1
+  obtain ⟨z, hz⟩ := hR 1
+  rw [LinearMap.mulLeft_apply] at hy
+  rw [LinearMap.mulRight_apply] at hz
+  refine ⟨⟨x, y, hy, ?_⟩, rfl⟩
+  calc y * x = z * x * (y * x) := by rw [hz, one_mul]
+    _ = z * (x * y * x) := by simp only [mul_assoc]
+    _ = z * x := by rw [hy, one_mul]
+    _ = 1 := hz
+
+/-- **The spectral radius is at most any algebra norm**: `ρ(a) ≤ N a` for every algebra norm `N`
+on a finite-dimensional algebra over a normed field.
+
+This is the general form of "`|λ| ≤ ‖A‖` for any consistent matrix norm": consistency is exactly
+submultiplicativity of `N`, and no relation between `N` and a norm the algebra may already carry is
+needed.  Positive definiteness of `N` is used and cannot be dropped — on two-by-two matrices
+`B ↦ |det B| ^ (1 / 2)` is submultiplicative and absolutely homogeneous, sends `1` to `1`, and
+vanishes on a rank-one matrix of spectral radius `1`. -/
+theorem spectralRadius_le_algebraNorm [FiniteDimensional 𝕜 B] (N : AlgebraNorm 𝕜 B) (a : B) :
+    spectralRadius 𝕜 a ≤ ENNReal.ofReal (N a) := by
+  refine iSup₂_le fun μ hμ => ?_
+  have hle : ‖μ‖ ≤ N a := by
+    by_contra hcon
+    have hlt : N a < ‖μ‖ := not_le.mp hcon
+    have hpos : ∀ y : B, y ≠ 0 → 0 < N y := fun y hy =>
+      lt_of_le_of_ne (apply_nonneg N y) fun h => hy (eq_zero_of_map_eq_zero N h.symm)
+    have hleft : ∀ y : B, (‖μ‖ - N a) * N y ≤ N ((algebraMap 𝕜 B μ - a) * y) := by
+      intro y
+      have hsplit : algebraMap 𝕜 B μ * y = (algebraMap 𝕜 B μ - a) * y + a * y := by noncomm_ring
+      have h1 : N (algebraMap 𝕜 B μ * y) ≤ N ((algebraMap 𝕜 B μ - a) * y) + N (a * y) := by
+        rw [hsplit]; exact map_add_le_add N _ _
+      have h2 : N (algebraMap 𝕜 B μ * y) = ‖μ‖ * N y := by
+        rw [← Algebra.smul_def]; exact map_smul_eq_mul N _ _
+      have h3 : N (a * y) ≤ N a * N y := map_mul_le_mul N _ _
+      nlinarith
+    have hright : ∀ y : B, (‖μ‖ - N a) * N y ≤ N (y * (algebraMap 𝕜 B μ - a)) := by
+      intro y
+      have hsplit : y * algebraMap 𝕜 B μ = y * (algebraMap 𝕜 B μ - a) + y * a := by noncomm_ring
+      have h1 : N (y * algebraMap 𝕜 B μ) ≤ N (y * (algebraMap 𝕜 B μ - a)) + N (y * a) := by
+        rw [hsplit]; exact map_add_le_add N _ _
+      have h2 : N (y * algebraMap 𝕜 B μ) = ‖μ‖ * N y := by
+        rw [← Algebra.commutes, ← Algebra.smul_def]; exact map_smul_eq_mul N _ _
+      have h3 : N (y * a) ≤ N y * N a := map_mul_le_mul N _ _
+      nlinarith
+    refine spectrum.mem_iff.mp hμ
+      (isUnit_of_mul_ne_zero (𝕜 := 𝕜) (fun y hy h0 => ?_) fun y hy h0 => ?_)
+    · have h := hleft y
+      rw [h0, map_zero] at h
+      nlinarith [hpos y hy]
+    · have h := hright y
+      rw [h0, map_zero] at h
+      nlinarith [hpos y hy]
+  calc (‖μ‖₊ : ℝ≥0∞) = ENNReal.ofReal ‖μ‖ := (ofReal_norm μ).symm
+    _ ≤ ENNReal.ofReal (N a) := ENNReal.ofReal_le_ofReal hle
+
+end AlgebraNorm
+
+omit [NormOneClass A] in
+/-- If some algebra norm of `a` is `< 1`, the powers of `a` tend to `0`: the convergence criterion
+for an arbitrary consistent matrix norm.  Only submultiplicativity of the norm relates it to the
+algebra; the convergence is in the topology of `A`. -/
+theorem tendsto_pow_of_algebraNorm_lt_one [FiniteDimensional ℂ A] (N : AlgebraNorm ℂ A) {a : A}
+    (h : N a < 1) : Tendsto (fun n => a ^ n) atTop (𝓝 0) :=
+  tendsto_pow_of_spectralRadius_lt_one
+    ((spectralRadius_le_algebraNorm N a).trans_lt (ENNReal.ofReal_lt_one.mpr h))

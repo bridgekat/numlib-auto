@@ -1,16 +1,9 @@
-desc = '''
-Weak sequential convergence in a normed space (upstreaming candidate, natural home:
-`Mathlib.Analysis.Normed.Module.WeakDual` or `Mathlib.Topology.Algebra.Module.WeakDual`): the norm
-is weakly sequentially lower semicontinuous, Atkinson–Han, *Theoretical Numerical Analysis*,
-Example 3.3.5, which their §2.7, Ch. 11 and Kress reuse. Proved in the Atkinson–Han surface today
-with a local `WeakSeqTendsto` predicate; the phase-2 promotion states it for Mathlib's weak
-topology on `WeakSpace 𝕜 V` so that the predicate disappears.
-'''
+[[node]]
+id = "tendsto_toWeakSpace_iff"
+
+[[node]]
+id = "exists_norm_le_of_tendsto_toWeakSpace"
 
 [[node]]
 id = "norm_le_liminf_norm_of_weak_tendsto"
-kind = "theorem"
-desc = '''If `v n → u` weakly (`∀ ℓ : StrongDual 𝕜 V, Tendsto (fun n => ℓ (v n)) atTop (𝓝 (ℓ u))`, or
-`Tendsto (toWeakSpace ∘ v) atTop (𝓝 (toWeakSpace u))`), then `‖u‖ ≤ liminf (fun n => ‖v n‖) atTop`;
-by `exists_dual_vector''` at `u` and `le_opNorm`.'''
 source = "Atkinson–Han, Theoretical Numerical Analysis, Example 3.3.5"

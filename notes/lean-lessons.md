@@ -96,6 +96,11 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   complement `ᴾ`/`ᗮ` — they look identical in most fonts. Getting it wrong either makes the
   script's `assert s.count(old) == 1` fail for no visible reason, or writes Lean that fails to
   parse with `unexpected token 'ᴾ'`. The same pair of confusables: `ℓ` (script l) vs `l`.
+* The temp-file discipline above is not optional even for a two-line patch. A script that ends
+  `io.open(p, 'w', ...).write(s)` truncates the target *before* it encodes, so a single `𝕜` in the
+  replacement string leaves a zero-byte file. This happened again; the fix is mechanical — always
+  write to `p + '.tmp'` and `os.replace`. Recovery is `git checkout -- <file>`, which loses every
+  uncommitted edit to it, so commit before running a patch script.
 
 ## Correctness traps
 
@@ -123,6 +128,14 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   right angle. The correct subspace is the whole eigenspace, and the printed form is the
   simple-eigenvalue corollary. Check every "the eigenvector" against a repeated eigenvalue before
   transcribing.
+* **The Newton–Kantorovich uniqueness domain is the *open* ball of radius `t**`, not the closed
+  one.** The scalar majorant polynomial `p t = (L/2)t² − t/β + η/β` satisfies every Kantorovich
+  hypothesis at `x₀ = 0` and has a second zero at distance exactly `t**`, so uniqueness on the
+  closed ball is false whenever `h < 1/2`. The reason is visible in the recursion: the error
+  sequence obeys `τ_{k+1} = τ_k²/(2 s_k)`, for which `τ_k = u + s_k` is a *fixed* trajectory
+  starting at `1 + u = βL t**`; below it the normalized error `τ_k/(u + s_k)` squares to zero,
+  at it nothing moves. The closed ball of radius `t*` is a uniqueness domain, and that is the
+  form that survives the critical case `h = 1/2`.
 
 ## Syntax and elaboration
 
@@ -354,6 +367,20 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   that `lake build` reports; a plain `simp [h]` reduces the same `ite` without one.
 * A beta-redex goal — after `rintro _ ⟨w, hw, rfl⟩` on an image set, or in the `rfl` component of
   `refine ⟨_, …, rfl⟩` — defeats `rw`. `dsimp only` clears it.
+* `Filter.isCoboundedUnder_le_of_le l (fun i => h i) : IsCoboundedUnder (· ≤ ·) l f` from a
+  pointwise *lower* bound `x ≤ f i` is the cheap way to feed `limsup_le_limsup`; dually
+  `isCoboundedUnder_ge_of_le`. `IsCoboundedUnder.of_frequently_ge` is the other constructor.
+  `Filter.le_limsup_of_frequently_le` wants only `IsBoundedUnder (· ≤ ·)`, which
+  `Tendsto.isBoundedUnder_le` supplies for a dominating convergent sequence.
+* **`set x := e with h` leaves `x` a let-binding, and `nlinarith`/`positivity` unfold it.** Four
+  nested `set`s in one Kantorovich proof turned a routine `nlinarith` into a `whnf` heartbeat
+  timeout. `clear_value x` right after the `set` (children first: `clear_value η₁ β₁`) keeps the
+  equation `h` and makes the body opaque; a term proof built before the `clear_value`, such as
+  `div_pos hβ hs₁ : 0 < β / s₁`, then no longer typechecks against `0 < β₁` and needs its own
+  `rw [h]`.
+* Replacing a failing `nlinarith` on `a ≤ b` given `a² ≤ b²` by
+  `Real.sqrt_le_sqrt` between `√(a²)` and `√(b²)`, or by `mul_self_le_mul_self`, is both faster
+  and more robust than hunting for the right `pow_le_pow` name.
 
 ## Mathlib names and API
 
@@ -667,6 +694,28 @@ More structural facts:
 * A `noncomputable abbrev` wrapping a product of matrices is reducible enough that `rw [mul_assoc]`
   and friends rewrite *through* it, so a proof written against the folded statement will find its
   goal already unfolded. Open such a proof with `change` to the unfolded form and stay there.
+  It is also the whole of "in a finite-dimensional algebra an element that is a zero divisor on
+  neither side is a unit", which is all `spectralRadius_le_algebraNorm` needs — no analysis, no
+  norm equivalence, no completeness.
+* An **`AlgebraNorm 𝕜 A`** (`Mathlib.Analysis.Normed.Unbundled.AlgebraNorm`) is the right way to
+  quantify over "any consistent norm": `map_mul_le_mul`, `map_add_le_add`, `map_smul_eq_mul`,
+  `eq_zero_of_map_eq_zero`, `apply_nonneg`. Bundling it avoids the `[NormedRing (Matrix n n ℝ)]`
+  trap, because its hypotheses are attached to the type's canonical ring and module structures.
+* Entrywise matrix-norm identities under a map are already in Mathlib: `Matrix.nnnorm_map_eq`,
+  `Matrix.norm_map_eq`, `Matrix.frobenius_norm_map_eq`, so `‖complexify A‖ = ‖A‖` for the
+  Frobenius norm is one name. Only the `l²` operator norm needs the `x + i y` computation.
+* `Complex.sq_norm : ‖z‖ ^ 2 = normSq z` (`Complex.sq_abs` and `Complex.norm_eq_abs` are gone);
+  with `Complex.normSq_apply` that is the Pythagoras step for `EuclideanSpace ℂ n`.
+* `WithLp.toLp 2 v = 0` is not reached by `simp [map_zero]` — `toLp` is not a bundled map at that
+  position. Rewrite the argument to `0` first (`rw [hv0]; simp`), and get `v = 0` back from
+  `congrArg (WithLp.ofLp (p := 2))`.
+* `Matrix.smul_mulVec`, not `smul_mulVec_assoc`. `Matrix.exists_mulVec_eq_zero_iff` turns
+  `det M = 0` into an eigenvector, which is how a point of `spectrum ℂ M` becomes one.
+* `Real.continuousAt_const_rpow (h : a ≠ 0) : ContinuousAt (a ^ ·) b` composed with
+  `tendsto_one_div_atTop_nhds_zero_nat` is `c ^ (1/k) → 1`; `Real.pow_rpow_inv_natCast` is
+  `(x ^ k) ^ (k : ℝ)⁻¹ = x`. Both are needed for any Gelfand-style `k`-th root argument.
+* `spectrum.pow_norm_pow_one_div_tendsto_nhds_spectralRadius` is Gelfand's formula already in
+  `ENNReal.ofReal` form, which `ENNReal.tendsto_toReal` turns into a real limit in three lines.
 
 ## Design conventions of this library
 

@@ -8,6 +8,8 @@ import Numlib.Analysis.InnerProductSpace.Projection.Compression
 import Numlib.Analysis.InnerProductSpace.Projection.ObliqueProjection
 import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.Analysis.Normed.Algebra.SpectralRadius
+import Numlib.Analysis.Normed.Module.WeakDual
+import Numlib.Analysis.Normed.Operator.BanachSteinhaus
 import Numlib.Analysis.Normed.Ring.CondNumber
 import Numlib.Analysis.Normed.Ring.Inverse
 import Numlib.Approximation.BestApprox

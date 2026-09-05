@@ -26,50 +26,32 @@ id = "tendsto_iterate"
 
 [[node]]
 id = "kantorovich_unique"
-kind = "theorem"
-desc = '''The uniqueness clause of the Newton–Kantorovich theorem in Atkinson–Han's form (Thm 5.4.2): under
-the hypotheses of `Newton.kantorovich` with `h = β η L < 1/2`, the zero is unique in
-`closedBall x₀ t** ∩ D` with `t** = (1 + √(1 - 2h))/(β L)` (in `closedBall x₀ t*` when `h = 1/2`).
-Majorant argument: the second root of the majorant quadratic.'''
-deps = ["kantorovich", "iterate"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 5.4.2; Ortega–Rheinboldt, Iterative Solution of Nonlinear Equations in Several Variables, Section 12.6"
 
 [[node]]
+id = "kantorovich_unique_closedBall"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 5.4.2"
+
+[[node]]
 id = "kantorovich_norm_sub_le"
-kind = "theorem"
-desc = '''The sharp a priori bound of Atkinson–Han Thm 5.4.2: `‖x_n - xstar‖ ≤ (1 - √(1 - 2h))^{2^n}/(2^n β L)`,
-which improves the `(2h)^{2^n} η/(2^n h)` of `Newton.kantorovich` since `1 - √(1 - 2h) ≤ 2h`, the
-two agreeing at `h = 1/2`. From the closed form of the majorant sequence
-`t_{n+1} = t_n - p(t_n)/p'(t_n)` for `p t = (L β/2) t² - t + η`.'''
-deps = ["kantorovich", "iterate"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 5.4.2"
 
 [[node]]
 id = "kantorovich_of_closedBall_step"
-kind = "theorem"
-desc = '''Atkinson–Han's localized existence (Thm 5.4.2): the zero lies in `closedBall x₁ (t* - η)` where
-`x₁` is the first Newton iterate, and it suffices that this smaller ball, not `closedBall x₀ t*`,
-be contained in the domain where the Lipschitz bound on `F'` holds; the majorant sequence is
-started one step later.'''
-deps = ["kantorovich", "iterate_succ"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 5.4.2"
 
 [[node]]
 id = "chordStep"
-kind = "definition"
-desc = '''The modified (chord) Newton method with frozen derivative (Atkinson–Han (5.4.11), Ex 5.4.5;
-Kress Thm 6.21, the simplified Newton method): `chordStep Fn A x := x - A⁻¹ (Fn x)` for a fixed
-invertible `A : E ≃L[𝕜] F`, and `chordIterate Fn A x₀ k`.'''
-deps = ["step", "iterate"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, (5.4.11); Kress, Numerical Analysis, Theorem 6.21"
 
 [[node]]
+id = "chordIterate"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (5.4.11)"
+
+[[node]]
+id = "norm_chordStep_sub_le"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 5.4.5"
+
+[[node]]
 id = "tendsto_chordIterate"
-kind = "theorem"
-desc = '''Linear convergence of the chord method (Atkinson–Han Ex 5.4.5; Kress Thm 6.21): if `F'` is
-`L`-Lipschitz on `closedBall xstar r`, `Fn xstar = 0`, `A = F' x₀` (or any `A` with
-`‖1 - A⁻¹ F' xstar‖ < 1`) and `x₀` is close enough, the chord iterates converge to `xstar` with
-`‖x_{k+1} - xstar‖ ≤ q ‖x_k - xstar‖`, `q < 1` — the Banach fixed point theorem
-(`Numlib/Nonlinear/FixedPoint`) for `x ↦ x - A⁻¹ Fn x`, a contraction on a small ball.'''
-deps = ["chordStep", "lipschitzOnWith_of_hasFDerivWithinAt", "exists_unique_fixedPoint_of_mapsTo"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 5.4.5; Kress, Numerical Analysis, Theorem 6.21"
