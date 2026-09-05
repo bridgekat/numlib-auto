@@ -58,9 +58,16 @@ Banach/Hilbert-space level of generality:
    several implementations satisfying it).
 3. **Atkinson & Han, *Theoretical Numerical Analysis*** — Ch. 2 (§2.3–2.5), §3.3–3.7, Ch. 5
    (§5.1–5.4, 5.6), §8.2–8.3, 8.7, Ch. 9; §6.2 (Lax equivalence) and Ch. 11–12 (abstract parts)
-   are phase 3; Ch. 4, 7, 10, 13–14 (Fourier, Sobolev, FEM, BIE) are out of scope until Mathlib
-   has Sobolev spaces. It supplies the Banach/Hilbert-space forms in which the backbone is
-   stated, and its CG chapters (5.6, 9.4) meet Saad's CG in the middle.
+   are phase 3; Ch. 7, 10, 13–14 (Sobolev, FEM, BIE) are out of scope until Mathlib has Sobolev
+   spaces. It supplies the Banach/Hilbert-space forms in which the backbone is stated, and its CG
+   chapters (5.6, 9.4) meet Saad's CG in the middle.
+
+   *Amended (§13).* Chapter 4 was listed here as out of scope "until Mathlib has Sobolev spaces",
+   which was simply wrong: Fourier series, the Fourier transform, the DFT and Haar wavelets use no
+   Sobolev space. Mathlib has `SchwartzMap`, `TemperedDistribution` with its Fourier transform,
+   `Lp.fourierTransformₗᵢ` (Plancherel), `Integrable.fourierInv_fourier_eq` and `ZMod.dft`, so the
+   chapter is planned in §13. What Mathlib does lack, and what really blocks Ch. 7, 10 and 13–14,
+   is a weak derivative on an open set: see §14.
 
 Choi's thesis is the natural fourth book (phase 2): it fits the same spine (singular systems,
 MINRES-QLP, norm estimates) but is implementation-heavy and less theorem-dense than
@@ -285,8 +292,13 @@ Decisions that cut across sections, stated once here:
   stability across `m` is automatic; `Fin`-matrices are built at the end (3.5).
 * **Floating point is relational** (`FloatingPoint.RoundingModel`, §6), phase 4.
 * **Out of scope** (no Mathlib support, not planned): the Banach closed range theorem (unbounded
-  Banach adjoints), Sobolev spaces and FEM, nonlinear CG (AH Algorithm 2), analytic perturbation
-  theory via contour integrals of operator-valued functions.
+  Banach adjoints), Sobolev spaces on a domain and FEM, nonlinear CG (AH Algorithm 2), analytic
+  perturbation theory via contour integrals of operator-valued functions. *Amended (§13, §14):*
+  "distribution theory" used to be on this list and is not any more — Mathlib has tempered
+  distributions with their Fourier transform. The Sobolev entry means `W^{k,p}(Ω)` for an open
+  `Ω ⊆ ℝⁿ`, built from a weak derivative; Mathlib's `TemperedDistribution.MemSobolev` is the
+  Bessel-potential space on all of `ℝⁿ` and is not a substitute. The *periodic* spaces `H^s(2π)`
+  of AH §7.5 are a weighted `ℓ²` over the `AddCircle` Fourier basis and need none of it.
 
 ---
 
