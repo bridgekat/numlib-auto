@@ -73,14 +73,21 @@ def main() -> None:
     if not files:
         sys.exit("no conflicted files")
     left = []
+    # Regenerate both roots every time, not only when git reports them as conflicting: a branch
+    # that adds a module to one library and touches nothing else merges *cleanly* into a root file
+    # that another branch has already rewritten, and the new import is then silently absent. A
+    # module nobody imports is invisible to the tracker, which reports its nodes as `open`.
+    for lib in LIBS:
+        regenerate_root(lib)
     for f in files:
         if f in (f"{lib}.lean" for lib in LIBS):
-            regenerate_root(f[: -len(".lean")])
+            pass
         elif f == LESSONS:
             keep_both(ROOT / f)
         else:
             left.append(f)
-    subprocess.run(["git", "add", "--"] + [f for f in files if f not in left], cwd=ROOT, check=True)
+    subprocess.run(["git", "add", "--"] + [f"{lib}.lean" for lib in LIBS]
+                   + [f for f in files if f not in left], cwd=ROOT, check=True)
     if left:
         print("\nleft for you to resolve by hand:")
         for f in left:

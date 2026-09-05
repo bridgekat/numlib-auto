@@ -46,6 +46,6 @@ deps = ["pcg", "SaadSparse.Ch08.cgne"]
 id = "pcgne_eq"
 kind = "theorem"
 desc = '''Algorithm 9.8 is Algorithm 9.1 applied to `A Aᴴ u = b` with preconditioner `M`, read in
-`x = Aᴴ u`; hence, by `Krylov.isMinErrorIterate_of_isGalerkinIterate_comp_adjoint`, its iterates
+`x = Aᴴ u`; hence, by `Krylov.isMinError_of_isGalerkinIterate_comp_adjoint`, its iterates
 minimize `‖x_* - x‖₂` over the preconditioned affine space.'''
-deps = ["pcgne", "pcg_eq", "Krylov.isMinErrorIterate_of_isGalerkinIterate_comp_adjoint"]
+deps = ["pcgne", "pcg_eq", "Krylov.isMinError_of_isGalerkinIterate_comp_adjoint"]

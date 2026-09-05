@@ -56,7 +56,7 @@ desc = '''The optimality of CGNE: `x_m` minimizes `‖x_* - x‖₂` over
 `x₀ + Aᴴ 𝒦_m(A Aᴴ, r₀) = x₀ + 𝒦_m(Aᴴ A, Aᴴ r₀)`, i.e.
 `IsMinError x_* x₀ (𝒦_m(Aᴴ A, Aᴴ r₀)) x_m` — the minimal-error property, against CGNR's minimal
 residual over the same space.'''
-deps = ["cgne_eq", "Krylov.isMinErrorIterate_of_isGalerkinIterate_comp_adjoint", "IsMinError"]
+deps = ["cgne_eq", "Krylov.isMinError_of_isGalerkinIterate_comp_adjoint", "IsMinError"]
 
 [[node]]
 id = "subspace_adjoint_eq"

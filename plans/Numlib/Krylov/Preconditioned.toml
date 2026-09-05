@@ -106,7 +106,7 @@ FGMRES satisfies, since its field relates one family of vectors to itself
 an unrelated family (Saad (9.22)).  The two-family relation `Krylov.HessenbergRelation₂` of the
 planned group `Numlib/Krylov/QuasiMinRes` is what this needs; `deps` still names
 `HessenbergRelation` only because that group does not exist in this branch.'''
-deps = ["IsMinRes", "HessenbergRelation", "HessenbergRelation.residual_eq"]
+deps = ["IsMinRes", "HessenbergRelation₂", "HessenbergRelation₂.residual_eq", "IsQuasiMinResIterate", "IsQuasiMinResIterate.isMinOn_norm_residual"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 9.2"
 
 [[node]]
@@ -117,5 +117,5 @@ iterate `x_j` is exact iff `h_{j+1,j} = 0`; the flexible counterpart of the luck
 corollary of `Krylov.HessenbergRelation`.
 
 Blocked on `FGMRES.isMinRes`, hence on `Krylov.HessenbergRelation₂`.'''
-deps = ["FGMRES.isMinRes", "HessenbergRelation.residual_eq_of_mulVec_eq"]
+deps = ["FGMRES.isMinRes", "HessenbergRelation₂.residual_eq_of_mulVec_eq"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 9.3"
