@@ -1,35 +1,5 @@
 namespace = "FiniteDifference"
-desc = '''
-Two-level schemes: the elementary convergence theorem for a recursion `v^{m+1} = Q v^m + h g^m` in
-one normed space, where the exact values satisfy the same recursion up to a local truncation error
-`h τ^m`. Atkinson–Han, *Theoretical Numerical Analysis*, Section 6.3 (Definition 6.3.1 and
-Theorem 6.3.2).
-
-This is the form of the Lax theory that is actually applied to a difference scheme: the space does
-not vary with the discretization parameter in the statement (it varies in the application, and the
-constants are uniform in it), the amplification operator `Q` is fixed, and the conclusion is the
-one-directional implication *consistent and stable implies convergent* with the order carried
-through. The proof is the closed form `e^{m+1} = h Σ_{l ≤ m} Q^l τ^{m-l}` of the error recursion
-`e^{m+1} = Q e^m + h τ^m` with `e^0 = 0`, so the whole theorem is a geometric-sum estimate and the
-statement should be an inequality with explicit constants — no limits, no order symbols, no
-family indexed by a mesh parameter.
-
-Stated over a real normed space, since the step size `h` is a real scalar multiplying elements of
-the space, and the discrete solutions of a difference scheme are real. The book's consistency,
-order `(p₁, p₂)`, stability and convergence of Definition 6.3.1 are the surface's business: they
-are statements about a family of schemes as the mesh is refined, and each one is this inequality
-plus a limit. Do not define a mesh family here.
-'''
 
 [[node]]
 id = "norm_sub_le_of_stable"
-kind = "theorem"
-desc = '''Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 6.3.2. Let `Q : E →L[ℝ] E`, let
-`v` satisfy `v^{m+1} = Q v^m + h g^m` and `u` satisfy `u^{m+1} = Q u^m + h g^m + h τ^m` for
-`m < N`, with `u^0 = v^0`, `0 ≤ h`, `N * h ≤ T`, and the stability bound `‖Q ^ m‖ ≤ M₀` for
-`m ≤ N`. If `‖τ^m‖ ≤ δ` for `m < N`, then `‖u^m - v^m‖ ≤ M₀ * T * δ` for every `m ≤ N`. Proof: the
-error satisfies `e^{m+1} = Q e^m + h τ^m` with `e^0 = 0`, hence
-`e^{m+1} = h Σ_{l ≤ m} Q^l τ^{m-l}`, and the sum of `m + 1 ≤ N` terms of size at most `M₀ δ` times
-`h` is at most `M₀ T δ`. With `δ = c (h_x^{p₁} + h^{p₂})` this is the convergence order (6.3.7) of
-the scheme.'''
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 6.3.2"

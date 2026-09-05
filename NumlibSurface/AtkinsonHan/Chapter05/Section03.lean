@@ -1,4 +1,5 @@
 import Numlib.Analysis.Calculus.MeanValue
+import Numlib.Analysis.Convex.Gateaux
 import Mathlib.Analysis.Calculus.LineDeriv.Basic
 import Mathlib.Analysis.Calculus.FDeriv.Bilinear
 import Mathlib.Analysis.Calculus.FDeriv.Partial
@@ -25,7 +26,9 @@ second-order Taylor remainder) together with the Lipschitz-derivative form
 Proposition 5.3.15 on partial derivatives, including formula (5.3.8).  Section §5.3.4 on convex
 functionals is Theorems 5.3.17–5.3.19: convexity via the tangent plane inequality and via
 monotonicity of the derivative, their strict versions, and the characterization of a minimizer by
-the variational inequality (5.3.10) and, over a subspace, the variational equation (5.3.11).
+the variational inequality (5.3.10) and, over a subspace, the variational equation (5.3.11);
+those four are specializations of `Numlib.Analysis.Convex.Gateaux`, which owns the general
+statements and their proofs.
 
 Left out, with the reason: Examples 5.3.9 (Jacobian) and 5.3.10 (the Fréchet derivative of the
 Urysohn operator; needs the phase-3 `C[a,b]` integral-operator toolkit and differentiation under
@@ -172,24 +175,12 @@ theorem hasFDerivAt_of_hasGateauxDerivAt_uniform {f : V → W} {A : V →L[ℝ] 
 
 /-- Definition 5.3.2 gives the derivative of the restriction `s ↦ f (u + s • h)` only at `s = 0`;
 a Gâteaux derivative at the point `u + t • h` gives it at `s = t`, by translating the parameter.
-This is the form in which the mean value theorem is applied below. -/
+This is the form in which the mean value theorem is applied below; it is
+`HasLineDerivAt.hasDerivAt_line` applied in the single direction `h`. -/
 theorem HasGateauxDerivAt.hasDerivAt_line {f : V → W} {A : V →L[ℝ] W} {u h : V} {t : ℝ}
     (hG : HasGateauxDerivAt f A (u + t • h)) :
-    HasDerivAt (fun s : ℝ => f (u + s • h)) (A h) t := by
-  have h0 : HasDerivAt (fun s : ℝ => f (u + t • h + s • h)) (A h) 0 := hG h
-  have h0' : HasDerivAt (fun s : ℝ => f (u + t • h + s • h)) (A h) ((fun s : ℝ => s - t) t) := by
-    simpa using h0
-  have h1 : HasDerivAt (fun s : ℝ => s - t) 1 t := (hasDerivAt_id t).sub_const t
-  have h2 : HasDerivAt ((fun s : ℝ => f (u + t • h + s • h)) ∘ fun s : ℝ => s - t)
-      ((1 : ℝ) • A h) t := HasDerivAt.scomp t h0' h1
-  have heq : ((fun s : ℝ => f (u + t • h + s • h)) ∘ fun s : ℝ => s - t)
-      = fun s : ℝ => f (u + s • h) := by
-    funext s
-    simp only [Function.comp_apply]
-    congr 1
-    module
-  rw [heq, one_smul] at h2
-  exact h2
+    HasDerivAt (fun s : ℝ => f (u + s • h)) (A h) t :=
+  (hG h).hasDerivAt_line
 
 /-- **Proposition 5.3.4**(iii): if `f` has a Gâteaux derivative `A u` at every point of a ball
 around `u₀` and `u ↦ A u` is continuous at `u₀`, then `A u₀` is the Fréchet derivative of `f` at
@@ -345,250 +336,40 @@ section Convexity
 variable {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V]
 variable {K : Set V} {f : V → ℝ} {f' : V → V →L[ℝ] ℝ}
 
-/-- Points of the segment `[u, v]` of a convex set, in the parametrization `u + t (v - u)`
-used throughout §5.3.4. -/
-private theorem segment_mem (hK : Convex ℝ K) {u v : V} (hu : u ∈ K) (hv : v ∈ K) {t : ℝ}
-    (ht : t ∈ Icc (0 : ℝ) 1) : u + t • (v - u) ∈ K := by
-  have h : u + t • (v - u) = (1 - t) • u + t • v := by module
-  rw [h]
-  exact hK hu hv (by linarith [ht.2]) ht.1 (by ring)
-
-/-- Mean value theorem along the segment `[u, v]` of a convex set: for a Gâteaux differentiable
-`f` there is an interior point `u + c (v - u)` at which the derivative in the direction `v - u`
-is the slope `f v - f u`.  This is the common step of Theorems 5.3.17 and 5.3.18. -/
-private theorem exists_lineDeriv_eq_sub (hK : Convex ℝ K)
-    (hG : ∀ u ∈ K, HasGateauxDerivAt f (f' u) u) {u : V} (hu : u ∈ K) {v : V} (hv : v ∈ K) :
-    ∃ c ∈ Ioo (0 : ℝ) 1, u + c • (v - u) ∈ K ∧ f' (u + c • (v - u)) (v - u) = f v - f u := by
-  have hderiv : ∀ t ∈ Icc (0 : ℝ) 1,
-      HasDerivAt (fun s : ℝ => f (u + s • (v - u))) (f' (u + t • (v - u)) (v - u)) t :=
-    fun t ht => (hG _ (segment_mem hK hu hv ht)).hasDerivAt_line
-  have hcont : ContinuousOn (fun s : ℝ => f (u + s • (v - u))) (Icc 0 1) :=
-    fun t ht => ((hderiv t ht).continuousAt).continuousWithinAt
-  obtain ⟨c, hc, hcslope⟩ := exists_hasDerivAt_eq_slope (fun s : ℝ => f (u + s • (v - u)))
-    (fun t : ℝ => f' (u + t • (v - u)) (v - u)) zero_lt_one hcont
-    (fun t ht => hderiv t ⟨ht.1.le, ht.2.le⟩)
-  have h1v : u + (1 : ℝ) • (v - u) = v := by module
-  have h0v : u + (0 : ℝ) • (v - u) = u := by module
-  simp only [h1v, h0v, sub_zero, div_one] at hcslope
-  exact ⟨c, hc, segment_mem hK hu hv ⟨hc.1.le, hc.2.le⟩, hcslope⟩
-
-/-- **Theorem 5.3.17**, (a) ⇒ (b): a convex Gâteaux differentiable functional lies above each of
-its tangent planes, `f u + ⟨f'(u), v - u⟩ ≤ f v`. -/
-theorem ConvexOn.add_lineDeriv_le (hcvx : ConvexOn ℝ K f)
-    (hG : ∀ u ∈ K, HasGateauxDerivAt f (f' u) u) {u : V} (hu : u ∈ K) {v : V} (hv : v ∈ K) :
-    f u + f' u (v - u) ≤ f v := by
-  have hslope : Tendsto (fun t : ℝ => t⁻¹ • (f (u + t • (v - u)) - f u)) (𝓝[>] (0 : ℝ))
-      (𝓝 (f' u (v - u))) := (hG u hu (v - u)).tendsto_slope_zero_right
-  have hle : ∀ᶠ t : ℝ in 𝓝[>] (0 : ℝ), t⁻¹ • (f (u + t • (v - u)) - f u) ≤ f v - f u := by
-    filter_upwards [Ioo_mem_nhdsGT (zero_lt_one' ℝ)] with t ht
-    have hpt : (1 - t) • u + t • v = u + t • (v - u) := by module
-    have hconv := hcvx.2 hu hv (by linarith [ht.2] : (0 : ℝ) ≤ 1 - t) ht.1.le (by ring)
-    rw [hpt] at hconv
-    simp only [smul_eq_mul] at hconv ⊢
-    rw [inv_mul_le_iff₀ ht.1]
-    have hexp : (1 - t) * f u + t * f v - f u = t * (f v - f u) := by ring
-    linarith
-  have hmain := le_of_tendsto hslope hle
-  linarith
-
-/-- **Theorem 5.3.17**, (b) ⇒ (a). -/
-theorem convexOn_of_add_lineDeriv_le (hK : Convex ℝ K)
-    (h : ∀ u ∈ K, ∀ v ∈ K, f u + f' u (v - u) ≤ f v) : ConvexOn ℝ K f := by
-  refine ⟨hK, ?_⟩
-  intro x hx y hy a b ha hb hab
-  have hwK : a • x + b • y ∈ K := hK hx hy ha hb hab
-  have h1 := h _ hwK x hx
-  have h2 := h _ hwK y hy
-  have hz : a • (x - (a • x + b • y)) + b • (y - (a • x + b • y)) = 0 := by
-    have hexp : a • (x - (a • x + b • y)) + b • (y - (a • x + b • y))
-        = (a • x + b • y) - (a + b) • (a • x + b • y) := by module
-    rw [hexp, hab, one_smul, sub_self]
-  have hlin : a * f' (a • x + b • y) (x - (a • x + b • y))
-      + b * f' (a • x + b • y) (y - (a • x + b • y)) = 0 := by
-    have hc := congrArg (f' (a • x + b • y)) hz
-    rw [map_add, map_smul, map_smul, map_zero] at hc
-    simpa [smul_eq_mul] using hc
-  have ha1 := mul_le_mul_of_nonneg_left h1 ha
-  have hb1 := mul_le_mul_of_nonneg_left h2 hb
-  have hsum : a * f (a • x + b • y) + b * f (a • x + b • y) = f (a • x + b • y) := by
-    rw [← add_mul, hab, one_mul]
-  simp only [smul_eq_mul]
-  linarith
-
-/-- **Theorem 5.3.17**, (b) ⇒ (c): the Gâteaux derivative of a convex functional is a monotone
-operator. -/
-theorem monotone_of_add_lineDeriv_le (h : ∀ u ∈ K, ∀ v ∈ K, f u + f' u (v - u) ≤ f v)
-    {u : V} (hu : u ∈ K) {v : V} (hv : v ∈ K) : 0 ≤ (f' v - f' u) (v - u) := by
-  have h1 := h u hu v hv
-  have h2 := h v hv u hu
-  have h3 : f' v (u - v) = -f' v (v - u) := by
-    rw [← map_neg]
-    congr 1
-    abel
-  rw [h3] at h2
-  rw [sub_apply]
-  linarith
-
-/-- **Theorem 5.3.17**, (c) ⇒ (b), by the mean value theorem for `t ↦ f (u + t (v - u))`. -/
-theorem add_lineDeriv_le_of_monotone (hK : Convex ℝ K)
-    (hG : ∀ u ∈ K, HasGateauxDerivAt f (f' u) u)
-    (h : ∀ u ∈ K, ∀ v ∈ K, 0 ≤ (f' v - f' u) (v - u)) {u : V} (hu : u ∈ K) {v : V} (hv : v ∈ K) :
-    f u + f' u (v - u) ≤ f v := by
-  obtain ⟨c, hc, hcmem, hcslope⟩ := exists_lineDeriv_eq_sub hK hG hu hv
-  have hmono := h u hu _ hcmem
-  rw [show u + c • (v - u) - u = c • (v - u) by abel, sub_apply, map_smul, map_smul, smul_eq_mul,
-    smul_eq_mul] at hmono
-  have hkey : f' u (v - u) ≤ f' (u + c • (v - u)) (v - u) := by nlinarith [hc.1]
-  linarith
-
 /-- **Theorem 5.3.17**: for a Gâteaux differentiable `f : V → ℝ` on a convex set `K`, the
 following are equivalent: (a) `f` is convex on `K`; (b) `f u + ⟨f'(u), v - u⟩ ≤ f v` for all
-`u, v ∈ K`; (c) the derivative is monotone, `⟨f'(v) - f'(u), v - u⟩ ≥ 0`. -/
+`u, v ∈ K`; (c) the derivative is monotone, `⟨f'(v) - f'(u), v - u⟩ ≥ 0`.  The two equivalences
+are `convexOn_iff_forall_add_lineDeriv_le` and `convexOn_iff_monotone_lineDeriv`, whose hypothesis
+`∀ h, HasLineDerivAt ℝ f (f' u h) u h` is `HasGateauxDerivAt f (f' u) u` by definition. -/
 theorem theorem_5_3_17 (hK : Convex ℝ K) (hG : ∀ u ∈ K, HasGateauxDerivAt f (f' u) u) :
     (ConvexOn ℝ K f ↔ ∀ u ∈ K, ∀ v ∈ K, f u + f' u (v - u) ≤ f v) ∧
-      (ConvexOn ℝ K f ↔ ∀ u ∈ K, ∀ v ∈ K, 0 ≤ (f' v - f' u) (v - u)) := by
-  have hab : ConvexOn ℝ K f ↔ ∀ u ∈ K, ∀ v ∈ K, f u + f' u (v - u) ≤ f v :=
-    ⟨fun hc u hu v hv => ConvexOn.add_lineDeriv_le hc hG hu hv, convexOn_of_add_lineDeriv_le hK⟩
-  exact ⟨hab, hab.trans ⟨fun h u hu v hv => monotone_of_add_lineDeriv_le h hu hv,
-    fun h u hu v hv => add_lineDeriv_le_of_monotone hK hG h hu hv⟩⟩
+      (ConvexOn ℝ K f ↔ ∀ u ∈ K, ∀ v ∈ K, 0 ≤ (f' v - f' u) (v - u)) :=
+  ⟨convexOn_iff_forall_add_lineDeriv_le hK hG, convexOn_iff_monotone_lineDeriv hK hG⟩
 
-/-- **Theorem 5.3.18**, (a) ⇒ (b): the strict tangent plane inequality for a strictly convex
-functional.  Applying Theorem 5.3.17 at the midpoint of `[u, v]` gives the strict inequality. -/
-theorem StrictConvexOn.add_lineDeriv_lt (hcvx : StrictConvexOn ℝ K f)
-    (hG : ∀ u ∈ K, HasGateauxDerivAt f (f' u) u) {u : V} (hu : u ∈ K) {v : V} (hv : v ∈ K)
-    (huv : u ≠ v) : f u + f' u (v - u) < f v := by
-  have hw : (2 : ℝ)⁻¹ • u + (2 : ℝ)⁻¹ • v ∈ K :=
-    hcvx.1 hu hv (by norm_num) (by norm_num) (by norm_num)
-  have hlt := hcvx.2 hu hv huv (by norm_num : (0 : ℝ) < 2⁻¹) (by norm_num : (0 : ℝ) < 2⁻¹)
-    (by norm_num)
-  have hb := ConvexOn.add_lineDeriv_le hcvx.convexOn hG hu hw
-  have hwu : (2 : ℝ)⁻¹ • u + (2 : ℝ)⁻¹ • v - u = (2 : ℝ)⁻¹ • (v - u) := by module
-  rw [hwu, map_smul, smul_eq_mul] at hb
-  simp only [smul_eq_mul] at hlt
-  linarith
-
-/-- **Theorem 5.3.18**, (b) ⇒ (a). -/
-theorem strictConvexOn_of_add_lineDeriv_lt (hK : Convex ℝ K)
-    (h : ∀ u ∈ K, ∀ v ∈ K, u ≠ v → f u + f' u (v - u) < f v) : StrictConvexOn ℝ K f := by
-  refine ⟨hK, ?_⟩
-  intro x hx y hy hxy a b ha hb hab
-  have hwK : a • x + b • y ∈ K := hK hx hy ha.le hb.le hab
-  have hwx : a • x + b • y ≠ x := by
-    intro hcon
-    have hb0 : b • (y - x) = 0 := by
-      have hexp : b • (y - x) = a • x + b • y - (a + b) • x := by module
-      rw [hexp, hab, one_smul, hcon, sub_self]
-    rcases smul_eq_zero.mp hb0 with h' | h'
-    · exact hb.ne' h'
-    · exact hxy (sub_eq_zero.mp h').symm
-  have hwy : a • x + b • y ≠ y := by
-    intro hcon
-    have ha0 : a • (x - y) = 0 := by
-      have hexp : a • (x - y) = a • x + b • y - (a + b) • y := by module
-      rw [hexp, hab, one_smul, hcon, sub_self]
-    rcases smul_eq_zero.mp ha0 with h' | h'
-    · exact ha.ne' h'
-    · exact hxy (sub_eq_zero.mp h')
-  have h1 := h _ hwK x hx hwx
-  have h2 := h _ hwK y hy hwy
-  have hz : a • (x - (a • x + b • y)) + b • (y - (a • x + b • y)) = 0 := by
-    have hexp : a • (x - (a • x + b • y)) + b • (y - (a • x + b • y))
-        = (a • x + b • y) - (a + b) • (a • x + b • y) := by module
-    rw [hexp, hab, one_smul, sub_self]
-  have hlin : a * f' (a • x + b • y) (x - (a • x + b • y))
-      + b * f' (a • x + b • y) (y - (a • x + b • y)) = 0 := by
-    have hc := congrArg (f' (a • x + b • y)) hz
-    rw [map_add, map_smul, map_smul, map_zero] at hc
-    simpa [smul_eq_mul] using hc
-  have ha1 := mul_lt_mul_of_pos_left h1 ha
-  have hb1 := mul_lt_mul_of_pos_left h2 hb
-  have hsum : a * f (a • x + b • y) + b * f (a • x + b • y) = f (a • x + b • y) := by
-    rw [← add_mul, hab, one_mul]
-  simp only [smul_eq_mul]
-  linarith
-
-/-- **Theorem 5.3.18**, (b) ⇒ (c): strict monotonicity of the derivative. -/
-theorem strictMonotone_of_add_lineDeriv_lt
-    (h : ∀ u ∈ K, ∀ v ∈ K, u ≠ v → f u + f' u (v - u) < f v) {u : V} (hu : u ∈ K) {v : V}
-    (hv : v ∈ K) (huv : u ≠ v) : 0 < (f' v - f' u) (v - u) := by
-  have h1 := h u hu v hv huv
-  have h2 := h v hv u hu huv.symm
-  have h3 : f' v (u - v) = -f' v (v - u) := by
-    rw [← map_neg]
-    congr 1
-    abel
-  rw [h3] at h2
-  rw [sub_apply]
-  linarith
-
-/-- **Theorem 5.3.18**, (c) ⇒ (b). -/
-theorem add_lineDeriv_lt_of_strictMonotone (hK : Convex ℝ K)
-    (hG : ∀ u ∈ K, HasGateauxDerivAt f (f' u) u)
-    (h : ∀ u ∈ K, ∀ v ∈ K, u ≠ v → 0 < (f' v - f' u) (v - u)) {u : V} (hu : u ∈ K) {v : V}
-    (hv : v ∈ K) (huv : u ≠ v) : f u + f' u (v - u) < f v := by
-  obtain ⟨c, hc, hcmem, hcslope⟩ := exists_lineDeriv_eq_sub hK hG hu hv
-  have hne : u ≠ u + c • (v - u) := by
-    intro hcon
-    have hz : c • (v - u) = 0 := by
-      have hd : u + c • (v - u) - u = c • (v - u) := by abel
-      rw [← hd, ← hcon, sub_self]
-    rcases smul_eq_zero.mp hz with h' | h'
-    · exact absurd h' (ne_of_gt hc.1)
-    · exact huv (sub_eq_zero.mp h').symm
-  have hmono := h u hu _ hcmem hne
-  rw [show u + c • (v - u) - u = c • (v - u) by abel, sub_apply, map_smul, map_smul, smul_eq_mul,
-    smul_eq_mul] at hmono
-  have hkey : f' u (v - u) < f' (u + c • (v - u)) (v - u) := by nlinarith [hc.1]
-  linarith
-
-/-- **Theorem 5.3.18**: the strict version of Theorem 5.3.17. -/
+/-- **Theorem 5.3.18**: the strict version of Theorem 5.3.17, from
+`strictConvexOn_iff_forall_add_lineDeriv_lt` and `strictConvexOn_iff_forall_lineDeriv_sub_pos`. -/
 theorem theorem_5_3_18 (hK : Convex ℝ K) (hG : ∀ u ∈ K, HasGateauxDerivAt f (f' u) u) :
     (StrictConvexOn ℝ K f ↔ ∀ u ∈ K, ∀ v ∈ K, u ≠ v → f u + f' u (v - u) < f v) ∧
-      (StrictConvexOn ℝ K f ↔ ∀ u ∈ K, ∀ v ∈ K, u ≠ v → 0 < (f' v - f' u) (v - u)) := by
-  have hab : StrictConvexOn ℝ K f ↔ ∀ u ∈ K, ∀ v ∈ K, u ≠ v → f u + f' u (v - u) < f v :=
-    ⟨fun hc u hu v hv huv => StrictConvexOn.add_lineDeriv_lt hc hG hu hv huv,
-      strictConvexOn_of_add_lineDeriv_lt hK⟩
-  exact ⟨hab, hab.trans ⟨fun h u hu v hv huv => strictMonotone_of_add_lineDeriv_lt h hu hv huv,
-    fun h u hu v hv huv => add_lineDeriv_lt_of_strictMonotone hK hG h hu hv huv⟩⟩
+      (StrictConvexOn ℝ K f ↔ ∀ u ∈ K, ∀ v ∈ K, u ≠ v → 0 < (f' v - f' u) (v - u)) :=
+  ⟨strictConvexOn_iff_forall_add_lineDeriv_lt hK hG,
+    strictConvexOn_iff_forall_lineDeriv_sub_pos hK hG⟩
 
 /-- **Theorem 5.3.19**: for a convex Gâteaux differentiable `f` on a convex set `K`, `u` minimizes
 `f` over `K` if and only if it solves the variational inequality (5.3.10),
 `⟨f'(u), v - u⟩ ≥ 0` for all `v ∈ K`.  The book states the two existence problems to be
-equivalent; the proof gives this stronger pointwise form. -/
-theorem theorem_5_3_19 (hK : Convex ℝ K) (hG : ∀ u ∈ K, HasGateauxDerivAt f (f' u) u)
-    (hcvx : ConvexOn ℝ K f) {u : V} (hu : u ∈ K) :
-    IsMinOn f K u ↔ ∀ v ∈ K, 0 ≤ f' u (v - u) := by
-  rw [isMinOn_iff]
-  constructor
-  · intro hmin v hv
-    have hslope : Tendsto (fun t : ℝ => t⁻¹ • (f (u + t • (v - u)) - f u)) (𝓝[>] (0 : ℝ))
-        (𝓝 (f' u (v - u))) := (hG u hu (v - u)).tendsto_slope_zero_right
-    refine ge_of_tendsto hslope ?_
-    filter_upwards [Ioo_mem_nhdsGT (zero_lt_one' ℝ)] with t ht
-    have hmem : u + t • (v - u) ∈ K := segment_mem hK hu hv ⟨ht.1.le, ht.2.le⟩
-    have hfu : f u ≤ f (u + t • (v - u)) := hmin _ hmem
-    simp only [smul_eq_mul]
-    exact mul_nonneg (le_of_lt (inv_pos.2 ht.1)) (by linarith)
-  · intro h v hv
-    have hb := ConvexOn.add_lineDeriv_le hcvx hG hu hv
-    have hv0 := h v hv
-    linarith
+equivalent; `isMinOn_iff_forall_lineDeriv_nonneg` gives this stronger pointwise form.  The book's
+separate hypothesis that `K` is convex is `hcvx.1` and is not repeated. -/
+theorem theorem_5_3_19 (hG : ∀ u ∈ K, HasGateauxDerivAt f (f' u) u) (hcvx : ConvexOn ℝ K f)
+    {u : V} (hu : u ∈ K) : IsMinOn f K u ↔ ∀ v ∈ K, 0 ≤ f' u (v - u) :=
+  isMinOn_iff_forall_lineDeriv_nonneg hcvx hG hu
 
 /-- **Theorem 5.3.19**, formula (5.3.11): when `K` is a subspace the variational inequality
-becomes the variational equation `⟨f'(u), v⟩ = 0` for all `v ∈ K`. -/
+becomes the variational equation `⟨f'(u), v⟩ = 0` for all `v ∈ K`.  This is
+`isMinOn_iff_forall_lineDeriv_eq_zero`. -/
 theorem theorem_5_3_19_submodule (K : Submodule ℝ V)
     (hG : ∀ u ∈ (K : Set V), HasGateauxDerivAt f (f' u) u) (hcvx : ConvexOn ℝ (K : Set V) f)
-    {u : V} (hu : u ∈ K) : IsMinOn f (K : Set V) u ↔ ∀ v ∈ K, f' u v = 0 := by
-  rw [theorem_5_3_19 K.convex hG hcvx hu]
-  constructor
-  · intro h v hv
-    have h1 := h (u + v) (K.add_mem hu hv)
-    have h2 := h (u - v) (K.sub_mem hu hv)
-    rw [show u + v - u = v by abel] at h1
-    rw [show u - v - u = -v by abel, map_neg] at h2
-    linarith
-  · intro h v hv
-    exact le_of_eq (h (v - u) (K.sub_mem hv hu)).symm
+    {u : V} (hu : u ∈ K) : IsMinOn f (K : Set V) u ↔ ∀ v ∈ K, f' u v = 0 :=
+  isMinOn_iff_forall_lineDeriv_eq_zero hcvx hG hu
 
 end Convexity
 

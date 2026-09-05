@@ -1,4 +1,6 @@
 import Numlib.Analysis.Calculus.MeanValue
+import Numlib.Analysis.Convex.Gateaux
+import Numlib.Analysis.Convex.SaddlePoint
 import Numlib.Analysis.Convex.StrictConvexSpace
 import Numlib.Analysis.InnerProductSpace.Coercive
 import Numlib.Analysis.InnerProductSpace.Energy
@@ -22,6 +24,7 @@ import Numlib.Eigen.Normal
 import Numlib.Eigen.Perturbation
 import Numlib.Eigen.PowerMethod
 import Numlib.Eigen.RayleighRitz
+import Numlib.FiniteDifference.TwoLevel
 import Numlib.FloatingPoint.Model
 import Numlib.IntegralEquations.Basic
 import Numlib.Krylov.Arnoldi
@@ -60,6 +63,7 @@ import Numlib.Nonlinear.FixedPoint
 import Numlib.Nonlinear.Newton
 import Numlib.RingTheory.Polynomial.ChebyshevEllipse
 import Numlib.RingTheory.Polynomial.ChebyshevMinimax
+import Numlib.Variational.AubinNitsche
 import Numlib.Variational.Forms
 import Numlib.Variational.Galerkin
 import Numlib.Variational.LaxMilgram

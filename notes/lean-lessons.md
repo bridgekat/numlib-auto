@@ -381,6 +381,12 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
 * Replacing a failing `nlinarith` on `a ≤ b` given `a² ≤ b²` by
   `Real.sqrt_le_sqrt` between `√(a²)` and `√(b²)`, or by `mul_self_le_mul_self`, is both faster
   and more robust than hunting for the right `pow_le_pow` name.
+* `simpa using h` fails when `h`'s type is a `def` that unfolds to the goal's head: `simp`
+  normalises `h : HasLineDerivAt ℝ f a x v` as itself and never reaches the goal's `HasDerivAt`.
+  Bind the unfolded form first, `have h0 : HasDerivAt … := h`, and `simpa using h0`.
+* `field_simp` can stop one step short, leaving `a / a = 1` with `a ≠ 0` in context. Either finish
+  with `div_self`, or avoid it: `div_mul_cancel₀ e hne : e / a * a = e` is the cancellation for
+  `a * (e / a)` after `mul_comm`.
 
 ## Mathlib names and API
 
@@ -716,6 +722,14 @@ More structural facts:
   `(x ^ k) ^ (k : ℝ)⁻¹ = x`. Both are needed for any Gelfand-style `k`-th root argument.
 * `spectrum.pow_norm_pow_one_div_tendsto_nhds_spectralRadius` is Gelfand's formula already in
   `ENNReal.ofReal` form, which `ENNReal.tendsto_toReal` turns into a real limit in three lines.
+* `Convex.add_smul_sub_mem : Convex ℝ s → x ∈ s → y ∈ s → t ∈ Icc 0 1 → x + t • (y - x) ∈ s`
+  already exists, so the segment parametrization every mean value argument along `[u, v]` uses
+  needs no private helper.
+* For a bare `[NormedAddCommGroup E] [NormedSpace ℝ E]` module with operator norms, the two
+  imports are `Mathlib.Analysis.Normed.Module.Basic` (the `NormedSpace` class) and
+  `Mathlib.Analysis.Normed.Operator.Basic` (`ContinuousLinearMap.le_opNorm`). There is no
+  `Mathlib.Analysis.Normed.Operator.ContinuousLinearMap`, and the failure mode is a cascade of
+  "failed to synthesize `TopologicalSpace E`" on the *statement*, not a missing-import message.
 
 ## Design conventions of this library
 
