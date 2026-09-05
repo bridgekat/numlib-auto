@@ -19,12 +19,6 @@ id = "complexSpectralRadius_smul"
 id = "complexify"
 
 [[node]]
-id = "complexify_add"
-
-[[node]]
-id = "complexify_neg"
-
-[[node]]
 id = "det_complexify"
 
 [[node]]

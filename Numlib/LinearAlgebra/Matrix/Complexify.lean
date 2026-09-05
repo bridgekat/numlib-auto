@@ -106,9 +106,14 @@ theorem complexify_pow (A : Matrix n n ℝ) (k : ℕ) : complexify (A ^ k) = com
   | zero => simp
   | succ k ih => rw [pow_succ, pow_succ, complexify_mul, ih]
 
+/-- Determinants commute with complexification: `det (complexify A)` is `det A` read in `ℂ`. -/
 @[simp] theorem det_complexify (A : Matrix n n ℝ) : (complexify A).det = ((A.det : ℝ) : ℂ) :=
   (RingHom.map_det Complex.ofRealHom A).symm
 
+/-- A real matrix is invertible exactly when its complexification is, so invertibility may be
+settled after passing to `ℂ`.  That is the route taken by
+`Matrix.isUnit_one_sub_of_complexSpectralRadius_lt_one`, where only the complex Neumann series is
+available. -/
 theorem isUnit_complexify_iff (A : Matrix n n ℝ) : IsUnit (complexify A) ↔ IsUnit A := by
   rw [Matrix.isUnit_iff_isUnit_det, Matrix.isUnit_iff_isUnit_det, det_complexify]
   simp [isUnit_iff_ne_zero]
@@ -119,6 +124,10 @@ theorem charpoly_complexify (A : Matrix n n ℝ) :
   have h : complexify A = A.map (algebraMap ℝ ℂ) := rfl
   rw [h, Matrix.charpoly_map]
 
+/-- The complex spectrum of a real matrix is the root set of its characteristic polynomial pushed
+forward to `ℂ`; no eigenvalue is lost, as one would be over `ℝ`.  This is the spectrum that
+governs the decay of `Aᵏ`: the real characteristic polynomial of a rotation has no root at all,
+yet its powers stay at norm one. -/
 theorem mem_spectrum_complexify_iff (A : Matrix n n ℝ) (μ : ℂ) :
     μ ∈ spectrum ℂ (complexify A) ↔ (A.charpoly.map (algebraMap ℝ ℂ)).IsRoot μ := by
   rw [Matrix.mem_spectrum_iff_isRoot_charpoly, charpoly_complexify]

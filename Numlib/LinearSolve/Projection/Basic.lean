@@ -105,6 +105,8 @@ namespace IsPetrovGalerkin
 
 variable {A : E →ₗ[𝕜] E} {b x₀ : E} {K L : Submodule 𝕜 E} {x : E}
 
+/-- The Petrov–Galerkin condition as a scalar equation: the residual `b - A x` is orthogonal to
+every test vector `w ∈ L`.  This is the form in which the orthogonality is used downstream. -/
 theorem inner_residual_eq_zero (hx : IsPetrovGalerkin A b x₀ K L x) {w : E} (hw : w ∈ L) :
     inner 𝕜 w (b - A x) = 0 :=
   (Submodule.mem_orthogonal _ _).1 hx.orth w hw
@@ -200,6 +202,8 @@ theorem residual_unique [FiniteDimensional 𝕜 K] (hx : IsMinRes A b x₀ K x) 
     (hx' : IsMinRes A b x₀ K x') : b - A x = b - A x' := by
   rw [hx.residual_eq, hx'.residual_eq]
 
+/-- A minimal-residual step never increases the residual norm, since the starting point `x₀` is
+itself a competitor in the minimization over `x₀ + K`. -/
 theorem norm_residual_le_norm_residual_zero (hx : IsMinRes A b x₀ K x) :
     ‖b - A x‖ ≤ ‖b - A x₀‖ :=
   hx.min x₀ (by simp)

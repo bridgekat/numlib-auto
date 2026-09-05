@@ -133,6 +133,12 @@ theorem exists_unique_fixedPoint_of_iterate_contractingWith [Nonempty α] [Compl
 
 -- Continuity of `T` is again not needed: `T^[m]` already pins the limit down.
 set_option linter.unusedVariables false in
+/-- Convergence for the `T^[m]`-contraction criterion (Atkinson–Han, *Theoretical Numerical
+Analysis*, Exercise 5.1.2; Kress, *Numerical Analysis*, Problem 3.17): from every starting point
+the whole orbit `T^[n] x` converges to a fixed point of `T` itself, although `T` need be a
+contraction in no metric.  The orbit splits into the `m` interleaved subsequences
+`k ↦ T^[m k + j] x`, each of which iterates the contraction `T^[m]` and hence converges to its
+one fixed point; taking the largest of the `m` thresholds makes the whole orbit converge. -/
 theorem tendsto_iterate_of_iterate_contractingWith [CompleteSpace α] {T : α → α}
     (hT : Continuous T) {m : ℕ} (hm : 0 < m) {K : NNReal} (hK : ContractingWith K T^[m]) (x : α) :
     ∃ x', T x' = x' ∧ Tendsto (fun n => T^[n] x) atTop (𝓝 x') := by

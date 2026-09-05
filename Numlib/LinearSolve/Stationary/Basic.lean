@@ -44,6 +44,8 @@ private theorem norm_pow_le_pow_norm (G : E →L[𝕜] E) (k : ℕ) : ‖G ^ k�
 
 variable (G : E →L[𝕜] E) (f : E)
 
+/-- Error propagation: the error after `k` steps is `G^k` applied to the initial error, for any
+fixed point `x'` of the step.  Every convergence statement below is read off this identity. -/
 theorem step_iterate_sub {x' : E} (hfix : G x' + f = x') (x₀ : E) (k : ℕ) :
     (step G f)^[k] x₀ - x' = (G ^ k) (x₀ - x') := by
   have hf : f - x' = -G x' := by rw [eq_sub_of_add_eq' hfix]; abel
@@ -115,6 +117,10 @@ variable {F : Type*} [NormedAddCommGroup F] [NormedSpace ℂ F]
 private theorem subsingleton_clm [Subsingleton F] : Subsingleton (F →L[ℂ] F) :=
   ⟨fun _ _ => by ext x; exact Subsingleton.elim _ _⟩
 
+/-- Neumann: a spectral radius `ρ(G) < 1` makes `1 - G` invertible, so the affine iteration has
+the unique fixed point `(1 - G)⁻¹ f`.  The Banach-algebra form
+`_root_.isUnit_one_sub_of_spectralRadius_lt_one` assumes `NormOneClass`, which `F →L[ℂ] F`
+satisfies only for nontrivial `F`; on a trivial `F` every operator is a unit anyway. -/
 theorem isUnit_one_sub_of_spectralRadius_lt_one [CompleteSpace F] (G : F →L[ℂ] F)
     (hG : spectralRadius ℂ G < 1) : IsUnit (1 - G) := by
   rcases subsingleton_or_nontrivial F with _ | _

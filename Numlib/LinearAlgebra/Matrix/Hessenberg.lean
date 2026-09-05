@@ -28,6 +28,8 @@ def IsUpperHessenberg [Zero R] (H : Matrix n n R) : Prop :=
 def IsTridiagonal [Zero R] (T : Matrix n n R) : Prop :=
   ∀ i j, (∃ k, j < k ∧ k < i) ∨ (∃ k, i < k ∧ k < j) → T i j = 0
 
+/-- A tridiagonal matrix is upper Hessenberg: tridiagonality is the Hessenberg condition together
+with its mirror image above the first superdiagonal, so it is the stronger of the two. -/
 theorem IsTridiagonal.isUpperHessenberg [Zero R] {T : Matrix n n R} (hT : T.IsTridiagonal) :
     T.IsUpperHessenberg := fun i j h => hT i j (Or.inl h)
 
@@ -80,6 +82,9 @@ theorem strictUpper_blockTriangular (A : Matrix n n R) :
 
 end Parts
 
+/-- Every matrix is the sum of its diagonal, strictly lower and strictly upper parts: the three
+parts partition the entries, so nothing is counted twice and nothing is missed.  The signed form
+below is the splitting convention of the classical stationary iterations. -/
 theorem diagPart_add_strictLower_add_strictUpper [DecidableEq n] [AddCommMonoid R]
     (A : Matrix n n R) : diagPart A + strictLower A + strictUpper A = A := by
   ext i j

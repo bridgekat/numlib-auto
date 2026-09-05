@@ -181,6 +181,10 @@ theorem eq_starProjection [K.HasOrthogonalProjection] (hx : IsMinError xstar x�
   rw [show (xstar - x₀) - (x - x₀) = xstar - x by abel]
   exact (Submodule.mem_orthogonal' _ _).1 hx.sub_mem_orthogonal w hw
 
+/-- The minimal-error iterate is unique, with no hypothesis on `A`, on `K` or on the dimension:
+the midpoint of two minimizers again lies in the affine set `x₀ + K`, and the parallelogram law
+turns its own optimality into `x = x'`.  Minimal *residual* iterates are unique only when `A` is
+injective on `K` (`existsUnique_isMinRes_of_injOn`), although their residual always is. -/
 theorem unique {x' : E} (hx : IsMinError xstar x₀ K x) (hx' : IsMinError xstar x₀ K x') :
     x = x' := by
   have hmem : (x₀ + (2 : 𝕜)⁻¹ • ((x - x₀) + (x' - x₀))) - x₀ ∈ K := by

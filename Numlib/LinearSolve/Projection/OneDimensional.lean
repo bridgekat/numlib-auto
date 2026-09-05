@@ -166,6 +166,9 @@ noncomputable def step1 (A : E →ₗ[𝕜] E) (b : E) (v w : E) (x : E) : E :=
 
 variable {A : E →ₗ[𝕜] E} {b : E}
 
+/-- The one-dimensional step meets the Petrov–Galerkin specification for `K = span {v}` and
+`L = span {w}`, under the nondegeneracy condition `⟪w, A v⟫ ≠ 0` that makes its denominator
+nonzero.  The three instances below differ only in how `v` and `w` are chosen. -/
 theorem step1_isPetrovGalerkin (v w x : E) (h : inner 𝕜 w (A v) ≠ 0) :
     IsPetrovGalerkin A b x (𝕜 ∙ v) (𝕜 ∙ w) (step1 A b v w x) := by
   refine ⟨?_, ?_⟩
@@ -199,6 +202,9 @@ private theorem step1_of_residual_eq_zero {v w x : E} (h0 : b - A x = 0) (hv : v
     step1 A b v w x = x := by
   rw [step1, hv, h0, smul_zero, add_zero]
 
+/-- Steepest descent is the Galerkin method on the residual line `K = L = span {r}`, `r = b - A x`.
+Coercivity of `A` supplies the nondegeneracy `⟪r, A r⟫ ≠ 0`; if the residual already vanishes the
+step does nothing and the conclusion is immediate. -/
 theorem steepestDescentStep_isGalerkin (x : E) (hA : A.IsCoercive) :
     IsGalerkin A b x (𝕜 ∙ (b - A x)) (steepestDescentStep A b x) := by
   rcases eq_or_ne (b - A x) 0 with h0 | h0
@@ -209,6 +215,9 @@ theorem steepestDescentStep_isGalerkin (x : E) (hA : A.IsCoercive) :
     rw [inner_eq_zero_symm.1 hcon, map_zero] at hpos
     exact lt_irrefl 0 hpos
 
+/-- The minimal residual iteration deserves its name: its step minimizes `‖b - A y‖` over the
+residual line `y ∈ x + span {r}`, `r = b - A x`.  Taking `L = A K` turns the minimization into the
+one-dimensional step, and its nondegeneracy `⟪A r, A r⟫ ≠ 0` is injectivity of a coercive `A`. -/
 theorem minResStep_isMinRes (x : E) (hA : A.IsCoercive) :
     IsMinRes A b x (𝕜 ∙ (b - A x)) (minResStep A b x) := by
   have hmap : (𝕜 ∙ (b - A x)).map A = 𝕜 ∙ A (b - A x) := by

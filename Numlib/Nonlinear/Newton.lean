@@ -41,6 +41,8 @@ noncomputable def step (Fn : E → F) (F' : E → E →L[𝕜] F) (x : E) : E :=
 noncomputable def iterate (Fn : E → F) (F' : E → E →L[𝕜] F) (x₀ : E) (k : ℕ) : E :=
   (step Fn F')^[k] x₀
 
+/-- The Newton recurrence `x_{k+1} = x_k - (F' x_k)⁻¹ (F x_k)`: the iterates advance by a step
+taken at the *last* point rather than the first, which is the form every induction below uses. -/
 theorem iterate_succ (Fn : E → F) (F' : E → E →L[𝕜] F) (x₀ : E) (k : ℕ) :
     iterate Fn F' x₀ (k + 1) = step Fn F' (iterate Fn F' x₀ k) :=
   Function.iterate_succ_apply' _ _ _

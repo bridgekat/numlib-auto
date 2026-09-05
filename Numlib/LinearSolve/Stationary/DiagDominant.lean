@@ -44,15 +44,22 @@ def IsStrictColDiagDominant (A : Matrix n n 𝕜) : Prop :=
   ∀ j, ∑ i ∈ Finset.univ.erase j, ‖A i j‖ < ‖A j j‖
 
 omit [LinearOrder n] in
+/-- Column dominance of `A` is row dominance of `Aᵀ`; true by definition, and the bridge along
+which the column-dominance criterion for Jacobi is deduced from the row one. -/
 theorem IsStrictColDiagDominant.transpose_iff (A : Matrix n n 𝕜) :
     A.transpose.IsStrictDiagDominant ↔ A.IsStrictColDiagDominant := Iff.rfl
 
 omit [LinearOrder n] in
+/-- A strictly row diagonally dominant matrix has no zero on its diagonal: `|a_ii|` strictly
+exceeds a sum of norms, hence is positive. -/
 theorem IsStrictDiagDominant.diag_ne_zero {A : Matrix n n 𝕜} (hA : A.IsStrictDiagDominant) (i : n) :
     A i i ≠ 0 :=
   norm_pos_iff.mp (lt_of_le_of_lt (Finset.sum_nonneg fun _ _ => norm_nonneg _) (hA i))
 
 omit [LinearOrder n] in
+/-- The diagonal part of a strictly row diagonally dominant matrix is invertible, so the Jacobi,
+Gauss–Seidel and SOR splittings of such a matrix are all defined; this is the hypothesis every
+statement below carries. -/
 theorem IsStrictDiagDominant.isUnit_diagPart {A : Matrix n n 𝕜} (hA : A.IsStrictDiagDominant) :
     IsUnit (diagPart A) :=
   (isUnit_diagPart_iff A).mpr hA.diag_ne_zero
@@ -70,6 +77,9 @@ noncomputable def jacobiContraction [Nonempty n] (A : Matrix n n 𝕜) : ℝ :=
   Finset.univ.sup' Finset.univ_nonempty fun i => (∑ j ∈ Finset.univ.erase i, ‖A i j‖) / ‖A i i‖
 
 omit [LinearOrder n] in
+/-- Strict row dominance says exactly that each row quotient `∑_{j ≠ i} |a_ij| / |a_ii|` is `< 1`,
+so their maximum `q_∞` is too.  With `Matrix.linfty_opNorm_jacobi_iterMatrix`, which identifies
+`q_∞` with `‖G_J‖_∞`, this makes the Jacobi iteration a contraction in the `‖·‖_∞` norm. -/
 theorem IsStrictDiagDominant.jacobiContraction_lt_one [Nonempty n] {A : Matrix n n 𝕜}
     (hA : A.IsStrictDiagDominant) : jacobiContraction A < 1 := by
   rw [jacobiContraction, Finset.sup'_lt_iff]

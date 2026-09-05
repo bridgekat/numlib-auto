@@ -44,15 +44,23 @@ variable {a : R} (s : Splitting a)
 /-- The complementary part `n = m - a`. -/
 def n : R := s.m - a
 
+/-- The defining identity `a = m - n`.  Only `m` is stored and `n` is recovered as `m - a`, so
+this is the statement that a `Splitting` really does split `a`. -/
 theorem m_sub_n : s.m - s.n = a := sub_sub_cancel _ _
 
 /-- The iteration operator `G = m⁻¹ n = 1 - m⁻¹ a` of the splitting `a = m - n`
 (Saad, *Iterative Methods*, (4.28)/(4.30)). -/
 noncomputable def iterationOperator : R := 1 - Ring.inverse s.m * a
 
+/-- The two usual formulas for the iteration operator agree: `1 - m⁻¹ a` is `m⁻¹ n`.  The first
+is the definition, the second is the form in which the classical iteration matrices are read off
+from `Splitting.n`. -/
 theorem iterationOperator_eq : s.iterationOperator = Ring.inverse s.m * s.n := by
   rw [iterationOperator, Splitting.n, mul_sub, Ring.inverse_mul_cancel _ s.isUnit]
 
+/-- `1 - G = m⁻¹ a`, the preconditioned system operator.  Read with
+`Stationary.Splitting.eq_iterationOperator_mul_add_iff`, this is the consistency of the
+iteration: `m` preconditions `a`, and the fixed points are the solutions of `a x = b`. -/
 theorem one_sub_iterationOperator : 1 - s.iterationOperator = Ring.inverse s.m * a := by
   rw [iterationOperator, sub_sub_cancel]
 
@@ -72,6 +80,8 @@ noncomputable def richardson {𝕜 : Type*} [Field 𝕜] [Algebra 𝕜 R] (a : R
     rw [← Algebra.algebraMap_eq_smul_one]
     exact (isUnit_iff_ne_zero.mpr (inv_ne_zero hα)).map (algebraMap 𝕜 R)⟩
 
+/-- Richardson's iteration operator is `1 - α a`, so the step is `x ↦ x + α (b - a x)`: a fixed
+step length `α` along the residual, with no preconditioner beyond the scalar. -/
 theorem richardson_iterationOperator {𝕜 : Type*} [Field 𝕜] [Algebra 𝕜 R] (a : R) {α : 𝕜}
     (hα : α ≠ 0) : (richardson a hα).iterationOperator = 1 - α • a := by
   let u : Rˣ :=
@@ -134,6 +144,9 @@ private theorem isUnit_smul {c : 𝕜} (hc : c ≠ 0) {M : Matrix n n 𝕜} (hM 
   rw [isUnit_iff_isUnit_det, det_smul, isUnit_iff_ne_zero] at *
   exact mul_ne_zero (pow_ne_zero _ hc) hM
 
+/-- `D + L`, Saad's `D - E`, is invertible as soon as the diagonal of `A` is: it is lower
+triangular with the diagonal of `A` on its diagonal.  This is what makes the Gauss–Seidel
+splitting well defined. -/
 theorem isUnit_diagPart_add_strictLower {A : Matrix n n 𝕜} (h : IsUnit (diagPart A)) :
     IsUnit (diagPart A + strictLower A) := by
   simpa using isUnit_smul_diagPart_add_smul_strictLower (d := 1) A one_ne_zero h
@@ -168,6 +181,9 @@ noncomputable def gaussSeidelSplitting (A : Matrix n n 𝕜) (h : IsUnit (diagPa
     Splitting A :=
   ⟨diagPart A + strictLower A, isUnit_diagPart_add_strictLower h⟩
 
+/-- The complementary part of the Gauss–Seidel splitting is `-strictUpper A`, that is `N = F` in
+Saad's letters `A = D - E - F`: the forward sweep absorbs the whole lower triangle, leaving only
+the strictly upper part on the right-hand side. -/
 theorem gaussSeidelSplitting_n (A : Matrix n n 𝕜) (h : IsUnit (diagPart A)) :
     (gaussSeidelSplitting A h).n = -strictUpper A := by
   change diagPart A + strictLower A - A = -strictUpper A
