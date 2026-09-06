@@ -1,3 +1,5 @@
+import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
+import Mathlib.MeasureTheory.Function.ContinuousMapDense
 import Numlib.IntegralEquations.Basic
 
 /-!
@@ -355,6 +357,162 @@ theorem admissibleKernelCLM_eq_kernelCLM (k : C(X × X, ℝ)) :
   rfl
 
 end ContinuousKernel
+
+section Approximation
+
+variable {X : Type*} [MetricSpace X] [CompactSpace X] [MeasurableSpace X] [BorelSpace X]
+  {μ : Measure X} [IsFiniteMeasure μ] {k : X × X → ℝ}
+
+/-- **A kernel that continuous kernels approximate uniformly in the row `L¹` norm is admissible.**
+
+This is the practical criterion for admissibility: both (A₁) and (A₂) are stable under a uniform
+`L¹` perturbation of the rows, so it is enough to exhibit, for each `ε`, one *continuous* kernel
+whose rows are within `ε` of those of `k` in `L¹(μ)`, uniformly in the row index. The continuous
+kernel supplies (A₁) through `IntegralOperator.isAdmissibleKernel_of_continuousMap`, that is,
+through its uniform continuity on the compact `X × X`.
+
+The route is the one [han2009theoretical] takes for a singular kernel on an interval: regularize
+the singularity, estimate the `L¹` distance to the regularization, and let the regularization
+parameter go to zero. -/
+theorem isAdmissibleKernel_of_forall_exists_continuousMap
+    (hrow : ∀ x, Integrable (fun y => k (x, y)) μ)
+    (happrox : ∀ ε > 0, ∃ g : C(X × X, ℝ), ∀ x, (∫ y, |k (x, y) - g (x, y)| ∂μ) ≤ ε) :
+    IsAdmissibleKernel μ k := by
+  have habs : ∀ (g : C(X × X, ℝ)) (x : X), Integrable (fun y => |k (x, y) - g (x, y)|) μ :=
+    fun g x => ((hrow x).sub (integrable_kernel_row μ g x)).abs
+  refine ⟨hrow, ?_, ?_⟩
+  · obtain ⟨g, hg⟩ := happrox 1 one_pos
+    refine ⟨1 + ‖g‖ * μ.real univ, ?_⟩
+    rintro _ ⟨x, rfl⟩
+    have hpt : ∀ y, |k (x, y)| ≤ |k (x, y) - g (x, y)| + |g (x, y)| := fun y => by
+      simpa using abs_add_le (k (x, y) - g (x, y)) (g (x, y))
+    have hgint : (∫ y, |g (x, y)| ∂μ) ≤ ‖g‖ * μ.real univ := by
+      have h1 : ∫ y, |g (x, y)| ∂μ ≤ ∫ _y : X, ‖g‖ ∂μ :=
+        integral_mono (integrable_kernel_row μ g x).abs (integrable_const _)
+          fun y => by rw [← Real.norm_eq_abs]; exact g.norm_coe_le_norm _
+      simpa [integral_const, smul_eq_mul, mul_comm] using h1
+    calc ∫ y, |k (x, y)| ∂μ ≤ ∫ y, (|k (x, y) - g (x, y)| + |g (x, y)|) ∂μ :=
+          integral_mono (hrow x).abs ((habs g x).add (integrable_kernel_row μ g x).abs) hpt
+      _ = (∫ y, |k (x, y) - g (x, y)| ∂μ) + ∫ y, |g (x, y)| ∂μ :=
+          integral_add (habs g x) (integrable_kernel_row μ g x).abs
+      _ ≤ 1 + ‖g‖ * μ.real univ := add_le_add (hg x) hgint
+  · intro ε hε
+    obtain ⟨g, hg⟩ := happrox (ε / 3) (by positivity)
+    obtain ⟨δ, hδ, hδg⟩ :=
+      (isAdmissibleKernel_of_continuousMap μ g).exists_delta (ε / 3) (by positivity)
+    refine ⟨δ, hδ, fun x z hxz => ?_⟩
+    have hgg : Integrable (fun y => |g (x, y) - g (z, y)|) μ :=
+      ((integrable_kernel_row μ g x).sub (integrable_kernel_row μ g z)).abs
+    have hpt : ∀ y, |k (x, y) - k (z, y)|
+        ≤ |k (x, y) - g (x, y)| + |g (x, y) - g (z, y)| + |k (z, y) - g (z, y)| := by
+      intro y
+      have h1 := abs_sub_le (k (x, y)) (g (x, y)) (k (z, y))
+      have h2 := abs_sub_le (g (x, y)) (g (z, y)) (k (z, y))
+      have h3 : |g (z, y) - k (z, y)| = |k (z, y) - g (z, y)| := abs_sub_comm _ _
+      linarith
+    have h12 : Integrable
+        (fun y => |k (x, y) - g (x, y)| + |g (x, y) - g (z, y)|) μ := (habs g x).add hgg
+    calc ∫ y, |k (x, y) - k (z, y)| ∂μ
+        ≤ ∫ y, (|k (x, y) - g (x, y)| + |g (x, y) - g (z, y)| + |k (z, y) - g (z, y)|) ∂μ :=
+          integral_mono ((hrow x).sub (hrow z)).abs (h12.add (habs g z)) hpt
+      _ = ((∫ y, |k (x, y) - g (x, y)| ∂μ) + ∫ y, |g (x, y) - g (z, y)| ∂μ)
+            + ∫ y, |k (z, y) - g (z, y)| ∂μ := by
+          rw [integral_add h12 (habs g z), integral_add (habs g x) hgg]
+      _ < ε := by
+          have h1 := hg x
+          have h2 := hδg x z hxz
+          have h3 := hg z
+          linarith
+
+/-- **The operator norm of an admissible kernel operator is the largest row integral**,
+`‖K‖ = sup_x ∫ |k (x, y)| dμ`, equation (2.8.6) of [han2009theoretical].
+
+`IntegralOperator.norm_admissibleKernelCLM_le` is the easy half. For the other one, testing `K`
+against a continuous approximation of the sign of the row `k (x₀, ·)` needs that row to be
+approximable by continuous functions in `L¹(μ)`, which for a finite Borel measure on a metric space
+is `MeasureTheory.Integrable.exists_boundedContinuous_integral_sub_le`; the sign is then
+approximated as in `IntegralOperator.norm_kernelCLM`, by `y ↦ g y / (|g y| + δ)`.
+
+Unlike the continuous case there is no reason for the supremum to be attained, so it is a `⨆` and
+not a `max`. -/
+theorem norm_admissibleKernelCLM (hk : IsAdmissibleKernel μ k) :
+    ‖admissibleKernelCLM hk‖ = rowBound μ k := by
+  refine le_antisymm (norm_admissibleKernelCLM_le hk) ?_
+  refine Real.iSup_le (fun x₀ => ?_) (norm_nonneg _)
+  refine le_of_forall_pos_le_add fun ε hε => ?_
+  set M : ℝ := μ.real univ with hM
+  have hMnn : (0 : ℝ) ≤ M := measureReal_nonneg
+  set δ : ℝ := ε / (3 * (M + 1)) with hδdef
+  have hδ : 0 < δ := by positivity
+  obtain ⟨g, hgapprox, hgint⟩ :=
+    MeasureTheory.Integrable.exists_boundedContinuous_integral_sub_le
+      (hk.integrable_row x₀) (ε := ε / 3) (by positivity)
+  have hpos : ∀ y : X, (0 : ℝ) < |g y| + δ := fun y => add_pos_of_nonneg_of_pos (abs_nonneg _) hδ
+  set w : C(X, ℝ) :=
+    { toFun := fun y => g y / (|g y| + δ)
+      continuous_toFun := Continuous.div (by fun_prop) (by fun_prop) fun y => (hpos y).ne' }
+    with hwdef
+  have hwapp : ∀ y : X, w y = g y / (|g y| + δ) := fun _ => rfl
+  have hwle : ∀ y : X, |w y| ≤ 1 := by
+    intro y
+    rw [hwapp, abs_div, abs_of_pos (hpos y), div_le_one (hpos y)]
+    linarith [abs_nonneg (g y)]
+  have hfg : (∫ y, |k (x₀, y) - g y| ∂μ) ≤ ε / 3 := by
+    simpa [Real.norm_eq_abs] using hgapprox
+  have hdiff : Integrable (fun y => k (x₀, y) - g y) μ := (hk.integrable_row x₀).sub hgint
+  have hfw : Integrable (fun y => k (x₀, y) * w y) μ := hk.integrable_mul w x₀
+  have hgw : Integrable (fun y => g y * w y) μ :=
+    hgint.mul_bdd w.continuous.aestronglyMeasurable
+      (Eventually.of_forall fun y => by rw [Real.norm_eq_abs]; exact hwle y)
+  -- the row `L¹` norm of `g` is within `ε / 3` of that of the row of `k`
+  have hstep1 : (∫ y, |k (x₀, y)| ∂μ) ≤ (∫ y, |g y| ∂μ) + ε / 3 := by
+    have hpt : ∀ y, |k (x₀, y)| ≤ |g y| + |k (x₀, y) - g y| := fun y => by
+      have := abs_sub_abs_le_abs_sub (k (x₀, y)) (g y)
+      linarith
+    have hsum : Integrable (fun y => |g y| + |k (x₀, y) - g y|) μ := hgint.abs.add hdiff.abs
+    calc ∫ y, |k (x₀, y)| ∂μ ≤ ∫ y, (|g y| + |k (x₀, y) - g y|) ∂μ :=
+          integral_mono (hk.integrable_row x₀).abs hsum hpt
+      _ = (∫ y, |g y| ∂μ) + ∫ y, |k (x₀, y) - g y| ∂μ := integral_add hgint.abs hdiff.abs
+      _ ≤ (∫ y, |g y| ∂μ) + ε / 3 := by linarith
+  -- `w` nearly realises the sign of `g`
+  have hstep2 : (∫ y, |g y| ∂μ) - δ * M ≤ ∫ y, g y * w y ∂μ := by
+    have hpt : ∀ y, |g y| - δ ≤ g y * w y := by
+      intro y
+      rw [hwapp, ← mul_div_assoc, le_div_iff₀ (hpos y)]
+      nlinarith [abs_mul_abs_self (g y), mul_pos hδ hδ]
+    have h1 : (∫ y, (|g y| - δ) ∂μ) ≤ ∫ y, g y * w y ∂μ :=
+      integral_mono (hgint.abs.sub (integrable_const δ)) hgw hpt
+    rwa [integral_sub hgint.abs (integrable_const δ), integral_const, smul_eq_mul,
+      mul_comm M δ] at h1
+  -- and it tests the row of `k` almost as well as it tests `g`
+  have hstep3 : (∫ y, g y * w y ∂μ) - ε / 3 ≤ ∫ y, k (x₀, y) * w y ∂μ := by
+    have hpt : ∀ y, g y * w y - |k (x₀, y) - g y| ≤ k (x₀, y) * w y := by
+      intro y
+      have h1 : |(k (x₀, y) - g y) * w y| ≤ |k (x₀, y) - g y| := by
+        rw [abs_mul]
+        nlinarith [abs_nonneg (k (x₀, y) - g y), hwle y, abs_nonneg (w y)]
+      have h2 := abs_le.1 h1
+      nlinarith [h2.1]
+    have hsub : Integrable (fun y => g y * w y - |k (x₀, y) - g y|) μ := hgw.sub hdiff.abs
+    have h1 : (∫ y, (g y * w y - |k (x₀, y) - g y|) ∂μ) ≤ ∫ y, k (x₀, y) * w y ∂μ :=
+      integral_mono hsub hfw hpt
+    rw [integral_sub hgw hdiff.abs] at h1
+    linarith
+  have hop : (∫ y, k (x₀, y) * w y ∂μ) ≤ ‖admissibleKernelCLM hk‖ := by
+    have hwnorm : ‖w‖ ≤ 1 := by
+      rw [ContinuousMap.norm_le _ zero_le_one]
+      exact fun y => by rw [Real.norm_eq_abs]; exact hwle y
+    calc ∫ y, k (x₀, y) * w y ∂μ = admissibleKernelCLM hk w x₀ := rfl
+      _ ≤ ‖admissibleKernelCLM hk w‖ := (admissibleKernelCLM hk w).apply_le_norm x₀
+      _ ≤ ‖admissibleKernelCLM hk‖ * ‖w‖ := (admissibleKernelCLM hk).le_opNorm w
+      _ ≤ ‖admissibleKernelCLM hk‖ := by
+          nlinarith [norm_nonneg (admissibleKernelCLM hk), norm_nonneg w]
+  have hδM : δ * M ≤ ε / 3 := by
+    rw [hδdef, div_mul_eq_mul_div, div_le_div_iff₀ (by positivity) (by norm_num)]
+    nlinarith [hε.le, hMnn]
+  linarith
+
+end Approximation
 
 section Splitting
 
