@@ -137,6 +137,23 @@ dependants must add is `[Nontrivial n]` wherever they route through the block-tr
   `‖P_X(1−P_W)‖ = ‖(1−P_W)P_X‖`), and the second one-sided bound follows from the first by
   inverting the basis-transport map.
 
+### R11. The Krylov interfaces are single-space where the books are rectangular
+
+`Krylov.adjoint_comp_isSymmetricCoercive` and `…_of_injective` take `A` and `Aᴴ` as endomorphisms of
+one space, so they do not apply to Saad §8.1's least-squares problem at all, and that surface had to
+prove its coercivity from `LinearMap.isCoercive_iff_forall_pos` instead. `IsMinRes`, `IsGalerkin` and
+`IsPetrovGalerkin` have the same shape. Generalizing the first family to `A : E →ₗ[𝕜] F` with the
+adjoint as a separate `Astar : F →ₗ[𝕜] E` would cost nothing — the adjoint is already a hypothesis
+rather than `LinearMap.adjoint` — and would serve §8.1, §8.3 and any least-squares source. `IsMinError`
+is the exception and needs no change: no operator appears in its statement, and it was used unchanged.
+
+### R12. `NumlibSurface/SaadSparse/Common.lean` should hold the adjoint identity
+
+`⟪B x, y⟫ = ⟪x, Bᴴ y⟫` for matrices is proved three times, once each in the Chapter 7, 8 and 9
+surfaces (`inner_op_conjTranspose`, `inner_conjTranspose`, `inner_op_conjTranspose`). It belongs in
+`Common.lean` beside `ofLp_toEuclideanLin` — together with a **rectangular** `ofLp_toEuclideanLin`,
+since the existing one is square-only and forced a private copy in Chapter 8.
+
 ### R10. The `Lp` dilation isometry wants to be general
 
 `MeasureTheory.Lp.dilationₗᵢ` (`Numlib/Analysis/Wavelet/Haar.lean`) is stated for dyadic dilations
