@@ -7,15 +7,13 @@ id = "condNumberLp"
 id = "lpOpNorm"
 
 [[node]]
+id = "isUnit_lpCLM_iff"
+
+[[node]]
+id = "ringInverse_lpCLM"
+
+[[node]]
 id = "equation_1_75"
-kind = "theorem"
-desc = '''(1.74)–(1.75): `ε ↦ (A + ε E)⁻¹ (b + ε e)` is differentiable at `0` with derivative `A⁻¹ (e - E x)`,
-and the first-order form of (1.76), `‖x(ε) - x‖/‖x‖ ≤ ε κ(A) (‖E‖/‖A‖ + ‖e‖/‖b‖) + o(ε)`.'''
-deps = ["hasDerivAt_perturbed_solution", "condNumberLp"]
 
 [[node]]
 id = "example_1_5"
-kind = "theorem"
-desc = '''Example 1.5: for `A = 1 + α e₁ eₙᵀ`, `κ_∞(A) = (1 + |α|)²`, an explicit computation with
-`A⁻¹ = 1 - α e₁ eₙᵀ`; the plan marks it optional.'''
-deps = ["condNumberLp"]

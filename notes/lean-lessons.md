@@ -176,6 +176,14 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   "has neither a desc nor a doc comment". Add helpers *above* the doc comment, or move the doc
   comment down in the same edit.
 
+* **The Edit tool matches a prefix of a line, and will splice into the middle of it.** An
+  `old_string` ending `ext x i; simp` matches inside `ext x i; simp [smul_mulVec]`, so inserting a
+  new declaration after it leaves ` [smul_mulVec]` attached to the *new* declaration's tactic
+  block. The symptom is an error in the untouched theorem above ("unsolved goals") together with
+  an unused-simp-argument warning on the one just added. Include the whole line — trailing
+  argument list included — in `old_string`, and re-read the region after any edit whose anchor is
+  a tactic line.
+
 ## Correctness traps
 
 * **`include h` makes every later declaration in scope carry `h`.** A theorem that re-binds a
@@ -2108,6 +2116,28 @@ Structural facts from the approximation layer:
   instance — has to prove `f x = ∑_{k ≤ m} f⁽ᵏ⁾(a)(x-a)ᵏ/k! + (1/m!) ∫_a^x (x-t)^m f⁽ᵐ⁺¹⁾(t) dt`
   first, by induction on `m` with `intervalIntegral.integral_mul_deriv_eq_deriv_mul` from the
   fundamental theorem of calculus.
+
+* **`ContinuousLinearMap.isHomeomorph_of_isUnit` is the cheap way from `IsUnit f` to injectivity**
+  of `f : E →L[𝕜] E`: `(ContinuousLinearMap.isHomeomorph_of_isUnit hf).bijective.injective`. The
+  obvious route — destructure the unit and apply `Units.inv_mul` at a point — needs
+  `mul_apply_eq_comp` and `one_apply_eq_self` by hand (`ContinuousLinearMap.one_apply` and
+  `coe_mul` are both deprecated aliases now).
+* **There is no `Fact (1 ≤ (⊤ : ℝ≥0∞))` instance in Mathlib**, so any statement about `PiLp ⊤`
+  simply fails to elaborate; and Mathlib's `Matrix.linfty_opNorm_eq_opNorm` bridges the maximum
+  absolute row sum to the operator norm on the *plain* function type `n → 𝕜`, not to `PiLp ⊤`.
+  For `‖·‖_∞` of a matrix, use the scoped `Matrix.Norms.Operator` instance and stay there.
+* `(diagPart A)⁻¹ = diagonal fun i => (A i i)⁻¹` is `Matrix.inv_eq_right_inv` plus
+  `diagonal_mul_diagonal`, in four lines, given `∀ i, A i i ≠ 0` — `Matrix.inv_diagonal` is the
+  Pi-ring inverse and is useless here (see the note above). `Matrix.diagonal_mul` is the applied
+  form `(diagonal d * M) i j = d i * M i j`, which is what turns `1 - D⁻¹ A` into entries.
+* Under `open Matrix`, a bare `sub_apply` is ambiguous between `_root_.sub_apply` (for `Pi`) and
+  `Matrix.sub_apply`, and the error is "Ambiguous term" with no hint that the fix is a
+  qualification. The same trap as `mul_inv_rev`; `add_apply`, `smul_apply` and `zero_apply` are
+  all in the same family.
+* `Matrix.stdBasisMatrix` is now **`Matrix.single i j c`** (`Mathlib.Data.Matrix.Basis`), with
+  `single_apply : single i j c i' j' = if i = i' ∧ j = j' then c else 0` — note the order, the
+  *defining* indices on the left of each equation. `single_mul_single_of_ne` needs the two middle
+  indices to differ, so `single i j 1 * single i j 1 = 0` asks for `j ≠ i`.
 
 ## Design conventions of this library
 
