@@ -22,6 +22,13 @@ Conventions used throughout the library:
   values of `Matrix.IsHermitian.eigenvalues`;
 * real matrices are viewed as complex ones through `Matrix.complexify`, and `ρ(A)` is
   `Matrix.complexSpectralRadius A`.
+
+## Notation
+
+`A ⬝ x` is `Matrix.toEuclideanLin A x`, the book's `A x` read on `EuclideanSpace 𝕜 (Fin n)`.  It
+is the only notation this library introduces, it is scoped to the `SaadSparse` namespace, and a
+file that wants it writes `open scoped SaadSparse`.  Do not confuse it with Mathlib's `x ⬝ᵥ y`
+(`Matrix.dotProduct`) or `A *ᵥ x` (`Matrix.mulVec`), which act on the plain function type.
 -/
 
 namespace SaadSparse
@@ -111,15 +118,16 @@ theorem eigenvalues_le_lambdaMax (i : Fin n) : hH.eigenvalues i ≤ lambdaMax hH
 
 include hH in
 /-- `λ_min(H) ≤ λ_max(H)`.  The interval `[λ_min, λ_max]` that carries the quadratic-form bounds
-of (1.40) is therefore nonempty; this needs `n ≠ 0`, since there must be an eigenvalue between
+of §1.9.2 is therefore nonempty; this needs `n ≠ 0`, since there must be an eigenvalue between
 the two. -/
 theorem lambdaMin_le_lambdaMax : lambdaMin hH ≤ lambdaMax hH :=
   (lambdaMin_le_eigenvalues hH ⟨0, Nat.pos_of_ne_zero (NeZero.ne n)⟩).trans
     (eigenvalues_le_lambdaMax hH _)
 
 include hH in
-/-- The quadratic-form bounds `λ_min ‖x‖² ≤ (H x, x) ≤ λ_max ‖x‖²` of a Hermitian matrix
-(Saad §1.8, (1.40)). -/
+/-- The quadratic-form bounds `λ_min ‖x‖² ≤ (H x, x) ≤ λ_max ‖x‖²` of a Hermitian matrix.  The
+two halves are the extremal characterizations (1.38) and (1.40) of Saad §1.9.2, cleared of the
+denominator `(x, x)`. -/
 theorem isSymmetricBoundedBy_toEuclideanLin :
     (toEuclideanLin H).IsSymmetricBoundedBy (lambdaMin hH) (lambdaMax hH) :=
   hH.isSymmetricBoundedBy_toEuclideanLin fun i =>

@@ -216,20 +216,14 @@ theorem condNumberLp_smul {c : 𝕜} (hc : c ≠ 0) (A : Matrix (Fin n) (Fin n) 
 /-- Saad §1.13.2: `κ_p(A) ≥ 1` for a nonsingular `A`. -/
 theorem one_le_condNumberLp [NeZero n] {A : Matrix (Fin n) (Fin n) 𝕜} (hA : IsUnit A) :
     1 ≤ condNumberLp p A := by
-  have : Nontrivial (PiLp p (fun _ : Fin n => 𝕜)) := by
-    have : Nonempty (Fin n) := ⟨⟨0, Nat.pos_of_ne_zero (NeZero.ne n)⟩⟩
-    infer_instance
   rw [condNumberLp_eq_condNumber p hA]
   exact NormedRing.one_le_condNumber ((coe_lpEquiv p hA) ▸ (lpEquiv p hA).toUnit.isUnit)
 
 /-- Saad §1.13.2: `κ_p(α I) = 1` although `det (α I) = αⁿ`. -/
 theorem condNumberLp_smul_one [NeZero n] {c : 𝕜} (hc : c ≠ 0) :
     condNumberLp p (c • (1 : Matrix (Fin n) (Fin n) 𝕜)) = 1 := by
-  rw [condNumberLp_smul p hc, condNumberLp, lpOpNorm, lpOpNorm, inv_one, lpCLM_one]
-  have : Nontrivial (PiLp p (fun _ : Fin n => 𝕜)) := by
-    have : Nonempty (Fin n) := ⟨⟨0, Nat.pos_of_ne_zero (NeZero.ne n)⟩⟩
-    infer_instance
-  rw [norm_one, mul_one]
+  rw [condNumberLp_smul p hc, condNumberLp, lpOpNorm, lpOpNorm, inv_one, lpCLM_one, norm_one,
+    mul_one]
 
 /-- Saad §1.13.2: `det (α I) = αⁿ`, so the determinant is no indication of conditioning. -/
 theorem det_smul_one (c : 𝕜) : (c • (1 : Matrix (Fin n) (Fin n) 𝕜)).det = c ^ n := by

@@ -40,6 +40,7 @@ namespace SaadSparse.Chapter01
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n : ℕ}
 
+/-- `𝔼` abbreviates `EuclideanSpace 𝕜 (Fin n)`, the book's `𝕜ⁿ`, throughout this file. -/
 local notation "𝔼" => EuclideanSpace 𝕜 (Fin n)
 
 /-! ### Gram–Schmidt, for an arbitrary index type
@@ -452,10 +453,9 @@ theorem equation_1_28_normalized {m : ℕ} (hmn : m ≤ n) {X Q : Matrix (Fin n)
         R = Dᴴ * ((stdCols 𝕜 n m)ᴴ * (P * X)) := by
   obtain ⟨P, hP, hT⟩ := Matrix.exists_unitary_mul_upperTriangular X
   obtain ⟨hX₀, hQ₀, hR₀⟩ := factorization_of_unitary_mul_upperTriangular hmn hP hT
-  have hd' : ∀ j, 0 < R j j := hd
   have hdet : IsUnit R.det := by
     rw [det_of_isUpperTriangular hR, isUnit_iff_ne_zero]
-    exact Finset.prod_ne_zero_iff.2 fun j _ => (hd' j).ne'
+    exact Finset.prod_ne_zero_iff.2 fun j _ => (hd j).ne'
   have : Invertible R := invertibleOfIsUnitDet R hdet
   obtain ⟨hDu, hQeq, hReq⟩ := qr_change_of_factor hX₀ hXQR hQ₀ hQ hdet
   exact ⟨P, hP, _, hT, hDu, hR₀.mul (blockTriangular_inv_of_blockTriangular hR), hQeq, hReq⟩

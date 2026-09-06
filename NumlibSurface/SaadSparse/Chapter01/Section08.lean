@@ -146,7 +146,7 @@ the general power follows by induction. -/
 private theorem maxGenEigenspace_le_eigenspace {K M : Type*} [Field K] [AddCommGroup M]
     [Module K M] {f : Module.End K M} (hf : (⨆ μ : K, Module.End.eigenspace f μ) = ⊤) (μ : K) :
     Module.End.maxGenEigenspace f μ ≤ Module.End.eigenspace f μ := by
-  obtain ⟨g, hg⟩ : ∃ g : Module.End K M, g = f - μ • (1 : Module.End K M) := ⟨_, rfl⟩
+  set g := f - μ • (1 : Module.End K M) with hg
   have hgx : ∀ x : M, g x = f x - μ • x := by
     intro x
     rw [hg]

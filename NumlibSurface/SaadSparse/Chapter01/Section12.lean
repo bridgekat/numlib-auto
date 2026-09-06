@@ -305,10 +305,8 @@ theorem isUnit_conjTranspose_mul_iff (hV : V.IsBasisOf M) (hW : W.IsBasisOf L) :
     have hVc : (V ⬝ (WithLp.toLp 2 c : EuclideanSpace 𝕜 (Fin m))) = ∑ k, c k • V.cols k :=
       toEuclideanLin_apply_eq_sum V c
     have h0 : (Wᴴ * V) *ᵥ c = 0 := (hzero c).mpr (by rw [hVc]; exact hvL)
-    have hc : c = 0 := by
-      have hinj := mulVec_injective_iff_isUnit.mpr h
-      have := hinj (a₁ := c) (a₂ := 0) (by rw [h0, mulVec_zero])
-      exact this
+    have hc : c = 0 :=
+      mulVec_injective_iff_isUnit.mpr h (a₁ := c) (a₂ := 0) (by rw [h0, mulVec_zero])
     rw [hc]
     simp
   · intro hcond
@@ -319,10 +317,10 @@ theorem isUnit_conjTranspose_mul_iff (hV : V.IsBasisOf M) (hW : W.IsBasisOf L) :
       hV.span_eq ▸ toEuclideanLin_mem_span V _
     have hzeroV := hcond _ hmemM ((hzero (u - v)).mp hsub)
     rw [toEuclideanLin_apply_eq_sum] at hzeroV
-    have := Fintype.linearIndependent_iff.mp hV.linearIndependent (u - v) hzeroV
+    have hli := Fintype.linearIndependent_iff.mp hV.linearIndependent (u - v) hzeroV
     funext i
-    have := this i
-    rwa [Pi.sub_apply, sub_eq_zero] at this
+    have hi := hli i
+    rwa [Pi.sub_apply, sub_eq_zero] at hi
 
 /-- Saad (1.66): `P = V (Wᴴ V)⁻¹ Wᴴ` is the projector onto `M` orthogonally to `L`. -/
 theorem obliqueProj_isProjOnto (hV : V.IsBasisOf M) (hW : W.IsBasisOf L) (h : IsUnit (Wᴴ * V))

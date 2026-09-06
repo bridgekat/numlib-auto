@@ -17,8 +17,8 @@ With `K_i = span(V_i)` (`ProjFamily.subspace`) and `V_iᵀ A V_i` nonsingular, t
 is nondegenerate in the sense of the backbone, and Algorithms 5.5 and 5.6 are the backbone's
 `Projection.additiveStep` and `Projection.multiplicativeStep` (`additiveStep_eq`,
 `multiplicativeSweep_eq`), so their residual identities are `Projection.residual_additiveStep`
-and `Projection.residual_multiplicativeStep`.  `P_i_isProjOnto` is the second half of
-(5.22)–(5.23), and `leastSquares_P_i_eq_starProjection` with `sum_P_i_eq_one` are the
+and `Projection.residual_multiplicativeStep`.  `P_i_isProjOnto` is the claim the book makes about
+`P_i` where it displays it, and `leastSquares_P_i_eq_starProjection` with `sum_P_i_eq_one` are the
 least-squares option and its exactness criterion.
 -/
 
@@ -29,6 +29,7 @@ namespace SaadSparse.Chapter05
 
 variable {n : ℕ}
 
+/-- Saad Chapter 5 works in `ℝⁿ`. -/
 local notation "E" n => EuclideanSpace ℝ (Fin n)
 
 /-- Saad §5.4: a family of `p` subspaces of `ℝⁿ`, each given by a matrix of basis columns. -/
@@ -51,8 +52,8 @@ variable (𝒱 : ProjFamily n) (A : Matrix (Fin n) (Fin n) ℝ)
 noncomputable def corrector (i : Fin 𝒱.p) : Matrix (Fin n) (Fin n) ℝ :=
   𝒱.V i * ((𝒱.V i)ᵀ * A * 𝒱.V i)⁻¹ * (𝒱.V i)ᵀ
 
-/-- Saad (5.22): the projector `P_i = A V_i (V_iᵀ A V_i)⁻¹ V_iᵀ` onto `A K_i` orthogonally to
-`K_i`. -/
+/-- Saad §5.4: the projector `P_i = A V_i (V_iᵀ A V_i)⁻¹ V_iᵀ` onto `A K_i` orthogonally to
+`K_i`, displayed between (5.22) and (5.23). -/
 noncomputable def P_i (i : Fin 𝒱.p) : Matrix (Fin n) (Fin n) ℝ :=
   A * 𝒱.V i * ((𝒱.V i)ᵀ * A * 𝒱.V i)⁻¹ * (𝒱.V i)ᵀ
 
@@ -82,8 +83,7 @@ theorem toEuclideanLin_mul_apply (M N : Matrix (Fin n) (Fin n) ℝ) (z : E n) :
   have h : (M * N) *ᵥ WithLp.ofLp z = M *ᵥ (N *ᵥ WithLp.ofLp z) := (mulVec_mulVec _ _ _).symm
   exact congrArg (WithLp.toLp 2) h
 
-/-- Saad (5.22)–(5.23): the residual of the additive procedure is
-`r_{k+1} = (I - ∑ ω_i P_i) r_k`. -/
+/-- Saad (5.23): the residual of the additive procedure is `r_{k+1} = (I - ∑ ω_i P_i) r_k`. -/
 theorem residual_additiveStep (ω : Fin 𝒱.p → ℝ) (b x : E n) :
     b - (A ⬝ additiveStep 𝒱 A ω b x) =
       (b - (A ⬝ x)) - ∑ i, ω i • ((P_i 𝒱 A i) ⬝ (b - (A ⬝ x))) := by
@@ -215,8 +215,8 @@ theorem projStep_eq_pairStep_subspace (h : ∀ i, IsUnit ((𝒲.V i)ᵀ * A * �
         (isNondegeneratePair_subspace h i) x :=
   projStep_eq_pairStep (h i) b x
 
-/-- Saad (5.22)–(5.23), the second half: `P_i = A V_i (V_iᵀ A V_i)⁻¹ V_iᵀ` is the projector onto
-`A K_i` orthogonally to `K_i`. -/
+/-- Saad §5.4, the sentence after the display of `P_i`: `P_i = A V_i (V_iᵀ A V_i)⁻¹ V_iᵀ` is the
+projector onto `A K_i` orthogonally to `K_i`. -/
 theorem P_i_isProjOnto {i : Fin 𝒲.p} (h : IsUnit ((𝒲.V i)ᵀ * A * 𝒲.V i)) (z : E n) :
     SaadSparse.IsProjOnto ((𝒲.subspace i).map (toEuclideanLin A)) (𝒲.subspace i) z
       ((P_i 𝒲 A i) ⬝ z) := by

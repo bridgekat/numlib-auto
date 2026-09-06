@@ -365,15 +365,11 @@ theorem theorem_4_6 (A : Matrix (Fin n) (Fin n) ℂ) {μ : ℂ} (hμ : μ ∈ sp
   obtain ⟨i, hi⟩ := Set.mem_iUnion.mp (spectrum_subset_iUnion_closedBall A hμ)
   exact ⟨i, by simpa [Metric.mem_closedBall, dist_eq_norm] using hi⟩
 
-/-- Transposing does not change the spectrum. -/
-theorem spectrum_transpose (A : Matrix (Fin n) (Fin n) ℂ) : spectrum ℂ Aᵀ = spectrum ℂ A := by
-  ext μ
-  have hT : (algebraMap ℂ (Matrix (Fin n) (Fin n) ℂ) μ - A)ᵀ
-      = algebraMap ℂ (Matrix (Fin n) (Fin n) ℂ) μ - Aᵀ := by
-    rw [transpose_sub]
-    congr 1
-    simp [Algebra.algebraMap_eq_smul_one]
-  simp only [spectrum.mem_iff, ← hT, isUnit_iff_isUnit_det, det_transpose]
+/-- Transposing does not change the spectrum.  This is Mathlib's `Matrix.spectrum_transpose`,
+restated at `ℂ` because it is the step that turns the row form of Gershgorin's theorem into the
+column form. -/
+theorem spectrum_transpose (A : Matrix (Fin n) (Fin n) ℂ) : spectrum ℂ Aᵀ = spectrum ℂ A :=
+  Matrix.spectrum_transpose A
 
 /-- Saad, Theorem 4.6 (columns): the same statement for the column sums, obtained by
 transposing. -/
@@ -498,7 +494,8 @@ end DiagonallyDominant
 
 section SymmetricPositiveDefinite
 
-/-- The index type of a two-block partition. -/
+/-- `I n₁, n₂` abbreviates `Fin n₁ ⊕ Fin n₂`, the index type of the two-block partition that
+Proposition 4.12 is stated over. -/
 local notation "I" n₁ ", " n₂ => Fin n₁ ⊕ Fin n₂
 
 variable {n₁ n₂ : ℕ}
@@ -891,19 +888,13 @@ open scoped SaadSparse
 
 variable {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
 
-/-- Over `ℝ` a symmetric matrix is Hermitian. -/
-theorem isHermitian_of_isSymm (hA : A.IsSymm) : A.IsHermitian := by
-  change Aᴴ = A
-  rw [conjTranspose_eq_transpose_of_trivial]
-  exact hA
-
 /-- **Saad, Theorem 4.10**: for a real symmetric `A` with positive diagonal and `0 < ω < 2`, the
 SOR iteration matrix has spectral radius `< 1` exactly when `A` is positive definite. -/
 theorem theorem_4_10 (hA : A.IsSymm) (hd : ∀ i, 0 < A i i) (h : IsUnit (diagPart A)) {ω : ℝ}
     (hω0 : 0 < ω) (hω2 : ω < 2) :
     complexSpectralRadius (A.sorSplitting h hω0.ne').iterationOperator < 1 ↔ A.PosDef :=
-  Matrix.sorSplitting_complexSpectralRadius_lt_one_iff_posDef (isHermitian_of_isSymm hA) hd h
-    hω0 hω2
+  Matrix.sorSplitting_complexSpectralRadius_lt_one_iff_posDef
+    (Matrix.isHermitian_iff_isSymm.2 hA) hd h hω0 hω2
 
 /-- **Saad, Theorem 4.10** in the book's words, read through Theorem 4.1: SOR converges for every
 right-hand side and every starting vector exactly when `A` is positive definite.  The quantifier

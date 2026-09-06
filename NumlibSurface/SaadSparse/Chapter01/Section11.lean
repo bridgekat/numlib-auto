@@ -9,8 +9,9 @@ import NumlibSurface.SaadSparse.Common
 
 Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
 2003, §1.11: the Hermitian/skew-Hermitian decomposition (1.49)–(1.52), Saad's non-symmetric notion
-of a positive definite real matrix (1.48), Theorem 1.34, Bendixson's Theorem 1.35 and the `B`-inner
-product (1.57).
+of a positive definite real matrix (1.48), Theorem 1.34, Bendixson's Theorem 1.35, the `B`-inner
+product (1.57) and the `B`-self-adjointness of Exercise P-1.18
+(`Matrix.IsSelfAdjointWrt`).
 
 Saad's "positive definite" is `Matrix.IsPositiveReal` here; the backbone counterpart is
 `LinearMap.IsCoercive` of `Matrix.toEuclideanLin`, and the equivalence

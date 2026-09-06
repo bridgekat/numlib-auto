@@ -19,12 +19,15 @@ All three steps are the backbone's `Projection.step1` for `Matrix.toEuclideanLin
 (`step1_eq`, `sdStep_eq`, `mrStep_eq` are `rfl`), so the convergence estimates specialize
 `Numlib/LinearSolve/Projection/OneDimensional.lean`.
 
-The exact one-step identities (5.16)–(5.18) and (5.20) specialize the backbone's
-`Projection.norm_residual_minResStep_sq_eq` and `Projection.energyNorm_steepestDescentStep_sq_eq`,
-and `norm_residual_mrStep_eq_sin` is the `sin ∠` reading of (5.18).
+The exact one-step identities specialize the backbone's
+`Projection.norm_residual_minResStep_sq_eq` and `Projection.energyNorm_steepestDescentStep_sq_eq`:
+`equation_5_18` is the book's (5.16)–(5.18) and `norm_residual_mrStep_eq_sin` is the `sin ∠`
+reading of (5.18).  `equation_5_20` is misnamed — see its doc comment; it is the unnumbered
+display closing the proof of Theorem 5.9, not the book's (5.20).
 
 Left open here: the state-machine bookkeeping of Algorithms 5.2–5.4 (their recursive residual
-updates).
+updates), and Saad's actual (5.20), the alternative residual bound
+`‖r_{k+1}‖₂² ≤ (1 - μ(A) μ(A⁻¹)) ‖r_k‖₂²` that §5.3.2 derives beside Theorem 5.10.
 -/
 
 open Matrix Module Filter Topology
@@ -34,6 +37,7 @@ namespace SaadSparse.Chapter05
 
 variable {n : ℕ}
 
+/-- Saad Chapter 5 works in `ℝⁿ`. -/
 local notation "E" n => EuclideanSpace ℝ (Fin n)
 
 variable {A : Matrix (Fin n) (Fin n) ℝ} {b x₀ x : E n}
@@ -114,15 +118,20 @@ theorem mrStep_min (hA : A.IsPositiveReal) (b x y : E n)
 
 variable [NeZero n]
 
+/-- `λ_min` of a symmetric positive definite matrix is positive, every eigenvalue of it being
+positive.  This is the hypothesis all the estimates of §5.3 take. -/
+private theorem lambdaMin_pos {B : Matrix (Fin n) (Fin n) ℝ} (hB : B.PosDef) :
+    0 < lambdaMin hB.1 := by
+  rw [lambdaMin, Finset.lt_inf'_iff]
+  exact fun i _ => Matrix.PosDef.eigenvalues_pos hB i
+
 /-- Saad, Lemma 5.8 (Kantorovich's inequality): for a real SPD `B`,
 `(Bx, x)(B⁻¹x, x) ≤ (λ_max + λ_min)²/(4 λ_max λ_min) (x, x)²`. -/
 theorem lemma_5_8 {B : Matrix (Fin n) (Fin n) ℝ} (hB : B.PosDef) (x : Fin n → ℝ) :
     ((B *ᵥ x) ⬝ᵥ x) * ((B⁻¹ *ᵥ x) ⬝ᵥ x) ≤
       (lambdaMax hB.1 + lambdaMin hB.1) ^ 2 / (4 * lambdaMax hB.1 * lambdaMin hB.1) *
         (x ⬝ᵥ x) ^ 2 := by
-  have hl : 0 < lambdaMin hB.1 := by
-    rw [lambdaMin, Finset.lt_inf'_iff]
-    exact fun i _ => Matrix.PosDef.eigenvalues_pos hB i
+  have hl : 0 < lambdaMin hB.1 := lambdaMin_pos hB
   have hsb := isSymmetricBoundedBy_toEuclideanLin hB.1
   have hdet : IsUnit B.det := (isUnit_iff_isUnit_det B).mp hB.isUnit
   have hBB : B *ᵥ (B⁻¹ *ᵥ x) = x := by
@@ -149,20 +158,15 @@ factor `(λ_max - λ_min)/(λ_max + λ_min)`. -/
 theorem theorem_5_9_step (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b) (x : E n) :
     E_A A xstar (sdStep A b x) ≤
       (lambdaMax hA.1 - lambdaMin hA.1) / (lambdaMax hA.1 + lambdaMin hA.1) *
-        E_A A xstar x := by
-  have hl : 0 < lambdaMin hA.1 := by
-    rw [lambdaMin, Finset.lt_inf'_iff]
-    exact fun i _ => Matrix.PosDef.eigenvalues_pos hA i
-  exact Projection.energyNorm_steepestDescentStep_le hl (isSymmetricBoundedBy_toEuclideanLin hA.1)
-    hstar x
+        E_A A xstar x :=
+  Projection.energyNorm_steepestDescentStep_le (lambdaMin_pos hA)
+    (isSymmetricBoundedBy_toEuclideanLin hA.1) hstar x
 
 /-- The contraction factor of Theorem 5.9 lies in `[0, 1)`. -/
 theorem theorem_5_9_factor_lt_one {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.PosDef) :
     0 ≤ (lambdaMax hH.1 - lambdaMin hH.1) / (lambdaMax hH.1 + lambdaMin hH.1) ∧
       (lambdaMax hH.1 - lambdaMin hH.1) / (lambdaMax hH.1 + lambdaMin hH.1) < 1 := by
-  have hl : 0 < lambdaMin hH.1 := by
-    rw [lambdaMin, Finset.lt_inf'_iff]
-    exact fun i _ => Matrix.PosDef.eigenvalues_pos hH i
+  have hl : 0 < lambdaMin hH.1 := lambdaMin_pos hH
   have hle : lambdaMin hH.1 ≤ lambdaMax hH.1 := lambdaMin_le_lambdaMax hH.1
   have hsum : 0 < lambdaMax hH.1 + lambdaMin hH.1 := by linarith
   refine ⟨div_nonneg (by linarith) hsum.le, ?_⟩
@@ -192,9 +196,7 @@ theorem theorem_5_9 (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b) (x
 /-- Saad, Theorem 5.9: Algorithm 5.2 converges to the solution from every starting vector. -/
 theorem theorem_5_9_tendsto (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b) (x₀ : E n) :
     Tendsto (fun k => (sdStep A b)^[k] x₀) atTop (𝓝 xstar) := by
-  have hl : 0 < lambdaMin hA.1 := by
-    rw [lambdaMin, Finset.lt_inf'_iff]
-    exact fun i _ => Matrix.PosDef.eigenvalues_pos hA i
+  have hl : 0 < lambdaMin hA.1 := lambdaMin_pos hA
   obtain ⟨hnn, hlt⟩ := theorem_5_9_factor_lt_one hA
   set ρ := (lambdaMax hA.1 - lambdaMin hA.1) / (lambdaMax hA.1 + lambdaMin hA.1) with hρ
   have hs : 0 < Real.sqrt (lambdaMin hA.1) := Real.sqrt_pos.mpr hl
@@ -228,10 +230,8 @@ theorem posDef_hermitianPart (hA : A.IsPositiveReal) : (Matrix.hermitianPart A).
 
 /-- Saad, Theorem 5.10: `μ = λ_min((A + Aᵀ)/2) > 0` for a positive real `A`. -/
 theorem lambdaMin_hermitianPart_pos (hA : A.IsPositiveReal) :
-    0 < lambdaMin (Matrix.hermitianPart_isHermitian A) := by
-  have hpd := posDef_hermitianPart hA
-  rw [lambdaMin, Finset.lt_inf'_iff]
-  exact fun i _ => Matrix.PosDef.eigenvalues_pos hpd i
+    0 < lambdaMin (Matrix.hermitianPart_isHermitian A) :=
+  lambdaMin_pos (posDef_hermitianPart hA)
 
 open scoped Matrix.Norms.L2Operator in
 /-- Saad, Theorem 5.10: the minimal-residual step contracts the residual by the factor
@@ -292,7 +292,6 @@ theorem rnsdStep_eq_sdStep_normal (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n) :
   simp only [step1]
   rw [hres, hAA, hnum, hden]
 
-
 /-! ### The exact one-step identities (5.16)–(5.18) and (5.20) -/
 
 omit [NeZero n] in
@@ -324,9 +323,14 @@ theorem norm_residual_mrStep_eq_sin (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n)
   rw [real_inner_comm (A ⬝ r) r, div_pow, mul_pow]
 
 omit [NeZero n] in
-/-- Saad (5.20): the exact one-step identity of steepest descent in the `A`-norm,
+/-- The exact one-step identity of steepest descent in the `A`-norm,
 `‖d_{k+1}‖_A² = ‖d_k‖_A² (1 - (r_k, r_k)² / ((A r_k, r_k) (A⁻¹ r_k, r_k)))`, from which
-Theorem 5.9 follows by Kantorovich's inequality (Lemma 5.8). -/
+Theorem 5.9 follows by Kantorovich's inequality (Lemma 5.8).
+
+**The name of this declaration misnumbers the result.**  This is the last display in the proof of
+Theorem 5.9 in §5.3.1, which the book leaves unnumbered.  Saad's (5.20) is a different statement
+in §5.3.2, the *residual* bound `‖r_{k+1}‖₂² ≤ (1 - μ(A) μ(A⁻¹)) ‖r_k‖₂²` for the
+minimal-residual iteration, with `μ(B) = λ_min((B + Bᵀ)/2)`; that one is not formalized here. -/
 theorem equation_5_20 (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b) (x : E n) :
     E_A A xstar (sdStep A b x) ^ 2 =
       E_A A xstar x ^ 2 *

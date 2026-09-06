@@ -168,11 +168,13 @@ theorem posDef_transpose_mul_mul {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef
 
 /-! ### Propositions 5.2–5.5 -/
 
-/-- Saad §5.3: the error functional `E(x) = (A(x* - x), x* - x)^{1/2}`. -/
+/-- Saad §5.2.1: the error functional `E(x) = (A(x* - x), x* - x)^{1/2}`, the quantity
+Proposition 5.2 minimizes. -/
 noncomputable def E_A (A : Matrix (Fin n) (Fin n) ℝ) (xstar x : E n) : ℝ :=
   Real.sqrt (inner ℝ (A ⬝ (xstar - x)) (xstar - x))
 
-/-- Saad §5.3: the residual functional `R(x) = ‖b - A x‖₂`. -/
+/-- Saad §5.2.1: the residual functional `R(x) = ‖b - A x‖₂`, the quantity Proposition 5.3
+minimizes. -/
 noncomputable def R_A (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n) : ℝ := ‖b - (A ⬝ x)‖
 
 /-- `E(x)` is the backbone's energy norm of the error. -/

@@ -49,9 +49,10 @@ theorem proposition_1_2 (A : Matrix (Fin n) (Fin n) 𝕜) :
     A.det ≠ 0 ↔ ∃ B, A * B = 1 ∧ B * A = 1 := by
   rw [← isUnit_iff_ne_zero, ← isUnit_iff_isUnit_det, isUnit_iff_exists]
 
-/-- **Saad §1.2**: the trace of a complex matrix is the sum of its eigenvalues and the
-determinant is their product, both counted with algebraic multiplicity — that is, over the roots
-of the characteristic polynomial. -/
+/-- **Saad §1.2**: the trace of a complex matrix is the sum of its eigenvalues, counted with
+algebraic multiplicity — that is, over the roots of the characteristic polynomial.  The second
+clause here, that the determinant is their product, is the companion fact; the book states it
+nowhere explicitly but uses it from §1.2 on. -/
 theorem trace_eq_sum_eigenvalues (A : Matrix (Fin n) (Fin n) ℂ) :
     A.trace = A.charpoly.roots.sum ∧ A.det = A.charpoly.roots.prod :=
   ⟨A.trace_eq_sum_roots_charpoly, A.det_eq_prod_roots_charpoly⟩

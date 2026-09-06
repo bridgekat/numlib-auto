@@ -216,7 +216,9 @@ vectors. -/
 def fieldOfValues (A : Matrix (Fin n) (Fin n) ℂ) : Set ℂ :=
   {z | ∃ x : EuclideanSpace ℂ (Fin n), x ≠ 0 ∧ rayleigh A x = z}
 
-/-- **Saad §1.9.1**: the *numerical radius* `ν(A) = max_{x ≠ 0} |μ(x)|`. -/
+/-- **Saad §1.9.1**: the *numerical radius* `ν(A) = max_{x ≠ 0} |μ(x)|`.  The supremum here runs
+over *every* `x`, which is the same number: `rayleigh A 0` is the junk value `0`, and every value
+of `‖rayleigh A ·‖` is nonnegative, so admitting `x = 0` cannot raise the supremum. -/
 noncomputable def numericalRadius (A : Matrix (Fin n) (Fin n) ℂ) : ℝ :=
   ⨆ x : EuclideanSpace ℂ (Fin n), ‖rayleigh A x‖
 
