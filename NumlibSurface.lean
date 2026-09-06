@@ -23,6 +23,7 @@ import NumlibSurface.AtkinsonHan.Chapter04.Section01
 import NumlibSurface.AtkinsonHan.Chapter04.Section02
 import NumlibSurface.AtkinsonHan.Chapter04.Section03
 import NumlibSurface.AtkinsonHan.Chapter04.Section04
+import NumlibSurface.AtkinsonHan.Chapter04.Section05
 import NumlibSurface.AtkinsonHan.Chapter05.Section01
 import NumlibSurface.AtkinsonHan.Chapter05.Section02
 import NumlibSurface.AtkinsonHan.Chapter05.Section03
@@ -44,7 +45,10 @@ import NumlibSurface.AtkinsonHan.Chapter11.Section02
 import NumlibSurface.AtkinsonHan.Chapter11.Section03
 import NumlibSurface.AtkinsonHan.Chapter11.Section04
 import NumlibSurface.AtkinsonHan.Chapter12.Section01
+import NumlibSurface.AtkinsonHan.Chapter12.Section03
 import NumlibSurface.AtkinsonHan.Chapter12.Section04
+import NumlibSurface.AtkinsonHan.Chapter12.Section06
+import NumlibSurface.AtkinsonHan.Chapter12.Section07
 import NumlibSurface.FongSaunders
 import NumlibSurface.FongSaunders.Section1
 import NumlibSurface.FongSaunders.Section2

@@ -1,42 +1,16 @@
 namespace = "AtkinsonHan.Ch04"
-desc = '''
-Atkinson-Han §4.5: multiresolution analysis — the five axioms, their first consequences, and the
-scaling equation.
-
-The backbone `Numlib/Analysis/Wavelet/Multiresolution` holds the bundled definition, Proposition
-4.5.2 and the scaling equation; the Haar system of §4.4 is the instance.
-
-Not planned, and it is most of the rest of the section: the construction of a scaling function from
-its dilation coefficients `{p_k}` (4.5.1)-(4.5.3), the claim that the `ψ` of (4.5.4) generates the
-wavelet spaces, the four listed properties of the `W_j` for a general multiresolution analysis, the
-fixed-point computation of `φ`, and the Daubechies example (4.5.5)-(4.5.6). Atkinson-Han state all
-of these without proof and refer to Daubechies; the standard proofs run through conditions on `φ̂`
-and need a piece of harmonic analysis Mathlib does not have. The stable-basis weakening of axiom (1)
-is likewise left out — the book only remarks that one can renormalise to the orthonormal case.
-'''
 
 [[node]]
 id = "definition_4_5_1"
-kind = "theorem"
-desc = '''Definition 4.5.1: a sequence `{V_j}` of subspaces of `L²(ℝ)` with scaling function `φ` is a
-multiresolution analysis when it is shift-invariant, scale-invariant, nested, dense and separated.
-The backbone `IsMultiresolutionAnalysis`, with the field names matching the book's five clauses.'''
-deps = ["IsMultiresolutionAnalysis"]
 
 [[node]]
 id = "proposition_4_5_2"
-kind = "theorem"
-desc = '''Proposition 4.5.2: in a multiresolution analysis `{2^{j/2} φ(2^j x - k) | k ∈ ℤ}` is an orthonormal
-basis of `V_j` for every `j`. The backbone
-`IsMultiresolutionAnalysis.orthonormal_scaled`.'''
-deps = ["IsMultiresolutionAnalysis.orthonormal_scaled", "definition_4_5_1"]
+
+[[node]]
+id = "scalingCoeff"
 
 [[node]]
 id = "equation_4_5_2"
-kind = "theorem"
-desc = '''(4.5.1)-(4.5.3), the scaling equation: `φ = ∑_k p_k √2 φ(2 x - k)` with
-`p_l = ∫ √2 φ(2x - l) φ(x) dx`, and its dilated form
-`2^{j/2} φ(2^j x - l) = ∑_k p_{k - 2l} 2^{(j+1)/2} φ(2^{j+1} x - k)`. The backbone
-`IsMultiresolutionAnalysis.hasSum_scalingEquation`. For the Haar system
-(`Haar.isMultiresolutionAnalysis`) the coefficients are `p₀ = p₁ = 1/√2`.'''
-deps = ["IsMultiresolutionAnalysis.hasSum_scalingEquation", "Haar.isMultiresolutionAnalysis", "proposition_4_5_2"]
+
+[[node]]
+id = "haar_scalingCoeff"

@@ -1,44 +1,16 @@
 namespace = "AtkinsonHan.Ch12"
-desc = '''
-Atkinson–Han Section 12.6, iteration methods for the linear systems that the numerical methods of
-this chapter produce: the residual correction framework and the two-grid iteration for the Nyström
-method.
-
-Formalized: the two-grid step (12.6.20)–(12.6.22), in which the coarse inverse `(λ - K_m)⁻¹` is
-the approximate inverse `C_n` of the residual correction method (12.6.5)–(12.6.6); the error
-identity (12.6.27)–(12.6.28) `u_n - u_n^{(κ+1)} = M_{m,n} (u_n - u_n^{(κ)})` with
-`M_{m,n} = (1/λ)(λ - K_m)⁻¹ (K_n - K_m) K_n`; and the abstract form of Theorem 12.6.1, that for a
-collectively compact pointwise convergent family `‖M_{m,n}‖ < 1` for all `n > m` once `m` is large
-enough, so the iteration converges geometrically.
-
-Not formalized: Section 12.6.3, the translation of the operator iteration into the linear system
-`A_n u_n = f_n`, and Section 12.6.4, the operation count. Both are implementation, with no theorem
-content.
-'''
 
 [[node]]
 id = "twoGridStep"
-kind = "definition"
-desc = '''The two-grid iteration (12.6.20)–(12.6.22): from `u_n^{(κ)}` form the residual
-`r_n^{(κ)} = f - (λ - K_n) u_n^{(κ)}`, the correction
-`δ_n^{(κ)} = (λ - K_m)⁻¹ (K_n r_n^{(κ)})`, and
-`u_n^{(κ+1)} = u_n^{(κ)} + (r_n^{(κ)} + δ_n^{(κ)})/λ`; the instance of the residual correction
-method (12.6.5)–(12.6.6) in which the coarse inverse plays the role of `C_n`.'''
-deps = ["_root_.SecondKind.twoGridStep"]
+
+[[node]]
+id = "equation_12_6_20"
+
+[[node]]
+id = "twoGridOperator"
 
 [[node]]
 id = "equation_12_6_27"
-kind = "theorem"
-desc = '''(12.6.27)–(12.6.28): the error of the two-grid iteration is multiplied at each step by
-`M_{m,n} = (1/λ)(λ - K_m)⁻¹ (K_n - K_m) K_n`.'''
-deps = ["twoGridStep", "SecondKind.twoGrid_error_eq"]
 
 [[node]]
 id = "theorem_12_6_1"
-kind = "theorem"
-desc = '''Theorem 12.6.1, abstract form: for a collectively compact pointwise convergent family
-`K_p` with `λ - K` bijective, `‖M_{m,n}‖ < 1` for every `n > m` once `m` is large enough, so
-`u_n^{(κ)} → u_n` as `κ → ∞` for every such `n`. The book states it for the Nyström operators, but
-its proof uses only the compact closure of `{K_p v : p ≥ 1, ‖v‖ ≤ 1}` and the uniform bound on the
-coarse inverses.'''
-deps = ["equation_12_6_27", "SecondKind.tendsto_twoGridIterate", "lemma_12_4_7_d"]
