@@ -801,6 +801,18 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   `(fun i => (A ^ i) v) (i + 1)`, which defeats `rw [pow_succ']`. Factor the step out as its own
   lemma (`A ((A ^ i) v) = (A ^ (i + 1)) v`) and close with `exact`; the defeq check absorbs the beta
   where `rw` will not.
+* **`obtain ⟨-, hd⟩` can delete the hypothesis you meant to keep.** The `-` pattern *clears* the
+  component, and clearing it also clears everything whose type mentions it. Destructuring
+  `∃ h : u t ∈ L.domain, HasDerivWithinAt u (L ⟨u t, h⟩) s t` with `⟨-, hd⟩` therefore leaves no
+  `hd` at all, and the error is `Unknown identifier hd` at the next line. Write `⟨_, hd⟩`.
+* `squeeze_zero` cannot infer its majorant from `refine squeeze_zero h₀ (fun k => ?_) ?_`: the
+  bound `g` appears only in the two postponed goals, so elaboration stops with "don't know how to
+  synthesize implicit argument `g`". Prove the majorant's limit as a named `have` first and pass it
+  as the last argument, which fixes `g` before the pointwise bound is elaborated.
+* A function introduced by `obtain ⟨F, hFdef⟩ : ∃ F : ℕ → ℝ, ∀ n, F n = … := ⟨_, fun _ => rfl⟩` is
+  opaque (which is the point — see the `set` warnings above), and `simpa [hFdef]` then makes no
+  progress on a goal such as `Tendsto F atTop (𝓝 0)`, where `F` is not applied. Close it with
+  `Filter.Tendsto.congr (fun n => (hFdef n).symm) h` against the unfolded limit.
 
 ## Mathlib names and API
 
@@ -1765,6 +1777,35 @@ across a rectangular `A` unchanged (Saad §8.1 uses exactly that).
   linear independence of a family of *continuous* functions in one line through
   `(ContinuousMap.toLp p μ 𝕜).toLinearMap`; passing the `→L` bundled map instead of its
   `.toLinearMap` sends the elaborator into a `whnf` timeout.
+
+**`real_inner_comm x y : ⟪y, x⟫ = ⟪x, y⟫`** — the arguments are in the opposite order to the
+inner product on the left, so `rw [real_inner_comm y z]` reports "did not find the pattern
+`inner ℝ z y`" on a goal that visibly contains `inner ℝ y z`. When several such rewrites are
+needed, a one-line private `inner_comm' (a b : V) : inner ℝ a b = inner ℝ b a := real_inner_comm _ _`
+with the arguments in the readable order is worth it.
+
+`Filter.Tendsto.bddAbove_range` (`Mathlib/Topology/Order/LiminfLimsup.lean`) turns a convergent
+real sequence into `BddAbove (Set.range u)`, which is how "the residuals of an approximating family
+are bounded" becomes a single constant. `tendsto_of_subseq_tendsto`
+(`Mathlib/Order/Filter/AtTopBot/CountablyGenerated.lean`) is the converse packaging — a sequence
+converges as soon as every subsequence has a convergent further subsequence — and it asks for
+neither of the two index maps to be monotone, only `Tendsto ns atTop l`.
+
+`AtkinsonHan.Ch05.StronglyMonotoneWith` does *not* carry `[CompleteSpace V]`, but
+`stronglyMonotoneWith_iff` beside it does, being in a section whose `variable` line has it. Using
+the bridge outside a complete space then fails with a bare "failed to synthesize `CompleteSpace V`"
+pointing at the bridge rather than at the section. The two predicates are definitionally equal, so
+`fun x y => by simpa using hmono x y` crosses with no completeness.
+
+**A `@[simp]` lemma of this project can be shadowed by Mathlib's coercion normalization.**
+`AtkinsonHan.BilinForm.toCLM_apply : a.toCLM hM u v = a u v` is `@[simp]` and `rfl`, yet a plain
+`simp` leaves `((a.toCLM hM) u) v` standing in the goal while `simp only [BilinForm.toCLM_apply]`
+closes the same goal outright. The observed trigger is a goal reached through
+`SesqForm.inner_toOperator`, which sees through the `noncomputable abbrev` `BilinForm.toOperator`;
+what exactly blocks the second rewrite was not established, so treat this as a symptom to
+recognize, not a diagnosis. The fix is to spell the bridge out with `simp only`, or to route
+through a stated `Iff` (`isVariationalInequalitySolution_toOperator_iff` in
+`AtkinsonHan/Chapter11/Section03`) rather than through `simp`.
 
 ## Design conventions of this library
 

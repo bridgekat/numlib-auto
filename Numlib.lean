@@ -109,6 +109,7 @@ import Numlib.RingTheory.Polynomial.KernelPolynomial
 import Numlib.Variational.AubinNitsche
 import Numlib.Variational.Forms
 import Numlib.Variational.Galerkin
+import Numlib.Variational.Inequality.Approximation
 import Numlib.Variational.Inequality.Basic
 import Numlib.Variational.LaxMilgram
 import Numlib.Variational.Minimization

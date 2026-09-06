@@ -27,6 +27,7 @@ import NumlibSurface.AtkinsonHan.Chapter05.Section03
 import NumlibSurface.AtkinsonHan.Chapter05.Section04
 import NumlibSurface.AtkinsonHan.Chapter05.Section05
 import NumlibSurface.AtkinsonHan.Chapter05.Section06
+import NumlibSurface.AtkinsonHan.Chapter06.Section02
 import NumlibSurface.AtkinsonHan.Chapter06.Section03
 import NumlibSurface.AtkinsonHan.Chapter08.Section02
 import NumlibSurface.AtkinsonHan.Chapter08.Section03
@@ -37,6 +38,7 @@ import NumlibSurface.AtkinsonHan.Chapter09.Section02
 import NumlibSurface.AtkinsonHan.Chapter09.Section03
 import NumlibSurface.AtkinsonHan.Chapter09.Section04
 import NumlibSurface.AtkinsonHan.Chapter10.Section04
+import NumlibSurface.AtkinsonHan.Chapter11.Section03
 
 /-!
 # Atkinson–Han, *Theoretical Numerical Analysis*
