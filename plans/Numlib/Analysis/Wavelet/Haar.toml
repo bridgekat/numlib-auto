@@ -53,3 +53,12 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 4.4.3"
 [[node]]
 id = "Haar.reconstruction"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 4.4.4"
+
+[[node]]
+id = "Haar.V_mono"
+
+[[node]]
+id = "Haar.starProjection_V_eq_sum"
+
+[[node]]
+id = "Haar.hilbertBasis"

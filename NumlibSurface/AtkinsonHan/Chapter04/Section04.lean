@@ -16,8 +16,14 @@ its dilates and translates `Haar.scalingFun`, the scaling spaces `Haar.V`, the w
 * `theorem_4_4_1_1` … `theorem_4_4_1_5` — the five properties of the scaling spaces.
 * `theorem_4_4_2` — the characterization of `W_j` inside `V_{j+1}`, and (4.4.2).
 * `equation_4_4_3` — the wavelet decomposition of `V_j` and of `L²(ℝ)`.
+* `bookScalingFun`, `bookWaveletFun` — the book's unnormalised `φ(2^j x - k)` and `ψ(2^j x - k)`.
+* `equation_4_4_6`, `equation_4_4_15` — (4.4.5)–(4.4.6) and (4.4.14)–(4.4.15), the two-scale
+  relations in both directions.
 * `theorem_4_4_3`, `theorem_4_4_4` — the decomposition and reconstruction steps, in the book's
   unnormalised coefficients.
+* `equation_4_4_18` — (4.4.9)–(4.4.13) and (4.4.18), the multi-level transform: the analysis step
+  iterated, with each piece expanded in its own system.
+* `exercise_4_4_4` — the Haar wavelets of all levels are an orthonormal basis of `L²(ℝ)`.
 
 ## Conventions
 
@@ -150,6 +156,65 @@ theorem equation_4_4_3 (j : ℤ) :
     rw [Haar.topologicalClosure_iSup_V] at hmono
     exact top_le_iff.mp hmono
 
+/-! ### The two-scale relations -/
+
+/-- The book's unnormalised scaling function `φ(2^j x - k)`, which is `2^{-j/2}` times the
+normalised `Haar.scalingFun j k`: it is the indicator of the dyadic interval
+`[k 2^{-j}, (k+1) 2^{-j})`, of `L²` norm `2^{-j/2}` rather than `1`.  Every displayed equation of
+the section is written in this basis. -/
+noncomputable abbrev bookScalingFun (j k : ℤ) : Lp ℝ 2 (volume : Measure ℝ) :=
+  (√((2 : ℝ) ^ j))⁻¹ • Haar.scalingFun j k
+
+/-- The book's unnormalised wavelet `ψ(2^j x - k)`, which is `2^{-j/2}` times the normalised
+`Haar.waveletFun j k`. -/
+noncomputable abbrev bookWaveletFun (j k : ℤ) : Lp ℝ 2 (volume : Measure ℝ) :=
+  (√((2 : ℝ) ^ j))⁻¹ • Haar.waveletFun j k
+
+private theorem inv_sqrt_zpow_mul (j : ℤ) :
+    (√((2 : ℝ) ^ j))⁻¹ * (√2)⁻¹ = (√((2 : ℝ) ^ (j + 1)))⁻¹ := by
+  rw [zpow_add_one₀ (two_ne_zero' ℝ), Real.sqrt_mul (by positivity), mul_inv]
+
+private theorem inv_sqrt_zpow_succ_mul (j : ℤ) :
+    (√((2 : ℝ) ^ (j + 1)))⁻¹ * (√2)⁻¹ = 2⁻¹ * (√((2 : ℝ) ^ j))⁻¹ := by
+  have h2 : (√2 : ℝ) * √2 = 2 := Real.mul_self_sqrt (by norm_num)
+  have hs2 : (√2 : ℝ) ≠ 0 := ne_of_gt (Real.sqrt_pos.mpr (by norm_num))
+  rw [← inv_sqrt_zpow_mul, mul_assoc, ← mul_inv]
+  rw [h2]
+  ring
+
+/-- **(4.4.5)–(4.4.6)**, the two-scale relations that read a fine scaling function off the coarse
+pair: `φ(2^{j+1} x - 2k) = ½[φ(2^j x - k) + ψ(2^j x - k)]` and
+`φ(2^{j+1} x - 2k - 1) = ½[φ(2^j x - k) - ψ(2^j x - k)]`.  These are the identities the book
+derives Theorem 4.4.3 from; in the normalised basis they are `Haar.scalingFun_succ_eq`, where the
+`½` is `(√2)⁻¹` twice over. -/
+theorem equation_4_4_6 (j k : ℤ) :
+    bookScalingFun (j + 1) (2 * k) = (2 : ℝ)⁻¹ • (bookScalingFun j k + bookWaveletFun j k) ∧
+      bookScalingFun (j + 1) (2 * k + 1)
+        = (2 : ℝ)⁻¹ • (bookScalingFun j k - bookWaveletFun j k) := by
+  obtain ⟨h1, h2⟩ := Haar.scalingFun_succ_eq j k
+  refine ⟨?_, ?_⟩
+  · rw [show bookScalingFun (j + 1) (2 * k)
+        = (√((2 : ℝ) ^ (j + 1)))⁻¹ • Haar.scalingFun (j + 1) (2 * k) from rfl, h1, smul_smul,
+      inv_sqrt_zpow_succ_mul, smul_add, ← smul_smul, ← smul_smul, smul_add]
+  · rw [show bookScalingFun (j + 1) (2 * k + 1)
+        = (√((2 : ℝ) ^ (j + 1)))⁻¹ • Haar.scalingFun (j + 1) (2 * k + 1) from rfl, h2, smul_smul,
+      inv_sqrt_zpow_succ_mul, smul_sub, ← smul_smul, ← smul_smul, smul_sub]
+
+/-- **(4.4.14)–(4.4.15)**, the two-scale relations in the other direction:
+`φ(2^j x - k) = φ(2^{j+1} x - 2k) + φ(2^{j+1} x - 2k - 1)` — a dyadic interval is the disjoint
+union of its two halves — and `ψ(2^j x - k) = φ(2^{j+1} x - 2k) - φ(2^{j+1} x - 2k - 1)`, which is
+the definition of the Haar wavelet.  With (4.4.5)–(4.4.6) they are what makes Theorem 4.4.4 the
+inverse of Theorem 4.4.3. -/
+theorem equation_4_4_15 (j k : ℤ) :
+    bookScalingFun j k = bookScalingFun (j + 1) (2 * k) + bookScalingFun (j + 1) (2 * k + 1) ∧
+      bookWaveletFun j k
+        = bookScalingFun (j + 1) (2 * k) - bookScalingFun (j + 1) (2 * k + 1) := by
+  refine ⟨?_, ?_⟩
+  · rw [show bookScalingFun j k = (√((2 : ℝ) ^ j))⁻¹ • Haar.scalingFun j k from rfl,
+      Haar.scalingFun_two_scale j k, smul_smul, inv_sqrt_zpow_mul, smul_add]
+  · rw [show bookWaveletFun j k = (√((2 : ℝ) ^ j))⁻¹ • Haar.waveletFun j k from rfl,
+      Haar.waveletFun_eq j k, smul_smul, inv_sqrt_zpow_mul, smul_sub]
+
 /-! ### Decomposition and reconstruction -/
 
 private theorem inv_sqrt_two : (√2 : ℝ)⁻¹ = √2 / 2 := by
@@ -195,5 +260,66 @@ theorem theorem_4_4_4 (j k : ℤ) (f : Lp ℝ 2 (volume : Measure ℝ)) :
       (inner ℝ (Haar.scalingFun j k) f + inner ℝ (Haar.waveletFun j k) f) / 2) * h2
   · linear_combination (√((2 : ℝ) ^ j) *
       (inner ℝ (Haar.scalingFun j k) f - inner ℝ (Haar.waveletFun j k) f) / 2) * h2
+
+/-! ### The multi-level transform -/
+
+/-- **(4.4.9)–(4.4.13)** and **(4.4.18)**, the multi-level Haar transform. Iterating the analysis
+step of Theorem 4.4.3 from level `J` down to level `i` writes an element of `V_J` as
+
+`f_J = f_i + w_i + w_{i+1} + ⋯ + w_{J-1}`,
+
+with `f_i` its orthogonal projection onto `V_i` and `w_l` its projection onto `W_l`; and each piece
+is the expansion the book writes, `f_i = ∑_k a_k^i φ(2^i x - k)` and `w_l = ∑_k b_k^l ψ(2^l x - k)`,
+in the unnormalised basis and with the coefficients `a_k^j = √(2^j) ⟪φ_{j,k}, f⟫` and
+`b_k^j = √(2^j) ⟪ψ_{j,k}, f⟫` of Theorems 4.4.3–4.4.4.
+
+Stated for the projections of an arbitrary `f`, which for `f ∈ V_J` is the book's statement about
+`f` itself, since the projection onto `V_J` then fixes it. -/
+theorem equation_4_4_18 {i J : ℤ} (h : i ≤ J) (f : Lp ℝ 2 (volume : Measure ℝ)) :
+    (Haar.V J).starProjection f
+        = (Haar.V i).starProjection f
+          + ∑ l ∈ Finset.Ico i J, (Haar.W l).starProjection f ∧
+      HasSum (fun k : ℤ =>
+          (√((2 : ℝ) ^ i) * inner ℝ (Haar.scalingFun i k) f) • bookScalingFun i k)
+        ((Haar.V i).starProjection f) ∧
+      ∀ l : ℤ, HasSum (fun k : ℤ =>
+          (√((2 : ℝ) ^ l) * inner ℝ (Haar.waveletFun l k) f) • bookWaveletFun l k)
+        ((Haar.W l).starProjection f) := by
+  have hne : ∀ l : ℤ, √((2 : ℝ) ^ l) ≠ 0 := fun l => ne_of_gt (Real.sqrt_pos.mpr (by positivity))
+  refine ⟨Haar.starProjection_V_eq_sum h f, ?_, fun l => ?_⟩
+  · refine (Haar.hasSum_inner_smul_starProjection_V i f).congr_fun fun k => ?_
+    rw [show bookScalingFun i k = (√((2 : ℝ) ^ i))⁻¹ • Haar.scalingFun i k from rfl, smul_smul]
+    congr 1
+    field_simp
+  · refine (Haar.hasSum_inner_smul_starProjection_W l f).congr_fun fun k => ?_
+    rw [show bookWaveletFun l k = (√((2 : ℝ) ^ l))⁻¹ • Haar.waveletFun l k from rfl, smul_smul]
+    congr 1
+    field_simp
+
+/-- **Exercise 4.4.4**: the rescaled Haar wavelets `ψ_{jk}(x) = 2^{j/2} ψ(2^j x - k)`, over all
+`j, k ∈ ℤ`, form an orthonormal basis of `L²(ℝ)`: they satisfy `∫ ψ_{jk} ψ_{lm} = δ_{jl} δ_{km}`
+and every `f ∈ L²(ℝ)` is the sum of its wavelet coefficients against them.
+
+The expansion is stated rather than the bundled `Haar.hilbertBasis` because it is what a consumer
+uses; the basis itself is the backbone declaration behind both clauses. -/
+theorem exercise_4_4_4 :
+    (∀ i j k l : ℤ, inner ℝ (Haar.waveletFun i k) (Haar.waveletFun j l)
+        = if i = j then (if k = l then (1 : ℝ) else 0) else 0) ∧
+      ∀ f : Lp ℝ 2 (volume : Measure ℝ),
+        HasSum (fun p : ℤ × ℤ =>
+          (inner ℝ (Haar.waveletFun p.1 p.2) f) • Haar.waveletFun p.1 p.2) f := by
+  refine ⟨fun i j k l => ?_, fun f => ?_⟩
+  · have h := orthonormal_iff_ite.mp Haar.orthonormal_waveletFun_prod (i, k) (j, l)
+    rw [h]
+    by_cases hij : i = j
+    · subst hij
+      by_cases hkl : k = l
+      · subst hkl
+        rw [ite_eq_left rfl, ite_eq_left rfl, ite_eq_left rfl]
+      · rw [ite_eq_right (by simp [Prod.ext_iff, hkl]), ite_eq_left rfl, ite_eq_right hkl]
+    · rw [ite_eq_right (by simp [Prod.ext_iff, hij]), ite_eq_right hij]
+  · have h := Haar.hilbertBasis.hasSum_repr f
+    refine h.congr_fun fun p => ?_
+    simp only [HilbertBasis.repr_apply_apply, Haar.coe_hilbertBasis]
 
 end AtkinsonHan.Chapter04

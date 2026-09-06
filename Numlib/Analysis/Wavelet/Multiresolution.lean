@@ -33,6 +33,12 @@ equation, and shows that the Haar system of `Numlib/Analysis/Wavelet/Haar` is an
   Hilbert basis of `V j`.
 * `IsMultiresolutionAnalysis.hasSum_scalingEquation` is the scaling equation: `φ` is the sum of its
   level-`1` coefficients against the level-`1` system.
+* `IsMultiresolutionAnalysis.hasSum_scalingCoeff_mul` is the necessary condition on those
+  coefficients that orthonormality of the translates imposes, `∑_k p_k p_{k - 2l} = δ_{0l}`
+  ([han2009theoretical], Exercise 4.5.2).  It rests on `MeasureTheory.Lp.translationₗᵢ_dilationₗᵢ`,
+  the commutation of translation with dilation, and on its corollary
+  `translationₗᵢ_scalingSystem_one`: a unit translation at level `0` is a translation by two at
+  level `1`.
 * `Haar.isMultiresolutionAnalysis` is the Haar instance. Its scaling coefficients are computed in
   `NumlibSurface.AtkinsonHan.Chapter04.haar_scalingCoeff`, in the surface rather than here, because
   the book states them and nothing in this layer consumes them yet.
@@ -66,6 +72,31 @@ theorem translationₗᵢ_zero (f : Lp ℝ 2 (volume : Measure ℝ)) : translati
   refine Lp.ext ?_
   filter_upwards [translationₗᵢ_apply 0 f] with x hx
   rw [hx, add_zero]
+
+/-- Two translations compose into one. -/
+theorem translationₗᵢ_trans (a b : ℝ) (f : Lp ℝ 2 (volume : Measure ℝ)) :
+    translationₗᵢ a (translationₗᵢ b f) = translationₗᵢ (b + a) f := by
+  refine Lp.ext ?_
+  filter_upwards [translationₗᵢ_apply a (translationₗᵢ b f),
+    (translationₗᵢ_apply b f).comp_tendsto
+      (measurePreserving_add_right volume a).quasiMeasurePreserving.tendsto_ae,
+    translationₗᵢ_apply (b + a) f] with x h1 h2 h3
+  simp only [Function.comp_apply] at h2
+  rw [h1, h3, h2, add_assoc, add_comm a b]
+
+/-- **Translation commutes with dilation**: translating by `a` the dilate by `c` of `f` is the
+dilate by `c` of the translate of `f` by `c * a`.  It is what identifies the coefficients of the
+dilated scaling equation with the coefficients of the scaling equation reindexed. -/
+theorem translationₗᵢ_dilationₗᵢ (a c : ℝ) (hc : c ≠ 0) (f : Lp ℝ 2 (volume : Measure ℝ)) :
+    translationₗᵢ a (dilationₗᵢ c hc f) = dilationₗᵢ c hc (translationₗᵢ (c * a) f) := by
+  refine Lp.ext ?_
+  filter_upwards [translationₗᵢ_apply a (dilationₗᵢ c hc f),
+    (dilationₗᵢ_apply c hc f).comp_tendsto
+      (measurePreserving_add_right volume a).quasiMeasurePreserving.tendsto_ae,
+    dilationₗᵢ_apply c hc (translationₗᵢ (c * a) f),
+    ae_comp_const_mul hc (translationₗᵢ_apply (c * a) f)] with x h1 h2 h3 h4
+  simp only [Function.comp_apply] at h2
+  rw [h1, h2, h3, h4, mul_add]
 
 /-- The translate of `r` times the indicator of `s` is `r` times the indicator of the translated set
 `(fun x => x + a) ⁻¹' s`. -/
@@ -118,6 +149,24 @@ theorem scalingSystem_zero (φ : Lp ℝ 2 (volume : Measure ℝ)) :
   filter_upwards [Lp.dilationₗᵢ_apply ((2 : ℝ) ^ (0 : ℤ)) (zpow_ne_zero 0 two_ne_zero)
     (translates φ k)] with x hx
   rw [hx, zpow_zero, one_mul, abs_one, Real.one_rpow, one_mul]
+
+@[simp]
+theorem translates_zero (φ : Lp ℝ 2 (volume : Measure ℝ)) : translates φ 0 = φ := by
+  rw [translates, Int.cast_zero, neg_zero]
+  exact Lp.translationₗᵢ_zero φ
+
+/-- **A unit translation at level `0` is a translation by two at level `1`**: translating the
+level-one system member `2^{1/2} φ(2 x - k)` by `l` gives `2^{1/2} φ(2 x - (k - 2 l))`.  This is
+what makes the coefficients of the dilated scaling equation the sequence `p` of the scaling
+equation, reindexed. -/
+theorem translationₗᵢ_scalingSystem_one (φ : Lp ℝ 2 (volume : Measure ℝ)) (k l : ℤ) :
+    Lp.translationₗᵢ (l : ℝ) (scalingSystem φ 1 k) = scalingSystem φ 1 (k - 2 * l) := by
+  have harg : -(k : ℝ) + (2 : ℝ) ^ (1 : ℤ) * (l : ℝ) = -((k - 2 * l : ℤ) : ℝ) := by
+    rw [zpow_one]
+    push_cast
+    ring
+  simp only [scalingSystem, translates]
+  rw [Lp.translationₗᵢ_dilationₗᵢ, Lp.translationₗᵢ_trans, harg]
 
 /-! ### The definition -/
 
@@ -233,6 +282,38 @@ Reference: [han2009theoretical], (4.5.1)–(4.5.3). -/
 theorem hasSum_scalingEquation (h : IsMultiresolutionAnalysis V φ) :
     HasSum (fun k : ℤ => (inner ℝ (scalingSystem φ 1 k) φ) • scalingSystem φ 1 k) φ :=
   h.hasSum_inner_smul 1 (h.le_succ 0 h.mem_zero)
+
+/-- **The necessary condition on the dilation coefficients** ([han2009theoretical], Exercise
+4.5.2). If the integer translates of the scaling function are orthonormal, its dilation
+coefficients `p_k = ⟪√2 φ(2 · - k), φ⟫` satisfy
+
+`∑_k p_k p_{k - 2l} = δ_{0l}`.
+
+The proof is the orthonormality of the translates read through the scaling equation: translating
+that equation by `l` reindexes the level-one system by `k ↦ k - 2l`, and pairing the result with
+`φ` turns `⟪φ(· - l), φ⟫ = δ_{0l}` into the displayed sum. -/
+theorem hasSum_scalingCoeff_mul (h : IsMultiresolutionAnalysis V φ) (l : ℤ) :
+    HasSum (fun k : ℤ => inner ℝ (scalingSystem φ 1 k) φ
+        * inner ℝ (scalingSystem φ 1 (k - 2 * l)) φ)
+      (if l = 0 then (1 : ℝ) else 0) := by
+  have htrans : Lp.translationₗᵢ (l : ℝ) φ = translates φ (-l) := by
+    rw [translates, show -(((-l : ℤ)) : ℝ) = (l : ℝ) by push_cast; ring]
+  -- the value: orthonormality of the translates
+  have hval : (inner ℝ φ (Lp.translationₗᵢ (l : ℝ) φ) : ℝ) = if l = 0 then 1 else 0 := by
+    have hon := orthonormal_iff_ite.mp h.orthonormal_translates 0 (-l)
+    rw [translates_zero] at hon
+    rw [htrans, hon]
+    by_cases hl : l = 0
+    · rw [ite_eq_left (by omega), ite_eq_left hl]
+    · rw [ite_eq_right (by omega), ite_eq_right hl]
+  -- translate the scaling equation and pair it with `φ`
+  have hT := (h.hasSum_scalingEquation.mapL
+    (Lp.translationₗᵢ (l : ℝ)).toContinuousLinearMap).mapL (innerSL ℝ φ)
+  simp only [LinearIsometry.coe_toContinuousLinearMap, innerSL_apply_apply ℝ, map_smul,
+    translationₗᵢ_scalingSystem_one φ _ l, real_inner_smul_right] at hT
+  rw [hval] at hT
+  refine hT.congr_fun fun k => ?_
+  simp only [real_inner_comm φ]
 
 end IsMultiresolutionAnalysis
 

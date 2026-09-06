@@ -13,3 +13,12 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, (4.5.1)–(4.5.3)"
 [[node]]
 id = "Haar.isMultiresolutionAnalysis"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Section 4.5"
+
+[[node]]
+id = "_root_.MeasureTheory.Lp.translationₗᵢ_dilationₗᵢ"
+
+[[node]]
+id = "translationₗᵢ_scalingSystem_one"
+
+[[node]]
+id = "IsMultiresolutionAnalysis.hasSum_scalingCoeff_mul"

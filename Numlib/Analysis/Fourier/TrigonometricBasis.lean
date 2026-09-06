@@ -440,6 +440,88 @@ theorem tsum_sq_realFourierCoeff (f : Lp ℝ 2 (@haarAddCircle T hT)) :
   rw [real_inner_comm, inner_trigLp]
   ring
 
+/-- **Parseval's identity** as a `HasSum`: the squares of the real Fourier coefficients are a
+summable family whose sum is `‖f‖ ^ 2`. -/
+theorem hasSum_sq_realFourierCoeff (f : Lp ℝ 2 (@haarAddCircle T hT)) :
+    HasSum (fun n : ℤ => realFourierCoeff (f : AddCircle T → ℝ) n ^ 2) (‖f‖ ^ 2) := by
+  have h := (trigBasis T).hasSum_inner_mul_inner f f
+  simp only [coe_trigBasis, real_inner_self_eq_norm_sq] at h
+  refine h.congr_fun fun n => ?_
+  have h1 : inner ℝ f (trigLp T n) = realFourierCoeff (f : AddCircle T → ℝ) n := by
+    rw [← inner_trigLp n f]
+    exact real_inner_comm _ _
+  rw [h1, inner_trigLp, sq]
+
+/-! ### The partial sums of the Fourier series -/
+
+/-- The `L²` partial sum of the real Fourier series, the truncation of `hasSum_trigSeries` to the
+frequencies of absolute value at most `n`:
+
+`trigPartialSum n f = ∑_{|m| ≤ n} realFourierCoeff f m • trigLp T m`.
+
+It is the orthogonal projection of `f` onto the trigonometric polynomials of degree at most `n`,
+and in the classical coefficients it is `a₀ / 2 + ∑_{j = 1}^{n} (a_j cos (j x) + b_j sin (j x))`. -/
+noncomputable def trigPartialSum (n : ℕ) (f : Lp ℝ 2 (@haarAddCircle T hT)) :
+    Lp ℝ 2 (@haarAddCircle T hT) :=
+  ∑ m ∈ Finset.Icc (-(n : ℤ)) (n : ℤ), realFourierCoeff (f : AddCircle T → ℝ) m • trigLp T m
+
+theorem trigPartialSum_def (n : ℕ) (f : Lp ℝ 2 (@haarAddCircle T hT)) :
+    trigPartialSum n f
+      = ∑ m ∈ Finset.Icc (-(n : ℤ)) (n : ℤ),
+          realFourierCoeff (f : AddCircle T → ℝ) m • trigLp T m :=
+  rfl
+
+/-- The partial sum has the same inner product with `f` as it has with itself: both are the sum of
+the squares of the coefficients it keeps. -/
+private theorem inner_trigPartialSum_left (n : ℕ) (f : Lp ℝ 2 (@haarAddCircle T hT)) :
+    inner ℝ (trigPartialSum n f) f
+      = ∑ m ∈ Finset.Icc (-(n : ℤ)) (n : ℤ), realFourierCoeff (f : AddCircle T → ℝ) m ^ 2 := by
+  rw [trigPartialSum_def, sum_inner]
+  exact Finset.sum_congr rfl fun m _ => by rw [real_inner_smul_left, inner_trigLp, sq]
+
+private theorem norm_trigPartialSum_sq (n : ℕ) (f : Lp ℝ 2 (@haarAddCircle T hT)) :
+    ‖trigPartialSum n f‖ ^ 2
+      = ∑ m ∈ Finset.Icc (-(n : ℤ)) (n : ℤ), realFourierCoeff (f : AddCircle T → ℝ) m ^ 2 := by
+  rw [← real_inner_self_eq_norm_sq, trigPartialSum_def, sum_inner]
+  refine Finset.sum_congr rfl fun m hm => ?_
+  rw [real_inner_smul_left, orthonormal_trigFun.inner_right_sum _ hm, sq]
+
+/-- **The `L²` truncation error of the Fourier series**: subtracting the partial sum removes
+exactly the coefficients it keeps, so `‖f - S_n f‖² = ‖f‖² - ∑_{|m| ≤ n} c_m²`. -/
+theorem norm_sub_trigPartialSum_sq (n : ℕ) (f : Lp ℝ 2 (@haarAddCircle T hT)) :
+    ‖f - trigPartialSum n f‖ ^ 2
+      = ‖f‖ ^ 2 - ∑ m ∈ Finset.Icc (-(n : ℤ)) (n : ℤ),
+          realFourierCoeff (f : AddCircle T → ℝ) m ^ 2 := by
+  rw [norm_sub_sq_real, real_inner_comm, inner_trigPartialSum_left, norm_trigPartialSum_sq]
+  ring
+
+/-- **The tail form of Parseval's identity**: the squares of the Fourier coefficients of frequency
+`|m| > n` sum to the squared `L²` truncation error `‖f - S_n f‖²`. It is Parseval's identity with
+the finitely many coefficients that the partial sum reproduces taken out. -/
+theorem hasSum_sq_realFourierCoeff_compl (n : ℕ) (f : Lp ℝ 2 (@haarAddCircle T hT)) :
+    HasSum (fun m : ℤ =>
+        if m.natAbs ≤ n then 0 else realFourierCoeff (f : AddCircle T → ℝ) m ^ 2)
+      (‖f - trigPartialSum n f‖ ^ 2) := by
+  have hmem : ∀ m : ℤ, m ∈ Finset.Icc (-(n : ℤ)) (n : ℤ) ↔ m.natAbs ≤ n := by
+    intro m
+    rw [Finset.mem_Icc]
+    omega
+  have hfin : HasSum (fun m : ℤ => if m.natAbs ≤ n then
+      realFourierCoeff (f : AddCircle T → ℝ) m ^ 2 else 0)
+      (∑ m ∈ Finset.Icc (-(n : ℤ)) (n : ℤ), realFourierCoeff (f : AddCircle T → ℝ) m ^ 2) := by
+    have heq : (∑ b ∈ Finset.Icc (-(n : ℤ)) (n : ℤ),
+        if b.natAbs ≤ n then realFourierCoeff (f : AddCircle T → ℝ) b ^ 2 else 0)
+        = ∑ b ∈ Finset.Icc (-(n : ℤ)) (n : ℤ), realFourierCoeff (f : AddCircle T → ℝ) b ^ 2 :=
+      Finset.sum_congr rfl fun m hm => ite_eq_left ((hmem m).mp hm)
+    rw [← heq]
+    exact hasSum_sum_of_ne_finset_zero fun m hm => ite_eq_right fun h => hm ((hmem m).mpr h)
+  have hsub := (hasSum_sq_realFourierCoeff f).sub hfin
+  rw [← norm_sub_trigPartialSum_sq] at hsub
+  refine hsub.congr_fun fun m => ?_
+  by_cases hm : m.natAbs ≤ n
+  · rw [ite_eq_left hm, ite_eq_left hm, sub_self]
+  · rw [ite_eq_right hm, ite_eq_right hm, sub_zero]
+
 end Circle
 
 /-! ### The trigonometric polynomials of degree at most `n` -/

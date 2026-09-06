@@ -17,6 +17,10 @@ the scaling function, and the Haar instance `Haar.isMultiresolutionAnalysis` bui
 * `proposition_4_5_2` — the level-`j` system is an orthonormal basis of `V_j`.
 * `scalingCoeff`, `equation_4_5_2` — (4.5.1)–(4.5.3), the scaling equation and its dilated form.
 * `haar_scalingCoeff` — the Haar coefficients `p₀ = p₁ = 1/√2`, and `p_k = 0` otherwise.
+* `exercise_4_5_2` — the necessary condition `∑_k p_k p_{k-2l} = δ_{0l}` on the coefficients.
+* `exercise_4_5_5`, `exercise_4_5_6_subset` — the values of the Daubechies `D4` scaling function
+  at the first dyadic points, and the support bound for its wavelet, both under the hypothesis that
+  a function with the properties (4.5.5)–(4.5.7) exists.
 
 ## Conventions
 
@@ -33,21 +37,24 @@ that consumers actually use, which avoids transporting a basis across `V_j = clo
 
 The book writes the coefficients of the dilated scaling equation (4.5.3) as `p_{k-2l}`, the
 *same* sequence that appears in (4.5.1) shifted by `2l`.  The second clause of `equation_4_5_2`
-states (4.5.3) with the coefficients as they are, `⟪φ_{j+1,k}, φ_{j,l}⟫`; identifying them with
-`p_{k-2l}` needs the commutation of translation with dilation on `L²(ℝ)`, which the backbone does
-not yet state.  Nothing later in the book's development of this section is formalized, so nothing
-depends on the reindexing.
+states (4.5.3) with the coefficients as they are, `⟪φ_{j+1,k}, φ_{j,l}⟫`.  What identifies those
+with `p_{k-2l}` at level `0` is the backbone `translationₗᵢ_scalingSystem_one`, that a unit
+translation at level `0` is a translation by two at level `1`; that is the lemma behind
+`exercise_4_5_2`, and the general level would follow the same way.
 
 ## Not formalized here
 
-Most of the rest of the section: the construction of a scaling function from its dilation
-coefficients, the claim that the `ψ` of (4.5.4) generates the wavelet spaces, the four listed
-properties of the `W_j` for a general multiresolution analysis, the fixed-point computation of `φ`
-and the Daubechies example (4.5.5)–(4.5.6).  Atkinson–Han state all of these without proof and
-refer the reader to Daubechies, *Ten Lectures on Wavelets*; the standard arguments run through
-conditions on `φ̂`, a piece of harmonic analysis Mathlib does not have.  The stable-basis
-weakening of axiom (1) is left out too — the book only remarks that one may renormalise to the
-orthonormal case.
+The general theory the section states without proof: the claim that the `ψ` of (4.5.4) generates
+the wavelet spaces and that its dilates and translates are an orthonormal basis of `L²(ℝ)`
+(Mallat's theorem), and the existence of a scaling function with prescribed dilation coefficients,
+of which the Daubechies `D4` function of (4.5.5)–(4.5.7) is the example.  Atkinson–Han state all
+of these without proof and refer the reader to Daubechies, *Ten Lectures on Wavelets*; the standard
+arguments run on the Fourier side, through the periodisation of `|φ̂|²` and the `2π`-periodic symbol
+`m₀`, which is a self-contained harmonic-analysis development the backbone does not have.  What is
+proved here of that material is what needs no existence theorem: the coefficient identity
+`exercise_4_5_2`, and the dyadic values and support bound of the Daubechies pair, stated of a
+function *assumed* to have the properties (4.5.5)–(4.5.7).  The stable-basis weakening of axiom (1)
+is left out too — the book only remarks that one may renormalise to the orthonormal case.
 -/
 
 open MeasureTheory Real
@@ -124,6 +131,19 @@ theorem equation_4_5_2 (h : IsMultiresolutionAnalysis V φ) :
   ⟨h.hasSum_scalingEquation,
     fun j l => h.hasSum_inner_smul (j + 1) (h.le_succ j (h.scalingSystem_mem j l))⟩
 
+/-- **Exercise 4.5.2**, the necessary condition on the dilation coefficients: for the integer
+translates of the scaling function to be orthonormal, its coefficients must satisfy
+
+`∑_k p_k p_{k - 2l} = δ_{0l}`.
+
+The book gives this as the sample of the identities that constrain `{p_k}`, and remarks that it is
+difficult to find coefficients satisfying them all; the constructions that do are what §4.5 leaves
+to Daubechies. -/
+theorem exercise_4_5_2 (h : IsMultiresolutionAnalysis V φ) (l : ℤ) :
+    HasSum (fun k : ℤ => scalingCoeff φ k * scalingCoeff φ (k - 2 * l))
+      (if l = 0 then (1 : ℝ) else 0) :=
+  h.hasSum_scalingCoeff_mul l
+
 end
 
 /-- The dilation coefficients of the **Haar** multiresolution analysis, whose scaling function is
@@ -156,6 +176,92 @@ theorem haar_scalingCoeff :
     ring
   · intro k hk0 hk1
     rw [hcoeff, Haar.inner_scalingFun_of_ne 1 hk0, Haar.inner_scalingFun_of_ne 1 hk1]
+    ring
+
+/-! ### The Daubechies example -/
+
+/-- **The values of the Daubechies `D4` scaling function at the first dyadic points.** For a
+function `φ` with the three properties (4.5.5)–(4.5.7) — supported in `[0, 3]`, satisfying the
+four-term scaling equation (4.5.6), and normalised by `φ(1) = (1+√3)/2`, `φ(2) = (1-√3)/2` — the
+scaling equation determines `φ` at every dyadic point, and the first few values are those the book
+computes and asks for in Exercise 4.5.5:
+
+`φ(0) = φ(3) = 0`, `φ(1/2) = (2+√3)/4`, `φ(3/2) = 0` and `φ(1/4) = (5+3√3)/16`.
+
+The vanishing at the endpoints is not assumed: it follows from the scaling equation, because the
+coefficients `(1+√3)/4` and `(1-√3)/4` of the two end terms are not `1`.
+
+That such a `φ` exists is Daubechies' construction, which the book states without proof and which
+is the open node `equation_4_5_6`; this statement is unconditional on it. -/
+theorem exercise_4_5_5 {φ : ℝ → ℝ} (hsupp : ∀ x : ℝ, x < 0 ∨ 3 < x → φ x = 0)
+    (hscal : ∀ x : ℝ, φ x = (1 + √3) / 4 * φ (2 * x) + (3 + √3) / 4 * φ (2 * x - 1)
+      + (3 - √3) / 4 * φ (2 * x - 2) + (1 - √3) / 4 * φ (2 * x - 3))
+    (hone : φ 1 = (1 + √3) / 2) (htwo : φ 2 = (1 - √3) / 2) :
+    φ 0 = 0 ∧ φ 3 = 0 ∧ φ (1 / 2) = (2 + √3) / 4 ∧ φ (3 / 2) = 0 ∧
+      φ (1 / 4) = (5 + 3 * √3) / 16 := by
+  have hs3 : √3 * √3 = 3 := Real.mul_self_sqrt (by norm_num)
+  have hs3lt : √3 < 3 := by nlinarith [Real.sqrt_nonneg 3]
+  have hneg : ∀ x : ℝ, x < 0 → φ x = 0 := fun x hx => hsupp x (Or.inl hx)
+  have hbig : ∀ x : ℝ, 3 < x → φ x = 0 := fun x hx => hsupp x (Or.inr hx)
+  -- the endpoints, from the scaling equation alone
+  have h0 : φ 0 = 0 := by
+    have h := hscal 0
+    rw [hneg ((2 : ℝ) * 0 - 1) (by norm_num), hneg ((2 : ℝ) * 0 - 2) (by norm_num),
+      hneg ((2 : ℝ) * 0 - 3) (by norm_num), show (2 : ℝ) * 0 = 0 by norm_num] at h
+    have hkey : ((3 - √3) / 4) * φ 0 = 0 := by linarith
+    rcases mul_eq_zero.mp hkey with h' | h'
+    · exact absurd h' (by intro hc; rw [div_eq_zero_iff] at hc; rcases hc with hc | hc <;> linarith)
+    · exact h'
+  have h3 : φ 3 = 0 := by
+    have h := hscal 3
+    rw [hbig ((2 : ℝ) * 3 - 1) (by norm_num), hbig ((2 : ℝ) * 3 - 2) (by norm_num),
+      show (2 : ℝ) * 3 - 3 = 3 by norm_num, hbig ((2 : ℝ) * 3) (by norm_num)] at h
+    have hkey : ((3 + √3) / 4) * φ 3 = 0 := by linarith
+    rcases mul_eq_zero.mp hkey with h' | h'
+    · exact absurd h' (by
+        intro hc
+        rw [div_eq_zero_iff] at hc
+        rcases hc with hc | hc <;> nlinarith [Real.sqrt_nonneg 3])
+    · exact h'
+  -- the book's worked value at `1/2`, and Exercise 4.5.5
+  have hhalf : φ (1 / 2) = (2 + √3) / 4 := by
+    have h := hscal (1 / 2)
+    rw [show (2 : ℝ) * (1 / 2) - 1 = 0 by norm_num,
+      hneg ((2 : ℝ) * (1 / 2) - 2) (by norm_num), hneg ((2 : ℝ) * (1 / 2) - 3) (by norm_num),
+      show (2 : ℝ) * (1 / 2) = 1 by norm_num, hone, h0] at h
+    rw [h]
+    linear_combination hs3 / 8
+  refine ⟨h0, h3, hhalf, ?_, ?_⟩
+  · have h := hscal (3 / 2)
+    rw [show (2 : ℝ) * (3 / 2) - 1 = 2 by norm_num, show (2 : ℝ) * (3 / 2) - 2 = 1 by norm_num,
+      show (2 : ℝ) * (3 / 2) - 3 = 0 by norm_num, show (2 : ℝ) * (3 / 2) = 3 by norm_num,
+      h3, htwo, hone, h0] at h
+    rw [h]
+    linear_combination -hs3 / 4
+  · have h := hscal (1 / 4)
+    rw [hneg ((2 : ℝ) * (1 / 4) - 1) (by norm_num), hneg ((2 : ℝ) * (1 / 4) - 2) (by norm_num),
+      hneg ((2 : ℝ) * (1 / 4) - 3) (by norm_num), show (2 : ℝ) * (1 / 4) = 1 / 2 by norm_num,
+      hhalf] at h
+    rw [h]
+    linear_combination hs3 / 16
+
+/-- **Half of Exercise 4.5.6**: the Daubechies wavelet (4.5.8) vanishes outside `[-1, 2]`, so its
+support is contained in that interval.
+
+Only the inclusion is proved.  The book asks for the equality `supp ψ = [-1, 2]`, whose other half
+needs `φ` to be non-vanishing near the ends of `[0, 3]`; that does not follow from (4.5.5)–(4.5.7)
+without the existence theory the section defers to Daubechies, which is the open node
+`equation_4_5_6`. -/
+theorem exercise_4_5_6_subset {φ ψ : ℝ → ℝ} (hsupp : ∀ x : ℝ, x < 0 ∨ 3 < x → φ x = 0)
+    (hpsi : ∀ x : ℝ, ψ x = -((1 + √3) / 4) * φ (2 * x - 1) + (3 + √3) / 4 * φ (2 * x)
+      - (3 - √3) / 4 * φ (2 * x + 1) + (1 - √3) / 4 * φ (2 * x + 2))
+    {x : ℝ} (hx : x < -1 ∨ 2 < x) : ψ x = 0 := by
+  rcases hx with hx | hx
+  · rw [hpsi, hsupp (2 * x - 1) (Or.inl (by linarith)), hsupp (2 * x) (Or.inl (by linarith)),
+      hsupp (2 * x + 1) (Or.inl (by linarith)), hsupp (2 * x + 2) (Or.inl (by linarith))]
+    ring
+  · rw [hpsi, hsupp (2 * x - 1) (Or.inr (by linarith)), hsupp (2 * x) (Or.inr (by linarith)),
+      hsupp (2 * x + 1) (Or.inr (by linarith)), hsupp (2 * x + 2) (Or.inr (by linarith))]
     ring
 
 end AtkinsonHan.Chapter04

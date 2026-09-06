@@ -30,6 +30,7 @@ quasi-measure preserving, so the underlying map on `α →ₘ[μ] β` is built f
 * `MeasureTheory.Lp.dilationₗᵢ`: the dilation, as an element of `L²(ℝ) ≃ₗᵢ[ℝ] L²(ℝ)`.
 * `Haar.scalingFun`, `Haar.waveletFun`: the Haar scaling and wavelet functions.
 * `Haar.V`, `Haar.W`: the scaling and wavelet spaces, with their Hilbert bases.
+* `Haar.hilbertBasis`: the wavelets of all levels together, as a Hilbert basis of `L²(ℝ)`.
 
 ## Main statements
 
@@ -39,10 +40,16 @@ quasi-measure preserving, so the underlying map on `α →ₘ[μ] β` is built f
 * `Haar.mem_W_iff`, `Haar.isCompl_V_W`: `V (j+1)` is the orthogonal direct sum of `V j` and `W j`.
 * `Haar.decomposition`, `Haar.reconstruction`: the analysis and synthesis formulas for the
   coefficients of one level in terms of the next.
+* `Haar.starProjection_V_eq_sum`: the multi-level decomposition, one analysis step iterated, which
+  splits the projection onto `V j` into a coarse part in `V i` and the detail parts in the
+  intermediate wavelet spaces.
+* `Haar.orthonormal_waveletFun_prod`, `Haar.hilbertBasis`: the wavelets of all levels are
+  orthonormal and complete.
 
 ## References
 
-The material is [han2009theoretical] §4.4 (Theorems 4.4.1–4.4.4). None of it is in Mathlib.
+The material is [han2009theoretical] §4.4 (Theorems 4.4.1–4.4.4 and Exercise 4.4.4). None of it
+is in Mathlib.
 -/
 
 open scoped ENNReal Pointwise
@@ -64,7 +71,7 @@ private theorem qmp_const_mul (hc : c ≠ 0) :
   exact Measure.smul_absolutelyContinuous
 
 /-- Almost-everywhere equality is preserved by precomposition with `x ↦ c * x` for `c ≠ 0`. -/
-private theorem ae_comp_const_mul (hc : c ≠ 0) {g g' : ℝ → ℝ} (h : g =ᵐ[volume] g') :
+theorem ae_comp_const_mul (hc : c ≠ 0) {g g' : ℝ → ℝ} (h : g =ᵐ[volume] g') :
     (fun x => g (c * x)) =ᵐ[volume] fun x => g' (c * x) :=
   h.comp_tendsto (qmp_const_mul hc).tendsto_ae
 
@@ -292,6 +299,32 @@ def Orthonormal.hilbertBasisTopologicalClosure (hv : Orthonormal ℝ v) :
           (Submodule.isClosed_orthogonal _) x.2
       have hzero : inner ℝ (x : E) (x : E) = 0 := (Submodule.mem_orthogonal _ _).1 hmem2 _ hmem
       exact Submodule.coe_eq_zero.mp (inner_self_eq_zero.mp hzero))
+
+/-- **The expansion of an orthogonal projection in an orthonormal family.** The projection onto
+the closed span of an orthonormal family is the sum of the family against the coefficients of the
+projected vector; for a vector already in that closed span it is the expansion of the vector
+itself. -/
+theorem Orthonormal.hasSum_inner_smul_starProjection (hv : Orthonormal ℝ v) (x : E) :
+    HasSum (fun i : ι => (inner ℝ (v i) x) • v i)
+      ((Submodule.span ℝ (Set.range v)).topologicalClosure.starProjection x) := by
+  have : CompleteSpace ((Submodule.span ℝ (Set.range v)).topologicalClosure) :=
+    (Submodule.isClosed_topologicalClosure _).completeSpace_coe
+  have hmem : ∀ i : ι, v i ∈ (Submodule.span ℝ (Set.range v)).topologicalClosure := fun i =>
+    Submodule.le_topologicalClosure _ (Submodule.subset_span (Set.mem_range_self i))
+  have hbcoe : ∀ i : ι, ((hv.hilbertBasisTopologicalClosure i :
+      (Submodule.span ℝ (Set.range v)).topologicalClosure) : E) = v i := by
+    intro i
+    simp only [Orthonormal.hilbertBasisTopologicalClosure]
+    rw [HilbertBasis.coe_mkOfOrthogonalEqBot]
+    rfl
+  have hsum := (hv.hilbertBasisTopologicalClosure.hasSum_repr
+      ⟨_, (Submodule.span ℝ (Set.range v)).topologicalClosure.starProjection_apply_mem x⟩).mapL
+    (Submodule.span ℝ (Set.range v)).topologicalClosure.subtypeL
+  refine hsum.congr_fun fun i => ?_
+  rw [ContinuousLinearMap.map_smul, Submodule.subtypeL_apply, hbcoe i,
+    HilbertBasis.repr_apply_apply, Submodule.coe_inner, hbcoe i,
+    ← Submodule.inner_starProjection_left_eq_right,
+    Submodule.starProjection_eq_self_iff.mpr (hmem i)]
 
 end HilbertBasis
 
@@ -1100,6 +1133,162 @@ theorem reconstruction (j k : ℤ) (f : Lp ℝ 2 (volume : Measure ℝ)) :
   refine ⟨?_, ?_⟩
   · rw [h1, real_inner_smul_left, inner_add_left]
   · rw [h2, real_inner_smul_left, inner_sub_left]
+
+/-! ### The multi-level decomposition -/
+
+/-- The scaling spaces increase with the level, by iterating `Haar.V_le_V_succ`. -/
+theorem V_mono {i j : ℤ} (h : i ≤ j) : V i ≤ V j := by
+  induction j, h using Int.leInduction with
+  | base => exact le_rfl
+  | succ n _ ih => exact ih.trans (V_le_V_succ n)
+
+/-- Membership in `(W j)ᗮ` is orthogonality to every wavelet of level `j`. -/
+theorem mem_orthogonal_W_iff (j : ℤ) (f : Lp ℝ 2 (volume : Measure ℝ)) :
+    f ∈ (W j)ᗮ ↔ ∀ k : ℤ, inner ℝ (waveletFun j k) f = 0 := by
+  refine ⟨fun h k => (Submodule.mem_orthogonal _ _).1 h _ (waveletFun_mem_W j k), fun h => ?_⟩
+  simp only [W]
+  rw [Submodule.orthogonal_closure]
+  exact Submodule.mem_orthogonal_span_range h
+
+/-- **One analysis step, as a splitting of the projection.** Since `V (j + 1)` is the orthogonal
+direct sum of `V j` and `W j`, the projection onto it is the sum of the projections onto the two
+summands. -/
+theorem starProjection_V_succ (j : ℤ) (f : Lp ℝ 2 (volume : Measure ℝ)) :
+    (V (j + 1)).starProjection f = (V j).starProjection f + (W j).starProjection f := by
+  obtain ⟨g, hg⟩ : ∃ g, (V (j + 1)).starProjection f = g := ⟨_, rfl⟩
+  have hgmem : g ∈ V (j + 1) := hg ▸ (V (j + 1)).starProjection_apply_mem f
+  -- projecting `f` onto `V j` or `W j` is projecting `g` onto them
+  have hVg : (V j).starProjection g = (V j).starProjection f := by
+    rw [← hg]
+    exact congrFun (congrArg DFunLike.coe
+      (Submodule.starProjection_comp_starProjection_of_le (V_le_V_succ j))) f
+  have hWg : (W j).starProjection g = (W j).starProjection f := by
+    rw [← hg]
+    exact congrFun (congrArg DFunLike.coe
+      (Submodule.starProjection_comp_starProjection_of_le (W_le_V_succ j))) f
+  -- the part of `g` orthogonal to `V j` lies in `W j`, and is what `W j` projects it to
+  have hsub : g - (V j).starProjection g ∈ W j := by
+    refine (mem_W_iff j _).2 ⟨Submodule.sub_mem _ hgmem
+      (V_le_V_succ j ((V j).starProjection_apply_mem g)), ?_⟩
+    exact (mem_orthogonal_V_iff j _).1 ((V j).sub_starProjection_mem_orthogonal g)
+  have hzero : (W j).starProjection ((V j).starProjection g) = 0 :=
+    (Submodule.starProjection_apply_eq_zero_iff _).mpr
+      (V_le_orthogonal_W j ((V j).starProjection_apply_mem g))
+  have hWval : (W j).starProjection g = g - (V j).starProjection g := by
+    have h := map_sub ((W j).starProjection) g ((V j).starProjection g)
+    rw [hzero, sub_zero] at h
+    rw [← h]
+    exact Submodule.starProjection_eq_self_iff.mpr hsub
+  rw [hg, ← hVg, ← hWg, hWval]
+  abel
+
+/-- **The multi-level Haar decomposition** ([han2009theoretical], (4.4.9)–(4.4.13) and (4.4.18)):
+iterating one analysis step from level `j` down to level `i` splits the projection onto `V j` into
+the coarse part in `V i` and the detail parts in the intermediate wavelet spaces,
+
+`P_{V j} f = P_{V i} f + ∑_{i ≤ l < j} P_{W l} f`.
+
+This is the Haar transform as an algorithm: `j - i` rounds of `Haar.decomposition` produce exactly
+these summands, each expanded in its own orthonormal system by `Haar.hilbertBasis_V` and
+`Haar.hilbertBasis_W`. -/
+theorem starProjection_V_eq_sum {i j : ℤ} (h : i ≤ j) (f : Lp ℝ 2 (volume : Measure ℝ)) :
+    (V j).starProjection f
+      = (V i).starProjection f + ∑ l ∈ Finset.Ico i j, (W l).starProjection f := by
+  induction j, h using Int.leInduction with
+  | base => simp
+  | succ n hn ih =>
+      rw [starProjection_V_succ, ih, ← Finset.sum_Ico_add_eq_sum_Ico_add_one hn, add_assoc]
+
+/-- The coarse part of `f` at level `j`, expanded in the level-`j` scaling functions: this is the
+book's `f_j = ∑_k a_k^j φ(2^j x - k)` with `a_k^j` its scaling coefficients. -/
+theorem hasSum_inner_smul_starProjection_V (j : ℤ) (f : Lp ℝ 2 (volume : Measure ℝ)) :
+    HasSum (fun k : ℤ => (inner ℝ (scalingFun j k) f) • scalingFun j k)
+      ((V j).starProjection f) :=
+  (orthonormal_scalingFun j).hasSum_inner_smul_starProjection f
+
+/-- The detail part of `f` at level `j`, expanded in the level-`j` wavelets: this is the book's
+`w_j = ∑_k b_k^j ψ(2^j x - k)` with `b_k^j` its wavelet coefficients. -/
+theorem hasSum_inner_smul_starProjection_W (j : ℤ) (f : Lp ℝ 2 (volume : Measure ℝ)) :
+    HasSum (fun k : ℤ => (inner ℝ (waveletFun j k) f) • waveletFun j k)
+      ((W j).starProjection f) :=
+  (orthonormal_waveletFun j).hasSum_inner_smul_starProjection f
+
+/-! ### The Haar wavelets as a basis of `L²(ℝ)` -/
+
+/-- Wavelets of different levels are orthogonal: the level-`i` wavelet space sits inside `V j` for
+`i < j`, and `V j` is orthogonal to `W j`. -/
+theorem inner_waveletFun_of_lt {i j : ℤ} (hij : i < j) (k l : ℤ) :
+    inner ℝ (waveletFun i k) (waveletFun j l) = 0 := by
+  have hmem : waveletFun i k ∈ (W j)ᗮ :=
+    (((W_le_V_succ i).trans (V_mono (by omega))).trans (V_le_orthogonal_W j)) (waveletFun_mem_W i k)
+  rw [real_inner_comm]
+  exact (Submodule.mem_orthogonal _ _).1 hmem _ (waveletFun_mem_W j l)
+
+/-- The Haar wavelets of all levels and translations together are orthonormal. -/
+theorem orthonormal_waveletFun_prod :
+    Orthonormal ℝ fun p : ℤ × ℤ => waveletFun p.1 p.2 := by
+  rw [orthonormal_iff_ite]
+  rintro ⟨i, k⟩ ⟨j, l⟩
+  rcases lt_trichotomy i j with hij | rfl | hij
+  · rw [inner_waveletFun_of_lt hij, ite_eq_right (by simp [Prod.ext_iff]; omega)]
+  · have h := (orthonormal_iff_ite.mp (orthonormal_waveletFun i)) k l
+    rw [h]
+    by_cases hkl : k = l
+    · rw [ite_eq_left hkl, ite_eq_left (by rw [hkl])]
+    · rw [ite_eq_right hkl, ite_eq_right (by simp [Prod.ext_iff, hkl])]
+  · rw [real_inner_comm, inner_waveletFun_of_lt hij, ite_eq_right (by simp [Prod.ext_iff]; omega)]
+
+/-- A function orthogonal to every Haar wavelet is zero: the wavelet spaces span `L²(ℝ)`. -/
+theorem orthogonal_span_waveletFun_prod_eq_bot :
+    (Submodule.span ℝ (Set.range fun p : ℤ × ℤ => waveletFun p.1 p.2))ᗮ = ⊥ := by
+  rw [Submodule.eq_bot_iff]
+  intro f hf
+  -- `f` is orthogonal to every wavelet space, so every detail projection vanishes
+  have hW : ∀ j : ℤ, (W j).starProjection f = 0 := by
+    intro j
+    refine (Submodule.starProjection_apply_eq_zero_iff _).mpr
+      ((mem_orthogonal_W_iff j f).2 fun k => ?_)
+    exact (Submodule.mem_orthogonal _ _).1 hf _ (Submodule.subset_span ⟨(j, k), rfl⟩)
+  -- the coarse projections are then all equal, hence lie in every scaling space
+  have hV : ∀ {i j : ℤ}, i ≤ j → (V j).starProjection f = (V i).starProjection f := by
+    intro i j hij
+    rw [starProjection_V_eq_sum hij f, Finset.sum_congr rfl fun l _ => hW l, Finset.sum_const_zero,
+      add_zero]
+  have hmem : ∀ j : ℤ, (V j).starProjection f ∈ ⨅ i : ℤ, V i := by
+    intro j
+    refine Submodule.mem_iInf _ |>.mpr fun i => ?_
+    rcases le_total i j with hij | hij
+    · rw [hV hij]
+      exact (V i).starProjection_apply_mem f
+    · exact V_mono hij ((V j).starProjection_apply_mem f)
+  have hVzero : ∀ j : ℤ, (V j).starProjection f = 0 := by
+    intro j
+    have := hmem j
+    rw [iInf_V_eq_bot, Submodule.mem_bot] at this
+    exact this
+  -- so `f` is orthogonal to every scaling space, and those are dense
+  have horth : ∀ i : ℤ, V i ≤ (Submodule.span ℝ {f})ᗮ := by
+    intro i u hu
+    rw [Submodule.mem_orthogonal_singleton_iff_inner_right, real_inner_comm]
+    exact (Submodule.mem_orthogonal _ _).1
+      ((Submodule.starProjection_apply_eq_zero_iff _).mp (hVzero i)) u hu
+  have hclose : (⨆ i : ℤ, V i).topologicalClosure ≤ (Submodule.span ℝ {f})ᗮ :=
+    Submodule.topologicalClosure_minimal _ (iSup_le horth) (Submodule.isClosed_orthogonal _)
+  rw [topologicalClosure_iSup_V] at hclose
+  have hfmem : f ∈ (Submodule.span ℝ {f})ᗮ := hclose Submodule.mem_top
+  rw [Submodule.mem_orthogonal_singleton_iff_inner_right] at hfmem
+  exact inner_self_eq_zero.mp hfmem
+
+/-- **The Haar wavelets are an orthonormal basis of `L²(ℝ)`** ([han2009theoretical], Exercise
+4.4.4): the family `2 ^ (j/2) ψ (2 ^ j x - k)`, over all levels `j` and translations `k`, is a
+Hilbert basis. -/
+noncomputable def hilbertBasis : HilbertBasis (ℤ × ℤ) ℝ (Lp ℝ 2 (volume : Measure ℝ)) :=
+  HilbertBasis.mkOfOrthogonalEqBot orthonormal_waveletFun_prod
+    orthogonal_span_waveletFun_prod_eq_bot
+
+@[simp]
+theorem coe_hilbertBasis : ⇑hilbertBasis = fun p : ℤ × ℤ => waveletFun p.1 p.2 :=
+  HilbertBasis.coe_mkOfOrthogonalEqBot _ _
 
 end Haar
 

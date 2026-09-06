@@ -185,3 +185,31 @@ ascent–descent theory (Thm 2.8.12 (3), (5), Thm 2.8.14 (1)); the holomorphic f
 and the Riesz spectral projection (Thm 2.9.3, Thm 2.9.4); Müntz's theorem (Thm 3.1.5); the M. Riesz
 theorem behind (4.1.12) for `p ≠ 2`; the Fourier-side construction of general wavelets (§4.5 after
 Prop 4.5.2); and the weakly singular kernels of §2.8.1.
+
+## 6. The chapter 4 gap pass
+
+A later pass filled the displayed-equation gaps the audit `notes/audit/atkinsonhan-ch04.md` lists,
+and its conclusions change two lines of what is written above.
+
+* **Theorem 4.2.4 on `L²` did not need a general `Lp` dilation.** The audit expected it to need
+  `MeasureTheory.Lp.dilationₗᵢ` generalised from one real dimension to a Haar measure on a
+  finite-dimensional space, so that Mathlib's `Lp.fourierTransformₗᵢ` could be rescaled into the
+  book's normalisation. The shorter route is the one Mathlib itself takes: extend from the Schwartz
+  space, where the isometry is `theorem_4_2_4`, with `LinearEquiv.extendOfIsometry`. That is
+  `bookFourierSchwartzEquiv` and `bookFourierL2`, and it needs nothing new in the backbone.
+
+* **§4.5 beyond Proposition 4.5.2 stays out, and is now on the record as four open nodes.**
+  `equation_4_5_4` and `theorem_wavelet_spaces` are Mallat's theorem, `scaling_exists` the cascade
+  construction, and `equation_4_5_6` the existence of the Daubechies `D4` function; the book states
+  all four without proof. The obstruction is size, not Mathlib: the standard arguments need a
+  Fourier-side theory of the scaling function — the periodisation of `|φ̂|²`, the `2π`-periodic
+  symbol `m₀`, and the quadrature identity — which is a self-contained harmonic-analysis project
+  and should be scheduled as one, not as "finishing chapter 4". What comes free of it is proved:
+  `exercise_4_5_2` (the necessary condition on the coefficients), and `exercise_4_5_5` and
+  `exercise_4_5_6_subset`, which are stated of a function *assumed* to have the properties
+  (4.5.5)–(4.5.7) and so do not depend on the existence theorem.
+
+The backbone grew four items in the pass: `trigPartialSum` with the tail form of Parseval's
+identity, `Haar.starProjection_V_eq_sum` (the multi-level decomposition) with `Haar.hilbertBasis`
+(Exercise 4.4.4), and `MeasureTheory.Lp.translationₗᵢ_dilationₗᵢ` with the coefficient condition
+that rests on it.

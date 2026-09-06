@@ -19,7 +19,7 @@ id = "equation_4_2_5"
 id = "equation_4_2_6"
 
 [[node]]
-id = "equation_4_2_8"
+id = "equation_4_2_7_dim_one"
 
 [[node]]
 id = "definition_4_2_1"
@@ -41,3 +41,21 @@ id = "bookFourierTD"
 
 [[node]]
 id = "theorem_4_2_4"
+
+[[node]]
+id = "equation_4_2_7"
+
+[[node]]
+id = "equation_4_2_8"
+
+[[node]]
+id = "equation_4_2_12"
+
+[[node]]
+id = "bookFourierSchwartzEquiv"
+
+[[node]]
+id = "bookFourierL2"
+
+[[node]]
+id = "theorem_4_2_4_l2"

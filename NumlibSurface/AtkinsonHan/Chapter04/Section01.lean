@@ -37,6 +37,8 @@ the dictionary between those and the two coefficient families the backbone and M
 * `theorem_4_1_2` — `L^p` convergence of a sequence of partial-sum operators holds for every `f` if
   and only if the operators are uniformly bounded.
 * `equation_4_1_13` — Parseval's equality in the book's normalisation.
+* `equation_4_1_14`, `equation_4_1_15` — the `L²` and the uniform truncation error of the partial
+  sums, both as tails of the coefficient series.
 
 ## Not formalized here
 
@@ -422,6 +424,31 @@ private theorem hasSum_int_fold {c : ℤ → ℝ} {S : ℝ} (h : HasSum c S) :
   rw [hfun, hval] at h2
   exact h2
 
+/-- The squared `L²` norm for the probability measure of the circle, as the book's integral over
+`(-π, π)`: the two differ by the normalising factor `2 π` of the measure. -/
+private theorem norm_sq_eq_intervalIntegral
+    (F : Lp ℝ 2 (AddCircle.haarAddCircle : Measure (AddCircle (2 * π)))) :
+    ‖F‖ ^ 2 = (2 * π)⁻¹ * ∫ x in -π..π, (F : AddCircle (2 * π) → ℝ) ↑x ^ 2 := by
+  rw [← integral_intervalIntegral_eq (fun b => (F : AddCircle (2 * π) → ℝ) b ^ 2),
+    ← real_inner_self_eq_norm_sq, MeasureTheory.L2.inner_def]
+  refine integral_congr_ae (Filter.Eventually.of_forall fun b => ?_)
+  dsimp only
+  rw [RCLike.inner_apply]
+  simp [sq]
+
+/-- The coefficient dictionary in squared form: the book's `a_j²` is twice the square of the
+coefficient against the orthonormal system. -/
+private theorem sq_realFourierCoeff_cos (G : AddCircle (2 * π) → ℝ) {j : ℕ} (hj : 0 < j) :
+    realFourierCoeff G j ^ 2 = fourierCoeffCos (fun x : ℝ => G ↑x) j ^ 2 / 2 := by
+  rw [equation_4_1_3_cos G hj, mul_pow, Real.sq_sqrt (by norm_num : (0 : ℝ) ≤ 2)]
+  ring
+
+/-- The coefficient dictionary in squared form, for the sines. -/
+private theorem sq_realFourierCoeff_sin (G : AddCircle (2 * π) → ℝ) {j : ℕ} (hj : 0 < j) :
+    realFourierCoeff G (-j) ^ 2 = fourierCoeffSin (fun x : ℝ => G ↑x) j ^ 2 / 2 := by
+  rw [equation_4_1_3_sin G hj, mul_pow, Real.sq_sqrt (by norm_num : (0 : ℝ) ≤ 2)]
+  ring
+
 /-- **Parseval's equality (4.1.13)** in the book's normalisation:
 
 `‖f‖²_{L²(-π,π)} = π (|a_0|²/2 + ∑_{j ≥ 1} (|a_j|² + |b_j|²))`.
@@ -451,25 +478,17 @@ theorem equation_4_1_13 (F : Lp ℝ 2 (AddCircle.haarAddCircle : Measure (AddCir
     exact h
   -- the `L²` norm against the probability measure, and against the book's interval
   have hnorm : ‖F‖ ^ 2 = (2 * π)⁻¹ * ∫ x in -π..π, G ↑x ^ 2 := by
-    rw [← integral_intervalIntegral_eq (fun b => G b ^ 2), ← real_inner_self_eq_norm_sq,
-      MeasureTheory.L2.inner_def]
-    refine integral_congr_ae (Filter.Eventually.of_forall fun b => ?_)
-    dsimp only
-    rw [RCLike.inner_apply, hG]
-    simp [sq]
+    rw [← hG]
+    exact norm_sq_eq_intervalIntegral F
   -- the coefficient dictionary
   have hc0 : realFourierCoeff G 0 = fourierCoeffCos (fun x : ℝ => G ↑x) 0 / 2 := by
     rw [equation_4_1_3_const]; ring
   have hcj : ∀ j : ℕ, 0 < j →
-      realFourierCoeff G j ^ 2 = fourierCoeffCos (fun x : ℝ => G ↑x) j ^ 2 / 2 := by
-    intro j hj
-    rw [equation_4_1_3_cos G hj, mul_pow, Real.sq_sqrt (by norm_num : (0 : ℝ) ≤ 2)]
-    ring
+      realFourierCoeff G j ^ 2 = fourierCoeffCos (fun x : ℝ => G ↑x) j ^ 2 / 2 :=
+    fun j hj => sq_realFourierCoeff_cos G hj
   have hsj : ∀ j : ℕ, 0 < j →
-      realFourierCoeff G (-j) ^ 2 = fourierCoeffSin (fun x : ℝ => G ↑x) j ^ 2 / 2 := by
-    intro j hj
-    rw [equation_4_1_3_sin G hj, mul_pow, Real.sq_sqrt (by norm_num : (0 : ℝ) ≤ 2)]
-    ring
+      realFourierCoeff G (-j) ^ 2 = fourierCoeffSin (fun x : ℝ => G ↑x) j ^ 2 / 2 :=
+    fun j hj => sq_realFourierCoeff_sin G hj
   -- fold the sum over `ℤ` onto `ℕ`, then rescale
   have hB := (hasSum_int_fold hA).mul_left (2 * π)
   have hfun : (fun j : ℕ => 2 * π *
@@ -491,5 +510,134 @@ theorem equation_4_1_13 (F : Lp ℝ 2 (AddCircle.haarAddCircle : Measure (AddCir
     rw [hnorm]
     field_simp
   rwa [hval] at hB
+
+/-! ### The truncation error (4.1.14)–(4.1.15) -/
+
+/-- **(4.1.14)**, the `L²` truncation error of the Fourier series:
+
+`‖f - S_n f‖²_{L²(-π,π)} = π ∑_{j > n} (|a_j|² + |b_j|²)`,
+
+the tail of Parseval's equality (4.1.13), of which `equation_4_1_13` is the case `n = -1`.  It is
+stated as a `HasSum` over `ℕ` whose terms of index at most `n` vanish, the shape in which the book
+writes a series over the trigonometric system.
+
+The book's `S_n` here is the `L²` partial sum, the backbone `trigPartialSum n`: the truncation of
+the Fourier series to the frequencies of absolute value at most `n`, which by the coefficient
+dictionary `equation_4_1_3_const`, `equation_4_1_3_cos` and `equation_4_1_3_sin` is
+`a₀/2 + ∑_{j=1}^{n} (a_j cos (j x) + b_j sin (j x))`. -/
+theorem equation_4_1_14 (n : ℕ)
+    (F : Lp ℝ 2 (AddCircle.haarAddCircle : Measure (AddCircle (2 * π)))) :
+    HasSum (fun j : ℕ =>
+        if j ≤ n then 0
+        else π * (fourierCoeffCos (fun x : ℝ => (F : AddCircle (2 * π) → ℝ) ↑x) j ^ 2
+          + fourierCoeffSin (fun x : ℝ => (F : AddCircle (2 * π) → ℝ) ↑x) j ^ 2))
+      (∫ x in -π..π,
+        ((F - trigPartialSum n F : Lp ℝ 2
+          (AddCircle.haarAddCircle : Measure (AddCircle (2 * π)))) : AddCircle (2 * π) → ℝ)
+            ↑x ^ 2) := by
+  have hπ : π ≠ 0 := Real.pi_ne_zero
+  obtain ⟨G, hG⟩ : ∃ G : AddCircle (2 * π) → ℝ, (F : AddCircle (2 * π) → ℝ) = G := ⟨_, rfl⟩
+  -- the tail of Parseval's identity, folded onto `ℕ` and rescaled to the book's normalisation
+  have hB := (hasSum_int_fold (hasSum_sq_realFourierCoeff_compl n F)).mul_left (2 * π)
+  rw [hG] at hB ⊢
+  have hfun : (fun j : ℕ => 2 * π *
+        if j = 0 then (if (0 : ℤ).natAbs ≤ n then 0 else realFourierCoeff G 0 ^ 2)
+        else (if ((j : ℤ)).natAbs ≤ n then 0 else realFourierCoeff G (j : ℤ) ^ 2)
+          + (if (-(j : ℤ)).natAbs ≤ n then 0 else realFourierCoeff G (-(j : ℤ)) ^ 2))
+      = fun j : ℕ =>
+        if j ≤ n then 0
+        else π * (fourierCoeffCos (fun x : ℝ => G ↑x) j ^ 2
+          + fourierCoeffSin (fun x : ℝ => G ↑x) j ^ 2) := by
+    funext j
+    rcases eq_or_ne j 0 with rfl | hj
+    · rw [ite_eq_left rfl]
+      simp
+    · rw [ite_eq_right hj, Int.natAbs_natCast, Int.natAbs_neg, Int.natAbs_natCast]
+      by_cases hjn : j ≤ n
+      · rw [ite_eq_left hjn, ite_eq_left hjn, ite_eq_left hjn, add_zero, mul_zero]
+      · rw [ite_eq_right hjn, ite_eq_right hjn, ite_eq_right hjn,
+          sq_realFourierCoeff_cos G (Nat.pos_of_ne_zero hj),
+          sq_realFourierCoeff_sin G (Nat.pos_of_ne_zero hj)]
+        ring
+  rw [hfun] at hB
+  -- the squared norm of the error, as the book's integral over `(-π, π)`
+  have hval : 2 * π * ‖F - trigPartialSum n F‖ ^ 2
+      = ∫ x in -π..π, ((F - trigPartialSum n F :
+          Lp ℝ 2 (AddCircle.haarAddCircle : Measure (AddCircle (2 * π)))) :
+            AddCircle (2 * π) → ℝ) ↑x ^ 2 := by
+    rw [norm_sq_eq_intervalIntegral]
+    field_simp
+  rwa [hval] at hB
+
+/-- The `j`-th term of the real Fourier series of `f` at `x`, with the constant `a_0 / 2` carried
+by the term `j = 0`, so that the `m`-th partial sum of the series is the sum over
+`Finset.range (m + 1)`. -/
+private noncomputable def fourierTerm (f : ℝ → ℝ) (x : ℝ) (j : ℕ) : ℝ :=
+  if j = 0 then fourierCoeffCos f 0 / 2
+  else fourierCoeffCos f j * Real.cos (j * x) + fourierCoeffSin f j * Real.sin (j * x)
+
+private theorem sum_range_fourierTerm (f : ℝ → ℝ) (x : ℝ) (m : ℕ) :
+    ∑ j ∈ Finset.range (m + 1), fourierTerm f x j = fourierPartialSum f m x := by
+  induction m with
+  | zero =>
+      rw [Finset.sum_range_one, fourierTerm, ite_eq_left rfl, fourierPartialSum]
+      simp
+  | succ m ih =>
+      rw [Finset.sum_range_succ, ih, fourierPartialSum_succ, fourierTerm,
+        ite_eq_right (Nat.succ_ne_zero m)]
+
+private theorem norm_fourierTerm_le (f : ℝ → ℝ) (x : ℝ) (j : ℕ) :
+    ‖fourierTerm f x (j + 1)‖ ≤ |fourierCoeffCos f (j + 1)| + |fourierCoeffSin f (j + 1)| := by
+  rw [fourierTerm, ite_eq_right (Nat.succ_ne_zero j), Real.norm_eq_abs]
+  refine (abs_add_le _ _).trans (add_le_add ?_ ?_) <;> rw [abs_mul]
+  · exact mul_le_of_le_one_right (abs_nonneg _) (Real.abs_cos_le_one _)
+  · exact mul_le_of_le_one_right (abs_nonneg _) (Real.abs_sin_le_one _)
+
+private theorem summable_fourierTerm {f : ℝ → ℝ}
+    (hs : Summable fun j : ℕ => |fourierCoeffCos f j| + |fourierCoeffSin f j|) (x : ℝ) :
+    Summable (fourierTerm f x) :=
+  (summable_nat_add_iff 1).mp
+    (Summable.of_norm_bounded ((summable_nat_add_iff 1).mpr hs) (norm_fourierTerm_le f x))
+
+/-- **(4.1.15)**, the uniform truncation error: when the Fourier coefficients are absolutely
+summable and the Fourier series converges to `f`, the partial sums satisfy
+
+`|f x - S_n x| ≤ ∑_{j > n} (|a_j| + |b_j|)`
+
+at every `x`, so in particular the maximum over `[-π, π]` obeys the same bound.
+
+The summability hypothesis is the book's "the Fourier series is absolutely convergent", and it
+cannot be dropped: without it the right-hand side is Mathlib's junk value `0` for a non-summable
+`tsum` and the inequality is false.  The convergence hypothesis is the book's "`f` is continuous
+after possibly being modified on a set of measure zero", under which the display the bound is read
+off, `f x - S_n x = ∑_{j > n} [a_j cos (j x) + b_j sin (j x)]`, holds. -/
+theorem equation_4_1_15 {f : ℝ → ℝ}
+    (hs : Summable fun j : ℕ => |fourierCoeffCos f j| + |fourierCoeffSin f j|)
+    (hconv : ∀ y : ℝ, Tendsto (fun m : ℕ => fourierPartialSum f m y) atTop (𝓝 (f y)))
+    (n : ℕ) (x : ℝ) :
+    |f x - fourierPartialSum f n x|
+      ≤ ∑' j : ℕ, (|fourierCoeffCos f (j + (n + 1))| + |fourierCoeffSin f (j + (n + 1))|) := by
+  have hsum := summable_fourierTerm hs x
+  -- the series sums to `f x`
+  have hfx : ∑' j : ℕ, fourierTerm f x j = f x :=
+    tendsto_nhds_unique
+      ((hsum.hasSum.tendsto_sum_nat.comp (Filter.tendsto_add_atTop_nat 1)).congr
+        (sum_range_fourierTerm f x))
+      (hconv x)
+  -- the truncation error is the tail of the series
+  have htail : f x - fourierPartialSum f n x = ∑' j : ℕ, fourierTerm f x (j + (n + 1)) := by
+    have h := hsum.sum_add_tsum_nat_add (n + 1)
+    rw [sum_range_fourierTerm f x n, hfx] at h
+    linarith
+  have hcsum : Summable fun j : ℕ =>
+      |fourierCoeffCos f (j + (n + 1))| + |fourierCoeffSin f (j + (n + 1))| :=
+    (summable_nat_add_iff
+      (f := fun j : ℕ => |fourierCoeffCos f j| + |fourierCoeffSin f j|) (n + 1)).mpr hs
+  have hnormsum : Summable fun j : ℕ => ‖fourierTerm f x (j + (n + 1))‖ :=
+    Summable.of_nonneg_of_le (fun j => norm_nonneg _) (fun j => norm_fourierTerm_le f x (j + n))
+      hcsum
+  rw [htail, ← Real.norm_eq_abs]
+  exact (norm_tsum_le_tsum_norm hnormsum).trans
+    (hnormsum.tsum_le_tsum (fun j => norm_fourierTerm_le f x (j + n)) hcsum)
 
 end AtkinsonHan.Chapter04

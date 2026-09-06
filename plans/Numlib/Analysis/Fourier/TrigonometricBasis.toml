@@ -42,3 +42,12 @@ id = "linearIndependent_trigFun"
 
 [[node]]
 id = "finrank_trigPolyLE"
+
+[[node]]
+id = "trigPartialSum"
+
+[[node]]
+id = "norm_sub_trigPartialSum_sq"
+
+[[node]]
+id = "hasSum_sq_realFourierCoeff_compl"

@@ -14,3 +14,68 @@ id = "equation_4_5_2"
 
 [[node]]
 id = "haar_scalingCoeff"
+
+[[node]]
+id = "exercise_4_5_2"
+
+[[node]]
+id = "exercise_4_5_5"
+
+[[node]]
+id = "exercise_4_5_6_subset"
+
+[[node]]
+id = "equation_4_5_4"
+kind = "definition"
+desc = '''
+(4.5.4), the wavelet `ψ(x) = ∑_k (-1)^k p_{1-k} √2 φ(2x - k)` attached to the scaling function of a
+general multiresolution analysis.  OPEN, and deliberately so: see `theorem_wavelet_spaces`.
+'''
+deps = ["definition_4_5_1", "scalingCoeff"]
+
+[[node]]
+id = "theorem_wavelet_spaces"
+kind = "theorem"
+desc = '''
+Mallat's theorem, which the book states without proof and refers to Daubechies for: for the `ψ` of
+(4.5.4), the translates `ψ(· - k)` are orthonormal, `W_0 = V_1 ⊖ V_0` is their closed span, and the
+whole family `{2^{j/2} ψ(2^j x - k)}_{j,k}` is an orthonormal basis of `L²(ℝ)`.
+
+OPEN.  The obstruction is not Mathlib but size: the standard proof runs on the Fourier side, and
+needs the periodisation `∑_k |φ̂(ξ + 2πk)|² = 1` characterising orthonormality of the integer
+translates, the `2π`-periodic symbol `m₀` with `φ̂(ξ) = m₀(ξ/2) φ̂(ξ/2)`, and the quadrature
+identity `|m₀(ξ)|² + |m₀(ξ + π)|² = 1`.  None of that exists in the backbone, and building it is a
+self-contained harmonic-analysis project rather than a section of this chapter.  Everything it
+needs on the Fourier side does exist in Mathlib (`Real.fourierIntegral`, Plancherel through
+`MeasureTheory.Lp.fourierTransformₗᵢ`), so it is long, not blocked.
+'''
+deps = ["equation_4_5_4", "definition_4_5_1"]
+
+[[node]]
+id = "scaling_exists"
+kind = "theorem"
+desc = '''
+The existence half of the construction: given coefficients `{p_k}` satisfying the orthonormality
+condition of Exercise 4.5.2, the scaling equation (4.5.1) has a solution `φ ∈ L²(ℝ)`, obtained as
+the fixed point of the cascade iteration.
+
+OPEN.  The book itself says only that "it is difficult to find the coefficients directly" and
+refers out.  The standard proof is the infinite product `φ̂(ξ) = ∏_{j ≥ 1} m₀(2^{-j} ξ)` and its
+convergence; like `theorem_wavelet_spaces` it needs a Fourier-side theory of the symbol that the
+backbone does not have.
+'''
+deps = ["exercise_4_5_2"]
+
+[[node]]
+id = "equation_4_5_6"
+kind = "theorem"
+desc = '''
+The existence of the Daubechies `D4` scaling function: a continuous `φ` with `supp φ = [0, 3]`
+satisfying the four-term scaling equation (4.5.6) and the normalisation (4.5.7).
+
+OPEN, and downstream of `scaling_exists`: the book introduces `φ` by its properties and shows how
+to compute its values, which is `exercise_4_5_5`; that such a `φ` exists is Daubechies'
+construction.  `exercise_4_5_5` and `exercise_4_5_6_subset` are stated under the hypothesis that
+`φ` has these properties, so they are faithful and unconditional on this node.
+'''
+deps = ["scaling_exists"]
