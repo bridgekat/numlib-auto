@@ -27,10 +27,13 @@ import NumlibSurface.SaadSparse.Chapter07.Section01
 import NumlibSurface.SaadSparse.Chapter08.Section01
 import NumlibSurface.SaadSparse.Chapter09.Section01
 import NumlibSurface.SaadSparse.Chapter09.Section02
+import NumlibSurface.SaadSparse.Chapter09.Section03
+import NumlibSurface.SaadSparse.Chapter09.Section06
 import NumlibSurface.SaadSparse.Chapter10.Section02
 import NumlibSurface.SaadSparse.Chapter10.Section05
 import NumlibSurface.SaadSparse.Chapter10.Section08
 import NumlibSurface.SaadSparse.Chapter12.Section03
+import NumlibSurface.SaadSparse.Chapter14.Section03
 import NumlibSurface.SaadSparse.Chapter14.Section06
 import NumlibSurface.SaadSparse.Common
 

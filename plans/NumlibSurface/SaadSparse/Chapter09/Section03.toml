@@ -1,89 +1,31 @@
 namespace = "SaadSparse.Ch09"
-desc = '''
-Saad §9.3: preconditioned GMRES — Algorithm 9.4 (left), Algorithm 9.5 (right), split
-preconditioning (§9.3.3), and the comparison of left and right preconditioning (§9.3.4,
-Proposition 9.1).
-
-Both algorithms are `SaadSparse.Ch06.gmres` at another operator: Algorithm 9.4 is GMRES for
-`M⁻¹A` with right-hand side `M⁻¹b`, Algorithm 9.5 is GMRES for `A M⁻¹` with the solution read
-back as `x_m = x₀ + M⁻¹ V_m y_m`. The section's point, and Proposition 9.1, is that the two
-produce approximations from the *same* affine space `x₀ + 𝒦_m(M⁻¹A, M⁻¹ r₀)`, of the same
-polynomial form `x₀ + s(M⁻¹A) M⁻¹ r₀ = x₀ + M⁻¹ s(A M⁻¹) r₀`, but minimize different norms of the
-residual: `‖M⁻¹(b - A x)‖₂` on the left, `‖b - A x‖₂` on the right. The commutation (9.18)
-`s(M⁻¹A) M⁻¹ r = M⁻¹ s(A M⁻¹) r` (P-9.11) is what makes the two affine spaces agree.
-
-§9.3.1 also sketches a GMRES in the `M`-inner product for a symmetric positive definite `M` and
-nonsymmetric `A` (P-9.13): the Arnoldi coefficients are `h_ij = (z_j, v_i)_M = (w_j, v_i)` and
-the norm `h_{j+1,j} = (ẑ_j, w_j)^{1/2}` are computable without applying `M`, and the resulting
-approximation minimizes the `M`-norm of the preconditioned residual. That is Arnoldi in
-`WithEnergy M`, so it costs the transport and nothing else.
-'''
 
 [[node]]
 id = "gmresLeft"
-kind = "definition"
-desc = '''**Algorithm 9.4** (GMRES with left preconditioning): Algorithm 6.9 applied to `M⁻¹ A` with
-right-hand side `M⁻¹ b`, so that the Arnoldi basis spans
-`𝒦_m(M⁻¹A, M⁻¹ r₀)` and the monitored residual is the preconditioned one `M⁻¹(b - A x_m)`.'''
-deps = ["SaadSparse.Ch06.gmresFixed", "leftPreconditioned"]
 
 [[node]]
 id = "gmresRight"
-kind = "definition"
-desc = '''**Algorithm 9.5** (GMRES with right preconditioning): Algorithm 6.9 applied to `A M⁻¹` with
-right-hand side `b`, the iterate returned as `x_m = x₀ + M⁻¹ V_m y_m`; the `u`-variable never
-appears, and the monitored residual is the true `b - A x_m`. Algorithm 9.5 with `M = M_L M_R` and
-the initial `M_L⁻¹` / final `M_R⁻¹` applications is the split version of §9.3.3.'''
-deps = ["SaadSparse.Ch06.gmresFixed", "leftPreconditioned"]
+
+[[node]]
+id = "gmresRight_eq"
 
 [[node]]
 id = "gmresLeft_isMinRes"
-kind = "theorem"
-desc = '''Algorithm 9.4 computes `Krylov.IsMinResIterate (M⁻¹A) (M⁻¹b) x₀ m x_m`: it minimizes
-`‖M⁻¹(b - A x)‖₂` over `x₀ + 𝒦_m(M⁻¹A, M⁻¹ r₀)`.'''
-deps = ["gmresLeft", "SaadSparse.Ch06.IsGMRESIterate", "Krylov.IsMinResIterate"]
 
 [[node]]
 id = "gmresRight_isMinRes"
-kind = "theorem"
-desc = '''Algorithm 9.5 computes an `x_m` with `IsMinRes (op A) b x₀ (𝒦_m(M⁻¹A, M⁻¹ r₀)) x_m`: it
-minimizes the *true* residual `‖b - A x‖₂` over the same affine space as Algorithm 9.4. From
-`Krylov.exists_aeval_of_isMinResIterate_preconditioned` and (9.18).'''
-deps = ["gmresRight", "Krylov.exists_aeval_of_isMinResIterate_preconditioned", "IsMinRes",
-  "equation_9_18"]
 
 [[node]]
 id = "equation_9_18"
-kind = "theorem"
-desc = '''(9.18) and **P-9.11**: `s(M⁻¹A) M⁻¹ r = M⁻¹ s(A M⁻¹) r` for every polynomial `s` and every
-`r`; hence `M⁻¹ 𝒦_m(A M⁻¹, r₀) = 𝒦_m(M⁻¹A, M⁻¹ r₀)` and the two preconditioned Krylov spaces of
-(9.17) and (9.20) agree.'''
-deps = ["leftPreconditioned", "Krylov.subspace", "Krylov.mem_subspace_iff_exists_aeval"]
 
 [[node]]
 id = "proposition_9_1"
-kind = "theorem"
-desc = '''**Proposition 9.1**: the approximation produced by left- or right-preconditioned GMRES is
-`x_m = x₀ + s_{m-1}(M⁻¹A) z₀ = x₀ + M⁻¹ s_{m-1}(A M⁻¹) r₀` with `deg s_{m-1} ≤ m - 1` and
-`z₀ = M⁻¹ r₀`; `s_{m-1}` minimizes `‖b - A x_m‖₂` in the right-preconditioned case and
-`‖M⁻¹(b - A x_m)‖₂` in the left-preconditioned case.'''
-deps = ["gmresLeft_isMinRes", "gmresRight_isMinRes", "equation_9_18",
-  "Krylov.exists_aeval_of_isMinResIterate_preconditioned"]
 
 [[node]]
-id = "gmresEnergy"
-kind = "definition"
-desc = '''**P-9.13** and (9.10)-(9.15): GMRES for `M⁻¹A x = M⁻¹b` in the `M`-inner product, for a
-symmetric positive definite `M` and a nonsymmetric `A`; the modified Gram-Schmidt form saving the
-vectors `M v_i`. `gmresEnergy_isMinRes` states its optimality — it minimizes the `M`-norm of the
-preconditioned residual, i.e. `‖b - A x‖_{M⁻¹}` — as Arnoldi and GMRES in `WithEnergy M`.'''
-deps = ["SaadSparse.Ch06.gmresFixed", "WithEnergy", "isSymmetric_energy"]
+id = "IsGMRESEnergyIterate"
+
+[[node]]
+id = "isGMRESEnergyIterate_iff"
 
 [[node]]
 id = "equation_9_12"
-kind = "theorem"
-desc = '''(9.12), (9.14)-(9.15): the `M`-inner products of the `M`-orthogonal Arnoldi process are
-Euclidean inner products of already computed vectors, `h_ij = (z_j, v_i)_M = (w_j, v_i)` with
-`w_j = A v_j`, `z_j = M⁻¹ w_j`, and `h_{j+1,j} = (ẑ_j, w_j)^{1/2}` — the reason the algorithm
-costs no extra product with `M`.'''
-deps = ["gmresEnergy", "WithEnergy.inner_equiv"]

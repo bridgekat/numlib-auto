@@ -482,6 +482,21 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
 * Dot notation `A.IsSymmetric` on a `Matrix` fails with *"the environment does not contain
   `Function.IsSymmetric`"* — Mathlib's name for `Aᵀ = A` is `Matrix.IsSymm`, so the lookup falls
   through to the unfolded `Fin n → Fin n → α`. `Matrix.IsHermitian` is the `Aᴴ = A` one.
+* **`rw [map_sub]` fires on the outermost subtraction, which is usually the argument.** A goal
+  `(toEuclideanLin (1 - P)) (x - y) = …` has two candidates for `f (a - b)`, and `rw` takes the
+  application `(toEuclideanLin (1 - P)) (x - y)` before the operator `toEuclideanLin (1 - P)`, so
+  a rewrite meant to split `1 - P` splits the *vector* instead and the following
+  `Matrix.toLpLin_one` finds nothing. State `((1 - M) ⬝ z) = z - (M ⬝ z)` once as its own lemma
+  (`SaadSparse.Ch14.toEuclideanLin_one_sub_apply`) and rewrite with that.
+* **An instance argument that mentions the term being rewritten blocks `rw`.**
+  `Schwarz.energyProjection A hA K` carries `[FiniteDimensional 𝕜 ↑K]`, so `rw [hK]` for
+  `hK : range Pr = subdomainSpace 𝕜 S` is a motive failure. `FiniteDimensional` is a `Prop`
+  class, so a three-line congruence lemma with the two subspaces as *variables* and `subst h; rfl`
+  transports it; that is cheaper than any `conv`/`simp only` incantation.
+* `include h` and `omit h in` compose: after `include hA`, one private helper of the section that
+  genuinely does not use `hA` needs `omit hA in` before its doc comment, or it silently acquires
+  `hA` as its *first explicit argument* and every call site fails with `PosDef ?m` in place of the
+  hypothesis it was given. The unused-section-variable linter names the declaration for you.
 
 * **Dot notation on a `Ne` hypothesis resolves into `Function`.** `a ≠ b` unfolds to
   `a = b → False`, so `hij.lt_or_lt` fails with "the environment does not contain
@@ -771,6 +786,17 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   does the job.
 * `positivity` cannot see `0 ≤ T` in the context, so `0 < 2 * (M * T + 1)` needs a `mul_nonneg`
   and `linarith`, and `0 ≤ (k : ℝ) * Δt i` is `mul_nonneg (Nat.cast_nonneg _) h`.
+* A `simpa`-discharged argument leaves the *other* parameters of the lemma as metavariables:
+  `re_mem_Icc_of_hasEigenvalue (fun u => by simpa using nonneg u) …` fails with
+  `?a * ‖u‖ ^ 2 ≤ …` because `simp` normalized `0 * ‖u‖ ^ 2` away before `?a` was solved. Pin the
+  parameter at the call site, `(a := 0)`.
+* `Arnoldi.coeff_eq_zero_of_adjoint_mem` takes its adjoint `B` as a genuine `LinearMap`, so a
+  hypothesis stated as `∀ x y, ⟪ A x, y ⟫ = ⟪ x, 2 • y - A y ⟫` does not unify with `⟪ x, ?B y ⟫`
+  (higher-order). Pass `(B := (2 : 𝕜) • LinearMap.id - A)` explicitly and open the two goals with
+  `LinearMap.sub_apply, LinearMap.smul_apply, LinearMap.id_apply`.
+* `Krylov.pow_apply_mem_subspace … (i := 1) (by omega)` fails with "omega could not prove the
+  goal" when the *bound* `m` is still a metavariable, which happens whenever the conclusion is
+  fixed only by a later `simpa`. Give `(m := 2)` as well.
 
 * `rw [h]` with `h : b = (b - A x) + A x` rewrites the `b` *inside* `b - A x` too and produces
   `b - A x + A x - A x`. Do not rewrite: build the membership directly, e.g.
@@ -1806,6 +1832,25 @@ what exactly blocks the second rewrite was not established, so treat this as a s
 recognize, not a diagnosis. The fix is to spell the bridge out with `simp only`, or to route
 through a stated `Iff` (`isVariationalInequalitySolution_toOperator_iff` in
 `AtkinsonHan/Chapter11/Section03`) rather than through `simp`.
+* **The rectangular `toEuclideanLin` glue is in Mathlib, not in this project.**
+  `Matrix.toEuclideanLin_conjTranspose_eq_adjoint` (`Analysis/InnerProductSpace/Adjoint`) and
+  `Matrix.toLpLin_mul_same` are stated for `Matrix m n`, while this project's
+  `Matrix.toEuclideanLin_conjTranspose` and `Matrix.toEuclideanLin_mul`
+  (`Numlib/Analysis/Matrix/ToEuclideanLin`) are square-only. For a boolean restriction
+  `R : Matrix ↑S (Fin n) 𝕜` that is the whole of "the adjoint of the extension is the
+  restriction" and "`R A Rᵀ` is the Galerkin coarse operator of `Rᵀ`".
+* `Matrix.mulVec_single_one M j : M *ᵥ Pi.single j 1 = M.col j` together with `PiLp.ofLp_single`
+  and `PiLp.toLp_single` computes `toEuclideanLin M (EuclideanSpace.single j 1)` in three
+  rewrites; there is no need to go through `Matrix.toLpLin_apply` and `funext`.
+* `Submodule.isOrtho_span` reduces orthogonality of two spans to their generators, and
+  `WithEnergy.submoduleMap A hA (span 𝕜 s)` is `span 𝕜 (equiv '' s)` by `rfl` plus
+  `Submodule.map_span` — so `A`-orthogonality of two coordinate subspaces is exactly the vanishing
+  of the coupling entries `A l k`, with no `span_induction`.
+* `SemiconjBy` is the cheap way to say `p(B A) B = B p(A B)` for every polynomial `p`:
+  `(mul_assoc B A B).symm : SemiconjBy B (A * B) (B * A)`, then `SemiconjBy.pow_right` and
+  `Polynomial.induction_on'` with `SemiconjBy.mul_right (Algebra.commutes a B).symm` for the
+  monomials. That is Saad's (9.18), the identity that makes left- and right-preconditioned GMRES
+  search the same affine space.
 
 ## Design conventions of this library
 
