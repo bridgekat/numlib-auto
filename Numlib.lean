@@ -7,6 +7,7 @@ import Numlib.Analysis.Fourier.DFT
 import Numlib.Analysis.Fourier.Dirichlet
 import Numlib.Analysis.Fourier.TrigonometricBasis
 import Numlib.Analysis.InnerProductSpace.Coercive
+import Numlib.Analysis.InnerProductSpace.CompactSpectral
 import Numlib.Analysis.InnerProductSpace.Energy
 import Numlib.Analysis.InnerProductSpace.GramSchmidt
 import Numlib.Analysis.InnerProductSpace.Projection.Angle
@@ -44,6 +45,7 @@ import Numlib.FiniteDifference.TwoLevel
 import Numlib.FloatingPoint.InnerProduct
 import Numlib.FloatingPoint.Model
 import Numlib.IntegralEquations.Basic
+import Numlib.IntegralEquations.SecondKind
 import Numlib.Krylov.Arnoldi
 import Numlib.Krylov.BiLanczos
 import Numlib.Krylov.Block
@@ -62,6 +64,7 @@ import Numlib.Krylov.Perturbed
 import Numlib.Krylov.Preconditioned
 import Numlib.Krylov.QuasiMinRes
 import Numlib.Krylov.Relations
+import Numlib.Krylov.Singular
 import Numlib.Krylov.Subspace
 import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.LinearAlgebra.Matrix.Hessenberg

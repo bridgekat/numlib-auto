@@ -1,3 +1,4 @@
+import Numlib.Analysis.InnerProductSpace.CompactSpectral
 import Numlib.Analysis.InnerProductSpace.Energy
 import Numlib.Krylov.CG
 import Numlib.Krylov.Convergence.CG
@@ -23,20 +24,19 @@ eigenvalues of `K` accumulate only at `0`, so a polynomial of degree `k` can ann
 largest of them and still be small at all the others.
 
 The classical proof (Atkinson–Han[^atkinson-han] Thm 5.6.2, after Winther[^winther]) reads the
-eigen-decomposition of `K` off the spectral theorem for compact self-adjoint operators. That
-theorem is available: `ContinuousLinearMap.orthogonalComplement_iSup_eigenspaces_eq_bot` says the
-eigenspaces of a compact self-adjoint operator span, and
-`ContinuousLinearMap.finite_dimensional_eigenspace` that the ones for nonzero eigenvalues are
-finite-dimensional. What the argument actually consumes is one step further on — the *enumeration*
-of the eigenvalues as a sequence with `|λ|` decreasing — and that step is missing: it rests on the
-eigenvalues accumulating only at `0`, and it needs `E` separable before the index type can be `ℕ`
-at all. `LinearMap.IsSymmetric.eigenvalues` does enumerate in decreasing order, but only in finite
-dimension.
+eigen-decomposition of `K` off the spectral theorem for compact self-adjoint operators. What the
+argument actually consumes is one step further on — the *enumeration* of the eigenvalues as a
+sequence with `|λ|` decreasing — which rests on the eigenvalues accumulating only at `0` and needs
+the index type to be `ℕ`. That enumeration is
+`ContinuousLinearMap.IsSymmetric.eigenvalueSeq`, with the matching orthonormal basis
+`ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis`.
 
-The statements here therefore take the *enumerated* decomposition as data: a Hilbert basis
+The statements here take the *enumerated* decomposition as data: a Hilbert basis
 `φ : HilbertBasis ℕ 𝕜 E` of eigenvectors of `K` with real eigenvalues `λ`, ordered so that `|λ|`
 is antitone, together with the enclosure `0 < δ ≤ 1 - λ j ≤ Δ`. Compactness of `K` is then never
-used — it is what produces the data, not what the proof needs. Everything else is proved: the
+used — it is what produces the data, not what the proof needs, and
+`Krylov.winther_of_isCompactOperator` is the same theorem with the data discharged, proved without
+changing a line above it. Everything else is proved: the
 quadratic-form bounds `LinearMap.IsSymmetricBoundedBy δ Δ` follow from the decomposition by
 Parseval (`Krylov.isSymmetricBoundedBy_of_eq_one_sub`), and so does the operator bound
 `LinearMap.IsSymmetric.norm_aeval_map_apply_le_of_hilbertBasis`, the discrete counterpart of the
@@ -421,5 +421,35 @@ theorem winther {A K : E →ₗ[𝕜] E} (hAK : A = 1 - K) (hK : K.IsSymmetric)
     _ = wintherRate lam δ Δ k ^ k := by
         rw [wintherRate, mul_pow ((Δ / δ) ^ (1 / (2 * (k : ℝ))))
           (2 / (k : ℝ) * ∑ j ∈ Finset.range k, |lam j| / (1 - lam j)) k, hrpow]
+
+open ContinuousLinearMap in
+/-- **Winther's theorem with no eigen-decomposition supplied.** For an injective compact
+self-adjoint `K` on an infinite-dimensional Hilbert space and `A = 1 - K` with
+`0 < δ ≤ 1 - λ_j ≤ Δ` for the eigenvalues `λ` of `K`, the conjugate gradient iterates for
+`A x = b` satisfy `‖x* - x_k‖ ≤ c_k^k ‖x* - x₀‖` with `c_k = Krylov.wintherRate λ δ Δ k`, and
+`c_k → 0`: convergence is superlinear.
+
+This is `Krylov.winther` and `Krylov.winther_rate_tendsto_zero` with their three data hypotheses
+discharged by `ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis` and its companions. The
+proof of `Krylov.winther` is unchanged and still never uses compactness: compactness is what
+*produces* the enumerated eigen-decomposition, not what the estimate needs. The two hypotheses
+beyond compactness and symmetry, injectivity of `K` and infinite-dimensionality of `E`, are what
+make an antitone enumeration by `ℕ` possible at all; see
+`Numlib/Analysis/InnerProductSpace/CompactSpectral`. -/
+theorem winther_of_isCompactOperator [CompleteSpace E] {A : E →ₗ[𝕜] E} {K : E →L[𝕜] E}
+    (hAK : A = 1 - (K : E →ₗ[𝕜] E)) (hKs : (K : E →ₗ[𝕜] E).IsSymmetric)
+    (hKc : IsCompactOperator K) (hKinj : LinearMap.ker (K : E →ₗ[𝕜] E) = ⊥)
+    (hfin : ¬ FiniteDimensional 𝕜 E) {δ Δ : ℝ} (hδ : 0 < δ)
+    (hlow : ∀ j, δ ≤ 1 - IsSymmetric.eigenvalueSeq hKs hKc j)
+    (hupp : ∀ j, 1 - IsSymmetric.eigenvalueSeq hKs hKc j ≤ Δ)
+    {b x₀ xstar : E} (hstar : A xstar = b) :
+    (∀ k, ‖xstar - (CG.iterate A b x₀ k).x‖
+        ≤ wintherRate (IsSymmetric.eigenvalueSeq hKs hKc) δ Δ k ^ k * ‖xstar - x₀‖) ∧
+      Tendsto (wintherRate (IsSymmetric.eigenvalueSeq hKs hKc) δ Δ) atTop (𝓝 0) := by
+  refine ⟨fun k => winther hAK hKs (IsSymmetric.eigenvectorHilbertBasis hKs hKc hKinj hfin)
+    (fun j => IsSymmetric.apply_eigenvectorHilbertBasis hKs hKc hKinj hfin j)
+    (IsSymmetric.eigenvalueSeq_antitone hKs hKc) hδ hlow hupp hstar k, ?_⟩
+  exact winther_rate_tendsto_zero hδ (hδ.trans_le ((hlow 0).trans (hupp 0)))
+    (IsSymmetric.tendsto_eigenvalueSeq_zero hKs hKc)
 
 end Krylov

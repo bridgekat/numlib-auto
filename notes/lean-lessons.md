@@ -148,6 +148,15 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   `UnicodeEncodeError: 'gbk' codec` on Windows *after* `os.replace` has already run, so the patch
   succeeded and the traceback is about stdout. Check the file before re-running the script — a
   second run will fail its `assert s.count(old) == 1`.
+* **`-D weak.linter.mathlibStandardSet=true` also switches the *header* linter back on**, which
+  `lakefile.toml` deliberately turns off, so it reports a spurious "Copyright too short!" on every
+  file with this project's `Upstreaming candidate:` header. Either ignore those, or pass the whole
+  option set: `-D pp.unicode.fun=true -D relaxedAutoImplicit=false -D
+  weak.linter.mathlibStandardSet=true -D weak.linter.style.header=false -D maxSynthPendingDepth=3`.
+* `lake exe tracker lint --no-check`, run right after `lake build <one module>`, answers from a
+  cache written *before* that build and reports every node of the new module as `open`.
+  `lake exe tracker check` reads oleans and takes no build lock, so run it before trusting any
+  `--no-check` reading.
 
 ## Correctness traps
 
@@ -470,6 +479,41 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   `Function.IsSymmetric`"* — Mathlib's name for `Aᵀ = A` is `Matrix.IsSymm`, so the lookup falls
   through to the unfolded `Fin n → Fin n → α`. `Matrix.IsHermitian` is the `Aᴴ = A` one.
 
+* **Dot notation on a `Ne` hypothesis resolves into `Function`.** `a ≠ b` unfolds to
+  `a = b → False`, so `hij.lt_or_lt` fails with "the environment does not contain
+  `Function.lt_or_lt`" — and there is no `Ne.lt_or_lt` to reach for either: the name is
+  `lt_or_gt_of_ne`. `LinearMap.IsSymmetric`, which unfolds to a `∀`, behaves the same way, so
+  write `IsSymmetric.foo hT` rather than `hT.foo` for a lemma of your own.
+* `obtain ⟨h1, h2⟩ := hx` on `hx : x ∈ A ⊓ B` for submodules yields memberships in the *set*
+  coercions (`x ∈ ↑B`), against which `rw [Submodule.mem_orthogonal_singleton_iff_inner_right]`
+  reports "did not find an occurrence of the pattern". Destructure with `Submodule.mem_inf.1 hx`.
+* `rw [← RCLike.norm_ofReal]`, to turn a `|r|` into a norm, leaves the field a metavariable and
+  fails with "typeclass instance problem is stuck: `RCLike ?m`". Pass it:
+  `RCLike.norm_ofReal (K := 𝕜)`.
+
+* **`Module.End` lemmas are unreachable by dot notation from `A : E →ₗ[𝕜] E`**: the unfolded head
+  is `LinearMap`, so `A.eigenspace μ` looks up `LinearMap.eigenspace` and fails. Write
+  `Module.End.eigenspace A μ`, `Module.End.mem_eigenspace_iff`, `Module.End.eigenspace_zero` out.
+* **`A ∘L B` and `A * B` on `X →L[𝕜] X` are definitionally but not syntactically equal**, so `rw`,
+  `noncomm_ring` and `linarith` atoms tell them apart, and `rw [← he]` against
+  `he : ↑e = μ • 1 - A ∘L B` fails on a goal written with `*`. Keep one spelling per proof:
+  a private `comp_eq_mul (C D : X →L[𝕜] X) : C ∘L D = C * D := rfl` plus
+  `simp only [comp_eq_mul] at h ⊢` converts everything once.
+* `ContinuousLinearMap.le_opNorm _ _` fails to unify when the argument is written with the *equiv*
+  coercion (`e.symm x` rather than `↑e.symm x`), reporting a type mismatch with both metavariables
+  unsolved. Supply both arguments: `ContinuousLinearMap.le_opNorm (e.symm : X →L[𝕜] X) v`.
+* **`IsMinResIterate A b 0 m x` still carries `b - A 0`.** `A 0 = 0` is not `rfl` for a `LinearMap`
+  and `rw` cannot see through the `IsMinResIterate` abbrev, so the residual stays `b - A 0`
+  everywhere. Restate by reducibility and then rewrite:
+  `have h : IsMinRes A b 0 (subspace A (b - A 0) m) x := hx` followed by
+  `rwa [map_zero, sub_zero] at h`. The instance goes the same way:
+  `FiniteDimensional 𝕜 ↥(fullSubspace A (b - A 0))` is closed by
+  `rw [map_zero, sub_zero]; infer_instance`.
+* **A `by tac [...]` argument list continued on the next line at too small a column silently ends
+  the `by` block.** The error surfaces on the continuation line as `unexpected token '('; expected
+  ']'`, which reads like a bracket typo. Put a multi-line `nlinarith [...]`/`simp [...]` on its own
+  line under the `have`.
+
 ## Tactics
 
 * `module` is the right tactic for vector identities with symbolic scalars; `abel` cannot move
@@ -723,6 +767,36 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   does the job.
 * `positivity` cannot see `0 ≤ T` in the context, so `0 < 2 * (M * T + 1)` needs a `mul_nonneg`
   and `linarith`, and `0 ≤ (k : ℝ) * Δt i` is `mul_nonneg (Nat.cast_nonneg _) h`.
+
+* `rw [h]` with `h : b = (b - A x) + A x` rewrites the `b` *inside* `b - A x` too and produces
+  `b - A x + A x - A x`. Do not rewrite: build the membership directly, e.g.
+  `Submodule.mem_sup.2 ⟨b - A x, _, A x, _, by abel⟩`. The same trap hits `rw [hy']` for
+  `hy' : y = x + (y - x)` before `norm_add_sq_eq_norm_sq_add_norm_sq_of_inner_eq_zero`: apply the
+  lemma to `x` and `y - x` and `rwa [show x + (y - x) = y from by abel] at h`.
+* **`rw [hX]` for `hX : ∀ z, X z = f z` rewrites one instantiation only.** On `X (A (X z)) = X z`
+  it rewrites the outer application and leaves the inner one and the right-hand side.
+  `simp only [hX]` rewrites bottom-up and is what nested applications of an `obtain`-ed opaque
+  function need.
+* `rw [norm_sub_rev]` rewrites the **first** `‖a - b‖` in the goal, which in
+  `‖u - z‖ ≤ C * ‖T u - S u‖` is the left-hand side — silently flipping the wrong one. Pass both
+  arguments: `norm_sub_rev (S u) (T u)`.
+* Instantiating a helper equation before handing it to `simp only` can make it dead:
+  `simp only [map_sub, hKm (Kn (x - y))]` fails because `map_sub` splits `Kn (x - y)` first and the
+  instance no longer matches (the linter then reports the argument as unused). Pass the
+  `∀`-quantified `hKm` and let `simp` instantiate it. After such a `simp only` one side often keeps
+  a folded `μ • (a - b)` while the other has `μ • a - μ • b`; `abel` cannot move scalars and fails,
+  `module` closes it.
+* In a noncommutative-ring `calc`, `rw [sub_mul]` and `rw [mul_assoc]` fire on the **first** match in
+  traversal order, regularly on the side you did not mean. Hoist each ring identity into its own
+  `have` whose statement *is* the redex, so there is exactly one match.
+* `obtain ⟨R, hR⟩ : ∃ R, e = R := ⟨_, rfl⟩` is the safe way to abbreviate a long term (an opaque
+  name plus a rewriting equation, unlike `set`) — but the name really is opaque, so `positivity` can
+  no longer see that it is a norm or a quotient of nonnegatives. Carry `0 ≤ R` as a separate `have`
+  and finish with `mul_nonneg`/`linarith`.
+* `rintro _ ⟨i, rfl⟩` on `Set.range (fun i : ℕ => (A ^ i) v)` leaves the beta-redex
+  `(fun i => (A ^ i) v) (i + 1)`, which defeats `rw [pow_succ']`. Factor the step out as its own
+  lemma (`A ((A ^ i) v) = (A ^ (i + 1)) v`) and close with `exact`; the defeq check absorbs the beta
+  where `rw` will not.
 
 ## Mathlib names and API
 
@@ -1133,6 +1207,20 @@ Mathlib's Gershgorin is the root-level `eigenvalue_mem_ball` in
 conj (l₁ i) * l₂ i` is the expansion lemma to reach for; `Orthonormal.inner_left_right_finset` is a
 different statement, about a double sum of weighted inner products.
 
+`Submodule.span_zero_singleton` has to be named: plain `simp` makes no progress on
+`Module.finrank K ↥(K ∙ (0 : V)) ≤ 1`, while `rw [Submodule.span_zero_singleton K, finrank_bot]`
+closes it — the ring argument is explicit.
+
+`Matrix.toEuclideanLin` is fine for rectangular matrices
+(`Matrix m n 𝕜 ≃ₗ[𝕜] EuclideanSpace 𝕜 n →ₗ[𝕜] EuclideanSpace 𝕜 m`), and
+`(Matrix.toEuclideanLin M y) i` is *defeq* to `(M *ᵥ WithLp.ofLp y) i` (`Matrix.toLpLin_apply` is
+`rfl`), so an entrywise fact proved in `mulVec` form can be `exact`-ed into the `toEuclideanLin`
+form — but not `rw`-ed. `EuclideanSpace.norm_sq_eq` with `Fin.sum_univ_castSucc` is then the way to
+compare a matrix with its leading row block.
+
+`LinearMap.IsSymmetric.orthogonal_range : (LinearMap.range T)ᗮ = LinearMap.ker T` is already in
+Mathlib (`Analysis/InnerProductSpace/Symmetric`), with no adjoint and no completeness.
+
 Mathlib gained `Mathlib/Analysis/InnerProductSpace/SingularValues.lean` (`LinearMap.singularValues`,
 a descending `ℕ →₀ ℝ`), but it has **no SVD factorization, no pseudoinverse and no polar
 decomposition**; `Matrix.singularValues` and `Matrix.pinv` in `Numlib/LinearAlgebra/Matrix/SVD` are
@@ -1202,6 +1290,27 @@ Compact operators:
 * `ContinuousLinearMap.finite_dimensional_eigenspace` and the compact self-adjoint spectral theorem
   `orthogonalComplement_iSup_eigenspaces_eq_bot` are in `Mathlib/Analysis/InnerProductSpace/Spectrum`,
   and the former needs no self-adjointness.
+* **A compact self-adjoint operator attains its norm at an eigenvector** in about twenty lines and
+  with no Rayleigh-quotient machinery: `ContinuousLinearMap.spectralRadius_eq_nnnorm`
+  (`Analysis/InnerProductSpace/Rayleigh`, needs `[CompleteSpace E]`) gives
+  `spectralRadius 𝕜 T = ‖T‖₊`; `spectrum.exists_nnnorm_eq_spectralRadius_of_nonempty` attains the
+  supremum, because the spectrum is compact and `RCLike 𝕜` supplies the `[ProperSpace 𝕜]` it wants;
+  and `IsCompactOperator.hasEigenvalue_iff_mem_spectrum` turns the nonzero maximizer into an
+  eigenvalue. Nonemptiness of the spectrum is free from `‖T‖ ≠ 0`, so no algebraic closedness of
+  `𝕜` is needed. `LinearMap.IsSymmetric.conj_eigenvalue_eq_self` then makes the eigenvalue real.
+* Building an eigenbasis by greedy recursion needs the invariance and the closedness of the
+  subspace the next step works in, and those are *proved by induction* rather than available when
+  the recursion is written. Recurse into a plain non-dependent type — the pair together with the
+  current subspace, `(E × ℝ) × Submodule 𝕜 E` — and make the choice with `Classical.choose` of
+  `∃ p, ((∃ q, P q) → P p) ∧ ((¬ ∃ q, P q) → p = junk)`, which fixes the junk value as well. Every
+  recursion equation is then `rfl` and every property is proved afterwards; a dependent recursion
+  carrying the proofs is far worse. `Numlib/Analysis/InnerProductSpace/CompactSpectral` does this.
+* **An antitone enumeration of the eigenvalues by `ℕ` does not always exist.** A compact
+  self-adjoint operator with infinitely many nonzero eigenvalues *and* a nonzero kernel —
+  `diag(1, 1/2, 1/3, …) ⊕ 0` on `ℓ² ⊕ ℓ²` — would have to place the eigenvalue `0` after
+  infinitely many others. `ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis` therefore
+  assumes `ker T = ⊥` (under which separability of the space is a conclusion, not a hypothesis);
+  the only other representable case is finite rank with a separable kernel.
 * `tendsto_one_div_add_atTop_nhds_zero_nat` is polymorphic in the field, so
   `simpa … using tendsto_one_div_add_atTop_nhds_zero_nat.comp h` leaves a stuck
   `ContinuousSMul ℚ≥0 ?m` instance. Pin it with a typed `have` before composing.

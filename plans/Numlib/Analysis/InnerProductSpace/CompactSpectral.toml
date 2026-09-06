@@ -1,85 +1,40 @@
 namespace = "ContinuousLinearMap"
-desc = '''
-The eigenvalues of a compact self-adjoint operator on a separable Hilbert space, enumerated in
-decreasing order of modulus, with an orthonormal basis of eigenvectors indexed by `ℕ`.
 
-This module exists to discharge three hypotheses, not to prove a new theorem. `Krylov.winther`
-(`Numlib/Krylov/Convergence/Superlinear`) states Atkinson-Han's superlinear convergence of
-conjugate gradients for `A = 1 - K` with the eigen-decomposition of `K` supplied as *data*: a
-`HilbertBasis ℕ 𝕜 E` of eigenvectors, an antitone modulus, and eigenvalues tending to zero. Its
-proof uses nothing else about `K` -- in particular it never uses compactness, which is what
-*produces* that data. So this module turns `hlam`, `hanti` and `hlim` into conclusions, with no
-change to the proof of `winther`.
+[[node]]
+id = "IsTopEigenpair"
 
-The plan long recorded this as blocked by the absence of the spectral theorem for compact
-self-adjoint operators. That was wrong twice over. Mathlib has that theorem
-(`ContinuousLinearMap.orthogonalComplement_iSup_eigenspaces_eq_bot`, and
-`ContinuousLinearMap.finite_dimensional_eigenspace` for the eigenspaces), and what was really
-missing was the *accumulation* fact -- that a compact operator has finitely many eigenvalues
-outside any disc about the origin. That is now
-`IsCompactOperator.finite_setOf_hasEigenvalue_norm_le` in
-`Numlib/Analysis/Normed/Operator/Compact`, proved by Riesz's lemma on the chain of eigenvector
-spans and needing no completeness of the space.
-
-What remains is bookkeeping of a kind that is nonetheless easy to get wrong:
-
-* **Separability is a real hypothesis, not a convenience.** `ker K` may be non-separable, and it
-  contributes the eigenvalue `0` with an orthonormal basis of its own. Indexing the whole basis by
-  `ℕ` therefore needs `[SeparableSpace E]`. The book works in a separable setting tacitly; a
-  faithful statement says so.
-* **The enumeration is of eigenvalues *with multiplicity*.** Each nonzero eigenvalue contributes a
-  finite-dimensional eigenspace (Mathlib's `finite_dimensional_eigenspace`, which needs compactness
-  and `μ ≠ 0` but, despite where it sits, not self-adjointness), and the sequence must repeat it as
-  often as its dimension. Enumerating the *distinct* eigenvalues would make `winther`'s sum wrong.
-* Mathlib's `LinearMap.IsSymmetric.eigenvalues` and `eigenvalues_antitone` already enumerate in
-  decreasing order, but carry `[FiniteDimensional 𝕜 E]` and index by `Fin n`. They are the model to
-  follow, not a lemma to reuse.
-
-The assembly at the end is `HilbertBasis.mkOfOrthogonalEqBot`, whose hypothesis
-`(span 𝕜 (Set.range v))ᗮ = ⊥` is `orthogonalComplement_iSup_eigenspaces_eq_bot` almost verbatim.
-'''
+[[node]]
+id = "IsSymmetric.exists_isTopEigenpair"
 
 [[node]]
 id = "IsSymmetric.eigenvalueSeq"
-kind = "definition"
-desc = '''For a compact self-adjoint `T : E →L[𝕜] E` on a separable Hilbert space, `eigenvalueSeq hT hK : ℕ → ℝ`,
-the eigenvalues of `T` listed with multiplicity in decreasing order of modulus (padded with zeros
-when the spectrum is finite, so that the sequence is total). Built by strong recursion: the
-accumulation fact makes `{μ | HasEigenvalue T μ ∧ ε ≤ ‖μ‖}` finite for every `ε > 0`, so a largest
-remaining modulus exists at every stage.'''
-deps = ["_root_.IsCompactOperator.finite_setOf_hasEigenvalue_norm_le"]
 
 [[node]]
 id = "IsSymmetric.eigenvalueSeq_antitone"
-kind = "theorem"
-desc = '''`Antitone fun j => |eigenvalueSeq hT hK j|`, immediate from the construction.'''
-deps = ["IsSymmetric.eigenvalueSeq"]
 
 [[node]]
 id = "IsSymmetric.tendsto_eigenvalueSeq_zero"
-kind = "theorem"
-desc = '''`Tendsto (eigenvalueSeq hT hK) atTop (𝓝 0)`: for every `ε > 0` only finitely many eigenvalues have
-modulus at least `ε`, counted with multiplicity, so the antitone sequence of moduli passes below
-`ε` and stays there. This is the clause that consumes the accumulation fact, and it is the reason
-the fact had to be proved with multiplicity in mind.'''
-deps = ["IsSymmetric.eigenvalueSeq", "IsSymmetric.eigenvalueSeq_antitone",
-  "_root_.IsCompactOperator.finite_setOf_hasEigenvalue_norm_le"]
+
+[[node]]
+id = "IsSymmetric.abs_eigenvalueSeq_zero"
+
+[[node]]
+id = "IsSymmetric.eigenvector"
+
+[[node]]
+id = "IsSymmetric.apply_eigenvector"
+
+[[node]]
+id = "IsSymmetric.orthonormal_eigenvector"
+
+[[node]]
+id = "IsSymmetric.orthogonal_span_range_eigenvector_le_ker"
 
 [[node]]
 id = "IsSymmetric.eigenvectorHilbertBasis"
-kind = "definition"
-desc = '''`HilbertBasis ℕ 𝕜 E` of eigenvectors of a compact self-adjoint `T` on a separable Hilbert space,
-indexed so that the `j`-th vector has eigenvalue `eigenvalueSeq hT hK j`. Orthonormality within an
-eigenspace is a choice of orthonormal basis of a finite-dimensional space; across eigenspaces it is
-symmetry. Completeness is `HilbertBasis.mkOfOrthogonalEqBot` applied to
-`orthogonalComplement_iSup_eigenspaces_eq_bot`, together with a separable orthonormal basis of
-`ker T`, which is where `[SeparableSpace E]` enters.'''
-deps = ["IsSymmetric.eigenvalueSeq"]
+
+[[node]]
+id = "IsSymmetric.coe_eigenvectorHilbertBasis"
 
 [[node]]
 id = "IsSymmetric.apply_eigenvectorHilbertBasis"
-kind = "theorem"
-desc = '''`T (eigenvectorHilbertBasis hT hK j) = (eigenvalueSeq hT hK j : 𝕜) • eigenvectorHilbertBasis hT hK j`.
-Together with the antitone and limit clauses this is exactly the triple `hlam`, `hanti`, `hlim`
-that `Krylov.winther` takes as hypotheses.'''
-deps = ["IsSymmetric.eigenvectorHilbertBasis", "IsSymmetric.eigenvalueSeq"]

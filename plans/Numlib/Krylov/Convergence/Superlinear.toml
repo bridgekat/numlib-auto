@@ -36,16 +36,3 @@ id = "LinearMap.IsSymmetricBoundedBy.energyNorm_le_sqrt_mul_norm"
 
 [[node]]
 id = "Krylov.winther_of_isCompactOperator"
-kind = "theorem"
-desc = '''Winther's theorem with no eigen-decomposition supplied: for a compact self-adjoint `K` on a
-separable Hilbert space with `A = 1 - K` bounded below and above by `delta` and `Delta`, the
-conjugate-gradient error satisfies `‖x* - x_k‖ ≤ wintherRate lam delta Delta k ^ k * ‖x* - x₀‖`
-with `lam` the eigenvalues of `K` in decreasing order of modulus, and the rate tends to zero.
-This is `Krylov.winther` and `winther_rate_tendsto_zero` with their three data hypotheses
-discharged by `Numlib/Analysis/InnerProductSpace/CompactSpectral`; the proof of `winther` itself
-does not change, and never uses compactness.'''
-deps = ["Krylov.winther", "Krylov.winther_rate_tendsto_zero",
-  "_root_.ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis",
-  "_root_.ContinuousLinearMap.IsSymmetric.apply_eigenvectorHilbertBasis",
-  "_root_.ContinuousLinearMap.IsSymmetric.eigenvalueSeq_antitone",
-  "_root_.ContinuousLinearMap.IsSymmetric.tendsto_eigenvalueSeq_zero"]
