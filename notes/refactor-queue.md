@@ -126,11 +126,11 @@ dependants must add is `[Nontrivial n]` wherever they route through the block-tr
   `LinearSolve/Projection/Optimality` each build it inline.
 * **`IsStronglyMonotoneWith`** in `Nonlinear/FixedPoint` — seven consumers, several in
   `Variational/Inequality`.
-* **Saad Thm 1.31–1.33** (M-matrix characterizations). `Matrix/Order.toml` says they are "not needed
-  by any surface"; the ILU existence theorem (Saad Thm 10.2) cannot be proved without Thm 1.33, so
-  that sentence needs revising too. `Matrix.EntrywiseLE.pow` and Thm 1.28 are **done**, in
-  `LinearAlgebra/Matrix/PerronFrobenius` rather than in `Matrix/Order` — which is where the plan
-  puts them and where `lint` enforces it.
+* ~~Saad Thm 1.31–1.33~~ — **done**, in `LinearAlgebra/Matrix/MMatrix` (which is where
+  `Matrix.IsMMatrix` lives, and so their home; `plans/proposals/plan-saad10.md` §1.1 proposed
+  `Stationary/RegularSplitting`, which is wrong and should be corrected). Thm 1.32 needed nothing:
+  its content is the existing `IsMMatrix.diag_pos`. `Matrix.EntrywiseLE.pow` and Thm 1.28 are also
+  done, in `PerronFrobenius`.
 * **A projection-gap lemma** in `Analysis/InnerProductSpace/Projection/Angle`: from
   `‖w_j − x_j‖ ≤ δ` for two bases and a coordinate bound, conclude `‖P_X − P_W‖ ≤ M δ`. It is the
   single missing statement for `Krylov.gap_subspaceIterate_le`, which is in turn the only thing
@@ -211,6 +211,16 @@ is private and its public form needs `NormOneClass`, which `X →L[𝕜] X` lack
 modules have now routed around it. And `Krylov.norm_sum_smul_vec_eq`,
 `mem_subspace_iff_exists_coeffs`, `residual_coeff_eq_zero` in `Krylov/Hessenberg`, plus
 `Lanczos.mulVec_tridiagExt_castSucc`, were duplicated privately by `Krylov/Singular`.
+
+### R20. Four Schur-complement lemmas are in the ILU module
+
+`Matrix.schurComplementSingle_mulVec_of_apply_eq_zero`, `schurComplementSingle_mul_submatrix_inv`,
+`isUnit_schurComplementSingle` and `inv_schurComplementSingle` are public and untracked in
+`LinearSolve/Preconditioner/ILU.lean`. They belong in `LinearAlgebra/Matrix/SchurComplement` — the
+last of them is the one-by-one pivot form of `toBlocks₂₂_inv_eq_inv_schurComplement`, which is
+exactly the connection that module's own implementation note says was left out for time. Move them
+and add nodes there in one go. `Matrix.elimStep` / `elimMul` / `elimMultipliers` arguably belong
+there too; a book on sparse direct methods would want them.
 
 ### R19. The M-matrix characterizations are proved in a surface
 
