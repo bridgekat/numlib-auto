@@ -20,34 +20,23 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Example 3.6.6; Kress, 
 
 [[node]]
 id = "norm_sub_piecewiseLinearInterpCLM_le"
-kind = "theorem"
-desc = '''The error of piecewise-linear interpolation on a partition of mesh `h`: `‖f - P f‖ ≤ ω(f, h)` for
-a continuous `f` (Atkinson–Han (3.2.8)) and `‖f - P f‖ ≤ h²/8 ‖f''‖` for a `C²` one
-(Atkinson–Han (3.2.9), Kress §8.3). Split off from `piecewiseLinearInterpCLM`, whose operator and
-projection properties are proved.
-
-The route is `piecewiseLinearInterpCLM_apply_of_mem`, which says that on `[x j, x (j+1)]` the
-interpolant is the affine function through the two node values: identify that with
-`Lagrange.interpolate` at those two nodes, apply `Lagrange.exists_sub_interpolate_eq` at `n = 1`
-on the subinterval, and bound `|(t - u)(t - v)| ≤ (v - u)²/4`. The `C²` hypothesis has to be on a
-function `ℝ → ℝ` restricted to `[a, b]`, as it is in `Lagrange.exists_sub_interpolate_eq`, since
-`C(Icc a b, ℝ)` carries no derivative.'''
-deps = ["piecewiseLinearInterpCLM", "Lagrange.exists_sub_interpolate_eq"]
-source = "Atkinson–Han, Theoretical Numerical Analysis, (3.2.8)–(3.2.9); Kress, Numerical Analysis, Section 8.3"
+source = "Atkinson-Han, Theoretical Numerical Analysis, (3.2.9); Kress, Numerical Analysis, Section 8.3"
 
 [[node]]
 id = "trigInterpCLM"
 kind = "definition"
-desc = '''Trigonometric interpolation at the `2n + 1` equispaced nodes of a period, as a projection of
-`C_p(2π)` onto the trigonometric polynomials of degree `≤ n` (Atkinson–Han (3.7.19)), with
-Rivlin's bound `‖trigInterpCLM n‖ ≤ 1 + (2/π) log n` (Atkinson–Han (3.7.20)) as
-`norm_trigInterpCLM_le`. The last item of the module: the bound is a real estimate on the
-Lebesgue function of the Dirichlet kernel, and needs the Dirichlet kernel on `AddCircle (2π)`
-together with the comparison of `∑ |sin| / k` with `∫ dt/t`.
+desc = '''Trigonometric interpolation at the `2 n + 1` equispaced nodes of a period, as a projection of
+`C_p(2 pi)` onto the trigonometric polynomials of degree at most `n` (Atkinson-Han (3.7.19)), with
+Rivlin's bound `norm (trigInterpCLM n) <= 1 + (2/pi) log n` (Atkinson-Han (3.7.20)) as
+`norm_trigInterpCLM_le`.
 
-Blocked in the same way as `Numlib/Approximation/Trigonometric`: it needs `dirichletKernel` and
-its closed form from `Numlib/Analysis/Fourier/Dirichlet`, and a space of trigonometric polynomials
-on `AddCircle (2π)` to project onto. Do it after that module lands, and with the same subspace
-that `PeriodicCont.fourierProj` ranges over.'''
+No longer blocked on the subspace: `trigPolyLE` of `Numlib/Analysis/Fourier/TrigonometricBasis` is
+it, `finrank_trigPolyLE` gives its dimension `2 n + 1`, and the Haar property it needs for
+unisolvence at `2 n + 1` distinct nodes is `card_le_two_mul_of_forall_trigFun_eq_zero` of
+`Numlib/Approximation/Chebyshev`; with `Approximation.haarCondition_iff_isUnisolvent` the operator
+is then built exactly as `Lagrange.interpolateCLM` is. The norm bound is the separate half, and it
+still needs the Dirichlet kernel of `Numlib/Analysis/Fourier/Dirichlet` on `AddCircle (2 pi)`
+together with the comparison of `sum |sin| / k` with the integral of `dt/t`; the Lebesgue constant
+of the Fourier projection in `Numlib/Approximation/Trigonometric` is the model for it.'''
 deps = ["Lagrange.norm_interpolateCLM"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, (3.7.19)–(3.7.20)"

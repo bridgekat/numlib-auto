@@ -1,67 +1,17 @@
 namespace = "Hermite"
-desc = '''
-Hermite interpolation: matching a function and its derivatives up to prescribed orders at finitely
-many nodes, with the error formula. Atkinson–Han, *Theoretical Numerical Analysis*, §3.2.2 and
-Exercise 3.2.6; Kress, *Numerical Analysis*, §8.1. Not in Mathlib, which has `Lagrange.interpolate`
-and nothing with multiplicities.
-
-A separate module from `Numlib/Approximation/Interpolation` because the two things it needs are
-elsewhere: unisolvence from `Numlib/Approximation/Unisolvent`, and a Rolle theorem *with
-multiplicities* that strengthens the `exists_iteratedDeriv_eq_zero_of_forall_eq_zero` of the
-Lagrange module. That strengthening is the real work here: if `g` is `N + 1` times differentiable
-on `[a, b]` and vanishes to order `m i + 1` at each of the nodes `x i`, with
-`∑ (m i + 1) = N + 1`, then some derivative `g^{(N+1)}` vanishes strictly inside. Prove it by
-induction on `N`, counting zeros of `g'` with multiplicity: each node of multiplicity `m + 1`
-contributes a zero of multiplicity `m` to `g'`, and each gap between consecutive nodes contributes
-one more by Rolle (`exists_hasDerivAt_eq_zero`).
-
-Divided-difference forms of the error and the Newton form of the interpolant are not planned: no
-result in the corpus uses them, and Atkinson–Han only cite them.
-'''
 
 [[node]]
 id = "exists_iteratedDeriv_eq_zero"
-kind = "theorem"
-desc = '''Rolle's theorem with multiplicities: if `g : ℝ → ℝ` is `N + 1` times differentiable on `[a, b]`,
-the nodes `x : Fin n → ℝ` are distinct and in `[a, b]`, `g` vanishes to order `m i + 1` at `x i`
-(that is, `iteratedDeriv j g (x i) = 0` for `j ≤ m i`), and `∑ i, (m i + 1) = N + 1`, then
-`iteratedDeriv (N + 1) g ξ = 0` for some `ξ` strictly between the smallest and largest node.
-Induction on `N`, counting the zeros of `g'` with multiplicity. Generalises
-`exists_iteratedDeriv_eq_zero_of_forall_eq_zero` of `Numlib/Approximation/Interpolation`, which is
-the case `m = 0`.'''
-deps = ["exists_iteratedDeriv_eq_zero_of_forall_eq_zero"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, Section 3.2.2; Kress, Numerical Analysis, Theorem 8.4"
 
 [[node]]
 id = "isUnisolvent"
-kind = "theorem"
-desc = '''Existence and uniqueness of the Hermite interpolant, Atkinson–Han (3.2.6) and its generalisation
-in §3.2.2: for distinct nodes `x : Fin n → ℝ`, multiplicities `m : Fin n → ℕ` and
-`N = ∑ (m i + 1) - 1`, the functionals `p ↦ p^{(j)}(x i)` for `j ≤ m i` are unisolvent over the
-polynomials of degree `≤ N`. The homogeneous problem is trivial because a nonzero polynomial of
-degree `≤ N` cannot have `N + 1` roots counted with multiplicity
-(`Polynomial.card_roots_le_degree` with `rootMultiplicity`); then `isUnisolvent_tfae`.'''
-deps = ["Approximation.IsUnisolvent", "Approximation.isUnisolvent_tfae"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, Section 3.2.2, Exercise 3.2.6"
 
 [[node]]
 id = "interpolate"
-kind = "definition"
-desc = '''`Hermite.interpolate x m f : Polynomial ℝ`, the Hermite interpolant of degree `≤ N` determined by
-`isUnisolvent`, with `Hermite.iteratedDeriv_interpolate` (it matches `f` and its derivatives at
-the nodes) and `Hermite.degree_interpolate_le`. For `m = 0` it is `Lagrange.interpolate`
-(`Hermite.interpolate_zero_eq_lagrange`).'''
-deps = ["isUnisolvent", "Approximation.IsUnisolvent.interpolate"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, (3.2.6)"
 
 [[node]]
 id = "exists_sub_interpolate_eq"
-kind = "theorem"
-desc = '''The Hermite error formula (Atkinson–Han §3.2.2): for `f` `N + 1` times differentiable on `[a, b]`
-and every `t ∈ [a, b]` there is `ξ ∈ [a, b]` with
-`f t - (interpolate x m f).eval t = iteratedDeriv (N + 1) f ξ / (N + 1)! * ∏ i, (t - x i) ^ (m i + 1)`.
-Apply `exists_iteratedDeriv_eq_zero` to `s ↦ f s - p s - c * ∏ (s - x i) ^ (m i + 1)` with `c`
-chosen so that the function vanishes at `t`; the Lagrange case `m = 0` is
-`Lagrange.exists_sub_interpolate_eq`.'''
-deps = ["interpolate", "exists_iteratedDeriv_eq_zero"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, Section 3.2.2"

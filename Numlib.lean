@@ -23,8 +23,10 @@ import Numlib.Analysis.Normed.Operator.Compact
 import Numlib.Analysis.Normed.Ring.CondNumber
 import Numlib.Analysis.Normed.Ring.Inverse
 import Numlib.Analysis.Wavelet.Haar
+import Numlib.Analysis.Wavelet.Multiresolution
 import Numlib.Approximation.BestApprox
 import Numlib.Approximation.Chebyshev
+import Numlib.Approximation.Hermite
 import Numlib.Approximation.Interpolation
 import Numlib.Approximation.OrthogonalPolynomial
 import Numlib.Approximation.Quadrature
@@ -45,6 +47,7 @@ import Numlib.FiniteDifference.LaxEquivalence
 import Numlib.FiniteDifference.TwoLevel
 import Numlib.FloatingPoint.InnerProduct
 import Numlib.FloatingPoint.Model
+import Numlib.FloatingPoint.Stationary
 import Numlib.IntegralEquations.Basic
 import Numlib.IntegralEquations.SecondKind
 import Numlib.Krylov.Arnoldi

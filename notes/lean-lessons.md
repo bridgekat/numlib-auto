@@ -2053,6 +2053,61 @@ Taylor's theorem, in the form the finite-difference formulas need:
 * In a Python patch script `𝒱` is `\U0001d4b1` and `𝒲` is `\U0001d4b2`. Writing either as a
   surrogate pair makes `assert s.count(old) == 1` fail for no visible reason — which is the good
   outcome, since the assertion fires before the file is opened for writing.
+* **`Fin m` for an opaque `m` has no `0`.** `z 0` fails with "failed to synthesize `OfNat (Fin m) 0`"
+  whenever `m` is a variable known only to be positive. `have : NeZero m := ⟨by omega⟩` after the
+  hypothesis `1 ≤ m` supplies the instance. And even then `(0 : Fin m)` is `⟨0 % m, _⟩`, which is
+  **not** definitionally `⟨0, h⟩` for a variable `m`, because `0 % m` does not reduce: bridging
+  `z ⟨0, h⟩` to `z 0` needs `congrArg z (by ext; simp)`.
+* `x ∈ {w | P w}` is definitionally `P x`, so `exact`/application see through it, but **`rw` does
+  not**: destructuring a membership in an intersection of `setOf`s gives hypotheses that no
+  rewrite will fire on. Re-bind them with their unfolded types (`have h' : P x := h`) or open the
+  goal with `change`.
+* `rw [← h]` with `h : (J - 1) + 1 = J` over `ℕ` rewrites the `J` *inside* `J - 1` as well and
+  produces nonsense. Do the one-step identity in a `conv_lhs` (`conv_lhs => rw [show m = (m-1)+1
+  from by omega]`), or prove the scalar fact `(-1)^J = -(-1)^(J-1)` separately and rewrite with it.
+* `lt_or_le` no longer exists; `Nat.lt_or_ge` is the live name. `Set.setOf_forall` is deprecated in
+  favour of `Set.ofPred_forall`, and `Set.mem_setOf_eq` in favour of `Set.mem_ofPred_eq`.
+* `Polynomial.Monic` unfolds to `Eq`, so `hmonic.leadingCoeff` looks up `Eq.leadingCoeff`; write
+  `Monic.leadingCoeff hmonic`. `Polynomial.mem_roots hp0` is an `Iff` with `IsRoot`, not with a
+  conjunction, so `(mem_roots hp0).1 h` is already the evaluation — a further `.2` fails with
+  "Projections cannot be used".
+* `Lagrange.degree_interpolate_lt`, `Lagrange.eq_interpolate_of_eval_eq` and friends take the
+  *value function* `r` as an explicit **leading** argument (it is a `variable` declared before the
+  hypotheses), so `Lagrange.eq_interpolate_of_eval_eq hinj hdeg hval` fails with "expected
+  `Set.InjOn`"; write `Lagrange.eq_interpolate_of_eval_eq _ hinj hdeg hval`.
+* `Polynomial.modByMonic_add_div p q` takes the *divisor*, not a monic proof: `modByMonic_add_div p
+  hmonic` fails with "`hmonic` has type `Monic` but is expected to have type `ℝ[X]`".
+
+Structural facts from the approximation layer:
+
+* **To minimize over strictly monotone tuples, relax to `Monotone`.** The set of strictly monotone
+  `Fin m → X` is not closed, so no compactness argument reaches it; the set of *monotone* ones is
+  an intersection of closed conditions `{w | (w i : ℝ) ≤ (w j : ℝ)}` and is closed, hence compact
+  inside the compact `Fin m → X`. When the tuples also carry alternating signs of a nonvanishing
+  function, monotone already implies strict, so nothing is lost. That is what makes
+  "the alternation of length `m` with the smallest node sum" exist, and minimality of that sum is
+  what the exchange argument of `isBestApprox_iff_equioscillates` uses in place of a greedy
+  leftmost construction — replacing one node by an earlier one of the same sign is a competitor of
+  the same length, which a *maximal-length* argument alone cannot exclude.
+* `Nat.findGreatest` is the clean way to take "the greatest `k ≤ b` with `P k`" for an undecidable
+  `P`: open with `classical`, and package the three facts once —
+  `Nat.le_findGreatest`, `Nat.findGreatest_le`, `Nat.findGreatest_spec` and
+  `Nat.findGreatest_is_greatest` — into an `obtain ⟨m, …⟩ : ∃ m, …`, so that the rest of the proof
+  never mentions `findGreatest` and never has to unfold a `set`.
+* **The Haar condition for trigonometric polynomials is the substitution `z = exp (2 π i x / T)`.**
+  `AddCircle.injective_toCircle (hT : T ≠ 0)` makes it injective on a period, `fourier m x =
+  (fourier 1 x) ^ m` is `Complex.exp_int_mul` on a representative, and a real combination of the
+  real system `trigFun T m`, `|m| ≤ n`, is `z ^ (-n)` times an algebraic polynomial of degree at
+  most `2 n` evaluated at `z` — the complex coefficients being
+  `d m = (c m w m + c (-m) conj (w (-m)))/2` with `w = trigWeight`, obtained by writing
+  `(z.re : ℂ) = (z + conj z)/2` and reindexing the conjugate half by `Finset.sum_equiv (Equiv.neg ℤ)`.
+  `Polynomial.card_roots'` then bounds the zeros. About 90 lines in all.
+* **Mathlib has no Taylor expansion with integral remainder.** `Mathlib/Analysis/Calculus/Taylor.lean`
+  has `taylor_mean_remainder`, `_lagrange`, `_cauchy` and `exists_taylor_mean_remainder_bound`, all
+  of them mean-value forms. Anything that has to integrate the remainder — Peano kernels, for
+  instance — has to prove `f x = ∑_{k ≤ m} f⁽ᵏ⁾(a)(x-a)ᵏ/k! + (1/m!) ∫_a^x (x-t)^m f⁽ᵐ⁺¹⁾(t) dt`
+  first, by induction on `m` with `intervalIntegral.integral_mul_deriv_eq_deriv_mul` from the
+  fundamental theorem of calculus.
 
 ## Design conventions of this library
 

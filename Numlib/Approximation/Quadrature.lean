@@ -3,6 +3,7 @@ import Mathlib.Topology.ContinuousMap.Weierstrass
 import Mathlib.Topology.TietzeExtension
 import Numlib.Analysis.Normed.Operator.BanachSteinhaus
 import Numlib.Approximation.Interpolation
+import Numlib.Approximation.OrthogonalPolynomial
 
 /-!
 # Numerical quadrature
@@ -28,6 +29,11 @@ converges for every continuous integrand.
   `ContinuousLinearMap.tendsto_of_tendsto_on_dense_of_bounded`; necessity is the uniform
   boundedness principle. `Quadrature.tendsto_of_nonneg` is the corollary for nonnegative weights,
   whose absolute sum is the value of the rule at the constant function `1`.
+* `Quadrature.exists_gauss` is Gauss quadrature: the roots of the `n`-th orthogonal polynomial of
+  a weight carry positive weights making the rule exact on the polynomials of degree less than
+  `2n`, and `Quadrature.not_forall_eq_integral_of_degree_le` says that no `n`-point rule does
+  better. Both are stated about polynomials and a measure rather than through `IsExactOn`, which
+  lives on `C(X, ℝ)` for a compact `X` and would need the weight to be carried by `X`.
 
 ## References
 
@@ -315,5 +321,157 @@ theorem tendsto_of_nonneg {m d : ℕ → ℕ} {w : ∀ k, Fin (m k) → ℝ}
   exact Finset.sum_congr rfl fun i _ => by rw [abs_of_nonneg (hw k i)]; simp
 
 end Convergence
+
+/-! ### Gauss quadrature -/
+
+section Gauss
+
+open OrthogonalPolynomial Polynomial MeasureTheory
+
+variable {μ : Measure ℝ}
+
+/-- **Gauss quadrature.** For a weight `μ` and every `n`, the `n` roots of the `n`-th orthogonal
+polynomial of `μ` carry positive weights making the rule exact on every polynomial of degree less
+than `2n` — twice as far as the `n` degrees of freedom of the nodes alone would give.
+
+The nodes are the roots of `OrthogonalPolynomial.family μ n`, which are `n` and distinct
+(`OrthogonalPolynomial.exists_injective_family_eq_prod`), and the weights are the integrals of the
+Lagrange basis functions of those nodes, so the rule is interpolatory and hence exact to degree
+`n - 1` by construction. Exactness to degree `2n - 1` is division with remainder by the orthogonal
+polynomial: the quotient has degree less than `n`, so its integral against the orthogonal
+polynomial vanishes, while the nodes annihilate that term in the sum. Positivity of the weights
+is exactness applied to the square of a Lagrange basis function.
+
+`Quadrature.not_forall_eq_integral_of_degree_le` is the converse: no `n`-point rule at all is exact
+to degree `2n`.
+
+Reference: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998,
+§9.3; Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional Analysis
+Framework*, 3rd edition, Springer, 2009, §3.5. -/
+theorem exists_gauss (hw : IsWeight μ) (n : ℕ) :
+    ∃ x w : Fin n → ℝ, Function.Injective x ∧ (∀ i, 0 < w i) ∧
+      ∀ p : ℝ[X], p.degree < ((2 * n : ℕ) : WithBot ℕ) →
+        ∑ i, w i * p.eval (x i) = ∫ t, p.eval t ∂μ := by
+  classical
+  obtain ⟨x, hxinj, hprod⟩ := exists_injective_family_eq_prod hw n
+  obtain ⟨w, hwval⟩ : ∃ w : Fin n → ℝ,
+      ∀ i, w i = ∫ t, (Lagrange.basis Finset.univ x i).eval t ∂μ := ⟨_, fun _ => rfl⟩
+  have hxroot : ∀ i, (family μ n).eval (x i) = 0 := by
+    intro i
+    rw [hprod, eval_prod]
+    exact Finset.prod_eq_zero (Finset.mem_univ i) (by simp)
+  have hcarduniv : (Finset.univ : Finset (Fin n)).card = n := by simp
+  -- the rule is interpolatory, hence exact below the number of nodes
+  have hlow : ∀ r : ℝ[X], r.degree < (n : WithBot ℕ) →
+      ∑ i, w i * r.eval (x i) = ∫ t, r.eval t ∂μ := by
+    intro r hr
+    have heq : r = Lagrange.interpolate Finset.univ x fun i => r.eval (x i) :=
+      Lagrange.eq_interpolate hxinj.injOn (by rw [hcarduniv]; exact hr)
+    have hev : ∀ t : ℝ,
+        r.eval t = ∑ i, r.eval (x i) * (Lagrange.basis Finset.univ x i).eval t := by
+      intro t
+      conv_lhs => rw [heq]
+      rw [Lagrange.interpolate_apply, eval_finsetSum]
+      exact Finset.sum_congr rfl fun i _ => by rw [eval_mul, eval_C]
+    rw [integral_congr_ae (Filter.Eventually.of_forall hev),
+      integral_finsetSum _ fun i _ => (hw.integrable_eval _).const_mul _]
+    refine (Finset.sum_congr rfl fun i _ => ?_).symm
+    rw [integral_const_mul, hwval i]
+    ring
+  -- division with remainder by the orthogonal polynomial doubles the reach
+  have hexact : ∀ p : ℝ[X], p.degree < ((2 * n : ℕ) : WithBot ℕ) →
+      ∑ i, w i * p.eval (x i) = ∫ t, p.eval t ∂μ := by
+    intro p hp
+    rcases eq_or_ne p 0 with rfl | hp0
+    · simp
+    have hmonic : (family μ n).Monic := monic_family μ n
+    have hfamnat : (family μ n).natDegree = n :=
+      natDegree_eq_of_degree_eq_some (degree_family μ n)
+    have hnatp : p.natDegree < 2 * n := (natDegree_lt_iff_degree_lt hp0).mpr (by exact_mod_cast hp)
+    obtain ⟨q, hqval⟩ : ∃ q : ℝ[X], q = p /ₘ family μ n := ⟨_, rfl⟩
+    obtain ⟨r, hrval⟩ : ∃ r : ℝ[X], r = p %ₘ family μ n := ⟨_, rfl⟩
+    have hdiv : r + family μ n * q = p := by
+      rw [hrval, hqval]
+      exact modByMonic_add_div p (family μ n)
+    have hrdeg : r.degree < (n : WithBot ℕ) := by
+      have h := degree_modByMonic_lt p hmonic
+      rw [degree_family] at h
+      rwa [hrval]
+    have hqdeg : q.degree < (n : WithBot ℕ) := by
+      have hqnat : q.natDegree = p.natDegree - n := by
+        rw [hqval, natDegree_divByMonic p hmonic, hfamnat]
+      refine lt_of_le_of_lt degree_le_natDegree ?_
+      exact_mod_cast (by omega : q.natDegree < n)
+    have hsplit : ∀ t : ℝ, p.eval t = r.eval t + (family μ n).eval t * q.eval t := by
+      intro t
+      conv_lhs => rw [← hdiv]
+      rw [eval_add, eval_mul]
+    have hint : ∫ t, p.eval t ∂μ = ∫ t, r.eval t ∂μ := by
+      rw [integral_congr_ae (Filter.Eventually.of_forall hsplit),
+        integral_add (hw.integrable_eval r) (hw.integrable_eval_mul _ _),
+        integral_family_mul_of_degree_lt hw hqdeg, add_zero]
+    have hsum : ∑ i, w i * p.eval (x i) = ∑ i, w i * r.eval (x i) :=
+      Finset.sum_congr rfl fun i _ => by rw [hsplit (x i), hxroot i]; ring
+    rw [hsum, hlow r hrdeg, hint]
+  refine ⟨x, w, hxinj, fun i => ?_, hexact⟩
+  -- the weights are positive: apply exactness to the square of a Lagrange basis function
+  have hne : Lagrange.basis Finset.univ x i ≠ 0 :=
+    Lagrange.basis_ne_zero hxinj.injOn (Finset.mem_univ i)
+  have hbnat : (Lagrange.basis Finset.univ x i).natDegree = n - 1 := by
+    rw [Lagrange.natDegree_basis hxinj.injOn (Finset.mem_univ i), hcarduniv]
+  have hn : 0 < n := Fin.pos i
+  have hdeg2 : ((Lagrange.basis Finset.univ x i) ^ 2).degree < ((2 * n : ℕ) : WithBot ℕ) := by
+    refine lt_of_le_of_lt degree_le_natDegree ?_
+    rw [natDegree_pow, hbnat]
+    exact_mod_cast (by omega : 2 * (n - 1) < 2 * n)
+  have h1 := hexact _ hdeg2
+  have hlhs : ∑ j, w j * ((Lagrange.basis Finset.univ x i) ^ 2).eval (x j) = w i := by
+    rw [Finset.sum_eq_single i]
+    · rw [eval_pow, Lagrange.eval_basis_self hxinj.injOn (Finset.mem_univ i)]
+      ring
+    · intro j _ hji
+      rw [eval_pow, Lagrange.eval_basis_of_ne (Ne.symm hji) (Finset.mem_univ j)]
+      ring
+    · intro h
+      exact absurd (Finset.mem_univ i) h
+  rw [hlhs] at h1
+  rw [h1]
+  exact hw.integral_eval_pos (pow_ne_zero 2 hne) fun t => by rw [eval_pow]; positivity
+
+/-- **No `n`-point rule is exact to degree `2n`**: the square of the nodal polynomial is a
+polynomial of degree `2n` that the rule evaluates to zero and the weight integrates to something
+positive. Gauss quadrature is therefore optimal.
+
+Reference: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998,
+§9.3. -/
+theorem not_forall_eq_integral_of_degree_le (hw : IsWeight μ) {n : ℕ} (x w : Fin n → ℝ) :
+    ¬ ∀ p : ℝ[X], p.degree ≤ ((2 * n : ℕ) : WithBot ℕ) →
+      ∑ i, w i * p.eval (x i) = ∫ t, p.eval t ∂μ := by
+  classical
+  intro h
+  obtain ⟨q, hqval⟩ : ∃ q : ℝ[X], q = ∏ i, (X - C (x i)) := ⟨_, rfl⟩
+  have hqmonic : q.Monic := by
+    rw [hqval]
+    exact monic_prod_of_monic _ _ fun i _ => monic_X_sub_C (x i)
+  have hqnat : q.natDegree = n := by
+    rw [hqval, natDegree_prod _ _ fun i _ => (monic_X_sub_C (x i)).ne_zero]
+    simp
+  have hdeg : (q ^ 2).degree ≤ ((2 * n : ℕ) : WithBot ℕ) := by
+    refine degree_le_natDegree.trans ?_
+    rw [natDegree_pow, hqnat]
+  have hzero : ∀ i, q.eval (x i) = 0 := by
+    intro i
+    rw [hqval, eval_prod]
+    exact Finset.prod_eq_zero (Finset.mem_univ i) (by simp)
+  have hlhs : ∑ i, w i * (q ^ 2).eval (x i) = 0 := by
+    refine Finset.sum_eq_zero fun i _ => ?_
+    rw [eval_pow, hzero i]
+    ring
+  have hpos : 0 < ∫ t, (q ^ 2).eval t ∂μ :=
+    hw.integral_eval_pos (pow_ne_zero 2 hqmonic.ne_zero) fun t => by rw [eval_pow]; positivity
+  rw [← h _ hdeg, hlhs] at hpos
+  exact absurd hpos (lt_irrefl 0)
+
+end Gauss
 
 end Quadrature

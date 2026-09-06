@@ -35,6 +35,80 @@ open scoped Nat
 
 noncomputable section
 
+namespace Polynomial
+
+/-! ### Real polynomials of constant sign
+
+Nothing in Mathlib says when a real polynomial keeps its sign, and the Gauss-quadrature argument
+needs exactly that: a polynomial whose real roots all have even multiplicity does not change sign.
+-/
+
+/-- **A real polynomial without real roots has constant sign**, by the intermediate value
+theorem. -/
+theorem forall_pos_or_forall_neg_of_forall_eval_ne_zero {p : ℝ[X]} (h : ∀ x : ℝ, p.eval x ≠ 0) :
+    (∀ x, 0 < p.eval x) ∨ (∀ x, p.eval x < 0) := by
+  by_cases hpos : ∀ x, 0 < p.eval x
+  · exact Or.inl hpos
+  refine Or.inr fun v => ?_
+  push Not at hpos
+  obtain ⟨u, hu⟩ := hpos
+  have hu' : p.eval u < 0 := lt_of_le_of_ne hu (h u)
+  by_contra hv
+  push Not at hv
+  have hv' : 0 < p.eval v := lt_of_le_of_ne hv (Ne.symm (h v))
+  have hmem : (0 : ℝ) ∈ Set.uIcc (p.eval u) (p.eval v) :=
+    Set.mem_uIcc.mpr (Or.inl ⟨hu'.le, hv'.le⟩)
+  obtain ⟨c, -, hc⟩ :=
+    intermediate_value_uIcc (f := fun x => p.eval x) p.continuous.continuousOn hmem
+  exact h c hc
+
+/-- **A real polynomial all of whose real roots have even multiplicity does not change sign.**
+Splitting off the square of the product of its linear factors leaves a polynomial with no real
+root, which has constant sign by the intermediate value theorem. -/
+theorem forall_nonneg_or_forall_nonpos_of_even_rootMultiplicity {p : ℝ[X]} (hp : p ≠ 0)
+    (heven : ∀ r : ℝ, Even (p.rootMultiplicity r)) :
+    (∀ x, 0 ≤ p.eval x) ∨ (∀ x, p.eval x ≤ 0) := by
+  classical
+  set g : ℝ[X] := ∏ r ∈ p.roots.toFinset, (X - C r) ^ (p.rootMultiplicity r / 2) with hg
+  clear_value g
+  have hgsq : g ^ 2 = ∏ r ∈ p.roots.toFinset, (X - C r) ^ p.rootMultiplicity r := by
+    rw [hg, ← Finset.prod_pow]
+    refine Finset.prod_congr rfl fun r _ => ?_
+    rw [← pow_mul]
+    obtain ⟨k, hk⟩ := heven r
+    congr 1
+    omega
+  have hdvd : g ^ 2 ∣ p := by
+    rw [hgsq, ← Polynomial.prod_multiset_root_eq_finset_root]
+    exact p.prod_multiset_X_sub_C_dvd
+  obtain ⟨h, hh⟩ := hdvd
+  have hne : ∀ x : ℝ, h.eval x ≠ 0 := by
+    intro x hx
+    have hroot : p.IsRoot x := by
+      rw [IsRoot, hh, eval_mul, hx, mul_zero]
+    have hmem : x ∈ p.roots.toFinset := Multiset.mem_toFinset.mpr ((mem_roots hp).2 hroot)
+    have hdvd1 : (X - C x) ^ p.rootMultiplicity x ∣ g ^ 2 := by
+      rw [hgsq]
+      exact Finset.dvd_prod_of_mem _ hmem
+    have hdvd2 : (X - C x) ∣ h := dvd_iff_isRoot.mpr hx
+    have hdvd3 : (X - C x) ^ (p.rootMultiplicity x + 1) ∣ p := by
+      have hgh : (X - C x) ^ (p.rootMultiplicity x + 1) ∣ g ^ 2 * h := by
+        rw [pow_succ]
+        exact mul_dvd_mul hdvd1 hdvd2
+      rwa [← hh] at hgh
+    have := (le_rootMultiplicity_iff hp).2 hdvd3
+    omega
+  have heval : ∀ x : ℝ, p.eval x = g.eval x ^ 2 * h.eval x := by
+    intro x
+    rw [hh, eval_mul, eval_pow]
+  rcases forall_pos_or_forall_neg_of_forall_eval_ne_zero hne with hpos | hneg
+  · exact Or.inl fun x => by rw [heval x]; exact mul_nonneg (sq_nonneg _) (hpos x).le
+  · refine Or.inr fun x => ?_
+    rw [heval x]
+    exact mul_nonpos_of_nonneg_of_nonpos (sq_nonneg _) (hneg x).le
+
+end Polynomial
+
 namespace OrthogonalPolynomial
 
 variable {μ : Measure ℝ}
@@ -90,6 +164,21 @@ theorem integral_eval_sq_pos (hw : IsWeight μ) {p : ℝ[X]} (hp : p ≠ 0) :
     simp only [Set.mem_compl_iff, Multiset.mem_toFinset, Finset.mem_coe] at hx
     have : p.eval x ≠ 0 := fun h0 => hx ((mem_roots hp).2 (by simpa [IsRoot] using h0))
     simpa using pow_ne_zero 2 this
+  refine hw.measure_compl_ne_zero p.roots.toFinset.finite_toSet ?_
+  refine measure_mono_null hsub ?_
+  simpa [Filter.EventuallyEq, ae_iff] using hae
+
+/-- The integral of a nonzero polynomial that is nonnegative everywhere is positive: it vanishes
+only on a finite set, and `μ` charges the complement of every finite set. -/
+theorem integral_eval_pos (hw : IsWeight μ) {p : ℝ[X]} (hp : p ≠ 0)
+    (hnn : ∀ x, 0 ≤ p.eval x) : 0 < ∫ x, p.eval x ∂μ := by
+  refine lt_of_le_of_ne (integral_nonneg hnn) fun h => ?_
+  have hae : (fun x => p.eval x) =ᵐ[μ] 0 :=
+    (integral_eq_zero_iff_of_nonneg hnn (hw.integrable_eval p)).1 h.symm
+  have hsub : (↑p.roots.toFinset : Set ℝ)ᶜ ⊆ {x | p.eval x ≠ 0} := by
+    intro x hx
+    simp only [Set.mem_compl_iff, Multiset.mem_toFinset, Finset.mem_coe] at hx
+    exact fun h0 => hx ((mem_roots hp).2 (by simpa [IsRoot] using h0))
   refine hw.measure_compl_ne_zero p.roots.toFinset.finite_toSet ?_
   refine measure_mono_null hsub ?_
   simpa [Filter.EventuallyEq, ae_iff] using hae
@@ -305,6 +394,140 @@ theorem eq_zero_of_degree_lt (hw : IsWeight μ) {n : ℕ} {q : ℝ[X]} (hq : q.d
   rw [eq_sum_family hw hq]
   refine Finset.sum_eq_zero fun k hk => ?_
   rw [h k (Finset.mem_range.mp hk), zero_div, zero_smul]
+
+/-! ### The zeros of the orthogonal polynomials -/
+
+/-- The `n`-th orthogonal polynomial changes sign at least `n` times: it has at least `n` roots of
+odd multiplicity.
+
+This is the classical argument. If it changed sign at fewer than `n` points, the product of
+`family μ n` with the monic polynomial vanishing at those points would have every real root of
+even multiplicity, hence constant sign by
+`Polynomial.forall_nonneg_or_forall_nonpos_of_even_rootMultiplicity`, while orthogonality to every
+polynomial of lower degree forces its integral against `μ` to vanish. -/
+private theorem le_card_odd_rootMultiplicity (hw : IsWeight μ) (n : ℕ) :
+    n ≤ ((family μ n).roots.toFinset.filter
+      fun r => Odd ((family μ n).rootMultiplicity r)).card := by
+  classical
+  by_contra hlt
+  push Not at hlt
+  set S : Finset ℝ :=
+    (family μ n).roots.toFinset.filter fun r => Odd ((family μ n).rootMultiplicity r) with hS
+  set q : ℝ[X] := ∏ r ∈ S, (X - C r) with hq
+  have hqmonic : q.Monic := monic_prod_of_monic _ _ fun r _ => monic_X_sub_C r
+  have hqnat : q.natDegree = S.card := by
+    rw [hq, natDegree_prod _ _ fun r _ => (monic_X_sub_C r).ne_zero]
+    simp
+  have hqdeg : q.degree < (n : WithBot ℕ) := by
+    rw [degree_eq_natDegree hqmonic.ne_zero, hqnat]
+    exact_mod_cast hlt
+  have hzero : ∫ x, (family μ n).eval x * q.eval x ∂μ = 0 :=
+    integral_family_mul_of_degree_lt hw hqdeg
+  have hf0 : family μ n * q ≠ 0 := mul_ne_zero (family_ne_zero μ n) hqmonic.ne_zero
+  -- the multiplicities of the auxiliary factor
+  have hqroots : q.roots = S.val := by
+    rw [hq, Finset.prod_eq_multiset_prod]
+    exact roots_multiset_prod_X_sub_C S.val
+  have hqmult : ∀ r : ℝ, q.rootMultiplicity r = if r ∈ S then 1 else 0 := by
+    intro r
+    rw [← count_roots, hqroots]
+    by_cases hr : r ∈ S
+    · rw [ite_eq_left hr]
+      exact Multiset.count_eq_one_of_mem S.nodup (Finset.mem_val.mpr hr)
+    · rw [ite_eq_right hr]
+      exact Multiset.count_eq_zero_of_notMem fun h => hr (Finset.mem_val.mp h)
+  -- every real root of the product has even multiplicity
+  have heven : ∀ r : ℝ, Even ((family μ n * q).rootMultiplicity r) := by
+    intro r
+    rw [rootMultiplicity_mul hf0, hqmult r]
+    by_cases hr : r ∈ S
+    · rw [ite_eq_left hr]
+      exact ((Finset.mem_filter.mp hr).2).add_one
+    · rw [ite_eq_right hr, add_zero]
+      rcases Nat.even_or_odd ((family μ n).rootMultiplicity r) with hev | hodd
+      · exact hev
+      · exfalso
+        have hpos : 0 < (family μ n).rootMultiplicity r :=
+          Nat.pos_of_ne_zero fun h0 => by rw [h0] at hodd; simp at hodd
+        have hmem : r ∈ (family μ n).roots.toFinset :=
+          Multiset.mem_toFinset.mpr
+            ((mem_roots (family_ne_zero μ n)).2
+              ((rootMultiplicity_pos (family_ne_zero μ n)).mp hpos))
+        exact hr (Finset.mem_filter.mpr ⟨hmem, hodd⟩)
+  -- a polynomial of constant sign cannot integrate to zero against a weight
+  have hcongr : ∫ x, (family μ n * q).eval x ∂μ = 0 := by
+    rw [← hzero]
+    exact integral_congr_ae (Filter.Eventually.of_forall fun x => eval_mul)
+  rcases Polynomial.forall_nonneg_or_forall_nonpos_of_even_rootMultiplicity hf0 heven with
+    hsign | hsign
+  · exact absurd hcongr (hw.integral_eval_pos hf0 hsign).ne'
+  · have hneg : 0 < ∫ x, (-(family μ n * q)).eval x ∂μ :=
+      hw.integral_eval_pos (neg_ne_zero.mpr hf0) fun x => by
+        rw [eval_neg]; exact neg_nonneg.mpr (hsign x)
+    have hflip : (∫ x, (-(family μ n * q)).eval x ∂μ) = -∫ x, (family μ n * q).eval x ∂μ := by
+      rw [← integral_neg]
+      exact integral_congr_ae (Filter.Eventually.of_forall fun x => eval_neg _ _)
+    rw [hflip, hcongr] at hneg
+    norm_num at hneg
+
+/-- **The `n`-th orthogonal polynomial of a weight has `n` distinct real roots**, and is the monic
+product of the corresponding linear factors. These roots are the nodes of the `n`-point Gauss
+quadrature rule of `μ`.
+
+Reference: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998,
+§9.3; Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional Analysis
+Framework*, 3rd edition, Springer, 2009, §3.5. -/
+theorem exists_injective_family_eq_prod (hw : IsWeight μ) (n : ℕ) :
+    ∃ x : Fin n → ℝ, Function.Injective x ∧ family μ n = ∏ i, (X - C (x i)) := by
+  classical
+  have hp0 : family μ n ≠ 0 := family_ne_zero μ n
+  have hnat : (family μ n).natDegree = n := natDegree_eq_of_degree_eq_some (degree_family μ n)
+  -- the number of distinct roots is squeezed between `n` and `n`
+  have hsub : ((family μ n).roots.toFinset.filter
+      fun r => Odd ((family μ n).rootMultiplicity r)) ⊆ (family μ n).roots.toFinset :=
+    Finset.filter_subset _ _
+  have hcard : (family μ n).roots.toFinset.card = n := by
+    have h1 := le_card_odd_rootMultiplicity hw n
+    have h2 := Finset.card_le_card hsub
+    have h3 := Multiset.toFinset_card_le (family μ n).roots
+    have h4 := card_roots' (family μ n)
+    omega
+  -- the product of the linear factors divides, and both sides are monic of degree `n`
+  have hGmonic : (∏ r ∈ (family μ n).roots.toFinset, (X - C r)).Monic :=
+    monic_prod_of_monic _ _ fun r _ => monic_X_sub_C r
+  have hGnat : (∏ r ∈ (family μ n).roots.toFinset, (X - C r)).natDegree = n := by
+    rw [natDegree_prod _ _ fun r _ => (monic_X_sub_C r).ne_zero]
+    simpa using hcard
+  have hmid : (∏ r ∈ (family μ n).roots.toFinset,
+      (X - C r) ^ (family μ n).rootMultiplicity r) ∣ family μ n := by
+    rw [← Polynomial.prod_multiset_root_eq_finset_root]
+    exact (family μ n).prod_multiset_X_sub_C_dvd
+  have hGdvd : (∏ r ∈ (family μ n).roots.toFinset, (X - C r)) ∣ family μ n := by
+    refine dvd_trans (Finset.prod_dvd_prod_of_dvd _ _ fun r hr => ?_) hmid
+    have hpos : 0 < (family μ n).rootMultiplicity r :=
+      (rootMultiplicity_pos hp0).mpr ((mem_roots hp0).1 (Multiset.mem_toFinset.mp hr))
+    exact dvd_pow_self _ hpos.ne'
+  have hGeq : family μ n = ∏ r ∈ (family μ n).roots.toFinset, (X - C r) := by
+    have h := eq_leadingCoeff_mul_of_monic_of_dvd_of_natDegree_le hGmonic hGdvd (by
+      rw [hnat, hGnat])
+    rwa [Monic.leadingCoeff (monic_family μ n), map_one, one_mul] at h
+  -- enumerate the roots
+  refine ⟨⇑(((family μ n).roots.toFinset).orderEmbOfFin hcard),
+    (((family μ n).roots.toFinset).orderEmbOfFin hcard).strictMono.injective, ?_⟩
+  have himg : Finset.image (⇑(((family μ n).roots.toFinset).orderEmbOfFin hcard)) Finset.univ
+      = (family μ n).roots.toFinset := by
+    refine Finset.eq_of_subset_of_card_le (fun r hr => ?_) ?_
+    · obtain ⟨i, -, rfl⟩ := Finset.mem_image.mp hr
+      exact Finset.orderEmbOfFin_mem _ hcard i
+    · rw [Finset.card_image_of_injective _
+        (((family μ n).roots.toFinset).orderEmbOfFin hcard).strictMono.injective,
+        Finset.card_univ, Fintype.card_fin, hcard]
+  calc family μ n = ∏ r ∈ (family μ n).roots.toFinset, (X - C r) := hGeq
+    _ = ∏ r ∈ Finset.image (⇑(((family μ n).roots.toFinset).orderEmbOfFin hcard)) Finset.univ,
+          (X - C r) := by rw [himg]
+    _ = ∏ i, (X - C ((((family μ n).roots.toFinset).orderEmbOfFin hcard) i)) :=
+        Finset.prod_image fun i _ j _ h =>
+          (((family μ n).roots.toFinset).orderEmbOfFin hcard).strictMono.injective h
 
 /-! ### The three-term recurrence -/
 

@@ -22,36 +22,39 @@ source = "Kress, Numerical Analysis, Section 9.1"
 
 [[node]]
 id = "exists_gauss"
-kind = "theorem"
-desc = '''Gauss quadrature (Kress Thm 9.6–9.7-style): for a positive measure `μ` on `[a, b]` with finite
-moments and `n ≥ 1`, the orthogonal polynomial `p_n` of degree `n` has `n` simple real roots in
-`(a, b)`, and the interpolatory rule at these roots has positive weights and degree of exactness
-`2n - 1`; conversely no `n`-point rule is exact to degree `2n`. Division with remainder by `p_n`
-and orthogonality, as in `Lanczos.gauss_quadrature`.
+source = "Kress, Numerical Analysis, Section 9.3"
 
-The orthogonal polynomial itself has no source yet: `Numlib/Approximation/OrthogonalPolynomial`
-is unwritten, so this node should either wait for it or take the orthogonal polynomial as a
-hypothesis — "if `q` has degree `n` and is `μ`-orthogonal to every polynomial of lower degree,
-then …" — which is what the proof actually uses. The one part that is not bookkeeping is that such
-a `q` has `n` distinct roots inside `(a, b)`: the product of the linear factors at the sign changes
-would otherwise pair with `q` to a nonzero integral of a one-signed function against a polynomial
-of degree `< n`.'''
-deps = ["IsInterpolatory", "Polynomial.christoffel_darboux"]
+[[node]]
+id = "not_forall_eq_integral_of_degree_le"
 source = "Kress, Numerical Analysis, Section 9.3"
 
 [[node]]
 id = "error_eq_integral_peanoKernel"
 kind = "theorem"
-desc = '''Peano's kernel theorem (Kress Thm 9.2-style): for a rule exact on polynomials of degree `≤ m` and
-`f ∈ C^{m+1}[a, b]`, `∫ f - functional w x f = ∫ K(t) f^{(m+1)}(t) dt` with the Peano kernel
-`K(t) = (1/m!) E_x((· - t)₊^m)`, the error functional applied to the truncated power; and the
-corollary `|E f| ≤ ‖K‖₁ ‖f^{(m+1)}‖_∞`.
+desc = '''Peano's kernel theorem (Kress Thm 9.2-style): for a rule exact on polynomials of degree at most `m`
+and `f` of class `C^{m+1}[a, b]`, the error `E f = int f - functional w x f` is
+`int K(t) f^{(m+1)}(t) dt` with the Peano kernel `K(t) = (1/m!) E_x((. - t)_+^m)`, the error
+functional applied to the truncated power; and the corollary `|E f| <= norm K_1 * norm f^{(m+1)}_inf`.
 
 Unlike the rest of this module the statement is not about an arbitrary target functional: the
-interchange `E(s ↦ ∫ g(s, t) dt) = ∫ E(g(·, t)) dt` needs `L` to be the integral itself, so the
-node should be stated for `L f = ∫ x in a..b, f x`. Two ingredients are missing from Mathlib: the
-Taylor expansion with *integral* remainder on an interval (`Mathlib.Analysis.Calculus.Taylor` has
-only the Lagrange and Cauchy forms), and the Fubini step that moves the error functional inside
-that remainder.'''
+interchange `E(s -> int g(s, t) dt) = int E(g(., t)) dt` needs `L` to be the integral itself, so the
+node should be stated for `L f = int x in a..b, f x`.
+
+The obstruction is still the one recorded when this node was written, and it was checked again
+against the current Mathlib: `Mathlib/Analysis/Calculus/Taylor.lean` has `taylor_mean_remainder`,
+`taylor_mean_remainder_lagrange`, `taylor_mean_remainder_cauchy` and
+`exists_taylor_mean_remainder_bound`, all mean-value forms, and **no integral remainder**. So the
+node has three parts, none of them short:
+
+1. `f x = sum_{k <= m} f^(k)(a) (x-a)^k / k! + (1/m!) int_a^x (x-t)^m f^(m+1)(t) dt`, by induction
+   on `m` from the fundamental theorem of calculus with
+   `intervalIntegral.integral_mul_deriv_eq_deriv_mul` at each step;
+2. the extension of the inner integral to `[a, b]` by the truncated power, which is where the
+   kernel's `(. - t)_+^m` comes from and where the integrand stops being smooth in `x`;
+3. the Fubini step `MeasureTheory.integral_integral_swap` on the continuous integrand
+   `(x, t) -> (x-t)_+^m f^(m+1)(t)` over the rectangle, the sum half of `E` being finite and hence
+   free.
+
+Part 1 is general enough to be its own node in an analysis module rather than in this one.'''
 deps = ["functional", "IsInterpolatory"]
 source = "Kress, Numerical Analysis, Section 9.2"

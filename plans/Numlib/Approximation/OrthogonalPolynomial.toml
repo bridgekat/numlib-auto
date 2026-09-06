@@ -35,3 +35,13 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, (3.5.6)"
 [[node]]
 id = "_root_.Polynomial.Chebyshev.integral_T_mul_T_div_sqrt"
 source = "Atkinson–Han, Theoretical Numerical Analysis, (3.5.8)–(3.5.9)"
+
+[[node]]
+id = "exists_injective_family_eq_prod"
+source = "Kress, Numerical Analysis, Section 9.3"
+
+[[node]]
+id = "_root_.Polynomial.forall_nonneg_or_forall_nonpos_of_even_rootMultiplicity"
+
+[[node]]
+id = "_root_.Polynomial.forall_pos_or_forall_neg_of_forall_eval_ne_zero"

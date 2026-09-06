@@ -18,6 +18,12 @@ points of `[a, b]` has a zero of its `(n+1)`-st derivative strictly inside `[a, 
 `s ↦ f s - p s - c ∏ (s - x_i)` with `c` chosen to make the value at `t` vanish, it gives
 `Lagrange.exists_sub_interpolate_eq`.
 
+The module also has the Lagrange interpolation operator with its Lebesgue constant, and
+piecewise-linear interpolation on a partition, whose error on a mesh of size `h` is
+`h² ‖f''‖ / 8` (`norm_sub_piecewiseLinearInterpCLM_le`) — the two-node case of the same error
+formula. The companion bound by the modulus of continuity of a merely continuous `f` is not
+stated: nothing in the library defines a modulus of continuity yet.
+
 ## References
 
 [^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
@@ -682,5 +688,104 @@ theorem norm_piecewiseLinearInterpCLM (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i 
     have := (piecewiseLinearInterpCLM n x).le_opNorm (1 : C(Set.Icc a b, ℝ))
     rw [hfix, hone, mul_one] at this
     exact this
+
+/-- **The error of piecewise-linear interpolation.** On a partition of `[a, b]` of mesh at most
+`h`, the piecewise-linear interpolant of a `C²` function differs from it by at most
+`h² ‖f''‖ / 8`.
+
+The function is given as a `C²` map `ℝ → ℝ` agreeing with `f` on `[a, b]`, since `C(Icc a b, ℝ)`
+carries no derivative; only the values of the second derivative on `[a, b]` are used.
+
+The route is `piecewiseLinearInterpCLM_apply_of_mem`: on `[x j, x (j+1)]` the interpolant is the
+affine function through the two node values, hence the Lagrange interpolant at those two nodes, so
+`Lagrange.exists_sub_interpolate_eq` at `n = 1` applies on the subinterval, and
+`|(t - u)(t - v)| ≤ (v - u)²/4` finishes it.
+
+Reference: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, (3.2.9); Rainer Kress, *Numerical Analysis*,
+Graduate Texts in Mathematics 181, Springer, 1998, §8.3. -/
+theorem norm_sub_piecewiseLinearInterpCLM_le (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ))
+    (hfirst : (x 0 : ℝ) = a) (hlast : (x (n + 1) : ℝ) = b) {g : ℝ → ℝ}
+    (hg : ContDiff ℝ ((2 : ℕ) : WithTop ℕ∞) g) {f : C(Set.Icc a b, ℝ)}
+    (hf : ∀ t : Set.Icc a b, f t = g (t : ℝ)) {h M : ℝ}
+    (hmesh : ∀ i ≤ n, (x (i + 1) : ℝ) - (x i : ℝ) ≤ h)
+    (hM : ∀ t ∈ Set.Icc a b, |iteratedDeriv 2 g t| ≤ M) :
+    ‖f - piecewiseLinearInterpCLM n x f‖ ≤ h ^ 2 / 8 * M := by
+  classical
+  have hM0 : 0 ≤ M := le_trans (abs_nonneg _) (hM (x 0) (x 0).2)
+  have hh0 : 0 ≤ h := le_trans (sub_nonneg.mpr (hstep 0 (Nat.zero_le n)).le)
+    (hmesh 0 (Nat.zero_le n))
+  rw [ContinuousMap.norm_le _ (by positivity)]
+  intro t
+  obtain ⟨j, hj, h1, h2⟩ := exists_mem_subinterval hfirst hlast t
+  have huv : (x j : ℝ) < (x (j + 1) : ℝ) := hstep j hj
+  -- the two nodes of the subinterval
+  have hnodeinj : Function.Injective ![(x j : ℝ), (x (j + 1) : ℝ)] := by
+    intro p q hpq
+    fin_cases p <;> fin_cases q <;> simp_all [huv.ne, huv.ne']
+  have hnodemem : ∀ i : Fin 2, ![(x j : ℝ), (x (j + 1) : ℝ)] i ∈
+      Set.Icc ((x j : ℝ)) ((x (j + 1) : ℝ)) := by
+    intro i
+    fin_cases i <;> simp [Set.mem_Icc, huv.le]
+  -- the affine polynomial through the two node values is the Lagrange interpolant
+  obtain ⟨L, hL⟩ : ∃ L : ℝ[X], L = Polynomial.C (g (x j)) +
+      Polynomial.C ((g (x (j + 1)) - g (x j)) / ((x (j + 1) : ℝ) - (x j : ℝ))) *
+        (Polynomial.X - Polynomial.C ((x j : ℝ))) := ⟨_, rfl⟩
+  have hne : ((x (j + 1) : ℝ) - (x j : ℝ)) ≠ 0 := sub_ne_zero.mpr huv.ne'
+  have hLnat : L.natDegree ≤ 1 := by
+    rw [hL]
+    compute_degree
+  have hLdeg : L.degree < ((Finset.univ : Finset (Fin 2)).card : WithBot ℕ) := by
+    have hbound : L.degree ≤ ((1 : ℕ) : WithBot ℕ) :=
+      L.degree_le_natDegree.trans (by exact_mod_cast hLnat)
+    refine lt_of_le_of_lt hbound ?_
+    simp
+  have hLu : L.eval ((x j : ℝ)) = g (x j) := by rw [hL]; simp
+  have hLv : L.eval ((x (j + 1) : ℝ)) = g (x (j + 1)) := by
+    rw [hL]
+    simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_C,
+      Polynomial.eval_sub, Polynomial.eval_X]
+    field_simp
+    ring
+  have hLeq : L = Lagrange.interpolate Finset.univ ![(x j : ℝ), (x (j + 1) : ℝ)]
+      fun i => g (![(x j : ℝ), (x (j + 1) : ℝ)] i) :=
+    Lagrange.eq_interpolate_of_eval_eq _ hnodeinj.injOn hLdeg (by
+      intro i _
+      fin_cases i <;> simpa using by first | exact hLu | exact hLv)
+  -- the interpolation error on the subinterval
+  obtain ⟨ξ, hξ, hξeq⟩ := Lagrange.exists_sub_interpolate_eq (n := 1) huv hg hnodeinj hnodemem
+    (Set.mem_Icc.mpr ⟨h1, h2⟩)
+  rw [← hLeq] at hξeq
+  have hξmem : ξ ∈ Set.Icc a b :=
+    ⟨le_trans (x j).2.1 hξ.1.le, le_trans hξ.2.le (x (j + 1)).2.2⟩
+  have hprodeq : ∏ i : Fin 2, ((t : ℝ) - ![(x j : ℝ), (x (j + 1) : ℝ)] i)
+      = ((t : ℝ) - (x j : ℝ)) * ((t : ℝ) - (x (j + 1) : ℝ)) := by
+    simp [Fin.prod_univ_two]
+  rw [hprodeq] at hξeq
+  -- the local description of the interpolant
+  have hPt : (piecewiseLinearInterpCLM n x f) t = L.eval ((t : ℝ)) := by
+    rw [piecewiseLinearInterpCLM_apply_of_mem hstep f hj h1 h2, hL, hf (x j), hf (x (j + 1))]
+    simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_C,
+      Polynomial.eval_sub, Polynomial.eval_X]
+    ring
+  -- the two bounds
+  have hprod : |((t : ℝ) - (x j : ℝ)) * ((t : ℝ) - (x (j + 1) : ℝ))| ≤ h ^ 2 / 4 := by
+    have hvu : (0 : ℝ) ≤ (x (j + 1) : ℝ) - (x j : ℝ) := sub_nonneg.mpr huv.le
+    have hd : (x (j + 1) : ℝ) - (x j : ℝ) ≤ h := hmesh j hj
+    have hsq : ((x (j + 1) : ℝ) - (x j : ℝ)) ^ 2 ≤ h ^ 2 := by nlinarith
+    have hnonpos : ((t : ℝ) - (x j : ℝ)) * ((t : ℝ) - (x (j + 1) : ℝ)) ≤ 0 :=
+      mul_nonpos_of_nonneg_of_nonpos (sub_nonneg.mpr h1) (sub_nonpos.mpr h2)
+    rw [abs_of_nonpos hnonpos, neg_mul_eq_mul_neg, neg_sub]
+    nlinarith [sq_nonneg ((x (j + 1) : ℝ) + (x j : ℝ) - 2 * (t : ℝ))]
+  have hfact : ((1 + 1).factorial : ℝ) = 2 := by norm_num
+  calc ‖(f - piecewiseLinearInterpCLM n x f) t‖
+      = |g (t : ℝ) - L.eval ((t : ℝ))| := by
+        rw [ContinuousMap.sub_apply, Real.norm_eq_abs, hf t, hPt]
+    _ = |iteratedDeriv 2 g ξ| / 2 * |((t : ℝ) - (x j : ℝ)) * ((t : ℝ) - (x (j + 1) : ℝ))| := by
+        rw [hξeq, abs_mul, abs_div, hfact]
+        norm_num
+    _ ≤ M / 2 * (h ^ 2 / 4) :=
+        mul_le_mul (by linarith [hM ξ hξmem]) hprod (abs_nonneg _) (by linarith)
+    _ = h ^ 2 / 8 * M := by ring
 
 end PiecewiseLinear
