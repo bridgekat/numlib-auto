@@ -34,3 +34,11 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 3.7.5"
 [[node]]
 id = "isGreatest_norm_trigInterpCLM"
 source = "Atkinson–Han, Theoretical Numerical Analysis, (3.7.20)"
+
+[[node]]
+id = "_root_.norm_sub_trigInterpCLM_le"
+source = "Atkinson-Han, Theoretical Numerical Analysis, (3.7.21)"
+
+[[node]]
+id = "_root_.norm_trigInterpCLM_le"
+source = "Atkinson-Han, Theoretical Numerical Analysis, (3.7.20); Rivlin, An Introduction to the Approximation of Functions, p. 13"

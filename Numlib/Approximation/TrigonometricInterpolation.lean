@@ -28,6 +28,7 @@ values `Dₙ(xₖ - xⱼ) = (2 n + 1)/2` for `j = k` and `0` otherwise
 
 ## Main statements
 
+* `norm_sub_trigInterpCLM_le` — the Lebesgue lemma for the interpolatory projection.
 * `PeriodicCont.dirichletShiftCM_mem_trigPolyLE` — it is a trigonometric polynomial of degree at
   most `n`.
 * `PeriodicCont.dirichletKernel_node_sub` — the kernel's values at the differences of the
@@ -38,17 +39,37 @@ values `Dₙ(xₖ - xⱼ) = (2 n + 1)/2` for `j = k` and `0` otherwise
 * `PeriodicCont.cardinalBasisCM_trigInterpNode` — the cardinal functions are exactly
   `2 Dₙ(· - xⱼ)/(2 n + 1)`, and `PeriodicCont.isGreatest_norm_trigInterpCLM` — the operator norm of
   the projection is therefore the largest value of the Lebesgue function
-  `Λₙ(x) = (2/(2 n + 1)) ∑ⱼ |Dₙ(x - xⱼ)|`. Rivlin's bound `‖𝓘ₙ‖ ≤ 1 + (2/π) log n` of
-  [han2009theoretical], (3.7.20) is a bound on that supremum and is not proved.
+  `Λₙ(x) = (2/(2 n + 1)) ∑ⱼ |Dₙ(x - xⱼ)|`.
+* `norm_trigInterpCLM_le` — a Rivlin-type bound on that supremum,
+  `‖𝓘ₙ‖ ≤ 2 + (2/π) log (2 n + 1)`. It carries the sharp coefficient `2/π` of
+  [han2009theoretical], (3.7.20) but a larger additive constant; the theorem's own doc comment
+  says why the constant printed there is not the one proved here.
 
 ## References
 
-[han2009theoretical], (3.7.19) and Exercise 3.7.5.
+[han2009theoretical], (3.7.19)–(3.7.20) and Exercise 3.7.5.
 -/
 
 open Set
 
 open scoped Real
+
+/-! ### The Lebesgue lemma for the interpolatory projection -/
+
+/-- **The Lebesgue lemma for trigonometric interpolation**: the error of the interpolant of a
+continuous periodic function at the `2 n + 1` equispaced nodes is at most `1 + ‖𝓘ₙ‖` times its
+distance to the trigonometric polynomials of degree at most `n`.
+
+It is the abstract Lebesgue lemma `norm_sub_apply_le_of_isIdempotentElem` for the projection
+`trigInterpCLM`; combined with a bound on the best approximation error — Jackson's theorem — it
+gives the uniform convergence rate of trigonometric interpolation. -/
+theorem norm_sub_trigInterpCLM_le {T : ℝ} [Fact (0 < T)] (n : ℕ) (f : C(AddCircle T, ℝ)) :
+    ‖f - trigInterpCLM T n f‖
+      ≤ (1 + ‖trigInterpCLM T n‖) *
+        Metric.infDist f (trigPolyLE T n : Set C(AddCircle T, ℝ)) := by
+  have h := norm_sub_apply_le_of_isIdempotentElem (trigInterpCLM T n)
+    isIdempotentElem_trigInterpCLM f
+  rwa [range_trigInterpCLM] at h
 
 namespace PeriodicCont
 
@@ -290,3 +311,367 @@ theorem isGreatest_norm_trigInterpCLM (n : ℕ) :
   rwa [hrange] at h
 
 end PeriodicCont
+
+/-! ### Rivlin's bound for the Lebesgue constant -/
+
+/-- The power series of `log ((1 + w) / (1 - w))` has nonnegative terms for `0 ≤ w < 1`, so it
+dominates the sum of its first two: `2 w + (2/3) w³ ≤ log (1 + w) - log (1 - w)`. -/
+private theorem add_le_log_sub_log {w : ℝ} (hw0 : 0 ≤ w) (hw1 : w < 1) :
+    2 * w + 2 / 3 * w ^ 3 ≤ Real.log (1 + w) - Real.log (1 - w) := by
+  have habs : |w| < 1 := by rwa [abs_of_nonneg hw0]
+  have hsum := Real.hasSum_log_sub_log_of_abs_lt_one habs
+  have hnn : ∀ k : ℕ, 0 ≤ (2 : ℝ) * (1 / (2 * (k : ℝ) + 1)) * w ^ (2 * k + 1) := by
+    intro k
+    have hk : (0 : ℝ) ≤ 1 / (2 * (k : ℝ) + 1) := by positivity
+    have : (0 : ℝ) ≤ w ^ (2 * k + 1) := pow_nonneg hw0 _
+    positivity
+  have h := sum_le_hasSum (Finset.range 2) (fun i _ => hnn i) hsum
+  refine le_trans (le_of_eq ?_) h
+  rw [Finset.sum_range_succ, Finset.sum_range_one]
+  norm_num
+
+/-- The elementary inequality behind the sharp constant of the midpoint bound: for `0 < h ≤ π/6`,
+`h ≤ sin h + (sin h)³ / 3`. -/
+private theorem le_sin_add_sin_cube_div {h : ℝ} (hh0 : 0 < h) (hh : h ≤ π / 6) :
+    h ≤ Real.sin h + Real.sin h ^ 3 / 3 := by
+  have hb : h ≤ 2 / 3 := by
+    have := Real.pi_le_four
+    linarith
+  have hs : h - h ^ 3 / 6 ≤ Real.sin h := Real.sin_ge_sub_cube hh0.le
+  have hsq : h ^ 2 ≤ 0.45 := by nlinarith
+  have hcube : h ^ 3 ≤ 0.45 * h := by nlinarith
+  have h1 : 0.925 * h ≤ Real.sin h := by linarith
+  have h2 : (0.925 * h) ^ 3 ≤ Real.sin h ^ 3 := pow_le_pow_left₀ (by positivity) h1 3
+  have h3 : (0.925 * h) ^ 3 = 0.791453125 * h ^ 3 := by ring
+  nlinarith [pow_pos hh0 3]
+
+/-- **The midpoint bound for the cosecant.** For `0 < h ≤ π/6` and `h < φ < π - h`,
+
+`2 h / sin φ ≤ log (tan ((φ + h)/2)) - log (tan ((φ - h)/2))`.
+
+This is the comparison `2h / sin φ ≤ ∫_{φ - h}^{φ + h} dy / sin y` in algebraic form: the
+right-hand side is `log ((sin φ + sin h)/(sin φ - sin h))`, and the first two terms of the power
+series of that logarithm already dominate the left-hand side. -/
+private theorem two_mul_div_sin_le {h φ : ℝ} (hh0 : 0 < h) (hh : h ≤ π / 6)
+    (hφ1 : h < φ) (hφ2 : φ < π - h) :
+    2 * h / Real.sin φ
+      ≤ Real.log (Real.tan ((φ + h) / 2)) - Real.log (Real.tan ((φ - h) / 2)) := by
+  have hpi := Real.pi_pos
+  set A := (φ + h) / 2 with hA
+  set B := (φ - h) / 2 with hB
+  have hB0 : 0 < B := by rw [hB]; linarith
+  have hA2 : A < π / 2 := by rw [hA]; linarith
+  have hAB : B < A := by rw [hA, hB]; linarith
+  have hsinA : 0 < Real.sin A := Real.sin_pos_of_pos_of_lt_pi (by linarith) (by linarith)
+  have hsinB : 0 < Real.sin B := Real.sin_pos_of_pos_of_lt_pi hB0 (by linarith)
+  have hcosA : 0 < Real.cos A := Real.cos_pos_of_mem_Ioo ⟨by linarith, hA2⟩
+  have hcosB : 0 < Real.cos B := Real.cos_pos_of_mem_Ioo ⟨by linarith, by linarith⟩
+  have hs : Real.sin φ = Real.sin A * Real.cos B + Real.cos A * Real.sin B := by
+    rw [show φ = A + B by rw [hA, hB]; ring, Real.sin_add]
+  have he : Real.sin h = Real.sin A * Real.cos B - Real.cos A * Real.sin B := by
+    rw [show h = A - B by rw [hA, hB]; ring, Real.sin_sub]
+  have hs0 : 0 < Real.sin φ := by rw [hs]; positivity
+  have he0 : 0 < Real.sin h := Real.sin_pos_of_pos_of_lt_pi hh0 (by linarith)
+  have hes : Real.sin h < Real.sin φ := by
+    rw [hs, he]; nlinarith [mul_pos hcosA hsinB]
+  set w := Real.sin h / Real.sin φ with hw
+  have hw0 : 0 ≤ w := by rw [hw]; positivity
+  have hw1 : w < 1 := by rw [hw, div_lt_one hs0]; exact hes
+  -- the ratio of the two tangents is `(1 + w)/(1 - w)`
+  have htanA : 0 < Real.tan A := by rw [Real.tan_eq_sin_div_cos]; positivity
+  have htanB : 0 < Real.tan B := by rw [Real.tan_eq_sin_div_cos]; positivity
+  have hratio : Real.tan A / Real.tan B = (1 + w) / (1 - w) := by
+    rw [Real.tan_eq_sin_div_cos, Real.tan_eq_sin_div_cos, hw, hs, he]
+    field_simp
+    ring
+  have hlog : Real.log (Real.tan A) - Real.log (Real.tan B) = Real.log (1 + w) - Real.log (1 - w) :=
+    by rw [← Real.log_div htanA.ne' htanB.ne', hratio,
+      Real.log_div (by linarith) (by linarith)]
+  rw [hlog]
+  refine le_trans ?_ (add_le_log_sub_log hw0 hw1)
+  -- and the first two terms of the series already dominate `2 h / sin φ`
+  have hle : h ≤ Real.sin h + Real.sin h ^ 3 / 3 := le_sin_add_sin_cube_div hh0 hh
+  have hs2 : Real.sin φ ^ 2 ≤ 1 := by nlinarith [Real.sin_le_one φ, Real.neg_one_le_sin φ]
+  have hnum : 0 ≤ 2 * Real.sin h * Real.sin φ ^ 2 + 2 / 3 * Real.sin h ^ 3
+      - 2 * h * Real.sin φ ^ 2 := by
+    nlinarith [mul_nonneg (sq_nonneg (Real.sin φ)) (sub_nonneg.2 hle),
+      mul_nonneg (sub_nonneg.2 hs2) (pow_pos he0 3).le]
+  rw [← sub_nonneg, hw]
+  have hid : 2 * (Real.sin h / Real.sin φ) + 2 / 3 * (Real.sin h / Real.sin φ) ^ 3
+      - 2 * h / Real.sin φ
+      = (2 * Real.sin h * Real.sin φ ^ 2 + 2 / 3 * Real.sin h ^ 3 - 2 * h * Real.sin φ ^ 2)
+        / Real.sin φ ^ 3 := by
+    field_simp
+  rw [hid]
+  exact div_nonneg hnum (by positivity)
+
+/-- A single interior term of the Lebesgue function of trigonometric interpolation is bounded by a
+telescoping difference. Here `q = π / (2 (2 n + 1))` is half the spacing of the points
+`x/2`, and the hypotheses place `x` at distance at least `2 q` from `0` and from `π`. -/
+private theorem dirichlet_mid_le {n : ℕ} {q x : ℝ} (hq0 : 0 < q) (hq6 : q ≤ π / 6)
+    (hqN : 2 * (2 * (n : ℝ) + 1) * q = π) (hx1 : 2 * q ≤ x) (hx2 : x ≤ π - 2 * q) :
+    2 / (2 * (n : ℝ) + 1) * |dirichletKernel n (2 * x)|
+      ≤ 1 / π * (Real.log (Real.tan ((x + q) / 2)) - Real.log (Real.tan ((x - q) / 2))) := by
+  have hpi := Real.pi_pos
+  have hN0 : (0 : ℝ) < 2 * (n : ℝ) + 1 := by positivity
+  have hsin : 0 < Real.sin x :=
+    Real.sin_pos_of_pos_of_lt_pi (by linarith) (by linarith)
+  have hkey : 2 * Real.sin x * dirichletKernel n (2 * x)
+      = Real.sin (((n : ℝ) + 1 / 2) * (2 * x)) := by
+    have := two_mul_sin_half_mul_dirichletKernel n (2 * x)
+    rwa [show 2 * x / 2 = x by ring] at this
+  have habs : |dirichletKernel n (2 * x)| ≤ 1 / (2 * Real.sin x) := by
+    rw [le_div_iff₀ (show (0:ℝ) < 2 * Real.sin x by positivity)]
+    have h1 : |dirichletKernel n (2 * x)| * (2 * Real.sin x)
+        = |2 * Real.sin x * dirichletKernel n (2 * x)| := by
+      rw [abs_mul, abs_of_pos (show (0:ℝ) < 2 * Real.sin x by positivity)]
+      ring
+    rw [h1, hkey]
+    exact Real.abs_sin_le_one _
+  have hmain := two_mul_div_sin_le (φ := x) hq0 hq6 (by linarith) (by linarith)
+  have hrw : 2 / (2 * (n : ℝ) + 1) * (1 / (2 * Real.sin x)) = 1 / π * (2 * q / Real.sin x) := by
+    rw [← hqN]
+    field_simp
+  calc 2 / (2 * (n : ℝ) + 1) * |dirichletKernel n (2 * x)|
+      ≤ 2 / (2 * (n : ℝ) + 1) * (1 / (2 * Real.sin x)) := by
+        exact mul_le_mul_of_nonneg_left habs (by positivity)
+    _ = 1 / π * (2 * q / Real.sin x) := hrw
+    _ ≤ 1 / π * (Real.log (Real.tan ((x + q) / 2)) - Real.log (Real.tan ((x - q) / 2))) :=
+        mul_le_mul_of_nonneg_left hmain (by positivity)
+
+/-- A sum whose first and last terms are at most `1` and whose interior terms are dominated by a
+telescoping difference is at most `2` plus the total difference. -/
+private theorem sum_le_of_telescope {M : ℕ} (G Ψ : ℕ → ℝ) (C : ℝ)
+    (hend : ∀ c, G c ≤ 1) (hmid : ∀ i, i < M → G (i + 1) ≤ C * (Ψ (i + 1) - Ψ i)) :
+    ∑ c ∈ Finset.range (M + 2), G c ≤ 2 + C * (Ψ M - Ψ 0) := by
+  have h1 : ∑ c ∈ Finset.range (M + 2), G c
+      = (∑ i ∈ Finset.range M, G (i + 1)) + G (M + 1) + G 0 := by
+    rw [Finset.sum_range_succ' G (M + 1), Finset.sum_range_succ (fun i => G (i + 1)) M]
+  have h2 : ∑ i ∈ Finset.range M, G (i + 1) ≤ ∑ i ∈ Finset.range M, C * (Ψ (i + 1) - Ψ i) :=
+    Finset.sum_le_sum fun i hi => hmid i (Finset.mem_range.1 hi)
+  have h3 : ∑ i ∈ Finset.range M, C * (Ψ (i + 1) - Ψ i) = C * (Ψ M - Ψ 0) := by
+    rw [← Finset.mul_sum, Finset.sum_range_sub Ψ M]
+  rw [h1]
+  have e1 := hend (M + 1)
+  have e2 := hend 0
+  linarith [h2.trans_eq h3]
+
+/-- **The Lebesgue function of trigonometric interpolation is at most `2 + (2/π) log (2 n + 1)`.**
+The evaluation point is written as `2 π (m + δ) / (2 n + 1)` with `0 ≤ δ < 1`; since the nodes are
+`2 π j / (2 n + 1)` and the kernel has period `2 π`, the sum over the nodes is the sum below. -/
+private theorem lebesgueFun_shift_le (n : ℕ) (hn : 1 ≤ n) {δ : ℝ} (hδ0 : 0 ≤ δ) (hδ1 : δ < 1) :
+    2 / (2 * (n : ℝ) + 1) * ∑ c ∈ Finset.range (2 * n + 1),
+        |dirichletKernel n (2 * π * ((c : ℝ) + δ) / (2 * (n : ℝ) + 1))|
+      ≤ 2 + 2 / π * Real.log (2 * (n : ℝ) + 1) := by
+  obtain ⟨m, rfl⟩ : ∃ m, n = m + 1 := ⟨n - 1, by omega⟩
+  have hpi := Real.pi_pos
+  have hpi3 : (3 : ℝ) < π := by
+    have h := Real.sin_lt (show (0 : ℝ) < π / 6 by positivity)
+    rw [Real.sin_pi_div_six] at h
+    linarith
+  have hm : (0 : ℝ) ≤ (m : ℝ) := Nat.cast_nonneg m
+  have hN3 : (3 : ℝ) ≤ 2 * ((m + 1 : ℕ) : ℝ) + 1 := by push_cast; linarith
+  have hN0 : (0 : ℝ) < 2 * ((m + 1 : ℕ) : ℝ) + 1 := by linarith
+  set N : ℝ := 2 * ((m + 1 : ℕ) : ℝ) + 1 with hNdef
+  set q : ℝ := π / (2 * N) with hqdef
+  have hq0 : 0 < q := by rw [hqdef]; positivity
+  have hqN : 2 * N * q = π := by rw [hqdef]; field_simp
+  have hq6 : q ≤ π / 6 := by
+    rw [hqdef, div_le_div_iff₀ (by positivity) (by norm_num)]
+    nlinarith
+  -- rewrite the kernel arguments in terms of the half-spacing `q`
+  have harg : ∀ c : ℝ, 2 * π * (c + δ) / N = 2 * (2 * q * (c + δ)) := by
+    intro c
+    rw [hqdef]
+    field_simp
+  simp only [harg]
+  rw [Finset.mul_sum]
+  -- the two end terms are at most one, the interior ones telescope
+  set G : ℕ → ℝ := fun c => 2 / N * |dirichletKernel (m + 1) (2 * (2 * q * ((c : ℝ) + δ)))|
+    with hGdef
+  set Ψ : ℕ → ℝ := fun i => Real.log (Real.tan ((2 * q * ((i : ℝ) + 1 + δ) - q) / 2)) with hΨdef
+  have hend : ∀ c : ℕ, G c ≤ 1 := by
+    intro c
+    have hb := abs_dirichletKernel_le (m + 1) (2 * (2 * q * ((c : ℝ) + δ)))
+    have hhalf : ((m + 1 : ℕ) : ℝ) + 1 / 2 = N / 2 := by rw [hNdef]; ring
+    rw [hhalf] at hb
+    rw [hGdef]
+    calc 2 / N * |dirichletKernel (m + 1) (2 * (2 * q * ((c : ℝ) + δ)))|
+        ≤ 2 / N * (N / 2) := by exact mul_le_mul_of_nonneg_left hb (by positivity)
+      _ = 1 := by field_simp
+  have hmid : ∀ i : ℕ, i < 2 * m + 1 → G (i + 1) ≤ 1 / π * (Ψ (i + 1) - Ψ i) := by
+    intro i hi
+    have hiR : ((i : ℝ) + 1) ≤ 2 * (m : ℝ) + 1 := by
+      have : (i : ℝ) ≤ 2 * (m : ℝ) := by exact_mod_cast Nat.lt_succ_iff.1 hi
+      linarith
+    have hx1 : 2 * q ≤ 2 * q * ((i : ℝ) + 1 + δ) := by nlinarith
+    have hx2 : 2 * q * ((i : ℝ) + 1 + δ) ≤ π - 2 * q := by
+      have hNv : N = 2 * (m : ℝ) + 3 := by rw [hNdef]; push_cast; ring
+      nlinarith
+    have hmain := dirichlet_mid_le (n := m + 1) hq0 hq6 (by rw [← hNdef] at *; linarith [hqN])
+      hx1 hx2
+    have hG : G (i + 1) = 2 / N * |dirichletKernel (m + 1) (2 * (2 * q * ((i : ℝ) + 1 + δ)))| := by
+      rw [hGdef]
+      push_cast
+      ring_nf
+    have hΨ1 : Ψ (i + 1) = Real.log (Real.tan ((2 * q * ((i : ℝ) + 1 + δ) + q) / 2)) := by
+      rw [hΨdef]
+      push_cast
+      ring_nf
+    have hΨ0 : Ψ i = Real.log (Real.tan ((2 * q * ((i : ℝ) + 1 + δ) - q) / 2)) := by rw [hΨdef]
+    rw [hG, hΨ1, hΨ0]
+    exact hmain
+  refine (sum_le_of_telescope (M := 2 * m + 1) G Ψ (1 / π) hend hmid).trans ?_
+  -- the total telescoped difference is at most `2 log N`
+  have hb0 : 0 < (3 - 2 * δ) * q / 2 := by nlinarith
+  have hbpi : (3 - 2 * δ) * q / 2 < π / 2 := by nlinarith
+  have ha0 : 0 < (1 + 2 * δ) * q / 2 := by nlinarith
+  have hapi : (1 + 2 * δ) * q / 2 < π / 2 := by nlinarith
+  have hΨtop : Ψ (2 * m + 1) = -Real.log (Real.tan ((3 - 2 * δ) * q / 2)) := by
+    have harg2 : (2 * q * (((2 * m + 1 : ℕ) : ℝ) + 1 + δ) - q) / 2
+        = π / 2 - (3 - 2 * δ) * q / 2 := by
+      have hNv : N = 2 * (m : ℝ) + 3 := by rw [hNdef]; push_cast; ring
+      push_cast
+      nlinarith [hqN]
+    rw [hΨdef]
+    simp only []
+    rw [harg2, Real.tan_pi_div_two_sub, Real.log_inv]
+  have hΨbot : Ψ 0 = Real.log (Real.tan ((1 + 2 * δ) * q / 2)) := by
+    rw [hΨdef]
+    norm_num
+    ring_nf
+  have hla : Real.log ((1 + 2 * δ) * q / 2) ≤ Real.log (Real.tan ((1 + 2 * δ) * q / 2)) :=
+    Real.log_le_log ha0 (Real.lt_tan ha0 hapi).le
+  have hlb : Real.log ((3 - 2 * δ) * q / 2) ≤ Real.log (Real.tan ((3 - 2 * δ) * q / 2)) :=
+    Real.log_le_log hb0 (Real.lt_tan hb0 hbpi).le
+  have hprod : Real.log ((3 - 2 * δ) * q / 2) + Real.log ((1 + 2 * δ) * q / 2)
+      = Real.log (((3 - 2 * δ) * q / 2) * ((1 + 2 * δ) * q / 2)) :=
+    (Real.log_mul hb0.ne' ha0.ne').symm
+  have hge : 1 / N ^ 2 ≤ ((3 - 2 * δ) * q / 2) * ((1 + 2 * δ) * q / 2) := by
+    have hq2 : q = π / (2 * N) := hqdef
+    have h16 : (16 : ℝ) ≤ 3 * π ^ 2 := by nlinarith
+    rw [hq2, div_le_iff₀ (by positivity)]
+    field_simp
+    nlinarith [sq_nonneg δ, mul_nonneg hδ0 (sub_nonneg.2 hδ1.le)]
+  have hlog2 : -(2 * Real.log N) ≤ Real.log (((3 - 2 * δ) * q / 2) * ((1 + 2 * δ) * q / 2)) := by
+    have h := Real.log_le_log (by positivity) hge
+    rw [one_div, Real.log_inv, Real.log_pow] at h
+    push_cast at h
+    linarith
+  have hfin : Ψ (2 * m + 1) - Ψ 0 ≤ 2 * Real.log N := by
+    rw [hΨtop, hΨbot]
+    linarith
+  have : 1 / π * (Ψ (2 * m + 1) - Ψ 0) ≤ 2 / π * Real.log N := by
+    have := mul_le_mul_of_nonneg_left hfin (le_of_lt (by positivity : (0:ℝ) < 1 / π))
+    calc 1 / π * (Ψ (2 * m + 1) - Ψ 0) ≤ 1 / π * (2 * Real.log N) := this
+      _ = 2 / π * Real.log N := by ring
+  linarith
+
+/-- Summing an `N`-periodic function of an integer over `N` consecutive integers, in either
+direction, always gives the same value. -/
+private theorem sum_range_sub_of_periodic {N : ℕ} (hN : 0 < N) (g : ℤ → ℝ)
+    (hg : ∀ c : ℤ, g (c + N) = g c) (M : ℤ) :
+    ∑ j ∈ Finset.range N, g (M - j) = ∑ c ∈ Finset.range N, g c := by
+  have hstep : ∀ K : ℤ, (∑ j ∈ Finset.range N, g (K + 1 - j))
+      = ∑ j ∈ Finset.range N, g (K - j) := by
+    intro K
+    obtain ⟨L, rfl⟩ : ∃ L, N = L + 1 := ⟨N - 1, by omega⟩
+    rw [Finset.sum_range_succ' (fun j : ℕ => g (K + 1 - j)) L,
+      Finset.sum_range_succ (fun j : ℕ => g (K - j)) L]
+    have h1 : ∀ i : ℕ, g (K + 1 - ((i + 1 : ℕ) : ℤ)) = g (K - i) := by
+      intro i
+      congr 1
+      push_cast
+      ring
+    have h2 : g (K + 1 - ((0 : ℕ) : ℤ)) = g (K - L) := by
+      have h3 := hg (K - L)
+      rw [show K - (L : ℤ) + ((L + 1 : ℕ) : ℤ) = K + 1 by push_cast; ring] at h3
+      rw [show ((0 : ℕ) : ℤ) = 0 by norm_num, sub_zero, ← h3]
+    simp only [h1, h2]
+  have hall : ∀ K : ℤ, (∑ j ∈ Finset.range N, g (K - j))
+      = ∑ j ∈ Finset.range N, g (0 - j) := by
+    intro K
+    induction K using Int.induction_on with
+    | zero => rfl
+    | succ i ih => rw [hstep]; exact ih
+    | pred i ih =>
+      rw [← hstep (-(i : ℤ) - 1), show -(i : ℤ) - 1 + 1 = -(i : ℤ) by ring]
+      exact ih
+  have hbase : (∑ j ∈ Finset.range N, g ((N : ℤ) - 1 - j)) = ∑ c ∈ Finset.range N, g c := by
+    rw [← Finset.sum_range_reflect (fun c : ℕ => g c) N]
+    refine Finset.sum_congr rfl fun j hj => ?_
+    have hj' : j < N := Finset.mem_range.1 hj
+    congr 1
+    have h1 : (1 : ℕ) ≤ N := hN
+    push_cast [Nat.cast_sub (by omega : j ≤ N - 1), Nat.cast_sub h1]
+    ring
+  rw [hall M, ← hall ((N : ℤ) - 1), hbase]
+
+/-- **Rivlin's bound for the Lebesgue constant of trigonometric interpolation**, with the constant
+`2` in place of the `1` of [han2009theoretical], (3.7.20):
+
+`‖𝓘ₙ‖ ≤ 2 + (2/π) log (2 n + 1)`.
+
+The book prints `‖𝓘ₙ‖ ≤ 1 + (2/π) log n` for `n ≥ 1`, quoting Rivlin; as printed that is false —
+at `n = 1` the Lebesgue function attains `5/3` at the midpoint of two nodes while the right-hand
+side is `1`. The `n` of Rivlin's bound is the *number of nodes*, here `2 n + 1`, and the sharp
+statement is `‖𝓘ₙ‖ ≤ 1 + (2/π) log (2 n + 1)`, which has no slack to speak of: its two sides
+differ by about `0.04` for every `n`. What is proved here keeps the sharp `2/π`, and so gives the
+`𝓞(log n)` growth that the convergence rate (3.7.22) consumes, but pays a larger additive
+constant, one for each of the two nodes nearest the evaluation point.
+
+The proof bounds the Lebesgue function `(2/(2n+1)) ∑ⱼ |Dₙ(x - xⱼ)|` term by term. Writing
+`x = 2π(m + δ)/(2n+1)` with `0 ≤ δ < 1`, the terms are `|Dₙ|` at the points `2π(c + δ)/(2n+1)`,
+`0 ≤ c ≤ 2n`. The two extreme ones are bounded by `|Dₙ| ≤ n + 1/2`; each interior one is
+`|sin(π(c+δ))| / (2 sin φ_c) ≤ 1/(2 sin φ_c)` with `φ_c = π(c+δ)/(2n+1)`, and
+`(1/(2n+1)) / sin φ ≤ (1/π) (log tan ((φ+q)/2) - log tan ((φ-q)/2))` for `q = π/(2(2n+1))` half
+the spacing — the midpoint comparison with `∫ dy / sin y`. Those differences telescope to
+`log (4/(3 q²)) ≤ 2 log (2n+1)`. -/
+theorem norm_trigInterpCLM_le (n : ℕ) :
+    ‖trigInterpCLM (2 * π) n‖ ≤ 2 + 2 / π * Real.log (2 * (n : ℝ) + 1) := by
+  have hpi := Real.pi_pos
+  obtain ⟨t, ht⟩ := (PeriodicCont.isGreatest_norm_trigInterpCLM n).1
+  rw [← ht]
+  simp only []
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · simp only [Nat.cast_zero, mul_zero, zero_add, Real.log_one, mul_zero, add_zero,
+      dirichletKernel_zero]
+    norm_num
+  have hN0 : (0 : ℝ) < 2 * (n : ℝ) + 1 := by positivity
+  have hcongr : ∀ x y : ℝ, x = y → |dirichletKernel n x| = |dirichletKernel n y| :=
+    fun x y h => by rw [h]
+  -- write the evaluation point as `2 π (M + δ) / (2 n + 1)` with `0 ≤ δ < 1`
+  obtain ⟨M, δ, hδ0, hδ1, hMval⟩ :
+      ∃ (M : ℤ) (δ : ℝ), 0 ≤ δ ∧ δ < 1 ∧ (M : ℝ) = (2 * (n : ℝ) + 1) * t / (2 * π) - δ :=
+    ⟨⌊(2 * (n : ℝ) + 1) * t / (2 * π)⌋, Int.fract _, Int.fract_nonneg _, Int.fract_lt_one _,
+      by rw [eq_sub_iff_add_eq]; exact Int.floor_add_fract _⟩
+  obtain ⟨g, hgdef⟩ : ∃ g : ℤ → ℝ,
+      g = fun c : ℤ => |dirichletKernel n (2 * π * ((c : ℝ) + δ) / (2 * (n : ℝ) + 1))| := ⟨_, rfl⟩
+  have hgper : ∀ c : ℤ, g (c + ((2 * n + 1 : ℕ) : ℤ)) = g c := by
+    intro c
+    rw [hgdef]
+    simp only []
+    refine (hcongr _ (2 * π * ((c : ℝ) + δ) / (2 * (n : ℝ) + 1) + 2 * π) ?_).trans ?_
+    · push_cast
+      field_simp
+      ring
+    · rw [dirichletKernel_periodic n]
+  have hterm : ∀ j : ℕ,
+      |dirichletKernel n (t - (j : ℝ) * (2 * π) / (2 * (n : ℝ) + 1))| = g (M - j) := by
+    intro j
+    rw [hgdef]
+    simp only []
+    refine hcongr _ _ ?_
+    push_cast
+    rw [hMval]
+    field_simp
+    ring
+  have hfin : ∑ j : Fin (2 * n + 1),
+        |dirichletKernel n (t - ((j : ℕ) : ℝ) * (2 * π) / (2 * (n : ℝ) + 1))|
+      = ∑ j ∈ Finset.range (2 * n + 1), g (M - (j : ℤ)) := by
+    rw [← Fin.sum_univ_eq_sum_range (fun j : ℕ => g (M - (j : ℤ))) (2 * n + 1)]
+    exact Finset.sum_congr rfl fun j _ => hterm j
+  rw [hfin, sum_range_sub_of_periodic (by omega) g hgper M]
+  simp only [hgdef, Int.cast_natCast]
+  exact lebesgueFun_shift_le n hn hδ0 hδ1
+

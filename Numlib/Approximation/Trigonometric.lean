@@ -492,20 +492,6 @@ theorem log_le_lebesgueConstant (n : ℕ) :
 
 /-! ### An upper bound for the Lebesgue constants -/
 
-/-- The Dirichlet kernel is bounded by its value `n + 1/2` at the origin: it is a sum of `n` cosines
-and a half. -/
-private theorem abs_dirichletKernel_le (n : ℕ) (t : ℝ) :
-    |dirichletKernel n t| ≤ (n : ℝ) + 1 / 2 := by
-  rw [dirichletKernel_apply]
-  refine (abs_add_le _ _).trans ?_
-  have h2 : |∑ j ∈ Finset.Icc 1 n, Real.cos (j * t)| ≤ (n : ℝ) := by
-    refine (Finset.abs_sum_le_sum_abs _ _).trans ?_
-    calc ∑ j ∈ Finset.Icc 1 n, |Real.cos (j * t)|
-        ≤ ∑ _j ∈ Finset.Icc 1 n, (1 : ℝ) := Finset.sum_le_sum fun j _ => Real.abs_cos_le_one _
-      _ = (n : ℝ) := by simp
-  have h1 : |(1 : ℝ) / 2| = 1 / 2 := by norm_num
-  linarith
-
 /-- Away from the origin the Dirichlet kernel is bounded uniformly in `n`, by `π / (2 t)`: the
 numerator of the closed form (3.7.8) is at most one and Jordan's inequality `Real.mul_le_sin` bounds
 the denominator below by `2 t / π`. -/

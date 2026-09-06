@@ -92,6 +92,19 @@ theorem continuous_dirichletKernel (n : ℕ) : Continuous (dirichletKernel n) :=
   rw [h]
   fun_prop
 
+/-- The Dirichlet kernel is bounded by its value `n + 1/2` at the origin: it is a sum of `n`
+cosines and a half. -/
+theorem abs_dirichletKernel_le (n : ℕ) (t : ℝ) : |dirichletKernel n t| ≤ (n : ℝ) + 1 / 2 := by
+  rw [dirichletKernel_apply]
+  refine (abs_add_le _ _).trans ?_
+  have h2 : |∑ j ∈ Finset.Icc 1 n, Real.cos (j * t)| ≤ (n : ℝ) := by
+    refine (Finset.abs_sum_le_sum_abs _ _).trans ?_
+    calc ∑ j ∈ Finset.Icc 1 n, |Real.cos (j * t)|
+        ≤ ∑ _j ∈ Finset.Icc 1 n, (1 : ℝ) := Finset.sum_le_sum fun j _ => Real.abs_cos_le_one _
+      _ = (n : ℝ) := by simp
+  have h1 : |(1 : ℝ) / 2| = 1 / 2 := by norm_num
+  linarith
+
 /-- The telescoping identity behind the closed form of the Dirichlet kernel. -/
 theorem two_mul_sin_half_mul_dirichletKernel (n : ℕ) (t : ℝ) :
     2 * Real.sin (t / 2) * dirichletKernel n t = Real.sin ((n + 1 / 2) * t) := by

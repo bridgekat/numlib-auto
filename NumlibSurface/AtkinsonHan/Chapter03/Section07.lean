@@ -380,6 +380,29 @@ theorem equation_3_7_12 (k : ℕ) {α : ℝ≥0} (hα0 : 0 < α) (hα1 : α ≤ 
 
 end JacksonTheorem
 
+/-! ### (3.7.21)–(3.7.22): the convergence of trigonometric interpolation -/
+
+section TrigonometricInterpolationRate
+
+open Real NNReal _root_.PeriodicCont
+
+/-- **(3.7.21)**: the Lebesgue lemma for the interpolatory projection `𝓘ₙ`, combined with
+Jackson's theorem, gives `‖f − 𝓘ₙf‖_∞ ≤ (1 + ‖𝓘ₙ‖) c^{k+1} Mₖ / n^{k+α}` for
+`f ∈ C_p^{k,α}(2π)`, with `c = 1 + π²/2`.
+
+No bound on `‖𝓘ₙ‖` enters here: the statement is about the operator norm itself, exactly as the
+book writes it. -/
+theorem equation_3_7_21 {k n : ℕ} {α M : ℝ≥0} (hα0 : 0 < α) (hα1 : α ≤ 1) (hn : 1 ≤ n)
+    {g : ℝ → ℝ} (hg : HolderClass k α M g) :
+    ‖PeriodicCont.ofIsPeriodicCont hg.1
+        - trigInterpCLM (2 * π) n (PeriodicCont.ofIsPeriodicCont hg.1)‖
+      ≤ (1 + ‖trigInterpCLM (2 * π) n‖) *
+        ((1 + π ^ 2 / 2) ^ (k + 1) * (M : ℝ) / (n : ℝ) ^ ((k : ℝ) + (α : ℝ))) :=
+  (norm_sub_trigInterpCLM_le n _).trans
+    (mul_le_mul_of_nonneg_left (theorem_3_7_1 hα0 hα1 hn hg) (by positivity))
+
+end TrigonometricInterpolationRate
+
 /-! ### Theorem 3.7.3: the Christoffel–Darboux identity -/
 
 section ChristoffelDarboux

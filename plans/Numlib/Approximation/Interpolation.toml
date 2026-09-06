@@ -43,33 +43,6 @@ id = "trigInterpCLM"
 source = "Atkinson–Han, Theoretical Numerical Analysis, (3.2.16)-(3.2.17), (3.7.19)"
 
 [[node]]
-id = "norm_trigInterpCLM_le"
-kind = "theorem"
-desc = '''Rivlin's bound `norm (trigInterpCLM (2 pi) n) <= 1 + (2/pi) log n` (Atkinson-Han (3.7.20)) on the
-operator norm of trigonometric interpolation at the equispaced nodes.
-
-The Dirichlet-kernel form of the operator is now proved, as
-`PeriodicCont.trigInterpCLM_eq_sum_dirichletShiftCM` in
-`Numlib/Approximation/TrigonometricInterpolation`; two pieces remain.
-
-(1) The Lebesgue-function formula for the operator norm is now proved, in the general form
-`Approximation.IsUnisolvent.isGreatest_norm_interpCLM` and, instantiated at the equispaced nodes,
-as `PeriodicCont.isGreatest_norm_trigInterpCLM`:
-`norm (trigInterpCLM (2 pi) n)` is the largest value of `(2/(2n+1)) sum_j |D_n (t - t_j)|`.
-
-(2) What remains is the estimate itself, which is the hard half and where the constant `2/pi` lives. With
-`N = 2n+1` the identity `sin (N (x - x_j) / 2) = (-1)^j sin (N x / 2)` turns the Lebesgue function
-into `(|sin (N x / 2)| / N) sum_j 1 / |sin ((x - x_j) / 2)|`, and it is periodic in `x` with period
-`2 pi / N`. Bounding each `|sin ((x - x_j)/2)|` from below by `|x - x_j| / pi` (Jordan) and summing
-gives only `1 + log n`: the harmonic sum `2 sum_{k <= n} 1/(2k-1)` is about `log n + 1.96`, not
-`(2/pi) log n ~ 0.64 log n`. The sharp constant needs the `|sin (N x / 2)|` factor to be used
-against the sum rather than bounded by 1 -- the comparison with `(2/pi) integral dt/t` -- which is
-the part not attempted. `PeriodicCont.lebesgueConstant_le` in `Numlib/Approximation/Trigonometric`
-is the model for the integral version.'''
-deps = ["trigInterpCLM", "Lagrange.norm_interpolateCLM"]
-source = "Atkinson–Han, Theoretical Numerical Analysis, (3.7.20)"
-
-[[node]]
 id = "ContinuousMap.tendsto_modulusOfContinuity"
 
 [[node]]
