@@ -83,7 +83,9 @@ The user can prompt an agent to formalize a plan. In such cases, the agent shoul
 - Proceed to fill in the proofs, optionally by spawning parallel sub-agents to work on different files in the skeleton. Start each with the output of `tracker show <group>`, tell them to mark `wrong` on problematic plan items and allow them to write their own items. If any of them proves difficult to complete, identify the cause, report back and stop for a restructure of the plan if necessary.
 - Verify the formalization by compiling the Lean files and running `lake exe tracker check`.
 
-Keep in mind the backbone-surface split. Everything in the backbone (including doc comments) should be self-contained; to reference material from the books, state the source book explicitly (full name in the references section, using Markdown footnote syntax), instead of a mere number like "Theorem 3.7". Mere numbers may be used in surface only.
+Keep in mind the backbone-surface split. Everything in the backbone (including doc comments) should be self-contained; to reference material from the books, cite the source explicitly instead of writing a mere number like "Theorem 3.7". Mere numbers may be used in surface only.
+
+Citations follow Mathlib: the bibliography is `docs/references.bib`, and a doc comment links to an entry by `[bibkey]` or `[Author, *Title*][bibkey]`. Add the entry to `docs/references.bib` before citing it, using only alphanumerics, `-`, `_` and `:` in the key — doc-gen fails silently on anything else. An entry an agent wrote or edited must carry a `# GENERATED` comment above it, so that a human can check it. Do not write a `## References` section listing what a module cites: the citation is the link, and the bibliography is the list.
 
 ### Reviewing a formalization
 
