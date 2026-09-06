@@ -310,6 +310,24 @@ private theorem energyNorm_sub_smul_apply_sq (hAc : A.IsSymmetricCoercive) (d : 
   rw [hsym]
   ring
 
+/-- **The steepest-descent step in closed form**: with the residual `r = b - A x` and
+`q = re ⟪ A r, r ⟫`, the step is `x ↦ x + (‖r‖²/q) r`.  The step length is real because the
+quadratic form of a symmetric operator is.  Both convergence statements below start here. -/
+private theorem steepestDescentStep_eq (hsym : A.IsSymmetric) (x : E) :
+    steepestDescentStep A b x
+      = x + ((‖b - A x‖ ^ 2 / RCLike.re (inner 𝕜 (A (b - A x)) (b - A x)) : ℝ) : 𝕜)
+          • (b - A x) := by
+  have hself : inner 𝕜 (A (b - A x)) (b - A x)
+      = ((RCLike.re (inner 𝕜 (A (b - A x)) (b - A x)) : ℝ) : 𝕜) := by
+    refine (RCLike.conj_eq_iff_re.1 ?_).symm
+    rw [inner_conj_symm]
+    exact (hsym (b - A x) (b - A x)).symm
+  have hscal : inner 𝕜 (b - A x) (b - A x) / inner 𝕜 (b - A x) (A (b - A x))
+      = ((‖b - A x‖ ^ 2 / RCLike.re (inner 𝕜 (A (b - A x)) (b - A x)) : ℝ) : 𝕜) := by
+    rw [inner_self_eq_norm_sq_to_K, ← hsym (b - A x) (b - A x), hself,
+      ← RCLike.ofReal_pow, ← RCLike.ofReal_div, RCLike.ofReal_re]
+  rw [steepestDescentStep, step1, hscal]
+
 /-- Saad, *Iterative Methods*, Thm 5.9: steepest descent contracts the energy norm of the error
 by the factor `(λmax - λmin)/(λmax + λmin)`. -/
 theorem energyNorm_steepestDescentStep_le {lmin lmax : ℝ} (hl : 0 < lmin)
@@ -334,16 +352,10 @@ theorem energyNorm_steepestDescentStep_le {lmin lmax : ℝ} (hl : 0 < lmin)
   have hspos : (0 : ℝ) < lmax + lmin := by linarith
   set q : ℝ := RCLike.re (inner 𝕜 (A (b - A x)) (b - A x)) with hqdef
   have hqpos : 0 < q := lt_of_lt_of_le (by positivity) (hA.le_re_inner (b - A x))
-  have hself : inner 𝕜 (A (b - A x)) (b - A x) = (q : 𝕜) := by
-    refine (RCLike.conj_eq_iff_re.1 ?_).symm
-    rw [inner_conj_symm]
-    exact (hA.isSymmetric (b - A x) (b - A x)).symm
   set a : ℝ := ‖b - A x‖ ^ 2 / q with hadef
   have hstep : steepestDescentStep A b x = x + (a : 𝕜) • (b - A x) := by
-    rw [steepestDescentStep, step1]
-    congr 2
-    rw [inner_self_eq_norm_sq_to_K, ← hA.isSymmetric (b - A x) (b - A x), hself,
-      ← RCLike.ofReal_pow, ← RCLike.ofReal_div]
+    rw [hadef, hqdef]
+    exact steepestDescentStep_eq hA.isSymmetric x
   have herr : xstar - steepestDescentStep A b x = (xstar - x) - (a : 𝕜) • A (xstar - x) := by
     rw [hstep, hAd]; abel
   have hexp0 := energyNorm_sub_smul_apply_sq hAc (xstar - x) a
@@ -488,16 +500,10 @@ theorem energyNorm_steepestDescentStep_sq_eq (hA : A.IsSymmetricCoercive) {xstar
   have hqpos : 0 < q := hA.isCoercive.inner_self_pos h0
   have hqne : q ≠ 0 := ne_of_gt hqpos
   have hene : energyNorm A (xstar - x) ≠ 0 := ne_of_gt (hA.energyNorm_pos hd0)
-  have hself : inner 𝕜 (A (b - A x)) (b - A x) = (q : 𝕜) := by
-    refine (RCLike.conj_eq_iff_re.1 ?_).symm
-    rw [inner_conj_symm]
-    exact (hA.isSymmetric (b - A x) (b - A x)).symm
   set a : ℝ := ‖b - A x‖ ^ 2 / q with ha
   have hstep : steepestDescentStep A b x = x + (a : 𝕜) • (b - A x) := by
-    rw [steepestDescentStep, step1]
-    congr 2
-    rw [inner_self_eq_norm_sq_to_K, ← hA.isSymmetric (b - A x) (b - A x), hself,
-      ← RCLike.ofReal_pow, ← RCLike.ofReal_div]
+    rw [ha, hq]
+    exact steepestDescentStep_eq hA.isSymmetric x
   have herr : xstar - steepestDescentStep A b x = (xstar - x) - (a : 𝕜) • A (xstar - x) := by
     rw [hstep, hAd]; abel
   have hexp := energyNorm_sub_smul_apply_sq hA (xstar - x) a

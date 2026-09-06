@@ -60,6 +60,7 @@ noncomputable def sigma (θ δ : ℝ) (k : ℕ) : ℝ := (T ℝ (k : ℤ)).eval 
 /-- `ρ_k = σ_k/σ_{k+1}`, the scalar of Saad (12.6) that the iteration carries. -/
 noncomputable def rho (θ δ : ℝ) (k : ℕ) : ℝ := sigma θ δ k / sigma θ δ (k + 1)
 
+/-- The defining quotient of `ρ_k`, in a form `rw` can use. -/
 theorem rho_eq_div_sigma (θ δ : ℝ) (k : ℕ) : rho θ δ k = sigma θ δ k / sigma θ δ (k + 1) := rfl
 
 @[simp] theorem sigma_zero (θ δ : ℝ) : sigma θ δ 0 = 1 := by
@@ -80,14 +81,20 @@ section Positive
 variable (hδ : 0 < δ) (hθδ : δ < θ)
 include hδ hθδ
 
+/-- The Chebyshev argument `σ₁ = θ/δ` is at least `1`: the interval `[θ - δ, θ + δ]` lies to the
+right of the origin, which is what makes every `σ_k` grow. -/
 theorem one_le_sigma_one : 1 ≤ θ / δ := (one_le_div hδ).mpr hθδ.le
 
+/-- Chebyshev polynomials are at least `1` outside `[-1, 1]`, so `1 ≤ σ_k`. -/
 theorem one_le_sigma (k : ℕ) : 1 ≤ sigma θ δ k := one_le_eval_T (one_le_sigma_one hδ hθδ) k
 
+/-- Every `σ_k` is positive. -/
 theorem sigma_pos (k : ℕ) : 0 < sigma θ δ k := lt_of_lt_of_le zero_lt_one (one_le_sigma hδ hθδ k)
 
+/-- Every `σ_k` is nonzero, so the quotients defining `ρ_k` are honest divisions. -/
 theorem sigma_ne_zero (k : ℕ) : sigma θ δ k ≠ 0 := (sigma_pos hδ hθδ k).ne'
 
+/-- Every `ρ_k` is positive. -/
 theorem rho_pos (k : ℕ) : 0 < rho θ δ k :=
   div_pos (sigma_pos hδ hθδ k) (sigma_pos hδ hθδ (k + 1))
 
@@ -132,9 +139,12 @@ noncomputable def dirPoly (θ δ : ℝ) : ℕ → ℝ[X]
   | k + 1 => C (rho θ δ k * rho θ δ (k + 1)) * dirPoly θ δ k +
       C (2 * rho θ δ (k + 1) / δ) * resPoly θ δ (k + 1)
 
+/-- The `k`-th residual polynomial has degree at most `k`, so the `k`-th residual lies in the
+`k`-th Krylov subspace. -/
 theorem degree_resPoly_le (θ δ : ℝ) (k : ℕ) : (resPoly θ δ k).degree ≤ (k : WithBot ℕ) :=
   shifted_degree_le k (θ - δ) (θ + δ) 0
 
+/-- The residual polynomial in closed form: `P_k(t) = C_k((θ - t)/δ) / σ_k`. -/
 private theorem eval_resPoly (hδ : δ ≠ 0) (k : ℕ) (t : ℝ) :
     (resPoly θ δ k).eval t = (T ℝ (k : ℤ)).eval (θ / δ - δ⁻¹ * t) / sigma θ δ k := by
   have h1 : θ + δ - (θ - δ) = 2 * δ := by ring
@@ -147,6 +157,7 @@ private theorem eval_resPoly (hδ : δ ≠ 0) (k : ℕ) (t : ℝ) :
 @[simp] theorem resPoly_zero (θ δ : ℝ) : resPoly θ δ 0 = 1 := by
   simp [resPoly, Polynomial.Chebyshev.shifted, Polynomial.Chebyshev.T_zero]
 
+/-- The first residual polynomial is `1 - t/θ`, matching the first step `d₀ = θ⁻¹ r₀`. -/
 theorem resPoly_one (hδ : δ ≠ 0) (hθ : θ ≠ 0) : resPoly θ δ 1 = 1 - C θ⁻¹ * X := by
   refine Polynomial.funext fun t => ?_
   rw [eval_resPoly hδ, sigma_one]
@@ -220,12 +231,17 @@ theorem iterate_succ (k : ℕ) :
     iterate A b x₀ θ δ (k + 1) = step A θ δ (iterate A b x₀ θ δ k) :=
   Function.iterate_succ_apply' _ _ _
 
+/-- The iterate advances along the search direction, `x' = x + d`. -/
 theorem step_x (s : State E) : (step A θ δ s).x = s.x + s.d := rfl
 
+/-- The residual follows the iterate, `r' = r - A d`. -/
 theorem step_r (s : State E) : (step A θ δ s).r = s.r - A s.d := rfl
 
+/-- The scalar recurrence of Saad (12.6), `ρ' = (2 σ₁ - ρ)⁻¹`. -/
 theorem step_ρ (s : State E) : (step A θ δ s).ρ = (2 * (θ / δ) - s.ρ)⁻¹ := rfl
 
+/-- The three-term recurrence for the search direction,
+`d' = ρ ρ' d + (2 ρ'/δ) r'`. -/
 theorem step_d (s : State E) :
     (step A θ δ s).d = ((s.ρ * (step A θ δ s).ρ : ℝ) : 𝕜) • s.d +
       ((2 * (step A θ δ s).ρ / δ : ℝ) : 𝕜) • (step A θ δ s).r := rfl
@@ -239,15 +255,18 @@ theorem residual_eq (k : ℕ) :
 
 /-! ### The residual is a Chebyshev polynomial of the initial residual -/
 
+/-- Applying `A` after a polynomial in `A` multiplies the polynomial by `X`. -/
 private theorem apply_aeval (A : E →ₗ[𝕜] E) (q : ℝ[X]) (v : E) :
     A (aeval A (q.map (algebraMap ℝ 𝕜)) v) = aeval A ((X * q).map (algebraMap ℝ 𝕜)) v := by
   rw [Polynomial.map_mul, Polynomial.map_X, map_mul, aeval_X, Module.End.mul_apply]
 
+/-- Evaluation at a vector of a polynomial in `A` respects subtraction of polynomials. -/
 private theorem aeval_sub_apply (A : E →ₗ[𝕜] E) (p q : ℝ[X]) (v : E) :
     aeval A ((p - q).map (algebraMap ℝ 𝕜)) v =
       aeval A (p.map (algebraMap ℝ 𝕜)) v - aeval A (q.map (algebraMap ℝ 𝕜)) v := by
   rw [Polynomial.map_sub, map_sub, LinearMap.sub_apply]
 
+/-- A real scalar multiple of `q(A) v` is `(C c * q)(A) v`. -/
 private theorem smul_aeval (A : E →ₗ[𝕜] E) (c : ℝ) (q : ℝ[X]) (v : E) :
     ((c : 𝕜)) • aeval A (q.map (algebraMap ℝ 𝕜)) v =
       aeval A ((C c * q).map (algebraMap ℝ 𝕜)) v := by
@@ -319,6 +338,7 @@ theorem residual_iterate_eq {α β : ℝ} (hα : 0 < α) (hαβ : α < β) (k : 
 private noncomputable def iterPoly (θ δ : ℝ) (k : ℕ) : ℝ[X] :=
   ∑ j ∈ Finset.range k, dirPoly θ δ j
 
+/-- The `k`-th direction polynomial has degree at most `k`. -/
 private theorem degree_dirPoly_le (k : ℕ) : (dirPoly θ δ k).degree ≤ (k : WithBot ℕ) := by
   induction k with
   | zero => simpa [dirPoly] using degree_C_le
@@ -332,6 +352,8 @@ private theorem degree_dirPoly_le (k : ℕ) : (dirPoly θ δ k).degree ≤ (k : 
           ((add_le_add degree_C_le (degree_resPoly_le θ δ (k + 1))).trans ?_)
         rw [zero_add]
 
+/-- The polynomial carrying `x_k - x₀` has degree below `k`, which is exactly membership in the
+`k`-th Krylov subspace. -/
 private theorem degree_iterPoly_lt (k : ℕ) : (iterPoly θ δ k).degree < (k : WithBot ℕ) := by
   induction k with
   | zero => simp [iterPoly]
@@ -343,6 +365,7 @@ private theorem degree_iterPoly_lt (k : ℕ) : (iterPoly θ δ k).degree < (k : 
       · exact lt_of_lt_of_le ih (by exact_mod_cast Nat.le_succ k)
       · exact lt_of_le_of_lt (degree_dirPoly_le k) (by exact_mod_cast Nat.lt_succ_self k)
 
+/-- The iterate is `x₀` plus the running sum of the direction polynomials applied to `r₀`. -/
 private theorem iterate_x_eq (A : E →ₗ[𝕜] E) (b x₀ : E) (hδ : 0 < δ) (hθδ : δ < θ) (k : ℕ) :
     (iterate A b x₀ θ δ k).x =
       x₀ + aeval A ((iterPoly θ δ k).map (algebraMap ℝ 𝕜)) (b - A x₀) := by

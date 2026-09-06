@@ -85,6 +85,7 @@ Taking it as the zero pattern of an incomplete factorization gives `ILU(0)`, who
 the sparsity of the lower and upper parts of `A`. -/
 def zeroPattern (A : Matrix n n α) : Set (n × n) := {p | A p.1 p.2 = 0 ∧ p.1 ≠ p.2}
 
+/-- Membership in the off-diagonal zero pattern, entry by entry. -/
 @[simp]
 theorem mem_zeroPattern {A : Matrix n n α} {p : n × n} :
     p ∈ A.zeroPattern ↔ A p.1 p.2 = 0 ∧ p.1 ≠ p.2 := Iff.rfl
@@ -481,6 +482,8 @@ noncomputable def elimStep (M : Matrix n n ℝ) (p : n) : Matrix n n ℝ :=
   M - elimMultipliers M p * M
 
 omit [Fintype n] in
+/-- Entries of the multiplier matrix: `M i p / M p p` in column `p` below the pivot, zero
+elsewhere. -/
 @[simp]
 theorem elimMultipliers_apply (M : Matrix n n ℝ) (p i j : n) :
     elimMultipliers M p i j = if p < i ∧ j = p then M i p * (M p p)⁻¹ else 0 := rfl
@@ -495,6 +498,8 @@ theorem elimMultipliers_mul_apply (M : Matrix n n ℝ) (p i j : n) :
     simp [hi]
   · simp [hi]
 
+/-- Entries of the eliminated matrix: the rows below the pivot lose `M i p / M p p` times row
+`p`, and every other row is unchanged. -/
 theorem elimStep_apply (M : Matrix n n ℝ) (p i j : n) :
     elimStep M p i j = M i j - if p < i then M i p * (M p p)⁻¹ * M p j else 0 := by
   rw [elimStep, Matrix.sub_apply, elimMultipliers_mul_apply]
@@ -536,15 +541,18 @@ theorem elimMul_mul_one_sub (M : Matrix n n ℝ) (p : n) :
     elimMultipliers_mul_self, sub_zero]
   abel
 
+/-- `1 - N` inverts the unipotent factor on the left as well. -/
 theorem one_sub_mul_elimMul (M : Matrix n n ℝ) (p : n) :
     (1 - elimMultipliers M p) * elimMul M p = 1 := by
   rw [elimMul, Matrix.mul_add, Matrix.mul_one, sub_mul, Matrix.one_mul,
     elimMultipliers_mul_self, sub_zero]
   abel
 
+/-- The unipotent factor of an elimination step is a unit. -/
 theorem isUnit_elimMul (M : Matrix n n ℝ) (p : n) : IsUnit (elimMul M p) :=
   ⟨⟨_, _, elimMul_mul_one_sub M p, one_sub_mul_elimMul M p⟩, rfl⟩
 
+/-- The inverse of the unipotent factor is `1 - N`, obtained by negating the multipliers. -/
 theorem inv_elimMul (M : Matrix n n ℝ) (p : n) :
     (elimMul M p)⁻¹ = 1 - elimMultipliers M p :=
   Matrix.inv_eq_right_inv (elimMul_mul_one_sub M p)
@@ -555,7 +563,6 @@ theorem elimMul_mul_elimStep (M : Matrix n n ℝ) (p : n) : elimMul M p * elimSt
   rw [elimStep, elimMul, Matrix.mul_sub, add_mul, Matrix.one_mul, add_mul, Matrix.one_mul,
     ← Matrix.mul_assoc, elimMultipliers_mul_self, Matrix.zero_mul, add_zero]
   abel
-
 
 set_option linter.unusedDecidableInType false in
 /-- A sum over a linearly ordered index type, split at one point. -/
@@ -665,12 +672,14 @@ private noncomputable def dropPattern (P : Set (n × n)) (M : Matrix n n ℝ) : 
   Matrix.of fun i j => if (i, j) ∈ P then 0 else M i j
 
 omit [Fintype n] [LinearOrder n] [DecidableEq n] in
+/-- Inside the zero pattern, dropping leaves a zero. -/
 private theorem dropPattern_of_mem {P : Set (n × n)} {M : Matrix n n ℝ} {i j : n}
     (h : (i, j) ∈ P) : dropPattern P M i j = 0 := by
   classical
   simp [dropPattern, h]
 
 omit [Fintype n] [LinearOrder n] [DecidableEq n] in
+/-- Outside the zero pattern, dropping changes nothing. -/
 private theorem dropPattern_of_notMem {P : Set (n × n)} {M : Matrix n n ℝ} {i j : n}
     (h : (i, j) ∉ P) : dropPattern P M i j = M i j := by
   classical
@@ -903,7 +912,6 @@ theorem IsMMatrix.exists_isILU {A : Matrix n n ℝ} (hA : A.IsMMatrix) (P : Set 
     exact hst.m_mmatrix.inv_entrywiseNonneg.mul hst.l_inv_nonneg
 
 end Existence
-
 
 section Regular
 

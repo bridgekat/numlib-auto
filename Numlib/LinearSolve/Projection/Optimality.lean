@@ -30,7 +30,6 @@ import Numlib.LinearSolve.Projection.Basic
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 variable {A : E →ₗ[𝕜] E} {b x₀ : E} {K : Submodule 𝕜 E} {x xstar : E}
 
-
 /-- Comparison of energy norms may be checked on the squares. -/
 theorem energyNorm_le_of_sq_le {u v : E} (h : energyNorm A u ^ 2 ≤ energyNorm A v ^ 2) :
     energyNorm A u ≤ energyNorm A v := by
@@ -219,15 +218,3 @@ theorem isPetrovGalerkin_of_map_adjoint [FiniteDimensional 𝕜 E] {L : Submodul
   exact Submodule.mem_map_of_mem hw
 
 end IsMinError
-
-/-- Existence and characterization: `x₀ + P_K (x* - x₀)` is the minimal-error point. -/
-theorem isMinError_add_starProjection [K.HasOrthogonalProjection] (xstar x₀ : E) :
-    IsMinError xstar x₀ K (x₀ + K.starProjection (xstar - x₀)) := by
-  refine ⟨?_, fun y hy => ?_⟩
-  · rw [add_sub_cancel_left]
-    exact Submodule.starProjection_apply_mem K _
-  · rw [show xstar - (x₀ + K.starProjection (xstar - x₀))
-        = (xstar - x₀) - K.starProjection (xstar - x₀) by abel,
-      show xstar - y = (xstar - x₀) - (y - x₀) by abel]
-    exact Submodule.norm_sub_le_of_forall_inner_eq_zero (Submodule.starProjection_apply_mem K _)
-      (fun w hw => K.starProjection_inner_eq_zero _ w hw) hy

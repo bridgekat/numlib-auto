@@ -9,7 +9,8 @@ import Numlib.LinearSolve.Stationary.Splitting
 Given a symmetric coercive `A` on an inner product space `E` and a *prolongation*
 `Pr : F →ₗ[𝕜] E` from a finite-dimensional coarse space `F`, the **Galerkin coarse operator** is
 `A_H = Pr† A Pr` (`Multigrid.galerkinCoarse`) and the **coarse-grid correction** is
-`T = 1 - Pr A_H⁻¹ Pr† A` (`Multigrid.coarseCorrection`).
+`T = 1 - Pr A_H⁻¹ Pr† A` (`Multigrid.coarseCorrection`).  This is Saad, *Iterative Methods for
+Sparse Linear Systems*[^saad-iterative], §13.4.1–13.4.2 and §13.5.1.
 
 The design decision of this module is to *define* the coarse-grid projector
 `Q = Pr A_H⁻¹ Pr† A` as the `A`-orthogonal projector onto `range Pr` — that is, as
@@ -63,6 +64,7 @@ noncomputable def galerkinCoarse [FiniteDimensional 𝕜 E] (A : E →ₗ[𝕜] 
     F →ₗ[𝕜] F :=
   LinearMap.adjoint Pr ∘ₗ A ∘ₗ Pr
 
+/-- The coarse operator acts as `u ↦ Pr† (A (Pr u))`. -/
 @[simp]
 theorem galerkinCoarse_apply [FiniteDimensional 𝕜 E] (A : E →ₗ[𝕜] E) (Pr : F →ₗ[𝕜] E) (u : F) :
     galerkinCoarse A Pr u = LinearMap.adjoint Pr (A (Pr u)) := rfl
@@ -105,10 +107,13 @@ noncomputable def coarseProjection : E →ₗ[𝕜] E :=
 Linear Systems*, (13.43)), the error propagation operator of one coarse-grid correction. -/
 noncomputable def coarseCorrection : E →ₗ[𝕜] E := 1 - coarseProjection A hA Pr
 
+/-- The coarse-grid correction removes the coarse-grid projection, `T x = x - Q x`. -/
 @[simp]
 theorem coarseCorrection_apply (x : E) :
     coarseCorrection A hA Pr x = x - coarseProjection A hA Pr x := rfl
 
+/-- Read in the energy space, the coarse-grid projector is the orthogonal projector onto the image
+of `range Pr`; this is its definition, and the bridge every proof below crosses. -/
 @[simp]
 theorem equiv_coarseProjection (x : E) :
     WithEnergy.equiv A hA (coarseProjection A hA Pr x)
@@ -283,6 +288,7 @@ end Projector
 theory only through this operator, because every statement of the theory is about the error. -/
 def smootherOperator (A B : E →ₗ[𝕜] E) : E →ₗ[𝕜] E := 1 - B ∘ₗ A
 
+/-- The smoother propagates the error by `x ↦ x - B (A x)`. -/
 @[simp]
 theorem smootherOperator_apply (A B : E →ₗ[𝕜] E) (x : E) :
     smootherOperator A B x = x - B (A x) := rfl
@@ -301,6 +307,7 @@ noncomputable def twoGridOperator (A : E →ₗ[𝕜] E) (hA : A.IsSymmetricCoer
     (S : E →ₗ[𝕜] E) (nu1 nu2 : ℕ) : E →ₗ[𝕜] E :=
   (S ^ nu2) ∘ₗ coarseCorrection A hA Pr ∘ₗ (S ^ nu1)
 
+/-- One two-grid cycle: pre-smooth, correct on the coarse grid, post-smooth. -/
 @[simp]
 theorem twoGridOperator_apply (A : E →ₗ[𝕜] E) (hA : A.IsSymmetricCoercive) (Pr : F →ₗ[𝕜] E)
     (S : E →ₗ[𝕜] E) (nu1 nu2 : ℕ) (x : E) :

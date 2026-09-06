@@ -5,7 +5,7 @@ import Numlib.LinearSolve.Multigrid.Basic
 
 The two-grid error propagation operator `S^ν₂ (1 - Q) S^ν₁` of
 `Numlib/LinearSolve/Multigrid/Basic.lean` contracts the energy norm as soon as two constants are
-available:
+available (Saad, *Iterative Methods for Sparse Linear Systems*[^saad-iterative], §13.5.2):
 
 * a **smoothing property** `‖S e‖_A² ≤ ‖e‖_A² - α q(A e)²` (`Multigrid.IsSmootherWith`): the
   smoother is `A`-nonexpansive, and what it removes is measured by a seminorm `q` of the residual;
@@ -186,6 +186,20 @@ theorem energyNorm_le_of_isApproximationWith (hpq : IsDualSeminormPair 𝕜 p q)
   · rw [← hzero']
     exact mul_nonneg (Real.sqrt_nonneg β) hq
 
+/-- The square of `Multigrid.energyNorm_le_of_isApproximationWith`, which is the form both
+halves of Saad's Theorem 13.3 consume. -/
+private theorem energyNorm_sq_le_of_isApproximationWith (hβ : 0 ≤ β)
+    (hpq : IsDualSeminormPair 𝕜 p q)
+    (happ : IsApproximationWith A p (LinearMap.range Pr) β) {e : E}
+    (he : e ∈ LinearMap.range (coarseCorrection A hA Pr)) :
+    energyNorm A e ^ 2 ≤ β * q (A e) ^ 2 := by
+  have hgeo := energyNorm_le_of_isApproximationWith (hA := hA) hpq happ he
+  calc energyNorm A e ^ 2 = energyNorm A e * energyNorm A e := sq _
+    _ ≤ Real.sqrt β * q (A e) * (Real.sqrt β * q (A e)) :=
+        mul_self_le_mul_self (energyNorm_nonneg A e) hgeo
+    _ = Real.sqrt β ^ 2 * q (A e) ^ 2 := by ring
+    _ = β * q (A e) ^ 2 := by rw [Real.sq_sqrt hβ]
+
 /-- **Saad's Theorem 13.3**, the constants: if a smoothing property and an approximation property
 hold for the same dual pair, and some error left by the coarse-grid correction is nonzero, then
 `α ≤ β`.  The nondegeneracy is needed: on the zero space every pair of constants qualifies. -/
@@ -206,12 +220,8 @@ theorem IsSmootherWith.le_of_isApproximationWith {S : E →ₗ[𝕜] E}
     push Not at h
     exact absurd (hgeo.trans (mul_nonpos_of_nonneg_of_nonpos (Real.sqrt_nonneg β) h))
       (not_le.2 hpos)
-  have hbsq : energyNorm A e ^ 2 ≤ β * q (A e) ^ 2 := by
-    calc energyNorm A e ^ 2 = energyNorm A e * energyNorm A e := sq _
-      _ ≤ Real.sqrt β * q (A e) * (Real.sqrt β * q (A e)) :=
-          mul_self_le_mul_self (energyNorm_nonneg A e) hgeo
-      _ = Real.sqrt β ^ 2 * q (A e) ^ 2 := by ring
-      _ = β * q (A e) ^ 2 := by rw [Real.sq_sqrt hb]
+  have hbsq : energyNorm A e ^ 2 ≤ β * q (A e) ^ 2 :=
+    energyNorm_sq_le_of_isApproximationWith (hA := hA) hb hpq happ he
   have hsm' := hsm e
   have hnn : 0 ≤ energyNorm A (S e) ^ 2 := sq_nonneg _
   exact le_of_mul_le_mul_right (by linarith) (pow_pos hqpos 2)
@@ -227,16 +237,11 @@ theorem energyNorm_twoGrid_le {S : E →ₗ[𝕜] E} (hsm : IsSmootherWith A q S
   have hmem : coarseCorrection A hA Pr v ∈ LinearMap.range (coarseCorrection A hA Pr) := ⟨v, rfl⟩
   obtain ⟨e, he⟩ : ∃ e : E, coarseCorrection A hA Pr v = e := ⟨_, rfl⟩
   rw [he] at hmem ⊢
-  have hgeo := energyNorm_le_of_isApproximationWith (hA := hA) hpq happ hmem
   have hnex : energyNorm A e ≤ energyNorm A v := by
     rw [← he]; exact energyNorm_coarseCorrection_le A hA Pr v
   have hqnn : 0 ≤ q (A e) := hpq.q_nonneg _
-  have hsq : energyNorm A e ^ 2 ≤ β * q (A e) ^ 2 := by
-    calc energyNorm A e ^ 2 = energyNorm A e * energyNorm A e := sq _
-      _ ≤ Real.sqrt β * q (A e) * (Real.sqrt β * q (A e)) :=
-          mul_self_le_mul_self (energyNorm_nonneg A e) hgeo
-      _ = Real.sqrt β ^ 2 * q (A e) ^ 2 := by ring
-      _ = β * q (A e) ^ 2 := by rw [Real.sq_sqrt hβ.le]
+  have hsq : energyNorm A e ^ 2 ≤ β * q (A e) ^ 2 :=
+    energyNorm_sq_le_of_isApproximationWith (hA := hA) hβ.le hpq happ hmem
   have h1 := hsm e
   rcases (energyNorm_nonneg A e).lt_or_eq with hpos | hzero
   · -- the substantial case: the coarse-grid error is nonzero

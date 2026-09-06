@@ -5,7 +5,8 @@ import Numlib.LinearSolve.Projection.Additive
 /-!
 # The abstract Schwarz theory
 
-A **Schwarz method** solves a linear system by repeatedly solving it on a family of subspaces.
+A **Schwarz method** solves a linear system by repeatedly solving it on a family of subspaces
+(Saad, *Iterative Methods for Sparse Linear Systems*[^saad-iterative], §14.3).
 The whole convergence theory is a statement about a finite family `V : ℕ → Submodule 𝕜 H` of
 subspaces of an inner product space and their orthogonal projectors `P i = (V i).starProjection`:
 
@@ -162,6 +163,7 @@ onto the subspaces.  Read in the energy inner product of `A`, it is the precondi
 noncomputable def additiveOperator (s : ℕ) : H →L[𝕜] H :=
   ∑ i ∈ Finset.range s, (V i).starProjection
 
+/-- The additive Schwarz operator acts as the sum of the projections. -/
 @[simp]
 theorem additiveOperator_apply (s : ℕ) (u : H) :
     additiveOperator V s u = ∑ i ∈ Finset.range s, (V i).starProjection u := by
@@ -343,12 +345,15 @@ noncomputable def errorOp : ℕ → H →L[𝕜] H
   | 0 => 1
   | i + 1 => (1 - (V i).starProjection) ∘L errorOp i
 
+/-- An empty sweep leaves the error alone. -/
 @[simp]
 theorem errorOp_zero : errorOp V 0 = 1 := rfl
 
+/-- One more subdomain correction composes `1 - P i` onto the sweep so far. -/
 theorem errorOp_succ (i : ℕ) :
     errorOp V (i + 1) = (1 - (V i).starProjection) ∘L errorOp V i := rfl
 
+/-- The pointwise form of `Schwarz.errorOp_succ`. -/
 @[simp]
 theorem errorOp_succ_apply (i : ℕ) (v : H) :
     errorOp V (i + 1) v = errorOp V i v - (V i).starProjection (errorOp V i v) := rfl
@@ -536,6 +541,8 @@ noncomputable def energyProjection (A : E →ₗ[𝕜] E) (hA : A.IsSymmetricCoe
 variable (A : E →ₗ[𝕜] E) (hA : A.IsSymmetricCoercive) (K : Submodule 𝕜 E)
   [FiniteDimensional 𝕜 K]
 
+/-- Read in the energy space, the subdomain projector is the orthogonal projector onto the image
+of `K`; this is its definition, and the bridge every proof below crosses. -/
 @[simp]
 theorem equiv_energyProjection (x : E) :
     WithEnergy.equiv A hA (energyProjection A hA K x)

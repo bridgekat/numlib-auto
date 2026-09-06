@@ -184,6 +184,8 @@ theorem iff_isPetrovGalerkin [FiniteDimensional 𝕜 K] :
     rw [← residual_eq_sub_apply_sub A b x₀ x]
     exact (Submodule.mem_orthogonal' _ _).1 horth w hw
 
+/-- The forward direction of `IsMinRes.iff_isPetrovGalerkin`: a minimal-residual iterate is
+Petrov–Galerkin with `L = A K`. -/
 theorem isPetrovGalerkin [FiniteDimensional 𝕜 K] (hx : IsMinRes A b x₀ K x) :
     IsPetrovGalerkin A b x₀ K (K.map A) x :=
   (iff_isPetrovGalerkin).1 hx
@@ -222,6 +224,19 @@ theorem apply_eq_of_exists (hx : IsMinRes A b x₀ K x) {y : E} (hy : y - x₀ �
   exact (sub_eq_zero.1 (norm_le_zero_iff.1 h)).symm
 
 end IsMinRes
+
+/-- Existence and characterization: `x₀ + P_K (x* - x₀)` is the minimal-error point.  Only the
+existence of the orthogonal projection onto `K` is needed, not finite dimension. -/
+theorem isMinError_add_starProjection {K : Submodule 𝕜 E} [K.HasOrthogonalProjection]
+    (xstar x₀ : E) : IsMinError xstar x₀ K (x₀ + K.starProjection (xstar - x₀)) := by
+  refine ⟨?_, fun y hy => ?_⟩
+  · rw [add_sub_cancel_left]
+    exact Submodule.starProjection_apply_mem K _
+  · rw [show xstar - (x₀ + K.starProjection (xstar - x₀))
+        = (xstar - x₀) - K.starProjection (xstar - x₀) by abel,
+      show xstar - y = (xstar - x₀) - (y - x₀) by abel]
+    exact Submodule.norm_sub_le_of_forall_inner_eq_zero (Submodule.starProjection_apply_mem K _)
+      (fun w hw => K.starProjection_inner_eq_zero _ w hw) hy
 
 section WellPosed
 
@@ -318,16 +333,8 @@ theorem existsUnique_isMinRes_of_injOn [FiniteDimensional 𝕜 K] (hinj : Set.In
   exact hinj hz K.zero_mem (by rw [h0, map_zero])
 
 /-- A minimal-error iterate always exists on a finite-dimensional `K` (projection of `x*`). -/
-theorem exists_isMinError [FiniteDimensional 𝕜 K] (xstar : E) : ∃ x, IsMinError xstar x₀ K x := by
-  refine ⟨x₀ + K.starProjection (xstar - x₀), ?_, fun y hy => ?_⟩
-  · rw [add_sub_cancel_left]
-    exact Submodule.starProjection_apply_mem K _
-  have h1 : xstar - (x₀ + K.starProjection (xstar - x₀))
-      = (xstar - x₀) - K.starProjection (xstar - x₀) := by abel
-  have h2 : xstar - y = (xstar - x₀) - (y - x₀) := by abel
-  rw [h1, h2]
-  exact Submodule.norm_sub_le_of_forall_inner_eq_zero (Submodule.starProjection_apply_mem K _)
-    (fun w hw => K.starProjection_inner_eq_zero _ w hw) hy
+theorem exists_isMinError [FiniteDimensional 𝕜 K] (xstar : E) : ∃ x, IsMinError xstar x₀ K x :=
+  ⟨_, isMinError_add_starProjection (K := K) xstar x₀⟩
 
 end WellPosed
 

@@ -8,9 +8,10 @@ import Mathlib.Tactic.Positivity
 
 Full multigrid sweeps once from the coarsest level upwards, taking as initial guess on each level
 the interpolant of the previous level's approximation and applying `μ` cycles of the multigrid
-iteration.  If the interpolation is accurate to the discretization order, the cycle is uniformly
-contractive, and the interpolation operators are bounded by `c₂ 2^{-κ}`, then the full multigrid
-approximation is accurate to the discretization order on *every* level.
+iteration (Saad, *Iterative Methods for Sparse Linear Systems*[^saad-iterative], §13.4.4).  If the
+interpolation is accurate to the discretization order, the cycle is uniformly contractive, and the
+interpolation operators are bounded by `c₂ 2^{-κ}`, then the full multigrid approximation is
+accurate to the discretization order on *every* level.
 
 There is no analysis in the proof.  Its whole content is a scalar recursion:
 `a_{l+1} ≤ ξ^μ (c₁ h_{l+1}^κ + c₂ 2^{-κ} a_l)` with `h_{l+1} = h_l / 2` and `a_0 = 0` implies

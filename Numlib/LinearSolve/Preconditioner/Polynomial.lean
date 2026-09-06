@@ -151,6 +151,8 @@ private theorem aeval_one_sub_X_mul_apply (A : E →ₗ[𝕜] E) (s : ℝ[X]) (x
   rw [hcomm]
   simp [Polynomial.map_sub, Polynomial.map_mul, Polynomial.map_X, Module.End.mul_apply]
 
+/-- The values of the residual polynomial `1 - X s` are `t ↦ 1 - t s(t)`, the function whose
+supremum over `[α, β]` the optimality criterion minimizes. -/
 private theorem eval_one_sub_X_mul (s : ℝ[X]) :
     (fun t => |Polynomial.eval t ((1 : ℝ[X]) - X * s)|) = fun t => |1 - t * s.eval t| := by
   funext t

@@ -80,15 +80,6 @@ theorem jacobiLower_add_jacobiUpper (A : Matrix n n 𝕜) (h : IsUnit (diagPart 
     jacobiLower A + jacobiUpper A = (jacobiSplitting A h).iterationOperator := by
   rw [jacobiSplitting_iterationOperator, jacobiLower, jacobiUpper, ← mul_add]
 
-omit [LinearOrder n] in
-/-- The inverse of the diagonal part is the diagonal matrix of the inverses. -/
-theorem inv_diagPart {A : Matrix n n 𝕜} (h : IsUnit (diagPart A)) :
-    (diagPart A)⁻¹ = diagonal fun i => (A i i)⁻¹ := by
-  have hd := (isUnit_diagPart_iff A).mp h
-  refine inv_eq_left_inv ?_
-  rw [diagPart, diagonal_mul_diagonal, ← diagonal_one]
-  exact congrArg _ (funext fun i => inv_mul_cancel₀ (hd i))
-
 /-- Entries of `L`: the strictly lower triangle of `A`, scaled row by row. -/
 theorem jacobiLower_apply {A : Matrix n n 𝕜} (h : IsUnit (diagPart A)) (i j : n) :
     jacobiLower A i j = -((A i i)⁻¹ * strictLower A i j) := by
@@ -211,6 +202,8 @@ consistently ordered. -/
 private def indexRank (i : n) : ℕ := (Finset.univ.filter (· < i)).card
 
 omit [DecidableEq n] in
+/-- Consecutive indices have consecutive ranks: if nothing lies strictly between `j` and `i` then
+`indexRank i = indexRank j + 1`. -/
 private theorem indexRank_eq_succ {i j : n} (hji : j < i) (hcov : ¬ ∃ k, j < k ∧ k < i) :
     indexRank i = indexRank j + 1 := by
   have hset : Finset.univ.filter (· < i) = insert j (Finset.univ.filter (· < j)) := by
@@ -285,6 +278,7 @@ private theorem isUnit_smul_iff {c : ℂ} (hc : c ≠ 0) (M : Matrix n n ℂ) :
     rw [Algebra.algebraMap_eq_smul_one, smul_mul_assoc, one_mul]
   rw [hsm, ← hc'.unit_spec, Units.isUnit_units_mul]
 
+/-- `D + ω L'` is a unit, being `ω` times the `M` factor of the SOR splitting. -/
 private theorem isUnit_diagPart_add_smul_strictLower {A : Matrix n n ℂ} (h : IsUnit (diagPart A))
     {ω : ℂ} (hω : ω ≠ 0) : IsUnit (diagPart A + ω • strictLower A) := by
   have hm : diagPart A + ω • strictLower A = ω • (sorSplitting A h hω).m := by
@@ -452,6 +446,7 @@ theorem youngRadius_of_lt {ω r : ℝ} (h : (ω * r / 2) ^ 2 < ω - 1) : youngRa
   rw [youngRadius, Real.sqrt_eq_zero_of_nonpos (by linarith), add_zero]
   exact max_eq_right h.le
 
+/-- Young's radius is nonnegative: the first branch of the maximum is a square. -/
 theorem youngRadius_nonneg {ω r : ℝ} : 0 ≤ youngRadius ω r :=
   le_max_of_le_left (sq_nonneg _)
 
@@ -522,18 +517,22 @@ private theorem norm_le_young_aux {ω t : ℝ} (ht : 0 ≤ t) {l : ℂ}
     rw [hznorm, hre0, abs_of_neg hdneg]
     linarith
 
+/-- The square of a real complex number is the square of its modulus. -/
+private theorem sq_eq_sq_norm_of_im_eq_zero {μ : ℂ} (h : μ.im = 0) :
+    μ ^ 2 = ((‖μ‖ : ℝ) : ℂ) ^ 2 := by
+  have hre : μ = ((μ.re : ℝ) : ℂ) := by apply Complex.ext <;> simp [h]
+  have hnorm : ‖μ‖ = |μ.re| := by
+    conv_lhs => rw [hre]
+    rw [Complex.norm_real, Real.norm_eq_abs]
+  conv_lhs => rw [hre]
+  rw [hnorm, ← Complex.ofReal_pow, ← Complex.ofReal_pow, sq_abs]
+
 /-- Any eigenvalue `λ` of the SOR iteration matrix attached by Young's relation to a *real*
 Jacobi eigenvalue `μ` of modulus at most `r` satisfies `‖λ‖ ≤ youngRadius ω r`. -/
 theorem norm_le_youngRadius {ω r : ℝ} (hω : 0 ≤ ω) {l μ : ℂ} (hμim : μ.im = 0) (hμ : ‖μ‖ ≤ r)
     (hrel : (l + (ω : ℂ) - 1) ^ 2 = l * (ω : ℂ) ^ 2 * μ ^ 2) :
     ‖l‖ ≤ youngRadius ω r := by
-  have hre : μ = ((μ.re : ℝ) : ℂ) := by apply Complex.ext <;> simp [hμim]
-  have hnorm : ‖μ‖ = |μ.re| := by
-    conv_lhs => rw [hre]
-    rw [Complex.norm_real, Real.norm_eq_abs]
-  have hμsq : μ ^ 2 = ((‖μ‖ : ℝ) : ℂ) ^ 2 := by
-    conv_lhs => rw [hre]
-    rw [hnorm, ← Complex.ofReal_pow, ← Complex.ofReal_pow, sq_abs]
+  have hμsq : μ ^ 2 = ((‖μ‖ : ℝ) : ℂ) ^ 2 := sq_eq_sq_norm_of_im_eq_zero hμim
   have ht : 0 ≤ ω * ‖μ‖ / 2 := by positivity
   have hrel' : (l + (ω : ℂ) - 1) ^ 2 = l * (2 * ((ω * ‖μ‖ / 2 : ℝ) : ℂ)) ^ 2 := by
     rw [hrel, hμsq]
@@ -596,16 +595,8 @@ theorem exists_norm_eq_youngRadius {ω r : ℝ} (hω : 0 ≤ ω) (hr : 0 ≤ r) 
         zero_add, add_zero, sub_zero]
       linear_combination hs2
 
-/-- The square of a real complex number is the square of its modulus. -/
-private theorem sq_eq_sq_norm_of_im_eq_zero {μ : ℂ} (h : μ.im = 0) :
-    μ ^ 2 = ((‖μ‖ : ℝ) : ℂ) ^ 2 := by
-  have hre : μ = ((μ.re : ℝ) : ℂ) := by apply Complex.ext <;> simp [h]
-  have hnorm : ‖μ‖ = |μ.re| := by
-    conv_lhs => rw [hre]
-    rw [Complex.norm_real, Real.norm_eq_abs]
-  conv_lhs => rw [hre]
-  rw [hnorm, ← Complex.ofReal_pow, ← Complex.ofReal_pow, sq_abs]
-
+/-- The coercion `ℝ≥0 → ℝ≥0∞` of a norm is its `ENNReal.ofReal`; the form in which the suprema
+defining a spectral radius are compared with real bounds. -/
 private theorem coe_nnnorm_eq_ofReal (z : ℂ) : ((‖z‖₊ : ℝ≥0) : ℝ≥0∞) = ENNReal.ofReal ‖z‖ := by
   rw [← coe_nnnorm, ENNReal.ofReal_coe_nnreal]
 
@@ -709,6 +700,8 @@ section Optimal
 
 variable {r : ℝ}
 
+/-- The three facts about `√(1 - r²)` that every computation with the optimal parameter needs:
+its square is `1 - r²`, it is positive, and it is at most `1`. -/
 private theorem sqrt_one_sub_sq_facts (hr0 : 0 ≤ r) (hr1 : r < 1) :
     Real.sqrt (1 - r ^ 2) ^ 2 = 1 - r ^ 2 ∧ 0 < Real.sqrt (1 - r ^ 2) ∧
       Real.sqrt (1 - r ^ 2) ≤ 1 := by
@@ -718,11 +711,13 @@ private theorem sqrt_one_sub_sq_facts (hr0 : 0 ≤ r) (hr1 : r < 1) :
   · exact Real.sqrt_pos.mpr hpos
   · nlinarith [Real.sqrt_nonneg (1 - r ^ 2)]
 
+/-- The optimal relaxation parameter is at least `1`: over-relaxation never hurts. -/
 theorem one_le_optimalRelaxation (hr0 : 0 ≤ r) (hr1 : r < 1) : 1 ≤ optimalRelaxation r := by
   obtain ⟨-, hq0, hq1⟩ := sqrt_one_sub_sq_facts hr0 hr1
   rw [optimalRelaxation, le_div_iff₀ (by linarith)]
   linarith
 
+/-- The optimal relaxation parameter lies below `2`, so it is admissible for Kahan's condition. -/
 theorem optimalRelaxation_lt_two (hr0 : 0 ≤ r) (hr1 : r < 1) : optimalRelaxation r < 2 := by
   obtain ⟨-, hq0, -⟩ := sqrt_one_sub_sq_facts hr0 hr1
   rw [optimalRelaxation, div_lt_iff₀ (by linarith)]
@@ -824,6 +819,7 @@ section Matrices
 variable {A : Matrix n n ℂ} [Nonempty n]
 
 omit [LinearOrder n] [Nonempty n] in
+/-- A spectral radius below `1` is finite, so its real value is below `1` too. -/
 private theorem toReal_spectralRadius_lt_one {M : Matrix n n ℂ}
     (hlt : spectralRadius ℂ M < 1) : (spectralRadius ℂ M).toReal < 1 := by
   have hne : spectralRadius ℂ M ≠ ⊤ := (hlt.trans_le le_top).ne

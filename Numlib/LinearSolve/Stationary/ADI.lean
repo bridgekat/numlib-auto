@@ -270,6 +270,7 @@ noncomputable def peacemanRachfordSplitting (H V : E →L[𝕜] E) {r : ℝ} (hr
 
 variable {hr : r ≠ 0} {hH : IsUnit (H + (r : 𝕜) • 1)} {hV : IsUnit (V + (r : 𝕜) • 1)}
 
+/-- The preconditioner of Saad's (4.52) is `M = (2r)⁻¹ (H + r)(V + r)`. -/
 theorem peacemanRachfordSplitting_m :
     (peacemanRachfordSplitting H V hr hH hV).m
       = (2 * (r : 𝕜))⁻¹ • ((H + (r : 𝕜) • 1) * (V + (r : 𝕜) • 1)) := rfl
@@ -406,19 +407,9 @@ theorem norm_conj_peacemanRachford_lt_one (hH : (H : E →ₗ[𝕜] E).IsCoerciv
     norm_nonneg ((V - (r : 𝕜) • (1 : E →L[𝕜] E)) * Ring.inverse (V + (r : 𝕜) • 1))]
 
 omit [CompleteSpace E] in
-/-- A conjugate of a power is the power of the conjugate. -/
-private theorem pow_conj {u : (E →L[𝕜] E)ˣ} {P Q : E →L[𝕜] E}
-    (hP : (↑u⁻¹ : E →L[𝕜] E) * Q * ↑u = P) (k : ℕ) :
-    P ^ k = (↑u⁻¹ : E →L[𝕜] E) * Q ^ k * ↑u := by
-  induction k with
-  | zero => rw [pow_zero, pow_zero, mul_one, u.inv_mul]
-  | succ k ih =>
-    rw [pow_succ, ih, ← hP, pow_succ]
-    calc ((↑u⁻¹ : E →L[𝕜] E) * Q ^ k * ↑u) * ((↑u⁻¹ : E →L[𝕜] E) * Q * ↑u)
-        = (↑u⁻¹ : E →L[𝕜] E) * Q ^ k * ((u : E →L[𝕜] E) * ↑u⁻¹) * Q * ↑u := by noncomm_ring
-      _ = (↑u⁻¹ : E →L[𝕜] E) * (Q ^ k * Q) * ↑u := by rw [u.mul_inv]; noncomm_ring
-
-omit [CompleteSpace E] in
+/-- A power of a conjugate grows no faster than the conjugated power of the norm: this is what
+turns "the sweep is similar to a contraction" into "the errors go to zero", with the constant
+`‖u⁻¹‖ ‖u‖` absorbed once and for all.  The conjugation identity is `Units.conj_pow'`. -/
 private theorem norm_pow_conj_le {u : (E →L[𝕜] E)ˣ} {P Q : E →L[𝕜] E}
     (hP : (↑u⁻¹ : E →L[𝕜] E) * Q * ↑u = P) (k : ℕ) :
     ‖P ^ k‖ ≤ ‖(↑u⁻¹ : E →L[𝕜] E)‖ * ‖Q‖ ^ k * ‖(u : E →L[𝕜] E)‖ := by
@@ -431,7 +422,7 @@ private theorem norm_pow_conj_le {u : (E →L[𝕜] E)ˣ} {P Q : E →L[𝕜] E}
     | succ j ih =>
       rw [pow_succ, pow_succ]
       exact (norm_mul_le _ _).trans (by gcongr)
-  rw [pow_conj hP k]
+  rw [← hP, u.conj_pow']
   calc ‖(↑u⁻¹ : E →L[𝕜] E) * Q ^ k * ↑u‖
       ≤ ‖(↑u⁻¹ : E →L[𝕜] E) * Q ^ k‖ * ‖(u : E →L[𝕜] E)‖ := norm_mul_le _ _
     _ ≤ ‖(↑u⁻¹ : E →L[𝕜] E)‖ * ‖Q ^ k‖ * ‖(u : E →L[𝕜] E)‖ := by

@@ -284,13 +284,6 @@ open Stationary
 
 variable {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- A real number in `[p, q]` has absolute value at most `max |p| |q|`: the absolute value is
-convex, so on an interval it is largest at an endpoint. -/
-private theorem abs_le_max_abs_abs {p q x : ℝ} (h₁ : p ≤ x) (h₂ : x ≤ q) :
-    |x| ≤ max |p| |q| :=
-  abs_le.2 ⟨(neg_le_neg (le_max_left |p| |q|)).trans ((neg_abs_le p).trans h₁),
-    h₂.trans ((le_abs_self q).trans (le_max_right _ _))⟩
-
 /-- The spectral radius of a real matrix is `K` as soon as every complex eigenvalue has modulus
 at most `K` and one of them attains it. -/
 private theorem complexSpectralRadius_eq_of_forall_le {X : Matrix n n ℝ} {K : ℝ}

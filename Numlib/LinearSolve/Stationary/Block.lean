@@ -52,6 +52,7 @@ column carry the same label, Saad's `D` of (4.15). -/
 def blockDiagPart [DecidableEq ι] (π : n → ι) (A : Matrix n n R) : Matrix n n R :=
   Matrix.of fun i j => if π i = π j then A i j else 0
 
+/-- Entries of the block diagonal part: those whose row and column carry the same label. -/
 @[simp]
 theorem blockDiagPart_apply [DecidableEq ι] (π : n → ι) (A : Matrix n n R) (i j : n) :
     blockDiagPart π A i j = if π i = π j then A i j else 0 := rfl
@@ -60,6 +61,7 @@ theorem blockDiagPart_apply [DecidableEq ι] (π : n → ι) (A : Matrix n n R) 
 def blockStrictLower [LinearOrder ι] (π : n → ι) (A : Matrix n n R) : Matrix n n R :=
   Matrix.of fun i j => if π j < π i then A i j else 0
 
+/-- Entries of the strict block-lower part: those whose column label is below the row label. -/
 @[simp]
 theorem blockStrictLower_apply [LinearOrder ι] (π : n → ι) (A : Matrix n n R) (i j : n) :
     blockStrictLower π A i j = if π j < π i then A i j else 0 := rfl
@@ -68,6 +70,7 @@ theorem blockStrictLower_apply [LinearOrder ι] (π : n → ι) (A : Matrix n n 
 def blockStrictUpper [LinearOrder ι] (π : n → ι) (A : Matrix n n R) : Matrix n n R :=
   Matrix.of fun i j => if π i < π j then A i j else 0
 
+/-- Entries of the strict block-upper part: those whose row label is below the column label. -/
 @[simp]
 theorem blockStrictUpper_apply [LinearOrder ι] (π : n → ι) (A : Matrix n n R) (i j : n) :
     blockStrictUpper π A i j = if π i < π j then A i j else 0 := rfl

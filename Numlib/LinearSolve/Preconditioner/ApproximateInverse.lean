@@ -89,19 +89,6 @@ theorem norm_le_norm_sq_of_isMinOn {S : Type*} [NormedRing S] [NormedSpace ℝ S
   rw [pow_two, pow_two]
   exact norm_mul_le r r
 
-/-- Saad (10.61)–(10.62): the self-preconditioned global minimal-residual step
-`M' = M + α (M R)` with `R = 1 - A M` has residual `R' = (1 - α) R + α R²`. Iterating, `R_k` is a
-polynomial of degree `2^k` in `R₀`. -/
-theorem residual_selfPreconditionedStep {S T : Type*} [CommRing S] [Ring T] [Algebra S T]
-    (A M : T) (α : S) :
-    1 - A * (M + α • (M * (1 - A * M))) =
-      (1 - α) • (1 - A * M) + α • (1 - A * M) ^ 2 := by
-  have hL : A * (M + α • (M * (1 - A * M))) = A * M + α • (A * M * (1 - A * M)) := by
-    rw [mul_add, mul_smul_comm, ← mul_assoc]
-  have h2 : A * M * (1 - A * M) = (1 - A * M) - (1 - A * M) * (1 - A * M) := by noncomm_ring
-  rw [hL, pow_two, h2, smul_sub, sub_smul, one_smul]
-  abel
-
 /-- Saad (10.63): the preconditioned matrix `B = A M` of the self-preconditioned step satisfies
 `B' = B + α (B (1 - B))`, so it stays a polynomial in `B₀`. In particular a symmetric `B₀`, as
 when `M₀ = α₀ Aᵀ`, keeps every `B_k` symmetric. -/
@@ -109,6 +96,17 @@ theorem mul_selfPreconditionedStep {S T : Type*} [CommRing S] [Ring T] [Algebra 
     (A M : T) (α : S) :
     A * (M + α • (M * (1 - A * M))) = A * M + α • (A * M * (1 - A * M)) := by
   rw [mul_add, mul_smul_comm, ← mul_assoc]
+
+/-- Saad (10.61)–(10.62): the self-preconditioned global minimal-residual step
+`M' = M + α (M R)` with `R = 1 - A M` has residual `R' = (1 - α) R + α R²`. Iterating, `R_k` is a
+polynomial of degree `2^k` in `R₀`. -/
+theorem residual_selfPreconditionedStep {S T : Type*} [CommRing S] [Ring T] [Algebra S T]
+    (A M : T) (α : S) :
+    1 - A * (M + α • (M * (1 - A * M))) =
+      (1 - α) • (1 - A * M) + α • (1 - A * M) ^ 2 := by
+  have h2 : A * M * (1 - A * M) = (1 - A * M) - (1 - A * M) * (1 - A * M) := by noncomm_ring
+  rw [mul_selfPreconditionedStep, pow_two, h2, smul_sub, sub_smul, one_smul]
+  abel
 
 /-! ### The sparsity estimate -/
 

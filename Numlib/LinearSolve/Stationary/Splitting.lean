@@ -106,10 +106,22 @@ variable {n : Type*} [Fintype n] [DecidableEq n] [LinearOrder n]
 variable {𝕜 : Type*} [Field 𝕜]
 
 omit [LinearOrder n] in
-/-- Unit diagonal part. -/
+/-- The diagonal part of `A` is a unit exactly when every diagonal entry of `A` is nonzero.  This
+is the hypothesis every splitting below is built on. -/
 theorem isUnit_diagPart_iff (A : Matrix n n 𝕜) : IsUnit (diagPart A) ↔ ∀ i, A i i ≠ 0 := by
   rw [isUnit_iff_isUnit_det, diagPart, det_diagonal, isUnit_iff_ne_zero, Finset.prod_ne_zero_iff]
   simp [Matrix.diag]
+
+omit [LinearOrder n] in
+/-- The inverse of the diagonal part is the diagonal matrix of the inverses.  Every entrywise
+computation with a splitting goes through this, because `Matrix.inv_diagonal` inverts the diagonal
+in the Pi ring and is therefore `0` when one entry vanishes. -/
+theorem inv_diagPart {A : Matrix n n 𝕜} (h : IsUnit (diagPart A)) :
+    (diagPart A)⁻¹ = diagonal fun i => (A i i)⁻¹ := by
+  have hd := (isUnit_diagPart_iff A).mp h
+  refine inv_eq_left_inv ?_
+  rw [diagPart, diagonal_mul_diagonal, ← diagonal_one]
+  exact congrArg _ (funext fun i => inv_mul_cancel₀ (hd i))
 
 /-- A triangular matrix whose diagonal entries are nonzero is a unit. -/
 private theorem isUnit_of_isLowerTriangular {M : Matrix n n 𝕜} (hM : M.IsLowerTriangular)
@@ -117,6 +129,7 @@ private theorem isUnit_of_isLowerTriangular {M : Matrix n n 𝕜} (hM : M.IsLowe
   rw [isUnit_iff_isUnit_det, det_of_isLowerTriangular M hM, isUnit_iff_ne_zero]
   exact Finset.prod_ne_zero_iff.mpr fun i _ => hd i
 
+/-- An upper triangular matrix whose diagonal entries are nonzero is a unit. -/
 private theorem isUnit_of_isUpperTriangular {M : Matrix n n 𝕜} (hM : M.IsUpperTriangular)
     (hd : ∀ i, M i i ≠ 0) : IsUnit M := by
   rw [isUnit_iff_isUnit_det, det_of_isUpperTriangular hM, isUnit_iff_ne_zero]
@@ -131,6 +144,8 @@ private theorem isUnit_smul_diagPart_add_smul_strictLower (A : Matrix n n 𝕜) 
     simp [hij'.ne, asymm hij']
   · simpa using mul_ne_zero hc ((isUnit_diagPart_iff A).mp h i)
 
+/-- The upper triangular counterpart of
+`Matrix.isUnit_smul_diagPart_add_smul_strictLower`, used for the backward sweeps. -/
 private theorem isUnit_smul_diagPart_add_smul_strictUpper (A : Matrix n n 𝕜) {c d : 𝕜} (hc : c ≠ 0)
     (h : IsUnit (diagPart A)) : IsUnit (c • diagPart A + d • strictUpper A) := by
   refine isUnit_of_isUpperTriangular (fun i j hij => ?_) fun i => ?_
@@ -139,6 +154,7 @@ private theorem isUnit_smul_diagPart_add_smul_strictUpper (A : Matrix n n 𝕜) 
   · simpa using mul_ne_zero hc ((isUnit_diagPart_iff A).mp h i)
 
 omit [LinearOrder n] in
+/-- A nonzero scalar multiple of a unit matrix is a unit. -/
 private theorem isUnit_smul {c : 𝕜} (hc : c ≠ 0) {M : Matrix n n 𝕜} (hM : IsUnit M) :
     IsUnit (c • M) := by
   rw [isUnit_iff_isUnit_det, det_smul, isUnit_iff_ne_zero] at *
@@ -151,6 +167,8 @@ theorem isUnit_diagPart_add_strictLower {A : Matrix n n 𝕜} (h : IsUnit (diagP
     IsUnit (diagPart A + strictLower A) := by
   simpa using isUnit_smul_diagPart_add_smul_strictLower (d := 1) A one_ne_zero h
 
+/-- `D + U`, Saad's `D - F`, is invertible as soon as the diagonal of `A` is.  This is what makes
+the backward Gauss–Seidel splitting well defined. -/
 theorem isUnit_diagPart_add_strictUpper {A : Matrix n n 𝕜} (h : IsUnit (diagPart A)) :
     IsUnit (diagPart A + strictUpper A) := by
   simpa using isUnit_smul_diagPart_add_smul_strictUpper (d := 1) A one_ne_zero h
@@ -160,6 +178,8 @@ negated strictly lower / strictly upper parts (Saad, *Iterative Methods*, (4.5))
 noncomputable def jacobiSplitting (A : Matrix n n 𝕜) (h : IsUnit (diagPart A)) : Splitting A :=
   ⟨diagPart A, h⟩
 
+/-- The complementary part of the Jacobi splitting is `-(strictLower A + strictUpper A)`, that is
+`N = E + F` in Saad's letters `A = D - E - F`. -/
 theorem jacobiSplitting_n (A : Matrix n n 𝕜) (h : IsUnit (diagPart A)) :
     (jacobiSplitting A h).n = -(strictLower A + strictUpper A) := by
   change diagPart A - A = -(strictLower A + strictUpper A)
@@ -190,7 +210,8 @@ theorem gaussSeidelSplitting_n (A : Matrix n n 𝕜) (h : IsUnit (diagPart A)) :
   rw [eq_neg_iff_add_eq_zero, sub_add_eq_add_sub, diagPart_add_strictLower_add_strictUpper,
     sub_self]
 
-/-- Backward Gauss–Seidel: `M = D - F`. -/
+/-- Backward Gauss–Seidel: `M = D - F`, the backward sweep, in Saad's letters `A = D - E - F`
+(Saad, *Iterative Methods*, §4.1). -/
 noncomputable def backwardGaussSeidelSplitting (A : Matrix n n 𝕜) (h : IsUnit (diagPart A)) :
     Splitting A :=
   ⟨diagPart A + strictUpper A, isUnit_diagPart_add_strictUpper h⟩

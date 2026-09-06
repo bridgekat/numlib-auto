@@ -57,7 +57,7 @@ variable {𝕜 : Type*} [RCLike 𝕜]
 def IsStrictDiagDominant (A : Matrix n n 𝕜) : Prop :=
   ∀ i, ∑ j ∈ Finset.univ.erase i, ‖A i j‖ < ‖A i i‖
 
-/-- Column strict diagonal dominance. -/
+/-- Column strict diagonal dominance: `∑_{i ≠ j} |a_ij| < |a_jj|` for every column `j`. -/
 def IsStrictColDiagDominant (A : Matrix n n 𝕜) : Prop :=
   ∀ j, ∑ i ∈ Finset.univ.erase j, ‖A i j‖ < ‖A j j‖
 
@@ -104,11 +104,14 @@ theorem IsStrictDiagDominant.jacobiContraction_lt_one [Nonempty n] {A : Matrix n
   exact fun i _ => (div_lt_one (norm_pos_iff.mpr (hA.diag_ne_zero i))).mpr (hA i)
 
 omit [LinearOrder n] in
+/-- Every row quotient `∑_{j ≠ i} |a_ij| / |a_ii|` is at most the Jacobi constant `q_∞`, of which
+it is the defining supremum. -/
 theorem div_le_jacobiContraction [Nonempty n] (A : Matrix n n 𝕜) (i : n) :
     (∑ j ∈ Finset.univ.erase i, ‖A i j‖) / ‖A i i‖ ≤ jacobiContraction A :=
   Finset.le_sup' (fun i => (∑ j ∈ Finset.univ.erase i, ‖A i j‖) / ‖A i i‖) (Finset.mem_univ i)
 
 omit [LinearOrder n] in
+/-- The Jacobi constant `q_∞` is nonnegative, being a supremum of quotients of norms. -/
 theorem jacobiContraction_nonneg [Nonempty n] (A : Matrix n n 𝕜) : 0 ≤ jacobiContraction A := by
   obtain ⟨i⟩ := ‹Nonempty n›
   refine le_trans ?_ (div_le_jacobiContraction A i)
@@ -126,13 +129,18 @@ private def sassenfeldMatrix (A : Matrix n n 𝕜) : Matrix n n ℝ :=
   Matrix.of fun i j => if i = j then ‖A i i‖ else if j < i then -‖A i j‖ else 0
 
 omit [Fintype n] in
+/-- Entries of the Sassenfeld matrix `|D| - |L|`. -/
 private theorem sassenfeldMatrix_apply (A : Matrix n n 𝕜) (i j : n) :
     sassenfeldMatrix A i j = if i = j then ‖A i i‖ else if j < i then -‖A i j‖ else 0 := rfl
 
+/-- The Sassenfeld numbers as the solution of the lower-triangular system
+`(|D| - |L|) p = |U| 𝟙`. -/
 private theorem sassenfeld_def (A : Matrix n n 𝕜) :
     sassenfeld A =
       (sassenfeldMatrix A)⁻¹ *ᵥ fun i => ∑ j ∈ Finset.univ.filter (i < ·), ‖A i j‖ := rfl
 
+/-- The Sassenfeld matrix is lower triangular with `|a_ii|` on its diagonal, hence nonsingular
+whenever the diagonal of `A` is. -/
 private theorem isUnit_det_sassenfeldMatrix {A : Matrix n n 𝕜} (h : IsUnit (diagPart A)) :
     IsUnit (sassenfeldMatrix A).det := by
   have hd := (isUnit_diagPart_iff A).mp h
@@ -200,15 +208,6 @@ open scoped Matrix.Norms.Operator
 
 variable {𝕜 : Type*} [RCLike 𝕜]
 
-omit [LinearOrder n] in
-/-- The inverse of the diagonal part is the diagonal matrix of the inverses. -/
-private theorem inv_diagPart {A : Matrix n n 𝕜} (h : IsUnit (diagPart A)) :
-    (diagPart A)⁻¹ = diagonal fun i => (A i i)⁻¹ := by
-  have hd := (isUnit_diagPart_iff A).mp h
-  refine inv_eq_left_inv ?_
-  rw [diagPart, diagonal_mul_diagonal, ← diagonal_one]
-  exact congrArg _ (funext fun i => inv_mul_cancel₀ (hd i))
-
 /-- Entries of the Jacobi iteration matrix. -/
 private theorem jacobi_iterationOperator_apply (A : Matrix n n 𝕜) (h : IsUnit (diagPart A))
     (i j : n) : (jacobiSplitting A h).iterationOperator i j =
@@ -219,12 +218,15 @@ private theorem jacobi_iterationOperator_apply (A : Matrix n n 𝕜) (h : IsUnit
   · simp [diagonal_mul]
   · simp [diagonal_mul, hlt, hlt.ne', asymm hlt]
 
+/-- Off-diagonal entries of the Jacobi iteration matrix have norm `|a_ij| / |a_ii|`. -/
 private theorem norm_jacobi_iterationOperator_apply (A : Matrix n n 𝕜) (h : IsUnit (diagPart A))
     {i j : n} (hij : j ≠ i) :
     ‖(jacobiSplitting A h).iterationOperator i j‖ = ‖A i j‖ / ‖A i i‖ := by
   rw [jacobi_iterationOperator_apply, ite_eq_right (Ne.symm hij), norm_neg, norm_mul, norm_inv,
     div_eq_inv_mul]
 
+/-- The absolute row sums of the Jacobi iteration matrix are the row quotients whose supremum is
+the Jacobi constant. -/
 private theorem sum_norm_jacobi_iterationOperator (A : Matrix n n 𝕜) (h : IsUnit (diagPart A))
     (i : n) : ∑ j, ‖(jacobiSplitting A h).iterationOperator i j‖ =
       (∑ j ∈ Finset.univ.erase i, ‖A i j‖) / ‖A i i‖ := by
@@ -582,12 +584,11 @@ private theorem diagPart_add_strictLower_mul_gaussSeidel_resolvent (A : Matrix n
   rw [mul_sub, mul_smul_comm, mul_one, diagPart_add_strictLower_mul_gaussSeidel, sub_neg_eq_add]
 
 omit [LinearOrder n] in
-/-- A vector annihilated by a unit is zero. -/
+/-- A vector annihilated by a unit is zero; the `IsUnit` phrasing of Mathlib's
+`Matrix.eq_zero_of_mulVec_eq_zero`. -/
 private theorem eq_zero_of_isUnit_of_mulVec_eq_zero {B : Matrix n n 𝕜} (hB : IsUnit B)
-    {x : n → 𝕜} (hBx : B *ᵥ x = 0) : x = 0 := by
-  by_contra hx
-  exact (isUnit_iff_ne_zero.mp ((isUnit_iff_isUnit_det B).mp hB))
-    (Matrix.exists_mulVec_eq_zero_iff.mp ⟨x, hx, hBx⟩)
+    {x : n → 𝕜} (hBx : B *ᵥ x = 0) : x = 0 :=
+  eq_zero_of_mulVec_eq_zero (isUnit_iff_ne_zero.mp ((isUnit_iff_isUnit_det B).mp hB)) hBx
 
 omit [LinearOrder n] in
 /-- A point of the spectrum is an eigenvalue: it comes with a nonzero vector in the kernel of the
@@ -627,7 +628,7 @@ private theorem strict_of_norm_le {A B : Matrix n n 𝕜} {c : ℝ}
 
 omit [LinearOrder n] in
 /-- Strict column dominance is inherited in the same way, for `c > 0`. -/
-private theorem col_of_norm_le {A B : Matrix n n 𝕜} {c : ℝ}
+private theorem isStrictColDiagDominant_of_norm_le {A B : Matrix n n 𝕜} {c : ℝ}
     (hoff : ∀ i j, i ≠ j → ‖B i j‖ ≤ c * ‖A i j‖) (hdiag : ∀ i, ‖B i i‖ = c * ‖A i i‖)
     (hc : 0 < c) (hA : A.IsStrictColDiagDominant) : B.IsStrictColDiagDominant := fun j => by
   calc ∑ i ∈ Finset.univ.erase j, ‖B i j‖
@@ -646,11 +647,13 @@ private theorem jacobiPencil_norm_le {A : Matrix n n 𝕜} {μ : 𝕜} (hμ : 1 
   nlinarith [norm_nonneg (A i j)]
 
 omit [Fintype n] in
+/-- The diagonal of the Jacobi pencil is `μ` times that of `A`. -/
 private theorem jacobiPencil_norm_diag (A : Matrix n n 𝕜) (μ : 𝕜) (i : n) :
     ‖(μ • diagPart A + strictLower A + strictUpper A) i i‖ = ‖μ‖ * ‖A i i‖ := by
   rw [jacobiPencil_apply, ite_eq_left rfl, norm_mul]
 
 omit [Fintype n] in
+/-- The Jacobi pencil has the same off-diagonal nonzero pattern as `A`. -/
 private theorem jacobiPencil_ne_zero {A : Matrix n n 𝕜} (μ : 𝕜) {i j : n} (hij : i ≠ j)
     (hAij : A i j ≠ 0) : (μ • diagPart A + strictLower A + strictUpper A) i j ≠ 0 := by
   rwa [jacobiPencil_apply, ite_eq_right hij]
@@ -667,11 +670,13 @@ private theorem gaussSeidelPencil_norm_le {A : Matrix n n 𝕜} {l : 𝕜} (hl :
   · nlinarith [norm_nonneg (A i j)]
 
 omit [Fintype n] in
+/-- The diagonal of the Gauss–Seidel pencil is `λ` times that of `A`. -/
 private theorem gaussSeidelPencil_norm_diag (A : Matrix n n 𝕜) (l : 𝕜) (i : n) :
     ‖(l • (diagPart A + strictLower A) + strictUpper A) i i‖ = ‖l‖ * ‖A i i‖ := by
   rw [gaussSeidelPencil_apply, ite_eq_left le_rfl, norm_mul]
 
 omit [Fintype n] in
+/-- The Gauss–Seidel pencil has the same nonzero pattern as `A` for `λ ≠ 0`. -/
 private theorem gaussSeidelPencil_ne_zero {A : Matrix n n 𝕜} {l : 𝕜} (hl : l ≠ 0) (i j : n)
     (hAij : A i j ≠ 0) : (l • (diagPart A + strictLower A) + strictUpper A) i j ≠ 0 := by
   rw [gaussSeidelPencil_apply]
@@ -705,6 +710,8 @@ private theorem spectralRadius_lt_one_of_forall_norm_le {M : Matrix n n ℂ} {r 
   exact hr1
 
 omit [LinearOrder n] in
+/-- Over an empty index type every matrix is a unit, so the spectrum is empty and the spectral
+radius is `0`. -/
 private theorem spectralRadius_lt_one_of_isEmpty [IsEmpty n] (M : Matrix n n ℂ) :
     spectralRadius ℂ M < 1 := by
   have : Subsingleton (Matrix n n ℂ) := ⟨fun _ _ => by ext i; exact isEmptyElim i⟩
@@ -948,8 +955,8 @@ theorem gaussSeidel_spectralRadius_lt_one_of_col (A : Matrix n n ℂ)
     rw [← diagPart_add_strictLower_mul_gaussSeidel_resolvent A h l, ← mulVec_mulVec, hxeq,
       mulVec_zero]
   have hunit : IsUnit (l • (diagPart A + strictLower A) + strictUpper A) :=
-    (col_of_norm_le (gaussSeidelPencil_norm_le hge) (gaussSeidelPencil_norm_diag A l) hpos
-      hA).isUnit
+    (isStrictColDiagDominant_of_norm_le (gaussSeidelPencil_norm_le hge)
+      (gaussSeidelPencil_norm_diag A l) hpos hA).isUnit
   exact hx (eq_zero_of_isUnit_of_mulVec_eq_zero hunit hBx)
 
 end Spectral

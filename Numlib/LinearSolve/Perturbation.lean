@@ -36,30 +36,48 @@ open NormedRing
 
 variable {𝕜 E : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
 
+section TwoSpace
+
+variable {F : Type*} [NormedAddCommGroup F] [NormedSpace 𝕜 F]
+
+/-- **The two-space residual–error relation** (Atkinson–Han, *Theoretical Numerical Analysis*,
+(2.4.1)): for an isomorphism `L : E ≃L[𝕜] F` of normed spaces, the relative error of the solution
+of `L v = w` is at most `κ L` times the relative error of the data.
+
+The single-space `relative_error_le_condNumber_mul_relative_residual` is the case `F = E`. -/
+theorem ContinuousLinearEquiv.relative_error_le_condNumber_mul_relative_residual (L : E ≃L[𝕜] F)
+    {v v' : E} {w w' : F} (hv : L v = w) (hv' : L v' = w') (hw : w ≠ 0) :
+    ‖v - v'‖ / ‖v‖ ≤ L.condNumber * (‖w - w'‖ / ‖w‖) := by
+  have hv0 : v ≠ 0 := by
+    rintro rfl
+    exact hw (by rw [← hv]; simp)
+  have hvn : 0 < ‖v‖ := norm_pos_iff.mpr hv0
+  have hwn : 0 < ‖w‖ := norm_pos_iff.mpr hw
+  have hvv : v - v' = (L.symm : F →L[𝕜] E) (w - w') := by
+    rw [← hv, ← hv']
+    simp
+  have h1 : ‖v - v'‖ ≤ ‖(L.symm : F →L[𝕜] E)‖ * ‖w - w'‖ := by
+    rw [hvv]
+    exact (L.symm : F →L[𝕜] E).le_opNorm _
+  have h2 : ‖w‖ ≤ ‖(L : E →L[𝕜] F)‖ * ‖v‖ := by
+    rw [← hv]
+    simpa using (L : E →L[𝕜] F).le_opNorm v
+  rw [ContinuousLinearEquiv.condNumber, ← mul_div_assoc, div_le_div_iff₀ hvn hwn]
+  calc ‖v - v'‖ * ‖w‖
+      ≤ ‖(L.symm : F →L[𝕜] E)‖ * ‖w - w'‖ * (‖(L : E →L[𝕜] F)‖ * ‖v‖) :=
+        mul_le_mul h1 h2 (norm_nonneg _) (by positivity)
+    _ = ‖(L : E →L[𝕜] F)‖ * ‖(L.symm : F →L[𝕜] E)‖ * ‖w - w'‖ * ‖v‖ := by ring
+
+end TwoSpace
+
 /-- Residual–error relation: `‖x - y‖ / ‖x‖ ≤ κ(A) ‖b - A y‖ / ‖b‖`, where `κ(A) = ‖A‖ ‖A⁻¹‖`
-(Atkinson–Han, *Theoretical Numerical Analysis*, (2.4.1)). -/
+(Atkinson–Han, *Theoretical Numerical Analysis*, (2.4.1)).  It is the case `F = E` of
+`ContinuousLinearEquiv.relative_error_le_condNumber_mul_relative_residual`, with `w' = A y`. -/
 theorem relative_error_le_condNumber_mul_relative_residual (A : E ≃L[𝕜] E) {b x y : E}
     (hx : A x = b) (hb : b ≠ 0) :
     ‖x - y‖ / ‖x‖ ≤ condNumber (A : E →L[𝕜] E) * (‖b - A y‖ / ‖b‖) := by
-  have hx0 : x ≠ 0 := by
-    rintro rfl
-    exact hb (by rw [← hx]; simp)
-  have hxn : 0 < ‖x‖ := norm_pos_iff.mpr hx0
-  have hbn : 0 < ‖b‖ := norm_pos_iff.mpr hb
-  have hxy : x - y = (A.symm : E →L[𝕜] E) (b - A y) := by
-    rw [map_sub, ← hx]
-    simp
-  have h1 : ‖x - y‖ ≤ ‖(A.symm : E →L[𝕜] E)‖ * ‖b - A y‖ := by
-    rw [hxy]
-    exact (A.symm : E →L[𝕜] E).le_opNorm _
-  have h2 : ‖b‖ ≤ ‖(A : E →L[𝕜] E)‖ * ‖x‖ := by
-    rw [← hx]
-    simpa using (A : E →L[𝕜] E).le_opNorm x
-  rw [ContinuousLinearEquiv.condNumber_eq, ← mul_div_assoc, div_le_div_iff₀ hxn hbn]
-  calc ‖x - y‖ * ‖b‖
-      ≤ ‖(A.symm : E →L[𝕜] E)‖ * ‖b - A y‖ * (‖(A : E →L[𝕜] E)‖ * ‖x‖) :=
-        mul_le_mul h1 h2 (norm_nonneg _) (by positivity)
-    _ = ‖(A : E →L[𝕜] E)‖ * ‖(A.symm : E →L[𝕜] E)‖ * ‖b - A y‖ * ‖x‖ := by ring
+  rw [ContinuousLinearEquiv.condNumber_coe]
+  exact A.relative_error_le_condNumber_mul_relative_residual hx rfl hb
 
 /-- Normwise perturbation bound (Saad, *Iterative Methods*, (1.76); Kress, *Numerical Analysis*,
 Thm 5.3; Higham, *Accuracy and Stability*, Thm 7.2): if `A x = b`, `(A + ΔA) y = b + Δb` and
@@ -137,9 +155,11 @@ and `‖Δb‖ ≤ ξ β ‖b‖` (Fong–Saunders, *CG versus MINRES*, (3.2)). 
 noncomputable def backwardError (A : E →L[𝕜] E) (b y : E) (α β : ℝ) : ℝ :=
   ‖b - A y‖ / (α * ‖A‖ * ‖y‖ + β * ‖b‖)
 
+/-- The defining quotient of `backwardError`, in a form `rw` can use. -/
 private theorem backwardError_def (A : E →L[𝕜] E) (b y : E) (α β : ℝ) :
     backwardError A b y α β = ‖b - A y‖ / (α * ‖A‖ * ‖y‖ + β * ‖b‖) := rfl
 
+/-- The backward error is nonnegative when its denominator is positive. -/
 private theorem backwardError_nonneg (A : E →L[𝕜] E) (b y : E) {α β : ℝ}
     (hpos : 0 < α * ‖A‖ * ‖y‖ + β * ‖b‖) : 0 ≤ backwardError A b y α β := by
   rw [backwardError_def]
@@ -227,40 +247,6 @@ theorem backwardError_le_iff (A : E →L[𝕜] E) (b y : E) {α β ξ : ℝ}
   rw [backwardError_def, div_le_iff₀ hpos]
 
 end BackwardError
-
-section TwoSpace
-
-variable {F : Type*} [NormedAddCommGroup F] [NormedSpace 𝕜 F]
-
-/-- **The two-space residual–error relation** (Atkinson–Han, *Theoretical Numerical Analysis*,
-(2.4.1)): for an isomorphism `L : E ≃L[𝕜] F` of normed spaces, the relative error of the solution
-of `L v = w` is at most `κ L` times the relative error of the data.
-
-The single-space `relative_error_le_condNumber_mul_relative_residual` is the case `F = E`. -/
-theorem ContinuousLinearEquiv.relative_error_le_condNumber_mul_relative_residual (L : E ≃L[𝕜] F)
-    {v v' : E} {w w' : F} (hv : L v = w) (hv' : L v' = w') (hw : w ≠ 0) :
-    ‖v - v'‖ / ‖v‖ ≤ L.condNumber * (‖w - w'‖ / ‖w‖) := by
-  have hv0 : v ≠ 0 := by
-    rintro rfl
-    exact hw (by rw [← hv]; simp)
-  have hvn : 0 < ‖v‖ := norm_pos_iff.mpr hv0
-  have hwn : 0 < ‖w‖ := norm_pos_iff.mpr hw
-  have hvv : v - v' = (L.symm : F →L[𝕜] E) (w - w') := by
-    rw [← hv, ← hv']
-    simp
-  have h1 : ‖v - v'‖ ≤ ‖(L.symm : F →L[𝕜] E)‖ * ‖w - w'‖ := by
-    rw [hvv]
-    exact (L.symm : F →L[𝕜] E).le_opNorm _
-  have h2 : ‖w‖ ≤ ‖(L : E →L[𝕜] F)‖ * ‖v‖ := by
-    rw [← hv]
-    simpa using (L : E →L[𝕜] F).le_opNorm v
-  rw [ContinuousLinearEquiv.condNumber, ← mul_div_assoc, div_le_div_iff₀ hvn hwn]
-  calc ‖v - v'‖ * ‖w‖
-      ≤ ‖(L.symm : F →L[𝕜] E)‖ * ‖w - w'‖ * (‖(L : E →L[𝕜] F)‖ * ‖v‖) :=
-        mul_le_mul h1 h2 (norm_nonneg _) (by positivity)
-    _ = ‖(L : E →L[𝕜] F)‖ * ‖(L.symm : F →L[𝕜] E)‖ * ‖w - w'‖ * ‖v‖ := by ring
-
-end TwoSpace
 
 /-- **First-order perturbation theory for a linear system** (Saad, *Iterative Methods for Sparse
 Linear Systems*, (1.74)–(1.75); Kress, *Numerical Analysis*, Thm 5.3; Higham, *Accuracy and
