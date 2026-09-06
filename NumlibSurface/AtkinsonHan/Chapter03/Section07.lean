@@ -8,8 +8,8 @@ import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
 /-!
 # Atkinson–Han §3.7: uniform error bounds
 
-Statements from Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework* (3rd ed.), §3.7.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §3.7.
 
 The section's two abstract ingredients are formalized here:
 
@@ -52,7 +52,7 @@ because none of the objects it speaks about exist yet in Mathlib or in `Numlib`:
 
 open Filter Topology Bornology
 
-namespace AtkinsonHan.Ch03
+namespace AtkinsonHan.Chapter03
 
 variable {𝕜 V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
 
@@ -93,7 +93,7 @@ theorem exists_not_tendsto_of_not_bddAbove [CompleteSpace V] (P : ℕ → V →L
     ∃ f : V, ¬ Tendsto (fun n => P n f) atTop (𝓝 f) := by
   by_contra hcon
   simp only [not_exists, not_not] at hcon
-  obtain ⟨C, hC⟩ := banach_steinhaus fun v => Ch02.exists_norm_le_of_tendsto (hcon v)
+  obtain ⟨C, hC⟩ := banach_steinhaus fun v => Chapter02.exists_norm_le_of_tendsto (hcon v)
   exact h ⟨C, by rintro x ⟨n, rfl⟩; exact hC n⟩
 
 /-! ### The function spaces of Theorems 3.7.1 and 3.7.2
@@ -132,4 +132,4 @@ def HolderClassIcc (k : ℕ) (α M : ℝ≥0) (f : ℝ → ℝ) : Prop :=
 
 end Spaces
 
-end AtkinsonHan.Ch03
+end AtkinsonHan.Chapter03

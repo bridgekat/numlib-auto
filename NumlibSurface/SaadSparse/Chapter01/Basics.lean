@@ -2,10 +2,10 @@ import Mathlib.Analysis.CStarAlgebra.Spectrum
 import NumlibSurface.SaadSparse.Chapter01.Section13
 
 /-!
-# §1.1–§1.6 Matrices, eigenvalues, types of matrices, norms, subspaces
+# Saad §1.1–1.6: matrices, eigenvalues, types of matrices, norms, subspaces
 
-Sections 1.1–1.6 of Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003: matrices and their determinants, eigenvalues, the standard classes of matrices,
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §1.1–1.6: matrices and their determinants, eigenvalues, the standard classes of matrices,
 inner products and vector norms, matrix norms, and subspaces with the range and the kernel.
 
 Almost all of this chapter is Mathlib restated in the book's notation, and the file is
@@ -24,7 +24,7 @@ Two warnings about the book.  In §1.3 Saad calls a matrix *orthogonal* when `Q�
 **diagonal** rather than the identity, which no other source uses; `Matrix.unitaryGroup` is the
 standard notion and is what Proposition 1.4 is about.  And the book prints (1.18) as
 `ℂⁿ = Ran(A) ⊕ Null(Aᵀ)` in a complex setting, where `Aᴴ` is meant; that is how
-`SaadSparse.Ch01.equation_1_18` states it.
+`SaadSparse.Chapter01.equation_1_18` states it.
 
 The matrix norms of §1.5 use Mathlib's scoped instances, one per norm, opened declaration by
 declaration: `Matrix.Norms.Operator` for `‖·‖_∞`, `Matrix.Norms.L2Operator` for `‖·‖₂` and
@@ -36,11 +36,11 @@ open Matrix Finset Polynomial
 
 open scoped SaadSparse ENNReal NNReal
 
-namespace SaadSparse.Ch01
+namespace SaadSparse.Chapter01
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n : ℕ}
 
-/-! ### §1.1–§1.2 Matrices, determinants and eigenvalues -/
+/-! ### §1.1–1.2 Matrices, determinants and eigenvalues -/
 
 /-- **Saad Proposition 1.2**: a square matrix is nonsingular — its determinant does not
 vanish — exactly when it has a two-sided inverse.  The inverse is then `A⁻¹`, by
@@ -335,4 +335,4 @@ theorem equation_1_18 (A : Matrix (Fin n) (Fin n) 𝕜) :
   have := key Aᴴ
   rwa [Matrix.conjTranspose_conjTranspose] at this
 
-end SaadSparse.Ch01
+end SaadSparse.Chapter01

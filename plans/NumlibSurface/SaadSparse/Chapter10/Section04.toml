@@ -1,4 +1,4 @@
-namespace = "SaadSparse.Ch10"
+namespace = "SaadSparse.Chapter10"
 desc = '''
 §10.4.1–10.4.2, ILUT and its existence theorem. Only Theorem 10.8 has content; §10.4.3–10.4.6
 (implementation, ILUTP, ILUS, Crout ILU) are data structures and dropping heuristics.

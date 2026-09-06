@@ -2,10 +2,10 @@ import Numlib.LinearSolve.DomainDecomposition.Schwarz
 import NumlibSurface.SaadSparse.Common
 
 /-!
-# Saad, §14.3: the Schwarz alternating procedures
+# Saad §14.3: the Schwarz alternating procedures
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003, §14.3.
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §14.3.
 
 The data of the section are index sets `S_i ⊆ {1, …, n}`, not necessarily disjoint, the boolean
 restriction matrices `R_i` of §14.3.1 (`restrictSubset`), the local matrices `A_i = R_i A R_iᵀ`
@@ -18,7 +18,7 @@ j ∈ S_i}` (`subdomainSpace`).  The whole convergence theory is then read off
 `Numlib/LinearSolve/DomainDecomposition/Schwarz.lean`, whose statements are about the orthogonal
 projectors of an inner product space, applied in the energy space of `A`.
 
-* §14.3.1–§14.3.3: `multiplicativeSweep` is (14.25), `Q_s` its error operator (14.26), and
+* §14.3.1–14.3.3: `multiplicativeSweep` is (14.25), `Q_s` its error operator (14.26), and
   `additiveSweep` the additive procedure.  `error_multiplicativeSweep` is the meaning of `Q_s`,
   `proposition_14_3` the fixed-point form (14.27)–(14.28), and `lemma_14_4` the recurrences
   (14.32)–(14.35) that make Algorithms 14.4 and 14.5 run without `A⁻¹`.
@@ -41,7 +41,7 @@ open Matrix Finset
 
 open scoped ComplexOrder SaadSparse
 
-namespace SaadSparse.Ch14
+namespace SaadSparse.Chapter14
 
 variable {n : ℕ}
 
@@ -233,7 +233,7 @@ theorem subdomainProjector_mul_self (hA : A.PosDef) (S : Finset (Fin n)) :
     (Schwarz.energyProjection_apply_mem (Matrix.toEuclideanLin A)
       (isSymmetricCoercive_toEuclideanLin hA) (subdomainSpace 𝕜 S) x)
 
-/-! ### §14.3.2–§14.3.3: the multiplicative and additive procedures -/
+/-! ### §14.3.2–14.3.3: the multiplicative and additive procedures -/
 
 section Procedures
 
@@ -670,4 +670,4 @@ theorem theorem_14_9 {s : ℕ} {K₀ K₁ : ℝ} (hK₀ : 0 < K₀) (hK₁ : 0 �
     (isStableDecompositionWith_of hA S hst) (isStrengthenedCauchySchwarzWith_of hA S hcs) _
 
 end Rates
-end SaadSparse.Ch14
+end SaadSparse.Chapter14

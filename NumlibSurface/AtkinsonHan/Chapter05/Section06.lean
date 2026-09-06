@@ -9,8 +9,8 @@ import Numlib.LinearSolve.Projection.Optimality
 /-!
 # Atkinson–Han §5.6: the conjugate gradient method for operator equations
 
-Surface formalization of §5.6 of Kendall Atkinson and Weimin Han, *Theoretical Numerical
-Analysis: A Functional Analysis Framework*, 3rd edition, Springer, 2009.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §5.6.
 
 Throughout, `V` is a real Hilbert space and `A : V →L[ℝ] V` is bounded, self-adjoint and positive
 definite in the sense of (5.6.3), `√m ‖v‖ ≤ ‖v‖_A ≤ √M ‖v‖` with `m, M > 0`.  Contents:
@@ -44,7 +44,7 @@ regularity.
 
 open Filter Topology
 
-namespace AtkinsonHan.Ch05
+namespace AtkinsonHan.Chapter05
 
 variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
 
@@ -227,7 +227,7 @@ section KantorovichStep
 norm of the error contracts by the Kantorovich factor `(lmax - lmin) / (lmax + lmin)`.
 
 Stated in the backbone's vocabulary because both §5.6 (`equation_5_6_4`) and §9.4
-(`AtkinsonHan.Ch09.cg_energy_rate`) specialize it.  It is a two-line assembly of
+(`AtkinsonHan.Chapter09.cg_energy_rate`) specialize it.  It is a two-line assembly of
 `IsGalerkin.energyNorm_le` (the conjugate gradient iterate is optimal in the energy norm over
 `x₀ + 𝒦_{k+1}`) and the Kantorovich bound for one steepest-descent step, which the backbone
 assembles as `Krylov.IsGalerkinIterate.energyNorm_error_succ_le`. -/
@@ -408,4 +408,4 @@ theorem theorem_5_6_2 (hAK : (A : V →ₗ[ℝ] V) = 1 - (K : V →ₗ[ℝ] V)) 
 
 end Superlinear
 
-end AtkinsonHan.Ch05
+end AtkinsonHan.Chapter05

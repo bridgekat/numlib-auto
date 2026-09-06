@@ -2,10 +2,10 @@ import Mathlib.LinearAlgebra.Dimension.OrzechProperty
 import Numlib.LinearAlgebra.Matrix.QR
 
 /-!
-# §1.7 Orthogonal vectors and subspaces
+# Saad §1.7: orthogonal vectors and subspaces
 
-Section 1.7 of Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003: the Gram–Schmidt process (Algorithms 1.1 and 1.2), the QR factorization (1.19), and
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §1.7: the Gram–Schmidt process (Algorithms 1.1 and 1.2), the QR factorization (1.19), and
 Householder orthogonalization ((1.20)–(1.28) and Algorithm 1.3).
 
 The vocabulary of the section — orthogonal and orthonormal sets, the orthogonal complement, the
@@ -36,7 +36,7 @@ open InnerProductSpace Matrix
 
 open scoped ComplexOrder Matrix
 
-namespace SaadSparse.Ch01
+namespace SaadSparse.Chapter01
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n : ℕ}
 
@@ -460,4 +460,4 @@ theorem equation_1_28_normalized {m : ℕ} (hmn : m ≤ n) {X Q : Matrix (Fin n)
   obtain ⟨hDu, hQeq, hReq⟩ := qr_change_of_factor hX₀ hXQR hQ₀ hQ hdet
   exact ⟨P, hP, _, hT, hDu, hR₀.mul (blockTriangular_inv_of_blockTriangular hR), hQeq, hReq⟩
 
-end SaadSparse.Ch01
+end SaadSparse.Chapter01

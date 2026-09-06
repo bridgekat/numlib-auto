@@ -2,10 +2,10 @@ import Numlib.Krylov.Preconditioned
 import NumlibSurface.SaadSparse.Chapter09.Section03
 
 /-!
-# Saad, §9.4: flexible variants
+# Saad §9.4: flexible variants
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003, §9.4.
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §9.4.
 
 FGMRES is the first method of the book whose search space is not a Krylov subspace: the
 preconditioner may change at every step, so the iterate is expanded in the arbitrary directions
@@ -30,9 +30,9 @@ open Matrix Finset
 
 open scoped SaadSparse
 
-namespace SaadSparse.Ch09
+namespace SaadSparse.Chapter09
 
-open Ch06 (op)
+open Chapter06 (op)
 
 variable {n : ℕ} {𝕜 : Type*} [RCLike 𝕜]
 
@@ -129,7 +129,7 @@ private theorem norm_fgmresV_succ {j : ℕ} (hw : fgmresW M A v₁ j ≠ 0) :
     inv_mul_cancel₀ (norm_ne_zero_iff.2 hw)]
 
 /-- The Gram matrix of the flexible Arnoldi basis is the identity, as long as the process has not
-broken down: this is the induction behind `SaadSparse.Ch09.orthonormal_fgmresV`. -/
+broken down: this is the induction behind `SaadSparse.Chapter09.orthonormal_fgmresV`. -/
 private theorem inner_fgmresV (hv : ‖v₁‖ = 1) :
     ∀ m : ℕ, (∀ j, j < m → fgmresW M A v₁ j ≠ 0) →
       ∀ a ≤ m, ∀ b ≤ m,
@@ -198,30 +198,31 @@ theorem orthonormal_fgmresV (hv : ‖v₁‖ = 1) {m : ℕ}
 Algorithm 6.9 by the Givens process, `y_m = R_m⁻¹ g_m`. -/
 noncomputable def fgmresY (M : ℕ → Matrix (Fin n) (Fin n) 𝕜) (A : Matrix (Fin n) (Fin n) 𝕜)
     (b x₀ : EuclideanSpace 𝕜 (Fin n)) (m : ℕ) : Fin m → 𝕜 :=
-  (Ch06.R (fgmresCoeff M A (Ch06.v₁ A b x₀)) m)⁻¹ *ᵥ
-    Ch06.g (fgmresCoeff M A (Ch06.v₁ A b x₀)) (Ch06.β A b x₀ : 𝕜) m
+  (Chapter06.R (fgmresCoeff M A (Chapter06.v₁ A b x₀)) m)⁻¹ *ᵥ
+    Chapter06.g (fgmresCoeff M A (Chapter06.v₁ A b x₀)) (Chapter06.β A b x₀ : 𝕜) m
 
 /-- **Algorithm 9.6** (FGMRES), line 12: `x_m = x₀ + Z_m y_m`. The iterate is expanded in the
 preconditioned directions `z_j = M_j⁻¹ v_j`, which the flexible algorithm must therefore
 store. -/
 noncomputable def fgmres (M : ℕ → Matrix (Fin n) (Fin n) 𝕜) (A : Matrix (Fin n) (Fin n) 𝕜)
     (b x₀ : EuclideanSpace 𝕜 (Fin n)) (m : ℕ) : EuclideanSpace 𝕜 (Fin n) :=
-  x₀ + ∑ j : Fin m, fgmresY M A b x₀ m j • fgmresZ M A (Ch06.v₁ A b x₀) (j : ℕ)
+  x₀ + ∑ j : Fin m, fgmresY M A b x₀ m j • fgmresZ M A (Chapter06.v₁ A b x₀) (j : ℕ)
 
 /-- `r₀ = β v_0`, the starting relation of the Arnoldi process. -/
 private theorem residual_eq_smul_fgmresV (M : ℕ → Matrix (Fin n) (Fin n) 𝕜)
     (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : EuclideanSpace 𝕜 (Fin n)) :
-    b - op A x₀ = (Ch06.β A b x₀ : 𝕜) • fgmresV M A (Ch06.v₁ A b x₀) 0 := by
+    b - op A x₀ = (Chapter06.β A b x₀ : 𝕜) • fgmresV M A (Chapter06.v₁ A b x₀) 0 := by
   rw [fgmresV_zero]
   exact (smul_inv_smul_norm (b - op A x₀)).symm
 
 /-- The minimizer computed by the Givens process really minimizes the quasi-residual. -/
 private theorem isMinOn_fgmresY (M : ℕ → Matrix (Fin n) (Fin n) 𝕜)
     (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : EuclideanSpace 𝕜 (Fin n)) {m : ℕ}
-    (hR : IsUnit (Ch06.R (fgmresCoeff M A (Ch06.v₁ A b x₀)) m)) :
-    IsMinOn (Krylov.quasiResidual (fgmresCoeff M A (Ch06.v₁ A b x₀)) (Ch06.β A b x₀ : 𝕜) m)
+    (hR : IsUnit (Chapter06.R (fgmresCoeff M A (Chapter06.v₁ A b x₀)) m)) :
+    IsMinOn
+      (Krylov.quasiResidual (fgmresCoeff M A (Chapter06.v₁ A b x₀)) (Chapter06.β A b x₀ : 𝕜) m)
       Set.univ (fgmresY M A b x₀ m) :=
-  (Ch06.isMinOn_lsq _ _ (fun _ _ hij => fgmresCoeff_eq_zero_of_lt hij) hR).1
+  (Chapter06.isMinOn_lsq _ _ (fun _ _ hij => fgmresCoeff_eq_zero_of_lt hij) hR).1
 
 /-! ### Propositions 9.2 and 9.3 -/
 
@@ -231,33 +232,34 @@ private theorem isMinOn_fgmresY (M : ℕ → Matrix (Fin n) (Fin n) 𝕜)
 Unlike GMRES, the space searched is not a Krylov subspace; what makes the minimization work is
 only the two-family relation (9.22) together with the orthonormality of `V_{m+1}`. -/
 theorem proposition_9_2 (M : ℕ → Matrix (Fin n) (Fin n) 𝕜) (A : Matrix (Fin n) (Fin n) 𝕜)
-    (b x₀ : EuclideanSpace 𝕜 (Fin n)) {m : ℕ} (hr : Ch06.r₀ A b x₀ ≠ 0)
-    (hbreak : ∀ j, j < m → fgmresW M A (Ch06.v₁ A b x₀) j ≠ 0)
-    (hR : IsUnit (Ch06.R (fgmresCoeff M A (Ch06.v₁ A b x₀)) m)) :
+    (b x₀ : EuclideanSpace 𝕜 (Fin n)) {m : ℕ} (hr : Chapter06.r₀ A b x₀ ≠ 0)
+    (hbreak : ∀ j, j < m → fgmresW M A (Chapter06.v₁ A b x₀) j ≠ 0)
+    (hR : IsUnit (Chapter06.R (fgmresCoeff M A (Chapter06.v₁ A b x₀)) m)) :
     IsMinRes (op A) b x₀
-      (Submodule.span 𝕜 (Set.range fun j : Fin m => fgmresZ M A (Ch06.v₁ A b x₀) (j : ℕ)))
+      (Submodule.span 𝕜 (Set.range fun j : Fin m => fgmresZ M A (Chapter06.v₁ A b x₀) (j : ℕ)))
       (fgmres M A b x₀ m) :=
   Krylov.FGMRES.isMinRes (equation_9_22 M A _) (residual_eq_smul_fgmresV M A b x₀)
-    (orthonormal_fgmresV (Ch06.norm_v₁ A b x₀ hr) hbreak) (isMinOn_fgmresY M A b x₀ hR)
+    (orthonormal_fgmresV (Chapter06.norm_v₁ A b x₀ hr) hbreak) (isMinOn_fgmresY M A b x₀ hR)
 
 /-- **Proposition 9.3**: if the initial residual is nonzero, the previous steps have not broken
 down and the square Hessenberg matrix `H_m` is nonsingular, then the FGMRES iterate is exact
 exactly when `h_{m+1,m} = 0`.
 
 The nonsingularity of `H_m` is a genuine extra hypothesis in the flexible case — see
-`SaadSparse.Ch09.hessenbergSq_isUnit_of_linearIndependent` for the book's remark that it is not
+`SaadSparse.Chapter09.hessenbergSq_isUnit_of_linearIndependent` for the book's remark that it is not
 vacuous. -/
 theorem proposition_9_3 (M : ℕ → Matrix (Fin n) (Fin n) 𝕜) (A : Matrix (Fin n) (Fin n) 𝕜)
-    (b x₀ : EuclideanSpace 𝕜 (Fin n)) {m : ℕ} (hr : Ch06.r₀ A b x₀ ≠ 0) (hm : 0 < m)
-    (hsub : ∀ i, i + 1 < m → fgmresCoeff M A (Ch06.v₁ A b x₀) (i + 1) i ≠ 0)
-    (hH : IsUnit (Krylov.hessenbergSqOf (fgmresCoeff M A (Ch06.v₁ A b x₀)) m).det)
-    (hbreak : ∀ j, j < m → fgmresW M A (Ch06.v₁ A b x₀) j ≠ 0)
-    (hR : IsUnit (Ch06.R (fgmresCoeff M A (Ch06.v₁ A b x₀)) m)) :
-    op A (fgmres M A b x₀ m) = b ↔ fgmresCoeff M A (Ch06.v₁ A b x₀) m (m - 1) = 0 :=
+    (b x₀ : EuclideanSpace 𝕜 (Fin n)) {m : ℕ} (hr : Chapter06.r₀ A b x₀ ≠ 0) (hm : 0 < m)
+    (hsub : ∀ i, i + 1 < m → fgmresCoeff M A (Chapter06.v₁ A b x₀) (i + 1) i ≠ 0)
+    (hH : IsUnit (Krylov.hessenbergSqOf (fgmresCoeff M A (Chapter06.v₁ A b x₀)) m).det)
+    (hbreak : ∀ j, j < m → fgmresW M A (Chapter06.v₁ A b x₀) j ≠ 0)
+    (hR : IsUnit (Chapter06.R (fgmresCoeff M A (Chapter06.v₁ A b x₀)) m)) :
+    op A (fgmres M A b x₀ m) = b ↔ fgmresCoeff M A (Chapter06.v₁ A b x₀) m (m - 1) = 0 :=
   Krylov.FGMRES.apply_eq_iff_coeff_eq_zero (equation_9_22 M A _)
     (residual_eq_smul_fgmresV M A b x₀)
-    (by simpa [Ch06.β] using (RCLike.ofReal_ne_zero (K := 𝕜)).2 (norm_ne_zero_iff.2 hr))
-    hm hsub hH (orthonormal_fgmresV (Ch06.norm_v₁ A b x₀ hr) hbreak) (isMinOn_fgmresY M A b x₀ hR)
+    (by simpa [Chapter06.β] using (RCLike.ofReal_ne_zero (K := 𝕜)).2 (norm_ne_zero_iff.2 hr))
+    hm hsub hH (orthonormal_fgmresV (Chapter06.norm_v₁ A b x₀ hr) hbreak)
+    (isMinOn_fgmresY M A b x₀ hR)
 
 /-- **The remark after Proposition 9.3**: if `A` is nonsingular, the directions `z_0, …, z_{m-1}`
 are linearly independent and the process has broken down at step `m`, then the square Hessenberg
@@ -293,7 +295,7 @@ theorem hessenbergSq_isUnit_of_linearIndependent (M : ℕ → Matrix (Fin n) (Fi
           simp only [Matrix.mulVec, dotProduct, Krylov.hessenbergOf, Krylov.hessenbergSqOf,
             Matrix.of_apply]
         rw [hrow, hu, Pi.zero_apply, zero_smul]
-    have hinj := Ch06.injective_op_of_isUnit hA
+    have hinj := Chapter06.injective_op_of_isUnit hA
     have h0 : ∑ j, u j • fgmresZ M A v₁ (j : ℕ) = 0 := by
       have := hinj (by rw [hzero, map_zero] : op A (∑ j, u j • fgmresZ M A v₁ (j : ℕ)) = op A 0)
       exact this
@@ -317,35 +319,35 @@ private theorem op_rightPreconditioned_apply (x : EuclideanSpace 𝕜 (Fin n)) :
 /-- With a constant preconditioner, the flexible Arnoldi basis is the Arnoldi basis of
 `A M⁻¹`. -/
 private theorem fgmresV_const (u : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) :
-    fgmresV (fun _ => M) A u j = Ch06.arnoldiCGS (rightPreconditioned M A) u j := by
+    fgmresV (fun _ => M) A u j = Chapter06.arnoldiCGS (rightPreconditioned M A) u j := by
   induction j using Nat.strong_induction_on with
   | _ j ih =>
     rcases Nat.eq_zero_or_pos j with rfl | hj
-    · rw [fgmresV_zero, Ch06.arnoldiCGS_zero]
+    · rw [fgmresV_zero, Chapter06.arnoldiCGS_zero]
     · obtain ⟨k, rfl⟩ : ∃ k, j = k + 1 := ⟨j - 1, by omega⟩
       have hlt : ∀ i, i ≤ k →
-          fgmresV (fun _ => M) A u i = Ch06.arnoldiCGS (rightPreconditioned M A) u i :=
+          fgmresV (fun _ => M) A u i = Chapter06.arnoldiCGS (rightPreconditioned M A) u i :=
         fun i hi => ih i (by omega)
       have hAz : op A (op M⁻¹ (fgmresV (fun _ => M) A u k))
-          = op (rightPreconditioned M A) (Ch06.arnoldiCGS (rightPreconditioned M A) u k) := by
+          = op (rightPreconditioned M A) (Chapter06.arnoldiCGS (rightPreconditioned M A) u k) := by
         rw [hlt k le_rfl, op_rightPreconditioned_apply]
       have hW : fgmresW (fun _ => M) A u k
-          = Ch06.arnoldiW (rightPreconditioned M A) u k := by
-        simp only [fgmresW, fgmresZ, Ch06.arnoldiW, Ch06.arnoldiCoeff]
+          = Chapter06.arnoldiW (rightPreconditioned M A) u k := by
+        simp only [fgmresW, fgmresZ, Chapter06.arnoldiW, Chapter06.arnoldiCoeff]
         rw [hAz]
         congr 1
         exact Finset.sum_congr rfl fun i hi =>
           by rw [hlt i (Nat.lt_succ_iff.1 (Finset.mem_range.1 hi))]
-      rw [fgmresV_succ, Ch06.arnoldiCGS_succ, hW]
+      rw [fgmresV_succ, Chapter06.arnoldiCGS_succ, hW]
 
 /-- With a constant preconditioner, the unnormalized vectors agree with those of Algorithm 6.1
 applied to `A M⁻¹`. -/
 private theorem fgmresW_const (u : EuclideanSpace 𝕜 (Fin n)) (k : ℕ) :
-    fgmresW (fun _ => M) A u k = Ch06.arnoldiW (rightPreconditioned M A) u k := by
+    fgmresW (fun _ => M) A u k = Chapter06.arnoldiW (rightPreconditioned M A) u k := by
   have hAz : op A (op M⁻¹ (fgmresV (fun _ => M) A u k))
-      = op (rightPreconditioned M A) (Ch06.arnoldiCGS (rightPreconditioned M A) u k) := by
+      = op (rightPreconditioned M A) (Chapter06.arnoldiCGS (rightPreconditioned M A) u k) := by
     rw [fgmresV_const, op_rightPreconditioned_apply]
-  simp only [fgmresW, fgmresZ, Ch06.arnoldiW, Ch06.arnoldiCoeff]
+  simp only [fgmresW, fgmresZ, Chapter06.arnoldiW, Chapter06.arnoldiCoeff]
   rw [hAz]
   congr 1
   exact Finset.sum_congr rfl fun i _ => by rw [fgmresV_const]
@@ -353,49 +355,49 @@ private theorem fgmresW_const (u : EuclideanSpace 𝕜 (Fin n)) (k : ℕ) :
 /-- With a constant preconditioner, the Hessenberg coefficients agree with those of Algorithm 6.1
 applied to `A M⁻¹`. -/
 private theorem fgmresCoeff_const {u : EuclideanSpace 𝕜 (Fin n)} (hu : ‖u‖ = 1) :
-    fgmresCoeff (fun _ => M) A u = Ch06.arnoldiCoeff (rightPreconditioned M A) u := by
+    fgmresCoeff (fun _ => M) A u = Chapter06.arnoldiCoeff (rightPreconditioned M A) u := by
   funext i j
   rcases lt_trichotomy i (j + 1) with h | rfl | h
   · rw [fgmresCoeff_of_le (by omega), fgmresZ]
     simp only [fgmresV_const]
     rw [← op_rightPreconditioned_apply]
     rfl
-  · rw [fgmresCoeff_succ_self, fgmresW_const, Ch06.arnoldiCoeff_succ_self _ _ hu]
-  · rw [fgmresCoeff_eq_zero_of_lt h, Ch06.arnoldiCoeff_eq_zero_of_lt _ _ hu h]
+  · rw [fgmresCoeff_succ_self, fgmresW_const, Chapter06.arnoldiCoeff_succ_self _ _ hu]
+  · rw [fgmresCoeff_eq_zero_of_lt h, Chapter06.arnoldiCoeff_eq_zero_of_lt _ _ hu h]
 
 /-- **A constant preconditioner gives back Algorithm 9.5**: FGMRES run with `M_j = M` at every
 step produces the iterates of GMRES with right preconditioning, so the flexible algorithm is a
 genuine generalization and nothing more. -/
 theorem fgmres_eq_gmresRight (b x₀ : EuclideanSpace 𝕜 (Fin n)) (m : ℕ) (hM : IsUnit M)
-    (hr : Ch06.r₀ A b x₀ ≠ 0) :
+    (hr : Chapter06.r₀ A b x₀ ≠ 0) :
     fgmres (fun _ => M) A b x₀ m = gmresRight M A b x₀ m := by
   have hMM : ∀ x : EuclideanSpace 𝕜 (Fin n), op M⁻¹ (op M x) = x := by
     intro x
     have h1 : (op (1 : Matrix (Fin n) (Fin n) 𝕜)) = LinearMap.id := Matrix.toEuclideanLin_one
     rw [← op_mul_apply, Matrix.nonsing_inv_mul _ ((Matrix.isUnit_iff_isUnit_det M).1 hM), h1,
       LinearMap.id_apply]
-  have hr0 : Ch06.r₀ (rightPreconditioned M A) b (op M x₀) = Ch06.r₀ A b x₀ := by
-    rw [Ch06.r₀_def, Ch06.r₀_def, op_rightPreconditioned_apply, hMM]
-  have hbetaR : Ch06.β (rightPreconditioned M A) b (op M x₀) = Ch06.β A b x₀ :=
+  have hr0 : Chapter06.r₀ (rightPreconditioned M A) b (op M x₀) = Chapter06.r₀ A b x₀ := by
+    rw [Chapter06.r₀_def, Chapter06.r₀_def, op_rightPreconditioned_apply, hMM]
+  have hbetaR : Chapter06.β (rightPreconditioned M A) b (op M x₀) = Chapter06.β A b x₀ :=
     congrArg norm hr0
-  have hv1 : Ch06.v₁ (rightPreconditioned M A) b (op M x₀) = Ch06.v₁ A b x₀ := by
-    have e1 : Ch06.v₁ (rightPreconditioned M A) b (op M x₀)
-        = (‖Ch06.r₀ (rightPreconditioned M A) b (op M x₀)‖ : 𝕜) ⁻¹ •
-            Ch06.r₀ (rightPreconditioned M A) b (op M x₀) := rfl
-    have e2 : Ch06.v₁ A b x₀ = (‖Ch06.r₀ A b x₀‖ : 𝕜)⁻¹ • Ch06.r₀ A b x₀ := rfl
+  have hv1 : Chapter06.v₁ (rightPreconditioned M A) b (op M x₀) = Chapter06.v₁ A b x₀ := by
+    have e1 : Chapter06.v₁ (rightPreconditioned M A) b (op M x₀)
+        = (‖Chapter06.r₀ (rightPreconditioned M A) b (op M x₀)‖ : 𝕜) ⁻¹ •
+            Chapter06.r₀ (rightPreconditioned M A) b (op M x₀) := rfl
+    have e2 : Chapter06.v₁ A b x₀ = (‖Chapter06.r₀ A b x₀‖ : 𝕜)⁻¹ • Chapter06.r₀ A b x₀ := rfl
     rw [e1, e2, hr0]
-  have hcoeff : fgmresCoeff (fun _ => M) A (Ch06.v₁ A b x₀)
-      = Ch06.arnoldiCoeff (rightPreconditioned M A) (Ch06.v₁ A b x₀) :=
-    fgmresCoeff_const M A (Ch06.norm_v₁ A b x₀ hr)
+  have hcoeff : fgmresCoeff (fun _ => M) A (Chapter06.v₁ A b x₀)
+      = Chapter06.arnoldiCoeff (rightPreconditioned M A) (Chapter06.v₁ A b x₀) :=
+    fgmresCoeff_const M A (Chapter06.norm_v₁ A b x₀ hr)
   have hy : fgmresY (fun _ => M) A b x₀ m
-      = Ch06.gmresY (rightPreconditioned M A) b (op M x₀) m := by
-    rw [fgmresY, Ch06.gmresY, hv1, hcoeff, hbetaR]
-  have hvec : ∀ j : ℕ, fgmresZ (fun _ => M) A (Ch06.v₁ A b x₀) j
+      = Chapter06.gmresY (rightPreconditioned M A) b (op M x₀) m := by
+    rw [fgmresY, Chapter06.gmresY, hv1, hcoeff, hbetaR]
+  have hvec : ∀ j : ℕ, fgmresZ (fun _ => M) A (Chapter06.v₁ A b x₀) j
       = op M⁻¹ (Arnoldi.vec (op (rightPreconditioned M A))
-          (Ch06.r₀ (rightPreconditioned M A) b (op M x₀)) j) := by
+          (Chapter06.r₀ (rightPreconditioned M A) b (op M x₀)) j) := by
     intro j
-    rw [fgmresZ, fgmresV_const, ← Ch06.arnoldiCGS_v₁_apply, hv1]
-  rw [fgmres, gmresRight, Ch06.gmresFixed, Ch06.krylovIterate_eq_sum, add_sub_cancel_left,
+    rw [fgmresZ, fgmresV_const, ← Chapter06.arnoldiCGS_v₁_apply, hv1]
+  rw [fgmres, gmresRight, Chapter06.gmresFixed, Chapter06.krylovIterate_eq_sum, add_sub_cancel_left,
     map_sum, hy]
   refine congrArg _ (Finset.sum_congr rfl fun j _ => ?_)
   rw [hvec, map_smul]
@@ -410,20 +412,21 @@ end Const
 consumed at once and need not be stored.
 
 The book states nothing about it beyond the algorithm; the identification with Algorithm 6.13 at
-`M_j = I` is `SaadSparse.Ch09.fdqgmres_eq_dqgmres`. -/
+`M_j = I` is `SaadSparse.Chapter09.fdqgmres_eq_dqgmres`. -/
 noncomputable def fdqgmres (M : ℕ → Matrix (Fin n) (Fin n) 𝕜) (x₀ : EuclideanSpace 𝕜 (Fin n))
     (v : ℕ → EuclideanSpace 𝕜 (Fin n)) (h : ℕ → ℕ → 𝕜) (β : 𝕜) (k : ℕ) :
     ℕ → EuclideanSpace 𝕜 (Fin n) :=
-  Ch06.dqgmres x₀ (fun j => op (M j)⁻¹ (v j)) h β k
+  Chapter06.dqgmres x₀ (fun j => op (M j)⁻¹ (v j)) h β k
 
 /-- With the identity preconditioner at every step, flexible DQGMRES is Algorithm 6.13. -/
 theorem fdqgmres_eq_dqgmres (x₀ : EuclideanSpace 𝕜 (Fin n)) (v : ℕ → EuclideanSpace 𝕜 (Fin n))
     (h : ℕ → ℕ → 𝕜) (β : 𝕜) (k : ℕ) :
-    fdqgmres (fun _ => (1 : Matrix (Fin n) (Fin n) 𝕜)) x₀ v h β k = Ch06.dqgmres x₀ v h β k := by
+    fdqgmres (fun _ => (1 : Matrix (Fin n) (Fin n) 𝕜)) x₀ v h β k
+      = Chapter06.dqgmres x₀ v h β k := by
   have hv : (fun j => op ((1 : Matrix (Fin n) (Fin n) 𝕜))⁻¹ (v j)) = v := by
     funext j
     have h1 : (op (1 : Matrix (Fin n) (Fin n) 𝕜)) = LinearMap.id := Matrix.toEuclideanLin_one
     rw [_root_.inv_one, h1, LinearMap.id_apply]
   rw [fdqgmres, hv]
 
-end SaadSparse.Ch09
+end SaadSparse.Chapter09

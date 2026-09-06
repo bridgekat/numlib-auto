@@ -9,8 +9,8 @@ import Mathlib.Analysis.InnerProductSpace.PiL2
 /-!
 # Atkinson–Han §3.6: projection operators
 
-Statements from Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework* (3rd ed.), §3.6.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §3.6.
 
 ## Book-specific definitions
 
@@ -40,7 +40,7 @@ Analysis Framework* (3rd ed.), §3.6.
 Example 3.6.4 is a picture in `ℝ²`.
 -/
 
-namespace AtkinsonHan.Ch03
+namespace AtkinsonHan.Chapter03
 
 /-! ### Definition 3.6.1 and Proposition 3.6.2: direct sums -/
 
@@ -369,4 +369,4 @@ theorem example_3_6_8_l2 {n : ℕ} (f : PeriodicCont) {m : ℤ} (hm : m.natAbs �
 
 end Examples
 
-end AtkinsonHan.Ch03
+end AtkinsonHan.Chapter03

@@ -5,10 +5,10 @@ import NumlibSurface.SaadSparse.Chapter06.Common
 import NumlibSurface.SaadSparse.Chapter09.Section01
 
 /-!
-# Saad, §9.2: the preconditioned conjugate gradient method
+# Saad §9.2: the preconditioned conjugate gradient method
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003, §9.2, with P-9.2, P-9.3 and P-9.6.
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §9.2 , with P-9.2, P-9.3 and P-9.6.
 
 The section rests on one observation, `isSymmetric_energy`: for symmetric `A` and symmetric
 positive definite `M`, the preconditioned matrix `M⁻¹ A` is self-adjoint for the `M`-inner
@@ -48,9 +48,9 @@ open Matrix
 
 open scoped ComplexOrder Matrix SaadSparse
 
-namespace SaadSparse.Ch09
+namespace SaadSparse.Chapter09
 
-open Ch06 (op)
+open Chapter06 (op)
 
 section General
 
@@ -311,9 +311,9 @@ theorem pcg_isGalerkinIterate (hM : Krylov.IsPreconditioner (op M) (op M⁻¹))
     (hA : (op A).IsSymmetric) {c : ℝ} (hc : 0 < c)
     (hcoer : ∀ x : 𝔼, c * RCLike.re (inner 𝕜 (op M x) x) ≤ RCLike.re (inner 𝕜 (op A x) x))
     (b x₀ : 𝔼) (j : ℕ) :
-    IsGalerkin (op A) b x₀ (Ch06.krylov (M⁻¹ * A) (op M⁻¹ (b - op A x₀)) j)
+    IsGalerkin (op A) b x₀ (Chapter06.krylov (M⁻¹ * A) (op M⁻¹ (b - op A x₀)) j)
       (pcgX A M b x₀ j) := by
-  rw [pcgX_eq hA hM.isSymmetric_inv, Ch06.krylov_eq, op_mul]
+  rw [pcgX_eq hA hM.isSymmetric_inv, Chapter06.krylov_eq, op_mul]
   exact Krylov.PCG.isGalerkinIterate hM hA hc hcoer j
 
 /-- **P-9.6**: the conjugate gradient convergence bound for Algorithm 9.1,
@@ -635,7 +635,7 @@ theorem pcgEnergyA_isGalerkinIterate (hA : (op A).IsSymmetric)
       ≤ RCLike.re (inner 𝕜 (op (A * M⁻¹ * A) x) x))
     (hMinv : (op M⁻¹).IsSymmetric) (b x₀ : 𝔼) (j : ℕ) :
     IsGalerkin (op (A * M⁻¹ * A)) (op (A * M⁻¹) b) x₀
-      (Ch06.krylov (M⁻¹ * A) (op M⁻¹ (b - op A x₀)) j) (pcgEnergyA A M b x₀ j).1 := by
+      (Chapter06.krylov (M⁻¹ * A) (op M⁻¹ (b - op A x₀)) j) (pcgEnergyA A M b x₀ j).1 := by
   have hAinv : ∀ y : 𝔼, op A⁻¹ (op A y) = y := hAp.inv_apply
   have hAhat : ∀ y : 𝔼, op (A * M⁻¹ * A) y = op A (op M⁻¹ (op A y)) := fun y => by
     simp only [op_mul_apply]
@@ -649,7 +649,7 @@ theorem pcgEnergyA_isGalerkinIterate (hA : (op A).IsSymmetric)
   have h := Krylov.PCG.isGalerkinIterate (A := op (A * M⁻¹ * A)) (Minv := op A⁻¹)
     (b := op (A * M⁻¹) b) (x₀ := x₀) hAp (isSymmetric_op_mul_inv_mul hA hMinv) hc hcoer j
   rw [hspace, hres] at h
-  rw [(pcgEnergyA_eq hAinv b x₀ j).1, Ch06.krylov_eq]
+  rw [(pcgEnergyA_eq hAinv b x₀ j).1, Chapter06.krylov_eq]
   exact h
 
 end General
@@ -662,15 +662,15 @@ variable {n : ℕ} {A D : Matrix (Fin n) (Fin n) ℝ}
 
 /-- For symmetric `A` the strict upper part of (4.2) is the transpose of the strict lower part,
 so the splitting reads `A = D₀ - E - Eᵀ`, which is the form §9.2.2 uses. -/
-theorem transpose_E (hA : A.IsSymm) : (Ch04.E A)ᵀ = Ch04.F A := by
+theorem transpose_E (hA : A.IsSymm) : (Chapter04.E A)ᵀ = Chapter04.F A := by
   ext i j
   have hsym : A j i = A i j := congrFun (congrFun hA i) j
-  simp [Ch04.E, Ch04.F, Matrix.strictLower_apply, Matrix.strictUpper_apply, hsym]
+  simp [Chapter04.E, Chapter04.F, Matrix.strictLower_apply, Matrix.strictUpper_apply, hsym]
 
 /-- Saad §9.2.2: the splitting `A = D₀ - E - Eᵀ` of a symmetric matrix. -/
-theorem decomp_symm (hA : A.IsSymm) : A = Ch04.D A - Ch04.E A - (Ch04.E A)ᵀ := by
+theorem decomp_symm (hA : A.IsSymm) : A = Chapter04.D A - Chapter04.E A - (Chapter04.E A)ᵀ := by
   rw [transpose_E hA]
-  exact Ch04.decomp A
+  exact Chapter04.decomp A
 
 /-- The algebra behind (9.8): if `X = Y + B + C` with `B` and `C` invertible then
 `B⁻¹ X C⁻¹ = B⁻¹ Y C⁻¹ + B⁻¹ + C⁻¹`. -/
@@ -686,29 +686,29 @@ private theorem inv_mul_mul_inv_eq {X Y B C : Matrix (Fin n) (Fin n) ℝ} (hB : 
 `(D - E)⁻¹ D₁ (D - Eᵀ)⁻¹ + (D - E)⁻¹ + (D - Eᵀ)⁻¹` with `D₁ = D₀ - 2D`. That identity is the
 whole content of Eisenstat's trick: `Â v` costs one product with the sparse `D₁` and the two
 triangular solves that applying `M⁻¹` would need anyway. -/
-theorem equation_9_8 (hA : A.IsSymm) (h1 : IsUnit (D - Ch04.E A))
-    (h2 : IsUnit (D - (Ch04.E A)ᵀ)) :
-    (D - Ch04.E A)⁻¹ * A * (D - (Ch04.E A)ᵀ)⁻¹
-      = (D - Ch04.E A)⁻¹ * (Ch04.D A - (2 : ℝ) • D) * (D - (Ch04.E A)ᵀ)⁻¹
-        + (D - Ch04.E A)⁻¹ + (D - (Ch04.E A)ᵀ)⁻¹ := by
+theorem equation_9_8 (hA : A.IsSymm) (h1 : IsUnit (D - Chapter04.E A))
+    (h2 : IsUnit (D - (Chapter04.E A)ᵀ)) :
+    (D - Chapter04.E A)⁻¹ * A * (D - (Chapter04.E A)ᵀ)⁻¹
+      = (D - Chapter04.E A)⁻¹ * (Chapter04.D A - (2 : ℝ) • D) * (D - (Chapter04.E A)ᵀ)⁻¹
+        + (D - Chapter04.E A)⁻¹ + (D - (Chapter04.E A)ᵀ)⁻¹ := by
   refine inv_mul_mul_inv_eq (Matrix.nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).1 h1))
     (Matrix.mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).1 h2)) ?_
   conv_lhs => rw [decomp_symm hA]
   module
 
-open Ch06 (op)
+open Chapter06 (op)
 
 /-- **Algorithm 9.3** (Eisenstat's implementation): `z = (D - Eᵀ)⁻¹ v`,
 `w = (D - E)⁻¹ (v + D₁ z)`, `w := w + z`. -/
 noncomputable def eisenstat (A D : Matrix (Fin n) (Fin n) ℝ) (v : EuclideanSpace ℝ (Fin n)) :
     EuclideanSpace ℝ (Fin n) :=
-  let z := op (D - (Ch04.E A)ᵀ)⁻¹ v
-  op (D - Ch04.E A)⁻¹ (v + op (Ch04.D A - (2 : ℝ) • D) z) + z
+  let z := op (D - (Chapter04.E A)ᵀ)⁻¹ v
+  op (D - Chapter04.E A)⁻¹ (v + op (Chapter04.D A - (2 : ℝ) • D) z) + z
 
 theorem eisenstat_def (A D : Matrix (Fin n) (Fin n) ℝ) (v : EuclideanSpace ℝ (Fin n)) :
-    eisenstat A D v = op (D - Ch04.E A)⁻¹
-        (v + op (Ch04.D A - (2 : ℝ) • D) (op (D - (Ch04.E A)ᵀ)⁻¹ v))
-      + op (D - (Ch04.E A)ᵀ)⁻¹ v := rfl
+    eisenstat A D v = op (D - Chapter04.E A)⁻¹
+        (v + op (Chapter04.D A - (2 : ℝ) • D) (op (D - (Chapter04.E A)ᵀ)⁻¹ v))
+      + op (D - (Chapter04.E A)ᵀ)⁻¹ v := rfl
 
 /-- The action of a sum of matrices is the sum of the actions. -/
 private theorem op_add_apply (X Y : Matrix (Fin n) (Fin n) ℝ)
@@ -720,13 +720,13 @@ private theorem op_add_apply (X Y : Matrix (Fin n) (Fin n) ℝ)
 
 /-- **Algorithm 9.3** computes `Â v` for the `Â` of (9.8): three triangular solves and one
 product with the diagonal `D₁`, and no product with `A`. -/
-theorem eisenstat_eq (hA : A.IsSymm) (h1 : IsUnit (D - Ch04.E A))
-    (h2 : IsUnit (D - (Ch04.E A)ᵀ)) (v : EuclideanSpace ℝ (Fin n)) :
-    eisenstat A D v = op ((D - Ch04.E A)⁻¹ * A * (D - (Ch04.E A)ᵀ)⁻¹) v := by
+theorem eisenstat_eq (hA : A.IsSymm) (h1 : IsUnit (D - Chapter04.E A))
+    (h2 : IsUnit (D - (Chapter04.E A)ᵀ)) (v : EuclideanSpace ℝ (Fin n)) :
+    eisenstat A D v = op ((D - Chapter04.E A)⁻¹ * A * (D - (Chapter04.E A)ᵀ)⁻¹) v := by
   rw [equation_9_8 hA h1 h2, op_add_apply, op_add_apply, eisenstat_def, map_add,
     op_mul_apply, op_mul_apply]
   abel
 
 end Eisenstat
 
-end SaadSparse.Ch09
+end SaadSparse.Chapter09

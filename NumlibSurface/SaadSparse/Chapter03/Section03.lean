@@ -2,10 +2,10 @@ import Numlib.Combinatorics.SimpleGraph.IndepSet
 import Numlib.LinearAlgebra.Sparse.Reordering
 
 /-!
-# §3.3 Permutations and reorderings
+# Saad §3.3: permutations and reorderings
 
-Section 3.3 of Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003: Definition 3.1 and Proposition 3.2 (§3.3.1), the relation with the adjacency graph
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §3.3: Definition 3.1 and Proposition 3.2 (§3.3.1), the relation with the adjacency graph
 (§3.3.2), the three common reorderings (§3.3.3) and irreducibility (§3.3.4).
 
 §3.3.1 is Mathlib.  Saad's row and column `π`-permutations of `A` are `A.submatrix π id` and
@@ -43,7 +43,7 @@ connectivity, and `adjGraph_submatrix` really does need `σ` on both sides.
 
 open Finset Matrix
 
-namespace SaadSparse.Ch03
+namespace SaadSparse.Chapter03
 
 variable {n : ℕ}
 
@@ -156,7 +156,7 @@ diagonal block of `A.submatrix σ σ` a diagonal matrix.
 `Matrix.adjGraph` is already the symmetrized graph.
 
 With two colours this is Saad's Property A (Definition 4.11) and the block form (4.42); the bridge
-to `SaadSparse.Ch04.HasPropertyA` belongs on the Chapter 4 side, which imports this one. -/
+to `SaadSparse.Chapter04.HasPropertyA` belongs on the Chapter 4 side, which imports this one. -/
 theorem multicoloring_blocks {α : Type*} (A : Matrix (Fin n) (Fin n) ℝ)
     (c : A.adjGraph.Coloring α) (σ : Equiv.Perm (Fin n)) :
     (∀ i j, i ≠ j → c i = c j → A i j = 0) ∧
@@ -202,7 +202,7 @@ breadth-first search satisfies and an arbitrary traversal does not (P-3.11(a)).
 The order along which the colouring proceeds is the given `LinearOrder` on the index type, so the
 "traversal" of Algorithm 3.6 is the identity ordering of a matrix already reordered.  Problem
 P-3.9, that the five-point grid is two-coloured, is the second clause at the graph of
-`SaadSparse.Ch02.laplacian2D`. -/
+`SaadSparse.Chapter02.laplacian2D`. -/
 theorem greedy_coloring_bounds (A : Matrix (Fin n) (Fin n) ℝ) {ν : ℕ}
     (hsymm : ∀ i j, A i j ≠ 0 → A j i ≠ 0)
     (hrow : ∀ i, #{j ∈ univ | j ≠ i ∧ A i j ≠ 0} ≤ ν) :
@@ -238,4 +238,4 @@ theorem isPatternIrreducible_iff (A : Matrix (Fin n) (Fin n) ℝ) (hn : 2 ≤ n)
   ⟨isPatternIrreducible_iff_forall_submatrix_not_blockTriangular,
     not_isPatternIrreducible_iff_exists_submatrix_blockTriangular⟩
 
-end SaadSparse.Ch03
+end SaadSparse.Chapter03

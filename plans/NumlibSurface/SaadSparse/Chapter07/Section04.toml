@@ -1,4 +1,4 @@
-namespace = "SaadSparse.Ch07"
+namespace = "SaadSparse.Chapter07"
 desc = '''
 Saad §7.4: the transpose-free variants CGS (Algorithm 7.6), BICGSTAB (Algorithm 7.7) and TFQMR
 (Algorithm 7.8).
@@ -27,7 +27,7 @@ identification that gives each method its meaning:
 The one substantial proof here is `tfqmr_isQuasiMinResIterate`: that Algorithm 7.8's
 `θ, c, τ, η, d` recurrence computes the least-squares solution for `H̄_m = Δ_{m+1} B̄_m`. It is
 DQGMRES with `k = 1` on a bidiagonal matrix, so it can be read off
-`SaadSparse.Ch06.dqgmres_eq_qgmres` once (7.70) is available.
+`SaadSparse.Chapter06.dqgmres_eq_qgmres` once (7.70) is available.
 '''
 
 [[node]]
@@ -141,9 +141,9 @@ kind = "theorem"
 desc = '''Algorithm 7.8 computes the quasi-minimal-residual iterate of the relation (7.70):
 `Krylov.IsQuasiMinResIterate u (Δ B̄) δ_0 x₀ m (tfqmr … m).x`. The `θ_m, c_m, τ_m, η_m, d_m`
 recurrence is DQGMRES with `k = 1` applied to the bidiagonal `H̄_m`, so this is
-`SaadSparse.Ch06.dqgmres_eq_qgmres` once (7.70) is available; `τ_m = γ_{m+1}` identifies the
+`SaadSparse.Chapter06.dqgmres_eq_qgmres` once (7.70) is available; `τ_m = γ_{m+1}` identifies the
 book's `τ` with the backbone `Krylov.gamma`.'''
-deps = ["equation_7_70", "Krylov.IsQuasiMinResIterate", "SaadSparse.Ch06.dqgmres",
+deps = ["equation_7_70", "Krylov.IsQuasiMinResIterate", "SaadSparse.Chapter06.dqgmres",
   "Krylov.gamma"]
 
 [[node]]

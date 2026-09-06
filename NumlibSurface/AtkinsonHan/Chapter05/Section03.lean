@@ -10,8 +10,8 @@ import Mathlib.Analysis.Calculus.Deriv.MeanValue
 /-!
 # Atkinson–Han §5.3: differential calculus for nonlinear operators
 
-Surface formalization of §5.3 of Kendall Atkinson and Weimin Han, *Theoretical Numerical
-Analysis: A Functional Analysis Framework*, 3rd edition, Springer, 2009.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §5.3.
 
 The book's Fréchet derivative (Definition 5.3.1) is Mathlib's `HasFDerivAt`; its "interior point"
 convention `B(u₀, r) ⊆ K` is `K ∈ 𝓝 u₀`, under which `HasFDerivWithinAt` and `HasFDerivAt`
@@ -45,7 +45,7 @@ for linear maps only, and Brouwer's theorem is available only in dimension one).
 
 open Filter Set Topology
 
-namespace AtkinsonHan.Ch05
+namespace AtkinsonHan.Chapter05
 
 section Frechet
 
@@ -389,4 +389,4 @@ theorem theorem_5_3_19_submodule (K : Submodule ℝ V)
 
 end Convexity
 
-end AtkinsonHan.Ch05
+end AtkinsonHan.Chapter05

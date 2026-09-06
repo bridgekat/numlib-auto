@@ -57,7 +57,7 @@ import NumlibSurface.SaadSparse.Common
 # Saad, *Iterative Methods for Sparse Linear Systems*
 
 The surface library for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition
-(SIAM, 2003): one module per section of the book, covering §1.11–§1.13, §4.1–§4.2, Chapter 5,
+(SIAM, 2003): one module per section of the book, covering §1.11–1.13, §4.1–4.2, Chapter 5,
 Chapter 6 and §10.8. Each module states the book's results in the book's own terms — Saad's
 non-symmetric "positive definite", the splitting `A = D - E - F`, the algorithms written out as Lean
 functions — and proves them by specializing the general backbone under `Numlib/`. Almost nothing is
@@ -78,7 +78,7 @@ descriptive name (`arnoldiCGS`, `gmresFixed`, `smoothEta`), and each such defini
 equivalence lemma to its backbone counterpart; those lemmas are the load-bearing part of the
 library.
 
-Declarations live in `SaadSparse.ChNN` for the chapter, except in §1.11–§1.13, where results about
+Declarations live in `SaadSparse.ChNN` for the chapter, except in §1.11–1.13, where results about
 a matrix are stated in `Matrix` so that dot notation reads as the book does. `SaadSparse.Common`
 holds the conventions shared by the whole library, and `SaadSparse.Chapter06.Common` the `r₀`, `β`,
 `v₁`, `e₁`, `mEff` vocabulary shared by every Krylov method of Chapter 6.
@@ -159,7 +159,7 @@ Deferred to a later phase of the backbone, with the plans in `plans/saadsparse-c
 * §4.2.1, the convergence factors and rates, which need `‖complexify A‖ = ‖A‖` for the scoped
   operator norms before Gelfand's formula transports to a real matrix; Theorem 4.4 on regular
   splittings and M-matrices; Theorem 4.7 and the *irreducibly* diagonally dominant halves of
-  Corollary 4.8 and Theorem 4.9; and the SOR theory of §4.2.4–§4.2.5 — Theorem 4.10, Definitions
+  Corollary 4.8 and Theorem 4.9; and the SOR theory of §4.2.4–4.2.5 — Theorem 4.10, Definitions
   4.11 and 4.13, Propositions 4.14–4.15, Theorem 4.16 and the optimal parameter (4.47).
 * Block relaxation (§4.1.1, Algorithms 4.1–4.2) and the identification of the additive procedure of
   §5.4 with the abstract additive projection process.

@@ -1,4 +1,4 @@
-namespace = "SaadSparse.Ch14"
+namespace = "SaadSparse.Chapter14"
 desc = '''
 §14.5, full matrix methods: iterating on the unreduced system with the block preconditioners
 (14.49) or (14.55) is the same as iterating on the reduced Schur complement system.

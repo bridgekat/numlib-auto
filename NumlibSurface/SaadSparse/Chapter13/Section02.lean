@@ -3,10 +3,10 @@ import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
 import NumlibSurface.SaadSparse.Chapter04.Section02
 
 /-!
-# §13.2 The model problems and the spectra of the smoothers
+# Saad §13.2: the model problems and the spectra of the smoothers
 
-Section 13.2 of Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003: the one- and two-dimensional discrete Laplaceans on which the whole multigrid chapter
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §13.2: the one- and two-dimensional discrete Laplaceans on which the whole multigrid chapter
 runs, their eigenvalues and eigenvectors, and the spectra of Richardson's iteration (§13.2.1),
 weighted Jacobi (§13.2.2) and Gauss–Seidel (§13.2.3) on them.
 
@@ -24,9 +24,9 @@ The two conclusions the chapter is built on are
 
 The matrices of §13.2 are **unscaled**: `laplacian1D n` is `tridiag(-1, 2, -1)`, the `h²`-scaled
 form of the operator `-u''` on the grid `x_i = i h`, `h = 1/(n + 1)`.  Saad writes the same matrix
-in §2.2.3 with the factor `1/h²`, and `SaadSparse.Ch02.laplacian1D n h` carries it; the two live in
-different namespaces and `SaadSparse.Ch02.laplacian2D_smul` relates them.  Interior points are
-numbered from `0`, so the library's `k : Fin n` is Saad's `k + 1`, and `theta n k` is his
+in §2.2.3 with the factor `1/h²`, and `SaadSparse.Chapter02.laplacian1D n h` carries it; the two
+live in different namespaces and `SaadSparse.Chapter02.laplacian2D_smul` relates them.  Interior
+points are numbered from `0`, so the library's `k : Fin n` is Saad's `k + 1`, and `theta n k` is his
 `θ_k = kπ/(n + 1)`.
 
 The two-dimensional matrix is indexed by the **product type** `Fin n × Fin m`, never by
@@ -43,14 +43,14 @@ has the sine eigenbasis of `tridiag(a, b, a)` and, in
 `Numlib/LinearAlgebra/Matrix/KroneckerSum.lean` has the Leibniz rule on an elementary tensor and
 the tensor orthonormal basis, which is what makes the two-dimensional eigenpairs exhaustive even
 where the sums `σ_k + μ_l` coincide.  The Gauss–Seidel spectrum comes from Young's theorem
-(Saad Theorem 4.16, `SaadSparse.Ch04.theorem_4_16_mpr`), a tridiagonal matrix being consistently
-ordered.
+(Saad Theorem 4.16, `SaadSparse.Chapter04.theorem_4_16_mpr`), a tridiagonal matrix being
+consistently ordered.
 -/
 
 open Finset Matrix Stationary
 open scoped Kronecker Matrix Real
 
-namespace SaadSparse.Ch13
+namespace SaadSparse.Chapter13
 
 /-! ### §13.2 The one-dimensional model problem, (13.4)–(13.9) -/
 
@@ -63,7 +63,7 @@ discretization of `-u'' = f` on `(0, 1)` with homogeneous Dirichlet conditions o
 `x_i = i h`, `h = 1/(n + 1)`.
 
 This is the **unscaled** matrix of Chapter 13, in which the factor `h²` sits on the right-hand
-side; `SaadSparse.Ch02.laplacian1D n h` is the same matrix scaled by `1/h²`, as §2.2.3 displays
+side; `SaadSparse.Chapter02.laplacian1D n h` is the same matrix scaled by `1/h²`, as §2.2.3 displays
 it. -/
 def laplacian1D (n : ℕ) : Matrix (Fin n) (Fin n) ℝ := symmTridiagonalToeplitz n (-1) 2
 
@@ -472,16 +472,16 @@ No hypothesis is needed on `γ`: the identity holds for every `γ`, the degenera
 the do-nothing iteration and the factor `1`. -/
 theorem richardson_reduction (n : ℕ) (γ : ℝ) (b x₀ xstar : Fin n → ℝ)
     (hxstar : laplacian1D n *ᵥ xstar = b) (k : Fin n) (j : ℕ) :
-    sineVec n k ⬝ᵥ ((Ch04.richardsonStep (laplacian1D n) γ⁻¹ b)^[j] x₀ - xstar) =
+    sineVec n k ⬝ᵥ ((Chapter04.richardsonStep (laplacian1D n) γ⁻¹ b)^[j] x₀ - xstar) =
       (1 - eigenvalue1D n k / γ) ^ j * (sineVec n k ⬝ᵥ (x₀ - xstar)) := by
-  have hfix : Ch04.affineStep (1 - γ⁻¹ • laplacian1D n) (γ⁻¹ • b) xstar = xstar := by
-    rw [Ch04.affineStep_fixed_iff, sub_sub_cancel, Matrix.smul_mulVec, hxstar]
+  have hfix : Chapter04.affineStep (1 - γ⁻¹ • laplacian1D n) (γ⁻¹ • b) xstar = xstar := by
+    rw [Chapter04.affineStep_fixed_iff, sub_sub_cancel, Matrix.smul_mulVec, hxstar]
   have hsymm : (1 - γ⁻¹ • laplacian1D n).IsSymm :=
     Matrix.isSymm_one.sub ((laplacian1D_isSymm n).smul γ⁻¹)
   have heig : (1 - γ⁻¹ • laplacian1D n) *ᵥ sineVec n k =
       (1 - eigenvalue1D n k / γ) • sineVec n k := by
     rw [richardson_iterationMatrix_mulVec_sineVec, div_eq_inv_mul]
-  rw [Ch04.richardsonStep_eq_affine, Ch04.affineStep_iterate_sub hfix,
+  rw [Chapter04.richardsonStep_eq_affine, Chapter04.affineStep_iterate_sub hfix,
     dotProduct_pow_mulVec hsymm heig]
 
 /-- Saad (13.18): with `γ = 4` the Richardson reduction factor is `η_k = cos²(θ_k/2)`. -/
@@ -816,7 +816,7 @@ theorem equation_13_29 (n : ℕ) (k : Fin n) :
     rw [e0, e2, Real.sin_sub, Real.sin_add]
     ring
   rw [gaussSeidel1D_eq, sub_mulVec, one_mulVec, ← mulVec_mulVec, key, Matrix.mulVec_smul,
-    Ch04.inv_mulVec_mulVec (isUnit_diagPart_add_strictLower (isUnit_diagPart_laplacian1D n))]
+    Chapter04.inv_mulVec_mulVec (isUnit_diagPart_add_strictLower (isUnit_diagPart_laplacian1D n))]
   module
 
 /-- The Gauss–Seidel eigenvector of (13.29) is nonzero exactly when `cos θ_k ≠ 0`. -/
@@ -848,7 +848,7 @@ theorem gaussSeidel1D_mulVec_single (n : ℕ) (hn : 0 < n) :
     rw [laplacian1D_mulVec_apply, gsLower_mulVec_apply, h2]
     ring
   rw [gaussSeidel1D_eq, sub_mulVec, one_mulVec, ← mulVec_mulVec, hkey,
-    Ch04.inv_mulVec_mulVec (isUnit_diagPart_add_strictLower (isUnit_diagPart_laplacian1D n)),
+    Chapter04.inv_mulVec_mulVec (isUnit_diagPart_add_strictLower (isUnit_diagPart_laplacian1D n)),
     sub_self]
 
 /-- The Jacobi iteration matrix of the one-dimensional model problem is `tridiag(1/2, 0, 1/2)`,
@@ -899,7 +899,7 @@ private theorem ofReal_mem_spectrum_complexify_of_mulVec {N : ℕ} {A : Matrix (
 one-dimensional model problem, for every `k`.
 
 This is Saad's own shortcut: the model matrix is tridiagonal, hence consistently ordered, so
-Young's theorem (Saad Theorem 4.16, `SaadSparse.Ch04.theorem_4_16_mpr`) says that the SOR
+Young's theorem (Saad Theorem 4.16, `SaadSparse.Chapter04.theorem_4_16_mpr`) says that the SOR
 eigenvalues at `ω = 1` are the squares of the Jacobi ones, and the Jacobi eigenvalues are the
 `cos θ_k`.  The eigenvectors are (13.29), `equation_13_29`.
 
@@ -921,4 +921,4 @@ theorem gaussSeidel_eigenvalues (n : ℕ) (k : Fin n) :
 
 end GaussSeidel
 
-end SaadSparse.Ch13
+end SaadSparse.Chapter13

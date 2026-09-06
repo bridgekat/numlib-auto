@@ -10,10 +10,10 @@ import Mathlib.Analysis.Normed.Operator.Extend
 /-!
 # Atkinson–Han §2.4: more results on linear operators
 
-Statements from Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework* (3rd ed.), §2.4.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §2.4.
 
-The book's `cond(L) = ‖L⁻¹‖ ‖L‖` is defined here as `AtkinsonHan.Ch02.cond`, with
+The book's `cond(L) = ‖L⁻¹‖ ‖L‖` is defined here as `AtkinsonHan.Chapter02.cond`, with
 `cond_eq_condNumber` identifying it, for `V = W`, with the backbone's
 `NormedRing.condNumber` (`Numlib.Analysis.Normed.Ring.CondNumber`).
 
@@ -35,7 +35,7 @@ planned.
 
 open Filter Topology Bornology NNReal
 
-namespace AtkinsonHan.Ch02
+namespace AtkinsonHan.Chapter02
 
 variable {𝕜 V W : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
   [NormedAddCommGroup W] [NormedSpace 𝕜 W]
@@ -216,4 +216,4 @@ theorem quadrature_convergence {m d : ℕ → ℕ} {w : ∀ k, Fin (m k) → ℝ
   ⟨Quadrature.tendsto_iff_bddAbove_sum_abs hx hd hexact,
     fun hw => Quadrature.tendsto_of_nonneg hx hd hexact hw⟩
 
-end AtkinsonHan.Ch02
+end AtkinsonHan.Chapter02

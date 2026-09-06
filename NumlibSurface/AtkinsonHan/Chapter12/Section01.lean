@@ -3,8 +3,8 @@ import Numlib.IntegralEquations.SecondKind
 /-!
 # Atkinson–Han §12.1: projection methods for equations of the second kind
 
-Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional Analysis
-Framework*, 3rd edition, Springer, 2009.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §12.1.
 
 The book's data is a Banach space `V`, a scalar `λ ≠ 0`, a bounded operator `K` on `V`, and a
 sequence of bounded projections `P_n` of `V` onto finite-dimensional subspaces `V_n`.  `λ` is
@@ -36,7 +36,7 @@ basis of the trial space, and nothing in the rest of the chapter uses them.
 
 open Filter Topology
 
-namespace AtkinsonHan.Ch12
+namespace AtkinsonHan.Chapter12
 
 variable {𝕜 X : Type*} [RCLike 𝕜] [NormedAddCommGroup X] [NormedSpace 𝕜 X]
 
@@ -297,4 +297,4 @@ theorem exercise_12_1_4 [CompleteSpace X] {μ : 𝕜} {K : X →L[𝕜] X}
         mul_le_mul he'norm (ContinuousLinearMap.le_opNorm _ _) (norm_nonneg _) (by positivity)
     _ = 2 * (‖(e.symm : X →L[𝕜] X)‖ * ‖K - P n ∘L K‖) * ‖y‖ := by ring
 
-end AtkinsonHan.Ch12
+end AtkinsonHan.Chapter12

@@ -14,12 +14,12 @@ import NumlibSurface.SaadSparse.Chapter01.Section13
 import NumlibSurface.SaadSparse.Chapter04.Section01
 
 /-!
-# §4.2 Convergence of the basic iterative methods
+# Saad §4.2: convergence of the basic iterative methods
 
-Section 4.2 of Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003, in three parts.
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §4.2 , in three parts.
 
-**§4.2–§4.2.2, the affine iteration** `x_{k+1} = G x_k + f` (4.28)–(4.30): Theorem 4.1 (`ρ(G) < 1`
+**§4.2–4.2.2, the affine iteration** `x_{k+1} = G x_k + f` (4.28)–(4.30): Theorem 4.1 (`ρ(G) < 1`
 characterizes convergence), Corollary 4.2 (`‖G‖ < 1` suffices), the remark `|λ| ≤ ‖A‖` before
 Theorem 4.6, and Example 4.1 (Richardson). The proofs specialize the backbone's spectral-radius
 theory (`Numlib/LinearAlgebra/Matrix/Complexify.lean`,
@@ -33,7 +33,7 @@ Definition 4.5 as printed uses column sums for all three dominance conditions, w
 Theorems 4.6 and 4.9 use row sums; both forms are stated here, following the backbone's
 `Matrix.IsStrictDiagDominant` (rows) and `Matrix.IsStrictColDiagDominant` (columns).
 
-**§4.2.4–§4.2.5, symmetric positive definite matrices and Young's theory**: Proposition 4.12,
+**§4.2.4–4.2.5, symmetric positive definite matrices and Young's theory**: Proposition 4.12,
 by the similarity argument the book uses — for a block anti-diagonal `B` the spectrum is symmetric
 under negation, and the spectrum of `B(α) = α L + α⁻¹ U` does not depend on `α ≠ 0`; Theorem 4.10
 (SOR converges exactly for positive definite `A`), Definitions 4.11 and 4.13 (Property A,
@@ -41,9 +41,9 @@ consistent orderings, T-matrices), Propositions 4.14–4.15, Theorem 4.16 and th
 parameter (4.47).
 
 Saad's Definition 4.13 is a *labelling* of the indices, and it is the labelling that the surface
-takes as `SaadSparse.Ch04.IsConsistentlyOrdered`; the backbone's `Matrix.IsConsistentlyOrdered` is
-Kress's spectral property, which Young's theory actually uses, and
-`SaadSparse.Ch04.IsConsistentlyOrdered.matrix_isConsistentlyOrdered` is the implication between
+takes as `SaadSparse.Chapter04.IsConsistentlyOrdered`; the backbone's `Matrix.IsConsistentlyOrdered`
+is Kress's spectral property, which Young's theory actually uses, and
+`SaadSparse.Chapter04.IsConsistentlyOrdered.matrix_isConsistentlyOrdered` is the implication between
 them — Saad's Proposition 4.15.
 
 Left out of the plan: the *specific* convergence factor of §4.2.1 for a generic `d₀`, which the
@@ -52,9 +52,9 @@ book derives heuristically from the Jordan form.
 
 open Matrix
 
-namespace SaadSparse.Ch04
+namespace SaadSparse.Chapter04
 
-/-! ### §4.2–§4.2.2 The affine iteration and its convergence -/
+/-! ### §4.2–4.2.2 The affine iteration and its convergence -/
 
 section AffineIteration
 
@@ -494,7 +494,7 @@ theorem theorem_4_9_jacobi_col (h : A.IsStrictColDiagDominant) (hd : IsUnit (dia
 
 end DiagonallyDominant
 
-/-! ### §4.2.4–§4.2.5 Symmetric positive definite matrices and Young's theory -/
+/-! ### §4.2.4–4.2.5 Symmetric positive definite matrices and Young's theory -/
 
 section SymmetricPositiveDefinite
 
@@ -1173,4 +1173,4 @@ theorem equation_4_47 [NeZero n] (h : IsConsistentlyOrdered A) (hd : IsUnit (dia
 
 end Young
 
-end SaadSparse.Ch04
+end SaadSparse.Chapter04

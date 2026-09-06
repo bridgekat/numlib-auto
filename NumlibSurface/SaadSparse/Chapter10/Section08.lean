@@ -2,10 +2,10 @@ import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 import NumlibSurface.SaadSparse.Common
 
 /-!
-# Saad, §10.8: preconditioners for the normal equations
+# Saad §10.8: preconditioners for the normal equations
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003, §10.8.
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §10.8.
 
 **Algorithm 10.17**, the incomplete Gram–Schmidt process of §10.8.3, is `imgsHat` (the vector
 `q̂_i` of line 3), `imgsQ` (its normalization `q_i` of line 5) and `imgsL` (the coefficients
@@ -30,7 +30,7 @@ and padded by `0` past `n`, so that the recursion of Algorithm 10.17 needs no de
 arithmetic.
 -/
 
-namespace SaadSparse.Ch10
+namespace SaadSparse.Chapter10
 
 section IncompleteGramSchmidt
 
@@ -219,4 +219,4 @@ theorem proposition_10_17 {A : Matrix (Fin n) (Fin n) ℝ} (dropL : ℕ → ℕ 
 
 end IncompleteGramSchmidt
 
-end SaadSparse.Ch10
+end SaadSparse.Chapter10

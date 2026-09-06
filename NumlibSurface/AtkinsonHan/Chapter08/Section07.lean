@@ -3,10 +3,10 @@ import Numlib.Variational.LaxMilgram
 import NumlibSurface.AtkinsonHan.Chapter08.Section03
 
 /-!
-# The generalized Lax–Milgram lemma (§8.7)
+# Atkinson–Han §8.7: the generalized Lax–Milgram lemma
 
-Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional Analysis
-Framework*, 3rd edition, Springer, 2009.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §8.7.
 
 Theorem 8.7.1, which the book attributes to Nečas: a bilinear form `a : U × V → ℝ` on a pair of
 real Hilbert spaces which is bounded (8.7.1), satisfies the inf–sup condition (8.7.2) and is
@@ -208,7 +208,7 @@ theorem BilinForm.IsEllipticWith.exists_pos (ha : a.IsEllipticWith α) (hα : 0 
 
 end Elliptic
 
-namespace Ch08
+namespace Chapter08
 
 variable {U V : Type*} [NormedAddCommGroup U] [InnerProductSpace ℝ U] [NormedAddCommGroup V]
   [InnerProductSpace ℝ V]
@@ -236,6 +236,6 @@ theorem exercise_8_7_1 [CompleteSpace V] (a : BilinForm V) (ℓ : StrongDual ℝ
   theorem_8_7_1 a ℓ hα (BilinForm₂.isBoundedWith_of_isBoundedWith hM) (ha.infSup hM)
     (fun v hv => ha.exists_pos hα v hv)
 
-end Ch08
+end Chapter08
 
 end AtkinsonHan

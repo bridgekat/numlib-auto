@@ -30,8 +30,8 @@ equation, and shows that the Haar system of `Numlib/Analysis/Wavelet/Haar` is an
 * `IsMultiresolutionAnalysis.hasSum_scalingEquation` is the scaling equation: `φ` is the sum of
   its level-`1` coefficients against the level-`1` system.
 * `Haar.isMultiresolutionAnalysis` is the Haar instance. Its scaling coefficients are computed in
-  `NumlibSurface.AtkinsonHan.Ch04.haar_scalingCoeff`, in the surface rather than here, because the
-  book states them and nothing in this layer consumes them yet.
+  `NumlibSurface.AtkinsonHan.Chapter04.haar_scalingCoeff`, in the surface rather than here, because
+  the book states them and nothing in this layer consumes them yet.
 
 The construction of a scaling function from a sequence of dilation coefficients, the wavelet of
 Atkinson–Han (4.5.4) and Daubechies' compactly supported families are not developed: the book

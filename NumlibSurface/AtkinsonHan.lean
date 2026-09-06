@@ -71,10 +71,10 @@ norms of Example 2.2.8 — a trailing word tells them apart, as in `proposition_
 `theorem_8_3_3_subspace` and `example_2_2_8_l1`. Book-specific definitions get descriptive names
 instead (`IsBoundedOperator`, `IsSublinear`, `BilinForm`, `BookSplitting`, `HasGateauxDerivAt`,
 `IsSaddlePoint`, `DualProblem`), each with a bridge lemma to the Mathlib or backbone notion it
-agrees with. Declarations live in the flat per-chapter namespaces `AtkinsonHan.Ch01`,
-`AtkinsonHan.Ch02`, `AtkinsonHan.Ch03`, `AtkinsonHan.Ch05`, `AtkinsonHan.Ch08`, `AtkinsonHan.Ch09`
-and `AtkinsonHan.Ch10`, with the bilinear-form vocabulary shared by §8.3, §8.7 and Chapters 9–10
-directly in `AtkinsonHan`.
+agrees with. Declarations live in the flat per-chapter namespaces `AtkinsonHan.Chapter01`,
+`AtkinsonHan.Chapter02`, `AtkinsonHan.Chapter03`, `AtkinsonHan.Chapter05`, `AtkinsonHan.Chapter08`,
+`AtkinsonHan.Chapter09` and `AtkinsonHan.Chapter10`, with the bilinear-form vocabulary shared by
+§8.3, §8.7 and Chapters 9–10 directly in `AtkinsonHan`.
 
 ## The outline
 

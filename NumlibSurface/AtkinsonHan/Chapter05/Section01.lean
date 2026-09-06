@@ -4,8 +4,8 @@ import Numlib.Nonlinear.FixedPoint
 /-!
 # Atkinson–Han §5.1: the Banach fixed-point theorem
 
-Surface formalization of §5.1 of Kendall Atkinson and Weimin Han, *Theoretical Numerical
-Analysis: A Functional Analysis Framework*, 3rd edition, Springer, 2009.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §5.1.
 
 * Definition 5.1.2: `ContractiveOn`, `NonExpansiveOn`, `LipschitzOn`, and the chain
   contractive ⇒ non-expansive ⇒ Lipschitz ⇒ continuous.
@@ -20,7 +20,7 @@ Every proof specializes a declaration of `Numlib/Nonlinear/FixedPoint.lean` or o
 
 open Filter Metric Set Topology
 
-namespace AtkinsonHan.Ch05
+namespace AtkinsonHan.Chapter05
 
 -- The book states §5.1 in a Banach space and Theorem 5.1.4 in a Hilbert space.  The vector space
 -- structure plays no role in several of the metric arguments below, so the section variables
@@ -313,4 +313,4 @@ theorem theorem_5_1_4 {T : V → V} {c₁ c₂ : ℝ} (hc₁ : 0 < c₁) (hc₂ 
 
 end Hilbert
 
-end AtkinsonHan.Ch05
+end AtkinsonHan.Chapter05

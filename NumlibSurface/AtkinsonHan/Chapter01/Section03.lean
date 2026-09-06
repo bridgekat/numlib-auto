@@ -6,9 +6,9 @@ import Numlib.Analysis.Fourier.TrigonometricBasis
 /-!
 # Atkinson–Han §1.3: inner product spaces
 
-Statements from Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework* (3rd ed.), §1.3: inner product spaces, Hilbert spaces, orthogonality,
-orthonormal bases and the Gram–Schmidt process.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §1.3: inner product spaces, Hilbert spaces,
+orthogonality, orthonormal bases and the Gram–Schmidt process.
 
 The book's inner product is linear in its *first* slot and Mathlib's in its second, so the book's
 `(u, v)` is `inner 𝕜 v u`; every statement below is written in Mathlib's convention with that
@@ -47,7 +47,7 @@ open Filter InnerProductSpace MeasureTheory Submodule Topology
 
 open scoped Real
 
-namespace AtkinsonHan.Ch01
+namespace AtkinsonHan.Chapter01
 
 section InnerProduct
 
@@ -223,4 +223,4 @@ theorem theorem_1_3_16 {f : ℕ → E} (hf : LinearIndependent 𝕜 f) :
 
 end GramSchmidt
 
-end AtkinsonHan.Ch01
+end AtkinsonHan.Chapter01

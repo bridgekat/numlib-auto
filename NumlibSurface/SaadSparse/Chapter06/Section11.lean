@@ -12,12 +12,12 @@ import NumlibSurface.SaadSparse.Chapter06.Section05
 import NumlibSurface.SaadSparse.Chapter06.Section07
 
 /-!
-# Saad, §6.11: convergence analysis
+# Saad §6.11: convergence analysis
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003, §6.11, in two parts.
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §6.11 , in two parts.
 
-## §6.11.1–§6.11.2: Chebyshev polynomials and the min–max property
+## §6.11.1–6.11.2: Chebyshev polynomials and the min–max property
 
 `C k` is the book's `C_k`, the degree-`k` Chebyshev polynomial of the first kind of (6.109), which
 is Mathlib's `Polynomial.Chebyshev.T ℝ k`; `Chat k α β γ` is the shifted and normalized polynomial
@@ -29,10 +29,10 @@ off from the backbone through that identity: (6.109)–(6.112) from the closed f
 from the backbone min–max pair `one_div_eval_T_le_sSup_abs_eval` / `sSup_abs_eval_shifted`.
 
 Mathlib's `Polynomial.Chebyshev.T` is written out in full in this part, because the book's own
-`T_m` — the tridiagonal Lanczos matrix of `Chapter06/Section06.lean` — is `SaadSparse.Ch06.T` and
-takes precedence over an `open` inside the namespace.
+`T_m` — the tridiagonal Lanczos matrix of `Chapter06/Section06.lean` — is `SaadSparse.Chapter06.T`
+and takes precedence over an `open` inside the namespace.
 
-## §6.11.3–§6.11.4: convergence of the conjugate gradient method and of GMRES
+## §6.11.3–6.11.4: convergence of the conjugate gradient method and of GMRES
 
 The quantities of §6.11.3–6.11.4 are `η` (6.122), the condition number `κ`, the `A`-norm `anorm`
 (the backbone's `energyNorm`, `Numlib/Analysis/InnerProductSpace/Energy.lean`) and `ε^{(m)}`
@@ -78,9 +78,9 @@ proof is not the disc principle but the annulus one — the Joukowski map identi
 
 open scoped Polynomial
 
-namespace SaadSparse.Ch06
+namespace SaadSparse.Chapter06
 
-/-! ### §6.11.1–§6.11.2: Chebyshev polynomials and the min–max property -/
+/-! ### §6.11.1–6.11.2: Chebyshev polynomials and the min–max property -/
 
 section ChebyshevMinimax
 
@@ -314,7 +314,7 @@ theorem ellipse_max_Chat (k : ℕ) {ρ : ℝ} (hρ : 1 ≤ ρ) {c d gam : ℂ} (
 end ComplexEllipse
 
 
-/-! ### §6.11.3–§6.11.4: convergence of the conjugate gradient method and of GMRES -/
+/-! ### §6.11.3–6.11.4: convergence of the conjugate gradient method and of GMRES -/
 
 /-! ### The quantities of §6.11.3 -/
 
@@ -896,4 +896,4 @@ theorem corollary_6_33 {A : Matrix (Fin n) (Fin n) ℂ} (b x₀ : 𝔼) (X : Mat
 
 end Diagonalizable
 
-end SaadSparse.Ch06
+end SaadSparse.Chapter06

@@ -3,8 +3,8 @@ import Numlib.FiniteDifference.TwoLevel
 /-!
 # Atkinson–Han §6.3: two-level difference schemes
 
-Surface formalization of §6.3 of Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis:
-A Functional Analysis Framework*, 3rd edition, Springer, 2009.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §6.3.
 
 The section studies the two-level recursion (6.3.4)–(6.3.5)
 
@@ -32,7 +32,7 @@ matrix, and they exercise nothing in the theory above.
 
 open Filter Set
 
-namespace AtkinsonHan.Ch06
+namespace AtkinsonHan.Chapter06
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {ι : Type*}
 
@@ -119,4 +119,4 @@ theorem theorem_6_3_2 {l : Filter ι} (hT : 0 ≤ T) (hht : ∀ i, 0 ≤ ht i)
 
 end Theorem632
 
-end AtkinsonHan.Ch06
+end AtkinsonHan.Chapter06

@@ -1,7 +1,7 @@
 namespace = "AtkinsonHan"
 
 [[node]]
-id = "Ch09.theorem_9_2_1"
+id = "Chapter09.theorem_9_2_1"
 
 [[node]]
 id = "DiscreteInfSup"
@@ -16,4 +16,4 @@ id = "PetrovGalerkinProblem"
 id = "infSupValue"
 
 [[node]]
-id = "Ch09.remark_9_2_2"
+id = "Chapter09.remark_9_2_2"

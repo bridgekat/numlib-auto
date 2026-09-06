@@ -4,10 +4,10 @@ import Mathlib.Analysis.Normed.Module.RCLike.Basic
 /-!
 # Atkinson–Han §2.6: adjoint operators
 
-Statements from Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework* (3rd ed.), §2.6: the adjoint of a bounded operator between Hilbert spaces,
-self-adjoint operators, and the characterisation `‖L‖ = sup_{‖v‖ = 1} |(L v, v)|` of the norm of a
-self-adjoint operator.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §2.6: the adjoint of a bounded operator between
+Hilbert spaces, self-adjoint operators, and the characterisation `‖L‖ = sup_{‖v‖ = 1} |(L v, v)|` of
+the norm of a self-adjoint operator.
 
 The book restricts §2.6 to real scalars; the statements below are over `RCLike 𝕜`, because
 Mathlib's `ContinuousLinearMap.adjoint` is, and the real case is the instantiation. The book's
@@ -42,7 +42,7 @@ self-adjoint `L`, and is written `RCLike.re (inner 𝕜 v (L v))` below.
 open Metric RCLike
 open scoped InnerProduct
 
-namespace AtkinsonHan.Ch02
+namespace AtkinsonHan.Chapter02
 
 variable {𝕜 V W : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [InnerProductSpace 𝕜 V]
   [NormedAddCommGroup W] [InnerProductSpace 𝕜 W] [CompleteSpace V] [CompleteSpace W]
@@ -162,4 +162,4 @@ theorem exercise_2_6_3 (hL : IsSelfAdjoint L) (u v : V) :
 
 end Norm
 
-end AtkinsonHan.Ch02
+end AtkinsonHan.Chapter02

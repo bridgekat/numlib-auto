@@ -4,10 +4,10 @@ import Numlib.Krylov.Subspace
 import NumlibSurface.SaadSparse.Chapter06.Section08
 
 /-!
-# Saad, §6.9: GCR, ORTHOMIN and ORTHODIR
+# Saad §6.9: GCR, ORTHOMIN and ORTHODIR
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003, §6.9.
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §6.9.
 
 **Lemma 6.21** with (6.104)–(6.105) says that *any* sequence of directions `p_0, …, p_{m-1}`
 that is `AᴴA`-orthogonal and spans `𝒦_m(A, r_0)` produces the minimal-residual approximation by
@@ -39,7 +39,7 @@ generality in §6.9.
 
 open scoped ComplexOrder Matrix
 
-namespace SaadSparse.Ch06
+namespace SaadSparse.Chapter06
 
 section General
 
@@ -606,4 +606,4 @@ theorem orthomin_eq_gcr_book {k m : ℕ} (hk : m ≤ k) :
 
 end BookResults
 
-end SaadSparse.Ch06
+end SaadSparse.Chapter06

@@ -52,7 +52,7 @@ scalars matter, so each surface file is a specialization and, in §8.6 and §6.3
 ### D1. Completely continuous operator (Def 5.5.3)
 *Book.* `T : K ⊆ V → W` is **compact** if `T(B)` is relatively compact for every bounded `B ⊆ K`,
 and **completely continuous** if it is compact and continuous. *Lean.* The first half is the
-backbone `IsCompactMap T K`; the second is `AtkinsonHan.Ch05.IsCompletelyContinuousOn`, which adds
+backbone `IsCompactMap T K`; the second is `AtkinsonHan.Chapter05.IsCompletelyContinuousOn`, which adds
 `ContinuousOn T K`. The two halves are separate because for a nonlinear map compactness does not
 imply continuity — that is exactly the remark the book makes after the definition, and it is why
 Mathlib's `IsCompactOperator`, which is the linear notion, cannot be reused directly.
@@ -70,7 +70,7 @@ at the two ends, so no case split is needed. Well-posedness (Def 6.2.2) adds uni
 ### D3. The solution operators and the generalized solution (Def 6.2.3)
 *Book.* `S(t) u₀ = u(t)` on `V₀`, extended to `V` by the book's Theorem 2.4.1; `S(t) u₀` for
 `u₀ ∈ V ∖ V₀` is the *generalized* solution. *Lean.* `S : ℝ → V →L[ℝ] V` obtained from the
-extension theorem, which this surface already proves as `AtkinsonHan.Ch02.theorem_2_4_1`. Note that
+extension theorem, which this surface already proves as `AtkinsonHan.Chapter02.theorem_2_4_1`. Note that
 the equivalence theorem never uses the semigroup property (Prop 6.2.6); it is stated because the
 book states it, and it must not become a hypothesis of Thm 6.2.11.
 
@@ -111,7 +111,7 @@ The discrete problem (11.4.3) is the *same* predicate with a different constrain
 introduces no new notion of discrete solution and its unique solvability is Theorem 11.3.1 again.
 
 ### D8. Strongly monotone and Lipschitz (11.3.1)–(11.3.2)
-Already in this surface as `AtkinsonHan.Ch05.StronglyMonotoneWith` (for Thm 5.1.4) with the bridges
+Already in this surface as `AtkinsonHan.Chapter05.StronglyMonotoneWith` (for Thm 5.1.4) with the bridges
 `stronglyMonotoneWith_iff` and `lipschitzWith_toNNReal_iff`. Reuse them; do not restate. The
 backbone takes both hypotheses unbundled, in exactly the shape `zarantonello` takes them, so the
 bridge is the same one Chapter 5 already crosses.

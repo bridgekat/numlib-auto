@@ -1,4 +1,4 @@
-namespace = "SaadSparse.Ch13"
+namespace = "SaadSparse.Chapter13"
 
 [[node]]
 id = "laplacian1D"

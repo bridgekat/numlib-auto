@@ -4,12 +4,12 @@ import Numlib.LinearSolve.Projection.Basic
 import NumlibSurface.SaadSparse.Common
 
 /-!
-# §1.12 Projection operators
+# Saad §1.12: projection operators
 
-Section 1.12 of Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003: projectors (1.58), the projector onto `M` orthogonally to `L` (1.59)–(1.62), its
-matrix representations (1.63)–(1.66), orthogonal projectors (1.67)–(1.72), Lemma 1.36,
-Proposition 1.37, Theorem 1.38 and Corollary 1.39.
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §1.12: projectors (1.58), the projector onto `M` orthogonally to `L` (1.59)–(1.62), its matrix
+representations (1.63)–(1.66), orthogonal projectors (1.67)–(1.72), Lemma 1.36, Proposition 1.37,
+Theorem 1.38 and Corollary 1.39.
 
 A projector in the book's sense is an idempotent matrix; the backbone counterparts are
 `IsIdempotentElem` on `EuclideanSpace 𝕜 (Fin n) →ₗ[𝕜] EuclideanSpace 𝕜 (Fin n)`,
@@ -179,7 +179,7 @@ theorem isProjOnto_self_iff_eq_starProjection (x u : EuclideanSpace 𝕜 (Fin n)
 
 end SaadSparse
 
-namespace SaadSparse.Ch01
+namespace SaadSparse.Chapter01
 
 open Matrix
 
@@ -509,4 +509,4 @@ theorem corollary_1_39 (M : Submodule 𝕜 (EuclideanSpace 𝕜 (Fin n)))
     exact Submodule.norm_sub_le_of_forall_inner_eq_zero hy
       (fun u hu => (Submodule.mem_orthogonal' _ _).1 h u hu) hw
 
-end SaadSparse.Ch01
+end SaadSparse.Chapter01

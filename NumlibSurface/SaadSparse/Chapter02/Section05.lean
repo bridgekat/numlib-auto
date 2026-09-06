@@ -1,10 +1,10 @@
 import NumlibSurface.SaadSparse.Common
 
 /-!
-# §2.5 The finite volume method
+# Saad §2.5: the finite volume method
 
-Section 2.5 of Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003: the cell-centred finite volume discretization of a conservation law, and the one
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §2.5: the cell-centred finite volume discretization of a conservation law, and the one
 structural claim the section makes about it — the semi-discrete operator (2.54)–(2.55) has
 nonnegative diagonal entries, nonpositive off-diagonal entries and zero row sums, hence is a
 Z-matrix that is weakly diagonally dominant by rows.
@@ -13,20 +13,20 @@ Everything here is plane linear algebra.  The claim rests on `∑ j, s⃗_j = 0`
 vectors of a polygon, which Saad's Problem P-2.12 asks to be proved by the divergence theorem;
 the elementary proof is used instead, since the outward normal times the edge length is the edge
 vector rotated by a quarter turn and the edge vectors of a closed polygon telescope
-(`SaadSparse.Ch02.sum_edgeVec_eq_zero`).
+(`SaadSparse.Chapter02.sum_edgeVec_eq_zero`).
 
 The derivation preceding the claim is not formalized: the conservation law (2.48), its weak form,
 the cell integration (2.49) — which is the divergence theorem on a cell — and the cell-averaging
 approximations (2.50)–(2.51), which the book itself calls crude and for which it states no error
 bound.  The section discretizes in space only, so no linear system is ever formed; what it
-produces is the operator `SaadSparse.Ch02.equation_2_55` below.
+produces is the operator `SaadSparse.Chapter02.equation_2_55` below.
 
 Vectors of the plane are `Fin 2 → ℝ`, so that Saad's `λ⃗ ⬝ s⃗` is Mathlib's `dotProduct`.
 -/
 
 open Finset Matrix
 
-namespace SaadSparse.Ch02
+namespace SaadSparse.Chapter02
 
 /-! ### The outward edge vectors of a polygon -/
 
@@ -93,7 +93,7 @@ theorem posPart_add_negPart (z : ℝ) : max z 0 + min z 0 = z := by
 
 /-- Saad (2.53), the upwind edge value: the average flux `(a + b)/2 * z` corrected by the upwind
 term `|z|/2 * (b - a)` is `a z⁺ + b z⁻`, which is what produces the coefficients (2.54)–(2.55)
-from the flux balance.  At `a = b = 1` it is `SaadSparse.Ch02.posPart_add_negPart`. -/
+from the flux balance.  At `a = b = 1` it is `SaadSparse.Chapter02.posPart_add_negPart`. -/
 theorem equation_2_53 (a b z : ℝ) :
     (a + b) / 2 * z - |z| / 2 * (b - a) = a * max z 0 + b * min z 0 := by
   rw [max_zero_eq_half, min_zero_eq_half]; ring
@@ -112,8 +112,8 @@ The cells are indexed by `ι`; cell `i` has edges indexed by `κ i`, with outwar
 the edges leading to it.
 
 The geometry enters only through the hypothesis `∑ j, s⃗ i j = 0` of
-`SaadSparse.Ch02.equation_2_55_isDiagDominant`, which
-`SaadSparse.Ch02.sum_edgeVec_eq_zero` supplies for polygonal cells. -/
+`SaadSparse.Chapter02.equation_2_55_isDiagDominant`, which
+`SaadSparse.Chapter02.sum_edgeVec_eq_zero` supplies for polygonal cells. -/
 def equation_2_55 (lam : Fin 2 → ℝ) (s : (i : ι) → κ i → Fin 2 → ℝ) (nb : (i : ι) → κ i → ι) :
     Matrix ι ι ℝ :=
   Matrix.of fun i j =>
@@ -137,7 +137,7 @@ theorem equation_2_55_apply_ne {i j : ι} (hij : i ≠ j) :
   simp [equation_2_55, hij]
 
 /-- The row sum of the operator is `λ⃗ ⬝ (∑ j, s⃗ i j)`: the positive and negative parts of each
-edge recombine by `SaadSparse.Ch02.posPart_add_negPart`. -/
+edge recombine by `SaadSparse.Chapter02.posPart_add_negPart`. -/
 theorem sum_equation_2_55 (i : ι) :
     ∑ j, equation_2_55 lam s nb i j = lam ⬝ᵥ ∑ k, s i k := by
   have hdiag : ∑ j, (if i = j then ∑ k, max (lam ⬝ᵥ s i k) 0 else 0) =
@@ -156,7 +156,7 @@ theorem sum_equation_2_55 (i : ι) :
 nonnegative diagonal entries, nonpositive off-diagonal entries and zero row sums, and is
 therefore a Z-matrix that is weakly diagonally dominant by rows — "the same desirable property
 of weak diagonal dominance seen in the one-dimensional case".  The only geometric input is that
-the outward edge vectors of each cell sum to zero, which `SaadSparse.Ch02.sum_edgeVec_eq_zero`
+the outward edge vectors of each cell sum to zero, which `SaadSparse.Chapter02.sum_edgeVec_eq_zero`
 supplies. -/
 theorem equation_2_55_isDiagDominant (hnb : ∀ i k, nb i k ≠ i) (hs : ∀ i, ∑ k, s i k = 0) :
     (∀ i, 0 ≤ equation_2_55 lam s nb i i) ∧
@@ -187,4 +187,4 @@ theorem equation_2_55_isDiagDominant (hnb : ∀ i k, nb i k ≠ i) (hs : ∀ i, 
 
 end Operator
 
-end SaadSparse.Ch02
+end SaadSparse.Chapter02

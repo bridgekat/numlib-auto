@@ -3,13 +3,12 @@ import Numlib.LinearSolve.Stationary.ADI
 import NumlibSurface.SaadSparse.Chapter02.Section02
 
 /-!
-# §4.3 Alternating direction methods
+# Saad §4.3: alternating direction methods
 
-Section 4.3 of Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003: the splitting `A = H + V` (4.49) of a discretized elliptic operator into its
-horizontal and vertical three-point differences, Algorithm 4.3 (Peaceman–Rachford), the
-identities (4.50)–(4.52) with Problem P-4.5, and the convergence claim the section asserts in
-prose.
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §4.3: the splitting `A = H + V` (4.49) of a discretized elliptic operator into its horizontal
+and vertical three-point differences, Algorithm 4.3 (Peaceman–Rachford), the identities
+(4.50)–(4.52) with Problem P-4.5, and the convergence claim the section asserts in prose.
 
 The section states no numbered result. One sweep of Algorithm 4.3 is `adiStep`, with
 `adiHalfStep` for the intermediate vector; `equation_4_50` identifies it with the affine map
@@ -30,8 +29,8 @@ Everything is indexed by an arbitrary finite type rather than by `Fin n`, becaus
 problem needs the product index `Fin n₁ × Fin n₂`: `adi_model_problem` reads the five-point
 matrix of §2.2.5 as `H + V` with `H` the horizontal and `V` the vertical one-dimensional
 Laplacean, each positive definite, and applies `adi_converges` to it. That identity is
-`SaadSparse.Ch02.laplacian2D_eq_kroneckerSum` read as a sum of its two Kronecker factors, and it
-is the only discretization this section needs.
+`SaadSparse.Chapter02.laplacian2D_eq_kroneckerSum` read as a sum of its two Kronecker factors, and
+it is the only discretization this section needs.
 
 Not formalized, with reasons. The optimal parameter `r` and the cyclic parameter sequences: the
 book states no formula, no bound and no theorem, and cites a theory that exists only when `H` and
@@ -47,7 +46,7 @@ not about the iteration.
 open Filter Matrix Stationary Topology
 open scoped Kronecker
 
-namespace SaadSparse.Ch04
+namespace SaadSparse.Chapter04
 
 variable {ι : Type*} [Fintype ι] [DecidableEq ι] {H V : Matrix ι ι ℝ} {r : ℝ}
 
@@ -366,7 +365,7 @@ theorem adi_tendsto_inv_mulVec (hH : H.PosDef) (hV : V.PosDef) (hr : 0 < r) (b x
 
 section ModelProblem
 
-open SaadSparse.Ch02
+open SaadSparse.Chapter02
 
 /-- Saad (4.49) for the model problem: the horizontal part of the five-point matrix, the
 one-dimensional Laplacean in the first coordinate. -/
@@ -380,7 +379,7 @@ noncomputable def modelV (n₁ n₂ : ℕ) (h₂ : ℝ) : Matrix (Fin n₁ × Fi
 
 /-- Saad (4.49): the two-dimensional five-point matrix of §2.2.5 is `H + V`, with `H` and `V` the
 horizontal and vertical one-dimensional Laplaceans.  This is
-`SaadSparse.Ch02.laplacian2D_eq_kroneckerSum` read as a sum of its two Kronecker factors. -/
+`SaadSparse.Chapter02.laplacian2D_eq_kroneckerSum` read as a sum of its two Kronecker factors. -/
 theorem laplacian2D_eq_modelH_add_modelV (n₁ n₂ : ℕ) (h₁ h₂ : ℝ) :
     laplacian2D n₁ n₂ h₁ h₂ = modelH n₁ n₂ h₁ + modelV n₁ n₂ h₂ :=
   laplacian2D_eq_kroneckerSum n₁ n₂ h₁ h₂
@@ -431,4 +430,4 @@ theorem adi_model_problem (n₁ n₂ : ℕ) {h₁ h₂ : ℝ} (h₁0 : h₁ ≠ 
 
 end ModelProblem
 
-end SaadSparse.Ch04
+end SaadSparse.Chapter04

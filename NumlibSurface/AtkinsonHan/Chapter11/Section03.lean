@@ -5,8 +5,8 @@ import NumlibSurface.AtkinsonHan.Chapter08.Section03
 /-!
 # Atkinson–Han §11.3: existence and uniqueness for elliptic variational inequalities
 
-Surface formalization of §11.3 of Kendall Atkinson and Weimin Han, *Theoretical Numerical
-Analysis: A Functional Analysis Framework*, 3rd edition, Springer, 2009.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §11.3.
 
 The section studies, on a real Hilbert space `V`, the inequality (11.3.3)
 
@@ -15,7 +15,7 @@ The section studies, on a real Hilbert space `V`, the inequality (11.3.3)
 and the five variants the book displays beside it: the inequality *of the first kind* (11.3.8) is
 `j = 0`, the inequality *of the second kind* (11.3.9) is `K = V`, and (11.3.12)–(11.3.14) are the
 same three with `A` the operator of a bounded `V`-elliptic bilinear form.  All six are one
-predicate, `AtkinsonHan.Ch11.IsVariationalInequalitySolution`, which is the backbone's
+predicate, `AtkinsonHan.Chapter11.IsVariationalInequalitySolution`, which is the backbone's
 `IsVariationalInequalitySolution` written with the book's `≥`; the identification is
 `isVariationalInequalitySolution_iff`, and the four unfoldings the book uses are
 `isVariationalInequalitySolution_zero_iff`, `..._univ_iff`, `..._univ_zero_iff` and
@@ -26,9 +26,10 @@ Because the six displays differ only in the arguments of that one predicate,
 Theorem 11.3.6 is Theorem 11.3.1 at `j = 0`.
 
 The book's vocabulary is already in this surface: strong monotonicity (11.3.1) is
-`AtkinsonHan.Ch05.StronglyMonotoneWith`, introduced for Theorem 5.1.4, and the Lipschitz condition
-(11.3.2) crosses to Mathlib's `LipschitzWith` by `AtkinsonHan.Ch05.lipschitzWith_toNNReal_iff`.
-`V`-ellipticity of a bilinear form is `AtkinsonHan.BilinForm.IsEllipticWith` of §8.3.
+`AtkinsonHan.Chapter05.StronglyMonotoneWith`, introduced for Theorem 5.1.4, and the Lipschitz
+condition (11.3.2) crosses to Mathlib's `LipschitzWith` by
+`AtkinsonHan.Chapter05.lipschitzWith_toNNReal_iff`. `V`-ellipticity of a bilinear form is
+`AtkinsonHan.BilinForm.IsEllipticWith` of §8.3.
 
 ## Main results
 
@@ -60,7 +61,7 @@ domain.
 open Filter Set Topology
 open scoped InnerProductSpace
 
-namespace AtkinsonHan.Ch11
+namespace AtkinsonHan.Chapter11
 
 /-! ### Lemma 11.3.5: the affine minorant -/
 
@@ -135,7 +136,7 @@ theorem isVariationalInequalitySolution_univ_zero_iff (A : V → V) (f : V) (u :
 
 /-- The book's hypothesis (11.3.1) in the shape the backbone takes it. -/
 private theorem isStronglyMonotoneWith_of {A : V → V} {c : ℝ}
-    (hmono : Ch05.StronglyMonotoneWith A c) : IsStronglyMonotoneWith ℝ A c :=
+    (hmono : Chapter05.StronglyMonotoneWith A c) : IsStronglyMonotoneWith ℝ A c :=
   fun x y => by simpa using hmono x y
 
 section Existence
@@ -151,15 +152,15 @@ depends Lipschitz continuously on the datum, `‖u₁ - u₂‖ ≤ (1/c₀) ‖
 Neither Lipschitz continuity nor convexity of `j` is used for the second clause; that is the
 backbone's `IsVariationalInequalitySolution.norm_sub_le`. -/
 theorem theorem_11_3_1 (hKne : K.Nonempty) (hKcl : IsClosed K) (hKcv : Convex ℝ K) (hc₀ : 0 < c₀)
-    (hM : 0 ≤ M) (hmono : Ch05.StronglyMonotoneWith A c₀)
+    (hM : 0 ≤ M) (hmono : Chapter05.StronglyMonotoneWith A c₀)
     (hlip : ∀ v₁ v₂ : V, ‖A v₁ - A v₂‖ ≤ M * ‖v₁ - v₂‖) (hj : ConvexOn ℝ K j)
     (hjlsc : LowerSemicontinuousOn j K) :
     (∀ f : V, ∃! u, IsVariationalInequalitySolution A j f K u) ∧
       ∀ f₁ f₂ u₁ u₂ : V, IsVariationalInequalitySolution A j f₁ K u₁ →
         IsVariationalInequalitySolution A j f₂ K u₂ → ‖u₁ - u₂‖ ≤ 1 / c₀ * ‖f₁ - f₂‖ := by
   refine ⟨fun f => existsUnique_isVariationalInequalitySolution hKne hKcl hKcv hc₀
-      (isStronglyMonotoneWith_of hmono) ((Ch05.lipschitzWith_toNNReal_iff hM).1 hlip) hj hjlsc f,
-    fun f₁ f₂ u₁ u₂ h₁ h₂ => ?_⟩
+      (isStronglyMonotoneWith_of hmono) ((Chapter05.lipschitzWith_toNNReal_iff hM).1 hlip) hj hjlsc
+    f, fun f₁ f₂ u₁ u₂ h₁ h₂ => ?_⟩
   have h := IsVariationalInequalitySolution.norm_sub_le hc₀ (isStronglyMonotoneWith_of hmono)
     h₁ h₂
   rwa [one_div, inv_mul_eq_div]
@@ -169,7 +170,7 @@ case `j = 0` of (11.3.3) — has exactly one solution for every `f`, depending L
 continuously on `f`.  `isVariationalInequalitySolution_zero_iff` unfolds the statement to the
 book's display. -/
 theorem theorem_11_3_6 (hKne : K.Nonempty) (hKcl : IsClosed K) (hKcv : Convex ℝ K) (hc₀ : 0 < c₀)
-    (hM : 0 ≤ M) (hmono : Ch05.StronglyMonotoneWith A c₀)
+    (hM : 0 ≤ M) (hmono : Chapter05.StronglyMonotoneWith A c₀)
     (hlip : ∀ v₁ v₂ : V, ‖A v₁ - A v₂‖ ≤ M * ‖v₁ - v₂‖) :
     (∀ f : V, ∃! u, IsVariationalInequalitySolution A 0 f K u) ∧
       ∀ f₁ f₂ u₁ u₂ : V, IsVariationalInequalitySolution A 0 f₁ K u₁ →
@@ -184,7 +185,7 @@ for every `f`, depending Lipschitz continuously on `f`.
 The book's `j` takes values in `ℝ ∪ {+∞}` and is proper; a real-valued `j` on the whole space is
 that hypothesis with the effective domain equal to `V`, which is what makes `K = Set.univ` the
 right reading. -/
-theorem theorem_11_3_7 (hc₀ : 0 < c₀) (hM : 0 ≤ M) (hmono : Ch05.StronglyMonotoneWith A c₀)
+theorem theorem_11_3_7 (hc₀ : 0 < c₀) (hM : 0 ≤ M) (hmono : Chapter05.StronglyMonotoneWith A c₀)
     (hlip : ∀ v₁ v₂ : V, ‖A v₁ - A v₂‖ ≤ M * ‖v₁ - v₂‖) (hj : ConvexOn ℝ univ j)
     (hjlsc : LowerSemicontinuous j) :
     (∀ f : V, ∃! u, IsVariationalInequalitySolution A j f univ u) ∧
@@ -196,7 +197,7 @@ theorem theorem_11_3_7 (hc₀ : 0 < c₀) (hM : 0 ≤ M) (hmono : Ch05.StronglyM
 /-- **Exercise 11.3.13.**  For `A` strongly monotone and Lipschitz on a real Hilbert space the
 equation `A u = f` has exactly one solution for every `f`, and it depends Lipschitz continuously
 on `f`.  This is Theorem 11.3.6 at `K = V`, and it is the statement of Theorem 5.1.4. -/
-theorem exercise_11_3_13 (hc₀ : 0 < c₀) (hM : 0 ≤ M) (hmono : Ch05.StronglyMonotoneWith A c₀)
+theorem exercise_11_3_13 (hc₀ : 0 < c₀) (hM : 0 ≤ M) (hmono : Chapter05.StronglyMonotoneWith A c₀)
     (hlip : ∀ v₁ v₂ : V, ‖A v₁ - A v₂‖ ≤ M * ‖v₁ - v₂‖) :
     (∀ f : V, ∃! u, A u = f) ∧
       ∀ f₁ f₂ u₁ u₂ : V, A u₁ = f₁ → A u₂ = f₂ → ‖u₁ - u₂‖ ≤ 1 / c₀ * ‖f₁ - f₂‖ := by
@@ -229,7 +230,7 @@ One direction is monotonicity; the other tests at `u + t (v - u)`, uses convexit
 which implies the hypothesis here because the segment from `u` to `v` lies in the span of `u` and
 `v`; the weaker form is what the proof consumes and what a weak-limit argument can supply. -/
 theorem lemma_11_3_8 {A : V → V} {j : V → ℝ} {f : V} {K : Set V} (hKcv : Convex ℝ K)
-    (hj : ConvexOn ℝ K j) (hmono : Ch05.StronglyMonotoneWith A 0) {u : V} (hu : u ∈ K)
+    (hj : ConvexOn ℝ K j) (hmono : Chapter05.StronglyMonotoneWith A 0) {u : V} (hu : u ∈ K)
     (hA : ∀ v ∈ K, ContinuousWithinAt (fun t : ℝ => A (u + t • (v - u))) (Ioi 0) 0) :
     IsVariationalInequalitySolution A j f K u ↔
       ∀ v ∈ K, ⟪A v, v - u⟫_ℝ + j v - j u ≥ ⟪f, v - u⟫_ℝ :=
@@ -324,8 +325,8 @@ the operator of a bounded `V`-elliptic bilinear form turns the inequality of the
 the variational equation `a(u, v) = ℓ(v)`, and its unique solvability is Theorem 8.3.4. -/
 theorem exercise_11_3_2 (hM : a.IsBoundedWith M) (hα : 0 < α) (ha : a.IsEllipticWith α)
     (ℓ : StrongDual ℝ V) : ∃! u, ∀ v, a u v = ℓ v := by
-  have hmono : Ch05.StronglyMonotoneWith (BilinForm.toOperator a hM : V → V) α :=
-    fun x y => Ch08.stronglyMonotone_toOperator hM ha x y
+  have hmono : Chapter05.StronglyMonotoneWith (BilinForm.toOperator a hM : V → V) α :=
+    fun x y => Chapter08.stronglyMonotone_toOperator hM ha x y
   have hlip : ∀ v₁ v₂ : V, ‖BilinForm.toOperator a hM v₁ - BilinForm.toOperator a hM v₂‖
       ≤ ‖BilinForm.toOperator a hM‖ * ‖v₁ - v₂‖ := by
     intro v₁ v₂
@@ -376,4 +377,4 @@ theorem exercise_11_3_10 (hM : a.IsBoundedWith M) {j : V → ℝ} (hj : ConvexOn
 
 end BilinearForm
 
-end AtkinsonHan.Ch11
+end AtkinsonHan.Chapter11

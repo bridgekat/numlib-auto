@@ -2,12 +2,12 @@ import Numlib.LinearAlgebra.Matrix.KroneckerSum
 import Numlib.LinearSolve.Multigrid.Basic
 
 /-!
-# §13.3 Inter-grid operations
+# Saad §13.3: inter-grid operations
 
-Section 13.3 of Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003: the two operators that move a vector between a fine grid and the coarse grid obtained
-from it by dropping every other point — the *prolongation* `I_{2h}^h` (linear interpolation) and
-the *restriction* `I_h^{2h}` (injection, and full weighting) — in one and two dimensions.
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §13.3: the two operators that move a vector between a fine grid and the coarse grid obtained
+from it by dropping every other point — the *prolongation* `I_{2h}^h` (linear interpolation) and the
+*restriction* `I_h^{2h}` (injection, and full weighting) — in one and two dimensions.
 
 ## The indexing convention
 
@@ -28,13 +28,13 @@ reads on the `0`-based interior indices as
 `v^h_{2q+1} = v^{2h}_q`,   `v^h_{2q} = (v^{2h}_{q-1} + v^{2h}_q) / 2`,
 
 a coarse value outside `Fin m` being the boundary value `0`. So the entries of
-`SaadSparse.Ch13.prolongation1D` are
+`SaadSparse.Chapter13.prolongation1D` are
 
 * `1` at `(2 q + 1, q)` — the fine point that *is* a coarse point;
 * `1 / 2` at `(2 q, q)` and at `(2 q + 2, q)` — the two fine points either side of it;
 
 that is, column `q` carries the stencil `½ [1 2 1]` on the fine rows `2 q, 2 q + 1, 2 q + 2`.
-Dually, row `q` of `SaadSparse.Ch13.restriction1D` carries `¼ [1 2 1]` on the fine columns
+Dually, row `q` of `SaadSparse.Chapter13.restriction1D` carries `¼ [1 2 1]` on the fine columns
 `2 q, 2 q + 1, 2 q + 2`, which is Saad's full weighting (13.34); the shift is why the `2j` of the
 book is the `2q + 1` here.
 
@@ -58,7 +58,7 @@ open Matrix
 
 open scoped Kronecker Matrix
 
-namespace SaadSparse.Ch13
+namespace SaadSparse.Chapter13
 
 /-! ### The one-dimensional inter-grid operators -/
 
@@ -374,4 +374,4 @@ theorem adjoint_toEuclideanLin_prolongation1D (m : ℕ) :
   rw [Matrix.conjTranspose_apply, Matrix.smul_apply, star_trivial,
     prolongation1D_eq_smul_transpose, Matrix.smul_apply, Matrix.transpose_apply]
 
-end SaadSparse.Ch13
+end SaadSparse.Chapter13

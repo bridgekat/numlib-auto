@@ -7,10 +7,10 @@ import Numlib.Variational.Galerkin
 import NumlibSurface.AtkinsonHan.Chapter08.Section03
 
 /-!
-# The Galerkin method (§9.1)
+# Atkinson–Han §9.1: the Galerkin method
 
-Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional Analysis
-Framework*, 3rd edition, Springer, 2009.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §9.1.
 
 The Galerkin problem (9.1.4) `u_N ∈ V_N`, `a(u_N, v) = ℓ(v) ∀ v ∈ V_N`, its stiffness matrix and
 load vector (9.1.5), the Ritz formulation (9.1.6)–(9.1.8), Céa's inequality (Proposition 9.1.3,
@@ -37,7 +37,7 @@ def stiffnessMatrix (a : BilinForm V) {N : ℕ} (φ : Fin N → V) : Matrix (Fin
 /-- The load vector `b = (ℓ(φ_i))` of (9.1.5). -/
 def loadVector (ℓ : StrongDual ℝ V) {N : ℕ} (φ : Fin N → V) : Fin N → ℝ := fun i => ℓ (φ i)
 
-namespace Ch09
+namespace Chapter09
 
 variable {a : BilinForm V} {M α c₀ : ℝ} {ℓ : StrongDual ℝ V} {VN : Submodule ℝ V} {u uN : V}
 
@@ -51,7 +51,7 @@ theorem galerkinProblem_iff (hM : a.IsBoundedWith M) :
 Lax–Milgram. -/
 theorem existsUnique_solution [CompleteSpace V] (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀)
     (ha : a.IsEllipticWith c₀) (ℓ : StrongDual ℝ V) : ∃! u, ∀ v, a u v = ℓ v :=
-  Ch08.theorem_8_3_4 hM hc₀ ha ℓ
+  Chapter08.theorem_8_3_4 hM hc₀ ha ℓ
 
 /-- (9.1.4) is uniquely solvable on any finite-dimensional subspace `V_N`: the form restricted to
 `V_N` is still bounded and `V_N`-elliptic with the same constants, so Lax–Milgram applies there.
@@ -136,9 +136,9 @@ theorem galerkinProblem_iff_isMinOn [CompleteSpace V] (hM : a.IsBoundedWith M) (
     GalerkinProblem a ℓ VN uN ↔ uN ∈ VN ∧ IsMinOn (a.energy ℓ) (VN : Set V) uN := by
   constructor
   · rintro ⟨h1, h2⟩
-    exact ⟨h1, (Ch08.theorem_8_3_3_subspace hM hc₀ ha hs ℓ VN h1).mpr h2⟩
+    exact ⟨h1, (Chapter08.theorem_8_3_3_subspace hM hc₀ ha hs ℓ VN h1).mpr h2⟩
   · rintro ⟨h1, h2⟩
-    exact ⟨h1, (Ch08.theorem_8_3_3_subspace hM hc₀ ha hs ℓ VN h1).mp h2⟩
+    exact ⟨h1, (Chapter08.theorem_8_3_3_subspace hM hc₀ ha hs ℓ VN h1).mp h2⟩
 
 /-! ### Céa's inequality (Proposition 9.1.3) -/
 
@@ -236,6 +236,6 @@ theorem corollary_9_1_4 (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀) (ha : a.IsEl
   rw [tendsto_iff_norm_sub_tendsto_zero] at h
   simpa only [norm_sub_rev] using h
 
-end Ch09
+end Chapter09
 
 end AtkinsonHan

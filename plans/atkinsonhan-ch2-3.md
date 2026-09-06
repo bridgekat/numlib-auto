@@ -25,7 +25,7 @@ Conventions used below.
   book `(v, u)` = Mathlib `inner 𝕜 u v`. All surface statements are written in Mathlib's convention with this swap.
 * Operators: `𝓛(V, W)` = `V →L[𝕜] W`; "bijection with bounded inverse" = `∃ e : V ≃L[𝕜] W, (e : V →L[𝕜] W) = L`;
   `V'` = `StrongDual 𝕜 V`; `Vᗮ` = `Submodule.orthogonal`.
-* Naming: `AtkinsonHan.Ch02.theorem_2_3_1`, `corollary_2_3_3`, `lemma_3_4_1`, `proposition_3_6_9_a`, `example_3_6_7`, `exercise_3_6_7`,
+* Naming: `AtkinsonHan.Chapter02.theorem_2_3_1`, `corollary_2_3_3`, `lemma_3_4_1`, `proposition_3_6_9_a`, `example_3_6_7`, `exercise_3_6_7`,
   `equation_2_3_13` (numbered inequalities); book numbers appear only in the surface, per `backbone.md` §1.4.
 * Backbone results in a normed ring `R` (`Numlib/Analysis/Normed/Ring/Inverse.lean`, `CondNumber.lean`) assume
   `[NormOneClass R]`; for `R = V →L[𝕜] V` this is the instance `ContinuousLinearMap.normOneClass`, available for
@@ -36,13 +36,13 @@ Files (`Surface/AtkinsonHan/…`, importing only `Numlib`):
 
 | File | Book | Content |
 |---|---|---|
-| `Ch02/GeometricSeries.lean` | §2.3 | Thm 2.3.1, (2.3.5), Ex 2.3.2 (abstract), Cor 2.3.3, Ex 2.3.4 (abstract), Thm 2.3.5, (2.3.16) |
-| `Ch02/Operators.lean` | §2.4 | Thm 2.4.1, Thm 2.4.3, `cond`, (2.4.1), Thm 2.4.4, Thm 2.4.5; quadrature (2.4.3)–(2.4.4), Exer 2.4.3 as stubs |
-| `Ch02/Functionals.lean` | §2.5 | Thm 2.5.2, Def 2.5.4, Thm 2.5.5, Cor 2.5.6–2.5.7, Thm 2.5.8 |
-| `Ch03/BestApprox.lean` | §3.3 | defs, Ex 3.3.5, Thm 3.3.7, Thm 3.3.13, Thm 3.3.15–3.3.16, Ex 3.3.17, Thm 3.3.18, strictly normed, Thm 3.3.21, Exer 3.3.8–3.3.9 |
-| `Ch03/InnerProduct.lean` | §3.4 (+§3.5 refs) | Lem 3.4.1, Cor 3.4.2, Thm 3.4.3, `projConvex`, Prop 3.4.4, Thm 3.4.5–3.4.7, (3.4.6), expansion |
-| `Ch03/Projections.lean` | §3.6 | Def 3.6.1, Prop 3.6.2, Def 3.6.3, orthogonal projection operators, Ex 3.6.7, Prop 3.6.9, Exer 3.6.1/3.6.7 |
-| `Ch03/UniformBounds.lean` | §3.7 | Lebesgue-lemma forms of (3.7.11)/(3.7.14)/(3.7.21), non-convergence lemma; the rest recorded as docstring stubs |
+| `Chapter02/GeometricSeries.lean` | §2.3 | Thm 2.3.1, (2.3.5), Ex 2.3.2 (abstract), Cor 2.3.3, Ex 2.3.4 (abstract), Thm 2.3.5, (2.3.16) |
+| `Chapter02/Operators.lean` | §2.4 | Thm 2.4.1, Thm 2.4.3, `cond`, (2.4.1), Thm 2.4.4, Thm 2.4.5; quadrature (2.4.3)–(2.4.4), Exer 2.4.3 as stubs |
+| `Chapter02/Functionals.lean` | §2.5 | Thm 2.5.2, Def 2.5.4, Thm 2.5.5, Cor 2.5.6–2.5.7, Thm 2.5.8 |
+| `Chapter03/BestApprox.lean` | §3.3 | defs, Ex 3.3.5, Thm 3.3.7, Thm 3.3.13, Thm 3.3.15–3.3.16, Ex 3.3.17, Thm 3.3.18, strictly normed, Thm 3.3.21, Exer 3.3.8–3.3.9 |
+| `Chapter03/InnerProduct.lean` | §3.4 (+§3.5 refs) | Lem 3.4.1, Cor 3.4.2, Thm 3.4.3, `projConvex`, Prop 3.4.4, Thm 3.4.5–3.4.7, (3.4.6), expansion |
+| `Chapter03/Projections.lean` | §3.6 | Def 3.6.1, Prop 3.6.2, Def 3.6.3, orthogonal projection operators, Ex 3.6.7, Prop 3.6.9, Exer 3.6.1/3.6.7 |
+| `Chapter03/UniformBounds.lean` | §3.7 | Lebesgue-lemma forms of (3.7.11)/(3.7.14)/(3.7.21), non-convergence lemma; the rest recorded as docstring stubs |
 
 ---
 
@@ -360,7 +360,7 @@ Thm 2.4.5 for the criterion.
 (piecewise-linear interpolation between distinct nodes — the only real work). (ii) `⇐`: (i)-upper bound + Thm 2.4.5 `⇐` with `V₀ =` polynomial
 functions (dense); `⇒`: `banach_steinhaus` + (i). (iii) `∑ wᵢ = Lₙ 1 = L 1` bounded.
 *Classification:* deferred (phase 3, `backbone.md` §5.1.4; Deferred item 2). The statements above are recorded as docstring stubs in
-`Ch02/Operators.lean`; (ii)–(iii) need only Thm 2.4.5 and Weierstrass, (i) is the piecewise-linear construction.
+`Chapter02/Operators.lean`; (ii)–(iii) need only Thm 2.4.5 and Weierstrass, (i) is the piecewise-linear construction.
 
 **Exercise 2.4.4** (pointwise limit of bounded operators is bounded, `‖L‖ ≤ liminf ‖Lₙ‖`) — not cited by an in-scope theorem; Mathlib
 `ContinuousLinearMap.ofTendstoOfBoundedRange`, `banach_steinhaus`. Left out (see §Left out).
@@ -708,7 +708,7 @@ how each item was read off the book.
 6. **Trigonometric approximation on `C_p(2π)`** (phase 3; §8.3 schedules Thm 3.7.1–3.7.3 there, as material absent from Mathlib): `C_p(2π)` and the Hölder classes (item 19),
    the Fourier projection `𝓕ₙ`, Dirichlet kernel and Lebesgue constants (3.7.6)–(3.7.10), Jackson's theorems 3.7.1–3.7.2 with (3.7.1)–(3.7.2),
    the consequences (3.7.11)–(3.7.12), (3.7.22), Ex 3.6.8, Ex 3.7.4.
-7. **Integral operators on `C[a,b]`** (phase 3; §8.3 `Ch05/IntegralEquations.lean`, see `AtkinsonHan-Ch5.md`): the operator with continuous
+7. **Integral operators on `C[a,b]`** (phase 3; §8.3 `Chapter05/IntegralEquations.lean`, see `AtkinsonHan-Ch5.md`): the operator with continuous
    kernel, its norm formula (2.2.8) `‖K‖ = max_x ∫|k(x,y)|dy`, iterated Volterra kernels `‖Lᵏ‖ ≤ (MB)ᵏ/k!` (Ex 2.3.4); consumers Ex 2.3.2(ii), (3.7.9), (3.7.17).
 8. **Minimizers in reflexive spaces** (phase 3, the reflexive-space existence theorem of §5.1.1): weak (sequential) closedness and l.s.c. as
    general definitions, Thm 3.3.8, 3.3.10–3.3.12, 3.3.14 and Mazur's lemma (3.3.11). Needs reflexivity and weak sequential compactness (AH Thm 2.7.5), absent from Mathlib.
@@ -734,6 +734,6 @@ how each item was read off the book.
 * Weak closedness / w.l.s.c. as general definitions, Theorems 3.3.8, 3.3.10–3.3.12, 3.3.14, Mazur (3.3.11) — Deferred item 8.
 * Theorems 3.3.19–3.3.20 (equioscillation) — Deferred item 3.
 * All of §3.5 except as cited black boxes; §3.7 Jackson theorems, Dirichlet kernel, Lebesgue constants, Christoffel–Darboux, interpolatory projections — Deferred items 4–6;
-  only the abstract Lebesgue lemma and the Banach–Steinhaus non-convergence lemma are kept in `Ch03/UniformBounds.lean`.
+  only the abstract Lebesgue lemma and the Banach–Steinhaus non-convergence lemma are kept in `Chapter03/UniformBounds.lean`.
 * (2.2.8)-based norm identities (`‖K‖ = max_x ∫|k(x,y)|dy`) used by Ex 2.3.2, (3.7.9), (3.7.17) — Deferred item 7.
 * The `Lᵖ` (`1 < p < ∞`) strict-convexity claims after Thm 3.3.18/3.3.21 (Clarkson) — not in Mathlib.

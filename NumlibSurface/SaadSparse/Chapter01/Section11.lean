@@ -5,12 +5,12 @@ import Numlib.Eigen.Perturbation
 import NumlibSurface.SaadSparse.Common
 
 /-!
-# §1.11 Positive-definite matrices
+# Saad §1.11: positive-definite matrices
 
-Section 1.11 of Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003: the Hermitian/skew-Hermitian decomposition (1.49)–(1.52), Saad's non-symmetric
-notion of a positive definite real matrix (1.48), Theorem 1.34, Bendixson's Theorem 1.35 and
-the `B`-inner product (1.57).
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §1.11: the Hermitian/skew-Hermitian decomposition (1.49)–(1.52), Saad's non-symmetric notion
+of a positive definite real matrix (1.48), Theorem 1.34, Bendixson's Theorem 1.35 and the `B`-inner
+product (1.57).
 
 Saad's "positive definite" is `Matrix.IsPositiveReal` here; the backbone counterpart is
 `LinearMap.IsCoercive` of `Matrix.toEuclideanLin`, and the equivalence
@@ -250,7 +250,7 @@ end BInner
 
 end Matrix
 
-namespace SaadSparse.Ch01
+namespace SaadSparse.Chapter01
 
 open Matrix
 
@@ -338,4 +338,4 @@ theorem theorem_1_35 [NeZero n] {A : Matrix (Fin n) (Fin n) ℂ} {μ : ℂ} (hμ
       μ.im ≤ SaadSparse.lambdaMax (skewPart_isHermitian A) :=
   ⟨(theorem_1_35_re hμ).1, (theorem_1_35_re hμ).2, (theorem_1_35_im hμ).1, (theorem_1_35_im hμ).2⟩
 
-end SaadSparse.Ch01
+end SaadSparse.Chapter01

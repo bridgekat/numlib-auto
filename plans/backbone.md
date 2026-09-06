@@ -21,10 +21,10 @@ statements, describes the difficult proofs, and says what is left to the surface
 
 The Lean modules under `Numlib/` (imported by `Numlib.lean`) implement the phase-1 part of this
 plan (§7): every phase-1 statement is stated there with its final name and hypotheses, and the Lean
-blocks of §2–§5 for phase-1 modules give the main statements with those names and hypotheses
+blocks of §2–5 for phase-1 modules give the main statements with those names and hypotheses
 (`variable` declarations and repeated hypotheses abbreviated, routine API lemmas omitted). Where a
 Lean block describes a later phase it is a sketch. The per-book surface plans in ``
-cite the section numbers §1–§10 of this file; their code goes into the `Surface/` libraries of §8.
+cite the section numbers §1–10 of this file; their code goes into the `Surface/` libraries of §8.
 
 ---
 
@@ -190,7 +190,7 @@ Mathlib bundles reused as is: `LinearMap.IsSymmetric`, `IsSelfAdjoint`, `LinearM
 * Scoped notation: `𝒦[A, v] m` for `Krylov.subspace A v m` (scoped in `Krylov`); `⟪x, y⟫_[A]` /
   `‖x‖_[A]` for the energy inner product and norm (scoped in `Energy`); `κ a` for the condition
   number (scoped in `NormedRing`).
-* Book numbering appears only in docstrings and in the surface (`SaadSparse.Ch06.prop_6_5`), never
+* Book numbering appears only in docstrings and in the surface (`SaadSparse.Chapter06.prop_6_5`), never
   in backbone names.
 * One theorem per statement, Mathlib naming conventions (`norm_residual_le`,
   `spectralRadius_lt_one_iff_tendsto_pow`); `⨅`-statements are the primary form of min–max
@@ -200,7 +200,7 @@ Mathlib bundles reused as is: `LinearMap.IsSymmetric`, `IsSelfAdjoint`, `LinearM
 
 ```
 Numlib.lean                     -- imports all backbone modules
-Numlib/                         -- backbone (this plan, §2–§6)
+Numlib/                         -- backbone (this plan, §2–6)
   Analysis/Normed/…             -- upstreaming candidates: Neumann-series bounds, κ, spectral radius
   Analysis/InnerProductSpace/…  -- upstreaming candidates: coercivity, energy norm, compression,
                                 --   Gram–Schmidt flags, oblique projections
@@ -217,7 +217,7 @@ Numlib/                         -- backbone (this plan, §2–§6)
   FloatingPoint/…               -- reserved (phase 4)
 NumlibSurface/                  -- the second Lake library, one directory per book
   SaadSparse/ChapterNN/SectionNN.lean
-  FongSaunders/SectionN.lean
+  FongSaunders/SectionNN.lean
   AtkinsonHan/ChapterNN/SectionNN.lean
 plans/                        -- the plan: a copy of both trees, `.lean` replaced by `.toml`
   backbone.md                   -- this file
@@ -1206,28 +1206,28 @@ refine the tables below theorem by theorem.
 
 | Book location | Surface file | Backbone items used | Surface-specific definitions (need equivalence lemmas) |
 |---|---|---|---|
-| §1.8–1.9 normal/Hermitian matrices (Thm 1.7–1.9 spectral facts) | `Ch01/Spectral.lean` | Mathlib `Matrix.IsHermitian.eigenvalues`, spectral theorem; Schur form phase 3 (4.5) | `Matrix.IsNormal`? (Mathlib has `IsStarNormal`) |
-| §1.11 Thm 1.34–1.35 (positive definite, Bendixson) | `Ch01/PositiveDefinite.lean` | 2.1.4, 2.1.14, 4.1 | Saad's "positive definite" = `IsCoercive` of `toEuclideanLin`; `Matrix.symmPart`/`skewPart` |
-| §1.12 Lemma 1.36, Prop 1.37, Thm 1.38, Cor 1.39 (projectors) | `Ch01/Projectors.lean` | 2.1.7, Mathlib `starProjection_minimal` | matrix projector `V (Wᴴ V)⁻¹ Wᴴ` via `LinearMap.obliqueProjectionOfBases` |
-| §1.13 (1.76) perturbation, `κ(A)` | `Ch01/Conditioning.lean` | 2.1.2, 2.2 | `κ_p` for matrix `p`-norms (scoped instances) |
-| §4.1 Jacobi/GS/SOR/SSOR matrices (4.5)–(4.27) | `Ch04/Splittings.lean` | 2.3.2 | `(jacobiSplitting A h).iterationOperator` with `jacobiSplitting_iterationOperator` etc. |
-| §4.2 Thm 4.1–4.4, Cor 4.2 | `Ch04/Convergence.lean` | 2.1.3, 2.1.11, 2.3.1, 2.3.4 (phase 2) | real matrices via `complexify` |
-| §4.2.3 Thm 4.6–4.9 diagonal dominance | `Ch04/DiagDominant.lean` | 2.3.3 | irreducible variant (phase 2) |
-| §4.2.4–4.2.5 Thm 4.10–4.16 SPD/SOR/Young | `Ch04/SPD.lean` | 2.3.5 (phase 2) | consistent ordering, Property A (surface-only) |
-| §5.1–5.2 Prop 5.1–5.7 | `Ch05/Projection.lean` | 2.4.1–2.4.2 | matrix form `x = x₀ + V (Wᵀ A V)⁻¹ Wᵀ r₀` (5.7) with the equivalence to `IsPetrovGalerkin` |
-| §5.3 Lemma 5.8, Thm 5.9–5.10, Alg 5.2–5.4 | `Ch05/OneDimensional.lean` | 2.4.3 | — |
-| §5.4 Alg 5.5–5.6 | `Ch05/Additive.lean` | 2.4.4 (phase 2) | — |
-| §6.2 Prop 6.1–6.2 | `Ch06/Krylov.lean` | 3.1 | `Matrix` Krylov space `𝒦_m(A, v)` as a `Submodule ℝ (n → ℝ)` |
-| §6.3 Alg 6.1–6.3, Prop 6.4–6.6 | `Ch06/Arnoldi.lean` | 2.1.13, 3.2 | Alg 6.2 (MGS) and 6.3 (Householder) as functions with equality to `Arnoldi.vec` in exact arithmetic |
-| §6.4 (6.16)–(6.18), Prop 6.7, Alg 6.4–6.6 (FOM, restarted, IOM) | `Ch06/FOM.lean` | 3.4–3.5 | `FOM.iterate` := `x₀ + V_m H_m⁻¹ (β e₁)` with `IsGalerkinIterate` |
-| §6.5 (6.27)–(6.47), Prop 6.9–6.12, Alg 6.9–6.13, Thm 6.30 | `Ch06/GMRES.lean` | 3.4–3.6, 3.10 | `GMRES.iterate` (least-squares form) with `IsMinResIterate`; breakdown/stagnation |
-| §6.5.7–6.5.8 Prop 6.13–6.17, Lemma 6.18 | `Ch06/Relations.lean` | 3.6 | — |
-| §6.6 Alg 6.15, Thm 6.19; §6.7 Alg 6.16–6.19, Prop 6.20; §6.7.3 | `Ch06/Lanczos.lean`, `Ch06/CG.lean` | 3.3, 3.7 | D-Lanczos (`LDLᵀ`) equals CG |
-| §6.8–6.9 Alg 6.20–6.22, Lemma 6.21 | `Ch06/CR.lean`, `Ch06/GCR.lean` | 3.8 | ORTHOMIN(k)/ORTHODIR as functions; only the full versions satisfy the spec |
-| §6.10 Lemma 6.22–6.24 Faber–Manteuffel | `Ch06/FaberManteuffel.lean` | surface-only (phase 3) | — |
-| §6.11 Thm 6.25–6.29, Lemma 6.26–6.27, Prop 6.32, Cor 6.33 | `Ch06/Convergence.lean` | 2.1.9, 3.9–3.10 | complex ellipse results (phase 3) |
+| §1.8–1.9 normal/Hermitian matrices (Thm 1.7–1.9 spectral facts) | `Chapter01/Spectral.lean` | Mathlib `Matrix.IsHermitian.eigenvalues`, spectral theorem; Schur form phase 3 (4.5) | `Matrix.IsNormal`? (Mathlib has `IsStarNormal`) |
+| §1.11 Thm 1.34–1.35 (positive definite, Bendixson) | `Chapter01/PositiveDefinite.lean` | 2.1.4, 2.1.14, 4.1 | Saad's "positive definite" = `IsCoercive` of `toEuclideanLin`; `Matrix.symmPart`/`skewPart` |
+| §1.12 Lemma 1.36, Prop 1.37, Thm 1.38, Cor 1.39 (projectors) | `Chapter01/Projectors.lean` | 2.1.7, Mathlib `starProjection_minimal` | matrix projector `V (Wᴴ V)⁻¹ Wᴴ` via `LinearMap.obliqueProjectionOfBases` |
+| §1.13 (1.76) perturbation, `κ(A)` | `Chapter01/Conditioning.lean` | 2.1.2, 2.2 | `κ_p` for matrix `p`-norms (scoped instances) |
+| §4.1 Jacobi/GS/SOR/SSOR matrices (4.5)–(4.27) | `Chapter04/Splittings.lean` | 2.3.2 | `(jacobiSplitting A h).iterationOperator` with `jacobiSplitting_iterationOperator` etc. |
+| §4.2 Thm 4.1–4.4, Cor 4.2 | `Chapter04/Convergence.lean` | 2.1.3, 2.1.11, 2.3.1, 2.3.4 (phase 2) | real matrices via `complexify` |
+| §4.2.3 Thm 4.6–4.9 diagonal dominance | `Chapter04/DiagDominant.lean` | 2.3.3 | irreducible variant (phase 2) |
+| §4.2.4–4.2.5 Thm 4.10–4.16 SPD/SOR/Young | `Chapter04/SPD.lean` | 2.3.5 (phase 2) | consistent ordering, Property A (surface-only) |
+| §5.1–5.2 Prop 5.1–5.7 | `Chapter05/Projection.lean` | 2.4.1–2.4.2 | matrix form `x = x₀ + V (Wᵀ A V)⁻¹ Wᵀ r₀` (5.7) with the equivalence to `IsPetrovGalerkin` |
+| §5.3 Lemma 5.8, Thm 5.9–5.10, Alg 5.2–5.4 | `Chapter05/OneDimensional.lean` | 2.4.3 | — |
+| §5.4 Alg 5.5–5.6 | `Chapter05/Additive.lean` | 2.4.4 (phase 2) | — |
+| §6.2 Prop 6.1–6.2 | `Chapter06/Krylov.lean` | 3.1 | `Matrix` Krylov space `𝒦_m(A, v)` as a `Submodule ℝ (n → ℝ)` |
+| §6.3 Alg 6.1–6.3, Prop 6.4–6.6 | `Chapter06/Arnoldi.lean` | 2.1.13, 3.2 | Alg 6.2 (MGS) and 6.3 (Householder) as functions with equality to `Arnoldi.vec` in exact arithmetic |
+| §6.4 (6.16)–(6.18), Prop 6.7, Alg 6.4–6.6 (FOM, restarted, IOM) | `Chapter06/FOM.lean` | 3.4–3.5 | `FOM.iterate` := `x₀ + V_m H_m⁻¹ (β e₁)` with `IsGalerkinIterate` |
+| §6.5 (6.27)–(6.47), Prop 6.9–6.12, Alg 6.9–6.13, Thm 6.30 | `Chapter06/GMRES.lean` | 3.4–3.6, 3.10 | `GMRES.iterate` (least-squares form) with `IsMinResIterate`; breakdown/stagnation |
+| §6.5.7–6.5.8 Prop 6.13–6.17, Lemma 6.18 | `Chapter06/Relations.lean` | 3.6 | — |
+| §6.6 Alg 6.15, Thm 6.19; §6.7 Alg 6.16–6.19, Prop 6.20; §6.7.3 | `Chapter06/Lanczos.lean`, `Chapter06/CG.lean` | 3.3, 3.7 | D-Lanczos (`LDLᵀ`) equals CG |
+| §6.8–6.9 Alg 6.20–6.22, Lemma 6.21 | `Chapter06/CR.lean`, `Chapter06/GCR.lean` | 3.8 | ORTHOMIN(k)/ORTHODIR as functions; only the full versions satisfy the spec |
+| §6.10 Lemma 6.22–6.24 Faber–Manteuffel | `Chapter06/FaberManteuffel.lean` | surface-only (phase 3) | — |
+| §6.11 Thm 6.25–6.29, Lemma 6.26–6.27, Prop 6.32, Cor 6.33 | `Chapter06/Convergence.lean` | 2.1.9, 3.9–3.10 | complex ellipse results (phase 3) |
 | §6.12 block methods | — | phase 3 | — |
-| Ch. 7–9 | `Ch07..Ch09/` | 3.12 (phase 2) | — |
+| Ch. 7–9 | `Chapter07..Chapter09/` | 3.12 (phase 2) | — |
 
 Restarted and truncated variants (GMRES(m), IOM, DIOM, ORTHOMIN(k)) are functions in the surface;
 GMRES(m) satisfies the per-cycle specification and its convergence theorem is backbone (3.10),
@@ -1237,12 +1237,12 @@ truncated methods are algorithm-only (1.2).
 
 | Paper | Surface file | Backbone items |
 |---|---|---|
-| §1–1.1 setting, Lanczos, Table 2.1 (CG, CR) | `Sec1.lean`, `Sec2.lean` | 3.3, 3.7, 3.8 — the paper's CG/CR are literally `CG.iterate`/`CR.iterate` with `x₀ = 0`, `A : Matrix n n ℝ` symmetric positive definite (`Matrix.PosDef`), via 2.1.14 |
-| §2.1–2.2 minimization properties (2.1)–(2.2) | `Sec2.lean` | 2.4.2, 3.4 (`IsGalerkin.iff_energyNorm_min`, `norm_residual_eq_iInf`) |
-| Thm 2.1–2.5 | `Sec2.lean` | 3.8 (Thm 2.1–2.2), 3.11 (Thm 2.3–2.5) |
-| §3 backward errors (3.1)–(3.6), Thm 3.1, stopping rules | `Sec3.lean` | 2.2 (`isLeast_backwardError`), 3.11 |
-| §4.1 numerics — no theorems; §4.2 (4.1) FOM/GMRES relation; Steihaug indefinite | `Sec4.lean` | 3.6, 3.11 |
-| §5 Table 5.1 | `Sec5.lean` | restatement of all of the above as one `structure` of properties per method |
+| §1–1.1 setting, Lanczos, Table 2.1 (CG, CR) | `Section01.lean`, `Section02.lean` | 3.3, 3.7, 3.8 — the paper's CG/CR are literally `CG.iterate`/`CR.iterate` with `x₀ = 0`, `A : Matrix n n ℝ` symmetric positive definite (`Matrix.PosDef`), via 2.1.14 |
+| §2.1–2.2 minimization properties (2.1)–(2.2) | `Section02.lean` | 2.4.2, 3.4 (`IsGalerkin.iff_energyNorm_min`, `norm_residual_eq_iInf`) |
+| Thm 2.1–2.5 | `Section02.lean` | 3.8 (Thm 2.1–2.2), 3.11 (Thm 2.3–2.5) |
+| §3 backward errors (3.1)–(3.6), Thm 3.1, stopping rules | `Section03.lean` | 2.2 (`isLeast_backwardError`), 3.11 |
+| §4.1 numerics — no theorems; §4.2 (4.1) FOM/GMRES relation; Steihaug indefinite | `Section04.lean` | 3.6, 3.11 |
+| §5 Table 5.1 | `Section05.lean` | restatement of all of the above as one `structure` of properties per method |
 
 Surface-specific: Frobenius norm `‖A‖_F` in the backward-error formula (equality with the operator
 norm for the rank-one optimal perturbation; state both), `x₀ = 0` throughout, real symmetric
@@ -1254,19 +1254,19 @@ coefficient formulas.
 
 | Book | Surface file | Backbone items |
 |---|---|---|
-| Thm 2.3.1, Cor 2.3.3, Thm 2.3.4–2.3.5 | `Ch02/GeometricSeries.lean` | 2.1.1 |
-| Thm 2.4.1–2.4.5 (Banach–Steinhaus), §2.4.4 quadrature convergence, (2.4.1) `cond(L)` | `Ch02/Operators.lean` | Mathlib `banach_steinhaus`; 2.2; 5.1.4 (phase 3) |
-| §2.5 Hahn–Banach, Riesz | `Ch02/Functionals.lean` | Mathlib |
-| Thm 3.3.12–3.3.21, Lemma 3.4.1–Thm 3.4.7, Prop 3.6.9, Ex 3.6.7, Lebesgue lemma | `Ch03/BestApprox.lean`, `Ch03/Projections.lean` | 5.1.1 |
+| Thm 2.3.1, Cor 2.3.3, Thm 2.3.4–2.3.5 | `Chapter02/GeometricSeries.lean` | 2.1.1 |
+| Thm 2.4.1–2.4.5 (Banach–Steinhaus), §2.4.4 quadrature convergence, (2.4.1) `cond(L)` | `Chapter02/Operators.lean` | Mathlib `banach_steinhaus`; 2.2; 5.1.4 (phase 3) |
+| §2.5 Hahn–Banach, Riesz | `Chapter02/Functionals.lean` | Mathlib |
+| Thm 3.3.12–3.3.21, Lemma 3.4.1–Thm 3.4.7, Prop 3.6.9, Ex 3.6.7, Lebesgue lemma | `Chapter03/BestApprox.lean`, `Chapter03/Projections.lean` | 5.1.1 |
 | Thm 3.7.1–3.7.3 (Jackson etc.) | — | phase 3 |
-| Thm 5.1.3–5.1.4, 5.2.1, Ex 5.1.2, (5.1.11) | `Ch05/FixedPoint.lean` | 5.3.1 |
-| §5.2.2 linear systems | `Ch05/LinearIteration.lean` | 2.3.1–2.3.3 |
-| Thm 5.2.2–5.2.4 (Urysohn, Volterra, Picard) | `Ch05/IntegralEquations.lean` | phase 3 |
-| Thm 5.4.1–5.4.2 | `Ch05/Newton.lean` | 5.3.2 |
-| Thm 5.6.1–5.6.3 (CG for operator equations) | `Ch05/ConjugateGradient.lean` | 3.7, 3.10 with the compression trick (3.9, 5.2.3); Winther (5.6.2) phase 2 |
-| Thm 8.2.1, 8.2.4, 8.2.7–8.2.8; Thm 8.3.1–8.3.4; Thm 8.7.1 | `Ch08/Existence.lean`, `Ch08/LaxMilgram.lean` | 5.2.1–5.2.2 |
-| Prop 9.1.3, Cor 9.1.4, Thm 9.2.1, Rem 9.2.2, Cor 9.2.3, Thm 9.3.1 | `Ch09/Galerkin.lean`, `Ch09/PetrovGalerkin.lean`, `Ch09/Strang.lean` | 5.2.3 |
-| §9.4 CG variational | `Ch09/CG.lean` | 3.7 via `SesqForm.toOperator` |
+| Thm 5.1.3–5.1.4, 5.2.1, Ex 5.1.2, (5.1.11) | `Chapter05/FixedPoint.lean` | 5.3.1 |
+| §5.2.2 linear systems | `Chapter05/LinearIteration.lean` | 2.3.1–2.3.3 |
+| Thm 5.2.2–5.2.4 (Urysohn, Volterra, Picard) | `Chapter05/IntegralEquations.lean` | phase 3 |
+| Thm 5.4.1–5.4.2 | `Chapter05/Newton.lean` | 5.3.2 |
+| Thm 5.6.1–5.6.3 (CG for operator equations) | `Chapter05/ConjugateGradient.lean` | 3.7, 3.10 with the compression trick (3.9, 5.2.3); Winther (5.6.2) phase 2 |
+| Thm 8.2.1, 8.2.4, 8.2.7–8.2.8; Thm 8.3.1–8.3.4; Thm 8.7.1 | `Chapter08/Existence.lean`, `Chapter08/LaxMilgram.lean` | 5.2.1–5.2.2 |
+| Prop 9.1.3, Cor 9.1.4, Thm 9.2.1, Rem 9.2.2, Cor 9.2.3, Thm 9.3.1 | `Chapter09/Galerkin.lean`, `Chapter09/PetrovGalerkin.lean`, `Chapter09/Strang.lean` | 5.2.3 |
+| §9.4 CG variational | `Chapter09/CG.lean` | 3.7 via `SesqForm.toOperator` |
 
 Surface-specific definitions: real bilinear forms `a : V → V → ℝ` with `IsBoundedBilinearMap`
 (equivalence with `V →L[ℝ] V →L[ℝ] ℝ`, which is `SesqForm ℝ V` by definition), "V-elliptic",
@@ -1279,7 +1279,7 @@ Surface-specific definitions: real bilinear forms `a : V → V → ℝ` with `Is
   everything else specializes 3.3–3.6.
 * **Meurant–Strakoš**: 3.12 `OrthogonalPolynomials`; §3 identities are in 3.7 (HS 6:1/6:3) and
   2.1.5; §4–5 finite precision in §6.
-* **Saad-eig**: §4 (theorem numbers integrated there); shares Ch. 1 with `SaadSparse/Ch01`, §4.3
+* **Saad-eig**: §4 (theorem numbers integrated there); shares Ch. 1 with `SaadSparse/Chapter01`, §4.3
   with 2.4/2.1.6, §4.4 with 2.1.9, Ch. 6 with 3.1–3.3; Ch. 3 analytic perturbation theory
   (Riesz–Dunford) and Ch. 7–9 are phase 3.
 * **Kress**: Ch. 3 → 2.1.1, 2.3.1, 5.1.1, 5.3.1; Ch. 4 → 2.3.2–2.3.5 (Kress is the second source
@@ -1410,14 +1410,14 @@ value decomposition that Saad §8.1's `±σ_i` spectrum needs
 
 ## 12. The sparse-matrix and model-problem layers (Saad Ch. 1-4, the parts phase 1 left out)
 
-Added with the plan of Saad §1.1-§1.10, Ch. 2, Ch. 3 and §4.3 (`plans/proposals/saadlow.md` holds
+Added with the plan of Saad §1.1–1.10, Ch. 2, Ch. 3 and §4.3 (`plans/proposals/saadlow.md` holds
 the coverage table and the skip list). Five arguments are worth keeping here, because they decided
 where the new modules sit.
 
 ### 12.1 Nonnegative matrices are one theory in two places, on purpose
 
 `Numlib/LinearAlgebra/Matrix/PerronFrobenius` holds the order-monotonicity results (Saad
-Prop 1.24 clause 5, Cor 1.27, Thm 1.28) and the *irreducible* Perron-Frobenius theorem (Thm 1.25);
+Prop 1.24 clause 5, Cor 1.27, Thm 1.28) and the *irreducible* Perron–Frobenius theorem (Thm 1.25);
 `Numlib/LinearSolve/Stationary/RegularSplitting` keeps the *weak* Perron theorem, Thm 1.29 and
 `Matrix.IsMMatrix`. That split is not tidy and §1 of the proposal asks for it to be undone by
 moving the latter three up. It is nevertheless sound as it stands, and the reason is worth
@@ -1482,7 +1482,7 @@ symmetric with `re ⟪A x, x⟫ ≥ c ‖x‖²` and `r > 0`,
   `‖A x - r x‖² + 4 r c ‖x‖² ≤ ‖A x + r x‖²`,
 
 which is the expansion of both sides. It says the Cayley transform `(A - r)(A + r)⁻¹` is a strict
-contraction with an explicit factor, and the Peaceman-Rachford operator (4.50) is conjugate to a
+contraction with an explicit factor, and the Peaceman–Rachford operator (4.50) is conjugate to a
 product of two of them. Three things fall out that the literature's framing obscures: the
 commutativity of `H` and `V` is not used anywhere (it belongs to the theory of the optimal
 parameter *sequence*, which the book only cites); the splitting identity (4.52) `M - N = H + V`
@@ -1494,7 +1494,7 @@ upstreaming candidate in its own right and should move to
 ### 12.5 Where the corpus stops being numerical analysis
 
 Saad Ch. 2 is the sharpest test of the scope rule, and the answer is cleaner than expected. The
-chapter's finite element section states no Céa lemma, no Lax-Milgram theorem, no Poincaré
+chapter's finite element section states no Céa lemma, no Lax–Milgram theorem, no Poincaré
 inequality, no trace theorem and no convergence result, and it uses no property of `H¹(Ω)`: the
 Sobolev framing is decorative, and **no Sobolev theory is needed to formalize anything the chapter
 proves**. Its algebraic content - bilinearity, the nodal basis, the Galerkin reduction, the
@@ -1504,7 +1504,7 @@ the Gram matrix of a basis in the energy inner product. What is missing is only 
 a triangulation of a planar domain, piecewise-affine functions on it, integration over triangles,
 and Green's formula on a domain with a smooth boundary. That is plane geometry and measure theory,
 not numerical analysis, and it is where the chapter is left. The same line puts §2.1 (the partial
-differential equations), §2.4 (mesh refinement) and §3.4-§3.7 (storage formats, sparse
+differential equations), §2.4 (mesh refinement) and §3.4–3.7 (storage formats, sparse
 matrix-vector products, direct-method heuristics) outside; the last group for a different reason,
 that it states no theorem at all.
 
@@ -1615,7 +1615,7 @@ node is stated for **orthonormal** polynomials (`p_{n+1} = (a_n X + b_n) p_n - c
 `OrthogonalPolynomial.three_term_recurrence` is the **monic** one, so the two do not meet. Whoever
 writes it should state it in the monic-with-weights form
 `∑_{n ≤ N} p_n(x) p_n(t)/h_n = (p_{N+1}(x) p_N(t) - p_N(x) p_{N+1}(t))/(h_N (x - t))`, which both
-specialize to, or plan the normalization bridge as a node of its own. `AtkinsonHan.Ch03.theorem_3_7_3`
+specialize to, or plan the normalization bridge as a node of its own. `AtkinsonHan.Chapter03.theorem_3_7_3`
 is blocked on this and on nothing else.
 
 One thing this module was expected to supply and does not: **the zeros of the orthogonal

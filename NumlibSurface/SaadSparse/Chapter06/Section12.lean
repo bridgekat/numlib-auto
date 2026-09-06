@@ -3,10 +3,10 @@ import Numlib.LinearSolve.Projection.Basic
 import NumlibSurface.SaadSparse.Chapter06.Section02
 
 /-!
-# Saad, §6.12: block Krylov methods
+# Saad §6.12: block Krylov methods
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003, §6.12.
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §6.12.
 
 The book's blocks are `n × p` matrices — `V_1` of starting vectors, `B` of right-hand sides, `X_0`
 of initial guesses — and the family of their columns is what every statement here takes:
@@ -38,7 +38,7 @@ Indices are `0`-based as elsewhere in Chapter 6: `ruhe A v j` is the book's `v_{
 
 open scoped ComplexOrder
 
-namespace SaadSparse.Ch06
+namespace SaadSparse.Chapter06
 
 section Block
 
@@ -207,4 +207,4 @@ theorem blockGMRES_iff (hon : Orthonormal 𝕜 fun k : Fin (m + p) => ruhe A v (
 
 end Block
 
-end SaadSparse.Ch06
+end SaadSparse.Chapter06

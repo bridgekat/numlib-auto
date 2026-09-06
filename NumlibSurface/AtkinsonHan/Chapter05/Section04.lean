@@ -5,8 +5,8 @@ import NumlibSurface.AtkinsonHan.Chapter05.Section03
 /-!
 # Atkinson–Han §5.4: Newton's method
 
-Surface formalization of §5.4 of Kendall Atkinson and Weimin Han, *Theoretical Numerical
-Analysis: A Functional Analysis Framework*, 3rd edition, Springer, 2009.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §5.4.
 
 The book's iteration (5.4.2), `u_{n+1} = u_n - [F'(u_n)]⁻¹ F(u_n)`, is the backbone's
 `Newton.step` / `Newton.iterate` (`Numlib/Nonlinear/Newton.lean`), which uses Mathlib's
@@ -35,7 +35,7 @@ which need the phase-3 `C[a,b]` integral-operator toolkit.
 
 open Filter Metric Topology
 
-namespace AtkinsonHan.Ch05
+namespace AtkinsonHan.Chapter05
 
 variable {U W : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [NormedAddCommGroup W]
   [NormedSpace ℝ W]
@@ -370,4 +370,4 @@ theorem equation_5_4_7 {d : ℕ} {F : EuclideanSpace ℝ (Fin d) → EuclideanSp
 
 end System
 
-end AtkinsonHan.Ch05
+end AtkinsonHan.Chapter05

@@ -15,7 +15,7 @@ nonnegative inverse (his Definition 1.30). Both are statements about the entrywi
 `Numlib/LinearAlgebra/Matrix/Complexify`, and neither mentions an iteration; the splittings that
 consume them are in `Numlib/LinearSolve/Stationary/RegularSplitting`.
 
-## The proof, and the Perron-Frobenius theorem it does not use
+## The proof, and the Perron–Frobenius theorem it does not use
 
 Both directions of the criterion come from one identity — with `C` a right inverse of `1 - B`,
 ```
@@ -26,7 +26,7 @@ Both directions of the criterion come from one identity — with `C` a right inv
 Forwards, `ρ(B) < 1` makes `Bᵏ → 0`, so the partial sums converge to `C`; each is entrywise
 nonnegative and the nonnegative matrices are closed, so `C` is nonnegative.
 
-Backwards is where the textbooks invoke Perron-Frobenius: `ρ(B)` is an eigenvalue of a nonnegative
+Backwards is where the textbooks invoke Perron–Frobenius: `ρ(B)` is an eigenvalue of a nonnegative
 `B` with a nonnegative eigenvector, and testing `C` against it forces `ρ(B) < 1`. That is not
 needed. If `C` is nonnegative then `Bᵏ C` is too, so the identity exhibits every partial sum
 `∑_{j < k} Bʲ` as *bounded above by `C`*, entry by entry; the partial sums are also nondecreasing,
@@ -35,7 +35,7 @@ increments `Bᵏ` tend to `0` entrywise, which is `ρ(B) < 1`. The whole argumen
 convergence in `ℝ`, one entry at a time, and it needs no eigenvector, no irreducibility and no
 compactness.
 
-The irreducible Perron-Frobenius theorem is a separate development, in
+The irreducible Perron–Frobenius theorem is a separate development, in
 `Numlib/LinearAlgebra/Matrix/PerronFrobenius`; neither statement implies the other cheaply.
 
 ## References

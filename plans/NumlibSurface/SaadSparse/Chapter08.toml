@@ -7,8 +7,8 @@ all of it is *recognition* — the chapter's content is that familiar objects re
 normal equations:
 
 * §8.2 row projection methods are projection processes on `AᴴA x = Aᴴb` and `A Aᴴ u = b`, so
-  Cimmino is `SaadSparse.Ch05.additiveStep` of §5.4 and the NE/NR-SOR sweeps are
-  `SaadSparse.Ch05.multiplicativeSweep`, both with the coordinate subspaces `K_i = span {e_i}`;
+  Cimmino is `SaadSparse.Chapter05.additiveStep` of §5.4 and the NE/NR-SOR sweeps are
+  `SaadSparse.Chapter05.multiplicativeSweep`, both with the coordinate subspaces `K_i = span {e_i}`;
   Cimmino with normalized columns is the Richardson iteration of §4.1, and its convergence
   interval `0 < ω < 2/λ_max` is Example 4.1;
 * §8.3 CGNR and CGNE are `Numlib/Krylov/NormalEquations` rewritten in the original variable, with

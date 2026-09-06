@@ -1,4 +1,4 @@
-namespace = "AtkinsonHan.Ch12"
+namespace = "AtkinsonHan.Chapter12"
 
 [[node]]
 id = "twoGridStep"

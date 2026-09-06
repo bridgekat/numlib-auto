@@ -49,7 +49,7 @@ Ch. 9 surface):
   (Saad Alg. 9.2) and `PCG.iterate` (Alg. 9.1) produce the same iterates, both equal to
   `CG.iterate` for `L⁻¹ A L⁻ᴴ` transported by `u = Lᴴ x`. Deps: `PCG.iterate`, `CG.iterate`.
   *Why here*: it is a statement about `PCG.iterate`, and the surface theorem
-  `SaadSparse.Ch09.splitPcg_eq_pcg` should specialize it rather than redo a change of variables.
+  `SaadSparse.Chapter09.splitPcg_eq_pcg` should specialize it rather than redo a change of variables.
 * `Krylov.PCG.iterate_eq_rightPreconditioned` — **theorem**. Left-preconditioned CG in the
   `M`-inner product equals right-preconditioned CG (for `A M⁻¹`, `x = M⁻¹ u`) in the `M⁻¹`-inner
   product. Deps: `PCG.iterate`, `WithEnergy`. *Why here*: same reason; it is the closing paragraph
@@ -102,7 +102,7 @@ reason the energy space exists, and the eigenvalue and variational layers will w
 The Cimmino identification of Saad §8.2 needs the least-squares variant with a *relaxation
 parameter* and its residual identity, which the group's `residual_additiveStep` already has. No
 change is proposed; `Projection/Additive` as planned covers §8.2 exactly, and the surface
-(`SaadSparse.Ch08.cimmino_eq_additiveStep`) goes through `SaadSparse.Ch05.additiveStep`, which
+(`SaadSparse.Chapter08.cimmino_eq_additiveStep`) goes through `SaadSparse.Chapter05.additiveStep`, which
 already exists. **Answer to the question posed in the brief: yes, Saad §8.2 is a surface
 specialization of `Projection/Additive` and needs nothing new from it** — Cimmino is
 `additiveStep` for `AᴴA x = Aᴴb` over the coordinate subspaces, and the NE/NR-SOR sweeps are
@@ -115,7 +115,7 @@ specialization of `Projection/Additive` and needs nothing new from it** — Cimm
 * **`Krylov/Hessenberg`: generalize `HessenbergRelation` to two families** (§1.1). Runs alone, per
   the tracker README's rule for restatements.
 * **`SaadSparse/Chapter06/Section05`: re-base the QGMRES layer on the backbone.**
-  `SaadSparse.Ch06.qgmres`, `quasiResidualNorm`, `z`, `ζ`, `equation_6_50`, `equation_6_51`,
+  `SaadSparse.Chapter06.qgmres`, `quasiResidualNorm`, `z`, `ζ`, `equation_6_50`, `equation_6_51`,
   `equation_6_55`, `problem_6_25` are already stated for an arbitrary `u`, `h` satisfying
   `Krylov.HessenbergRelation (op A) u h` — that is, they *are* the quasi-minimal-residual theory,
   written in a surface file. They should become specializations of `Krylov/QuasiMinRes`:
@@ -124,7 +124,7 @@ specialization of `Projection/Additive` and needs nothing new from it** — Cimm
   depends on a Chapter 6 surface declaration for its backbone content, which the README forbids in
   spirit even where the tracker cannot see it.
 * **`SaadSparse/Chapter06`: Theorem 6.11 is missing and should be added**, as
-  `SaadSparse.Ch06.theorem_6_11` in `Chapter06/Section05.toml`. `Chapter06/Section05.lean`'s own
+  `SaadSparse.Chapter06.theorem_6_11` in `Chapter06/Section05.toml`. `Chapter06/Section05.lean`'s own
   header reports it as "not formalized here (reported to the plan)", and `plans/saadsparse-ch6.md`
   §R31 estimates ~60 lines because it planned to build a Gram–Schmidt factorization `S` of the IOP
   basis. With `Krylov.IsQuasiMinResIterate.norm_residual_le_mul` it is a two-line corollary:
@@ -135,7 +135,7 @@ specialization of `Projection/Additive` and needs nothing new from it** — Cimm
   `Krylov/QuasiMinRes` rather than restate it.** `QMR.IsQuasiMinRes` as planned is
   `Krylov.IsQuasiMinResIterate` at the two-sided Lanczos data, and `QMR.norm_residual_le` is
   Prop 7.3 + Thm 7.4, both of which are backbone theorems about arbitrary Hessenberg relations. The
-  Ch. 7 surface (`SaadSparse.Ch07.qmr_isQuasiMinResIterate`, `proposition_7_3`, `theorem_7_4`)
+  Ch. 7 surface (`SaadSparse.Chapter07.qmr_isQuasiMinResIterate`, `proposition_7_3`, `theorem_7_4`)
   names both the general and the BiLanczos node in its `deps`, so either route works, but proving
   them twice would be waste.
 
@@ -173,27 +173,27 @@ Preconditioned}` written concurrently).
 
 | Book | Status | Node |
 |---|---|---|
-| Algorithm 7.1 | planned | `SaadSparse.Ch07.bilanczosV`, `bilanczosV_eq` → `BiLanczos.vec` |
-| (7.1), (7.2) | planned | `SaadSparse.Ch07.bilanczosCoeff`, `T` |
-| **Proposition 7.1** | planned | `SaadSparse.Ch07.proposition_7_1`, `proposition_7_1_span` → `BiLanczos.inner_vec_dualVec` |
-| (7.3), (7.4), (7.5) | planned | `SaadSparse.Ch07.equation_7_3`, `equation_7_5` |
+| Algorithm 7.1 | planned | `SaadSparse.Chapter07.bilanczosV`, `bilanczosV_eq` → `BiLanczos.vec` |
+| (7.1), (7.2) | planned | `SaadSparse.Chapter07.bilanczosCoeff`, `T` |
+| **Proposition 7.1** | planned | `SaadSparse.Chapter07.proposition_7_1`, `proposition_7_1_span` → `BiLanczos.inner_vec_dualVec` |
+| (7.3), (7.4), (7.5) | planned | `SaadSparse.Chapter07.equation_7_3`, `equation_7_5` |
 | (7.6), (7.7), moment matrix | skipped | look-ahead material, §3 |
-| Algorithm 7.2, (7.9) | planned | `SaadSparse.Ch07.lanczosSolve`, `equation_7_9` |
-| Algorithm 7.3, (7.10)–(7.12) | planned | `SaadSparse.Ch07.bcg`, `bcg_eq_lanczosSolve` → `BCG.iterate` |
-| **Proposition 7.2**, (7.13)–(7.14), P-7.10 | planned | `SaadSparse.Ch07.proposition_7_2` → `BCG.inner_residual_dualResidual_eq_zero` |
-| Algorithm 7.4, (7.15)–(7.17) | planned | `SaadSparse.Ch07.qmr`, `qmr_isQuasiMinResIterate`, `equation_7_16` |
-| (7.18), (7.19), (7.20) | planned | `SaadSparse.Ch07.equation_7_18`, `equation_7_19`, `equation_7_20` |
-| **Proposition 7.3**, (7.21)–(7.22) | planned | `SaadSparse.Ch07.proposition_7_3` → `Krylov.IsQuasiMinResIterate.norm_residual_le` |
-| **Theorem 7.4** | planned | `SaadSparse.Ch07.theorem_7_4` → `Krylov.IsQuasiMinResIterate.norm_residual_le_mul` |
-| (7.23), (7.24) | planned | `SaadSparse.Ch07.equation_7_23`, `equation_7_24` |
-| **Proposition 7.5**, (7.25) | planned | `SaadSparse.Ch07.proposition_7_5` |
-| (7.26)–(7.31), Algorithm 7.5 | planned | `SaadSparse.Ch07.equation_7_26`, `equation_7_29`, `qmrSmoothing` |
-| (7.32)–(7.39) | planned | `SaadSparse.Ch07.bcgResidualPoly`, `bcg_residual_eq_aeval` |
-| Algorithm 7.6, (7.40)–(7.45) | planned | `SaadSparse.Ch07.cgs`, `cgs_residual_eq` |
-| Algorithm 7.7, (7.46)–(7.55) | planned | `SaadSparse.Ch07.bicgstab`, `bicgstab_residual_eq`, `equation_7_53`, `equation_7_55` |
-| Algorithm 7.8, (7.56)–(7.82) | planned | `SaadSparse.Ch07.tfqmr`, `equation_7_70`, `equation_7_76`, `tfqmr_isQuasiMinResIterate` |
-| (7.83) | planned | `SaadSparse.Ch07.equation_7_83` |
-| P-7.2, P-7.6 | planned | `SaadSparse.Ch07.problem_7_2`, `problem_7_6` |
+| Algorithm 7.2, (7.9) | planned | `SaadSparse.Chapter07.lanczosSolve`, `equation_7_9` |
+| Algorithm 7.3, (7.10)–(7.12) | planned | `SaadSparse.Chapter07.bcg`, `bcg_eq_lanczosSolve` → `BCG.iterate` |
+| **Proposition 7.2**, (7.13)–(7.14), P-7.10 | planned | `SaadSparse.Chapter07.proposition_7_2` → `BCG.inner_residual_dualResidual_eq_zero` |
+| Algorithm 7.4, (7.15)–(7.17) | planned | `SaadSparse.Chapter07.qmr`, `qmr_isQuasiMinResIterate`, `equation_7_16` |
+| (7.18), (7.19), (7.20) | planned | `SaadSparse.Chapter07.equation_7_18`, `equation_7_19`, `equation_7_20` |
+| **Proposition 7.3**, (7.21)–(7.22) | planned | `SaadSparse.Chapter07.proposition_7_3` → `Krylov.IsQuasiMinResIterate.norm_residual_le` |
+| **Theorem 7.4** | planned | `SaadSparse.Chapter07.theorem_7_4` → `Krylov.IsQuasiMinResIterate.norm_residual_le_mul` |
+| (7.23), (7.24) | planned | `SaadSparse.Chapter07.equation_7_23`, `equation_7_24` |
+| **Proposition 7.5**, (7.25) | planned | `SaadSparse.Chapter07.proposition_7_5` |
+| (7.26)–(7.31), Algorithm 7.5 | planned | `SaadSparse.Chapter07.equation_7_26`, `equation_7_29`, `qmrSmoothing` |
+| (7.32)–(7.39) | planned | `SaadSparse.Chapter07.bcgResidualPoly`, `bcg_residual_eq_aeval` |
+| Algorithm 7.6, (7.40)–(7.45) | planned | `SaadSparse.Chapter07.cgs`, `cgs_residual_eq` |
+| Algorithm 7.7, (7.46)–(7.55) | planned | `SaadSparse.Chapter07.bicgstab`, `bicgstab_residual_eq`, `equation_7_53`, `equation_7_55` |
+| Algorithm 7.8, (7.56)–(7.82) | planned | `SaadSparse.Chapter07.tfqmr`, `equation_7_70`, `equation_7_76`, `tfqmr_isQuasiMinResIterate` |
+| (7.83) | planned | `SaadSparse.Chapter07.equation_7_83` |
+| P-7.2, P-7.6 | planned | `SaadSparse.Chapter07.problem_7_2`, `problem_7_6` |
 | P-7.1, P-7.3–P-7.5, P-7.7–P-7.9, P-7.11 | skipped | §3 |
 
 **Chapter 7: 5 of 5 numbered results planned, 8 of 8 algorithms planned, 4 of 11 problems planned
@@ -203,25 +203,25 @@ Preconditioned}` written concurrently).
 
 | Book | Status | Node |
 |---|---|---|
-| (8.1)–(8.4) | planned | `SaadSparse.Ch08.equation_8_1`, `equation_8_3` |
-| (8.5)–(8.7), P-8.1 | planned | `SaadSparse.Ch08.equation_8_5` |
+| (8.1)–(8.4) | planned | `SaadSparse.Chapter08.equation_8_1`, `equation_8_3` |
+| (8.5)–(8.7), P-8.1 | planned | `SaadSparse.Chapter08.equation_8_5` |
 | spectrum of `[[0,A],[Aᴴ,0]]`, P-8.4 | skipped | needs an SVD, §3 |
-| (8.8) | planned | `SaadSparse.Ch08.equation_8_8` |
-| Algorithm 8.1, (8.11)–(8.15) | planned | `SaadSparse.Ch08.neSorStep`, `neSorStep_isPetrovGalerkin` |
-| Algorithm 8.2, (8.16)–(8.18) | planned | `SaadSparse.Ch08.nrSorStep`, `nrSorStep_isGalerkin` |
-| Algorithm 8.3, (8.19)–(8.21) | planned | `SaadSparse.Ch08.cimmino`, `cimmino_eq_additiveStep` |
-| (8.22), P-8.2 | planned | `SaadSparse.Ch08.cimmino_eq_richardson`, `equation_8_22` |
-| (8.23)–(8.25), P-8.8 | planned | `SaadSparse.Ch08.equation_8_24`, `equation_8_25` |
-| (8.26)–(8.27) | planned | `SaadSparse.Ch08.blockCimmino` |
-| Algorithm 8.4 and its optimality | planned | `SaadSparse.Ch08.cgnr`, `cgnr_eq`, `cgnr_isMinRes` → `Krylov.CGNR.iterate` |
-| Algorithm 8.5 and its optimality | planned | `SaadSparse.Ch08.cgne`, `cgne_eq`, `cgne_isMinError` |
-| "the same subspace" | planned | `SaadSparse.Ch08.subspace_adjoint_eq` |
-| (8.28)–(8.30) | planned | `SaadSparse.Ch08.saddleMatrix`, `equation_8_30` |
-| Algorithm 8.6, (8.31)–(8.32), P-8.7 | planned | `SaadSparse.Ch08.uzawa`, `equation_8_32` |
-| **Corollary 8.1** | planned | `SaadSparse.Ch08.corollary_8_1`, `schur_posDef` |
-| "(8.32) is the `A⁻¹`-normal equations", P-8.5(a) | planned | `SaadSparse.Ch08.equation_8_32_isMinRes` |
-| Algorithm 8.7 | planned | `SaadSparse.Ch08.arrowHurwicz` |
-| Example 8.2 | planned | `SaadSparse.Ch08.example_8_2` |
+| (8.8) | planned | `SaadSparse.Chapter08.equation_8_8` |
+| Algorithm 8.1, (8.11)–(8.15) | planned | `SaadSparse.Chapter08.neSorStep`, `neSorStep_isPetrovGalerkin` |
+| Algorithm 8.2, (8.16)–(8.18) | planned | `SaadSparse.Chapter08.nrSorStep`, `nrSorStep_isGalerkin` |
+| Algorithm 8.3, (8.19)–(8.21) | planned | `SaadSparse.Chapter08.cimmino`, `cimmino_eq_additiveStep` |
+| (8.22), P-8.2 | planned | `SaadSparse.Chapter08.cimmino_eq_richardson`, `equation_8_22` |
+| (8.23)–(8.25), P-8.8 | planned | `SaadSparse.Chapter08.equation_8_24`, `equation_8_25` |
+| (8.26)–(8.27) | planned | `SaadSparse.Chapter08.blockCimmino` |
+| Algorithm 8.4 and its optimality | planned | `SaadSparse.Chapter08.cgnr`, `cgnr_eq`, `cgnr_isMinRes` → `Krylov.CGNR.iterate` |
+| Algorithm 8.5 and its optimality | planned | `SaadSparse.Chapter08.cgne`, `cgne_eq`, `cgne_isMinError` |
+| "the same subspace" | planned | `SaadSparse.Chapter08.subspace_adjoint_eq` |
+| (8.28)–(8.30) | planned | `SaadSparse.Chapter08.saddleMatrix`, `equation_8_30` |
+| Algorithm 8.6, (8.31)–(8.32), P-8.7 | planned | `SaadSparse.Chapter08.uzawa`, `equation_8_32` |
+| **Corollary 8.1** | planned | `SaadSparse.Chapter08.corollary_8_1`, `schur_posDef` |
+| "(8.32) is the `A⁻¹`-normal equations", P-8.5(a) | planned | `SaadSparse.Chapter08.equation_8_32_isMinRes` |
+| Algorithm 8.7 | planned | `SaadSparse.Chapter08.arrowHurwicz` |
+| Example 8.2 | planned | `SaadSparse.Chapter08.example_8_2` |
 | P-8.3 | skipped | the row/column dual of Cimmino, same statement with `A ↔ Aᴴ` |
 | P-8.6, P-8.9–P-8.12 | skipped | §3 |
 
@@ -233,27 +233,27 @@ skipped for want of an SVD.**
 
 | Book | Status | Node |
 |---|---|---|
-| (9.1)–(9.3), P-9.1, P-9.10 | planned | `SaadSparse.Ch09.leftPreconditioned`, `solution_iff`, `problem_9_1` |
-| §9.2.1 self-adjointness | planned | `SaadSparse.Ch09.isSymmetric_energy` (+ §1.3 backbone nodes) |
-| Algorithm 9.1 | planned | `SaadSparse.Ch09.pcg`, `pcg_eq` → `Krylov.PCG.iterate` |
-| Algorithm 9.2 and "the iterates are identical", P-9.3 | planned | `SaadSparse.Ch09.splitPcg`, `splitPcg_eq_pcg` |
-| right-preconditioned CG in the `M⁻¹` product | planned | `SaadSparse.Ch09.rightPcg_eq_pcg` |
-| P-9.2 | planned | `SaadSparse.Ch09.pcgEnergyA` |
-| P-9.6 | planned | `SaadSparse.Ch09.problem_9_6` → `Krylov.PCG.energyNorm_error_le` |
-| (9.5)–(9.8), Algorithm 9.3 | planned | `SaadSparse.Ch09.equation_9_8`, `eisenstat` |
+| (9.1)–(9.3), P-9.1, P-9.10 | planned | `SaadSparse.Chapter09.leftPreconditioned`, `solution_iff`, `problem_9_1` |
+| §9.2.1 self-adjointness | planned | `SaadSparse.Chapter09.isSymmetric_energy` (+ §1.3 backbone nodes) |
+| Algorithm 9.1 | planned | `SaadSparse.Chapter09.pcg`, `pcg_eq` → `Krylov.PCG.iterate` |
+| Algorithm 9.2 and "the iterates are identical", P-9.3 | planned | `SaadSparse.Chapter09.splitPcg`, `splitPcg_eq_pcg` |
+| right-preconditioned CG in the `M⁻¹` product | planned | `SaadSparse.Chapter09.rightPcg_eq_pcg` |
+| P-9.2 | planned | `SaadSparse.Chapter09.pcgEnergyA` |
+| P-9.6 | planned | `SaadSparse.Chapter09.problem_9_6` → `Krylov.PCG.energyNorm_error_le` |
+| (9.5)–(9.8), Algorithm 9.3 | planned | `SaadSparse.Chapter09.equation_9_8`, `eisenstat` |
 | §9.2.2 counts, Example 9.1, P-9.7–P-9.9 | skipped | §3 |
-| Algorithm 9.4, Algorithm 9.5, §9.3.3 | planned | `SaadSparse.Ch09.gmresLeft`, `gmresRight` and their `isMinRes` |
-| (9.17)–(9.21), (9.18), P-9.11 | planned | `SaadSparse.Ch09.equation_9_18` |
-| **Proposition 9.1** | planned | `SaadSparse.Ch09.proposition_9_1` → `Krylov.exists_aeval_of_isMinResIterate_preconditioned` |
-| (9.10)–(9.15), P-9.13 | planned | `SaadSparse.Ch09.gmresEnergy`, `equation_9_12` |
-| Algorithm 9.6, (9.22)–(9.26) | planned | `SaadSparse.Ch09.fgmres`, `equation_9_22` |
-| **Proposition 9.2** | planned | `SaadSparse.Ch09.proposition_9_2` → `Krylov.IsQuasiMinResIterate.isMinOn_norm_residual` |
-| **Proposition 9.3** and its remark | planned | `SaadSparse.Ch09.proposition_9_3`, `hessenbergSq_isUnit_of_linearIndependent` |
+| Algorithm 9.4, Algorithm 9.5, §9.3.3 | planned | `SaadSparse.Chapter09.gmresLeft`, `gmresRight` and their `isMinRes` |
+| (9.17)–(9.21), (9.18), P-9.11 | planned | `SaadSparse.Chapter09.equation_9_18` |
+| **Proposition 9.1** | planned | `SaadSparse.Chapter09.proposition_9_1` → `Krylov.exists_aeval_of_isMinResIterate_preconditioned` |
+| (9.10)–(9.15), P-9.13 | planned | `SaadSparse.Chapter09.gmresEnergy`, `equation_9_12` |
+| Algorithm 9.6, (9.22)–(9.26) | planned | `SaadSparse.Chapter09.fgmres`, `equation_9_22` |
+| **Proposition 9.2** | planned | `SaadSparse.Chapter09.proposition_9_2` → `Krylov.IsQuasiMinResIterate.isMinOn_norm_residual` |
+| **Proposition 9.3** and its remark | planned | `SaadSparse.Chapter09.proposition_9_3`, `hessenbergSq_isUnit_of_linearIndependent` |
 | §9.4.1 steepest-descent remark | skipped | no statement in the book, §3 |
-| §9.4.2, (9.28) | planned | `SaadSparse.Ch09.fdqgmres` (algorithm-only) |
-| Algorithm 9.7, Algorithm 9.8 | planned | `SaadSparse.Ch09.pcgnr`, `pcgne` and their `_eq` |
+| §9.4.2, (9.28) | planned | `SaadSparse.Chapter09.fdqgmres` (algorithm-only) |
+| Algorithm 9.7, Algorithm 9.8 | planned | `SaadSparse.Chapter09.pcgnr`, `pcgne` and their `_eq` |
 | P-9.4, P-9.5, P-9.12 | skipped | §3 (P-9.12, preconditioned CR, is `Krylov.CR.iterate` in `WithEnergy M`; one line if wanted) |
-| §9.6, (9.29) and the CGW recurrence | planned | `SaadSparse.Ch09.cgwM`, `isSkewAdjoint_energy`, `equation_9_29`, `cgw`, `cgw_alpha`, `cgw_isGalerkinIterate` |
+| §9.6, (9.29) and the CGW recurrence | planned | `SaadSparse.Chapter09.cgwM`, `isSkewAdjoint_energy`, `equation_9_29`, `cgw`, `cgw_alpha`, `cgw_isGalerkinIterate` |
 
 **Chapter 9: 3 of 3 numbered results planned, 8 of 8 algorithms planned, 7 of 13 problems planned
 (P-9.1, P-9.2, P-9.3, P-9.6, P-9.10, P-9.11, P-9.13) and 6 skipped.**

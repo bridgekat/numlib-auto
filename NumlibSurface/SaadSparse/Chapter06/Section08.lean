@@ -6,10 +6,10 @@ import NumlibSurface.SaadSparse.Chapter06.Section05
 import NumlibSurface.SaadSparse.Chapter06.Section07
 
 /-!
-# Saad, §6.8: the conjugate residual method
+# Saad §6.8: the conjugate residual method
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003, §6.8.
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §6.8.
 
 **Algorithm 6.20** (conjugate residual) is `cr`, whose state is the quadruple
 `(x_j, r_j, p_j, A p_j)` that the algorithm carries; `crX`, `crR`, `crP`, `crAp`, `crAlpha`,
@@ -35,7 +35,7 @@ symmetric positive definite, the book's generality in §6.8.
 
 open scoped ComplexOrder Matrix
 
-namespace SaadSparse.Ch06
+namespace SaadSparse.Chapter06
 
 section General
 
@@ -313,4 +313,4 @@ theorem algorithm_6_20_eq_alg_6_9 (hA : A.PosDef) {j : ℕ} (hj : j ≤ grade A 
 
 end BookResults
 
-end SaadSparse.Ch06
+end SaadSparse.Chapter06

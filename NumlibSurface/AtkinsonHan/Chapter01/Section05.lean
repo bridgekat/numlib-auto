@@ -7,10 +7,10 @@ import Mathlib.MeasureTheory.Measure.Lebesgue.EqHaar
 /-!
 # Atkinson–Han §1.5: the `Lᵖ` spaces
 
-Statements from Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework* (3rd ed.), §1.5: Young's, Hölder's and Minkowski's inequalities, completeness
-of `Lᵖ(Ω)`, the inclusions between the `Lᵖ` spaces on a set of finite measure, and the density of
-`C₀^∞(Ω)`.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §1.5: Young's, Hölder's and Minkowski's
+inequalities, completeness of `Lᵖ(Ω)`, the inclusions between the `Lᵖ` spaces on a set of finite
+measure, and the density of `C₀^∞(Ω)`.
 
 Everything here is Mathlib. The section is stated because it is the book's account of the spaces
 every later chapter integrates over, and because Theorem 1.5.5 (c) — the inclusion `Lq ⊆ Lᵖ` with
@@ -49,7 +49,7 @@ exponent `p ∈ [1, ∞]` is Mathlib's `p : ℝ≥0∞` with `Fact (1 ≤ p)`, a
 open Filter MeasureTheory Topology
 open scoped ENNReal ContDiff
 
-namespace AtkinsonHan.Ch01
+namespace AtkinsonHan.Chapter01
 
 /-! ### Young's inequality -/
 
@@ -147,4 +147,4 @@ theorem theorem_1_5_6 {d : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ �
         f =ᵐ[volume] g ∧ HasCompactSupport g ∧ ContDiff ℝ ∞ g} :=
   MeasureTheory.Lp.dense_hasCompactSupport_contDiff hp
 
-end AtkinsonHan.Ch01
+end AtkinsonHan.Chapter01

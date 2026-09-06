@@ -15,7 +15,7 @@ The surface `NumlibSurface.SaadSparse` for Saad, *Iterative Methods for Sparse L
 (2nd edition), Ch. 10 (preconditioning techniques), Ch. 11 (parallel implementations), Ch. 12
 (parallel preconditioners), Ch. 13 (multigrid) and Ch. 14 (domain decomposition). Conventions are
 those of `plans/saadsparse-ch1-4-5.md` §0: real `n × n` matrices, `EuclideanSpace ℝ (Fin n)` for
-vectors, `Matrix.toEuclideanLin` for the action, names `SaadSparse.Ch13.theorem_13_3`,
+vectors, `Matrix.toEuclideanLin` for the action, names `SaadSparse.Chapter13.theorem_13_3`,
 `equation_13_43`, and docstrings carrying the book statement.
 
 ## 1. What this slice is, and is not

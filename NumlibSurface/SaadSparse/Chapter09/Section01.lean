@@ -3,10 +3,10 @@ import Numlib.Analysis.Matrix.ToEuclideanLin
 import NumlibSurface.SaadSparse.Common
 
 /-!
-# Saad, §9.1: preconditioned iterations — left, right and split preconditioning
+# Saad §9.1: preconditioned iterations — left, right and split preconditioning
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003, §9.1, with P-9.1 and P-9.10.
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §9.1 , with P-9.1 and P-9.10.
 
 A preconditioner is a nonsingular `M` for which `M z = r` is cheap to solve and `M ≈ A`. It can
 be applied on the left (9.1), on the right (9.2) or split as `M = M_L M_R` (9.3); the three
@@ -24,7 +24,7 @@ nevertheless minimize different quantities.
 open Matrix
 open scoped SaadSparse
 
-namespace SaadSparse.Ch09
+namespace SaadSparse.Chapter09
 
 variable {n : ℕ} {𝕜 : Type*} [RCLike 𝕜]
 
@@ -134,4 +134,4 @@ theorem problem_9_1_spectrum (hML : IsUnit ML) (hMR : IsUnit MR) (hM : M = ML * 
   rw [h2, ← hML.unit_spec, ← Matrix.coe_units_inv hML.unit, spectrum.units_conjugate']
   exact hr
 
-end SaadSparse.Ch09
+end SaadSparse.Chapter09

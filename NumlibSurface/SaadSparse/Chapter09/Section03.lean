@@ -3,10 +3,10 @@ import NumlibSurface.SaadSparse.Chapter06.Section05
 import NumlibSurface.SaadSparse.Chapter09.Section02
 
 /-!
-# Saad, §9.3: preconditioned GMRES
+# Saad §9.3: preconditioned GMRES
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003, §9.3, with P-9.11 and P-9.13.
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §9.3 , with P-9.11 and P-9.13.
 
 Both preconditioned algorithms are Algorithm 6.9 at another operator.
 
@@ -34,9 +34,9 @@ open Matrix Polynomial
 
 open scoped SaadSparse
 
-namespace SaadSparse.Ch09
+namespace SaadSparse.Chapter09
 
-open Ch06 (op)
+open Chapter06 (op)
 
 variable {n : ℕ} {𝕜 : Type*} [RCLike 𝕜]
 
@@ -51,7 +51,7 @@ right-hand side `M⁻¹ b`.  The Arnoldi basis spans `𝒦_m(M⁻¹A, M⁻¹ r�
 algorithm monitors is the preconditioned one, `M⁻¹(b - A x_m)`. -/
 noncomputable def gmresLeft (M A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : EuclideanSpace 𝕜 (Fin n))
     (m : ℕ) : EuclideanSpace 𝕜 (Fin n) :=
-  Ch06.gmresFixed (leftPreconditioned M A) (op M⁻¹ b) x₀ m
+  Chapter06.gmresFixed (leftPreconditioned M A) (op M⁻¹ b) x₀ m
 
 /-- **Algorithm 9.5** (GMRES with right preconditioning): Algorithm 6.9 applied to `A M⁻¹` with
 right-hand side `b` and initial guess `u₀ = M x₀`, the iterate returned as
@@ -60,7 +60,7 @@ monitors is the true one, `b - A x_m`.  With `M = M_L M_R` and the initial `M_L�
 `M_R⁻¹` applications this is the split-preconditioned algorithm of §9.3.3. -/
 noncomputable def gmresRight (M A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : EuclideanSpace 𝕜 (Fin n))
     (m : ℕ) : EuclideanSpace 𝕜 (Fin n) :=
-  x₀ + op M⁻¹ (Ch06.gmresFixed (rightPreconditioned M A) b (op M x₀) m - op M x₀)
+  x₀ + op M⁻¹ (Chapter06.gmresFixed (rightPreconditioned M A) b (op M x₀) m - op M x₀)
 
 /-- `M⁻¹ (M x) = x` for a nonsingular `M`. -/
 private theorem inv_apply_apply' (hM : IsUnit M) (x : EuclideanSpace 𝕜 (Fin n)) :
@@ -71,7 +71,8 @@ private theorem inv_apply_apply' (hM : IsUnit M) (x : EuclideanSpace 𝕜 (Fin n
 
 /-- Saad's `x_m = x₀ + M⁻¹ V_m y_m` is `M⁻¹ u_m`: the two forms of Algorithm 9.5 agree. -/
 theorem gmresRight_eq (hM : IsUnit M) (b x₀ : EuclideanSpace 𝕜 (Fin n)) (m : ℕ) :
-    gmresRight M A b x₀ m = op M⁻¹ (Ch06.gmresFixed (rightPreconditioned M A) b (op M x₀) m) := by
+    gmresRight M A b x₀ m
+      = op M⁻¹ (Chapter06.gmresFixed (rightPreconditioned M A) b (op M x₀) m) := by
   rw [gmresRight, map_sub, inv_apply_apply' hM]
   abel
 
@@ -79,23 +80,23 @@ theorem gmresRight_eq (hM : IsUnit M) (b x₀ : EuclideanSpace 𝕜 (Fin n)) (m 
 `x₀ + 𝒦_m(M⁻¹A, M⁻¹ r₀)`: it is the minimal-residual Krylov iterate of `M⁻¹ A x = M⁻¹ b`. -/
 theorem gmresLeft_isMinRes (b x₀ : EuclideanSpace 𝕜 (Fin n)) {m : ℕ}
     (hMA : IsUnit (leftPreconditioned M A))
-    (hm : m ≤ Ch06.grade (leftPreconditioned M A)
-      (Ch06.v₁ (leftPreconditioned M A) (op M⁻¹ b) x₀)) :
+    (hm : m ≤ Chapter06.grade (leftPreconditioned M A)
+      (Chapter06.v₁ (leftPreconditioned M A) (op M⁻¹ b) x₀)) :
     Krylov.IsMinResIterate (op (leftPreconditioned M A)) (op M⁻¹ b) x₀ m
       (gmresLeft M A b x₀ m) :=
-  Ch06.gmresFixed_isMinResIterate _ _ _ hm (Ch06.isUnit_R_of_isUnit _ _ _ hMA hm)
+  Chapter06.gmresFixed_isMinResIterate _ _ _ hm (Chapter06.isUnit_R_of_isUnit _ _ _ hMA hm)
 
 /-- **Algorithm 9.5** minimizes the *true* residual `‖b - A x‖₂` over the same affine space
 `x₀ + 𝒦_m(M⁻¹A, M⁻¹ r₀)` that Algorithm 9.4 searches.  This is the difference between left and
 right preconditioning: the space is the same, the norm minimized over it is not. -/
 theorem gmresRight_isMinRes (b x₀ : EuclideanSpace 𝕜 (Fin n)) {m : ℕ} (hM : IsUnit M)
     (hAM : IsUnit (rightPreconditioned M A))
-    (hm : m ≤ Ch06.grade (rightPreconditioned M A)
-      (Ch06.v₁ (rightPreconditioned M A) b (op M x₀))) :
+    (hm : m ≤ Chapter06.grade (rightPreconditioned M A)
+      (Chapter06.v₁ (rightPreconditioned M A) b (op M x₀))) :
     IsMinRes (op A) b x₀
       (Krylov.subspace (op M⁻¹ ∘ₗ op A) (op M⁻¹ (b - op A x₀)) m) (gmresRight M A b x₀ m) := by
-  have hu := Ch06.gmresFixed_isMinResIterate (rightPreconditioned M A) b (op M x₀) hm
-    (Ch06.isUnit_R_of_isUnit _ _ _ hAM hm)
+  have hu := Chapter06.gmresFixed_isMinResIterate (rightPreconditioned M A) b (op M x₀) hm
+    (Chapter06.isUnit_R_of_isUnit _ _ _ hAM hm)
   rw [show op (rightPreconditioned M A) = op A ∘ₗ op M⁻¹ from op_mul A M⁻¹] at hu
   rw [gmresRight_eq hM]
   exact Krylov.isMinRes_of_isMinResIterate_rightPreconditioned (inv_apply_apply' hM x₀).symm hu
@@ -189,4 +190,4 @@ theorem equation_9_12 (hM : Krylov.IsPreconditioner (op M) (op M⁻¹))
       energyNorm (op M) (op M⁻¹ w) = Real.sqrt (RCLike.re (inner 𝕜 w (op M⁻¹ w))) := by
   refine ⟨by rw [energyInner, hM.apply_inv], by rw [energyNorm, hM.apply_inv]⟩
 
-end SaadSparse.Ch09
+end SaadSparse.Chapter09

@@ -31,7 +31,7 @@ Mathlib's `inner 𝕜 y x`, algorithm vectors are `ℕ`-indexed and `0`-based (`
 Two conventions specific to these chapters:
 
 * **Breakdown is a hypothesis, not a case.** Algorithm 7.1 stops when `(v̂_{j+1}, ŵ_{j+1}) = 0`, and
-  every statement of §7.1–§7.3 carries `∀ j < m, (v̂_{j+1}, ŵ_{j+1}) ≠ 0`, exactly as the book
+  every statement of §7.1–7.3 carries `∀ j < m, (v̂_{j+1}, ŵ_{j+1}) ≠ 0`, exactly as the book
   does. The recursion still returns `0` after a breakdown, so the definitions are total.
 * **Normalization.** Algorithm 7.1 scales so that `(v_j, w_j) = 1`; from (7.18) on the book
   switches, "without loss of generality", to `‖v_j‖₂ = 1`. Both are admissible by (7.1), and the
@@ -42,26 +42,26 @@ Two conventions specific to these chapters:
 
 | File | Book | Contents |
 |---|---|---|
-| `Ch07/Section01.lean` | §7.1 | Algorithm 7.1, `T`, `T̄`, Proposition 7.1, (7.3)–(7.5), the Hessenberg relation, P-7.2, P-7.6 |
-| `Ch07/Section02.lean` | §7.2 | Algorithm 7.2, the Petrov–Galerkin identification, (7.9) |
-| `Ch07/Section03.lean` | §7.3 | Algorithm 7.3 (BCG), Proposition 7.2, the `LDU` derivation (7.10)–(7.12); Algorithm 7.4 (QMR), (7.15)–(7.31), Propositions 7.3, 7.5, Theorem 7.4, Algorithm 7.5 |
-| `Ch07/Section04.lean` | §7.4 | the BCG polynomials `φ_j`, `π_j`; Algorithms 7.6 (CGS), 7.7 (BICGSTAB), 7.8 (TFQMR) with their polynomial identifications and (7.70), (7.76), (7.83) |
-| `Ch08/Section01.lean` | §8.1 | (8.1)–(8.8) |
-| `Ch08/Section02.lean` | §8.2 | Algorithms 8.1–8.3 and their identification with the projection processes of §5.3–§5.4; (8.22)–(8.27), P-8.8 |
-| `Ch08/Section03.lean` | §8.3 | Algorithms 8.4 (CGNR), 8.5 (CGNE) and the two optimality properties |
-| `Ch08/Section04.lean` | §8.4 | (8.28)–(8.35), Algorithm 8.6 (Uzawa), Corollary 8.1, Algorithm 8.7, Example 8.2, P-8.7 |
-| `Ch09/Section01.lean` | §9.1 | (9.1)–(9.3), P-9.1, P-9.10 |
-| `Ch09/Section02.lean` | §9.2 | Algorithms 9.1–9.3, the three self-adjointness facts, the equality of the three CG variants, (9.5)–(9.8), P-9.2, P-9.3, P-9.6 |
-| `Ch09/Section03.lean` | §9.3 | Algorithms 9.4, 9.5, split preconditioning, (9.17)–(9.21), Proposition 9.1, the `M`-inner-product GMRES of P-9.13 |
-| `Ch09/Section04.lean` | §9.4 | Algorithm 9.6 (FGMRES), (9.22)–(9.26), Propositions 9.2, 9.3, flexible DQGMRES |
-| `Ch09/Section05.lean` | §9.5 | Algorithms 9.7, 9.8 |
-| `Ch09/Section06.lean` | §9.6 | the CGW splitting, (9.29), the algorithm and its Galerkin property |
+| `Chapter07/Section01.lean` | §7.1 | Algorithm 7.1, `T`, `T̄`, Proposition 7.1, (7.3)–(7.5), the Hessenberg relation, P-7.2, P-7.6 |
+| `Chapter07/Section02.lean` | §7.2 | Algorithm 7.2, the Petrov–Galerkin identification, (7.9) |
+| `Chapter07/Section03.lean` | §7.3 | Algorithm 7.3 (BCG), Proposition 7.2, the `LDU` derivation (7.10)–(7.12); Algorithm 7.4 (QMR), (7.15)–(7.31), Propositions 7.3, 7.5, Theorem 7.4, Algorithm 7.5 |
+| `Chapter07/Section04.lean` | §7.4 | the BCG polynomials `φ_j`, `π_j`; Algorithms 7.6 (CGS), 7.7 (BICGSTAB), 7.8 (TFQMR) with their polynomial identifications and (7.70), (7.76), (7.83) |
+| `Chapter08/Section01.lean` | §8.1 | (8.1)–(8.8) |
+| `Chapter08/Section02.lean` | §8.2 | Algorithms 8.1–8.3 and their identification with the projection processes of §5.3–5.4; (8.22)–(8.27), P-8.8 |
+| `Chapter08/Section03.lean` | §8.3 | Algorithms 8.4 (CGNR), 8.5 (CGNE) and the two optimality properties |
+| `Chapter08/Section04.lean` | §8.4 | (8.28)–(8.35), Algorithm 8.6 (Uzawa), Corollary 8.1, Algorithm 8.7, Example 8.2, P-8.7 |
+| `Chapter09/Section01.lean` | §9.1 | (9.1)–(9.3), P-9.1, P-9.10 |
+| `Chapter09/Section02.lean` | §9.2 | Algorithms 9.1–9.3, the three self-adjointness facts, the equality of the three CG variants, (9.5)–(9.8), P-9.2, P-9.3, P-9.6 |
+| `Chapter09/Section03.lean` | §9.3 | Algorithms 9.4, 9.5, split preconditioning, (9.17)–(9.21), Proposition 9.1, the `M`-inner-product GMRES of P-9.13 |
+| `Chapter09/Section04.lean` | §9.4 | Algorithm 9.6 (FGMRES), (9.22)–(9.26), Propositions 9.2, 9.3, flexible DQGMRES |
+| `Chapter09/Section05.lean` | §9.5 | Algorithms 9.7, 9.8 |
+| `Chapter09/Section06.lean` | §9.6 | the CGW splitting, (9.29), the algorithm and its Galerkin property |
 
-Import order: `Ch07/Section01 → 02 → 03 → 04`; `Ch08/Section01 → 02, 03 → 04`;
-`Ch09/Section01 → 02 → 03 → 04, 05, 06`. `Ch07/Section03` imports `Chapter06/Section05`
-(the QGMRES layer), `Ch08/Section02` imports `Chapter05/Section03` and `Chapter05/Section04`
+Import order: `Chapter07/Section01 → 02 → 03 → 04`; `Chapter08/Section01 → 02, 03 → 04`;
+`Chapter09/Section01 → 02 → 03 → 04, 05, 06`. `Chapter07/Section03` imports `Chapter06/Section05`
+(the QGMRES layer), `Chapter08/Section02` imports `Chapter05/Section03` and `Chapter05/Section04`
 (the one-dimensional and additive projection processes) and `Chapter04/Section02` (Example 4.1),
-`Ch09/Section05` imports `Chapter08/Section03`.
+`Chapter09/Section05` imports `Chapter08/Section03`.
 
 ## 3. The four structural claims
 
@@ -111,18 +111,18 @@ iterates, TFQMR is its quasi-minimal-residual iterate, and (7.83) `‖b - A x_m�
 `Krylov.IsQuasiMinResIterate.norm_residual_le` with `C = √(m+1)`. The hard declaration of the
 chapter is `tfqmr_isQuasiMinResIterate`: the `θ, c, τ, η, d` recurrence of Algorithm 7.8 solves the
 least-squares problem. It is DQGMRES with `k = 1` on a bidiagonal matrix, so
-`SaadSparse.Ch06.dqgmres_eq_qgmres` does the work once (7.70) is available.
+`SaadSparse.Chapter06.dqgmres_eq_qgmres` does the work once (7.70) is available.
 
 ### 3.3 Chapter 8 is recognition, not construction
 
 The chapter introduces no method that is not an old method on a new system.
 
-* §8.2 row projection = §5.3–§5.4 projection processes with `K_i = span {e_i}`. One NR-SOR
-  relaxation is `SaadSparse.Ch05.mrStep` along `e_i`; one NE-SOR (Kaczmarz) relaxation is
+* §8.2 row projection = §5.3–5.4 projection processes with `K_i = span {e_i}`. One NR-SOR
+  relaxation is `SaadSparse.Chapter05.mrStep` along `e_i`; one NE-SOR (Kaczmarz) relaxation is
   `Projection.step1` with `K = span {Aᴴ e_i}`, `L = span {e_i}`; the sweeps are
-  `SaadSparse.Ch05.multiplicativeSweep`; Cimmino is `SaadSparse.Ch05.additiveStep` for
+  `SaadSparse.Chapter05.multiplicativeSweep`; Cimmino is `SaadSparse.Chapter05.additiveStep` for
   `AᴴA x = Aᴴb`. With normalized columns Cimmino is Richardson on the normal equations, so
-  (8.22) is `SaadSparse.Ch04.example_4_1_spectralRadius`. The block version (8.26)–(8.27) is the
+  (8.22) is `SaadSparse.Chapter04.example_4_1_spectralRadius`. The block version (8.26)–(8.27) is the
   same with `dim K_i > 1` and a least-squares subproblem.
 * §8.3 CGNR/CGNE = `Numlib/Krylov/NormalEquations`, whose two theorems are exactly Saad's two
   optimality properties. The section's own contribution is the last observation: both draw from
@@ -133,7 +133,7 @@ The chapter introduces no method that is not an old method on a new system.
   `Numlib/Analysis/InnerProductSpace/Coercive`. The KKT statement (8.28)–(8.30) is a two-line
   computation, `f(x') - f(x) = ½(A(x'-x), x'-x) ≥ 0` for admissible `x'`.
 
-### 3.4 Chapter 9 is transport (§9.2–§9.5), except §9.6
+### 3.4 Chapter 9 is transport (§9.2–9.5), except §9.6
 
 `Numlib/Krylov/Preconditioned` states the transport: PCG is `CG.iterate` for `M⁻¹A` in
 `WithEnergy M`, so its Galerkin property and its Chebyshev bound with `κ(M⁻¹A)` are inherited.

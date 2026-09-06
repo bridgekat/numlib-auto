@@ -6,10 +6,10 @@ import Mathlib.MeasureTheory.Integral.Prod
 /-!
 # Atkinson–Han §1.2: normed spaces
 
-Statements from Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework* (3rd ed.), §1.2: normed spaces, convergence, equivalence of norms, Banach
-spaces, the completion of a normed space, and the two facts from measure theory (§1.2.3) that the
-book records for later use.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §1.2: normed spaces, convergence, equivalence of
+norms, Banach spaces, the completion of a normed space, and the two facts from measure theory
+(§1.2.3) that the book records for later use.
 
 The definitions of the section — norm, seminorm, ball, open and closed set, convergence, dense
 subset, Schauder basis, Cauchy sequence, completeness — are Mathlib's `Norm`, `Seminorm`,
@@ -49,7 +49,7 @@ whole project.
 
 open Filter Topology MeasureTheory
 
-namespace AtkinsonHan.Ch01
+namespace AtkinsonHan.Chapter01
 
 section Normed
 
@@ -150,4 +150,4 @@ theorem theorem_1_2_27 {β : Type*} [MeasurableSpace β] {ν : Measure β} [SFin
 
 end Measure
 
-end AtkinsonHan.Ch01
+end AtkinsonHan.Chapter01

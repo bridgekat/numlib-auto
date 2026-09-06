@@ -8,8 +8,8 @@ import NumlibSurface.AtkinsonHan.Chapter05.Section01
 /-!
 # Atkinson–Han §5.2: applications of the fixed-point theorem to iterative methods
 
-Surface formalization of §5.2 of Kendall Atkinson and Weimin Han, *Theoretical Numerical
-Analysis: A Functional Analysis Framework*, 3rd edition, Springer, 2009.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §5.2.
 
 * Theorem 5.2.1, the scalar case of Theorem 5.1.3 on an interval `[a, b]`, together with the
   derivative criterion `sup_{[a,b]} |T'| ≤ α < 1` for contractivity.
@@ -40,7 +40,7 @@ Mathlib's `IsPicardLindelof` and is not re-derived here.
 open Filter Set Topology
 open scoped Matrix
 
-namespace AtkinsonHan.Ch05
+namespace AtkinsonHan.Chapter05
 
 section Scalar
 
@@ -312,7 +312,7 @@ end Classical
 
 end Splittings
 
-/-! ### §5.2.3–§5.2.4: integral equations of the second kind and the Picard iteration -/
+/-! ### §5.2.3–5.2.4: integral equations of the second kind and the Picard iteration -/
 
 section IntegralEquations
 
@@ -530,4 +530,4 @@ theorem theorem_5_2_4 {t₀ t₁ : ℝ} (ht : t₀ ≤ t₁) {g : C(Icc t₀ t�
 
 end IntegralEquations
 
-end AtkinsonHan.Ch05
+end AtkinsonHan.Chapter05

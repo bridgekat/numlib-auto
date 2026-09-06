@@ -1,8 +1,8 @@
-import NumlibSurface.FongSaunders.Section1
-import NumlibSurface.FongSaunders.Section2
-import NumlibSurface.FongSaunders.Section3
-import NumlibSurface.FongSaunders.Section4
-import NumlibSurface.FongSaunders.Section5
+import NumlibSurface.FongSaunders.Section01
+import NumlibSurface.FongSaunders.Section02
+import NumlibSurface.FongSaunders.Section03
+import NumlibSurface.FongSaunders.Section04
+import NumlibSurface.FongSaunders.Section05
 
 /-!
 # Fong–Saunders, *CG versus MINRES: an empirical comparison*
@@ -29,20 +29,20 @@ Theorem 2.3 for Algorithm CR and `equation_4_1` is (4.1). Where one numbered res
 declarations — its separate clauses, its CG and its MINRES form, or a strict beside a nonstrict
 version — a trailing word tells them apart, as in `theorem_2_2_a`, `theorem_3_1_minres` and
 `theorem_2_3_strict`. The paper's unnumbered constructions keep descriptive names (`cg`, `cr`,
-`krylov`, `lanczosVec`, `nrbe`). Everything is in the flat `FongSaunders` namespace, and `SectionN`
+`krylov`, `lanczosVec`, `nrbe`). Everything is in the flat `FongSaunders` namespace, and `SectionNN`
 is the module for §N.
 
 ## The outline
 
 | § | module | subject |
 |---|---|---|
-| 1 | `Section1` | The setting, Krylov subspaces and the Lanczos process |
-| 2 | `Section2` | Algorithms CG and CR, their minimization properties, Theorems 2.1–2.5 |
-| 3 | `Section3` | Normwise relative backward errors, the stopping rule, Theorem 3.1 |
-| 4 | `Section4` | The exact relations behind the numerical comparison |
-| 5 | `Section5` | Table 5.1, the summary of monotonicity properties |
+| 1 | `Section01` | The setting, Krylov subspaces and the Lanczos process |
+| 2 | `Section02` | Algorithms CG and CR, their minimization properties, Theorems 2.1–2.5 |
+| 3 | `Section03` | Normwise relative backward errors, the stopping rule, Theorem 3.1 |
+| 4 | `Section04` | The exact relations behind the numerical comparison |
+| 5 | `Section05` | Table 5.1, the summary of monotonicity properties |
 
-`Section1` also fixes the vocabulary the other four use and proves the bridges to the backbone;
+`Section01` also fixes the vocabulary the other four use and proves the bridges to the backbone;
 each later module imports its predecessor together with the backbone modules its own proofs need.
 
 ## The setting
@@ -56,7 +56,7 @@ on matrices. In Lean:
   "symmetric, with `xᵀ A x > 0` for `x ≠ 0`"; `isSymmetricCoercive_of_posDef` is the bridge to the
   backbone's `LinearMap.IsSymmetricCoercive`, through which every backbone theorem applies;
 * `A ⬝ x` is `Matrix.toEuclideanLin A x`, the paper's matrix–vector product read on `Vec n`;
-* `‖A‖` is the Frobenius norm, from `open scoped Matrix.Norms.Frobenius` in `Section3`.
+* `‖A‖` is the Frobenius norm, from `open scoped Matrix.Norms.Frobenius` in `Section03`.
 
 `x₀ = 0` is an instantiation rather than a hypothesis: the backbone states its Krylov theory for an
 arbitrary `x₀`, and every theorem here fixes it to `0`, as the paper does. That is what makes

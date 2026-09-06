@@ -4,9 +4,10 @@ import Mathlib.Analysis.Normed.Algebra.Spectrum
 /-!
 # Atkinson–Han §2.9: the resolvent operator
 
-Statements from Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework* (3rd ed.), §2.9: the resolvent set, the spectrum, the perturbation bound
-(2.9.2) and the Neumann expansion (2.9.3) of the resolvent about a point of the resolvent set.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §2.9: the resolvent set, the spectrum, the
+perturbation bound (2.9.2) and the Neumann expansion (2.9.3) of the resolvent about a point of the
+resolvent set.
 
 Definition 2.9.1 is Mathlib's `resolventSet`, `spectrum` and `resolvent`, and is not restated: the
 book's `R(λ) = (λ I - L)⁻¹` is `resolvent L λ`, defined as `Ring.inverse (algebraMap 𝕜 _ λ - L)` in
@@ -48,7 +49,7 @@ meaningless. `equation_2_9_3` needs no such hypothesis.
   3rd edition, Texts in Applied Mathematics 39, Springer, 2009.
 -/
 
-namespace AtkinsonHan.Ch02
+namespace AtkinsonHan.Chapter02
 
 variable {𝕜 V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V] [CompleteSpace V]
   [Nontrivial V]
@@ -144,4 +145,4 @@ theorem spectrum_subset_closedBall (L : V →L[𝕜] V) :
       spectrum 𝕜 L ⊆ Metric.closedBall (0 : 𝕜) ‖L‖ :=
   ⟨fun _ h => spectrum.mem_resolventSet_of_norm_lt h, spectrum.subset_closedBall_norm L⟩
 
-end AtkinsonHan.Ch02
+end AtkinsonHan.Chapter02

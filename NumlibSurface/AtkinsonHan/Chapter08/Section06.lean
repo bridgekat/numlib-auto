@@ -3,8 +3,8 @@ import Numlib.Analysis.Convex.SaddlePoint
 /-!
 # Atkinson–Han §8.6: mixed and dual formulations
 
-Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional Analysis
-Framework*, 3rd edition, Springer, 2009.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §8.6.
 
 Almost all of §8.6 is a worked derivation for the model Dirichlet problem for the Poisson
 equation and needs `H¹₀(Ω)`, `L²(Ω)^d` and `H(div; Ω)`; two items are abstract, and they are the
@@ -36,7 +36,7 @@ unbounded sets, and without them the extremal problems say nothing.
   about `H¹₀(Ω)`, `H(div; Ω)` or the Stokes equations.
 -/
 
-namespace AtkinsonHan.Ch08
+namespace AtkinsonHan.Chapter08
 
 variable {α β : Type*} {L : α → β → ℝ} {A : Set α} {B : Set β} {u : α} {p : β}
 
@@ -118,4 +118,4 @@ theorem equation_8_6_14 (h : IsSaddlePoint L A B u p) (hbddA : ∀ v ∈ A, BddA
   have h' := isSaddlePoint_iff.mp h
   exact (h'.isLeast_sSup hbddA).csInf_eq.trans ((h'.isGreatest_sInf hbddB).csSup_eq).symm
 
-end AtkinsonHan.Ch08
+end AtkinsonHan.Chapter08

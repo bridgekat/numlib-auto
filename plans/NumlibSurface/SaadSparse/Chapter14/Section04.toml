@@ -1,4 +1,4 @@
-namespace = "SaadSparse.Ch14"
+namespace = "SaadSparse.Chapter14"
 desc = '''
 §14.4.1, induced preconditioners. One node: Proposition 14.10.
 

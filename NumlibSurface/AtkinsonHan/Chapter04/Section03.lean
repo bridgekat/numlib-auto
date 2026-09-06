@@ -3,8 +3,8 @@ import Numlib.Analysis.Fourier.DFT
 /-!
 # Atkinson–Han §4.3: the discrete Fourier transform
 
-Statements from Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework* (3rd ed.), §4.3.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §4.3.
 
 The book's matrix `F_n` of (4.3.2), with entries `ω_n^{jk}` for `ω_n = e^{2πi/n}`, is the backbone
 `Matrix.dft` (`Numlib/Analysis/Fourier/DFT`), and the book's transform `ŷ = conj(F_n) y` — the
@@ -37,7 +37,7 @@ open Complex Matrix
 
 open scoped Real
 
-namespace AtkinsonHan.Ch04
+namespace AtkinsonHan.Chapter04
 
 /-- **Definition 4.3.1**, (4.3.1)–(4.3.2). The book's matrix `F_n` has entries `ω_n^{jk}` for
 `ω_n = e^{2πi/n}`, and the discrete Fourier transform of `y` is `ŷ = conj(F_n) y`, whose entries
@@ -99,4 +99,4 @@ theorem equation_4_3_9 {n : ℕ} (y : Fin (2 * n) → ℂ) (k : Fin n) :
             * ((dft n)ᴴ *ᵥ fun m : Fin n => y ⟨2 * (m : ℕ) + 1, by omega⟩) k :=
   ⟨dft_radix_two y k, dft_radix_two_add y k⟩
 
-end AtkinsonHan.Ch04
+end AtkinsonHan.Chapter04

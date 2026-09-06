@@ -5,10 +5,11 @@ import Mathlib.Analysis.InnerProductSpace.Spectrum
 /-!
 # Atkinson–Han §2.8: compact linear operators
 
-Statements from Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework* (3rd ed.), §2.8: compact operators and their closure properties, the Fredholm
-alternative for an equation of the second kind `(λ - K) u = f`, the Riesz theory of the spectrum
-of a compact operator, and the spectral theorem for a compact self-adjoint operator.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §2.8: compact operators and their closure
+properties, the Fredholm alternative for an equation of the second kind `(λ - K) u = f`, the Riesz
+theory of the spectrum of a compact operator, and the spectral theorem for a compact self-adjoint
+operator.
 
 Mathlib carries most of this. `IsCompactOperator` is the book's Definition 2.8.1 in the *preimage*
 form, and `isCompactOperator_iff_isCompact_closure_image_closedBall` is the book's own phrasing;
@@ -49,7 +50,7 @@ need the Riesz ascent–descent theory, which the backbone module does not devel
 
 open Filter Topology Metric Module.End
 
-namespace AtkinsonHan.Ch02
+namespace AtkinsonHan.Chapter02
 
 section Banach
 
@@ -266,4 +267,4 @@ theorem theorem_2_8_15_closure_range {K : V →L[𝕜] V} (hK : IsSelfAdjoint K)
 
 end Hilbert
 
-end AtkinsonHan.Ch02
+end AtkinsonHan.Chapter02

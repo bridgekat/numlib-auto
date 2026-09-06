@@ -8,12 +8,12 @@ import Numlib.LinearSolve.Projection.OneDimensional
 import NumlibSurface.SaadSparse.Chapter05.Section01
 
 /-!
-# §5.3 One-dimensional projection processes
+# Saad §5.3: one-dimensional projection processes
 
-Section 5.3 of Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003: the elementary step (5.12), steepest descent (Algorithm 5.2), Kantorovich's
-inequality (Lemma 5.8) and Theorem 5.9, the minimal-residual iteration (Algorithm 5.3) and
-Theorem 5.10, and the residual-norm steepest descent (Algorithm 5.4).
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §5.3: the elementary step (5.12), steepest descent (Algorithm 5.2), Kantorovich's inequality
+(Lemma 5.8) and Theorem 5.9, the minimal-residual iteration (Algorithm 5.3) and Theorem 5.10, and
+the residual-norm steepest descent (Algorithm 5.4).
 
 All three steps are the backbone's `Projection.step1` for `Matrix.toEuclideanLin A`
 (`step1_eq`, `sdStep_eq`, `mrStep_eq` are `rfl`), so the convergence estimates specialize
@@ -30,7 +30,7 @@ updates).
 open Matrix Module Filter Topology
 open scoped SaadSparse
 
-namespace SaadSparse.Ch05
+namespace SaadSparse.Chapter05
 
 variable {n : ℕ}
 
@@ -241,7 +241,7 @@ theorem theorem_5_10_step (hA : A.IsPositiveReal) (b x : E n) :
       Real.sqrt (1 - lambdaMin (Matrix.hermitianPart_isHermitian A) ^ 2 / ‖A‖ ^ 2) *
         ‖b - (A ⬝ x)‖ := by
   have hpos := lambdaMin_hermitianPart_pos hA
-  have hcoer := Ch01.isCoerciveWith_lambdaMin A
+  have hcoer := Chapter01.isCoerciveWith_lambdaMin A
   rw [Matrix.l2_opNorm_eq_norm_toEuclideanLin A]
   exact Projection.norm_residual_minResStep_le
     (A := LinearMap.toContinuousLinearMap (toEuclideanLin A)) hpos hcoer b x
@@ -353,4 +353,4 @@ theorem equation_5_20 (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b) 
     hsc hstar x
   rw [E_A_eq_energyNorm, sdStep_eq, h, ← E_A_eq_energyNorm, henergy, hnorm, RCLike.re_to_real]
 
-end SaadSparse.Ch05
+end SaadSparse.Chapter05

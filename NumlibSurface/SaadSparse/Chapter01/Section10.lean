@@ -4,13 +4,13 @@ import Numlib.LinearSolve.Stationary.Splitting
 import NumlibSurface.SaadSparse.Common
 
 /-!
-# §1.10 Nonnegative matrices, M-matrices
+# Saad §1.10: nonnegative matrices, M-matrices
 
-Section 1.10 of Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003: the entrywise order (Definition 1.23) and its calculus (Proposition 1.24,
-Proposition 1.26, Corollary 1.27), the Perron–Frobenius theorem (Theorem 1.25), the monotonicity
-of the spectral radius (Theorem 1.28), the nonnegative Neumann criterion (Theorem 1.29), and
-M-matrices (Definition 1.30, Theorems 1.31–1.33).
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §1.10: the entrywise order (Definition 1.23) and its calculus (Proposition 1.24, Proposition
+1.26, Corollary 1.27), the Perron–Frobenius theorem (Theorem 1.25), the monotonicity of the spectral
+radius (Theorem 1.28), the nonnegative Neumann criterion (Theorem 1.29), and M-matrices (Definition
+1.30, Theorems 1.31–1.33).
 
 Saad's `A ≥ O` and `B ≥ A` are the **entrywise** order, `Matrix.EntrywiseNonneg` and
 `Matrix.EntrywiseLE` (notation `≤ₑ`) of `Numlib/LinearAlgebra/Matrix/Order.lean` — not Mathlib's
@@ -41,7 +41,7 @@ open Matrix
 
 open scoped SaadSparse Matrix
 
-namespace SaadSparse.Ch01
+namespace SaadSparse.Chapter01
 
 variable {n : ℕ}
 
@@ -277,4 +277,4 @@ theorem theorem_1_33 {B : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsMMatrix) (hAB : 
 
 end MMatrix
 
-end SaadSparse.Ch01
+end SaadSparse.Chapter01

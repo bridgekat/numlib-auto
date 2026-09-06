@@ -4,10 +4,10 @@ import NumlibSurface.SaadSparse.Common
 import Numlib.LinearSolve.Multigrid.FullMultigrid
 
 /-!
-# §13.4 The standard multigrid cycles
+# Saad §13.4: the standard multigrid cycles
 
-Section 13.4 of Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003: the Galerkin coarse problem (13.39), the smoother written through its error propagation
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §13.4: the Galerkin coarse problem (13.39), the smoother written through its error propagation
 operator (13.40)–(13.42), the two-grid operator (13.43) and Lemma 13.1, the V- and W-cycles, the
 cost of one cycle (13.44)–(13.46), and full multigrid with its error bound (Theorem 13.2).
 
@@ -51,7 +51,7 @@ open Matrix Stationary
 
 open scoped SaadSparse
 
-namespace SaadSparse.Ch13
+namespace SaadSparse.Chapter13
 
 variable {n m : ℕ}
 
@@ -303,7 +303,7 @@ prolongation scaled by the positive factor `2^{-d}` of (13.37).
 
 Under them the Galerkin coarse matrix (13.39) is nonsingular, so the coarse solve of Algorithm 13.2
 makes sense, and the coarse-grid correction (13.43) is the `A`-orthogonal projector of Lemma 13.1.
-The one-dimensional model problem of §13.2–§13.3 satisfies them (`isCoarsening_model`). -/
+The one-dimensional model problem of §13.2–13.3 satisfies them (`isCoarsening_model`). -/
 structure IsCoarsening (A : Matrix (Fin n) (Fin n) ℝ) (R : Matrix (Fin m) (Fin n) ℝ)
     (P : Matrix (Fin n) (Fin m) ℝ) : Prop where
   /-- The fine matrix is symmetric positive definite. -/
@@ -333,7 +333,7 @@ theorem isSymmetricCoercive (h : IsCoarsening A R P) : (toEuclideanLin A).IsSymm
 /-- The Galerkin coarse matrix (13.39) of a coarsening is symmetric positive definite. -/
 theorem posDef_coarseOperator (h : IsCoarsening A R P) : (coarseOperator R A P).PosDef := by
   obtain ⟨c, hc, rfl⟩ := h.exists_smul
-  exact _root_.SaadSparse.Ch13.posDef_coarseOperator h.posDef h.injective hc
+  exact _root_.SaadSparse.Chapter13.posDef_coarseOperator h.posDef h.injective hc
 
 /-- The Galerkin coarse matrix (13.39) of a coarsening is nonsingular, so `A_H⁻¹` of (13.43) is a
 genuine inverse. -/
@@ -668,4 +668,4 @@ theorem theorem_13_2 (H : Hierarchy) {ν₁ ν₂ γ μ : ℕ} {f u : ∀ l, H.V
   rw [Hierarchy.fullMultigrid_succ]
   exact norm_sub_iterate_le hξ (h1350 l) μ _
 
-end SaadSparse.Ch13
+end SaadSparse.Chapter13

@@ -4,7 +4,7 @@ import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.LinearAlgebra.Matrix.Hessenberg
 
 /-!
-# Conventions for the `SaadSparse` surface library
+# Saad: conventions for the `SaadSparse` surface library
 
 Shared notation and glue lemmas for the surface library of Yousef Saad, *Iterative Methods for
 Sparse Linear Systems*, 2nd edition, SIAM, 2003.

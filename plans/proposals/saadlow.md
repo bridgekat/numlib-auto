@@ -4,7 +4,7 @@ Everything in this file is something the planning branch `agent/plan-saadlow` co
 new TOML group: additions to group files another agent may be holding, changes to declarations that
 already exist, the explicit skip list, and the coverage summary.
 
-The slice is: §1.1-§1.10, Ch. 2, Ch. 3, §4.3, and the gaps left in Ch. 6. The new groups it created
+The slice is: §1.1–1.10, Ch. 2, Ch. 3, §4.3, and the gaps left in Ch. 6. The new groups it created
 are
 
 | new group | nodes | what it is for |
@@ -15,8 +15,8 @@ are
 | `Numlib/LinearAlgebra/Matrix/QR` | 5 | Householder reflectors, `X = Q R` |
 | `Numlib/LinearAlgebra/Sparse/{Pattern,Reordering}` | 6 + 4 | the graph of a matrix; orderings to block structure |
 | `Numlib/Combinatorics/SimpleGraph/{Coloring,IndepSet,LevelSet}` | 4 + 2 + 4 | the three graph bricks Mathlib lacks |
-| `Numlib/LinearSolve/Stationary/ADI` | 6 | Peaceman-Rachford, and the theorem §4.3 asserts |
-| `NumlibSurface/SaadSparse/Chapter01/{Basics,Section07,Section08,Section09,Section10}` | 12 + 5 + 8 + 13 + 9 | §1.1-§1.10 |
+| `Numlib/LinearSolve/Stationary/ADI` | 6 | Peaceman–Rachford, and the theorem §4.3 asserts |
+| `NumlibSurface/SaadSparse/Chapter01/{Basics,Section07,Section08,Section09,Section10}` | 12 + 5 + 8 + 13 + 9 | §1.1–1.10 |
 | `NumlibSurface/SaadSparse/Chapter02/{Section02,Section05}` | 18 + 4 | finite differences, finite volumes |
 | `NumlibSurface/SaadSparse/Chapter03/{Section02,Section03}` | 3 + 8 | adjacency graph, permutations, reorderings |
 | `NumlibSurface/SaadSparse/Chapter04/Section03` | 5 | §4.3 |
@@ -112,8 +112,8 @@ only on `Matrix/Order` and `Matrix/Complexify`, and no new node duplicates an ex
 
 ### 1.4 `NumlibSurface/SaadSparse/Chapter04/Section02` - Property A is two-colourability
 
-* **id** `SaadSparse.Ch04.hasPropertyA_iff_colorable_two`, **kind** theorem, **deps**
-  `SaadSparse.Ch04.HasPropertyA`, `Matrix.adjGraph`, `Matrix.apply_eq_zero_of_coloring_eq`.
+* **id** `SaadSparse.Chapter04.hasPropertyA_iff_colorable_two`, **kind** theorem, **deps**
+  `SaadSparse.Chapter04.HasPropertyA`, `Matrix.adjGraph`, `Matrix.apply_eq_zero_of_coloring_eq`.
   *Saad Definition 4.11 is exactly the two-colourability of the adjacency graph:
   `A.HasPropertyA ↔ (Matrix.adjGraph A).Colorable 2`, with the block form (4.42) -
   `∃ σ, A.submatrix σ σ` has diagonal diagonal blocks in a two-block split - as
@@ -127,9 +127,9 @@ Saad's own remark that a consistently ordered matrix has Property A becomes a co
 
 ### 1.5 `NumlibSurface/SaadSparse/Chapter06/Section03` - identify the two Householder reflectors
 
-* **id** `SaadSparse.Ch06.householder_eq_toEuclideanLin`, **kind** theorem, **deps**
-  `SaadSparse.Ch06.householder`, `Matrix.householder`.
-  *The `EuclideanSpace` reflector `SaadSparse.Ch06.householder w` of Algorithm 6.3 is
+* **id** `SaadSparse.Chapter06.householder_eq_toEuclideanLin`, **kind** theorem, **deps**
+  `SaadSparse.Chapter06.householder`, `Matrix.householder`.
+  *The `EuclideanSpace` reflector `SaadSparse.Chapter06.householder w` of Algorithm 6.3 is
   `Matrix.toEuclideanLin (Matrix.householder w)` of `Numlib/LinearAlgebra/Matrix/QR`, and the
   vector `householderVec` of Saad (1.24)-(1.26) is the one
   `Matrix.householder_mulVec_eq_smul_single` names.*
@@ -140,10 +140,10 @@ object twice under two names, which is the outcome the plan most wants to avoid.
 
 ### 1.6 `NumlibSurface/SaadSparse/Chapter06/Section10` - the provable half of Theorem 6.24
 
-* **id** `SaadSparse.Ch06.theorem_6_24_mpr`, **kind** theorem, **deps** `SaadSparse.Ch06.IsCGs`,
-  `SaadSparse.Ch06.ν`, `SaadSparse.Ch06.lemma_6_23`.
+* **id** `SaadSparse.Chapter06.theorem_6_24_mpr`, **kind** theorem, **deps** `SaadSparse.Chapter06.IsCGs`,
+  `SaadSparse.Chapter06.ν`, `SaadSparse.Chapter06.lemma_6_23`.
   *`((minpoly ℂ A).natDegree ≤ s ∨ (IsStarNormal A ∧ ν A ≤ s - 1)) → IsCGs A s`, the direction of
-  the Faber-Manteuffel theorem that follows from what is already proved. In the first case every
+  the Faber–Manteuffel theorem that follows from what is already proved. In the first case every
   starting vector has grade at most `s`, so the index range `i + s ≤ j ≤ μ(v₁) - 1` of `IsCGs` is
   empty and the conclusion is vacuous. In the second case `Aᴴ = q(A)` with `deg q ≤ s - 1`, so
   `⟪A v_j, v_i⟫ = ⟪v_j, q(A) v_i⟫ = 0` for `j ≥ i + s`, which is the argument of Proposition 6.22,
@@ -155,8 +155,8 @@ closes the only half of Theorem 6.24 that is reachable (see §3 for the other ha
 ### 1.7 Housekeeping
 
 * `NumlibSurface/SaadSparse/Chapter01.toml`'s `desc` reads "spectral facts, projectors and
-  conditioning (§1.11-1.13)". It should now read §1.1-§1.13, listing the five new section files.
-* `plans/backbone.md` §8.1's `SaadSparse` table has no rows for §1.1-§1.10, Ch. 2, Ch. 3 or §4.3;
+  conditioning (§1.11–1.13)". It should now read §1.1–1.13, listing the five new section files.
+* `plans/backbone.md` §8.1's `SaadSparse` table has no rows for §1.1–1.10, Ch. 2, Ch. 3 or §4.3;
   §11 of that file (appended on this branch) supplies them.
 
 ---
@@ -165,7 +165,7 @@ closes the only half of Theorem 6.24 that is reachable (see §3 for the other ha
 
 1. **Saad's irreducibility should be defined once, in the backbone.**
    `plans/saadsparse-ch1-4-5.md` D15 plans a surface definition
-   `SaadSparse.Ch04.IsIrreducible A := Matrix.IsIrreducible (A.map ‖·‖)` inside
+   `SaadSparse.Chapter04.IsIrreducible A := Matrix.IsIrreducible (A.map ‖·‖)` inside
    `Chapter04/Section02`, and §3 item 4 of that document asks
    `Numlib/LinearSolve/Stationary/DiagDominant` to adopt it as *its* definition too. The new
    `Numlib/LinearAlgebra/Sparse/Pattern` defines exactly that, as `Matrix.IsPatternIrreducible`,
@@ -181,7 +181,7 @@ closes the only half of Theorem 6.24 that is reachable (see §3 for the other ha
    works without the move.
 
 3. No restatement or rename of a *proved* declaration is requested. The one place where a proved
-   statement is weaker than the book's is `SaadSparse.Ch06.lemma_6_23`, which drops Saad's
+   statement is weaker than the book's is `SaadSparse.Chapter06.lemma_6_23`, which drops Saad's
    nonsingularity hypothesis and is therefore stronger, not weaker; that is already recorded in
    `plans/saadsparse-ch6.md` §6.
 
@@ -223,7 +223,7 @@ Numbered results and named claims in the slice that get no node, one line each.
   claim that block cyclic reduction is unstable and Buneman's variant stable is made with no
   analysis anywhere in the book, so there is no statement to formalize. Operation counts likewise.
 * **§2.3, the finite element method.** Its algebraic content is already in the library abstractly -
-  `Numlib/Variational/{Forms,Galerkin}` with the Atkinson-Han Chapter 9 surface, where the
+  `Numlib/Variational/{Forms,Galerkin}` with the Atkinson–Han Chapter 9 surface, where the
   stiffness matrix is the Gram matrix of a basis in the energy inner product and is positive
   definite for exactly Saad's reason. What is missing is the *concrete* space: a triangulation of a
   planar domain, piecewise-affine functions on it and integration over triangles, which is a
@@ -231,7 +231,7 @@ Numbered results and named claims in the slice that get no node, one line each.
   Green's formula (2.40), which carries §2.3's Neumann equation (2.47), needs the divergence
   theorem with a boundary measure and an outward normal field on a smooth-boundary domain, which
   Mathlib has only for boxes. Worth recording, against the expectation: the chapter states **no**
-  Céa lemma, Lax-Milgram theorem, Poincaré inequality, trace theorem, interpolation estimate or
+  Céa lemma, Lax–Milgram theorem, Poincaré inequality, trace theorem, interpolation estimate or
   convergence result, and uses no property of `H¹(Ω)` - the Sobolev framing is decorative and no
   Sobolev theory is needed for anything the chapter proves.
 * **§2.4, mesh generation and refinement.** Its one claim with content, that connecting the
@@ -287,9 +287,9 @@ Numbered results and named claims in the slice that get no node, one line each.
 
 **Chapter 6.**
 
-* **Theorem 6.24, the Faber-Manteuffel theorem.** The direction
+* **Theorem 6.24, the Faber–Manteuffel theorem.** The direction
   `IsCGs A s → (minpoly degree ≤ s ∨ (normal ∧ ν(A) ≤ s - 1))` stays out. Saad states the theorem
-  without proof; the known proofs (Faber-Manteuffel 1984, Liesen-Strakoš 2008) are research-level -
+  without proof; the known proofs (Faber–Manteuffel 1984, Liesen-Strakoš 2008) are research-level -
   the hard case is a matrix that is neither normal nor of small minimal degree, where one must
   build a starting vector whose Arnoldi run breaks the `s`-term recurrence, and the argument goes
   through a careful analysis of the eigenvalue multiplicities and the structure of the invariant
@@ -313,48 +313,48 @@ Numbered results and named claims in the slice that get no node, one line each.
 
 ## 4. Coverage summary
 
-### 4.1 Saad §1.1-§1.10, every numbered item
+### 4.1 Saad §1.1–1.10, every numbered item
 
 | Item | Status | Where |
 |---|---|---|
 | Def 1.1 eigenvalue, spectrum | Mathlib | `spectrum`, `Matrix.hasEigenvalue_toEuclideanLin_iff` (proved) |
-| Prop 1.2 nonsingular ⟺ invertible | planned | `Ch01/Basics.proposition_1_2` |
-| Prop 1.3 `conj μ ∈ σ(Aᴴ)`, left eigenvector | planned | `Ch01/Basics.proposition_1_3` |
-| Prop 1.4 unitary preserves the inner product | planned | `Ch01/Basics.proposition_1_4` |
-| Def 1.5 similarity | planned | `Ch01/Section08.IsSimilar` |
-| Thm 1.6 diagonalizable ⟺ `n` independent eigenvectors | planned | `Ch01/Section08.theorem_1_6` |
-| Prop 1.7 diagonalizable ⟺ all eigenvalues semisimple | planned | `Ch01/Section08.proposition_1_7` |
+| Prop 1.2 nonsingular ⟺ invertible | planned | `Chapter01/Basics.proposition_1_2` |
+| Prop 1.3 `conj μ ∈ σ(Aᴴ)`, left eigenvector | planned | `Chapter01/Basics.proposition_1_3` |
+| Prop 1.4 unitary preserves the inner product | planned | `Chapter01/Basics.proposition_1_4` |
+| Def 1.5 similarity | planned | `Chapter01/Section08.IsSimilar` |
+| Thm 1.6 diagonalizable ⟺ `n` independent eigenvectors | planned | `Chapter01/Section08.theorem_1_6` |
+| Prop 1.7 diagonalizable ⟺ all eigenvalues semisimple | planned | `Chapter01/Section08.proposition_1_7` |
 | **Thm 1.8 Jordan form** | **skipped** | no Jordan form in Mathlib; stated without proof; avoided by design (§3) |
-| Thm 1.9 Schur form | planned | `Ch01/Section08.theorem_1_9`, on the open `Matrix.exists_unitary_conj_upperTriangular` |
-| Thm 1.10 `Aᵏ → 0 ⟺ ρ < 1` | proved | `Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one`; restated as `Ch01/Section08.theorem_1_10` |
+| Thm 1.9 Schur form | planned | `Chapter01/Section08.theorem_1_9`, on the open `Matrix.exists_unitary_conj_upperTriangular` |
+| Thm 1.10 `Aᵏ → 0 ⟺ ρ < 1` | proved | `Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one`; restated as `Chapter01/Section08.theorem_1_10` |
 | Thm 1.11 Neumann series | proved | `summable_pow_iff_spectralRadius_lt_one`; restated as `theorem_1_11` |
-| Thm 1.12 Gelfand | planned | `Ch01/Section08.theorem_1_12`, on the open `Matrix.tendsto_pow_rpow_complexSpectralRadius` |
-| Lemma 1.13 normal + triangular ⟹ diagonal | planned | `Ch01/Section09.lemma_1_13` |
-| Thm 1.14 normal ⟺ unitarily diagonalizable | planned | `Ch01/Section09.theorem_1_14`, on the two `Eigen/Normal` nodes of §1.1 |
+| Thm 1.12 Gelfand | planned | `Chapter01/Section08.theorem_1_12`, on the open `Matrix.tendsto_pow_rpow_complexSpectralRadius` |
+| Lemma 1.13 normal + triangular ⟹ diagonal | planned | `Chapter01/Section09.lemma_1_13` |
+| Thm 1.14 normal ⟺ unitarily diagonalizable | planned | `Chapter01/Section09.theorem_1_14`, on the two `Eigen/Normal` nodes of §1.1 |
 | Lemma 1.15 shared eigenvectors ⟺ normal | proved | `LinearMap.isStarNormal_of_adjoint_apply_eq_smul`, `…eigenspace_adjoint`; restated as `lemma_1_15` |
-| Cor 1.16 normal + real spectrum ⟹ Hermitian | planned | `Ch01/Section09.corollary_1_16` |
-| Thm 1.17 field of values of a normal matrix | planned | `Ch01/Section09.theorem_1_17` |
-| Prop 1.18 field of values convex ⊇ hull | **half planned** | containment `Ch01/Section09.proposition_1_18`; convexity skipped (Toeplitz-Hausdorff, §3) |
+| Cor 1.16 normal + real spectrum ⟹ Hermitian | planned | `Chapter01/Section09.corollary_1_16` |
+| Thm 1.17 field of values of a normal matrix | planned | `Chapter01/Section09.theorem_1_17` |
+| Prop 1.18 field of values convex ⊇ hull | **half planned** | containment `Chapter01/Section09.proposition_1_18`; convexity skipped (Toeplitz-Hausdorff, §3) |
 | Thm 1.19 Hermitian ⟹ real spectrum | Mathlib | `Matrix.IsHermitian.eigenvalues`; restated as `theorem_1_19` |
 | Thm 1.20 Hermitian unitarily diagonalizable | Mathlib | `Matrix.IsHermitian.spectral_theorem`; restated as `theorem_1_20` |
-| Thm 1.21 Courant-Fischer min-max | proved | `LinearMap.IsSymmetric.eigenvalues_eq_iInf_iSup`, `…iSup_iInf`; restated as `theorem_1_21` |
+| Thm 1.21 Courant–Fischer min-max | proved | `LinearMap.IsSymmetric.eigenvalues_eq_iInf_iSup`, `…iSup_iInf`; restated as `theorem_1_21` |
 | Thm 1.22 Courant characterization | proved | `LinearMap.IsSymmetric.isGreatest_rayleighQuotient_orthogonal`; restated as `theorem_1_22` |
 | Def 1.23 entrywise order | planned | `Matrix.EntrywiseLE` (`Matrix/Order`, open) |
-| Prop 1.24 (5 clauses) | planned | clauses 2, 3 in `Matrix/Order`; clause 5 `Matrix.EntrywiseLE.linfty_opNorm_le`; clauses 1, 4 requested in §1.2; surface `Ch01/Section10.proposition_1_24` |
-| Thm 1.25 Perron-Frobenius | planned | `Matrix.IsIrreducible.exists_pos_hasEigenvector_complexSpectralRadius` + geometric simplicity; algebraic simplicity skipped |
+| Prop 1.24 (5 clauses) | planned | clauses 2, 3 in `Matrix/Order`; clause 5 `Matrix.EntrywiseLE.linfty_opNorm_le`; clauses 1, 4 requested in §1.2; surface `Chapter01/Section10.proposition_1_24` |
+| Thm 1.25 Perron–Frobenius | planned | `Matrix.IsIrreducible.exists_pos_hasEigenvector_complexSpectralRadius` + geometric simplicity; algebraic simplicity skipped |
 | Prop 1.26 monotone multiplication | planned | `Matrix.EntrywiseLE.mul_of_entrywiseNonneg_left` (`Matrix/Order`, open) |
 | Cor 1.27 `A ^ k ≤ B ^ k` | planned | `Matrix.EntrywiseLE.pow` |
 | Thm 1.28 `ρ(A) ≤ ρ(B)` | planned | `Matrix.complexSpectralRadius_le_of_entrywiseLE` |
 | Thm 1.29 `ρ(B) < 1 ⟺ (1 - B)⁻¹ ≥ 0` | planned | `Matrix.EntrywiseNonneg.complexSpectralRadius_lt_one_iff` (`RegularSplitting`, open) |
 | Def 1.30 M-matrix | planned | `Matrix.IsMMatrix` (`RegularSplitting`, open) |
-| Thm 1.31 M-matrix ⟺ `ρ(B) < 1` | planned | requested in §1.3; surface `Ch01/Section10.theorem_1_31` |
+| Thm 1.31 M-matrix ⟺ `ρ(B) < 1` | planned | requested in §1.3; surface `Chapter01/Section10.theorem_1_31` |
 | Thm 1.32 clause (1) is redundant | planned | requested in §1.3; surface `theorem_1_32` |
 | Thm 1.33 M-matrix property is monotone | planned | requested in §1.3; surface `theorem_1_33` |
 
 **33 numbered items: 6 already proved, 25 newly planned, 1 skipped outright (Thm 1.8), 1 planned in
-half (Prop 1.18).** Unnumbered material planned alongside: Cauchy-Schwarz (1.2), the adjoint
+half (Prop 1.18).** Unnumbered material planned alongside: Cauchy–Schwarz (1.2), the adjoint
 identity (1.5), the matrix-norm formulas (1.13)-(1.16), Example 1.1, the range-kernel splitting
-(1.18), the Gram-Schmidt breakdown criterion, the QR factorization (1.19), the Householder
+(1.18), the Gram–Schmidt breakdown criterion, the QR factorization (1.19), the Householder
 reflectors (1.20)-(1.28), the field of values and the numerical radius, and Problem P-1.15.
 
 ### 4.2 Saad Ch. 2
@@ -363,13 +363,13 @@ The chapter has **no numbered results**. Of its inline assertions:
 
 | Content | Status |
 |---|---|
-| (2.9)-(2.13), (2.16) Taylor truncation errors, and (2.17) the five-point error | planned, `Ch02/Section02` (6 nodes) |
+| (2.9)-(2.13), (2.16) Taylor truncation errors, and (2.17) the five-point error | planned, `Chapter02/Section02` (6 nodes) |
 | the 1-D model matrix (§2.2.3) and its spectrum, positive definiteness, condition number | planned; the spectrum is *not* in the book and comes from `Matrix/TridiagonalToeplitz` |
 | (2.20)-(2.23) the convection-diffusion problem: exact continuous and discrete solutions, the oscillation criterion, the M-matrix failure, the upwind sign structure | planned (5 nodes) |
 | the 2-D five-point matrix (§2.2.5), (2.26)-(2.27) | planned, as a Kronecker sum, with its full spectrum - neither in the book |
 | (2.28)-(2.29) the fast Poisson reduction, and the spectrum of `B` | planned (2 nodes) |
 | (2.33), (2.36) the block cyclic reduction recurrence and its Chebyshev factorization | planned (1 node) |
-| §2.5 (2.54)-(2.55) the finite volume sign structure, and `∑ s⃗_j = 0` | planned, `Ch02/Section05` (4 nodes) |
+| §2.5 (2.54)-(2.55) the finite volume sign structure, and `∑ s⃗_j = 0` | planned, `Chapter02/Section05` (4 nodes) |
 | §2.1, §2.2.2 nine-point stencils, §2.2.6 Buneman and stability, §2.3 FEM, §2.4 meshes, §2.5 derivation | **skipped**, with the reasons in §3 |
 
 So: the *model problem matrices and their spectra*, which is what the rest of the book cites, are
@@ -381,24 +381,24 @@ skipped. That is 22 surface nodes plus 10 backbone nodes in two new modules.
 
 | Item | Status |
 |---|---|
-| Def 3.1 row/column permutation | planned, `Ch03/Section03.proposition_3_2` (Mathlib restatement) |
+| Def 3.1 row/column permutation | planned, `Chapter03/Section03.proposition_3_2` (Mathlib restatement) |
 | Prop 3.2 permutation as matrix multiplication | planned, same node (Mathlib restatement) |
-| §3.2.1 adjacency graph; pattern of `A ^ k` = paths | planned, `Ch03/Section02` (3 nodes) on `Sparse/Pattern` |
+| §3.2.1 adjacency graph; pattern of `A ^ k` = paths | planned, `Chapter03/Section02` (3 nodes) on `Sparse/Pattern` |
 | §3.2.2 graphs of PDE matrices | **skipped** - the chapter states nothing (the claim is hedged and set as P-3.1) |
-| §3.3.2 symmetric permutation = relabelling | planned, `Ch03/Section03.adjGraph_submatrix` |
+| §3.3.2 symmetric permutation = relabelling | planned, `Chapter03/Section03.adjGraph_submatrix` |
 | §3.3.3 level sets are separators; CMK is block tridiagonal | planned, on `SimpleGraph/LevelSet` and `Sparse/Reordering` |
 | §3.3.3 independent set size `≥ n/(1 + ν)` | planned, on `SimpleGraph/IndepSet` |
 | §3.3.3 multicolouring: diagonal diagonal blocks; `≤ Δ + 1` colours; two colours on a bipartite graph | planned, on `SimpleGraph/Coloring` |
 | §3.3.3 reverse Cuthill-McKee | **skipped** - an observation with a picture, no statement |
 | §3.3.4 irreducible ⟺ no block triangular symmetric permutation | planned, `Sparse/Pattern` |
 | §3.3.4 Frobenius normal form | **skipped** - stated without proof and incompletely; needs SCC/topological-sort API |
-| §3.4-§3.7 | **skipped** - no theorem content anywhere |
+| §3.4–3.7 | **skipped** - no theorem content anywhere |
 | P-3.2, P-3.4, P-3.5 | planned |
 | P-3.9, P-3.10, P-3.11 | planned, on `SimpleGraph/Coloring` |
 | P-3.12 structural inverse | **skipped**; its kernel planned as `Matrix.IsIrreducible.entrywisePos_one_add_pow` |
 
-**Both numbered items planned; every inline claim of §3.2-§3.3 planned except reverse
-Cuthill-McKee and the Frobenius normal form; §3.4-§3.7 skipped in full, honestly, because they
+**Both numbered items planned; every inline claim of §3.2–3.3 planned except reverse
+Cuthill-McKee and the Frobenius normal form; §3.4–3.7 skipped in full, honestly, because they
 contain no theorem.** 11 surface nodes on 10 new backbone nodes across five modules, three of which
 are Mathlib gaps worth upstreaming.
 
@@ -406,7 +406,7 @@ are Mathlib gaps worth upstreaming.
 
 | Item | Status |
 |---|---|
-| §4.3 Algorithm 4.3, (4.50)-(4.52), P-4.5 | planned, `Ch04/Section03` (3 nodes) on `Stationary/ADI` |
+| §4.3 Algorithm 4.3, (4.50)-(4.52), P-4.5 | planned, `Chapter04/Section03` (3 nodes) on `Stationary/ADI` |
 | §4.3 "`H`, `V` SPD and `r > 0` ⟹ the stationary iteration converges" | planned and *proved in the plan* - the book asserts it without proof or citation |
 | §4.3 the model problem splitting `A = H + V` | planned, as the Kronecker decomposition of `laplacian2D` |
 | §4.3 optimal/cyclic parameters, complexity, SSOR comparison, parabolic form | **skipped**, §3 |
@@ -425,6 +425,6 @@ of Theorem 6.24 - each of which the book itself states without proof. Of the mat
 states *without* numbering, the model problem matrices with their full spectra, the whole upwind
 analysis, the finite volume sign structure, the adjacency-graph and reordering theory, and the ADI
 convergence theorem are planned; the partial-differential-equation modelling of §2.1, the finite
-element space of §2.3, the mesh geometry of §2.4 and the storage-and-algorithm sections §3.4-§3.7
+element space of §2.3, the mesh geometry of §2.4 and the storage-and-algorithm sections §3.4–3.7
 are skipped, the first two because they need analysis or plane geometry that is not
 numerical-analysis work, the last two because they state no theorem.

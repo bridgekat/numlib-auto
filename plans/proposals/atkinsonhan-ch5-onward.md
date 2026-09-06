@@ -44,7 +44,7 @@ Add `LinearMap`-style bundles for the hypotheses that `zarantonello`,
 Reason: with the elliptic-variational-inequality layer there are now seven consumers of that exact
 hypothesis (`zarantonello`, `norm_sub_le_of_strongly_monotone`, `contractingWith_damped`, and the
 four existence and stability nodes of `Numlib/Variational/Inequality/Basic`), plus the surface
-predicate `AtkinsonHan.Ch05.StronglyMonotoneWith` that already exists for AH (5.1.8). §1.3 of
+predicate `AtkinsonHan.Chapter05.StronglyMonotoneWith` that already exists for AH (5.1.8). §1.3 of
 `backbone.md` asks for a named bundle exactly at that point. It belongs in `Nonlinear/FixedPoint`
 rather than in the new module because that is where the first consumer lives. **Until it exists**,
 `Numlib/Variational/Inequality/Basic` states the hypothesis unbundled, in exactly the shape
@@ -76,7 +76,7 @@ the owner of that file; §5.3 is otherwise complete, and the tracker currently r
 covering less of §5.3 than it does.
 
 **A4. `NumlibSurface/AtkinsonHan/Chapter05.toml` and `Chapter08.toml`: widen the descriptions.**
-`Chapter05.toml` says "§5.1-5.4, §5.6" and `Chapter08.toml` says "§8.2-8.3, §8.7"; this task adds
+`Chapter05.toml` says "§5.1–5.4, §5.6" and `Chapter08.toml` says "§8.2–8.3, §8.7"; this task adds
 `Chapter05/Section05` and `Chapter08/Section06` beneath them. One word each.
 
 **A5. `NumlibSurface/AtkinsonHan/Chapter12/Section04`: the Nyström instance, later.**

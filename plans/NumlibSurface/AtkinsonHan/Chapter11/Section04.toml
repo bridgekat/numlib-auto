@@ -1,4 +1,4 @@
-namespace = "AtkinsonHan.Ch11"
+namespace = "AtkinsonHan.Chapter11"
 
 [[node]]
 id = "residual"

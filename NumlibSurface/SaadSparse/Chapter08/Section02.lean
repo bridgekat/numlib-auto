@@ -4,12 +4,12 @@ import NumlibSurface.SaadSparse.Chapter05.Section04
 import NumlibSurface.SaadSparse.Chapter08.Section01
 
 /-!
-# Saad, §8.2: row projection methods
+# Saad §8.2: row projection methods
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003, §8.2, with P-8.2 and P-8.8.
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §8.2 , with P-8.2 and P-8.8.
 
-The section introduces no new method: every algorithm in it is a projection process of §5.3–§5.4
+The section introduces no new method: every algorithm in it is a projection process of §5.3–5.4
 over the coordinate subspaces `K_i = span {e_i}`, run on one of the two normal-equations systems.
 This file says so declaration by declaration.
 
@@ -22,7 +22,7 @@ This file says so declaration by declaration.
   component of the normal-equations residual vanishes.
 * `sorSweep_eq_multiplicativeSweep` and `neSorSweep_eq_multiplicativeStep` put the two sweeps in
   the multiplicative projection process of §5.4 over the coordinate family — the NR-SOR sweep in
-  the Galerkin form `SaadSparse.Ch05.multiplicativeSweep`, the NE-SOR sweep in the backbone's
+  the Galerkin form `SaadSparse.Chapter05.multiplicativeSweep`, the NE-SOR sweep in the backbone's
   Petrov–Galerkin `Projection.multiplicativeStep`, since its test spaces differ from its trial
   spaces; `cimmino_eq_additiveStep` puts **Algorithm 8.3** in the
   additive one, which is Saad's own remark that each instance of Cimmino's method is an
@@ -37,14 +37,14 @@ This file says so declaration by declaration.
   subproblem in place of the scalar division.
 
 The row/column duality of P-8.3 is the exchange of `A` and `Aᵀ` and is not stated separately.
-As in Chapter 5, everything is over `ℝ`, which is where §5.3–§5.4 live.
+As in Chapter 5, everything is over `ℝ`, which is where §5.3–5.4 live.
 -/
 
 open Matrix Filter Topology
 
 open scoped Matrix SaadSparse
 
-namespace SaadSparse.Ch08
+namespace SaadSparse.Chapter08
 
 variable {n : ℕ}
 
@@ -56,13 +56,13 @@ local notation "E" n => EuclideanSpace ℝ (Fin n)
 noncomputable def coordVec (i : Fin n) : E n := EuclideanSpace.single i 1
 
 /-- The `i`-th coordinate axis as a one-column matrix, the shape
-`SaadSparse.Ch05.ProjFamily` takes. -/
+`SaadSparse.Chapter05.ProjFamily` takes. -/
 def coordCol (i : Fin n) : Matrix (Fin n) (Fin 1) ℝ :=
   Matrix.of fun p _ => (Pi.single i (1 : ℝ) : Fin n → ℝ) p
 
 /-- The family of the `n` coordinate axes: the projection family over which every method of
 §8.2 is a §5.4 projection process. -/
-noncomputable def coordFamily (n : ℕ) : Ch05.ProjFamily n where
+noncomputable def coordFamily (n : ℕ) : Chapter05.ProjFamily n where
   p := n
   size _ := 1
   V := coordCol
@@ -88,9 +88,9 @@ theorem coordFamily_subspace (i : Fin n) : (coordFamily n).subspace i = ℝ ∙ 
 theorem inner_transpose (M : Matrix (Fin n) (Fin n) ℝ) (u v : E n) :
     inner ℝ (Mᵀ ⬝ u) v = inner ℝ u (M ⬝ v) := by
   have h := inner_conjTranspose M u v
-  rwa [Ch05.conjTranspose_eq_transpose] at h
+  rwa [Chapter05.conjTranspose_eq_transpose] at h
 
-/-- `(u, Aᵀ v) = (A u, v)`, the companion of `SaadSparse.Ch08.inner_transpose`. -/
+/-- `(u, Aᵀ v) = (A u, v)`, the companion of `SaadSparse.Chapter08.inner_transpose`. -/
 theorem inner_transpose' (M : Matrix (Fin n) (Fin n) ℝ) (u v : E n) :
     inner ℝ u (Mᵀ ⬝ v) = inner ℝ (M ⬝ u) v := by
   rw [real_inner_comm, inner_transpose, real_inner_comm]
@@ -99,7 +99,7 @@ theorem inner_transpose' (M : Matrix (Fin n) (Fin n) ℝ) (u v : E n) :
 of the corresponding column of `A`. -/
 theorem inner_normal_coordVec (A : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) :
     inner ℝ (coordVec i) ((Aᵀ * A) ⬝ coordVec i) = ‖A ⬝ coordVec i‖ ^ 2 := by
-  rw [Ch05.toEuclideanLin_mul_apply, inner_transpose', real_inner_self_eq_norm_sq]
+  rw [Chapter05.toEuclideanLin_mul_apply, inner_transpose', real_inner_self_eq_norm_sq]
 
 /-- The quadratic form of `A Aᵀ` on a coordinate axis is the squared norm of the corresponding
 row of `A`. -/
@@ -110,7 +110,7 @@ theorem inner_normal'_coordVec (A : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) :
 /-- The normal-equations residual is `Aᵀ` of the residual. -/
 theorem normal_residual (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n) :
     (Aᵀ ⬝ b) - ((Aᵀ * A) ⬝ x) = (Aᵀ ⬝ (b - (A ⬝ x))) := by
-  rw [Ch05.toEuclideanLin_mul_apply, ← map_sub]
+  rw [Chapter05.toEuclideanLin_mul_apply, ← map_sub]
 
 /-! ### One-dimensional Petrov–Galerkin pairs -/
 
@@ -148,7 +148,7 @@ quadratic form does not vanish on any coordinate axis. -/
 theorem isUnit_coordCol {M : Matrix (Fin n) (Fin n) ℝ} {i : Fin n}
     (h : inner ℝ (coordVec i) (M ⬝ coordVec i) ≠ 0) :
     IsUnit ((coordCol i)ᵀ * M * coordCol i) := by
-  rw [← Ch05.crossGram_matrix M (coordCol i) (coordCol i), Matrix.isUnit_iff_isUnit_det,
+  rw [← Chapter05.crossGram_matrix M (coordCol i) (coordCol i), Matrix.isUnit_iff_isUnit_det,
     Matrix.det_fin_one, Matrix.of_apply, coordCol_cols, isUnit_iff_ne_zero]
   exact h
 
@@ -180,14 +180,14 @@ variable {A b ω}
 /-- The unrelaxed NE-SOR relaxation is the elementary step (5.12) with `v = Aᵀ e_i`,
 `w = e_i`. -/
 theorem neSorStep_eq_step1 (i : Fin n) (x : E n) :
-    neSorStep A b 1 i x = Ch05.step1 A b (Aᵀ ⬝ coordVec i) (coordVec i) x := by
-  rw [neSorStep, Ch05.step1, inner_normal'_coordVec, one_mul]
+    neSorStep A b 1 i x = Chapter05.step1 A b (Aᵀ ⬝ coordVec i) (coordVec i) x := by
+  rw [neSorStep, Chapter05.step1, inner_normal'_coordVec, one_mul]
 
 /-- The unrelaxed NR-SOR relaxation is the elementary step (5.12) for the normal equations
 `AᵀA x = Aᵀ b` with `v = w = e_i`. -/
 theorem nrSorStep_eq_step1 (i : Fin n) (x : E n) :
-    nrSorStep A b 1 i x = Ch05.step1 (Aᵀ * A) (Aᵀ ⬝ b) (coordVec i) (coordVec i) x := by
-  rw [nrSorStep, Ch05.step1, inner_normal_coordVec, normal_residual, inner_transpose', one_mul]
+    nrSorStep A b 1 i x = Chapter05.step1 (Aᵀ * A) (Aᵀ ⬝ b) (coordVec i) (coordVec i) x := by
+  rw [nrSorStep, Chapter05.step1, inner_normal_coordVec, normal_residual, inner_transpose', one_mul]
 
 /-- **Saad (8.12)–(8.15)**: the unrelaxed NE-SOR relaxation is the Petrov–Galerkin step onto
 `K = span {Aᵀ e_i}` orthogonally to `L = span {e_i}`, and the `i`-th component of the new
@@ -199,8 +199,9 @@ theorem neSorStep_isPetrovGalerkin (hi : (Aᵀ ⬝ coordVec i) ≠ 0) (x : E n) 
   have hne : inner ℝ (coordVec i) (A ⬝ (Aᵀ ⬝ coordVec i)) ≠ 0 := by
     rw [inner_normal'_coordVec]
     exact pow_ne_zero 2 (norm_ne_zero_iff.2 hi)
-  have hpg := Ch05.isProjectionApprox_iff.1
-    (Ch05.step1_isProjectionApprox (A := A) (b := b) (x := x) (Aᵀ ⬝ coordVec i) (coordVec i) hne)
+  have hpg := Chapter05.isProjectionApprox_iff.1
+    (Chapter05.step1_isProjectionApprox (A := A) (b := b) (x := x) (Aᵀ ⬝ coordVec i)
+      (coordVec i) hne)
   rw [← neSorStep_eq_step1] at hpg
   exact ⟨hpg, (Submodule.mem_orthogonal_singleton_iff_inner_right).1 hpg.orth⟩
 
@@ -214,8 +215,8 @@ theorem nrSorStep_isGalerkin (hi : (A ⬝ coordVec i) ≠ 0) (x : E n) :
   have hne : inner ℝ (coordVec i) ((Aᵀ * A) ⬝ coordVec i) ≠ 0 := by
     rw [inner_normal_coordVec]
     exact pow_ne_zero 2 (norm_ne_zero_iff.2 hi)
-  have hpg := Ch05.isProjectionApprox_iff.1
-    (Ch05.step1_isProjectionApprox (A := Aᵀ * A) (b := (Aᵀ ⬝ b)) (x := x) (coordVec i)
+  have hpg := Chapter05.isProjectionApprox_iff.1
+    (Chapter05.step1_isProjectionApprox (A := Aᵀ * A) (b := (Aᵀ ⬝ b)) (x := x) (coordVec i)
       (coordVec i) hne)
   rw [← nrSorStep_eq_step1] at hpg
   refine ⟨hpg, ?_⟩
@@ -229,23 +230,23 @@ theorem nrSorStep_isGalerkin (hi : (A ⬝ coordVec i) ≠ 0) (x : E n) :
 for the normal equations `AᵀA x = Aᵀ b` over the coordinate family — block Gauss–Seidel with
 `K_i = span {e_i}`. The NE-SOR sweep is `neSorSweep_eq_multiplicativeStep`. -/
 theorem sorSweep_eq_multiplicativeSweep (h : ∀ i : Fin n, (A ⬝ coordVec i) ≠ 0) (x : E n) :
-    nrSorSweep A b 1 x = Ch05.multiplicativeSweep (coordFamily n) (Aᵀ * A) (Aᵀ ⬝ b) x := by
+    nrSorSweep A b 1 x = Chapter05.multiplicativeSweep (coordFamily n) (Aᵀ * A) (Aᵀ ⬝ b) x := by
   have hne : ∀ i : Fin n, inner ℝ (coordVec i) ((Aᵀ * A) ⬝ coordVec i) ≠ 0 := fun i => by
     rw [inner_normal_coordVec]
     exact pow_ne_zero 2 (norm_ne_zero_iff.2 (h i))
   have hunit : ∀ i : Fin (coordFamily n).p,
       IsUnit (((coordFamily n).V i)ᵀ * (Aᵀ * A) * (coordFamily n).V i) :=
     fun i => isUnit_coordCol (hne i)
-  have hrhs : Ch05.multiplicativeSweep (coordFamily n) (Aᵀ * A) (Aᵀ ⬝ b) x
+  have hrhs : Chapter05.multiplicativeSweep (coordFamily n) (Aᵀ * A) (Aᵀ ⬝ b) x
       = (List.finRange n).foldl (fun y i => Projection.pairStep
           (Matrix.toEuclideanLin (Aᵀ * A)) (Aᵀ ⬝ b) ((coordFamily n).subspace i)
-          ((coordFamily n).subspace i) (Ch05.isNondegeneratePair_subspace hunit i) y) x := by
-    rw [Ch05.multiplicativeSweep_eq hunit]
+          ((coordFamily n).subspace i) (Chapter05.isNondegeneratePair_subspace hunit i) y) x := by
+    rw [Chapter05.multiplicativeSweep_eq hunit]
     rfl
   have hfun : (fun (y : E n) (i : Fin n) => nrSorStep A b 1 i y)
       = fun (y : E n) (i : Fin n) => Projection.pairStep
           (Matrix.toEuclideanLin (Aᵀ * A)) (Aᵀ ⬝ b) ((coordFamily n).subspace i)
-          ((coordFamily n).subspace i) (Ch05.isNondegeneratePair_subspace hunit i) y :=
+          ((coordFamily n).subspace i) (Chapter05.isNondegeneratePair_subspace hunit i) y :=
     funext fun y => funext fun i => by
       rw [pairStep_eq_step1 _ (coordFamily_subspace i) (coordFamily_subspace i) (hne i),
         nrSorStep_eq_step1]
@@ -255,7 +256,7 @@ theorem sorSweep_eq_multiplicativeSweep (h : ∀ i : Fin n, (A ⬝ coordVec i) �
 
 /-- **Saad §8.2**: the unrelaxed NE-SOR sweep is the multiplicative *Petrov–Galerkin* process
 over the pairs `(span {Aᵀ e_i}, span {e_i})` — the same block Gauss–Seidel pattern of §5.4, in
-the backbone's form. It is not `SaadSparse.Ch05.multiplicativeSweep`, whose test space is its
+the backbone's form. It is not `SaadSparse.Chapter05.multiplicativeSweep`, whose test space is its
 trial space; the two coincide only for NR-SOR. -/
 theorem neSorSweep_eq_multiplicativeStep
     (hne : ∀ i : Fin n, inner ℝ (coordVec i) (A ⬝ (Aᵀ ⬝ coordVec i)) ≠ 0) (x : E n) :
@@ -296,18 +297,18 @@ mathematically equivalent to an orthogonal projection step for `AᵀA x = Aᵀ b
 `K = span {e_i}`". -/
 theorem cimmino_eq_additiveStep (h : ∀ i : Fin n, (A ⬝ coordVec i) ≠ 0) (x : E n) :
     cimmino A b ω x
-      = Ch05.additiveStep (coordFamily n) (Aᵀ * A) (fun _ => ω) (Aᵀ ⬝ b) x := by
+      = Chapter05.additiveStep (coordFamily n) (Aᵀ * A) (fun _ => ω) (Aᵀ ⬝ b) x := by
   have hne : ∀ i : Fin n, inner ℝ (coordVec i) ((Aᵀ * A) ⬝ coordVec i) ≠ 0 := fun i => by
     rw [inner_normal_coordVec]
     exact pow_ne_zero 2 (norm_ne_zero_iff.2 (h i))
   have hunit : ∀ i : Fin (coordFamily n).p,
       IsUnit (((coordFamily n).V i)ᵀ * (Aᵀ * A) * (coordFamily n).V i) :=
     fun i => isUnit_coordCol (hne i)
-  have hrhs : Ch05.additiveStep (coordFamily n) (Aᵀ * A) (fun _ => ω) (Aᵀ ⬝ b) x
+  have hrhs : Chapter05.additiveStep (coordFamily n) (Aᵀ * A) (fun _ => ω) (Aᵀ ⬝ b) x
       = x + ∑ i, ω • (Projection.pairStep (Matrix.toEuclideanLin (Aᵀ * A)) (Aᵀ ⬝ b)
           ((coordFamily n).subspace i) ((coordFamily n).subspace i)
-          (Ch05.isNondegeneratePair_subspace hunit i) x - x) := by
-    rw [Ch05.additiveStep_eq hunit]
+          (Chapter05.isNondegeneratePair_subspace hunit i) x - x) := by
+    rw [Chapter05.additiveStep_eq hunit]
     rfl
   rw [cimmino, hrhs]
   refine congrArg (fun z : E n => x + z) (Finset.sum_congr rfl fun i _ => ?_)
@@ -341,7 +342,7 @@ theorem equation_8_24 {i : Fin n} (h : (A ⬝ coordVec i) ≠ 0) (r : E n) :
     rw [inner_normal_coordVec]
     exact pow_ne_zero 2 (norm_ne_zero_iff.2 h)
   refine ⟨?_, ?_⟩
-  · have hls := Ch05.leastSquares_P_i_eq_starProjection (𝒲 := coordFamily n) (A := A) (i := i)
+  · have hls := Chapter05.leastSquares_P_i_eq_starProjection (𝒲 := coordFamily n) (A := A) (i := i)
       hunit
     rw [coordFamily_subspace] at hls
     simp only [map_coordVec] at hls
@@ -369,7 +370,7 @@ theorem equation_8_25 (h : ∀ i : Fin n, (A ⬝ coordVec i) ≠ 0) (x : E n) :
       = ω • ∑ i, (ℝ ∙ (A ⬝ coordVec i)).starProjection (b - (A ⬝ x)) := by
     rw [hstep]; abel
   have hinv : (A⁻¹ ⬝ (A ⬝ (cimmino A b ω x - x))) = cimmino A b ω x - x := by
-    rw [← Ch05.toEuclideanLin_mul_apply,
+    rw [← Chapter05.toEuclideanLin_mul_apply,
       Matrix.nonsing_inv_mul _ ((Matrix.isUnit_iff_isUnit_det A).1 hA), Matrix.toEuclideanLin_one]
     rfl
   have hd : (A⁻¹ ⬝ (A ⬝ (cimmino A b ω x - x)))
@@ -387,7 +388,7 @@ is Richardson preconditioned by the diagonal of `AᵀA`, whose `i`-th entry is `
 theorem cimmino_eq_richardson (h : ∀ i : Fin n, ‖A ⬝ coordVec i‖ = 1) (x : E n) :
     cimmino A b ω x = x + ω • ((Aᵀ ⬝ b) - ((Aᵀ * A) ⬝ x)) ∧
       WithLp.ofLp (cimmino A b ω x)
-        = Ch04.richardsonStep (Aᵀ * A) ω (Aᵀ *ᵥ WithLp.ofLp b) (WithLp.ofLp x) := by
+        = Chapter04.richardsonStep (Aᵀ * A) ω (Aᵀ *ᵥ WithLp.ofLp b) (WithLp.ofLp x) := by
   have hsum : ∑ i, (ω * inner ℝ (A ⬝ coordVec i) (b - (A ⬝ x)) / ‖A ⬝ coordVec i‖ ^ 2)
       • coordVec i = ω • (Aᵀ ⬝ (b - (A ⬝ x))) := by
     have hb := (EuclideanSpace.basisFun (Fin n) ℝ).sum_repr' (Aᵀ ⬝ (b - (A ⬝ x)))
@@ -399,7 +400,7 @@ theorem cimmino_eq_richardson (h : ∀ i : Fin n, ‖A ⬝ coordVec i‖ = 1) (x
   have h1 : cimmino A b ω x = x + ω • ((Aᵀ ⬝ b) - ((Aᵀ * A) ⬝ x)) := by
     rw [cimmino, hsum, normal_residual]
   refine ⟨h1, ?_⟩
-  rw [h1, Ch04.richardsonStep, WithLp.ofLp_add, WithLp.ofLp_smul, WithLp.ofLp_sub]
+  rw [h1, Chapter04.richardsonStep, WithLp.ofLp_add, WithLp.ofLp_smul, WithLp.ofLp_sub]
   rfl
 
 /-- **Saad (8.22)**: with normalized columns, Cimmino's method converges for every right-hand
@@ -410,15 +411,15 @@ theorem equation_8_22 {lmin lmax : ℝ} (hsub : spectrum ℝ (Aᵀ * A) ⊆ Set.
     (hmin : lmin ∈ spectrum ℝ (Aᵀ * A)) (hmax : lmax ∈ spectrum ℝ (Aᵀ * A)) (hpos : 0 < lmin)
     (hω : ω ≠ 0) :
     ((∀ c z₀ : Fin n → ℝ, ∃ z,
-        Tendsto (fun k => (Ch04.richardsonStep (Aᵀ * A) ω c)^[k] z₀) atTop (𝓝 z)) ↔
+        Tendsto (fun k => (Chapter04.richardsonStep (Aᵀ * A) ω c)^[k] z₀) atTop (𝓝 z)) ↔
       0 < ω ∧ ω < 2 / lmax) ∧
       IsMinOn (fun ω : ℝ => Matrix.complexSpectralRadius (1 - ω • (Aᵀ * A))) (Set.Ioi 0)
         (2 / (lmin + lmax)) := by
   have hherm : (Aᵀ * A).IsHermitian := by
     have h := Matrix.isHermitian_conjTranspose_mul_self A
-    rwa [Ch05.conjTranspose_eq_transpose] at h
-  exact ⟨Ch04.example_4_1_tendsto_iff hherm hsub hmin hmax hpos hω,
-    (Ch04.example_4_1_opt hherm hsub hmin hmax hpos).1⟩
+    rwa [Chapter05.conjTranspose_eq_transpose] at h
+  exact ⟨Chapter04.example_4_1_tendsto_iff hherm hsub hmin hmax hpos hω,
+    (Chapter04.example_4_1_opt hherm hsub hmin hmax hpos).1⟩
 
 /-! ### (8.26)–(8.27): the block form -/
 
@@ -428,37 +429,37 @@ variable (A b ω)
 `V_1, …, V_p`: `x_new = x + ω ∑_i V_i d_i` with `d_i = (A_iᵀ A_i)⁻¹ A_iᵀ r` and `A_i = A V_i`.
 The scalar division of Algorithm 8.3 is replaced by the least-squares problem
 `min_d ‖r - A_i d‖₂` (`blockCimmino_isMinRes`). -/
-noncomputable def blockCimmino (𝒱 : Ch05.ProjFamily n) (x : E n) : E n :=
+noncomputable def blockCimmino (𝒱 : Chapter05.ProjFamily n) (x : E n) : E n :=
   x + ∑ i, ω • ((𝒱.V i * ((A * 𝒱.V i)ᵀ * (A * 𝒱.V i))⁻¹ * (A * 𝒱.V i)ᵀ) ⬝ (b - (A ⬝ x)))
 
 variable {A b ω}
 
 /-- The block form is the additive projection process of §5.4 for the normal equations over the
 family, which for one-dimensional blocks is `cimmino_eq_additiveStep`. -/
-theorem blockCimmino_eq_additiveStep (𝒱 : Ch05.ProjFamily n) (x : E n) :
-    blockCimmino A b ω 𝒱 x = Ch05.additiveStep 𝒱 (Aᵀ * A) (fun _ => ω) (Aᵀ ⬝ b) x := by
-  rw [blockCimmino, Ch05.additiveStep]
+theorem blockCimmino_eq_additiveStep (𝒱 : Chapter05.ProjFamily n) (x : E n) :
+    blockCimmino A b ω 𝒱 x = Chapter05.additiveStep 𝒱 (Aᵀ * A) (fun _ => ω) (Aᵀ ⬝ b) x := by
+  rw [blockCimmino, Chapter05.additiveStep]
   refine congrArg (fun z : E n => x + z) (Finset.sum_congr rfl fun i _ => ?_)
   refine congrArg (fun z : E n => ω • z) ?_
   have hmat : 𝒱.V i * ((A * 𝒱.V i)ᵀ * (A * 𝒱.V i))⁻¹ * (A * 𝒱.V i)ᵀ
       = (𝒱.V i * ((𝒱.V i)ᵀ * (Aᵀ * A) * 𝒱.V i)⁻¹ * (𝒱.V i)ᵀ) * Aᵀ := by
     rw [Matrix.transpose_mul]
     simp only [Matrix.mul_assoc]
-  rw [Ch05.corrector, normal_residual, ← Ch05.toEuclideanLin_mul_apply, hmat]
+  rw [Chapter05.corrector, normal_residual, ← Chapter05.toEuclideanLin_mul_apply, hmat]
 
 /-- **Saad (8.26)–(8.27)**: the block correction `d_i` solves the least-squares problem
 `min_d ‖r - A_i d‖₂`, so each substep reduces the residual as far as the columns of `A_i`
 allow. This is §8.1's `equation_8_1` for the matrix `A_i = A V_i`. -/
-theorem blockCimmino_isMinRes {𝒱 : Ch05.ProjFamily n} {i : Fin 𝒱.p}
+theorem blockCimmino_isMinRes {𝒱 : Chapter05.ProjFamily n} {i : Fin 𝒱.p}
     (h : IsUnit ((A * 𝒱.V i)ᵀ * (A * 𝒱.V i))) (r : E n) :
     ∀ d : EuclideanSpace ℝ (Fin (𝒱.size i)),
       ‖r - ((A * 𝒱.V i) ⬝ ((((A * 𝒱.V i)ᵀ * (A * 𝒱.V i))⁻¹ * (A * 𝒱.V i)ᵀ) ⬝ r))‖
         ≤ ‖r - ((A * 𝒱.V i) ⬝ d)‖ := by
-  have hH : (A * 𝒱.V i)ᴴ = (A * 𝒱.V i)ᵀ := Ch05.conjTranspose_eq_transpose _
+  have hH : (A * 𝒱.V i)ᴴ = (A * 𝒱.V i)ᵀ := Chapter05.conjTranspose_eq_transpose _
   have hnormal : (((A * 𝒱.V i)ᴴ * (A * 𝒱.V i))
       ⬝ ((((A * 𝒱.V i)ᵀ * (A * 𝒱.V i))⁻¹ * (A * 𝒱.V i)ᵀ) ⬝ r)) = ((A * 𝒱.V i)ᴴ ⬝ r) := by
     rw [hH, ← toEuclideanLin_mul_apply, ← Matrix.mul_assoc,
       Matrix.mul_nonsing_inv _ ((Matrix.isUnit_iff_isUnit_det _).1 h), Matrix.one_mul]
   exact (equation_8_1 (A * 𝒱.V i) r _).1 hnormal
 
-end SaadSparse.Ch08
+end SaadSparse.Chapter08

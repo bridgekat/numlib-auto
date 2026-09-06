@@ -5,10 +5,10 @@ import NumlibSurface.SaadSparse.Chapter06.Section09
 import Mathlib.Analysis.Complex.Polynomial.Basic
 
 /-!
-# Saad, §6.10: optimality and the Faber–Manteuffel condition
+# Saad §6.10: optimality and the Faber–Manteuffel condition
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003, §6.10.
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §6.10.
 
 **Proposition 6.22** says that when `Aᵀ v ∈ 𝒦_s(A, v)` for every `v`, the Arnoldi coefficients
 obey the band condition `h_{ij} = 0` for `i + s ≤ j` (6.108), so that the incomplete
@@ -46,7 +46,7 @@ open Polynomial
 
 open scoped ComplexOrder Matrix
 
-namespace SaadSparse.Ch06
+namespace SaadSparse.Chapter06
 
 section Band
 
@@ -407,4 +407,4 @@ theorem lemma_6_23 {A : Matrix (Fin n) (Fin n) ℂ} {s : ℕ} (hs : 0 < s) :
 
 end Normal
 
-end SaadSparse.Ch06
+end SaadSparse.Chapter06

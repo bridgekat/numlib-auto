@@ -4,10 +4,10 @@ import NumlibSurface.SaadSparse.Chapter01.Section13
 import NumlibSurface.SaadSparse.Common
 
 /-!
-# Saad, §8.1: the normal equations
+# Saad §8.1: the normal equations
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003, §8.1, with P-8.1.
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §8.1 , with P-8.1.
 
 A rectangular `A : Matrix (Fin n) (Fin m) 𝕜` has two systems of normal equations. The system of
 the *first* kind, `Aᴴ A x = Aᴴ b` (8.1), characterizes the least-squares solutions of (8.2),
@@ -32,7 +32,7 @@ open Matrix
 
 open scoped SaadSparse ENNReal
 
-namespace SaadSparse.Ch08
+namespace SaadSparse.Chapter08
 
 variable {n m : ℕ} {𝕜 : Type*} [RCLike 𝕜]
 
@@ -44,7 +44,7 @@ theorem inner_conjTranspose (A : Matrix (Fin n) (Fin m) 𝕜) (u : EuclideanSpac
   rw [toEuclideanLin_conjTranspose_eq_adjoint]
   exact LinearMap.adjoint_inner_left _ _ _
 
-/-- `(v, Aᴴ u) = (A v, u)`, the companion of `SaadSparse.Ch08.inner_conjTranspose`. -/
+/-- `(v, Aᴴ u) = (A v, u)`, the companion of `SaadSparse.Chapter08.inner_conjTranspose`. -/
 theorem inner_conjTranspose' (A : Matrix (Fin n) (Fin m) 𝕜) (u : EuclideanSpace 𝕜 (Fin n))
     (v : EuclideanSpace 𝕜 (Fin m)) : inner 𝕜 v (Aᴴ ⬝ u) = inner 𝕜 (A ⬝ v) u := by
   rw [← inner_conj_symm, inner_conjTranspose, inner_conj_symm]
@@ -84,7 +84,7 @@ private theorem conjTranspose_apply_eq_zero_iff (A : Matrix (Fin n) (Fin m) 𝕜
 minimizes `‖b - A x‖₂`. Both directions are the characterization of a best approximation from
 `Ran A` by orthogonality of its error, so no rank assumption on `A` is needed; when the columns
 of `A` are independent, `Aᴴ A` is in addition symmetric positive definite
-(`SaadSparse.Ch08.isSymmetricCoercive_conjTranspose_mul_self`) and the minimizer is unique. -/
+(`SaadSparse.Chapter08.isSymmetricCoercive_conjTranspose_mul_self`) and the minimizer is unique. -/
 theorem equation_8_1 (A : Matrix (Fin n) (Fin m) 𝕜) (b : EuclideanSpace 𝕜 (Fin n))
     (x : EuclideanSpace 𝕜 (Fin m)) :
     ((Aᴴ * A) ⬝ x) = (Aᴴ ⬝ b) ↔ ∀ y, ‖b - (A ⬝ x)‖ ≤ ‖b - (A ⬝ y)‖ := by
@@ -206,4 +206,4 @@ theorem equation_8_8 (A : Matrix (Fin n) (Fin n) 𝕜) :
     l2_opNorm_self_mul_conjTranspose]
   ring
 
-end SaadSparse.Ch08
+end SaadSparse.Chapter08

@@ -1,4 +1,4 @@
-namespace = "AtkinsonHan.Ch03"
+namespace = "AtkinsonHan.Chapter03"
 
 [[node]]
 id = "exists_not_tendsto_of_not_bddAbove"

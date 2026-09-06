@@ -6,10 +6,10 @@ import Mathlib.Analysis.InnerProductSpace.l2Space
 /-!
 # Atkinson–Han §3.4: best approximation in inner product spaces
 
-Statements from Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework* (3rd ed.), §3.4. The book works over a **real** inner product space
-throughout §3.4, and that is kept here; Theorem 3.4.6, Theorem 3.4.7 and (3.4.6) are stated over
-`RCLike 𝕜`, which contains the book's real case.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §3.4: the book works over a **real** inner product
+space throughout §3.4, and that is kept here; Theorem 3.4.6, Theorem 3.4.7 and (3.4.6) are stated
+over `RCLike 𝕜`, which contains the book's real case.
 
 The book's inner product `(u, v)` is linear in its first argument and Mathlib's `⟪u, v⟫` in its
 second, so the book's `(u − û, v − û)` is `inner ℝ (u - uhat) (v - uhat)` (symmetric in the real
@@ -35,7 +35,7 @@ black box; (3.5.2) is the instance of `equation_3_4_6` for an orthonormal polyno
 
 open Filter Topology
 
-namespace AtkinsonHan.Ch03
+namespace AtkinsonHan.Chapter03
 
 /-! ### The real theory of §3.4 -/
 
@@ -176,4 +176,4 @@ theorem hilbertBasis_expansion {ι : Type*} (b : HilbertBasis ι 𝕜 H) (u : H)
 
 end Hilbert
 
-end AtkinsonHan.Ch03
+end AtkinsonHan.Chapter03

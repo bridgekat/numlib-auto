@@ -3,8 +3,8 @@ import Numlib.Nonlinear.CompletelyContinuous
 /-!
 # Atkinson–Han §5.5: completely continuous vector fields
 
-Statements from Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework* (3rd ed.), §5.5.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §5.5.
 
 The section is a summary: Brouwer's theorem (5.5.1), Schauder's theorem (5.5.4) and the properties
 P1–P5 of the rotation of a completely continuous vector field are quoted there from Krasnoselskii
@@ -33,7 +33,7 @@ completely continuous vector field and its properties P1–P5.
   3rd edition, Texts in Applied Mathematics 39, Springer, 2009.
 -/
 
-namespace AtkinsonHan.Ch05
+namespace AtkinsonHan.Chapter05
 
 /-- **Definition 5.5.3.** An operator `T` is **completely continuous** on `K` when it is a compact
 map on `K` — the image of every bounded subset of `K` is relatively compact — and is continuous
@@ -54,4 +54,4 @@ theorem proposition_5_5_5 {V W : Type*} [NormedAddCommGroup V] [NormedSpace ℝ 
     (hA : HasFDerivAt T A v₀) : IsCompactOperator A :=
   hT.1.isCompactOperator_hasFDerivAt (hK.mem_nhds hv₀) hA
 
-end AtkinsonHan.Ch05
+end AtkinsonHan.Chapter05

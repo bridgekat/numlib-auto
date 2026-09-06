@@ -1,4 +1,4 @@
-namespace = "SaadSparse.Ch10"
+namespace = "SaadSparse.Chapter10"
 desc = '''
 §10.3, incomplete `LU` factorizations: the general static-pattern ILU and its existence for
 M-matrices (Thm 10.1, Thm 10.2), the residual identity (Prop 10.4), ILU(0) and modified ILU.
@@ -22,7 +22,7 @@ recorded so that ILU(p) can be named, but the graph characterization is skipped.
 [[node]]
 id = "iluPattern"
 kind = "definition"
-desc = '''Saad (10.11): a zero pattern is a set `P ⊆ {(i,j) : i ≠ j}`; `SaadSparse.Ch10.IsZeroPattern P`
+desc = '''Saad (10.11): a zero pattern is a set `P ⊆ {(i,j) : i ≠ j}`; `SaadSparse.Chapter10.IsZeroPattern P`
 and the reading of Saad's `ILU_P` as `Matrix.IsILU P A L U` for real matrices.'''
 deps = ["Matrix.IsILU"]
 

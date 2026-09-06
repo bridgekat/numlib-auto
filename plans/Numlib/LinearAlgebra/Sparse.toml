@@ -8,6 +8,6 @@ maximal independent set, the separating property of the distance spheres - is st
 `Sparse/Pattern` defines the graph of a matrix and proves the permutation invariance;
 `Sparse/Reordering` turns a graph ordering into a block structure of the permuted matrix. Nothing
 in this directory is about storage formats, sparse matrix-vector products or sparse direct
-solvers: Saad's §3.4-§3.7 state no theorem, and they are not planned (see
+solvers: Saad's §3.4–3.7 state no theorem, and they are not planned (see
 `plans/proposals/saadlow.md`).
 '''

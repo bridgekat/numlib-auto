@@ -6,13 +6,13 @@ import Mathlib.Analysis.Matrix.PosDef
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 
 /-!
-# §12.3 Polynomial preconditioners
+# Saad §12.3: polynomial preconditioners
 
-Section 12.3 of Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003: preconditioners of the form `M⁻¹ = s(A)` for a low-degree polynomial `s`, so that
-applying the preconditioner costs only matrix–vector products. Three ways of choosing `s`:
-Neumann series (§12.3.1), Chebyshev acceleration (§12.3.2, Algorithm 12.1) and least-squares
-polynomials (§12.3.3).
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §12.3: preconditioners of the form `M⁻¹ = s(A)` for a low-degree polynomial `s`, so that
+applying the preconditioner costs only matrix–vector products. Three ways of choosing `s`: Neumann
+series (§12.3.1), Chebyshev acceleration (§12.3.2, Algorithm 12.1) and least-squares polynomials
+(§12.3.3).
 
 The section carries no numbered result, so the declarations here are named for the book's
 displayed equations. Everything specializes `Numlib/LinearSolve/Preconditioner/Polynomial`,
@@ -30,7 +30,7 @@ polygonal case is a numerical procedure with no theorem attached.
 open Matrix Polynomial
 open scoped SaadSparse
 
-namespace SaadSparse.Ch12
+namespace SaadSparse.Chapter12
 
 variable {n : ℕ}
 
@@ -375,4 +375,4 @@ theorem norm_leastSquaresResidual_le {B : LinearMap.BilinForm ℝ (Polynomial �
       ((β - α) / (β + α)) ^ (2 * k) * B 1 1 :=
   bilinForm_kernelPolynomial_le_pow horth hdeg hα hαβ hB hS
 
-end SaadSparse.Ch12
+end SaadSparse.Chapter12

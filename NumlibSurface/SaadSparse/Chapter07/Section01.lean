@@ -3,10 +3,10 @@ import Numlib.Krylov.BiLanczos
 import NumlibSurface.SaadSparse.Chapter06.Common
 
 /-!
-# Saad, §7.1: the Lanczos biorthogonalization procedure
+# Saad §7.1: the Lanczos biorthogonalization procedure
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003, §7.1, with P-7.2 and P-7.6.
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §7.1 , with P-7.2 and P-7.6.
 
 **Algorithm 7.1** is `bilanczos`, whose state carries the pair `(v_j, w_j)`, the previous pair and
 the two scalars the next step consumes; `bilanczosV`, `bilanczosW`, `bilanczosVhat`,
@@ -43,9 +43,9 @@ open Matrix
 
 open scoped Matrix SaadSparse
 
-namespace SaadSparse.Ch07
+namespace SaadSparse.Chapter07
 
-open Ch06 (op)
+open Chapter06 (op)
 
 variable {n : ℕ} {𝕜 : Type*} [RCLike 𝕜]
 
@@ -59,14 +59,14 @@ dual residual `r_0^* = b^* - Aᴴ x_0^*` — rescaled so that the book's normali
 `(0 : 𝕜)⁻¹ = 0`. -/
 noncomputable def w₁ (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ w : EuclideanSpace 𝕜 (Fin n)) :
     EuclideanSpace 𝕜 (Fin n) :=
-  (inner 𝕜 (Ch06.v₁ A b x₀) w)⁻¹ • w
+  (inner 𝕜 (Chapter06.v₁ A b x₀) w)⁻¹ • w
 
 /-- Algorithm 7.1, line 1: the normalization `(v_1, w_1) = 1`, which in Mathlib's convention
 (conjugate-linear in the *first* slot) reads `⟪w_1, v_1⟫ = 1`. -/
 theorem inner_w₁_v₁ (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ w : EuclideanSpace 𝕜 (Fin n))
-    (hw : inner 𝕜 (Ch06.v₁ A b x₀) w ≠ 0) :
-    inner 𝕜 (w₁ A b x₀ w) (Ch06.v₁ A b x₀) = 1 := by
-  have hconj : starRingEnd 𝕜 (inner 𝕜 (Ch06.v₁ A b x₀) w) = inner 𝕜 w (Ch06.v₁ A b x₀) :=
+    (hw : inner 𝕜 (Chapter06.v₁ A b x₀) w ≠ 0) :
+    inner 𝕜 (w₁ A b x₀ w) (Chapter06.v₁ A b x₀) = 1 := by
+  have hconj : starRingEnd 𝕜 (inner 𝕜 (Chapter06.v₁ A b x₀) w) = inner 𝕜 w (Chapter06.v₁ A b x₀) :=
     inner_conj_symm _ _
   rw [w₁, inner_smul_left, map_inv₀, hconj, inv_mul_cancel₀]
   rw [← hconj]
@@ -260,7 +260,7 @@ structure NoBreakdown (A : Matrix (Fin n) (Fin n) 𝕜) (v₁ w₁ : EuclideanSp
 
 /-- Algorithm 7.1 suffers no *serious* breakdown: whenever line 6 stops the algorithm, the primal
 recurrence has already terminated, `v̂_{j+1} = 0`. This holds generically and at a regular
-termination, and unlike `SaadSparse.Ch07.NoBreakdown` it is a hypothesis about every step —
+termination, and unlike `SaadSparse.Chapter07.NoBreakdown` it is a hypothesis about every step —
 which is what (7.3) needs, since at a serious breakdown there is no `v_{m+1}` to expand `A v_m`
 along and the relation is genuinely false. -/
 structure NoSeriousBreakdown (A : Matrix (Fin n) (Fin n) 𝕜)
@@ -361,10 +361,10 @@ noncomputable def Tbar (m : ℕ) : Matrix (Fin (m + 1)) (Fin m) 𝕜 :=
   Matrix.of fun i j => bilanczosCoeff A v₁ w₁ i j
 
 /-- `V_m = [v_1, …, v_m]`, the matrix whose columns are the primal Lanczos vectors. -/
-noncomputable def V (m : ℕ) : Matrix (Fin n) (Fin m) 𝕜 := Ch06.colMatrix (bilanczosV A v₁ w₁) m
+noncomputable def V (m : ℕ) : Matrix (Fin n) (Fin m) 𝕜 := Chapter06.colMatrix (bilanczosV A v₁ w₁) m
 
 /-- `W_m = [w_1, …, w_m]`, the matrix whose columns are the dual Lanczos vectors. -/
-noncomputable def W (m : ℕ) : Matrix (Fin n) (Fin m) 𝕜 := Ch06.colMatrix (bilanczosW A v₁ w₁) m
+noncomputable def W (m : ℕ) : Matrix (Fin n) (Fin m) 𝕜 := Chapter06.colMatrix (bilanczosW A v₁ w₁) m
 
 @[simp] theorem T_apply {m : ℕ} (i j : Fin m) : T A v₁ w₁ m i j = bilanczosCoeff A v₁ w₁ i j := rfl
 
@@ -415,15 +415,15 @@ private theorem range_fin_eq_image_Iio {α : Type*} (f : ℕ → α) (k : ℕ) :
 Theorem 7.4 therefore does not have to assume. -/
 theorem proposition_7_1_span (h : NoBreakdown A v₁ w₁ m) :
     Submodule.span 𝕜 (Set.range fun i : Fin m => bilanczosV A v₁ w₁ (i : ℕ))
-        = Ch06.krylov A v₁ m ∧
+        = Chapter06.krylov A v₁ m ∧
       Submodule.span 𝕜 (Set.range fun i : Fin m => bilanczosW A v₁ w₁ (i : ℕ))
-        = Ch06.krylov Aᴴ w₁ m := by
+        = Chapter06.krylov Aᴴ w₁ m := by
   constructor
-  · rw [range_fin_eq_image_Iio, Ch06.krylov_eq,
+  · rw [range_fin_eq_image_Iio, Chapter06.krylov_eq,
       show (bilanczosV A v₁ w₁) = BiLanczos.vec (op A) (op Aᴴ) v₁ w₁ from
         funext (bilanczosV_eq A v₁ w₁)]
     exact BiLanczos.span_vec h.toBiLanczos
-  · rw [range_fin_eq_image_Iio, Ch06.krylov_eq,
+  · rw [range_fin_eq_image_Iio, Chapter06.krylov_eq,
       show (bilanczosW A v₁ w₁) = BiLanczos.dualVec (op A) (op Aᴴ) v₁ w₁ from
         funext (bilanczosW_eq A v₁ w₁)]
     exact BiLanczos.span_dualVec h.toBiLanczos
@@ -542,7 +542,7 @@ private theorem mul_colMatrix_eq_of_apply {B : Matrix (Fin n) (Fin n) 𝕜}
     {u : ℕ → EuclideanSpace 𝕜 (Fin n)} {c : ℕ → ℕ → 𝕜} {k : ℕ}
     (happ : ∀ j < k, op B (u j) = ∑ i ∈ Finset.range (j + 2), c i j • u i)
     (hz : ∀ i j, j + 1 < i → c i j = 0) :
-    B * Ch06.colMatrix u k = Ch06.colMatrix u (k + 1) * Krylov.hessenbergOf c k := by
+    B * Chapter06.colMatrix u k = Chapter06.colMatrix u (k + 1) * Krylov.hessenbergOf c k := by
   ext i j
   have hj : (j : ℕ) < k := j.2
   have hrange : op B (u (j : ℕ)) = ∑ l ∈ Finset.range (k + 1), c l (j : ℕ) • u l := by
@@ -550,7 +550,7 @@ private theorem mul_colMatrix_eq_of_apply {B : Matrix (Fin n) (Fin n) 𝕜}
     refine Finset.sum_subset (Finset.range_subset_range.2 (by omega)) fun l _ hl => ?_
     rw [Finset.mem_range, not_lt] at hl
     rw [hz l (j : ℕ) (by omega), zero_smul]
-  rw [Ch06.mul_colMatrix_apply, hrange, sum_coord, Matrix.mul_apply,
+  rw [Chapter06.mul_colMatrix_apply, hrange, sum_coord, Matrix.mul_apply,
     ← Fin.sum_univ_eq_sum_range (fun l => (c l (j : ℕ) • u l) i) (k + 1)]
   exact Finset.sum_congr rfl fun l _ => mul_comm _ _
 
@@ -559,7 +559,8 @@ private theorem mul_colMatrix_eq_add_vecMulVec {B : Matrix (Fin n) (Fin n) 𝕜}
     {u : ℕ → EuclideanSpace 𝕜 (Fin n)} {c : ℕ → ℕ → 𝕜} {k : ℕ}
     (happ : ∀ j < k + 1, op B (u j) = ∑ i ∈ Finset.range (j + 2), c i j • u i)
     (hz : ∀ i j, j + 1 < i → c i j = 0) :
-    B * Ch06.colMatrix u (k + 1) = Ch06.colMatrix u (k + 1) * Krylov.hessenbergSqOf c (k + 1)
+    B * Chapter06.colMatrix u (k + 1) =
+      Chapter06.colMatrix u (k + 1) * Krylov.hessenbergSqOf c (k + 1)
       + Matrix.vecMulVec (WithLp.ofLp (c (k + 1) k • u (k + 1)))
           (Pi.single (M := fun _ : Fin (k + 1) => 𝕜) (Fin.last k) 1) := by
   have hlast : ∀ j : Fin (k + 1), c (k + 1) (j : ℕ) • u (k + 1)
@@ -579,8 +580,8 @@ private theorem mul_colMatrix_eq_add_vecMulVec {B : Matrix (Fin n) (Fin n) 𝕜}
     refine Finset.sum_subset (Finset.range_subset_range.2 (by omega)) fun l _ hl => ?_
     rw [Finset.mem_range, not_lt] at hl
     rw [hz l (j : ℕ) (by omega), zero_smul]
-  rw [Ch06.mul_colMatrix_apply, hrange, Finset.sum_range_succ, hlast j, PiLp.add_apply, sum_coord,
-    Matrix.add_apply, Matrix.mul_apply, Matrix.vecMulVec_apply,
+  rw [Chapter06.mul_colMatrix_apply, hrange, Finset.sum_range_succ, hlast j, PiLp.add_apply,
+    sum_coord, Matrix.add_apply, Matrix.mul_apply, Matrix.vecMulVec_apply,
     ← Fin.sum_univ_eq_sum_range (fun l => (c l (j : ℕ) • u l) i) (k + 1)]
   refine congrArg₂ (· + ·) (Finset.sum_congr rfl fun l _ => mul_comm _ _) ?_
   rw [PiLp.smul_apply, smul_eq_mul, mul_comm]
@@ -628,7 +629,7 @@ theorem equation_7_3 (h : NoBreakdown A v₁ w₁ (m + 1)) :
 private theorem mul_V_apply (A : Matrix (Fin n) (Fin n) 𝕜) (v₁ w₁ : EuclideanSpace 𝕜 (Fin n))
     {k : ℕ} (i : Fin n) (j : Fin k) :
     (A * V A v₁ w₁ k) i j = op A (bilanczosV A v₁ w₁ (j : ℕ)) i :=
-  Ch06.mul_colMatrix_apply A _ i j
+  Chapter06.mul_colMatrix_apply A _ i j
 
 /-- **Saad (7.5)**: `W_mᴴ A V_m = T_m`, so `T_m` is the compression of `A` to `𝒦_m(A, v_1)`
 along `𝒦_m(Aᴴ, w_1)`; conjugate-transposing, `V_mᴴ Aᴴ W_m = T_mᴴ` compresses `Aᴴ` the other
@@ -693,7 +694,7 @@ private theorem toEuclideanLin_V_mul_conjTranspose_W (A : Matrix (Fin n) (Fin n)
       = Matrix.toEuclideanLin (V A v₁ w₁ k) ∘ₗ Matrix.toEuclideanLin (W A v₁ w₁ k)ᴴ from
     Matrix.toLpLin_mul 2 2 2 _ _]
   rw [LinearMap.comp_apply, toEuclideanLin_conjTranspose_W_apply]
-  exact Ch06.toEuclideanLin_colMatrix_apply _ _
+  exact Chapter06.toEuclideanLin_colMatrix_apply _ _
 
 /-- **P-7.6(a)**: the oblique projector onto `𝒦_m(A, v_1)` orthogonally to `𝒦_m(Aᴴ, w_1)` is
 `V_m W_mᴴ`; the general formula `V (Wᴴ V)⁻¹ Wᴴ` collapses because `W_mᴴ V_m = I` by
@@ -704,9 +705,9 @@ theorem problem_7_6 (h : NoBreakdown A v₁ w₁ m) :
             (fun i : Fin m => bilanczosW A v₁ w₁ (i : ℕ)) ∧
       IsIdempotentElem (Matrix.toEuclideanLin (V A v₁ w₁ m * (W A v₁ w₁ m)ᴴ)) ∧
       LinearMap.range (Matrix.toEuclideanLin (V A v₁ w₁ m * (W A v₁ w₁ m)ᴴ))
-          = Ch06.krylov A v₁ m ∧
+          = Chapter06.krylov A v₁ m ∧
       LinearMap.ker (Matrix.toEuclideanLin (V A v₁ w₁ m * (W A v₁ w₁ m)ᴴ))
-          = (Ch06.krylov Aᴴ w₁ m)ᗮ := by
+          = (Chapter06.krylov Aᴴ w₁ m)ᗮ := by
   have hG := crossGram_eq_one h
   have hU : IsUnit (LinearMap.crossGram 𝕜 (fun i : Fin m => bilanczosV A v₁ w₁ (i : ℕ))
       (fun i : Fin m => bilanczosW A v₁ w₁ (i : ℕ))) := hG ▸ isUnit_one
@@ -736,7 +737,7 @@ theorem problem_7_6 (h : NoBreakdown A v₁ w₁ m) :
 /-- **P-7.6(b)**: a projector onto `K` along `Lᗮ` exists exactly when `K ⊓ Lᗮ = ⊥`, and the two
 Lanczos subspaces satisfy that condition as long as Algorithm 7.1 has not broken down. -/
 theorem problem_7_6_inf_eq_bot (h : NoBreakdown A v₁ w₁ m) :
-    Ch06.krylov A v₁ m ⊓ (Ch06.krylov Aᴴ w₁ m)ᗮ = ⊥ := by
+    Chapter06.krylov A v₁ m ⊓ (Chapter06.krylov Aᴴ w₁ m)ᗮ = ⊥ := by
   obtain ⟨-, hidem, hran, hker⟩ := problem_7_6 h
   refine Submodule.eq_bot_iff _ |>.2 fun x hx => ?_
   obtain ⟨z, hz⟩ : x ∈ LinearMap.range (Matrix.toEuclideanLin (V A v₁ w₁ m * (W A v₁ w₁ m)ᴴ)) := by
@@ -750,4 +751,4 @@ theorem problem_7_6_inf_eq_bot (h : NoBreakdown A v₁ w₁ m) :
 
 end Projector
 
-end SaadSparse.Ch07
+end SaadSparse.Chapter07

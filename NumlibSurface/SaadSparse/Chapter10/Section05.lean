@@ -4,11 +4,11 @@ import NumlibSurface.SaadSparse.Common
 import Mathlib.Analysis.Matrix.Normed
 
 /-!
-# §10.5 Approximate inverse preconditioners
+# Saad §10.5: approximate inverse preconditioners
 
-Section 10.5 of Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003: instead of factoring `A`, minimize the Frobenius objective
-`F(M) = ‖I - A M‖_F²` over sparse `M` and use `M` itself as the preconditioner.
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §10.5: instead of factoring `A`, minimize the Frobenius objective `F(M) = ‖I - A M‖_F²` over
+sparse `M` and use `M` itself as the preconditioner.
 
 The Frobenius norm is Mathlib's, under `open scoped Matrix.Norms.Frobenius`, so `‖·‖` on matrices
 means `‖·‖_F` throughout this file. The Frobenius inner product `⟨X, Y⟩ = tr(Yᵀ X)` of (10.48) is
@@ -28,14 +28,14 @@ one-dimensional projection step of `Numlib/LinearSolve/Projection/OneDimensional
 preconditioned matrix `C = A M`, since self-preconditioned MR for `A m = e_j` *is* plain MR for
 `C y = e_j`.
 
-The dropping strategies of §10.5.1–§10.5.5 and the factored forms of §10.5.7–§10.5.8 carry no
+The dropping strategies of §10.5.1–10.5.5 and the factored forms of §10.5.7–10.5.8 carry no
 statement of their own.
 -/
 
 open Matrix Projection
 open scoped Matrix.Norms.Frobenius SaadSparse
 
-namespace SaadSparse.Ch10
+namespace SaadSparse.Chapter10
 
 variable {n : ℕ}
 
@@ -266,4 +266,4 @@ theorem lemma_10_15 {A L : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) (hL : IsU
   rw [Matrix.conjTranspose_eq_transpose_of_trivial] at h
   exact h.diag_pos
 
-end SaadSparse.Ch10
+end SaadSparse.Chapter10

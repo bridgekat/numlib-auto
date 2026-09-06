@@ -2,12 +2,12 @@ import Numlib.LinearSolve.Projection.Additive
 import NumlibSurface.SaadSparse.Chapter05.Section01
 
 /-!
-# §5.4 Additive and multiplicative projection processes
+# Saad §5.4: additive and multiplicative projection processes
 
-Section 5.4 of Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003: the additive procedure (Algorithm 5.5) with relaxation parameters, its residual
-identity (5.22)–(5.23), the projectors `P_i = A V_i (V_iᵀ A V_i)⁻¹ V_iᵀ`, and the multiplicative
-procedure (Algorithm 5.6).
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §5.4: the additive procedure (Algorithm 5.5) with relaxation parameters, its residual identity
+(5.22)–(5.23), the projectors `P_i = A V_i (V_iᵀ A V_i)⁻¹ V_iᵀ`, and the multiplicative procedure
+(Algorithm 5.6).
 
 Saad's remark that each inner step of the block relaxations of §4.1.1 is an orthogonal
 projection step over `K_i = span(V_i)` is `blockCorrection_eq_projStep`: (4.17) is literally
@@ -25,7 +25,7 @@ least-squares option and its exactness criterion.
 open Matrix Module Finset
 open scoped SaadSparse
 
-namespace SaadSparse.Ch05
+namespace SaadSparse.Chapter05
 
 variable {n : ℕ}
 
@@ -223,7 +223,7 @@ theorem P_i_isProjOnto {i : Fin 𝒲.p} (h : IsUnit ((𝒲.V i)ᵀ * A * 𝒲.V 
   have hunit : IsUnit ((𝒲.V i)ᴴ * (A * 𝒲.V i)) := by
     rwa [conjTranspose_eq_transpose, ← Matrix.mul_assoc]
   rw [P_i_eq_obliqueProj]
-  exact SaadSparse.Ch01.obliqueProj_isProjOnto (isBasisOf_mul_of_isUnit h)
+  exact SaadSparse.Chapter01.obliqueProj_isProjOnto (isBasisOf_mul_of_isUnit h)
     (isBasisOf_of_isUnit h) hunit z
 
 /-- Saad, Algorithm 5.5 is the backbone's additive projection step, so its residual identity
@@ -310,4 +310,4 @@ theorem sum_P_i_eq_one (horth : ∀ i j, i ≠ j → (A * 𝒲.V i)ᵀ * (A * �
 
 end Family
 
-end SaadSparse.Ch05
+end SaadSparse.Chapter05

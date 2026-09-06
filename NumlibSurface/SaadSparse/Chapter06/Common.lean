@@ -4,10 +4,10 @@ import Numlib.Krylov.Subspace
 import NumlibSurface.SaadSparse.Chapter06.Section03
 
 /-!
-# Saad, Chapter 6: the data of a linear system
+# Saad Chapter 6: the data of a linear system
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003, Chapter 6.
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, Chapter 6.
 
 Every Krylov method of the chapter starts from the same three quantities: the initial residual
 `r₀ = b - A x₀`, its norm `β = ‖r₀‖₂` and the unit vector `v₁ = r₀/β` on which Algorithm 6.1 is
@@ -25,7 +25,7 @@ set `m := j`" as `min m (grade A v₁)`.
 
 open scoped Matrix
 
-namespace SaadSparse.Ch06
+namespace SaadSparse.Chapter06
 
 section General
 
@@ -130,4 +130,4 @@ theorem grade_v₁ : grade A (v₁ A b x₀) = Krylov.grade (op A) (r₀ A b x�
 
 end General
 
-end SaadSparse.Ch06
+end SaadSparse.Chapter06

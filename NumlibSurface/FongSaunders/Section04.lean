@@ -5,13 +5,13 @@ import Numlib.Krylov.Lanczos
 import Numlib.Krylov.Relations
 import Numlib.Krylov.Subspace
 import Numlib.LinearSolve.Projection.Basic
-import NumlibSurface.FongSaunders.Section3
+import NumlibSurface.FongSaunders.Section03
 
 /-!
-# §4: the exact relations behind the numerical comparison
+# Fong–Saunders §4: the exact relations behind the numerical comparison
 
-Surface file for D. C.-L. Fong and M. A. Saunders, *CG versus MINRES: an empirical
-comparison*, SQU Journal for Science **17** (2012) 44–62 (Report SOL 2011-2R).
+Surface file for D. C.-L. Fong and M. A. Saunders, *CG versus MINRES: an empirical comparison*, SQU
+Journal for Science **17** (2012) 44–62 (Report SOL 2011-2R), §4.
 
 §4 is mostly an experimental study; the material with mathematical content is formalized here:
 the FOM/GMRES-type relation (4.1) between the CG and MINRES residual norms, the telescoping

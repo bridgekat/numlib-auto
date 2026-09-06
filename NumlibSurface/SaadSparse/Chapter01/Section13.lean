@@ -3,12 +3,12 @@ import Numlib.LinearSolve.Perturbation
 import NumlibSurface.SaadSparse.Common
 
 /-!
-# §1.13 Basic concepts in linear systems
+# Saad §1.13: basic concepts in linear systems
 
-Section 1.13 of Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003: the three existence cases of §1.13.1, the matrix `p`-norms and the condition number
-`κ_p(A) = ‖A‖_p ‖A⁻¹‖_p` of §1.13.2, the first-order perturbation theory (1.74)–(1.75), the
-relative perturbation bound (1.76), the residual–error relation, and Example 1.5.
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §1.13: the three existence cases of §1.13.1, the matrix `p`-norms and the condition number
+`κ_p(A) = ‖A‖_p ‖A⁻¹‖_p` of §1.13.2, the first-order perturbation theory (1.74)–(1.75), the relative
+perturbation bound (1.76), the residual–error relation, and Example 1.5.
 
 The condition number is the backbone's `NormedRing.condNumber` of the operator
 `x ↦ A x` on `PiLp p (fun _ : Fin n => 𝕜)`, and the perturbation bounds are

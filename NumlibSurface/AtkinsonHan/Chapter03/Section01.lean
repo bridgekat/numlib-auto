@@ -6,8 +6,8 @@ import Numlib.Analysis.Fourier.TrigonometricBasis
 /-!
 # Atkinson–Han §3.1: the Weierstrass approximation theorems
 
-Statements from Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework* (3rd ed.), §3.1.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §3.1.
 
 ## Main results
 
@@ -46,7 +46,7 @@ open Complex MeasureTheory Set Submodule
 
 open scoped Polynomial Real
 
-namespace AtkinsonHan.Ch03
+namespace AtkinsonHan.Chapter03
 
 /-- **Theorem 3.1.1** (Weierstrass). The polynomials are dense in `C[a, b]` with the uniform norm:
 every continuous `f` on `[a, b]` is within `ε` of a polynomial. -/
@@ -217,4 +217,4 @@ theorem corollary_3_1_4 [Fact (0 < T)] (f : C(AddCircle T, ℝ)) {ε : ℝ} (hε
 
 end Trigonometric
 
-end AtkinsonHan.Ch03
+end AtkinsonHan.Chapter03

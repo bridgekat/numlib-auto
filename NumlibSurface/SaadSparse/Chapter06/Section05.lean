@@ -11,10 +11,10 @@ import NumlibSurface.SaadSparse.Chapter06.Section03
 import NumlibSurface.SaadSparse.Chapter06.Section04
 
 /-!
-# Saad, §6.5: GMRES
+# Saad §6.5: GMRES
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003, §6.5, together with the problems P-6.9, P-6.13, P-6.14, P-6.25 and P-6.26.
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §6.5 , together with the problems P-6.9, P-6.13, P-6.14, P-6.25 and P-6.26.
 
 The data of the system — `r₀ = b - A x₀`, `β = ‖r₀‖₂`, `v₁ = r₀/β`, the first coordinate vector
 `e₁`, and `mEff`, which implements the book's "if `h_{j+1,j} = 0` set `m := j`" — are shared with
@@ -44,7 +44,7 @@ recomputed when a column is appended, and it makes (6.44)–(6.46) hold by defin
 real and its §6.5.9 is complex, and the two are the same code, so the numbered results are
 collected at the end of the part over `ℝ` and over `ℂ`.
 
-## §6.5.1–§6.5.5: GMRES
+## §6.5.1–6.5.5: GMRES
 
 The element `x = x₀ + V_m y` of (6.25) is `krylovIterate`, the least-squares function `J(y)` of
 (6.26)/(6.28) is `J`, and Algorithm 6.9 line 12 ("compute `y_m` the minimizer") is the relation
@@ -128,7 +128,7 @@ are the short inductions the book performs, shared by the single private lemma
 
 open scoped Matrix
 
-namespace SaadSparse.Ch06
+namespace SaadSparse.Chapter06
 
 /-! ### §6.5.3 and §6.5.9: Givens rotations and the factorization `Q_m H̄_m = R̄_m` -/
 
@@ -634,7 +634,7 @@ theorem equation_6_81 (hv : ‖v₁‖ = 1) (t : ℝ) (m : ℕ) :
 
 end BookResultsComplex
 
-/-! ### §6.5.1–§6.5.5: GMRES -/
+/-! ### §6.5.1–6.5.5: GMRES -/
 
 section General
 
@@ -873,7 +873,7 @@ theorem apply_eq_of_s_eq_zero {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀))
 /-! ### P-6.5: GMRES from Saad (5.7) -/
 
 /-- **P-6.5**: the GMRES coordinates satisfy the normal equations
-`H̄_mᴴ H̄_m y_m = H̄_mᴴ (β e_1)` of the least-squares problem (6.29) — the Petrov-Galerkin
+`H̄_mᴴ H̄_m y_m = H̄_mᴴ (β e_1)` of the least-squares problem (6.29) — the Petrov–Galerkin
 formula Saad (5.7) with `V = V_m` and `W = A V_m`. -/
 theorem normalEquations_gmresY {m : ℕ} (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m)) :
     ((Hbar A (v₁ A b x₀) m)ᴴ * Hbar A (v₁ A b x₀) m) *ᵥ gmresY A b x₀ m
@@ -2791,4 +2791,4 @@ theorem problem_6_26 (hA : IsUnit A) (xO rO : ℕ → 𝔼) (hr : ∀ j, rO j = 
 
 end FOM
 
-end SaadSparse.Ch06
+end SaadSparse.Chapter06

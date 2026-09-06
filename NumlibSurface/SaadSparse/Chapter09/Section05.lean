@@ -4,10 +4,10 @@ import NumlibSurface.SaadSparse.Chapter08.Section03
 import NumlibSurface.SaadSparse.Chapter09.Section02
 
 /-!
-# Saad, §9.5: preconditioned CG for the normal equations
+# Saad §9.5: preconditioned CG for the normal equations
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003, §9.5.
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §9.5.
 
 Both algorithms are Algorithm 9.1 (`pcg`) run on a normal-equations system and rearranged so
 that only products with `A` and `Aᴴ` and solves with `M` occur, and neither `Aᴴ A` nor `A Aᴴ`
@@ -26,7 +26,7 @@ general-subspace forms of what `Numlib/Krylov/NormalEquations` proves for the un
 Krylov space. Unlike the unpreconditioned case, the two search spaces now *differ*: Algorithm
 9.7 minimizes `‖b - A x‖₂` over `x₀ + 𝒦_m(M⁻¹ Aᴴ A, M⁻¹ Aᴴ r₀)` while Algorithm 9.8 minimizes
 `‖x_* - x‖₂` over `x₀ + 𝒦_m(Aᴴ M⁻¹ A, Aᴴ M⁻¹ r₀)`; at `M = I` both are the single space
-`x₀ + 𝒦_m(Aᴴ A, Aᴴ r₀)` of §8.3 (`Ch08.subspace_adjoint_eq`).
+`x₀ + 𝒦_m(Aᴴ A, Aᴴ r₀)` of §8.3 (`Chapter08.subspace_adjoint_eq`).
 
 The right, split and centred variants of P-9.4 and P-9.5 are the same derivation in other inner
 products and are not formalized; see `plans/saadsparse-ch7-9.md` §4.
@@ -39,9 +39,9 @@ open Matrix
 
 open scoped Matrix SaadSparse
 
-namespace SaadSparse.Ch09
+namespace SaadSparse.Chapter09
 
-open Ch06 (op)
+open Chapter06 (op)
 
 variable {n : ℕ} {𝕜 : Type*} [RCLike 𝕜]
 
@@ -55,7 +55,7 @@ theorem isSymmetric_conjTranspose_mul (A : Matrix (Fin n) (Fin n) 𝕜) :
     (op (Aᴴ * A)).IsSymmetric := by
   intro x y
   simp only [op_mul_apply]
-  rw [Ch08.inner_op_conjTranspose, Ch08.inner_op_self]
+  rw [Chapter08.inner_op_conjTranspose, Chapter08.inner_op_self]
 
 /-- `A Aᴴ` is a symmetric operator: the coefficient operator of the system Algorithm 9.8
 preconditions. -/
@@ -63,28 +63,28 @@ theorem isSymmetric_mul_conjTranspose (A : Matrix (Fin n) (Fin n) 𝕜) :
     (op (A * Aᴴ)).IsSymmetric := by
   intro x y
   simp only [op_mul_apply]
-  rw [Ch08.inner_op_self, Ch08.inner_op_conjTranspose]
+  rw [Chapter08.inner_op_self, Chapter08.inner_op_conjTranspose]
 
 /-- `(Aᴴ A p, p) = ‖A p‖₂²`: the denominator of Algorithm 9.7, line 4, is the one Algorithm 9.1
 would form. -/
 private theorem inner_conjTranspose_mul_self (A : Matrix (Fin n) (Fin n) 𝕜) (p : 𝔼) :
     inner 𝕜 p (op (Aᴴ * A) p) = (‖op A p‖ : 𝕜) ^ 2 := by
-  rw [op_mul_apply, ← Ch08.inner_op_self, inner_self_eq_norm_sq_to_K]
+  rw [op_mul_apply, ← Chapter08.inner_op_self, inner_self_eq_norm_sq_to_K]
 
 /-- `(A Aᴴ q, q) = (Aᴴ q, Aᴴ q)`: the denominator of Algorithm 9.8, line 4, is the one
 Algorithm 9.1 would form, read through `p = Aᴴ q`. -/
 private theorem inner_mul_conjTranspose_self (A : Matrix (Fin n) (Fin n) 𝕜) (q : 𝔼) :
     inner 𝕜 (op Aᴴ q) (op Aᴴ q) = inner 𝕜 q (op (A * Aᴴ) q) := by
-  rw [op_mul_apply, Ch08.inner_op_conjTranspose]
+  rw [op_mul_apply, Chapter08.inner_op_conjTranspose]
 
 /-- `Aᴴ` carries the Krylov space of `M⁻¹ A Aᴴ` to the Krylov space of `Aᴴ M⁻¹ A`:
 `Aᴴ 𝒦_m(M⁻¹ A Aᴴ, v) = 𝒦_m(Aᴴ M⁻¹ A, Aᴴ v)`. This is the change of variables `x = Aᴴ u` of
 Algorithm 9.8, and it is what names the affine space that algorithm searches. -/
 theorem map_krylov_conjTranspose (A M : Matrix (Fin n) (Fin n) 𝕜)
     (v : EuclideanSpace 𝕜 (Fin n)) (m : ℕ) :
-    (Ch06.krylov (M⁻¹ * (A * Aᴴ)) v m).map (op Aᴴ)
-      = Ch06.krylov (Aᴴ * (M⁻¹ * A)) (op Aᴴ v) m := by
-  rw [Ch06.krylov_eq, Ch06.krylov_eq, ← Matrix.mul_assoc M⁻¹ A Aᴴ, op_mul (M⁻¹ * A) Aᴴ,
+    (Chapter06.krylov (M⁻¹ * (A * Aᴴ)) v m).map (op Aᴴ)
+      = Chapter06.krylov (Aᴴ * (M⁻¹ * A)) (op Aᴴ v) m := by
+  rw [Chapter06.krylov_eq, Chapter06.krylov_eq, ← Matrix.mul_assoc M⁻¹ A Aᴴ, op_mul (M⁻¹ * A) Aᴴ,
     op_mul Aᴴ (M⁻¹ * A), op_mul M⁻¹ A]
   exact Krylov.map_subspace_comp (op M⁻¹ ∘ₗ op A) (op Aᴴ) v m
 
@@ -110,11 +110,11 @@ theorem isGalerkin_adjoint_comp_iff_isMinRes (A : Matrix (Fin n) (Fin n) 𝕜)
     rintro _ ⟨w, hw, rfl⟩
     have h := (Submodule.mem_orthogonal _ _).1 horth w hw
     rwa [LinearMap.comp_apply, ← map_sub,
-      Krylov.inner_adjoint_right (Ch08.inner_op_conjTranspose A)] at h
+      Krylov.inner_adjoint_right (Chapter08.inner_op_conjTranspose A)] at h
   · refine ⟨hmem, (Submodule.mem_orthogonal _ _).2 fun w hw => ?_⟩
     have h := (Submodule.mem_orthogonal _ _).1 horth (op A w) (Submodule.mem_map_of_mem hw)
     rwa [LinearMap.comp_apply, ← map_sub,
-      Krylov.inner_adjoint_right (Ch08.inner_op_conjTranspose A)]
+      Krylov.inner_adjoint_right (Chapter08.inner_op_conjTranspose A)]
 
 /-- **CGNE's optimality over an arbitrary subspace.** If `u` is a Galerkin iterate for
 `A Aᴴ u = b` over `u₀ + K` and `x = x₀ + Aᴴ (u - u₀)`, then `x` minimizes the *error*
@@ -138,7 +138,7 @@ theorem isMinError_of_isGalerkin_comp_adjoint (A : Matrix (Fin n) (Fin n) 𝕜)
   have h2 : op A x₀ = (op A ∘ₗ op Aᴴ) u₀ := by rw [hx₀, LinearMap.comp_apply]
   have hA : op A ((xstar - x₀) - op Aᴴ (u - u₀)) = b - (op A ∘ₗ op Aᴴ) u := by
     rw [map_sub, map_sub, hstar, h1, h2]; abel
-  rw [Krylov.inner_adjoint_right (Ch08.inner_op_conjTranspose A), hA, ← inner_conj_symm,
+  rw [Krylov.inner_adjoint_right (Chapter08.inner_op_conjTranspose A), hA, ← inner_conj_symm,
     (Submodule.mem_orthogonal _ _).1 hu.orth z hz, map_zero]
 
 /-! ### Algorithm 9.7: left-preconditioned CGNR -/
@@ -260,13 +260,13 @@ theorem pcgnr_isMinRes (hM : Krylov.IsPreconditioner (op M) (op M⁻¹)) {c : �
     (hcoer : ∀ x : 𝔼, c * RCLike.re (inner 𝕜 (op M x) x) ≤ ‖op A x‖ ^ 2)
     (b x₀ : EuclideanSpace 𝕜 (Fin n)) (m : ℕ) :
     IsMinRes (op A) b x₀
-        (Ch06.krylov (M⁻¹ * (Aᴴ * A)) (op M⁻¹ (op Aᴴ (b - op A x₀))) m)
+        (Chapter06.krylov (M⁻¹ * (Aᴴ * A)) (op M⁻¹ (op Aᴴ (b - op A x₀))) m)
       (pcgnr A M b x₀ m).x := by
   have hinit : op Aᴴ b - op (Aᴴ * A) x₀ = op Aᴴ (b - op A x₀) := by
     rw [op_mul_apply, ← map_sub]
   have hcoer' : ∀ x : 𝔼, c * RCLike.re (inner 𝕜 (op M x) x)
       ≤ RCLike.re (inner 𝕜 (op (Aᴴ * A) x) x) := fun x => by
-    rw [op_mul, Krylov.inner_adjoint_comp_self (Ch08.inner_op_conjTranspose A) x,
+    rw [op_mul, Krylov.inner_adjoint_comp_self (Chapter08.inner_op_conjTranspose A) x,
       RCLike.ofReal_re]
     exact hcoer x
   have h := pcg_isGalerkinIterate (A := Aᴴ * A) (M := M) hM (isSymmetric_conjTranspose_mul A)
@@ -394,18 +394,18 @@ over the affine space `x_0 + 𝒦_m(Aᴴ M⁻¹ A, Aᴴ M⁻¹ r_0)`.
 
 That space is not the one Algorithm 9.7 searches: preconditioning separates the two normal
 equations, and only at `M = I` do `𝒦_m(M⁻¹ Aᴴ A, M⁻¹ Aᴴ r_0)` and `𝒦_m(Aᴴ M⁻¹ A, Aᴴ M⁻¹ r_0)`
-coincide (`Ch08.subspace_adjoint_eq`). -/
+coincide (`Chapter08.subspace_adjoint_eq`). -/
 theorem pcgne_isMinError (hM : Krylov.IsPreconditioner (op M) (op M⁻¹)) {c : ℝ} (hc : 0 < c)
     (hcoer : ∀ x : 𝔼, c * RCLike.re (inner 𝕜 (op M x) x) ≤ ‖op Aᴴ x‖ ^ 2)
     (b x₀ : EuclideanSpace 𝕜 (Fin n)) {u₀ xstar : EuclideanSpace 𝕜 (Fin n)}
     (hu₀ : op Aᴴ u₀ = x₀) (hstar : op A xstar = b) (m : ℕ) :
     IsMinError xstar x₀
-        (Ch06.krylov (Aᴴ * (M⁻¹ * A)) (op Aᴴ (op M⁻¹ (b - op A x₀))) m)
+        (Chapter06.krylov (Aᴴ * (M⁻¹ * A)) (op Aᴴ (op M⁻¹ (b - op A x₀))) m)
       (pcgne A M b x₀ m).x := by
   have hres : b - op (A * Aᴴ) u₀ = b - op A x₀ := by rw [op_mul_apply, hu₀]
   have hcoer' : ∀ x : 𝔼, c * RCLike.re (inner 𝕜 (op M x) x)
       ≤ RCLike.re (inner 𝕜 (op (A * Aᴴ) x) x) := fun x => by
-    rw [op_mul, Krylov.inner_adjoint_comp_self (Ch08.inner_op_self A) x, RCLike.ofReal_re]
+    rw [op_mul, Krylov.inner_adjoint_comp_self (Chapter08.inner_op_self A) x, RCLike.ofReal_re]
     exact hcoer x
   have h := pcg_isGalerkinIterate (A := A * Aᴴ) (M := M) hM (isSymmetric_mul_conjTranspose A)
     hc hcoer' b u₀ m
@@ -416,4 +416,4 @@ theorem pcgne_isMinError (hM : Krylov.IsPreconditioner (op M) (op M⁻¹)) {c : 
 
 end CGNE
 
-end SaadSparse.Ch09
+end SaadSparse.Chapter09

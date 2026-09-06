@@ -1,4 +1,4 @@
-namespace = "AtkinsonHan.Ch08"
+namespace = "AtkinsonHan.Chapter08"
 
 [[node]]
 id = "isClosed_iff_seq"

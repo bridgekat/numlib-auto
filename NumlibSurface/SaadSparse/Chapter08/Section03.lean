@@ -3,10 +3,10 @@ import NumlibSurface.SaadSparse.Chapter06.Section02
 import NumlibSurface.SaadSparse.Chapter08.Section01
 
 /-!
-# Saad, §8.3: conjugate gradient and the normal equations
+# Saad §8.3: conjugate gradient and the normal equations
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003, §8.3.
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §8.3.
 
 Both algorithms of the section are the conjugate gradient method on a normal-equations system,
 rearranged so that only products with `A` and `Aᴴ` occur and neither `Aᴴ A` nor `A Aᴴ` is ever
@@ -30,9 +30,9 @@ open Matrix
 
 open scoped Matrix SaadSparse
 
-namespace SaadSparse.Ch08
+namespace SaadSparse.Chapter08
 
-open Ch06 (op)
+open Chapter06 (op)
 
 variable {n : ℕ} {𝕜 : Type*} [RCLike 𝕜]
 
@@ -58,8 +58,8 @@ private theorem op_mul (B C : Matrix (Fin n) (Fin n) 𝕜) : op (B * C) = op B �
 
 /-- The book's `𝒦_m(Aᴴ A, v)` is the backbone Krylov subspace of the composite operator. -/
 theorem krylov_conjTranspose_mul (B C : Matrix (Fin n) (Fin n) 𝕜) (v : 𝔼) (m : ℕ) :
-    Ch06.krylov (B * C) v m = Krylov.subspace (op B ∘ₗ op C) v m := by
-  rw [Ch06.krylov_eq, op_mul]
+    Chapter06.krylov (B * C) v m = Krylov.subspace (op B ∘ₗ op C) v m := by
+  rw [Chapter06.krylov_eq, op_mul]
 
 /-- `Aᴴ A` is symmetric positive definite as soon as `A` is nonsingular, which is the hypothesis
 under which CGNR is well defined. -/
@@ -270,7 +270,7 @@ variable {A : Matrix (Fin n) (Fin n) 𝕜} (b x₀ : EuclideanSpace 𝕜 (Fin n)
 `x_0 + 𝒦_m(Aᴴ A, Aᴴ r_0)`. It is the same minimization GMRES performs, over a different
 subspace. -/
 theorem cgnr_isMinRes (hA : Function.Injective (op A)) (m : ℕ) :
-    IsMinRes (op A) b x₀ (Ch06.krylov (Aᴴ * A) (op Aᴴ (b - op A x₀)) m) (cgnr A b x₀ m).x := by
+    IsMinRes (op A) b x₀ (Chapter06.krylov (Aᴴ * A) (op Aᴴ (b - op A x₀)) m) (cgnr A b x₀ m).x := by
   have hgal := CG.isGalerkinIterate (op Aᴴ b) x₀ (isSymmetricCoercive_normal hA) m
   rw [cgnr_eq, krylov_conjTranspose_mul]
   exact (Krylov.isGalerkinIterate_adjoint_comp_iff_isMinRes (inner_op_conjTranspose A) b x₀ m
@@ -282,7 +282,7 @@ same affine subspace `x_0 + 𝒦_m(Aᴴ A, Aᴴ r_0)` that CGNR minimizes the re
 theorem cgne_isMinError (hA : Function.Injective (op Aᴴ))
     {u₀ xstar : EuclideanSpace 𝕜 (Fin n)} (hu₀ : op Aᴴ u₀ = x₀) (hstar : op A xstar = b)
     (m : ℕ) :
-    IsMinError xstar x₀ (Ch06.krylov (Aᴴ * A) (op Aᴴ (b - op A x₀)) m) (cgne A b x₀ m).x := by
+    IsMinError xstar x₀ (Chapter06.krylov (Aᴴ * A) (op Aᴴ (b - op A x₀)) m) (cgne A b x₀ m).x := by
   have hgal := CG.isGalerkinIterate b u₀ (isSymmetricCoercive_normal' hA) m
   rw [(cgne_eq b x₀ hu₀ m).1, krylov_conjTranspose_mul]
   exact Krylov.isMinError_of_isGalerkinIterate_comp_adjoint (inner_op_conjTranspose A) b x₀
@@ -293,7 +293,7 @@ CGNR and CGNE draw their approximations from the same affine subspace and differ
 they minimize over it. -/
 theorem subspace_adjoint_eq (A : Matrix (Fin n) (Fin n) 𝕜) (r₀ : EuclideanSpace 𝕜 (Fin n))
     (m : ℕ) :
-    (Ch06.krylov (A * Aᴴ) r₀ m).map (op Aᴴ) = Ch06.krylov (Aᴴ * A) (op Aᴴ r₀) m := by
+    (Chapter06.krylov (A * Aᴴ) r₀ m).map (op Aᴴ) = Chapter06.krylov (Aᴴ * A) (op Aᴴ r₀) m := by
   rw [krylov_conjTranspose_mul, krylov_conjTranspose_mul]
   exact Krylov.map_subspace_comp (op A) (op Aᴴ) r₀ m
 
@@ -321,4 +321,4 @@ theorem cgnr_norm_residual_le {smin smax : ℝ} (hs : 0 < smin) (hss : smin ≤ 
 
 end Optimality
 
-end SaadSparse.Ch08
+end SaadSparse.Chapter08

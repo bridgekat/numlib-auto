@@ -5,10 +5,10 @@ import Numlib.Krylov.Lanczos
 import Numlib.Krylov.Subspace
 
 /-!
-# §1: the setting, Krylov subspaces and the Lanczos process
+# Fong–Saunders §1: the setting, Krylov subspaces and the Lanczos process
 
-Surface library for D. C.-L. Fong and M. A. Saunders, *CG versus MINRES: an empirical
-comparison*, SQU Journal for Science **17** (2012) 44–62 (Report SOL 2011-2R).
+Surface file for D. C.-L. Fong and M. A. Saunders, *CG versus MINRES: an empirical comparison*, SQU
+Journal for Science **17** (2012) 44–62 (Report SOL 2011-2R), §1.
 
 §1 fixes the problem: a real symmetric positive definite system `A x = b` of order `n`, solved
 from `x₀ = 0`, with `‖·‖` the 2-norm on vectors. This file introduces the surface vocabulary

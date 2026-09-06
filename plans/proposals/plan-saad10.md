@@ -298,7 +298,7 @@ Ch. 11 contains no theorem-shaped content at all.
 
 | Result | Status |
 |---|---|
-| Thm 10.1 (Ky Fan) | planned — `Matrix.IsMMatrix.isMMatrix_schurComplementSingle`, surface `SaadSparse.Ch10.theorem_10_1` |
+| Thm 10.1 (Ky Fan) | planned — `Matrix.IsMMatrix.isMMatrix_schurComplementSingle`, surface `SaadSparse.Chapter10.theorem_10_1` |
 | Thm 10.2 (ILU exists for M-matrices, regular splitting) | planned — `Matrix.IsMMatrix.exists_isILU`, `Matrix.IsILU.isRegular`, surface `theorem_10_2` (★★★, the hard proof of the slice) |
 | Prop 10.3 (KIJ = IKJ) | **skipped** — no algorithm objects exist; `Matrix.IsILU` abstracts from the loop order |
 | Prop 10.4 (`A = LU - R`, `R` in the pattern) | planned — `Matrix.IsILU.sub_eq_zero_of_notMem`, surface `proposition_10_4` |

@@ -18,8 +18,8 @@ Table 2.1, the minimization characterizations of CG and MINRES, the CR sign lemm
 the monotonicity theorems Thm 2.3–2.5 for CR (hence MINRES); (§3) normwise relative backward error
 (3.1)–(3.6), the stopping rule (3.4), Thm 3.1; (§4.1.1) the FOM/GMRES-type relation (4.1); (§4.2)
 Steihaug's indefinite-case monotonicity and its CR analogue; (§5) Table 5.1.
-Lean files: `NumlibSurface/FongSaunders/Section1.lean` (setting), `Sec2.lean`, `Sec3.lean`, `Sec4.lean`
-(only (4.1), the telescoping identity, §4.2), `Sec5.lean` (Table 5.1 as a structure). Numerical-only
+Lean files: `NumlibSurface/FongSaunders/Section01.lean` (setting), `Section02.lean`, `Section03.lean`, `Section04.lean`
+(only (4.1), the telescoping identity, §4.2), `Section05.lean` (Table 5.1 as a structure). Numerical-only
 material (§4 experiments, Figures 4.1–4.8, the MINRES-QLP heuristic in §4.2, Table 5.2, §5 prose) is
 left out (section "Left out" below). Count: 26 result blocks, all formalized. Backbone dependencies: `backbone.md` §2.1.4–2.1.5, §2.2, §2.4, §3.1–3.8, §3.11,
 §8.2.
@@ -54,7 +54,7 @@ Each block: paper formulation → Lean surface definition → backbone counterpa
   matrix glue `Matrix.toEuclideanLin_one`, `Matrix.toEuclideanLin_mul`, `Matrix.toEuclideanLin_pow`,
   `Matrix.l2_opNorm_eq_norm_toEuclideanLin` (`Numlib/Analysis/Matrix/ToEuclideanLin.lean`).
 * Equivalence: `Matrix.posDef_iff_isSymmetricCoercive (M) : M.PosDef ↔ (toEuclideanLin M).IsSymmetricCoercive`
-  (`Numlib/Analysis/InnerProductSpace/Coercive.lean`). Surface glue lemmas (trivial `simp`/`rfl`, in `Sec1.lean`):
+  (`Numlib/Analysis/InnerProductSpace/Coercive.lean`). Surface glue lemmas (trivial `simp`/`rfl`, in `Section01.lean`):
   `mulVecE_add`, `mulVecE_smul`, `mulVecE_zero`,
   `inner_mulVecE : ⟪x, A ⬝ y⟫_ℝ = x.ofLp ⬝ᵥ (A *ᵥ y.ofLp)` (unfold `Matrix.toEuclideanLin`,
   `EuclideanSpace.inner_eq_star_dotProduct`),

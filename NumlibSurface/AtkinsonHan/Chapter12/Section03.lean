@@ -3,8 +3,8 @@ import NumlibSurface.AtkinsonHan.Chapter12.Section01
 /-!
 # Atkinson–Han §12.3: iterated projection methods
 
-Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional Analysis
-Framework*, 3rd edition, Springer, 2009.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §12.3.
 
 Sloan's observation: one fixed-point sweep applied to a projection solution `u_n` of
 `(λ - K) u = f` produces an approximation `û_n` whose error carries an extra factor `I - P_n`
@@ -42,7 +42,7 @@ specialization to an orthogonal projection.
 
 open Filter Topology
 
-namespace AtkinsonHan.Ch12
+namespace AtkinsonHan.Chapter12
 
 variable {𝕜 X : Type*} [RCLike 𝕜] [NormedAddCommGroup X] [NormedSpace 𝕜 X]
 
@@ -149,4 +149,4 @@ theorem equation_12_3_11 {μ : 𝕜} (hμ : μ ≠ 0) {K P : X →L[𝕜] X} (hP
         mul_le_mul_of_nonneg_left (ContinuousLinearMap.le_opNorm _ _) (norm_nonneg _)
     _ = ‖(e''.symm : X →L[𝕜] X)‖ * ‖K ∘L (1 - P)‖ * ‖u - P u‖ := by ring
 
-end AtkinsonHan.Ch12
+end AtkinsonHan.Chapter12

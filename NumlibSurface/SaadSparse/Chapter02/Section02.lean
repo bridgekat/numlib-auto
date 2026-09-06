@@ -8,19 +8,19 @@ import Mathlib.Analysis.SpecialFunctions.ExpDeriv
 import Mathlib.RingTheory.Polynomial.Chebyshev
 
 /-!
-# §2.2 Finite difference methods
+# Saad §2.2: finite difference methods
 
-Section 2.2 of Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003: the truncation errors of §2.2.1–§2.2.2, the one-dimensional model matrix of §2.2.3,
-the exactly solvable convection–diffusion problem of §2.2.4, the two-dimensional five-point
-matrix of §2.2.5, and the spectral facts of §2.2.6 on which the fast Poisson solvers rest.
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §2.2: the truncation errors of §2.2.1–2.2.2, the one-dimensional model matrix of §2.2.3, the
+exactly solvable convection–diffusion problem of §2.2.4, the two-dimensional five-point matrix of
+§2.2.5, and the spectral facts of §2.2.6 on which the fast Poisson solvers rest.
 
 The chapter states no numbered result, so what matters here are the *definitions*:
-`SaadSparse.Ch02.laplacian1D`, `SaadSparse.Ch02.laplacian2D` and the block
-`SaadSparse.Ch02.blockB` of (2.27) are cited by Chapters 4, 6, 10, 12 and 13, and every numerical
-experiment of the book runs on them.  They carry the `1/h²` scaling on the matrix, as the displays
-of §2.2.3 and §2.2.5 do; §2.2.6 scales it away, and `SaadSparse.Ch02.laplacian2D_smul` relates the
-two conventions.
+`SaadSparse.Chapter02.laplacian1D`, `SaadSparse.Chapter02.laplacian2D` and the block
+`SaadSparse.Chapter02.blockB` of (2.27) are cited by Chapters 4, 6, 10, 12 and 13, and every
+numerical experiment of the book runs on them.  They carry the `1/h²` scaling on the matrix, as the
+displays of §2.2.3 and §2.2.5 do; §2.2.6 scales it away, and `SaadSparse.Chapter02.laplacian2D_smul`
+relates the two conventions.
 
 The spectral work is the backbone's.  `Numlib/LinearAlgebra/Matrix/TridiagonalToeplitz` has the
 eigenpairs of `tridiag(a, b, a)` and the orthogonality of the discrete sine basis, and
@@ -42,16 +42,17 @@ transposed and are stated here as `p` systems of size `m`, which is what Algorit
 and the `1/h²` scaling of §2.2.3, which the book writes on the right-hand side of the scalar
 equation and on the matrix in the display, is used in the matrix convention only.
 
-The module imports §2.5 for the positive/negative-part identity `SaadSparse.Ch02.equation_2_53`,
-which is the same algebraic fact as the upwind combination (2.22) and is proved there once.
+The module imports §2.5 for the positive/negative-part identity
+`SaadSparse.Chapter02.equation_2_53`, which is the same algebraic fact as the upwind combination
+(2.22) and is proved there once.
 -/
 
 open Finset Matrix Polynomial
 open scoped Kronecker Matrix Real
 
-namespace SaadSparse.Ch02
+namespace SaadSparse.Chapter02
 
-/-! ### §2.2.1–§2.2.2 Truncation errors of the difference formulas
+/-! ### §2.2.1–2.2.2 Truncation errors of the difference formulas
 
 Saad's derivations are Taylor expansions with a Lagrange remainder, so each statement below names
 the intermediate point that the remainder is evaluated at, exactly as the book's displays do. -/
@@ -922,7 +923,7 @@ theorem convDiffUpwind_diagDominant {n : ℕ} {h c : ℝ} (hh : h ≠ 0) (hc : 0
 taking the backward difference where `b_i > 0` and the forward difference where `b_i < 0` gives
 the single formula `(-b_i⁺ u_{i-1} + |b_i| u_i + b_i⁻ u_{i+1})/h`, whose three coefficients have
 nonnegative diagonal, nonpositive off-diagonal parts and sum to zero.  The identity behind it is
-`SaadSparse.Ch02.equation_2_53`, proved once in §2.5. -/
+`SaadSparse.Chapter02.equation_2_53`, proved once in §2.5. -/
 theorem equation_2_23 (b uprev ucur unext h : ℝ) :
     (max b 0 * (ucur - uprev) + min b 0 * (unext - ucur)) / h
         = (-(max b 0) * uprev + |b| * ucur + min b 0 * unext) / h ∧
@@ -933,7 +934,7 @@ theorem equation_2_23 (b uprev ucur unext h : ℝ) :
 
 end ConvectionDiffusion
 
-/-! ### §2.2.5–§2.2.6 The two-dimensional model problem -/
+/-! ### §2.2.5–2.2.6 The two-dimensional model problem -/
 
 section TwoDimensional
 
@@ -1243,4 +1244,4 @@ theorem cyclicReduction_mulVec_of_mulVec_eq_smul {p : ℕ} {B : Matrix (Fin p) (
 
 end TwoDimensional
 
-end SaadSparse.Ch02
+end SaadSparse.Chapter02

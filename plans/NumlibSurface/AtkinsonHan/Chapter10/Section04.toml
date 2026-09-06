@@ -1,4 +1,4 @@
-namespace = "AtkinsonHan.Ch10"
+namespace = "AtkinsonHan.Chapter10"
 
 [[node]]
 id = "_root_.AtkinsonHan.DualProblem"

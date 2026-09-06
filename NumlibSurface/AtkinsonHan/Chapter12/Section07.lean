@@ -6,8 +6,8 @@ import NumlibSurface.AtkinsonHan.Chapter12.Section01
 /-!
 # Atkinson–Han §12.7: projection methods for nonlinear equations
 
-Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional Analysis
-Framework*, 3rd edition, Springer, 2009.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §12.7.
 
 The fixed point problem `u = T u` for a completely continuous `T` on a Banach space, approximated
 by the projection equations `u_n = P_n T u_n`.  §12.7.1 analyses it by linearizing at an isolated
@@ -45,7 +45,7 @@ bound on `‖(I - P_n T'(u*))⁻¹‖`.
 
 open Filter Topology
 
-namespace AtkinsonHan.Ch12
+namespace AtkinsonHan.Chapter12
 
 /-! ### The linearization remainder -/
 
@@ -153,7 +153,7 @@ Uniform boundedness of the projections is Banach–Steinhaus, and is where compl
 second time. -/
 theorem exercise_12_7_3 {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [CompleteSpace V]
     {T : V → V} {T' : V → V →L[ℝ] V} {T'' : V → V →L[ℝ] V →L[ℝ] V}
-    {H : Set V} (hH : IsOpen H) (hcc : Ch05.IsCompletelyContinuousOn T H)
+    {H : Set V} (hH : IsOpen H) (hcc : Chapter05.IsCompletelyContinuousOn T H)
     {ustar : V} (hmem : ustar ∈ H) (hfix : T ustar = ustar) {ρ : ℝ} (hρ : 0 < ρ)
     (hT : ∀ z ∈ Metric.closedBall ustar ρ, HasFDerivAt T (T' z) z)
     (hT' : ∀ z ∈ Metric.closedBall ustar ρ, HasFDerivAt T' (T'' z) z)
@@ -167,7 +167,7 @@ theorem exercise_12_7_3 {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [
           ‖ustar - un‖ ≤ c * ‖ustar - P n ustar‖ := by
   have hcen : ustar ∈ Metric.closedBall ustar ρ := Metric.mem_closedBall_self hρ.le
   -- the derivative at the fixed point is compact, so the linear theory of §12.1 applies to it
-  have hA : IsCompactOperator (T' ustar) := Ch05.proposition_5_5_5 hcc hH hmem (hT ustar hcen)
+  have hA : IsCompactOperator (T' ustar) := Chapter05.proposition_5_5_5 hcc hH hmem (hT ustar hcen)
   have hconv : Tendsto (fun n => ‖T' ustar - P n ∘L T' ustar‖) atTop (𝓝 0) := lemma_12_1_4 hA hP
   -- the projections are uniformly bounded, by Banach–Steinhaus
   obtain ⟨Cp, hCp⟩ : ∃ C : ℝ, ∀ n, ‖P n‖ ≤ C :=
@@ -302,7 +302,7 @@ theorem exercise_12_7_3 {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [
           rw [hsplit]; exact norm_add_le _ _
       _ ≤ 1 / 2 * r + r / 2 := add_le_add (h1.trans (by linarith)) hFcenter
       _ = r := by ring
-  have hcon : Ch05.ContractiveOn F (Metric.closedBall ustar r) (1 / 2) :=
+  have hcon : Chapter05.ContractiveOn F (Metric.closedBall ustar r) (1 / 2) :=
     ⟨by norm_num, by norm_num, fun u hu v hv => hcontract u hu v hv⟩
   -- the fixed points of `F` are exactly the projection solutions
   have hzero : ∀ x : V, en.symm x = 0 ↔ x = 0 := by
@@ -318,7 +318,7 @@ theorem exercise_12_7_3 {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [
     rw [← sub_eq_zero]
     exact (hzero _).1 h0
   obtain ⟨u0, ⟨hu0mem, hu0fix⟩, hu0uniq⟩ :=
-    (Ch05.theorem_5_1_3 Metric.isClosed_closedBall ⟨ustar, hcen'⟩ hmaps hcon).1
+    (Chapter05.theorem_5_1_3 Metric.isClosed_closedBall ⟨ustar, hcen'⟩ hmaps hcon).1
   refine ⟨⟨u0, ⟨hu0mem, (hfixiff u0).1 hu0fix⟩, ?_⟩, ?_⟩
   · rintro y ⟨hy1, hy2⟩
     exact hu0uniq y ⟨hy1, (hfixiff y).2 hy2⟩
@@ -333,4 +333,4 @@ theorem exercise_12_7_3 {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [
     have h3 : ‖F ustar - F un‖ ≤ 1 / 2 * ‖ustar - un‖ := hcontract ustar hcen' un hun
     linarith
 
-end AtkinsonHan.Ch12
+end AtkinsonHan.Chapter12

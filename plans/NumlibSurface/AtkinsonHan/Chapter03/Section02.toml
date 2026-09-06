@@ -1,6 +1,6 @@
-namespace = "AtkinsonHan.Ch03"
+namespace = "AtkinsonHan.Chapter03"
 desc = '''
-Atkinson-Han §3.2: interpolation theory — the abstract interpolation problem and its unique
+Atkinson–Han §3.2: interpolation theory — the abstract interpolation problem and its unique
 solvability, Lagrange interpolation with its error formula, Hermite interpolation, piecewise linear
 interpolation, and trigonometric interpolation.
 

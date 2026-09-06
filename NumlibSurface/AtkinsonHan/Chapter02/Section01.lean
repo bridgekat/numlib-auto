@@ -3,9 +3,9 @@ import Mathlib.Analysis.Normed.Group.Bounded
 /-!
 # Atkinson–Han §2.1: operators
 
-Statements from Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework* (3rd ed.), §2.1: operators, their domain, range and null set, injectivity and
-surjectivity, continuity and boundedness.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §2.1: operators, their domain, range and null set,
+injectivity and surjectivity, continuity and boundedness.
 
 Definition 2.1.1 is `Function.Injective`, `Function.Surjective` and `Function.Bijective`; the
 domain, range and null set of an operator are `Set.univ`, `Set.range` and `T ⁻¹' {0}`, or for a
@@ -35,7 +35,7 @@ not in Mathlib as a normed space, and the examples carry no theorem the rest of 
 
 open Bornology Metric
 
-namespace AtkinsonHan.Ch02
+namespace AtkinsonHan.Chapter02
 
 variable {V W : Type*} [SeminormedAddCommGroup V] [SeminormedAddCommGroup W]
 
@@ -62,4 +62,4 @@ theorem isBoundedOperator_iff_image_bounded (T : V → W) :
       isBounded_iff_forall_norm_le.mp (hT (closedBall 0 r) isBounded_closedBall)
     exact ⟨R, fun v hv => hR _ ⟨v, by simpa using hv, rfl⟩⟩
 
-end AtkinsonHan.Ch02
+end AtkinsonHan.Chapter02

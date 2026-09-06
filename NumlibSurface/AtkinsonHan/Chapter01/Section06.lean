@@ -6,8 +6,9 @@ import Mathlib.Topology.ContinuousMap.Compact
 /-!
 # Atkinson–Han §1.6: compact sets
 
-Statements from Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework* (3rd ed.), §1.6: the Heine–Borel theorem and the Arzelà–Ascoli theorem.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §1.6: the Heine–Borel theorem and the
+Arzelà–Ascoli theorem.
 
 Definition 1.6.1 — compact, sequentially compact, precompact — is Mathlib's `IsCompact`,
 `IsSeqCompact` and "the closure is compact"; the equivalence of the first two in a metric space is
@@ -44,7 +45,7 @@ the book uses is proved.
 open Bornology Metric Set
 open scoped BoundedContinuousFunction
 
-namespace AtkinsonHan.Ch01
+namespace AtkinsonHan.Chapter01
 
 /-! ### Theorem 1.6.2: the Heine–Borel theorem -/
 
@@ -89,4 +90,4 @@ theorem theorem_1_6_3 {d : ℕ} {D : Set (EuclideanSpace ℝ (Fin d))} (hD : IsC
   rw [← himg]
   exact key.image h.symm.continuous
 
-end AtkinsonHan.Ch01
+end AtkinsonHan.Chapter01

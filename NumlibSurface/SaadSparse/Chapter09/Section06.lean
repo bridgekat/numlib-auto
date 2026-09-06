@@ -2,10 +2,10 @@ import NumlibSurface.SaadSparse.Chapter01.Section11
 import NumlibSurface.SaadSparse.Chapter09.Section02
 
 /-!
-# Saad, §9.6: the Concus–Golub–Widlund algorithm
+# Saad §9.6: the Concus–Golub–Widlund algorithm
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003, §9.6.
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §9.6.
 
 For a nearly symmetric `A`, precondition with its Hermitian part `M = (A + Aᴴ)/2` (`cgwM`) and
 write `A = M - N` with `N = M - A = (Aᴴ - A)/2` (`cgwN`) skew-Hermitian.  Then
@@ -41,9 +41,9 @@ open Matrix
 
 open scoped ComplexOrder SaadSparse
 
-namespace SaadSparse.Ch09
+namespace SaadSparse.Chapter09
 
-open Ch06 (op)
+open Chapter06 (op)
 
 variable {n : ℕ} {𝕜 : Type*} [RCLike 𝕜]
 
@@ -292,4 +292,4 @@ theorem cgw_alpha (j : ℕ) :
 
 end Algorithm
 
-end SaadSparse.Ch09
+end SaadSparse.Chapter09

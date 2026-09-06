@@ -6,8 +6,8 @@ import NumlibSurface.AtkinsonHan.Chapter03.Section01
 /-!
 # Atkinson–Han §4.1: Fourier series
 
-Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional Analysis
-Framework*, 3rd edition, Springer, 2009.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §4.1.
 
 The book works on `(-π, π)` and always means the `2 π`-periodic extension: the coefficients
 (4.1.2)–(4.1.3), the partial sums (4.1.1) and Parseval's equality (4.1.13) are statements about
@@ -53,7 +53,7 @@ open Filter MeasureTheory Topology
 
 open scoped ENNReal Real
 
-namespace AtkinsonHan.Ch04
+namespace AtkinsonHan.Chapter04
 
 local instance : Fact (0 < 2 * π) := ⟨Real.two_pi_pos⟩
 
@@ -349,7 +349,7 @@ theorem denseRange_toLp_trigSpan {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ �
     intro f
     rw [Metric.mem_closure_iff]
     intro ε hε
-    obtain ⟨q, hq, hqf⟩ := AtkinsonHan.Ch03.corollary_3_1_4 f hε
+    obtain ⟨q, hq, hqf⟩ := AtkinsonHan.Chapter03.corollary_3_1_4 f hε
     exact ⟨q, hq, by rwa [dist_eq_norm, norm_sub_rev]⟩
   have hTd := ContinuousMap.toLp_denseRange ℝ
     (AddCircle.haarAddCircle : Measure (AddCircle (2 * π))) ℝ hp (p := p)
@@ -384,7 +384,7 @@ theorem theorem_4_1_2 {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤)
     (∀ f, Tendsto (fun N => ‖S N f - f‖) atTop (𝓝 0)) ↔ ∃ C : ℝ, ∀ N, ‖S N‖ ≤ C := by
   constructor
   · intro h
-    refine AtkinsonHan.Ch02.theorem_2_4_4 S fun v => ?_
+    refine AtkinsonHan.Chapter02.theorem_2_4_4 S fun v => ?_
     have hv : Tendsto (fun N => S N v) atTop (𝓝 v) := tendsto_iff_norm_sub_tendsto_zero.2 (h v)
     obtain ⟨M, hM⟩ := hv.norm.bddAbove_range
     exact ⟨M, fun N => hM ⟨N, rfl⟩⟩
@@ -492,4 +492,4 @@ theorem equation_4_1_13 (F : Lp ℝ 2 (AddCircle.haarAddCircle : Measure (AddCir
     field_simp
   rwa [hval] at hB
 
-end AtkinsonHan.Ch04
+end AtkinsonHan.Chapter04

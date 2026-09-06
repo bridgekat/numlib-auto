@@ -3,10 +3,10 @@ import NumlibSurface.SaadSparse.Chapter04.Section02
 import NumlibSurface.SaadSparse.Chapter08.Section01
 
 /-!
-# Saad, §8.4: saddle-point problems
+# Saad §8.4: saddle-point problems
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003, §8.4, with P-8.7.
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §8.4 , with P-8.7.
 
 The block system (8.30) is `saddleMatrix A B D`, `[[A, B], [Bᴴ, D]]`, with `D = 0` the
 saddle-point matrix itself and `D = ρ C` the regularization of Example 8.2;
@@ -39,13 +39,13 @@ open Matrix Filter Topology
 
 open scoped Matrix SaadSparse ComplexOrder
 
-namespace SaadSparse.Ch08
+namespace SaadSparse.Chapter08
 
 variable {n m : ℕ} {𝕜 : Type*} [RCLike 𝕜]
 
 /-! ### Moving `B` across the inner product -/
 
-/-- `(B u, w) = (u, Bᴴ w)`, the companion of `SaadSparse.Ch08.inner_conjTranspose` with the
+/-- `(B u, w) = (u, Bᴴ w)`, the companion of `SaadSparse.Chapter08.inner_conjTranspose` with the
 rectangular matrix on the left. -/
 theorem inner_mul_conjTranspose (B : Matrix (Fin n) (Fin m) 𝕜) (u : EuclideanSpace 𝕜 (Fin m))
     (w : EuclideanSpace 𝕜 (Fin n)) : inner 𝕜 (B ⬝ u) w = inner 𝕜 u (Bᴴ ⬝ w) := by
@@ -561,12 +561,12 @@ reduced system `S y = g`, so its convergence is Example 4.1 applied to `S`. -/
 theorem uzawa_snd_eq_richardson
     (s₀ : EuclideanSpace ℝ (Fin n) × EuclideanSpace ℝ (Fin m)) (k : ℕ) :
     WithLp.ofLp (uzawa A B b c ω s₀ k).2
-      = (Ch04.richardsonStep (schur A B) ω (WithLp.ofLp (schurRhs A B b c)))^[k]
+      = (Chapter04.richardsonStep (schur A B) ω (WithLp.ofLp (schurRhs A B b c)))^[k]
           (WithLp.ofLp s₀.2) := by
   induction k with
   | zero => rfl
   | succ k ih =>
-    rw [uzawa_succ, equation_8_32, Function.iterate_succ_apply', ← ih, Ch04.richardsonStep,
+    rw [uzawa_succ, equation_8_32, Function.iterate_succ_apply', ← ih, Chapter04.richardsonStep,
       WithLp.ofLp_add, WithLp.ofLp_smul, WithLp.ofLp_sub]
     rfl
 
@@ -582,14 +582,14 @@ theorem corollary_8_1 (hA : A.PosDef) (hB : Function.Injective (Matrix.toEuclide
     (hpos : 0 < lmin) (hω : ω ≠ 0) :
     (schur A B).PosDef ∧
       ((∀ g y₀ : Fin m → ℝ, ∃ y,
-          Tendsto (fun k => (Ch04.richardsonStep (schur A B) ω g)^[k] y₀) atTop (𝓝 y)) ↔
+          Tendsto (fun k => (Chapter04.richardsonStep (schur A B) ω g)^[k] y₀) atTop (𝓝 y)) ↔
         0 < ω ∧ ω < 2 / lmax) ∧
       IsMinOn (fun ω : ℝ => Matrix.complexSpectralRadius (1 - ω • schur A B)) (Set.Ioi 0)
         (2 / (lmin + lmax)) :=
   ⟨schur_posDef hA hB,
-    Ch04.example_4_1_tendsto_iff (schur_posDef hA hB).isHermitian hsub hmin hmax hpos hω,
-    (Ch04.example_4_1_opt (schur_posDef hA hB).isHermitian hsub hmin hmax hpos).1⟩
+    Chapter04.example_4_1_tendsto_iff (schur_posDef hA hB).isHermitian hsub hmin hmax hpos hω,
+    (Chapter04.example_4_1_opt (schur_posDef hA hB).isHermitian hsub hmin hmax hpos).1⟩
 
 end Corollary
 
-end SaadSparse.Ch08
+end SaadSparse.Chapter08

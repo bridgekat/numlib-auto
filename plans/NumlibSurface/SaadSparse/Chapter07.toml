@@ -9,7 +9,7 @@ and BCG (`Numlib/Krylov/BiLanczos`) and the quasi-minimal-residual layer
 lemmas that connect them.
 
 Two economies shape these files. First, QMR is *the same code* as QGMRES: Algorithm 7.4 is
-Algorithm 6.13 run on the two-sided Lanczos basis, so §7.3.2 reuses `SaadSparse.Ch06.qgmres`,
+Algorithm 6.13 run on the two-sided Lanczos basis, so §7.3.2 reuses `SaadSparse.Chapter06.qgmres`,
 `quasiResidualNorm`, `z`, `ζ`, `c`, `s`, `γ` and `qmrs` of `Chapter06/Section05.lean` rather than
 repeating them. Second, the transpose-free variants of §7.4 have no theorem of their own in the
 book, and what makes them meaningful is a *polynomial identity* — the CGS residual is

@@ -6,10 +6,10 @@ import Numlib.LinearSolve.Projection.Basic
 import NumlibSurface.SaadSparse.Chapter06.Common
 
 /-!
-# Saad, §6.4: the Full Orthogonalization Method
+# Saad §6.4: the Full Orthogonalization Method
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003, §6.4.
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §6.4.
 
 The Full Orthogonalization Method (6.16)–(6.17), Algorithm 6.4, is `fom`; `fomFixed` is the
 same formula with a prescribed number of Arnoldi steps, and `fomRestarted` is FOM(m),
@@ -42,7 +42,7 @@ generality in §6.4, as one-line specializations of field-agnostic companions.
 
 open scoped Matrix
 
-namespace SaadSparse.Ch06
+namespace SaadSparse.Chapter06
 
 section General
 
@@ -1207,4 +1207,4 @@ theorem algorithm_6_6_eq_alg_6_2 {j : ℕ} (hjk : j ≤ k) : iop A v k j = arnol
 
 end BookResults
 
-end SaadSparse.Ch06
+end SaadSparse.Chapter06

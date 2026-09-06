@@ -1,4 +1,4 @@
-namespace = "SaadSparse.Ch10"
+namespace = "SaadSparse.Chapter10"
 
 [[node]]
 id = "frobeniusEquiv"

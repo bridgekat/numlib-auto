@@ -4,10 +4,10 @@ import Numlib.Variational.Galerkin
 import NumlibSurface.AtkinsonHan.Chapter08.Section07
 
 /-!
-# The Petrov–Galerkin method (§9.2)
+# Atkinson–Han §9.2: the Petrov–Galerkin method
 
-Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional Analysis
-Framework*, 3rd edition, Springer, 2009.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §9.2.
 
 The Petrov–Galerkin problem (9.2.5), the discrete inf–sup constant (9.2.6), Babuška's theorem
 (Theorem 9.2.1 with the error bound (9.2.7) and the Galerkin orthogonality (9.2.8)), the
@@ -71,7 +71,7 @@ theorem infSupCondition_of_forall_le {a : BilinForm₂ U V} {UN : ℕ → Submod
     (h : ∀ i, DiscreteInfSup a (UN i) (VN i) (αN i)) (hα : ∀ i, α₀ ≤ αN i) :
     InfSupCondition a UN VN α₀ := fun i => (h i).mono (hα i)
 
-namespace Ch09
+namespace Chapter09
 
 variable {a : BilinForm₂ U V} {ℓ : StrongDual ℝ V} {M αN α₀ : ℝ} {UN : Submodule ℝ U}
   {VN : Submodule ℝ V} {u uN : U}
@@ -240,6 +240,6 @@ theorem kato {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℝ H] [Compl
     {P : H →L[ℝ] H} (hP : IsIdempotentElem P) (h0 : P ≠ 0) (h1 : P ≠ 1) : ‖P‖ = ‖1 - P‖ :=
   (ContinuousLinearMap.IsIdempotentElem.norm_one_sub_eq hP h0 h1).symm
 
-end Ch09
+end Chapter09
 
 end AtkinsonHan

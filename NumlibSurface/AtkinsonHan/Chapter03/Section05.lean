@@ -3,8 +3,8 @@ import Numlib.Approximation.OrthogonalPolynomial
 /-!
 # Atkinson–Han §3.5: orthogonal polynomials
 
-Statements from Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework* (3rd ed.), §3.5.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §3.5.
 
 The section states no numbered result — it is the book's catalogue of the families that §3.7 and
 Chapter 5 cite — so the nodes here are the displayed formulas (3.5.1)–(3.5.9). They rest on the
@@ -44,7 +44,7 @@ open MeasureTheory Polynomial Real
 
 open scoped Nat
 
-namespace AtkinsonHan.Ch03
+namespace AtkinsonHan.Chapter03
 
 /-! ### The weighted space (3.5.1) -/
 
@@ -149,4 +149,4 @@ theorem equation_3_5_9 (m n : ℕ) :
   rw [← Real.cos_arccos hx.1 hx.2, Chebyshev.T_real_cos, Real.cos_arccos hx.1 hx.2]
   norm_cast
 
-end AtkinsonHan.Ch03
+end AtkinsonHan.Chapter03

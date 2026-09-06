@@ -7,11 +7,11 @@ import NumlibSurface.AtkinsonHan.Chapter03.Section03
 /-!
 # Atkinson–Han §2.7: weak convergence
 
-Statements from Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework* (3rd ed.), §2.7.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §2.7.
 
 Definition 2.7.1, weak convergence of a sequence, is already in this surface as
-`AtkinsonHan.Ch03.WeakSeqTendsto`, introduced in §3.3 for Example 3.3.5 before this section was
+`AtkinsonHan.Chapter03.WeakSeqTendsto`, introduced in §3.3 for Example 3.3.5 before this section was
 planned; it is reused here rather than defined a second time.
 
 ## Main results
@@ -54,7 +54,7 @@ open Filter MeasureTheory Topology
 
 open scoped Real
 
-namespace AtkinsonHan.Ch02
+namespace AtkinsonHan.Chapter02
 
 section General
 
@@ -62,14 +62,14 @@ variable {𝕜 V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜
 
 /-- **Proposition 2.7.2.** A weakly convergent sequence in a normed space is bounded. This is the
 principle of uniform boundedness applied to the images of the `uₙ` in the double dual. -/
-theorem proposition_2_7_2 {v : ℕ → V} {u : V} (h : Ch03.WeakSeqTendsto 𝕜 v u) :
+theorem proposition_2_7_2 {v : ℕ → V} {u : V} (h : Chapter03.WeakSeqTendsto 𝕜 v u) :
     ∃ C : ℝ, ∀ n, ‖v n‖ ≤ C :=
   exists_norm_le_of_tendsto_toWeakSpace (tendsto_toWeakSpace_iff.2 h)
 
 /-- **Exercise 2.7.2.** `uₙ ⇀ u` implies `‖u‖ ≤ liminf ‖uₙ‖`: the norm is weakly sequentially
-lower semicontinuous. The book proves the same statement twice; it is `Ch03.example_3_3_5`.
+lower semicontinuous. The book proves the same statement twice; it is `Chapter03.example_3_3_5`.
 `example_2_7_3` is an instance in which the inequality is strict. -/
-theorem exercise_2_7_2 {v : ℕ → V} {u : V} (h : Ch03.WeakSeqTendsto 𝕜 v u) :
+theorem exercise_2_7_2 {v : ℕ → V} {u : V} (h : Chapter03.WeakSeqTendsto 𝕜 v u) :
     ‖u‖ ≤ liminf (fun n => ‖v n‖) atTop :=
   norm_le_liminf_norm_of_weak_tendsto (tendsto_toWeakSpace_iff.2 h)
 
@@ -83,7 +83,7 @@ section Example
 by the Riesz representation of the dual. -/
 theorem weakSeqTendsto_iff_inner {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℝ H]
     [CompleteSpace H] {v : ℕ → H} {u : H} :
-    Ch03.WeakSeqTendsto ℝ v u ↔
+    Chapter03.WeakSeqTendsto ℝ v u ↔
       ∀ w : H, Tendsto (fun n => inner ℝ (v n) w) atTop (𝓝 (inner ℝ u w)) := by
   constructor
   · intro h w
@@ -99,7 +99,7 @@ theorem weakSeqTendsto_iff_inner {H : Type*} [NormedAddCommGroup H] [InnerProduc
 a fixed vector are square-summable by Bessel's inequality, hence tend to zero. -/
 theorem weakSeqTendsto_zero_of_orthonormal {ι H : Type*} [NormedAddCommGroup H]
     [InnerProductSpace ℝ H] [CompleteSpace H] {φ : ι → H} (hφ : Orthonormal ℝ φ) {g : ℕ → ι}
-    (hg : Function.Injective g) : Ch03.WeakSeqTendsto ℝ (fun n => φ (g n)) 0 := by
+    (hg : Function.Injective g) : Chapter03.WeakSeqTendsto ℝ (fun n => φ (g n)) 0 := by
   refine weakSeqTendsto_iff_inner.2 fun w => ?_
   have hgt : Tendsto g atTop cofinite := Nat.cofinite_eq_atTop ▸ hg.tendsto_cofinite
   have h1 : Tendsto (fun n => ‖inner ℝ (φ (g n)) w‖ ^ 2) atTop (𝓝 0) :=
@@ -119,7 +119,7 @@ probability Haar measure is `trigFun (2π) (-n)` of Theorem 1.3.13.
 Since the weak limit is `0` and every term has norm `1`, this is also an example in which the
 inequality of `exercise_2_7_2` is strict. -/
 theorem example_2_7_3 :
-    Ch03.WeakSeqTendsto ℝ (fun n : ℕ => trigLp (2 * π) (-(n + 1) : ℤ)) 0 ∧
+    Chapter03.WeakSeqTendsto ℝ (fun n : ℕ => trigLp (2 * π) (-(n + 1) : ℤ)) 0 ∧
       (∀ n : ℕ, ‖trigLp (2 * π) (-(n + 1) : ℤ)‖ = 1) ∧
       ¬ Tendsto (fun n : ℕ => trigLp (2 * π) (-(n + 1) : ℤ)) atTop (𝓝 0) := by
   have hinj : Function.Injective fun n : ℕ => (-(n + 1) : ℤ) := by
@@ -142,15 +142,15 @@ weak convergence together with convergence of the norms is convergence. -/
 theorem exercise_2_7_3 {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℝ H]
     [CompleteSpace H] {v : ℕ → H} {u : H} :
     Tendsto v atTop (𝓝 u) ↔
-      Ch03.WeakSeqTendsto ℝ v u ∧ Tendsto (fun n => ‖v n‖) atTop (𝓝 ‖u‖) := by
+      Chapter03.WeakSeqTendsto ℝ v u ∧ Tendsto (fun n => ‖v n‖) atTop (𝓝 ‖u‖) := by
   rw [tendsto_of_forall_inner_tendsto_of_tendsto_norm (𝕜 := ℝ), weakSeqTendsto_iff_inner]
 
 /-- **Exercise 2.7.4 (a), (c)**, the Radon–Riesz property. In a uniformly convex Banach space —
 a Hilbert space in particular, by Mathlib's `InnerProductSpace.toUniformConvexSpace` — weak
 convergence together with convergence of the norms implies convergence in norm. -/
 theorem exercise_2_7_4 {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [UniformConvexSpace E]
-    {v : ℕ → E} {u : E} (hweak : Ch03.WeakSeqTendsto ℝ v u)
+    {v : ℕ → E} {u : E} (hweak : Chapter03.WeakSeqTendsto ℝ v u)
     (hnorm : Tendsto (fun n => ‖v n‖) atTop (𝓝 ‖u‖)) : Tendsto v atTop (𝓝 u) :=
   tendsto_of_forall_dual_tendsto_of_tendsto_norm hweak hnorm
 
-end AtkinsonHan.Ch02
+end AtkinsonHan.Chapter02

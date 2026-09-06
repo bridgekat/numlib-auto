@@ -2,10 +2,10 @@ import Numlib.Variational.Forms
 import Numlib.Variational.LaxMilgram
 
 /-!
-# General existence and uniqueness for operator equations (§8.2)
+# Atkinson–Han §8.2: general existence and uniqueness for operator equations
 
-Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional Analysis
-Framework*, 3rd edition, Springer, 2009.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §8.2.
 
 The section proves that a linear operator `L : D(L) ⊂ V → W` which is closed (Definition 8.2.2)
 and satisfies the a priori stability estimate (8.2.2) `‖L v‖ ≥ c ‖v‖` has closed range, so that
@@ -23,7 +23,7 @@ as `theorem_8_2_7_hilbert`.
 open Filter Topology
 open scoped InnerProductSpace
 
-namespace AtkinsonHan.Ch08
+namespace AtkinsonHan.Chapter08
 
 section Normed
 
@@ -241,4 +241,4 @@ theorem theorem_8_2_7_hilbert (T : V →L[ℝ] W)
 
 end ClosedRange
 
-end AtkinsonHan.Ch08
+end AtkinsonHan.Chapter08

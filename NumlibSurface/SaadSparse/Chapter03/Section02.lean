@@ -1,10 +1,10 @@
 import Numlib.LinearAlgebra.Sparse.Pattern
 
 /-!
-# §3.2 Graph representations
+# Saad §3.2: graph representations
 
-Section 3.2 of Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003: the adjacency graph of a sparse matrix, and the relation between the pattern of a
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §3.2: the adjacency graph of a sparse matrix, and the relation between the pattern of a
 product and the paths of that graph.
 
 Everything here specializes `Numlib/LinearAlgebra/Sparse/Pattern`, where the two modelling
@@ -24,7 +24,7 @@ quotient-graph storage saving is a counting remark.
 
 open Matrix
 
-namespace SaadSparse.Ch03
+namespace SaadSparse.Chapter03
 
 variable {n : ℕ}
 
@@ -87,4 +87,4 @@ theorem problem_3_5 {A B : Matrix (Fin n) (Fin n) ℝ} (hA : ∀ i j, 0 ≤ A i 
   · exact mul_apply_pos_of_pos_of_pos hA hB h (hBd j)
   · exact mul_apply_pos_of_pos_of_pos hA hB (hAd i) h
 
-end SaadSparse.Ch03
+end SaadSparse.Chapter03

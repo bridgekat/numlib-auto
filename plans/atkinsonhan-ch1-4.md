@@ -62,13 +62,13 @@ New backbone modules: `Numlib/Analysis/Fourier/{TrigonometricBasis,Dirichlet,DFT
 
 Each entry: book formulation → surface or backbone object → equivalence.
 
-1. **Bounded operator** (Def 2.1.6): `AtkinsonHan.Ch02.IsBoundedOperator T`, "bounded sets have
+1. **Bounded operator** (Def 2.1.6): `AtkinsonHan.Chapter02.IsBoundedOperator T`, "bounded sets have
    bounded images". Not `‖T‖ < ∞`: the point of Theorem 2.2.4 is that for a *linear* operator the
    two agree, so the surface must be able to state both. Bridges:
    `isBoundedOperator_iff_image_bounded` (the book's two readings) and
    `isBoundedOperator_iff_exists_bound` (Proposition 2.2.3, linear case).
 
-2. **Weak convergence** (Def 2.7.1): the existing `AtkinsonHan.Ch03.WeakSeqTendsto`, which §3.3
+2. **Weak convergence** (Def 2.7.1): the existing `AtkinsonHan.Chapter03.WeakSeqTendsto`, which §3.3
    introduced for Example 3.3.5. The declaration should move to §2.7, where the book puts it; see
    the proposal file. No Mathlib counterpart is used: `WeakSpace 𝕜 V` gives the topological version,
    and `tendsto_iff_forall_dual_apply_tendsto` is stated only for the weak operator topology.
@@ -100,7 +100,7 @@ Each entry: book formulation → surface or backbone object → equivalence.
    restriction to `C_p(2π)`; the proposal file asks for that module to be written that way rather
    than defining a second Dirichlet kernel.
 
-9. **The book's Fourier transform** (4.2.1)/(4.2.3): `AtkinsonHan.Ch04.bookFourier`, with the
+9. **The book's Fourier transform** (4.2.1)/(4.2.3): `AtkinsonHan.Chapter04.bookFourier`, with the
    normalisation bridge of §1 above.
 
 10. **Schwartz space, tempered distributions** (Def 4.2.1–4.2.3): Mathlib's `SchwartzMap`,

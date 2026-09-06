@@ -1,4 +1,4 @@
-namespace = "SaadSparse.Ch03"
+namespace = "SaadSparse.Chapter03"
 
 [[node]]
 id = "adjDigraph_eq"

@@ -4,8 +4,8 @@ import NumlibSurface.AtkinsonHan.Chapter11.Section03
 /-!
 # Atkinson–Han §11.4: numerical approximation of elliptic variational inequalities
 
-Surface formalization of §11.4 of Kendall Atkinson and Weimin Han, *Theoretical Numerical
-Analysis: A Functional Analysis Framework*, 3rd edition, Springer, 2009.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §11.4.
 
 The discrete problem (11.4.3) is the *same* predicate as the continuous one (11.3.3) with a
 different constraint set, so §11.4 introduces no new notion of discrete solution, and its unique
@@ -49,7 +49,7 @@ as well.
 open Filter Set Topology
 open scoped InnerProductSpace
 
-namespace AtkinsonHan.Ch11
+namespace AtkinsonHan.Chapter11
 
 variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] [CompleteSpace V]
 
@@ -69,8 +69,8 @@ section
 variable {A : V → V} {c₀ M : ℝ} {j jh : V → ℝ} {f u uh : V} {K Kh : Set V}
 
 /-- The book's (11.3.1) in the shape the backbone takes it. -/
-private theorem isStronglyMonotoneWith_of (hmono : Ch05.StronglyMonotoneWith A c₀) :
-    IsStronglyMonotoneWith ℝ A c₀ := Ch05.stronglyMonotoneWith_iff.1 hmono
+private theorem isStronglyMonotoneWith_of (hmono : Chapter05.StronglyMonotoneWith A c₀) :
+    IsStronglyMonotoneWith ℝ A c₀ := Chapter05.stronglyMonotoneWith_iff.1 hmono
 
 /-- The constant `c` of the square-rooted error bounds (11.4.7) and (11.4.27). -/
 private noncomputable def falkConst (c₀ M : ℝ) : ℝ := max (M / c₀) (Real.sqrt (2 / c₀))
@@ -133,7 +133,7 @@ unnecessary — that is `exercise_11_4_2`.  The boundedness of the `u_h` that th
 separately is not a hypothesis here: it follows from Falk's lemma tested at `v = u` together with
 a continuous affine minorant of `j`. -/
 theorem theorem_11_4_1 {Kh : ℕ → Set V} {uh : ℕ → V} (hc₀ : 0 < c₀) (hM : 0 ≤ M)
-    (hmono : Ch05.StronglyMonotoneWith A c₀)
+    (hmono : Chapter05.StronglyMonotoneWith A c₀)
     (hlip : ∀ v₁ v₂ : V, ‖A v₁ - A v₂‖ ≤ M * ‖v₁ - v₂‖) (hKcv : Convex ℝ K)
     (hjcv : ConvexOn ℝ univ j) (hjc : Continuous j)
     (happrox : ∀ v ∈ K, ∃ w : ℕ → V, (∀ n, w n ∈ Kh n) ∧ Tendsto w atTop (𝓝 v))
@@ -143,7 +143,7 @@ theorem theorem_11_4_1 {Kh : ℕ → Set V} {uh : ℕ → V} (hc₀ : 0 < c₀) 
     (huh : ∀ n, IsVariationalInequalitySolution A j f (Kh n) (uh n)) :
     Tendsto uh atTop (𝓝 u) :=
   tendsto_of_isVariationalInequalitySolution hc₀ (isStronglyMonotoneWith_of hmono)
-    ((Ch05.lipschitzWith_toNNReal_iff hM).1 hlip) hKcv hjcv hjc happrox hweak hu huh
+    ((Chapter05.lipschitzWith_toNNReal_iff hM).1 hlip) hKcv hjcv hjc happrox hweak hu huh
 
 /-! ### Theorem 11.4.2: Falk's generalized Céa lemma -/
 
@@ -158,8 +158,8 @@ by Cauchy–Schwarz, the Lipschitz bound and Young's inequality.  No closedness,
 topology is used, and `K_h` need not meet `K`.
 
 For a variational *equation* — `K` a subspace, `j = 0`, `K_h ⊆ K` — both residuals vanish and this
-is Céa's lemma, which this surface has as `AtkinsonHan.Ch09.theorem_9_1_3`. -/
-theorem theorem_11_4_2 (hc₀ : 0 < c₀) (hM : 0 ≤ M) (hmono : Ch05.StronglyMonotoneWith A c₀)
+is Céa's lemma, which this surface has as `AtkinsonHan.Chapter09.theorem_9_1_3`. -/
+theorem theorem_11_4_2 (hc₀ : 0 < c₀) (hM : 0 ≤ M) (hmono : Chapter05.StronglyMonotoneWith A c₀)
     (hlip : ∀ v₁ v₂ : V, ‖A v₁ - A v₂‖ ≤ M * ‖v₁ - v₂‖)
     (hu : IsVariationalInequalitySolution A j f K u)
     (huh : IsVariationalInequalitySolution A j f Kh uh) :
@@ -171,7 +171,7 @@ theorem theorem_11_4_2 (hc₀ : 0 < c₀) (hM : 0 ≤ M) (hmono : Ch05.StronglyM
       + (residual A j j f u vh u + M ^ 2 / (2 * c₀) * ‖u - vh‖ ^ 2) := by
     intro v vh
     have h := norm_sub_le_of_isVariationalInequalitySolution hc₀ (isStronglyMonotoneWith_of hmono)
-      ((Ch05.lipschitzWith_toNNReal_iff hM).1 hlip) hu huh v.2 vh.2
+      ((Chapter05.lipschitzWith_toNNReal_iff hM).1 hlip) hu huh v.2 vh.2
     simp only [residual]
     linarith
   have h₁ : ∀ v : K, c₀ / 2 * ‖u - uh‖ ^ 2 - residual A j j f u v uh
@@ -191,7 +191,7 @@ first residual vanishes, at `v = u_h`, and the estimate can be square-rooted to
 The book leaves the constant unnamed; it is written out here because the square root of a sum of
 two squares is what fixes it. -/
 theorem theorem_11_4_2_of_subset (hc₀ : 0 < c₀) (hM : 0 ≤ M)
-    (hmono : Ch05.StronglyMonotoneWith A c₀)
+    (hmono : Chapter05.StronglyMonotoneWith A c₀)
     (hlip : ∀ v₁ v₂ : V, ‖A v₁ - A v₂‖ ≤ M * ‖v₁ - v₂‖) (hsub : Kh ⊆ K)
     (hu : IsVariationalInequalitySolution A j f K u)
     (huh : IsVariationalInequalitySolution A j f Kh uh) :
@@ -202,7 +202,7 @@ theorem theorem_11_4_2_of_subset (hc₀ : 0 < c₀) (hM : 0 ≤ M)
     Real.mul_iInf_of_nonneg (falkConst_nonneg hc₀ hM)]
   refine le_ciInf fun vh => norm_le_falkConst hc₀ hM (norm_nonneg _) (norm_nonneg _) ?_
   have h := norm_sub_le_of_isVariationalInequalitySolution_of_subset hc₀
-    (isStronglyMonotoneWith_of hmono) ((Ch05.lipschitzWith_toNNReal_iff hM).1 hlip) hu huh
+    (isStronglyMonotoneWith_of hmono) ((Chapter05.lipschitzWith_toNNReal_iff hM).1 hlip) hu huh
     (hsub huh.1) vh.2
   simp only [residual]
   linarith
@@ -222,7 +222,7 @@ The book says only that the union of the `V_h` is dense; nestedness is added bec
 there need be no point of `V_h n` near `u` for *each* `n`.  With it, the best approximations to
 `u` have antitone errors, and density makes them tend to zero. -/
 theorem exercise_11_4_2 {Vh : ℕ → Submodule ℝ V} [∀ n, FiniteDimensional ℝ (Vh n)]
-    {uh : ℕ → V} (hc₀ : 0 < c₀) (hM : 0 ≤ M) (hmono : Ch05.StronglyMonotoneWith A c₀)
+    {uh : ℕ → V} (hc₀ : 0 < c₀) (hM : 0 ≤ M) (hmono : Chapter05.StronglyMonotoneWith A c₀)
     (hlip : ∀ v₁ v₂ : V, ‖A v₁ - A v₂‖ ≤ M * ‖v₁ - v₂‖) (hVmono : Monotone Vh)
     (hdense : Dense (⋃ n, (Vh n : Set V))) (hjc : Continuous j)
     (hu : IsVariationalInequalitySolution A j f univ u)
@@ -243,8 +243,8 @@ theorem exercise_11_4_2 {Vh : ℕ → Submodule ℝ V} [∀ n, FiniteDimensional
       _ ≤ ‖u - z‖ := (hw n).2 z hzn
       _ < ε := by rwa [dist_eq_norm] at hzd
   exact tendsto_of_isVariationalInequalitySolution_of_subset hc₀ (isStronglyMonotoneWith_of hmono)
-    ((Ch05.lipschitzWith_toNNReal_iff hM).1 hlip) (fun n => subset_univ _) hjc.continuousOn hu huh
-    hwmem hwlim
+    ((Chapter05.lipschitzWith_toNNReal_iff hM).1 hlip) (fun n => subset_univ _) hjc.continuousOn hu
+    huh hwmem hwlim
 
 /-! ### Exercise 11.4.3: the regularized problem -/
 
@@ -257,7 +257,7 @@ The constant is the sharp one: at `v = u_ε` and `v_h = u` the cross term of the
 vanishes, so neither the Lipschitz constant nor Young's inequality enters, and going through
 Falk's lemma instead would lose a factor of two. -/
 theorem exercise_11_4_3 {jeps : V → ℝ} {c₁ ε : ℝ} {ueps : V} (hc₀ : 0 < c₀)
-    (hmono : Ch05.StronglyMonotoneWith A c₀)
+    (hmono : Chapter05.StronglyMonotoneWith A c₀)
     (hu : IsVariationalInequalitySolution A j f univ u)
     (hueps : IsVariationalInequalitySolution A jeps f univ ueps)
     (hreg : ∀ v : V, |jeps v - j v| ≤ c₁ * ε) : ‖u - ueps‖ ≤ Real.sqrt (2 * c₁ * ε / c₀) :=
@@ -276,7 +276,7 @@ residual measured by `j_h`:
 with the same constant `c = max (M/c₀) √(2/c₀)` as `theorem_11_4_2_of_subset`.  The algebra is
 Falk's, with the single inequality `j(u_h) ≤ j_h(u_h)` inserted at `v = u_h`. -/
 theorem theorem_11_4_7 (hc₀ : 0 < c₀) (hM : 0 ≤ M)
-    (hmono : Ch05.StronglyMonotoneWith A c₀)
+    (hmono : Chapter05.StronglyMonotoneWith A c₀)
     (hlip : ∀ v₁ v₂ : V, ‖A v₁ - A v₂‖ ≤ M * ‖v₁ - v₂‖)
     (hu : IsVariationalInequalitySolution A j f univ u)
     (huh : IsVariationalInequalitySolution A jh f Kh uh) (hjle : ∀ vh ∈ Kh, j vh ≤ jh vh) :
@@ -287,11 +287,11 @@ theorem theorem_11_4_7 (hc₀ : 0 < c₀) (hM : 0 ≤ M)
     Real.mul_iInf_of_nonneg (falkConst_nonneg hc₀ hM)]
   refine le_ciInf fun vh => norm_le_falkConst hc₀ hM (norm_nonneg _) (norm_nonneg _) ?_
   have h := norm_sub_le_of_isVariationalInequalitySolution_of_le hc₀
-    (isStronglyMonotoneWith_of hmono) ((Ch05.lipschitzWith_toNNReal_iff hM).1 hlip) hu huh
+    (isStronglyMonotoneWith_of hmono) ((Chapter05.lipschitzWith_toNNReal_iff hM).1 hlip) hu huh
     (mem_univ uh) (hjle uh huh.1) vh.2
   simp only [residual]
   linarith
 
 end
 
-end AtkinsonHan.Ch11
+end AtkinsonHan.Chapter11

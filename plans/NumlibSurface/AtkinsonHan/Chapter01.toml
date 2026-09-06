@@ -1,5 +1,5 @@
 desc = '''
-Atkinson-Han, Chapter 1: linear spaces (§1.1-1.6).
+Atkinson–Han, Chapter 1: linear spaces (§1.1–1.6).
 
 The chapter is the book's review of functional analysis, and Mathlib has essentially all of it. The
 surface therefore states the chapter's numbered *results* — its theorems, propositions, lemmas and

@@ -12,10 +12,10 @@ import Mathlib.Topology.ContinuousMap.Compact
 /-!
 # Atkinson–Han §3.3: best approximation
 
-Statements from Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework* (3rd ed.), §3.3. The book's best approximation (3.3.3) is the backbone's
-`IsBestApprox` (`Numlib.Approximation.BestApprox`); `isBestApprox_iff_norm_eq_iInf` is the bridge
-to the book's `‖u - û‖ = inf_{v ∈ K} ‖u - v‖` phrasing.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §3.3: the book's best approximation (3.3.3) is the
+backbone's `IsBestApprox` (`Numlib.Approximation.BestApprox`); `isBestApprox_iff_norm_eq_iInf` is
+the bridge to the book's `‖u - û‖ = inf_{v ∈ K} ‖u - v‖` phrasing.
 
 Definitions 3.3.1–3.3.2 (convex set, convex and strictly convex functional) are Mathlib's
 `Convex ℝ K`, `ConvexOn ℝ K f` and `StrictConvexOn ℝ K f`; the book quantifies `λ ∈ (0,1)` where
@@ -57,7 +57,7 @@ de la Vallée-Poussin theorem. Both are phase-3 backbone items.
 
 open Filter Topology Bornology
 
-namespace AtkinsonHan.Ch03
+namespace AtkinsonHan.Chapter03
 
 /-! ### The book's best-approximation vocabulary -/
 
@@ -170,7 +170,7 @@ private theorem exists_norm_le_of_weakSeqTendsto {v : ℕ → V} {u : V}
   have hb : ∀ ℓ : StrongDual 𝕜 V,
       ∃ C : ℝ, ∀ n, ‖NormedSpace.inclusionInDoubleDual 𝕜 V (v n) ℓ‖ ≤ C := by
     intro ℓ
-    exact Ch02.exists_norm_le_of_tendsto (h ℓ)
+    exact Chapter02.exists_norm_le_of_tendsto (h ℓ)
   obtain ⟨C, hC⟩ := banach_steinhaus hb
   refine ⟨C, fun n => ?_⟩
   rw [← (NormedSpace.inclusionInDoubleDualLi 𝕜).norm_map (v n)]
@@ -351,4 +351,4 @@ theorem exercise_3_3_9 : IsStrictlyNormed H :=
 
 end InnerProduct
 
-end AtkinsonHan.Ch03
+end AtkinsonHan.Chapter03

@@ -1,4 +1,4 @@
-namespace = "AtkinsonHan.Ch04"
+namespace = "AtkinsonHan.Chapter04"
 
 [[node]]
 id = "equation_4_1_3_const"

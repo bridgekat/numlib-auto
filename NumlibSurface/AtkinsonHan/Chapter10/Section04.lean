@@ -4,8 +4,8 @@ import NumlibSurface.AtkinsonHan.Chapter09.Section01
 /-!
 # Atkinson–Han §10.4: the Aubin–Nitsche lemma
 
-Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional Analysis
-Framework*, 3rd edition, Springer, 2009.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §10.4.
 
 The book states Theorem 10.4.3 for `V ⊆ H¹(Ω)` and `H = L²(Ω)`; the surface states it for a real
 inner product space `V`, a real inner product space `H`, and a continuous linear `ι : V →L[ℝ] H`
@@ -43,7 +43,7 @@ uniquely solvable by Lax–Milgram (Theorem 8.3.4) applied to `a(·, ·)ᵀ`. -/
 def DualProblem (a : BilinForm V) (ι : V →L[ℝ] H) (g : H) (φ : V) : Prop :=
   ∀ v : V, a v φ = inner ℝ (ι v) g
 
-namespace Ch10
+namespace Chapter10
 
 variable {a : BilinForm V} {ℓ : StrongDual ℝ V} {M c₀ δ : ℝ} {Vh : Submodule ℝ V} {u uh : V}
 
@@ -112,7 +112,7 @@ theorem theorem_10_4_3 (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀) (ha : a.IsEll
     rcases eq_or_lt_of_le (norm_nonneg e) with h | h
     · simp [← h]
     · nlinarith [abs_nonneg (a e e), hM e e]
-  have horth : ∀ v ∈ Vh, a e v = 0 := fun v hv => Ch09.galerkin_orthogonality hM hu huh hv
+  have horth : ∀ v ∈ Vh, a e v = 0 := fun v hv => Chapter09.galerkin_orthogonality hM hu huh hv
   rcases eq_or_lt_of_le (norm_nonneg (ι e)) with h0 | h0
   · rw [← h0]
     positivity
@@ -153,8 +153,8 @@ theorem corollary_10_4_4_abstract (hM : a.IsBoundedWith M) (hδ : 0 ≤ δ) (ι 
       Metric.infDist φ (Vh : Set V) ≤ δ * ‖g‖) :
     ‖ι (u - uh)‖ ≤ M * δ * ‖u - uh‖ :=
   norm_map_le_of_dual_approx (BilinForm.isBoundedWith_toCLM hM) hδ ι
-    (fun _ hv => Ch09.galerkin_orthogonality hM hu huh hv) hdual
+    (fun _ hv => Chapter09.galerkin_orthogonality hM hu huh hv) hdual
 
-end Ch10
+end Chapter10
 
 end AtkinsonHan

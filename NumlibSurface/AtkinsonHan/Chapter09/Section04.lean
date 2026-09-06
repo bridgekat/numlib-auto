@@ -8,10 +8,10 @@ import NumlibSurface.AtkinsonHan.Chapter05.Section06
 import NumlibSurface.AtkinsonHan.Chapter09.Section01
 
 /-!
-# The conjugate gradient method: variational formulation (§9.4)
+# Atkinson–Han §9.4: the conjugate gradient method in variational form
 
-Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional Analysis
-Framework*, 3rd edition, Springer, 2009.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §9.4.
 
 The variational problem (9.4.1) is turned into the operator equation (9.4.7) `A u = f` through the
 Riesz representation (9.4.5)–(9.4.6), and Algorithm 1 of §9.4 -- written here as `cgIterate`,
@@ -28,7 +28,7 @@ exist in general.
 open Filter Topology
 open scoped InnerProductSpace
 
-namespace AtkinsonHan.Ch09
+namespace AtkinsonHan.Chapter09
 
 variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] [CompleteSpace V]
 variable {a : BilinForm V} {M α : ℝ}
@@ -303,6 +303,6 @@ theorem inner_residual_eq_neg_fderiv (hM : a.IsBoundedWith M) (ℓ : StrongDual 
 theorem energy_isMinOn_iff (hM : a.IsBoundedWith M) (hα : 0 < α) (ha : a.IsEllipticWith α)
     (hs : LinearMap.BilinForm.IsSymm a) (ℓ : StrongDual ℝ V) (u : V) :
     IsMinOn (a.energy ℓ) Set.univ u ↔ ∀ v, a u v = ℓ v := by
-  simpa using Ch08.theorem_8_3_3_subspace hM hα ha hs ℓ ⊤ Submodule.mem_top
+  simpa using Chapter08.theorem_8_3_3_subspace hM hα ha hs ℓ ⊤ Submodule.mem_top
 
-end AtkinsonHan.Ch09
+end AtkinsonHan.Chapter09

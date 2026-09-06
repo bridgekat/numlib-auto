@@ -68,7 +68,7 @@ they are short and because Chapter 12's projection methods for `I - K` will need
 |---|---|---|---|---|---|
 | `NumlibSurface/AtkinsonHan/Chapter03/Section03` | `WeakSeqTendsto` | definition | Weak sequential convergence, `∀ ℓ : StrongDual 𝕜 V, Tendsto (fun n => ℓ (v n)) atTop (𝓝 (ℓ u))`. The declaration exists and is used by `example_3_3_5`; it is simply not a node, and `plans/README.md` says a surface's book-specific definitions are nodes. §2.7's three nodes want it in their `deps`. | — | It is already in that module; adding the node is bookkeeping. Better still, move the declaration to the new `Chapter02/Section07`, where the book puts it (Definition 2.7.1), and have §3.3 import it — see §3 below. |
 | `NumlibSurface/AtkinsonHan/Chapter03/Section03` | `AreSeparated`, `AreStrictlySeparated`, `IsCoerciveFunctionalOn`, `IsStrictlyNormed`, `polyLE`, `rho` | definition | The other five book-specific definitions the module's own doc comment lists, none of which is a node today. | — | Same rule: the surface's vocabulary for the book is what a plan names. |
-| `Numlib/Analysis/Normed/Module/WeakDual` | `bddAbove_range_norm_of_weak_tendsto` | theorem | A weakly convergent sequence in a normed space is bounded (Atkinson–Han Prop 2.7.2): uniform boundedness applied to its image in the double dual, then `NormedSpace.inclusionInDoubleDualLi`. | `norm_le_liminf_norm_of_weak_tendsto` | The proof already exists as the **private** `AtkinsonHan.Ch03.exists_norm_le_of_weakSeqTendsto`; §2.7 needs it as a theorem with a book number, and the module's own description already says the weak-convergence lemmas proved in the surface move here in phase 2. |
+| `Numlib/Analysis/Normed/Module/WeakDual` | `bddAbove_range_norm_of_weak_tendsto` | theorem | A weakly convergent sequence in a normed space is bounded (Atkinson–Han Prop 2.7.2): uniform boundedness applied to its image in the double dual, then `NormedSpace.inclusionInDoubleDualLi`. | `norm_le_liminf_norm_of_weak_tendsto` | The proof already exists as the **private** `AtkinsonHan.Chapter03.exists_norm_le_of_weakSeqTendsto`; §2.7 needs it as a theorem with a book number, and the module's own description already says the weak-convergence lemmas proved in the surface move here in phase 2. |
 | `Numlib/IntegralEquations/Basic` | `IntegralOperator.isCompactOperator_fredholm` | theorem | The Fredholm operator with a continuous kernel is a compact operator on `C(Icc a b, ℝ)` (Atkinson–Han §2.8.1 in the continuous-kernel case): the image of the unit ball is bounded and equicontinuous by uniform continuity of `k`, so Arzelà–Ascoli applies. | `IntegralOperator.fredholm`, `IntegralOperator.norm_fredholm` | Every object it mentions is in that module already, and Chapter 12's projection methods for `I - K` will need it. The weakly singular kernels of Atkinson–Han's (A₁)–(A₂) are **not** requested — see §4. |
 | `Numlib/Approximation/Interpolation` | (amend `piecewiseLinearInterpCLM`) | — | Add the modulus-of-continuity bound `‖f - Π f‖_∞ ≤ ω(f, h)` for merely continuous `f`, Atkinson–Han (3.2.8), beside the `h²/8 ‖f''‖` bound the node already promises for `C²` functions. | — | (3.2.8) is the bound §3.2.3 states first, and it is one line from the definition. |
 | `Numlib/Approximation/Interpolation` | (amend `trigInterpCLM`) | — | Note that the unique solvability of trigonometric interpolation at `2n+1` distinct nodes is `Approximation.IsUnisolvent` transported along `z = e^{ix}`, and add `Approximation.isUnisolvent_tfae` to its `deps`. | `Approximation.isUnisolvent_tfae` | The abstract framework is now available; otherwise that module re-proves it. |
@@ -78,8 +78,8 @@ they are short and because Chapter 12's projection methods for `I - K` will need
 
 Group descriptions to refresh (they name section ranges that are now too narrow):
 
-* `NumlibSurface/AtkinsonHan/Chapter02.toml`: "§2.3-2.5" → "§2.1-2.9".
-* `NumlibSurface/AtkinsonHan/Chapter03.toml`: "§3.3-3.7" → "§3.1-3.7".
+* `NumlibSurface/AtkinsonHan/Chapter02.toml`: "§2.3–2.5" → "§2.1–2.9".
+* `NumlibSurface/AtkinsonHan/Chapter03.toml`: "§3.3–3.7" → "§3.1–3.7".
 * `NumlibSurface/AtkinsonHan.lean`: the module doc says "nineteen modules" and its outline table
   starts at §2.3. With this plan it becomes thirty-four modules spanning §1.1–9.4; the table needs
   the new rows. (A Lean file, so not edited here.)
@@ -88,13 +88,13 @@ Group descriptions to refresh (they name section ranges that are now too narrow)
 
 ## 3. Changes to existing declarations
 
-1. **`AtkinsonHan.Ch03.exists_norm_le_of_weakSeqTendsto` is `private`.** It is Atkinson–Han
+1. **`AtkinsonHan.Chapter03.exists_norm_le_of_weakSeqTendsto` is `private`.** It is Atkinson–Han
    Proposition 2.7.2 — a numbered result of the book — proved as a helper for Example 3.3.5.
    Make it public and move it to the backbone as
-   `bddAbove_range_norm_of_weak_tendsto` (§2 above); `AtkinsonHan.Ch02.proposition_2_7_2` is then
+   `bddAbove_range_norm_of_weak_tendsto` (§2 above); `AtkinsonHan.Chapter02.proposition_2_7_2` is then
    its restatement under the book's number, and §3.3 keeps working unchanged.
 
-2. **`AtkinsonHan.Ch03.WeakSeqTendsto` is in the wrong section.** It is Definition 2.7.1, not a
+2. **`AtkinsonHan.Chapter03.WeakSeqTendsto` is in the wrong section.** It is Definition 2.7.1, not a
    §3.3 definition; §3.3 needed it first only because §2.7 was not planned. Move the declaration to
    `NumlibSurface/AtkinsonHan/Chapter02/Section07.lean` and have `Chapter03/Section03.lean` import
    it. The name does not change, so nothing downstream breaks; the tracker sees a module move, which
@@ -197,33 +197,33 @@ Examples and Exercises appear only when they are planned or when §4 records a d
 
 | Result | State | Node |
 |---|---|---|
-| Thm 1.1.10 (dimension well defined) | P/M | `AtkinsonHan.Ch01.theorem_1_1_10` |
-| Prop 1.2.10 (norm continuous), (1.2.5) | P/M | `AtkinsonHan.Ch01.proposition_1_2_10` |
-| Thm 1.2.14 (norms equivalent in finite dim) | P | `AtkinsonHan.Ch01.theorem_1_2_14` |
-| Prop 1.2.23 (Cauchy + convergent subsequence) | P/M | `AtkinsonHan.Ch01.proposition_1_2_23` |
-| Thm 1.2.25 (completion) | P/M | `AtkinsonHan.Ch01.theorem_1_2_25` |
-| Thm 1.2.26 (dominated convergence) | P/M | `AtkinsonHan.Ch01.theorem_1_2_26` |
-| Thm 1.2.27 (Fubini) | P/M | `AtkinsonHan.Ch01.theorem_1_2_27` |
-| Thm 1.3.2 (Cauchy–Schwarz + equality case) | P/M | `AtkinsonHan.Ch01.theorem_1_3_2` |
-| Prop 1.3.3 (inner product continuous) | P/M | `AtkinsonHan.Ch01.proposition_1_3_3` |
-| Thm 1.3.4 (parallelogram law) | P/M | `AtkinsonHan.Ch01.theorem_1_3_4` |
-| Thm 1.3.11 (Bessel) | P/M | `AtkinsonHan.Ch01.theorem_1_3_11` |
-| Thm 1.3.12 (Parseval, ONB criteria) | P/M | `AtkinsonHan.Ch01.theorem_1_3_12` |
-| **Thm 1.3.13 (real trigonometric ONB)** | **P** | `AtkinsonHan.Ch01.theorem_1_3_13`, backbone `trigBasis`, `trigFun`, `orthonormal_trigFun`, `realFourierCoeff`, `realFourierCoeff_eq_fourierCoeff`, `hasSum_trigSeries`, `tsum_sq_realFourierCoeff` |
-| Thm 1.3.16 (Gram–Schmidt) | P/M | `AtkinsonHan.Ch01.theorem_1_3_16` |
+| Thm 1.1.10 (dimension well defined) | P/M | `AtkinsonHan.Chapter01.theorem_1_1_10` |
+| Prop 1.2.10 (norm continuous), (1.2.5) | P/M | `AtkinsonHan.Chapter01.proposition_1_2_10` |
+| Thm 1.2.14 (norms equivalent in finite dim) | P | `AtkinsonHan.Chapter01.theorem_1_2_14` |
+| Prop 1.2.23 (Cauchy + convergent subsequence) | P/M | `AtkinsonHan.Chapter01.proposition_1_2_23` |
+| Thm 1.2.25 (completion) | P/M | `AtkinsonHan.Chapter01.theorem_1_2_25` |
+| Thm 1.2.26 (dominated convergence) | P/M | `AtkinsonHan.Chapter01.theorem_1_2_26` |
+| Thm 1.2.27 (Fubini) | P/M | `AtkinsonHan.Chapter01.theorem_1_2_27` |
+| Thm 1.3.2 (Cauchy–Schwarz + equality case) | P/M | `AtkinsonHan.Chapter01.theorem_1_3_2` |
+| Prop 1.3.3 (inner product continuous) | P/M | `AtkinsonHan.Chapter01.proposition_1_3_3` |
+| Thm 1.3.4 (parallelogram law) | P/M | `AtkinsonHan.Chapter01.theorem_1_3_4` |
+| Thm 1.3.11 (Bessel) | P/M | `AtkinsonHan.Chapter01.theorem_1_3_11` |
+| Thm 1.3.12 (Parseval, ONB criteria) | P/M | `AtkinsonHan.Chapter01.theorem_1_3_12` |
+| **Thm 1.3.13 (real trigonometric ONB)** | **P** | `AtkinsonHan.Chapter01.theorem_1_3_13`, backbone `trigBasis`, `trigFun`, `orthonormal_trigFun`, `realFourierCoeff`, `realFourierCoeff_eq_fourierCoeff`, `hasSum_trigSeries`, `tsum_sq_realFourierCoeff` |
+| Thm 1.3.16 (Gram–Schmidt) | P/M | `AtkinsonHan.Chapter01.theorem_1_3_16` |
 | §1.4 (no numbered result) | — | no group |
-| Lem 1.5.1–1.5.4 (Young, Hölder, Minkowski) | P/M | `AtkinsonHan.Ch01.lemma_1_5_1` … `lemma_1_5_4` |
-| Thm 1.5.5 (a)(b)(c) | P/M | `AtkinsonHan.Ch01.theorem_1_5_5` (three declarations) |
-| Thm 1.5.6 (`C₀^∞` dense in `Lᵖ`) | P/M | `AtkinsonHan.Ch01.theorem_1_5_6` |
-| Thm 1.6.2 (Heine–Borel) | P/M | `AtkinsonHan.Ch01.theorem_1_6_2` |
-| Thm 1.6.3 (Arzelà–Ascoli) | P/M | `AtkinsonHan.Ch01.theorem_1_6_3` |
+| Lem 1.5.1–1.5.4 (Young, Hölder, Minkowski) | P/M | `AtkinsonHan.Chapter01.lemma_1_5_1` … `lemma_1_5_4` |
+| Thm 1.5.5 (a)(b)(c) | P/M | `AtkinsonHan.Chapter01.theorem_1_5_5` (three declarations) |
+| Thm 1.5.6 (`C₀^∞` dense in `Lᵖ`) | P/M | `AtkinsonHan.Chapter01.theorem_1_5_6` |
+| Thm 1.6.2 (Heine–Borel) | P/M | `AtkinsonHan.Chapter01.theorem_1_6_2` |
+| Thm 1.6.3 (Arzelà–Ascoli) | P/M | `AtkinsonHan.Chapter01.theorem_1_6_3` |
 | Clarkson (1.5.5)–(1.5.6) | S | not in Mathlib; only consumer is Ex 2.7.4 (b) |
 
 ### Chapter 2 — Linear Operators on Normed Spaces (32 newly planned, 22 done, 8 skipped)
 
 | Result | State | Node |
 |---|---|---|
-| Def 2.1.6 (bounded operator) | P | `AtkinsonHan.Ch02.IsBoundedOperator` |
+| Def 2.1.6 (bounded operator) | P | `AtkinsonHan.Chapter02.IsBoundedOperator` |
 | Prop 2.2.2, Prop 2.2.3, Thm 2.2.4 | P | `proposition_2_2_2`, `proposition_2_2_3`, `theorem_2_2_4` |
 | Thm 2.2.5 (`𝓛(V,W)` normed), Thm 2.2.6 | P/M | `theorem_2_2_5`, `theorem_2_2_6` |
 | Ex 2.2.8 (matrix `p`-norms) | P | `example_2_2_8` |
@@ -257,7 +257,7 @@ Examples and Exercises appear only when they are planned or when §4 records a d
 
 | Result | State | Node |
 |---|---|---|
-| Thm 3.1.1 (Weierstrass), Thm 3.1.2 (Stone–W.) | P/M | `AtkinsonHan.Ch03.theorem_3_1_1`, `theorem_3_1_2` |
+| Thm 3.1.1 (Weierstrass), Thm 3.1.2 (Stone–W.) | P/M | `AtkinsonHan.Chapter03.theorem_3_1_1`, `theorem_3_1_2` |
 | Cor 3.1.3 (`ℝ^d` polynomials dense) | P | `corollary_3_1_3` |
 | Cor 3.1.4 (trig polynomials dense) | P | `corollary_3_1_4` |
 | **Thm 3.1.5 (Müntz)** | **S** | not in Mathlib, no consumer |
@@ -279,7 +279,7 @@ Examples and Exercises appear only when they are planned or when §4 records a d
 
 | Result | State | Node |
 |---|---|---|
-| (4.1.1)–(4.1.3), (4.1.4)–(4.1.6) | P | `AtkinsonHan.Ch04.equation_4_1_3`, `equation_4_1_6` |
+| (4.1.1)–(4.1.3), (4.1.4)–(4.1.6) | P | `AtkinsonHan.Chapter04.equation_4_1_3`, `equation_4_1_6` |
 | (4.1.7)–(4.1.10) (sine/cosine series) | P | `equation_4_1_10` |
 | **Thm 4.1.1 (pointwise convergence)** | **P** | `theorem_4_1_1`; backbone `dirichletKernel`, `integral_dirichletKernel`, `fourierPartialSum`, `fourierPartialSum_eq_integral`, `tendsto_fourierPartialSum_of_dini`, `tendsto_fourierPartialSum_of_hasDerivAt` |
 | Thm 4.1.2 (`Lᵖ` convergence iff bounded) | P | `theorem_4_1_2` |

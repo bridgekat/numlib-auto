@@ -10,10 +10,10 @@ import NumlibSurface.SaadSparse.Chapter06.Section04
 import NumlibSurface.SaadSparse.Chapter06.Section06
 
 /-!
-# Saad, §6.7: the conjugate gradient method
+# Saad §6.7: the conjugate gradient method
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003, §6.7.
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §6.7.
 
 The four algorithms of the section are `cg` (**Algorithm 6.18**, the two-term conjugate
 gradient recurrence, with `cgX`, `cgR`, `cgP`, `cgAlpha`, `cgBeta` reading off its state),
@@ -42,7 +42,7 @@ symmetric positive definite, the book's generality in §6.7.
 
 open scoped ComplexOrder Matrix
 
-namespace SaadSparse.Ch06
+namespace SaadSparse.Chapter06
 
 section General
 
@@ -1283,4 +1283,4 @@ theorem dLanczos_eq_diom2 (hA : A.IsSymm) (hb : b - op A x₀ ≠ 0) {m : ℕ}
 
 end RealTwo
 
-end SaadSparse.Ch06
+end SaadSparse.Chapter06

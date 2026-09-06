@@ -20,14 +20,14 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Example 3.6.6; Kress, 
 
 [[node]]
 id = "norm_sub_piecewiseLinearInterpCLM_le"
-source = "Atkinson-Han, Theoretical Numerical Analysis, (3.2.9); Kress, Numerical Analysis, Section 8.3"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (3.2.9); Kress, Numerical Analysis, Section 8.3"
 
 [[node]]
 id = "trigInterpCLM"
 kind = "definition"
 desc = '''Trigonometric interpolation at the `2 n + 1` equispaced nodes of a period, as a projection of
-`C_p(2 pi)` onto the trigonometric polynomials of degree at most `n` (Atkinson-Han (3.7.19)), with
-Rivlin's bound `norm (trigInterpCLM n) <= 1 + (2/pi) log n` (Atkinson-Han (3.7.20)) as
+`C_p(2 pi)` onto the trigonometric polynomials of degree at most `n` (Atkinson–Han (3.7.19)), with
+Rivlin's bound `norm (trigInterpCLM n) <= 1 + (2/pi) log n` (Atkinson–Han (3.7.20)) as
 `norm_trigInterpCLM_le`.
 
 No longer blocked on the subspace: `trigPolyLE` of `Numlib/Analysis/Fourier/TrigonometricBasis` is

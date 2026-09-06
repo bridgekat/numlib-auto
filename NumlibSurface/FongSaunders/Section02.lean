@@ -6,13 +6,13 @@ import Numlib.Krylov.Monotonicity
 import Numlib.Krylov.Subspace
 import Numlib.LinearSolve.Projection.Basic
 import Numlib.LinearSolve.Projection.Optimality
-import NumlibSurface.FongSaunders.Section1
+import NumlibSurface.FongSaunders.Section01
 
 /-!
-# §2: CG and CR, their minimization properties and the monotonicity theorems
+# Fong–Saunders §2: CG and CR, their minimization properties and the monotonicity theorems
 
-Surface file for D. C.-L. Fong and M. A. Saunders, *CG versus MINRES: an empirical
-comparison*, SQU Journal for Science **17** (2012) 44–62 (Report SOL 2011-2R).
+Surface file for D. C.-L. Fong and M. A. Saunders, *CG versus MINRES: an empirical comparison*, SQU
+Journal for Science **17** (2012) 44–62 (Report SOL 2011-2R), §2.
 
 The paper's Algorithm CG and Algorithm CR of Table 2.1 are transcribed literally as state
 recurrences (`cg`, `cr`) and identified with the backbone's `CG.iterate` and `CR.iterate` at

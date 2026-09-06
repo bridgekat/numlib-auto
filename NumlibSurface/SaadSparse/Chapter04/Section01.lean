@@ -3,12 +3,12 @@ import Numlib.LinearSolve.Stationary.Splitting
 import NumlibSurface.SaadSparse.Common
 
 /-!
-# §4.1 Jacobi, Gauss–Seidel and SOR
+# Saad §4.1: Jacobi, Gauss–Seidel and SOR
 
-Section 4.1 of Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003: the splitting `A = D - E - F` (4.2), the Jacobi (4.3)–(4.5), Gauss–Seidel
-(4.6)–(4.9), SOR (4.11)–(4.12) and SSOR (4.13)–(4.14) iterations, the general splitting form
-(4.18)–(4.23) and the preconditioners (4.24)–(4.27).
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §4.1: the splitting `A = D - E - F` (4.2), the Jacobi (4.3)–(4.5), Gauss–Seidel (4.6)–(4.9),
+SOR (4.11)–(4.12) and SSOR (4.13)–(4.14) iterations, the general splitting form (4.18)–(4.23) and
+the preconditioners (4.24)–(4.27).
 
 Every iteration is a `Stationary.Splitting` of the backbone
 (`Numlib/LinearSolve/Stationary/Splitting.lean`): the equivalence lemmas `jacobiStep_eq`,
@@ -22,7 +22,7 @@ backbone (`plans/backbone.md` §2.4.4).
 
 open Matrix Finset Stationary
 
-namespace SaadSparse.Ch04
+namespace SaadSparse.Chapter04
 
 variable {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} {b x : Fin n → ℝ} {ω : ℝ}
 
@@ -462,4 +462,4 @@ theorem ssorStep_eq_affine (A : Matrix (Fin n) (Fin n) ℝ) (ω : ℝ) (b x : Fi
     ← mulVec_mulVec, mulVec_add, add_mulVec, one_mulVec, mulVec_smul, smul_add]
   abel
 
-end SaadSparse.Ch04
+end SaadSparse.Chapter04

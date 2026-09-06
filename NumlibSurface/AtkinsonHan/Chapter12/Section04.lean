@@ -3,8 +3,8 @@ import Numlib.IntegralEquations.SecondKind
 /-!
 # Atkinson–Han §12.4: the Nyström method and collectively compact approximation
 
-Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional Analysis
-Framework*, 3rd edition, Springer, 2009.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §12.4.
 
 Only the abstract half of the section, §12.4.3, is formalized: the perturbation theorem whose
 hypothesis constrains `(T - S) S` rather than `T - S`, the assumptions A1–A3, and Lemma 12.4.7.
@@ -40,7 +40,7 @@ belongs in this file.
 
 open Filter Topology
 
-namespace AtkinsonHan.Ch12
+namespace AtkinsonHan.Chapter12
 
 variable {𝕜 X : Type*} [RCLike 𝕜] [NormedAddCommGroup X] [NormedSpace 𝕜 X]
 
@@ -213,4 +213,4 @@ theorem exists_norm_inverse_le_of_isCollectivelyCompactFamily [CompleteSpace X] 
   exact ⟨en, hencoe, hbound, fun f u un hu hun =>
     (herr f u un hu hun).trans (mul_le_mul_of_nonneg_right hbound (norm_nonneg _))⟩
 
-end AtkinsonHan.Ch12
+end AtkinsonHan.Chapter12

@@ -6,10 +6,10 @@ import Numlib.LinearAlgebra.Matrix.Hessenberg
 import NumlibSurface.SaadSparse.Chapter06.Section03
 
 /-!
-# Saad, §6.6: the symmetric Lanczos algorithm
+# Saad §6.6: the symmetric Lanczos algorithm
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003, §6.6.
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §6.6.
 
 **Algorithm 6.15** is `lanczosState`, a two-term state recursion whose fields are read off by
 `lanczosV` (the vectors `v_j`), `lanczosAlpha` (`α_j`) and `lanczosBeta` (`β_j`, with
@@ -42,7 +42,7 @@ generality in §6.6.
 
 open Polynomial
 
-namespace SaadSparse.Ch06
+namespace SaadSparse.Chapter06
 
 /-- The running state of **Algorithm 6.15** after `j` steps. -/
 structure LanczosState (n : ℕ) (𝕜 : Type*) [RCLike 𝕜] where
@@ -595,4 +595,4 @@ theorem equation_6_85_lanczos_charpoly (hA : A.IsSymm) (hv : ‖v₁‖ = 1) {m 
 
 end BookResults
 
-end SaadSparse.Ch06
+end SaadSparse.Chapter06

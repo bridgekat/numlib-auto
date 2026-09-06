@@ -3,8 +3,8 @@ import NumlibSurface.AtkinsonHan.Chapter12.Section04
 /-!
 # Atkinson–Han §12.6: iteration methods for the discretized equations
 
-Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional Analysis
-Framework*, 3rd edition, Springer, 2009.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §12.6.
 
 The linear systems produced by the methods of this chapter are large and dense, so they are solved
 by residual correction rather than by elimination.  §12.6.2 is the two-grid iteration for the
@@ -43,7 +43,7 @@ has to be small *uniformly in `n`* and so is not covered by the diagonal estimat
 
 open Filter Topology
 
-namespace AtkinsonHan.Ch12
+namespace AtkinsonHan.Chapter12
 
 variable {𝕜 X : Type*} [RCLike 𝕜] [NormedAddCommGroup X] [NormedSpace 𝕜 X]
 
@@ -122,4 +122,4 @@ theorem theorem_12_6_1 [CompleteSpace X] {μ : 𝕜} (hμ : μ ≠ 0)
   exact ⟨em, hem, fun n hn =>
     ⟨hlt n hn, fun f un hun u₀ => SecondKind.tendsto_twoGridIterate hμ hem (hlt n hn) hun u₀⟩⟩
 
-end AtkinsonHan.Ch12
+end AtkinsonHan.Chapter12

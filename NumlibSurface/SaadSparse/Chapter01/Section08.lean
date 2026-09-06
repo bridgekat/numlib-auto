@@ -7,10 +7,10 @@ import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 import Mathlib.Analysis.SpecialFunctions.Pow.Continuity
 
 /-!
-# §1.8 Canonical forms of matrices
+# Saad §1.8: canonical forms of matrices
 
-Section 1.8 of Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003: similarity and the canonical forms — diagonal (§1.8.1), Jordan (§1.8.2) and Schur
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §1.8: similarity and the canonical forms — diagonal (§1.8.1), Jordan (§1.8.2) and Schur
 (§1.8.3) — and the application to powers of matrices (§1.8.4).
 
 **Theorem 1.8, the Jordan canonical form, is not stated.** Mathlib has no Jordan form, the book
@@ -21,9 +21,10 @@ algebraic and geometric multiplicity, simple, semisimple, defective, derogatory 
 `Module.End.eigenspace`, `Module.End.maxGenEigenspace` and `Polynomial.rootMultiplicity` of the
 characteristic polynomial, and gets no declaration here.
 
-Similarity is a surface definition, `SaadSparse.Ch01.IsSimilar`, because the book's `A = X B X⁻¹`
-with `X` nonsingular is what every statement of the section uses; it is an equivalence relation,
-it transports eigenvectors, and it preserves the characteristic polynomial (Problem P-1.9).
+Similarity is a surface definition, `SaadSparse.Chapter01.IsSimilar`, because the book's `A = X B
+X⁻¹` with `X` nonsingular is what every statement of the section uses; it is an equivalence
+relation, it transports eigenvectors, and it preserves the characteristic polynomial (Problem
+P-1.9).
 
 Theorems 1.10, 1.11 and 1.12 are the backbone's, in stronger form, and are restated here in the
 book's words. Theorem 1.12, Gelfand's formula, is stated for the Euclidean operator norm; the book
@@ -33,7 +34,7 @@ states it for an arbitrary matrix norm and defers the proof to Problem P-1.10.
 open Matrix Filter Topology
 open scoped ENNReal
 
-namespace SaadSparse.Ch01
+namespace SaadSparse.Chapter01
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n : ℕ}
 
@@ -238,7 +239,7 @@ is *semisimple* — its eigenspace is already the whole maximal generalized eige
 geometric and algebraic multiplicities agree. One direction is that the generalized eigenspaces
 always span over an algebraically closed field; the other is that a spanning family of eigenspaces
 leaves no room for a defective eigenvalue. Saad's corollary, that `n` distinct eigenvalues force
-diagonalizability, is `SaadSparse.Ch01.diagonalizable_of_injective_eigenvalues`. -/
+diagonalizability, is `SaadSparse.Chapter01.diagonalizable_of_injective_eigenvalues`. -/
 theorem proposition_1_7 (A : Matrix (Fin n) (Fin n) ℂ) :
     (∃ d : Fin n → ℂ, IsSimilar A (Matrix.diagonal d)) ↔
       ∀ μ : ℂ, Module.End.eigenspace A.mulVecLin μ =
@@ -335,4 +336,4 @@ theorem theorem_1_12 (A : Matrix (Fin n) (Fin n) ℝ) :
     Tendsto (fun k : ℕ => ‖A ^ k‖ ^ (1 / k : ℝ)) atTop (𝓝 A.complexSpectralRadius.toReal) :=
   Matrix.tendsto_pow_rpow_complexSpectralRadius A
 
-end SaadSparse.Ch01
+end SaadSparse.Chapter01

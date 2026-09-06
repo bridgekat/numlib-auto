@@ -7,14 +7,14 @@ import NumlibSurface.SaadSparse.Chapter01.Section11
 import NumlibSurface.SaadSparse.Chapter01.Section12
 
 /-!
-# §5.1–§5.2 Projection methods
+# Saad §5.1–5.2: projection methods
 
-Sections 5.1 and 5.2 of Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003: the general projection step (5.1)–(5.7), the nonsingularity of `WᵀAV`
-(Proposition 5.1), the optimality characterizations (Propositions 5.2–5.5), the operators
-`P_K`, `Q_K^L`, `A_m` of §5.2.3, Proposition 5.6 and the error identity behind Theorem 5.7.
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §5.1–5.2: the general projection step (5.1)–(5.7), the nonsingularity of `WᵀAV` (Proposition
+5.1), the optimality characterizations (Propositions 5.2–5.5), the operators `P_K`, `Q_K^L`, `A_m`
+of §5.2.3, Proposition 5.6 and the error identity behind Theorem 5.7.
 
-The book's condition (5.5)–(5.6) is `SaadSparse.Ch05.IsProjectionApprox`; it is the backbone's
+The book's condition (5.5)–(5.6) is `SaadSparse.Chapter05.IsProjectionApprox`; it is the backbone's
 `IsPetrovGalerkin` for `Matrix.toEuclideanLin A` (`isProjectionApprox_iff`), so that every
 statement below specializes a result of `Numlib/LinearSolve/Projection/`.
 
@@ -26,7 +26,7 @@ of §5.4 (phase 2 of the backbone, `plans/backbone.md` §2.4.4).
 open Matrix Module Submodule Finset
 open scoped SaadSparse
 
-namespace SaadSparse.Ch05
+namespace SaadSparse.Chapter05
 
 variable {n m : ℕ}
 
@@ -98,11 +98,11 @@ theorem isUnit_transpose_mul_mul_iff (hV : V.IsBasisOf K) (hW : W.IsBasisOf L) :
   have hzero : ∀ y : Fin m → ℝ, (Wᵀ * A * V) *ᵥ y = 0 ↔
       (A ⬝ (V ⬝ (WithLp.toLp 2 y : E m))) ∈ Lᗮ := by
     intro y
-    rw [← Ch01.conjTranspose_mulVec_eq_zero_iff hW]
+    rw [← Chapter01.conjTranspose_mulVec_eq_zero_iff hW]
     have h1 : WithLp.ofLp (A ⬝ (V ⬝ (WithLp.toLp 2 y : E m))) = A *ᵥ (V *ᵥ y) := rfl
     rw [h1, mulVec_mulVec, mulVec_mulVec, conjTranspose_eq_transpose]
   have hmemK : ∀ y : Fin m → ℝ, (V ⬝ (WithLp.toLp 2 y : E m)) ∈ K :=
-    fun y => hV.span_eq ▸ Ch01.toEuclideanLin_mem_span V _
+    fun y => hV.span_eq ▸ Chapter01.toEuclideanLin_mem_span V _
   constructor
   · intro h u huK huL
     rw [← hV.span_eq] at huK
@@ -290,4 +290,4 @@ theorem theorem_5_7 (hd : finrank ℝ K = finrank ℝ L) (h : K ⊓ Lᗮ = ⊥) 
   congr 1
   rw [map_sub, hstar]
 
-end SaadSparse.Ch05
+end SaadSparse.Chapter05

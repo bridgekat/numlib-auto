@@ -5,10 +5,10 @@ import Mathlib.Analysis.Fourier.LpSpace
 import Mathlib.Analysis.Fourier.RiemannLebesgueLemma
 
 /-!
-# Atkinson-Han §4.2: the Fourier transform
+# Atkinson–Han §4.2: the Fourier transform
 
-Statements from Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework* (3rd ed.), §4.2.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §4.2.
 
 Almost everything the section states is in Mathlib, and what is left is a matter of
 *normalisation*. The book's transform (4.2.1) is
@@ -34,7 +34,7 @@ Definitions 4.2.1, 4.2.2 and 4.2.3 are Mathlib's `SchwartzMap` (`𝓢(E, F)`),
 as identifications rather than as new definitions.
 -/
 
-namespace AtkinsonHan.Ch04
+namespace AtkinsonHan.Chapter04
 
 open MeasureTheory Module Real VectorFourier
 
@@ -285,4 +285,4 @@ theorem definition_4_2_3 (u : 𝓢'(V, ℂ)) (φ : 𝓢(V, ℂ)) :
     bookFourierTD u φ = u (bookFourierCLM φ) :=
   rfl
 
-end AtkinsonHan.Ch04
+end AtkinsonHan.Chapter04

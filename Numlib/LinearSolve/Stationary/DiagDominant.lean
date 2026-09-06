@@ -24,14 +24,14 @@ both constants are `< 1`, so both iterations converge.
 Strict dominance in *every* row is more than convergence needs.  A matrix that is only weakly
 dominant, but is *irreducible* — its nonzero pattern has a strongly connected adjacency graph,
 `Matrix.IsIrreducibleAbs` — and strictly dominant in one row is still nonsingular, and Jacobi and
-Gauss-Seidel still converge for it (Saad Thm 4.7, Cor 4.8, Thm 4.9).  The engine is
+Gauss–Seidel still converge for it (Saad Thm 4.7, Cor 4.8, Thm 4.9).  The engine is
 `Matrix.IsIrreducibleAbs.norm_diag_eq_of_mulVec_eq_zero`: at a row where the modulus of a kernel
 vector is maximal, weak dominance is forced to be an equality, and the maximum then propagates
 along the graph to every row.  The three convergence statements all apply it to a *pencil* — the
 matrix `A` with its diagonal, or its whole lower triangle, scaled by the eigenvalue in question —
 which for an eigenvalue of modulus at least one inherits the dominance of `A`, and is therefore
 nonsingular; so no such eigenvalue exists.  The same pencil, with strict column dominance in
-place of irreducibility, gives Gauss-Seidel under column dominance
+place of irreducibility, gives Gauss–Seidel under column dominance
 (`Matrix.gaussSeidel_spectralRadius_lt_one_of_col`).
 
 ## References

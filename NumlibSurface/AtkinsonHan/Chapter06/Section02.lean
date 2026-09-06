@@ -4,8 +4,8 @@ import Mathlib.Analysis.Calculus.Deriv.Slope
 /-!
 # Atkinson–Han §6.2: the Lax equivalence theorem
 
-Surface formalization of §6.2 of Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis:
-A Functional Analysis Framework*, 3rd edition, Springer, 2009.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §6.2.
 
 The section studies the abstract initial value problem `u' = L u`, `u(0) = u₀`, on `[0, T]` in a
 Banach space `V` over `ℝ` or `ℂ`, for a linear, generally unbounded operator `L` defined on a dense
@@ -27,7 +27,7 @@ passage from a limit the book writes with a quotient to the form the backbone ta
 **Definition 6.2.3, the solution operators, is a definition here and an existence theorem there.**
 `FiniteDifference.exists_solutionOperator` produces the family from well-posedness and density —
 the book's appeal to its Theorem 2.4.1, which this surface proves as
-`AtkinsonHan.Ch02.theorem_2_4_1` — so `solutionOperator` opens that existential once and
+`AtkinsonHan.Chapter02.theorem_2_4_1` — so `solutionOperator` opens that existential once and
 `solutionOperator_zero`, `norm_solutionOperator_le` and `solutionOperator_apply` are its three
 properties.  `solutionOperator L hdense hT hc₀ hwp t u₀` for `u₀ ∉ L.domain` is the book's
 *generalized* solution.
@@ -59,7 +59,7 @@ expansions of a solution assumed smooth.
 
 open Filter Set Topology
 
-namespace AtkinsonHan.Ch06
+namespace AtkinsonHan.Chapter06
 
 variable {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V]
 
@@ -314,4 +314,4 @@ theorem corollary_6_2_12 {C : ℝ → V →L[ℝ] V} {Δt c M₀ t : ℝ} {k m :
 
 end Equivalence
 
-end AtkinsonHan.Ch06
+end AtkinsonHan.Chapter06

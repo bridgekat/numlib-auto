@@ -6,26 +6,26 @@ import Numlib.Eigen.Normal
 import NumlibSurface.SaadSparse.Common
 
 /-!
-# §1.9 Normal and Hermitian matrices
+# Saad §1.9: normal and Hermitian matrices
 
-Section 1.9 of Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003: normal matrices (§1.9.1) with the field of values and the numerical radius, and
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §1.9: normal matrices (§1.9.1) with the field of values and the numerical radius, and
 Hermitian matrices (§1.9.2) with the min–max theorems.
 
 The normal theory is the backbone's `Numlib/Eigen/Normal`: Lemma 1.15 is the pair
 `LinearMap.IsStarNormal.eigenspace_adjoint` and
 `LinearMap.isStarNormal_of_adjoint_apply_eq_smul`, and Theorem 1.14 is
 `Matrix.IsStarNormal.spectral_theorem`, whose orthonormal eigenbasis
-(`LinearMap.IsStarNormal.eigenvectorBasis`) is what `SaadSparse.Ch01.normalEigenBasis` names here.
-The Hermitian theory is Mathlib's `Matrix.IsHermitian.spectral_theorem` together with the
+(`LinearMap.IsStarNormal.eigenvectorBasis`) is what `SaadSparse.Chapter01.normalEigenBasis` names
+here. The Hermitian theory is Mathlib's `Matrix.IsHermitian.spectral_theorem` together with the
 backbone's Courant–Fischer of `Numlib/Eigen/MinMax`.
 
 Two conventions.  Saad's inner product `(x, y)` is Mathlib's `inner 𝕜 y x`, so the Rayleigh
-quotient (1.33) `μ(x) = (A x, x)/(x, x)` is `SaadSparse.Ch01.rayleigh`, `inner ℂ x (A ⬝ x)`
+quotient (1.33) `μ(x) = (A x, x)/(x, x)` is `SaadSparse.Chapter01.rayleigh`, `inner ℂ x (A ⬝ x)`
 over `inner ℂ x x`; the backbone's `LinearMap.rayleighQuotient` is its real part, which is all
 that is needed for a Hermitian matrix.  And the book indexes the eigenvalues of a Hermitian
 matrix in decreasing order `λ₁ ≥ ⋯ ≥ λ_n`, which is
-`SaadSparse.Ch01.eigenvaluesDesc` — Mathlib's `Matrix.IsHermitian.eigenvalues` is in no
+`SaadSparse.Chapter01.eigenvaluesDesc` — Mathlib's `Matrix.IsHermitian.eigenvalues` is in no
 particular order, while the backbone's `LinearMap.IsSymmetric.eigenvalues` is already
 decreasing.
 
@@ -43,7 +43,7 @@ open Matrix Finset Module.End Polynomial
 
 open scoped SaadSparse ComplexConjugate ENNReal
 
-namespace SaadSparse.Ch01
+namespace SaadSparse.Chapter01
 
 variable {n : ℕ}
 
@@ -111,17 +111,17 @@ noncomputable abbrev normalEigenBasis (hA : IsStarNormal A) :
     finrank_euclideanSpace_fin
 
 /-- The eigenvalues `λ₁, …, λ_n` of a normal matrix, in the order of
-`SaadSparse.Ch01.normalEigenBasis`. -/
+`SaadSparse.Chapter01.normalEigenBasis`. -/
 noncomputable abbrev normalEigenvalues (hA : IsStarNormal A) : Fin n → ℂ :=
   LinearMap.IsStarNormal.eigenvalues (Matrix.isStarNormal_toEuclideanLin_iff.2 hA)
     finrank_euclideanSpace_fin
 
-/-- `SaadSparse.Ch01.normalEigenBasis` is a basis of eigenvectors. -/
+/-- `SaadSparse.Chapter01.normalEigenBasis` is a basis of eigenvectors. -/
 theorem apply_normalEigenBasis (hA : IsStarNormal A) (k : Fin n) :
     (A ⬝ normalEigenBasis hA k) = normalEigenvalues hA k • normalEigenBasis hA k :=
   LinearMap.IsStarNormal.apply_eigenvectorBasis _ _ k
 
-/-- The eigenvalues of a normal matrix in the sense of `SaadSparse.Ch01.normalEigenvalues` are
+/-- The eigenvalues of a normal matrix in the sense of `SaadSparse.Chapter01.normalEigenvalues` are
 its spectrum. -/
 theorem normalEigenvalues_mem_spectrum (hA : IsStarNormal A) (k : Fin n) :
     normalEigenvalues hA k ∈ spectrum ℂ A := by
@@ -258,7 +258,7 @@ theorem numericalRadius_le_l2_opNorm (A : Matrix (Fin n) (Fin n) ℂ) :
 a complex square matrix contains its spectrum, since an eigenvalue is the Rayleigh quotient at
 its eigenvector.  Given convexity — the Toeplitz–Hausdorff theorem, which is not proved here —
 the field of values then contains the convex hull of the spectrum; for a normal matrix the two
-are equal unconditionally, which is `SaadSparse.Ch01.theorem_1_17`. -/
+are equal unconditionally, which is `SaadSparse.Chapter01.theorem_1_17`. -/
 theorem proposition_1_18 (A : Matrix (Fin n) (Fin n) ℂ) :
     spectrum ℂ A ⊆ fieldOfValues A ∧
       (Convex ℝ (fieldOfValues A) → convexHull ℝ (spectrum ℂ A) ⊆ fieldOfValues A) := by
@@ -494,12 +494,12 @@ noncomputable abbrev eigenvaluesDesc (hA : A.IsHermitian) : Fin n → ℝ :=
   (Matrix.isSymmetric_toEuclideanLin_iff.mpr hA).eigenvalues finrank_euclideanSpace_fin
 
 /-- **Saad §1.9.2**: the orthonormal eigenvectors `q₁, …, q_n` of a Hermitian matrix, ordered so
-that `q_k` belongs to `SaadSparse.Ch01.eigenvaluesDesc hA k`. -/
+that `q_k` belongs to `SaadSparse.Chapter01.eigenvaluesDesc hA k`. -/
 noncomputable abbrev eigenvectorBasisDesc (hA : A.IsHermitian) :
     OrthonormalBasis (Fin n) 𝕜 (EuclideanSpace 𝕜 (Fin n)) :=
   (Matrix.isSymmetric_toEuclideanLin_iff.mpr hA).eigenvectorBasis finrank_euclideanSpace_fin
 
-/-- The eigenvalues of `SaadSparse.Ch01.eigenvaluesDesc` really do decrease. -/
+/-- The eigenvalues of `SaadSparse.Chapter01.eigenvaluesDesc` really do decrease. -/
 theorem eigenvaluesDesc_antitone (hA : A.IsHermitian) : Antitone (eigenvaluesDesc hA) :=
   LinearMap.IsSymmetric.eigenvalues_antitone _ _
 
@@ -556,4 +556,4 @@ theorem theorem_1_22 (hA : A.IsHermitian) (k : Fin n) :
 
 end Hermitian
 
-end SaadSparse.Ch01
+end SaadSparse.Chapter01

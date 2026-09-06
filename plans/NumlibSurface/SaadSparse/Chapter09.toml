@@ -26,7 +26,7 @@ the exercises about them (P-9.7 to P-9.9), are not planned. Neither are the four
 preconditioned normal-equation variants of P-9.4 and the centered variants of P-9.5, which are
 the same derivation with different inner products.
 
-The Concus-Golub-Widlund method of §9.6 is the one place in the chapter with genuinely new
+The Concus–Golub-Widlund method of §9.6 is the one place in the chapter with genuinely new
 structure — `M⁻¹A = 1 + (skew-adjoint)` in the `M` inner product, hence a three-term Arnoldi
 recurrence — and it gets its own file.
 '''

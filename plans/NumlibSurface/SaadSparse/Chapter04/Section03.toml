@@ -1,4 +1,4 @@
-namespace = "SaadSparse.Ch04"
+namespace = "SaadSparse.Chapter04"
 
 [[node]]
 id = "adiHalfStep"

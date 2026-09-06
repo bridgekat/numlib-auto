@@ -7,8 +7,8 @@ import Numlib.Variational.LaxMilgram
 /-!
 # Atkinson–Han §8.3: the Lax–Milgram lemma
 
-Statements from Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework* (3rd ed.), §8.3.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §8.3.
 
 The data of §8.3 is a real bilinear form `a : V × V → ℝ` on a real normed (later Hilbert) space
 `V`, together with `ℓ ∈ V'`.  Such a form is a `BilinForm V` (`V →ₗ[ℝ] V →ₗ[ℝ] ℝ`), and the
@@ -315,7 +315,7 @@ end Hilbert
 
 end BilinForm
 
-namespace Ch08
+namespace Chapter08
 
 variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
 
@@ -521,6 +521,6 @@ theorem exercise_8_3_1 [CompleteSpace V] (hM0 : 0 ≤ M) (hM : a.IsBoundedWith M
   refine ⟨u, (BilinForm.toOperator_eq_rieszRep_iff hM ℓ u).mp hu, fun y hy => ?_⟩
   exact huniq y ((BilinForm.toOperator_eq_rieszRep_iff hM ℓ y).mpr hy)
 
-end Ch08
+end Chapter08
 
 end AtkinsonHan

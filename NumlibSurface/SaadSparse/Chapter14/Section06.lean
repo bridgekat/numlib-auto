@@ -5,8 +5,9 @@ import Mathlib.Combinatorics.SimpleGraph.LapMatrix
 /-!
 # Saad §14.6: graph partitioning
 
-Only §14.6.3, spectral bisection, carries a theorem, and it is a short one over Mathlib's graph
-Laplacian.
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §14.6. Only §14.6.3, spectral bisection, carries a theorem, and it is a short one over
+Mathlib's graph Laplacian.
 
 * `lapMatrix_quadratic_partition` is the identity that makes graph bisection a quadratic
   minimization: for a partition vector `p` with entries `±1`, the Laplacian quadratic form
@@ -31,7 +32,7 @@ attached.
 
 open Finset Matrix
 
-namespace SaadSparse.Ch14
+namespace SaadSparse.Chapter14
 
 /-! ### The minimum of the Rayleigh quotient on a hyperplane -/
 
@@ -82,7 +83,7 @@ entries are `±1`, `pᵀ L p` is twice the number of *ordered* pairs of adjacent
 partition separates, that is `4 n_c` in Saad's notation, where `n_c` counts the cut edges
 themselves.  Minimizing the number of cut edges subject to `(p, e) = 0` — the constraint that the
 two parts have equal size — is therefore the minimization of a quadratic form over a discrete
-set, whose continuous relaxation is `SaadSparse.Ch14.fiedlerVector`. -/
+set, whose continuous relaxation is `SaadSparse.Chapter14.fiedlerVector`. -/
 theorem lapMatrix_quadratic_partition {p : V → ℝ} (hp : ∀ i, p i = 1 ∨ p i = -1) :
     Matrix.toLinearMap₂' ℝ (G.lapMatrix ℝ) p p
       = 2 * ({q ∈ (Finset.univ : Finset (V × V)) | G.Adj q.1 q.2 ∧ p q.1 ≠ p q.2}.card : ℝ) := by
@@ -218,4 +219,4 @@ theorem fiedlerVector (hconn : G.Connected) {m : ℕ}
   rw [hset]
   exact isLeast_rayleighQuotient_orthogonal_last hL hn
 
-end SaadSparse.Ch14
+end SaadSparse.Chapter14

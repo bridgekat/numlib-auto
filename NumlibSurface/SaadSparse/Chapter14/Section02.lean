@@ -2,10 +2,10 @@ import Numlib.LinearAlgebra.Matrix.SchurComplement
 import NumlibSurface.SaadSparse.Common
 
 /-!
-# Saad, §14.2: block Gaussian elimination and the Schur complement
+# Saad §14.2: block Gaussian elimination and the Schur complement
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003, §14.2.1–14.2.2.
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §14.2.1–14.2.2.
 
 The partitioning is the edge-based one of (14.2): the interior variables come first and the
 interface variables last, so the system matrix is `Matrix.fromBlocks B E F C` over the index type
@@ -24,7 +24,7 @@ Everything specializes `Numlib/LinearAlgebra/Matrix/SchurComplement`.
 
 open Matrix
 
-namespace SaadSparse.Ch14
+namespace SaadSparse.Chapter14
 
 variable {p q : ℕ} {B : Matrix (Fin p) (Fin p) ℝ} {E : Matrix (Fin p) (Fin q) ℝ}
 variable {F : Matrix (Fin q) (Fin p) ℝ} {C : Matrix (Fin q) (Fin q) ℝ}
@@ -139,4 +139,4 @@ theorem blockGaussianElimination_eq (hB : IsUnit B) (hA : IsUnit (fromBlocks B E
     rw [hsum, hy, reducedRhs_def, Matrix.mulVec_mulVec]
     abel
 
-end SaadSparse.Ch14
+end SaadSparse.Chapter14

@@ -16,7 +16,7 @@ import Mathlib.LinearAlgebra.Matrix.Permutation
 # The pattern of a matrix and the graphs it defines
 
 The *pattern* of a square matrix is the set of positions where it is nonzero, and the graph of the
-pattern is what the sparse-matrix reorderings of Saad[^saad-iterative] §3.2–§3.3 act on. Three
+pattern is what the sparse-matrix reorderings of Saad[^saad-iterative] §3.2–3.3 act on. Three
 carriers are needed, because the book uses all three:
 
 * `Matrix.adjDigraph A : Digraph n` has an arrow `i ⟶ j` exactly when `A i j ≠ 0`. This is Saad's

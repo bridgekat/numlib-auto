@@ -36,7 +36,7 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.19"
 
 [[node]]
 id = "isBestApprox_iff_equioscillates"
-source = "Atkinson-Han, Theoretical Numerical Analysis, Theorem 3.3.19; Kress, Numerical Analysis, Section 8.2"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.19; Kress, Numerical Analysis, Section 8.2"
 
 [[node]]
 id = "IsBestApprox.unique_of_haarCondition"
@@ -45,7 +45,7 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.19"
 [[node]]
 id = "isBestApprox_trig_iff_equioscillates"
 kind = "theorem"
-desc = '''Atkinson-Han Thm 3.3.20: the same characterization for `2 pi`-periodic continuous functions and
+desc = '''Atkinson–Han Thm 3.3.20: the same characterization for `2 pi`-periodic continuous functions and
 trigonometric polynomials of degree at most `n`, with `2 n + 2` alternation points on a period; the
 Haar theorem on the circle.
 
@@ -68,12 +68,12 @@ id = "_root_.Equioscillates.mono"
 
 [[node]]
 id = "_root_.IsBestApprox.exists_mul_nonpos"
-source = "Atkinson-Han, Theoretical Numerical Analysis, Theorem 3.3.19; Kress, Numerical Analysis, Section 8.2"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.19; Kress, Numerical Analysis, Section 8.2"
 
 [[node]]
 id = "_root_.card_le_two_mul_of_forall_trigFun_eq_zero"
-source = "Atkinson-Han, Theoretical Numerical Analysis, Theorem 3.3.20"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.20"
 
 [[node]]
 id = "_root_.IsBestApprox.equioscillates_of_polyLE"
-source = "Atkinson-Han, Theoretical Numerical Analysis, Theorem 3.3.19"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.19"

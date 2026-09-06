@@ -7,9 +7,9 @@ import Mathlib.Tactic.Positivity.Finset
 /-!
 # Atkinson–Han §2.3: the geometric series theorem and its variants
 
-Statements from Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework* (3rd ed.), §2.3, proved by specializing `Numlib.Analysis.Normed.Ring.Inverse`
-and the Neumann-series API of Mathlib.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §2.3 , proved by specializing
+`Numlib.Analysis.Normed.Ring.Inverse` and the Neumann-series API of Mathlib.
 
 The book phrases invertibility as "`L` is a bijection of `V` onto `W` whose inverse is bounded".
 Here that is `∃ e : V ≃L[𝕜] W, (e : V →L[𝕜] W) = L`, and `L⁻¹` is `e.symm`; the bridge to the
@@ -36,7 +36,7 @@ Example 2.3.6, a numerical solvability analysis with explicit constants.
 
 open Filter Topology
 
-namespace AtkinsonHan.Ch02
+namespace AtkinsonHan.Chapter02
 
 variable {𝕜 V W : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
   [NormedAddCommGroup W] [NormedSpace 𝕜 W]
@@ -409,4 +409,4 @@ theorem example_2_3_4_volterra (hab : a ≤ b) (k : C(Icc a b × Icc a b, ℝ)) 
 
 end IntegralEquations
 
-end AtkinsonHan.Ch02
+end AtkinsonHan.Chapter02

@@ -3,10 +3,10 @@ import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.Krylov.Subspace
 
 /-!
-# Saad, §6.1–6.2: Krylov subspaces and the grade of a vector
+# Saad §6.1–6.2: Krylov subspaces and the grade of a vector
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003, §6.1–6.2.
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §6.1–6.2.
 
 The chapter's conventions are fixed here: a matrix `A : Matrix (Fin n) (Fin n) 𝕜` acts on
 `EuclideanSpace 𝕜 (Fin n)` through `op A = Matrix.toEuclideanLin A`; the Krylov subspace
@@ -22,7 +22,7 @@ specialization of a field-agnostic companion lemma proved just above it.
 
 open Polynomial
 
-namespace SaadSparse.Ch06
+namespace SaadSparse.Chapter06
 
 section General
 
@@ -275,4 +275,4 @@ theorem proposition_6_3 {m : ℕ} (hm : 0 < m)
 
 end BookResults
 
-end SaadSparse.Ch06
+end SaadSparse.Chapter06

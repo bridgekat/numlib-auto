@@ -1,4 +1,4 @@
-namespace = "SaadSparse.Ch14"
+namespace = "SaadSparse.Chapter14"
 
 [[node]]
 id = "lapMatrix_quadratic_partition"

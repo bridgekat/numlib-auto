@@ -4,9 +4,9 @@ import Mathlib.Analysis.InnerProductSpace.Dual
 /-!
 # Atkinson–Han §2.5: linear functionals
 
-Statements from Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework* (3rd ed.), §2.5. The book's dual space `V'` of bounded linear functionals is
-Mathlib's `StrongDual 𝕜 V`.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §2.5: the book's dual space `V'` of bounded linear
+functionals is Mathlib's `StrongDual 𝕜 V`.
 
 The book's inner product `(u, v)` is linear in its *first* argument while Mathlib's `⟪u, v⟫` is
 linear in its second, so the book's `ℓ(v) = (v, u)` is written `ℓ v = inner 𝕜 u v` below.
@@ -27,7 +27,7 @@ Example 2.5.1 (`(Lᵖ)' = Lᵖ'`), Example 2.5.3 (point evaluation on `L^∞`) a
 
 open Filter Topology
 
-namespace AtkinsonHan.Ch02
+namespace AtkinsonHan.Chapter02
 
 variable {𝕜 V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
 
@@ -113,4 +113,4 @@ theorem theorem_2_5_8 {H : Type*} [NormedAddCommGroup H] [InnerProductSpace 𝕜
       rw [← this, LinearIsometryEquiv.symm_apply_apply]
   · exact ((InnerProductSpace.toDual 𝕜 H).symm.norm_map ℓ).symm
 
-end AtkinsonHan.Ch02
+end AtkinsonHan.Chapter02

@@ -1,10 +1,10 @@
 import NumlibSurface.SaadSparse.Chapter07.Section01
 
 /-!
-# Saad, §7.2: the two-sided Lanczos algorithm for linear systems
+# Saad §7.2: the two-sided Lanczos algorithm for linear systems
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003, §7.2.
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §7.2.
 
 **Algorithm 7.2** is `lanczosSolve`: run Algorithm 7.1 from `v_1 = r_0/β` and a dual starting
 vector `w_1`, solve the tridiagonal system `T_m y_m = β e_1` and set `x_m = x_0 + V_m y_m`. It has
@@ -29,9 +29,9 @@ open Matrix
 
 open scoped Matrix SaadSparse
 
-namespace SaadSparse.Ch07
+namespace SaadSparse.Chapter07
 
-open Ch06 (op)
+open Chapter06 (op)
 
 variable {n : ℕ} {𝕜 : Type*} [RCLike 𝕜]
 
@@ -40,10 +40,10 @@ variable {n : ℕ} {𝕜 : Type*} [RCLike 𝕜]
 /-- `β v_1 = r_0`: the normalization of Algorithm 6.4, line 1, with no hypothesis, since
 `r_0 = 0` makes both sides vanish. -/
 theorem smul_v₁_eq_r₀ (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : EuclideanSpace 𝕜 (Fin n)) :
-    (Ch06.β A b x₀ : 𝕜) • Ch06.v₁ A b x₀ = b - op A x₀ := by
-  rw [Ch06.v₁, smul_smul]
-  rcases eq_or_ne (Ch06.β A b x₀) 0 with h | h
-  · have hr : Ch06.r₀ A b x₀ = 0 := norm_eq_zero.1 h
+    (Chapter06.β A b x₀ : 𝕜) • Chapter06.v₁ A b x₀ = b - op A x₀ := by
+  rw [Chapter06.v₁, smul_smul]
+  rcases eq_or_ne (Chapter06.β A b x₀) 0 with h | h
+  · have hr : Chapter06.r₀ A b x₀ = 0 := norm_eq_zero.1 h
     rw [hr, smul_zero]
     exact hr.symm
   · rw [mul_inv_cancel₀ (RCLike.ofReal_ne_zero.2 h), one_smul]
@@ -57,21 +57,21 @@ variable (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ w₁ : EuclideanSpace 𝕜 (F
 /-- (7.8): the coordinate vector `y_m = T_m⁻¹ (β e_1)` of Algorithm 7.2, line 5.
 `Matrix.inv` is `0` at a singular `T_m`, which is the book's breakdown case. -/
 noncomputable def lanczosSolveY (m : ℕ) : Fin m → 𝕜 :=
-  (T A (Ch06.v₁ A b x₀) w₁ m)⁻¹ *ᵥ ((Ch06.β A b x₀ : 𝕜) • Ch06.e₁ m)
+  (T A (Chapter06.v₁ A b x₀) w₁ m)⁻¹ *ᵥ ((Chapter06.β A b x₀ : 𝕜) • Chapter06.e₁ m)
 
 /-- **Algorithm 7.2** (the two-sided Lanczos algorithm for linear systems):
 `x_m = x_0 + V_m T_m⁻¹ (β e_1)`, with `V_m` the primal Lanczos basis of Algorithm 7.1 started
 from `v_1 = r_0/β` and the dual vector `w_1`. -/
 noncomputable def lanczosSolve (m : ℕ) : EuclideanSpace 𝕜 (Fin n) :=
-  x₀ + Matrix.toEuclideanLin (V A (Ch06.v₁ A b x₀) w₁ m)
+  x₀ + Matrix.toEuclideanLin (V A (Chapter06.v₁ A b x₀) w₁ m)
     (WithLp.toLp 2 (lanczosSolveY A b x₀ w₁ m))
 
 /-- `x_m - x_0 = V_m y_m = ∑_j (y_m)_j v_j`, the form the backbone consumes. -/
 theorem lanczosSolve_eq_add_sum (m : ℕ) :
     lanczosSolve A b x₀ w₁ m
-      = x₀ + ∑ j, lanczosSolveY A b x₀ w₁ m j • bilanczosV A (Ch06.v₁ A b x₀) w₁ (j : ℕ) :=
+      = x₀ + ∑ j, lanczosSolveY A b x₀ w₁ m j • bilanczosV A (Chapter06.v₁ A b x₀) w₁ (j : ℕ) :=
   congrArg (fun z => x₀ + z)
-    (Ch06.toEuclideanLin_colMatrix_apply _ (lanczosSolveY A b x₀ w₁ m))
+    (Chapter06.toEuclideanLin_colMatrix_apply _ (lanczosSolveY A b x₀ w₁ m))
 
 /-- Nothing happens at step `0`. -/
 @[simp] theorem lanczosSolve_zero : lanczosSolve A b x₀ w₁ 0 = x₀ := by
@@ -79,12 +79,12 @@ theorem lanczosSolve_eq_add_sum (m : ℕ) :
   simp
 
 /-- `T_m y_m = β e_1` whenever `T_m` is nonsingular: `y_m` really solves (7.8). -/
-theorem T_mulVec_lanczosSolveY {m : ℕ} (hT : IsUnit (T A (Ch06.v₁ A b x₀) w₁ m)) :
-    T A (Ch06.v₁ A b x₀) w₁ m *ᵥ lanczosSolveY A b x₀ w₁ m
-      = Krylov.firstVec (Ch06.β A b x₀ : 𝕜) m := by
+theorem T_mulVec_lanczosSolveY {m : ℕ} (hT : IsUnit (T A (Chapter06.v₁ A b x₀) w₁ m)) :
+    T A (Chapter06.v₁ A b x₀) w₁ m *ᵥ lanczosSolveY A b x₀ w₁ m
+      = Krylov.firstVec (Chapter06.β A b x₀ : 𝕜) m := by
   rw [lanczosSolveY, Matrix.mulVec_mulVec,
     Matrix.mul_nonsing_inv _ ((Matrix.isUnit_iff_isUnit_det _).1 hT), Matrix.one_mulVec,
-    Ch06.smul_e₁_eq_firstVec]
+    Chapter06.smul_e₁_eq_firstVec]
 
 end Algorithm
 
@@ -106,10 +106,10 @@ private theorem inner_bilanczosW_apply_bilanczosV {v : EuclideanSpace 𝕜 (Fin 
 `𝒦_m(A, v_1)` orthogonally to `𝒦_m(Aᴴ, w_1)` — the projection process (7.6) the section is
 derived from. Only the no-breakdown hypothesis of §7.1 and the nonsingularity of `T_m` are
 needed. -/
-theorem lanczosSolve_isPetrovGalerkin (h : NoBreakdown A (Ch06.v₁ A b x₀) w₁ m)
-    (hT : IsUnit (T A (Ch06.v₁ A b x₀) w₁ m)) :
-    IsPetrovGalerkin (op A) b x₀ (Ch06.krylov A (Ch06.v₁ A b x₀) m) (Ch06.krylov Aᴴ w₁ m)
-      (lanczosSolve A b x₀ w₁ m) := by
+theorem lanczosSolve_isPetrovGalerkin (h : NoBreakdown A (Chapter06.v₁ A b x₀) w₁ m)
+    (hT : IsUnit (T A (Chapter06.v₁ A b x₀) w₁ m)) :
+    IsPetrovGalerkin (op A) b x₀ (Chapter06.krylov A (Chapter06.v₁ A b x₀) m)
+      (Chapter06.krylov Aᴴ w₁ m) (lanczosSolve A b x₀ w₁ m) := by
   have hsum := lanczosSolve_eq_add_sum A b x₀ w₁ m
   constructor
   · rw [hsum, add_sub_cancel_left, ← (proposition_7_1_span h).1]
@@ -120,25 +120,25 @@ theorem lanczosSolve_isPetrovGalerkin (h : NoBreakdown A (Ch06.v₁ A b x₀) w�
     have hres : b - op A (lanczosSolve A b x₀ w₁ m)
         = (b - op A x₀)
           - ∑ j, lanczosSolveY A b x₀ w₁ m j
-              • op A (bilanczosV A (Ch06.v₁ A b x₀) w₁ (j : ℕ)) := by
+              • op A (bilanczosV A (Chapter06.v₁ A b x₀) w₁ (j : ℕ)) := by
       rw [hsum, map_add, map_sum]
       simp only [map_smul]
       abel
-    have hstart : inner 𝕜 (bilanczosW A (Ch06.v₁ A b x₀) w₁ (i : ℕ)) (b - op A x₀)
-        = Krylov.firstVec (Ch06.β A b x₀ : 𝕜) m i := by
+    have hstart : inner 𝕜 (bilanczosW A (Chapter06.v₁ A b x₀) w₁ (i : ℕ)) (b - op A x₀)
+        = Krylov.firstVec (Chapter06.β A b x₀ : 𝕜) m i := by
       have h0 : b - op A x₀
-          = (Ch06.β A b x₀ : 𝕜) • bilanczosV A (Ch06.v₁ A b x₀) w₁ 0 := by
+          = (Chapter06.β A b x₀ : 𝕜) • bilanczosV A (Chapter06.v₁ A b x₀) w₁ 0 := by
         rw [bilanczosV_zero]
         exact (smul_v₁_eq_r₀ A b x₀).symm
       rw [h0, inner_smul_right, proposition_7_1 h (le_of_lt i.2) (Nat.zero_le m)]
       by_cases h1 : (i : ℕ) = 0 <;> simp [Krylov.firstVec, h1]
     have hcoeff : ∀ j : Fin m,
-        inner 𝕜 (bilanczosW A (Ch06.v₁ A b x₀) w₁ (i : ℕ))
-            (op A (bilanczosV A (Ch06.v₁ A b x₀) w₁ (j : ℕ)))
-          = T A (Ch06.v₁ A b x₀) w₁ m i j := fun j =>
+        inner 𝕜 (bilanczosW A (Chapter06.v₁ A b x₀) w₁ (i : ℕ))
+            (op A (bilanczosV A (Chapter06.v₁ A b x₀) w₁ (j : ℕ)))
+          = T A (Chapter06.v₁ A b x₀) w₁ m i j := fun j =>
       inner_bilanczosW_apply_bilanczosV h (le_of_lt i.2) j.2
-    have hmv : (T A (Ch06.v₁ A b x₀) w₁ m *ᵥ lanczosSolveY A b x₀ w₁ m) i
-        = ∑ j, lanczosSolveY A b x₀ w₁ m j * T A (Ch06.v₁ A b x₀) w₁ m i j := by
+    have hmv : (T A (Chapter06.v₁ A b x₀) w₁ m *ᵥ lanczosSolveY A b x₀ w₁ m) i
+        = ∑ j, lanczosSolveY A b x₀ w₁ m j * T A (Chapter06.v₁ A b x₀) w₁ m i j := by
       rw [Matrix.mulVec_apply_eq_sum]
       exact Finset.sum_congr rfl fun j _ => mul_comm _ _
     rw [hres, inner_sub_right, inner_sum, hstart]
@@ -155,22 +155,22 @@ variable {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ w₁ : EuclideanSpace 𝕜 (F
 
 /-- **Saad (7.9)**, in vector form: the residual of Algorithm 7.2 is a multiple of the next
 Lanczos vector, `b - A x_m = -δ_{m+1} (e_mᵀ y_m) v_{m+1}`. -/
-theorem residual_lanczosSolve (h : NoSeriousBreakdown A (Ch06.v₁ A b x₀) w₁)
-    (hT : IsUnit (T A (Ch06.v₁ A b x₀) w₁ m)) (hm : 0 < m) :
+theorem residual_lanczosSolve (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁)
+    (hT : IsUnit (T A (Chapter06.v₁ A b x₀) w₁ m)) (hm : 0 < m) :
     b - op A (lanczosSolve A b x₀ w₁ m)
-      = -(bilanczosDelta A (Ch06.v₁ A b x₀) w₁ m
+      = -(bilanczosDelta A (Chapter06.v₁ A b x₀) w₁ m
           * lanczosSolveY A b x₀ w₁ m ⟨m - 1, by omega⟩)
-        • bilanczosV A (Ch06.v₁ A b x₀) w₁ m := by
+        • bilanczosV A (Chapter06.v₁ A b x₀) w₁ m := by
   have hstart : b - op A x₀
-      = (Ch06.β A b x₀ : 𝕜) • bilanczosV A (Ch06.v₁ A b x₀) w₁ 0 := by
+      = (Chapter06.β A b x₀ : 𝕜) • bilanczosV A (Chapter06.v₁ A b x₀) w₁ 0 := by
     rw [bilanczosV_zero]
     exact (smul_v₁_eq_r₀ A b x₀).symm
-  have hmul : Krylov.hessenbergSqOf (bilanczosCoeff A (Ch06.v₁ A b x₀) w₁) m
-      *ᵥ lanczosSolveY A b x₀ w₁ m = Krylov.firstVec (Ch06.β A b x₀ : 𝕜) m := by
+  have hmul : Krylov.hessenbergSqOf (bilanczosCoeff A (Chapter06.v₁ A b x₀) w₁) m
+      *ᵥ lanczosSolveY A b x₀ w₁ m = Krylov.firstVec (Chapter06.β A b x₀ : 𝕜) m := by
     rw [← T_eq_hessenbergSqOf]
     exact T_mulVec_lanczosSolveY A b x₀ w₁ hT
-  have hdelta : bilanczosCoeff A (Ch06.v₁ A b x₀) w₁ m (m - 1)
-      = bilanczosDelta A (Ch06.v₁ A b x₀) w₁ m := by
+  have hdelta : bilanczosCoeff A (Chapter06.v₁ A b x₀) w₁ m (m - 1)
+      = bilanczosDelta A (Chapter06.v₁ A b x₀) w₁ m := by
     obtain ⟨M, rfl⟩ : ∃ M, m = M + 1 := ⟨m - 1, by omega⟩
     rw [Nat.add_sub_cancel, bilanczosCoeff_succ_self]
   rw [lanczosSolve_eq_add_sum, ← hdelta]
@@ -180,14 +180,14 @@ theorem residual_lanczosSolve (h : NoSeriousBreakdown A (Ch06.v₁ A b x₀) w�
 Algorithm 7.2 is available without forming the iterate. This is the analogue of (6.18) for FOM
 and of (6.87) for the symmetric Lanczos method; the factor `‖v_{m+1}‖₂`, which is `1` there, is
 what a merely biorthogonal basis leaves behind. -/
-theorem equation_7_9 (h : NoSeriousBreakdown A (Ch06.v₁ A b x₀) w₁)
-    (hT : IsUnit (T A (Ch06.v₁ A b x₀) w₁ m)) (hm : 0 < m) :
+theorem equation_7_9 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁)
+    (hT : IsUnit (T A (Chapter06.v₁ A b x₀) w₁ m)) (hm : 0 < m) :
     ‖b - op A (lanczosSolve A b x₀ w₁ m)‖
-      = ‖bilanczosDelta A (Ch06.v₁ A b x₀) w₁ m
+      = ‖bilanczosDelta A (Chapter06.v₁ A b x₀) w₁ m
           * lanczosSolveY A b x₀ w₁ m ⟨m - 1, by omega⟩‖
-        * ‖bilanczosV A (Ch06.v₁ A b x₀) w₁ m‖ := by
+        * ‖bilanczosV A (Chapter06.v₁ A b x₀) w₁ m‖ := by
   rw [residual_lanczosSolve h hT hm, norm_smul, norm_neg]
 
 end Residual
 
-end SaadSparse.Ch07
+end SaadSparse.Chapter07

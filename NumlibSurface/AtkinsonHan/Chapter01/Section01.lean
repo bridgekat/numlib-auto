@@ -3,8 +3,8 @@ import Mathlib.LinearAlgebra.Dimension.StrongRankCondition
 /-!
 # Atkinson–Han §1.1: linear spaces
 
-Statements from Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework* (3rd ed.), §1.1.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §1.1.
 
 Chapter 1 is the book's review of functional analysis, and Mathlib has essentially all of it. This
 surface therefore states the chapter's numbered *results* and proves each from Mathlib; it does not
@@ -30,7 +30,7 @@ illustrations of the definitions, and none is cited by a later result.
   3rd edition, Texts in Applied Mathematics 39, Springer, 2009.
 -/
 
-namespace AtkinsonHan.Ch01
+namespace AtkinsonHan.Chapter01
 
 variable {𝕜 V : Type*} [DivisionRing 𝕜] [AddCommGroup V] [Module 𝕜 V]
 
@@ -41,4 +41,4 @@ theorem theorem_1_1_10 {ι : Type*} (b : Module.Basis ι 𝕜 V) :
     Nat.card ι = Module.finrank 𝕜 V :=
   (Module.finrank_eq_nat_card_basis b).symm
 
-end AtkinsonHan.Ch01
+end AtkinsonHan.Chapter01

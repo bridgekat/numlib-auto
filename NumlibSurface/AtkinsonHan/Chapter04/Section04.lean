@@ -3,8 +3,8 @@ import Numlib.Analysis.Wavelet.Haar
 /-!
 # Atkinson–Han §4.4: Haar wavelets
 
-Statements from Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework* (3rd ed.), §4.4.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §4.4.
 
 Everything is the backbone `Numlib/Analysis/Wavelet/Haar`: the scaling function `φ = 1_[0,1)` and
 its dilates and translates `Haar.scalingFun`, the scaling spaces `Haar.V`, the wavelet
@@ -43,7 +43,7 @@ orthonormal basis both steps carry the same factor `(√2)⁻¹`, which is the b
 
 open MeasureTheory Real Submodule
 
-namespace AtkinsonHan.Ch04
+namespace AtkinsonHan.Chapter04
 
 /-! ### The scaling function and the scaling spaces -/
 
@@ -199,4 +199,4 @@ theorem theorem_4_4_4 (j k : ℤ) (f : Lp ℝ 2 (volume : Measure ℝ)) :
   · linear_combination (√((2 : ℝ) ^ j) *
       (inner ℝ (Haar.scalingFun j k) f - inner ℝ (Haar.waveletFun j k) f) / 2) * h2
 
-end AtkinsonHan.Ch04
+end AtkinsonHan.Chapter04

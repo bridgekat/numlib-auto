@@ -4,13 +4,13 @@ import Numlib.Krylov.CG
 import Numlib.Krylov.Iterate
 import Numlib.Krylov.Monotonicity
 import Numlib.Krylov.Subspace
-import NumlibSurface.FongSaunders.Section4
+import NumlibSurface.FongSaunders.Section04
 
 /-!
-# §5: Table 5.1, the summary of monotonicity properties
+# Fong–Saunders §5: Table 5.1, the summary of monotonicity properties
 
-Surface file for D. C.-L. Fong and M. A. Saunders, *CG versus MINRES: an empirical
-comparison*, SQU Journal for Science **17** (2012) 44–62 (Report SOL 2011-2R).
+Surface file for D. C.-L. Fong and M. A. Saunders, *CG versus MINRES: an empirical comparison*, SQU
+Journal for Science **17** (2012) 44–62 (Report SOL 2011-2R), §5.
 
 Table 5.1 collects the monotonicity properties of CG and MINRES on a symmetric positive definite
 system.  `MonotoneProfile` and `MinresProfile` package the rows of the table; `cg_profile`,

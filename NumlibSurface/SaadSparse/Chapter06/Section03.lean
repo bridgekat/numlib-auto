@@ -6,10 +6,10 @@ import Numlib.LinearSolve.Projection.Basic
 import NumlibSurface.SaadSparse.Chapter06.Section02
 
 /-!
-# Saad, §6.3: Arnoldi's method
+# Saad §6.3: Arnoldi's method
 
-Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-SIAM, 2003, §6.3.
+Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §6.3.
 
 Algorithm 6.1 (Arnoldi with classical Gram–Schmidt) is `arnoldiCGS`; its coefficients `h_{ij}`
 are `arnoldiCoeff` and its unnormalized vectors `w_j` are `arnoldiW`; the matrices `V_m`,
@@ -36,7 +36,7 @@ Arnoldi is real throughout, as in the book.
 
 open scoped Matrix
 
-namespace SaadSparse.Ch06
+namespace SaadSparse.Chapter06
 
 section General
 
@@ -1181,4 +1181,4 @@ theorem algorithm_6_2_eq_alg_6_1 (hv : ‖v₁‖ = 1) :
 
 end BookResults
 
-end SaadSparse.Ch06
+end SaadSparse.Chapter06

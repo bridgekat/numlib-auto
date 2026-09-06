@@ -2,13 +2,13 @@ import Numlib.Krylov.CG
 import Numlib.Krylov.CR
 import Numlib.Krylov.Iterate
 import Numlib.Krylov.Monotonicity
-import NumlibSurface.FongSaunders.Section2
+import NumlibSurface.FongSaunders.Section02
 
 /-!
-# §3: normwise relative backward errors and stopping rules
+# Fong–Saunders §3: normwise relative backward errors and stopping rules
 
-Surface file for D. C.-L. Fong and M. A. Saunders, *CG versus MINRES: an empirical
-comparison*, SQU Journal for Science **17** (2012) 44–62 (Report SOL 2011-2R).
+Surface file for D. C.-L. Fong and M. A. Saunders, *CG versus MINRES: an empirical comparison*, SQU
+Journal for Science **17** (2012) 44–62 (Report SOL 2011-2R), §3.
 
 §3 measures an approximate solution `x_k` by the smallest perturbation `(A + E) x_k = b + f` it
 solves exactly, with `‖E‖/‖A‖ ≤ α ξ` and `‖f‖/‖b‖ ≤ β ξ`; the matrix norm is the Frobenius norm.

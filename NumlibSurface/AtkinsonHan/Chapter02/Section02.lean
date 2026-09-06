@@ -9,9 +9,9 @@ import NumlibSurface.AtkinsonHan.Chapter02.Section01
 /-!
 # Atkinson–Han §2.2: continuous linear operators
 
-Statements from Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework* (3rd ed.), §2.2: the equivalence of continuity and boundedness for a linear
-operator, the operator norm, and `𝓛(V, W)` as a Banach space.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §2.2: the equivalence of continuity and
+boundedness for a linear operator, the operator norm, and `𝓛(V, W)` as a Banach space.
 
 The book's `𝓛(V, W)` is Mathlib's `V →L[𝕜] W`, so Theorems 2.2.5 and 2.2.10 are instances rather
 than theorems; they are stated anyway, in the shape the book gives them, because they are numbered
@@ -47,7 +47,7 @@ Examples 2.2.1, 2.2.3 and 2.2.7 exhibit particular operators (differentiation, a
 
 open Bornology Filter Metric Topology
 
-namespace AtkinsonHan.Ch02
+namespace AtkinsonHan.Chapter02
 
 section Continuity
 
@@ -296,4 +296,4 @@ theorem equation_2_2_8 {a b : ℝ} (hab : a ≤ b) (k : C(Set.Icc a b × Set.Icc
 
 end IntegralOperator
 
-end AtkinsonHan.Ch02
+end AtkinsonHan.Chapter02

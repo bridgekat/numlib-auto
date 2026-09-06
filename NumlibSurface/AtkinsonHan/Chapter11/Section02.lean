@@ -6,8 +6,8 @@ import NumlibSurface.AtkinsonHan.Chapter11.Section03
 /-!
 # Atkinson–Han §11.2: existence and uniqueness based on convex minimization
 
-Surface formalization of §11.2 of Kendall Atkinson and Weimin Han, *Theoretical Numerical
-Analysis: A Functional Analysis Framework*, 3rd edition, Springer, 2009.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §11.2.
 
 The section turns a constrained convex minimization problem into an elliptic variational
 inequality and back.  Theorem 11.2.1 does it for a general Gâteaux differentiable convex `f` plus
@@ -18,10 +18,10 @@ real Hilbert space, where the minimizer also exists and is unique.
 Theorem 11.2.1 extends Theorem 5.3.19 of `Chapter05/Section03` by the term `j`, and both are
 specializations of `isMinOn_add_iff_forall_le` of `Numlib/Analysis/Convex/Gateaux`.  Formula
 (11.2.3) — over a subspace and with `j = 0` the variational inequality is the variational equation
-`⟨f'(u), v⟩ = 0` — is `AtkinsonHan.Ch05.theorem_5_3_19_submodule` and is not restated here.
+`⟨f'(u), v⟩ = 0` — is `AtkinsonHan.Chapter05.theorem_5_3_19_submodule` and is not restated here.
 
 The variational inequality of Theorem 11.2.2 is the predicate
-`AtkinsonHan.Ch11.IsVariationalInequalitySolution` of §11.3, at `A = a.toOperator` and
+`AtkinsonHan.Chapter11.IsVariationalInequalitySolution` of §11.3, at `A = a.toOperator` and
 `f = rieszRep ℓ`; that is the book's (11.3.12), so §11.2 and §11.3 really do state the same
 problem, and the identification is `isVariationalInequalitySolution_toOperator_iff`.
 
@@ -49,7 +49,7 @@ problem, both of which name a domain and its Sobolev spaces.
 open Filter Set Topology
 open scoped InnerProductSpace
 
-namespace AtkinsonHan.Ch11
+namespace AtkinsonHan.Chapter11
 
 /-! ### Theorem 11.2.1: minimization and the variational inequality -/
 
@@ -66,11 +66,11 @@ minimizes `f + j` over `K` — the book's (11.2.1) — if and only if
 
 which is (11.2.2).  The convexity of `K` is `hf.1` and is not assumed separately.
 
-The case `j = 0` is `AtkinsonHan.Ch05.theorem_5_3_19`, and (11.2.3) — over a subspace and with
+The case `j = 0` is `AtkinsonHan.Chapter05.theorem_5_3_19`, and (11.2.3) — over a subspace and with
 `j = 0` the inequality is the equation `⟨f'(u), v⟩ = 0` — is
-`AtkinsonHan.Ch05.theorem_5_3_19_submodule`. -/
+`AtkinsonHan.Chapter05.theorem_5_3_19_submodule`. -/
 theorem theorem_11_2_1 (hf : ConvexOn ℝ K f) (hj : ConvexOn ℝ K j)
-    (hG : ∀ u ∈ K, Ch05.HasGateauxDerivAt f (f' u) u) {u : V} (hu : u ∈ K) :
+    (hG : ∀ u ∈ K, Chapter05.HasGateauxDerivAt f (f' u) u) {u : V} (hu : u ∈ K) :
     IsMinOn (f + j) K u ↔ ∀ v ∈ K, 0 ≤ f' u (v - u) + j v - j u :=
   isMinOn_add_iff_forall_le hf hj hG hu
 
@@ -182,4 +182,4 @@ theorem exercise_11_2_1 {a : SesqForm ℂ V} (ha : a.IsHermitian) {α : ℝ} (h�
 
 end Complex
 
-end AtkinsonHan.Ch11
+end AtkinsonHan.Chapter11

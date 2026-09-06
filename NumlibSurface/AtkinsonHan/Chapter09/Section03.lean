@@ -2,10 +2,10 @@ import Numlib.Variational.Galerkin
 import NumlibSurface.AtkinsonHan.Chapter09.Section01
 
 /-!
-# The generalized Galerkin method and Strang's first lemma (§9.3)
+# Atkinson–Han §9.3: the generalized Galerkin method and Strang's first lemma
 
-Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional Analysis
-Framework*, 3rd edition, Springer, 2009.
+Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+Analysis Framework*, 3rd edition, Springer, 2009, §9.3.
 
 In §9.3 the discrete space `V_N` need no longer be a subspace of `V`, and the form and the
 functional are themselves approximated by `a_N` and `ℓ_N`.  The book carries out the analysis on
@@ -27,7 +27,7 @@ abbrev GeneralizedGalerkinProblem {W : Type*} [NormedAddCommGroup W] [NormedSpac
     (aN : W →ₗ[ℝ] W →ₗ[ℝ] ℝ) (ℓN : W →ₗ[ℝ] ℝ) (VN : Submodule ℝ W) (uN : W) : Prop :=
   IsGeneralizedGalerkinSolution aN ℓN VN uN
 
-namespace Ch09
+namespace Chapter09
 
 section Strang
 
@@ -138,6 +138,6 @@ theorem exercise_9_3_1 {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ
     (fun w v _ => hM w v) (fun v _ => ha v) huN u le_rfl hres hv
   simpa using h
 
-end Ch09
+end Chapter09
 
 end AtkinsonHan
