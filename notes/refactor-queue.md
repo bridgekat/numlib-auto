@@ -212,6 +212,24 @@ modules have now routed around it. And `Krylov.norm_sum_smul_vec_eq`,
 `mem_subspace_iff_exists_coeffs`, `residual_coeff_eq_zero` in `Krylov/Hessenberg`, plus
 `Lanczos.mulVec_tridiagExt_castSucc`, were duplicated privately by `Krylov/Singular`.
 
+### R21. Two `Lp` facts would let the two-scale relation be stated as printed
+
+`Numlib/Analysis/Wavelet/Multiresolution.lean` needs two facts of exactly the kind it already
+proves for `Lp.translationₗᵢ_indicatorConstLp`: that translations compose
+(`translationₗᵢ a (translationₗᵢ b f) = translationₗᵢ (a + b) f`), and that a translation commutes
+with a dilation (`translationₗᵢ a (dilationₗᵢ c hc f) = dilationₗᵢ c hc (translationₗᵢ (c * a) f)`).
+With those and the existing `dilationₗᵢ_trans`, the covariance
+`⟪scalingSystem φ (j+1) k, scalingSystem φ j l⟫ = scalingCoeff φ (k - 2 * l)` is a few lines —
+dilate out by `2^j`, then translate by `l` — and Atkinson–Han's (4.5.3) can be stated with the
+book's indexing instead of with the coefficients as they arise, which is how
+`NumlibSurface/AtkinsonHan/Chapter04/Section05.lean` has it today.
+
+Beside it: `Numlib/IntegralEquations/SecondKind.lean` says of its own
+`eventually_forall_opNorm_sub_comp_lt` that the statement "belongs in
+`Numlib.Analysis.Normed.Operator.CollectivelyCompact` beside its companion and lives here only
+because this module does not own that file", and its private `opNorm_le_of_forall_norm_lt`
+duplicates one already in that file.
+
 ### R20. Four Schur-complement lemmas are in the ILU module
 
 `Matrix.schurComplementSingle_mulVec_of_apply_eq_zero`, `schurComplementSingle_mul_submatrix_inv`,
