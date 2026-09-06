@@ -10,7 +10,8 @@ The abstract theory of the operator equation `(μ - K) u = f` on a Banach space 
 approximations: what makes a projection method, a Nyström method or a two-grid iteration for such
 an equation stable and convergent.  Everything here is operator theory — no kernel, no quadrature
 and no function space — although the consumers are integral equations, which is why the module
-sits beside `Numlib.IntegralEquations.Basic`.
+sits beside `Numlib.IntegralEquations.Basic`.  The account followed is Chapter 12 of Atkinson–Han,
+*Theoretical Numerical Analysis*[^atkinson-han].
 
 Invertible operators are carried as a `ContinuousLinearEquiv` together with an equation
 identifying its coercion, so that every bound below is about a genuine inverse and never about the

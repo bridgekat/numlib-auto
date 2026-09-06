@@ -94,47 +94,28 @@ variable [CompleteSpace E] [CompleteSpace F] [IsRCLikeNormedField 𝕜] [NormedS
 
 omit [CompleteSpace F] [IsRCLikeNormedField 𝕜] [NormedSpace ℝ E] in
 /-- Perturbation (Neumann) lemma: an operator within `1 / (2 K)` of an invertible one, where `K`
-bounds the norm of the inverse, is itself invertible, with inverse of norm at most `2 K`. -/
+bounds the norm of the inverse, is itself invertible, with inverse of norm at most `2 K`.
+
+This is `ContinuousLinearEquiv.exists_symm_norm_le_of_add` at the perturbation `A - e`, with the
+bound `‖e⁻¹‖ / (1 - ‖e⁻¹‖ ‖A - e‖)` simplified at the particular radius `1 / (2 K)` that the
+quadratic-convergence proof uses. -/
 private theorem exists_equiv_of_norm_le {A : E →L[𝕜] F} (e : E ≃L[𝕜] F) {K : ℝ}
     (hK : ‖(e.symm : F →L[𝕜] E)‖ ≤ K) (h : K * ‖(e : E →L[𝕜] F) - A‖ ≤ 1 / 2) :
     ∃ B : E ≃L[𝕜] F, (B : E →L[𝕜] F) = A ∧ ∀ y : F, ‖B.symm y‖ ≤ 2 * K * ‖y‖ := by
-  set S : F →L[𝕜] E := (e.symm : F →L[𝕜] E) with hS
-  set T : E →L[𝕜] E := S ∘L A with hT
-  have hdiff : (1 : E →L[𝕜] E) - T = S ∘L ((e : E →L[𝕜] F) - A) := by
-    ext z
-    simp [hT, hS]
-  have hle : ‖(1 : E →L[𝕜] E) - T‖ ≤ 1 / 2 := by
-    rw [hdiff]
-    refine le_trans (ContinuousLinearMap.opNorm_comp_le _ _) (le_trans ?_ h)
-    exact mul_le_mul_of_nonneg_right hK (norm_nonneg _)
-  have hlt : ‖(1 : E →L[𝕜] E) - T‖ < 1 := lt_of_le_of_lt hle (by norm_num)
-  have hunit : ((Units.oneSub _ hlt : (E →L[𝕜] E)ˣ) : E →L[𝕜] E) = T := by
-    rw [Units.val_oneSub, sub_sub_cancel]
-  set B₀ : E ≃L[𝕜] E := ContinuousLinearEquiv.unitsEquiv 𝕜 E (Units.oneSub _ hlt) with hB₀def
-  have hB₀ : ∀ z : E, B₀ z = T z := by
-    intro z
-    rw [hB₀def, ContinuousLinearEquiv.unitsEquiv_apply, hunit]
-  have hlow : ∀ z : E, ‖z‖ / 2 ≤ ‖T z‖ := by
-    intro z
-    have h1 : ‖z - T z‖ ≤ 1 / 2 * ‖z‖ := by
-      have h2 := ((1 : E →L[𝕜] E) - T).le_opNorm z
-      simp only [sub_apply, one_apply_eq_self] at h2
-      exact le_trans h2 (mul_le_mul_of_nonneg_right hle (norm_nonneg _))
-    have h3 : ‖z‖ - ‖T z‖ ≤ ‖z - T z‖ := norm_sub_norm_le z (T z)
-    linarith
-  refine ⟨B₀.trans e, ?_, ?_⟩
-  · ext z
-    simp only [ContinuousLinearEquiv.coe_coe, ContinuousLinearEquiv.trans_apply, hB₀, hT, hS,
-      ContinuousLinearMap.comp_apply, ContinuousLinearEquiv.apply_symm_apply]
-  · intro y
-    have hz := hlow (B₀.symm (e.symm y))
-    rw [← hB₀, ContinuousLinearEquiv.apply_symm_apply] at hz
-    have hy : ‖e.symm y‖ ≤ K * ‖y‖ :=
-      le_trans ((e.symm : F →L[𝕜] E).le_opNorm y)
-        (mul_le_mul_of_nonneg_right hK (norm_nonneg _))
-    have hval : (B₀.trans e).symm y = B₀.symm (e.symm y) := rfl
-    rw [hval]
-    linarith
+  have hK0 : 0 ≤ K := le_trans (norm_nonneg _) hK
+  have hmul : ‖(e.symm : F →L[𝕜] E)‖ * ‖A - (e : E →L[𝕜] F)‖ ≤ 1 / 2 := by
+    rw [norm_sub_rev]
+    exact le_trans (mul_le_mul_of_nonneg_right hK (norm_nonneg _)) h
+  obtain ⟨B, hB, hBnorm, -⟩ :=
+    e.exists_symm_norm_le_of_add (A - (e : E →L[𝕜] F)) (by linarith)
+  refine ⟨B, by rw [hB]; abel, fun y => ?_⟩
+  have hle : ‖(B.symm : F →L[𝕜] E)‖ ≤ 2 * K := by
+    refine hBnorm.trans ?_
+    rw [div_le_iff₀ (by linarith)]
+    nlinarith [mul_nonneg hK0 (by linarith :
+      (0 : ℝ) ≤ 1 / 2 - ‖(e.symm : F →L[𝕜] E)‖ * ‖A - (e : E →L[𝕜] F)‖)]
+  exact le_trans ((B.symm : F →L[𝕜] E).le_opNorm y)
+    (mul_le_mul_of_nonneg_right hle (norm_nonneg _))
 
 omit [CompleteSpace E] [CompleteSpace F] in
 /-- Taylor-type remainder bound inside the ball: the linearization of `Fn` at `x` approximates `Fn`
@@ -374,8 +355,9 @@ theorem le_majorant {u : ℝ} (hu : 0 ≤ u) (hu1 : u ≤ 1) (k : ℕ) : u ≤ m
       div_nonneg (sq_nonneg _) (by linarith [majorant_pos u k])
     linarith
 
-/-- The majorant is nonincreasing, so the scalar iterates `t_k` increase. -/
-theorem majorant_antitone {u : ℝ} (hu : 0 ≤ u) (hu1 : u ≤ 1) (k : ℕ) :
+/-- One step of the majorant does not increase it, so the scalar iterates `t_k` increase.  The
+monotone form is `Newton.majorant_le_one` together with `Newton.le_majorant`. -/
+theorem majorant_succ_le {u : ℝ} (hu : 0 ≤ u) (hu1 : u ≤ 1) (k : ℕ) :
     majorant u (k + 1) ≤ majorant u k := by
   have h := majorant_sub_succ u k
   have hk := le_majorant hu hu1 k
@@ -388,7 +370,7 @@ theorem majorant_antitone {u : ℝ} (hu : 0 ≤ u) (hu1 : u ≤ 1) (k : ℕ) :
 theorem majorant_le_one {u : ℝ} (hu : 0 ≤ u) (hu1 : u ≤ 1) (k : ℕ) : majorant u k ≤ 1 := by
   induction k with
   | zero => simp
-  | succ k ih => exact le_trans (majorant_antitone hu hu1 k) ih
+  | succ k ih => exact le_trans (majorant_succ_le hu hu1 k) ih
 
 /-- The defining relation of the Newton majorant, in the form the vector induction consumes:
 one Newton step of size `(majorant u k - majorant u (k + 1)) / (β L)` produces a residual whose
@@ -649,7 +631,7 @@ private theorem kantorovich_invariant {Fn : E → F} {F' : E → E →L[𝕜] F}
     have hs0 := majorant_pos u k
     have hs1 := majorant_pos u (k + 1)
     have hdiff : 0 ≤ majorant u k - majorant u (k + 1) := by
-      linarith [majorant_antitone hu0 hu1 k]
+      linarith [majorant_succ_le hu0 hu1 k]
     calc ‖iterate Fn F' x₀ (k + 2) - iterate Fn F' x₀ (k + 1)‖
         ≤ ‖(ek1.symm : F →L[𝕜] E)‖ * ‖Fn (iterate Fn F' x₀ (k + 1))‖ := hnext
       _ ≤ (β / majorant u (k + 1)) *
@@ -782,7 +764,7 @@ private theorem kantorovich_of_sq {Fn : E → F} {F' : E → E →L[𝕜] F} {x�
     refine squeeze_zero (fun k => norm_nonneg _) hFnzero ?_
     have h1 : Tendsto (fun k => (majorant u k - majorant u (k + 1)) / (β * L)) atTop (𝓝 0) := by
       refine squeeze_zero
-        (fun k => div_nonneg (by linarith [majorant_antitone hu0 hu1 k]) hA.le)
+        (fun k => div_nonneg (by linarith [majorant_succ_le hu0 hu1 k]) hA.le)
         (fun k => ?_) htend
       gcongr
       linarith [le_majorant hu0 hu1 (k + 1)]

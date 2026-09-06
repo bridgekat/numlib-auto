@@ -175,37 +175,13 @@ end Uniqueness
 
 section Energy
 
-/-- Expansion of the energy around a point: `E (u + w) = E u + (a u w - ℓ w) + ½ a w w`. -/
+/-- Expansion of the energy around a point: `E (u + w) = E u + (a u w - ℓ w) + ½ a w w`.  This is
+`SesqForm.energy_add_sub_energy` with the real scalars written without `re`. -/
 private theorem energy_add (a : SesqForm ℝ V) (ha : a.IsHermitian) (ℓ : V →L[ℝ] ℝ) (u w : V) :
     a.energy ℓ (u + w) = a.energy ℓ u + (a u w - ℓ w) + 1 / 2 * a w w := by
-  have hsym : a w u = a u w := (SesqForm.isHermitian_real_iff a).mp ha w u
-  simp only [SesqForm.energy, RCLike.re_to_real, map_add, add_apply]
-  rw [hsym]
-  ring
-
-/-- Parallelogram identity for the energy of a symmetric real form:
-`E x + E y - 2 E ((x + y) / 2) = ¼ a (x - y) (x - y)`. -/
-private theorem energy_parallelogram (a : SesqForm ℝ V) (ha : a.IsHermitian) (ℓ : V →L[ℝ] ℝ)
-    (x y : V) :
-    a.energy ℓ x + a.energy ℓ y - 2 * a.energy ℓ ((1 / 2 : ℝ) • x + (1 / 2 : ℝ) • y)
-      = 1 / 4 * a (x - y) (x - y) := by
-  have hsym : a y x = a x y := (SesqForm.isHermitian_real_iff a).mp ha y x
-  simp only [SesqForm.energy, RCLike.re_to_real, map_smulₛₗ, map_add, map_sub, add_apply,
-    sub_apply, smul_apply, smul_eq_mul, RingHom.id_apply, starRingEnd_apply, star_trivial]
-  rw [hsym]
-  ring
-
-/-- The energy functional is continuous (its quadratic part is a bounded bilinear map). -/
-private theorem continuous_energy (a : SesqForm ℝ V) (ℓ : V →L[ℝ] ℝ) :
-    Continuous (a.energy ℓ) := by
-  have h1 : Continuous fun v : V => ((a v : V →L[ℝ] ℝ), v) := a.continuous.prodMk continuous_id
-  have h2 : Continuous fun p : (V →L[ℝ] ℝ) × V => p.1 p.2 := isBoundedBilinearMap_apply.continuous
-  have hq : Continuous fun v : V => a v v := h2.comp h1
-  have hE : a.energy ℓ = fun v : V => (1 / 2 : ℝ) * a v v - ℓ v := by
-    funext v
-    simp [SesqForm.energy]
-  rw [hE]
-  exact (continuous_const.mul hq).sub ℓ.continuous
+  have h := a.energy_add_sub_energy ℓ ha u w
+  simp only [RCLike.re_to_real] at h
+  linarith
 
 /-- The Gâteaux derivative of the energy of a symmetric form at `u` is `v ↦ a u v - ℓ v`. -/
 private theorem hasLineDerivAt_energy (a : SesqForm ℝ V) (ha : a.IsHermitian) (ℓ : V →L[ℝ] ℝ)
@@ -300,7 +276,7 @@ theorem existsUnique_isMinOn_energy_add {a : SesqForm ℝ V} (ha : a.IsHermitian
     have hjm : j ((1 / 2 : ℝ) • x + (1 / 2 : ℝ) • y) ≤ 1 / 2 * j x + 1 / 2 * j y := by
       simpa using hj.2 hx hy (by norm_num : (0 : ℝ) ≤ 1 / 2) (by norm_num : (0 : ℝ) ≤ 1 / 2)
         (by norm_num)
-    have hpar := energy_parallelogram a ha ℓ x y
+    have hpar := SesqForm.energy_parallelogram ha ℓ x y
     have hq : c * ‖x - y‖ ^ 2 ≤ a (x - y) (x - y) := hcoer (x - y)
     have hd := hdle _ hm
     simp only [hEdef, Pi.add_apply] at hd ⊢
@@ -336,7 +312,7 @@ theorem existsUnique_isMinOn_energy_add {a : SesqForm ℝ V} (ha : a.IsHermitian
   have huK : u ∈ K := hKcl.mem_of_tendsto htend (Eventually.of_forall hwK)
   -- the limit attains the infimum, by continuity of the energy and semicontinuity of `j`
   have henergy : Tendsto (fun n => a.energy ℓ (w n)) atTop (𝓝 (a.energy ℓ u)) :=
-    ((continuous_energy a ℓ).tendsto u).comp htend
+    ((SesqForm.continuous_energy a ℓ).tendsto u).comp htend
   have hEtend : Tendsto (fun n => E (w n)) atTop (𝓝 d) := by
     refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds ?_
       (fun n => hdle _ (hwK n)) (fun n => (hwlt n).le)

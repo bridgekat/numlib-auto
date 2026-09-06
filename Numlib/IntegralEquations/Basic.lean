@@ -11,7 +11,10 @@ import Mathlib.Topology.UniformSpace.HeineCantor
 
 The Fredholm, Urysohn and Volterra integral operators on the Banach space `C(Set.Icc a b, ℝ)` of
 continuous real functions on a compact interval, and the estimates on which the classical existence
-theorems for integral equations of the second kind rest.
+theorems for integral equations of the second kind rest.  The operators, their norms and the
+factorial estimate are as in Atkinson–Han, *Theoretical Numerical Analysis*[^atkinson-han], §2.2,
+§2.3 and §5.2, which every declaration below cites; Kress, *Linear Integral
+Equations*[^kress-integral], is the standard monograph on the same material.
 
 * `IntegralOperator.kernelCLM` is the bounded operator `u ↦ (x ↦ ∫ y, k (x, y) * u y dμ)` on
   `C(X, ℝ)` for a compact space `X` with a finite Borel measure `μ`, and
@@ -41,8 +44,9 @@ be clamped back into `Set.Icc a b` by `Set.projIcc`.
 
 [^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
   Analysis Framework*, 3rd edition, Springer, 2009.
-[^kress]: Rainer Kress, *Linear Integral Equations*, 3rd edition, Applied Mathematical Sciences 82,
-  Springer, 2014.
+[^kress-integral]: Rainer Kress, *Linear Integral Equations*, 3rd edition, Applied Mathematical
+  Sciences 82, Springer, 2014.  A different book from the same author's *Numerical Analysis*,
+  which the rest of this library cites under the key `kress`.
 -/
 
 open MeasureTheory Metric Set
@@ -59,6 +63,8 @@ section Clamp
 
 variable (hab : a ≤ b)
 
+/-- The clamping map `Set.projIcc a b hab` of the line onto the compact interval is
+continuous. -/
 @[fun_prop]
 theorem continuous_projIcc : Continuous (projIcc a b hab) :=
   continuous_induced_rng.2 (continuous_const.max (continuous_const.min continuous_id))
@@ -69,10 +75,12 @@ theorem continuous_apply_projIcc (u : C(Icc a b, ℝ)) :
     Continuous fun y : ℝ => u (projIcc a b hab y) :=
   u.continuous.comp (continuous_projIcc hab)
 
+/-- Clamping fixes a point already in the interval, so it does not change the value there. -/
 theorem apply_projIcc_of_mem (u : C(Icc a b, ℝ)) {y : ℝ} (hy : y ∈ Icc a b) :
     u (projIcc a b hab y) = u ⟨y, hy⟩ := by
   rw [projIcc_of_mem]
 
+/-- Clamping a point of the interval returns that point. -/
 @[simp]
 theorem coe_projIcc_of_mem {y : ℝ} (hy : y ∈ Icc a b) :
     ((projIcc a b hab y : Icc a b) : ℝ) = y := by
@@ -186,6 +194,7 @@ noncomputable def kernelCLM (k : C(X × X, ℝ)) : C(X, ℝ) →L[ℝ] C(X, ℝ)
             norm_integral_le_of_norm_le_const (Filter.Eventually.of_forall hle)
         _ = ‖k‖ * μ.real univ * ‖u‖ := by ring
 
+/-- The defining formula of `IntegralOperator.kernelCLM`. -/
 @[simp]
 theorem kernelCLM_apply (k : C(X × X, ℝ)) (u : C(X, ℝ)) (x : X) :
     kernelCLM μ k u x = ∫ y, k (x, y) * u y ∂μ :=
@@ -289,6 +298,7 @@ noncomputable def urysohn (k : C(Icc a b × Icc a b × ℝ, ℝ)) (u : C(Icc a b
       (f := fun (x : Icc a b) (y : ℝ) => k (x, projIcc a b hab y, u (projIcc a b hab y)))
     exact k.continuous.comp (by fun_prop)
 
+/-- The defining formula of `IntegralOperator.urysohn`. -/
 @[simp]
 theorem urysohn_apply (k : C(Icc a b × Icc a b × ℝ, ℝ)) (u : C(Icc a b, ℝ)) (x : Icc a b) :
     urysohn hab k u x = ∫ y in a..b, k (x, projIcc a b hab y, u (projIcc a b hab y)) :=
@@ -333,6 +343,7 @@ noncomputable def fredholm (k : C(Icc a b × Icc a b, ℝ)) :
           ≤ ‖k‖ * ‖u‖ * |b - a| := intervalIntegral.norm_integral_le_of_norm_le_const hle
         _ = ‖k‖ * (b - a) * ‖u‖ := by rw [abs_of_nonneg hba]; ring
 
+/-- The defining formula of `IntegralOperator.fredholm`. -/
 @[simp]
 theorem fredholm_apply (k : C(Icc a b × Icc a b, ℝ)) (u : C(Icc a b, ℝ)) (x : Icc a b) :
     fredholm hab k u x = ∫ y in a..b, k (x, projIcc a b hab y) * u (projIcc a b hab y) :=
@@ -348,6 +359,8 @@ against which `IntegralOperator.fredholm` integrates. -/
 noncomputable def iccMeasure (a b : ℝ) : Measure (Icc a b) :=
   Measure.comap Subtype.val volume
 
+/-- `IntegralOperator.iccMeasure` is a finite measure, being Lebesgue measure restricted to a
+bounded interval. -/
 instance : IsFiniteMeasure (iccMeasure a b) where
   measure_univ_lt_top := by
     have h : (iccMeasure a b) univ = (volume.restrict (Icc a b)) univ := by
@@ -443,6 +456,7 @@ noncomputable def urysohnDerivKernel (kz : C(Icc a b × Icc a b × ℝ, ℝ)) (u
     C(Icc a b × Icc a b, ℝ) :=
   ⟨fun p => kz (p.1, p.2, u p.2), by fun_prop⟩
 
+/-- The defining formula of `IntegralOperator.urysohnDerivKernel`. -/
 @[simp]
 theorem urysohnDerivKernel_apply (kz : C(Icc a b × Icc a b × ℝ, ℝ)) (u : C(Icc a b, ℝ))
     (x y : Icc a b) : urysohnDerivKernel kz u (x, y) = kz (x, y, u y) :=
@@ -599,6 +613,7 @@ the linear operators are instances of the nonlinear ones. -/
 def mulKernel (k : C(Icc a b × Icc a b, ℝ)) : C(Icc a b × Icc a b × ℝ, ℝ) :=
   ⟨fun p => k (p.1, p.2.1) * p.2.2, by fun_prop⟩
 
+/-- The defining formula of `IntegralOperator.mulKernel`. -/
 @[simp]
 theorem mulKernel_apply (k : C(Icc a b × Icc a b, ℝ)) (x y : Icc a b) (z : ℝ) :
     mulKernel k (x, y, z) = k (x, y) * z :=
@@ -616,6 +631,8 @@ noncomputable def volterra (k : C(Icc a b × Icc a b × ℝ, ℝ)) (u : C(Icc a 
       (s := fun t : Icc a b => (t : ℝ)) (k.continuous.comp (by fun_prop))
     fun_prop
 
+/-- The defining formula of `IntegralOperator.volterra`: the upper limit of integration is the
+evaluation point, which is what distinguishes a Volterra operator from a Fredholm one. -/
 @[simp]
 theorem volterra_apply (k : C(Icc a b × Icc a b × ℝ, ℝ)) (u : C(Icc a b, ℝ)) (t : Icc a b) :
     volterra hab k u t = ∫ s in a..(t : ℝ), k (t, projIcc a b hab s, u (projIcc a b hab s)) :=
@@ -657,6 +674,7 @@ noncomputable def volterraCLM (k : C(Icc a b × Icc a b, ℝ)) :
         _ ≤ ‖k‖ * ‖u‖ * (b - a) := mul_le_mul_of_nonneg_left habs (by positivity)
         _ = ‖k‖ * (b - a) * ‖u‖ := by ring
 
+/-- The defining formula of `IntegralOperator.volterraCLM`. -/
 @[simp]
 theorem volterraCLM_apply (k : C(Icc a b × Icc a b, ℝ)) (u : C(Icc a b, ℝ)) (t : Icc a b) :
     volterraCLM hab k u t = ∫ s in a..(t : ℝ), k (t, projIcc a b hab s) * u (projIcc a b hab s) :=
@@ -778,6 +796,8 @@ theorem exists_contractingWith_iterate_volterra {k : C(Icc a b × Icc a b × ℝ
   · rw [dist_eq_norm, dist_eq_norm, Real.coe_toNNReal _ hnn]
     exact norm_iterate_volterra_sub_le hab hk u v m
 
+/-- A power of a bounded operator acts as the iterate of its underlying function, which is what
+lets a contraction statement about the iterates be read as one about the powers. -/
 private theorem coe_clm_pow (L : C(Icc a b, ℝ) →L[ℝ] C(Icc a b, ℝ)) (n : ℕ) :
     ⇑(L ^ n) = (⇑L)^[n] :=
   hom_coe_pow _ rfl (fun _ _ => rfl) _ _
@@ -830,8 +850,11 @@ namespace Bielecki
 
 variable {a b β : ℝ}
 
+/-- The Bielecki space carries the additive group of `C(Icc a b, ℝ)`, of which it is a type
+synonym: only the norm differs. -/
 instance : AddCommGroup (Bielecki a b β) := inferInstanceAs (AddCommGroup C(Icc a b, ℝ))
 
+/-- Likewise for the real vector space structure. -/
 instance : Module ℝ (Bielecki a b β) := inferInstanceAs (Module ℝ C(Icc a b, ℝ))
 
 /-- The identity linear equivalence between the Bielecki space and `C(Icc a b, ℝ)`.  It is not an
@@ -846,11 +869,14 @@ noncomputable def weight : Bielecki a b β →ₗ[ℝ] C(Icc a b, ℝ) where
   map_add' u v := by ext t; simp [mul_add]
   map_smul' c u := by ext t; simp; ring
 
+/-- The defining formula of `Bielecki.weight`. -/
 @[simp]
 theorem weight_apply (u : Bielecki a b β) (t : Icc a b) :
     weight u t = Real.exp (-(β * ((t : ℝ) - a))) * equiv u t :=
   rfl
 
+/-- The weighting map is injective, the weight being everywhere nonzero.  This is what lets the
+Bielecki norm be induced along it. -/
 theorem weight_injective : Function.Injective (weight : Bielecki a b β → C(Icc a b, ℝ)) := by
   intro u v huv
   refine equiv.injective (ContinuousMap.ext fun t => ?_)
@@ -858,18 +884,24 @@ theorem weight_injective : Function.Injective (weight : Bielecki a b β → C(Ic
   simp only [weight_apply] at h
   exact mul_left_cancel₀ (Real.exp_ne_zero _) h
 
+/-- The Bielecki norm `‖u‖ = ⨆ t, exp (-(β (t - a))) * |u t|`, induced from the supremum norm of
+`C(Icc a b, ℝ)` along the injective weighting map. -/
 noncomputable instance : NormedAddCommGroup (Bielecki a b β) :=
   NormedAddCommGroup.induced (Bielecki a b β) C(Icc a b, ℝ)
     (weight : Bielecki a b β →ₗ[ℝ] C(Icc a b, ℝ)).toAddMonoidHom weight_injective
 
+/-- The Bielecki norm of `u` is the supremum norm of its weighting, by construction. -/
 theorem norm_eq (u : Bielecki a b β) : ‖u‖ = ‖weight u‖ := rfl
 
+/-- The Bielecki norm is homogeneous, the weighting map being linear. -/
 instance : NormedSpace ℝ (Bielecki a b β) where
   norm_smul_le c u := le_of_eq (by rw [norm_eq, norm_eq, map_smul, norm_smul])
 
+/-- The weighting map is an isometry onto `C(Icc a b, ℝ)`, again by construction of the norm. -/
 theorem isometry_weight : Isometry (weight : Bielecki a b β → C(Icc a b, ℝ)) :=
   AddMonoidHomClass.isometry_of_norm _ fun u => (norm_eq u).symm
 
+/-- The weighting map is surjective: divide by the weight, which is nowhere zero. -/
 theorem weight_surjective : Function.Surjective (weight : Bielecki a b β → C(Icc a b, ℝ)) := by
   intro v
   refine ⟨equiv.symm ⟨fun t => Real.exp (β * ((t : ℝ) - a)) * v t, by fun_prop⟩, ?_⟩
@@ -878,9 +910,12 @@ theorem weight_surjective : Function.Surjective (weight : Bielecki a b β → C(
     ← Real.exp_add]
   simp
 
+/-- The Bielecki space is complete, being isometrically isomorphic to `C(Icc a b, ℝ)`.  This is
+what makes it a legitimate home for the Banach fixed-point theorem. -/
 instance : CompleteSpace (Bielecki a b β) :=
   (isometry_weight.isUniformInducing.completeSpace_congr weight_surjective).2 inferInstance
 
+/-- `Bielecki.equiv` is linear, so it commutes with subtraction. -/
 @[simp]
 theorem equiv_sub (u v : Bielecki a b β) : equiv (u - v) = equiv u - equiv v :=
   map_sub equiv u v
@@ -943,6 +978,8 @@ noncomputable def volterraBielecki (hab : a ≤ b) (k : C(Icc a b × Icc a b × 
     Bielecki a b β → Bielecki a b β :=
   fun u => Bielecki.equiv.symm (volterra hab k (Bielecki.equiv u))
 
+/-- The defining formula of `IntegralOperator.volterraBielecki`: read through `Bielecki.equiv` it
+is the Volterra operator itself, only the norm on the space having changed. -/
 @[simp]
 theorem equiv_volterraBielecki (hab : a ≤ b) (k : C(Icc a b × Icc a b × ℝ, ℝ)) (β : ℝ)
     (u : Bielecki a b β) :

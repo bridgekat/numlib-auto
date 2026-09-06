@@ -17,7 +17,8 @@ A theorem proved in the model therefore holds for *every* rounding rule meeting 
 when the theorem is about an algorithm, for every evaluation order that its statement spells out.
 A concrete format is plugged in later by exhibiting its rounding relation as a `RoundingModel`.
 
-The bookkeeping constants are Higham's: `gamma u n = n u / (1 - n u)`, and `IsRelPert u n x y`
+The bookkeeping constants are those of Higham, *Accuracy and Stability of Numerical
+Algorithms*[^higham]: `gamma u n = n u / (1 - n u)`, and `IsRelPert u n x y`
 says that `y = x (1 + θ)` for some `|θ| ≤ gamma u n`.  The two facts that drive every error
 analysis are that a product of `n` factors `(1 + δ_i)^{±1}` is `1 + θ` with `|θ| ≤ gamma u n`
 (`abs_prod_one_add_sub_one_le_gamma`), and that relative perturbations compose by adding their
@@ -75,12 +76,15 @@ the hypothesis `n u < 1`, which every statement below carries. -/
 def gamma (u : K) (n : ℕ) : K := n * u / (1 - n * u)
 
 omit [LinearOrder K] [IsStrictOrderedRing K] in
+/-- The defining formula of `FloatingPoint.gamma`, as a rewrite rule. -/
 theorem gamma_def (u : K) (n : ℕ) : gamma u n = n * u / (1 - n * u) := rfl
 
 omit [LinearOrder K] [IsStrictOrderedRing K] in
+/-- No roundings, no error: `γ₀ = 0`. -/
 @[simp]
 theorem gamma_zero (u : K) : gamma u 0 = 0 := by simp [gamma]
 
+/-- Below the breakdown point `n u = 1` the constant `γ_n` is nonnegative. -/
 theorem gamma_nonneg {u : K} (hu : 0 ≤ u) {n : ℕ} (h : (n : K) * u < 1) : 0 ≤ gamma u n :=
   div_nonneg (mul_nonneg (by positivity) hu) (by linarith)
 
@@ -92,6 +96,7 @@ theorem one_add_gamma {u : K} {n : ℕ} (h : (n : K) * u < 1) :
   field_simp
   ring
 
+/-- More roundings cannot help: `γ_n` increases with `n` below the breakdown point. -/
 theorem gamma_mono {u : K} (hu : 0 ≤ u) {m n : ℕ} (hmn : m ≤ n) (h : (n : K) * u < 1) :
     gamma u m ≤ gamma u n := by
   have hmnn : (0 : K) ≤ (m : K) * u := mul_nonneg (by positivity) hu
@@ -192,8 +197,11 @@ within a relative perturbation of order `n` in a model of unit roundoff `u`.  Th
 relation so that it composes. -/
 def IsRelPert (u : K) (n : ℕ) (x y : K) : Prop := ∃ θ : K, |θ| ≤ gamma u n ∧ y = x * (1 + θ)
 
+/-- No perturbation at all is a relative perturbation of order `0`. -/
 theorem IsRelPert.refl (u : K) (x : K) : IsRelPert u 0 x x := ⟨0, by simp, by simp⟩
 
+/-- A relative perturbation of order `m` is one of every larger order `n`, since `γ_n` grows
+with `n`. -/
 theorem IsRelPert.mono {u : K} (hu : 0 ≤ u) {m n : ℕ} (hmn : m ≤ n) (h : (n : K) * u < 1)
     {x y : K} (hxy : IsRelPert u m x y) : IsRelPert u n x y := by
   obtain ⟨θ, hθ, rfl⟩ := hxy

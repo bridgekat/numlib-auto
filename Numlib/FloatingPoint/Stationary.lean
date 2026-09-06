@@ -10,7 +10,7 @@ perturbed at every step, and its accuracy is limited by the size of that perturb
 by the number of steps. This module separates the two halves of Higham's Theorem 17.1[^higham].
 
 * `Stationary.norm_perturbed_iterate_sub_le` is the exact-arithmetic half, and knows nothing about
-  rounding: a sequence obeying `x_{k+1} = G x_k + c + ξ_k` with `‖ξ_k‖ ≤ ε` and `‖G‖ < 1` stays
+  rounding: a sequence obeying `x_{k+1} = G x_k + f + ξ_k` with `‖ξ_k‖ ≤ ε` and `‖G‖ < 1` stays
   within `‖G‖^k ‖x_0 - x'‖ + ε / (1 - ‖G‖)` of the fixed point `x'`. The first term dies and the
   second does not: `Stationary.limsup_norm_perturbed_iterate_sub_le` is the *limiting accuracy*
   `ε / (1 - ‖G‖)`, which is what the theorem is about.
@@ -112,19 +112,6 @@ end Stationary
 namespace FloatingPoint
 
 variable {K : Type*} [Field K] [LinearOrder K] [IsStrictOrderedRing K] {μ ν : Type*}
-
-/-- One more rounding raises the order of a relative perturbation by one:
-`γ_k (1 + u) + u ≤ γ_{k+1}`. This is Higham's Lemma 3.3 together with `u ≤ γ₁`. -/
-private theorem gamma_mul_one_add_add_le {u : K} (hu : 0 ≤ u) (hu1 : u < 1) {k : ℕ}
-    (h : ((k + 1 : ℕ) : K) * u < 1) : gamma u k * (1 + u) + u ≤ gamma u (k + 1) := by
-  have hcast : ((k + 1 : ℕ) : K) * u = (k : K) * u + u := by push_cast; ring
-  have hk : (k : K) * u < 1 := by rw [hcast] at h; linarith
-  have hgk : 0 ≤ gamma u k := gamma_nonneg hu hk
-  have hg1 : u ≤ gamma u 1 := le_gamma_one hu hu1
-  have hmain := gamma_add_gamma_add_mul_le (u := u) hu (j := k) (k := 1) h
-  have hmul : gamma u k * u ≤ gamma u k * gamma u 1 := mul_le_mul_of_nonneg_left hg1 hgk
-  rw [mul_add, mul_one]
-  linarith
 
 /-- `RoundsAffineStep m G c x y`: `y` is an admissible computed value of the affine step
 `G x + c`, evaluated as the matrix–vector product `G x` — itself an inner product per row, as in

@@ -211,6 +211,29 @@ theorem norm_sub_le_of_regularization {jeps : V → ℝ} {c₁ ε : ℝ} (hc : 0
 
 end Core
 
+/-- The part of Falk's bound that does not see the discrete solution — the residual of the
+continuous solution at the approximating point, together with the Young term — tends to zero
+along any sequence `w n → u` on which the values of `j` converge.  Both convergence theorems
+below run the same argument on it, differing only in how they get `hjw`: the internal one from
+continuity of `j` on `K`, the external one from continuity on the whole space. -/
+private theorem tendsto_falk_majorant {A : V → V} {j : V → ℝ} {f u : V} {c L : ℝ} {w : ℕ → V}
+    (hw : Tendsto w atTop (𝓝 u)) (hjw : Tendsto (fun n => j (w n)) atTop (𝓝 (j u))) :
+    Tendsto (fun n => (inner ℝ (A u) (w n - u) + j (w n) - j u - inner ℝ f (w n - u))
+      + L ^ 2 / (2 * c) * ‖u - w n‖ ^ 2) atTop (𝓝 0) := by
+  have hwu : Tendsto (fun n => w n - u) atTop (𝓝 0) := by
+    simpa using hw.sub (tendsto_const_nhds (x := u))
+  have hinner : ∀ y : V, Tendsto (fun n => inner ℝ y (w n - u)) atTop (𝓝 0) := fun y => by
+    have hcont : Continuous fun x : V => inner ℝ y x :=
+      continuous_inner.comp (continuous_const.prodMk continuous_id)
+    simpa [Function.comp_def] using (hcont.tendsto (0 : V)).comp hwu
+  have hnormw : Tendsto (fun n => ‖u - w n‖ ^ 2) atTop (𝓝 0) := by
+    have h1 : Tendsto (fun n => ‖u - w n‖) atTop (𝓝 0) := by
+      have h := (tendsto_const_nhds (x := u) (f := atTop (α := ℕ))).sub hw
+      simpa using h.norm
+    simpa using h1.pow 2
+  have h := (((hinner (A u)).add hjw).sub (tendsto_const_nhds (x := j u))).sub (hinner f)
+  simpa using h.add (hnormw.const_mul (L ^ 2 / (2 * c)))
+
 /-! ### Convergence of internal approximations -/
 
 section Internal
@@ -240,28 +263,14 @@ theorem tendsto_of_isVariationalInequalitySolution_of_subset (hc : 0 < c)
     norm_sub_le_of_isVariationalInequalitySolution_of_subset hc hmono hlip hu (huh n)
       (hsub n (huh n).1) (hwmem n)
   -- the majorant tends to zero
-  have hwu : Tendsto (fun n => w n - u) atTop (𝓝 0) := by
-    simpa using hw.sub (tendsto_const_nhds (x := u))
-  have hinner : ∀ y : V, Tendsto (fun n => inner ℝ y (w n - u)) atTop (𝓝 0) := by
-    intro y
-    have hcont : Continuous fun x : V => inner ℝ y x :=
-      continuous_inner.comp (continuous_const.prodMk continuous_id)
-    have := (hcont.tendsto (0 : V)).comp hwu
-    simpa [Function.comp_def] using this
   have hjw : Tendsto (fun n => j (w n)) atTop (𝓝 (j u)) := by
     have hwK : Tendsto w atTop (𝓝[K] u) :=
       tendsto_nhdsWithin_of_tendsto_nhds_of_eventually_within w hw
         (Eventually.of_forall fun n => hsub n (hwmem n))
     simpa [Function.comp_def] using (hjc u hu.1).tendsto.comp hwK
-  have hnormw : Tendsto (fun n => ‖u - w n‖ ^ 2) atTop (𝓝 0) := by
-    have h1 : Tendsto (fun n => ‖u - w n‖) atTop (𝓝 0) := by
-      have := (tendsto_const_nhds (x := u) (f := atTop (α := ℕ))).sub hw
-      simpa using this.norm
-    simpa using h1.pow 2
   have hBzero : Tendsto B atTop (𝓝 0) := by
-    have h := (((hinner (A u)).add hjw).sub (tendsto_const_nhds (x := j u))).sub (hinner f)
-    have h2 := h.add ((hnormw.const_mul (L ^ 2 / (2 * c))))
-    simpa [hB] using h2
+    rw [hB]
+    exact tendsto_falk_majorant hw hjw
   -- hence so does the error
   have hzero : Tendsto (fun n => ‖u - uh n‖ ^ 2) atTop (𝓝 0) := by
     refine squeeze_zero (fun n => sq_nonneg _) (fun n => ?_)
@@ -282,7 +291,9 @@ end Internal
 
 /-! ### Weak sequential lower semicontinuity of a convex continuous functional -/
 
-/-- Symmetry of the real inner product, with both arguments explicit and in this order. -/
+/-- Symmetry of the real inner product, with the arguments in the order they appear on the left.
+Mathlib's `real_inner_comm a b` is `⟪b, a⟫ = ⟪a, b⟫`, so aiming it at a particular occurrence
+needs the arguments reversed; this wrapper spares every call site that reversal. -/
 private theorem inner_comm' (a b : V) : inner ℝ a b = inner ℝ b a := real_inner_comm _ _
 
 /-- Weak convergence written with the vector on the left is weak convergence with it on the
@@ -390,26 +401,10 @@ theorem tendsto_of_isVariationalInequalitySolution (hc : 0 < c)
   obtain ⟨Ψ, hΨdef⟩ : ∃ Ψ : ℕ → ℝ, ∀ n, Ψ n =
       (inner ℝ (A u) (w n - u) + j (w n) - j u - inner ℝ f (w n - u))
         + L ^ 2 / (2 * c) * ‖u - w n‖ ^ 2 := ⟨_, fun _ => rfl⟩
-  have hwu : Tendsto (fun n => w n - u) atTop (𝓝 0) := by
-    simpa using hw.sub (tendsto_const_nhds (x := u))
-  have hinner0 : ∀ y : V, Tendsto (fun n => inner ℝ y (w n - u)) atTop (𝓝 0) := by
-    intro y
-    have hcont : Continuous fun x : V => inner ℝ y x :=
-      continuous_inner.comp (continuous_const.prodMk continuous_id)
-    simpa [Function.comp_def] using (hcont.tendsto (0 : V)).comp hwu
   have hjw : Tendsto (fun n => j (w n)) atTop (𝓝 (j u)) := by
     simpa [Function.comp_def] using (hjc.tendsto u).comp hw
-  have hnormw : Tendsto (fun n => ‖u - w n‖ ^ 2) atTop (𝓝 0) := by
-    have h1 : Tendsto (fun n => ‖u - w n‖) atTop (𝓝 0) := by
-      have h := (tendsto_const_nhds (x := u) (f := atTop (α := ℕ))).sub hw
-      simpa using h.norm
-    simpa using h1.pow 2
-  have hΨ0 : Tendsto Ψ atTop (𝓝 0) := by
-    have h := (((hinner0 (A u)).add hjw).sub (tendsto_const_nhds (x := j u))).sub (hinner0 f)
-    have h2 := h.add (hnormw.const_mul (L ^ 2 / (2 * c)))
-    have h3 : Tendsto (fun n => (inner ℝ (A u) (w n - u) + j (w n) - j u - inner ℝ f (w n - u))
-        + L ^ 2 / (2 * c) * ‖u - w n‖ ^ 2) atTop (𝓝 0) := by simpa using h2
-    exact Filter.Tendsto.congr (fun n => (hΨdef n).symm) h3
+  have hΨ0 : Tendsto Ψ atTop (𝓝 0) :=
+    Filter.Tendsto.congr (fun n => (hΨdef n).symm) (tendsto_falk_majorant hw hjw)
   -- Falk's bound at `v = u` and `v_h = w n`
   have hfalk : ∀ n, c / 2 * ‖u - uh n‖ ^ 2
       ≤ (inner ℝ (A u) (u - uh n) - inner ℝ f (u - uh n)) + (j u - j (uh n)) + Ψ n := by

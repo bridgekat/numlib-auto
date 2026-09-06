@@ -1,5 +1,5 @@
-import Mathlib.Analysis.Normed.Operator.BanachSteinhaus
 import Mathlib.Analysis.Normed.Operator.Compact.FredholmAlternative
+import Numlib.Analysis.Normed.Operator.CollectivelyCompact
 import Numlib.Variational.Galerkin
 
 /-!
@@ -134,95 +134,22 @@ section SecondKind
 
 variable {𝕜 X : Type*} [RCLike 𝕜] [NormedAddCommGroup X] [NormedSpace 𝕜 X] [CompleteSpace X]
 
-/-- A pointwise convergent sequence of bounded operators is uniformly bounded (Banach–Steinhaus:
-a convergent sequence of reals is bounded, so the pointwise hypothesis of the uniform boundedness
-principle holds). -/
-private theorem exists_norm_le_of_tendsto {P : ℕ → (X →L[𝕜] X)}
-    (hP : ∀ x, Filter.Tendsto (fun n => P n x) Filter.atTop (nhds x)) : ∃ C : ℝ, ∀ n, ‖P n‖ ≤ C :=
-  banach_steinhaus fun x => by
-    obtain ⟨M, hM⟩ := ((hP x).norm).bddAbove_range
-    exact ⟨M, fun n => hM ⟨n, rfl⟩⟩
-
 /-- **Pointwise convergence becomes uniform against a compact operator**: if `P n x → x` for every
 `x` and `T` is compact, then `‖P n T - T‖ → 0`.  This is the one place where compactness of `T`
 is used, and it is what lets a Neumann series perturb `1 - T` into `1 - P n T`.
 
-The proof is the classical `ε/3` argument: the `P n` are uniformly bounded by Banach–Steinhaus,
-the image of the unit ball under `T` is totally bounded, and pointwise convergence at the finitely
-many centres of a `δ`-net is uniform. -/
+It is `tendsto_opNorm_comp_of_isCompactOperator` at `A n = P n - 1`, that being the family the
+general statement was written for. -/
 private theorem tendsto_norm_comp_sub_of_isCompactOperator {T : X →L[𝕜] X}
     (hT : IsCompactOperator T) {P : ℕ → (X →L[𝕜] X)}
     (hP : ∀ x, Filter.Tendsto (fun n => P n x) Filter.atTop (nhds x)) :
     Filter.Tendsto (fun n => ‖P n ∘L T - T‖) Filter.atTop (nhds 0) := by
-  obtain ⟨C, hC⟩ := exists_norm_le_of_tendsto hP
-  have hC0 : 0 ≤ C := (norm_nonneg _).trans (hC 0)
-  obtain ⟨S, hScpt, hSsub⟩ := hT.image_closedBall_subset_compact (r := 1)
-  rw [Metric.tendsto_atTop]
-  intro ε hε
-  set δ : ℝ := ε / (2 * (C + 2)) with hδdef
-  have hδ0 : 0 < δ := by
-    rw [hδdef]; positivity
-  obtain ⟨t, htfin, htcover⟩ := Metric.totallyBounded_iff.1 hScpt.totallyBounded δ hδ0
-  have hev : ∀ᶠ n in Filter.atTop, ∀ y ∈ t, ‖P n y - y‖ < δ := by
-    refine htfin.eventually_all.2 fun y _ => ?_
-    have hy : Filter.Tendsto (fun n => ‖P n y - y‖) Filter.atTop (nhds 0) :=
-      tendsto_iff_norm_sub_tendsto_zero.1 (hP y)
-    exact hy.eventually (eventually_lt_nhds hδ0)
-  obtain ⟨N, hN⟩ := Filter.eventually_atTop.1 hev
-  refine ⟨N, fun n hn => ?_⟩
-  -- a constant bound on the unit ball
-  have hunit : ∀ x : X, ‖x‖ ≤ 1 → ‖(P n ∘L T - T) x‖ ≤ (C + 2) * δ := by
-    intro x hx
-    have hmem : T x ∈ S :=
-      hSsub ⟨x, by simpa [Metric.mem_closedBall, dist_zero_right] using hx, rfl⟩
-    obtain ⟨y, hyt, hy⟩ := Set.mem_iUnion₂.1 (htcover hmem)
-    have h1 : ‖P n (T x) - P n y‖ ≤ C * δ := by
-      have := (P n).le_opNorm (T x - y)
-      rw [map_sub] at this
-      refine this.trans ?_
-      have hδ' : ‖T x - y‖ ≤ δ := by
-        rw [← dist_eq_norm]
-        exact (Metric.mem_ball.1 hy).le
-      exact mul_le_mul (hC n) hδ' (norm_nonneg _) hC0
-    have h2 : ‖P n y - y‖ ≤ δ := (hN n hn y hyt).le
-    have h3 : ‖y - T x‖ ≤ δ := by
-      rw [norm_sub_rev, ← dist_eq_norm]
-      exact (Metric.mem_ball.1 hy).le
-    have hsplit : (P n ∘L T - T) x = (P n (T x) - P n y) + (P n y - y) + (y - T x) := by
-      simp only [sub_apply, ContinuousLinearMap.comp_apply]
-      abel
-    calc ‖(P n ∘L T - T) x‖ ≤ ‖P n (T x) - P n y‖ + ‖P n y - y‖ + ‖y - T x‖ := by
-          rw [hsplit]
-          exact (norm_add_le _ _).trans (by gcongr; exact norm_add_le _ _)
-      _ ≤ C * δ + δ + δ := by gcongr
-      _ = (C + 2) * δ := by ring
-  -- and hence the operator norm bound, by homogeneity
-  have hop : ‖P n ∘L T - T‖ ≤ (C + 2) * δ := by
-    refine ContinuousLinearMap.opNorm_le_bound _ (by positivity) fun x => ?_
-    rcases eq_or_ne x 0 with rfl | hx
-    · simp
-    have hxpos : 0 < ‖x‖ := norm_pos_iff.2 hx
-    have hc : ((‖x‖ : ℝ) : 𝕜) ≠ 0 := by
-      simpa using hxpos.ne'
-    have hy1 : ‖(((‖x‖ : ℝ) : 𝕜))⁻¹ • x‖ ≤ 1 := by
-      rw [norm_smul, norm_inv, RCLike.norm_ofReal, abs_of_pos hxpos, inv_mul_cancel₀ hxpos.ne']
-    have hxeq : x = ((‖x‖ : ℝ) : 𝕜) • ((((‖x‖ : ℝ) : 𝕜))⁻¹ • x) := by
-      rw [smul_smul, mul_inv_cancel₀ hc, one_smul]
-    calc ‖(P n ∘L T - T) x‖
-        = ‖x‖ * ‖(P n ∘L T - T) ((((‖x‖ : ℝ) : 𝕜))⁻¹ • x)‖ := by
-          conv_lhs => rw [hxeq]
-          rw [map_smul, norm_smul, RCLike.norm_ofReal, abs_of_pos hxpos]
-      _ ≤ ‖x‖ * ((C + 2) * δ) := by
-          exact mul_le_mul_of_nonneg_left (hunit _ hy1) (norm_nonneg _)
-      _ = (C + 2) * δ * ‖x‖ := by ring
-  have hlt : (C + 2) * δ < ε := by
-    rw [hδdef]
-    rw [mul_div_assoc'] at *
-    have hpos : 0 < 2 * (C + 2) := by linarith
-    rw [div_lt_iff₀ hpos]
-    nlinarith
-  rw [Real.dist_eq, sub_zero, abs_of_nonneg (norm_nonneg _)]
-  exact lt_of_le_of_lt hop hlt
+  have hid : ∀ n, P n ∘L T - T = (P n - 1 : X →L[𝕜] X) ∘L T := fun n => by
+    ext x
+    simp
+  have hzero : ∀ x, Filter.Tendsto (fun n => (P n - 1 : X →L[𝕜] X) x) Filter.atTop (nhds 0) :=
+    fun x => by simpa using (hP x).sub (tendsto_const_nhds (x := x))
+  simpa only [hid] using tendsto_opNorm_comp_of_isCompactOperator hzero hT
 
 /-- **Stability and convergence of a projection method for an equation of the second kind**
 (Kress, *Numerical Analysis*, Ch. 12): let `T` be a compact operator with `1 - T` injective — by

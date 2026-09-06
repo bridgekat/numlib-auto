@@ -36,37 +36,42 @@ section BoundedBelow
 /-! ### Bounded-below operators
 
 The two workhorses of Atkinson–Han, *Theoretical Numerical Analysis*, §8.2 — a bounded-below
-operator has closed range, and if in addition its range is dense then it is bijective — proved
-once here and reused by `SesqForm₂.babuska_necas` and by the public statements at the end of the
-file. -/
+operator has closed range, and if in addition its range is dense then it is bijective.  They stand
+at the head of the file because `SesqForm₂.babuska_necas` maps between two different spaces and
+needs them in that generality; the rest of §8.2 is the `APriori` section at the end. -/
 
 variable {U W : Type*} [NormedAddCommGroup U] [InnerProductSpace 𝕜 U] [CompleteSpace U]
   [NormedAddCommGroup W] [InnerProductSpace 𝕜 W] [CompleteSpace W]
 
-omit [CompleteSpace W] in
-private theorem isClosed_range_aux (L : U →L[𝕜] W) {c : ℝ} (hc : 0 < c)
-    (h : ∀ v, c * ‖v‖ ≤ ‖L v‖) : IsClosed (LinearMap.range (L : U →ₗ[𝕜] W) : Set W) := by
-  have hanti : AntilipschitzWith (Real.toNNReal c⁻¹) L := by
-    refine L.antilipschitz_of_bound fun v => ?_
-    rw [Real.coe_toNNReal _ (by positivity), inv_mul_eq_div, le_div_iff₀ hc, mul_comm]
-    exact h v
-  rw [LinearMap.coe_range]
-  exact hanti.isClosed_range L.uniformContinuous
-
 omit [CompleteSpace U] [CompleteSpace W] in
-private theorem injective_aux (L : U →L[𝕜] W) {c : ℝ} (hc : 0 < c) (h : ∀ v, c * ‖v‖ ≤ ‖L v‖) :
-    Function.Injective L := by
-  intro x y hxy
-  have hx := h (x - y)
-  rw [map_sub, hxy, sub_self, norm_zero] at hx
-  have hx0 : ‖x - y‖ ≤ 0 := by nlinarith [norm_nonneg (x - y)]
-  exact sub_eq_zero.mp (norm_le_zero_iff.mp hx0)
+/-- A lower bound `c ‖v‖ ≤ ‖L v‖` with `c > 0` says exactly that `L` is antilipschitz with
+constant `c⁻¹`.  Everything the a priori estimate buys — injectivity, a closed range, a bounded
+inverse on the range — is a consequence of that one reading. -/
+theorem ContinuousLinearMap.antilipschitzWith_of_le_norm (L : U →L[𝕜] W) {c : ℝ} (hc : 0 < c)
+    (h : ∀ v, c * ‖v‖ ≤ ‖L v‖) : AntilipschitzWith (Real.toNNReal c⁻¹) L := by
+  refine L.antilipschitz_of_bound fun v => ?_
+  rw [Real.coe_toNNReal _ (by positivity), inv_mul_eq_div, le_div_iff₀ hc, mul_comm]
+  exact h v
 
-private theorem bijective_aux (L : U →L[𝕜] W) {c : ℝ} (hc : 0 < c) (h : ∀ v, c * ‖v‖ ≤ ‖L v‖)
+omit [CompleteSpace W] in
+/-- Atkinson–Han, *Theoretical Numerical Analysis*, Thm 8.2.1: a bounded-below operator
+`c ‖v‖ ≤ ‖L v‖` on a complete space has closed range. -/
+theorem ContinuousLinearMap.isClosed_range_of_le_norm (L : U →L[𝕜] W) {c : ℝ} (hc : 0 < c)
+    (h : ∀ v, c * ‖v‖ ≤ ‖L v‖) : IsClosed (LinearMap.range (L : U →ₗ[𝕜] W) : Set W) := by
+  rw [LinearMap.coe_range]
+  exact (L.antilipschitzWith_of_le_norm hc h).isClosed_range L.uniformContinuous
+
+/-- Atkinson–Han, *Theoretical Numerical Analysis*, Thm 8.2.4: a bounded-below operator whose
+range is dense is bijective.  The bound `c ‖v‖ ≤ ‖L v‖` gives injectivity and a closed range, and
+the hypothesis `(range L)ᗮ = ⊥` — no nonzero vector is orthogonal to the range — then forces that
+closed range to be all of `W`.  This is the closed-range route to Lax–Milgram and to
+`SesqForm₂.babuska_necas`, where the two hypotheses are coercivity and nondegeneracy. -/
+theorem ContinuousLinearMap.bijective_of_le_norm_of_orthogonal_range_eq_bot (L : U →L[𝕜] W)
+    {c : ℝ} (hc : 0 < c) (h : ∀ v, c * ‖v‖ ≤ ‖L v‖)
     (hdense : (LinearMap.range (L : U →ₗ[𝕜] W))ᗮ = ⊥) : Function.Bijective L := by
-  refine ⟨injective_aux L hc h, ?_⟩
+  refine ⟨(L.antilipschitzWith_of_le_norm hc h).injective, ?_⟩
   have hcs : CompleteSpace (LinearMap.range (L : U →ₗ[𝕜] W)) :=
-    (isClosed_range_aux L hc h).completeSpace_coe
+    (L.isClosed_range_of_le_norm hc h).completeSpace_coe
   have hrange : LinearMap.range (L : U →ₗ[𝕜] W) = ⊤ := by
     rw [← Submodule.orthogonal_orthogonal (LinearMap.range (L : U →ₗ[𝕜] W)), hdense,
       Submodule.bot_orthogonal_eq_top]
@@ -170,8 +175,10 @@ theorem contractingWith_damped_toOperator {c : ℝ} (hc : 0 < c) (ha : a.IsCoerc
 
 omit [CompleteSpace V] in
 /-- Expansion of the energy around a point for a Hermitian form:
-`E(u + w) - E(u) = re (a u w) - re (ℓ w) + ½ re (a w w)`. -/
-private theorem energy_add_sub_energy (ha : a.IsHermitian) (u w : V) :
+`E(u + w) - E(u) = re (a u w) - re (ℓ w) + ½ re (a w w)`.  The linear term is the Gâteaux
+derivative and the quadratic term is what coercivity controls, so this one identity carries both
+directions of the equivalence between the variational problem and minimizing `E`. -/
+theorem energy_add_sub_energy (ha : a.IsHermitian) (u w : V) :
     a.energy ℓ (u + w) - a.energy ℓ u
       = RCLike.re (a u w) - RCLike.re (ℓ w) + (1 / 2 : ℝ) * RCLike.re (a w w) := by
   have hsym : RCLike.re (a w u) = RCLike.re (a u w) := by rw [ha w u, RCLike.conj_re]
@@ -180,8 +187,9 @@ private theorem energy_add_sub_energy (ha : a.IsHermitian) (u w : V) :
   ring
 
 omit [CompleteSpace V] in
-/-- The energy along the real line through `u` in direction `v`. -/
-private theorem energy_smul_sub_energy (ha : a.IsHermitian) (u v : V) (t : ℝ) :
+/-- The energy along the real line through `u` in direction `v` is a quadratic in the parameter:
+`E(u + t v) - E(u) = t (re (a u v) - re (ℓ v)) + ½ t² re (a v v)`. -/
+theorem energy_smul_sub_energy (ha : a.IsHermitian) (u v : V) (t : ℝ) :
     a.energy ℓ (u + (t : 𝕜) • v) - a.energy ℓ u
       = t * (RCLike.re (a u v) - RCLike.re (ℓ v))
         + (1 / 2 : ℝ) * t ^ 2 * RCLike.re (a v v) := by
@@ -201,8 +209,8 @@ private theorem eq_zero_of_forall_quadratic_nonneg {δ q : ℝ} (hq : 0 ≤ q)
   have h1 : 0 < s ^ 2 := (sq_nonneg s).lt_of_ne' (pow_ne_zero 2 hs0)
   nlinarith [h (-s), mul_nonneg h1.le hq]
 
-/-- The energy functional is continuous (the quadratic part is a bounded bilinear map). -/
-private theorem continuous_energy {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
+/-- The energy functional is continuous, because its quadratic part is a bounded bilinear map. -/
+theorem continuous_energy {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
     (a : SesqForm ℝ V) (ℓ : V →L[ℝ] ℝ) : Continuous (a.energy ℓ) := by
   have h1 : Continuous fun v : V => ((a v : V →L[ℝ] ℝ), v) := a.continuous.prodMk continuous_id
   have h2 : Continuous fun p : (V →L[ℝ] ℝ) × V => p.1 p.2 := isBoundedBilinearMap_apply.continuous
@@ -214,16 +222,17 @@ private theorem continuous_energy {V : Type*} [NormedAddCommGroup V] [InnerProdu
   exact (continuous_const.mul hq).sub ℓ.continuous
 
 /-- Parallelogram identity for the energy of a symmetric real form:
-`E x + E y - 2 E ((x + y) / 2) = ¼ a (x - y) (x - y)`. -/
-private theorem energy_parallelogram {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
+`E x + E y - 2 E ((x + y) / 2) = ¼ a (x - y) (x - y)`.  On a coercive form the right-hand side is
+bounded below by `(c/4) ‖x - y‖²`, which is what makes a minimizing sequence Cauchy; the midpoint
+is written as a convex combination so that convexity of the constraint set applies to it
+directly. -/
+theorem energy_parallelogram {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
     {a : SesqForm ℝ V} (ha : a.IsHermitian) (ℓ : V →L[ℝ] ℝ) (x y : V) :
-    a.energy ℓ x + a.energy ℓ y - 2 * a.energy ℓ ((1 / 2 : ℝ) • (x + y))
+    a.energy ℓ x + a.energy ℓ y - 2 * a.energy ℓ ((1 / 2 : ℝ) • x + (1 / 2 : ℝ) • y)
       = (1 / 4 : ℝ) * a (x - y) (x - y) := by
   have hsym : a y x = a x y := by simpa using ha y x
-  simp only [energy, RCLike.re_to_real, map_smulₛₗ, map_add, map_sub,
-    add_apply, sub_apply,
-    smul_apply, smul_eq_mul, RingHom.id_apply, starRingEnd_apply,
-    star_trivial]
+  simp only [energy, RCLike.re_to_real, map_smulₛₗ, map_add, map_sub, add_apply, sub_apply,
+    smul_apply, smul_eq_mul, RingHom.id_apply, starRingEnd_apply, star_trivial]
   rw [hsym]
   ring
 
@@ -361,11 +370,8 @@ theorem existsUnique_isMinOn_energy {V : Type*} [NormedAddCommGroup V] [InnerPro
   have hpara : ∀ x ∈ K, ∀ y ∈ K,
       c / 4 * ‖x - y‖ ^ 2 ≤ a.energy ℓ x + a.energy ℓ y - 2 * m := by
     intro x hx y hy
-    have hmid : (1 / 2 : ℝ) • (x + y) ∈ K := by
-      have h := hK hx hy (by norm_num : (0:ℝ) ≤ 1 / 2) (by norm_num : (0:ℝ) ≤ 1 / 2)
-        (by norm_num)
-      convert h using 1
-      module
+    have hmid : (1 / 2 : ℝ) • x + (1 / 2 : ℝ) • y ∈ K :=
+      hK hx hy (by norm_num) (by norm_num) (by norm_num)
     have hid := energy_parallelogram ha ℓ x y
     have h1 := hmle _ hmid
     have h2 : c * ‖x - y‖ ^ 2 ≤ a (x - y) (x - y) := hcoer' (x - y)
@@ -455,14 +461,19 @@ private noncomputable def toOperator₂ : U →L[𝕜] V :=
   (InnerProductSpace.toDual 𝕜 V).symm.toContinuousLinearEquiv.toContinuousLinearMap.comp a
 
 omit [CompleteSpace U] in
+/-- The defining property of `toOperator₂`: the inner product against `toOperator₂ a u` is the
+form `a u`. -/
 private theorem inner_toOperator₂ (u : U) (v : V) : inner 𝕜 (toOperator₂ a u) v = a u v := by
   simp [toOperator₂]
 
 omit [CompleteSpace U] in
+/-- `toOperator₂` is isometric on each vector, Riesz representation being an isometry. -/
 private theorem norm_toOperator₂_apply (u : U) : ‖toOperator₂ a u‖ = ‖a u‖ :=
   (InnerProductSpace.toDual 𝕜 V).symm.norm_map (a u)
 
 omit [CompleteSpace U] in
+/-- The two-space problem `a u v = ℓ v` for all `v` is the operator equation
+`toOperator₂ a u = rieszRep ℓ`. -/
 private theorem forall_apply_eq_iff_toOperator₂_eq (u : U) :
     (∀ v, a u v = ℓ v) ↔ toOperator₂ a u = SesqForm.rieszRep ℓ := by
   constructor
@@ -486,7 +497,9 @@ theorem babuska_necas {α : ℝ} (hα : 0 < α) (hinf : a.InfSupWith α) (hnd : 
     by_contra hv0
     obtain ⟨u, hu⟩ := hnd v hv0
     exact hu (by rw [← inner_toOperator₂ a u v]; exact hv _ ⟨u, rfl⟩)
-  obtain ⟨hinj, hsurj⟩ := bijective_aux (toOperator₂ a) hα hbound hperp
+  obtain ⟨hinj, hsurj⟩ :=
+    ContinuousLinearMap.bijective_of_le_norm_of_orthogonal_range_eq_bot (toOperator₂ a) hα hbound
+      hperp
   obtain ⟨u, hu⟩ := hsurj (SesqForm.rieszRep ℓ)
   refine ⟨u, (forall_apply_eq_iff_toOperator₂_eq a ℓ u).mpr hu, fun y hy => ?_⟩
   exact hinj (((forall_apply_eq_iff_toOperator₂_eq a ℓ y).mp hy).trans hu.symm)
@@ -530,27 +543,12 @@ section APriori
 
 Following Atkinson–Han, *Theoretical Numerical Analysis*, §8.2: a lower bound `c ‖v‖ ≤ ‖L v‖`,
 which in applications comes from an a priori estimate for the problem being solved, already
-delivers injectivity and closed range, and hence solvability once the range is dense. -/
+delivers injectivity and closed range, and hence solvability once the range is dense.  The bounded
+case is `ContinuousLinearMap.isClosed_range_of_le_norm` and
+`ContinuousLinearMap.bijective_of_le_norm_of_orthogonal_range_eq_bot` at the head of this file;
+what remains here is the closed-operator version and the quantitative estimate. -/
 
 variable {W : Type*} [NormedAddCommGroup W] [InnerProductSpace 𝕜 W] [CompleteSpace W]
-
-omit [CompleteSpace W] in
-/-- Atkinson–Han, *Theoretical Numerical Analysis*, Thm 8.2.1 and Thm 8.2.4 (bounded case): a
-bounded-below operator `c ‖v‖ ≤ ‖L v‖` has closed range; if moreover its range is dense
-(`(range L)ᗮ = ⊥`) it is bijective. -/
-theorem ContinuousLinearMap.isClosed_range_of_le_norm (L : V →L[𝕜] W) {c : ℝ} (hc : 0 < c)
-    (h : ∀ v, c * ‖v‖ ≤ ‖L v‖) : IsClosed (LinearMap.range (L : V →ₗ[𝕜] W) : Set W) :=
-  isClosed_range_aux L hc h
-
-/-- Atkinson–Han, *Theoretical Numerical Analysis*, Thm 8.2.4: a bounded-below operator whose
-range is dense is bijective.  The bound `c ‖v‖ ≤ ‖L v‖` gives injectivity and a closed range, and
-the hypothesis `(range L)ᗮ = ⊥` — no nonzero vector is orthogonal to the range — then forces that
-closed range to be all of `W`.  This is the closed-range route to Lax–Milgram and to
-`SesqForm₂.babuska_necas`, where the two hypotheses are coercivity and nondegeneracy. -/
-theorem ContinuousLinearMap.bijective_of_le_norm_of_orthogonal_range_eq_bot (L : V →L[𝕜] W)
-    {c : ℝ} (hc : 0 < c) (h : ∀ v, c * ‖v‖ ≤ ‖L v‖)
-    (hdense : (LinearMap.range (L : V →ₗ[𝕜] W))ᗮ = ⊥) : Function.Bijective L :=
-  bijective_aux L hc h hdense
 
 omit [CompleteSpace W] in
 /-- Atkinson–Han, *Theoretical Numerical Analysis*, Thm 8.2.4 (closed-operator version): a closed,

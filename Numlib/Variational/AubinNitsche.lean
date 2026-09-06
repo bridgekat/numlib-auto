@@ -75,20 +75,13 @@ theorem norm_map_le_of_dual_approx {a : SesqForm 𝕜 V} {M δ : ℝ} (hM : a.Is
     linarith [mul_nonneg hδ hMe]
   · have key : ‖ι e‖ ^ 2 ≤ M * ‖e‖ * Metric.infDist φ (K : Set V) := by
       rcases eq_or_lt_of_le hMe with hMe0 | hMe0
-      · have := norm_map_sq_le_of_dual hM ι horth hφ K.zero_mem
-        rw [← hMe0] at this ⊢
-        simpa using this
-      · have hne : M * ‖e‖ ≠ 0 := ne_of_gt hMe0
-        refine le_of_forall_pos_le_add fun ε hε => ?_
-        have hcancel : M * ‖e‖ * (ε / (M * ‖e‖)) = ε := by
-          rw [mul_comm, div_mul_cancel₀ ε hne]
-        obtain ⟨w, hw, hwd⟩ := (Metric.infDist_lt_iff hKne).mp
-          (lt_add_of_pos_right (Metric.infDist φ (K : Set V)) (div_pos hε hMe0))
-        calc ‖ι e‖ ^ 2 ≤ M * ‖e‖ * ‖φ - w‖ := norm_map_sq_le_of_dual hM ι horth hφ hw
-          _ = M * ‖e‖ * dist φ w := by rw [dist_eq_norm]
-          _ ≤ M * ‖e‖ * (Metric.infDist φ (K : Set V) + ε / (M * ‖e‖)) :=
-              mul_le_mul_of_nonneg_left hwd.le hMe
-          _ = M * ‖e‖ * Metric.infDist φ (K : Set V) + ε := by rw [mul_add, hcancel]
+      · have h := norm_map_sq_le_of_dual hM ι horth hφ K.zero_mem
+        rw [← hMe0] at h ⊢
+        simpa using h
+      · rw [← div_le_iff₀' hMe0, Metric.le_infDist hKne]
+        intro w hw
+        rw [div_le_iff₀' hMe0, dist_eq_norm]
+        exact norm_map_sq_le_of_dual hM ι horth hφ hw
     have hle : ‖ι e‖ ^ 2 ≤ M * ‖e‖ * (δ * ‖ι e‖) :=
       key.trans (mul_le_mul_of_nonneg_left hφd hMe)
     exact le_of_mul_le_mul_right (by linarith : ‖ι e‖ * ‖ι e‖ ≤ M * δ * ‖e‖ * ‖ι e‖) h0

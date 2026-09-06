@@ -74,15 +74,17 @@ theorem IsCoerciveWith.norm_le_norm_apply {c : ℝ} (h : a.IsCoerciveWith c) (u 
       _ ≤ ‖a u u‖ := RCLike.re_le_norm _
       _ ≤ ‖a u‖ * ‖u‖ := (a u).le_opNorm u
 
-/-- Real forms: coercivity without `re`. -/
+/-- Over real scalars `re` is the identity, so coercivity is the bare inequality
+`c ‖v‖² ≤ a v v`. -/
 theorem isCoerciveWith_real_iff {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
     (a : SesqForm ℝ V) (c : ℝ) : a.IsCoerciveWith c ↔ ∀ v, c * ‖v‖ ^ 2 ≤ a v v := Iff.rfl
 
-/-- Real forms: Hermitian = symmetric. -/
+/-- Over real scalars conjugation is the identity, so a Hermitian form is a symmetric one. -/
 theorem isHermitian_real_iff {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
     (a : SesqForm ℝ V) : a.IsHermitian ↔ ∀ u v, a u v = a v u := Iff.rfl
 
-/-- The inner product as a form. -/
+/-- The inner product, read as a form, is coercive with constant `1`: `‖v‖² ≤ re ⟪v, v⟫`.  It is
+therefore the model coercive form, and the one the projection theorem specializes to. -/
 theorem innerSL_isCoerciveWith : SesqForm.IsCoerciveWith (innerSL 𝕜 : SesqForm 𝕜 V) 1 := fun v => by
   simp
 
@@ -93,6 +95,7 @@ theorem innerSL_isHermitian : SesqForm.IsHermitian (innerSL 𝕜 : SesqForm 𝕜
 /-- The form of an operator: `ofOperator A u v = ⟪A u, v⟫`. -/
 noncomputable def ofOperator (A : V →L[𝕜] V) : SesqForm 𝕜 V := (innerSL 𝕜).comp A
 
+/-- The defining equation of `SesqForm.ofOperator`. -/
 theorem ofOperator_apply (A : V →L[𝕜] V) (u v : V) : ofOperator A u v = inner 𝕜 (A u) v := rfl
 
 section Operator

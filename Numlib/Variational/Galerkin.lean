@@ -63,6 +63,71 @@ private noncomputable def SesqForm₂.restrict {U : Type*} [NormedAddCommGroup U
     SesqForm₂ 𝕜 K L :=
   ((a.comp K.subtypeL).flip.comp L.subtypeL).flip
 
+/-! ### Quasi-optimality, in the abstract
+
+Céa's lemma, Babuška's lemma and the Xu–Zikatanov bound all say the same thing: the error of the
+discrete solution is at most a constant times the distance from the exact solution to any element
+of the trial space.  The two consequences that every one of them needs — the same bound against
+the *infimum*, and convergence along a monotone family with dense union — depend on nothing but
+that shape, so they are proved once here on a bare normed space. -/
+
+section QuasiOptimal
+
+variable {X : Type*} [NormedAddCommGroup X] [NormedSpace 𝕜 X]
+
+/-- A pointwise quasi-optimality bound `‖u* - u‖ ≤ C ‖u* - w‖`, valid for every `w` in the trial
+space, gives the same bound against the distance from `u*` to that space.  No sign hypothesis on
+`C` is needed: testing at `w = u` makes a negative constant force `u = u*`. -/
+private theorem norm_sub_le_mul_infDist {K : Submodule 𝕜 X} {C : ℝ} {ustar u : X} (hu : u ∈ K)
+    (h : ∀ w ∈ K, ‖ustar - u‖ ≤ C * ‖ustar - w‖) :
+    ‖ustar - u‖ ≤ C * Metric.infDist ustar (K : Set X) := by
+  rcases le_or_gt C 0 with hC | hC
+  · have h0 : ‖ustar - u‖ ≤ 0 := by nlinarith [h u hu, norm_nonneg (ustar - u)]
+    have hd : Metric.infDist ustar (K : Set X) = 0 :=
+      le_antisymm ((Metric.infDist_le_dist_of_mem hu).trans (by rwa [dist_eq_norm]))
+        Metric.infDist_nonneg
+    rw [hd, mul_zero]
+    exact h0
+  · rw [← div_le_iff₀' hC, Metric.le_infDist ⟨0, K.zero_mem⟩]
+    intro w hw
+    rw [div_le_iff₀' hC, dist_eq_norm]
+    exact h w hw
+
+/-- Distances to a monotone family of subspaces with dense union tend to zero.  This is the
+approximation-theoretic half shared by Atkinson–Han, *Theoretical Numerical Analysis*, Cor 9.1.4
+and Cor 9.2.3; combined with a quasi-optimality bound it gives convergence of the discrete
+solutions. -/
+theorem tendsto_infDist_of_monotone_dense {K : ℕ → Submodule 𝕜 X} (hmono : Monotone K)
+    (hdense : Dense (⋃ n, (K n : Set X))) (u : X) :
+    Filter.Tendsto (fun n => Metric.infDist u (K n : Set X)) Filter.atTop (nhds 0) := by
+  rw [Metric.tendsto_atTop]
+  intro ε hε
+  obtain ⟨w, hw, hwd⟩ := Metric.mem_closure_iff.mp (hdense u) ε hε
+  obtain ⟨N, hwN⟩ := Set.mem_iUnion.mp hw
+  refine ⟨N, fun n hn => ?_⟩
+  have hmem : w ∈ (K n : Set X) := hmono hn hwN
+  have h1 : Metric.infDist u (K n : Set X) ≤ dist u w := Metric.infDist_le_dist_of_mem hmem
+  rw [Real.dist_eq, sub_zero, abs_of_nonneg Metric.infDist_nonneg]
+  linarith
+
+/-- Quasi-optimality with one constant for the whole family, plus a monotone family of trial
+spaces with dense union, gives convergence of the discrete solutions.  This is the common core of
+Atkinson–Han, *Theoretical Numerical Analysis*, Cor 9.1.4 and Cor 9.2.3: the approximation error
+tends to zero by `tendsto_infDist_of_monotone_dense`, and quasi-optimality transports that to the
+error itself. -/
+private theorem tendsto_of_forall_norm_sub_le {K : ℕ → Submodule 𝕜 X} (hmono : Monotone K)
+    (hdense : Dense (⋃ n, (K n : Set X))) {C : ℝ} {uN : ℕ → X} {ustar : X}
+    (hmem : ∀ n, uN n ∈ K n) (h : ∀ n, ∀ w ∈ K n, ‖ustar - uN n‖ ≤ C * ‖ustar - w‖) :
+    Filter.Tendsto uN Filter.atTop (nhds ustar) := by
+  have hzero : Filter.Tendsto (fun n => ‖ustar - uN n‖) Filter.atTop (nhds 0) := by
+    refine squeeze_zero (fun n => norm_nonneg _)
+      (fun n => norm_sub_le_mul_infDist (hmem n) (h n)) ?_
+    simpa using (tendsto_infDist_of_monotone_dense hmono hdense ustar).const_mul C
+  rw [tendsto_iff_norm_sub_tendsto_zero]
+  simpa only [norm_sub_rev] using hzero
+
+end QuasiOptimal
+
 namespace IsGalerkinSolution
 
 variable {a : SesqForm 𝕜 V} {ℓ : V →L[𝕜] 𝕜} {K : Submodule 𝕜 V} {u : V}
@@ -139,33 +204,8 @@ theorem norm_sub_le {M c : ℝ} (hc : 0 < c) (hM : a.IsBoundedWith M) (ha : a.Is
 /-- Céa's lemma with the infimum. -/
 theorem norm_sub_le_infDist {M c : ℝ} (hc : 0 < c) (hM : a.IsBoundedWith M)
     (ha : a.IsCoerciveWith c) (hN : IsGalerkinSolution a ℓ K u) {ustar : V}
-    (hstar : ∀ v, a ustar v = ℓ v) : ‖ustar - u‖ ≤ M / c * Metric.infDist ustar (K : Set V) := by
-  have hKne : (K : Set V).Nonempty := ⟨0, K.zero_mem⟩
-  rcases le_or_gt (M / c) 0 with hMc | hMc
-  · -- then the error already vanishes, and so does the distance
-    have h0 : ‖ustar - u‖ ≤ 0 := by
-      have h := norm_sub_le hc hM ha hN hstar hN.1
-      nlinarith [norm_nonneg (ustar - u)]
-    have hd : Metric.infDist ustar (K : Set V) = 0 := by
-      refine le_antisymm ?_ Metric.infDist_nonneg
-      refine le_trans (Metric.infDist_le_dist_of_mem hN.1) ?_
-      rw [dist_eq_norm]
-      exact h0
-    rw [hd, mul_zero]
-    exact h0
-  · have hMne : M ≠ 0 := by
-      have h := mul_pos hMc hc
-      rw [div_mul_cancel₀ M hc.ne'] at h
-      exact h.ne'
-    refine le_of_forall_pos_le_add fun ε hε => ?_
-    obtain ⟨v, hv, hvd⟩ :=
-      (Metric.infDist_lt_iff hKne).mp
-        (lt_add_of_pos_right (Metric.infDist ustar (K : Set V)) (div_pos hε hMc))
-    calc ‖ustar - u‖ ≤ M / c * ‖ustar - v‖ := norm_sub_le hc hM ha hN hstar hv
-      _ = M / c * dist ustar v := by rw [dist_eq_norm]
-      _ ≤ M / c * (Metric.infDist ustar (K : Set V) + ε / (M / c)) :=
-          mul_le_mul_of_nonneg_left hvd.le hMc.le
-      _ = M / c * Metric.infDist ustar (K : Set V) + ε := by field_simp
+    (hstar : ∀ v, a ustar v = ℓ v) : ‖ustar - u‖ ≤ M / c * Metric.infDist ustar (K : Set V) :=
+  norm_sub_le_mul_infDist hN.1 fun _ hv => norm_sub_le hc hM ha hN hstar hv
 
 /-- Hermitian case: `u_N` is the best approximation to `u` in the energy norm, that is, the
 orthogonal projection of `u` onto `K` for the inner product `a`.  This is the remark following
@@ -260,23 +300,6 @@ theorem iff_mulVec {ι : Type*} [Fintype ι] (φ : Module.Basis ι 𝕜 K) (ξ :
 
 end IsGalerkinSolution
 
-/-- Distances to a monotone family of subspaces with dense union tend to zero.  This is the
-approximation-theoretic half shared by Atkinson–Han, *Theoretical Numerical Analysis*, Cor 9.1.4
-and Cor 9.2.3; combined with a quasi-optimality bound it gives convergence of the discrete
-solutions. -/
-theorem tendsto_infDist_of_monotone_dense {K : ℕ → Submodule 𝕜 V} (hmono : Monotone K)
-    (hdense : Dense (⋃ n, (K n : Set V))) (u : V) :
-    Filter.Tendsto (fun n => Metric.infDist u (K n : Set V)) Filter.atTop (nhds 0) := by
-  rw [Metric.tendsto_atTop]
-  intro ε hε
-  obtain ⟨w, hw, hwd⟩ := Metric.mem_closure_iff.mp (hdense u) ε hε
-  obtain ⟨N, hwN⟩ := Set.mem_iUnion.mp hw
-  refine ⟨N, fun n hn => ?_⟩
-  have hmem : w ∈ (K n : Set V) := hmono hn hwN
-  have h1 : Metric.infDist u (K n : Set V) ≤ dist u w := Metric.infDist_le_dist_of_mem hmem
-  rw [Real.dist_eq, sub_zero, abs_of_nonneg Metric.infDist_nonneg]
-  linarith
-
 /-- Atkinson–Han, *Theoretical Numerical Analysis*, Cor 9.1.4: Galerkin solutions on a monotone
 family of subspaces whose union is dense converge to the exact solution. -/
 theorem IsGalerkinSolution.tendsto {a : SesqForm 𝕜 V} {ℓ : V →L[𝕜] 𝕜} {M c : ℝ} (hc : 0 < c)
@@ -284,25 +307,9 @@ theorem IsGalerkinSolution.tendsto {a : SesqForm 𝕜 V} {ℓ : V →L[𝕜] �
     (hmono : Monotone K) (hdense : Dense (⋃ n, (K n : Set V))) {uN : ℕ → V}
     (hN : ∀ n, IsGalerkinSolution a ℓ (K n) (uN n))
     {ustar : V} (hstar : ∀ v, a ustar v = ℓ v) :
-    Filter.Tendsto uN Filter.atTop (nhds ustar) := by
-  rw [Metric.tendsto_atTop]
-  intro ε hε
-  set C : ℝ := max (M / c) 1 with hC
-  have hC0 : 0 < C := lt_of_lt_of_le one_pos (le_max_right _ _)
-  obtain ⟨w, hw, hwd⟩ := Metric.mem_closure_iff.mp (hdense ustar) (ε / C) (by positivity)
-  obtain ⟨N, hwN⟩ := Set.mem_iUnion.mp hw
-  refine ⟨N, fun n hn => ?_⟩
-  have hmem : w ∈ K n := hmono hn hwN
-  have h1 : ‖ustar - uN n‖ ≤ M / c * ‖ustar - w‖ := (hN n).norm_sub_le hc hM ha hstar hmem
-  have h2 : ‖ustar - w‖ < ε / C := by rwa [← dist_eq_norm]
-  have h3 : M / c * ‖ustar - w‖ ≤ C * ‖ustar - w‖ := by
-    gcongr
-    exact le_max_left _ _
-  have h4 : C * ‖ustar - w‖ < ε := by
-    calc C * ‖ustar - w‖ < C * (ε / C) := by gcongr
-      _ = ε := by field_simp
-  rw [dist_eq_norm, norm_sub_rev]
-  linarith
+    Filter.Tendsto uN Filter.atTop (nhds ustar) :=
+  tendsto_of_forall_norm_sub_le hmono hdense (fun n => (hN n).1)
+    fun n _ hw => (hN n).norm_sub_le hc hM ha hstar hw
 
 namespace IsPetrovGalerkinSolution
 
@@ -327,12 +334,15 @@ private noncomputable def rieszOp (a : SesqForm₂ 𝕜 U V) (K : Submodule 𝕜
   map_smul' r x := by
     simp only [map_smulₛₗ, RingHom.id_apply, starRingEnd_self_apply]
 
+/-- The defining property of `rieszOp`: the inner product against `rieszOp a K L w` on the test
+space is the form. -/
 private theorem inner_rieszOp (a : SesqForm₂ 𝕜 U V) (K : Submodule 𝕜 U) (L : Submodule 𝕜 V)
     [CompleteSpace L] (w : K) (v : L) :
     inner 𝕜 (rieszOp a K L w) v = a (w : U) (v : V) := by
   change inner 𝕜 ((InnerProductSpace.toDual 𝕜 L).symm (SesqForm₂.restrict a K L w)) v = _
   exact InnerProductSpace.toDual_symm_apply
 
+/-- `rieszOp` is isometric on each vector, because the inverse Riesz map is. -/
 private theorem norm_rieszOp_apply (a : SesqForm₂ 𝕜 U V) (K : Submodule 𝕜 U) (L : Submodule 𝕜 V)
     [CompleteSpace L] (w : K) : ‖rieszOp a K L w‖ = ‖(a (w : U)).comp L.subtypeL‖ := by
   change ‖(InnerProductSpace.toDual 𝕜 L).symm (SesqForm₂.restrict a K L w)‖ = _
@@ -375,7 +385,12 @@ Numerical Analysis*, estimate (9.2.7) of Thm 9.2.1): the Petrov–Galerkin analo
 
 The hypothesis `hM0 : 0 ≤ M` was added: the statement is false without it.  Take `V = 0`,
 `U = ℝ`, `K = L = 0`, `a = 0`, `α = 1`, `M = -1`; every hypothesis holds vacuously and the
-conclusion reads `‖ustar‖ ≤ 0`. -/
+conclusion reads `‖ustar‖ ≤ 0`.
+
+`hdim` and the two finite-dimensionality instances are carried because the book's Thm 9.2.1
+states the estimate together with unique solvability, but the estimate itself never uses them:
+it holds for any `u` that happens to solve the discrete problem.  That is why the
+unused-variable linter is switched off here. -/
 theorem norm_sub_le [FiniteDimensional 𝕜 K] [FiniteDimensional 𝕜 L]
     (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) {M α : ℝ} (hα : 0 < α) (hM0 : 0 ≤ M)
     (hM : ∀ w v, ‖a w v‖ ≤ M * ‖w‖ * ‖v‖) (hinf : DiscreteInfSup a K L α)
@@ -413,27 +428,9 @@ theorem tendsto {K : ℕ → Submodule 𝕜 U} {L : ℕ → Submodule 𝕜 V} [�
     (hinf : ∀ n, DiscreteInfSup a (K n) (L n) α) (hmono : Monotone K)
     (hdense : Dense (⋃ n, (K n : Set U))) {uN : ℕ → U}
     (hN : ∀ n, IsPetrovGalerkinSolution a ℓ (K n) (L n) (uN n)) {ustar : U}
-    (hstar : ∀ v, a ustar v = ℓ v) : Filter.Tendsto uN Filter.atTop (nhds ustar) := by
-  rw [Metric.tendsto_atTop]
-  intro ε hε
-  set C : ℝ := max (1 + M / α) 1 with hC
-  have hC0 : 0 < C := lt_of_lt_of_le one_pos (le_max_right _ _)
-  obtain ⟨w, hw, hwd⟩ := Metric.mem_closure_iff.mp (hdense ustar) (ε / C) (by positivity)
-  obtain ⟨N, hwN⟩ := Set.mem_iUnion.mp hw
-  refine ⟨N, fun n hn => ?_⟩
-  have hmem : w ∈ K n := hmono hn hwN
-  have h1 : ‖ustar - uN n‖ ≤ (1 + M / α) * ‖ustar - w‖ :=
-    norm_sub_le (hdim n) hα hM0 hM (hinf n) (hN n) hstar hmem
-  have h2 : ‖ustar - w‖ < ε / C := by rwa [← dist_eq_norm]
-  have h3 : (1 + M / α) * ‖ustar - w‖ ≤ C * ‖ustar - w‖ := by
-    gcongr
-    exact le_max_left _ _
-  have h4 : C * ‖ustar - w‖ < ε := by
-    calc C * ‖ustar - w‖ < C * (ε / C) := by gcongr
-      _ = ε := by field_simp
-  rw [dist_eq_norm, norm_sub_rev]
-  linarith
-
+    (hstar : ∀ v, a ustar v = ℓ v) : Filter.Tendsto uN Filter.atTop (nhds ustar) :=
+  tendsto_of_forall_norm_sub_le hmono hdense (fun n => (hN n).1)
+    fun n _ hw => norm_sub_le (hdim n) hα hM0 hM (hinf n) (hN n) hstar hw
 
 /-! ### The Petrov–Galerkin projector and the Xu–Zikatanov bound -/
 
@@ -455,16 +452,19 @@ private noncomputable def projFun (a : SesqForm₂ 𝕜 U V) (K : Submodule 𝕜
     (hinf : DiscreteInfSup a K L α) (u : U) : U :=
   (existsUnique (a := a) (ℓ := a u) (K := K) (L := L) hdim hα hinf).choose
 
+/-- `projFun a K L … u` does solve the Petrov–Galerkin problem with data `a u ·`. -/
 private theorem projFun_spec (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) {α : ℝ}
     (hα : 0 < α) (hinf : DiscreteInfSup a K L α) (u : U) :
     IsPetrovGalerkinSolution a (a u) K L (projFun a K L hdim hα hinf u) :=
   (existsUnique (a := a) (ℓ := a u) (K := K) (L := L) hdim hα hinf).choose_spec.1
 
+/-- … and it is the only solution, which is what makes `projFun` a function of `u` alone. -/
 private theorem eq_projFun (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) {α : ℝ}
     (hα : 0 < α) (hinf : DiscreteInfSup a K L α) {u w : U}
     (hw : IsPetrovGalerkinSolution a (a u) K L w) : w = projFun a K L hdim hα hinf u :=
   (existsUnique (a := a) (ℓ := a u) (K := K) (L := L) hdim hα hinf).choose_spec.2 w hw
 
+/-- The bound `‖P_N u‖ ≤ (M / α) ‖u‖` on the projector, before it is bundled as an operator. -/
 private theorem norm_projFun_le (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) {α : ℝ}
     (hα : 0 < α) (hinf : DiscreteInfSup a K L α) {M : ℝ} (hM0 : 0 ≤ M)
     (hM : ∀ w v, ‖a w v‖ ≤ M * ‖w‖ * ‖v‖) (u : U) :
@@ -610,25 +610,7 @@ theorem norm_sub_le_div_mul_infDist (hdim : Module.finrank 𝕜 K = Module.finra
       _ = ‖projection a K L hdim hα hinf‖ * ‖ustar - w‖ := by rw [hnorm]
       _ ≤ M / α * ‖ustar - w‖ :=
           mul_le_mul_of_nonneg_right (norm_projection_le hdim hα hinf hM0 hM) (norm_nonneg _)
-  have hKne : (K : Set U).Nonempty := ⟨0, K.zero_mem⟩
-  rcases eq_or_lt_of_le hMa with hM0' | hMpos
-  · have h := hstep u hN.1
-    rw [← hM0', zero_mul] at h
-    rw [← hM0', zero_mul]
-    exact h
-  have hMne : M ≠ 0 := by
-    have h := mul_pos hMpos hα
-    rw [div_mul_cancel₀ M hα.ne'] at h
-    exact h.ne'
-  refine le_of_forall_pos_le_add fun ε hε => ?_
-  obtain ⟨w, hw, hwd⟩ :=
-    (Metric.infDist_lt_iff hKne).mp
-      (lt_add_of_pos_right (Metric.infDist ustar (K : Set U)) (div_pos hε hMpos))
-  calc ‖ustar - u‖ ≤ M / α * ‖ustar - w‖ := hstep w hw
-    _ = M / α * dist ustar w := by rw [dist_eq_norm]
-    _ ≤ M / α * (Metric.infDist ustar (K : Set U) + ε / (M / α)) :=
-        mul_le_mul_of_nonneg_left hwd.le hMpos.le
-    _ = M / α * Metric.infDist ustar (K : Set U) + ε := by field_simp
+  exact norm_sub_le_mul_infDist hN.1 hstep
 
 end Projector
 
@@ -654,7 +636,6 @@ def IsGeneralizedGalerkinSolution (aN : W →ₗ[𝕜] W →ₗ[𝕜] 𝕜) (ℓ
     (uN : W) : Prop :=
   uN ∈ K ∧ ∀ v ∈ K, aN uN v = ℓN v
 
-set_option linter.unusedVariables false in
 /-- Strang's first lemma (Atkinson–Han, *Theoretical Numerical Analysis*, Thm 9.3.1, estimate
 (9.3.2)): with `a_N` bounded by `M` on `W × K` and coercive with constant `c` on `K`,
 `‖u - u_N‖ ≤ (1 + M/c) ‖u - v‖ + δ/c`, where `δ` bounds the consistency error

@@ -31,8 +31,8 @@ The uniform bound `‖ŷ - A x‖_∞ ≤ γ_n ‖A‖_∞ ‖x‖_∞` is `abs_
 stated with row sums and an entrywise bound on `x` rather than with norms, since the scalar field
 here carries an order but no norm.
 
-Every proof rests on one scalar step, `γ_k (1 + u) + u ≤ γ_{k+1}`: one more rounding raises the
-order of a relative perturbation by one.
+Every proof rests on one scalar step, `FloatingPoint.gamma_mul_one_add_add_le`, that is
+`γ_k (1 + u) + u ≤ γ_{k+1}`: one more rounding raises the order of a relative perturbation by one.
 
 ## References
 
@@ -53,7 +53,7 @@ variable {K : Type*} [Field K] [LinearOrder K] [IsStrictOrderedRing K]
 
 /-- One more rounding raises the order of a relative perturbation by one:
 `γ_k (1 + u) + u ≤ γ_{k+1}`.  This is Higham's Lemma 3.3 together with `u ≤ γ₁`. -/
-private theorem gamma_mul_one_add_add_le {u : K} (hu : 0 ≤ u) (hu1 : u < 1) {k : ℕ}
+theorem gamma_mul_one_add_add_le {u : K} (hu : 0 ≤ u) (hu1 : u < 1) {k : ℕ}
     (h : ((k + 1 : ℕ) : K) * u < 1) : gamma u k * (1 + u) + u ≤ gamma u (k + 1) := by
   have hcast : ((k + 1 : ℕ) : K) * u = (k : K) * u + u := by push_cast; ring
   have hk : (k : K) * u < 1 := by rw [hcast] at h; linarith
@@ -84,9 +84,12 @@ def RoundsSum (m : RoundingModel K) : List K → K → Prop
   | [], s => s = 0
   | x :: l, s => RoundsSumFrom m x l s
 
+/-- The recursive summation of the empty list is `0`. -/
 @[simp]
 theorem roundsSum_nil {m : RoundingModel K} {s : K} : RoundsSum m [] s ↔ s = 0 := Iff.rfl
 
+/-- The recursive summation of `x :: l` is the left-to-right sweep over `l` started at the
+*unrounded* first term `x`, which is why a list of length `n` costs only `n - 1` roundings. -/
 @[simp]
 theorem roundsSum_cons {m : RoundingModel K} {x : K} {l : List K} {s : K} :
     RoundsSum m (x :: l) s ↔ RoundsSumFrom m x l s := Iff.rfl

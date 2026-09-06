@@ -15,7 +15,8 @@ term, `v^{m+1} = Q v^m + h g^m`, where `h` is the step in the evolution variable
 So the whole theory of this scheme is a geometric-sum estimate: if the powers of `Q` are bounded
 by `M₀` up to step `N` (*stability*) and the truncation errors are bounded by `δ`
 (*consistency*), then over a fixed horizon `N h ≤ T` the error never exceeds `M₀ T δ`.  That is
-`FiniteDifference.norm_sub_le_of_stable`, and it is the only content of the module.
+`FiniteDifference.norm_sub_le_of_stable`; the closed form itself is
+`FiniteDifference.sub_eq_smul_sum`, and the two are the whole content of the module.
 
 The statement is an inequality with explicit constants: no limit, no order symbol, and no family
 indexed by a mesh parameter.  Consistency, order, stability and convergence *of a family* of
@@ -36,6 +37,39 @@ namespace FiniteDifference
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
+/-- **The discrete Duhamel formula.**  Subtracting the recursion satisfied by the computed values
+from the one satisfied by the exact values leaves `e^{m+1} = Q e^m + h τ^m` with `e^0 = 0`, whose
+solution is
+
+  `u^k - v^k = h ∑_{l < k} Q^{k - 1 - l} (τ^l)`.
+
+Nothing but linearity of `Q` is used: no bound on the powers of `Q`, none on the truncation
+errors, and no sign condition on `h`. -/
+theorem sub_eq_smul_sum {Q : E →L[ℝ] E} {u v g τ : ℕ → E} {h : ℝ} {N : ℕ}
+    (hv : ∀ m < N, v (m + 1) = Q (v m) + h • g m)
+    (hu : ∀ m < N, u (m + 1) = Q (u m) + h • g m + h • τ m) (h0 : u 0 = v 0) {k : ℕ}
+    (hk : k ≤ N) : u k - v k = h • ∑ l ∈ Finset.range k, (Q ^ (k - 1 - l)) (τ l) := by
+  induction k with
+  | zero => simp [h0]
+  | succ n ih =>
+    have hnN : n < N := hk
+    have hn := ih (Nat.le_of_succ_le hk)
+    have hstep : Q (u n) + h • g n + h • τ n - (Q (v n) + h • g n)
+        = Q (u n - v n) + h • τ n := by
+      rw [map_sub]
+      abel
+    have hrhs : ∑ l ∈ Finset.range (n + 1), (Q ^ (n + 1 - 1 - l)) (τ l)
+        = (∑ l ∈ Finset.range n, Q ((Q ^ (n - 1 - l)) (τ l))) + τ n := by
+      rw [Finset.sum_range_succ]
+      congr 1
+      · refine Finset.sum_congr rfl fun l hl => ?_
+        have hl' : l < n := Finset.mem_range.mp hl
+        have hidx : n + 1 - 1 - l = n - 1 - l + 1 := by omega
+        rw [hidx, pow_succ']
+        rfl
+      · simp
+    rw [hu n hnN, hv n hnN, hstep, hn, map_smul, map_sum, hrhs, smul_add]
+
 /-- **Convergence of a stable, consistent two-level scheme.**  Let `Q : E →L[ℝ] E`, let the
 computed values `v` satisfy `v^{m+1} = Q v^m + h g^m` and the exact values `u` satisfy
 `u^{m+1} = Q u^m + h g^m + h τ^m` for `m < N`, with the same starting value.  If the scheme is
@@ -53,29 +87,6 @@ theorem norm_sub_le_of_stable {Q : E →L[ℝ] E} {u v g τ : ℕ → E} {h T M�
     (hQ : ∀ m ≤ N, ‖Q ^ m‖ ≤ M₀) (hτ : ∀ m < N, ‖τ m‖ ≤ δ) {m : ℕ} (hm : m ≤ N) :
     ‖u m - v m‖ ≤ M₀ * T * δ := by
   have hM₀ : 0 ≤ M₀ := le_trans (norm_nonneg _) (hQ 0 (Nat.zero_le N))
-  have key : ∀ k, k ≤ N → u k - v k = h • ∑ l ∈ Finset.range k, (Q ^ (k - 1 - l)) (τ l) := by
-    intro k
-    induction k with
-    | zero => intro _; simp [h0]
-    | succ n ih =>
-      intro hk
-      have hnN : n < N := hk
-      have hn := ih (Nat.le_of_succ_le hk)
-      have hstep : Q (u n) + h • g n + h • τ n - (Q (v n) + h • g n)
-          = Q (u n - v n) + h • τ n := by
-        rw [map_sub]
-        abel
-      have hrhs : ∑ l ∈ Finset.range (n + 1), (Q ^ (n + 1 - 1 - l)) (τ l)
-          = (∑ l ∈ Finset.range n, Q ((Q ^ (n - 1 - l)) (τ l))) + τ n := by
-        rw [Finset.sum_range_succ]
-        congr 1
-        · refine Finset.sum_congr rfl fun l hl => ?_
-          have hl' : l < n := Finset.mem_range.mp hl
-          have hidx : n + 1 - 1 - l = n - 1 - l + 1 := by omega
-          rw [hidx, pow_succ']
-          rfl
-        · simp
-      rw [hu n hnN, hv n hnN, hstep, hn, map_smul, map_sum, hrhs, smul_add]
   have hsum : ‖∑ l ∈ Finset.range m, (Q ^ (m - 1 - l)) (τ l)‖ ≤ (m : ℝ) * (M₀ * δ) := by
     calc ‖∑ l ∈ Finset.range m, (Q ^ (m - 1 - l)) (τ l)‖
         ≤ ∑ l ∈ Finset.range m, ‖(Q ^ (m - 1 - l)) (τ l)‖ := norm_sum_le _ _
@@ -88,7 +99,7 @@ theorem norm_sub_le_of_stable {Q : E →L[ℝ] E} {u v g τ : ℕ → E} {h T M�
           rw [Finset.sum_const, Finset.card_range, nsmul_eq_mul]
   have hmh : (m : ℝ) * h ≤ T :=
     le_trans (mul_le_mul_of_nonneg_right (by exact_mod_cast hm) hh) hT
-  rw [key m hm, norm_smul, Real.norm_eq_abs, abs_of_nonneg hh]
+  rw [sub_eq_smul_sum hv hu h0 hm, norm_smul, Real.norm_eq_abs, abs_of_nonneg hh]
   calc h * ‖∑ l ∈ Finset.range m, (Q ^ (m - 1 - l)) (τ l)‖ ≤ h * ((m : ℝ) * (M₀ * δ)) :=
         mul_le_mul_of_nonneg_left hsum hh
     _ = (m : ℝ) * h * (M₀ * δ) := by ring
