@@ -1,4 +1,5 @@
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Periodic
+import Numlib.Approximation.CompositeQuadrature
 import Mathlib.Topology.Instances.AddCircle.Real
 import NumlibSurface.AtkinsonHan.Chapter12.Section04
 
@@ -32,19 +33,20 @@ Neumann problem, and for §13.3.
   the quadrature nodes.
 * `equation_13_2_7` — unique solvability of the approximating equations for all large `n`,
   uniformly bounded inverses, and `‖ρ - ρ_n‖_∞ ≤ c ‖K ρ - K_n ρ‖_∞`.
+* `equation_13_2_4` — the same with the concrete periodic trapezoidal rule
+  `h ∑_{j < n} k (t, j h) ρ (j h)`, `h = L / n`, whose two quadrature hypotheses are discharged by
+  `Quadrature.sum_abs_circleTrapezoid` and `Quadrature.tendsto_circleTrapezoid`.
 
 ## Not formalized here
 
 * The identification of `K` with the boundary integral `∫_S ρ(Q) ∂/∂n_Q log |P - Q| dS_Q`, which
   needs a surface measure and a normal field on `S`; only the parametrized kernel is reachable, and
   that is `Chapter13/Section01`.
-* The *concrete* trapezoidal rule `h ∑_{j<n} v (j h)` with `h = L / n`.  What is missing is its
-  convergence for every continuous periodic integrand: a Riemann-sum theorem, which neither this
-  library nor Mathlib has, and which `Numlib/Approximation/Quadrature` has no composite rule to
-  state it for.  The convergence of the rules is therefore a hypothesis of `equation_13_2_7`,
-  written exactly as Theorem 12.4.4 asks for it.  The *rate* — spectral convergence of the
-  trapezoidal rule for a smooth periodic integrand — is Proposition 7.5.6 and needs the periodic
-  Sobolev scale `H^s(2π)`; only the bound is stated.
+* The *rate* of the trapezoidal rule — spectral convergence for a smooth periodic integrand —
+  which is Proposition 7.5.6 and needs the periodic Sobolev scale `H^s(2π)`; only the bound is
+  stated.  Its *convergence* for every continuous periodic integrand is no longer a hypothesis:
+  `Quadrature.tendsto_circleTrapezoid` of `Numlib/Approximation/CompositeQuadrature` proves it, and
+  `equation_13_2_4` is the resulting concrete scheme.
 * Exercise 13.2.5, that `‖K‖ = π` for a convex region; (13.2.14)–(13.2.23), the evaluation of the
   potential near the boundary; and (13.2.32), the Fourier diagonalization of the logarithmic
   single-layer operator.  See `plans/NumlibSurface/AtkinsonHan/Chapter13/Section02.toml`.
@@ -125,5 +127,39 @@ theorem equation_13_2_7 (k : C(AddCircle L × AddCircle L, ℝ)) {m : ℕ → �
   refine mul_le_mul_of_nonneg_left (le_of_eq ?_) ?_
   · rw [neg_apply, neg_apply, ← neg_sub, norm_neg, neg_sub_neg]
   · exact le_trans (norm_nonneg _) hennorm
+
+/-- **(13.2.4)–(13.2.5), the Nyström method with the periodic trapezoidal rule.**  The concrete
+scheme of §13.2: the boundary integral is approximated by
+
+`K_n ρ (t) = h ∑_{j < n} k (t, j h) ρ (j h)`, `h = L / n`,
+
+the trapezoidal rule on the closed parameter curve, and the discrete equations
+`(-π + K_n) ρ_n = f` are then uniquely solvable for all large `n` with uniformly bounded inverses
+and `‖ρ - ρ_n‖_∞ ≤ c ‖K ρ - K_n ρ‖_∞`.
+
+This is `equation_13_2_7` with its two quadrature hypotheses discharged:
+`Quadrature.sum_abs_circleTrapezoid` bounds the absolute weight sums by `L` and
+`Quadrature.tendsto_circleTrapezoid` is the Riemann sum theorem on the circle.  It is the form the
+book actually computes with, and the kernel it applies to is `doubleLayerKernelCP`. -/
+theorem equation_13_2_4 (k : C(AddCircle L × AddCircle L, ℝ))
+    {e : C(AddCircle L, ℝ) ≃L[ℝ] C(AddCircle L, ℝ)}
+    (he : (e : C(AddCircle L, ℝ) →L[ℝ] C(AddCircle L, ℝ))
+      = (-π) • 1 + kernelCLM volume k) :
+    ∃ c : ℝ, ∀ᶠ n in atTop, ∃ en : C(AddCircle L, ℝ) ≃L[ℝ] C(AddCircle L, ℝ),
+      (en : C(AddCircle L, ℝ) →L[ℝ] C(AddCircle L, ℝ))
+          = (-π) • 1 + nystromCLM (fun _ : Fin n => L / n)
+            (fun j : Fin n => (((j : ℕ) * (L / n) : ℝ) : AddCircle L)) k ∧
+      ‖(en.symm : C(AddCircle L, ℝ) →L[ℝ] C(AddCircle L, ℝ))‖ ≤ c ∧
+      ∀ f ρ ρn : C(AddCircle L, ℝ),
+        ((-π) • 1 + kernelCLM volume k : C(AddCircle L, ℝ) →L[ℝ] C(AddCircle L, ℝ)) ρ = f →
+        ((-π) • 1 + nystromCLM (fun _ : Fin n => L / n)
+          (fun j : Fin n => (((j : ℕ) * (L / n) : ℝ) : AddCircle L)) k :
+          C(AddCircle L, ℝ) →L[ℝ] C(AddCircle L, ℝ)) ρn = f →
+        ‖ρ - ρn‖ ≤ c * ‖kernelCLM volume k ρ - nystromCLM (fun _ : Fin n => L / n)
+          (fun j : Fin n => (((j : ℕ) * (L / n) : ℝ) : AddCircle L)) k ρ‖ :=
+  equation_13_2_7 k (W := L) (fun n => Quadrature.sum_abs_circleTrapezoid n)
+    (fun v => by
+      simpa only [integralCLM_apply, Quadrature.circleTrapezoid] using
+        Quadrature.tendsto_circleTrapezoid v) he
 
 end AtkinsonHan.Chapter13

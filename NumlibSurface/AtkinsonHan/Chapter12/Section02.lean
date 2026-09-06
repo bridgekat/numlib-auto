@@ -33,11 +33,18 @@ the mesh is assumed beyond `h_n → 0`; the book's uniform mesh `h = (b - a) / n
   `O(log n)`, so `P_n u → u` fails for a general continuous `u` and Lemma 12.1.4 does not apply.
   The book instead estimates `(I - P_n) k(·, y)` uniformly in `y`, which needs a modulus of
   continuity argument on the kernel and the `O(log n)` bound itself; neither is in the library.
-* §12.2.3, piecewise linear Galerkin (12.2.24), and §12.2.4, trigonometric Galerkin (12.2.29).
-  Both are `L²(a, b)` statements, and the library has no bridge from `C([a, b], ℝ)` to `L²(a, b)`:
-  no orthogonal projection onto the piecewise linear functions, and no density of those in `L²`.
-  The argument itself would be the shorter one — an orthogonal projection has norm one for free —
-  so this is missing infrastructure, not missing mathematics.
+* §12.2.3, piecewise linear Galerkin, whose error bound is **(12.2.19)** and not (12.2.24): the
+  library has no bridge from `C([a, b], ℝ)` to `L²(a, b)`, so there is no orthogonal projection
+  onto the piecewise linear functions and no density of those in `L²`.  The argument itself is the
+  shorter one — an orthogonal projection has norm one for free, and the book's own bound goes
+  through the *uniform* norm of the interpolation error, so `norm_sub_piecewiseLinearInterpCLM_le`
+  supplies all of the approximation theory.  This is missing infrastructure, not missing
+  mathematics.
+* §12.2.4, trigonometric Galerkin.  Its `L²` half is **(12.2.24)–(12.2.25)**, of which only the
+  *rate* is missing: the projection `trigProjCLM` of `Numlib/Analysis/Fourier/Truncation` has
+  everything Lemma 12.1.4 and Theorem 12.1.2 ask for, and the rate `c n^{-r} ‖u‖_{H^r}` needs a
+  bridge to the periodic Sobolev scale.  Its uniform half is (12.2.27), `‖P_n‖ = O(log n)`, whose
+  content is again the Lebesgue constant.
 
 ## Conventions
 

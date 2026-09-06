@@ -38,18 +38,11 @@ id = "theorem_12_4_4"
 
 [[node]]
 id = "example_12_4_5"
-kind = "theorem"
-desc = '''
-Example 12.4.5, the composite trapezoidal rule error
-`int_a^b g - h (g(x_0)/2 + ... + g(x_N)/2) = -h^2 (b - a) g''(xi) / 12` for `g` in `C^2[a, b]`, and
-its asymptotic form `= -(h^2/12) [g'(b) - g'(a)] + O(h^4)` for `g` in `C^4[a, b]`.
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 12.4.5"
 
-The mean-value form belongs in the backbone as `Quadrature.sub_composite_trapezoid_eq`, planned in
-`plans/Numlib/Approximation/Quadrature.toml`, together with `Quadrature.composite`; this surface
-node is its instance and is one line once that exists. The asymptotic form (12.4.39) is the first
-Euler-Maclaurin term, is a separate and harder task, and is quoted by the book from the literature.
-'''
-deps = ["Quadrature.composite", "Quadrature.sub_composite_trapezoid_eq"]
+[[node]]
+id = "equation_12_4_39"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (12.4.39)"
 
 [[node]]
 id = "example_12_4_6"
@@ -60,7 +53,12 @@ Example 12.4.6, the asymptotic error expansion of the Nystrom solution: for a `C
 whose data is the Euler-Maclaurin boundary term; hence Richardson extrapolation raises the order.
 
 The operator half is easy -- `(lambda - K_n)(u - u_n) = (K - K_n) u` is `SecondKind.norm_sub_le`
--- and all the work is in the Euler-Maclaurin expansion, i.e. in the asymptotic form (12.4.39) of
-Example 12.4.5. Lowest priority of §12.4; skip until (12.4.39) exists.
+-- and the Euler-Maclaurin expansion it needs, (12.4.39), is now `equation_12_4_39`.
+
+What is still missing is the step from one integrand to the Nystrom error *kernel*: the expansion
+`u - u_n = h^2 gamma + O(h^4)` requires (12.4.39) applied to `k(t, .) u(.)` uniformly in `t`, with
+the boundary term `d/ds [k(t, s) u(s)]` at the endpoints as the data of the integral equation that
+`gamma` solves. So the remaining content is the identification of `gamma` and the uniformity of the
+`O(h^4)`, not the scalar expansion. Lowest priority of the section.
 '''
-deps = ["example_12_4_5", "theorem_12_4_4"]
+deps = ["equation_12_4_39", "theorem_12_4_4"]

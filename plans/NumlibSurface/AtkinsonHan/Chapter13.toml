@@ -16,7 +16,8 @@ wrong for two of its three sections, and the obstruction is different in each:
   layer potentials**, and everything in §13.1 that is a boundary integral over `S` stays skipped.
   Two items escape, because they are about the *parametrized* kernel and not about the potential:
   the Kelvin transform, and the double layer kernel of (13.1.32)-(13.1.37). They are the nodes of
-  `Chapter13/Section01`.
+  `Chapter13/Section01`, and the second is now formalized both on a parameter interval and, by
+  `doubleLayerKernelCP`, on `AddCircle L` for a regular simple closed curve.
 * **§13.2, the Nystrom method -- no obstruction at all, and it is formalized.** The book's own
   setting is `C_p(L)` with the uniform norm, and it *quotes* the invertibility of `-pi + K` from the
   literature rather than proving it. So the second-kind analysis is Theorem 12.4.4 read on
@@ -24,15 +25,16 @@ wrong for two of its three sections, and the obstruction is different in each:
   what the book does in practice. `Chapter13/Section02` states it. Only §13.2.2, the exterior
   Neumann problem, reaches for a Sobolev space, and only for the one norm identity of
   Exercise 13.2.8.
-* **§13.3, the Fourier-Galerkin method -- the reason is right, but the space is smaller than
-  "Sobolev on a boundary".** What §13.3 needs is the *periodic* Sobolev scale `H^q(2 pi)`: the
+* **§13.3, the Fourier-Galerkin method -- §13.3.1 is formalized conditionally, and the rest waits
+  on a space smaller than "Sobolev on a boundary".** What §13.3 needs is the *periodic* Sobolev scale `H^q(2 pi)`: the
   solvability theory (13.3.2)-(13.3.7) uses `A : H^q -> H^{q+1}` an isomorphism and the compact
   embedding `H^{q+2} -> H^{q+1}`, and the rate (13.3.15) uses Atkinson-Han Theorem 7.5.7. That is a
   weighted `l^2` space over the Fourier basis of `AddCircle`, needs none of the domain machinery,
   and is already singled out as reachable in `backbone.md` §14.8. Until it exists, §13.3.1's
-  convergence statement can be given conditionally -- with the compactness of `A^{-1} B` and the
-  invertibility of `I + A^{-1} B` as hypotheses, both of which the book assumes -- and its proof is
-  `theorem_12_1_2` and `lemma_12_1_4` unchanged.
+  convergence statement is given conditionally by `equation_13_3_14` -- with the compactness of
+  `A^{-1} B` and the invertibility of `I + A^{-1} B` as hypotheses, both of which the book assumes
+  -- and its proof is `theorem_12_1_2` and `lemma_12_1_4` unchanged, over the Fourier truncation
+  `trigProjCLM` of `Numlib/Analysis/Fourier/Truncation`.
 
 **Still skipped, and why.** Theorem 13.1.1 (existence for the interior Dirichlet and Neumann
 problems; quoted from Chapter 8, needs `H^1_0` and a trace theorem or the classical potential

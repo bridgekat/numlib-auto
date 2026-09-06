@@ -1,0 +1,22 @@
+[[node]]
+id = "trigPolyLp"
+
+[[node]]
+id = "trigPartialSum_mem_trigPolyLp"
+
+[[node]]
+id = "trigProjCLM"
+
+[[node]]
+id = "isIdempotentElem_trigProjCLM"
+
+[[node]]
+id = "norm_trigProjCLM_le_one"
+
+[[node]]
+id = "tendsto_norm_sub_trigPartialSum"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 1.3.15"
+
+[[node]]
+id = "tendsto_trigProjCLM"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Section 13.3.1"

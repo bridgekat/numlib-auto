@@ -1,6 +1,10 @@
 namespace = "AtkinsonHan.Chapter13"
 
 [[node]]
+id = "equation_13_2_4"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (13.2.4)–(13.2.5)"
+
+[[node]]
 id = "equation_13_2_6"
 
 [[node]]

@@ -1,3 +1,4 @@
+import Numlib.Approximation.CompositeQuadrature
 import Numlib.IntegralEquations.Nystrom
 import Numlib.IntegralEquations.SecondKind
 
@@ -33,13 +34,20 @@ makes the Nyström method analysable, and which §12.5 reuses for product integr
   expressing `(K - K_n) K` and `(K - K_n) K_n` through the single kernel `e_n`, the norm formulas
   (12.4.16)–(12.4.17), and (12.4.18), that both norms tend to zero.
 * `theorem_12_4_4` — the Nyström instance of the abstract theorem.
+* `example_12_4_5` — the composite trapezoidal rule error `-h² (b - a) g''(ξ) / 12`, an instance
+  of `Quadrature.sub_composite_trapezoid_eq` in `Numlib/Approximation/CompositeQuadrature`.
+* `equation_12_4_39` — its asymptotic form `-(h²/12) [g'(b) - g'(a)] + O(h⁴)`, the first
+  Euler–Maclaurin term, with the explicit remainder `(b - a) h⁴ ‖g⁗‖_∞ / 720`.  The book quotes
+  this one from the literature; it is `Quadrature.abs_sub_trapezoidSum_add_le`.
 
 ## Not formalized here
 
-Example 12.4.5, the trapezoidal rule error `-h² (b - a) g''(ξ) / 12`, and Example 12.4.6, the
-`h²`-expansion of the Nyström error that justifies Richardson extrapolation.  The first belongs in
-`Numlib/Approximation/Quadrature`, which has no composite rule yet; the second needs the
-Euler–Maclaurin form (12.4.39) of the first, which the book itself only quotes.
+Example 12.4.6, the `h²`-expansion of the *Nyström* error that justifies Richardson extrapolation.
+Its operator half is `SecondKind.norm_sub_le`; what is missing is the expansion `u - u_n = h² γ +
+O(h⁴)` with `γ` itself the solution of an integral equation whose data is the Euler–Maclaurin
+boundary term of `equation_12_4_39` applied to the *kernel* in the second variable, uniformly in
+the first.  That is a statement about the Nyström error kernel and not about a single integrand,
+and it is what remains.
 
 ## Conventions
 
@@ -353,5 +361,79 @@ theorem theorem_12_4_4 {μ : ℝ} (hμ : μ ≠ 0) (k : C(D × D, ℝ)) {m : ℕ
     (isCollectivelyCompactFamily_nystromCLM ν k hW hQ) he
 
 end Nystrom
+
+/-! ### The composite trapezoidal rule -/
+
+/-- **Example 12.4.5, the composite trapezoidal rule error.**  For `g` of class `C²` on `[a, b]`,
+the uniform mesh `x_j = a + j h` with `h = (b - a)/N` and the composite trapezoidal rule,
+
+`∫_a^b g - h [g(x_0)/2 + g(x_1) + ⋯ + g(x_{N-1}) + g(x_N)/2] = -h² (b - a) g''(ξ)/12`
+
+for some `ξ` in `[a, b]`.  This is `Quadrature.sub_composite_trapezoid_eq` written with the book's
+displayed sum, which is `Quadrature.trapezoidSum_eq`.
+
+The asymptotic form (12.4.39), `= -(h²/12) [g'(b) - g'(a)] + O(h⁴)` for `g` of class `C⁴`, is a
+different statement: the book quotes it from the literature, it is the first Euler–Maclaurin term,
+and Example 12.4.6 needs that one and not this one. -/
+theorem example_12_4_5 {a b : ℝ} (hab : a < b) {N : ℕ} (hN : 0 < N) {h : ℝ}
+    (hh : h = (b - a) / N) {g : ℝ → ℝ} (hg : ContDiff ℝ 2 g) :
+    ∃ ξ ∈ Set.Icc a b,
+      (∫ t in a..b, g t) - h * ((g a + g b) / 2 + ∑ j ∈ Finset.Ico 1 N, g (a + j * h))
+        = -(h ^ 2 * (b - a) / 12) * iteratedDeriv 2 g ξ := by
+  have hd1 : Differentiable ℝ g := hg.differentiable (by norm_num)
+  have hdd : ContDiff ℝ 1 (deriv g) := (contDiff_succ_iff_deriv.mp hg).2.2
+  have hd2 : Differentiable ℝ (deriv g) := hdd.differentiable (by norm_num)
+  have hc2 : Continuous (deriv (deriv g)) := (contDiff_one_iff_deriv.mp hdd).2
+  have hiter : iteratedDeriv 2 g = deriv (deriv g) := by
+    rw [iteratedDeriv_succ, iteratedDeriv_one]
+  have hNR : (N : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hN.ne'
+  have hxN : a + (N : ℝ) * h = b := by
+    have hc : (N : ℝ) * ((b - a) / N) = b - a := by field_simp
+    rw [hh, hc]
+    ring
+  obtain ⟨ξ, hξ, hval⟩ := Quadrature.sub_composite_trapezoid_eq hab hN hh
+    (g' := deriv g) (g'' := deriv (deriv g)) (fun x _ => (hd1 x).hasDerivAt)
+    (fun x _ => (hd2 x).hasDerivAt) hc2.continuousOn
+  refine ⟨ξ, hξ, ?_⟩
+  rw [hiter, ← hval, Quadrature.trapezoidSum_eq hN, hxN]
+
+/-- **(12.4.39), the asymptotic form of the composite trapezoidal error.**  For `g` of class `C⁴`
+on `[a, b]` with `|g⁗| ≤ M` there, and the uniform mesh `h = (b - a)/N`,
+
+`∫_a^b g - h [g(x_0)/2 + ⋯ + g(x_N)/2] = -(h²/12) [g'(b) - g'(a)] + O(h⁴)`,
+
+with the explicit remainder bound `(b - a) h⁴ M / 720`.
+
+This is the first Euler–Maclaurin term, and it is a *different* statement from the mean value form
+`example_12_4_5`: it names the leading term, which is what Example 12.4.6 and Richardson
+extrapolation need.  The book quotes it from the literature; it is proved in the backbone as
+`Quadrature.abs_sub_trapezoidSum_add_le`, by two further integrations by parts of the Peano
+identity on each panel followed by a telescoping sum. -/
+theorem equation_12_4_39 {a b : ℝ} (hab : a < b) {N : ℕ} (hN : 0 < N) {h : ℝ}
+    (hh : h = (b - a) / N) {g : ℝ → ℝ} (hg : ContDiff ℝ 4 g) {M : ℝ}
+    (hM : ∀ t ∈ Set.Icc a b, |iteratedDeriv 4 g t| ≤ M) :
+    |(∫ t in a..b, g t) - h * ((g a + g b) / 2 + ∑ j ∈ Finset.Ico 1 N, g (a + j * h))
+        + h ^ 2 / 12 * (deriv g b - deriv g a)| ≤ (b - a) * h ^ 4 * M / 720 := by
+  have hd0 : Differentiable ℝ g := hg.differentiable (by norm_num)
+  have hc3 : ContDiff ℝ 3 (deriv g) := (contDiff_succ_iff_deriv.mp hg).2.2
+  have hd1 : Differentiable ℝ (deriv g) := hc3.differentiable (by norm_num)
+  have hc2 : ContDiff ℝ 2 (deriv (deriv g)) := (contDiff_succ_iff_deriv.mp hc3).2.2
+  have hd2 : Differentiable ℝ (deriv (deriv g)) := hc2.differentiable (by norm_num)
+  have hc1 : ContDiff ℝ 1 (deriv (deriv (deriv g))) := (contDiff_succ_iff_deriv.mp hc2).2.2
+  have hd3 : Differentiable ℝ (deriv (deriv (deriv g))) := hc1.differentiable (by norm_num)
+  have hcont4 : Continuous (deriv (deriv (deriv (deriv g)))) := (contDiff_one_iff_deriv.mp hc1).2
+  have hiter : iteratedDeriv 4 g = deriv (deriv (deriv (deriv g))) := by
+    rw [iteratedDeriv_succ, iteratedDeriv_succ, iteratedDeriv_succ, iteratedDeriv_one]
+  have hNR : (N : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hN.ne'
+  have hxN : a + (N : ℝ) * h = b := by
+    have hc : (N : ℝ) * ((b - a) / N) = b - a := by field_simp
+    rw [hh, hc]
+    ring
+  have hbound := Quadrature.abs_sub_trapezoidSum_add_le hab hN hh
+    (g' := deriv g) (g'' := deriv (deriv g)) (g₃ := deriv (deriv (deriv g)))
+    (g₄ := deriv (deriv (deriv (deriv g)))) (M := M) (fun t _ => (hd0 t).hasDerivAt)
+    (fun t _ => (hd1 t).hasDerivAt) (fun t _ => (hd2 t).hasDerivAt)
+    (fun t _ => (hd3 t).hasDerivAt) hcont4.continuousOn (by rw [← hiter]; exact hM)
+  rwa [Quadrature.trapezoidSum_eq hN, hxN] at hbound
 
 end AtkinsonHan.Chapter12

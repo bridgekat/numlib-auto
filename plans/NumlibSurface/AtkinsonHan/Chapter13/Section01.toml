@@ -16,45 +16,30 @@ id = "doubleLayerKernelCM"
 id = "isCompactOperator_doubleLayer"
 
 [[node]]
+id = "firstOrder_add_period"
+
+[[node]]
+id = "secondOrder_add_period"
+
+[[node]]
+id = "doubleLayerKernel_add_period"
+
+[[node]]
+id = "periodic_of_hasDerivAt"
+
+[[node]]
+id = "doubleLayerKernel_sub_half_period"
+
+[[node]]
+id = "doubleLayerKernelCPFun"
+
+[[node]]
 id = "doubleLayerKernelCP"
-kind = "definition"
-desc = '''
-The parametrized double layer kernel of a regular simple *closed* curve of period `L`, as an element
-of `C(AddCircle L x AddCircle L, R)` -- the form Section 13.2 uses, and the form in which the book
-states that `K` is compact from `C_p(L)` to `C_p(L)`.
+source = "Atkinson–Han, Theoretical Numerical Analysis, Section 13.1.3"
 
-`doubleLayerKernel` and `isCompactOperator_doubleLayer` give the statement on a parameter *interval*
-on which the curve is simple; what is missing is the descent to the circle.
-
-**`doubleLayerKernel` is not separately `L`-periodic, so the obvious plan -- prove biperiodicity,
-then lift along the quotient map -- does not work.** At `s = t` one has `k(t + L, t) = 0`, because
-`equation_13_1_33` applies (the real parameters `t` and `t + L` are distinct) and both its numerator
-and its denominator vanish, while `k(t, t)` is half the curvature. The divided-difference formula
-divides by `s - t`, and for a closed curve `s - t` and `s - t - L` are different divisors of the
-same vanishing chord.
-
-The construction that does work chooses the representative of the *difference*: for
-`(T, S) : AddCircle L x AddCircle L`, take any representative `t` of `T` and the representative `d`
-of `S - T` in `[-L/2, L/2)`, and set `K (T, S) = doubleLayerKernel t (t + d)`. Three things to
-check, each within reach:
-
-1. **Well-definedness in `t`.** `doubleLayerKernel (t + m L) (s + m L) = doubleLayerKernel t s` for
-   every integer `m`: `firstOrder xi' (s + m L) (t + m L)` is `int_0^1 xi' ((s - t) th + t + m L)`,
-   which is `firstOrder xi' s t` by periodicity of `xi'` alone, and the same for `secondOrder`. The
-   kernel *is* invariant under the diagonal action, which is all this step needs.
-2. **Continuity away from the seam** is `continuous_doubleLayerKernel` composed with the local
-   section `AddCircle.equivIco` or `AddCircle.equivIoc`, homeomorphisms off one point.
-3. **The seam `d = -L/2`.** Continuity there is the equality
-   `doubleLayerKernel t (t - L/2) = doubleLayerKernel t (t + L/2)`; both arguments are off the
-   diagonal, so `equation_13_1_33` reduces it to the periodicity of `xi` and `eta`.
-
-With this, `IntegralOperator.kernelCLM volume doubleLayerKernelCP` is the operator of
-`AtkinsonHan.Chapter13.equation_13_2_7`, and its compactness is
-`IntegralOperator.isCompactOperator_kernelCLM`. Until it exists, Section 13.2's theorem is stated for
-an arbitrary continuous kernel on `AddCircle L`, which is honest but does not say that the double
-layer kernel is one.
-'''
-deps = ["doubleLayerKernel", "equation_13_1_33", "IntegralOperator.isCompactOperator_kernelCLM"]
+[[node]]
+id = "isCompactOperator_doubleLayerCP"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Section 13.1.3"
 
 [[node]]
 id = "kelvin"
