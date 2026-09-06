@@ -1,4 +1,5 @@
 import Mathlib.Analysis.Normed.Group.Bounded
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.Deriv
 
 /-!
 # Atkinson–Han §2.1: operators
@@ -21,6 +22,8 @@ linear map `LinearMap.range` and `LinearMap.ker`. None of these is restated.
 ## Main results
 
 * `isBoundedOperator_iff_image_bounded` — the two readings the book gives of Definition 2.1.6.
+* `example_2_1_7` — the half of Example 2.1.7 that needs no `C¹[0, 1]`: differentiation is
+  *unbounded* for the sup norm on `C[0, 1]`.
 
 The bridge to the estimate `‖T v‖ ≤ γ ‖v‖` for a *linear* operator is Proposition 2.2.3, and lives
 in §2.2 with the rest of that discussion.
@@ -28,10 +31,10 @@ in §2.2 with the rest of that discussion.
 ## Not formalized here
 
 Examples 2.1.2 and 2.1.3, the identity operator and a matrix acting on `ℝⁿ`, illustrate
-Definition 2.1.1 and carry no statement the rest of the book uses. Examples 2.1.4, 2.1.5 and 2.1.7
-concern the differentiation operator on `C[0, 1]` and `C¹[0, 1]`; the latter space is not in
-Mathlib as a normed space, and Exercise 2.1.1, which asks for the unboundedness asserted in
-Example 2.1.7, needs it.
+Definition 2.1.1 and carry no statement the rest of the book uses. Examples 2.1.4 and 2.1.5, and
+the *bounded* half of Example 2.1.7, concern the differentiation operator read on `C¹[0, 1]` with
+the norm `‖v‖_∞ + ‖v'‖_∞`; Mathlib does not have `C¹[0, 1]` as a normed space, so they are not
+stated. The *unbounded* half of Example 2.1.7 needs no such space and is `example_2_1_7`.
 -/
 
 open Bornology Metric
@@ -62,5 +65,27 @@ theorem isBoundedOperator_iff_image_bounded (T : V → W) :
     obtain ⟨R, hR⟩ :=
       isBounded_iff_forall_norm_le.mp (hT (closedBall 0 r) isBounded_closedBall)
     exact ⟨R, fun v hv => hR _ ⟨v, by simpa using hv, rfl⟩⟩
+
+/-- **Example 2.1.7**, the half that needs no `C¹[0, 1]`: *differentiation is not a bounded
+operator for the sup norm on `C[0, 1]`*. There is no `γ` with `‖v'‖_∞ ≤ γ ‖v‖_∞` for every
+continuously differentiable `v`, and the book's witnesses show it: `v_n (x) = sin (n x)` has
+`‖v_n‖_∞ ≤ 1` while `v_n' (0) = n`.
+
+The statement is the negation in witness form — for every `γ` such a `v` exists — because the
+bounded reading of the operator would need `C¹[0, 1]` as a normed space, which Mathlib does not
+have; the other half of the Example, that `d/dx` *is* bounded for `‖v‖_∞ + ‖v'‖_∞`, waits on that
+space. -/
+theorem example_2_1_7 (γ : ℝ) :
+    ∃ v v' : ℝ → ℝ, (∀ x, HasDerivAt v (v' x) x) ∧ Continuous v' ∧
+      (∀ x ∈ Set.Icc (0 : ℝ) 1, |v x| ≤ 1) ∧ ∃ x ∈ Set.Icc (0 : ℝ) 1, γ < |v' x| := by
+  set n : ℝ := max γ 0 + 1 with hn
+  have hn1 : γ < n := by simp [hn]; linarith [le_max_left γ 0]
+  refine ⟨fun x => Real.sin (n * x), fun x => n * Real.cos (n * x), fun x => ?_,
+    by fun_prop, fun x _ => Real.abs_sin_le_one _, 0, by norm_num, ?_⟩
+  · have h := (Real.hasDerivAt_sin (n * x)).comp x ((hasDerivAt_id x).const_mul n)
+    simpa [Function.comp_def, mul_comm] using h
+  · have hn0 : (0 : ℝ) < n := by positivity
+    simp only [mul_zero, Real.cos_zero, mul_one]
+    rwa [abs_of_pos hn0]
 
 end AtkinsonHan.Chapter02

@@ -1,0 +1,83 @@
+namespace = "IntegralOperator"
+
+desc = '''
+Integral operators on `C(D)` whose kernel is *weakly singular*: Atkinson–Han §2.8.1, conditions
+(A₁)–(A₂), which are what make `log |cos x − cos y|` and `|x − y|^{-γ}` compact.
+
+`Numlib/IntegralEquations/Basic` proves that a *continuous* kernel gives a compact operator
+(`IntegralOperator.isCompactOperator_kernelCLM`), by uniform boundedness and equicontinuity of the
+image of the unit ball. Both halves of that argument survive for a kernel that is only integrable
+in `y`, provided the two conditions of §2.8.1 hold: `sup_x ∫ |k (x, y)| dy < ∞`, and the modulus
+`ω(h) = sup_{‖x − z‖ ≤ h} ∫ |k (x, y) − k (z, y)| dy` tends to `0`. Stated once as a predicate, they
+give boundedness with `‖K‖ = max_x ∫ |k (x, y)| dy` and compactness by Arzelà–Ascoli, and Examples
+2.8.2 and 2.8.9 and the whole `‖x − y‖^{-β}`, `β < d` family follow from the splitting rule
+(2.8.9).
+
+What is new here is the operator itself for a kernel that is not continuous — `kernelCLM` takes
+`C(X × X, ℝ)` — and the modulus. `ContinuousMap.isCompact_closure_of_forall_norm_le`
+(`Numlib/Topology/ContinuousMap/ArzelaAscoli`) is the Arzelà–Ascoli step, already available.
+
+Consumers: Atkinson–Han Examples 2.8.2 and 2.8.9, and Chapter 13's boundary integral equations.
+Deferred for priority, not for infrastructure: nothing before Chapter 13 needs a singular kernel.
+Phase 3.
+'''
+
+[[node]]
+id = "kernelModulus"
+kind = "definition"
+desc = '''
+`kernelModulus μ k h = ⨆ x, ⨆ z ∈ closedBall x h, ∫ y, |k (x, y) - k (z, y)| ∂μ`, the modulus of
+continuity in the mean of Atkinson–Han (2.8.3). Condition (A₂) is `Tendsto (kernelModulus μ k)
+(𝓝[>] 0) (𝓝 0)`.
+'''
+
+[[node]]
+id = "IsAdmissibleKernel"
+kind = "definition"
+desc = '''
+Conditions (A₁)–(A₂) of Atkinson–Han §2.8.1 as one predicate on a kernel `k : X × X → ℝ`: every row
+`k (x, ·)` is integrable with `sup_x ∫ |k (x, y)| dy < ∞`, and `kernelModulus μ k h → 0` as
+`h → 0⁺`. A continuous kernel on a compact metric space satisfies both.
+'''
+deps = ["kernelModulus"]
+
+[[node]]
+id = "admissibleKernelCLM"
+kind = "definition"
+desc = '''
+The bounded operator `u ↦ (x ↦ ∫ k (x, y) u y ∂μ)` on `C(X, ℝ)` attached to a kernel satisfying
+`IsAdmissibleKernel`. (A₂) is what makes the image a *continuous* function of `x`, so it is needed
+already to define the operator; `IntegralOperator.kernelCLM` is the case of a continuous kernel.
+'''
+deps = ["IsAdmissibleKernel"]
+
+[[node]]
+id = "norm_admissibleKernelCLM"
+kind = "theorem"
+desc = '''
+`‖admissibleKernelCLM μ k‖ = ⨆ x, ∫ y, |k (x, y)| ∂μ`, the extension of
+`IntegralOperator.norm_kernelCLM` to an admissible kernel.
+'''
+deps = ["admissibleKernelCLM", "norm_kernelCLM"]
+
+[[node]]
+id = "isCompactOperator_admissibleKernelCLM"
+kind = "theorem"
+desc = '''
+An admissible kernel gives a compact operator on `C(X, ℝ)`: the image of the unit ball is bounded
+by (A₁) and equicontinuous by (A₂), so Arzelà–Ascoli applies exactly as in
+`IntegralOperator.isCompactOperator_kernelCLM`.
+'''
+deps = ["admissibleKernelCLM", "isCompactOperator_kernelCLM",
+  "ContinuousMap.isCompact_closure_of_forall_norm_le"]
+
+[[node]]
+id = "isAdmissibleKernel_of_isAdmissibleKernel_mul_continuous"
+kind = "theorem"
+desc = '''
+The splitting rule of Atkinson–Han (2.8.9): if `k` is admissible and `g` is continuous on
+`X × X`, then `(x, y) ↦ k (x, y) * g (x, y)` is admissible. This is what reduces
+`log |cos x − cos y|` to `|x − y|^{-1/2}` times a continuous factor, and reduces the whole
+`‖x − y‖^{-β}`, `β < d` family to one computation.
+'''
+deps = ["IsAdmissibleKernel"]

@@ -53,3 +53,30 @@ id = "volterraBielecki"
 
 [[node]]
 id = "contractingWith_volterra_bielecki"
+
+[[node]]
+id = "abs_kernelCLM_sub_kernelCLM_le"
+
+[[node]]
+id = "isCompactOperator_kernelCLM"
+
+[[node]]
+id = "isCompactOperator_fredholm"
+
+[[node]]
+id = "degenerateKernel"
+
+[[node]]
+id = "kernelCLM_degenerateKernel"
+
+[[node]]
+id = "range_kernelCLM_degenerateKernel_le"
+
+[[node]]
+id = "finiteDimensional_range_kernelCLM_degenerateKernel"
+
+[[node]]
+id = "norm_kernelCLM_degenerateKernel_le"
+
+[[node]]
+id = "regionMeasure"

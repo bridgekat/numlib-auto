@@ -1,0 +1,7 @@
+namespace = "ContinuousMap"
+
+[[node]]
+id = "isCompact_closure_of_equicontinuous"
+
+[[node]]
+id = "isCompact_closure_of_forall_norm_le"

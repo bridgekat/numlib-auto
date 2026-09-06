@@ -48,6 +48,9 @@ times. Theorem 1.2.14 also needs a decision Lean forces: two norms on one type c
 quantified over, so it is stated for two normed types and a linear equivalence between them.
 
 **(c) The Riesz ascent–descent theory is the one real gap of Chapter 2, and it is not planned.**
+*Corrected (§7): it is planned now, as `plans/Numlib/Analysis/Normed/Operator/Riesz.toml`; it is
+still unwritten, and it is not the only real gap — Example 2.6.1 and the weakly singular kernels
+are two more.*
 Mathlib's Fredholm alternative (`IsCompactOperator.hasEigenvalue_or_mem_resolventSet`) is exactly
 Theorem 2.8.10, and the compact self-adjoint spectral theorem
 (`orthogonalComplement_iSup_eigenspaces_eq_bot`, `finite_dimensional_eigenspace`) is most of
@@ -141,7 +144,12 @@ Chapter 2
   *weakly singular* kernels (`log|cos x - cos y|`, `|x-y|^{-γ}`, the single-layer kernel on the
   sphere). The continuous-kernel case is requested in §2 above; the weakly singular case needs the
   `ω(h) → 0` machinery of (2.8.3)–(2.8.8) and has no consumer in the corpus until Chapter 13.
-* §2.8.3 — the `L²` kernel bound `‖K‖ ≤ B`; it is Example 2.6.1 with a name.
+  *Corrected (§7): the deferral stands, but it is a MISSING item with a plan
+  (`plans/Numlib/IntegralEquations/WeaklySingular.toml`), not a permanent skip.*
+* §2.8.3 — the `L²` kernel bound `‖K‖ ≤ B`; it is Example 2.6.1 with a name. *Corrected (§7):
+  Example 2.6.1 is **not** stated anywhere, so this skip and the §5 row that claims 2.6.1 is
+  covered point at each other and neither fact is in the library. Both are now planned, as
+  `AtkinsonHan.Chapter02.example_2_6_1` over `plans/Numlib/IntegralEquations/L2Kernel.toml`.*
 * **Theorem 2.8.12 (3), (5)** and **Theorem 2.8.14 (1)** — the Riesz ascent–descent theory, as in
   §1 (c).
 * §2.9's classification of the spectrum into point, continuous and residual parts — a definition
@@ -230,7 +238,8 @@ Examples and Exercises appear only when they are planned or when §4 records a d
 | Ex 2.2.9, (2.2.8) (integral operator norm) | P | `equation_2_2_8` → `IntegralOperator.norm_fredholm` |
 | Thm 2.2.10 (`𝓛(V,W)` Banach) | P/M | `theorem_2_2_10` |
 | Thm 2.3.1–2.3.5, §2.4, §2.5 | D | 22 declarations, unchanged |
-| (2.6.1)–(2.6.4), Ex 2.6.1 | P/M | `equation_2_6_1`, `equation_2_6_3`, `equation_2_6_4` |
+| (2.6.1)–(2.6.4) | P/M | `equation_2_6_1`, `equation_2_6_3`, `equation_2_6_4` |
+| **Ex 2.6.1** (`L²` kernel operator) | **P** | `example_2_6_1`, `example_2_6_1_adjoint`; backbone `IntegralOperator.l2KernelCLM`, `.norm_l2KernelCLM_le`, `.adjoint_l2KernelCLM`. *Corrected (§7): the row above used to include it, and the three `equation_2_6_*` declarations say nothing about integral operators.* |
 | Prop 2.6.2, Prop 2.6.3, Cor 2.6.4 | P/M | `proposition_2_6_2`, `proposition_2_6_3`, `corollary_2_6_4` |
 | Thm 2.6.5 (`‖L‖ = sup |(Lv,v)|`) | P/M | `theorem_2_6_5` (Mathlib `norm_eq_iSup_rayleighQuotient`) |
 | Prop 2.7.2 (weak ⇒ bounded) | P | `proposition_2_7_2`; backbone request in §2 |
@@ -241,15 +250,17 @@ Examples and Exercises appear only when they are planned or when §4 records a d
 | Def 2.7.6, Dunford–Pettis | S | naming convention; uniform integrability |
 | Def 2.8.1, Def 2.8.3 | P | `definition_2_8_1` |
 | Prop 2.8.4, Prop 2.8.6, Prop 2.8.7 | P | `proposition_2_8_4/6/7`; backbone `IsCompactOperator.of_finiteDimensional_range`, `IsCompactOperator.of_tendsto` |
-| §2.8.1 (A₁)–(A₂), Ex 2.8.2, 2.8.9, 2.8.16 | S | weakly singular kernels; continuous case requested in §2 |
-| §2.8.3 (`L²` kernel bound) | S | = Example 2.6.1 |
+| Ex 2.8.5 (degenerate kernel), Ex 2.8.8 (continuous kernel compact) | **D** | `example_2_8_5`, `example_2_8_5_isCompactOperator`, `example_2_8_5_norm`, `example_2_8_8`, `example_2_8_8_interval`; backbone `IntegralOperator.degenerateKernel`, `.isCompactOperator_kernelCLM`, `.isCompactOperator_fredholm` |
+| §2.8.1 (A₁)–(A₂), Ex 2.8.2, 2.8.9 | P | `example_2_8_2`, `example_2_8_9`; backbone `plans/Numlib/IntegralEquations/WeaklySingular.toml` |
+| Ex 2.8.16 (single-layer kernel on the sphere) | S | spherical harmonics; no integration formula for the surface measure |
+| §2.8.3 (`L²` kernel bound) | P | *the same statement as Example 2.6.1, which is now planned rather than assumed covered* |
 | **Thm 2.8.10 (Fredholm alternative)** | P/M | `theorem_2_8_10` (Mathlib `hasEigenvalue_or_mem_resolventSet`) |
 | Thm 2.8.12 (1), (2), (4) | P | `theorem_2_8_12`; backbone `IsCompactOperator.finite_setOf_hasEigenvalue_norm_le`, `.isClosed_range_smul_sub` |
-| Thm 2.8.12 (3), (5) | S | Riesz ascent–descent |
+| Thm 2.8.12 (3), (5), (6) | P | `theorem_2_8_12_3`, `_5`, `_6`; backbone `plans/Numlib/Analysis/Normed/Operator/Riesz.toml` |
 | Lem 2.8.13 (Schauder) | P | `lemma_2_8_13`; backbone `IsCompactOperator.adjoint` |
 | Thm 2.8.14 (2) | P | `theorem_2_8_14`; backbone `IsCompactOperator.range_smul_sub_eq_orthogonal_ker_adjoint` |
-| Thm 2.8.14 (1) | S | Riesz ascent–descent |
-| Thm 2.8.15 (compact self-adjoint spectral) | P/M | `theorem_2_8_15` (Mathlib `orthogonalComplement_iSup_eigenspaces_eq_bot`) |
+| Thm 2.8.14 (1) | D / P | `theorem_2_8_14_hasEigenvalue_adjoint` (proved: `conj λ` is an eigenvalue of `K*`); `theorem_2_8_14_dim` for the dimension equality, over backbone `IsCompactOperator.finrank_ker_eq_finrank_ker_adjoint` |
+| Thm 2.8.15 (compact self-adjoint spectral) | P/M | `theorem_2_8_15` (Mathlib `orthogonalComplement_iSup_eigenspaces_eq_bot`), `theorem_2_8_15_eigenvalue_real`, `theorem_2_8_15_index`, `theorem_2_8_15_closure_range`; the enumeration (2.8.31)–(2.8.32) is `theorem_2_8_15_enumeration`, over the backbone's `ContinuousLinearMap.IsSymmetric.eigenvalueSeq` and `.eigenvectorHilbertBasis` |
 | Def 2.9.1, Lem 2.9.2, (2.9.1)–(2.9.3) | P | `lemma_2_9_2`, `equation_2_9_3`, `spectrum_subset_closedBall` |
 | **Thm 2.9.3, Thm 2.9.4** | **S** | holomorphic functional calculus; contour integrals of operator-valued functions |
 
@@ -345,3 +356,60 @@ Backbone groups (60 open nodes):
 Surface groups (95 open nodes): `NumlibSurface/AtkinsonHan/Chapter01` with `Section01`, `02`,
 `03`, `05`, `06`; `Chapter02/Section01`, `02`, `06`, `07`, `08`, `09`;
 `Chapter03/Section01`, `02`, `05`; `Chapter04` with `Section01` … `Section05`.
+
+---
+
+## 7. Corrections
+
+Written after the result-by-result audits `notes/audit/atkinsonhan-ch01.md` and
+`…-ch02.md`, which read this document against the compiled library. The document above is left as
+it was written, with pointers here; where the two disagree, this section is right.
+
+1. **Example 2.6.1 was never stated, and §5 said it was.** The row
+   "(2.6.1)–(2.6.4), Ex 2.6.1 | P/M | `equation_2_6_1`, `equation_2_6_3`, `equation_2_6_4`" is
+   wrong about the Example: those three declarations are the *general* adjoint identities
+   `(L v, w) = (v, L* w)`, `(L*)* = L` and `‖L*‖ = ‖L‖`, and none of them mentions an integral
+   operator. §4 then skipped §2.8.3, the `L²` kernel bound `‖K‖ ≤ B`, on the ground that it "=
+   Example 2.6.1". So the two records of one fact pointed at each other and the fact is in neither.
+   It is now planned: `plans/Numlib/IntegralEquations/L2Kernel.toml` for the operator, the bound
+   and the transposed-kernel adjoint, and `example_2_6_1`, `example_2_6_1_adjoint` in
+   `Chapter02/Section06`. `Chapter02/Section06.lean`'s doc records the gap where a reader meets it.
+
+2. **`IntegralOperator.isCompactOperator_fredholm`, requested in §2, was never written.** It is
+   written now, together with `IntegralOperator.isCompactOperator_kernelCLM` at the generality of a
+   compact space with a finite Borel measure, over the new
+   `Numlib/Topology/ContinuousMap/ArzelaAscoli` (Mathlib states Arzelà–Ascoli for `X →ᵇ Y`, not for
+   `C(X, Y)`). Until it existed, Chapter 12's projection and Nyström methods took
+   `IsCompactOperator` as a hypothesis that no concrete operator in the library could discharge.
+   Example 2.8.5, the degenerate kernel, is written beside it.
+
+3. **Two name collisions read as coverage.** `scripts/coverage.py` matches a declaration name to a
+   book number, and two of its matches are wrong: `equation_2_9_3` is the Neumann expansion
+   (2.9.3), not **Theorem 2.9.3** (multiplicativity of the holomorphic functional calculus), and
+   `exercise_2_7_4` is Exercise 2.7.4, not **Definition 2.7.4** (reflexivity). Neither numbered
+   result is stated anywhere. `Chapter02/Section09.lean` and `Chapter02/Section07.lean` now say so
+   in their "Not formalized here".
+
+4. **§1.4 has no numbered result at all.** §4 lists "all of §1.4" among the definitions not
+   restated, which reads as a decision; in fact the book's numbering there runs
+   `Exercise 1.4.1`–`1.4.13` and there is nothing else to state. The section is notation —
+   multi-indices, `Cᵐ(Ω)`, `C₀^∞(Ω)`, Hölder classes — reached through Mathlib's `ContDiff`,
+   `HasCompactSupport`, `HolderWith` and `HolderOnWith`. The one assertion it makes that the library
+   cannot state is that `Cᵐ[a, b]` and `C^{m,β}[a, b]` are Banach spaces, which is Example 1.2.28 (a)
+   and is blocked on `Cᵐ[a, b]` as a normed space. `NumlibSurface/AtkinsonHan.lean` records this,
+   as does `plans/NumlibSurface/AtkinsonHan/Chapter01.toml`.
+
+5. **Example 2.1.7's unbounded half needed no `C¹[0, 1]`.** §4 skipped Examples 2.1.2–2.1.7 as a
+   block, on the ground that `C¹[0, 1]` is not in Mathlib as a normed space. That is right for the
+   bounded half and for Examples 2.1.4 and 2.1.5, and wrong for the unboundedness of `d/dx` for the
+   sup norm, which is `sin (n x)` and four lines: `example_2_1_7`.
+
+6. **The index clause of Theorem 2.8.15 does not need the ascent–descent theory.** For a
+   self-adjoint `K` and real `λ`, `(λ - K)² v = 0` gives `‖(λ - K) v‖² = ⟪(λ - K)² v, v⟫ = 0` at once:
+   `theorem_2_8_15_index`. The *enumeration* clause (2.8.31)–(2.8.32) is not open either: the audit
+   guessed that sorting the eigenvalues and assembling the orthonormal family was "the real work",
+   and in fact `Numlib/Analysis/InnerProductSpace/CompactSpectral` had already built both, for the
+   convergence theory of the conjugate gradient method. `theorem_2_8_15_enumeration` is that module
+   read under the book's number, for an injective `K` on an infinite-dimensional space — the case
+   in which an enumeration by `ℕ` exists at all; its doc comment says why the general case, a list
+   finite or infinite according to the rank, is not stated.

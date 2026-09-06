@@ -1,0 +1,4 @@
+desc = '''
+Mathlib-shaped general topology that this project needed and Mathlib lacks. The paths mirror the
+Mathlib directories these modules are destined for, so they can be upstreamed without being moved.
+'''

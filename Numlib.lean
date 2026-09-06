@@ -112,6 +112,7 @@ import Numlib.Nonlinear.Newton
 import Numlib.RingTheory.Polynomial.ChebyshevEllipse
 import Numlib.RingTheory.Polynomial.ChebyshevMinimax
 import Numlib.RingTheory.Polynomial.KernelPolynomial
+import Numlib.Topology.ContinuousMap.ArzelaAscoli
 import Numlib.Variational.AubinNitsche
 import Numlib.Variational.Forms
 import Numlib.Variational.Galerkin

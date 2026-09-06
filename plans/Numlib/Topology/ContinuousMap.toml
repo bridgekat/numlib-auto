@@ -1,0 +1,4 @@
+desc = '''
+Spaces of continuous maps: what `C(X, Y)` with the uniform metric needs and Mathlib states only for
+the bounded continuous functions `X →ᵇ Y`.
+'''

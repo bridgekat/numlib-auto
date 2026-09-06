@@ -1,0 +1,59 @@
+namespace = "IntegralOperator"
+
+desc = '''
+The integral operator of a square-integrable kernel on `L²(μ)`: Atkinson–Han Example 2.6.1 and
+§2.8.3, which the surface cannot state without it.
+
+`Numlib/IntegralEquations/Basic` builds `IntegralOperator.kernelCLM` on `C(X, ℝ)` for a
+*continuous* kernel, and that is a different object from the one §2.6 and Chapters 12–13 want: for
+`k ∈ L²(μ.prod μ)` the map `v ↦ (x ↦ ∫ k (x, y) v y dμ)` is bounded on `L²(μ)` with
+`‖K‖ ≤ B = ‖k‖_{L²(μ×μ)}`, its adjoint is the operator of the transposed kernel `(x, y) ↦ k (y, x)`,
+and it is self-adjoint exactly when `k` is symmetric almost everywhere.
+
+Mathlib has no Hilbert–Schmidt operators at all, so everything here is new. None of it is hard: the
+bound is Cauchy–Schwarz in `y` followed by Fubini (`AtkinsonHan.Chapter01.theorem_1_2_27`), and the
+adjoint identity is Fubini again. What it costs is the measurability bookkeeping of a kernel that
+is only an a.e.-class on the product, which is why it is a module of its own rather than a section
+of `Basic`.
+
+Consumers: Atkinson–Han Example 2.6.1, §2.8.3, the `L²` projection methods of Chapter 12, and
+Chapter 13. Phase 3.
+'''
+
+[[node]]
+id = "l2KernelCLM"
+kind = "definition"
+desc = '''
+For `k : X × X → ℝ` with `MemLp k 2 (μ.prod μ)`, the bounded operator
+`v ↦ (x ↦ ∫ k (x, y) v y ∂μ)` on `Lp ℝ 2 μ`. The integrand is integrable for a.e. `x` by
+Cauchy–Schwarz on the row `k (x, ·)`, which is in `L²(μ)` for a.e. `x` by Fubini.
+'''
+
+[[node]]
+id = "norm_l2KernelCLM_le"
+kind = "theorem"
+desc = '''
+`‖l2KernelCLM μ k‖ ≤ ‖k‖_{L²(μ×μ)}` — Atkinson–Han's `‖K‖ ≤ B`. Cauchy–Schwarz in `y` bounds
+`|K v (x)|² ≤ (∫ |k (x, y)|² dy) ‖v‖²`, and integrating in `x` and using Fubini gives the square of
+the claim.
+'''
+deps = ["l2KernelCLM"]
+
+[[node]]
+id = "adjoint_l2KernelCLM"
+kind = "theorem"
+desc = '''
+The adjoint of an `L²` kernel operator is the operator of the transposed kernel:
+`(l2KernelCLM μ k)† = l2KernelCLM μ (fun p => k (p.2, p.1))`. Fubini on `∫∫ k (x, y) v y w x`.
+'''
+deps = ["l2KernelCLM"]
+
+[[node]]
+id = "isSelfAdjoint_l2KernelCLM_iff"
+kind = "theorem"
+desc = '''
+An `L²` kernel operator is self-adjoint exactly when its kernel is symmetric almost everywhere,
+`k (x, y) = k (y, x)` for `(μ.prod μ)`-a.e. `(x, y)`. The forward direction needs that a kernel
+whose operator vanishes is null, which is the injectivity of `l2KernelCLM`.
+'''
+deps = ["adjoint_l2KernelCLM"]

@@ -26,3 +26,29 @@ id = "proposition_2_6_3"
 
 [[node]]
 id = "theorem_2_6_5"
+
+[[node]]
+id = "example_2_6_1"
+kind = "theorem"
+desc = '''
+Example 2.6.1: for a kernel with `B = (∫∫ |k (x, y)|² dx dy)^{1/2} < ∞` the operator
+`K v (x) = ∫ k (x, y) v (y) dy` is bounded on `L²(a, b)` with `‖K‖ ≤ B`. Open: it waits on the new
+backbone module `Numlib/IntegralEquations/L2Kernel`, because Mathlib has no Hilbert–Schmidt
+operators and the backbone's `IntegralOperator.kernelCLM` acts on `C(X, ℝ)` for a continuous
+kernel, a different object. §2.8.3 states the same bound under a second number.
+
+`equation_2_6_1` in this group is the displayed relation (2.6.1), the defining identity of the
+adjoint, and is not this Example; `plans/proposals/atkinsonhan-ch1-4.md` §5 recorded the two as one
+row and left the Example unstated.
+'''
+deps = ["IntegralOperator.l2KernelCLM", "IntegralOperator.norm_l2KernelCLM_le"]
+
+[[node]]
+id = "example_2_6_1_adjoint"
+kind = "theorem"
+desc = '''
+The second half of Example 2.6.1: the adjoint of an `L²` kernel operator is the operator of the
+transposed kernel `k (y, x)`, so `K` is self-adjoint exactly when `k` is symmetric. Same
+obstruction as `example_2_6_1`.
+'''
+deps = ["IntegralOperator.adjoint_l2KernelCLM", "IntegralOperator.isSelfAdjoint_l2KernelCLM_iff"]

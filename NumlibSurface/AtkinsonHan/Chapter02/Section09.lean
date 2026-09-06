@@ -41,7 +41,9 @@ meaningless. `equation_2_9_3` needs no such hypothesis.
 * Theorems 2.9.3 and 2.9.4, the multiplicativity of the holomorphic functional calculus and the
   Riesz spectral projection `E(λ₀, L) = (2πi)⁻¹ ∮ (λ - L)⁻¹ dλ`. Both are stated in the book
   without proof, both need contour integrals of operator-valued functions, and Theorem 2.9.4 needs
-  the Riesz ascent–descent theory as well.
+  the Riesz ascent–descent theory as well. `equation_2_9_3` above is the *displayed formula*
+  (2.9.3), the Neumann expansion of the resolvent, and is not Theorem 2.9.3; the book uses the two
+  numbers for different results, and no declaration here states the Theorem.
 -/
 
 namespace AtkinsonHan.Chapter02

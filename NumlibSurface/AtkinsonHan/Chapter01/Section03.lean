@@ -36,6 +36,15 @@ Theorem 1.3.13 is stated on `L²(AddCircle (2π))` with its *probability* Haar m
 `2π`. That scaling is what turns the book's `1/√(2π)`, `cos (j x)/√π`, `sin (j x)/√π` into the
 system `1`, `√2 cos (j x)`, `√2 sin (j x)` of the backbone's `trigFun`: dividing by `√(2π)`
 renormalises a function of unit `L²(-π, π)` norm to unit norm for the probability measure.
+
+## Not formalized here
+
+Example 1.3.14, the half-range cosine system `e₀ = 1/√π`, `eₖ = √(2/π) cos (k x)` as an orthonormal
+basis of `L²(0, π)`. It is a real theorem of the chapter and nothing in the corpus uses it. The
+route is the even extension `L²(0, π) → L²(-π, π)`, `v ↦ v(|x|)`, a linear isometry onto the even
+subspace carrying the cosine system to the even half of `trigBasis (2π)`; neither Mathlib nor the
+backbone has that isometry. Example 1.3.7 and Example 1.2.28 (b) need Sobolev spaces and are out of
+scope for the project.
 -/
 
 open Filter InnerProductSpace MeasureTheory Submodule Topology

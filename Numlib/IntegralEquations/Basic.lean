@@ -1,10 +1,12 @@
 import Mathlib.Analysis.Calculus.MeanValue
+import Mathlib.Analysis.Normed.Operator.Compact.Basic
 import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.MeasureTheory.Integral.DominatedConvergence
 import Mathlib.Topology.Algebra.Order.Floor
 import Mathlib.Topology.ContinuousMap.Compact
 import Mathlib.Topology.MetricSpace.Contracting
 import Mathlib.Topology.UniformSpace.HeineCantor
+import Numlib.Topology.ContinuousMap.ArzelaAscoli
 
 /-!
 # Integral operators on a compact interval
@@ -24,6 +26,17 @@ below cites; [kress1989linear], is the standard monograph on the same material.
   attached to a continuous kernel, the case `X = Set.Icc a b` of the above
   (`IntegralOperator.fredholm_eq_kernelCLM`), and `IntegralOperator.norm_fredholm` computes its
   operator norm as `⨆ x, ∫ y in a..b, |k (x, y)|`.
+* `IntegralOperator.isCompactOperator_kernelCLM` and `IntegralOperator.isCompactOperator_fredholm`
+  are the compactness of those operators, by Arzelà–Ascoli: the image of the unit ball is uniformly
+  bounded and equicontinuous, the latter because
+  `IntegralOperator.abs_kernelCLM_sub_kernelCLM_le` bounds the oscillation of `K u` by the `L¹`
+  distance between two rows of the kernel. This is what lets a projection or Nyström method for an
+  equation of the second kind discharge its compactness hypothesis on a concrete operator.
+* `IntegralOperator.degenerateKernel` is the separable kernel `∑ i, β i x * γ i y`, whose operator
+  is the finite-rank map `u ↦ ∑ i, (∫ γ i u) • β i`
+  (`IntegralOperator.kernelCLM_degenerateKernel`).
+* `IntegralOperator.regionMeasure` is the ambient volume measure read on a subset `D ⊆ ℝ^d`, so
+  that the operators above act on `C(D)` for a compact region `D` and not only on an interval.
 * `IntegralOperator.urysohn` is its nonlinear companion `u ↦ (x ↦ ∫ y in a..b, k (x, y, u y))`,
   Lipschitz with constant `L * (b - a)` when the kernel is `L`-Lipschitz in its last argument
   (`IntegralOperator.lipschitzWith_urysohn`), and Fréchet differentiable with derivative the
@@ -268,7 +281,189 @@ theorem norm_kernelCLM [Nonempty X] (k : C(X × X, ℝ)) :
     nlinarith
   linarith [hlow _ hd]
 
+/-! #### Compactness of a kernel operator -/
+
+/-- The `L¹` distance between two rows of a continuous kernel depends continuously on the row
+index. Together with its vanishing at `x = x₀` this is the equicontinuity estimate behind
+`IntegralOperator.isCompactOperator_kernelCLM`. -/
+theorem continuous_integral_abs_sub_row (k : C(X × X, ℝ)) (x₀ : X) :
+    Continuous fun x => ∫ y, |k (x, y) - k (x₀, y)| ∂μ :=
+  continuous_integral_row μ ⟨fun p => |k p - k (x₀, p.2)|, by fun_prop⟩
+
+/-- **The rows of a kernel operator are controlled by the rows of its kernel**: the values of
+`kernelCLM μ k u` at two points differ by at most `‖u‖` times the `L¹` distance between the
+corresponding rows of `k`. -/
+theorem abs_kernelCLM_sub_kernelCLM_le (k : C(X × X, ℝ)) (u : C(X, ℝ)) (x x₀ : X) :
+    |kernelCLM μ k u x - kernelCLM μ k u x₀| ≤ (∫ y, |k (x, y) - k (x₀, y)| ∂μ) * ‖u‖ := by
+  have hsub : Integrable (fun y => k (x, y) * u y - k (x₀, y) * u y) μ :=
+    (integrable_kernel_mul μ k u x).sub (integrable_kernel_mul μ k u x₀)
+  have hrow : Integrable (fun y => |k (x, y) - k (x₀, y)|) μ :=
+    ((integrable_kernel_row μ k x).sub (integrable_kernel_row μ k x₀)).abs
+  have hpt : ∀ y : X, |k (x, y) * u y - k (x₀, y) * u y| ≤ |k (x, y) - k (x₀, y)| * ‖u‖ := by
+    intro y
+    rw [← sub_mul, abs_mul]
+    exact mul_le_mul_of_nonneg_left (u.norm_coe_le_norm y) (abs_nonneg _)
+  rw [kernelCLM_apply, kernelCLM_apply,
+    ← integral_sub (integrable_kernel_mul μ k u x) (integrable_kernel_mul μ k u x₀)]
+  calc |∫ y, (k (x, y) * u y - k (x₀, y) * u y) ∂μ|
+      ≤ ∫ y, |k (x, y) * u y - k (x₀, y) * u y| ∂μ := abs_integral_le_integral_abs
+    _ ≤ ∫ y, |k (x, y) - k (x₀, y)| * ‖u‖ ∂μ :=
+        integral_mono hsub.abs (hrow.mul_const ‖u‖) hpt
+    _ = (∫ y, |k (x, y) - k (x₀, y)| ∂μ) * ‖u‖ := integral_mul_const _ _
+
+/-- **A kernel operator with a continuous kernel is a compact operator** on `C(X, ℝ)`, for `X` a
+compact space carrying a finite Borel measure ([han2009theoretical], Example 2.8.8;
+[kress1989linear], Theorem 2.20).
+
+The image of the closed unit ball is uniformly bounded by `‖kernelCLM μ k‖` and equicontinuous,
+because `IntegralOperator.abs_kernelCLM_sub_kernelCLM_le` bounds the oscillation of `K u` by the
+`L¹` distance between two rows of `k`, which is continuous in the row index and vanishes on the
+diagonal; Arzelà–Ascoli then applies. Note that no uniform structure on `X` is used: pointwise
+equicontinuity is all that `ContinuousMap.isCompact_closure_of_forall_norm_le` asks for. -/
+theorem isCompactOperator_kernelCLM (k : C(X × X, ℝ)) : IsCompactOperator (kernelCLM μ k) := by
+  refine (isCompactOperator_iff_isCompact_closure_image_closedBall
+    (kernelCLM μ k : C(X, ℝ) →ₗ[ℝ] C(X, ℝ)) one_pos).2 ?_
+  refine ContinuousMap.isCompact_closure_of_forall_norm_le (M := ‖kernelCLM μ k‖) ?_ ?_
+  · rintro f ⟨u, hu, rfl⟩ x
+    calc ‖kernelCLM μ k u x‖ ≤ ‖kernelCLM μ k u‖ := (kernelCLM μ k u).norm_coe_le_norm x
+      _ ≤ ‖kernelCLM μ k‖ * ‖u‖ := (kernelCLM μ k).le_opNorm u
+      _ ≤ ‖kernelCLM μ k‖ * 1 :=
+        mul_le_mul_of_nonneg_left (mem_closedBall_zero_iff.1 hu) (norm_nonneg _)
+      _ = ‖kernelCLM μ k‖ := mul_one _
+  · intro x₀
+    rw [Metric.equicontinuousAt_iff_right]
+    intro ε hε
+    have hlim : Filter.Tendsto (fun x => ∫ y, |k (x, y) - k (x₀, y)| ∂μ) (𝓝 x₀) (𝓝 0) := by
+      have h := (continuous_integral_abs_sub_row μ k x₀).tendsto x₀
+      simpa using h
+    filter_upwards [hlim.eventually_lt_const hε] with x hx
+    rintro ⟨f, u, hu, rfl⟩
+    have hbdd : |kernelCLM μ k u x₀ - kernelCLM μ k u x|
+        ≤ (∫ y, |k (x₀, y) - k (x, y)| ∂μ) * ‖u‖ :=
+      abs_kernelCLM_sub_kernelCLM_le μ k u x₀ x
+    have hsymm : (∫ y, |k (x₀, y) - k (x, y)| ∂μ) = ∫ y, |k (x, y) - k (x₀, y)| ∂μ :=
+      integral_congr_ae (Filter.Eventually.of_forall fun y => abs_sub_comm _ _)
+    have hnn : (0 : ℝ) ≤ ∫ y, |k (x, y) - k (x₀, y)| ∂μ := integral_nonneg fun _ => abs_nonneg _
+    rw [hsymm] at hbdd
+    have hu1 : ‖u‖ ≤ 1 := mem_closedBall_zero_iff.1 hu
+    rw [Real.dist_eq]
+    calc |kernelCLM μ k u x₀ - kernelCLM μ k u x|
+        ≤ (∫ y, |k (x, y) - k (x₀, y)| ∂μ) * ‖u‖ := hbdd
+      _ ≤ (∫ y, |k (x, y) - k (x₀, y)| ∂μ) * 1 := mul_le_mul_of_nonneg_left hu1 hnn
+      _ < ε := by rwa [mul_one]
+
 end Kernel
+
+/-! ### Degenerate kernels -/
+
+section Degenerate
+
+variable {X : Type*} [TopologicalSpace X] {n : ℕ}
+
+/-- **A degenerate (finite-rank) kernel** `k (x, y) = ∑ i, β i x * γ i y`, the separable kernel of
+a finite sum of products ([han2009theoretical], Example 2.8.5). Both families are taken continuous;
+the book allows the `γ i` to be merely integrable, which the continuous-kernel operator
+`IntegralOperator.kernelCLM` does not admit and which no consumer of the Example needs. -/
+noncomputable def degenerateKernel (β γ : Fin n → C(X, ℝ)) : C(X × X, ℝ) :=
+  ⟨fun p => ∑ i, β i p.1 * γ i p.2, by fun_prop⟩
+
+/-- The defining formula of `IntegralOperator.degenerateKernel`. -/
+@[simp]
+theorem degenerateKernel_apply (β γ : Fin n → C(X, ℝ)) (p : X × X) :
+    degenerateKernel β γ p = ∑ i, β i p.1 * γ i p.2 :=
+  rfl
+
+variable [CompactSpace X] [MeasurableSpace X] [BorelSpace X] (μ : Measure X) [IsFiniteMeasure μ]
+
+/-- **A degenerate kernel operator is a finite linear combination of the `β i`**, with the
+coefficients `∫ γ i u` reading off the only information about `u` the operator uses. -/
+theorem kernelCLM_degenerateKernel (β γ : Fin n → C(X, ℝ)) (u : C(X, ℝ)) :
+    kernelCLM μ (degenerateKernel β γ) u = ∑ i, (∫ y, γ i y * u y ∂μ) • β i := by
+  ext x
+  have hint : ∀ i : Fin n, Integrable (fun y => β i x * (γ i y * u y)) μ := fun i =>
+    (integrable_of_continuousMap μ (γ i * u)).const_mul (β i x)
+  rw [kernelCLM_apply]
+  have hpt : ∀ y : X, degenerateKernel β γ (x, y) * u y = ∑ i, β i x * (γ i y * u y) := by
+    intro y
+    rw [degenerateKernel_apply, Finset.sum_mul]
+    exact Finset.sum_congr rfl fun i _ => by ring
+  rw [integral_congr_ae (Filter.Eventually.of_forall hpt),
+    integral_finsetSum _ fun i _ => hint i]
+  simp only [ContinuousMap.coe_sum, Finset.sum_apply, ContinuousMap.smul_apply, smul_eq_mul]
+  exact Finset.sum_congr rfl fun i _ => by rw [integral_const_mul]; ring
+
+/-- The range of a degenerate kernel operator lies in the span of the `β i`. -/
+theorem range_kernelCLM_degenerateKernel_le (β γ : Fin n → C(X, ℝ)) :
+    LinearMap.range (kernelCLM μ (degenerateKernel β γ) : C(X, ℝ) →ₗ[ℝ] C(X, ℝ)) ≤
+      Submodule.span ℝ (Set.range β) := by
+  rintro v ⟨u, rfl⟩
+  have h : (kernelCLM μ (degenerateKernel β γ) : C(X, ℝ) →ₗ[ℝ] C(X, ℝ)) u
+      = ∑ i, (∫ y, γ i y * u y ∂μ) • β i := kernelCLM_degenerateKernel μ β γ u
+  rw [h]
+  exact Submodule.sum_mem _ fun i _ => Submodule.smul_mem _ _ (Submodule.subset_span ⟨i, rfl⟩)
+
+/-- **A degenerate kernel operator has finite rank**, so it is compact by the finite-rank
+criterion `IsCompactOperator.of_finiteDimensional_range`. -/
+theorem finiteDimensional_range_kernelCLM_degenerateKernel (β γ : Fin n → C(X, ℝ)) :
+    FiniteDimensional ℝ
+      (LinearMap.range (kernelCLM μ (degenerateKernel β γ) : C(X, ℝ) →ₗ[ℝ] C(X, ℝ))) :=
+  have : FiniteDimensional ℝ (Submodule.span ℝ (Set.range β)) :=
+    FiniteDimensional.span_of_finite ℝ (Set.finite_range β)
+  Submodule.finiteDimensional_of_le (range_kernelCLM_degenerateKernel_le μ β γ)
+
+/-- The operator norm of a degenerate kernel operator is at most `∑ i, ‖β i‖ ∫ |γ i|`
+([han2009theoretical], Example 2.8.5). -/
+theorem norm_kernelCLM_degenerateKernel_le (β γ : Fin n → C(X, ℝ)) :
+    ‖kernelCLM μ (degenerateKernel β γ)‖ ≤ ∑ i, ‖β i‖ * ∫ y, |γ i y| ∂μ := by
+  have hint : ∀ i : Fin n, Integrable (fun y => ‖β i‖ * |γ i y|) μ := fun i =>
+    ((integrable_of_continuousMap μ (γ i)).abs).const_mul _
+  refine norm_kernelCLM_le μ ?_ fun x => ?_
+  · exact Finset.sum_nonneg fun i _ =>
+      mul_nonneg (norm_nonneg _) (integral_nonneg fun _ => abs_nonneg _)
+  · have hpt : ∀ y : X, |degenerateKernel β γ (x, y)| ≤ ∑ i, ‖β i‖ * |γ i y| := by
+      intro y
+      rw [degenerateKernel_apply]
+      refine (Finset.abs_sum_le_sum_abs _ _).trans (Finset.sum_le_sum fun i _ => ?_)
+      rw [abs_mul]
+      exact mul_le_mul_of_nonneg_right ((β i).norm_coe_le_norm x) (abs_nonneg _)
+    calc ∫ y, |degenerateKernel β γ (x, y)| ∂μ
+        ≤ ∫ y, ∑ i, ‖β i‖ * |γ i y| ∂μ :=
+          integral_mono (integrable_kernel_row μ (degenerateKernel β γ) x).abs
+            (integrable_finsetSum _ fun i _ => hint i) hpt
+      _ = ∑ i, ‖β i‖ * ∫ y, |γ i y| ∂μ := by
+          rw [integral_finsetSum _ fun i _ => hint i]
+          exact Finset.sum_congr rfl fun i _ => integral_const_mul _ _
+
+end Degenerate
+
+/-! ### Lebesgue measure on a compact region -/
+
+section Region
+
+/-- The ambient volume measure of `E` restricted to a region `D ⊆ E` and read on the subtype `↥D`:
+the measure an integral operator over a region `D ⊆ ℝ^d` integrates against.
+
+Mathlib's `MeasureTheory.Measure.Subtype.measureSpace` is this measure, but it is deliberately not
+an instance — a subtype has other natural measures — so it is named here instead of enabled
+globally. `IntegralOperator.iccMeasure` is the case `E = ℝ`, `D = Set.Icc a b`. -/
+noncomputable def regionMeasure {E : Type*} [MeasureSpace E] (D : Set E) : Measure D :=
+  Measure.comap Subtype.val volume
+
+/-- **A compact region has finite volume**, so the kernel operator theory on a compact space applies
+to `IntegralOperator.regionMeasure D` whenever `D` is compact. -/
+instance isFiniteMeasure_regionMeasure {E : Type*} [MeasureSpace E] [TopologicalSpace E]
+    [OpensMeasurableSpace E] [T2Space E] [IsFiniteMeasureOnCompacts (volume : Measure E)]
+    (D : Set E) [CompactSpace D] : IsFiniteMeasure (regionMeasure D) where
+  measure_univ_lt_top := by
+    have hD : IsCompact D := isCompact_iff_compactSpace.2 ‹_›
+    have hmeas : MeasurableSet D := hD.isClosed.measurableSet
+    have h : regionMeasure D univ = (volume.restrict D) univ := by
+      rw [regionMeasure, ← map_comap_subtype_coe hmeas (volume : Measure E),
+        Measure.map_apply measurable_subtype_coe MeasurableSet.univ, Set.preimage_univ]
+    rw [h, Measure.restrict_apply_univ]
+    exact hD.measure_lt_top
+
+end Region
 
 /-! ### The Urysohn and Fredholm operators -/
 
@@ -402,6 +597,17 @@ theorem norm_fredholm (k : C(Icc a b × Icc a b, ℝ)) :
   have hne : Nonempty (Icc a b) := ⟨⟨a, left_mem_Icc.2 hab⟩⟩
   rw [fredholm_eq_kernelCLM hab k, norm_kernelCLM]
   exact iSup_congr fun x => integral_iccMeasure_abs hab k x
+
+/-- **The Fredholm operator of a continuous kernel is a compact operator** on `C(Set.Icc a b, ℝ)`
+([han2009theoretical], Example 2.8.8; [kress1989linear], Theorem 2.20): the specialization of
+`IntegralOperator.isCompactOperator_kernelCLM` to a compact interval with Lebesgue measure.
+
+This is the fact that discharges the compactness hypothesis of the projection and Nyström methods
+for an integral equation of the second kind on a concrete operator. -/
+theorem isCompactOperator_fredholm (k : C(Icc a b × Icc a b, ℝ)) :
+    IsCompactOperator (fredholm hab k) := by
+  rw [fredholm_eq_kernelCLM hab k]
+  exact isCompactOperator_kernelCLM _ k
 
 /-- **A Urysohn operator is Lipschitz** with constant `L (b - a)` when its kernel is `L`-Lipschitz
 in its last argument, uniformly in the other two ([han2009theoretical], Theorem 5.2.2). -/

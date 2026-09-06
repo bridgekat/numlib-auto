@@ -1,7 +1,6 @@
 import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.Analysis.RCLike.Lemmas
-import Mathlib.Topology.ContinuousMap.Bounded.ArzelaAscoli
-import Mathlib.Topology.ContinuousMap.Compact
+import Numlib.Topology.ContinuousMap.ArzelaAscoli
 
 /-!
 # Atkinson–Han §1.6: compact sets
@@ -38,7 +37,6 @@ the book uses is proved.
 -/
 
 open Bornology Metric Set
-open scoped BoundedContinuousFunction
 
 namespace AtkinsonHan.Chapter01
 
@@ -63,26 +61,15 @@ theorem theorem_1_6_2_converse (h : ∀ S : Set V, IsClosed S → IsBounded S �
 /-! ### Theorem 1.6.3: the Arzelà–Ascoli theorem -/
 
 /-- **Arzelà–Ascoli theorem** (Theorem 1.6.3). A uniformly bounded, equicontinuous set of
-continuous functions on a compact `D ⊆ ℝ^d` is precompact in `C(D)` with the uniform norm. -/
+continuous functions on a compact `D ⊆ ℝ^d` is precompact in `C(D)` with the uniform norm.
+
+This is the backbone's `ContinuousMap.isCompact_closure_of_forall_norm_le`, which says the same for
+maps from any compact space into a proper normed space; Mathlib states Arzelà–Ascoli for the
+bounded continuous functions `D →ᵇ ℝ`, and the transport to `C(D, ℝ)` is what the backbone adds. -/
 theorem theorem_1_6_3 {d : ℕ} {D : Set (EuclideanSpace ℝ (Fin d))} (hD : IsCompact D)
     {S : Set C(D, ℝ)} {M : ℝ} (hbdd : ∀ f ∈ S, ∀ x, |f x| ≤ M)
-    (heqc : Equicontinuous ((↑) : S → D → ℝ)) : IsCompact (closure S) := by
-  have _ : CompactSpace D := isCompact_iff_compactSpace.mp hD
-  let h : C(D, ℝ) ≃ₜ (D →ᵇ ℝ) :=
-    (ContinuousMap.isometryEquivBoundedOfCompact (D : Type _) ℝ).toHomeomorph
-  have hu : ∀ g : (h '' S : Set (D →ᵇ ℝ)), h.symm (g : D →ᵇ ℝ) ∈ S := by
-    rintro ⟨g, f, hf, rfl⟩
-    simpa using hf
-  have key : IsCompact (closure (h '' S)) := by
-    refine BoundedContinuousFunction.arzela_ascoli (Icc (-M) M) isCompact_Icc _ ?_ ?_
-    · rintro f x ⟨g, hg, rfl⟩
-      exact abs_le.mp (hbdd g hg x)
-    · exact heqc.comp (fun g : (h '' S : Set (D →ᵇ ℝ)) =>
-        (⟨h.symm (g : D →ᵇ ℝ), hu g⟩ : S))
-  have himg : h.symm '' closure (h '' S) = closure S := by
-    rw [h.symm.image_closure, ← Set.image_comp]
-    simp
-  rw [← himg]
-  exact key.image h.symm.continuous
+    (heqc : Equicontinuous ((↑) : S → D → ℝ)) : IsCompact (closure S) :=
+  have : CompactSpace D := isCompact_iff_compactSpace.mp hD
+  ContinuousMap.isCompact_closure_of_forall_norm_le hbdd heqc
 
 end AtkinsonHan.Chapter01

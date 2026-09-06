@@ -1,5 +1,8 @@
 import Mathlib.Analysis.InnerProductSpace.Spectrum
+import Mathlib.MeasureTheory.Measure.Haar.InnerProductSpace
+import Numlib.Analysis.InnerProductSpace.CompactSpectral
 import Numlib.Analysis.Normed.Operator.Compact
+import Numlib.IntegralEquations.Basic
 import NumlibSurface.AtkinsonHan.Chapter02.Section04
 
 /-!
@@ -24,16 +27,23 @@ range are `Numlib/Analysis/Normed/Operator/Compact`.
 * `definition_2_8_1` — compactness in the sequential form.
 * `proposition_2_8_4`, `proposition_2_8_6`, `proposition_2_8_7` — finite rank, composition and
   operator-norm limits.
+* `example_2_8_5`, `example_2_8_5_isCompactOperator`, `example_2_8_5_norm` — a degenerate kernel
+  gives a finite-rank operator, its range in the span of the `β i`, with `‖K‖ ≤ ∑ ‖β i‖ ∫ |γ i|`.
+* `example_2_8_8`, `example_2_8_8_interval` — an integral operator with a continuous kernel is
+  compact on `C(D)` for a compact region `D ⊆ ℝ^d`, and on `C[a, b]`.
 * `theorem_2_8_10` — the Fredholm alternative, with `theorem_2_8_10_inverse` for the bounded
   inverse the book gets from its own Theorem 2.4.3.
 * `theorem_2_8_12_1`, `theorem_2_8_12_2`, `theorem_2_8_12_4` — the eigenvalues accumulate only at
   `0`, the nonzero eigenspaces are finite-dimensional, and `range (λ - K)` is closed.
 * `lemma_2_8_13` — Schauder's theorem.
 * `theorem_2_8_14`, `theorem_2_8_14_isCompl` — solvability of `(λ - K) u = f` and the orthogonal
-  decomposition (2.8.30) it gives.
-* `theorem_2_8_15`, `theorem_2_8_15_eigenvalue_real`, `theorem_2_8_15_closure_range` — the spectral
-  theorem for compact self-adjoint operators, the reality of the eigenvalues, and the location
-  `(ker K)ᗮ = closure (range K)` of the eigenvectors for the nonzero eigenvalues.
+  decomposition (2.8.30) it gives; `theorem_2_8_14_hasEigenvalue_adjoint` for the half of clause (1)
+  that needs no ascent–descent theory, that `conj λ` is an eigenvalue of `K*`.
+* `theorem_2_8_15`, `theorem_2_8_15_eigenvalue_real`, `theorem_2_8_15_index`,
+  `theorem_2_8_15_closure_range`, `theorem_2_8_15_enumeration` — the spectral theorem for compact
+  self-adjoint operators, the reality of the eigenvalues, the index-one clause
+  `N((λ - K)²) = N(λ - K)`, the location `(ker K)ᗮ = closure (range K)` of the eigenvectors for the
+  nonzero eigenvalues, and the decreasing enumeration (2.8.31)–(2.8.32) with its orthonormal basis.
 
 ## Conventions
 
@@ -41,12 +51,18 @@ The book writes `λ` for the scalar of the second-kind equation; `λ` is a keywo
 written `l` below. The book states §2.8 over a general scalar field and specializes to real or
 complex scalars; the statements here are over `RCLike 𝕜`, as elsewhere in this surface.
 
-Not stated here: §2.8.1's conditions for an integral operator with a weakly singular kernel to be
-compact, and the Examples that instantiate it; the parts of Theorem 2.8.12 and Theorem 2.8.14 that
-need the Riesz ascent–descent theory, which the backbone module does not develop.
+Not stated here: §2.8.1's conditions (A₁)–(A₂) for an integral operator with a *weakly singular*
+kernel to be compact, and the two Examples that instantiate them, 2.8.2 (`log |cos x − cos y|`) and
+2.8.9 (`|x − y|^{-γ}`) — both need the modulus `ω(h) = sup_{‖x−z‖ ≤ h} ∫ |k (x, y) − k (z, y)| dy`
+and an operator for a kernel that is merely integrable in `y`, neither of which the backbone has.
+The continuous-kernel case, which is what Chapters 12 and 13 use, is `example_2_8_8`. Also not
+stated: the parts of Theorem 2.8.12 and Theorem 2.8.14 that need the Riesz ascent–descent theory,
+which the backbone module does not develop.
 -/
 
 open Filter Topology Metric Module.End
+
+open scoped InnerProductSpace
 
 namespace AtkinsonHan.Chapter02
 
@@ -119,6 +135,67 @@ theorem proposition_2_8_7 [CompleteSpace W] {A : ℕ → V →L[𝕜] W} {K : V 
     (hA : ∀ n, IsCompactOperator (A n)) (h : Tendsto (fun n => ‖A n - K‖) atTop (𝓝 0)) :
     IsCompactOperator K :=
   IsCompactOperator.of_tendsto hA h
+
+end Banach
+
+/-! ### Examples 2.8.5 and 2.8.8: integral operators -/
+
+section IntegralOperators
+
+open MeasureTheory IntegralOperator
+
+variable {X : Type*} [TopologicalSpace X] [CompactSpace X] [MeasurableSpace X] [BorelSpace X]
+  (μ : Measure X) [IsFiniteMeasure μ] {n : ℕ}
+
+/-- **Example 2.8.5.** A *degenerate* kernel `k (x, y) = ∑ i, β i x * γ i y` gives a finite-rank
+operator on `C(X)`, its range lying in the span of `β 1, …, β n`. The book takes the `γ i` merely
+absolutely integrable; `IntegralOperator.degenerateKernel` takes them continuous, which is what its
+consumers in the book supply. -/
+theorem example_2_8_5 (β γ : Fin n → C(X, ℝ)) :
+    LinearMap.range (kernelCLM μ (degenerateKernel β γ) : C(X, ℝ) →ₗ[ℝ] C(X, ℝ)) ≤
+      Submodule.span ℝ (Set.range β) :=
+  range_kernelCLM_degenerateKernel_le μ β γ
+
+/-- **Example 2.8.5**, the compactness it is used for: a degenerate kernel operator has
+finite-dimensional range, so Proposition 2.8.4 makes it compact. -/
+theorem example_2_8_5_isCompactOperator (β γ : Fin n → C(X, ℝ)) :
+    IsCompactOperator (kernelCLM μ (degenerateKernel β γ)) :=
+  have := finiteDimensional_range_kernelCLM_degenerateKernel μ β γ
+  proposition_2_8_4 (𝕜 := ℝ) _
+
+/-- **Example 2.8.5**, the bound `‖K‖ ≤ ∑ i, ‖β i‖_∞ ∫ |γ i|` on the norm of a degenerate kernel
+operator. -/
+theorem example_2_8_5_norm (β γ : Fin n → C(X, ℝ)) :
+    ‖kernelCLM μ (degenerateKernel β γ)‖ ≤ ∑ i, ‖β i‖ * ∫ y, |γ i y| ∂μ :=
+  norm_kernelCLM_degenerateKernel_le μ β γ
+
+/-- **Example 2.8.8.** For a closed bounded `D ⊆ ℝ^d` and a continuous kernel `k` on `D × D`, the
+integral operator `K v (x) = ∫_D k (x, y) v (y) dy` is compact on `C(D)`.
+
+The book's "closed and bounded" is `IsCompact D` by Heine–Borel (Theorem 1.6.2), written here as
+the instance `CompactSpace ↥D`, and `IntegralOperator.regionMeasure D` is Lebesgue measure on `D`.
+The proof is Arzelà–Ascoli (Theorem 1.6.3) applied to the image of the unit ball, carried out in
+the backbone at the generality of a compact space with a finite Borel measure; the book instead
+approximates `k` uniformly by degenerate kernels and appeals to Examples 2.8.5, Propositions 2.8.4
+and 2.8.7. -/
+theorem example_2_8_8 {d : ℕ} {D : Set (EuclideanSpace ℝ (Fin d))} [CompactSpace D]
+    (k : C(D × D, ℝ)) : IsCompactOperator (kernelCLM (regionMeasure D) k) :=
+  isCompactOperator_kernelCLM _ k
+
+/-- **Example 2.8.8 on an interval**: the Fredholm operator
+`u ↦ (x ↦ ∫ y in a..b, k (x, y) u y)` of a continuous kernel is compact on `C[a, b]`. This is the
+instance that discharges the `IsCompactOperator` hypothesis of the projection and Nyström methods
+of Chapter 12 on a concrete operator. -/
+theorem example_2_8_8_interval {a b : ℝ} (hab : a ≤ b)
+    (k : C(Set.Icc a b × Set.Icc a b, ℝ)) : IsCompactOperator (fredholm hab k) :=
+  isCompactOperator_fredholm hab k
+
+end IntegralOperators
+
+section Banach
+
+variable {𝕜 V W : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
+  [NormedAddCommGroup W] [NormedSpace 𝕜 W]
 
 /-! ### Theorem 2.8.10: the Fredholm alternative -/
 
@@ -237,6 +314,47 @@ theorem theorem_2_8_14_isCompl {K : V →L[𝕜] V} (hK : IsCompactOperator K) {
     exact (ContinuousLinearMap.isClosed_ker _)
   exact Submodule.isCompl_orthogonal _
 
+/-- **Theorem 2.8.14 (1)**, the half that needs no ascent–descent theory: if `λ ≠ 0` is an
+eigenvalue of a compact `K` on a Hilbert space then `conj λ` is an eigenvalue of `K*`.
+
+Were it not, the Fredholm alternative applied to the compact `K*` would make `conj λ - K*`
+bijective, while `theorem_2_8_14` read for `K*` says its range is `(ker (λ - K))ᗮ`, a proper
+subspace because `λ` *is* an eigenvalue of `K`. The other half of the clause, the equality of
+dimensions `dim N(λ - K) = dim N(conj λ - K*)` — that `λ - K` has Fredholm index zero — is not
+stated: it needs the Riesz ascent–descent theory, which the backbone does not develop. -/
+theorem theorem_2_8_14_hasEigenvalue_adjoint {K : V →L[𝕜] V} (hK : IsCompactOperator K) {l : 𝕜}
+    (hl : l ≠ 0) (hev : HasEigenvalue (K : Module.End 𝕜 V) l) :
+    HasEigenvalue ((ContinuousLinearMap.adjoint K : V →L[𝕜] V) : Module.End 𝕜 V)
+      ((starRingEnd 𝕜) l) := by
+  have hl' : (starRingEnd 𝕜) l ≠ 0 := by simpa using hl
+  by_contra hno
+  have hres := (hK.adjoint.hasEigenvalue_or_mem_resolventSet hl').resolve_left hno
+  rw [spectrum.mem_resolventSet_iff, Algebra.algebraMap_eq_smul_one] at hres
+  have hsurj : Function.Surjective
+      ((starRingEnd 𝕜) l • (1 : V →L[𝕜] V) - ContinuousLinearMap.adjoint K) :=
+    (ContinuousLinearMap.isUnit_iff_bijective.1 hres).2
+  have hrange : LinearMap.range
+      (((starRingEnd 𝕜) l • (1 : V →L[𝕜] V) - ContinuousLinearMap.adjoint K : V →L[𝕜] V) :
+        V →ₗ[𝕜] V) = ⊤ := LinearMap.range_eq_top.2 hsurj
+  have h14 : LinearMap.range
+      (((starRingEnd 𝕜) l • (1 : V →L[𝕜] V) - ContinuousLinearMap.adjoint K : V →L[𝕜] V) :
+        V →ₗ[𝕜] V) = (LinearMap.ker ((l • (1 : V →L[𝕜] V) - K : V →L[𝕜] V) : V →ₗ[𝕜] V))ᗮ := by
+    simpa using theorem_2_8_14 hK.adjoint hl'
+  rw [h14] at hrange
+  have hbot : LinearMap.ker ((l • (1 : V →L[𝕜] V) - K : V →L[𝕜] V) : V →ₗ[𝕜] V) = ⊥ := by
+    rw [Submodule.eq_bot_iff]
+    intro x hx
+    have hmem : x ∈ (LinearMap.ker ((l • (1 : V →L[𝕜] V) - K : V →L[𝕜] V) : V →ₗ[𝕜] V))ᗮ := by
+      rw [hrange]; trivial
+    exact inner_self_eq_zero.1 (hmem x hx)
+  refine hev (Submodule.eq_bot_iff _ |>.2 fun u hu => ?_)
+  rw [mem_eigenspace_iff] at hu
+  have hu' : K u = l • u := hu
+  have hker : u ∈ LinearMap.ker ((l • (1 : V →L[𝕜] V) - K : V →L[𝕜] V) : V →ₗ[𝕜] V) := by
+    simp [hu']
+  rw [hbot, Submodule.mem_bot] at hker
+  exact hker
+
 /-- **Theorem 2.8.15**, the **spectral theorem** for a compact self-adjoint operator on a
 Hilbert space: the eigenvectors span a dense subspace, so an orthonormal basis of eigenvectors
 exists. -/
@@ -250,6 +368,35 @@ theorem theorem_2_8_15_eigenvalue_real {K : V →L[𝕜] V} (hK : IsSelfAdjoint 
     (hμ : HasEigenvalue (K : Module.End 𝕜 V) μ) : (starRingEnd 𝕜) μ = μ :=
   (ContinuousLinearMap.isSelfAdjoint_iff_isSymmetric.1 hK).conj_eigenvalue_eq_self hμ
 
+/-- **Theorem 2.8.15**, the index clause: every eigenvalue of a compact self-adjoint operator has
+index one, `N((λ - K)²) = N(λ - K)`. The general ascent–descent theory of Theorem 2.8.12 (3) is not
+needed for it: with `λ` real — which `theorem_2_8_15_eigenvalue_real` supplies — the operator
+`λ - K` is self-adjoint, so `(λ - K)² v = 0` gives `‖(λ - K) v‖² = ⟪(λ - K)² v, v⟫ = 0`.
+
+Compactness plays no part, so no compactness hypothesis is imposed. -/
+theorem theorem_2_8_15_index {K : V →L[𝕜] V} (hK : IsSelfAdjoint K) {l : 𝕜}
+    (hl : (starRingEnd 𝕜) l = l) :
+    LinearMap.ker (((l • (1 : V →L[𝕜] V) - K) ^ 2 : V →L[𝕜] V) : V →ₗ[𝕜] V) =
+      LinearMap.ker ((l • (1 : V →L[𝕜] V) - K : V →L[𝕜] V) : V →ₗ[𝕜] V) := by
+  have hlsa : IsSelfAdjoint l := hl
+  have hAsa : IsSelfAdjoint (l • (1 : V →L[𝕜] V) - K) :=
+    (hlsa.smul (IsSelfAdjoint.one (V →L[𝕜] V))).sub hK
+  have hadj : ContinuousLinearMap.adjoint (l • (1 : V →L[𝕜] V) - K) = l • 1 - K := by
+    rw [← ContinuousLinearMap.star_eq_adjoint]; exact hAsa
+  refine le_antisymm (fun v hv => ?_) (fun v hv => ?_)
+  · simp only [LinearMap.mem_ker, ContinuousLinearMap.coe_coe] at hv ⊢
+    have hsq : ((l • (1 : V →L[𝕜] V) - K) ^ 2) v
+        = (l • (1 : V →L[𝕜] V) - K) ((l • (1 : V →L[𝕜] V) - K) v) := by
+      rw [pow_two]; rfl
+    rw [hsq] at hv
+    have hinner : ⟪(l • (1 : V →L[𝕜] V) - K) v, (l • (1 : V →L[𝕜] V) - K) v⟫_𝕜 = 0 := by
+      rw [← ContinuousLinearMap.adjoint_inner_left, hadj, hv, inner_zero_left]
+    exact inner_self_eq_zero.1 hinner
+  · simp only [LinearMap.mem_ker, ContinuousLinearMap.coe_coe] at hv ⊢
+    rw [pow_two]
+    change (l • (1 : V →L[𝕜] V) - K) ((l • (1 : V →L[𝕜] V) - K) v) = 0
+    rw [hv, map_zero]
+
 /-- The clause of Theorem 2.8.15 that locates the basis: for a self-adjoint operator the
 orthogonal complement of the null space is the closure of the range, which is where the
 eigenvectors for the nonzero eigenvalues live. -/
@@ -262,6 +409,55 @@ theorem theorem_2_8_15_closure_range {K : V →L[𝕜] V} (hK : IsSelfAdjoint K)
   rw [← Submodule.orthogonal_orthogonal_eq_closure]
   congr 1
   rw [ContinuousLinearMap.orthogonal_range K, hadj]
+
+/-- **Theorem 2.8.15**, the enumeration (2.8.31)–(2.8.32): the nonzero eigenvalues of a compact
+self-adjoint operator can be listed with multiplicity in decreasing order of modulus,
+`|λ₁| ≥ |λ₂| ≥ ⋯ > 0` with `λⱼ → 0`, together with an orthonormal family of eigenvectors
+`K uⱼ = λⱼ uⱼ` whose closed span is `closure (range K)`.
+
+Stated for an *injective* `K` on an *infinite-dimensional* space, which is where an enumeration by
+`ℕ` exists; the backbone's `ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis` explains why
+both are needed. If `K` has both infinitely many nonzero eigenvalues and a nontrivial kernel then a
+decreasing enumeration would have to place `0` after infinitely many nonzero values and no listing
+by `ℕ` exists; if `K` has finite rank the book's list is finite, which is Mathlib's
+`LinearMap.IsSymmetric.eigenvalues` indexed by `Fin n`. The general statement, a list that is
+finite or infinite according to the rank, is not stated here. Under the hypotheses taken,
+`closure (range K) = V` by `theorem_2_8_15_closure_range`. -/
+theorem theorem_2_8_15_enumeration {K : V →L[𝕜] V} (hKc : IsCompactOperator K)
+    (hK : IsSelfAdjoint K) (hinj : LinearMap.ker (K : V →ₗ[𝕜] V) = ⊥)
+    (hfin : ¬ FiniteDimensional 𝕜 V) :
+    ∃ (l : ℕ → ℝ) (u : ℕ → V),
+      Antitone (fun j => |l j|) ∧ (∀ j, l j ≠ 0) ∧ Tendsto l atTop (𝓝 0) ∧
+        Orthonormal 𝕜 u ∧ (∀ j, K (u j) = ((l j : ℝ) : 𝕜) • u j) ∧
+        (Submodule.span 𝕜 (Set.range u)).topologicalClosure =
+          (LinearMap.range (K : V →ₗ[𝕜] V)).topologicalClosure := by
+  have hsym : (K : V →ₗ[𝕜] V).IsSymmetric :=
+    ContinuousLinearMap.isSelfAdjoint_iff_isSymmetric.1 hK
+  have horth := ContinuousLinearMap.IsSymmetric.orthonormal_eigenvector hsym hKc hfin
+  have happ := ContinuousLinearMap.IsSymmetric.apply_eigenvector hsym hKc hfin
+  refine ⟨ContinuousLinearMap.IsSymmetric.eigenvalueSeq hsym hKc,
+    ContinuousLinearMap.IsSymmetric.eigenvector hsym hKc,
+    ContinuousLinearMap.IsSymmetric.eigenvalueSeq_antitone hsym hKc, fun j h0 => ?_,
+    ContinuousLinearMap.IsSymmetric.tendsto_eigenvalueSeq_zero hsym hKc, horth, happ, ?_⟩
+  · have hz : K (ContinuousLinearMap.IsSymmetric.eigenvector hsym hKc j) = 0 := by
+      rw [happ j, h0]; simp
+    have hmem : ContinuousLinearMap.IsSymmetric.eigenvector hsym hKc j ∈
+        LinearMap.ker (K : V →ₗ[𝕜] V) := hz
+    rw [hinj, Submodule.mem_bot] at hmem
+    have hone := horth.1 j
+    rw [hmem, norm_zero] at hone
+    exact one_ne_zero hone.symm
+  · have hbot : (Submodule.span 𝕜
+        (Set.range (ContinuousLinearMap.IsSymmetric.eigenvector hsym hKc)))ᗮ = ⊥ :=
+      le_bot_iff.1 (hinj ▸
+        ContinuousLinearMap.IsSymmetric.orthogonal_span_range_eigenvector_le_ker hsym hKc hfin)
+    have hL : (Submodule.span 𝕜
+        (Set.range (ContinuousLinearMap.IsSymmetric.eigenvector hsym hKc))).topologicalClosure
+          = ⊤ := by
+      rw [← Submodule.orthogonal_orthogonal_eq_closure, hbot, Submodule.bot_orthogonal_eq_top]
+    have hR : (LinearMap.range (K : V →ₗ[𝕜] V)).topologicalClosure = ⊤ := by
+      rw [← theorem_2_8_15_closure_range hK, hinj, Submodule.bot_orthogonal_eq_top]
+    rw [hL, hR]
 
 end Hilbert
 

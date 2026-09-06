@@ -12,9 +12,10 @@ norms, Banach spaces, the completion of a normed space, and the two facts from m
 (§1.2.3) that the book records for later use.
 
 The definitions of the section — norm, seminorm, ball, open and closed set, convergence, dense
-subset, Schauder basis, Cauchy sequence, completeness — are Mathlib's `Norm`, `Seminorm`,
-`Metric.ball`, `IsOpen`, `IsClosed`, `Filter.Tendsto`, `Dense`, `CauchySeq` and `CompleteSpace`,
-and are not restated.
+subset, separability, Schauder basis, Cauchy sequence, completeness — are Mathlib's `Norm`,
+`Seminorm`, `Metric.ball`, `IsOpen`, `IsClosed`, `Filter.Tendsto`, `Dense`,
+`TopologicalSpace.SeparableSpace`, `SchauderBasis`, `CauchySeq` and `CompleteSpace`, and are not
+restated.
 
 ## Main results
 
@@ -37,9 +38,13 @@ of `ℝ^d`, which is how Mathlib has them and how the book uses them.
 
 ## Not formalized here
 
-The examples of the section (1.2.2 the `ℓᵖ` and `Lᵖ` norms, 1.2.16–1.2.22 the classical Banach
-spaces, 1.2.28 the Sobolev spaces) are illustrations; the Sobolev ones are out of scope for the
-whole project.
+The examples of the section (1.2.3–1.2.5 the `ℓᵖ`, `Lᵖ` and sup norms, 1.2.13–1.2.22 the classical
+Banach spaces and the inequivalent norms on `C[0, 1]`, 1.2.28 the Sobolev spaces) are
+illustrations. Example 1.2.28 is out of scope in both clauses: (b) is the Sobolev completion
+`W^{m,p}(a, b)`, and (a), that `Cᵐ[a, b]` and `C_pᵏ(2π)` are Banach spaces, is blocked on
+`Cᵐ[a, b]` as a normed space, which Mathlib does not have — it has `C(X, ℝ)` for compact `X`,
+hence the case `m = 0`. Example 1.2.19 is Theorem 1.5.6 restated for a bounded `Ω`, and is
+recorded with it in §1.5.
 -/
 
 open Filter Topology MeasureTheory

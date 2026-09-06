@@ -239,10 +239,28 @@ each section module names the results it leaves out.
   reason.
 * **The `C[a, b]` integral-operator toolkit.** `Numlib/IntegralEquations/Basic` has the Fredholm,
   Urysohn and Volterra operators with their norms and Lipschitz constants, which is what §5.2's
-  applications and the norm formula (2.2.8) need. What it does not yet have is differentiation
-  under the integral sign, so Example 5.3.10 — the Fréchet derivative of the Urysohn operator is
-  the Fredholm operator with kernel `∂_u k(t, s, u(s))` — is still open. The concrete halves of
-  Examples 2.3.2 and 2.3.4 are no longer blocked by anything; they are simply unwritten.
+  applications and the norm formula (2.2.8) need, and now their *compactness*
+  (`IntegralOperator.isCompactOperator_fredholm`), which is what discharges the
+  `IsCompactOperator` hypothesis of §12.1 and §12.4 on a concrete operator. What it does not yet
+  have is differentiation under the integral sign, so Example 5.3.10 — the Fréchet derivative of
+  the Urysohn operator is the Fredholm operator with kernel `∂_u k(t, s, u(s))` — is still open.
+  Nor does it have a *weakly singular* kernel: the modulus
+  `ω(h) = sup_{‖x−z‖ ≤ h} ∫ |k (x, y) − k (z, y)| dy` of Atkinson–Han §2.8.1 and the operator of a
+  kernel that is merely integrable in `y`, without which Examples 2.8.2 and 2.8.9 cannot be
+  stated. The concrete halves of Examples 2.3.2 and 2.3.4 are no longer blocked by anything; they
+  are simply unwritten.
+* **`L²` kernel operators.** Example 2.6.1 and §2.8.3 — a kernel with
+  `B = (∫∫ |k|²)^{1/2} < ∞` gives a bounded operator on `L²(a, b)` with `‖K‖ ≤ B`, whose adjoint
+  is the transposed kernel — are not stated. Mathlib has no Hilbert–Schmidt operators, and the
+  backbone's kernel operator acts on `C(X, ℝ)` for a continuous kernel, a different object.
+
+§1.4, spaces of continuously differentiable functions and Hölder spaces, has no module and needs
+none: it contains no numbered result of any kind — the book's numbering there runs
+`Exercise 1.4.1`–`1.4.13` and nothing else — and its vocabulary is reached through Mathlib's
+`ContDiff`, `HasCompactSupport`, `HolderWith` and `HolderOnWith` where §3.7 and Theorem 1.5.6 need
+it. The one thing the section asserts that the library cannot say is that `Cᵐ[a, b]` and
+`C^{m,β}[a, b]` are Banach spaces, which is Example 1.2.28 (a) and is blocked on `Cᵐ[a, b]` as a
+normed space; Mathlib has `C(X, ℝ)` for compact `X`, hence the case `m = 0` only.
 
 Smaller omissions all have the same shape — an object the backbone or Mathlib has not built yet —
 and each is listed in the module it belongs to: trigonometric and interpolatory approximation

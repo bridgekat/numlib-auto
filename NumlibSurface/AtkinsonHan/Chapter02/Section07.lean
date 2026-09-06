@@ -36,7 +36,10 @@ is what makes it weakly null and of constant norm.
 ## Not formalized here
 
 Theorem 2.7.5 — a Banach space is reflexive if and only if every bounded sequence has a weakly
-convergent subsequence — is not planned: it is the Eberlein–Šmulian theorem together with
+convergent subsequence — is not planned, and neither is **Definition 2.7.4**, reflexivity itself:
+`exercise_2_7_4` below is Exercise 2.7.4, the Radon–Riesz property in a uniformly convex space, and
+is a different result from the Definition that precedes Theorem 2.7.5. The obstruction to the
+Theorem is that it is the Eberlein–Šmulian theorem together with
 Kakutani's characterisation of reflexivity, and Mathlib has neither reflexivity as a class nor
 Banach–Alaoglu in a form that would give it. Everything in the book that consumes it (Theorems
 3.3.8, 3.3.10–3.3.12, 3.3.14 and Mazur's lemma) is already recorded as unplanned in

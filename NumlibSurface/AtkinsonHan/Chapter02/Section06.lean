@@ -32,6 +32,20 @@ its arguments reversed below.
 Theorem 2.6.5 carries a `[Nontrivial V]` hypothesis: on the zero space the unit sphere is empty and
 the supremum the book writes has no meaning. The quantity `(L v, v)` of the book is real for a
 self-adjoint `L`, and is written `RCLike.re (inner 𝕜 v (L v))` below.
+
+## Not formalized here
+
+**Example 2.6.1**, the `L²` kernel operator. For a kernel with
+`B = (∫∫ |k (x, y)|² dx dy)^{1/2} < ∞` the operator `K v (x) = ∫ k (x, y) v (y) dy` is bounded on
+`L²(a, b)` with `‖K‖ ≤ B`; its adjoint is the transposed kernel `k (y, x)`, so `K` is self-adjoint
+exactly when `k` is symmetric. None of this is stated. Mathlib has no Hilbert–Schmidt operators, and
+the backbone's `IntegralOperator.kernelCLM` is the operator on `C(X, ℝ)` for a *continuous* kernel,
+which is a different object; an `L²` kernel operator would be a new backbone module.
+
+`equation_2_6_1` above is the *displayed relation* (2.6.1), `(L v, w) = (v, L* w)`, which defines
+the adjoint in general — it is not Example 2.6.1, and neither it nor `equation_2_6_3` and
+`equation_2_6_4` says anything about integral operators. §2.8.3's kernel bound `‖K‖ ≤ B` is the same
+missing statement under a second number.
 -/
 
 open Metric RCLike

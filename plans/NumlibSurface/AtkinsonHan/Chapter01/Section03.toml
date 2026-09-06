@@ -20,3 +20,18 @@ id = "theorem_1_3_13"
 
 [[node]]
 id = "theorem_1_3_16"
+
+[[node]]
+id = "example_1_3_14"
+kind = "theorem"
+desc = '''
+Example 1.3.14: the half-range cosine system `e₀ = 1/√π`, `eₖ = √(2/π) cos (k x)` for `k ≥ 1` is
+an orthonormal basis of `L²(0, π)`. Open: the route is the even extension
+`L²(0, π) → L²(-π, π)`, `v ↦ v(|x|)`, a linear isometry onto the even subspace carrying the cosine
+system to the even half of `trigBasis (2π)`, and neither Mathlib nor the backbone has that
+isometry. The book's own argument — every `cosᵏ x` is a finite combination of the `eₖ`, then
+Weierstrass — needs the Chebyshev expansion of `cosᵏ` instead. Nothing in the corpus consumes it,
+so this is low priority; it is recorded because it is a numbered result of the chapter that no
+declaration states.
+'''
+deps = ["trigBasis", "orthonormal_trigFun", "theorem_1_3_12"]
