@@ -9,7 +9,8 @@ import Numlib.Approximation.BestApprox
 # Orthogonal polynomials of a measure
 
 The family of monic orthogonal polynomials attached to a measure `μ` on `ℝ`, its three-term
-recurrence, and the truncated expansion as a best `L²(μ)` approximation.
+recurrence, the orthonormal family obtained by scaling it, and the truncated expansion as a best
+`L²(μ)` approximation.
 
 ## Main definitions
 
@@ -21,6 +22,11 @@ recurrence, and the truncated expansion as a best `L²(μ)` approximation.
   defined for every `μ`, but only under `IsWeight μ` is it orthogonal.
   `OrthogonalPolynomial.normSq`, `OrthogonalPolynomial.alpha` and `OrthogonalPolynomial.beta` are
   its squared `L²(μ)` norms and the coefficients of its three-term recurrence.
+* `OrthogonalPolynomial.orthonormalFamily μ n` is that family scaled to unit `L²(μ)` norm, and
+  `OrthogonalPolynomial.cdA`, `cdB`, `cdC` are the coefficients of *its* three-term recurrence, in
+  the form `p_{n+2} = (a_{n+1} X + b_{n+1}) p_{n+1} - c_{n+1} p_n` that the Christoffel–Darboux
+  identity consumes; `cdA_eq_leadingCoeff_div` identifies `a_n` with the ratio `A_{n+1} / A_n` of
+  leading coefficients.
 * `Polynomial.legendre n` is the `n`-th Legendre polynomial, by Rodrigues' formula, and
   `OrthogonalPolynomial.legendreMeasure` is the weight it is orthogonal for.
 
@@ -29,7 +35,8 @@ recurrence, and the truncated expansion as a best `L²(μ)` approximation.
 * `OrthogonalPolynomial.integral_family_mul_family` and
   `OrthogonalPolynomial.integral_family_mul_of_degree_lt`: the family is orthogonal, and each member
   is orthogonal to every polynomial of lower degree.
-* `OrthogonalPolynomial.three_term_recurrence`: `p_{n+2} = (X - a_{n+1}) p_{n+1} - b_n p_n`.
+* `OrthogonalPolynomial.three_term_recurrence`: `p_{n+2} = (X - a_{n+1}) p_{n+1} - b_n p_n`, and
+  `OrthogonalPolynomial.orthonormalFamily_recurrence` for the orthonormal family.
 * `OrthogonalPolynomial.exists_injective_family_eq_prod`: `family μ n` has `n` distinct real roots —
   the nodes of the `n`-point Gauss quadrature rule of `μ`.
 * `OrthogonalPolynomial.isBestApprox_truncation`: the truncated expansion is the best `L²(μ)`
@@ -674,6 +681,149 @@ theorem three_term_recurrence (hw : IsWeight μ) (n : ℕ) :
       simp only [alpha]
       rw [div_mul_cancel₀ _ (normSq_ne_zero hw (n + 1))]
       ring
+
+/-! ### The orthonormal polynomials -/
+
+/-- The `L²(μ)` norm `‖p_n‖` of the `n`-th monic orthogonal polynomial. -/
+noncomputable def normOf (μ : Measure ℝ) (n : ℕ) : ℝ := Real.sqrt (normSq μ n)
+
+theorem normOf_pos (hw : IsWeight μ) (n : ℕ) : 0 < normOf μ n :=
+  Real.sqrt_pos.2 (normSq_pos hw n)
+
+theorem sq_normOf (hw : IsWeight μ) (n : ℕ) : normOf μ n ^ 2 = normSq μ n :=
+  Real.sq_sqrt (normSq_pos hw n).le
+
+/-- The **orthonormal polynomials** of a weight: the monic family scaled to unit `L²(μ)` norm.
+This is the family [han2009theoretical] §3.7.2 works with, where the normalization
+`(p_n, p_n) = 1` is taken "without loss of generality". -/
+noncomputable def orthonormalFamily (μ : Measure ℝ) (n : ℕ) : ℝ[X] :=
+  C (normOf μ n)⁻¹ * family μ n
+
+theorem eval_orthonormalFamily (μ : Measure ℝ) (n : ℕ) (x : ℝ) :
+    (orthonormalFamily μ n).eval x = (normOf μ n)⁻¹ * (family μ n).eval x := by
+  rw [orthonormalFamily, eval_mul, eval_C]
+
+/-- Distinct orthonormal polynomials are orthogonal. -/
+theorem integral_orthonormalFamily_mul (hw : IsWeight μ) {m n : ℕ} (hmn : m ≠ n) :
+    ∫ x, (orthonormalFamily μ m).eval x * (orthonormalFamily μ n).eval x ∂μ = 0 := by
+  have h : ∀ x : ℝ, (orthonormalFamily μ m).eval x * (orthonormalFamily μ n).eval x
+      = ((normOf μ m)⁻¹ * (normOf μ n)⁻¹) *
+        ((family μ m).eval x * (family μ n).eval x) := fun x => by
+    rw [eval_orthonormalFamily, eval_orthonormalFamily]; ring
+  simp only [h]
+  rw [integral_const_mul, integral_family_mul_family hw hmn, mul_zero]
+
+/-- The orthonormal polynomials have unit `L²(μ)` norm. -/
+theorem integral_orthonormalFamily_sq (hw : IsWeight μ) (n : ℕ) :
+    ∫ x, (orthonormalFamily μ n).eval x ^ 2 ∂μ = 1 := by
+  have hn := (normOf_pos hw n).ne'
+  have h : ∀ x : ℝ, (orthonormalFamily μ n).eval x ^ 2
+      = ((normOf μ n)⁻¹ ^ 2) * ((family μ n).eval x ^ 2) := fun x => by
+    rw [eval_orthonormalFamily]; ring
+  simp only [h]
+  rw [integral_const_mul]
+  change (normOf μ n)⁻¹ ^ 2 * normSq μ n = 1
+  rw [← sq_normOf hw n]
+  field_simp
+
+theorem degree_orthonormalFamily (hw : IsWeight μ) (n : ℕ) :
+    (orthonormalFamily μ n).degree = n := by
+  rw [orthonormalFamily, degree_C_mul (by
+    simpa using inv_ne_zero (normOf_pos hw n).ne'), degree_family]
+
+/-- The leading coefficient `A_n` of the `n`-th orthonormal polynomial is `1 / ‖p_n‖`. -/
+theorem leadingCoeff_orthonormalFamily (μ : Measure ℝ) (n : ℕ) :
+    (orthonormalFamily μ n).leadingCoeff = (normOf μ n)⁻¹ := by
+  rw [orthonormalFamily, leadingCoeff_mul, leadingCoeff_C, (monic_family μ n).leadingCoeff,
+    mul_one]
+
+/-! ### The three-term recurrence of the orthonormal polynomials -/
+
+/-- The coefficient `a_n = ‖p_n‖ / ‖p_{n+1}‖` of `X` in the three-term recurrence for the
+orthonormal polynomials. It is the ratio `A_{n+1} / A_n` of consecutive leading coefficients
+(`cdA_eq_leadingCoeff_div`), which is the form [han2009theoretical] Theorem 3.7.3 states it in. -/
+noncomputable def cdA (μ : Measure ℝ) (n : ℕ) : ℝ := normOf μ n / normOf μ (n + 1)
+
+/-- The constant coefficient `b_n = -a_n a_n'` of the three-term recurrence for the orthonormal
+polynomials, where `a_n'` is the recurrence coefficient of the monic family. -/
+noncomputable def cdB (μ : Measure ℝ) (n : ℕ) : ℝ := -(alpha μ n * cdA μ n)
+
+/-- The coefficient `c_n = ‖p_n‖² / (‖p_{n-1}‖ ‖p_{n+1}‖)` of the three-term recurrence for the
+orthonormal polynomials. Only its values at `n ≥ 1` are used. -/
+noncomputable def cdC (μ : Measure ℝ) (n : ℕ) : ℝ :=
+  normOf μ n * normOf μ n / (normOf μ (n - 1) * normOf μ (n + 1))
+
+theorem cdA_pos (hw : IsWeight μ) (n : ℕ) : 0 < cdA μ n :=
+  div_pos (normOf_pos hw n) (normOf_pos hw (n + 1))
+
+/-- The recurrence coefficient `a_n` is the ratio `A_{n+1} / A_n` of the leading coefficients of
+consecutive orthonormal polynomials, which is the form the Christoffel–Darboux identity is usually
+stated in. -/
+theorem cdA_eq_leadingCoeff_div (hw : IsWeight μ) (n : ℕ) :
+    cdA μ n = (orthonormalFamily μ (n + 1)).leadingCoeff /
+      (orthonormalFamily μ n).leadingCoeff := by
+  have h0 := (normOf_pos hw n).ne'
+  have h1 := (normOf_pos hw (n + 1)).ne'
+  rw [leadingCoeff_orthonormalFamily, leadingCoeff_orthonormalFamily, cdA]
+  field_simp
+
+/-- The first step of the three-term recurrence for the orthonormal polynomials. -/
+theorem orthonormalFamily_one (hw : IsWeight μ) :
+    orthonormalFamily μ 1 = (C (cdA μ 0) * X + C (cdB μ 0)) * orthonormalFamily μ 0 := by
+  have h0 := (normOf_pos hw 0).ne'
+  have h1 := (normOf_pos hw 1).ne'
+  have e1 : cdA μ 0 * (normOf μ 0)⁻¹ = (normOf μ 1)⁻¹ := by
+    rw [cdA]; field_simp
+  have e2 : cdB μ 0 * (normOf μ 0)⁻¹ = -(alpha μ 0 * (normOf μ 1)⁻¹) := by
+    rw [cdB, cdA]; field_simp
+  rw [orthonormalFamily, orthonormalFamily, family_one, family_zero, mul_one]
+  have hsplit : (C (cdA μ 0) * X + C (cdB μ 0)) * C (normOf μ 0)⁻¹
+      = C (cdA μ 0 * (normOf μ 0)⁻¹) * X + C (cdB μ 0 * (normOf μ 0)⁻¹) := by
+    simp only [C_mul]; ring
+  rw [hsplit, e1, e2, C_neg, C_mul]
+  ring
+
+/-- **The three-term recurrence for the orthonormal polynomials**, in the form
+`p_{n+2} = (a_{n+1} X + b_{n+1}) p_{n+1} - c_{n+1} p_n` that the Christoffel–Darboux identity
+consumes. -/
+theorem orthonormalFamily_recurrence (hw : IsWeight μ) (n : ℕ) :
+    orthonormalFamily μ (n + 2)
+      = (C (cdA μ (n + 1)) * X + C (cdB μ (n + 1))) * orthonormalFamily μ (n + 1)
+        - C (cdC μ (n + 1)) * orthonormalFamily μ n := by
+  have h0 := (normOf_pos hw n).ne'
+  have h1 := (normOf_pos hw (n + 1)).ne'
+  have h2 := (normOf_pos hw (n + 2)).ne'
+  have e1 : cdA μ (n + 1) * (normOf μ (n + 1))⁻¹ = (normOf μ (n + 2))⁻¹ := by
+    rw [cdA]; field_simp
+  have e2 : cdB μ (n + 1) * (normOf μ (n + 1))⁻¹
+      = -(alpha μ (n + 1) * (normOf μ (n + 2))⁻¹) := by
+    rw [cdB, cdA]; field_simp
+  have e3 : cdC μ (n + 1) * (normOf μ n)⁻¹ = beta μ n * (normOf μ (n + 2))⁻¹ := by
+    have hb : beta μ n = normOf μ (n + 1) ^ 2 / normOf μ n ^ 2 := by
+      rw [beta, sq_normOf hw, sq_normOf hw]
+    rw [cdC, hb]
+    simp only [Nat.add_sub_cancel]
+    field_simp
+  rw [orthonormalFamily, orthonormalFamily, orthonormalFamily, three_term_recurrence hw n]
+  have hsplit : (C (cdA μ (n + 1)) * X + C (cdB μ (n + 1))) *
+        (C (normOf μ (n + 1))⁻¹ * family μ (n + 1))
+      - C (cdC μ (n + 1)) * (C (normOf μ n)⁻¹ * family μ n)
+      = (C (cdA μ (n + 1) * (normOf μ (n + 1))⁻¹) * X
+          + C (cdB μ (n + 1) * (normOf μ (n + 1))⁻¹)) * family μ (n + 1)
+        - C (cdC μ (n + 1) * (normOf μ n)⁻¹) * family μ n := by
+    simp only [C_mul]; ring
+  rw [hsplit, e1, e2, e3, C_neg, C_mul, C_mul]
+  ring
+
+/-- The normalization `c_{n+1} a_n = a_{n+1}` that the orthonormal scaling produces, and that the
+Christoffel–Darboux identity needs. -/
+theorem cdC_mul_cdA (hw : IsWeight μ) (n : ℕ) : cdC μ (n + 1) * cdA μ n = cdA μ (n + 1) := by
+  have h0 := (normOf_pos hw n).ne'
+  have h1 := (normOf_pos hw (n + 1)).ne'
+  have h2 := (normOf_pos hw (n + 2)).ne'
+  rw [cdC, cdA, cdA]
+  simp only [Nat.add_sub_cancel]
+  field_simp
 
 /-! ### The truncated expansion as a best approximation -/
 

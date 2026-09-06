@@ -48,11 +48,12 @@ idempotency with no orthogonality computation of its own — the orthonormality 
 
 ## Not done here
 
-Jackson's theorems ([han2009theoretical], Theorems 3.7.1 and 3.7.2), which bound the best uniform
-trigonometric approximation of a Hölder function by `M_k / n^{k+α}`, are not formalized; they are
-independent of the Fourier projection except through the subspace `trigPolyLE (2 π) n` that they
-measure the distance to, and their proof is a separate construction (convolution with the Jackson
-kernel `(sin (n θ / 2) / sin (θ / 2))⁴`). Of Zygmund's asymptotic `L_n = (4/π²) log n + O(1)` the
+Jackson's theorem ([han2009theoretical], Theorem 3.7.1), which bounds the best uniform
+trigonometric approximation of a Hölder function by `M_k / n^{k+α}`, is in
+`Numlib/Approximation/Jackson`: it is independent of the Fourier projection except through the
+subspace `trigPolyLE (2 π) n` that it measures the distance to.
+
+Of Zygmund's asymptotic `L_n = (4/π²) log n + O(1)` the
 two halves are proved with different constants — `log_le_lebesgueConstant` has the sharp `4/π²`
 below, `lebesgueConstant_le` the crude `1 + log (2 n + 1)` above — which is all that the divergence
 argument and the convergence rate (3.7.12) consume. What is proved of Atkinson and Han's (3.7.11) is
@@ -63,9 +64,6 @@ contributes; the rate then follows from it and Jackson's theorem.
 open MeasureTheory Metric Set
 
 open scoped Real
-
-/-- The circle of circumference `2 π` needs `0 < 2 π` as a `Fact`. -/
-instance : Fact (0 < 2 * π) := ⟨by positivity⟩
 
 namespace PeriodicCont
 
@@ -90,22 +88,6 @@ private theorem sum_Icc_neg_eq {M : Type*} [AddCommMonoid M] (g : ℤ → M) (n 
       Finset.sum_Icc_succ_top (Nat.succ_le_succ (Nat.zero_le n))]
     push_cast
     abel
-
-/-- On the circle of circumference `2 π` the member of index `j > 0` of the real trigonometric
-system is `√2 cos (j t)`. -/
-theorem trigFun_coe_of_pos {j : ℤ} (hj : 0 < j) (t : ℝ) :
-    trigFun (2 * π) j ↑t = √2 * Real.cos (j * t) := by
-  have hπ : (π : ℝ) ≠ 0 := Real.pi_ne_zero
-  have h : 2 * π * (j : ℝ) * t / (2 * π) = (j : ℝ) * t := by field_simp
-  rw [trigFun_coe_apply_of_pos hj, h]
-
-/-- On the circle of circumference `2 π` the member of index `j < 0` of the real trigonometric
-system is `√2 sin (-j t)`. -/
-theorem trigFun_coe_of_neg {j : ℤ} (hj : j < 0) (t : ℝ) :
-    trigFun (2 * π) j ↑t = √2 * Real.sin (-(j : ℝ) * t) := by
-  have hπ : (π : ℝ) ≠ 0 := Real.pi_ne_zero
-  have h : -(2 * π * (j : ℝ) * t / (2 * π)) = -(j : ℝ) * t := by field_simp
-  rw [trigFun_coe_apply_of_neg hj, h]
 
 /-- The Dirichlet kernel as a continuous function on the circle: it is the trigonometric polynomial
 `1/2 + ∑_{j = 1}^{n} (√2)⁻¹ e_j`, whose value at `↑t` is `dirichletKernel n t`

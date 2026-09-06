@@ -29,6 +29,7 @@ import Numlib.Approximation.BestApprox
 import Numlib.Approximation.Chebyshev
 import Numlib.Approximation.Hermite
 import Numlib.Approximation.Interpolation
+import Numlib.Approximation.Jackson
 import Numlib.Approximation.OrthogonalPolynomial
 import Numlib.Approximation.Quadrature
 import Numlib.Approximation.Trigonometric

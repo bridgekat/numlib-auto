@@ -118,6 +118,22 @@ theorem trigFun_coe_apply_of_neg {n : ℤ} (hn : n < 0) (x : ℝ) :
   rw [trigFun_apply, trigWeight_of_neg hn, fourier_coe_apply_mul_I, mul_assoc, re_ofReal_mul,
     Real.sin_neg, Complex.I_mul_re, exp_ofReal_mul_I_im]
 
+/-- On the circle of circumference `2 π` the member of index `j > 0` of the real trigonometric
+system is `√2 cos (j t)`. -/
+theorem trigFun_coe_of_pos {j : ℤ} (hj : 0 < j) (t : ℝ) :
+    trigFun (2 * π) j ↑t = √2 * Real.cos (j * t) := by
+  have hπ : (π : ℝ) ≠ 0 := Real.pi_ne_zero
+  have h : 2 * π * (j : ℝ) * t / (2 * π) = (j : ℝ) * t := by field_simp
+  rw [trigFun_coe_apply_of_pos hj, h]
+
+/-- On the circle of circumference `2 π` the member of index `j < 0` of the real trigonometric
+system is `√2 sin (-j t)`. -/
+theorem trigFun_coe_of_neg {j : ℤ} (hj : j < 0) (t : ℝ) :
+    trigFun (2 * π) j ↑t = √2 * Real.sin (-(j : ℝ) * t) := by
+  have hπ : (π : ℝ) ≠ 0 := Real.pi_ne_zero
+  have h : -(2 * π * (j : ℝ) * t / (2 * π)) = -(j : ℝ) * t := by field_simp
+  rw [trigFun_coe_apply_of_neg hj, h]
+
 /-- The `n`-th member of the real trigonometric system, as an element of `L²` of the circle. -/
 noncomputable abbrev trigLp (T : ℝ) [hT : Fact (0 < T)] (n : ℤ) :
     Lp ℝ 2 (@AddCircle.haarAddCircle T hT) :=
@@ -126,11 +142,21 @@ noncomputable abbrev trigLp (T : ℝ) [hT : Fact (0 < T)] (n : ℤ) :
 private theorem norm_fourier_apply (n : ℤ) (x : AddCircle T) : ‖fourier n x‖ = 1 := by
   rw [fourier_apply, Circle.norm_coe]
 
+/-- The circle of circumference `2 π`, on which the classical Fourier series lives, needs
+`0 < 2 π` as a `Fact` for its Haar measure and its compactness. -/
+instance : Fact (0 < 2 * π) := ⟨by positivity⟩
+
 section Circle
 
 variable [hT : Fact (0 < T)]
 
 open AddCircle
+
+/-- The circle of circumference `T > 0` is infinite, being in bijection with the interval
+`[0, T)`. -/
+instance instInfiniteAddCircle : Infinite (AddCircle T) :=
+  have : Infinite (Set.Ico (0 : ℝ) (0 + T)) := Set.Ico.infinite (by simpa using hT.out)
+  (AddCircle.equivIco T 0).infinite_iff.2 this
 
 /-! ### Integrals of the exponentials -/
 

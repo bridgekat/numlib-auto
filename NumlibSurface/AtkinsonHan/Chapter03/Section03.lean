@@ -7,6 +7,7 @@ import Mathlib.Topology.ContinuousMap.Polynomial
 import Numlib.Analysis.Convex.StrictConvexSpace
 import Numlib.Analysis.Normed.Module.WeakDual
 import Numlib.Approximation.BestApprox
+import Numlib.Approximation.Chebyshev
 import Numlib.Variational.Minimization
 
 /-!
@@ -47,6 +48,10 @@ Definition 3.3.9 (a coercive functional) is the backbone's `IsCoerciveFunctional
 * `theorem_3_3_15`, `theorem_3_3_16`, `example_3_3_17` — existence of best approximations.
 * `theorem_3_3_18`, `theorem_3_3_21` — uniqueness under strict convexity of `‖·‖ᵖ`, resp. strict
   normedness.
+* `theorem_3_3_19`, `theorem_3_3_19_equioscillates`, `theorem_3_3_19_alternation` — the Chebyshev
+  equi-oscillation theorem: a unique best uniform polynomial approximation on `[a, b]`, and its
+  characterization by an alternation of length `n + 2`.
+* `theorem_3_3_20` — the same existence and uniqueness for trigonometric polynomials on `C_p(2π)`.
 * `exercise_3_3_8`, `exercise_3_3_8_rpow`, `exercise_3_3_9` — inner product spaces satisfy
   both criteria.
 
@@ -56,13 +61,9 @@ Theorems 3.3.8, 3.3.10, 3.3.11 (Mazur), 3.3.12 and 3.3.14 concern minimizers in 
 spaces; they wait on weak sequential compactness (the book's Thm 2.7.5), which Mathlib does not
 have.
 
-Theorems 3.3.19–3.3.20, the Chebyshev equioscillation theorem on `[a, b]` and its trigonometric
-counterpart, are not stated here either, but no longer for want of ingredients: the backbone
-`Numlib/Approximation/Chebyshev.lean` has the Haar condition, the de la Vallée-Poussin bound
-`le_infDist_of_alternates`, the sufficiency half `isBestApprox_of_equioscillates` and the
-uniqueness `IsBestApprox.unique_of_polyLE`/`unique_of_haarCondition`. What is missing is the
-existence of an alternation of length `n + 2` for the error of a best approximation, which is the
-remaining half of Theorem 3.3.19.
+Theorems 3.3.19 and 3.3.20 are stated here and proved from the backbone
+`Numlib/Approximation/Chebyshev.lean`; the book's `𝕋ₙ` is the backbone's `trigPolyLE (2π) n` and
+its `C_p(2π)` is `C(ℝ / 2πℤ, ℝ)`, so no vocabulary of its own is introduced for them.
 -/
 
 open Filter Topology Bornology
@@ -292,7 +293,62 @@ theorem example_3_3_17 (a b : ℝ) (n : ℕ) (f : C(Set.Icc a b, ℝ)) :
     ∃ p, IsBestApprox (polyLE a b n : Set C(Set.Icc a b, ℝ)) f p :=
   exists_isBestApprox_of_finiteDimensional (polyLE a b n) f
 
+/-- The book's `𝒫ₙ` on `[a, b]` is the backbone's `polyLE`: the polynomials of degree `< n + 1` and
+those of degree `≤ n` are the same subspace of `ℝ[X]`. -/
+theorem polyLE_eq (a b : ℝ) (n : ℕ) : polyLE a b n = _root_.polyLE (Set.Icc a b) n := by
+  rw [polyLE, _root_.polyLE, Polynomial.degreeLT_succ_eq_degreeLE]
+
+/-- **Theorem 3.3.19** (Chebyshev equi-oscillation theorem), the existence and uniqueness clause:
+on a nondegenerate interval the minimization problem `ρₙ(f) = min_{p ∈ 𝒫ₙ} ‖f - p‖_∞` has exactly
+one solution. -/
+theorem theorem_3_3_19 {a b : ℝ} (hab : a < b) (n : ℕ) (f : C(Set.Icc a b, ℝ)) :
+    ∃! p : C(Set.Icc a b, ℝ), IsBestApprox (polyLE a b n : Set C(Set.Icc a b, ℝ)) f p := by
+  have : Infinite (Set.Icc a b) := Set.Icc.infinite hab
+  rw [polyLE_eq]
+  exact existsUnique_isBestApprox_polyLE n f
+
+/-- **Theorem 3.3.19**, the characterization: `p ∈ 𝒫ₙ` is a best uniform approximation of `f` on
+`[a, b]` exactly when the error `f - p` attains `± ‖f - p‖_∞` with alternating signs at `n + 2`
+increasing points of `[a, b]`. -/
+theorem theorem_3_3_19_equioscillates {a b : ℝ} (hab : a < b) {n : ℕ} {f p : C(Set.Icc a b, ℝ)}
+    (hp : p ∈ polyLE a b n) :
+    IsBestApprox (polyLE a b n : Set C(Set.Icc a b, ℝ)) f p ↔ Equioscillates (f - p) (n + 2) := by
+  have : Infinite (Set.Icc a b) := Set.Icc.infinite hab
+  rw [polyLE_eq] at hp ⊢
+  exact isBestApprox_iff_equioscillates hp
+
+/-- **Theorem 3.3.19** in the book's display: for the best approximation `p̂ₙ` there are `n + 2`
+points `a ≤ x₀ < ⋯ < x_{n+1} ≤ b` and a sign `σ = ±1` with `f(xⱼ) - p̂ₙ(xⱼ) = σ (-1)ʲ ρₙ(f)`. -/
+theorem theorem_3_3_19_alternation {a b : ℝ} (hab : a < b) {n : ℕ} {f p : C(Set.Icc a b, ℝ)}
+    (h : IsBestApprox (polyLE a b n : Set C(Set.Icc a b, ℝ)) f p) :
+    ∃ (σ : ℝ) (x : Fin (n + 2) → Set.Icc a b), (σ = 1 ∨ σ = -1) ∧
+      StrictMono (fun i => (x i : ℝ)) ∧
+      ∀ i : Fin (n + 2), f (x i) - p (x i) = σ * (-1) ^ (i : ℕ) * rho a b n f := by
+  obtain ⟨σ, x, hσ, hmono, hval⟩ := (theorem_3_3_19_equioscillates hab h.1).1 h
+  exact ⟨σ, x, hσ, hmono, fun i => by
+    simpa [rho_eq_norm_sub_of_isBestApprox h] using hval i⟩
+
 end Polynomials
+
+/-! ### Theorem 3.3.20: best uniform approximation by trigonometric polynomials -/
+
+section TrigonometricPolynomials
+
+open scoped Real
+
+/-- **Theorem 3.3.20.** For a continuous `2π`-periodic function `g` — an element of `C_p(2π)`,
+realized as `C(ℝ / 2πℤ, ℝ)` — and an integer `n ≥ 0` there is exactly one trigonometric polynomial
+`q̂ₙ ∈ 𝕋ₙ` of degree at most `n` with `‖g - q̂ₙ‖_∞ = min_{q ∈ 𝕋ₙ} ‖g - q‖_∞`.
+
+Existence is Theorem 3.3.16, `𝕋ₙ` being a `2 n + 1`-dimensional subspace; uniqueness is the Haar
+condition for the trigonometric polynomials, a nonzero one of degree at most `n` having at most
+`2 n` zeros in a period. -/
+theorem theorem_3_3_20 (n : ℕ) (g : C(AddCircle (2 * π), ℝ)) :
+    ∃! q : C(AddCircle (2 * π), ℝ),
+      IsBestApprox (trigPolyLE (2 * π) n : Set C(AddCircle (2 * π), ℝ)) g q :=
+  existsUnique_isBestApprox_trigPolyLE n g
+
+end TrigonometricPolynomials
 
 /-! ### Theorems 3.3.18 and 3.3.21: uniqueness of best approximations -/
 

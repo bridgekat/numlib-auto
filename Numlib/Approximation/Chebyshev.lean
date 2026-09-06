@@ -1,6 +1,7 @@
 import Mathlib.Analysis.Convex.Combination
 import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 import Mathlib.LinearAlgebra.Lagrange
+import Mathlib.RingTheory.Polynomial.DegreeLT
 import Mathlib.Topology.Algebra.Polynomial
 import Mathlib.Topology.ContinuousMap.Compact
 import Mathlib.Topology.ContinuousMap.Polynomial
@@ -48,7 +49,14 @@ of degree at most `n`, and the alternation (equioscillation) that characterizes 
   builds, out of a maximal alternation shorter than `n + 2`, a polynomial that
   `IsBestApprox.exists_mul_nonpos` — Kolmogorov's criterion — forbids.
 * `card_le_two_mul_of_forall_trigFun_eq_zero` is the Haar condition for the trigonometric
-  polynomials: a nonzero one of degree at most `n` has at most `2 n` zeros in a period.
+  polynomials: a nonzero one of degree at most `n` has at most `2 n` zeros in a period. Packaged as
+  `haarCondition_trigPolyLE` it gives `IsBestApprox.unique_of_trigPolyLE` and, with the
+  finite-dimensionality of the subspace, `existsUnique_isBestApprox_trigPolyLE`;
+  `existsUnique_isBestApprox_polyLE` is the polynomial counterpart.
+
+The interpolation and uniqueness arguments — everything but the alternation itself, which is stated
+for a subset of the line because it speaks of increasing points — hold on an arbitrary compact
+space, which is what lets the trigonometric case on a circle reuse them verbatim.
 -/
 
 open scoped Polynomial
@@ -69,6 +77,16 @@ theorem mem_polyLE_iff {X : Set ℝ} {n : ℕ} {g : C(X, ℝ)} :
     refine ⟨P, Polynomial.mem_degreeLE.mpr hP, ?_⟩
     ext t
     simpa using (hg t).symm
+
+/-- The polynomials of degree at most `n` on `X` form a finite-dimensional subspace of `C(X, ℝ)`,
+being the image of the space of polynomials of degree `< n + 1`. -/
+instance instFiniteDimensionalPolyLE (X : Set ℝ) (n : ℕ) :
+    FiniteDimensional ℝ (polyLE X n) := by
+  have h : polyLE X n =
+      (Polynomial.degreeLT ℝ (n + 1)).map (Polynomial.toContinuousMapOnAlgHom X).toLinearMap := by
+    rw [polyLE, Polynomial.degreeLT_succ_eq_degreeLE]
+  rw [h]
+  infer_instance
 
 /-- A subspace `V` of `C(X, ℝ)` satisfies the **Haar condition in dimension `d`** when no nonzero
 element of `V` vanishes at `d` distinct points of `X`. For a `d`-dimensional space this is the
@@ -273,7 +291,8 @@ theorem isBestApprox_of_equioscillates {X : Set ℝ} [CompactSpace X] {n : ℕ} 
 /-! ### The extreme set of a best approximation, and uniqueness -/
 
 /-- On a compact nonempty space the maximum modulus of a continuous function is attained. -/
-private theorem exists_abs_eq_norm {X : Set ℝ} [CompactSpace X] [Nonempty X] (g : C(X, ℝ)) :
+private theorem exists_abs_eq_norm {X : Type*} [TopologicalSpace X] [CompactSpace X]
+    [Nonempty X] (g : C(X, ℝ)) :
     ∃ t : X, |g t| = ‖g‖ := by
   obtain ⟨t, -, hmax⟩ := isCompact_univ.exists_isMaxOn Set.univ_nonempty
     (continuous_abs.comp g.continuous).continuousOn
@@ -286,7 +305,8 @@ private theorem exists_abs_eq_norm {X : Set ℝ} [CompactSpace X] [Nonempty X] (
 `|g|` attains its maximum, then `g - λ q` is strictly smaller than `g` in sup norm for all small `λ
 > 0`: away from the extreme set there is room to spare, and at the extreme set the correction has
 the right sign. -/
-private theorem exists_norm_sub_smul_lt {X : Set ℝ} [CompactSpace X] [Nonempty X]
+private theorem exists_norm_sub_smul_lt {X : Type*} [TopologicalSpace X] [CompactSpace X]
+    [Nonempty X]
     {g q : C(X, ℝ)} (hE : 0 < ‖g‖) (hsign : ∀ t : X, |g t| = ‖g‖ → 0 < g t * q t) :
     ∃ lam : ℝ, 0 < lam ∧ ‖g - lam • q‖ < ‖g‖ := by
   classical
@@ -352,7 +372,8 @@ The hypothesis is what a Haar system of dimension `d` supplies
 of degree at most `n`, with `d = n + 1`.
 
 Reference: [han2009theoretical], Theorem 3.3.19. -/
-theorem IsBestApprox.exists_card_eq_of_interpolation {X : Set ℝ} [CompactSpace X] [Infinite X]
+theorem IsBestApprox.exists_card_eq_of_interpolation {X : Type*} [TopologicalSpace X]
+    [CompactSpace X] [Infinite X]
     {d : ℕ} {V : Submodule ℝ C(X, ℝ)} {f p : C(X, ℝ)}
     (hinterp : ∀ S : Finset X, S.card < d → ∀ y : X → ℝ, ∃ q ∈ V, ∀ t ∈ S, q t = y t)
     (hp : IsBestApprox (V : Set C(X, ℝ)) f p) :
@@ -432,7 +453,8 @@ theorem IsBestApprox.exists_card_eq_of_polyLE {X : Set ℝ} [CompactSpace X] [In
 errors have the common minimal norm `ρ`, so each has modulus at most `ρ` everywhere; where their
 average has modulus exactly `ρ` neither can fall short, and both have the same sign. This is the
 step both uniqueness theorems below take. -/
-private theorem eq_of_abs_sub_midpoint_eq {X : Set ℝ} [CompactSpace X] {K : Set C(X, ℝ)}
+private theorem eq_of_abs_sub_midpoint_eq {X : Type*} [TopologicalSpace X] [CompactSpace X]
+    {K : Set C(X, ℝ)}
     {f p₁ p₂ : C(X, ℝ)} (h₁ : IsBestApprox K f p₁) (h₂ : IsBestApprox K f p₂)
     (hmid : IsBestApprox K f ((2 : ℝ)⁻¹ • p₁ + (2 : ℝ)⁻¹ • p₂)) {t : X}
     (hmax : |(f - ((2 : ℝ)⁻¹ • p₁ + (2 : ℝ)⁻¹ • p₂)) t|
@@ -468,7 +490,8 @@ and at each of those the two errors must agree; the Haar condition then forces t
 be equal.
 
 Reference: [han2009theoretical], Theorem 3.3.19; [kress1998numerical], §8.2. -/
-theorem IsBestApprox.unique_of_haarCondition {X : Set ℝ} [CompactSpace X] [Infinite X] {d : ℕ}
+theorem IsBestApprox.unique_of_haarCondition {X : Type*} [TopologicalSpace X] [CompactSpace X]
+    [Infinite X] {d : ℕ}
     {V : Submodule ℝ C(X, ℝ)} [FiniteDimensional ℝ V] (hV : HaarCondition V d)
     (hdim : Module.finrank ℝ V = d) {f p₁ p₂ : C(X, ℝ)}
     (h₁ : IsBestApprox (V : Set C(X, ℝ)) f p₁) (h₂ : IsBestApprox (V : Set C(X, ℝ)) f p₂) :
@@ -734,6 +757,50 @@ theorem card_le_two_mul_of_forall_trigFun_eq_zero {T : ℝ} (hT : T ≠ 0) {n : 
     _ ≤ Multiset.card Q.roots := Multiset.toFinset_card_le _
     _ ≤ Q.natDegree := Polynomial.card_roots' Q
     _ ≤ 2 * n := hQdeg
+
+/-- **The trigonometric polynomials of degree at most `n` satisfy the Haar condition in dimension
+`2 n + 1`**, which is their dimension (`finrank_trigPolyLE`): a nonzero one has at most `2 n` zeros
+in a period, by `card_le_two_mul_of_forall_trigFun_eq_zero`.
+
+Reference: [han2009theoretical], Theorem 3.3.20. -/
+theorem haarCondition_trigPolyLE {T : ℝ} (hT : T ≠ 0) (n : ℕ) :
+    HaarCondition (trigPolyLE T n) (2 * n + 1) := by
+  intro g hg hg0 s hs
+  obtain ⟨c, hc⟩ := mem_trigPolyLE_iff.mp hg
+  have := card_le_two_mul_of_forall_trigFun_eq_zero hT hc hg0 hs
+  omega
+
+/-- **Uniqueness of the best uniform approximation by trigonometric polynomials** of degree at most
+`n` on the circle of circumference `T`: the Haar condition `haarCondition_trigPolyLE` fed to
+`IsBestApprox.unique_of_haarCondition`.
+
+Reference: [han2009theoretical], Theorem 3.3.20. -/
+theorem IsBestApprox.unique_of_trigPolyLE {T : ℝ} [hT : Fact (0 < T)] {n : ℕ}
+    {f p₁ p₂ : C(AddCircle T, ℝ)}
+    (h₁ : IsBestApprox (trigPolyLE T n : Set C(AddCircle T, ℝ)) f p₁)
+    (h₂ : IsBestApprox (trigPolyLE T n : Set C(AddCircle T, ℝ)) f p₂) : p₁ = p₂ :=
+  IsBestApprox.unique_of_haarCondition (haarCondition_trigPolyLE hT.out.ne' n)
+    (finrank_trigPolyLE T n) h₁ h₂
+
+/-- **Existence and uniqueness of the best uniform trigonometric approximation** of a continuous
+periodic function by trigonometric polynomials of degree at most `n`: the subspace is
+finite-dimensional, so a best approximation exists, and it is unique by the Haar condition.
+
+Reference: [han2009theoretical], Theorem 3.3.20. -/
+theorem existsUnique_isBestApprox_trigPolyLE {T : ℝ} [Fact (0 < T)] (n : ℕ)
+    (f : C(AddCircle T, ℝ)) :
+    ∃! p : C(AddCircle T, ℝ), IsBestApprox (trigPolyLE T n : Set C(AddCircle T, ℝ)) f p := by
+  obtain ⟨p, hp⟩ := exists_isBestApprox_of_finiteDimensional (trigPolyLE T n) f
+  exact ⟨p, hp, fun q hq => IsBestApprox.unique_of_trigPolyLE hq hp⟩
+
+/-- **Existence and uniqueness of the best uniform polynomial approximation** of degree at most `n`
+on a compact infinite subset of the line.
+
+Reference: [han2009theoretical], Theorem 3.3.19. -/
+theorem existsUnique_isBestApprox_polyLE {X : Set ℝ} [CompactSpace X] [Infinite X] (n : ℕ)
+    (f : C(X, ℝ)) : ∃! p : C(X, ℝ), IsBestApprox (polyLE X n : Set C(X, ℝ)) f p := by
+  obtain ⟨p, hp⟩ := exists_isBestApprox_of_finiteDimensional (polyLE X n) f
+  exact ⟨p, hp, fun q hq => hq.unique_of_polyLE hp⟩
 
 /-- **A longest alternation.** A nonzero `g` on a compact nonempty space alternates once, at a point
 of maximum modulus; so if it does not alternate `n + 2` times, there is a greatest length `m` at

@@ -45,3 +45,27 @@ id = "_root_.Polynomial.forall_nonneg_or_forall_nonpos_of_even_rootMultiplicity"
 
 [[node]]
 id = "_root_.Polynomial.forall_pos_or_forall_neg_of_forall_eval_ne_zero"
+
+[[node]]
+id = "orthonormalFamily"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Section 3.7.2"
+
+[[node]]
+id = "integral_orthonormalFamily_sq"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Section 3.7.2"
+
+[[node]]
+id = "integral_orthonormalFamily_mul"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Section 3.7.2"
+
+[[node]]
+id = "cdA"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.7.3"
+
+[[node]]
+id = "cdA_eq_leadingCoeff_div"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.7.3"
+
+[[node]]
+id = "orthonormalFamily_recurrence"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Exercises 3.5.5–3.5.6"

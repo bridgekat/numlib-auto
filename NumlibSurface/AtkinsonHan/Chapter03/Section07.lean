@@ -4,6 +4,10 @@ import Mathlib.Topology.Instances.AddCircle.Defs
 import Mathlib.Topology.MetricSpace.Holder
 import Numlib.Analysis.Normed.Operator.BanachSteinhaus
 import Numlib.Approximation.BestApprox
+import Numlib.Approximation.Jackson
+import Numlib.Approximation.OrthogonalPolynomial
+import Numlib.Approximation.Trigonometric
+import Numlib.Krylov.OrthogonalPolynomials
 
 /-!
 # Atkinson–Han §3.7: uniform error bounds
@@ -26,25 +30,31 @@ The section's two abstract ingredients are formalized here:
 * `IsPeriodicCont`, `PeriodicCont`, `HolderClass`, `HolderClassIcc` — the function spaces
   `C_p(2π)`, `C_p^{k,α}(2π)` and `C^{k,α}[−1, 1]` that Theorems 3.7.1–3.7.2 speak about,
   as definitions only.
+* `equation_3_7_6`, `equation_3_7_8`, `equation_3_7_9` — the Dirichlet-kernel representation of
+  the Fourier projection `𝓕ₙ`, the closed form of `Dₙ`, and `‖𝓕ₙ‖ = Lₙ`;
+  `norm_fourierProj_asymptotics` is the two-sided `Lₙ ≍ log n` that stands in for (3.7.10).
+* `theorem_3_7_1` — **Jackson's theorem** for `C_p^{k,α}(2π)`, a specialization of the backbone's
+  `Jackson.infDist_le_of_holder_deriv'`; `equation_3_7_11` and `equation_3_7_12` combine it with
+  the Lebesgue lemma to give the rate `c_k log n / n^{k+α}` for the Fourier partial sums.
+* `theorem_3_7_3`, `theorem_3_7_3_confluent` — the Christoffel–Darboux identity for the
+  orthonormal polynomials of a weight, in the quotient form the book states and in its confluent
+  case `x = t`.
 
 ## Not formalized here
 
 Everything else in §3.7 is deferred to the trigonometric-approximation phase of the backbone,
 because none of the objects it speaks about exist yet in Mathlib or in `Numlib`:
 
-* (3.7.1)–(3.7.2) and **Theorems 3.7.1, 3.7.2** (Jackson's theorems)
-  `‖g − qₙ‖_∞ ≤ c^{k+1} M_k / n^{k+α}`, and the polynomial version on `[−1, 1]`: these need the
-  space `C_p(2π)` of continuous `2π`-periodic functions, its Hölder subclasses `C_p^{k,α}(2π)`,
-  and the trigonometric polynomials `𝕋ₙ`. The two spaces are defined below; the theorems are
-  not.
-* (3.7.6)–(3.7.10): the Fourier projection `𝓕ₙ` on `C_p(2π)`, the Dirichlet kernel `Dₙ`, the
-  identity `‖𝓕ₙ‖ = Lₙ` (which needs the integral-operator norm formula (2.2.8)), and Zygmund's
-  asymptotics `Lₙ = (4/π²) log n + O(1)`.
+* (3.7.1)–(3.7.2) and **Theorem 3.7.2**, the polynomial half of Jackson's theorem on `[−1, 1]`:
+  the transfer of Theorem 3.7.1 through `x = cos θ` is not in the backbone, so the constant `d_k`
+  is not available here. See the plan node `Jackson.infDist_le_of_holder_poly`.
+* (3.7.10), Zygmund's sharp asymptotics `Lₙ = (4/π²) log n + O(1)`: the backbone proves the two
+  halves with different constants, `(4/π²) log n ≤ Lₙ ≤ 1 + log (2 n + 1)`, which is what the
+  divergence argument and the convergence rate consume, so `norm_fourierProj_asymptotics` carries
+  that name rather than the equation's.
 * (3.7.12), (3.7.22): the resulting `c_k log n / n^{k+α}` bounds.
 * (3.7.13)–(3.7.17): the least-squares projection `P_N` on a weighted `L²_w(−1, 1)`, its kernel
   `K(x, t)` and `‖P_N‖ = max_x ∫ |K(x, t)| dt`.
-* **Theorem 3.7.3** (the Christoffel–Darboux identity), which is purely algebraic from the
-  three-term recurrence and belongs with orthogonal polynomials.
 * **Example 3.7.4** (the Chebyshev kernel) and §3.7.3 ((3.7.19) trigonometric Lagrange formula,
   (3.7.20) `‖𝓘ₙ‖ ≤ 1 + (2/π) log n`), which need interpolatory projections.
 * (3.7.5) `‖f − 𝓕ₙ f‖₂ ≤ √(2π) ‖f − 𝓕ₙ f‖_∞`, which needs `L²` function spaces.
@@ -132,5 +142,214 @@ def HolderClassIcc (k : ℕ) (α M : ℝ≥0) (f : ℝ → ℝ) : Prop :=
     HolderOnWith M α (iteratedDerivWithin k f (Set.Icc (-1) 1)) (Set.Icc (-1) 1)
 
 end Spaces
+
+/-! ### (3.7.6)–(3.7.9): the Fourier projection and the Lebesgue constants -/
+
+section FourierProjection
+
+open Real _root_.PeriodicCont
+
+/-- **(3.7.6)**: the `n`-th partial sum of the Fourier series of `f ∈ C_p(2π)` is the integral of
+`f` against the Dirichlet kernel, `𝓕ₙ f (x) = (1/π) ∫_{-π}^{π} Dₙ(x - y) f(y) dy`. -/
+theorem equation_3_7_6 (n : ℕ) (f : PeriodicCont) (x : ℝ) :
+    fourierProj n f ↑x = 1 / π * ∫ y in -π..π, dirichletKernel n (x - y) * f ↑y := by
+  have hf : Function.Periodic (fun t : ℝ => f ↑t) (2 * π) := fun t => by
+    simp only []
+    rw [AddCircle.coe_add_period]
+  have hper : Function.Periodic (fun y : ℝ => dirichletKernel n (x - y) * f ↑y) (2 * π) := by
+    intro y
+    have h1 : dirichletKernel n (x - (y + 2 * π)) = dirichletKernel n (x - y) := by
+      rw [show x - (y + 2 * π) = (x - y) - 2 * π by ring]
+      exact (dirichletKernel_periodic n).sub_eq (x - y)
+    have h2 : f ((y + 2 * π : ℝ) : AddCircle (2 * π)) = f ((y : ℝ) : AddCircle (2 * π)) := hf y
+    simp only []
+    rw [h1, h2]
+  have hshift : (∫ y in -π..π, dirichletKernel n (x - y) * f ↑y)
+      = ∫ r in -π..π, dirichletKernel n r * f ↑(x + r) := by
+    have h1 := hper.intervalIntegral_add_eq (-π) (x + -π)
+    rw [show -π + 2 * π = π by ring, show x + -π + 2 * π = x + π by ring] at h1
+    rw [h1, ← intervalIntegral.integral_comp_add_left
+      (fun y : ℝ => dirichletKernel n (x - y) * f ↑y) x]
+    refine intervalIntegral.integral_congr fun r _ => ?_
+    rw [show x - (x + r) = -r by ring, dirichletKernel_neg]
+  rw [hshift, fourierProj_apply, integral_addCircle_eq
+    (fun y => fourierKernel n (↑x, y) * f y) x, ← intervalIntegral.integral_const_mul]
+  refine intervalIntegral.integral_congr fun r _ => ?_
+  have hsub : ((↑(x + r) : AddCircle (2 * π)) - ↑x) = ((r : ℝ) : AddCircle (2 * π)) := by
+    have h : ((↑(x + r) : AddCircle (2 * π))) = (↑x : AddCircle (2 * π)) + ↑r := rfl
+    rw [h, add_sub_cancel_left]
+  simp only [fourierKernel_apply, hsub, dirichletCM_coe]
+  field_simp
+
+/-- **(3.7.7)–(3.7.8)**: the Dirichlet kernel is `Dₙ(θ) = 1/2 + ∑_{j=1}^{n} cos (j θ)`, and away
+from the multiples of `2π` it is `sin ((n + 1/2) θ) / (2 sin (θ/2))`. -/
+theorem equation_3_7_8 (n : ℕ) {t : ℝ} (ht : Real.sin (t / 2) ≠ 0) :
+    dirichletKernel n t = 1 / 2 + ∑ j ∈ Finset.Icc 1 n, Real.cos (j * t) ∧
+      dirichletKernel n t = Real.sin ((n + 1 / 2) * t) / (2 * Real.sin (t / 2)) :=
+  ⟨dirichletKernel_apply n t, dirichletKernel_eq_sin_div ht⟩
+
+/-- **(3.7.9)**: `𝓕ₙ : C_p(2π) → 𝕋ₙ` is a bounded projection whose operator norm is the `n`-th
+Lebesgue constant `Lₙ = (2/π) ∫_0^π |Dₙ(y)| dy`. -/
+theorem equation_3_7_9 (n : ℕ) :
+    ‖fourierProj n‖ = 2 / π * ∫ t in (0 : ℝ)..π, |dirichletKernel n t| := by
+  rw [norm_fourierProj, lebesgueConstant_eq]
+
+/-- The Lebesgue constants are of exact order `log n`: this is the two-sided bound that the sharp
+asymptotics (3.7.10) `Lₙ = (4/π²) log n + 𝓞(1)` of Zygmund refine. The lower half is what makes
+`{‖𝓕ₙ‖}` unbounded, and so — by `exists_not_tendsto_of_not_bddAbove` — produces a continuous
+periodic function whose Fourier series does not converge uniformly; the upper half is what the
+convergence rate (3.7.12) consumes. -/
+theorem norm_fourierProj_asymptotics (n : ℕ) :
+    4 / π ^ 2 * Real.log n ≤ ‖fourierProj n‖ ∧
+      ‖fourierProj n‖ ≤ 1 + Real.log (2 * (n : ℝ) + 1) := by
+  rw [norm_fourierProj]
+  exact ⟨log_le_lebesgueConstant n, lebesgueConstant_le n⟩
+
+end FourierProjection
+
+/-! ### Theorem 3.7.1 and (3.7.11)–(3.7.12): Jackson's theorem and the Fourier series -/
+
+section JacksonTheorem
+
+open Real NNReal _root_.PeriodicCont
+
+set_option linter.unusedVariables false in
+/-- **Theorem 3.7.1** (Jackson's theorem). Let `g ∈ C_p^{k,α}(2π)`: a `2π`-periodic function with
+`k` continuous derivatives whose `k`-th derivative satisfies the Hölder condition
+`|g⁽ᵏ⁾(θ₁) - g⁽ᵏ⁾(θ₂)| ≤ Mₖ |θ₁ - θ₂|^α` for some `Mₖ > 0` and some `α ∈ (0, 1]`. Then the error in
+the best approximation `qₙ` to `g` from `𝕋ₙ` satisfies
+
+`max_θ |g(θ) - qₙ(θ)| ≤ c^{k+1} Mₖ / n^{k+α}`,  `c = 1 + π²/2`.
+
+The hypothesis `0 < α` is the book's and is not needed: the bound holds for `α = 0` too, where it
+says that a function with bounded oscillation is approximated within a constant. -/
+theorem theorem_3_7_1 {k n : ℕ} {α M : ℝ≥0} (hα0 : 0 < α) (hα1 : α ≤ 1) (hn : 1 ≤ n)
+    {g : ℝ → ℝ} (hg : HolderClass k α M g) :
+    Metric.infDist (PeriodicCont.ofIsPeriodicCont hg.1)
+        (trigPolyLE (2 * π) n : Set C(AddCircle (2 * π), ℝ))
+      ≤ (1 + π ^ 2 / 2) ^ (k + 1) * (M : ℝ) / (n : ℝ) ^ ((k : ℝ) + (α : ℝ)) := by
+  obtain ⟨hper, hcd, hhol⟩ := hg
+  have hlift : _root_.Jackson.lift (PeriodicCont.ofIsPeriodicCont hper) = g :=
+    funext fun x => PeriodicCont.ofIsPeriodicCont_coe hper x
+  refine _root_.Jackson.infDist_le_of_holder_deriv' (D := fun j => iteratedDeriv j g) hn ?_ ?_ ?_
+    M.coe_nonneg α.coe_nonneg (by exact_mod_cast hα1) ?_
+  · rw [iteratedDeriv_zero, hlift]
+  · exact fun j hj => hcd.continuous_iteratedDeriv j (by exact_mod_cast hj)
+  · intro j hj x
+    have hdiff : Differentiable ℝ (iteratedDeriv j g) :=
+      hcd.differentiable_iteratedDeriv j (by exact_mod_cast hj)
+    have h := (hdiff x).hasDerivAt
+    rwa [← iteratedDeriv_succ] at h
+  · intro u v
+    have h := hhol.dist_le u v
+    rwa [Real.dist_eq, Real.dist_eq] at h
+
+/-- **(3.7.11)**: combining the Lebesgue lemma for the Fourier projection with Jackson's theorem,
+`‖f − 𝓕ₙf‖_∞ ≤ (1 + ‖𝓕ₙ‖) c^{k+1} Mₖ / n^{k+α}` for `f ∈ C_p^{k,α}(2π)`. -/
+theorem equation_3_7_11 {k n : ℕ} {α M : ℝ≥0} (hα0 : 0 < α) (hα1 : α ≤ 1) (hn : 1 ≤ n)
+    {g : ℝ → ℝ} (hg : HolderClass k α M g) :
+    ‖PeriodicCont.ofIsPeriodicCont hg.1 - fourierProj n (PeriodicCont.ofIsPeriodicCont hg.1)‖
+      ≤ (1 + ‖fourierProj n‖) *
+        ((1 + π ^ 2 / 2) ^ (k + 1) * (M : ℝ) / (n : ℝ) ^ ((k : ℝ) + (α : ℝ))) := by
+  have h := norm_sub_fourierProj_le n (PeriodicCont.ofIsPeriodicCont hg.1)
+  rw [← norm_fourierProj] at h
+  exact h.trans (mul_le_mul_of_nonneg_left (theorem_3_7_1 hα0 hα1 hn hg) (by positivity))
+
+/-- **(3.7.12)**: the resulting rate `‖f − 𝓕ₙf‖_∞ ≤ c_k log n / n^{k+α}` for `n ≥ 2`, with `c_k`
+depending linearly on the Hölder constant `Mₖ` and otherwise only on `k`. The constant is explicit
+here because the growth `Lₙ ≤ 1 + log (2n + 1)` of the Lebesgue constants is. -/
+theorem equation_3_7_12 (k : ℕ) {α : ℝ≥0} (hα0 : 0 < α) (hα1 : α ≤ 1) :
+    ∃ c : ℝ, 0 < c ∧ ∀ (M : ℝ≥0) (g : ℝ → ℝ) (hg : HolderClass k α M g) (n : ℕ), 2 ≤ n →
+      ‖PeriodicCont.ofIsPeriodicCont hg.1 - fourierProj n (PeriodicCont.ofIsPeriodicCont hg.1)‖
+        ≤ c * (M : ℝ) * Real.log n / (n : ℝ) ^ ((k : ℝ) + (α : ℝ)) := by
+  have hlog2 : (0 : ℝ) < Real.log 2 := Real.log_pos (by norm_num)
+  have hlog3 : (0 : ℝ) ≤ Real.log 3 := Real.log_nonneg (by norm_num)
+  set c₀ : ℝ := 1 + (2 + Real.log 3) / Real.log 2 with hc₀
+  have hc₀pos : 0 < c₀ := by
+    rw [hc₀]
+    positivity
+  have hcpos : 0 < c₀ * (1 + π ^ 2 / 2) ^ (k + 1) := by
+    refine mul_pos hc₀pos (pow_pos ?_ _)
+    positivity
+  refine ⟨c₀ * (1 + π ^ 2 / 2) ^ (k + 1), hcpos, fun M g hg n hn => ?_⟩
+  have hn1 : 1 ≤ n := by omega
+  have hnR : (2 : ℝ) ≤ (n : ℝ) := by exact_mod_cast hn
+  have hlogn : Real.log 2 ≤ Real.log n := Real.log_le_log (by norm_num) hnR
+  have hlognpos : 0 < Real.log n := lt_of_lt_of_le hlog2 hlogn
+  -- the Lebesgue constants grow at most like `log n`
+  have hleb : 1 + ‖fourierProj n‖ ≤ c₀ * Real.log n := by
+    rw [norm_fourierProj]
+    have h1 := lebesgueConstant_le n
+    have h2 : Real.log (2 * (n : ℝ) + 1) ≤ Real.log 3 + Real.log n := by
+      have h3 : (2 : ℝ) * (n : ℝ) + 1 ≤ 3 * (n : ℝ) := by linarith
+      calc Real.log (2 * (n : ℝ) + 1) ≤ Real.log (3 * (n : ℝ)) :=
+            Real.log_le_log (by linarith) h3
+        _ = Real.log 3 + Real.log n := Real.log_mul (by norm_num) (by linarith)
+    have h4 : (2 : ℝ) + Real.log 3 ≤ (2 + Real.log 3) / Real.log 2 * Real.log n := by
+      rw [div_mul_eq_mul_div, le_div_iff₀ hlog2]
+      nlinarith
+    rw [hc₀]
+    nlinarith
+  -- Jackson's theorem
+  have hjack := theorem_3_7_1 hα0 hα1 hn1 hg
+  have hden : (0 : ℝ) < (n : ℝ) ^ ((k : ℝ) + (α : ℝ)) :=
+    Real.rpow_pos_of_pos (by linarith) _
+  have hnum : (0 : ℝ) ≤ (1 + π ^ 2 / 2) ^ (k + 1) * (M : ℝ) := by positivity
+  have h := norm_sub_fourierProj_le n (PeriodicCont.ofIsPeriodicCont hg.1)
+  rw [← norm_fourierProj] at h
+  calc ‖PeriodicCont.ofIsPeriodicCont hg.1 - fourierProj n (PeriodicCont.ofIsPeriodicCont hg.1)‖
+      ≤ (1 + ‖fourierProj n‖) *
+          Metric.infDist (PeriodicCont.ofIsPeriodicCont hg.1)
+            (trigPolyLE (2 * π) n : Set C(AddCircle (2 * π), ℝ)) := h
+    _ ≤ (c₀ * Real.log n) *
+          ((1 + π ^ 2 / 2) ^ (k + 1) * (M : ℝ) / (n : ℝ) ^ ((k : ℝ) + (α : ℝ))) := by
+        refine mul_le_mul hleb hjack (Metric.infDist_nonneg) (by positivity)
+    _ = c₀ * (1 + π ^ 2 / 2) ^ (k + 1) * (M : ℝ) * Real.log n /
+          (n : ℝ) ^ ((k : ℝ) + (α : ℝ)) := by
+        field_simp
+
+end JacksonTheorem
+
+/-! ### Theorem 3.7.3: the Christoffel–Darboux identity -/
+
+section ChristoffelDarboux
+
+open MeasureTheory OrthogonalPolynomial Polynomial
+
+variable {μ : MeasureTheory.Measure ℝ}
+
+/-- **Theorem 3.7.3** (Christoffel–Darboux identity). For `{pₙ}` the orthonormal family of a
+weight `w ≥ 0` — the monic orthogonal polynomials of the measure, scaled to unit `L²(w)` norm —
+and `x ≠ t`,
+
+`∑_{n=0}^{N} pₙ(x) pₙ(t) = (p_{N+1}(x) p_N(t) − p_N(x) p_{N+1}(t)) / (a_N (x − t))`
+
+with `a_N = A_{N+1} / A_N` the ratio of the leading coefficients. -/
+theorem theorem_3_7_3 (hw : IsWeight μ) (N : ℕ) {x t : ℝ} (hxt : x ≠ t) :
+    ∑ n ∈ Finset.range (N + 1),
+        (orthonormalFamily μ n).eval x * (orthonormalFamily μ n).eval t
+      = ((orthonormalFamily μ (N + 1)).eval x * (orthonormalFamily μ N).eval t
+          - (orthonormalFamily μ N).eval x * (orthonormalFamily μ (N + 1)).eval t)
+        / ((orthonormalFamily μ (N + 1)).leadingCoeff /
+            (orthonormalFamily μ N).leadingCoeff * (x - t)) := by
+  rw [← cdA_eq_leadingCoeff_div hw]
+  exact Polynomial.christoffel_darboux_div (orthonormalFamily_one hw)
+    (orthonormalFamily_recurrence hw) (cdC_mul_cdA hw) N (cdA_pos hw N).ne' hxt
+
+/-- **Theorem 3.7.3**, the confluent case `x = t`:
+
+`∑_{n=0}^{N} pₙ(t)² = (p'_{N+1}(t) p_N(t) − p'_N(t) p_{N+1}(t)) / a_N`. -/
+theorem theorem_3_7_3_confluent (hw : IsWeight μ) (N : ℕ) (t : ℝ) :
+    ∑ n ∈ Finset.range (N + 1), (orthonormalFamily μ n).eval t ^ 2
+      = ((derivative (orthonormalFamily μ (N + 1))).eval t * (orthonormalFamily μ N).eval t
+          - (derivative (orthonormalFamily μ N)).eval t *
+            (orthonormalFamily μ (N + 1)).eval t)
+        / ((orthonormalFamily μ (N + 1)).leadingCoeff /
+            (orthonormalFamily μ N).leadingCoeff) := by
+  rw [← cdA_eq_leadingCoeff_div hw]
+  exact Polynomial.christoffel_darboux_confluent_div (orthonormalFamily_one hw)
+    (orthonormalFamily_recurrence hw) (cdC_mul_cdA hw) N t (cdA_pos hw N).ne'
+
+end ChristoffelDarboux
 
 end AtkinsonHan.Chapter03

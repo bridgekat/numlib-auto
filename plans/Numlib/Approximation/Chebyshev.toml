@@ -45,22 +45,24 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.19"
 [[node]]
 id = "isBestApprox_trig_iff_equioscillates"
 kind = "theorem"
-desc = '''Atkinson–Han Thm 3.3.20: the same characterization for `2 pi`-periodic continuous functions and
-trigonometric polynomials of degree at most `n`, with `2 n + 2` alternation points on a period; the
-Haar theorem on the circle.
+desc = '''The equioscillation *characterization* for `2 pi`-periodic continuous functions and trigonometric
+polynomials of degree at most `n`, with `2 n + 2` alternation points on a period: the Haar theorem
+on the circle.
 
-The subspace is no longer missing: `trigPolyLE T n` of `Numlib/Analysis/Fourier/TrigonometricBasis`
-is it, with `finrank_trigPolyLE : finrank (trigPolyLE T n) = 2 n + 1` and `mem_trigPolyLE_iff` for
-its elements. Its Haar property is no longer missing either:
-`card_le_two_mul_of_forall_trigFun_eq_zero` of this module says that a nonzero combination of the
-`2 n + 1` members of the real trigonometric system of index at most `n` has at most `2 n` zeros in
-a period, so `HaarCondition (trigPolyLE T n) (2 * n + 1)` is one `mem_trigPolyLE_iff` away.
+**Not what Atkinson–Han's Theorem 3.3.20 asks for.** That theorem is existence and uniqueness only,
+and it is proved: `existsUnique_isBestApprox_trigPolyLE` of this module, from
+`haarCondition_trigPolyLE` and the finite dimension of the subspace. This node is the further
+characterization, which the book states for polynomials (Thm 3.3.19) but not for trigonometric
+polynomials.
 
-What is left is the exchange argument on a circle, where the alternation is cyclic: the linear
-version is `IsBestApprox.equioscillates_of_polyLE` of this module, and the cyclic one differs in
-that there is no leftmost extreme point, so the block decomposition has to be cut at an arbitrary
-point of the extreme set and the parity of the number of blocks matters.'''
-deps = ["isBestApprox_iff_equioscillates", "HaarCondition", "Equioscillates"]
+Everything but the exchange argument is here: `trigPolyLE T n` with `finrank_trigPolyLE` and
+`mem_trigPolyLE_iff`, the Haar condition `haarCondition_trigPolyLE`, and the interpolation and
+uniqueness machinery, which is now stated for an arbitrary compact space and so applies on a circle
+unchanged. What is left is (a) an `Equioscillates` for a circle — this module's is stated for a
+subset of the line, because it speaks of increasing points — and (b) the exchange argument in the
+cyclic case, where there is no leftmost extreme point, so the block decomposition has to be cut at
+an arbitrary point of the extreme set and the parity of the number of blocks matters.'''
+deps = ["isBestApprox_iff_equioscillates", "HaarCondition", "haarCondition_trigPolyLE"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.20"
 
 [[node]]
@@ -76,4 +78,20 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.20"
 
 [[node]]
 id = "_root_.IsBestApprox.equioscillates_of_polyLE"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.19"
+
+[[node]]
+id = "haarCondition_trigPolyLE"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.20"
+
+[[node]]
+id = "IsBestApprox.unique_of_trigPolyLE"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.20"
+
+[[node]]
+id = "existsUnique_isBestApprox_trigPolyLE"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.20"
+
+[[node]]
+id = "existsUnique_isBestApprox_polyLE"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.19"

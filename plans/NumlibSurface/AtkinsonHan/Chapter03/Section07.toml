@@ -8,37 +8,35 @@ id = "lebesgue_lemma"
 
 [[node]]
 id = "theorem_3_7_1"
-kind = "theorem"
-desc = '''Theorem 3.7.1 (Jackson): for `g ∈ C_p^{k,α}(2π)` the best uniform trigonometric approximation of
-degree `n ≥ 1` satisfies `ρ_n(g) ≤ (1 + π²/2)^{k+1} M_k / n^{k+α}`; (3.7.1)–(3.7.2) alongside.'''
-deps = ["jackson_trig"]
 
 [[node]]
 id = "theorem_3_7_2"
 kind = "theorem"
-desc = '''Theorem 3.7.2 (Jackson, polynomial case): for `f ∈ C^{k,α}[-1, 1]`, `ρ_n(f) ≤ d_k M_k / n^{k+α}`.'''
-deps = ["jackson_poly"]
+desc = '''Theorem 3.7.2 (Jackson, polynomial case): for `f ∈ C^{k,α}[-1, 1]`, `ρ_n(f) ≤ d_k c^{k+1} M_k /
+n^{k+α}` with `c = 1 + π²/2`. It waits on the backbone transfer of Theorem 3.7.1 through
+`x = cos θ`.'''
+deps = ["Jackson.infDist_le_of_holder_poly"]
 
 [[node]]
 id = "theorem_3_7_3"
-kind = "theorem"
-desc = '''Theorem 3.7.3, the Christoffel–Darboux identity for the orthonormal polynomials of a weight, with
-its confluent form.'''
-deps = ["Polynomial.christoffel_darboux"]
+
+[[node]]
+id = "theorem_3_7_3_confluent"
+
+[[node]]
+id = "equation_3_7_6"
+
+[[node]]
+id = "equation_3_7_8"
 
 [[node]]
 id = "equation_3_7_9"
-kind = "theorem"
-desc = '''(3.7.6)–(3.7.9): the Dirichlet-kernel representation of `𝓕_n`, its closed form (3.7.8), and
-`‖𝓕_n‖ = L_n = (1/π) ∫ |D_n|`; with `equation_3_7_10`, `L_n = (4/π²) log n + O(1)`.'''
-deps = ["PeriodicCont.fourierProj", "PeriodicCont.norm_fourierProj"]
+
+[[node]]
+id = "equation_3_7_11"
 
 [[node]]
 id = "equation_3_7_12"
-kind = "theorem"
-desc = '''(3.7.11)–(3.7.12): `‖f - 𝓕_n f‖ ≤ (1 + L_n) ρ_n(f) ≤ c_k log n / n^{k+α}` for `f ∈ C_p^{k,α}(2π)`,
-the Lebesgue lemma with Jackson's theorem; and (3.7.22) for trigonometric interpolation.'''
-deps = ["lebesgue_lemma", "PeriodicCont.norm_sub_fourierProj_le", "theorem_3_7_1"]
 
 [[node]]
 id = "equation_3_7_20"

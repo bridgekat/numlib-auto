@@ -290,11 +290,6 @@ section Examples
 
 open MeasureTheory Real
 
-/-- The space `𝒫ₙ` of §3.3 is the backbone's `polyLE (Set.Icc a b) n`: the two definitions cut
-the polynomials down by `degree < n + 1` and by `degree ≤ n`. -/
-theorem polyLE_eq (a b : ℝ) (n : ℕ) : polyLE a b n = _root_.polyLE (Set.Icc a b) n := by
-  rw [polyLE, _root_.polyLE, ← Polynomial.degreeLT_succ_eq_degreeLE]
-
 /-- **Example 3.6.5.**  Lagrange interpolation at `n + 1` distinct nodes of `[a, b]` is a
 projection operator on `C[a, b]` whose range is `𝒫ₙ`, and whose operator norm is the Lebesgue
 constant of the nodes, the supremum of the Lebesgue function `∑ᵢ |ℓᵢ(t)|`. -/
