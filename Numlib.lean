@@ -84,6 +84,7 @@ import Numlib.LinearAlgebra.Matrix.SchurComplement
 import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
 import Numlib.LinearAlgebra.Sparse.Pattern
 import Numlib.LinearAlgebra.Sparse.Reordering
+import Numlib.LinearSolve.DomainDecomposition.Schur
 import Numlib.LinearSolve.DomainDecomposition.Schwarz
 import Numlib.LinearSolve.Multigrid.Basic
 import Numlib.LinearSolve.Multigrid.FullMultigrid

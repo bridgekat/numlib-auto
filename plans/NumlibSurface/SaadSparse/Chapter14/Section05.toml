@@ -1,45 +1,43 @@
 namespace = "SaadSparse.Chapter14"
-desc = '''
-§14.5, full matrix methods: iterating on the unreduced system with the block preconditioners
-(14.49) or (14.55) is the same as iterating on the reduced Schur complement system.
-
-Saad states Propositions 14.11 and 14.12 for "the same Krylov subspace method", which is not a
-formal object. The surface reads them as statements about the *specifications* of
-`Numlib/LinearSolve/Projection/Basic`: the preconditioned operator is `fromBlocks 1 0 0 S`, the
-preconditioned residual of a consistent initial guess (14.50) lies in the second block, the Krylov
-subspace therefore lies in the second block, and a minimal-residual (respectively Galerkin) iterate
-there corresponds to one for `S`. That reading is faithful to the proof Saad gives — his argument
-is precisely that the Krylov vectors (14.54) have vanishing first block and that the coefficients
-`α_i` are determined by the same inner products — and it makes the results apply to GMRES, FOM, CG
-and MINRES at once.
-'''
 
 [[node]]
 id = "blockPreconditioner"
-kind = "definition"
-desc = '''(14.49) and (14.55): `L_A = fromBlocks 1 0 (F B⁻¹) L_S`, `U_A = fromBlocks B E 0 U_S` (with
-`L_S = U_S = 1` in (14.49)), the consistent initial guess (14.50)/(14.56)
-`x₀ = B⁻¹ (f - E y₀)`, and the factorizations (14.52) and (14.58)
-`A = L_A (1 ⊕ L_S⁻¹ S U_S⁻¹) U_A`; also the one-sided variants (14.59)–(14.60).'''
-deps = ["schurComplement", "Matrix.fromBlocks_eq_mul_schurComplement", "DomainDecomposition.restrict"]
+
+[[node]]
+id = "equation_14_51"
+
+[[node]]
+id = "equation_14_52"
+
+[[node]]
+id = "equation_14_57"
+
+[[node]]
+id = "equation_14_58"
+
+[[node]]
+id = "equation_14_59"
+
+[[node]]
+id = "equation_14_60"
+
+[[node]]
+id = "blockPreconditioner_eq_fromBlocks"
 
 [[node]]
 id = "proposition_14_11"
-kind = "theorem"
-desc = '''Proposition 14.11: with the preconditioners (14.49) and a consistent initial guess (14.50), the
-preconditioned Krylov iterates have the form (14.51) `x_m = B⁻¹(f - E y_m)`, and the sequence
-`y_m` is what the same Krylov method produces on the reduced system `S y = g'` from `y₀`. Read as:
-the Krylov subspace of the preconditioned operator at the preconditioned initial residual is the
-image of `𝒦_m(S, g' - S y₀)` under the block embedding (14.53)–(14.54), and the minimal-residual
-and Galerkin specifications correspond.'''
-deps = ["blockPreconditioner", "DomainDecomposition.krylov_subspace_eq_map_of_consistent", "DomainDecomposition.isMinRes_iff_isMinRes_schurComplement"]
+
+[[node]]
+id = "proposition_14_11_form"
+
+[[node]]
+id = "proposition_14_11_galerkin"
 
 [[node]]
 id = "proposition_14_12"
-kind = "theorem"
-desc = '''Proposition 14.12: the same statement when `S` is itself preconditioned, `S = L_S U_S - R`, with
-the preconditioners (14.55) — the `y_m` are then the iterates of the method applied to `S y = g'`
-preconditioned on the left by `L_S` and on the right by `U_S`. Apply Proposition 14.11 to
-`L_S⁻¹ S U_S⁻¹` through the factorization (14.58); with `M_S = S` the induced block preconditioner
-of `A` is exact, which is Saad's closing remark.'''
-deps = ["proposition_14_11", "DomainDecomposition.isMinRes_iff_isMinRes_schurComplement"]
+
+[[node]]
+id = "proposition_14_12_form"
+
+[[node]]
+id = "proposition_14_12_galerkin"

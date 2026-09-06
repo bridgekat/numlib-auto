@@ -54,6 +54,8 @@ import NumlibSurface.SaadSparse.Chapter13.Section05
 import NumlibSurface.SaadSparse.Chapter13.Section06
 import NumlibSurface.SaadSparse.Chapter14.Section02
 import NumlibSurface.SaadSparse.Chapter14.Section03
+import NumlibSurface.SaadSparse.Chapter14.Section04
+import NumlibSurface.SaadSparse.Chapter14.Section05
 import NumlibSurface.SaadSparse.Chapter14.Section06
 import NumlibSurface.SaadSparse.Common
 
@@ -161,6 +163,8 @@ holds the conventions shared by the whole library, and `SaadSparse.Chapter06.Com
 | **14** | | *Domain Decomposition Methods* |
 | 14.2 | `Chapter14.Section02` | Block Gaussian elimination and the Schur complement |
 | 14.3 | `Chapter14.Section03` | The Schwarz alternating procedures |
+| 14.4 | `Chapter14.Section04` | Induced preconditioners for `S`; Proposition 14.10 |
+| 14.5 | `Chapter14.Section05` | Full matrix methods; Propositions 14.11 and 14.12 |
 | 14.6 | `Chapter14.Section06` | Graph partitioning and spectral bisection |
 
 There is no `Chapter06.Section01`: §6.1 is the chapter's introduction, and its one substantive

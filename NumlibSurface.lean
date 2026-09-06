@@ -113,6 +113,8 @@ import NumlibSurface.SaadSparse.Chapter13.Section05
 import NumlibSurface.SaadSparse.Chapter13.Section06
 import NumlibSurface.SaadSparse.Chapter14.Section02
 import NumlibSurface.SaadSparse.Chapter14.Section03
+import NumlibSurface.SaadSparse.Chapter14.Section04
+import NumlibSurface.SaadSparse.Chapter14.Section05
 import NumlibSurface.SaadSparse.Chapter14.Section06
 import NumlibSurface.SaadSparse.Common
 
