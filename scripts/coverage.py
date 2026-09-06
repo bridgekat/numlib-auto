@@ -41,6 +41,26 @@ BOOKS = {
     ),
 }
 
+# Chapters the plans put out of scope *in full*, each with the reason recorded in the document
+# named. These are excluded from the "in scope" figure, which is the one that answers whether a
+# book is mostly formalized; the raw figure is reported beside it so the exclusions stay visible.
+#
+# Only whole-chapter exclusions belong here. Atkinson-Han Chapter 10, for instance, is mostly out
+# of scope -- its error estimates need Sobolev spaces, Bramble-Hilbert and elliptic regularity --
+# but its 10.4 is planned and partly proved, so the chapter is counted and simply reads low.
+OUT_OF_SCOPE: dict[str, dict[int, str]] = {
+    "AtkinsonHan": {
+        7: "Sobolev spaces on a domain: Mathlib has no weak derivative on an open set "
+           "(plans/proposals/atkinsonhan-ch5-onward.md §3)",
+        13: "boundary integral equations: needs Sobolev spaces on a boundary (plans/backbone.md §0.2)",
+    },
+    "SaadSparse": {
+        11: "parallel implementations: verified section by section to state no theorem "
+            "(plans/proposals/plan-saad10.md)",
+    },
+    "FongSaunders": {},
+}
+
 DECL = re.compile(
     r"\b(theorem|proposition|lemma|corollary|definition|example|exercise|equation|remark|algorithm)"
     r"_(\d+)_(\d+)(?:_(\d+))?"
@@ -95,11 +115,18 @@ def main() -> None:
         for n in covered:
             by_chapter[chapter(n)][0] += 1
 
+        skipped = OUT_OF_SCOPE[key]
         total = len(results)
         pct = 100.0 * len(covered) / total if total else 0.0
-        print(f"== {key}: {len(covered)}/{total} numbered results ({pct:.0f}%)")
+        in_scope = {n for n in results if chapter(n) not in skipped}
+        in_pct = 100.0 * len(covered & in_scope) / len(in_scope) if in_scope else 0.0
+        print(f"== {key}: {len(covered)}/{total} numbered results ({pct:.0f}%)"
+              f" -- in scope {len(covered & in_scope)}/{len(in_scope)} ({in_pct:.0f}%)")
         for ch in sorted(by_chapter):
             done, all_ = by_chapter[ch]
+            if ch in skipped:
+                print(f"   ch {ch:>2}  {'':>3} {all_:<3} out of scope: {skipped[ch]}")
+                continue
             bar = "#" * round(20 * done / all_) if all_ else ""
             print(f"   ch {ch:>2}  {done:>3}/{all_:<3} {bar}")
 
