@@ -1,3 +1,4 @@
+import Numlib.IntegralEquations.Nystrom
 import Numlib.IntegralEquations.SecondKind
 
 /-!
@@ -6,10 +7,11 @@ import Numlib.IntegralEquations.SecondKind
 Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
 Analysis Framework*, 3rd edition, Springer, 2009, §12.4.
 
-Only the abstract half of the section, §12.4.3, is formalized: the perturbation theorem whose
-hypothesis constrains `(T - S) S` rather than `T - S`, the assumptions A1–A3, and Lemma 12.4.7.
-That is the framework which makes the Nyström method analysable, and which §12.5 reuses for
-product integration.
+The section has an abstract half, §12.4.3, and a concrete half: the perturbation theorem whose
+hypothesis constrains `(T - S) S` rather than `T - S`, the assumptions A1–A3 and Lemma 12.4.7 on
+the one side, and on the other the Nyström operators of a quadrature rule, for which those
+assumptions are verified.  Both are formalized here.  The abstract half is the framework which
+makes the Nyström method analysable, and which §12.5 reuses for product integration.
 
 ## Main results
 
@@ -25,23 +27,30 @@ product integration.
   for large `n` the approximate equations are uniquely solvable, the inverses are uniformly
   bounded, and the error is controlled by the consistency error `‖(K - K_n) u‖` at the exact
   solution.
+* `isCollectivelyCompactFamily_nystromCLM` — the Nyström operators of a sequence of convergent
+  quadrature rules with uniformly bounded absolute weight sums satisfy A1–A3.
+* `lemma_12_4_2_a`–`lemma_12_4_2_c` — the three clauses of Lemma 12.4.2: the identities (12.4.14)
+  expressing `(K - K_n) K` and `(K - K_n) K_n` through the single kernel `e_n`, the norm formulas
+  (12.4.16)–(12.4.17), and (12.4.18), that both norms tend to zero.
+* `theorem_12_4_4` — the Nyström instance of the abstract theorem.
 
 ## Not formalized here
 
-Lemma 12.4.2 and Theorem 12.4.4 in their stated form, which instantiate this framework for the
-numerical integral operators `K_n u (x) = Σ_j w_j k (x, t_j) u (t_j)` on `C(D)`.  Their content is
-that those operators form a collectively compact, pointwise convergent family, which needs the
-`C(D)` integral-operator toolkit together with a convergent quadrature rule; neither the
-quadrature rule nor its Banach–Steinhaus convergence criterion exists yet.  Once they do,
-Theorem 12.4.4 is one application of `exists_norm_inverse_le_of_isCollectivelyCompactFamily` and
-belongs in this file.
+Example 12.4.5, the trapezoidal rule error `-h² (b - a) g''(ξ) / 12`, and Example 12.4.6, the
+`h²`-expansion of the Nyström error that justifies Richardson extrapolation.  The first belongs in
+`Numlib/Approximation/Quadrature`, which has no composite rule yet; the second needs the
+Euler–Maclaurin form (12.4.39) of the first, which the book itself only quotes.
 
 ## Conventions
 
-As in §12.1 the book's scalar `λ` is written `μ`, `λ` being Lean's lambda binder.  The book's
-family is `K_n` with limit `K`; here the family is `K : ℕ → X →L[𝕜] X` and its limit is `L`, so
-that the family is named once and indexed.  Doc comments below quote the book's `K` and `K_n`,
-which are this file's `L` and `K n`.
+As in §12.1 the book's scalar `λ` is written `μ`, `λ` being Lean's lambda binder; the measure of
+the concrete half is therefore written `ν`.  The book's domain is a closed bounded `D` in `ℝ^m`
+with Lebesgue measure, and the statements below are for a compact space with a finite Borel
+measure, the generality at which the backbone `IntegralOperator.kernelCLM` and
+`IntegralOperator.nystromCLM` are written; the book's case is `IntegralOperator.regionMeasure D`.
+The book's family is `K_n` with limit `K`; here the family is `K : ℕ → X →L[𝕜] X` and its limit is
+`L`, so that the family is named once and indexed.  Doc comments below quote the book's `K` and
+`K_n`, which are this file's `L` and `K n`.
 -/
 
 open Filter Topology
@@ -218,5 +227,131 @@ theorem exists_norm_inverse_le_of_isCollectivelyCompactFamily [CompleteSpace X] 
           mul_le_mul_of_nonneg_left hden hnum0
   exact ⟨en, hencoe, hbound, fun f u un hu hun =>
     (herr f u un hu hun).trans (mul_le_mul_of_nonneg_right hbound (norm_nonneg _))⟩
+
+/-! ### The Nyström operators -/
+
+section Nystrom
+
+open IntegralOperator MeasureTheory
+
+variable {D : Type*} [TopologicalSpace D] [CompactSpace D] [MeasurableSpace D] [BorelSpace D]
+  (ν : Measure D) [IsFiniteMeasure ν]
+
+/-- **The Nyström family satisfies A1–A3.**  With `K u (t) = ∫ k (t, s) u (s) dν` the integral
+operator of a continuous kernel and
+
+`K_n u (t) = Σ_j w_{n,j} k (t, x_{n,j}) u (x_{n,j})`
+
+the Nyström operators (12.4.4) of a sequence of quadrature rules, the family `{K_n}` converges to
+`K` pointwise on `C(D)` and is collectively compact, as soon as the rules converge at every
+continuous integrand and their absolute weight sums are bounded — the book's (12.4.3).
+
+This is the missing instance of the framework: A2 is
+`IntegralOperator.tendsto_nystromCLM` and A3 is
+`IntegralOperator.isCollectivelyCompact_nystromCLM`, both proved from the uniform convergence of
+the rules on the compact set of row integrands. -/
+theorem isCollectivelyCompactFamily_nystromCLM (k : C(D × D, ℝ)) {m : ℕ → ℕ}
+    {w : ∀ n, Fin (m n) → ℝ} {x : ∀ n, Fin (m n) → D} {W : ℝ} (hW : ∀ n, ∑ j, |w n j| ≤ W)
+    (hQ : ∀ v : C(D, ℝ), Tendsto (fun n => Quadrature.functional (w n) (x n) v) atTop
+      (𝓝 (integralCLM ν v))) :
+    IsCollectivelyCompactFamily (fun n => nystromCLM (w n) (x n) k) (kernelCLM ν k) :=
+  isCollectivelyCompactFamily_of_isCollectivelyCompact
+    (isCollectivelyCompact_nystromCLM k hW) fun u => tendsto_nystromCLM ν hQ u
+
+/-- **Lemma 12.4.2, first clause.**  With
+
+`e_n (t, s) = ∫ k (t, v) k (v, s) dν - Σ_j w_j k (t, x_j) k (x_j, s)`
+
+the quadrature error of the composed kernel, `(K - K_n) K` is the integral operator of `e_n`
+(12.4.14), and hence its norm is the largest row integral of `e_n` (12.4.16). -/
+theorem lemma_12_4_2_a [SecondCountableTopology D] [Nonempty D] {m : ℕ} (w : Fin m → ℝ)
+    (x : Fin m → D) (k : C(D × D, ℝ)) :
+    (kernelCLM ν k - nystromCLM w x k) ∘L kernelCLM ν k = kernelCLM ν (compKernel ν w x k) ∧
+      ‖(kernelCLM ν k - nystromCLM w x k) ∘L kernelCLM ν k‖
+        = ⨆ t, ∫ s, |compKernel ν w x k (t, s)| ∂ν := by
+  refine ⟨kernelCLM_sub_nystromCLM_comp_kernelCLM ν w x k, ?_⟩
+  rw [kernelCLM_sub_nystromCLM_comp_kernelCLM ν w x k, norm_kernelCLM]
+
+/-- **Lemma 12.4.2, second clause.**  `(K - K_n) K_n` is the *Nyström* operator of the same kernel
+`e_n` (12.4.14), and hence its norm is the largest absolute weight sum of `e_n` (12.4.17). -/
+theorem lemma_12_4_2_b [T2Space D] [Nonempty D] {m : ℕ} {w : Fin m → ℝ} {x : Fin m → D}
+    (hx : Function.Injective x) (k : C(D × D, ℝ)) :
+    (kernelCLM ν k - nystromCLM w x k) ∘L nystromCLM w x k
+        = nystromCLM w x (compKernel ν w x k) ∧
+      ‖(kernelCLM ν k - nystromCLM w x k) ∘L nystromCLM w x k‖
+        = ⨆ t, ∑ j, |w j * compKernel ν w x k (t, x j)| := by
+  refine ⟨kernelCLM_sub_nystromCLM_comp_nystromCLM ν w x k, ?_⟩
+  rw [kernelCLM_sub_nystromCLM_comp_nystromCLM ν w x k, norm_nystromCLM hx]
+
+/-- **Lemma 12.4.2, third clause (12.4.18)**: for a convergent quadrature rule the composed
+quadrature error tends to zero uniformly, `max_{t,s} |e_n (t, s)| → 0`, and therefore so do both
+operator norms — which is hypothesis (12.4.22) of Theorem 12.4.3 for all large `n`.
+
+The two bounds are `‖(K - K_n) K‖ ≤ ν(D) ‖e_n‖` and `‖(K - K_n) K_n‖ ≤ W ‖e_n‖`, read off the
+identities of the two clauses above. -/
+theorem lemma_12_4_2_c [SecondCountableTopology D] {m : ℕ → ℕ} {w : ∀ n, Fin (m n) → ℝ}
+    {x : ∀ n, Fin (m n) → D} (k : C(D × D, ℝ)) {W : ℝ} (hW : ∀ n, ∑ j, |w n j| ≤ W)
+    (hQ : ∀ v : C(D, ℝ), Tendsto (fun n => Quadrature.functional (w n) (x n) v) atTop
+      (𝓝 (integralCLM ν v))) :
+    Tendsto (fun n => ‖(kernelCLM ν k - nystromCLM (w n) (x n) k) ∘L kernelCLM ν k‖)
+        atTop (𝓝 0) ∧
+      Tendsto (fun n => ‖(kernelCLM ν k - nystromCLM (w n) (x n) k) ∘L
+        nystromCLM (w n) (x n) k‖) atTop (𝓝 0) := by
+  have hW0 : (0 : ℝ) ≤ W := le_trans (Finset.sum_nonneg fun _ _ => abs_nonneg _) (hW 0)
+  have he := tendsto_norm_compKernel ν k hQ
+  constructor
+  · refine squeeze_zero (fun n => norm_nonneg _) (fun n => ?_)
+      (by simpa using he.const_mul (ν.real Set.univ))
+    rw [kernelCLM_sub_nystromCLM_comp_kernelCLM ν (w n) (x n) k]
+    refine norm_kernelCLM_le ν (by positivity) fun t => ?_
+    have hint : (∫ s, |compKernel ν (w n) (x n) k (t, s)| ∂ν)
+        ≤ ∫ _s : D, ‖compKernel ν (w n) (x n) k‖ ∂ν :=
+      integral_mono (integrable_kernel_row ν _ t).abs (integrable_const _) fun s => by
+        simpa using (compKernel ν (w n) (x n) k).norm_coe_le_norm (t, s)
+    rwa [integral_const, smul_eq_mul] at hint
+  · refine squeeze_zero (fun n => norm_nonneg _) (fun n => ?_)
+      (by simpa using he.const_mul W)
+    rw [kernelCLM_sub_nystromCLM_comp_nystromCLM ν (w n) (x n) k]
+    refine norm_nystromCLM_le (by positivity) fun t => ?_
+    calc ∑ j, |w n j * compKernel ν (w n) (x n) k (t, x n j)|
+        ≤ ∑ j, |w n j| * ‖compKernel ν (w n) (x n) k‖ := by
+          refine Finset.sum_le_sum fun j _ => ?_
+          rw [abs_mul]
+          exact mul_le_mul_of_nonneg_left
+            (by simpa using (compKernel ν (w n) (x n) k).norm_coe_le_norm (t, x n j))
+            (abs_nonneg _)
+      _ = (∑ j, |w n j|) * ‖compKernel ν (w n) (x n) k‖ := by rw [Finset.sum_mul]
+      _ ≤ W * ‖compKernel ν (w n) (x n) k‖ :=
+          mul_le_mul_of_nonneg_right (hW n) (norm_nonneg _)
+
+/-- **Theorem 12.4.4**: let `k` be a continuous kernel on a compact `D` carrying a finite Borel
+measure, let the quadrature rules converge at every continuous integrand with uniformly bounded
+absolute weight sums, and let `λ ≠ 0` be such that `λ - K` is invertible on `C(D)`.  Then there is
+a constant `c` such that, for all large `n`, `λ - K_n` is invertible with `‖(λ - K_n)⁻¹‖ ≤ c`
+(12.4.32) — so the Nyström equations are uniquely solvable — and
+
+`‖u - u_n‖_∞ ≤ c ‖K u - K_n u‖_∞`,
+
+the consistency error of the quadrature rule at the *exact* solution.
+
+Every step is `exists_norm_inverse_le_of_isCollectivelyCompactFamily` applied to
+`isCollectivelyCompactFamily_nystromCLM`; the book's bound (12.4.23) is inside
+`theorem_12_4_3`. -/
+theorem theorem_12_4_4 {μ : ℝ} (hμ : μ ≠ 0) (k : C(D × D, ℝ)) {m : ℕ → ℕ}
+    {w : ∀ n, Fin (m n) → ℝ} {x : ∀ n, Fin (m n) → D} {W : ℝ} (hW : ∀ n, ∑ j, |w n j| ≤ W)
+    (hQ : ∀ v : C(D, ℝ), Tendsto (fun n => Quadrature.functional (w n) (x n) v) atTop
+      (𝓝 (integralCLM ν v)))
+    {e : C(D, ℝ) ≃L[ℝ] C(D, ℝ)}
+    (he : (e : C(D, ℝ) →L[ℝ] C(D, ℝ)) = μ • 1 - kernelCLM ν k) :
+    ∃ c : ℝ, ∀ᶠ n in atTop, ∃ en : C(D, ℝ) ≃L[ℝ] C(D, ℝ),
+      (en : C(D, ℝ) →L[ℝ] C(D, ℝ)) = μ • 1 - nystromCLM (w n) (x n) k ∧
+      ‖(en.symm : C(D, ℝ) →L[ℝ] C(D, ℝ))‖ ≤ c ∧
+      ∀ f u un : C(D, ℝ), (μ • 1 - kernelCLM ν k : C(D, ℝ) →L[ℝ] C(D, ℝ)) u = f →
+        (μ • 1 - nystromCLM (w n) (x n) k : C(D, ℝ) →L[ℝ] C(D, ℝ)) un = f →
+        ‖u - un‖ ≤ c * ‖kernelCLM ν k u - nystromCLM (w n) (x n) k u‖ :=
+  exists_norm_inverse_le_of_isCollectivelyCompactFamily hμ
+    (isCollectivelyCompactFamily_nystromCLM ν k hW hQ) he
+
+end Nystrom
 
 end AtkinsonHan.Chapter12

@@ -28,6 +28,7 @@ import Numlib.Analysis.Wavelet.Haar
 import Numlib.Analysis.Wavelet.Multiresolution
 import Numlib.Approximation.BestApprox
 import Numlib.Approximation.Chebyshev
+import Numlib.Approximation.DividedDifference
 import Numlib.Approximation.Hermite
 import Numlib.Approximation.Interpolation
 import Numlib.Approximation.Jackson
@@ -55,6 +56,7 @@ import Numlib.FloatingPoint.InnerProduct
 import Numlib.FloatingPoint.Model
 import Numlib.FloatingPoint.Stationary
 import Numlib.IntegralEquations.Basic
+import Numlib.IntegralEquations.Nystrom
 import Numlib.IntegralEquations.SecondKind
 import Numlib.Krylov.Arnoldi
 import Numlib.Krylov.BiLanczos

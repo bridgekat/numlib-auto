@@ -58,16 +58,41 @@ Banach/Hilbert-space level of generality:
    several implementations satisfying it).
 3. **Atkinson & Han, *Theoretical Numerical Analysis*** — Ch. 2 (§2.3–2.5), §3.3–3.7, Ch. 5
    (§5.1–5.4, 5.6), §8.2–8.3, 8.7, Ch. 9; §6.2 (Lax equivalence) and Ch. 11–12 (abstract parts)
-   are phase 3; Ch. 7, 10, 13–14 (Sobolev, FEM, BIE) are out of scope until Mathlib has Sobolev
-   spaces. It supplies the Banach/Hilbert-space forms in which the backbone is stated, and its CG
-   chapters (5.6, 9.4) meet Saad's CG in the middle.
+   are phase 3; Ch. 7, 10, 14 are out of scope until Mathlib has Sobolev spaces, and Ch. 13 is out
+   of scope section by section for the reasons amended below. It supplies the Banach/Hilbert-space
+   forms in which the backbone is stated, and its CG chapters (5.6, 9.4) meet Saad's CG in the
+   middle.
 
    *Amended (§13).* Chapter 4 was listed here as out of scope "until Mathlib has Sobolev spaces",
    which was simply wrong: Fourier series, the Fourier transform, the DFT and Haar wavelets use no
    Sobolev space. Mathlib has `SchwartzMap`, `TemperedDistribution` with its Fourier transform,
    `Lp.fourierTransformₗᵢ` (Plancherel), `Integrable.fourierInv_fourier_eq` and `ZMod.dft`, so the
-   chapter is planned in §13. What Mathlib does lack, and what really blocks Ch. 7, 10 and 13–14,
+   chapter is planned in §13. What Mathlib does lack, and what really blocks Ch. 7, 10 and 14,
    is a weak derivative on an open set: see §14.
+
+   *Amended again (Ch. 12–13 pass).* Chapter 13 was listed with Ch. 7 and 10 as out of scope "until
+   Mathlib has Sobolev spaces". That reason is wrong for two of its three sections, and the true
+   obstruction differs by section:
+
+   * **§13.1** uses no Sobolev space. It uses *planar potential theory*: the divergence theorem on
+     a piecewise smooth multiply connected region, Green's first and second identities, the
+     representation formula, and the jump relations of the layer potentials. Mathlib's divergence
+     theorem is for boxes, and there is no surface measure and no normal field on a curve. Out of
+     scope, for that reason. Two items escape it, because they concern the parametrization and not
+     the potential: the Kelvin transform, and the parametrized double layer kernel of
+     (13.1.32)–(13.1.37), whose continuity at the diagonal (value: half the curvature) is the only
+     analysis needed to make the double layer operator a compact operator on `C(Γ)`.
+   * **§13.2** needs nothing that is missing. Its second-kind analysis is Theorem 12.4.4 read on
+     `C_p(L) = C(AddCircle L, ℝ)` at `λ = −π`, with the invertibility of `−π + K` a hypothesis the
+     book itself only quotes; `NumlibSurface/AtkinsonHan/Chapter13/Section02` states it. Only
+     §13.2.2, the exterior Neumann problem, reaches for `H¹(2π)`, and only for one norm identity.
+   * **§13.3** does need the *periodic* Sobolev scale `H^q(2π)` — but that is the weighted `ℓ²`
+     space over the Fourier basis of `AddCircle` that §14.8 below already calls reachable, not the
+     domain machinery that blocks Ch. 7 and 10. Its convergence argument, §13.3.1, is
+     `theorem_12_1_2` and `lemma_12_1_4` unchanged.
+
+   The per-section verdict and the skip list are `plans/atkinsonhan-ch13.md` and
+   `plans/NumlibSurface/AtkinsonHan/Chapter13.toml`.
 
 Choi's thesis is the natural fourth book (phase 2): it fits the same spine (singular systems,
 MINRES-QLP, norm estimates) but is implementation-heavy and less theorem-dense than

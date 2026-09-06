@@ -9,16 +9,23 @@ Lemma 12.7.1 in Section 12.7. They are all statements about bounded and compact 
 Banach space, they do not mention a kernel or a quadrature rule, and they are what the whole
 chapter rests on.
 
-The concrete body is not formalized. It is the estimation, for a particular family of subspaces,
-of the approximation error `‖u - P_n u‖` or the quadrature error `‖(K - K_n) u‖`: Section 12.2
-(piecewise linear and trigonometric collocation, piecewise linear and trigonometric Galerkin),
-Theorem 12.3.3 and the superconvergence results of Section 12.3, Lemma 12.4.2 and Theorem 12.4.4
-(the Nyström operators, whose properties are the `C(D)` integral-operator toolkit of
-`Numlib/IntegralEquations/Basic` plus a convergent quadrature rule), and Section 12.5 (product
-integration for weakly singular kernels, Theorems 12.5.1, 12.5.4, 12.5.6, Lemma 12.5.5, graded
-meshes). Those need the interpolation and quadrature branches of the approximation layer
-(`Numlib/Approximation/{Interpolation,Quadrature,Trigonometric}`, phase 3) and, for Section 12.5,
-Hölder spaces and singular kernels that nothing else in the corpus asks for.
+The concrete body is the estimation, for a particular family of subspaces, of the approximation
+error `‖u - P_n u‖` or the quadrature error `‖(K - K_n) u‖`. Two of its four parts are now
+formalized:
+
+* Section 12.2.1, piecewise linear collocation (`Chapter12/Section02`), on
+  `Numlib/Approximation/Interpolation`;
+* Lemma 12.4.2 and Theorem 12.4.4, the Nyström operators (`Chapter12/Section04`), on the new
+  `Numlib/IntegralEquations/Nystrom` — which is where the collective compactness of the Nyström
+  family and the composed quadrature error `e_n` live.
+
+What is left, with the obstruction recorded on each node: Sections 12.2.2–12.2.4 (trigonometric
+collocation and the two Galerkin methods — the `O(log n)` Lebesgue constant, and an `L²(a, b)`
+bridge that the library does not have); Theorem 12.3.3 (piecewise *quadratic* interpolation, absent
+from the backbone, and the odd-moment cancellation (12.3.31)); Examples 12.4.5–12.4.6 (a composite
+quadrature rule and the Euler–Maclaurin expansion); and the whole of Section 12.5 (product
+integration for weakly singular kernels), which waits on
+`Numlib/IntegralEquations/WeaklySingular` and on piecewise polynomial interpolation of degree `m`.
 
 Also left out: Section 12.7.2, the homotopy argument, which needs the rotation and index of a
 completely continuous vector field (Section 5.5.1) — no Mathlib degree theory, and the book quotes

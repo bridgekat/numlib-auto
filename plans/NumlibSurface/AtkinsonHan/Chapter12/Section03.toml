@@ -17,3 +17,26 @@ id = "lemma_12_3_1_projection"
 
 [[node]]
 id = "equation_12_3_11"
+
+[[node]]
+id = "theorem_12_3_3"
+kind = "theorem"
+desc = '''
+Theorem 12.3.3, superconvergence of iterated piecewise *quadratic* collocation. For
+`u` in `C^4[a, b]` and a kernel continuously differentiable in `y`,
+`norm (u - u_n)_inf <= (sqrt 3 |lambda| M / 27) h^3 norm (u^(3))_inf` and the iterated solution
+satisfies `norm (u - u_hat_n)_inf <= c h^4`, hence
+`max_j |u(x_j) - u_n(x_j)| = O(h^4)` at the breakpoints (12.3.34).
+
+The two operator bounds are free: `theorem_12_1_2` and `equation_12_3_11` give them. What is
+missing is (a) the piecewise quadratic interpolatory projection -- `Numlib/Approximation/
+Interpolation` has `piecewiseLinearInterpCLM` and no higher degree -- with its error constant
+`sqrt 3 h^3 / 27` against `norm (f^(3))`; and (b) (12.3.31), `K (I - P_n) u = O(h^4)`, which is the
+cancellation of the odd moment of the quadratic interpolation error over each panel and is the real
+theorem. (b) is a moment / integration-by-parts argument on one panel followed by a sum, and it is
+where the "even degree gains one power of `h`, odd degree does not" phenomenon lives.
+
+Do not state it before the piecewise quadratic operator exists. Clause (12.3.34) is one line from
+`equation_12_3_2` once (12.3.33) is in hand.
+'''
+deps = ["equation_12_3_11", "theorem_12_1_2", "equation_12_3_2"]

@@ -17,7 +17,8 @@ Ch. 9). Six chapters contribute: §5.5 (completely continuous vector fields, two
 variational inequalities, §11.2–11.4) and Chapter 12 (Fredholm equations of the second kind, the
 abstract parts of §12.1, 12.3, 12.4, 12.6, 12.7).
 
-Chapter 7 contributes nothing, and neither do Chapters 13 and 14; §8.1, §8.4, §8.5, §8.8, §11.1,
+Chapter 7 contributes nothing, and neither does Chapter 14 (Chapter 13 is planned separately,
+in `atkinsonhan-ch13.md`); §8.1, §8.4, §8.5, §8.8, §11.1,
 §11.5 and most of Chapter 10 contribute nothing. The reason is one and the same in every case and
 is documented, with the searches that establish it, in `proposals/atkinsonhan-ch5-onward.md` §3 and
 in `backbone.md` §11.8.
@@ -151,13 +152,20 @@ share lemmas.
 
 ## 4. Deferred and left out
 
-Deferred, with the module named: AH Lemma 12.4.2 and Theorem 12.4.4 (the `C(D)` integral-operator
-toolkit and a convergent quadrature rule); the Nyström and product-integration parts of §12.2 and
-§12.5 (the interpolation, quadrature and trigonometric branches of `Numlib/Approximation/`).
+*Amended.* The deferrals recorded here have been discharged in part. `Numlib/IntegralEquations/
+Basic` and `Numlib/Approximation/{Interpolation,Quadrature}` now exist, and with them AH Lemma
+12.4.2, Theorem 12.4.4 and §12.2.1 are proved — the only piece that was ever really missing was the
+Nyström operator itself together with the collective compactness of its family, which is now
+`Numlib/IntegralEquations/Nystrom`. What remains deferred, with the obstruction on each plan node:
+§12.2.2–12.2.4 (the `O(log n)` Lebesgue constant; an `L²(a, b)` bridge), Theorem 12.3.3 (piecewise
+quadratic interpolation), Examples 12.4.5–12.4.6 (a composite quadrature rule and Euler–Maclaurin)
+and the whole of §12.5 (weakly singular kernels).
 
 Left out, with the obstruction: everything that names a domain `Ω` and hence a Sobolev space
-(§8.1, §8.4, §8.5, §8.8, §11.1, §11.5, all of Chapter 7, all of Chapter 10 but Theorem 10.4.3, all
-of Chapter 13); everything needing reflexivity or weak compactness in a Banach space (Theorem 8.6.3,
+(§8.1, §8.4, §8.5, §8.8, §11.1, §11.5, all of Chapter 7, all of Chapter 10 but Theorem 10.4.3);
+Chapter 13 was listed here and should not have been — its obstruction differs by section, and only
+§13.3 and §13.2.2 involve a Sobolev space at all, so it now has a plan of its own
+(`atkinsonhan-ch13.md` and `plans/NumlibSurface/AtkinsonHan/Chapter13.toml`); everything needing reflexivity or weak compactness in a Banach space (Theorem 8.6.3,
 Theorem 8.8.5, and the reflexive-space theorems of §3.3 they cite); everything needing degree theory
 (§5.5.1, §12.7.2); the specific difference schemes of Chapter 6; and Chapter 14, whose formalizable
 core would be multivariate orthogonal polynomials on `L²(𝔹_d, W)`, which Mathlib does not have and

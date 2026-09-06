@@ -1,0 +1,54 @@
+desc = '''
+Atkinson-Han, Chapter 13: boundary integral equations for the planar Laplace equation.
+
+**The chapter's exclusion, per section.** The chapter was excluded wholesale, in `backbone.md` §0.2
+and in `scripts/coverage.py`, on the ground that it "needs Sobolev spaces on a boundary". That is
+wrong for two of its three sections, and the obstruction is different in each:
+
+* **§13.1, potential theory -- genuinely out of reach, but not for the recorded reason.** Nothing in
+  §13.1 uses a Sobolev space. What it uses is the divergence theorem on a piecewise smooth multiply
+  connected planar region (Theorem 13.1.2), Green's first and second identities (13.1.5)-(13.1.6),
+  Green's representation formula (13.1.23), the jump relations (13.1.7)-(13.1.8) of the double layer
+  potential, and the classical existence theory for the Dirichlet and Neumann problems
+  (Theorem 13.1.1, quoted from Chapter 8). Mathlib's divergence theorem is for boxes, and there is
+  no surface measure and no normal field on a curve. So the recorded reason should read **planar
+  potential theory: Green's identities on a piecewise smooth region, and the jump relations of the
+  layer potentials**, and everything in §13.1 that is a boundary integral over `S` stays skipped.
+  Two items escape, because they are about the *parametrized* kernel and not about the potential:
+  the Kelvin transform, and the double layer kernel of (13.1.32)-(13.1.37). They are the nodes of
+  `Chapter13/Section01`.
+* **§13.2, the Nystrom method -- no obstruction at all, and it is formalized.** The book's own
+  setting is `C_p(L)` with the uniform norm, and it *quotes* the invertibility of `-pi + K` from the
+  literature rather than proving it. So the second-kind analysis is Theorem 12.4.4 read on
+  `C(AddCircle L, R)` with `lambda = -pi` and the invertibility as a hypothesis, which is exactly
+  what the book does in practice. `Chapter13/Section02` states it. Only §13.2.2, the exterior
+  Neumann problem, reaches for a Sobolev space, and only for the one norm identity of
+  Exercise 13.2.8.
+* **§13.3, the Fourier-Galerkin method -- the reason is right, but the space is smaller than
+  "Sobolev on a boundary".** What §13.3 needs is the *periodic* Sobolev scale `H^q(2 pi)`: the
+  solvability theory (13.3.2)-(13.3.7) uses `A : H^q -> H^{q+1}` an isomorphism and the compact
+  embedding `H^{q+2} -> H^{q+1}`, and the rate (13.3.15) uses Atkinson-Han Theorem 7.5.7. That is a
+  weighted `l^2` space over the Fourier basis of `AddCircle`, needs none of the domain machinery,
+  and is already singled out as reachable in `backbone.md` §14.8. Until it exists, §13.3.1's
+  convergence statement can be given conditionally -- with the compactness of `A^{-1} B` and the
+  invertibility of `I + A^{-1} B` as hypotheses, both of which the book assumes -- and its proof is
+  `theorem_12_1_2` and `lemma_12_1_4` unchanged.
+
+**Still skipped, and why.** Theorem 13.1.1 (existence for the interior Dirichlet and Neumann
+problems; quoted from Chapter 8, needs `H^1_0` and a trace theorem or the classical potential
+theory the chapter is building); Theorem 13.1.2 (the divergence theorem on a multiply connected
+region with an inner normal field); (13.1.5)-(13.1.6), Green's identities, and Exercise 13.1.2 with
+them; (13.1.7)-(13.1.8), the jump relations, which are the heart of §13.1 and the reason the factor
+`-pi` appears in every boundary integral equation of the chapter; (13.1.23), the representation
+formula; (13.1.28)-(13.1.30), the boundary integral equations of direct type; (13.1.38)-(13.1.42),
+the layer potentials of indirect type, whose *definitions* need surface measure on `S`; §13.2.2 and
+Exercise 13.2.8, which identify `A` as a bijection `L^2(0, 2 pi) -> H^1(2 pi)` of norm one; and
+(13.3.2)-(13.3.7) and (13.3.15), which are the `H^q(2 pi)` solvability theory and rate. The first
+seven are potential theory, the last three are the periodic Sobolev scale.
+
+The chapter has exactly two numbered results, Theorem 13.1.1 and Theorem 13.1.2, and both are SKIP;
+everything else it says is carried by displayed equations, which is why the nodes below are named
+for equations. `scripts/coverage.py --gaps 13` also reports "13.1.31", which is an OCR artifact:
+the string "By Theorem 13.1.31 and (13.1.22)" is a garbled cross-reference to Theorem 13.1.1, and
+there is no Theorem 13.1.3 in the chapter.
+'''

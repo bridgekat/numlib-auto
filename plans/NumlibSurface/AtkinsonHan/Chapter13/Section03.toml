@@ -1,0 +1,42 @@
+namespace = "AtkinsonHan.Chapter13"
+
+desc = '''
+Atkinson-Han §13.3: the Fourier-Galerkin method for the first-kind boundary integral equation
+`(A + B) phi = g` on `L^2(0, 2 pi)`, where `A` is the logarithmic single layer operator and `B` is a
+smoothing perturbation.
+
+The section's solvability theory (13.3.2)-(13.3.7) and its convergence rate (13.3.15) are skipped:
+they need the periodic Sobolev scale `H^q(2 pi)` -- `A : H^q -> H^{q+1}` an isomorphism
+(Atkinson-Han (7.5.18)), `B : H^q -> H^{q+2}`, the compact embedding `H^{q+2} -> H^{q+1}`
+(Theorem 7.3.11), and the approximation theorem 7.5.7. That scale is a weighted `l^2` space over the
+Fourier basis of `AddCircle` and is the one Chapter 7 item `backbone.md` §14.8 calls reachable, but
+it does not exist.
+
+What does not need it is §13.3.1's convergence *argument*, which the book itself describes as
+"simply a repetition of the general argument given in Theorem 12.1.2": with the two operator facts
+taken as hypotheses -- exactly the two the book assumes -- the whole proof is two theorems that are
+already proved.
+'''
+
+[[node]]
+id = "equation_13_3_14"
+kind = "theorem"
+desc = '''
+§13.3.1, (13.3.9)-(13.3.14), the Fourier-Galerkin method for the first-kind equation. With `P_n` the
+Fourier truncation on `L^2(0, 2 pi)`, `P_n A = A P_n`, and the Galerkin equations (13.3.10) are
+equivalent to `phi_n + P_n A^{-1} B phi_n = P_n A^{-1} g`; assuming `A^{-1} B` compact on `L^2` and
+`I + A^{-1} B` invertible, the equations are uniquely solvable for large `n` and
+`norm (phi - phi_n)_0 <= norm ((I + P_n A^{-1} B)^{-1}) norm (phi - P_n phi)_0`.
+
+**Conditional, and honestly so.** The two hypotheses are what the Sobolev machinery would supply
+from `b` in `C^{kappa - 1}`; the book assumes unique solvability in the same way. Stated with them
+as hypotheses the theorem is `theorem_12_1_2` and `lemma_12_1_4` applied on `L^2(AddCircle (2 pi))`,
+both already proved.
+
+What has to be built is only `P_n`: the orthogonal projection onto the span of the Fourier modes of
+index at most `n`, with `IsIdempotentElem P_n`, `norm P_n <= 1`, and `P_n phi -> phi`. The last is
+`HilbertBasis.hasSum_repr` for `fourierBasis` read along the cofinal sequence of symmetric index
+blocks; `Numlib/Analysis/Fourier/TrigonometricBasis` is where the basis lives. That, and nothing
+else, is why this node is still open.
+'''
+deps = ["AtkinsonHan.Chapter12.theorem_12_1_2", "AtkinsonHan.Chapter12.lemma_12_1_4"]

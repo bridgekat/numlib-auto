@@ -20,3 +20,47 @@ id = "lemma_12_4_7_d"
 
 [[node]]
 id = "exists_norm_inverse_le_of_isCollectivelyCompactFamily"
+
+[[node]]
+id = "isCollectivelyCompactFamily_nystromCLM"
+
+[[node]]
+id = "lemma_12_4_2_a"
+
+[[node]]
+id = "lemma_12_4_2_b"
+
+[[node]]
+id = "lemma_12_4_2_c"
+
+[[node]]
+id = "theorem_12_4_4"
+
+[[node]]
+id = "example_12_4_5"
+kind = "theorem"
+desc = '''
+Example 12.4.5, the composite trapezoidal rule error
+`int_a^b g - h (g(x_0)/2 + ... + g(x_N)/2) = -h^2 (b - a) g''(xi) / 12` for `g` in `C^2[a, b]`, and
+its asymptotic form `= -(h^2/12) [g'(b) - g'(a)] + O(h^4)` for `g` in `C^4[a, b]`.
+
+The mean-value form belongs in the backbone as `Quadrature.sub_composite_trapezoid_eq`, planned in
+`plans/Numlib/Approximation/Quadrature.toml`, together with `Quadrature.composite`; this surface
+node is its instance and is one line once that exists. The asymptotic form (12.4.39) is the first
+Euler-Maclaurin term, is a separate and harder task, and is quoted by the book from the literature.
+'''
+deps = ["Quadrature.composite", "Quadrature.sub_composite_trapezoid_eq"]
+
+[[node]]
+id = "example_12_4_6"
+kind = "theorem"
+desc = '''
+Example 12.4.6, the asymptotic error expansion of the Nystrom solution: for a `C^4` kernel and a
+`C^4` solution, `u - u_n = h^2 gamma + O(h^4)`, where `gamma` itself solves an integral equation
+whose data is the Euler-Maclaurin boundary term; hence Richardson extrapolation raises the order.
+
+The operator half is easy -- `(lambda - K_n)(u - u_n) = (K - K_n) u` is `SecondKind.norm_sub_le`
+-- and all the work is in the Euler-Maclaurin expansion, i.e. in the asymptotic form (12.4.39) of
+Example 12.4.5. Lowest priority of §12.4; skip until (12.4.39) exists.
+'''
+deps = ["example_12_4_5", "theorem_12_4_4"]

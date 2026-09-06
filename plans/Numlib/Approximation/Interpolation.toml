@@ -55,3 +55,10 @@ integral of `dt/t`. The Lebesgue constant of the Fourier projection in
 `Numlib/Approximation/Trigonometric` is the model for it.'''
 deps = ["trigInterpCLM", "Lagrange.norm_interpolateCLM"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, (3.7.20)"
+
+[[node]]
+id = "ContinuousMap.tendsto_modulusOfContinuity"
+
+[[node]]
+id = "tendsto_piecewiseLinearInterpCLM"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (3.2.8)"

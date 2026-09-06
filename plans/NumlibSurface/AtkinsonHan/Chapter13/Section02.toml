@@ -1,0 +1,78 @@
+namespace = "AtkinsonHan.Chapter13"
+
+[[node]]
+id = "equation_13_2_6"
+
+[[node]]
+id = "equation_13_2_7"
+
+[[node]]
+id = "exercise_13_2_5"
+kind = "theorem"
+desc = '''
+Exercise 13.2.5 and (13.2.20): for a bounded *convex* region with smooth boundary the double layer
+operator has `norm K = pi` exactly, so that `norm ((-pi + K)^{-1})` cannot be obtained from a
+Neumann series and the compactness argument of Chapter 12 is necessary rather than convenient.
+
+`IntegralOperator.norm_kernelCLM` gives `norm K = max_t int |k(t, s)| ds` immediately, so the work
+is entirely geometric: convexity makes `k` of one sign, and the row integral is then the total
+turning of the tangent, i.e. Hopf's Umlaufsatz for a convex curve. Mathlib has no turning number
+and no Umlaufsatz. The `<= pi` half for a general smooth curve follows from the same computation
+with `|k|` and is the part worth attempting first.
+
+Self-contained and instructive -- it is the reason the whole apparatus of Chapter 12 is needed
+here -- but it waits on `doubleLayerKernel`.
+'''
+deps = ["doubleLayerKernel", "IntegralOperator.norm_kernelCLM"]
+
+[[node]]
+id = "equation_13_2_19"
+kind = "theorem"
+desc = '''
+§13.2.1, (13.2.14)-(13.2.23): the evaluation of the double layer potential at a point `A` *near* the
+boundary, by subtracting the singularity,
+`u(A) = int_S [rho(Q) - rho(P_A)] d/dn_Q log norm (A - Q) dS_Q - pi rho(P_A)`, together with the
+error analysis of the resulting composite scheme `u_{n,m}`.
+
+Filed as missing rather than skipped only because the *parametrized* form of the statement is again
+an ordinary integral over `[0, L]` and so avoids surface measure -- but only barely, and the
+singularity-subtraction analysis is long. It has no consumer elsewhere in the corpus. Lowest
+priority in the chapter; moving it to the skip list beside the rest of the potential theory would
+be defensible.
+'''
+deps = ["equation_13_2_7"]
+
+[[node]]
+id = "equation_13_2_32"
+kind = "theorem"
+desc = '''
+(13.2.32), the **Fourier diagonalization of the logarithmic single layer operator**:
+
+`A phi (t) = -(1/pi) int_0^{2 pi} phi(s) log |2 e^{-1/2} sin ((t - s)/2)| ds`
+
+acts on the Fourier modes by `A psi_0 = psi_0` and `A psi_m = psi_m / |m|` for `m` nonzero.
+
+The analytic content is the classical expansion `-log |2 sin (th/2)| = sum_{m >= 1} cos (m th) / m`,
+which is the real part of `-log (1 - e^{i th})` and follows from Mathlib's `Complex.log` and the
+geometric series. Once it is in place `A` is a Fourier multiplier and the whole operator algebra of
+§13.3 becomes elementary, which makes this the single highest-leverage item of the chapter; its
+natural home is `Numlib/Analysis/Fourier/` rather than the surface, beside
+`TrigonometricBasis` and `Dirichlet`.
+
+The bound (13.2.33), `norm A_{C_p -> C_p} <= sqrt (1 + pi^2/3)`, is quoted by the book from
+Atkinson and is a separate, harder step; state the diagonalization without it.
+'''
+
+[[node]]
+id = "exercise_13_3_1"
+kind = "theorem"
+desc = '''
+Exercise 13.3.1: `-(1/pi) int_0^{2 pi} phi(s) log |2 e^{-1/2} sin ((t - s)/2)| ds = cos (k t)` is
+solved by `phi(t) = k cos (k t)` for `k >= 1` and by `phi(t) = 1` for `k = 0`. A one-line corollary
+of `equation_13_2_32`, and a good sanity check on it.
+
+Filed in §13.2's group rather than §13.3's because it is a statement about the operator `A` alone
+and needs none of §13.3's Sobolev machinery; `Chapter13/Section03` is where the Galerkin method
+that uses `A` goes.
+'''
+deps = ["equation_13_2_32"]

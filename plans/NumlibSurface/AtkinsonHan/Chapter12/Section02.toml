@@ -1,0 +1,65 @@
+namespace = "AtkinsonHan.Chapter12"
+
+[[node]]
+id = "equation_12_2_5"
+
+[[node]]
+id = "equation_12_2_17"
+kind = "theorem"
+desc = '''
+(12.2.17)-(12.2.18), trigonometric collocation. For `V_n` the trigonometric polynomials of degree at
+most `n` on `C_p(2 pi)` and `P_n` interpolation at the `2n + 1` equidistant nodes,
+`norm (K - P_n K) -> 0` and Theorem 12.1.2 applies -- although `P_n u -> u` fails for a general
+continuous `u`, so Lemma 12.1.4 is *not* the route.
+
+This is the case the book uses to show that (12.1.21) can hold without pointwise convergence of the
+projections. The estimate is on `P_n K` directly, as a degenerate-kernel operator, so it needs a
+bound on `norm ((I - P_n) k(., y))` uniform in `y`, hence a modulus-of-continuity argument for the
+kernel together with the `O(log n)` Lebesgue constant of trigonometric interpolation.
+
+Obstruction: `trigInterpCLM` exists in `Numlib/Approximation/Interpolation`, but its Lebesgue
+constant does not -- `Numlib/Approximation/Interpolation.toml` carries `norm_trigInterpCLM_le`
+(Rivlin's bound, Atkinson-Han (3.7.20)) as an open node, and this entry waits on it. Do
+`equation_12_2_5` and `equation_12_2_24` first.
+'''
+deps = ["equation_12_2_5", "theorem_12_1_2", "trigInterpCLM", "norm_trigInterpCLM_le"]
+
+[[node]]
+id = "equation_12_2_24"
+kind = "theorem"
+desc = '''
+(12.2.24), piecewise linear Galerkin. For `P_n` the `L^2`-orthogonal projection onto the continuous
+piecewise linear functions of a partition of mesh `h_n -> 0`, `norm (K - P_n K) -> 0` and
+`norm (u - u_n)_{L^2} <= c h_n^2 norm (u'')_{L^2}`.
+
+Mathematically the *easier* of the two §12.2 methods: an orthogonal projection has norm one for
+free, `P_n u -> u` is density, and the `h^2` rate is the interpolation bound again, since the
+orthogonal projection is at least as good as the interpolant.
+
+Obstruction: the library has no bridge from `C(Icc a b, R)` to `L^2(a, b)`. What is needed is the
+submodule of `MeasureTheory.Lp R 2 (volume.restrict (Icc a b))` spanned by the images of the
+piecewise linear functions, its `HasOrthogonalProjection` instance, and the density of the
+piecewise linears in `L^2` -- which is `ContinuousMap.toLp` dense (Mathlib has that) composed with
+`tendsto_piecewiseLinearInterpCLM` (the backbone has that), so the missing piece is only the
+plumbing. `Numlib/Approximation/BestApprox` supplies `isBestApprox_starProjection` and
+`norm_sub_apply_le_of_isIdempotentElem` for the rest. Section 12.2.4 is the same argument with the
+Fourier truncation and should be stated beside it.
+'''
+deps = ["theorem_12_1_2", "lemma_12_1_4", "tendsto_piecewiseLinearInterpCLM",
+  "isBestApprox_starProjection"]
+
+[[node]]
+id = "equation_12_2_29"
+kind = "theorem"
+desc = '''
+§12.2.4, trigonometric Galerkin in `C_p(2 pi)`. With `P_n` the Fourier truncation regarded on the
+*continuous* periodic functions, `norm P_n = O(log n)` so Lemma 12.1.4 fails, but
+`norm (K - P_n K) -> 0` still holds for a smooth kernel.
+
+Lowest priority of the chapter. Its content is the `O(log n)` Lebesgue constant of the Fourier
+projection, Atkinson-Han (3.7.9)-(3.7.10), which belongs in `Numlib/Analysis/Fourier/Dirichlet`
+and is shared with §3.7; formalize it there and this entry becomes the same three lines as
+`equation_12_2_17`. The `L^2` half of §12.2.4 is a corollary of `equation_12_2_24`'s argument with
+the Fourier basis in place of the piecewise linears.
+'''
+deps = ["equation_12_2_17"]

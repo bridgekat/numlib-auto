@@ -1,0 +1,31 @@
+namespace = "IntegralOperator"
+
+[[node]]
+id = "integralCLM"
+
+[[node]]
+id = "nystromCLM"
+
+[[node]]
+id = "norm_nystromCLM"
+
+[[node]]
+id = "tendsto_norm_of_tendsto_functional"
+
+[[node]]
+id = "tendsto_nystromCLM"
+
+[[node]]
+id = "isCollectivelyCompact_nystromCLM"
+
+[[node]]
+id = "compKernel"
+
+[[node]]
+id = "kernelCLM_sub_nystromCLM_comp_kernelCLM"
+
+[[node]]
+id = "kernelCLM_sub_nystromCLM_comp_nystromCLM"
+
+[[node]]
+id = "tendsto_norm_compKernel"

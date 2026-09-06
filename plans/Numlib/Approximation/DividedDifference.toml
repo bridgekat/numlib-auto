@@ -1,0 +1,27 @@
+namespace = "DividedDifference"
+
+[[node]]
+id = "firstOrder"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Section 3.2 (Hermite–Genocchi)"
+
+[[node]]
+id = "secondOrder"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Section 3.2 (Hermite–Genocchi)"
+
+[[node]]
+id = "sub_eq_mul_firstOrder"
+
+[[node]]
+id = "sub_firstOrder_eq"
+
+[[node]]
+id = "firstOrder_self"
+
+[[node]]
+id = "secondOrder_self"
+
+[[node]]
+id = "continuous_firstOrder"
+
+[[node]]
+id = "continuous_secondOrder"

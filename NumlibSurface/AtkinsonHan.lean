@@ -49,10 +49,13 @@ import NumlibSurface.AtkinsonHan.Chapter11.Section02
 import NumlibSurface.AtkinsonHan.Chapter11.Section03
 import NumlibSurface.AtkinsonHan.Chapter11.Section04
 import NumlibSurface.AtkinsonHan.Chapter12.Section01
+import NumlibSurface.AtkinsonHan.Chapter12.Section02
 import NumlibSurface.AtkinsonHan.Chapter12.Section03
 import NumlibSurface.AtkinsonHan.Chapter12.Section04
 import NumlibSurface.AtkinsonHan.Chapter12.Section06
 import NumlibSurface.AtkinsonHan.Chapter12.Section07
+import NumlibSurface.AtkinsonHan.Chapter13.Section01
+import NumlibSurface.AtkinsonHan.Chapter13.Section02
 
 /-!
 # Atkinson–Han, *Theoretical Numerical Analysis*
@@ -146,14 +149,18 @@ bilinear-form vocabulary shared by §8.3, §8.7 and Chapters 9–10 directly in 
 | 11.4 | `Chapter11.Section04` | The discrete inequality and Falk's error estimate |
 | **12** | | *Numerical Solution of Fredholm Integral Equations of the Second Kind* |
 | 12.1 | `Chapter12.Section01` | Projection methods for `(μ − K) u = f`: stability and convergence |
+| 12.2 | `Chapter12.Section02` | Piecewise linear collocation and its `h²` error bound |
 | 12.3 | `Chapter12.Section03` | Iterated projection methods and Sloan's superconvergence |
 | 12.4 | `Chapter12.Section04` | The Nyström method and collectively compact approximation |
 | 12.6 | `Chapter12.Section06` | Two-grid iteration for the discretized equations |
 | 12.7 | `Chapter12.Section07` | Projection methods for nonlinear equations |
+| **13** | | *Boundary Integral Equations* |
+| 13.1 | `Chapter13.Section01` | The parametrized double layer kernel and its compactness |
+| 13.2 | `Chapter13.Section02` | The Nyström method for the second-kind boundary integral equation |
 
 A section module imports the section modules it builds on, so the import graph runs forwards
 through the book: §2.2 on §2.1, §3.3 on §2.4, §4.5 on §4.4, §5.4 on §5.3, §6.3 on §6.2, §9.1 on
-§8.3, §9.4 on §5.6 and §9.1, §10.4 on §9.1, §11.4 on §11.3, and §§12.3–12.7 on §12.1. Two
+§8.3, §9.4 on §5.6 and §9.1, §10.4 on §9.1, §11.4 on §11.3, and §§12.2–12.7 on §12.1. Two
 sections reach backwards for a definition rather than restate it: §2.7 takes weak convergence
 from §3.3, which needed it first for Example 3.3.5, and §11.3 takes strong monotonicity from
 §5.1.
@@ -238,12 +245,22 @@ each section module names the results it leaves out.
   PDE instances of Chapter 9. What survives is the abstract skeleton — §8.2, §8.3, §8.6, §8.7,
   Chapter 9 and §10.4 — which is where the functional analysis lives; the missing part is the
   verification that a particular boundary value problem satisfies its hypotheses. The same
-  boundary cuts Chapters 11 and 12 in two: their abstract spines are formalized — §11.2–11.4 on
-  elliptic variational inequalities, §12.1, §12.3, §12.4, §12.6 and §12.7 on projection and
-  collectively compact methods for Fredholm equations of the second kind — while their
-  applications live in `H¹₀(Ω)` and on a concrete kernel, and are out of scope. So is Chapter 7,
-  which is the Sobolev theory itself, and Chapter 13, which is boundary integral equations on a
-  Sobolev space over a boundary.
+  boundary cuts Chapter 11 in two: its abstract spine is formalized — §11.2–11.4 on elliptic
+  variational inequalities — while its applications live in `H¹₀(Ω)` and are out of scope. So is
+  Chapter 7, which is the Sobolev theory itself. Chapter 12 is *not* cut by this boundary: its
+  concrete half names a kernel and a quadrature rule, not a Sobolev space, and §12.2.1 and §12.4
+  are formalized on `C(D)` in full.
+* **Potential theory on a curve, for Chapter 13.** The obstruction there is not a Sobolev space, as
+  was once recorded here, and it differs by section. §13.1 needs the divergence theorem on a
+  piecewise smooth multiply connected planar region, Green's identities and the jump relations of
+  the layer potentials, none of which Mathlib has and none of which is numerical analysis; only its
+  parametrized double-layer kernel is reachable. §13.2's second-kind analysis needs no Sobolev
+  space at all — it is Theorem 12.4.4 on `C_p(L) = C(AddCircle L, ℝ)`, with the invertibility of
+  `-π + K` a hypothesis the book itself only quotes — and `Chapter13.Section02` states it; its
+  §13.2.2, the exterior Neumann problem, does need `H¹(2π)`. §13.3 needs the periodic Sobolev scale
+  `H^q(2π)`, which is a weighted `ℓ²` over the Fourier basis of `AddCircle` and is reachable, but
+  does not exist yet; its convergence proof, once that scale is there, is Theorem 12.1.2 and
+  Lemma 12.1.4 unchanged.
 * **Weak compactness in a reflexive space.** Theorems 3.3.8, 3.3.10, 3.3.11 (Mazur), 3.3.12 and
   3.3.14, on minimizers of weakly sequentially lower semicontinuous functionals over a reflexive
   Banach space, and Theorem 8.6.3 (Ekeland–Temam, the existence of a saddle point for a

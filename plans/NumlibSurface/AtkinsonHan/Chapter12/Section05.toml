@@ -1,0 +1,119 @@
+namespace = "AtkinsonHan.Chapter12"
+
+desc = '''
+Atkinson-Han §12.5: product integration for weakly singular kernels, the hardest section of the
+chapter and the only one with no module yet.
+
+The setting is `k(x, y) = l(x, y) g(x, y)` with `l` continuous and `g` weakly singular, and the
+approximation replaces `l(x, .) u(.)` by its piecewise polynomial interpolant and integrates the
+singular factor exactly. The second half of the analysis is free: `IsCollectivelyCompactFamily`,
+`lemma_12_4_7_a`-`_d` and `exists_norm_inverse_le_of_isCollectivelyCompactFamily` are proved and
+apply verbatim. The first half is not: the library has no weakly singular kernel at all, and
+`plans/Numlib/IntegralEquations/WeaklySingular.toml` is where it is planned
+(`IntegralOperator.IsAdmissibleKernel`, `admissibleKernelCLM`,
+`isCompactOperator_admissibleKernelCLM`, the splitting rule (2.8.9)).
+
+The section therefore waits on two backbone items, in this order: the admissible-kernel operator of
+`Numlib/IntegralEquations/WeaklySingular`, and piecewise polynomial interpolation of degree `m`
+in `Numlib/Approximation/Interpolation`, of which only the linear case exists. With both, 12.5.1's
+A1 is definitional, A3 is uniform boundedness plus equicontinuity of `{K_n v}`, and A2 is
+Exercise 12.5.1; everything else in the section follows.
+'''
+
+[[node]]
+id = "theorem_12_5_1"
+kind = "theorem"
+desc = '''
+Theorem 12.5.1: for `k = l g` with `l` continuous and `g` satisfying the two weak-singularity
+conditions (12.5.15)-(12.5.16), and `K_n` the product trapezoidal approximation obtained by
+replacing `l(x, .) u(.)` by its piecewise linear interpolant, the family `{K_n}` is collectively
+compact and pointwise convergent on `C[a, b]`, so the approximating equations are uniquely solvable
+for large `n` with `norm (u - u_n)_inf <= c norm (K u - K_n u)_inf`.
+
+Obstruction: (a) the weakly singular kernel itself -- the two conditions
+`sup_x int |g(x, y)| dy < infinity` and `omega_g(h) -> 0`, together with the compactness of the
+resulting operator on `C[a, b]`, which is Atkinson-Han §2.8.1 and is planned as
+`IntegralOperator.IsAdmissibleKernel` and `isCompactOperator_admissibleKernelCLM`; and (b)
+`piecewiseLinearInterpCLM` used as a *product* rule, i.e. the operator
+`u -> (x -> int l(x, y) g(x, y) (P_n u)(y) dy)`, which is a Nystrom-like operator with the weights
+`int g(x, y) phi_j(y) dy` depending on `x` and so is not an instance of
+`IntegralOperator.nystromCLM`. Both `log |x - y|` and `|x - y|^{gamma - 1}` have to be shown to
+satisfy the two conditions.
+
+Everything downstream (12.5.2, 12.5.6) waits on this.
+'''
+deps = ["IntegralOperator.IsAdmissibleKernel", "IntegralOperator.isCompactOperator_admissibleKernelCLM",
+  "piecewiseLinearInterpCLM", "exists_norm_inverse_le_of_isCollectivelyCompactFamily"]
+
+[[node]]
+id = "example_12_5_2"
+kind = "theorem"
+desc = '''
+Example 12.5.2: with `z_n` the piecewise linear interpolant, `norm (z - z_n)_inf <= (h^2/8) norm
+(z'')_inf`, which is the convergence rate of the product trapezoidal method.
+
+Trivial once 12.5.1 is stated: `norm_sub_piecewiseLinearInterpCLM_le` is literally the quoted
+bound. The degree-`m` version, `norm ((K - K_n) u)_inf = O(h^{m+1})` for `l(x, .)` and `u` in
+`C^{m+1}`, needs the piecewise polynomial interpolation operator, which does not exist; state the
+`m = 1` case only.
+'''
+deps = ["theorem_12_5_1", "norm_sub_piecewiseLinearInterpCLM_le"]
+
+[[node]]
+id = "theorem_12_5_4"
+kind = "theorem"
+desc = '''
+Theorem 12.5.4, the regularity of the solution of a weakly singular equation: for (12.5.26) with
+`g_gamma(u) = u^{gamma - 1}` (`0 < gamma < 1`) or `log |u|` (`gamma = 1`), a `C^{k+1}` coefficient
+`l` and data `f` of the stated class, the solution satisfies
+`u` in `C^{(0,gamma)}[a, b] cap C^k(a, b)` with `(x - a)^i (b - x)^i u^{(i)}(x)` in
+`C^{(0,gamma)}[a, b]` vanishing at the endpoints, and `|u^{(i)}(x)| <= c_i (x - a)^{gamma - i}`
+near `a`.
+
+The single hardest statement of the chapter: the book proves it over several pages by
+differentiating under the singular integral and bootstrapping. The Holder classes it needs exist --
+`AtkinsonHan.Chapter03.HolderClass` and `HolderClassIcc` -- but the log-modified class
+`C^{(0,1)}[a, b]` defined just before the theorem is new, and there is no regularity theory for
+weakly singular kernels anywhere in the library.
+
+Not a skip: nothing in it is outside numerical analysis. But the pragmatic route is to state
+`theorem_12_5_6` with this as a hypothesis, which is what the book's own use of it amounts to.
+'''
+deps = ["theorem_12_5_1"]
+
+[[node]]
+id = "lemma_12_5_5"
+kind = "theorem"
+desc = '''
+Lemma 12.5.5, graded-mesh interpolation: for the mesh `x_j = a + (2j/n)^q (b - a)/2` and piecewise
+polynomial interpolation of degree `m`, a function of Rice's type `(gamma, m + 1)` -- that is,
+`u` in `C^{(0,gamma)}[0, 1] cap C^{m+1}(0, 1]` with `|u^{(m+1)}(x)| <= c x^{gamma - (m+1)}` --
+satisfies `norm (u - P_n u)_inf <= c n^{-(m+1)}` once `q >= (m + 1)/gamma`, and
+`norm (u - P_n u)_p <= c n^{-(m+1)}` once `q > p(m + 1)/(1 + p gamma)`.
+
+The book states it without proof, citing Atkinson and Rice, so formalizing means reconstructing the
+argument: split off the first panel `[x_0, x_1]`, where the Holder bound is used directly, and apply
+the Lagrange error formula panel by panel on the rest, where the grading makes
+`h_j^{m+1} sup |u^{(m+1)}|` uniform. Self-contained approximation theory, and the only place in the
+corpus that asks for graded meshes.
+
+Obstruction: piecewise polynomial interpolation of degree `m`. The *mesh* is not the obstacle --
+`piecewiseLinearInterpCLM` already takes an arbitrary node sequence -- the degree is.
+'''
+deps = ["Lagrange.exists_sub_interpolate_eq"]
+
+[[node]]
+id = "theorem_12_5_6"
+kind = "theorem"
+desc = '''
+Theorem 12.5.6: for the weakly singular equation (12.5.26) solved by graded-mesh piecewise
+polynomial product integration, the approximating equations are uniquely solvable for large `n`
+with uniformly bounded inverses, and `norm (u - u_n)_inf <= c n^{-(m+1)}` once
+`q >= (m + 1)/gamma` (or `q > m + 1` when `gamma = 1`).
+
+The proof really is "12.5.1 gives `norm (u - u_n) <= c norm (K u - K_n u)`, then 12.5.4 puts `u` in
+Rice's class and 12.5.5 bounds the interpolation error". With 12.5.4 taken as a hypothesis rather
+than proved this is the easiest of the four §12.5 nodes; it is listed last because it needs the
+other three to be stated.
+'''
+deps = ["theorem_12_5_1", "theorem_12_5_4", "lemma_12_5_5"]

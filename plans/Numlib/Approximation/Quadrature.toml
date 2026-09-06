@@ -54,3 +54,68 @@ therefore free. What is left is:
    free.'''
 deps = ["functional", "IsInterpolatory"]
 source = "Kress, Numerical Analysis, Section 9.2"
+
+[[node]]
+id = "composite"
+kind = "definition"
+desc = '''
+The composite rule of a one-panel rule on a partition `a = x_0 < ... < x_N = b`: the quadrature rule
+whose nodes are the panel nodes and whose weights are the panel weights scaled by the panel length.
+`Quadrature.functional` is the frame; what is new is only the bookkeeping that turns `N` panels of
+`m` nodes into one `Fin (N * m)`-indexed rule, and the identity
+`composite f = sum over panels of the panel rule`.
+
+The composite trapezoidal rule is the case `m = 2` with weights `(1/2, 1/2)`, which is what
+Atkinson-Han Example 12.4.5 and Section 13.2 use; the composite midpoint (rectangle) rule is the
+case `m = 1`, which on `AddCircle T` is the same rule as the trapezoidal one by periodicity.
+'''
+deps = ["functional"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 12.4.5"
+
+[[node]]
+id = "tendsto_composite"
+kind = "theorem"
+desc = '''
+**The Riemann-sum theorem**: a composite rule with nonnegative panel weights summing to one
+converges to the integral for *every* continuous integrand as the mesh tends to zero, with the
+explicit bound `|int_a^b f - composite f| <= (b - a) * omega(f, h)` by the modulus of continuity.
+
+Neither this library nor Mathlib has it: a search for "Riemann sum" over Mathlib finds nothing, and
+`Quadrature.tendsto_iff_bddAbove_sum_abs` does not apply, because a composite rule of fixed panel
+degree is *not* exact on polynomials of a degree tending to infinity. The proof is short and
+self-contained -- split `int_a^b` into panels with
+`intervalIntegral.sum_integral_adjacent_intervals`, and on each panel bound
+`int (f - f(node))` by the panel length times `ContinuousMap.modulusOfContinuity f h`, which tends
+to zero by `ContinuousMap.tendsto_modulusOfContinuity` -- but the interval-integral bookkeeping is
+the whole of it.
+
+This is the one hypothesis that `AtkinsonHan.Chapter13.equation_13_2_7` has to assume rather than
+discharge: the trapezoidal rule of Section 13.2 converges for every continuous periodic integrand
+for exactly this reason. The periodic form needs the transfer
+`AddCircle.intervalIntegral_preimage` from `int over AddCircle T` to `int_0^T`, and the bound that
+the quotient map does not increase distance, so that the modulus on `AddCircle T` controls the
+modulus on the interval.
+'''
+deps = ["composite", "ContinuousMap.tendsto_modulusOfContinuity"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Section 13.2"
+
+[[node]]
+id = "sub_composite_trapezoid_eq"
+kind = "theorem"
+desc = '''
+The composite trapezoidal rule error in mean-value form,
+`int_a^b g - h * (g(x_0)/2 + g(x_1) + ... + g(x_N)/2) = -h^2 (b - a) g''(xi) / 12` for `g` in
+`C^2[a, b]` and some `xi` in `(a, b)`.
+
+The one-panel case is the two-node Lagrange error formula
+(`Lagrange.exists_sub_interpolate_eq` at `n = 1`) integrated over the panel, which gives
+`-h^3 g''(xi_j) / 12` there; summing and applying the intermediate value theorem to `g''` collects
+the `N` values `g''(xi_j)` into one. Both steps are available.
+
+Not to be confused with the asymptotic form (12.4.39),
+`= -(h^2/12) [g'(b) - g'(a)] + O(h^4)`, which is the first Euler-Maclaurin term and is a separate
+and harder statement that Atkinson-Han themselves quote; Example 12.4.6, the Richardson
+extrapolation of the Nystrom solution, needs that form and not this one.
+'''
+deps = ["composite", "Lagrange.exists_sub_interpolate_eq"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 12.4.5, (12.4.38)"

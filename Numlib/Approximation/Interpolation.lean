@@ -581,6 +581,31 @@ theorem modulusOfContinuity_nonneg [Nonempty X] (hδ : 0 ≤ δ) : 0 ≤ f.modul
   have := le_modulusOfContinuity f (u := u) (v := u) (by simpa using hδ)
   simpa using this
 
+open Filter Topology in
+/-- **The modulus of continuity tends to zero with the scale.** This is the uniform continuity of a
+continuous function on a compact space, restated for the modulus: it is what turns every
+approximation bound of the form `‖f - P f‖ ≤ ω(f, h)` into a convergence statement as the mesh `h`
+tends to zero. -/
+theorem tendsto_modulusOfContinuity [Nonempty X] :
+    Tendsto f.modulusOfContinuity (𝓝[≥] (0 : ℝ)) (𝓝 0) := by
+  have huc : UniformContinuous f := CompactSpace.uniformContinuous_of_continuous f.continuous
+  rw [Metric.tendsto_nhdsWithin_nhds]
+  intro ε hε
+  obtain ⟨d, hd, hdf⟩ := Metric.uniformContinuous_iff.1 huc (ε / 2) (by positivity)
+  refine ⟨d / 2, by positivity, fun {r} hr hrd => ?_⟩
+  have hr0 : (0 : ℝ) ≤ r := Set.mem_Ici.1 hr
+  have hrlt : r < d := by
+    rw [Real.dist_eq, sub_zero, abs_of_nonneg hr0] at hrd
+    linarith
+  have hle : f.modulusOfContinuity r ≤ ε / 2 := by
+    refine Real.sSup_le ?_ (by positivity)
+    rintro y ⟨⟨u, v⟩, huv, rfl⟩
+    have hd2 := hdf (lt_of_le_of_lt huv hrlt)
+    rw [Real.dist_eq] at hd2
+    exact hd2.le
+  rw [Real.dist_eq, sub_zero, abs_of_nonneg (f.modulusOfContinuity_nonneg hr0)]
+  linarith
+
 end ContinuousMap
 
 /-! ### Piecewise-linear interpolation -/
@@ -948,6 +973,34 @@ theorem norm_sub_piecewiseLinearInterpCLM_le_modulus
         rw [abs_mul, abs_mul, abs_of_nonneg (by linarith : (0:ℝ) ≤ 1 - θ), abs_of_nonneg hθ0]
     _ ≤ (1 - θ) * f.modulusOfContinuity h + θ * f.modulusOfContinuity h := by gcongr
     _ = f.modulusOfContinuity h := by ring
+
+open Filter Topology in
+/-- **Piecewise-linear interpolation converges uniformly for every continuous function** as the
+mesh of the partitions tends to zero. The bound is the modulus of continuity
+(`norm_sub_piecewiseLinearInterpCLM_le_modulus`), which tends to zero with the mesh
+(`ContinuousMap.tendsto_modulusOfContinuity`); no differentiability of `f` is used, and it is this
+statement — not the `h²` bound for a `C²` function — that a projection method needs in order to
+satisfy the hypothesis `P_n u → u` of the Banach–Steinhaus argument.
+
+Reference: [han2009theoretical], (3.2.8). -/
+theorem tendsto_piecewiseLinearInterpCLM {N : ℕ → ℕ} {y : ℕ → ℕ → Set.Icc a b} {h : ℕ → ℝ}
+    (hstep : ∀ n, ∀ i ≤ N n, (y n i : ℝ) < (y n (i + 1) : ℝ))
+    (hfirst : ∀ n, (y n 0 : ℝ) = a) (hlast : ∀ n, (y n (N n + 1) : ℝ) = b)
+    (hmesh : ∀ n, ∀ i ≤ N n, (y n (i + 1) : ℝ) - (y n i : ℝ) ≤ h n)
+    (hh : Tendsto h atTop (𝓝 0)) (f : C(Set.Icc a b, ℝ)) :
+    Tendsto (fun n => piecewiseLinearInterpCLM (N n) (y n) f) atTop (𝓝 f) := by
+  have hne : Nonempty (Set.Icc a b) := ⟨y 0 0⟩
+  have hh0 : ∀ n, 0 ≤ h n := fun n =>
+    le_trans (sub_nonneg.mpr (hstep n 0 (Nat.zero_le _)).le) (hmesh n 0 (Nat.zero_le _))
+  have hhw : Tendsto h atTop (𝓝[≥] (0 : ℝ)) :=
+    tendsto_nhdsWithin_of_tendsto_nhds_of_eventually_within _ hh
+      (Filter.Eventually.of_forall fun n => Set.mem_Ici.2 (hh0 n))
+  have hmod : Tendsto (fun n => f.modulusOfContinuity (h n)) atTop (𝓝 0) :=
+    (ContinuousMap.tendsto_modulusOfContinuity f).comp hhw
+  rw [tendsto_iff_norm_sub_tendsto_zero]
+  refine squeeze_zero (fun n => norm_nonneg _) (fun n => ?_) hmod
+  rw [norm_sub_rev]
+  exact norm_sub_piecewiseLinearInterpCLM_le_modulus (hstep n) (hfirst n) (hlast n) f (hmesh n)
 
 end PiecewiseLinear
 
