@@ -42,10 +42,10 @@ interpolation at the equispaced nodes of a period. The material is [han2009theor
   of `Numlib/Approximation/Unisolvent` for the subspace `polyLE X n` and the point evaluations at
   the nodes, and `Lagrange.interpCLM_isUnisolvent_polyLE` identifies `Lagrange.interpolateCLM` with
   the interpolation projection of that problem.
-* `haarCondition_trigPolyLE` and `isUnisolvent_trigPolyLE`: a nonzero trigonometric polynomial of
-  degree at most `n` has at most `2 n` zeros in a period, so interpolation by such polynomials at
-  `2 n + 1` distinct nodes has exactly one solution. `trigInterpCLM` is the resulting bounded
-  projection onto `trigPolyLE T n` at the equispaced nodes.
+* `isUnisolvent_trigPolyLE`: a nonzero trigonometric polynomial of degree at most `n` has at most
+  `2 n` zeros in a period (`haarCondition_trigPolyLE`, in `Numlib.Approximation.Chebyshev`), so
+  interpolation by such polynomials at `2 n + 1` distinct nodes has exactly one solution.
+  `trigInterpCLM` is the resulting bounded projection onto `trigPolyLE T n` at the equispaced nodes.
 
 ## Implementation notes
 
@@ -955,21 +955,14 @@ end PiecewiseLinear
 
 section Trigonometric
 
-/-- **The Haar condition for trigonometric polynomials**: a nonzero trigonometric polynomial of
-degree at most `n` vanishes at fewer than `2 n + 1` points of a period. -/
-theorem haarCondition_trigPolyLE (T : ℝ) [hT : Fact (0 < T)] (n : ℕ) :
-    HaarCondition (trigPolyLE T n) (2 * n + 1) := by
-  intro g hg hg0 s hs
-  obtain ⟨c, hc⟩ := mem_trigPolyLE_iff.mp hg
-  have := card_le_two_mul_of_forall_trigFun_eq_zero hT.out.ne' hc hg0 hs
-  omega
-
-/-- **Trigonometric interpolation at `2 n + 1` distinct nodes of a period is unisolvent.** -/
-theorem isUnisolvent_trigPolyLE (T : ℝ) [Fact (0 < T)] {n : ℕ}
+/-- **Trigonometric interpolation at `2 n + 1` distinct nodes of a period is unisolvent.** The
+Haar condition it feeds on is `haarCondition_trigPolyLE`, proved with the rest of the Haar theory
+in `Numlib.Approximation.Chebyshev`. -/
+theorem isUnisolvent_trigPolyLE (T : ℝ) [hT : Fact (0 < T)] {n : ℕ}
     {x : Fin (2 * n + 1) → AddCircle T} (hx : Function.Injective x) :
     Approximation.IsUnisolvent (trigPolyLE T n) fun i => ContinuousMap.evalCLM ℝ (x i) :=
   (Approximation.haarCondition_iff_isUnisolvent (trigPolyLE T n)
-    (finrank_trigPolyLE T n)).mp (haarCondition_trigPolyLE T n) x hx
+    (finrank_trigPolyLE T n)).mp (haarCondition_trigPolyLE hT.out.ne' n) x hx
 
 /-- The `2 n + 1` **equispaced nodes** of a period: `x j = j T / (2 n + 1)`. -/
 noncomputable def trigInterpNode (T : ℝ) (n : ℕ) (j : Fin (2 * n + 1)) : AddCircle T :=
