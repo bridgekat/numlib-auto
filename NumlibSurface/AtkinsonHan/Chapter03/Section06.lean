@@ -1,6 +1,9 @@
 import Numlib.Analysis.InnerProductSpace.Projection.ObliqueProjection
 import Numlib.Approximation.BestApprox
+import Numlib.Approximation.Interpolation
+import Numlib.Approximation.Trigonometric
 import NumlibSurface.AtkinsonHan.Chapter03.Section03
+import NumlibSurface.AtkinsonHan.Chapter03.Section07
 import Mathlib.Analysis.InnerProductSpace.PiL2
 
 /-!
@@ -27,12 +30,14 @@ Analysis Framework* (3rd ed.), §3.6.
 * `proposition_3_6_9_a` … `proposition_3_6_9_e` — the properties of orthogonal projections;
   `proposition_3_6_9_c'` restates (c) as an orthogonal direct sum.
 * `exercise_3_6_1`, `exercise_3_6_7` — `I − P` is a projection; `‖P‖ ≥ 1` for `P ≠ 0`.
+* `example_3_6_5`, `example_3_6_6`, `example_3_6_8` — the three concrete projection operators of
+  the section: Lagrange interpolation on `C[a, b]`, piecewise-linear interpolation on `C[a, b]`,
+  and the Fourier projection on `C_p(2π)`. `example_3_6_8_l2` is the section's closing remark
+  that the Fourier projection is also the orthogonal projection in `L²`.
 
 ## Not formalized here
 
-Example 3.6.5 (Lagrange interpolation), Example 3.6.6 (piecewise linear interpolation) and
-Example 3.6.8 (Fourier projection) need interpolation and trigonometric projection operators on
-`C[a, b]` and `C_p(2π)`; these are phase-3 backbone items. Example 3.6.4 is a picture in `ℝ²`.
+Example 3.6.4 is a picture in `ℝ²`.
 -/
 
 namespace AtkinsonHan.Ch03
@@ -278,5 +283,90 @@ theorem proposition_3_6_9_e [CompleteSpace H] (P : H →L[𝕜] H)
   · rw [hcoe, ← hker, ← LinearMap.IsSymmetric.orthogonal_range hsym]
 
 end Hilbert
+
+/-! ### Examples 3.6.5, 3.6.6 and 3.6.8: the three concrete projections -/
+
+section Examples
+
+open MeasureTheory Real
+
+/-- The space `𝒫ₙ` of §3.3 is the backbone's `polyLE (Set.Icc a b) n`: the two definitions cut
+the polynomials down by `degree < n + 1` and by `degree ≤ n`. -/
+theorem polyLE_eq (a b : ℝ) (n : ℕ) : polyLE a b n = _root_.polyLE (Set.Icc a b) n := by
+  rw [polyLE, _root_.polyLE, ← Polynomial.degreeLT_succ_eq_degreeLE]
+
+/-- **Example 3.6.5.**  Lagrange interpolation at `n + 1` distinct nodes of `[a, b]` is a
+projection operator on `C[a, b]` whose range is `𝒫ₙ`, and whose operator norm is the Lebesgue
+constant of the nodes, the supremum of the Lebesgue function `∑ᵢ |ℓᵢ(t)|`. -/
+theorem example_3_6_5 {a b : ℝ} {n : ℕ} {x : Fin (n + 1) → Set.Icc a b}
+    (hx : Function.Injective x) :
+    IsProjectionOperator (Lagrange.interpolateCLM x) ∧
+      LinearMap.range ((Lagrange.interpolateCLM x :
+          C(Set.Icc a b, ℝ) →L[ℝ] C(Set.Icc a b, ℝ)) :
+          C(Set.Icc a b, ℝ) →ₗ[ℝ] C(Set.Icc a b, ℝ)) = polyLE a b n ∧
+      ‖Lagrange.interpolateCLM x‖ = sSup (Set.range fun t => ∑ i, |Lagrange.basisCM x i t|) := by
+  have : Nonempty (Set.Icc a b) := ⟨x 0⟩
+  refine ⟨Lagrange.isIdempotentElem_interpolateCLM hx, ?_, Lagrange.norm_interpolateCLM hx⟩
+  rw [Lagrange.range_interpolateCLM hx, polyLE_eq]
+
+/-- **Example 3.6.6.**  Piecewise-linear interpolation on a partition
+`a = x₀ < x₁ < ⋯ < x_{n+1} = b` is a projection operator on `C[a, b]` of norm `1`: on each
+subinterval the interpolant is a convex combination of two values of the function, and it fixes
+the constants. -/
+theorem example_3_6_6 {a b : ℝ} {n : ℕ} {x : ℕ → Set.Icc a b}
+    (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ)) (hfirst : (x 0 : ℝ) = a)
+    (hlast : (x (n + 1) : ℝ) = b) :
+    IsProjectionOperator (piecewiseLinearInterpCLM n x) ∧
+      ‖piecewiseLinearInterpCLM n x‖ = 1 :=
+  ⟨isIdempotentElem_piecewiseLinearInterpCLM hstep hfirst hlast,
+    norm_piecewiseLinearInterpCLM hstep hfirst hlast⟩
+
+/-- **Example 3.6.8.**  The Fourier projection `𝓕ₙ` is a projection operator on `C_p(2π)` whose
+range is the space `𝕋ₙ` of trigonometric polynomials of degree at most `n`, and whose operator
+norm is the `n`-th Lebesgue constant `Lₙ = (1/π) ∫_{-π}^{π} |Dₙ|` of (3.7.9). -/
+theorem example_3_6_8 (n : ℕ) :
+    IsProjectionOperator (_root_.PeriodicCont.fourierProj n) ∧
+      LinearMap.range ((_root_.PeriodicCont.fourierProj n : PeriodicCont →L[ℝ] PeriodicCont) :
+          PeriodicCont →ₗ[ℝ] PeriodicCont) = trigPolyLE (2 * π) n ∧
+      ‖_root_.PeriodicCont.fourierProj n‖ = _root_.PeriodicCont.lebesgueConstant n :=
+  ⟨_root_.PeriodicCont.isIdempotentElem_fourierProj n, _root_.PeriodicCont.range_fourierProj n,
+    _root_.PeriodicCont.norm_fourierProj n⟩
+
+/-- **Example 3.6.8**, the closing remark: `𝓕ₙ` is also the *orthogonal* projection of `L²(0, 2π)`
+onto `𝕋ₙ`.  Read on the continuous functions, that says the error `f − 𝓕ₙ f` is `L²`-orthogonal to
+every member of the real trigonometric system of index at most `n`, hence to all of `𝕋ₙ`.
+
+The Fourier projection is not orthogonal for the *uniform* norm of `C_p(2π)`: its norm is `Lₙ`,
+which grows like `log n` (`PeriodicCont.log_le_lebesgueConstant`), whereas an orthogonal
+projection has norm one by Proposition 3.6.9(b). -/
+theorem example_3_6_8_l2 {n : ℕ} (f : PeriodicCont) {m : ℤ} (hm : m.natAbs ≤ n) :
+    inner ℝ (trigLp (2 * π) m)
+        (ContinuousMap.toLp 2 AddCircle.haarAddCircle ℝ f -
+          ContinuousMap.toLp 2 AddCircle.haarAddCircle ℝ
+            (_root_.PeriodicCont.fourierProj n f)) = 0 := by
+  classical
+  have hbridge : ∀ g : C(AddCircle (2 * π), ℝ),
+      inner ℝ (trigLp (2 * π) m) (ContinuousMap.toLp 2 AddCircle.haarAddCircle ℝ g)
+        = realFourierCoeff (⇑g) m := by
+    intro g
+    rw [trigLp, ContinuousMap.inner_toLp, realFourierCoeff_apply]
+    simp [mul_comm]
+  have hsum : ContinuousMap.toLp 2 AddCircle.haarAddCircle ℝ
+      (_root_.PeriodicCont.fourierProj n f)
+      = ∑ j ∈ Finset.Icc (-(n : ℤ)) n, realFourierCoeff (⇑f) j • trigLp (2 * π) j := by
+    rw [_root_.PeriodicCont.fourierProj_eq_sum, map_sum]
+    exact Finset.sum_congr rfl fun j _ => map_smul _ _ _
+  rw [inner_sub_right, hbridge f, hsum, inner_sum]
+  have hstep : ∀ j ∈ Finset.Icc (-(n : ℤ)) n,
+      inner ℝ (trigLp (2 * π) m) (realFourierCoeff (⇑f) j • trigLp (2 * π) j)
+        = if m = j then realFourierCoeff (⇑f) j else 0 := by
+    intro j _
+    rw [real_inner_smul_right, orthonormal_iff_ite.1 orthonormal_trigFun m j]
+    split_ifs <;> ring
+  rw [Finset.sum_congr rfl hstep, Finset.sum_ite_eq _ m,
+    ite_eq_left (Finset.mem_Icc.2 (Set.mem_Icc.1 (mem_Icc_iff_natAbs_le.2 hm)))]
+  ring
+
+end Examples
 
 end AtkinsonHan.Ch03

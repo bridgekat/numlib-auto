@@ -2139,6 +2139,53 @@ Structural facts from the approximation layer:
   *defining* indices on the left of each equation. `single_mul_single_of_ne` needs the two middle
   indices to differ, so `single i j 1 * single i j 1 = 0` asks for `j ≠ i`.
 
+* **`InnerProductSpace.complexToReal` is a `def`, not an instance**, and deliberately so (it would
+  diamond with `PiLp.innerProductSpace`). A complex Hilbert space therefore has `NormedSpace ℝ V`
+  and `Module ℝ V` by instance — so `Convex ℝ K` elaborates in a *statement* — but no real inner
+  product. Open one inside the proof with `let _ : InnerProductSpace ℝ V :=
+  InnerProductSpace.complexToReal`; `real_inner_eq_re_inner ℂ x y` is then `rfl`. The real form of
+  a complex sesquilinear `a` is `(innerSL ℝ).comp ((SesqForm.toOperator a).restrictScalars ℝ)`,
+  which satisfies `b u v = re (a u v)` and is Hermitian and coercive with the same constant. That
+  is the whole reduction of a complex variational problem to a real one, in about fifteen lines
+  (`AtkinsonHan.Ch11.exercise_11_2_1`).
+* **`letI`/`haveI` on a goal that is a `Prop` now trips `linter.style.haveILetI`** ("The goal is a
+  proposition, so `let`/`have` is preferred"). Write `let`/`have`; the instance is still found.
+* `ContinuousMap.inner_toLp f g : ⟪toLp f, toLp g⟫ = ∫ x, g x * conj (f x) ∂μ` — the arguments are
+  *swapped* relative to the integrand and the conjugate is on the first. With
+  `trigLp T n = toLp (trigFun T n)` it turns an `L²` inner product against the trigonometric system
+  straight into `realFourierCoeff`, with no `ContinuousMap.coeFn_toLp` almost-everywhere bridge.
+* **`AtkinsonHan.Ch03.polyLE (a b : ℝ) (n : ℕ)` shadows the backbone `polyLE (X : Set ℝ) (n : ℕ)`**
+  inside `namespace AtkinsonHan.Ch03`, and the error is an application type mismatch on the *first*
+  argument (`X` has type `Set ℝ` but is expected to have type `ℝ`), which reads like a bad
+  statement rather than a name clash. The two differ by `degreeLT ℝ (n+1)` versus `degreeLE ℝ n`
+  and `Polynomial.degreeLT_succ_eq_degreeLE` is the one-line bridge.
+* `integral_inv_of_pos (ha : 0 < a) (hb : 0 < b) : ∫ x in a..b, x⁻¹ = log (b / a)` is at the
+  **root**, not in `intervalIntegral`: `Mathlib/Analysis/SpecialFunctions/Integrals/Basic.lean`
+  closes that namespace before it. `intervalIntegral.integral_inv_of_pos` is an unknown constant.
+* `NormedAddCommGroup.tendsto_nhds_zero` is deprecated in favour of
+  `NormedAddGroup.tendsto_nhds_zero`.
+* `Real.mul_iInf_of_nonneg (ha : 0 ≤ a) (f : ι → ℝ) : a * ⨅ i, f i = ⨅ i, a * f i` is how a
+  constant moves through an infimum over a subtype, which is what a book statement of the form
+  `‖u - u_h‖ ≤ c inf_{v_h ∈ K_h} (…)` needs before `le_ciInf`. `le_ciInf` itself wants only
+  `[Nonempty ι]` over `ℝ`, and a nonempty constraint set is free from the membership clause of the
+  solution.
+* `AtkinsonHan.Ch05.stronglyMonotoneWith_iff.1` is the *public* bridge from the book's
+  `StronglyMonotoneWith` to the backbone's `IsStronglyMonotoneWith ℝ`; the two are definitionally
+  equal, so it also typechecks as a plain coercion. `Chapter11/Section03` keeps a private
+  `isStronglyMonotoneWith_of` doing the same thing, which is why `Section04` has a second copy —
+  making one of them public would remove the duplication.
+* **Mathlib has no Fejér kernel, no Jackson kernel and no Jackson theorem**, and no convolution on
+  `AddCircle` beyond the generic `MeasureTheory.convolution`. What it does have for that circle of
+  problems is `fourier_add : fourier (m + n) x = fourier m x * fourier n x`
+  (`Analysis/Fourier/AddCircle`) and `ConcaveOn.le_map_integral` (`Analysis/Convex/Integral`), the
+  Jensen step. Searched at `v4.34.0-rc2`; do not search again.
+* A `sin`-quotient kernel is bounded away from the origin by Jordan's inequality
+  `Real.mul_le_sin (hx : 0 ≤ x) (hx' : x ≤ π/2) : 2 / π * x ≤ sin x`
+  (`Analysis/SpecialFunctions/Trigonometric/Bounds`), which is what turns `|D_n(t)| ≤ π / (2 t)`
+  into two lines. Splitting `∫₀^π` at the first zero `π/(2n+1)` of the numerator, bounding below
+  it by the value at the origin and above it by `π/(2t)`, gives `L_n ≤ 1 + log (2n+1)` in about
+  seventy lines (`PeriodicCont.lebesgueConstant_le`).
+
 ## Design conventions of this library
 
 Decided in `plans/backbone.md` §1.7; the short version for a proof author:

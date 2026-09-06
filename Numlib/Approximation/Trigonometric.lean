@@ -14,7 +14,8 @@ Dirichlet kernel `D_n (y - x) / π`. It is the partial-sum operator of a Fourier
 at most `n` (`PeriodicCont.range_fourierProj` and `PeriodicCont.isIdempotentElem_fourierProj`), and
 its operator norm is the `n`-th **Lebesgue constant** `L_n = (1/π) ∫_{-π}^{π} |D_n|`
 (`PeriodicCont.norm_fourierProj`), which grows at least like `(4/π²) log n`
-(`PeriodicCont.log_le_lebesgueConstant`) and so is unbounded.
+(`PeriodicCont.log_le_lebesgueConstant`) — so it is unbounded — and at most like `log (2 n + 1)`
+(`PeriodicCont.lebesgueConstant_le`).
 
 Nothing here duplicates `Numlib/Analysis/Fourier/Dirichlet`: the Dirichlet kernel and the partial
 sums are that module's, and what is added is that the partial sum of a *continuous* periodic
@@ -39,8 +40,10 @@ best uniform trigonometric approximation of a Hölder function by `M_k / n^{k+α
 formalized; they are independent of the Fourier projection except through the subspace
 `trigPolyLE (2 π) n` that they measure the distance to, and their proof is a separate construction
 (convolution with the Jackson kernel `(sin (n θ / 2) / sin (θ / 2))⁴`). Of Zygmund's asymptotic
-`L_n = (4/π²) log n + O(1)` only the lower bound is proved, which is the half the divergence
-argument uses. What is proved of Atkinson and Han's (3.7.11) is the Lebesgue-lemma half,
+`L_n = (4/π²) log n + O(1)` the two halves are proved with different constants —
+`log_le_lebesgueConstant` has the sharp `4/π²` below, `lebesgueConstant_le` the crude `1 + log
+(2 n + 1)` above — which is all that the divergence argument and the convergence rate (3.7.12)
+consume. What is proved of Atkinson and Han's (3.7.11) is the Lebesgue-lemma half,
 `‖f - 𝓕_n f‖ ≤ (1 + L_n) dist (f, 𝕋_n)`, which is what the projection contributes; the rate then
 follows from it and Jackson's theorem.
 
@@ -508,5 +511,101 @@ theorem log_le_lebesgueConstant (n : ℕ) :
   rw [lebesgueConstant_eq, show 4 / π ^ 2 * Real.log n = 2 / π * (2 / π * Real.log n) by
     field_simp; ring]
   exact mul_le_mul_of_nonneg_left hI (by positivity)
+
+/-! ### An upper bound for the Lebesgue constants -/
+
+/-- The Dirichlet kernel is bounded by its value `n + 1/2` at the origin: it is a sum of `n`
+cosines and a half. -/
+private theorem abs_dirichletKernel_le (n : ℕ) (t : ℝ) :
+    |dirichletKernel n t| ≤ (n : ℝ) + 1 / 2 := by
+  rw [dirichletKernel_apply]
+  refine (abs_add_le _ _).trans ?_
+  have h2 : |∑ j ∈ Finset.Icc 1 n, Real.cos (j * t)| ≤ (n : ℝ) := by
+    refine (Finset.abs_sum_le_sum_abs _ _).trans ?_
+    calc ∑ j ∈ Finset.Icc 1 n, |Real.cos (j * t)|
+        ≤ ∑ _j ∈ Finset.Icc 1 n, (1 : ℝ) := Finset.sum_le_sum fun j _ => Real.abs_cos_le_one _
+      _ = (n : ℝ) := by simp
+  have h1 : |(1 : ℝ) / 2| = 1 / 2 := by norm_num
+  linarith
+
+/-- Away from the origin the Dirichlet kernel is bounded uniformly in `n`, by `π / (2 t)`: the
+numerator of the closed form (3.7.8) is at most one and Jordan's inequality
+`Real.mul_le_sin` bounds the denominator below by `2 t / π`. -/
+private theorem abs_dirichletKernel_le_div (n : ℕ) {t : ℝ} (ht0 : 0 < t) (htp : t ≤ π) :
+    |dirichletKernel n t| ≤ π / 2 * t⁻¹ := by
+  have hπ : (0 : ℝ) < π := Real.pi_pos
+  have hs : t / π ≤ Real.sin (t / 2) := by
+    have h := Real.mul_le_sin (x := t / 2) (by positivity) (by linarith)
+    calc t / π = 2 / π * (t / 2) := by ring
+      _ ≤ Real.sin (t / 2) := h
+  have hst : t ≤ π * Real.sin (t / 2) := by
+    rw [div_le_iff₀ hπ] at hs
+    linarith
+  have hs0 : 0 < Real.sin (t / 2) := by nlinarith
+  rw [dirichletKernel_eq_sin_div (ne_of_gt hs0), abs_div,
+    abs_of_pos (by positivity : (0 : ℝ) < 2 * Real.sin (t / 2)),
+    div_le_iff₀ (by positivity),
+    show π / 2 * t⁻¹ * (2 * Real.sin (t / 2)) = π * Real.sin (t / 2) / t by field_simp,
+    le_div_iff₀ ht0]
+  have h1 : |Real.sin (((n : ℝ) + 1 / 2) * t)| * t ≤ 1 * t :=
+    mul_le_mul_of_nonneg_right (Real.abs_sin_le_one _) ht0.le
+  linarith
+
+/-- **The Lebesgue constants grow no faster than `log n`**: `L_n ≤ 1 + log (2 n + 1)`.
+
+Together with `log_le_lebesgueConstant` this is the two-sided `L_n ≍ log n` that Atkinson and
+Han[^atkinson-han] state sharply as `L_n = (4/π²) log n + O(1)` in (3.7.10); the constant here is
+not the sharp one, but the upper bound is what the uniform convergence rate (3.7.12) consumes.
+
+The split is at `π / (2 n + 1)`, the first zero of the numerator of the closed form: below it the
+kernel is bounded by `n + 1/2`, which contributes `π/2`; above it Jordan's inequality gives the
+bound `π / (2 t)`, whose integral is the logarithm. -/
+theorem lebesgueConstant_le (n : ℕ) : lebesgueConstant n ≤ 1 + Real.log (2 * (n : ℝ) + 1) := by
+  have hπ : (0 : ℝ) < π := Real.pi_pos
+  have hN : (0 : ℝ) < 2 * (n : ℝ) + 1 := by positivity
+  obtain ⟨a, hadef⟩ : ∃ a : ℝ, a = π / (2 * (n : ℝ) + 1) := ⟨_, rfl⟩
+  have ha0 : 0 < a := by rw [hadef]; positivity
+  have hap : a ≤ π := by
+    rw [hadef, div_le_iff₀ hN]
+    nlinarith [Nat.cast_nonneg (α := ℝ) n]
+  have hcont : Continuous fun t : ℝ => |dirichletKernel n t| := (continuous_dirichletKernel n).abs
+  -- the piece near the origin, where the kernel is bounded by `n + 1/2`
+  have h1 : (∫ t in (0 : ℝ)..a, |dirichletKernel n t|) ≤ π / 2 := by
+    have hmono := intervalIntegral.integral_mono_on (μ := volume) ha0.le
+      (hcont.intervalIntegrable _ _) intervalIntegrable_const
+      (fun t _ => abs_dirichletKernel_le n t)
+    rw [intervalIntegral.integral_const, smul_eq_mul, sub_zero] at hmono
+    refine hmono.trans (le_of_eq ?_)
+    rw [hadef]
+    field_simp
+  -- the piece away from the origin, where Jordan's inequality applies
+  have hint : IntervalIntegrable (fun t : ℝ => π / 2 * t⁻¹) volume a π := by
+    refine (ContinuousOn.intervalIntegrable ?_)
+    refine continuousOn_const.mul (continuousOn_inv₀.mono ?_)
+    intro t ht
+    rw [Set.uIcc_of_le hap] at ht
+    exact ne_of_gt (lt_of_lt_of_le ha0 ht.1)
+  have h2 : (∫ t in a..π, |dirichletKernel n t|) ≤ π / 2 * Real.log (2 * (n : ℝ) + 1) := by
+    have hmono := intervalIntegral.integral_mono_on (μ := volume) hap
+      (hcont.intervalIntegrable _ _) hint
+      (fun t ht => abs_dirichletKernel_le_div n (lt_of_lt_of_le ha0 ht.1) ht.2)
+    refine hmono.trans (le_of_eq ?_)
+    rw [intervalIntegral.integral_const_mul, integral_inv_of_pos ha0 hπ, hadef]
+    congr 1
+    field_simp
+  -- and the two pieces together
+  have hadj := intervalIntegral.integral_add_adjacent_intervals (μ := volume)
+    (a := (0 : ℝ)) (b := a) (c := π)
+    (hcont.intervalIntegrable _ _) (hcont.intervalIntegrable _ _)
+  rw [lebesgueConstant_eq]
+  have hsum : (∫ t in (0 : ℝ)..π, |dirichletKernel n t|)
+      ≤ π / 2 + π / 2 * Real.log (2 * (n : ℝ) + 1) := by
+    rw [← hadj]
+    linarith
+  have hcoef : (0 : ℝ) < 2 / π := by positivity
+  calc 2 / π * ∫ t in (0 : ℝ)..π, |dirichletKernel n t|
+      ≤ 2 / π * (π / 2 + π / 2 * Real.log (2 * (n : ℝ) + 1)) :=
+        mul_le_mul_of_nonneg_left hsum hcoef.le
+    _ = 1 + Real.log (2 * (n : ℝ) + 1) := by field_simp
 
 end PeriodicCont

@@ -1,50 +1,10 @@
 namespace = "AtkinsonHan.Ch11"
-desc = '''
-Atkinson–Han Section 11.2, existence and uniqueness based on convex minimization: the two theorems
-that turn a constrained convex minimization problem into a variational inequality and back.
-
-Theorem 11.2.1 is the extension of Theorem 5.3.19 (already in this surface, in
-`Chapter05/Section03`) by a second, non-differentiable convex term `j`; both are specializations of
-`isMinOn_add_iff_forall_le` in `Numlib/Analysis/Convex/Gateaux`. Theorem 11.2.2 is the Hilbert
-space existence and uniqueness result for the energy `E v = ½ a(v,v) + j(v) - ℓ(v)` over a
-nonempty closed convex `K`.
-
-**A note on the proof of Theorem 11.2.2.** The book derives it from its Theorem 3.3.12, which needs
-the reflexivity of `V` and weak sequential compactness of bounded sets; that route is unavailable
-(see `Numlib/Variational/Minimization.toml`). It is not needed either: in a Hilbert space the
-parallelogram law makes a minimizing sequence Cauchy, and the backbone node
-`existsUnique_isMinOn_energy_add` takes that route. The surface statement is the book's.
-
-Examples 11.2.3 and 11.2.4 (the obstacle problem and the simplified friction problem) are out of
-scope. Exercise 11.2.1, the complex version of Theorem 11.2.2, is free: the backbone form is stated
-over `RCLike`, so the exercise is the same theorem with `𝕜 = ℂ`, and it is worth stating for that
-reason.
-'''
 
 [[node]]
 id = "theorem_11_2_1"
-kind = "theorem"
-desc = '''Theorem 11.2.1: for a convex `K` in a normed space, `f` convex and Gâteaux differentiable
-and `j` convex on `K`, `u ∈ K` minimizes `f + j` over `K` ((11.2.1)) if and only if
-`⟨f'(u), v - u⟩ + j v - j u ≥ 0` for all `v ∈ K` ((11.2.2)); when `K` is a subspace and `j = 0` the
-inequality becomes the equation `⟨f'(u), v⟩ = 0` ((11.2.3)).'''
-deps = ["isMinOn_add_iff_forall_le", "_root_.AtkinsonHan.Ch05.HasGateauxDerivAt"]
 
 [[node]]
 id = "theorem_11_2_2"
-kind = "theorem"
-desc = '''Theorem 11.2.2: for a real Hilbert space `V`, a nonempty closed convex `K`, a continuous
-symmetric `V`-elliptic bilinear form `a`, `ℓ ∈ V'` and `j : K → ℝ` convex and lower
-semicontinuous, the energy `E v = ½ a(v,v) + j v - ℓ v` has exactly one minimizer on `K`, and
-`u ∈ K` minimizes it if and only if `a(u, v - u) + j v - j u ≥ ℓ(v - u)` for all `v ∈ K`.'''
-deps = ["existsUnique_isMinOn_energy_add", "isMinOn_energy_add_iff",
-  "IsVariationalInequalitySolution", "_root_.AtkinsonHan.BilinForm.IsEllipticWith", "_root_.AtkinsonHan.BilinForm.energy"]
 
 [[node]]
 id = "exercise_11_2_1"
-kind = "theorem"
-desc = '''Exercise 11.2.1, the complex case of Theorem 11.2.2: for a complex Hilbert space and a
-Hermitian, `V`-elliptic sesquilinear `a`, the energy `E v = ½ a(v,v) + j v - ℓ v` has a unique
-minimizer on `K`, characterized by `Re a(u, v - u) + j v - j u ≥ ℓ(v - u)`. The backbone statement
-is over `RCLike`, so this is the same theorem at `𝕜 = ℂ` with the `re` decorations kept.'''
-deps = ["theorem_11_2_2", "existsUnique_isMinOn_energy_add"]

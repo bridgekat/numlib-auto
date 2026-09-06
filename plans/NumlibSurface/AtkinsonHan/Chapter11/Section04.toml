@@ -1,64 +1,25 @@
 namespace = "AtkinsonHan.Ch11"
-desc = '''
-Atkinson–Han Section 11.4, numerical approximations of elliptic variational inequalities: the
-convergence theorem for approximating families of constraint sets, Falk's error estimate, and the
-analysis of replacing the non-differentiable term by a computable approximation of it.
 
-The discrete problem (11.4.3) is the same predicate as the continuous one with a different
-constraint set, so it needs no new definition; its unique solvability is Theorem 11.3.1 again. All
-four theorems are specializations of `Numlib/Variational/Inequality/Approximation`.
-
-Two remarks on what is and is not needed. Theorem 11.4.1 uses a weakly convergent subsequence of
-the discrete solutions, which is `exists_subseq_weak_tendsto` of
-`Numlib/Analysis/InnerProductSpace/WeakCompactness`; its hypothesis (b) is automatic for internal
-approximations by `mem_of_weak_tendsto_of_convex`. Exercise 11.4.2 gives the same conclusion for
-internal approximations with no weak compactness at all, straight from (11.4.7), and should be
-proved first.
-
-Not formalized: Theorem 11.4.5 and Exercise 11.4.4 (the Lagrange-multiplier form of the simplified
-friction problem, which lives on `H^{1/2}(Γ)` and uses `(L¹(Γ))' = L^∞(Γ)`), Examples 11.4.3 and
-11.4.4 and the closing analysis of the numerical-integration functional (11.4.29), all of which are
-finite element interpolation estimates on a polygonal domain, and Exercises 11.4.1 and 11.4.5.
-'''
+[[node]]
+id = "residual"
 
 [[node]]
 id = "theorem_11_4_1"
-kind = "theorem"
-desc = '''Theorem 11.4.1: with the assumptions of Theorem 11.3.1, `j` the restriction to `K` of a
-convex continuous `j₀ : V → ℝ` (11.4.2), and a family `{K_h}` of nonempty closed convex sets such
-that (a) every `v ∈ K` is the limit of a family `v_h ∈ K_h` and (b) a weak limit of elements
-`v_h ∈ K_h` lies in `K`, the discrete solutions of (11.4.3) converge to `u` in norm.'''
-deps = ["IsVariationalInequalitySolution", "tendsto_of_isVariationalInequalitySolution",
-  "theorem_11_3_1", "lemma_11_3_8"]
 
 [[node]]
 id = "theorem_11_4_2"
-kind = "theorem"
-desc = '''Theorem 11.4.2, Falk's generalized Céa lemma, (11.4.7): with
-`R(v, w) = (A u, v - w) + j₀ v - j₀ w - ℓ(v - w)` the residual of the continuous solution,
 
-  `(c₀/2) ‖u - u_h‖² ≤ inf_{v ∈ K} R(v, u_h) + inf_{v_h ∈ K_h} [R(v_h, u) + (M²/(2 c₀)) ‖u - v_h‖²]`,
-
-together with the internal-approximation form `‖u - u_h‖ ≤ c inf_{v_h ∈ K_h} (‖u - v_h‖ +
-|R(v_h, u)|^{1/2})` when `K_h ⊆ K`, and the remark that for a variational equation it is Céa's
-lemma.'''
-deps = ["IsVariationalInequalitySolution", "norm_sub_le_of_isVariationalInequalitySolution",
-  "norm_sub_le_of_isVariationalInequalitySolution_of_subset"]
+[[node]]
+id = "theorem_11_4_2_of_subset"
 
 [[node]]
 id = "exercise_11_4_2"
-kind = "theorem"
-desc = '''Exercise 11.4.2: if `V_h ⊆ V` are finite-dimensional subspaces whose union is dense and
-`j` is continuous, then (11.4.7) gives `‖u - u_h‖ → 0` for the solutions of (11.4.12) — convergence
-of internal approximations without any weak compactness.'''
-deps = ["theorem_11_4_2", "tendsto_of_isVariationalInequalitySolution_of_subset"]
 
 [[node]]
 id = "exercise_11_4_3"
-kind = "theorem"
-desc = '''Exercise 11.4.3: if the regularization satisfies `|j_ε v - j v| ≤ c₁ ε` for all `v`
-((11.4.32)), then `‖u - u_ε‖ ≤ √(2 c₁ ε / c₀)`, the a priori bound (11.4.20) with `β = 1/2`.'''
-deps = ["theorem_11_4_2", "norm_sub_le_of_regularization"]
+
+[[node]]
+id = "theorem_11_4_7"
 
 [[node]]
 id = "theorem_11_4_6"
@@ -67,13 +28,30 @@ desc = '''Theorem 11.4.6: convergence of the method of numerical integration (11
 `V_h` admit maps `r_h : U → V_h` from a dense `U ⊆ V` with `r_h v → v`, and the `j_h` are convex,
 lower semicontinuous, uniformly proper, satisfy `liminf j_h(v_h) ≥ j(v)` along weakly convergent
 `v_h` and `j_h(r_h v) → j(v)`, then `‖u - u_h‖ → 0`.'''
-deps = ["theorem_11_4_1", "tendsto_of_isVariationalInequalitySolution"]
+deps = ["IsVariationalInequalitySolution", "theorem_11_4_1",
+  "tendsto_of_isVariationalInequalitySolution"]
+wrong = '''Not a defect of the statement, which is the book's and is true: it is unreachable from
+the backbone as this plan supposes. Both suggested dependencies carry **one** functional `j`,
+shared by the continuous problem and by every discrete problem —
+`tendsto_of_isVariationalInequalitySolution` takes `hu : IsVariationalInequalitySolution A j f K u`
+and `huh : ∀ n, IsVariationalInequalitySolution A j f (Kh n) (uh n)` with the same `j` — whereas
+Theorem 11.4.6 is exactly the theorem in which the discrete functional `j_h` varies with `h`. No
+choice of `K_h` encodes a varying `j_h`, so the node cannot be a specialization of anything that
+exists.
 
-[[node]]
-id = "theorem_11_4_7"
-kind = "theorem"
-desc = '''Theorem 11.4.7, (11.4.27): under the assumption `j(v_h) ≤ j_h(v_h)` for `v_h ∈ V_h`
-((11.4.26), which the numerical-integration construction (11.4.28) satisfies), the solution of
-(11.4.25) obeys `‖u - u_h‖ ≤ c inf_{v_h ∈ V_h} (‖u - v_h‖ + |R_h(v_h, u)|^{1/2})` with
-`R_h(v_h, u) = (A u, v_h - u) + j_h(v_h) - j(u) - ℓ(v_h - u)`.'''
-deps = ["theorem_11_4_2", "norm_sub_le_of_isVariationalInequalitySolution_of_le"]
+What `Numlib/Variational/Inequality/Approximation` would have to gain is one theorem: for
+`u` solving over `K` with `j` and `u_h` solving over `K_h` with `j_h`, with (a) `K_h` internal
+(`K_h ⊆ K`), (b) a uniform affine minorant `l v + b ≤ j_h v` on `K_h` (uniform properness), (c)
+weak sequential lower semicontinuity of the family, `j z ≤ liminf j_h(v_h)` along weakly convergent
+`v_h ∈ K_h`, and (d) an approximating family `r_h v ∈ K_h` with `r_h v → v` and
+`j_h (r_h v) → j v` for `v` in a dense set, the conclusion `‖u - u_h‖ → 0`. Its proof is the
+proof of `tendsto_of_isVariationalInequalitySolution` with three changes: the boundedness step
+takes its lower bound on `j_h(u_h)` from (b) rather than from an affine minorant of `j`; the
+weak-limit step uses (c) as a hypothesis in place of the private
+`eventually_lt_of_weak_tendsto`; and the final norm-convergence step uses (c) and (d) in place
+of the continuity of `j`.
+
+A cheaper partial result is available now and was not stated: **under the extra hypothesis
+(11.4.26)** `j(v_h) ≤ j_h(v_h)`, convergence follows from `theorem_11_4_7` plus density and the
+continuity of `j`, with no weak compactness at all — but (11.4.26) is Theorem 11.4.7's hypothesis,
+not Theorem 11.4.6's.'''

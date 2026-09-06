@@ -38,17 +38,59 @@ id = "PeriodicCont.norm_sub_fourierProj_le"
 id = "PeriodicCont.log_le_lebesgueConstant"
 
 [[node]]
+id = "PeriodicCont.lebesgueConstant_le"
+
+[[node]]
 id = "jackson_trig"
 kind = "theorem"
 desc = '''Jackson's theorem (Atkinson–Han Thm 3.7.1): for `g ∈ C_p^{k,α}(2π)`, `k ≥ 0`, `0 < α ≤ 1`, with
 Hölder constant `M_k` of `g^{(k)}`, the best uniform trigonometric approximation of degree `n ≥ 1`
 satisfies `ρ_n(g) ≤ (1 + π²/2)^{k+1} M_k / n^{k+α}`; by the Jackson kernel and induction on `k`.
 
-Not attempted. It is the largest single item of the module and it is independent of the Fourier
-projection: the only thing it shares with the rest is the subspace `trigPolyLE (2 π) n` that it
-measures the distance to, which now exists. The proof convolves with the normalized Jackson kernel
-`(sin (n θ / 2) / sin (θ / 2))⁴` and estimates moduli of continuity; none of the projection theory
-proved here is used by it.'''
+**Not attempted, and the size of the job is now measured.** The statement below elaborates against
+the present library and is the one to use, so the node's interface is settled even though its proof
+is not:
+
+    theorem jackson_trig {k n : ℕ} {α M : ℝ≥0} (hα : 0 < α) (hα1 : α ≤ 1) (hn : 1 ≤ n)
+        (G : C(AddCircle (2 * π), ℝ))
+        (hcd : ContDiff ℝ k fun x : ℝ => G ↑x)
+        (hhol : HolderWith M α (iteratedDeriv k fun x : ℝ => G ↑x)) :
+        Metric.infDist G (trigPolyLE (2 * π) n : Set C(AddCircle (2 * π), ℝ))
+          ≤ (1 + π ^ 2 / 2) ^ (k + 1) * M / (n : ℝ) ^ ((k : ℝ) + (α : ℝ))
+
+`Metric.infDist G ↑(trigPolyLE (2 π) n)` is the book's `ρ_n(g)`, and is the quantity
+`PeriodicCont.norm_sub_fourierProj_le` already bounds the projection error by; the smoothness is
+stated on the lift `fun x : ℝ => G ↑x`, which is automatically continuous and `2π`-periodic, so no
+separate periodicity hypothesis is needed.
+
+**What is missing, verified against Mathlib at `v4.34.0-rc2`.** Mathlib has no Fejér kernel, no
+Jackson kernel, no Jackson theorem and no convolution on `AddCircle` beyond the generic
+`MeasureTheory.convolution` of `Mathlib/Analysis/Convolution.lean`. It does have
+`fourier_add : fourier (m + n) x = fourier m x * fourier n x` (`Analysis/Fourier/AddCircle`), which
+is the cheap route to every algebraic step below, and `ConvexOn.map_integral_le` /
+`ConcaveOn.le_map_integral` (`Analysis/Convex/Integral`), which is the Jensen step for `α < 1`.
+`Numlib/Analysis/Fourier/TrigonometricBasis` has `trigPolyLE`, `mem_trigPolyLE_iff`,
+`finrank_trigPolyLE` and the orthonormality, but **no product formula and no translation formula**
+for `trigFun` — those are the first two things to write.
+
+The proof decomposes into a module of its own, `Numlib/Approximation/Jackson.lean`, roughly:
+
+1. `trigPolyLE T m * trigPolyLE T n ⊆ trigPolyLE T (m + n)`, through `fourier_add` and the
+   real/complex bridge of `TrigonometricBasis` (~60 lines).
+2. Translation invariance of `trigPolyLE`, and hence that `x ↦ ∫ K(θ) f(x - θ) dθ` lies in
+   `trigPolyLE T n` for `K ∈ trigPolyLE T n` and `f` merely continuous (~80 lines).
+3. The Jackson kernel `J_n ∝ |∑_{k < n} e_k|⁴`: nonnegative, a member of `trigPolyLE (2π) (2n-2)`,
+   and normalized. Its normalizer is the constant Fourier coefficient of the expansion,
+   `∑_{|j| < n} (n - |j|)² = n(2n²+1)/3` (~150 lines).
+4. The moment estimate `∫ J_n(θ) |θ| dθ ≤ π²/(2n)`, from `Real.mul_le_sin` and the normalizer
+   (~200 lines). This is the analytic heart and the reason the Fejér kernel will not do: the first
+   absolute moment of the Fejér kernel is of order `log n / n`, not `1/n`.
+5. The case `k = 0`, by convolution and Jensen (~100 lines).
+6. The induction on `k`, which needs the antiderivative of a trigonometric polynomial and the
+   `k = 0` case applied to the remainder (~200 lines).
+
+Estimate: 800 lines and a session of its own. Nothing in `Numlib/Approximation/Trigonometric`
+is used by it, and nothing in it is used by the rest of that module.'''
 deps = ["trigPolyLE"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.7.1"
 
@@ -56,8 +98,29 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.7.1"
 id = "jackson_poly"
 kind = "theorem"
 desc = '''Atkinson–Han Thm 3.7.2: for `f ∈ C^{k,α}[-1, 1]`, the best uniform polynomial approximation of
-degree `n` satisfies `ρ_n(f) ≤ d_k M_k / n^{k+α}` with `d_k = (1 + π²/2)^{k+1} ...` as in the book,
-through `g(θ) = f(cos θ)` and `jackson_trig` ((3.7.1)–(3.7.2)). Not attempted, because
-`jackson_trig` is not.'''
+degree `n` satisfies `ρ_n(f) ≤ d_k M_k / n^{k+α}`, through `g(θ) = f(cos θ)` and `jackson_trig`
+((3.7.1)–(3.7.2)).
+
+**Not attempted, because `jackson_trig` is not — and the plan does not pin the statement.** The
+constant `d_k` is elided in this plan ("as in the book"), so the node cannot be stated faithfully
+without the book in hand; whoever takes it must read Theorem 3.7.2 for `d_k` before writing
+anything. Everything else about the statement is settled: with `polyLE` of
+`Numlib/Approximation/Chebyshev` for `𝒫_n` and `Metric.infDist` for `ρ_n`, the shape
+
+    theorem jackson_poly {k n : ℕ} {α M : ℝ≥0} (hα : 0 < α) (hα1 : α ≤ 1) (hn : 1 ≤ n)
+        (f : C(Set.Icc (-1 : ℝ) 1, ℝ)) (hcd : …) (hhol : …) :
+        Metric.infDist f (polyLE (Set.Icc (-1 : ℝ) 1) n : Set C(Set.Icc (-1 : ℝ) 1, ℝ))
+          ≤ d k * M / (n : ℝ) ^ ((k : ℝ) + (α : ℝ))
+
+elaborates, with the smoothness stated on a clamped extension of `f` to `ℝ` so that
+`iteratedDerivWithin` applies.
+
+Beyond `jackson_trig` it needs two things this library does not have: that `θ ↦ f (cos θ)` is in
+`C_p^{k,α}(2π)` with a constant controlled by that of `f` (a chain-rule computation for `f ∘ cos`,
+which is where the book's `d_k` comes from), and that an **even** trigonometric polynomial of
+degree `n` is `p(cos θ)` for an algebraic `p` of degree `n` — the Chebyshev correspondence.
+`Numlib/Approximation/Chebyshev` has `Polynomial.Chebyshev.T_real_cos` and the extremal facts but
+not that correspondence as a statement about `trigPolyLE` and `polyLE`. Estimate: 300 lines on top
+of `jackson_trig`.'''
 deps = ["jackson_trig"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.7.2"
