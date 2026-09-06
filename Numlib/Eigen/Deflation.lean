@@ -15,7 +15,14 @@ Wielandt's choice is
 for any `v` normalized by `⟪v, u⟫ = 1`
 (Saad, *Numerical Methods for Large Eigenvalue Problems*[^saad-eigenvalue], §4.2.1).
 
-## The spectrum of the deflated operator
+## Main definitions
+
+* `LinearMap.wielandtDeflate A u v σ` is the deflation itself, the rank-one modification
+  `A - σ u vᴴ`.
+
+## Main results
+
+### The spectrum of the deflated operator
 
 `LinearMap.charpoly_wielandtDeflate` is the theorem of Wielandt (Saad, Thm 4.2) in the form that
 records multiplicities:
@@ -41,7 +48,7 @@ deflation untouched. That statement is proved here as well, since it is what say
 leaves the *left* eigenvectors alone; it is not strong enough on its own to give the
 multiplicities.
 
-## The Schur–Wielandt choice
+### The Schur–Wielandt choice
 
 Taking `v = u` for a unit eigenvector `u` — Saad's Prop 4.1, and the reason Algorithm 4.4 is
 called Schur–Wielandt deflation — preserves the Schur vectors of `A`. A Schur factorization is a
@@ -77,6 +84,7 @@ spectrum, and the choice `v = u` for a unit eigenvector `u` is the Schur–Wiela
 noncomputable def wielandtDeflate (A : E →ₗ[𝕜] E) (u v : E) (σ : 𝕜) : E →ₗ[𝕜] E :=
   A - σ • (toSpanSingleton 𝕜 E u ∘ₗ innerₛₗ 𝕜 v)
 
+/-- The deflated operator, applied to a vector. -/
 @[simp]
 theorem wielandtDeflate_apply (A : E →ₗ[𝕜] E) (u v : E) (σ : 𝕜) (x : E) :
     wielandtDeflate A u v σ x = A x - (σ * inner 𝕜 v x) • u := by

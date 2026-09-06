@@ -235,22 +235,28 @@ namespace Polynomial
 
 variable (s : Finset ι) (r : ι → ℝ) (c : ℝ)
 
+/-- The value of the deflating polynomial, as the product it is defined by. -/
 theorem deflator_eval (t : ℝ) :
     (deflator s r c).eval t = ∏ j ∈ s, (r j - t) / (r j - c) := by
   rw [deflator, eval_prod]
   exact Finset.prod_congr rfl fun j _ => by rw [eval_mul, eval_C, eval_sub, eval_C, eval_X,
     div_eq_inv_mul]
 
+/-- The deflating polynomial has degree at most the number of roots it prescribes: this is what
+it costs in the degree budget of the min–max problem. -/
 theorem deflator_degree_le : (deflator s r c).degree ≤ s.card := by
   rw [deflator]
   refine degree_le_of_natDegree_le (le_trans (natDegree_prod_le s _) ?_)
   refine le_trans (Finset.sum_le_sum (g := fun _ => 1) fun j _ => ?_) (by simp)
   compute_degree
 
+/-- The deflating polynomial is normalized to `1` at `c`, as the min–max problem requires. -/
 theorem deflator_eval_self (h : ∀ j ∈ s, r j ≠ c) : (deflator s r c).eval c = 1 := by
   rw [deflator_eval]
   exact Finset.prod_eq_one fun j hj => div_self (sub_ne_zero.2 (h j hj))
 
+/-- The deflating polynomial vanishes at each prescribed root, which is what removes that point
+from the min–max problem. -/
 theorem deflator_eval_eq_zero {j : ι} (hj : j ∈ s) : (deflator s r c).eval (r j) = 0 := by
   rw [deflator_eval]
   exact Finset.prod_eq_zero hj (by rw [sub_self, zero_div])
@@ -666,14 +672,8 @@ theorem eigenvalues_sub_eigenvalues_compression_le_of_mem_Icc {v : E} {m : ℕ}
     ((compression.isSymmetric A (Krylov.subspace A v m) hA).isGreatest_rayleighQuotient_orthogonal
       hm i).2 ⟨_, fun h0 => hx0 (Submodule.coe_eq_zero.2 h0), horth, hrq⟩
   -- the numerator, in eigenbasis coordinates
-  have hnum : hA.eigenvalues hn i' * ‖aeval A (q.map (algebraMap ℝ 𝕜)) v‖ ^ 2 -
-      RCLike.re (inner 𝕜 (A (aeval A (q.map (algebraMap ℝ 𝕜)) v))
-        (aeval A (q.map (algebraMap ℝ 𝕜)) v)) =
-      ∑ j, (hA.eigenvalues hn i' - hA.eigenvalues hn j) *
-        ‖(hA.eigenvectorBasis hn).repr (aeval A (q.map (algebraMap ℝ 𝕜)) v) j‖ ^ 2 := by
-    rw [hA.norm_sq_eq_sum_norm_repr_sq hn, hA.re_inner_apply_self_eq_sum hn, Finset.mul_sum,
-      ← Finset.sum_sub_distrib]
-    exact Finset.sum_congr rfl fun j _ => by ring
+  have hnum := hA.mul_norm_sq_sub_re_inner_eq_sum hn (hA.eigenvalues hn i')
+    (aeval A (q.map (algebraMap ℝ 𝕜)) v)
   -- the part of `v` orthogonal to the eigenvector
   have hwrepr : ∀ j : Fin n, j ≠ i' →
       (hA.eigenvectorBasis hn).repr
@@ -936,6 +936,7 @@ variable (A : E →ₗ[𝕜] E) (b : E)
 private noncomputable def outside (m : ℕ) : E →ₗ[𝕜] E :=
   (LinearMap.id - ((subspace A b m).starProjection : E →ₗ[𝕜] E)) ∘ₗ A
 
+/-- `outside` unfolded: the residual of `A x` against `𝒦_m`. -/
 private theorem outside_apply (m : ℕ) (x : E) :
     outside A b m x = A x - (subspace A b m).starProjection (A x) := rfl
 

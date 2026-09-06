@@ -8,7 +8,19 @@ import Numlib.Approximation.Interpolation
 
 Interpolation of a function and its derivatives at finitely many nodes: given distinct nodes
 `x i` and multiplicities `m i`, the Hermite interpolant is the polynomial of degree less than
-`∑ i, (m i + 1)` whose derivatives of order `j ≤ m i` agree with those of `f` at `x i`.
+`∑ i, (m i + 1)` whose derivatives of order `j ≤ m i` agree with those of `f` at `x i`. The
+material is Atkinson–Han, *Theoretical Numerical Analysis*[^atkinson-han] §3.2.2 and Kress,
+*Numerical Analysis*[^kress] §8.1.
+
+## Main definitions
+
+* `Hermite.nodal x m` is the nodal polynomial `∏ i, (X - x i) ^ (m i + 1)`, which carries the
+  interpolation error.
+* `Hermite.interpolate x m f` is the interpolant itself, with `Hermite.degree_interpolate_lt`,
+  `Hermite.eval_iterate_derivative_interpolate` and `Hermite.eq_interpolate` for its defining
+  properties, and `Hermite.interpolate_zero_eq_lagrange` for the simple-node case.
+
+## Main results
 
 * `Hermite.exists_iteratedDeriv_eq_zero` is **Rolle's theorem with multiplicities**: a function
   whose zeros in `[a, b]`, counted with multiplicity, number `N + 2` has a vanishing derivative
@@ -19,12 +31,11 @@ Interpolation of a function and its derivatives at finitely many nodes: given di
   problem is that a nonzero polynomial cannot have more roots, counted with multiplicity, than
   its degree; surjectivity is then a dimension count, the data space and the polynomials of
   degree less than `∑ (m i + 1)` having the same finite dimension.
-* `Hermite.interpolate` is the interpolant, with `Hermite.degree_interpolate_lt`,
-  `Hermite.eval_iterate_derivative_interpolate` and, for simple nodes,
-  `Hermite.interpolate_zero_eq_lagrange`.
 * `Hermite.exists_sub_interpolate_eq` is the error formula
   `f(t) - p(t) = f^{(N+1)}(ξ)/(N+1)! ∏ (t - x i)^{m i + 1}`, proved from the Rolle theorem exactly
   as the Lagrange error formula is proved from the simple one.
+
+## Implementation notes
 
 Divided-difference forms of the error and the Newton form of the interpolant are not developed:
 nothing downstream uses them.
@@ -187,9 +198,8 @@ For `m = 0` and `n = N + 2` this is `exists_iteratedDeriv_eq_zero_of_forall_eq_z
 conclusion is the sharper `Set.Ioo a b`; with multiplicities the open interval is out of reach,
 since a single node of multiplicity `N + 2` may be an endpoint.
 
-Reference: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998,
-§8.1; Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional Analysis
-Framework*, 3rd edition, Springer, 2009, §3.2.2. -/
+Reference: Kress, *Numerical Analysis*, §8.1; Atkinson–Han, *Theoretical Numerical Analysis*,
+§3.2.2. -/
 theorem exists_iteratedDeriv_eq_zero {N n : ℕ} {a b : ℝ} {g : ℝ → ℝ}
     (hg : ContDiff ℝ ((N + 1 : ℕ) : WithTop ℕ∞) g) {x : Fin n → ℝ}
     (hx : Function.Injective x) (hmem : ∀ i, x i ∈ Set.Icc a b) {m : Fin n → ℕ}
@@ -244,9 +254,11 @@ first `m i` derivatives, and it carries the error of Hermite interpolation. -/
 noncomputable def nodal (x : Fin n → ℝ) (m : Fin n → ℕ) : ℝ[X] :=
   ∏ i, (Polynomial.X - Polynomial.C (x i)) ^ (m i + 1)
 
+/-- The nodal polynomial is monic. -/
 theorem monic_nodal (x : Fin n → ℝ) (m : Fin n → ℕ) : (nodal x m).Monic :=
   Polynomial.monic_prod_of_monic _ _ fun i _ => (Polynomial.monic_X_sub_C (x i)).pow _
 
+/-- The nodal polynomial has degree the total number of interpolation conditions. -/
 theorem natDegree_nodal (x : Fin n → ℝ) (m : Fin n → ℕ) :
     (nodal x m).natDegree = ∑ i, (m i + 1) := by
   rw [nodal, Polynomial.natDegree_prod _ _ fun i _ =>
@@ -254,11 +266,13 @@ theorem natDegree_nodal (x : Fin n → ℝ) (m : Fin n → ℕ) :
   exact Finset.sum_congr rfl fun i _ => by
     rw [Polynomial.natDegree_pow, Polynomial.natDegree_X_sub_C, mul_one]
 
+/-- The value of the nodal polynomial, as the product it is defined by. -/
 @[simp]
 theorem eval_nodal (x : Fin n → ℝ) (m : Fin n → ℕ) (t : ℝ) :
     (nodal x m).eval t = ∏ i, (t - x i) ^ (m i + 1) := by
   simp [nodal, Polynomial.eval_prod]
 
+/-- Each linear factor divides the nodal polynomial to its full multiplicity. -/
 theorem pow_dvd_nodal (x : Fin n → ℝ) (m : Fin n → ℕ) (i : Fin n) :
     (Polynomial.X - Polynomial.C (x i)) ^ (m i + 1) ∣ nodal x m :=
   Finset.dvd_prod_of_mem _ (Finset.mem_univ i)
@@ -354,8 +368,7 @@ every `j ≤ m i`.
 Injectivity is `eq_zero_of_forall_eval_iterate_derivative_eq_zero`; existence is then the
 equality of dimensions of the polynomials of degree less than `M` and of the data.
 
-Reference: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §3.2.2 and (3.2.6). -/
+Reference: Atkinson–Han, *Theoretical Numerical Analysis*, §3.2.2 and (3.2.6). -/
 theorem isUnisolvent {M : ℕ} {x : Fin n → ℝ} (hx : Function.Injective x) {m : Fin n → ℕ}
     (hM : ∑ i, (m i + 1) = M) (y : Fin n → ℕ → ℝ) :
     ∃! p : ℝ[X], p.degree < (M : WithBot ℕ) ∧
@@ -391,8 +404,7 @@ polynomial of degree less than `∑ i, (m i + 1)` whose derivatives of order `j 
 It is junk (namely `0`) when the nodes are not distinct, in which case the interpolation problem
 is not solvable in general.
 
-Reference: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §3.2.2. -/
+Reference: Atkinson–Han, *Theoretical Numerical Analysis*, §3.2.2. -/
 noncomputable def interpolate (x : Fin n → ℝ) (m : Fin n → ℕ) (f : ℝ → ℝ) : ℝ[X] :=
   if h : Function.Injective x then
     (isUnisolvent h (M := ∑ i, (m i + 1)) rfl fun i j => iteratedDeriv j f (x i)).choose
@@ -456,9 +468,8 @@ As in the Lagrange case the proof subtracts a multiple of the nodal polynomial c
 auxiliary function vanishes at `t` as well; its zeros then number `N + 2` with multiplicity, and
 `Hermite.exists_iteratedDeriv_eq_zero` applies.
 
-Reference: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §3.2.2; Rainer Kress, *Numerical Analysis*,
-Graduate Texts in Mathematics 181, Springer, 1998, §8.1. -/
+Reference: Atkinson–Han, *Theoretical Numerical Analysis*, §3.2.2; Kress, *Numerical Analysis*,
+§8.1. -/
 theorem exists_sub_interpolate_eq {N n : ℕ} {a b : ℝ} {f : ℝ → ℝ}
     (hf : ContDiff ℝ ((N + 1 : ℕ) : WithTop ℕ∞) f) {x : Fin n → ℝ}
     (hx : Function.Injective x) (hxmem : ∀ i, x i ∈ Set.Icc a b) {m : Fin n → ℕ}

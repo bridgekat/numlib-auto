@@ -13,6 +13,27 @@ strictly convex spaces (Atkinson–Han Thm 3.3.21), the Hilbert-space characteri
 (Atkinson–Han Lemma 3.4.1, Thm 3.4.6; Kress Thm 3.51) as glue to Mathlib's orthogonal
 projection, and the Lebesgue lemma for projections (Atkinson–Han (3.7.11), (3.7.14), (3.7.21)).
 
+## Main definitions
+
+* `IsBestApprox K u v` says that `v ∈ K` minimizes the distance from `u` to `K`.
+  `isBestApprox_iff_norm_sub_eq_infDist` identifies it with the metric description
+  `‖u - v‖ = Metric.infDist u K`, so either may be used as the definition.
+
+## Main results
+
+* `exists_isBestApprox_of_finiteDimensional` and
+  `exists_isBestApprox_of_isClosed_of_finiteDimensional`: existence, by compactness of a closed
+  bounded set in a finite-dimensional subspace.
+* `IsBestApprox.unique`: uniqueness from a convex set in a strictly convex space.
+* `isBestApprox_iff_inner_le_zero`, `isBestApprox_iff_mem_orthogonal`,
+  `isBestApprox_starProjection` and `IsBestApprox.eq_starProjection`: in an inner product space
+  the best approximation from a subspace is the orthogonal projection, and from a convex set it
+  is characterized variationally. `isBestApprox_sum_iff` is the normal equations in a basis.
+* `norm_sub_apply_le_of_isIdempotentElem`: the **Lebesgue lemma**, `‖u - P u‖ ≤ (1 + ‖P‖)
+  dist(u, range P)` for a bounded projection `P`, with the sharper
+  `norm_sub_apply_le_of_isIdempotentElem'` by `‖1 - P‖`. This is the abstract form of the
+  quasi-optimality estimates that projection methods satisfy.
+
 ## References
 
 [^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
@@ -78,8 +99,8 @@ variable {𝕜 V : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup V] 
 /-- A closed subset of a finite-dimensional subspace admits best approximations: the workhorse
 behind the two existence theorems below. -/
 private theorem exists_isBestApprox_aux [CompleteSpace 𝕜] [LocallyCompactSpace 𝕜] {K : Set V}
-    (hK : IsClosed K)
-    (hne : K.Nonempty) (S : Submodule 𝕜 V) [FiniteDimensional 𝕜 S] (hKS : K ⊆ S) (u : V) :
+    (hK : IsClosed K) (hne : K.Nonempty) (S : Submodule 𝕜 V) [FiniteDimensional 𝕜 S]
+    (hKS : K ⊆ S) (u : V) :
     ∃ v, IsBestApprox K u v := by
   obtain ⟨v₀, hv₀⟩ := hne
   have : ProperSpace S := FiniteDimensional.proper 𝕜 S
@@ -104,16 +125,16 @@ private theorem exists_isBestApprox_aux [CompleteSpace 𝕜] [LocallyCompactSpac
 /-- Best approximations from finite-dimensional subspaces exist (Atkinson–Han, *Theoretical
 Numerical Analysis*, Thm 3.3.16; Kress, *Numerical Analysis*, Thm 3.50). -/
 theorem exists_isBestApprox_of_finiteDimensional [CompleteSpace 𝕜] [LocallyCompactSpace 𝕜]
-    (K : Submodule 𝕜 V)
-    [FiniteDimensional 𝕜 K] (u : V) : ∃ v, IsBestApprox (K : Set V) u v :=
+    (K : Submodule 𝕜 V) [FiniteDimensional 𝕜 K] (u : V) :
+    ∃ v, IsBestApprox (K : Set V) u v :=
   exists_isBestApprox_aux K.closed_of_finiteDimensional ⟨0, K.zero_mem⟩ K le_rfl u
 
 /-- Best approximations from closed convex finite-dimensional sets exist (a closed subset of a
 finite-dimensional subspace); Atkinson–Han, *Theoretical Numerical Analysis*, Thm 3.3.15. -/
 theorem exists_isBestApprox_of_isClosed_of_finiteDimensional [CompleteSpace 𝕜]
-    [LocallyCompactSpace 𝕜] {K : Set V}
-    (hK : IsClosed K) (hne : K.Nonempty) (S : Submodule 𝕜 V) [FiniteDimensional 𝕜 S]
-    (hKS : K ⊆ S) (u : V) : ∃ v, IsBestApprox K u v :=
+    [LocallyCompactSpace 𝕜] {K : Set V} (hK : IsClosed K) (hne : K.Nonempty) (S : Submodule 𝕜 V)
+    [FiniteDimensional 𝕜 S] (hKS : K ⊆ S) (u : V) :
+    ∃ v, IsBestApprox K u v :=
   exists_isBestApprox_aux hK hne S hKS u
 
 end Existence

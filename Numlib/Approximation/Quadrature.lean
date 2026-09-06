@@ -11,17 +11,25 @@ import Numlib.Approximation.OrthogonalPolynomial
 A quadrature rule is the bounded linear functional `f ↦ ∑ i, w i * f (x i)` on the continuous
 functions of a compact space: finitely many *nodes* `x i` with *weights* `w i`, approximating an
 integral. This file has the rule itself, its norm, and the criterion by which a sequence of rules
-converges for every continuous integrand.
+converges for every continuous integrand. The material is Atkinson–Han, *Theoretical Numerical
+Analysis*[^atkinson-han] §2.4 and Kress, *Numerical Analysis*[^kress] §9.1 and §9.3.
+
+## Main definitions
 
 * `Quadrature.functional w x` is the rule, as an element of the dual of `C(X, ℝ)`.
-* `Quadrature.norm_functional`: for distinct nodes its norm is `∑ i, |w i|`. The inequality `≤` is
-  the triangle inequality; `≥` needs a continuous function of norm `1` taking the value
-  `sign (w i)` at each node, which the Tietze extension theorem supplies.
 * `Quadrature.IsExactOn L w x d` says that the rule reproduces a target functional `L` on the
-  polynomials of degree at most `d`, and `Quadrature.IsInterpolatory L w x` says that its weights
-  are the values of `L` at the Lagrange basis functions of its nodes. For `n + 1` distinct nodes
-  the two agree at `d = n` (`Quadrature.isInterpolatory_iff_isExactOn`), both being the statement
-  that the rule is `L` applied to the interpolant.
+  polynomials of degree at most `d`, and `Quadrature.degreeOfExactness` is the largest such `d`.
+* `Quadrature.IsInterpolatory L w x` says that the weights are the values of `L` at the Lagrange
+  basis functions of the nodes.
+
+## Main results
+
+* `Quadrature.norm_functional`: for distinct nodes the norm of the rule is `∑ i, |w i|`. The
+  inequality `≤` is the triangle inequality; `≥` needs a continuous function of norm `1` taking
+  the value `sign (w i)` at each node, which the Tietze extension theorem supplies.
+* `Quadrature.isInterpolatory_iff_isExactOn`: for `n + 1` distinct nodes, being interpolatory and
+  being exact to degree `n` agree, both being the statement that the rule is `L` applied to the
+  interpolant.
 * `Quadrature.tendsto_iff_bddAbove_sum_abs` is the convergence criterion of Szegő and Pólya: rules
   that are exact on polynomials of a degree tending to infinity converge for *every* continuous
   integrand exactly when their weights are uniformly absolutely summable. Sufficiency is the
@@ -57,11 +65,11 @@ variable {X : Type*} [TopologicalSpace X]
 /-- **A quadrature rule.** The bounded linear functional `f ↦ ∑ i, w i * f (x i)` on `C(X, ℝ)`
 with nodes `x` and weights `w`, the elementary approximation to an integral.
 
-Reference: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, (2.4.3). -/
+Reference: Atkinson–Han, *Theoretical Numerical Analysis*, (2.4.3). -/
 noncomputable def functional {n : ℕ} (w : Fin n → ℝ) (x : Fin n → X) : C(X, ℝ) →L[ℝ] ℝ :=
   ∑ i, w i • ContinuousMap.evalCLM ℝ (x i)
 
+/-- The value of a quadrature rule at an integrand. -/
 @[simp]
 theorem functional_apply {n : ℕ} (w : Fin n → ℝ) (x : Fin n → X) (f : C(X, ℝ)) :
     functional w x f = ∑ i, w i * f (x i) := by
@@ -101,8 +109,7 @@ private theorem exists_norm_le_one_apply_eq {n : ℕ} {x : Fin n → X} (hx : Fu
 distinct: otherwise the rule with weights `1` and `-1` at one repeated node is the zero
 functional.
 
-Reference: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, (2.4.4) and Exercise 2.4.2. -/
+Reference: Atkinson–Han, *Theoretical Numerical Analysis*, (2.4.4) and Exercise 2.4.2. -/
 theorem norm_functional {n : ℕ} (w : Fin n → ℝ) {x : Fin n → X} (hx : Function.Injective x) :
     ‖functional w x‖ = ∑ i, |w i| := by
   have hnn : (0 : ℝ) ≤ ∑ i, |w i| := by positivity
@@ -161,6 +168,7 @@ def IsExactOn (L : C(X, ℝ) →L[ℝ] ℝ) {m : ℕ} (w : Fin m → ℝ) (x : F
   ∀ p ∈ polyLE X d, functional w x p = L p
 
 omit [CompactSpace X] in
+/-- Exactness to a degree implies exactness to every smaller degree. -/
 theorem IsExactOn.mono {L : C(X, ℝ) →L[ℝ] ℝ} {m : ℕ} {w : Fin m → ℝ} {x : Fin m → X} {d e : ℕ}
     (h : IsExactOn L w x d) (hed : e ≤ d) : IsExactOn L w x e := fun p hp => by
   obtain ⟨P, hP, hPval⟩ := mem_polyLE_iff.mp hp
@@ -174,6 +182,8 @@ noncomputable def degreeOfExactness (L : C(X, ℝ) →L[ℝ] ℝ) {m : ℕ} (w :
   sSup {d | IsExactOn L w x d}
 
 omit [CompactSpace X] in
+/-- Every degree of exactness is at most the degree of exactness, provided the latter is not the
+junk value of an unbounded set. -/
 theorem IsExactOn.le_degreeOfExactness {L : C(X, ℝ) →L[ℝ] ℝ} {m : ℕ} {w : Fin m → ℝ}
     {x : Fin m → X} {d : ℕ} (h : IsExactOn L w x d) (hbdd : BddAbove {e | IsExactOn L w x e}) :
     d ≤ degreeOfExactness L w x :=
@@ -182,8 +192,7 @@ theorem IsExactOn.le_degreeOfExactness {L : C(X, ℝ) →L[ℝ] ℝ} {m : ℕ} {
 /-- **An interpolatory rule.** Its weights are the values of the target functional at the
 Lagrange basis functions of its nodes, so that the rule is `L` applied to the interpolant.
 
-Reference: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998,
-§9.1. -/
+Reference: Kress, *Numerical Analysis*, §9.1. -/
 def IsInterpolatory (L : C(X, ℝ) →L[ℝ] ℝ) (w : Fin (n + 1) → ℝ) (x : Fin (n + 1) → X) : Prop :=
   ∀ i, w i = L (Lagrange.basisCM x i)
 
@@ -206,8 +215,7 @@ theorem isExactOn_iff_functional_eq {L : C(X, ℝ) →L[ℝ] ℝ} {w : Fin (n + 
 /-- **An `n + 1`-point rule at distinct nodes is interpolatory exactly when it is exact on the
 polynomials of degree at most `n`.**
 
-Reference: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998,
-§9.1. -/
+Reference: Kress, *Numerical Analysis*, §9.1. -/
 theorem isInterpolatory_iff_isExactOn {L : C(X, ℝ) →L[ℝ] ℝ} {w : Fin (n + 1) → ℝ}
     {x : Fin (n + 1) → X} (hx : Function.Injective x) :
     IsInterpolatory L w x ↔ IsExactOn L w x n := by
@@ -277,9 +285,8 @@ Sufficiency is Weierstrass' theorem — on a polynomial the rules are eventually
 together with the ε/3 argument for a uniformly bounded family. Necessity is the uniform
 boundedness principle applied to the rules, whose norms are the absolute sums of their weights.
 
-Reference: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §2.4.4; Rainer Kress, *Numerical Analysis*,
-Graduate Texts in Mathematics 181, Springer, 1998, Theorem 9.10. -/
+Reference: Atkinson–Han, *Theoretical Numerical Analysis*, §2.4.4; Kress, *Numerical Analysis*,
+Theorem 9.10. -/
 theorem tendsto_iff_bddAbove_sum_abs {m d : ℕ → ℕ} {w : ∀ k, Fin (m k) → ℝ}
     {x : ∀ k, Fin (m k) → Set.Icc a b} (hx : ∀ k, Function.Injective (x k))
     {L : C(Set.Icc a b, ℝ) →L[ℝ] ℝ} (hd : Tendsto d atTop atTop)
@@ -306,8 +313,7 @@ theorem tendsto_iff_bddAbove_sum_abs {m d : ℕ → ℕ} {w : ∀ k, Fin (m k) �
 absolute sum, because that sum is the value of the rule at the constant function `1`, hence
 `L 1`.
 
-Reference: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, Exercise 2.4.3. -/
+Reference: Atkinson–Han, *Theoretical Numerical Analysis*, Exercise 2.4.3. -/
 theorem tendsto_of_nonneg {m d : ℕ → ℕ} {w : ∀ k, Fin (m k) → ℝ}
     {x : ∀ k, Fin (m k) → Set.Icc a b} (hx : ∀ k, Function.Injective (x k))
     {L : C(Set.Icc a b, ℝ) →L[ℝ] ℝ} (hd : Tendsto d atTop atTop)
@@ -345,9 +351,8 @@ is exactness applied to the square of a Lagrange basis function.
 `Quadrature.not_forall_eq_integral_of_degree_le` is the converse: no `n`-point rule at all is exact
 to degree `2n`.
 
-Reference: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998,
-§9.3; Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional Analysis
-Framework*, 3rd edition, Springer, 2009, §3.5. -/
+Reference: Kress, *Numerical Analysis*, §9.3; Atkinson–Han, *Theoretical Numerical Analysis*, §3.5.
+-/
 theorem exists_gauss (hw : IsWeight μ) (n : ℕ) :
     ∃ x w : Fin n → ℝ, Function.Injective x ∧ (∀ i, 0 < w i) ∧
       ∀ p : ℝ[X], p.degree < ((2 * n : ℕ) : WithBot ℕ) →
@@ -442,8 +447,7 @@ theorem exists_gauss (hw : IsWeight μ) (n : ℕ) :
 polynomial of degree `2n` that the rule evaluates to zero and the weight integrates to something
 positive. Gauss quadrature is therefore optimal.
 
-Reference: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998,
-§9.3. -/
+Reference: Kress, *Numerical Analysis*, §9.3. -/
 theorem not_forall_eq_integral_of_degree_le (hw : IsWeight μ) {n : ℕ} (x w : Fin n → ℝ) :
     ¬ ∀ p : ℝ[X], p.degree ≤ ((2 * n : ℕ) : WithBot ℕ) →
       ∑ i, w i * p.eval (x i) = ∫ t, p.eval t ∂μ := by

@@ -149,6 +149,16 @@ theorem re_inner_apply_self_eq_sum (x : E) :
     OrthonormalBasis.repr_apply_apply]
   simp
 
+/-- The quadratic form of the shift `c - T` in the eigenvector basis:
+`c ‖x‖² - re ⟪T x, x⟫ = ∑ i, (c - λ i) ‖⟪v i, x⟫‖²`.  This is the form in which an eigenvalue
+minus a Rayleigh quotient is estimated, one eigenbasis coordinate at a time. -/
+theorem mul_norm_sq_sub_re_inner_eq_sum (c : ℝ) (x : E) :
+    c * ‖x‖ ^ 2 - RCLike.re (inner 𝕜 (T x) x) =
+      ∑ i, (c - hT.eigenvalues hn i) * ‖(hT.eigenvectorBasis hn).repr x i‖ ^ 2 := by
+  rw [hT.norm_sq_eq_sum_norm_repr_sq hn, hT.re_inner_apply_self_eq_sum hn, Finset.mul_sum,
+    ← Finset.sum_sub_distrib]
+  exact Finset.sum_congr rfl fun i _ => by ring
+
 /-- The vectors of an eigenvector basis are nonzero, being unit vectors. -/
 theorem eigenvectorBasis_ne_zero (i : Fin n) : hT.eigenvectorBasis hn i ≠ 0 :=
   norm_ne_zero_iff.mp (by rw [(hT.eigenvectorBasis hn).norm_eq_one i]; norm_num)

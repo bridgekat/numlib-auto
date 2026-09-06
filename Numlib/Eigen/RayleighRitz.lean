@@ -8,6 +8,8 @@ import Numlib.Krylov.Arnoldi
 /-!
 # Rayleigh–Ritz approximation
 
+## Main definitions
+
 A *Ritz pair* of `A` on a subspace `K` is a pair `(θ, u)` with `u ∈ K`, `u ≠ 0` and the residual
 `A u - θ • u` orthogonal to `K`. This is the eigenvalue twin of the Galerkin condition for a
 linear system: `Krylov.IsRitzPair` is to `Module.End.HasEigenvector` what `IsGalerkin` is to
@@ -18,6 +20,8 @@ compression, and needs no more than an inner product and an orthogonal projectio
 finite dimension, no completeness. The Petrov–Galerkin version `Krylov.IsObliqueRitzPair`, with a
 test space `L` distinct from the trial space `K`, is the eigenpair condition for the oblique
 compression `compressionBy Q A` through any projector `Q` onto `K` along `Lᗮ`.
+
+## Main results
 
 Two consequences need nothing beyond the definitions.
 
@@ -477,8 +481,7 @@ theorem compression_residual_le' {A : E →ₗ[𝕜] E} {K : Submodule 𝕜 E} [
     rw [mul_pow, Real.sq_sqrt (by positivity)]
     nlinarith [hpyth, hle, norm_nonneg
       (K.starProjection (A (K.starProjection u)) - μ • K.starProjection u)]
-  have h := Real.sqrt_le_sqrt hsq
-  rwa [Real.sqrt_sq (norm_nonneg _), Real.sqrt_sq (by positivity)] at h
+  exact le_of_sq_le_sq hsq (by positivity)
 
 /-! ### The oblique residual bounds
 
@@ -561,8 +564,7 @@ theorem compressionBy_residual_le' {A : E →ₗ[𝕜] E} {K : Submodule 𝕜 E}
     rw [mul_pow, Real.sq_sqrt (by positivity)]
     nlinarith [hpyth, hle, norm_nonneg (v - μ • K.starProjection u),
       norm_nonneg (u - K.starProjection u)]
-  have h := Real.sqrt_le_sqrt hsq
-  rwa [Real.sqrt_sq (norm_nonneg _), Real.sqrt_sq (by positivity)] at h
+  exact le_of_sq_le_sq hsq (by positivity)
 
 /-! ### The shifted quadratic form
 
@@ -795,8 +797,7 @@ theorem mul_norm_le_norm_sub_smul [FiniteDimensional 𝕜 E] {n : ℕ} {T : E �
       have habs : (0 : ℝ) ≤ |hT.eigenvalues hn i - lam| := abs_nonneg _
       have hsq2 : δ ^ 2 ≤ |hT.eigenvalues hn i - lam| ^ 2 := by nlinarith [h, hδ0, habs]
       exact mul_le_mul_of_nonneg_right hsq2 (sq_nonneg _)
-  have hstep := Real.sqrt_le_sqrt hsq
-  rwa [Real.sqrt_sq (mul_nonneg hδ0 (norm_nonneg z)), Real.sqrt_sq (norm_nonneg _)] at hstep
+  exact le_of_sq_le_sq hsq (norm_nonneg _)
 
 /-- **Saad's Lemma 4.2**: for a symmetric `A`, an eigenpair `(lam, u)` and any nonzero competitor
 `y`, the Rayleigh quotient at `y` differs from `lam` by at most `C (‖u - y‖/‖y‖)²`, where `C`
@@ -985,10 +986,9 @@ theorem sin_angle_ritzVector_le {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric) {K :
         rw [← mul_pow, hsin]
       rw [h0] at hdiv
       nlinarith [hdiv, hpy, e2, hupos]
-    have hstep := Real.sqrt_le_sqrt
-      (show (1 : ℝ) ≤ (Real.sqrt (1 + γ ^ 2 / δ ^ 2) * K.sinAngle u) ^ 2 by
-        rw [hprod]; exact h1)
-    rwa [Real.sqrt_one, Real.sqrt_sq hnn] at hstep
+    refine le_of_sq_le_sq ?_ hnn
+    rw [one_pow, hprod]
+    exact h1
   · have hpW : p ∈ W := W.starProjection_apply_mem y
     refine ⟨(p : E), isRitzPair_of_hasEigenvector A K (θ : 𝕜) ⟨hpW, hp0⟩, ?_⟩
     have hyE : ((y : K) : E) = K.starProjection u := rfl
@@ -1021,8 +1021,7 @@ theorem sin_angle_ritzVector_le {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric) {K :
         ≤ (Real.sqrt (1 + γ ^ 2 / δ ^ 2) * K.sinAngle u) ^ 2 := by
       rw [hprod]
       exact hsqle
-    have hstep := Real.sqrt_le_sqrt hb
-    rwa [Real.sqrt_sq (Submodule.sinAngle_nonneg _ _), Real.sqrt_sq hnn] at hstep
+    exact le_of_sq_le_sq hb hnn
 
 /-- The reverse bound: a Ritz pair `(θ, w)` of a symmetric `A` and an eigenpair `(lam, u)`
 satisfy `|θ - lam| ≤ C sin²θ(u, w)`, with `C` bounding the quadratic form of `A - lam`.  So the
@@ -1083,10 +1082,6 @@ private theorem mem_orthogonal_of_forall_inner_vec {m : ℕ} {x : E}
   | zero => simp
   | add y z _ _ hy hz => rw [inner_add_left, hy, hz, add_zero]
   | smul c y _ hy => rw [inner_smul_left, hy, mul_zero]
-
-/-- From `a² ≤ c²` with `c` nonnegative to `a ≤ c`. -/
-private theorem le_of_sq_le_sq {a c : ℝ} (hc : 0 ≤ c) (h : a ^ 2 ≤ c ^ 2) : a ≤ c := by
-  nlinarith
 
 section Charpoly
 
@@ -1156,7 +1151,7 @@ theorem charpoly_compression_isMinOn {m : ℕ} (hm : m ≤ grade A b) :
     exact norm_add_sq_eq_norm_sq_add_norm_sq_of_inner_eq_zero _ _
       (Submodule.inner_left_of_mem_orthogonal hmem (aeval_charpoly_mem_orthogonal A b hm))
   have hnn := sq_nonneg ‖aeval A (p - c) b‖
-  exact le_of_sq_le_sq (norm_nonneg _) (by nlinarith)
+  exact le_of_sq_le_sq (by nlinarith) (norm_nonneg _)
 
 end Charpoly
 

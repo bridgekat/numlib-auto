@@ -13,6 +13,10 @@ import Numlib.Approximation.BestApprox
 
 Best uniform approximation of a continuous function on a compact subset of the line by
 polynomials of degree at most `n`, and the alternation (equioscillation) that characterizes it.
+The material is Atkinson–Han, *Theoretical Numerical Analysis*[^atkinson-han] Thm 3.3.19 and
+Kress, *Numerical Analysis*[^kress] §8.2.
+
+## Main definitions
 
 * `polyLE X n` is the subspace of `C(X, ℝ)` of the restrictions of the real polynomials of
   degree at most `n`.
@@ -23,6 +27,9 @@ polynomials of degree at most `n`, and the alternation (equioscillation) that ch
   `Module.finrank`, so that no rank computation is needed at a use site.
 * `Equioscillates g m` says that `g` attains `± ‖g‖` with alternating signs at `m` increasing
   points of `X`.
+
+## Main results
+
 * `le_infDist_of_alternates` is the de la Vallée-Poussin lower bound: an alternation of length
   `n + 2` for the error of *any* competitor bounds the distance to `polyLE X n` from below. Its
   immediate consequence `isBestApprox_of_equioscillates` is the sufficiency half of Chebyshev's
@@ -37,6 +44,12 @@ polynomials of degree at most `n`, and the alternation (equioscillation) that ch
 * `IsBestApprox.unique_of_polyLE` and `IsBestApprox.unique_of_haarCondition`, the uniqueness of
   the best uniform approximation, follow from it and the Haar condition through the midpoint of
   two best approximations.
+* `isBestApprox_iff_equioscillates` is **Chebyshev's equioscillation theorem** itself, of which
+  `IsBestApprox.equioscillates_of_polyLE` is the direction with content: the exchange argument
+  builds, out of a maximal alternation shorter than `n + 2`, a polynomial that
+  `IsBestApprox.exists_mul_nonpos` — Kolmogorov's criterion — forbids.
+* `card_le_two_mul_of_forall_trigFun_eq_zero` is the Haar condition for the trigonometric
+  polynomials: a nonzero one of degree at most `n` has at most `2 n` zeros in a period.
 
 ## References
 
@@ -173,8 +186,7 @@ The proof is the Haar condition for `polyLE X n`: were some `p` closer than `ε`
 `p - q` would inherit the alternation, hence have `n + 1` roots by the intermediate value
 theorem, hence vanish — contradicting the alternation itself.
 
-Reference: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, Theorem 3.3.19. -/
+Reference: Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 3.3.19. -/
 theorem le_infDist_of_alternates {X : Set ℝ} [CompactSpace X] {n : ℕ} {f q : C(X, ℝ)}
     (hq : q ∈ polyLE X n) {ε σ : ℝ} (hσ : σ = 1 ∨ σ = -1) {x : Fin (n + 2) → X}
     (hmono : StrictMono fun i => (x i : ℝ))
@@ -247,8 +259,7 @@ theorem le_infDist_of_alternates {X : Set ℝ} [CompactSpace X] {n : ℕ} {f q :
 /-- The sufficiency half of Chebyshev's equioscillation theorem: a polynomial whose error
 equioscillates at `n + 2` points is a best uniform approximation.
 
-Reference: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, Theorem 3.3.19. -/
+Reference: Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 3.3.19. -/
 theorem isBestApprox_of_equioscillates {X : Set ℝ} [CompactSpace X] {n : ℕ} {f p : C(X, ℝ)}
     (hp : p ∈ polyLE X n) (h : Equioscillates (f - p) (n + 2)) :
     IsBestApprox (polyLE X n : Set C(X, ℝ)) f p := by
@@ -278,278 +289,6 @@ private theorem exists_abs_eq_norm {X : Set ℝ} [CompactSpace X] [Nonempty X] (
   rw [ContinuousMap.norm_le _ (abs_nonneg _)]
   intro u
   simpa using hmax (Set.mem_univ u)
-
-/-- **The error of a best uniform approximation from an interpolating subspace attains its
-maximum modulus at `d` points.** This is the half of the Chebyshev characterization that has
-content: if the error attained its maximum modulus at fewer than `d` points, then an element `q`
-of the subspace interpolating the error at those points makes `p + c q` a strictly better
-approximation once `c > 0` is small enough.
-
-The hypothesis is what a Haar system of dimension `d` supplies
-(`HaarCondition.exists_mem_forall_eq`), and what Lagrange interpolation supplies for the
-polynomials of degree at most `n`, with `d = n + 1`.
-
-Reference: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, Theorem 3.3.19. -/
-theorem IsBestApprox.exists_card_eq_of_interpolation {X : Set ℝ} [CompactSpace X] [Infinite X]
-    {d : ℕ} {V : Submodule ℝ C(X, ℝ)} {f p : C(X, ℝ)}
-    (hinterp : ∀ S : Finset X, S.card < d → ∀ y : X → ℝ, ∃ q ∈ V, ∀ t ∈ S, q t = y t)
-    (hp : IsBestApprox (V : Set C(X, ℝ)) f p) :
-    ∃ S : Finset X, S.card = d ∧ ∀ t ∈ S, |(f - p) t| = ‖f - p‖ := by
-  classical
-  set g : C(X, ℝ) := f - p with hgdef
-  by_cases hbig : ∃ S : Finset X, S.card = d ∧ ∀ t ∈ S, |g t| = ‖g‖
-  · exact hbig
-  exfalso
-  set E : Set X := {t | |g t| = ‖g‖} with hEdef
-  have hEne : E.Nonempty := (exists_abs_eq_norm g).imp fun t ht => ht
-  have hEfin : E.Finite := by
-    by_contra hinf
-    obtain ⟨S, hSsub, hScard⟩ := Set.Infinite.exists_subset_card_eq hinf d
-    exact hbig ⟨S, hScard, fun t ht => hSsub (Finset.mem_coe.mpr ht)⟩
-  have hEcard : hEfin.toFinset.card < d := by
-    by_contra hlt
-    push Not at hlt
-    obtain ⟨S, hSsub, hScard⟩ := Finset.exists_subset_card_eq hlt
-    exact hbig ⟨S, hScard, fun t ht => hEfin.mem_toFinset.mp (hSsub ht)⟩
-  -- the error is not identically zero
-  have hgpos : 0 < ‖g‖ := by
-    rcases (norm_nonneg g).lt_or_eq with h | h
-    · exact h
-    · exfalso
-      have huniv : E = Set.univ := by
-        ext t
-        simp only [hEdef, Set.mem_ofPred_eq, Set.mem_univ, iff_true]
-        have h1 : |g t| ≤ ‖g‖ := by simpa using g.norm_coe_le_norm t
-        have h2 : (0 : ℝ) ≤ |g t| := abs_nonneg _
-        linarith
-      exact Set.infinite_univ (α := X) (huniv ▸ hEfin)
-  set S : Finset X := hEfin.toFinset with hSdef
-  have hSmem : ∀ t ∈ S, |g t| = ‖g‖ := fun t ht => hEfin.mem_toFinset.mp ht
-  obtain ⟨t₃, ht₃⟩ : S.Nonempty := hEfin.toFinset_nonempty.mpr hEne
-  -- interpolate the error at the extreme points
-  obtain ⟨q, hqmem, hqval⟩ := hinterp S hEcard fun t => g t
-  -- the set where the error and the interpolant have the same sign
-  set P : Set X := {t | 0 < g t * q t} with hPdef
-  have hPopen : IsOpen P := isOpen_lt continuous_const (g.continuous.mul q.continuous)
-  have hSP : ∀ t ∈ S, t ∈ P := by
-    intro t ht
-    have h2 : |g t| = ‖g‖ := hSmem t ht
-    have h3 : g t * q t = ‖g‖ * ‖g‖ := by
-      rw [hqval t ht, ← abs_mul_abs_self (g t), h2]
-    change 0 < g t * q t
-    rw [h3]
-    exact mul_pos hgpos hgpos
-  have hKlt : ∀ t ∈ (Pᶜ : Set X), |g t| < ‖g‖ := by
-    intro t ht
-    have htE : |g t| ≠ ‖g‖ := fun h => ht (hSP t (hEfin.mem_toFinset.mpr h))
-    exact lt_of_le_of_ne (by simpa using g.norm_coe_le_norm t) htE
-  obtain ⟨δ, hδpos, hδ⟩ : ∃ δ > 0, ∀ t ∈ (Pᶜ : Set X), |g t| ≤ ‖g‖ - δ := by
-    rcases Set.eq_empty_or_nonempty (Pᶜ : Set X) with hK | hK
-    · refine ⟨‖g‖, hgpos, fun t ht => ?_⟩
-      rw [hK] at ht
-      exact absurd ht (Set.notMem_empty t)
-    · obtain ⟨t₂, ht₂, hm⟩ := (hPopen.isClosed_compl.isCompact).exists_isMaxOn hK
-        (continuous_abs.comp g.continuous).continuousOn
-      refine ⟨‖g‖ - |g t₂|, by linarith [hKlt t₂ ht₂], fun t ht => ?_⟩
-      have h : |g t| ≤ |g t₂| := hm ht
-      linarith
-  have hqpos : 0 < ‖q‖ := by
-    have h1 : |q t₃| ≤ ‖q‖ := by simpa using q.norm_coe_le_norm t₃
-    have h2 : |q t₃| = ‖g‖ := by rw [hqval t₃ ht₃]; exact hSmem t₃ ht₃
-    linarith
-  -- the improving step
-  set c : ℝ := min (δ / (‖q‖ + 1)) (‖g‖ / (‖q‖ + 1)) with hcdef
-  have hq1 : (0 : ℝ) < ‖q‖ + 1 := by linarith
-  have hcpos : 0 < c := lt_min (by positivity) (by positivity)
-  have hcq1 : c * ‖q‖ < δ := by
-    have hle : c ≤ δ / (‖q‖ + 1) := min_le_left _ _
-    have h1 : c * ‖q‖ ≤ δ / (‖q‖ + 1) * ‖q‖ :=
-      mul_le_mul_of_nonneg_right hle (norm_nonneg _)
-    have h2 : δ / (‖q‖ + 1) * ‖q‖ < δ := by
-      rw [div_mul_eq_mul_div, div_lt_iff₀ hq1]
-      nlinarith
-    linarith
-  have hcq2 : c * ‖q‖ < ‖g‖ := by
-    have hle : c ≤ ‖g‖ / (‖q‖ + 1) := min_le_right _ _
-    have h1 : c * ‖q‖ ≤ ‖g‖ / (‖q‖ + 1) * ‖q‖ :=
-      mul_le_mul_of_nonneg_right hle (norm_nonneg _)
-    have h2 : ‖g‖ / (‖q‖ + 1) * ‖q‖ < ‖g‖ := by
-      rw [div_mul_eq_mul_div, div_lt_iff₀ hq1]
-      nlinarith
-    linarith
-  have hlt : ‖g - c • q‖ < ‖g‖ := by
-    obtain ⟨t, -, hmax⟩ := isCompact_univ.exists_isMaxOn Set.univ_nonempty
-      (continuous_abs.comp (g - c • q).continuous).continuousOn
-    have hattain : ‖g - c • q‖ = |(g - c • q) t| := by
-      refine le_antisymm ?_ (by simpa using (g - c • q).norm_coe_le_norm t)
-      rw [ContinuousMap.norm_le _ (abs_nonneg _)]
-      intro u
-      simpa using hmax (Set.mem_univ u)
-    have hval : (g - c • q) t = g t - c * q t := by simp
-    rw [hattain, hval]
-    have hga : |g t| ≤ ‖g‖ := by simpa using g.norm_coe_le_norm t
-    have hqa : |q t| ≤ ‖q‖ := by simpa using q.norm_coe_le_norm t
-    by_cases htP : t ∈ P
-    · have hab : 0 < g t * q t := htP
-      have hg1 : g t ≤ ‖g‖ := (abs_le.mp hga).2
-      have hg2 : -‖g‖ ≤ g t := (abs_le.mp hga).1
-      have hqu : q t ≤ ‖q‖ := (abs_le.mp hqa).2
-      have hql : -‖q‖ ≤ q t := (abs_le.mp hqa).1
-      have hcqu : c * q t ≤ c * ‖q‖ := mul_le_mul_of_nonneg_left hqu hcpos.le
-      have hcql : c * -‖q‖ ≤ c * q t := mul_le_mul_of_nonneg_left hql hcpos.le
-      rw [abs_lt]
-      rcases mul_pos_iff.mp hab with ⟨h1, h2⟩ | ⟨h1, h2⟩
-      · have hcqp : 0 < c * q t := mul_pos hcpos h2
-        constructor <;> nlinarith
-      · have hcqn : c * q t < 0 := mul_neg_of_pos_of_neg hcpos h2
-        constructor <;> nlinarith
-    · have h1 : |g t| ≤ ‖g‖ - δ := hδ t htP
-      calc |g t - c * q t| ≤ |g t| + |c * q t| := by
-            simpa [sub_eq_add_neg] using abs_add_le (g t) (-(c * q t))
-        _ = |g t| + c * |q t| := by rw [abs_mul, abs_of_pos hcpos]
-        _ ≤ ‖g‖ - δ + c * ‖q‖ := by gcongr
-        _ < ‖g‖ := by linarith
-  -- contradiction with best approximation
-  have hmem : p + c • q ∈ (V : Set C(X, ℝ)) := V.add_mem hp.1 (V.smul_mem c hqmem)
-  have hbetter := hp.2 (p + c • q) hmem
-  have heq : f - (p + c • q) = g - c • q := by
-    rw [hgdef]
-    abel
-  rw [heq] at hbetter
-  exact absurd hbetter (not_le.mpr hlt)
-
-/-- **The error of a best uniform approximation attains its maximum modulus at `n + 1` distinct
-points.** The polynomial case of `IsBestApprox.exists_card_eq_of_interpolation`, whose
-interpolation hypothesis is Lagrange's formula at the extreme points.
-
-Reference: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, Theorem 3.3.19. -/
-theorem IsBestApprox.exists_card_eq_of_polyLE {X : Set ℝ} [CompactSpace X] [Infinite X] {n : ℕ}
-    {f p : C(X, ℝ)} (hp : IsBestApprox (polyLE X n : Set C(X, ℝ)) f p) :
-    ∃ S : Finset X, S.card = n + 1 ∧ ∀ t ∈ S, |(f - p) t| = ‖f - p‖ := by
-  classical
-  refine hp.exists_card_eq_of_interpolation fun S hS y => ?_
-  have hinj : Set.InjOn (fun u : X => (u : ℝ)) ↑S := fun a _ b _ h => Subtype.val_injective h
-  set Q : ℝ[X] := Lagrange.interpolate S (fun u : X => (u : ℝ)) (fun u => y u) with hQdef
-  have hQdeg : Q.degree ≤ (n : ℕ) := by
-    have h1 : Q.degree < (S.card : WithBot ℕ) := Lagrange.degree_interpolate_lt _ hinj
-    have h2 : (S.card : WithBot ℕ) ≤ (n : ℕ) := by
-      exact_mod_cast Nat.lt_succ_iff.mp hS
-    exact le_of_lt (lt_of_lt_of_le h1 h2)
-  refine ⟨Q.toContinuousMapOn X, mem_polyLE_iff.mpr ⟨Q, hQdeg, fun t => rfl⟩, fun t ht => ?_⟩
-  exact Lagrange.eval_interpolate_at_node _ hinj ht
-
-/-- **Uniqueness of the best uniform approximation from a Haar subspace.** Two best
-approximations of the same function by elements of a `d`-dimensional subspace satisfying the Haar
-condition in dimension `d` agree.
-
-Their midpoint is a best approximation too, its error attains the common minimal norm at `d`
-points, and at each of those the two errors must agree; the Haar condition then forces the two
-elements to be equal.
-
-Reference: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, Theorem 3.3.19; Rainer Kress, *Numerical
-Analysis*, Graduate Texts in Mathematics 181, Springer, 1998, §8.2. -/
-theorem IsBestApprox.unique_of_haarCondition {X : Set ℝ} [CompactSpace X] [Infinite X] {d : ℕ}
-    {V : Submodule ℝ C(X, ℝ)} [FiniteDimensional ℝ V] (hV : HaarCondition V d)
-    (hdim : Module.finrank ℝ V = d) {f p₁ p₂ : C(X, ℝ)}
-    (h₁ : IsBestApprox (V : Set C(X, ℝ)) f p₁) (h₂ : IsBestApprox (V : Set C(X, ℝ)) f p₂) :
-    p₁ = p₂ := by
-  have hmid : IsBestApprox (V : Set C(X, ℝ)) f ((2 : ℝ)⁻¹ • p₁ + (2 : ℝ)⁻¹ • p₂) :=
-    convex_setOf_isBestApprox V.convex f h₁ h₂ (by norm_num) (by norm_num) (by norm_num)
-  obtain ⟨S, hScard, hSext⟩ :=
-    hmid.exists_card_eq_of_interpolation (hV.exists_mem_forall_eq hdim)
-  set ρ : ℝ := ‖f - ((2 : ℝ)⁻¹ • p₁ + (2 : ℝ)⁻¹ • p₂)‖ with hρ
-  have hρ₁ : ‖f - p₁‖ = ρ := by
-    rw [hρ, h₁.norm_sub_eq_infDist, hmid.norm_sub_eq_infDist]
-  have hρ₂ : ‖f - p₂‖ = ρ := by
-    rw [hρ, h₂.norm_sub_eq_infDist, hmid.norm_sub_eq_infDist]
-  have hagree : ∀ t ∈ S, p₁ t = p₂ t := by
-    intro t ht
-    have hmax := hSext t ht
-    have hb₁ : |f t - p₁ t| ≤ ρ := by
-      rw [← hρ₁]
-      simpa using (f - p₁).norm_coe_le_norm t
-    have hb₂ : |f t - p₂ t| ≤ ρ := by
-      rw [← hρ₂]
-      simpa using (f - p₂).norm_coe_le_norm t
-    have hsplit : (f - ((2 : ℝ)⁻¹ • p₁ + (2 : ℝ)⁻¹ • p₂)) t
-        = (2 : ℝ)⁻¹ * (f t - p₁ t) + (2 : ℝ)⁻¹ * (f t - p₂ t) := by
-      simp
-      ring
-    rw [hsplit] at hmax
-    rcases abs_le.mp hb₁ with ⟨ha₁, ha₂⟩
-    rcases abs_le.mp hb₂ with ⟨hc₁, hc₂⟩
-    rcases abs_cases ((2 : ℝ)⁻¹ * (f t - p₁ t) + (2 : ℝ)⁻¹ * (f t - p₂ t)) with
-      ⟨he, -⟩ | ⟨he, -⟩ <;> rw [he] at hmax <;> linarith
-  have hzero : p₁ - p₂ = 0 := by
-    by_contra hne
-    have hcard := hV (p₁ - p₂) (V.sub_mem h₁.1 h₂.1) hne S (fun t ht => by
-      simpa using sub_eq_zero.mpr (hagree t ht))
-    omega
-  exact sub_eq_zero.mp hzero
-
-/-- **Uniqueness of the best uniform approximation** by polynomials of degree at most `n` on a
-compact infinite subset of the line: two best approximations of the same function agree.
-
-Their midpoint is a best approximation too, its error attains the common minimal norm at `n + 1`
-points, and at each of those the two errors must agree; the Haar condition then forces the two
-polynomials to be equal.
-
-Reference: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, Theorem 3.3.19. -/
-theorem IsBestApprox.unique_of_polyLE {X : Set ℝ} [CompactSpace X] [Infinite X] {n : ℕ}
-    {f p₁ p₂ : C(X, ℝ)} (h₁ : IsBestApprox (polyLE X n : Set C(X, ℝ)) f p₁)
-    (h₂ : IsBestApprox (polyLE X n : Set C(X, ℝ)) f p₂) : p₁ = p₂ := by
-  have hconv : Convex ℝ ((polyLE X n : Set C(X, ℝ))) := (polyLE X n).convex
-  have hmid : IsBestApprox (polyLE X n : Set C(X, ℝ)) f
-      ((2 : ℝ)⁻¹ • p₁ + (2 : ℝ)⁻¹ • p₂) :=
-    convex_setOf_isBestApprox hconv f h₁ h₂ (by norm_num) (by norm_num) (by norm_num)
-  obtain ⟨S, hScard, hSext⟩ := hmid.exists_card_eq_of_polyLE
-  set ρ : ℝ := ‖f - ((2 : ℝ)⁻¹ • p₁ + (2 : ℝ)⁻¹ • p₂)‖ with hρ
-  have hρ₁ : ‖f - p₁‖ = ρ := by
-    rw [hρ, h₁.norm_sub_eq_infDist, hmid.norm_sub_eq_infDist]
-  have hρ₂ : ‖f - p₂‖ = ρ := by
-    rw [hρ, h₂.norm_sub_eq_infDist, hmid.norm_sub_eq_infDist]
-  have hagree : ∀ t ∈ S, p₁ t = p₂ t := by
-    intro t ht
-    have hmax := hSext t ht
-    have hb₁ : |f t - p₁ t| ≤ ρ := by
-      rw [← hρ₁]
-      simpa using (f - p₁).norm_coe_le_norm t
-    have hb₂ : |f t - p₂ t| ≤ ρ := by
-      rw [← hρ₂]
-      simpa using (f - p₂).norm_coe_le_norm t
-    have hsplit : (f - ((2 : ℝ)⁻¹ • p₁ + (2 : ℝ)⁻¹ • p₂)) t
-        = (2 : ℝ)⁻¹ * (f t - p₁ t) + (2 : ℝ)⁻¹ * (f t - p₂ t) := by
-      simp
-      ring
-    rw [hsplit] at hmax
-    rcases abs_le.mp hb₁ with ⟨ha₁, ha₂⟩
-    rcases abs_le.mp hb₂ with ⟨hc₁, hc₂⟩
-    rcases abs_cases ((2 : ℝ)⁻¹ * (f t - p₁ t) + (2 : ℝ)⁻¹ * (f t - p₂ t)) with
-      ⟨he, -⟩ | ⟨he, -⟩ <;> rw [he] at hmax <;> linarith
-  have hsubmem : p₁ - p₂ ∈ polyLE X n := (polyLE X n).sub_mem h₁.1 h₂.1
-  have hzero : p₁ - p₂ = 0 := by
-    by_contra hne
-    have hcard := haarCondition_polyLE X n (p₁ - p₂) hsubmem hne S (fun t ht => by
-      simpa using sub_eq_zero.mpr (hagree t ht))
-    omega
-  exact sub_eq_zero.mp hzero
-
-/-! ### Kolmogorov's improvement criterion -/
-
-/-- An alternation of length `m` contains one of every shorter length. -/
-theorem Equioscillates.mono {X : Set ℝ} [CompactSpace X] {g : C(X, ℝ)} {m k : ℕ}
-    (h : Equioscillates g m) (hk : k ≤ m) : Equioscillates g k := by
-  obtain ⟨σ, x, hσ, hmono, hval⟩ := h
-  refine ⟨σ, fun i => x (Fin.castLE hk i), hσ, fun i j hij => hmono ?_, fun i => ?_⟩
-  · have hlt : ((Fin.castLE hk i : Fin m) : ℕ) < ((Fin.castLE hk j : Fin m) : ℕ) := by
-      simpa only [Fin.val_castLE] using (Fin.lt_def.mp hij)
-    exact hlt
-  · change g (x (Fin.castLE hk i)) = σ * (-1) ^ (i : ℕ) * ‖g‖
-    rw [hval (Fin.castLE hk i), Fin.val_castLE]
 
 /-- **A direction of improvement.** If some `q` has the same strict sign as `g` at every point
 where `|g|` attains its maximum, then `g - λ q` is strictly smaller than `g` in sup norm for all
@@ -610,6 +349,191 @@ private theorem exists_norm_sub_smul_lt {X : Set ℝ} [CompactSpace X] [Nonempty
       · nlinarith [neg_abs_le (g t)]
       · nlinarith
 
+/-- **The error of a best uniform approximation from an interpolating subspace attains its
+maximum modulus at `d` points.** This is the half of the Chebyshev characterization that has
+content: if the error attained its maximum modulus at fewer than `d` points, then an element `q`
+of the subspace interpolating the error at those points makes `p + c q` a strictly better
+approximation once `c > 0` is small enough.
+
+The hypothesis is what a Haar system of dimension `d` supplies
+(`HaarCondition.exists_mem_forall_eq`), and what Lagrange interpolation supplies for the
+polynomials of degree at most `n`, with `d = n + 1`.
+
+Reference: Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 3.3.19. -/
+theorem IsBestApprox.exists_card_eq_of_interpolation {X : Set ℝ} [CompactSpace X] [Infinite X]
+    {d : ℕ} {V : Submodule ℝ C(X, ℝ)} {f p : C(X, ℝ)}
+    (hinterp : ∀ S : Finset X, S.card < d → ∀ y : X → ℝ, ∃ q ∈ V, ∀ t ∈ S, q t = y t)
+    (hp : IsBestApprox (V : Set C(X, ℝ)) f p) :
+    ∃ S : Finset X, S.card = d ∧ ∀ t ∈ S, |(f - p) t| = ‖f - p‖ := by
+  classical
+  set g : C(X, ℝ) := f - p with hgdef
+  by_cases hbig : ∃ S : Finset X, S.card = d ∧ ∀ t ∈ S, |g t| = ‖g‖
+  · exact hbig
+  exfalso
+  set E : Set X := {t | |g t| = ‖g‖} with hEdef
+  have hEfin : E.Finite := by
+    by_contra hinf
+    obtain ⟨S, hSsub, hScard⟩ := Set.Infinite.exists_subset_card_eq hinf d
+    exact hbig ⟨S, hScard, fun t ht => hSsub (Finset.mem_coe.mpr ht)⟩
+  have hEcard : hEfin.toFinset.card < d := by
+    by_contra hlt
+    push Not at hlt
+    obtain ⟨S, hSsub, hScard⟩ := Finset.exists_subset_card_eq hlt
+    exact hbig ⟨S, hScard, fun t ht => hEfin.mem_toFinset.mp (hSsub ht)⟩
+  -- the error is not identically zero
+  have hgpos : 0 < ‖g‖ := by
+    rcases (norm_nonneg g).lt_or_eq with h | h
+    · exact h
+    · exfalso
+      have huniv : E = Set.univ := by
+        ext t
+        simp only [hEdef, Set.mem_ofPred_eq, Set.mem_univ, iff_true]
+        have h1 : |g t| ≤ ‖g‖ := by simpa using g.norm_coe_le_norm t
+        have h2 : (0 : ℝ) ≤ |g t| := abs_nonneg _
+        linarith
+      exact Set.infinite_univ (α := X) (huniv ▸ hEfin)
+  set S : Finset X := hEfin.toFinset with hSdef
+  -- interpolate the error at the extreme points
+  obtain ⟨q, hqmem, hqval⟩ := hinterp S hEcard fun t => g t
+  -- at every extreme point the interpolant has the sign of the error, so it is a direction of
+  -- improvement
+  have hsign : ∀ t : X, |g t| = ‖g‖ → 0 < g t * q t := by
+    intro t ht
+    have htS : t ∈ S := by
+      rw [hSdef]
+      exact hEfin.mem_toFinset.mpr ht
+    have h3 : g t * q t = ‖g‖ * ‖g‖ := by
+      rw [hqval t htS, ← abs_mul_abs_self (g t), ht]
+    rw [h3]
+    exact mul_pos hgpos hgpos
+  obtain ⟨c, -, hlt⟩ := exists_norm_sub_smul_lt hgpos hsign
+  -- contradiction with best approximation
+  have hmem : p + c • q ∈ (V : Set C(X, ℝ)) := V.add_mem hp.1 (V.smul_mem c hqmem)
+  have hbetter := hp.2 (p + c • q) hmem
+  have heq : f - (p + c • q) = g - c • q := by
+    rw [hgdef]
+    abel
+  rw [heq] at hbetter
+  exact absurd hbetter (not_le.mpr hlt)
+
+/-- **The error of a best uniform approximation attains its maximum modulus at `n + 1` distinct
+points.** The polynomial case of `IsBestApprox.exists_card_eq_of_interpolation`, whose
+interpolation hypothesis is Lagrange's formula at the extreme points.
+
+Reference: Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 3.3.19. -/
+theorem IsBestApprox.exists_card_eq_of_polyLE {X : Set ℝ} [CompactSpace X] [Infinite X] {n : ℕ}
+    {f p : C(X, ℝ)} (hp : IsBestApprox (polyLE X n : Set C(X, ℝ)) f p) :
+    ∃ S : Finset X, S.card = n + 1 ∧ ∀ t ∈ S, |(f - p) t| = ‖f - p‖ := by
+  classical
+  refine hp.exists_card_eq_of_interpolation fun S hS y => ?_
+  have hinj : Set.InjOn (fun u : X => (u : ℝ)) ↑S := fun a _ b _ h => Subtype.val_injective h
+  set Q : ℝ[X] := Lagrange.interpolate S (fun u : X => (u : ℝ)) (fun u => y u) with hQdef
+  have hQdeg : Q.degree ≤ (n : ℕ) := by
+    have h1 : Q.degree < (S.card : WithBot ℕ) := Lagrange.degree_interpolate_lt _ hinj
+    have h2 : (S.card : WithBot ℕ) ≤ (n : ℕ) := by
+      exact_mod_cast Nat.lt_succ_iff.mp hS
+    exact le_of_lt (lt_of_lt_of_le h1 h2)
+  refine ⟨Q.toContinuousMapOn X, mem_polyLE_iff.mpr ⟨Q, hQdeg, fun t => rfl⟩, fun t ht => ?_⟩
+  exact Lagrange.eval_interpolate_at_node _ hinj ht
+
+/-- **Two best approximations agree wherever the error of their midpoint is extreme.** The two
+errors have the common minimal norm `ρ`, so each has modulus at most `ρ` everywhere; where their
+average has modulus exactly `ρ` neither can fall short, and both have the same sign. This is the
+step both uniqueness theorems below take. -/
+private theorem eq_of_abs_sub_midpoint_eq {X : Set ℝ} [CompactSpace X] {K : Set C(X, ℝ)}
+    {f p₁ p₂ : C(X, ℝ)} (h₁ : IsBestApprox K f p₁) (h₂ : IsBestApprox K f p₂)
+    (hmid : IsBestApprox K f ((2 : ℝ)⁻¹ • p₁ + (2 : ℝ)⁻¹ • p₂)) {t : X}
+    (hmax : |(f - ((2 : ℝ)⁻¹ • p₁ + (2 : ℝ)⁻¹ • p₂)) t|
+      = ‖f - ((2 : ℝ)⁻¹ • p₁ + (2 : ℝ)⁻¹ • p₂)‖) :
+    p₁ t = p₂ t := by
+  set ρ : ℝ := ‖f - ((2 : ℝ)⁻¹ • p₁ + (2 : ℝ)⁻¹ • p₂)‖ with hρ
+  have hρ₁ : ‖f - p₁‖ = ρ := by
+    rw [hρ, h₁.norm_sub_eq_infDist, hmid.norm_sub_eq_infDist]
+  have hρ₂ : ‖f - p₂‖ = ρ := by
+    rw [hρ, h₂.norm_sub_eq_infDist, hmid.norm_sub_eq_infDist]
+  have hb₁ : |f t - p₁ t| ≤ ρ := by
+    rw [← hρ₁]
+    simpa using (f - p₁).norm_coe_le_norm t
+  have hb₂ : |f t - p₂ t| ≤ ρ := by
+    rw [← hρ₂]
+    simpa using (f - p₂).norm_coe_le_norm t
+  have hsplit : (f - ((2 : ℝ)⁻¹ • p₁ + (2 : ℝ)⁻¹ • p₂)) t
+      = (2 : ℝ)⁻¹ * (f t - p₁ t) + (2 : ℝ)⁻¹ * (f t - p₂ t) := by
+    simp
+    ring
+  rw [hsplit] at hmax
+  rcases abs_le.mp hb₁ with ⟨ha₁, ha₂⟩
+  rcases abs_le.mp hb₂ with ⟨hc₁, hc₂⟩
+  rcases abs_cases ((2 : ℝ)⁻¹ * (f t - p₁ t) + (2 : ℝ)⁻¹ * (f t - p₂ t)) with
+    ⟨he, -⟩ | ⟨he, -⟩ <;> rw [he] at hmax <;> linarith
+
+/-- **Uniqueness of the best uniform approximation from a Haar subspace.** Two best
+approximations of the same function by elements of a `d`-dimensional subspace satisfying the Haar
+condition in dimension `d` agree.
+
+Their midpoint is a best approximation too, its error attains the common minimal norm at `d`
+points, and at each of those the two errors must agree; the Haar condition then forces the two
+elements to be equal.
+
+Reference: Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 3.3.19; Kress, *Numerical
+Analysis*, §8.2. -/
+theorem IsBestApprox.unique_of_haarCondition {X : Set ℝ} [CompactSpace X] [Infinite X] {d : ℕ}
+    {V : Submodule ℝ C(X, ℝ)} [FiniteDimensional ℝ V] (hV : HaarCondition V d)
+    (hdim : Module.finrank ℝ V = d) {f p₁ p₂ : C(X, ℝ)}
+    (h₁ : IsBestApprox (V : Set C(X, ℝ)) f p₁) (h₂ : IsBestApprox (V : Set C(X, ℝ)) f p₂) :
+    p₁ = p₂ := by
+  have hmid : IsBestApprox (V : Set C(X, ℝ)) f ((2 : ℝ)⁻¹ • p₁ + (2 : ℝ)⁻¹ • p₂) :=
+    convex_setOf_isBestApprox V.convex f h₁ h₂ (by norm_num) (by norm_num) (by norm_num)
+  obtain ⟨S, hScard, hSext⟩ :=
+    hmid.exists_card_eq_of_interpolation (hV.exists_mem_forall_eq hdim)
+  have hagree : ∀ t ∈ S, p₁ t = p₂ t := fun t ht =>
+    eq_of_abs_sub_midpoint_eq h₁ h₂ hmid (hSext t ht)
+  have hzero : p₁ - p₂ = 0 := by
+    by_contra hne
+    have hcard := hV (p₁ - p₂) (V.sub_mem h₁.1 h₂.1) hne S (fun t ht => by
+      simpa using sub_eq_zero.mpr (hagree t ht))
+    omega
+  exact sub_eq_zero.mp hzero
+
+/-- **Uniqueness of the best uniform approximation** by polynomials of degree at most `n` on a
+compact infinite subset of the line: two best approximations of the same function agree.
+
+Their midpoint is a best approximation too, its error attains the common minimal norm at `n + 1`
+points, and at each of those the two errors must agree; the Haar condition then forces the two
+polynomials to be equal.
+
+Reference: Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 3.3.19. -/
+theorem IsBestApprox.unique_of_polyLE {X : Set ℝ} [CompactSpace X] [Infinite X] {n : ℕ}
+    {f p₁ p₂ : C(X, ℝ)} (h₁ : IsBestApprox (polyLE X n : Set C(X, ℝ)) f p₁)
+    (h₂ : IsBestApprox (polyLE X n : Set C(X, ℝ)) f p₂) : p₁ = p₂ := by
+  have hconv : Convex ℝ ((polyLE X n : Set C(X, ℝ))) := (polyLE X n).convex
+  have hmid : IsBestApprox (polyLE X n : Set C(X, ℝ)) f
+      ((2 : ℝ)⁻¹ • p₁ + (2 : ℝ)⁻¹ • p₂) :=
+    convex_setOf_isBestApprox hconv f h₁ h₂ (by norm_num) (by norm_num) (by norm_num)
+  obtain ⟨S, hScard, hSext⟩ := hmid.exists_card_eq_of_polyLE
+  have hagree : ∀ t ∈ S, p₁ t = p₂ t := fun t ht =>
+    eq_of_abs_sub_midpoint_eq h₁ h₂ hmid (hSext t ht)
+  have hsubmem : p₁ - p₂ ∈ polyLE X n := (polyLE X n).sub_mem h₁.1 h₂.1
+  have hzero : p₁ - p₂ = 0 := by
+    by_contra hne
+    have hcard := haarCondition_polyLE X n (p₁ - p₂) hsubmem hne S (fun t ht => by
+      simpa using sub_eq_zero.mpr (hagree t ht))
+    omega
+  exact sub_eq_zero.mp hzero
+
+/-! ### Kolmogorov's improvement criterion -/
+
+/-- An alternation of length `m` contains one of every shorter length. -/
+theorem Equioscillates.mono {X : Set ℝ} [CompactSpace X] {g : C(X, ℝ)} {m k : ℕ}
+    (h : Equioscillates g m) (hk : k ≤ m) : Equioscillates g k := by
+  obtain ⟨σ, x, hσ, hmono, hval⟩ := h
+  refine ⟨σ, fun i => x (Fin.castLE hk i), hσ, fun i j hij => hmono ?_, fun i => ?_⟩
+  · have hlt : ((Fin.castLE hk i : Fin m) : ℕ) < ((Fin.castLE hk j : Fin m) : ℕ) := by
+      simpa only [Fin.val_castLE] using (Fin.lt_def.mp hij)
+    exact hlt
+  · change g (x (Fin.castLE hk i)) = σ * (-1) ^ (i : ℕ) * ‖g‖
+    rw [hval (Fin.castLE hk i), Fin.val_castLE]
+
 /-- **Kolmogorov's criterion, the half with content.** At a best approximation no element of the
 subspace has the same strict sign as the error at every point of the extreme set: such an element
 would be a direction of improvement.
@@ -617,9 +541,8 @@ would be a direction of improvement.
 It is the analytic half of Chebyshev's equioscillation theorem — the other half is the
 combinatorial construction of such an element out of a short alternation.
 
-Reference: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, Theorem 3.3.19; Rainer Kress, *Numerical
-Analysis*, Graduate Texts in Mathematics 181, Springer, 1998, §8.2. -/
+Reference: Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 3.3.19; Kress, *Numerical
+Analysis*, §8.2. -/
 theorem IsBestApprox.exists_mul_nonpos {X : Set ℝ} [CompactSpace X] [Nonempty X]
     {V : Submodule ℝ C(X, ℝ)} {f p : C(X, ℝ)} (hp : IsBestApprox (V : Set C(X, ℝ)) f p)
     (hE : 0 < ‖f - p‖) {q : C(X, ℝ)} (hq : q ∈ V) :
@@ -716,8 +639,7 @@ The hypothesis is stated as an explicit combination of the real trigonometric sy
 as membership in a subspace of trigonometric polynomials, so that this file needs nothing from the
 Fourier layer beyond `Numlib/Analysis/Fourier/TrigonometricBasis`'s system itself.
 
-Reference: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, Theorem 3.3.20. -/
+Reference: Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 3.3.20. -/
 theorem card_le_two_mul_of_forall_trigFun_eq_zero {T : ℝ} (hT : T ≠ 0) {n : ℕ}
     {f : C(AddCircle T, ℝ)} {c : ℤ → ℝ}
     (hf : f = ∑ m ∈ Finset.Icc (-(n : ℤ)) n, c m • trigFun T m) (hne : f ≠ 0)
@@ -823,6 +745,30 @@ theorem card_le_two_mul_of_forall_trigFun_eq_zero {T : ℝ} (hT : T ≠ 0) {n : 
     _ ≤ Q.natDegree := Polynomial.card_roots' Q
     _ ≤ 2 * n := hQdeg
 
+/-- **A longest alternation.** A nonzero `g` on a compact nonempty space alternates once, at a
+point of maximum modulus; so if it does not alternate `n + 2` times, there is a greatest length
+`m` at which it alternates, and `1 ≤ m ≤ n + 1`. -/
+private theorem exists_maximal_equioscillates {X : Set ℝ} [CompactSpace X] [Nonempty X] {n : ℕ}
+    {g : C(X, ℝ)} (hcon : ¬ Equioscillates g (n + 2)) :
+    ∃ m : ℕ, 1 ≤ m ∧ m ≤ n + 1 ∧ Equioscillates g m ∧ ∀ k, m < k → ¬ Equioscillates g k := by
+  classical
+  obtain ⟨t₀, ht₀⟩ := exists_abs_eq_norm g
+  have halt1 : Equioscillates g 1 := by
+    refine equioscillates_of_alternating (w := fun _ : Fin 1 => t₀) (c := g t₀) ?_ ht₀ ?_
+    · intro a b hab
+      have ha := a.isLt
+      have hb := b.isLt
+      exact absurd (Fin.lt_def.mp hab) (by omega)
+    · intro i
+      have hi : (i : ℕ) = 0 := by have := i.isLt; omega
+      rw [hi, pow_zero, one_mul]
+  refine ⟨Nat.findGreatest (fun k => Equioscillates g k) (n + 1),
+    Nat.le_findGreatest (by omega) halt1, Nat.findGreatest_le _,
+    Nat.findGreatest_spec (m := 1) (by omega) halt1, fun k hk hk' => ?_⟩
+  rcases Nat.lt_or_ge (n + 1) k with h | h
+  · exact hcon (hk'.mono (by omega))
+  · exact Nat.findGreatest_is_greatest hk h hk'
+
 /-- **The exchange argument.** If the error of a best approximation does not alternate `n + 2`
 times, then a polynomial of degree at most `n` has the sign of the error at every extreme point,
 which `IsBestApprox.exists_mul_nonpos` forbids.
@@ -837,26 +783,8 @@ private theorem exists_improving_of_not_equioscillates {X : Set ℝ} [CompactSpa
     {n : ℕ} {g : C(X, ℝ)} (hE : 0 < ‖g‖) (hcon : ¬ Equioscillates g (n + 2)) :
     ∃ q ∈ polyLE X n, ∀ t : X, |g t| = ‖g‖ → 0 < g t * q t := by
   classical
-  -- an alternation of length one, and the greatest length of an alternation
-  obtain ⟨t₀, ht₀⟩ := exists_abs_eq_norm g
-  have halt1 : Equioscillates g 1 := by
-    refine equioscillates_of_alternating (w := fun _ : Fin 1 => t₀) (c := g t₀) ?_ ht₀ ?_
-    · intro a b hab
-      have ha := a.isLt
-      have hb := b.isLt
-      exact absurd (Fin.lt_def.mp hab) (by omega)
-    · intro i
-      have hi : (i : ℕ) = 0 := by have := i.isLt; omega
-      rw [hi, pow_zero, one_mul]
-  obtain ⟨m, hm1, hmle, hmspec, hmmax⟩ :
-      ∃ m : ℕ, 1 ≤ m ∧ m ≤ n + 1 ∧ Equioscillates g m ∧
-        ∀ k, m < k → ¬ Equioscillates g k := by
-    refine ⟨Nat.findGreatest (fun k => Equioscillates g k) (n + 1),
-      Nat.le_findGreatest (by omega) halt1, Nat.findGreatest_le _,
-      Nat.findGreatest_spec (m := 1) (by omega) halt1, fun k hk hk' => ?_⟩
-    rcases Nat.lt_or_ge (n + 1) k with h | h
-    · exact hcon (hk'.mono (by omega))
-    · exact Nat.findGreatest_is_greatest hk h hk'
+  -- the greatest length of an alternation
+  obtain ⟨m, hm1, hmle, hmspec, hmmax⟩ := exists_maximal_equioscillates hcon
   have : NeZero m := ⟨by omega⟩
   -- the alternations of length `m`, as a compact set of tuples
   obtain ⟨σ, x, hσ, hxmono, hxval⟩ := hmspec
@@ -1242,9 +1170,8 @@ private theorem exists_improving_of_not_equioscillates {X : Set ℝ} [CompactSpa
 uniform approximation of degree at most `n` attains `± ‖f - p‖` with alternating signs at `n + 2`
 increasing points.
 
-Reference: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, Theorem 3.3.19; Rainer Kress, *Numerical
-Analysis*, Graduate Texts in Mathematics 181, Springer, 1998, §8.2. -/
+Reference: Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 3.3.19; Kress, *Numerical
+Analysis*, §8.2. -/
 theorem IsBestApprox.equioscillates_of_polyLE {X : Set ℝ} [CompactSpace X] [Infinite X] {n : ℕ}
     {f p : C(X, ℝ)} (hp : IsBestApprox (polyLE X n : Set C(X, ℝ)) f p) :
     Equioscillates (f - p) (n + 2) := by
@@ -1267,9 +1194,8 @@ approximation of `f` on a compact infinite subset of the line exactly when its e
 Sufficiency is `isBestApprox_of_equioscillates`, from de la Vallée-Poussin's bound; necessity is
 `IsBestApprox.equioscillates_of_polyLE`, the exchange argument.
 
-Reference: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, Theorem 3.3.19; Rainer Kress, *Numerical
-Analysis*, Graduate Texts in Mathematics 181, Springer, 1998, §8.2. -/
+Reference: Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 3.3.19; Kress, *Numerical
+Analysis*, §8.2. -/
 theorem isBestApprox_iff_equioscillates {X : Set ℝ} [CompactSpace X] [Infinite X] {n : ℕ}
     {f p : C(X, ℝ)} (hp : p ∈ polyLE X n) :
     IsBestApprox (polyLE X n : Set C(X, ℝ)) f p ↔ Equioscillates (f - p) (n + 2) :=

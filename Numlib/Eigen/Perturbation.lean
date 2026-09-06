@@ -9,6 +9,7 @@ import Mathlib.LinearAlgebra.Matrix.Gershgorin
 import Numlib.Analysis.InnerProductSpace.Coercive
 import Numlib.Analysis.InnerProductSpace.Projection.Angle
 import Numlib.Analysis.Normed.Ring.CondNumber
+import Numlib.Eigen.MinMax
 import Numlib.Eigen.Normal
 
 /-!
@@ -91,11 +92,6 @@ include hA
 All the symmetric bounds below are inequalities between the sums
 `∑ i, f (λ i) ‖⟪v i, x⟫‖²` over an orthonormal eigenbasis `v` with eigenvalues `λ`. -/
 
-private theorem sum_norm_repr_sq {n : ℕ} (hn : Module.finrank 𝕜 E = n) (x : E) :
-    ∑ i, ‖(hA.eigenvectorBasis hn).repr x i‖ ^ 2 = ‖x‖ ^ 2 := by
-  simpa only [OrthonormalBasis.repr_apply_apply] using
-    (hA.eigenvectorBasis hn).sum_sq_norm_inner_right x
-
 private theorem repr_sub_smul {n : ℕ} (hn : Module.finrank 𝕜 E = n) (θ : ℝ) (x : E) (i : Fin n) :
     (hA.eigenvectorBasis hn).repr (A x - (θ : 𝕜) • x) i =
       ((hA.eigenvalues hn i - θ : ℝ) : 𝕜) * (hA.eigenvectorBasis hn).repr x i := by
@@ -107,19 +103,9 @@ private theorem repr_sub_smul {n : ℕ} (hn : Module.finrank 𝕜 E = n) (θ : �
 private theorem norm_residual_sq {n : ℕ} (hn : Module.finrank 𝕜 E = n) (θ : ℝ) (x : E) :
     ‖A x - (θ : 𝕜) • x‖ ^ 2 =
       ∑ i, (hA.eigenvalues hn i - θ) ^ 2 * ‖(hA.eigenvectorBasis hn).repr x i‖ ^ 2 := by
-  rw [← hA.sum_norm_repr_sq hn]
+  rw [hA.norm_sq_eq_sum_norm_repr_sq hn]
   refine Finset.sum_congr rfl fun i _ => ?_
   rw [hA.repr_sub_smul hn, norm_mul, mul_pow, RCLike.norm_ofReal, sq_abs]
-
-private theorem re_inner_apply_self {n : ℕ} (hn : Module.finrank 𝕜 E = n) (x : E) :
-    RCLike.re (inner 𝕜 (A x) x) =
-      ∑ i, hA.eigenvalues hn i * ‖(hA.eigenvectorBasis hn).repr x i‖ ^ 2 := by
-  rw [← (hA.eigenvectorBasis hn).sum_inner_mul_inner (A x) x, map_sum]
-  refine Finset.sum_congr rfl fun i _ => ?_
-  rw [hA x (hA.eigenvectorBasis hn i), hA.apply_eigenvectorBasis hn, inner_smul_right,
-    ← inner_conj_symm x (hA.eigenvectorBasis hn i), mul_assoc, RCLike.conj_mul,
-    OrthonormalBasis.repr_apply_apply]
-  simp
 
 /-- The identity behind Saad, *Large Eigenvalue Problems*, Lemma 3.2 and the Kato–Temple bounds:
 for a unit vector `x` with Rayleigh quotient `θ = re⟪A x, x⟫`, residual `r = A x - θ x` and
@@ -132,9 +118,9 @@ private theorem sum_quadratic {n : ℕ} (hn : Module.finrank 𝕜 E = n) {x : E}
         (RCLike.re (inner 𝕜 (A x) x) - u) * (RCLike.re (inner 𝕜 (A x) x) - v) := by
   set θ := RCLike.re (inner 𝕜 (A x) x) with hθ
   have hs : ∑ i, ‖(hA.eigenvectorBasis hn).repr x i‖ ^ 2 = 1 := by
-    rw [hA.sum_norm_repr_sq hn, hx, one_pow]
+    rw [← hA.norm_sq_eq_sum_norm_repr_sq hn, hx, one_pow]
   have hth : ∑ i, hA.eigenvalues hn i * ‖(hA.eigenvectorBasis hn).repr x i‖ ^ 2 = θ :=
-    (hA.re_inner_apply_self hn x).symm
+    (hA.re_inner_apply_self_eq_sum hn x).symm
   have hr : ‖A x - (θ : 𝕜) • x‖ ^ 2 =
       ∑ i, (hA.eigenvalues hn i - θ) ^ 2 * ‖(hA.eigenvectorBasis hn).repr x i‖ ^ 2 :=
     hA.norm_residual_sq hn θ x
@@ -173,14 +159,14 @@ theorem exists_hasEigenvalue_dist_le (θ : ℝ) {x : E} (hx : x ≠ 0) :
     rw [← RCLike.ofReal_sub, RCLike.norm_ofReal]
   rw [hnorm, le_div_iff₀ (norm_pos_iff.mpr hx)]
   have key : (|hA.eigenvalues hn i₀ - θ| * ‖x‖) ^ 2 ≤ ‖A x - (θ : 𝕜) • x‖ ^ 2 := by
-    rw [mul_pow, sq_abs, ← hA.sum_norm_repr_sq hn, hA.norm_residual_sq hn, Finset.mul_sum]
+    rw [mul_pow, sq_abs, hA.norm_sq_eq_sum_norm_repr_sq hn, hA.norm_residual_sq hn,
+      Finset.mul_sum]
     refine Finset.sum_le_sum fun i _ => ?_
     refine mul_le_mul_of_nonneg_right ?_ (sq_nonneg _)
     have habs := hi₀ i (Finset.mem_univ i)
     nlinarith [abs_nonneg (hA.eigenvalues hn i₀ - θ), abs_nonneg (hA.eigenvalues hn i - θ),
       sq_abs (hA.eigenvalues hn i₀ - θ), sq_abs (hA.eigenvalues hn i - θ)]
-  have hsq := Real.sqrt_le_sqrt key
-  rwa [Real.sqrt_sq (by positivity), Real.sqrt_sq (norm_nonneg _)] at hsq
+  exact le_of_sq_le_sq key (norm_nonneg _)
 
 /-- Saad, *Large Eigenvalue Problems*, Lemma 3.2: with `θ = re⟪A x, x⟫` (`‖x‖ = 1`) and an
 interval `(α, β) ∋ θ` free of eigenvalues, `(β - θ)(θ - α) ≤ ‖r‖²` for the residual
@@ -190,7 +176,7 @@ theorem rayleigh_gap_le_norm_residual_sq {x : E} (hx : ‖x‖ = 1) {α β : ℝ
     (hfree : ∀ μ : 𝕜, Module.End.HasEigenvalue A μ → RCLike.re μ ∉ Set.Ioo α β) :
     (β - RCLike.re (inner 𝕜 (A x) x)) * (RCLike.re (inner 𝕜 (A x) x) - α) ≤
       ‖A x - (RCLike.re (inner 𝕜 (A x) x) : 𝕜) • x‖ ^ 2 := by
-  set n := Module.finrank 𝕜 E with hn'
+  set n := Module.finrank 𝕜 E
   have hn : Module.finrank 𝕜 E = n := rfl
   have hout : ∀ i : Fin n, hA.eigenvalues hn i ≤ α ∨ β ≤ hA.eigenvalues hn i := by
     intro i
@@ -230,7 +216,7 @@ theorem kato_temple {x : E} (hx : ‖x‖ = 1) {a b : ℝ} {μ : 𝕜} (hμ : Mo
       RCLike.re μ - RCLike.re (inner 𝕜 (A x) x) ≤
         ‖A x - (RCLike.re (inner 𝕜 (A x) x) : 𝕜) • x‖ ^ 2 /
           (RCLike.re (inner 𝕜 (A x) x) - a) := by
-  set n := Module.finrank 𝕜 E with hn'
+  set n := Module.finrank 𝕜 E
   have hn : Module.finrank 𝕜 E = n := rfl
   set θ := RCLike.re (inner 𝕜 (A x) x) with hθ
   obtain ⟨hab1, hab2⟩ := hab
@@ -306,7 +292,7 @@ theorem abs_sub_rayleigh_le_norm_residual_sq_div {x : E} (hx : ‖x‖ = 1) {μ 
 theorem rayleigh_mem_Icc {lmin lmax : ℝ}
     (hspec : ∀ μ : 𝕜, Module.End.HasEigenvalue A μ → RCLike.re μ ∈ Set.Icc lmin lmax) {x : E}
     (hx : x ≠ 0) : RCLike.re (inner 𝕜 (A x) x) / ‖x‖ ^ 2 ∈ Set.Icc lmin lmax := by
-  set n := Module.finrank 𝕜 E with hn'
+  set n := Module.finrank 𝕜 E
   have hn : Module.finrank 𝕜 E = n := rfl
   have hpos : (0 : ℝ) < ‖x‖ ^ 2 := pow_pos (norm_pos_iff.mpr hx) 2
   have hbounds : ∀ i : Fin n, hA.eigenvalues hn i ∈ Set.Icc lmin lmax := by
@@ -315,10 +301,12 @@ theorem rayleigh_mem_Icc {lmin lmax : ℝ}
     rwa [RCLike.ofReal_re] at this
   rw [Set.mem_Icc]
   constructor
-  · rw [le_div_iff₀ hpos, hA.re_inner_apply_self hn, ← hA.sum_norm_repr_sq hn, Finset.mul_sum]
+  · rw [le_div_iff₀ hpos, hA.re_inner_apply_self_eq_sum hn, hA.norm_sq_eq_sum_norm_repr_sq hn,
+      Finset.mul_sum]
     exact Finset.sum_le_sum fun i _ =>
       mul_le_mul_of_nonneg_right (hbounds i).1 (sq_nonneg _)
-  · rw [div_le_iff₀ hpos, hA.re_inner_apply_self hn, ← hA.sum_norm_repr_sq hn, Finset.mul_sum]
+  · rw [div_le_iff₀ hpos, hA.re_inner_apply_self_eq_sum hn, hA.norm_sq_eq_sum_norm_repr_sq hn,
+      Finset.mul_sum]
     exact Finset.sum_le_sum fun i _ =>
       mul_le_mul_of_nonneg_right (hbounds i).2 (sq_nonneg _)
 
@@ -344,7 +332,7 @@ private theorem mul_norm_le_norm_sub_smul_of_mem_orthogonal {n : ℕ}
     rw [OrthonormalBasis.repr_apply_apply]
     exact (Submodule.mem_orthogonal _ q).1 hq _ hmem
   have hsq : (δ * ‖q‖) ^ 2 ≤ ‖A q - (θ : 𝕜) • q‖ ^ 2 := by
-    rw [mul_pow, hA.norm_residual_sq hn θ q, ← hA.sum_norm_repr_sq hn q, Finset.mul_sum]
+    rw [mul_pow, hA.norm_residual_sq hn θ q, hA.norm_sq_eq_sum_norm_repr_sq hn q, Finset.mul_sum]
     refine Finset.sum_le_sum fun i _ => ?_
     by_cases hi : hA.eigenvalues hn i = lam
     · rw [hzero i hi]
@@ -352,8 +340,7 @@ private theorem mul_norm_le_norm_sub_smul_of_mem_orthogonal {n : ℕ}
     · refine mul_le_mul_of_nonneg_right ?_ (sq_nonneg _)
       have h := hsep i hi
       nlinarith [sq_abs (hA.eigenvalues hn i - θ), abs_nonneg (hA.eigenvalues hn i - θ)]
-  have h := Real.sqrt_le_sqrt hsq
-  rwa [Real.sqrt_sq (mul_nonneg hδ (norm_nonneg q)), Real.sqrt_sq (norm_nonneg _)] at h
+  exact le_of_sq_le_sq hsq (norm_nonneg _)
 
 /-- **The eigenvector residual bound** (Saad, *Large Eigenvalue Problems*, Thm 3.9): for a unit
 vector `x` with Rayleigh quotient `θ = re⟪A x, x⟫` and residual `r = A x - θ x`, and a real
@@ -659,8 +646,9 @@ eigenvalue of some `A - B` with `‖B‖ < ε`.
 Forwards, the perturbation is the rank-one one of `isLeast_eigen_backwardError`, built from the
 residual of the approximate eigenvector; backwards, an eigenvector of `A - B` has residual `B w`
 for `A`.  The book states (v) with `‖B‖ ≤ ε`, but its own proof of (v) ⇒ (iv) needs the strict
-inequality, and with `≤` the equivalence is false: for `A = 0` and `B = ε • 1` every `z` of
-modulus `ε` satisfies the right-hand side and none satisfies the left. -/
+inequality, and with `≤` the equivalence is false: for `A = 0` every `z` of modulus `ε` satisfies
+the right-hand side, with the perturbation `B = -z • 1` of norm exactly `ε`, and none satisfies
+the left, `‖0 - z • w‖` being `ε` at every unit `w`. -/
 theorem mem_pseudospectrum_iff {ε : ℝ} (A : E →L[𝕜] E) (z : 𝕜) :
     z ∈ pseudospectrum ε A ↔
       ∃ B : E →L[𝕜] E, ‖B‖ < ε ∧ Module.End.HasEigenvalue ((A - B : E →L[𝕜] E) :

@@ -17,6 +17,8 @@ its adjoint is a polynomial in it. This is the spectral theorem for normal opera
 last statement is the algebraic form of it that the Faber–Manteuffel theory of short-recurrence
 Krylov methods needs (Saad, *Iterative Methods for Sparse Linear Systems*[^saad-iterative], §6.10).
 
+## Main results
+
 The route avoids both Schur triangulation and the Jordan form, neither of which Mathlib has:
 
 * `LinearMap.IsStarNormal.norm_adjoint_apply`: a normal `A` satisfies `‖A† v‖ = ‖A v‖`, hence
@@ -45,6 +47,8 @@ The route avoids both Schur triangulation and the Jordan form, neither of which 
   (`LinearMap.IsStarNormal.aeval_eq_adjoint_of_eval_eq`), and Lagrange interpolation supplies one
   (`LinearMap.IsStarNormal.exists_aeval_eq_adjoint`).
   `Matrix.IsStarNormal.exists_aeval_eq_conjTranspose` is the matrix form, `Aᴴ = q(A)`.
+
+## Implementation notes
 
 Only the statements that need the eigenspaces to span assume `[IsAlgClosed 𝕜]`. Everything else —
 the norm identity, the kernels, the shift, and the eigenspace identity in the direction
@@ -440,11 +444,8 @@ field is normal exactly when it is unitarily similar to a diagonal matrix.  The 
 assembles the orthonormal eigenbasis `LinearMap.IsStarNormal.eigenvectorBasis` into the
 change-of-basis matrix; the converse is a computation with diagonal matrices, which commute with
 their conjugate transposes.  This is the counterpart of `Matrix.IsHermitian.spectral_theorem` for
-normal rather than Hermitian matrices (Saad, *Iterative Methods for Sparse Linear
-Systems*[^saad-iterative-normal], Theorem 1.14).
-
-[^saad-iterative-normal]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003. -/
+normal rather than Hermitian matrices (Saad, *Iterative Methods for Sparse Linear Systems*,
+Thm 1.14). -/
 theorem IsStarNormal.spectral_theorem [IsAlgClosed 𝕜] {A : Matrix n n 𝕜} :
     IsStarNormal A ↔
       ∃ U ∈ Matrix.unitaryGroup n 𝕜, ∃ d : n → 𝕜, Uᴴ * A * U = Matrix.diagonal d := by

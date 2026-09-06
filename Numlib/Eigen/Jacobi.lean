@@ -73,6 +73,7 @@ exactly `2 ‖a_jk‖²`. -/
 noncomputable def offDiagNormSq (A : Matrix n n 𝕜) : ℝ :=
   ∑ i, ∑ j ∈ Finset.univ.erase i, ‖A i j‖ ^ 2
 
+/-- The off-diagonal mass is a sum of squares, hence nonnegative. -/
 theorem offDiagNormSq_nonneg (A : Matrix n n 𝕜) : 0 ≤ offDiagNormSq A :=
   Finset.sum_nonneg fun _ _ => Finset.sum_nonneg fun _ _ => sq_nonneg _
 
@@ -187,15 +188,20 @@ end PlaneRotation
 section Frobenius
 
 omit [DecidableEq n] in
+/-- The trace of `AᵀA` is the squared Frobenius norm of `A`. -/
 theorem trace_transpose_mul_self (A : Matrix n n ℝ) :
     (Aᵀ * A).trace = ∑ i, ∑ q, (A i q) ^ 2 := by
   simp only [Matrix.trace, Matrix.diag_apply, Matrix.mul_apply, Matrix.transpose_apply, sq]
   exact Finset.sum_comm
 
+/-- Over the reals the off-diagonal mass is the sum of the squares of the off-diagonal
+entries, the norm bars being redundant. -/
 theorem offDiagNormSq_real (A : Matrix n n ℝ) :
     offDiagNormSq A = ∑ i, ∑ q ∈ Finset.univ.erase i, (A i q) ^ 2 := by
   simp [offDiagNormSq, Real.norm_eq_abs, sq_abs]
 
+/-- The real form of `Matrix.offDiagNormSq_add_sum_diag_sq`: the off-diagonal and the diagonal
+masses make up the squared Frobenius norm. -/
 theorem offDiagNormSq_add_sum_diag_sq_real (A : Matrix n n ℝ) :
     offDiagNormSq A + ∑ i, (A i i) ^ 2 = ∑ i, ∑ q, (A i q) ^ 2 := by
   simpa [Real.norm_eq_abs, sq_abs] using offDiagNormSq_add_sum_diag_sq A
@@ -244,6 +250,7 @@ noncomputable def jacobiStep : Matrix n n ℝ :=
   (jacobiRotation A j k)ᵀ * A * jacobiRotation A j k
 
 omit [Fintype n] [DecidableEq n] in
+/-- The Jacobi cosine and sine are the cosine and the sine of an angle: `c² + s² = 1`. -/
 theorem jacobiCos_sq_add_jacobiSin_sq : jacobiCos A j k ^ 2 + jacobiSin A j k ^ 2 = 1 := by
   have hpos : (0 : ℝ) < 1 + jacobiTan A j k ^ 2 := by positivity
   have hsq : Real.sqrt (1 + jacobiTan A j k ^ 2) ^ 2 = 1 + jacobiTan A j k ^ 2 :=
@@ -284,6 +291,7 @@ theorem jacobi_annihilate :
   rw [jacobiSin]
   linear_combination (jacobiCos A j k ^ 2) * h
 
+/-- A Jacobi rotation is orthogonal, so a Jacobi step is an orthogonal similarity. -/
 theorem transpose_jacobiRotation_mul_self (hjk : j ≠ k) :
     (jacobiRotation A j k)ᵀ * jacobiRotation A j k = 1 :=
   transpose_planeRotation_mul_self hjk (jacobiCos_sq_add_jacobiSin_sq A j k)
@@ -296,24 +304,30 @@ section Step
 
 variable {c s : ℝ} {j k : n}
 
+/-- Conjugating by a plane rotation leaves every entry outside the `j`-th and `k`-th rows and
+columns alone. -/
 theorem conj_planeRotation_apply_of_ne (hjk : j ≠ k) (M : Matrix n n ℝ) {p q : n}
     (hpj : p ≠ j) (hpk : p ≠ k) (hqj : q ≠ j) (hqk : q ≠ k) :
     ((planeRotation j k c s)ᵀ * M * planeRotation j k c s) p q = M p q := by
   simp [transpose_planeRotation_mul_apply hjk, mul_planeRotation_apply hjk,
     hpj, hpk, hqj, hqk]
 
+/-- The `(j,j)` entry of a matrix conjugated by a plane rotation. -/
 theorem conj_planeRotation_apply_jj (hjk : j ≠ k) (M : Matrix n n ℝ) :
     ((planeRotation j k c s)ᵀ * M * planeRotation j k c s) j j
       = c * (c * M j j + s * M j k) + s * (c * M k j + s * M k k) := by
   simp [transpose_planeRotation_mul_apply hjk, mul_planeRotation_apply hjk]
   ring
 
+/-- The `(k,k)` entry of a matrix conjugated by a plane rotation. -/
 theorem conj_planeRotation_apply_kk (hjk : j ≠ k) (M : Matrix n n ℝ) :
     ((planeRotation j k c s)ᵀ * M * planeRotation j k c s) k k
       = -s * (-s * M j j + c * M j k) + c * (-s * M k j + c * M k k) := by
   simp [transpose_planeRotation_mul_apply hjk, mul_planeRotation_apply hjk, Ne.symm hjk]
   ring
 
+/-- The `(j,k)` entry of a matrix conjugated by a plane rotation: the entry the Jacobi angle is
+chosen to annihilate. -/
 theorem conj_planeRotation_apply_jk (hjk : j ≠ k) (M : Matrix n n ℝ) :
     ((planeRotation j k c s)ᵀ * M * planeRotation j k c s) j k
       = c * (-s * M j j + c * M j k) + s * (-s * M k j + c * M k k) := by
@@ -329,6 +343,7 @@ theorem jacobiStep_apply_eq_zero (hA : A.IsSymm) (hjk : j ≠ k) : jacobiStep A 
   rw [jacobiStep, jacobiRotation, conj_planeRotation_apply_jk hjk, hsym]
   linear_combination jacobi_annihilate A j k
 
+/-- The `(j,j)` entry after a Jacobi step. -/
 theorem jacobiStep_apply_jj (hA : A.IsSymm) (hjk : j ≠ k) :
     jacobiStep A j k j j = jacobiCos A j k ^ 2 * A j j
       + 2 * (jacobiCos A j k * jacobiSin A j k) * A j k + jacobiSin A j k ^ 2 * A k k := by
@@ -336,6 +351,7 @@ theorem jacobiStep_apply_jj (hA : A.IsSymm) (hjk : j ≠ k) :
   rw [jacobiStep, jacobiRotation, conj_planeRotation_apply_jj hjk, hsym]
   ring
 
+/-- The `(k,k)` entry after a Jacobi step. -/
 theorem jacobiStep_apply_kk (hA : A.IsSymm) (hjk : j ≠ k) :
     jacobiStep A j k k k = jacobiSin A j k ^ 2 * A j j
       - 2 * (jacobiCos A j k * jacobiSin A j k) * A j k + jacobiCos A j k ^ 2 * A k k := by
@@ -343,6 +359,7 @@ theorem jacobiStep_apply_kk (hA : A.IsSymm) (hjk : j ≠ k) :
   rw [jacobiStep, jacobiRotation, conj_planeRotation_apply_kk hjk, hsym]
   ring
 
+/-- A Jacobi step leaves every diagonal entry outside the rotated plane alone. -/
 theorem jacobiStep_apply_diag_of_ne (hjk : j ≠ k) {i : n} (hij : i ≠ j) (hik : i ≠ k) :
     jacobiStep A j k i i = A i i := by
   rw [jacobiStep, jacobiRotation, conj_planeRotation_apply_of_ne hjk A hij hik hij hik]
@@ -397,11 +414,15 @@ end Step
 
 section ClassicalJacobi
 
+/-- A Jacobi step preserves symmetry, being an orthogonal similarity. -/
 theorem isSymm_jacobiStep {A : Matrix n n ℝ} (hA : A.IsSymm) (j k : n) :
     (jacobiStep A j k).IsSymm := by
   rw [Matrix.IsSymm, jacobiStep, Matrix.transpose_mul, Matrix.transpose_mul,
     Matrix.transpose_transpose, hA, ← Matrix.mul_assoc]
 
+/-- A matrix with at most one index has no off-diagonal entries, so no off-diagonal mass. This
+is the degenerate case that the geometric decay below has to dispose of separately, the factor
+`1/(n² - n)` being meaningless there. -/
 theorem offDiagNormSq_eq_zero_of_card_le_one (h : Fintype.card n ≤ 1) (A : Matrix n n ℝ) :
     offDiagNormSq A = 0 := by
   refine Finset.sum_eq_zero fun i _ => Finset.sum_eq_zero fun q hq => ?_
@@ -414,6 +435,8 @@ theorem offDiagNormSq_eq_zero_of_card_le_one (h : Fintype.card n ≤ 1) (A : Mat
 variable [Nonempty n]
 
 omit [DecidableEq n] [Nonempty n] in
+/-- With at least two indices there is a pair of distinct ones at which `A` attains its largest
+off-diagonal modulus: the choice the classical method makes at every step. -/
 theorem exists_maxOffDiagPair (A : Matrix n n ℝ) (hn : 2 ≤ Fintype.card n) :
     ∃ p : n × n, p.1 ≠ p.2 ∧ ∀ q : n × n, q.1 ≠ q.2 → |A q.1 q.2| ≤ |A p.1 p.2| := by
   classical
@@ -442,11 +465,15 @@ noncomputable def maxOffDiagPair (A : Matrix n n ℝ) : n × n :=
   (exists_maxOffDiagPair_aux A).choose
 
 omit [DecidableEq n] in
+/-- The two indices of `Matrix.maxOffDiagPair` are distinct, so the pair really is off the
+diagonal. -/
 theorem maxOffDiagPair_ne (A : Matrix n n ℝ) (hn : 2 ≤ Fintype.card n) :
     (maxOffDiagPair A).1 ≠ (maxOffDiagPair A).2 :=
   ((exists_maxOffDiagPair_aux A).choose_spec hn).1
 
 omit [DecidableEq n] in
+/-- `Matrix.maxOffDiagPair` really is a maximizing pair: no off-diagonal entry has larger
+modulus. -/
 theorem abs_le_abs_maxOffDiagPair (A : Matrix n n ℝ) (hn : 2 ≤ Fintype.card n) (q : n × n)
     (hq : q.1 ≠ q.2) :
     |A q.1 q.2| ≤ |A (maxOffDiagPair A).1 (maxOffDiagPair A).2| :=
@@ -460,14 +487,18 @@ noncomputable def classicalJacobiIterate (A : Matrix n n ℝ) : ℕ → Matrix n
       (maxOffDiagPair (classicalJacobiIterate A ν)).1
       (maxOffDiagPair (classicalJacobiIterate A ν)).2
 
+/-- The method starts at the given matrix. -/
 @[simp]
 theorem classicalJacobiIterate_zero (A : Matrix n n ℝ) : classicalJacobiIterate A 0 = A := rfl
 
+/-- One step of the classical method is a Jacobi step at a largest off-diagonal entry. -/
 theorem classicalJacobiIterate_succ (A : Matrix n n ℝ) (ν : ℕ) :
     classicalJacobiIterate A (ν + 1)
       = jacobiStep (classicalJacobiIterate A ν) (maxOffDiagPair (classicalJacobiIterate A ν)).1
         (maxOffDiagPair (classicalJacobiIterate A ν)).2 := rfl
 
+/-- Every iterate of the classical method is symmetric, each step being an orthogonal
+similarity. -/
 theorem isSymm_classicalJacobiIterate {A : Matrix n n ℝ} (hA : A.IsSymm) :
     ∀ ν, (classicalJacobiIterate A ν).IsSymm
   | 0 => hA

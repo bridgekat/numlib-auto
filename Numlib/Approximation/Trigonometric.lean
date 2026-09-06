@@ -1,4 +1,5 @@
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Periodic
+import Mathlib.NumberTheory.Harmonic.Bounds
 import Numlib.Analysis.Fourier.Dirichlet
 import Numlib.Analysis.Fourier.TrigonometricBasis
 import Numlib.Approximation.BestApprox
@@ -9,13 +10,28 @@ import Numlib.IntegralEquations.Basic
 
 The space of continuous `2 π`-periodic real functions is `C(AddCircle (2 π), ℝ)`, and the
 `n`-th **Fourier projection** on it is `PeriodicCont.fourierProj n`, the kernel operator of the
-Dirichlet kernel `D_n (y - x) / π`. It is the partial-sum operator of a Fourier series
+Dirichlet kernel `D_n (y - x) / π`. The material is Atkinson–Han, *Theoretical Numerical
+Analysis*[^atkinson-han] §3.7.
+
+## Main definitions
+
+* `PeriodicCont.dirichletCM n` is the Dirichlet kernel as a continuous function on the circle, and
+  `PeriodicCont.fourierKernel n` is the kernel `(x, y) ↦ D_n (y - x) / π` built from it.
+* `PeriodicCont.fourierProj n` is the Fourier projection, the kernel operator of that kernel.
+* `PeriodicCont.lebesgueConstant n` is `L_n = (1/π) ∫_{-π}^{π} |D_n|`.
+
+## Main results
+
+The Fourier projection is the partial-sum operator of a Fourier series
 (`PeriodicCont.fourierProj_coe`), a bounded projection onto the trigonometric polynomials of degree
 at most `n` (`PeriodicCont.range_fourierProj` and `PeriodicCont.isIdempotentElem_fourierProj`), and
-its operator norm is the `n`-th **Lebesgue constant** `L_n = (1/π) ∫_{-π}^{π} |D_n|`
+its operator norm is the `n`-th **Lebesgue constant**
 (`PeriodicCont.norm_fourierProj`), which grows at least like `(4/π²) log n`
 (`PeriodicCont.log_le_lebesgueConstant`) — so it is unbounded — and at most like `log (2 n + 1)`
-(`PeriodicCont.lebesgueConstant_le`).
+(`PeriodicCont.lebesgueConstant_le`). `PeriodicCont.norm_sub_fourierProj_le` is the Lebesgue
+lemma that these two bounds feed.
+
+## Implementation notes
 
 Nothing here duplicates `Numlib/Analysis/Fourier/Dirichlet`: the Dirichlet kernel and the partial
 sums are that module's, and what is added is that the partial sum of a *continuous* periodic
@@ -107,6 +123,7 @@ noncomputable def dirichletCM (n : ℕ) : C(AddCircle (2 * π), ℝ) :=
   (2 : ℝ)⁻¹ • (1 : C(AddCircle (2 * π), ℝ))
     + ∑ j ∈ Finset.Icc 1 n, ((√2)⁻¹ : ℝ) • trigFun (2 * π) (j : ℤ)
 
+/-- On the circle, `dirichletCM` is the Dirichlet kernel of `Numlib/Analysis/Fourier/Dirichlet`. -/
 @[simp]
 theorem dirichletCM_coe (n : ℕ) (t : ℝ) : dirichletCM n ↑t = dirichletKernel n t := by
   have h2 : (√2 : ℝ) ≠ 0 := by positivity
@@ -129,6 +146,7 @@ theorem dirichletCM_coe (n : ℕ) (t : ℝ) : dirichletCM n ↑t = dirichletKern
 noncomputable def fourierKernel (n : ℕ) : C(AddCircle (2 * π) × AddCircle (2 * π), ℝ) :=
   (π⁻¹ : ℝ) • (dirichletCM n).comp ⟨fun p => p.2 - p.1, by fun_prop⟩
 
+/-- The kernel of the Fourier projection, as a function of `y - x`. -/
 @[simp]
 theorem fourierKernel_apply (n : ℕ) (x y : AddCircle (2 * π)) :
     fourierKernel n (x, y) = π⁻¹ * dirichletCM n (y - x) :=
@@ -144,6 +162,7 @@ noncomputable def fourierProj (n : ℕ) :
     C(AddCircle (2 * π), ℝ) →L[ℝ] C(AddCircle (2 * π), ℝ) :=
   IntegralOperator.kernelCLM volume (fourierKernel n)
 
+/-- The Fourier projection, as the integral against its kernel. -/
 theorem fourierProj_apply (n : ℕ) (f : C(AddCircle (2 * π), ℝ)) (x : AddCircle (2 * π)) :
     fourierProj n f x = ∫ y, fourierKernel n (x, y) * f y :=
   rfl
@@ -462,28 +481,16 @@ private theorem sum_pieces_le (n : ℕ) :
     (hcont.intervalIntegrable _ _) (hcont.intervalIntegrable _ _)
   linarith
 
-/-- `log n` is at most the `n`-th partial sum of the harmonic series. -/
+/-- `log n` is at most the `n`-th partial sum of the harmonic series: Mathlib's
+`log_add_one_le_harmonic`, with the harmonic number written as a real sum. -/
 private theorem log_le_sum_inv (n : ℕ) :
     Real.log n ≤ ∑ k ∈ Finset.Icc 1 n, ((k : ℝ))⁻¹ := by
-  have key : ∀ m : ℕ, Real.log ((m : ℝ) + 1) ≤ ∑ k ∈ Finset.Icc 1 m, ((k : ℝ))⁻¹ := by
-    intro m
-    induction m with
-    | zero => simp
-    | succ m ih =>
-      have hpos : (0 : ℝ) < (m : ℝ) + 1 := by positivity
-      have hlog : Real.log ((m : ℝ) + 1 + 1) - Real.log ((m : ℝ) + 1) ≤ ((m : ℝ) + 1)⁻¹ := by
-        rw [← Real.log_div (by positivity) (by positivity)]
-        have h := Real.log_le_sub_one_of_pos
-          (x := ((m : ℝ) + 1 + 1) / ((m : ℝ) + 1)) (by positivity)
-        have heq : ((m : ℝ) + 1 + 1) / ((m : ℝ) + 1) - 1 = ((m : ℝ) + 1)⁻¹ := by
-          field_simp; ring
-        linarith [h, heq.le, heq.ge]
-      rw [Finset.sum_Icc_succ_top (by omega)]
-      push_cast
-      linarith
+  have key := log_add_one_le_harmonic n
+  rw [harmonic_eq_sum_Icc] at key
+  push_cast at key
   rcases Nat.eq_zero_or_pos n with rfl | hn
   · simp
-  · refine le_trans (Real.log_le_log (by exact_mod_cast hn) ?_) (key n)
+  · refine le_trans (Real.log_le_log (by exact_mod_cast hn) ?_) key
     linarith
 
 /-- **Zygmund's lower bound for the Lebesgue constants**, `(4/π²) log n ≤ L_n` (Atkinson and Han,

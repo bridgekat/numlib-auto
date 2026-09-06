@@ -11,14 +11,34 @@ import Numlib.Approximation.BestApprox
 The family of monic orthogonal polynomials attached to a measure `μ` on `ℝ`, its three-term
 recurrence, and the truncated expansion as a best `L²(μ)` approximation.
 
-The standing hypothesis is `OrthogonalPolynomial.IsWeight μ`: every moment of `μ` is finite, and
-`μ` is not carried by a finite set. The first makes every polynomial square integrable, the second
-makes `∫ p² ∂μ` strictly positive for `p ≠ 0`, so that the Gram–Schmidt process on the monomials
-never stalls. `OrthogonalPolynomial.family μ n` is the outcome of that process, rescaled to be
-monic; it is defined for every `μ`, but only under `IsWeight μ` is it orthogonal.
+## Main definitions
 
-The Legendre polynomials `Polynomial.legendre` and the Chebyshev polynomials of Mathlib are the
-two classical instances, with the weights `1` on `(-1, 1)` and `(1 - x²)^{-1/2}` on `(-1, 1)`.
+* `OrthogonalPolynomial.IsWeight μ` is the standing hypothesis: every moment of `μ` is finite,
+  and `μ` is not carried by a finite set. The first makes every polynomial square integrable, the
+  second makes `∫ p² ∂μ` strictly positive for `p ≠ 0`, so that the Gram–Schmidt process on the
+  monomials never stalls.
+* `OrthogonalPolynomial.family μ n` is the outcome of that process, rescaled to be monic; it is
+  defined for every `μ`, but only under `IsWeight μ` is it orthogonal.
+  `OrthogonalPolynomial.normSq`, `OrthogonalPolynomial.alpha` and `OrthogonalPolynomial.beta` are
+  its squared `L²(μ)` norms and the coefficients of its three-term recurrence.
+* `Polynomial.legendre n` is the `n`-th Legendre polynomial, by Rodrigues' formula, and
+  `OrthogonalPolynomial.legendreMeasure` is the weight it is orthogonal for.
+
+## Main results
+
+* `OrthogonalPolynomial.integral_family_mul_family` and
+  `OrthogonalPolynomial.integral_family_mul_of_degree_lt`: the family is orthogonal, and each
+  member is orthogonal to every polynomial of lower degree.
+* `OrthogonalPolynomial.three_term_recurrence`:
+  `p_{n+2} = (X - a_{n+1}) p_{n+1} - b_n p_n`.
+* `OrthogonalPolynomial.exists_injective_family_eq_prod`: `family μ n` has `n` distinct real
+  roots — the nodes of the `n`-point Gauss quadrature rule of `μ`.
+* `OrthogonalPolynomial.isBestApprox_truncation`: the truncated expansion is the best `L²(μ)`
+  approximation by polynomials of degree at most `N`.
+* `Polynomial.legendre_recurrence`, `Polynomial.legendre_ode` and
+  `Polynomial.integral_legendre_mul_legendre` for the Legendre family, with
+  `OrthogonalPolynomial.family_eq_legendre` identifying its monic rescaling with the general
+  construction; `Polynomial.Chebyshev.integral_T_mul_T_div_sqrt` is the Chebyshev instance.
 
 ## References
 
@@ -206,6 +226,7 @@ theorem family_eq (μ : Measure ℝ) (n : ℕ) :
   exact Finset.sum_attach _ fun k =>
     C ((∫ x, x ^ n * (family μ k).eval x ∂μ) / ∫ x, (family μ k).eval x ^ 2 ∂μ) * family μ k
 
+/-- The family starts at the constant `1`, the Gram–Schmidt process having nothing to subtract. -/
 @[simp]
 theorem family_zero (μ : Measure ℝ) : family μ 0 = 1 := by rw [family_eq]; simp
 
@@ -270,15 +291,18 @@ for degree-graded sequences apply to it. -/
 def sequence (μ : Measure ℝ) : Polynomial.Sequence ℝ :=
   ⟨family μ, degree_family μ⟩
 
+/-- The members of `OrthogonalPolynomial.sequence` are those of the family. -/
 @[simp]
 theorem sequence_apply (μ : Measure ℝ) (n : ℕ) : sequence μ n = family μ n := rfl
 
 /-- The squared `L²(μ)` norm `∫ (family μ n)² ∂μ` of the `n`-th orthogonal polynomial. -/
 def normSq (μ : Measure ℝ) (n : ℕ) : ℝ := ∫ x, (family μ n).eval x ^ 2 ∂μ
 
+/-- The members of the family are nonzero, so their squared norms are positive. -/
 theorem normSq_pos (hw : IsWeight μ) (n : ℕ) : 0 < normSq μ n :=
   hw.integral_eval_sq_pos (family_ne_zero μ n)
 
+/-- The squared norms are nonzero, which is what makes the Fourier coefficients well defined. -/
 theorem normSq_ne_zero (hw : IsWeight μ) (n : ℕ) : normSq μ n ≠ 0 :=
   (normSq_pos hw n).ne'
 
@@ -474,9 +498,8 @@ private theorem le_card_odd_rootMultiplicity (hw : IsWeight μ) (n : ℕ) :
 product of the corresponding linear factors. These roots are the nodes of the `n`-point Gauss
 quadrature rule of `μ`.
 
-Reference: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998,
-§9.3; Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional Analysis
-Framework*, 3rd edition, Springer, 2009, §3.5. -/
+Reference: Kress, *Numerical Analysis*, §9.3; Atkinson–Han, *Theoretical Numerical Analysis*, §3.5.
+-/
 theorem exists_injective_family_eq_prod (hw : IsWeight μ) (n : ℕ) :
     ∃ x : Fin n → ℝ, Function.Injective x ∧ family μ n = ∏ i, (X - C (x i)) := by
   classical
@@ -675,6 +698,7 @@ def toLpₗ (hw : IsWeight μ) : ℝ[X] →ₗ[ℝ] Lp ℝ 2 μ where
     rw [RingHom.id_apply, ← MemLp.toLp_const_smul]
     exact MemLp.toLp_congr _ _ (Filter.Eventually.of_forall fun x => by simp)
 
+/-- The `L²(μ)` class of a polynomial is represented by the polynomial function. -/
 theorem coeFn_toLpₗ (hw : IsWeight μ) (p : ℝ[X]) :
     ⇑(hw.toLpₗ p) =ᵐ[μ] fun x => p.eval x := (hw.memLp p).coeFn_toLp
 

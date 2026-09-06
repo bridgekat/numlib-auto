@@ -153,6 +153,7 @@ noncomputable def powerIterate (A : Module.End 𝕜 E) (x₀ : E) (k : ℕ) : E 
 
 variable (A : Module.End 𝕜 E) (x₀ : E) (k : ℕ)
 
+/-- The iteration starts at the normalization of the starting vector. -/
 @[simp]
 theorem powerIterate_zero : powerIterate A x₀ 0 = (‖x₀‖ : 𝕜)⁻¹ • x₀ := by
   simp [powerIterate]
@@ -162,6 +163,7 @@ Krylov subspace `𝒦[A, x₀] (k + 1)`. -/
 theorem powerIterate_eq_smul :
     powerIterate A x₀ k = (‖(A ^ k) x₀‖ : 𝕜)⁻¹ • (A ^ k) x₀ := rfl
 
+/-- The iterate vanishes exactly in the degenerate case `A^k x₀ = 0`. -/
 theorem powerIterate_eq_zero_iff : powerIterate A x₀ k = 0 ↔ (A ^ k) x₀ = 0 := by
   refine ⟨fun h => ?_, fun h => by simp [powerIterate, h]⟩
   by_contra hne
@@ -173,6 +175,7 @@ theorem norm_powerIterate_of_ne_zero (h : (A ^ k) x₀ ≠ 0) : ‖powerIterate 
   rw [powerIterate, norm_smul, norm_inv, RCLike.norm_ofReal, abs_of_nonneg (norm_nonneg _),
     inv_mul_cancel₀ (norm_ne_zero_iff.mpr h)]
 
+/-- The iterates are bounded by `1`, with equality away from the degenerate case. -/
 theorem norm_powerIterate_le_one : ‖powerIterate A x₀ k‖ ≤ 1 := by
   rcases eq_or_ne ((A ^ k) x₀) 0 with h | h
   · simp [(powerIterate_eq_zero_iff A x₀ k).mpr h]
