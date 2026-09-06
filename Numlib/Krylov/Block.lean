@@ -314,21 +314,12 @@ nothing about the Krylov structure enters. -/
 
 section GramSchmidtAux
 
-/-- A vector orthogonal to a generating set is orthogonal to the span. -/
-private theorem mem_orthogonal_span {s : Set E} {x : E}
-    (h : ∀ u ∈ s, inner 𝕜 u x = (0 : 𝕜)) : x ∈ (Submodule.span 𝕜 s)ᗮ := by
-  intro u hu
-  induction hu using Submodule.span_induction with
-  | mem y hy => exact h y hy
-  | zero => simp
-  | add y z _ _ hy hz => rw [inner_add_left, hy, hz, add_zero]
-  | smul c y _ hy => rw [inner_smul_left, hy, mul_zero]
-
-/-- The companion of `mem_orthogonal_span` with the roles of the two slots exchanged. -/
+/-- The companion of `Submodule.mem_orthogonal_span` with the roles of the two slots
+exchanged. -/
 private theorem inner_eq_zero_of_mem_span {s : Set E} {x y : E}
     (hx : ∀ u ∈ s, inner 𝕜 u x = (0 : 𝕜)) (hy : y ∈ Submodule.span 𝕜 s) :
     inner 𝕜 x y = 0 :=
-  Submodule.inner_left_of_mem_orthogonal hy (mem_orthogonal_span hx)
+  Submodule.inner_left_of_mem_orthogonal hy (Submodule.mem_orthogonal_span.2 hx)
 
 /-- Pythagoras for an orthonormal family: the norm of a combination is the `ℓ²` norm of the
 coefficient vector. -/
@@ -364,7 +355,7 @@ orthogonal to all of them. -/
 private theorem sub_sum_inner_smul_gsn_mem_orthogonal (x : E) (n : ℕ) :
     x - ∑ i ∈ Finset.range n, inner 𝕜 (gramSchmidtNormed 𝕜 f i) x • gramSchmidtNormed 𝕜 f i ∈
       (Submodule.span 𝕜 (gramSchmidtNormed 𝕜 f '' Set.Iio n))ᗮ := by
-  refine mem_orthogonal_span ?_
+  refine Submodule.mem_orthogonal_span.2 ?_
   rintro _ ⟨k, hk, rfl⟩
   rw [inner_sub_right, inner_sum, Finset.sum_eq_single k]
   · rcases eq_or_ne (gramSchmidtNormed 𝕜 f k) 0 with h0 | h0
@@ -651,7 +642,7 @@ theorem isGalerkin_iff_mulVec_eq (hon : Orthonormal 𝕜 fun i : Fin (m + p) => 
   · intro hy
     refine ⟨by simpa using sum_smul_vec_mem A v m y, ?_⟩
     rw [hres]
-    refine mem_orthogonal_span ?_
+    refine Submodule.mem_orthogonal_span.2 ?_
     rintro _ ⟨j, hj, rfl⟩
     have h1 := hinner ⟨j, hj⟩
     rw [hcz ⟨j, hj⟩, hy, sub_self] at h1

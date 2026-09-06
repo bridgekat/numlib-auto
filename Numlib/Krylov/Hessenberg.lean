@@ -56,7 +56,9 @@ def firstVec (β : 𝕜) (m : ℕ) : Fin m → 𝕜 := fun i => if (i : ℕ) = 0
 /-- A sequence `v` satisfying the Hessenberg relation `A v_j = ∑_{i ≤ j+1} h i j v_i` with `h`
 upper Hessenberg (Saad, *Iterative Methods*, (6.6)–(6.9) without orthogonality). -/
 structure HessenbergRelation (A : E →ₗ[𝕜] E) (v : ℕ → E) (h : ℕ → ℕ → 𝕜) : Prop where
+  /-- The expansion of `A v_j` in the vectors up to `v_{j+1}`. -/
   apply_eq : ∀ j, A (v j) = ∑ i ∈ range (j + 2), h i j • v i
+  /-- The coefficients are upper Hessenberg. -/
   eq_zero_of_lt : ∀ i j, j + 1 < i → h i j = 0
 
 namespace HessenbergRelation
@@ -64,6 +66,7 @@ namespace HessenbergRelation
 variable {A : E →ₗ[𝕜] E} {v : ℕ → E} {h : ℕ → ℕ → 𝕜} (hv : HessenbergRelation A v h)
 include hv
 
+/-- The matrix `H̄_m` cut out of the coefficients of a Hessenberg relation is upper Hessenberg. -/
 theorem hessenbergOf_isUpperHessenbergRect (m : ℕ) : (hessenbergOf h m).IsUpperHessenbergRect :=
   fun i j hij => hv.eq_zero_of_lt i j hij
 
@@ -160,8 +163,10 @@ namespace Arnoldi
 
 variable (A : E →ₗ[𝕜] E) (b : E)
 
+/-- `H̄_m` of the Arnoldi process is the rectangular Hessenberg matrix of its coefficients. -/
 theorem hessenberg_eq (m : ℕ) : hessenberg A b m = hessenbergOf (coeff A b) m := rfl
 
+/-- `H_m` of the Arnoldi process is the square Hessenberg matrix of its coefficients. -/
 theorem hessenbergSq_eq (m : ℕ) : hessenbergSq A b m = hessenbergSqOf (coeff A b) m := rfl
 
 /-- The Arnoldi vectors and coefficients satisfy the Hessenberg relation (for every `j`, also
@@ -202,7 +207,9 @@ private theorem span_range_vec (m : ℕ) :
   · rintro ⟨j, hj, rfl⟩
     exact ⟨⟨j, hj⟩, rfl⟩
 
-private theorem mem_subspace_iff_exists_coeffs (m : ℕ) (z : E) :
+/-- Membership in `𝒦_m` is the existence of Arnoldi coordinates: `z ∈ 𝒦_m` iff `z = V_m y` for
+some `y : Fin m → 𝕜`. -/
+theorem mem_subspace_iff_exists_coeffs (m : ℕ) (z : E) :
     z ∈ subspace A r m ↔ ∃ y : Fin m → 𝕜, z = ∑ j, y j • Arnoldi.vec A r (j : ℕ) := by
   rw [← span_range_vec A r m, Submodule.mem_span_range_iff_exists_fun]
   exact ⟨fun ⟨c, hc⟩ => ⟨c, hc.symm⟩, fun ⟨c, hc⟩ => ⟨c, hc.symm⟩⟩
@@ -234,7 +241,7 @@ private theorem inner_vec_sum_eq {N : ℕ} (c : Fin N → 𝕜) (j : Fin N)
 
 /-- Pythagoras: the norm of a combination of Arnoldi vectors whose coefficients vanish past the
 grade is the `ℓ²` norm of the coefficient vector. -/
-private theorem norm_sum_smul_vec_eq {N : ℕ} (c : Fin N → 𝕜)
+theorem norm_sum_smul_vec_eq {N : ℕ} (c : Fin N → 𝕜)
     (hc : ∀ i : Fin N, grade A r ≤ (i : ℕ) → c i = 0) :
     ‖∑ i, c i • Arnoldi.vec A r (i : ℕ)‖ =
       ‖(WithLp.toLp 2 c : EuclideanSpace 𝕜 (Fin N))‖ := by
@@ -291,7 +298,7 @@ private theorem coeff_eq_zero_of_mem_orthogonal {m : ℕ} (hm : m ≤ grade A r)
   rwa [inner_vec_sum_eq A r c j (lt_of_lt_of_le hj hm)] at hin
 
 /-- The residual coefficient vector vanishes at the last index once the grade is reached. -/
-private theorem residual_coeff_eq_zero {m : ℕ} (hm : m ≤ grade A r) (y : Fin m → 𝕜)
+theorem residual_coeff_eq_zero {m : ℕ} (hm : m ≤ grade A r) (y : Fin m → 𝕜)
     (i : Fin (m + 1)) (hi : grade A r ≤ (i : ℕ)) :
     (firstVec (‖r‖ : 𝕜) (m + 1) - (Arnoldi.hessenberg A r m).mulVec y) i = 0 := by
   have him : (i : ℕ) = m := by have := i.isLt; omega
@@ -536,8 +543,10 @@ theorem rotated_succ_apply (k i j : ℕ) :
         -givensS h k * rotated h k k j + givensC h k * rotated h k (k + 1) j
       else rotated h k i j := rfl
 
+/-- `ρ_k` is a norm, hence nonnegative. -/
 theorem givensRho_nonneg (k : ℕ) : 0 ≤ givensRho h k := Real.sqrt_nonneg _
 
+/-- `ρ_k² = |h_{kk}|² + |h_{k+1,k}|²` for the entries as rotation `k` sees them. -/
 theorem givensRho_sq (k : ℕ) :
     givensRho h k ^ 2 = ‖rotated h k k k‖ ^ 2 + ‖rotated h k (k + 1) k‖ ^ 2 :=
   Real.sq_sqrt (by positivity)
@@ -590,6 +599,7 @@ theorem rotated_succ_self (k : ℕ) : rotated h (k + 1) k k = (givensRho h k : �
     push_cast
     ring
 
+/-- Rotation `k` annihilates the subdiagonal entry it was built for: `(k+1, k)` becomes `0`. -/
 theorem rotated_succ_succ_self (k : ℕ) : rotated h (k + 1) (k + 1) k = 0 := by
   rw [rotated_succ_apply, ite_eq_right (by omega), ite_eq_left rfl, givensC, givensS]
   ring
@@ -801,16 +811,21 @@ noncomputable def givensQAux (n m : ℕ) : Matrix (Fin (m + 1)) (Fin (m + 1)) �
 /-- `Q_m = Ω_{m-1} ⋯ Ω_0`. -/
 noncomputable def givensQ (m : ℕ) : Matrix (Fin (m + 1)) (Fin (m + 1)) 𝕜 := givensQAux h m m
 
+/-- `Q_m` is the partial product at `n = m`. -/
 theorem givensQ_eq_givensQAux (m : ℕ) : givensQ h m = givensQAux h m m := rfl
 
+/-- No rotations applied is the identity. -/
 @[simp]
 theorem givensQAux_zero (m : ℕ) : givensQAux h 0 m = 1 := by simp [givensQAux]
 
+/-- One more rotation multiplies on the left: `Q^{(n+1)}_m = Ω_n Q^{(n)}_m`. -/
 theorem givensQAux_succ (n m : ℕ) :
     givensQAux h (n + 1) m = givensMatrix h n m * givensQAux h n m := by
   rw [givensQAux, givensQAux, List.range_succ, List.map_append, List.reverse_append]
   simp
 
+/-- The rotation matrices are stable in `m`: the leading block of `Ω_k` at size `m + 2` is `Ω_k`
+at size `m + 1`. -/
 theorem givensMatrix_castSucc (k m : ℕ) (i j : Fin (m + 1)) :
     givensMatrix h k (m + 1) i.castSucc j.castSucc = givensMatrix h k m i j := by
   simp only [givensMatrix, Matrix.of_apply, Fin.val_castSucc, Fin.castSucc_inj]
@@ -883,6 +898,7 @@ theorem givensQ_mul_hessenbergOf (m : ℕ) :
     givensQ h m * hessenbergOf h m = hessenbergOf (rotated h m) m :=
   givensQAux_mul_hessenbergOf h le_rfl
 
+/-- A product of genuine rotations is unitary; `ρ_k ≠ 0` is what makes rotation `k` genuine. -/
 theorem givensQAux_mem_unitaryGroup {n m : ℕ} (hn : n ≤ m) (hρ : ∀ k < n, givensRho h k ≠ 0) :
     givensQAux h n m ∈ Matrix.unitaryGroup (Fin (m + 1)) 𝕜 := by
   refine Submonoid.list_prod_mem _ ?_
@@ -926,18 +942,24 @@ theorem givensQAux_apply_of_lt (n m : ℕ) (i j : Fin (m + 1)) (hj : n < (j : �
 noncomputable def gvecTrunc (β : 𝕜) (n i : ℕ) : 𝕜 :=
   if i < n then gvec h β i else if i = n then gamma h β n else 0
 
+/-- Entry `n` of the truncated right-hand side is the running residual `γ_n`. -/
 theorem gvecTrunc_self (β : 𝕜) (n : ℕ) : gvecTrunc h β n n = gamma h β n := by
   simp [gvecTrunc]
 
+/-- The truncated right-hand side stops just after `γ_n`. -/
 theorem gvecTrunc_succ (β : 𝕜) (n : ℕ) : gvecTrunc h β n (n + 1) = 0 := by
   simp [gvecTrunc]
 
+/-- Below `n` the truncated right-hand side is the solved part `g_i`. -/
 theorem gvecTrunc_of_lt (β : 𝕜) {n i : ℕ} (hi : i < n) :
     gvecTrunc h β n i = gvec h β i := by simp [gvecTrunc, hi]
 
+/-- Above `n` the truncated right-hand side vanishes. -/
 theorem gvecTrunc_of_gt (β : 𝕜) {n i : ℕ} (hi : n < i) : gvecTrunc h β n i = 0 := by
   simp [gvecTrunc, Nat.not_lt.mpr hi.le, hi.ne']
 
+/-- The first `n` rotations turn `β e₁` into `(g_0, …, g_{n-1}, γ_n, 0, …)`
+(Saad, *Iterative Methods*, (6.44)–(6.46)). -/
 theorem givensQAux_mulVec_firstVec (β : 𝕜) (m : ℕ) : ∀ n, n ≤ m →
     (givensQAux h n m).mulVec (firstVec β (m + 1)) =
       fun i : Fin (m + 1) => gvecTrunc h β n (i : ℕ) := by
@@ -1021,6 +1043,7 @@ theorem hessenbergSqOf_rotated_isUpperTriangular (hh : ∀ i j, j + 1 < i → h 
   have h2 := i.isLt
   exact rotated_eq_zero_of_lt h hh n i j (by omega) h1
 
+/-- The determinant of the triangular factor is the product of its diagonal. -/
 theorem det_hessenbergSqOf_rotated (hh : ∀ i j, j + 1 < i → h i j = 0) {n N : ℕ}
     (hN : N ≤ n + 1) :
     (hessenbergSqOf (rotated h n) N).det = ∏ j : Fin N, rotated h n (j : ℕ) (j : ℕ) :=
@@ -1394,7 +1417,7 @@ private theorem minres_rotated_of_givensRho_ne_zero {m : ℕ} (hm : m ≤ grade 
 /-- The breakdown case of `IsMinResIterate.exists_mulVec_rotated_eq`: some rotation before step
 `m` degenerates. -/
 private theorem minres_rotated_of_breakdown {m : ℕ} (hm : m ≤ grade A (b - A x₀))
-    (hρ : ¬ ∀ k < m, givensRho (Arnoldi.coeff A (b - A x₀)) k ≠ 0) {x : E}
+    (hρ : ¬∀ k < m, givensRho (Arnoldi.coeff A (b - A x₀)) k ≠ 0) {x : E}
     (hx : IsMinResIterate A b x₀ m x) :
     ∃ y : Fin m → 𝕜, (hessenbergSqOf (rotated (Arnoldi.coeff A (b - A x₀)) m) m).mulVec y =
         (fun i : Fin m => gvec (Arnoldi.coeff A (b - A x₀)) (‖b - A x₀‖ : 𝕜) i) ∧

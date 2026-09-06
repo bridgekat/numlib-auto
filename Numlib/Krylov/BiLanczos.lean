@@ -31,7 +31,7 @@ algorithm (Alg 7.3): its residuals are biorthogonal and its directions `A`-bicon
 `BCG.inner_dualDirection_apply_direction_eq_zero`, Prop 7.2), which makes its iterate the
 Petrov–Galerkin iterate with `L = 𝒦_m(Aᴴ, r*₀)` (`BCG.isPetrovGalerkin`). `QMR` minimizes the
 *quasi*-residual `‖β e₁ - T̄_m y‖` rather than the residual itself (`QMR.IsQuasiMinRes`,
-(7.12)–(7.14)); `QMR.norm_residual_le_norm_quasiResidual` is Prop 7.3 and
+(7.15)–(7.17)); `QMR.norm_residual_le_norm_quasiResidual` is Prop 7.3 and
 `QMR.norm_residual_le` is Thm 7.4, the comparison `‖r^Q_m‖ ≤ κ₂(V_{m+1}) ‖r^G_m‖` with the
 GMRES residual. Because an abstract inner product space has no matrix `V_{m+1}`, the two
 singular-value bounds `c ‖z‖ ≤ ‖∑ z_i v_i‖ ≤ C ‖z‖` on the coordinate map are hypotheses and
@@ -150,14 +150,19 @@ noncomputable def zeta (j : ℕ) : 𝕜 := inner 𝕜 (dualVhat A B v₁ w₁ j)
 theorem state_succ (j : ℕ) : state A B v₁ w₁ (j + 1) = step A B (state A B v₁ w₁ j) :=
   Function.iterate_succ_apply' _ _ _
 
+/-- The unnormalized next primal vector: `v̂_{j+1} = A v_j - α_j v_j - β_j v_{j-1}`
+(Saad, *Iterative Methods*, Alg 7.1, line 5). -/
 theorem vhat_eq (j : ℕ) : vhat A B v₁ w₁ j =
     A (vec A B v₁ w₁ j) - alpha A B v₁ w₁ j • vec A B v₁ w₁ j -
       beta A B v₁ w₁ j • vecPrev A B v₁ w₁ j := rfl
 
+/-- The unnormalized next dual vector: `ŵ_{j+1} = Aᴴ w_j - conj α_j w_j - conj δ_j w_{j-1}`
+(Saad, *Iterative Methods*, Alg 7.1, line 6). -/
 theorem dualVhat_eq (j : ℕ) : dualVhat A B v₁ w₁ j =
     B (dualVec A B v₁ w₁ j) - starRingEnd 𝕜 (alpha A B v₁ w₁ j) • dualVec A B v₁ w₁ j -
       starRingEnd 𝕜 (delta A B v₁ w₁ j) • dualVecPrev A B v₁ w₁ j := rfl
 
+/-- `α_j = ⟪w_j, A v_j⟫` (Saad, *Iterative Methods*, Alg 7.1, line 4). -/
 theorem alpha_eq (j : ℕ) :
     alpha A B v₁ w₁ j = inner 𝕜 (dualVec A B v₁ w₁ j) (A (vec A B v₁ w₁ j)) := rfl
 
@@ -168,23 +173,23 @@ theorem alpha_eq (j : ℕ) :
     dualVecPrev A B v₁ w₁ (j + 1) = dualVec A B v₁ w₁ j := by
   rw [dualVecPrev, state_succ]; rfl
 
-/-- `δ_{j+1} = |⟪ŵ_{j+1}, v̂_{j+1}⟫|^{1/2}` (Saad, *Iterative Methods*, Alg 7.1, line 5). -/
+/-- `δ_{j+1} = |⟪ŵ_{j+1}, v̂_{j+1}⟫|^{1/2}` (Saad, *Iterative Methods*, Alg 7.1, line 7). -/
 theorem delta_succ (j : ℕ) :
     delta A B v₁ w₁ (j + 1) = ((Real.sqrt ‖zeta A B v₁ w₁ j‖ : ℝ) : 𝕜) := by
   rw [delta, state_succ]; rfl
 
-/-- `β_{j+1} = ⟪ŵ_{j+1}, v̂_{j+1}⟫ / δ_{j+1}` (Saad, *Iterative Methods*, Alg 7.1, line 6). -/
+/-- `β_{j+1} = ⟪ŵ_{j+1}, v̂_{j+1}⟫ / δ_{j+1}` (Saad, *Iterative Methods*, Alg 7.1, line 8). -/
 theorem beta_succ (j : ℕ) :
     beta A B v₁ w₁ (j + 1) = zeta A B v₁ w₁ j / delta A B v₁ w₁ (j + 1) := by
   rw [delta_succ, beta, state_succ]; rfl
 
-/-- `v_{j+1} = v̂_{j+1} / δ_{j+1}` (Saad, *Iterative Methods*, Alg 7.1, line 8), and `0` on
+/-- `v_{j+1} = v̂_{j+1} / δ_{j+1}` (Saad, *Iterative Methods*, Alg 7.1, line 10), and `0` on
 breakdown. -/
 theorem vec_succ (j : ℕ) :
     vec A B v₁ w₁ (j + 1) = (delta A B v₁ w₁ (j + 1))⁻¹ • vhat A B v₁ w₁ j := by
   rw [delta_succ, vec, state_succ]; rfl
 
-/-- `w_{j+1} = ŵ_{j+1} / conj β_{j+1}` (Saad, *Iterative Methods*, Alg 7.1, line 7), and `0` on
+/-- `w_{j+1} = ŵ_{j+1} / conj β_{j+1}` (Saad, *Iterative Methods*, Alg 7.1, line 9), and `0` on
 breakdown. -/
 theorem dualVec_succ (j : ℕ) : dualVec A B v₁ w₁ (j + 1) =
     (starRingEnd 𝕜 (beta A B v₁ w₁ (j + 1)))⁻¹ • dualVhat A B v₁ w₁ j := by
@@ -205,10 +210,12 @@ theorem delta_succ_eq_zero_iff (j : ℕ) :
   rw [delta_succ, RCLike.ofReal_eq_zero, Real.sqrt_eq_zero', ← not_lt]
   simp [norm_pos_iff]
 
+/-- `β` breaks down with `δ`, at the same scalar. -/
 theorem beta_succ_eq_zero_iff (j : ℕ) :
     beta A B v₁ w₁ (j + 1) = 0 ↔ zeta A B v₁ w₁ j = 0 := by
   rw [beta_succ, div_eq_zero_iff, delta_succ_eq_zero_iff, or_self]
 
+/-- The two coefficients of a step vanish together, so either may serve as the breakdown test. -/
 theorem beta_succ_ne_zero_iff (j : ℕ) :
     beta A B v₁ w₁ (j + 1) ≠ 0 ↔ delta A B v₁ w₁ (j + 1) ≠ 0 := by
   rw [ne_eq, ne_eq, beta_succ_eq_zero_iff, delta_succ_eq_zero_iff]
@@ -273,6 +280,7 @@ noncomputable def coeff (i j : ℕ) : 𝕜 :=
     coeff A B v₁ w₁ j (j + 1) = beta A B v₁ w₁ (j + 1) := by
   rw [coeff, ite_eq_right (by omega), ite_eq_right (by omega), ite_eq_left rfl]
 
+/-- The coefficient array is tridiagonal: everything off the three central diagonals is `0`. -/
 theorem coeff_eq_zero {i j : ℕ} (h₁ : i ≠ j) (h₂ : i ≠ j + 1) (h₃ : j ≠ i + 1) :
     coeff A B v₁ w₁ i j = 0 := by
   rw [coeff, ite_eq_right h₁, ite_eq_right h₂, ite_eq_right h₃]
@@ -316,6 +324,7 @@ private theorem mem_subspace_aux (j : ℕ) :
 theorem vec_mem_subspace (j : ℕ) : vec A B v₁ w₁ j ∈ Krylov.subspace A v₁ (j + 1) :=
   (mem_subspace_aux A B v₁ w₁ j).1
 
+/-- `v_{j-1} ∈ 𝒦_{j+1}(A, v₁)`, the previous primal vector carried in the state. -/
 theorem vecPrev_mem_subspace (j : ℕ) : vecPrev A B v₁ w₁ j ∈ Krylov.subspace A v₁ (j + 1) :=
   (mem_subspace_aux A B v₁ w₁ j).2
 
@@ -339,6 +348,7 @@ private theorem dualMem_subspace_aux (j : ℕ) :
 theorem dualVec_mem_subspace (j : ℕ) : dualVec A B v₁ w₁ j ∈ Krylov.subspace B w₁ (j + 1) :=
   (dualMem_subspace_aux A B v₁ w₁ j).1
 
+/-- `w_{j-1} ∈ 𝒦_{j+1}(B, w₁)`, the previous dual vector carried in the state. -/
 theorem dualVecPrev_mem_subspace (j : ℕ) :
     dualVecPrev A B v₁ w₁ j ∈ Krylov.subspace B w₁ (j + 1) :=
   (dualMem_subspace_aux A B v₁ w₁ j).2
@@ -366,6 +376,7 @@ structure NoBreakdown (A B : E →ₗ[𝕜] E) (v₁ w₁ : E) (m : ℕ) : Prop 
   /-- No breakdown occurs before step `m`. -/
   delta_ne_zero : ∀ j < m, delta A B v₁ w₁ (j + 1) ≠ 0
 
+/-- Running without breakdown for `m` steps includes running without breakdown for fewer. -/
 theorem NoBreakdown.mono {m n : ℕ} (h : NoBreakdown A B v₁ w₁ m) (hnm : n ≤ m) :
     NoBreakdown A B v₁ w₁ n :=
   ⟨h.adjoint, h.inner_start, fun j hj => h.delta_ne_zero j (hj.trans_le hnm)⟩
@@ -488,18 +499,18 @@ theorem inner_dualVec_apply_vec {m : ℕ} (h : NoBreakdown A B v₁ w₁ (m + 1)
     inner_smul_right, inner_dualVec_vecPrev (biorth h) hi (by omega),
     inner_dualVec_vec h hi (by omega), inner_dualVec_vec h hi (by omega), coeff]
   by_cases h1 : i = j
-  · rw [ite_eq_right (by omega : ¬ (i + 1 = j)), ite_eq_left h1,
-      ite_eq_right (by omega : ¬ (i = j + 1)), ite_eq_left h1, h1]
+  · rw [ite_eq_right (by omega : i + 1 ≠ j), ite_eq_left h1,
+      ite_eq_right (by omega : i ≠ j + 1), ite_eq_left h1, h1]
     ring
   · by_cases h2 : i = j + 1
-    · rw [ite_eq_right (by omega : ¬ (i + 1 = j)), ite_eq_right h1, ite_eq_left h2,
+    · rw [ite_eq_right (by omega : i + 1 ≠ j), ite_eq_right h1, ite_eq_left h2,
         ite_eq_right h1, ite_eq_left h2, h2]
       ring
     · by_cases h3 : j = i + 1
       · rw [ite_eq_left (by omega : i + 1 = j), ite_eq_right h1, ite_eq_right h2,
           ite_eq_right h1, ite_eq_right h2, ite_eq_left h3]
         ring
-      · rw [ite_eq_right (by omega : ¬ (i + 1 = j)), ite_eq_right h1, ite_eq_right h2,
+      · rw [ite_eq_right (by omega : i + 1 ≠ j), ite_eq_right h1, ite_eq_right h2,
           ite_eq_right h1, ite_eq_right h2, ite_eq_right h3]
         ring
 
@@ -715,27 +726,32 @@ theorem iterate_succ (k : ℕ) :
 
 @[simp] theorem dualDirection_zero : dualDirection A B b x₀ rs₀ 0 = rs₀ := rfl
 
+/-- `x_{k+1} = x_k + α_k p_k` (Saad, *Iterative Methods*, Alg 7.3, line 5). -/
 theorem iterate_succ_x (k : ℕ) : (iterate A B b x₀ rs₀ (k + 1)).x =
     (iterate A B b x₀ rs₀ k).x + alpha A B b x₀ rs₀ k • direction A B b x₀ rs₀ k := by
   simp only [alpha, residual, dualResidual, direction, dualDirection, iterate_succ]
   rfl
 
+/-- `r_{k+1} = r_k - α_k A p_k` (Saad, *Iterative Methods*, Alg 7.3, line 6). -/
 theorem residual_succ (k : ℕ) : residual A B b x₀ rs₀ (k + 1) =
     residual A B b x₀ rs₀ k - alpha A B b x₀ rs₀ k • A (direction A B b x₀ rs₀ k) := by
   simp only [alpha, residual, dualResidual, direction, dualDirection, iterate_succ]
   rfl
 
+/-- `r*_{k+1} = r*_k - conj α_k Aᴴ p*_k` (Saad, *Iterative Methods*, Alg 7.3, line 7). -/
 theorem dualResidual_succ (k : ℕ) : dualResidual A B b x₀ rs₀ (k + 1) =
     dualResidual A B b x₀ rs₀ k -
       starRingEnd 𝕜 (alpha A B b x₀ rs₀ k) • B (dualDirection A B b x₀ rs₀ k) := by
   simp only [alpha, residual, dualResidual, direction, dualDirection, iterate_succ]
   rfl
 
+/-- `p_{k+1} = r_{k+1} + β_k p_k` (Saad, *Iterative Methods*, Alg 7.3, line 9). -/
 theorem direction_succ (k : ℕ) : direction A B b x₀ rs₀ (k + 1) =
     residual A B b x₀ rs₀ (k + 1) + beta A B b x₀ rs₀ k • direction A B b x₀ rs₀ k := by
   simp only [beta, residual, dualResidual, direction, iterate_succ]
   rfl
 
+/-- `p*_{k+1} = r*_{k+1} + conj β_k p*_k` (Saad, *Iterative Methods*, Alg 7.3, line 10). -/
 theorem dualDirection_succ (k : ℕ) : dualDirection A B b x₀ rs₀ (k + 1) =
     dualResidual A B b x₀ rs₀ (k + 1) +
       starRingEnd 𝕜 (beta A B b x₀ rs₀ k) • dualDirection A B b x₀ rs₀ k := by
@@ -829,11 +845,13 @@ structure NoBreakdown (A B : E →ₗ[𝕜] E) (b x₀ rs₀ : E) (m : ℕ) : Pr
   inner_apply_direction_ne_zero : ∀ k < m,
     inner 𝕜 (dualDirection A B b x₀ rs₀ k) (A (direction A B b x₀ rs₀ k)) ≠ 0
 
+/-- Running without breakdown for `m` steps includes running without breakdown for fewer. -/
 theorem NoBreakdown.mono {m n : ℕ} (h : NoBreakdown A B b x₀ rs₀ m) (hnm : n ≤ m) :
     NoBreakdown A B b x₀ rs₀ n :=
   ⟨h.adjoint, fun k hk => h.inner_residual_ne_zero k (hk.trans_le hnm),
     fun k hk => h.inner_apply_direction_ne_zero k (hk.trans_le hnm)⟩
 
+/-- Without breakdown the step lengths are nonzero, both parts of the quotient being nonzero. -/
 theorem NoBreakdown.alpha_ne_zero {m : ℕ} (h : NoBreakdown A B b x₀ rs₀ m) {k : ℕ} (hk : k < m) :
     alpha A B b x₀ rs₀ k ≠ 0 :=
   div_ne_zero (h.inner_residual_ne_zero k hk) (h.inner_apply_direction_ne_zero k hk)
@@ -1111,13 +1129,14 @@ noncomputable def quasiResidual (A B : E →ₗ[𝕜] E) (v₁ w₁ : E) (β : �
   WithLp.toLp 2 (Krylov.firstVec β (m + 1) -
     (Krylov.hessenbergOf (BiLanczos.coeff A B v₁ w₁) m).mulVec y)
 
+/-- `QMR.quasiResidual` unfolded: the coordinate vector `β e₁ - T̄_m y` read in `ℓ²`. -/
 theorem quasiResidual_def (A B : E →ₗ[𝕜] E) (v₁ w₁ : E) (β : 𝕜) (m : ℕ) (y : Fin m → 𝕜) :
     quasiResidual A B v₁ w₁ β m y = WithLp.toLp 2 (Krylov.firstVec β (m + 1) -
       (Krylov.hessenbergOf (BiLanczos.coeff A B v₁ w₁) m).mulVec y) := rfl
 
 variable {A B : E →ₗ[𝕜] E} {v₁ w₁ : E}
 
-/-- The quasi-minimal-residual specification (Saad, *Iterative Methods*, (7.12)–(7.14)): `x` is
+/-- The quasi-minimal-residual specification (Saad, *Iterative Methods*, (7.15)–(7.17)): `x` is
 `x₀ + V_m y` for a coordinate vector `y` minimizing the quasi-residual `‖β e₁ - T̄_m y‖`, where
 `b - A x₀ = β v₁`. Replacing the true residual `‖V_{m+1} (β e₁ - T̄_m y)‖` by the norm of its
 coordinate vector turns the step into a small least-squares problem; the price is the factor

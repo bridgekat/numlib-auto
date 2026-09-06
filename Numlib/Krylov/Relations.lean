@@ -427,13 +427,33 @@ theorem minRes_eq_combination {m : ℕ} {xG xG' xF : E}
   push_cast
   module
 
+/-- The Galerkin iterate over `x₀ + K` exists as soon as the compression `P_K A|_K` of `A` to a
+finite-dimensional `K` is injective: injective is then surjective, so the projected equation
+`P_K A z = P_K r₀` has a solution, and `x₀ + z` is the iterate. This is the half of
+`Krylov.existsUnique_isGalerkinIterate_iff_isUnit` that does not need coordinates. -/
+private theorem exists_isGalerkin_of_injective_compression {K : Submodule 𝕜 E}
+    [FiniteDimensional 𝕜 K]
+    (hinj : Function.Injective
+      ((K.orthogonalProjectionOnto : E →ₗ[𝕜] K).comp (A.comp K.subtype))) :
+    ∃ x, IsGalerkin A b x₀ K x := by
+  obtain ⟨z, hz⟩ :=
+    (LinearMap.injective_iff_surjective.1 hinj) (K.orthogonalProjectionOnto (b - A x₀))
+  have hz' : K.starProjection (A (z : E)) = K.starProjection (b - A x₀) := by
+    rw [Submodule.starProjection_apply, Submodule.starProjection_apply]
+    exact congrArg Subtype.val hz
+  refine ⟨x₀ + (z : E), by simp, (Submodule.mem_orthogonal _ _).2 fun w hw => ?_⟩
+  have h1 : inner 𝕜 w (A (z : E)) = inner 𝕜 w (b - A x₀) := by
+    rw [← Submodule.inner_starProjection_right hw (A (z : E)), hz',
+      Submodule.inner_starProjection_right hw]
+  rw [map_add, ← sub_sub, inner_sub_right, h1, sub_self]
+
 /-- Brown (Saad, *Iterative Methods*, Prop 6.17): the minimal-residual iteration stagnates at
 step `m + 1` (`‖r_{m+1}^G‖ = ‖r_m^G‖ ≠ 0`) iff no Galerkin iterate exists at step `m + 1`. -/
-theorem norm_residual_minRes_eq_iff_not_exists_galerkin [FiniteDimensional 𝕜 E] {m : ℕ}
+theorem norm_residual_minRes_eq_iff_not_exists_galerkin {m : ℕ}
     {xG xG' : E} (hG : IsMinResIterate A b x₀ m xG) (hG' : IsMinResIterate A b x₀ (m + 1) xG')
     (h0 : b - A xG' ≠ 0) [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))]
     (hm : m + 1 ≤ grade A (b - A x₀)) :
-    ‖b - A xG'‖ = ‖b - A xG‖ ↔ ¬ ∃ xF, IsGalerkinIterate A b x₀ (m + 1) xF := by
+    ‖b - A xG'‖ = ‖b - A xG‖ ↔ ¬∃ xF, IsGalerkinIterate A b x₀ (m + 1) xF := by
   constructor
   · rintro heq ⟨xF, hF⟩
     have hkey := inv_sq_norm_residual_minRes hG hG' hF h0
@@ -443,23 +463,11 @@ theorem norm_residual_minRes_eq_iff_not_exists_galerkin [FiniteDimensional 𝕜 
     exact h0 (by rw [hG'.apply_eq_of_exists hF.mem (sub_eq_zero.1 hzero).symm, sub_self])
   · intro hno
     -- the compression of `A` to `𝒦_{m+1}` is not injective, else the Galerkin iterate exists
-    have hTinj : ¬ Function.Injective
+    have hTinj : ¬Function.Injective
         (((subspace A (b - A x₀) (m + 1)).orthogonalProjectionOnto :
             E →ₗ[𝕜] subspace A (b - A x₀) (m + 1)).comp
           (A.comp (subspace A (b - A x₀) (m + 1)).subtype)) := by
-      intro hinj
-      refine hno ?_
-      obtain ⟨z, hz⟩ := (LinearMap.injective_iff_surjective.1 hinj)
-        ((subspace A (b - A x₀) (m + 1)).orthogonalProjectionOnto (b - A x₀))
-      have hz' : (subspace A (b - A x₀) (m + 1)).starProjection (A (z : E))
-          = (subspace A (b - A x₀) (m + 1)).starProjection (b - A x₀) := by
-        rw [Submodule.starProjection_apply, Submodule.starProjection_apply]
-        exact congrArg Subtype.val hz
-      refine ⟨x₀ + (z : E), by simp, (Submodule.mem_orthogonal _ _).2 fun w hw => ?_⟩
-      have h1 : inner 𝕜 w (A (z : E)) = inner 𝕜 w (b - A x₀) := by
-        rw [← Submodule.inner_starProjection_right hw (A (z : E)), hz',
-          Submodule.inner_starProjection_right hw]
-      rw [map_add, ← sub_sub, inner_sub_right, h1, sub_self]
+      exact fun hinj => hno (exists_isGalerkin_of_injective_compression hinj)
     obtain ⟨z, hzmem, hzne⟩ := (Submodule.ne_bot_iff _).1
       (fun h => hTinj (LinearMap.ker_eq_bot.1 h))
     have hstar : (subspace A (b - A x₀) (m + 1)).starProjection (A (z : E)) = 0 := by
@@ -574,9 +582,9 @@ theorem IsGalerkinIterate.mrs_isMinResIterate {xO : ℕ → E} (hinj : Function.
     · rw [mrs]
       exact smoothing_isMinResIterate (ih hOn) (hO (n + 1) le_rfl) h0
 
-/-- Saad, *Iterative Methods*, (6.79): for pairwise orthogonal residuals `r^O_j` (Galerkin
-residuals), the smoothed residual is the weighted average
-`r^S_m = (∑_{j ≤ m} r^O_j / ρ_j²) / (∑_{j ≤ m} 1 / ρ_j²)`. -/
+/-- The induction step of `Krylov.residual_mrs_eq` as an identity of scalars: a smoothing step
+applied to a weighted average of weight sum `S` and a new vector of weight `1/rho` is the weighted
+average of weight sum `S + 1/rho`. -/
 theorem smul_combination_eq {S rho : ℝ} (hS : 0 < S) (hr : 0 < rho) (u v : E) :
     ((1 - S⁻¹ / (rho + S⁻¹) : ℝ) : 𝕜) • (((S⁻¹ : ℝ) : 𝕜) • u) +
         ((S⁻¹ / (rho + S⁻¹) : ℝ) : 𝕜) • v

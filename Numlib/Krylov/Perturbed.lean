@@ -5,16 +5,23 @@ import Numlib.Krylov.Hessenberg
 
 A finite-precision Arnoldi or Lanczos process does not produce the exact relation
 `A v_j = ∑_{i ≤ j+1} h_ij v_i` with an orthonormal `v`; it produces that relation up to a residual
-`F_j` of small norm, with vectors that are orthonormal only up to a defect.  This module isolates
-that as a hypothesis, `Arnoldi.IsPerturbedRelation`, so that the exact-arithmetic identities can be
-restated with the perturbation carried along and applied to computed quantities once a rounding
-model supplies the two bounds.
+`F_j` of small norm, with vectors that are orthonormal only up to a defect
+(Meurant–Strakoš[^meurant-strakos] Thm 14, after Paige).  This module isolates that as a
+hypothesis, `Arnoldi.IsPerturbedRelation`, so that the exact-arithmetic identities can be restated
+with the perturbation carried along and applied to computed quantities once a rounding model
+supplies the two bounds.
 
 The structure is indexed by the number of steps `m`: `A v_j` is expanded for `j < m`, and the
 orthogonality defect is controlled for the `m + 1` vectors `v_0, …, v_m` that those expansions
 involve.  The exact process is the instance with `F = 0` and both bounds `0`
 (`Arnoldi.hessenbergRelation_isPerturbedRelation`), which needs `m < grade` because the Arnoldi
 vectors from the grade onwards are zero rather than unit.
+
+What is carried along is the coordinate form of the residual, Saad,
+*Iterative Methods*[^saad-iterative], (6.27). `Arnoldi.IsPerturbedRelation.residual_eq` and
+`norm_residual_sub_le` bound the gap between the true residual and the small-problem residual
+`V_{m+1} (β e₁ - H̄_m y)` that an implementation monitors, and `abs_norm_sq_sub_sum_le` does the
+same for the Pythagoras identity that turns coordinates into norms.
 
 ## References
 

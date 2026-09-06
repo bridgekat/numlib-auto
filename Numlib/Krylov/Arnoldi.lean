@@ -3,6 +3,7 @@ import Mathlib.Analysis.InnerProductSpace.Projection.FiniteDimensional
 import Numlib.Analysis.InnerProductSpace.Projection.Compression
 import Numlib.Krylov.Subspace
 import Numlib.LinearAlgebra.Matrix.Hessenberg
+import Numlib.LinearSolve.Projection.Basic
 
 /-!
 # Arnoldi's process
@@ -15,8 +16,9 @@ of `h i j = ⟪v i, A v j⟫` and the Arnoldi relation `A v_j = ∑_{i ≤ j+1} 
 (Prop 6.5, (6.9)), and the identification with the classical recurrence
 `w_j = A v_j - ∑_{i ≤ j} h_{ij} v_i`, `v_{j+1} = w_j / ‖w_j‖` (Alg 6.1), all from that book.
 Also the basis-free form `(1 - P_m) A P_m = h_{m+1,m} v_{m+1} v_mᴴ`, where `P_m` is the
-orthogonal projection onto `𝒦_m` (Saad, *Large Eigenvalue Problems*[^saad-eigenvalue],
-Prop 6.6). Indices are `0`-based: `v 0 = b / ‖b‖`.
+orthogonal projection onto `𝒦_m` (Saad, *Large Eigenvalue Problems*[^saad-eigenvalue], P-6.1,
+which measures the invariance defect of `𝒦_m` by `‖(I - P_m) A P_m‖`). Indices are `0`-based:
+`v 0 = b / ‖b‖`.
 
 ## References
 
@@ -75,16 +77,6 @@ private theorem inv_mul_inv_cancel (x y : ℝ) (hy : y ≠ 0) :
   push_cast
   rw [mul_inv, inv_inv, mul_right_comm, mul_inv_cancel₀ hy', one_mul]
 
-/-- A vector orthogonal to a generating set is orthogonal to the span. -/
-private theorem mem_orthogonal_span {s : Set E} {x : E}
-    (h : ∀ u ∈ s, inner 𝕜 u x = (0 : 𝕜)) : x ∈ (Submodule.span 𝕜 s)ᗮ := by
-  intro u hu
-  induction hu using Submodule.span_induction with
-  | mem y hy => exact h y hy
-  | zero => simp
-  | add y z _ _ hy hz => rw [inner_add_left, hy, hz, add_zero]
-  | smul c y _ hy => rw [inner_smul_left, hy, mul_zero]
-
 private theorem subspace_eq_span_gs_image (m : ℕ) :
     subspace A b m = Submodule.span 𝕜 (gs A b '' Set.Iio m) := by
   rw [subspace_eq_span_image_Iio]
@@ -96,7 +88,7 @@ private theorem gs_mem_subspace {i j : ℕ} (h : i < j) : gs A b i ∈ subspace 
 
 private theorem gs_mem_orthogonal (j : ℕ) : gs A b j ∈ (subspace A b j)ᗮ := by
   rw [subspace_eq_span_gs_image]
-  refine mem_orthogonal_span ?_
+  refine Submodule.mem_orthogonal_span.2 ?_
   rintro _ ⟨i, hi, rfl⟩
   exact gs_orthogonal A b hi.ne
 
@@ -133,6 +125,9 @@ theorem vec_zero (hb : b ≠ 0) : vec A b 0 = (‖b‖⁻¹ : 𝕜) • b := by
     simp
   rw [vec_eq_smul_gs, h0]
 
+/-- Breakdown at step `j` is exactly the closing up of the Krylov sequence there: `v_j = 0` iff
+`A^j b` already lies in `𝒦_j`. The form of `Arnoldi.vec_eq_zero_iff` that needs no
+finite-dimensionality. -/
 theorem vec_eq_zero_iff_pow_apply_mem (j : ℕ) :
     vec A b j = 0 ↔ (A ^ j) b ∈ subspace A b j := by
   rw [← gs_eq_zero_iff, vec_eq_smul_gs, smul_eq_zero]
@@ -140,6 +135,7 @@ theorem vec_eq_zero_iff_pow_apply_mem (j : ℕ) :
   rw [inv_eq_zero, RCLike.ofReal_eq_zero, norm_eq_zero] at hc
   exact hc
 
+/-- An Arnoldi vector that has not broken down is a unit vector. -/
 theorem norm_vec_eq_one_of_ne_zero {j : ℕ} (h : vec A b j ≠ 0) : ‖vec A b j‖ = 1 :=
   InnerProductSpace.gramSchmidtNormed_unit_length' h
 
@@ -149,6 +145,7 @@ theorem vec_mem_subspace (j : ℕ) : vec A b j ∈ subspace A b (j + 1) := by
   rw [vec_eq_smul_gs]
   exact Submodule.smul_mem _ _ (gs_mem_subspace A b j.lt_succ_self)
 
+/-- The first `m` Arnoldi vectors all lie in `𝒦_m`. -/
 theorem vec_mem_subspace_of_lt {i m : ℕ} (h : i < m) : vec A b i ∈ subspace A b m :=
   subspace_mono A b h (vec_mem_subspace A b i)
 
@@ -195,7 +192,7 @@ end FiniteDimensional
 private theorem sub_sum_inner_smul_vec_mem_orthogonal (x : E) (m : ℕ) :
     x - ∑ i ∈ Finset.range m, inner 𝕜 (vec A b i) x • vec A b i ∈ (subspace A b m)ᗮ := by
   rw [← span_vec]
-  refine mem_orthogonal_span ?_
+  refine Submodule.mem_orthogonal_span.2 ?_
   rintro _ ⟨k, hk, rfl⟩
   rw [inner_sub_right, inner_sum, Finset.sum_eq_single k]
   · rcases eq_or_ne (vec A b k) 0 with h0 | h0
@@ -218,6 +215,19 @@ theorem eq_sum_inner_smul_vec {x : E} {m : ℕ} (hx : x ∈ subspace A b m) :
     (sub_sum_inner_smul_vec_mem_orthogonal A b x m)
   rw [inner_self_eq_zero, sub_eq_zero] at h0
   exact h0
+
+/-- A vector of `𝒦_{m+1}` orthogonal to `𝒦_m` is the multiple `⟪v_m, x⟫ • v_m` of the `m`-th
+Arnoldi vector: in the expansion of `Arnoldi.eq_sum_inner_smul_vec` only the last coefficient
+survives. This is the step that turns "the new direction" into a scalar. -/
+theorem eq_inner_smul_vec {x : E} {m : ℕ} (hx : x ∈ subspace A b (m + 1))
+    (hxo : x ∈ (subspace A b m)ᗮ) :
+    x = inner 𝕜 (vec A b m) x • vec A b m := by
+  have hzero : ∀ i ∈ Finset.range m,
+      inner 𝕜 (vec A b i) x • vec A b i = (0 : E) := fun i hi => by
+    rw [(Submodule.mem_orthogonal _ _).1 hxo _
+      (vec_mem_subspace_of_lt A b (Finset.mem_range.1 hi)), zero_smul]
+  conv_lhs => rw [eq_sum_inner_smul_vec A b hx]
+  rw [Finset.sum_range_succ, Finset.sum_eq_zero hzero, zero_add]
 
 section OrthonormalBasis
 
@@ -302,10 +312,10 @@ theorem w_eq_sub_starProjection (j : ℕ) :
     exact Submodule.inner_left_of_mem_orthogonal hy
       (sub_sum_inner_smul_vec_mem_orthogonal A b (A (vec A b j)) (j + 1))
 
-/-- Saad, *Iterative Methods*, Prop 6.22 (band structure, generalizing Lanczos
-tridiagonality): if `A` has an adjoint
-`B` (`⟪A x, y⟫ = ⟪x, B y⟫`) with `B v ∈ 𝒦_s(A, v)` for every `v`, then `h i j = 0` for
-`i + s ≤ j`. -/
+/-- Saad, *Iterative Methods*, (6.108), the band structure established in the proof of Prop 6.22
+and generalizing Lanczos tridiagonality: if `A` has an adjoint `B` (`⟪A x, y⟫ = ⟪x, B y⟫`) with
+`B v ∈ 𝒦_s(A, v)` for every `v`, then `h i j = 0` for `i + s ≤ j`. (Prop 6.22 itself draws from
+this the equivalence of DIOM(s) with FOM.) -/
 theorem coeff_eq_zero_of_adjoint_mem {B : E →ₗ[𝕜] E} (hB : ∀ x y, inner 𝕜 (A x) y = inner 𝕜 x (B y))
     {s : ℕ} (hs : ∀ v, B v ∈ subspace A v s) {i j : ℕ} (h : i + s ≤ j) : coeff A b i j = 0 := by
   have hle : subspace A (vec A b i) s ≤ subspace A b j := by
@@ -389,11 +399,12 @@ theorem coeff_succ_self_eq_zero_iff [FiniteDimensional 𝕜 (fullSubspace A b)] 
 
 /-! ### The Hessenberg matrices -/
 
-/-- The `(m+1) × m` Hessenberg matrix `H̄_m` (Saad, *Iterative Methods*, (6.11)). -/
+/-- The `(m+1) × m` Hessenberg matrix `H̄_m` (Saad, *Iterative Methods*, Prop 6.5). -/
 noncomputable def hessenberg (m : ℕ) : Matrix (Fin (m + 1)) (Fin m) 𝕜 :=
   Matrix.of fun i j => coeff A b i j
 
-/-- The square Hessenberg matrix `H_m` (Saad, *Iterative Methods*, (6.10)). -/
+/-- The square Hessenberg matrix `H_m`: `H̄_m` with its last row deleted
+(Saad, *Iterative Methods*, Prop 6.5). -/
 noncomputable def hessenbergSq (m : ℕ) : Matrix (Fin m) (Fin m) 𝕜 :=
   Matrix.of fun i j => coeff A b i j
 
@@ -402,6 +413,7 @@ form of `coeff_eq_zero_of_lt`. -/
 theorem hessenberg_isUpperHessenbergRect (m : ℕ) :
     (hessenberg A b m).IsUpperHessenbergRect := fun _ _ h => coeff_eq_zero_of_lt A b h
 
+/-- `H_m` is upper Hessenberg. The square form of `Arnoldi.coeff_eq_zero_of_lt`. -/
 theorem hessenbergSq_isUpperHessenberg (m : ℕ) : (hessenbergSq A b m).IsUpperHessenberg := by
   rintro i j ⟨k, hjk, hki⟩
   rw [Fin.lt_def] at hjk hki
@@ -426,7 +438,7 @@ theorem apply_sum (m : ℕ) (y : Fin m → 𝕜) :
   rw [hmv, Finset.sum_smul]
 
 /-- `H_m = V_mᴴ A V_m` is the matrix of the compression of `A` to `𝒦_m`
-(Saad, *Iterative Methods*, (6.10), Prop 6.5). -/
+(Saad, *Iterative Methods*, (6.8), Prop 6.5). -/
 theorem hessenbergSq_eq_toMatrix_compression [FiniteDimensional 𝕜 (fullSubspace A b)] {m : ℕ}
     (hm : m ≤ grade A b) :
     hessenbergSq A b m =

@@ -9,7 +9,7 @@ For symmetric `A` the Arnoldi coefficients are real and tridiagonal
 Saad, *Large Eigenvalue Problems*[^saad-eigenvalue] Thm 6.2), which gives the three-term
 recurrence `A v_j = β_j v_{j-1} + α_j v_j + β_{j+1} v_{j+1}`
 (Saad, *Iterative Methods*, Alg 6.15, Choi[^choi] §2.1,
-Meurant–Strakoš[^meurant-strakos] §2.1, Fong–Saunders[^fong-saunders] §1.1). Indexing is
+Meurant–Strakoš[^meurant-strakos] §2.1, Fong–Saunders[^fong-saunders] §1). Indexing is
 `0`-based: `alpha A b j = ⟪v_j, A v_j⟫` and
 `beta A b j = h_{j+1,j} = ‖w_j‖ ≥ 0`, so `A v_{j+1} = beta j • v_j + alpha (j+1) • v_{j+1} +
 beta (j+1) • v_{j+2}`.
@@ -64,6 +64,7 @@ noncomputable def alpha (j : ℕ) : ℝ := RCLike.re (Arnoldi.coeff A b j j)
 /-- Off-diagonal Lanczos coefficient `β_j = h_{j+1,j} = ‖w_j‖ ≥ 0`. -/
 noncomputable def beta (j : ℕ) : ℝ := ‖Arnoldi.w A b j‖
 
+/-- The off-diagonal Lanczos coefficients are nonnegative, being norms. -/
 theorem beta_nonneg (j : ℕ) : 0 ≤ beta A b j := norm_nonneg _
 
 /-- The off-diagonal coefficient is the subdiagonal Arnoldi entry: `β_j = h_{j+1,j}`. Symmetry of
@@ -71,7 +72,7 @@ theorem beta_nonneg (j : ℕ) : 0 ≤ beta A b j := norm_nonneg _
 theorem coe_beta (j : ℕ) : (beta A b j : 𝕜) = Arnoldi.coeff A b (j + 1) j :=
   (Arnoldi.coeff_succ_self A b j).symm
 
-/-- The real symmetric tridiagonal Lanczos matrix `T_m` (Saad, *Iterative Methods*, (6.89)). -/
+/-- The real symmetric tridiagonal Lanczos matrix `T_m` (Saad, *Iterative Methods*, (6.84)). -/
 noncomputable def tridiag (m : ℕ) : Matrix (Fin m) (Fin m) ℝ :=
   Matrix.of fun i j =>
     if (i : ℕ) = j then alpha A b i
@@ -87,6 +88,23 @@ noncomputable def tridiagExt (m : ℕ) : Matrix (Fin (m + 1)) (Fin m) ℝ :=
     else if (j : ℕ) + 1 = i then beta A b j
     else 0
 
+/-- Entrywise description of `T_m`. The two matrices share it: `T_m` and `T̄_m` have the same
+entry function, read at different index ranges. -/
+theorem tridiag_apply {m : ℕ} (i j : Fin m) :
+    tridiag A b m i j =
+      if (i : ℕ) = j then alpha A b i
+      else if (i : ℕ) + 1 = j then beta A b i
+      else if (j : ℕ) + 1 = i then beta A b j
+      else 0 := rfl
+
+/-- Entrywise description of `T̄_m`; the same entry function as `Lanczos.tridiag_apply`. -/
+theorem tridiagExt_apply {m : ℕ} (i : Fin (m + 1)) (j : Fin m) :
+    tridiagExt A b m i j =
+      if (i : ℕ) = j then alpha A b i
+      else if (i : ℕ) + 1 = j then beta A b i
+      else if (j : ℕ) + 1 = i then beta A b j
+      else 0 := rfl
+
 /-- `T_m` is tridiagonal: it vanishes outside the diagonal and the two neighbouring diagonals. -/
 theorem tridiag_isTridiagonal (m : ℕ) : (tridiag A b m).IsTridiagonal := by
   intro i j hij
@@ -96,13 +114,13 @@ theorem tridiag_isTridiagonal (m : ℕ) : (tridiag A b m).IsTridiagonal := by
       omega
     · rw [Fin.lt_def] at hik hkj
       omega
-  simp only [tridiag, Matrix.of_apply]
+  simp only [tridiag_apply]
   rw [ite_eq_right (by omega), ite_eq_right (by omega), ite_eq_right (by omega)]
 
 /-- `T_m` is symmetric: the same `β_j` sits above and below the diagonal. -/
 theorem tridiag_isSymm (m : ℕ) : (tridiag A b m).IsSymm := by
   refine Matrix.IsSymm.ext_iff.2 fun i j => ?_
-  simp only [tridiag, Matrix.of_apply]
+  simp only [tridiag_apply]
   by_cases h₁ : (i : ℕ) = j
   · rw [ite_eq_left h₁.symm, ite_eq_left h₁, h₁]
   · rw [ite_eq_right h₁, ite_eq_right (Ne.symm h₁)]
@@ -113,7 +131,7 @@ theorem tridiag_isSymm (m : ℕ) : (tridiag A b m).IsSymm := by
       · rw [ite_eq_right h₃, ite_eq_right h₂, ite_eq_right h₂, ite_eq_right h₃]
 
 /-- The rows of `T̄_n` below the last one are the rows of `T_n`. -/
-private theorem mulVec_tridiagExt_castSucc {n : ℕ} (y : Fin n → 𝕜) (i : Fin n) :
+theorem mulVec_tridiagExt_castSucc {n : ℕ} (y : Fin n → 𝕜) (i : Fin n) :
     ((tridiagExt A b n).map (algebraMap ℝ 𝕜)).mulVec y i.castSucc =
       ((tridiag A b n).map (algebraMap ℝ 𝕜)).mulVec y i := by
   simp only [Matrix.mulVec, dotProduct, Matrix.map_apply, tridiagExt, tridiag, Matrix.of_apply,
@@ -169,7 +187,7 @@ theorem apply_vec_zero :
     Arnoldi.apply_vec_of_le A b (j := 0) (n := 1 + 1) (by omega),
     Finset.sum_range_succ, Finset.sum_range_one]
 
-/-- Three-term recurrence (Saad, *Iterative Methods*, Alg 6.15, (6.87)):
+/-- Three-term recurrence (Saad, *Iterative Methods*, Alg 6.15 and the display opening §6.6.2):
 `A v_{j+1} = β_j v_j + α_{j+1} v_{j+1} + β_{j+1} v_{j+2}`. -/
 theorem apply_vec (j : ℕ) :
     A (Arnoldi.vec A b (j + 1)) =
@@ -249,8 +267,10 @@ theorem hessenberg_eq_map_tridiagExt (m : ℕ) :
   ext i j
   exact coeff_eq_ite b hA i j
 
-/-- `A V_m = V_m T_m + β_m v_m e_mᵀ` (Saad, *Iterative Methods*, (6.91)), coordinate form,
-for `m ≥ 1`. -/
+/-- `A V_m = V_m T_m + β_m v_m e_mᵀ`, the symmetric case of Saad, *Iterative Methods*, (6.6),
+where `H_m = T_m` by Thm 6.19; coordinate form.
+Written at `m + 1` steps, so that the number of steps is positive and the vector `v_{m+1}` that
+falls outside `V_{m+1}` is the one carrying the rank-one correction. -/
 theorem apply_sum (m : ℕ) (y : Fin (m + 1) → 𝕜) :
     A (∑ j, y j • Arnoldi.vec A b j) =
       ∑ i : Fin (m + 1), ((tridiag A b (m + 1)).map (algebraMap ℝ 𝕜)).mulVec y i •

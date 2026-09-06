@@ -16,7 +16,8 @@ orthonormal.
   residual formulas `residual_eq`, `residual_eq_of_mulVec_eq` hold verbatim at this generality.
 * `Krylov.quasiResidual h β m y = ‖β e₁ - H̄_m y‖₂`, and the specification
   `Krylov.IsQuasiMinResIterate z h β x₀ m x`, "`x = x₀ + Z_m y` with `y` minimizing the
-  quasi-residual": QMR (Saad Algorithm 7.4), TFQMR (Algorithm 7.8), QGMRES and DQGMRES
+  quasi-residual": QMR (Freund–Nachtigal[^freund-nachtigal]; Saad Algorithm 7.4),
+  TFQMR (Algorithm 7.8), QGMRES and DQGMRES
   (Algorithms 6.12–6.13) and FGMRES (Algorithm 9.6) all satisfy it, each for its own `z`, `v`
   and `h`. It is `Krylov.IsMinResIterate` when the residual basis is the Arnoldi one
   (`Krylov.isQuasiMinResIterate_iff_isMinResIterate`); in general it minimizes something else,
@@ -67,7 +68,9 @@ residual basis `v` on the right (Saad, *Iterative Methods*, (9.22) for FGMRES an
 TFQMR). `Krylov.HessenbergRelation` is the diagonal case `z = v`, embedded by
 `Krylov.HessenbergRelation₂.of_hessenbergRelation`. -/
 structure HessenbergRelation₂ (A : E →ₗ[𝕜] E) (z v : ℕ → E) (h : ℕ → ℕ → 𝕜) : Prop where
+  /-- The expansion of `A z_j` in the residual basis up to `v_{j+1}`. -/
   apply_eq : ∀ j, A (z j) = ∑ i ∈ range (j + 2), h i j • v i
+  /-- The coefficients are upper Hessenberg. -/
   eq_zero_of_lt : ∀ i j, j + 1 < i → h i j = 0
 
 namespace HessenbergRelation₂
@@ -80,6 +83,7 @@ theorem of_hessenbergRelation {A : E →ₗ[𝕜] E} {v : ℕ → E} {h : ℕ �
 variable {A : E →ₗ[𝕜] E} {z v : ℕ → E} {h : ℕ → ℕ → 𝕜} (hv : HessenbergRelation₂ A z v h)
 include hv
 
+/-- The matrix `H̄_m` cut out of the coefficients of a two-family relation is upper Hessenberg. -/
 theorem hessenbergOf_isUpperHessenbergRect (m : ℕ) : (hessenbergOf h m).IsUpperHessenbergRect :=
   fun i j hij => hv.eq_zero_of_lt i j hij
 
@@ -187,6 +191,7 @@ theorem quasiResidual_def (h : ℕ → ℕ → 𝕜) (β : 𝕜) (m : ℕ) (y : 
       ‖(WithLp.toLp 2 (firstVec β (m + 1) - (hessenbergOf h m).mulVec y) :
         EuclideanSpace 𝕜 (Fin (m + 1)))‖ := rfl
 
+/-- The quasi-residual is a norm, hence nonnegative. -/
 theorem quasiResidual_nonneg (h : ℕ → ℕ → 𝕜) (β : 𝕜) (m : ℕ) (y : Fin m → 𝕜) :
     0 ≤ quasiResidual h β m y := norm_nonneg _
 

@@ -167,7 +167,7 @@ private theorem eval_map_ofReal (p : ℝ[X]) (t : ℝ) :
   rw [← RCLike.algebraMap_eq_ofReal, eval_map, eval₂_hom, RCLike.algebraMap_eq_ofReal]
 
 /-- The discrete spectral measure of the pair `(A, v)` for a symmetric `A` in finite dimension
-(Meurant–Strakoš, §2.1): the measure `∑_l ω_l δ_{λ_l}` on `ℝ` carried by the eigenvalues of `A`,
+(Meurant–Strakoš, §2.2): the measure `∑_l ω_l δ_{λ_l}` on `ℝ` carried by the eigenvalues of `A`,
 with the weight `ω_l = |⟪u_l, v⟫|²` at the eigenvector `u_l`. Its total mass is `‖v‖²`, and the
 inner product `Krylov.polyInner A v` of two real polynomials is the integral of their product
 against it (`Krylov.polyInner_eq_integral`), so the Lanczos polynomials of `Numlib.Krylov`'s
@@ -454,17 +454,6 @@ theorem inner_vec_pow_apply (m : ℕ) :
     · intro h
       exact absurd (Finset.self_mem_range_succ m) h
 
-/-- A vector of `𝒦_{m+1}` orthogonal to `𝒦_m` is a multiple of the `m`-th Lanczos vector. -/
-private theorem eq_inner_smul_vec (m : ℕ) {x : E} (hx : x ∈ subspace A v (m + 1))
-    (hxo : x ∈ (subspace A v m)ᗮ) :
-    x = inner 𝕜 (Arnoldi.vec A v m) x • Arnoldi.vec A v m := by
-  have hzero : ∀ i ∈ Finset.range m,
-      inner 𝕜 (Arnoldi.vec A v i) x • Arnoldi.vec A v i = (0 : E) := fun i hi => by
-    rw [(Submodule.mem_orthogonal _ _).1 hxo _
-      (Arnoldi.vec_mem_subspace_of_lt A v (Finset.mem_range.1 hi)), zero_smul]
-  conv_lhs => rw [Arnoldi.eq_sum_inner_smul_vec A v hx]
-  rw [Finset.sum_range_succ, Finset.sum_eq_zero hzero, zero_add]
-
 variable {A}
 
 /-- `T_m` is the matrix of the compression of `A` to `𝒦_m` in the Lanczos basis
@@ -508,7 +497,7 @@ theorem aeval_charpoly_tridiag (hA : A.IsSymmetric) (v : E)
     rw [hsplit, inner_add_right, Submodule.inner_left_of_mem_orthogonal
       (aeval_apply_mem_subspace A v hlt) (Arnoldi.vec_mem_orthogonal A v m), add_zero]
   rw [hcp]
-  refine (eq_inner_smul_vec A v m (aeval_apply_mem_subspace A v (by
+  refine (Arnoldi.eq_inner_smul_vec A v (aeval_apply_mem_subspace A v (by
     rw [hcd]; exact_mod_cast m.lt_succ_self)) (Arnoldi.aeval_charpoly_mem_orthogonal A v hm)).trans
     ?_
   rw [hinner, inner_vec_pow_apply]
@@ -806,14 +795,6 @@ variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpac
 variable (A : E →ₗ[𝕜] E) (b : E) {m k : ℕ}
 
 section Padded
-
-/-- Entrywise description of `T_m`, for reading off a single entry. -/
-private theorem tridiag_apply (i j : Fin m) :
-    tridiag A b m i j =
-      if (i : ℕ) = j then alpha A b i
-      else if (i : ℕ) + 1 = j then beta A b i
-      else if (j : ℕ) + 1 = i then beta A b j
-      else 0 := rfl
 
 /-- The leading `(m+1) × (m+1)` block of `T_k` is `T_{m+1}`: the entries depend only on the
 underlying natural numbers. -/
