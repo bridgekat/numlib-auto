@@ -1,0 +1,67 @@
+namespace = "AtkinsonHan.Chapter07"
+
+[[node]]
+id = "psi"
+
+[[node]]
+id = "eval"
+
+[[node]]
+id = "eval_eq_tsum"
+
+[[node]]
+id = "definition_7_5_1_norm"
+
+[[node]]
+id = "definition_7_5_1_inner"
+
+[[node]]
+id = "theorem_7_5_2"
+
+[[node]]
+id = "classicalNormSq"
+
+[[node]]
+id = "weight_sq_le_sum_le"
+
+[[node]]
+id = "theorem_7_5_2_norm_equiv"
+
+[[node]]
+id = "proposition_7_5_4_bound"
+
+[[node]]
+id = "proposition_7_5_4"
+
+[[node]]
+id = "proposition_7_5_5"
+
+[[node]]
+id = "exercise_7_5_1"
+
+[[node]]
+id = "exercise_7_5_2"
+
+[[node]]
+id = "integral"
+
+[[node]]
+id = "trapezoid"
+
+[[node]]
+id = "integral_sub_trapezoid"
+
+[[node]]
+id = "proposition_7_5_6"
+
+[[node]]
+id = "simpson"
+
+[[node]]
+id = "simpson_eq"
+
+[[node]]
+id = "exercise_7_5_3"
+
+[[node]]
+id = "exercise_7_5_4"

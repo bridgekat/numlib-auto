@@ -26,6 +26,7 @@ import Numlib.Analysis.Normed.Operator.Compact
 import Numlib.Analysis.Normed.Operator.Scaling
 import Numlib.Analysis.Normed.Ring.CondNumber
 import Numlib.Analysis.Normed.Ring.Inverse
+import Numlib.Analysis.Sobolev.Periodic
 import Numlib.Analysis.SpecialFunctions.Chebyshev
 import Numlib.Analysis.Wavelet.Haar
 import Numlib.Analysis.Wavelet.Multiresolution

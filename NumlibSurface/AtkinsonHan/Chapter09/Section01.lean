@@ -1,5 +1,7 @@
+import Mathlib.NumberTheory.ZetaValues
 import Numlib.Analysis.InnerProductSpace.Coercive
 import Numlib.Analysis.InnerProductSpace.Energy
+import Numlib.Analysis.InnerProductSpace.WeakCompactness
 import Numlib.LinearSolve.Projection.Basic
 import Numlib.LinearSolve.Projection.Optimality
 import Numlib.Variational.Forms
@@ -15,12 +17,18 @@ Analysis Framework*, 3rd edition, Springer, 2009, §9.1.
 The Galerkin problem (9.1.4) `u_N ∈ V_N`, `a(u_N, v) = ℓ(v) ∀ v ∈ V_N`, its stiffness matrix and
 load vector (9.1.5), the Ritz formulation (9.1.6)–(9.1.8), Céa's inequality (Proposition 9.1.3,
 estimates (9.1.11)–(9.1.12)) with its symmetric sharpening, and the convergence corollary
-(Corollary 9.1.4, (9.1.13)–(9.1.14)).  Everything is the backbone's `IsGalerkinSolution` theory
+(Corollary 9.1.4, (9.1.13)–(9.1.14)).  All of that is the backbone's `IsGalerkinSolution` theory
 read through the definitional bridge `galerkinProblem_iff`.
+
+Exercise 9.1.3, the Fourier expansion of the Green kernel of Example 9.1.2, and Exercise 9.1.4,
+which turns the Galerkin method into a second proof that (9.1.1) is solvable, close the section.
+The latter is deliberately independent of `AtkinsonHan.Chapter08.theorem_8_3_4`, so that
+`existsUnique_solution_of_galerkin` is a genuine second proof of Lax–Milgram and not a corollary of
+the first one.
 -/
 
 open Filter Topology
-open scoped InnerProductSpace
+open scoped InnerProductSpace Real
 
 namespace AtkinsonHan
 
@@ -239,6 +247,216 @@ theorem corollary_9_1_4 (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀) (ha : a.IsEl
     (BilinForm.isBoundedWith_toCLM hM) ha hmono hdense huN hu
   rw [tendsto_iff_norm_sub_tendsto_zero] at h
   simpa only [norm_sub_rev] using h
+
+/-! ### Exercise 9.1.3: the Fourier expansion of the Green kernel -/
+
+/-- The second Bernoulli polynomial over `ℝ`: `B₂(x) = x² − x + 1/6`.  Mathlib returns the sum of
+the cosine series in that shape. -/
+private theorem bernoulli_two_eval (x : ℝ) :
+    (Polynomial.map (algebraMap ℚ ℝ) (Polynomial.bernoulli 2)).eval x = x ^ 2 - x + 1 / 6 := by
+  simp [Polynomial.bernoulli, Finset.sum_range_succ, bernoulli_eq_bernoulli'_of_ne_one]
+  ring
+
+/-- The classical cosine series `∑_{n ≥ 1} cos(nθ)/n² = π²/6 − πθ/2 + θ²/4` for `θ ∈ [0, 2π]`,
+read off Mathlib's Fourier expansion of the Bernoulli polynomials at `k = 1`.  The sum is taken
+over all of `ℕ`, as Mathlib takes it: the `n = 0` term is `cos 0 / 0 = 0`. -/
+private theorem hasSum_cos_div_sq {θ : ℝ} (hθ : θ ∈ Set.Icc (0 : ℝ) (2 * π)) :
+    HasSum (fun n : ℕ => Real.cos (n * θ) / n ^ 2) (π ^ 2 / 6 - π * θ / 2 + θ ^ 2 / 4) := by
+  have hpi : (0 : ℝ) < π := Real.pi_pos
+  have hx : θ / (2 * π) ∈ Set.Icc (0 : ℝ) 1 :=
+    ⟨div_nonneg hθ.1 (by positivity), (div_le_one (by positivity)).2 hθ.2⟩
+  convert hasSum_one_div_nat_pow_mul_cos one_ne_zero hx using 1
+  · ext1 n
+    have harg : 2 * π * (n : ℝ) * (θ / (2 * π)) = n * θ := by field_simp
+    rw [harg]
+    norm_num
+    ring
+  · rw [show (2 * 1 : ℕ) = 2 from rfl, bernoulli_two_eval]
+    norm_num [Nat.factorial]
+    field_simp
+    ring
+
+/-- Exercise 9.1.3 for `x ≤ t`, where `min(x,t) (1 − max(x,t)) = x (1 − t)`.  The product formula
+`sin(jπx) sin(jπt) = ½ (cos(jπ(t−x)) − cos(jπ(t+x)))` turns the series into the difference of two
+copies of `hasSum_cos_div_sq`, at `θ = π(t−x) ∈ [0, π]` and at `θ = π(t+x) ∈ [0, 2π]`. -/
+private theorem hasSum_kernel_aux {x t : ℝ} (hx0 : 0 ≤ x) (hxt : x ≤ t) (ht1 : t ≤ 1) :
+    HasSum (fun n : ℕ => 2 / π ^ 2 * (Real.sin (n * π * x) * Real.sin (n * π * t) / n ^ 2))
+      (x * (1 - t)) := by
+  have hpi : (0 : ℝ) < π := Real.pi_pos
+  have h1 := hasSum_cos_div_sq (θ := π * (t - x)) ⟨by nlinarith, by nlinarith⟩
+  have h2 := hasSum_cos_div_sq (θ := π * (t + x)) ⟨by nlinarith, by nlinarith⟩
+  have hfun : ∀ n : ℕ, 2 / π ^ 2 * (Real.sin (n * π * x) * Real.sin (n * π * t) / n ^ 2)
+      = 1 / π ^ 2 * (Real.cos ((n : ℝ) * (π * (t - x))) / (n : ℝ) ^ 2
+        - Real.cos ((n : ℝ) * (π * (t + x))) / (n : ℝ) ^ 2) := by
+    intro n
+    have ha : (n : ℝ) * (π * (t - x)) = n * π * t - n * π * x := by ring
+    have hb : (n : ℝ) * (π * (t + x)) = n * π * t + n * π * x := by ring
+    rw [ha, hb, Real.cos_sub, Real.cos_add]
+    ring
+  have hval : x * (1 - t) = 1 / π ^ 2 *
+      ((π ^ 2 / 6 - π * (π * (t - x)) / 2 + (π * (t - x)) ^ 2 / 4)
+        - (π ^ 2 / 6 - π * (π * (t + x)) / 2 + (π * (t + x)) ^ 2 / 4)) := by
+    field_simp
+    ring
+  rw [funext hfun, hval]
+  exact (h1.sub h2).mul_left _
+
+/-- Exercise 9.1.3 with the sum taken over all of `ℕ`; the `j = 0` term vanishes.  Both the
+summand and `min`/`max` are symmetric in `x` and `t`, so the case `t ≤ x` is `hasSum_kernel_aux`
+with the two swapped. -/
+private theorem hasSum_kernel {x t : ℝ} (hx : x ∈ Set.Icc (0 : ℝ) 1) (ht : t ∈ Set.Icc (0 : ℝ) 1) :
+    HasSum (fun n : ℕ => 2 / π ^ 2 * (Real.sin (n * π * x) * Real.sin (n * π * t) / n ^ 2))
+      (min x t * (1 - max x t)) := by
+  rcases le_total x t with h | h
+  · rw [min_eq_left h, max_eq_right h]
+    exact hasSum_kernel_aux hx.1 h ht.2
+  · rw [min_eq_right h, max_eq_left h]
+    have hcomm : ∀ n : ℕ, 2 / π ^ 2 * (Real.sin (n * π * x) * Real.sin (n * π * t) / n ^ 2)
+        = 2 / π ^ 2 * (Real.sin (n * π * t) * Real.sin (n * π * x) / n ^ 2) := fun n => by ring
+    rw [funext hcomm]
+    exact hasSum_kernel_aux ht.1 h hx.2
+
+/-- Exercise 9.1.3: the Green kernel `K(x,t) = min(x,t) (1 − max(x,t))` of `−u'' = f` on `(0,1)`
+under `u(0) = u(1) = 0`, the kernel of the solution formula (9.1.15) of Example 9.1.2, has the
+expansion
+
+`K(x,t) = (2/π²) ∑_{j ≥ 1} sin(jπx) sin(jπt) / j²`.
+
+The statement is the pointwise one, a `HasSum` at each `x, t ∈ [0,1]`; the series converges
+absolutely, being dominated by `1/j²`.  The kernel `K_N` of (9.1.10) is the `N`-th partial sum, so
+the Galerkin solution of Example 9.1.2 is what (9.1.15) gives after truncating this series — that
+second half of the exercise needs `H¹₀(0,1)` and the weak form of (9.1.9), neither of which the
+project has yet, so only the expansion is stated here. -/
+theorem exercise_9_1_3 {x t : ℝ} (hx : x ∈ Set.Icc (0 : ℝ) 1) (ht : t ∈ Set.Icc (0 : ℝ) 1) :
+    HasSum (fun j : ℕ => 2 / π ^ 2 *
+        (Real.sin (((j : ℝ) + 1) * π * x) * Real.sin (((j : ℝ) + 1) * π * t) / ((j : ℝ) + 1) ^ 2))
+      (min x t * (1 - max x t)) := by
+  have h0 : HasSum (fun n : ℕ => 2 / π ^ 2 *
+      (Real.sin (n * π * x) * Real.sin (n * π * t) / (n : ℝ) ^ 2))
+      (min x t * (1 - max x t) + ∑ i ∈ Finset.range 1, 2 / π ^ 2 *
+        (Real.sin (i * π * x) * Real.sin (i * π * t) / (i : ℝ) ^ 2)) := by
+    simpa using hasSum_kernel hx ht
+  have hshift : ∀ n : ℕ, 2 / π ^ 2 *
+      (Real.sin (((n : ℝ) + 1) * π * x) * Real.sin (((n : ℝ) + 1) * π * t) / ((n : ℝ) + 1) ^ 2)
+      = 2 / π ^ 2 * (Real.sin ((↑(n + 1) : ℝ) * π * x) * Real.sin ((↑(n + 1) : ℝ) * π * t)
+        / (↑(n + 1) : ℝ) ^ 2) := by
+    intro n
+    push_cast
+    ring
+  rw [funext hshift]
+  exact (hasSum_nat_add_iff 1).2 h0
+
+/-! ### Exercise 9.1.4: the Galerkin method as a second existence proof -/
+
+/-- Exercise 9.1.4(a): zero is the only solution of the Galerkin system for `ℓ = 0`.  Testing the
+equation against the solution itself and using `V`-ellipticity is all it takes; nothing here needs
+`a` bounded, `V` complete or `V_N` finite-dimensional. -/
+theorem eq_zero_of_galerkinProblem_zero (hc₀ : 0 < c₀) (ha : a.IsEllipticWith c₀)
+    (h : GalerkinProblem a (0 : StrongDual ℝ V) VN uN) : uN = 0 := by
+  have h0 : a uN uN = 0 := by simpa using h.2 uN h.1
+  have hle : c₀ * ‖uN‖ ^ 2 ≤ 0 := h0 ▸ ha uN
+  have hsq : ‖uN‖ ^ 2 = 0 := le_antisymm (by nlinarith) (sq_nonneg _)
+  exact norm_eq_zero.mp (pow_eq_zero_iff two_ne_zero |>.mp hsq)
+
+/-- Exercise 9.1.4(a): the discrete problem (9.1.4) is uniquely solvable on a finite-dimensional
+`V_N`.  This is the book's own argument — the square system is injective by
+`eq_zero_of_galerkinProblem_zero`, hence surjective — rather than
+`existsUnique_galerkinProblem`, which invokes Lax–Milgram on `V_N`.  It therefore assumes neither
+boundedness of `a` nor completeness of `V`, and Exercise 9.1.4 can build on it without becoming a
+corollary of the theorem it is meant to reprove. -/
+theorem exercise_9_1_4_a (hc₀ : 0 < c₀) (ha : a.IsEllipticWith c₀) (ℓ : StrongDual ℝ V)
+    (VN : Submodule ℝ V) [FiniteDimensional ℝ VN] : ∃! uN, GalerkinProblem a ℓ VN uN := by
+  obtain ⟨b, hb⟩ : ∃ b : VN →ₗ[ℝ] Module.Dual ℝ VN, ∀ w v : VN, b w v = a (w : V) (v : V) :=
+    ⟨LinearMap.BilinForm.restrict a VN, fun _ _ => rfl⟩
+  have hinj : Function.Injective b := by
+    refine LinearMap.ker_eq_bot.1 (LinearMap.ker_eq_bot'.2 fun z hz => ?_)
+    refine Subtype.ext (eq_zero_of_galerkinProblem_zero hc₀ ha ⟨z.2, fun v hv => ?_⟩)
+    have := congrArg (fun φ : Module.Dual ℝ VN => φ ⟨v, hv⟩) hz
+    simpa [hb] using this
+  have hsurj : Function.Surjective b :=
+    (LinearMap.injective_iff_surjective_of_finrank_eq_finrank
+      Subspace.dual_finrank_eq.symm).1 hinj
+  obtain ⟨z, hz⟩ := hsurj ((ℓ : V →ₗ[ℝ] ℝ).domRestrict VN)
+  have hsol : ∀ v ∈ VN, a (z : V) v = ℓ v := by
+    intro v hv
+    have := congrArg (fun φ : Module.Dual ℝ VN => φ ⟨v, hv⟩) hz
+    simpa [hb] using this
+  refine ⟨(z : V), ⟨z.2, hsol⟩, fun y hy => ?_⟩
+  refine sub_eq_zero.mp (eq_zero_of_galerkinProblem_zero hc₀ ha
+    ⟨VN.sub_mem hy.1 z.2, fun v hv => ?_⟩)
+  simp [map_sub, LinearMap.sub_apply, hy.2 v hv, hsol v hv]
+
+/-- Exercise 9.1.4, steps (b)–(e): under the hypotheses of Corollary 9.1.4 the Galerkin solutions
+`u_n` themselves produce a solution of (9.1.1).  (b) `V`-ellipticity bounds `‖u_n‖` by `‖ℓ‖/c₀`, so
+some subsequence converges weakly to a `u ∈ V`; (c) for fixed `N` the relation `a(u_n, v) = ℓ(v)`
+holds for every `v ∈ V_N` once `n ≥ N`, and passing to the weak limit gives `a(u, v) = ℓ(v)` there;
+(d) the union of the `V_N` is dense and `v ↦ a(u,v) − ℓ(v)` is continuous, so `u` solves (9.1.1);
+(e) Corollary 9.1.4 then makes the *whole* sequence converge to `u` in norm.
+
+The ascending chain `{V_n}` is taken as given data, as the book does — it is what forces `V` to be
+separable, a hypothesis the book notes but never states.  Finite-dimensionality of the `V_n` is not
+needed here: it enters only in producing the `u_n`, which is Exercise 9.1.4(a). -/
+theorem exercise_9_1_4 [CompleteSpace V] (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀)
+    (ha : a.IsEllipticWith c₀) (ℓ : StrongDual ℝ V) (VN : ℕ → Submodule ℝ V)
+    (hmono : Monotone VN) (hdense : Dense (⋃ n, (VN n : Set V))) (uN : ℕ → V)
+    (huN : ∀ n, GalerkinProblem a ℓ (VN n) (uN n)) :
+    ∃ u, (∀ v, a u v = ℓ v) ∧ Tendsto (fun n => ‖u - uN n‖) atTop (𝓝 0) := by
+  -- (b) the discrete solutions are bounded by `‖ℓ‖ / c₀`.
+  have hbdd : ∀ n, ‖uN n‖ ≤ ‖ℓ‖ / c₀ := by
+    intro n
+    have h1 : c₀ * ‖uN n‖ ^ 2 ≤ a (uN n) (uN n) := ha _
+    have h2 : a (uN n) (uN n) = ℓ (uN n) := (huN n).2 _ (huN n).1
+    have h3 : ℓ (uN n) ≤ ‖ℓ‖ * ‖uN n‖ := (Real.le_norm_self _).trans (ℓ.le_opNorm _)
+    rcases eq_or_lt_of_le (norm_nonneg (uN n)) with h | h
+    · rw [← h]
+      exact div_nonneg (norm_nonneg ℓ) hc₀.le
+    · rw [le_div_iff₀ hc₀]
+      nlinarith
+  obtain ⟨σ, w, hσ, hweak⟩ := exists_subseq_weak_tendsto (𝕜 := ℝ) hbdd
+  -- the same weak convergence, in the form the functionals see it
+  have hfun : ∀ f : StrongDual ℝ V, Tendsto (fun k => f (uN (σ k))) atTop (𝓝 (f w)) := by
+    intro f
+    have hval : ∀ z : V, ⟪z, (InnerProductSpace.toDual ℝ V).symm f⟫_ℝ = f z := fun z => by
+      rw [real_inner_comm]
+      exact InnerProductSpace.toDual_symm_apply
+    simpa only [hval] using hweak ((InnerProductSpace.toDual ℝ V).symm f)
+  -- (c) the weak limit solves the variational equation on every `V_N`.
+  have hcv : ∀ N : ℕ, ∀ v ∈ VN N, a w v = ℓ v := by
+    intro N v hv
+    have hlim1 : Tendsto (fun k => a (uN (σ k)) v) atTop (𝓝 (a w v)) :=
+      hfun ((a.toCLM hM).flip v)
+    have hlim2 : Tendsto (fun k => a (uN (σ k)) v) atTop (𝓝 (ℓ v)) := by
+      refine Tendsto.congr' ?_ tendsto_const_nhds
+      filter_upwards [eventually_ge_atTop N] with k hk
+      exact ((huN (σ k)).2 v (hmono (hk.trans hσ.le_apply) hv)).symm
+    exact tendsto_nhds_unique hlim1 hlim2
+  -- (d) the density (9.1.13) upgrades that to all of `V`.
+  have hsol : ∀ v, a w v = ℓ v := by
+    have hclosed : IsClosed {v : V | a.toCLM hM w v = ℓ v} :=
+      isClosed_eq (a.toCLM hM w).continuous ℓ.continuous
+    have hsub : (⋃ n, (VN n : Set V)) ⊆ {v : V | a.toCLM hM w v = ℓ v} := by
+      rintro v hv
+      obtain ⟨N, hN⟩ := Set.mem_iUnion.mp hv
+      exact hcv N v hN
+    exact fun v => closure_minimal hsub hclosed (hdense v)
+  -- (e) with a solution in hand, Corollary 9.1.4 moves the whole sequence.
+  exact ⟨w, hsol, corollary_9_1_4 hM hc₀ ha ℓ VN hmono hdense hsol uN huN⟩
+
+/-- Exercise 9.1.4, the payoff: an ascending chain of finite-dimensional subspaces with dense union
+already forces (9.1.1) to be uniquely solvable.  This is Lax–Milgram again, proved through the
+Galerkin method — the finite-dimensional systems of `exercise_9_1_4_a`, a weakly convergent
+subsequence, and the density (9.1.13) — and it uses `AtkinsonHan.Chapter08.theorem_8_3_4` nowhere.
+Uniqueness is the `ℓ = 0` case of `eq_zero_of_galerkinProblem_zero` on `V_N = ⊤`. -/
+theorem existsUnique_solution_of_galerkin [CompleteSpace V] (hM : a.IsBoundedWith M)
+    (hc₀ : 0 < c₀) (ha : a.IsEllipticWith c₀) (ℓ : StrongDual ℝ V) (VN : ℕ → Submodule ℝ V)
+    [∀ n, FiniteDimensional ℝ (VN n)] (hmono : Monotone VN)
+    (hdense : Dense (⋃ n, (VN n : Set V))) : ∃! u, ∀ v, a u v = ℓ v := by
+  choose uN huN using fun n => (exercise_9_1_4_a hc₀ ha ℓ (VN n)).exists
+  obtain ⟨u, hu, -⟩ := exercise_9_1_4 hM hc₀ ha ℓ VN hmono hdense uN huN
+  refine ⟨u, hu, fun y hy => ?_⟩
+  refine sub_eq_zero.mp (eq_zero_of_galerkinProblem_zero hc₀ ha
+    ⟨Submodule.mem_top, fun v _ => ?_⟩)
+  simp [map_sub, LinearMap.sub_apply, hy v, hu v]
 
 end Chapter09
 

@@ -1,0 +1,16 @@
+desc = '''
+Sobolev spaces that this project needed and Mathlib lacks (natural home:
+`Mathlib.Analysis.Fourier.AddCircle` for the periodic ones, `Mathlib.Analysis.Distribution` for
+the rest).
+
+Mathlib has Bessel potential spaces `H^{s,p}` of tempered distributions on all of `ℝ^d`
+(`Mathlib/Analysis/Distribution/Sobolev.lean`) and nothing about a *domain*: no weak derivative on
+an open set, no `W^{k,p}(Ω)`, no `W^{k,p}_0`, no trace, no extension operator, no
+Rellich–Kondrachov and no Poincaré inequality. That gap is what excludes Atkinson–Han §7.1–§7.4
+and §7.6 from this project, and every downstream section that needs them (§8.1, §8.4, §8.5, §8.8,
+chapter 10 beyond the Aubin–Nitsche lemma, chapter 13).
+
+The *periodic* spaces are the exception, and are the only thing here so far: they are defined by
+the decay of Fourier coefficients, so no domain, boundary or weak derivative enters them, and they
+are reachable today. Serves Atkinson–Han, *Theoretical Numerical Analysis*, §7.5.
+'''

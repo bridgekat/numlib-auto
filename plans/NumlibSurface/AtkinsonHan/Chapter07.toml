@@ -1,0 +1,32 @@
+desc = '''
+Atkinson–Han, Chapter 7: Sobolev spaces. The chapter is excluded except for §7.5, and the
+obstruction differs by section — the exclusion is recorded here so that the chapter is on the
+record rather than absent.
+
+* **§7.1, weak derivatives on an open `Ω`.** Definition 7.1.3 is a dozen lines over
+  `MeasureTheory.LocallyIntegrableOn`, and its uniqueness (Lemmas 7.1.2 and 7.1.4) is already
+  Mathlib's `IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero`. It is not written because
+  nothing consumes it: every result that would is blocked further down by §7.3. A phase gate, not
+  a schedule.
+* **§7.2, the spaces `W^{k,p}(Ω)`.** Definable on top of §7.1 — completeness (Theorem 7.2.3)
+  needs nothing more than completeness of `L^p` and closedness of the weak derivative — but
+  unusable without §7.3. Definition 7.2.13 (Sobolev spaces over a boundary, by local charts)
+  additionally needs surface measure on a Lipschitz boundary.
+* **§7.3, the structural theorems.** This is the obstruction itself, and Mathlib has none of it:
+  density of `C^∞(Ω̄)` (Meyers–Serrin, Calderón–Stein), the extension operator, the continuous and
+  compact Sobolev embeddings, Rellich–Kondrachov, the trace `γ : W^{1,p}(Ω) → L^p(Γ)`, and the
+  Deny–Lions norm equivalences with Poincaré–Friedrichs and Bramble–Hilbert on top of them. Each
+  is a substantial analysis project, and each is needed by §8.1, §8.4, §8.5, §8.8, chapter 10 and
+  chapter 13.
+* **§7.4, the Fourier characterization of `H^k(ℝ^d)`.** The one domain for which Mathlib does have
+  a weak derivative is `Ω = ℝ^d`: `TemperedDistribution.MemSobolev s 2` with
+  `memSobolev_two_iff_fourier` is one side of Theorem 7.4.1 and `MemSobolev.lineDerivOp` the
+  other, so the theorem is statable. Not written; it has no consumer in this corpus either, and
+  Examples 7.4.2–7.4.3 and Exercises 7.4.3–7.4.4 are the §7.3 embeddings on a domain again.
+* **§7.5, periodic Sobolev spaces — formalized**, in `Chapter07/Section05`. These are defined by
+  the decay of Fourier coefficients, so no domain, boundary or weak derivative enters them, and
+  they need no §7.3.
+* **§7.6, integration by parts on a Lipschitz domain.** Green's and divergence formulas
+  `∫_Ω ∂_i v = ∫_Γ v ν_i` need surface measure on a Lipschitz boundary and the trace; Mathlib's
+  divergence theorem is for boxes.
+'''

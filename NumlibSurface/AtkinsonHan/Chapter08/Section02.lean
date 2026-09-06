@@ -18,6 +18,10 @@ states it.
 Theorem 8.2.7 is out of scope in the Banach generality of the book (Mathlib has no continuous
 Banach dual of an unbounded densely defined operator); its Hilbert-space bounded case is recorded
 as `theorem_8_2_7_hilbert`.
+
+Exercise 8.2.1 closes the file with the finite-dimensional instance the book asks for: on
+`ℝ^d = EuclideanSpace ℝ (Fin d)` every range is closed, so Theorem 8.2.1 alone turns uniqueness of
+a solution of `A x = b` into existence for every `b`.
 -/
 
 open Filter Topology
@@ -240,5 +244,53 @@ theorem theorem_8_2_7_hilbert (T : V →L[ℝ] W)
   simp only [LinearMap.mem_ker, ContinuousLinearMap.coe_coe]
 
 end ClosedRange
+
+section FiniteDimensional
+
+/-- Exercise 8.2.1: for a linear system `A x = b` on `ℝ^d`, solvability for every right-hand side
+`b` and uniqueness of the solution are equivalent.
+
+The exercise asks for this to be read off Theorem 8.2.1, and that is how it is proved here: over
+`ℝ^d = EuclideanSpace ℝ (Fin d)` the range of `A` is a finite-dimensional subspace, hence closed,
+and injectivity leaves it no room for a nonzero orthogonal vector, so `R(A)^⊥ = {0}` and Theorem
+8.2.1 gives `R(A) = ℝ^d`.  The converse direction is the rank-nullity theorem. -/
+theorem exercise_8_2_1 {d : ℕ} (f : EuclideanSpace ℝ (Fin d) →ₗ[ℝ] EuclideanSpace ℝ (Fin d)) :
+    Function.Injective f ↔ Function.Surjective f := by
+  have hrank := LinearMap.finrank_range_add_finrank_ker f
+  have hrange : LinearMap.range (f.toPMap ⊤).toFun = LinearMap.range f := by
+    simp [LinearMap.toPMap, LinearMap.range_comp]
+  constructor
+  · intro hinj
+    have hker : LinearMap.ker f = ⊥ := LinearMap.ker_eq_bot.mpr hinj
+    rw [hker, finrank_bot, add_zero] at hrank
+    have horth : (LinearMap.range f)ᗮ = ⊥ :=
+      Submodule.finrank_eq_zero.mp
+        (Submodule.finrank_add_finrank_orthogonal' (by simpa using hrank))
+    have hclosed : IsClosed (LinearMap.range (f.toPMap ⊤).toFun :
+        Set (EuclideanSpace ℝ (Fin d))) := by
+      rw [hrange]
+      exact (LinearMap.range f).closed_of_finiteDimensional
+    have htop := (theorem_8_2_1 (f.toPMap ⊤)).mpr ⟨hclosed, by rw [hrange]; exact horth⟩
+    rw [hrange] at htop
+    exact LinearMap.range_eq_top.mp htop
+  · intro hsurj
+    rw [LinearMap.range_eq_top.mpr hsurj, finrank_top] at hrank
+    exact LinearMap.ker_eq_bot.mp (Submodule.finrank_eq_zero.mp (by omega))
+
+/-- Exercise 8.2.1, the sufficient condition it asks Theorem 8.2.8 to supply: if `A` obeys the
+stability estimate `c ‖x‖ ≤ ‖A x‖` with `c > 0`, then Theorem 8.2.8 (a) makes the solution of
+`A x = b` unique, and by the equivalence above `A x = b` is then uniquely solvable for every
+`b ∈ ℝ^d`. -/
+theorem exercise_8_2_1_stability {d : ℕ}
+    (f : EuclideanSpace ℝ (Fin d) →ₗ[ℝ] EuclideanSpace ℝ (Fin d)) {c : ℝ} (hc : 0 < c)
+    (hstab : ∀ v, c * ‖v‖ ≤ ‖f v‖) (b : EuclideanSpace ℝ (Fin d)) : ∃! x, f x = b := by
+  have hinj : Function.Injective f := fun u v huv =>
+    theorem_8_2_8a (D := Set.univ) f hc
+      (fun u _ v _ => by rw [← map_sub]; exact hstab (u - v)) (Set.mem_univ u) (Set.mem_univ v)
+      rfl huv.symm
+  obtain ⟨x, hx⟩ := (exercise_8_2_1 f).mp hinj b
+  exact ⟨x, hx, fun y hy => hinj (hy.trans hx.symm)⟩
+
+end FiniteDimensional
 
 end AtkinsonHan.Chapter08

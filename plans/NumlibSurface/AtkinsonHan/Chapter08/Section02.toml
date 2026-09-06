@@ -26,3 +26,9 @@ id = "example_8_2_5"
 
 [[node]]
 id = "theorem_8_2_7_hilbert"
+
+[[node]]
+id = "exercise_8_2_1"
+
+[[node]]
+id = "exercise_8_2_1_stability"

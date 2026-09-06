@@ -33,6 +33,7 @@ import NumlibSurface.AtkinsonHan.Chapter05.Section06
 import NumlibSurface.AtkinsonHan.Chapter06.Section01
 import NumlibSurface.AtkinsonHan.Chapter06.Section02
 import NumlibSurface.AtkinsonHan.Chapter06.Section03
+import NumlibSurface.AtkinsonHan.Chapter07.Section05
 import NumlibSurface.AtkinsonHan.Chapter08.Section02
 import NumlibSurface.AtkinsonHan.Chapter08.Section03
 import NumlibSurface.AtkinsonHan.Chapter08.Section06
@@ -66,12 +67,14 @@ import NumlibSurface.AtkinsonHan.Chapter14.Section04
 
 The surface library for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A
 Functional Analysis Framework* (3rd ed., Springer, 2009): fifty-four modules, one per section of
+Functional Analysis Framework* (3rd ed., Springer, 2009): fifty-two modules, one per section of
 the book that the project covers, grouped by chapter. Each states the book's results in the book's
 own terms and proves them by specializing the backbone under `Numlib/`. Almost nothing is proved
 here that is not proved there — the surface exists to test the backbone against a published account
 of the subject, and to give a reader of the book a Lean name for every result formalized.
 
 This module imports the fifty-four section modules and adds nothing of its own.
+This module imports the fifty-two section modules and adds nothing of its own.
 
 ## Naming
 
@@ -132,6 +135,8 @@ bilinear-form vocabulary shared by §8.3, §8.7 and Chapters 9–10 directly in 
 | 6.1 | `Chapter06.Section01` | The four difference quotients and their orders (6.1.1)–(6.1.4) |
 | 6.2 | `Chapter06.Section02` | The Lax equivalence theorem for `u' = L u`, `L` a `LinearPMap` |
 | 6.3 | `Chapter06.Section03` | Two-level schemes: consistency, stability and convergence |
+| **7** | | *Sobolev Spaces* |
+| 7.5 | `Chapter07.Section05` | Periodic Sobolev spaces; the trapezoidal rule on periodic data |
 | **8** | | *Weak Formulations of Elliptic Boundary Value Problems* |
 | 8.2 | `Chapter08.Section02` | Existence and uniqueness for operator equations |
 | 8.3 | `Chapter08.Section03` | Bilinear forms and the Lax–Milgram lemma |
@@ -270,6 +275,25 @@ each section module names the results it leaves out.
   `H^q(2π)`, which is a weighted `ℓ²` over the Fourier basis of `AddCircle` and is reachable, but
   does not exist yet; its convergence proof, once that scale is there, is Theorem 12.1.2 and
   Lemma 12.1.4 unchanged.
+  boundary cuts Chapters 11 and 12 in two: their abstract spines are formalized — §11.2–11.4 on
+  elliptic variational inequalities, §12.1, §12.3, §12.4, §12.6 and §12.7 on projection and
+  collectively compact methods for Fredholm equations of the second kind — while their
+  applications live in `H¹₀(Ω)` and on a concrete kernel, and are out of scope. So is Chapter 13,
+  which is boundary integral equations on a Sobolev space over a boundary.
+* **Chapter 7, section by section.** The chapter is the Sobolev theory itself, and is excluded
+  except for §7.5. §7.1 (weak derivatives on an open `Ω`) and §7.2 (the spaces `W^{k,p}(Ω)`) are
+  writable but have no consumer, because everything downstream of them is blocked by §7.3; §7.3
+  is the obstruction itself — density of `C^∞(Ω̄)`, the extension operator, the Sobolev
+  embeddings, the trace, Rellich–Kondrachov and the Deny–Lions equivalences, none of which
+  Mathlib has for a domain; §7.4 (the Fourier characterization of `H^k(ℝ^d)`) is reachable
+  through Mathlib's Bessel potential spaces on `ℝ^d` but is not yet written; §7.6 (integration by
+  parts on a Lipschitz domain) needs surface measure on a Lipschitz boundary. **§7.5 is the
+  exception and is formalized**: the periodic spaces are defined by decay of Fourier coefficients,
+  so no domain, boundary or weak derivative enters them, and `Chapter07.Section05` carries
+  Definition 7.5.1, Theorem 7.5.2, Propositions 7.5.4–7.5.6 and Exercises 7.5.1–7.5.4. Left out
+  within §7.5 are Example 7.5.3 (distributions on the circle), Theorem 7.5.7 (the project has no
+  trigonometric interpolation operator), §7.5.4 (the logarithmic-kernel symbol, which the book
+  quotes without proof) and §7.5.5 (spherical harmonics, which Mathlib does not have).
 * **Weak compactness in a reflexive space.** Theorems 3.3.8, 3.3.10, 3.3.11 (Mazur), 3.3.12 and
   3.3.14, on minimizers of weakly sequentially lower semicontinuous functionals over a reflexive
   Banach space, and Theorem 8.6.3 (Ekeland–Temam, the existence of a saddle point for a

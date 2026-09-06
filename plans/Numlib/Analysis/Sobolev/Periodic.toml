@@ -1,0 +1,143 @@
+[[node]]
+id = "zetaReal"
+
+[[node]]
+id = "ofReal_zetaReal"
+
+[[node]]
+id = "hasSum_int_inv_abs_rpow"
+
+[[node]]
+id = "lp.hasSum_norm_sq"
+
+[[node]]
+id = "lp.norm_eq_sqrt_tsum_norm_sq"
+
+[[node]]
+id = "memℓp_two_iff"
+
+[[node]]
+id = "periodicSobolevWeight"
+
+[[node]]
+id = "periodicSobolevWeight_le"
+
+[[node]]
+id = "periodicSobolevWeight_sq"
+
+[[node]]
+id = "periodicSobolevWeight_mul_neg"
+
+[[node]]
+id = "PeriodicSobolev"
+
+[[node]]
+id = "PeriodicSobolev.coeff"
+
+[[node]]
+id = "PeriodicSobolev.ofCoeff"
+
+[[node]]
+id = "PeriodicSobolev.hasSum_norm_sq"
+
+[[node]]
+id = "PeriodicSobolev.inner_eq_tsum"
+
+[[node]]
+id = "PeriodicSobolev.weight_mul_norm_coeff_le"
+
+[[node]]
+id = "PeriodicSobolev.summable_norm_coeff_mul"
+
+[[node]]
+id = "PeriodicSobolev.tsum_norm_coeff_mul_le"
+
+[[node]]
+id = "PeriodicSobolev.summable_norm_coeff"
+
+[[node]]
+id = "PeriodicSobolev.tsum_norm_coeff_le"
+
+[[node]]
+id = "PeriodicSobolev.tsum_norm_coeff_le'"
+
+[[node]]
+id = "PeriodicSobolev.basisElt"
+
+[[node]]
+id = "PeriodicSobolev.coeffL"
+
+[[node]]
+id = "PeriodicSobolev.inclL"
+
+[[node]]
+id = "PeriodicSobolev.norm_inclL_le"
+
+[[node]]
+id = "PeriodicSobolev.eq_zero_of_inner_basisElt_eq_zero"
+
+[[node]]
+id = "PeriodicSobolev.denseRange_inclL"
+
+[[node]]
+id = "PeriodicSobolev.dense_span_basisElt"
+
+[[node]]
+id = "PeriodicSobolev.truncL"
+
+[[node]]
+id = "PeriodicSobolev.isCompactOperator_truncL"
+
+[[node]]
+id = "PeriodicSobolev.norm_incl_sub_truncL_le"
+
+[[node]]
+id = "PeriodicSobolev.isCompactOperator_inclL"
+
+[[node]]
+id = "periodicChar"
+
+[[node]]
+id = "norm_periodicChar"
+
+[[node]]
+id = "periodicChar_periodic"
+
+[[node]]
+id = "sum_periodicChar"
+
+[[node]]
+id = "PeriodicSobolev.eval"
+
+[[node]]
+id = "PeriodicSobolev.norm_eval_le"
+
+[[node]]
+id = "PeriodicSobolev.continuous_eval"
+
+[[node]]
+id = "PeriodicSobolev.eval_periodic"
+
+[[node]]
+id = "PeriodicSobolev.intervalIntegral_eval"
+
+[[node]]
+id = "PeriodicSobolev.trapezoidSum"
+
+[[node]]
+id = "PeriodicSobolev.trapezoidSum_eval"
+
+[[node]]
+id = "PeriodicSobolev.norm_intervalIntegral_sub_trapezoidSum_le"
+
+[[node]]
+id = "PeriodicSobolev.summable_coeff_mul_conj"
+
+[[node]]
+id = "PeriodicSobolev.norm_tsum_coeff_mul_conj_le"
+
+[[node]]
+id = "PeriodicSobolev.dualPairing"
+
+[[node]]
+id = "PeriodicSobolev.norm_dualPairing_le"
