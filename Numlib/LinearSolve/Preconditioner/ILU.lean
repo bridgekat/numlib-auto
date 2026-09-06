@@ -341,6 +341,82 @@ private theorem pos_of_sum_nonneg_of_sum_gt_neg (x : n → ℝ) (d : n) (hoff : 
   have h2 := sum_erase_le_sum_gt x d hoff
   linarith
 
+/-- **The sign pattern and the row sums along a threshold elimination** ([saad2003iterative],
+(10.28) and (10.29)): the working row `u k` stays nonpositive off its own diagonal position `d`, and
+its row sum stays nonnegative and never decreases.
+
+This is the half of [saad2003iterative] Theorem 10.8 that needs neither the strictly negative sum to
+the right of the diagonal — (10.27), which is vacuous in the last row — nor the protected entry of
+the drop strategy, so it holds in *every* row. The full statement, with the strictly positive pivot,
+is `Matrix.IsMHat.ilut_rows`; the last row keeps `Matrix.IsMHat.ilut_rows_diag_nonneg`. The data and
+the remaining hypotheses are described there. -/
+theorem IsMHat.ilut_rows_nonpos {H : Matrix n n ℝ} (hH : IsMHat.IsDiagDominant H) (d : n)
+    (u w : ℕ → n → ℝ) (l : ℕ → ℝ) (r : ℕ → n → ℝ) (p : ℕ → n)
+    (hu0 : u 0 = H d) (hrec : ∀ k, u (k + 1) = u k - l k • w k - r k)
+    (hw : ∀ k j, j ≠ p k → w k j ≤ 0) (hwsum : ∀ k, 0 ≤ ∑ j, w k j) (hl : ∀ k, l k ≤ 0)
+    (hpivot : ∀ k, l k * w k (p k) = u k (p k))
+    (hdrop : ∀ k j, r k j = 0 ∨ r k j = u k j - l k * w k j) (hdropDiag : ∀ k, r k d = 0) (k : ℕ) :
+    (∀ j, j ≠ d → u k j ≤ 0) ∧ 0 ≤ ∑ j, u k j ∧ ∑ j, u k j ≤ ∑ j, u (k + 1) j := by
+  have step : ∀ k, (∀ j, j ≠ d → u k j ≤ 0) →
+      (∀ j, j ≠ d → u (k + 1) j ≤ 0) ∧ ∑ j, u k j ≤ ∑ j, u (k + 1) j := by
+    intro k hoff
+    have hu : ∀ j, u (k + 1) j = u k j - l k * w k j - r k j := fun j => by
+      rw [hrec k]; simp
+    -- the value computed at step `k`, before dropping, is nonpositive off the diagonal
+    have hv : ∀ j, j ≠ d → u k j - l k * w k j ≤ 0 := by
+      intro j hj
+      rcases eq_or_ne j (p k) with rfl | hjp
+      · rw [hpivot k, sub_self]
+      · have : 0 ≤ l k * w k j := mul_nonneg_of_nonpos_of_nonpos (hl k) (hw k j hjp)
+        linarith [hoff j hj]
+    have hnext : ∀ j, j ≠ d → u (k + 1) j ≤ 0 := by
+      intro j hj
+      rcases hdrop k j with h | h
+      · rw [hu j, h, sub_zero]; exact hv j hj
+      · rw [hu j, h, sub_self]
+    have hrnp : ∀ j, r k j ≤ 0 := by
+      intro j
+      rcases eq_or_ne j d with rfl | hj
+      · rw [hdropDiag k]
+      · rcases hdrop k j with h | h
+        · rw [h]
+        · rw [h]; exact hv j hj
+    have hsplit : ∑ j, u (k + 1) j = (∑ j, u k j) - l k * ∑ j, w k j - ∑ j, r k j := by
+      simp only [hu]
+      rw [Finset.sum_sub_distrib, Finset.sum_sub_distrib, ← Finset.mul_sum]
+    refine ⟨hnext, ?_⟩
+    have h1 : l k * ∑ j, w k j ≤ 0 := mul_nonpos_of_nonpos_of_nonneg (hl k) (hwsum k)
+    have h2 : ∑ j, r k j ≤ 0 := Finset.sum_nonpos fun j _ => hrnp j
+    rw [hsplit]; linarith
+  induction k with
+  | zero =>
+    have hoff : ∀ j, j ≠ d → u 0 j ≤ 0 := fun j hj => by
+      rw [hu0]; exact hH.toIsMHat.offDiag_nonpos d j (Ne.symm hj)
+    have hsum : 0 ≤ ∑ j, u 0 j := by
+      simp only [hu0]; exact hH.rowSum_nonneg d
+    exact ⟨hoff, hsum, (step 0 hoff).2⟩
+  | succ k ih =>
+    obtain ⟨hoff, hsum, hmono⟩ := ih
+    exact ⟨(step k hoff).1, hsum.trans hmono, (step (k + 1) (step k hoff).1).2⟩
+
+/-- **[saad2003iterative] `u^n_n ≥ 0`**, the last-row half of (10.30): the diagonal entry of the
+working row is nonnegative, in every row and at every step.
+
+Only the sign pattern and the nonnegative row sum of `Matrix.IsMHat.ilut_rows_nonpos` are used, so
+this needs neither (10.27) nor the drop-strategy modification, and it is all that is available in
+the last row, where `Matrix.IsMHat.ilut_rows` does not apply. -/
+theorem IsMHat.ilut_rows_diag_nonneg {H : Matrix n n ℝ} (hH : IsMHat.IsDiagDominant H) (d : n)
+    (u w : ℕ → n → ℝ) (l : ℕ → ℝ) (r : ℕ → n → ℝ) (p : ℕ → n)
+    (hu0 : u 0 = H d) (hrec : ∀ k, u (k + 1) = u k - l k • w k - r k)
+    (hw : ∀ k j, j ≠ p k → w k j ≤ 0) (hwsum : ∀ k, 0 ≤ ∑ j, w k j) (hl : ∀ k, l k ≤ 0)
+    (hpivot : ∀ k, l k * w k (p k) = u k (p k))
+    (hdrop : ∀ k j, r k j = 0 ∨ r k j = u k j - l k * w k j) (hdropDiag : ∀ k, r k d = 0) (k : ℕ) :
+    0 ≤ u k d := by
+  obtain ⟨hoff, hsum, -⟩ :=
+    IsMHat.ilut_rows_nonpos hH d u w l r p hu0 hrec hw hwsum hl hpivot hdrop hdropDiag k
+  exact hsum.trans
+    (sum_le_of_mem (u k) Finset.univ (Finset.mem_univ d) fun j _ hj => hoff j hj)
+
 /-- **[saad2003iterative] Theorem 10.8** (*Iterative Methods for Sparse Linear Systems*), the
 existence result for the threshold factorization `ILUT`.
 
@@ -370,73 +446,35 @@ theorem IsMHat.ilut_rows {H : Matrix n n ℝ} (hH : IsMHat.IsDiagDominant H) {d 
       ∀ j, d < j → u k j₀ - l k * w k j₀ ≤ u k j - l k * w k j) (k : ℕ) :
     (∀ j, j ≠ d → u k j ≤ 0) ∧ (0 ≤ ∑ j, u k j ∧ ∑ j, u k j ≤ ∑ j, u (k + 1) j) ∧
       ∑ j ∈ Finset.univ.filter (fun j => d < j), u k j < 0 ∧ 0 < u k d := by
-  have step : ∀ k, (∀ j, j ≠ d → u k j ≤ 0) → (0 ≤ ∑ j, u k j) →
-      (∑ j ∈ Finset.univ.filter (fun j => d < j), u k j < 0) →
-      (∀ j, j ≠ d → u (k + 1) j ≤ 0) ∧ (∑ j, u k j ≤ ∑ j, u (k + 1) j) ∧
-        ∑ j ∈ Finset.univ.filter (fun j => d < j), u (k + 1) j < 0 := by
-    intro k hoff hsum hgt
-    have hu : ∀ j, u (k + 1) j = u k j - l k * w k j - r k j := fun j => by
-      rw [hrec k]; simp
-    -- the value computed at step `k`, before dropping, is nonpositive off the diagonal
-    have hv : ∀ j, j ≠ d → u k j - l k * w k j ≤ 0 := by
-      intro j hj
-      rcases eq_or_ne j (p k) with rfl | hjp
-      · rw [hpivot k, sub_self]
-      · have : 0 ≤ l k * w k j := mul_nonneg_of_nonpos_of_nonpos (hl k) (hw k j hjp)
-        linarith [hoff j hj]
-    have hnext : ∀ j, j ≠ d → u (k + 1) j ≤ 0 := by
-      intro j hj
-      rcases hdrop k j with h | h
-      · rw [hu j, h, sub_zero]; exact hv j hj
-      · rw [hu j, h, sub_self]
-    have hrnp : ∀ j, r k j ≤ 0 := by
-      intro j
-      rcases eq_or_ne j d with rfl | hj
-      · rw [hdropDiag k]
-      · rcases hdrop k j with h | h
-        · rw [h]
-        · rw [h]; exact hv j hj
-    have hsplit : ∑ j, u (k + 1) j = (∑ j, u k j) - l k * ∑ j, w k j - ∑ j, r k j := by
-      simp only [hu]
-      rw [Finset.sum_sub_distrib, Finset.sum_sub_distrib, ← Finset.mul_sum]
-    have hmono : ∑ j, u k j ≤ ∑ j, u (k + 1) j := by
-      have h1 : l k * ∑ j, w k j ≤ 0 := mul_nonpos_of_nonpos_of_nonneg (hl k) (hwsum k)
-      have h2 : ∑ j, r k j ≤ 0 := Finset.sum_nonpos fun j _ => hrnp j
-      rw [hsplit]; linarith
-    refine ⟨hnext, hmono, ?_⟩
-    obtain ⟨j₀, hj₀, hj₀drop, hj₀min⟩ := hkeep k
-    have hvsum : ∑ j ∈ Finset.univ.filter (fun j => d < j), (u k j - l k * w k j) < 0 := by
-      refine lt_of_le_of_lt (Finset.sum_le_sum fun j hj => ?_) hgt
-      have hjd : d < j := (Finset.mem_filter.1 hj).2
-      have hjp : j ≠ p k := ne_of_gt ((hp k).trans hjd)
-      have : 0 ≤ l k * w k j := mul_nonneg_of_nonpos_of_nonpos (hl k) (hw k j hjp)
-      linarith
-    have hlt : ∑ j ∈ Finset.univ.filter (fun j => d < j), (u k j - l k * w k j)
-        < ∑ _j ∈ Finset.univ.filter (fun j => d < j), (0 : ℝ) := by
-      rw [Finset.sum_const_zero]; exact hvsum
-    obtain ⟨j₁, hj₁mem, hj₁⟩ := Finset.exists_lt_of_sum_lt hlt
-    have hj₀neg : u (k + 1) j₀ < 0 := by
-      rw [hu j₀, hj₀drop, sub_zero]
-      exact lt_of_le_of_lt (hj₀min j₁ (Finset.mem_filter.1 hj₁mem).2) hj₁
-    exact lt_of_le_of_lt (sum_le_of_mem _ _ (Finset.mem_filter.2 ⟨Finset.mem_univ _, hj₀⟩)
-      fun j hj _ => hnext j (Finset.mem_filter.1 hj).2.ne') hj₀neg
-  induction k with
-  | zero =>
-    have hoff : ∀ j, j ≠ d → u 0 j ≤ 0 := fun j hj => by
-      rw [hu0]; exact hH.toIsMHat.offDiag_nonpos d j (Ne.symm hj)
-    have hsum : 0 ≤ ∑ j, u 0 j := by
-      simp only [hu0]; exact hH.rowSum_nonneg d
-    have hgt : ∑ j ∈ Finset.univ.filter (fun j => d < j), u 0 j < 0 := by
-      simp only [hu0]; exact hH.toIsMHat.sum_gt_neg d hd
-    obtain ⟨_, hmono, _⟩ := step 0 hoff hsum hgt
-    exact ⟨hoff, ⟨hsum, hmono⟩, hgt, pos_of_sum_nonneg_of_sum_gt_neg _ d hoff hsum hgt⟩
-  | succ k ih =>
-    obtain ⟨hoff, ⟨hsum, _⟩, hgt, _⟩ := ih
-    obtain ⟨hoff', hmono', hgt'⟩ := step k hoff hsum hgt
-    have hsum' : 0 ≤ ∑ j, u (k + 1) j := hsum.trans hmono'
-    obtain ⟨_, hmono'', _⟩ := step (k + 1) hoff' hsum' hgt'
-    exact ⟨hoff', ⟨hsum', hmono''⟩, hgt',
-      pos_of_sum_nonneg_of_sum_gt_neg _ d hoff' hsum' hgt'⟩
+  have base : ∀ m, (∀ j, j ≠ d → u m j ≤ 0) ∧ 0 ≤ ∑ j, u m j ∧ ∑ j, u m j ≤ ∑ j, u (m + 1) j :=
+    fun m => IsMHat.ilut_rows_nonpos hH d u w l r p hu0 hrec hw hwsum hl hpivot hdrop hdropDiag m
+  -- the entries to the right of the diagonal keep a strictly negative sum, by induction on `m`
+  have hgt : ∀ m, ∑ j ∈ Finset.univ.filter (fun j => d < j), u m j < 0 := by
+    intro m
+    induction m with
+    | zero => simp only [hu0]; exact hH.toIsMHat.sum_gt_neg d hd
+    | succ m ih =>
+      have hu : ∀ j, u (m + 1) j = u m j - l m * w m j - r m j := fun j => by
+        rw [hrec m]; simp
+      obtain ⟨j₀, hj₀, hj₀drop, hj₀min⟩ := hkeep m
+      have hvsum : ∑ j ∈ Finset.univ.filter (fun j => d < j), (u m j - l m * w m j) < 0 := by
+        refine lt_of_le_of_lt (Finset.sum_le_sum fun j hj => ?_) ih
+        have hjd : d < j := (Finset.mem_filter.1 hj).2
+        have hjp : j ≠ p m := ne_of_gt ((hp m).trans hjd)
+        have : 0 ≤ l m * w m j := mul_nonneg_of_nonpos_of_nonpos (hl m) (hw m j hjp)
+        linarith
+      have hlt : ∑ j ∈ Finset.univ.filter (fun j => d < j), (u m j - l m * w m j)
+          < ∑ _j ∈ Finset.univ.filter (fun j => d < j), (0 : ℝ) := by
+        rw [Finset.sum_const_zero]; exact hvsum
+      obtain ⟨j₁, hj₁mem, hj₁⟩ := Finset.exists_lt_of_sum_lt hlt
+      have hj₀neg : u (m + 1) j₀ < 0 := by
+        rw [hu j₀, hj₀drop, sub_zero]
+        exact lt_of_le_of_lt (hj₀min j₁ (Finset.mem_filter.1 hj₁mem).2) hj₁
+      exact lt_of_le_of_lt (sum_le_of_mem _ _ (Finset.mem_filter.2 ⟨Finset.mem_univ _, hj₀⟩)
+        fun j hj _ => (base (m + 1)).1 j (Finset.mem_filter.1 hj).2.ne') hj₀neg
+  obtain ⟨hoff, hsum, hmono⟩ := base k
+  exact ⟨hoff, ⟨hsum, hmono⟩, hgt k,
+    pos_of_sum_nonneg_of_sum_gt_neg _ d hoff hsum (hgt k)⟩
 
 end MHat
 

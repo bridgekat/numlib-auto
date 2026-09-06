@@ -1,29 +1,13 @@
 namespace = "SaadSparse.Chapter10"
-desc = '''
-§10.4.1–10.4.2, ILUT and its existence theorem. Only Theorem 10.8 has content; §10.4.3–10.4.6
-(implementation, ILUTP, ILUS, Crout ILU) are data structures and dropping heuristics.
-
-Theorem 10.8 is about the *rows* produced by the elimination with dropping, not about a
-factorization, and is stated that way: the row sequence `u^k` of (10.23) with the multipliers
-`l_k`, the dropped rows `r^k`, and the drop-strategy modification of §10.4.2 (the entry of largest
-modulus to the right of the diagonal is never dropped) as hypotheses. That keeps the statement
-faithful without writing Algorithm 10.6 down, which would add a heap-based selection rule with no
-mathematical content.
-'''
 
 [[node]]
-id = "IsMHat"
-kind = "definition"
-desc = '''Saad (10.25)–(10.27): an `M̂` matrix has `h i i > 0` for `i < n`, `h n n ≥ 0`, nonpositive
-off-diagonal entries, and `∑_{j > i} h i j < 0` for `i < n`; it is *diagonally dominant* when every
-row sum is nonnegative. `rowSum` (Saad's `rs`) and the two predicates.'''
-deps = ["Matrix.IsMHat"]
+id = "rowSum"
+
+[[node]]
+id = "isMHat_iff"
+
+[[node]]
+id = "isDiagDominant_iff"
 
 [[node]]
 id = "theorem_10_8"
-kind = "theorem"
-desc = '''If `A` is a diagonally dominant `M̂` matrix then the rows `u_{i,*}^k` defined by (10.23), starting
-from `u^0 = 0`, `u^1 = a_{i,*}`, satisfy for every `k`: (10.28) `u^k i j ≤ 0` for `j ≠ i`,
-(10.29) `rs(u^k) ≥ rs(u^{k-1}) ≥ 0`, and (10.30) `u^k i i > 0` for `i < n` and `u^k n n ≥ 0` — so
-ILUT with the drop-strategy modification of §10.4.2 never encounters a zero pivot.'''
-deps = ["IsMHat", "Matrix.IsMHat.ilut_rows"]

@@ -48,6 +48,14 @@ id = "IsMHat"
 source = "Saad, Iterative Methods for Sparse Linear Systems, (10.25)–(10.27)"
 
 [[node]]
+id = "IsMHat.ilut_rows_nonpos"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (10.28)–(10.29)"
+
+[[node]]
+id = "IsMHat.ilut_rows_diag_nonneg"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (10.30), last row"
+
+[[node]]
 id = "IsMHat.ilut_rows"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 10.8"
 
