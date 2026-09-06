@@ -10,9 +10,9 @@ The block Krylov subspace of a finite family `v : Fin p → M` is
 `Krylov.blockSeq A v k = A^(k / p) (v (k % p))`, so that consecutive blocks of `p` indices carry
 one more power of `A` — turns the block process into an ordinary Gram–Schmidt
 orthonormalization: `BlockArnoldi.vec` is `gramSchmidtNormed` of `Krylov.blockSeq`, which is
-Ruhe's variant of the block Arnoldi process (Saad, *Iterative Methods for Sparse Linear
-Systems*[^saad-iterative], Algorithm 6.24). The block methods of Saad, *Numerical Methods for
-Large Eigenvalue Problems*[^saad-eigenvalue], Ch. 6 use the same vectors.
+Ruhe's variant of the block Arnoldi process ([Saad, *Iterative Methods for Sparse Linear
+Systems*][saad2003iterative], Algorithm 6.24). The block methods of [Saad, *Numerical Methods for
+Large Eigenvalue Problems*][saad2011numerical], Ch. 6 use the same vectors.
 
 Because `A (blockSeq A v k) = blockSeq A v (k + p)`, the vectors satisfy a banded Hessenberg
 relation of bandwidth `p`, `A v_k = ∑_{i ≤ k + p} h_{ik} v_i`, that is `A V_m = V_{m+p} H̄_m`
@@ -37,13 +37,6 @@ subspace, one right-hand side at a time — are the small banded systems (6.135)
 `BlockArnoldi.isGalerkin_iff_mulVec_eq` and `BlockArnoldi.isMinRes_iff`. Ruhe's variant makes
 sense at every step `m`, and `BlockArnoldi.span_vec_eq_blockSubspace` identifies the space it
 builds with the block Krylov subspace exactly at the multiples of `p`.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
-[^saad-eigenvalue]: Yousef Saad, *Numerical Methods for Large Eigenvalue Problems*, 2nd edition,
-  SIAM, 2011.
 -/
 
 open InnerProductSpace

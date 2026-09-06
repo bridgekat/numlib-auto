@@ -31,10 +31,10 @@ same `R`.
 
 Nothing here is numerical: no stability, no operation count, no pivoting.
 
-This serves Saad, *Iterative Methods for Sparse Linear Systems*[^saad-iterative], §1.7 — the
+This serves [Saad, *Iterative Methods for Sparse Linear Systems*][saad2003iterative], §1.7 — the
 reflector (1.20), its defining conditions (1.21)–(1.26), the factorization (1.19), the
-triangularization (1.27)–(1.28) and Algorithm 1.3 — and Kress, *Numerical
-Analysis*[^kress], §5.
+triangularization (1.27)–(1.28) and Algorithm 1.3 — and [Kress, *Numerical
+Analysis*][kress1998numerical], §5.
 
 ## Main definitions
 
@@ -52,12 +52,6 @@ Analysis*[^kress], §5.
   independent columns, and its converse `Matrix.linearIndependent_of_qr`.
 * `Matrix.qr_unique`: the factorization with a positive diagonal is unique, so all three
   constructions compute the same pair.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
-[^kress]: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998.
 -/
 
 open scoped Matrix

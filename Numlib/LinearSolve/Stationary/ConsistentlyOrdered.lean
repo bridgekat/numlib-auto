@@ -10,8 +10,8 @@ import Numlib.LinearSolve.Stationary.Splitting
 # Consistently ordered matrices and Young's theory of SOR
 
 The relation between the eigenvalues of the Jacobi iteration matrix `B` and those of the SOR
-iteration matrix `G_ω` for a *consistently ordered* matrix (Saad[^saad-iterative] §4.2.5;
-Kress[^kress] §4.2).
+iteration matrix `G_ω` for a *consistently ordered* matrix ([Saad][saad2003iterative] §4.2.5;
+[Kress][kress1998numerical] §4.2).
 
 Write `A = D - E - F` for the splitting of `A` into its diagonal part and the negatives of its
 strictly lower and strictly upper parts, and put `L = D⁻¹ E`, `U = D⁻¹ F`, so that the Jacobi
@@ -45,12 +45,6 @@ vanishes and the radius is `ω_opt - 1`
 
 Everything is stated over `ℂ`, where square roots exist; real matrices enter through
 `Matrix.complexify`.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
-[^kress]: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998.
 -/
 
 namespace Matrix

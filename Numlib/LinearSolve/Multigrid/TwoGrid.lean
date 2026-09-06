@@ -5,7 +5,7 @@ import Numlib.LinearSolve.Multigrid.Basic
 
 The two-grid error propagation operator `S^ν₂ (1 - Q) S^ν₁` of
 `Numlib/LinearSolve/Multigrid/Basic.lean` contracts the energy norm as soon as two constants are
-available (Saad, *Iterative Methods for Sparse Linear Systems*[^saad-iterative], §13.5.2):
+available ([Saad, *Iterative Methods for Sparse Linear Systems*][saad2003iterative], §13.5.2):
 
 * a **smoothing property** `‖S e‖_A² ≤ ‖e‖_A² - α q(A e)²` (`Multigrid.IsSmootherWith`): the
   smoother is `A`-nonexpansive, and what it removes is measured by a seminorm `q` of the residual;
@@ -31,12 +31,6 @@ The only concrete smoothing property proved here is the Richardson/weighted-Jaco
 `Multigrid.isSmootherWith_richardson`: for `S = 1 - ω D⁻¹ A` the constant is `α = ω (2 - ω γ)`,
 where `γ` bounds the quadratic form of `A` by that of `D`.  It is positive exactly on the classical
 range `0 < ω < 2/γ`, but the identity itself holds for every `ω`.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.  The smoothing property is his (13.62), the approximation property his (13.63),
-  the convergence theorem his Theorem 13.3, and the weighted Jacobi computation his Example 13.8.
 -/
 
 namespace Multigrid

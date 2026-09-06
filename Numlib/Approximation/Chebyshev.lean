@@ -13,8 +13,8 @@ import Numlib.Approximation.BestApprox
 
 Best uniform approximation of a continuous function on a compact subset of the line by
 polynomials of degree at most `n`, and the alternation (equioscillation) that characterizes it.
-The material is Atkinson–Han, *Theoretical Numerical Analysis*[^atkinson-han] Thm 3.3.19 and
-Kress, *Numerical Analysis*[^kress] §8.2.
+The material is [Atkinson–Han, *Theoretical Numerical Analysis*][han2009theoretical] Thm 3.3.19 and
+[Kress, *Numerical Analysis*][kress1998numerical] §8.2.
 
 ## Main definitions
 
@@ -50,13 +50,6 @@ Kress, *Numerical Analysis*[^kress] §8.2.
   `IsBestApprox.exists_mul_nonpos` — Kolmogorov's criterion — forbids.
 * `card_le_two_mul_of_forall_trigFun_eq_zero` is the Haar condition for the trigonometric
   polynomials: a nonzero one of degree at most `n` has at most `2 n` zeros in a period.
-
-## References
-
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009. (Theorem 3.3.19.)
-[^kress]: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998.
-  (§8.2.)
 -/
 
 open scoped Polynomial

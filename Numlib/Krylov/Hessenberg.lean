@@ -6,7 +6,7 @@ import Numlib.Krylov.Relations
 # Hessenberg relations, FOM/GMRES coordinates and Givens rotations
 
 * `Krylov.HessenbergRelation A v h`: a sequence `v` with `A v_j = ∑_{i ≤ j+1} h i j v_i`
-  (Saad, *Iterative Methods*[^saad-iterative] (6.6)–(6.7)), *without* orthogonality, so that the
+  ([Saad, *Iterative Methods*][saad2003iterative] (6.6)–(6.7)), *without* orthogonality, so that the
   residual formulas Saad (6.18), (6.27) and Prop 6.7 apply verbatim to IOM/DIOM/DQGMRES and
   (Saad Ch. 7) to the bi-Lanczos basis of QMR; Arnoldi is the instance
   `Arnoldi.hessenbergRelation`.
@@ -15,25 +15,16 @@ import Numlib.Krylov.Relations
   and the minimal-residual iterate is `x₀ + V_m y` with `y` the least-squares solution of
   `H̄_m y ≈ β e₁`.
 * Givens rotations, indexed by `ℕ` (no `Fin` casts): the progressive QR factorization of the
-  Hessenberg coefficients `h`, the parameters `c_k, s_k, ρ_k`, the transformed right-hand side
-  `γ_k, g_k` with `γ_{k+1} = -s_k γ_k` (Saad (6.37), (6.44)–(6.47), (6.80)–(6.81);
-  Choi[^choi] §2.2.3; Fong–Saunders[^fong-saunders] §4.2), `‖r_m‖ = |γ_m|` (Saad (6.42)), and the
-  spec-level identifications
-  `|s_m| = ‖r^G_{m+1}‖ / ‖r^G_m‖`, `|c_m| = ‖r^G_{m+1}‖ / ‖r^F_{m+1}‖`, `H_{m+1}` unit iff
-  `c_m ≠ 0` (Saad Prop 6.9, (6.75), Lemma 6.16). Because the rotations are computed from the
-  infinite coefficient function, prefix stability across `m` is automatic.
+  Hessenberg coefficients `h`, the parameters `c_k, s_k, ρ_k`, the transformed right-hand side `γ_k,
+  g_k` with `γ_{k+1} = -s_k γ_k` (Saad (6.37), (6.44)–(6.47), (6.80)–(6.81);
+  [Choi][choi2006iterative] §2.2.3; [Fong–Saunders][fong2012cg] §4.2), `‖r_m‖ = |γ_m|` (Saad
+  (6.42)), and the spec-level identifications `|s_m| = ‖r^G_{m+1}‖ / ‖r^G_m‖`, `|c_m| = ‖r^G_{m+1}‖
+  / ‖r^F_{m+1}‖`, `H_{m+1}` unit iff `c_m ≠ 0` (Saad Prop 6.9, (6.75), Lemma 6.16). Because the
+  rotations are computed from the infinite coefficient function, prefix stability across `m` is
+  automatic.
 
 Here `r^G_m` is the residual of the minimal-residual (GMRES) iterate and `r^F_m` that of the
 Galerkin (FOM) iterate, both over `x₀ + 𝒦_m`.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
-[^choi]: Sou-Cheng Choi, *Iterative Methods for Singular Linear Equations and Least-Squares
-  Problems*, PhD thesis, Stanford University, 2006.
-[^fong-saunders]: David Chin-Lung Fong and Michael Saunders, *CG versus MINRES: an empirical
-  comparison*, SQU Journal for Science 17 (2012), 44–62.
 -/
 
 open Krylov Finset

@@ -6,19 +6,13 @@ import Numlib.LinearSolve.Stationary.Basic
 /-!
 # Fixed-point iterations
 
-Glue around Mathlib's `ContractingWith` for the Banach fixed-point theorem with the a priori,
-a posteriori and linear-rate bounds (Atkinson–Han[^atkinson-han] Thm 5.1.3, estimates
-(5.1.4)–(5.1.6); Kress[^kress] Thm 3.45–3.46), the `T^m`-contraction variant (Atkinson–Han
-Exercise 5.1.2, Kress Problem 3.17), the derivative criterion `sup ‖T'‖ < 1` (Kress Thm 6.8;
-Atkinson–Han give the scalar case in the remark following their Thm 5.2.1), and Zarantonello's
-theorem for strongly monotone Lipschitz maps on Hilbert spaces (Atkinson–Han Thm 5.1.4, the
-nonlinear Lax–Milgram).
-
-## References
-
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
-[^kress]: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998.
+Glue around Mathlib's `ContractingWith` for the Banach fixed-point theorem with the a priori, a
+posteriori and linear-rate bounds ([Atkinson–Han][han2009theoretical] Thm 5.1.3, estimates
+(5.1.4)–(5.1.6); [Kress][kress1998numerical] Thm 3.45–3.46), the `T^m`-contraction variant
+(Atkinson–Han Exercise 5.1.2, Kress Problem 3.17), the derivative criterion `sup ‖T'‖ < 1` (Kress
+Thm 6.8; Atkinson–Han give the scalar case in the remark following their Thm 5.2.1), and
+Zarantonello's theorem for strongly monotone Lipschitz maps on Hilbert spaces (Atkinson–Han Thm
+5.1.4, the nonlinear Lax–Milgram).
 -/
 
 open Filter Topology

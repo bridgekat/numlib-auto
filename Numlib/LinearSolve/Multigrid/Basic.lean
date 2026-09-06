@@ -9,8 +9,8 @@ import Numlib.LinearSolve.Stationary.Splitting
 Given a symmetric coercive `A` on an inner product space `E` and a *prolongation*
 `Pr : F →ₗ[𝕜] E` from a finite-dimensional coarse space `F`, the **Galerkin coarse operator** is
 `A_H = Pr† A Pr` (`Multigrid.galerkinCoarse`) and the **coarse-grid correction** is
-`T = 1 - Pr A_H⁻¹ Pr† A` (`Multigrid.coarseCorrection`).  This is Saad, *Iterative Methods for
-Sparse Linear Systems*[^saad-iterative], §13.4.1–13.4.2 and §13.5.1.
+`T = 1 - Pr A_H⁻¹ Pr† A` (`Multigrid.coarseCorrection`).  This is [Saad, *Iterative Methods for
+Sparse Linear Systems*][saad2003iterative], §13.4.1–13.4.2 and §13.5.1.
 
 The design decision of this module is to *define* the coarse-grid projector
 `Q = Pr A_H⁻¹ Pr† A` as the `A`-orthogonal projector onto `range Pr` — that is, as
@@ -40,14 +40,6 @@ smoothers are the iteration operators of `Numlib/LinearSolve/Stationary/Splittin
 The coarse space is finite-dimensional throughout — that is what makes the `A`-orthogonal
 projection onto `range Pr` exist — and `E` is finite-dimensional wherever `Pr†` appears, which is
 what `LinearMap.adjoint` needs.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.  The coarse operator is his (13.39), the correction his (13.43), Lemma 13.1 is
-  `Multigrid.coarseProjection_apply_eq`, and the subspace decomposition is his (13.59)–(13.61).
-  His restriction `I_h^H` is `Pr†` up to the positive factor `2^d` of (13.37), which cancels out
-  of every formula here.
 -/
 
 namespace Multigrid

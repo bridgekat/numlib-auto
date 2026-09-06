@@ -12,8 +12,8 @@ import Numlib.LinearAlgebra.Sparse.Pattern
 /-!
 # What a graph ordering does to the pattern of a matrix
 
-Each of the three reorderings of Saad[^saad-iterative] §3.3.3 — level sets (breadth-first search,
-Cuthill–McKee), independent sets, multicolouring — is a *labelling* of the vertices of
+Each of the three reorderings of [Saad][saad2003iterative] §3.3.3 — level sets (breadth-first
+search, Cuthill–McKee), independent sets, multicolouring — is a *labelling* of the vertices of
 `Matrix.adjGraph A`, and each gives a block structure of `A.submatrix σ σ` for any permutation `σ`
 compatible with the labelling. The graph-theoretic content lives in
 `Numlib/Combinatorics/SimpleGraph`; what is here is only the translation to matrix entries, and it
@@ -45,12 +45,6 @@ the level-set result need every index to be reachable from the root, because
 both sides. Only `Matrix.maxDegree_adjGraph_le`, and through it
 `Matrix.exists_coloring_of_le_maxDegree`, needs pattern symmetry, and it needs it to bound the
 degree of the *symmetrized* graph by a count of nonzeros in one row.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003. §3.3.3 describes the level-set, independent-set and multicolour orderings; (4.42)
-  and Definition 4.11 are the two-colour case, Property A.
 -/
 
 open Finset

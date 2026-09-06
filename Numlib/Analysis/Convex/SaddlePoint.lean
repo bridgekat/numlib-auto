@@ -27,12 +27,7 @@ Not proved here: the existence of a saddle point for a convex–concave `L` on c
 of a reflexive Banach space, which needs weak compactness of bounded sets in a reflexive space.
 
 The definition and the equivalence are Definition 8.6.1 and Proposition 8.6.2 of
-Atkinson–Han[^atkinson-han].
-
-## References
-
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
+[Atkinson–Han][han2009theoretical].
 -/
 
 variable {α β : Type*} {L : α → β → ℝ} {A : Set α} {B : Set β} {u : α} {p : β}

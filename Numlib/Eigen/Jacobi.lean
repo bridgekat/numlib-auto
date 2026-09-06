@@ -15,9 +15,9 @@ import Mathlib.LinearAlgebra.Matrix.Trace
 Jacobi's method drives a real symmetric matrix towards a diagonal one by a sequence of plane
 rotations, each chosen to annihilate one off-diagonal entry. The quantity it decreases is the
 **off-diagonal mass** `N(A)² = ∑_{i ≠ j} |a_ij|²`, and the whole of the classical analysis is the
-identity `N(UᵀAU)² = N(A)² - 2 a_jk²` for the rotation `U` that annihilates `a_jk`
-(Kress, *Numerical Analysis*[^kress], Lemma 7.13), together with the observation that the largest
-off-diagonal entry carries at least a fraction `1/(n² - n)` of the mass.
+identity `N(UᵀAU)² = N(A)² - 2 a_jk²` for the rotation `U` that annihilates `a_jk` ([Kress,
+*Numerical Analysis*][kress1998numerical], Lemma 7.13), together with the observation that the
+largest off-diagonal entry carries at least a fraction `1/(n² - n)` of the mass.
 
 ## Main definitions
 
@@ -48,11 +48,6 @@ The rotation angle is parametrized by its tangent `t`, the root `t = θ + √(θ
 annihilation identity is then a polynomial identity in `c` and `s`, provable by
 `linear_combination`, and no trigonometry is needed. The numerically preferable root, the one of
 smaller modulus, differs only in stability and not in the statements proved here.
-
-## References
-
-[^kress]: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181,
-  Springer, 1998.
 -/
 
 open Finset

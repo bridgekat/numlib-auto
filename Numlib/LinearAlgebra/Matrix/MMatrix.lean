@@ -7,9 +7,9 @@ import Numlib.LinearAlgebra.Matrix.PerronFrobenius
 /-!
 # The nonnegative Neumann criterion, and M-matrices
 
-For an entrywise nonnegative real matrix `B`, the spectral radius is below `1` exactly when
-`1 - B` is invertible with an entrywise nonnegative inverse (Saad[^saad-iterative], Theorem 1.29),
-and an *M-matrix* is a matrix with nonpositive off-diagonal entries that is invertible with a
+For an entrywise nonnegative real matrix `B`, the spectral radius is below `1` exactly when `1 - B`
+is invertible with an entrywise nonnegative inverse ([Saad][saad2003iterative], Theorem 1.29), and
+an *M-matrix* is a matrix with nonpositive off-diagonal entries that is invertible with a
 nonnegative inverse (his Definition 1.30). Both are statements about the entrywise order of
 `Numlib/LinearAlgebra/Matrix/Order` and the spectral radius of
 `Numlib/LinearAlgebra/Matrix/Complexify`, and neither mentions an iteration; the splittings that
@@ -52,11 +52,6 @@ compactness.
 
 The irreducible Perron–Frobenius theorem is a separate development, in
 `Numlib/LinearAlgebra/Matrix/PerronFrobenius`; neither statement implies the other cheaply.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
 -/
 
 open Filter Finset

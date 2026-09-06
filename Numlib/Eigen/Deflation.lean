@@ -13,7 +13,7 @@ Wielandt's choice is
 `wielandtDeflate A u v σ = A - σ • (x ↦ ⟪v, x⟫ u)`,
 
 for any `v` normalized by `⟪v, u⟫ = 1`
-(Saad, *Numerical Methods for Large Eigenvalue Problems*[^saad-eigenvalue], §4.2.1).
+([Saad, *Numerical Methods for Large Eigenvalue Problems*][saad2011numerical], §4.2.1).
 
 ## Main definitions
 
@@ -61,11 +61,6 @@ Nothing in that theorem uses `v = u` or the normalization: only `u ∈ S`. The b
 `A - Q Σ Qᴴ` of Saad's Prop 4.2 is `LinearMap.wielandtDeflate` iterated over the columns of `Q`
 (`LinearMap.wielandtDeflate_wielandtDeflate` composes two steps into one rank-two modification),
 and the same theorem applies at each step.
-
-## References
-
-[^saad-eigenvalue]: Yousef Saad, *Numerical Methods for Large Eigenvalue Problems*, 2nd edition,
-  SIAM, 2011.
 -/
 
 open Polynomial

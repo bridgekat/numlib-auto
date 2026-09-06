@@ -6,8 +6,9 @@ import Numlib.LinearSolve.Stationary.Basic
 # Stationary iterations in finite precision
 
 A stationary iteration `x ↦ G x + c` run in floating-point arithmetic is the exact iteration
-perturbed at every step, and its accuracy is limited by the size of that perturbation rather than
-by the number of steps. This module separates the two halves of Higham's Theorem 17.1[^higham].
+perturbed at every step, and its accuracy is limited by the size of that perturbation rather than by
+the number of steps. This module separates the two halves of Higham's Theorem 17.1
+[higham2002accuracy].
 
 * `Stationary.norm_perturbed_iterate_sub_le` is the exact-arithmetic half, and knows nothing about
   rounding: a sequence obeying `x_{k+1} = G x_k + f + ξ_k` with `‖ξ_k‖ ≤ ε` and `‖G‖ < 1` stays
@@ -29,11 +30,6 @@ substitution — is **not** covered, and the reason is that a model of substitut
 products, but no triangular solve, so there is nothing to bound the error of the solve with. The
 affine form here covers every splitting whose iteration operator has already been formed, which is
 the form the exact-arithmetic half consumes.
-
-## References
-
-[^higham]: Nicholas J. Higham, *Accuracy and Stability of Numerical Algorithms*, 2nd edition,
-  SIAM, 2002. (Chapter 17, Theorems 17.1–17.2 and (17.5)–(17.6).)
 -/
 
 open scoped Matrix

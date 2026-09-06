@@ -8,7 +8,7 @@ import Numlib.Approximation.Chebyshev
 Given a subspace `Vₙ` of a normed space `V` and `n` bounded linear functionals `L i`, the
 *interpolation problem* asks for a `u ∈ Vₙ` with `L i u = b i` for prescribed data `b`. The
 problem is **unisolvent** when it has exactly one solution for every datum. The material is
-Atkinson–Han, *Theoretical Numerical Analysis*[^atkinson-han] §3.2 and §3.3.4.
+[Atkinson–Han, *Theoretical Numerical Analysis*][han2009theoretical] §3.2 and §3.3.4.
 
 ## Main definitions
 
@@ -31,12 +31,6 @@ Atkinson–Han, *Theoretical Numerical Analysis*[^atkinson-han] §3.2 and §3.3.
   `Numlib/Approximation/Chebyshev`: a subspace of `C(X, ℝ)` of dimension `n` satisfies the Haar
   condition in dimension `n` exactly when every family of `n` distinct point evaluations is
   unisolvent over it. Both say that a nonzero element has fewer than `n` zeros.
-
-## References
-
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009. (Definition 3.2.1, Lemma 3.2.2,
-  Theorem 3.2.3, §3.3.4.)
 -/
 
 open scoped Matrix

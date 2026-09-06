@@ -18,9 +18,9 @@ Zarantonello's lemma and the complex min–max estimates on an ellipse.
 The Joukowski map `J w = (w + w⁻¹)/2` carries the circle of radius `ρ` about the origin onto an
 ellipse with foci `±1` and semi-axes `(ρ ± ρ⁻¹)/2`, and carries `w ↦ w^k` to the Chebyshev
 polynomial: `T_k (J w) = (w^k + w^{-k})/2`. Everything here follows from that identity and from
-the maximum modulus principle. This is Saad, *Iterative Methods for Sparse Linear
-Systems*[^saad-iterative], §6.11.2 and Saad, *Numerical Methods for Large Eigenvalue
-Problems*[^saad-eigenvalue], §4.4.
+the maximum modulus principle. This is [Saad, *Iterative Methods for Sparse Linear
+Systems*][saad2003iterative], §6.11.2 and [Saad, *Numerical Methods for Large Eigenvalue
+Problems*][saad2011numerical], §4.4.
 
 ## Main definitions
 
@@ -51,13 +51,6 @@ Problems*[^saad-eigenvalue], §4.4.
   give it, because the Joukowski parameter domain of a filled ellipse is an annulus rather than a
   disc; what makes the annulus principle apply with a bound on the outer circle alone is the
   symmetry `J w⁻¹ = J w`, which sends the inner boundary circle onto the outer one.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003. §6.11.2 has Lemma 6.26, Theorem 6.27 and (6.115)–(6.121).
-[^saad-eigenvalue]: Yousef Saad, *Numerical Methods for Large Eigenvalue Problems*, 2nd edition,
-  SIAM, 2011. §4.4 has Lemma 4.3 and Theorem 4.9.
 -/
 
 open Polynomial Polynomial.Chebyshev

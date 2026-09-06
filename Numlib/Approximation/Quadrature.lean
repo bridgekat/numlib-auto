@@ -11,8 +11,9 @@ import Numlib.Approximation.OrthogonalPolynomial
 A quadrature rule is the bounded linear functional `f ↦ ∑ i, w i * f (x i)` on the continuous
 functions of a compact space: finitely many *nodes* `x i` with *weights* `w i`, approximating an
 integral. This file has the rule itself, its norm, and the criterion by which a sequence of rules
-converges for every continuous integrand. The material is Atkinson–Han, *Theoretical Numerical
-Analysis*[^atkinson-han] §2.4 and Kress, *Numerical Analysis*[^kress] §9.1 and §9.3.
+converges for every continuous integrand. The material is [Atkinson–Han, *Theoretical Numerical
+Analysis*][han2009theoretical] §2.4 and [Kress, *Numerical Analysis*][kress1998numerical] §9.1 and
+§9.3.
 
 ## Main definitions
 
@@ -42,14 +43,6 @@ Analysis*[^atkinson-han] §2.4 and Kress, *Numerical Analysis*[^kress] §9.1 and
   `2n`, and `Quadrature.not_forall_eq_integral_of_degree_le` says that no `n`-point rule does
   better. Both are stated about polynomials and a measure rather than through `IsExactOn`, which
   lives on `C(X, ℝ)` for a compact `X` and would need the weight to be carried by `X`.
-
-## References
-
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009. ((2.4.3), (2.4.4), §2.4.4, Exercises 2.4.2
-  and 2.4.3.)
-[^kress]: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998.
-  (§9.1, and Theorem 9.10, due to Szegő.)
 -/
 
 open Filter Topology

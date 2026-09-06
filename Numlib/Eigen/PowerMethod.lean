@@ -10,8 +10,8 @@ import Numlib.Approximation.BestApprox
 The power iteration `x_{k+1} = A x_k / ‖A x_k‖`, written in closed form
 `Krylov.powerIterate A x₀ k = ‖A^k x₀‖⁻¹ • A^k x₀` as a function of the step index, and its
 convergence to the dominant eigendirection
-(Saad, *Numerical Methods for Large Eigenvalue Problems*[^saad-eigenvalue], Thm 4.1;
-Kress[^kress] §7.2); then its block form, subspace iteration
+([Saad, *Numerical Methods for Large Eigenvalue Problems*][saad2011numerical], Thm 4.1;
+[Kress][kress1998numerical] §7.2); then its block form, subspace iteration
 (Saad, Thm 5.2; Kress Lemma 7.18), which carries a whole subspace along and captures as many
 dominant eigenvectors as that subspace has dimensions.
 
@@ -66,7 +66,7 @@ alternative is `Krylov.tendsto_norm_sub_smul_powerIterate`: the eigenvalue resid
 ## Inverse iteration
 
 `Krylov.inverseIterate A σ x₀ k` is the power method run on `(A - σ)⁻¹`, the shift-and-invert
-iteration of Saad, *Numerical Methods for Large Eigenvalue Problems*[^saad-eigenvalue],
+iteration of [Saad, *Numerical Methods for Large Eigenvalue Problems*][saad2011numerical],
 §4.1.2–4.1.3.
 Its point is that the map `μ ↦ (μ - σ)⁻¹` makes the eigenvalue of `A` *nearest the shift* the
 dominant one, so `Krylov.tendsto_smul_inverseIterate` converges under a hypothesis about distances
@@ -90,7 +90,7 @@ shift at every step, is described by the book without a theorem and is not forma
 Treppeniteration reorthonormalizes its block of vectors at every step, which replaces the basis
 but not the subspace it spans, so in closed form the `k`-th iterate is again a power of `A`
 applied to the starting data — this time to a whole subspace. What converges is the subspace, and
-the theorem of Saad, *Numerical Methods for Large Eigenvalue Problems*[^saad-eigenvalue], Thm 5.2
+the theorem of [Saad, *Numerical Methods for Large Eigenvalue Problems*][saad2011numerical], Thm 5.2
 measures its distance to a dominant eigenvector `u`, namely `‖u - P_{S_k} u‖` for `P_{S_k}` the
 orthogonal projector onto `S_k`. It is *not* a statement about a gap between subspaces.
 
@@ -111,8 +111,9 @@ orthogonal projector onto `S_k`. It is *not* a statement about a gap between sub
 The gap of `Numlib.Analysis.InnerProductSpace.Projection.Angle` says more than any of these:
 `Submodule.sinAngle_le_gap` turns a bound on `gap M S_k` into the same distance bound for *every*
 vector of the dominant invariant subspace `M`, whereas the theorem above gives it only for the
-eigenvectors of `M`. That stronger statement is a real theorem of the literature — Kress,
-*Numerical Analysis*[^kress], Lemma 7.18, for diagonalizable `A` — and it is not proved here; the
+eigenvectors of `M`. That stronger statement is a real theorem of the literature — [Kress,
+*Numerical Analysis*][kress1998numerical], Lemma 7.18, for diagonalizable `A` — and it is not proved
+here; the
 route and what it still needs are recorded in the plan.
 
 ## The spectral projector of a set of eigenvalues
@@ -126,12 +127,6 @@ the splitting being non-orthogonal unless `A` is normal. Its kernel is `W`, so t
 hypothesis that the vectors `P x_i` are linearly independent is `Disjoint S₀ W`
 (`Krylov.injOn_spectralProjector_iff`), and with `finrank S₀ = finrank M` every `u ∈ M` is `P s`
 for exactly one `s ∈ S₀` (`Krylov.existsUnique_mem_spectralProjector_eq`).
-
-## References
-
-[^saad-eigenvalue]: Yousef Saad, *Numerical Methods for Large Eigenvalue Problems*, 2nd edition,
-  SIAM, 2011.
-[^kress]: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998.
 -/
 
 open Filter Topology

@@ -16,7 +16,7 @@ A normed space has the **Radon–Riesz property** (also called the Kadec–Klee 
 property (H)) when weak convergence together with convergence of the norms implies convergence in
 norm. Every uniformly convex space has it, and so does every inner product space, where the proof
 is the expansion of `‖vₙ - u‖²` and needs neither completeness nor uniform convexity. Both
-statements are Atkinson–Han[^atkinson-han] Exercises 2.7.3 and 2.7.4 (c).
+statements are [Atkinson–Han][han2009theoretical] Exercises 2.7.3 and 2.7.4 (c).
 
 ## Main statements
 
@@ -28,11 +28,6 @@ statements are Atkinson–Han[^atkinson-han] Exercises 2.7.3 and 2.7.4 (c).
 Weak convergence is written in the sequential form `∀ ℓ, Tendsto (fun n => ℓ (v n)) atTop (𝓝 (ℓ u))`
 rather than through a weak topology, because that is the form in which the numerical-analysis
 literature states it and the form the consumers of this module use.
-
-## References
-
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
 -/
 
 open Filter Topology RCLike

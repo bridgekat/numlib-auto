@@ -3,9 +3,9 @@ import Numlib.Krylov.Iterate
 /-!
 # The conjugate residual recurrence (Stiefel)
 
-`CR.step` is one step of the CR recurrence (Saad, *Iterative Methods*[^saad-iterative]
-Alg 6.20, Fong–Saunders[^fong-saunders] Table 2.1, Choi[^choi] Table 2.12), with `q = A p`
-carried in the state so that each step applies `A` once.
+`CR.step` is one step of the CR recurrence ([Saad, *Iterative Methods*][saad2003iterative] Alg 6.20,
+[Fong–Saunders][fong2012cg] Table 2.1, [Choi][choi2006iterative] Table 2.12), with `q = A p` carried
+in the state so that each step applies `A` once.
 
 ## Main definitions
 
@@ -30,15 +30,6 @@ carried in the state so that each step applies `A` once.
 * `Krylov.isMinResIterate_of_orthogonal_directions`: the general GCR lemma (Saad Lemma 6.21),
   that any `AᴴA`-orthogonal direction sequence spanning the Krylov spaces yields
   minimal-residual iterates.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
-[^fong-saunders]: David Chin-Lung Fong and Michael Saunders, *CG versus MINRES: an empirical
-  comparison*, SQU Journal for Science 17 (2012), 44–62.
-[^choi]: Sou-Cheng Choi, *Iterative Methods for Singular Linear Equations and Least-Squares
-  Problems*, PhD thesis, Stanford University, 2006.
 -/
 
 open Krylov

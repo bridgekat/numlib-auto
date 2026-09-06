@@ -5,27 +5,14 @@ import Numlib.Krylov.Arnoldi
 # The symmetric Lanczos process
 
 For symmetric `A` the Arnoldi coefficients are real and tridiagonal
-(Saad, *Iterative Methods*[^saad-iterative] Thm 6.19 /
-Saad, *Large Eigenvalue Problems*[^saad-eigenvalue] Thm 6.2), which gives the three-term
+([Saad, *Iterative Methods*][saad2003iterative] Thm 6.19 /
+[Saad, *Large Eigenvalue Problems*][saad2011numerical] Thm 6.2), which gives the three-term
 recurrence `A v_j = β_j v_{j-1} + α_j v_j + β_{j+1} v_{j+1}`
-(Saad, *Iterative Methods*, Alg 6.15, Choi[^choi] §2.1,
-Meurant–Strakoš[^meurant-strakos] §2.1, Fong–Saunders[^fong-saunders] §1). Indexing is
+(Saad, *Iterative Methods*, Alg 6.15, [Choi][choi2006iterative] §2.1,
+[Meurant–Strakoš][meurant2006lanczos] §2.1, [Fong–Saunders][fong2012cg] §1). Indexing is
 `0`-based: `alpha A b j = ⟪v_j, A v_j⟫` and
 `beta A b j = h_{j+1,j} = ‖w_j‖ ≥ 0`, so `A v_{j+1} = beta j • v_j + alpha (j+1) • v_{j+1} +
 beta (j+1) • v_{j+2}`.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
-[^saad-eigenvalue]: Yousef Saad, *Numerical Methods for Large Eigenvalue Problems*, 2nd edition,
-  SIAM, 2011.
-[^choi]: Sou-Cheng Choi, *Iterative Methods for Singular Linear Equations and Least-Squares
-  Problems*, PhD thesis, Stanford University, 2006.
-[^meurant-strakos]: Gérard Meurant and Zdeněk Strakoš, *The Lanczos and conjugate gradient
-  algorithms in finite precision arithmetic*, Acta Numerica (2006), 471–542.
-[^fong-saunders]: David Chin-Lung Fong and Michael Saunders, *CG versus MINRES: an empirical
-  comparison*, SQU Journal for Science 17 (2012), 44–62.
 -/
 
 open Krylov

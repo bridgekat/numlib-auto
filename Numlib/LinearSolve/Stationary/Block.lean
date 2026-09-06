@@ -4,7 +4,7 @@ import Numlib.LinearSolve.Stationary.Splitting
 /-!
 # Block splittings and block relaxation
 
-The block form of the classical iterations (Saad[^saad-iterative] §4.1.1, (4.15)–(4.17),
+The block form of the classical iterations ([Saad][saad2003iterative] §4.1.1, (4.15)–(4.17),
 Algorithms 4.1–4.2 in the non-overlapping case). The block structure is a *labelling*
 `π : n → ι` of the index set by a linearly ordered type of block labels, and the block-diagonal,
 strict block-lower and strict block-upper parts of `A` are the entries with `π i = π j`,
@@ -28,11 +28,6 @@ block, hence changes no determinant. So no finiteness of the label type `ι` is 
 
 Overlapping blocks — Saad's general Algorithm 4.1, in which the index sets need not partition
 `n` — are not formalized; the book proves no theorem about them.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
 -/
 
 namespace Matrix

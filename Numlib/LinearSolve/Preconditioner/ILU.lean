@@ -14,11 +14,11 @@ supported in `P`.
 ## The declarative definition
 
 `Matrix.IsILU P A L U` states exactly the five constraints above, and not an algorithm.
-Saad[^saad-iterative] §10.3.1 gives several loop orders (`KIJ`, `IKJ`) that compute such factors,
-proves that two of them agree, and observes before Algorithm 10.4 that the factors are in general
-not unique. Each loop order produces factors satisfying `Matrix.IsILU`, every downstream statement
-of §10.3–10.5 uses only these constraints, and no uniqueness is available to be exploited; so the
-constraints are the definition here. `Matrix.IsILU0`, taking `P` to be the off-diagonal zero
+[Saad][saad2003iterative] §10.3.1 gives several loop orders (`KIJ`, `IKJ`) that compute such
+factors, proves that two of them agree, and observes before Algorithm 10.4 that the factors are in
+general not unique. Each loop order produces factors satisfying `Matrix.IsILU`, every downstream
+statement of §10.3–10.5 uses only these constraints, and no uniqueness is available to be exploited;
+so the constraints are the definition here. `Matrix.IsILU0`, taking `P` to be the off-diagonal zero
 pattern `Matrix.zeroPattern A` of `A` itself, is the level-zero factorization `ILU(0)`.
 
 `Matrix.IsMILU` is the *modified* variant of §10.3.5: the constraints hold off the diagonal, and
@@ -28,16 +28,15 @@ preconditioner exact on constant vectors.
 ## Existence for M-matrices
 
 The theorem of the chapter is that an M-matrix (`Matrix.IsMMatrix`) admits an incomplete
-factorization for *every* zero pattern avoiding the diagonal, that no pivot vanishes, and that
-`A = L U - R` is then a regular splitting, hence a convergent iteration
-(`Matrix.IsMMatrix.exists_isILU` and `Matrix.IsILU.isRegular`). This is due to Meijerink and van
-der Vorst[^meijerink]; the induction rests on Ky Fan's theorem[^kyfan], that one step of Gaussian
-elimination applied to an M-matrix produces an M-matrix
-(`Matrix.IsMMatrix.isMMatrix_schurComplementSingle`), and on the comparison theorem
-`Matrix.IsMMatrix.of_entrywiseLE` of `Numlib/LinearAlgebra/Matrix/MMatrix`, which is what makes
-the *dropping* step legitimate: discarding a nonpositive off-diagonal entry moves the matrix up in
-the entrywise order, and an entrywise-larger matrix with nonpositive off-diagonal entries is again
-an M-matrix.
+factorization for *every* zero pattern avoiding the diagonal, that no pivot vanishes, and that `A =
+L U - R` is then a regular splitting, hence a convergent iteration (`Matrix.IsMMatrix.exists_isILU`
+and `Matrix.IsILU.isRegular`). This is due to [Meijerink and van der Vorst][meijerink1977iterative];
+the induction rests on Ky Fan's theorem [fan1960note], that one step of Gaussian elimination applied
+to an M-matrix produces an M-matrix (`Matrix.IsMMatrix.isMMatrix_schurComplementSingle`), and on the
+comparison theorem `Matrix.IsMMatrix.of_entrywiseLE` of `Numlib/LinearAlgebra/Matrix/MMatrix`, which
+is what makes the *dropping* step legitimate: discarding a nonpositive off-diagonal entry moves the
+matrix up in the entrywise order, and an entrywise-larger matrix with nonpositive off-diagonal
+entries is again an M-matrix.
 
 The elimination step is taken in the form `Matrix.elimStep`, which keeps the index type fixed:
 it is `G⁻¹ A` for the unipotent `G = Matrix.elimMul A p` carrying the multipliers of column `p`,
@@ -53,16 +52,6 @@ holds: positive diagonal except possibly in the last row, nonpositive off-diagon
 strictly negative sum of the entries to the right of the diagonal in every row but the last. No
 nonsingularity and no nonnegative inverse are assumed. `Matrix.IsMHat.ilut_rows` is the resulting
 theorem, stated over the abstract row recurrence rather than over an algorithm.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003. Chapter 10, in particular §10.3 (Theorems 10.1 and 10.2, Proposition 10.4) and
-  §10.4 (Theorem 10.8).
-[^meijerink]: J. A. Meijerink and H. A. van der Vorst, *An iterative solution method for linear
-  systems of which the coefficient matrix is a symmetric M-matrix*, Mathematics of Computation 31
-  (1977), 148-162.
-[^kyfan]: Ky Fan, *Note on M-matrices*, The Quarterly Journal of Mathematics 11 (1960), 43-49.
 -/
 
 open Finset

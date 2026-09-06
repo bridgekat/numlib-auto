@@ -10,10 +10,10 @@ import Numlib.Analysis.Normed.Ring.Inverse
 /-!
 # Stationary (affine) iterations
 
-`Stationary.step G f x = G x + f`. Convergence for all data iff the spectral radius satisfies
-`ρ(G) < 1` (Saad[^saad-iterative] Thm 4.1, in a complex Banach space for `⇒` and in finite
-dimension for `⇐`; Kress[^kress] Thm 4.1), the contraction case `‖G‖ < 1` with a priori /
-a posteriori bounds (Kress Thm 3.48, Atkinson–Han[^atkinson-han] §5.2.2), and the error
+`Stationary.step G f x = G x + f`. Convergence for all data iff the spectral radius satisfies `ρ(G)
+< 1` ([Saad][saad2003iterative] Thm 4.1, in a complex Banach space for `⇒` and in finite dimension
+for `⇐`; [Kress][kress1998numerical] Thm 4.1), the contraction case `‖G‖ < 1` with a priori / a
+posteriori bounds (Kress Thm 3.48, [Atkinson–Han][han2009theoretical] §5.2.2), and the error
 propagation `x_k - x* = G^k (x₀ - x*)`.
 
 The spectral radius is also the *sharp* asymptotic convergence factor: no starting vector decays
@@ -21,14 +21,6 @@ faster than `ρ(G)` in the sense of the limsup of `(‖G^k d₀‖/‖d₀‖)^{
 (`Stationary.limsup_norm_pow_apply_rpow_le_spectralRadius`), and in finite dimension an
 eigenvector of a dominant eigenvalue attains it
 (`Stationary.exists_limsup_norm_pow_apply_rpow_eq_spectralRadius`).
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
-[^kress]: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998.
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
 -/
 
 open Filter Topology

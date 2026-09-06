@@ -11,12 +11,12 @@ orthonormal.
   *unrelated* families, the iterate basis `z` on the left and the residual basis `v` on the
   right. `Krylov.HessenbergRelation` is the diagonal case `z = v`
   (`Krylov.HessenbergRelation₂.of_hessenbergRelation`); flexible GMRES
-  (Saad, *Iterative Methods*[^saad-iterative] (9.22), where `z_j = M_j⁻¹ v_j` for a
+  ([Saad, *Iterative Methods*][saad2003iterative] (9.22), where `z_j = M_j⁻¹ v_j` for a
   step-dependent preconditioner) and TFQMR (Saad (7.70)) are genuinely two-family, and the
   residual formulas `residual_eq`, `residual_eq_of_mulVec_eq` hold verbatim at this generality.
 * `Krylov.quasiResidual h β m y = ‖β e₁ - H̄_m y‖₂`, and the specification
   `Krylov.IsQuasiMinResIterate z h β x₀ m x`, "`x = x₀ + Z_m y` with `y` minimizing the
-  quasi-residual": QMR (Freund–Nachtigal[^freund-nachtigal]; Saad Algorithm 7.4),
+  quasi-residual": QMR ([Freund–Nachtigal][freund1991qmr]; Saad Algorithm 7.4),
   TFQMR (Algorithm 7.8), QGMRES and DQGMRES
   (Algorithms 6.12–6.13) and FGMRES (Algorithm 9.6) all satisfy it, each for its own `z`, `v`
   and `h`. It is `Krylov.IsMinResIterate` when the residual basis is the Arnoldi one
@@ -39,19 +39,10 @@ orthonormal.
 * `Krylov.IsQuasiMinResIterate.eq_combination`: successive quasi-minimal-residual iterates are the
   smoothing combinations `x^Q_{m+1} = |s_m|² x^Q_m + |c_m|² x^F_{m+1}` of the previous
   quasi-minimal-residual iterate and the Galerkin iterate at the current step (Saad (7.29)–(7.30),
-  (6.58); Zhou–Walker[^zhou-walker]).
+  (6.58); [Zhou–Walker][zhou1994residual]).
 
 Indices are `0`-based, as in the rest of the Krylov layer: `ρ^Q_k = ‖γ_k‖` is the quasi-residual
 norm after `k` steps and `ρ^F_k = ρ^Q_k / |c_{k-1}|` the Galerkin one.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
-[^freund-nachtigal]: Roland W. Freund and Noël M. Nachtigal, *QMR: a quasi-minimal residual method
-  for non-Hermitian linear systems*, Numerische Mathematik 60 (1991), 315–339.
-[^zhou-walker]: Lu Zhou and Homer F. Walker, *Residual smoothing techniques for iterative
-  methods*, SIAM Journal on Scientific Computing 15 (1994), 297–312.
 -/
 
 open Krylov Finset

@@ -10,22 +10,15 @@ import Numlib.LinearSolve.Projection.Basic
 
 The Arnoldi vectors are the Gram–Schmidt orthonormalization of the Krylov sequence
 `b, A b, A² b, …` (`InnerProductSpace.gramSchmidtNormed`), which is `0` after breakdown. This
-gives orthonormality, `span {v₀, …, v_{m-1}} = 𝒦_m` (Saad, *Iterative
-Methods*[^saad-iterative], Prop 6.4), breakdown iff grade (Prop 6.6), the Hessenberg structure
+gives orthonormality, `span {v₀, …, v_{m-1}} = 𝒦_m` ([Saad, *Iterative
+Methods*][saad2003iterative], Prop 6.4), breakdown iff grade (Prop 6.6), the Hessenberg structure
 of `h i j = ⟪v i, A v j⟫` and the Arnoldi relation `A v_j = ∑_{i ≤ j+1} h i j v_i`
 (Prop 6.5, (6.9)), and the identification with the classical recurrence
 `w_j = A v_j - ∑_{i ≤ j} h_{ij} v_i`, `v_{j+1} = w_j / ‖w_j‖` (Alg 6.1), all from that book.
 Also the basis-free form `(1 - P_m) A P_m = h_{m+1,m} v_{m+1} v_mᴴ`, where `P_m` is the
-orthogonal projection onto `𝒦_m` (Saad, *Large Eigenvalue Problems*[^saad-eigenvalue], P-6.1,
+orthogonal projection onto `𝒦_m` ([Saad, *Large Eigenvalue Problems*][saad2011numerical], P-6.1,
 which measures the invariance defect of `𝒦_m` by `‖(I - P_m) A P_m‖`). Indices are `0`-based:
 `v 0 = b / ‖b‖`.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
-[^saad-eigenvalue]: Yousef Saad, *Numerical Methods for Large Eigenvalue Problems*, 2nd edition,
-  SIAM, 2011.
 -/
 
 open Krylov

@@ -5,30 +5,18 @@ import Numlib.LinearSolve.Perturbation
 /-!
 # Monotonicity properties of Krylov iterates on SPD systems (Fong–Saunders)
 
-Specification-level versions of Fong–Saunders[^fong-saunders] Thm 2.3–2.5 and Thm 3.1: for *any*
+Specification-level versions of [Fong–Saunders][fong2012cg] Thm 2.3–2.5 and Thm 3.1: for *any*
 sequence of minimal-residual Krylov iterates of a symmetric coercive system (MINRES, CR, GMRES, …)
 started at `x₀ = 0`, `‖x_k‖` is nondecreasing, `‖x* - x_k‖` and `‖x* - x_k‖_A` are nonincreasing,
 and the normwise relative backward error is nonincreasing. Proved by identifying the iterates with
 the CR iterates (`CR.isMinResIterate` + uniqueness) and using the sign lemma of
 `Numlib/Krylov/CR`. Alongside them, `‖A x_k‖` is nondecreasing from `x₀ = 0`
-(Choi[^choi] Lemma 2.20), which needs neither symmetry nor coercivity.
+([Choi][choi2006iterative] Lemma 2.20), which needs neither symmetry nor coercivity.
 
 The same argument run through the CG iterates gives the Galerkin counterparts, which hold on the
 same SPD systems but are older: `‖x_k‖` is nondecreasing from `x₀ = 0`, due to
-Steihaug[^steihaug] and tabulated as the CG column of Fong–Saunders Table 5.1, and `‖x* - x_k‖`
-is nonincreasing, Hestenes–Stiefel[^hestenes-stiefel] Thm 6:3.
-
-## References
-
-[^fong-saunders]: David Chin-Lung Fong and Michael Saunders, *CG versus MINRES: an empirical
-  comparison*, SQU Journal for Science 17 (2012), 44–62.
-[^choi]: Sou-Cheng Choi, *Iterative Methods for Singular Linear Equations and Least-Squares
-  Problems*, PhD thesis, Stanford University, 2006.
-[^steihaug]: Trond Steihaug, *The conjugate gradient method and trust regions in large scale
-  optimization*, SIAM Journal on Numerical Analysis 20 (1983), 626–637.
-[^hestenes-stiefel]: Magnus R. Hestenes and Eduard Stiefel, *Methods of conjugate gradients for
-  solving linear systems*, Journal of Research of the National Bureau of Standards 49 (1952),
-  409–436.
+[Steihaug][steihaug1983conjugate] and tabulated as the CG column of Fong–Saunders Table 5.1, and
+`‖x* - x_k‖` is nonincreasing, [Hestenes–Stiefel][hestenes1952methods] Thm 6:3.
 -/
 
 open Krylov

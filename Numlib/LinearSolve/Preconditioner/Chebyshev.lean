@@ -5,11 +5,11 @@ import Numlib.RingTheory.Polynomial.ChebyshevMinimax
 /-!
 # Chebyshev acceleration
 
-The parameter-free three-term iteration whose residuals are the shifted Chebyshev polynomials of
-an interval `[α, β]` enclosing the spectrum of a symmetric operator
-(Saad, *Iterative Methods for Sparse Linear Systems*[^saad-iterative], §12.3.2 and Algorithm 12.1;
-Kress, *Numerical Analysis*[^kress], §4.4). One step costs one operator application and no inner
-product at all, which is the practical point of the method.
+The parameter-free three-term iteration whose residuals are the shifted Chebyshev polynomials of an
+interval `[α, β]` enclosing the spectrum of a symmetric operator ([Saad, *Iterative Methods for
+Sparse Linear Systems*][saad2003iterative], §12.3.2 and Algorithm 12.1; [Kress, *Numerical
+Analysis*][kress1998numerical], §4.4). One step costs one operator application and no inner product
+at all, which is the practical point of the method.
 
 The residual polynomial is already in the library: it is
 `Polynomial.Chebyshev.shifted k α β 0` of `Numlib/RingTheory/Polynomial/ChebyshevMinimax`, which
@@ -36,12 +36,6 @@ polynomials with `r_k = P_k(A) r₀` and `d_k = Q_k(A) r₀`; the identity that 
 `Chebyshev.resPoly_add_two` is really a statement about `Polynomial.Chebyshev.shifted` and belongs
 beside it in `Numlib/RingTheory/Polynomial/ChebyshevMinimax`; it is proved here only because that
 file was owned elsewhere while this one was written.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
-[^kress]: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998.
 -/
 
 open Polynomial Krylov

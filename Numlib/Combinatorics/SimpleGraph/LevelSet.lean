@@ -20,16 +20,11 @@ differ by two or more (`SimpleGraph.not_adj_of_two_le_dist_sub_dist`), so every 
 the spheres below it from the spheres above it (`SimpleGraph.isSeparator_sphere`).
 
 This is the graph-theoretic content behind the level-set reorderings of a sparse matrix — the
-Cuthill–McKee ordering and the separators of nested dissection — of Saad[^saad-iterative] §3.3.3
+Cuthill–McKee ordering and the separators of nested dissection — of [Saad][saad2003iterative] §3.3.3
 and §3.6.2: a reordering that lists the vertices in order of their distance to a root makes the
 matrix block tridiagonal. The algorithm is not needed for that, because the sets a breadth-first
 search marks at step `k` are exactly the distance spheres, so the theorems below are stated about
 `SimpleGraph.dist` and about no traversal.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
 -/
 
 namespace SimpleGraph

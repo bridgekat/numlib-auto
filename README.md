@@ -85,7 +85,7 @@ The user can prompt an agent to formalize a plan. In such cases, the agent shoul
 
 Keep in mind the backbone-surface split. Everything in the backbone (including doc comments) should be self-contained; to reference material from the books, cite the source explicitly instead of writing a mere number like "Theorem 3.7". Mere numbers may be used in surface only.
 
-Citations follow Mathlib: the bibliography is `docs/references.bib`, and a doc comment links to an entry by `[bibkey]` or `[Author, *Title*][bibkey]`. Add the entry to `docs/references.bib` before citing it, using only alphanumerics, `-`, `_` and `:` in the key — doc-gen fails silently on anything else. An entry an agent wrote or edited must carry a `# GENERATED` comment above it, so that a human can check it. Do not write a `## References` section listing what a module cites: the citation is the link, and the bibliography is the list.
+Citations follow Mathlib: the bibliography is `docs/references.bib`, and a doc comment links to an entry by `[bibkey]` or `[Author, *Title*][bibkey]`. Add the entry to `docs/references.bib` before citing it, using only alphanumerics, `-`, `_` and `:` in the key — doc-gen fails silently on anything else. An entry an agent wrote or edited must carry a `# GENERATED` comment above it, so that a human can check it. A `## References` section is for saying which parts of a source a module draws on — which chapter, which numbered results — with the sources linked; it is not for reprinting a citation the bibliography already holds.
 
 ### Reviewing a formalization
 

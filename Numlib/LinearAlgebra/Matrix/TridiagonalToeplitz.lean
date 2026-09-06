@@ -30,17 +30,12 @@ quadratic form is enclosed in `[b - 2|a| cos(π/(n+1)), b + 2|a| cos(π/(n+1))]`
 (`Matrix.isSymmetricBoundedBy_symmTridiagonalToeplitz`); and `tridiag(-1, 2, -1)`, whose
 eigenvalues are `4 sin²((k + 1)π / (2(n + 1)))`, is positive definite.
 
-This is the model problem of Saad, *Iterative Methods for Sparse Linear
-Systems*[^saad-iterative], §2.2.3 and §2.2.6, and of Kress, *Numerical Analysis*[^kress], §4.
-The module knows nothing about differential equations: the claim that these matrices discretize
-`-u''` belongs to a textbook surface, and the two-dimensional five-point Laplacian is the
-Kronecker sum of two of them, in `Numlib.LinearAlgebra.Matrix.KroneckerSum`.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
-[^kress]: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998.
+This is the model problem of [Saad, *Iterative Methods for Sparse Linear
+Systems*][saad2003iterative], §2.2.3 and §2.2.6, and of [Kress, *Numerical
+Analysis*][kress1998numerical], §4. The module knows nothing about differential equations: the claim
+that these matrices discretize `-u''` belongs to a textbook surface, and the two-dimensional
+five-point Laplacian is the Kronecker sum of two of them, in
+`Numlib.LinearAlgebra.Matrix.KroneckerSum`.
 -/
 
 open Finset

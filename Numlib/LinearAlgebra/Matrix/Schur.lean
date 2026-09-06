@@ -22,9 +22,9 @@ diagonal of `R` then carries the eigenvalues of `A` with their multiplicities, s
 characteristic polynomial of a triangular matrix is the product of `X - r_ii` and conjugation does
 not change it.
 
-This is the classical triangulation of Saad, *Iterative Methods for Sparse Linear
-Systems*[^saad-iterative] (Theorem 1.9) and Saad, *Numerical Methods for Large Eigenvalue
-Problems*[^saad-eigenvalue] (Theorem 1.5), the source of the *Schur vectors* that deflation
+This is the classical triangulation of [Saad, *Iterative Methods for Sparse Linear
+Systems*][saad2003iterative] (Theorem 1.9) and [Saad, *Numerical Methods for Large Eigenvalue
+Problems*][saad2011numerical] (Theorem 1.5), the source of the *Schur vectors* that deflation
 techniques for non-normal matrices work with.
 
 ## Main results
@@ -49,13 +49,6 @@ where an invariant hyperplane puts it.
 
 Only `Module.End.exists_eigenvalue` uses `[IsAlgClosed 𝕜]`; over `ℝ` the statement is false, as a
 plane rotation shows.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
-[^saad-eigenvalue]: Yousef Saad, *Numerical Methods for Large Eigenvalue Problems*, 2nd edition,
-  SIAM, 2011.
 -/
 
 open Module Submodule

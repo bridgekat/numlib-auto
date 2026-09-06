@@ -19,7 +19,7 @@ proves therefore transports.
 * `Krylov.IsPreconditioner.EnergySpace`, `toEnergy`, `energySubmodule`, `energyEnd`: the
   `M`-inner product space and the transport of vectors, subspaces and operators into it;
 * `Krylov.PCG.State`, `alpha`, `beta`, `step`, `init`, `iterate`: the preconditioned conjugate
-  gradient iteration (Saad, *Iterative Methods*[^saad-iterative] Algorithm 9.1).
+  gradient iteration ([Saad, *Iterative Methods*][saad2003iterative] Algorithm 9.1).
 
 ## Main statements
 
@@ -47,11 +47,6 @@ proves therefore transports.
 The inverse is carried as data rather than deduced from surjectivity of `M`: that is what a
 preconditioner is in practice (a routine that solves `M z = r`), and it keeps the module free of
 completeness and finite-dimensionality hypotheses.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
 -/
 
 open Polynomial Krylov

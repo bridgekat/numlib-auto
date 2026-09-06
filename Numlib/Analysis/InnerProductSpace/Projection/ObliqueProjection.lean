@@ -15,7 +15,7 @@ import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 Projectors `P` (`P ∘ P = P`) onto `K` and orthogonal to `L` (`ker P = Lᗮ`): uniqueness from
 range and kernel, existence iff `K ⊓ Lᗮ = ⊥`, the matrix form `P = V (Wᴴ V)⁻¹ Wᴴ` from bases `V`
 of `K` and `W` of `L`, the characterization of the orthogonal projectors as the projectors of
-norm `1`, and Kato's lemma `‖P‖ = ‖1 - P‖`[^szyld].
+norm `1`, and Kato's lemma `‖P‖ = ‖1 - P‖` [szyld2006many].
 
 ## Main definitions
 
@@ -40,11 +40,6 @@ norm `1`, and Kato's lemma `‖P‖ = ‖1 - P‖`[^szyld].
 
 Kato's lemma rests on `norm_smul_add_smul_eq_norm_add`, an elementary fact about inner product
 spaces: rescaling two vectors so as to exchange their norms does not change the norm of their sum.
-
-## References
-
-[^szyld]: Daniel B. Szyld, *The many proofs of an identity on the norm of oblique projections*,
-  Numerical Algorithms 42, 2006.
 -/
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]

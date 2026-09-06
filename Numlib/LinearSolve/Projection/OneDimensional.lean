@@ -4,17 +4,12 @@ import Numlib.LinearSolve.Projection.Optimality
 /-!
 # One-dimensional projection processes
 
-The projection step with `K = span {v}`, `L = span {w}` (Saad[^saad-iterative] (5.12)–(5.13)),
+The projection step with `K = span {v}`, `L = span {w}` ([Saad][saad2003iterative] (5.12)–(5.13)),
 and its three classical instances, written with the residual `r = b - A x`: steepest descent
 (`v = w = r`), minimal residual iteration (`v = r`, `w = A r`), and residual-norm steepest
 descent (`v = A† r`, `w = A v`). Convergence: Kantorovich's inequality (Saad Lemma 5.8), the
 steepest-descent rate (Saad Thm 5.9) and the minimal-residual rate (Saad Thm 5.10, valid for
 bounded coercive operators on any inner product space).
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
 -/
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]

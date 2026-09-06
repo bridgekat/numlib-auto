@@ -11,11 +11,11 @@ import Mathlib.LinearAlgebra.Lagrange
 /-!
 # Normal operators in finite dimension
 
-A normal operator on a finite-dimensional inner product space is diagonalizable, its eigenspaces
-are pairwise orthogonal, they are the eigenspaces of its adjoint at the conjugate eigenvalues, and
-its adjoint is a polynomial in it. This is the spectral theorem for normal operators, and the
-last statement is the algebraic form of it that the Faber–Manteuffel theory of short-recurrence
-Krylov methods needs (Saad, *Iterative Methods for Sparse Linear Systems*[^saad-iterative], §6.10).
+A normal operator on a finite-dimensional inner product space is diagonalizable, its eigenspaces are
+pairwise orthogonal, they are the eigenspaces of its adjoint at the conjugate eigenvalues, and its
+adjoint is a polynomial in it. This is the spectral theorem for normal operators, and the last
+statement is the algebraic form of it that the Faber–Manteuffel theory of short-recurrence Krylov
+methods needs ([Saad, *Iterative Methods for Sparse Linear Systems*][saad2003iterative], §6.10).
 
 ## Main results
 
@@ -58,11 +58,6 @@ Dot notation does not reach these lemmas: they live in the `LinearMap` and `Matr
 while the hypothesis `IsStarNormal A` is a root-level structure, so a normality hypothesis `hA`
 has to be passed as `LinearMap.IsStarNormal.ker_adjoint_eq_ker hA` and not as
 `hA.ker_adjoint_eq_ker`. This follows Mathlib's `ContinuousLinearMap.IsStarNormal` lemmas.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
 -/
 
 open Module End Polynomial

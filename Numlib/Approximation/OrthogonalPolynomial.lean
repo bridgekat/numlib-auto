@@ -42,11 +42,8 @@ recurrence, and the truncated expansion as a best `L²(μ)` approximation.
 
 ## References
 
-The material is Atkinson–Han[^atkinson-han] §3.5 and Kress[^kress] §9.3.
+The material is [Atkinson–Han][han2009theoretical] §3.5 and [Kress][kress1998numerical] §9.3.
 
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
-[^kress]: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998.
 -/
 
 open MeasureTheory Polynomial
@@ -347,7 +344,7 @@ private theorem integral_family_mul_family_of_lt (hw : IsWeight μ) :
     · intro hj'
       exact absurd (Finset.mem_range.mpr hj) hj'
 
-/-- Orthogonality of the family, Atkinson–Han[^atkinson-han] §3.5: distinct members are
+/-- Orthogonality of the family, [Atkinson–Han][han2009theoretical] §3.5: distinct members are
 orthogonal in `L²(μ)`. -/
 theorem integral_family_mul_family (hw : IsWeight μ) {m n : ℕ} (hmn : m ≠ n) :
     ∫ x, (family μ m).eval x * (family μ n).eval x ∂μ = 0 := by
@@ -613,7 +610,8 @@ private theorem integral_X_mul_family_mul_self (μ : Measure ℝ) (m : ℕ) :
   integral_congr_ae (Filter.Eventually.of_forall fun x => by ring)
 
 /-- The three-term recurrence for the monic orthogonal polynomials of `μ`,
-Atkinson–Han[^atkinson-han] Exercises 3.5.5–3.5.6: `p_{n+2} = (X - a_{n+1}) p_{n+1} - b_n p_n`. -/
+[Atkinson–Han][han2009theoretical] Exercises 3.5.5–3.5.6: `p_{n+2} = (X - a_{n+1}) p_{n+1} - b_n
+p_n`. -/
 theorem three_term_recurrence (hw : IsWeight μ) (n : ℕ) :
     family μ (n + 2) =
       (X - C (alpha μ (n + 1))) * family μ (n + 1) - C (beta μ n) * family μ n := by
@@ -728,7 +726,7 @@ theorem map_degreeLE_toLpₗ (hw : IsWeight μ) (N : ℕ) :
   · rintro ⟨k, rfl⟩
     exact ⟨family μ k, ⟨k, Nat.lt_succ_iff.mp k.2, rfl⟩, rfl⟩
 
-/-- Atkinson–Han[^atkinson-han] (3.5.2): the truncated expansion
+/-- [Atkinson–Han][han2009theoretical] (3.5.2): the truncated expansion
 `∑_{k ≤ N} (⟪u, p_k⟫ / ‖p_k‖²) p_k` is the best `L²(μ)` approximation of `u` by polynomials of
 degree at most `N`. -/
 theorem isBestApprox_truncation (hw : IsWeight μ) (N : ℕ) (u : Lp ℝ 2 μ) :
@@ -1297,7 +1295,7 @@ namespace Polynomial.Chebyshev
 
 open Real
 
-/-- Atkinson–Han[^atkinson-han] (3.5.8)–(3.5.9): the Chebyshev polynomials are orthogonal on
+/-- [Atkinson–Han][han2009theoretical] (3.5.8)–(3.5.9): the Chebyshev polynomials are orthogonal on
 `(-1, 1)` for the weight `(1 - x²)^{-1/2}`. -/
 theorem integral_T_mul_T_div_sqrt (m n : ℕ) :
     ∫ x in (-1 : ℝ)..1, (T ℝ m).eval x * (T ℝ n).eval x / √(1 - x ^ 2) =

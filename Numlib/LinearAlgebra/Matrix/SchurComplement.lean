@@ -14,7 +14,7 @@ For `A : Matrix (m ⊕ n) (m ⊕ n) R`, the *Schur complement* of the `(1,1)` bl
 
 `A.schurComplement = A.toBlocks₂₂ - A.toBlocks₂₁ * A.toBlocks₁₁⁻¹ * A.toBlocks₁₂`,
 
-written `S = C - F B⁻¹ E` in the notation of Saad[^saad-iterative] (14.5). Mathlib's
+written `S = C - F B⁻¹ E` in the notation of [Saad][saad2003iterative] (14.5). Mathlib's
 `Mathlib.LinearAlgebra.Matrix.SchurComplement` carries the block LDU identity, the determinant
 formulas and the positive *semi*definite criterion, but names no Schur complement and proves
 nothing about its inverse. This file adds the name and the four facts a domain-decomposition
@@ -31,7 +31,7 @@ method needs:
   definite. Mathlib has only the positive semidefinite equivalence `Matrix.PosDef.fromBlocks₁₁`.
 
 `Matrix.schurComplementSingle` is the `1 × 1`-pivot case, one step of Gaussian elimination, which
-is the form incomplete factorizations use (Saad[^saad-iterative] Theorem 10.1).
+is the form incomplete factorizations use ([Saad][saad2003iterative] Theorem 10.1).
 
 ## Implementation notes
 
@@ -50,12 +50,6 @@ Connect `Matrix.schurComplementSingle` to `Matrix.schurComplement`, by the ident
 `1 × 1` block, which is `Matrix.adjugate_subsingleton` (the adjugate of a subsingleton-indexed
 matrix is `1`) together with `Matrix.det_unique`, and then the collapse of a sum over a `Unique`
 index type.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003. §14.2 introduces the Schur complement `S = C - F B⁻¹ E` of (14.5), its
-  factorizations (14.6) and (14.52), its inverse (14.7) and Proposition 14.1.
 -/
 
 namespace Matrix

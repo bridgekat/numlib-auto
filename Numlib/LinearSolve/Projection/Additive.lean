@@ -5,7 +5,7 @@ import Numlib.LinearSolve.Projection.Basic
 # Additive and multiplicative projection processes
 
 A family of Petrov–Galerkin pairs `(K i, L i)` can be combined in two ways
-(Saad[^saad-iterative] §5.4).  The *additive* process adds all the corrections at once, with
+([Saad][saad2003iterative] §5.4).  The *additive* process adds all the corrections at once, with
 relaxation weights `ω i` (Saad's Algorithm 5.5); the *multiplicative* process applies them one
 after another along a list of indices (Saad's Algorithm 5.6), which is the block Gauss–Seidel
 pattern.  Block Jacobi and block Gauss–Seidel are the instances in which the `K i` are coordinate
@@ -18,11 +18,6 @@ is `(1 - ∑ i, ω i • P i) r` and the residual of a multiplicative sweep is t
 `1 - P i` in the order of the sweep.  With `L i = A (K i)` each `P i` is an orthogonal projector,
 and if the `A (K i)` are mutually orthogonal and their dimensions add up to that of the whole
 space, the projectors sum to `1` and one additive sweep with `ω = 1` is exact.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
 -/
 
 open Module (finrank)

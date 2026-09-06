@@ -6,8 +6,8 @@ import Numlib.Analysis.Normed.Ring.Inverse
 # Approximate inverse preconditioners
 
 Instead of factoring `A`, minimize `‖1 - A M‖` over sparse `M` and use `M` itself as the
-preconditioner (Saad, *Iterative Methods for Sparse Linear Systems*[^saad-iterative], §10.5). The
-algorithms of §10.5 are dropping strategies with no theorem attached; what has content is here:
+preconditioner ([Saad, *Iterative Methods for Sparse Linear Systems*][saad2003iterative], §10.5).
+The algorithms of §10.5 are dropping strategies with no theorem attached; what has content is here:
 
 * the derivative of the least-squares objective, stated in the general Hilbert-space form
   `d/dm ‖c - T m‖² = -2 ⟪c - T m, T ·⟫`, of which Saad's `G = -2 Aᵀ R` for the Frobenius inner
@@ -26,11 +26,6 @@ algorithms of §10.5 are dropping strategies with no theorem attached; what has 
 The other half of Saad Proposition 10.13 — one self-preconditioned minimal-residual step reduces
 the residual by the sine of the angle between `r` and `C r` — is the one-dimensional
 minimal-residual step of `Numlib/LinearSolve/Projection/OneDimensional`, and is not restated here.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
 -/
 
 namespace Preconditioner

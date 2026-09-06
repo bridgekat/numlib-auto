@@ -6,7 +6,7 @@ import Numlib.Krylov.Lanczos
 # Krylov methods on singular and incompatible symmetric systems
 
 The behaviour of the minimal-residual iteration when `A` is symmetric but singular, and when
-`A x = b` has no solution at all, following Choi[^choi] Ch. 2–3.
+`A x = b` has no solution at all, following [Choi][choi2006iterative] Ch. 2–3.
 
 * **Termination.** The full Krylov space of `b` misses the range of `A` only in the direction of
   `b` itself (`Krylov.fullSubspace_le_span_sup_range`), so the grade is at most `rank A + 1`, and
@@ -36,11 +36,6 @@ The behaviour of the minimal-residual iteration when `A` is symmetric but singul
 Everything about the specification level (`Krylov.IsMinResIterate`,
 `Krylov.IsMinNormMinResIterate` of `Numlib/Krylov/Iterate`) needs only symmetry of `A` and finite
 grade; the eigenvalue counts and the `T̄_m` bounds are where finite dimension enters.
-
-## References
-
-[^choi]: Sou-Cheng Choi, *Iterative Methods for Singular Linear Equations and Least-Squares
-  Problems*, PhD thesis, Stanford University, 2006.
 -/
 
 open Polynomial Krylov

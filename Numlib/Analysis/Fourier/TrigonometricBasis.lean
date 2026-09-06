@@ -29,8 +29,8 @@ complex exponentials, so that nothing here repeats an argument Mathlib already h
 reduces to `∫ fourier n = 0` for `n ≠ 0`, and completeness to `fourierBasis` through
 `realFourierCoeff_eq_fourierCoeff`, not to a second Stone–Weierstrass argument.
 
-Atkinson and Han[^atkinson-han] state the orthonormal basis as Theorem 1.3.13 and the coefficient
-dictionary as (4.1.6). The normalization used here — `‖trigFun T n‖ = 1` in `L²` of the
+[Atkinson and Han][han2009theoretical] state the orthonormal basis as Theorem 1.3.13 and the
+coefficient dictionary as (4.1.6). The normalization used here — `‖trigFun T n‖ = 1` in `L²` of the
 *probability* Haar measure — is the one that makes the system a Hilbert basis; the book's `a_j`,
 `b_j` of (4.1.2)–(4.1.3), for which the series reads `a₀/2 + ∑ (a_j cos + b_j sin)`, are
 `√2 * realFourierCoeff f j` and `√2 * realFourierCoeff f (-j)`.
@@ -56,11 +56,6 @@ dictionary as (4.1.6). The normalization used here — `‖trigFun T n‖ = 1` i
   `|m| ≤ n`, and they form a space of dimension `2 n + 1`.  That space is what the Fourier
   projection and trigonometric interpolation project onto, and the Haar subspace of the
   trigonometric equioscillation theorem, so it is defined once here rather than in each of them.
-
-## References
-
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
 -/
 
 open Complex MeasureTheory Set Submodule

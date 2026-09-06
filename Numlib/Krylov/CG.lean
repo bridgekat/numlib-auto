@@ -4,10 +4,10 @@ import Numlib.Krylov.Lanczos
 /-!
 # The conjugate gradient recurrence (Hestenes–Stiefel)
 
-`CG.step` is one step of the two-term CG recurrence
-(Saad, *Iterative Methods*[^saad-iterative] Alg 6.18, Atkinson–Han[^atkinson-han] (5.6.2)/§9.4,
-Fong–Saunders[^fong-saunders] Table 2.1, Meurant–Strakoš[^meurant-strakos] (3.2),
-Choi[^choi] Table 2.7), and `CG.iterate` iterates it from `CG.init`.
+`CG.step` is one step of the two-term CG recurrence ([Saad, *Iterative Methods*][saad2003iterative]
+Alg 6.18, [Atkinson–Han][han2009theoretical] (5.6.2)/§9.4, [Fong–Saunders][fong2012cg] Table 2.1,
+[Meurant–Strakoš][meurant2006lanczos] (3.2), [Choi][choi2006iterative] Table 2.7), and `CG.iterate`
+iterates it from `CG.init`.
 
 ## Main definitions
 
@@ -27,31 +27,13 @@ Choi[^choi] Table 2.7), and `CG.iterate` iterates it from `CG.init`.
   (Saad (6.87), (6.99); Meurant–Strakoš (3.4)), which is what lets the surface read the Lanczos
   tridiagonal off the CG coefficients;
 * `CG.energyNorm_error_sq_sub`, `CG.energyNorm_error_sq_eq_sum`, `CG.norm_error_antitone`,
-  `CG.energyNorm_error_antitone`: the Hestenes–Stiefel[^hestenes-stiefel] error identities and
+  `CG.energyNorm_error_antitone`: the [Hestenes–Stiefel][hestenes1952methods] error identities and
   the monotonicity they give (Hestenes–Stiefel Thm 6:1, 6:3);
 * `CG.norm_iterate_monotone` and `CG.norm_iterate_lt_of_re_inner_apply_direction_pos`:
-  Steihaug's[^steihaug] theorem, the second in his form for a symmetric but possibly
+  [Steihaug's][steihaug1983conjugate] theorem, the second in his form for a symmetric but possibly
   indefinite `A`;
 * `CG.iterate_succ_eq_three_term`, `CG.residual_succ_eq_three_term`: the three-term form
   (Saad §6.7.2, Alg 6.19).
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
-[^fong-saunders]: David Chin-Lung Fong and Michael Saunders, *CG versus MINRES: an empirical
-  comparison*, SQU Journal for Science 17 (2012), 44–62.
-[^meurant-strakos]: Gérard Meurant and Zdeněk Strakoš, *The Lanczos and conjugate gradient
-  algorithms in finite precision arithmetic*, Acta Numerica (2006), 471–542.
-[^choi]: Sou-Cheng Choi, *Iterative Methods for Singular Linear Equations and Least-Squares
-  Problems*, PhD thesis, Stanford University, 2006.
-[^hestenes-stiefel]: Magnus R. Hestenes and Eduard Stiefel, *Methods of conjugate gradients for
-  solving linear systems*, Journal of Research of the National Bureau of Standards 49 (1952),
-  409–436.
-[^steihaug]: Trond Steihaug, *The conjugate gradient method and trust regions in large scale
-  optimization*, SIAM Journal on Numerical Analysis 20 (1983), 626–637.
 -/
 
 open Krylov

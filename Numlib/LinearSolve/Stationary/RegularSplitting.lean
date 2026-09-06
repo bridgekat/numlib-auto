@@ -6,14 +6,9 @@ import Numlib.LinearSolve.Stationary.Splitting
 
 A splitting `A = M - N` of a real matrix is *regular* when `M⁻¹` and `N` are entrywise nonnegative,
 and it converges exactly when `A` is invertible with `A⁻¹` entrywise nonnegative
-(Saad[^saad-iterative], Definition 4.3 and Theorem 4.4). The engine is the nonnegative Neumann
+([Saad][saad2003iterative], Definition 4.3 and Theorem 4.4). The engine is the nonnegative Neumann
 criterion `Matrix.EntrywiseNonneg.complexSpectralRadius_lt_one_iff` of
 `Numlib/LinearAlgebra/Matrix/MMatrix`, applied to the iteration operator `G = M⁻¹ N`.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
 -/
 
 open scoped Matrix

@@ -17,7 +17,8 @@ equation, and shows that the Haar system of `Numlib/Analysis/Wavelet/Haar` is an
 * `scalingSystem φ j k` is `2 ^ (j / 2) φ (2 ^ j x - k)`, the dilate by `2 ^ j` of the translate
   of `φ` by `k`, and `translates φ k = scalingSystem φ 0 k` up to the identification of the
   dilation by `1` with the identity.
-* `IsMultiresolutionAnalysis V φ` is Atkinson–Han's Definition 4.5.1[^atkinson-han]. Two of its
+* `IsMultiresolutionAnalysis V φ` is Atkinson–Han's Definition 4.5.1 [han2009theoretical]. Two of
+  its
   clauses depart from the book's phrasing, and deliberately. *Shift invariance* is stated as
   orthonormality of the translates together with `V 0` being the closed span of them, rather than
   as "the translates are an orthonormal basis of `V 0`": the two are equivalent, the former is
@@ -42,12 +43,6 @@ The construction of a scaling function from a sequence of dilation coefficients,
 Atkinson–Han (4.5.4) and Daubechies' compactly supported families are not developed: the book
 states them without proof, and the standard arguments need conditions on `φ̂` that Mathlib has no
 vocabulary for.
-
-## References
-
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009. (Definition 4.5.1, Proposition 4.5.2,
-  (4.5.1)–(4.5.3).)
 -/
 
 open scoped ENNReal

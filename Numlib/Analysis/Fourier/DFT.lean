@@ -33,13 +33,8 @@ even- and odd-indexed halves of the input, at the cost of one multiplication per
 An implementation of the fast Fourier transform and its operation count are algorithmic and are not
 formalized here; the theorem content is exactly the identity above.
 
-Atkinson and Han[^atkinson-han] state the matrix in Section 4.3, the inversion formula as
+[Atkinson and Han][han2009theoretical] state the matrix in Section 4.3, the inversion formula as
 Theorem 4.3.2 and the radix-2 identity as (4.3.8)–(4.3.9).
-
-## References
-
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
 -/
 
 open Complex

@@ -17,11 +17,11 @@ splittings; and `Matrix.abs A`, written `A.abs`, is the matrix of the absolute v
 entries. Together they carry the componentwise calculus behind the convergence theory of regular
 splittings and behind rounding-error analysis: monotonicity of a product in either factor when the
 other one is nonnegative (`Matrix.EntrywiseLE.mul_of_entrywiseNonneg_left` and
-`Matrix.EntrywiseLE.mul_of_entrywiseNonneg_right`, which is Saad[^saad-iterative] §1.10, Prop 1.26,
-and whose clause-by-clause companions are his Prop 1.24), the stability of nonnegativity under
+`Matrix.EntrywiseLE.mul_of_entrywiseNonneg_right`, which is [Saad][saad2003iterative] §1.10, Prop
+1.26, and whose clause-by-clause companions are his Prop 1.24), the stability of nonnegativity under
 sums, products, powers and matrix-vector multiplication, and the triangle inequality for a product,
 `(A * B).abs ≤ₑ A.abs * B.abs` (`Matrix.abs_mul_entrywiseLE`), which is the matrix form of the
-componentwise bounds of Higham[^higham] §3.5.
+componentwise bounds of [Higham][higham2002accuracy] §3.5.
 
 ## Notation
 
@@ -40,13 +40,6 @@ Vectors are plain `Pi` types, and there the entrywise order and absolute value *
 `≤` and `|·|`. So the statements that mix the two — `Matrix.abs_mulVec_le`,
 `Matrix.EntrywiseNonneg.mulVec_nonneg` — use `≤` and `|·|` on the vector side and `≤ₑ` and `.abs`
 on the matrix side.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
-[^higham]: Nicholas J. Higham, *Accuracy and Stability of Numerical Algorithms*, 2nd edition,
-  SIAM, 2002.
 -/
 
 namespace Matrix

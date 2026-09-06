@@ -25,14 +25,9 @@ a totally bounded set. Continuity of `T` is not used: differentiability at the o
 together with compactness on bounded sets is enough, so the hypothesis is weaker than the
 "completely continuous" of the source.
 
-These are Atkinson–Han[^atkinson-han] Definition 5.5.3 and Proposition 5.5.5. Brouwer's and
+These are [Atkinson–Han][han2009theoretical] Definition 5.5.3 and Proposition 5.5.5. Brouwer's and
 Schauder's fixed point theorems, and the rotation of a completely continuous vector field, are not
 here: Mathlib has neither a Brouwer theorem nor degree theory.
-
-## References
-
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
 -/
 
 open Metric Set Bornology

@@ -21,7 +21,7 @@ satisfies `‖(K - Kₙ) ∘ Kₙ‖ → 0` even though `‖K - Kₙ‖` does no
 the Nyström method for integral equations of the second kind stable, and it is the hypothesis of
 Anselone's perturbation theorem.
 
-This is P. Anselone's theory, as presented in Atkinson–Han[^atkinson-han], Section 12.4.3
+This is P. Anselone's theory, as presented in [Atkinson–Han][han2009theoretical], Section 12.4.3
 (assumptions A1–A3 and Lemma 12.4.7) and Section 12.1 (Lemmas 12.1.3 and 12.1.4).
 
 ## Main definitions
@@ -45,11 +45,6 @@ projection methods rest on:
   `M` is a compact operator. With `Aₙ = 1 - Pₙ` this is the estimate `‖K - Pₙ K‖ → 0` that makes a
   projection method for a second-kind equation convergent, and with `Aₙ = K - Kₙ` it is one clause
   of the collective-compactness lemma below; the two should not be proved separately.
-
-## References
-
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
 -/
 
 open Filter Topology Metric Set Bornology

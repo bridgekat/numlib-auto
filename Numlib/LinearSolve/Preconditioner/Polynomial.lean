@@ -6,7 +6,7 @@ import Numlib.Krylov.Convergence.Polynomial
 
 A polynomial preconditioner is `M⁻¹ = s(A)` for a low-degree polynomial `s`, so that the
 preconditioned operator is `s(A) A` and applying `M⁻¹` costs only matrix–vector products
-(Saad, *Iterative Methods for Sparse Linear Systems*[^saad-iterative], §12.3). Two of the three
+([Saad, *Iterative Methods for Sparse Linear Systems*][saad2003iterative], §12.3). Two of the three
 ingredients are here; the two ways of choosing `s` optimally are
 `Numlib/LinearSolve/Preconditioner/Chebyshev` (uniform norm on an enclosing interval) and
 `Numlib/RingTheory/Polynomial/KernelPolynomial` (weighted least squares).
@@ -27,11 +27,6 @@ Nothing here is analytic.
   operator can still be used with CG. It is stated for any `B` that is already `D`-self-adjoint,
   which covers `B = D⁻¹ A` for symmetric `A` and `D` without any inverse appearing
   (`Preconditioner.energyInner_comm_of_comp_eq`).
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
 -/
 
 open Polynomial

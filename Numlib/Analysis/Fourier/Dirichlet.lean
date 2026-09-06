@@ -14,11 +14,12 @@ import Mathlib.MeasureTheory.Integral.IntervalIntegral.Periodic
 
 Mathlib has the `L²` theory of Fourier series on the circle and the uniform convergence of an
 absolutely summable series, but no Dirichlet kernel and no pointwise convergence criterion. This
-file supplies both, for a `2 π`-periodic, interval-integrable `f : ℝ → ℝ`. Atkinson and
-Han[^atkinson-han] state the kernel as (3.7.6)–(3.7.8) and the partial sums as (4.1.1)–(4.1.3).
-Their Theorem 4.1.1 — convergence to the mean of the one-sided limits at a point where the
-one-sided derivatives exist — is the criterion `tendsto_fourierPartialSum_of_dini` applied to that
-mean; `tendsto_fourierPartialSum_of_hasDerivAt` is its corollary at a point of differentiability.
+file supplies both, for a `2 π`-periodic, interval-integrable `f : ℝ → ℝ`. [Atkinson and
+Han][han2009theoretical] state the kernel as (3.7.6)–(3.7.8) and the partial sums as
+(4.1.1)–(4.1.3). Their Theorem 4.1.1 — convergence to the mean of the one-sided limits at a point
+where the one-sided derivatives exist — is the criterion `tendsto_fourierPartialSum_of_dini` applied
+to that mean; `tendsto_fourierPartialSum_of_hasDerivAt` is its corollary at a point of
+differentiability.
 
 ## Main definitions
 
@@ -50,11 +51,6 @@ Mathlib states that lemma for the Fourier integral over `ℝ`
 (`Real.tendsto_integral_exp_smul_cocompact`), so the form needed here — the integral of
 `g t * sin (r t)` over an interval tends to `0` as `r → ∞` — is obtained by extending `g` by zero,
 which is `tendsto_intervalIntegral_mul_sin`.
-
-## References
-
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
 -/
 
 open MeasureTheory Filter Topology

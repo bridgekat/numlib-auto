@@ -3,28 +3,14 @@ import Numlib.Krylov.Iterate
 /-!
 # Relations between Galerkin and minimal-residual iterates
 
-Residual smoothing (Weiss[^weiss]; Saad, *Iterative Methods*[^saad-iterative] Lemma 6.18) and the
-Cullum–Greenbaum[^cullum-greenbaum] / Brown[^brown] relations between FOM and GMRES residuals
-(Saad Prop 6.12–6.17, (6.65), Cor 6.14; Fong–Saunders[^fong-saunders] (4.1);
-Greenbaum[^greenbaum] Lemma 5.4.1), proved at the specification level without any factorization.
+Residual smoothing ([Weiss][weiss1990convergence]; [Saad, *Iterative Methods*][saad2003iterative]
+Lemma 6.18) and the [Cullum–Greenbaum][cullum1996relations] / [Brown][brown1991theoretical]
+relations between FOM and GMRES residuals (Saad Prop 6.12–6.17, (6.65), Cor 6.14;
+[Fong–Saunders][fong2012cg] (4.1); [Greenbaum][greenbaum1997iterative] Lemma 5.4.1), proved at the
+specification level without any factorization.
 
 Throughout, `r^F_m` denotes the residual `b - A x` of the Galerkin (FOM) iterate over `x₀ + 𝒦_m`
 and `r^G_m` that of the minimal-residual (GMRES) iterate over the same affine space.
-
-## References
-
-[^weiss]: Rüdiger Weiss, *Convergence behavior of generalized conjugate gradient methods*,
-  PhD thesis, University of Karlsruhe, 1990.
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
-[^cullum-greenbaum]: Jane Cullum and Anne Greenbaum, *Relations between Galerkin and
-  norm-minimizing iterative methods for solving linear systems*, SIAM Journal on Matrix Analysis
-  and Applications 17 (1996), 223–247.
-[^brown]: Peter N. Brown, *A theoretical comparison of the Arnoldi and GMRES algorithms*, SIAM
-  Journal on Scientific and Statistical Computing 12 (1991), 58–78.
-[^fong-saunders]: David Chin-Lung Fong and Michael Saunders, *CG versus MINRES: an empirical
-  comparison*, SQU Journal for Science 17 (2012), 44–62.
-[^greenbaum]: Anne Greenbaum, *Iterative Methods for Solving Linear Systems*, 1997.
 -/
 
 open Krylov Polynomial

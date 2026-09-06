@@ -11,8 +11,9 @@ import Numlib.LinearSolve.Stationary.Splitting
 # Diagonal dominance and convergence of Jacobi / Gauss–Seidel
 
 Strict (row / column) diagonal dominance, invertibility, and convergence of the Jacobi and
-Gauss–Seidel iterations (Saad[^saad-iterative] Thm 4.6–4.9, Cor 4.8; Kress[^kress] Thm 4.2–4.3,
-Cor 4.4 with the explicit `‖·‖_∞` contraction constants; Atkinson–Han[^atkinson-han] Ex 5.2.2).
+Gauss–Seidel iterations ([Saad][saad2003iterative] Thm 4.6–4.9, Cor 4.8; [Kress][kress1998numerical]
+Thm 4.2–4.3, Cor 4.4 with the explicit `‖·‖_∞` contraction constants;
+[Atkinson–Han][han2009theoretical] Ex 5.2.2).
 
 The two explicit constants are Kress's.  The *Jacobi constant*
 `q_∞ = max_i ∑_{j ≠ i} |a_ij| / |a_ii|` is exactly `‖G_J‖_∞`, the `‖·‖_∞` operator norm of the
@@ -33,14 +34,6 @@ which for an eigenvalue of modulus at least one inherits the dominance of `A`, a
 nonsingular; so no such eigenvalue exists.  The same pencil, with strict column dominance in
 place of irreducibility, gives Gauss–Seidel under column dominance
 (`Matrix.gaussSeidel_spectralRadius_lt_one_of_col`).
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
-[^kress]: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998.
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
 -/
 
 namespace Matrix

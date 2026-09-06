@@ -24,12 +24,7 @@ estimate comes from; the bound on `δ` itself is elliptic regularity theory and 
 argument.
 
 The theorem is due to Aubin and to Nitsche; the account followed here is Theorem 10.4.3 and
-Corollary 10.4.4 of Atkinson–Han[^atkinson-han].
-
-## References
-
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
+Corollary 10.4.4 of [Atkinson–Han][han2009theoretical].
 -/
 
 variable {𝕜 V H : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [InnerProductSpace 𝕜 V]

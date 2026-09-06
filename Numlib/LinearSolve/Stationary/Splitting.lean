@@ -7,23 +7,13 @@ import Numlib.LinearSolve.Stationary.Basic
 # Splittings and the classical iterations
 
 A splitting `a = m - n` with `m` a unit, in any ring (`Stationary.Splitting`, determined by `m`
-alone: `n := m - a`), its iteration operator `G = m⁻¹ n = 1 - m⁻¹ a`, and the matrix
-constructors for Jacobi, Gauss–Seidel, SOR, SSOR and Richardson (Saad[^saad-iterative] §4.1,
-(4.5)–(4.27); Kress[^kress] §4.1–4.2; Atkinson–Han[^atkinson-han] §5.2.2 — whose convention
-`A = N - M` swaps the roles of the letters; Higham[^higham] Ch. 17). Saad writes the splitting
-as `A = D - E - F` with `D` the diagonal and `-E`, `-F` the strictly lower and strictly upper
-triangular parts, which corresponds to `D = diagPart A`, `E = -strictLower A`,
-`F = -strictUpper A`.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
-[^kress]: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998.
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
-[^higham]: Nicholas J. Higham, *Accuracy and Stability of Numerical Algorithms*, 2nd edition,
-  SIAM, 2002.
+alone: `n := m - a`), its iteration operator `G = m⁻¹ n = 1 - m⁻¹ a`, and the matrix constructors
+for Jacobi, Gauss–Seidel, SOR, SSOR and Richardson ([Saad][saad2003iterative] §4.1, (4.5)–(4.27);
+[Kress][kress1998numerical] §4.1–4.2; [Atkinson–Han][han2009theoretical] §5.2.2 — whose convention
+`A = N - M` swaps the roles of the letters; [Higham][higham2002accuracy] Ch. 17). Saad writes the
+splitting as `A = D - E - F` with `D` the diagonal and `-E`, `-F` the strictly lower and strictly
+upper triangular parts, which corresponds to `D = diagPart A`, `E = -strictLower A`, `F =
+-strictUpper A`.
 -/
 
 namespace Stationary

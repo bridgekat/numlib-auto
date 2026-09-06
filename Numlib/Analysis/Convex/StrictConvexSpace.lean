@@ -7,18 +7,13 @@ import Mathlib.Analysis.SpecialFunctions.Pow.Real
 
 A real normed space is a `StrictConvexSpace ℝ V` as soon as some power `‖·‖ ^ p`, `p ≥ 1`, is a
 strictly convex function on `V`: `StrictConvexSpace.of_strictConvexOn_norm_rpow`. This is the form
-in which the hypothesis appears in the uniqueness theorem for best approximations from a convex
-set of Atkinson–Han[^atkinson-han], whose conclusion is Mathlib's `StrictConvexSpace ℝ V` here.
+in which the hypothesis appears in the uniqueness theorem for best approximations from a convex set
+of [Atkinson–Han][han2009theoretical], whose conclusion is Mathlib's `StrictConvexSpace ℝ V` here.
 
 On an inner product space the hypothesis holds with `p = 2`: `strictConvexOn_norm_sq`, in the
 natural-power form, and `strictConvexOn_norm_rpow_two` in the real-power form the criterion above
 consumes. The proof is the identity `a ‖x‖² + b ‖y‖² - ‖a x + b y‖² = a b ‖x - y‖²` for
 `a + b = 1`, a form of the parallelogram law.
-
-## References
-
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009. Theorem 3.3.18 and Exercise 3.3.8.
 -/
 
 section Rpow

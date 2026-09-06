@@ -25,7 +25,7 @@ their behaviour at the grade of `r₀`.
 * `Krylov.exists_residual_poly`, `Krylov.exists_mem_of_residual_poly`,
   `Krylov.IsMinResIterate.norm_residual_eq_iInf` and
   `Krylov.IsGalerkinIterate.energyNorm_error_eq_iInf`: the polynomial characterizations
-  (Saad, *Iterative Methods*[^saad-iterative] Lemma 6.28 and Lemma 6.31);
+  ([Saad, *Iterative Methods*][saad2003iterative] Lemma 6.28 and Lemma 6.31);
 * `Krylov.IsGalerkinIterate.residual_mem_span`: the Galerkin residual is a multiple of the next
   Arnoldi vector (Saad Prop 6.7);
 * `Krylov.IsMinResIterate.apply_eq_of_grade_le`, `Krylov.IsGalerkinIterate.apply_eq_of_grade_le`
@@ -33,14 +33,7 @@ their behaviour at the grade of `r₀`.
 * `Krylov.existsUnique_isMinNormMinResIterate`: the MINRES-QLP iterate is well defined with no
   hypothesis on `A`;
 * `Krylov.norm_le_of_apply_eq`: an exact Krylov solution of a compatible symmetric system is the
-  minimum-norm solution (core of Choi[^choi] Thm 2.25).
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
-[^choi]: Sou-Cheng Choi, *Iterative Methods for Singular Linear Equations and Least-Squares
-  Problems*, PhD thesis, Stanford University, 2006.
+  minimum-norm solution (core of [Choi][choi2006iterative] Thm 2.25).
 -/
 
 open Polynomial Krylov

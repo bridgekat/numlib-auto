@@ -51,19 +51,10 @@ the theorem asks for `[CompleteSpace V]`.
 `FiniteDifference.norm_iterate_sub_le` is the order of convergence read off the same telescoping
 estimate: an inequality with explicit constants, no limit and no order symbol.
 
-The material is Section 6.2 of Atkinson–Han[^atkinson-han] (Definitions 6.2.1, 6.2.2, 6.2.3, 6.2.7,
-6.2.9 and 6.2.10, Propositions 6.2.5 and 6.2.6, Theorem 6.2.11 and Corollary 6.2.12); the theorem
-is due to Lax and Richtmyer[^lax-richtmyer], and Chapter 3 of Richtmyer and
-Morton[^richtmyer-morton] is the standard account.
-
-## References
-
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
-[^lax-richtmyer]: Peter D. Lax and Robert D. Richtmyer, *Survey of the stability of linear finite
-  difference equations*, Communications on Pure and Applied Mathematics 9 (1956), 267–293.
-[^richtmyer-morton]: Robert D. Richtmyer and K. W. Morton, *Difference Methods for Initial-Value
-  Problems*, 2nd edition, Wiley, 1967.
+The material is Section 6.2 of [Atkinson–Han][han2009theoretical] (Definitions 6.2.1, 6.2.2, 6.2.3,
+6.2.7, 6.2.9 and 6.2.10, Propositions 6.2.5 and 6.2.6, Theorem 6.2.11 and Corollary 6.2.12); the
+theorem is due to [Lax and Richtmyer][lax1956survey], and Chapter 3 of Richtmyer and Morton is the
+standard account.
 -/
 
 open Filter Set Topology

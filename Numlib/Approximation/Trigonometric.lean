@@ -10,8 +10,8 @@ import Numlib.IntegralEquations.Basic
 
 The space of continuous `2 π`-periodic real functions is `C(AddCircle (2 π), ℝ)`, and the
 `n`-th **Fourier projection** on it is `PeriodicCont.fourierProj n`, the kernel operator of the
-Dirichlet kernel `D_n (y - x) / π`. The material is Atkinson–Han, *Theoretical Numerical
-Analysis*[^atkinson-han] §3.7.
+Dirichlet kernel `D_n (y - x) / π`. The material is [Atkinson–Han, *Theoretical Numerical
+Analysis*][han2009theoretical] §3.7.
 
 ## Main definitions
 
@@ -51,22 +51,16 @@ orthogonality computation of its own — the orthonormality of the system is
 
 ## Not done here
 
-Jackson's theorems (Atkinson and Han[^atkinson-han], Theorems 3.7.1 and 3.7.2), which bound the
-best uniform trigonometric approximation of a Hölder function by `M_k / n^{k+α}`, are not
-formalized; they are independent of the Fourier projection except through the subspace
-`trigPolyLE (2 π) n` that they measure the distance to, and their proof is a separate construction
-(convolution with the Jackson kernel `(sin (n θ / 2) / sin (θ / 2))⁴`). Of Zygmund's asymptotic
-`L_n = (4/π²) log n + O(1)` the two halves are proved with different constants —
-`log_le_lebesgueConstant` has the sharp `4/π²` below, `lebesgueConstant_le` the crude `1 + log
-(2 n + 1)` above — which is all that the divergence argument and the convergence rate (3.7.12)
-consume. What is proved of Atkinson and Han's (3.7.11) is the Lebesgue-lemma half,
-`‖f - 𝓕_n f‖ ≤ (1 + L_n) dist (f, 𝕋_n)`, which is what the projection contributes; the rate then
-follows from it and Jackson's theorem.
-
-## References
-
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
+Jackson's theorems ([Atkinson and Han][han2009theoretical], Theorems 3.7.1 and 3.7.2), which bound
+the best uniform trigonometric approximation of a Hölder function by `M_k / n^{k+α}`, are not
+formalized; they are independent of the Fourier projection except through the subspace `trigPolyLE
+(2 π) n` that they measure the distance to, and their proof is a separate construction (convolution
+with the Jackson kernel `(sin (n θ / 2) / sin (θ / 2))⁴`). Of Zygmund's asymptotic `L_n = (4/π²) log
+n + O(1)` the two halves are proved with different constants — `log_le_lebesgueConstant` has the
+sharp `4/π²` below, `lebesgueConstant_le` the crude `1 + log (2 n + 1)` above — which is all that
+the divergence argument and the convergence rate (3.7.12) consume. What is proved of Atkinson and
+Han's (3.7.11) is the Lebesgue-lemma half, `‖f - 𝓕_n f‖ ≤ (1 + L_n) dist (f, 𝕋_n)`, which is what
+the projection contributes; the rate then follows from it and Jackson's theorem.
 -/
 
 open MeasureTheory Metric Set
@@ -560,9 +554,9 @@ private theorem abs_dirichletKernel_le_div (n : ℕ) {t : ℝ} (ht0 : 0 < t) (ht
 
 /-- **The Lebesgue constants grow no faster than `log n`**: `L_n ≤ 1 + log (2 n + 1)`.
 
-Together with `log_le_lebesgueConstant` this is the two-sided `L_n ≍ log n` that Atkinson and
-Han[^atkinson-han] state sharply as `L_n = (4/π²) log n + O(1)` in (3.7.10); the constant here is
-not the sharp one, but the upper bound is what the uniform convergence rate (3.7.12) consumes.
+Together with `log_le_lebesgueConstant` this is the two-sided `L_n ≍ log n` that [Atkinson and
+Han][han2009theoretical] state sharply as `L_n = (4/π²) log n + O(1)` in (3.7.10); the constant here
+is not the sharp one, but the upper bound is what the uniform convergence rate (3.7.12) consumes.
 
 The split is at `π / (2 n + 1)`, the first zero of the numerator of the closed form: below it the
 kernel is bounded by `n + 1/2`, which contributes `π/2`; above it Jordan's inequality gives the

@@ -47,14 +47,9 @@ Everything is stated in an inner product space, complete where an inverse is nee
 reach it through `Matrix.toEuclideanCLM`.  The Cayley inequality is an upstreaming candidate on
 its own and should move beside the coercivity API as soon as a second consumer appears.
 
-This is Saad, *Iterative Methods for Sparse Linear Systems*[^saad-iterative], §4.3: Algorithm 4.3
-and the identities (4.50)–(4.52).  The book states no numbered result there and asserts the
+This is [Saad, *Iterative Methods for Sparse Linear Systems*][saad2003iterative], §4.3: Algorithm
+4.3 and the identities (4.50)–(4.52).  The book states no numbered result there and asserts the
 convergence claim in one sentence.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
 -/
 
 open Filter Topology

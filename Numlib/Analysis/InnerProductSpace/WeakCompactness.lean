@@ -17,7 +17,7 @@ import Mathlib.Topology.Metrizable.Basic
 
 Two facts about weak sequential convergence that the convergence analysis of numerical methods for
 variational problems rests on, and that Mathlib states in neither form. These are
-Atkinson–Han[^atkinson-han] Theorem 2.7.5 in the Hilbert case, and the consequence of
+[Atkinson–Han][han2009theoretical] Theorem 2.7.5 in the Hilbert case, and the consequence of
 Theorem 3.3.11 (Mazur) that makes the second hypothesis of their Theorem 11.4.1 automatic for
 internal approximations.
 
@@ -45,11 +45,6 @@ numerical-analysis literature states the hypotheses.
 The general Banach-space statements — reflexivity, Eberlein–Šmulian, weak sequential compactness of
 bounded sets in a reflexive space — are deliberately out of scope: Mathlib has no reflexivity class
 for Banach spaces, and everything the applications need happens in a Hilbert space.
-
-## References
-
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
 -/
 
 open Filter Topology Metric

@@ -23,13 +23,12 @@ the spectrum, and does not improve with `k`. What drives the improvement here is
 eigenvalues of `K` accumulate only at `0`, so a polynomial of degree `k` can annihilate the `k`
 largest of them and still be small at all the others.
 
-The classical proof (Atkinson–Han[^atkinson-han] Thm 5.6.2, after Winther[^winther]) reads the
-eigen-decomposition of `K` off the spectral theorem for compact self-adjoint operators. What the
-argument actually consumes is one step further on — the *enumeration* of the eigenvalues as a
-sequence with `|λ|` decreasing — which rests on the eigenvalues accumulating only at `0` and needs
-the index type to be `ℕ`. That enumeration is
-`ContinuousLinearMap.IsSymmetric.eigenvalueSeq`, with the matching orthonormal basis
-`ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis`.
+The classical proof ([Atkinson–Han][han2009theoretical] Thm 5.6.2, after [Winther][winther1980some])
+reads the eigen-decomposition of `K` off the spectral theorem for compact self-adjoint operators.
+What the argument actually consumes is one step further on — the *enumeration* of the eigenvalues as
+a sequence with `|λ|` decreasing — which rests on the eigenvalues accumulating only at `0` and needs
+the index type to be `ℕ`. That enumeration is `ContinuousLinearMap.IsSymmetric.eigenvalueSeq`, with
+the matching orthonormal basis `ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis`.
 
 The statements here take the *enumerated* decomposition as data: a Hilbert basis
 `φ : HilbertBasis ℕ 𝕜 E` of eigenvectors of `K` with real eigenvalues `λ`, ordered so that `|λ|`
@@ -60,13 +59,6 @@ route through the residual, `‖x* - x_k‖ ≤ ‖A⁻¹‖ ‖r̃_k‖` and `�
 error directly in the energy norm at both ends costs only the one conversion
 `√δ ‖v‖ ≤ ‖v‖_A ≤ √Δ ‖v‖`. Since `δ ≤ Δ`, the constant proved here is the smaller one, and the
 book's form follows from it.
-
-## References
-
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
-[^winther]: Ragnar Winther, *Some superlinear convergence results for the conjugate gradient
-  method*, SIAM Journal on Numerical Analysis 17 (1980), 14–17.
 -/
 
 open Filter Polynomial Topology

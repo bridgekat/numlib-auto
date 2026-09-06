@@ -5,7 +5,7 @@ import Mathlib.Topology.Semicontinuity.Basic
 /-!
 # Existence of minimizers of a functional on a closed set
 
-The finite-dimensional existence theorem of Atkinson–Han[^atkinson-han] (their Thm 3.3.13): a
+The finite-dimensional existence theorem of [Atkinson–Han][han2009theoretical] (their Thm 3.3.13): a
 lower semicontinuous functional on a nonempty closed subset `K` of a finite-dimensional subspace
 attains its infimum as soon as `K` is bounded, or the functional is coercive on `K` in the sense
 of `IsCoerciveFunctionalOn` — `f x → ∞` as `‖x‖ → ∞` inside `K`.  Neither the set nor the
@@ -18,11 +18,6 @@ sets in a reflexive space, which Mathlib does not have; stating them with that c
 explicit hypothesis would misrepresent them.  When Mathlib acquires reflexivity they belong in
 this module, with the existence of best approximations in a reflexive space as the first
 corollary.
-
-## References
-
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.  Definition 3.3.9 and Theorem 3.3.13.
 -/
 
 open Bornology

@@ -7,8 +7,9 @@ import Numlib.Analysis.InnerProductSpace.Projection.Compression
 /-!
 # Projection methods: specifications and well-posedness
 
-The canonical Prop-valued specifications of a projection step (Saad[^saad-iterative] Ch. 5,
-Fong–Saunders[^fong-saunders] §2, Choi[^choi] Table 2.5, Atkinson–Han[^atkinson-han] Ch. 9):
+The canonical Prop-valued specifications of a projection step ([Saad][saad2003iterative] Ch. 5,
+[Fong–Saunders][fong2012cg] §2, [Choi][choi2006iterative] Table 2.5,
+[Atkinson–Han][han2009theoretical] Ch. 9):
 
 * `IsPetrovGalerkin A b x₀ K L x`: `x ∈ x₀ + K` and `b - A x ⟂ L`;
 * `IsGalerkin A b x₀ K x`: the case `L = K` (FOM, CG, Lanczos method);
@@ -18,17 +19,6 @@ Fong–Saunders[^fong-saunders] §2, Choi[^choi] Table 2.5, Atkinson–Han[^atki
 Well-posedness (Saad Prop 5.1), the residual formula (Saad Prop 5.4), exactness on invariant
 subspaces (Saad Prop 5.6), the matrix representation (Saad (5.7)) and the general error bound
 (Saad Thm 5.7) are stated here; optimality characterizations are in `Optimality.lean`.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
-[^fong-saunders]: David Chin-Lung Fong and Michael Saunders, *CG versus MINRES: an empirical
-  comparison*, SQU Journal for Science 17 (2012), 44–62.
-[^choi]: Sou-Cheng Choi, *Iterative Methods for Singular Linear Equations and Least-Squares
-  Problems*, PhD thesis, Stanford University, 2006.
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
 -/
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]

@@ -24,13 +24,8 @@ schemes as the mesh is refined are each this inequality together with a limit, a
 that family is defined.  The space is a real normed space, because the step `h` is a real scalar
 acting on its elements.
 
-The result is Theorem 6.3.2 of Atkinson–Han[^atkinson-han], where `δ = c (h_x^{p₁} + h^{p₂})`
+The result is Theorem 6.3.2 of [Atkinson–Han][han2009theoretical], where `δ = c (h_x^{p₁} + h^{p₂})`
 turns it into the convergence order of a scheme.
-
-## References
-
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
 -/
 
 namespace FiniteDifference

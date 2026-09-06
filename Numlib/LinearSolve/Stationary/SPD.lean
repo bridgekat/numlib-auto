@@ -11,8 +11,8 @@ The convergence theory of the classical splittings when the matrix is symmetric 
 definite, stated at the operator level wherever the proof allows.
 
 * `Stationary.Splitting.spectralRadius_lt_one_of_isSymmetricCoercive` is the
-  **Householder–John / Ostrowski–Reich theorem** (Saad[^saad-iterative] Thm 4.10;
-  Kress[^kress] Thm 4.12): for a symmetric coercive `A` on a
+  **Householder–John / Ostrowski–Reich theorem** ([Saad][saad2003iterative] Thm 4.10;
+  [Kress][kress1998numerical] Thm 4.12): for a symmetric coercive `A` on a
   finite-dimensional complex inner product space and a splitting `A = M - N` whose
   `Q = M + Mᴴ - A` is coercive, the iteration operator `M⁻¹ N` has spectral radius `< 1`.
   `Stationary.Splitting.isCoercive_of_spectralRadius_lt_one` is its converse: with `Q` coercive,
@@ -21,26 +21,19 @@ definite, stated at the operator level wherever the proof allows.
   equivalence for a real symmetric matrix with positive diagonal and `0 < ω < 2`.
 * `Stationary.Splitting.richardson_complexSpectralRadius_eq` and its companions compute the
   spectral radius of Richardson's iteration `G_α = 1 - α A`, characterize convergence as
-  `0 < α < 2/λmax` and minimize the radius at `α = 2/(λmin + λmax)` (Saad[^saad-iterative]
-  Example 4.1; Atkinson–Han[^atkinson-han] Exercise 5.2.3).
+  `0 < α < 2/λmax` and minimize the radius at `α = 2/(λmin + λmax)` ([Saad][saad2003iterative]
+  Example 4.1; [Atkinson–Han][han2009theoretical] Exercise 5.2.3).
 * `Matrix.jorSplitting` is Jacobi over-relaxation, `M = ω⁻¹ D`, whose optimal parameter is
-  `2/(2 - λmax - λmin)` for a Jacobi matrix with real eigenvalues (Kress[^kress] Thm 4.9).
+  `2/(2 - λmax - λmin)` for a Jacobi matrix with real eigenvalues ([Kress][kress1998numerical] Thm
+  4.9).
 * `Matrix.det_sorSplitting_iterationOperator` computes `det G_ω = (1 - ω)ⁿ`, from which
   `Matrix.lt_two_of_sorSplitting_complexSpectralRadius_lt_one` reads off **Kahan's necessary
-  condition** `0 < ω < 2` for SOR to converge (Kress[^kress] Thm 4.11).
+  condition** `0 < ω < 2` for SOR to converge ([Kress][kress1998numerical] Thm 4.11).
 
 Everything spectral is stated over `ℂ`, because the real spectrum of a real matrix is the wrong
 object: `Matrix.complexSpectralRadius` is the spectral radius of the complexification, and the
 operator statements are for a complex inner product space, which a real matrix reaches through
 `Matrix.complexify` and `Matrix.toEuclideanCLM`.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
-[^kress]: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998.
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
 -/
 
 open Filter Topology

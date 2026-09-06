@@ -11,17 +11,11 @@ import Mathlib.Analysis.SpecificLimits.Normed
 /-!
 # Explicit Neumann-series and perturbation bounds
 
-Quantitative versions of `Units.oneSub` / `Units.add` in a complete normed ring:
-`‖(1 - t)⁻¹‖ ≤ 1 / (1 - ‖t‖)`, `‖(x + t)⁻¹‖ ≤ ‖x⁻¹‖ / (1 - ‖x⁻¹‖ ‖t‖)`, and the two-space
-version for continuous linear equivalences. These are the explicit forms of the classical
-geometric-series (Banach perturbation) estimates for the inverse of a small perturbation of an
-invertible element, and are stated as Atkinson–Han[^atkinson-han] (2.3.6), Theorem 2.3.5 and its
-displays (2.3.13) and (2.3.14).
-
-## References
-
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
+Quantitative versions of `Units.oneSub` / `Units.add` in a complete normed ring: `‖(1 - t)⁻¹‖ ≤ 1 /
+(1 - ‖t‖)`, `‖(x + t)⁻¹‖ ≤ ‖x⁻¹‖ / (1 - ‖x⁻¹‖ ‖t‖)`, and the two-space version for continuous linear
+equivalences. These are the explicit forms of the classical geometric-series (Banach perturbation)
+estimates for the inverse of a small perturbation of an invertible element, and are stated as
+[Atkinson–Han][han2009theoretical] (2.3.6), Theorem 2.3.5 and its displays (2.3.13) and (2.3.14).
 -/
 
 /-- `u ↦ 1 / (1 - u)` is monotone below `1`. -/

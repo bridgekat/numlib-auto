@@ -65,13 +65,9 @@ afterwards by induction rather than threaded through the definition.
 
 ## References
 
-The theorem is classical; see Conway, *A Course in Functional Analysis*[^conway], Chapter II §5,
-and Atkinson–Han[^atkinson-han], Section 2.8.
+The theorem is classical; see [Conway, *A Course in Functional Analysis*][conway2007course], Chapter
+II §5, and [Atkinson–Han][han2009theoretical], Section 2.8.
 
-[^conway]: John B. Conway, *A Course in Functional Analysis*, 2nd edition, Springer, 1990.
-
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
 -/
 
 open Filter Module.End Submodule

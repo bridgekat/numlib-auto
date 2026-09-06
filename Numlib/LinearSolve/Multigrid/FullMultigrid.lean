@@ -8,9 +8,9 @@ import Mathlib.Tactic.Positivity
 
 Full multigrid sweeps once from the coarsest level upwards, taking as initial guess on each level
 the interpolant of the previous level's approximation and applying `μ` cycles of the multigrid
-iteration (Saad, *Iterative Methods for Sparse Linear Systems*[^saad-iterative], §13.4.4).  If the
-interpolation is accurate to the discretization order, the cycle is uniformly contractive, and the
-interpolation operators are bounded by `c₂ 2^{-κ}`, then the full multigrid approximation is
+iteration ([Saad, *Iterative Methods for Sparse Linear Systems*][saad2003iterative], §13.4.4).  If
+the interpolation is accurate to the discretization order, the cycle is uniformly contractive, and
+the interpolation operators are bounded by `c₂ 2^{-κ}`, then the full multigrid approximation is
 accurate to the discretization order on *every* level.
 
 There is no analysis in the proof.  Its whole content is a scalar recursion:
@@ -27,12 +27,6 @@ The hypotheses are *not* verified here for any concrete discretization, and cann
 accuracy of the interpolation is a statement about the solution of a differential equation, not
 about linear algebra.  They are named and assumed, following the convention of the rest of the
 multigrid development.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003, §13.4.4.  The theorem is his Theorem 13.2 and the three hypotheses are his
-  (13.49)–(13.51).
 -/
 
 namespace Multigrid

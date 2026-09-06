@@ -3,8 +3,8 @@ import Numlib.Krylov.Hessenberg
 /-!
 # The two-sided Lanczos process
 
-The Lanczos biorthogonalization of Saad, *Iterative Methods for Sparse Linear
-Systems*[^saad-iterative], Alg 7.1: two sequences `v_j` and `w_j`, built from a starting pair
+The Lanczos biorthogonalization of [Saad, *Iterative Methods for Sparse Linear
+Systems*][saad2003iterative], Alg 7.1: two sequences `v_j` and `w_j`, built from a starting pair
 with `⟪w₁, v₁⟫ = 1` by the coupled three-term recurrences
 
 ```
@@ -40,11 +40,6 @@ singular-value bounds `c ‖z‖ ≤ ‖∑ z_i v_i‖ ≤ C ‖z‖` on the coo
 Indices are `0`-based as in the rest of the Krylov layer, so `vec A B v₁ w₁ 0 = v₁` and the
 coefficient `delta A B v₁ w₁ j` is the book's `δ_{j+1}`. Breakdown is uniform: the recurrence
 returns `0` from the first vanishing `δ` onwards, because `(0 : 𝕜)⁻¹ = 0`.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
 -/
 
 open Krylov Finset

@@ -9,9 +9,10 @@ import Numlib.Approximation.Chebyshev
 /-!
 # Polynomial interpolation and its error
 
-Lagrange interpolation at `n + 1` distinct nodes, with the classical error formula
-`f(t) - p(t) = f^{(n+1)}(ξ)/(n+1)! ∏ (t - x_i)`. The material is Atkinson–Han, *Theoretical
-Numerical Analysis*[^atkinson-han] §3.2 and Kress, *Numerical Analysis*[^kress] §8.1 and §8.3.
+Lagrange interpolation at `n + 1` distinct nodes, with the classical error formula `f(t) - p(t) =
+f^{(n+1)}(ξ)/(n+1)! ∏ (t - x_i)`. The material is [Atkinson–Han, *Theoretical Numerical
+Analysis*][han2009theoretical] §3.2 and [Kress, *Numerical Analysis*][kress1998numerical] §8.1 and
+§8.3.
 
 ## Main definitions
 
@@ -38,13 +39,6 @@ Numerical Analysis*[^atkinson-han] §3.2 and Kress, *Numerical Analysis*[^kress]
 
 The bound on the piecewise-linear error by the modulus of continuity of a merely continuous `f`
 is not stated: nothing in the library defines a modulus of continuity yet.
-
-## References
-
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009. (§3.2, (3.2.6).)
-[^kress]: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998.
-  (§8.1, Theorem 8.4.)
 -/
 
 open scoped Polynomial

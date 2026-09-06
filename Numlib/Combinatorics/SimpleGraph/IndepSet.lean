@@ -23,15 +23,10 @@ that is what makes the heuristic "take the vertices of low degree first" a state
 advice.
 
 The bound is the whole justification of the independent-set reorderings of a sparse matrix in
-Saad[^saad-iterative] §3.3.3: an independent set of size `s` gives a diagonal leading block of
+[Saad][saad2003iterative] §3.3.3: an independent set of size `s` gives a diagonal leading block of
 size `s` in the reordered matrix, so the bound says how much of the matrix one elimination step
 can clear. Saad states it for the set his greedy algorithm produces; the argument he gives needs
 no algorithm, only maximality, and that is how it is stated here.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
 -/
 
 open Finset

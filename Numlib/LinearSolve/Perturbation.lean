@@ -10,26 +10,14 @@ import Numlib.Analysis.Normed.Ring.Inverse
 /-!
 # Perturbation theory for linear systems
 
-Normwise error bounds for `A x = b` in terms of the condition number
-`κ(A) = ‖A‖ ‖A⁻¹‖` (Saad[^saad-iterative] §1.13.2 (1.76), Atkinson–Han[^atkinson-han] (2.4.1),
-Kress[^kress] Thm 5.3, Higham[^higham] Thm 7.2), the residual–error relation, and the
-Rigal–Gaches formula for the normwise backward error (Higham Thm 7.1,
-Fong–Saunders[^fong-saunders] (3.2)–(3.3)).  The normwise backward error of an approximate
-solution `y`, relative to tolerances `α` on `A` and `β` on `b`, is the least `ξ` for which `y`
-solves exactly some system `(A + ΔA) y = b + Δb` with `‖ΔA‖ ≤ ξ α ‖A‖` and `‖Δb‖ ≤ ξ β ‖b‖`;
-the Rigal–Gaches theorem evaluates it in closed form as `‖b - A y‖ / (α ‖A‖ ‖y‖ + β ‖b‖)`.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
-[^kress]: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998.
-[^higham]: Nicholas J. Higham, *Accuracy and Stability of Numerical Algorithms*, 2nd edition,
-  SIAM, 2002.
-[^fong-saunders]: David Chin-Lung Fong and Michael Saunders, *CG versus MINRES: an empirical
-  comparison*, SQU Journal for Science 17 (2012), 44–62.
+Normwise error bounds for `A x = b` in terms of the condition number `κ(A) = ‖A‖ ‖A⁻¹‖`
+([Saad][saad2003iterative] §1.13.2 (1.76), [Atkinson–Han][han2009theoretical] (2.4.1),
+[Kress][kress1998numerical] Thm 5.3, [Higham][higham2002accuracy] Thm 7.2), the residual–error
+relation, and the Rigal–Gaches formula for the normwise backward error (Higham Thm 7.1,
+[Fong–Saunders][fong2012cg] (3.2)–(3.3)).  The normwise backward error of an approximate solution
+`y`, relative to tolerances `α` on `A` and `β` on `b`, is the least `ξ` for which `y` solves exactly
+some system `(A + ΔA) y = b + Δb` with `‖ΔA‖ ≤ ξ α ‖A‖` and `‖Δb‖ ≤ ξ β ‖b‖`; the Rigal–Gaches
+theorem evaluates it in closed form as `‖b - A y‖ / (α ‖A‖ ‖y‖ + β ‖b‖)`.
 -/
 
 open NormedRing

@@ -4,14 +4,14 @@ import Mathlib.Analysis.InnerProductSpace.Spectrum
 /-!
 # Courant–Fischer: the variational characterization of eigenvalues
 
-The eigenvalues of a symmetric operator `T` on a finite-dimensional inner product space, sorted
-in decreasing order as `hT.eigenvalues hn : Fin n → ℝ`, are the max–min and min–max values of the
+The eigenvalues of a symmetric operator `T` on a finite-dimensional inner product space, sorted in
+decreasing order as `hT.eigenvalues hn : Fin n → ℝ`, are the max–min and min–max values of the
 Rayleigh quotient `T.rayleighQuotient x = re ⟪T x, x⟫ / ‖x‖ ^ 2` over subspaces: `λ i` is the
-largest number that bounds the Rayleigh quotient from below on some subspace of dimension
-`i + 1`, and the smallest number that bounds it from above on some subspace of dimension `n - i`.
-This is the min–max theorem of Courant, Fischer, Poincaré and Weyl, stated as the two formulas of
-Saad, *Numerical Methods for Large Eigenvalue Problems*[^saad-eigenvalue], Thm 1.9, and as
-Kress, *Numerical Analysis*[^kress], Thm 7.4.  Mathlib has only the two extreme eigenvalues,
+largest number that bounds the Rayleigh quotient from below on some subspace of dimension `i + 1`,
+and the smallest number that bounds it from above on some subspace of dimension `n - i`. This is the
+min–max theorem of Courant, Fischer, Poincaré and Weyl, stated as the two formulas of [Saad,
+*Numerical Methods for Large Eigenvalue Problems*][saad2011numerical], Thm 1.9, and as [Kress,
+*Numerical Analysis*][kress1998numerical], Thm 7.4.  Mathlib has only the two extreme eigenvalues,
 through `LinearMap.IsSymmetric.hasEigenvalue_iSup_of_finiteDimensional` and its `iInf` twin.
 
 Both books index the eigenvalues from `1` in decreasing order, so their `λ_k` is
@@ -53,12 +53,6 @@ corollary for continuous linear maps.  Its workhorse
 `LinearMap.IsSymmetric.eigenvalues_le_add_of_re_inner_le` is weaker still: it asks only for the
 quadratic-form bound `re ⟪A x, x⟫ ≤ re ⟪B x, x⟫ + C ‖x‖ ^ 2` that Kress's proof actually uses,
 which is the form this library prefers for spectral hypotheses.
-
-## References
-
-[^saad-eigenvalue]: Yousef Saad, *Numerical Methods for Large Eigenvalue Problems*, 2nd edition,
-  SIAM, 2011.
-[^kress]: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998.
 -/
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]

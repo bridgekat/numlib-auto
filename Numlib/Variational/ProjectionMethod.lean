@@ -6,19 +6,13 @@ import Numlib.Variational.Galerkin
 # Projection methods for operator equations
 
 The operator-level twin of `Numlib.Variational.Galerkin`: instead of a sesquilinear form on a
-Hilbert space, the data is a bounded operator `A` and a bounded projection `P` of the space onto
-the trial space, and the discrete problem is `P (A u) = P f` with `u ∈ range P`
-(`IsProjectionMethodSolution`, Kress[^kress] (11.30)).  For an orthogonal projection this is the
-Galerkin specification `IsGalerkin A f 0 (range P) u` of `Numlib.LinearSolve.Projection.Basic`
-(`isProjectionMethodSolution_starProjection_iff`), and Céa's lemma reads
-`‖u* - u_n‖ ≤ (‖A‖ / c) inf_{v ∈ range P} ‖u* - v‖` for a strictly coercive `A`
+Hilbert space, the data is a bounded operator `A` and a bounded projection `P` of the space onto the
+trial space, and the discrete problem is `P (A u) = P f` with `u ∈ range P`
+(`IsProjectionMethodSolution`, [Kress][kress1998numerical] (11.30)).  For an orthogonal projection
+this is the Galerkin specification `IsGalerkin A f 0 (range P) u` of
+`Numlib.LinearSolve.Projection.Basic` (`isProjectionMethodSolution_starProjection_iff`), and Céa's
+lemma reads `‖u* - u_n‖ ≤ (‖A‖ / c) inf_{v ∈ range P} ‖u* - v‖` for a strictly coercive `A`
 (`IsProjectionMethodSolution.norm_sub_le_of_isCoercive`).
-
-## References
-
-[^kress]: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998.
-  Theorem 11.17 for Céa's lemma in operator form, and Chapter 12 for projection methods for
-  equations of the second kind.
 -/
 
 section Defs

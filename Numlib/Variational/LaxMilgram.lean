@@ -7,26 +7,18 @@ import Numlib.Variational.Forms
 # Lax–Milgram, Babuška–Nečas, and existence theory for variational problems
 
 * `SesqForm.laxMilgram`: a bounded coercive form on a Hilbert space is uniquely solvable,
-  `‖u‖ ≤ ‖ℓ‖ / c` (Atkinson–Han[^atkinson-han] Thm 8.3.4; Kress[^kress] Thm 11.13 in operator
-  form, Cor 11.16 for forms; Mathlib's `IsCoercive.continuousLinearEquivOfBilin` is the real
-  case); proof routes: Riesz + `ContinuousLinearMap.exists_equiv_of_isCoerciveWith`
-  (Atkinson–Han's second proof of Thm 8.3.4) or the damped fixed-point iteration (their first
-  proof, `contractingWith_damped`).
+  `‖u‖ ≤ ‖ℓ‖ / c` ([Atkinson–Han][han2009theoretical] Thm 8.3.4; [Kress][kress1998numerical] Thm
+  11.13 in operator form, Cor 11.16 for forms; Mathlib's `IsCoercive.continuousLinearEquivOfBilin`
+  is the real case); proof routes: Riesz + `ContinuousLinearMap.exists_equiv_of_isCoerciveWith`
+  (Atkinson–Han's second proof of Thm 8.3.4) or the damped fixed-point iteration (their first proof,
+  `contractingWith_damped`).
 * `SesqForm.isMinOn_energy_iff`: for Hermitian coercive forms, the solution is the unique
-  minimizer of the energy (Atkinson–Han Thm 8.3.3; Saad[^saad-iterative] Prop 5.2 in operator
+  minimizer of the energy (Atkinson–Han Thm 8.3.3; [Saad][saad2003iterative] Prop 5.2 in operator
   form), on subspaces and on closed convex sets (variational inequalities, Atkinson–Han (8.3.3)).
 * `SesqForm₂.babuska_necas`: the generalized Lax–Milgram lemma (Atkinson–Han Thm 8.7.1) under the
   inf–sup condition and nondegeneracy, with `‖u‖ ≤ ‖ℓ‖ / α` (8.7.5).
 * Existence via a priori estimates (Atkinson–Han Thm 8.2.1–8.2.4): bounded-below operators with
   closed / dense range, including the closed-operator version.
-
-## References
-
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
-[^kress]: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998.
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
 -/
 
 variable {𝕜 V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [InnerProductSpace 𝕜 V] [CompleteSpace V]

@@ -47,16 +47,11 @@ Strong monotonicity is bundled here as `IsStronglyMonotoneWith`, whose unfolding
 hypothesis `zarantonello` and `contractingWith_damped` take, so the two compose with no
 translation lemma.
 
-The material is Chapter 11 of Atkinson–Han[^atkinson-han]: (11.3.3), (11.3.8), (11.3.9) and
+The material is Chapter 11 of [Atkinson–Han][han2009theoretical]: (11.3.3), (11.3.8), (11.3.9) and
 (11.3.12)–(11.3.14) for the problem, Theorem 11.2.2 for the equivalence with minimization,
 Theorem 11.3.1 for unique solvability, Theorem 11.3.6 (Stampacchia) and Theorem 11.3.9 for its
 specializations, Lemma 11.3.8 for Minty's lemma, and Exercises 11.3.3 and 11.3.10 for the last
 two.
-
-## References
-
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
 -/
 
 open Filter Set Topology

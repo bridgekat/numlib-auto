@@ -20,8 +20,8 @@ The singular values of `A : Matrix m n 𝕜` are the square roots of the eigenva
 semidefinite matrix `Aᴴ A`, and an orthonormal eigenbasis `u` of `Aᴴ A` is a family of *right
 singular vectors*: the images `A u_i` are pairwise orthogonal of norm `σ_i`, so the normalized
 nonzero ones are an orthonormal family `v` of *left singular vectors*, and
-`A x = ∑ σ_i ⟪u_i, x⟫ v_i`. That is the *singular system* of Kress, *Numerical
-Analysis*[^kress] (Theorem 5.4), and `Matrix.exists_singularSystem` states it.
+`A x = ∑ σ_i ⟪u_i, x⟫ v_i`. That is the *singular system* of [Kress, *Numerical
+Analysis*][kress1998numerical] (Theorem 5.4), and `Matrix.exists_singularSystem` states it.
 
 Three things are built on it. The **Moore–Penrose pseudoinverse** `A⁺ = (Aᴴ A)⁺ Aᴴ`, obtained by
 inverting the nonzero eigenvalues of the Gram matrix and leaving the zero ones alone, is the
@@ -29,7 +29,7 @@ unique matrix satisfying the four Penrose conditions, and `A⁺ y` is the least-
 `A x = y` of smallest norm. The **spectral condition number** of a nonsingular matrix is the ratio
 of its extreme singular values. And the **Tikhonov regularization** `(α + Aᴴ A)⁻¹ Aᴴ` at level
 `α > 0` is the unique solution of the regularized normal equations and the unique minimizer of
-`x ↦ ‖A x - y‖² + α ‖x‖²` (Kress[^kress], Theorem 5.7).
+`x ↦ ‖A x - y‖² + α ‖x‖²` ([Kress][kress1998numerical], Theorem 5.7).
 
 ## Main definitions
 
@@ -57,11 +57,6 @@ of its extreme singular values. And the **Tikhonov regularization** `(α + Aᴴ 
 Mathlib indexes `Matrix.IsHermitian.eigenvalues`, and because every consumer here wants the
 value attached to a given right singular vector rather than the `j`-th largest. Mathlib's
 `LinearMap.singularValues` is the sorted `ℕ`-indexed sequence, which this file does not use.
-
-## References
-
-[^kress]: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181,
-  Springer, 1998.
 -/
 
 open Module

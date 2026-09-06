@@ -9,8 +9,8 @@ import Numlib.Approximation.Interpolation
 Interpolation of a function and its derivatives at finitely many nodes: given distinct nodes
 `x i` and multiplicities `m i`, the Hermite interpolant is the polynomial of degree less than
 `∑ i, (m i + 1)` whose derivatives of order `j ≤ m i` agree with those of `f` at `x i`. The
-material is Atkinson–Han, *Theoretical Numerical Analysis*[^atkinson-han] §3.2.2 and Kress,
-*Numerical Analysis*[^kress] §8.1.
+material is [Atkinson–Han, *Theoretical Numerical Analysis*][han2009theoretical] §3.2.2 and [Kress,
+*Numerical Analysis*][kress1998numerical] §8.1.
 
 ## Main definitions
 
@@ -39,13 +39,6 @@ material is Atkinson–Han, *Theoretical Numerical Analysis*[^atkinson-han] §3.
 
 Divided-difference forms of the error and the Newton form of the interpolant are not developed:
 nothing downstream uses them.
-
-## References
-
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009. (§3.2.2, (3.2.6), Exercise 3.2.6.)
-[^kress]: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998.
-  (§8.1.)
 -/
 
 open scoped Polynomial

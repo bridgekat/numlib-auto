@@ -34,13 +34,8 @@ Rayleigh–Ritz constant `γ = ‖P_K A (1 - P_K)‖`.
 * `compression.inner_apply`, the Galerkin characterization, and `compression.isSymmetric`, the
   symmetry it gives;
 * `compression.apply_sub_smul_orthogonalProjection`, the residual identity behind the
-  Rayleigh–Ritz eigenvalue error bounds of Saad, *Numerical Methods for Large Eigenvalue
-  Problems*[^saad-eigenvalue], Thm 4.3.
-
-## References
-
-[^saad-eigenvalue]: Yousef Saad, *Numerical Methods for Large Eigenvalue Problems*, 2nd edition,
-  SIAM, 2011.
+  Rayleigh–Ritz eigenvalue error bounds of [Saad, *Numerical Methods for Large Eigenvalue
+  Problems*][saad2011numerical], Thm 4.3.
 -/
 
 open Polynomial

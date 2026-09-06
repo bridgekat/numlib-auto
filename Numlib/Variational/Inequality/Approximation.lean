@@ -49,15 +49,8 @@ The bounds are stated squared, as the proofs establish them, rather than as the 
 root by `Real.sqrt_le_sqrt` together with `√(x + y) ≤ √x + √y`, and neither step belongs in the
 statement of the estimate.
 
-The material is Section 11.4 of Atkinson–Han[^atkinson-han] — Theorems 11.4.1, 11.4.2 and 11.4.7
-and Exercises 11.4.2 and 11.4.3 — and the error bound is due to Falk[^falk].
-
-## References
-
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
-[^falk]: Richard S. Falk, *Error estimates for the approximation of a class of variational
-  inequalities*, Mathematics of Computation 28 (1974), 963–971.
+The material is Section 11.4 of [Atkinson–Han][han2009theoretical] — Theorems 11.4.1, 11.4.2 and
+11.4.7 and Exercises 11.4.2 and 11.4.3 — and the error bound is due to [Falk][falk1974error].
 -/
 
 open Filter Set Topology

@@ -8,21 +8,13 @@ import Numlib.Analysis.InnerProductSpace.Energy
 
 A bounded form is `a : V →L⋆[𝕜] V →L[𝕜] 𝕜` (conjugate-linear in the first slot, as `innerSL`):
 boundedness with constant `M`, coercivity `c ‖v‖² ≤ re (a v v)` (what
-Atkinson–Han[^atkinson-han] call "`V`-elliptic" or "strongly positive"), Hermitian symmetry, the
-associated operator `SesqForm.toOperator a` (`⟪A u, v⟫ = a u v`, Mathlib's
-`InnerProductSpace.continuousLinearMapOfBilin`), the Riesz representative of a functional, and
-the energy functional `E(v) = ½ re (a v v) - re (ℓ v)` (Atkinson–Han §8.3, §9.4;
-Kress[^kress] §11.3; Saad[^saad-iterative] §5.2 in the operator language). Over `ℝ` a
-`V →L[ℝ] V →L[ℝ] ℝ` *is* a `V →L⋆[ℝ] V →L[ℝ] ℝ` (same defeq Mathlib's `LaxMilgram.lean` uses), so
-the real surfaces need no conversion; the `_real` lemmas remove the `re`/`conj` decorations.
-
-## References
-
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
-[^kress]: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998.
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
+[Atkinson–Han][han2009theoretical] call "`V`-elliptic" or "strongly positive"), Hermitian symmetry,
+the associated operator `SesqForm.toOperator a` (`⟪A u, v⟫ = a u v`, Mathlib's
+`InnerProductSpace.continuousLinearMapOfBilin`), the Riesz representative of a functional, and the
+energy functional `E(v) = ½ re (a v v) - re (ℓ v)` (Atkinson–Han §8.3, §9.4;
+[Kress][kress1998numerical] §11.3; [Saad][saad2003iterative] §5.2 in the operator language). Over
+`ℝ` a `V →L[ℝ] V →L[ℝ] ℝ` *is* a `V →L⋆[ℝ] V →L[ℝ] ℝ` (same defeq Mathlib's `LaxMilgram.lean` uses),
+so the real surfaces need no conversion; the `_real` lemmas remove the `re`/`conj` decorations.
 -/
 
 variable {𝕜 V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [InnerProductSpace 𝕜 V]

@@ -110,8 +110,8 @@ the step at which the process terminates, the second with no hypothesis at all.
 
 ## References
 
-Every result here is from Saad, *Numerical Methods for Large Eigenvalue
-Problems*[^saad-eigenvalue]: §4.3 for the Ritz pairs, for the exactness on an invariant subspace
+Every result here is from [Saad, *Numerical Methods for Large Eigenvalue
+Problems*][saad2011numerical]: §4.3 for the Ritz pairs, for the exactness on an invariant subspace
 (Prop 4.3, with the remark preceding Thm 4.7 for the oblique case) and for the residual bounds
 with `γ` (Thm 4.3, whose oblique companion is Thm 4.7); §4.3.2 for the Hermitian bounds — the
 variational characterization of the Ritz values and the interlacing that follows from it (Prop
@@ -131,8 +131,6 @@ stated as Saad states it, as the existence of *some* Ritz vector for the given R
 one produced is the projection of `P_K u` onto the `θ`-eigenspace of the compression, and when
 that projection vanishes the bound is vacuous, its right-hand side being then at least `1`.
 
-[^saad-eigenvalue]: Yousef Saad, *Numerical Methods for Large Eigenvalue Problems*, 2nd edition,
-  SIAM, 2011.
 -/
 
 open Polynomial

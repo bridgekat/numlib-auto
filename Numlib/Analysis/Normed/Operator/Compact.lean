@@ -40,13 +40,8 @@ domain to be complete: Riesz's lemma and the compactness of `K` carry both argum
 The Riesz ascent–descent theory — that the chain of null spaces of `(μ - K)ⁿ` stabilizes, and that
 `ker (μ - K)` and `ker (conj μ - K†)` have equal dimension — is not developed here.
 
-These are Atkinson–Han[^atkinson-han] Propositions 2.8.4 and 2.8.7, Lemma 2.8.13, Theorem 2.8.12
-clauses (1) and (4), and Theorem 2.8.14 clause (2).
-
-## References
-
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
+These are [Atkinson–Han][han2009theoretical] Propositions 2.8.4 and 2.8.7, Lemma 2.8.13, Theorem
+2.8.12 clauses (1) and (4), and Theorem 2.8.14 clause (2).
 -/
 
 open Filter Topology Metric Set

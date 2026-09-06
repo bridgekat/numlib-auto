@@ -39,7 +39,7 @@ The combinatorial core is `Matrix.IsIrreducible.entrywisePos_one_add_pow`: for i
 they stabilise as soon as two consecutive ones agree, and irreducibility forbids stabilising short
 of everything. Hence each step before saturation gains at least one index, and `N - 1` steps
 suffice. This replaces the argument the standard accounts give — shortening a quiver path below
-`N`, as in Seneta, *Non-negative Matrices and Markov Chains*[^seneta] — for which Mathlib has no
+`N`, as in Seneta, *Non-negative Matrices and Markov Chains* — for which Mathlib has no
 lemma.
 
 The Perron eigenvector is obtained without any maximisation. An eigenvalue `μ` of maximal modulus
@@ -55,15 +55,8 @@ Geometric simplicity is then a one-line extremal argument: for another eigenvect
 entry, so it is zero.
 
 *Algebraic* simplicity of the Perron eigenvalue, which is what "simple" means in
-Saad[^saad-iterative] Theorem 1.25, is not proved here: it needs the derivative of the
+[Saad][saad2003iterative] Theorem 1.25, is not proved here: it needs the derivative of the
 characteristic polynomial through the adjugate.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003. §1.10 states Theorem 1.25 (Perron–Frobenius) without proof, and Corollary 1.27 and
-  Theorem 1.28 are the monotonicity results above.
-[^seneta]: E. Seneta, *Non-negative Matrices and Markov Chains*, 2nd edition, Springer, 1981.
 -/
 
 open Filter Topology

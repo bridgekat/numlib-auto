@@ -34,7 +34,7 @@ coercivity constants simply **add** under a Kronecker sum
 eigenvector in sight, and it is how a two-dimensional model problem enters a convergence
 estimate: the five-point Laplacean is the Kronecker sum of two copies of the tridiagonal
 Toeplitz matrix of `Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz`, and the bounds of that
-module add.  Saad, *Iterative Methods for Sparse Linear Systems*[^saad-iterative], §13.2 writes
+module add.  [Saad, *Iterative Methods for Sparse Linear Systems*][saad2003iterative], §13.2 writes
 the tensor sum as `T_x ⊕ T_y` and states its eigenvalues without proof.
 
 ## Main definitions
@@ -61,11 +61,6 @@ the tensor sum as `T_x ⊕ T_y` and states its eigenvalues without proof.
 Everything here is indexed by the product type `m × n`, matching Mathlib's `kroneckerMap`; a
 consumer that wants `Fin (n₁ * n₂)` reindexes with `Matrix.reindex` and a `Fin`-product
 equivalence.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
 -/
 
 open scoped Matrix Kronecker

@@ -8,7 +8,7 @@ import Numlib.Variational.LaxMilgram
 # Galerkin and Petrov–Galerkin methods for variational problems
 
 * `IsGalerkinSolution a ℓ K u`: `u ∈ K` and `a u v = ℓ v` for all `v ∈ K`
-  (Atkinson–Han[^atkinson-han] (9.1.4)); bridge to the operator specification
+  ([Atkinson–Han][han2009theoretical] (9.1.4)); bridge to the operator specification
   `IsGalerkin (toOperator a) (rieszRep ℓ) 0 K u` of `Numlib.LinearSolve.Projection.Basic`, and to
   the stiffness-matrix system (9.1.5).
 * Céa's lemma `‖u - u_N‖ ≤ (M / c) inf_{v ∈ K} ‖u - v‖` (Atkinson–Han Prop 9.1.3, their
@@ -25,11 +25,6 @@ import Numlib.Variational.LaxMilgram
   `‖1 - P‖ = ‖P‖` (Atkinson–Han Rem 9.2.2).
 * Strang's first lemma for the generalized Galerkin method on an abstract normed space `W`
   (Atkinson–Han Thm 9.3.1).
-
-## References
-
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
 -/
 
 open scoped InnerProductSpace

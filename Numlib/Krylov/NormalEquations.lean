@@ -6,7 +6,7 @@ import Numlib.Krylov.Convergence.CG
 
 The two ways of running a symmetric Krylov method on a system that is not symmetric: CGNR is CG
 on `Aᴴ A x = Aᴴ b`, and CGNE (Craig's method) is CG on `A Aᴴ u = b` with `x = Aᴴ u`
-(Saad, *Iterative Methods*[^saad-iterative] §8.3, Algorithms 8.4 and 8.5).
+([Saad, *Iterative Methods*][saad2003iterative] §8.3, Algorithms 8.4 and 8.5).
 
 Nothing here is a new algorithm. The module records that the specifications of
 `Numlib/Krylov/Iterate` applied to `Aᴴ A` on the Krylov space `𝒦_m(Aᴴ A, Aᴴ r₀)` are, read back
@@ -24,11 +24,6 @@ The adjoint enters as a *hypothesis* `∀ u v, ⟪Aᴴ u, v⟫ = ⟪u, A v⟫` o
 than as `LinearMap.adjoint A`, so that the module needs neither finite-dimensionality nor
 completeness; `LinearMap.adjoint_inner_left` and `ContinuousLinearMap.adjoint_inner_left` supply
 the hypothesis where those are available.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
 -/
 
 open Krylov

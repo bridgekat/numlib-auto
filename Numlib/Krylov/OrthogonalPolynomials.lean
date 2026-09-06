@@ -20,7 +20,7 @@ orthonormal polynomials of that form evaluated at `A`: `Lanczos.poly A v j` is t
 degree `j` with `p_j(A) v = v_j` (`Lanczos.aeval_poly`, `Lanczos.poly_degree`), obtained from the
 three-term recurrence `β_{j+1} p_{j+2} = (X - α_{j+1}) p_{j+1} - β_j p_j` that the Lanczos
 process itself runs, and `Lanczos.polyInner_poly` is its orthonormality
-(Meurant–Strakoš[^meurant-strakos] §2.2, Saad, *Iterative Methods*[^saad-iterative] §6.6.2).
+([Meurant–Strakoš][meurant2006lanczos] §2.2, [Saad, *Iterative Methods*][saad2003iterative] §6.6.2).
 As everywhere in this library the recurrence is run past breakdown with no hypothesis, the
 inverse of the vanishing `β` being `0`, so that `Lanczos.aeval_poly` holds at every index.
 
@@ -52,20 +52,11 @@ are `‖v‖²` times the squared first components of the eigenvectors of `T_m`.
 Two results that belong to this circle but not to the Lanczos process itself close the module.
 `Polynomial.christoffel_darboux` is the Christoffel–Darboux identity for *any* sequence of
 polynomials obeying a three-term recurrence with the orthonormal normalization `c_n a_{n-1} = a_n`
-(Atkinson–Han[^atkinson-han] Thm 3.7.3); it is stated division-free, so that it holds over a
+([Atkinson–Han][han2009theoretical] Thm 3.7.3); it is stated division-free, so that it holds over a
 commutative ring and at `x = t`, with the quotient form and the confluent form beside it.
 `Lanczos.persistence` is the persistence theorem of Paige (Meurant–Strakoš Thm 5): a Ritz value of
 `T_{m+1}` whose normalized eigenvector has a small last component `z_m` is approximated to within
 `β_m |z_m|` by a Ritz value of every later `T_k`.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
-[^meurant-strakos]: Gérard Meurant and Zdeněk Strakoš, *The Lanczos and conjugate gradient
-  algorithms in finite precision arithmetic*, Acta Numerica (2006), 471–542.
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
 -/
 
 open Polynomial

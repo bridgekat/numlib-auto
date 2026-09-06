@@ -9,25 +9,12 @@ import Numlib.Analysis.InnerProductSpace.Projection.Compression
 
 `‖p(A) x‖ ≤ max_{λ ∈ σ(A)} |p(λ)| ‖x‖` and the energy-norm analogue for symmetric `A` in finite
 dimension (via `LinearMap.IsSymmetric.eigenvectorBasis`), and the real-interval form used by the
-Chebyshev bounds: for `A.IsSymmetricBoundedBy a b`, `‖p(A) x‖ ≤ sup_{[a,b]} |p| ‖x‖` in *any*
-inner product space, obtained by compressing `A` to the finite-dimensional
-`span {x, A x, …, A^(deg p) x}` (the "compression trick";
-Saad, *Iterative Methods*[^saad-iterative] Lemma 6.28/6.31 proofs,
-Saad, *Large Eigenvalue Problems*[^saad-eigenvalue] Lemma 6.1,
-Atkinson–Han[^atkinson-han] (5.6.16)–(5.6.19), Meurant–Strakoš[^meurant-strakos] (3.7)–(3.8)).
-The Hilbert-space version via the continuous functional calculus is a phase-2 alternative, not
-needed for the statements.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
-[^saad-eigenvalue]: Yousef Saad, *Numerical Methods for Large Eigenvalue Problems*, 2nd edition,
-  SIAM, 2011.
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
-[^meurant-strakos]: Gérard Meurant and Zdeněk Strakoš, *The Lanczos and conjugate gradient
-  algorithms in finite precision arithmetic*, Acta Numerica (2006), 471–542.
+Chebyshev bounds: for `A.IsSymmetricBoundedBy a b`, `‖p(A) x‖ ≤ sup_{[a,b]} |p| ‖x‖` in *any* inner
+product space, obtained by compressing `A` to the finite-dimensional `span {x, A x, …, A^(deg p) x}`
+(the "compression trick"; [Saad, *Iterative Methods*][saad2003iterative] Lemma 6.28/6.31 proofs,
+[Saad, *Large Eigenvalue Problems*][saad2011numerical] Lemma 6.1, [Atkinson–Han][han2009theoretical]
+(5.6.16)–(5.6.19), [Meurant–Strakoš][meurant2006lanczos] (3.7)–(3.8)). The Hilbert-space version via
+the continuous functional calculus is a phase-2 alternative, not needed for the statements.
 -/
 
 open Polynomial

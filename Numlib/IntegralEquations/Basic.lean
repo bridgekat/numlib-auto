@@ -12,9 +12,9 @@ import Mathlib.Topology.UniformSpace.HeineCantor
 The Fredholm, Urysohn and Volterra integral operators on the Banach space `C(Set.Icc a b, ℝ)` of
 continuous real functions on a compact interval, and the estimates on which the classical existence
 theorems for integral equations of the second kind rest.  The operators, their norms and the
-factorial estimate are as in Atkinson–Han, *Theoretical Numerical Analysis*[^atkinson-han], §2.2,
-§2.3 and §5.2, which every declaration below cites; Kress, *Linear Integral
-Equations*[^kress-integral], is the standard monograph on the same material.
+factorial estimate are as in [Atkinson–Han, *Theoretical Numerical Analysis*][han2009theoretical],
+§2.2, §2.3 and §5.2, which every declaration below cites; [Kress, *Linear Integral
+Equations*][kress1989linear], is the standard monograph on the same material.
 
 * `IntegralOperator.kernelCLM` is the bounded operator `u ↦ (x ↦ ∫ y, k (x, y) * u y dμ)` on
   `C(X, ℝ)` for a compact space `X` with a finite Borel measure `μ`, and
@@ -39,14 +39,6 @@ Equations*[^kress-integral], is the standard monograph on the same material.
 
 Every operator here carries a proof `hab : a ≤ b`, which is what lets the real integration variable
 be clamped back into `Set.Icc a b` by `Set.projIcc`.
-
-## References
-
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
-[^kress-integral]: Rainer Kress, *Linear Integral Equations*, 3rd edition, Applied Mathematical
-  Sciences 82, Springer, 2014.  A different book from the same author's *Numerical Analysis*,
-  which the rest of this library cites under the key `kress`.
 -/
 
 open MeasureTheory Metric Set

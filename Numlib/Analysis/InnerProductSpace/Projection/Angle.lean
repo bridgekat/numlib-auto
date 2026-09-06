@@ -20,7 +20,7 @@ subspace-iteration bounds are inequalities about the gap; neither notion exists 
 Everything here is stated over `RCLike` and needs neither completeness nor finite dimension, only
 `Submodule.HasOrthogonalProjection`.
 
-Both notions follow Saad, *Numerical Methods for Large Eigenvalue Problems*[^saad-eigenvalue],
+Both notions follow [Saad, *Numerical Methods for Large Eigenvalue Problems*][saad2011numerical],
 §3.1, the source of the bounds that use them. Saad takes the acute angle between a vector and a
 subspace to be the smallest angle `u` makes with any vector of `K`, and shows it is attained at
 `P_K u`; since `⟪u, P_K u⟫ = ‖P_K u‖ ^ 2`, its cosine is `‖P_K u‖ / ‖u‖`, which is `cosAngle`.
@@ -54,14 +54,9 @@ best-approximation vocabulary of `Numlib.Approximation.BestApprox`.
 For the gap, `gap_le_one` comes from the pointwise bound `norm_starProjection_sub_apply_le`,
 `‖(P_K - P_L) x‖ ≤ ‖x‖`, proved by splitting `P_K - P_L = P_K (1 - P_L) - P_Kᗮ P_L` into two
 orthogonal pieces, and
-`finrank_eq_of_gap_lt_one` is the rank-constancy fact behind subspace iteration (Saad, *Numerical
-Methods for Large Eigenvalue Problems*[^saad-eigenvalue], Thm 3.2): a gap below `1` makes `P_K`
+`finrank_eq_of_gap_lt_one` is the rank-constancy fact behind subspace iteration ([Saad, *Numerical
+Methods for Large Eigenvalue Problems*][saad2011numerical], Thm 3.2): a gap below `1` makes `P_K`
 injective on `L`, and symmetry does the rest.
-
-## References
-
-[^saad-eigenvalue]: Yousef Saad, *Numerical Methods for Large Eigenvalue Problems*, 2nd edition,
-  SIAM, 2011.
 -/
 
 namespace Submodule

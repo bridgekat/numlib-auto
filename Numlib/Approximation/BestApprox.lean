@@ -8,10 +8,10 @@ import Mathlib.Topology.MetricSpace.HausdorffDistance
 # Best approximation
 
 `IsBestApprox K u v`: `v ∈ K` minimizes `‖u - v‖` over `K`. Existence from finite-dimensional
-subspaces (Atkinson–Han[^atkinson-han] Thm 3.3.16, Kress[^kress] Thm 3.50), uniqueness in
-strictly convex spaces (Atkinson–Han Thm 3.3.21), the Hilbert-space characterizations
-(Atkinson–Han Lemma 3.4.1, Thm 3.4.6; Kress Thm 3.51) as glue to Mathlib's orthogonal
-projection, and the Lebesgue lemma for projections (Atkinson–Han (3.7.11), (3.7.14), (3.7.21)).
+subspaces ([Atkinson–Han][han2009theoretical] Thm 3.3.16, [Kress][kress1998numerical] Thm 3.50),
+uniqueness in strictly convex spaces (Atkinson–Han Thm 3.3.21), the Hilbert-space characterizations
+(Atkinson–Han Lemma 3.4.1, Thm 3.4.6; Kress Thm 3.51) as glue to Mathlib's orthogonal projection,
+and the Lebesgue lemma for projections (Atkinson–Han (3.7.11), (3.7.14), (3.7.21)).
 
 ## Main definitions
 
@@ -33,12 +33,6 @@ projection, and the Lebesgue lemma for projections (Atkinson–Han (3.7.11), (3.
   dist(u, range P)` for a bounded projection `P`, with the sharper
   `norm_sub_apply_le_of_isIdempotentElem'` by `‖1 - P‖`. This is the abstract form of the
   quasi-optimality estimates that projection methods satisfy.
-
-## References
-
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
-[^kress]: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998.
 -/
 
 section Normed

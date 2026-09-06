@@ -10,8 +10,8 @@ For symmetric `A` with `λmin ‖x‖² ≤ re ⟪A x, x⟫ ≤ λmax ‖x‖²`
 in any inner product space: the proofs go through the compression of `A` to `𝒦_{m+1}`) and *any*
 sequence of Galerkin iterates (CG, D-Lanczos, …):
 `‖x* - x_m‖_A ≤ ‖x* - x₀‖_A / T_m((λmax + λmin)/(λmax - λmin)) ≤ 2 ((√κ-1)/(√κ+1))^m ‖x* - x₀‖_A`
-(Saad, *Iterative Methods*[^saad-iterative] Thm 6.29, (6.123)–(6.128);
-Atkinson–Han[^atkinson-han] Thm 5.6.1; Meurant–Strakoš[^meurant-strakos] (3.9)). The
+([Saad, *Iterative Methods*][saad2003iterative] Thm 6.29, (6.123)–(6.128);
+[Atkinson–Han][han2009theoretical] Thm 5.6.1; [Meurant–Strakoš][meurant2006lanczos] (3.9)). The
 minimal-residual analogue for the residual norm, and Saad Thm 6.30 (restarted minimal-residual
 iterations converge for coercive `A`). Also the one-step Kantorovich contraction
 `‖x* - x_{m+1}‖_A ≤ ((λmax - λmin)/(λmax + λmin)) ‖x* - x_m‖_A` (Atkinson–Han (5.6.4)), which
@@ -34,15 +34,6 @@ the degenerate case being one where `A` is a scalar and the iterates are exact f
 * `Krylov.IsMinResIterate.norm_residual_le_of_isCoerciveWith` and
   `Krylov.restarted_minRes_tendsto`: convergence of restarted minimal-residual iterations for a
   bounded coercive `A` (Saad Thm 6.30).
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
-[^meurant-strakos]: Gérard Meurant and Zdeněk Strakoš, *The Lanczos and conjugate gradient
-  algorithms in finite precision arithmetic*, Acta Numerica (2006), 471–542.
 -/
 
 open Polynomial Polynomial.Chebyshev Krylov

@@ -4,27 +4,17 @@ import Numlib.LinearSolve.Projection.Basic
 /-!
 # Optimality properties of projection methods
 
-* Saad[^saad-iterative] Prop 5.2 / Hestenes–Stiefel[^hestenes-stiefel] Thm 4:3: for symmetric
+* [Saad][saad2003iterative] Prop 5.2 / [Hestenes–Stiefel][hestenes1952methods] Thm 4:3: for
+  symmetric
   coercive `A`, Galerkin iterates are exactly the minimizers of the energy norm of the error
   over `x₀ + K`.
 * Saad Prop 5.5: the Galerkin error is the `A`-orthogonal projection of `d₀ = x* - x₀`.
 * Nested subspaces give monotone residual / error norms.
-* Fong–Saunders[^fong-saunders] §2.1: the Galerkin iterate minimizes the quadratic
+* [Fong–Saunders][fong2012cg] §2.1: the Galerkin iterate minimizes the quadratic
   `½⟪A x, x⟫ - re⟪b, x⟫`.
-* Saad §8.3 and Choi[^choi]: the minimal-error method over `x₀ + A† K` is Petrov–Galerkin
+* [Saad][saad2003iterative] §8.3 and [Choi][choi2006iterative]: the minimal-error method over `x₀ +
+  A† K` is Petrov–Galerkin
   with `L = K`.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
-[^hestenes-stiefel]: Magnus R. Hestenes and Eduard Stiefel, *Methods of conjugate gradients for
-  solving linear systems*, Journal of Research of the National Bureau of Standards 49 (1952),
-  409–436.
-[^fong-saunders]: David Chin-Lung Fong and Michael Saunders, *CG versus MINRES: an empirical
-  comparison*, SQU Journal for Science 17 (2012), 44–62.
-[^choi]: Sou-Cheng Choi, *Iterative Methods for Singular Linear Equations and Least-Squares
-  Problems*, PhD thesis, Stanford University, 2006.
 -/
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]

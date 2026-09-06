@@ -6,7 +6,7 @@ import Numlib.LinearSolve.Projection.Additive
 # The abstract Schwarz theory
 
 A **Schwarz method** solves a linear system by repeatedly solving it on a family of subspaces
-(Saad, *Iterative Methods for Sparse Linear Systems*[^saad-iterative], §14.3).
+([Saad, *Iterative Methods for Sparse Linear Systems*][saad2003iterative], §14.3).
 The whole convergence theory is a statement about a finite family `V : ℕ → Submodule 𝕜 H` of
 subspaces of an inner product space and their orthogonal projectors `P i = (V i).starProjection`:
 
@@ -45,14 +45,6 @@ statements about a discretization:
   (`Schwarz.norm_errorOp_le`).
 
 Both difficult proofs rest on the vector-valued Cauchy–Schwarz inequality `Schwarz.inner_sum_le`.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.  The subspace projector is his (14.24), the additive operator his (14.37), the
-  multiplicative error operator his (14.26), the two hypotheses his Assumptions 1 and 2 of
-  §14.3.4, and the four convergence results his Theorems 14.5–14.7, Lemma 14.8 and Theorem 14.9.
-  The vector-valued Cauchy–Schwarz inequality is his Exercise 14.1.
 -/
 
 namespace Schwarz

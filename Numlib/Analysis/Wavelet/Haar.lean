@@ -43,10 +43,9 @@ quasi-measure preserving, so the underlying map on `α →ₘ[μ] β` is built f
 
 ## References
 
-The material is Atkinson–Han[^atkinson-han] §4.4 (Theorems 4.4.1–4.4.4). None of it is in Mathlib.
+The material is [Atkinson–Han][han2009theoretical] §4.4 (Theorems 4.4.1–4.4.4). None of it is in
+Mathlib.
 
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
 -/
 
 open scoped ENNReal Pointwise

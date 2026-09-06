@@ -35,12 +35,7 @@ for a general normed target because it belongs with the one-dimensional restrict
 has no other home yet.
 
 The material is classical; it is stated as Theorems 5.3.17–5.3.19 and Theorem 11.2.1 of
-Atkinson–Han[^atkinson-han].
-
-## References
-
-[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-  Analysis Framework*, 3rd edition, Springer, 2009.
+[Atkinson–Han][han2009theoretical].
 -/
 
 open Filter Set Topology

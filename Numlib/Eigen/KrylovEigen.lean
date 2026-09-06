@@ -10,8 +10,8 @@ For a symmetric operator `A` with eigenvalues `λ_1 ≥ … ≥ λ_n` and orthon
 `u_1, …, u_n`, this file bounds the angle between `u_i` and the Krylov subspace `𝒦_m(A, v)`, and
 through it the error of the Ritz values computed on that subspace.  These are the convergence
 estimates of the symmetric Lanczos process due to Kaniel, Paige and Saad, stated in the angle
-vocabulary of `Numlib.Analysis.InnerProductSpace.Projection.Angle` and following Saad, *Numerical
-Methods for Large Eigenvalue Problems*[^saad-eigenvalue], §6.6.  The three ingredients are the
+vocabulary of `Numlib.Analysis.InnerProductSpace.Projection.Angle` and following [Saad, *Numerical
+Methods for Large Eigenvalue Problems*][saad2011numerical], §6.6.  The three ingredients are the
 ones that also prove the conjugate gradient error bound of `Numlib.Krylov.Convergence.CG`: a
 variational characterization, a polynomial norm bound and a Chebyshev min–max.
 
@@ -61,11 +61,6 @@ Neighbouring and extreme indices are passed as data with their defining properti
 `i + 1 = iS`, and `first`, `last` characterized by `first ≤ j` and `j ≤ last` for all `j` —
 rather than computed.  This keeps `Fin` arithmetic out of the statements, and lets a consumer
 that knows only part of the spectrum still apply them.
-
-## References
-
-[^saad-eigenvalue]: Yousef Saad, *Numerical Methods for Large Eigenvalue Problems*, 2nd edition,
-  SIAM, 2011.
 -/
 
 open Polynomial Polynomial.Chebyshev Krylov

@@ -6,8 +6,8 @@ import Numlib.LinearAlgebra.Matrix.Order
 /-!
 # Rounding errors of inner products and matrix products
 
-The componentwise error bounds of Higham[^higham] §3.1–3.5 for recursive summation, inner
-products, matrix–vector products and matrix products, in the relational model of
+The componentwise error bounds of [Higham][higham2002accuracy] §3.1–3.5 for recursive summation,
+inner products, matrix–vector products and matrix products, in the relational model of
 `Numlib/FloatingPoint/Model.lean`.
 
 Everything here is about an *explicit evaluation order*: `RoundsSumFrom m s l t` says that `t`
@@ -33,12 +33,6 @@ here carries an order but no norm.
 
 Every proof rests on one scalar step, `FloatingPoint.gamma_mul_one_add_add_le`, that is
 `γ_k (1 + u) + u ≤ γ_{k+1}`: one more rounding raises the order of a relative perturbation by one.
-
-## References
-
-[^higham]: Nicholas J. Higham, *Accuracy and Stability of Numerical Algorithms*, 2nd edition,
-  SIAM, 2002.  Recursive summation is his (3.1)–(3.3), the inner-product bounds his (3.4)–(3.5),
-  and the matrix bounds his (3.12)–(3.13).
 -/
 
 open Finset

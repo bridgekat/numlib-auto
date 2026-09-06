@@ -17,17 +17,12 @@ A theorem proved in the model therefore holds for *every* rounding rule meeting 
 when the theorem is about an algorithm, for every evaluation order that its statement spells out.
 A concrete format is plugged in later by exhibiting its rounding relation as a `RoundingModel`.
 
-The bookkeeping constants are those of Higham, *Accuracy and Stability of Numerical
-Algorithms*[^higham]: `gamma u n = n u / (1 - n u)`, and `IsRelPert u n x y`
+The bookkeeping constants are those of [Higham, *Accuracy and Stability of Numerical
+Algorithms*][higham2002accuracy]: `gamma u n = n u / (1 - n u)`, and `IsRelPert u n x y`
 says that `y = x (1 + θ)` for some `|θ| ≤ gamma u n`.  The two facts that drive every error
 analysis are that a product of `n` factors `(1 + δ_i)^{±1}` is `1 + θ` with `|θ| ≤ gamma u n`
 (`abs_prod_one_add_sub_one_le_gamma`), and that relative perturbations compose by adding their
 orders (`IsRelPert.trans`, `IsRelPert.mul`, `IsRelPert.div`).
-
-## References
-
-[^higham]: Nicholas J. Higham, *Accuracy and Stability of Numerical Algorithms*, 2nd edition,
-  SIAM, 2002.  The model is his (2.4) and the constants are his Lemma 3.1 and Lemma 3.3.
 -/
 
 open Finset

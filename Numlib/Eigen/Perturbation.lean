@@ -15,14 +15,13 @@ import Numlib.Eigen.Normal
 /-!
 # Eigenvalue perturbation and a posteriori bounds
 
-Residual bounds for approximate eigenpairs of symmetric operators
-(Saad, *Numerical Methods for Large Eigenvalue Problems*[^saad-eigenvalue], Cor 3.3, Lemma 3.2,
-Thm 3.8–3.9 for Kato–Temple; Meurant–Strakoš[^meurant-strakos] §2.1; Choi[^choi] §2.4),
-Bauer–Fike for diagonalizable matrices (Saad, *Large Eigenvalue Problems*, Thm 3.6;
-Kress[^kress] Problem 7.6), the backward error of an approximate eigenpair
-(Saad, *Large Eigenvalue Problems*, Prop 3.4), Bendixson
-(Saad, *Iterative Methods for Sparse Linear Systems*[^saad-iterative], Thm 1.35) and
-Rayleigh-quotient bounds.
+Residual bounds for approximate eigenpairs of symmetric operators ([Saad, *Numerical Methods for
+Large Eigenvalue Problems*][saad2011numerical], Cor 3.3, Lemma 3.2, Thm 3.8–3.9 for Kato–Temple;
+[Meurant–Strakoš][meurant2006lanczos] §2.1; [Choi][choi2006iterative] §2.4), Bauer–Fike for
+diagonalizable matrices (Saad, *Large Eigenvalue Problems*, Thm 3.6; [Kress][kress1998numerical]
+Problem 7.6), the backward error of an approximate eigenpair (Saad, *Large Eigenvalue Problems*,
+Prop 3.4), Bendixson ([Saad, *Iterative Methods for Sparse Linear Systems*][saad2003iterative], Thm
+1.35) and Rayleigh-quotient bounds.
 
 Throughout, an approximate eigenpair of `A` is a unit vector `x` together with a scalar `θ`
 (usually the Rayleigh quotient `θ = re⟪A x, x⟫`), and `r = A x - θ x` is its residual; the
@@ -57,18 +56,6 @@ Two books by Saad are cited in this file and are kept apart by their short title
 *Large Eigenvalue Problems* and *Iterative Methods*.  Bauer–Fike, Gershgorin, Kato–Temple and
 Bendixson are the classical names of the results; the numbered forms used here are the ones
 proved in the cited texts.
-
-## References
-
-[^saad-eigenvalue]: Yousef Saad, *Numerical Methods for Large Eigenvalue Problems*, 2nd edition,
-  SIAM, 2011.
-[^meurant-strakos]: Gérard Meurant and Zdeněk Strakoš, *The Lanczos and conjugate gradient
-  algorithms in finite precision arithmetic*, Acta Numerica (2006), 471–542.
-[^choi]: Sou-Cheng Choi, *Iterative Methods for Singular Linear Equations and Least-Squares
-  Problems*, PhD thesis, Stanford University, 2006.
-[^kress]: Rainer Kress, *Numerical Analysis*, Graduate Texts in Mathematics 181, Springer, 1998.
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
 -/
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]

@@ -40,14 +40,9 @@ formula.
 * `Polynomial.bilinForm_kernelPolynomial_le_pow`: geometric decay of the minimum value for a form
   supported on `[α, β]` with `0 < α < β`.
 
-The material follows Saad, *Iterative Methods for Sparse Linear Systems*[^saad-iterative], §12.3.3.
-Saad's explicit Jacobi-weight formula and the Gamma-function evaluation of the minimum are not
-here: they need Jacobi polynomials.
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
+The material follows [Saad, *Iterative Methods for Sparse Linear Systems*][saad2003iterative],
+§12.3.3. Saad's explicit Jacobi-weight formula and the Gamma-function evaluation of the minimum are
+not here: they need Jacobi polynomials.
 -/
 
 open Polynomial

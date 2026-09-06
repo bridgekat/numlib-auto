@@ -28,7 +28,7 @@ vertex `1` is not the least of its connected component and has no earlier neighb
 gives colour `0` to `0` and to `1`, colour `1` to `2` and colour `2` to `3`, so it uses three
 colours on a two-colourable graph.
 
-Both facts are used by the multicolour reorderings of a sparse matrix in Saad[^saad-iterative]
+Both facts are used by the multicolour reorderings of a sparse matrix in [Saad][saad2003iterative]
 §3.3.3: the diagonal blocks of an ordering that groups the indices by colour are diagonal
 matrices, so `G.maxDegree + 1` blocks always suffice, and two blocks suffice when the adjacency
 graph is bipartite. No traversal is formalized: greedy colouring is a function of the order alone,
@@ -42,11 +42,6 @@ colours makes it total with no further well-foundedness argument. That set of ex
 `SimpleGraph.greedyExcludedColors`, and the two facts the rest of the file rests on are that the
 greedy colour avoids it (`SimpleGraph.greedyColoring_notMem_excludedColors`) and is at most its
 cardinality (`SimpleGraph.greedyColoring_le_card_excludedColors`).
-
-## References
-
-[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
-  SIAM, 2003.
 -/
 
 open Finset
