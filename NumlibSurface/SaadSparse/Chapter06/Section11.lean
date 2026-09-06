@@ -15,7 +15,7 @@ import NumlibSurface.SaadSparse.Chapter06.Section07
 # Saad §6.11: convergence analysis
 
 Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §6.11 , in two parts.
+2003, §6.11, in three parts.
 
 ## §6.11.1–6.11.2: Chebyshev polynomials and the min–max property
 
@@ -31,6 +31,25 @@ from the backbone min–max pair `one_div_eval_T_le_sSup_abs_eval` / `sSup_abs_e
 Mathlib's `Polynomial.Chebyshev.T` is written out in full in this part, because the book's own
 `T_m` — the tridiagonal Lanczos matrix of `Chapter06/Section06.lean` — is `SaadSparse.Chapter06.T`
 and takes precedence over an `open` inside the namespace.
+
+## §6.11.2: the complex ellipse
+
+The results on `E(c, d, a)` specialize `Numlib/RingTheory/Polynomial/ChebyshevEllipse.lean`:
+Lemma 6.26 is `Polynomial.zarantonello`, Theorem 6.27 with (6.117) is
+`Polynomial.Chebyshev.ellipse_minimax_bounds`, and (6.119)–(6.120) is
+`Polynomial.Chebyshev.sSup_norm_eval_shiftedComplex_ellipse`.
+
+`ellipse c d ρ` is the backbone's `Set.ellipse`, parameterized by the Joukowski radius `ρ` rather
+than by the semi-major axis `a`: `a = d (ρ + ρ⁻¹)/2` is not invertible without an `arcosh`, and
+every estimate of the section is a function of `ρ`. The book's `C_k(a/d)` survives verbatim,
+because `a/d` *is* `(ρ + ρ⁻¹)/2`.
+
+Corollary 6.33 needs one step the book leaves implicit: its hypothesis places the spectrum
+*inside* the ellipse, while (6.119)–(6.120) bounds `|Ĉ_m|` *on* it. That step is the maximum
+modulus principle on a filled ellipse, `Polynomial.norm_eval_le_of_forall_mem_ellipse`, whose
+proof is not the disc principle but the annulus one — the Joukowski map identifies `w` with
+`w⁻¹`, so the filled ellipse is the image of a closed annulus and the symmetry `Ĉ_m(J w) =
+Ĉ_m(J w⁻¹)` folds its inner boundary circle onto the outer one.
 
 ## §6.11.3–6.11.4: convergence of the conjugate gradient method and of GMRES
 
@@ -55,32 +74,13 @@ Everything here is a specialization of the backbone:
 * Lemma 6.31 is `Krylov.IsMinResIterate.norm_residual_le_norm_aeval` through the GMRES
   identification `gmresFixed_isMinResIterate` of `Chapter06/Section05.lean`, and Proposition 6.32
   adds the surface bound `norm_aeval_diagonal_mulVec_le` for a diagonalizable complex matrix.
-
-## §6.11.2, the complex ellipse
-
-The results on `E(c, d, a)` specialize `Numlib/RingTheory/Polynomial/ChebyshevEllipse.lean`:
-Lemma 6.26 is `Polynomial.zarantonello`, Theorem 6.27 with (6.117) is
-`Polynomial.Chebyshev.ellipse_minimax_bounds`, and (6.119)–(6.120) is
-`Polynomial.Chebyshev.sSup_norm_eval_shiftedComplex_ellipse`.
-
-`ellipse c d ρ` is the backbone's `Set.ellipse`, parameterized by the Joukowski radius `ρ` rather
-than by the semi-major axis `a`: `a = d (ρ + ρ⁻¹)/2` is not invertible without an `arcosh`, and
-every estimate of the section is a function of `ρ`. The book's `C_k(a/d)` survives verbatim,
-because `a/d` *is* `(ρ + ρ⁻¹)/2`.
-
-Corollary 6.33 needs one step the book leaves implicit: its hypothesis places the spectrum
-*inside* the ellipse, while (6.119)–(6.120) bounds `|Ĉ_m|` *on* it. That step is the maximum
-modulus principle on a filled ellipse, `Polynomial.norm_eval_le_of_forall_mem_ellipse`, whose
-proof is not the disc principle but the annulus one — the Joukowski map identifies `w` with
-`w⁻¹`, so the filled ellipse is the image of a closed annulus and the symmetry `Ĉ_m(J w) =
-Ĉ_m(J w⁻¹)` folds its inner boundary circle onto the outer one.
 -/
 
 open scoped Polynomial
 
 namespace SaadSparse.Chapter06
 
-/-! ### §6.11.1–6.11.2: Chebyshev polynomials and the min–max property -/
+/-! ## §6.11.1–6.11.2: Chebyshev polynomials and the min–max property -/
 
 section ChebyshevMinimax
 
@@ -97,8 +97,8 @@ variable {t α β γ : ℝ}
 noncomputable abbrev C (k : ℕ) : ℝ[X] := Polynomial.Chebyshev.T ℝ (k : ℤ)
 
 /-- **(6.114)**: the Chebyshev polynomials of the first kind over `ℂ`. They are used only by the
-complex-ellipse results of §6.11.2 — Lemma 6.26, Theorem 6.27 and (6.117), (6.119)–(6.120) —
-which are deferred to the later phase (`plans/saadsparse-ch6.md` §4). -/
+complex-ellipse results of §6.11.2 below — Lemma 6.26, Theorem 6.27 with (6.117), and
+(6.119)–(6.120) — and by Corollary 6.33, which normalizes `C_m` at `c/d`. -/
 noncomputable abbrev Ccomplex (k : ℕ) : ℂ[X] := Polynomial.Chebyshev.T ℂ (k : ℤ)
 
 /-- **(6.109)**: `C_k(t) = cos(k cos⁻¹ t)` on `[-1, 1]`. -/
@@ -251,7 +251,7 @@ theorem theorem_6_25_value_mid (k : ℕ) (hαβ : α < β) (hγ : γ ∉ Set.Icc
 
 end ChebyshevMinimax
 
-/-! ### §6.11.2: the complex ellipse `E(c, d, a)` and the min–max estimates on it -/
+/-! ## §6.11.2: the complex ellipse `E(c, d, a)` and the min–max estimates on it -/
 
 section ComplexEllipse
 
@@ -313,8 +313,7 @@ theorem ellipse_max_Chat (k : ℕ) {ρ : ℝ} (hρ : 1 ≤ ρ) {c d gam : ℂ} (
 
 end ComplexEllipse
 
-
-/-! ### §6.11.3–6.11.4: convergence of the conjugate gradient method and of GMRES -/
+/-! ## §6.11.3–6.11.4: convergence of the conjugate gradient method and of GMRES -/
 
 /-! ### The quantities of §6.11.3 -/
 
@@ -843,7 +842,6 @@ theorem proposition_6_32 {A : Matrix (Fin n) (Fin n) ℂ} (b x₀ : 𝔼) (X : M
   have hgoal : ‖b - op A (gmresFixed A b x₀ m)‖ ≤
       ‖X‖ * ‖X⁻¹‖ * ‖r₀ A b x₀‖ * epsMin lam m := le_mul_ciInf (by positivity) key
   exact hgoal.trans_eq (by rw [epsMin]; ring)
-
 
 /-- **Corollary 6.33**: assume that `A` is diagonalizable, `A = X Λ X⁻¹`, and that all its
 eigenvalues are enclosed in the ellipse `E(c, d, a)`, which excludes the origin. Then the `m`-th

@@ -157,6 +157,7 @@ theorem arnoldiCGS_eq_zero_iff (hv : ‖v₁‖ = 1) (j : ℕ) :
     arnoldiCGS A v₁ j = 0 ↔ grade A v₁ ≤ j := by
   rw [arnoldiCGS_eq_vec A v₁ hv, Arnoldi.vec_eq_zero_iff, grade_eq]
 
+/-- The Arnoldi vectors are unit vectors up to the grade of the starting vector. -/
 theorem norm_arnoldiCGS (hv : ‖v₁‖ = 1) {j : ℕ} (h : j < grade A v₁) :
     ‖arnoldiCGS A v₁ j‖ = 1 := by
   rw [arnoldiCGS_eq_vec A v₁ hv]
@@ -200,10 +201,12 @@ strictly before the last one. -/
 def NoBreakdownBefore (A : Matrix (Fin n) (Fin n) 𝕜) (v₁ : 𝔼) (m : ℕ) : Prop :=
   ∀ j, j + 1 < m → arnoldiCoeff A v₁ (j + 1) j ≠ 0
 
+/-- Algorithm 6.1 stops at step `j` exactly when the grade of `v_1` has been reached. -/
 theorem arnoldiCoeff_succ_self_eq_zero_iff (hv : ‖v₁‖ = 1) (j : ℕ) :
     arnoldiCoeff A v₁ (j + 1) j = 0 ↔ grade A v₁ ≤ j + 1 := by
   rw [arnoldiCoeff_eq A v₁ hv, Arnoldi.coeff_succ_self_eq_zero_iff, grade_eq]
 
+/-- A unit starting vector has positive grade, so Algorithm 6.1 takes at least one step. -/
 theorem grade_pos (hv : ‖v₁‖ = 1) : 0 < grade A v₁ := by
   rw [grade_eq]
   refine Nat.pos_of_ne_zero fun h => ?_
@@ -287,6 +290,8 @@ theorem toEuclideanLin_V_apply {m : ℕ} (y : Fin m → 𝕜) :
 FOM and GMRES run Algorithm 6.1 on `v_1 = r_0/‖r_0‖`, while the backbone indexes the Arnoldi
 data by the residual `r_0` itself. These lemmas are the translation between the two. -/
 
+/-- Normalizing a nonzero vector gives a unit vector: this is the `v_1 = r_0/β` of the
+algorithms started from a residual. -/
 theorem norm_norm_inv_smul {r : EuclideanSpace 𝕜 (Fin n)} (hr : r ≠ 0) :
     ‖(‖r‖⁻¹ : 𝕜) • r‖ = 1 := by
   rw [norm_smul, norm_inv, RCLike.norm_ofReal, abs_of_nonneg (norm_nonneg _),
@@ -319,6 +324,8 @@ theorem grade_normalize {r : EuclideanSpace 𝕜 (Fin n)} (hr : r ≠ 0) :
 
 /-! ### Proposition 6.4 -/
 
+/-- **Proposition 6.4**, first half: `v_1, …, v_m` are orthonormal as long as `m` does not
+exceed the grade of `v_1`. -/
 theorem orthonormal_arnoldiCGS (hv : ‖v₁‖ = 1) {m : ℕ} (hm : m ≤ grade A v₁) :
     Orthonormal 𝕜 (fun i : Fin m => arnoldiCGS A v₁ (i : ℕ)) := by
   have hg : m ≤ Krylov.grade (op A) v₁ := by rwa [← grade_eq]
@@ -328,6 +335,8 @@ theorem orthonormal_arnoldiCGS (hv : ‖v₁‖ = 1) {m : ℕ} (hm : m ≤ grade
     exact Arnoldi.norm_vec_eq_one_of_lt_grade _ _ (lt_of_lt_of_le i.2 hg)
   · exact inner_arnoldiCGS_eq_zero A v₁ hv fun h => hij (Fin.val_injective h)
 
+/-- **Proposition 6.4**, second half: `v_1, …, v_m` span the Krylov subspace `𝒦_m(A, v_1)`;
+this needs no bound on `m`, since past the grade both sides stop growing. -/
 theorem span_arnoldiCGS (hv : ‖v₁‖ = 1) (m : ℕ) :
     Submodule.span 𝕜 (Set.range fun i : Fin m => arnoldiCGS A v₁ (i : ℕ)) = krylov A v₁ m := by
   have hfun : (fun i : Fin m => arnoldiCGS A v₁ (i : ℕ))
@@ -448,7 +457,7 @@ private theorem mgsW_congr {v v' : ℕ → 𝔼} (w₀ : 𝔼) {k : ℕ} (h : �
 
 /-- The inner loop of modified Gram–Schmidt subtracts the same total as classical Gram–Schmidt,
 as soon as the `v_i` are pairwise orthogonal. -/
-private theorem mgsW_eq_sub_sum {v : ℕ → 𝔼} (ho : ∀ i j, i ≠ j → inner 𝕜 (v i) (v j) = 0)
+theorem mgsW_eq_sub_sum {v : ℕ → 𝔼} (ho : ∀ i j, i ≠ j → inner 𝕜 (v i) (v j) = 0)
     (w₀ : 𝔼) (k : ℕ) :
     mgsW v w₀ k = w₀ - ∑ i ∈ Finset.range k, inner 𝕜 (v i) w₀ • v i := by
   induction k with
@@ -461,7 +470,9 @@ private theorem mgsW_eq_sub_sum {v : ℕ → 𝔼} (ho : ∀ i j, i ≠ j → in
     rw [mgsW, hik, ih, Finset.sum_range_succ]
     abel
 
-private theorem inner_mgsW_self {v : ℕ → 𝔼} (ho : ∀ i j, i ≠ j → inner 𝕜 (v i) (v j) = 0)
+/-- For a pairwise orthogonal family the modified Gram–Schmidt loop does not change the
+coefficient it is about to compute: `(v_k, w)` after `k` subtractions is `(v_k, w_0)`. -/
+theorem inner_mgsW_self {v : ℕ → 𝔼} (ho : ∀ i j, i ≠ j → inner 𝕜 (v i) (v j) = 0)
     (w₀ : 𝔼) (k : ℕ) : inner 𝕜 (v k) (mgsW v w₀ k) = inner 𝕜 (v k) w₀ := by
   rw [mgsW_eq_sub_sum ho, inner_sub_right, inner_sum]
   refine sub_eq_self.2 (Finset.sum_eq_zero fun i hi => ?_)
@@ -553,16 +564,18 @@ noncomputable def stdVec (k : ℕ) : 𝔼 := WithLp.toLp 2 fun i => if (i : ℕ)
 noncomputable def householderTail (z : 𝔼) (k : ℕ) : 𝔼 :=
   WithLp.toLp 2 fun i => if k ≤ (i : ℕ) then z i else 0
 
-/-- Saad (1.25): `β = sign(z_k) (∑_{i ≥ k} z_i²)^{1/2}`, with the convention `sign 0 = 1`. -/
+/-- Saad (1.26): `β = sign(z_k) (∑_{i ≥ k} z_i²)^{1/2}`, with the convention `sign 0 = 1`. -/
 noncomputable def householderBeta (z : 𝔼) (k : ℕ) : ℝ :=
   (if 0 ≤ coordAt z k then 1 else -1) * ‖householderTail z k‖
 
-/-- Saad (1.24): the unnormalized Householder direction `z'` at position `k`. -/
+/-- Saad (1.25): the unnormalized Householder direction `z'` at position `k`. The book prints
+its `k`-th entry as `β + x_ii`, a transcription slip for `β + x_kk`, which is what Algorithm 1.3
+needs and what is written here. -/
 noncomputable def householderDir (z : 𝔼) (k : ℕ) : 𝔼 :=
   WithLp.toLp 2 fun i =>
     if (i : ℕ) < k then 0 else if (i : ℕ) = k then householderBeta z k + z i else z i
 
-/-- Saad (1.26): the Householder unit vector `w = z'/‖z'‖` at position `k`; `0` when `z`
+/-- Saad (1.24): the Householder unit vector `w = z'/‖z'‖` at position `k`; `0` when `z`
 already has the required zero pattern. -/
 noncomputable def householderVec (z : 𝔼) (k : ℕ) : 𝔼 :=
   (‖householderDir z k‖⁻¹ : ℝ) • householderDir z k
@@ -636,7 +649,7 @@ theorem householderBeta_sq (z : 𝔼) (k : ℕ) :
   rw [householderBeta, mul_pow]
   split_ifs <;> norm_num
 
-/-- The identity behind Saad (1.26): `2 (z', z) = ‖z'‖²`. -/
+/-- The identity behind Saad (1.24): `2 (z', z) = ‖z'‖²`. -/
 theorem two_inner_householderDir (z : 𝔼) (k : ℕ) :
     2 * (inner ℝ (householderDir z k) z : ℝ) = ‖householderDir z k‖ ^ 2 := by
   by_cases hk : k < n
@@ -715,7 +728,8 @@ theorem householderVec_coord_of_lt {z : 𝔼} {k : ℕ} {i : Fin n} (h : (i : �
     householderVec z k i = 0 := by
   simp [householderVec, h]
 
-/-- Saad (1.26): `P z` keeps the entries of `z` below `k`, puts `-β` at `k` and `0` above. -/
+/-- Saad (1.23)–(1.26): `P z` keeps the entries of `z` below `k`, puts `-β` at `k` and `0`
+above. -/
 theorem householder_householderVec_apply (z : 𝔼) (k : ℕ) :
     householder (householderVec z k) z = z - householderDir z k := by
   rcases eq_or_ne (householderDir z k) 0 with h | h

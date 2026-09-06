@@ -72,6 +72,9 @@ theorem arnoldiCoeff_eq_zero_of_adjoint_mem {s : ℕ}
 
 /-! ### The truncated inner loop of Algorithm 6.6 under a band condition -/
 
+/-- The modified Gram–Schmidt loop written with its own running coefficients, so that no
+orthogonality of the `u_i` is needed; this is the form the band argument below uses, where
+`mgsW_eq_sub_sum` of `Chapter06/Section03.lean` would ask for more than is available. -/
 private theorem mgsW_eq_sub_sum' (u : ℕ → 𝔼) (w₀ : 𝔼) (k : ℕ) :
     mgsW u w₀ k = w₀ - ∑ i ∈ Finset.range k, inner 𝕜 (u i) (mgsW u w₀ i) • u i := by
   induction k with
@@ -81,15 +84,6 @@ private theorem mgsW_eq_sub_sum' (u : ℕ → 𝔼) (w₀ : 𝔼) (k : ℕ) :
     rw [h, Finset.sum_range_succ]
     nth_rewrite 1 [ih]
     abel
-
-/-- For an orthogonal family the modified Gram–Schmidt loop does not change the coefficient it
-is about to compute. -/
-private theorem inner_mgsW_self' {u : ℕ → 𝔼} (ho : ∀ a c, a ≠ c → inner 𝕜 (u a) (u c) = 0)
-    (w₀ : 𝔼) (k : ℕ) : inner 𝕜 (u k) (mgsW u w₀ k) = inner 𝕜 (u k) w₀ := by
-  rw [mgsW_eq_sub_sum' u w₀ k, inner_sub_right, inner_sum,
-    Finset.sum_eq_zero fun i hi => by
-      rw [inner_smul_right, ho k i (by have := Finset.mem_range.1 hi; omega), mul_zero],
-    sub_zero]
 
 /-- The truncated loop of Algorithm 6.6 agrees with the full loop of Algorithm 6.2 as soon as
 the coefficients it skips vanish. -/
@@ -115,7 +109,7 @@ private theorem inner_mgsW_arnoldiMGS_eq_zero {s : ℕ} (hv : ‖v‖ = 1)
     rw [arnoldiMGS_eq_arnoldiCGS A v hv, arnoldiMGS_eq_arnoldiCGS A v hv]
     exact inner_arnoldiCGS_eq_zero A v hv hac
   intro i hi
-  rw [inner_mgsW_self' ho, arnoldiMGS_eq_arnoldiCGS A v hv, arnoldiMGS_eq_arnoldiCGS A v hv]
+  rw [inner_mgsW_self ho, arnoldiMGS_eq_arnoldiCGS A v hv, arnoldiMGS_eq_arnoldiCGS A v hv]
   exact hband i j (by omega)
 
 /-- **The algorithmic content of Proposition 6.22**: under the band condition (6.108) the

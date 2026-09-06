@@ -51,10 +51,7 @@ variable (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : EuclideanSpace 𝕜 (Fin n)
 
 /-! ### Krylov glue -/
 
-private theorem krylov_mono {v : 𝔼} {k l : ℕ} (h : k ≤ l) : krylov A v k ≤ krylov A v l := by
-  rw [krylov_eq, krylov_eq]
-  exact Krylov.subspace_mono (op A) v h
-
+/-- The image of a Krylov subspace under `A` sits in the next one. -/
 private theorem apply_mem_krylov_succ {v x : 𝔼} {m : ℕ} (h : x ∈ krylov A v m) :
     op A x ∈ krylov A v (m + 1) := by
   rw [krylov_eq] at h
@@ -132,6 +129,11 @@ theorem equation_6_104 {m : ℕ} (p : ℕ → 𝔼)
 noncomputable def gcrStepAlpha (A : Matrix (Fin n) (Fin n) 𝕜) (s : 𝔼 × 𝔼 × 𝔼) : 𝕜 :=
   inner 𝕜 (op A s.2.2) s.2.1 / inner 𝕜 (op A s.2.2) (op A s.2.2)
 
+/-- Line 5 of **Algorithm 6.21**, shared by GCR, ORTHOMIN(k) and ORTHODIR: the next residual
+`r_{j+1} = r_j - α_j A p_j` on a state `(x_j, r_j, p_j)`. -/
+noncomputable def gcrStepR (A : Matrix (Fin n) (Fin n) 𝕜) (s : 𝔼 × 𝔼 × 𝔼) : 𝔼 :=
+  s.2.1 - gcrStepAlpha A s • op A s.2.2
+
 /-- The coefficient `β_ij = -(A z, A p_i)/(A p_i, A p_i)` used in line 6 of Algorithm 6.21 and
 in (6.107), with `z = r_{j+1}` for GCR and ORTHOMIN(k) and `z = A p_j` for ORTHODIR. -/
 noncomputable def gcrStepBeta (A : Matrix (Fin n) (Fin n) 𝕜) (pi z : 𝔼) : 𝕜 :=
@@ -142,18 +144,17 @@ noncomputable def gcrStepBeta (A : Matrix (Fin n) (Fin n) 𝕜) (pi z : 𝔼) : 
 noncomputable def gcrBody (A : Matrix (Fin n) (Fin n) 𝕜) {j : ℕ}
     (s : Fin (j + 1) → 𝔼 × 𝔼 × 𝔼) : 𝔼 × 𝔼 × 𝔼 :=
   ((s (Fin.last j)).1 + gcrStepAlpha A (s (Fin.last j)) • (s (Fin.last j)).2.2,
-    (s (Fin.last j)).2.1 - gcrStepAlpha A (s (Fin.last j)) • op A (s (Fin.last j)).2.2,
-    ((s (Fin.last j)).2.1 - gcrStepAlpha A (s (Fin.last j)) • op A (s (Fin.last j)).2.2) +
-      ∑ i : Fin (j + 1), gcrStepBeta A (s i).2.2
-        ((s (Fin.last j)).2.1 - gcrStepAlpha A (s (Fin.last j)) • op A (s (Fin.last j)).2.2) •
-          (s i).2.2)
+    gcrStepR A (s (Fin.last j)),
+    gcrStepR A (s (Fin.last j)) +
+      ∑ i : Fin (j + 1),
+        gcrStepBeta A (s i).2.2 (gcrStepR A (s (Fin.last j))) • (s i).2.2)
 
 /-- Lines 3–5 of Algorithm 6.21 with the direction update (6.107) of **ORTHODIR**: the new
 direction is `A p_j` orthogonalized against the previous directions. -/
 noncomputable def orthodirBody (A : Matrix (Fin n) (Fin n) 𝕜) {j : ℕ}
     (s : Fin (j + 1) → 𝔼 × 𝔼 × 𝔼) : 𝔼 × 𝔼 × 𝔼 :=
   ((s (Fin.last j)).1 + gcrStepAlpha A (s (Fin.last j)) • (s (Fin.last j)).2.2,
-    (s (Fin.last j)).2.1 - gcrStepAlpha A (s (Fin.last j)) • op A (s (Fin.last j)).2.2,
+    gcrStepR A (s (Fin.last j)),
     op A (s (Fin.last j)).2.2 +
       ∑ i : Fin (j + 1),
         gcrStepBeta A (s i).2.2 (op A (s (Fin.last j)).2.2) • (s i).2.2)
@@ -163,12 +164,10 @@ directions `p_i` with `j - k + 1 ≤ i ≤ j` are used. -/
 noncomputable def orthominBody (A : Matrix (Fin n) (Fin n) 𝕜) (k : ℕ) {j : ℕ}
     (s : Fin (j + 1) → 𝔼 × 𝔼 × 𝔼) : 𝔼 × 𝔼 × 𝔼 :=
   ((s (Fin.last j)).1 + gcrStepAlpha A (s (Fin.last j)) • (s (Fin.last j)).2.2,
-    (s (Fin.last j)).2.1 - gcrStepAlpha A (s (Fin.last j)) • op A (s (Fin.last j)).2.2,
-    ((s (Fin.last j)).2.1 - gcrStepAlpha A (s (Fin.last j)) • op A (s (Fin.last j)).2.2) +
+    gcrStepR A (s (Fin.last j)),
+    gcrStepR A (s (Fin.last j)) +
       ∑ i : Fin (j + 1), if j + 1 ≤ (i : ℕ) + k then
-        gcrStepBeta A (s i).2.2
-          ((s (Fin.last j)).2.1 - gcrStepAlpha A (s (Fin.last j)) • op A (s (Fin.last j)).2.2) •
-            (s i).2.2
+        gcrStepBeta A (s i).2.2 (gcrStepR A (s (Fin.last j))) • (s i).2.2
       else 0)
 
 /-- With `k` at least the number of steps performed, ORTHOMIN(k) does not truncate anything. -/
@@ -234,7 +233,7 @@ private theorem mem_krylov_of_recur (p z : ℕ → 𝔼) (v : 𝔼) (c : ℕ →
       rw [hrec j]
       refine Submodule.add_mem _ (hz j hp) (Submodule.sum_mem _ fun i hi => ?_)
       exact Submodule.smul_mem _ _
-        (krylov_mono A (by have := Finset.mem_range.1 hi; omega) (hp i (by
+        (krylov_mono A _ (by have := Finset.mem_range.1 hi; omega) (hp i (by
           have := Finset.mem_range.1 hi; omega)))
 
 /-- `AᴴA`-orthogonal, nonzero directions inside `𝒦_m` span it, provided `m` does not exceed the
@@ -254,7 +253,7 @@ private theorem span_eq_krylov (p : ℕ → 𝔼) {m : ℕ}
       ≤ krylov A (r₀ A b x₀) m := by
     rw [Submodule.span_le]
     rintro _ ⟨i, rfl⟩
-    exact krylov_mono A i.2 (hmem (i : ℕ))
+    exact krylov_mono A _ i.2 (hmem (i : ℕ))
   refine Submodule.eq_of_le_of_finrank_eq hle ?_
   rw [finrank_span_eq_card hindep, finrank_krylov, min_eq_left hm, Fintype.card_fin]
 
@@ -340,7 +339,7 @@ theorem gcrP_mem_krylov (j : ℕ) : gcrP A b x₀ j ∈ krylov A (r₀ A b x₀)
     | succ l ih =>
       intro hl
       rw [gcrR_succ]
-      exact Submodule.sub_mem _ (krylov_mono A (by omega) (ih (by omega)))
+      exact Submodule.sub_mem _ (krylov_mono A _ (by omega) (ih (by omega)))
         (Submodule.smul_mem _ _ (apply_mem_krylov_succ A (hp l (by omega))))
   exact hr (j + 1) le_rfl
 
@@ -407,9 +406,8 @@ theorem orthodirAlpha_eq (j : ℕ) : orthodirAlpha A b x₀ j =
       inner 𝕜 (op A (orthodirP A b x₀ j)) (op A (orthodirP A b x₀ j)) := rfl
 
 /-- (6.105) for ORTHODIR: `x_{j+1} = x_j + α_j p_j`. -/
-theorem orthodirX_succ (j : ℕ) :
-    orthodirX A b x₀ (j + 1) = orthodirX A b x₀ j + orthodirAlpha A b x₀ j • orthodirP A b x₀ j
-    := by
+theorem orthodirX_succ (j : ℕ) : orthodirX A b x₀ (j + 1) =
+    orthodirX A b x₀ j + orthodirAlpha A b x₀ j • orthodirP A b x₀ j := by
   rw [orthodirX, orthodirAux]
   rfl
 

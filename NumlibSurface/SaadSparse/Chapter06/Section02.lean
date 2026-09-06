@@ -61,13 +61,21 @@ variable (A : Matrix (Fin n) (Fin n) 𝕜) (v : EuclideanSpace 𝕜 (Fin n))
 theorem krylov_eq (m : ℕ) : krylov A v m = Krylov.subspace (op A) v m :=
   (Matrix.krylov_subspace_toEuclideanLin A v m).symm
 
+/-- Each of the spanning vectors `A^i v`, `i < m`, of (6.2) lies in `𝒦_m(A, v)`. -/
 theorem pow_apply_mem_krylov {i m : ℕ} (h : i < m) : (op A ^ i) v ∈ krylov A v m := by
   rw [krylov_eq]
   exact Krylov.pow_apply_mem_subspace _ _ h
 
+/-- `v ∈ 𝒦_m(A, v)` for `m ≥ 1`. -/
 theorem self_mem_krylov {m : ℕ} (h : 0 < m) : v ∈ krylov A v m := by
   rw [krylov_eq]
   exact Krylov.self_mem_subspace _ _ h
+
+/-- §6.2: the Krylov subspaces increase with `m`, `𝒦_k ⊆ 𝒦_l` for `k ≤ l`; by Proposition 6.1
+they stop increasing at the grade of `v`. -/
+theorem krylov_mono {k l : ℕ} (h : k ≤ l) : krylov A v k ≤ krylov A v l := by
+  rw [krylov_eq, krylov_eq]
+  exact Krylov.subspace_mono (op A) v h
 
 /-! ### The grade of a vector (§6.2) -/
 
@@ -97,12 +105,15 @@ least possible degree, namely `grade A v`. -/
 noncomputable def minpolyVec (A : Matrix (Fin n) (Fin n) 𝕜) (v : 𝔼) : 𝕜[X] :=
   (monic_natDegree_eq_grade A v).choose
 
+/-- The minimal polynomial of `v` is monic, as §6.2 requires. -/
 theorem minpolyVec_monic : (minpolyVec A v).Monic :=
   (monic_natDegree_eq_grade A v).choose_spec.1
 
+/-- The minimal polynomial of `v` has degree the grade of `v`, by definition of the grade. -/
 theorem natDegree_minpolyVec : (minpolyVec A v).natDegree = grade A v :=
   (monic_natDegree_eq_grade A v).choose_spec.2.1
 
+/-- The minimal polynomial of `v` annihilates `v`: `p(A) v = 0`. -/
 theorem op_aeval_minpolyVec : op (aeval A (minpolyVec A v)) v = 0 :=
   (monic_natDegree_eq_grade A v).choose_spec.2.2
 
@@ -145,10 +156,13 @@ theorem krylov_eq_map_degreeLT (m : ℕ) :
     krylov A v m = (Polynomial.degreeLT 𝕜 m).map (Krylov.polyEval (op A) v) := by
   rw [krylov_eq, Krylov.subspace_eq_map_degreeLT]
 
+/-- §6.2, the first property listed after (6.2), pointwise: `x ∈ 𝒦_m(A, v)` exactly when
+`x = p(A) v` for some `p` of degree at most `m - 1`. -/
 theorem mem_krylov_iff_exists_aeval {x : 𝔼} {m : ℕ} :
     x ∈ krylov A v m ↔ ∃ p : 𝕜[X], p.degree < m ∧ aeval (op A) p v = x := by
   rw [krylov_eq, Krylov.mem_subspace_iff_exists_aeval]
 
+/-- `p(A) v ∈ 𝒦_m(A, v)` for `deg p < m`. -/
 theorem aeval_mem_krylov {p : 𝕜[X]} {m : ℕ} (hp : p.degree < m) :
     aeval (op A) p v ∈ krylov A v m :=
   (mem_krylov_iff_exists_aeval A v).2 ⟨p, hp, rfl⟩

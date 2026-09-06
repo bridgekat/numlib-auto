@@ -85,7 +85,7 @@ variable (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : EuclideanSpace 𝕜 (Fin n)
 /-- The `j`-th conjugate residual iterate `x_j` of Algorithm 6.20. -/
 noncomputable def crX (j : ℕ) : 𝔼 := (cr A b x₀ j).1
 
-/-- The `j`-th conjugate residual residual `r_j` of Algorithm 6.20. -/
+/-- The `j`-th residual `r_j` of Algorithm 6.20. -/
 noncomputable def crR (j : ℕ) : 𝔼 := (cr A b x₀ j).2.1
 
 /-- The `j`-th conjugate residual search direction `p_j` of Algorithm 6.20. -/

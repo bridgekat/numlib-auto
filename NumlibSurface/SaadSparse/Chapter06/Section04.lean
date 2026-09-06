@@ -192,7 +192,6 @@ theorem norm_residual_fomFixed {m : ℕ} (hH : FOMDefined A b x₀ m)
     simp [hz]
   · rw [norm_arnoldiCGS A _ hv hmg, mul_one]
 
-
 /-! ### Algorithm 6.6: the incomplete orthogonalization procedure
 
 Algorithm 6.6 is Algorithm 6.2 with the inner loop restricted to the last `k` vectors,
@@ -493,7 +492,12 @@ theorem norm_residual_iomFixed {m : ℕ} (hH : IsUnit (HI A (v₁ A b x₀) k m)
     simp [hz]
 
 /-- **Proposition 6.8**: IOM is a projection process onto `𝒦_m` orthogonally to
-`L_m = span {z_1, …, z_m}` with `z_i = v_i - (v_i, v_{m+1}) v_{m+1}`. -/
+`L_m = span {z_1, …, z_m}` with `z_i = v_i - (v_i, v_{m+1}) v_{m+1}`.
+
+Two of the hypotheses are implicit in the book. `hnorm` is what makes `v_{m+1}` orthogonal to
+every `z_i` — the book's "by construction" — and `hspan` is what makes the search space `𝒦_m`
+rather than merely the span of the `v_i`; both hold as long as Algorithm 6.6 has not broken
+down, but neither follows from `hH` alone. -/
 theorem iomFixed_isPetrovGalerkin {m : ℕ} (hH : IsUnit (HI A (v₁ A b x₀) k m)) (hm0 : 0 < m)
     (hnorm : ‖iop A (v₁ A b x₀) k m‖ = 1)
     (hspan : Submodule.span 𝕜 (Set.range fun i : Fin m => iop A (v₁ A b x₀) k (i : ℕ))
@@ -515,7 +519,6 @@ theorem iomFixed_isPetrovGalerkin {m : ℕ} (hH : IsUnit (HI A (v₁ A b x₀) k
       norm_num
     rw [inner_smul_right, inner_sub_left, inner_smul_left, hself, mul_one, inner_conj_symm,
       sub_self, mul_zero]
-
 
 /-! ### The Hessenberg LU factorization of §6.4.2
 
@@ -1052,7 +1055,6 @@ theorem fomRestarted_succ_isGalerkinIterate (m : ℕ) (x₀ : 𝔼) (k : ℕ)
 
 end Restarted
 
-
 /-! ### The numbered results of §6.4, in the book's real setting -/
 
 section BookResults
@@ -1164,7 +1166,10 @@ theorem algorithm_6_8_eq_alg_6_7 {m : ℕ}
   diom_eq_iomFixed A b x₀ k hpiv
 
 /-- **Proposition 6.8**. IOM and DIOM are mathematically equivalent to a projection process
-onto `𝒦_m` orthogonally to `L_m = span {z_1, …, z_m}`, `z_i = v_i - (v_i, v_{m+1}) v_{m+1}`. -/
+onto `𝒦_m` orthogonally to `L_m = span {z_1, …, z_m}`, `z_i = v_i - (v_i, v_{m+1}) v_{m+1}`.
+
+The hypotheses `hnorm` and `hspan` are the book's implicit ones; see
+`iomFixed_isPetrovGalerkin`. -/
 theorem proposition_6_8 {m : ℕ} (hH : IsUnit (HI A (v₁ A b x₀) k m)) (hm0 : 0 < m)
     (hnorm : ‖iop A (v₁ A b x₀) k m‖ = 1)
     (hspan : Submodule.span ℝ (Set.range fun i : Fin m => iop A (v₁ A b x₀) k (i : ℕ))

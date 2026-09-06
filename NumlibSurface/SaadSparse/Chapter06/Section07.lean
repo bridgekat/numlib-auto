@@ -30,6 +30,10 @@ the Galerkin iterate (`lanczosMethodAt_isGalerkinIterate`, (6.86)) with residual
 D-Lanczos produces the same iterates (`dLanczosX_eq_lanczosMethodAt`, `cgX_eq_dLanczosX`), and
 the three-term algorithm produces the CG iterates (`cg3_eq`).
 
+Algorithms 6.16 and 6.17 start from the unit residual `v_1 = r_0/‖r_0‖₂` of `Chapter06/Common.lean`,
+where the bridge lemmas translating it to the backbone's `r_0`-indexed data live; `lanczosV_v₁`,
+`T_v₁` and `lanczosBeta_succ_v₁` are the Lanczos members of that family.
+
 Indices are `0`-based: `cgX A b x₀ j` is the book's `x_j` and `cgAlpha A b x₀ j` its `α_j`
 (the book already numbers the conjugate gradient iterates from `0`), while
 `lanczosV A v₁ j` is the book's `v_{j+1}` and `lanczosBeta A v₁ j` its `β_{j+1}`, as in
@@ -298,27 +302,6 @@ theorem apply_cgP_eq (hA : A.PosDef) {j : ℕ} (hr : cgR A b x₀ j ≠ 0) :
 
 variable (A b x₀)
 
-/-! ### The starting vector of Algorithms 6.16 and 6.17 -/
-
-/-- The unit starting vector `v_1 = r_0/β`, `β = ‖r_0‖₂`, of Algorithms 6.16 and 6.17,
-line 1. -/
-noncomputable def unitResidual : 𝔼 := ((‖b - op A x₀‖ : 𝕜))⁻¹ • (b - op A x₀)
-
-theorem unitResidual_def :
-    unitResidual A b x₀ = ((‖b - op A x₀‖ : 𝕜))⁻¹ • (b - op A x₀) := rfl
-
-theorem norm_unitResidual {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ : 𝔼}
-    (hb : b - op A x₀ ≠ 0) : ‖unitResidual A b x₀‖ = 1 :=
-  norm_norm_inv_smul hb
-
-/-- The Krylov subspaces of the unit starting vector are those of the residual `r_0`. -/
-theorem krylov_unitResidual {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ : 𝔼}
-    (hb : b - op A x₀ ≠ 0) (m : ℕ) :
-    krylov A (unitResidual A b x₀) m = Krylov.subspace (op A) (b - op A x₀) m := by
-  have hc : ((‖b - op A x₀‖ : 𝕜))⁻¹ ≠ 0 :=
-    inv_ne_zero (by simpa using norm_ne_zero_iff.2 hb)
-  rw [unitResidual_def, krylov_smul A _ hc, krylov_eq]
-
 /-! ### Algorithm 6.19: the three-term recurrence variant -/
 
 private theorem inner_self_div (x y : 𝔼) :
@@ -545,14 +528,14 @@ local notation "𝔼" => EuclideanSpace ℝ (Fin n)
 
 /-- `y_m = T_m^{-1}(β e_1)` of (6.86). -/
 noncomputable def lanczosMethodY (m : ℕ) : Fin m → ℝ :=
-  (T A (unitResidual A b x₀) m)⁻¹ *ᵥ Krylov.firstVec ‖b - op A x₀‖ m
+  (T A (v₁ A b x₀) m)⁻¹ *ᵥ Krylov.firstVec ‖b - op A x₀‖ m
 
 theorem lanczosMethodY_def (m : ℕ) : lanczosMethodY A b x₀ m =
-    (T A (unitResidual A b x₀) m)⁻¹ *ᵥ Krylov.firstVec ‖b - op A x₀‖ m := rfl
+    (T A (v₁ A b x₀) m)⁻¹ *ᵥ Krylov.firstVec ‖b - op A x₀‖ m := rfl
 
 /-- (6.86): `x_m = x_0 + V_m y_m`, `m` steps of Algorithm 6.16 carried out unconditionally. -/
 noncomputable def lanczosMethodAt (m : ℕ) : 𝔼 :=
-  x₀ + ∑ j : Fin m, lanczosMethodY A b x₀ m j • lanczosV A (unitResidual A b x₀) (j : ℕ)
+  x₀ + ∑ j : Fin m, lanczosMethodY A b x₀ m j • lanczosV A (v₁ A b x₀) (j : ℕ)
 
 /-- **Algorithm 6.16** (the Lanczos method for linear systems), with the book's
 "if `β_{j+1} = 0` then set `m := j` and Stop". -/
@@ -560,7 +543,7 @@ noncomputable def lanczosMethod (m : ℕ) : 𝔼 :=
   lanczosMethodAt A b x₀ (min m (grade A (b - op A x₀)))
 
 theorem lanczosMethodAt_def (m : ℕ) : lanczosMethodAt A b x₀ m =
-    x₀ + ∑ j : Fin m, lanczosMethodY A b x₀ m j • lanczosV A (unitResidual A b x₀) (j : ℕ) :=
+    x₀ + ∑ j : Fin m, lanczosMethodY A b x₀ m j • lanczosV A (v₁ A b x₀) (j : ℕ) :=
   rfl
 
 /-- Below the grade the book's stopping rule does not fire, and Algorithm 6.16 is the
@@ -573,31 +556,33 @@ variable {A b x₀}
 
 /-- Running Algorithm 6.15 from `v_1 = r_0/‖r_0‖` computes the backbone Arnoldi vectors of
 `r_0` itself, the indexing the backbone Krylov results use. -/
-theorem lanczosV_unitResidual (hA : A.IsSymm) (hb : b - op A x₀ ≠ 0) (j : ℕ) :
-    lanczosV A (unitResidual A b x₀) j = Arnoldi.vec (op A) (b - op A x₀) j := by
-  rw [lanczosV_eq A _ (isSymmetric_op_of_isSymm hA) (norm_unitResidual hb), unitResidual_def]
+theorem lanczosV_v₁ (hA : A.IsSymm) (hb : b - op A x₀ ≠ 0) (j : ℕ) :
+    lanczosV A (v₁ A b x₀) j = Arnoldi.vec (op A) (b - op A x₀) j := by
+  rw [lanczosV_eq A _ (isSymmetric_op_of_isSymm hA) (norm_v₁ A b x₀ hb), v₁_def]
   exact arnoldiCGS_normalize A hb j
 
 /-- `T_m` computed from `v_1 = r_0/‖r_0‖` is the backbone Arnoldi matrix `H_m` of `r_0`. -/
-theorem T_unitResidual (hA : A.IsSymm) (hb : b - op A x₀ ≠ 0) (m : ℕ) :
-    T A (unitResidual A b x₀) m = Arnoldi.hessenbergSq (op A) (b - op A x₀) m := by
-  rw [T_eq_H A _ hA (norm_unitResidual hb), unitResidual_def]
+theorem T_v₁ (hA : A.IsSymm) (hb : b - op A x₀ ≠ 0) (m : ℕ) :
+    T A (v₁ A b x₀) m = Arnoldi.hessenbergSq (op A) (b - op A x₀) m := by
+  rw [T_eq_H A _ hA (norm_v₁ A b x₀ hb), v₁_def]
   exact H_normalize A hb m
 
-theorem lanczosBeta_unitResidual (hA : A.IsSymm) (hb : b - op A x₀ ≠ 0) (j : ℕ) :
-    lanczosBeta A (unitResidual A b x₀) (j + 1)
+/-- `β_{j+1}` computed from `v_1 = r_0/‖r_0‖` is the backbone subdiagonal Arnoldi coefficient
+`h_{j+1,j}` of `r_0`. -/
+theorem lanczosBeta_succ_v₁ (hA : A.IsSymm) (hb : b - op A x₀ ≠ 0) (j : ℕ) :
+    lanczosBeta A (v₁ A b x₀) (j + 1)
       = Arnoldi.coeff (op A) (b - op A x₀) (j + 1) j := by
-  have h := lanczosBeta_succ_eq_arnoldiCoeff A (unitResidual A b x₀)
-    (isSymmetric_op_of_isSymm hA) (norm_unitResidual hb) j
-  have h2 : arnoldiCoeff A (unitResidual A b x₀) (j + 1) j
+  have h := lanczosBeta_succ_eq_arnoldiCoeff A (v₁ A b x₀)
+    (isSymmetric_op_of_isSymm hA) (norm_v₁ A b x₀ hb) j
+  have h2 : arnoldiCoeff A (v₁ A b x₀) (j + 1) j
       = Arnoldi.coeff (op A) (b - op A x₀) (j + 1) j := by
-    rw [unitResidual_def]
+    rw [v₁_def]
     exact arnoldiCoeff_normalize A hb (j + 1) j
   rw [h2] at h
   simpa using h
 
-theorem mulVec_lanczosMethodY {m : ℕ} (hT : IsUnit (T A (unitResidual A b x₀) m).det) :
-    T A (unitResidual A b x₀) m *ᵥ lanczosMethodY A b x₀ m
+theorem mulVec_lanczosMethodY {m : ℕ} (hT : IsUnit (T A (v₁ A b x₀) m).det) :
+    T A (v₁ A b x₀) m *ᵥ lanczosMethodY A b x₀ m
       = Krylov.firstVec ‖b - op A x₀‖ m := by
   rw [lanczosMethodY_def, Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv _ hT, Matrix.one_mulVec]
 
@@ -605,19 +590,19 @@ private theorem lanczosMethodAt_eq_sum (hA : A.IsSymm) (hb : b - op A x₀ ≠ 0
     lanczosMethodAt A b x₀ m =
       x₀ + ∑ j : Fin m, lanczosMethodY A b x₀ m j • Arnoldi.vec (op A) (b - op A x₀) (j : ℕ) := by
   rw [lanczosMethodAt_def]
-  exact congrArg _ (Finset.sum_congr rfl fun j _ => by rw [lanczosV_unitResidual hA hb])
+  exact congrArg _ (Finset.sum_congr rfl fun j _ => by rw [lanczosV_v₁ hA hb])
 
 private theorem mulVec_hessenbergSq (hA : A.IsSymm) (hb : b - op A x₀ ≠ 0) {m : ℕ}
-    (hT : IsUnit (T A (unitResidual A b x₀) m).det) :
+    (hT : IsUnit (T A (v₁ A b x₀) m).det) :
     Arnoldi.hessenbergSq (op A) (b - op A x₀) m *ᵥ lanczosMethodY A b x₀ m
       = Krylov.firstVec ‖b - op A x₀‖ m := by
-  rw [← T_unitResidual hA hb]
+  rw [← T_v₁ hA hb]
   exact mulVec_lanczosMethodY hT
 
 /-- (6.86): the iterate of Algorithm 6.16 is the orthogonal projection (Galerkin) iterate onto
 `𝒦_m`. -/
 theorem lanczosMethodAt_isGalerkinIterate (hA : A.IsSymm) (hb : b - op A x₀ ≠ 0) {m : ℕ}
-    (hm : m ≤ grade A (b - op A x₀)) (hT : IsUnit (T A (unitResidual A b x₀) m).det) :
+    (hm : m ≤ grade A (b - op A x₀)) (hT : IsUnit (T A (v₁ A b x₀) m).det) :
     Krylov.IsGalerkinIterate (op A) b x₀ m (lanczosMethodAt A b x₀ m) := by
   rw [lanczosMethodAt_eq_sum hA hb]
   exact (Krylov.isGalerkinIterate_iff_mulVec_eq (by rwa [← grade_eq]) _).2
@@ -625,30 +610,30 @@ theorem lanczosMethodAt_isGalerkinIterate (hA : A.IsSymm) (hb : b - op A x₀ �
 
 /-- (6.87): `b - A x_m = -β_{m+1}(e_m^T y_m) v_{m+1}`. -/
 theorem equation_6_87 (hA : A.IsSymm) (hb : b - op A x₀ ≠ 0) {m : ℕ} (hm : 0 < m)
-    (hT : IsUnit (T A (unitResidual A b x₀) m).det) :
+    (hT : IsUnit (T A (v₁ A b x₀) m).det) :
     b - op A (lanczosMethodAt A b x₀ m) =
-      -(lanczosBeta A (unitResidual A b x₀) m * lanczosMethodY A b x₀ m ⟨m - 1, by omega⟩) •
-        lanczosV A (unitResidual A b x₀) m := by
+      -(lanczosBeta A (v₁ A b x₀) m * lanczosMethodY A b x₀ m ⟨m - 1, by omega⟩) •
+        lanczosV A (v₁ A b x₀) m := by
   obtain ⟨k, rfl⟩ : ∃ k, m = k + 1 := ⟨m - 1, by omega⟩
-  rw [lanczosMethodAt_eq_sum hA hb, lanczosV_unitResidual hA hb, lanczosBeta_unitResidual hA hb]
+  rw [lanczosMethodAt_eq_sum hA hb, lanczosV_v₁ hA hb, lanczosBeta_succ_v₁ hA hb]
   exact Krylov.residual_galerkin_eq hm (lanczosMethodY A b x₀ (k + 1))
     (mulVec_hessenbergSq hA hb hT)
 
 /-- **Proposition 6.20** (1) for Algorithm 6.16: the residual is a multiple of `v_{m+1}`. -/
 theorem proposition_6_20_1 (hA : A.IsSymm) (hb : b - op A x₀ ≠ 0) {m : ℕ} (hm : 0 < m)
-    (hT : IsUnit (T A (unitResidual A b x₀) m).det) :
-    ∃ σ : ℝ, b - op A (lanczosMethodAt A b x₀ m) = σ • lanczosV A (unitResidual A b x₀) m :=
+    (hT : IsUnit (T A (v₁ A b x₀) m).det) :
+    ∃ σ : ℝ, b - op A (lanczosMethodAt A b x₀ m) = σ • lanczosV A (v₁ A b x₀) m :=
   ⟨_, equation_6_87 hA hb hm hT⟩
 
 /-- **Proposition 6.20** (1), second half: the residuals of Algorithm 6.16 are mutually
 orthogonal, because each is a multiple of a Lanczos vector. -/
 theorem inner_residual_lanczosMethodAt_eq_zero (hA : A.IsSymm) (hb : b - op A x₀ ≠ 0) {i j : ℕ}
     (hi : 0 < i) (hj : 0 < j) (hij : i ≠ j)
-    (hTi : IsUnit (T A (unitResidual A b x₀) i).det)
-    (hTj : IsUnit (T A (unitResidual A b x₀) j).det) :
+    (hTi : IsUnit (T A (v₁ A b x₀) i).det)
+    (hTj : IsUnit (T A (v₁ A b x₀) j).det) :
     inner ℝ (b - op A (lanczosMethodAt A b x₀ i)) (b - op A (lanczosMethodAt A b x₀ j)) = 0 := by
   rw [equation_6_87 hA hb hi hTi, equation_6_87 hA hb hj hTj, inner_smul_left, inner_smul_right,
-    lanczosV_unitResidual hA hb, lanczosV_unitResidual hA hb,
+    lanczosV_v₁ hA hb, lanczosV_v₁ hA hb,
     Arnoldi.inner_vec_eq_zero (op A) (b - op A x₀) hij]
   simp
 
@@ -684,7 +669,7 @@ noncomputable def dlP (A : Matrix (Fin n) (Fin n) ℝ) (v₁ : 𝔼) : ℕ → �
 noncomputable def dLanczosX (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : 𝔼) : ℕ → 𝔼
   | 0 => x₀
   | m + 1 => dLanczosX A b x₀ m +
-      dlZeta A (unitResidual A b x₀) ‖b - op A x₀‖ m • dlP A (unitResidual A b x₀) m
+      dlZeta A (v₁ A b x₀) ‖b - op A x₀‖ m • dlP A (v₁ A b x₀) m
 
 variable {A b x₀}
 
@@ -713,7 +698,7 @@ theorem dlP_succ (v₁ : 𝔼) (m : ℕ) : dlP A v₁ (m + 1) = (dlEta A v₁ (m
 @[simp] theorem dLanczosX_zero : dLanczosX A b x₀ 0 = x₀ := rfl
 
 theorem dLanczosX_succ (m : ℕ) : dLanczosX A b x₀ (m + 1) = dLanczosX A b x₀ m +
-    dlZeta A (unitResidual A b x₀) ‖b - op A x₀‖ m • dlP A (unitResidual A b x₀) m := rfl
+    dlZeta A (v₁ A b x₀) ‖b - op A x₀‖ m • dlP A (v₁ A b x₀) m := rfl
 
 /-- `A p_m = v_m + λ_{m+1} v_{m+1}`: the auxiliary vectors of Algorithm 6.17 are mapped into
 the span of two consecutive Lanczos vectors. This is the whole content of the `LU`
@@ -748,17 +733,17 @@ theorem apply_dlP (hA : A.IsSymm) {v₁ : 𝔼} (hv : ‖v₁‖ = 1) :
 /-- The residual of Algorithm 6.17 is `ζ_{m+1} v_{m+1}`: **Proposition 6.20** (1) for
 D-Lanczos, and the reason the algorithm computes the Galerkin iterate. -/
 theorem residual_dLanczosX (hA : A.IsSymm) (hb : b - op A x₀ ≠ 0) :
-    ∀ m : ℕ, (∀ i < m, dlEta A (unitResidual A b x₀) i ≠ 0) →
+    ∀ m : ℕ, (∀ i < m, dlEta A (v₁ A b x₀) i ≠ 0) →
       b - op A (dLanczosX A b x₀ m) =
-        dlZeta A (unitResidual A b x₀) ‖b - op A x₀‖ m • lanczosV A (unitResidual A b x₀) m := by
-  have hv := norm_unitResidual hb
+        dlZeta A (v₁ A b x₀) ‖b - op A x₀‖ m • lanczosV A (v₁ A b x₀) m := by
+  have hv := norm_v₁ A b x₀ hb
   have hn : ‖b - op A x₀‖ ≠ 0 := norm_ne_zero_iff.2 hb
   intro m
   induction m with
   | zero =>
     intro _
-    have hone : (‖b - op A x₀‖ : ℝ) • unitResidual A b x₀ = b - op A x₀ := by
-      rw [unitResidual_def, smul_smul]
+    have hone : (‖b - op A x₀‖ : ℝ) • v₁ A b x₀ = b - op A x₀ := by
+      rw [v₁_def, smul_smul]
       simp [mul_inv_cancel₀ hn]
     rw [dLanczosX_zero, dlZeta_zero, lanczosV_zero]
     exact hone.symm
@@ -767,8 +752,8 @@ theorem residual_dLanczosX (hA : A.IsSymm) (hb : b - op A x₀ ≠ 0) :
     have h := ih fun i hi => hη i (by omega)
     have hp := apply_dlP hA hv m fun i hi => hη i (by omega)
     have hstep : b - op A (dLanczosX A b x₀ (m + 1)) = (b - op A (dLanczosX A b x₀ m)) -
-        dlZeta A (unitResidual A b x₀) ‖b - op A x₀‖ m •
-          op A (dlP A (unitResidual A b x₀) m) := by
+        dlZeta A (v₁ A b x₀) ‖b - op A x₀‖ m •
+          op A (dlP A (v₁ A b x₀) m) := by
       rw [dLanczosX_succ, map_add, map_smul]
       abel
     rw [hstep, h, hp, dlZeta_succ]
@@ -783,37 +768,35 @@ theorem dlP_mem_krylov (hA : A.IsSymm) {v₁ : 𝔼} (hv : ‖v₁‖ = 1) (m : 
     rw [dlP_zero]
     exact Submodule.smul_mem _ _ (lanczosV_mem_krylov A v₁ hA' hv 0)
   | succ m ih =>
-    have hmono : krylov A v₁ (m + 1) ≤ krylov A v₁ (m + 2) := by
-      rw [krylov_eq, krylov_eq]
-      exact Krylov.subspace_mono (op A) v₁ (by omega)
+    have hmono : krylov A v₁ (m + 1) ≤ krylov A v₁ (m + 2) := krylov_mono A v₁ (by omega)
     rw [dlP_succ]
     exact Submodule.smul_mem _ _ (Submodule.sub_mem _
       (lanczosV_mem_krylov A v₁ hA' hv (m + 1)) (Submodule.smul_mem _ _ (hmono ih)))
 
 theorem dLanczosX_sub_mem (hA : A.IsSymm) (hb : b - op A x₀ ≠ 0) (m : ℕ) :
     dLanczosX A b x₀ m - x₀ ∈ Krylov.subspace (op A) (b - op A x₀) m := by
-  have hv := norm_unitResidual hb
+  have hv := norm_v₁ A b x₀ hb
   induction m with
   | zero => simp
   | succ m ih =>
-    have hmem : dlP A (unitResidual A b x₀) m ∈ Krylov.subspace (op A) (b - op A x₀) (m + 1) := by
-      rw [← krylov_unitResidual hb]
+    have hmem : dlP A (v₁ A b x₀) m ∈ Krylov.subspace (op A) (b - op A x₀) (m + 1) := by
+      rw [← krylov_v₁ A b x₀]
       exact dlP_mem_krylov hA hv m
     have hmono := Krylov.subspace_mono (op A) (b - op A x₀) (Nat.le_succ m)
     rw [dLanczosX_succ, show dLanczosX A b x₀ m + _ - x₀ = (dLanczosX A b x₀ m - x₀) +
-      dlZeta A (unitResidual A b x₀) ‖b - op A x₀‖ m • dlP A (unitResidual A b x₀) m from by abel]
+      dlZeta A (v₁ A b x₀) ‖b - op A x₀‖ m • dlP A (v₁ A b x₀) m from by abel]
     exact Submodule.add_mem _ (hmono ih) (Submodule.smul_mem _ _ hmem)
 
 /-- **(6.86)–(6.89)**: Algorithm 6.17 computes the orthogonal projection (Galerkin) iterate
 onto `𝒦_m`, hence the same iterate as Algorithm 6.16. -/
 theorem dLanczosX_isGalerkinIterate (hA : A.IsSymm) (hb : b - op A x₀ ≠ 0) (m : ℕ)
-    (hη : ∀ i < m, dlEta A (unitResidual A b x₀) i ≠ 0) :
+    (hη : ∀ i < m, dlEta A (v₁ A b x₀) i ≠ 0) :
     Krylov.IsGalerkinIterate (op A) b x₀ m (dLanczosX A b x₀ m) := by
-  have hv := norm_unitResidual hb
+  have hv := norm_v₁ A b x₀ hb
   refine ⟨dLanczosX_sub_mem hA hb m, ?_⟩
   rw [residual_dLanczosX hA hb m hη]
   refine Submodule.smul_mem _ _ ?_
-  rw [← krylov_unitResidual hb]
+  rw [← krylov_v₁ A b x₀]
   exact lanczosV_mem_orthogonal A _ (isSymmetric_op_of_isSymm hA) hv m
 
 /-! ### §6.7.1: the three algorithms compute the same iterates -/
@@ -839,15 +822,15 @@ theorem cgX_isGalerkinIterate (hA : A.PosDef) (m : ℕ) :
 /-- §6.7.1: **CG is mathematically equivalent to D-Lanczos** — both compute the Galerkin
 iterate onto `𝒦_m`. -/
 theorem cgX_eq_dLanczosX (hA : A.PosDef) (hb : b - op A x₀ ≠ 0) (m : ℕ)
-    (hη : ∀ i < m, dlEta A (unitResidual A b x₀) i ≠ 0) :
+    (hη : ∀ i < m, dlEta A (v₁ A b x₀) i ≠ 0) :
     cgX A b x₀ m = dLanczosX A b x₀ m :=
   galerkin_unique hA (cgX_isGalerkinIterate hA m)
     (dLanczosX_isGalerkinIterate (isSymm_of_posDef hA) hb m hη)
 
 /-- §6.7.1: Algorithm 6.17 delivers the iterate of Algorithm 6.16. -/
 theorem dLanczosX_eq_lanczosMethodAt (hA : A.PosDef) (hb : b - op A x₀ ≠ 0) {m : ℕ}
-    (hη : ∀ i < m, dlEta A (unitResidual A b x₀) i ≠ 0)
-    (hm : m ≤ grade A (b - op A x₀)) (hT : IsUnit (T A (unitResidual A b x₀) m).det) :
+    (hη : ∀ i < m, dlEta A (v₁ A b x₀) i ≠ 0)
+    (hm : m ≤ grade A (b - op A x₀)) (hT : IsUnit (T A (v₁ A b x₀) m).det) :
     dLanczosX A b x₀ m = lanczosMethodAt A b x₀ m :=
   galerkin_unique hA (dLanczosX_isGalerkinIterate (isSymm_of_posDef hA) hb m hη)
     (lanczosMethodAt_isGalerkinIterate (isSymm_of_posDef hA) hb hm hT)
@@ -865,8 +848,8 @@ theorem lanczosMethod_eq_fom (hA : A.IsSymm) {m : ℕ}
   · have h0 : grade A (b - op A x₀) = 0 := by rw [hb, grade_eq, Krylov.grade_zero]
     rw [lanczosMethod, h0, min_zero, fom, hmE, h0, min_zero, fomFixed_zero, lanczosMethodAt_def]
     simp
-  · have hT : IsUnit (T A (unitResidual A b x₀) (mEff A b x₀ m)).det := by
-      rw [T_unitResidual hA hb, ← H_v₁ A b x₀]
+  · have hT : IsUnit (T A (v₁ A b x₀) (mEff A b x₀ m)).det := by
+      rw [T_v₁ hA hb, ← H_v₁ A b x₀]
       exact (Matrix.isUnit_iff_isUnit_det _).1 hH
     rw [lanczosMethod, ← hmE, fom]
     exact eq_fomFixed_of_isGalerkinIterate A b x₀ hH (mEff_le A b x₀ m)
@@ -874,7 +857,7 @@ theorem lanczosMethod_eq_fom (hA : A.IsSymm) {m : ℕ}
 
 /-- §6.7.1: Algorithm 6.18 delivers the iterate of Algorithm 6.16. -/
 theorem cgX_eq_lanczosMethodAt (hA : A.PosDef) (hb : b - op A x₀ ≠ 0) {m : ℕ}
-    (hm : m ≤ grade A (b - op A x₀)) (hT : IsUnit (T A (unitResidual A b x₀) m).det) :
+    (hm : m ≤ grade A (b - op A x₀)) (hT : IsUnit (T A (v₁ A b x₀) m).det) :
     cgX A b x₀ m = lanczosMethodAt A b x₀ m :=
   galerkin_unique hA (cgX_isGalerkinIterate hA m)
     (lanczosMethodAt_isGalerkinIterate (isSymm_of_posDef hA) hb hm hT)
@@ -923,30 +906,32 @@ theorem cgR_ne_zero_of_le (hA : A.PosDef) {k j : ℕ} (hr : cgR A b x₀ k ≠ 0
   rw [CG.iterate_eq_of_residual_eq_zero' (op A) b x₀ h0 k hj]
   exact h0
 
+/-- The sign `(-1)^j` of (6.99) squares to `1`. -/
+private theorem neg_one_pow_mul_self (k : ℕ) : ((-1 : ℝ) ^ k) * ((-1 : ℝ) ^ k) = 1 := by
+  rw [← pow_add]
+  exact Even.neg_one_pow ⟨k, rfl⟩
+
 /-- (6.99): the Lanczos vector `v_{j+1}` is `(-1)^j r_j/‖r_j‖`. -/
 theorem lanczosV_eq_smul_cgR (hA : A.PosDef) {k : ℕ} (hr : cgR A b x₀ k ≠ 0) :
-    lanczosV A (unitResidual A b x₀) k =
+    lanczosV A (v₁ A b x₀) k =
       ((-1 : ℝ) ^ k * ‖cgR A b x₀ k‖⁻¹) • cgR A b x₀ k := by
   have hb : b - op A x₀ ≠ 0 := by simpa using cgR_ne_zero_of_le hA hr (Nat.zero_le k)
   have hs := (isSymmetricCoercive_op_of_posDef hA).isSymmetric
   have h := CG.arnoldi_vec_eq b x₀ (isSymmetricCoercive_op_of_posDef hA) k
     (by rwa [cgR_eq_CG A b x₀ hs] at hr)
-  rw [lanczosV_unitResidual (isSymm_of_posDef hA) hb, cgR_eq_CG A b x₀ hs]
+  rw [lanczosV_v₁ (isSymm_of_posDef hA) hb, cgR_eq_CG A b x₀ hs]
   simpa using h
 
 /-- (6.99): the CG residual `r_j` is a nonzero multiple of the Lanczos vector `v_{j+1}`. -/
 theorem equation_6_99 (hA : A.PosDef) {k : ℕ} (hr : cgR A b x₀ k ≠ 0) :
-    ∃ σ : ℝ, σ ≠ 0 ∧ cgR A b x₀ k = σ • lanczosV A (unitResidual A b x₀) k := by
+    ∃ σ : ℝ, σ ≠ 0 ∧ cgR A b x₀ k = σ • lanczosV A (v₁ A b x₀) k := by
   have hn : ‖cgR A b x₀ k‖ ≠ 0 := norm_ne_zero_iff.2 hr
-  have hpow : ((-1 : ℝ) ^ k) * ((-1 : ℝ) ^ k) = 1 := by
-    rw [← pow_add]
-    exact Even.neg_one_pow ⟨k, rfl⟩
   refine ⟨(-1 : ℝ) ^ k * ‖cgR A b x₀ k‖,
     mul_ne_zero (pow_ne_zero k (by norm_num)) hn, ?_⟩
   have hone : ((-1 : ℝ) ^ k * ‖cgR A b x₀ k‖) * ((-1 : ℝ) ^ k * ‖cgR A b x₀ k‖⁻¹) = 1 :=
     calc ((-1 : ℝ) ^ k * ‖cgR A b x₀ k‖) * ((-1 : ℝ) ^ k * ‖cgR A b x₀ k‖⁻¹)
         = ((-1 : ℝ) ^ k * (-1 : ℝ) ^ k) * (‖cgR A b x₀ k‖ * ‖cgR A b x₀ k‖⁻¹) := by ring
-      _ = 1 := by rw [hpow, mul_inv_cancel₀ hn, mul_one]
+      _ = 1 := by rw [neg_one_pow_mul_self, mul_inv_cancel₀ hn, mul_one]
   rw [lanczosV_eq_smul_cgR hA hr, smul_smul, hone, one_smul]
 
 /-- (6.100): `r_j = p_j - β_{j-1} p_{j-1}`. -/
@@ -1033,10 +1018,6 @@ private theorem inner_cgR_succ_apply_cgR (hA : A.PosDef) {k : ℕ}
       inner_cgR_eq_zero hA (show k + 1 + 1 ≠ k by omega), real_inner_self_eq_norm_sq]
     ring
 
-private theorem neg_one_pow_mul_self (k : ℕ) : ((-1 : ℝ) ^ k) * ((-1 : ℝ) ^ k) = 1 := by
-  rw [← pow_add]
-  exact Even.neg_one_pow ⟨k, rfl⟩
-
 private theorem sign_norm_sq (k : ℕ) (t : ℝ) :
     ((-1 : ℝ) ^ k * t⁻¹) * ((-1 : ℝ) ^ k * t⁻¹) = (t ^ 2)⁻¹ := by
   calc ((-1 : ℝ) ^ k * t⁻¹) * ((-1 : ℝ) ^ k * t⁻¹)
@@ -1057,28 +1038,28 @@ private theorem sign_norm_mul (k : ℕ) (s t : ℝ) :
 
 /-- (6.102): `δ_1 = 1/α_0`. -/
 theorem equation_6_102 (hA : A.PosDef) (hr : cgR A b x₀ 0 ≠ 0) :
-    lanczosAlpha A (unitResidual A b x₀) 0 = 1 / cgAlpha A b x₀ 0 := by
+    lanczosAlpha A (v₁ A b x₀) 0 = 1 / cgAlpha A b x₀ 0 := by
   have hb : b - op A x₀ ≠ 0 := hr
   have hn : ‖cgR A b x₀ 0‖ ≠ 0 := norm_ne_zero_iff.2 hr
-  rw [lanczosAlpha_eq_inner_real A _ (isSymm_of_posDef hA) (norm_unitResidual hb),
+  rw [lanczosAlpha_eq_inner_real A _ (isSymm_of_posDef hA) (norm_v₁ A b x₀ hb),
     lanczosV_eq_smul_cgR hA hr, map_smul, real_inner_smul_left, real_inner_smul_right,
     inner_cgR_apply_cgR_zero hA hr]
   field_simp
 
 /-- (6.101): `δ_{j+1} = 1/α_j + β_{j-1}/α_{j-1}`. -/
 theorem equation_6_101 (hA : A.PosDef) {k : ℕ} (hr : cgR A b x₀ (k + 1) ≠ 0) :
-    lanczosAlpha A (unitResidual A b x₀) (k + 1) =
+    lanczosAlpha A (v₁ A b x₀) (k + 1) =
       1 / cgAlpha A b x₀ (k + 1) + cgBeta A b x₀ k / cgAlpha A b x₀ k := by
   have hb : b - op A x₀ ≠ 0 := cgR_ne_zero_of_le hA hr (Nat.zero_le _)
   have hn : ‖cgR A b x₀ (k + 1)‖ ≠ 0 := norm_ne_zero_iff.2 hr
-  rw [lanczosAlpha_eq_inner_real A _ (isSymm_of_posDef hA) (norm_unitResidual hb),
+  rw [lanczosAlpha_eq_inner_real A _ (isSymm_of_posDef hA) (norm_v₁ A b x₀ hb),
     lanczosV_eq_smul_cgR hA hr, map_smul, real_inner_smul_left, real_inner_smul_right,
     inner_cgR_apply_cgR_succ hA hr, ← mul_assoc, sign_norm_sq]
   field_simp
 
 /-- (6.103): `η_{j+1} = √(β_{j-1})/α_{j-1}`. -/
 theorem equation_6_103 (hA : A.PosDef) {k : ℕ} (hr : cgR A b x₀ (k + 1) ≠ 0) :
-    lanczosBeta A (unitResidual A b x₀) (k + 1) =
+    lanczosBeta A (v₁ A b x₀) (k + 1) =
       Real.sqrt (cgBeta A b x₀ k) / cgAlpha A b x₀ k := by
   have hb : b - op A x₀ ≠ 0 := cgR_ne_zero_of_le hA hr (Nat.zero_le _)
   have hrk : cgR A b x₀ k ≠ 0 := cgR_ne_zero_of_le hA hr (by omega)
@@ -1089,7 +1070,7 @@ theorem equation_6_103 (hA : A.PosDef) {k : ℕ} (hr : cgR A b x₀ (k + 1) ≠ 
   have hsqrt : Real.sqrt (cgBeta A b x₀ k) = ‖cgR A b x₀ (k + 1)‖ / ‖cgR A b x₀ k‖ := by
     rw [hbeta, ← div_pow, Real.sqrt_sq (by positivity)]
   have hα : cgAlpha A b x₀ k ≠ 0 := cgAlpha_ne_zero hA hrk
-  rw [lanczosBeta_succ_eq_inner_real A _ (isSymm_of_posDef hA) (norm_unitResidual hb),
+  rw [lanczosBeta_succ_eq_inner_real A _ (isSymm_of_posDef hA) (norm_v₁ A b x₀ hb),
     lanczosV_eq_smul_cgR hA hr, lanczosV_eq_smul_cgR hA hrk, map_smul, real_inner_smul_left,
     real_inner_smul_right, inner_cgR_succ_apply_cgR hA hr, ← mul_assoc, sign_norm_mul,
     hsqrt]
@@ -1098,26 +1079,26 @@ theorem equation_6_103 (hA : A.PosDef) {k : ℕ} (hr : cgR A b x₀ (k + 1) ≠ 
 /-- §6.7.1, last sentence: the search directions of Algorithm 6.18 are nonzero multiples of
 the auxiliary vectors of Algorithm 6.17. -/
 theorem cgP_smul_dlP (hA : A.PosDef) (hb : b - op A x₀ ≠ 0) {j : ℕ} (hr : cgR A b x₀ j ≠ 0)
-    (hη : ∀ i < j + 1, dlEta A (unitResidual A b x₀) i ≠ 0) :
-    ∃ c : ℝ, c ≠ 0 ∧ cgP A b x₀ j = c • dlP A (unitResidual A b x₀) j := by
+    (hη : ∀ i < j + 1, dlEta A (v₁ A b x₀) i ≠ 0) :
+    ∃ c : ℝ, c ≠ 0 ∧ cgP A b x₀ j = c • dlP A (v₁ A b x₀) j := by
   have hα := cgAlpha_ne_zero hA hr
   have hxj := cgX_eq_dLanczosX hA hb j fun i hi => hη i (by omega)
   have hxj1 := cgX_eq_dLanczosX hA hb (j + 1) hη
   have hres := residual_dLanczosX (isSymm_of_posDef hA) hb j fun i hi => hη i (by omega)
-  have hζ : dlZeta A (unitResidual A b x₀) ‖b - op A x₀‖ j ≠ 0 := by
+  have hζ : dlZeta A (v₁ A b x₀) ‖b - op A x₀‖ j ≠ 0 := by
     intro h0
     rw [h0, zero_smul] at hres
     exact hr (by rw [cgR_eq_residual A b x₀ (isSymmetricCoercive_op_of_posDef hA).isSymmetric,
       hxj, hres])
   have hstep : cgAlpha A b x₀ j • cgP A b x₀ j =
-      dlZeta A (unitResidual A b x₀) ‖b - op A x₀‖ j • dlP A (unitResidual A b x₀) j := by
+      dlZeta A (v₁ A b x₀) ‖b - op A x₀‖ j • dlP A (v₁ A b x₀) j := by
     have h1 : cgX A b x₀ (j + 1) = cgX A b x₀ j + cgAlpha A b x₀ j • cgP A b x₀ j
         := cgX_succ A b x₀ j
     have h2 := dLanczosX_succ (A := A) (b := b) (x₀ := x₀) j
     rw [hxj1, hxj] at h1
     rw [h2] at h1
     exact (add_right_injective (dLanczosX A b x₀ j) h1.symm)
-  refine ⟨dlZeta A (unitResidual A b x₀) ‖b - op A x₀‖ j / cgAlpha A b x₀ j,
+  refine ⟨dlZeta A (v₁ A b x₀) ‖b - op A x₀‖ j / cgAlpha A b x₀ j,
     div_ne_zero hζ hα, ?_⟩
   rw [div_eq_inv_mul, ← smul_smul, ← hstep, smul_smul, inv_mul_cancel₀ hα, one_smul]
 
@@ -1269,7 +1250,7 @@ D-Lanczos by `dLanczosX_isGalerkinIterate`, DIOM(2) because for symmetric `A` th
 orthogonalization of Algorithm 6.6 with `k = 2` is the Arnoldi process, so DIOM(2) is FOM. -/
 theorem dLanczos_eq_diom2 (hA : A.IsSymm) (hb : b - op A x₀ ≠ 0) {m : ℕ}
     (hm : m ≤ grade A (b - op A x₀))
-    (hη : ∀ i < m, dlEta A (unitResidual A b x₀) i ≠ 0)
+    (hη : ∀ i < m, dlEta A (v₁ A b x₀) i ≠ 0)
     (hpiv : ∀ l, l < m → dioU (iopCoeff A (v₁ A b x₀) 2) l l ≠ 0) :
     dLanczosX A b x₀ m = diom A b x₀ 2 m := by
   have hsym := isSymmetric_op_of_isSymm hA

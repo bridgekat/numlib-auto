@@ -14,7 +14,7 @@ import NumlibSurface.SaadSparse.Chapter06.Section04
 # Saad §6.5: GMRES
 
 Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §6.5 , together with the problems P-6.9, P-6.13, P-6.14, P-6.25 and P-6.26.
+2003, §6.5, together with the problems P-6.9, P-6.13, P-6.14, P-6.25 and P-6.26.
 
 The data of the system — `r₀ = b - A x₀`, `β = ‖r₀‖₂`, `v₁ = r₀/β`, the first coordinate vector
 `e₁`, and `mEff`, which implements the book's "if `h_{j+1,j} = 0` set `m := j`" — are shared with
@@ -130,9 +130,9 @@ open scoped Matrix
 
 namespace SaadSparse.Chapter06
 
-/-! ### §6.5.3 and §6.5.9: Givens rotations and the factorization `Q_m H̄_m = R̄_m` -/
+/-! ## §6.5.3 and §6.5.9: Givens rotations and the factorization `Q_m H̄_m = R̄_m` -/
 
-section General
+section Givens
 
 variable {𝕜 : Type*} [RCLike 𝕜]
 
@@ -472,7 +472,7 @@ theorem isUnit_conjTranspose_mul_self_hessenbergOf {m : ℕ}
 /-- **P-6.5**: the triangular solution `y = R_m⁻¹ g_m` of Proposition 6.9(2) satisfies the normal
 equations `H̄_mᴴ H̄_m y = H̄_mᴴ (β e_1)` of the least-squares problem (6.29) — that is, GMRES is
 Saad (5.7) with `V = V_m` and `W = A V_m`. -/
-theorem normalEquations {m : ℕ} (hρ : ∀ k < m, Krylov.givensRho h k ≠ 0) {y : Fin m → 𝕜}
+theorem normal_equations {m : ℕ} (hρ : ∀ k < m, Krylov.givensRho h k ≠ 0) {y : Fin m → 𝕜}
     (hy : R h m *ᵥ y = g h β m) :
     ((Krylov.hessenbergOf h m)ᴴ * Krylov.hessenbergOf h m) *ᵥ y
       = (Krylov.hessenbergOf h m)ᴴ *ᵥ Krylov.firstVec β (m + 1) := by
@@ -534,16 +534,16 @@ theorem exists_real_gamma_arnoldiCoeff (hv : ‖v₁‖ = 1) (t : ℝ) (i : ℕ)
   induction i with
   | zero => exact ⟨t, rfl⟩
   | succ i ih =>
-      obtain ⟨u, hu⟩ := ih
-      obtain ⟨w, -, hw⟩ := s_arnoldiCoeff_nonneg A v₁ hv i
-      refine ⟨-(w * u), ?_⟩
-      rw [gamma_succ, hu, hw]
-      push_cast
-      ring
+    obtain ⟨u, hu⟩ := ih
+    obtain ⟨w, -, hw⟩ := s_arnoldiCoeff_nonneg A v₁ hv i
+    refine ⟨-(w * u), ?_⟩
+    rw [gamma_succ, hu, hw]
+    push_cast
+    ring
 
 end Arnoldi
 
-end General
+end Givens
 
 /-! ### The numbered facts of §6.5.3, in the book's real setting -/
 
@@ -634,9 +634,9 @@ theorem equation_6_81 (hv : ‖v₁‖ = 1) (t : ℝ) (m : ℕ) :
 
 end BookResultsComplex
 
-/-! ### §6.5.1–6.5.5: GMRES -/
+/-! ## §6.5.1–6.5.5: GMRES -/
 
-section General
+section GMRES
 
 variable {n : ℕ} {𝕜 : Type*} [RCLike 𝕜]
 
@@ -875,12 +875,12 @@ theorem apply_eq_of_s_eq_zero {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀))
 /-- **P-6.5**: the GMRES coordinates satisfy the normal equations
 `H̄_mᴴ H̄_m y_m = H̄_mᴴ (β e_1)` of the least-squares problem (6.29) — the Petrov–Galerkin
 formula Saad (5.7) with `V = V_m` and `W = A V_m`. -/
-theorem normalEquations_gmresY {m : ℕ} (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m)) :
+theorem normal_equations_gmresY {m : ℕ} (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m)) :
     ((Hbar A (v₁ A b x₀) m)ᴴ * Hbar A (v₁ A b x₀) m) *ᵥ gmresY A b x₀ m
       = (Hbar A (v₁ A b x₀) m)ᴴ *ᵥ ((β A b x₀ : 𝕜) • e₁ (m + 1)) := by
   have hρ := (isUnit_R_iff _ (hessenberg_coeffs A b x₀)).1 hR
   rw [Hbar_eq_hessenbergOf, smul_e₁_eq_firstVec]
-  exact normalEquations _ _ (hessenberg_coeffs A b x₀) hρ (mulVec_R_gmresY A b x₀ hR)
+  exact normal_equations _ _ (hessenberg_coeffs A b x₀) hρ (mulVec_R_gmresY A b x₀ hR)
 
 /-- **P-6.5**: `y_m = (H̄_mᴴ H̄_m)⁻¹ H̄_mᴴ (β e_1)`. -/
 theorem problem_6_5 {m : ℕ} (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m)) :
@@ -890,7 +890,7 @@ theorem problem_6_5 {m : ℕ} (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m
   have hN : IsUnit ((Hbar A (v₁ A b x₀) m)ᴴ * Hbar A (v₁ A b x₀) m) := by
     rw [Hbar_eq_hessenbergOf]
     exact isUnit_conjTranspose_mul_self_hessenbergOf _ (hessenberg_coeffs A b x₀) hρ hR
-  rw [← normalEquations_gmresY A b x₀ hR, Matrix.mulVec_mulVec,
+  rw [← normal_equations_gmresY A b x₀ hR, Matrix.mulVec_mulVec,
     Matrix.nonsing_inv_mul _ ((Matrix.isUnit_iff_isUnit_det _).1 hN), Matrix.one_mulVec]
 
 /-! ### Proposition 6.10 and the "at most `n` steps" remark -/
@@ -922,7 +922,7 @@ theorem gmres_apply_eq (hA : IsUnit A) {m : ℕ} (hmn : n ≤ m) : op A (gmres A
 theorem exists_gmres_apply_eq (hA : IsUnit A) : ∃ m ≤ n, op A (gmres A b x₀ m) = b :=
   ⟨n, le_rfl, gmres_apply_eq A b x₀ hA le_rfl⟩
 
-end General
+end GMRES
 
 /-! ### Algorithm 6.10: Householder GMRES (§6.5.2) -/
 
@@ -949,14 +949,14 @@ private theorem QhhT_hornerAccumulate (v : 𝔼) (η : ℕ → ℝ) :
   induction l with
   | zero => intro j; simp [hornerAccumulate]
   | succ l ih =>
-      intro j
-      rw [hornerAccumulate, ← LinearMap.comp_apply, ← QhhT_succ, map_add, map_smul, ih (j + 1),
-        Finset.sum_range_succ']
-      have hs : ∑ i ∈ Finset.range l, η (j + 1 + (i + 1)) • hhV A v (j + 1 + (i + 1))
-          = ∑ i ∈ Finset.range l, η (j + 1 + 1 + i) • hhV A v (j + 1 + 1 + i) :=
-        Finset.sum_congr rfl fun i _ => by rw [show j + 1 + (i + 1) = j + 1 + 1 + i by omega]
-      rw [hs]
-      exact add_comm _ _
+    intro j
+    rw [hornerAccumulate, ← LinearMap.comp_apply, ← QhhT_succ, map_add, map_smul, ih (j + 1),
+      Finset.sum_range_succ']
+    have hs : ∑ i ∈ Finset.range l, η (j + 1 + (i + 1)) • hhV A v (j + 1 + (i + 1))
+        = ∑ i ∈ Finset.range l, η (j + 1 + 1 + i) • hhV A v (j + 1 + 1 + i) :=
+      Finset.sum_congr rfl fun i _ => by rw [show j + 1 + (i + 1) = j + 1 + 1 + i by omega]
+    rw [hs]
+    exact add_comm _ _
 
 /-- (6.31)–(6.33): the accumulation of Algorithm 6.10 computes `∑_{j<m} η_j v_j` in the
 Householder Arnoldi basis. -/
@@ -966,14 +966,14 @@ theorem hornerAccumulate_eq_sum (v : 𝔼) (η : ℕ → ℝ) (m : ℕ) :
   cases m with
   | zero => simp [hornerAccumulate]
   | succ l =>
-      rw [hornerAccumulate]
-      have h0 : (householder (hhW A v 0) : 𝔼 →ₗ[ℝ] 𝔼) = QhhT A v 0 := (QhhT_zero A v).symm
-      rw [h0, map_add, map_smul, QhhT_hornerAccumulate A v η l 0, Finset.sum_range_succ']
-      have hs : ∑ i ∈ Finset.range l, η (0 + 1 + i) • hhV A v (0 + 1 + i)
-          = ∑ i ∈ Finset.range l, η (i + 1) • hhV A v (i + 1) :=
-        Finset.sum_congr rfl fun i _ => by rw [show 0 + 1 + i = i + 1 by omega]
-      rw [hs]
-      exact add_comm _ _
+    rw [hornerAccumulate]
+    have h0 : (householder (hhW A v 0) : 𝔼 →ₗ[ℝ] 𝔼) = QhhT A v 0 := (QhhT_zero A v).symm
+    rw [h0, map_add, map_smul, QhhT_hornerAccumulate A v η l 0, Finset.sum_range_succ']
+    have hs : ∑ i ∈ Finset.range l, η (0 + 1 + i) • hhV A v (0 + 1 + i)
+        = ∑ i ∈ Finset.range l, η (i + 1) • hhV A v (i + 1) :=
+      Finset.sum_congr rfl fun i _ => by rw [show 0 + 1 + i = i + 1 by omega]
+    rw [hs]
+    exact add_comm _ _
 
 /-- **Algorithm 6.10**, line 1: the scalar `β = e_1ᵀ h_0`. -/
 noncomputable def βHH (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : 𝔼) : ℝ :=
@@ -1081,7 +1081,7 @@ end Householder
 
 /-! ### The numbered results of §6.5, in the book's real setting -/
 
-section BookResults
+section BookResultsGMRES
 
 variable {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : EuclideanSpace ℝ (Fin n))
 
@@ -1156,11 +1156,11 @@ theorem gmres_exact_of_card_le (hA : IsUnit A) {m : ℕ} (hmn : n ≤ m) :
     op A (gmres A b x₀ m) = b :=
   gmres_apply_eq A b x₀ hA hmn
 
-end BookResults
+end BookResultsGMRES
 
-/-! ### §6.5.6: QGMRES and DQGMRES -/
+/-! ## §6.5.6: QGMRES and DQGMRES -/
 
-section General
+section QGMRES
 
 variable {n : ℕ} {𝕜 : Type*} [RCLike 𝕜]
 
@@ -1251,7 +1251,6 @@ theorem z_eq_sum (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (m : ℕ) :
   simp only [Matrix.mulVec, dotProduct, Matrix.conjTranspose_apply, Pi.single_apply, mul_ite,
     mul_one, mul_zero, Finset.sum_ite_eq', Finset.mem_univ, ite_true]
   exact (starRingEnd_apply _).symm
-
 
 private theorem givensQ_succ_last_castSucc (h : ℕ → ℕ → 𝕜) (m : ℕ) (k : Fin (m + 1)) :
     Qrot h (m + 1) (Fin.last (m + 1)) k.castSucc = -(s h m) * Qrot h m (Fin.last m) k := by
@@ -1354,31 +1353,31 @@ theorem problem_6_25 (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (hu : ∀ i, 
   induction j with
   | zero => simpa using hbase
   | succ j ih =>
-      set a := ‖s h (k + j)‖ with ha
-      set bb := ‖c h (k + j)‖ with hb
-      set zz := ζ u h (k + j) with hzz
-      set w := ‖u (k + j + 1)‖ with hw
-      have hz0 : 0 ≤ zz := norm_nonneg _
-      have ha0 : 0 ≤ a := norm_nonneg _
-      have hb0 : 0 ≤ bb := norm_nonneg _
-      have hw0 : 0 ≤ w := norm_nonneg _
-      have hw1 : w ≤ 1 := hu _
-      have hw2 : w ^ 2 ≤ 1 := by nlinarith
-      have hab : a ^ 2 + bb ^ 2 = 1 := by
-        have := norm_c_sq_add_norm_s_sq h (hρ (k + j))
-        linarith
-      have hsq : zz ^ 2 ≤ (j : ℝ) + 1 := by
-        have hs := Real.sq_sqrt (by positivity : (0 : ℝ) ≤ (j : ℝ) + 1)
-        nlinarith [ih, hz0]
-      have hC : (a * zz + bb * w) ^ 2 ≤ (a ^ 2 + bb ^ 2) * (zz ^ 2 + w ^ 2) := by
-        nlinarith [sq_nonneg (a * w - bb * zz)]
-      rw [hab, one_mul] at hC
-      have hnn : 0 ≤ a * zz + bb * w := by positivity
-      have hkey : (a * zz + bb * w) ^ 2 ≤ ((j : ℝ) + 1) + 1 := by linarith
-      calc ζ u h (k + (j + 1)) ≤ a * zz + bb * w := equation_6_54 u h (k + j)
-        _ = Real.sqrt ((a * zz + bb * w) ^ 2) := (Real.sqrt_sq hnn).symm
-        _ ≤ Real.sqrt (((j : ℝ) + 1) + 1) := Real.sqrt_le_sqrt hkey
-        _ = Real.sqrt (((j + 1 : ℕ) : ℝ) + 1) := by push_cast; ring_nf
+    set a := ‖s h (k + j)‖ with ha
+    set bb := ‖c h (k + j)‖ with hb
+    set zz := ζ u h (k + j) with hzz
+    set w := ‖u (k + j + 1)‖ with hw
+    have hz0 : 0 ≤ zz := norm_nonneg _
+    have ha0 : 0 ≤ a := norm_nonneg _
+    have hb0 : 0 ≤ bb := norm_nonneg _
+    have hw0 : 0 ≤ w := norm_nonneg _
+    have hw1 : w ≤ 1 := hu _
+    have hw2 : w ^ 2 ≤ 1 := by nlinarith
+    have hab : a ^ 2 + bb ^ 2 = 1 := by
+      have := norm_c_sq_add_norm_s_sq h (hρ (k + j))
+      linarith
+    have hsq : zz ^ 2 ≤ (j : ℝ) + 1 := by
+      have hs := Real.sq_sqrt (by positivity : (0 : ℝ) ≤ (j : ℝ) + 1)
+      nlinarith [ih, hz0]
+    have hC : (a * zz + bb * w) ^ 2 ≤ (a ^ 2 + bb ^ 2) * (zz ^ 2 + w ^ 2) := by
+      nlinarith [sq_nonneg (a * w - bb * zz)]
+    rw [hab, one_mul] at hC
+    have hnn : 0 ≤ a * zz + bb * w := by positivity
+    have hkey : (a * zz + bb * w) ^ 2 ≤ ((j : ℝ) + 1) + 1 := by linarith
+    calc ζ u h (k + (j + 1)) ≤ a * zz + bb * w := equation_6_54 u h (k + j)
+      _ = Real.sqrt ((a * zz + bb * w) ^ 2) := (Real.sqrt_sq hnn).symm
+      _ ≤ Real.sqrt (((j : ℝ) + 1) + 1) := Real.sqrt_le_sqrt hkey
+      _ = Real.sqrt (((j + 1 : ℕ) : ℝ) + 1) := by push_cast; ring_nf
 
 /-- **P-6.25** in the book's indexing: `ζ_{m+1} ≤ √(m − k + 1)` for `m ≥ k`. -/
 theorem problem_6_25_le (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (hu : ∀ i, ‖u i‖ ≤ 1)
@@ -1402,7 +1401,6 @@ theorem equation_6_51 {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ : 𝔼} {u : ℕ
       ≤ ‖γ h β m‖ * Real.sqrt (((m - k : ℕ) : ℝ) + 1) :=
         mul_le_mul_of_nonneg_left hzz (norm_nonneg _)
     _ = Real.sqrt (((m - k : ℕ) : ℝ) + 1) * ‖γ h β m‖ := mul_comm _ _
-
 
 /-! ### Theorem 6.11: the Freund–Nachtigal bound -/
 
@@ -1491,8 +1489,8 @@ theorem dqgmres_eq_sum (x₀ : 𝔼) (u : ℕ → 𝔼) (h : ℕ → ℕ → �
   induction m with
   | zero => simp [dqgmres]
   | succ m ih =>
-      rw [dqgmres, ih, Fin.sum_univ_castSucc, add_assoc]
-      rfl
+    rw [dqgmres, ih, Fin.sum_univ_castSucc, add_assoc]
+    rfl
 
 /-! ### DQGMRES is QGMRES -/
 
@@ -1503,13 +1501,13 @@ private theorem rotated_of_col_lt {h : ℕ → ℕ → 𝕜} (hh : ∀ i j : ℕ
   induction M with
   | zero => intro hM; omega
   | succ M ih =>
-      intro hM i
-      rcases Nat.lt_or_ge j M with hjM | hjM
-      · rw [Krylov.rotated_succ_eq_of_lt h hh M j hjM i]
-        exact ih (by omega) i
-      · have hMj : M = j := by omega
-        subst hMj
-        rfl
+    intro hM i
+    rcases Nat.lt_or_ge j M with hjM | hjM
+    · rw [Krylov.rotated_succ_eq_of_lt h hh M j hjM i]
+      exact ih (by omega) i
+    · have hMj : M = j := by omega
+      subst hMj
+      rfl
 
 /-- `R_m i j` is the entry `Krylov.rotated h (j+1) i j` used by the DQGMRES recurrence. -/
 private theorem R_apply_eq_rotated_succ {h : ℕ → ℕ → 𝕜} (hh : ∀ i j : ℕ, j + 1 < i → h i j = 0)
@@ -1578,11 +1576,11 @@ theorem dqgmres_eq_qgmres {x₀ : 𝔼} {u : ℕ → 𝔼} {h : ℕ → ℕ → 
     _ = ∑ j : Fin m, qgmresY h β m j • u (j : ℕ) :=
         Finset.sum_congr rfl fun j _ => by rw [key j]
 
-end General
+end QGMRES
 
-/-! ### §6.5.7: relations between FOM and GMRES -/
+/-! ## §6.5.7: relations between FOM and GMRES -/
 
-section General
+section Relations
 
 variable {n : ℕ} {𝕜 : Type*} [RCLike 𝕜]
 
@@ -1691,7 +1689,9 @@ theorem fomDefined_zero : FOMDefined A b x₀ 0 := by
 
 open scoped Classical in
 /-- Proposition 6.15: `ρ^F_{m*}`, the smallest FOM residual norm reached in the first `m` steps,
-the steps with a singular `H_i` being skipped. -/
+the steps with a singular `H_i` being skipped. The minimum runs over the `m + 1` indices
+`0, …, m`, as the sum of (6.66) does; step `0` contributes the initial residual norm, which the
+book writes `ρ^F_0 = ρ^G_0`. -/
 noncomputable def ρFmin (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (m : ℕ) : ℝ :=
   ((Finset.range (m + 1)).filter (FOMDefined A b x₀)).inf'
     ⟨0, Finset.mem_filter.2 ⟨Finset.mem_range.2 (Nat.succ_pos m), fomDefined_zero A b x₀⟩⟩
@@ -1848,11 +1848,11 @@ theorem le_ρFmin {m : ℕ} {r : ℝ} (h : ∀ i ≤ m, FOMDefined A b x₀ i �
   obtain ⟨hi1, hi2⟩ := Finset.mem_filter.1 hi
   exact h i (by have := Finset.mem_range.1 hi1; omega) hi2
 
-end General
+end Relations
 
 /-! ### The numbered results of §6.5.7, in the book's real setting -/
 
-section BookResults
+section BookResultsRelations
 
 variable {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : EuclideanSpace ℝ (Fin n))
 
@@ -2014,7 +2014,12 @@ theorem corollary_6_14 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) (hH : ∀ 
 
 /-! #### Proposition 6.15, (6.68) -/
 
-/-- **Proposition 6.15**, (6.68): `ρ_m^G ≤ ρ^F_{m*} ≤ √(m+1) ρ_m^G`. -/
+/-- **Proposition 6.15**, (6.68): `ρ_m^G ≤ ρ^F_{m*} ≤ √(m+1) ρ_m^G`.
+
+The book prints `√m` in (6.68), but the inequality displayed two lines above it —
+`1/(ρ_m^G)² = ∑_{i=0}^m 1/(ρ_i^F)² ≤ (m+1)/(ρ^F_{m*})²`, which is what (6.66) gives — yields
+`√(m+1)`, and the sum really does run over the `m + 1` indices `0, …, m`, `ρ^F_0` being the
+initial residual norm. The constant here is the one the book's own derivation supports. -/
 theorem proposition_6_15 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀))
     (hH : ∀ i ≤ m, FOMDefined A b x₀ i) :
     ρG A b x₀ m ≤ ρFmin A b x₀ m ∧
@@ -2304,9 +2309,9 @@ theorem lemma_6_16 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀))
     (β A b x₀) (givensRho_ne_zero_of_fomDefined A b x₀ hm hH)
     (isUnit_Rtilde_of_fomDefined A b x₀ hm hH) _ _ hy hyp
 
-end BookResults
+end BookResultsRelations
 
-/-! ### §6.5.8: residual smoothing -/
+/-! ## §6.5.8: residual smoothing -/
 
 section Smoothing
 
@@ -2330,9 +2335,9 @@ theorem smoothEta_eq (s r : 𝔼) : smoothEta s r = Krylov.smoothingCoeff s r :=
 noncomputable def mrs (xO rO : ℕ → 𝔼) : ℕ → 𝔼 × 𝔼
   | 0 => (xO 0, rO 0)
   | m + 1 =>
-      let p := mrs xO rO m
-      let η := smoothEta p.2 (rO (m + 1))
-      (p.1 + η • (xO (m + 1) - p.1), p.2 + η • (rO (m + 1) - p.2))
+    let p := mrs xO rO m
+    let η := smoothEta p.2 (rO (m + 1))
+    (p.1 + η • (xO (m + 1) - p.1), p.2 + η • (rO (m + 1) - p.2))
 
 /-- The smoothed approximations `x^S_m` of Algorithm 6.14. -/
 noncomputable abbrev mrsX (xO rO : ℕ → 𝔼) (m : ℕ) : 𝔼 := (mrs xO rO m).1
@@ -2367,8 +2372,8 @@ noncomputable def qmrsEta (rO : ℕ → 𝔼) (m : ℕ) : ℝ :=
 noncomputable def qmrs (xO rO : ℕ → 𝔼) : ℕ → 𝔼 × 𝔼
   | 0 => (xO 0, rO 0)
   | m + 1 =>
-      let p := qmrs xO rO m
-      (p.1 + qmrsEta rO m • (xO (m + 1) - p.1), p.2 + qmrsEta rO m • (rO (m + 1) - p.2))
+    let p := qmrs xO rO m
+    (p.1 + qmrsEta rO m • (xO (m + 1) - p.1), p.2 + qmrsEta rO m • (rO (m + 1) - p.2))
 
 theorem qmrs_zero (xO rO : ℕ → 𝔼) : qmrs xO rO 0 = (xO 0, rO 0) := rfl
 
@@ -2631,7 +2636,12 @@ theorem equation_6_78 (xO rO : ℕ → 𝔼) {m : ℕ} (hr : ∀ j ≤ m + 1, rO
   rw [h1, hq, ← h2, hτ]
 
 /-- **(6.79)**: the smoothed residual is the weighted average
-`r^S_m = (∑_{j ≤ m} r^O_j/ρ_j²)/(∑_{j ≤ m} 1/ρ_j²)`. -/
+`r^S_m = (∑_{j ≤ m} r^O_j/ρ_j²)/(∑_{j ≤ m} 1/ρ_j²)`.
+
+The book prints both sums of (6.79) from `j = 1`, but the identity it combines with (6.78) to get
+them — displayed just above as `1/τ_j² = ∑_{i=0}^j 1/ρ_i²` — starts at `0`, and so does
+Algorithm 6.14, whose line 1 sets `r^S_0 = r^O_0`. At `m = 1` the printed range would give
+`r^S_1 = r^O_1`. The sums here therefore run over `0, …, m`. -/
 theorem equation_6_79 (xO rO : ℕ → 𝔼) {m : ℕ} (hr : ∀ j ≤ m, rO j ≠ 0)
     (horth : ∀ j < m, inner ℝ (rO (j + 1)) (mrsR xO rO j) = 0) :
     mrsR xO rO m = (∑ j ∈ Finset.range (m + 1), 1 / ‖rO j‖ ^ 2)⁻¹ •

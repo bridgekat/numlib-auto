@@ -69,6 +69,7 @@ theorem β_eq_norm_r₀ : (β A b x₀ : 𝕜) = (‖r₀ A b x₀‖ : 𝕜) :=
 
 theorem v₁_def : v₁ A b x₀ = (‖b - op A x₀‖ : 𝕜)⁻¹ • (b - op A x₀) := rfl
 
+/-- The number of Arnoldi steps actually performed never exceeds the grade of `v_1`. -/
 theorem mEff_le (m : ℕ) : mEff A b x₀ m ≤ grade A (v₁ A b x₀) := min_le_right _ _
 
 /-- `‖v_1‖ = 1` unless `x_0` already solves the system. -/
@@ -92,6 +93,7 @@ theorem arnoldiCGS_v₁_apply (j : ℕ) :
     arnoldiCGS A (v₁ A b x₀) j = Arnoldi.vec (op A) (r₀ A b x₀) j :=
   arnoldiCGS_eq_vec_of_vec_zero A _ (vec_zero_eq_v₁ A b x₀) j
 
+/-- `arnoldiCGS_v₁_apply` as an equality of families. -/
 theorem arnoldiCGS_v₁ : arnoldiCGS A (v₁ A b x₀) = Arnoldi.vec (op A) (r₀ A b x₀) :=
   funext (arnoldiCGS_v₁_apply A b x₀)
 
@@ -101,14 +103,17 @@ theorem arnoldiCoeff_v₁_apply (i j : ℕ) :
   rw [arnoldiCoeff, arnoldiCGS_v₁_apply, arnoldiCGS_v₁_apply]
   rfl
 
+/-- `arnoldiCoeff_v₁_apply` as an equality of coefficient functions. -/
 theorem arnoldiCoeff_v₁ : arnoldiCoeff A (v₁ A b x₀) = Arnoldi.coeff (op A) (r₀ A b x₀) :=
   funext fun i => funext fun j => arnoldiCoeff_v₁_apply A b x₀ i j
 
+/-- The book's `H̄_m` built from `v_1` is the backbone Arnoldi Hessenberg matrix of `r_0`. -/
 theorem Hbar_v₁ (m : ℕ) : Hbar A (v₁ A b x₀) m = Arnoldi.hessenberg (op A) (r₀ A b x₀) m := by
   ext i j
   rw [Hbar_apply, arnoldiCoeff_v₁]
   rfl
 
+/-- The book's `H_m` built from `v_1` is the backbone square Arnoldi matrix of `r_0`. -/
 theorem H_v₁ (m : ℕ) : H A (v₁ A b x₀) m = Arnoldi.hessenbergSq (op A) (r₀ A b x₀) m := by
   ext i j
   rw [H_apply, arnoldiCoeff_v₁]
@@ -127,6 +132,14 @@ theorem grade_v₁ : grade A (v₁ A b x₀) = Krylov.grade (op A) (r₀ A b x�
   · rw [v₁, h, smul_zero]
     exact grade_eq A 0
   · rw [v₁, grade_normalize A h, grade_eq]
+
+/-- The book's `𝒦_m(A, v_1)` is the backbone Krylov subspace of `r_0`: the two starting vectors
+are proportional. -/
+theorem krylov_v₁ (m : ℕ) : krylov A (v₁ A b x₀) m = Krylov.subspace (op A) (r₀ A b x₀) m := by
+  rcases eq_or_ne (r₀ A b x₀) 0 with h | h
+  · rw [v₁, h, smul_zero, krylov_eq]
+  · have hc : ((‖r₀ A b x₀‖ : 𝕜))⁻¹ ≠ 0 := inv_ne_zero (by simpa using norm_ne_zero_iff.2 h)
+    rw [v₁, krylov_smul A _ hc, krylov_eq]
 
 end General
 
