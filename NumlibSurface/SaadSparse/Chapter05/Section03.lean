@@ -110,9 +110,9 @@ theorem sdStep_min (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b) (x 
 
 /-- Saad, Algorithm 5.3: each minimal-residual step minimizes the residual norm along the
 residual line. -/
-theorem mrStep_min (hA : A.IsPositiveReal) (b x y : E n)
+theorem mrStep_min (b x y : E n)
     (hy : y - x ∈ (ℝ ∙ (b - (A ⬝ x)))) : R_A A b (mrStep A b x) ≤ R_A A b y :=
-  (Projection.minResStep_isMinRes x ((Matrix.isPositiveReal_iff_isCoercive A).mp hA)).min y hy
+  (Projection.minResStep_isMinRes x).min y hy
 
 /-! ### Lemma 5.8 (Kantorovich) -/
 

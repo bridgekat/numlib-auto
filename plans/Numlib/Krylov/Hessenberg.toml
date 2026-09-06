@@ -110,6 +110,12 @@ id = "Krylov.rotated_eq_of_le"
 id = "Krylov.rotated_eq_zero_of_lt"
 
 [[node]]
+id = "Krylov.rotated_eq_zero_of_lt_of_lt_col"
+
+[[node]]
+id = "Krylov.rotated_eq_zero_of_succ_lt_col"
+
+[[node]]
 id = "Krylov.rotated_last_row"
 
 [[node]]

@@ -627,6 +627,39 @@ theorem rotated_eq_zero_of_lt (hh : ∀ i j, j + 1 < i → h i j = 0) (k i j : �
               rotated_eq_of_le h j i j (by omega)]
             exact hh i j (by omega)
 
+/-- When `h` itself vanishes strictly above the diagonal — a lower bidiagonal coefficient array, for
+instance — column `j` stays zero above the diagonal until rotation `j` reaches it: `rotated h k i j
+= 0` for `i < j` and `k < j`.  Rotation `k` combines rows `k` and `k + 1`, and while `k + 1 ≤ j`
+both of them are still zero in column `j`. -/
+theorem rotated_eq_zero_of_lt_of_lt_col (hh : ∀ i j, i < j → h i j = 0) (k i j : ℕ) (hk : k < j)
+    (hij : i < j) : rotated h k i j = 0 := by
+  induction k generalizing i with
+  | zero => exact hh i j hij
+  | succ k ih =>
+      rw [rotated_succ_apply]
+      split_ifs
+      · rw [ih k (by omega) (by omega), ih (k + 1) (by omega) (by omega), mul_zero, mul_zero,
+          add_zero]
+      · rw [ih k (by omega) (by omega), ih (k + 1) (by omega) (by omega), mul_zero, mul_zero,
+          add_zero]
+      · exact ih i (by omega) hij
+
+/-- Under the same hypothesis, no rotation ever fills column `j` *two* rows or more above the
+diagonal: `rotated h k i j = 0` for `i + 1 < j` and every `k`.  Rotation `j - 1` is the first to
+touch the entry `(j - 1, j)`, and every earlier rotation combines two rows that are still zero. -/
+theorem rotated_eq_zero_of_succ_lt_col (hh : ∀ i j, i < j → h i j = 0) (k i j : ℕ)
+    (hij : i + 1 < j) : rotated h k i j = 0 := by
+  induction k generalizing i with
+  | zero => exact hh i j (by omega)
+  | succ k ih =>
+      rw [rotated_succ_apply]
+      split_ifs
+      · rw [ih k (by omega), rotated_eq_of_le h k (k + 1) j le_rfl, hh (k + 1) j (by omega),
+          mul_zero, mul_zero, add_zero]
+      · rw [ih k (by omega), rotated_eq_of_le h k (k + 1) j le_rfl, hh (k + 1) j (by omega),
+          mul_zero, mul_zero, add_zero]
+      · exact ih i hij
+
 /-- Columns `j < k` are not changed by rotation `k`, for Hessenberg `h`. -/
 theorem rotated_succ_eq_of_lt (hh : ∀ i j, j + 1 < i → h i j = 0) (k j : ℕ) (hj : j < k) (i : ℕ) :
     rotated h (k + 1) i j = rotated h k i j := by

@@ -377,6 +377,39 @@ theorem inner_apply_eq (hB : ∀ x y, inner 𝕜 (A x) y = inner 𝕜 x (B y)) (
     inner 𝕜 x (A y) = inner 𝕜 (B x) y := by
   rw [← inner_conj_symm x (A y), hB y x, inner_conj_symm (B x) y]
 
+/-- Moving a power of `A` across the inner product: `B^k` is the adjoint of `A^k`. -/
+theorem inner_pow_apply_eq (hB : ∀ x y, inner 𝕜 (A x) y = inner 𝕜 x (B y)) (k : ℕ) (x y : E) :
+    inner 𝕜 ((B ^ k) x) y = inner 𝕜 x ((A ^ k) y) := by
+  induction k generalizing x with
+  | zero => simp
+  | succ k ih =>
+    have hB' : (B ^ (k + 1)) x = (B ^ k) (B x) := by rw [pow_succ]; rfl
+    have hA' : (A ^ (k + 1)) y = A ((A ^ k) y) := by rw [pow_succ']; rfl
+    rw [hB', ih (B x), ← inner_apply_eq hB, hA']
+
+/-- Moving a *polynomial* in `A` across the inner product: the adjoint of `p(A)` is `p̄(B)`, the
+polynomial with conjugated coefficients evaluated at the adjoint `B`.  Over `ℝ` it says that the
+transpose of `p(A)` is `p(Aᵀ)`; it is what turns a bilinear expression in `p(A) v` and `q(B) w`
+into one in `(q̄ p)(A) v` and `w`. -/
+theorem inner_aeval_map_eq (hB : ∀ x y, inner 𝕜 (A x) y = inner 𝕜 x (B y)) (p : Polynomial 𝕜)
+    (x y : E) :
+    inner 𝕜 (Polynomial.aeval B (p.map (starRingEnd 𝕜)) x)
+        y = inner 𝕜 x (Polynomial.aeval A p y) := by
+  refine Polynomial.induction_on' p ?_ ?_
+  · intro q r hq hr
+    simp only [Polynomial.map_add, map_add, LinearMap.add_apply, inner_add_left, inner_add_right,
+      hq, hr]
+  · intro k a
+    have hB' : Polynomial.aeval B (Polynomial.monomial k (starRingEnd 𝕜 a)) x
+        = starRingEnd 𝕜 a • (B ^ k) x := by
+      rw [Polynomial.aeval_monomial]
+      simp [Module.algebraMap_end_apply]
+    have hA' : Polynomial.aeval A (Polynomial.monomial k a) y = a • (A ^ k) y := by
+      rw [Polynomial.aeval_monomial]
+      simp [Module.algebraMap_end_apply]
+    rw [Polynomial.map_monomial, hB', hA', inner_smul_left, inner_smul_right, RCLike.conj_conj,
+      inner_pow_apply_eq hB]
+
 /-- The biorthogonality relation up to step `m`, the invariant the induction carries. -/
 private def Biorth (A B : E →ₗ[𝕜] E) (v₁ w₁ : E) (m : ℕ) : Prop :=
   ∀ i ≤ m, ∀ j ≤ m, inner 𝕜 (dualVec A B v₁ w₁ i) (vec A B v₁ w₁ j) = if i = j then 1 else 0
@@ -1081,6 +1114,62 @@ private theorem inner_eq_zero_of_mem_span {m : ℕ} (h : NoBreakdown A B b x₀ 
   | zero => simp
   | add y z _ _ hy hz => rw [inner_add_left, hy, hz, add_zero]
   | smul c y _ hy => rw [inner_smul_left, hy, mul_zero]
+
+/-- The BCG residual is orthogonal to the whole shadow Krylov space, `⟪u, r_m⟫ = 0` for every `u ∈
+𝒦_m(B, r*₀)`.  This is the biorthogonality of [saad2003iterative], Prop 7.2 in the form the
+polynomial arguments of the transpose-free variants use it: the shadow residuals span that
+subspace, so nothing beyond `⟪r*_i, r_m⟫ = 0` for `i < m` is involved. -/
+theorem inner_residual_eq_zero_of_mem_subspace {m : ℕ} (h : NoBreakdown A B b x₀ rs₀ m) {u : E}
+    (hu : u ∈ Krylov.subspace B rs₀ m) : inner 𝕜 u (residual A B b x₀ rs₀ m) = 0 :=
+  inner_eq_zero_of_mem_span h (subspace_le_span_dualResidual h hu)
+
+/-- The shadow residuals lie in the span of the shadow directions: `r*_0 = p*_0` and `r*_{k+1} =
+p*_{k+1} - conj β_k p*_k`. -/
+private theorem dualResidual_mem_span_dualDirection (k : ℕ) :
+    dualResidual A B b x₀ rs₀ k ∈
+      Submodule.span 𝕜 (dualDirection A B b x₀ rs₀ '' Set.Iio (k + 1)) := by
+  cases k with
+  | zero => exact Submodule.subset_span ⟨0, by simp, rfl⟩
+  | succ j =>
+    have hrs : dualResidual A B b x₀ rs₀ (j + 1) =
+        dualDirection A B b x₀ rs₀ (j + 1) -
+          starRingEnd 𝕜 (beta A B b x₀ rs₀ j) • dualDirection A B b x₀ rs₀ j := by
+      rw [dualDirection_succ]; abel
+    rw [hrs]
+    exact Submodule.sub_mem _ (Submodule.subset_span ⟨j + 1, by simp, rfl⟩)
+      (Submodule.smul_mem _ _ (Submodule.subset_span ⟨j, by simp, rfl⟩))
+
+/-- The shadow Krylov space is spanned by the shadow directions as well: the two families are
+related by a triangular change of basis. -/
+theorem subspace_le_span_dualDirection {m : ℕ} (h : NoBreakdown A B b x₀ rs₀ m) :
+    Krylov.subspace B rs₀ m ≤ Submodule.span 𝕜 (dualDirection A B b x₀ rs₀ '' Set.Iio m) := by
+  refine (subspace_le_span_dualResidual h).trans ?_
+  rw [Submodule.span_le]
+  rintro _ ⟨j, hj, rfl⟩
+  have hj' : j < m := hj
+  exact Submodule.span_mono (Set.image_mono (Set.Iio_subset_Iio (by omega)))
+    (dualResidual_mem_span_dualDirection j)
+
+private theorem inner_apply_direction_eq_zero_of_mem_span {m : ℕ}
+    (h : NoBreakdown A B b x₀ rs₀ m) {u : E}
+    (hu : u ∈ Submodule.span 𝕜 (dualDirection A B b x₀ rs₀ '' Set.Iio m)) :
+    inner 𝕜 u (A (direction A B b x₀ rs₀ m)) = 0 := by
+  induction hu using Submodule.span_induction with
+  | mem y hy =>
+    obtain ⟨j, hj, rfl⟩ := hy
+    have hj' : j < m := hj
+    exact inner_dualDirection_apply_direction_eq_zero h le_rfl (le_of_lt hj') (by omega)
+  | zero => simp
+  | add y z _ _ hy hz => rw [inner_add_left, hy, hz, add_zero]
+  | smul c y _ hy => rw [inner_smul_left, hy, mul_zero]
+
+/-- `A p_m` is orthogonal to the whole shadow Krylov space, `⟪u, A p_m⟫ = 0` for every `u ∈ 𝒦_m(B,
+r*₀)`: the `A`-biconjugacy of [saad2003iterative], Prop 7.2 against the subspace rather than against
+the individual shadow directions. -/
+theorem inner_apply_direction_eq_zero_of_mem_subspace {m : ℕ} (h : NoBreakdown A B b x₀ rs₀ m)
+    {u : E} (hu : u ∈ Krylov.subspace B rs₀ m) :
+    inner 𝕜 u (A (direction A B b x₀ rs₀ m)) = 0 :=
+  inner_apply_direction_eq_zero_of_mem_span h (subspace_le_span_dualDirection h hu)
 
 /-- [saad2003iterative], Prop 7.2: the BCG iterate is the Petrov–Galerkin iterate with `K = 𝒦_m(A,
 r₀)` and `L = 𝒦_m(Aᴴ, r*₀)`. -/

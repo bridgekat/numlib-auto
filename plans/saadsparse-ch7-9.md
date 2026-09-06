@@ -110,8 +110,15 @@ state it; `Krylov.HessenbergRelation₂` can, and then (7.76) says the CGS itera
 iterates, TFQMR is its quasi-minimal-residual iterate, and (7.83) `‖b - A x_m‖ ≤ √(m+1) τ_m` is
 `Krylov.IsQuasiMinResIterate.norm_residual_le` with `C = √(m+1)`. The hard declaration of the
 chapter is `tfqmr_isQuasiMinResIterate`: the `θ, c, τ, η, d` recurrence of Algorithm 7.8 solves the
-least-squares problem. It is DQGMRES with `k = 1` on a bidiagonal matrix, so
-`SaadSparse.Chapter06.dqgmres_eq_qgmres` does the work once (7.70) is available.
+least-squares problem. It is DQGMRES with `k = 1` on a bidiagonal matrix. That is *not*
+`SaadSparse.Chapter06.dqgmres_eq_qgmres`, which assumes `m ≤ k` — no truncation at all; what makes
+`k = 1` lossless here is that a coefficient array vanishing above the diagonal keeps every column
+zero two rows or more above it, at every stage of the rotations
+(`Krylov.rotated_eq_zero_of_succ_lt_col`), so the terms the truncation drops are zero anyway. The
+back-substitution argument of `sum_R_smul_dqgmresP` is then repeated for `k = 1` in the surface
+file. The other half is the rotations themselves: `γ_m` is the book's `τ_m` times a unimodular
+factor, which cancels in `η_{m+1} = c_{m+1}² α_m = g_m/ρ_m`, so the book's *real* recurrence for
+`θ, c, τ` is correct over `ℂ` as it stands.
 
 ### 3.3 Chapter 8 is recognition, not construction
 

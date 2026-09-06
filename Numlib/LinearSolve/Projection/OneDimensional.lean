@@ -211,20 +211,24 @@ theorem steepestDescentStep_isGalerkin (x : E) (hA : A.IsCoercive) :
 
 /-- The minimal residual iteration deserves its name: its step minimizes `‖b - A y‖` over the
 residual line `y ∈ x + span {r}`, `r = b - A x`.  Taking `L = A K` turns the minimization into the
-one-dimensional step, and its nondegeneracy `⟪A r, A r⟫ ≠ 0` is injectivity of a coercive `A`. -/
-theorem minResStep_isMinRes (x : E) (hA : A.IsCoercive) :
+one-dimensional step, whose nondegeneracy is `A r ≠ 0`; where that fails every point of the line
+has the same residual `r`, and the step, which does nothing, minimizes trivially.  So no hypothesis
+on `A` is needed. -/
+theorem minResStep_isMinRes (x : E) :
     IsMinRes A b x (𝕜 ∙ (b - A x)) (minResStep A b x) := by
   have hmap : (𝕜 ∙ (b - A x)).map A = 𝕜 ∙ A (b - A x) := by
     rw [Submodule.map_span, Set.image_singleton]
-  rcases eq_or_ne (b - A x) 0 with h0 | h0
-  · rw [minResStep, step1_of_residual_eq_zero h0 rfl]
-    refine ⟨by simp, fun y _ => ?_⟩
-    rw [h0, norm_zero]
-    exact norm_nonneg _
+  rcases eq_or_ne (A (b - A x)) 0 with h0 | h0
+  · have hstep : minResStep A b x = x := by
+      rw [minResStep, step1, h0, inner_zero_left, inner_zero_left, zero_div, zero_smul, add_zero]
+    refine ⟨by rw [hstep, sub_self]; exact Submodule.zero_mem _, fun y hy => ?_⟩
+    obtain ⟨c, hc⟩ := Submodule.mem_span_singleton.1 hy
+    have hy' : y = x + c • (b - A x) := by rw [hc]; abel
+    rw [hstep, hy', map_add, map_smul, h0, smul_zero, add_zero]
   · refine IsMinRes.iff_isPetrovGalerkin.2 ?_
     rw [hmap]
-    refine step1_isPetrovGalerkin (b - A x) (A (b - A x)) x fun hcon => ?_
-    exact h0 (hA.injective (by rw [map_zero]; exact inner_self_eq_zero.1 hcon))
+    exact step1_isPetrovGalerkin (b - A x) (A (b - A x)) x fun hcon =>
+      h0 (inner_self_eq_zero.1 hcon)
 
 /-- Kantorovich's inequality ([saad2003iterative], Lemma 5.8): for symmetric coercive `A` with
 spectrum in `[λmin, λmax]`, `re⟪A x, x⟫ · re⟪A⁻¹ x, x⟫ ≤ (λmax + λmin)² / (4 λmax λmin) ‖x‖⁴`. -/
@@ -392,8 +396,7 @@ theorem norm_residual_minResStep_le {A : E →L[𝕜] E} {c : ℝ} (hc : 0 < c)
     (hA : (A : E →ₗ[𝕜] E).IsCoerciveWith c) (b x : E) :
     ‖b - A (minResStep (A : E →ₗ[𝕜] E) b x)‖ ≤
       Real.sqrt (1 - c ^ 2 / ‖A‖ ^ 2) * ‖b - A x‖ := by
-  have hcoer : (A : E →ₗ[𝕜] E).IsCoercive := ⟨c, hc, hA⟩
-  have hmin := minResStep_isMinRes (A := (A : E →ₗ[𝕜] E)) (b := b) x hcoer
+  have hmin := minResStep_isMinRes (A := (A : E →ₗ[𝕜] E)) (b := b) x
   set θ : ℝ := c / ‖A‖ ^ 2 with hθ
   have hθnn : 0 ≤ θ := by positivity
   have hstep := hmin.min (x + (θ : 𝕜) • (b - A x))

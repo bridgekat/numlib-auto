@@ -20,10 +20,16 @@ id = "BCG.dualDirection"
 id = "BCG.dualResidual"
 
 [[node]]
+id = "BCG.inner_apply_direction_eq_zero_of_mem_subspace"
+
+[[node]]
 id = "BCG.inner_dualDirection_apply_direction_eq_zero"
 
 [[node]]
 id = "BCG.inner_residual_dualResidual_eq_zero"
+
+[[node]]
+id = "BCG.inner_residual_eq_zero_of_mem_subspace"
 
 [[node]]
 id = "BCG.isPetrovGalerkin"
@@ -42,6 +48,9 @@ id = "BCG.residual_eq"
 
 [[node]]
 id = "BCG.step"
+
+[[node]]
+id = "BCG.subspace_le_span_dualDirection"
 
 [[node]]
 id = "BCG.subspace_le_span_dualResidual"
@@ -95,6 +104,9 @@ id = "BiLanczos.dualVec_succ"
 id = "BiLanczos.hessenbergRelation"
 
 [[node]]
+id = "BiLanczos.inner_aeval_map_eq"
+
+[[node]]
 id = "BiLanczos.inner_apply_eq"
 
 [[node]]
@@ -105,6 +117,9 @@ id = "BiLanczos.inner_dualVec_vec"
 
 [[node]]
 id = "BiLanczos.inner_dualVec_vec_succ"
+
+[[node]]
+id = "BiLanczos.inner_pow_apply_eq"
 
 [[node]]
 id = "BiLanczos.inner_vec_dualVec"
