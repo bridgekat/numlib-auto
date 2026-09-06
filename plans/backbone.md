@@ -566,7 +566,11 @@ Saad §5.4: additive/multiplicative projection procedures, residual `r_{k+1} = (
 with `P_i` the projector onto `A K_i` orthogonal to `K_i`; block Jacobi/GS are instances. Plan:
 `Projection/Additive.toml` (the step, the projectors, the least-squares option and the exactness
 criterion) with the block instances in `Stationary/Block.toml`; the exact one-step identities of
-Saad (5.18) and (5.20) are open nodes of `Projection/OneDimensional.toml`.
+Saad (5.18) and (5.20) are open nodes of `Projection/OneDimensional.toml`. The trial and test
+spaces of the block instances are the coordinate subspaces of `Projection/Coordinate.lean`
+(`EuclideanSpace.coordSubspace`, `EuclideanSpace.blockSubspace`), whose only content is that
+membership is "vanishing off the index set" and membership in the orthogonal complement is
+"vanishing on it".
 
 ---
 
@@ -677,6 +681,20 @@ proved for `k+1` from `k`). Steihaug's monotonicity uses `⟪r_i, p_j⟫ = ‖r_
 `⟪p_i, p_j⟫ ≥ 0` — a local argument, no termination needed. The Lanczos coefficients in terms of
 the CG coefficients (Saad (6.102)–(6.103)) are surface corollaries of `arnoldi_vec_eq`; the
 D-Lanczos / `LDLᵀ` derivation is surface (Saad Alg 6.17, Choi Table 2.6).
+
+### 3.7b `Krylov/CGW.lean` (L1, real field)
+Serves Saad §9.6 (Concus–Golub–Widlund). The conjugate gradient recurrence with the sign of `β`
+reversed, for an operator `B` with `B + B* = 2` (`LinearMap.IsShiftedSkewAdjoint`, that is `B = 1 -
+S` with `S` skew-adjoint), which is what `M⁻¹ A` is in the `M`-inner product when `M` is the
+Hermitian part of `A`. `CGW.isGalerkinIterate` is the point: the recurrence is a projection method
+although `B` is not self-adjoint. The invariant is the CG one with the conjugacy of the directions
+one-sided, `⟪p_i, B p_j⟫ = 0` only for `i < j`, and the reversed sign of `β` is exactly what makes
+the `i = j` step cancel.
+
+Over `ℝ` only, and that is not a limitation of the proof: over `ℂ` the step length
+`α_j = ⟪r_j, r_j⟫/⟪p_j, B p_j⟫` is genuinely complex, because the quadratic form of a skew-adjoint
+operator is purely imaginary rather than zero, and `⟪p_0, B p_1⟫ = ‖r_1‖²(conj α_0⁻¹ - α_0⁻¹)` is
+then nonzero, so the iterate is not Galerkin from step two on.
 
 ### 3.8 `Krylov/CR.lean` (L1; sign results L3)
 Serves Saad §6.8–6.9 (Alg 6.20, Lemma 6.21), Fong–Saunders Thm 2.1–2.5, Choi Table 2.12.

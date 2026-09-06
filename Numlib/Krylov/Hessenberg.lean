@@ -23,6 +23,15 @@ import Numlib.Krylov.Relations
   Because the rotations are computed from the infinite coefficient function, prefix stability across
   `m` is automatic.
 
+The residual itself, not only its norm, is read off the rotations: as long as no rotation has
+degenerated, `r^G_m = γ_m ∑_i conj (Q_m)_{m,i} v_i`
+(`Krylov.IsMinResIterate.residual_eq_gamma_smul_sum`), because the rotated residual is carried by
+its last entry alone (`Krylov.givensQ_mulVec_firstVec_sub_mulVec`) and undoing the unitary `Q_m`
+multiplies that entry by the conjugate of its last row. That last row steps by
+`Krylov.givensQ_last_row_castSucc` and `Krylov.givensQ_last_row_last`, which is what turns the
+identity into a recurrence between consecutive residuals ([choi2006iterative] Lemma 2.18,
+`Lanczos.residual_minRes_succ_eq` of `Numlib/Krylov/Singular`).
+
 Here `r^G_m` is the residual of the minimal-residual (GMRES) iterate and `r^F_m` that of the
 Galerkin (FOM) iterate, both over `x₀ + 𝒦_m`.
 -/
@@ -961,6 +970,50 @@ theorem givensQAux_apply_of_lt (n m : ℕ) (i j : Fin (m + 1)) (hj : n < (j : �
         · intro hc; exact absurd (Finset.mem_univ _) hc
   exact key n hj i
 
+/-- **The last row of the accumulated rotation, one step on** (off the diagonal): applying `Ω_m`
+scales the last row of `Q_m` by `-s_m`.  With `Krylov.givensQ_last_row_last` this is the whole of
+the recurrence the residual identity of a minimal-residual method needs. -/
+theorem givensQ_last_row_castSucc (m : ℕ) (j : Fin (m + 1)) :
+    givensQ h (m + 1) (Fin.last (m + 1)) j.castSucc
+      = -givensS h m * givensQ h m (Fin.last m) j := by
+  rw [givensQ_eq_givensQAux, givensQAux_succ, Matrix.mul_apply, Fin.sum_univ_castSucc]
+  have hlastrow : givensQAux h m (m + 1) (Fin.last (m + 1)) j.castSucc = 0 := by
+    rw [givensQAux_apply_of_row_lt h (m + 1) j.castSucc m (Fin.last (m + 1))
+      (by rw [Fin.val_last]; omega)]
+    refine ite_eq_right fun hc => ?_
+    have := j.isLt
+    have h1 : ((Fin.last (m + 1) : Fin (m + 2)) : ℕ) = ((j.castSucc : Fin (m + 2)) : ℕ) := by
+      rw [hc]
+    rw [Fin.val_last, Fin.val_castSucc] at h1
+    omega
+  rw [hlastrow, mul_zero, add_zero]
+  rw [Finset.sum_eq_single (Fin.last m)]
+  · rw [givensMatrix_last_row h m ((Fin.last m : Fin (m + 1)).castSucc),
+      ite_eq_left (by rw [Fin.val_castSucc, Fin.val_last]),
+      givensQAux_castSucc h m m le_rfl (Fin.last m) j, givensQ_eq_givensQAux]
+  · intro p _ hp
+    have hpm : (p : ℕ) ≠ m := fun hc => hp (Fin.ext (by rw [hc, Fin.val_last]))
+    rw [givensMatrix_last_row h m (p.castSucc), Fin.val_castSucc, ite_eq_right hpm,
+      ite_eq_right (by have := p.isLt; omega), zero_mul]
+  · intro hc
+    exact absurd (Finset.mem_univ _) hc
+
+/-- **The last row of the accumulated rotation, one step on** (on the diagonal): the new corner
+entry is `c_m`, because `Q^{(m)}_{m+1}` has not touched the last column. -/
+theorem givensQ_last_row_last (m : ℕ) :
+    givensQ h (m + 1) (Fin.last (m + 1)) (Fin.last (m + 1)) = givensC h m := by
+  rw [givensQ_eq_givensQAux, givensQAux_succ, Matrix.mul_apply,
+    Finset.sum_eq_single (Fin.last (m + 1))]
+  · rw [givensQAux_apply_of_lt h m (m + 1) (Fin.last (m + 1)) (Fin.last (m + 1))
+      (by rw [Fin.val_last]; omega), ite_eq_left rfl, mul_one,
+      givensMatrix_last_row h m (Fin.last (m + 1)),
+      ite_eq_right (by rw [Fin.val_last]; omega), ite_eq_left (by rw [Fin.val_last])]
+  · intro p _ hp
+    rw [givensQAux_apply_of_lt h m (m + 1) p (Fin.last (m + 1))
+      (by rw [Fin.val_last]; omega), ite_eq_right hp, mul_zero]
+  · intro hc
+    exact absurd (Finset.mem_univ _) hc
+
 /-- The right-hand side after `n` rotations: `(g_0, …, g_{n-1}, γ_n, 0, …)`. -/
 noncomputable def gvecTrunc (β : 𝕜) (n i : ℕ) : 𝕜 :=
   if i < n then gvec h β i else if i = n then gamma h β n else 0
@@ -1560,6 +1613,82 @@ theorem IsMinResIterate.exists_mulVec_rotated_eq {m : ℕ} (hm : m ≤ grade A (
   by_cases hρ : ∀ k < m, givensRho (Arnoldi.coeff A (b - A x₀)) k ≠ 0
   · exact (minres_rotated_of_givensRho_ne_zero hm hρ hx).2
   · exact minres_rotated_of_breakdown hm hρ hx
+
+omit [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))] in
+/-- The rotated residual of a minimal-residual iterate is carried by its last entry alone:
+`Q_m (β e₁ - H̄_m y) = γ_m e_{m+1}`.  The first `m` entries vanish because `y` solves the triangular
+system `R_m y = g_m`, and the last one is `γ_m` because the last row of `R̄_m` is zero. -/
+theorem givensQ_mulVec_firstVec_sub_mulVec {m : ℕ} {y : Fin m → 𝕜}
+    (hy : (hessenbergSqOf (rotated (Arnoldi.coeff A (b - A x₀)) m) m).mulVec y =
+      fun i : Fin m => gvec (Arnoldi.coeff A (b - A x₀)) (‖b - A x₀‖ : 𝕜) i) :
+    (givensQ (Arnoldi.coeff A (b - A x₀)) m).mulVec
+        (firstVec (‖b - A x₀‖ : 𝕜) (m + 1) -
+          (Arnoldi.hessenberg A (b - A x₀) m).mulVec y) =
+      fun i : Fin (m + 1) =>
+        if (i : ℕ) = m then gamma (Arnoldi.coeff A (b - A x₀)) (‖b - A x₀‖ : 𝕜) m else 0 := by
+  set h := Arnoldi.coeff A (b - A x₀) with hh
+  set β : 𝕜 := ((‖b - A x₀‖ : ℝ) : 𝕜) with hβ
+  have hzero : ∀ i j : ℕ, j + 1 < i → h i j = 0 :=
+    fun i j hij => Arnoldi.coeff_eq_zero_of_lt A (b - A x₀) hij
+  funext i
+  rw [Matrix.mulVec_sub, Pi.sub_apply, givensQ_mulVec_firstVec, Arnoldi.hessenberg_eq,
+    Matrix.mulVec_mulVec, givensQ_mul_hessenbergOf]
+  dsimp only
+  by_cases hi : (i : ℕ) < m
+  · have hval : (hessenbergOf (rotated h m) m).mulVec y i =
+        (hessenbergSqOf (rotated h m) m).mulVec y ⟨(i : ℕ), hi⟩ := rfl
+    rw [ite_eq_left hi, hval, hy, ite_eq_right (by omega : ¬(i : ℕ) = m), sub_self]
+  · have him : (i : ℕ) = m := by have := i.isLt; omega
+    have hlast : (hessenbergOf (rotated h m) m).mulVec y i = 0 := by
+      simp only [Matrix.mulVec, dotProduct, hessenbergOf, Matrix.of_apply, him]
+      exact Finset.sum_eq_zero fun j _ => by
+        rw [rotated_last_row h hzero m (j : ℕ) j.isLt, zero_mul]
+    rw [ite_eq_right hi, hlast, sub_zero, ite_eq_left him]
+
+/-- **The minimal-residual residual in the Arnoldi basis** ([saad2003iterative], (6.40)–(6.47) read
+as a vector identity): `r_m = γ_m ∑_i conj (Q_m)_{m,i} v_i`.  Only the *last row* of the
+accumulated rotation `Q_m` enters, because the rotated residual is carried by its last entry alone
+(`Krylov.givensQ_mulVec_firstVec_sub_mulVec`) and `Q_m` is unitary, so undoing it multiplies that
+entry by the conjugate of the last row.
+
+The hypothesis `hρ` — no rotation has degenerated before step `m` — is what makes `Q_m` unitary; it
+follows from `m < grade` through `Krylov.givensRho_arnoldi_ne_zero` and holds at `m = grade` exactly
+when the last rotation is nondegenerate, which is the same hypothesis
+`Krylov.IsMinResIterate.norm_residual_eq_norm_gamma_of_givensRho_ne_zero` carries. -/
+theorem IsMinResIterate.residual_eq_gamma_smul_sum {m : ℕ} (hm : m ≤ grade A (b - A x₀))
+    (hρ : ∀ k < m, givensRho (Arnoldi.coeff A (b - A x₀)) k ≠ 0) {x : E}
+    (hx : IsMinResIterate A b x₀ m x) :
+    b - A x = ∑ i : Fin (m + 1),
+      (gamma (Arnoldi.coeff A (b - A x₀)) (‖b - A x₀‖ : 𝕜) m *
+          (starRingEnd 𝕜) (givensQ (Arnoldi.coeff A (b - A x₀)) m (Fin.last m) i)) •
+        Arnoldi.vec A (b - A x₀) (i : ℕ) := by
+  obtain ⟨y, hy, rfl⟩ := hx.exists_mulVec_rotated_eq hm
+  have hres := (Arnoldi.hessenbergRelation A (b - A x₀)).residual_eq
+    (Arnoldi.smul_vec_zero A (b - A x₀)).symm m y
+  rw [hres]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  congr 1
+  have hQ := givensQ_mem_unitaryGroup (Arnoldi.coeff A (b - A x₀)) m hρ
+  rw [Unitary.mem_iff] at hQ
+  have hstar : (givensQ (Arnoldi.coeff A (b - A x₀)) m).conjTranspose *
+      givensQ (Arnoldi.coeff A (b - A x₀)) m = 1 := hQ.1
+  have hkey := givensQ_mulVec_firstVec_sub_mulVec (A := A) (b := b) (x₀ := x₀) hy
+  have hinv : (firstVec (‖b - A x₀‖ : 𝕜) (m + 1) -
+      (Arnoldi.hessenberg A (b - A x₀) m).mulVec y)
+      = ((givensQ (Arnoldi.coeff A (b - A x₀)) m).conjTranspose).mulVec
+        (fun l : Fin (m + 1) =>
+          if (l : ℕ) = m then gamma (Arnoldi.coeff A (b - A x₀)) (‖b - A x₀‖ : 𝕜) m else 0) := by
+    rw [← hkey, Matrix.mulVec_mulVec, hstar, Matrix.one_mulVec]
+  rw [← Arnoldi.hessenberg_eq A (b - A x₀) m, hinv]
+  simp only [Matrix.mulVec, dotProduct, Matrix.conjTranspose_apply]
+  rw [Finset.sum_eq_single (Fin.last m)]
+  · rw [ite_eq_left (by simp : ((Fin.last m : Fin (m + 1)) : ℕ) = m), mul_comm,
+      starRingEnd_apply]
+  · intro l _ hl
+    have hlm : (l : ℕ) ≠ m := fun hc => hl (Fin.ext (by simpa using hc))
+    rw [ite_eq_right hlm, mul_zero]
+  · intro hc
+    exact absurd (Finset.mem_univ _) hc
 
 /-- `|s_m| = ‖r^G_{m+1}‖ / ‖r^G_m‖` ([saad2003iterative], (6.47), Prop 6.9).
 

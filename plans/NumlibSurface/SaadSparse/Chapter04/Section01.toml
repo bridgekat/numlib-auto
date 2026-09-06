@@ -52,18 +52,31 @@ id = "ssorStep"
 id = "symmetricGsStep"
 
 [[node]]
+id = "blockD"
+
+[[node]]
+id = "blockE"
+
+[[node]]
+id = "blockF"
+
+[[node]]
 id = "blockJacobiStep"
-kind = "definition"
-desc = '''Algorithm 4.1 in the non-overlapping case, (4.15)–(4.17): for a labelling `π : Fin n → Fin p`,
-one block Jacobi sweep `x ↦ (blockD)⁻¹ ((blockE + blockF) x + b)`, and `blockGaussSeidelStep`
-(Algorithm 4.2); `equation_4_17` is the componentwise form
-`ξ_i ← A_ii⁻¹ (β_i - ∑_{j ≠ i} A_ij ξ_j)`.'''
-deps = ["Matrix.blockDiagPart", "Matrix.blockJacobiSplitting"]
+
+[[node]]
+id = "blockGaussSeidelStep"
+
+[[node]]
+id = "equation_4_17"
 
 [[node]]
 id = "blockJacobiStep_eq"
-kind = "theorem"
-desc = '''The block sweeps are the backbone's block splittings and, through them, the additive and
-multiplicative projection processes of §5.4: `blockJacobiStep π A b = (blockJacobiSplitting π A h).step b`
-and `blockGaussSeidelStep π A b = (blockGaussSeidelSplitting π A h).step b`.'''
-deps = ["blockJacobiStep", "Matrix.blockJacobiSplitting", "Matrix.blockJacobiSplitting_step_eq_additiveStep", "Matrix.blockGaussSeidelSplitting_step_eq_multiplicativeStep"]
+
+[[node]]
+id = "blockGaussSeidelStep_eq"
+
+[[node]]
+id = "blockJacobiStep_eq_additiveStep"
+
+[[node]]
+id = "blockGaussSeidelStep_eq_multiplicativeStep"

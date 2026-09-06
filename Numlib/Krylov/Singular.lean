@@ -32,6 +32,11 @@ b` has no solution at all, following [choi2006iterative] Ch. 2–3.
   (`Krylov.IsMinResIterate.norm_residual_eq_prod_givensS`), and every bound on `A` is inherited by
   the tridiagonal matrices `T̄_m` and `T_m` (`Lanczos.norm_toEuclideanLin_tridiagExt_le`,
   `Lanczos.norm_toEuclideanLin_tridiag_le`).
+* **The residual recurrence.** `Lanczos.residual_minRes_succ_eq` is [choi2006iterative] Lemma 2.18,
+  `r_{m+1} = |s_m|² r_m - (s_m g_m) v_{m+1}`, the *vector* refinement of the norm identity above.
+  It reads both residuals off the last row of the accumulated rotation
+  (`Krylov.IsMinResIterate.residual_eq_gamma_smul_sum`) and steps that row with
+  `Krylov.givensQ_last_row_castSucc`; nothing in it is symmetry-specific.
 
 Everything about the specification level (`Krylov.IsMinResIterate`, `Krylov.IsMinNormMinResIterate`
 of `Numlib/Krylov/Iterate`) needs only symmetry of `A` and finite grade; the eigenvalue counts and
@@ -566,5 +571,71 @@ theorem norm_toEuclideanLin_tridiag_le (hA : A.IsSymmetric) {C : ℝ}
   exact hle.trans (norm_toEuclideanLin_tridiagExt_le hA hC hm y)
 
 end Tridiag
+
+/-! ### The residual recurrence of MINRES -/
+
+section Residual
+
+variable {A : E →ₗ[𝕜] E} {b x₀ : E} [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))]
+
+/-- **[choi2006iterative], Lemma 2.18** (also [saad2003iterative], (6.55) for DQGMRES): the vector
+recurrence between consecutive minimal-residual residuals,
+
+`r_{m+1} = |s_m|² r_m - (s_m g_m) v_{m+1}`,
+
+with `g_m = c̄_m γ_m` the `m`-th entry of the rotated right-hand side.  Choi's real form
+`r_k = s_k² r_{k-1} - φ_k c_k v_{k+1}` is this with `γ_m = ±φ_m`.
+
+Both residuals are read off the last row of the accumulated rotation
+(`Krylov.IsMinResIterate.residual_eq_gamma_smul_sum`), and one step of that row is
+`Krylov.givensQ_last_row_castSucc` and `Krylov.givensQ_last_row_last`; the `|s_m|²` is `s_m` from
+`γ_{m+1} = -s_m γ_m` times `conj s_m` from the row.  Nothing here is symmetry-specific — the same
+identity holds for GMRES — but this is where [choi2006iterative] uses it. -/
+theorem residual_minRes_succ_eq {m : ℕ} (hm : m + 1 ≤ grade A (b - A x₀))
+    (hρ : ∀ k < m + 1, givensRho (Arnoldi.coeff A (b - A x₀)) k ≠ 0) {x x' : E}
+    (hx : IsMinResIterate A b x₀ m x) (hx' : IsMinResIterate A b x₀ (m + 1) x') :
+    b - A x' =
+      ((‖givensS (Arnoldi.coeff A (b - A x₀)) m‖ ^ 2 : ℝ) : 𝕜) • (b - A x) -
+        (givensS (Arnoldi.coeff A (b - A x₀)) m *
+            gvec (Arnoldi.coeff A (b - A x₀)) ((‖b - A x₀‖ : ℝ) : 𝕜) m) •
+          Arnoldi.vec A (b - A x₀) (m + 1) := by
+  have hr := hx.residual_eq_gamma_smul_sum (by omega) fun k hk => hρ k (by omega)
+  have hr' := hx'.residual_eq_gamma_smul_sum hm hρ
+  have h1 : ∀ j : Fin (m + 1),
+      (gamma (Arnoldi.coeff A (b - A x₀)) ((‖b - A x₀‖ : ℝ) : 𝕜) (m + 1) *
+          (starRingEnd 𝕜) (givensQ (Arnoldi.coeff A (b - A x₀)) (m + 1)
+            (Fin.last (m + 1)) j.castSucc)) •
+          Arnoldi.vec A (b - A x₀) ((j.castSucc : Fin (m + 2)) : ℕ)
+        = ((‖givensS (Arnoldi.coeff A (b - A x₀)) m‖ ^ 2 : ℝ) : 𝕜) •
+          ((gamma (Arnoldi.coeff A (b - A x₀)) ((‖b - A x₀‖ : ℝ) : 𝕜) m *
+              (starRingEnd 𝕜) (givensQ (Arnoldi.coeff A (b - A x₀)) m (Fin.last m) j)) •
+            Arnoldi.vec A (b - A x₀) (j : ℕ)) := by
+    intro j
+    have hval : ((j.castSucc : Fin (m + 2)) : ℕ) = (j : ℕ) := rfl
+    rw [hval, givensQ_last_row_castSucc, gamma_succ, map_mul, map_neg, smul_smul]
+    congr 1
+    have hc : givensS (Arnoldi.coeff A (b - A x₀)) m *
+        (starRingEnd 𝕜) (givensS (Arnoldi.coeff A (b - A x₀)) m)
+        = ((‖givensS (Arnoldi.coeff A (b - A x₀)) m‖ ^ 2 : ℝ) : 𝕜) := by
+      rw [RCLike.mul_conj]
+      push_cast
+      ring
+    linear_combination (gamma (Arnoldi.coeff A (b - A x₀)) ((‖b - A x₀‖ : ℝ) : 𝕜) m *
+      (starRingEnd 𝕜) (givensQ (Arnoldi.coeff A (b - A x₀)) m (Fin.last m) j)) * hc
+  have h2 : (gamma (Arnoldi.coeff A (b - A x₀)) ((‖b - A x₀‖ : ℝ) : 𝕜) (m + 1) *
+        (starRingEnd 𝕜) (givensQ (Arnoldi.coeff A (b - A x₀)) (m + 1)
+          (Fin.last (m + 1)) (Fin.last (m + 1)))) •
+        Arnoldi.vec A (b - A x₀) ((Fin.last (m + 1) : Fin (m + 2)) : ℕ)
+      = -((givensS (Arnoldi.coeff A (b - A x₀)) m *
+          gvec (Arnoldi.coeff A (b - A x₀)) ((‖b - A x₀‖ : ℝ) : 𝕜) m) •
+        Arnoldi.vec A (b - A x₀) (m + 1)) := by
+    have hval : ((Fin.last (m + 1) : Fin (m + 2)) : ℕ) = m + 1 := rfl
+    rw [hval, givensQ_last_row_last, gamma_succ, gvec, ← neg_smul]
+    congr 1
+    ring
+  rw [hr', Fin.sum_univ_castSucc, Finset.sum_congr rfl fun j _ => h1 j, ← Finset.smul_sum, ← hr,
+    h2, ← sub_eq_add_neg]
+
+end Residual
 
 end Lanczos

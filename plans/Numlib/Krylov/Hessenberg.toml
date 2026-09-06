@@ -56,6 +56,20 @@ id = "Krylov.givensQ_mem_unitaryGroup"
 id = "Krylov.givensQ_mulVec_firstVec"
 
 [[node]]
+id = "Krylov.givensQ_mulVec_firstVec_sub_mulVec"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (6.40)-(6.47)"
+
+[[node]]
+id = "Krylov.givensQ_last_row_castSucc"
+
+[[node]]
+id = "Krylov.givensQ_last_row_last"
+
+[[node]]
+id = "Krylov.IsMinResIterate.residual_eq_gamma_smul_sum"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (6.40)-(6.47)"
+
+[[node]]
 id = "Krylov.givensQ_mul_hessenbergOf"
 
 [[node]]

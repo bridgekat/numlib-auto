@@ -56,8 +56,10 @@ import Numlib.Krylov.Arnoldi
 import Numlib.Krylov.BiLanczos
 import Numlib.Krylov.Block
 import Numlib.Krylov.CG
+import Numlib.Krylov.CGW
 import Numlib.Krylov.CR
 import Numlib.Krylov.Convergence.CG
+import Numlib.Krylov.Convergence.MinRes
 import Numlib.Krylov.Convergence.Polynomial
 import Numlib.Krylov.Convergence.Superlinear
 import Numlib.Krylov.Hessenberg
@@ -97,6 +99,7 @@ import Numlib.LinearSolve.Preconditioner.ILU
 import Numlib.LinearSolve.Preconditioner.Polynomial
 import Numlib.LinearSolve.Projection.Additive
 import Numlib.LinearSolve.Projection.Basic
+import Numlib.LinearSolve.Projection.Coordinate
 import Numlib.LinearSolve.Projection.OneDimensional
 import Numlib.LinearSolve.Projection.Optimality
 import Numlib.LinearSolve.Stationary.ADI

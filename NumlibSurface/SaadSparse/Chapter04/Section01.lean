@@ -1,4 +1,5 @@
 import Numlib.LinearAlgebra.Matrix.Hessenberg
+import Numlib.LinearSolve.Stationary.Block
 import Numlib.LinearSolve.Stationary.Splitting
 import NumlibSurface.SaadSparse.Common
 
@@ -15,9 +16,15 @@ Every iteration is a `Stationary.Splitting` of the backbone
 `gsStep_eq`, `backwardGsStep_eq`, `sorStep_eq` and `ssorStep_eq` identify the book's
 componentwise or matrix recurrences with `Splitting.step` of the corresponding splitting.
 
-Block relaxation (§4.1.1, Algorithms 4.1–4.2) is deferred: the plan assigns the block
-splittings and their identification with the additive projection process to phase 2 of the
-backbone (`plans/backbone.md` §2.4.4).
+Block relaxation (§4.1.1, (4.15)–(4.17), Algorithms 4.1–4.2) is the last section, in the
+non-overlapping case: the blocks are the fibres of a labelling `π : Fin n → Fin p`, `blockD`,
+`blockE` and `blockF` are the block analogues of `D`, `E` and `F`, and `blockJacobiStep` and
+`blockGaussSeidelStep` are the two sweeps.  Each is the corresponding block splitting of
+`Numlib/LinearSolve/Stationary/Block.lean` (`blockJacobiStep_eq`, `blockGaussSeidelStep_eq`) and,
+through §5.4, the additive and the multiplicative projection process over the blocks
+(`blockJacobiStep_eq_additiveStep`, `blockGaussSeidelStep_eq_multiplicativeStep`).  Overlapping
+blocks — the general form of Algorithm 4.1 — are not formalized; the book proves no theorem about
+them.
 -/
 
 open Matrix Finset Stationary
@@ -461,5 +468,118 @@ theorem ssorStep_eq_affine (A : Matrix (Fin n) (Fin n) ℝ) (ω : ℝ) (b x : Fi
   simp only [ssorStep, Function.comp_apply, backwardSorStep, sorStep, G_ssor, f_ssor,
     ← mulVec_mulVec, mulVec_add, add_mulVec, one_mulVec, mulVec_smul, smul_add]
   abel
+
+/-! ### Block relaxation (§4.1.1, (4.15)–(4.17), Algorithms 4.1–4.2) -/
+
+section Block
+
+variable {p : ℕ} {π : Fin n → Fin p}
+
+/-- Saad (4.15)–(4.16): the block diagonal `D` of `A`, for the partition of `{1, …, n}` into the
+fibres of the labelling `π`. -/
+def blockD (π : Fin n → Fin p) (A : Matrix (Fin n) (Fin n) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
+  blockDiagPart π A
+
+/-- Saad (4.16): `-E` is the strict block-lower part of `A`. -/
+def blockE (π : Fin n → Fin p) (A : Matrix (Fin n) (Fin n) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
+  -blockStrictLower π A
+
+/-- Saad (4.16): `-F` is the strict block-upper part of `A`. -/
+def blockF (π : Fin n → Fin p) (A : Matrix (Fin n) (Fin n) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
+  -blockStrictUpper π A
+
+/-- Saad §4.1.1: `A = D - E - F` for the block splitting. -/
+theorem blockDecomp (π : Fin n → Fin p) (A : Matrix (Fin n) (Fin n) ℝ) :
+    A = blockD π A - blockE π A - blockF π A := by
+  rw [blockD, blockE, blockF, sub_neg_eq_add, sub_neg_eq_add]
+  exact (blockDiagPart_add_blockStrictLower_add_blockStrictUpper π A).symm
+
+/-- Saad §4.1.1: `E + F = D - A` in the block letters. -/
+theorem blockE_add_blockF (π : Fin n → Fin p) (A : Matrix (Fin n) (Fin n) ℝ) :
+    blockE π A + blockF π A = blockD π A - A := by
+  ext i j
+  rcases lt_trichotomy (π i) (π j) with hlt | heq | hlt
+  · simp [blockD, blockE, blockF, hlt, hlt.ne, asymm hlt]
+  · simp [blockD, blockE, blockF, heq]
+  · simp [blockD, blockE, blockF, hlt, hlt.ne', asymm hlt]
+
+/-- Saad §4.1.1: `D - E = A + F` in the block letters. -/
+theorem blockD_sub_blockE_eq (π : Fin n → Fin p) (A : Matrix (Fin n) (Fin n) ℝ) :
+    blockD π A - blockE π A = A + blockF π A := by
+  ext i j
+  rcases lt_trichotomy (π i) (π j) with hlt | heq | hlt
+  · simp [blockD, blockE, blockF, hlt, hlt.ne, asymm hlt]
+  · simp [blockD, blockE, blockF, heq]
+  · simp [blockD, blockE, blockF, hlt, hlt.ne', asymm hlt]
+
+/-- Saad §4.1.1: the block-lower factor `D - E` is invertible as soon as the block diagonal is. -/
+theorem isUnit_blockD_sub_blockE (h : IsUnit (blockD π A)) : IsUnit (blockD π A - blockE π A) := by
+  rw [blockD, blockE, sub_neg_eq_add]
+  exact isUnit_blockDiagPart_add_blockStrictLower h
+
+/-- Saad Algorithm 4.1 in the non-overlapping case: one **block Jacobi** sweep,
+`x ↦ D⁻¹ ((E + F) x + b)`, in which every block is updated from the same previous iterate. -/
+noncomputable def blockJacobiStep (π : Fin n → Fin p) (A : Matrix (Fin n) (Fin n) ℝ)
+    (b x : Fin n → ℝ) : Fin n → ℝ :=
+  (blockD π A)⁻¹ *ᵥ ((blockE π A + blockF π A) *ᵥ x + b)
+
+/-- Saad Algorithm 4.2 in the non-overlapping case: one **block Gauss–Seidel** sweep,
+`x ↦ (D - E)⁻¹ (F x + b)`, in which each block uses the blocks already updated before it. -/
+noncomputable def blockGaussSeidelStep (π : Fin n → Fin p) (A : Matrix (Fin n) (Fin n) ℝ)
+    (b x : Fin n → ℝ) : Fin n → ℝ :=
+  (blockD π A - blockE π A)⁻¹ *ᵥ (blockF π A *ᵥ x + b)
+
+/-- Saad (4.17): the block Jacobi sweep in residual form, `ξ_i ← ξ_i + A_ii⁻¹ (b - A x)_i`; taking
+all blocks at once, `x' = x + D⁻¹ (b - A x)`. -/
+theorem equation_4_17 (h : IsUnit (blockD π A)) (b x : Fin n → ℝ) :
+    blockJacobiStep π A b x = x + (blockD π A)⁻¹ *ᵥ (b - A *ᵥ x) := by
+  rw [blockJacobiStep, blockE_add_blockF, sub_mulVec, mulVec_add, mulVec_sub, mulVec_sub,
+    inv_mulVec_mulVec h]
+  abel
+
+/-- Saad (4.16)–(4.17): the block Jacobi sweep is the splitting with `M = D`, the block diagonal. -/
+theorem blockJacobiStep_eq (h : IsUnit (blockD π A)) (b : Fin n → ℝ) :
+    blockJacobiStep π A b = Splitting.step (blockJacobiSplitting π A h) b := by
+  funext x
+  rw [Splitting.step_eq, equation_4_17 h]
+  rfl
+
+/-- Saad Algorithm 4.2: the block Gauss–Seidel sweep is the splitting with `M = D - E`, the
+block-lower part. -/
+theorem blockGaussSeidelStep_eq (h : IsUnit (blockD π A)) (b : Fin n → ℝ) :
+    blockGaussSeidelStep π A b = Splitting.step (blockGaussSeidelSplitting π A h) b := by
+  funext x
+  refine (Splitting.step_eq_of_mulVec _ b x _ ?_).symm
+  have hm : (blockGaussSeidelSplitting π A h).m = blockD π A - blockE π A := by
+    rw [blockD, blockE, sub_neg_eq_add]; rfl
+  rw [hm, mulVec_sub, blockGaussSeidelStep,
+    mulVec_inv_mulVec (isUnit_blockD_sub_blockE h), blockD_sub_blockE_eq, add_mulVec]
+  abel
+
+/-- Saad §5.4: **one block Jacobi sweep is one step of the additive projection process** over the
+blocks, with all weights `1` — the reading of (4.17) as (5.7) that §5.4 gives. -/
+theorem blockJacobiStep_eq_additiveStep (h : IsUnit (blockD π A)) (b x : Fin n → ℝ) :
+    WithLp.toLp 2 (blockJacobiStep π A b x) =
+      Projection.additiveStep (toEuclideanLin A) (WithLp.toLp 2 b)
+        (EuclideanSpace.blockSubspace ℝ π) (EuclideanSpace.blockSubspace ℝ π)
+        (isNondegeneratePair_blockSubspace h) 1 (WithLp.toLp 2 x) := by
+  rw [blockJacobiSplitting_step_eq_additiveStep h (WithLp.toLp 2 b) (WithLp.toLp 2 x),
+    equation_4_17 h]
+  rfl
+
+/-- Saad §5.4, Algorithm 5.6: **one block Gauss–Seidel sweep is one sweep of the multiplicative
+projection process** over the blocks, taken in increasing order of the block label. -/
+theorem blockGaussSeidelStep_eq_multiplicativeStep (h : IsUnit (blockD π A)) (b x : Fin n → ℝ) :
+    WithLp.toLp 2 (blockGaussSeidelStep π A b x) =
+      Projection.multiplicativeStep (toEuclideanLin A) (WithLp.toLp 2 b)
+        (EuclideanSpace.blockSubspace ℝ π) (EuclideanSpace.blockSubspace ℝ π)
+        (isNondegeneratePair_blockSubspace h) (Finset.sort (Finset.univ : Finset (Fin p)))
+        (WithLp.toLp 2 x) := by
+  rw [blockGaussSeidelSplitting_step_eq_multiplicativeStep h (WithLp.toLp 2 b) (WithLp.toLp 2 x),
+    blockGaussSeidelStep_eq h, Splitting.step_eq]
+  rfl
+
+end Block
+
 
 end SaadSparse.Chapter04

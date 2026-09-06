@@ -1,4 +1,5 @@
 import Mathlib.LinearAlgebra.Matrix.Block
+import Numlib.LinearSolve.Projection.Coordinate
 import Numlib.LinearSolve.Stationary.Splitting
 
 /-!
@@ -17,6 +18,15 @@ The point splittings of `Numlib/LinearSolve/Stationary/Splitting.lean` are the c
 (`Matrix.blockDiagPart_id`, `Matrix.blockStrictLower_id`, `Matrix.blockStrictUpper_id`), and the
 block Jacobi, Gauss–Seidel and SOR splittings ([saad2003iterative] (4.16), Algorithms 4.1–4.2) are
 built here exactly as the point ones are, under the invertibility of the block diagonal.
+
+The last section reads the two of them as *projection processes* over the blocks
+([saad2003iterative] §5.4): each block gives a Petrov–Galerkin pair whose trial and test space is
+the coordinate subspace of the block (`EuclideanSpace.blockSubspace`), nondegenerate exactly because
+the block diagonal is invertible (`Matrix.isNondegeneratePair_blockSubspace`), and then one block
+Jacobi step is one *additive* step over those pairs with unit weights
+(`Matrix.blockJacobiSplitting_step_eq_additiveStep`) while one block Gauss–Seidel sweep is the
+*multiplicative* sweep over them in increasing order of the block label
+(`Matrix.blockGaussSeidelSplitting_step_eq_multiplicativeStep`).
 
 ## Implementation notes
 
@@ -202,5 +212,250 @@ theorem blockSorSplitting_one (π : n → ι) (A : Matrix n n 𝕜) (h : IsUnit 
   rw [inv_one, one_smul]
 
 end Splittings
+
+/-! ### Block relaxation as a projection process -/
+
+section ProjectionProcess
+
+open EuclideanSpace Projection
+
+variable {𝕜 : Type*} [RCLike 𝕜] [Fintype n] [DecidableEq n] [LinearOrder ι]
+variable {π : n → ι} {A : Matrix n n 𝕜}
+
+/-- Entries of `toEuclideanLin M v` are the entries of `M *ᵥ v`. -/
+private theorem toEuclideanLin_apply_eq_sum (M : Matrix n n 𝕜) (v : EuclideanSpace 𝕜 n) (k : n) :
+    toEuclideanLin M v k = ∑ j, M k j * v j := rfl
+
+omit [Fintype n] [DecidableEq n] in
+/-- Entries of a finite sum in `EuclideanSpace` are the sums of the entries. -/
+private theorem euclideanSpace_sum_apply {κ : Type*} (s : Finset κ)
+    (f : κ → EuclideanSpace 𝕜 n) (j : n) : (∑ i ∈ s, f i) j = ∑ i ∈ s, f i j := by
+  classical
+  induction s using Finset.induction with
+  | empty => simp
+  | insert a s ha ih => rw [Finset.sum_insert ha, Finset.sum_insert ha, PiLp.add_apply, ih]
+
+/-- The restriction of `v` to the `i`-th block: the entries of `v` on the block, zero elsewhere. -/
+private def blockRestrict (π : n → ι) (i : ι) (v : EuclideanSpace 𝕜 n) : EuclideanSpace 𝕜 n :=
+  WithLp.toLp 2 fun j => if π j = i then v j else 0
+
+omit [Fintype n] [DecidableEq n] in
+@[simp]
+private theorem blockRestrict_apply (i : ι) (v : EuclideanSpace 𝕜 n) (j : n) :
+    blockRestrict π i v j = if π j = i then v j else 0 := rfl
+
+omit [Fintype n] [DecidableEq n] in
+private theorem blockRestrict_mem (i : ι) (v : EuclideanSpace 𝕜 n) :
+    blockRestrict π i v ∈ blockSubspace 𝕜 π i := fun _ hj => ite_eq_right hj
+
+omit [Fintype n] [DecidableEq n] in
+private theorem sum_blockRestrict [Fintype ι] (v : EuclideanSpace 𝕜 n) :
+    ∑ i, blockRestrict π i v = v := by
+  refine PiLp.ext fun j => ?_
+  rw [euclideanSpace_sum_apply]
+  simp
+
+/-- On a vector supported in the `i`-th block, a row of that block sees only the block diagonal. -/
+private theorem blockDiag_apply_of_eq {i : ι} {v : EuclideanSpace 𝕜 n}
+    (hv : v ∈ blockSubspace 𝕜 π i) {k : n} (hk : π k = i) :
+    toEuclideanLin (blockDiagPart π A) v k = toEuclideanLin A v k := by
+  rw [toEuclideanLin_apply_eq_sum, toEuclideanLin_apply_eq_sum]
+  refine Finset.sum_congr rfl fun j _ => ?_
+  by_cases hj : π j = i
+  · rw [blockDiagPart_apply, ite_eq_left (hk.trans hj.symm)]
+  · rw [hv j hj, mul_zero, mul_zero]
+
+/-- Outside the `i`-th block the block diagonal annihilates a vector supported in that block. -/
+private theorem blockDiag_apply_of_ne {i : ι} {v : EuclideanSpace 𝕜 n}
+    (hv : v ∈ blockSubspace 𝕜 π i) {k : n} (hk : π k ≠ i) :
+    toEuclideanLin (blockDiagPart π A) v k = 0 := by
+  rw [toEuclideanLin_apply_eq_sum]
+  refine Finset.sum_eq_zero fun j _ => ?_
+  by_cases hj : π j = i
+  · rw [blockDiagPart_apply, ite_eq_right (by rw [hj]; exact hk), zero_mul]
+  · rw [hv j hj, mul_zero]
+
+/-- The block diagonal does not see the entries of `v` outside the block of the row. -/
+private theorem blockDiag_blockRestrict_apply (i : ι) (v : EuclideanSpace 𝕜 n) {k : n}
+    (hk : π k = i) : toEuclideanLin (blockDiagPart π A) (blockRestrict π i v) k
+      = toEuclideanLin (blockDiagPart π A) v k := by
+  rw [toEuclideanLin_apply_eq_sum, toEuclideanLin_apply_eq_sum]
+  refine Finset.sum_congr rfl fun j _ => ?_
+  by_cases hj : π j = i
+  · rw [blockRestrict_apply, ite_eq_left hj]
+  · rw [blockDiagPart_apply, ite_eq_right (by rw [hk]; exact fun hc => hj hc.symm), zero_mul,
+      zero_mul]
+
+/-- On a vector supported in the `i`-th block, a row whose label is at least `i` sees the same in
+the block-lower part `D - E` as in `A` itself: the diagonal block contributes for a row of block
+`i` and the strict block-lower part for a row below it. -/
+private theorem blockLower_apply_of_le {i : ι} {v : EuclideanSpace 𝕜 n}
+    (hv : v ∈ blockSubspace 𝕜 π i) {k : n} (hk : i ≤ π k) :
+    toEuclideanLin (blockDiagPart π A + blockStrictLower π A) v k = toEuclideanLin A v k := by
+  rw [toEuclideanLin_apply_eq_sum, toEuclideanLin_apply_eq_sum]
+  refine Finset.sum_congr rfl fun j _ => ?_
+  by_cases hj : π j = i
+  · rw [Matrix.add_apply, blockDiagPart_apply, blockStrictLower_apply]
+    rcases hk.lt_or_eq with hlt | heq
+    · rw [ite_eq_right (by rw [hj]; exact fun hc => absurd hc.symm hlt.ne),
+        ite_eq_left (by rw [hj]; exact hlt), zero_add]
+    · rw [ite_eq_left (by rw [hj, heq]),
+        ite_eq_right (by rw [hj, heq]; exact lt_irrefl _), add_zero]
+  · rw [hv j hj, mul_zero, mul_zero]
+
+/-- A vector supported on blocks with labels above `i` is annihilated by the block-lower part
+`D - E` in every row whose label is at most `i`. -/
+private theorem blockLower_apply_eq_zero {i : ι} {v : EuclideanSpace 𝕜 n}
+    (hv : ∀ j, ¬ i < π j → v j = 0) {k : n} (hk : π k ≤ i) :
+    toEuclideanLin (blockDiagPart π A + blockStrictLower π A) v k = 0 := by
+  rw [toEuclideanLin_apply_eq_sum]
+  refine Finset.sum_eq_zero fun j _ => ?_
+  by_cases hj : i < π j
+  · have h1 : π k < π j := lt_of_le_of_lt hk hj
+    rw [Matrix.add_apply, blockDiagPart_apply, blockStrictLower_apply, ite_eq_right h1.ne,
+      ite_eq_right (asymm h1), add_zero, zero_mul]
+  · rw [hv j hj, mul_zero]
+
+/-- **Each block is a nondegenerate Petrov–Galerkin pair** as soon as the block diagonal is
+invertible: on a vector supported in the block, the rows of the block reproduce the diagonal block,
+which is therefore what has to be inverted.  This is the hypothesis under which the block
+relaxations are projection processes ([saad2003iterative], §5.4). -/
+theorem isNondegeneratePair_blockSubspace (h : IsUnit (blockDiagPart π A)) (i : ι) :
+    IsNondegeneratePair (toEuclideanLin A) (blockSubspace 𝕜 π i) (blockSubspace 𝕜 π i) where
+  finrank_eq := rfl
+  eq_zero_of_mem_orthogonal z hz hAz := by
+    have hzero : toEuclideanLin (blockDiagPart π A) z = 0 := by
+      refine PiLp.ext fun k => ?_
+      rw [PiLp.zero_apply]
+      by_cases hk : π k = i
+      · rw [blockDiag_apply_of_eq hz hk]
+        exact mem_orthogonal_blockSubspace.1 hAz k hk
+      · exact blockDiag_apply_of_ne hz hk
+    have hinv : (blockDiagPart π A)⁻¹ * blockDiagPart π A = 1 :=
+      Matrix.nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).1 h)
+    calc z = toEuclideanLin ((blockDiagPart π A)⁻¹ * blockDiagPart π A) z := by
+          rw [hinv, Matrix.toLpLin_one, LinearMap.id_apply]
+      _ = toEuclideanLin (blockDiagPart π A)⁻¹ (toEuclideanLin (blockDiagPart π A) z) := by
+          rw [Matrix.toLpLin_mul_same, LinearMap.comp_apply]
+      _ = 0 := by rw [hzero, map_zero]
+
+/-- Applying the inverse of an invertible matrix undoes the matrix. -/
+private theorem toEuclideanLin_inv_apply {M : Matrix n n 𝕜} (hM : IsUnit M)
+    (v : EuclideanSpace 𝕜 n) : toEuclideanLin M (toEuclideanLin M⁻¹ v) = v := by
+  rw [← LinearMap.comp_apply, ← Matrix.toLpLin_mul_same,
+    Matrix.mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).1 hM), Matrix.toLpLin_one,
+    LinearMap.id_apply]
+
+/-- **[saad2003iterative], §5.4**: one **block Jacobi** step is one step of the *additive*
+projection process over the blocks, with all relaxation weights equal to `1`.  Each block
+contributes the Petrov–Galerkin correction of the pair `K i = L i = ` the coordinate subspace of
+the block, and the corrections are added at once because they are all computed from the same
+iterate; their sum is the block Jacobi correction `D⁻¹ (b - A x)`, which is [saad2003iterative]
+(4.17) read as (5.7). -/
+theorem blockJacobiSplitting_step_eq_additiveStep [Fintype ι] (h : IsUnit (blockDiagPart π A))
+    (b x : EuclideanSpace 𝕜 n) :
+    additiveStep (toEuclideanLin A) b (blockSubspace 𝕜 π) (blockSubspace 𝕜 π)
+        (isNondegeneratePair_blockSubspace h) 1 x
+      = x + toEuclideanLin ((blockJacobiSplitting π A h).m)⁻¹ (b - toEuclideanLin A x) := by
+  have hm : (blockJacobiSplitting π A h).m = blockDiagPart π A := rfl
+  set d : EuclideanSpace 𝕜 n :=
+    toEuclideanLin (blockDiagPart π A)⁻¹ (b - toEuclideanLin A x) with hd
+  have hMd : toEuclideanLin (blockDiagPart π A) d = b - toEuclideanLin A x :=
+    toEuclideanLin_inv_apply h _
+  have hstep : ∀ i : ι, pairStep (toEuclideanLin A) b (blockSubspace 𝕜 π i)
+      (blockSubspace 𝕜 π i) (isNondegeneratePair_blockSubspace h i) x
+        = x + blockRestrict π i d := by
+    intro i
+    refine (pairStep_isPetrovGalerkin (isNondegeneratePair_blockSubspace h i) x).eq_of_forall
+      ⟨?_, ?_⟩ (isNondegeneratePair_blockSubspace h i).eq_zero_of_mem_orthogonal
+    · rw [add_sub_cancel_left]
+      exact blockRestrict_mem i d
+    · refine mem_orthogonal_blockSubspace.2 fun k hk => ?_
+      rw [PiLp.sub_apply, map_add, PiLp.add_apply,
+        blockDiag_apply_of_eq (blockRestrict_mem i d) hk |>.symm,
+        blockDiag_blockRestrict_apply i d hk, hMd, PiLp.sub_apply]
+      ring
+  rw [additiveStep, hm]
+  congr 1
+  rw [← hd, ← sum_blockRestrict (π := π) d]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [hstep i, Pi.one_apply, one_smul, add_sub_cancel_left]
+
+/-- The invariant of a partial multiplicative sweep over an increasing list `l` of block labels:
+the correction it has accumulated is supported on the blocks of `l`, and in every row of those
+blocks it satisfies the block Gauss–Seidel equation `(D - E) δ = b - A x`.  The second clause is
+what makes the sweep a *solve* with the block-lower factor: at the moment block `i` is processed
+the blocks below it are already updated and the ones above it are still at their old values, which
+is exactly the pattern of the rows of `D - E`. -/
+private theorem multiplicativeStep_invariant (h : IsUnit (blockDiagPart π A))
+    (b : EuclideanSpace 𝕜 n) (l : List ι) (hl : l.Pairwise (· < ·)) (x : EuclideanSpace 𝕜 n) :
+    (∀ j, π j ∉ l → (multiplicativeStep (toEuclideanLin A) b (blockSubspace 𝕜 π)
+        (blockSubspace 𝕜 π) (isNondegeneratePair_blockSubspace h) l x - x) j = 0) ∧
+      (∀ k, π k ∈ l → toEuclideanLin (blockDiagPart π A + blockStrictLower π A)
+        (multiplicativeStep (toEuclideanLin A) b (blockSubspace 𝕜 π) (blockSubspace 𝕜 π)
+          (isNondegeneratePair_blockSubspace h) l x - x) k = (b - toEuclideanLin A x) k) := by
+  induction l generalizing x with
+  | nil => exact ⟨fun j _ => by rw [multiplicativeStep, List.foldl_nil, sub_self, PiLp.zero_apply],
+      fun k hk => absurd hk (List.not_mem_nil)⟩
+  | cons i l ih =>
+    obtain ⟨hi, hl'⟩ := List.pairwise_cons.1 hl
+    set y := pairStep (toEuclideanLin A) b (blockSubspace 𝕜 π i) (blockSubspace 𝕜 π i)
+      (isNondegeneratePair_blockSubspace h i) x with hy
+    have hstep : multiplicativeStep (toEuclideanLin A) b (blockSubspace 𝕜 π) (blockSubspace 𝕜 π)
+        (isNondegeneratePair_blockSubspace h) (i :: l) x
+          = multiplicativeStep (toEuclideanLin A) b (blockSubspace 𝕜 π) (blockSubspace 𝕜 π)
+            (isNondegeneratePair_blockSubspace h) l y := rfl
+    obtain ⟨hsupp, hkey⟩ := ih hl' y
+    set z := multiplicativeStep (toEuclideanLin A) b (blockSubspace 𝕜 π) (blockSubspace 𝕜 π)
+      (isNondegeneratePair_blockSubspace h) l y with hz
+    obtain ⟨hw, hyorth⟩ :
+        IsPetrovGalerkin (toEuclideanLin A) b x (blockSubspace 𝕜 π i) (blockSubspace 𝕜 π i) y :=
+      pairStep_isPetrovGalerkin (isNondegeneratePair_blockSubspace h i) x
+    have hdiff : z - x = (y - x) + (z - y) := by abel
+    have hsupp' : ∀ j, ¬ i < π j → (z - y) j = 0 := by
+      intro j hj
+      refine hsupp j fun hmem => hj ?_
+      exact hi _ hmem
+    refine ⟨fun j hj => ?_, fun k hk => ?_⟩
+    · rw [hstep, hdiff, PiLp.add_apply, hsupp j fun hm => hj (List.mem_cons_of_mem _ hm),
+        hw j fun hc => hj (hc ▸ List.mem_cons_self), add_zero]
+    · rw [hstep, hdiff, map_add, PiLp.add_apply]
+      rcases List.mem_cons.1 hk with hki | hki
+      · rw [blockLower_apply_eq_zero hsupp' hki.le, add_zero,
+          blockLower_apply_of_le hw hki.ge, map_sub, PiLp.sub_apply]
+        have := mem_orthogonal_blockSubspace.1 hyorth k hki
+        rw [PiLp.sub_apply] at this
+        rw [PiLp.sub_apply]
+        linear_combination (norm := ring_nf) -this
+      · rw [hkey k hki, blockLower_apply_of_le hw (hi _ hki).le, map_sub, PiLp.sub_apply,
+          PiLp.sub_apply, PiLp.sub_apply]
+        ring
+
+/-- **[saad2003iterative], §5.4, Algorithm 5.6**: one **block Gauss–Seidel** sweep is one sweep of
+the *multiplicative* projection process over the blocks, taken in increasing order of the block
+label.  Unlike the additive process each correction is computed from the iterate the previous one
+produced, and the accumulated correction therefore solves the block-lower system
+`(D - E) δ = b - A x`, which is the block Gauss–Seidel step. -/
+theorem blockGaussSeidelSplitting_step_eq_multiplicativeStep [Fintype ι]
+    (h : IsUnit (blockDiagPart π A)) (b x : EuclideanSpace 𝕜 n) :
+    multiplicativeStep (toEuclideanLin A) b (blockSubspace 𝕜 π) (blockSubspace 𝕜 π)
+        (isNondegeneratePair_blockSubspace h) (Finset.sort (Finset.univ : Finset ι)) x
+      = x + toEuclideanLin ((blockGaussSeidelSplitting π A h).m)⁻¹ (b - toEuclideanLin A x) := by
+  have hm : (blockGaussSeidelSplitting π A h).m = blockDiagPart π A + blockStrictLower π A := rfl
+  obtain ⟨-, hkey⟩ := multiplicativeStep_invariant h b (Finset.sort (Finset.univ : Finset ι))
+    (Finset.sortedLT_sort _).pairwise x
+  set z := multiplicativeStep (toEuclideanLin A) b (blockSubspace 𝕜 π) (blockSubspace 𝕜 π)
+    (isNondegeneratePair_blockSubspace h) (Finset.sort (Finset.univ : Finset ι)) x with hz
+  have hsolve : toEuclideanLin (blockDiagPart π A + blockStrictLower π A) (z - x)
+      = b - toEuclideanLin A x :=
+    PiLp.ext fun k => hkey k ((Finset.mem_sort _).2 (Finset.mem_univ _))
+  have hMinv : z - x = toEuclideanLin (blockDiagPart π A + blockStrictLower π A)⁻¹
+      (b - toEuclideanLin A x) := by
+    rw [← hsolve, ← LinearMap.comp_apply, ← Matrix.toLpLin_mul_same,
+      Matrix.nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).1
+        (isUnit_blockDiagPart_add_blockStrictLower h)), Matrix.toLpLin_one, LinearMap.id_apply]
+  rw [hm, ← hMinv, add_sub_cancel]
+
+end ProjectionProcess
 
 end Matrix

@@ -1,16 +1,15 @@
 [[node]]
 id = "CG.energyNorm_error_sq_eq_sub_inner_inv"
-kind = "theorem"
-desc = '''Meurant–Strakoš Thm 9 (Dahlquist–Golub–Nash): for CG on a symmetric positive definite `A` with
-`grade A r₀ = n`, `‖xstar - x_k‖_A² = ‖r₀‖² ((T_n⁻¹ e₁, e₁) - (T_k⁻¹ e₁, e₁))`, the Gauss remainder
-of `f(λ) = 1/λ`; from `‖ε_k‖_A² = ⟪A⁻¹ r₀, r₀⟫ - 2 ⟪r₀, V_k y_k⟫ + ⟪A V_k y_k, V_k y_k⟫` and
-`T_k y_k = ‖r₀‖ e₁`. Two cautions, both conjectures of the agent who left this open rather than
-observations: the identity needs `tridiag A r₀ k` invertible for symmetric positive definite `A`,
-which nothing in the library seems to supply yet, and `Matrix.inv` is junk-valued at a singular
-matrix, so a statement written with `T_k⁻¹` and no invertibility hypothesis would read as vacuous
-rather than false. The `k = n` end of the identity uses `ε_n = 0`.'''
-deps = ["CG.iterate", "CG.isGalerkinIterate", "Lanczos.tridiag", "Krylov.isGalerkinIterate_iff_mulVec_eq", "Lanczos.gauss_quadrature"]
-source = "Meurant–Strakoš, Theorem 9"
+source = "Meurant, The Lanczos and Conjugate Gradient Algorithms in Finite Precision Arithmetic, Theorem 9"
+
+[[node]]
+id = "Lanczos.tridiagInvFirst"
+
+[[node]]
+id = "Lanczos.isUnit_hessenbergSq"
+
+[[node]]
+id = "Lanczos.isUnit_tridiag"
 
 [[node]]
 id = "Krylov.aeval_eq_zero_iff_of_degree_lt_grade"

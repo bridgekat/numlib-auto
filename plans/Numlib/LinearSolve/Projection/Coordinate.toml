@@ -1,0 +1,14 @@
+namespace = "EuclideanSpace"
+
+[[node]]
+id = "coordSubspace"
+
+[[node]]
+id = "mem_orthogonal_coordSubspace"
+
+[[node]]
+id = "blockSubspace"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 5.4"
+
+[[node]]
+id = "mem_orthogonal_blockSubspace"

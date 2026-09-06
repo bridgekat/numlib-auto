@@ -1,3 +1,4 @@
+import Numlib.Krylov.CGW
 import NumlibSurface.SaadSparse.Chapter01.Section11
 import NumlibSurface.SaadSparse.Chapter09.Section02
 
@@ -23,15 +24,22 @@ diagonal is `1` and the two off-diagonals are `η_{j+1}` and `-conj η_{j+1}`.  
 `cgw` is the resulting algorithm: Algorithm 9.1 with the sign of `β_j` reversed
 (`cgw_alpha`).
 
-## Not formalized here
+`cgw_isGalerkinIterate` is the only optimality property the algorithm has: the iterate is the
+Galerkin (FOM) iterate of `M⁻¹ A x = M⁻¹ b` in the `M`-inner product.  It comes from the backbone
+recurrence `Numlib/Krylov/CGW.lean` for an operator of the shape "identity plus skew-adjoint",
+through the bridge `cgw_eq_CGW_iterate`; the hypothesis that backbone theory needs is exactly
+`adjoint_energyEnd`, here `isShiftedSkewAdjoint_energyEnd`.  No minimization is claimed, because
+`M⁻¹ A` is not `M`-self-adjoint.
 
-`cgw_isGalerkinIterate` — that the CGW iterate is the Galerkin (FOM) iterate of
-`M⁻¹ A x = M⁻¹ b` in the `M`-inner product, the only optimality property CGW has — is left as
-an open node of `plans/NumlibSurface/SaadSparse/Chapter09/Section06.toml`.  What is missing is a
-recurrence-to-Galerkin bridge for an operator of the form "identity plus skew-adjoint":
-`Numlib/Krylov/CG.lean` has one for self-adjoint operators, and `M⁻¹ A` is *not*
-`M`-self-adjoint, which is the whole point of the section.  `cgw_residual_eq` is the first step
-of such an induction and is proved here.
+## The real field
+
+The Galerkin property is stated over `ℝ`, and over `ℂ` it is false: the step length `α_j` is then
+genuinely complex — the quadratic form of a skew-adjoint operator is purely imaginary rather than
+zero — and the cancellation that makes the search directions `M⁻¹A`-conjugate already fails at
+`j = 1`.  The rest of the section, including (9.29), holds over any `RCLike` field.  See the module
+documentation of `Numlib/Krylov/CGW.lean`.
+
+## Not formalized here
 
 The inner-outer variants of Golub and Overton mentioned in the notes of §9.6 carry no statement
 in the book and are not formalized.
@@ -295,5 +303,111 @@ theorem cgw_alpha (j : ℕ) :
   rfl
 
 end Algorithm
+
+/-! ### The Galerkin property of the Concus–Golub–Widlund iterate (real case) -/
+
+section Galerkin
+
+variable {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
+
+/-- **§9.6 read as the hypothesis of the backbone recurrence**: in the `M`-inner product `M⁻¹ A` is
+*shifted skew-adjoint*, `B + B* = 2`.  This is `adjoint_energyEnd` over the reals. -/
+theorem isShiftedSkewAdjoint_energyEnd
+    (hM : Krylov.IsPreconditioner (op (cgwM A)) (op (cgwM A)⁻¹)) :
+    (hM.energyEnd (op (cgwM A)⁻¹ ∘ₗ op A)).IsShiftedSkewAdjoint := by
+  intro u v
+  have h := adjoint_energyEnd (A := A) hM u v
+  rw [inner_sub_right, real_inner_smul_right] at h
+  linarith
+
+/-- **The Concus–Golub–Widlund recurrence is the backbone `CGW.iterate`** of `M⁻¹ A` in the
+`M`-inner product: the iterate and the search direction transport unchanged, and what plays the
+part of the backbone residual is the *preconditioned* residual `z_j = M⁻¹ r_j`. -/
+theorem cgw_eq_CGW_iterate (hM : Krylov.IsPreconditioner (op (cgwM A)) (op (cgwM A)⁻¹))
+    (b x₀ : EuclideanSpace ℝ (Fin n)) (j : ℕ) :
+    hM.toEnergy (cgwX A b x₀ j)
+        = (CGW.iterate (hM.energyEnd (op (cgwM A)⁻¹ ∘ₗ op A))
+            (hM.toEnergy (op (cgwM A)⁻¹ b)) (hM.toEnergy x₀) j).x ∧
+      hM.toEnergy (cgwZ A b x₀ j)
+        = (CGW.iterate (hM.energyEnd (op (cgwM A)⁻¹ ∘ₗ op A))
+            (hM.toEnergy (op (cgwM A)⁻¹ b)) (hM.toEnergy x₀) j).r ∧
+      hM.toEnergy (cgwP A b x₀ j)
+        = (CGW.iterate (hM.energyEnd (op (cgwM A)⁻¹ ∘ₗ op A))
+            (hM.toEnergy (op (cgwM A)⁻¹ b)) (hM.toEnergy x₀) j).p := by
+  have hnum : ∀ k : ℕ,
+      inner ℝ (hM.toEnergy (cgwZ A b x₀ k)) (hM.toEnergy (cgwZ A b x₀ k))
+        = inner ℝ (op (cgwM A)⁻¹ (cgwR A b x₀ k)) (cgwR A b x₀ k) := by
+    intro k
+    rw [WithEnergy.inner_equiv, _root_.energyInner]
+    simp only [cgwZ]
+    rw [hM.apply_inv]
+    exact real_inner_comm _ _
+  have hBapply : ∀ y : EuclideanSpace ℝ (Fin n),
+      hM.energyEnd (op (cgwM A)⁻¹ ∘ₗ op A) (hM.toEnergy y)
+        = hM.toEnergy (op (cgwM A)⁻¹ (op A y)) := by
+    intro y
+    rw [Krylov.IsPreconditioner.energyEnd_apply, LinearMap.comp_apply]
+  have hinit : hM.toEnergy (op (cgwM A)⁻¹ (b - op A x₀))
+      = hM.toEnergy (op (cgwM A)⁻¹ b)
+        - hM.energyEnd (op (cgwM A)⁻¹ ∘ₗ op A) (hM.toEnergy x₀) := by
+    rw [hBapply, ← map_sub, ← map_sub]
+  induction j with
+  | zero => exact ⟨rfl, hinit, hinit⟩
+  | succ j ih =>
+    obtain ⟨hx, hr, hp⟩ := ih
+    have halpha : cgwAlpha A b x₀ j
+        = CGW.alpha (hM.energyEnd (op (cgwM A)⁻¹ ∘ₗ op A))
+          (CGW.iterate (hM.energyEnd (op (cgwM A)⁻¹ ∘ₗ op A))
+            (hM.toEnergy (op (cgwM A)⁻¹ b)) (hM.toEnergy x₀) j) := by
+      rw [CGW.alpha, ← hr, ← hp, hnum j, hM.inner_energyEnd_right (op A)]
+      rfl
+    have hr' : hM.toEnergy (cgwZ A b x₀ (j + 1))
+        = (CGW.iterate (hM.energyEnd (op (cgwM A)⁻¹ ∘ₗ op A))
+            (hM.toEnergy (op (cgwM A)⁻¹ b)) (hM.toEnergy x₀) (j + 1)).r := by
+      rw [CGW.iterate_succ_r, ← hr, ← hp, ← halpha, hBapply]
+      simp only [cgwZ, cgwR_succ, map_sub, map_smul]
+    have hbeta : cgwBeta A b x₀ j
+        = CGW.beta (hM.energyEnd (op (cgwM A)⁻¹ ∘ₗ op A))
+          (CGW.iterate (hM.energyEnd (op (cgwM A)⁻¹ ∘ₗ op A))
+            (hM.toEnergy (op (cgwM A)⁻¹ b)) (hM.toEnergy x₀) j) := by
+      rw [CGW.beta_iterate, ← hr', ← hr, hnum (j + 1), hnum j, cgwBeta, pcgStepBeta_def,
+        ← cgwR_succ_eq]
+      rfl
+    refine ⟨?_, hr', ?_⟩
+    · rw [CGW.iterate_succ_x, ← hx, ← hp, ← halpha, cgwX_succ, map_add, map_smul]
+    · rw [CGW.iterate_succ_p, ← hr', ← hp, ← hbeta, cgwP_succ, map_add, map_smul]
+
+/-- **The Concus–Golub–Widlund iterate is a Galerkin iterate**: it lies in
+`x₀ + 𝒦_j(M⁻¹ A, M⁻¹ r₀)` and its residual is `M`-orthogonal to that space, so §9.6 is a
+projection method for the preconditioned system `M⁻¹ A x = M⁻¹ b` in the `M`-inner product.  This
+is the only optimality the algorithm has: no minimization comes with it, because `M⁻¹ A` is not
+`M`-self-adjoint.
+
+Over the reals only.  Over `ℂ` the recurrence is not a projection method — see the module
+documentation of `Numlib/Krylov/CGW.lean`: the step length `α_j` is then genuinely complex and the
+cancellation that makes the directions `B`-conjugate fails already at `j = 1`. -/
+theorem cgw_isGalerkinIterate (hM : Krylov.IsPreconditioner (op (cgwM A)) (op (cgwM A)⁻¹))
+    (b x₀ : EuclideanSpace ℝ (Fin n)) (j : ℕ) :
+    IsGalerkin (op A) b x₀
+      (Chapter06.krylov ((cgwM A)⁻¹ * A) (op (cgwM A)⁻¹ (b - op A x₀)) j) (cgwX A b x₀ j) := by
+  have hgal : IsGalerkin (hM.energyEnd (op (cgwM A)⁻¹ ∘ₗ op A))
+      (hM.toEnergy (op (cgwM A)⁻¹ b)) (hM.toEnergy x₀)
+      (Krylov.subspace (hM.energyEnd (op (cgwM A)⁻¹ ∘ₗ op A))
+        (hM.toEnergy (op (cgwM A)⁻¹ b)
+          - hM.energyEnd (op (cgwM A)⁻¹ ∘ₗ op A) (hM.toEnergy x₀)) j)
+      (CGW.iterate (hM.energyEnd (op (cgwM A)⁻¹ ∘ₗ op A))
+        (hM.toEnergy (op (cgwM A)⁻¹ b)) (hM.toEnergy x₀) j).x :=
+    CGW.isGalerkinIterate (hM.toEnergy (op (cgwM A)⁻¹ b)) (hM.toEnergy x₀)
+      (isShiftedSkewAdjoint_energyEnd hM) j
+  rw [show hM.toEnergy (op (cgwM A)⁻¹ b)
+        - hM.energyEnd (op (cgwM A)⁻¹ ∘ₗ op A) (hM.toEnergy x₀)
+      = hM.toEnergy (op (cgwM A)⁻¹ (b - op A x₀)) by
+      rw [Krylov.IsPreconditioner.energyEnd_apply, LinearMap.comp_apply, ← map_sub, ← map_sub],
+    hM.subspace_energyEnd, ← (cgw_eq_CGW_iterate hM b x₀ j).1] at hgal
+  rw [Chapter06.krylov_eq, op_mul]
+  exact (hM.isGalerkin_energyEnd_iff (op A) b x₀ _ _).1 hgal
+
+end Galerkin
+
 
 end SaadSparse.Chapter09

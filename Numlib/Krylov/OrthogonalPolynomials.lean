@@ -4,8 +4,10 @@ import Mathlib.MeasureTheory.Integral.Bochner.Basic
 import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.Eigen.Perturbation
 import Numlib.Eigen.RayleighRitz
+import Numlib.Krylov.CG
 import Numlib.Krylov.Convergence.Polynomial
 import Numlib.Krylov.Convergence.Superlinear
+import Numlib.Krylov.Hessenberg
 import Numlib.Krylov.Lanczos
 
 /-!
@@ -48,6 +50,15 @@ Gauss rule of the measure is then the spectral measure of the *compressed* pair:
 alike, and `Lanczos.gauss_quadrature_eq_sum` writes the rule out with its `m` nodes and weights. The
 nodes are the Ritz values by the second point above, and the weights are `‖v‖²` times the squared
 first components of the eigenvectors of `T_m`.
+
+The Gauss rule for `f(λ) = λ⁻¹` is the conjugate gradient error itself, which is the
+Dahlquist–Golub–Nash identity `CG.energyNorm_error_sq_eq_sub_inner_inv`
+([meurant2006lanczos] Thm 9): for symmetric coercive `A`,
+`‖x* - x_k‖_A² = ‖r₀‖² ((T_n⁻¹ e₁, e₁) - (T_k⁻¹ e₁, e₁))` with `n = grade A r₀`, the two terms
+being `Lanczos.tridiagInvFirst` at `n` and at `k`. What makes the statement meaningful rather than
+vacuous — `Matrix.inv` being junk-valued at a singular matrix — is `Lanczos.isUnit_tridiag`: for a
+coercive operator the Galerkin iterate over `𝒦_m` exists and is unique, which by
+`Krylov.existsUnique_isGalerkinIterate_iff_isUnit` is nonsingularity of `H_m = T_m`.
 
 Two results that belong to this circle but not to the Lanczos process itself close the module.
 `Polynomial.christoffel_darboux` is the Christoffel–Darboux identity for *any* sequence of
@@ -937,3 +948,252 @@ theorem persistence (h : m + 1 ≤ k) {θ : ℝ} {z : EuclideanSpace ℝ (Fin (m
 end Persistence
 
 end Lanczos
+
+/-! ### The Dahlquist–Golub–Nash error identity -/
+
+section DahlquistGolubNash
+
+variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
+variable {A : E →ₗ[𝕜] E} {b x₀ : E}
+
+namespace Lanczos
+
+/-- The **Gauss quadrature estimate** `(T_m⁻¹ e₁, e₁)` of the first inverse moment `∫ λ⁻¹ dα(λ)`
+of the spectral measure, written as a bilinear expression so that it is `0` for `m = 0`.  It is
+the quantity through which the Lanczos process sees the energy norm of the conjugate gradient
+error ([meurant2006lanczos], Thm 9). -/
+noncomputable def tridiagInvFirst (A : E →ₗ[𝕜] E) (r : E) (m : ℕ) : ℝ :=
+  ((tridiag A r m)⁻¹).mulVec (Krylov.firstVec (1 : ℝ) m) ⬝ᵥ Krylov.firstVec (1 : ℝ) m
+
+@[simp]
+theorem tridiagInvFirst_zero (A : E →ₗ[𝕜] E) (r : E) : tridiagInvFirst A r 0 = 0 := by
+  simp [tridiagInvFirst, dotProduct]
+
+/-- **The Hessenberg matrix of a coercive operator is nonsingular** up to the grade: for a coercive
+operator the Galerkin iterate over `𝒦_m` exists and is unique, and that is exactly nonsingularity
+of `H_m` (`Krylov.existsUnique_isGalerkinIterate_iff_isUnit`). -/
+theorem isUnit_hessenbergSq [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))]
+    (hA : A.IsCoercive) {m : ℕ} (hm : m ≤ grade A (b - A x₀)) :
+    IsUnit (Arnoldi.hessenbergSq A (b - A x₀) m) :=
+  (existsUnique_isGalerkinIterate_iff_isUnit hm).1
+    (existsUnique_isGalerkinIterate_of_isCoercive hA b x₀ m)
+
+/-- **The Lanczos tridiagonal matrix of a symmetric coercive operator is nonsingular** up to the
+grade: it is the Hessenberg matrix of a symmetric operator, entry by entry the image of the real
+`T_m` under `algebraMap ℝ 𝕜`, and that map is injective. -/
+theorem isUnit_tridiag [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))]
+    (hA : A.IsSymmetricCoercive) {m : ℕ} (hm : m ≤ grade A (b - A x₀)) :
+    IsUnit (tridiag A (b - A x₀) m) := by
+  have h1 := isUnit_hessenbergSq hA.isCoercive hm
+  have hdet : ((tridiag A (b - A x₀) m).map (algebraMap ℝ 𝕜)).det
+      = algebraMap ℝ 𝕜 (tridiag A (b - A x₀) m).det := by
+    rw [RingHom.map_det (algebraMap ℝ 𝕜), RingHom.mapMatrix_apply]
+  rw [hessenbergSq_eq_map_tridiag (b - A x₀) hA.isSymmetric m, Matrix.isUnit_iff_isUnit_det, hdet,
+    isUnit_iff_ne_zero] at h1
+  rw [Matrix.isUnit_iff_isUnit_det, isUnit_iff_ne_zero]
+  exact fun hc => h1 (by rw [hc, map_zero])
+
+end Lanczos
+
+namespace CG
+
+open Lanczos
+
+variable [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))]
+
+/-- Orthonormality reads a coefficient off a combination of Arnoldi vectors. -/
+private theorem inner_vec_sum {m : ℕ} (hm : m ≤ grade A (b - A x₀)) (y : Fin m → 𝕜) (i : Fin m) :
+    inner 𝕜 (Arnoldi.vec A (b - A x₀) (i : ℕ))
+        (∑ j, y j • Arnoldi.vec A (b - A x₀) (j : ℕ)) = y i := by
+  rw [inner_sum, Finset.sum_eq_single i]
+  · rw [inner_smul_right, inner_self_eq_norm_sq_to_K,
+      Arnoldi.norm_vec_eq_one_of_lt_grade A _ (lt_of_lt_of_le i.isLt hm)]
+    norm_num
+  · intro j _ hji
+    rw [inner_smul_right,
+      Arnoldi.inner_vec_eq_zero A _ (fun hc => hji (Fin.ext hc.symm)), mul_zero]
+  · intro hc
+    exact absurd (Finset.mem_univ _) hc
+
+omit [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))] in
+/-- The `m`-th Arnoldi vector is orthogonal to `𝒦_m`. -/
+private theorem inner_vec_last_sum {m : ℕ} (y : Fin m → 𝕜) :
+    inner 𝕜 (Arnoldi.vec A (b - A x₀) m) (∑ j, y j • Arnoldi.vec A (b - A x₀) (j : ℕ)) = 0 := by
+  rw [inner_sum]
+  refine Finset.sum_eq_zero fun j _ => ?_
+  rw [inner_smul_right,
+    Arnoldi.inner_vec_eq_zero A _ (fun hc => absurd hc.symm (Nat.ne_of_lt j.isLt)), mul_zero]
+
+/-- `⟪A V_m y, V_m y⟫ = (H_m y)ᴴ y`: the quadratic form of `A` on `𝒦_m` in Arnoldi coordinates. -/
+private theorem inner_apply_sum_sum {m : ℕ} (hm : m ≤ grade A (b - A x₀)) (y : Fin m → 𝕜) :
+    inner 𝕜 (A (∑ j, y j • Arnoldi.vec A (b - A x₀) (j : ℕ)))
+        (∑ j, y j • Arnoldi.vec A (b - A x₀) (j : ℕ))
+      = ∑ j, (starRingEnd 𝕜) ((Arnoldi.hessenbergSq A (b - A x₀) m).mulVec y j) * y j := by
+  have hlast : inner 𝕜 ((hessenbergOf (Arnoldi.coeff A (b - A x₀)) m).mulVec y (Fin.last m) •
+      Arnoldi.vec A (b - A x₀) ((Fin.last m : Fin (m + 1)) : ℕ))
+      (∑ j, y j • Arnoldi.vec A (b - A x₀) (j : ℕ)) = 0 := by
+    rw [inner_smul_left]
+    have hval : ((Fin.last m : Fin (m + 1)) : ℕ) = m := rfl
+    rw [hval, inner_vec_last_sum y, mul_zero]
+  rw [(Arnoldi.hessenbergRelation A (b - A x₀)).apply_sum m y, sum_inner, Fin.sum_univ_castSucc,
+    hlast, add_zero]
+  refine Finset.sum_congr rfl fun j _ => ?_
+  rw [inner_smul_left]
+  have hval : ((j.castSucc : Fin (m + 1)) : ℕ) = (j : ℕ) := rfl
+  have hval2 : (hessenbergOf (Arnoldi.coeff A (b - A x₀)) m).mulVec y j.castSucc
+      = (Arnoldi.hessenbergSq A (b - A x₀) m).mulVec y j := rfl
+  rw [hval, inner_vec_sum hm y j, hval2]
+
+/-- `⟪r₀, V_m y⟫ = (β e₁)ᴴ y`. -/
+private theorem inner_residual_sum {m : ℕ} (hm : m ≤ grade A (b - A x₀)) (y : Fin m → 𝕜) :
+    inner 𝕜 (b - A x₀) (∑ j, y j • Arnoldi.vec A (b - A x₀) (j : ℕ))
+      = ∑ j, (starRingEnd 𝕜) (Krylov.firstVec ((‖b - A x₀‖ : ℝ) : 𝕜) m j) * y j := by
+  have key : ∀ z : E, inner 𝕜 (b - A x₀) z
+      = (starRingEnd 𝕜) ((‖b - A x₀‖ : ℝ) : 𝕜) *
+        inner 𝕜 (Arnoldi.vec A (b - A x₀) 0) z := by
+    intro z
+    conv_lhs => rw [← Arnoldi.smul_vec_zero A (b - A x₀)]
+    rw [inner_smul_left]
+  rw [key, inner_sum, Finset.mul_sum]
+  refine Finset.sum_congr rfl fun j _ => ?_
+  rw [inner_smul_right]
+  by_cases hj : (j : ℕ) = 0
+  · have hgrade : 0 < grade A (b - A x₀) :=
+      lt_of_le_of_lt (Nat.zero_le _) (lt_of_lt_of_le j.isLt hm)
+    have hj0 : Arnoldi.vec A (b - A x₀) (j : ℕ) = Arnoldi.vec A (b - A x₀) 0 := by rw [hj]
+    rw [hj0, inner_self_eq_norm_sq_to_K, Arnoldi.norm_vec_eq_one_of_lt_grade A _ hgrade,
+      Krylov.firstVec, ite_eq_left hj]
+    push_cast
+    ring
+  · rw [Arnoldi.inner_vec_eq_zero A _ (Ne.symm hj), Krylov.firstVec, ite_eq_right hj, map_zero,
+      mul_zero, zero_mul, mul_zero]
+
+/-- The energy-norm error of the Galerkin iterate `x₀ + V_m y`: the cross terms and the quadratic
+term collapse because `H_m y = β e₁`. -/
+private theorem energyNorm_error_sq_eq_sub (hA : A.IsSymmetricCoercive) {xstar : E}
+    (hstar : A xstar = b) {m : ℕ} (hm : m ≤ grade A (b - A x₀)) {y : Fin m → 𝕜}
+    (hy : (Arnoldi.hessenbergSq A (b - A x₀) m).mulVec y
+      = Krylov.firstVec ((‖b - A x₀‖ : ℝ) : 𝕜) m) :
+    energyNorm A (xstar - (x₀ + ∑ j, y j • Arnoldi.vec A (b - A x₀) (j : ℕ))) ^ 2
+      = energyNorm A (xstar - x₀) ^ 2
+        - RCLike.re (inner 𝕜 (A (xstar - x₀))
+            (∑ j, y j • Arnoldi.vec A (b - A x₀) (j : ℕ))) := by
+  set S : E := ∑ j, y j • Arnoldi.vec A (b - A x₀) (j : ℕ) with hS
+  set e : E := xstar - x₀ with he
+  have hAe : A e = b - A x₀ := by rw [he, map_sub, hstar]
+  have hquad : inner 𝕜 (A S) S = inner 𝕜 (A e) S := by
+    rw [hAe, hS, inner_apply_sum_sum hm y, hy, ← inner_residual_sum hm y]
+  have hcross : inner 𝕜 (A S) e = (starRingEnd 𝕜) (inner 𝕜 (A e) S) := by
+    rw [hA.isSymmetric S e, ← inner_conj_symm]
+  have hexpand : ∀ u w : E, inner 𝕜 (A (u - w)) (u - w)
+      = inner 𝕜 (A u) u - inner 𝕜 (A u) w - inner 𝕜 (A w) u + inner 𝕜 (A w) w := by
+    intro u w
+    rw [map_sub, inner_sub_left, inner_sub_right, inner_sub_right]
+    ring
+  have hexp : inner 𝕜 (A (e - S)) (e - S)
+      = inner 𝕜 (A e) e - (starRingEnd 𝕜) (inner 𝕜 (A e) S) := by
+    rw [hexpand e S, hquad, hcross]
+    ring
+  have hsub : xstar - (x₀ + S) = e - S := by rw [he]; abel
+  rw [hsub, hA.energyNorm_sq, hA.energyNorm_sq, hexp, map_sub, RCLike.conj_re]
+
+/-- `e₁` scaled: `firstVec β m = β • firstVec 1 m`. -/
+private theorem firstVec_eq_smul (β : ℝ) (m : ℕ) :
+    Krylov.firstVec β m = β • Krylov.firstVec (1 : ℝ) m := by
+  funext i
+  rw [Pi.smul_apply, Krylov.firstVec, Krylov.firstVec, smul_eq_mul]
+  split <;> simp
+
+/-- **The first inverse moment in coordinates**: `⟪r₀, V_m y⟫ = ‖r₀‖² (T_m⁻¹ e₁, e₁)` for the
+Galerkin coordinates `y`.  The coordinates are the image of the real solution of `T_m y' = β e₁`,
+because `H_m` is the image of `T_m` and both systems are uniquely solvable. -/
+private theorem re_inner_residual_sum_eq (hA : A.IsSymmetricCoercive) {m : ℕ}
+    (hm : m ≤ grade A (b - A x₀)) {y : Fin m → 𝕜}
+    (hy : (Arnoldi.hessenbergSq A (b - A x₀) m).mulVec y
+      = Krylov.firstVec ((‖b - A x₀‖ : ℝ) : 𝕜) m) :
+    RCLike.re (inner 𝕜 (b - A x₀) (∑ j, y j • Arnoldi.vec A (b - A x₀) (j : ℕ)))
+      = ‖b - A x₀‖ ^ 2 * tridiagInvFirst A (b - A x₀) m := by
+  set T := tridiag A (b - A x₀) m with hT
+  have hTu : IsUnit T := isUnit_tridiag hA hm
+  have hTdet : IsUnit T.det := (Matrix.isUnit_iff_isUnit_det T).1 hTu
+  set y' : Fin m → ℝ := (T⁻¹).mulVec (Krylov.firstVec ‖b - A x₀‖ m) with hy'def
+  have hTy' : T.mulVec y' = Krylov.firstVec ‖b - A x₀‖ m := by
+    rw [hy'def, Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv _ hTdet, Matrix.one_mulVec]
+  have hmapfirst : ∀ i : Fin m,
+      Krylov.firstVec ((‖b - A x₀‖ : ℝ) : 𝕜) m i
+        = algebraMap ℝ 𝕜 (Krylov.firstVec ‖b - A x₀‖ m i) := by
+    intro i
+    rw [Krylov.firstVec, Krylov.firstVec]
+    split <;> simp
+  have hyeq : y = fun j => algebraMap ℝ 𝕜 (y' j) := by
+    refine Matrix.mulVec_injective_iff_isUnit.2 (isUnit_hessenbergSq hA.isCoercive hm) ?_
+    rw [hy]
+    funext i
+    have h := RingHom.map_mulVec (algebraMap ℝ 𝕜) T y' i
+    rw [hTy'] at h
+    simp only [Function.comp_def] at h
+    rw [hessenbergSq_eq_map_tridiag (b - A x₀) hA.isSymmetric m, ← hT, ← h, hmapfirst i]
+  rw [inner_residual_sum hm y, hyeq]
+  have hsum : ∑ j, (starRingEnd 𝕜) (Krylov.firstVec ((‖b - A x₀‖ : ℝ) : 𝕜) m j) *
+      algebraMap ℝ 𝕜 (y' j)
+      = algebraMap ℝ 𝕜 (∑ j, Krylov.firstVec ‖b - A x₀‖ m j * y' j) := by
+    rw [map_sum]
+    refine Finset.sum_congr rfl fun j _ => ?_
+    rw [map_mul, hmapfirst j, RCLike.algebraMap_eq_ofReal, RCLike.conj_ofReal]
+  rw [hsum, RCLike.algebraMap_eq_ofReal, RCLike.ofReal_re]
+  have hdot : ∑ j, Krylov.firstVec ‖b - A x₀‖ m j * y' j
+      = Krylov.firstVec ‖b - A x₀‖ m ⬝ᵥ y' := rfl
+  rw [hdot, hy'def, firstVec_eq_smul, Matrix.mulVec_smul, smul_dotProduct, dotProduct_smul,
+    tridiagInvFirst, ← hT, dotProduct_comm]
+  simp only [smul_eq_mul]
+  ring
+
+/-- **[meurant2006lanczos], Thm 9 (Dahlquist–Golub–Nash)**: the energy norm of the conjugate
+gradient error is the *Gauss quadrature remainder* for `f(λ) = λ⁻¹`,
+
+`‖x* - x_k‖_A² = ‖r₀‖² ((T_n⁻¹ e₁, e₁) - (T_k⁻¹ e₁, e₁))`, `n = grade A r₀`.
+
+Each step of the identity is elementary once the Galerkin coordinates are in hand: the error
+expands as `‖x* - x₀‖_A² - ⟪r₀, V_k y_k⟫`, the cross term and the quadratic term cancelling
+because `T_k y_k = ‖r₀‖ e₁`, and that inner product is `‖r₀‖² (T_k⁻¹ e₁, e₁)`.  The first term is
+the same expression at `k = n`, where the iterate is exact.
+
+The tridiagonal matrices are nonsingular up to the grade (`Lanczos.isUnit_tridiag`), which is what
+makes the statement about `T_k⁻¹` meaningful rather than vacuous. -/
+theorem energyNorm_error_sq_eq_sub_inner_inv (hA : A.IsSymmetricCoercive) {xstar : E}
+    (hstar : A xstar = b) {k : ℕ} (hk : k ≤ grade A (b - A x₀)) :
+    energyNorm A (xstar - (CG.iterate A b x₀ k).x) ^ 2
+      = ‖b - A x₀‖ ^ 2 * (tridiagInvFirst A (b - A x₀) (grade A (b - A x₀))
+          - tridiagInvFirst A (b - A x₀) k) := by
+  have key : ∀ m, m ≤ grade A (b - A x₀) →
+      energyNorm A (xstar - (CG.iterate A b x₀ m).x) ^ 2
+        = energyNorm A (xstar - x₀) ^ 2
+          - ‖b - A x₀‖ ^ 2 * tridiagInvFirst A (b - A x₀) m := by
+    intro m hm
+    obtain ⟨y, hy, hx⟩ :=
+      (isGalerkinIterate_iff_exists_mulVec_eq hm _).1 (CG.isGalerkinIterate b x₀ hA m)
+    rw [hx, energyNorm_error_sq_eq_sub hA hstar hm hy,
+      show A (xstar - x₀) = b - A x₀ by rw [map_sub, hstar], re_inner_residual_sum_eq hA hm hy]
+  have hzero : energyNorm A (xstar - (CG.iterate A b x₀ (grade A (b - A x₀))).x) ^ 2 = 0 := by
+    have h1 : A (CG.iterate A b x₀ (grade A (b - A x₀))).x = b :=
+      (CG.isGalerkinIterate b x₀ hA _).apply_eq_of_grade_le le_rfl
+    have h2 : (CG.iterate A b x₀ (grade A (b - A x₀))).x = xstar := by
+      by_contra hne
+      have h3 : A ((CG.iterate A b x₀ (grade A (b - A x₀))).x - xstar) = 0 := by
+        rw [map_sub, h1, hstar, sub_self]
+      have h4 := hA.isCoercive.inner_self_pos (sub_ne_zero.2 hne)
+      rw [h3, inner_zero_left, map_zero] at h4
+      exact lt_irrefl 0 h4
+    rw [h2, sub_self, energyNorm]
+    simp
+  have hgrade := key _ le_rfl
+  rw [hzero] at hgrade
+  rw [key k hk]
+  have h0 : energyNorm A (xstar - x₀) ^ 2
+      = ‖b - A x₀‖ ^ 2 * tridiagInvFirst A (b - A x₀) (grade A (b - A x₀)) := by linarith
+  rw [h0]
+  ring
+
+end CG
+
+end DahlquistGolubNash

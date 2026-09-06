@@ -1,30 +1,5 @@
 namespace = "Krylov"
-desc = '''
-Convergence bounds for the minimal-residual iterate on symmetric *indefinite* systems, where the
-single-interval Chebyshev argument of `Numlib/Krylov/Convergence/CG` does not apply because the
-spectrum straddles the origin. The classical bound (Greenbaum, *Iterative Methods for Solving
-Linear Systems*, Thm 3.1.1; it is the estimate Choi, *Iterative Methods for Singular Linear
-Equations and Least-Squares Problems*, §2.4 and Fong–Saunders §1 quote for MINRES) encloses the
-spectrum in `[a, b] ∪ [c, d]` with `a < b < 0 < c < d` and `b - a = d - c`, composes the Chebyshev
-polynomial with the quadratic `q(t) = (t - a)(t - d)` that maps both intervals onto one interval
-avoiding the image of `0`, and gets `‖r_{2k}‖ ≤ 2 ((√(|a d|) - √(|b c|))/(√(|a d|) + √(|b c|)))^k ‖r₀‖`.
-
-The polynomial ingredient is the two-interval min–max statement in
-`Numlib/RingTheory/Polynomial/ChebyshevMinimax`; the operator ingredient is the eigenvalue form
-of the polynomial norm bound, `LinearMap.IsSymmetric.norm_aeval_apply_le` of
-`Numlib/Krylov/Convergence/Polynomial`, at the finite-dimensional rung (a two-interval spectral
-hypothesis is not a quadratic-form bound, so the compression trick does not lift it to arbitrary
-inner product spaces without further work; the Hilbert-space version would go through Mathlib's
-continuous functional calculus and is not planned).
-'''
 
 [[node]]
 id = "IsMinResIterate.norm_residual_le_of_eigenvalues_mem_union_Icc"
-kind = "theorem"
-desc = '''For symmetric `A` on a finite-dimensional inner product space with every eigenvalue in
-`Set.Icc a b ∪ Set.Icc c d`, `a < b < 0 < c < d`, `b - a = d - c`, a minimal-residual iterate at
-step `2k` satisfies `‖b - A x‖ ≤ 2 ((√(a d) - √(b c))/(√(a d) + √(b c)))^k ‖b - A x₀‖` (with `a d`
-and `b c` positive). `Krylov.IsMinResIterate.norm_residual_le_norm_aeval` with the composed
-Chebyshev polynomial and `LinearMap.IsSymmetric.norm_aeval_apply_le`.'''
-deps = ["IsMinResIterate", "IsMinResIterate.norm_residual_le_norm_aeval", "LinearMap.IsSymmetric.norm_aeval_apply_le", "Polynomial.Chebyshev.exists_eval_zero_eq_one_abs_le_of_union_Icc"]
 source = "Greenbaum, Iterative Methods for Solving Linear Systems, Theorem 3.1.1; Choi, Iterative Methods for Singular Linear Equations and Least-Squares Problems, Section 2.4"

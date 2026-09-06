@@ -34,18 +34,10 @@ id = "cgw_alpha"
 id = "cgw_residual_eq"
 
 [[node]]
-id = "cgw_isGalerkinIterate"
-kind = "theorem"
-desc = '''The CGW iterate is the Galerkin iterate of `M⁻¹ A x = M⁻¹ b` in the `M`-inner product:
-`Krylov.IsGalerkinIterate` for `M⁻¹A` on `𝒦_j(M⁻¹A, M⁻¹ r₀)` in `WithEnergy M`, i.e. the
-preconditioned residual `z_j` is `M`-orthogonal to the preconditioned Krylov space. The FOM
-iterate of the tridiagonal relation (9.29); no minimization property is claimed, because `M⁻¹A`
-is not `M`-self-adjoint.
+id = "isShiftedSkewAdjoint_energyEnd"
 
-Not attempted: the library has no recurrence-to-Galerkin bridge for an operator of the shape
-"identity plus skew-adjoint". `Numlib/Krylov/CG.lean` proves `CG.iterate` Galerkin for a
-*self-adjoint* operator, and Saad's whole point in §9.6 is that `M⁻¹A` is not `M`-self-adjoint,
-so that argument does not transfer; what is wanted is a backbone theory of the CG-shaped
-recurrence for `1 - S` with `S` skew-adjoint, of which CGW would then be the instance.
-`cgw_residual_eq` is the first step of such an induction and is proved.'''
-deps = ["cgw", "cgw_alpha", "equation_9_29", "Krylov.IsGalerkinIterate", "WithEnergy"]
+[[node]]
+id = "cgw_eq_CGW_iterate"
+
+[[node]]
+id = "cgw_isGalerkinIterate"

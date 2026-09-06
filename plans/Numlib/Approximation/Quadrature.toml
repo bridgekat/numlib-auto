@@ -40,21 +40,17 @@ Unlike the rest of this module the statement is not about an arbitrary target fu
 interchange `E(s -> int g(s, t) dt) = int E(g(., t)) dt` needs `L` to be the integral itself, so the
 node should be stated for `L f = int x in a..b, f x`.
 
-The obstruction is still the one recorded when this node was written, and it was checked again
-against the current Mathlib: `Mathlib/Analysis/Calculus/Taylor.lean` has `taylor_mean_remainder`,
-`taylor_mean_remainder_lagrange`, `taylor_mean_remainder_cauchy` and
-`exists_taylor_mean_remainder_bound`, all mean-value forms, and **no integral remainder**. So the
-node has three parts, none of them short:
+**The obstruction recorded here has shrunk: the pinned Mathlib now has the integral form of
+Taylor's theorem.** `Mathlib/Analysis/Calculus/Taylor.lean` has `taylor_integral_remainder` (and
+`taylor_integral_remainder_of_absolutelyContinuous`), `f x - taylorWithinEval f n (uIcc x0 x) x0 x
+= int_{x0}^{x} ((x-t)^n / n!) . f^{(n+1)}(t) dt` under `ContDiffOn` of order `n+1`, beside the
+mean-value forms. What used to be part 1 of this node, and was the part worth a node of its own, is
+therefore free. What is left is:
 
-1. `f x = sum_{k <= m} f^(k)(a) (x-a)^k / k! + (1/m!) int_a^x (x-t)^m f^(m+1)(t) dt`, by induction
-   on `m` from the fundamental theorem of calculus with
-   `intervalIntegral.integral_mul_deriv_eq_deriv_mul` at each step;
-2. the extension of the inner integral to `[a, b]` by the truncated power, which is where the
+1. the extension of the inner integral to `[a, b]` by the truncated power, which is where the
    kernel's `(. - t)_+^m` comes from and where the integrand stops being smooth in `x`;
-3. the Fubini step `MeasureTheory.integral_integral_swap` on the continuous integrand
+2. the Fubini step `MeasureTheory.integral_integral_swap` on the continuous integrand
    `(x, t) -> (x-t)_+^m f^(m+1)(t)` over the rectangle, the sum half of `E` being finite and hence
-   free.
-
-Part 1 is general enough to be its own node in an analysis module rather than in this one.'''
+   free.'''
 deps = ["functional", "IsInterpolatory"]
 source = "Kress, Numerical Analysis, Section 9.2"

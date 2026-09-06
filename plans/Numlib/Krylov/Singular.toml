@@ -45,19 +45,6 @@ id = "Lanczos.norm_toEuclideanLin_tridiag_le"
 
 [[node]]
 id = "Lanczos.residual_minRes_succ_eq"
-kind = "theorem"
-desc = '''Choi Lemma 2.18 (also Saad (6.55) for DQGMRES): the vector recurrence between consecutive
-MINRES residuals. In this library's `0`-based indexing and over a complex field the identity reads
-`r_{m+1} = ‖s_m‖² • r_m - (s_m * g_m) • v_{m+1}` with `g_m = Krylov.gvec (Arnoldi.coeff A r₀) β m`
-the `m`-th entry of the rotated right-hand side; Choi's real form `r_k = s_k² r_{k-1} - φ_k c_k
-v_{k+1}` is this with `γ_m = ±φ_m`. Only the *norm* consequence `‖r_{m+1}‖ = |s_m| ‖r_m‖` is
-available (`Krylov.IsMinResIterate.norm_residual_succ_eq`); the vector form needs what
-`Krylov/Hessenberg` does not yet export, namely `r_m = γ_m • ∑_i conj (Q_m)_{m,i} • v_i` and the
-last-row recurrence `Q_{m+1} e_last = -conj s_m • (Q_m e_last) + conj c_m • e_{m+1}` read off
-`Krylov.givensQAux_succ` and `Krylov.givensMatrix_last_row`. Not symmetry-specific: the same
-identity holds for GMRES, so the natural home may be `Krylov/Hessenberg` rather than here.'''
-deps = ["Krylov.IsMinResIterate.norm_residual_succ_eq", "Krylov.givensQ_mulVec_firstVec",
-  "Krylov.givensQ_mul_hessenbergOf", "Krylov.givensC", "Krylov.givensS", "Krylov.gvec"]
 source = "Choi, Iterative Methods for Singular Linear Equations and Least-Squares Problems, Lemma 2.18"
 
 [[node]]
@@ -66,8 +53,19 @@ kind = "theorem"
 desc = '''Choi Lemma 2.19: `A r_k = ‖r_k‖ (γ_{k+1}^{(1)} • v_{k+1} + δ_{k+2}^{(1)} • v_{k+2})` and hence
 `‖A r_k‖ = ‖r_k‖ √((γ_{k+1}^{(1)})² + (δ_{k+2}^{(1)})²)`, in terms of the entries of the rotated
 tridiagonal factor; and Lemma 2.20, `‖A x_k‖² = ‖t_k‖²` for the rotated right-hand side, which
-makes `‖A x_k‖` computable from the small problem. Downstream of
-`Lanczos.residual_minRes_succ_eq`: apply `A` to that recurrence and use the three-term
-`Lanczos.apply_vec`.'''
+makes `‖A x_k‖` computable from the small problem.
+
+**Blocked on the source.** `books/iterative-methods-for-singular-linear-equations-and-least-squares-problems-choi.pdf`
+is password-protected and cannot be opened, and this desc is the only record of the statement; it
+names `γ^{(1)}_{k+1}` and `δ^{(1)}_{k+2}` without saying which entries of which rotated matrix they
+are, so the coefficients cannot be pinned down without the book. What *is* determined, and is the
+structural half of the lemma, is that `A r_k` lies in `span {v_k, v_{k+1}}` — `A r_k ∈ 𝒦_{k+2}`
+because `r_k ∈ 𝒦_{k+1}`, and `A r_k ⟂ 𝒦_k` because `⟪v_j, A r_k⟫ = ⟪A v_j, r_k⟫` vanishes for
+`j < k` by minimality of the residual over `A 𝒦_k` — so that
+`‖A r_k‖² = |⟪v_k, A r_k⟫|² + |⟪v_{k+1}, A r_k⟫|²`, with the two coefficients computable from
+`Lanczos.residual_minRes_succ_eq` (now proved) and the three-term `Lanczos.apply_vec`: writing
+`r_k = γ_k ∑_i conj (Q_k)_{k,i} v_i`, the coefficient of `v_j` in `A r_k` is
+`γ_k conj ((T̄_k q)_j)` for `q` the last row of `Q_k`. Anyone attempting this should first check that
+form against Choi's `γ^{(1)}`/`δ^{(1)}` rather than guess the normalization.'''
 deps = ["Lanczos.residual_minRes_succ_eq", "Krylov.rotated", "Krylov.gvec", "Lanczos.apply_vec"]
 source = "Choi, Iterative Methods for Singular Linear Equations and Least-Squares Problems, Lemmas 2.19 and 2.20"
