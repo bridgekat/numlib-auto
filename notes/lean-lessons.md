@@ -677,6 +677,19 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   needs no "the set is nonempty" hypothesis, because `i < 0` is false. `FongSaunders.steihaug_cr`
   drops the termination hypothesis this way.
 
+* **`simpa using h₁.add h₂` on a `HasDerivAt` goal can fail on instance paths.** `simp` folds
+  `fun t => f t + g t` into the `Pi.add` form `f + g`, and the two elaborations pick different
+  `Module ℝ ℝ` instances (`Real.normedAddCommGroup.toAddCommGroup` against `Real.instAddCommGroup`),
+  so the error is a type mismatch between two identical-looking `HasDerivAt`s. Ascribe the type of
+  the sum in a `have` and close with `exact`, which unifies up to defeq.
+* `Tendsto.sub tendsto_const_nhds` leaves the constant a metavariable, so a following `simpa`
+  reports a mismatch against `?m`. Bind `have hc : Tendsto (fun _ => a) l (𝓝 a) := tendsto_const_nhds`
+  first. And never `simpa` a goal mentioning `(C ^ m) x`: simp rewrites it to `(⇑C)^[m] x`, which no
+  longer matches a definition stated with the operator power — `simp only [sub_self, norm_zero]`
+  does the job.
+* `positivity` cannot see `0 ≤ T` in the context, so `0 < 2 * (M * T + 1)` needs a `mul_nonneg`
+  and `linarith`, and `0 ≤ (k : ℝ) * Δt i` is `mul_nonneg (Nat.cast_nonneg _) h`.
+
 ## Mathlib names and API
 
 `pow_left_inj₀ ha hb hn : a ^ n = b ^ n ↔ a = b` is the way to cancel the squares after comparing
@@ -1306,6 +1319,44 @@ a strong induction on the columns. No flag or span machinery is needed.
   (x (i+1) - x i)`, so the interpolation operator is visibly a bounded linear map and the local
   affine description is one `Finset.sum_Ico_consecutive` plus `Finset.sum_range_sub` away. Indexing
   the nodes by `ℕ` rather than by `Fin (n + 2)` is what keeps that telescoping painless.
+
+**A continuous affine minorant of a convex lower semicontinuous function** is
+`ConvexOn.exists_affine_le_of_lt` in `Mathlib/Analysis/Convex/Approximation.lean` — Atkinson–Han's
+Lemma 11.3.5, and the only thing "the direct method in a reflexive space" is needed for in a
+Hilbert space, since the parallelogram identity supplies the rest. `𝕜` must be given, the
+`ConvexOn` argument comes *last* (so dot notation is wrong twice over, `ConvexOn` unfolding to
+`And`), and the conclusion is an inequality between `Set.domRestrict`s: apply it at `⟨z, hz⟩ : ↥s`
+and `simpa`.
+
+**`ContinuousLinearMap.extend`** — a bounded operator on a dense subspace extends to the whole
+space — is in `Mathlib/Topology/Algebra/Module/ContinuousLinearMap/Extend.lean`, and its norm
+bound `opNorm_extend_le` in `Mathlib/Analysis/Normed/Operator/Extend.lean`. **Without the import
+the name silently parses as `Function.extend` applied to the namespace `ContinuousLinearMap`**, and
+the error blames the arguments rather than the missing import. Along the inclusion of a submodule,
+`DenseRange` is `Subtype.range_coe` (`Submodule.range_subtypeL` is deprecated) and
+`IsUniformInducing` is `(ContinuousLinearMap.isUniformEmbedding_of_bound _ (fun x => by simp)).isUniformInducing`.
+
+For "the operator norms are unbounded, so extract a subsequence and contradict uniform
+boundedness": `IsCompact.tendsto_subseq` for the parameters, `StrictMono.tendsto_atTop` to push the
+other limits along the subsequence, and this project's
+`ContinuousLinearMap.exists_not_tendsto_of_not_bddAbove` for the last step — the contrapositive
+form is much shorter than calling `banach_steinhaus` by hand. The matching Cauchy criterion is
+`cauchySeq_of_le_tendsto_0 b (fun n m N _ _ => …) (b → 0)`.
+
+Mathlib has no `LowerSemicontinuousOn.const_mul`; scaling by a positive constant is four lines from
+the definition. `Nat.le_ceil_iff'` does not exist: `m ≤ ⌈T / a⌉₊` from `(m : ℝ) * a ≤ T` is
+`((le_div_iff₀ ha).2 h).trans (Nat.le_ceil _)` and then `exact_mod_cast`.
+
+A `LinearPMap` at a constructed member wants the membership rewritten first:
+`rw [show (⟨x + y, _⟩ : L.domain) = ⟨x, hx⟩ + ⟨y, hy⟩ from rfl]` and then `L.map_add`. Writing
+`rw [← L.map_add]` alone leaves a goal whose two sides differ only in a membership proof, and
+`rw`'s trailing `rfl` does not close it.
+
+When a construction is only constrained on an interval but the object has to be *total* — a family
+`S : ℝ → V →L[𝕜] V` defined by well-posedness on `Icc 0 T` — clamp the parameter with
+`max 0 (min t T)` instead of carrying a partial function. The clamped map is linear at *every*
+parameter, which is what a `LinearMap` structure instance needs, and `max 0 (min t T) = t` on the
+interval is one `rw`.
 
 ## Design conventions of this library
 

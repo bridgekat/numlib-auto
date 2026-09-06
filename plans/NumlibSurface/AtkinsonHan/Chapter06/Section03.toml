@@ -1,45 +1,16 @@
 namespace = "AtkinsonHan.Ch06"
-desc = '''
-Atkinson–Han Section 6.3, the variant of the Lax theory that is used to analyse a concrete scheme:
-a two-level recursion `v^{m+1} = Q v^m + h_t g^m`, `v^0 = u^0`, in `ℝ^{N_x - 1}`, whose exact
-values satisfy the same recursion with an extra local truncation error `h_t τ^m` (6.3.6).
-
-The surface takes the space to be an arbitrary real normed space rather than `ℝ^{N_x - 1}` with an
-unspecified norm — the book says explicitly that the norm depends on `N_x` and that it will be
-chosen per example, so fixing one would be less faithful, not more. The definitions of
-Definition 6.3.1 are stated for a family of schemes indexed by the two mesh parameters, since that
-is where consistency, order and convergence live; the theorem itself is one inequality with
-explicit constants.
-
-Examples 6.3.3 and 6.3.4 (the forward and backward schemes for the heat equation in the maximum
-norm and in the discrete two-norm) and Exercises 6.3.1–6.3.3 are not formalized: they are Taylor
-expansions of a solution assumed smooth, plus the eigenvalues of a tridiagonal Toeplitz matrix.
-'''
 
 [[node]]
 id = "IsConsistentScheme"
-kind = "definition"
-desc = '''Definition 6.3.1, consistency and order: a family of two-level schemes indexed by the
-mesh parameters is consistent when `sup_{m h_t ≤ T} ‖τ^m‖ → 0` as `h_x, h_t → 0`, and of order
-`(p₁, p₂)` when `sup_{m h_t ≤ T} ‖τ^m‖ ≤ c (h_x^{p₁} + h_t^{p₂})` (6.3.7). The truncation error
-`τ^m` is defined by the relation (6.3.6) that the exact values satisfy.'''
+
+[[node]]
+id = "IsSchemeOfOrder"
 
 [[node]]
 id = "IsStableScheme"
-kind = "definition"
-desc = '''Definition 6.3.1, stability: `sup_{m h_t ≤ T} ‖Q^m‖ ≤ M₀` with `M₀` independent of the
-mesh.'''
 
 [[node]]
 id = "IsConvergentScheme"
-kind = "definition"
-desc = '''Definition 6.3.1, convergence: `sup_{m h_t ≤ T} ‖u^m - v^m‖ → 0` as `h_x, h_t → 0`.'''
 
 [[node]]
 id = "theorem_6_3_2"
-kind = "theorem"
-desc = '''Theorem 6.3.2: a consistent and stable two-level scheme is convergent, with
-`sup_{m h_t ≤ T} ‖u^m - v^m‖ ≤ M₀ T sup_{m h_t ≤ T} ‖τ^m‖`; if moreover the scheme has order
-`(p₁, p₂)` then the error is `≤ c (h_x^{p₁} + h_t^{p₂})`.'''
-deps = ["IsConsistentScheme", "IsStableScheme", "IsConvergentScheme",
-  "FiniteDifference.norm_sub_le_of_stable"]

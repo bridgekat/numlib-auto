@@ -1,180 +1,53 @@
-desc = '''
-Existence, uniqueness and stability for elliptic variational inequalities in a real Hilbert space
-`V`: for a nonempty closed convex `K`, a strongly monotone Lipschitz `A : V → V`, a convex lower
-semicontinuous `j : V → ℝ` and a datum `f : V`, the problem
-
-  `u ∈ K`,  `inner f (v - u) ≤ inner (A u) (v - u) + j v - j u`  for all `v ∈ K`
-
-has exactly one solution, and it depends Lipschitz continuously on `f`. Atkinson–Han, *Theoretical
-Numerical Analysis*, Theorem 11.3.1, with its specializations to inequalities of the first kind
-(`j = 0`, Theorem 11.3.6 — Stampacchia's theorem) and of the second kind (`K = univ`,
-Theorem 11.3.7), the bilinear-form version (Theorem 11.3.9) and Minty's lemma (Lemma 11.3.8).
-
-**Hypothesis shape.** Strong monotonicity and Lipschitz continuity are taken unbundled, in exactly
-the form `Numlib/Nonlinear/FixedPoint`'s `zarantonello` takes them
-(`hmono : ∀ x y, c * ‖x - y‖ ^ 2 ≤ RCLike.re (inner (A x - A y) (x - y))` and
-`hlip : LipschitzWith (Real.toNNReal L) A`), so that the two theorems compose without a
-translation lemma; `zarantonello` is the case `K = univ`, `j = 0` of `stampacchia`, and the linear
-case is `LinearMap.IsCoerciveWith`. `j` is a total function `V → ℝ` with `ConvexOn ℝ K j` and
-`LowerSemicontinuousOn j K`, not a function on `K` extended by `+∞`: the book's extension trick
-exists only to make the two kinds one statement, and in Lean the set argument already does that.
-
-**The two proof engines.** Uniqueness and the stability estimate are two lines of strong
-monotonicity. Existence goes through the auxiliary minimization problem: for `θ` small the map
-`P θ` sending `u` to the minimizer of `½‖w‖² + θ j w - inner (u - θ (A u - f)) w` over `K` is a
-contraction with factor `√(1 - 2 c θ + L² θ²)`, exactly the damping factor of
-`contractingWith_damped`, and the fixed point theorem `exists_unique_fixedPoint_of_mapsTo` on the
-closed set `K` finishes. So the difficult part is `existsUnique_isMinOn_energy_add` below: the
-existence of the minimizer of a strongly convex functional over a closed convex set. Do **not**
-reach for the direct method in a reflexive space (Atkinson–Han Theorem 3.3.12): in a Hilbert space
-the parallelogram law makes any minimizing sequence Cauchy, which is how Mathlib proves
-`exists_norm_eq_iInf_of_complete_convex`, and the convex lower semicontinuous `j` only needs the
-affine minorant `ConvexOn.exists_affine_le_of_lt` to keep the functional bounded below.
-Atkinson–Han's Lemma 11.3.5 is that minorant, and Mathlib already has it.
-'''
-
 [[node]]
 id = "IsVariationalInequalitySolution"
-kind = "definition"
-desc = '''`IsVariationalInequalitySolution A j f K u : Prop` — `u ∈ K` and
-`inner f (v - u) ≤ inner (A u) (v - u) + j v - j u` for every `v ∈ K`. Atkinson–Han, *Theoretical
-Numerical Analysis*, (11.3.3); the inequality of the first kind is `j = 0` ((11.3.8)) and the
-inequality of the second kind is `K = Set.univ` ((11.3.9)). The datum is a vector `f : V` rather
-than a functional, as in the book, the two being interchangeable by the Riesz representation
-(Atkinson–Han Remark 11.3.4).'''
 source = "Atkinson–Han, Theoretical Numerical Analysis, (11.3.3)"
 
 [[node]]
 id = "IsVariationalInequalitySolution.unique"
-kind = "theorem"
-desc = '''Two solutions of the same variational inequality with a strongly monotone operator
-coincide: add the two inequalities, each tested at the other solution, to get
-`inner (A u₁ - A u₂) (u₁ - u₂) ≤ 0`, and use strong monotonicity. Atkinson–Han Theorem 11.3.1,
-uniqueness; no Lipschitz continuity, no convexity of `j` and no closedness of `K` are used.'''
-deps = ["IsVariationalInequalitySolution"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 11.3.1"
 
 [[node]]
 id = "IsVariationalInequalitySolution.norm_sub_le"
-kind = "theorem"
-desc = '''Lipschitz dependence on the datum: if `u₁` and `u₂` solve the variational inequality with
-data `f₁` and `f₂`, then `‖u₁ - u₂‖ ≤ ‖f₁ - f₂‖ / c` where `c` is the strong monotonicity constant.
-Atkinson–Han Theorem 11.3.1, last clause. The linear special case is
-`norm_sub_le_of_strongly_monotone` of `Numlib/Nonlinear/FixedPoint`.'''
-deps = ["IsVariationalInequalitySolution"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 11.3.1"
 
 [[node]]
 id = "existsUnique_isMinOn_energy_add"
-kind = "theorem"
-desc = '''For a real Hilbert space `V`, a nonempty closed convex `K`, a bounded symmetric
-`V`-elliptic form `a`, a functional `ℓ`, and `j` convex and lower semicontinuous on `K`, the
-functional `E v = ½ a v v + j v - ℓ v` has exactly one minimizer on `K`. Atkinson–Han
-*Theoretical Numerical Analysis*, Theorem 11.2.2, existence clause. Proved directly in the Hilbert
-space rather than through the reflexive-space direct method the book cites: `j` has a continuous
-affine minorant (`ConvexOn.exists_affine_le_of_lt`, Atkinson–Han Lemma 11.3.5) so `E` is bounded
-below and coercive, and ellipticity plus convexity of `j` give
-`E v + E w - 2 E ((v + w)/2) ≥ (c/4) ‖v - w‖²`, making every minimizing sequence Cauchy. This is
-the existence engine of `existsUnique_isVariationalInequalitySolution`; Mathlib's
-`exists_norm_eq_iInf_of_complete_convex` is the case `a = inner`, `j = 0`.'''
-deps = ["SesqForm.IsCoerciveWith", "SesqForm.IsHermitian", "SesqForm.energy"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 11.2.2"
 
 [[node]]
 id = "isMinOn_energy_add_iff"
-kind = "theorem"
-desc = '''The minimizer of `E v = ½ a v v + j v - ℓ v` over a convex `K` is characterized by the
-variational inequality `a u (v - u) + j v - j u ≥ ℓ (v - u)` for all `v ∈ K`: the specialization of
-`isMinOn_add_iff_forall_le` (`Numlib/Analysis/Convex/Gateaux`) to the quadratic functional, whose
-Gâteaux derivative at `u` is `v ↦ a u v - ℓ v`. Atkinson–Han Theorem 11.2.2, characterization
-clause; the case `j = 0`, `K` a subspace is `SesqForm.isMinOn_energy_iff`.'''
-deps = ["isMinOn_add_iff_forall_le", "IsVariationalInequalitySolution", "SesqForm.energy"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 11.2.2"
 
 [[node]]
 id = "existsUnique_isVariationalInequalitySolution"
-kind = "theorem"
-desc = '''Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 11.3.1: for a nonempty closed
-convex `K` in a real Hilbert space, `A` strongly monotone with constant `c` and Lipschitz with
-constant `L`, and `j` convex and lower semicontinuous on `K`, the variational inequality has
-exactly one solution for every datum `f`. The map sending `u` to the solution of the auxiliary
-inequality with operator the identity is a contraction with factor `√(1 - 2 c θ + L² θ²)` for
-`0 < θ < 2c/L²`; each auxiliary problem is solvable by `existsUnique_isMinOn_energy_add` with
-`a = inner`, and the Banach fixed point theorem on the closed set `K` gives the solution.'''
-deps = ["IsVariationalInequalitySolution", "existsUnique_isMinOn_energy_add",
-  "isMinOn_energy_add_iff", "exists_unique_fixedPoint_of_mapsTo",
-  "IsVariationalInequalitySolution.unique"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 11.3.1"
 
 [[node]]
 id = "stampacchia"
-kind = "theorem"
-desc = '''Stampacchia's theorem, Atkinson–Han *Theoretical Numerical Analysis* Theorem 11.3.6: the
-case `j = 0` of `existsUnique_isVariationalInequalitySolution`, a variational inequality of the
-first kind over a nonempty closed convex set has a unique solution depending Lipschitz continuously
-on the datum. Kept under its classical name because that is what a reader looks for; it
-generalizes the Lax–Milgram lemma `SesqForm.laxMilgram`, which is the case where `K` is the whole
-space and `A` is linear (Atkinson–Han Exercise 11.3.2).'''
-deps = ["existsUnique_isVariationalInequalitySolution"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 11.3.6"
 
 [[node]]
 id = "existsUnique_isVariationalInequalitySolution_of_isCoercive"
-kind = "theorem"
-desc = '''Atkinson–Han Theorem 11.3.9: the bilinear-form version. For a bounded `V`-elliptic
-`a : SesqForm ℝ V` — not assumed symmetric — a functional `ℓ`, a convex lower semicontinuous `j`
-and a nonempty closed convex `K`, each of the three inequalities (11.3.12) on `K`, (11.3.13) with
-`j = 0` and (11.3.14) on the whole space has exactly one solution, depending Lipschitz continuously
-on `ℓ`. Immediate from `existsUnique_isVariationalInequalitySolution` applied to
-`A = a.toOperator`, whose strong monotonicity is `SesqForm.isCoerciveWith_iff_toOperator` and whose
-Lipschitz constant is `SesqForm.norm_toOperator`.'''
-deps = ["existsUnique_isVariationalInequalitySolution", "SesqForm.toOperator",
-  "SesqForm.isCoerciveWith_iff_toOperator", "SesqForm.norm_toOperator"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 11.3.9"
 
 [[node]]
 id = "IsVariationalInequalitySolution.iff_minty"
-kind = "theorem"
-desc = '''Minty's lemma, Atkinson–Han *Theoretical Numerical Analysis* Lemma 11.3.8: under the
-hypotheses of Theorem 11.3.1, `u` solves the variational inequality if and only if the *test*
-inequality `inner f (v - u) ≤ inner (A v) (v - u) + j v - j u` holds for all `v ∈ K`, that is, with
-`A` evaluated at the test point rather than at the solution. One direction is monotonicity; the
-other substitutes `u + t (v - u)`, uses convexity of `j` and lets `t` tend to `0`. The value of the
-lemma is that the Minty form is stable under weak limits, which is why it is the engine of the
-convergence proof in `Numlib/Variational/Inequality/Approximation`. Lipschitz continuity of `A` is
-not needed: continuity on finite-dimensional subspaces is enough, and the statement should carry
-only that.'''
-deps = ["IsVariationalInequalitySolution"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, Lemma 11.3.8"
 
 [[node]]
 id = "IsVariationalInequalitySolution.isBestApprox_energy"
-kind = "theorem"
-desc = '''For a symmetric bounded `V`-elliptic form and `j = 0`, the solution of the variational
-inequality over `K` is the best approximation to the unconstrained solution `w` in the energy norm:
-`a.energyNorm (w - u) = ⨅ v ∈ K, a.energyNorm (w - v)`, so the inequality is solved by solving the
-variational equation and projecting onto `K` in the energy inner product. Atkinson–Han, the remark
-following Example 11.3.11. Through `WithEnergy` this is `isBestApprox_iff_inner_le_zero` for the
-energy inner product.'''
-deps = ["IsVariationalInequalitySolution", "IsBestApprox", "isBestApprox_iff_inner_le_zero",
-  "WithEnergy"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, Section 11.3, remark after Example 11.3.11"
 
 [[node]]
 id = "IsVariationalInequalitySolution.iff_of_isCone"
-kind = "theorem"
-desc = '''Atkinson–Han Exercise 11.3.3: when `K` is a closed convex cone and `j = 0`, the
-variational inequality is equivalent to the pair of relations `ℓ v ≤ a u v` for all `v ∈ K` and
-`a u u = ℓ u`. Test at `2u` and at `0` for one direction, add for the other.'''
-deps = ["IsVariationalInequalitySolution"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 11.3.3"
 
 [[node]]
 id = "IsVariationalInequalitySolution.iff_of_isPositiveHomogeneous"
-kind = "theorem"
-desc = '''Atkinson–Han Exercise 11.3.10: for an inequality of the second kind whose `j` is
-positively homogeneous, the inequality is equivalent to `ℓ v ≤ a u v + j v` for all `v` together
-with `a u u + j u = ℓ u`. This is the identity behind the Lagrange-multiplier reformulation of a
-friction problem.'''
-deps = ["IsVariationalInequalitySolution"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 11.3.10"
+
+# The bundled form of the hypothesis `zarantonello` and `contractingWith_damped` take unbundled.
+# It belongs in `Numlib/Nonlinear/FixedPoint`, whose group file this task could not edit; move it
+# there, with the module's other consumers, in the task that lands the switch.
+[[node]]
+id = "IsStronglyMonotoneWith"
