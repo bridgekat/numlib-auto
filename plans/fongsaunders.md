@@ -17,11 +17,13 @@ for matrices. Mathematical content: (§1) Lanczos/Krylov setting; (§2) the CG/C
 Table 2.1, the minimization characterizations of CG and MINRES, the CR sign lemmas Thm 2.1–2.2, and
 the monotonicity theorems Thm 2.3–2.5 for CR (hence MINRES); (§3) normwise relative backward error
 (3.1)–(3.6), the stopping rule (3.4), Thm 3.1; (§4.1.1) the FOM/GMRES-type relation (4.1); (§4.2)
-Steihaug's indefinite-case monotonicity and its CR analogue; (§5) Table 5.1.
+Steihaug's indefinite-case monotonicity and its CR analogue, and the `3 × 3` indefinite
+counterexample (4.2) that makes Thm 2.3 and Thm 3.1 sharp; (§5) Table 5.1.
 Lean files: `NumlibSurface/FongSaunders/Section01.lean` (setting), `Section02.lean`, `Section03.lean`, `Section04.lean`
-(only (4.1), the telescoping identity, §4.2), `Section05.lean` (Table 5.1 as a structure). Numerical-only
-material (§4 experiments, Figures 4.1–4.8, the MINRES-QLP heuristic in §4.2, Table 5.2, §5 prose) is
-left out (section "Left out" below). Count: 26 result blocks, all formalized. Backbone dependencies: `backbone.md` §2.1.4–2.1.5, §2.2, §2.4, §3.1–3.8, §3.11,
+(only (4.1), the telescoping identity, §4.2), `Section05.lean` (Table 5.1 as a structure, and the
+counterexamples of R4.6 and R5.2). Numerical-only material (§4 experiments, Figures 4.1–4.8, the
+MINRES-QLP heuristic in §4.2, Table 5.2, §5 prose) is
+left out (section "Left out" below). Count: 27 result blocks. Backbone dependencies: `backbone.md` §2.1.4–2.1.5, §2.2, §2.4, §3.1–3.8, §3.11,
 §8.2.
 
 Conventions used below. `n : ℕ`; `Vec n := EuclideanSpace ℝ (Fin n)`; `A : Matrix (Fin n) (Fin n) ℝ`
@@ -679,6 +681,28 @@ Numbering: `R<section>.<item>`; the paper's own labels are in the `Book statemen
 * Proof route: unfold two steps of `cg`; `EuclideanSpace.norm_eq`, `Fin.sum_univ_two`.
 * Classification: `surface-only`.
 
+### R4.6 — The `3 × 3` indefinite counterexample (4.2)
+* Book statement: on the nonsingular indefinite system `A = [[2,1,1],[1,0,1],[1,1,2]]`,
+  `b = (0,1,1)ᵀ`, MINRES gives non-monotonic solution norms `‖x_k‖`, and hence non-monotonic
+  backward errors `‖r_k‖/‖x_k‖` (Figure 4.6).
+* Lean surface statement: `theorem minres_norm_iterate_not_monotone`,
+  `theorem minres_backwardError_not_antitoneOn` in `Section05.lean`, of the same existential shape
+  as R5.2 and quantified over every sequence of MINRES iterates — the iterate is unique here
+  because `det A = −2 ≠ 0`, so `Krylov.existsUnique_isMinResIterate_of_injective` applies and no
+  `PosDef` hypothesis is needed.
+* Backbone item: none. `Projection.IsMinRes.iff_isPetrovGalerkin` turns minimality into the
+  orthogonality certificates `⟪r_1, A b⟫ = 0` and `⟪r_2, A b⟫ = ⟪r_2, A² b⟫ = 0`; the iterates are
+  `x_1 = (0, 2/7, 2/7)` with `‖x_1‖² = 8/49` and `x_2 = (2/19, 3/19, 5/19)` with `‖x_2‖² = 2/19`,
+  and the squared backward errors are `21/4` then `8`.
+* Classification: `surface-only`.
+* **This item was previously in "Left out" as an optional exercise, on the ground that "the paper
+  only reports it graphically". That verdict is reversed.** The figure is the evidence; the
+  sentence of §4.2 is the claim, and the paper asserts it flatly. More to the point, it is the
+  *converse* half of the paper's message: Theorems 2.3 and 3.1 assume `A ≻ 0`, and with the
+  counterexample missing nothing in the formalization shows that hypothesis is doing any work. A
+  file that proves the positive-definite monotonicity results and omits the witness that they fail
+  otherwise has recorded half of the paper.
+
 ## Backbone items this paper asked for
 
 The two strict, symmetric-indefinite monotonicity theorems that `backbone.md` §3.11 lists under
@@ -700,11 +724,17 @@ The two strict, symmetric-indefinite monotonicity theorems that `backbone.md` §
   of Figures 4.1–4.8 and their captions (percentages of monotone steps) — empirical, no theorem.
 * §4.1.1's "cumulative minimum ≈" heuristic and "on average `‖r_k^M‖/‖r_{k−1}^M‖` closer to 1 if `l` is large" — informal reasoning;
   only the exact identities (4.1) and the telescoping product (R4.1–R4.2) are kept.
-* §4.2: the `3 × 3` indefinite example (4.2) with its non-monotone plots — could be a computable counterexample
-  (`¬ Monotone ‖x_k^M‖` for MINRES on an indefinite system), but the paper only reports it graphically; optional surface exercise.
 * §4.2: the MINRES-QLP relationship (`Q_k [T̲_k β_1 e_1]`, `R_k P_k = L_k`, `W_k = V_k P_k`, `‖x_k^M‖ = ‖u_k‖`, the `χ²`
-  update and "approximately monotonic") — a heuristic built on Choi–Paige–Saunders [3]; the identities belong to the Choi
-  surface / backbone phase 2 (`Krylov/Singular.lean`, `backbone.md` §3.12), and the paper draws no theorem from them.
+  update and "approximately monotonic") — the closing "we can expect `‖x_k^M‖` to be approximately monotonic" is a heuristic
+  and stays out, but the identities it rests on are theorems of Choi–Paige–Saunders [3] that the paper cites, not experiments.
+  They are left out on **effort** grounds, and the missing piece is named: the second, "QLP" factorization `R_k P_k = L_k` of an
+  upper-tridiagonal `R_k` by right-hand Givens rotations, together with the frozen-columns claim that the first `k − 3` columns
+  of `W_k` and the first `k − 3` entries of `u_k` do not change from step `k − 1`. `Numlib/Krylov/Singular.lean` already carries
+  the MINRES-QLP *specification* (`Krylov.IsMinNormMinResIterate` and its `isLeast_norm_of_grade_le`) and
+  `Numlib/Krylov/Hessenberg.lean` the left-hand Givens/QR layer (`Krylov.givensC`, `Krylov.gamma`), so the natural home is a
+  `QLP` section of `Krylov/Singular.lean` (`backbone.md` §3.12), with §4.2 of this paper as a specialization — **not** as
+  Fong–Saunders surface work.
+* §4.2: the `3 × 3` indefinite example (4.2) is **no longer left out**; it is R4.6 above.
 * Table 5.2 (LSQR/LSMR properties) and the §5 discussion of least-squares solvers — results of other papers ([7], [8], [19]); the
   reduction "LSQR/LSMR = CG/MINRES on the normal equations" is a definition-level remark about other algorithms.
 * §5 conclusions, acknowledgements, references, footnotes, key words.

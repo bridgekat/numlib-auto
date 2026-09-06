@@ -118,6 +118,35 @@ theorem isSymmetricCoercive_conjTranspose_mul_self (A : Matrix (Fin n) (Fin m) �
     have hAx : (A ⬝ x) ≠ 0 := fun h => hx (hA (by rw [h, map_zero]))
     simpa using by positivity
 
+/-- **P-8.10**: the residual of `x_*` for the perturbed right-hand side `b + α r` is `(1 + α) r`,
+where `r = b - A x_*` is the residual of `x_*` for `b`. -/
+theorem problem_8_10_residual (A : Matrix (Fin n) (Fin m) 𝕜) (b : EuclideanSpace 𝕜 (Fin n))
+    (xstar : EuclideanSpace 𝕜 (Fin m)) (α : 𝕜) :
+    (b + α • (b - (A ⬝ xstar))) - (A ⬝ xstar) = (1 + α) • (b - (A ⬝ xstar)) := by
+  rw [add_smul, one_smul]
+  abel
+
+/-- **P-8.10**: perturbing the right-hand side by a multiple of the residual does not move the
+least-squares problem. If `x_*` minimizes `‖b - A x‖₂` and `r = b - A x_*`, then the minimizers of
+`‖(b + α r) - A x‖₂` are exactly the minimizers of `‖b - A x‖₂` — in particular `x_*` itself, whose
+residual is merely scaled to `(1 + α) r` (`problem_8_10_residual`).
+
+The reason is (8.1): `r` is orthogonal to `Ran A`, so `Aᴴ (b + α r) = Aᴴ b` and the two problems
+have the *same* normal equations. No rank assumption is needed, and the answer is `x_*`, not
+`(1 + α) x_*`: scaling the minimizer would scale `A x` but not the component of `b` orthogonal to
+`Ran A`. -/
+theorem problem_8_10 (A : Matrix (Fin n) (Fin m) 𝕜) (b : EuclideanSpace 𝕜 (Fin n))
+    {xstar : EuclideanSpace 𝕜 (Fin m)} (hstar : ∀ y, ‖b - (A ⬝ xstar)‖ ≤ ‖b - (A ⬝ y)‖) (α : 𝕜)
+    (x : EuclideanSpace 𝕜 (Fin m)) :
+    (∀ y, ‖(b + α • (b - (A ⬝ xstar))) - (A ⬝ x)‖ ≤ ‖(b + α • (b - (A ⬝ xstar))) - (A ⬝ y)‖) ↔
+      ∀ y, ‖b - (A ⬝ x)‖ ≤ ‖b - (A ⬝ y)‖ := by
+  have hn : ((Aᴴ * A) ⬝ xstar) = (Aᴴ ⬝ b) := (equation_8_1 A b xstar).2 hstar
+  have hr : (Aᴴ ⬝ (b - (A ⬝ xstar))) = 0 := by
+    rw [map_sub, ← toEuclideanLin_mul_apply, hn, sub_self]
+  have hb : (Aᴴ ⬝ (b + α • (b - (A ⬝ xstar)))) = (Aᴴ ⬝ b) := by
+    rw [map_add, map_smul, hr, smul_zero, add_zero]
+  rw [← equation_8_1, ← equation_8_1, hb]
+
 /-! ### (8.3)–(8.4): the normal equations of the second kind -/
 
 /-- **Saad (8.3)–(8.4)**: if `A Aᴴ u = b` then `x = Aᴴ u` solves `A x = b`, and it is the

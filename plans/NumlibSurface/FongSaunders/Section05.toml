@@ -20,3 +20,12 @@ id = "cr_profile"
 
 [[node]]
 id = "minres_profile"
+
+[[node]]
+id = "indefinite_witness"
+
+[[node]]
+id = "minres_norm_iterate_not_monotone"
+
+[[node]]
+id = "minres_backwardError_not_antitoneOn"

@@ -1,3 +1,5 @@
+import Mathlib.Analysis.Matrix.PosDef
+import Numlib.LinearSolve.Projection.OneDimensional
 import Numlib.LinearSolve.Projection.Optimality
 import NumlibSurface.SaadSparse.Chapter04.Section02
 import NumlibSurface.SaadSparse.Chapter08.Section01
@@ -32,7 +34,31 @@ reduced system is the system of normal equations of the least-squares problem
 `min_y ‖b - B y‖_{A⁻¹}`. `arrowHurwicz` is **Algorithm 8.7** and `arrowHurwicz_eq_block` its
 block form; `example_8_2` is the regularized Schur complement `Bᴴ (ρ - A⁻¹) B`.
 
-Not formalized: **P-8.9** (inexact Uzawa) and **P-8.6**; see `plans/saadsparse-ch7-9.md` §4.
+`lagrangian_isSaddle` is the sentence that names the section: the solution of (8.30) is the saddle
+point of `L(x, y) = ½(A x, x) - (x, b) + (y, Bᴴ x - c)`. `constraintProjector` is the projector
+`P = I - B (Bᴴ B)⁻¹ Bᴴ` of **P-8.6**, `problem_8_6_projector` identifies it with the orthogonal
+projector onto `Ker Bᴴ`, and `equation_8_35` is P-8.6 (b), the reduction of (8.30) with `c = 0` to
+the singular consistent system `P A P x = P b`.
+
+`problem_8_5b` is **P-8.5 (b)**: any solver for the reduced system (8.32) is a solver for (8.30),
+since `x = A⁻¹ (b - B y)` completes a solution `y` of the reduced system to one of the block
+system — for `c = 0` and for `c ≠ 0` alike.
+
+**P-8.12** is the indefinite saddle-point exercise. `problem_8_12_pos` and `problem_8_12_neg` are
+the two choices of `x` part 1 asks for, and `problem_8_12_indefinite` turns them into eigenvalues
+of both signs; `problem_8_12_residual` is the initial guess of part 2, after which
+`problem_8_12_steepestDescent_stalls` and `problem_8_12_minRes_stalls` are parts 2 and 3 — both
+iterations return their starting point, because `(A r_0, r_0) = 0` for a residual of the shape
+`(0, s_0)` (`inner_saddleMatrix_blockVec_zero`), and that quantity is the steepest-descent
+*denominator* and the minimal-residual *numerator*. `problem_8_12_reduced` is part 5.
+
+Not formalized: **P-8.6 (d)**, which needs a `QR` factorization of a rectangular `B`; the rest of
+**P-8.6 (c)** — running CG on `P A P x = P b` needs a theorem about the conjugate gradient method
+on a symmetric positive *semi*definite consistent system, which the backbone does not have
+(`Numlib/Krylov/Singular.lean` carries the minimal-residual story only), although the question
+"in which subspace are the iterates generated?" is answered by `problem_8_6_cg_subspace`; and
+**P-8.9** (inexact Uzawa), which needs a perturbed-fixed-point theorem. See
+`plans/saadsparse-ch7-9.md` §4.
 -/
 
 open Matrix Filter Topology
@@ -578,5 +604,473 @@ theorem corollary_8_1 (hA : A.PosDef) (hB : Function.Injective (Matrix.toEuclide
     (Chapter04.example_4_1_opt (schur_posDef hA hB).isHermitian hsub hmin hmax hpos).1⟩
 
 end Corollary
+
+/-! ### §8.4: the Lagrangian and the saddle point -/
+
+section Lagrangian
+
+variable {A : Matrix (Fin n) (Fin n) 𝕜} {B : Matrix (Fin n) (Fin m) 𝕜}
+
+/-- **Saad §8.4**: the Lagrangian `L(x, y) = ½ (A x, x) - (x, b) + (y, Bᴴ x - c)` of the
+constrained problem (8.28)–(8.29), whose stationarity conditions are the block system (8.30). -/
+noncomputable def lagrangian (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜)
+    (b : EuclideanSpace 𝕜 (Fin n)) (c : EuclideanSpace 𝕜 (Fin m))
+    (x : EuclideanSpace 𝕜 (Fin n)) (y : EuclideanSpace 𝕜 (Fin m)) : ℝ :=
+  saddleObjective A b x + RCLike.re (inner 𝕜 ((Bᴴ ⬝ x) - c) y)
+
+/-- **Saad §8.4**: the sentence that names the section — the solution `(x_*, y_*)` of the block
+system (8.30) is the *saddle point* of the Lagrangian:
+`L(x_*, y) ≤ L(x_*, y_*) ≤ L(x, y_*)` for every `x` and every `y`.
+
+The two halves are of different kinds. On the `y` side the Lagrangian is affine and `x_*` is
+admissible, so `L(x_*, ·)` is *constant* and the inequality is an equality — the saddle point is
+never strict in `y`. On the `x` side, `L(x, y_*) - L(x_*, y_*) = ½ (A (x - x_*), x - x_*)`, which
+positive definiteness of `A` makes nonnegative. Note that the `x` inequality holds for *every*
+`x`, admissible or not: that is what distinguishes the saddle-point statement from the constrained
+minimization of `equation_8_30`. -/
+theorem lagrangian_isSaddle (hA : A.PosDef) (b : EuclideanSpace 𝕜 (Fin n))
+    (c : EuclideanSpace 𝕜 (Fin m)) {xstar : EuclideanSpace 𝕜 (Fin n)}
+    {ystar : EuclideanSpace 𝕜 (Fin m)} (hx : (Bᴴ ⬝ xstar) = c)
+    (hy : (A ⬝ xstar) + (B ⬝ ystar) = b) (x : EuclideanSpace 𝕜 (Fin n))
+    (y : EuclideanSpace 𝕜 (Fin m)) :
+    lagrangian A B b c xstar y ≤ lagrangian A B b c xstar ystar ∧
+      lagrangian A B b c xstar ystar ≤ lagrangian A B b c x ystar := by
+  have hsc := (Matrix.posDef_iff_isSymmetricCoercive A).1 hA
+  -- the Lagrangian does not depend on `y` at the admissible point `x_*`
+  have hconst : ∀ w : EuclideanSpace 𝕜 (Fin m),
+      lagrangian A B b c xstar w = saddleObjective A b xstar := fun w => by
+    rw [lagrangian, hx, sub_self, inner_zero_left, map_zero, add_zero]
+  refine ⟨le_of_eq (by rw [hconst y, hconst ystar]), ?_⟩
+  rw [hconst ystar, lagrangian]
+  set e := x - xstar with he
+  have hxe : x = xstar + e := by rw [he]; abel
+  have hAsym : inner 𝕜 (A ⬝ e) xstar = inner 𝕜 e (A ⬝ xstar) := hsc.isSymmetric e xstar
+  have hre : RCLike.re (inner 𝕜 e (A ⬝ xstar)) = RCLike.re (inner 𝕜 (A ⬝ xstar) e) := by
+    rw [← inner_conj_symm]
+    exact RCLike.conj_re _
+  have hquad : RCLike.re (inner 𝕜 (A ⬝ x) x)
+      = RCLike.re (inner 𝕜 (A ⬝ xstar) xstar) + 2 * RCLike.re (inner 𝕜 (A ⬝ xstar) e)
+        + RCLike.re (inner 𝕜 (A ⬝ e) e) := by
+    conv_lhs => rw [hxe]
+    rw [show (A ⬝ (xstar + e)) = (A ⬝ xstar) + (A ⬝ e) from map_add _ _ _, inner_add_left,
+      inner_add_right, inner_add_right, map_add, map_add, map_add, hAsym, hre]
+    ring
+  have hlin : RCLike.re (inner 𝕜 b x)
+      = RCLike.re (inner 𝕜 b xstar) + RCLike.re (inner 𝕜 b e) := by
+    conv_lhs => rw [hxe]
+    rw [inner_add_right, map_add]
+  have hBe : (Bᴴ ⬝ x) - c = (Bᴴ ⬝ e) := by rw [he, map_sub, hx]
+  have hmult : (B ⬝ ystar) = b - (A ⬝ xstar) := by rw [← hy]; abel
+  have hcon : RCLike.re (inner 𝕜 ((Bᴴ ⬝ x) - c) ystar)
+      = RCLike.re (inner 𝕜 b e) - RCLike.re (inner 𝕜 (A ⬝ xstar) e) := by
+    have hbe : RCLike.re (inner 𝕜 e b) = RCLike.re (inner 𝕜 b e) := by
+      rw [← inner_conj_symm]
+      exact RCLike.conj_re _
+    rw [hBe, inner_conjTranspose B e ystar, hmult, inner_sub_right, map_sub, hbe, hre]
+  have hnonneg : 0 ≤ RCLike.re (inner 𝕜 (A ⬝ e) e) := by
+    rcases eq_or_ne e 0 with h0 | h0
+    · rw [h0, show (A ⬝ (0 : EuclideanSpace 𝕜 (Fin n))) = 0 from map_zero _, inner_zero_left,
+        map_zero]
+    · exact le_of_lt (hsc.isCoercive.inner_self_pos h0)
+  rw [saddleObjective, saddleObjective, hquad, hlin, hcon]
+  linarith
+
+end Lagrangian
+
+/-! ### P-8.6: the projector onto the constraint space -/
+
+section Projector
+
+variable {A : Matrix (Fin n) (Fin n) 𝕜} {B : Matrix (Fin n) (Fin m) 𝕜}
+
+/-- **P-8.6**: the projector `P = I - B (Bᴴ B)⁻¹ Bᴴ` of the null-space method for the
+saddle-point system. -/
+noncomputable def constraintProjector (B : Matrix (Fin n) (Fin m) 𝕜) :
+    Matrix (Fin n) (Fin n) 𝕜 :=
+  1 - B * (Bᴴ * B)⁻¹ * Bᴴ
+
+/-- `B` has full column rank as a matrix exactly when it does as an operator on Euclidean
+space. -/
+private theorem injective_mulVec (hB : Function.Injective (Matrix.toEuclideanLin B)) :
+    Function.Injective B.mulVec := fun u v huv =>
+  (WithLp.toLp_injective 2) (hB (show (B ⬝ WithLp.toLp 2 u) = (B ⬝ WithLp.toLp 2 v) from
+    congrArg (WithLp.toLp 2) huv))
+
+/-- `Bᴴ B` is nonsingular when `B` has full column rank, which is what makes `P` well defined. -/
+private theorem isUnit_conjTranspose_mul_self
+    (hB : Function.Injective (Matrix.toEuclideanLin B)) : IsUnit (Bᴴ * B) :=
+  (Matrix.PosDef.conjTranspose_mul_self B (injective_mulVec hB)).isUnit
+
+/-- **P-8.6 (a)**: `P = I - B (Bᴴ B)⁻¹ Bᴴ` is the orthogonal projector onto the constraint space
+`Ker Bᴴ = (Ran B)ᗮ`. Its range and kernel are read off in
+`constraintProjector_apply_eq_self_iff` and `constraintProjector_apply_eq_zero_iff`. -/
+theorem problem_8_6_projector (hB : Function.Injective (Matrix.toEuclideanLin B)) :
+    (Matrix.toEuclideanLin (constraintProjector B) :
+        EuclideanSpace 𝕜 (Fin n) →ₗ[𝕜] EuclideanSpace 𝕜 (Fin n))
+      = ((LinearMap.ker (Matrix.toEuclideanLin Bᴴ)).starProjection :
+        EuclideanSpace 𝕜 (Fin n) →ₗ[𝕜] EuclideanSpace 𝕜 (Fin n)) := by
+  have hu := isUnit_conjTranspose_mul_self hB
+  refine LinearMap.ext fun u => ?_
+  refine (Submodule.eq_starProjection_of_mem_orthogonal ?_ ?_).symm
+  · rw [LinearMap.mem_ker,
+      show (Matrix.toEuclideanLin Bᴴ) ((Matrix.toEuclideanLin (constraintProjector B)) u)
+        = ((Bᴴ * constraintProjector B) ⬝ u) from (toEuclideanLin_mul_apply _ _ _).symm,
+      constraintProjector, Matrix.mul_sub, Matrix.mul_one, ← Matrix.mul_assoc,
+      ← Matrix.mul_assoc, Matrix.mul_nonsing_inv _ ((Matrix.isUnit_iff_isUnit_det _).1 hu),
+      Matrix.one_mul, sub_self, map_zero]
+    rfl
+  · rw [orthogonal_ker_eq_range B]
+    refine ⟨(((Bᴴ * B)⁻¹ * Bᴴ) ⬝ u), ?_⟩
+    rw [show (Matrix.toEuclideanLin B) (((Bᴴ * B)⁻¹ * Bᴴ) ⬝ u)
+        = ((B * ((Bᴴ * B)⁻¹ * Bᴴ)) ⬝ u) from (toEuclideanLin_mul_apply _ _ _).symm,
+      show (Matrix.toEuclideanLin (constraintProjector B)) u
+        = (constraintProjector B ⬝ u) from rfl, constraintProjector, Matrix.mul_assoc]
+    rw [show ((1 - B * ((Bᴴ * B)⁻¹ * Bᴴ)) ⬝ u)
+      = (Matrix.toEuclideanLin (1 - B * ((Bᴴ * B)⁻¹ * Bᴴ))) u from rfl,
+      show (Matrix.toEuclideanLin (1 - B * ((Bᴴ * B)⁻¹ * Bᴴ)) :
+          EuclideanSpace 𝕜 (Fin n) →ₗ[𝕜] EuclideanSpace 𝕜 (Fin n))
+        = Matrix.toEuclideanLin 1 - Matrix.toEuclideanLin (B * ((Bᴴ * B)⁻¹ * Bᴴ)) from
+        map_sub _ _ _]
+    rw [LinearMap.sub_apply, Matrix.toEuclideanLin_one]
+    simp
+
+/-- **P-8.6 (a)**: `Ran P = Ker Bᴴ` — a vector is fixed by `P` exactly when it is admissible. -/
+theorem constraintProjector_apply_eq_self_iff (hB : Function.Injective (Matrix.toEuclideanLin B))
+    (u : EuclideanSpace 𝕜 (Fin n)) : (constraintProjector B ⬝ u) = u ↔ (Bᴴ ⬝ u) = 0 := by
+  rw [show (constraintProjector B ⬝ u)
+    = (Matrix.toEuclideanLin (constraintProjector B)) u from rfl]
+  rw [show (Matrix.toEuclideanLin (constraintProjector B)) u
+    = ((LinearMap.ker (Matrix.toEuclideanLin Bᴴ)).starProjection u) from
+    congrFun (congrArg DFunLike.coe (problem_8_6_projector hB)) u]
+  exact Submodule.starProjection_eq_self_iff.trans LinearMap.mem_ker
+
+/-- **P-8.6 (a)**: `Ker P = Ran B` — `P` annihilates exactly the range of `B`, which is where the
+Lagrange multiplier term lives. -/
+theorem constraintProjector_apply_eq_zero_iff (hB : Function.Injective (Matrix.toEuclideanLin B))
+    (u : EuclideanSpace 𝕜 (Fin n)) :
+    (constraintProjector B ⬝ u) = 0 ↔ u ∈ LinearMap.range (Matrix.toEuclideanLin B) := by
+  rw [show (constraintProjector B ⬝ u)
+    = ((LinearMap.ker (Matrix.toEuclideanLin Bᴴ)).starProjection u) from
+    congrFun (congrArg DFunLike.coe (problem_8_6_projector hB)) u, ← orthogonal_ker_eq_range B]
+  constructor
+  · intro h
+    have hmem := Submodule.sub_starProjection_mem_orthogonal
+      (K := LinearMap.ker (Matrix.toEuclideanLin Bᴴ)) u
+    rwa [h, sub_zero] at hmem
+  · intro h
+    exact Submodule.eq_starProjection_of_mem_orthogonal (Submodule.zero_mem _) (by rwa [sub_zero])
+
+/-- **P-8.6 (b)** and **Saad (8.35)**: for `c = 0` and `B` of full column rank, an admissible `x`
+solves the block system (8.30) — that is, carries a Lagrange multiplier — exactly when it solves
+the singular but consistent system `P A P x = P b`.
+
+Both directions are `constraintProjector_apply_eq_zero_iff`: `P` fixes the admissible `x`, so
+(8.35) says `P (A x - b) = 0`, and the kernel of `P` is `Ran B`, which is precisely where the
+multiplier term `-B y` lives. `P A P` is symmetric positive *semi*definite and singular whenever
+`B ≠ 0`, so parts (c) and (d) of the problem — running CG on it — need the theory of a consistent
+semidefinite system; see the module doc. -/
+theorem equation_8_35 (hB : Function.Injective (Matrix.toEuclideanLin B))
+    (b : EuclideanSpace 𝕜 (Fin n)) {x : EuclideanSpace 𝕜 (Fin n)} (hx : (Bᴴ ⬝ x) = 0) :
+    (∃ y, (A ⬝ x) + (B ⬝ y) = b) ↔
+      (constraintProjector B ⬝ (A ⬝ (constraintProjector B ⬝ x)))
+        = (constraintProjector B ⬝ b) := by
+  rw [(constraintProjector_apply_eq_self_iff hB x).2 hx]
+  have hsub : ((constraintProjector B ⬝ (A ⬝ x)) = (constraintProjector B ⬝ b)) ↔
+      (constraintProjector B ⬝ ((A ⬝ x) - b)) = 0 := by
+    rw [map_sub, sub_eq_zero]
+  rw [hsub, constraintProjector_apply_eq_zero_iff hB]
+  constructor
+  · rintro ⟨y, hy⟩
+    refine ⟨-y, ?_⟩
+    rw [show (Matrix.toEuclideanLin B) (-y) = -(B ⬝ y) from map_neg _ _, ← hy]
+    abel
+  · rintro ⟨y, hy⟩
+    rw [show (Matrix.toEuclideanLin B) y = (B ⬝ y) from rfl] at hy
+    refine ⟨-y, ?_⟩
+    rw [show (B ⬝ (-y)) = -(B ⬝ y) from map_neg _ _, hy]
+    abel
+
+/-! ### P-8.6 (c), first half: the subspace the CG iterates live in -/
+
+/-- `Bᴴ P = 0`: the projector of P-8.6 lands in the constraint space `Ker Bᴴ`. -/
+theorem conjTranspose_mul_constraintProjector
+    (hB : Function.Injective (Matrix.toEuclideanLin B)) : Bᴴ * constraintProjector B = 0 := by
+  have hu := (Matrix.isUnit_iff_isUnit_det _).1 (isUnit_conjTranspose_mul_self (B := B) hB)
+  rw [constraintProjector, Matrix.mul_sub, Matrix.mul_one, ← Matrix.mul_assoc, ← Matrix.mul_assoc,
+    Matrix.mul_nonsing_inv _ hu, Matrix.one_mul, sub_self]
+
+/-- **P-8.6 (c)**, the half that needs no new theory: *in which subspace are the iterates
+generated from CG applied to (8.35)?*  In the constraint space `Ker Bᴴ`.  From `x_0 = 0` the CG
+iterates lie in the Krylov space `𝒦_m(P A P, P b)`, and every generator of that space is a value
+of `P`, which `conjTranspose_mul_constraintProjector` annihilates.  That is what makes the
+singular system harmless: the whole iteration takes place on `Ker Bᴴ`, where `P A P` is positive
+definite. -/
+theorem problem_8_6_cg_subspace (hB : Function.Injective (Matrix.toEuclideanLin B))
+    (b : EuclideanSpace 𝕜 (Fin n)) (k : ℕ) :
+    Krylov.subspace
+        (Matrix.toEuclideanLin (constraintProjector B * A * constraintProjector B))
+        (Matrix.toEuclideanLin (constraintProjector B) b) k
+      ≤ LinearMap.ker (Matrix.toEuclideanLin Bᴴ) := by
+  have hBP := conjTranspose_mul_constraintProjector (B := B) hB
+  have hstep : ∀ w : EuclideanSpace 𝕜 (Fin n),
+      Matrix.toEuclideanLin (constraintProjector B * A * constraintProjector B) w
+        ∈ LinearMap.ker (Matrix.toEuclideanLin Bᴴ) := fun w => by
+    rw [LinearMap.mem_ker, show (Matrix.toEuclideanLin Bᴴ)
+        ((Matrix.toEuclideanLin (constraintProjector B * A * constraintProjector B)) w)
+      = ((Bᴴ * (constraintProjector B * A * constraintProjector B)) ⬝ w) from
+        (toEuclideanLin_mul_apply _ _ _).symm,
+      ← Matrix.mul_assoc, ← Matrix.mul_assoc, hBP, Matrix.zero_mul, Matrix.zero_mul]
+    exact toEuclideanLin_zero_apply w
+  have hv : Matrix.toEuclideanLin (constraintProjector B) b
+      ∈ LinearMap.ker (Matrix.toEuclideanLin Bᴴ) := by
+    rw [LinearMap.mem_ker, show (Matrix.toEuclideanLin Bᴴ)
+        ((Matrix.toEuclideanLin (constraintProjector B)) b)
+      = ((Bᴴ * constraintProjector B) ⬝ b) from (toEuclideanLin_mul_apply _ _ _).symm, hBP]
+    exact toEuclideanLin_zero_apply b
+  have hpow : ∀ j : ℕ,
+      ((Matrix.toEuclideanLin (constraintProjector B * A * constraintProjector B)) ^ j)
+          (Matrix.toEuclideanLin (constraintProjector B) b)
+        ∈ LinearMap.ker (Matrix.toEuclideanLin Bᴴ) := by
+    intro j
+    cases j with
+    | zero => simpa using hv
+    | succ j =>
+      rw [pow_succ', Module.End.mul_apply]
+      exact hstep _
+  rw [Krylov.subspace, Submodule.span_le]
+  rintro _ ⟨i, rfl⟩
+  exact hpow _
+
+end Projector
+
+/-! ### P-8.5 (b): a method for (8.30) through the reduced system -/
+
+section Problem85b
+
+variable {A : Matrix (Fin n) (Fin n) 𝕜} {B : Matrix (Fin n) (Fin m) 𝕜}
+
+/-- **P-8.5 (b)**: *derive a method for solving the equivalent system (8.30)*.  Any solver for the
+reduced system (8.32) is one: if `y` solves `S y = g` then `x = A⁻¹ (b - B y)` completes it to a
+solution of the block system, for `c = 0` and for `c ≠ 0` alike.
+
+For `c = 0` the reduced system is the system of normal equations of `min_y ‖b - B y‖_{A⁻¹}`
+(`equation_8_32_isMinRes`), so the method P-8.5 (a) asks for is CGNR in the `A⁻¹` inner product;
+forming `S y` costs one solve with `A`, which is what the problem's hint asks for.  Compared with
+Uzawa's method (`uzawa`, `uzawa_snd_eq_richardson`), which is Richardson's iteration for the same
+reduced system with a fixed `ω`, this replaces the fixed step length by the conjugate gradient
+one at the same cost per step. -/
+theorem problem_8_5b (hA : IsUnit A) (b : EuclideanSpace 𝕜 (Fin n))
+    (c y : EuclideanSpace 𝕜 (Fin m)) (hy : (schur A B ⬝ y) = schurRhs A B b c) :
+    saddleMatrix A B 0 *ᵥ Sum.elim (WithLp.ofLp (A⁻¹ ⬝ (b - (B ⬝ y)))) (WithLp.ofLp y)
+      = Sum.elim (WithLp.ofLp b) (WithLp.ofLp c) := by
+  obtain ⟨h1, h2⟩ := (schur_eq hA b c y rfl).1 hy
+  rw [saddleMatrix_mulVec_iff]
+  refine ⟨h1, ?_⟩
+  rw [toEuclideanLin_zero_apply, add_zero]
+  exact h2
+
+end Problem85b
+
+/-! ### P-8.12: the indefinite saddle-point matrix -/
+
+section Problem812
+
+variable {A : Matrix (Fin n) (Fin n) 𝕜} {B : Matrix (Fin n) (Fin m) 𝕜}
+
+/-- A vector of `EuclideanSpace 𝕜 (Fin n ⊕ Fin m)` written in blocks: the shape `x = (u, p)` every
+vector of P-8.12 has. -/
+noncomputable def blockVec (u : EuclideanSpace 𝕜 (Fin n)) (v : EuclideanSpace 𝕜 (Fin m)) :
+    EuclideanSpace 𝕜 (Fin n ⊕ Fin m) :=
+  WithLp.toLp 2 (Sum.elim (WithLp.ofLp u) (WithLp.ofLp v))
+
+/-- The saddle-point matrix acts on a block vector blockwise. -/
+theorem saddleMatrix_apply_blockVec (D : Matrix (Fin m) (Fin m) 𝕜)
+    (u : EuclideanSpace 𝕜 (Fin n)) (v : EuclideanSpace 𝕜 (Fin m)) :
+    (saddleMatrix A B D ⬝ blockVec u v) = blockVec ((A ⬝ u) + (B ⬝ v)) ((Bᴴ ⬝ u) + (D ⬝ v)) := by
+  refine WithLp.ofLp_injective 2 ?_
+  rw [show WithLp.ofLp (saddleMatrix A B D ⬝ blockVec u v)
+      = saddleMatrix A B D *ᵥ WithLp.ofLp (blockVec u v) from rfl,
+    blockVec, WithLp.ofLp_toLp, saddleMatrix, fromBlocks_mulVec_elim, blockVec, WithLp.ofLp_toLp]
+
+/-- The inner product of two block vectors is the sum of the block inner products. -/
+theorem inner_blockVec (u u' : EuclideanSpace 𝕜 (Fin n)) (v v' : EuclideanSpace 𝕜 (Fin m)) :
+    inner 𝕜 (blockVec u v) (blockVec u' v') = inner 𝕜 u u' + inner 𝕜 v v' := by
+  simp [blockVec, PiLp.inner_apply, Fintype.sum_sum_type]
+
+/-- **P-8.12 (1)**, the positive direction: on a vector `x = (u, 0)` the quadratic form of the
+saddle-point matrix is `(A u, u)`, positive for `u ≠ 0`. -/
+theorem problem_8_12_pos (hA : A.PosDef) {u : EuclideanSpace 𝕜 (Fin n)} (hu : u ≠ 0) :
+    0 < RCLike.re (inner 𝕜 (blockVec u (0 : EuclideanSpace 𝕜 (Fin m)))
+      (saddleMatrix A B 0 ⬝ blockVec u 0)) := by
+  rw [saddleMatrix_apply_blockVec, map_zero, add_zero, toEuclideanLin_zero_apply, add_zero,
+    inner_blockVec, inner_zero_left, add_zero, ← inner_conj_symm, RCLike.conj_re]
+  exact ((Matrix.posDef_iff_isSymmetricCoercive A).1 hA).isCoercive.inner_self_pos hu
+
+/-- **P-8.12 (1)**, the negative direction: on `x = (-A⁻¹ B p, p)` the first block of the product
+vanishes and the form is `-(A⁻¹ B p, B p)`, negative once `B p ≠ 0`. -/
+theorem problem_8_12_neg (hA : A.PosDef) (hB : Function.Injective (Matrix.toEuclideanLin B))
+    {p : EuclideanSpace 𝕜 (Fin m)} (hp : p ≠ 0) :
+    RCLike.re (inner 𝕜 (blockVec (-(A⁻¹ ⬝ (B ⬝ p))) p)
+      (saddleMatrix A B 0 ⬝ blockVec (-(A⁻¹ ⬝ (B ⬝ p))) p)) < 0 := by
+  have hAinv := (Matrix.posDef_iff_isSymmetricCoercive A⁻¹).1 hA.inv
+  have hBp : (B ⬝ p) ≠ 0 := fun h => hp (hB (by
+    rw [show (Matrix.toEuclideanLin B) p = (B ⬝ p) from rfl, h, map_zero]))
+  have hfst : (A ⬝ (-(A⁻¹ ⬝ (B ⬝ p)))) + (B ⬝ p) = 0 := by
+    rw [show (A ⬝ (-(A⁻¹ ⬝ (B ⬝ p)))) = -(A ⬝ (A⁻¹ ⬝ (B ⬝ p))) from map_neg _ _,
+      apply_nonsing_inv hA.isUnit]
+    abel
+  rw [saddleMatrix_apply_blockVec, hfst, toEuclideanLin_zero_apply, add_zero, inner_blockVec,
+    inner_zero_right, zero_add,
+    show (Bᴴ ⬝ (-(A⁻¹ ⬝ (B ⬝ p)))) = -(Bᴴ ⬝ (A⁻¹ ⬝ (B ⬝ p))) from map_neg _ _,
+    inner_neg_right, inner_conjTranspose', map_neg, neg_lt_zero, ← inner_conj_symm, RCLike.conj_re]
+  exact hAinv.isCoercive.inner_self_pos hBp
+
+/-- A Hermitian matrix whose real spectrum is nonnegative has a nonnegative quadratic form: the
+bridge from "no negative eigenvalue" to the sign of `(M x, x)`, through Mathlib's
+`Matrix.IsHermitian.posSemidef_iff_eigenvalues_nonneg`. -/
+private theorem re_inner_nonneg_of_spectrum_nonneg {k : Type*} [Fintype k] [DecidableEq k]
+    {M : Matrix k k 𝕜} (hM : M.IsHermitian) (hspec : ∀ μ ∈ spectrum ℝ M, 0 ≤ μ)
+    (v : EuclideanSpace 𝕜 k) : 0 ≤ RCLike.re (inner 𝕜 v (M ⬝ v)) := by
+  have hps : M.PosSemidef :=
+    (Matrix.IsHermitian.posSemidef_iff_eigenvalues_nonneg hM).2 fun i =>
+      hspec _ (Matrix.IsHermitian.eigenvalues_mem_spectrum_real hM i)
+  have h := hps.re_dotProduct_nonneg (WithLp.ofLp v)
+  have hval : star (WithLp.ofLp v) ⬝ᵥ (M *ᵥ WithLp.ofLp v) = inner 𝕜 v (M ⬝ v) := by
+    rw [EuclideanSpace.inner_eq_star_dotProduct]
+    exact dotProduct_comm _ _
+  rwa [hval] at h
+
+/-- **P-8.12 (1)**: *the saddle-point matrix has both positive and negative eigenvalues.*  The
+two signs of its quadratic form are `problem_8_12_pos` and `problem_8_12_neg`, exactly the two
+choices of `x` the problem asks for; a Hermitian matrix whose spectrum has one sign has a
+quadratic form of that sign, so each choice forbids the corresponding half-line. -/
+theorem problem_8_12_indefinite (hA : A.PosDef) (hB : Function.Injective (Matrix.toEuclideanLin B))
+    {u : EuclideanSpace 𝕜 (Fin n)} (hu : u ≠ 0) {p : EuclideanSpace 𝕜 (Fin m)} (hp : p ≠ 0) :
+    (∃ μ ∈ spectrum ℝ (saddleMatrix A B (0 : Matrix (Fin m) (Fin m) 𝕜)), 0 < μ) ∧
+      ∃ μ ∈ spectrum ℝ (saddleMatrix A B (0 : Matrix (Fin m) (Fin m) 𝕜)), μ < 0 := by
+  set M : Matrix (Fin n ⊕ Fin m) (Fin n ⊕ Fin m) 𝕜 :=
+    saddleMatrix A B (0 : Matrix (Fin m) (Fin m) 𝕜) with hMdef
+  have hherm : M.IsHermitian := by
+    rw [hMdef, Matrix.IsHermitian, saddleMatrix, Matrix.fromBlocks_conjTranspose,
+      Matrix.conjTranspose_conjTranspose, hA.isHermitian.eq, Matrix.conjTranspose_zero]
+  have hhermneg : (-M).IsHermitian := by
+    rw [Matrix.IsHermitian, Matrix.conjTranspose_neg, hherm.eq]
+  refine ⟨?_, ?_⟩
+  · by_contra hcon
+    push Not at hcon
+    have hneg : ∀ μ ∈ spectrum ℝ (-M), 0 ≤ μ := by
+      intro μ hμ
+      rw [← spectrum.neg_eq, Set.mem_neg] at hμ
+      linarith [hcon _ hμ]
+    have h := re_inner_nonneg_of_spectrum_nonneg hhermneg hneg
+      (blockVec u (0 : EuclideanSpace 𝕜 (Fin m)))
+    rw [show ((-M) ⬝ blockVec u (0 : EuclideanSpace 𝕜 (Fin m)))
+        = -(M ⬝ blockVec u (0 : EuclideanSpace 𝕜 (Fin m))) from by
+      rw [show (Matrix.toEuclideanLin (-M) :
+          EuclideanSpace 𝕜 (Fin n ⊕ Fin m) →ₗ[𝕜] EuclideanSpace 𝕜 (Fin n ⊕ Fin m))
+        = -Matrix.toEuclideanLin M from map_neg _ _]
+      rfl, inner_neg_right, map_neg, neg_nonneg] at h
+    exact absurd (problem_8_12_pos (B := B) hA hu) (not_lt.2 h)
+  · by_contra hcon
+    push Not at hcon
+    have h := re_inner_nonneg_of_spectrum_nonneg hherm hcon (blockVec (-(A⁻¹ ⬝ (B ⬝ p))) p)
+    exact absurd (problem_8_12_neg hA hB hp) (not_lt.2 h)
+
+/-- **P-8.12 (2)–(3)**, the key computation: the quadratic form of the saddle-point matrix
+vanishes on every vector of the shape `r = (0, s)`, which is the shape the residual of the
+initial guess of P-8.12 (2) has. -/
+theorem inner_saddleMatrix_blockVec_zero (s : EuclideanSpace 𝕜 (Fin m)) :
+    inner 𝕜 (blockVec (0 : EuclideanSpace 𝕜 (Fin n)) s)
+        (saddleMatrix A B (0 : Matrix (Fin m) (Fin m) 𝕜)
+          ⬝ blockVec (0 : EuclideanSpace 𝕜 (Fin n)) s) = 0 := by
+  have h1 : (A ⬝ (0 : EuclideanSpace 𝕜 (Fin n))) + (B ⬝ s) = (B ⬝ s) := by
+    rw [map_zero, zero_add]
+  have h2 : (Bᴴ ⬝ (0 : EuclideanSpace 𝕜 (Fin n)))
+      + ((0 : Matrix (Fin m) (Fin m) 𝕜) ⬝ s) = 0 := by
+    rw [map_zero, zero_add, toEuclideanLin_zero_apply]
+  rw [saddleMatrix_apply_blockVec, h1, h2, inner_blockVec, inner_zero_left, inner_zero_right,
+    add_zero]
+
+/-- **P-8.12 (2)**: *how to select an initial guess `x_0 = (u_0, 0)` whose residual is
+`r_0 = (0, s_0)`* — take `u_0` with `A u_0 = f`; then the first block of `r_0` vanishes and
+`s_0 = -Bᴴ u_0`. -/
+theorem problem_8_12_residual (f : EuclideanSpace 𝕜 (Fin n))
+    {u₀ : EuclideanSpace 𝕜 (Fin n)} (hu₀ : (A ⬝ u₀) = f) :
+    blockVec f (0 : EuclideanSpace 𝕜 (Fin m))
+        - (saddleMatrix A B 0 ⬝ blockVec u₀ (0 : EuclideanSpace 𝕜 (Fin m)))
+      = blockVec (0 : EuclideanSpace 𝕜 (Fin n)) (-(Bᴴ ⬝ u₀)) := by
+  rw [saddleMatrix_apply_blockVec, map_zero, add_zero, toEuclideanLin_zero_apply, add_zero, hu₀]
+  refine WithLp.ofLp_injective 2 ?_
+  rw [WithLp.ofLp_sub, blockVec, blockVec, blockVec, WithLp.ofLp_toLp, WithLp.ofLp_toLp,
+    WithLp.ofLp_toLp, ← Sum.elim_sub_sub]
+  simp
+
+/-- **P-8.12 (2)**: *what happens if we attempt to use the steepest descent algorithm with this
+initial guess?*  It stalls: the step length `(r_0, r_0)/(A r_0, r_0)` has a vanishing denominator
+because `r_0 = (0, s_0)`, so the iteration never leaves `x_0`.  (Division by zero is `0` in Lean,
+which is what makes the stalled step literally the identity.) -/
+theorem problem_8_12_steepestDescent_stalls (f : EuclideanSpace 𝕜 (Fin n))
+    {u₀ : EuclideanSpace 𝕜 (Fin n)} (hu₀ : (A ⬝ u₀) = f) :
+    Projection.steepestDescentStep
+        (Matrix.toEuclideanLin (saddleMatrix A B (0 : Matrix (Fin m) (Fin m) 𝕜)))
+        (blockVec f 0) (blockVec u₀ 0)
+      = blockVec u₀ (0 : EuclideanSpace 𝕜 (Fin m)) := by
+  have hr := problem_8_12_residual (B := B) f hu₀
+  rw [Projection.steepestDescentStep, Projection.step1,
+    show (Matrix.toEuclideanLin (saddleMatrix A B (0 : Matrix (Fin m) (Fin m) 𝕜)))
+        (blockVec u₀ (0 : EuclideanSpace 𝕜 (Fin m)))
+      = (saddleMatrix A B (0 : Matrix (Fin m) (Fin m) 𝕜) ⬝ blockVec u₀ 0) from rfl, hr,
+    show (Matrix.toEuclideanLin (saddleMatrix A B (0 : Matrix (Fin m) (Fin m) 𝕜)))
+        (blockVec (0 : EuclideanSpace 𝕜 (Fin n)) (-(Bᴴ ⬝ u₀)))
+      = (saddleMatrix A B (0 : Matrix (Fin m) (Fin m) 𝕜)
+        ⬝ blockVec (0 : EuclideanSpace 𝕜 (Fin n)) (-(Bᴴ ⬝ u₀))) from rfl,
+    inner_saddleMatrix_blockVec_zero (A := A) (B := B) _,
+    div_zero, zero_smul, add_zero]
+
+/-- **P-8.12 (3)**: *what happens if the minimal residual iteration is applied with the same
+initial guess?*  It stalls too, and for the same reason: its step length is
+`(A r_0, r_0)/(A r_0, A r_0)`, whose *numerator* is the quantity that vanishes. -/
+theorem problem_8_12_minRes_stalls (f : EuclideanSpace 𝕜 (Fin n))
+    {u₀ : EuclideanSpace 𝕜 (Fin n)} (hu₀ : (A ⬝ u₀) = f) :
+    Projection.minResStep
+        (Matrix.toEuclideanLin (saddleMatrix A B (0 : Matrix (Fin m) (Fin m) 𝕜)))
+        (blockVec f 0) (blockVec u₀ 0)
+      = blockVec u₀ (0 : EuclideanSpace 𝕜 (Fin m)) := by
+  have hr := problem_8_12_residual (B := B) f hu₀
+  have hzero : inner 𝕜 (saddleMatrix A B (0 : Matrix (Fin m) (Fin m) 𝕜)
+        ⬝ blockVec (0 : EuclideanSpace 𝕜 (Fin n)) (-(Bᴴ ⬝ u₀)))
+      (blockVec (0 : EuclideanSpace 𝕜 (Fin n)) (-(Bᴴ ⬝ u₀))) = 0 := by
+    rw [← inner_conj_symm,
+      inner_saddleMatrix_blockVec_zero (A := A) (B := B) _,
+      map_zero]
+  rw [Projection.minResStep, Projection.step1,
+    show (Matrix.toEuclideanLin (saddleMatrix A B (0 : Matrix (Fin m) (Fin m) 𝕜)))
+        (blockVec u₀ (0 : EuclideanSpace 𝕜 (Fin m)))
+      = (saddleMatrix A B (0 : Matrix (Fin m) (Fin m) 𝕜) ⬝ blockVec u₀ 0) from rfl, hr,
+    show (Matrix.toEuclideanLin (saddleMatrix A B (0 : Matrix (Fin m) (Fin m) 𝕜)))
+        (blockVec (0 : EuclideanSpace 𝕜 (Fin n)) (-(Bᴴ ⬝ u₀)))
+      = (saddleMatrix A B (0 : Matrix (Fin m) (Fin m) 𝕜)
+        ⬝ blockVec (0 : EuclideanSpace 𝕜 (Fin n)) (-(Bᴴ ⬝ u₀))) from rfl, hzero, zero_div,
+    zero_smul, add_zero]
+
+/-- **P-8.12 (5)**: in the iteration `u_{k+1} = B⁻¹(f - C p_k)`, `p_{k+1} = p_k + α_k Cᵀ u_{k+1}`
+(the book's `B`, `C` are this file's `A`, `B`), the increment `Bᴴ u_{k+1}` *is* the residual
+`s_k = g - S p_k` of `p_k` for the reduced system `S p = g` of P-8.12 (4), so
+`p_{k+1} = p_k + α_k s_k`; and the steepest-descent choice `α_k = (s_k, s_k)/(S s_k, s_k)` makes
+`p_{k+1}` the steepest-descent iterate for that system. -/
+theorem problem_8_12_reduced (f : EuclideanSpace 𝕜 (Fin n))
+    (p : EuclideanSpace 𝕜 (Fin m)) :
+    (Bᴴ ⬝ (A⁻¹ ⬝ (f - (B ⬝ p)))) = schurRhs A B f 0 - (schur A B ⬝ p) ∧
+      Projection.steepestDescentStep (Matrix.toEuclideanLin (schur A B)) (schurRhs A B f 0) p
+        = p + (inner 𝕜 (Bᴴ ⬝ (A⁻¹ ⬝ (f - (B ⬝ p)))) (Bᴴ ⬝ (A⁻¹ ⬝ (f - (B ⬝ p)))) /
+            inner 𝕜 (Bᴴ ⬝ (A⁻¹ ⬝ (f - (B ⬝ p))))
+              (schur A B ⬝ (Bᴴ ⬝ (A⁻¹ ⬝ (f - (B ⬝ p))))))
+          • (Bᴴ ⬝ (A⁻¹ ⬝ (f - (B ⬝ p)))) := by
+  have hs : (Bᴴ ⬝ (A⁻¹ ⬝ (f - (B ⬝ p)))) = schurRhs A B f 0 - (schur A B ⬝ p) := by
+    rw [conjTranspose_inv_sub, schurRhs, sub_zero]
+  refine ⟨hs, ?_⟩
+  rw [Projection.steepestDescentStep, Projection.step1, hs]
+
+end Problem812
 
 end SaadSparse.Chapter08

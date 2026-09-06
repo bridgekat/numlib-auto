@@ -100,3 +100,7 @@ source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 9.2"
 [[node]]
 id = "FGMRES.apply_eq_iff_coeff_eq_zero"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 9.3"
+
+[[node]]
+id = "FGMRES.apply_eq_of_coeff_eq_zero"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 9.3 and §9.4.1"

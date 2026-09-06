@@ -21,6 +21,8 @@ section follows from `Numlib/Krylov/QuasiMinRes.lean` and `Numlib/Krylov/Precond
 * `proposition_9_2` is the optimality of FGMRES and `proposition_9_3` its breakdown criterion,
   with `hessenbergSq_isUnit_of_linearIndependent` the book's remark that the extra nonsingularity
   hypothesis of Proposition 9.3 is not vacuous.
+* `fgmres_eq_of_apply_fgmresZ_eq` is §9.4.1's consequence of Proposition 9.3: an inner solve that
+  happens to be exact at one step, `A z_j = v_j`, ends the outer iteration.
 * `fgmres_eq_gmresRight` says that a constant preconditioner gives back Algorithm 9.5.
 * `fdqgmres` is (9.28), flexible DQGMRES: Algorithm 6.13 fed the preconditioned vectors
   `M_j⁻¹ v_j`, which it consumes at once and need not store.
@@ -263,6 +265,55 @@ theorem proposition_9_3 (M : ℕ → Matrix (Fin n) (Fin n) 𝕜) (A : Matrix (F
     (residual_eq_smul_fgmresV M A b x₀)
     (by simpa [Chapter06.β] using (RCLike.ofReal_ne_zero (K := 𝕜)).2 (norm_ne_zero_iff.2 hr))
     hm hsub hH (orthonormal_fgmresV (Chapter06.norm_v₁ A b x₀ hr) hbreak)
+    (isMinOn_fgmresY M A b x₀ hR)
+
+/-! ### §9.4.1: an exact preconditioning step ends the iteration -/
+
+/-- **§9.4.1**: if the preconditioning is *exact* at step `j`, that is `A z_j = v_j`, then the
+orthogonalization of line 5 leaves nothing: `ŵ_j = 0`, and hence `h_{j+1,j} = 0`. The reason is
+that `A z_j` is one of the vectors it is being orthogonalized against. -/
+theorem fgmresW_eq_zero_of_apply_fgmresZ_eq (hv : ‖v₁‖ = 1) {j : ℕ}
+    (hbreak : ∀ i, i < j → fgmresW M A v₁ i ≠ 0)
+    (hz : op A (fgmresZ M A v₁ j) = fgmresV M A v₁ j) : fgmresW M A v₁ j = 0 := by
+  have hsum : ∑ i ∈ Finset.range (j + 1),
+      inner 𝕜 (fgmresV M A v₁ i) (op A (fgmresZ M A v₁ j)) • fgmresV M A v₁ i
+        = fgmresV M A v₁ j := by
+    have hterm : ∀ i ∈ Finset.range (j + 1),
+        inner 𝕜 (fgmresV M A v₁ i) (op A (fgmresZ M A v₁ j)) • fgmresV M A v₁ i
+          = if i = j then fgmresV M A v₁ j else 0 := by
+      intro i hi
+      rw [hz, inner_fgmresV hv j hbreak i (Nat.lt_succ_iff.1 (Finset.mem_range.1 hi)) j le_rfl]
+      by_cases hij : i = j
+      · rw [ite_eq_left hij, ite_eq_left hij, one_smul, hij]
+      · rw [ite_eq_right hij, ite_eq_right hij, zero_smul]
+    rw [Finset.sum_congr rfl hterm, Finset.sum_ite_eq' (Finset.range (j + 1)) j
+      (fun _ => fgmresV M A v₁ j), ite_eq_left (Finset.mem_range.2 (Nat.lt_succ_self j))]
+  rw [fgmresW, hsum, hz, sub_self]
+
+/-- **§9.4.1**: an exact inner solve ends the outer iteration. If `A z_j = v_j` at step `j` — the
+preconditioner happens to invert `A` on that vector — then, provided the previous steps have not
+broken down and the square Hessenberg matrix `H_{j+1}` is nonsingular, the flexible GMRES iterate
+`x_{j+1}` already solves `A x = b`.
+
+The book calls this "a consequence of the above proposition", and it is: `h_{j+1,j} = 0` by
+`fgmresW_eq_zero_of_apply_fgmresZ_eq`, and a vanishing subdiagonal entry makes the iterate exact
+(`Krylov.FGMRES.apply_eq_of_coeff_eq_zero`). It is what makes the flexible framework attractive:
+any inner solve good enough to be exact on one vector terminates the outer one. Note that
+Proposition 9.3 itself cannot be quoted here, since its orthonormality hypothesis covers
+`v_0, …, v_{j+1}` and the vector `v_{j+1}` is exactly the one this step fails to produce. -/
+theorem fgmres_eq_of_apply_fgmresZ_eq (M : ℕ → Matrix (Fin n) (Fin n) 𝕜)
+    (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : EuclideanSpace 𝕜 (Fin n)) {j : ℕ}
+    (hr : Chapter06.r₀ A b x₀ ≠ 0)
+    (hbreak : ∀ i, i < j → fgmresW M A (Chapter06.v₁ A b x₀) i ≠ 0)
+    (hz : op A (fgmresZ M A (Chapter06.v₁ A b x₀) j) = fgmresV M A (Chapter06.v₁ A b x₀) j)
+    (hH : IsUnit (Krylov.hessenbergSqOf (fgmresCoeff M A (Chapter06.v₁ A b x₀)) (j + 1)).det)
+    (hR : IsUnit (Chapter06.R (fgmresCoeff M A (Chapter06.v₁ A b x₀)) (j + 1))) :
+    op A (fgmres M A b x₀ (j + 1)) = b := by
+  have hw := fgmresW_eq_zero_of_apply_fgmresZ_eq (Chapter06.norm_v₁ A b x₀ hr) hbreak hz
+  have hzero : fgmresCoeff M A (Chapter06.v₁ A b x₀) (j + 1) (j + 1 - 1) = 0 := by
+    rw [Nat.add_sub_cancel, fgmresCoeff_succ_self, hw, norm_zero, RCLike.ofReal_zero]
+  exact Krylov.FGMRES.apply_eq_of_coeff_eq_zero (equation_9_22 M A _)
+    (residual_eq_smul_fgmresV M A b x₀) (Nat.succ_pos j) hH hzero
     (isMinOn_fgmresY M A b x₀ hR)
 
 /-- **The remark after Proposition 9.3**: if `A` is nonsingular, the directions `z_0, …, z_{m-1}`

@@ -28,8 +28,20 @@ Krylov space. Unlike the unpreconditioned case, the two search spaces now *diffe
 `‖x_* - x‖₂` over `x₀ + 𝒦_m(Aᴴ M⁻¹ A, Aᴴ M⁻¹ r₀)`; at `M = I` both are the single space
 `x₀ + 𝒦_m(Aᴴ A, Aᴴ r₀)` of §8.3 (`Chapter08.subspace_adjoint_eq`).
 
-The right, split and centred variants of P-9.4 and P-9.5 are the same derivation in other inner
-products and are not formalized; see `plans/saadsparse-ch7-9.md` §4.
+**P-9.4** asks for the right- and split-preconditioned versions of the two algorithms, which the
+book leaves out. They need no new pseudo-code: they are §9.2's `rightPcg` and `splitPcg` run at
+the normal-equations operators, and `rightPcgnr_eq`, `splitPcgnr_eq`, `rightPcgne_eq` and
+`splitPcgne_eq` say that each produces the iterates of Algorithm 9.7 or 9.8 after the stated
+change of variables — `x = M⁻¹ u` on the right, `x = L⁻ᴴ u` split, composed with `x = Aᴴ u` in
+the CGNE case.
+
+**P-9.5** is the *centred* pair `A M⁻¹ Aᴴ u = b` with `x = M⁻¹ Aᴴ u` and `Aᴴ M⁻¹ A x = Aᴴ M⁻¹ b`.
+These are not rearrangements of Algorithm 9.1: `Aᴴ M⁻¹ A` is a different operator from
+`M⁻¹ Aᴴ A`. `isSymmetric_centredNR` and `isSymmetric_centredNE` are the claim the book makes
+("the coefficient matrices in the above systems are all symmetric"), `centredPcgnr` and
+`centredPcgne` are the adapted algorithms with `op_centredNR_apply` / `op_centredNE_apply` as
+their operation lists, `centredPcgne_eq` carries out the change of variables, and
+`centredPcgnr_isGalerkinIterate` is the optimality that `isSymmetricCoercive_centredNR` unlocks.
 
 Indices are `0`-based, and division by a vanishing quantity is `0`, which reproduces the book's
 breakdown behaviour.
@@ -419,5 +431,212 @@ theorem pcgne_isMinError (hM : Krylov.IsPreconditioner (op M) (op M⁻¹)) {c : 
   exact isMinError_of_isGalerkin_comp_adjoint A hu₀.symm hstar h
 
 end CGNE
+
+/-! ### P-9.4: the right- and split-preconditioned CGNR and CGNE
+
+Saad leaves these four variants to Exercise 4 ("Right and split preconditioner versions of
+Algorithms 9.7 and 9.8 are not shown here"). Their content is that each is the *same* method as
+the left-preconditioned one after a change of variables, and §9.2 already proves the two
+rearrangements that do the work, `rightPcg_eq_pcg` and `splitPcg_eq_pcg`. So no new pseudo-code
+is needed: the algorithms are `rightPcg` and `splitPcg` of §9.2 run at the normal-equations
+operators `Aᴴ A` and `A Aᴴ`, and each theorem below is one of those two rearrangements composed
+with `pcgnr_eq` or `pcgne_eq`. -/
+
+section Variants
+
+variable {A M L : Matrix (Fin n) (Fin n) 𝕜}
+
+/-- **P-9.4, right-preconditioned CGNR.** The system preconditioned is the normal equations
+`Aᴴ A x = Aᴴ b` with `M` on the right, `(Aᴴ A) M⁻¹ u = Aᴴ b`, and the conjugate gradient method
+for it is run in the `M⁻¹`-inner product, which is what keeps `(Aᴴ A) M⁻¹` self-adjoint. Read
+through the change of variables `x = M⁻¹ u`, it is **Algorithm 9.7** started at `x_0 = M⁻¹ u_0`:
+`M⁻¹ u_j` is that algorithm's iterate `x_j`, the residual `ρ_j` it carries is the
+normal-equations residual `Aᴴ r_j`, and `M⁻¹ q_j` is its direction `p_j`. -/
+theorem rightPcgnr_eq (hMinv : (op M⁻¹).IsSymmetric) (b u₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) :
+    (op M⁻¹ (rightPcg (Aᴴ * A) M (op Aᴴ b) u₀ j).1,
+        (rightPcg (Aᴴ * A) M (op Aᴴ b) u₀ j).2.1,
+        op M⁻¹ (rightPcg (Aᴴ * A) M (op Aᴴ b) u₀ j).2.2)
+      = ((pcgnr A M b (op M⁻¹ u₀) j).x, op Aᴴ (pcgnr A M b (op M⁻¹ u₀) j).r,
+          (pcgnr A M b (op M⁻¹ u₀) j).p) :=
+  (rightPcg_eq_pcg (isSymmetric_conjTranspose_mul A) hMinv (op Aᴴ b) u₀ j).trans
+    (pcgnr_eq hMinv b (op M⁻¹ u₀) j).symm
+
+/-- **P-9.4, split-preconditioned CGNR.** The system preconditioned is again the normal equations
+`Aᴴ A x = Aᴴ b`, now split as `L⁻¹ Aᴴ A L⁻ᴴ u = L⁻¹ Aᴴ b` with `M = L Lᴴ` and `x = L⁻ᴴ u`;
+**Algorithm 9.2** run on it already carries that change of variables out, so its first field is
+`x_j` and not `u_j`. It is **Algorithm 9.7**: identical iterates and identical directions from
+the same `x_0`, with the split residual `r̂_j = L⁻¹ Aᴴ r_j` in place of `Aᴴ r_j`. -/
+theorem splitPcgnr_eq (hMinv : (op M⁻¹).IsSymmetric) (hM : M = L * Lᴴ)
+    (b x₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) :
+    splitPcg (Aᴴ * A) L (op Aᴴ b) x₀ j
+      = ((pcgnr A M b x₀ j).x, op L⁻¹ (op Aᴴ (pcgnr A M b x₀ j).r), (pcgnr A M b x₀ j).p) := by
+  rw [splitPcg_eq_pcg hM, ← pcgnr_eq hMinv]
+
+/-- **P-9.4, right-preconditioned CGNE.** The system preconditioned is `A Aᴴ u = b` with `M` on
+the right, `(A Aᴴ) M⁻¹ w = b`, and the conjugate gradient method for it is run in the
+`M⁻¹`-inner product. Two changes of variables stack: `u = M⁻¹ w` undoes the right
+preconditioning and `x = Aᴴ u` undoes the normal equations, so the iterate of **Algorithm 9.8**
+started at `x_0 = Aᴴ M⁻¹ w_0` is `x_j = x_0 + Aᴴ M⁻¹ (w_j - w_0)`; its residual is the residual
+`ρ_j` carried by the `w`-iteration, and its direction is `Aᴴ M⁻¹ q_j`. -/
+theorem rightPcgne_eq (hMinv : (op M⁻¹).IsSymmetric) (b x₀ : EuclideanSpace 𝕜 (Fin n))
+    {w₀ : EuclideanSpace 𝕜 (Fin n)} (hw₀ : op Aᴴ (op M⁻¹ w₀) = x₀) (j : ℕ) :
+    (pcgne A M b x₀ j).x
+        = x₀ + op Aᴴ (op M⁻¹ ((rightPcg (A * Aᴴ) M b w₀ j).1 - w₀)) ∧
+      (pcgne A M b x₀ j).r = (rightPcg (A * Aᴴ) M b w₀ j).2.1 ∧
+      (pcgne A M b x₀ j).p = op Aᴴ (op M⁻¹ (rightPcg (A * Aᴴ) M b w₀ j).2.2) := by
+  have h := rightPcg_eq_pcg (isSymmetric_mul_conjTranspose A) hMinv b w₀ j
+  have h₁ : op M⁻¹ (rightPcg (A * Aᴴ) M b w₀ j).1 = pcgX (A * Aᴴ) M b (op M⁻¹ w₀) j :=
+    congrArg Prod.fst h
+  have h₂ : (rightPcg (A * Aᴴ) M b w₀ j).2.1 = pcgR (A * Aᴴ) M b (op M⁻¹ w₀) j :=
+    congrArg (fun s => s.2.1) h
+  have h₃ : op M⁻¹ (rightPcg (A * Aᴴ) M b w₀ j).2.2 = pcgP (A * Aᴴ) M b (op M⁻¹ w₀) j :=
+    congrArg (fun s => s.2.2) h
+  obtain ⟨hx, hr, hp⟩ := pcgne_eq hMinv b x₀ hw₀ j
+  refine ⟨?_, ?_, ?_⟩
+  · have hsub : op M⁻¹ ((rightPcg (A * Aᴴ) M b w₀ j).1 - w₀)
+        = pcgX (A * Aᴴ) M b (op M⁻¹ w₀) j - op M⁻¹ w₀ := by rw [map_sub, h₁]
+    rw [hsub]; exact hx
+  · rw [hr]; exact h₂.symm
+  · rw [h₃]; exact hp
+
+/-- **P-9.4, split-preconditioned CGNE.** The system preconditioned is `A Aᴴ u = b`, split as
+`L⁻¹ A Aᴴ L⁻ᴴ v = L⁻¹ b` with `M = L Lᴴ` and `u = L⁻ᴴ v`; **Algorithm 9.2** run on it carries
+that change of variables out, so its first field is `u_j`, and the remaining change of variables
+`x = Aᴴ u` recovers the iterate of **Algorithm 9.8**, `x_j = x_0 + Aᴴ (u_j - u_0)`. The split
+residual it carries is `L⁻¹` of the residual of Algorithm 9.8, and `Aᴴ` of its direction is the
+direction of Algorithm 9.8. -/
+theorem splitPcgne_eq (hMinv : (op M⁻¹).IsSymmetric) (hM : M = L * Lᴴ)
+    (b x₀ : EuclideanSpace 𝕜 (Fin n)) {u₀ : EuclideanSpace 𝕜 (Fin n)} (hu₀ : op Aᴴ u₀ = x₀)
+    (j : ℕ) :
+    (pcgne A M b x₀ j).x = x₀ + op Aᴴ ((splitPcg (A * Aᴴ) L b u₀ j).1 - u₀) ∧
+      op L⁻¹ (pcgne A M b x₀ j).r = (splitPcg (A * Aᴴ) L b u₀ j).2.1 ∧
+      (pcgne A M b x₀ j).p = op Aᴴ (splitPcg (A * Aᴴ) L b u₀ j).2.2 := by
+  have h := splitPcg_eq_pcg (A := A * Aᴴ) (L := L) hM b u₀ j
+  have h₁ : (splitPcg (A * Aᴴ) L b u₀ j).1 = pcgX (A * Aᴴ) M b u₀ j := by rw [h]; rfl
+  have h₂ : (splitPcg (A * Aᴴ) L b u₀ j).2.1 = op L⁻¹ (pcgR (A * Aᴴ) M b u₀ j) := by rw [h]; rfl
+  have h₃ : (splitPcg (A * Aᴴ) L b u₀ j).2.2 = pcgP (A * Aᴴ) M b u₀ j := by rw [h]; rfl
+  obtain ⟨hx, hr, hp⟩ := pcgne_eq hMinv b x₀ hu₀ j
+  exact ⟨by rw [h₁]; exact hx, by rw [h₂, hr], by rw [h₃]; exact hp⟩
+
+end Variants
+
+/-! ### P-9.5: the centred variants
+
+Saad's P-9.5 replaces the two one-sided systems of §9.5 by the *centred* ones
+`A M⁻¹ Aᴴ u = b` with `x = M⁻¹ Aᴴ u` (the NE form) and `Aᴴ M⁻¹ A x = Aᴴ M⁻¹ b` (the NR form),
+observes that "the coefficient matrices in the above systems are all symmetric", and asks for the
+adapted conjugate gradient algorithms. These are not rearrangements of Algorithm 9.1:
+`Aᴴ M⁻¹ A` is a different operator from `M⁻¹ Aᴴ A`, and its Krylov space
+`𝒦_m(Aᴴ M⁻¹ A, Aᴴ M⁻¹ r_0)` — Algorithm 9.8's space, not Algorithm 9.7's — differs from
+Algorithm 9.7's `𝒦_m(M⁻¹ Aᴴ A, M⁻¹ Aᴴ r_0)` as soon as `M ≠ I`. -/
+
+/-- **P-9.5**: `Aᴴ M⁻¹ A` is symmetric whenever `M⁻¹` is, whatever `A` is. This is the
+coefficient operator of the centred NR system `Aᴴ M⁻¹ A x = Aᴴ M⁻¹ b`. -/
+theorem isSymmetric_centredNR (A : Matrix (Fin n) (Fin n) 𝕜) {M : Matrix (Fin n) (Fin n) 𝕜}
+    (hMinv : (op M⁻¹).IsSymmetric) : (op (Aᴴ * (M⁻¹ * A))).IsSymmetric := by
+  intro x y
+  simp only [op_mul_apply]
+  rw [Chapter08.inner_op_conjTranspose, hMinv, Chapter08.inner_op_self]
+
+/-- **P-9.5**: `A M⁻¹ Aᴴ` is symmetric whenever `M⁻¹` is. This is the coefficient operator of the
+centred NE system `A M⁻¹ Aᴴ u = b`. -/
+theorem isSymmetric_centredNE (A : Matrix (Fin n) (Fin n) 𝕜) {M : Matrix (Fin n) (Fin n) 𝕜}
+    (hMinv : (op M⁻¹).IsSymmetric) : (op (A * (M⁻¹ * Aᴴ))).IsSymmetric := by
+  intro x y
+  simp only [op_mul_apply]
+  rw [Chapter08.inner_op_self, hMinv, Chapter08.inner_op_conjTranspose]
+
+/-- The operation list of the centred NR step: `Aᴴ M⁻¹ A p` is one product with `A`, one solve
+with `M` and one product with `Aᴴ`; neither `Aᴴ M⁻¹ A` nor `M⁻¹` is ever formed. -/
+theorem op_centredNR_apply (A M : Matrix (Fin n) (Fin n) 𝕜) (y : EuclideanSpace 𝕜 (Fin n)) :
+    op (Aᴴ * (M⁻¹ * A)) y = op Aᴴ (op M⁻¹ (op A y)) := by
+  rw [op_mul_apply, op_mul_apply]
+
+/-- The operation list of the centred NE step: `A M⁻¹ Aᴴ q` is one product with `Aᴴ`, one solve
+with `M` and one product with `A`. -/
+theorem op_centredNE_apply (A M : Matrix (Fin n) (Fin n) 𝕜) (y : EuclideanSpace 𝕜 (Fin n)) :
+    op (A * (M⁻¹ * Aᴴ)) y = op A (op M⁻¹ (op Aᴴ y)) := by
+  rw [op_mul_apply, op_mul_apply]
+
+section Centred
+
+variable (A M : Matrix (Fin n) (Fin n) 𝕜)
+
+/-- **P-9.5, the centred CGNR**: the conjugate gradient method for `Aᴴ M⁻¹ A x = Aᴴ M⁻¹ b`. Its
+coefficient operator is symmetric (`isSymmetric_centredNR`), so the conjugate gradient
+recurrence applies verbatim; the adaptation is that the matrix-vector product of each step is
+the three operations of `op_centredNR_apply`, and that the solution variable is `x` itself, so
+no change of variables is needed. -/
+noncomputable def centredPcgnr (b x₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) : CG.State 𝔼 :=
+  CG.iterate (op (Aᴴ * (M⁻¹ * A))) (op Aᴴ (op M⁻¹ b)) x₀ j
+
+/-- **P-9.5, the centred CGNE**: the conjugate gradient method for `A M⁻¹ Aᴴ u = b`. Its
+coefficient operator is symmetric (`isSymmetric_centredNE`), the matrix-vector product of each
+step is the three operations of `op_centredNE_apply`, and the solution of `A x = b` is recovered
+by the change of variables `x = M⁻¹ Aᴴ u` (`centredPcgneX`). -/
+noncomputable def centredPcgne (b u₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) : CG.State 𝔼 :=
+  CG.iterate (op (A * (M⁻¹ * Aᴴ))) b u₀ j
+
+/-- **P-9.5**, the change of variables `x = M⁻¹ Aᴴ u` of the centred CGNE, in the incremental
+form `x_j = x_0 + M⁻¹ Aᴴ (u_j - u_0)` that keeps `x_0` exactly as given. -/
+noncomputable def centredPcgneX (b u₀ x₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) : 𝔼 :=
+  x₀ + op M⁻¹ (op Aᴴ ((centredPcgne A M b u₀ j).x - u₀))
+
+/-- The residual carried by the centred CGNR is the *preconditioned normal-equations* residual
+`Aᴴ M⁻¹ (b - A x_j)`, so the true residual `b - A x_j` is not available for free: that is the
+price of centring, and one reason Algorithm 9.7 is the form the book prints. -/
+theorem centredPcgnr_residual_eq (b x₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) :
+    (centredPcgnr A M b x₀ j).r
+      = op Aᴴ (op M⁻¹ (b - op A (centredPcgnr A M b x₀ j).x)) := by
+  rw [centredPcgnr, CG.residual_eq, op_centredNR_apply, map_sub, map_sub]
+
+/-- **P-9.5, the centred CGNE read in `x`.** With `x_0 = M⁻¹ Aᴴ u_0`, the change of variables
+`x = M⁻¹ Aᴴ u` takes the `u`-iteration to `x_j = x_0 + M⁻¹ Aᴴ (u_j - u_0)`; then
+`A x_j = (A M⁻¹ Aᴴ) u_j`, so the residual carried by the `u`-iteration is the *true* residual
+`b - A x_j` of `A x = b`. This is for the centred system what `pcgne_eq` is for `A Aᴴ u = b`. -/
+theorem centredPcgne_eq (b u₀ x₀ : EuclideanSpace 𝕜 (Fin n)) (hx₀ : op M⁻¹ (op Aᴴ u₀) = x₀)
+    (j : ℕ) :
+    centredPcgneX A M b u₀ x₀ j = x₀ + op M⁻¹ (op Aᴴ ((centredPcgne A M b u₀ j).x - u₀)) ∧
+      op A (centredPcgneX A M b u₀ x₀ j) = op (A * (M⁻¹ * Aᴴ)) (centredPcgne A M b u₀ j).x ∧
+      (centredPcgne A M b u₀ j).r = b - op A (centredPcgneX A M b u₀ x₀ j) := by
+  have hdef : centredPcgneX A M b u₀ x₀ j
+      = x₀ + op M⁻¹ (op Aᴴ ((centredPcgne A M b u₀ j).x - u₀)) := rfl
+  have happ : op A (centredPcgneX A M b u₀ x₀ j)
+      = op (A * (M⁻¹ * Aᴴ)) (centredPcgne A M b u₀ j).x := by
+    rw [hdef, ← hx₀, op_centredNE_apply, map_add, map_sub, map_sub, map_sub]
+    abel
+  exact ⟨hdef, happ, by rw [happ, centredPcgne, CG.residual_eq]⟩
+
+end Centred
+
+/-- **P-9.5**: `Aᴴ M⁻¹ A` is symmetric *positive definite* as soon as `A` is nonsingular and
+`M⁻¹` is symmetric positive definite, since `(Aᴴ M⁻¹ A x, x) = (M⁻¹ A x, A x) > 0` off the
+origin. This is the hypothesis under which the centred NR system is well posed and the
+conjugate gradient method for it is defined. -/
+theorem isSymmetricCoercive_centredNR {A M : Matrix (Fin n) (Fin n) 𝕜}
+    (hMinv : (op M⁻¹).IsSymmetricCoercive) (hA : Function.Injective (op A)) :
+    (op (Aᴴ * (M⁻¹ * A))).IsSymmetricCoercive where
+  isSymmetric := isSymmetric_centredNR A hMinv.isSymmetric
+  isCoercive := (LinearMap.isCoercive_iff_forall_pos _).2 fun x hx => by
+    rw [op_centredNR_apply, Chapter08.inner_op_conjTranspose]
+    exact LinearMap.IsCoercive.inner_self_pos hMinv.isCoercive
+      fun h => hx (hA (by rw [h, map_zero]))
+
+/-- **P-9.5, the optimality of the centred CGNR**: its iterate is the Galerkin iterate of the
+centred system `Aᴴ M⁻¹ A x = Aᴴ M⁻¹ b` over `x_0 + 𝒦_m(Aᴴ M⁻¹ A, Aᴴ M⁻¹ r_0)`, hence minimizes
+the `Aᴴ M⁻¹ A`-energy norm of the error over that space. The space is Algorithm 9.8's, not
+Algorithm 9.7's. -/
+theorem centredPcgnr_isGalerkinIterate {A M : Matrix (Fin n) (Fin n) 𝕜}
+    (hMinv : (op M⁻¹).IsSymmetricCoercive) (hA : Function.Injective (op A))
+    (b x₀ : EuclideanSpace 𝕜 (Fin n)) (m : ℕ) :
+    IsGalerkin (op (Aᴴ * (M⁻¹ * A))) (op Aᴴ (op M⁻¹ b)) x₀
+        (Chapter06.krylov (Aᴴ * (M⁻¹ * A)) (op Aᴴ (op M⁻¹ (b - op A x₀))) m)
+      (centredPcgnr A M b x₀ m).x := by
+  have hinit : op Aᴴ (op M⁻¹ b) - op (Aᴴ * (M⁻¹ * A)) x₀ = op Aᴴ (op M⁻¹ (b - op A x₀)) := by
+    rw [op_centredNR_apply, map_sub, map_sub]
+  have h := CG.isGalerkinIterate (op Aᴴ (op M⁻¹ b)) x₀
+    (isSymmetricCoercive_centredNR hMinv hA) m
+  rw [Chapter06.krylov_eq, ← hinit]
+  exact h
 
 end SaadSparse.Chapter09

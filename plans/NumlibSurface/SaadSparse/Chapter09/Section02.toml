@@ -59,3 +59,18 @@ id = "eisenstat"
 
 [[node]]
 id = "eisenstat_eq"
+
+[[node]]
+id = "pcr"
+
+[[node]]
+id = "pcr_eq"
+
+[[node]]
+id = "leftPreconditioned_apply_eq_add"
+
+[[node]]
+id = "problem_9_8c"
+
+[[node]]
+id = "problem_9_8c_ssor"

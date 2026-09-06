@@ -50,3 +50,60 @@ id = "example_8_2"
 
 [[node]]
 id = "equation_8_30_unique"
+
+[[node]]
+id = "lagrangian"
+
+[[node]]
+id = "lagrangian_isSaddle"
+
+[[node]]
+id = "constraintProjector"
+
+[[node]]
+id = "problem_8_6_projector"
+
+[[node]]
+id = "equation_8_35"
+
+[[node]]
+id = "conjTranspose_mul_constraintProjector"
+
+[[node]]
+id = "problem_8_6_cg_subspace"
+
+[[node]]
+id = "problem_8_5b"
+
+[[node]]
+id = "blockVec"
+
+[[node]]
+id = "saddleMatrix_apply_blockVec"
+
+[[node]]
+id = "inner_blockVec"
+
+[[node]]
+id = "problem_8_12_pos"
+
+[[node]]
+id = "problem_8_12_neg"
+
+[[node]]
+id = "problem_8_12_indefinite"
+
+[[node]]
+id = "inner_saddleMatrix_blockVec_zero"
+
+[[node]]
+id = "problem_8_12_residual"
+
+[[node]]
+id = "problem_8_12_steepestDescent_stalls"
+
+[[node]]
+id = "problem_8_12_minRes_stalls"
+
+[[node]]
+id = "problem_8_12_reduced"

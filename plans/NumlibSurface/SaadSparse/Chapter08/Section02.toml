@@ -44,3 +44,27 @@ id = "blockCimmino"
 
 [[node]]
 id = "blockCimmino_isMinRes"
+
+[[node]]
+id = "colNormDiag"
+
+[[node]]
+id = "cimmino_eq_richardson_diag"
+
+[[node]]
+id = "cimminoNE"
+
+[[node]]
+id = "cimminoNE_eq_additiveStep"
+
+[[node]]
+id = "cimminoNE_eq_jacobi"
+
+[[node]]
+id = "normal_diag"
+
+[[node]]
+id = "nrSorSweep_eq_sorStep"
+
+[[node]]
+id = "sorSweep_tendsto"

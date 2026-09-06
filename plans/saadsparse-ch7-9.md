@@ -166,17 +166,59 @@ Full list with reasons in `proposals/saad-ch7-9.md` §3. The four that matter:
 * **Look-ahead Lanczos (§7.1.2)**, with the indefinite bilinear form (7.7), the Hankel moment
   matrix and its `LU` factorization. The book proves nothing here; it describes a family of
   implementations and says where the pivots vanish. Nothing to be faithful to.
-* **The spectrum of `[[0, A], [Aᴴ, 0]]` (§8.1) and P-8.4.** Needs a singular value decomposition.
-  Mathlib has `LinearMap.singularValues` but no factorization, and
-  `Numlib/LinearAlgebra/Matrix/SVD` is a phase-3 group with no nodes proved.
-* **P-8.6**, CG on the singular consistent system `P A P x = P b`. This is Choi's material and
-  belongs in `Numlib/Krylov/Singular`; it should be planned there, with the Saad problem as a
-  consumer.
+* **The spectrum of `[[0, A], [Aᴴ, 0]]` (§8.1) and P-8.4.** Still unwritten, but *not* for the
+  reason on record. The old reason — "Mathlib has `LinearMap.singularValues` but no factorization,
+  and `Numlib/LinearAlgebra/Matrix/SVD` is a phase-3 group with no nodes proved" — is **stale**:
+  that module exists and is proved, with `Matrix.exists_singularSystem` (an orthonormal `u`, an
+  orthonormal `v` and positive `μ_j` with `A u_j = μ_j v_j`, `Aᴴ v_j = μ_j u_j`),
+  `Matrix.rightSingularUnitary` and `Matrix.conjTranspose_mul_self_eq_conj_diagonal`. With it, the
+  half the book actually asserts — "the eigenvalues are `±σ_i`, where `σ_i` is an *arbitrary*
+  singular value" — is a short computation: `(v_j, ±u_j)` is an eigenvector of `[[0, A], [Aᴴ, 0]]`
+  for `±μ_j`, since the product is `(A(±u_j), Aᴴ v_j) = (±μ_j v_j, μ_j u_j)`. What is genuinely
+  missing is the *converse*, that there are no other eigenvalues and that the multiplicities are
+  the ones the count suggests: that needs the whole eigenbasis of the augmented matrix assembled
+  from the singular system together with `Ker A` and `(Ran A)ᗮ`, which is where the remaining work
+  is, and which is what P-8.4's plot of `‖B(α)‖₂` rests on.
+* **P-8.6 (c) and (d)**, CG on the singular consistent system `P A P x = P b` and the `QR` variant.
+  Parts (a) and (b) are **now proved** (`constraintProjector`, `problem_8_6_projector`,
+  `equation_8_35`): they need only Mathlib's orthogonal projection onto `(Ran B)ᗮ` and
+  `equation_8_30` composed with `P`. The half of (c) that asks "in which subspace are the iterates?"
+  is `problem_8_6_cg_subspace`, the Krylov space of `P A P` at `P b` sitting inside `Ker Bᴴ`.
+  *The old reason for deferring the rest — "needs `Numlib/Krylov/Singular` (Choi, phase 2), which is
+  unwritten" — is stale: that module exists and has 30 declarations.* What it carries is the
+  **minimal-residual** story on a singular symmetric system
+  (`Krylov.IsMinResIterate.isLeast_norm_of_grade_le`, `Krylov.grade_le_finrank_range`,
+  `Krylov.IsMinNormMinResIterate.isLeast_norm_of_grade_le`), not CG on a semidefinite one. The one
+  missing backbone theorem, and the correct reason to defer, is:
+
+  > for a symmetric **positive semidefinite** `A` and `b ∈ Ran A`, the conjugate gradient iterates
+  > from `x₀ = 0` are well defined (`⟪A p_j, p_j⟫ > 0` until `r_j = 0`, because `p_j ∈ Ran A` and
+  > `A` is definite there), stay in `𝒦_m(A, b) ⊆ Ran A`, and terminate at the pseudoinverse
+  > solution `A⁺ b` — the minimum-norm solution of the consistent system.
+
+  It belongs beside the MINRES-QLP material in `Numlib/Krylov/Singular.lean`; P-8.6 (c) is then a
+  specialization and (d) needs, in addition, a `QR` factorization of a rectangular `B`, which
+  Mathlib does not have as a factorization theorem either (only Gram–Schmidt).
 * **P-8.9**, inexact Uzawa. Needs "if `x_{k+1} = T x_k + e_k` with `‖T‖ < 1` and `‖e_k‖ → 0` then
   `x_k` converges", which `Numlib/Nonlinear/FixedPoint` does not have and which no other source in
-  the corpus asks for. One node would do it if a second consumer appears; it is cheap but it is
-  not in the corpus's interest yet.
+  the corpus asks for. Not one node but three: the real-sequence lemma (`a_{k+1} ≤ q a_k + ε_k`,
+  `0 ≤ q < 1`, `ε_k → 0`, `0 ≤ a_k` ⇒ `a_k → 0`, proved by `a_k − ε/2` contracting past the index
+  where `ε_k ≤ (1−q)ε/2`), the perturbed Banach iteration built on it with the geometric-tail bound
+  for `ε_k ≤ α^k`, and — to apply it to Uzawa — the fact that (8.33) bounds the *spectral radius* of
+  `I − ω S`, so one still needs `‖·‖₂ = ρ` for the symmetric `I − ω S` before "‖T‖ < 1" is available.
+  Plus a surface definition of the inexact iteration, which the book states only through the
+  residual threshold `ε_{k+1}`. Left unwritten.
 
 Also not planned, as arithmetic rather than mathematics: Eisenstat's operation counts (§9.2.2,
-Example 9.1, P-9.7–P-9.9), the six preconditioned normal-equation variants of P-9.4 and P-9.5, and
-the numerical tables 7.1–7.3 and 8.1.
+Example 9.1, P-9.7, P-9.9 and P-9.8 (a), (b)) and the numerical tables 7.1–7.3 and 8.1. P-9.8 (c),
+the one part of P-9.7–P-9.9 with theorem content, **is** now written
+(`SaadSparse.Chapter09.problem_9_8c`): it is (9.8) conjugated by a symmetric square root of `D`,
+and the matrix "to be determined" is `D₂ = D^{-1/2} D₁ D^{-1/2}`, which is `-I` for the SSOR
+choice `D = D₀` (`problem_9_8c_ssor`).
+
+The two lines this section used to carry about **P-9.4** and **P-9.5** ("six rearrangements of
+Algorithm 9.1 in six inner products") are also gone: both are written. P-9.4's four variants need
+no new pseudo-code — they are §9.2's `rightPcg` and `splitPcg` at the normal-equations operators,
+composed with `pcgnr_eq` / `pcgne_eq` — and P-9.5's centred pair is genuinely a different operator,
+with its own symmetry claim (`isSymmetric_centredNR`, `isSymmetric_centredNE`), its own algorithms
+and its own Krylov space.

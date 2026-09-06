@@ -17,3 +17,48 @@ id = "pcgne_eq"
 
 [[node]]
 id = "pcgne_isMinError"
+
+[[node]]
+id = "rightPcgnr_eq"
+
+[[node]]
+id = "splitPcgnr_eq"
+
+[[node]]
+id = "rightPcgne_eq"
+
+[[node]]
+id = "splitPcgne_eq"
+
+[[node]]
+id = "isSymmetric_centredNR"
+
+[[node]]
+id = "isSymmetric_centredNE"
+
+[[node]]
+id = "op_centredNR_apply"
+
+[[node]]
+id = "op_centredNE_apply"
+
+[[node]]
+id = "centredPcgnr"
+
+[[node]]
+id = "centredPcgne"
+
+[[node]]
+id = "centredPcgneX"
+
+[[node]]
+id = "centredPcgnr_residual_eq"
+
+[[node]]
+id = "centredPcgne_eq"
+
+[[node]]
+id = "isSymmetricCoercive_centredNR"
+
+[[node]]
+id = "centredPcgnr_isGalerkinIterate"

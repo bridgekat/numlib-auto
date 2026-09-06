@@ -40,7 +40,9 @@ proves therefore transports.
   differ only in the norm they minimize over it — `‖M⁻¹ (b - A x)‖` on the left, `‖b - A x‖` on the
   right;
 * `Krylov.FGMRES.isMinRes` and `Krylov.FGMRES.apply_eq_iff_coeff_eq_zero`: [saad2003iterative]
-  Propositions 9.2 and 9.3 for flexible GMRES, whose search space is not a Krylov subspace at all.
+  Propositions 9.2 and 9.3 for flexible GMRES, whose search space is not a Krylov subspace at all,
+  with `Krylov.FGMRES.apply_eq_of_coeff_eq_zero` the half of the latter that needs no orthonormal
+  residual basis and so survives the breakdown step itself.
 
 ## Implementation notes
 
@@ -540,6 +542,65 @@ private theorem last_ne_zero_of_mulVec_eq {h : ℕ → ℕ → 𝕜} {β : 𝕜}
   rw [Finset.sum_congr rfl fun k _ => by rw [hy0 k, mul_zero]] at h0
   exact hβ (by simpa using h0.symm)
 
+/-- A row of `H̄_m` above the last one is the corresponding row of the square `H_m`. -/
+private theorem mulVec_hessenbergOf_of_lt {h : ℕ → ℕ → 𝕜} {j : ℕ} (w : Fin j → 𝕜) (r : ℕ)
+    (hr : r < j) :
+    (hessenbergOf h j).mulVec w ⟨r, by omega⟩ = (hessenbergSqOf h j).mulVec w ⟨r, hr⟩ := by
+  simp only [Matrix.mulVec, dotProduct, hessenbergOf, hessenbergSqOf, Matrix.of_apply]
+
+/-- `β e₁` of length `j + 1` agrees with `β e₁` of length `j` below the last entry. -/
+private theorem firstVec_succ_of_lt {β : 𝕜} {j : ℕ} (r : ℕ) (hr : r < j) :
+    firstVec β (j + 1) ⟨r, by omega⟩ = firstVec β j ⟨r, hr⟩ := by
+  simp [firstVec]
+
+/-- The quasi-residual vanishes exactly when its coefficient vector does. -/
+private theorem quasiResidual_eq_zero_iff (h : ℕ → ℕ → 𝕜) (β : 𝕜) (j : ℕ) :
+    ∀ w : Fin j → 𝕜, quasiResidual h β j w = 0 ↔
+      ∀ i : Fin (j + 1), (firstVec β (j + 1) - (hessenbergOf h j).mulVec w) i = 0 := by
+  intro w
+  rw [quasiResidual_def, norm_eq_zero]
+  constructor
+  · intro hw i
+    have := congrArg (WithLp.ofLp (p := 2)) hw
+    simpa using congrFun this i
+  · intro hw
+    have : (firstVec β (j + 1) - (hessenbergOf h j).mulVec w) = 0 := funext hw
+    rw [this]
+    simp
+
+/-- **A vanishing subdiagonal entry makes the flexible GMRES iterate exact**, with no
+orthonormality hypothesis on the residual basis: if `h_{m,m-1} = 0` and the square Hessenberg
+matrix `H_m` is nonsingular, then any minimizer of the quasi-residual gives `A (x₀ + Z_m y) = b`.
+
+This is the half of `Krylov.FGMRES.apply_eq_iff_coeff_eq_zero` that survives a breakdown at step
+`m - 1`, where the residual basis stops one vector short and `v_0, …, v_m` cannot be orthonormal.
+It is what [saad2003iterative] §9.4.1 needs: an *exact* inner solve `A z_j = v_j` empties the
+orthogonalization, and the outer iteration is finished. -/
+theorem apply_eq_of_coeff_eq_zero {A : E →ₗ[𝕜] E} {z v : ℕ → E} {h : ℕ → ℕ → 𝕜} {b x₀ : E}
+    {β : 𝕜} (hv : HessenbergRelation₂ A z v h) (hr : b - A x₀ = β • v 0) {m : ℕ} (hm : 0 < m)
+    (hH : IsUnit (hessenbergSqOf h m).det) (hzero : h m (m - 1) = 0) {y : Fin m → 𝕜}
+    (hy : IsMinOn (quasiResidual h β m) Set.univ y) :
+    A (x₀ + ∑ i, y i • z i) = b := by
+  set y' : Fin m → 𝕜 := (hessenbergSqOf h m)⁻¹.mulVec (firstVec β m) with hy'
+  have hy'eq : (hessenbergSqOf h m).mulVec y' = firstVec β m := by
+    rw [hy', Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv _ hH, Matrix.one_mulVec]
+  have hq' : quasiResidual h β m y' = 0 := by
+    refine (quasiResidual_eq_zero_iff h β m y').2 fun i => ?_
+    rcases eq_or_lt_of_le (Nat.lt_succ_iff.1 i.isLt) with heq | hlt
+    · have hi : i = (⟨m, Nat.lt_succ_self m⟩ : Fin (m + 1)) := Fin.ext heq
+      rw [hi, Pi.sub_apply, mulVec_hessenbergOf_last hv.eq_zero_of_lt hm y', hzero, zero_mul,
+        show firstVec β (m + 1) ⟨m, Nat.lt_succ_self m⟩ = 0 from by simp [firstVec]; omega,
+        sub_zero]
+    · rw [Pi.sub_apply, mulVec_hessenbergOf_of_lt y' (i : ℕ) hlt, hy'eq,
+        firstVec_succ_of_lt (i : ℕ) hlt, sub_self]
+  have hq : quasiResidual h β m y = 0 :=
+    le_antisymm (hq' ▸ isMinOn_iff.1 hy y' (Set.mem_univ y')) (quasiResidual_nonneg h β m y)
+  have hc0 := (quasiResidual_eq_zero_iff h β m y).1 hq
+  have h0 : b - A (x₀ + ∑ i, y i • z i) = 0 := by
+    rw [hv.residual_eq hr m y]
+    exact Finset.sum_eq_zero fun i _ => by rw [hc0 i, zero_smul]
+  exact (sub_eq_zero.1 h0).symm
+
 /-- **[saad2003iterative], Proposition 9.3**: if the residual is nonzero, the previous steps have
 not broken down and the square Hessenberg matrix `H_j` is nonsingular, then the flexible GMRES
 iterate at step `j` is exact exactly when the subdiagonal entry `h_{j+1,j}` vanishes.
@@ -558,26 +619,13 @@ theorem apply_eq_iff_coeff_eq_zero {A : E →ₗ[𝕜] E} {z v : ℕ → E} {h :
   classical
   -- the coefficients of the residual in the basis `v`
   have hrowj : ∀ (w : Fin j → 𝕜) (r : ℕ) (hr : r < j),
-      (hessenbergOf h j).mulVec w ⟨r, by omega⟩ = (hessenbergSqOf h j).mulVec w ⟨r, hr⟩ := by
-    intro w r hr
-    simp only [Matrix.mulVec, dotProduct, hessenbergOf, hessenbergSqOf, Matrix.of_apply]
+      (hessenbergOf h j).mulVec w ⟨r, by omega⟩ = (hessenbergSqOf h j).mulVec w ⟨r, hr⟩ :=
+    fun w r hr => mulVec_hessenbergOf_of_lt w r hr
   have hfirst : ∀ (r : ℕ) (hr : r < j),
-      firstVec β (j + 1) ⟨r, by omega⟩ = firstVec β j ⟨r, hr⟩ := by
-    intro r hr
-    simp [firstVec]
+      firstVec β (j + 1) ⟨r, by omega⟩ = firstVec β j ⟨r, hr⟩ :=
+    fun r hr => firstVec_succ_of_lt r hr
   -- `quasiResidual` vanishes exactly when the coefficient vector does
-  have hqz : ∀ w : Fin j → 𝕜, quasiResidual h β j w = 0 ↔
-      ∀ i : Fin (j + 1), (firstVec β (j + 1) - (hessenbergOf h j).mulVec w) i = 0 := by
-    intro w
-    rw [quasiResidual_def, norm_eq_zero]
-    constructor
-    · intro hw i
-      have := congrArg (WithLp.ofLp (p := 2)) hw
-      simpa using congrFun this i
-    · intro hw
-      have : (firstVec β (j + 1) - (hessenbergOf h j).mulVec w) = 0 := funext hw
-      rw [this]
-      simp
+  have hqz := quasiResidual_eq_zero_iff h β j
   -- exactness is vanishing of the coefficient vector
   have hexact : A (x₀ + ∑ i, y i • z i) = b ↔ quasiResidual h β j y = 0 := by
     rw [hqz]

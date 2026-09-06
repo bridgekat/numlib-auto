@@ -32,11 +32,26 @@ This file says so declaration by declaration.
   identity `r_new = (1 - ω ∑ P_i) r` together with **P-8.8**.
 * `cimmino_eq_richardson` is **P-8.2**: with unit columns Cimmino's method is Richardson's
   iteration on the normal equations, so (8.22) — its convergence interval and optimal
-  parameter — is Example 4.1 applied to `AᵀA` (`equation_8_22`).
+  parameter — is Example 4.1 applied to `AᵀA` (`equation_8_22`). Without the normalization,
+  `cimmino_eq_richardson_diag` is P-8.2 (a)–(b): the same iteration preconditioned by the diagonal
+  `D = diag(‖A e_i‖₂²)` of `AᵀA`.
+* `cimminoNE` is **P-8.3**, Cimmino's original *row* method — Jacobi for `A Aᵀ u = b` read through
+  `x = Aᵀ u` (`cimminoNE_eq_jacobi`) — and `cimminoNE_eq_additiveStep` puts it in the additive
+  Petrov–Galerkin process over the pairs `(span {Aᵀ e_i}, span {e_i})`, the pairs Kaczmarz's
+  method uses multiplicatively.
 * `blockCimmino` is (8.26)–(8.27), the same statement with `dim K_i > 1` and a least-squares
   subproblem in place of the scalar division.
 
-The row/column duality of P-8.3 is the exchange of `A` and `Aᵀ` and is not stated separately.
+* `nrSorSweep_eq_sorStep` makes §8.2.1's back-reference to Chapter 4 good: a whole NR-SOR sweep is
+  one SOR step (4.12) for the normal equations `AᵀA x = Aᵀ b`, and `sorSweep_tendsto` is then
+  Theorem 4.10 applied to `AᵀA` — symmetric positive definite whenever `A` is nonsingular — so the
+  sweep converges to the solution for every `0 < ω < 2`.
+
+Not formalized: P-8.2 (c), the convergence interval `0 < ω < 2/λ_max(D^{-1/2} AᵀA D^{-1/2})` of the
+unnormalized iteration, which needs the symmetric square root of `D` and the transport of
+`Chapter04.example_4_1_tendsto_iff` through that change of variables — `equation_8_22` is the
+normalized case. See `plans/saadsparse-ch7-9.md` §4.
+
 As in Chapter 5, everything is over `ℝ`, which is where §5.3–5.4 live.
 -/
 
@@ -428,6 +443,107 @@ theorem equation_8_22 {lmin lmax : ℝ} (hsub : spectrum ℝ (Aᵀ * A) ⊆ Set.
   exact ⟨Chapter04.example_4_1_tendsto_iff hherm hsub hmin hmax hpos hω,
     (Chapter04.example_4_1_opt hherm hsub hmin hmax hpos).1⟩
 
+/-! ### P-8.2 (a), (b): Cimmino with unnormalized columns -/
+
+/-- The `i`-th coordinate of a vector is its inner product with `e_i`. -/
+private theorem inner_coordVec (w : E n) (i : Fin n) :
+    inner ℝ (coordVec i) w = WithLp.ofLp w i := by
+  rw [coordVec, EuclideanSpace.inner_single_left]
+  simp
+
+/-- A diagonal matrix acts coordinate by coordinate. -/
+private theorem inner_coordVec_diagonal (d : Fin n → ℝ) (w : E n) (i : Fin n) :
+    inner ℝ (coordVec i) ((Matrix.diagonal d) ⬝ w) = d i * inner ℝ (coordVec i) w := by
+  rw [inner_coordVec, inner_coordVec,
+    show WithLp.ofLp ((Matrix.diagonal d) ⬝ w) = Matrix.diagonal d *ᵥ WithLp.ofLp w from rfl,
+    Matrix.mulVec_diagonal]
+
+/-- The expansion of `D w` in the coordinate basis, for a diagonal `D`. -/
+private theorem diagonal_apply_eq_sum (d : Fin n → ℝ) (w : E n) :
+    ((Matrix.diagonal d) ⬝ w) = ∑ i, (d i * inner ℝ (coordVec i) w) • coordVec i := by
+  conv_lhs => rw [← (EuclideanSpace.basisFun (Fin n) ℝ).sum_repr' ((Matrix.diagonal d) ⬝ w)]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [EuclideanSpace.basisFun_apply, show EuclideanSpace.single i (1 : ℝ) = coordVec i from rfl,
+    inner_coordVec_diagonal]
+
+/-- **P-8.2**: the diagonal `D = diag(‖A e_i‖₂²)` of the normal-equations matrix `AᵀA`, which is
+the preconditioner Cimmino's method carries when the columns of `A` are not normalized. -/
+noncomputable def colNormDiag (A : Matrix (Fin n) (Fin n) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
+  Matrix.diagonal fun i => ‖A ⬝ coordVec i‖ ^ 2
+
+/-- The entrywise inverse `D⁻¹` of `SaadSparse.Chapter08.colNormDiag`. It is written entrywise
+rather than as `(colNormDiag A)⁻¹` so that a vanishing column of `A` gives `0` in that place, as
+the algorithm's own division by zero does; when no column vanishes the two agree
+(`colNormDiag_mul_colNormDiagInv`). -/
+noncomputable def colNormDiagInv (A : Matrix (Fin n) (Fin n) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
+  Matrix.diagonal fun i => (‖A ⬝ coordVec i‖ ^ 2)⁻¹
+
+/-- `D D⁻¹ = I` when no column of `A` vanishes. -/
+theorem colNormDiag_mul_colNormDiagInv (h : ∀ i : Fin n, (A ⬝ coordVec i) ≠ 0) :
+    colNormDiag A * colNormDiagInv A = 1 := by
+  rw [colNormDiag, colNormDiagInv, Matrix.diagonal_mul_diagonal]
+  refine congrArg Matrix.diagonal (funext fun i => ?_)
+  exact mul_inv_cancel₀ (pow_ne_zero 2 (norm_ne_zero_iff.2 (h i)))
+
+/-- **P-8.2 (a), (b)**: without the normalization of the columns, Cimmino's step is
+`x_new = x + ω D⁻¹ (Aᵀ b - Aᵀ A x)` with `D = diag(‖A e_i‖₂²)` — Richardson's iteration for the
+normal equations `AᵀA x = Aᵀ b`, preconditioned by the diagonal of `AᵀA`.
+
+No hypothesis is needed: a vanishing column makes the book's `δ_i` and the corresponding entry of
+`D⁻¹` zero alike. `cimmino_eq_richardson` is the special case `D = I` that §8.2.2 states in the
+text. -/
+theorem cimmino_eq_richardson_diag (x : E n) :
+    cimmino A b ω x = x + ω • (colNormDiagInv A ⬝ ((Aᵀ ⬝ b) - ((Aᵀ * A) ⬝ x))) := by
+  rw [cimmino, normal_residual, colNormDiagInv, diagonal_apply_eq_sum, Finset.smul_sum]
+  refine congrArg (fun z : E n => x + z) (Finset.sum_congr rfl fun i _ => ?_)
+  rw [smul_smul, inner_transpose', div_eq_mul_inv]
+  ring_nf
+
+/-! ### P-8.3: the row form of Cimmino's method -/
+
+variable (A b ω)
+
+/-- **P-8.3**: Cimmino's method in its original, *row* form — Jacobi for the normal equations of
+the second kind `A Aᵀ u = b`, written in `x = Aᵀ u`. Every correction `δ_i Aᵀ e_i` is the
+Kaczmarz relaxation `neSorStep` computed from the *same* residual, and they are added at once. -/
+noncomputable def cimminoNE (x : E n) : E n :=
+  x + ∑ i, (ω * inner ℝ (coordVec i) (b - (A ⬝ x)) / ‖Aᵀ ⬝ coordVec i‖ ^ 2) • (Aᵀ ⬝ coordVec i)
+
+variable {A b ω}
+
+/-- **P-8.3**: the row form of Cimmino's method is the additive *Petrov–Galerkin* process of §5.4
+over the pairs `(span {Aᵀ e_i}, span {e_i})`, exactly as `neSorSweep_eq_multiplicativeStep` makes
+Kaczmarz's method the multiplicative one over the same pairs. It is not
+`SaadSparse.Chapter05.additiveStep`, whose test space is its trial space; only the column form
+`cimmino` is of that kind. -/
+theorem cimminoNE_eq_additiveStep
+    (hne : ∀ i : Fin n, inner ℝ (coordVec i) (A ⬝ (Aᵀ ⬝ coordVec i)) ≠ 0) (x : E n) :
+    cimminoNE A b ω x
+      = Projection.additiveStep (Matrix.toEuclideanLin A) b
+          (fun i => ℝ ∙ (Aᵀ ⬝ coordVec i)) (fun i => ℝ ∙ coordVec i)
+          (fun i => isNondegeneratePair_span_singleton (hne i)) (fun _ => ω) x := by
+  rw [cimminoNE, Projection.additiveStep]
+  refine congrArg (fun z : E n => x + z) (Finset.sum_congr rfl fun i _ => ?_)
+  rw [pairStep_eq_step1 _ rfl rfl (hne i),
+    show Projection.step1 (Matrix.toEuclideanLin A) b (Aᵀ ⬝ coordVec i) (coordVec i) x
+      = neSorStep A b 1 i x from (neSorStep_eq_step1 i x).symm, neSorStep, add_sub_cancel_left,
+    smul_smul, one_mul, mul_div_assoc]
+
+/-- **P-8.3**: the row form *is* Jacobi for `A Aᵀ u = b`, read through `x = Aᵀ u`. With
+`D' = diag(‖Aᵀ e_i‖₂²)` the diagonal of `A Aᵀ`, one step of the `u`-iteration is
+`u_new = u + ω D'⁻¹ (b - A Aᵀ u)`, and applying `Aᵀ` to it gives `cimminoNE`. This is the
+derivation the problem asks for: the row version of the column-wise `cimmino_eq_richardson_diag`,
+and Cimmino's own method. -/
+theorem cimminoNE_eq_jacobi (u : E n) :
+    cimminoNE A b ω (Aᵀ ⬝ u)
+      = (Aᵀ ⬝ (u + ω • (colNormDiagInv (Aᵀ) ⬝ (b - ((A * Aᵀ) ⬝ u))))) := by
+  rw [map_add, map_smul, colNormDiagInv, diagonal_apply_eq_sum, map_sum, Finset.smul_sum,
+    cimminoNE]
+  refine congrArg (fun z : E n => (Aᵀ ⬝ u) + z) (Finset.sum_congr rfl fun i _ => ?_)
+  rw [map_smul, smul_smul, Chapter05.toEuclideanLin_mul_apply, div_eq_mul_inv]
+  congr 1
+  ring
+
 /-! ### (8.26)–(8.27): the block form -/
 
 variable (A b ω)
@@ -468,5 +584,233 @@ theorem blockCimmino_isMinRes {𝒱 : Chapter05.ProjFamily n} {i : Fin 𝒱.p}
     rw [hH, ← toEuclideanLin_mul_apply, ← Matrix.mul_assoc,
       Matrix.mul_nonsing_inv _ ((Matrix.isUnit_iff_isUnit_det _).1 h), Matrix.one_mul]
   exact (equation_8_1 (A * 𝒱.V i) r _).1 hnormal
+
+/-! ### §8.2.1: the sweeps converge for `0 < ω < 2`
+
+The back-reference to Chapter 4 that closes §8.2.1: `AᵀA` is symmetric positive definite when `A`
+is nonsingular, so Theorem 4.10 applies to it and the NR-SOR sweep converges for every
+`0 < ω < 2`. The bridge is `nrSorSweep_eq_sorStep`: a whole NR-SOR sweep *is* one SOR step for the
+normal equations, because relaxation `i` changes only the `i`-th entry and changes it by
+`ω (Aᵀ b - AᵀA x)_i / (AᵀA)_ii`, using the entries below `i` already updated and those above `i`
+not yet — which is the SOR recursion in the ordering `i = 1, …, n`.
+-/
+
+section Convergence
+
+variable {A : Matrix (Fin n) (Fin n) ℝ} {b : E n} {ω : ℝ}
+
+/-- The `i`-th diagonal entry of the normal-equations matrix is the squared norm of the `i`-th
+column of `A`. -/
+theorem normal_diag (A : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) :
+    (Aᵀ * A) i i = ‖A ⬝ coordVec i‖ ^ 2 := by
+  rw [← inner_normal_coordVec A i, inner_coordVec]
+  simp [coordVec, Matrix.mulVec_single, Matrix.mul_apply, Matrix.mulVec, dotProduct]
+
+/-- One NR-SOR relaxation changes only the `i`-th entry, and changes it by
+`ω (Aᵀ b - AᵀA x)_i / (AᵀA)_ii`. -/
+private theorem ofLp_nrSorStep (i : Fin n) (x : E n) :
+    WithLp.ofLp (nrSorStep A b ω i x)
+      = Function.update (WithLp.ofLp x) i
+          (WithLp.ofLp x i + ω * WithLp.ofLp ((Aᵀ ⬝ b) - ((Aᵀ * A) ⬝ x)) i / (Aᵀ * A) i i) := by
+  have hnum : inner ℝ (A ⬝ coordVec i) (b - (A ⬝ x))
+      = WithLp.ofLp ((Aᵀ ⬝ b) - ((Aᵀ * A) ⬝ x)) i := by
+    rw [normal_residual, ← inner_transpose', inner_coordVec]
+  rw [nrSorStep, hnum, ← normal_diag]
+  funext j
+  rw [WithLp.ofLp_add, WithLp.ofLp_smul, Pi.add_apply, Pi.smul_apply, smul_eq_mul]
+  rcases eq_or_ne j i with rfl | hj
+  · rw [Function.update_self]
+    simp [coordVec]
+  · rw [Function.update_of_ne hj]
+    simp [coordVec, hj]
+
+/-- The relaxed entry after one NR-SOR relaxation. -/
+private theorem ofLp_nrSorStep_self (i : Fin n) (x : E n) :
+    WithLp.ofLp (nrSorStep A b ω i x) i
+      = WithLp.ofLp x i + ω * WithLp.ofLp ((Aᵀ ⬝ b) - ((Aᵀ * A) ⬝ x)) i / (Aᵀ * A) i i := by
+  rw [ofLp_nrSorStep, Function.update_self]
+
+/-- Every other entry is left alone. -/
+private theorem ofLp_nrSorStep_of_ne {i j : Fin n} (hj : j ≠ i) (x : E n) :
+    WithLp.ofLp (nrSorStep A b ω i x) j = WithLp.ofLp x j := by
+  rw [ofLp_nrSorStep, Function.update_of_ne hj]
+
+/-- The first `k` relaxations of an NR-SOR sweep. -/
+private noncomputable def partialSweep (A : Matrix (Fin n) (Fin n) ℝ) (b : E n) (ω : ℝ) (k : ℕ)
+    (x : E n) : E n :=
+  ((List.finRange n).take k).foldl (fun y i => nrSorStep A b ω i y) x
+
+private theorem partialSweep_succ {k : ℕ} (hk : k < n) (x : E n) :
+    partialSweep A b ω (k + 1) x = nrSorStep A b ω ⟨k, hk⟩ (partialSweep A b ω k x) := by
+  rw [partialSweep, partialSweep, List.take_add_one,
+    List.getElem?_eq_getElem (by simpa using hk), List.foldl_append]
+  simp
+
+private theorem partialSweep_card (x : E n) : partialSweep A b ω n x = nrSorSweep A b ω x := by
+  rw [partialSweep, nrSorSweep, List.take_of_length_le (by simp)]
+
+/-- Entries from `k` on are untouched by the first `k` relaxations. -/
+private theorem ofLp_partialSweep_of_le (x : E n) :
+    ∀ k : ℕ, k ≤ n → ∀ j : Fin n, k ≤ (j : ℕ) →
+      WithLp.ofLp (partialSweep A b ω k x) j = WithLp.ofLp x j := by
+  intro k
+  induction k with
+  | zero => intro _ j _; rfl
+  | succ k ih =>
+    intro hk j hj
+    have hkn : k < n := lt_of_lt_of_le (Nat.lt_succ_self k) hk
+    have hne : j ≠ ⟨k, hkn⟩ := by
+      simp only [ne_eq, Fin.ext_iff]
+      omega
+    rw [partialSweep_succ hkn, ofLp_nrSorStep_of_ne hne, ih hkn.le j (by omega)]
+
+/-- Entries below `k` are frozen once the first `k` relaxations are done. -/
+private theorem ofLp_partialSweep_stable (x : E n) :
+    ∀ l : ℕ, l ≤ n → ∀ k : ℕ, k ≤ l → ∀ j : Fin n, (j : ℕ) < k →
+      WithLp.ofLp (partialSweep A b ω l x) j = WithLp.ofLp (partialSweep A b ω k x) j := by
+  intro l
+  induction l with
+  | zero => intro _ k hk j hj; omega
+  | succ l ih =>
+    intro hl k hk j hj
+    rcases eq_or_lt_of_le hk with rfl | hkl
+    · rfl
+    have hln : l < n := lt_of_lt_of_le (Nat.lt_succ_self l) hl
+    have hne : j ≠ ⟨l, hln⟩ := by
+      simp only [ne_eq, Fin.ext_iff]
+      omega
+    rw [partialSweep_succ hln, ofLp_nrSorStep_of_ne hne, ih hln.le k (by omega) j hj]
+
+/-- **Saad §8.2.1**: one NR-SOR sweep is one SOR step for the normal equations `AᵀA x = Aᵀ b`.
+Relaxation `i` sets the `i`-th entry from the entries already updated below `i` and the old ones
+above it, which is exactly the recursion (4.12) defines. -/
+theorem nrSorSweep_eq_sorStep (hd : IsUnit (Matrix.diagPart (Aᵀ * A))) (hω : ω ≠ 0) (x : E n) :
+    WithLp.ofLp (nrSorSweep A b ω x)
+      = Chapter04.sorStep (Aᵀ * A) ω (WithLp.ofLp ((Aᵀ ⬝ b) : E n)) (WithLp.ofLp x) := by
+  have hdiag : ∀ i : Fin n, (Aᵀ * A) i i ≠ 0 := (Matrix.isUnit_diagPart_iff _).1 hd
+  have hres : (Chapter04.D (Aᵀ * A) - ω • Chapter04.E (Aᵀ * A)) *ᵥ
+      (WithLp.ofLp (nrSorSweep A b ω x) - WithLp.ofLp x)
+      = ω • (WithLp.ofLp ((Aᵀ ⬝ b) : E n) - (Aᵀ * A) *ᵥ WithLp.ofLp x) := by
+    funext i
+    -- the state after the first `i` relaxations agrees with the finished sweep below `i` and
+    -- with the starting vector from `i` on
+    have hzlt : ∀ j : Fin n, j < i →
+        WithLp.ofLp (partialSweep A b ω (i : ℕ) x) j
+          = WithLp.ofLp (nrSorSweep A b ω x) j := by
+      intro j hj
+      rw [← partialSweep_card (A := A) (b := b) (ω := ω) x]
+      exact (ofLp_partialSweep_stable x n le_rfl (i : ℕ) i.2.le j hj).symm
+    have hzge : ∀ j : Fin n, ¬ j < i →
+        WithLp.ofLp (partialSweep A b ω (i : ℕ) x) j = WithLp.ofLp x j := fun j hj =>
+      ofLp_partialSweep_of_le x (i : ℕ) i.2.le j (by omega)
+    -- the `i`-th entry of the finished sweep is the one relaxation `i` produced
+    have hyi : WithLp.ofLp (nrSorSweep A b ω x) i
+        = WithLp.ofLp x i
+          + ω * WithLp.ofLp ((Aᵀ ⬝ b) - ((Aᵀ * A) ⬝ partialSweep A b ω (i : ℕ) x)) i
+            / (Aᵀ * A) i i := by
+      have h1 : WithLp.ofLp (nrSorSweep A b ω x) i
+          = WithLp.ofLp (partialSweep A b ω ((i : ℕ) + 1) x) i := by
+        rw [← partialSweep_card (A := A) (b := b) (ω := ω) x]
+        exact ofLp_partialSweep_stable x n le_rfl ((i : ℕ) + 1) i.2 i (Nat.lt_succ_self _)
+      have h2 : (⟨(i : ℕ), i.2⟩ : Fin n) = i := rfl
+      rw [h1, partialSweep_succ i.2, h2, ofLp_nrSorStep_self,
+        ofLp_partialSweep_of_le x (i : ℕ) i.2.le i le_rfl]
+    have hmv : ∀ w : E n, WithLp.ofLp ((Aᵀ ⬝ b) - ((Aᵀ * A) ⬝ w)) i
+        = WithLp.ofLp ((Aᵀ ⬝ b) : E n) i - ((Aᵀ * A) *ᵥ WithLp.ofLp w) i := fun _ => rfl
+    have hkey : (Aᵀ * A) i i * (WithLp.ofLp (nrSorSweep A b ω x) i - WithLp.ofLp x i)
+        = ω * (WithLp.ofLp ((Aᵀ ⬝ b) : E n) i
+          - ((Aᵀ * A) *ᵥ WithLp.ofLp (partialSweep A b ω (i : ℕ) x)) i) := by
+      rw [hyi, add_sub_cancel_left, hmv, mul_div_cancel₀ _ (hdiag i)]
+    -- splitting a row sum at `i`
+    have hsplit : ∀ w : Fin n → ℝ, ((Aᵀ * A) *ᵥ w) i
+        = ∑ j ∈ Finset.univ.filter (· < i), (Aᵀ * A) i j * w j
+          + ∑ j ∈ Finset.univ.filter (fun j => ¬ j < i), (Aᵀ * A) i j * w j := by
+      intro w
+      change ∑ j, (Aᵀ * A) i j * w j = _
+      exact (Finset.sum_filter_add_sum_filter_not _ _ _).symm
+    have hlow : ∑ j ∈ Finset.univ.filter (· < i),
+          (Aᵀ * A) i j * (WithLp.ofLp (nrSorSweep A b ω x) j - WithLp.ofLp x j)
+        = ((Aᵀ * A) *ᵥ WithLp.ofLp (partialSweep A b ω (i : ℕ) x)) i
+          - ((Aᵀ * A) *ᵥ WithLp.ofLp x) i := by
+      have hexp : ∑ j ∈ Finset.univ.filter (· < i),
+            (Aᵀ * A) i j * (WithLp.ofLp (nrSorSweep A b ω x) j - WithLp.ofLp x j)
+          = ∑ j ∈ Finset.univ.filter (· < i),
+              (Aᵀ * A) i j * WithLp.ofLp (nrSorSweep A b ω x) j
+            - ∑ j ∈ Finset.univ.filter (· < i), (Aᵀ * A) i j * WithLp.ofLp x j := by
+        rw [← Finset.sum_sub_distrib]
+        exact Finset.sum_congr rfl fun j _ => by ring
+      have h1 : ∑ j ∈ Finset.univ.filter (· < i),
+            (Aᵀ * A) i j * WithLp.ofLp (partialSweep A b ω (i : ℕ) x) j
+          = ∑ j ∈ Finset.univ.filter (· < i),
+            (Aᵀ * A) i j * WithLp.ofLp (nrSorSweep A b ω x) j :=
+        Finset.sum_congr rfl fun j hj => by rw [hzlt j (Finset.mem_filter.1 hj).2]
+      have h2 : ∑ j ∈ Finset.univ.filter (fun j => ¬ j < i),
+            (Aᵀ * A) i j * WithLp.ofLp (partialSweep A b ω (i : ℕ) x) j
+          = ∑ j ∈ Finset.univ.filter (fun j => ¬ j < i),
+            (Aᵀ * A) i j * WithLp.ofLp x j :=
+        Finset.sum_congr rfl fun j hj => by rw [hzge j (Finset.mem_filter.1 hj).2]
+      rw [hexp, hsplit, hsplit, h1, h2]
+      ring
+    simp only [Pi.smul_apply, smul_eq_mul, Pi.sub_apply, Matrix.sub_mulVec, Chapter04.D_mulVec,
+      Matrix.smul_mulVec, Chapter04.E_mulVec]
+    rw [hlow, hkey]
+    ring
+  have hunit := Chapter04.isUnit_D_sub_smul_E hd hω
+  have hstep : (Chapter04.D (Aᵀ * A) - ω • Chapter04.E (Aᵀ * A)) *ᵥ
+      (WithLp.ofLp (nrSorSweep A b ω x) - WithLp.ofLp x)
+      = (Chapter04.D (Aᵀ * A) - ω • Chapter04.E (Aᵀ * A)) *ᵥ
+        (Chapter04.sorStep (Aᵀ * A) ω (WithLp.ofLp ((Aᵀ ⬝ b) : E n)) (WithLp.ofLp x)
+          - WithLp.ofLp x) := by
+    rw [hres, Chapter04.sorStep_sub hd hω]
+  exact sub_left_inj.mp (Matrix.mulVec_injective_of_isUnit hunit hstep)
+
+/-- **Saad §8.2.1**: because `AᵀA` is symmetric positive definite whenever `A` is nonsingular,
+Theorem 4.10 applies to it, and the NR-SOR sweep converges for every `0 < ω < 2` — from every
+starting vector, to the solution of the normal equations `AᵀA x = Aᵀ b`. The book states this as a
+back-reference to Chapter 4; `nrSorSweep_eq_sorStep` is what makes the reference legitimate. -/
+theorem sorSweep_tendsto (hA : IsUnit A) (hω0 : 0 < ω) (hω2 : ω < 2) (x₀ : E n) :
+    Tendsto (fun k => WithLp.ofLp ((nrSorSweep A b ω)^[k] x₀)) atTop
+      (𝓝 ((Aᵀ * A)⁻¹ *ᵥ WithLp.ofLp ((Aᵀ ⬝ b) : E n))) := by
+  have hAdet : IsUnit A.det := (Matrix.isUnit_iff_isUnit_det A).1 hA
+  have hinjVec : Function.Injective (Aᵀ * A).mulVec := by
+    refine Matrix.mulVec_injective_of_isUnit ?_
+    rw [Matrix.isUnit_iff_isUnit_det, Matrix.det_mul, Matrix.det_transpose]
+    exact hAdet.mul hAdet
+  have hposdiag : ∀ i : Fin n, 0 < (Aᵀ * A) i i := by
+    intro i
+    rw [normal_diag]
+    have hne : (A ⬝ coordVec i) ≠ 0 := by
+      intro h
+      have hzero : (Aᵀ * A) *ᵥ WithLp.ofLp (coordVec i) = (Aᵀ * A) *ᵥ 0 := by
+        rw [Matrix.mulVec_zero, show ((Aᵀ * A) *ᵥ WithLp.ofLp (coordVec i))
+            = WithLp.ofLp ((Aᵀ * A) ⬝ coordVec i) from rfl,
+          Chapter05.toEuclideanLin_mul_apply,
+          show (Matrix.toEuclideanLin A) (coordVec i) = (A ⬝ coordVec i) from rfl, h, map_zero]
+        rfl
+      exact absurd (congrFun (hinjVec hzero) i) (by simp [coordVec])
+    positivity
+  have hd : IsUnit (Matrix.diagPart (Aᵀ * A)) :=
+    (Matrix.isUnit_diagPart_iff _).2 fun i => (hposdiag i).ne'
+  have hsymm : (Aᵀ * A).IsSymm := by
+    rw [Matrix.IsSymm, Matrix.transpose_mul, Matrix.transpose_transpose]
+  have hposdef : (Aᵀ * A).PosDef := by
+    have h := Matrix.PosDef.conjTranspose_mul_self A (Matrix.mulVec_injective_of_isUnit hA)
+    rwa [Chapter05.conjTranspose_eq_transpose] at h
+  have hρ : Matrix.complexSpectralRadius
+      ((Aᵀ * A).sorSplitting hd hω0.ne').iterationOperator < 1 :=
+    (Chapter04.theorem_4_10 hsymm hposdiag hd hω0 hω2).2 hposdef
+  have hiter : ∀ k : ℕ, WithLp.ofLp ((nrSorSweep A b ω)^[k] x₀)
+      = (Chapter04.sorStep (Aᵀ * A) ω (WithLp.ofLp ((Aᵀ ⬝ b) : E n)))^[k] (WithLp.ofLp x₀) := by
+    intro k
+    induction k with
+    | zero => rfl
+    | succ k ih =>
+      rw [Function.iterate_succ_apply', Function.iterate_succ_apply', ← ih,
+        nrSorSweep_eq_sorStep hd hω0.ne']
+  simp only [hiter]
+  rw [Chapter04.sorStep_eq hd hω0.ne']
+  exact Chapter04.Splitting.tendsto_step _ hρ _ _
+
+end Convergence
 
 end SaadSparse.Chapter08

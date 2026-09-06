@@ -35,3 +35,6 @@ id = "fdqgmres_eq_dqgmres"
 
 [[node]]
 id = "fgmres_eq_gmresRight"
+
+[[node]]
+id = "fgmres_eq_of_apply_fgmresZ_eq"

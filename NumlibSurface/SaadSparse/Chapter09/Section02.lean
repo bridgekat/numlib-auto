@@ -35,10 +35,19 @@ matrix-vector product per step; `pcgEnergyA_isGalerkinIterate` identifies its it
 minimal-`A M⁻¹ A`-error iterates over the same preconditioned Krylov space, so it is the
 preconditioned conjugate residual method.
 
-Eisenstat's implementation (§9.2.2) is present as mathematics only: `equation_9_8` is the matrix
-identity behind it and `eisenstat` is **Algorithm 9.3**, with `eisenstat_eq` saying that it
-computes `Â v`. The operation counts and P-9.7 to P-9.9 are not formalized; see
-`plans/saadsparse-ch7-9.md` §4.
+**P-9.12** is `pcr`, the analogue of Algorithm 9.1 for the conjugate residual method, and
+`pcr_eq` is the same one-line reading as `pcg_eq`: it is `CR.iterate` for `M⁻¹ A` in the
+`M`-inner product. `pcr_residual_eq` says its second component is `M⁻¹ r_j`.
+
+Eisenstat's implementation (§9.2.2) is present as mathematics only:
+`leftPreconditioned_apply_eq_add` is the opening observation `M⁻¹ A v = v + M⁻¹ R v` for
+`M = A - R`, `equation_9_8` is the matrix identity behind the implementation and `eisenstat` is
+**Algorithm 9.3**, with `eisenstat_eq` saying that it computes `Â v`. `problem_9_8c` is
+**P-9.8 (c)**, the same identity conjugated by `D^{1/2}`: after that symmetric scaling the two
+triangular factors are transposes of each other with a unit diagonal, and the matrix "to be
+determined" is `D₂ = D^{-1/2} D₁ D^{-1/2}`, which for the SSOR choice `D = D₀` is `-I`
+(`problem_9_8c_ssor`). The operation counts, P-9.7, P-9.9 and P-9.8 (a), (b) are not formalized;
+see `plans/saadsparse-ch7-9.md` §4.
 
 Indices are `0`-based, and division by a vanishing quantity is `0`, which reproduces the book's
 breakdown behaviour.
@@ -668,6 +677,156 @@ theorem pcgEnergyA_isGalerkinIterate (hA : (op A).IsSymmetric)
   rw [(pcgEnergyA_eq hAinv b x₀ j).1, Chapter06.krylov_eq]
   exact h
 
+/-! ### P-9.12: the preconditioned conjugate residual method -/
+
+section CRStep
+
+variable {F : Type*} [NormedAddCommGroup F] [InnerProductSpace 𝕜 F]
+
+private theorem crStep_x (B : F →ₗ[𝕜] F) (s : CR.State F) :
+    (CR.step B s).x = s.x + CR.alpha B s • s.p := rfl
+
+private theorem crStep_r (B : F →ₗ[𝕜] F) (s : CR.State F) :
+    (CR.step B s).r = s.r - CR.alpha B s • s.q := rfl
+
+private theorem crStep_p (B : F →ₗ[𝕜] F) (s : CR.State F) :
+    (CR.step B s).p = (CR.step B s).r
+      + (inner 𝕜 (CR.step B s).r (B (CR.step B s).r) / inner 𝕜 s.r (B s.r)) • s.p := rfl
+
+private theorem crStep_q (B : F →ₗ[𝕜] F) (s : CR.State F) :
+    (CR.step B s).q = B (CR.step B s).r
+      + (inner 𝕜 (CR.step B s).r (B (CR.step B s).r) / inner 𝕜 s.r (B s.r)) • s.q := rfl
+
+end CRStep
+
+variable (A M)
+
+/-- The step length `α_j = (z_j, A z_j)/(M⁻¹ A p_j, A p_j)` of the preconditioned conjugate
+residual method (**P-9.12**) on the quadruple `(x_j, z_j, p_j, q_j)` with `q_j = A p_j`. As in
+Algorithm 9.1, both `M`-inner products of the underlying method are Euclidean ones:
+`(z_j, M⁻¹ A z_j)_M = (z_j, A z_j)` and `(M⁻¹ A p_j, M⁻¹ A p_j)_M = (M⁻¹ A p_j, A p_j)`. -/
+noncomputable def pcrStepAlpha (s : 𝔼 × 𝔼 × 𝔼 × 𝔼) : 𝕜 :=
+  inner 𝕜 s.2.1 (op A s.2.1) / inner 𝕜 (op M⁻¹ s.2.2.2) s.2.2.2
+
+/-- The next preconditioned residual `z_{j+1} = z_j - α_j M⁻¹ A p_j` of P-9.12. -/
+noncomputable def pcrStepZ (s : 𝔼 × 𝔼 × 𝔼 × 𝔼) : 𝔼 :=
+  s.2.1 - pcrStepAlpha A M s • op M⁻¹ s.2.2.2
+
+/-- The direction coefficient `β_j = (z_{j+1}, A z_{j+1})/(z_j, A z_j)` of P-9.12. -/
+noncomputable def pcrStepBeta (s : 𝔼 × 𝔼 × 𝔼 × 𝔼) : 𝕜 :=
+  inner 𝕜 (pcrStepZ A M s) (op A (pcrStepZ A M s)) / inner 𝕜 s.2.1 (op A s.2.1)
+
+/-- One pass of **P-9.12**, the analogue of Algorithm 9.1 for the conjugate residual method:
+`x := x + α p`, `z := z - α M⁻¹ q`, `p := z + β p`, `q := A z + β q`. It applies `A` once, to the
+new preconditioned residual, and `M⁻¹` once, to `q_j = A p_j`. -/
+noncomputable def pcrStep (s : 𝔼 × 𝔼 × 𝔼 × 𝔼) : 𝔼 × 𝔼 × 𝔼 × 𝔼 :=
+  (s.1 + pcrStepAlpha A M s • s.2.2.1, pcrStepZ A M s,
+    pcrStepZ A M s + pcrStepBeta A M s • s.2.2.1,
+    op A (pcrStepZ A M s) + pcrStepBeta A M s • s.2.2.2)
+
+/-- **P-9.12** (preconditioned conjugate residual) run for `j` steps: the quadruple
+`(x_j, z_j, p_j, q_j)`, started from `z_0 = p_0 = M⁻¹ r_0` and `q_0 = A p_0`. -/
+noncomputable def pcr (b x₀ : 𝔼) (j : ℕ) : 𝔼 × 𝔼 × 𝔼 × 𝔼 :=
+  (pcrStep A M)^[j] (x₀, op M⁻¹ (b - op A x₀), op M⁻¹ (b - op A x₀),
+    op A (op M⁻¹ (b - op A x₀)))
+
+/-- The recurrence: state `j + 1` is one pass of P-9.12 applied to state `j`. -/
+theorem pcr_succ (b x₀ : 𝔼) (j : ℕ) : pcr A M b x₀ (j + 1) = pcrStep A M (pcr A M b x₀ j) :=
+  Function.iterate_succ_apply' _ _ _
+
+variable {A M}
+
+/-- **P-9.12**: the preconditioned conjugate residual method is the backbone conjugate residual
+recurrence `CR.iterate` for `M⁻¹ A` in the `M`-inner product, exactly as Algorithm 9.1 is
+`Krylov.PCG.iterate` there. Its state carries the preconditioned residual `z_j = M⁻¹ r_j`, whose
+image is the residual of the transported iteration, and `q_j = A p_j`, whose image under `M⁻¹` is
+the transported `M⁻¹ A p_j`. -/
+theorem pcr_eq (hM : Krylov.IsPreconditioner (op M) (op M⁻¹)) (b x₀ : 𝔼) (j : ℕ) :
+    hM.toEnergy (pcr A M b x₀ j).1
+        = (CR.iterate (hM.energyEnd (op M⁻¹ ∘ₗ op A)) (hM.toEnergy (op M⁻¹ b))
+            (hM.toEnergy x₀) j).x ∧
+      hM.toEnergy (pcr A M b x₀ j).2.1
+        = (CR.iterate (hM.energyEnd (op M⁻¹ ∘ₗ op A)) (hM.toEnergy (op M⁻¹ b))
+            (hM.toEnergy x₀) j).r ∧
+      hM.toEnergy (pcr A M b x₀ j).2.2.1
+        = (CR.iterate (hM.energyEnd (op M⁻¹ ∘ₗ op A)) (hM.toEnergy (op M⁻¹ b))
+            (hM.toEnergy x₀) j).p ∧
+      hM.toEnergy (op M⁻¹ (pcr A M b x₀ j).2.2.2)
+        = (CR.iterate (hM.energyEnd (op M⁻¹ ∘ₗ op A)) (hM.toEnergy (op M⁻¹ b))
+            (hM.toEnergy x₀) j).q := by
+  set Ahat := hM.energyEnd (op M⁻¹ ∘ₗ op A) with hAhat
+  have hstep : ∀ y : 𝔼, Ahat (hM.toEnergy y) = hM.toEnergy (op M⁻¹ (op A y)) := fun _ => rfl
+  have hinit : hM.toEnergy (op M⁻¹ (b - op A x₀))
+      = hM.toEnergy (op M⁻¹ b) - Ahat (hM.toEnergy x₀) := by
+    rw [hstep, ← map_sub, ← map_sub]
+  induction j with
+  | zero =>
+    refine ⟨rfl, hinit, hinit, ?_⟩
+    change hM.toEnergy (op M⁻¹ (op A (op M⁻¹ (b - op A x₀))))
+      = Ahat (hM.toEnergy (op M⁻¹ b) - Ahat (hM.toEnergy x₀))
+    rw [← hinit, hstep]
+  | succ j ih =>
+    obtain ⟨hx, hr, hp, hq⟩ := ih
+    set S := pcr A M b x₀ j with hS
+    set C := CR.iterate Ahat (hM.toEnergy (op M⁻¹ b)) (hM.toEnergy x₀) j with hC
+    have hnum : inner 𝕜 C.r (Ahat C.r) = inner 𝕜 S.2.1 (op A S.2.1) := by
+      rw [← hr]
+      exact hM.inner_energyEnd_right (op A) S.2.1 S.2.1
+    have hden : inner 𝕜 C.q C.q = inner 𝕜 (op M⁻¹ S.2.2.2) S.2.2.2 := by
+      rw [← hq, hM.inner_toEnergy_inv]
+    have halpha : CR.alpha Ahat C = pcrStepAlpha A M S := by
+      rw [CR.alpha, pcrStepAlpha, hnum, hden]
+    have hznew : hM.toEnergy (pcrStepZ A M S) = (CR.step Ahat C).r := by
+      rw [crStep_r, halpha, pcrStepZ, map_sub, map_smul, hr, hq]
+    have hnum' : inner 𝕜 (CR.step Ahat C).r (Ahat (CR.step Ahat C).r)
+        = inner 𝕜 (pcrStepZ A M S) (op A (pcrStepZ A M S)) := by
+      rw [← hznew]
+      exact hM.inner_energyEnd_right (op A) (pcrStepZ A M S) (pcrStepZ A M S)
+    have hbeta : inner 𝕜 (CR.step Ahat C).r (Ahat (CR.step Ahat C).r) / inner 𝕜 C.r (Ahat C.r)
+        = pcrStepBeta A M S := by
+      rw [pcrStepBeta, hnum, hnum']
+    refine ⟨?_, ?_, ?_, ?_⟩
+    · rw [pcr_succ, ← hS, pcrStep, CR.iterate_succ, ← hC, crStep_x, map_add, map_smul, hx, hp,
+        halpha]
+    · rw [pcr_succ, ← hS, pcrStep, CR.iterate_succ, ← hC]
+      exact hznew
+    · rw [pcr_succ, ← hS, pcrStep, CR.iterate_succ, ← hC, crStep_p, map_add, map_smul, hznew, hp,
+        hbeta]
+    · rw [pcr_succ, ← hS, pcrStep, CR.iterate_succ, ← hC, crStep_q, map_add, map_add, map_smul,
+        map_smul, ← hstep, hznew, hq, hbeta]
+
+/-- **P-9.12**: the state's second component is `M⁻¹` of the true residual, so the stopping test of
+Algorithm 9.1 reads the same way here. -/
+theorem pcr_residual_eq (hM : Krylov.IsPreconditioner (op M) (op M⁻¹)) (b x₀ : 𝔼) (j : ℕ) :
+    (pcr A M b x₀ j).2.1 = op M⁻¹ (b - op A (pcr A M b x₀ j).1) := by
+  obtain ⟨hx, hr, -, -⟩ := pcr_eq hM b x₀ j
+  refine (hM.toEnergy).injective ?_
+  rw [hr, CR.residual_eq, ← hx, Krylov.IsPreconditioner.energyEnd_apply, LinearMap.comp_apply,
+    ← map_sub, ← map_sub]
+
+/-! ### §9.2.2: the preconditioned product when `M = A - R` -/
+
+/-- **§9.2.2**, opening paragraph: for a preconditioner `M = A - R` the left-preconditioned
+product is `M⁻¹ A v = M⁻¹ (M + R) v = v + M⁻¹ R v`, so applying it costs one solve with `M` and one
+product with `R`. This is the general form of the rearrangement `equation_9_8` performs for the
+SSOR-type preconditioner, and the reason an incomplete factorization is worth storing together
+with the entries it dropped. -/
+theorem leftPreconditioned_apply_eq_add {R : Matrix (Fin n) (Fin n) 𝕜} (hM : IsUnit M)
+    (hR : M = A - R) (v : 𝔼) :
+    op (leftPreconditioned M A) v = v + op M⁻¹ (op R v) := by
+  have hA : A = M + R := by rw [hR]; abel
+  have hmat : leftPreconditioned M A = 1 + M⁻¹ * R := by
+    rw [show leftPreconditioned M A = M⁻¹ * A from rfl, hA, Matrix.mul_add,
+      Matrix.nonsing_inv_mul _ ((isUnit_iff_isUnit_det M).1 hM)]
+  have hadd : op (1 + M⁻¹ * R) v = op (1 : Matrix (Fin n) (Fin n) 𝕜) v + op (M⁻¹ * R) v := by
+    rw [show (op (1 + M⁻¹ * R) : 𝔼 →ₗ[𝕜] 𝔼) = op 1 + op (M⁻¹ * R) from map_add _ _ _]
+    rfl
+  have hone : op (1 : Matrix (Fin n) (Fin n) 𝕜) v = v := by
+    rw [show (op (1 : Matrix (Fin n) (Fin n) 𝕜) : 𝔼 →ₗ[𝕜] 𝔼) = LinearMap.id from
+      Matrix.toEuclideanLin_one]
+    rfl
+  rw [hmat, hadd, op_mul_apply, hone]
+
 end General
 
 /-! ### §9.2.2: Eisenstat's implementation -/
@@ -745,6 +904,87 @@ theorem eisenstat_eq (hA : A.IsSymm) (h1 : IsUnit (D - Chapter04.E A))
   rw [equation_9_8 hA h1 h2, op_add_apply, op_add_apply, eisenstat_def, map_add,
     op_mul_apply, op_mul_apply]
   abel
+
+/-! ### P-9.8 (c): the split-preconditioning option
+
+The problem scales the system symmetrically by the square root of the diagonal `D` of (9.6):
+with `C = D^{1/2} Â D^{1/2}` and `Ê = D^{-1/2} E D^{-1/2}` it asks for a matrix `D₂` with
+`C = (1 - Ê)⁻¹ D₂ (1 - Ê)⁻ᵀ + (1 - Ê)⁻¹ + (1 - Ê)⁻ᵀ`.  The answer is `D₂ = D^{-1/2} D₁ D^{-1/2}`
+for the `D₁ = D₀ - 2D` of (9.8), and it is `-I` for the SSOR choice `D = D₀`: after the scaling
+the triangular factors have unit diagonal and no diagonal need be stored at all.
+
+Nothing below uses that `D^{1/2}` is diagonal, only that it is symmetric, invertible and squares
+to `D`; for a positive diagonal `D = diagonal d` the intended matrix is
+`diagonal fun i => Real.sqrt (d i)`.
+-/
+
+section Sqrt
+
+variable {S : Matrix (Fin n) (Fin n) ℝ} (hSu : IsUnit S) (hSD : S * S = D)
+
+include hSu hSD in
+/-- `D^{-1/2} D D^{-1/2} = I`. -/
+private theorem inv_mul_self_mul_inv : S⁻¹ * D * S⁻¹ = 1 := by
+  have hu := (isUnit_iff_isUnit_det S).1 hSu
+  rw [← hSD, ← Matrix.mul_assoc S⁻¹ S S, Matrix.nonsing_inv_mul _ hu, Matrix.one_mul,
+    Matrix.mul_nonsing_inv _ hu]
+
+include hSu hSD in
+/-- The scaling that turns a triangular factor `D - X` of (9.6) into a unit-diagonal one:
+`1 - D^{-1/2} X D^{-1/2} = D^{-1/2} (D - X) D^{-1/2}`, so its inverse is `D^{1/2} (D - X)⁻¹
+D^{1/2}`. -/
+private theorem inv_one_sub_conj (X : Matrix (Fin n) (Fin n) ℝ) :
+    (1 - S⁻¹ * X * S⁻¹)⁻¹ = S * (D - X)⁻¹ * S := by
+  have hu := (isUnit_iff_isUnit_det S).1 hSu
+  have hconj : 1 - S⁻¹ * X * S⁻¹ = S⁻¹ * (D - X) * S⁻¹ := by
+    rw [Matrix.mul_sub, Matrix.sub_mul, inv_mul_self_mul_inv hSu hSD]
+  rw [hconj, Matrix.mul_inv_rev, Matrix.mul_inv_rev, Matrix.nonsing_inv_nonsing_inv _ hu,
+    ← Matrix.mul_assoc]
+
+end Sqrt
+
+/-- **P-9.8 (c)**: the split-preconditioned form of Eisenstat's identity.  Let `D^{1/2}` be a
+symmetric square root of the diagonal `D` of (9.6), write `Ê = D^{-1/2} E D^{-1/2}`, and let
+`C = D^{1/2} Â D^{1/2}` be the matrix conjugate gradients is applied to in the split-preconditioning
+option.  Then
+
+`C = (1 - Ê)⁻¹ D₂ (1 - Ê)⁻ᵀ + (1 - Ê)⁻¹ + (1 - Ê)⁻ᵀ`,   `D₂ = D^{-1/2} (D₀ - 2D) D^{-1/2}`,
+
+the conjugate of the `D₁` of `SaadSparse.Chapter09.equation_9_8`.  The two triangular factors are
+now transposes of each other and carry a unit diagonal, which is the point of the exercise. -/
+theorem problem_9_8c {S : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hSs : S.IsSymm)
+    (hSu : IsUnit S) (hSD : S * S = D) (h1 : IsUnit (D - Chapter04.E A))
+    (h2 : IsUnit (D - (Chapter04.E A)ᵀ)) :
+    S * ((D - Chapter04.E A)⁻¹ * A * (D - (Chapter04.E A)ᵀ)⁻¹) * S
+      = (1 - S⁻¹ * Chapter04.E A * S⁻¹)⁻¹
+          * (S⁻¹ * (Chapter04.D A - (2 : ℝ) • D) * S⁻¹)
+          * ((1 - S⁻¹ * Chapter04.E A * S⁻¹)ᵀ)⁻¹
+        + (1 - S⁻¹ * Chapter04.E A * S⁻¹)⁻¹ + ((1 - S⁻¹ * Chapter04.E A * S⁻¹)ᵀ)⁻¹ := by
+  have hu := (isUnit_iff_isUnit_det S).1 hSu
+  have hinvSymm : (S⁻¹)ᵀ = S⁻¹ := by
+    rw [Matrix.transpose_nonsing_inv, hSs.eq]
+  -- the transposed factor is the conjugate of `D - Eᵀ`
+  have htr : ((1 - S⁻¹ * Chapter04.E A * S⁻¹)ᵀ)⁻¹ = S * (D - (Chapter04.E A)ᵀ)⁻¹ * S := by
+    rw [Matrix.transpose_sub, Matrix.transpose_one, Matrix.transpose_mul, Matrix.transpose_mul,
+      hinvSymm, ← Matrix.mul_assoc S⁻¹ (Chapter04.E A)ᵀ S⁻¹, inv_one_sub_conj hSu hSD]
+  have hfst : (1 - S⁻¹ * Chapter04.E A * S⁻¹)⁻¹ = S * (D - Chapter04.E A)⁻¹ * S :=
+    inv_one_sub_conj hSu hSD _
+  -- the middle term reassembles after cancelling `D^{1/2} D^{-1/2}` on both sides
+  have hmid : ∀ X Y Z : Matrix (Fin n) (Fin n) ℝ,
+      S * X * S * (S⁻¹ * Y * S⁻¹) * (S * Z * S) = S * (X * Y * Z) * S := fun X Y Z => by
+    simp only [Matrix.mul_assoc]
+    rw [← Matrix.mul_assoc S⁻¹ S (Z * S), Matrix.nonsing_inv_mul _ hu, Matrix.one_mul,
+      ← Matrix.mul_assoc S S⁻¹ (Y * (Z * S)), Matrix.mul_nonsing_inv _ hu, Matrix.one_mul]
+  rw [hfst, htr, hmid, equation_9_8 hA h1 h2]
+  simp only [Matrix.mul_add, Matrix.add_mul]
+
+/-- **P-9.8 (c)**, the SSOR case `D = D₀`: the matrix "to be determined" is `-I`, so the scaled
+identity is `C = -(1 - Ê)⁻¹ (1 - Ê)⁻ᵀ + (1 - Ê)⁻¹ + (1 - Ê)⁻ᵀ` and no diagonal survives. -/
+theorem problem_9_8c_ssor {S : Matrix (Fin n) (Fin n) ℝ} (hSu : IsUnit S)
+    (hSD : S * S = Chapter04.D A) :
+    S⁻¹ * (Chapter04.D A - (2 : ℝ) • Chapter04.D A) * S⁻¹ = -1 := by
+  have h : Chapter04.D A - (2 : ℝ) • Chapter04.D A = -Chapter04.D A := by module
+  rw [h, Matrix.mul_neg, Matrix.neg_mul, inv_mul_self_mul_inv hSu hSD]
 
 end Eisenstat
 

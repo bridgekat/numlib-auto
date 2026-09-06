@@ -151,10 +151,10 @@ specialization of `Projection/Additive` and needs nothing new from it** — Cimm
 | P-7.8 (a general consistent polynomial family `ψ_j` and its recurrences) | a five-part algebra exercise producing an algorithm the book does not state a theorem about; BICGSTAB is its `ψ_{j+1} = (1 - ω_j t) ψ_j` case and is planned |
 | P-7.11 (block two-sided Lanczos, block BCG/QMR) | belongs with `Numlib/Krylov/Block` (phase 3), not with this slice |
 | §7.4 residual-norm estimate strategies, Tables 7.1–7.3 | numerical experiments |
-| Saad §8.1, the spectrum `±σ_i(A)` of `[[0, A], [Aᴴ, 0]]`, and **P-8.4** | needs a singular value decomposition. Mathlib has `LinearMap.singularValues` but no SVD factorization; `Numlib/LinearAlgebra/Matrix/SVD` is phase 3 and unwritten |
-| **P-8.6** (the singular consistent system `P A P x = P b` and CG on it) | needs the singular-system theory of `Numlib/Krylov/Singular` (Choi, phase 2): CG on a symmetric positive *semi*definite operator with a consistent right-hand side. Should be planned there, not here |
-| **P-8.9** (inexact Uzawa: convergence when the inner solves have residual `≤ ε_k → 0`) | needs a perturbed-fixed-point theorem (`x_{k+1} = T x_k + e_k`, `‖e_k‖ → 0`, `‖T‖ < 1` ⇒ convergence) that no other source in the corpus asks for; `Numlib/Nonlinear/FixedPoint` has the exact version only. One node would do it if a second consumer appears |
-| P-8.10, P-8.11, P-8.12 | P-8.10 is a one-line remark; P-8.11 is empty in the source; P-8.12 is the indefiniteness of a saddle-point matrix and its steepest-descent/minimal-residual behaviour, an exercise whose parts 1–4 are covered by `equation_8_30`, `schur` and `schur_posDef` |
+| Saad §8.1, the spectrum `±σ_i(A)` of `[[0, A], [Aᴴ, 0]]`, and **P-8.4** | **SKIP.** Needs a singular value decomposition: Mathlib has `LinearMap.singularValues` but no factorization theorem, and `Numlib/LinearAlgebra/Matrix/SVD` is phase 3 and unwritten. That each `±σ_i` *is* an eigenvalue can be had without a factorization (pair `(u, ±v)` for `Aᴴ A v = σ² v`; M difficulty); what needs the factorization is the multiplicity count — "these are all of them" — which is the book's claim and what P-8.4's plot of `‖B(α)‖₂` rests on. Reopen only with `Matrix/SVD` |
+| **P-8.6 (c), (d)** (CG on the singular consistent system `P A P x = P b`, and the `QR` variant) | (a) and (b) are now proved (`constraintProjector`, `problem_8_6_projector`, `equation_8_35`) and the "which subspace" half of (c) is `problem_8_6_cg_subspace`. **The old reason — "needs `Numlib/Krylov/Singular` (Choi, phase 2), unwritten" — is stale: that module exists.** It carries the *minimal-residual* singular theory, not CG on a semidefinite consistent system. The one missing backbone theorem: for symmetric positive **semi**definite `A` and `b ∈ Ran A`, CG from `x₀ = 0` is well defined, its iterates lie in `𝒦_m(A, b) ⊆ Ran A`, and it terminates at `A⁺ b`, the minimum-norm solution. Plan it in `Krylov/Singular.lean`; (d) additionally needs a `QR` factorization of a rectangular `B`, which Mathlib has only as Gram–Schmidt |
+| **P-8.9** (inexact Uzawa: convergence when the inner solves have residual `≤ ε_k → 0`) | needs a perturbed-fixed-point theorem (`x_{k+1} = T x_k + e_k`, `‖e_k‖ → 0`, `‖T‖ < 1` ⇒ convergence) that no other source in the corpus asks for; `Numlib/Nonlinear/FixedPoint` has the exact version only. Not one node but three: the real-sequence lemma `a_{k+1} ≤ q a_k + ε_k` ⇒ `a_k → 0`, the perturbed Banach iteration with the geometric-tail bound for `ε_k ≤ α^k`, and `‖·‖₂ = ρ` for the symmetric `I − ω S` (since (8.33) bounds the spectral radius, not the norm) — plus a surface definition of the inexact iteration, which the book gives only through the threshold `ε_{k+1}` |
+| P-8.11 | empty in the source |
 | §9.2.2 operation counts, Example 9.1, **P-9.7**, **P-9.8**, **P-9.9** | arithmetic-cost accounting, no theorem content; the algebraic identity (9.8) that makes Eisenstat's trick possible *is* planned |
 | **P-9.4** (right/split preconditioned CGNR and CGNE), **P-9.5** (the "centered" variants `A M⁻¹ Aᴴ` and `Aᴴ M⁻¹ A`) | six rearrangements of Algorithm 9.1 in six inner products; the two the book writes out are planned and the rest are the same derivation |
 | §9.4.1 closing remark, "FGMRES converges if one `z_j` per cycle is a steepest descent direction" | true and provable from Proposition 9.2 plus `Projection.residualNormSDStep`, but the book states no theorem and gives no hypotheses; planning it would be inventing the statement |
@@ -205,7 +205,7 @@ Preconditioned}` written concurrently).
 |---|---|---|
 | (8.1)–(8.4) | planned | `SaadSparse.Chapter08.equation_8_1`, `equation_8_3` |
 | (8.5)–(8.7), P-8.1 | planned | `SaadSparse.Chapter08.equation_8_5` |
-| spectrum of `[[0,A],[Aᴴ,0]]`, P-8.4 | skipped | needs an SVD, §3 |
+| spectrum of `[[0,A],[Aᴴ,0]]`, P-8.4 | skipped | §3 -- the reason changed: `Numlib/LinearAlgebra/Matrix/SVD` now exists, and what is left is the multiplicity count |
 | (8.8) | planned | `SaadSparse.Chapter08.equation_8_8` |
 | Algorithm 8.1, (8.11)–(8.15) | planned | `SaadSparse.Chapter08.neSorStep`, `neSorStep_isPetrovGalerkin` |
 | Algorithm 8.2, (8.16)–(8.18) | planned | `SaadSparse.Chapter08.nrSorStep`, `nrSorStep_isGalerkin` |
@@ -220,14 +220,23 @@ Preconditioned}` written concurrently).
 | Algorithm 8.6, (8.31)–(8.32), P-8.7 | planned | `SaadSparse.Chapter08.uzawa`, `equation_8_32` |
 | **Corollary 8.1** | planned | `SaadSparse.Chapter08.corollary_8_1`, `schur_posDef` |
 | "(8.32) is the `A⁻¹`-normal equations", P-8.5(a) | planned | `SaadSparse.Chapter08.equation_8_32_isMinRes` |
+| P-8.5 (b) | planned | `SaadSparse.Chapter08.problem_8_5b` |
 | Algorithm 8.7 | planned | `SaadSparse.Chapter08.arrowHurwicz` |
 | Example 8.2 | planned | `SaadSparse.Chapter08.example_8_2` |
-| P-8.3 | skipped | the row/column dual of Cimmino, same statement with `A ↔ Aᴴ` |
-| P-8.6, P-8.9–P-8.12 | skipped | §3 |
+| P-8.3 | planned | `SaadSparse.Chapter08.cimminoNE`, `cimminoNE_eq_additiveStep`, `cimminoNE_eq_jacobi` |
+| P-8.6 (a), (b) | planned | `SaadSparse.Chapter08.constraintProjector`, `problem_8_6_projector`, `equation_8_35` |
+| P-8.6 (c) (the subspace half) | planned | `SaadSparse.Chapter08.problem_8_6_cg_subspace` |
+| P-8.6 (c) (CG itself), P-8.6 (d) | skipped | §3 |
+| P-8.9 | skipped | §3 |
+| P-8.10 | planned | `SaadSparse.Chapter08.problem_8_10` |
+| P-8.11 | skipped | empty in the source |
+| P-8.12 (1), (2), (3), (5) | planned | `SaadSparse.Chapter08.problem_8_12_indefinite`, `problem_8_12_residual`, `problem_8_12_steepestDescent_stalls`, `problem_8_12_minRes_stalls`, `problem_8_12_reduced` |
 
-**Chapter 8: 1 of 1 numbered result planned, 7 of 7 algorithms planned, 5 of 12 problems planned
-(P-8.1, P-8.2, P-8.5(a), P-8.7, P-8.8) and 7 skipped; one non-numbered claim (the `±σ_i` spectrum)
-skipped for want of an SVD.**
+**Chapter 8: 1 of 1 numbered result, 7 of 7 algorithms, and -- after the gap pass -- 10 of 12
+problems: P-8.1, P-8.2, P-8.3, P-8.5, P-8.6 (a), (b) and the subspace half of (c), P-8.7, P-8.8,
+P-8.10, P-8.12 (1), (2), (3), (5). Left: P-8.4 and P-8.9, plus P-8.6 (c), (d) and P-8.11 (empty in
+the source); one non-numbered claim, the `±σ_i` spectrum, still open, but for the multiplicity
+count rather than for want of an SVD.**
 
 ### Chapter 9
 
@@ -241,7 +250,8 @@ skipped for want of an SVD.**
 | P-9.2 | planned | `SaadSparse.Chapter09.pcgEnergyA` |
 | P-9.6 | planned | `SaadSparse.Chapter09.problem_9_6` → `Krylov.PCG.energyNorm_error_le` |
 | (9.5)–(9.8), Algorithm 9.3 | planned | `SaadSparse.Chapter09.equation_9_8`, `eisenstat` |
-| §9.2.2 counts, Example 9.1, P-9.7–P-9.9 | skipped | §3 |
+| §9.2.2 counts, Example 9.1, P-9.7, P-9.9, P-9.8 (a), (b) | skipped | §3 |
+| P-9.8 (c) | planned | `SaadSparse.Chapter09.problem_9_8c`, `problem_9_8c_ssor` |
 | Algorithm 9.4, Algorithm 9.5, §9.3.3 | planned | `SaadSparse.Chapter09.gmresLeft`, `gmresRight` and their `isMinRes` |
 | (9.17)–(9.21), (9.18), P-9.11 | planned | `SaadSparse.Chapter09.equation_9_18` |
 | **Proposition 9.1** | planned | `SaadSparse.Chapter09.proposition_9_1` → `Krylov.exists_aeval_of_isMinResIterate_preconditioned` |
@@ -252,11 +262,14 @@ skipped for want of an SVD.**
 | §9.4.1 steepest-descent remark | skipped | no statement in the book, §3 |
 | §9.4.2, (9.28) | planned | `SaadSparse.Chapter09.fdqgmres` (algorithm-only) |
 | Algorithm 9.7, Algorithm 9.8 | planned | `SaadSparse.Chapter09.pcgnr`, `pcgne` and their `_eq` |
-| P-9.4, P-9.5, P-9.12 | skipped | §3 (P-9.12, preconditioned CR, is `Krylov.CR.iterate` in `WithEnergy M`; one line if wanted) |
+| P-9.4 | planned | `SaadSparse.Chapter09.rightPcgnr_eq`, `splitPcgnr_eq`, `rightPcgne_eq`, `splitPcgne_eq` |
+| P-9.5 | planned | `SaadSparse.Chapter09.isSymmetric_centredNR`, `centredPcgnr`, `centredPcgne`, `centredPcgne_eq` |
+| P-9.12 | planned | `SaadSparse.Chapter09.pcr`, `pcr_eq` |
 | §9.6, (9.29) and the CGW recurrence | planned | `SaadSparse.Chapter09.cgwM`, `isSkewAdjoint_energy`, `equation_9_29`, `cgw`, `cgw_alpha`, `cgw_isGalerkinIterate` |
 
-**Chapter 9: 3 of 3 numbered results planned, 8 of 8 algorithms planned, 7 of 13 problems planned
-(P-9.1, P-9.2, P-9.3, P-9.6, P-9.10, P-9.11, P-9.13) and 6 skipped.**
+**Chapter 9: 3 of 3 numbered results, 8 of 8 algorithms, and -- after the gap pass -- 12 of 13
+problems: P-9.1 to P-9.6, P-9.8 (c), P-9.10 to P-9.13. Left: P-9.7, P-9.9 and P-9.8 (a), (b), all
+operation counts.**
 
 ### Headline
 
