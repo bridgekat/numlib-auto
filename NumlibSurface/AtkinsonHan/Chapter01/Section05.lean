@@ -39,11 +39,6 @@ exponent `p ∈ [1, ∞]` is Mathlib's `p : ℝ≥0∞` with `Fact (1 ≤ p)`, a
 * Theorem 1.5.6 for a *proper* open `Ω ⊆ ℝ^d`, with the approximants supported inside `Ω`. What is
   proved below is the statement for `Ω = ℝ^d`, which is Mathlib's; the version for a proper open
   set needs a compact exhaustion of `Ω` before the mollification, which Mathlib does not have.
-
-## References
-
-* K. E. Atkinson and W. Han, *Theoretical Numerical Analysis: A Functional Analysis Framework*,
-  3rd edition, Texts in Applied Mathematics 39, Springer, 2009.
 -/
 
 open Filter MeasureTheory Topology
@@ -133,7 +128,8 @@ theorem theorem_1_5_5_c [IsFiniteMeasure μ] {p q : ℝ≥0∞} (hpq : p ≤ q) 
     (hv : MemLp v q μ) :
     MemLp v p μ ∧ eLpNorm v p μ ≤ μ Set.univ ^ (1 / p.toReal - 1 / q.toReal) * eLpNorm v q μ :=
   ⟨hv.mono_exponent hpq, by
-    rw [mul_comm]; exact eLpNorm_le_eLpNorm_mul_rpow_measure_univ hpq hv.1⟩
+    rw [mul_comm]
+    exact eLpNorm_le_eLpNorm_mul_rpow_measure_univ hpq hv.1⟩
 
 end Lp
 

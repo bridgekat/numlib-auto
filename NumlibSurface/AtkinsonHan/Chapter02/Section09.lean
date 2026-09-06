@@ -42,11 +42,6 @@ meaningless. `equation_2_9_3` needs no such hypothesis.
   Riesz spectral projection `E(λ₀, L) = (2πi)⁻¹ ∮ (λ - L)⁻¹ dλ`. Both are stated in the book
   without proof, both need contour integrals of operator-valued functions, and Theorem 2.9.4 needs
   the Riesz ascent–descent theory as well.
-
-## References
-
-* K. E. Atkinson and W. Han, *Theoretical Numerical Analysis: A Functional Analysis Framework*,
-  3rd edition, Texts in Applied Mathematics 39, Springer, 2009.
 -/
 
 namespace AtkinsonHan.Chapter02

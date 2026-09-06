@@ -27,13 +27,17 @@ The book's `cond(L) = ‖L⁻¹‖ ‖L‖` is defined here as `AtkinsonHan.Chap
 * `tendsto_of_tendsto_on_dense_of_bounded` — its ε/3 half, in the generality it is proved in.
 * `equation_2_4_4`, `quadrature_convergence` — §2.4.4, the convergence of numerical quadrature.
 
+Theorems 2.4.4 and 2.4.5 are Mathlib's `banach_steinhaus` and the backbone's
+`ContinuousLinearMap.tendsto_iff_tendsto_on_dense_of_completeSpace`
+(`Numlib/Analysis/Normed/Operator/BanachSteinhaus.lean`), which is where the ε/3 argument lives.
+
 ## Not formalized here
 
 Example 2.4.2 (extension of the derivative to `H¹`) is out of scope: Sobolev spaces are not
 planned.
 -/
 
-open Filter Topology Bornology NNReal
+open Filter Topology NNReal
 
 namespace AtkinsonHan.Chapter02
 
@@ -112,8 +116,8 @@ theorem equation_2_4_1 (L : V ≃L[𝕜] W) {v vhat : V} (hv : v ≠ 0) :
     ‖v - vhat‖ / ‖v‖ ≤ cond L * (‖L v - L vhat‖ / ‖L v‖) := by
   have ha : 0 < ‖v‖ := norm_pos_iff.2 hv
   have hb : 0 < ‖L v‖ := norm_pos_iff.2 fun h => hv (by simpa using congrArg L.symm h)
-  have hd : ‖v - vhat‖ ≤ ‖(L.symm : W →L[𝕜] V)‖ * ‖L v - L vhat‖
-    := stability_of_isomorphism L v vhat
+  have hd : ‖v - vhat‖ ≤ ‖(L.symm : W →L[𝕜] V)‖ * ‖L v - L vhat‖ :=
+    stability_of_isomorphism L v vhat
   have hq : ‖L v‖ ≤ ‖(L : V →L[𝕜] W)‖ * ‖v‖ := (L : V →L[𝕜] W).le_opNorm v
   rw [cond, mul_div_assoc', div_le_div_iff₀ ha hb]
   have hp : 0 ≤ ‖(L.symm : W →L[𝕜] V)‖ := norm_nonneg _
@@ -128,64 +132,30 @@ theorem theorem_2_4_4 [CompleteSpace V] (Ln : ℕ → V →L[𝕜] W) (h : ∀ v
     ∃ C, ∀ n, ‖Ln n‖ ≤ C :=
   banach_steinhaus h
 
-/-- A convergent sequence in a normed space is bounded. Used repeatedly to feed
-`banach_steinhaus` the pointwise bounds it needs. -/
-theorem exists_norm_le_of_tendsto {X : Type*} [NormedAddCommGroup X] {f : ℕ → X} {a : X}
-    (h : Tendsto f atTop (𝓝 a)) : ∃ C : ℝ, ∀ n, ‖f n‖ ≤ C := by
-  obtain ⟨C, hC⟩ := isBounded_iff_forall_norm_le.1 (Metric.isBounded_range_of_tendsto _ h)
-  exact ⟨C, fun n => hC _ ⟨n, rfl⟩⟩
-
 /-- The `⇐` half of Theorem 2.4.5, in the generality in which it is proved: pointwise convergence
 on a dense *subset*, together with a uniform bound on the operator norms, gives pointwise
 convergence everywhere. Neither completeness of `V` nor linearity of the dense set is used; only
-the boundedness of the limit operator `L`, which the book also assumes. This is the ε/3 argument.
-
-This general form is a candidate for the backbone; see `plans/atkinsonhan-ch2-3.md`,
-Deferred backbone item 1. -/
+the boundedness of the limit operator `L`, which the book also assumes. This is the ε/3 argument,
+and it is the backbone's `ContinuousLinearMap.tendsto_of_tendsto_on_dense_of_bounded`
+(`Numlib/Analysis/Normed/Operator/BanachSteinhaus.lean`), which states it along an arbitrary
+filter on an arbitrary index type. -/
 theorem tendsto_of_tendsto_on_dense_of_bounded {s : Set V} (hs : Dense s) {L : V →L[𝕜] W}
     {Ln : ℕ → V →L[𝕜] W} {C : ℝ} (hC : ∀ n, ‖Ln n‖ ≤ C)
     (h : ∀ v ∈ s, Tendsto (fun n => Ln n v) atTop (𝓝 (L v))) (v : V) :
-    Tendsto (fun n => Ln n v) atTop (𝓝 (L v)) := by
-  have hC0 : 0 ≤ C := le_trans (norm_nonneg _) (hC 0)
-  rw [Metric.tendsto_atTop]
-  intro ε hε
-  have hM : 0 < C + ‖L‖ + 1 := by positivity
-  obtain ⟨u, hu, hdist⟩ := hs.exists_dist_lt v (ε := ε / (3 * (C + ‖L‖ + 1))) (by positivity)
-  obtain ⟨N, hN⟩ := (Metric.tendsto_atTop.1 (h u hu)) (ε / 3) (by positivity)
-  refine ⟨N, fun n hn => ?_⟩
-  have hvu : ‖v - u‖ < ε / (3 * (C + ‖L‖ + 1)) := by rwa [← dist_eq_norm]
-  have h1 : ‖Ln n v - Ln n u‖ ≤ C * ‖v - u‖ := by
-    rw [← map_sub]
-    exact ((Ln n).le_opNorm _).trans (mul_le_mul_of_nonneg_right (hC n) (norm_nonneg _))
-  have h2 : ‖L u - L v‖ ≤ ‖L‖ * ‖v - u‖ := by
-    rw [← map_sub, ← norm_neg, ← map_neg, neg_sub]
-    exact L.le_opNorm _
-  have h3 : ‖Ln n u - L u‖ < ε / 3 := by rw [← dist_eq_norm]; exact hN n hn
-  have hsum : (C + ‖L‖) * ‖v - u‖ < ε / 3 := by
-    have := mul_lt_mul_of_pos_left hvu hM
-    have hle : (C + ‖L‖) * ‖v - u‖ ≤ (C + ‖L‖ + 1) * ‖v - u‖ := by
-      have := norm_nonneg (v - u)
-      nlinarith
-    have hval : (C + ‖L‖ + 1) * (ε / (3 * (C + ‖L‖ + 1))) = ε / 3 := by
-      field_simp
-    linarith [hval ▸ this]
-  have hsplit : ‖Ln n v - L v‖ ≤ ‖Ln n v - Ln n u‖ + ‖Ln n u - L u‖ + ‖L u - L v‖ := by
-    have : Ln n v - L v = (Ln n v - Ln n u) + (Ln n u - L u) + (L u - L v) := by abel
-    rw [this]
-    exact (norm_add_le _ _).trans (by gcongr; exact norm_add_le _ _)
-  rw [dist_eq_norm]
-  nlinarith
+    Tendsto (fun n => Ln n v) atTop (𝓝 (L v)) :=
+  ContinuousLinearMap.tendsto_of_tendsto_on_dense_of_bounded hs hC h v
 
 /-- **Banach–Steinhaus theorem** (Theorem 2.4.5). For bounded operators `L, Lₙ` from a Banach
 space `V` and a dense subspace `V₀ ⊆ V`, one has `Lₙ v → L v` for every `v ∈ V` if and only if
-(a) `Lₙ v → L v` for every `v ∈ V₀` and (b) the norms `‖Lₙ‖` are uniformly bounded. -/
+(a) `Lₙ v → L v` for every `v ∈ V₀` and (b) the norms `‖Lₙ‖` are uniformly bounded.
+
+The book's `V₀` is a subspace; the backbone's
+`ContinuousLinearMap.tendsto_iff_tendsto_on_dense_of_completeSpace` needs only a dense set. -/
 theorem theorem_2_4_5 [CompleteSpace V] (L : V →L[𝕜] W) (Ln : ℕ → V →L[𝕜] W) (V₀ : Submodule 𝕜 V)
     (hV₀ : Dense (V₀ : Set V)) :
     (∀ v, Tendsto (fun n => Ln n v) atTop (𝓝 (L v))) ↔
-      (∀ v ∈ V₀, Tendsto (fun n => Ln n v) atTop (𝓝 (L v))) ∧ ∃ C, ∀ n, ‖Ln n‖ ≤ C := by
-  refine ⟨fun h => ⟨fun v _ => h v, banach_steinhaus fun v => exists_norm_le_of_tendsto (h v)⟩, ?_⟩
-  rintro ⟨hdense, C, hC⟩
-  exact tendsto_of_tendsto_on_dense_of_bounded hV₀ hC hdense
+      (∀ v ∈ V₀, Tendsto (fun n => Ln n v) atTop (𝓝 (L v))) ∧ ∃ C, ∀ n, ‖Ln n‖ ≤ C :=
+  ContinuousLinearMap.tendsto_iff_tendsto_on_dense_of_completeSpace hV₀ L Ln
 
 /-! ### §2.4.4: convergence of numerical quadrature
 

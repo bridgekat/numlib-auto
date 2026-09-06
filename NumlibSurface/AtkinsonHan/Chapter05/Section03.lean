@@ -11,36 +11,52 @@ import Numlib.IntegralEquations.Basic
 # Atkinson–Han §5.3: differential calculus for nonlinear operators
 
 Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §5.3.
+Analysis Framework*, 3rd edition, Springer, 2009, §5.3: the Fréchet and Gâteaux derivatives of a
+nonlinear operator between normed spaces, the differentiation rules, the mean value inequality
+and the second-order Taylor remainder, partial derivatives, and §5.3.4 on convex functionals.
 
 The book's Fréchet derivative (Definition 5.3.1) is Mathlib's `HasFDerivAt`; its "interior point"
 convention `B(u₀, r) ⊆ K` is `K ∈ 𝓝 u₀`, under which `HasFDerivWithinAt` and `HasFDerivAt`
-agree.  The book's Gâteaux derivative (Definition 5.3.2) is `HasGateauxDerivAt` below, defined
-from Mathlib's `HasLineDerivAt`; the identification is `HasFDerivAt.hasGateauxDerivAt`.
+agree.  So only the Gâteaux derivative needs a definition here.
 
-Contents: uniqueness of the Fréchet derivative (Definition 5.3.1), Proposition 5.3.3
-(differentiable ⇒ continuous), Proposition 5.3.4 (Fréchet ⇒ Gâteaux, and the two converses),
-Propositions 5.3.5–5.3.7 (sum, product and chain rules), Example 5.3.8 (affine maps),
-Example 5.3.10 (the Fréchet derivative of the Urysohn integral operator),
-Proposition 5.3.11 (mean value inequality (5.3.7)), Corollary 5.3.12, Proposition 5.3.13 (the
-second-order Taylor remainder) together with the Lipschitz-derivative form
-`norm_sub_sub_fderiv_le_half_mul_sq` used again in §5.4, and Definition 5.3.14 with
-Proposition 5.3.15 on partial derivatives, including formula (5.3.8).  Section §5.3.4 on convex
-functionals is Theorems 5.3.17–5.3.19: convexity via the tangent plane inequality and via
-monotonicity of the derivative, their strict versions, and the characterization of a minimizer by
-the variational inequality (5.3.10) and, over a subspace, the variational equation (5.3.11);
-those four are specializations of `Numlib.Analysis.Convex.Gateaux`, which owns the general
-statements and their proofs.
+## Book-specific definitions
 
-Left out, with the reason: Example 5.3.9 (Jacobian), Corollary 5.3.16 (the `C¹` form of
-Proposition 5.3.15; a restatement, not used downstream), and the exercises — see
-`plans/atkinsonhan-ch5.md` §4.
+* `HasGateauxDerivAt` — Definition 5.3.2, built from Mathlib's `HasLineDerivAt`, with
+  `hasGateauxDerivAt_iff_tendsto` for the difference-quotient form and
+  `HasGateauxDerivAt.unique` for uniqueness.
 
-§5.5 (completely continuous vector fields) is summarized rather than formalized: Theorem 5.5.1
-(Brouwer), Example 5.5.2, Definition 5.5.3 (compact and completely continuous nonlinear
-operators), Theorem 5.5.4 (Schauder), Proposition 5.5.5 and the rotation properties P1–P5 are all
-quoted in the book without proof and have no Mathlib support (Mathlib's `IsCompactOperator` is
-for linear maps only, and Brouwer's theorem is available only in dimension one).
+## Main results
+
+* `fderiv_unique`, `hasFDerivAt_iff_isLittleO`, `hasFDerivWithinAt_iff_of_mem_nhds` —
+  Definition 5.3.1: uniqueness of the Fréchet derivative, its little-`o` form (5.3.5), and the
+  interior-point convention.
+* `proposition_5_3_3` — differentiable ⇒ continuous.
+* `HasFDerivAt.hasGateauxDerivAt`, `hasFDerivAt_of_hasGateauxDerivAt_uniform`,
+  `hasFDerivAt_of_hasGateauxDerivAt_continuousAt` — Proposition 5.3.4, Fréchet ⇒ Gâteaux and its
+  two converses (uniformity in the direction; continuity of `u ↦ A u`).
+* `proposition_5_3_5`, `proposition_5_3_6`, `proposition_5_3_7` — the sum, product and chain
+  rules, with `HasGateauxDerivAt.add` and `HasGateauxDerivAt.const_smul` for the Gâteaux
+  versions.
+* `example_5_3_8`, `example_5_3_10` — the derivative of an affine map, and of the Urysohn
+  integral operator on `C[a, b]`.
+* `proposition_5_3_11`, `proposition_5_3_11_iSup`, `corollary_5_3_12` — the mean value
+  inequality (5.3.7), in the two forms the book gives, and the vanishing-derivative corollary.
+* `proposition_5_3_13` and `norm_sub_sub_fderiv_le_half_mul_sq` — the second-order Taylor
+  remainder, under a bound on `F''` and under a Lipschitz hypothesis on `F'` respectively. The
+  second is what (5.4.5) and the Newton–Kantorovich theorem of §5.4 rest on.
+* `proposition_5_3_15_fst`, `proposition_5_3_15_snd`, `proposition_5_3_15_of_partial`,
+  `equation_5_3_8` — Definition 5.3.14 and Proposition 5.3.15 on partial derivatives, in both
+  directions, with the total derivative as the sum of the partials.
+* `theorem_5_3_17`, `theorem_5_3_18`, `theorem_5_3_19`, `theorem_5_3_19_submodule` — §5.3.4:
+  convexity through the tangent plane inequality and through monotonicity of the derivative,
+  their strict versions, and a minimizer characterised by the variational inequality (5.3.10)
+  and, over a subspace, by the variational equation (5.3.11). All four specialize
+  `Numlib.Analysis.Convex.Gateaux`, which owns the general statements and their proofs.
+
+## Not formalized here
+
+Example 5.3.9 (the Jacobian matrix), Corollary 5.3.16 (the `C¹` form of Proposition 5.3.15 — a
+restatement, not used downstream) and the exercises; see `plans/atkinsonhan-ch5.md` §4.
 -/
 
 open Filter Set Topology

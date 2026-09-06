@@ -21,11 +21,11 @@ Analysis Framework*, 3rd edition, Springer, 2009, §3.6.
 * `IsOrthogonalProjectionOperator` — Definition 3.6.3 / (3.6.2) for Hilbert spaces, with
   `isOrthogonalProjectionOperator_iff` identifying it with Mathlib's
   `LinearMap.IsSymmetricProjection`.
+* `IsOrthogonalDirectSum` — the orthogonal direct sum of Definition 3.6.1.
 
 ## Main results
 
 * `proposition_3_6_2` — direct sums correspond to idempotent linear maps.
-* `IsOrthogonalDirectSum` — the orthogonal direct sum of Definition 3.6.1.
 * `example_3_6_7` — `∑ᵢ (·, φᵢ) φᵢ` is an orthogonal projection for an orthonormal family.
 * `proposition_3_6_9_a` … `proposition_3_6_9_e` — the properties of orthogonal projections;
   `proposition_3_6_9_c'` restates (c) as an orthogonal direct sum.

@@ -36,11 +36,6 @@ Theorem 1.3.13 is stated on `L²(AddCircle (2π))` with its *probability* Haar m
 `2π`. That scaling is what turns the book's `1/√(2π)`, `cos (j x)/√π`, `sin (j x)/√π` into the
 system `1`, `√2 cos (j x)`, `√2 sin (j x)` of the backbone's `trigFun`: dividing by `√(2π)`
 renormalises a function of unit `L²(-π, π)` norm to unit norm for the probability measure.
-
-## References
-
-* K. E. Atkinson and W. Han, *Theoretical Numerical Analysis: A Functional Analysis Framework*,
-  3rd edition, Texts in Applied Mathematics 39, Springer, 2009.
 -/
 
 open Filter InnerProductSpace MeasureTheory Submodule Topology

@@ -5,27 +5,50 @@ import Numlib.Nonlinear.FixedPoint
 # Atkinson–Han §5.1: the Banach fixed-point theorem
 
 Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §5.1.
+Analysis Framework*, 3rd edition, Springer, 2009, §5.1: contractive mappings, the Banach
+fixed-point theorem with its three error bounds, the variant in which only an iterate contracts,
+and the Zarantonello theorem for a strongly monotone Lipschitz operator on a Hilbert space.
 
-* Definition 5.1.2: `ContractiveOn`, `NonExpansiveOn`, `LipschitzOn`, and the chain
-  contractive ⇒ non-expansive ⇒ Lipschitz ⇒ continuous.
-* Example 5.1.1: the affine iteration on `ℝ`.
-* Theorem 5.1.3, the Banach fixed-point theorem, with the error bounds (5.1.4)–(5.1.6).
-* Example 5.1.2: a continuous map one of whose iterates is contractive.
-* Theorem 5.1.4: a strongly monotone Lipschitz operator on a Hilbert space is a bijection,
-  with the stability estimate (5.1.11).
+Every proof specializes a declaration of `Numlib/Nonlinear/FixedPoint.lean` or of Mathlib; the
+work of the file is the dictionary between the book's `‖T u - T v‖ ≤ α ‖u - v‖` and Mathlib's
+`LipschitzOnWith`/`ContractingWith`, which is what `contractiveOn_iff`, `lipschitzOn_iff` and
+`ContractiveOn.contractingWith_restrict` supply.
 
-Every proof specializes a declaration of `Numlib/Nonlinear/FixedPoint.lean` or of Mathlib.
+## Book-specific definitions
+
+* `ContractiveOn`, `NonExpansiveOn`, `LipschitzOn` — Definition 5.1.2, in the book's normed
+  form. `ContractiveOn.nonExpansiveOn`, `NonExpansiveOn.lipschitzOn` and
+  `LipschitzOn.continuousOn` are the chain contractive ⇒ non-expansive ⇒ Lipschitz ⇒ continuous
+  that the definition is stated for.
+* `StronglyMonotoneWith` — (5.1.8); `stronglyMonotoneWith_iff_isCoerciveWith` says that for a
+  bounded *linear* operator this is the backbone's `LinearMap.IsCoerciveWith`.
+
+## Main results
+
+* `example_5_1_1`, `example_5_1_1_tendsto_iff` — Example 5.1.1, the closed form of the affine
+  iteration `x ↦ a x + b` on `ℝ` and its convergence exactly when `|a| < 1`.
+* `theorem_5_1_3` — **Banach fixed-point theorem**, assembled from
+  `theorem_5_1_3_existsUnique`, `theorem_5_1_3_tendsto` and the error bounds `equation_5_1_4`
+  (a priori), `equation_5_1_5` (a posteriori) and `equation_5_1_6` (linear rate).
+* `example_5_1_2` — a continuous map one of whose iterates is contractive still has a unique
+  fixed point; this is what Theorem 5.2.3 uses for the Volterra equation.
+* `theorem_5_1_4` — a strongly monotone Lipschitz operator on a real Hilbert space is a
+  bijection, with the stability estimate (5.1.11).
+
+## Implementation notes
+
+The book states §5.1 in a Banach space and Theorem 5.1.4 in a Hilbert space, but several of the
+arguments are purely metric and do not touch the vector space structure. The section variables
+carrying it are kept, because they are part of the book's setting, and the unused-section-variable
+linter is turned off for the file rather than the statements being weakened.
 -/
 
 open Filter Metric Set Topology
 
 namespace AtkinsonHan.Chapter05
 
--- The book states §5.1 in a Banach space and Theorem 5.1.4 in a Hilbert space.  The vector space
--- structure plays no role in several of the metric arguments below, so the section variables
--- carrying it are genuinely unused there; they are kept because they are part of the book's
--- setting.
+-- See the implementation notes above: the section variables carrying the vector space structure
+-- are unused in the purely metric arguments, and are kept because the book's setting has them.
 set_option linter.unusedSectionVars false
 
 section Banach
@@ -51,10 +74,13 @@ variable {T : V → V} {K : Set V} {α : ℝ}
 
 namespace ContractiveOn
 
+/-- A contractivity constant is nonnegative. -/
 theorem nonneg (h : ContractiveOn T K α) : 0 ≤ α := h.1
 
+/-- A contractivity constant is smaller than `1`. -/
 theorem lt_one (h : ContractiveOn T K α) : α < 1 := h.2.1
 
+/-- The contraction estimate `‖T u - T v‖ ≤ α ‖u - v‖` of Definition 5.1.2. -/
 theorem norm_sub_le (h : ContractiveOn T K α) {u v : V} (hu : u ∈ K) (hv : v ∈ K) :
     ‖T u - T v‖ ≤ α * ‖u - v‖ := h.2.2 u hu v hv
 
@@ -205,8 +231,7 @@ theorem equation_5_1_6 (hT : MapsTo T K K) (hα : ContractiveOn T K α) {u : V} 
 /-- Theorem 5.1.3(b): the fixed-point iteration converges to the fixed point from every starting
 point of `K`. -/
 theorem theorem_5_1_3_tendsto (hK : IsClosed K) (hT : MapsTo T K K) (hα : ContractiveOn T K α)
-    {u : V}
-    (hu : u ∈ K) (hfix : T u = u) {u₀ : V} (hu₀ : u₀ ∈ K) :
+    {u : V} (hu : u ∈ K) (hfix : T u = u) {u₀ : V} (hu₀ : u₀ ∈ K) :
     Tendsto (fun n => T^[n] u₀) atTop (𝓝 u) := by
   refine tendsto_iff_norm_sub_tendsto_zero.2 ?_
   refine squeeze_zero (fun n => norm_nonneg _) (fun n => equation_5_1_4 hK hT hα hu hfix hu₀ n) ?_
@@ -235,8 +260,7 @@ theorem theorem_5_1_3 (hK : IsClosed K) (hne : K.Nonempty) (hT : MapsTo T K K)
 `T^[m]`, `m ≥ 1`, is contractive on `K`, then `T` still has a unique fixed point in `K` and
 `u_{n+1} = T u_n` converges to it from every `u₀ ∈ K`. -/
 theorem example_5_1_2 (hK : IsClosed K) (hne : K.Nonempty) (hT : MapsTo T K K)
-    (hc : ContinuousOn T K)
-    {m : ℕ} (hm : 0 < m) (hα : ContractiveOn T^[m] K α) :
+    (hc : ContinuousOn T K) {m : ℕ} (hm : 0 < m) (hα : ContractiveOn T^[m] K α) :
     (∃! u, u ∈ K ∧ T u = u) ∧
       ∀ u₀ ∈ K, ∃ u ∈ K, T u = u ∧ Tendsto (fun n => T^[n] u₀) atTop (𝓝 u) := by
   have hcomplete : CompleteSpace K := hK.completeSpace_coe

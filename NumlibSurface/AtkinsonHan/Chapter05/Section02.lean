@@ -9,23 +9,47 @@ import NumlibSurface.AtkinsonHan.Chapter05.Section01
 # Atkinson–Han §5.2: applications of the fixed-point theorem to iterative methods
 
 Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §5.2.
-
-* Theorem 5.2.1, the scalar case of Theorem 5.1.3 on an interval `[a, b]`, together with the
-  derivative criterion `sup_{[a,b]} |T'| ≤ α < 1` for contractivity.
-* §5.2.2: the book's matrix splitting `A = N - M` (`BookSplitting`), its iteration matrix
-  `N⁻¹ M` and iteration `N x_n = M x_{n-1} + b`; the error equation (5.2.5); convergence when
-  `‖N⁻¹ M‖ < 1`; `Gᵏ → 0` iff `r_σ(G) < 1`; convergence for every `x₀` iff `(N⁻¹M)ᵏ → 0` iff
-  `r_σ(N⁻¹M) < 1`; and the Jacobi, Gauss–Seidel and SOR splittings.
-* §5.2.3: the linear Fredholm equation of the second kind (`theorem_5_2_2_fredholm`) and
-  Theorem 5.2.2, its nonlinear Urysohn form; Theorem 5.2.3, the Volterra equation, where no
-  smallness of the kernel is needed because a power of the operator contracts.
-* §5.2.4: Theorem 5.2.4, the Picard iteration for the initial value problem, in the weighted
-  (Bielecki) norm in which the Picard operator itself contracts.
+Analysis Framework*, 3rd edition, Springer, 2009, §5.2: the four applications the book makes of
+Theorem 5.1.3 — the scalar iteration on an interval, the stationary iterative methods for a
+linear system, the integral equations of the second kind, and the Picard iteration for an initial
+value problem.
 
 Proofs specialize `Numlib/LinearSolve/Stationary/{Basic,Splitting}.lean`,
 `Numlib/LinearAlgebra/Matrix/{Complexify,Hessenberg}.lean`, `Numlib/Nonlinear/FixedPoint.lean`
 and `Numlib/IntegralEquations/Basic.lean`.
+
+## Book-specific definitions
+
+* `mulVecCLM` — a square matrix as a continuous linear map of `ι → ℝ`, the ambient normed space
+  the backbone's `Stationary.step` operates in.
+* `BookSplitting` — §5.2.2, the book's splitting `A = N - M` with `N` nonsingular, together with
+  its iteration matrix `BookSplitting.iterMatrix = N⁻¹ M` and its step
+  `BookSplitting.iterStep`, `N x_n = M x_{n-1} + b`. `BookSplitting.toSplitting` is the
+  corresponding backbone `Stationary.Splitting`, which writes `a = m - n` — so `m = N` and
+  `n = M`, a naming swap the `toSplitting_*` lemmas record.
+* `jacobi`, `gaussSeidel`, `sor` — the three classical splittings of §5.2.2, each identified with
+  its backbone counterpart.
+
+## Main results
+
+* `theorem_5_2_1` — Theorem 5.2.1, the scalar case of Theorem 5.1.3 on `[a, b]`, with
+  `theorem_5_2_1_deriv` for the derivative criterion `sup_{[a,b]} |T'| ≤ α < 1`.
+* `BookSplitting.equation_5_2_5` — the error equation `x - x_n = (N⁻¹M)ⁿ (x - x₀)`.
+* `BookSplitting.tendsto_of_opNorm_lt_one` — §5.2.2(b), convergence when `‖N⁻¹ M‖ < 1`;
+  `complexSpectralRadius_lt_one_of_opNorm_lt_one` is the implication `‖G‖ < 1 ⇒ r_σ(G) < 1`
+  behind it.
+* `tendsto_pow_iff_complexSpectralRadius_lt_one` — §5.2.2(c), `Gᵏ → 0` iff `r_σ(G) < 1`.
+* `BookSplitting.forall_tendsto_iff`,
+  `BookSplitting.forall_tendsto_iff_complexSpectralRadius_lt_one` — §5.2.2(d), convergence from
+  every `x₀` iff `(N⁻¹M)ᵏ → 0` iff `r_σ(N⁻¹M) < 1`.
+* `theorem_5_2_2_fredholm` — §5.2.3, the linear Fredholm equation of the second kind, whose
+  contractivity constant is `|λ|⁻¹ ‖K‖` with `‖K‖` the norm formula (2.2.8).
+* `theorem_5_2_2` — the nonlinear Urysohn form (5.2.10).
+* `theorem_5_2_3` — the Volterra equation, where no smallness of the kernel is needed because
+  the factorial estimate on the iterated kernels makes some power of the operator contract and
+  Example 5.1.2 applies.
+* `theorem_5_2_4` — §5.2.4, the Picard iteration for the initial value problem, in the weighted
+  (Bielecki) norm in which the Picard operator itself contracts.
 
 ## Not formalized here
 
@@ -86,9 +110,11 @@ noncomputable def mulVecCLM (G : Matrix ι ι ℝ) : (ι → ℝ) →L[ℝ] (ι 
   LinearMap.toContinuousLinearMap (Matrix.mulVecLin G)
 
 omit [DecidableEq ι] in
+/-- `mulVecCLM G` acts by matrix-vector multiplication. -/
 @[simp]
 theorem mulVecCLM_apply (G : Matrix ι ι ℝ) (x : ι → ℝ) : mulVecCLM G x = G *ᵥ x := rfl
 
+/-- Powers of `mulVecCLM G` act by the corresponding matrix power. -/
 theorem mulVecCLM_pow (G : Matrix ι ι ℝ) (k : ℕ) :
     ∀ x : ι → ℝ, (mulVecCLM G ^ k) x = G ^ k *ᵥ x := by
   induction k with
@@ -100,6 +126,7 @@ theorem mulVecCLM_pow (G : Matrix ι ι ℝ) (k : ℕ) :
     rw [mulVecCLM_apply, ih, Matrix.mulVec_mulVec]
 
 omit [DecidableEq ι] in
+/-- Submultiplicativity of the operator norm, in the iterated form `‖G^k‖ ≤ ‖G‖^k`. -/
 private theorem norm_mulVecCLM_pow_le (G : Matrix ι ι ℝ) (k : ℕ) :
     ‖mulVecCLM G ^ k‖ ≤ ‖mulVecCLM G‖ ^ k := by
   induction k with
@@ -152,14 +179,18 @@ the naming swap: the backbone writes `a = m - n` with `m` invertible, the book `
 `N` nonsingular, so `m = N` and `n = M`. -/
 def toSplitting : Stationary.Splitting A := ⟨s.N, s.isUnit⟩
 
+/-- The invertible part of the backbone splitting is the book's `N`. -/
 @[simp]
 theorem toSplitting_m : s.toSplitting.m = s.N := rfl
 
+/-- The remaining part of the backbone splitting is the book's `M`. -/
 theorem toSplitting_n : s.toSplitting.n = s.M := by
   have h : s.toSplitting.n = s.N - A := rfl
   have h2 : s.N - A = s.N - (s.N - s.M) := by rw [← s.eq]
   rw [h, h2, sub_sub_cancel]
 
+/-- The backbone's iteration operator of the splitting is the book's iteration matrix
+`N⁻¹ M`. -/
 theorem toSplitting_iterationOperator : s.toSplitting.iterationOperator = s.iterMatrix := by
   rw [Stationary.Splitting.iterationOperator_eq, toSplitting_n, toSplitting_m, iterMatrix,
     Matrix.nonsing_inv_eq_ringInverse]
@@ -290,14 +321,17 @@ noncomputable def sor (A : Matrix ι ι ℝ) (h : IsUnit A.diagPart) {ω : ℝ} 
     rw [hsub, Matrix.diagPart_add_strictLower_add_strictUpper],
     (Matrix.sorSplitting A h hω).isUnit⟩
 
+/-- The book's Jacobi splitting is the backbone's. -/
 @[simp]
 theorem jacobi_toSplitting (A : Matrix ι ι ℝ) (h : IsUnit A.diagPart) :
     (jacobi A h).toSplitting = Matrix.jacobiSplitting A h := rfl
 
+/-- The book's Gauss–Seidel splitting is the backbone's. -/
 @[simp]
 theorem gaussSeidel_toSplitting (A : Matrix ι ι ℝ) (h : IsUnit A.diagPart) :
     (gaussSeidel A h).toSplitting = Matrix.gaussSeidelSplitting A h := rfl
 
+/-- The book's SOR splitting is the backbone's. -/
 @[simp]
 theorem sor_toSplitting (A : Matrix ι ι ℝ) (h : IsUnit A.diagPart) {ω : ℝ} (hω : ω ≠ 0) :
     (sor A h hω).toSplitting = Matrix.sorSplitting A h hω := rfl
@@ -355,6 +389,8 @@ private def shiftKernel (k : C(Icc a b × Icc a b × ℝ, ℝ)) (f : C(Icc a b, 
     C(Icc a b × Icc a b × ℝ, ℝ) :=
   ⟨fun p => k (p.1, p.2.1, p.2.2 + f p.2.1), by fun_prop⟩
 
+/-- Translating the last argument of a kernel by a fixed function preserves its Lipschitz
+constant. -/
 private theorem lipschitzWith_shiftKernel {k : C(Icc a b × Icc a b × ℝ, ℝ)} {M : ℝ≥0}
     (hk : ∀ t s : Icc a b, LipschitzWith M fun z => k (t, s, z)) (f : C(Icc a b, ℝ))
     (t s : Icc a b) : LipschitzWith M fun z => shiftKernel k f (t, s, z) :=
@@ -363,6 +399,8 @@ private theorem lipschitzWith_shiftKernel {k : C(Icc a b × Icc a b × ℝ, ℝ)
       (hk t s).dist_le_mul _ _
     rwa [dist_add_right] at h
 
+/-- The defining property of `shiftKernel`: its Volterra operator at `u` is the Volterra
+operator of `k` at `u + f`. -/
 private theorem volterra_shiftKernel (hab : a ≤ b) (k : C(Icc a b × Icc a b × ℝ, ℝ))
     (f u : C(Icc a b, ℝ)) : volterra hab (shiftKernel k f) u = volterra hab k (u + f) :=
   rfl

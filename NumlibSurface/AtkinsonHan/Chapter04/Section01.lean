@@ -182,12 +182,13 @@ theorem equation_4_1_6_sin {g : AddCircle (2 * π) → ℝ}
 
 /-! ### Sine and cosine series (4.1.7)–(4.1.10) -/
 
-/-- The two halves of `(-π, π)` are subintervals of it. -/
+/-- The left half of `(-π, π)` is a subinterval of it. -/
 private theorem uIcc_subset_left : Set.uIcc (-π) (0 : ℝ) ⊆ Set.uIcc (-π) π := by
   have hπ : (0 : ℝ) < π := Real.pi_pos
   rw [Set.uIcc_of_le (by linarith), Set.uIcc_of_le (by linarith)]
   exact Set.Icc_subset_Icc le_rfl (by linarith)
 
+/-- The right half of `(-π, π)` is a subinterval of it. -/
 private theorem uIcc_subset_right : Set.uIcc (0 : ℝ) π ⊆ Set.uIcc (-π) π := by
   have hπ : (0 : ℝ) < π := Real.pi_pos
   rw [Set.uIcc_of_le (by linarith), Set.uIcc_of_le (by linarith)]
@@ -340,7 +341,7 @@ theorem theorem_4_1_1_continuous {f : ℝ → ℝ} (hf : Function.Periodic f (2 
 /-- The trigonometric polynomials are dense in `L^p` of the circle, for `1 ≤ p < ∞`: they are
 dense in `C(AddCircle (2 π), ℝ)` by Corollary 3.1.4, and the continuous functions are dense in
 `L^p`. -/
-theorem denseRange_toLp_trigSpan {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤) :
+theorem dense_image_toLp_trigSpan {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤) :
     Dense (ContinuousMap.toLp (E := ℝ) p
         (AddCircle.haarAddCircle : Measure (AddCircle (2 * π))) ℝ ''
       (Submodule.span ℝ (Set.range (trigFun (2 * π))) : Set C(AddCircle (2 * π), ℝ))) := by
@@ -398,7 +399,7 @@ theorem theorem_4_1_2 {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤)
       rintro w ⟨q, hq, rfl⟩
       simpa using hS q hq
     have hid := ContinuousLinearMap.tendsto_of_tendsto_on_dense_of_bounded
-      (denseRange_toLp_trigSpan (p := p) hp) hC hon f
+      (dense_image_toLp_trigSpan (p := p) hp) hC hon f
     rw [ContinuousLinearMap.id_apply] at hid
     exact tendsto_iff_norm_sub_tendsto_zero.1 hid
 
@@ -420,7 +421,6 @@ private theorem hasSum_int_fold {c : ℤ → ℝ} {S : ℝ} (h : HasSum c S) :
     ring
   rw [hfun, hval] at h2
   exact h2
-
 
 /-- **Parseval's equality (4.1.13)** in the book's normalisation:
 

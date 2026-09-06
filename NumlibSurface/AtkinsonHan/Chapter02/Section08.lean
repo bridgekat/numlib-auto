@@ -29,8 +29,11 @@ range are `Numlib/Analysis/Normed/Operator/Compact`.
 * `theorem_2_8_12_1`, `theorem_2_8_12_2`, `theorem_2_8_12_4` — the eigenvalues accumulate only at
   `0`, the nonzero eigenspaces are finite-dimensional, and `range (λ - K)` is closed.
 * `lemma_2_8_13` — Schauder's theorem.
-* `theorem_2_8_14` — solvability of `(λ - K) u = f` and the decomposition it gives.
-* `theorem_2_8_15` — the spectral theorem for compact self-adjoint operators.
+* `theorem_2_8_14`, `theorem_2_8_14_isCompl` — solvability of `(λ - K) u = f` and the orthogonal
+  decomposition (2.8.30) it gives.
+* `theorem_2_8_15`, `theorem_2_8_15_eigenvalue_real`, `theorem_2_8_15_closure_range` — the spectral
+  theorem for compact self-adjoint operators, the reality of the eigenvalues, and the location
+  `(ker K)ᗮ = closure (range K)` of the eigenvectors for the nonzero eigenvalues.
 
 ## Conventions
 
@@ -41,11 +44,6 @@ complex scalars; the statements here are over `RCLike 𝕜`, as elsewhere in thi
 Not stated here: §2.8.1's conditions for an integral operator with a weakly singular kernel to be
 compact, and the Examples that instantiate it; the parts of Theorem 2.8.12 and Theorem 2.8.14 that
 need the Riesz ascent–descent theory, which the backbone module does not develop.
-
-## References
-
-* K. E. Atkinson and W. Han, *Theoretical Numerical Analysis: A Functional Analysis Framework*,
-  3rd edition, Texts in Applied Mathematics 39, Springer, 2009.
 -/
 
 open Filter Topology Metric Module.End
@@ -59,7 +57,7 @@ variable {𝕜 V W : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace �
 
 /-! ### Definition 2.8.1 and its sequential form -/
 
-/-- Atkinson–Han Definition 2.8.1, with the sequential reading that follows it: a bounded operator
+/-- **Definition 2.8.1**, with the sequential reading that follows it: a bounded operator
 is compact exactly when every bounded sequence `(uₙ)` has a subsequence along which the images
 `K uₙ` converge. Mathlib's `IsCompactOperator` is the same notion in the form "the image of the
 closed unit ball has compact closure", which is the book's own definition. -/
@@ -101,20 +99,20 @@ theorem definition_2_8_1 (K : V →L[𝕜] W) :
 
 /-! ### Propositions 2.8.4, 2.8.6 and 2.8.7: closure properties -/
 
-/-- Atkinson–Han Proposition 2.8.4: a bounded linear operator of finite rank — Definition 2.8.3 —
+/-- **Proposition 2.8.4.** A bounded linear operator of finite rank — Definition 2.8.3 —
 is compact. -/
 theorem proposition_2_8_4 (K : V →L[𝕜] W)
     [FiniteDimensional 𝕜 (LinearMap.range (K : V →ₗ[𝕜] W))] : IsCompactOperator K :=
   IsCompactOperator.of_finiteDimensional_range K
 
-/-- Atkinson–Han Proposition 2.8.6: a composition of bounded operators in which at least one
+/-- **Proposition 2.8.6.** A composition of bounded operators in which at least one
 factor is compact is compact. -/
 theorem proposition_2_8_6 {U : Type*} [NormedAddCommGroup U] [NormedSpace 𝕜 U]
     (A : U →L[𝕜] V) (B : W →L[𝕜] U) {K : V →L[𝕜] W} (hK : IsCompactOperator K) :
     IsCompactOperator (K.comp A) ∧ IsCompactOperator (B.comp K) :=
   ⟨hK.comp_clm A, hK.clm_comp B⟩
 
-/-- Atkinson–Han Proposition 2.8.7: with a complete codomain, an operator-norm limit of compact
+/-- **Proposition 2.8.7.** With a complete codomain, an operator-norm limit of compact
 operators is compact. This is what makes an integral operator whose kernel is a uniform limit of
 degenerate kernels compact (the book's Example 2.8.8). -/
 theorem proposition_2_8_7 [CompleteSpace W] {A : ℕ → V →L[𝕜] W} {K : V →L[𝕜] W}
@@ -142,7 +140,7 @@ private theorem isUnit_smul_one_sub (hK : IsCompactOperator K) (hl : l ≠ 0)
   rw [spectrum.mem_resolventSet_iff, Algebra.algebraMap_eq_smul_one] at hres
   exact hres
 
-/-- Atkinson–Han Theorem 2.8.10, the **Fredholm alternative** for an equation of the second kind:
+/-- **Theorem 2.8.10**, the **Fredholm alternative** for an equation of the second kind:
 for compact `K` on a Banach space and `l ≠ 0`, the equation `(l - K) u = f` has a unique solution
 for every right-hand side exactly when the homogeneous equation `(l - K) u = 0` has only the
 trivial solution. -/
@@ -169,13 +167,13 @@ end Fredholm
 
 /-! ### Theorem 2.8.12: the spectrum of a compact operator -/
 
-/-- Atkinson–Han Theorem 2.8.12 (1): the eigenvalues of a compact operator can accumulate only at
+/-- **Theorem 2.8.12 (1).** The eigenvalues of a compact operator can accumulate only at
 `0` — for every `ε > 0` there are only finitely many eigenvalues of modulus at least `ε`. -/
 theorem theorem_2_8_12_1 {K : V →L[𝕜] V} (hK : IsCompactOperator K) {ε : ℝ} (hε : 0 < ε) :
     {μ : 𝕜 | HasEigenvalue (K : Module.End 𝕜 V) μ ∧ ε ≤ ‖μ‖}.Finite :=
   hK.finite_setOf_hasEigenvalue_norm_le hε
 
-/-- Atkinson–Han Theorem 2.8.12 (2): every nonzero eigenvalue of a compact operator on a Banach
+/-- **Theorem 2.8.12 (2).** Every nonzero eigenvalue of a compact operator on a Banach
 space has a finite-dimensional eigenspace. -/
 theorem theorem_2_8_12_2 [CompleteSpace V] {K : V →L[𝕜] V} (hK : IsCompactOperator K) (μ : 𝕜)
     (hμ : μ ≠ 0) : FiniteDimensional 𝕜 (eigenspace K.toLinearMap μ) := by
@@ -195,7 +193,7 @@ theorem theorem_2_8_12_2 [CompleteSpace V] {K : V →L[𝕜] V} (hK : IsCompactO
   rw [Module.End.restrict_eigenspace, LinearMap.coe_smul, IsCompactOperator.smul_iff₀ hμ] at hK
   rwa [← isCompactOperator_id_iff_finiteDimensional]
 
-/-- Atkinson–Han Theorem 2.8.12 (4): for a compact `K` and `l ≠ 0` the range of `l - K` is
+/-- **Theorem 2.8.12 (4).** For a compact `K` and `l ≠ 0` the range of `l - K` is
 closed. -/
 theorem theorem_2_8_12_4 {K : V →L[𝕜] V} (hK : IsCompactOperator K) {l : 𝕜} (hl : l ≠ 0) :
     IsClosed ((LinearMap.range ((l • (1 : V →L[𝕜] V) - K) : V →ₗ[𝕜] V)) : Set V) :=
@@ -210,13 +208,13 @@ section Hilbert
 variable {𝕜 V W : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [InnerProductSpace 𝕜 V]
   [NormedAddCommGroup W] [InnerProductSpace 𝕜 W] [CompleteSpace V] [CompleteSpace W]
 
-/-- Atkinson–Han Lemma 2.8.13, **Schauder's theorem**: the adjoint of a compact operator between
+/-- **Lemma 2.8.13**, **Schauder's theorem**: the adjoint of a compact operator between
 Hilbert spaces is compact. -/
 theorem lemma_2_8_13 {K : V →L[𝕜] W} (hK : IsCompactOperator K) :
     IsCompactOperator (ContinuousLinearMap.adjoint K) :=
   hK.adjoint
 
-/-- Atkinson–Han Theorem 2.8.14 (2), the solvability criterion (2.8.29)–(2.8.30): for a compact
+/-- **Theorem 2.8.14 (2)**, the solvability criterion (2.8.29)–(2.8.30): for a compact
 `K` on a Hilbert space and `l ≠ 0`, the equation `(l - K) u = f` is solvable exactly when `f` is
 orthogonal to every solution of the homogeneous adjoint equation `(conj l - K*) v = 0`. -/
 theorem theorem_2_8_14 {K : V →L[𝕜] V} (hK : IsCompactOperator K) {l : 𝕜} (hl : l ≠ 0) :
@@ -239,7 +237,7 @@ theorem theorem_2_8_14_isCompl {K : V →L[𝕜] V} (hK : IsCompactOperator K) {
     exact (ContinuousLinearMap.isClosed_ker _)
   exact Submodule.isCompl_orthogonal _
 
-/-- Atkinson–Han Theorem 2.8.15, the **spectral theorem** for a compact self-adjoint operator on a
+/-- **Theorem 2.8.15**, the **spectral theorem** for a compact self-adjoint operator on a
 Hilbert space: the eigenvectors span a dense subspace, so an orthonormal basis of eigenvectors
 exists. -/
 theorem theorem_2_8_15 {K : V →L[𝕜] V} (hKc : IsCompactOperator K) (hK : IsSelfAdjoint K) :

@@ -32,7 +32,13 @@ substance of the section for the rest of the book is Theorem 2.2.4 and the submu
 * `example_2_2_8_linfty`, `example_2_2_8_l1`, `example_2_2_8_l2` — the matrix operator norms for
   the vector `∞`-, `1`- and `2`-norms.
 * `theorem_2_2_10` — `𝓛(V, W)` is a Banach space when `W` is.
-* `equation_2_2_8` — the norm of an integral operator with continuous kernel on `C[a, b]`.
+* `equation_2_2_8` — Example 2.2.9, the norm of an integral operator with continuous kernel on
+  `C[a, b]`.
+
+Two clauses of Theorem 2.2.5 are also stated on their own, because later sections use them
+directly: `opNorm_eq_sSup_ratio` is (2.2.4), and `isBoundedOperator_iff_exists_bound` is
+Proposition 2.2.3 under the descriptive name that matches
+`isBoundedOperator_iff_image_bounded` of §2.1.
 
 Example 2.2.8 is three declarations because Mathlib keeps the three matrix norms apart with scoped
 instances, and because it has no `ℓ¹` operator norm on matrices at all: `example_2_2_8_l1`
@@ -41,8 +47,11 @@ operator norm is, rather than an equation between two norms.
 
 ## Not formalized here
 
-Examples 2.2.1, 2.2.3 and 2.2.7 exhibit particular operators (differentiation, a matrix acting on
-`ℝⁿ`, evaluation of a polynomial) and carry no statement the rest of the book uses.
+Example 2.2.7, that the identity operator has norm `1`, is Mathlib's
+`ContinuousLinearMap.norm_id`. The exercises of the section are either restatements of the
+theorems above (2.2.3 is Theorem 2.2.5, 2.2.4 is its fourth clause, 2.2.5 is `equation_2_2_8`) or
+one-line consequences of linearity and of `LinearMap.ker_eq_bot` (2.2.1, 2.2.2, 2.2.7, 2.2.8);
+Exercise 2.2.6, that multiplication by `m ∈ C(Ω̄)` has norm `‖m‖_∞` on `Lᵖ(Ω)`, is not used later.
 -/
 
 open Bornology Filter Metric Topology

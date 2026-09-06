@@ -6,31 +6,40 @@ import NumlibSurface.AtkinsonHan.Chapter05.Section03
 # Atkinson–Han §5.4: Newton's method
 
 Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §5.4.
+Analysis Framework*, 3rd edition, Springer, 2009, §5.4: Newton's method for `F(u) = 0` in a
+Banach space, its local quadratic convergence, the Newton–Kantorovich theorem and the modified
+(chord) method.
 
 The book's iteration (5.4.2), `u_{n+1} = u_n - [F'(u_n)]⁻¹ F(u_n)`, is the backbone's
 `Newton.step` / `Newton.iterate` (`Numlib/Nonlinear/Newton.lean`), which uses Mathlib's
-`ContinuousLinearMap.inverse`.  Contents:
+`ContinuousLinearMap.inverse`, so no surface definition of the iteration is needed.
 
-* (5.4.2) and the equivalent increment form `F'(u_n) δ_n = -F(u_n)` of (5.4.7)/(5.4.9);
-* (5.4.5), the quadratic estimate for one Newton step, proved from the `L/2` Taylor lemma
-  `norm_sub_sub_fderiv_le_half_mul_sq` of §5.3;
-* Theorem 5.4.1, local quadratic convergence, with (5.4.3) and (5.4.4);
-* Theorem 5.4.2, the Newton–Kantorovich theorem;
-* (5.4.7), Newton's method for a nonlinear system in `ℝᵈ`.
+## Main results
 
-* the book's finer form of Theorem 5.4.2: existence localized to `B̄(u₁, t* - b)`
-  (`theorem_5_4_2_step`), uniqueness within `t** = (1 + √(1-2h))/(aL)` of `u₀`
-  (`theorem_5_4_2_unique`), and the sharp a priori bound `[1 - √(1-2h)]^{2ⁿ}/(2ⁿ a L)`
-  (`theorem_5_4_2_sharp`);
-* (5.4.11) and Exercise 5.4.5, the modified Newton (chord) method with a frozen derivative, whose
-  convergence is linear rather than quadratic.
+* `equation_5_4_2`, `newtonStep_eq_self`, `newtonStep_sub_eq` — (5.4.2), that a root is a fixed
+  point of the step, and the increment form `F'(u_n) δ_n = -F(u_n)` of (5.4.7)/(5.4.9).
+* `exists_equiv_of_norm_lt` — the perturbation criterion (the book's Theorem 2.3.5) that keeps
+  `F'(u_n)` invertible along the iteration.
+* `equation_5_4_5` — the quadratic estimate for one Newton step, from the `L/2` Taylor lemma
+  `norm_sub_sub_fderiv_le_half_mul_sq` of §5.3.
+* `theorem_5_4_1` — Theorem 5.4.1, local quadratic convergence, with (5.4.3) and (5.4.4).
+* `theorem_5_4_2` — Theorem 5.4.2, the **Newton–Kantorovich theorem**, together with the book's
+  three finer clauses: existence localized to `B̄(u₁, t* - b)` (`theorem_5_4_2_step`),
+  uniqueness within `t** = (1 + √(1-2h))/(aL)` of `u₀` (`theorem_5_4_2_unique`) and the sharp a
+  priori bound `[1 - √(1-2h)]^{2ⁿ}/(2ⁿ a L)` (`theorem_5_4_2_sharp`).
+* `equation_5_4_11`, `exercise_5_4_5` — the modified Newton (chord) method with a frozen
+  derivative, whose convergence is linear rather than quadratic.
+* `equation_5_4_7` — Newton's method for a nonlinear system in `ℝᵈ`.
+
+## Conventions
 
 The uniqueness domain of Theorem 5.4.2 is the **open** ball of radius `t**`, not the closed one as
 the book prints it; `theorem_5_4_2_unique` explains why the closed form is false for `h < ½`.
 
-Out of scope (§4 of `plans/atkinsonhan-ch5.md`): the applications (5.4.8)–(5.4.10) and (5.4.12),
-which need the phase-3 `C[a,b]` integral-operator toolkit.
+## Not formalized here
+
+The applications (5.4.8)–(5.4.10) and (5.4.12), which need the phase-3 `C[a, b]`
+integral-operator toolkit; see §4 of `plans/atkinsonhan-ch5.md`.
 -/
 
 open Filter Metric Topology

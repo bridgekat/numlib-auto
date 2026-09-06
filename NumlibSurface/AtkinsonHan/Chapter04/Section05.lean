@@ -44,9 +44,10 @@ Most of the rest of the section: the construction of a scaling function from its
 coefficients, the claim that the `ψ` of (4.5.4) generates the wavelet spaces, the four listed
 properties of the `W_j` for a general multiresolution analysis, the fixed-point computation of `φ`
 and the Daubechies example (4.5.5)–(4.5.6).  Atkinson–Han state all of these without proof and
-refer to Daubechies; the standard arguments run through conditions on `φ̂`, a piece of harmonic
-analysis Mathlib does not have.  The stable-basis weakening of axiom (1) is left out too — the
-book only remarks that one may renormalise to the orthonormal case.
+refer the reader to Daubechies, *Ten Lectures on Wavelets*; the standard arguments run through
+conditions on `φ̂`, a piece of harmonic analysis Mathlib does not have.  The stable-basis
+weakening of axiom (1) is left out too — the book only remarks that one may renormalise to the
+orthonormal case.
 -/
 
 open MeasureTheory Real

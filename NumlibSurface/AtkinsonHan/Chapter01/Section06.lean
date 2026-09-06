@@ -35,11 +35,6 @@ theorem is about, equivalent; `UniformEquicontinuous.equicontinuous` converts.
 The converse half of Theorem 1.6.3 — a precompact subset of `C(D)` is uniformly bounded and
 equicontinuous — is true and elementary but has no Mathlib form to specialize; only the direction
 the book uses is proved.
-
-## References
-
-* K. E. Atkinson and W. Han, *Theoretical Numerical Analysis: A Functional Analysis Framework*,
-  3rd edition, Texts in Applied Mathematics 39, Springer, 2009.
 -/
 
 open Bornology Metric Set

@@ -23,11 +23,6 @@ in place of `Module`, so none is written.
 
 Examples 1.1.2, 1.1.4, 1.1.6, 1.1.7, 1.1.11, 1.1.12, 1.1.15 and 1.1.17 and the exercises are
 illustrations of the definitions, and none is cited by a later result.
-
-## References
-
-* K. E. Atkinson and W. Han, *Theoretical Numerical Analysis: A Functional Analysis Framework*,
-  3rd edition, Texts in Applied Mathematics 39, Springer, 2009.
 -/
 
 namespace AtkinsonHan.Chapter01

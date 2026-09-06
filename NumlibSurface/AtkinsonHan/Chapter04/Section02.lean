@@ -32,6 +32,34 @@ them.
 Definitions 4.2.1, 4.2.2 and 4.2.3 are Mathlib's `SchwartzMap` (`𝓢(E, F)`),
 `TemperedDistribution` (`𝓢'(E, F)`) and the Fourier transform on the latter, so they are stated
 as identifications rather than as new definitions.
+
+## Main definitions
+
+* `bookConst` — the normalising constant `(2 π)^{-d/2}` of (4.2.1), in `d = finrank ℝ V`.
+* `bookFourier`, `bookFourierInv` — the book's transform (4.2.1) and its inverse (4.2.4).
+* `bookFourierCLM` — the same transform as a continuous linear map `𝓢(V, ℂ) →L[ℂ] 𝓢(V, ℂ)`
+  (Definition 4.2.1), and `bookFourierTD` its extension to `𝓢'(V, ℂ)` (Definitions 4.2.2–4.2.3).
+
+## Main results
+
+* `bookFourier_eq_fourier`, `bookFourier_eq_vectorFourier`, `bookFourierInv_eq_fourierInv` — the
+  normalisation bridges to Mathlib's `𝓕`, `𝓕⁻` and `VectorFourier.fourierIntegral`. Everything
+  below is proved through them.
+* `equation_4_2_5` — (4.2.5), linearity.
+* `equation_4_2_6`, `continuous_bookFourier` — (4.2.6), the transform maps `L¹` into `L^∞` with
+  `‖f̂‖_∞ ≤ (2 π)^{-d/2} ‖f‖_{L¹}`, and its values are continuous.
+* `equation_4_2_8` — (4.2.7) in one dimension, `𝓕(f') ξ = i ξ 𝓕 f ξ`.
+* `equation_4_2_10` — (4.2.10), the multiplication formula `∫ f̂ g = ∫ f ĝ`.
+* `equation_4_2_11` — (4.2.4) and (4.2.11), the inversion formula.
+* `theorem_4_2_4` — Theorem 4.2.4 with (4.2.14)–(4.2.18), Plancherel's theorem on `𝓢(V, ℂ)`.
+* `definition_4_2_1`, `definition_4_2_3` — the two bundled transforms agree with `bookFourier`
+  and with the duality formula (4.2.13).
+
+## Implementation notes
+
+The prefactor `(2 π)^{-d/2}` is named `bookConst` rather than inlined, so that the two places
+where it has to cancel the Jacobian `(2 π)^d` of the rescaling `ξ ↦ (2 π)⁻¹ • ξ` — the inversion
+formula and Plancherel — can both cite one identity, `bookConst V * (bookConst V * (2 π)^d) = 1`.
 -/
 
 namespace AtkinsonHan.Chapter04
@@ -50,8 +78,11 @@ noncomputable def bookConst (V : Type*) [NormedAddCommGroup V] [InnerProductSpac
   (2 * π) ^ (-(finrank ℝ V : ℝ) / 2)
 
 omit [MeasurableSpace V] [BorelSpace V] in
+/-- The normalising constant of (4.2.1) is positive, so it may be divided by and pulled out of
+a norm. -/
 theorem bookConst_pos : 0 < bookConst V := by
-  rw [bookConst]; positivity
+  rw [bookConst]
+  positivity
 
 /-- The book's Fourier transform (4.2.1), (4.2.3):
 `𝓕_book f ξ = (2 π)^{-d/2} ∫ f x exp (-i ⟪x, ξ⟫) dx` on a `d`-dimensional real inner product

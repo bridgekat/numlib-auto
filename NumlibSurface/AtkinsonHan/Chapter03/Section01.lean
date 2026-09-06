@@ -35,11 +35,6 @@ as everywhere in this surface.
 
 Theorem 3.1.5, Müntz's theorem: the Müntz–Szász theorem is not in Mathlib, its proof is a
 development of its own, and no other result in the corpus uses it.
-
-## References
-
-* K. E. Atkinson and W. Han, *Theoretical Numerical Analysis: A Functional Analysis Framework*,
-  3rd edition, Texts in Applied Mathematics 39, Springer, 2009.
 -/
 
 open Complex MeasureTheory Set Submodule
@@ -94,16 +89,12 @@ section Trigonometric
 variable {T : ℝ}
 
 /-- Taking real parts, as a real-linear map on continuous complex-valued functions. -/
-private noncomputable def reMap (X : Type*) [TopologicalSpace X] : C(X, ℂ) →ₗ[ℝ] C(X, ℝ) where
-  toFun P := ⟨fun x => (P x).re, Complex.continuous_re.comp P.continuous⟩
-  map_add' _ _ := by ext x; simp
-  map_smul' _ _ := by ext x; simp
+private noncomputable def reMap (X : Type*) [TopologicalSpace X] : C(X, ℂ) →ₗ[ℝ] C(X, ℝ) :=
+  (Complex.reCLM.compLeftContinuous ℝ X).toLinearMap
 
 /-- Taking imaginary parts, as a real-linear map on continuous complex-valued functions. -/
-private noncomputable def imMap (X : Type*) [TopologicalSpace X] : C(X, ℂ) →ₗ[ℝ] C(X, ℝ) where
-  toFun P := ⟨fun x => (P x).im, Complex.continuous_im.comp P.continuous⟩
-  map_add' _ _ := by ext x; simp
-  map_smul' _ _ := by ext x; simp
+private noncomputable def imMap (X : Type*) [TopologicalSpace X] : C(X, ℂ) →ₗ[ℝ] C(X, ℝ) :=
+  (Complex.imCLM.compLeftContinuous ℝ X).toLinearMap
 
 @[simp]
 private theorem reMap_apply {X : Type*} [TopologicalSpace X] (P : C(X, ℂ)) (x : X) :

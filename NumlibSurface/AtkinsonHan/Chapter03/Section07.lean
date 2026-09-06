@@ -2,8 +2,8 @@ import Mathlib.Analysis.Calculus.IteratedDeriv.Defs
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
 import Mathlib.Topology.Instances.AddCircle.Defs
 import Mathlib.Topology.MetricSpace.Holder
+import Numlib.Analysis.Normed.Operator.BanachSteinhaus
 import Numlib.Approximation.BestApprox
-import NumlibSurface.AtkinsonHan.Chapter02.Section04
 
 /-!
 # Atkinson–Han §3.7: uniform error bounds
@@ -50,7 +50,7 @@ because none of the objects it speaks about exist yet in Mathlib or in `Numlib`:
 * (3.7.5) `‖f − 𝓕ₙ f‖₂ ≤ √(2π) ‖f − 𝓕ₙ f‖_∞`, which needs `L²` function spaces.
 -/
 
-open Filter Topology Bornology
+open Filter Topology
 
 namespace AtkinsonHan.Chapter03
 
@@ -87,14 +87,13 @@ theorem lebesgue_lemma_one_sub (P : V →L[𝕜] V) (hP : IsIdempotentElem P) (u
 /-- If the operator norms `‖𝓟ₙ‖` are unbounded, then `𝓟ₙ f → f` fails for some `f`. Applied to
 the Fourier projections `𝓕ₙ` on `C_p(2π)`, whose norms are the Lebesgue constants
 `Lₙ = (4/π²) log n + O(1)` by (3.7.10), this is the paragraph after (3.7.10): there is a
-continuous periodic function whose Fourier series does not converge uniformly to it. -/
+continuous periodic function whose Fourier series does not converge uniformly to it.
+
+It is the backbone's `ContinuousLinearMap.exists_not_tendsto_of_not_bddAbove` at `L = id`. -/
 theorem exists_not_tendsto_of_not_bddAbove [CompleteSpace V] (P : ℕ → V →L[𝕜] V)
     (h : ¬ BddAbove (Set.range fun n => ‖P n‖)) :
-    ∃ f : V, ¬ Tendsto (fun n => P n f) atTop (𝓝 f) := by
-  by_contra hcon
-  simp only [not_exists, not_not] at hcon
-  obtain ⟨C, hC⟩ := banach_steinhaus fun v => Chapter02.exists_norm_le_of_tendsto (hcon v)
-  exact h ⟨C, by rintro x ⟨n, rfl⟩; exact hC n⟩
+    ∃ f : V, ¬ Tendsto (fun n => P n f) atTop (𝓝 f) :=
+  ContinuousLinearMap.exists_not_tendsto_of_not_bddAbove h (ContinuousLinearMap.id 𝕜 V)
 
 /-! ### The function spaces of Theorems 3.7.1 and 3.7.2
 
@@ -116,6 +115,8 @@ noncomputable def PeriodicCont.ofIsPeriodicCont {g : ℝ → ℝ} (h : IsPeriodi
     PeriodicCont :=
   ⟨h.2.lift, continuous_quot_lift _ h.1⟩
 
+/-- `PeriodicCont.ofIsPeriodicCont` undoes the passage to the circle: its value at the class of
+`x` is `g x`. -/
 @[simp] theorem PeriodicCont.ofIsPeriodicCont_coe {g : ℝ → ℝ} (h : IsPeriodicCont g) (x : ℝ) :
     PeriodicCont.ofIsPeriodicCont h (x : AddCircle (2 * π)) = g x :=
   h.2.lift_coe x

@@ -43,11 +43,6 @@ Banach–Alaoglu in a form that would give it. Everything in the book that consu
 `Numlib/Variational/Minimization`. Example 2.7.3's uniform-integrability criterion
 (Dunford–Pettis) is not planned for the same reason, and neither is part (b) of Exercise 2.7.4,
 the uniform convexity of `Lᵖ` by the Clarkson inequalities.
-
-## References
-
-* K. E. Atkinson and W. Han, *Theoretical Numerical Analysis: A Functional Analysis Framework*,
-  3rd edition, Texts in Applied Mathematics 39, Springer, 2009.
 -/
 
 open Filter MeasureTheory Topology

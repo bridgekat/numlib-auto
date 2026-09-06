@@ -6,17 +6,23 @@ import Numlib.Nonlinear.CompletelyContinuous
 Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
 Analysis Framework*, 3rd edition, Springer, 2009, §5.5.
 
-The section is a summary: Brouwer's theorem (5.5.1), Schauder's theorem (5.5.4) and the properties
-P1–P5 of the rotation of a completely continuous vector field are quoted there from Krasnoselskii
-and Zeidler without proof, and Mathlib has neither Brouwer's theorem nor degree theory. Two items
-are formalized, and they are the ones later chapters use.
+The section is a summary: Brouwer's theorem (5.5.1), Schauder's theorem (5.5.4), Proposition 5.5.5
+and the properties P1–P5 of the rotation of a completely continuous vector field are all quoted
+without proof, from Krasnosel'skii, *Topological Methods in the Theory of Nonlinear Integral
+Equations*, Krasnosel'skii and Zabreyko, *Geometric Methods of Nonlinear Analysis*, Berger,
+*Nonlinearity and Functional Analysis*, and Kantorovich and Akilov, *Functional Analysis in Normed
+Spaces*. Mathlib has neither Brouwer's theorem nor degree theory, so only two items are
+formalized, and they are the ones later chapters use.
 
-## Main results
+## Main definitions
 
 * `IsCompletelyContinuousOn` — Definition 5.5.3: a compact map that is in addition continuous. The
   first half is the backbone `IsCompactMap` (`Numlib/Nonlinear/CompletelyContinuous`); the two
   halves are separate because for a nonlinear map compactness does not imply continuity, unlike
   for a linear one, where the notion is Mathlib's `IsCompactOperator`.
+
+## Main results
+
 * `proposition_5_5_5` — the Fréchet derivative of a completely continuous operator at an interior
   point is a compact linear operator, so the Fredholm alternative applies to `I - T'(v₀)`. This is
   what lets §12.7 linearize a nonlinear fixed point problem into a second-kind linear equation.
@@ -26,11 +32,6 @@ are formalized, and they are the ones later chapters use.
 Theorem 5.5.1 (Brouwer), Example 5.5.2 (a Lipschitz self-map of the unit ball of a Hilbert space
 without a fixed point), Theorem 5.5.4 (Schauder), and §5.5.1 in its entirety: the rotation of a
 completely continuous vector field and its properties P1–P5.
-
-## References
-
-* K. E. Atkinson and W. Han, *Theoretical Numerical Analysis: A Functional Analysis Framework*,
-  3rd edition, Texts in Applied Mathematics 39, Springer, 2009.
 -/
 
 namespace AtkinsonHan.Chapter05

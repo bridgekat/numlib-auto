@@ -26,11 +26,6 @@ The fast Fourier transform algorithm itself and its `O(n log n)` operation count
 theorem there: the book's derivation is (4.3.8)–(4.3.9), which is `equation_4_3_9`, plus a cost
 recursion, and a recursive implementation with a complexity bound is out of scope for this project
 by the same rule that excludes storage formats and parallelisation.
-
-## References
-
-* K. E. Atkinson and W. Han, *Theoretical Numerical Analysis: A Functional Analysis Framework*,
-  3rd edition, Texts in Applied Mathematics 39, Springer, 2009.
 -/
 
 open Complex Matrix

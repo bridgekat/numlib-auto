@@ -34,11 +34,6 @@ members have `L²` norm `2^{-j/2}`. Its coefficient `a_k^j` is therefore
 in (4.4.10)–(4.4.11) and its absence in (4.4.16)–(4.4.17) are exactly this normalisation. In the
 orthonormal basis both steps carry the same factor `(√2)⁻¹`, which is the backbone's
 `Haar.decomposition` and `Haar.reconstruction`.
-
-## References
-
-* K. E. Atkinson and W. Han, *Theoretical Numerical Analysis: A Functional Analysis Framework*,
-  3rd edition, Texts in Applied Mathematics 39, Springer, 2009.
 -/
 
 open MeasureTheory Real Submodule
@@ -114,11 +109,13 @@ theorem theorem_4_4_2 (j : ℤ) (f : Lp ℝ 2 (volume : Measure ℝ)) :
 
 /-! ### The wavelet decomposition -/
 
+/-- The scaling spaces increase with the level, by iterating `Haar.V_le_V_succ`. -/
 private theorem V_mono {i j : ℤ} (h : i ≤ j) : Haar.V i ≤ Haar.V j := by
   induction j, h using Int.leInduction with
   | base => exact le_rfl
   | succ n _ ih => exact ih.trans (Haar.V_le_V_succ n)
 
+/-- Telescoping `V_{l+1} = V_l ⊔ W_l` from level `i` up to level `j`. -/
 private theorem V_eq_sup_iSup_W {i j : ℤ} (h : i ≤ j) :
     Haar.V j = Haar.V i ⊔ ⨆ l ∈ Set.Ico i j, Haar.W l := by
   induction j, h using Int.leInduction with

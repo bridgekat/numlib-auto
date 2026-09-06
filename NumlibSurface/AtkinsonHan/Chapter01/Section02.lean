@@ -40,11 +40,6 @@ of `ℝ^d`, which is how Mathlib has them and how the book uses them.
 The examples of the section (1.2.2 the `ℓᵖ` and `Lᵖ` norms, 1.2.16–1.2.22 the classical Banach
 spaces, 1.2.28 the Sobolev spaces) are illustrations; the Sobolev ones are out of scope for the
 whole project.
-
-## References
-
-* K. E. Atkinson and W. Han, *Theoretical Numerical Analysis: A Functional Analysis Framework*,
-  3rd edition, Texts in Applied Mathematics 39, Springer, 2009.
 -/
 
 open Filter Topology MeasureTheory
@@ -70,7 +65,7 @@ theorem theorem_1_2_14 {W : Type*} [NormedAddCommGroup W] [NormedSpace 𝕜 W]
     [FiniteDimensional 𝕜 V] (e : V ≃ₗ[𝕜] W) :
     ∃ c₁ > 0, ∃ c₂ > 0, ∀ v : V, c₁ * ‖v‖ ≤ ‖e v‖ ∧ ‖e v‖ ≤ c₂ * ‖v‖ := by
   have _ : FiniteDimensional 𝕜 W := e.finiteDimensional
-  set E : V ≃L[𝕜] W := e.toContinuousLinearEquiv with hE
+  set E : V ≃L[𝕜] W := e.toContinuousLinearEquiv
   have hcoe : ∀ v : V, E v = e v := fun _ => rfl
   refine ⟨(‖(E.symm : W →L[𝕜] V)‖ + 1)⁻¹, by positivity, ‖(E : V →L[𝕜] W)‖ + 1, by positivity,
     fun v => ⟨?_, ?_⟩⟩
@@ -126,8 +121,8 @@ section Measure
 variable {α : Type*} [MeasurableSpace α] {μ : Measure α}
 
 /-- **Theorem 1.2.26**, the Lebesgue dominated convergence theorem, in the book's statement: if
-`fₙ → f` almost everywhere and `|fₙ| ≤ g` almost everywhere for an integrable `g`, then `f` is
-integrable and `∫ fₙ → ∫ f`. -/
+`f n → g` almost everywhere and `‖f n‖ ≤ bound` almost everywhere for an integrable `bound`, then
+the limit `g` is integrable and `∫ f n → ∫ g`. -/
 theorem theorem_1_2_26 {f : ℕ → α → ℝ} {g : α → ℝ} {bound : α → ℝ}
     (hf : ∀ n, AEStronglyMeasurable (f n) μ) (hbound : Integrable bound μ)
     (hle : ∀ n, ∀ᵐ x ∂μ, ‖f n x‖ ≤ bound x)

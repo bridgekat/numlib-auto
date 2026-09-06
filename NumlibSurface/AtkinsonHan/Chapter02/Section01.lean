@@ -11,12 +11,15 @@ Definition 2.1.1 is `Function.Injective`, `Function.Surjective` and `Function.Bi
 domain, range and null set of an operator are `Set.univ`, `Set.range` and `T ⁻¹' {0}`, or for a
 linear map `LinearMap.range` and `LinearMap.ker`. None of these is restated.
 
-## Main results
+## Main definitions
 
 * `IsBoundedOperator` — Definition 2.1.6, the book's boundedness of a not necessarily linear
   operator: *bounded sets have bounded images*, not "the operator norm is finite". The distinction
   matters, because the two differ for a nonlinear operator and the point of Theorem 2.2.4 is that
   for a linear operator they agree.
+
+## Main results
+
 * `isBoundedOperator_iff_image_bounded` — the two readings the book gives of Definition 2.1.6.
 
 The bridge to the estimate `‖T v‖ ≤ γ ‖v‖` for a *linear* operator is Proposition 2.2.3, and lives
@@ -24,13 +27,11 @@ in §2.2 with the rest of that discussion.
 
 ## Not formalized here
 
-Examples 2.1.2–2.1.5 and 2.1.7 concern the differentiation operator on `C¹[0, 1]`; that space is
-not in Mathlib as a normed space, and the examples carry no theorem the rest of the book uses.
-
-## References
-
-* K. E. Atkinson and W. Han, *Theoretical Numerical Analysis: A Functional Analysis Framework*,
-  3rd edition, Texts in Applied Mathematics 39, Springer, 2009.
+Examples 2.1.2 and 2.1.3, the identity operator and a matrix acting on `ℝⁿ`, illustrate
+Definition 2.1.1 and carry no statement the rest of the book uses. Examples 2.1.4, 2.1.5 and 2.1.7
+concern the differentiation operator on `C[0, 1]` and `C¹[0, 1]`; the latter space is not in
+Mathlib as a normed space, and Exercise 2.1.1, which asks for the unboundedness asserted in
+Example 2.1.7, needs it.
 -/
 
 open Bornology Metric

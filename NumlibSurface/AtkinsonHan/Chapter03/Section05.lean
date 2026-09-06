@@ -33,11 +33,6 @@ is `OrthogonalPolynomial.IsWeight`: finite moments and no finite set carrying th
 
 The Sobolev-norm error estimates for `P_N u` and `P_{1,N} u` quoted after (3.5.2) and (3.5.7):
 they need `Hˢ(-1, 1)`, and the book itself refers the reader elsewhere for them.
-
-## References
-
-* K. E. Atkinson and W. Han, *Theoretical Numerical Analysis: A Functional Analysis Framework*,
-  3rd edition, Texts in Applied Mathematics 39, Springer, 2009.
 -/
 
 open MeasureTheory Polynomial Real

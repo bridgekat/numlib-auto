@@ -32,11 +32,6 @@ its arguments reversed below.
 Theorem 2.6.5 carries a `[Nontrivial V]` hypothesis: on the zero space the unit sphere is empty and
 the supremum the book writes has no meaning. The quantity `(L v, v)` of the book is real for a
 self-adjoint `L`, and is written `RCLike.re (inner 𝕜 v (L v))` below.
-
-## References
-
-* K. E. Atkinson and W. Han, *Theoretical Numerical Analysis: A Functional Analysis Framework*,
-  3rd edition, Texts in Applied Mathematics 39, Springer, 2009.
 -/
 
 open Metric RCLike

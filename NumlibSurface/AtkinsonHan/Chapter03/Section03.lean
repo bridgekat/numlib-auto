@@ -5,9 +5,9 @@ import Mathlib.RingTheory.Polynomial.DegreeLT
 import Mathlib.Topology.ContinuousMap.Compact
 import Mathlib.Topology.ContinuousMap.Polynomial
 import Numlib.Analysis.Convex.StrictConvexSpace
+import Numlib.Analysis.Normed.Module.WeakDual
 import Numlib.Approximation.BestApprox
 import Numlib.Variational.Minimization
-import NumlibSurface.AtkinsonHan.Chapter02.Section04
 
 /-!
 # Atkinson–Han §3.3: best approximation
@@ -26,20 +26,23 @@ sequential and topological lower semicontinuity.
 
 ## Book-specific definitions
 
-* `WeakSeqTendsto` — weak sequential convergence (Definition 3.3.3), only the sequential form.
+* `WeakSeqTendsto` — weak sequential convergence (Definition 3.3.3), only the sequential form;
+  `tendsto_toWeakSpace_iff_weakSeqTendsto` identifies it with convergence in Mathlib's
+  `WeakSpace` topology, which is the form the backbone's lemmas take.
 * `AreSeparated`, `AreStrictlySeparated` — Definition 3.3.6.
 * `IsStrictlyNormed` — §3.3.4, equivalent to Mathlib's `StrictConvexSpace ℝ V`.
+* `polyLE`, `rho` — the space `𝒫ₙ` of polynomials of degree `≤ n` on `[a, b]` and the best
+  uniform approximation error `ρₙ(f)`.
 
 Definition 3.3.9 (a coercive functional) is the backbone's `IsCoerciveFunctionalOn`, which is
 *not* the backbone's `IsCoercive`: the latter is the operator condition `re ⟪A x, x⟫ ≥ c ‖x‖²`
 (the book's "strongly monotone").
-* `polyLE`, `rho` — the space `𝒫ₙ` of polynomials of degree `≤ n` on `[a, b]` and the best
-  uniform approximation error `ρₙ(f)`.
 
 ## Main results
 
 * `example_3_3_5` — the norm is weakly sequentially lower semicontinuous.
-* `theorem_3_3_7` — strict separation of a compact convex set from a disjoint closed convex set.
+* `theorem_3_3_7`, `theorem_3_3_7'` — strict separation of a compact convex set from a disjoint
+  closed convex set, in either order.
 * `theorem_3_3_13` — existence (and uniqueness) of minimizers on finite-dimensional closed sets.
 * `theorem_3_3_15`, `theorem_3_3_16`, `example_3_3_17` — existence of best approximations.
 * `theorem_3_3_18`, `theorem_3_3_21` — uniqueness under strict convexity of `‖·‖ᵖ`, resp. strict
@@ -51,8 +54,15 @@ Definition 3.3.9 (a coercive functional) is the backbone's `IsCoerciveFunctional
 
 Theorems 3.3.8, 3.3.10, 3.3.11 (Mazur), 3.3.12 and 3.3.14 concern minimizers in reflexive Banach
 spaces; they wait on weak sequential compactness (the book's Thm 2.7.5), which Mathlib does not
-have. Theorems 3.3.19–3.3.20 (Chebyshev equioscillation) wait on the Haar condition and the
-de la Vallée-Poussin theorem. Both are phase-3 backbone items.
+have.
+
+Theorems 3.3.19–3.3.20, the Chebyshev equioscillation theorem on `[a, b]` and its trigonometric
+counterpart, are not stated here either, but no longer for want of ingredients: the backbone
+`Numlib/Approximation/Chebyshev.lean` has the Haar condition, the de la Vallée-Poussin bound
+`le_infDist_of_alternates`, the sufficiency half `isBestApprox_of_equioscillates` and the
+uniqueness `IsBestApprox.unique_of_polyLE`/`unique_of_haarCondition`. What is missing is the
+existence of an alternation of length `n + 2` for the error of a best approximation, which is the
+remaining half of Theorem 3.3.19.
 -/
 
 open Filter Topology Bornology
@@ -163,37 +173,19 @@ section WeakLsc
 
 variable {𝕜 V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
 
-/-- A weakly convergent sequence is bounded: uniform boundedness applied to the images of the
-`vₙ` in the (complete) double dual. -/
-private theorem exists_norm_le_of_weakSeqTendsto {v : ℕ → V} {u : V}
-    (h : WeakSeqTendsto 𝕜 v u) : ∃ C : ℝ, ∀ n, ‖v n‖ ≤ C := by
-  have hb : ∀ ℓ : StrongDual 𝕜 V,
-      ∃ C : ℝ, ∀ n, ‖NormedSpace.inclusionInDoubleDual 𝕜 V (v n) ℓ‖ ≤ C := by
-    intro ℓ
-    exact Chapter02.exists_norm_le_of_tendsto (h ℓ)
-  obtain ⟨C, hC⟩ := banach_steinhaus hb
-  refine ⟨C, fun n => ?_⟩
-  rw [← (NormedSpace.inclusionInDoubleDualLi 𝕜).norm_map (v n)]
-  exact hC n
+/-- Weak sequential convergence in the sense of Definition 3.3.3 is convergence in Mathlib's
+`WeakSpace` topology, which is how the backbone states its two weak-convergence lemmas. -/
+theorem tendsto_toWeakSpace_iff_weakSeqTendsto {v : ℕ → V} {u : V} :
+    Tendsto (fun n => toWeakSpace 𝕜 V (v n)) atTop (𝓝 (toWeakSpace 𝕜 V u)) ↔
+      WeakSeqTendsto 𝕜 v u :=
+  tendsto_toWeakSpace_iff
 
 /-- **Example 3.3.5.** The norm is weakly sequentially lower semicontinuous:
-`vₙ ⇀ u` implies `‖u‖ ≤ liminf ‖vₙ‖`. -/
+`vₙ ⇀ u` implies `‖u‖ ≤ liminf ‖vₙ‖`. The book proves the same statement again as
+Exercise 2.7.2; both specialize the backbone's `norm_le_liminf_norm_of_weak_tendsto`. -/
 theorem example_3_3_5 (v : ℕ → V) (u : V) (hweak : WeakSeqTendsto 𝕜 v u) :
-    ‖u‖ ≤ liminf (fun n => ‖v n‖) atTop := by
-  obtain ⟨C, hC⟩ := exists_norm_le_of_weakSeqTendsto hweak
-  obtain ⟨ℓ, hℓ, hval⟩ := exists_dual_vector'' 𝕜 u
-  have hlim : Tendsto (fun n => ‖ℓ (v n)‖) atTop (𝓝 ‖ℓ u‖) := (hweak ℓ).norm
-  have hcobdd : IsCoboundedUnder (· ≥ ·) atTop fun n => ‖v n‖ := by
-    refine ⟨C, fun a ha => ?_⟩
-    rw [Filter.eventually_map] at ha
-    obtain ⟨n, hn⟩ := ha.exists
-    exact hn.trans (hC n)
-  have hle : ∀ n, ‖ℓ (v n)‖ ≤ ‖v n‖ := fun n =>
-    (ℓ.le_opNorm (v n)).trans (by simpa using mul_le_mul_of_nonneg_right hℓ (norm_nonneg (v n)))
-  calc ‖u‖ = ‖ℓ u‖ := by rw [hval, RCLike.norm_ofReal, abs_of_nonneg (norm_nonneg u)]
-    _ = liminf (fun n => ‖ℓ (v n)‖) atTop := hlim.liminf_eq.symm
-    _ ≤ liminf (fun n => ‖v n‖) atTop :=
-        liminf_le_liminf (Filter.Eventually.of_forall hle) hlim.isBoundedUnder_ge hcobdd
+    ‖u‖ ≤ liminf (fun n => ‖v n‖) atTop :=
+  norm_le_liminf_norm_of_weak_tendsto (tendsto_toWeakSpace_iff_weakSeqTendsto.2 hweak)
 
 end WeakLsc
 

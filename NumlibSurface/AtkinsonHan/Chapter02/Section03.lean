@@ -8,8 +8,10 @@ import Numlib.IntegralEquations.Basic
 # Atkinson–Han §2.3: the geometric series theorem and its variants
 
 Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §2.3 , proved by specializing
-`Numlib.Analysis.Normed.Ring.Inverse` and the Neumann-series API of Mathlib.
+Analysis Framework*, 3rd edition, Springer, 2009, §2.3: the geometric series (Neumann) theorem,
+the second-kind equation `(λI - K)u = f`, the variant under `‖Lᵐ‖ < 1`, the perturbation theorem
+and the consistency-plus-stability criterion (2.3.16). Every proof specializes
+`Numlib.Analysis.Normed.Ring.Inverse` or the Neumann-series API of Mathlib.
 
 The book phrases invertibility as "`L` is a bijection of `V` onto `W` whose inverse is bounded".
 Here that is `∃ e : V ≃L[𝕜] W, (e : V →L[𝕜] W) = L`, and `L⁻¹` is `e.symm`; the bridge to the
@@ -73,6 +75,22 @@ private theorem exists_equiv_of_isUnit {L : V →L[𝕜] V} (h : IsUnit L) :
   obtain ⟨u, rfl⟩ := h
   exact ⟨ContinuousLinearEquiv.ofUnit u, coe_ofUnit u, coe_ofUnit_symm u⟩
 
+/-- Rescaling an invertible operator by a nonzero scalar keeps it invertible, and inverts the
+scalar on the inverse. -/
+private theorem exists_smul_equiv {lam : 𝕜} (hlam : lam ≠ 0) (e₀ : V ≃L[𝕜] V) :
+    ∃ e : V ≃L[𝕜] V, (e : V →L[𝕜] V) = lam • (e₀ : V →L[𝕜] V) ∧
+      (e.symm : V →L[𝕜] V) = lam⁻¹ • (e₀.symm : V →L[𝕜] V) := by
+  have hcancel : (e₀ : V →L[𝕜] V) * (e₀.symm : V →L[𝕜] V) = 1 := by
+    ext x; exact e₀.apply_symm_apply x
+  have hcancel' : (e₀.symm : V →L[𝕜] V) * (e₀ : V →L[𝕜] V) = 1 := by
+    ext x; exact e₀.symm_apply_apply x
+  refine ⟨ContinuousLinearEquiv.ofUnit
+    ⟨lam • (e₀ : V →L[𝕜] V), lam⁻¹ • (e₀.symm : V →L[𝕜] V), ?_, ?_⟩, coe_ofUnit _, ?_⟩
+  · rw [smul_mul_smul_comm, hcancel, mul_inv_cancel₀ hlam, one_smul]
+  · rw [smul_mul_smul_comm, hcancel', inv_mul_cancel₀ hlam, one_smul]
+  · rw [coe_ofUnit_symm, Ring.inverse_unit]
+    rfl
+
 /-- Every operator on a trivial space has norm zero. Used to dispose of the degenerate case in
 which `V →L[𝕜] V` is not `NormOneClass`. -/
 private theorem norm_eq_zero_of_subsingleton [Subsingleton V] (T : V →L[𝕜] V) : ‖T‖ = 0 := by
@@ -134,8 +152,7 @@ theorem equation_2_3_5 [CompleteSpace V] (L : V →L[𝕜] V) (hL : ‖L‖ < 1)
 /-- **Second-kind equations** (Example 2.3.2, abstract part). If `‖K‖ < |λ|` then `λI - K` is
 invertible with `‖(λI - K)⁻¹‖ ≤ 1 / (|λ| - ‖K‖)`; consequently the solution of `(λI - K)u = f`
 satisfies `‖u‖ ≤ ‖f‖ / (|λ| - ‖K‖)`. The concrete part of the example, where `K` is an integral
-operator on `C[a, b]` with `‖K‖` given by (2.2.8), needs integral operators, which are not yet
-available. -/
+operator on `C[a, b]` with `‖K‖` given by (2.2.8), is `example_2_3_2_integral` below. -/
 theorem example_2_3_2 [CompleteSpace V] (K : V →L[𝕜] V) {lam : 𝕜} (h : ‖K‖ < ‖lam‖) :
     ∃ e : V ≃L[𝕜] V, (e : V →L[𝕜] V) = lam • (1 : V →L[𝕜] V) - K ∧
       ‖(e.symm : V →L[𝕜] V)‖ ≤ 1 / (‖lam‖ - ‖K‖) := by
@@ -145,20 +162,10 @@ theorem example_2_3_2 [CompleteSpace V] (K : V →L[𝕜] V) {lam : 𝕜} (h : �
     rw [norm_smul, norm_inv, inv_mul_lt_one₀ hlampos]
     exact h
   obtain ⟨e₀, he₀, -, hb₀⟩ := theorem_2_3_1 (lam⁻¹ • K) hLnorm
-  have hcancel : (e₀ : V →L[𝕜] V) * (e₀.symm : V →L[𝕜] V) = 1 := by
-    ext x; exact e₀.apply_symm_apply x
-  have hcancel' : (e₀.symm : V →L[𝕜] V) * (e₀ : V →L[𝕜] V) = 1 := by
-    ext x; exact e₀.symm_apply_apply x
-  have hval : lam • (e₀ : V →L[𝕜] V) = lam • (1 : V →L[𝕜] V) - K := by
-    rw [he₀, smul_sub, smul_inv_smul₀ hlam]
-  refine ⟨ContinuousLinearEquiv.ofUnit
-    ⟨lam • (e₀ : V →L[𝕜] V), lam⁻¹ • (e₀.symm : V →L[𝕜] V), ?_, ?_⟩, ?_, ?_⟩
-  · rw [smul_mul_smul_comm, hcancel, mul_inv_cancel₀ hlam, one_smul]
-  · rw [smul_mul_smul_comm, hcancel', inv_mul_cancel₀ hlam, one_smul]
-  · rw [coe_ofUnit]
-    exact hval
-  · rw [coe_ofUnit_symm, Ring.inverse_unit]
-    change ‖lam⁻¹ • (e₀.symm : V →L[𝕜] V)‖ ≤ 1 / (‖lam‖ - ‖K‖)
+  obtain ⟨e, he, hesymm⟩ := exists_smul_equiv hlam e₀
+  refine ⟨e, ?_, ?_⟩
+  · rw [he, he₀, smul_sub, smul_inv_smul₀ hlam]
+  · rw [hesymm]
     have hnorm : ‖lam⁻¹ • K‖ = ‖K‖ / ‖lam‖ := by
       rw [norm_smul, norm_inv, div_eq_inv_mul]
     rw [norm_smul, norm_inv]
@@ -209,7 +216,7 @@ theorem corollary_2_3_3 [CompleteSpace V] (L : V →L[𝕜] V) {m : ℕ} (hm : 1
 
 /-- **Example 2.3.4** (abstract part). If `‖Lᵏ‖ → 0` — as happens for the Volterra integral
 operator, whose iterated kernels give `‖Lᵏ‖ ≤ (MB)ᵏ / k!` — then `I - L` is invertible. The
-kernel estimate itself needs integral operators on `C[0, B]`, which are not yet available. -/
+kernel estimate itself is `example_2_3_4_volterra` below. -/
 theorem example_2_3_4 [CompleteSpace V] (L : V →L[𝕜] V)
     (h : Tendsto (fun k : ℕ => ‖L ^ k‖) atTop (𝓝 0)) :
     ∃ e : V ≃L[𝕜] V, (e : V →L[𝕜] V) = 1 - L := by
@@ -310,8 +317,7 @@ theorem equation_2_3_16 (hc : CompleteSpace V ∨ CompleteSpace W) (L : V ≃L[�
 /-- **(2.3.16), second part.** Consistency (`‖(L - Lₙ) v‖ → 0`) together with stability (a uniform
 bound on `‖Lₙ⁻¹‖`) implies convergence `vₙ → v` of the approximate solutions. The families `eₙ`
 and `vₙ` are only defined for `n ≥ N`, as `equation_2_3_16` provides them, and the conclusion is
-indexed
-accordingly. -/
+indexed accordingly. -/
 theorem convergence_of_consistent_stable (hc : CompleteSpace V ∨ CompleteSpace W)
     (L : V ≃L[𝕜] W) (Ln : ℕ → V →L[𝕜] W) (N : ℕ) (en : ∀ n, N ≤ n → (V ≃L[𝕜] W))
     (hen : ∀ n hn, ((en n hn : V ≃L[𝕜] W) : V →L[𝕜] W) = Ln n) {v : V}
@@ -342,18 +348,6 @@ section IntegralEquations
 open Set IntegralOperator
 
 open scoped Nat
-
-/-- Rescaling an invertible operator by a nonzero scalar keeps it invertible. -/
-private theorem exists_smul_equiv {lam : 𝕜} (hlam : lam ≠ 0) (e₀ : V ≃L[𝕜] V) :
-    ∃ e : V ≃L[𝕜] V, (e : V →L[𝕜] V) = lam • (e₀ : V →L[𝕜] V) := by
-  have hcancel : (e₀ : V →L[𝕜] V) * (e₀.symm : V →L[𝕜] V) = 1 := by
-    ext x; exact e₀.apply_symm_apply x
-  have hcancel' : (e₀.symm : V →L[𝕜] V) * (e₀ : V →L[𝕜] V) = 1 := by
-    ext x; exact e₀.symm_apply_apply x
-  refine ⟨ContinuousLinearEquiv.ofUnit
-    ⟨lam • (e₀ : V →L[𝕜] V), lam⁻¹ • (e₀.symm : V →L[𝕜] V), ?_, ?_⟩, coe_ofUnit _⟩
-  · rw [smul_mul_smul_comm, hcancel, mul_inv_cancel₀ hlam, one_smul]
-  · rw [smul_mul_smul_comm, hcancel', inv_mul_cancel₀ hlam, one_smul]
 
 variable {a b : ℝ}
 
@@ -404,7 +398,7 @@ theorem example_2_3_4_volterra (hab : a ≤ b) (k : C(Icc a b × Icc a b, ℝ)) 
     squeeze_zero (fun _ => norm_nonneg _) hbound
       (FloorSemiring.tendsto_pow_div_factorial_atTop _)
   obtain ⟨e₀, he₀⟩ := example_2_3_4 (lam⁻¹ • volterraCLM hab k) htend
-  obtain ⟨e, he⟩ := exists_smul_equiv hlam e₀
+  obtain ⟨e, he, -⟩ := exists_smul_equiv hlam e₀
   exact ⟨e, by rw [he, he₀, smul_sub, smul_inv_smul₀ hlam]⟩
 
 end IntegralEquations

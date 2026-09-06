@@ -10,36 +10,58 @@ import Numlib.LinearSolve.Projection.Optimality
 # Atkinson–Han §5.6: the conjugate gradient method for operator equations
 
 Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, 3rd edition, Springer, 2009, §5.6.
+Analysis Framework*, 3rd edition, Springer, 2009, §5.6: the conjugate gradient method for
+`A u = f` in a Hilbert space, its linear and Chebyshev convergence rates, and Winther's
+superlinear rate for a second-kind equation.
 
 Throughout, `V` is a real Hilbert space and `A : V →L[ℝ] V` is bounded, self-adjoint and positive
-definite in the sense of (5.6.3), `√m ‖v‖ ≤ ‖v‖_A ≤ √M ‖v‖` with `m, M > 0`.  Contents:
+definite in the sense of (5.6.3), `√m ‖v‖ ≤ ‖v‖_A ≤ √M ‖v‖` with `m, M > 0`.
 
-* the `A`-inner product and `A`-norm of §5.6 (`innerA`, `normA`), identified with the backbone's
-  `energyInner` and `energyNorm` (`Numlib/Analysis/InnerProductSpace/Energy.lean`);
-* the identification of (5.6.3) with `LinearMap.IsSymmetricBoundedBy`
-  (`Numlib/Analysis/InnerProductSpace/Coercive.lean`), and unique solvability of `A u = f`
-  with `‖A⁻¹‖ ≤ 1/m`;
-* the conjugate gradient iteration (5.6.2) as the book writes it (`cgStep`, `cg`), identified
-  with the backbone's `CG.iterate` (`Numlib/Krylov/CG.lean`);
-* Theorem 5.6.1 with the linear rate (5.6.4), the Chebyshev bound (5.6.5), the comparison
-  (5.6.6) of the two rates, and the closing remark that `u_k` minimizes the `A`-norm of the error
-  over `u₀ + 𝒦_k`.
+## Book-specific definitions
+
+* `innerA`, `normA` — the `A`-inner product and `A`-norm of §5.6, identified with the backbone's
+  `energyInner` and `energyNorm` (`Numlib/Analysis/InnerProductSpace/Energy.lean`) by
+  `innerA_eq` and `normA_eq`.
+* `CGState`, `cgStep`, `cg` — the conjugate gradient iteration (5.6.2) as the book writes it,
+  with the explicit residual `r_{k+1} = f - A u_{k+1}`; `cg_eq_CG_iterate` identifies it with the
+  backbone's `CG.iterate` (`Numlib/Krylov/CG.lean`), whose residual obeys the recurrence
+  `r_{k+1} = r_k - α_k A s_k` instead.
+
+## Main results
+
+* `isSymmetricBoundedBy_of_bound` — (5.6.3) is the backbone's `LinearMap.IsSymmetricBoundedBy`
+  (`Numlib/Analysis/InnerProductSpace/Coercive.lean`), the hypothesis every Chebyshev-type
+  estimate takes.
+* `existsUnique_solution` — the setting of §5.6: `A u = f` is uniquely solvable and
+  `‖A⁻¹‖ ≤ 1/m`.
+* `theorem_5_6_1` — Theorem 5.6.1: the iterates converge, at the linear rate (5.6.4)
+  (`equation_5_6_4`).
+* `equation_5_6_5` — the sharper Chebyshev bound (5.6.5), which the book quotes from Patterson,
+  *Iterative Methods for the Solution of a Linear Operator Equation in Hilbert Space — A Survey*,
+  and `equation_5_6_6` (Exercise 5.6.1) that its rate is the better of the two.
+* `normA_error_min` — the closing remark of §5.6: `u_k` minimizes the `A`-norm of the error over
+  `u₀ + 𝒦_k`.
+* `theorem_5_6_2` — Theorem 5.6.2, the superlinear convergence the book takes from Winther,
+  *Some superlinear convergence results for the conjugate gradient method*, for `A = I - K`, with
+  the setting (5.6.7)–(5.6.9) as `isSymmetricBoundedBy_of_one_sub` and the linear rate (5.6.10)
+  as `equation_5_6_10`.
+
+## Conventions
 
 `cg_energyNorm_error_step_le` is the one statement here that is not a book statement: it is the
 per-step Kantorovich contraction in the backbone's own vocabulary, shared with §9.4, and belongs
 in `Numlib/Krylov/Convergence/CG.lean`.
 
-Theorem 5.6.2, Winther's superlinear convergence, is `theorem_5_6_2`, a specialization of the
-backbone's `Krylov.winther`; the setting (5.6.7)–(5.6.9) is `isSymmetricBoundedBy_of_one_sub` and
-the linear rate (5.6.10) for `A = I - K` is `equation_5_6_10`.  The eigen-decomposition of `K` is
-taken as *data* rather than produced from compactness: what Mathlib lacks is not the spectral
-theorem for compact self-adjoint operators, which it has, but the decreasing enumeration of the
-eigenvalues of a compact operator as an `ℕ`-sequence.
+In Theorem 5.6.2 the eigen-decomposition of `K` is taken as *data* rather than produced from
+compactness: what Mathlib lacks is not the spectral theorem for compact self-adjoint operators,
+which it has, but the decreasing enumeration of the eigenvalues of a compact operator as an
+`ℕ`-sequence. The constant is the backbone's `Krylov.wintherRate`, which is sharper than the
+book's `(Δ/δ)^{3/(2k)}` prefactor and has the same limit `0`.
 
-Deferred (`plans/atkinsonhan-ch5.md` §3 item 3 and §4): Theorem 5.6.3, the rates for
-Hilbert–Schmidt and `Cᵖ` kernels, which needs that same enumeration together with kernel
-regularity.
+## Not formalized here
+
+Theorem 5.6.3, the rates for Hilbert–Schmidt and `Cᵖ` kernels, which needs that same enumeration
+together with kernel regularity; see `plans/atkinsonhan-ch5.md` §3 item 3 and §4.
 -/
 
 open Filter Topology
@@ -63,6 +85,7 @@ theorem innerA_eq (A : V →L[ℝ] V) (v u : V) :
 /-- The book's `A`-norm is the backbone's energy norm. -/
 theorem normA_eq (A : V →L[ℝ] V) (v : V) : normA A v = energyNorm (A : V →ₗ[ℝ] V) v := rfl
 
+/-- The `A`-norm is nonnegative, being a square root. -/
 theorem normA_nonneg (A : V →L[ℝ] V) (v : V) : 0 ≤ normA A v := Real.sqrt_nonneg _
 
 end Energy
@@ -161,9 +184,11 @@ noncomputable def cgStep (A : V →L[ℝ] V) (f : V) (st : CGState V) : CGState 
 noncomputable def cg (A : V →L[ℝ] V) (f u₀ : V) (k : ℕ) : CGState V :=
   (cgStep A f)^[k] ⟨u₀, f - A u₀, f - A u₀⟩
 
+/-- The conjugate gradient iteration starts at `u₀` with `r₀ = s₀ = f - A u₀`. -/
 theorem cg_zero (A : V →L[ℝ] V) (f u₀ : V) :
     cg A f u₀ 0 = ⟨u₀, f - A u₀, f - A u₀⟩ := rfl
 
+/-- Each conjugate gradient state is one `cgStep` past the previous one. -/
 theorem cg_succ (A : V →L[ℝ] V) (f u₀ : V) (k : ℕ) :
     cg A f u₀ (k + 1) = cgStep A f (cg A f u₀ k) :=
   Function.iterate_succ_apply' _ _ _
@@ -171,6 +196,8 @@ theorem cg_succ (A : V →L[ℝ] V) (f u₀ : V) (k : ℕ) :
 /-- The book's state read off from the backbone's CG state. -/
 def ofCGState (s : CG.State V) : CGState V := ⟨s.x, s.r, s.p⟩
 
+/-- One step of the book's iteration agrees with one step of the backbone's, provided the
+incoming state carries the residual `r = f - A x`. -/
 private theorem cgStep_ofCGState (A : V →L[ℝ] V) (f : V) {s : CG.State V}
     (hres : s.r = f - A s.x) :
     cgStep A f (ofCGState s) = ofCGState (CG.step (A : V →ₗ[ℝ] V) s) := by
@@ -204,16 +231,19 @@ theorem cg_eq_CG_iterate (A : V →L[ℝ] V) (f u₀ : V) (k : ℕ) :
     rw [cg_succ, ih, CG.iterate_succ,
       cgStep_ofCGState A f (CG.residual_eq (A : V →ₗ[ℝ] V) f u₀ k)]
 
+/-- The book's iterate `u_k` is the backbone's `x`. -/
 theorem cg_u (A : V →L[ℝ] V) (f u₀ : V) (k : ℕ) :
     (cg A f u₀ k).u = (CG.iterate (A : V →ₗ[ℝ] V) f u₀ k).x := by
   rw [cg_eq_CG_iterate]
   rfl
 
+/-- The book's residual `r_k` is the backbone's `r`. -/
 theorem cg_r (A : V →L[ℝ] V) (f u₀ : V) (k : ℕ) :
     (cg A f u₀ k).r = (CG.iterate (A : V →ₗ[ℝ] V) f u₀ k).r := by
   rw [cg_eq_CG_iterate]
   rfl
 
+/-- The book's search direction `s_k` is the backbone's `p`. -/
 theorem cg_s (A : V →L[ℝ] V) (f u₀ : V) (k : ℕ) :
     (cg A f u₀ k).s = (CG.iterate (A : V →ₗ[ℝ] V) f u₀ k).p := by
   rw [cg_eq_CG_iterate]
@@ -284,8 +314,8 @@ theorem equation_5_6_4 (hA : IsSelfAdjoint A) (hm : 0 < m)
   rw [cg_u, cg_u, normA_eq, normA_eq]
   exact cg_energyNorm_error_step_le hm (isSymmetricBoundedBy_of_bound hA hm hbound) hstar k
 
-/-- **Theorem 5.6.1** (Patterson): the conjugate gradient iterates converge to the solution of
-`A u = f`, at the linear rate (5.6.4). -/
+/-- **Theorem 5.6.1.** The conjugate gradient iterates converge to the solution of `A u = f`, at
+the linear rate (5.6.4). -/
 theorem theorem_5_6_1 (hA : IsSelfAdjoint A) (hm : 0 < m) (hM : 0 < M)
     (hbound : ∀ v, Real.sqrt m * ‖v‖ ≤ normA A v ∧ normA A v ≤ Real.sqrt M * ‖v‖)
     (hstar : A ustar = f) :
@@ -328,7 +358,8 @@ theorem theorem_5_6_1 (hA : IsSelfAdjoint A) (hm : 0 < m) (hM : 0 < M)
     (squeeze_zero (fun k => norm_nonneg _) hbnd hlim)
 
 /-- **(5.6.5)**: the Chebyshev bound
-`‖u* - u_k‖_A ≤ 2 ((√M - √m)/(√M + √m))ᵏ ‖u* - u₀‖_A`.  This is the backbone's
+`‖u* - u_k‖_A ≤ 2 ((√M - √m)/(√M + √m))ᵏ ‖u* - u₀‖_A`, which the book quotes from Patterson
+rather than proving.  This is the backbone's
 `Krylov.IsGalerkinIterate.energyNorm_error_le` (`Numlib/Krylov/Convergence/CG.lean`), whose rate
 is written with the condition number `κ = M/m`. -/
 theorem equation_5_6_5 (hA : IsSelfAdjoint A) (hm : 0 < m) (hmM : m ≤ M)
