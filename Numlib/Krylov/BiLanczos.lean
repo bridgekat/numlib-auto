@@ -228,7 +228,8 @@ theorem smul_dualVec_succ {j : ℕ} (h : delta A B v₁ w₁ (j + 1) ≠ 0) :
     simpa using (beta_succ_ne_zero_iff A B v₁ w₁ j).2 h
   rw [dualVec_succ, smul_smul, mul_inv_cancel₀ hb, one_smul]
 
-/-- The normalization of Alg 7.1: off breakdown, `⟪w_{j+1}, v_{j+1}⟫ = 1`. -/
+/-- The normalization of [Saad, *Iterative Methods*][saad2003iterative] Algorithm 7.1: off
+breakdown, `⟪w_{j+1}, v_{j+1}⟫ = 1`. -/
 theorem inner_dualVec_vec_succ {j : ℕ} (h : delta A B v₁ w₁ (j + 1) ≠ 0) :
     inner 𝕜 (dualVec A B v₁ w₁ (j + 1)) (vec A B v₁ w₁ (j + 1)) = 1 := by
   have hz : zeta A B v₁ w₁ j ≠ 0 := fun hc =>

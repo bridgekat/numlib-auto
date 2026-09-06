@@ -307,7 +307,8 @@ section Triangular
 
 variable {N M : ℕ}
 
-/-- One step of Algorithm 1.3: a reflector supported on the rows from `k` on annihilates the
+/-- One step of [Saad, *Iterative Methods*][saad2003iterative] Algorithm 1.3: a reflector
+supported on the rows from `k` on annihilates the
 `k`-th column below the diagonal without disturbing the columns already cleared. -/
 private theorem triangular_step (X : Matrix (Fin N) (Fin M) 𝕜) (k : ℕ)
     {P : Matrix (Fin N) (Fin N) 𝕜} (hP : P ∈ Matrix.unitaryGroup (Fin N) 𝕜)

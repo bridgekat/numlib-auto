@@ -218,7 +218,8 @@ noncomputable def peacemanRachfordSweep (H V : E →L[𝕜] E) (r : ℝ) (b x : 
   Ring.inverse (V + (r : 𝕜) • 1)
     (((r : 𝕜) • 1 - H) (Ring.inverse (H + (r : 𝕜) • 1) (((r : 𝕜) • 1 - V) x + b)) + b)
 
-/-- The two half-steps of Algorithm 4.3, composed, are the affine step of (4.50)–(4.51). -/
+/-- The two half-steps of [Saad, *Iterative Methods*][saad2003iterative] Algorithm 4.3, composed,
+are the affine step of its (4.50)–(4.51). -/
 theorem peacemanRachford_step_eq (H V : E →L[𝕜] E) (r : ℝ) (b x : E) :
     step (peacemanRachford H V r) (peacemanRachfordConst H V r b) x
       = peacemanRachfordSweep H V r b x := by
