@@ -1,4 +1,5 @@
 import Numlib.Analysis.Calculus.MeanValue
+import Numlib.Analysis.Convex.Continuity
 import Numlib.Analysis.Convex.Gateaux
 import Numlib.Analysis.Convex.SaddlePoint
 import Numlib.Analysis.Convex.StrictConvexSpace

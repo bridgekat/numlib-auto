@@ -19,39 +19,7 @@ id = "exercise_11_4_2"
 id = "exercise_11_4_3"
 
 [[node]]
-id = "theorem_11_4_7"
+id = "theorem_11_4_6"
 
 [[node]]
-id = "theorem_11_4_6"
-kind = "theorem"
-desc = '''Theorem 11.4.6: convergence of the method of numerical integration (11.4.25). If the
-`V_h` admit maps `r_h : U → V_h` from a dense `U ⊆ V` with `r_h v → v`, and the `j_h` are convex,
-lower semicontinuous, uniformly proper, satisfy `liminf j_h(v_h) ≥ j(v)` along weakly convergent
-`v_h` and `j_h(r_h v) → j(v)`, then `‖u - u_h‖ → 0`.'''
-deps = ["IsVariationalInequalitySolution", "theorem_11_4_1",
-  "tendsto_of_isVariationalInequalitySolution"]
-wrong = '''Not a defect of the statement, which is the book's and is true: it is unreachable from
-the backbone as this plan supposes. Both suggested dependencies carry **one** functional `j`,
-shared by the continuous problem and by every discrete problem —
-`tendsto_of_isVariationalInequalitySolution` takes `hu : IsVariationalInequalitySolution A j f K u`
-and `huh : ∀ n, IsVariationalInequalitySolution A j f (Kh n) (uh n)` with the same `j` — whereas
-Theorem 11.4.6 is exactly the theorem in which the discrete functional `j_h` varies with `h`. No
-choice of `K_h` encodes a varying `j_h`, so the node cannot be a specialization of anything that
-exists.
-
-What `Numlib/Variational/Inequality/Approximation` would have to gain is one theorem: for
-`u` solving over `K` with `j` and `u_h` solving over `K_h` with `j_h`, with (a) `K_h` internal
-(`K_h ⊆ K`), (b) a uniform affine minorant `l v + b ≤ j_h v` on `K_h` (uniform properness), (c)
-weak sequential lower semicontinuity of the family, `j z ≤ liminf j_h(v_h)` along weakly convergent
-`v_h ∈ K_h`, and (d) an approximating family `r_h v ∈ K_h` with `r_h v → v` and
-`j_h (r_h v) → j v` for `v` in a dense set, the conclusion `‖u - u_h‖ → 0`. Its proof is the
-proof of `tendsto_of_isVariationalInequalitySolution` with three changes: the boundedness step
-takes its lower bound on `j_h(u_h)` from (b) rather than from an affine minorant of `j`; the
-weak-limit step uses (c) as a hypothesis in place of the private
-`eventually_lt_of_weak_tendsto`; and the final norm-convergence step uses (c) and (d) in place
-of the continuity of `j`.
-
-A cheaper partial result is available now and was not stated: **under the extra hypothesis
-(11.4.26)** `j(v_h) ≤ j_h(v_h)`, convergence follows from `theorem_11_4_7` plus density and the
-continuity of `j`, with no weak compactness at all — but (11.4.26) is Theorem 11.4.7's hypothesis,
-not Theorem 11.4.6's.'''
+id = "theorem_11_4_7"

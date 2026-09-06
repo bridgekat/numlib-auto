@@ -19,5 +19,9 @@ id = "norm_sub_le_of_isVariationalInequalitySolution_of_le"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 11.4.7"
 
 [[node]]
+id = "tendsto_of_isVariationalInequalitySolution_of_mosco"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 11.4.6"
+
+[[node]]
 id = "norm_sub_le_of_regularization"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 11.4.3, (11.4.20)"

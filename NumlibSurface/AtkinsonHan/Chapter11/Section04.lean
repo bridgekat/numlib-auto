@@ -1,3 +1,4 @@
+import Numlib.Analysis.Convex.Continuity
 import Numlib.Variational.Inequality.Approximation
 import NumlibSurface.AtkinsonHan.Chapter11.Section03
 
@@ -17,6 +18,8 @@ solvability is Theorem 11.3.1 again.  What the section adds is the analysis of t
   internal-approximation form that follows it;
 * `exercise_11_4_2` — convergence of internal approximations, with no weak compactness;
 * `exercise_11_4_3` — the a priori bound (11.4.20) for a regularized functional;
+* `theorem_11_4_6` — convergence of the method of numerical integration (11.4.25), the one result
+  of the section whose discrete functional `j_h` varies with `h`;
 * `theorem_11_4_7` — the error bound (11.4.27) when the discrete functional dominates `j`.
 
 `residual` is the book's `R(v, w)` of the display preceding (11.4.7), with the functional at the
@@ -27,19 +30,24 @@ two arguments kept separate so that the same definition serves the `R_h` of (11.
 * **The estimates are squared.**  Falk's lemma is `(c₀/2) ‖u - u_h‖² ≤ R(v, u_h) + R(v_h, u) +
   (M²/(2c₀)) ‖u - v_h‖²`, which is what its proof establishes; the book's square-rooted form is
   `theorem_11_4_2_of_subset`, with the constant `max (M/c₀) √(2/c₀)` written out.
-* **The weak-closedness hypothesis of Theorem 11.4.1 is indexed by an arbitrary reindexing
+* **The weak-limit hypotheses of Theorems 11.4.1 and 11.4.6 are indexed by an arbitrary reindexing
   `σ : ℕ → ℕ`**, because the proof runs through `tendsto_of_subseq_tendsto` and so tests the
   hypothesis along a subsequence.  Boundedness of the discrete solutions is not a separate
   hypothesis: it falls out of Falk's lemma at `v = u` together with an affine minorant of `j`.
 * **Exercise 11.4.2 asks for the subspaces to be nested.**  "The union of the `V_h` is dense" does
   not by itself produce, for each `n`, a point of `V_h n` near `u`; monotonicity does, and the
   approximating sequence is then the sequence of best approximations, whose errors are antitone.
+* **The `liminf` of Theorem 11.4.6 is written as an eventual strict inequality**, `∀ α < j v, the
+  values j_h(v_h) are eventually above α`.  Over `ℝ`, `Filter.liminf` of a sequence unbounded below
+  is junk rather than `-∞`, so the inequality `liminf j_h(v_h) ≥ j(v)` spelled with it would be a
+  different — and, on such a sequence, false — statement; the eventual form is the one the proof
+  uses and the one that carries no hidden boundedness.
+* **Theorem 11.4.6 drops the hypotheses of it that only make the discrete problem solvable**:
+  the finite dimensionality of the `V_h` and the convexity and lower semicontinuity of the `j_h`
+  are what Theorem 11.3.1 needs to produce `u_h`, and the theorem takes the `u_h` as given.
 
 ## Not formalized
 
-Theorem 11.4.6, the convergence of the method of numerical integration (11.4.25): see the group
-file for the obstruction, which is that the backbone's convergence theorem carries **one**
-functional `j` shared by the continuous and the discrete problem, while Theorem 11.4.6 varies it.
 Theorem 11.4.5 and Exercise 11.4.4 (the Lagrange-multiplier form of the simplified friction
 problem) live on `H^{1/2}(Γ)`; Examples 11.4.3 and 11.4.4 and the analysis of (11.4.29) are finite
 element interpolation estimates on a polygonal domain; Exercises 11.4.1 and 11.4.5 name a domain
@@ -263,6 +271,47 @@ theorem exercise_11_4_3 {jeps : V → ℝ} {c₁ ε : ℝ} {ueps : V} (hc₀ : 0
     (hueps : IsVariationalInequalitySolution A jeps f univ ueps)
     (hreg : ∀ v : V, |jeps v - j v| ≤ c₁ * ε) : ‖u - ueps‖ ≤ Real.sqrt (2 * c₁ * ε / c₀) :=
   norm_sub_le_of_regularization hc₀ (isStronglyMonotoneWith_of hmono) hu hueps hreg
+
+/-! ### Theorem 11.4.6: the method of numerical integration -/
+
+/-- **Theorem 11.4.6**, convergence of the method of numerical integration (11.4.25).  The discrete
+problem is posed on the whole finite element space `V_h` and replaces the non-differentiable term
+`j` of (11.4.11) by a functional `j_h` obtained from a quadrature rule, so the functional varies
+with `h`.  Assume
+
+* `{V_h}` are subspaces carrying maps `r_h : U → V_h` on a dense set `U ⊆ V` with `r_h v → v`;
+* the family `{j_h}` is *uniformly proper in h*: there are `ℓ₀ ∈ V'` and `c₁ ∈ ℝ` with
+  `ℓ₀(v_h) + c₁ ≤ j_h(v_h)` for every `v_h ∈ V_h` and every `h`;
+* `v_h ∈ V_h` with `v_h ⇀ v` implies `liminf j_h(v_h) ≥ j(v)`;
+* `j_h(r_h v) → j(v)` for every `v ∈ U`.
+
+Then `‖u - u_h‖ → 0`.
+
+This is `tendsto_of_isVariationalInequalitySolution_of_mosco` at `K = V`: the backbone convergence
+theorem for an internal approximation whose functional varies, whose two hypotheses on the family
+are the weak `liminf` bound above and the recovery sequences `r_h v`, that is, Mosco convergence
+`j_h → j`.  Continuity of `j`, which the backbone theorem uses to pass from the dense set `U` to
+`V`, is not an extra hypothesis: `j` is real-valued, convex and lower semicontinuous on a Hilbert
+space, and `ConvexOn.continuous_of_lowerSemicontinuous` makes those imply it. -/
+theorem theorem_11_4_6 {jh : ℕ → V → ℝ} {uh : ℕ → V} {U : Set V} {Vh : ℕ → Submodule ℝ V}
+    {r : ℕ → V → V} (hc₀ : 0 < c₀) (hM : 0 ≤ M) (hmono : Chapter05.StronglyMonotoneWith A c₀)
+    (hlip : ∀ v₁ v₂ : V, ‖A v₁ - A v₂‖ ≤ M * ‖v₁ - v₂‖)
+    (hjcv : ConvexOn ℝ univ j) (hjlsc : LowerSemicontinuous j)
+    (hproper : ∃ (l₀ : V →L[ℝ] ℝ) (c₁ : ℝ), ∀ n, ∀ vh ∈ (Vh n : Set V), l₀ vh + c₁ ≤ jh n vh)
+    (hliminf : ∀ (σ : ℕ → ℕ) (vh : ℕ → V) (v : V), (∀ k, vh k ∈ (Vh (σ k) : Set V)) →
+      (∀ y : V, Tendsto (fun k => ⟪vh k, y⟫_ℝ) atTop (𝓝 ⟪v, y⟫_ℝ)) →
+      ∀ α < j v, ∀ᶠ k in atTop, α < jh (σ k) (vh k))
+    (hU : Dense U) (hrmem : ∀ v ∈ U, ∀ n, r n v ∈ (Vh n : Set V))
+    (hr : ∀ v ∈ U, Tendsto (fun n => r n v) atTop (𝓝 v))
+    (hjr : ∀ v ∈ U, Tendsto (fun n => jh n (r n v)) atTop (𝓝 (j v)))
+    (hu : IsVariationalInequalitySolution A j f univ u)
+    (huh : ∀ n, IsVariationalInequalitySolution A (jh n) f (Vh n : Set V) (uh n)) :
+    Tendsto uh atTop (𝓝 u) :=
+  tendsto_of_isVariationalInequalitySolution_of_mosco hc₀ (isStronglyMonotoneWith_of hmono)
+    ((Chapter05.lipschitzWith_toNNReal_iff hM).1 hlip) convex_univ isClosed_univ hjcv
+    (ConvexOn.continuous_of_lowerSemicontinuous hjcv hjlsc) (fun _ => subset_univ _) hproper
+    hliminf (fun v _ => hU v)
+    (fun v hv => ⟨fun n => r n v, fun n => hrmem v hv n, hr v hv, hjr v hv⟩) hu huh
 
 /-! ### Theorem 11.4.7: a discrete functional dominating `j` -/
 

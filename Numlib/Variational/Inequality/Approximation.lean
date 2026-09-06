@@ -41,6 +41,11 @@ module is a specialization.
   the *test* point.
 * `norm_sub_le_of_isVariationalInequalitySolution_of_le`: replacing `j` on the discrete set by a
   larger `j_h` costs one insertion of `j u_h ≤ j_h u_h`.
+* `tendsto_of_isVariationalInequalitySolution_of_mosco`: the only convergence theorem here whose
+  discrete functional *varies* with the discretization, as a quadrature approximation of `j` does.
+  Internal approximation again, and the two hypotheses that replace the single `j` are Mosco
+  convergence of the family — a weak liminf bound and recovery sequences over a dense set — together
+  with one affine minorant serving the whole family.
 * `norm_sub_le_of_regularization`: two problems on the whole space whose functionals differ by `c₁
   ε` have solutions within `√(2 c₁ ε / c)`.
 
@@ -56,6 +61,15 @@ Exercises 11.4.2 and 11.4.3 — and the error bound is due to [falk1974error].
 open Filter Set Topology
 
 variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
+
+/-- `LipschitzWith L.toNNReal A` truncates a negative constant to zero, and the square of the
+truncation is below the square of the constant either way.  This is the step that lets an estimate
+stated with `L ^ 2` be proved from a `LipschitzWith L.toNNReal` hypothesis. -/
+private theorem coe_toNNReal_sq_le (L : ℝ) : ((L.toNNReal : ℝ)) ^ 2 ≤ L ^ 2 := by
+  rcases le_or_gt 0 L with hL | hL
+  · rw [Real.coe_toNNReal L hL]
+  · rw [Real.toNNReal_of_nonpos hL.le]
+    simpa using sq_nonneg L
 
 /-! ### The algebraic core -/
 
@@ -122,14 +136,10 @@ theorem norm_sub_le_of_isVariationalInequalitySolution (hc : 0 < c)
     c / 2 * ‖u - uh‖ ^ 2 ≤
       (inner ℝ (A u) (v - uh) + j v - j uh - inner ℝ f (v - uh))
         + (inner ℝ (A u) (vh - u) + j vh - j u - inner ℝ f (vh - u))
-        + L ^ 2 / (2 * c) * ‖u - vh‖ ^ 2 := by
-  refine sq_le_of_le_add_mul (M := (L.toNNReal : ℝ)) hc ?_ ?_
-  · rcases le_or_gt 0 L with hL | hL
-    · rw [Real.coe_toNNReal L hL]
-    · rw [Real.toNNReal_of_nonpos hL.le]
-      simpa using sq_nonneg L
-  · exact (varIneq_core hmono hu huh hv hvh).trans
-      (by linarith [inner_sub_apply_le hlip u uh (u - vh)])
+        + L ^ 2 / (2 * c) * ‖u - vh‖ ^ 2 :=
+  sq_le_of_le_add_mul (M := (L.toNNReal : ℝ)) hc (coe_toNNReal_sq_le L)
+    ((varIneq_core hmono hu huh hv hvh).trans
+      (by linarith [inner_sub_apply_le hlip u uh (u - vh)]))
 
 /-- **The internal-approximation form of [falk1974error] lemma.**  When the discrete solution lies
 in `K` — in particular when `K_h ⊆ K` — the first residual of
@@ -166,14 +176,10 @@ theorem norm_sub_le_of_isVariationalInequalitySolution_of_le (hc : 0 < c)
     c / 2 * ‖u - uh‖ ^ 2 ≤
       (inner ℝ (A u) (vh - u) + jh vh - j u - inner ℝ f (vh - u))
         + L ^ 2 / (2 * c) * ‖u - vh‖ ^ 2 := by
-  refine sq_le_of_le_add_mul (M := (L.toNNReal : ℝ)) hc ?_ ?_
-  · rcases le_or_gt 0 L with hL | hL
-    · rw [Real.coe_toNNReal L hL]
-    · rw [Real.toNNReal_of_nonpos hL.le]
-      simpa using sq_nonneg L
-  · have hcore := varIneq_core hmono hu huh huhK hvh
-    simp only [sub_self, inner_zero_right] at hcore
-    linarith [inner_sub_apply_le hlip u uh (u - vh)]
+  refine sq_le_of_le_add_mul (M := (L.toNNReal : ℝ)) hc (coe_toNNReal_sq_le L) ?_
+  have hcore := varIneq_core hmono hu huh huhK hvh
+  simp only [sub_self, inner_zero_right] at hcore
+  linarith [inner_sub_apply_le hlip u uh (u - vh)]
 
 /-- **[han2009theoretical], Exercise 11.4.3 and (11.4.20).**  If a regularized functional satisfies
 `|j_ε v - j v| ≤ c₁ ε` everywhere, then the solution of the regularized inequality on the whole
@@ -205,27 +211,42 @@ theorem norm_sub_le_of_regularization {jeps : V → ℝ} {c₁ ε : ℝ} (hc : 0
 end Core
 
 /-- The part of [falk1974error] bound that does not see the discrete solution — the residual of the
-continuous solution at the approximating point, together with the Young term — tends to zero along
-any sequence `w n → u` on which the values of `j` converge.  Both convergence theorems below run the
-same argument on it, differing only in how they get `hjw`: the internal one from continuity of `j`
-on `K`, the external one from continuity on the whole space. -/
+continuous solution at the approximating point, together with the Young term — converges along any
+sequence `w n → v` on which the values of the functionals converge, to the same expression at `v`.
+The functional is allowed to vary with `n`, which is what
+`tendsto_of_isVariationalInequalitySolution_of_mosco` needs; `tendsto_falk_majorant` is the case
+`v = u` and a fixed `j`, where the limit is zero. -/
+private theorem tendsto_falk_majorant_of_tendsto {A : V → V} {j : V → ℝ} {jh : ℕ → V → ℝ}
+    {f u v : V} {c L : ℝ} {w : ℕ → V} (hw : Tendsto w atTop (𝓝 v))
+    (hjw : Tendsto (fun n => jh n (w n)) atTop (𝓝 (j v))) :
+    Tendsto (fun n => (inner ℝ (A u) (w n - u) + jh n (w n) - j u - inner ℝ f (w n - u))
+        + L ^ 2 / (2 * c) * ‖u - w n‖ ^ 2) atTop
+      (𝓝 ((inner ℝ (A u) (v - u) + j v - j u - inner ℝ f (v - u))
+        + L ^ 2 / (2 * c) * ‖u - v‖ ^ 2)) := by
+  have hwu : Tendsto (fun n => w n - u) atTop (𝓝 (v - u)) :=
+    hw.sub (tendsto_const_nhds (x := u))
+  have hinner : ∀ y : V, Tendsto (fun n => inner ℝ y (w n - u)) atTop (𝓝 (inner ℝ y (v - u))) :=
+    fun y => by
+      have hcont : Continuous fun x : V => inner ℝ y x :=
+        continuous_inner.comp (continuous_const.prodMk continuous_id)
+      simpa [Function.comp_def] using (hcont.tendsto (v - u)).comp hwu
+  have hnormw : Tendsto (fun n => ‖u - w n‖ ^ 2) atTop (𝓝 (‖u - v‖ ^ 2)) := by
+    have h1 : Tendsto (fun n => ‖u - w n‖) atTop (𝓝 ‖u - v‖) :=
+      ((tendsto_const_nhds (x := u) (f := atTop (α := ℕ))).sub hw).norm
+    exact h1.pow 2
+  have h := (((hinner (A u)).add hjw).sub (tendsto_const_nhds (x := j u))).sub (hinner f)
+  exact h.add (hnormw.const_mul (L ^ 2 / (2 * c)))
+
+/-- The majorant of `tendsto_falk_majorant_of_tendsto` at the continuous solution itself: it tends
+to zero along any sequence `w n → u` on which the values of `j` converge.  Both convergence theorems
+below run the same argument on it, differing only in how they get `hjw`: the internal one from
+continuity of `j` on `K`, the external one from continuity on the whole space. -/
 private theorem tendsto_falk_majorant {A : V → V} {j : V → ℝ} {f u : V} {c L : ℝ} {w : ℕ → V}
     (hw : Tendsto w atTop (𝓝 u)) (hjw : Tendsto (fun n => j (w n)) atTop (𝓝 (j u))) :
     Tendsto (fun n => (inner ℝ (A u) (w n - u) + j (w n) - j u - inner ℝ f (w n - u))
       + L ^ 2 / (2 * c) * ‖u - w n‖ ^ 2) atTop (𝓝 0) := by
-  have hwu : Tendsto (fun n => w n - u) atTop (𝓝 0) := by
-    simpa using hw.sub (tendsto_const_nhds (x := u))
-  have hinner : ∀ y : V, Tendsto (fun n => inner ℝ y (w n - u)) atTop (𝓝 0) := fun y => by
-    have hcont : Continuous fun x : V => inner ℝ y x :=
-      continuous_inner.comp (continuous_const.prodMk continuous_id)
-    simpa [Function.comp_def] using (hcont.tendsto (0 : V)).comp hwu
-  have hnormw : Tendsto (fun n => ‖u - w n‖ ^ 2) atTop (𝓝 0) := by
-    have h1 : Tendsto (fun n => ‖u - w n‖) atTop (𝓝 0) := by
-      have h := (tendsto_const_nhds (x := u) (f := atTop (α := ℕ))).sub hw
-      simpa using h.norm
-    simpa using h1.pow 2
-  have h := (((hinner (A u)).add hjw).sub (tendsto_const_nhds (x := j u))).sub (hinner f)
-  simpa using h.add (hnormw.const_mul (L ^ 2 / (2 * c)))
+  simpa using tendsto_falk_majorant_of_tendsto (A := A) (jh := fun _ => j) (f := f) (u := u)
+    (c := c) (L := L) hw hjw
 
 /-! ### Convergence of internal approximations -/
 
@@ -577,3 +598,311 @@ theorem tendsto_of_isVariationalInequalitySolution (hc : 0 < c)
   rwa [Real.sqrt_sq (norm_nonneg _), Real.sqrt_sq hb.le] at hsq
 
 end External
+
+/-! ### Convergence when the discrete functional varies -/
+
+section Varying
+
+variable [CompleteSpace V] {A : V → V} {j : V → ℝ} {jh : ℕ → V → ℝ} {f : V} {K U : Set V}
+  {Kh : ℕ → Set V} {c L : ℝ} {u : V} {uh : ℕ → V}
+
+/-- **Convergence of an internal approximation whose functional varies with the discretization.**
+Every convergence theorem above carries one functional `j`, shared by the continuous problem and by
+all the discrete ones.  Here the discrete problem number `n` carries its own convex term `j_h n`, as
+it does whenever the term `j` of the continuous problem is evaluated by a quadrature rule.  Assume
+`A` is `c`-strongly monotone and `L`-Lipschitz, `K` is convex and closed, `j` is convex on `K` and
+continuous, and
+
+* the approximation is *internal*: `K_h n ⊆ K`;
+* the family `j_h` is *uniformly proper*: one continuous affine minorant `lin + b` lies below every
+  `j_h n` on `K_h n`;
+* the family is *weakly sequentially lower semicontinuous*: whenever `v k ∈ K_h (σ k)` converges
+  weakly to `z`, every `α < j z` is eventually below `j_h (σ k) (v k)`;
+* the discrete sets carry *recovery sequences* over a set `U` whose closure contains `K`: for every
+  `v ∈ U` there are `w n ∈ K_h n` with `w n → v` **and** `j_h n (w n) → j v`.
+
+Then the discrete solutions converge to `u` in norm.
+
+The last two hypotheses are Mosco convergence of the family to `j` [mosco1969convergence] — a weak
+liminf bound and a strong recovery sequence.  The liminf is written as an eventual strict
+inequality, `∀ α < j z, ∀ᶠ k, α < j_h (σ k) (v k)`, which is what the proof consumes and which
+presumes no boundedness of the values; over `ℝ` a `Filter.liminf` would be junk on a sequence
+unbounded below.  Taking `j_h n = j` and `U = K` returns
+`tendsto_of_isVariationalInequalitySolution` for an internal approximation, a convex continuous
+functional being weakly sequentially lower semicontinuous.
+
+The proof is that of `tendsto_of_isVariationalInequalitySolution` with three substitutions.  The
+lower bound on `j_h n (u_h n)` in the boundedness step comes from the uniform minorant of the family
+rather than from an affine minorant of `j`.  The weak lower semicontinuity is the hypothesis on the
+family rather than the private `eventually_lt_of_weak_tendsto` for `j`.  And, because a recovery
+sequence is available only over `U` while the solution `u` need not lie in `U`, the two steps that
+approximate the continuous solution now pass through `U` by a limit: Minty's inequality for the weak
+limit is proved on `U` and extended to `K` by continuity of `A` and `j`, and the final estimate is
+run at a point of `U` where the residual of `u` is below a prescribed `ε`.  Continuity of `j` is
+therefore still used, and used only for those two limits; on a complete space it is not an extra
+assumption, a real-valued convex lower semicontinuous functional being continuous automatically. -/
+theorem tendsto_of_isVariationalInequalitySolution_of_mosco (hc : 0 < c)
+    (hmono : IsStronglyMonotoneWith ℝ A c) (hlip : LipschitzWith L.toNNReal A)
+    (hKcv : Convex ℝ K) (hKcl : IsClosed K) (hjcv : ConvexOn ℝ K j) (hjc : Continuous j)
+    (hsub : ∀ n, Kh n ⊆ K)
+    (hproper : ∃ (lin : V →L[ℝ] ℝ) (b : ℝ), ∀ n, ∀ v ∈ Kh n, lin v + b ≤ jh n v)
+    (hjlsc : ∀ (σ : ℕ → ℕ) (v : ℕ → V) (z : V), (∀ k, v k ∈ Kh (σ k)) →
+      (∀ y : V, Tendsto (fun k => inner ℝ (v k) y) atTop (𝓝 (inner ℝ z y))) →
+      ∀ α < j z, ∀ᶠ k in atTop, α < jh (σ k) (v k))
+    (hU : K ⊆ closure U)
+    (happrox : ∀ v ∈ U, ∃ w : ℕ → V, (∀ n, w n ∈ Kh n) ∧ Tendsto w atTop (𝓝 v) ∧
+      Tendsto (fun n => jh n (w n)) atTop (𝓝 (j v)))
+    (hu : IsVariationalInequalitySolution A j f K u)
+    (huh : ∀ n, IsVariationalInequalitySolution A (jh n) f (Kh n) (uh n)) :
+    Tendsto uh atTop (𝓝 u) := by
+  have hAcont : Continuous A := hlip.continuous
+  have hAlip : ∀ x y : V, ‖A x - A y‖ ≤ (L.toNNReal : ℝ) * ‖x - y‖ := fun x y => by
+    simpa only [dist_eq_norm] using hlip.dist_le_mul x y
+  have hmono0 : IsStronglyMonotoneWith ℝ A 0 := IsStronglyMonotoneWith.mono hmono hc.le
+  have hmono0' : ∀ x y : V, (0 : ℝ) ≤ inner ℝ (A x - A y) (x - y) := fun x y => by
+    simpa using hmono0 x y
+  obtain ⟨lin, bb, hminor⟩ := hproper
+  -- [falk1974error] bound, the continuous inequality tested at `v = u`
+  have hfalk : ∀ (n : ℕ) (vh : V), vh ∈ Kh n → c / 2 * ‖u - uh n‖ ^ 2 ≤
+      (inner ℝ (A u) (u - uh n) - inner ℝ f (u - uh n)) + (j u - jh n (uh n))
+        + (inner ℝ (A u) (vh - u) + jh n vh - j u - inner ℝ f (vh - u))
+        + L ^ 2 / (2 * c) * ‖u - vh‖ ^ 2 := fun n vh hvh =>
+    sq_le_of_le_add_mul (M := (L.toNNReal : ℝ)) hc (coe_toNNReal_sq_le L)
+      ((varIneq_core hmono hu (huh n) hu.1 hvh).trans
+        (by linarith [inner_sub_apply_le hlip u (uh n) (u - vh)]))
+  -- the residual of the continuous solution at a test point, together with the Young term
+  obtain ⟨G, hGdef⟩ : ∃ G : V → ℝ, ∀ x, G x =
+      (inner ℝ (A u) (x - u) + j x - j u - inner ℝ f (x - u))
+        + L ^ 2 / (2 * c) * ‖u - x‖ ^ 2 := ⟨_, fun _ => rfl⟩
+  have hGu : G u = 0 := by simp [hGdef]
+  have hGcont : Continuous G := by
+    have hin : ∀ y : V, Continuous fun x : V => inner ℝ y (x - u) := fun y =>
+      continuous_inner.comp (continuous_const.prodMk (continuous_id.sub continuous_const))
+    have hG : G = fun x : V => (inner ℝ (A u) (x - u) + j x - j u - inner ℝ f (x - u))
+        + L ^ 2 / (2 * c) * ‖u - x‖ ^ 2 := funext hGdef
+    rw [hG]
+    exact ((((hin (A u)).add hjc).sub continuous_const).sub (hin f)).add
+      (((continuous_const.sub continuous_id).norm.pow 2).const_mul _)
+  -- along a recovery sequence the majorant converges to the residual at its limit point
+  have hmaj : ∀ v ∈ U, ∃ w : ℕ → V, (∀ n, w n ∈ Kh n) ∧
+      Tendsto (fun n => (inner ℝ (A u) (w n - u) + jh n (w n) - j u - inner ℝ f (w n - u))
+        + L ^ 2 / (2 * c) * ‖u - w n‖ ^ 2) atTop (𝓝 (G v)) := by
+    intro v hv
+    obtain ⟨w, hwmem, hw, hjw⟩ := happrox v hv
+    refine ⟨w, hwmem, ?_⟩
+    rw [hGdef v]
+    exact tendsto_falk_majorant_of_tendsto hw hjw
+  -- the discrete solutions are bounded, by one recovery sequence and the uniform minorant
+  obtain ⟨v₀, hv₀⟩ : U.Nonempty := closure_nonempty_iff.1 ⟨u, hU hu.1⟩
+  obtain ⟨w₀, hw₀mem, hw₀⟩ := hmaj v₀ hv₀
+  obtain ⟨Ψ, hΨdef⟩ : ∃ Ψ : ℕ → ℝ, ∀ n, Ψ n =
+      (inner ℝ (A u) (w₀ n - u) + jh n (w₀ n) - j u - inner ℝ f (w₀ n - u))
+        + L ^ 2 / (2 * c) * ‖u - w₀ n‖ ^ 2 := ⟨_, fun _ => rfl⟩
+  have hΨlim : Tendsto Ψ atTop (𝓝 (G v₀)) :=
+    Filter.Tendsto.congr (fun n => (hΨdef n).symm) hw₀
+  have hC₁0 : (0 : ℝ) ≤ ‖A u - f‖ + ‖lin‖ := by positivity
+  have hbnd : ∀ n, c / 2 * ‖u - uh n‖ ^ 2
+      ≤ (‖A u - f‖ + ‖lin‖) * ‖u - uh n‖ + ((j u - lin u - bb) + Ψ n) := by
+    intro n
+    have h := hfalk n (w₀ n) (hw₀mem n)
+    have h1 : inner ℝ (A u) (u - uh n) - inner ℝ f (u - uh n) ≤ ‖A u - f‖ * ‖u - uh n‖ := by
+      rw [← inner_sub_left]
+      exact real_inner_le_norm _ _
+    have h2 : -jh n (uh n) ≤ lin (u - uh n) - lin u - bb := by
+      have h3 := hminor n (uh n) (huh n).1
+      rw [map_sub]
+      linarith
+    have h4 : lin (u - uh n) ≤ ‖lin‖ * ‖u - uh n‖ :=
+      le_trans (le_abs_self _) (by simpa [Real.norm_eq_abs] using lin.le_opNorm (u - uh n))
+    rw [hΨdef]
+    linarith
+  obtain ⟨C₂, hC₂⟩ := (Filter.Tendsto.const_add (j u - lin u - bb) hΨlim).bddAbove_range
+  have hGle : ∀ n, (j u - lin u - bb) + Ψ n ≤ max C₂ 0 :=
+    fun n => le_trans (hC₂ ⟨n, rfl⟩) (le_max_left _ _)
+  have hC₂0 : (0 : ℝ) ≤ max C₂ 0 := le_max_right _ _
+  obtain ⟨D, hDdef⟩ : ∃ D : ℝ, D = max 1 (2 * ((‖A u - f‖ + ‖lin‖) + max C₂ 0) / c) := ⟨_, rfl⟩
+  have hD1 : (1 : ℝ) ≤ D := hDdef ▸ le_max_left _ _
+  have hDbnd : ∀ n, ‖u - uh n‖ ≤ D := by
+    intro n
+    rcases le_or_gt (‖u - uh n‖) 1 with h | h
+    · exact h.trans hD1
+    · rw [hDdef]
+      refine le_max_of_le_right ?_
+      rw [le_div_iff₀ hc]
+      have hd0 : (0 : ℝ) < ‖u - uh n‖ := lt_trans zero_lt_one h
+      have hkey := hbnd n
+      have hG := hGle n
+      have hstep : ‖u - uh n‖ * (c / 2 * ‖u - uh n‖)
+          ≤ ‖u - uh n‖ * ((‖A u - f‖ + ‖lin‖) + max C₂ 0) := by
+        nlinarith [mul_nonneg hC₂0 (le_of_lt (sub_pos.2 h))]
+      have hfin := le_of_mul_le_mul_left hstep hd0
+      linarith
+  have hUB : ∀ n, ‖uh n‖ ≤ ‖u‖ + D := by
+    intro n
+    have h : ‖uh n‖ = ‖u - (u - uh n)‖ := by congr 1; abel
+    rw [h]
+    exact le_trans (norm_sub_le _ _) (by linarith [hDbnd n])
+  -- every subsequence has a further subsequence converging in norm
+  refine tendsto_of_subseq_tendsto fun ns hns => ?_
+  obtain ⟨σ, z, hσ, hweakconv⟩ :=
+    exists_subseq_weak_tendsto (𝕜 := ℝ) (u := fun k => uh (ns k)) (C := ‖u‖ + D)
+      (fun k => hUB (ns k))
+  refine ⟨σ, ?_⟩
+  have hmtop : Tendsto (fun k => ns (σ k)) atTop atTop := by
+    simpa [Function.comp_def] using hns.comp hσ.tendsto_atTop
+  have hzK : z ∈ K :=
+    mem_of_weak_tendsto hKcv hKcl (fun k => hsub _ (huh (ns (σ k))).1) hweakconv
+  -- the weak limit satisfies Minty's form of the inequality, first at the points of `U`
+  have hzmintyU : ∀ v ∈ U, inner ℝ f (v - z) ≤ inner ℝ (A v) (v - z) + j v - j z := by
+    intro v hv
+    obtain ⟨p, hpmem, hp, hjp0⟩ := happrox v hv
+    obtain ⟨E, hEdef⟩ : ∃ E : ℕ → ℝ, ∀ n, E n =
+        inner ℝ (A v) (p n - uh n) - inner ℝ f (p n - uh n) + jh n (p n)
+          + ‖A (p n) - A v‖ * ‖p n - uh n‖ := ⟨_, fun _ => rfl⟩
+    have hjle : ∀ n, jh n (uh n) ≤ E n := by
+      intro n
+      have h1 := (huh n).2 (p n) (hpmem n)
+      have h2 := hmono0' (p n) (uh n)
+      have h3 : inner ℝ (A (p n) - A v) (p n - uh n) ≤ ‖A (p n) - A v‖ * ‖p n - uh n‖ :=
+        real_inner_le_norm _ _
+      rw [inner_sub_left] at h2 h3
+      rw [hEdef]
+      linarith
+    have hpm : Tendsto (fun k => p (ns (σ k))) atTop (𝓝 v) := by
+      simpa [Function.comp_def] using hp.comp hmtop
+    have hpair : ∀ y : V, Tendsto (fun k => inner ℝ y (p (ns (σ k)) - uh (ns (σ k)))) atTop
+        (𝓝 (inner ℝ y (v - z))) := by
+      intro y
+      have hcont : Continuous fun x : V => inner ℝ y x :=
+        continuous_inner.comp (continuous_const.prodMk continuous_id)
+      have h1 : Tendsto (fun k => inner ℝ y (p (ns (σ k)))) atTop (𝓝 (inner ℝ y v)) := by
+        simpa [Function.comp_def] using (hcont.tendsto v).comp hpm
+      have h2 := tendsto_inner_of_weak hweakconv y
+      have h3 : (fun k => inner ℝ y (p (ns (σ k)) - uh (ns (σ k))))
+          = fun k => inner ℝ y (p (ns (σ k))) - inner ℝ y (uh (ns (σ k))) := by
+        funext k
+        rw [inner_sub_right]
+      have h4 : inner ℝ y (v - z) = inner ℝ y v - inner ℝ y z := inner_sub_right _ _ _
+      rw [h3, h4]
+      exact h1.sub h2
+    have hjp : Tendsto (fun k => jh (ns (σ k)) (p (ns (σ k)))) atTop (𝓝 (j v)) := by
+      simpa [Function.comp_def] using hjp0.comp hmtop
+    have hq : Tendsto (fun k => ‖p (ns (σ k)) - v‖) atTop (𝓝 0) := by
+      have h := hpm.sub (tendsto_const_nhds (x := v))
+      simpa using h.norm
+    have herr : Tendsto
+        (fun k => ‖A (p (ns (σ k))) - A v‖ * ‖p (ns (σ k)) - uh (ns (σ k))‖) atTop (𝓝 0) := by
+      have hmajr : Tendsto (fun k => (L.toNNReal : ℝ) * ‖p (ns (σ k)) - v‖
+          * (‖p (ns (σ k)) - v‖ + (‖v - u‖ + D))) atTop (𝓝 0) := by
+        have h := ((tendsto_const_nhds (x := ((L.toNNReal : ℝ)))).mul hq).mul
+          (hq.add (tendsto_const_nhds (x := ‖v - u‖ + D)))
+        simpa using h
+      refine squeeze_zero (fun k => by positivity) (fun k => ?_) hmajr
+      have hb1 : ‖A (p (ns (σ k))) - A v‖ ≤ (L.toNNReal : ℝ) * ‖p (ns (σ k)) - v‖ := hAlip _ _
+      have ht1 : ‖p (ns (σ k)) - uh (ns (σ k))‖
+          ≤ ‖p (ns (σ k)) - v‖ + ‖v - uh (ns (σ k))‖ := by
+        simpa only [dist_eq_norm] using dist_triangle (p (ns (σ k))) v (uh (ns (σ k)))
+      have ht2 : ‖v - uh (ns (σ k))‖ ≤ ‖v - u‖ + ‖u - uh (ns (σ k))‖ := by
+        simpa only [dist_eq_norm] using dist_triangle v u (uh (ns (σ k)))
+      have hb2 : ‖p (ns (σ k)) - uh (ns (σ k))‖
+          ≤ ‖p (ns (σ k)) - v‖ + (‖v - u‖ + D) := by
+        have hdb := hDbnd (ns (σ k))
+        linarith
+      exact mul_le_mul hb1 hb2 (norm_nonneg _)
+        (mul_nonneg (L.toNNReal).coe_nonneg (norm_nonneg _))
+    have hE : Tendsto (fun k => E (ns (σ k))) atTop
+        (𝓝 (inner ℝ (A v) (v - z) - inner ℝ f (v - z) + j v)) := by
+      have h := (((hpair (A v)).sub (hpair f)).add hjp).add herr
+      simpa [hEdef] using h
+    have hkey : j z ≤ inner ℝ (A v) (v - z) - inner ℝ f (v - z) + j v := by
+      by_contra hcon
+      push Not at hcon
+      obtain ⟨α, hα1, hα2⟩ := exists_between hcon
+      have h1 : ∀ᶠ k in atTop, α < jh (ns (σ k)) (uh (ns (σ k))) :=
+        hjlsc (fun k => ns (σ k)) (fun k => uh (ns (σ k))) z
+          (fun k => (huh (ns (σ k))).1) hweakconv α hα2
+      have h2 : ∀ᶠ k in atTop, E (ns (σ k)) < α := hE.eventually (eventually_lt_nhds hα1)
+      obtain ⟨k, hk1, hk2⟩ := (h1.and h2).exists
+      exact absurd (hjle (ns (σ k))) (not_le.2 (lt_trans hk2 hk1))
+    linarith
+  -- and then at every point of `K`, by density and the continuity of `A` and `j`
+  have hzminty : ∀ v ∈ K, inner ℝ f (v - z) ≤ inner ℝ (A v) (v - z) + j v - j z := by
+    intro v hv
+    obtain ⟨q, hqU, hq⟩ := mem_closure_iff_seq_limit.1 (hU hv)
+    have hqz : Tendsto (fun k => q k - z) atTop (𝓝 (v - z)) :=
+      hq.sub (tendsto_const_nhds (x := z))
+    have h1 : Tendsto (fun k => inner ℝ f (q k - z)) atTop (𝓝 (inner ℝ f (v - z))) := by
+      have hcont : Continuous fun x : V => inner ℝ f x :=
+        continuous_inner.comp (continuous_const.prodMk continuous_id)
+      simpa [Function.comp_def] using (hcont.tendsto (v - z)).comp hqz
+    have h2 : Tendsto (fun k => inner ℝ (A (q k)) (q k - z) + j (q k) - j z) atTop
+        (𝓝 (inner ℝ (A v) (v - z) + j v - j z)) := by
+      have hAq : Tendsto (fun k => A (q k)) atTop (𝓝 (A v)) := by
+        simpa [Function.comp_def] using (hAcont.tendsto v).comp hq
+      have hin : Tendsto (fun k => inner ℝ (A (q k)) (q k - z)) atTop
+          (𝓝 (inner ℝ (A v) (v - z))) := by
+        simpa [Function.comp_def] using
+          (continuous_inner.tendsto ((A v, v - z) : V × V)).comp (hAq.prodMk_nhds hqz)
+      have hjq : Tendsto (fun k => j (q k)) atTop (𝓝 (j v)) := by
+        simpa [Function.comp_def] using (hjc.tendsto v).comp hq
+      exact (hin.add hjq).sub tendsto_const_nhds
+    exact le_of_tendsto_of_tendsto' h1 h2 fun k => hzmintyU (q k) (hqU k)
+  have hzsol : IsVariationalInequalitySolution A j f K z := by
+    refine (IsVariationalInequalitySolution.iff_minty hKcv hjcv hmono0 hzK ?_).2 hzminty
+    intro y _
+    exact (hAcont.comp
+      (continuous_const.add (continuous_id.smul continuous_const))).continuousWithinAt
+  have hzu : z = u := IsVariationalInequalitySolution.unique hc hmono hzsol hu
+  rw [hzu] at hweakconv
+  -- and then the error tends to zero along that subsequence
+  refine tendsto_iff_norm_sub_tendsto_zero.2 ?_
+  have hrev : (fun k => ‖uh (ns (σ k)) - u‖) = fun k => ‖u - uh (ns (σ k))‖ :=
+    funext fun k => norm_sub_rev _ _
+  rw [hrev]
+  refine tendsto_order.2
+    ⟨fun b hb => Eventually.of_forall fun k => lt_of_lt_of_le hb (norm_nonneg _), fun b hb => ?_⟩
+  obtain ⟨ε, hεdef⟩ : ∃ ε : ℝ, ε = c / 2 * b ^ 2 / 3 := ⟨_, rfl⟩
+  have hε : 0 < ε := by rw [hεdef]; positivity
+  -- a point of `U` at which the residual of the continuous solution is below `ε`
+  obtain ⟨v, hvU, hvG⟩ : ∃ v ∈ U, G v < ε := by
+    have hnhd : G ⁻¹' Iio ε ∈ 𝓝 u :=
+      hGcont.continuousAt (Iio_mem_nhds (by rw [hGu]; exact hε))
+    obtain ⟨y, hy1, hy2⟩ := mem_closure_iff_nhds.1 (hU hu.1) _ hnhd
+    exact ⟨y, hy2, hy1⟩
+  obtain ⟨w, hwmem, hwlim⟩ := hmaj v hvU
+  have hP1 : Tendsto (fun k => inner ℝ (A u) (u - uh (ns (σ k)))
+      - inner ℝ f (u - uh (ns (σ k)))) atTop (𝓝 0) := by
+    have h : ∀ y : V, Tendsto (fun k => inner ℝ y (u - uh (ns (σ k)))) atTop (𝓝 0) := by
+      intro y
+      have h1 : Tendsto (fun k => inner ℝ y (uh (ns (σ k)))) atTop (𝓝 (inner ℝ y u)) :=
+        tendsto_inner_of_weak hweakconv y
+      have h3 : (fun k => inner ℝ y (u - uh (ns (σ k))))
+          = fun k => inner ℝ y u - inner ℝ y (uh (ns (σ k))) := by
+        funext k
+        rw [inner_sub_right]
+      rw [h3]
+      simpa using (tendsto_const_nhds (x := inner ℝ y u)).sub h1
+    simpa using (h (A u)).sub (h f)
+  have hP2 : ∀ᶠ k in atTop, j u - jh (ns (σ k)) (uh (ns (σ k))) < ε := by
+    have h := hjlsc (fun k => ns (σ k)) (fun k => uh (ns (σ k))) u
+      (fun k => (huh (ns (σ k))).1) hweakconv (j u - ε) (by linarith)
+    filter_upwards [h] with k hk
+    linarith
+  have hP3 : ∀ᶠ k in atTop, (inner ℝ (A u) (w (ns (σ k)) - u)
+      + jh (ns (σ k)) (w (ns (σ k))) - j u - inner ℝ f (w (ns (σ k)) - u))
+        + L ^ 2 / (2 * c) * ‖u - w (ns (σ k))‖ ^ 2 < ε := by
+    have hm : Tendsto (fun k => (inner ℝ (A u) (w (ns (σ k)) - u)
+        + jh (ns (σ k)) (w (ns (σ k))) - j u - inner ℝ f (w (ns (σ k)) - u))
+          + L ^ 2 / (2 * c) * ‖u - w (ns (σ k))‖ ^ 2) atTop (𝓝 (G v)) := by
+      simpa [Function.comp_def] using hwlim.comp hmtop
+    exact hm.eventually (eventually_lt_nhds hvG)
+  filter_upwards [hP1.eventually (eventually_lt_nhds hε), hP2, hP3] with k h1 h2 h3
+  have hfk := hfalk (ns (σ k)) (w (ns (σ k))) (hwmem (ns (σ k)))
+  have h3ε : (3 : ℝ) * ε = c / 2 * b ^ 2 := by rw [hεdef]; ring
+  have hd2 : ‖u - uh (ns (σ k))‖ ^ 2 < b ^ 2 := by
+    have hlt : c / 2 * ‖u - uh (ns (σ k))‖ ^ 2 < c / 2 * b ^ 2 := by linarith
+    nlinarith
+  have hsq := Real.sqrt_lt_sqrt (sq_nonneg _) hd2
+  rwa [Real.sqrt_sq (norm_nonneg _), Real.sqrt_sq hb.le] at hsq
+
+end Varying
