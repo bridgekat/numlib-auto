@@ -1,114 +1,82 @@
 namespace = "SaadSparse.Ch07"
-desc = '''
-Saad §7.1: the Lanczos biorthogonalization procedure (Algorithm 7.1), Proposition 7.1 and the
-matrix relations (7.2)-(7.5).
-
-Everything is a specialization of `Numlib/Krylov/BiLanczos` through one pair of equivalence
-lemmas (`bilanczosV_eq`, `bilanczosW_eq`): the book's recursion with its explicit normalization
-`δ_{j+1} = |(v̂,ŵ)|^{1/2}`, `β_{j+1} = (v̂,ŵ)/δ_{j+1}` computes the backbone `BiLanczos.vec` and
-`BiLanczos.dualVec`. The no-breakdown hypothesis `(v̂_{j+1}, ŵ_{j+1}) ≠ 0` for `j < m` is a
-hypothesis of every statement, as it is in the book; the Lean convention "division by zero is
-zero" makes the vectors after a breakdown `0`, which is the book's "Stop".
-
-§7.1.2 (look-ahead Lanczos, the indefinite bilinear form (7.7), the Hankel moment matrix and its
-`LU` factorization) contains no statement the book proves and is not formalized; see
-`plans/saadsparse-ch7-9.md` §4.
-'''
 
 [[node]]
 id = "w₁"
-kind = "definition"
-desc = '''The dual starting vector of Algorithm 7.1 and the dual residual `r₀* = b* - Aᴴ x₀*` of
-Algorithm 7.3, together with the book's normalization `(v₁, w₁) = 1`; the companion of
-`SaadSparse.Ch06.v₁`.'''
-deps = ["SaadSparse.Ch06.v₁"]
+
+[[node]]
+id = "inner_w₁_v₁"
+
+[[node]]
+id = "bilanczos"
 
 [[node]]
 id = "bilanczosV"
-kind = "definition"
-desc = '''**Algorithm 7.1**: the recursion producing `v_j`, `w_j` and the scalars `α_j`, `β_j`, `δ_j`
-for matrices `A : Matrix (Fin n) (Fin n) 𝕜` acting on `EuclideanSpace 𝕜 (Fin n)`, with the
-book's normalization of lines 7-8. `bilanczosV` and `bilanczosW` are the two vector sequences,
-`bilanczosAlpha`, `bilanczosBeta`, `bilanczosDelta` the three coefficient sequences, all
-`0`-based (the book's `v_{j+1}` is `bilanczosV A v₁ w₁ j`).'''
-deps = ["BiLanczos.vec", "w₁"]
+
+[[node]]
+id = "bilanczosW"
+
+[[node]]
+id = "bilanczosVhat"
+
+[[node]]
+id = "bilanczosWhat"
+
+[[node]]
+id = "bilanczosAlpha"
+
+[[node]]
+id = "bilanczosBeta"
+
+[[node]]
+id = "bilanczosDelta"
 
 [[node]]
 id = "bilanczosV_eq"
-kind = "theorem"
-desc = '''The book's recursion computes the backbone process:
-`bilanczosV A v₁ w₁ j = BiLanczos.vec (op A) v₁ w₁ j` and
-`bilanczosW A v₁ w₁ j = BiLanczos.dualVec (op A) v₁ w₁ j`, under the no-breakdown hypothesis.
-Every result of this section is read off from this pair.'''
-deps = ["bilanczosV", "BiLanczos.vec"]
+
+[[node]]
+id = "bilanczosW_eq"
+
+[[node]]
+id = "NoBreakdown"
+
+[[node]]
+id = "NoSeriousBreakdown"
 
 [[node]]
 id = "bilanczosCoeff"
-kind = "definition"
-desc = '''The Hessenberg coefficient function of the two-sided Lanczos basis: `α_j` on the diagonal,
-`β_{j+1}` one above, `δ_{j+1}` one below, `0` elsewhere. `T` is its `m × m` truncation (7.2) and
-`Tbar` its `(m+1) × m` extension `T̄_m` of (7.15).'''
-deps = ["bilanczosV"]
 
 [[node]]
 id = "T"
-kind = "definition"
-desc = '''(7.2): the tridiagonal matrix `T_m` of the two-sided Lanczos process, and `Tbar`, the
-`(m+1) × m` matrix `T̄_m` of (7.15) obtained by appending the row `δ_{m+1} e_mᵀ`.'''
-deps = ["bilanczosCoeff"]
+
+[[node]]
+id = "Tbar"
+
+[[node]]
+id = "V"
+
+[[node]]
+id = "W"
 
 [[node]]
 id = "proposition_7_1"
-kind = "theorem"
-desc = '''**Proposition 7.1**, biorthogonality: if the algorithm does not break down before step `m`
-then `(v_j, w_i) = δ_ij` for `i, j ≤ m`.'''
-deps = ["bilanczosV_eq", "BiLanczos.inner_vec_dualVec"]
 
 [[node]]
 id = "proposition_7_1_span"
-kind = "theorem"
-desc = '''**Proposition 7.1**, the spans: `{v_1, …, v_m}` is a basis of `𝒦_m(A, v₁)` and
-`{w_1, …, w_m}` a basis of `𝒦_m(Aᴴ, w₁)`; with `problem_7_2` (P-7.2), `V_{m+1}` and `W_{m+1}`
-have full rank, which is the hypothesis Theorem 7.4 no longer needs to assume.'''
-deps = ["bilanczosV_eq", "BiLanczos.inner_vec_dualVec"]
-
-[[node]]
-id = "equation_7_3"
-kind = "theorem"
-desc = '''(7.3)-(7.4): `A V_m = V_m T_m + δ_{m+1} v_{m+1} e_mᵀ` and
-`Aᴴ W_m = W_m T_mᴴ + β̄_{m+1} w_{m+1} e_mᵀ`, and the extended form (7.15)
-`A V_m = V_{m+1} T̄_m`.'''
-deps = ["proposition_7_1", "T"]
-
-[[node]]
-id = "equation_7_5"
-kind = "theorem"
-desc = '''(7.5): `W_mᴴ A V_m = T_m`, so `T_m` is the matrix of the oblique projection of `A` onto
-`𝒦_m(A, v₁)` orthogonally to `𝒦_m(Aᴴ, w₁)`, and `T_mᴴ` that of `Aᴴ` onto `𝒦_m(Aᴴ, w₁)`
-orthogonally to `𝒦_m(A, v₁)` (the book's reading of (7.3)-(7.5)).'''
-deps = ["proposition_7_1", "equation_7_3", "IsPetrovGalerkin"]
-
-[[node]]
-id = "bilanczos_hessenbergRelation"
-kind = "theorem"
-desc = '''The two-sided Lanczos basis satisfies `Krylov.HessenbergRelation (op A) (bilanczosV A v₁ w₁)
-(bilanczosCoeff A v₁ w₁)`, so the residual formula of `Numlib/Krylov/Hessenberg` and the whole
-QGMRES layer of `Chapter06/Section05.lean` apply verbatim with a non-orthonormal basis. This is
-the hinge of §7.2 and §7.3.'''
-deps = ["equation_7_3", "Krylov.HessenbergRelation", "BiLanczos.hessenbergRelation"]
 
 [[node]]
 id = "problem_7_2"
-kind = "theorem"
-desc = '''**P-7.2**: if the algorithm does not break down before step `m` then the columns of `V_{m+1}`
-and of `W_{m+1}` are linearly independent — immediate from biorthogonality.'''
-deps = ["proposition_7_1"]
+
+[[node]]
+id = "equation_7_3"
+
+[[node]]
+id = "equation_7_5"
+
+[[node]]
+id = "bilanczos_hessenbergRelation"
 
 [[node]]
 id = "problem_7_6"
-kind = "theorem"
-desc = '''**P-7.6**: the oblique projector onto `𝒦_m(A, v₁)` orthogonally to `𝒦_m(Aᴴ, w₁)` is
-`V_m W_mᴴ`, and the one onto `𝒦_m(Aᴴ, w₁)` orthogonally to `𝒦_m(A, v₁)` is `W_m V_mᴴ`; the
-existence condition for an oblique projector onto `K` along `Lᗮ` (part (b)) is
-`K ∩ Lᗮ = 0`, which the Lanczos vectors satisfy exactly while no breakdown occurs.'''
-deps = ["proposition_7_1", "LinearMap.obliqueProjectionOfBases"]
+
+[[node]]
+id = "problem_7_6_inf_eq_bot"

@@ -1,110 +1,61 @@
 namespace = "SaadSparse.Ch09"
-desc = '''
-Saad §9.2: the preconditioned conjugate gradient method — Algorithm 9.1, Algorithm 9.2 (split
-preconditioning), the `A`-inner-product variant of P-9.2, and Eisenstat's implementation
-(§9.2.2, Algorithm 9.3).
 
-The section is built on one observation, `isSymmetric_energy`: `M⁻¹ A` is self-adjoint for the
-`M`-inner product `(x, y)_M = (M x, y)`, so CG may be run in `WithEnergy M` even though `M⁻¹ A`
-is not symmetric in the Euclidean one, and the `M`-inner products never have to be formed —
-`(z_j, z_j)_M = (r_j, z_j)` and `(M⁻¹ A p_j, p_j)_M = (A p_j, p_j)` are Euclidean. That is
-Algorithm 9.1, which is `Krylov.PCG.iterate`, and its Galerkin property and Chebyshev bound with
-`κ(M⁻¹ A)` (P-9.6) come from `Numlib/Krylov/Preconditioned` by transport.
-
-`splitPcg_eq_pcg` and `rightPcg_eq_pcg` are the section's two "surprisingly, the iterates are
-identical" claims, proved by exhibiting the change of variables (`p̂ = Lᴴ p`, `u = Lᴴ x`,
-`r̂ = L⁻¹ r`, `Â = L⁻¹ A L⁻ᴴ`; resp. `q = M⁻¹ p`, `z = M⁻¹ r`) that turns one recurrence into the
-other.
-
-Eisenstat's implementation is planned only as mathematics: the identity (9.8) rewriting
-`Â = (D - E)⁻¹ A (D - Eᵀ)⁻¹` as `(D - E)⁻¹ D₁ (D - Eᵀ)⁻¹ + (D - E)⁻¹ + (D - Eᵀ)⁻¹` with
-`D₁ = D₀ - 2D`, and the fact that Algorithm 9.3 computes `Â v`. The operation counts and P-9.7 to
-P-9.9 are not planned.
-'''
+[[node]]
+id = "isPreconditioner"
 
 [[node]]
 id = "isSymmetric_energy"
-kind = "theorem"
-desc = '''§9.2.1: for symmetric `A` and symmetric positive definite `M`, `M⁻¹ A` is self-adjoint for
-the `M`-inner product, `(M⁻¹ A x, y)_M = (A x, y) = (x, M⁻¹ A y)_M`; it is also self-adjoint for
-the `A`-inner product when `A` is positive definite, and `A M⁻¹` is self-adjoint for the `M⁻¹`
-inner product. The three observations the section's three algorithms rest on.'''
-deps = ["WithEnergy", "WithEnergy.inner_equiv", "LinearMap.IsSymmetricCoercive"]
+
+[[node]]
+id = "isSymmetric_energyA"
+
+[[node]]
+id = "isSymmetric_energyInv"
 
 [[node]]
 id = "pcg"
-kind = "definition"
-desc = '''**Algorithm 9.1** (preconditioned CG): `z_j = M⁻¹ r_j`, `α_j = (r_j, z_j)/(A p_j, p_j)`,
-`x_{j+1} = x_j + α_j p_j`, `r_{j+1} = r_j - α_j A p_j`,
-`β_j = (r_{j+1}, z_{j+1})/(r_j, z_j)`, `p_{j+1} = z_{j+1} + β_j p_j`, for matrices.'''
-deps = ["Krylov.PCG.iterate"]
 
 [[node]]
 id = "pcg_eq"
-kind = "theorem"
-desc = '''Algorithm 9.1 computes the backbone `Krylov.PCG.iterate (op A) (op M) b x₀ j`, hence, by
-`Krylov.PCG.isGalerkinIterate`, the Galerkin iterate of `A x = b` on
-`x₀ + 𝒦_j(M⁻¹ A, M⁻¹ r₀)`: `x_j` minimizes the `A`-norm of the error over that space.'''
-deps = ["pcg", "Krylov.PCG.iterate", "Krylov.PCG.isGalerkinIterate", "isSymmetric_energy"]
 
 [[node]]
-id = "splitPcg"
-kind = "definition"
-desc = '''**Algorithm 9.2** (split-preconditioner CG) for `M = L Lᴴ`: `r̂_0 = L⁻¹ r_0`,
-`p_0 = L⁻ᴴ r̂_0`, `α_j = (r̂_j, r̂_j)/(A p_j, p_j)`, `x_{j+1} = x_j + α_j p_j`,
-`r̂_{j+1} = r̂_j - α_j L⁻¹ A p_j`, `β_j = (r̂_{j+1}, r̂_{j+1})/(r̂_j, r̂_j)`,
-`p_{j+1} = L⁻ᴴ r̂_{j+1} + β_j p_j`.'''
-deps = ["pcg"]
-
-[[node]]
-id = "splitPcg_eq_pcg"
-kind = "theorem"
-desc = '''§9.2.1: Algorithms 9.1 and 9.2 produce identical iterates from the same `x₀`, and both equal
-the CG iterates for `Â u = L⁻¹ b`, `Â = L⁻¹ A L⁻ᴴ`, read through `u = Lᴴ x`. The change of
-variables `p̂_j = Lᴴ p_j`, `r̂_j = Lᴴ z_j = L⁻¹ r_j` turns one recurrence into the other, and
-**P-9.3** is the same statement in the other direction.'''
-deps = ["splitPcg", "pcg_eq", "CG.iterate"]
-
-[[node]]
-id = "rightPcg_eq_pcg"
-kind = "theorem"
-desc = '''§9.2.1, closing paragraph: CG for the right-preconditioned system `A M⁻¹ u = b` in the
-`M⁻¹`-inner product, written in `x = M⁻¹ u` with `q_j = M⁻¹ p_j`, `z_j = M⁻¹ r_j`, is Algorithm
-9.1 verbatim. Left preconditioning with the `M`-inner product and right preconditioning with the
-`M⁻¹`-inner product are the same method.'''
-deps = ["pcg", "isSymmetric_energy", "WithEnergy"]
-
-[[node]]
-id = "pcgEnergyA"
-kind = "definition"
-desc = '''**P-9.2**: the analogue of Algorithm 9.1 in the `A`-inner product, using the self-adjointness
-of `M⁻¹ A` for `(·,·)_A` and one matrix-vector product per step, with
-`pcgEnergyA_isGalerkinIterate` identifying its iterates as the minimal-`A M⁻¹ A`-error iterates
-on the same preconditioned Krylov space (the preconditioned conjugate residual method).'''
-deps = ["isSymmetric_energy", "CR.iterate"]
+id = "pcg_isGalerkinIterate"
 
 [[node]]
 id = "problem_9_6"
-kind = "theorem"
-desc = '''**P-9.6**: the CG convergence bound for Algorithm 9.1,
-`‖x_* - x_j‖_A ≤ 2 ((√κ - 1)/(√κ + 1))^j ‖x_* - x₀‖_A` with `κ = λ_max(M⁻¹A)/λ_min(M⁻¹A)` the
-condition number in the `M`-inner product; `Krylov.PCG.energyNorm_error_le`, equivalently the
-standard bound applied to `Â` of `splitPcg_eq_pcg`, whose eigenvalues are those of `M⁻¹ A`.'''
-deps = ["pcg_eq", "Krylov.PCG.energyNorm_error_le", "splitPcg_eq_pcg"]
+
+[[node]]
+id = "splitPcg"
+
+[[node]]
+id = "splitPcg_eq_pcg"
+
+[[node]]
+id = "splitPcg_eq_cg"
+
+[[node]]
+id = "rightPcg"
+
+[[node]]
+id = "rightPcg_eq_pcg"
+
+[[node]]
+id = "pcgEnergyA"
+
+[[node]]
+id = "pcgEnergyA_eq"
+
+[[node]]
+id = "pcgEnergyA_isGalerkinIterate"
+
+[[node]]
+id = "decomp_symm"
 
 [[node]]
 id = "equation_9_8"
-kind = "theorem"
-desc = '''(9.5)-(9.8): for `A = D₀ - E - Eᴴ` and `M = (D - E) D⁻¹ (D - Eᴴ)`, the split-preconditioned
-matrix `Â = (D - E)⁻¹ A (D - Eᴴ)⁻¹` satisfies
-`Â = (D - E)⁻¹ D₁ (D - Eᴴ)⁻¹ + (D - E)⁻¹ + (D - Eᴴ)⁻¹` with `D₁ = D₀ - 2D`; a matrix identity,
-and the whole content of Eisenstat's trick.'''
-deps = ["SaadSparse.Ch04.D", "SaadSparse.Ch04.E"]
 
 [[node]]
 id = "eisenstat"
-kind = "definition"
-desc = '''**Algorithm 9.3**: `z = (D - Eᴴ)⁻¹ v`, `w = (D - E)⁻¹ (v + D₁ z)`, `w := w + z`, with
-`eisenstat_eq` stating that it computes `Â v` for the `Â` of (9.8). The operation counts of
-§9.2.2 and P-9.7 to P-9.9 are not planned.'''
-deps = ["equation_9_8"]
+
+[[node]]
+id = "eisenstat_eq"

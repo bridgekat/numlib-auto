@@ -454,6 +454,22 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   elaborated before the expected type is whnf'd. Use `refine ⟨?_, ?_⟩` in tactic mode, or phrase the
   sets as `Metric.ball` / `Metric.closedBall` and move through `mem_ball_zero_iff`.
 
+* **`SaadSparse.Ch06.op` is an `abbrev`, and `rw` does not see through it.** A goal written with
+  `op A` is not matched by `Matrix.toEuclideanLin_conjTranspose`, `…_mul`, `…_one` or `map_add`,
+  and the failure reads "did not find an occurrence of the pattern `toEuclideanLin ?A`" on a goal
+  that visibly contains one. The fix is one line: bind the equation as a `have` whose *type* is
+  written with `op` (`have h : (op Aᴴ) = LinearMap.adjoint (op A) := Matrix.toEuclideanLin_conjTranspose A`)
+  and `rw [h]`. From a sibling chapter's namespace `op` also needs `open Ch06 (op)`; a bare `op`
+  is an unknown identifier there.
+* **Section-variable auto-inclusion looks only at the declaration's own text.** In a family of
+  definitions sharing `variable (A M : Matrix …)`, one whose body happens not to mention `A`
+  silently gets the shorter signature `f M s`, and every later `f A M s` fails with an
+  application type mismatch naming the *state* argument. Either make the statement mention the
+  variable, or write the binders out.
+* Dot notation `A.IsSymmetric` on a `Matrix` fails with *"the environment does not contain
+  `Function.IsSymmetric`"* — Mathlib's name for `Aᵀ = A` is `Matrix.IsSymm`, so the lookup falls
+  through to the unfolded `Fin n → Fin n → α`. `Matrix.IsHermitian` is the `Aᴴ = A` one.
+
 ## Tactics
 
 * `module` is the right tactic for vector identities with symbolic scalars; `abel` cannot move
@@ -1397,6 +1413,31 @@ When a construction is only constrained on an interval but the object has to be 
 `max 0 (min t T)` instead of carrying a partial function. The clamped map is linear at *every*
 parameter, which is what a `LinearMap` structure instance needs, and `max 0 (min t T) = t` on the
 interval is one `rw`.
+
+`Finset.range_subset` is **not** `range n ⊆ range m ↔ n ≤ m` — it is
+`range n ⊆ s ↔ ∀ x, x < n → x ∈ s`, so `simp only [Finset.range_subset]` leaves a membership goal
+`omega` cannot touch. The one wanted is `Finset.range_subset_range`.
+
+`Matrix.inv_one` does not exist, but `Matrix n n α` is an `InvOneClass`, so the root `inv_one`
+applies (`_root_.inv_one`, since a bare `inv_one` under `open Matrix` looks for `Matrix.inv_one`
+first). `isUnit_star_iff` does not exist either; `IsUnit.star` is the way from `IsUnit (det L)` to
+`IsUnit (det Lᴴ)` after `Matrix.det_conjTranspose`. `Matrix.conjTranspose_nonsing_inv` takes its
+matrix *explicitly*. `Matrix.mulVec_apply_eq_sum` is the `rfl` lemma for `(M *ᵥ v) i`.
+
+**A product of *rectangular* matrices needs `Matrix.toLpLin_mul 2 2 2`, not
+`Matrix.toEuclideanLin_mul`**, which is stated for square factors only. Feeding the square one a
+rectangular product does not give a type error: unification wanders off and the proof dies with a
+`whnf` heartbeat timeout.
+
+`PiLp.inner_apply` expands to `∑ i, inner 𝕜 (x i) (y i)` at the *scalar* level, and
+`RCLike.inner_apply` orients as `y * conj x`. So matching `∑ i, Mᴴ j i * v i` against an expanded
+inner product needs a `mul_comm` per term, not `rfl`.
+
+`Krylov.adjoint_comp_isSymmetricCoercive` and `…_of_injective` (`Numlib/Krylov/NormalEquations`)
+take `A` and `Aᴴ` as endomorphisms of *one* space, so they do not apply to a rectangular
+least-squares problem; the same holds of `IsMinRes`, `IsGalerkin` and `IsPetrovGalerkin`, which
+are all `A : E →ₗ[𝕜] E`. `IsMinError` is the exception — it mentions no operator, so it works
+across a rectangular `A` unchanged (Saad §8.1 uses exactly that).
 
 ## Design conventions of this library
 
