@@ -1,5 +1,5 @@
-import Numlib.LinearSolve.Projection.Optimality
 import Mathlib.Analysis.InnerProductSpace.Adjoint
+import Numlib.LinearSolve.Projection.Optimality
 
 /-!
 # One-dimensional projection processes

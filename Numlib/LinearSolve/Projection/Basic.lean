@@ -1,8 +1,8 @@
-import Numlib.Analysis.InnerProductSpace.Coercive
-import Numlib.Analysis.InnerProductSpace.Projection.Compression
 import Mathlib.Analysis.InnerProductSpace.Projection.Basic
 import Mathlib.Analysis.InnerProductSpace.Projection.FiniteDimensional
 import Mathlib.LinearAlgebra.Eigenspace.Minpoly
+import Numlib.Analysis.InnerProductSpace.Coercive
+import Numlib.Analysis.InnerProductSpace.Projection.Compression
 
 /-!
 # Projection methods: specifications and well-posedness

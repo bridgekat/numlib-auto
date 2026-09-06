@@ -4,8 +4,8 @@ to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.LinearAlgebra.Matrix.Kronecker`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
-import Numlib.Analysis.Matrix.ToEuclideanLin
 import Mathlib.LinearAlgebra.Matrix.Kronecker
+import Numlib.Analysis.Matrix.ToEuclideanLin
 
 /-!
 # The Kronecker sum and separation of variables

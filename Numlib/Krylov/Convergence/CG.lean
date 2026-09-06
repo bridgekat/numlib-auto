@@ -1,7 +1,7 @@
-import Numlib.Krylov.Iterate
 import Numlib.Krylov.Convergence.Polynomial
-import Numlib.RingTheory.Polynomial.ChebyshevMinimax
+import Numlib.Krylov.Iterate
 import Numlib.LinearSolve.Projection.OneDimensional
+import Numlib.RingTheory.Polynomial.ChebyshevMinimax
 
 /-!
 # Chebyshev convergence bounds for Galerkin (CG) and minimal-residual iterates

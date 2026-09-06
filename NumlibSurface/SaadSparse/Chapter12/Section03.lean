@@ -1,9 +1,9 @@
-import Numlib.LinearSolve.Preconditioner.Polynomial
-import Numlib.LinearSolve.Preconditioner.Chebyshev
-import Numlib.RingTheory.Polynomial.KernelPolynomial
-import NumlibSurface.SaadSparse.Common
 import Mathlib.Analysis.Matrix.PosDef
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
+import Numlib.LinearSolve.Preconditioner.Chebyshev
+import Numlib.LinearSolve.Preconditioner.Polynomial
+import Numlib.RingTheory.Polynomial.KernelPolynomial
+import NumlibSurface.SaadSparse.Common
 
 /-!
 # Saad §12.3: polynomial preconditioners

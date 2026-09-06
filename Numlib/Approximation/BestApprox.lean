@@ -1,7 +1,7 @@
-import Mathlib.Analysis.Normed.Module.FiniteDimension
 import Mathlib.Analysis.Convex.StrictConvexSpace
 import Mathlib.Analysis.InnerProductSpace.Projection.Basic
 import Mathlib.Analysis.InnerProductSpace.Projection.FiniteDimensional
+import Mathlib.Analysis.Normed.Module.FiniteDimension
 import Mathlib.Topology.MetricSpace.HausdorffDistance
 
 /-!

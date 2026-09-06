@@ -4,9 +4,9 @@ to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.LinearAlgebra.Matrix`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
+import Mathlib.Analysis.RCLike.Basic
 import Mathlib.Data.Matrix.Basic
 import Mathlib.LinearAlgebra.Matrix.Block
-import Mathlib.Analysis.RCLike.Basic
 
 /-!
 # Hessenberg and tridiagonal matrices; triangular parts

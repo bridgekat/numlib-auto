@@ -4,10 +4,10 @@ general matrix material with no numerical-analysis-specific content.
 Natural home: `Mathlib.LinearAlgebra.Matrix.PlaneRotation`.
 -/
 import Mathlib.Analysis.Matrix.Spectrum
-import Mathlib.LinearAlgebra.Matrix.Trace
 import Mathlib.Analysis.SpecialFunctions.Sqrt
 import Mathlib.Analysis.SpecificLimits.Basic
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Basic
+import Mathlib.LinearAlgebra.Matrix.Trace
 
 /-!
 # Jacobi's eigenvalue algorithm

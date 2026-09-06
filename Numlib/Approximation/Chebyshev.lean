@@ -2,8 +2,8 @@ import Mathlib.Analysis.Convex.Combination
 import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 import Mathlib.LinearAlgebra.Lagrange
 import Mathlib.Topology.Algebra.Polynomial
-import Mathlib.Topology.ContinuousMap.Polynomial
 import Mathlib.Topology.ContinuousMap.Compact
+import Mathlib.Topology.ContinuousMap.Polynomial
 import Mathlib.Topology.Order.IntermediateValue
 import Numlib.Analysis.Fourier.TrigonometricBasis
 import Numlib.Approximation.BestApprox

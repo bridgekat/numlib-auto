@@ -1,10 +1,10 @@
+import Mathlib.Analysis.InnerProductSpace.PiL2
 import Numlib.Analysis.InnerProductSpace.Projection.ObliqueProjection
 import Numlib.Approximation.BestApprox
 import Numlib.Approximation.Interpolation
 import Numlib.Approximation.Trigonometric
 import NumlibSurface.AtkinsonHan.Chapter03.Section03
 import NumlibSurface.AtkinsonHan.Chapter03.Section07
-import Mathlib.Analysis.InnerProductSpace.PiL2
 
 /-!
 # Atkinson–Han §3.6: projection operators

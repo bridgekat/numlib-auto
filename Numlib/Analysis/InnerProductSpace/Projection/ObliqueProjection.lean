@@ -4,9 +4,9 @@ to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.Analysis.InnerProductSpace.Projection`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
+import Mathlib.Analysis.InnerProductSpace.Adjoint
 import Mathlib.Analysis.InnerProductSpace.Projection.Basic
 import Mathlib.Analysis.InnerProductSpace.Projection.FiniteDimensional
-import Mathlib.Analysis.InnerProductSpace.Adjoint
 import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 
 /-!

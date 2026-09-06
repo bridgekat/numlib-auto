@@ -1,15 +1,15 @@
-import Numlib.Analysis.InnerProductSpace.CompactSpectral
-import Numlib.Analysis.InnerProductSpace.Energy
-import Numlib.Krylov.CG
-import Numlib.Krylov.Convergence.CG
-import Numlib.Krylov.Convergence.Polynomial
-import Numlib.Krylov.Iterate
 import Mathlib.Analysis.Asymptotics.SpecificAsymptotics
 import Mathlib.Analysis.InnerProductSpace.l2Space
 import Mathlib.Analysis.MeanInequalities
 import Mathlib.Analysis.SpecialFunctions.Pow.Continuity
 import Mathlib.Analysis.SpecificLimits.Basic
 import Mathlib.LinearAlgebra.Eigenspace.Minpoly
+import Numlib.Analysis.InnerProductSpace.CompactSpectral
+import Numlib.Analysis.InnerProductSpace.Energy
+import Numlib.Krylov.CG
+import Numlib.Krylov.Convergence.CG
+import Numlib.Krylov.Convergence.Polynomial
+import Numlib.Krylov.Iterate
 
 /-!
 # Superlinear convergence of conjugate gradients for `A = 1 - K`

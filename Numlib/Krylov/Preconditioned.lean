@@ -1,7 +1,7 @@
+import Numlib.Analysis.InnerProductSpace.Energy
 import Numlib.Krylov.CG
 import Numlib.Krylov.Convergence.CG
 import Numlib.Krylov.QuasiMinRes
-import Numlib.Analysis.InnerProductSpace.Energy
 
 /-!
 # Preconditioned Krylov methods

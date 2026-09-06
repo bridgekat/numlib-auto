@@ -1,5 +1,5 @@
-import Numlib.FiniteDifference.LaxEquivalence
 import Mathlib.Analysis.Calculus.Deriv.Slope
+import Numlib.FiniteDifference.LaxEquivalence
 
 /-!
 # Atkinson–Han §6.2: the Lax equivalence theorem

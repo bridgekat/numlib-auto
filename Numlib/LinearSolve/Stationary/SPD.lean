@@ -1,8 +1,8 @@
-import Numlib.LinearSolve.Stationary.Splitting
-import Numlib.LinearAlgebra.Matrix.Complexify
-import Numlib.Analysis.Matrix.ToEuclideanLin
-import Mathlib.Analysis.Normed.Operator.Banach
 import Mathlib.Algebra.Order.Star.Real
+import Mathlib.Analysis.Normed.Operator.Banach
+import Numlib.Analysis.Matrix.ToEuclideanLin
+import Numlib.LinearAlgebra.Matrix.Complexify
+import Numlib.LinearSolve.Stationary.Splitting
 
 /-!
 # Stationary iterations for symmetric positive definite systems

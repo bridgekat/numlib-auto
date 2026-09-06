@@ -4,10 +4,10 @@ to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.LinearAlgebra.Matrix.PerronFrobenius`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
+import Mathlib.LinearAlgebra.Eigenspace.Basic
+import Mathlib.LinearAlgebra.Matrix.Irreducible.Defs
 import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.LinearAlgebra.Matrix.Order
-import Mathlib.LinearAlgebra.Matrix.Irreducible.Defs
-import Mathlib.LinearAlgebra.Eigenspace.Basic
 
 /-!
 # Perron–Frobenius theory of entrywise nonnegative matrices

@@ -1,7 +1,7 @@
-import Numlib.Nonlinear.FixedPoint
-import Numlib.Analysis.Normed.Ring.Inverse
 import Mathlib.Analysis.Calculus.FDeriv.Basic
 import Numlib.Analysis.Calculus.MeanValue
+import Numlib.Analysis.Normed.Ring.Inverse
+import Numlib.Nonlinear.FixedPoint
 
 /-!
 # Newton's method in Banach spaces

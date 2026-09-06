@@ -1,11 +1,11 @@
-import Numlib.LinearAlgebra.Matrix.KroneckerSum
-import Numlib.LinearAlgebra.Matrix.MMatrix
-import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
-import NumlibSurface.SaadSparse.Chapter02.Section05
 import Mathlib.Algebra.Order.Star.Real
 import Mathlib.Analysis.Calculus.Taylor
 import Mathlib.Analysis.SpecialFunctions.ExpDeriv
 import Mathlib.RingTheory.Polynomial.Chebyshev
+import Numlib.LinearAlgebra.Matrix.KroneckerSum
+import Numlib.LinearAlgebra.Matrix.MMatrix
+import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
+import NumlibSurface.SaadSparse.Chapter02.Section05
 
 /-!
 # Saad §2.2: finite difference methods

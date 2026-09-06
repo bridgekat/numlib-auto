@@ -4,9 +4,9 @@ to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.Analysis.Normed.Ring.Units`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
-import Mathlib.Analysis.Normed.Ring.Units
-import Mathlib.Analysis.Normed.Operator.NormedSpace
 import Mathlib.Analysis.Normed.Module.Basic
+import Mathlib.Analysis.Normed.Operator.NormedSpace
+import Mathlib.Analysis.Normed.Ring.Units
 
 /-!
 # Condition number in a normed ring

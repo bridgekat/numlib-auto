@@ -1,5 +1,5 @@
-import Numlib.Krylov.Lanczos
 import Numlib.Krylov.Iterate
+import Numlib.Krylov.Lanczos
 
 /-!
 # The conjugate gradient recurrence (Hestenes–Stiefel)

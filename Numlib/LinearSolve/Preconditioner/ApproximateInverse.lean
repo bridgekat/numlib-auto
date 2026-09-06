@@ -1,6 +1,6 @@
-import Numlib.Analysis.Normed.Ring.Inverse
 import Mathlib.Analysis.InnerProductSpace.Calculus
 import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
+import Numlib.Analysis.Normed.Ring.Inverse
 
 /-!
 # Approximate inverse preconditioners

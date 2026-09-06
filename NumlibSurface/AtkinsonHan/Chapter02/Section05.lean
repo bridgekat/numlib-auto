@@ -1,5 +1,5 @@
-import Mathlib.Analysis.Normed.Module.HahnBanach
 import Mathlib.Analysis.InnerProductSpace.Dual
+import Mathlib.Analysis.Normed.Module.HahnBanach
 
 /-!
 # Atkinson–Han §2.5: linear functionals

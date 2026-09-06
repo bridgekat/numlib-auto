@@ -4,11 +4,11 @@ to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.Analysis.Matrix`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
-import Numlib.Krylov.Subspace
-import Numlib.Analysis.InnerProductSpace.Coercive
 import Mathlib.Analysis.CStarAlgebra.Matrix
-import Mathlib.Analysis.Matrix.Spectrum
 import Mathlib.Analysis.InnerProductSpace.Spectrum
+import Mathlib.Analysis.Matrix.Spectrum
+import Numlib.Analysis.InnerProductSpace.Coercive
+import Numlib.Krylov.Subspace
 
 /-!
 # Matrices as operators on `EuclideanSpace`

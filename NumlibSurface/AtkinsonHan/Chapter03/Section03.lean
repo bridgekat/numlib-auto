@@ -1,13 +1,13 @@
-import Numlib.Analysis.Convex.StrictConvexSpace
-import Numlib.Variational.Minimization
-import Numlib.Approximation.BestApprox
-import NumlibSurface.AtkinsonHan.Chapter02.Section04
-import Mathlib.Analysis.Normed.Module.DoubleDual
 import Mathlib.Analysis.InnerProductSpace.Convex
-import Mathlib.RingTheory.Polynomial.DegreeLT
-import Mathlib.Topology.ContinuousMap.Polynomial
+import Mathlib.Analysis.Normed.Module.DoubleDual
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
+import Mathlib.RingTheory.Polynomial.DegreeLT
 import Mathlib.Topology.ContinuousMap.Compact
+import Mathlib.Topology.ContinuousMap.Polynomial
+import Numlib.Analysis.Convex.StrictConvexSpace
+import Numlib.Approximation.BestApprox
+import Numlib.Variational.Minimization
+import NumlibSurface.AtkinsonHan.Chapter02.Section04
 
 /-!
 # Atkinson–Han §3.3: best approximation

@@ -1,5 +1,5 @@
-import Numlib.LinearSolve.Stationary.Splitting
 import Numlib.Analysis.InnerProductSpace.Coercive
+import Numlib.LinearSolve.Stationary.Splitting
 
 /-!
 # The alternating direction implicit iteration

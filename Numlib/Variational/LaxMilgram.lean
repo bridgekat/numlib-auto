@@ -1,7 +1,7 @@
-import Numlib.Variational.Forms
-import Numlib.Nonlinear.FixedPoint
 import Mathlib.Analysis.InnerProductSpace.Projection.Basic
 import Mathlib.Topology.Algebra.Module.LinearPMap
+import Numlib.Nonlinear.FixedPoint
+import Numlib.Variational.Forms
 
 /-!
 # Lax–Milgram, Babuška–Nečas, and existence theory for variational problems

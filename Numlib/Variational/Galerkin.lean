@@ -1,8 +1,8 @@
-import Numlib.Analysis.InnerProductSpace.Projection.ObliqueProjection
-import Numlib.Variational.LaxMilgram
-import Numlib.LinearSolve.Projection.Optimality
-import Numlib.Approximation.BestApprox
 import Mathlib.Topology.MetricSpace.HausdorffDistance
+import Numlib.Analysis.InnerProductSpace.Projection.ObliqueProjection
+import Numlib.Approximation.BestApprox
+import Numlib.LinearSolve.Projection.Optimality
+import Numlib.Variational.LaxMilgram
 
 /-!
 # Galerkin and Petrov–Galerkin methods for variational problems

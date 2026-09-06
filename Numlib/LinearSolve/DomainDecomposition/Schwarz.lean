@@ -1,6 +1,6 @@
+import Numlib.Krylov.Convergence.CG
 import Numlib.LinearSolve.Multigrid.Basic
 import Numlib.LinearSolve.Projection.Additive
-import Numlib.Krylov.Convergence.CG
 
 /-!
 # The abstract Schwarz theory

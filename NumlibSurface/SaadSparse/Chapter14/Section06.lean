@@ -1,6 +1,6 @@
-import Numlib.Eigen.MinMax
 import Mathlib.Analysis.Matrix.Hermitian
 import Mathlib.Combinatorics.SimpleGraph.LapMatrix
+import Numlib.Eigen.MinMax
 
 /-!
 # Saad §14.6: graph partitioning

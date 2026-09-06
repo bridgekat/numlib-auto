@@ -1,5 +1,5 @@
-import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import Mathlib.Analysis.Normed.Operator.Basic
+import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
 

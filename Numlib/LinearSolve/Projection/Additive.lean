@@ -1,5 +1,5 @@
-import Numlib.LinearSolve.Projection.Basic
 import Numlib.Analysis.InnerProductSpace.Projection.ObliqueProjection
+import Numlib.LinearSolve.Projection.Basic
 
 /-!
 # Additive and multiplicative projection processes

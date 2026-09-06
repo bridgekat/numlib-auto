@@ -1,12 +1,12 @@
+import Mathlib.LinearAlgebra.Eigenspace.Matrix
+import Mathlib.LinearAlgebra.Matrix.Charpoly.Eigs
+import Mathlib.MeasureTheory.Integral.Bochner.Basic
 import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.Eigen.Perturbation
 import Numlib.Eigen.RayleighRitz
 import Numlib.Krylov.Convergence.Polynomial
 import Numlib.Krylov.Convergence.Superlinear
 import Numlib.Krylov.Lanczos
-import Mathlib.LinearAlgebra.Eigenspace.Matrix
-import Mathlib.LinearAlgebra.Matrix.Charpoly.Eigs
-import Mathlib.MeasureTheory.Integral.Bochner.Basic
 
 /-!
 # The Lanczos process as orthogonal polynomials

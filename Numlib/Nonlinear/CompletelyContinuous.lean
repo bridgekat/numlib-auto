@@ -1,6 +1,6 @@
 import Mathlib.Analysis.Calculus.FDeriv.Basic
-import Mathlib.Analysis.Normed.Operator.Compact.Basic
 import Mathlib.Analysis.LocallyConvex.Bounded
+import Mathlib.Analysis.Normed.Operator.Compact.Basic
 
 /-!
 # Compact and completely continuous nonlinear operators

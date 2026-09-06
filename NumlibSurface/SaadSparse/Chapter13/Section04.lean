@@ -1,7 +1,7 @@
+import Numlib.LinearSolve.Multigrid.FullMultigrid
 import NumlibSurface.SaadSparse.Chapter13.Section02
 import NumlibSurface.SaadSparse.Chapter13.Section03
 import NumlibSurface.SaadSparse.Common
-import Numlib.LinearSolve.Multigrid.FullMultigrid
 
 /-!
 # Saad §13.4: the standard multigrid cycles

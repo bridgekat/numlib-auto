@@ -1,6 +1,6 @@
-import Numlib.Variational.Galerkin
-import Mathlib.Analysis.Normed.Operator.Compact.FredholmAlternative
 import Mathlib.Analysis.Normed.Operator.BanachSteinhaus
+import Mathlib.Analysis.Normed.Operator.Compact.FredholmAlternative
+import Numlib.Variational.Galerkin
 
 /-!
 # Projection methods for operator equations

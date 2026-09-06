@@ -5,10 +5,10 @@ Natural home: `Mathlib.Analysis.InnerProductSpace.Dual` and
 `Mathlib.Analysis.Normed.Module.WeakDual`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
-import Mathlib.Analysis.LocallyConvex.Separation
 import Mathlib.Analysis.InnerProductSpace.Dual
 import Mathlib.Analysis.InnerProductSpace.Projection.Basic
 import Mathlib.Analysis.InnerProductSpace.Subspace
+import Mathlib.Analysis.LocallyConvex.Separation
 import Mathlib.Analysis.Normed.Module.WeakDual
 import Mathlib.Topology.Metrizable.Basic
 

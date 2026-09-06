@@ -1,7 +1,7 @@
+import Mathlib.Analysis.InnerProductSpace.Adjoint
 import Numlib.Analysis.InnerProductSpace.Energy
 import Numlib.LinearSolve.Projection.Optimality
 import Numlib.LinearSolve.Stationary.Splitting
-import Mathlib.Analysis.InnerProductSpace.Adjoint
 
 /-!
 # The Galerkin coarse problem and the coarse-grid correction

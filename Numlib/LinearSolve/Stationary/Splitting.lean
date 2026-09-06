@@ -1,7 +1,7 @@
-import Numlib.LinearSolve.Stationary.Basic
-import Numlib.LinearAlgebra.Matrix.Hessenberg
-import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 import Mathlib.Analysis.RCLike.Basic
+import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
+import Numlib.LinearAlgebra.Matrix.Hessenberg
+import Numlib.LinearSolve.Stationary.Basic
 
 /-!
 # Splittings and the classical iterations

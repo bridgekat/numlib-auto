@@ -1,9 +1,9 @@
-import Numlib.Eigen.Perturbation
-import Numlib.LinearAlgebra.Matrix.Complexify
-import Numlib.LinearAlgebra.Matrix.Hessenberg
 import Mathlib.Analysis.Normed.Unbundled.AlgebraNorm
 import Mathlib.Data.Fin.Tuple.Sort
 import Mathlib.LinearAlgebra.Matrix.IsDiag
+import Numlib.Eigen.Perturbation
+import Numlib.LinearAlgebra.Matrix.Complexify
+import Numlib.LinearAlgebra.Matrix.Hessenberg
 import Numlib.LinearAlgebra.Matrix.MMatrix
 import Numlib.LinearSolve.Stationary.ConsistentlyOrdered
 import Numlib.LinearSolve.Stationary.DiagDominant

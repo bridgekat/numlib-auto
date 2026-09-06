@@ -1,8 +1,8 @@
+import Mathlib.Analysis.Complex.Polynomial.Basic
 import Numlib.Eigen.Normal
 import Numlib.Krylov.Arnoldi
 import Numlib.Krylov.Subspace
 import NumlibSurface.SaadSparse.Chapter06.Section09
-import Mathlib.Analysis.Complex.Polynomial.Basic
 
 /-!
 # Saad §6.10: optimality and the Faber–Manteuffel condition

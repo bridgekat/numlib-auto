@@ -1,10 +1,10 @@
+import Mathlib.Analysis.SpecialFunctions.Pow.Continuity
+import Mathlib.LinearAlgebra.Basis.VectorSpace
+import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
+import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
+import Mathlib.LinearAlgebra.Matrix.Charpoly.Basic
 import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.LinearAlgebra.Matrix.Schur
-import Mathlib.LinearAlgebra.Matrix.Charpoly.Basic
-import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
-import Mathlib.LinearAlgebra.Basis.VectorSpace
-import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
-import Mathlib.Analysis.SpecialFunctions.Pow.Continuity
 
 /-!
 # Saad §1.8: canonical forms of matrices

@@ -4,10 +4,10 @@ to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: beside `Mathlib.LinearAlgebra.Matrix.Irreducible.Defs`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
+import Mathlib.Combinatorics.SimpleGraph.Clique
 import Numlib.Combinatorics.SimpleGraph.Coloring
 import Numlib.Combinatorics.SimpleGraph.LevelSet
 import Numlib.LinearAlgebra.Sparse.Pattern
-import Mathlib.Combinatorics.SimpleGraph.Clique
 
 /-!
 # What a graph ordering does to the pattern of a matrix

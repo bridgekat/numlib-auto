@@ -1,5 +1,5 @@
-import Numlib.Krylov.Iterate
 import Numlib.Krylov.Convergence.Polynomial
+import Numlib.Krylov.Iterate
 import Numlib.RingTheory.Polynomial.ChebyshevMinimax
 
 /-!

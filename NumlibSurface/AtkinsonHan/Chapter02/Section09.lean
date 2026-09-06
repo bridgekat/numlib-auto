@@ -1,5 +1,5 @@
-import Numlib.Analysis.Normed.Ring.Inverse
 import Mathlib.Analysis.Normed.Algebra.Spectrum
+import Numlib.Analysis.Normed.Ring.Inverse
 
 /-!
 # Atkinson–Han §2.9: the resolvent operator

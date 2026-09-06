@@ -1,11 +1,11 @@
+import Mathlib.Algebra.Polynomial.FieldDivision
 import Mathlib.Algebra.Polynomial.Module.AEval
+import Mathlib.LinearAlgebra.Dimension.Finrank
 import Mathlib.LinearAlgebra.Eigenspace.Minpoly
+import Mathlib.LinearAlgebra.FiniteDimensional.Defs
+import Mathlib.RingTheory.EuclideanDomain
 import Mathlib.RingTheory.Polynomial.Basic
 import Mathlib.RingTheory.PrincipalIdealDomain
-import Mathlib.RingTheory.EuclideanDomain
-import Mathlib.Algebra.Polynomial.FieldDivision
-import Mathlib.LinearAlgebra.FiniteDimensional.Defs
-import Mathlib.LinearAlgebra.Dimension.Finrank
 
 /-!
 # Krylov subspaces

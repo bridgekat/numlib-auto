@@ -1,15 +1,15 @@
-import Numlib.Analysis.Normed.Ring.CondNumber
-import Numlib.Analysis.InnerProductSpace.Coercive
-import Numlib.Analysis.InnerProductSpace.Projection.Angle
-import Numlib.Eigen.Normal
+import Mathlib.Analysis.CStarAlgebra.Matrix
 import Mathlib.Analysis.Calculus.Deriv.Add
 import Mathlib.Analysis.Calculus.Deriv.Comp
 import Mathlib.Analysis.Calculus.Deriv.Mul
-import Mathlib.Analysis.InnerProductSpace.Spectrum
 import Mathlib.Analysis.InnerProductSpace.Rayleigh
-import Mathlib.Analysis.CStarAlgebra.Matrix
-import Mathlib.LinearAlgebra.Matrix.Gershgorin
+import Mathlib.Analysis.InnerProductSpace.Spectrum
 import Mathlib.LinearAlgebra.Eigenspace.Matrix
+import Mathlib.LinearAlgebra.Matrix.Gershgorin
+import Numlib.Analysis.InnerProductSpace.Coercive
+import Numlib.Analysis.InnerProductSpace.Projection.Angle
+import Numlib.Analysis.Normed.Ring.CondNumber
+import Numlib.Eigen.Normal
 
 /-!
 # Eigenvalue perturbation and a posteriori bounds

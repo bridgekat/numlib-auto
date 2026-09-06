@@ -1,7 +1,7 @@
+import Mathlib.Analysis.Normed.Operator.Compact.FredholmAlternative
 import Numlib.Analysis.Normed.Operator.CollectivelyCompact
 import Numlib.Analysis.Normed.Ring.Inverse
 import Numlib.Variational.ProjectionMethod
-import Mathlib.Analysis.Normed.Operator.Compact.FredholmAlternative
 
 /-!
 # Equations of the second kind

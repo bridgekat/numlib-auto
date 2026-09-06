@@ -1,8 +1,8 @@
+import Mathlib.MeasureTheory.Integral.IntervalIntegral.Periodic
 import Numlib.Analysis.Fourier.Dirichlet
 import Numlib.Analysis.Fourier.TrigonometricBasis
 import Numlib.Approximation.BestApprox
 import Numlib.IntegralEquations.Basic
-import Mathlib.MeasureTheory.Integral.IntervalIntegral.Periodic
 
 /-!
 # Trigonometric approximation of continuous periodic functions

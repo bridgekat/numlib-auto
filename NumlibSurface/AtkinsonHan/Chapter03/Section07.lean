@@ -1,9 +1,9 @@
-import Numlib.Approximation.BestApprox
-import NumlibSurface.AtkinsonHan.Chapter02.Section04
-import Mathlib.Topology.Instances.AddCircle.Defs
-import Mathlib.Topology.MetricSpace.Holder
 import Mathlib.Analysis.Calculus.IteratedDeriv.Defs
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
+import Mathlib.Topology.Instances.AddCircle.Defs
+import Mathlib.Topology.MetricSpace.Holder
+import Numlib.Approximation.BestApprox
+import NumlibSurface.AtkinsonHan.Chapter02.Section04
 
 /-!
 # Atkinson–Han §3.7: uniform error bounds

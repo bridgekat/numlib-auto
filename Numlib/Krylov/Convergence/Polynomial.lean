@@ -1,8 +1,8 @@
+import Mathlib.Algebra.Polynomial.Module.AEval
+import Mathlib.Analysis.InnerProductSpace.Spectrum
+import Mathlib.Topology.Algebra.Polynomial
 import Numlib.Analysis.InnerProductSpace.Energy
 import Numlib.Analysis.InnerProductSpace.Projection.Compression
-import Mathlib.Analysis.InnerProductSpace.Spectrum
-import Mathlib.Algebra.Polynomial.Module.AEval
-import Mathlib.Topology.Algebra.Polynomial
 
 /-!
 # Polynomials in a symmetric operator: spectral norm bounds

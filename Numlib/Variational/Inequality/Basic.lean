@@ -1,7 +1,7 @@
+import Mathlib.Analysis.Convex.Approximation
 import Numlib.Analysis.Convex.Gateaux
 import Numlib.Approximation.BestApprox
 import Numlib.Variational.LaxMilgram
-import Mathlib.Analysis.Convex.Approximation
 
 /-!
 # Elliptic variational inequalities

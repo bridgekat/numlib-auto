@@ -1,7 +1,7 @@
-import Numlib.FloatingPoint.Model
-import Numlib.LinearAlgebra.Matrix.Order
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 import Mathlib.Data.Matrix.Mul
+import Numlib.FloatingPoint.Model
+import Numlib.LinearAlgebra.Matrix.Order
 
 /-!
 # Rounding errors of inner products and matrix products

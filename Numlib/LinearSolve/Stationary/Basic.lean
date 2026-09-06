@@ -1,11 +1,11 @@
-import Numlib.Analysis.Normed.Algebra.SpectralRadius
-import Numlib.Analysis.Normed.Ring.Inverse
-import Mathlib.Topology.MetricSpace.Contracting
-import Mathlib.Analysis.Normed.Operator.NormedSpace
 import Mathlib.Analysis.Normed.Module.FiniteDimension
 import Mathlib.Analysis.Normed.Operator.Banach
+import Mathlib.Analysis.Normed.Operator.NormedSpace
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import Mathlib.LinearAlgebra.Eigenspace.Basic
+import Mathlib.Topology.MetricSpace.Contracting
+import Numlib.Analysis.Normed.Algebra.SpectralRadius
+import Numlib.Analysis.Normed.Ring.Inverse
 
 /-!
 # Stationary (affine) iterations

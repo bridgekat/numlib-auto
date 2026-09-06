@@ -1,7 +1,7 @@
+import Mathlib.Analysis.InnerProductSpace.Adjoint
+import Mathlib.Analysis.InnerProductSpace.Dual
 import Numlib.Analysis.InnerProductSpace.Coercive
 import Numlib.Analysis.InnerProductSpace.Energy
-import Mathlib.Analysis.InnerProductSpace.Dual
-import Mathlib.Analysis.InnerProductSpace.Adjoint
 
 /-!
 # Bounded sesquilinear forms on Hilbert spaces

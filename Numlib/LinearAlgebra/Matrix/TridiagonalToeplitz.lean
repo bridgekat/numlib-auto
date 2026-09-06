@@ -4,9 +4,9 @@ to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.LinearAlgebra.Matrix`, beside `Mathlib.LinearAlgebra.Matrix.Circulant`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
-import Numlib.LinearAlgebra.Matrix.Hessenberg
-import Numlib.Analysis.Matrix.ToEuclideanLin
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
+import Numlib.Analysis.Matrix.ToEuclideanLin
+import Numlib.LinearAlgebra.Matrix.Hessenberg
 
 /-!
 # The symmetric tridiagonal Toeplitz matrix and its discrete sine eigenbasis

@@ -4,11 +4,11 @@ to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.RingTheory.Polynomial.Chebyshev`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
-import Mathlib.RingTheory.Polynomial.Chebyshev
-import Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Extremal
-import Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.RootsExtrema
 import Mathlib.Analysis.SpecialFunctions.Arcosh
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Extremal
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.RootsExtrema
+import Mathlib.RingTheory.Polynomial.Chebyshev
 import Mathlib.Topology.Algebra.Polynomial
 import Mathlib.Topology.Order.Compact
 

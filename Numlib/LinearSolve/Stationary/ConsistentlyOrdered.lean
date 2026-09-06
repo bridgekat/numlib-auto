@@ -1,10 +1,10 @@
-import Numlib.LinearSolve.Stationary.Splitting
 import Mathlib.Analysis.Normed.Algebra.Spectrum
+import Mathlib.Analysis.SpecialFunctions.Complex.Circle
+import Mathlib.Analysis.SpecialFunctions.Sqrt
 import Mathlib.FieldTheory.IsAlgClosed.Basic
 import Mathlib.LinearAlgebra.Eigenspace.Minpoly
-import Mathlib.Analysis.SpecialFunctions.Sqrt
-import Mathlib.Analysis.SpecialFunctions.Complex.Circle
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Eigs
+import Numlib.LinearSolve.Stationary.Splitting
 
 /-!
 # Consistently ordered matrices and Young's theory of SOR

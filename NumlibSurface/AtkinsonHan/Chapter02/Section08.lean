@@ -1,6 +1,6 @@
+import Mathlib.Analysis.InnerProductSpace.Spectrum
 import Numlib.Analysis.Normed.Operator.Compact
 import NumlibSurface.AtkinsonHan.Chapter02.Section04
-import Mathlib.Analysis.InnerProductSpace.Spectrum
 
 /-!
 # Atkinson–Han §2.8: compact linear operators

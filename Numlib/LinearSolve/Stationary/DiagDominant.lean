@@ -1,11 +1,11 @@
-import Numlib.LinearSolve.Stationary.Splitting
-import Mathlib.LinearAlgebra.Matrix.Gershgorin
 import Mathlib.Analysis.Matrix.Normed
-import Mathlib.Analysis.Normed.Algebra.Spectrum
 import Mathlib.Analysis.Matrix.Spectrum
+import Mathlib.Analysis.Normed.Algebra.Spectrum
+import Mathlib.LinearAlgebra.Eigenspace.Minpoly
+import Mathlib.LinearAlgebra.Matrix.Gershgorin
 import Mathlib.LinearAlgebra.Matrix.Irreducible.Defs
 import Mathlib.LinearAlgebra.Matrix.ToLinearEquiv
-import Mathlib.LinearAlgebra.Eigenspace.Minpoly
+import Numlib.LinearSolve.Stationary.Splitting
 
 /-!
 # Diagonal dominance and convergence of Jacobi / Gauss–Seidel

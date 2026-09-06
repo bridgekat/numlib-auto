@@ -1,7 +1,7 @@
+import Mathlib.Analysis.Calculus.ContDiff.Polynomial
 import Mathlib.Analysis.Calculus.Deriv.Polynomial
 import Mathlib.Analysis.Calculus.IteratedDeriv.Lemmas
 import Mathlib.Analysis.Calculus.LocalExtr.Rolle
-import Mathlib.Analysis.Calculus.ContDiff.Polynomial
 import Mathlib.LinearAlgebra.Lagrange
 import Mathlib.Topology.TietzeExtension
 import Numlib.Approximation.Chebyshev

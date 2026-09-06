@@ -1,8 +1,8 @@
+import Mathlib.Analysis.RCLike.Basic
+import Mathlib.Tactic.Positivity.Finset
+import Mathlib.Topology.Algebra.InfiniteSum.Module
 import Numlib.Analysis.Normed.Ring.Inverse
 import Numlib.IntegralEquations.Basic
-import Mathlib.Analysis.RCLike.Basic
-import Mathlib.Topology.Algebra.InfiniteSum.Module
-import Mathlib.Tactic.Positivity.Finset
 
 /-!
 # Atkinson–Han §2.3: the geometric series theorem and its variants

@@ -1,5 +1,5 @@
-import Numlib.LinearSolve.Stationary.Splitting
 import Mathlib.LinearAlgebra.Matrix.Block
+import Numlib.LinearSolve.Stationary.Splitting
 
 /-!
 # Block splittings and block relaxation

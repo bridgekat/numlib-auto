@@ -1,9 +1,9 @@
+import Mathlib.LinearAlgebra.Charpoly.Basic
+import Mathlib.Order.Filter.Extr
 import Numlib.Analysis.InnerProductSpace.Projection.Angle
 import Numlib.Analysis.InnerProductSpace.Projection.Compression
 import Numlib.Eigen.MinMax
 import Numlib.Krylov.Arnoldi
-import Mathlib.LinearAlgebra.Charpoly.Basic
-import Mathlib.Order.Filter.Extr
 
 /-!
 # Rayleigh–Ritz approximation

@@ -1,7 +1,7 @@
-import Numlib.Approximation.BestApprox
-import NumlibSurface.AtkinsonHan.Chapter03.Section03
 import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.Analysis.InnerProductSpace.l2Space
+import Numlib.Approximation.BestApprox
+import NumlibSurface.AtkinsonHan.Chapter03.Section03
 
 /-!
 # Atkinson–Han §3.4: best approximation in inner product spaces

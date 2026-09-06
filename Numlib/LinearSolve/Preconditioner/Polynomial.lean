@@ -1,5 +1,5 @@
-import Numlib.Krylov.Convergence.Polynomial
 import Mathlib.Algebra.Ring.GeomSum
+import Numlib.Krylov.Convergence.Polynomial
 
 /-!
 # Polynomial preconditioning

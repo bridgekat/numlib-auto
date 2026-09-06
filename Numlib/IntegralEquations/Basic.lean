@@ -1,8 +1,8 @@
 import Mathlib.Analysis.Calculus.MeanValue
 import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.MeasureTheory.Integral.DominatedConvergence
-import Mathlib.Topology.ContinuousMap.Compact
 import Mathlib.Topology.Algebra.Order.Floor
+import Mathlib.Topology.ContinuousMap.Compact
 import Mathlib.Topology.MetricSpace.Contracting
 import Mathlib.Topology.UniformSpace.HeineCantor
 

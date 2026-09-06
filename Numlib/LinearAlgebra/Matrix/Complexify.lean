@@ -4,14 +4,14 @@ to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.LinearAlgebra.Matrix`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
-import Numlib.Analysis.Normed.Algebra.SpectralRadius
-import Mathlib.LinearAlgebra.Matrix.Charpoly.Eigs
-import Mathlib.LinearAlgebra.Matrix.Hermitian
+import Mathlib.Analysis.CStarAlgebra.Matrix
+import Mathlib.Analysis.Complex.Basic
 import Mathlib.Analysis.Normed.Algebra.Spectrum
 import Mathlib.Analysis.Normed.Module.FiniteDimension
-import Mathlib.Analysis.CStarAlgebra.Matrix
+import Mathlib.LinearAlgebra.Matrix.Charpoly.Eigs
+import Mathlib.LinearAlgebra.Matrix.Hermitian
 import Mathlib.Topology.Instances.Matrix
-import Mathlib.Analysis.Complex.Basic
+import Numlib.Analysis.Normed.Algebra.SpectralRadius
 
 /-!
 # Complexification of real matrices

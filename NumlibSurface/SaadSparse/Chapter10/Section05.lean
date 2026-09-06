@@ -1,7 +1,7 @@
+import Mathlib.Analysis.Matrix.Normed
 import Numlib.LinearSolve.Preconditioner.ApproximateInverse
 import Numlib.LinearSolve.Projection.OneDimensional
 import NumlibSurface.SaadSparse.Common
-import Mathlib.Analysis.Matrix.Normed
 
 /-!
 # Saad §10.5: approximate inverse preconditioners

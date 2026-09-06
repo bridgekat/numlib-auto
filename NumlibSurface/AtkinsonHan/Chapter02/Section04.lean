@@ -1,11 +1,11 @@
+import Mathlib.Analysis.Normed.Module.Completion
+import Mathlib.Analysis.Normed.Operator.Banach
+import Mathlib.Analysis.Normed.Operator.BanachSteinhaus
+import Mathlib.Analysis.Normed.Operator.Extend
+import Mathlib.Analysis.RCLike.Basic
+import Mathlib.Topology.Algebra.LinearMapCompletion
 import Numlib.Analysis.Normed.Ring.CondNumber
 import Numlib.Approximation.Quadrature
-import Mathlib.Analysis.Normed.Operator.BanachSteinhaus
-import Mathlib.Analysis.RCLike.Basic
-import Mathlib.Analysis.Normed.Operator.Banach
-import Mathlib.Topology.Algebra.LinearMapCompletion
-import Mathlib.Analysis.Normed.Module.Completion
-import Mathlib.Analysis.Normed.Operator.Extend
 
 /-!
 # Atkinson–Han §2.4: more results on linear operators

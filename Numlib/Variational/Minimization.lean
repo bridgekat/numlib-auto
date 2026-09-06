@@ -1,5 +1,5 @@
-import Mathlib.Analysis.Normed.Module.FiniteDimension
 import Mathlib.Analysis.Convex.Function
+import Mathlib.Analysis.Normed.Module.FiniteDimension
 import Mathlib.Topology.Semicontinuity.Basic
 
 /-!

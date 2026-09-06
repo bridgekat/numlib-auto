@@ -1,11 +1,11 @@
-import Numlib.Analysis.Normed.Ring.Inverse
-import Numlib.Analysis.Normed.Ring.CondNumber
 import Mathlib.Analysis.Calculus.Deriv.Add
 import Mathlib.Analysis.Calculus.Deriv.Comp
 import Mathlib.Analysis.Calculus.Deriv.Mul
 import Mathlib.Analysis.Calculus.FDeriv.Mul
 import Mathlib.Analysis.InnerProductSpace.Basic
 import Mathlib.Analysis.InnerProductSpace.LinearMap
+import Numlib.Analysis.Normed.Ring.CondNumber
+import Numlib.Analysis.Normed.Ring.Inverse
 
 /-!
 # Perturbation theory for linear systems

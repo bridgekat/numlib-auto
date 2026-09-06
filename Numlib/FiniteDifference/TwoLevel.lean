@@ -1,5 +1,5 @@
-import Mathlib.Analysis.Normed.Operator.Basic
 import Mathlib.Analysis.Normed.Module.Basic
+import Mathlib.Analysis.Normed.Operator.Basic
 
 /-!
 # Two-level difference schemes: consistency and stability give convergence

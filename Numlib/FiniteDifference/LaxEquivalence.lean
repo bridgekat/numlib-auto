@@ -1,10 +1,10 @@
-import Numlib.Analysis.Normed.Operator.BanachSteinhaus
-import Mathlib.Analysis.Normed.Operator.Extend
 import Mathlib.Analysis.Calculus.Deriv.Add
 import Mathlib.Analysis.Calculus.Deriv.Comp
 import Mathlib.Analysis.Calculus.Deriv.Mul
+import Mathlib.Analysis.Normed.Operator.Extend
 import Mathlib.Topology.Algebra.Module.LinearPMap
 import Mathlib.Topology.MetricSpace.Sequences
+import Numlib.Analysis.Normed.Operator.BanachSteinhaus
 
 /-!
 # The Lax equivalence theorem
