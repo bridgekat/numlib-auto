@@ -71,11 +71,14 @@ import Numlib.LinearAlgebra.Matrix.Hessenberg
 import Numlib.LinearAlgebra.Matrix.KroneckerSum
 import Numlib.LinearAlgebra.Matrix.MMatrix
 import Numlib.LinearAlgebra.Matrix.Order
+import Numlib.LinearAlgebra.Matrix.PerronFrobenius
 import Numlib.LinearAlgebra.Matrix.QR
 import Numlib.LinearAlgebra.Matrix.SVD
 import Numlib.LinearAlgebra.Matrix.Schur
+import Numlib.LinearAlgebra.Matrix.SchurComplement
 import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
 import Numlib.LinearAlgebra.Sparse.Pattern
+import Numlib.LinearAlgebra.Sparse.Reordering
 import Numlib.LinearSolve.DomainDecomposition.Schwarz
 import Numlib.LinearSolve.Multigrid.Basic
 import Numlib.LinearSolve.Multigrid.FullMultigrid
@@ -90,6 +93,7 @@ import Numlib.LinearSolve.Projection.OneDimensional
 import Numlib.LinearSolve.Projection.Optimality
 import Numlib.LinearSolve.Stationary.ADI
 import Numlib.LinearSolve.Stationary.Basic
+import Numlib.LinearSolve.Stationary.Block
 import Numlib.LinearSolve.Stationary.ConsistentlyOrdered
 import Numlib.LinearSolve.Stationary.DiagDominant
 import Numlib.LinearSolve.Stationary.RegularSplitting

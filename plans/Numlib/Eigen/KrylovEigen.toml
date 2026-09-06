@@ -50,23 +50,23 @@ id = "Lanczos.eigenvalues_sub_eigenvalues_compression_le"
 id = "Lanczos.kaniel_paige_saad"
 
 [[node]]
+id = "Arnoldi.sub_starProjection_apply_vec_last"
+source = "Saad, Numerical Methods for Large Eigenvalue Problems, Proposition 6.6"
+
+[[node]]
+id = "Arnoldi.norm_sub_starProjection_apply_le"
+source = "Saad, Numerical Methods for Large Eigenvalue Problems, Proposition 6.6"
+
+[[node]]
+id = "Arnoldi.norm_starProjection_apply_le_of_mem_orthogonal"
+source = "Saad, Numerical Methods for Large Eigenvalue Problems, Proposition 6.6"
+
+[[node]]
 id = "Arnoldi.norm_starProjection_comp_orthogonal_eq_coeff"
-kind = "theorem"
-desc = '''Saad-eig Prop 6.6 in basis-free form: for `K = 𝒦_m(A, b)` with `m ≤ grade`,
-`‖(1 - P_K) A P_K‖ = h_{m+1,m} = Arnoldi.coeff A b m (m - 1)`, because `(1 - P_K) A v_j = 0` for
-`j < m - 1` and `(1 - P_K) A v_{m-1} = h_{m,m-1} v_m`; for symmetric `A` also `‖P_K A (1 - P_K)‖ = β_m`,
-which is the `γ` of the Ritz bounds of `Numlib/Eigen/RayleighRitz` on a Krylov subspace.'''
-deps = ["Arnoldi.coeff", "Arnoldi.apply_vec", "Arnoldi.vec_mem_orthogonal", "Arnoldi.starProjection_apply_vec", "Krylov.norm_starProjection_apply_le_opNorm"]
-source = "Saad, Numerical Methods for Large Eigenvalue Problems, Proposition 6.6 and Section 6.6.3"
+source = "Saad, Numerical Methods for Large Eigenvalue Problems, Proposition 6.6"
 
 [[node]]
 id = "Lanczos.sin_angle_ritzVector_le"
-kind = "theorem"
-desc = '''The Ritz-vector bound of the Lanczos process (Saad-eig §6.6.3): Thm 4.6 on `K = 𝒦_m(A, v)` with
-`γ = β_m`, so `sin θ(u_i, ũ_i) ≤ √(1 + β_m²/δ_i²) sin θ(u_i, 𝒦_m)`, and `sin θ(u_i, 𝒦_m)` bounded
-by `Lanczos.tan_angle_le`; `LinearMap.IsSymmetric.sin_angle_ritzVector_le` with
-`Arnoldi.norm_starProjection_comp_orthogonal_eq_coeff`.'''
-deps = ["LinearMap.IsSymmetric.sin_angle_ritzVector_le", "Arnoldi.norm_starProjection_comp_orthogonal_eq_coeff", "Lanczos.tan_angle_le"]
 source = "Saad, Numerical Methods for Large Eigenvalue Problems, Section 6.6.3"
 
 [[node]]

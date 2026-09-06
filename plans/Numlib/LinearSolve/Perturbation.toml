@@ -21,21 +21,6 @@ id = "relative_error_le_condNumber_mul_relative_residual"
 
 [[node]]
 id = "ContinuousLinearEquiv.relative_error_le_condNumber_mul_relative_residual"
-kind = "theorem"
-desc = '''The two-space form of Atkinson–Han (2.4.1): for `L : E ≃L[𝕜] F`, `L v = w`, `L v' = w'` and
-`w ≠ 0`, `‖v - v'‖ / ‖v‖ ≤ L.condNumber * (‖w - w'‖ / ‖w‖)`; the single-space
-`relative_error_le_condNumber_mul_relative_residual` is the case `E = F`.'''
-deps = ["ContinuousLinearEquiv.condNumber", "relative_error_le_condNumber_mul_relative_residual"]
-source = "Atkinson–Han, Theoretical Numerical Analysis, (2.4.1)"
 
 [[node]]
 id = "hasDerivAt_perturbed_solution"
-kind = "theorem"
-desc = '''The first-order perturbation theory of Saad (1.74)–(1.75), Kress Thm 5.3 and Higham Ch. 7: for
-`A : E ≃L[𝕜] E`, `E' : E →L[𝕜] E`, `b e : E` and `x = A⁻¹ b`, the map `ε ↦ (A + ε E')⁻¹ (b + ε e)`
-is differentiable at `0` (through `Units.isUnit_add_of_norm_lt` for small `ε` and
-`ContinuousLinearMap.inverse`) with derivative `A⁻¹ (e - E' x)`; hence the `IsLittleO` form
-`x(ε) - x = ε A⁻¹ (e - E' x) + o(ε)` and Saad's relative bound
-`‖x(ε) - x‖/‖x‖ ≤ ε κ(A) (‖E'‖/‖A‖ + ‖e‖/‖b‖) + o(ε)`.'''
-deps = ["Units.isUnit_add_of_norm_lt", "relative_error_le_condNumber", "NormedRing.condNumber"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, (1.74)–(1.76); Kress, Numerical Analysis, Theorem 5.3"

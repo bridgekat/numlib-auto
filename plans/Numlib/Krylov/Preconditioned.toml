@@ -95,27 +95,8 @@ id = "PCG.energyNorm_error_le"
 
 [[node]]
 id = "FGMRES.isMinRes"
-kind = "theorem"
-desc = '''Saad Prop 9.2: the flexible GMRES iterate, which minimizes `‖β e₁ - H̄_m y‖` and sets
-`x_m = x₀ + Z_m y` for arbitrary preconditioned directions `z_j` satisfying the Arnoldi-like
-relation `A Z_m = V_{m+1} H̄_m`, is `IsMinRes A b x₀ (span {z_1, …, z_m}) x_m`.
-
-Blocked, and the planned route is wrong: `Krylov.HessenbergRelation` cannot state the relation
-FGMRES satisfies, since its field relates one family of vectors to itself
-(`A (v j) = ∑ i ∈ range (j + 2), h i j • v i`), while FGMRES has `A z_j = ∑ h_ij v_i` with `z_j`
-an unrelated family (Saad (9.22)).  The two-family relation `Krylov.HessenbergRelation₂` of the
-planned group `Numlib/Krylov/QuasiMinRes` is what this needs; `deps` still names
-`HessenbergRelation` only because that group does not exist in this branch.'''
-deps = ["IsMinRes", "HessenbergRelation₂", "HessenbergRelation₂.residual_eq", "IsQuasiMinResIterate", "IsQuasiMinResIterate.isMinOn_norm_residual"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 9.2"
 
 [[node]]
 id = "FGMRES.apply_eq_iff_coeff_eq_zero"
-kind = "theorem"
-desc = '''Saad Prop 9.3: if `β ≠ 0`, `h_{i+1,i} ≠ 0` for `i < j` and `H_j` is nonsingular, then the FGMRES
-iterate `x_j` is exact iff `h_{j+1,j} = 0`; the flexible counterpart of the lucky-breakdown
-corollary of `Krylov.HessenbergRelation`.
-
-Blocked on `FGMRES.isMinRes`, hence on `Krylov.HessenbergRelation₂`.'''
-deps = ["FGMRES.isMinRes", "HessenbergRelation₂.residual_eq_of_mulVec_eq"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 9.3"

@@ -925,3 +925,163 @@ theorem kaniel_paige_saad {v : E} {m : ℕ}
 end Eigenbasis
 
 end Lanczos
+
+/-! ### The Arnoldi residual operator on a Krylov subspace -/
+
+namespace Arnoldi
+
+variable (A : E →ₗ[𝕜] E) (b : E)
+
+/-- The part of `A y` outside `𝒦_m`, as a linear map: `(1 - P_m) A`. -/
+private noncomputable def outside (m : ℕ) : E →ₗ[𝕜] E :=
+  (LinearMap.id - ((subspace A b m).starProjection : E →ₗ[𝕜] E)) ∘ₗ A
+
+private theorem outside_apply (m : ℕ) (x : E) :
+    outside A b m x = A x - (subspace A b m).starProjection (A x) := rfl
+
+/-- Below the last Arnoldi vector of `𝒦_m` the image stays inside `𝒦_m`. -/
+private theorem outside_vec_eq_zero {m j : ℕ} (h : j + 2 ≤ m) : outside A b m (vec A b j) = 0 := by
+  have hmem : A (vec A b j) ∈ subspace A b m :=
+    subspace_mono A b h (map_subspace_le A b (j + 1) ⟨_, vec_mem_subspace A b j, rfl⟩)
+  rw [outside_apply, Submodule.starProjection_eq_self_iff.2 hmem, sub_self]
+
+/-- At the last Arnoldi vector of `𝒦_m` the image leaves `𝒦_m` along `v_m`, with the subdiagonal
+Hessenberg coefficient as its size: `(1 - P_m) A v_{m-1} = h_{m+1,m} v_m` (Saad, *Numerical
+Methods for Large Eigenvalue Problems*, Proposition 6.6). -/
+theorem sub_starProjection_apply_vec_last {m : ℕ} (hm : 0 < m) :
+    A (vec A b (m - 1)) - (subspace A b m).starProjection (A (vec A b (m - 1)))
+      = coeff A b m (m - 1) • vec A b m := by
+  have h := starProjection_apply_vec A b (m - 1)
+  rw [show m - 1 + 1 = m from by omega] at h
+  exact h
+
+/-- The Arnoldi vectors have norm at most one: `1` before breakdown and `0` after. -/
+private theorem norm_vec_le_one (j : ℕ) : ‖vec A b j‖ ≤ 1 := by
+  rcases eq_or_ne (vec A b j) 0 with h | h
+  · rw [h, norm_zero]; norm_num
+  · rw [norm_vec_eq_one_of_ne_zero A b h]
+
+/-- **Saad, *Numerical Methods for Large Eigenvalue Problems*, Proposition 6.6**: on `𝒦_m` the
+operator `(1 - P_m) A` is bounded by the subdiagonal Hessenberg coefficient `h_{m+1,m}`.
+
+Only the last Arnoldi vector contributes, `(1 - P_m) A v_j` vanishing for `j + 2 ≤ m`, and there
+`(1 - P_m) A v_{m-1} = h_{m+1,m} v_m`. -/
+theorem norm_sub_starProjection_apply_le {m : ℕ} (hm : 0 < m) {y : E} (hy : y ∈ subspace A b m) :
+    ‖A y - (subspace A b m).starProjection (A y)‖ ≤ ‖coeff A b m (m - 1)‖ * ‖y‖ := by
+  have hval : outside A b m y
+      = (inner 𝕜 (vec A b (m - 1)) y : 𝕜) • coeff A b m (m - 1) • vec A b m := by
+    conv_lhs => rw [eq_sum_inner_smul_vec A b hy]
+    rw [map_sum, Finset.sum_eq_single (m - 1)]
+    · rw [map_smul, outside_apply, sub_starProjection_apply_vec_last A b hm]
+    · intro j hj hjne
+      have hjlt : j < m := Finset.mem_range.1 hj
+      rw [map_smul, outside_vec_eq_zero A b (by omega), smul_zero]
+    · intro hc
+      exact absurd (Finset.mem_range.2 (by omega)) hc
+  rw [← outside_apply, hval, norm_smul, norm_smul]
+  have h1 : ‖(inner 𝕜 (vec A b (m - 1)) y : 𝕜)‖ ≤ ‖y‖ :=
+    (norm_inner_le_norm _ _).trans
+      (by simpa using mul_le_mul_of_nonneg_right (norm_vec_le_one A b (m - 1)) (norm_nonneg y))
+  have h2 : ‖coeff A b m (m - 1)‖ * ‖vec A b m‖ ≤ ‖coeff A b m (m - 1)‖ := by
+    simpa using mul_le_mul_of_nonneg_left (norm_vec_le_one A b m) (norm_nonneg _)
+  calc ‖(inner 𝕜 (vec A b (m - 1)) y : 𝕜)‖ * (‖coeff A b m (m - 1)‖ * ‖vec A b m‖)
+      ≤ ‖y‖ * ‖coeff A b m (m - 1)‖ := mul_le_mul h1 h2 (by positivity) (norm_nonneg y)
+    _ = ‖coeff A b m (m - 1)‖ * ‖y‖ := mul_comm _ _
+
+/-- **The dual half of Saad, *Numerical Methods for Large Eigenvalue Problems*, Proposition 6.6**:
+for a symmetric operator the norm of `P_m A (1 - P_m)` is bounded by the same subdiagonal
+coefficient, because `P_m A (1 - P_m)` is the adjoint of `(1 - P_m) A P_m`.
+
+This is the hypothesis `γ` of `LinearMap.IsSymmetric.sin_angle_ritzVector_le`, so it is the form
+in which Proposition 6.6 enters the Ritz bounds of `Numlib/Eigen/RayleighRitz`. -/
+theorem norm_starProjection_apply_le_of_mem_orthogonal (hA : A.IsSymmetric) {m : ℕ} (hm : 0 < m)
+    {x : E} (hx : x ∈ (subspace A b m)ᗮ) :
+    ‖(subspace A b m).starProjection (A x)‖ ≤ ‖coeff A b m (m - 1)‖ * ‖x‖ := by
+  set K := subspace A b m with hK
+  set p := K.starProjection (A x) with hp
+  rcases eq_or_lt_of_le (norm_nonneg p) with h0 | hpos
+  · rw [← h0]
+    positivity
+  have hpK : p ∈ K := Submodule.starProjection_apply_mem _ _
+  -- `⟪p, p⟫ = ⟪x, A p - P_K (A p)⟫`
+  have h1 : (inner 𝕜 (A x) p : 𝕜) = inner 𝕜 p p := by
+    have h := Submodule.inner_left_of_mem_orthogonal (𝕜 := 𝕜) hpK
+      (Submodule.sub_starProjection_mem_orthogonal (K := K) (A x))
+    rw [inner_sub_left, sub_eq_zero] at h
+    exact h
+  have h2 : (inner 𝕜 x (A p - K.starProjection (A p)) : 𝕜) = inner 𝕜 p p := by
+    rw [inner_sub_right, Submodule.inner_left_of_mem_orthogonal
+      (Submodule.starProjection_apply_mem K (A p)) hx, sub_zero, ← hA x p, h1]
+  have h3 : ‖p‖ ^ 2 ≤ ‖x‖ * (‖coeff A b m (m - 1)‖ * ‖p‖) := by
+    have hcs : ‖(inner 𝕜 x (A p - K.starProjection (A p)) : 𝕜)‖
+        ≤ ‖x‖ * ‖A p - K.starProjection (A p)‖ := norm_inner_le_norm _ _
+    rw [h2] at hcs
+    have hsq : ‖(inner 𝕜 p p : 𝕜)‖ = ‖p‖ ^ 2 := by
+      rw [inner_self_eq_norm_sq_to_K, norm_pow, RCLike.norm_ofReal, abs_of_nonneg (norm_nonneg p)]
+    rw [hsq] at hcs
+    exact hcs.trans (mul_le_mul_of_nonneg_left
+      (norm_sub_starProjection_apply_le A b hm hpK) (norm_nonneg x))
+  have h4 : ‖p‖ * ‖p‖ ≤ ‖coeff A b m (m - 1)‖ * ‖x‖ * ‖p‖ := by nlinarith [h3]
+  exact le_of_mul_le_mul_right h4 hpos
+
+/-- **Saad, *Numerical Methods for Large Eigenvalue Problems*, Proposition 6.6**, in the form the
+Ritz bounds of `Numlib/Eigen/RayleighRitz` consume: for `0 < m ≤ grade A b` the norm of
+`(1 - P_m) A` on the unit sphere of `𝒦_m` is exactly the subdiagonal Hessenberg coefficient
+`h_{m+1,m} = Arnoldi.coeff A b m (m - 1)`, the `β_m` of the Lanczos process.
+
+The bound is `Arnoldi.norm_sub_starProjection_apply_le` and it is attained at the last Arnoldi
+vector `v_{m-1}`, where `(1 - P_m) A v_{m-1} = h_{m+1,m} v_m` and `v_m` is a unit vector unless
+the process has terminated, in which case `h_{m+1,m}` vanishes too. -/
+theorem norm_starProjection_comp_orthogonal_eq_coeff [FiniteDimensional 𝕜 (fullSubspace A b)]
+    {m : ℕ} (hm : 0 < m) (hgr : m ≤ grade A b) :
+    IsGreatest {r : ℝ | ∃ y ∈ subspace A b m, ‖y‖ = 1 ∧
+        ‖A y - (subspace A b m).starProjection (A y)‖ = r} ‖coeff A b m (m - 1)‖ := by
+  constructor
+  · refine ⟨vec A b (m - 1), vec_mem_subspace_of_lt A b (by omega),
+      norm_vec_eq_one_of_lt_grade A b (by omega), ?_⟩
+    rw [sub_starProjection_apply_vec_last A b hm, norm_smul]
+    rcases lt_or_eq_of_le hgr with hlt | heq
+    · rw [norm_vec_eq_one_of_lt_grade A b hlt, mul_one]
+    · have h0 : vec A b m = 0 := (vec_eq_zero_iff A b m).2 heq.ge
+      have hw : w A b (m - 1) = 0 := by
+        have hv := vec_succ_eq A b (m - 1)
+        rw [show m - 1 + 1 = m from by omega, h0] at hv
+        rcases smul_eq_zero.1 hv.symm with hc | hc
+        · have : ‖w A b (m - 1)‖ = 0 := by
+            simpa using congrArg RCLike.re (inv_eq_zero.1 hc)
+          exact norm_eq_zero.1 this
+        · exact hc
+      have hcoeff : coeff A b m (m - 1) = 0 := by
+        have hcs := coeff_succ_self A b (m - 1)
+        rw [show m - 1 + 1 = m from by omega] at hcs
+        rw [hcs, hw, norm_zero, RCLike.ofReal_zero]
+      rw [hcoeff, norm_zero, zero_mul]
+  · rintro r ⟨y, hy, hy1, rfl⟩
+    simpa [hy1] using norm_sub_starProjection_apply_le A b hm hy
+
+end Arnoldi
+
+namespace Lanczos
+
+/-- **The Ritz-vector bound of the Lanczos process** (Saad, *Numerical Methods for Large
+Eigenvalue Problems*, §6.6.3): on a Krylov subspace the constant `γ` of the Ritz-vector bound
+`LinearMap.IsSymmetric.sin_angle_ritzVector_le` is the subdiagonal Hessenberg coefficient
+`β_m = h_{m+1,m}`, so a Ritz pair at a well-separated Ritz value `θ` has
+
+`sin ∠(u, ũ) ≤ √(1 + β_m² / δ²) sin ∠(u, 𝒦_m)`,
+
+and `Krylov.Lanczos.tan_angle_le` bounds the right-hand side by a Chebyshev quotient. -/
+theorem sin_angle_ritzVector_le {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric) (v : E) {m : ℕ} (hm : 0 < m)
+    {δ θ lam : ℝ} (hδ0 : 0 < δ)
+    (hθ : Module.End.HasEigenvalue (compression A (subspace A v m)) (θ : 𝕜))
+    (hδ : ∀ z ∈ (Module.End.eigenspace (compression A (subspace A v m)) (θ : 𝕜))ᗮ,
+      δ * ‖z‖ ≤ ‖compression A (subspace A v m) z - (lam : 𝕜) • z‖)
+    {u : E} (hu : A u = (lam : 𝕜) • u) (hu0 : u ≠ 0) :
+    ∃ w : E, IsRitzPair A (subspace A v m) (θ : 𝕜) w ∧
+      (𝕜 ∙ w).sinAngle u ≤
+        Real.sqrt (1 + ‖Arnoldi.coeff A v m (m - 1)‖ ^ 2 / δ ^ 2) *
+          (subspace A v m).sinAngle u :=
+  hA.sin_angle_ritzVector_le hδ0
+    (fun _x hx => Arnoldi.norm_starProjection_apply_le_of_mem_orthogonal A v hA hm hx) hθ hδ hu hu0
+
+end Lanczos

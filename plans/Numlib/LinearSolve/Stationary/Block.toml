@@ -1,42 +1,60 @@
 namespace = "Matrix"
-desc = '''
-Block splittings and block relaxation: Saad, *Iterative Methods for Sparse Linear Systems*,
-§4.1.1, (4.15)–(4.17), Algorithms 4.1–4.2 (the non-overlapping case), and the identification of a
-block relaxation sweep with the projection processes of `Numlib/LinearSolve/Projection/Additive`
-(Saad §5.4: each inner step of Algorithm 4.1 is an orthogonal projection step onto the span of the
-block's coordinate vectors, so block Jacobi is the additive process and block Gauss–Seidel the
-multiplicative one with `K i = L i = span (e_j : π j = i)`).
-
-The block structure is a labelling `π : n → ι` of the index set by a linearly ordered type `ι`;
-the block-diagonal, strict block-lower and strict block-upper parts are the entries with
-`π i = π j`, `π j < π i` and `π i < π j`. The point splittings of
-`Numlib/LinearSolve/Stationary/Splitting` are the case `π = id`. Overlapping blocks (Saad's
-general Algorithm 4.1) are not planned; they have no theorem in the book.
-'''
 
 [[node]]
 id = "blockDiagPart"
-kind = "definition"
-desc = '''`blockDiagPart π A i j = if π i = π j then A i j else 0`, with `blockStrictLower` (`π j < π i`)
-and `blockStrictUpper` (`π i < π j`); `A = blockDiagPart - (-blockStrictLower) - (-blockStrictUpper)`
-is Saad (4.15), and `π = id` recovers `diagPart`, `strictLower`, `strictUpper`.'''
-deps = ["diagPart", "strictLower", "strictUpper"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, (4.15)"
 
 [[node]]
+id = "blockStrictLower"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (4.15)"
+
+[[node]]
+id = "blockStrictUpper"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (4.15)"
+
+[[node]]
+id = "blockDiagPart_add_blockStrictLower_add_blockStrictUpper"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (4.15)"
+
+[[node]]
+id = "isUnit_blockDiagPart_add_blockStrictLower"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Algorithm 4.1"
+
+[[node]]
 id = "blockJacobiSplitting"
-kind = "definition"
-desc = '''The block Jacobi splitting `M = blockDiagPart π A` (Saad (4.16)), with `blockGaussSeidelSplitting`
-(`M = blockDiagPart π A - E` for the strict block-lower part `-E`) and `blockSorSplitting` alongside,
-each a `Stationary.Splitting A` under the invertibility of the block diagonal.'''
-deps = ["blockDiagPart", "jacobiSplitting"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, (4.16), Algorithms 4.1–4.2"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (4.16)"
+
+[[node]]
+id = "blockGaussSeidelSplitting"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Algorithm 4.1"
+
+[[node]]
+id = "blockSorSplitting"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Algorithm 4.2"
 
 [[node]]
 id = "blockJacobiSplitting_step_eq_additiveStep"
 kind = "theorem"
 desc = '''Saad's remark in §5.4: one block Jacobi step is the additive projection step with
-`K i = L i = span {e_j | π j = i}` and all weights `1`, so (4.17) is (5.7) with `W = V = V_i`.'''
+`K i = L i = span {e_j | π j = i}` and all weights `1`, so (4.17) is (5.7) with `W = V = V_i`.
+
+Not attempted; the block splittings it needs are now proved, so what is left is the bridge, and
+the bridge is the whole cost. The mathematics is settled and short: the `i`-th Petrov–Galerkin
+correction is the vector `w i` supported on block `i` whose block-`i` coordinates are those of
+`(blockDiagPart π A)⁻¹ (b - A x)`, because for `π j = i` the entry `(A (w i)) j` equals
+`(blockDiagPart π A * w i) j` — the columns outside block `i` are zero — so the residual of
+`x + w i` vanishes on block `i`, which is orthogonality to `K i`; uniqueness in
+`Projection.existsUnique_isPetrovGalerkin_of_finrank_eq` then identifies it with `pairStep`, and
+`∑ i, w i` is `(blockDiagPart π A)⁻¹ (b - A x)`, the block Jacobi step.
+
+What has to be built first, none of which exists: the coordinate subspace
+`K i = span {EuclideanSpace.single j 1 | π j = i}` of `EuclideanSpace 𝕜 n` with its membership
+criterion `v ∈ K i ↔ ∀ j, π j ≠ i → v j = 0` and the dual criterion
+`v ∈ (K i)ᗮ ↔ ∀ j, π j = i → v j = 0`; the `FiniteDimensional` instances; and
+`Matrix.IsNondegeneratePair (toEuclideanLin A) (K i) (K i)` from `IsUnit (blockDiagPart π A)`,
+which needs invertibility of the block to be transported to the compression of `toEuclideanLin A`
+to `K i`. That is a `Numlib/LinearSolve/Projection/Coordinate.lean` worth of API, and it would
+serve `blockGaussSeidelSplitting_step_eq_multiplicativeStep` too.'''
 deps = ["blockJacobiSplitting", "Projection.additiveStep", "Stationary.Splitting.eq_iterationOperator_mul_add_iff"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, Section 5.4, remark on (4.17)"
 
@@ -44,6 +62,12 @@ source = "Saad, Iterative Methods for Sparse Linear Systems, Section 5.4, remark
 id = "blockGaussSeidelSplitting_step_eq_multiplicativeStep"
 kind = "theorem"
 desc = '''One block Gauss–Seidel sweep is the multiplicative projection sweep over the blocks in
-increasing label order (Saad §5.4, Algorithm 5.6).'''
-deps = ["blockJacobiSplitting", "Projection.multiplicativeStep"]
+increasing label order (Saad §5.4, Algorithm 5.6).
+
+Not attempted, for the reason recorded on `blockJacobiSplitting_step_eq_additiveStep`: it needs
+the same coordinate-subspace API, and in addition an induction over the sweep list showing that
+after the blocks with labels `< i` have been updated the residual on block `i` is the one the
+Gauss–Seidel formula uses. The list has to enumerate `Finset.univ.image π` in increasing order,
+which asks for `[Fintype ι]` here although the splittings themselves do not need it.'''
+deps = ["blockGaussSeidelSplitting", "Projection.multiplicativeStep"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, Section 5.4, Algorithm 5.6"

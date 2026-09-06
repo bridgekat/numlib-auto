@@ -157,6 +157,10 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   cache written *before* that build and reports every node of the new module as `open`.
   `lake exe tracker check` reads oleans and takes no build lock, so run it before trusting any
   `--no-check` reading.
+* `lake env lean -D weak.linter.mathlibStandardSet=true F.lean` turns the *whole* standard set on,
+  including `linter.style.header`, which `lakefile.toml` deliberately disables for this project. The
+  result is six copyright-header warnings on every file. Add `-D weak.linter.style.header=false`
+  and the output is exactly what `lake build` will say.
 
 ## Correctness traps
 
@@ -1676,6 +1680,35 @@ across a rectangular `A` unchanged (Saad §8.1 uses exactly that).
   and use `change`/`ContinuousLinearMap.ext` rather than `rw` on the derivative.
 * `open scoped … in` and `set_option … in` must both come **before** the docstring; after it the
   parser reports `unexpected token 'open'; expected 'lemma'`.
+
+* `add_sub_cancel a b : a + (b - a) = b` in this toolchain — *not* `a + b - b = a`, which is
+  `add_sub_cancel_right`. Putting `sub_add_cancel` in a `simp only` set where `add_sub_cancel` was
+  meant leaves the goal untouched and the linter then reports the lemma as unused, which is the
+  only sign that the wrong name was chosen.
+* `Finset.le_sup' f h : f b ≤ s.sup' _ f` cannot infer `f` from the goal any more than
+  `Finset.le_sup` can: pass it, `Finset.le_sup' (fun i => w i / x i) (Finset.mem_univ i)`. The
+  nonemptiness proof in the conclusion is `⟨b, h⟩` and matches any other by proof irrelevance.
+* `Matrix.BlockTriangular.det` factors the determinant over `Finset.univ.image b`, so it needs
+  **no** `Fintype` on the label type — only `DecidableEq` and `LinearOrder`. `det_fintype` is the
+  variant that does. That is what lets a block splitting be indexed by an arbitrary linearly
+  ordered label type.
+* `HasFDerivAt.comp_hasDerivAt` takes the point as an *explicit first* argument
+  (`HasFDerivAt.comp_hasDerivAt 0 hinv hg`) because `x` is a section variable of the file, and its
+  conclusion is about `l ∘ f`, which will not unify with the expected `fun t => l (f t)` when the
+  outer function is still a metavariable. Bind it with `have h := …` and close with `exact h`.
+* `HasDerivAt.const_add` is an `alias` of the `mpr` of `hasDerivAt_const_add_iff`, and writing it
+  as `HasDerivAt.const_add c h` elaborates `HasDerivAt` as a *function* and reports
+  "`Function.const_add` does not have a usable parameter". Use `(hasDerivAt_const_add_iff c).2 h`.
+  The same file's `HasDerivAt.smul_const hc f` is a real theorem and does work by name — but not by
+  dot notation on a `HasDerivAt` hypothesis, which resolves into `HasFDerivAtFilter`.
+* `hasFDerivAt_ringInverse (x : Rˣ) : HasFDerivAt Ring.inverse (-mulLeftRight 𝕜 R ↑x⁻¹ ↑x⁻¹) x`
+  (`Mathlib/Analysis/Calculus/FDeriv/Mul.lean`) applies to `R = E →L[𝕜] E` for a complete `E`, and
+  with `HasDerivAt.clm_apply` it differentiates `ε ↦ (A + ε B)⁻¹ (b + ε e)` in four lines. It needs
+  `Mathlib.Analysis.Calculus.Deriv.Comp` imported as well, or `HasFDerivAt.comp_hasDerivAt` is an
+  unknown constant.
+* `omega` cannot see through `↑(⟨m - 1, h⟩ : Fin m)`: a goal `(i : ℕ) = ↑(⟨m - 1, h⟩ : Fin m)` is
+  opaque to it. State the arithmetic as `have hval : (i : ℕ) = m - 1 := by omega` and feed that to
+  `Fin.ext`, which closes the coercion by defeq.
 
 ## Design conventions of this library
 

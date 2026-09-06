@@ -1,96 +1,45 @@
 namespace = "Matrix"
-desc = '''
-The Schur complement of a `2 × 2` block matrix, as an upstreaming candidate (natural home:
-`Mathlib.LinearAlgebra.Matrix.SchurComplement`, which already holds the block LDU identity
-`Matrix.fromBlocks_eq_of_invertible₁₁`, the determinant formulas and the positive *semi*definite
-criterion `Matrix.PosDef.fromBlocks₁₁`, but names no Schur complement and proves nothing about
-its inverse).
-
-Two consumers, which is why it is here and not in either of them. Domain decomposition (Saad,
-*Iterative Methods for Sparse Linear Systems*, §14.2) reduces `A x = b` to the interface system
-`S y = g'`, and needs: `S` nonsingular when `A` and the `(1,1)` block are, `S` positive definite
-when `A` is, `S⁻¹` is the `(2,2)` block of `A⁻¹`, and the three-factor factorization
-`A = L_A (1 ⊕ S) U_A` behind the equivalence of a preconditioned full-matrix iteration with an
-iteration on the reduced system. Incomplete factorization (Saad §10.3.1) needs the `1 × 1`-pivot
-case: one step of Gaussian elimination is the Schur complement by the `(1,1)` entry, which is what
-turns Ky Fan's theorem into a statement about `schurComplement`.
-
-Indexing is by a sum type `m ⊕ n` throughout, so that `Matrix.toBlocks₁₁ … toBlocks₂₂` apply and no
-reindexing equivalence appears in the statements. `IsUnit` rather than `Invertible` is the
-hypothesis form, since the surface hypotheses are nonsingularity, not a chosen inverse.
-'''
 
 [[node]]
 id = "schurComplement"
-kind = "definition"
-desc = '''`A.schurComplement : Matrix n n R` for `A : Matrix (m ⊕ n) (m ⊕ n) R` is
-`A.toBlocks₂₂ - A.toBlocks₂₁ * A.toBlocks₁₁⁻¹ * A.toBlocks₁₂`, the Schur complement of the `(1,1)`
-block (Saad, *Iterative Methods for Sparse Linear Systems*, (14.5): `S = C - F B⁻¹ E`), with
-`schurComplement_fromBlocks : (fromBlocks B E F C).schurComplement = C - F * B⁻¹ * E` as the
-simp-normal form. `noncomputable`, because `Matrix.inv` is.'''
 source = "Saad, Iterative Methods for Sparse Linear Systems, (14.5)"
 
 [[node]]
+id = "schurComplement_fromBlocks"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (14.5)"
+
+[[node]]
+id = "fromBlocks_eq_mul_fromBlocks_schurComplement"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (14.6)"
+
+[[node]]
 id = "fromBlocks_eq_mul_schurComplement"
-kind = "theorem"
-desc = '''Saad (14.6) and (14.52) in `IsUnit` form: for `IsUnit A.toBlocks₁₁`,
-`A = fromBlocks 1 0 (F * B⁻¹) 1 * fromBlocks 1 0 0 A.schurComplement * fromBlocks B E 0 1`, and the
-two-factor block-LU form `A = fromBlocks 1 0 (F * B⁻¹) 1 * fromBlocks B E 0 A.schurComplement`.
-Mathlib's `Matrix.fromBlocks_eq_of_invertible₁₁` gives the two-factor identity for an
-`Invertible` block; this restates it for `IsUnit` and splits the middle factor.'''
-deps = ["schurComplement"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, (14.6) and (14.52)"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (14.52)"
+
+[[node]]
+id = "isUnit_schurComplement_iff"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 14.1 (1)"
 
 [[node]]
 id = "isUnit_schurComplement"
-kind = "theorem"
-desc = '''Saad Proposition 14.1 (1): if `A` and its `(1,1)` block are nonsingular then so is the Schur
-complement, with the converse `isUnit_of_isUnit_schurComplement`. Read off
-`fromBlocks_eq_mul_schurComplement`: the outer factors are unipotent block triangular, hence
-units, so `A` is a unit iff `fromBlocks B E 0 S` is, iff `S` is.'''
-deps = ["schurComplement", "fromBlocks_eq_mul_schurComplement"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 14.1 (1)"
+
+[[node]]
+id = "isUnit_of_isUnit_schurComplement"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 14.1 (1)"
 
 [[node]]
 id = "inv_fromBlocks_eq"
-kind = "theorem"
-desc = '''Saad (14.7): the block inverse
-`A⁻¹ = fromBlocks (B⁻¹ + B⁻¹ E S⁻¹ F B⁻¹) (-B⁻¹ E S⁻¹) (-S⁻¹ F B⁻¹) S⁻¹` when `A.toBlocks₁₁` and `A`
-are units; by inverting the three factors of `fromBlocks_eq_mul_schurComplement`, each of which is
-block triangular with a unit diagonal (`Matrix.invOf_fromBlocks_zero₂₁_eq` in Mathlib).'''
-deps = ["schurComplement", "fromBlocks_eq_mul_schurComplement", "isUnit_schurComplement"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, (14.7)"
 
 [[node]]
 id = "toBlocks₂₂_inv_eq_inv_schurComplement"
-kind = "theorem"
-desc = '''Saad Proposition 14.1 (3): the `(2,2)` block of `A⁻¹` is `S⁻¹`, that is
-`(A⁻¹).toBlocks₂₂ = A.schurComplement⁻¹`, equivalently `S⁻¹ y = R_y (A⁻¹ (0 ⊕ᵥ y))` for the
-restriction `R_y` to the second block of coordinates. This is the identity that lets a
-preconditioner for `S` be built out of a solver for `A`.'''
-deps = ["inv_fromBlocks_eq", "schurComplement"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 14.1 (3)"
 
 [[node]]
 id = "PosDef.schurComplement"
-kind = "theorem"
-desc = '''Saad Proposition 14.1 (2): the Schur complement of a Hermitian positive definite matrix is
-Hermitian positive definite. Mathlib has only the positive *semi*definite equivalence
-(`Matrix.PosDef.fromBlocks₁₁`); the strict form follows from
-`toBlocks₂₂_inv_eq_inv_schurComplement`, since `A⁻¹` is positive definite and a principal submatrix
-of a positive definite matrix is positive definite (`Matrix.PosDef.submatrix` with an injection),
-and the inverse of a positive definite matrix is positive definite.'''
-deps = ["schurComplement", "toBlocks₂₂_inv_eq_inv_schurComplement"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 14.1 (2)"
 
 [[node]]
 id = "schurComplementSingle"
-kind = "definition"
-desc = '''The `1 × 1`-pivot case, one step of Gaussian elimination: for `A : Matrix n n R` with `n` a
-linear order (or an index `p : n` and its complement), `A.schurComplementSingle p i j =
-A i j - A i p * (A p p)⁻¹ * A p j` on the indices `i, j ≠ p`. The bridge from `schurComplement` to
-incomplete factorization: `A₁` of Saad (10.10) is `schurComplementSingle` of the first index, and
-`schurComplementSingle_eq_schurComplement` identifies it with the general definition through the
-splitting of `n` as `{p} ⊕ {p}ᶜ`.'''
-deps = ["schurComplement"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, (10.10)"

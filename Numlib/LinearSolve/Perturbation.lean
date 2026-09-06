@@ -1,5 +1,9 @@
 import Numlib.Analysis.Normed.Ring.Inverse
 import Numlib.Analysis.Normed.Ring.CondNumber
+import Mathlib.Analysis.Calculus.Deriv.Add
+import Mathlib.Analysis.Calculus.Deriv.Comp
+import Mathlib.Analysis.Calculus.Deriv.Mul
+import Mathlib.Analysis.Calculus.FDeriv.Mul
 import Mathlib.Analysis.InnerProductSpace.Basic
 import Mathlib.Analysis.InnerProductSpace.LinearMap
 
@@ -223,3 +227,76 @@ theorem backwardError_le_iff (A : E →L[𝕜] E) (b y : E) {α β ξ : ℝ}
   rw [backwardError_def, div_le_iff₀ hpos]
 
 end BackwardError
+
+section TwoSpace
+
+variable {F : Type*} [NormedAddCommGroup F] [NormedSpace 𝕜 F]
+
+/-- **The two-space residual–error relation** (Atkinson–Han, *Theoretical Numerical Analysis*,
+(2.4.1)): for an isomorphism `L : E ≃L[𝕜] F` of normed spaces, the relative error of the solution
+of `L v = w` is at most `κ L` times the relative error of the data.
+
+The single-space `relative_error_le_condNumber_mul_relative_residual` is the case `F = E`. -/
+theorem ContinuousLinearEquiv.relative_error_le_condNumber_mul_relative_residual (L : E ≃L[𝕜] F)
+    {v v' : E} {w w' : F} (hv : L v = w) (hv' : L v' = w') (hw : w ≠ 0) :
+    ‖v - v'‖ / ‖v‖ ≤ L.condNumber * (‖w - w'‖ / ‖w‖) := by
+  have hv0 : v ≠ 0 := by
+    rintro rfl
+    exact hw (by rw [← hv]; simp)
+  have hvn : 0 < ‖v‖ := norm_pos_iff.mpr hv0
+  have hwn : 0 < ‖w‖ := norm_pos_iff.mpr hw
+  have hvv : v - v' = (L.symm : F →L[𝕜] E) (w - w') := by
+    rw [← hv, ← hv']
+    simp
+  have h1 : ‖v - v'‖ ≤ ‖(L.symm : F →L[𝕜] E)‖ * ‖w - w'‖ := by
+    rw [hvv]
+    exact (L.symm : F →L[𝕜] E).le_opNorm _
+  have h2 : ‖w‖ ≤ ‖(L : E →L[𝕜] F)‖ * ‖v‖ := by
+    rw [← hv]
+    simpa using (L : E →L[𝕜] F).le_opNorm v
+  rw [ContinuousLinearEquiv.condNumber, ← mul_div_assoc, div_le_div_iff₀ hvn hwn]
+  calc ‖v - v'‖ * ‖w‖
+      ≤ ‖(L.symm : F →L[𝕜] E)‖ * ‖w - w'‖ * (‖(L : E →L[𝕜] F)‖ * ‖v‖) :=
+        mul_le_mul h1 h2 (norm_nonneg _) (by positivity)
+    _ = ‖(L : E →L[𝕜] F)‖ * ‖(L.symm : F →L[𝕜] E)‖ * ‖w - w'‖ * ‖v‖ := by ring
+
+end TwoSpace
+
+/-- **First-order perturbation theory for a linear system** (Saad, *Iterative Methods for Sparse
+Linear Systems*, (1.74)–(1.75); Kress, *Numerical Analysis*, Thm 5.3; Higham, *Accuracy and
+Stability of Numerical Algorithms*, Ch. 7): for an isomorphism `A`, a perturbation direction `B`
+of the operator and `e` of the right-hand side, the solution of `(A + ε B) x(ε) = b + ε e` is
+differentiable in `ε` at `0`, with derivative `A⁻¹ (e - B (A⁻¹ b))`.
+
+The solution is written with `Ring.inverse` in the algebra `E →L[𝕜] E`, whose junk value is
+irrelevant here: `A` is a unit, so `A + ε B` is one for all small `ε` and the map differentiated
+agrees with the solution of the perturbed system near `0`. -/
+theorem hasDerivAt_perturbed_solution [CompleteSpace E] (A : E ≃L[𝕜] E) (B : E →L[𝕜] E)
+    (b e : E) :
+    HasDerivAt (fun ε : 𝕜 => (Ring.inverse ((A : E →L[𝕜] E) + ε • B)) (b + ε • e))
+      ((A.symm : E →L[𝕜] E) (e - B ((A.symm : E →L[𝕜] E) b))) 0 := by
+  obtain ⟨u, hu⟩ : IsUnit (A : E →L[𝕜] E) := ⟨A.toUnit, rfl⟩
+  have hg : HasDerivAt (fun ε : 𝕜 => (A : E →L[𝕜] E) + ε • B) B 0 := by
+    simpa using (hasDerivAt_const_add_iff (A : E →L[𝕜] E)).2
+      (HasDerivAt.smul_const (hasDerivAt_id (0 : 𝕜)) B)
+  have hg0 : (fun ε : 𝕜 => (A : E →L[𝕜] E) + ε • B) 0 = (u : E →L[𝕜] E) := by
+    simp [hu]
+  have hinv : HasFDerivAt Ring.inverse
+      (-ContinuousLinearMap.mulLeftRight 𝕜 (E →L[𝕜] E) (↑u⁻¹) (↑u⁻¹))
+      ((fun ε : 𝕜 => (A : E →L[𝕜] E) + ε • B) 0) := by
+    rw [hg0]
+    exact hasFDerivAt_ringInverse u
+  have hcomp : HasDerivAt (fun ε : 𝕜 => Ring.inverse ((A : E →L[𝕜] E) + ε • B))
+      ((-ContinuousLinearMap.mulLeftRight 𝕜 (E →L[𝕜] E) (↑u⁻¹) (↑u⁻¹)) B) 0 := by
+    have h := HasFDerivAt.comp_hasDerivAt 0 hinv hg
+    exact h
+  have hb : HasDerivAt (fun ε : 𝕜 => b + ε • e) e 0 := by
+    simpa using (hasDerivAt_const_add_iff b).2
+      (HasDerivAt.smul_const (hasDerivAt_id (0 : 𝕜)) e)
+  have hAinv : ((u⁻¹ : (E →L[𝕜] E)ˣ) : E →L[𝕜] E) = (A.symm : E →L[𝕜] E) := by
+    rw [← ContinuousLinearEquiv.ring_inverse_coe A, ← hu, Ring.inverse_unit]
+  have hres := HasDerivAt.clm_apply hcomp hb
+  convert hres using 1
+  simp only [zero_smul, add_zero, ContinuousLinearEquiv.ring_inverse_coe, hAinv, neg_apply,
+    ContinuousLinearMap.mulLeftRight_apply, map_sub]
+  abel

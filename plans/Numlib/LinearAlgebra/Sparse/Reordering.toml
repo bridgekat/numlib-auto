@@ -1,69 +1,25 @@
 namespace = "Matrix"
-desc = '''
-What a graph ordering does to a matrix: Saad, *Iterative Methods for Sparse Linear Systems*,
-§3.3.3. Each of the book's three reorderings - level sets (breadth-first search, Cuthill-McKee),
-independent sets, multicolouring - is a labelling of the vertices of `Matrix.adjGraph A`, and each
-gives a block structure of `A.submatrix σ σ` for any permutation `σ` compatible with the
-labelling. The graph-theoretic content lives in `Numlib/Combinatorics/SimpleGraph`; what is here
-is only the translation to matrix entries, and it is deliberately stated for the *labelling*
-rather than for a permutation, so that no algorithm has to be formalized:
-
-* the level-set theorem is `A i j ≠ 0 → i ≠ j → |dist v i - dist v j| ≤ 1`, from which
-  block-tridiagonality of a distance-monotone reordering is immediate;
-* the multicolour theorem is `A i j ≠ 0 → i ≠ j → c i ≠ c j` for a proper colouring `c`, from
-  which the diagonal blocks of a colour-grouped reordering are diagonal;
-* the independent-set theorem is the same statement for the two-set labelling, giving Saad's
-  block form (3.3) with a diagonal leading block.
-
-Algorithms 3.1-3.6 are not formalized: the theorems are about the labelling they produce, and the
-statements above hold for any labelling with the stated property, including the ones the
-algorithms compute. Bandwidth and profile are not defined anywhere in the book's Ch. 3 and no
-bound about them is proved, so they are not planned.
-'''
 
 [[node]]
 id = "abs_dist_sub_dist_le_one_of_apply_ne_zero"
-kind = "theorem"
-desc = '''Saad §3.3.3, the property that makes level sets separators: if `A` has a symmetric pattern,
-`v` is a root and every index is reachable from `v` in `Matrix.adjGraph A`, then
-`A i j ≠ 0 → i ≠ j → |(adjGraph A).dist v i - (adjGraph A).dist v j| ≤ 1` (as integers). One
-application of `SimpleGraph.dist_le_dist_add_one_of_adj` of
-`Numlib/Combinatorics/SimpleGraph/LevelSet` in each direction.'''
-deps = ["adjGraph", "SimpleGraph.dist_le_dist_add_one_of_adj"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, Section 3.3.3"
 
 [[node]]
 id = "apply_eq_zero_of_dist_lt"
-kind = "theorem"
-desc = '''The block-tridiagonal conclusion of a Cuthill-McKee or breadth-first ordering: with the
-hypotheses above, `(adjGraph A).dist v i + 2 ≤ (adjGraph A).dist v j → A i j = 0` and its mirror
-image. For a permutation `σ` for which `k ↦ dist v (σ k)` is monotone, this says that
-`A.submatrix σ σ` is block tridiagonal with the level sets as blocks, which is what the book
-concludes and what the `Numlib/LinearAlgebra/Matrix/Hessenberg` predicate `IsTridiagonal`
-expresses at block level.'''
-deps = ["abs_dist_sub_dist_le_one_of_apply_ne_zero", "IsTridiagonal"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 3.3.3"
+
+[[node]]
+id = "apply_eq_zero_of_dist_lt'"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Section 3.3.3"
 
 [[node]]
 id = "apply_eq_zero_of_coloring_eq"
-kind = "theorem"
-desc = '''Multicolour orderings: for a proper colouring `c` of `Matrix.adjGraph A`,
-`i ≠ j → c i = c j → A i j = 0`. Hence in any permutation that groups the indices by colour, the
-diagonal blocks of `A.submatrix σ σ` are diagonal matrices - Saad's whole point about
-multicolouring, and the same statement with two colours is his Property A (Definition 4.11) and
-Saad (4.42). The independent-set form of §3.3.3 is the special case of the two-valued labelling
-whose first class is independent, giving the block form (3.3) with a diagonal leading block; it
-is `apply_eq_zero_of_isIndepSet`.'''
-deps = ["adjGraph"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, Section 3.3.3 and (4.42)"
 
 [[node]]
+id = "apply_eq_zero_of_isIndepSet"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 3.3.3 and (3.3)"
+
+[[node]]
 id = "exists_coloring_of_le_maxDegree"
-kind = "theorem"
-desc = '''The matrix-level corollary of the greedy colouring bound: a matrix with a symmetric pattern
-and at most `nu` off-diagonal nonzeros in each row admits a labelling into `nu + 1` classes with
-`apply_eq_zero_of_coloring_eq`, so a multicolour reordering with `nu + 1` blocks always exists.
-`SimpleGraph.colorable_maxDegree_add_one` of `Numlib/Combinatorics/SimpleGraph/Coloring` with
-`(adjGraph A).degree i` bounded by the number of off-diagonal nonzeros of row `i`.'''
-deps = ["apply_eq_zero_of_coloring_eq", "SimpleGraph.colorable_maxDegree_add_one"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, Section 3.3.3 and Problem P-3.10"

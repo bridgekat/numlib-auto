@@ -1,5 +1,6 @@
 import Numlib.Krylov.CG
 import Numlib.Krylov.Convergence.CG
+import Numlib.Krylov.QuasiMinRes
 import Numlib.Analysis.InnerProductSpace.Energy
 
 /-!
@@ -442,5 +443,173 @@ theorem energyNorm_error_le {M : E →ₗ[𝕜] E} (hM : IsPreconditioner M Minv
   exact h
 
 end PCG
+
+/-! ### Flexible GMRES -/
+
+namespace FGMRES
+
+/-- **Saad, *Iterative Methods for Sparse Linear Systems*, Proposition 9.2**: the flexible GMRES
+iterate minimizes the residual norm over `x₀ + span {z_0, …, z_{m-1}}`.
+
+FGMRES expands the *iterate* in arbitrary preconditioned directions `z_j = M_j⁻¹ v_j` while
+expanding the *residual* in the orthonormal Arnoldi basis `v_i`, so its search space is not a
+Krylov subspace; what makes the minimization work is only the two-family relation
+`A Z_m = V_{m+1} H̄_m` of Saad (9.22) together with orthonormality of `V_{m+1}`. This is
+`Krylov.IsQuasiMinResIterate.isMinOn_norm_residual` with the minimizer given explicitly. -/
+theorem isMinRes {A : E →ₗ[𝕜] E} {z v : ℕ → E} {h : ℕ → ℕ → 𝕜} {b x₀ : E} {β : 𝕜}
+    (hv : HessenbergRelation₂ A z v h) (hr : b - A x₀ = β • v 0) {m : ℕ}
+    (hon : Orthonormal 𝕜 fun i : Fin (m + 1) => v (i : ℕ)) {y : Fin m → 𝕜}
+    (hy : IsMinOn (quasiResidual h β m) Set.univ y) :
+    IsMinRes A b x₀ (Submodule.span 𝕜 (Set.range fun j : Fin m => z (j : ℕ)))
+      (x₀ + ∑ j, y j • z j) :=
+  IsQuasiMinResIterate.isMinOn_norm_residual hv hr hon ⟨y, hy, rfl⟩
+
+/-- The last row of the rectangular Hessenberg matrix carries only its subdiagonal entry. -/
+private theorem mulVec_hessenbergOf_last {h : ℕ → ℕ → 𝕜} (hH : ∀ i k, k + 1 < i → h i k = 0)
+    {m : ℕ} (hm : 0 < m) (y : Fin m → 𝕜) :
+    (hessenbergOf h m).mulVec y ⟨m, Nat.lt_succ_self m⟩
+      = h m (m - 1) * y ⟨m - 1, by omega⟩ := by
+  simp only [Matrix.mulVec, dotProduct, hessenbergOf, Matrix.of_apply]
+  refine Finset.sum_eq_single (⟨m - 1, by omega⟩ : Fin m) (fun k _ hk => ?_)
+    (fun hc => absurd (Finset.mem_univ _) hc)
+  have hklt := k.isLt
+  have hk' : (k : ℕ) ≠ m - 1 := fun hcc => hk (Fin.ext hcc)
+  rw [hH m (k : ℕ) (by omega), zero_mul]
+
+/-- **Back substitution in a Hessenberg system**: if the subdiagonal entries `h_{i+1,i}` do not
+vanish and `H_m y = β e₁` with `β ≠ 0`, then the last coordinate of `y` is nonzero.
+
+Were it zero, the last equation would force the one before it to vanish, and so on down to
+`y_0 = 0`; the first equation would then read `0 = β`. -/
+private theorem last_ne_zero_of_mulVec_eq {h : ℕ → ℕ → 𝕜} {β : 𝕜} (hβ : β ≠ 0) {m : ℕ}
+    (hm : 0 < m) (hH : ∀ i k, k + 1 < i → h i k = 0)
+    (hsub : ∀ i, i + 1 < m → h (i + 1) i ≠ 0) {y : Fin m → 𝕜}
+    (hyeq : (hessenbergSqOf h m).mulVec y = firstVec β m) :
+    y ⟨m - 1, by omega⟩ ≠ 0 := by
+  intro hlast
+  have hrow : ∀ (r : ℕ) (hr : r < m),
+      ∑ k : Fin m, h r (k : ℕ) * y k = firstVec β m ⟨r, hr⟩ := by
+    intro r hr
+    have hcong := congrFun hyeq ⟨r, hr⟩
+    simpa only [Matrix.mulVec, dotProduct, hessenbergSqOf, Matrix.of_apply] using hcong
+  have hall : ∀ t : ℕ, ∀ i : Fin m, m - 1 - t ≤ (i : ℕ) → y i = 0 := by
+    intro t
+    induction t with
+    | zero =>
+      intro i hi
+      have hilt := i.isLt
+      have hval : (i : ℕ) = m - 1 := by omega
+      have : i = (⟨m - 1, by omega⟩ : Fin m) := Fin.ext hval
+      rw [this]
+      exact hlast
+    | succ t ih =>
+      intro i hi
+      by_cases hcase : m - 1 - t ≤ (i : ℕ)
+      · exact ih i hcase
+      have hilt := i.isLt
+      have hij : (i : ℕ) + 1 < m := by omega
+      have hz := hrow ((i : ℕ) + 1) hij
+      have hfv : firstVec β m ⟨(i : ℕ) + 1, hij⟩ = 0 := by simp [firstVec]
+      rw [hfv] at hz
+      have hsum : ∑ k : Fin m, h ((i : ℕ) + 1) (k : ℕ) * y k
+          = h ((i : ℕ) + 1) (i : ℕ) * y i := by
+        refine Finset.sum_eq_single i (fun k _ hk => ?_)
+          (fun hc => absurd (Finset.mem_univ _) hc)
+        have hkne : (k : ℕ) ≠ (i : ℕ) := fun hcc => hk (Fin.ext hcc)
+        rcases lt_or_gt_of_ne hkne with hlt | hgt
+        · rw [hH ((i : ℕ) + 1) (k : ℕ) (by omega), zero_mul]
+        · rw [ih k (by omega), mul_zero]
+      rw [hsum] at hz
+      exact (mul_eq_zero.1 hz).resolve_left (hsub (i : ℕ) hij)
+  have hy0 : ∀ i : Fin m, y i = 0 := fun i => hall (m - 1) i (by omega)
+  have h0 := hrow 0 hm
+  rw [show firstVec β m ⟨0, hm⟩ = β from by simp [firstVec]] at h0
+  rw [Finset.sum_congr rfl fun k _ => by rw [hy0 k, mul_zero]] at h0
+  exact hβ (by simpa using h0.symm)
+
+/-- **Saad, *Iterative Methods for Sparse Linear Systems*, Proposition 9.3**: if the residual is
+nonzero, the previous steps have not broken down and the square Hessenberg matrix `H_j` is
+nonsingular, then the flexible GMRES iterate at step `j` is exact exactly when the subdiagonal
+entry `h_{j+1,j}` vanishes.
+
+The nonsingularity of `H_j` is a genuine extra hypothesis in the flexible case: unlike GMRES,
+where `A Z_j = A V_j` and nonsingularity of `A` transfers, the `z_j` are arbitrary. The forward
+direction is back substitution in `H_j y = β e₁`; the reverse builds the exact solution from
+`H_j⁻¹ (β e₁)` and uses minimality. -/
+theorem apply_eq_iff_coeff_eq_zero {A : E →ₗ[𝕜] E} {z v : ℕ → E} {h : ℕ → ℕ → 𝕜} {b x₀ : E}
+    {β : 𝕜} (hv : HessenbergRelation₂ A z v h) (hr : b - A x₀ = β • v 0) (hβ : β ≠ 0)
+    {j : ℕ} (hj : 0 < j) (hsub : ∀ i, i + 1 < j → h (i + 1) i ≠ 0)
+    (hH : IsUnit (hessenbergSqOf h j).det)
+    (hon : Orthonormal 𝕜 fun i : Fin (j + 1) => v (i : ℕ))
+    {y : Fin j → 𝕜} (hy : IsMinOn (quasiResidual h β j) Set.univ y) :
+    A (x₀ + ∑ i, y i • z i) = b ↔ h j (j - 1) = 0 := by
+  classical
+  -- the coefficients of the residual in the basis `v`
+  have hrowj : ∀ (w : Fin j → 𝕜) (r : ℕ) (hr : r < j),
+      (hessenbergOf h j).mulVec w ⟨r, by omega⟩ = (hessenbergSqOf h j).mulVec w ⟨r, hr⟩ := by
+    intro w r hr
+    simp only [Matrix.mulVec, dotProduct, hessenbergOf, hessenbergSqOf, Matrix.of_apply]
+  have hfirst : ∀ (r : ℕ) (hr : r < j),
+      firstVec β (j + 1) ⟨r, by omega⟩ = firstVec β j ⟨r, hr⟩ := by
+    intro r hr
+    simp [firstVec]
+  -- `quasiResidual` vanishes exactly when the coefficient vector does
+  have hqz : ∀ w : Fin j → 𝕜, quasiResidual h β j w = 0 ↔
+      ∀ i : Fin (j + 1), (firstVec β (j + 1) - (hessenbergOf h j).mulVec w) i = 0 := by
+    intro w
+    rw [quasiResidual_def, norm_eq_zero]
+    constructor
+    · intro hw i
+      have := congrArg (WithLp.ofLp (p := 2)) hw
+      simpa using congrFun this i
+    · intro hw
+      have : (firstVec β (j + 1) - (hessenbergOf h j).mulVec w) = 0 := funext hw
+      rw [this]
+      simp
+  -- exactness is vanishing of the coefficient vector
+  have hexact : A (x₀ + ∑ i, y i • z i) = b ↔ quasiResidual h β j y = 0 := by
+    rw [hqz]
+    constructor
+    · intro hax
+      have h0 : ∑ i : Fin (j + 1),
+          (firstVec β (j + 1) - (hessenbergOf h j).mulVec y) i • v (i : ℕ) = 0 := by
+        rw [← hv.residual_eq hr j y, hax, sub_self]
+      exact fun i => Fintype.linearIndependent_iff.1 hon.linearIndependent _ h0 i
+    · intro hc0
+      have h0 : b - A (x₀ + ∑ i, y i • z i) = 0 := by
+        rw [hv.residual_eq hr j y]
+        exact Finset.sum_eq_zero fun i _ => by rw [hc0 i, zero_smul]
+      exact (sub_eq_zero.1 h0).symm
+  rw [hexact]
+  constructor
+  · intro hq
+    have hc0 := (hqz y).1 hq
+    have hlast := hc0 ⟨j, Nat.lt_succ_self j⟩
+    rw [Pi.sub_apply, sub_eq_zero, mulVec_hessenbergOf_last hv.eq_zero_of_lt hj y,
+      show firstVec β (j + 1) ⟨j, Nat.lt_succ_self j⟩ = 0 from by simp [firstVec]; omega] at hlast
+    have hyeq : (hessenbergSqOf h j).mulVec y = firstVec β j := by
+      funext r
+      have := hc0 ⟨(r : ℕ), by omega⟩
+      rw [Pi.sub_apply, sub_eq_zero, hfirst (r : ℕ) r.isLt, hrowj y (r : ℕ) r.isLt] at this
+      exact this.symm
+    exact (mul_eq_zero.1 hlast.symm).resolve_right
+      (last_ne_zero_of_mulVec_eq hβ hj hv.eq_zero_of_lt hsub hyeq)
+  · intro hzero
+    set y' : Fin j → 𝕜 := (hessenbergSqOf h j)⁻¹.mulVec (firstVec β j) with hy'
+    have hy'eq : (hessenbergSqOf h j).mulVec y' = firstVec β j := by
+      rw [hy', Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv _ hH, Matrix.one_mulVec]
+    have hq' : quasiResidual h β j y' = 0 := by
+      refine (hqz y').2 fun i => ?_
+      rcases eq_or_lt_of_le (Nat.lt_succ_iff.1 i.isLt) with heq | hlt
+      · have hi : i = (⟨j, Nat.lt_succ_self j⟩ : Fin (j + 1)) := Fin.ext heq
+        rw [hi, Pi.sub_apply, mulVec_hessenbergOf_last hv.eq_zero_of_lt hj y', hzero, zero_mul,
+          show firstVec β (j + 1) ⟨j, Nat.lt_succ_self j⟩ = 0 from by simp [firstVec]; omega,
+          sub_zero]
+      · have hi : i = (⟨(i : ℕ), by omega⟩ : Fin (j + 1)) := Fin.ext rfl
+        rw [Pi.sub_apply, hrowj y' (i : ℕ) hlt, hy'eq, hfirst (i : ℕ) hlt, sub_self]
+    have hle := isMinOn_iff.1 hy y' (Set.mem_univ y')
+    exact le_antisymm (hq' ▸ hle) (quasiResidual_nonneg h β j y)
+
+end FGMRES
 
 end Krylov
