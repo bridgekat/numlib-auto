@@ -16,6 +16,15 @@ id = "proposition_7_2"
 id = "bcg_isPetrovGalerkin"
 
 [[node]]
+id = "problem_7_7"
+
+[[node]]
+id = "problem_7_7_direction"
+
+[[node]]
+id = "problem_7_7_start"
+
+[[node]]
 id = "bcg_eq_lanczosSolve"
 
 [[node]]
@@ -58,7 +67,13 @@ id = "proposition_7_5"
 id = "equation_7_26"
 
 [[node]]
+id = "equation_7_28"
+
+[[node]]
 id = "equation_7_29"
+
+[[node]]
+id = "equation_7_30"
 
 [[node]]
 id = "qmrSmoothing"

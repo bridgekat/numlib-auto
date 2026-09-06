@@ -8,3 +8,6 @@ id = "lanczosSolve_isPetrovGalerkin"
 
 [[node]]
 id = "equation_7_9"
+
+[[node]]
+id = "lanczosSolve_eq_of_bilanczosVhat_eq_zero"

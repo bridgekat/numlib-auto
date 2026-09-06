@@ -31,6 +31,12 @@ id = "bilanczosBeta"
 id = "bilanczosDelta"
 
 [[node]]
+id = "equation_7_1"
+
+[[node]]
+id = "equation_7_1_norm"
+
+[[node]]
 id = "bilanczosV_eq"
 
 [[node]]
@@ -83,3 +89,57 @@ id = "problem_7_6_inf_eq_bot"
 
 [[node]]
 id = "proposition_7_1'"
+
+[[node]]
+id = "noSeriousBreakdown_of_bilanczosVhat_eq_zero"
+
+[[node]]
+id = "krylov_mem_invtSubmodule_of_bilanczosVhat_eq_zero"
+
+[[node]]
+id = "span_bilanczosV_succ"
+
+[[node]]
+id = "polyForm"
+
+[[node]]
+id = "bilanczosPoly"
+
+[[node]]
+id = "momentMatrix"
+
+[[node]]
+id = "bilanczosVhat_eq_aeval"
+
+[[node]]
+id = "bilanczosWhat_eq_smul"
+
+[[node]]
+id = "bilanczosPoly_natDegree"
+
+[[node]]
+id = "polyForm_eq_moment"
+
+[[node]]
+id = "momentMatrix_apply_eq_of_add_eq"
+
+[[node]]
+id = "breakdown_iff_polyForm_eq_zero"
+
+[[node]]
+id = "polyForm_bilanczosPoly_eq_zero"
+
+[[node]]
+id = "problem_7_5"
+
+[[node]]
+id = "norm_bilanczosBeta_succ"
+
+[[node]]
+id = "bilanczosVUnit"
+
+[[node]]
+id = "bilanczosWUnit"
+
+[[node]]
+id = "problem_7_3"

@@ -18,6 +18,11 @@ recursion, with its explicit normalization `δ_{j+1} = |(v̂_{j+1}, ŵ_{j+1})|^{
 `BiLanczos.dualVec` of `Numlib/Krylov/BiLanczos.lean`, so Proposition 7.1 and everything after it
 are read off from there.
 
+(7.1) is `equation_7_1`: the two scalars of lines 7–8 are constrained only by their product
+`δ_{j+1} β_{j+1} = (v̂_{j+1}, ŵ_{j+1})`, and `inner_smul_smul_eq_one` is the reason — any pair with
+that product renormalizes the step to `(v_{j+1}, w_{j+1}) = 1`. `equation_7_1_norm` records the
+alternative the book names, scaling by 2-norms, which is what §7.3 switches to at (7.18).
+
 `NoBreakdown` bundles the hypothesis the book carries through §7.1: the starting pair is
 normalized, `(v_1, w_1) = 1`, and the test of line 7 passes, `(v̂_{j+1}, ŵ_{j+1}) ≠ 0`, for every
 `j < m`. Lean's "division by zero is zero" makes every vector after a breakdown `0`, which is the
@@ -28,11 +33,26 @@ terminates — and (7.3) is *false* at a serious breakdown, where there is no `v
 `A v_m` along.
 
 The matrices `V_m`, `W_m`, `T_m` and `T̄_m` of (7.2) and (7.15) are `V`, `W`, `T` and `Tbar`;
-(7.3), (7.4) and (7.15) are `equation_7_3` and (7.5) is `equation_7_5`.
+(7.3), (7.4) and (7.15) are `equation_7_3` and (7.5) is `equation_7_5`. `problem_7_3` runs the
+scaling freedom the other way: rescaled to unit 2-norm the two families stay biorthogonal but the
+projected problem becomes a generalized one.
 
-§7.1.2 — look-ahead Lanczos, the indefinite bilinear form (7.7), the Hankel moment matrix and its
-`LU` factorization — contains no statement the book proves and is not formalized; see
-`plans/saadsparse-ch7-9.md` §4.
+§7.1.2 distinguishes the *lucky* breakdown `v̂_{m+1} = 0` from the *serious* one, where the two
+unnormalized vectors are nonzero but their inner product vanishes. That distinction is
+`noSeriousBreakdown_of_bilanczosVhat_eq_zero` (a lucky breakdown satisfies `NoSeriousBreakdown`,
+so nothing of §7.1–§7.3 is lost at one), `krylov_mem_invtSubmodule_of_bilanczosVhat_eq_zero` (the
+subspace built so far is `A`-invariant) and `span_bilanczosV_succ`; the exactness of the
+Algorithm 7.2 iterate that goes with it is in `Chapter07/Section02.lean`.
+
+The other claims of §7.1.2 are the formal orthogonal polynomials: `bilanczosPoly` is the `p_j` with
+`v̂_{j+1} = p_j(A) v_1` (`bilanczosVhat_eq_aeval`, `bilanczosPoly_natDegree`), `polyForm` is the
+indefinite form (7.7), `bilanczosWhat_eq_smul` is "the same polynomial intervenes in the equivalent
+expression of `ŵ_{j+1}`", `breakdown_iff_polyForm_eq_zero` is "there is a serious breakdown at step
+`j` if and only if the indefinite norm of `p_j` vanishes", and `momentMatrix_apply_eq_of_add_eq` is
+the Hankel structure of the moment matrix. What is *not* formalized is the `LU` factorization
+`M_k = L_k U_k` the Parlett–Taylor–Liu implementation pivots on — no general `LU`-existence theorem
+is available — nor the look-ahead algorithms themselves, which are implementation prose with no
+claim attached. See `plans/saadsparse-ch7-9.md` §4.
 
 Indices are `0`-based: `bilanczosV A v₁ w₁ j` is the book's `v_{j+1}` and
 `bilanczosDelta A v₁ w₁ j` its `δ_{j+1}`, so that `bilanczosDelta A v₁ w₁ 0 = 0` is the book's
@@ -240,6 +260,12 @@ theorem bilanczosBeta_succ (j : ℕ) : bilanczosBeta A v₁ w₁ (j + 1) =
     BiLanczos.beta_succ]
   rfl
 
+/-- The remark after (7.2): with the determination of lines 7–8 "the `δ_j`'s are positive and
+`β_j = ±δ_j`" — the two scalars have the same modulus, at every step and with no hypothesis. -/
+theorem norm_bilanczosBeta_succ (j : ℕ) :
+    ‖bilanczosBeta A v₁ w₁ (j + 1)‖ = ‖bilanczosDelta A v₁ w₁ (j + 1)‖ := by
+  rw [bilanczosBeta_eq, bilanczosDelta_eq, BiLanczos.norm_beta_succ]
+
 /-- Algorithm 7.1, line 9: `w_{j+1} = ŵ_{j+1}/β̄_{j+1}`, and `0` on breakdown. -/
 theorem bilanczosW_succ (j : ℕ) : bilanczosW A v₁ w₁ (j + 1) =
     (starRingEnd 𝕜 (bilanczosBeta A v₁ w₁ (j + 1)))⁻¹ • bilanczosWhat A v₁ w₁ j := by
@@ -249,6 +275,43 @@ theorem bilanczosW_succ (j : ℕ) : bilanczosW A v₁ w₁ (j + 1) =
 theorem bilanczosV_succ (j : ℕ) : bilanczosV A v₁ w₁ (j + 1) =
     (bilanczosDelta A v₁ w₁ (j + 1))⁻¹ • bilanczosVhat A v₁ w₁ j := by
   rw [bilanczosV_eq, bilanczosVhat_eq, bilanczosDelta_eq, BiLanczos.vec_succ]
+
+/-! ### (7.1): the scaling of lines 7–8 -/
+
+/-- **(7.1)**: the two scaling scalars of Algorithm 7.1, lines 7–8, satisfy
+`δ_{j+1} β_{j+1} = (v̂_{j+1}, ŵ_{j+1})`. Lines 9 and 10 divide `ŵ_{j+1}` and `v̂_{j+1}` by them, so
+this product is the only constraint the normalization `(v_{j+1}, w_{j+1}) = 1` places on the pair,
+and the choice of lines 7–8 is only one of many admissible ones (`inner_smul_smul_eq_one`).
+No hypothesis is needed: at a breakdown both sides vanish. -/
+theorem equation_7_1 (j : ℕ) :
+    bilanczosDelta A v₁ w₁ (j + 1) * bilanczosBeta A v₁ w₁ (j + 1)
+      = inner 𝕜 (bilanczosWhat A v₁ w₁ j) (bilanczosVhat A v₁ w₁ j) := by
+  rw [bilanczosDelta_eq, bilanczosBeta_eq, bilanczosWhat_eq, bilanczosVhat_eq,
+    BiLanczos.delta_mul_beta_succ]
+  rfl
+
+/-- The freedom (7.1) leaves: *any* pair `(δ, β)` whose product is `(v̂, ŵ) ≠ 0` may be used in
+lines 7–8, since lines 9 and 10 then still deliver the normalization `(v_{j+1}, w_{j+1}) = 1`. -/
+theorem inner_smul_smul_eq_one {vh wh : EuclideanSpace 𝕜 (Fin n)} {δ β : 𝕜}
+    (hne : inner 𝕜 wh vh ≠ 0) (h : δ * β = inner 𝕜 wh vh) :
+    inner 𝕜 ((starRingEnd 𝕜 β)⁻¹ • wh) (δ⁻¹ • vh) = 1 :=
+  BiLanczos.inner_smul_smul_eq_one_of_mul_eq hne h
+
+/-- The scaling by 2-norms is admissible: `δ_{j+1} = ‖v̂_{j+1}‖₂` and
+`β_{j+1} = (v̂_{j+1}, ŵ_{j+1})/‖v̂_{j+1}‖₂` satisfy (7.1), they leave the normalization
+`(v_{j+1}, w_{j+1}) = 1` intact, and the primal vector they produce has unit 2-norm. This is the
+book's "both vectors can also be scaled by their 2-norms" of §7.1.1, and it is what justifies the
+hypothesis `‖v_j‖₂ = 1` that §7.3 carries from (7.18) on. -/
+theorem equation_7_1_norm {vh wh : EuclideanSpace 𝕜 (Fin n)} (hne : inner 𝕜 wh vh ≠ 0) :
+    (‖vh‖ : 𝕜) * (inner 𝕜 wh vh / (‖vh‖ : 𝕜)) = inner 𝕜 wh vh ∧
+      ‖((‖vh‖ : 𝕜))⁻¹ • vh‖ = 1 ∧
+      inner 𝕜 ((starRingEnd 𝕜 (inner 𝕜 wh vh / (‖vh‖ : 𝕜)))⁻¹ • wh) (((‖vh‖ : 𝕜))⁻¹ • vh) = 1 := by
+  have hv : vh ≠ 0 := fun hc => hne (by rw [hc, inner_zero_right])
+  have hn : (‖vh‖ : 𝕜) ≠ 0 := RCLike.ofReal_ne_zero.2 (norm_ne_zero_iff.2 hv)
+  have hmul : (‖vh‖ : 𝕜) * (inner 𝕜 wh vh / (‖vh‖ : 𝕜)) = inner 𝕜 wh vh := by field_simp
+  refine ⟨hmul, ?_, inner_smul_smul_eq_one hne hmul⟩
+  rw [norm_smul, norm_inv, RCLike.norm_ofReal, abs_of_nonneg (norm_nonneg vh),
+    inv_mul_cancel₀ (norm_ne_zero_iff.2 hv)]
 
 end Algorithm
 
@@ -309,6 +372,14 @@ theorem NoBreakdown.toBiLanczos {m : ℕ} (h : NoBreakdown A v₁ w₁ m) :
     refine h.inner_hat_ne_zero j hj ?_
     rw [zeta_eq, ← BiLanczos.delta_succ_eq_zero_iff, ← bilanczosDelta_eq]
     exact hc
+
+/-- The backbone no-serious-breakdown hypothesis is the surface one. -/
+theorem NoSeriousBreakdown.ofBiLanczos
+    (h : BiLanczos.NoSeriousBreakdown (op A) (op Aᴴ) v₁ w₁) : NoSeriousBreakdown A v₁ w₁ where
+  vhat_eq_zero j hj := by
+    rw [bilanczosVhat_eq]
+    exact h.vhat_eq_zero j
+      ((BiLanczos.delta_succ_eq_zero_iff _ _ _ _ j).2 (zeta_eq A v₁ w₁ j ▸ hj))
 
 /-- The surface no-serious-breakdown hypothesis is the backbone one. -/
 theorem NoSeriousBreakdown.toBiLanczos (h : NoSeriousBreakdown A v₁ w₁) :
@@ -771,5 +842,224 @@ theorem problem_7_6_inf_eq_bot (h : NoBreakdown A v₁ w₁ m) :
   rw [← hfix, hzero]
 
 end Projector
+
+/-! ### §7.1.2: the lucky breakdown -/
+
+section LuckyBreakdown
+
+variable {A : Matrix (Fin n) (Fin n) 𝕜} {v₁ w₁ : EuclideanSpace 𝕜 (Fin n)} {m : ℕ}
+
+/-- **Saad §7.1.2**: a lucky breakdown is not a serious one. If Algorithm 7.1 runs `m` clean steps
+and then the primal recurrence terminates, `v̂_{m+1} = 0`, then `NoSeriousBreakdown` holds — before
+step `m` because the test of line 7 passes there, and from step `m` on because every later
+`v̂` vanishes with `v_{m+1}`. Everything §7.1–§7.3 proves under `NoSeriousBreakdown`, (7.3)
+included, therefore survives a lucky breakdown; only the *serious* breakdown of (7.6), where
+`v̂_{m+1} ≠ 0` but the inner product vanishes, is excluded. -/
+theorem noSeriousBreakdown_of_bilanczosVhat_eq_zero (h : NoBreakdown A v₁ w₁ m)
+    (hv : bilanczosVhat A v₁ w₁ m = 0) : NoSeriousBreakdown A v₁ w₁ :=
+  NoSeriousBreakdown.ofBiLanczos
+    (BiLanczos.NoSeriousBreakdown.of_vhat_eq_zero h.toBiLanczos
+      (by rw [← bilanczosVhat_eq]; exact hv))
+
+/-- **Saad §7.1.2**, first half of the lucky-breakdown claim: if `v̂_{m+1} = 0` then the space
+`span{V_{m+1}} = 𝒦_{m+1}(A, v_1)` the algorithm has built is `A`-invariant. The last three-term
+relation has lost its `v_{m+1}` term, so `A v_m` falls back into the span of what came before.
+The Algorithm 7.2 iterate is then exact, which is
+`SaadSparse.Chapter07.lanczosSolve_eq_of_bilanczosVhat_eq_zero` in `Chapter07/Section02.lean`. -/
+theorem krylov_mem_invtSubmodule_of_bilanczosVhat_eq_zero (h : NoBreakdown A v₁ w₁ m)
+    (hv : bilanczosVhat A v₁ w₁ m = 0) :
+    Chapter06.krylov A v₁ (m + 1) ∈ Module.End.invtSubmodule (op A) := by
+  rw [Chapter06.krylov_eq]
+  exact BiLanczos.subspace_succ_mem_invtSubmodule_of_vhat_eq_zero h.toBiLanczos
+    (by rw [← bilanczosVhat_eq]; exact hv)
+
+/-- **Saad §7.1.2**: at a lucky breakdown the `m + 1` vectors already built span
+`𝒦_{m+1}(A, v_1)`, one Krylov subspace more than Proposition 7.1 accounts for. There is no
+`NoBreakdown A v₁ w₁ (m + 1)` to appeal to — line 7 has just failed — but `v_m` is there and the
+span has closed up. -/
+theorem span_bilanczosV_succ (h : NoBreakdown A v₁ w₁ m) :
+    Submodule.span 𝕜 (Set.range fun i : Fin (m + 1) => bilanczosV A v₁ w₁ (i : ℕ))
+      = Chapter06.krylov A v₁ (m + 1) := by
+  rw [range_fin_eq_image_Iio, Chapter06.krylov_eq,
+    show (bilanczosV A v₁ w₁) = BiLanczos.vec (op A) (op Aᴴ) v₁ w₁ from
+      funext (bilanczosV_eq A v₁ w₁)]
+  exact BiLanczos.span_vec_succ h.toBiLanczos
+
+end LuckyBreakdown
+
+/-! ### §7.1.2: (7.7), the formal orthogonal polynomials and the moment matrix -/
+
+section OrthogonalPolynomials
+
+open Polynomial
+
+variable (A : Matrix (Fin n) (Fin n) 𝕜) (v₁ w₁ : EuclideanSpace 𝕜 (Fin n))
+
+/-- **(7.7)**: the bilinear form `⟨p, q⟩ = (p(A) v_1, q(Aᵀ) w_1)` on `ℙ_{m-1}`. Over `ℂ` the
+conjugation the book's transpose hides is applied to `q`, which keeps the form bilinear. It is an
+*indefinite* form — `⟨p, p⟩` can vanish on a nonzero polynomial — and that is exactly the serious
+breakdown of §7.1.2 (`breakdown_iff_polyForm_eq_zero`). -/
+noncomputable abbrev polyForm : 𝕜[X] → 𝕜[X] → 𝕜 := BiLanczos.polyForm (op A) (op Aᴴ) v₁ w₁
+
+/-- The polynomial `p_j` of §7.1.2, of degree `j`, with `v̂_{j+1} = p_j(A) v_1`. -/
+noncomputable abbrev bilanczosPoly : ℕ → 𝕜[X] := BiLanczos.vhatPoly (op A) (op Aᴴ) v₁ w₁
+
+/-- The moment matrix `M_k = {⟨x^{i-1}, x^{j-1}⟩}_{i,j=1..k}` of §7.1.2. -/
+noncomputable abbrev momentMatrix (k : ℕ) : Matrix (Fin k) (Fin k) 𝕜 :=
+  BiLanczos.momentMatrix (op A) (op Aᴴ) v₁ w₁ k
+
+/-- **§7.1.2**: "there is a polynomial `p_j` of degree `j` such that `v̂_{j+1} = p_j(A) v_1`" — the
+existence half, which needs no hypothesis. -/
+theorem bilanczosVhat_eq_aeval (j : ℕ) :
+    bilanczosVhat A v₁ w₁ j = aeval (op A) (bilanczosPoly A v₁ w₁ j) v₁ := by
+  rw [bilanczosVhat_eq, BiLanczos.aeval_vhatPoly]
+
+/-- **§7.1.2**: "the same polynomial intervenes in the equivalent expression of `ŵ_{j+1}`" — there
+is a scalar `γ_j` with `ŵ_{j+1} = γ_j p̄_j(Aᴴ) w_1`. Over `ℝ` the conjugation is invisible and this
+is the book's statement verbatim. -/
+theorem bilanczosWhat_eq_smul (j : ℕ) :
+    bilanczosWhat A v₁ w₁ j = BiLanczos.dualPolyScalar (op A) (op Aᴴ) v₁ w₁ j •
+      aeval (op Aᴴ) ((bilanczosPoly A v₁ w₁ j).map (starRingEnd 𝕜)) w₁ := by
+  rw [bilanczosWhat_eq, BiLanczos.dualVhat_eq_smul]
+
+/-- **§7.1.2**: the form (7.7) is a *moment functional*, `⟨p, q⟩ = L(p q)` with
+`L(r) = (r(A) v_1, w_1)`. Its symmetry and the Hankel structure of the moment matrix are both
+consequences of this one identity. -/
+theorem polyForm_eq_moment (p q : 𝕜[X]) :
+    polyForm A v₁ w₁ p q = BiLanczos.moment (op A) v₁ w₁ (p * q) :=
+  BiLanczos.polyForm_eq_moment (inner_op_conjTranspose A) p q
+
+/-- **§7.1.2**: "`M_k` is a Hankel matrix, i.e., its coefficients `m_ij` are constant along
+anti-diagonals". The `LU` factorization `M_k = L_k U_k` that the Parlett–Taylor–Liu look-ahead
+implementation pivots on is *not* formalized: neither Mathlib nor this library has a general
+`LU`-existence theorem. -/
+theorem momentMatrix_apply_eq_of_add_eq {k : ℕ} {i j i' j' : Fin k}
+    (hij : (i : ℕ) + (j : ℕ) = (i' : ℕ) + (j' : ℕ)) :
+    momentMatrix A v₁ w₁ k i j = momentMatrix A v₁ w₁ k i' j' :=
+  BiLanczos.momentMatrix_apply_eq_of_add_eq (inner_op_conjTranspose A) hij
+
+variable {A v₁ w₁}
+
+/-- **§7.1.2**: while Algorithm 7.1 has not broken down, `p_j` has degree exactly `j` — the "of
+degree `j`" half of the claim above. (In the `0`-based indexing here the polynomial attached to
+`bilanczosVhat … j` is the book's `p_{j+1}`.) -/
+theorem bilanczosPoly_natDegree {m : ℕ} (h : NoBreakdown A v₁ w₁ m) {j : ℕ} (hj : j ≤ m) :
+    (bilanczosPoly A v₁ w₁ j).natDegree = j + 1 :=
+  BiLanczos.vhatPoly_natDegree h.toBiLanczos hj
+
+/-- **§7.1.2**: "there is a serious breakdown at step `j` if and only if the indefinite norm of the
+polynomial `p_j` vanishes". The two are the same number up to the factor `γ_j` of
+`bilanczosWhat_eq_smul`, which is nonzero as long as the process has run this far. -/
+theorem breakdown_iff_polyForm_eq_zero {m : ℕ} (h : NoBreakdown A v₁ w₁ m) {j : ℕ} (hj : j ≤ m) :
+    inner 𝕜 (bilanczosWhat A v₁ w₁ j) (bilanczosVhat A v₁ w₁ j) = 0 ↔
+      polyForm A v₁ w₁ (bilanczosPoly A v₁ w₁ j) (bilanczosPoly A v₁ w₁ j) = 0 := by
+  rw [zeta_eq, ← BiLanczos.delta_succ_eq_zero_iff]
+  exact BiLanczos.delta_succ_eq_zero_iff_polyForm_eq_zero h.toBiLanczos hj
+
+/-- **§7.1.2**: "the nonsymmetric Lanczos algorithm attempts to compute a sequence of polynomials
+that are orthogonal with respect to the indefinite inner product defined above" — and it succeeds:
+`⟨p_i, p_j⟩ = 0` for `i ≠ j`. In fact `p_j` is orthogonal to *every* polynomial of degree below
+its own (`BiLanczos.polyForm_vhatPoly_eq_zero_of_natDegree_le`). -/
+theorem polyForm_bilanczosPoly_eq_zero {m : ℕ} (h : NoBreakdown A v₁ w₁ m) {i j : ℕ} (hi : i < m)
+    (hj : j < m) (hij : i ≠ j) :
+    polyForm A v₁ w₁ (bilanczosPoly A v₁ w₁ i) (bilanczosPoly A v₁ w₁ j) = 0 :=
+  BiLanczos.polyForm_vhatPoly_eq_zero h.toBiLanczos hi hj hij
+
+/-- **P-7.5**, first part: `q = t^k p_j` is orthogonal to `p_i` whenever `deg(t^k p_i) < deg p_j`,
+because `⟨t^k p_j, p_i⟩ = ⟨p_j, t^k p_i⟩` and `p_j` is orthogonal to everything of lower degree.
+
+The range the book prints, "`p_1, p_2, …, p_{j-k}` assuming `k ≤ j`", **is one polynomial too
+generous**: at its last index `t^k p_{j-k}` has degree exactly `deg p_j`, and the pairing is then a
+nonzero multiple of `⟨p_j, p_j⟩`, which vanishes only *at* a serious breakdown. The same
+off-by-one is in the worked example of §7.1.2 itself (`q_j = x p_{j-1}` said to be orthogonal to
+`p_1, …, p_{j-2}`), so the passage is loose rather than the problem alone; the statement here is
+the corrected range. The second part of the problem, that orthogonalizing `q` against those
+polynomials produces one orthogonal to everything of lower degree, is Gram–Schmidt for the form
+and carries no content beyond this; the third, "derive a general look-ahead procedure", asks for an
+algorithm and states no theorem. -/
+theorem problem_7_5 {m : ℕ} (h : NoBreakdown A v₁ w₁ m) {j : ℕ} (hj : j < m) {i k : ℕ}
+    (hik : i + k + 1 ≤ j) :
+    polyForm A v₁ w₁ (X ^ k * bilanczosPoly A v₁ w₁ j) (bilanczosPoly A v₁ w₁ i) = 0 := by
+  rw [polyForm_eq_moment,
+    show X ^ k * bilanczosPoly A v₁ w₁ j * bilanczosPoly A v₁ w₁ i
+      = bilanczosPoly A v₁ w₁ j * (X ^ k * bilanczosPoly A v₁ w₁ i) from by ring,
+    ← polyForm_eq_moment]
+  refine BiLanczos.polyForm_vhatPoly_eq_zero_of_natDegree_le h.toBiLanczos hj ?_
+  refine le_trans Polynomial.natDegree_mul_le ?_
+  rw [Polynomial.natDegree_X_pow]
+  exact le_trans (Nat.add_le_add_left (BiLanczos.vhatPoly_natDegree_le _ _ _ _ i) k) (by omega)
+
+end OrthogonalPolynomials
+
+/-! ### P-7.3: the variant normalized in the 2-norm -/
+
+section UnitNorm
+
+variable (A : Matrix (Fin n) (Fin n) 𝕜) (v₁ w₁ : EuclideanSpace 𝕜 (Fin n))
+
+/-- The primal vectors of Algorithm 7.1 rescaled to unit 2-norm. This *is* what the variant of
+P-7.3 computes: only the scaling of lines 7–8 differs, the choice `δ_{j+1} = ‖v̂_{j+1}‖₂` is
+admissible by (7.1) (`equation_7_1_norm`), and the vectors a run with that scaling produces are the
+rescalings of the vectors of Algorithm 7.1. -/
+noncomputable def bilanczosVUnit (j : ℕ) : EuclideanSpace 𝕜 (Fin n) :=
+  ((‖bilanczosV A v₁ w₁ j‖ : ℝ) : 𝕜)⁻¹ • bilanczosV A v₁ w₁ j
+
+/-- The dual vectors of Algorithm 7.1 rescaled to unit 2-norm; see `bilanczosVUnit`. -/
+noncomputable def bilanczosWUnit (j : ℕ) : EuclideanSpace 𝕜 (Fin n) :=
+  ((‖bilanczosW A v₁ w₁ j‖ : ℝ) : 𝕜)⁻¹ • bilanczosW A v₁ w₁ j
+
+variable {A v₁ w₁}
+
+private theorem bilanczosV_ne_zero {m : ℕ} (h : NoBreakdown A v₁ w₁ m) {i : ℕ} (hi : i ≤ m) :
+    bilanczosV A v₁ w₁ i ≠ 0 := fun hc => by
+  have h1 := proposition_7_1 h hi hi
+  rw [hc, inner_zero_right, ite_eq_left rfl] at h1
+  exact zero_ne_one h1
+
+private theorem bilanczosW_ne_zero {m : ℕ} (h : NoBreakdown A v₁ w₁ m) {i : ℕ} (hi : i ≤ m) :
+    bilanczosW A v₁ w₁ i ≠ 0 := fun hc => by
+  have h1 := proposition_7_1 h hi hi
+  rw [hc, inner_zero_left, ite_eq_left rfl] at h1
+  exact zero_ne_one h1
+
+private theorem inner_unit_smul (a b : ℝ) (x y : EuclideanSpace 𝕜 (Fin n)) :
+    inner 𝕜 ((a : 𝕜)⁻¹ • x) ((b : 𝕜)⁻¹ • y) = ((a * b : ℝ) : 𝕜)⁻¹ * inner 𝕜 x y := by
+  rw [inner_smul_left, inner_smul_right, map_inv₀, RCLike.conj_ofReal, RCLike.ofReal_mul, mul_inv]
+  ring
+
+private theorem inner_bilanczosW_apply_bilanczosV {m : ℕ} (h : NoBreakdown A v₁ w₁ m) {i j : ℕ}
+    (hi : i ≤ m) (hj : j + 1 ≤ m) :
+    inner 𝕜 (bilanczosW A v₁ w₁ i) (op A (bilanczosV A v₁ w₁ j)) = bilanczosCoeff A v₁ w₁ i j := by
+  obtain ⟨M, rfl⟩ : ∃ M, m = M + 1 := ⟨m - 1, by omega⟩
+  rw [bilanczosW_eq, bilanczosV_eq, bilanczosCoeff_eq]
+  exact BiLanczos.inner_dualVec_apply_vec h.toBiLanczos hi (by omega)
+
+/-- **P-7.3**: rescaling both families of Algorithm 7.1 to unit 2-norm — admissible by (7.1) —
+keeps `(v'_i, w'_j) = 0` for `i ≠ j` and gives `‖v'_i‖₂ = ‖w'_i‖₂ = 1`; and it turns the projected
+problem into a *generalized* one. Where Algorithm 7.1 has `W_mᴴ V_m = I` and `W_mᴴ A V_m = T_m`, the
+rescaled families have `W_mᴴ V_m = D_m` and `W_mᴴ A V_m = D_W T_m D_V`, with `D_m`, `D_W`, `D_V`
+the diagonal matrices of the reciprocal norms: the eigenvalue problem to solve is `T'_m y = λ D_m y`
+rather than `T_m y = λ y`. -/
+theorem problem_7_3 {m : ℕ} (h : NoBreakdown A v₁ w₁ m) :
+    (∀ i ≤ m, ‖bilanczosVUnit A v₁ w₁ i‖ = 1 ∧ ‖bilanczosWUnit A v₁ w₁ i‖ = 1) ∧
+      (∀ i ≤ m, ∀ j ≤ m, inner 𝕜 (bilanczosWUnit A v₁ w₁ i) (bilanczosVUnit A v₁ w₁ j)
+        = if i = j then ((‖bilanczosW A v₁ w₁ i‖ * ‖bilanczosV A v₁ w₁ j‖ : ℝ) : 𝕜)⁻¹ else 0) ∧
+      (∀ i ≤ m, ∀ j, j + 1 ≤ m →
+        inner 𝕜 (bilanczosWUnit A v₁ w₁ i) (op A (bilanczosVUnit A v₁ w₁ j))
+          = ((‖bilanczosW A v₁ w₁ i‖ * ‖bilanczosV A v₁ w₁ j‖ : ℝ) : 𝕜)⁻¹
+            * bilanczosCoeff A v₁ w₁ i j) := by
+  refine ⟨fun i hi => ⟨?_, ?_⟩, fun i hi j hj => ?_, fun i hi j hj => ?_⟩
+  · rw [bilanczosVUnit, norm_smul, norm_inv, RCLike.norm_ofReal, abs_of_nonneg (norm_nonneg _),
+      inv_mul_cancel₀ (norm_ne_zero_iff.2 (bilanczosV_ne_zero h hi))]
+  · rw [bilanczosWUnit, norm_smul, norm_inv, RCLike.norm_ofReal, abs_of_nonneg (norm_nonneg _),
+      inv_mul_cancel₀ (norm_ne_zero_iff.2 (bilanczosW_ne_zero h hi))]
+  · rw [bilanczosWUnit, bilanczosVUnit, inner_unit_smul, proposition_7_1 h hi hj]
+    by_cases hij : i = j
+    · rw [ite_eq_left hij, ite_eq_left hij, mul_one]
+    · rw [ite_eq_right hij, ite_eq_right hij, mul_zero]
+  · rw [bilanczosWUnit, bilanczosVUnit, map_smul, inner_unit_smul,
+      inner_bilanczosW_apply_bilanczosV h hi hj]
+
+end UnitNorm
 
 end SaadSparse.Chapter07

@@ -112,6 +112,16 @@ specialization of `Projection/Additive` and needs nothing new from it** — Cimm
 
 ## 2. Changes to existing declarations
 
+* **Done: `SaadSparse.Chapter07.equation_7_29` was renamed `equation_7_30`.** It states (7.30), the
+  *iterate* form of the smoothing relation, as its own doc comment said; the residual forms the
+  book labels (7.28) and (7.29) were unstated and are now `equation_7_28` and `equation_7_29`.
+* **`SaadSparse.Chapter07.bcgAlpha` and `bcgBeta` are in `Chapter07/Section04.lean` and belong in
+  `Section03`**, beside Algorithm 7.3, which is where every other reading of that algorithm's lines
+  lives. They were defined in the §7.4 file because §7.4 was written first and needed them.
+  Section03 therefore states lines 4 and 8 under the neutral names `bcg_alpha_eq` and
+  `bcg_beta_eq`, and P-7.7 spells the coefficients as `BCG.alpha`/`BCG.beta` rather than shadowing
+  the Section04 abbrevs. Moving the two abbrevs up would let both files use one name; it is a
+  change to a file another agent had just landed, so it is proposed rather than done.
 * **`Krylov/Hessenberg`: generalize `HessenbergRelation` to two families** (§1.1). Runs alone, per
   the tracker README's rule for restatements.
 * **`SaadSparse/Chapter06/Section05`: re-base the QGMRES layer on the backbone.**
@@ -145,10 +155,11 @@ specialization of `Projection/Additive` and needs nothing new from it** — Cimm
 
 | Item | Reason |
 |---|---|
-| §7.1.2 look-ahead Lanczos (Parlett–Taylor–Liu), the indefinite form (7.7), the Hankel moment matrix and its `LU` factorization | the book states and proves nothing here; it is a description of a family of implementations, and the "serious breakdown" analysis is a remark, not a theorem |
-| P-7.1, P-7.3, P-7.4 (variants of Algorithm 7.1 with other normalizations) | algorithm variants with no statement; each would be a fourth copy of Proposition 7.1 |
-| P-7.5 (look-ahead orthogonalization of `t^k p_j`) | supports the look-ahead material above |
-| P-7.8 (a general consistent polynomial family `ψ_j` and its recurrences) | a five-part algebra exercise producing an algorithm the book does not state a theorem about; BICGSTAB is its `ψ_{j+1} = (1 - ω_j t) ψ_j` case and is planned |
+| §7.1.2 look-ahead Lanczos (Parlett–Taylor–Liu, the `2×2` pivots, the "added complexity" discussion) | a description of a family of implementations, with no claim attached. **Revised:** the rest of §7.1.2 is *not* of that kind and is now planned — the lucky-breakdown claim (`noSeriousBreakdown_of_bilanczosVhat_eq_zero`, `krylov_mem_invtSubmodule_of_bilanczosVhat_eq_zero`, `lanczosSolve_eq_of_bilanczosVhat_eq_zero`) and the formal orthogonal polynomials of (7.7) with their moment matrix (`bilanczosPoly`, `polyForm`, `momentMatrix`, and the backbone layer in `Numlib/Krylov/BiLanczos`). Only the `LU` factorization `M_k = L_k U_k` remains skipped |
+| **P-7.1** (arbitrary dual coefficients `h_ij`) | part (b), that the `v_i` and `T_m` do not depend on the `h_ij`, is a real independence theorem and *not* a copy of Proposition 7.1. It needs a second, parameterized two-sided process in the backbone plus a uniqueness argument for the primal family (`v_j` in the Krylov subspace, orthogonal to the dual Krylov subspace, normalized by `(v_j, w_j) = 1`); and the printed "modify line 4" answer `α_j = (A v_j, w_j)` is not correct for an arbitrary dual basis, since the modified `w_j` are no longer biorthogonal to the `v_i`. Left open |
+| **P-7.4** (`(v_i, w_j) = ±δ_ij` with `T_m` Hermitian tridiagonal) | the off-diagonal half is `BiLanczos.norm_beta_succ`, `|β_{j+1}| = δ_{j+1}`, which is stated. The Hermitian claim also needs the diagonal `α_j = (A v_j, w_j)` to be *real*, which holds over the reals but not over the complexes; a faithful statement is therefore a third algorithm variant restricted to `ℝ`. Left open |
+| P-7.5, third part ("derive a general look-ahead procedure") | asks for an algorithm and states no theorem. The first part is now `SaadSparse.Chapter07.problem_7_5` — in a range one index shorter than the printed one, which is off by one (see the declaration's doc comment) |
+| P-7.8 (a general consistent polynomial family `ψ_j` and its recurrences) | a five-part algebra exercise producing an algorithm the book does not state a theorem about; BICGSTAB is its `ψ_{j+1} = (1 - ω_j t) ψ_j` case and is planned. Its natural home is `Chapter07/Section04.lean`, whose `bcgResidualPoly` layer it would reuse; part (a), `ψ_j(0) = 1`, is two lines there |
 | P-7.11 (block two-sided Lanczos, block BCG/QMR) | belongs with `Numlib/Krylov/Block` (phase 3), not with this slice |
 | §7.4 residual-norm estimate strategies, Tables 7.1–7.3 | numerical experiments |
 | Saad §8.1, the spectrum `±σ_i(A)` of `[[0, A], [Aᴴ, 0]]`, and **P-8.4** | **SKIP.** Needs a singular value decomposition: Mathlib has `LinearMap.singularValues` but no factorization theorem, and `Numlib/LinearAlgebra/Matrix/SVD` is phase 3 and unwritten. That each `±σ_i` *is* an eigenvalue can be had without a factorization (pair `(u, ±v)` for `Aᴴ A v = σ² v`; M difficulty); what needs the factorization is the multiplicity count — "these are all of them" — which is the book's claim and what P-8.4's plot of `‖B(α)‖₂` rests on. Reopen only with `Matrix/SVD` |
@@ -174,10 +185,13 @@ Preconditioned}` written concurrently).
 | Book | Status | Node |
 |---|---|---|
 | Algorithm 7.1 | planned | `SaadSparse.Chapter07.bilanczosV`, `bilanczosV_eq` → `BiLanczos.vec` |
-| (7.1), (7.2) | planned | `SaadSparse.Chapter07.bilanczosCoeff`, `T` |
+| (7.1) | planned | `SaadSparse.Chapter07.equation_7_1`, `equation_7_1_norm`, `inner_smul_smul_eq_one` → `BiLanczos.delta_mul_beta_succ` |
+| (7.2) | planned | `SaadSparse.Chapter07.bilanczosCoeff`, `T`, `norm_bilanczosBeta_succ` |
 | **Proposition 7.1** | planned | `SaadSparse.Chapter07.proposition_7_1`, `proposition_7_1_span` → `BiLanczos.inner_vec_dualVec` |
 | (7.3), (7.4), (7.5) | planned | `SaadSparse.Chapter07.equation_7_3`, `equation_7_5` |
-| (7.6), (7.7), moment matrix | skipped | look-ahead material, §3 |
+| (7.6) | planned | `SaadSparse.Chapter07.NoBreakdown`, `NoSeriousBreakdown` |
+| §7.1.2 lucky breakdown | planned | `SaadSparse.Chapter07.noSeriousBreakdown_of_bilanczosVhat_eq_zero`, `krylov_mem_invtSubmodule_of_bilanczosVhat_eq_zero`, `span_bilanczosV_succ`, `lanczosSolve_eq_of_bilanczosVhat_eq_zero` |
+| (7.7), moment matrix | planned | `SaadSparse.Chapter07.polyForm`, `bilanczosPoly`, `momentMatrix` and their theorems; the `LU` factorization `M_k = L_k U_k` is *not* planned (no general `LU`-existence theorem is available) |
 | Algorithm 7.2, (7.9) | planned | `SaadSparse.Chapter07.lanczosSolve`, `equation_7_9` |
 | Algorithm 7.3, (7.10)–(7.12) | planned | `SaadSparse.Chapter07.bcg`, `bcg_eq_lanczosSolve` → `BCG.iterate` |
 | **Proposition 7.2**, (7.13)–(7.14), P-7.10 | planned | `SaadSparse.Chapter07.proposition_7_2` → `BCG.inner_residual_dualResidual_eq_zero` |
@@ -187,17 +201,21 @@ Preconditioned}` written concurrently).
 | **Theorem 7.4** | planned | `SaadSparse.Chapter07.theorem_7_4` → `Krylov.IsQuasiMinResIterate.norm_residual_le_mul` |
 | (7.23), (7.24) | planned | `SaadSparse.Chapter07.equation_7_23`, `equation_7_24` |
 | **Proposition 7.5**, (7.25) | planned | `SaadSparse.Chapter07.proposition_7_5` |
-| (7.26)–(7.31), Algorithm 7.5 | planned | `SaadSparse.Chapter07.equation_7_26`, `equation_7_29`, `qmrSmoothing` |
+| (7.26)–(7.31), Algorithm 7.5 | planned | `SaadSparse.Chapter07.equation_7_26`, `equation_7_28`, `equation_7_29`, `equation_7_30`, `qmrSmoothing` |
 | (7.32)–(7.39) | planned | `SaadSparse.Chapter07.bcgResidualPoly`, `bcg_residual_eq_aeval` |
 | Algorithm 7.6, (7.40)–(7.45) | planned | `SaadSparse.Chapter07.cgs`, `cgs_residual_eq` |
 | Algorithm 7.7, (7.46)–(7.55) | planned | `SaadSparse.Chapter07.bicgstab`, `bicgstab_residual_eq`, `equation_7_53`, `equation_7_55` |
 | Algorithm 7.8, (7.56)–(7.82) | planned | `SaadSparse.Chapter07.tfqmr`, `equation_7_70`, `equation_7_76`, `tfqmr_isQuasiMinResIterate` |
 | (7.83) | planned | `SaadSparse.Chapter07.equation_7_83` |
 | P-7.2, P-7.6 | planned | `SaadSparse.Chapter07.problem_7_2`, `problem_7_6` |
-| P-7.1, P-7.3–P-7.5, P-7.7–P-7.9, P-7.11 | skipped | §3 |
+| P-7.3 | planned | `SaadSparse.Chapter07.problem_7_3` |
+| P-7.5 (first part) | planned | `SaadSparse.Chapter07.problem_7_5` |
+| **P-7.7** | planned | `SaadSparse.Chapter07.problem_7_7`, `problem_7_7_direction`, `problem_7_7_start`. *This problem appeared in neither the coverage table nor the skip list of the original pass; the "7 skipped" headline silently counted it* |
+| P-7.9 | planned | answered inside `SaadSparse.Chapter07.equation_7_70` and `equation_7_76`, which are stated for an arbitrary column scaling |
+| P-7.1, P-7.4, P-7.8, P-7.11 | skipped | §3 |
 
-**Chapter 7: 5 of 5 numbered results planned, 8 of 8 algorithms planned, 4 of 11 problems planned
-(P-7.2, P-7.6, P-7.9, P-7.10) and 7 skipped.**
+**Chapter 7: 5 of 5 numbered results planned, 8 of 8 algorithms planned, 7 of 11 problems planned
+(P-7.2, P-7.3, P-7.5, P-7.6, P-7.7, P-7.9, P-7.10) and 4 skipped (P-7.1, P-7.4, P-7.8, P-7.11).**
 
 ### Chapter 8
 

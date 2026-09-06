@@ -22,6 +22,10 @@ what survives when the basis is only biorthogonal. Both statements come from the
 `Krylov.HessenbergRelation` of §7.1 through `bilanczos_hessenbergRelation`, so the residual
 formula is the same lemma that serves FOM.
 
+`lanczosSolve_eq_of_bilanczosVhat_eq_zero` is the half of §7.1.2 that belongs here: at a *lucky*
+breakdown, `v̂_{m+1} = 0`, the residual formula makes the iterate exact. The invariance half is in
+`Chapter07/Section01.lean`.
+
 Indices are `0`-based as in `Chapter07/Section01.lean`: `bilanczosV A v₁ w₁ j` is the book's
 `v_{j+1}` and `bilanczosDelta A v₁ w₁ m` its `δ_{m+1}`.
 -/
@@ -191,5 +195,32 @@ theorem equation_7_9 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁)
   rw [residual_lanczosSolve h hT hm, norm_smul, norm_neg]
 
 end Residual
+
+/-! ### §7.1.2: exactness at a lucky breakdown -/
+
+section LuckyBreakdown
+
+variable {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ w₁ : EuclideanSpace 𝕜 (Fin n)} {m : ℕ}
+
+/-- **Saad §7.1.2**, the lucky breakdown: when the primal recurrence of Algorithm 7.1 terminates,
+`v̂_{m+1} = 0`, the Algorithm 7.2 iterate is *exact*. By (7.9) the residual is a multiple of
+`δ_{m+1}`, and `δ_{m+1}` vanishes with `v̂_{m+1}`; the other half of the book's claim — that
+`span{V_{m+1}} = 𝒦_{m+1}(A, v_1)` is then `A`-invariant — is
+`SaadSparse.Chapter07.krylov_mem_invtSubmodule_of_bilanczosVhat_eq_zero`. The
+no-serious-breakdown hypothesis that (7.9) carries is free here, by
+`noSeriousBreakdown_of_bilanczosVhat_eq_zero`. Nothing of the sort holds at a *serious* breakdown,
+which is exactly the distinction §7.1.2 draws; and the dual lucky breakdown `ŵ_{m+1} = 0` makes
+`span{W_{m+1}}` invariant and the iterate of the transposed system exact, but says nothing about
+`A x = b`. -/
+theorem lanczosSolve_eq_of_bilanczosVhat_eq_zero (h : NoBreakdown A (Chapter06.v₁ A b x₀) w₁ m)
+    (hT : IsUnit (T A (Chapter06.v₁ A b x₀) w₁ (m + 1)))
+    (hv : bilanczosVhat A (Chapter06.v₁ A b x₀) w₁ m = 0) :
+    b - op A (lanczosSolve A b x₀ w₁ (m + 1)) = 0 := by
+  have hd : bilanczosDelta A (Chapter06.v₁ A b x₀) w₁ (m + 1) = 0 := by
+    rw [bilanczosDelta_succ, hv, inner_zero_right, norm_zero, Real.sqrt_zero, RCLike.ofReal_zero]
+  rw [residual_lanczosSolve (noSeriousBreakdown_of_bilanczosVhat_eq_zero h hv) hT (by omega), hd,
+    zero_mul, neg_zero, zero_smul]
+
+end LuckyBreakdown
 
 end SaadSparse.Chapter07

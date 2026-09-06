@@ -11,6 +11,9 @@ Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd
 `α_j = (r_j, r*_j)/(A p_j, p*_j)` and `β_j = (r_{j+1}, r*_{j+1})/(r_j, r*_j)`; `bcg_eq` identifies
 it with the backbone `BCG.iterate`, so that Proposition 7.2 (`proposition_7_2`) and the
 Petrov–Galerkin identification (`bcg_isPetrovGalerkin`) are read off `Numlib/Krylov/BiLanczos.lean`.
+`problem_7_7` and `problem_7_7_direction` are the two three-term recurrences P-7.7 asks for: they
+come from eliminating the directions, resp. the residuals, between lines 5, 6 and 9, and only the
+residual one divides by `α_j`.
 `bcg_eq_lanczosSolve` is the content of (7.10)–(7.12): BCG computes the Algorithm 7.2 iterate.
 The book gets there through the `LDU` factorization `T_m = L_m U_m` and the direction matrices
 `P_m = V_m U_m⁻¹`, `P*_m = W_m L_m⁻ᴴ`; here it is one line, because both iterates are
@@ -34,7 +37,14 @@ Theorem 6.11 can be dropped here.
 
 From (7.18) on the book normalizes the Lanczos vectors to unit 2-norm — a different scaling from
 Algorithm 7.1, admissible by (7.1). That is the hypothesis `∀ j, ‖v_j‖₂ = 1` carried by
-`equation_7_20` and everything after it.
+`equation_7_20` and everything after it; `equation_7_1_norm` is what makes it a scaling of
+Algorithm 7.1 rather than a new assumption, since `δ_{j+1} = ‖v̂_{j+1}‖₂` satisfies the constraint
+(7.1) and produces a unit primal vector without disturbing `(v_j, w_j) = 1`.
+
+The closing identities (7.28)–(7.31) are the smoothing relations: `equation_7_28` expands (7.26)
+through (7.27), `equation_7_29` turns its last term into the BCG residual through (7.19), and
+`equation_7_30` is the iterate form the book reads off (7.29) — which is what Algorithm 7.5
+implements.
 
 Indices are `0`-based as in `Chapter07/Section01.lean`: `qmrV A b x₀ w₁ j` is the book's
 `v_{j+1}`, `Chapter06.γ h β m` its `γ_{m+1}` and `Chapter06.c h m` its `c_{m+1}`.
@@ -91,6 +101,19 @@ theorem bcg_eq (k : ℕ) : bcg A b x₀ rs₀ k = BCG.iterate (op A) (op Aᴴ) b
     bcg A b x₀ rs₀ 0
       = { x := x₀, r := b - op A x₀, rs := rs₀, p := b - op A x₀, ps := rs₀ } := rfl
 
+/-- **Algorithm 7.3**, line 4: the step length `α_j = (r_j, r*_j)/(A p_j, p*_j)`. -/
+theorem bcg_alpha_eq (k : ℕ) : BCG.alpha (op A) (op Aᴴ) b x₀ rs₀ k =
+    inner 𝕜 (bcg A b x₀ rs₀ k).rs (bcg A b x₀ rs₀ k).r /
+      inner 𝕜 (bcg A b x₀ rs₀ k).ps (op A (bcg A b x₀ rs₀ k).p) := by
+  rw [bcg_eq]; rfl
+
+/-- **Algorithm 7.3**, line 8: the direction coefficient
+`β_j = (r_{j+1}, r*_{j+1})/(r_j, r*_j)`. -/
+theorem bcg_beta_eq (k : ℕ) : BCG.beta (op A) (op Aᴴ) b x₀ rs₀ k =
+    inner 𝕜 (bcg A b x₀ rs₀ (k + 1)).rs (bcg A b x₀ rs₀ (k + 1)).r /
+      inner 𝕜 (bcg A b x₀ rs₀ k).rs (bcg A b x₀ rs₀ k).r := by
+  rw [bcg_eq, bcg_eq]; rfl
+
 end BCG
 
 section BCGBreakdown
@@ -142,6 +165,48 @@ theorem bcg_isPetrovGalerkin (h : BCGNoBreakdown A b x₀ rs₀ m) :
       (Chapter06.krylov Aᴴ rs₀ m) (bcg A b x₀ rs₀ m).x := by
   simp only [Chapter06.krylov_eq, bcg_eq]
   exact BCG.isPetrovGalerkin h.toBCG
+
+/-- **P-7.7**: eliminating the direction vectors between lines 5, 6 and 9 of Algorithm 7.3 leaves a
+three-term recurrence for the residuals alone,
+`r_{j+2} = (1 + α_{j+1} β_j/α_j) r_{j+1} - α_{j+1} A r_{j+1} - (α_{j+1} β_j/α_j) r_j`. The division
+by `α_j` is what makes it need a hypothesis; `BCG.alpha_smul_residual_add_two` is the same identity
+cleared of denominators and holds at every step. The two iterates that start it are
+`problem_7_7_start`. The coefficients are named as in the backbone, `BCG.alpha` and `BCG.beta`;
+`bcg_alpha_eq` and `bcg_beta_eq` are the formulas of lines 4 and 8 they stand for. -/
+theorem problem_7_7 (h : BCGNoBreakdown A b x₀ rs₀ m) {k : ℕ} (hk : k < m) :
+    (bcg A b x₀ rs₀ (k + 2)).r
+      = (1 + BCG.alpha (op A) (op Aᴴ) b x₀ rs₀ (k + 1) * BCG.beta (op A) (op Aᴴ) b x₀ rs₀ k /
+            BCG.alpha (op A) (op Aᴴ) b x₀ rs₀ k) • (bcg A b x₀ rs₀ (k + 1)).r
+        - BCG.alpha (op A) (op Aᴴ) b x₀ rs₀ (k + 1) • op A (bcg A b x₀ rs₀ (k + 1)).r
+        - (BCG.alpha (op A) (op Aᴴ) b x₀ rs₀ (k + 1) * BCG.beta (op A) (op Aᴴ) b x₀ rs₀ k /
+            BCG.alpha (op A) (op Aᴴ) b x₀ rs₀ k) • (bcg A b x₀ rs₀ k).r := by
+  simp only [bcg_eq]
+  exact BCG.residual_add_two (op A) (op Aᴴ) b x₀ rs₀ (h.toBCG.alpha_ne_zero hk)
+
+/-- **P-7.7**, the direction half: `p_{j+2} = (1 + β_{j+1}) p_{j+1} - α_{j+1} A p_{j+1} - β_j p_j`.
+Eliminating the residuals rather than the directions costs no hypothesis at all. -/
+theorem problem_7_7_direction (A : Matrix (Fin n) (Fin n) 𝕜)
+    (b x₀ rs₀ : EuclideanSpace 𝕜 (Fin n)) (k : ℕ) :
+    (bcg A b x₀ rs₀ (k + 2)).p
+      = (1 + BCG.beta (op A) (op Aᴴ) b x₀ rs₀ (k + 1)) • (bcg A b x₀ rs₀ (k + 1)).p
+        - BCG.alpha (op A) (op Aᴴ) b x₀ rs₀ (k + 1) • op A (bcg A b x₀ rs₀ (k + 1)).p
+        - BCG.beta (op A) (op Aᴴ) b x₀ rs₀ k • (bcg A b x₀ rs₀ k).p := by
+  simp only [bcg_eq]
+  exact BCG.direction_add_two (op A) (op Aᴴ) b x₀ rs₀ k
+
+/-- **P-7.7**, the two iterates that start the recurrences of `problem_7_7` and
+`problem_7_7_direction`: `r_0 = p_0 = b - A x_0` (`bcg_zero`), `r_1 = r_0 - α_0 A r_0` and
+`p_1 = (1 + β_0) p_0 - α_0 A p_0`. -/
+theorem problem_7_7_start (A : Matrix (Fin n) (Fin n) 𝕜)
+    (b x₀ rs₀ : EuclideanSpace 𝕜 (Fin n)) :
+    (bcg A b x₀ rs₀ 1).r
+        = (bcg A b x₀ rs₀ 0).r
+          - BCG.alpha (op A) (op Aᴴ) b x₀ rs₀ 0 • op A (bcg A b x₀ rs₀ 0).r ∧
+      (bcg A b x₀ rs₀ 1).p
+        = (1 + BCG.beta (op A) (op Aᴴ) b x₀ rs₀ 0) • (bcg A b x₀ rs₀ 0).p
+          - BCG.alpha (op A) (op Aᴴ) b x₀ rs₀ 0 • op A (bcg A b x₀ rs₀ 0).p := by
+  simp only [bcg_eq]
+  exact ⟨BCG.residual_one (op A) (op Aᴴ) b x₀ rs₀, BCG.direction_one (op A) (op Aᴴ) b x₀ rs₀⟩
 
 /-- **(7.5)** entry by entry: `(A v_j, w_i) = T_{ij}` while Algorithm 7.1 has not broken down. -/
 private theorem inner_bilanczosW_apply_bilanczosV {v w : EuclideanSpace 𝕜 (Fin n)} {k : ℕ}
@@ -555,13 +620,49 @@ theorem equation_7_26 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁) 
   exact ⟨Chapter06.equation_6_50 (bilanczos_hessenbergRelation h) (smul_qmrV_zero A b x₀ w₁) hR,
     Chapter06.equation_6_53 _ _ m⟩
 
-/-- **(7.30)**: QMR is a residual smoothing of Algorithm 7.2 with parameter `|c_{m+1}|²`,
-`x^Q_{m+1} = |s_{m+1}|² x^Q_m + |c_{m+1}|² x_{m+1}`. It is the iterate form of the residual
-relation (7.29), and (7.31) rewrites it as `x^Q_{m+1} = x^Q_m + |c_{m+1}|² (x_{m+1} - x^Q_m)`.
-No no-serious-breakdown hypothesis is needed: the identity is one about the rotations and the
-two coordinate systems, not about the basis. The declaration keeps the name `equation_7_29`
-the plan gave it. -/
+/-- **(7.28)**: unfolding (7.27) inside (7.26) and using the recurrence `γ_{m+2} = -s_{m+1} γ_{m+1}`
+gives `r^Q_{m+1} = |s_{m+1}|² r^Q_m + c̄_{m+1} γ_{m+2} v_{m+2}`, which over `ℝ` is the book's
+`r^Q_m = s_m² r^Q_{m-1} + c_m γ_{m+1} v_{m+1}`. Nothing here is special to the two-sided Lanczos
+basis, so it is `SaadSparse.Chapter06.equation_6_55` at the Chapter 7 data. -/
+theorem equation_7_28 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁) {m : ℕ}
+    (hR : IsUnit (Chapter06.R (qmrCoeff A b x₀ w₁) m))
+    (hR' : IsUnit (Chapter06.R (qmrCoeff A b x₀ w₁) (m + 1))) :
+    b - op A (qmr A b x₀ w₁ (m + 1))
+      = ((‖Chapter06.s (qmrCoeff A b x₀ w₁) m‖ ^ 2 : ℝ) : 𝕜) • (b - op A (qmr A b x₀ w₁ m))
+        + (starRingEnd 𝕜 (Chapter06.c (qmrCoeff A b x₀ w₁) m)
+            * Chapter06.γ (qmrCoeff A b x₀ w₁) (Chapter06.β A b x₀ : 𝕜) (m + 1))
+          • qmrV A b x₀ w₁ (m + 1) := by
+  rw [show ((‖Chapter06.s (qmrCoeff A b x₀ w₁) m‖ ^ 2 : ℝ) : 𝕜)
+      = (‖Chapter06.s (qmrCoeff A b x₀ w₁) m‖ : 𝕜) ^ 2 by push_cast; ring]
+  exact Chapter06.equation_6_55 (bilanczos_hessenbergRelation h) (smul_qmrV_zero A b x₀ w₁) hR hR'
+
+/-- **(7.29)**: combining (7.28) with (7.19) replaces the last term of (7.28) by the Algorithm 7.2
+(BCG) residual, `r^Q_{m+1} = |s_{m+1}|² r^Q_m + |c_{m+1}|² r_{m+1}`. This is the residual form of
+the smoothing relation, and the one behind the observation that peaks of the BCG residual norms
+correspond to plateaus of the QMR quasi-residuals: `s_{m+1}` near `1` — slow BCG progress — leaves
+`r^Q` almost unchanged. -/
 theorem equation_7_29 {m : ℕ}
+    (hρ : ∀ k < m + 1, Krylov.givensRho (qmrCoeff A b x₀ w₁) k ≠ 0)
+    (hRm : IsUnit (Chapter06.R (qmrCoeff A b x₀ w₁) m))
+    (hR : IsUnit (Chapter06.R (qmrCoeff A b x₀ w₁) (m + 1)))
+    (hT : IsUnit (T A (Chapter06.v₁ A b x₀) w₁ (m + 1))) :
+    b - op A (qmr A b x₀ w₁ (m + 1))
+      = ((‖Chapter06.s (qmrCoeff A b x₀ w₁) m‖ ^ 2 : ℝ) : 𝕜) • (b - op A (qmr A b x₀ w₁ m))
+        + ((‖Chapter06.c (qmrCoeff A b x₀ w₁) m‖ ^ 2 : ℝ) : 𝕜)
+          • (b - op A (lanczosSolve A b x₀ w₁ (m + 1))) := by
+  refine Krylov.IsQuasiMinResIterate.residual_eq_combination
+    (fun _ _ hij => bilanczosCoeff_eq_zero_of_lt A _ _ hij) hρ
+    (w := lanczosSolveY A b x₀ w₁ (m + 1)) (qmr_isQuasiMinResIterate hR)
+    (qmr_isQuasiMinResIterate hRm) ?_ (lanczosSolve_eq_add_sum A b x₀ w₁ (m + 1))
+  rw [← T_eq_hessenbergSqOf]
+  exact T_mulVec_lanczosSolveY A b x₀ w₁ hT
+
+/-- **(7.30)**: QMR is a residual smoothing of Algorithm 7.2 with parameter `|c_{m+1}|²`,
+`x^Q_{m+1} = |s_{m+1}|² x^Q_m + |c_{m+1}|² x_{m+1}` — the iterate form of (7.29), which the book
+derives from it. (7.31) rewrites it as `x^Q_{m+1} = x^Q_m + |c_{m+1}|² (x_{m+1} - x^Q_m)`.
+No no-serious-breakdown hypothesis is needed: the identity is one about the rotations and the
+two coordinate systems, not about the basis. -/
+theorem equation_7_30 {m : ℕ}
     (hρ : ∀ k < m + 1, Krylov.givensRho (qmrCoeff A b x₀ w₁) k ≠ 0)
     (hRm : IsUnit (Chapter06.R (qmrCoeff A b x₀ w₁) m))
     (hR : IsUnit (Chapter06.R (qmrCoeff A b x₀ w₁) (m + 1)))
@@ -677,7 +778,7 @@ theorem qmrSmoothing_eq_qmr {A : Matrix (Fin n) (Fin n) ℝ}
     have hcs := Krylov.norm_givensC_sq_add_norm_givensS_sq (qmrCoeff A b x₀ w₁) k
       (hρ k (Nat.lt_succ_self k))
     rw [Chapter06.qmrs_succ, ih, qmrsEta_eq h hv hT hne k,
-      equation_7_29 hρ (hR k) (hR (k + 1)) (hT (k + 1))]
+      equation_7_30 hρ (hR k) (hR (k + 1)) (hT (k + 1))]
     simp only [RCLike.ofReal_real_eq_id, id_eq, givensC_eq, givensS_eq] at hcs ⊢
     rw [show ‖Krylov.givensS (qmrCoeff A b x₀ w₁) k‖ ^ 2
         = 1 - ‖Krylov.givensC (qmrCoeff A b x₀ w₁) k‖ ^ 2 from by linarith]

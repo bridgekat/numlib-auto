@@ -8,10 +8,19 @@ id = "BCG.State"
 id = "BCG.alpha"
 
 [[node]]
+id = "BCG.alpha_smul_residual_add_two"
+
+[[node]]
 id = "BCG.beta"
 
 [[node]]
 id = "BCG.direction"
+
+[[node]]
+id = "BCG.direction_add_two"
+
+[[node]]
+id = "BCG.direction_one"
 
 [[node]]
 id = "BCG.dualDirection"
@@ -44,7 +53,13 @@ id = "BCG.iterate_x_sub_mem"
 id = "BCG.residual"
 
 [[node]]
+id = "BCG.residual_add_two"
+
+[[node]]
 id = "BCG.residual_eq"
+
+[[node]]
+id = "BCG.residual_one"
 
 [[node]]
 id = "BCG.step"
@@ -62,7 +77,19 @@ id = "BiLanczos.NoBreakdown"
 id = "BiLanczos.NoSeriousBreakdown"
 
 [[node]]
+id = "BiLanczos.NoSeriousBreakdown.of_vhat_eq_zero"
+
+[[node]]
 id = "BiLanczos.State"
+
+[[node]]
+id = "BiLanczos.aeval_dualPoly"
+
+[[node]]
+id = "BiLanczos.aeval_poly"
+
+[[node]]
+id = "BiLanczos.aeval_vhatPoly"
 
 [[node]]
 id = "BiLanczos.alpha"
@@ -86,10 +113,22 @@ id = "BiLanczos.coeff"
 id = "BiLanczos.delta"
 
 [[node]]
+id = "BiLanczos.delta_mul_beta_succ"
+
+[[node]]
 id = "BiLanczos.delta_succ"
 
 [[node]]
 id = "BiLanczos.delta_succ_eq_zero_iff"
+
+[[node]]
+id = "BiLanczos.delta_succ_eq_zero_iff_polyForm_eq_zero"
+
+[[node]]
+id = "BiLanczos.dualPoly"
+
+[[node]]
+id = "BiLanczos.dualPolyScalar"
 
 [[node]]
 id = "BiLanczos.dualVec"
@@ -99,6 +138,9 @@ id = "BiLanczos.dualVec_mem_subspace"
 
 [[node]]
 id = "BiLanczos.dualVec_succ"
+
+[[node]]
+id = "BiLanczos.dualVhat_eq_smul"
 
 [[node]]
 id = "BiLanczos.hessenbergRelation"
@@ -122,7 +164,43 @@ id = "BiLanczos.inner_dualVec_vec_succ"
 id = "BiLanczos.inner_pow_apply_eq"
 
 [[node]]
+id = "BiLanczos.inner_smul_smul_eq_one_of_mul_eq"
+
+[[node]]
 id = "BiLanczos.inner_vec_dualVec"
+
+[[node]]
+id = "BiLanczos.moment"
+
+[[node]]
+id = "BiLanczos.momentMatrix"
+
+[[node]]
+id = "BiLanczos.momentMatrix_apply_eq_of_add_eq"
+
+[[node]]
+id = "BiLanczos.norm_beta_succ"
+
+[[node]]
+id = "BiLanczos.poly"
+
+[[node]]
+id = "BiLanczos.polyForm"
+
+[[node]]
+id = "BiLanczos.polyForm_comm"
+
+[[node]]
+id = "BiLanczos.polyForm_eq_moment"
+
+[[node]]
+id = "BiLanczos.polyForm_vhatPoly_eq_zero"
+
+[[node]]
+id = "BiLanczos.polyForm_vhatPoly_eq_zero_of_natDegree_le"
+
+[[node]]
+id = "BiLanczos.poly_natDegree"
 
 [[node]]
 id = "BiLanczos.span_dualVec"
@@ -131,10 +209,16 @@ id = "BiLanczos.span_dualVec"
 id = "BiLanczos.span_vec"
 
 [[node]]
+id = "BiLanczos.span_vec_succ"
+
+[[node]]
 id = "BiLanczos.state"
 
 [[node]]
 id = "BiLanczos.step"
+
+[[node]]
+id = "BiLanczos.subspace_succ_mem_invtSubmodule_of_vhat_eq_zero"
 
 [[node]]
 id = "BiLanczos.vec"
@@ -146,7 +230,19 @@ id = "BiLanczos.vec_mem_subspace"
 id = "BiLanczos.vec_succ"
 
 [[node]]
+id = "BiLanczos.vhatPoly"
+
+[[node]]
+id = "BiLanczos.vhatPoly_natDegree"
+
+[[node]]
+id = "BiLanczos.vhat_eq_zero_of_le"
+
+[[node]]
 id = "BiLanczos.zeta"
+
+[[node]]
+id = "BiLanczos.zeta_eq_polyForm"
 
 [[node]]
 id = "QMR.IsQuasiMinRes"

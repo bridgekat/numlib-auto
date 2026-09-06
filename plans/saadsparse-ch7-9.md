@@ -36,15 +36,19 @@ Two conventions specific to these chapters:
 * **Normalization.** Algorithm 7.1 scales so that `(v_j, w_j) = 1`; from (7.18) on the book
   switches, "without loss of generality", to `‖v_j‖₂ = 1`. Both are admissible by (7.1), and the
   switch is a hypothesis `∀ j, ‖v_j‖₂ = 1` on the statements after (7.18) rather than a second
-  definition.
+  definition. What ties that hypothesis to the book is `equation_7_1` — the constraint
+  `δ_{j+1} β_{j+1} = (v̂_{j+1}, ŵ_{j+1})` is the *only* one the normalization imposes — together
+  with `equation_7_1_norm`, which checks that the unit-2-norm choice satisfies it. P-7.3
+  (`problem_7_3`) runs the same freedom the other way and records what the projected problem
+  becomes under that scaling.
 
 ## 2. File layout
 
 | File | Book | Contents |
 |---|---|---|
-| `Chapter07/Section01.lean` | §7.1 | Algorithm 7.1, `T`, `T̄`, Proposition 7.1, (7.3)–(7.5), the Hessenberg relation, P-7.2, P-7.6 |
-| `Chapter07/Section02.lean` | §7.2 | Algorithm 7.2, the Petrov–Galerkin identification, (7.9) |
-| `Chapter07/Section03.lean` | §7.3 | Algorithm 7.3 (BCG), Proposition 7.2, the `LDU` derivation (7.10)–(7.12); Algorithm 7.4 (QMR), (7.15)–(7.31), Propositions 7.3, 7.5, Theorem 7.4, Algorithm 7.5 |
+| `Chapter07/Section01.lean` | §7.1 | Algorithm 7.1, (7.1), `T`, `T̄`, Proposition 7.1, (7.3)–(7.5), the Hessenberg relation, the §7.1.2 lucky breakdown and formal orthogonal polynomials, P-7.2, P-7.3, P-7.5, P-7.6 |
+| `Chapter07/Section02.lean` | §7.2 | Algorithm 7.2, the Petrov–Galerkin identification, (7.9), the exactness of the iterate at a lucky breakdown |
+| `Chapter07/Section03.lean` | §7.3 | Algorithm 7.3 (BCG), Proposition 7.2, the `LDU` derivation (7.10)–(7.12), P-7.7; Algorithm 7.4 (QMR), (7.15)–(7.31), Propositions 7.3, 7.5, Theorem 7.4, Algorithm 7.5 |
 | `Chapter07/Section04.lean` | §7.4 | the BCG polynomials `φ_j`, `π_j`; Algorithms 7.6 (CGS), 7.7 (BICGSTAB), 7.8 (TFQMR) with their polynomial identifications and (7.70), (7.76), (7.83) |
 | `Chapter08/Section01.lean` | §8.1 | (8.1)–(8.8) |
 | `Chapter08/Section02.lean` | §8.2 | Algorithms 8.1–8.3 and their identification with the projection processes of §5.3–5.4; (8.22)–(8.27), P-8.8 |
@@ -163,9 +167,15 @@ surface claims none.
 
 Full list with reasons in `proposals/saad-ch7-9.md` §3. The four that matter:
 
-* **Look-ahead Lanczos (§7.1.2)**, with the indefinite bilinear form (7.7), the Hankel moment
-  matrix and its `LU` factorization. The book proves nothing here; it describes a family of
-  implementations and says where the pivots vanish. Nothing to be faithful to.
+* **The look-ahead *algorithms* of §7.1.2** (Parlett–Taylor–Liu, the `2×2` pivots, the
+  "added complexity" discussion), and the `LU` factorization `M_k = L_k U_k` of the Hankel moment
+  matrix, for which no general `LU`-existence theorem is available. The rest of §7.1.2 is *not*
+  implementation prose and is formalized: the lucky-breakdown claim (a lucky breakdown is not a
+  serious one, the subspace it leaves is `A`-invariant, and the Algorithm 7.2 iterate is exact) and
+  the formal orthogonal polynomials of (7.7) — the polynomials themselves, their degrees, their
+  orthogonality for the indefinite form, the dual family up to the scalar `γ_j`, the criterion
+  "serious breakdown iff `⟨p_j, p_j⟩ = 0`", and the Hankel structure of the moment matrix. The
+  backbone layer for all of it is the last section of `Numlib/Krylov/BiLanczos.lean`.
 * **The spectrum of `[[0, A], [Aᴴ, 0]]` (§8.1) and P-8.4.** Still unwritten, but *not* for the
   reason on record. The old reason — "Mathlib has `LinearMap.singularValues` but no factorization,
   and `Numlib/LinearAlgebra/Matrix/SVD` is a phase-3 group with no nodes proved" — is **stale**:

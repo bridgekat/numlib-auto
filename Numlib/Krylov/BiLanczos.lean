@@ -24,6 +24,22 @@ The main results are [saad2003iterative] Prop 7.1: the two families are biorthog
 (`BiLanczos.hessenbergRelation`), so the residual formula `Krylov.HessenbergRelation.residual_eq`
 applies verbatim.
 
+Breakdown comes in two kinds. A *lucky* one, `v̂_{j+1} = 0`, is benign: it implies
+`BiLanczos.NoSeriousBreakdown` (`BiLanczos.NoSeriousBreakdown.of_vhat_eq_zero`), the span built so
+far is `𝒦_{j+1}(A, v₁)` (`BiLanczos.span_vec_succ`) and it is `A`-invariant
+(`BiLanczos.subspace_succ_mem_invtSubmodule_of_vhat_eq_zero`). A *serious* one,
+`⟪ŵ_{j+1}, v̂_{j+1}⟫ = 0` with `v̂_{j+1} ≠ 0`, is what the theory has to exclude.
+
+The last section is the polynomial picture. Every vector the process builds is a polynomial in `A`
+applied to `v₁` (`BiLanczos.poly`, `BiLanczos.vhatPoly`, `BiLanczos.aeval_poly`,
+`BiLanczos.aeval_vhatPoly`), the dual vectors are the *conjugate* polynomials in `B` applied to
+`w₁` up to a scalar (`BiLanczos.dualVhat_eq_smul`), and the form these are orthogonal for is the
+indefinite `BiLanczos.polyForm`, `⟨p, q⟩ = ⟪q̄(B) w₁, p(A) v₁⟫`. That form is a *moment functional*
+(`BiLanczos.polyForm_eq_moment`), which makes it symmetric and makes its moment matrix a Hankel
+matrix (`BiLanczos.momentMatrix_apply_eq_of_add_eq`); and a serious breakdown is exactly the
+vanishing of `⟨p, p⟩` on the current polynomial
+(`BiLanczos.delta_succ_eq_zero_iff_polyForm_eq_zero`).
+
 The two methods built on the process are here as well. `BCG` is the biconjugate gradient algorithm
 (Alg 7.3): its residuals are biorthogonal and its directions `A`-biconjugate
 (`BCG.inner_residual_dualResidual_eq_zero`, `BCG.inner_dualDirection_apply_direction_eq_zero`, Prop
@@ -210,6 +226,38 @@ theorem beta_succ_eq_zero_iff (j : ℕ) :
 theorem beta_succ_ne_zero_iff (j : ℕ) :
     beta A B v₁ w₁ (j + 1) ≠ 0 ↔ delta A B v₁ w₁ (j + 1) ≠ 0 := by
   rw [ne_eq, ne_eq, beta_succ_eq_zero_iff, delta_succ_eq_zero_iff]
+
+/-- [saad2003iterative], (7.1): the two scaling scalars of Alg 7.1, lines 7–8, multiply to the
+biorthogonality scalar, `δ_{j+1} β_{j+1} = ⟪ŵ_{j+1}, v̂_{j+1}⟫`. Lines 9 and 10 divide the two
+unnormalized vectors by them, so this product is the *only* constraint the normalization
+`⟪w_{j+1}, v_{j+1}⟫ = 1` places on the pair; see `BiLanczos.inner_smul_smul_eq_one_of_mul_eq`.
+No hypothesis is needed, since at a breakdown both sides vanish. -/
+theorem delta_mul_beta_succ (j : ℕ) :
+    delta A B v₁ w₁ (j + 1) * beta A B v₁ w₁ (j + 1) = zeta A B v₁ w₁ j := by
+  rcases eq_or_ne (delta A B v₁ w₁ (j + 1)) 0 with hd | hd
+  · rw [hd, zero_mul, (delta_succ_eq_zero_iff A B v₁ w₁ j).1 hd]
+  · rw [beta_succ]
+    field_simp
+
+/-- The scaling freedom behind [saad2003iterative], (7.1): *any* pair `(δ, β)` of scalars whose
+product is `⟪ŵ, v̂⟫ ≠ 0` normalizes a step of the two-sided Lanczos process,
+`⟪ŵ / conj β, v̂ / δ⟫ = 1`. The choice of Alg 7.1, lines 7–8 is one such pair
+(`BiLanczos.delta_mul_beta_succ`); so is the unit-2-norm scaling `δ = ‖v̂‖₂` the book switches to
+at its (7.18). -/
+theorem inner_smul_smul_eq_one_of_mul_eq {vh wh : E} {δ β : 𝕜} (hne : inner 𝕜 wh vh ≠ 0)
+    (h : δ * β = inner 𝕜 wh vh) :
+    inner 𝕜 ((starRingEnd 𝕜 β)⁻¹ • wh) (δ⁻¹ • vh) = 1 := by
+  have hd : δ ≠ 0 := by rintro rfl; exact hne (by rw [← h, zero_mul])
+  have hb : β ≠ 0 := by rintro rfl; exact hne (by rw [← h, mul_zero])
+  rw [inner_smul_left, inner_smul_right, map_inv₀, RCLike.conj_conj, ← h]
+  field_simp
+
+/-- With the determination of [saad2003iterative], Alg 7.1 lines 7–8 the two coefficients have the
+same modulus, `|β_{j+1}| = δ_{j+1}` — the book's "the `δ_j`'s are positive and `β_j = ±δ_j`". -/
+theorem norm_beta_succ (j : ℕ) :
+    ‖beta A B v₁ w₁ (j + 1)‖ = ‖delta A B v₁ w₁ (j + 1)‖ := by
+  rw [beta_succ, norm_div, delta_succ, RCLike.norm_ofReal, abs_of_nonneg (Real.sqrt_nonneg _),
+    Real.div_sqrt]
 
 /-- Off breakdown, `v̂_{j+1} = δ_{j+1} v_{j+1}`. -/
 theorem smul_vec_succ {j : ℕ} (h : delta A B v₁ w₁ (j + 1) ≠ 0) :
@@ -562,6 +610,33 @@ theorem NoSeriousBreakdown.vhat_eq_smul (h : NoSeriousBreakdown A B v₁ w₁) (
   · rw [h.vhat_eq_zero j hd, hd, zero_smul]
   · rw [smul_vec_succ _ _ _ _ hd]
 
+/-- Once the primal recurrence has terminated it stays terminated: `v̂_{m+1} = 0` forces
+`v̂_{j+1} = 0` for every `j ≥ m`, because `v_{m+1}` and every vector after it is `0`. -/
+theorem vhat_eq_zero_of_le {m : ℕ} (hv : vhat A B v₁ w₁ m = 0) {j : ℕ} (hj : m ≤ j) :
+    vhat A B v₁ w₁ j = 0 := by
+  obtain ⟨k, rfl⟩ := Nat.exists_eq_add_of_le hj
+  clear hj
+  induction k with
+  | zero => simpa using hv
+  | succ k ih =>
+    change vhat A B v₁ w₁ (m + k + 1) = 0
+    have hz : zeta A B v₁ w₁ (m + k) = 0 := by rw [zeta, ih, inner_zero_right]
+    have hvec : vec A B v₁ w₁ (m + k + 1) = 0 := by rw [vec_succ, ih, smul_zero]
+    have hb : beta A B v₁ w₁ (m + k + 1) = 0 := by rw [beta_succ, hz, zero_div]
+    simp [vhat_eq, hvec, hb]
+
+/-- **A lucky breakdown is not a serious one** ([saad2003iterative], §7.1.2): if the process runs
+`m` clean steps and then the primal recurrence terminates, `v̂_{m+1} = 0`, then
+`BiLanczos.NoSeriousBreakdown` holds globally — before step `m` because no `δ` vanishes there, and
+from step `m` on because every later `v̂` vanishes too. So the Hessenberg relation and everything
+built on it survive a lucky breakdown. -/
+theorem NoSeriousBreakdown.of_vhat_eq_zero {m : ℕ} (h : NoBreakdown A B v₁ w₁ m)
+    (hv : vhat A B v₁ w₁ m = 0) : NoSeriousBreakdown A B v₁ w₁ where
+  vhat_eq_zero j hj := by
+    rcases lt_or_ge j m with hjm | hjm
+    · exact absurd hj (h.delta_ne_zero j hjm)
+    · exact vhat_eq_zero_of_le hv hjm
+
 /-- The three-term recurrence `A v_j = β_j v_{j-1} + α_j v_j + δ_{j+1} v_{j+1}` at every step. -/
 theorem NoSeriousBreakdown.apply_vec (h : NoSeriousBreakdown A B v₁ w₁) (j : ℕ) :
     A (vec A B v₁ w₁ j) = beta A B v₁ w₁ j • vecPrev A B v₁ w₁ j +
@@ -600,7 +675,7 @@ private theorem map_span_le {m : ℕ} (h : NoBreakdown A B v₁ w₁ m) {k : ℕ
   · exact Submodule.smul_mem _ _ (hmem i (by omega))
   · exact Submodule.smul_mem _ _ (hmem (i + 1) (by omega))
 
-private theorem pow_apply_mem_span {m : ℕ} (h : NoBreakdown A B v₁ w₁ m) {k : ℕ} (hk : k < m) :
+private theorem pow_apply_mem_span {m : ℕ} (h : NoBreakdown A B v₁ w₁ m) {k : ℕ} (hk : k ≤ m) :
     (A ^ k) v₁ ∈ Submodule.span 𝕜 (vec A B v₁ w₁ '' Set.Iio (k + 1)) := by
   induction k with
   | zero =>
@@ -610,7 +685,7 @@ private theorem pow_apply_mem_span {m : ℕ} (h : NoBreakdown A B v₁ w₁ m) {
   | succ k ih =>
     have hpow : (A ^ (k + 1)) v₁ = A ((A ^ k) v₁) := by rw [pow_succ']; rfl
     rw [hpow]
-    exact map_span_le h (le_of_lt hk) ⟨_, ih (by omega), rfl⟩
+    exact map_span_le h hk ⟨_, ih (by omega), rfl⟩
 
 /-- [saad2003iterative], Prop 7.1: the primal vectors are a basis of `𝒦_m(A, v₁)`. -/
 theorem span_vec {m : ℕ} (h : NoBreakdown A B v₁ w₁ m) :
@@ -622,7 +697,59 @@ theorem span_vec {m : ℕ} (h : NoBreakdown A B v₁ w₁ m) :
     rintro _ ⟨k, hk, rfl⟩
     have hk' : k < m := hk
     exact Submodule.span_mono (Set.image_mono (Set.Iio_subset_Iio (by omega)))
-      (pow_apply_mem_span h hk')
+      (pow_apply_mem_span h hk'.le)
+
+/-- `m` good steps produce `v_0, …, v_m`, one vector more than `BiLanczos.span_vec` accounts for,
+and they span `𝒦_{m+1}(A, v₁)`. This is the form the lucky-breakdown statement of
+[saad2003iterative], §7.1.2 needs: at a breakdown after step `m` there is no `NoBreakdown (m+1)` to
+appeal to, yet `v_m` is there and the span has already closed up. -/
+theorem span_vec_succ {m : ℕ} (h : NoBreakdown A B v₁ w₁ m) :
+    Submodule.span 𝕜 (vec A B v₁ w₁ '' Set.Iio (m + 1)) = Krylov.subspace A v₁ (m + 1) := by
+  refine le_antisymm (Submodule.span_le.2 ?_) ?_
+  · rintro _ ⟨i, hi, rfl⟩
+    exact Krylov.subspace_mono A v₁ (Nat.succ_le_of_lt hi) (vec_mem_subspace A B v₁ w₁ i)
+  · rw [Krylov.subspace_eq_span_image_Iio, Submodule.span_le]
+    rintro _ ⟨k, hk, rfl⟩
+    have hk' : k < m + 1 := hk
+    exact Submodule.span_mono (Set.image_mono (Set.Iio_subset_Iio (by omega)))
+      (pow_apply_mem_span h (by omega))
+
+/-- The lucky breakdown of [saad2003iterative], §7.1.2: if the primal recurrence terminates,
+`v̂_{m+1} = 0`, then `A` maps the span of `v_0, …, v_m` into itself — the last three-term relation
+loses its `v_{m+1}` term and the span closes up. -/
+theorem map_span_vec_succ_le_of_vhat_eq_zero {m : ℕ} (h : NoBreakdown A B v₁ w₁ m)
+    (hv : vhat A B v₁ w₁ m = 0) :
+    Submodule.map A (Submodule.span 𝕜 (vec A B v₁ w₁ '' Set.Iio (m + 1))) ≤
+      Submodule.span 𝕜 (vec A B v₁ w₁ '' Set.Iio (m + 1)) := by
+  rw [Submodule.map_span, Submodule.span_le]
+  rintro _ ⟨_, ⟨i, hi, rfl⟩, rfl⟩
+  have hi' : i < m + 1 := hi
+  have hmem : ∀ l < m + 1, vec A B v₁ w₁ l ∈
+      Submodule.span 𝕜 (vec A B v₁ w₁ '' Set.Iio (m + 1)) := fun l hl =>
+    Submodule.subset_span ⟨l, hl, rfl⟩
+  rcases Nat.lt_succ_iff_lt_or_eq.1 hi' with him | him
+  · exact map_span_le h (le_refl m) ⟨_, Submodule.subset_span ⟨i, him, rfl⟩, rfl⟩
+  · subst him
+    have happ : A (vec A B v₁ w₁ i) =
+        alpha A B v₁ w₁ i • vec A B v₁ w₁ i + beta A B v₁ w₁ i • vecPrev A B v₁ w₁ i := by
+      have h0 : A (vec A B v₁ w₁ i) - alpha A B v₁ w₁ i • vec A B v₁ w₁ i -
+          beta A B v₁ w₁ i • vecPrev A B v₁ w₁ i = 0 := by
+        rw [← vhat_eq]; exact hv
+      rw [sub_sub, sub_eq_zero] at h0
+      exact h0
+    rw [SetLike.mem_coe, happ]
+    refine Submodule.add_mem _ (Submodule.smul_mem _ _ (hmem i hi')) ?_
+    cases i with
+    | zero => rw [vecPrev_zero, smul_zero]; exact Submodule.zero_mem _
+    | succ i => rw [vecPrev_succ]; exact Submodule.smul_mem _ _ (hmem i (by omega))
+
+/-- The lucky breakdown of [saad2003iterative], §7.1.2, as a statement about the Krylov subspace:
+a terminating primal recurrence leaves `𝒦_{m+1}(A, v₁)` invariant under `A`. -/
+theorem subspace_succ_mem_invtSubmodule_of_vhat_eq_zero {m : ℕ} (h : NoBreakdown A B v₁ w₁ m)
+    (hv : vhat A B v₁ w₁ m = 0) :
+    Krylov.subspace A v₁ (m + 1) ∈ Module.End.invtSubmodule A := by
+  rw [← span_vec_succ h]
+  exact (Module.End.mem_invtSubmodule_iff_map_le A).2 (map_span_vec_succ_le_of_vhat_eq_zero h hv)
 
 private theorem map_dualSpan_le {m : ℕ} (h : NoBreakdown A B v₁ w₁ m) {k : ℕ} (hk : k ≤ m) :
     Submodule.map B (Submodule.span 𝕜 (dualVec A B v₁ w₁ '' Set.Iio k)) ≤
@@ -667,6 +794,444 @@ theorem span_dualVec {m : ℕ} (h : NoBreakdown A B v₁ w₁ m) :
       (pow_apply_mem_dualSpan h hk')
 
 end Relation
+
+/-! ### Formal orthogonal polynomials and the moment matrix
+
+[saad2003iterative], §7.1.2. Every vector the process builds is a polynomial in `A` applied to
+`v₁`: `BiLanczos.poly` is the sequence with `p_j(A) v₁ = v_j` and `BiLanczos.vhatPoly` the one with
+`p̂_j(A) v₁ = v̂_{j+1}`, both defined by the divided recurrence so that they survive breakdown.
+The bilinear form the process orthogonalizes them against is `BiLanczos.polyForm`,
+`⟨p, q⟩ = (p(A) v₁, q(Aᴴ) w₁)`, which is *indefinite* — `⟨p, p⟩` may vanish on a nonzero
+polynomial, and that is what a serious breakdown is.
+
+The one structural fact about the form is `BiLanczos.polyForm_eq_moment`: it is a moment
+functional, `⟨p, q⟩ = L(p q)` with `L(r) = ⟪w₁, r(A) v₁⟫`. Symmetry (`BiLanczos.polyForm_comm`)
+and the Hankel structure of the moment matrix
+(`BiLanczos.momentMatrix_apply_eq_of_add_eq`) are immediate from it. -/
+
+section FormalOrthogonalPolynomials
+
+open Polynomial
+
+variable (A B : E →ₗ[𝕜] E) (v₁ w₁ : E)
+
+/-- The moment functional of the pair, `L(p) = ⟪w₁, p(A) v₁⟫`; its values on the monomials are the
+moments `L(x^k) = ⟪w₁, A^k v₁⟫` of [saad2003iterative], §7.1.2. -/
+noncomputable def moment (p : 𝕜[X]) : 𝕜 := inner 𝕜 w₁ (Polynomial.aeval A p v₁)
+
+/-- [saad2003iterative], (7.7): the bilinear form `⟨p, q⟩ = (p(A) v₁, q(Aᴴ) w₁)` on `𝕜[X]`. The
+conjugation applied to `q` is what makes it bilinear rather than sesquilinear over `ℂ`; over `ℝ`
+it is the book's form verbatim. It is an *indefinite* form: `⟨p, p⟩` can vanish on a nonzero `p`,
+which is exactly a serious breakdown of the process. -/
+noncomputable def polyForm (p q : 𝕜[X]) : 𝕜 :=
+  inner 𝕜 (Polynomial.aeval B (q.map (starRingEnd 𝕜)) w₁) (Polynomial.aeval A p v₁)
+
+/-- [saad2003iterative], §7.1.2: the moment matrix `M_k = {⟨x^{i-1}, x^{j-1}⟩}_{i,j=1..k}`. -/
+noncomputable def momentMatrix (k : ℕ) : Matrix (Fin k) (Fin k) 𝕜 :=
+  Matrix.of fun i j => polyForm A B v₁ w₁ (X ^ (i : ℕ)) (X ^ (j : ℕ))
+
+variable {A B v₁ w₁}
+
+/-- The form of [saad2003iterative], (7.7) is a *moment functional*: `⟨p, q⟩ = L(p q)`. Everything
+else about the form follows from this one identity. -/
+theorem polyForm_eq_moment (hB : ∀ x y, inner 𝕜 (A x) y = inner 𝕜 x (B y)) (p q : 𝕜[X]) :
+    polyForm A B v₁ w₁ p q = moment A v₁ w₁ (p * q) := by
+  rw [polyForm, inner_aeval_map_eq hB, moment, mul_comm, map_mul, Module.End.mul_apply]
+
+/-- The form of [saad2003iterative], (7.7) is symmetric, `⟨p, q⟩ = ⟨q, p⟩`, because it depends only
+on the product `p q`. -/
+theorem polyForm_comm (hB : ∀ x y, inner 𝕜 (A x) y = inner 𝕜 x (B y)) (p q : 𝕜[X]) :
+    polyForm A B v₁ w₁ p q = polyForm A B v₁ w₁ q p := by
+  rw [polyForm_eq_moment hB, polyForm_eq_moment hB, mul_comm]
+
+/-- The entries of the moment matrix are the moments: `(M_k)_{ij} = L(x^{i+j})`. -/
+theorem momentMatrix_apply (hB : ∀ x y, inner 𝕜 (A x) y = inner 𝕜 x (B y)) (k : ℕ) (i j : Fin k) :
+    momentMatrix A B v₁ w₁ k i j = moment A v₁ w₁ (X ^ ((i : ℕ) + (j : ℕ))) := by
+  rw [momentMatrix, Matrix.of_apply, polyForm_eq_moment hB, ← pow_add]
+
+/-- [saad2003iterative], §7.1.2: the moment matrix is a *Hankel* matrix, constant along
+antidiagonals, because `⟨x^i, x^j⟩ = L(x^{i+j})` depends on `i` and `j` only through `i + j`. -/
+theorem momentMatrix_apply_eq_of_add_eq (hB : ∀ x y, inner 𝕜 (A x) y = inner 𝕜 x (B y)) {k : ℕ}
+    {i j i' j' : Fin k} (h : (i : ℕ) + (j : ℕ) = (i' : ℕ) + (j' : ℕ)) :
+    momentMatrix A B v₁ w₁ k i j = momentMatrix A B v₁ w₁ k i' j' := by
+  rw [momentMatrix_apply hB, momentMatrix_apply hB, h]
+
+/-! #### The polynomials the process computes -/
+
+variable (A B v₁ w₁)
+
+/-- The pair `(p_j, p_{j+1})` of consecutive primal polynomials, as a one-step recursion so that
+the equations of `BiLanczos.poly` hold by `rfl`. -/
+private noncomputable def polyPair (A B : E →ₗ[𝕜] E) (v₁ w₁ : E) : ℕ → 𝕜[X] × 𝕜[X]
+  | 0 =>
+    (1, C (delta A B v₁ w₁ 1)⁻¹ *
+      ((X - C (alpha A B v₁ w₁ 0)) * 1 - C (beta A B v₁ w₁ 0) * 0))
+  | j + 1 =>
+    ((polyPair A B v₁ w₁ j).2,
+      C (delta A B v₁ w₁ (j + 2))⁻¹ *
+        ((X - C (alpha A B v₁ w₁ (j + 1))) * (polyPair A B v₁ w₁ j).2 -
+          C (beta A B v₁ w₁ (j + 1)) * (polyPair A B v₁ w₁ j).1))
+
+/-- The polynomials of the two-sided Lanczos process: `p_0 = 1` and
+`δ_{j+1} p_{j+1} = (X - α_j) p_j - β_j p_{j-1}`, so that `p_j(A) v₁ = v_j`
+(`BiLanczos.aeval_poly`). The recurrence is divided by `δ_{j+1}` rather than multiplied out, which
+makes it hold at every index: past a breakdown the vanishing `δ` inverts to `0` and both `p_j` and
+`v_j` are `0`. -/
+noncomputable def poly (A B : E →ₗ[𝕜] E) (v₁ w₁ : E) (j : ℕ) : 𝕜[X] := (polyPair A B v₁ w₁ j).1
+
+/-- `p_{j-1}`, with the convention `p_{-1} = 0` matching `BiLanczos.vecPrev`. -/
+noncomputable def polyPrev (A B : E →ₗ[𝕜] E) (v₁ w₁ : E) : ℕ → 𝕜[X]
+  | 0 => 0
+  | j + 1 => poly A B v₁ w₁ j
+
+/-- [saad2003iterative], §7.1.2: the polynomial `p̂_j = (X - α_j) p_j - β_j p_{j-1}` with
+`p̂_j(A) v₁ = v̂_{j+1}` (`BiLanczos.aeval_vhatPoly`). This is the book's `p_j`, the polynomial whose
+indefinite norm `⟨p̂_j, p̂_j⟩` decides whether the process breaks down. -/
+noncomputable def vhatPoly (A B : E →ₗ[𝕜] E) (v₁ w₁ : E) (j : ℕ) : 𝕜[X] :=
+  (X - C (alpha A B v₁ w₁ j)) * poly A B v₁ w₁ j - C (beta A B v₁ w₁ j) * polyPrev A B v₁ w₁ j
+
+@[simp] theorem poly_zero : poly A B v₁ w₁ 0 = 1 := rfl
+
+@[simp] theorem polyPrev_zero : polyPrev A B v₁ w₁ 0 = 0 := rfl
+
+@[simp] theorem polyPrev_succ (j : ℕ) : polyPrev A B v₁ w₁ (j + 1) = poly A B v₁ w₁ j := rfl
+
+/-- The normalization step at the level of polynomials: `p_{j+1} = p̂_j / δ_{j+1}`. -/
+theorem poly_succ (j : ℕ) :
+    poly A B v₁ w₁ (j + 1) = C (delta A B v₁ w₁ (j + 1))⁻¹ * vhatPoly A B v₁ w₁ j := by
+  cases j with
+  | zero => rfl
+  | succ j => rfl
+
+private theorem aeval_C_mul_apply (T : E →ₗ[𝕜] E) (c : 𝕜) (p : 𝕜[X]) (x : E) :
+    Polynomial.aeval T (C c * p) x = c • Polynomial.aeval T p x := by
+  rw [map_mul, Module.End.mul_apply, aeval_C, Module.algebraMap_end_apply]
+
+private theorem aeval_step (T : E →ₗ[𝕜] E) (a b : 𝕜) (p q : 𝕜[X]) (x : E) :
+    Polynomial.aeval T ((X - C a) * p - C b * q) x =
+      T (Polynomial.aeval T p x) - a • Polynomial.aeval T p x - b • Polynomial.aeval T q x := by
+  rw [map_sub, LinearMap.sub_apply, map_mul, Module.End.mul_apply, map_sub, LinearMap.sub_apply,
+    aeval_X, aeval_C, Module.algebraMap_end_apply, aeval_C_mul_apply]
+
+private theorem aeval_poly_aux (j : ℕ) :
+    Polynomial.aeval A (poly A B v₁ w₁ j) v₁ = vec A B v₁ w₁ j ∧
+      Polynomial.aeval A (polyPrev A B v₁ w₁ j) v₁ = vecPrev A B v₁ w₁ j := by
+  induction j with
+  | zero => exact ⟨by simp, by simp⟩
+  | succ j ih =>
+    have hv : Polynomial.aeval A (vhatPoly A B v₁ w₁ j) v₁ = vhat A B v₁ w₁ j := by
+      rw [vhatPoly, aeval_step, ih.1, ih.2, vhat_eq]
+    exact ⟨by rw [poly_succ, aeval_C_mul_apply, hv, vec_succ],
+      by rw [polyPrev_succ, ih.1, vecPrev_succ]⟩
+
+/-- [saad2003iterative], §7.1.2: the Lanczos vectors are polynomials in `A` applied to the starting
+vector, `p_j(A) v₁ = v_j`. No hypothesis is needed — past a breakdown both sides are `0`. -/
+theorem aeval_poly (j : ℕ) : Polynomial.aeval A (poly A B v₁ w₁ j) v₁ = vec A B v₁ w₁ j :=
+  (aeval_poly_aux A B v₁ w₁ j).1
+
+/-- [saad2003iterative], §7.1.2: "there is a polynomial `p_j` of degree `j` such that
+`v̂_{j+1} = p_j(A) v₁`". -/
+theorem aeval_vhatPoly (j : ℕ) :
+    Polynomial.aeval A (vhatPoly A B v₁ w₁ j) v₁ = vhat A B v₁ w₁ j := by
+  rw [vhatPoly, aeval_step, aeval_poly, (aeval_poly_aux A B v₁ w₁ j).2, vhat_eq]
+
+/-! #### Degrees -/
+
+private theorem natDegree_step (a b : 𝕜) {p q : 𝕜[X]} {k : ℕ} (hp : p.natDegree ≤ k)
+    (hq : q.natDegree ≤ k + 1) : ((X - C a) * p - C b * q).natDegree ≤ k + 1 := by
+  refine le_trans (natDegree_sub_le _ _) (max_le (le_trans natDegree_mul_le ?_)
+    (le_trans natDegree_mul_le ?_))
+  · rw [natDegree_X_sub_C]; omega
+  · rw [natDegree_C]; omega
+
+private theorem coeff_step (a b : 𝕜) {p q : 𝕜[X]} {k : ℕ} (hp : p.natDegree ≤ k)
+    (hq : q.natDegree ≤ k) : ((X - C a) * p - C b * q).coeff (k + 1) = p.coeff k := by
+  rw [sub_mul, coeff_sub, coeff_sub, coeff_X_mul, coeff_C_mul, coeff_C_mul,
+    coeff_eq_zero_of_natDegree_lt (n := k + 1) (by omega),
+    coeff_eq_zero_of_natDegree_lt (n := k + 1) (by omega), mul_zero, mul_zero, sub_zero, sub_zero]
+
+private theorem natDegree_aux (j : ℕ) :
+    (poly A B v₁ w₁ j).natDegree ≤ j ∧ (polyPrev A B v₁ w₁ j).natDegree ≤ j := by
+  induction j with
+  | zero => simp
+  | succ j ih =>
+    have hv : (vhatPoly A B v₁ w₁ j).natDegree ≤ j + 1 :=
+      natDegree_step _ _ ih.1 (le_trans ih.2 (by omega))
+    refine ⟨?_, by rw [polyPrev_succ]; exact le_trans ih.1 (by omega)⟩
+    rw [poly_succ]
+    exact le_trans natDegree_mul_le (by rw [natDegree_C]; simpa using hv)
+
+/-- `p_j` has degree at most `j`; exactly `j` while the process has not broken down
+(`BiLanczos.poly_natDegree`). -/
+theorem poly_natDegree_le (j : ℕ) : (poly A B v₁ w₁ j).natDegree ≤ j :=
+  (natDegree_aux A B v₁ w₁ j).1
+
+theorem polyPrev_natDegree_le (j : ℕ) : (polyPrev A B v₁ w₁ j).natDegree ≤ j :=
+  (natDegree_aux A B v₁ w₁ j).2
+
+/-- `p̂_j` has degree at most `j + 1`. -/
+theorem vhatPoly_natDegree_le (j : ℕ) : (vhatPoly A B v₁ w₁ j).natDegree ≤ j + 1 :=
+  natDegree_step _ _ (poly_natDegree_le A B v₁ w₁ j)
+    (le_trans (polyPrev_natDegree_le A B v₁ w₁ j) (Nat.le_succ j))
+
+/-- The leading coefficient of `p̂_j` is that of `p_j`: multiplying by `X - α_j` shifts it up. -/
+theorem vhatPoly_coeff_succ (j : ℕ) :
+    (vhatPoly A B v₁ w₁ j).coeff (j + 1) = (poly A B v₁ w₁ j).coeff j :=
+  coeff_step _ _ (poly_natDegree_le A B v₁ w₁ j) (polyPrev_natDegree_le A B v₁ w₁ j)
+
+/-- The `j`-th coefficient of `p_j` is the product of the inverted subdiagonal entries. -/
+theorem poly_coeff_self (j : ℕ) :
+    (poly A B v₁ w₁ j).coeff j = ∏ i ∈ range j, (delta A B v₁ w₁ (i + 1))⁻¹ := by
+  induction j with
+  | zero => simp
+  | succ j ih =>
+    rw [poly_succ, coeff_C_mul, vhatPoly_coeff_succ, ih, Finset.prod_range_succ]
+    ring
+
+variable {A B v₁ w₁}
+
+theorem poly_coeff_self_ne_zero {m : ℕ} (h : NoBreakdown A B v₁ w₁ m) {j : ℕ} (hj : j ≤ m) :
+    (poly A B v₁ w₁ j).coeff j ≠ 0 := by
+  rw [poly_coeff_self]
+  exact Finset.prod_ne_zero_iff.2 fun i hi =>
+    inv_ne_zero (h.delta_ne_zero i (lt_of_lt_of_le (Finset.mem_range.1 hi) hj))
+
+/-- While the process has not broken down, `p_j` has degree exactly `j`. -/
+theorem poly_natDegree {m : ℕ} (h : NoBreakdown A B v₁ w₁ m) {j : ℕ} (hj : j ≤ m) :
+    (poly A B v₁ w₁ j).natDegree = j :=
+  le_antisymm (poly_natDegree_le A B v₁ w₁ j)
+    (le_natDegree_of_ne_zero (poly_coeff_self_ne_zero h hj))
+
+/-- [saad2003iterative], §7.1.2: the polynomial with `v̂_{j+1} = p̂_j(A) v₁` has degree exactly
+`j + 1` while the process has not broken down. -/
+theorem vhatPoly_natDegree {m : ℕ} (h : NoBreakdown A B v₁ w₁ m) {j : ℕ} (hj : j ≤ m) :
+    (vhatPoly A B v₁ w₁ j).natDegree = j + 1 :=
+  le_antisymm (vhatPoly_natDegree_le A B v₁ w₁ j)
+    (le_natDegree_of_ne_zero (by rw [vhatPoly_coeff_succ]; exact poly_coeff_self_ne_zero h hj))
+
+/-! #### The dual polynomials, and the breakdown criterion -/
+
+variable (A B v₁ w₁)
+
+/-- The pair `(p*_j, p*_{j+1})` of consecutive dual polynomials. -/
+private noncomputable def dualPolyPair (A B : E →ₗ[𝕜] E) (v₁ w₁ : E) : ℕ → 𝕜[X] × 𝕜[X]
+  | 0 =>
+    (1, C (starRingEnd 𝕜 (beta A B v₁ w₁ 1))⁻¹ *
+      ((X - C (starRingEnd 𝕜 (alpha A B v₁ w₁ 0))) * 1 -
+        C (starRingEnd 𝕜 (delta A B v₁ w₁ 0)) * 0))
+  | j + 1 =>
+    ((dualPolyPair A B v₁ w₁ j).2,
+      C (starRingEnd 𝕜 (beta A B v₁ w₁ (j + 2)))⁻¹ *
+        ((X - C (starRingEnd 𝕜 (alpha A B v₁ w₁ (j + 1)))) * (dualPolyPair A B v₁ w₁ j).2 -
+          C (starRingEnd 𝕜 (delta A B v₁ w₁ (j + 1))) * (dualPolyPair A B v₁ w₁ j).1))
+
+/-- The dual polynomials of the process: `p*_0 = 1` and
+`conj β_{j+1} p*_{j+1} = (X - conj α_j) p*_j - conj δ_j p*_{j-1}`, so that `p*_j(Aᴴ) w₁ = w_j`
+(`BiLanczos.aeval_dualPoly`). -/
+noncomputable def dualPoly (A B : E →ₗ[𝕜] E) (v₁ w₁ : E) (j : ℕ) : 𝕜[X] :=
+  (dualPolyPair A B v₁ w₁ j).1
+
+/-- `p*_{j-1}`, with the convention `p*_{-1} = 0`. -/
+noncomputable def dualPolyPrev (A B : E →ₗ[𝕜] E) (v₁ w₁ : E) : ℕ → 𝕜[X]
+  | 0 => 0
+  | j + 1 => dualPoly A B v₁ w₁ j
+
+/-- The dual counterpart of `BiLanczos.vhatPoly`: `p̂*_j(Aᴴ) w₁ = ŵ_{j+1}`. -/
+noncomputable def dualVhatPoly (A B : E →ₗ[𝕜] E) (v₁ w₁ : E) (j : ℕ) : 𝕜[X] :=
+  (X - C (starRingEnd 𝕜 (alpha A B v₁ w₁ j))) * dualPoly A B v₁ w₁ j -
+    C (starRingEnd 𝕜 (delta A B v₁ w₁ j)) * dualPolyPrev A B v₁ w₁ j
+
+/-- The scalar `γ_j` of [saad2003iterative], §7.1.2, which relates the dual polynomials to the
+primal ones (`BiLanczos.dualVhat_eq_smul`): `γ_0 = 1` and
+`γ_{j+1} = γ_j δ_{j+1} / conj β_{j+1}`. -/
+noncomputable def dualPolyScalar (A B : E →ₗ[𝕜] E) (v₁ w₁ : E) : ℕ → 𝕜
+  | 0 => 1
+  | j + 1 => dualPolyScalar A B v₁ w₁ j *
+      (delta A B v₁ w₁ (j + 1) / starRingEnd 𝕜 (beta A B v₁ w₁ (j + 1)))
+
+@[simp] theorem dualPoly_zero : dualPoly A B v₁ w₁ 0 = 1 := rfl
+
+@[simp] theorem dualPolyPrev_zero : dualPolyPrev A B v₁ w₁ 0 = 0 := rfl
+
+@[simp] theorem dualPolyPrev_succ (j : ℕ) :
+    dualPolyPrev A B v₁ w₁ (j + 1) = dualPoly A B v₁ w₁ j := rfl
+
+@[simp] theorem dualPolyScalar_zero : dualPolyScalar A B v₁ w₁ 0 = 1 := rfl
+
+theorem dualPolyScalar_succ (j : ℕ) : dualPolyScalar A B v₁ w₁ (j + 1) =
+    dualPolyScalar A B v₁ w₁ j *
+      (delta A B v₁ w₁ (j + 1) / starRingEnd 𝕜 (beta A B v₁ w₁ (j + 1))) := rfl
+
+theorem dualPoly_succ (j : ℕ) : dualPoly A B v₁ w₁ (j + 1) =
+    C (starRingEnd 𝕜 (beta A B v₁ w₁ (j + 1)))⁻¹ * dualVhatPoly A B v₁ w₁ j := by
+  cases j with
+  | zero => rfl
+  | succ j => rfl
+
+private theorem aeval_dualPoly_aux (j : ℕ) :
+    Polynomial.aeval B (dualPoly A B v₁ w₁ j) w₁ = dualVec A B v₁ w₁ j ∧
+      Polynomial.aeval B (dualPolyPrev A B v₁ w₁ j) w₁ = dualVecPrev A B v₁ w₁ j := by
+  induction j with
+  | zero => exact ⟨by simp, by simp⟩
+  | succ j ih =>
+    have hv : Polynomial.aeval B (dualVhatPoly A B v₁ w₁ j) w₁ = dualVhat A B v₁ w₁ j := by
+      rw [dualVhatPoly, aeval_step, ih.1, ih.2, dualVhat_eq]
+    exact ⟨by rw [dualPoly_succ, aeval_C_mul_apply, hv, dualVec_succ],
+      by rw [dualPolyPrev_succ, ih.1, dualVecPrev_succ]⟩
+
+/-- The dual vectors are polynomials in `B` applied to `w₁`: `p*_j(Aᴴ) w₁ = w_j`. -/
+theorem aeval_dualPoly (j : ℕ) :
+    Polynomial.aeval B (dualPoly A B v₁ w₁ j) w₁ = dualVec A B v₁ w₁ j :=
+  (aeval_dualPoly_aux A B v₁ w₁ j).1
+
+/-- `p̂*_j(Aᴴ) w₁ = ŵ_{j+1}`. -/
+theorem aeval_dualVhatPoly (j : ℕ) :
+    Polynomial.aeval B (dualVhatPoly A B v₁ w₁ j) w₁ = dualVhat A B v₁ w₁ j := by
+  rw [dualVhatPoly, aeval_step, aeval_dualPoly, (aeval_dualPoly_aux A B v₁ w₁ j).2, dualVhat_eq]
+
+private theorem map_conj_map_conj (p : 𝕜[X]) :
+    (p.map (starRingEnd 𝕜)).map (starRingEnd 𝕜) = p :=
+  Polynomial.ext fun k => by rw [coeff_map, coeff_map, RCLike.conj_conj]
+
+private theorem dualPolyScalar_step (j : ℕ) :
+    (starRingEnd 𝕜 (beta A B v₁ w₁ (j + 1)))⁻¹ * dualPolyScalar A B v₁ w₁ j =
+        dualPolyScalar A B v₁ w₁ (j + 1) * (delta A B v₁ w₁ (j + 1))⁻¹ ∧
+      delta A B v₁ w₁ (j + 1) * dualPolyScalar A B v₁ w₁ j =
+        dualPolyScalar A B v₁ w₁ (j + 1) * starRingEnd 𝕜 (beta A B v₁ w₁ (j + 1)) := by
+  rcases eq_or_ne (delta A B v₁ w₁ (j + 1)) 0 with hd | hd
+  · have hb : starRingEnd 𝕜 (beta A B v₁ w₁ (j + 1)) = 0 := by
+      rw [(beta_succ_eq_zero_iff A B v₁ w₁ j).2 ((delta_succ_eq_zero_iff A B v₁ w₁ j).1 hd),
+        map_zero]
+    rw [dualPolyScalar_succ, hd, hb]
+    simp
+  · have hb : starRingEnd 𝕜 (beta A B v₁ w₁ (j + 1)) ≠ 0 := by
+      simpa using (beta_succ_ne_zero_iff A B v₁ w₁ j).2 hd
+    rw [dualPolyScalar_succ]
+    constructor <;> field_simp
+
+private theorem dualPoly_eq_aux (j : ℕ) :
+    dualPoly A B v₁ w₁ j =
+        C (dualPolyScalar A B v₁ w₁ j) * (poly A B v₁ w₁ j).map (starRingEnd 𝕜) ∧
+      dualVhatPoly A B v₁ w₁ j =
+        C (dualPolyScalar A B v₁ w₁ j) * (vhatPoly A B v₁ w₁ j).map (starRingEnd 𝕜) := by
+  induction j with
+  | zero =>
+    refine ⟨by simp, ?_⟩
+    rw [dualVhatPoly, vhatPoly, dualPoly_zero, dualPolyPrev_zero, poly_zero, polyPrev_zero,
+      dualPolyScalar_zero, delta_zero, beta_zero]
+    simp
+  | succ j ih =>
+    obtain ⟨hs1, hs2⟩ := dualPolyScalar_step A B v₁ w₁ j
+    have hpoly : (poly A B v₁ w₁ (j + 1)).map (starRingEnd 𝕜) =
+        C (delta A B v₁ w₁ (j + 1))⁻¹ * (vhatPoly A B v₁ w₁ j).map (starRingEnd 𝕜) := by
+      rw [poly_succ, Polynomial.map_mul, Polynomial.map_C, map_inv₀, conj_delta]
+    have h1 : dualPoly A B v₁ w₁ (j + 1) =
+        C (dualPolyScalar A B v₁ w₁ (j + 1)) * (poly A B v₁ w₁ (j + 1)).map (starRingEnd 𝕜) := by
+      rw [dualPoly_succ, ih.2, hpoly, ← mul_assoc, ← mul_assoc, ← C_mul, ← C_mul, hs1]
+    refine ⟨h1, ?_⟩
+    rw [dualVhatPoly, h1, dualPolyPrev_succ, ih.1, vhatPoly, Polynomial.map_sub,
+      Polynomial.map_mul, Polynomial.map_mul, Polynomial.map_sub, Polynomial.map_X,
+      Polynomial.map_C, Polynomial.map_C, polyPrev_succ, conj_delta, mul_sub]
+    rw [show C (delta A B v₁ w₁ (j + 1)) *
+          (C (dualPolyScalar A B v₁ w₁ j) * (poly A B v₁ w₁ j).map (starRingEnd 𝕜))
+        = C (dualPolyScalar A B v₁ w₁ (j + 1)) *
+            (C (starRingEnd 𝕜 (beta A B v₁ w₁ (j + 1))) *
+              (poly A B v₁ w₁ j).map (starRingEnd 𝕜)) by
+      rw [← mul_assoc, ← mul_assoc, ← C_mul, ← C_mul, hs2]]
+    ring
+
+/-- [saad2003iterative], §7.1.2: "the same polynomial intervenes in the equivalent expression of
+`ŵ_{j+1}`". There is a scalar `γ_j` — `BiLanczos.dualPolyScalar` — with
+`ŵ_{j+1} = γ_j p̄_j(Aᴴ) w₁`, the *conjugate* of the polynomial `p_j` that produces `v̂_{j+1}`; over
+`ℝ` the conjugation is invisible and this is the book's statement verbatim. -/
+theorem dualVhat_eq_smul (j : ℕ) :
+    dualVhat A B v₁ w₁ j = dualPolyScalar A B v₁ w₁ j •
+      Polynomial.aeval B ((vhatPoly A B v₁ w₁ j).map (starRingEnd 𝕜)) w₁ := by
+  rw [← aeval_dualVhatPoly, (dualPoly_eq_aux A B v₁ w₁ j).2, aeval_C_mul_apply]
+
+/-- [saad2003iterative], §7.1.2: `⟨p_j, p_j⟩ = γ_j (p_j(A) v₁, p_j(Aᴴ) w₁)` — the breakdown scalar
+of the process is the indefinite norm of `p_j` up to the factor `γ_j`. -/
+theorem zeta_eq_polyForm (j : ℕ) :
+    zeta A B v₁ w₁ j = starRingEnd 𝕜 (dualPolyScalar A B v₁ w₁ j) *
+      polyForm A B v₁ w₁ (vhatPoly A B v₁ w₁ j) (vhatPoly A B v₁ w₁ j) := by
+  rw [zeta, dualVhat_eq_smul, inner_smul_left, polyForm, ← aeval_vhatPoly]
+
+variable {A B v₁ w₁}
+
+/-- The factor `γ_j` does not vanish while the process has not broken down. -/
+theorem dualPolyScalar_ne_zero {m : ℕ} (h : NoBreakdown A B v₁ w₁ m) {j : ℕ} (hj : j ≤ m) :
+    dualPolyScalar A B v₁ w₁ j ≠ 0 := by
+  induction j with
+  | zero => rw [dualPolyScalar_zero]; exact one_ne_zero
+  | succ j ih =>
+    have hd : delta A B v₁ w₁ (j + 1) ≠ 0 := h.delta_ne_zero j (by omega)
+    have hb : starRingEnd 𝕜 (beta A B v₁ w₁ (j + 1)) ≠ 0 := by
+      simpa using (beta_succ_ne_zero_iff A B v₁ w₁ j).2 hd
+    rw [dualPolyScalar_succ]
+    exact mul_ne_zero (ih (by omega)) (div_ne_zero hd hb)
+
+/-- [saad2003iterative], §7.1.2: **the process breaks down at step `j` exactly when the indefinite
+norm of `p_j` vanishes**, `⟨p_j, p_j⟩ = 0`. This is the criterion that separates a serious
+breakdown from a lucky one only through the form: `⟨·,·⟩` is indefinite, so `⟨p, p⟩ = 0` does not
+force `p(A) v₁ = 0`. -/
+theorem delta_succ_eq_zero_iff_polyForm_eq_zero {m : ℕ} (h : NoBreakdown A B v₁ w₁ m) {j : ℕ}
+    (hj : j ≤ m) :
+    delta A B v₁ w₁ (j + 1) = 0 ↔
+      polyForm A B v₁ w₁ (vhatPoly A B v₁ w₁ j) (vhatPoly A B v₁ w₁ j) = 0 := by
+  rw [delta_succ_eq_zero_iff, zeta_eq_polyForm]
+  refine ⟨fun hc => ?_, fun hc => by rw [hc, mul_zero]⟩
+  rcases mul_eq_zero.1 hc with h1 | h2
+  · exact absurd (by simpa using h1) (dualPolyScalar_ne_zero h hj)
+  · exact h2
+
+/-! #### Orthogonality -/
+
+private theorem inner_dualVec_vhat_eq_zero {m : ℕ} (h : NoBreakdown A B v₁ w₁ m) {i j : ℕ}
+    (hi : i ≤ j) (hj : j < m) : inner 𝕜 (dualVec A B v₁ w₁ i) (vhat A B v₁ w₁ j) = 0 := by
+  rw [← smul_vec_succ A B v₁ w₁ (h.delta_ne_zero j hj), inner_smul_right,
+    inner_dualVec_vec h (by omega) (by omega), ite_eq_right (by omega), mul_zero]
+
+private theorem inner_eq_zero_of_mem_dualSpan {m : ℕ} (h : NoBreakdown A B v₁ w₁ m) {j : ℕ}
+    (hj : j < m) {x : E} (hx : x ∈ Submodule.span 𝕜 (dualVec A B v₁ w₁ '' Set.Iio (j + 1))) :
+    inner 𝕜 x (vhat A B v₁ w₁ j) = 0 := by
+  induction hx using Submodule.span_induction with
+  | mem x hx =>
+    obtain ⟨i, hi, rfl⟩ := hx
+    have hi' : i < j + 1 := hi
+    exact inner_dualVec_vhat_eq_zero h (by omega) hj
+  | zero => rw [inner_zero_left]
+  | add x y _ _ hx hy => rw [inner_add_left, hx, hy, add_zero]
+  | smul c x _ hx => rw [inner_smul_left, hx, mul_zero]
+
+/-- [saad2003iterative], §7.1.2: `p̂_j` is orthogonal, for the indefinite form (7.7), to every
+polynomial of degree below its own. This is the sense in which the two-sided Lanczos process
+computes *formal orthogonal polynomials*. -/
+theorem polyForm_vhatPoly_eq_zero_of_natDegree_le {m : ℕ} (h : NoBreakdown A B v₁ w₁ m) {j : ℕ}
+    (hj : j < m) {r : 𝕜[X]} (hr : r.natDegree ≤ j) :
+    polyForm A B v₁ w₁ (vhatPoly A B v₁ w₁ j) r = 0 := by
+  have hle : (r.map (starRingEnd 𝕜)).natDegree ≤ j :=
+    le_trans (Polynomial.natDegree_map_le) hr
+  have hdeg : (r.map (starRingEnd 𝕜)).degree < ((j + 1 : ℕ) : WithBot ℕ) := by
+    refine lt_of_le_of_lt Polynomial.degree_le_natDegree ?_
+    exact_mod_cast Nat.lt_succ_of_le hle
+  rw [polyForm, aeval_vhatPoly]
+  refine inner_eq_zero_of_mem_dualSpan h hj ?_
+  rw [span_dualVec (h.mono (by omega))]
+  exact Krylov.aeval_apply_mem_subspace B w₁ hdeg
+
+/-- [saad2003iterative], §7.1.2: the polynomials `p̂_j` are pairwise orthogonal for the indefinite
+form (7.7). -/
+theorem polyForm_vhatPoly_eq_zero {m : ℕ} (h : NoBreakdown A B v₁ w₁ m) {i j : ℕ} (hi : i < m)
+    (hj : j < m) (hij : i ≠ j) :
+    polyForm A B v₁ w₁ (vhatPoly A B v₁ w₁ i) (vhatPoly A B v₁ w₁ j) = 0 := by
+  rcases lt_or_gt_of_ne hij with hlt | hlt
+  · rw [polyForm_comm h.adjoint]
+    exact polyForm_vhatPoly_eq_zero_of_natDegree_le h hj
+      (le_trans (vhatPoly_natDegree_le A B v₁ w₁ i) (by omega))
+  · exact polyForm_vhatPoly_eq_zero_of_natDegree_le h hi
+      (le_trans (vhatPoly_natDegree_le A B v₁ w₁ j) (by omega))
+
+end FormalOrthogonalPolynomials
 
 end BiLanczos
 
@@ -782,6 +1347,94 @@ theorem dualDirection_succ (k : ℕ) : dualDirection A B b x₀ rs₀ (k + 1) =
       starRingEnd 𝕜 (beta A B b x₀ rs₀ k) • dualDirection A B b x₀ rs₀ k := by
   simp only [beta, residual, dualResidual, dualDirection, iterate_succ]
   rfl
+
+/-! #### Three-term recurrences ([saad2003iterative], P-7.7)
+
+Eliminating the direction vectors from the coupled two-term recurrences leaves a three-term
+recurrence for the residuals alone, and eliminating the residuals leaves one for the directions.
+The direction recurrence is unconditional; the residual one divides by `α_k`, so its closed form
+carries `α_k ≠ 0` and `BCG.alpha_smul_residual_add_two` is the division-free identity behind it. -/
+
+/-- The division-free form of the residual three-term recurrence ([saad2003iterative], P-7.7):
+`α_k r_{k+2} = (α_k + α_{k+1} β_k) r_{k+1} - α_k α_{k+1} A r_{k+1} - α_{k+1} β_k r_k`. It holds at
+every step, breakdown included. -/
+theorem alpha_smul_residual_add_two (k : ℕ) :
+    alpha A B b x₀ rs₀ k • residual A B b x₀ rs₀ (k + 2) =
+      (alpha A B b x₀ rs₀ k + alpha A B b x₀ rs₀ (k + 1) * beta A B b x₀ rs₀ k) •
+          residual A B b x₀ rs₀ (k + 1) -
+        (alpha A B b x₀ rs₀ k * alpha A B b x₀ rs₀ (k + 1)) •
+          A (residual A B b x₀ rs₀ (k + 1)) -
+        (alpha A B b x₀ rs₀ (k + 1) * beta A B b x₀ rs₀ k) • residual A B b x₀ rs₀ k := by
+  have h2 : residual A B b x₀ rs₀ (k + 2) = residual A B b x₀ rs₀ (k + 1) -
+      alpha A B b x₀ rs₀ (k + 1) • A (direction A B b x₀ rs₀ (k + 1)) :=
+    residual_succ A B b x₀ rs₀ (k + 1)
+  have h3 : direction A B b x₀ rs₀ (k + 1) =
+      residual A B b x₀ rs₀ (k + 1) + beta A B b x₀ rs₀ k • direction A B b x₀ rs₀ k :=
+    direction_succ A B b x₀ rs₀ k
+  have hX : alpha A B b x₀ rs₀ k • A (direction A B b x₀ rs₀ k) =
+      residual A B b x₀ rs₀ k - residual A B b x₀ rs₀ (k + 1) := by
+    rw [residual_succ A B b x₀ rs₀ k]; abel
+  have expand : alpha A B b x₀ rs₀ k • (residual A B b x₀ rs₀ (k + 1) -
+        alpha A B b x₀ rs₀ (k + 1) • (A (residual A B b x₀ rs₀ (k + 1)) +
+          beta A B b x₀ rs₀ k • A (direction A B b x₀ rs₀ k))) =
+      alpha A B b x₀ rs₀ k • residual A B b x₀ rs₀ (k + 1) -
+        (alpha A B b x₀ rs₀ k * alpha A B b x₀ rs₀ (k + 1)) •
+          A (residual A B b x₀ rs₀ (k + 1)) -
+        (alpha A B b x₀ rs₀ (k + 1) * beta A B b x₀ rs₀ k) •
+          (alpha A B b x₀ rs₀ k • A (direction A B b x₀ rs₀ k)) := by
+    module
+  rw [h2, h3, map_add, map_smul, expand, hX]
+  module
+
+/-- The residual three-term recurrence of [saad2003iterative], P-7.7:
+`r_{k+2} = (1 + α_{k+1} β_k/α_k) r_{k+1} - α_{k+1} A r_{k+1} - (α_{k+1} β_k/α_k) r_k`, started
+from `r_0 = b - A x_0` and `r_1 = r_0 - α_0 A r_0` (`BCG.residual_zero`, `BCG.residual_one`). -/
+theorem residual_add_two {k : ℕ} (hk : alpha A B b x₀ rs₀ k ≠ 0) :
+    residual A B b x₀ rs₀ (k + 2) =
+      (1 + alpha A B b x₀ rs₀ (k + 1) * beta A B b x₀ rs₀ k / alpha A B b x₀ rs₀ k) •
+          residual A B b x₀ rs₀ (k + 1) -
+        alpha A B b x₀ rs₀ (k + 1) • A (residual A B b x₀ rs₀ (k + 1)) -
+        (alpha A B b x₀ rs₀ (k + 1) * beta A B b x₀ rs₀ k / alpha A B b x₀ rs₀ k) •
+          residual A B b x₀ rs₀ k := by
+  refine smul_right_injective E hk ?_
+  dsimp only
+  rw [alpha_smul_residual_add_two]
+  match_scalars <;> field_simp
+
+/-- `r_1 = r_0 - α_0 A r_0`: the second residual, which starts the three-term recurrence
+`BCG.residual_add_two`. -/
+theorem residual_one : residual A B b x₀ rs₀ 1 =
+    residual A B b x₀ rs₀ 0 - alpha A B b x₀ rs₀ 0 • A (residual A B b x₀ rs₀ 0) := by
+  rw [residual_succ, direction_zero, residual_zero]
+
+/-- The direction three-term recurrence of [saad2003iterative], P-7.7:
+`p_{k+2} = (1 + β_{k+1}) p_{k+1} - α_{k+1} A p_{k+1} - β_k p_k`, started from `p_0 = b - A x_0`
+and `p_1 = (1 + β_0) p_0 - α_0 A p_0` (`BCG.direction_zero`, `BCG.direction_one`). Unlike the
+residual recurrence this one needs no hypothesis. -/
+theorem direction_add_two (k : ℕ) :
+    direction A B b x₀ rs₀ (k + 2) =
+      (1 + beta A B b x₀ rs₀ (k + 1)) • direction A B b x₀ rs₀ (k + 1) -
+        alpha A B b x₀ rs₀ (k + 1) • A (direction A B b x₀ rs₀ (k + 1)) -
+        beta A B b x₀ rs₀ k • direction A B b x₀ rs₀ k := by
+  have h1 : direction A B b x₀ rs₀ (k + 2) = residual A B b x₀ rs₀ (k + 2) +
+      beta A B b x₀ rs₀ (k + 1) • direction A B b x₀ rs₀ (k + 1) :=
+    direction_succ A B b x₀ rs₀ (k + 1)
+  have h2 : residual A B b x₀ rs₀ (k + 2) = residual A B b x₀ rs₀ (k + 1) -
+      alpha A B b x₀ rs₀ (k + 1) • A (direction A B b x₀ rs₀ (k + 1)) :=
+    residual_succ A B b x₀ rs₀ (k + 1)
+  have h3 : residual A B b x₀ rs₀ (k + 1) = direction A B b x₀ rs₀ (k + 1) -
+      beta A B b x₀ rs₀ k • direction A B b x₀ rs₀ k := by
+    rw [direction_succ A B b x₀ rs₀ k]; abel
+  rw [h1, h2, h3]
+  module
+
+/-- `p_1 = (1 + β_0) p_0 - α_0 A p_0`: the second direction, which starts the three-term
+recurrence `BCG.direction_add_two`. -/
+theorem direction_one : direction A B b x₀ rs₀ 1 =
+    (1 + beta A B b x₀ rs₀ 0) • direction A B b x₀ rs₀ 0 -
+      alpha A B b x₀ rs₀ 0 • A (direction A B b x₀ rs₀ 0) := by
+  rw [direction_succ, residual_succ, direction_zero, residual_zero]
+  module
 
 /-- The state's residual field is the true residual. -/
 theorem residual_eq (k : ℕ) :
