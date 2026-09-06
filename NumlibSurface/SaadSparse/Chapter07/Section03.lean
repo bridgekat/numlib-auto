@@ -56,7 +56,7 @@ section BCG
 
 variable (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ rs₀ : EuclideanSpace 𝕜 (Fin n))
 
-/-- One pass through lines 3–8 of **Algorithm 7.3**, on the state `(x_j, r_j, r*_j, p_j, p*_j)`.
+/-- One pass through lines 4–10 of **Algorithm 7.3**, on the state `(x_j, r_j, r*_j, p_j, p*_j)`.
 The backbone record `BCG.State` carries exactly that data. -/
 noncomputable def bcgStep (s : BCG.State (EuclideanSpace 𝕜 (Fin n))) :
     BCG.State (EuclideanSpace 𝕜 (Fin n)) :=
@@ -86,6 +86,7 @@ theorem bcg_eq (k : ℕ) : bcg A b x₀ rs₀ k = BCG.iterate (op A) (op Aᴴ) b
   | succ k ih =>
     rw [bcg, Function.iterate_succ_apply', ← bcg, ih, bcgStep_eq, ← BCG.iterate_succ]
 
+/-- **Algorithm 7.3**, lines 1 and 2: the initial state of BCG. -/
 @[simp] theorem bcg_zero :
     bcg A b x₀ rs₀ 0
       = { x := x₀, r := b - op A x₀, rs := rs₀, p := b - op A x₀, ps := rs₀ } := rfl
@@ -97,7 +98,7 @@ section BCGBreakdown
 variable {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ rs₀ : EuclideanSpace 𝕜 (Fin n)} {m : ℕ}
 
 /-- **Algorithm 7.3** has not broken down before step `m`: neither of the two denominators of
-lines 3 and 7 vanishes. The adjoint relation `(A x, y) = (x, Aᴴ y)`, which the backbone takes as
+lines 4 and 8 vanishes. The adjoint relation `(A x, y) = (x, Aᴴ y)`, which the backbone takes as
 data, is automatic for matrices, so this is the whole of the book's hypothesis. -/
 structure BCGNoBreakdown (A : Matrix (Fin n) (Fin n) 𝕜)
     (b x₀ rs₀ : EuclideanSpace 𝕜 (Fin n)) (m : ℕ) : Prop where
@@ -107,6 +108,7 @@ structure BCGNoBreakdown (A : Matrix (Fin n) (Fin n) 𝕜)
   inner_apply_direction_ne_zero : ∀ k < m,
     inner 𝕜 (bcg A b x₀ rs₀ k).ps (op A (bcg A b x₀ rs₀ k).p) ≠ 0
 
+/-- Running `m` steps without breakdown entails running `k ≤ m` steps without breakdown. -/
 theorem BCGNoBreakdown.mono {k : ℕ} (h : BCGNoBreakdown A b x₀ rs₀ m) (hk : k ≤ m) :
     BCGNoBreakdown A b x₀ rs₀ k :=
   ⟨fun j hj => h.inner_residual_ne_zero j (hj.trans_le hk),
@@ -302,6 +304,7 @@ private theorem rhoF_zero (h : ℕ → ℕ → 𝕜) (β : 𝕜) : rhoF h β 0 =
 private theorem rhoF_succ (h : ℕ → ℕ → 𝕜) (β : 𝕜) (k : ℕ) :
     rhoF h β (k + 1) = ‖Krylov.gamma h β (k + 1)‖ / ‖Krylov.givensC h k‖ := rfl
 
+/-- Nothing happens at step `0`. -/
 @[simp] theorem qmr_zero : qmr A b x₀ w₁ 0 = x₀ := by
   rw [qmr, Chapter06.qgmres, Chapter06.toEuclideanLin_colMatrix_apply]
   simp
@@ -552,10 +555,12 @@ theorem equation_7_26 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁) 
   exact ⟨Chapter06.equation_6_50 (bilanczos_hessenbergRelation h) (smul_qmrV_zero A b x₀ w₁) hR,
     Chapter06.equation_6_53 _ _ m⟩
 
-/-- **(7.29)–(7.31)**: QMR is a residual smoothing of Algorithm 7.2 with parameter `|c_{m+1}|²`,
-`x^Q_{m+1} = |s_{m+1}|² x^Q_m + |c_{m+1}|² x_{m+1}`, equivalently
-`x^Q_{m+1} = x^Q_m + |c_{m+1}|² (x_{m+1} - x^Q_m)`. No no-serious-breakdown hypothesis is needed:
-the identity is one about the rotations and the two coordinate systems, not about the basis. -/
+/-- **(7.30)**: QMR is a residual smoothing of Algorithm 7.2 with parameter `|c_{m+1}|²`,
+`x^Q_{m+1} = |s_{m+1}|² x^Q_m + |c_{m+1}|² x_{m+1}`. It is the iterate form of the residual
+relation (7.29), and (7.31) rewrites it as `x^Q_{m+1} = x^Q_m + |c_{m+1}|² (x_{m+1} - x^Q_m)`.
+No no-serious-breakdown hypothesis is needed: the identity is one about the rotations and the
+two coordinate systems, not about the basis. The declaration keeps the name `equation_7_29`
+the plan gave it. -/
 theorem equation_7_29 {m : ℕ}
     (hρ : ∀ k < m + 1, Krylov.givensRho (qmrCoeff A b x₀ w₁) k ≠ 0)
     (hRm : IsUnit (Chapter06.R (qmrCoeff A b x₀ w₁) m))
@@ -574,7 +579,7 @@ theorem equation_7_29 {m : ℕ}
 
 end QMR
 
-/-! ### §7.3.3: Algorithm 7.5, quasi-minimal residual smoothing -/
+/-! ### Algorithm 7.5: quasi-minimal residual smoothing -/
 
 section Smoothing
 

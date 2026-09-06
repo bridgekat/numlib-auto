@@ -110,8 +110,10 @@ variable (b x₀ : EuclideanSpace 𝕜 (Fin n))
 theorem cgnr_succ (i : ℕ) : cgnr A b x₀ (i + 1) = cgnrStep A (cgnr A b x₀ i) :=
   Function.iterate_succ_apply' _ _ _
 
+/-- Algorithm 8.4, line 1: the iteration starts at `x_0`. -/
 @[simp] theorem cgnr_zero_x : (cgnr A b x₀ 0).x = x₀ := rfl
 
+/-- Algorithm 8.4, line 1: `r_0 = b - A x_0`. -/
 @[simp] theorem cgnr_zero_r : (cgnr A b x₀ 0).r = b - op A x₀ := rfl
 
 /-- Algorithm 8.4, line 1: `p_0 = z_0 = Aᴴ r_0`. -/
@@ -202,8 +204,10 @@ variable (b x₀ : EuclideanSpace 𝕜 (Fin n))
 theorem cgne_succ (i : ℕ) : cgne A b x₀ (i + 1) = cgneStep A (cgne A b x₀ i) :=
   Function.iterate_succ_apply' _ _ _
 
+/-- Algorithm 8.5, line 1: the iteration starts at `x_0`. -/
 @[simp] theorem cgne_zero_x : (cgne A b x₀ 0).x = x₀ := rfl
 
+/-- Algorithm 8.5, line 1: `r_0 = b - A x_0`. -/
 @[simp] theorem cgne_zero_r : (cgne A b x₀ 0).r = b - op A x₀ := rfl
 
 /-- Algorithm 8.5, line 1: `p_0 = Aᴴ r_0`. -/

@@ -8,15 +8,17 @@ Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd
 2003, §10.8.
 
 **Algorithm 10.17**, the incomplete Gram–Schmidt process of §10.8.3, is `imgsHat` (the vector
-`q̂_i` of line 3), `imgsQ` (its normalization `q_i` of line 5) and `imgsL` (the coefficients
-`l_{ij}`), assembled into the matrices `imgsLMat` and `imgsQMat`. The dropping rule of line 6 is
-a predicate `dropL : ℕ → ℕ → Bool`, the book's set `P_L`: `dropL i j = true` discards the entry
-`l_{ij}`. No dropping is applied to `Q`, which is the hypothesis `P_Q = ∅` of Proposition 10.17.
+`q̂_i` of line 4), `imgsQ` (its normalization `q_i` of line 7) and `imgsL` (the coefficients
+`l_{ij}` of lines 2 and 6), assembled into the matrices `imgsLMat` and `imgsQMat`. The dropping
+rule of line 3 is a predicate `dropL : ℕ → ℕ → Bool`, the book's set `P_L`: `dropL i j = true`
+discards the entry `l_{ij}`. No dropping is applied to `Q` — line 5 is not modelled — which is
+the hypothesis `P_Q = ∅` of Proposition 10.17.
 
 The point of the algorithm is that dropping in `L` alone costs nothing in exactness: the vector
-subtracted on line 3 is built from the *retained* coefficients, so `a_i = ∑_{j ≤ i} l_{ij} q_j`
-holds however much is dropped (`rowVec_eq_sum`), and `A = L Q` is an exact factorization
-(`imgsLMat_mul_imgsQMat`). What is lost is the orthogonality of `Q`.
+subtracted on line 4 is built from the *retained* coefficients, so `a_i = ∑_{j ≤ i} l_{ij} q_j`
+holds however much is dropped (`rowVec_eq_sum`, the book's (10.83) with `r_i = 0`), and
+`A = L Q` is an exact factorization — the third clause of `proposition_10_17`, which is (10.84)
+with `R = 0`. What is lost is the orthogonality of `Q`.
 
 §10.8.1 (CGNE/SSOR and CGNR/SSOR) constructs no new object: it is the normal equations of
 `Numlib/Krylov/NormalEquations` preconditioned by the SSOR splitting of `A Aᵀ` or `Aᵀ A`, and its
@@ -40,6 +42,7 @@ variable {n : ℕ} {𝕜 : Type*} [RCLike 𝕜]
 noncomputable def rowVec (A : Matrix (Fin n) (Fin n) 𝕜) (i : ℕ) : EuclideanSpace 𝕜 (Fin n) :=
   if h : i < n then WithLp.toLp 2 (A ⟨i, h⟩) else 0
 
+/-- On a genuine row index, `rowVec` is that row of `A`. -/
 @[simp]
 theorem rowVec_coe (A : Matrix (Fin n) (Fin n) 𝕜) (i : Fin n) :
     rowVec A (i : ℕ) = WithLp.toLp 2 (A i) := by
@@ -53,7 +56,7 @@ private noncomputable def imgsTerm (A : Matrix (Fin n) (Fin n) 𝕜) (dropL : �
   (if dropL i j then 0
     else inner 𝕜 (((‖qhat‖ : 𝕜))⁻¹ • qhat) (rowVec A i)) • ((‖qhat‖ : 𝕜))⁻¹ • qhat
 
-/-- **Algorithm 10.17**, lines 2–3: the unnormalized vector
+/-- **Algorithm 10.17**, lines 2–4: the unnormalized vector
 `q̂_i = a_i - ∑_{j < i} l_{ij} q_j`, where the sum runs over the coefficients the dropping rule
 `dropL` retains. -/
 noncomputable def imgsHat (A : Matrix (Fin n) (Fin n) 𝕜) (dropL : ℕ → ℕ → Bool) :
@@ -61,13 +64,13 @@ noncomputable def imgsHat (A : Matrix (Fin n) (Fin n) 𝕜) (dropL : ℕ → ℕ
   | i => rowVec A i - ∑ j : Finset.range i, imgsTerm A dropL i j (imgsHat A dropL j)
   decreasing_by exact Finset.mem_range.1 j.2
 
-/-- **Algorithm 10.17**, line 5: the normalized vector `q_i = q̂_i / l_{ii}`. The book's "if
+/-- **Algorithm 10.17**, line 7: the normalized vector `q_i = q̂_i / l_{ii}`. The book's "if
 `l_{ii} = 0` then Stop" is Lean's `x / 0 = 0`, which makes `q_i = 0` at a breakdown. -/
 noncomputable def imgsQ (A : Matrix (Fin n) (Fin n) 𝕜) (dropL : ℕ → ℕ → Bool) (i : ℕ) :
     EuclideanSpace 𝕜 (Fin n) :=
   ((‖imgsHat A dropL i‖ : 𝕜))⁻¹ • imgsHat A dropL i
 
-/-- **Algorithm 10.17**, lines 2 and 4: the coefficient `l_{ij}`, which is `(a_i, q_j)` below the
+/-- **Algorithm 10.17**, lines 2–3 and 6: the coefficient `l_{ij}`, which is `(a_i, q_j)` below the
 diagonal unless the dropping rule discards it, `‖q̂_i‖₂` on the diagonal, and `0` above it. -/
 noncomputable def imgsL (A : Matrix (Fin n) (Fin n) 𝕜) (dropL : ℕ → ℕ → Bool) (i j : ℕ) : 𝕜 :=
   if j < i then (if dropL i j then 0 else inner 𝕜 (imgsQ A dropL j) (rowVec A i))
@@ -87,18 +90,22 @@ noncomputable def imgsQMat (A : Matrix (Fin n) (Fin n) 𝕜) (dropL : ℕ → �
 
 variable (A : Matrix (Fin n) (Fin n) 𝕜) (dropL : ℕ → ℕ → Bool)
 
+/-- The entries of `L` are the coefficients `l_{ij}`. -/
 @[simp]
 theorem imgsLMat_apply (i j : Fin n) : imgsLMat A dropL i j = imgsL A dropL (i : ℕ) (j : ℕ) := rfl
 
+/-- The rows of `Q` are the vectors `q_i`. -/
 @[simp]
 theorem imgsQMat_apply (i j : Fin n) :
     imgsQMat A dropL i j = WithLp.ofLp (imgsQ A dropL (i : ℕ)) j := rfl
 
+/-- `L` is lower triangular: `l_{ij} = 0` above the diagonal. -/
 theorem imgsL_of_lt {i j : ℕ} (h : i < j) : imgsL A dropL i j = 0 := by
   have h1 : ¬(j < i) := by omega
   have h2 : ¬(j = i) := by omega
   simp [imgsL, h1, h2]
 
+/-- **Algorithm 10.17**, line 6: the diagonal coefficient is `l_{ii} = ‖q̂_i‖₂`. -/
 theorem imgsL_diag (i : ℕ) : imgsL A dropL i i = ((‖imgsHat A dropL i‖ : ℝ) : 𝕜) := by
   simp [imgsL]
 
@@ -108,7 +115,7 @@ theorem imgsL_of_gt {i j : ℕ} (h : j < i) :
       if dropL i j then 0 else inner 𝕜 (imgsQ A dropL j) (rowVec A i) := by
   simp [imgsL, h]
 
-/-- **Algorithm 10.17**, line 3, in terms of the coefficients it produces. -/
+/-- **Algorithm 10.17**, line 4, in terms of the coefficients it produces. -/
 theorem imgsHat_eq (i : ℕ) :
     imgsHat A dropL i =
       rowVec A i - ∑ j ∈ Finset.range i, imgsL A dropL i j • imgsQ A dropL j := by
@@ -117,9 +124,9 @@ theorem imgsHat_eq (i : ℕ) :
   rw [imgsTerm, imgsL_of_gt A dropL (Finset.mem_range.1 j.2)]
   rfl
 
-/-- **Algorithm 10.17**, lines 3–5: `a_i = ∑_{j ≤ i} l_{ij} q_j`, exactly, however much is
+/-- **Saad (10.83)** at `P_Q = ∅`: `a_i = ∑_{j ≤ i} l_{ij} q_j`, exactly, however much is
 dropped from `L`. This is why dropping in `L` alone still gives an exact factorization: the
-subtracted vector on line 3 is built from the retained coefficients themselves. -/
+vector subtracted on line 4 is built from the retained coefficients themselves. -/
 theorem rowVec_eq_sum {i : ℕ} (h : imgsHat A dropL i ≠ 0) :
     rowVec A i = ∑ j ∈ Finset.range (i + 1), imgsL A dropL i j • imgsQ A dropL j := by
   have hnorm : ((‖imgsHat A dropL i‖ : ℝ) : 𝕜) ≠ 0 := by
@@ -160,7 +167,7 @@ to `Q`. Then the incomplete Gram–Schmidt algorithm 10.17 does not break down �
 positive — and it computes an exact factorization `A = L Q`, in which `L` is lower triangular with
 positive diagonal and `Q` is nonsingular, though not orthogonal.
 
-The proof is Saad's: were `l_{ii} = 0`, line 3 would exhibit the `i`-th row of `A` as a
+The proof is Saad's: were `l_{ii} = 0`, (10.83) would exhibit the `i`-th row of `A` as a
 combination of the earlier ones, contradicting nonsingularity. -/
 theorem proposition_10_17 {A : Matrix (Fin n) (Fin n) ℝ} (dropL : ℕ → ℕ → Bool)
     (hA : IsUnit A) :

@@ -87,7 +87,8 @@ theorem equation_12_5 {A : Matrix (Fin n) (Fin n) ℝ} {α β : ℝ}
   have h := Preconditioner.norm_sub_aeval_mul_apply_le hA s x
   rwa [map_algebraMap_real] at h
 
-/-- Saad (12.4), the min–max problem the criterion poses, and its answer for `γ = 0`: no
+/-- Saad (12.4)–(12.5), the min–max problem the criterion poses, answered on the enclosing
+interval `E = [α, β]` of (12.5) for `γ = 0`: no
 polynomial `s` of degree at most `k` makes `max_{[α, β]} |1 - λ s(λ)|` smaller than
 `1 / C_{k+1}((β + α)/(β - α))`, the value attained by the shifted Chebyshev polynomial of
 Theorem 6.25. The residual polynomials `1 - λ s(λ)` are exactly the polynomials of degree at most
@@ -138,16 +139,20 @@ noncomputable abbrev chebyshevIterate (A : Matrix (Fin n) (Fin n) ℝ)
     Preconditioner.Chebyshev.State (EuclideanSpace ℝ (Fin n)) :=
   Preconditioner.Chebyshev.iterate (Matrix.toEuclideanLin A) b x₀ ((β + α) / 2) ((β - α) / 2) k
 
-/-- Saad (12.7): the Chebyshev values `σ_k = C_k(θ/δ)` obey the three-term recurrence of the
-Chebyshev polynomials themselves. -/
+/-- The Chebyshev values `σ_k = C_k(θ/δ)` obey the three-term recurrence of the Chebyshev
+polynomials themselves. This is the display just before Saad (12.6) and carries no number of
+its own; the declaration keeps the name the plan gave it. The numbered (12.7) is the `ρ`
+recurrence, which is `equation_12_6`. -/
 theorem equation_12_7 (θ δ : ℝ) (k : ℕ) :
     Preconditioner.Chebyshev.sigma θ δ (k + 2) =
       2 * (θ / δ) * Preconditioner.Chebyshev.sigma θ δ (k + 1) -
         Preconditioner.Chebyshev.sigma θ δ k :=
   Preconditioner.Chebyshev.sigma_add_two θ δ k
 
-/-- Saad (12.6): the scalar `ρ_k = σ_k/σ_{k+1}` that the algorithm carries obeys
-`ρ_{k+1} = (2 σ₁ - ρ_k)⁻¹`, which is what removes the Chebyshev values from the implementation. -/
+/-- **Saad (12.7)**: the scalar `ρ_k = σ_k/σ_{k+1}` of (12.6), which the algorithm carries,
+obeys `ρ_{k+1} = (2 σ₁ - ρ_k)⁻¹` — what removes the Chebyshev values from the implementation.
+(12.6) itself is the definition of `ρ_k`, which is `Preconditioner.Chebyshev.rho`; the
+declaration keeps the name the plan gave it. -/
 theorem equation_12_6 {θ δ : ℝ} (hδ : 0 < δ) (hθδ : δ < θ) (k : ℕ) :
     Preconditioner.Chebyshev.rho θ δ (k + 1) =
       (2 * (θ / δ) - Preconditioner.Chebyshev.rho θ δ k)⁻¹ :=
@@ -252,6 +257,7 @@ noncomputable def bilinFormOfWeight (α β : ℝ) (w : ℝ → ℝ)
       simp only [eval_smul, smul_eq_mul]
       ring)
 
+/-- The weighted form of (12.10) evaluated: `⟨p, q⟩_w = ∫_α^β p q w`. -/
 @[simp]
 theorem bilinFormOfWeight_apply (hw : IntervalIntegrable w volume α β) (p q : Polynomial ℝ) :
     bilinFormOfWeight α β w hw p q = ∫ t in α..β, p.eval t * q.eval t * w t := rfl

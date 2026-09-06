@@ -236,13 +236,17 @@ noncomputable def cgwAlpha (j : ℕ) : 𝕜 := pcgStepAlpha A (cgwM A) (cgw A b 
 /-- The CGW direction coefficient `β_j`, the negative of Algorithm 9.1's. -/
 noncomputable def cgwBeta (j : ℕ) : 𝕜 := -pcgStepBeta A (cgwM A) (cgw A b x₀ j)
 
+/-- The recurrence: state `j + 1` is one pass of the CGW step applied to state `j`. -/
 theorem cgw_succ (j : ℕ) : cgw A b x₀ (j + 1) = cgwStep A (cgwM A) (cgw A b x₀ j) :=
   Function.iterate_succ_apply' _ _ _
 
+/-- The iteration starts at `x_0`. -/
 @[simp] theorem cgwX_zero : cgwX A b x₀ 0 = x₀ := rfl
 
+/-- `r_0 = b - A x_0`. -/
 @[simp] theorem cgwR_zero : cgwR A b x₀ 0 = b - op A x₀ := rfl
 
+/-- `p_0 = z_0 = M⁻¹ r_0`. -/
 @[simp] theorem cgwP_zero : cgwP A b x₀ 0 = cgwZ A b x₀ 0 := rfl
 
 /-- The CGW iterate update `x_{j+1} = x_j + α_j p_j`. -/

@@ -7,15 +7,16 @@ import NumlibSurface.SaadSparse.Common
 # Saad §8.1: the normal equations
 
 Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §8.1 , with P-8.1.
+2003, §8.1, with P-8.1.
 
 A rectangular `A : Matrix (Fin n) (Fin m) 𝕜` has two systems of normal equations. The system of
 the *first* kind, `Aᴴ A x = Aᴴ b` (8.1), characterizes the least-squares solutions of (8.2),
 `min ‖b - A x‖₂`: that is `equation_8_1`, and both of its directions are the statement that a
 best approximation from `Ran A` is the point whose error is orthogonal to `Ran A`. The system of
-the *second* kind, `A Aᴴ u = b` (8.3) with `x = Aᴴ u` (8.4), solves `A x = b` with the least
-`‖·‖₂`: that is `equation_8_3`, whose last clause states the minimality as `IsMinError` over
-`Ran Aᴴ`, the form §8.3 needs for CGNE. The augmented system (8.5) is `equation_8_5`, and
+the *second* kind, `A Aᴴ u = b` (8.3), solves `A x = b` through `x = Aᴴ u` and does so with the
+least `‖·‖₂`: that is `equation_8_3`, whose last clause is (8.4), `minimize ‖x_* - Aᴴ u‖₂`,
+stated as `IsMinError` over `Ran Aᴴ` — the form §8.3 needs for CGNE.
+The augmented system (8.5) is `equation_8_5`, and
 `equation_8_8` is `κ₂(Aᴴ A) = κ₂(A)²`, the chapter's reason for preferring methods that never
 form the normal equations.
 
@@ -59,8 +60,8 @@ theorem toEuclideanLin_mul_apply {k : ℕ} (B : Matrix (Fin n) (Fin m) 𝕜)
 
 /-- The action of a rectangular matrix on a Euclidean vector is `Matrix.mulVec` under
 `WithLp.ofLp`; the rectangular companion of `SaadSparse.ofLp_toEuclideanLin`. -/
-private theorem ofLp_apply (B : Matrix (Fin n) (Fin m) 𝕜) (x : EuclideanSpace 𝕜 (Fin m)) :
-    WithLp.ofLp (B ⬝ x) = B *ᵥ WithLp.ofLp x := rfl
+theorem ofLp_toEuclideanLin {k l : ℕ} (B : Matrix (Fin k) (Fin l) 𝕜)
+    (x : EuclideanSpace 𝕜 (Fin l)) : WithLp.ofLp (B ⬝ x) = B *ᵥ WithLp.ofLp x := rfl
 
 /-- The range of `A`: the space over which `min ‖b - A x‖₂` searches. -/
 private def ran (A : Matrix (Fin n) (Fin m) 𝕜) : Submodule 𝕜 (EuclideanSpace 𝕜 (Fin n)) :=
@@ -149,11 +150,6 @@ theorem equation_8_3 (A : Matrix (Fin n) (Fin m) 𝕜) {b u : EuclideanSpace �
 
 /-! ### (8.5)–(8.7): the augmented system -/
 
-private theorem sum_elim_eq_iff {α β γ : Type*} {f f' : α → γ} {g g' : β → γ} :
-    Sum.elim f g = Sum.elim f' g' ↔ f = f' ∧ g = g' :=
-  ⟨fun h => ⟨funext fun i => congrFun h (Sum.inl i), funext fun i => congrFun h (Sum.inr i)⟩,
-    fun h => by rw [h.1, h.2]⟩
-
 /-- **Saad (8.5)–(8.7)** and **P-8.1**: the pair `(r, x)` solves the augmented system
 `[[1, A], [Aᴴ, 0]] (r, x) = (b, 0)` exactly when `r` is the residual `b - A x` and `x` solves the
 least-squares problem (8.2). The second block equation `Aᴴ r = 0` is the constraint of
@@ -171,11 +167,11 @@ theorem equation_8_5 (A : Matrix (Fin n) (Fin m) 𝕜) (b r : EuclideanSpace �
     constructor
     · intro h
       refine WithLp.ofLp_injective 2 ?_
-      rw [WithLp.ofLp_sub, ofLp_apply]
+      rw [WithLp.ofLp_sub, ofLp_toEuclideanLin]
       exact eq_sub_of_add_eq h
     · intro h
-      rw [h, WithLp.ofLp_sub, ofLp_apply, sub_add_cancel]
-  rw [hblk, sum_elim_eq_iff, h1]
+      rw [h, WithLp.ofLp_sub, ofLp_toEuclideanLin, sub_add_cancel]
+  rw [hblk, Sum.elim_eq_iff, h1]
   refine and_congr_right fun hr => ?_
   have h2 : Aᴴ *ᵥ WithLp.ofLp r = WithLp.ofLp (Aᴴ ⬝ (b - (A ⬝ x))) := by rw [hr]; rfl
   rw [h2, ← WithLp.ofLp_zero (p := 2), (WithLp.ofLp_injective 2).eq_iff,

@@ -80,6 +80,7 @@ theorem inv_D_eq (h : IsUnit (diagPart A)) :
   funext i
   exact mul_inv_cancel₀ (hne i)
 
+/-- The entries of `D⁻¹`: the reciprocals of the diagonal of `A`, and `0` off it. -/
 theorem inv_D_apply (h : IsUnit (diagPart A)) (i j : Fin n) :
     (Chapter04.D A)⁻¹ i j = if i = j then (A i i)⁻¹ else 0 := by
   rw [inv_D_eq h, Matrix.diagonal_apply]

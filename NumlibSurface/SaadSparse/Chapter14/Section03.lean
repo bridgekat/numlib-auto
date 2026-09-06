@@ -61,6 +61,7 @@ def subdomainSpace (𝕜 : Type*) [RCLike 𝕜] (S : Finset (Fin n)) :
 
 variable {𝕜 : Type*} [RCLike 𝕜]
 
+/-- The entries of `R_S`, read off its definition. -/
 theorem restrictSubset_apply (S : Finset (Fin n)) (i : ↥S) (j : Fin n) :
     restrictSubset 𝕜 S i j = if (i : Fin n) = j then 1 else 0 := rfl
 
@@ -248,10 +249,12 @@ noncomputable def multiplicativeSweep (b : EuclideanSpace 𝕜 (Fin n)) :
   | i + 1, x => multiplicativeSweep b i x +
       (subdomainInverse A (S i) ⬝ (b - (A ⬝ multiplicativeSweep b i x)))
 
+/-- A sweep over no subdomains changes nothing. -/
 @[simp]
 theorem multiplicativeSweep_zero (b x : EuclideanSpace 𝕜 (Fin n)) :
     multiplicativeSweep A S b 0 x = x := rfl
 
+/-- One more subdomain adds one more correction, computed from the current iterate. -/
 theorem multiplicativeSweep_succ (b : EuclideanSpace 𝕜 (Fin n)) (i : ℕ)
     (x : EuclideanSpace 𝕜 (Fin n)) :
     multiplicativeSweep A S b (i + 1) x = multiplicativeSweep A S b i x +
@@ -269,9 +272,11 @@ noncomputable def Q_s : ℕ → Matrix (Fin n) (Fin n) 𝕜
   | 0 => 1
   | i + 1 => (1 - subdomainProjector A (S i)) * Q_s i
 
+/-- A sweep over no subdomains propagates the error unchanged. -/
 @[simp]
 theorem Q_s_zero : Q_s A S 0 = 1 := rfl
 
+/-- One more subdomain composes one more factor `1 - P_i` on the left. -/
 theorem Q_s_succ (i : ℕ) :
     Q_s A S (i + 1) = (1 - subdomainProjector A (S i)) * Q_s A S i := rfl
 
@@ -523,7 +528,15 @@ private theorem isOrtho_energySpace {i j : ℕ}
 have no coupling in `A` — no entry `A_{lk}` with `k` in one and `l` in the other, which for a
 positive definite `A` forces them to be disjoint — then `λ_max(A_J) ≤ c`, the number of
 colours.  Colouring the interaction graph of the subdomains therefore replaces the crude bound
-of Theorem 14.5 by one that does not grow with the number of subdomains. -/
+of Theorem 14.5 by one that does not grow with the number of subdomains.
+
+The book asks only that two subdomains of the same colour "have no common nodes", justifying
+it by "`P_{Θ_i} = ∑_{j ∈ Θ_i} P_j` is again an orthogonal projector".  That step needs the
+ranges to be `A`-orthogonal, which disjointness does not give.  A counterexample: `n = 2`,
+`A = [[2, 1], [1, 2]]`, `S_0 = {0}` and `S_1 = {1}`, disjoint and therefore of one colour.
+Then `P_0 = [[1, ½], [0, 0]]`, `P_1 = [[0, 0], [½, 1]]` and `A_J = [[1, ½], [½, 1]]`, whose
+largest eigenvalue is `3/2 > 1 = c`.  The no-coupling hypothesis used here is what the proof
+needs, and it is what a genuinely decoupled colouring provides. -/
 theorem theorem_14_6 {κ : Type*} [Fintype κ] (s : ℕ) (col : ℕ → κ)
     (hcol : ∀ i ∈ Finset.range s, ∀ j ∈ Finset.range s, i ≠ j → col i = col j →
       ∀ k ∈ S i, ∀ l ∈ S j, A l k = 0)

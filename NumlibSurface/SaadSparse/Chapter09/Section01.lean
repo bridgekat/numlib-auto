@@ -6,7 +6,7 @@ import NumlibSurface.SaadSparse.Common
 # Saad §9.1: preconditioned iterations — left, right and split preconditioning
 
 Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §9.1 , with P-9.1 and P-9.10.
+2003, §9.1, with P-9.1 and P-9.10.
 
 A preconditioner is a nonsingular `M` for which `M z = r` is cheap to solve and `M ≈ A`. It can
 be applied on the left (9.1), on the right (9.2) or split as `M = M_L M_R` (9.3); the three

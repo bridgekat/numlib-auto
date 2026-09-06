@@ -107,7 +107,7 @@ theorem isUnit_diagPart_laplacian1D (n : ℕ) : IsUnit (diagPart (laplacian1D n)
   (isUnit_diagPart_iff _).2 fun i => by
     rw [laplacian1D_eq, symmTridiagonalToeplitz_apply_self]; norm_num
 
-/-- Saad (13.7): the angle `θ_k = k π / (n + 1)`, in the library's `0`-based numbering — the index
+/-- Saad (13.6): the angle `θ_k = k π / (n + 1)`, in the library's `0`-based numbering — the index
 `k : Fin n` is Saad's `k + 1`, so `theta n k = (k + 1) π / (n + 1)`. -/
 noncomputable def theta (n : ℕ) (k : Fin n) : ℝ := (((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1)
 
@@ -430,7 +430,7 @@ theorem equation_13_14 (n m : ℕ) (μ : ℝ) :
 
 end TwoDimensional
 
-/-! ### §13.2.1 Richardson's iteration, (13.15)–(13.18) -/
+/-! ### §13.2.1 Richardson's iteration, (13.15)–(13.16) -/
 
 section Richardson
 
@@ -450,14 +450,14 @@ private theorem dotProduct_pow_mulVec {M : Matrix (Fin n) (Fin n) ℝ} (hM : M.I
     rw [pow_succ', ← mulVec_mulVec, hstep, ih]
     ring
 
-/-- Saad (13.17): the Richardson iteration matrix `M_ω = I - ω A` has the sine vectors as
+/-- Saad (13.15): the Richardson iteration matrix `M_ω = I - ω A` has the sine vectors as
 eigenvectors, with eigenvalues `1 - ω λ_k`. -/
 theorem richardson_iterationMatrix_mulVec_sineVec (n : ℕ) (ω : ℝ) (k : Fin n) :
     (1 - ω • laplacian1D n) *ᵥ sineVec n k = (1 - ω * eigenvalue1D n k) • sineVec n k := by
   rw [sub_mulVec, one_mulVec, Matrix.smul_mulVec, laplacian1D_mulVec_sineVec, smul_smul, sub_smul,
     one_smul]
 
-/-- **Saad (13.16)–(13.18)**: for Richardson's iteration `x ← x + (1/γ)(b - A x)` on the
+/-- **Saad (13.15)–(13.16)**: for Richardson's iteration `x ← x + (1/γ)(b - A x)` on the
 one-dimensional model problem, the `w_k`-component of the error is multiplied by
 `η_k = 1 - λ_k/γ` at every step, so after `j` steps it has been multiplied by `η_k^j`.
 
@@ -484,7 +484,8 @@ theorem richardson_reduction (n : ℕ) (γ : ℝ) (b x₀ xstar : Fin n → ℝ)
   rw [Chapter04.richardsonStep_eq_affine, Chapter04.affineStep_iterate_sub hfix,
     dotProduct_pow_mulVec hsymm heig]
 
-/-- Saad (13.18): with `γ = 4` the Richardson reduction factor is `η_k = cos²(θ_k/2)`. -/
+/-- Saad §13.2.1, the display closing the section: with `γ = 4` the Richardson reduction
+factor is `η_k = cos²(θ_k/2)`. -/
 theorem richardson_factor_eq_cos_sq (n : ℕ) (k : Fin n) :
     1 - eigenvalue1D n k / 4 = Real.cos (theta n k / 2) ^ 2 := by
   have h := Real.sin_sq_add_cos_sq (theta n k / 2)
@@ -511,7 +512,7 @@ theorem richardson_factor_le_half_of_oscillatory (n : ℕ) {k : Fin n}
 
 end Richardson
 
-/-! ### §13.2.2 Weighted Jacobi, (13.19)–(13.25) -/
+/-! ### §13.2.2 Weighted Jacobi, (13.17)–(13.25) -/
 
 section WeightedJacobi
 
@@ -595,8 +596,14 @@ theorem equation_13_22 (n : ℕ) (hω0 : 0 < ω) (hω1 : ω ≤ 1) (k : Fin n) :
   rw [abs_le]
   constructor <;> nlinarith
 
-/-- Saad (13.23): on the oscillatory half `k > n/2` of the spectrum the weighted Jacobi eigenvalues
-lie in `(1 - 2ω, 1 - ω]`, an interval that does not depend on the mesh. -/
+/-- Saad (13.23): on the oscillatory half `k > n/2` of the spectrum the weighted Jacobi
+eigenvalues lie in an interval that does not depend on the mesh.
+
+The book prints the upper bound as `1 - ω/2`; that is true but not sharp. On the oscillatory
+half `sin²(θ_k/2) ≥ 1/2`, so `μ_k(ω) = 1 - 2ω sin²(θ_k/2) ≤ 1 - ω`, which is what is proved
+here. Saad's own conclusion two lines later — that `ω = 2/3` gives eigenvalues between `-1/3`
+and `1/3` — needs `1 - ω`, not `1 - ω/2`, which would give `2/3`. The `1 - ω/2` of (13.23) is
+the correct bound in *two* dimensions, where it is (13.25). -/
 theorem weightedJacobi_eigenvalue_mem_Ioc (n : ℕ) (hω : 0 < ω) {k : Fin n}
     (hk : n + 1 ≤ 2 * ((k : ℕ) + 1)) :
     1 - 2 * ω * Real.sin (theta n k / 2) ^ 2 ∈ Set.Ioc (1 - 2 * ω) (1 - ω) := by
@@ -604,24 +611,26 @@ theorem weightedJacobi_eigenvalue_mem_Ioc (n : ℕ) (hω : 0 < ω) {k : Fin n}
   have h2 := sin_sq_theta_div_two_lt_one n k
   exact Set.mem_Ioc.2 ⟨by nlinarith, by nlinarith⟩
 
-/-- Saad (13.24): the mesh-independent **smoothing factor** of weighted Jacobi at `ω = 1/2` in one
-dimension is `1/2`. -/
+/-- Saad §13.2.2, the prose after (13.23): the mesh-independent **smoothing factor** of
+weighted Jacobi at `ω = 1/2` in one dimension. The book says `3/4`, reading it off the
+unsharp `1 - ω/2` of (13.23); the sharp value is `1/2`, which is what is proved here. -/
 theorem smoothingFactor_one_half (n : ℕ) {k : Fin n} (hk : n + 1 ≤ 2 * ((k : ℕ) + 1)) :
     |1 - 2 * (1 / 2 : ℝ) * Real.sin (theta n k / 2) ^ 2| ≤ 1 / 2 := by
   have h := Set.mem_Ioc.1 (weightedJacobi_eigenvalue_mem_Ioc (ω := 1 / 2) n (by norm_num) hk)
   rw [abs_le]
   constructor <;> [linarith [h.1]; linarith [h.2]]
 
-/-- Saad (13.25): the mesh-independent **smoothing factor** of weighted Jacobi in one dimension is
-minimized at `ω = 2/3`, where it is `1/3`. -/
+/-- Saad §13.2.2, the prose after (13.23): the mesh-independent **smoothing factor** of
+weighted Jacobi in one dimension is minimized at `ω = 2/3`, where it is `1/3`. -/
 theorem smoothingFactor_two_thirds (n : ℕ) {k : Fin n} (hk : n + 1 ≤ 2 * ((k : ℕ) + 1)) :
     |1 - 2 * (2 / 3 : ℝ) * Real.sin (theta n k / 2) ^ 2| ≤ 1 / 3 := by
   have h := Set.mem_Ioc.1 (weightedJacobi_eigenvalue_mem_Ioc (ω := 2 / 3) n (by norm_num) hk)
   rw [abs_le]
   constructor <;> [linarith [h.1]; linarith [h.2]]
 
-/-- Saad (13.23) in two dimensions: a mode is oscillatory when at least one of its two indices is,
-and then the weighted Jacobi eigenvalue lies in `(1 - 2ω, 1 - ω/2]`. -/
+/-- **Saad (13.25)**: in two dimensions a mode is oscillatory when at least one of its two
+indices is, and then the weighted Jacobi eigenvalue lies in `(1 - 2ω, 1 - ω/2]`. Here the
+book's `1 - ω/2` *is* sharp, both ends meeting at `ω = 4/5`. -/
 theorem weightedJacobi2D_eigenvalue_mem_Ioc (n m : ℕ) (hω : 0 < ω) {k : Fin n} {l : Fin m}
     (hkl : n + 1 ≤ 2 * ((k : ℕ) + 1) ∨ m + 1 ≤ 2 * ((l : ℕ) + 1)) :
     1 - ω * (Real.sin (theta n k / 2) ^ 2 + Real.sin (theta m l / 2) ^ 2) ∈
@@ -636,7 +645,8 @@ theorem weightedJacobi2D_eigenvalue_mem_Ioc (n m : ℕ) (hω : 0 < ω) {k : Fin 
     · nlinarith [sin_sq_theta_div_two_ge_half m h]
   exact Set.mem_Ioc.2 ⟨by nlinarith, by nlinarith⟩
 
-/-- Saad (13.25): in two dimensions the smoothing factor at `ω = 1/2` is `3/4`. -/
+/-- Saad (13.25) and the prose after it: in two dimensions the smoothing factor at `ω = 1/2`
+is `3/4`. -/
 theorem smoothingFactor2D_one_half (n m : ℕ) {k : Fin n} {l : Fin m}
     (hkl : n + 1 ≤ 2 * ((k : ℕ) + 1) ∨ m + 1 ≤ 2 * ((l : ℕ) + 1)) :
     |1 - (1 / 2 : ℝ) * (Real.sin (theta n k / 2) ^ 2 + Real.sin (theta m l / 2) ^ 2)| ≤
@@ -646,8 +656,12 @@ theorem smoothingFactor2D_one_half (n m : ℕ) {k : Fin n} {l : Fin m}
   rw [abs_le]
   constructor <;> [linarith [h.1]; linarith [h.2]]
 
-/-- Saad (13.25): in two dimensions the smoothing factor is minimized at `ω = 4/5`, where the two
-ends `|1 - 2ω|` and `1 - ω/2` of `weightedJacobi2D_eigenvalue_mem_Ioc` meet at `3/5`. -/
+/-- Saad (13.25): in two dimensions the smoothing factor is minimized at `ω = 4/5`, where the
+two ends `|1 - 2ω|` and `1 - ω/2` of `weightedJacobi2D_eigenvalue_mem_Ioc` meet at `3/5`.
+
+The book's sentence "`ω = 3/5` yields a smoothing factor of `4/5`" transposes the two
+numbers: at `ω = 3/5` the factor is `7/10`, and it is `ω = 4/5` that yields `3/5`. Its next
+sentence, that `ω = 4/5` is the best choice, is right. -/
 theorem smoothingFactor2D_four_fifths (n m : ℕ) {k : Fin n} {l : Fin m}
     (hkl : n + 1 ≤ 2 * ((k : ℕ) + 1) ∨ m + 1 ≤ 2 * ((l : ℕ) + 1)) :
     |1 - (4 / 5 : ℝ) * (Real.sin (theta n k / 2) ^ 2 + Real.sin (theta m l / 2) ^ 2)| ≤

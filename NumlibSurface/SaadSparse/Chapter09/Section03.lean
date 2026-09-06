@@ -6,7 +6,7 @@ import NumlibSurface.SaadSparse.Chapter09.Section02
 # Saad §9.3: preconditioned GMRES
 
 Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §9.3 , with P-9.11 and P-9.13.
+2003, §9.3, with P-9.11 and P-9.13.
 
 Both preconditioned algorithms are Algorithm 6.9 at another operator.
 

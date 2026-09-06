@@ -189,8 +189,10 @@ theorem pcgnr_succ (b x₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) :
     pcgnr A M b x₀ (j + 1) = pcgnrStep A M (pcgnr A M b x₀ j) :=
   Function.iterate_succ_apply' _ _ _
 
+/-- Algorithm 9.7, line 1: the iteration starts at `x_0`. -/
 @[simp] theorem pcgnr_zero_x (b x₀ : EuclideanSpace 𝕜 (Fin n)) : (pcgnr A M b x₀ 0).x = x₀ := rfl
 
+/-- Algorithm 9.7, line 1: `r_0 = b - A x_0`. -/
 @[simp] theorem pcgnr_zero_r (b x₀ : EuclideanSpace 𝕜 (Fin n)) :
     (pcgnr A M b x₀ 0).r = b - op A x₀ := rfl
 
@@ -325,8 +327,10 @@ theorem pcgne_succ (b x₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) :
     pcgne A M b x₀ (j + 1) = pcgneStep A M (pcgne A M b x₀ j) :=
   Function.iterate_succ_apply' _ _ _
 
+/-- Algorithm 9.8, line 1: the iteration starts at `x_0`. -/
 @[simp] theorem pcgne_zero_x (b x₀ : EuclideanSpace 𝕜 (Fin n)) : (pcgne A M b x₀ 0).x = x₀ := rfl
 
+/-- Algorithm 9.8, line 1: `r_0 = b - A x_0`. -/
 @[simp] theorem pcgne_zero_r (b x₀ : EuclideanSpace 𝕜 (Fin n)) :
     (pcgne A M b x₀ 0).r = b - op A x₀ := rfl
 

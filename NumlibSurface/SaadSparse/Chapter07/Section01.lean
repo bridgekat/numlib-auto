@@ -6,20 +6,20 @@ import NumlibSurface.SaadSparse.Chapter06.Common
 # Saad §7.1: the Lanczos biorthogonalization procedure
 
 Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §7.1 , with P-7.2 and P-7.6.
+2003, §7.1, with P-7.2 and P-7.6.
 
 **Algorithm 7.1** is `bilanczos`, whose state carries the pair `(v_j, w_j)`, the previous pair and
 the two scalars the next step consumes; `bilanczosV`, `bilanczosW`, `bilanczosVhat`,
 `bilanczosWhat`, `bilanczosAlpha`, `bilanczosBeta` and `bilanczosDelta` read the seven quantities
 the algorithm names off it, and `bilanczosDelta_succ`, `bilanczosBeta_succ`, `bilanczosW_succ`,
-`bilanczosV_succ` are its lines 6–9. The pivot is `bilanczosV_eq` and `bilanczosW_eq`: the book's
+`bilanczosV_succ` are its lines 7–10. The pivot is `bilanczosV_eq` and `bilanczosW_eq`: the book's
 recursion, with its explicit normalization `δ_{j+1} = |(v̂_{j+1}, ŵ_{j+1})|^{1/2}`,
 `β_{j+1} = (v̂_{j+1}, ŵ_{j+1})/δ_{j+1}`, computes the backbone `BiLanczos.vec` and
 `BiLanczos.dualVec` of `Numlib/Krylov/BiLanczos.lean`, so Proposition 7.1 and everything after it
 are read off from there.
 
 `NoBreakdown` bundles the hypothesis the book carries through §7.1: the starting pair is
-normalized, `(v_1, w_1) = 1`, and the test of line 6 passes, `(v̂_{j+1}, ŵ_{j+1}) ≠ 0`, for every
+normalized, `(v_1, w_1) = 1`, and the test of line 7 passes, `(v̂_{j+1}, ŵ_{j+1}) ≠ 0`, for every
 `j < m`. Lean's "division by zero is zero" makes every vector after a breakdown `0`, which is the
 book's "Stop", so the definitions are total. `NoSeriousBreakdown` is the weaker global hypothesis
 the Hessenberg relation needs: a vanishing `(v̂_{j+1}, ŵ_{j+1})` must come with `v̂_{j+1} = 0`.
@@ -80,7 +80,7 @@ section Algorithm
 
 variable (A : Matrix (Fin n) (Fin n) 𝕜) (v₁ w₁ : EuclideanSpace 𝕜 (Fin n))
 
-/-- One pass through lines 3–9 of **Algorithm 7.1**, on the state `(v_j, w_j, v_{j-1}, w_{j-1},
+/-- One pass through lines 4–10 of **Algorithm 7.1**, on the state `(v_j, w_j, v_{j-1}, w_{j-1},
 β_j, δ_j)`. The backbone record `BiLanczos.State` carries exactly that data. -/
 noncomputable def bilanczosStep (s : BiLanczos.State 𝕜 (EuclideanSpace 𝕜 (Fin n))) :
     BiLanczos.State 𝕜 (EuclideanSpace 𝕜 (Fin n)) :=
@@ -107,30 +107,30 @@ noncomputable def bilanczosV (j : ℕ) : EuclideanSpace 𝕜 (Fin n) := (bilancz
 /-- The dual Lanczos vectors `w_j` of Algorithm 7.1. -/
 noncomputable def bilanczosW (j : ℕ) : EuclideanSpace 𝕜 (Fin n) := (bilanczos A v₁ w₁ j).w
 
-/-- `v_{j-1}`, with the convention `v_0 = 0` of Algorithm 7.1, line 1. -/
+/-- `v_{j-1}`, with the convention `v_0 = 0` of Algorithm 7.1, line 2. -/
 noncomputable def bilanczosVPrev (j : ℕ) : EuclideanSpace 𝕜 (Fin n) := (bilanczos A v₁ w₁ j).vPrev
 
-/-- `w_{j-1}`, with the convention `w_0 = 0` of Algorithm 7.1, line 1. -/
+/-- `w_{j-1}`, with the convention `w_0 = 0` of Algorithm 7.1, line 2. -/
 noncomputable def bilanczosWPrev (j : ℕ) : EuclideanSpace 𝕜 (Fin n) := (bilanczos A v₁ w₁ j).wPrev
 
-/-- The superdiagonal coefficient `β_{j+1}` of Algorithm 7.1, line 7, with `β_1 = 0`. -/
+/-- The superdiagonal coefficient `β_{j+1}` of Algorithm 7.1, line 8, with `β_1 = 0`. -/
 noncomputable def bilanczosBeta (j : ℕ) : 𝕜 := (bilanczos A v₁ w₁ j).beta
 
-/-- The subdiagonal coefficient `δ_{j+1}` of Algorithm 7.1, line 6, with `δ_1 = 0`. -/
+/-- The subdiagonal coefficient `δ_{j+1}` of Algorithm 7.1, line 7, with `δ_1 = 0`. -/
 noncomputable def bilanczosDelta (j : ℕ) : 𝕜 := (bilanczos A v₁ w₁ j).delta
 
-/-- The diagonal coefficient `α_j = (A v_j, w_j)` of Algorithm 7.1, line 3. -/
+/-- The diagonal coefficient `α_j = (A v_j, w_j)` of Algorithm 7.1, line 4. -/
 noncomputable def bilanczosAlpha (j : ℕ) : 𝕜 :=
   inner 𝕜 (bilanczosW A v₁ w₁ j) (op A (bilanczosV A v₁ w₁ j))
 
 /-- The unnormalized vector `v̂_{j+1} = A v_j - α_j v_j - β_j v_{j-1}` of Algorithm 7.1,
-line 4. -/
+line 5. -/
 noncomputable def bilanczosVhat (j : ℕ) : EuclideanSpace 𝕜 (Fin n) :=
   op A (bilanczosV A v₁ w₁ j) - bilanczosAlpha A v₁ w₁ j • bilanczosV A v₁ w₁ j -
     bilanczosBeta A v₁ w₁ j • bilanczosVPrev A v₁ w₁ j
 
 /-- The unnormalized vector `ŵ_{j+1} = Aᴴ w_j - ᾱ_j w_j - δ̄_j w_{j-1}` of Algorithm 7.1,
-line 5. -/
+line 6. -/
 noncomputable def bilanczosWhat (j : ℕ) : EuclideanSpace 𝕜 (Fin n) :=
   op Aᴴ (bilanczosW A v₁ w₁ j) - starRingEnd 𝕜 (bilanczosAlpha A v₁ w₁ j) • bilanczosW A v₁ w₁ j -
     starRingEnd 𝕜 (bilanczosDelta A v₁ w₁ j) • bilanczosWPrev A v₁ w₁ j
@@ -159,31 +159,38 @@ theorem bilanczosW_eq (j : ℕ) :
     bilanczosW A v₁ w₁ j = BiLanczos.dualVec (op A) (op Aᴴ) v₁ w₁ j := by
   rw [bilanczosW, bilanczos_eq]; rfl
 
+/-- The shifted primal sequence `v_{j-1}` of Algorithm 7.1 is the backbone one. -/
 theorem bilanczosVPrev_eq (j : ℕ) :
     bilanczosVPrev A v₁ w₁ j = BiLanczos.vecPrev (op A) (op Aᴴ) v₁ w₁ j := by
   rw [bilanczosVPrev, bilanczos_eq]; rfl
 
+/-- The shifted dual sequence `w_{j-1}` of Algorithm 7.1 is the backbone one. -/
 theorem bilanczosWPrev_eq (j : ℕ) :
     bilanczosWPrev A v₁ w₁ j = BiLanczos.dualVecPrev (op A) (op Aᴴ) v₁ w₁ j := by
   rw [bilanczosWPrev, bilanczos_eq]; rfl
 
+/-- The superdiagonal coefficients of Algorithm 7.1 are the backbone ones. -/
 theorem bilanczosBeta_eq (j : ℕ) :
     bilanczosBeta A v₁ w₁ j = BiLanczos.beta (op A) (op Aᴴ) v₁ w₁ j := by
   rw [bilanczosBeta, bilanczos_eq]; rfl
 
+/-- The subdiagonal coefficients of Algorithm 7.1 are the backbone ones. -/
 theorem bilanczosDelta_eq (j : ℕ) :
     bilanczosDelta A v₁ w₁ j = BiLanczos.delta (op A) (op Aᴴ) v₁ w₁ j := by
   rw [bilanczosDelta, bilanczos_eq]; rfl
 
+/-- The diagonal coefficients of Algorithm 7.1 are the backbone ones. -/
 theorem bilanczosAlpha_eq (j : ℕ) :
     bilanczosAlpha A v₁ w₁ j = BiLanczos.alpha (op A) (op Aᴴ) v₁ w₁ j := by
   rw [bilanczosAlpha, bilanczosV_eq, bilanczosW_eq]; rfl
 
+/-- The unnormalized primal vectors of Algorithm 7.1, line 5, are the backbone ones. -/
 theorem bilanczosVhat_eq (j : ℕ) :
     bilanczosVhat A v₁ w₁ j = BiLanczos.vhat (op A) (op Aᴴ) v₁ w₁ j := by
   rw [bilanczosVhat, bilanczosV_eq, bilanczosVPrev_eq, bilanczosAlpha_eq, bilanczosBeta_eq,
     BiLanczos.vhat_eq]
 
+/-- The unnormalized dual vectors of Algorithm 7.1, line 6, are the backbone ones. -/
 theorem bilanczosWhat_eq (j : ℕ) :
     bilanczosWhat A v₁ w₁ j = BiLanczos.dualVhat (op A) (op Aᴴ) v₁ w₁ j := by
   rw [bilanczosWhat, bilanczosW_eq, bilanczosWPrev_eq, bilanczosAlpha_eq, bilanczosDelta_eq,
@@ -191,35 +198,41 @@ theorem bilanczosWhat_eq (j : ℕ) :
 
 /-! ### Lines 1 and 6–9 of Algorithm 7.1 -/
 
+/-- Algorithm 7.1, line 1: the primal sequence starts at `v_1`. -/
 @[simp] theorem bilanczosV_zero : bilanczosV A v₁ w₁ 0 = v₁ := rfl
 
+/-- Algorithm 7.1, line 1: the dual sequence starts at `w_1`. -/
 @[simp] theorem bilanczosW_zero : bilanczosW A v₁ w₁ 0 = w₁ := rfl
 
+/-- Algorithm 7.1, line 2: `v_0 = 0`. -/
 @[simp] theorem bilanczosVPrev_zero : bilanczosVPrev A v₁ w₁ 0 = 0 := rfl
 
+/-- Algorithm 7.1, line 2: `w_0 = 0`. -/
 @[simp] theorem bilanczosWPrev_zero : bilanczosWPrev A v₁ w₁ 0 = 0 := rfl
 
-/-- Algorithm 7.1, line 1: `β_1 = 0`. -/
+/-- Algorithm 7.1, line 2: `β_1 = 0`. -/
 @[simp] theorem bilanczosBeta_zero : bilanczosBeta A v₁ w₁ 0 = 0 := rfl
 
-/-- Algorithm 7.1, line 1: `δ_1 = 0`. -/
+/-- Algorithm 7.1, line 2: `δ_1 = 0`. -/
 @[simp] theorem bilanczosDelta_zero : bilanczosDelta A v₁ w₁ 0 = 0 := rfl
 
+/-- After step `j + 1` the previous-vector slot of the state holds `v_j`. -/
 @[simp] theorem bilanczosVPrev_succ (j : ℕ) :
     bilanczosVPrev A v₁ w₁ (j + 1) = bilanczosV A v₁ w₁ j := by
   rw [bilanczosVPrev_eq, bilanczosV_eq, BiLanczos.vecPrev_succ]
 
+/-- After step `j + 1` the previous-vector slot of the dual state holds `w_j`. -/
 @[simp] theorem bilanczosWPrev_succ (j : ℕ) :
     bilanczosWPrev A v₁ w₁ (j + 1) = bilanczosW A v₁ w₁ j := by
   rw [bilanczosWPrev_eq, bilanczosW_eq, BiLanczos.dualVecPrev_succ]
 
-/-- Algorithm 7.1, line 6: `δ_{j+1} = |(v̂_{j+1}, ŵ_{j+1})|^{1/2}`. -/
+/-- Algorithm 7.1, line 7: `δ_{j+1} = |(v̂_{j+1}, ŵ_{j+1})|^{1/2}`. -/
 theorem bilanczosDelta_succ (j : ℕ) : bilanczosDelta A v₁ w₁ (j + 1) =
     ((Real.sqrt ‖inner 𝕜 (bilanczosWhat A v₁ w₁ j) (bilanczosVhat A v₁ w₁ j)‖ : ℝ) : 𝕜) := by
   rw [bilanczosDelta_eq, bilanczosWhat_eq, bilanczosVhat_eq, BiLanczos.delta_succ]
   rfl
 
-/-- Algorithm 7.1, line 7: `β_{j+1} = (v̂_{j+1}, ŵ_{j+1})/δ_{j+1}`. -/
+/-- Algorithm 7.1, line 8: `β_{j+1} = (v̂_{j+1}, ŵ_{j+1})/δ_{j+1}`. -/
 theorem bilanczosBeta_succ (j : ℕ) : bilanczosBeta A v₁ w₁ (j + 1) =
     inner 𝕜 (bilanczosWhat A v₁ w₁ j) (bilanczosVhat A v₁ w₁ j) /
       bilanczosDelta A v₁ w₁ (j + 1) := by
@@ -227,12 +240,12 @@ theorem bilanczosBeta_succ (j : ℕ) : bilanczosBeta A v₁ w₁ (j + 1) =
     BiLanczos.beta_succ]
   rfl
 
-/-- Algorithm 7.1, line 8: `w_{j+1} = ŵ_{j+1}/β̄_{j+1}`, and `0` on breakdown. -/
+/-- Algorithm 7.1, line 9: `w_{j+1} = ŵ_{j+1}/β̄_{j+1}`, and `0` on breakdown. -/
 theorem bilanczosW_succ (j : ℕ) : bilanczosW A v₁ w₁ (j + 1) =
     (starRingEnd 𝕜 (bilanczosBeta A v₁ w₁ (j + 1)))⁻¹ • bilanczosWhat A v₁ w₁ j := by
   rw [bilanczosW_eq, bilanczosWhat_eq, bilanczosBeta_eq, BiLanczos.dualVec_succ]
 
-/-- Algorithm 7.1, line 9: `v_{j+1} = v̂_{j+1}/δ_{j+1}`, and `0` on breakdown. -/
+/-- Algorithm 7.1, line 10: `v_{j+1} = v̂_{j+1}/δ_{j+1}`, and `0` on breakdown. -/
 theorem bilanczosV_succ (j : ℕ) : bilanczosV A v₁ w₁ (j + 1) =
     (bilanczosDelta A v₁ w₁ (j + 1))⁻¹ • bilanczosVhat A v₁ w₁ j := by
   rw [bilanczosV_eq, bilanczosVhat_eq, bilanczosDelta_eq, BiLanczos.vec_succ]
@@ -246,7 +259,7 @@ section Breakdown
 variable {A : Matrix (Fin n) (Fin n) 𝕜} {v₁ w₁ : EuclideanSpace 𝕜 (Fin n)}
 
 /-- Algorithm 7.1 runs `m` steps without breaking down: the starting pair is normalized as in
-line 1, and the test of line 6, `(v̂_{j+1}, ŵ_{j+1}) ≠ 0`, passes for every `j < m`. This is the
+line 1, and the test of line 7, `(v̂_{j+1}, ŵ_{j+1}) ≠ 0`, passes for every `j < m`. This is the
 hypothesis the book carries through §7.1, and it is the surface form of
 `BiLanczos.NoBreakdown`; the adjoint relation the backbone takes as data is automatic here,
 `op Aᴴ` being the adjoint of `op A`. -/
@@ -258,7 +271,7 @@ structure NoBreakdown (A : Matrix (Fin n) (Fin n) 𝕜) (v₁ w₁ : EuclideanSp
   inner_hat_ne_zero : ∀ j < m,
     inner 𝕜 (bilanczosWhat A v₁ w₁ j) (bilanczosVhat A v₁ w₁ j) ≠ 0
 
-/-- Algorithm 7.1 suffers no *serious* breakdown: whenever line 6 stops the algorithm, the primal
+/-- Algorithm 7.1 suffers no *serious* breakdown: whenever line 7 stops the algorithm, the primal
 recurrence has already terminated, `v̂_{j+1} = 0`. This holds generically and at a regular
 termination, and unlike `SaadSparse.Chapter07.NoBreakdown` it is a hypothesis about every step —
 which is what (7.3) needs, since at a serious breakdown there is no `v_{m+1}` to expand `A v_m`
@@ -280,6 +293,7 @@ private theorem zeta_eq (A : Matrix (Fin n) (Fin n) 𝕜) (v₁ w₁ : Euclidean
       = BiLanczos.zeta (op A) (op Aᴴ) v₁ w₁ j := by
   rw [bilanczosWhat_eq, bilanczosVhat_eq, BiLanczos.zeta]
 
+/-- Running `m` steps without breakdown entails running `k ≤ m` steps without breakdown. -/
 theorem NoBreakdown.mono {m k : ℕ} (h : NoBreakdown A v₁ w₁ m) (hk : k ≤ m) :
     NoBreakdown A v₁ w₁ k :=
   ⟨h.inner_start, fun j hj => h.inner_hat_ne_zero j (hj.trans_le hk)⟩
@@ -332,18 +346,22 @@ theorem bilanczosCoeff_eq (i j : ℕ) :
     bilanczosCoeff A v₁ w₁ i j = BiLanczos.coeff (op A) (op Aᴴ) v₁ w₁ i j := by
   rw [bilanczosCoeff, BiLanczos.coeff, bilanczosAlpha_eq, bilanczosDelta_eq, bilanczosBeta_eq]
 
+/-- The diagonal entry of `T_m` is `α_j`. -/
 @[simp] theorem bilanczosCoeff_self (j : ℕ) :
     bilanczosCoeff A v₁ w₁ j j = bilanczosAlpha A v₁ w₁ j := by
   rw [bilanczosCoeff, ite_eq_left rfl]
 
+/-- The subdiagonal entry of `T_m` is `δ_{j+1}`. -/
 @[simp] theorem bilanczosCoeff_succ_self (j : ℕ) :
     bilanczosCoeff A v₁ w₁ (j + 1) j = bilanczosDelta A v₁ w₁ (j + 1) := by
   rw [bilanczosCoeff, ite_eq_right (by omega), ite_eq_left rfl]
 
+/-- The superdiagonal entry of `T_m` is `β_{j+1}`. -/
 @[simp] theorem bilanczosCoeff_self_succ (j : ℕ) :
     bilanczosCoeff A v₁ w₁ j (j + 1) = bilanczosBeta A v₁ w₁ (j + 1) := by
   rw [bilanczosCoeff, ite_eq_right (by omega), ite_eq_right (by omega), ite_eq_left rfl]
 
+/-- Off the three diagonals the coefficient array vanishes. -/
 theorem bilanczosCoeff_eq_zero {i j : ℕ} (h₁ : i ≠ j) (h₂ : i ≠ j + 1) (h₃ : j ≠ i + 1) :
     bilanczosCoeff A v₁ w₁ i j = 0 := by
   rw [bilanczosCoeff, ite_eq_right h₁, ite_eq_right h₂, ite_eq_right h₃]
@@ -366,20 +384,26 @@ noncomputable def V (m : ℕ) : Matrix (Fin n) (Fin m) 𝕜 := Chapter06.colMatr
 /-- `W_m = [w_1, …, w_m]`, the matrix whose columns are the dual Lanczos vectors. -/
 noncomputable def W (m : ℕ) : Matrix (Fin n) (Fin m) 𝕜 := Chapter06.colMatrix (bilanczosW A v₁ w₁) m
 
+/-- The entries of `T_m` are the tridiagonal coefficients. -/
 @[simp] theorem T_apply {m : ℕ} (i j : Fin m) : T A v₁ w₁ m i j = bilanczosCoeff A v₁ w₁ i j := rfl
 
+/-- The entries of `T̄_m` are the tridiagonal coefficients. -/
 @[simp] theorem Tbar_apply {m : ℕ} (i : Fin (m + 1)) (j : Fin m) :
     Tbar A v₁ w₁ m i j = bilanczosCoeff A v₁ w₁ i j := rfl
 
+/-- The columns of `V_m` are the primal Lanczos vectors. -/
 @[simp] theorem V_apply {m : ℕ} (i : Fin n) (j : Fin m) :
     V A v₁ w₁ m i j = bilanczosV A v₁ w₁ (j : ℕ) i := rfl
 
+/-- The columns of `W_m` are the dual Lanczos vectors. -/
 @[simp] theorem W_apply {m : ℕ} (i : Fin n) (j : Fin m) :
     W A v₁ w₁ m i j = bilanczosW A v₁ w₁ (j : ℕ) i := rfl
 
+/-- `T̄_m` is the backbone Hessenberg matrix of the tridiagonal coefficient array. -/
 theorem Tbar_eq_hessenbergOf (m : ℕ) :
     Tbar A v₁ w₁ m = Krylov.hessenbergOf (bilanczosCoeff A v₁ w₁) m := rfl
 
+/-- `T_m` is the backbone square Hessenberg matrix of the tridiagonal coefficient array. -/
 theorem T_eq_hessenbergSqOf (m : ℕ) :
     T A v₁ w₁ m = Krylov.hessenbergSqOf (bilanczosCoeff A v₁ w₁) m := rfl
 
@@ -428,34 +452,31 @@ theorem proposition_7_1_span (h : NoBreakdown A v₁ w₁ m) :
         funext (bilanczosW_eq A v₁ w₁)]
     exact BiLanczos.span_dualVec h.toBiLanczos
 
+/-- A family biorthogonal to another is linearly independent: Mathlib's
+`LinearIndependent.of_pairwise_dual_eq_zero_one` at the dual functionals `⟪w_i, ·⟫`. -/
+private theorem linearIndependent_of_biorthogonal {k : ℕ}
+    (v w : Fin k → EuclideanSpace 𝕜 (Fin n))
+    (h0 : ∀ i j, i ≠ j → inner 𝕜 (w i) (v j) = (0 : 𝕜))
+    (h1 : ∀ i, inner 𝕜 (w i) (v i) = (1 : 𝕜)) :
+    LinearIndependent 𝕜 v :=
+  LinearIndependent.of_pairwise_dual_eq_zero_one v (fun i => (innerSL 𝕜 (w i)).toLinearMap)
+    (fun i j hij => by simpa using h0 i j hij) fun i => by simpa using h1 i
+
 /-- **P-7.2**: while Algorithm 7.1 has not broken down, the columns of `V_m` are linearly
 independent, and so are those of `W_m` — immediate from biorthogonality. -/
 theorem problem_7_2 (h : NoBreakdown A v₁ w₁ m) :
     LinearIndependent 𝕜 (fun i : Fin m => bilanczosV A v₁ w₁ (i : ℕ)) ∧
-      LinearIndependent 𝕜 (fun i : Fin m => bilanczosW A v₁ w₁ (i : ℕ)) := by
-  constructor
-  · refine Fintype.linearIndependent_iff.2 fun c hc i => ?_
-    have h0 : inner 𝕜 (bilanczosW A v₁ w₁ (i : ℕ)) (∑ k, c k • bilanczosV A v₁ w₁ (k : ℕ))
-        = (0 : 𝕜) := by rw [hc, inner_zero_right]
-    rw [inner_sum] at h0
-    rw [← h0, Finset.sum_eq_single i]
-    · rw [inner_smul_right, proposition_7_1 h (le_of_lt i.2) (le_of_lt i.2), ite_eq_left rfl,
-        mul_one]
-    · intro k _ hk
-      rw [inner_smul_right, proposition_7_1 h (le_of_lt i.2) (le_of_lt k.2),
-        ite_eq_right (fun hc' => hk (Fin.ext hc'.symm)), mul_zero]
-    · intro hi; exact absurd (Finset.mem_univ i) hi
-  · refine Fintype.linearIndependent_iff.2 fun c hc i => ?_
-    have h0 : inner 𝕜 (bilanczosV A v₁ w₁ (i : ℕ)) (∑ k, c k • bilanczosW A v₁ w₁ (k : ℕ))
-        = (0 : 𝕜) := by rw [hc, inner_zero_right]
-    rw [inner_sum] at h0
-    rw [← h0, Finset.sum_eq_single i]
-    · rw [inner_smul_right, proposition_7_1' h (le_of_lt i.2) (le_of_lt i.2), ite_eq_left rfl,
-        mul_one]
-    · intro k _ hk
-      rw [inner_smul_right, proposition_7_1' h (le_of_lt i.2) (le_of_lt k.2),
-        ite_eq_right (fun hc' => hk (Fin.ext hc'.symm)), mul_zero]
-    · intro hi; exact absurd (Finset.mem_univ i) hi
+      LinearIndependent 𝕜 (fun i : Fin m => bilanczosW A v₁ w₁ (i : ℕ)) :=
+  ⟨linearIndependent_of_biorthogonal _ _
+      (fun i j hij => by
+        rw [proposition_7_1 h (le_of_lt i.2) (le_of_lt j.2),
+          ite_eq_right (fun hc => hij (Fin.ext hc))])
+      fun i => by rw [proposition_7_1 h (le_of_lt i.2) (le_of_lt i.2), ite_eq_left rfl],
+    linearIndependent_of_biorthogonal _ _
+      (fun i j hij => by
+        rw [proposition_7_1' h (le_of_lt i.2) (le_of_lt j.2),
+          ite_eq_right (fun hc => hij (Fin.ext hc))])
+      fun i => by rw [proposition_7_1' h (le_of_lt i.2) (le_of_lt i.2), ite_eq_left rfl]⟩
 
 end Proposition
 
@@ -495,7 +516,7 @@ private theorem sum_dualCoeff_lt (A : Matrix (Fin n) (Fin n) 𝕜)
 
 variable {A : Matrix (Fin n) (Fin n) 𝕜} {v₁ w₁ : EuclideanSpace 𝕜 (Fin n)} {m : ℕ}
 
-/-- (7.1) in the Hessenberg-sum form: `A v_j = ∑_{i ≤ j+1} T_{ij} v_i`. -/
+/-- (7.3) columnwise: `A v_j = ∑_{i ≤ j+1} T_{ij} v_i`. -/
 private theorem apply_bilanczosV_sum (h : NoBreakdown A v₁ w₁ m) {j : ℕ} (hj : j < m) :
     op A (bilanczosV A v₁ w₁ j)
       = ∑ i ∈ Finset.range (j + 2), bilanczosCoeff A v₁ w₁ i j • bilanczosV A v₁ w₁ i := by
@@ -505,7 +526,7 @@ private theorem apply_bilanczosV_sum (h : NoBreakdown A v₁ w₁ m) {j : ℕ} (
     bilanczosDelta_eq]
   exact BiLanczos.apply_vec _ _ _ _ (h.toBiLanczos.delta_ne_zero j hj)
 
-/-- (7.2) in the Hessenberg-sum form: `Aᴴ w_j = ∑_{i ≤ j+1} conj(T_{ji}) w_i`. -/
+/-- (7.4) columnwise: `Aᴴ w_j = ∑_{i ≤ j+1} conj(T_{ji}) w_i`. -/
 private theorem apply_bilanczosW_sum (h : NoBreakdown A v₁ w₁ m) {j : ℕ} (hj : j < m) :
     op Aᴴ (bilanczosW A v₁ w₁ j) = ∑ i ∈ Finset.range (j + 2),
       starRingEnd 𝕜 (bilanczosCoeff A v₁ w₁ j i) • bilanczosW A v₁ w₁ i := by

@@ -8,7 +8,7 @@ import NumlibSurface.SaadSparse.Chapter09.Section01
 # Saad §9.2: the preconditioned conjugate gradient method
 
 Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §9.2 , with P-9.2, P-9.3 and P-9.6.
+2003, §9.2, with P-9.2, P-9.3 and P-9.6.
 
 The section rests on one observation, `isSymmetric_energy`: for symmetric `A` and symmetric
 positive definite `M`, the preconditioned matrix `M⁻¹ A` is self-adjoint for the `M`-inner
@@ -70,6 +70,7 @@ theorem inner_op_conjTranspose (B : Matrix (Fin n) (Fin n) 𝕜) (x y : 𝔼) :
 theorem op_mul (B C : Matrix (Fin n) (Fin n) 𝕜) : op (B * C) = op B ∘ₗ op C :=
   Matrix.toEuclideanLin_mul B C
 
+/-- A matrix product acts on a vector as the composite of the two actions. -/
 theorem op_mul_apply (B C : Matrix (Fin n) (Fin n) 𝕜) (x : 𝔼) : op (B * C) x = op B (op C x) := by
   rw [op_mul]; rfl
 
@@ -175,12 +176,16 @@ noncomputable def pcgStep (s : 𝔼 × 𝔼 × 𝔼) : 𝔼 × 𝔼 × 𝔼 :=
 noncomputable def pcg (b x₀ : 𝔼) (j : ℕ) : 𝔼 × 𝔼 × 𝔼 :=
   (pcgStep A M)^[j] (x₀, b - op A x₀, op M⁻¹ (b - op A x₀))
 
+/-- The defining formula for `SaadSparse.Chapter09.pcgStepAlpha`, which the tuple
+projections keep `rw` from unfolding on its own. -/
 theorem pcgStepAlpha_def (s : 𝔼 × 𝔼 × 𝔼) :
     pcgStepAlpha A M s = inner 𝕜 (op M⁻¹ s.2.1) s.2.1 / inner 𝕜 s.2.2 (op A s.2.2) := rfl
 
+/-- The defining formula for `SaadSparse.Chapter09.pcgStepR`. -/
 theorem pcgStepR_def (s : 𝔼 × 𝔼 × 𝔼) :
     pcgStepR A M s = s.2.1 - pcgStepAlpha A M s • op A s.2.2 := rfl
 
+/-- The defining formula for `SaadSparse.Chapter09.pcgStepBeta`. -/
 theorem pcgStepBeta_def (s : 𝔼 × 𝔼 × 𝔼) : pcgStepBeta A M s =
     inner 𝕜 (op M⁻¹ (pcgStepR A M s)) (pcgStepR A M s) / inner 𝕜 (op M⁻¹ s.2.1) s.2.1 := rfl
 
@@ -204,11 +209,14 @@ noncomputable def pcgAlpha (j : ℕ) : 𝕜 := pcgStepAlpha A M (pcg A M b x₀ 
 /-- The direction coefficient `β_j` of Algorithm 9.1 at step `j`. -/
 noncomputable def pcgBeta (j : ℕ) : 𝕜 := pcgStepBeta A M (pcg A M b x₀ j)
 
+/-- The recurrence: state `j + 1` is one pass of Algorithm 9.1 applied to state `j`. -/
 theorem pcg_succ (j : ℕ) : pcg A M b x₀ (j + 1) = pcgStep A M (pcg A M b x₀ j) :=
   Function.iterate_succ_apply' _ _ _
 
+/-- Algorithm 9.1, line 1: the iteration starts at `x_0`. -/
 @[simp] theorem pcgX_zero : pcgX A M b x₀ 0 = x₀ := rfl
 
+/-- Algorithm 9.1, line 1: `r_0 = b - A x_0`. -/
 @[simp] theorem pcgR_zero : pcgR A M b x₀ 0 = b - op A x₀ := rfl
 
 /-- Algorithm 9.1, line 1: `p_0 = z_0`. -/
@@ -285,14 +293,17 @@ theorem pcg_eq (hA : (op A).IsSymmetric) (hMinv : (op M⁻¹).IsSymmetric) (b x�
   | succ j ih =>
     rw [pcg_succ, ih, Krylov.PCG.iterate_succ, pcgStep_eq_PCG hA hMinv]
 
+/-- The iterate `x_j` of Algorithm 9.1 is the backbone one. -/
 theorem pcgX_eq (hA : (op A).IsSymmetric) (hMinv : (op M⁻¹).IsSymmetric) (b x₀ : 𝔼) (j : ℕ) :
     pcgX A M b x₀ j = (Krylov.PCG.iterate (op A) (op M⁻¹) b x₀ j).x := by
   rw [pcgX, pcg_eq hA hMinv]
 
+/-- The residual `r_j` of Algorithm 9.1 is the backbone one. -/
 theorem pcgR_eq (hA : (op A).IsSymmetric) (hMinv : (op M⁻¹).IsSymmetric) (b x₀ : 𝔼) (j : ℕ) :
     pcgR A M b x₀ j = (Krylov.PCG.iterate (op A) (op M⁻¹) b x₀ j).r := by
   rw [pcgR, pcg_eq hA hMinv]
 
+/-- The search direction `p_j` of Algorithm 9.1 is the backbone one. -/
 theorem pcgP_eq (hA : (op A).IsSymmetric) (hMinv : (op M⁻¹).IsSymmetric) (b x₀ : 𝔼) (j : ℕ) :
     pcgP A M b x₀ j = (Krylov.PCG.iterate (op A) (op M⁻¹) b x₀ j).p := by
   rw [pcgP, pcg_eq hA hMinv]
@@ -358,6 +369,7 @@ steps: the triple `(x_j, r̂_j, p_j)`, started from `r̂_0 = L⁻¹ r_0` and `p_
 noncomputable def splitPcg (b x₀ : 𝔼) (j : ℕ) : 𝔼 × 𝔼 × 𝔼 :=
   (splitPcgStep A L)^[j] (x₀, op L⁻¹ (b - op A x₀), op (Lᴴ)⁻¹ (op L⁻¹ (b - op A x₀)))
 
+/-- The recurrence: state `j + 1` is one pass of Algorithm 9.2 applied to state `j`. -/
 theorem splitPcg_succ (b x₀ : 𝔼) (j : ℕ) :
     splitPcg A L b x₀ (j + 1) = splitPcgStep A L (splitPcg A L b x₀ j) :=
   Function.iterate_succ_apply' _ _ _
@@ -490,6 +502,8 @@ noncomputable def rightPcgStep (s : 𝔼 × 𝔼 × 𝔼) : 𝔼 × 𝔼 × 𝔼
 noncomputable def rightPcg (b u₀ : 𝔼) (j : ℕ) : 𝔼 × 𝔼 × 𝔼 :=
   (rightPcgStep A M)^[j] (u₀, b - op A (op M⁻¹ u₀), b - op A (op M⁻¹ u₀))
 
+/-- The recurrence: state `j + 1` is one pass of the right-preconditioned iteration
+applied to state `j`. -/
 theorem rightPcg_succ (b u₀ : 𝔼) (j : ℕ) :
     rightPcg A M b u₀ (j + 1) = rightPcgStep A M (rightPcg A M b u₀ j) :=
   Function.iterate_succ_apply' _ _ _
@@ -561,6 +575,8 @@ noncomputable def pcgEnergyA (b x₀ : 𝔼) (j : ℕ) : 𝔼 × 𝔼 × 𝔼 ×
   (pcgEnergyAStep A M)^[j] (x₀, op M⁻¹ (b - op A x₀), op A (op M⁻¹ (b - op A x₀)),
     op M⁻¹ (b - op A x₀), op A (op M⁻¹ (b - op A x₀)))
 
+/-- The recurrence: state `j + 1` is one pass of the `A`-inner-product algorithm applied to
+state `j`. -/
 theorem pcgEnergyA_succ (b x₀ : 𝔼) (j : ℕ) :
     pcgEnergyA A M b x₀ (j + 1) = pcgEnergyAStep A M (pcgEnergyA A M b x₀ j) :=
   Function.iterate_succ_apply' _ _ _
@@ -699,12 +715,15 @@ theorem equation_9_8 (hA : A.IsSymm) (h1 : IsUnit (D - Chapter04.E A))
 open Chapter06 (op)
 
 /-- **Algorithm 9.3** (Eisenstat's implementation): `z = (D - Eᵀ)⁻¹ v`,
-`w = (D - E)⁻¹ (v + D₁ z)`, `w := w + z`. -/
+`w = (D - E)⁻¹ (v + D₁ z)`, `w := w + z`. This is the procedure §9.2.2 states just before
+Algorithm 9.3; the algorithm itself is its rescaling by `D⁻¹`, which saves one product with
+the diagonal but computes the same `Â v`. -/
 noncomputable def eisenstat (A D : Matrix (Fin n) (Fin n) ℝ) (v : EuclideanSpace ℝ (Fin n)) :
     EuclideanSpace ℝ (Fin n) :=
   let z := op (D - (Chapter04.E A)ᵀ)⁻¹ v
   op (D - Chapter04.E A)⁻¹ (v + op (Chapter04.D A - (2 : ℝ) • D) z) + z
 
+/-- `SaadSparse.Chapter09.eisenstat` with its `let`-bindings unfolded. -/
 theorem eisenstat_def (A D : Matrix (Fin n) (Fin n) ℝ) (v : EuclideanSpace ℝ (Fin n)) :
     eisenstat A D v = op (D - Chapter04.E A)⁻¹
         (v + op (Chapter04.D A - (2 : ℝ) • D) (op (D - (Chapter04.E A)ᵀ)⁻¹ v))
@@ -718,7 +737,7 @@ private theorem op_add_apply (X Y : Matrix (Fin n) (Fin n) ℝ)
   rw [h]
   rfl
 
-/-- **Algorithm 9.3** computes `Â v` for the `Â` of (9.8): three triangular solves and one
+/-- **Algorithm 9.3** computes `Â v` for the `Â` of (9.8): two triangular solves and one
 product with the diagonal `D₁`, and no product with `A`. -/
 theorem eisenstat_eq (hA : A.IsSymm) (h1 : IsUnit (D - Chapter04.E A))
     (h2 : IsUnit (D - (Chapter04.E A)ᵀ)) (v : EuclideanSpace ℝ (Fin n)) :

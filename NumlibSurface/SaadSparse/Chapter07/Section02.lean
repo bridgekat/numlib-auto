@@ -10,8 +10,9 @@ Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd
 vector `w_1`, solve the tridiagonal system `T_m y_m = β e_1` and set `x_m = x_0 + V_m y_m`. It has
 the shape of FOM (§6.4) with the Arnoldi basis replaced by the biorthogonal one, and
 `lanczosSolve_isPetrovGalerkin` is the identification the section opens with: `x_m` is the
-Petrov–Galerkin iterate onto `𝒦_m(A, v_1)` orthogonally to `𝒦_m(Aᴴ, w_1)`, which is the
-projection process (7.6). Only `NoBreakdown` and the nonsingularity of `T_m` are needed, since
+Petrov–Galerkin iterate onto `𝒦_m(A, v_1)` orthogonally to `𝒦_m(Aᴴ, w_1)`, the oblique
+projection process §7.3.1 opens with. Only `NoBreakdown` and the nonsingularity of `T_m` are
+needed, since
 the orthogonality is tested against the dual basis directly through (7.5).
 
 (7.9) is `equation_7_9`, the analogue of (6.18) and (6.87): the residual is a multiple of the
@@ -54,7 +55,7 @@ section Algorithm
 
 variable (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ w₁ : EuclideanSpace 𝕜 (Fin n))
 
-/-- (7.8): the coordinate vector `y_m = T_m⁻¹ (β e_1)` of Algorithm 7.2, line 5.
+/-- The coordinate vector `y_m = T_m⁻¹ (β e_1)` of the last line of Algorithm 7.2.
 `Matrix.inv` is `0` at a singular `T_m`, which is the book's breakdown case. -/
 noncomputable def lanczosSolveY (m : ℕ) : Fin m → 𝕜 :=
   (T A (Chapter06.v₁ A b x₀) w₁ m)⁻¹ *ᵥ ((Chapter06.β A b x₀ : 𝕜) • Chapter06.e₁ m)
@@ -78,7 +79,8 @@ theorem lanczosSolve_eq_add_sum (m : ℕ) :
   rw [lanczosSolve_eq_add_sum]
   simp
 
-/-- `T_m y_m = β e_1` whenever `T_m` is nonsingular: `y_m` really solves (7.8). -/
+/-- `T_m y_m = β e_1` whenever `T_m` is nonsingular: `y_m` really solves the tridiagonal
+system of Algorithm 7.2. -/
 theorem T_mulVec_lanczosSolveY {m : ℕ} (hT : IsUnit (T A (Chapter06.v₁ A b x₀) w₁ m)) :
     T A (Chapter06.v₁ A b x₀) w₁ m *ᵥ lanczosSolveY A b x₀ w₁ m
       = Krylov.firstVec (Chapter06.β A b x₀ : 𝕜) m := by

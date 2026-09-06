@@ -6,7 +6,7 @@ import NumlibSurface.SaadSparse.Chapter08.Section01
 # Saad §8.4: saddle-point problems
 
 Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §8.4 , with P-8.7.
+2003, §8.4, with P-8.7.
 
 The block system (8.30) is `saddleMatrix A B D`, `[[A, B], [Bᴴ, D]]`, with `D = 0` the
 saddle-point matrix itself and `D = ρ C` the regularization of Example 8.2;
@@ -90,41 +90,25 @@ def saddleMatrix (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) �
     (D : Matrix (Fin m) (Fin m) 𝕜) : Matrix (Fin n ⊕ Fin m) (Fin n ⊕ Fin m) 𝕜 :=
   Matrix.fromBlocks A B Bᴴ D
 
-private theorem sum_elim_eq_iff {α β γ : Type*} {f f' : α → γ} {g g' : β → γ} :
-    Sum.elim f g = Sum.elim f' g' ↔ f = f' ∧ g = g' :=
-  ⟨fun h => ⟨funext fun i => congrFun h (Sum.inl i), funext fun i => congrFun h (Sum.inr i)⟩,
-    fun h => by rw [h.1, h.2]⟩
-
-/-- The action of a rectangular matrix on a Euclidean vector is `Matrix.mulVec` under
-`WithLp.ofLp`; the rectangular companion of `SaadSparse.ofLp_toEuclideanLin`. -/
-theorem ofLp_toEuclideanLin {k l : ℕ} (M : Matrix (Fin k) (Fin l) 𝕜)
-    (v : EuclideanSpace 𝕜 (Fin l)) : WithLp.ofLp (M ⬝ v) = M *ᵥ WithLp.ofLp v := rfl
-
 private theorem toEuclideanLin_zero_apply {k l : ℕ} (v : EuclideanSpace 𝕜 (Fin l)) :
     ((0 : Matrix (Fin k) (Fin l) 𝕜) ⬝ v) = 0 := by
-  refine WithLp.ofLp_injective 2 ?_
-  rw [ofLp_toEuclideanLin, WithLp.ofLp_zero, Matrix.zero_mulVec]
+  rw [map_zero]; rfl
 
 private theorem toEuclideanLin_one_apply {k : ℕ} (v : EuclideanSpace 𝕜 (Fin k)) :
     ((1 : Matrix (Fin k) (Fin k) 𝕜) ⬝ v) = v := by
-  refine WithLp.ofLp_injective 2 ?_
-  rw [ofLp_toEuclideanLin, Matrix.one_mulVec]
+  rw [Matrix.toEuclideanLin_one]; rfl
 
 private theorem toEuclideanLin_neg_apply {k l : ℕ} (M : Matrix (Fin k) (Fin l) 𝕜)
     (v : EuclideanSpace 𝕜 (Fin l)) : ((-M) ⬝ v) = -(M ⬝ v) := by
-  refine WithLp.ofLp_injective 2 ?_
-  rw [ofLp_toEuclideanLin, WithLp.ofLp_neg, ofLp_toEuclideanLin, Matrix.neg_mulVec]
+  rw [map_neg]; rfl
 
 private theorem toEuclideanLin_sub_apply {k l : ℕ} (M N : Matrix (Fin k) (Fin l) 𝕜)
     (v : EuclideanSpace 𝕜 (Fin l)) : ((M - N) ⬝ v) = (M ⬝ v) - (N ⬝ v) := by
-  refine WithLp.ofLp_injective 2 ?_
-  rw [ofLp_toEuclideanLin, WithLp.ofLp_sub, ofLp_toEuclideanLin, ofLp_toEuclideanLin,
-    Matrix.sub_mulVec]
+  rw [map_sub]; rfl
 
 private theorem toEuclideanLin_smul_apply {k l : ℕ} (r : 𝕜) (M : Matrix (Fin k) (Fin l) 𝕜)
     (v : EuclideanSpace 𝕜 (Fin l)) : ((r • M) ⬝ v) = r • (M ⬝ v) := by
-  refine WithLp.ofLp_injective 2 ?_
-  rw [ofLp_toEuclideanLin, WithLp.ofLp_smul, ofLp_toEuclideanLin, Matrix.smul_mulVec]
+  rw [map_smul]; rfl
 
 private theorem ofLp_eq_add_iff {k : ℕ} (x y z : EuclideanSpace 𝕜 (Fin k)) :
     WithLp.ofLp x = WithLp.ofLp y + WithLp.ofLp z ↔ x = y + z := by
@@ -149,7 +133,7 @@ theorem saddleMatrix_mulVec_iff (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (F
     saddleMatrix A B D *ᵥ Sum.elim (WithLp.ofLp x) (WithLp.ofLp y)
         = Sum.elim (WithLp.ofLp b) (WithLp.ofLp c) ↔
       ((A ⬝ x) + (B ⬝ y) = b ∧ (Bᴴ ⬝ x) + (D ⬝ y) = c) := by
-  rw [saddleMatrix, fromBlocks_mulVec_elim, sum_elim_eq_iff]
+  rw [saddleMatrix, fromBlocks_mulVec_elim, Sum.elim_eq_iff]
   exact and_congr (WithLp.ofLp_injective 2).eq_iff (WithLp.ofLp_injective 2).eq_iff
 
 /-- A block identity `M z' = N z + p` read off as its two rows. -/
@@ -162,7 +146,7 @@ private theorem fromBlocks_elim_eq_iff
           + Sum.elim (WithLp.ofLp p) (WithLp.ofLp q) ↔
       ((M₁ ⬝ u') + (M₂ ⬝ v') = (N₁ ⬝ u) + (N₂ ⬝ v) + p ∧
         (M₃ ⬝ u') + (M₄ ⬝ v') = (N₃ ⬝ u) + (N₄ ⬝ v) + q) := by
-  rw [fromBlocks_mulVec_elim, fromBlocks_mulVec_elim, ← Sum.elim_add_add, sum_elim_eq_iff]
+  rw [fromBlocks_mulVec_elim, fromBlocks_mulVec_elim, ← Sum.elim_add_add, Sum.elim_eq_iff]
   exact and_congr (ofLp_eq_add_iff _ _ _) (ofLp_eq_add_iff _ _ _)
 
 /-! ### (8.28)–(8.30): the constrained minimization problem -/
@@ -269,7 +253,8 @@ theorem equation_8_30_unique {B : Matrix (Fin n) (Fin m) 𝕜}
 
 /-! ### (8.31)–(8.32): the Schur complement -/
 
-/-- **Saad (8.31)**: the Schur complement `S = Bᴴ A⁻¹ B` of the block system (8.30). -/
+/-- **Saad (8.32)** and **Corollary 8.1**: the Schur complement `S = Bᴴ A⁻¹ B` of the block
+system (8.30), the coefficient matrix of the system that eliminating `x` leaves. -/
 noncomputable def schur (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜) :
     Matrix (Fin m) (Fin m) 𝕜 :=
   Bᴴ * A⁻¹ * B
@@ -383,6 +368,7 @@ noncomputable def uzawa (s₀ : EuclideanSpace 𝕜 (Fin n) × EuclideanSpace �
     EuclideanSpace 𝕜 (Fin n) × EuclideanSpace 𝕜 (Fin m) :=
   (uzawaStep A B b c ω)^[k] s₀
 
+/-- The recurrence: state `k + 1` is one pass of Algorithm 8.6 applied to state `k`. -/
 theorem uzawa_succ (s₀ : EuclideanSpace 𝕜 (Fin n) × EuclideanSpace 𝕜 (Fin m)) (k : ℕ) :
     uzawa A B b c ω s₀ (k + 1) = uzawaStep A B b c ω (uzawa A B b c ω s₀ k) :=
   Function.iterate_succ_apply' _ _ _
@@ -442,6 +428,7 @@ noncomputable def arrowHurwicz
     EuclideanSpace 𝕜 (Fin n) × EuclideanSpace 𝕜 (Fin m) :=
   (arrowHurwiczStep A B b c ε ω)^[k] s₀
 
+/-- The recurrence: state `k + 1` is one pass of Algorithm 8.7 applied to state `k`. -/
 theorem arrowHurwicz_succ (s₀ : EuclideanSpace 𝕜 (Fin n) × EuclideanSpace 𝕜 (Fin m)) (k : ℕ) :
     arrowHurwicz A B b c ε ω s₀ (k + 1)
       = arrowHurwiczStep A B b c ε ω (arrowHurwicz A B b c ε ω s₀ k) :=

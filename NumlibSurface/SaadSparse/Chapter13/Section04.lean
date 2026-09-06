@@ -9,7 +9,7 @@ import NumlibSurface.SaadSparse.Common
 Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
 2003, §13.4: the Galerkin coarse problem (13.39), the smoother written through its error propagation
 operator (13.40)–(13.42), the two-grid operator (13.43) and Lemma 13.1, the V- and W-cycles, the
-cost of one cycle (13.44)–(13.46), and full multigrid with its error bound (Theorem 13.2).
+cost of one cycle (13.44), and full multigrid with its error bound (Theorem 13.2).
 
 ## The pair of grids
 
@@ -573,9 +573,9 @@ theorem fullMultigrid_succ (H : Hierarchy) (ν₁ ν₂ γ μ : ℕ) (f : ∀ l,
 
 end Hierarchy
 
-/-! ### §13.4.3 The cost of a cycle, (13.44)–(13.46) -/
+/-! ### §13.4.3 The cost of a cycle, (13.44) -/
 
-/-- **Saad (13.44)–(13.46)**, the cost of one cycle.  Let `n_l` be the number of unknowns of level
+/-- **Saad (13.44)**, the cost of one cycle.  Let `n_l` be the number of unknowns of level
 `l`, so that `n_{l+1} = 2^d n_l` after a coarsening by two in each of `d` dimensions, and let `C l`
 bound the cost of one `γ`-cycle on level `l`: a visit to a level costs `η` per unknown, and the
 level below is visited `γ` times, which is the recurrence `C (l+1) ≤ η n_{l+1} + γ C l`.
@@ -583,9 +583,11 @@ level below is visited `γ` times, which is the recurrence `C (l+1) ≤ η n_{l+
 If `γ < 2^d` then the total cost stays proportional to the number of unknowns of the *finest* level,
 `C l ≤ η n_l / (1 - γ 2^{-d})` — Saad's `O(n)`, and his condition "`γ < 2` in 1-D and `γ < 4` in
 2-D".  A V-cycle (`γ = 1`) satisfies it in every dimension, with the constant `2` in one dimension
-and `4/3` in two; a W-cycle (`γ = 2`) satisfies it as soon as `d ≥ 2`, with the constant `2` in two
-dimensions.  In one dimension the W-cycle is the borderline case `γ = 2^d`, where this bound fails
-and the cost grows like `η n_l log₂ n_l`, Saad's `O(n log₂ n)`.
+and `4/3` in two; a W-cycle (`γ = 2`) satisfies it as soon as `d ≥ 2`, with the constant `2` in
+two dimensions.  The book prints `7/3` for the two-dimensional V-cycle; the geometric series
+it solves, `∑ 4^{-k}`, is `4/3`.  In one dimension the W-cycle is the borderline case
+`γ = 2^d`, where this bound fails and the cost grows like `η n_l log₂ n_l`, Saad's
+`O(n log₂ n)`.
 
 This is the only quantitative statement the book makes about the cycles themselves, and the whole
 of it is the geometric series `∑ (γ 2^{-d})^k`. -/

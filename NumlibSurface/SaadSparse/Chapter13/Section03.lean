@@ -251,14 +251,15 @@ theorem prolongation2D_apply (m₁ m₂ : ℕ) (i : Fin (2 * m₁ + 1) × Fin (2
 
 /-- The two-dimensional **full weighting** restriction of Saad (13.38), the Kronecker product of
 the one-dimensional full weightings. Its stencil is therefore
-`¼[1 2 1] ⊗ ¼[1 2 1] = 1/16 [[1, 2, 1], [2, 4, 2], [1, 2, 1]]`, Saad's (13.36). -/
+`¼[1 2 1] ⊗ ¼[1 2 1] = 1/16 [[1, 2, 1], [2, 4, 2], [1, 2, 1]]`, the display §13.3.2 gives just
+before (13.36). -/
 noncomputable def restriction2D (m₁ m₂ : ℕ) :
     Matrix (Fin m₁ × Fin m₂) (Fin (2 * m₁ + 1) × Fin (2 * m₂ + 1)) ℝ :=
   restriction1D m₁ ⊗ₖ restriction1D m₂
 
 /-- Every entry of the two-dimensional full-weighting matrix is the product of the two
-one-dimensional entries; that is the `1/16 [[1, 2, 1], [2, 4, 2], [1, 2, 1]]` stencil of Saad
-(13.36), whose centre `¼`, edge `⅛` and corner `1/16` are `½·½`, `½·¼` and `¼·¼`. -/
+one-dimensional entries; that is the `1/16 [[1, 2, 1], [2, 4, 2], [1, 2, 1]]` stencil of
+§13.3.2, whose centre `¼`, edge `⅛` and corner `1/16` are `½·½`, `½·¼` and `¼·¼`. -/
 theorem restriction2D_apply (m₁ m₂ : ℕ) (j : Fin m₁ × Fin m₂)
     (i : Fin (2 * m₁ + 1) × Fin (2 * m₂ + 1)) :
     restriction2D m₁ m₂ j i = restriction1D m₁ j.1 i.1 * restriction1D m₂ j.2 i.2 :=
@@ -300,10 +301,10 @@ theorem prolongation2D_mulVec_odd (m₁ m₂ : ℕ) (u : Fin m₁ × Fin m₂ �
   · intro h
     exact absurd (Finset.mem_univ q.1) h
 
-/-- **Saad (13.37)** at `d = 2`: in two dimensions full weighting is `2^{-d} = ¼` times the
-transpose of linear interpolation, `I_h^{2h} = 2^{-d} (I_{2h}^h)ᵀ`. The factor is the product of
-the two one-dimensional factors of `equation_13_35`, one per coordinate direction, which is
-exactly why the exponent is the dimension. -/
+/-- **Saad (13.36)**, which is **(13.37)** at `d = 2`: in two dimensions full weighting is
+`2^{-d} = ¼` times the transpose of linear interpolation, `I_h^{2h} = 2^{-d} (I_{2h}^h)ᵀ`.
+The factor is the product of the two one-dimensional factors of `equation_13_35`, one per
+coordinate direction, which is exactly why the exponent is the dimension. -/
 theorem equation_13_37 (m₁ m₂ : ℕ) :
     restriction2D m₁ m₂ = (1 / 4 : ℝ) • (prolongation2D m₁ m₂)ᵀ := by
   have h₁ : restriction2D m₁ m₂ = restriction1D m₁ ⊗ₖ restriction1D m₂ := rfl

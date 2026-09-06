@@ -61,6 +61,7 @@ noncomputable def frobeniusEquiv (n : ℕ) :
   right_inv _ := rfl
   norm_map' := norm_toLp_eq
 
+/-- `frobeniusEquiv` reads a matrix as the vector of its entries. -/
 @[simp]
 theorem frobeniusEquiv_apply (M : Matrix (Fin n) (Fin n) ℝ) :
     frobeniusEquiv n M = WithLp.toLp 2 fun p => M p.1 p.2 := rfl
@@ -69,6 +70,7 @@ theorem frobeniusEquiv_apply (M : Matrix (Fin n) (Fin n) ℝ) :
 product whose norm is the Frobenius norm. -/
 def frobeniusInner (X Y : Matrix (Fin n) (Fin n) ℝ) : ℝ := Matrix.trace (Yᵀ * X)
 
+/-- The Frobenius inner product entry by entry, `⟨X, Y⟩_F = ∑ᵢⱼ Xᵢⱼ Yᵢⱼ`. -/
 theorem frobeniusInner_eq_sum (X Y : Matrix (Fin n) (Fin n) ℝ) :
     frobeniusInner X Y = ∑ i, ∑ j, X i j * Y i j := by
   simp only [frobeniusInner, Matrix.trace, Matrix.diag_apply, Matrix.mul_apply,
@@ -90,6 +92,7 @@ this inner product. -/
 theorem frobeniusInner_self (X : Matrix (Fin n) (Fin n) ℝ) : frobeniusInner X X = ‖X‖ ^ 2 := by
   rw [← inner_frobeniusEquiv, real_inner_self_eq_norm_sq, (frobeniusEquiv n).norm_map]
 
+/-- The squared Frobenius norm entry by entry, `‖X‖_F² = ∑ᵢⱼ Xᵢⱼ²`. -/
 theorem norm_sq_eq_sum (X : Matrix (Fin n) (Fin n) ℝ) : ‖X‖ ^ 2 = ∑ i, ∑ j, X i j ^ 2 := by
   rw [← frobeniusInner_self, frobeniusInner_eq_sum]
   exact Finset.sum_congr rfl fun _ _ => Finset.sum_congr rfl fun _ _ => (sq _).symm
@@ -121,6 +124,7 @@ noncomputable def frobeniusInnerL (X : Matrix (Fin n) (Fin n) ℝ) :
     Matrix (Fin n) (Fin n) ℝ →L[ℝ] ℝ :=
   (innerSL ℝ (frobeniusEquiv n X)).comp (frobeniusEquiv n).toLinearIsometry.toContinuousLinearMap
 
+/-- `frobeniusInnerL X` is the Frobenius inner product against `X`. -/
 @[simp]
 theorem frobeniusInnerL_apply (X Y : Matrix (Fin n) (Fin n) ℝ) :
     frobeniusInnerL X Y = frobeniusInner X Y :=
@@ -201,12 +205,14 @@ theorem corollary_10_12 {A M : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A.det) {
 
 /-! ### Propositions 10.13 and 10.14: quadratic convergence of self-preconditioned MR -/
 
-/-- Saad (10.59), the first half of Proposition 10.13: one minimal-residual step of the
+/-- Saad (10.58), the identity behind the first half of Proposition 10.13: one
+minimal-residual step of the
 self-preconditioned iteration for a single column. Self-preconditioned MR for `A m = b` with
 search direction `M r` *is* plain MR for `C y = b` with `C = A M` and `m = M y`, so the exact
 one-step identity `‖r′‖ = ‖r‖ sin ∠(r, C r)` of `Numlib/LinearSolve/Projection/OneDimensional`
 applies verbatim to the preconditioned matrix. In particular `‖r′‖ ≤ ‖(I - A M) r‖`, which is the
-bound the book draws. The second half, (10.60), is `proposition_10_14`, which is stated for the
+bound (10.59) the book draws. The second half, (10.60), is `proposition_10_14`, which is stated
+for the
 whole residual matrix and covers both. -/
 theorem proposition_10_13 (A M : Matrix (Fin n) (Fin n) ℝ) (b x : EuclideanSpace ℝ (Fin n)) :
     ‖b - ((A * M) ⬝ minResStep (Matrix.toEuclideanLin (A * M)) b x)‖ ^ 2 =

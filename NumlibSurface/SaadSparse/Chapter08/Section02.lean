@@ -7,7 +7,7 @@ import NumlibSurface.SaadSparse.Chapter08.Section01
 # Saad §8.2: row projection methods
 
 Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §8.2 , with P-8.2 and P-8.8.
+2003, §8.2, with P-8.2 and P-8.8.
 
 The section introduces no new method: every algorithm in it is a projection process of §5.3–5.4
 over the coordinate subspaces `K_i = span {e_i}`, run on one of the two normal-equations systems.
@@ -67,10 +67,13 @@ noncomputable def coordFamily (n : ℕ) : Chapter05.ProjFamily n where
   size _ := 1
   V := coordCol
 
+/-- The coordinate family has one subspace per coordinate. -/
 @[simp] theorem coordFamily_p : (coordFamily n).p = n := rfl
 
+/-- The `i`-th block of the coordinate family is the `i`-th coordinate axis. -/
 @[simp] theorem coordFamily_V (i : Fin n) : (coordFamily n).V i = coordCol i := rfl
 
+/-- The single column of `coordCol i` is the coordinate vector `e_i`. -/
 theorem coordCol_cols (i : Fin n) (j : Fin 1) : (coordCol i).cols j = coordVec i := by
   refine WithLp.ofLp_injective 2 ?_
   funext p
@@ -384,7 +387,11 @@ theorem equation_8_25 (h : ∀ i : Fin n, (A ⬝ coordVec i) ≠ 0) (x : E n) :
 
 /-- **P-8.2**: if the columns of `A` have unit Euclidean norm then Cimmino's step is
 `x_new = x + ω (Aᵀ b - Aᵀ A x)`, Richardson's iteration for the normal equations. In general it
-is Richardson preconditioned by the diagonal of `AᵀA`, whose `i`-th entry is `‖A e_i‖₂²`. -/
+is Richardson preconditioned by the diagonal of `AᵀA`, whose `i`-th entry is `‖A e_i‖₂²`.
+
+The normalization is of the *columns* `A e_i`, as in Algorithm 8.3 and in the text of §8.2.2
+("if the columns are not normalized by their 2-norms"); P-8.2 writes `‖Aᵀ e_i‖₂ = 1`, the
+rows, which is not the hypothesis that makes the step Richardson's. -/
 theorem cimmino_eq_richardson (h : ∀ i : Fin n, ‖A ⬝ coordVec i‖ = 1) (x : E n) :
     cimmino A b ω x = x + ω • ((Aᵀ ⬝ b) - ((Aᵀ * A) ⬝ x)) ∧
       WithLp.ofLp (cimmino A b ω x)

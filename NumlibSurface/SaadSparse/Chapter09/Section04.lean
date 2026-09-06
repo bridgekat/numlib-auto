@@ -13,7 +13,7 @@ preconditioner may change at every step, so the iterate is expanded in the arbit
 That is a `Krylov.HessenbergRelation₂` with two families — `equation_9_22` — and the whole of the
 section follows from `Numlib/Krylov/QuasiMinRes.lean` and `Numlib/Krylov/Preconditioned.lean`.
 
-* `fgmresV`, `fgmresZ`, `fgmresW` and `fgmresCoeff` are Algorithm 9.6 lines 3–8, and `fgmres` is
+* `fgmresV`, `fgmresZ`, `fgmresW` and `fgmresCoeff` are Algorithm 9.6 lines 3–9, and `fgmres` is
   its iterate `x_m = x₀ + Z_m y_m` with `y_m` the minimizer of `‖β e₁ - H̄_m y‖₂` computed, as in
   Algorithm 6.9, by the Givens process.
 * `orthonormal_fgmresV` is the statement that the Arnoldi basis is orthonormal as long as the
@@ -38,7 +38,7 @@ variable {n : ℕ} {𝕜 : Type*} [RCLike 𝕜]
 
 /-! ### Algorithm 9.6 -/
 
-/-- **Algorithm 9.6** (FGMRES), lines 3–7, `0`-based: the Arnoldi basis of the flexible process.
+/-- **Algorithm 9.6** (FGMRES), lines 3–9, `0`-based: the Arnoldi basis of the flexible process.
 `v_0 = v₁` and `v_{j+1} = w_j / ‖w_j‖` with `w_j = A M_j⁻¹ v_j - ∑_{i ≤ j} h_{ij} v_i` and
 `h_{ij} = (A M_j⁻¹ v_j, v_i)`. The book's "if `h_{j+1,j} = 0` then Stop" is Lean's `x / 0 = 0`. -/
 noncomputable def fgmresV (M : ℕ → Matrix (Fin n) (Fin n) 𝕜) (A : Matrix (Fin n) (Fin n) 𝕜)
@@ -65,7 +65,7 @@ noncomputable def fgmresW (M : ℕ → Matrix (Fin n) (Fin n) 𝕜) (A : Matrix 
     ∑ i ∈ Finset.range (j + 1),
       inner 𝕜 (fgmresV M A v₁ i) (op A (fgmresZ M A v₁ j)) • fgmresV M A v₁ i
 
-/-- **Algorithm 9.6**, lines 4 and 8: the Hessenberg coefficients `h_{ij} = (A z_j, v_i)` for
+/-- **Algorithm 9.6**, lines 6 and 9: the Hessenberg coefficients `h_{ij} = (A z_j, v_i)` for
 `i ≤ j` and `h_{j+1,j} = ‖w_j‖₂`, and `0` below the subdiagonal. -/
 noncomputable def fgmresCoeff (M : ℕ → Matrix (Fin n) (Fin n) 𝕜) (A : Matrix (Fin n) (Fin n) 𝕜)
     (v₁ : EuclideanSpace 𝕜 (Fin n)) (i j : ℕ) : 𝕜 :=
@@ -76,9 +76,11 @@ noncomputable def fgmresCoeff (M : ℕ → Matrix (Fin n) (Fin n) 𝕜) (A : Mat
 variable {M : ℕ → Matrix (Fin n) (Fin n) 𝕜} {A : Matrix (Fin n) (Fin n) 𝕜}
 variable {v₁ : EuclideanSpace 𝕜 (Fin n)}
 
+/-- Algorithm 9.6, line 1: the Arnoldi basis starts at `v_1`. -/
 @[simp]
 theorem fgmresV_zero : fgmresV M A v₁ 0 = v₁ := by rw [fgmresV]
 
+/-- Algorithm 9.6, line 9: `v_{j+1} = w_j/‖w_j‖₂`, and `0` at a breakdown. -/
 theorem fgmresV_succ (j : ℕ) :
     fgmresV M A v₁ (j + 1) = ((‖fgmresW M A v₁ j‖ : 𝕜)⁻¹) • fgmresW M A v₁ j := by
   rw [fgmresV, fgmresW, fgmresZ]
@@ -87,14 +89,17 @@ theorem fgmresV_succ (j : ℕ) :
     (fun i => inner 𝕜 (fgmresV M A v₁ i) (op A (op (M j)⁻¹ (fgmresV M A v₁ j))) •
       fgmresV M A v₁ i) (j + 1)]
 
+/-- On and above the diagonal the coefficient is `h_{ij} = (A z_j, v_i)`. -/
 theorem fgmresCoeff_of_le {i j : ℕ} (hij : i ≤ j) :
     fgmresCoeff M A v₁ i j = inner 𝕜 (fgmresV M A v₁ i) (op A (fgmresZ M A v₁ j)) := by
   rw [fgmresCoeff, ite_eq_right (by omega), ite_eq_left hij]
 
+/-- The subdiagonal coefficient is `h_{j+1,j} = ‖w_j‖₂`. -/
 theorem fgmresCoeff_succ_self (j : ℕ) :
     fgmresCoeff M A v₁ (j + 1) j = (‖fgmresW M A v₁ j‖ : 𝕜) := by
   rw [fgmresCoeff, ite_eq_left rfl]
 
+/-- The coefficient array is upper Hessenberg. -/
 theorem fgmresCoeff_eq_zero_of_lt {i j : ℕ} (hij : j + 1 < i) : fgmresCoeff M A v₁ i j = 0 := by
   rw [fgmresCoeff, ite_eq_right (by omega), ite_eq_right (by omega)]
 
@@ -118,7 +123,6 @@ theorem equation_9_22 (M : ℕ → Matrix (Fin n) (Fin n) 𝕜) (A : Matrix (Fin
   rw [Finset.sum_congr rfl fun i (hi : i ∈ Finset.range (j + 1)) => by
     rw [fgmresCoeff_of_le (Nat.lt_succ_iff.1 (Finset.mem_range.1 hi))]]
   abel
-
 
 /-! ### Orthonormality of the flexible Arnoldi basis -/
 
@@ -194,7 +198,7 @@ theorem orthonormal_fgmresV (hv : ‖v₁‖ = 1) {m : ℕ}
 
 /-! ### Algorithm 9.6: the iterate -/
 
-/-- **Algorithm 9.6**, line 11: the minimizer `y_m` of `‖β e₁ - H̄_m y‖₂`, computed as in
+/-- **Algorithm 9.6**, line 12: the minimizer `y_m` of `‖β e₁ - H̄_m y‖₂`, computed as in
 Algorithm 6.9 by the Givens process, `y_m = R_m⁻¹ g_m`. -/
 noncomputable def fgmresY (M : ℕ → Matrix (Fin n) (Fin n) 𝕜) (A : Matrix (Fin n) (Fin n) 𝕜)
     (b x₀ : EuclideanSpace 𝕜 (Fin n)) (m : ℕ) : Fin m → 𝕜 :=

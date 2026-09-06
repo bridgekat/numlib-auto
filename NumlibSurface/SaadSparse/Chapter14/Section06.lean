@@ -119,6 +119,7 @@ theorem lapMatrix_quadratic_partition {p : V → ℝ} (hp : ∀ i, p i = 1 ∨ p
 noncomputable abbrev lapOperator : EuclideanSpace ℝ V →ₗ[ℝ] EuclideanSpace ℝ V :=
   Matrix.toEuclideanLin (G.lapMatrix ℝ)
 
+/-- The graph Laplacian is a symmetric operator. -/
 theorem isSymmetric_lapOperator : (lapOperator G).IsSymmetric :=
   Matrix.isSymmetric_toEuclideanLin_iff.2 (G.isHermitian_lapMatrix ℝ)
 
@@ -128,6 +129,8 @@ bisection problem. -/
 noncomputable def constVector (V : Type*) [Fintype V] : EuclideanSpace ℝ V :=
   WithLp.toLp 2 fun _ => (1 : ℝ)
 
+/-- §14.6.3: the constant vector spans the kernel direction the bisection constraint removes,
+`L e = 0`. -/
 theorem lapOperator_constVector : lapOperator G (constVector V) = 0 := by
   refine WithLp.ofLp_injective 2 ?_
   have hconst : Matrix.mulVec (G.lapMatrix ℝ) (fun _ => (1 : ℝ)) = 0 := by
@@ -136,6 +139,7 @@ theorem lapOperator_constVector : lapOperator G (constVector V) = 0 := by
     simp
   simpa [constVector, Matrix.toLpLin_apply] using hconst
 
+/-- The constant vector of a nonempty vertex set is nonzero. -/
 theorem constVector_ne_zero (V : Type*) [Fintype V] [Nonempty V] : constVector V ≠ 0 := by
   intro h
   have := congrArg (fun z : EuclideanSpace ℝ V => WithLp.ofLp z (Classical.arbitrary V)) h
