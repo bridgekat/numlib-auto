@@ -7,6 +7,7 @@ import Numlib.Analysis.Convex.Uniform
 import Numlib.Analysis.Fourier.DFT
 import Numlib.Analysis.Fourier.Dirichlet
 import Numlib.Analysis.Fourier.TrigonometricBasis
+import Numlib.Analysis.HarmonicPolynomial
 import Numlib.Analysis.InnerProductSpace.Coercive
 import Numlib.Analysis.InnerProductSpace.CompactSpectral
 import Numlib.Analysis.InnerProductSpace.Energy
@@ -32,9 +33,12 @@ import Numlib.Approximation.BestApprox
 import Numlib.Approximation.Chebyshev
 import Numlib.Approximation.DividedDifference
 import Numlib.Approximation.Hermite
+import Numlib.Approximation.Hyperinterpolation
 import Numlib.Approximation.Interpolation
 import Numlib.Approximation.Jackson
+import Numlib.Approximation.MvPolynomial
 import Numlib.Approximation.NodalInterpolation
+import Numlib.Approximation.OrthogonalDecomposition
 import Numlib.Approximation.OrthogonalPolynomial
 import Numlib.Approximation.Quadrature
 import Numlib.Approximation.Trigonometric

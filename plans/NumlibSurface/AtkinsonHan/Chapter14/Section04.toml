@@ -1,0 +1,19 @@
+namespace = "AtkinsonHan.Chapter14"
+
+[[node]]
+id = "trialSpace"
+
+[[node]]
+id = "finrank_trialSpace"
+
+[[node]]
+id = "laplacian_mem_polySpace"
+
+[[node]]
+id = "laplacianOn"
+
+[[node]]
+id = "lemma_14_4_1_injective"
+
+[[node]]
+id = "lemma_14_4_1"

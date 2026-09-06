@@ -1,0 +1,28 @@
+namespace = "AtkinsonHan.Chapter14"
+
+[[node]]
+id = "polySpace"
+
+[[node]]
+id = "finrank_polySpace"
+
+[[node]]
+id = "finrank_polySpace_two"
+
+[[node]]
+id = "minimaxError"
+
+[[node]]
+id = "minimaxError_antitone"
+
+[[node]]
+id = "exercise_14_1_1"
+kind = "theorem"
+description = '''Exercise 14.1.1: the results of Section 14.1 carry over to an ellipse `(x/a)² + (y/b)² ≤ 1` by the
+linear change of variables that takes it to the disk. The formalizable content is that `Π_n^d` is
+invariant under an invertible affine substitution, `p ↦ MvPolynomial.aeval (fun i => affine i) p`,
+which needs a bound on `MvPolynomial.totalDegree` under substitution by polynomials of degree at
+most one — no such lemma exists in Mathlib. Obstruction: what the exercise transports is Theorem
+14.1.1, which is skipped, so on its own it says only that the ellipse and the disk carry the same
+polynomial spaces.'''
+deps = ["polySpace"]

@@ -1,0 +1,53 @@
+[[node]]
+id = "MvPolynomial.slackEquiv"
+
+[[node]]
+id = "MvPolynomial.card_setOf_sum_le"
+
+[[node]]
+id = "MvPolynomial.finrank_restrictTotalDegree"
+
+[[node]]
+id = "MvPolynomial.restrictTotalDegree_mono"
+
+[[node]]
+id = "MvPolynomial.eq_zero_of_eval_eq_zero_of_mem_interior"
+
+[[node]]
+id = "Approximation.toContinuousMapOn"
+
+[[node]]
+id = "Approximation.mvPolyLE"
+
+[[node]]
+id = "Approximation.toContinuousMapOn_injective"
+
+[[node]]
+id = "Approximation.finrank_mvPolyLE"
+
+[[node]]
+id = "Approximation.IsMvWeight"
+
+[[node]]
+id = "Approximation.IsMvWeight.toL2"
+
+[[node]]
+id = "Approximation.IsMvWeight.inner_toL2"
+
+[[node]]
+id = "Approximation.IsMvWeight.inner_toL2_mul_left"
+
+[[node]]
+id = "Approximation.IsMvWeight.toL2_injective"
+
+[[node]]
+id = "Approximation.IsMvWeight.polyLE"
+
+[[node]]
+id = "Approximation.IsMvWeight.finrank_polyLE"
+
+[[node]]
+id = "Approximation.IsMvWeight.finrank_orthogonalComponent_add"
+
+[[node]]
+id = "Approximation.isMvWeight_restrict"

@@ -56,6 +56,10 @@ import NumlibSurface.AtkinsonHan.Chapter12.Section06
 import NumlibSurface.AtkinsonHan.Chapter12.Section07
 import NumlibSurface.AtkinsonHan.Chapter13.Section01
 import NumlibSurface.AtkinsonHan.Chapter13.Section02
+import NumlibSurface.AtkinsonHan.Chapter14.Section01
+import NumlibSurface.AtkinsonHan.Chapter14.Section02
+import NumlibSurface.AtkinsonHan.Chapter14.Section03
+import NumlibSurface.AtkinsonHan.Chapter14.Section04
 
 /-!
 # Atkinson–Han, *Theoretical Numerical Analysis*
@@ -157,6 +161,11 @@ bilinear-form vocabulary shared by §8.3, §8.7 and Chapters 9–10 directly in 
 | **13** | | *Boundary Integral Equations* |
 | 13.1 | `Chapter13.Section01` | The parametrized double layer kernel and its compactness |
 | 13.2 | `Chapter13.Section02` | The Nyström method for the second-kind boundary integral equation |
+| **14** | | *Multivariable Polynomial Approximations* |
+| 14.1 | `Chapter14.Section01` | `Π_n^d`, its dimension, and the minimax error `E_n(f)` |
+| 14.2 | `Chapter14.Section02` | Orthogonal polynomials in several variables on a ball |
+| 14.3 | `Chapter14.Section03` | Hyperinterpolation over an exact quadrature rule |
+| 14.4 | `Chapter14.Section04` | The Laplacian on the trial space `(1 − r²) Π_n^d` |
 
 A section module imports the section modules it builds on, so the import graph runs forwards
 through the book: §2.2 on §2.1, §3.3 on §2.4, §4.5 on §4.4, §5.4 on §5.3, §6.3 on §6.2, §9.1 on

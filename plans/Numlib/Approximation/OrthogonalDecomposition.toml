@@ -1,0 +1,43 @@
+namespace = "Approximation"
+
+[[node]]
+id = "orthogonalComponent"
+
+[[node]]
+id = "orthogonalComponent_le"
+
+[[node]]
+id = "orthogonalComponent_le_orthogonal"
+
+[[node]]
+id = "orthogonalComponent_isOrtho"
+
+[[node]]
+id = "orthogonalFamily_orthogonalComponent"
+
+[[node]]
+id = "iSupIndep_orthogonalComponent"
+
+[[node]]
+id = "starProjection_eq_add_of_isOrtho"
+
+[[node]]
+id = "sup_orthogonalComponent_succ"
+
+[[node]]
+id = "finsetSup_orthogonalComponent"
+
+[[node]]
+id = "orthogonal_inf_eq_finsetSup"
+
+[[node]]
+id = "mem_finsetSup_of_mem_of_inner_eq_zero"
+
+[[node]]
+id = "mem_finsetSup_Icc_of_mem"
+
+[[node]]
+id = "finrank_orthogonalComponent_add"
+
+[[node]]
+id = "starProjection_eq_sum_orthogonalComponent"

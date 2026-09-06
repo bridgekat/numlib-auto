@@ -1,0 +1,34 @@
+namespace = "Approximation"
+
+[[node]]
+id = "discreteInner"
+
+[[node]]
+id = "discreteInner_comm"
+
+[[node]]
+id = "hyperinterp"
+
+[[node]]
+id = "hyperinterp_mem_span"
+
+[[node]]
+id = "totalDegree_hyperinterp_le"
+
+[[node]]
+id = "hyperinterp_add"
+
+[[node]]
+id = "hyperinterp_smul"
+
+[[node]]
+id = "IsExactOn"
+
+[[node]]
+id = "discreteInner_eq_inner_toL2"
+
+[[node]]
+id = "hyperinterp_eq_self"
+
+[[node]]
+id = "hyperinterp_hyperinterp"

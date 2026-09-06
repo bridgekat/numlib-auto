@@ -1,0 +1,49 @@
+desc = '''
+Atkinson–Han, Chapter 14: multivariable polynomial approximations.
+
+The chapter is a short introduction to polynomial approximation in several variables, almost
+entirely on the unit disk `𝔹₂ ⊆ ℝ²`. Section 14.1 fixes notation — `Π_n^d`, its dimension, the
+minimax error `E_n(f)`, the moduli of continuity — and quotes Ragozin's multivariate Jackson
+theorem. Section 14.2 builds the orthogonal decomposition `Π_n^d = V_0 ⊕ ⋯ ⊕ V_n` in `L²(𝔹_d)`,
+exhibits a ridge-polynomial basis of `V_n^2`, proves a triple recursion relation, and quotes Yuan
+Xu's `‖P_n‖ = O(n)`. Section 14.3 is hyperinterpolation, the orthogonal projection with its
+integrals replaced by a quadrature rule. Section 14.4 is a spectral Galerkin method for the
+Dirichlet problem on the disk, with trial space `(1 − |x|²) Π_n^2`.
+
+What is formalized is the part that is linear algebra and Hilbert-space geometry over an integral
+inner product: the dimension of `Π_n^d`, the decomposition into orthogonal components and their
+dimensions, the triple recursion, the projection `P_n` and the Lebesgue bound, hyperinterpolation
+over an abstract exact quadrature rule, and the bijectivity of the Laplacian on the trial space of
+Section 14.4. The general content sits in the backbone —
+`Numlib/Approximation/{OrthogonalDecomposition,MvPolynomial,Hyperinterpolation}` and
+`Numlib/Analysis/HarmonicPolynomial` — and each surface module specializes it.
+
+What is skipped, and what each would need:
+
+* **Theorem 14.1.1**, Ragozin's multivariate Jackson theorem, quoted by the book without proof.
+  Its proof runs through approximation on the sphere `S^d` and needs spherical harmonics, a surface
+  measure on `S^d` and a convolution structure on it. Mathlib has none of the three.
+* The **moduli of continuity** `ω(f, h)`, `ω_n(f, h)` and the norm `‖f‖_{*,n}` that Theorem 14.1.1
+  is stated with. Nothing in Mathlib or in this library defines a modulus of continuity. It belongs
+  in a backbone module of its own — Sections 12.2 and 12.5 want it too — and is not planned here,
+  because with Theorem 14.1.1 out of reach Chapter 14 has no consumer for it.
+* **(14.2.14)–(14.2.15)**, the closed form of the reproducing kernel `G_n` as an integral of a
+  Jacobi polynomial `P_n^{(3/2,1/2)}`. Mathlib has neither Jacobi nor Gegenbauer polynomials. The
+  kernel itself, as the sum `Σ φ_{m,ℓ}(x) φ_{m,ℓ}(y)`, exists as soon as `Π_n^2` is
+  finite-dimensional; it is the closed form that is out of reach.
+* **Theorem 14.2.4**, `‖P_n‖_{C(𝔹₂)→C(𝔹₂)} = O(n)`, quoted from Xu. The reduction
+  `‖P_n‖ = sup_x ∫ |G_n(x, y)| dy` is available (`IntegralOperator.norm_kernelCLM`); the `O(n)`
+  asymptotics is an estimate on Jacobi polynomials.
+* **Theorem 14.2.5** and its Banach–Steinhaus corollary: literally (14.2.13) combined with 14.2.4
+  and 14.1.1, both of which are skipped. The combination is one line and becomes available the
+  moment they do.
+* **Exercise 14.2.4**, the sphere–disk integral identity. Needs the surface measure on `S²`.
+* **Section 14.3.1, (14.3.6)–(14.3.7)**, `‖L_n‖ = O(n log n)`: the same Jacobi estimate as 14.2.4
+  with a discretization on top.
+* **Section 14.4, (14.4.1)–(14.4.7), (14.4.10)–(14.4.13) and Exercises 14.4.2–14.4.3** — the weak
+  formulation in `H¹₀(𝔹₂)`, the Galerkin method on `X_n`, its Céa estimate, and the Green's
+  function of the disk. `H¹₀(Ω)` does not exist: Mathlib has no weak derivative on an open set.
+  The abstract halves are covered elsewhere in this surface — Lax–Milgram is
+  `AtkinsonHan.Chapter08.Section03` and Céa's inequality `AtkinsonHan.Chapter09.Section01` — so
+  only the space is missing.
+'''

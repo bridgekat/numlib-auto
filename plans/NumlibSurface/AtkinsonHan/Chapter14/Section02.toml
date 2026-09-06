@@ -1,0 +1,70 @@
+namespace = "AtkinsonHan.Chapter14"
+
+[[node]]
+id = "unitBall"
+
+[[node]]
+id = "isCompact_unitBall"
+
+[[node]]
+id = "zero_mem_interior_unitBall"
+
+[[node]]
+id = "isMvWeight_ballVolume"
+
+[[node]]
+id = "orthPolySpace"
+
+[[node]]
+id = "orthPolySpace_zero"
+
+[[node]]
+id = "mem_orthPolySpace_succ_iff"
+
+[[node]]
+id = "lemma_14_2_1"
+
+[[node]]
+id = "lemma_14_2_1_isOrtho"
+
+[[node]]
+id = "lemma_14_2_1_iSupIndep"
+
+[[node]]
+id = "finrank_orthPolySpace"
+
+[[node]]
+id = "finrank_orthPolySpace_two"
+
+[[node]]
+id = "exercise_14_2_1"
+
+[[node]]
+id = "theorem_14_2_3"
+
+[[node]]
+id = "theorem_14_2_3_unique"
+
+[[node]]
+id = "equation_14_2_12"
+
+[[node]]
+id = "equation_14_2_12_isBestApprox"
+
+[[node]]
+id = "equation_14_2_13"
+
+[[node]]
+id = "example_14_2_2"
+kind = "theorem"
+description = '''Example 14.2.2, the ridge polynomials: `φ_{n,k}(x, y) = (1/√π) U_n(x cos(kh) + y sin(kh))` with
+`h = π/(n + 1)` and `k = 0, …, n` is an orthonormal basis of `V_n^2` for the standard inner product
+on `𝔹₂`; hence `{φ_{n,k} : 0 ≤ k ≤ n ≤ N}` is an orthonormal basis of `Π_N^2`. The book gives no
+proof, citing Logan and Shepp. Nothing is missing but the proof: `Polynomial.Chebyshev.U` and its
+trigonometric form are in Mathlib, and `integral_comp_polarCoord_symm` turns the disk integral into
+`r dr dθ`. The computation `∫_{𝔹₂} U_m(x·θ_j) U_n(x·θ_k) dx` reduces, by polar coordinates and the
+substitution `x·θ = r cos φ`, to one-dimensional Chebyshev orthogonality together with the discrete
+orthogonality of `{e^{i k h}}` over `k = 0, …, n`. Obstruction: the polar-coordinate bookkeeping and
+the double angular integral are a genuine piece of special-function analysis, and every other result
+of the section is stated without a basis, so nothing in the chapter waits on it.'''
+deps = ["orthPolySpace", "finrank_orthPolySpace_two"]
