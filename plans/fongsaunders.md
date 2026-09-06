@@ -8,7 +8,7 @@ how each book-specific definition relates to the backbone, what was deferred and
 deliberately left out.
 -->
 
-# Surface plan: Fong–Saunders (2012)
+# Surface plan: Fong–Saunders — the whole paper
 
 Paper: D. C.-L. Fong and M. A. Saunders, *CG versus MINRES: an empirical comparison*, SQU J. Sci.
 17:1 (2012) 44–62 (Report SOL 2011-2R; surface docstrings cite the SQU version). Setting: a real

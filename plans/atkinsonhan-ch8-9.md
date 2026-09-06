@@ -110,7 +110,7 @@ given; collected in §6).
 * Book: `a : V × V → ℝ` bilinear; bounded (`|a(u,v)| ≤ M‖u‖‖v‖`), positive (`a(v,v) ≥ 0`),
   strictly positive (`a(v,v) > 0`, `v ≠ 0`), strongly positive / `V`-elliptic
   (`a(v,v) ≥ α‖v‖²`, `α > 0`), symmetric (`a(u,v) = a(v,u)`).
-* Lean (`Chapter08/BilinearForms.lean`):
+* Lean (`Chapter08/Section03.lean`):
   ```lean
   abbrev BilinForm (V) [AddCommGroup V] [Module ℝ V] := LinearMap.BilinForm ℝ V   -- V →ₗ[ℝ] V →ₗ[ℝ] ℝ
   namespace BilinForm
@@ -508,10 +508,10 @@ Classification: **direct**.
 **Ex 8.3.1.** Deduce Lax–Milgram from Thm 5.1.4 (`T : V → V` strongly monotone and Lipschitz ⇒
 `T u = b` uniquely solvable).
 * Lean: `theorem exercise_8_3_1 … : ∃! u, ∀ v, a u v = ℓ v` proved by applying the surface `Chapter05.theorem_5_1_4`
-  (`AtkinsonHan-Ch5.md`; backbone `zarantonello`, `Numlib/Nonlinear/FixedPoint.lean`)
+  (`plans/atkinsonhan-ch5.md`; backbone `zarantonello`, `Numlib/Nonlinear/FixedPoint.lean`)
   to `T := toOperator a hM`, `c₁ = α` (`inner_toOperator`, `ha`), `c₂ = M` (`‖toOperator a hM‖ ≤ M`),
   `b := rieszRep ℓ`; then (9.4.7)⟺(9.4.4) (`SesqForm.forall_apply_eq_iff_toOperator_eq`).
-* Classification: **needs-equivalence** (imports `Chapter05/FixedPoint.lean` within the same library).
+* Classification: **needs-equivalence** (imports `Chapter05/Section01.lean` within the same library).
 
 ### §8.7 Generalized Lax–Milgram Lemma
 
@@ -815,8 +815,8 @@ lower bound `0` for the `ciInf` from sign symmetry).
 * Lean: `theorem cg_converges … : Tendsto (fun k => (cgIterate a hM ℓ u₀ k).x) atTop (𝓝 u)`,
   `theorem cg_energy_rate … : energyNorm a (u - (cgIterate a hM ℓ u₀ (k+1)).x) ≤ (M - α) / (M + α) * energyNorm a (u - (cgIterate a hM ℓ u₀ k).x)`,
   `theorem cg_energy_bound … : energyNorm a (u - (cgIterate a hM ℓ u₀ k).x) ≤ 2 * ((√M - √α)/(√M + √α)) ^ k * energyNorm a (u - u₀)`.
-* Route: transport Thm 5.6.1 from `Chapter05/ConjugateGradient.lean`
-  (`AtkinsonHan-Ch5.md`) via `cgIterate_eq`, `energyNorm_eq` (D6) and
+* Route: transport Thm 5.6.1 from `Chapter05/Section06.lean`
+  (`plans/atkinsonhan-ch5.md`) via `cgIterate_eq`, `energyNorm_eq` (D6) and
   `(toOperator a hM : V →ₗ[ℝ] V).IsSymmetricBoundedBy α M` (from symmetry, ellipticity and `hM`
   through `inner_toOperator`). The backbone supplies (5.6.5) in any inner product space as
   `Krylov.IsGalerkinIterate.energyNorm_error_le` (`Numlib/Krylov/Convergence/CG.lean`, §3.10,
@@ -902,8 +902,8 @@ Out of scope for other reasons:
   the book; the line search `α_k` is an argmin that need not exist in general.
 
 Placed elsewhere:
-* Thm 5.6.1/5.6.2 themselves belong to `Chapter05/ConjugateGradient.lean`
-  (`AtkinsonHan-Ch5.md`; Winther's superlinear rate 5.6.2 is a later phase); §9.4
+* Thm 5.6.1/5.6.2 themselves belong to `Chapter05/Section06.lean`
+  (`plans/atkinsonhan-ch5.md`; Winther's superlinear rate 5.6.2 is a later phase); §9.4
   only transports them through `cgIterate_eq`.
 
 ## 7. Reading notes on the book text

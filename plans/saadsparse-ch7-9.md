@@ -6,7 +6,7 @@ which declaration, how each book-specific definition relates to the backbone, an
 out and why.
 -->
 
-# Surface plan: Saad, Iterative Methods — Chapters 7, 8 and 9
+# Surface plan: Saad — Chapters 7, 8 and 9
 
 Surface library `SaadSparse`, file sets `NumlibSurface/SaadSparse/Chapter07/*.lean`,
 `Chapter08/*.lean`, `Chapter09/*.lean`. Companion to `saadsparse-ch1-4-5.md` and

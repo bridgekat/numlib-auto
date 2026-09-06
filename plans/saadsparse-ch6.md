@@ -8,7 +8,7 @@ how each book-specific definition relates to the backbone, what was deferred and
 deliberately left out.
 -->
 
-# Surface plan: Saad, Iterative Methods — Chapter 6
+# Surface plan: Saad — Chapter 6
 
 Surface library `SaadSparse`, chapter file set `NumlibSurface/SaadSparse/Chapter06/*.lean`, importing only the
 backbone `Numlib` (backbone references are to `backbone.md` § numbers and to declarations
@@ -50,28 +50,29 @@ are defined faithfully and only the properties the book actually proves about th
   `l2_opNorm_eq_norm_toEuclideanLin`), together with Mathlib's `Matrix.isSymmetric_toEuclideanLin_iff`
   and `Matrix.posDef_iff_isSymmetricCoercive` (`Numlib/Analysis/InnerProductSpace/Coercive.lean`).
 
-Proposed files (in dependency order):
+Files, in dependency order.  Paths are under `NumlibSurface/SaadSparse/`; the book section is
+the primary key, because §6.5 is one module and not the five the first plan proposed.
 
-| File | Book | Contents |
+| Book | File | Contents |
 |---|---|---|
-| `Chapter06/Basic.lean` | §6.1–6.2 | `op`, `krylov`, `grade` (minimal-polynomial degree), equivalence with `Krylov.subspace`/`Krylov.grade`; Prop 6.1–6.3 |
-| `Chapter06/Arnoldi.lean` | §6.3 | Alg 6.1–6.3, `V_m, H_m, H̄_m, w_m`; Prop 6.4–6.6, (6.6)–(6.13); P-6.1 |
-| `Chapter06/FOM.lean` | §6.4 | (6.16)–(6.18), Alg 6.4 (FOM), 6.5 (FOM(m)), 6.6 (IOP), 6.7 (IOM), 6.8 (DIOM); Prop 6.7–6.8, (6.19)–(6.24); P-6.22 |
-| `Chapter06/Residual.lean` | §6.4–6.5 preliminaries | `r₀`, `β`, `v₁`, `e₁`, `mEff` and the bridges from the book's unit starting vector to the backbone's residual-indexed Arnoldi data; shared by FOM, GMRES, Givens and DQGMRES |
-| `Chapter06/Givens.lean` | §6.5.3–6.5.4, 6.5.9 | (6.34)–(6.47), (6.80)–(6.81), the rotation data; **precedes `GMRES.lean`**, since `y_m = R⁻¹ g` needs D8 |
-| `Chapter06/GMRES.lean` | §6.5.1–6.5.2, 6.5.5 | (6.25)–(6.33), Alg 6.9 (GMRES), 6.10 (Householder GMRES), 6.11 (GMRES(m)); Prop 6.9–6.10; P-6.5 |
-| `Chapter06/DQGMRES.lean` | §6.5.6 | Alg 6.12 (QGMRES), 6.13 (DQGMRES), (6.48)–(6.58), Thm 6.11; P-6.25 |
-| `Chapter06/Relations.lean` | §6.5.7 | (6.62)–(6.75), Prop 6.12–6.17, Lemma 6.16, Cor 6.14; P-6.9, P-6.13, P-6.14 |
-| `Chapter06/Smoothing.lean` | §6.5.8 | Alg 6.14 (MRS), QMRS, Lemma 6.18, (6.76)–(6.79); P-6.26 |
-| `Chapter06/Lanczos.lean` | §6.6 | Thm 6.19, `T_m`, Alg 6.15, §6.6.2 (6.85) |
-| `Chapter06/CG.lean` | §6.7 | (6.86)–(6.103), Alg 6.16 (Lanczos method), 6.17 (D-Lanczos), 6.18 (CG), 6.19 (three-term CG), Prop 6.20; P-6.17, P-6.19 |
-| `Chapter06/CR.lean` | §6.8 | Alg 6.20 and its invariants |
-| `Chapter06/GCR.lean` | §6.9 | Lemma 6.21, Alg 6.21 (GCR), ORTHOMIN(k), ORTHODIR, GCR(m) |
-| `Chapter06/FaberManteuffel.lean` | §6.10 | Prop 6.22, `ν(A)`, `CG(s)`; Lemma 6.23, Thm 6.24 (deferred, §4) |
-| `Chapter06/Chebyshev.lean` | §6.11.1–6.11.2 | (6.109)–(6.121), Thm 6.25; Lemma 6.26, Thm 6.27 (deferred, §4) |
-| `Chapter06/Convergence.lean` | §6.11.3–6.11.4 | Lemma 6.28, Thm 6.29, (6.122)–(6.128), Thm 6.30, Lemma 6.31, Prop 6.32; Cor 6.33 (deferred, §4) |
-| `Chapter06/Block.lean` | §6.12 | Alg 6.22–6.24, (6.129)–(6.136), block-FOM/GMRES specifications (relations deferred, §4) |
-| `Chapter06/Problems.lean` | Problems | P-6.1, 6.5, 6.9, 6.13, 6.14, 6.17, 6.22, 6.25, 6.26, 6.29 (cited by the text, or supplying proofs the text omits) |
+| §6.1–6.2 | `Chapter06/Section02.lean` | `op`, `krylov`, `grade` (minimal-polynomial degree), equivalence with `Krylov.subspace`/`Krylov.grade`; Prop 6.1–6.3 |
+| §6.3 | `Chapter06/Section03.lean` | Alg 6.1–6.3, `V_m, H_m, H̄_m, w_m`; Prop 6.4–6.6, (6.6)–(6.13); P-6.1 |
+| §6.4 | `Chapter06/Section04.lean` | (6.16)–(6.18), Alg 6.4 (FOM), 6.5 (FOM(m)), 6.6 (IOP), 6.7 (IOM), 6.8 (DIOM); Prop 6.7–6.8, (6.19)–(6.24); P-6.22 |
+| §6.4–6.5 preliminaries | `Chapter06/Common.lean` | `r₀`, `β`, `v₁`, `e₁`, `mEff` and the bridges from the book's unit starting vector to the backbone's residual-indexed Arnoldi data; shared by FOM, GMRES, Givens and DQGMRES |
+| §6.5.3–6.5.4, 6.5.9 | `Chapter06/Section05.lean` | (6.34)–(6.47), (6.80)–(6.81), the rotation data; stated **before** the GMRES iterate in the module, since `y_m = R⁻¹ g` needs D8 |
+| §6.5.1–6.5.2, 6.5.5 | `Chapter06/Section05.lean` | (6.25)–(6.33), Alg 6.9 (GMRES), 6.10 (Householder GMRES), 6.11 (GMRES(m)); Prop 6.9–6.10; P-6.5 |
+| §6.5.6 | `Chapter06/Section05.lean` | Alg 6.12 (QGMRES), 6.13 (DQGMRES), (6.48)–(6.58), Thm 6.11; P-6.25 |
+| §6.5.7 | `Chapter06/Section05.lean` | (6.62)–(6.75), Prop 6.12–6.17, Lemma 6.16, Cor 6.14; P-6.9, P-6.13, P-6.14 |
+| §6.5.8 | `Chapter06/Section05.lean` | Alg 6.14 (MRS), QMRS, Lemma 6.18, (6.76)–(6.79); P-6.26 |
+| §6.6 | `Chapter06/Section06.lean` | Thm 6.19, `T_m`, Alg 6.15, §6.6.2 (6.85) |
+| §6.7 | `Chapter06/Section07.lean` | (6.86)–(6.103), Alg 6.16 (Lanczos method), 6.17 (D-Lanczos), 6.18 (CG), 6.19 (three-term CG), Prop 6.20; P-6.17, P-6.19 |
+| §6.8 | `Chapter06/Section08.lean` | Alg 6.20 and its invariants |
+| §6.9 | `Chapter06/Section09.lean` | Lemma 6.21, Alg 6.21 (GCR), ORTHOMIN(k), ORTHODIR, GCR(m) |
+| §6.10 | `Chapter06/Section10.lean` | Prop 6.22, `ν(A)`, `CG(s)`; Lemma 6.23, Thm 6.24 (deferred, §4) |
+| §6.11.1–6.11.2 | `Chapter06/Section11.lean` | (6.109)–(6.121), Thm 6.25; Lemma 6.26, Thm 6.27 (deferred, §4) |
+| §6.11.3–6.11.4 | `Chapter06/Section11.lean` | Lemma 6.28, Thm 6.29, (6.122)–(6.128), Thm 6.30, Lemma 6.31, Prop 6.32; Cor 6.33 (deferred, §4) |
+| §6.12 | `Chapter06/Section12.lean` | Alg 6.22–6.24, (6.129)–(6.136), block-FOM/GMRES specifications (relations deferred, §4) |
+| Problems | with the section that cites them | P-6.1, 6.5, 6.9, 6.13, 6.14, 6.17, 6.22, 6.25, 6.26, 6.29 (cited by the text, or supplying proofs the text omits) |
 
 ## 2. Book-specific definitions and algorithms
 

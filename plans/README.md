@@ -83,9 +83,16 @@ Krylov/CG` works, but `tracker show CG` does not — three modules end in `CG`.
 
 The `.md` files here are the reasoning the TOML cannot hold. `backbone.md` is the design record of
 the general layer: the corpus it serves, the generality ladder that decides where each item sits,
-the named hypothesis bundles, the phasing, and the difficult-proof index. One file per book holds
-the surface's book alignment — which numbered result maps to which declaration, how each
+the named hypothesis bundles, the phasing, and the difficult-proof index. The rest are surface
+plans, holding a book alignment — which numbered result maps to which declaration, how each
 book-specific definition relates to the backbone, what was deferred and why.
+
+A book gets as many surface plans as it took planning passes to cover, one file per pass, named
+`<book>-ch<range>.md`. The ranges are disjoint but the file names are only approximate, because a
+pass often picked up the sections an earlier one skipped: the `# Surface plan:` heading of each
+file states the range it actually covers, and that heading is what to trust. `plans/proposals/`
+keeps the working documents those passes produced — per-result coverage tables, the searches
+behind a "not in Mathlib" claim — which the surface plans cite but do not repeat.
 
 Where those documents quote a Lean statement, the source is the authority and the document is the
 one that is wrong. They are kept because the *arguments* in them — why a theorem is stated over

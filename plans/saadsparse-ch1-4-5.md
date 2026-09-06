@@ -8,7 +8,7 @@ how each book-specific definition relates to the backbone, what was deferred and
 deliberately left out.
 -->
 
-# Surface plan: Saad, Iterative Methods — §1.11–1.13, §4.1–4.2, Ch. 5
+# Surface plan: Saad — §1.11–1.13, §4.1–4.2, Ch. 5
 
 The surface `NumlibSurface.SaadSparse` (in the `NumlibSurface` library, which imports only
 `Numlib`) for the second
@@ -471,7 +471,7 @@ Fields: **Book** (faithful statement with exact hypotheses) · **Lean** (sketch)
 `needs-equivalence` (through one of the §1 equivalence lemmas), `surface-only` (proved in the
 surface from Mathlib), `deferred` (needs a §3 backbone item), `out-of-scope`.
 
-### §1.11 Positive-definite matrices (`Chapter01/PositiveDefinite.lean`)
+### §1.11 Positive-definite matrices (`Chapter01/Section11.lean`)
 
 **R-1.1 (1.49)–(1.52) Hermitian/skew decomposition.** Book: any square (real or complex) `A`
 equals `H + iS` with `H = (A+Aᴴ)/2`, `S = (A−Aᴴ)/(2i)` both Hermitian, `iS` skew-Hermitian; for real
@@ -517,7 +517,7 @@ product on ℂⁿ (Saad §1.4 axioms). Lean: `energyInner_conj_symm`, `energyInn
 Hermitian w.r.t. `(·,·)_B` (text remark; Exercise 18). Lean: `isSelfAdjointWrt_inv_mul`,
 `isSelfAdjointWrt_mul`. Class: `surface-only` (two-line matrix algebra), optional.
 
-### §1.12 Projection operators (`Chapter01/Projectors.lean`)
+### §1.12 Projection operators (`Chapter01/Section12.lean`)
 
 **R-1.6 Projector basics (1.58).** Book: `P` projector ⇒ `I − P` projector, `Null P = Ran (I−P)`,
 `Null P ∩ Ran P = {0}`, `ℂⁿ = Null P ⊕ Ran P`; conversely each direct-sum pair `(M, S)` defines a
@@ -598,7 +598,7 @@ Class: `direct`.
 (`IsLeast` includes membership, which is how the book's "min over `y ∈ M`" is read — see §5).
 Backbone/Mathlib: `Submodule.norm_eq_iInf_iff_inner_eq_zero (hv : v ∈ K)`. Class: `direct`.
 
-### §1.13 Basic concepts in linear systems (`Chapter01/LinearSystems.lean`)
+### §1.13 Basic concepts in linear systems (`Chapter01/Section13.lean`)
 
 **R-1.16 Existence (§1.13.1, Cases 1–3).** Book: `A` nonsingular ⇒ unique solution `x = A⁻¹b`;
 `A` singular and `b ∈ Ran A` ⇒ infinitely many solutions (`x₀ + Null A`); `b ∉ Ran A` ⇒ none.
@@ -660,7 +660,7 @@ surface. Route: `linfty_opNorm_def` (row sums), `charpoly` of a unipotent matrix
 Backbone: `relative_error_le_condNumber_mul_relative_residual (A : E ≃L[𝕜] E) (hx) (hb)`
 (`Numlib/LinearSolve/Perturbation.lean`). Class: `direct` (via D8).
 
-### §4.1 Jacobi, Gauss–Seidel and SOR (`Chapter04/Splittings.lean`)
+### §4.1 Jacobi, Gauss–Seidel and SOR (`Chapter04/Section01.lean`)
 
 **R-4.1 (4.3)–(4.5) Jacobi.** Book: annihilating the `i`-th residual component gives (4.4)
 `ξ_i^{(k+1)} = (β_i − Σ_{j≠i} a_ij ξ_j^{(k)})/a_ii`, i.e. (4.5) `x_{k+1} = D⁻¹(E+F)x_k + D⁻¹b`.
@@ -744,7 +744,7 @@ Lean: `M_JA_eq : (jacobiSplitting A h).m = D A` (`rfl`), `M_GS_eq`, `M_sor_eq` (
 Backbone: `Matrix.ssorSplitting` (its `m` is (4.27) verbatim), `Splitting.iterationOperator`
 (`Splitting.lean`). Class: `needs-equivalence` (D11); the product form (4.13) is surface algebra.
 
-### §4.2 Convergence (`Chapter04/Convergence.lean`, `DiagDominant.lean`, `SPD.lean`)
+### §4.2 Convergence (`Chapter04/Section02.lean`)
 
 **R-4.9 (4.29) the limit solves the system.** Book: if `x_{k+1} = Gx_k + f` converges, the limit
 satisfies `x = Gx + f`; for `G = M⁻¹N`, `f = M⁻¹b` this is `Mx = Nx + b`, i.e. `Ax = b`.
@@ -945,7 +945,7 @@ shown to be `ω_opt = 2/(1 + √(1 − ρ(B)²))`" (Young; needs `B` with real e
 Backbone: §2.3.5 (phase 2; "`ω_opt`, `ρ_GS = ρ_J²`"). Class: `deferred` (§3 item 5; lowest
 priority).
 
-### §5.1 Basic definitions (`Chapter05/Projection.lean`)
+### §5.1 Basic definitions (`Chapter05/Section01.lean`)
 
 **R-5.1 (5.3)–(5.7) reformulations and matrix representation.** Book: (5.3) ⟺ (5.5)–(5.6)
 with `δ = x̃ − x₀`, `r₀ = b − Ax₀`; with bases `V` of `K`, `W` of `L`, `x̃ = x₀ + Vy` satisfies the
@@ -1067,7 +1067,7 @@ Backbone: R-1.12 (`VVᵀ = P_K`), `compression.toMatrix_orthonormalBasis`
 `compression (toEuclideanLin A) K` in the orthonormal basis `V.cols`), `‖V y‖ = ‖y‖` for isometric
 `V`. Class: `needs-equivalence`.
 
-### §5.3 One-dimensional projection processes (`Chapter05/OneDimensional.lean`)
+### §5.3 One-dimensional projection processes (`Chapter05/Section03.lean`)
 
 **R-5.15 (5.12).** Book: `K = span{v}`, `L = span{w}`: the new approximation is `x + αv` with
 `α = (r, w)/(Av, w)`. Lean: `step1_isProjectionApprox (h : inner ℝ w (A ⬝ v) ≠ 0) : IsProjectionApprox A b x (span {v}) (span {w}) (step1 A b v w x)`
@@ -1156,7 +1156,7 @@ Lean: `rnsdAlg_spec`, `rnsdStep_eq_sdStep_normal : rnsdStep A b x = sdStep (Aᵀ
 `Matrix.PosDef.conjTranspose_mul_self`. Class: `direct` (via R-5.18) + `surface-only` (algebraic
 identities).
 
-### §5.4 Additive and multiplicative processes (`Chapter05/Additive.lean`)
+### §5.4 Additive and multiplicative processes (`Chapter05/Section04.lean`)
 
 **R-5.23 Block relaxations are projection processes.** Book: each inner step of Alg 4.1/4.2 is an
 orthogonal projection process over `K_i = span(V_i)`; (4.17) is exactly (5.7) with `W = V = V_i`.

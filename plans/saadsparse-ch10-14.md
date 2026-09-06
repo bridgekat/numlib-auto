@@ -9,7 +9,7 @@ deliberately left out. The skip list and the full coverage table are in
 `plans/proposals/plan-saad10.md`.
 -->
 
-# Surface plan: Saad, Iterative Methods — Chapters 10–14
+# Surface plan: Saad — Chapters 10–14
 
 The surface `NumlibSurface.SaadSparse` for Saad, *Iterative Methods for Sparse Linear Systems*
 (2nd edition), Ch. 10 (preconditioning techniques), Ch. 11 (parallel implementations), Ch. 12
