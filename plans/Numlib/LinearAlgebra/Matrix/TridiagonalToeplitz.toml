@@ -20,7 +20,7 @@ id = "dotProduct_sineVec"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Section 2.2.6"
 
 [[node]]
-id = "symmTridiagonalToeplitz_posDef"
+id = "posDef_symmTridiagonalToeplitz"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Section 2.2.3"
 
 [[node]]
