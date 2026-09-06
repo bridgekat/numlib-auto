@@ -212,6 +212,18 @@ modules have now routed around it. And `Krylov.norm_sum_smul_vec_eq`,
 `mem_subspace_iff_exists_coeffs`, `residual_coeff_eq_zero` in `Krylov/Hessenberg`, plus
 `Lanczos.mulVec_tridiagExt_castSucc`, were duplicated privately by `Krylov/Singular`.
 
+### R18. More private declarations that a second module has re-derived
+
+* `map_topologicalClosure` (the image of a closure under a surjective linear isometry) is private in
+  **both** `Analysis/Wavelet/Haar.lean` and `Analysis/Wavelet/Multiresolution.lean`.
+* `FloatingPoint.gamma_mul_one_add_add_le` is private in `FloatingPoint/InnerProduct.lean` and was
+  re-derived privately in `FloatingPoint/Stationary.lean`. Make it public.
+
+Also: `Numlib/Approximation/Chebyshev.lean` now imports `Analysis/Fourier/TrigonometricBasis` for
+the trigonometric Haar property, and that propagates to `Interpolation`, `Quadrature` and
+`Unisolvent`. If `Chebyshev` should stay light, the theorem moves to `Approximation/Trigonometric`
+unchanged.
+
 ### R17. Two one-dimensional projection facts belong in the backbone
 
 Every one-dimensional relaxation in the corpus — Kaczmarz, NR-SOR, Cimmino, and SOR read as a

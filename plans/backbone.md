@@ -1624,6 +1624,12 @@ argument is the classical sign-change one against `integral_family_mul_of_degree
 cost sits in "a real polynomial all of whose roots have even multiplicity has constant sign", for
 which Mathlib appears to have nothing.
 
+*Both are now done.* `Polynomial.forall_nonneg_or_forall_nonpos_of_even_rootMultiplicity` is the
+sign lemma — Mathlib indeed lacked it — and `exists_injective_family_eq_prod` is the zeros, so
+`Approximation/Quadrature`'s `exists_gauss` is proved. What that node does *not* carry is the
+localization of the nodes inside the interval, which needs a support hypothesis the module does
+not have.
+
 ### 13.5 Surface
 
 `NumlibSurface/AtkinsonHan/` gains `Chapter01/{Section01,02,03,05,06}`,
