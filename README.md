@@ -23,7 +23,7 @@ Examples that may go into the backbone:
 
 ## The surface
 
-One surface library is produced for each textbook, which should contain theorem statements faithful to the book: we seek similar structures and organizations as the books (with chapter-to-chapter correspondence), with accurate semantic alignment for each theorem statement.
+The surface is one Lake library, `NumlibSurface`, with one directory per textbook, and it should contain theorem statements faithful to the book: we seek similar structures and organizations as the books (with chapter-to-chapter correspondence), with accurate semantic alignment for each theorem statement. A book's directory is `NumlibSurface/<Book>/`, with one module per section of it: `NumlibSurface/SaadSparse/Chapter06/Section05.lean` is Saad §6.5, and its declarations are in the namespace `SaadSparse.Chapter06`. Chapters and sections are numbered with two digits and spelled in full, in the module path and in the namespace alike, so the two always read the same.
 
 The proofs here should mostly be *direct uses and specializations* of results in the backbone. Definitions may be created here for semantic alignment, but it is desirable to accompany those with equivalence proofs to the backbone versions, so that results can derive from the equivalence. If the book is already written with generality in mind, the surface layer is expected to be thin.
 
