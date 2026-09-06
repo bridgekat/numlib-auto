@@ -76,6 +76,8 @@ decreasing_by exact card_filter_lt_lt_card_filter_lt ‹_›
 
 variable [Fintype V]
 
+/-- The defining equation of `SimpleGraph.greedyColoring`, which a `termination_by`
+definition does not give by `rfl`. -/
 theorem greedyColoring_def (v : V) :
     G.greedyColoring v = sInf {k | ∀ w, w < v → G.Adj w v → G.greedyColoring w ≠ k} := by
   rw [greedyColoring]
@@ -88,6 +90,7 @@ noncomputable def greedyExcludedColors (v : V) : Finset ℕ :=
 
 variable {G}
 
+/-- Membership in the set of excluded colours, unfolded. -/
 @[simp]
 theorem mem_greedyExcludedColors {v : V} {k : ℕ} :
     k ∈ G.greedyExcludedColors v ↔ ∃ w, w < v ∧ G.Adj w v ∧ G.greedyColoring w = k := by
@@ -103,6 +106,7 @@ private theorem exists_le_card_notMem (t : Finset ℕ) : ∃ k ≤ #t, k ∉ t :
   rw [card_range] at this
   omega
 
+/-- The greedy colour is the least natural number outside the excluded set. -/
 private theorem greedyColoring_eq_sInf (v : V) :
     G.greedyColoring v = sInf {k | k ∉ G.greedyExcludedColors v} := by
   rw [greedyColoring_def]
@@ -146,6 +150,7 @@ variable (G)
 noncomputable def greedyColoring_isColoring : G.Coloring ℕ :=
   Coloring.mk G.greedyColoring fun h => greedyColoring_ne_of_adj h
 
+/-- The packaged greedy colouring is the function it is built from. -/
 @[simp]
 theorem greedyColoring_isColoring_apply (v : V) :
     G.greedyColoring_isColoring v = G.greedyColoring v := rfl

@@ -14,17 +14,38 @@ import Mathlib.LinearAlgebra.Matrix.Block
 Basic predicates on matrices indexed by a linearly ordered type, and the strict lower / strict
 upper / diagonal parts used by the classical splittings `A = D - E - F` behind the Jacobi,
 Gauss–Seidel and SOR iterations.
+
+## Main definitions
+
+* `Matrix.IsUpperHessenberg`, `Matrix.IsTridiagonal`: zero below the first subdiagonal, and zero
+  outside the three central diagonals. Both are stated over a bare `LinearOrder` on the index type,
+  as "no index lies strictly between the two", which on `Fin n` is the usual condition on the
+  difference of the indices.
+* `Matrix.IsUpperHessenbergRect`: the rectangular `(m + 1) × m` form of the same condition, as in
+  the matrix `H̄ₘ` of the Arnoldi process.
+* `Matrix.strictLower`, `Matrix.strictUpper`, `Matrix.diagPart`: the three parts a matrix splits
+  into, `Matrix.diagPart_add_strictLower_add_strictUpper`.
+
+## Implementation notes
+
+Mathlib's `Matrix.BlockTriangular M b` unfolds to `b j < b i → M i j = 0`, so `BlockTriangular ·
+id` is *upper* triangularity (`Matrix.IsUpperTriangular`) and the lower-triangular statement is
+the one for `OrderDual.toDual`. That is why `Matrix.strictLower_blockTriangular` and
+`Matrix.strictUpper_blockTriangular` are stated with different order maps.
 -/
 
 namespace Matrix
 
 variable {n R : Type*} [LinearOrder n]
 
-/-- Upper Hessenberg: zero below the first subdiagonal. -/
+/-- Upper Hessenberg: zero below the first subdiagonal. "Below the first subdiagonal" is spelled
+as "some index lies strictly between the column and the row", which needs no arithmetic on the
+index type and is the usual condition `j + 1 < i` on `Fin n`. -/
 def IsUpperHessenberg [Zero R] (H : Matrix n n R) : Prop :=
   ∀ i j, (∃ k, j < k ∧ k < i) → H i j = 0
 
-/-- Tridiagonal: zero outside the three central diagonals. -/
+/-- Tridiagonal: zero outside the three central diagonals, that is, upper Hessenberg together with
+its mirror image above the first superdiagonal. -/
 def IsTridiagonal [Zero R] (T : Matrix n n R) : Prop :=
   ∀ i j, (∃ k, j < k ∧ k < i) ∨ (∃ k, i < k ∧ k < j) → T i j = 0
 
@@ -50,31 +71,29 @@ def strictUpper (A : Matrix n n R) : Matrix n n R := Matrix.of fun i j => if i <
 /-- Diagonal part. -/
 def diagPart [DecidableEq n] (A : Matrix n n R) : Matrix n n R := Matrix.diagonal A.diag
 
+/-- The entries of the strict lower triangular part. -/
 @[simp]
 theorem strictLower_apply (A : Matrix n n R) (i j : n) :
     strictLower A i j = if j < i then A i j else 0 := rfl
 
+/-- The entries of the strict upper triangular part. -/
 @[simp]
 theorem strictUpper_apply (A : Matrix n n R) (i j : n) :
     strictUpper A i j = if i < j then A i j else 0 := rfl
 
 omit [LinearOrder n] in
+/-- The entries of the diagonal part. -/
 @[simp]
 theorem diagPart_apply [DecidableEq n] (A : Matrix n n R) (i j : n) :
     diagPart A i j = if i = j then A i i else 0 := diagonal_apply _ _ _
 
--- Statement corrected: Mathlib's `Matrix.BlockTriangular M b` unfolds to `b j < b i → M i j = 0`,
--- so `BlockTriangular · id` is *upper* triangularity (`Matrix.IsUpperTriangular`). The strict
--- lower part is block triangular for `OrderDual.toDual`; with `id` the statement is false as soon
--- as `A` has a nonzero entry strictly below the diagonal.
-/-- The strict lower part is lower triangular. -/
+/-- The strict lower part is lower triangular, that is, block triangular for `OrderDual.toDual`;
+see the implementation notes for why the order map is not `id`. -/
 theorem strictLower_blockTriangular (A : Matrix n n R) :
     (strictLower A).BlockTriangular OrderDual.toDual := fun _ _ h => by
   simp [asymm (OrderDual.toDual_lt_toDual.mp h)]
 
--- Statement corrected for the same reason as `Matrix.strictLower_blockTriangular`: the strict
--- upper part is block triangular for `id`, not for `OrderDual.toDual`.
-/-- The strict upper part is upper triangular. -/
+/-- The strict upper part is upper triangular, that is, block triangular for `id`. -/
 theorem strictUpper_blockTriangular (A : Matrix n n R) :
     (strictUpper A).BlockTriangular id := fun i j h => by
   simp only [strictUpper_apply, ite_eq_right_iff]

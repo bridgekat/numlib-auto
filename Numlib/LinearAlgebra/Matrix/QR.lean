@@ -36,6 +36,23 @@ reflector (1.20), its defining conditions (1.21)–(1.26), the factorization (1.
 triangularization (1.27)–(1.28) and Algorithm 1.3 — and Kress, *Numerical
 Analysis*[^kress], §5.
 
+## Main definitions
+
+* `Matrix.householder`: the reflector `1 - 2 w wᴴ` in the hyperplane orthogonal to `w`.
+* `Matrix.phase`: the unit-modulus phase of a scalar, `1` at zero; Saad's `sign`.
+* `Matrix.householderAxis`, `Matrix.householderVec`: the axis `x + sign(x i) ‖x‖ eᵢ` of the
+  reflector that annihilates every entry of `x` but the `i`-th, and its normalization.
+
+## Main results
+
+* `Matrix.householder_mulVec_eq_smul_single`: one reflector annihilates every entry of a vector
+  but one.
+* `Matrix.exists_unitary_mul_upperTriangular`: a product of reflectors triangularizes any matrix.
+* `Matrix.exists_qr`: the Gram–Schmidt factorization `X = Q R` of a matrix with linearly
+  independent columns, and its converse `Matrix.linearIndependent_of_qr`.
+* `Matrix.qr_unique`: the factorization with a positive diagonal is unique, so all three
+  constructions compute the same pair.
+
 ## References
 
 [^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
@@ -89,16 +106,19 @@ when `w` is a unit vector, and the identity when `w = 0`. -/
 def householder (w : n → 𝕜) : Matrix n n 𝕜 := 1 - (2 : 𝕜) • vecMulVec w (star w)
 
 omit [Fintype n] in
+/-- The entries of a Householder reflector. -/
 theorem householder_apply (w : n → 𝕜) (i j : n) :
     householder w i j = (if i = j then 1 else 0) - 2 * (w i * star (w j)) := by
   simp [householder, one_apply, vecMulVec_apply]
 
 omit [Fintype n] in
+/-- The reflector of the zero axis is the identity. -/
 @[simp]
 theorem householder_zero : householder (0 : n → 𝕜) = 1 := by simp [householder]
 
 omit [Fintype n] in
-theorem householder_isHermitian (w : n → 𝕜) : IsHermitian (householder w) := by
+/-- A Householder reflector is Hermitian, whatever the axis. -/
+theorem isHermitian_householder (w : n → 𝕜) : IsHermitian (householder w) := by
   ext i j
   simp only [conjTranspose_apply, householder_apply, star_sub, star_mul', RCLike.star_def,
     map_ofNat, apply_ite (starRingEnd 𝕜), map_one, map_zero, starRingEnd_self_apply]
@@ -140,7 +160,7 @@ theorem householder_mul_self {w : n → 𝕜} (hw : star w ⬝ᵥ w = 1) :
 theorem householder_mem_unitaryGroup {w : n → 𝕜} (hw : star w ⬝ᵥ w = 1) :
     householder w ∈ Matrix.unitaryGroup n 𝕜 := by
   rw [mem_unitaryGroup_iff']
-  have hs : (star (householder w) : Matrix n n 𝕜) = householder w := householder_isHermitian w
+  have hs : (star (householder w) : Matrix n n 𝕜) = householder w := isHermitian_householder w
   rw [hs, householder_mul_self hw]
 
 /-- The reflector built from an unnormalized axis `v` sends `x` to
@@ -158,9 +178,11 @@ private theorem householder_normalize_mulVec {v : n → 𝕜} (hv : v ≠ 0) (x 
 /-- The unit-modulus phase of a scalar, and `1` at zero: the `sign` of Saad's (1.22). -/
 noncomputable def phase (z : 𝕜) : 𝕜 := if z = 0 then 1 else ((‖z‖ : 𝕜))⁻¹ * z
 
+/-- The phase of `0` is `1`, by convention. -/
 @[simp]
 theorem phase_zero : phase (0 : 𝕜) = 1 := by simp [phase]
 
+/-- The phase has modulus one. -/
 @[simp]
 theorem norm_phase (z : 𝕜) : ‖phase z‖ = 1 := by
   rw [phase]
@@ -189,6 +211,7 @@ noncomputable def householderAxis (x : n → 𝕜) (i : n) : n → 𝕜 :=
 `i`-th. -/
 noncomputable def householderVec (x : n → 𝕜) (i : n) : n → 𝕜 := normalize (householderAxis x i)
 
+/-- Away from the pivot the reflector's axis agrees with the vector it is built from. -/
 theorem householderAxis_apply_of_ne (x : n → 𝕜) {r i : n} (h : r ≠ i) :
     householderAxis x i r = x r := by
   simp [householderAxis, Pi.single_eq_of_ne h]
@@ -262,6 +285,7 @@ theorem star_dotProduct_householderVec_self {x : n → 𝕜} (hx : x ≠ 0) (i :
     star (householderVec x i) ⬝ᵥ householderVec x i = 1 :=
   star_dotProduct_normalize_self (householderAxis_ne_zero hx i)
 
+/-- The reflector that annihilates a nonzero vector below its `i`-th entry is unitary. -/
 theorem householder_householderVec_mem_unitaryGroup {x : n → 𝕜} (hx : x ≠ 0) (i : n) :
     householder (householderVec x i) ∈ Matrix.unitaryGroup n 𝕜 :=
   householder_mem_unitaryGroup (star_dotProduct_householderVec_self hx i)

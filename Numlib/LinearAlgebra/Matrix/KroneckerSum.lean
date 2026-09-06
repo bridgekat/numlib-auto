@@ -37,6 +37,27 @@ Toeplitz matrix of `Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz`, and the bo
 module add.  Saad, *Iterative Methods for Sparse Linear Systems*[^saad-iterative], §13.2 writes
 the tensor sum as `T_x ⊕ T_y` and states its eigenvalues without proof.
 
+## Main definitions
+
+* `Matrix.kroneckerSum`, written `A ⊕ₖ B`: the Kronecker sum `A ⊗ₖ 1 + 1 ⊗ₖ B`.
+* `Matrix.kroneckerVec`: the elementary tensor `v ⊗ w` of two vectors.
+* `Matrix.kroneckerOrthonormalBasis`: the orthonormal basis of `EuclideanSpace 𝕜 (m × n)` made of
+  the elementary tensors of two orthonormal bases.
+
+## Main statements
+
+* `Matrix.kroneckerSum_mulVec_kroneckerVec`, the Leibniz rule on an elementary tensor, and
+  `Matrix.kroneckerSum_mulVec_kroneckerVec_of_mulVec_eq_smul`, the separation of variables it
+  gives: eigenvalues add.
+* `Matrix.isCoerciveWith_kroneckerSum`, `Matrix.isSymmetricBoundedBy_kroneckerSum` and
+  `Matrix.posDef_kroneckerSum`: quadratic-form bounds add, with no eigenvalue named.
+
+## Notation
+
+`A ⊕ₖ B` is `Matrix.kroneckerSum A B`, scoped in `Kronecker` beside Mathlib's `A ⊗ₖ B`.
+
+## Implementation notes
+
 Everything here is indexed by the product type `m × n`, matching Mathlib's `kroneckerMap`; a
 consumer that wants `Fin (n₁ * n₂)` reindexes with `Matrix.reindex` and a `Fin`-product
 equivalence.
@@ -68,9 +89,11 @@ def kroneckerSum (A : Matrix m m R) (B : Matrix n n R) : Matrix (m × n) (m × n
 @[inherit_doc]
 scoped[Kronecker] infixl:100 " ⊕ₖ " => Matrix.kroneckerSum
 
+/-- The Kronecker sum, unfolded. -/
 theorem kroneckerSum_def (A : Matrix m m R) (B : Matrix n n R) :
     A ⊕ₖ B = A ⊗ₖ (1 : Matrix n n R) + (1 : Matrix m m R) ⊗ₖ B := rfl
 
+/-- The entries of a Kronecker sum: on the diagonal of one factor it is the other factor. -/
 theorem kroneckerSum_apply (A : Matrix m m R) (B : Matrix n n R) (i₁ j₁ : m) (i₂ j₂ : n) :
     (A ⊕ₖ B) (i₁, i₂) (j₁, j₂)
       = (if i₂ = j₂ then A i₁ j₁ else 0) + (if i₁ = j₁ then B i₂ j₂ else 0) := by
@@ -82,18 +105,22 @@ theorem kroneckerSum_add (A₁ A₂ : Matrix m m R) (B₁ B₂ : Matrix n n R) :
   simp only [kroneckerSum, add_kronecker, kronecker_add]
   abel
 
+/-- The Kronecker sum commutes with a common scalar multiple of both arguments. -/
 theorem kroneckerSum_smul (c : R) (A : Matrix m m R) (B : Matrix n n R) :
     (c • A) ⊕ₖ (c • B) = c • (A ⊕ₖ B) := by
   simp only [kroneckerSum, smul_kronecker, kronecker_smul, smul_add]
 
+/-- The Kronecker sum of two zero matrices is zero. -/
 @[simp]
 theorem kroneckerSum_zero_zero : (0 : Matrix m m R) ⊕ₖ (0 : Matrix n n R) = 0 := by
   simp [kroneckerSum]
 
+/-- Conjugate transposition distributes over a Kronecker sum. -/
 theorem conjTranspose_kroneckerSum [StarRing R] (A : Matrix m m R) (B : Matrix n n R) :
     (A ⊕ₖ B)ᴴ = Aᴴ ⊕ₖ Bᴴ := by
   simp [kroneckerSum, conjTranspose_add, conjTranspose_kronecker]
 
+/-- The Kronecker sum of two Hermitian matrices is Hermitian. -/
 theorem isHermitian_kroneckerSum [StarRing R] {A : Matrix m m R} {B : Matrix n n R}
     (hA : A.IsHermitian) (hB : B.IsHermitian) : (A ⊕ₖ B).IsHermitian := by
   rw [IsHermitian, conjTranspose_kroneckerSum, hA.eq, hB.eq]
@@ -109,14 +136,17 @@ def kroneckerVec (v : m → R) (w : n → R) : m × n → R := fun q => v q.1 * 
 theorem kroneckerVec_apply (v : m → R) (w : n → R) (i : m) (j : n) :
     kroneckerVec v w (i, j) = v i * w j := rfl
 
+/-- A scalar on the left factor of an elementary tensor scales the tensor. -/
 theorem kroneckerVec_smul_left (c : R) (v : m → R) (w : n → R) :
     kroneckerVec (c • v) w = c • kroneckerVec v w := by
   funext q; simp [kroneckerVec, mul_assoc]
 
+/-- A scalar on the right factor of an elementary tensor scales the tensor. -/
 theorem kroneckerVec_smul_right (c : R) (v : m → R) (w : n → R) :
     kroneckerVec v (c • w) = c • kroneckerVec v w := by
   funext q; simp [kroneckerVec, mul_left_comm]
 
+/-- An elementary tensor of two nonzero vectors is nonzero. -/
 theorem kroneckerVec_ne_zero [NoZeroDivisors R] {v : m → R} {w : n → R} (hv : v ≠ 0)
     (hw : w ≠ 0) : kroneckerVec v w ≠ 0 := by
   obtain ⟨i, hi⟩ := Function.ne_iff.1 hv
@@ -135,7 +165,8 @@ theorem kronecker_mulVec [Fintype m] [Fintype n] (A : Matrix l m R) (B : Matrix 
 
 variable [DecidableEq m] [DecidableEq n]
 
-/-- The Leibniz rule for a Kronecker sum on an elementary tensor, Saad's (13.13). -/
+/-- The Leibniz rule for a Kronecker sum on an elementary tensor (Saad, *Iterative Methods for
+Sparse Linear Systems*, (13.13)). -/
 theorem kroneckerSum_mulVec_kroneckerVec [Fintype m] [Fintype n] (A : Matrix m m R)
     (B : Matrix n n R) (v : m → R) (w : n → R) :
     (A ⊕ₖ B) *ᵥ kroneckerVec v w = kroneckerVec (A *ᵥ v) w + kroneckerVec v (B *ᵥ w) := by
@@ -180,11 +211,15 @@ private def colFibre (z : EuclideanSpace 𝕜 (m × n)) (j : n) : EuclideanSpace
 private def rowFibre (z : EuclideanSpace 𝕜 (m × n)) (i : m) : EuclideanSpace 𝕜 n :=
   WithLp.toLp 2 fun j => WithLp.ofLp z (i, j)
 
+/-- The squared norm of a vector indexed by `m × n` is the sum of the squared norms of its column
+fibres. -/
 private theorem norm_sq_eq_sum_colFibre (z : EuclideanSpace 𝕜 (m × n)) :
     ‖z‖ ^ 2 = ∑ j, ‖colFibre z j‖ ^ 2 := by
   simp only [EuclideanSpace.norm_sq_eq, colFibre]
   rw [Fintype.sum_prod_type_right]
 
+/-- The squared norm of a vector indexed by `m × n` is the sum of the squared norms of its row
+fibres. -/
 private theorem norm_sq_eq_sum_rowFibre (z : EuclideanSpace 𝕜 (m × n)) :
     ‖z‖ ^ 2 = ∑ i, ‖rowFibre z i‖ ^ 2 := by
   simp only [EuclideanSpace.norm_sq_eq, rowFibre]
@@ -208,6 +243,7 @@ noncomputable def kroneckerOrthonormalBasis (u : OrthonormalBasis m 𝕜 (Euclid
   OrthonormalBasis.mk hon
     (hon.linearIndependent.span_eq_top_of_card_eq_finrank' (by simp [finrank_euclideanSpace])).ge
 
+/-- The vectors of `Matrix.kroneckerOrthonormalBasis` are the elementary tensors. -/
 @[simp]
 theorem kroneckerOrthonormalBasis_apply (u : OrthonormalBasis m 𝕜 (EuclideanSpace 𝕜 m))
     (u' : OrthonormalBasis n 𝕜 (EuclideanSpace 𝕜 n)) (q : m × n) :
@@ -229,6 +265,7 @@ theorem hasEigenvector_kroneckerSum {A : Matrix m m 𝕜} {B : Matrix n n 𝕜} 
 
 /-! ### Quadratic-form bounds add -/
 
+/-- The quadratic form of `A ⊗ₖ 1` is the sum of the quadratic forms of `A` on the column fibres. -/
 private theorem inner_kronecker_one_left (A : Matrix m m 𝕜) (z : EuclideanSpace 𝕜 (m × n)) :
     inner 𝕜 (toEuclideanLin (A ⊗ₖ (1 : Matrix n n 𝕜)) z) z
       = ∑ j, inner 𝕜 (toEuclideanLin A (colFibre z j)) (colFibre z j) := by
@@ -243,6 +280,7 @@ private theorem inner_kronecker_one_left (A : Matrix m m 𝕜) (z : EuclideanSpa
     = (A ⊗ₖ (1 : Matrix n n 𝕜)) *ᵥ WithLp.ofLp z from rfl, hfib i j]
   rfl
 
+/-- The quadratic form of `1 ⊗ₖ B` is the sum of the quadratic forms of `B` on the row fibres. -/
 private theorem inner_one_kronecker_right (B : Matrix n n 𝕜) (z : EuclideanSpace 𝕜 (m × n)) :
     inner 𝕜 (toEuclideanLin ((1 : Matrix m m 𝕜) ⊗ₖ B) z) z
       = ∑ i, inner 𝕜 (toEuclideanLin B (rowFibre z i)) (rowFibre z i) := by

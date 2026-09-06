@@ -28,6 +28,25 @@ transported through `complexify`.
 absolutely homogeneous, positive definite matrix norm; the three scoped norms of
 `Mathlib.Analysis.Matrix.Normed` and `Mathlib.Analysis.CStarAlgebra.Matrix` are recorded as
 corollaries at the end of the file.
+
+## Main definitions
+
+* `Matrix.complexify`: the entrywise inclusion `Matrix n n ℝ → Matrix n n ℂ`.
+* `Matrix.complexSpectralRadius`: `spectralRadius ℂ` of the complexification.
+
+## Main results
+
+* `Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one`: `Aᵏ → 0` exactly when `ρ(A) < 1`, and
+  `Matrix.isUnit_one_sub_of_complexSpectralRadius_lt_one`, the Neumann consequence.
+* `Matrix.complexSpectralRadius_le_of_norm` and its three corollaries for the scoped matrix norms;
+  `Matrix.tendsto_pow_of_algebraNorm_lt_one` for an arbitrary consistent norm.
+* `Matrix.l2_opNorm_complexify`, `Matrix.linfty_opNorm_complexify` and
+  `Matrix.frobenius_norm_complexify`: complexification changes none of the three norms, which is
+  what transports every statement about `‖A ^ k‖` to `ℂ`.
+* `Matrix.tendsto_pow_rpow_complexSpectralRadius`: **Gelfand's formula** for a real matrix.
+* `Matrix.limsup_norm_pow_mulVec_rpow_le` and
+  `Matrix.exists_limsup_norm_pow_mulVec_rpow_eq`: the spectral radius bounds every specific
+  convergence factor `limsup (‖Gᵏ d₀‖/‖d₀‖) ^ (1/k)`, and some `d₀` attains it.
 -/
 
 open Filter Topology
@@ -58,6 +77,7 @@ theorem complexify_smul (c : ℝ) (A : Matrix n n ℝ) :
     complexify (c • A) = (c : ℂ) • complexify A := by
   ext i j; simp
 
+/-- Complexification is injective: it is the entrywise inclusion of the reals in the complexes. -/
 theorem complexify_injective : Function.Injective (complexify (n := n)) := by
   intro A B hAB
   ext i j
@@ -80,6 +100,7 @@ theorem complexify_conjTranspose (A : Matrix n n ℝ) : complexify Aᴴ = (compl
     exact h.eq
   · exact (complexify_conjTranspose A).symm.trans (congrArg complexify h.eq)
 
+/-- Complexification is multiplicative. -/
 theorem complexify_mul [Fintype n] (A B : Matrix n n ℝ) :
     complexify (A * B) = complexify A * complexify B := by
   ext i j
@@ -101,6 +122,7 @@ variable [DecidableEq n]
 
 variable [Fintype n]
 
+/-- Complexification commutes with taking powers. -/
 theorem complexify_pow (A : Matrix n n ℝ) (k : ℕ) : complexify (A ^ k) = complexify A ^ k := by
   induction k with
   | zero => simp
@@ -160,6 +182,8 @@ theorem complexSpectralRadius_pow_le (A : Matrix n n ℝ) {k : ℕ} (hk : k ≠ 
   rw [complexSpectralRadius, complexSpectralRadius, complexify_pow]
   exact spectrum.spectralRadius_pow_le _ k hk
 
+/-- The real spectral radius is at most the complex one, and can be strictly smaller: a plane
+rotation has empty real spectrum. -/
 theorem spectralRadius_le_complexSpectralRadius (A : Matrix n n ℝ) :
     spectralRadius ℝ A ≤ complexSpectralRadius A := by
   refine iSup₂_le fun μ hμ => ?_
@@ -300,10 +324,10 @@ private theorem apply_pow_le (hmul : ∀ B C : Matrix n n ℝ, f (B * C) ≤ f B
   induction k with
   | zero => simp
   | succ k ih =>
-      calc f (B ^ (k + 1 + 1)) = f (B ^ (k + 1) * B) := by rw [pow_succ]
-        _ ≤ f (B ^ (k + 1)) * f B := hmul _ _
-        _ ≤ f B ^ (k + 1) * f B := by gcongr
-        _ = f B ^ (k + 1 + 1) := (pow_succ _ _).symm
+    calc f (B ^ (k + 1 + 1)) = f (B ^ (k + 1) * B) := by rw [pow_succ]
+      _ ≤ f (B ^ (k + 1)) * f B := hmul _ _
+      _ ≤ f B ^ (k + 1) * f B := by gcongr
+      _ = f B ^ (k + 1 + 1) := (pow_succ _ _).symm
 
 /-- `f B < 1` forces `Bᵏ → 0` entrywise, hence `ρ(B) < 1` by
 `Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one`. -/
@@ -535,13 +559,6 @@ theorem tendsto_pow_rpow_complexSpectralRadius (A : Matrix n n ℝ) :
   simp only [Function.comp_apply]
   exact ENNReal.toReal_ofReal (Real.rpow_nonneg (norm_nonneg _) _)
 
-/-- The Euclidean norm is submultiplicative against the Euclidean operator norm. -/
-private theorem norm_toLp_mulVec_le (A : Matrix n n ℝ) (d : n → ℝ) :
-    ‖(WithLp.toLp 2 (A *ᵥ d) : EuclideanSpace ℝ n)‖
-      ≤ ‖A‖ * ‖(WithLp.toLp 2 d : EuclideanSpace ℝ n)‖ := by
-  rw [← toEuclideanCLM_toLp, ← l2_opNorm_toEuclideanCLM (𝕜 := ℝ)]
-  exact ContinuousLinearMap.le_opNorm _ _
-
 /-- The specific convergence factor of an initial error is bounded termwise by the general one. -/
 private theorem rpow_le_rpow_norm_pow (G : Matrix n n ℝ) (d₀ : n → ℝ) (k : ℕ) :
     (‖(WithLp.toLp 2 (G ^ k *ᵥ d₀) : EuclideanSpace ℝ n)‖
@@ -555,7 +572,7 @@ private theorem rpow_le_rpow_norm_pow (G : Matrix n n ℝ) (d₀ : n → ℝ) (k
       simpa using hc
     simp [hd0]
   · rw [div_le_iff₀ h]
-    exact norm_toLp_mulVec_le _ _
+    exact l2_opNorm_mulVec _ (WithLp.toLp 2 d₀)
 
 /-- The *specific convergence factor* of an initial error `d₀` for the iteration matrix `G`:
 `limsup (‖Gᵏ d₀‖ / ‖d₀‖) ^ (1 / k)`.  It is at most the spectral radius, for every `d₀`.
@@ -576,10 +593,10 @@ theorem limsup_norm_pow_mulVec_rpow_le (G : Matrix n n ℝ) (d₀ : n → ℝ) :
     _ = (complexSpectralRadius G).toReal :=
         (tendsto_pow_rpow_complexSpectralRadius G).limsup_eq
 
-/-- The spectral radius of a real matrix is attained at a complex eigenvalue, together with an
+/-- **The spectral radius of a real matrix is attained at a complex eigenvalue**, together with an
 eigenvector: the complex spectrum is compact and nonempty, so the modulus attains its maximum on
 it, and a matrix eigenvalue always has an eigenvector. -/
-private theorem exists_eigenvector_norm_eq [Nonempty n] (G : Matrix n n ℝ) :
+theorem exists_eigenvector_norm_eq_complexSpectralRadius [Nonempty n] (G : Matrix n n ℝ) :
     ∃ (μ : ℂ) (v : n → ℂ), v ≠ 0 ∧ complexify G *ᵥ v = μ • v ∧
       ‖μ‖ = (complexSpectralRadius G).toReal := by
   have _ : CompleteSpace (Matrix n n ℂ) := FiniteDimensional.complete ℂ _
@@ -612,7 +629,7 @@ private theorem exists_frequently_norm_pow_mulVec_ge [Nonempty n] (G : Matrix n 
     ∃ d₀ : n → ℝ, d₀ ≠ 0 ∧ ∃ c > 0, ∃ᶠ k : ℕ in atTop,
       c * (complexSpectralRadius G).toReal ^ k
         ≤ ‖(WithLp.toLp 2 (G ^ k *ᵥ d₀) : EuclideanSpace ℝ n)‖ := by
-  obtain ⟨μ, v, hv0, heig, hμ⟩ := exists_eigenvector_norm_eq G
+  obtain ⟨μ, v, hv0, heig, hμ⟩ := exists_eigenvector_norm_eq_complexSpectralRadius G
   set ρ := (complexSpectralRadius G).toReal with hρdef
   have hρ0 : 0 ≤ ρ := hμ ▸ norm_nonneg μ
   set x : n → ℝ := fun j => (v j).re with hxdef

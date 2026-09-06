@@ -15,21 +15,26 @@ import Mathlib.Data.Matrix.Basic
 `Matrix.EntrywiseNonneg A` is `0 ≤ₑ A`, the *nonnegative matrices* of the theory of regular
 splittings; and `Matrix.abs A`, written `A.abs`, is the matrix of the absolute values of the
 entries. Together they carry the componentwise calculus behind the convergence theory of regular
-splittings (Saad[^saad-iterative] §1.10, Prop 1.24 and Prop 1.26) and behind rounding-error
-analysis (Higham[^higham] §3.5): the triangle inequality for a product,
-`(A * B).abs ≤ₑ A.abs * B.abs` (`Matrix.abs_mul_entrywiseLE`), monotonicity of a product in either
-factor when the other one is nonnegative (`Matrix.EntrywiseLE.mul_of_entrywiseNonneg_left` and
-`Matrix.EntrywiseLE.mul_of_entrywiseNonneg_right`), and the stability of nonnegativity under sums,
-products, powers and matrix-vector multiplication.
+splittings and behind rounding-error analysis: monotonicity of a product in either factor when the
+other one is nonnegative (`Matrix.EntrywiseLE.mul_of_entrywiseNonneg_left` and
+`Matrix.EntrywiseLE.mul_of_entrywiseNonneg_right`, which is Saad[^saad-iterative] §1.10, Prop 1.26,
+and whose clause-by-clause companions are his Prop 1.24), the stability of nonnegativity under
+sums, products, powers and matrix-vector multiplication, and the triangle inequality for a product,
+`(A * B).abs ≤ₑ A.abs * B.abs` (`Matrix.abs_mul_entrywiseLE`), which is the matrix form of the
+componentwise bounds of Higham[^higham] §3.5.
+
+## Notation
+
+`A ≤ₑ B` is `Matrix.EntrywiseLE A B`, scoped in `Matrix` beside `*ᵥ`. The entrywise absolute value
+has no notation of its own, because `|·|` is already the lattice absolute value and `A.abs` reads
+well enough.
 
 ## Implementation notes
 
 The entrywise order is a *predicate*, not an `LE` instance. Mathlib already orders square matrices
 over an `RCLike` field by the Loewner order — there `A ≤ B` means that `B - A` is positive
 semidefinite — as instances scoped in `MatrixOrder`, and a second `LE` on the same type would make
-every statement about either of them ambiguous. The notation `≤ₑ` is scoped in `Matrix`, beside
-`*ᵥ`; the entrywise absolute value has no notation of its own, because `|·|` is already the lattice
-absolute value and `A.abs` reads well enough.
+every statement about either of them ambiguous.
 
 Vectors are plain `Pi` types, and there the entrywise order and absolute value *are* the canonical
 `≤` and `|·|`. So the statements that mix the two — `Matrix.abs_mulVec_le`,
@@ -244,8 +249,8 @@ section Ring
 variable [Ring α] [LinearOrder α] [IsOrderedRing α]
 
 /-- The entrywise triangle inequality for a matrix product, `|A * B| ≤ |A| |B|` in the notation of
-the books (Saad, *Iterative Methods for Sparse Linear Systems*, Prop 1.24; the matrix form of the
-componentwise bounds of Higham, *Accuracy and Stability of Numerical Algorithms*, §3.5). -/
+the books: the matrix form of the componentwise bounds of Higham, *Accuracy and Stability of
+Numerical Algorithms*, §3.5. -/
 theorem abs_mul_entrywiseLE [Fintype l] (A : Matrix m l α) (B : Matrix l n α) :
     (A * B).abs ≤ₑ A.abs * B.abs := by
   intro i j

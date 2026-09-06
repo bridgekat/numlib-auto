@@ -38,8 +38,9 @@ The combinatorial core is `Matrix.IsIrreducible.entrywisePos_one_add_pow`: for i
 `Sₖ = {j | 0 < ((1 + A) ^ k) i j}` grow: they are nondecreasing, `Sₖ₊₁` is determined by `Sₖ`, so
 they stabilise as soon as two consecutive ones agree, and irreducibility forbids stabilising short
 of everything. Hence each step before saturation gains at least one index, and `N - 1` steps
-suffice. This replaces the usual argument by shortening a quiver path below `N`, for which Mathlib
-has no lemma.
+suffice. This replaces the argument the standard accounts give — shortening a quiver path below
+`N`, as in Seneta, *Non-negative Matrices and Markov Chains*[^seneta] — for which Mathlib has no
+lemma.
 
 The Perron eigenvector is obtained without any maximisation. An eigenvalue `μ` of maximal modulus
 of the complexification has an eigenvector `y`, and the entrywise modulus `z = ‖y ·‖` satisfies the
@@ -146,13 +147,6 @@ private theorem norm_toLp_abs (a : n → ℝ) :
 
 variable [DecidableEq n]
 
-/-- The Euclidean norm is submultiplicative against the Euclidean operator norm. -/
-private theorem norm_toLp_mulVec_le' (A : Matrix n n ℝ) (d : n → ℝ) :
-    ‖(WithLp.toLp 2 (A *ᵥ d) : EuclideanSpace ℝ n)‖
-      ≤ ‖A‖ * ‖(WithLp.toLp 2 d : EuclideanSpace ℝ n)‖ := by
-  rw [← toEuclideanCLM_toLp, ← l2_opNorm_toEuclideanCLM (𝕜 := ℝ)]
-  exact ContinuousLinearMap.le_opNorm _ _
-
 /-- **The Euclidean operator norm is monotone on nonnegative matrices** (Saad, *Iterative Methods
 for Sparse Linear Systems*, Problem P-1.28): if `0 ≤ₑ A` and `A ≤ₑ B` then `‖A‖ ≤ ‖B‖` for the
 norm scoped in `Matrix.Norms.L2Operator`.
@@ -182,7 +176,8 @@ theorem EntrywiseLE.l2_opNorm_le {A B : Matrix n n ℝ} (hA : A.EntrywiseNonneg)
   calc ‖(WithLp.toLp 2 (A *ᵥ d) : EuclideanSpace ℝ n)‖
       ≤ ‖(WithLp.toLp 2 (B *ᵥ fun j => |d j|) : EuclideanSpace ℝ n)‖ :=
         norm_toLp_le_of_abs_le hstep
-    _ ≤ ‖B‖ * ‖(WithLp.toLp 2 (fun j => |d j|) : EuclideanSpace ℝ n)‖ := norm_toLp_mulVec_le' _ _
+    _ ≤ ‖B‖ * ‖(WithLp.toLp 2 (fun j => |d j|) : EuclideanSpace ℝ n)‖ :=
+        l2_opNorm_mulVec _ (WithLp.toLp 2 fun j => |d j|)
     _ = ‖B‖ * ‖(WithLp.toLp 2 d : EuclideanSpace ℝ n)‖ := by rw [norm_toLp_abs]
 
 /-! ### Monotonicity of the spectral radius -/
@@ -373,39 +368,13 @@ private theorem mulVec_one_add_pow_of_mulVec_eq {z : n → ℝ} {r : ℝ} (h : A
   | zero => simp
   | succ k ih => rw [pow_succ', ← mulVec_mulVec, ih, mulVec_smul, hstep, smul_smul, ← pow_succ]
 
-/-- The spectral radius of a real matrix is attained at a complex eigenvalue, together with an
-eigenvector: the complex spectrum is compact and nonempty, so the modulus attains its maximum on
-it, and a matrix eigenvalue always has an eigenvector. -/
-private theorem exists_complex_eigenvector [Nonempty n] (A : Matrix n n ℝ) :
-    ∃ (μ : ℂ) (v : n → ℂ), v ≠ 0 ∧ complexify A *ᵥ v = μ • v ∧
-      ‖μ‖ = (complexSpectralRadius A).toReal := by
-  have _ : CompleteSpace (Matrix n n ℂ) := FiniteDimensional.complete ℂ _
-  obtain ⟨μ, hμ, hmax⟩ := (spectrum.isCompact (complexify A)).exists_isMaxOn
-    (spectrum.nonempty (complexify A)) continuous_norm.continuousOn
-  have hsr : complexSpectralRadius A = (‖μ‖₊ : ℝ≥0∞) := by
-    refine le_antisymm (iSup₂_le fun ν hν => ?_) (le_iSup₂ (α := ENNReal) μ hμ)
-    exact_mod_cast hmax hν
-  have hdet : (algebraMap ℂ (Matrix n n ℂ) μ - complexify A).det = 0 := by
-    have h := spectrum.mem_iff.mp hμ
-    rw [Matrix.isUnit_iff_isUnit_det, isUnit_iff_ne_zero] at h
-    exact not_not.mp h
-  obtain ⟨v, hv0, hv⟩ := Matrix.exists_mulVec_eq_zero_iff.mpr hdet
-  refine ⟨μ, v, hv0, ?_, ?_⟩
-  · rw [sub_mulVec] at hv
-    have halg : algebraMap ℂ (Matrix n n ℂ) μ *ᵥ v = μ • v := by
-      rw [Algebra.algebraMap_eq_smul_one, smul_mulVec, one_mulVec]
-    rw [halg] at hv
-    exact (sub_eq_zero.mp hv).symm
-  · rw [hsr]
-    simp
-
 /-- **Subinvariance.** The entrywise modulus of a complex eigenvector for an eigenvalue of maximal
 modulus is a nonzero nonnegative real vector `z` with `ρ • z ≤ A *ᵥ z`, because the triangle
 inequality applied to `μ v = A v` reads `|μ| |v| ≤ A |v|` entrywise. -/
 private theorem exists_subinvariant [Nonempty n] (hA : ∀ i j, 0 ≤ A i j) :
     ∃ z : n → ℝ, (∀ i, 0 ≤ z i) ∧ z ≠ 0 ∧
       ∀ i, (complexSpectralRadius A).toReal * z i ≤ (A *ᵥ z) i := by
-  obtain ⟨μ, v, hv0, heig, hμ⟩ := exists_complex_eigenvector A
+  obtain ⟨μ, v, hv0, heig, hμ⟩ := exists_eigenvector_norm_eq_complexSpectralRadius A
   refine ⟨fun i => ‖v i‖, fun i => norm_nonneg _, ?_, fun i => ?_⟩
   · intro h
     exact hv0 (funext fun i => by simpa using congrFun h i)
@@ -458,7 +427,7 @@ private theorem le_complexSpectralRadius_of_pos [Nonempty n] (hA : ∀ i j, 0 �
     have hsm : (WithLp.toLp 2 ((t ^ k) • u) : EuclideanSpace ℝ n)
         = (t ^ k) • (WithLp.toLp 2 u : EuclideanSpace ℝ n) := _root_.rfl
     rw [hsm, norm_smul, Real.norm_eq_abs, abs_of_nonneg (pow_nonneg ht k)] at hcmp
-    have hbd := (norm_toLp_mulVec_le' (A ^ k) u)
+    have hbd := l2_opNorm_mulVec (A ^ k) (WithLp.toLp 2 u)
     have := hcmp.trans hbd
     exact le_of_mul_le_mul_right (by linarith) hupos
   refine ge_of_tendsto (tendsto_pow_rpow_complexSpectralRadius A) ?_

@@ -18,7 +18,21 @@ Zarantonello's lemma and the complex min–max estimates on an ellipse.
 The Joukowski map `J w = (w + w⁻¹)/2` carries the circle of radius `ρ` about the origin onto an
 ellipse with foci `±1` and semi-axes `(ρ ± ρ⁻¹)/2`, and carries `w ↦ w^k` to the Chebyshev
 polynomial: `T_k (J w) = (w^k + w^{-k})/2`. Everything here follows from that identity and from
-the maximum modulus principle.
+the maximum modulus principle. This is Saad, *Iterative Methods for Sparse Linear
+Systems*[^saad-iterative], §6.11.2 and Saad, *Numerical Methods for Large Eigenvalue
+Problems*[^saad-eigenvalue], §4.4.
+
+## Main definitions
+
+* `Complex.joukowski`: the map `w ↦ (w + w⁻¹)/2`.
+* `Set.ellipse c d ρ` and `Set.filledEllipse c d ρ`: the image under `w ↦ c + d · J w` of the
+  circle of radius `ρ`, and of the closed annulus `ρ⁻¹ ≤ ‖w‖ ≤ ρ` it bounds.
+* `Polynomial.normalizedSupNorms k γ K`: the sup norms over `K` of the polynomials of degree at
+  most `k` normalized by `p γ = 1`, the competitors in a min–max problem on `K`.
+* `Polynomial.Chebyshev.shiftedComplex`: `T_k((c - z)/d) / T_k((c - γ)/d)`, the complex
+  counterpart of `Polynomial.Chebyshev.shifted`.
+
+## Main results
 
 * `Polynomial.zarantonello`: among the complex polynomials of degree at most `k` normalized by
   `p γ = 1`, the least attainable maximum modulus on the circle of radius `ρ < ‖γ‖` is
@@ -40,10 +54,10 @@ the maximum modulus principle.
 
 ## References
 
-* Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM, 2003,
-  §6.11.2 (Lemma 6.26, Theorem 6.27, (6.115)–(6.121)).
-* Yousef Saad, *Numerical Methods for Large Eigenvalue Problems*, revised edition, SIAM, 2011,
-  §4.4 (Lemma 4.3, Theorem 4.9).
+[^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
+  SIAM, 2003. §6.11.2 has Lemma 6.26, Theorem 6.27 and (6.115)–(6.121).
+[^saad-eigenvalue]: Yousef Saad, *Numerical Methods for Large Eigenvalue Problems*, 2nd edition,
+  SIAM, 2011. §4.4 has Lemma 4.3 and Theorem 4.9.
 -/
 
 open Polynomial Polynomial.Chebyshev
@@ -55,6 +69,7 @@ onto the ellipse with foci `±1` and semi-axes `(ρ + ρ⁻¹)/2` and `(ρ - ρ�
 change of variable that turns the Chebyshev polynomial `T_k` into `w ↦ (w^k + w^{-k})/2`. -/
 noncomputable def joukowski (w : ℂ) : ℂ := (w + w⁻¹) / 2
 
+/-- The Joukowski map, unfolded. -/
 theorem joukowski_def (w : ℂ) : joukowski w = (w + w⁻¹) / 2 := rfl
 
 /-- The Joukowski map identifies `w` with `w⁻¹`; this is why the inside of an ellipse is covered
@@ -121,9 +136,11 @@ is the ellipse with foci `c ± d`, semi-major axis `d (ρ + ρ⁻¹)/2` and semi
 noncomputable def Set.ellipse (c d : ℂ) (ρ : ℝ) : Set ℂ :=
   (fun w => c + d * Complex.joukowski w) '' Metric.sphere 0 ρ
 
+/-- The ellipse, unfolded. -/
 theorem Set.ellipse_def (c d : ℂ) (ρ : ℝ) :
     Set.ellipse c d ρ = (fun w => c + d * Complex.joukowski w) '' Metric.sphere 0 ρ := rfl
 
+/-- Membership in an ellipse, as the existence of a Joukowski parameter of modulus `ρ`. -/
 theorem Set.mem_ellipse {c d z : ℂ} {ρ : ℝ} :
     z ∈ Set.ellipse c d ρ ↔ ∃ w : ℂ, ‖w‖ = ρ ∧ z = c + d * Complex.joukowski w := by
   simp only [Set.ellipse_def, Set.mem_image, mem_sphere_zero_iff_norm]
@@ -159,6 +176,7 @@ closed elliptical region with foci `c ± d`. -/
 noncomputable def Set.filledEllipse (c d : ℂ) (ρ : ℝ) : Set ℂ :=
   (fun w => c + d * Complex.joukowski w) '' {w : ℂ | ρ⁻¹ ≤ ‖w‖ ∧ ‖w‖ ≤ ρ}
 
+/-- Membership in a filled ellipse, as the existence of a Joukowski parameter in the annulus. -/
 theorem Set.mem_filledEllipse {c d z : ℂ} {ρ : ℝ} :
     z ∈ Set.filledEllipse c d ρ ↔
       ∃ w : ℂ, ρ⁻¹ ≤ ‖w‖ ∧ ‖w‖ ≤ ρ ∧ z = c + d * Complex.joukowski w :=
@@ -224,6 +242,7 @@ problem on `K`. -/
 def normalizedSupNorms (k : ℕ) (γ : ℂ) (K : Set ℂ) : Set ℝ :=
   {M | ∃ p : ℂ[X], p.degree ≤ k ∧ p.eval γ = 1 ∧ M = sSup ((fun z => ‖p.eval z‖) '' K)}
 
+/-- Membership in `Polynomial.normalizedSupNorms`, unfolded. -/
 theorem mem_normalizedSupNorms {k : ℕ} {γ : ℂ} {K : Set ℂ} {M : ℝ} :
     M ∈ normalizedSupNorms k γ K ↔
       ∃ p : ℂ[X], p.degree ≤ k ∧ p.eval γ = 1 ∧ M = sSup ((fun z => ‖p.eval z‖) '' K) :=
@@ -350,11 +369,9 @@ by `p γ = 1`, the least attainable maximum of `|p|` on the circle of radius `ρ
 origin is `(ρ/‖γ‖)^k`, and it is attained by `(X/γ)^k`.
 
 This is the complex counterpart of the Chebyshev min–max theorem on an interval, and the source
-of the lower bound in the ellipse estimate `Polynomial.Chebyshev.ellipse_minimax_bounds`.
-
-Reference: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM, 2003,
-Lemma 6.26; Yousef Saad, *Numerical Methods for Large Eigenvalue Problems*, revised edition,
-SIAM, 2011, Lemma 4.3. -/
+of the lower bound in the ellipse estimate `Polynomial.Chebyshev.ellipse_minimax_bounds`
+(Saad, *Iterative Methods for Sparse Linear Systems*, Lemma 6.26, and Saad, *Numerical
+Methods for Large Eigenvalue Problems*, Lemma 4.3). -/
 theorem zarantonello (k : ℕ) {ρ : ℝ} (hρ : 0 < ρ) {γ : ℂ} (hγ : ρ < ‖γ‖) :
     IsLeast (normalizedSupNorms k γ (Metric.sphere 0 ρ)) ((ρ / ‖γ‖) ^ k) := by
   have hγ0 : γ ≠ 0 := by
@@ -592,10 +609,8 @@ private theorem image_norm_eval_T_ellipse (k : ℕ) {c d : ℂ} (hd : d ≠ 0) (
   rw [hcz, norm_eval_T_neg]
 
 /-- The maximum of `|T_k|` on the ellipse `E_ρ` with foci `±1` and semi-axes `(ρ ± ρ⁻¹)/2` is
-`(ρ^k + ρ^{-k})/2`, attained at the vertex `J ρ = (ρ + ρ⁻¹)/2`.
-
-Reference: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM, 2003,
-(6.117). -/
+`(ρ^k + ρ^{-k})/2`, attained at the vertex `J ρ = (ρ + ρ⁻¹)/2` (Saad, *Iterative Methods for
+Sparse Linear Systems*, (6.117)). -/
 theorem sSup_norm_eval_T_ellipse (k : ℕ) {ρ : ℝ} (hρ : 1 ≤ ρ) :
     sSup ((fun z => ‖(T ℂ (k : ℤ)).eval z‖) '' Set.ellipse 0 1 ρ) = (ρ ^ k + (ρ ^ k)⁻¹) / 2 := by
   have himg : (fun z => ‖(T ℂ (k : ℤ)).eval z‖) '' Set.ellipse 0 1 ρ
@@ -613,11 +628,9 @@ theorem sSup_norm_eval_T_ellipse (k : ℕ) {ρ : ℝ} (hρ : 1 ≤ ρ) :
 For `ρ ≥ 1` and a normalization point `γ = J w_γ` lying outside `E_ρ`, that is with
 `‖w_γ‖ > ρ`, every polynomial `p` of degree at most `k` with `p γ = 1` has maximum modulus at
 least `(ρ/‖w_γ‖)^k` on `E_ρ`, and the normalized Chebyshev polynomial `T_k(z)/T_k(γ)` attains
-the value `(ρ^k + ρ^{-k})/‖w_γ^k + w_γ^{-k}‖`.
-
-Reference: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM, 2003,
-Theorem 6.27; Yousef Saad, *Numerical Methods for Large Eigenvalue Problems*, revised edition,
-SIAM, 2011, Theorem 4.9. -/
+the value `(ρ^k + ρ^{-k})/‖w_γ^k + w_γ^{-k}‖` (Saad, *Iterative Methods for Sparse Linear
+Systems*, Theorem 6.27, and Saad, *Numerical Methods for Large Eigenvalue Problems*,
+Theorem 4.9). -/
 theorem ellipse_minimax_bounds (k : ℕ) {ρ : ℝ} (hρ : 1 ≤ ρ) {wγ : ℂ} (hw : ρ < ‖wγ‖) :
     (ρ / ‖wγ‖) ^ k ∈
         lowerBounds (normalizedSupNorms k (Complex.joukowski wγ) (Set.ellipse 0 1 ρ)) ∧
@@ -732,10 +745,8 @@ theorem ellipse_minimax_bounds (k : ℕ) {ρ : ℝ} (hρ : 1 ≤ ρ) {wγ : ℂ}
 
 /-- The shifted, normalized complex Chebyshev polynomial
 `Ĉ_k(z) = T_k((c - z)/d) / T_k((c - γ)/d)`, which takes the value `1` at `γ`. It is the complex
-counterpart of `Polynomial.Chebyshev.shifted`.
-
-Reference: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM, 2003,
-(6.119). -/
+counterpart of `Polynomial.Chebyshev.shifted` (Saad, *Iterative Methods for Sparse Linear
+Systems*, (6.119)). -/
 noncomputable def shiftedComplex (k : ℕ) (c d γ : ℂ) : ℂ[X] :=
   Polynomial.C ((T ℂ (k : ℤ)).eval ((c - γ) / d))⁻¹ *
     (T ℂ (k : ℤ)).comp (Polynomial.C (c / d) - Polynomial.C d⁻¹ * X)
@@ -769,10 +780,8 @@ theorem shiftedComplex_eval_self (k : ℕ) {c d γ : ℂ} (hd : d ≠ 0)
 
 /-- The maximum on the ellipse `E(c, d, a)` of the shifted, normalized Chebyshev polynomial
 `Ĉ_k(z) = T_k((c - z)/d)/T_k((c - γ)/d)` is `T_k(a/d)/|T_k((c - γ)/d)|`, where
-`a/d = (ρ + ρ⁻¹)/2` is the ratio of the semi-major axis to the focal semi-distance.
-
-Reference: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM, 2003,
-(6.119)–(6.120). -/
+`a/d = (ρ + ρ⁻¹)/2` is the ratio of the semi-major axis to the focal semi-distance (Saad,
+*Iterative Methods for Sparse Linear Systems*, (6.119)–(6.120)). -/
 theorem sSup_norm_eval_shiftedComplex_ellipse (k : ℕ) {ρ : ℝ} (hρ : 1 ≤ ρ) {c d γ : ℂ}
     (hd : d ≠ 0) (hγ : (T ℂ (k : ℤ)).eval ((c - γ) / d) ≠ 0) :
     sSup ((fun z => ‖(shiftedComplex k c d γ).eval z‖) '' Set.ellipse c d ρ) =

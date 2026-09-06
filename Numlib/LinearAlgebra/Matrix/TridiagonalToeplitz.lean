@@ -57,6 +57,7 @@ both off-diagonals and `0` elsewhere. -/
 def symmTridiagonalToeplitz (n : ℕ) (a b : ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   Matrix.of fun i j => if i = j then b else if (i : ℕ) + 1 = j ∨ (j : ℕ) + 1 = i then a else 0
 
+/-- The entries of `tridiag(a, b, a)`. -/
 theorem symmTridiagonalToeplitz_apply (i j : Fin n) :
     symmTridiagonalToeplitz n a b i j =
       if i = j then b else if (i : ℕ) + 1 = j ∨ (j : ℕ) + 1 = i then a else 0 := rfl
@@ -68,10 +69,12 @@ theorem symmTridiagonalToeplitz_apply' (i j : Fin n) :
   rw [symmTridiagonalToeplitz_apply]
   simp only [Fin.ext_iff]
 
+/-- The diagonal entries are `b`. -/
 @[simp]
 theorem symmTridiagonalToeplitz_apply_self (i : Fin n) :
     symmTridiagonalToeplitz n a b i i = b := by simp [symmTridiagonalToeplitz_apply]
 
+/-- The entries on the first superdiagonal are `a`. -/
 theorem symmTridiagonalToeplitz_apply_succ {i j : Fin n} (h : (i : ℕ) + 1 = j) :
     symmTridiagonalToeplitz n a b i j = a := by
   rw [symmTridiagonalToeplitz_apply']
@@ -83,17 +86,21 @@ theorem symmTridiagonalToeplitz_apply_of_one_lt {i j : Fin n}
   rw [symmTridiagonalToeplitz_apply']
   split_ifs <;> first | rfl | (exfalso; omega)
 
+/-- A symmetric tridiagonal Toeplitz matrix is symmetric. -/
 theorem symmTridiagonalToeplitz_isSymm : (symmTridiagonalToeplitz n a b).IsSymm := by
   ext i j
   rw [transpose_apply, symmTridiagonalToeplitz_apply', symmTridiagonalToeplitz_apply']
   split_ifs <;> first | rfl | (exfalso; omega)
 
+/-- Over the reals, symmetry is Hermitian symmetry. -/
 theorem symmTridiagonalToeplitz_isHermitian : (symmTridiagonalToeplitz n a b).IsHermitian := by
   ext i j
   rw [conjTranspose_apply, star_trivial, symmTridiagonalToeplitz_apply',
     symmTridiagonalToeplitz_apply']
   split_ifs <;> first | rfl | (exfalso; omega)
 
+/-- A symmetric tridiagonal Toeplitz matrix is tridiagonal in the sense of
+`Matrix.IsTridiagonal`. -/
 theorem symmTridiagonalToeplitz_isTridiagonal :
     (symmTridiagonalToeplitz n a b).IsTridiagonal := by
   rintro i j (⟨k, hjk, hki⟩ | ⟨k, hik, hkj⟩)
@@ -173,6 +180,7 @@ eigenvector of every `Matrix.symmTridiagonalToeplitz n a b`. -/
 noncomputable def sineVec (n : ℕ) (k : Fin n) : Fin n → ℝ :=
   fun j => Real.sin (((j : ℕ) + 1) * (((k : ℕ) + 1) * π / (n + 1)))
 
+/-- The entries of a discrete sine vector. -/
 theorem sineVec_apply (k j : Fin n) :
     sineVec n k j = Real.sin (((j : ℕ) + 1) * (((k : ℕ) + 1) * π / (n + 1))) := rfl
 
@@ -395,6 +403,7 @@ noncomputable def sineOrthonormalBasis (n : ℕ) :
   OrthonormalBasis.mk (orthonormal_sineVec n)
     ((orthonormal_sineVec n).linearIndependent.span_eq_top_of_card_eq_finrank' (by simp)).ge
 
+/-- The vectors of the orthonormal sine basis are the normalized discrete sine vectors. -/
 @[simp]
 theorem sineOrthonormalBasis_apply (k : Fin n) :
     sineOrthonormalBasis n k = Real.sqrt (2 / ((n : ℝ) + 1)) • (WithLp.toLp 2 (sineVec n k)) := by
@@ -530,7 +539,7 @@ theorem isSymmetricBoundedBy_symmTridiagonalToeplitz (n : ℕ) (a b : ℝ) :
 /-- `tridiag(a, b, a)` is positive definite when the diagonal dominates strictly, `2|a| < b`.
 The boundary case `2|a| = b`, which is the model Laplacian `tridiag(-1, 2, -1)`, needs the sharp
 cosine bound instead: see `Matrix.posDef_symmTridiagonalToeplitz_neg_one_two`. -/
-theorem symmTridiagonalToeplitz_posDef (n : ℕ) {a b : ℝ} (h : 2 * |a| < b) :
+theorem posDef_symmTridiagonalToeplitz (n : ℕ) {a b : ℝ} (h : 2 * |a| < b) :
     (symmTridiagonalToeplitz n a b).PosDef := by
   rw [posDef_iff_isSymmetricCoercive]
   refine (isSymmetricBoundedBy_symmTridiagonalToeplitz n a b).isSymmetricCoercive ?_

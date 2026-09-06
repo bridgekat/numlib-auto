@@ -15,7 +15,22 @@ nonnegative inverse (his Definition 1.30). Both are statements about the entrywi
 `Numlib/LinearAlgebra/Matrix/Complexify`, and neither mentions an iteration; the splittings that
 consume them are in `Numlib/LinearSolve/Stationary/RegularSplitting`.
 
-## The proof, and the Perron–Frobenius theorem it does not use
+## Main definitions
+
+* `Matrix.IsMMatrix`: Saad's Definition 1.30, as a three-field structure; the remaining clause of
+  the book, positivity of the diagonal, is the derived `Matrix.IsMMatrix.diag_pos`.
+
+## Main results
+
+* `Matrix.EntrywiseNonneg.complexSpectralRadius_lt_one_iff`: the nonnegative Neumann criterion.
+* `Matrix.isMMatrix_iff_complexSpectralRadius_lt_one`: the spectral characterization, through the
+  Jacobi operator `1 - D⁻¹ A`.
+* `Matrix.IsMMatrix.of_entrywiseLE`: the comparison theorem, which is what makes the dropping step
+  of an incomplete factorization legitimate.
+
+## Implementation notes
+
+The proof of the criterion, and the Perron–Frobenius theorem it does *not* use.
 
 Both directions of the criterion come from one identity — with `C` a right inverse of `1 - B`,
 ```
@@ -137,8 +152,9 @@ namespace IsMMatrix
 variable {A : Matrix n n ℝ} (hA : A.IsMMatrix)
 include hA
 
-/-- The diagonal entries of an M-matrix are positive — the fourth clause of Saad's Definition
-1.30, which the other three imply. Reading `(A A⁻¹) i i = 1` entrywise, every off-diagonal term
+/-- The diagonal entries of an M-matrix are positive — the *first* clause of Saad's Definition
+1.30, which his Theorem 1.32 shows the other three to imply. Reading `(A A⁻¹) i i = 1` entrywise,
+every off-diagonal term
 `A i k * A⁻¹ k i` is nonpositive, so `A i i * A⁻¹ i i ≥ 1`, which forces both factors positive. -/
 theorem diag_pos (i : n) : 0 < A i i := by
   have hdet : IsUnit A.det := isUnit_iff_isUnit_det _ |>.1 hA.isUnit

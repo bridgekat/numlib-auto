@@ -87,6 +87,7 @@ diagonal entry. -/
 def adjDigraph (A : Matrix n n R) : Digraph n where
   Adj i j := A i j ≠ 0
 
+/-- The arrows of the adjacency digraph are the nonzero entries. -/
 @[simp]
 theorem adjDigraph_adj {A : Matrix n n R} {i j : n} : A.adjDigraph.Adj i j ↔ A i j ≠ 0 := Iff.rfl
 
@@ -107,6 +108,8 @@ when `i ≠ j` and at least one of `A i j`, `A j i` is nonzero. This is the grap
 reorderings act on. -/
 def adjGraph (A : Matrix n n R) : SimpleGraph n := SimpleGraph.fromRel fun i j => A i j ≠ 0
 
+/-- The edges of the pattern graph: distinct indices carrying a nonzero entry one way or
+the other. -/
 @[simp]
 theorem adjGraph_adj {A : Matrix n n R} {i j : n} :
     A.adjGraph.Adj i j ↔ i ≠ j ∧ (A i j ≠ 0 ∨ A j i ≠ 0) :=
@@ -147,6 +150,8 @@ section Normed
 
 variable [NormedAddCommGroup R] {A : Matrix n n R}
 
+/-- The arrows of the adjacency quiver are the nonzero entries, so it carries the same
+relation as `Matrix.adjDigraph`. -/
 @[simp]
 theorem nonempty_adjQuiver_hom_iff {i j : n} :
     Nonempty (@Quiver.Hom n A.adjQuiver i j) ↔ A i j ≠ 0 :=
@@ -156,6 +161,7 @@ theorem nonempty_adjQuiver_hom_iff {i j : n} :
 def adjHom {i j : n} (h : A i j ≠ 0) : @Quiver.Hom n A.adjQuiver i j :=
   PLift.up (norm_pos_iff.2 h)
 
+/-- An arrow of the adjacency quiver witnesses a nonzero entry. -/
 theorem apply_ne_zero_of_adjHom {i j : n} (e : @Quiver.Hom n A.adjQuiver i j) : A i j ≠ 0 :=
   norm_pos_iff.1 e.down
 
@@ -187,6 +193,7 @@ def adjGraphIso (A : Matrix n n R) (σ : Equiv.Perm n) :
     intro i j
     simp [adjGraph_adj, σ.injective.ne_iff]
 
+/-- The relabelling `Matrix.adjGraphIso` acts by the permutation it is built from. -/
 @[simp]
 theorem adjGraphIso_apply (A : Matrix n n R) (σ : Equiv.Perm n) (i : n) :
     adjGraphIso A σ i = σ i := rfl
@@ -301,6 +308,7 @@ theorem isPatternIrreducible_iff :
   rw [map_apply]
   exact norm_nonneg _
 
+/-- The path of positive length that pattern irreducibility provides. -/
 theorem IsPatternIrreducible.exists_pos_length_path (h : A.IsPatternIrreducible) (i j : n) :
     letI := A.adjQuiver; ∃ p : Path i j, 0 < p.length := isPatternIrreducible_iff.1 h i j
 

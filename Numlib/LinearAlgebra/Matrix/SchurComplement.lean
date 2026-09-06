@@ -31,7 +31,7 @@ method needs:
   definite. Mathlib has only the positive semidefinite equivalence `Matrix.PosDef.fromBlocks₁₁`.
 
 `Matrix.schurComplementSingle` is the `1 × 1`-pivot case, one step of Gaussian elimination, which
-is the form incomplete factorizations use (Saad[^saad-iterative] (10.10)).
+is the form incomplete factorizations use (Saad[^saad-iterative] Theorem 10.1).
 
 ## Implementation notes
 
@@ -42,12 +42,14 @@ hypothesis takes downstream; each proof turns them into `Invertible` instances i
 Indexing is by a sum type `m ⊕ n` throughout, so that `Matrix.toBlocks₁₁ … Matrix.toBlocks₂₂`
 apply and no reindexing equivalence appears in the statements.
 
-`Matrix.schurComplementSingle` is not yet connected to `Matrix.schurComplement`: the identity
-`A.schurComplementSingle p = ((A.submatrix e e).schurComplement)` for
-`e = Equiv.sumCompl (· = p) : {i // i = p} ⊕ {i // i ≠ p} ≃ n` needs the inverse of the
+## TODO
+
+Connect `Matrix.schurComplementSingle` to `Matrix.schurComplement`, by the identity
+`A.schurComplementSingle p = (A.submatrix e e).schurComplement` for
+`e = Equiv.sumCompl (· = p) : {i // i = p} ⊕ {i // i ≠ p} ≃ n`. It needs the inverse of the
 `1 × 1` block, which is `Matrix.adjugate_subsingleton` (the adjugate of a subsingleton-indexed
 matrix is `1`) together with `Matrix.det_unique`, and then the collapse of a sum over a `Unique`
-index type. Nothing else is missing; it was left out for time.
+index type.
 
 ## References
 
@@ -72,6 +74,7 @@ singular, `Matrix.inv` being junk there. -/
 noncomputable def schurComplement (A : Matrix (m ⊕ n) (m ⊕ n) R) : Matrix n n R :=
   A.toBlocks₂₂ - A.toBlocks₂₁ * A.toBlocks₁₁⁻¹ * A.toBlocks₁₂
 
+/-- The Schur complement, unfolded. -/
 theorem schurComplement_eq (A : Matrix (m ⊕ n) (m ⊕ n) R) :
     A.schurComplement = A.toBlocks₂₂ - A.toBlocks₂₁ * A.toBlocks₁₁⁻¹ * A.toBlocks₁₂ := rfl
 
@@ -205,9 +208,10 @@ section Single
 variable {K : Type*} [Field K]
 
 /-- **One step of Gaussian elimination**, the `1 × 1`-pivot Schur complement: for a pivot index
-`p`, the matrix `A i j - A i p (A p p)⁻¹ A p j` on the indices other than `p`. This is `A₁` of
-Saad, *Iterative Methods for Sparse Linear Systems*, (10.10), the matrix whose incomplete
-factorizations the theory of Chapter 10 studies. -/
+`p`, the matrix `A i j - A i p (A p p)⁻¹ A p j` on the indices other than `p`. It is the trailing
+block of the matrix `A₁` of Saad, *Iterative Methods for Sparse Linear Systems*, Theorem 10.1 —
+his `A₁` is square on all `n` indices, keeping the pivot row and a zeroed pivot column — and it is
+the matrix whose incomplete factorizations the theory of Chapter 10 studies. -/
 noncomputable def schurComplementSingle (A : Matrix n n K) (p : n) :
     Matrix {i : n // i ≠ p} {i : n // i ≠ p} K :=
   Matrix.of fun i j => A i.1 j.1 - A i.1 p * (A p p)⁻¹ * A p j.1

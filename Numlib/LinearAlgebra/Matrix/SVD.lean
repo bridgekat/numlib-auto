@@ -23,14 +23,33 @@ nonzero ones are an orthonormal family `v` of *left singular vectors*, and
 `A x = ∑ σ_i ⟪u_i, x⟫ v_i`. That is the *singular system* of Kress, *Numerical
 Analysis*[^kress] (Theorem 5.4), and `Matrix.exists_singularSystem` states it.
 
+Three things are built on it. The **Moore–Penrose pseudoinverse** `A⁺ = (Aᴴ A)⁺ Aᴴ`, obtained by
+inverting the nonzero eigenvalues of the Gram matrix and leaving the zero ones alone, is the
+unique matrix satisfying the four Penrose conditions, and `A⁺ y` is the least-squares solution of
+`A x = y` of smallest norm. The **spectral condition number** of a nonsingular matrix is the ratio
+of its extreme singular values. And the **Tikhonov regularization** `(α + Aᴴ A)⁻¹ Aᴴ` at level
+`α > 0` is the unique solution of the regularized normal equations and the unique minimizer of
+`x ↦ ‖A x - y‖² + α ‖x‖²` (Kress[^kress], Theorem 5.7).
+
 ## Main definitions
 
 * `Matrix.singularValues`, `Matrix.rightSingularBasis`: the singular values indexed by the columns
-  of `A`, and the orthonormal eigenbasis of `Aᴴ A` they come from.
+  of `A`, and the orthonormal eigenbasis of `Aᴴ A` they come from;
+  `Matrix.rightSingularUnitary` is the same eigenbasis as a unitary matrix.
+* `Matrix.gramPinv` and `Matrix.pinv`: the Moore–Penrose pseudoinverse of `Aᴴ A` and of `A`.
+* `Matrix.tikhonov`: the Tikhonov regularization of `A` at level `α`.
 
 ## Main results
 
-* `Matrix.exists_singularSystem`: the singular system of `A` and the expansion of `A` along it.
+* `Matrix.exists_singularSystem`: the singular system of `A` and the expansion of `A` along it;
+  `Matrix.norm_sq_toEuclideanLin_apply` is the Parseval identity behind every bound here.
+* `Matrix.pinv_unique`: the four Penrose conditions characterize `A⁺`;
+  `Matrix.norm_toEuclideanLin_pinv_sub_eq_iInf` and `Matrix.norm_pinv_le_of_normalEquations`: it
+  is the least-squares solution of least norm.
+* `Matrix.l2_opNorm_eq_iSup_singularValues`, `Matrix.l2_opNorm_inv_eq_inv_iInf_singularValues` and
+  `Matrix.condNumber_l2_eq_div_singularValues`: the spectral condition number is `σmax/σmin`.
+* `Matrix.tikhonov_unique` and `Matrix.norm_sub_sq_add_mul_norm_sq_tikhonov_le`: the regularized
+  normal equations and the variational characterization of the regularized solution.
 
 ## Implementation notes
 
@@ -68,8 +87,10 @@ noncomputable def rightSingularBasis (A : Matrix m n 𝕜) :
 
 variable (A : Matrix m n 𝕜)
 
+/-- Singular values are nonnegative, being square roots. -/
 theorem singularValues_nonneg (i : n) : 0 ≤ A.singularValues i := Real.sqrt_nonneg _
 
+/-- The square of a singular value is the corresponding eigenvalue of the Gram matrix. -/
 theorem sq_singularValues (i : n) :
     A.singularValues i ^ 2 = (isHermitian_conjTranspose_mul_self A).eigenvalues i :=
   Real.sq_sqrt (eigenvalues_conjTranspose_mul_self_nonneg A i)
@@ -104,6 +125,7 @@ theorem inner_toEuclideanLin_rightSingularBasis (i j : n) :
   · rw [h, mul_one]
   · rw [mul_zero]
 
+/-- The image of a right singular vector has the corresponding singular value as its norm. -/
 @[simp]
 theorem norm_toEuclideanLin_rightSingularBasis (i : n) :
     ‖toEuclideanLin A (A.rightSingularBasis i)‖ = A.singularValues i := by
@@ -253,11 +275,13 @@ section Pinv
 
 open scoped ComplexOrder
 
+/-- `x x⁻¹ x = x`, at `x = 0` too. -/
 private theorem mul_inv_mul_self (x : 𝕜) : x * x⁻¹ * x = x := by
   rcases eq_or_ne x 0 with rfl | h
   · simp
   · rw [mul_inv_cancel₀ h, one_mul]
 
+/-- `x⁻¹ x x⁻¹ = x⁻¹`, at `x = 0` too. -/
 private theorem inv_mul_mul_inv (x : 𝕜) : x⁻¹ * x * x⁻¹ = x⁻¹ := by
   rcases eq_or_ne x 0 with rfl | h
   · simp
@@ -268,13 +292,16 @@ unitary of the Gram matrix `Aᴴ A`. -/
 noncomputable def rightSingularUnitary (A : Matrix m n 𝕜) : Matrix n n 𝕜 :=
   (isHermitian_conjTranspose_mul_self A).eigenvectorUnitary
 
+/-- The right singular unitary is unitary. -/
 theorem rightSingularUnitary_mem_unitaryGroup : A.rightSingularUnitary ∈ unitaryGroup n 𝕜 :=
   ((isHermitian_conjTranspose_mul_self A).eigenvectorUnitary).2
 
+/-- One half of unitarity of the right singular unitary, in equational form. -/
 theorem star_mul_rightSingularUnitary :
     star A.rightSingularUnitary * A.rightSingularUnitary = 1 :=
   mem_unitaryGroup_iff'.1 A.rightSingularUnitary_mem_unitaryGroup
 
+/-- The other half of unitarity of the right singular unitary, in equational form. -/
 theorem rightSingularUnitary_mul_star :
     A.rightSingularUnitary * star A.rightSingularUnitary = 1 :=
   mem_unitaryGroup_iff.1 A.rightSingularUnitary_mem_unitaryGroup
@@ -311,10 +338,12 @@ noncomputable def gramPinv (A : Matrix m n 𝕜) : Matrix n n 𝕜 :=
   A.rightSingularUnitary * diagonal (fun i => ((A.singularValues i ^ 2 : ℝ) : 𝕜)⁻¹)
     * star A.rightSingularUnitary
 
+/-- The pseudoinverse of the Gram matrix, unfolded. -/
 theorem gramPinv_def : A.gramPinv = A.rightSingularUnitary *
     diagonal (fun i => ((A.singularValues i ^ 2 : ℝ) : 𝕜)⁻¹) * star A.rightSingularUnitary :=
   rfl
 
+/-- The pseudoinverse of the Gram matrix is Hermitian, its eigenvalues being real. -/
 theorem isHermitian_gramPinv : A.gramPinv.IsHermitian := by
   have hf : (star fun i => (((A.singularValues i ^ 2 : ℝ) : 𝕜))⁻¹)
       = fun i => (((A.singularValues i ^ 2 : ℝ) : 𝕜))⁻¹ := by
@@ -323,18 +352,22 @@ theorem isHermitian_gramPinv : A.gramPinv.IsHermitian := by
   rw [Matrix.IsHermitian, gramPinv_def, star_eq_conjTranspose, conjTranspose_mul,
     conjTranspose_mul, conjTranspose_conjTranspose, diagonal_conjTranspose, hf, Matrix.mul_assoc]
 
+/-- The first Penrose condition for the Gram matrix. -/
 theorem gram_mul_gramPinv_mul_gram : Aᴴ * A * A.gramPinv * (Aᴴ * A) = Aᴴ * A := by
   rw [conjTranspose_mul_self_eq_conj_diagonal, gramPinv_def, conj_diagonal_mul_conj_diagonal,
     conj_diagonal_mul_conj_diagonal]
   congr 2
   exact congrArg diagonal (funext fun i => mul_inv_mul_self _)
 
+/-- The second Penrose condition for the Gram matrix. -/
 theorem gramPinv_mul_gram_mul_gramPinv : A.gramPinv * (Aᴴ * A) * A.gramPinv = A.gramPinv := by
   rw [conjTranspose_mul_self_eq_conj_diagonal, gramPinv_def, conj_diagonal_mul_conj_diagonal,
     conj_diagonal_mul_conj_diagonal]
   congr 2
   exact congrArg diagonal (funext fun i => inv_mul_mul_inv _)
 
+/-- The Gram matrix commutes with its pseudoinverse, both being diagonal in the right
+singular basis. -/
 theorem gramPinv_mul_gram_comm : A.gramPinv * (Aᴴ * A) = Aᴴ * A * A.gramPinv := by
   rw [conjTranspose_mul_self_eq_conj_diagonal, gramPinv_def, conj_diagonal_mul_conj_diagonal,
     conj_diagonal_mul_conj_diagonal]
@@ -347,6 +380,7 @@ characterized by the four Penrose conditions (`Matrix.pinv_unique`), and `A⁺ y
 least-squares solution of `A x = y` of smallest norm. -/
 noncomputable def pinv (A : Matrix m n 𝕜) : Matrix n m 𝕜 := A.gramPinv * Aᴴ
 
+/-- The pseudoinverse, unfolded. -/
 theorem pinv_def : A.pinv = A.gramPinv * Aᴴ := rfl
 
 omit [DecidableEq n] in
@@ -628,12 +662,14 @@ variable (α : ℝ)
 /-- The **Tikhonov regularization** of `A` at level `α`: the matrix `(α + Aᴴ A)⁻¹ Aᴴ`, whose
 action on `y` is the regularized solution of `A x = y`. For `α > 0` it is the unique solution of
 the regularized normal equations `α x + Aᴴ A x = Aᴴ y` (`Matrix.tikhonov_unique`) and the unique
-minimizer of `x ↦ ‖A x - y‖² + α ‖x‖²` (`Matrix.isMinOn_tikhonov`). In the right singular basis
+minimizer of `x ↦ ‖A x - y‖² + α ‖x‖²`
+(`Matrix.norm_sub_sq_add_mul_norm_sq_tikhonov_le`). In the right singular basis
 it multiplies the `i`-th coordinate by `σ_i/(α + σ_i²)`, which is
 `Matrix.mul_inv_smul_one_add_gram` read through `Matrix.exists_singularSystem`. -/
 noncomputable def tikhonov (A : Matrix m n 𝕜) (α : ℝ) : Matrix n m 𝕜 :=
   ((α : 𝕜) • 1 + Aᴴ * A)⁻¹ * Aᴴ
 
+/-- The Tikhonov regularization, unfolded. -/
 theorem tikhonov_def : A.tikhonov α = ((α : 𝕜) • 1 + Aᴴ * A)⁻¹ * Aᴴ := rfl
 
 /-- The regularized Gram matrix is diagonal in the right singular basis, with entries
@@ -681,6 +717,7 @@ theorem mul_inv_smul_one_add_gram (hα : 0 < α) :
     · simp [h]
   rw [hone, hdiag, Matrix.mul_one, A.rightSingularUnitary_mul_star]
 
+/-- For `α > 0` the regularized Gram matrix is nonsingular. -/
 theorem isUnit_det_smul_one_add_gram (hα : 0 < α) :
     IsUnit ((α : 𝕜) • 1 + Aᴴ * A).det :=
   Matrix.isUnit_det_of_right_inverse (A.mul_inv_smul_one_add_gram α hα)
@@ -714,7 +751,7 @@ theorem tikhonov_unique (hα : 0 < α) (y : EuclideanSpace 𝕜 m) (x : Euclidea
 functional** `x ↦ ‖A x - y‖² + α ‖x‖²` (Kress, *Numerical Analysis*, Theorem 5.7). The
 first-order term of the expansion around `z` vanishes exactly because `z` solves the normal
 equations, and the remainder `‖A (x - z)‖² + α ‖x - z‖²` is nonnegative. -/
-theorem isMinOn_of_smul_add_gram (hα : 0 ≤ α) (y : EuclideanSpace 𝕜 m)
+theorem norm_sub_sq_add_mul_norm_sq_le_of_smul_add_gram (hα : 0 ≤ α) (y : EuclideanSpace 𝕜 m)
     {z : EuclideanSpace 𝕜 n} (hz : (α : 𝕜) • z + toEuclideanLin (Aᴴ * A) z = toEuclideanLin Aᴴ y)
     (x : EuclideanSpace 𝕜 n) :
     ‖toEuclideanLin A z - y‖ ^ 2 + α * ‖z‖ ^ 2
@@ -757,11 +794,13 @@ theorem isMinOn_of_smul_add_gram (hα : 0 ≤ α) (y : EuclideanSpace 𝕜 m)
     mul_nonneg hα (sq_nonneg ‖x - z‖)]
 
 /-- **The Tikhonov solution is the minimizer of the regularized least-squares functional.** -/
-theorem isMinOn_tikhonov (hα : 0 < α) (y : EuclideanSpace 𝕜 m) (x : EuclideanSpace 𝕜 n) :
+theorem norm_sub_sq_add_mul_norm_sq_tikhonov_le (hα : 0 < α) (y : EuclideanSpace 𝕜 m)
+    (x : EuclideanSpace 𝕜 n) :
     ‖toEuclideanLin A (toEuclideanLin (A.tikhonov α) y) - y‖ ^ 2
         + α * ‖toEuclideanLin (A.tikhonov α) y‖ ^ 2
       ≤ ‖toEuclideanLin A x - y‖ ^ 2 + α * ‖x‖ ^ 2 :=
-  A.isMinOn_of_smul_add_gram α hα.le y ((A.tikhonov_unique α hα y _).2 rfl) x
+  A.norm_sub_sq_add_mul_norm_sq_le_of_smul_add_gram α hα.le y
+    ((A.tikhonov_unique α hα y _).2 rfl) x
 
 end Tikhonov
 

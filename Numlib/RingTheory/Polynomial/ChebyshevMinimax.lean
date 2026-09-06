@@ -21,6 +21,26 @@ The classical Chebyshev min–max theorem on an interval,
 geometric rates used in Krylov-method error bounds.
 Mathlib supplies `Polynomial.Chebyshev.T` and the extremal inequality
 `Polynomial.Chebyshev.eval_iterate_derivative_le_of_forall_abs_le_one`.
+
+The last theorem of the file leaves the single interval: for a spectrum split into two intervals
+on either side of the origin, composing the shifted Chebyshev polynomial with a quadratic that
+fixes the origin and maps both intervals onto one gives the corresponding geometric bound.
+
+## Main definitions
+
+* `Polynomial.Chebyshev.shifted m a b γ`: the Chebyshev polynomial of degree `m` transplanted to
+  `[a, b]` by an affine change of variable and normalized to `1` at `γ`.
+
+## Main results
+
+* `Polynomial.Chebyshev.one_div_eval_T_le_sSup_abs_eval` and
+  `Polynomial.Chebyshev.sSup_abs_eval_shifted`: the min–max value, as a lower bound over the
+  admissible polynomials and as the value `Polynomial.Chebyshev.shifted` attains;
+  `Polynomial.Chebyshev.one_div_eval_T_le_sSup_abs_eval_of_eval_zero` is the case `γ = 0`.
+* `Polynomial.Chebyshev.one_div_eval_T_le_two_mul_pow`: the growth estimate
+  `1 / T_m((κ + 1)/(κ - 1)) ≤ 2 ((√κ - 1)/(√κ + 1))^m`, which is where the `√κ` rate of a Krylov
+  method on a system of condition number `κ` comes from.
+* `Polynomial.Chebyshev.exists_eval_zero_eq_one_abs_le_of_union_Icc`: the two-interval bound.
 -/
 
 open Polynomial Polynomial.Chebyshev
@@ -106,6 +126,7 @@ private theorem one_lt_abs_shift {a b γ : ℝ} (hab : a < b) (hγ : γ ∉ Set.
       have : (b + a - 2 * γ) / (b - a) < -1 := by rw [div_lt_iff₀ hd]; linarith
       linarith) (neg_le_abs _)
 
+/-- `|T_m|` is unchanged by a sign change of its argument, `T_m` being even or odd with `m`. -/
 private theorem abs_eval_T_neg (m : ℕ) (z : ℝ) :
     |(T ℝ (m : ℤ)).eval (-z)| = |(T ℝ (m : ℤ)).eval z| := by
   simp [T_eval_neg, abs_mul]
@@ -149,6 +170,7 @@ private theorem eval_le_abs_eval_T {m : ℕ} {P : ℝ[X]} (hdeg : P.degree ≤ m
       _ ≤ |(T ℝ (m : ℤ)).eval (-z)| := le_abs_self _
       _ = |(T ℝ (m : ℤ)).eval z| := abs_eval_T_neg m z
 
+/-- The modulus of a polynomial attains a maximum on a nonempty compact interval. -/
 private theorem exists_isGreatest_abs_eval (p : ℝ[X]) {a b : ℝ} (hab : a ≤ b) :
     ∃ M, IsGreatest ((fun t => |p.eval t|) '' Set.Icc a b) M :=
   (isCompact_Icc.image p.continuous.abs).exists_isGreatest

@@ -64,6 +64,7 @@ unreachable pair, which would otherwise put the whole of the rest of the graph i
 -/
 def sphere (G : SimpleGraph V) (v : V) (k : ℕ) : Set V := {u | G.Reachable v u ∧ G.dist v u = k}
 
+/-- Membership in a sphere, unfolded. -/
 @[simp]
 theorem mem_sphere : u ∈ G.sphere v k ↔ G.Reachable v u ∧ G.dist v u = k := Iff.rfl
 
