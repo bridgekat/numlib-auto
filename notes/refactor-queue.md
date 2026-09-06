@@ -156,6 +156,15 @@ surfaces (`inner_op_conjTranspose`, `inner_conjTranspose`, `inner_op_conjTranspo
 `Common.lean` beside `ofLp_toEuclideanLin` — together with a **rectangular** `ofLp_toEuclideanLin`,
 since the existing one is square-only and forced a private copy in Chapter 8.
 
+Chapters 8.3 and 8.4 avoided a fourth copy by importing §8.1's, but added four more near-duplicates
+that belong in the same place: `Ch08.inner_mul_conjTranspose` (the rectangular companion),
+`Ch08.ofLp_toEuclideanLin` (the rectangular coercion R12 already asks for), `Ch08.inner_transpose`
+and `inner_transpose'` (the real specializations), and a third copy of
+`op (B * C) = op B ∘ₗ op C`, which `Ch09.op_mul` and `Ch05.toEuclideanLin_mul_apply` also are.
+
+`Numlib/Analysis/Matrix/ToEuclideanLin.lean` should also carry the five applied forms of matrix
+linearity (`0 ⬝ v`, `1 ⬝ v`, `(-M) ⬝ v`, `(M - N) ⬝ v`, `(r • M) ⬝ v`), written privately in §8.4.
+
 ### R10. The `Lp` dilation isometry wants to be general
 
 `MeasureTheory.Lp.dilationₗᵢ` (`Numlib/Analysis/Wavelet/Haar.lean`) is stated for dyadic dilations
@@ -202,6 +211,20 @@ is private and its public form needs `NormOneClass`, which `X →L[𝕜] X` lack
 modules have now routed around it. And `Krylov.norm_sum_smul_vec_eq`,
 `mem_subspace_iff_exists_coeffs`, `residual_coeff_eq_zero` in `Krylov/Hessenberg`, plus
 `Lanczos.mulVec_tridiagExt_castSucc`, were duplicated privately by `Krylov/Singular`.
+
+### R17. Two one-dimensional projection facts belong in the backbone
+
+Every one-dimensional relaxation in the corpus — Kaczmarz, NR-SOR, Cimmino, and SOR read as a
+projection process — goes through "a one-dimensional Petrov–Galerkin pair's `pairStep` is
+`Projection.step1`". It is `SaadSparse.Ch08.pairStep_eq_step1` today and belongs in
+`Numlib/LinearSolve/Projection/{Additive,OneDimensional}.lean`, with
+`isNondegeneratePair_span_singleton`.
+
+Beside it, `Numlib/LinearSolve/Projection/Optimality.lean` should take
+`SaadSparse.Ch08.isGalerkin_iff_saddleObjective_min`: for symmetric coercive `A`, the Galerkin
+iterate over `x₀ + K` is exactly the minimizer of `f z = ½⟪A z, z⟫ - ⟪b, z⟫`. That module has
+`IsGalerkin.quadratic_le`, which is only one direction; the bridge is
+`f z = ½‖x* - z‖_A² - ½⟪b, x*⟫`, about ten lines.
 
 ### R15. Gram-Schmidt is index-bound, and three modules have paid for it
 
