@@ -1,184 +1,93 @@
 namespace = "Schwarz"
-desc = '''
-The abstract Schwarz theory: Saad, *Iterative Methods for Sparse Linear Systems*, §14.3, and in
-particular the convergence analysis of §14.3.4.
 
-The data is a finite family `V : ι → Submodule 𝕜 H` of finite-dimensional subspaces of an inner
-product space, and `P i = (V i).starProjection`. Saad's `P_i = R_iᵀ A_i⁻¹ R_i A` is exactly this
-projector in the energy inner product of `A`: `V i = range R_iᵀ`, `A_i = R_i A R_iᵀ` is the Galerkin
-coarse operator of that subspace, and the self-adjointness Saad checks by hand is
-`Submodule.starProjection`'s. So the whole theory is stated in a plain Hilbert space `H` and applied
-with `H = WithEnergy A hA`; that is the reason the difficult results below have short proofs, and it
-is what lets a finite-element book reuse them verbatim.
+[[node]]
+id = "inner_sum_le"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Exercise 14.1"
 
-The two hypotheses are named. `IsStableDecompositionWith V K₀` is Saad's Assumption 1: every vector
-decomposes over the family with `∑ ‖u_i‖² ≤ K₀ ‖u‖²`. `IsStrengthenedCauchySchwarzWith V K₁` is
-Assumption 2. Saad is explicit that neither is verifiable by linear algebra alone — they hold for
-finite-element discretizations of elliptic problems and are proved there — so they are hypotheses
-here and nothing in the plan attempts to establish them.
-
-Results: `λmax(A_J) ≤ s` (Thm 14.5) and `≤ c` for a colouring into `c` classes of mutually
-non-interacting subdomains (Thm 14.6); `λmin(A_J) ≥ 1/K₀` (Thm 14.7); the telescoping identity
-(14.39); Lemma 14.8; and `‖Q_s‖_A ≤ √(1 - 1/(K₀ (1 + K₁)²))` (Thm 14.9). The first and third are
-packaged as one `LinearMap.IsSymmetricBoundedBy` statement, which is the hypothesis every
-Chebyshev-type bound in the library takes, so that "additive Schwarz preconditioned CG converges at
-the rate of `√(s K₀)`" is a corollary of `Krylov.IsGalerkinIterate.energyNorm_error_le` and needs no
-new estimate.
-
-Difficulty: Thm 14.7 and Lemma 14.8 are the real proofs (★★), both by the vector-valued
-Cauchy–Schwarz inequality `∑ ⟪x_i, y_i⟫ ≤ (∑ ‖x_i‖²)^{1/2} (∑ ‖y_i‖²)^{1/2}`, which is Saad's own
-Exercise 14.1 and should be a lemma of the module.
-'''
+[[node]]
+id = "sum_norm_starProjection_sq_le_of_pairwise_orthogonal"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 14.6"
 
 [[node]]
 id = "IsStableDecompositionWith"
-kind = "definition"
-desc = '''Saad's Assumption 1 of §14.3.4: `Schwarz.IsStableDecompositionWith V K₀ : Prop` says every
-`u : H` can be written `u = ∑ i, w i` with `w i ∈ V i` and `∑ i, ‖w i‖ ^ 2 ≤ K₀ * ‖u‖ ^ 2`. In the
-Schwarz application the norm is the energy norm, so this is Saad's
-`∑ (A u_i, u_i) ≤ K₀ (A u, u)`. Not provable from the algebra: it is the hypothesis that the
-subdomains cover the space stably.'''
 source = "Saad, Iterative Methods for Sparse Linear Systems, Assumption 1 of Section 14.3.4"
 
 [[node]]
 id = "IsStrengthenedCauchySchwarzWith"
-kind = "definition"
-desc = '''Saad's Assumption 2 of §14.3.4, (14.40): for every finite set `S ⊆ ι × ι` and all families
-`u, v : ι → H`, `∑_{(i,j) ∈ S} re ⟪P i (u i), P j (v j)⟫ ≤ K₁ (∑ ‖P i (u i)‖²)^{1/2}
-(∑ ‖P j (v j)‖²)^{1/2}`. Measures how far from orthogonal the subspaces are; `K₁ = 0` for pairwise
-orthogonal ones, and `K₁ ≤ card ι` always by the plain Cauchy–Schwarz inequality.'''
 source = "Saad, Iterative Methods for Sparse Linear Systems, Assumption 2 of Section 14.3.4, (14.40)"
 
 [[node]]
-id = "inner_sum_le"
-kind = "theorem"
-desc = '''The vector-valued Cauchy–Schwarz inequality that both difficult proofs of the module use, and
-Saad's Exercise 14.1: `∑ i, re ⟪x i, y i⟫ ≤ (∑ i, ‖x i‖ ^ 2)^{1/2} * (∑ i, ‖y i‖ ^ 2)^{1/2}`.
-Cauchy–Schwarz termwise, then the Cauchy–Schwarz inequality in `EuclideanSpace ℝ ι` (Mathlib's
-`Finset.inner_mul_le_norm_mul_norm` or `Finset.sum_sqrt_mul_sqrt_le`).'''
-source = "Saad, Iterative Methods for Sparse Linear Systems, Exercise 14.1"
-
-[[node]]
 id = "additiveOperator"
-kind = "definition"
-desc = '''`Schwarz.additiveOperator V = ∑ i, (V i).starProjection`, Saad's `A_J` of (14.37): the additive
-Schwarz preconditioned operator `M⁻¹ A` read in the energy inner product. Self-adjoint, being a
-sum of orthogonal projectors (`additiveOperator_isSymmetric`), and positive
-(`additiveOperator_isPositive`, `re ⟪A_J u, u⟫ = ∑ ‖P i u‖²`).'''
 source = "Saad, Iterative Methods for Sparse Linear Systems, (14.37)"
 
 [[node]]
+id = "additiveOperator_isSymmetric"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 14.3.4"
+
+[[node]]
+id = "re_inner_additiveOperator"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 14.3.4"
+
+[[node]]
 id = "re_inner_additiveOperator_le"
-kind = "theorem"
-desc = '''Saad Theorem 14.5: `re ⟪A_J u, u⟫ ≤ card ι * ‖u‖ ^ 2`, so `λmax(A_J) ≤ s`. Each `‖P i u‖ ≤ ‖u‖`,
-and `re ⟪A_J u, u⟫ = ∑ ‖P i u‖²`. The refinement `re_inner_additiveOperator_le_of_orthogonalFamily`
-is Saad Theorem 14.6: if the index set partitions into `c` classes such that the subspaces within a
-class are pairwise orthogonal, then each class contributes an orthogonal projector and
-`λmax(A_J) ≤ c` — a colouring of the subdomain graph.'''
-deps = ["additiveOperator"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, Theorems 14.5 and 14.6"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 14.5"
+
+[[node]]
+id = "re_inner_additiveOperator_le_of_coloring"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 14.6"
 
 [[node]]
 id = "le_re_inner_additiveOperator"
-kind = "theorem"
-desc = '''Saad Theorem 14.7: under a stable decomposition with constant `K₀`,
-`‖u‖ ^ 2 / K₀ ≤ re ⟪A_J u, u⟫`, so `λmin(A_J) ≥ 1/K₀`. Write `u = ∑ w i` with `w i ∈ V i`; then
-`‖u‖² = ∑ ⟪w i, u⟫ = ∑ ⟪w i, P i u⟫` because `P i` is the orthogonal projector onto a subspace
-containing `w i`; apply `inner_sum_le`, then the stable decomposition, then
-`∑ ‖P i u‖² = re ⟪A_J u, u⟫`.'''
-deps = ["additiveOperator", "IsStableDecompositionWith", "inner_sum_le"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 14.7"
 
 [[node]]
 id = "isSymmetricBoundedBy_additiveOperator"
-kind = "theorem"
-desc = '''Theorems 14.5 and 14.7 combined into the library's spectral hypothesis:
-`LinearMap.IsSymmetricBoundedBy (additiveOperator V) (1/K₀) (card ι)` under a stable decomposition,
-whence `Matrix`- and eigenvalue-free access to every Chebyshev-type bound. In particular, additive
-Schwarz preconditioned CG has condition number at most `s K₀` and hence the rate
-`2 ((√(s K₀) - 1)/(√(s K₀) + 1))^k` by `Krylov.IsGalerkinIterate.energyNorm_error_le`; this
-corollary is what makes the theory usable and is the reason the two bounds are packaged together.'''
-deps = ["re_inner_additiveOperator_le", "le_re_inner_additiveOperator", "LinearMap.IsSymmetricBoundedBy", "Krylov.IsGalerkinIterate.energyNorm_error_le"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, Theorems 14.5 and 14.7"
 
 [[node]]
+id = "energyNorm_error_le"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 14.3.4"
+
+[[node]]
 id = "errorOp"
-kind = "definition"
-desc = '''`Schwarz.errorOp V : ℕ → H →L[𝕜] H` with `errorOp V 0 = 1` and
-`errorOp V (i+1) = (1 - (V i).starProjection) ∘L errorOp V i`, Saad's `Q_i` of (14.26): the error
-propagation operator of a multiplicative Schwarz sweep over the subspaces in the order
-`0, 1, …, i-1`. `ℕ`-indexed rather than `Fin`-indexed so that the recursion is definitional and
-prefixes are stable, following the convention of `Numlib/Krylov/Hessenberg`.'''
-source = "Saad, Iterative Methods for Sparse Linear Systems, (14.25)–(14.26)"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (14.25)-(14.26)"
 
 [[node]]
 id = "one_sub_errorOp_eq_sum"
-kind = "theorem"
-desc = '''Saad Lemma 14.4 and its consequence (14.35): with `Z_i = 1 - Q_i`, `Z_{i+1} = Z_i + P_i (1 - Z_i)`
-and hence `Z_s = ∑_{j < s} P_j Q_j`. Also the preconditioner form of Saad Proposition 14.3 and
-Lemma 14.4: the multiplicative Schwarz sweep is the fixed-point iteration of the preconditioned
-system with `M⁻¹ A = 1 - Q_s` and `M⁻¹ = (1 - Q_s) A⁻¹`, computed by the recurrence
-`M_i = M_{i-1} + T_i (1 - A M_{i-1})` for `T_i = P_i A⁻¹`, which is Saad's Algorithms 14.4–14.5.
-The recurrences are algebra on the definition of `errorOp`; the `A⁻¹` forms are stated in the
-original inner product, where `T_i` is `R_iᵀ A_i⁻¹ R_i`.'''
-deps = ["errorOp"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 14.3, Lemma 14.4, (14.35)"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Lemma 14.4, (14.35)"
 
 [[node]]
 id = "norm_errorOp_sq_eq"
-kind = "theorem"
-desc = '''Saad (14.39), the telescoping identity of a multiplicative sweep:
-`‖errorOp V s v‖² = ‖v‖² - ∑_{i < s} ‖P i (errorOp V i v)‖²`. From
-`‖(1 - P) w‖² = ‖w‖² - ‖P w‖²` for an orthogonal projector, summed. It shows at once that the
-`A`-norm of the error never increases during a sweep, and it is the identity Theorem 14.9 turns
-into a rate.'''
-deps = ["errorOp"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, (14.39)"
 
 [[node]]
 id = "sum_norm_starProjection_sq_le"
-kind = "theorem"
-desc = '''Saad Lemma 14.8: under a strengthened Cauchy–Schwarz inequality with constant `K₁`,
-`∑_{i < s} ‖P i v‖² ≤ (1 + K₁)² ∑_{i < s} ‖P i (errorOp V i v)‖²`. Split
-`⟪P i v, P i v⟫ = ⟪P i v, P i (Q_i v)⟫ + ⟪P i v, (1 - Q_i) v⟫`, expand the second term by
-(14.35), bound the first by `inner_sum_le` and the second by Assumption 2, then divide by the
-common factor `(∑ ‖P i v‖²)^{1/2}`.'''
-deps = ["errorOp", "IsStrengthenedCauchySchwarzWith", "one_sub_errorOp_eq_sum", "inner_sum_le"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, Lemma 14.8"
 
 [[node]]
 id = "norm_errorOp_le"
-kind = "theorem"
-desc = '''Saad Theorem 14.9: under both assumptions,
-`‖errorOp V s v‖ ≤ √(1 - 1/(K₀ (1 + K₁)²)) ‖v‖`, so a multiplicative Schwarz sweep contracts the
-energy norm of the error at a rate depending only on `K₀` and `K₁`. Combine (14.39), Lemma 14.8 and
-`∑ ‖P i v‖² = re ⟪A_J v, v⟫ ≥ ‖v‖²/K₀` from Theorem 14.7.'''
-deps = ["norm_errorOp_sq_eq", "sum_norm_starProjection_sq_le", "le_re_inner_additiveOperator"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 14.9"
 
 [[node]]
 id = "energyProjection"
-kind = "definition"
-desc = '''The bridge to the rest of the library. For `A` symmetric coercive on `E` and a
-finite-dimensional `K ≤ E`, `Schwarz.energyProjection A hA K : E →ₗ[𝕜] E` is the `A`-orthogonal
-projector onto `K`, the transport of `(WithEnergy.submoduleMap A hA K).starProjection` along
-`WithEnergy.equiv` — the same object as `Multigrid.coarseProjection`, and Saad's
-`P_i = R_iᵀ A_i⁻¹ R_i A` of (14.24) once `K = range R_iᵀ`
-(`energyProjection_eq_of_galerkinCoarse`). Its defining characterization,
-`energyProjection_isGalerkin`, is that `x + P_i (x* - x)` is the Galerkin iterate of `A y = b` on
-`x + K`, which is what identifies a Schwarz subdomain solve with a projection step.'''
-deps = ["WithEnergy", "WithEnergy.equiv", "WithEnergy.submoduleMap", "IsGalerkin", "IsGalerkin.error_eq_starProjection"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, (14.24)"
 
 [[node]]
+id = "energyProjection_isGalerkin"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (14.24)"
+
+[[node]]
+id = "energyProjection_eq_of_galerkinCoarse"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (14.24)"
+
+[[node]]
+id = "isNondegeneratePair_self"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 14.3.1"
+
+[[node]]
 id = "error_multiplicativeStep_eq_errorOp"
-kind = "theorem"
-desc = '''The multiplicative Schwarz sweep of Saad §14.3.1 is the multiplicative projection sweep of
-`Numlib/LinearSolve/Projection/Additive` with `K i = L i` the subdomain subspaces: the error of
-`Projection.multiplicativeStep A b K K x` is `errorOp` applied to the error of `x`, transported
-along `WithEnergy.equiv`. The companion `error_additiveStep_eq` does the same for
-`Projection.additiveStep` with unit weights and Saad's `1 - A_J`. In other words, Saad's residual
-projectors of (5.22) and his error projectors of (14.24) are conjugate by `A`; proving that here is
-what keeps §5.4 and §14.3 from being two copies of one theory.'''
-deps = ["energyProjection", "errorOp", "additiveOperator", "Projection.multiplicativeStep", "Projection.additiveStep", "Projection.residual_additiveStep"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Sections 5.4 and 14.3"
+
+[[node]]
+id = "error_additiveStep_eq"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Sections 5.4 and 14.3"

@@ -1439,6 +1439,48 @@ least-squares problem; the same holds of `IsMinRes`, `IsGalerkin` and `IsPetrovG
 are all `A : E →ₗ[𝕜] E`. `IsMinError` is the exception — it mentions no operator, so it works
 across a rectangular `A` unchanged (Saad §8.1 uses exactly that).
 
+* **The discrete Cauchy–Schwarz inequality is `Real.sum_mul_le_sqrt_mul_sqrt`**
+  (`Mathlib/Analysis/Real/Sqrt.lean`), `∑ f g ≤ √(∑ f²) √(∑ g²)`, with `Real.sum_sqrt_mul_sqrt_le`
+  beside it and `sum_mul_sq_le_sq_mul_sq` (root namespace, `Algebra/Order/BigOperators/Ring/Finset`)
+  as the square-free form. `Finset.inner_mul_le_norm_mul_norm` does **not** exist — a plan named it,
+  and it cost a search. With `RCLike.re_le_norm` and `norm_inner_le_norm` termwise, the whole
+  vector-valued Cauchy–Schwarz inequality `∑ re ⟪x i, y i⟫ ≤ (∑‖x i‖²)^{1/2}(∑‖y i‖²)^{1/2}` is
+  three lines.
+* `div_inv_eq` does not exist in this toolchain: `a / b⁻¹ = a * b` is `rw [div_eq_mul_inv, inv_inv]`.
+* Orthogonal-projection API worth knowing before writing any of it by hand:
+  `Submodule.starProjection_orthogonal' : Uᗮ.starProjection = 1 - U.starProjection` (the error
+  operator of one projection step), `Submodule.norm_sq_eq_add_norm_sq_starProjection` (Pythagoras,
+  and hence the telescoping identity of a sweep), `Submodule.inner_starProjection_left_eq_right`
+  (self-adjointness), `Submodule.starProjection_apply_mem`, `Submodule.starProjection_eq_self_iff`
+  and `Submodule.starProjection_inner_eq_zero`. `Submodule.re_inner_starProjection_eq_normSq` is
+  stated with `‖K.orthogonalProjectionOnto v‖`, not with `‖K.starProjection v‖`, so the version
+  wanted for a quadratic form is easier reproved in four lines from
+  `starProjection_inner_eq_zero` than converted.
+* `Submodule.isOrtho_iff_inner_eq` and `inner_self_eq_norm_sq` both need `(𝕜 := 𝕜)` supplied when
+  used in a position where the scalar field is not already fixed by the goal — the usual symptom is
+  `typeclass instance problem is stuck: InnerProductSpace ?m E`, which names no lemma.
+* **`rw` with an equation whose left-hand side also occurs under a `√` destroys the link to the
+  hypotheses.** Rewriting the goal `X ≤ c * (√X * √Y)` with `hsum : X = T₁ + T₂` turns the `√X`
+  into `√(T₁ + T₂)` as well, after which `linarith` cannot use bounds stated in terms of `√X`.
+  `refine … (hsum.trans_le ?_)` rewrites only the outer occurrence and leaves the square roots
+  alone.
+* **`set x := e with h` is transparent to `rw`'s matching**, so a rewrite aimed at one side of the
+  goal can fire inside the *body* of the abbreviation: with `set z := Dinv (A e)`, a
+  `rw [← map_smul]` meant for `ω • equiv z` rewrote `ω • Dinv (A e)` into `Dinv (ω • A e)` instead.
+  `obtain ⟨z, hz⟩ : ∃ z, Dinv (A e) = z := ⟨_, rfl⟩` gives a genuinely opaque `z` plus a rewriting
+  equation, and rewriting forward with `hz` never surprises.
+* For an identity between a norm in a renormed space and the original space, rewrite *forwards* out
+  of the wrapper: `rw [← WithEnergy.norm_equiv A hA X, map_sub, map_smul]` turns `energyNorm A X`
+  into `‖equiv e - ω • equiv z‖` safely, where the reverse route (`rw [← map_smul, ← map_sub,
+  norm_equiv]`) matches the wrong subterm. Once inside `WithEnergy`, `norm_sub_sq (𝕜 := 𝕜)` gives
+  the polarization identity for the energy norm with no computation at all.
+* A textbook rate of the form `‖T v‖ ≤ √(1 - α/β) ‖v‖` does **not** need `α ≤ β` as a side
+  condition, and proving `α ≤ β` needs a nondegeneracy hypothesis the rate does not. The reason is
+  `Real.sqrt_mul' x (hy : 0 ≤ y) : √(x * y) = √x * √y`, which takes nonnegativity of the *second*
+  factor only: `‖T v‖ = √(‖T v‖²) ≤ √(c ‖v‖²) = √c ‖v‖` goes through for negative `c` too, both
+  sides being `0`. Check which of the book's clauses the estimate actually consumes before
+  importing its hypotheses.
+
 ## Design conventions of this library
 
 Decided in `plans/backbone.md` §1.7; the short version for a proof author:

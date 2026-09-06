@@ -73,8 +73,10 @@ import Numlib.LinearAlgebra.Matrix.SVD
 import Numlib.LinearAlgebra.Matrix.Schur
 import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
 import Numlib.LinearAlgebra.Sparse.Pattern
+import Numlib.LinearSolve.DomainDecomposition.Schwarz
 import Numlib.LinearSolve.Multigrid.Basic
 import Numlib.LinearSolve.Multigrid.FullMultigrid
+import Numlib.LinearSolve.Multigrid.TwoGrid
 import Numlib.LinearSolve.Perturbation
 import Numlib.LinearSolve.Preconditioner.ApproximateInverse
 import Numlib.LinearSolve.Preconditioner.Chebyshev
