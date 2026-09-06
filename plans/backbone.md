@@ -1716,10 +1716,16 @@ because that group file was owned elsewhere when it was planned.
 `FiniteDifference/LaxEquivalence.lean`: the abstract initial value problem `u' = L u` for a densely
 defined `L : V →ₗ.[𝕜] V`, its solutions and well-posedness, the solution operators and the
 generalized solution, consistency, stability, convergence, the equivalence theorem and the
-convergence-order corollary. The theorem uses only `S 0 = 1`, a uniform bound on `‖S t‖` and strong
-continuity, so it is stated for a family `S` rather than reconstructed from `L`, and the bridge from
-the initial value problem is a separate node; **the semigroup property is recorded but is not a
-hypothesis anywhere**. Both directions rest on `Analysis/Normed/Operator/BanachSteinhaus`: forward
+convergence-order corollary. The theorem uses only `S 0 = 1` and strong continuity, so it is stated
+for a family `S` rather than reconstructed from `L`, and the bridge from the initial value problem
+is a separate node; **the semigroup property is recorded but is not a hypothesis anywhere**.
+*Corrected after the module was written*: the uniform bound on `‖S t‖` was listed here too and is
+not used by the equivalence theorem either. What the writing did add, in three places the plan did
+not anticipate, is a restriction of convergence to steps *within the horizon* — outside it the
+scheme is evaluated where the family is junk and the continuity hypothesis says nothing — the
+requirement that the solution operator represent solutions at every shorter horizon, not only at
+`T`, and `0 ≤ c₀` as a hypothesis of `exists_solutionOperator`, since on a trivial space a negative
+bound satisfies well-posedness while the conclusion fails. Both directions rest on `Analysis/Normed/Operator/BanachSteinhaus`: forward
 through the density argument, backward through uniform boundedness.
 
 `FiniteDifference/TwoLevel.lean`: one theorem, the error accumulation `‖u^m − v^m‖ ≤ M₀ T δ` for a

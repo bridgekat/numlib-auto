@@ -1081,7 +1081,11 @@ item scheduled for a later phase (listed in §4); `out-of-scope` = not formalize
   (`Numlib/Analysis/Normed/Ring/CondNumber.lean`) under the L2 operator norm.
 - **Proof route.** The book's: `r = W S⁻¹ t`, `t = S Wᴴ r`; minimality of `t_m` over the set `ℛ` of
   residuals of `x₀ + span(V_m) = x₀ + 𝒦_m`, and `r^G ∈ ℛ`.
-- **Classification.** `surface-only` (Gram–Schmidt `S` from `hV`; ~60 lines).
+- **Classification.** **Done**, and this estimate was wrong. `Krylov.IsQuasiMinResIterate.norm_residual_le_mul`
+  (`Numlib/Krylov/QuasiMinRes.lean`) needs neither the Gram–Schmidt factorization `V_{m+1} = W S` nor the
+  full-rank hypothesis: it takes a two-sided bound `c‖z‖ ≤ ‖∑ zᵢ vᵢ‖ ≤ C‖z‖`, whose ratio `C/c` *is* the
+  condition number the book writes, and full rank is subsumed in `0 < c`. The surface `theorem_6_11` is two
+  lines of it.
 
 ### R32. (6.62)
 - **Book statement.** `ρ_m^G = |s_m| ρ_{m−1}^G`, hence `ρ_m^G = |s_1 s_2 ⋯ s_m| β` (the `s_i` of (6.37)
