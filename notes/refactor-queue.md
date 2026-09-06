@@ -212,6 +212,22 @@ modules have now routed around it. And `Krylov.norm_sum_smul_vec_eq`,
 `mem_subspace_iff_exists_coeffs`, `residual_coeff_eq_zero` in `Krylov/Hessenberg`, plus
 `Lanczos.mulVec_tridiagExt_castSucc`, were duplicated privately by `Krylov/Singular`.
 
+### R19. The M-matrix characterizations are proved in a surface
+
+`SaadSparse.Ch01.theorem_1_31`, `theorem_1_32` and `theorem_1_33` carry about fifty lines of matrix
+theory in `NumlibSurface/SaadSparse/Chapter01/Section10.lean`, because the backbone items
+`plans/proposals/saadlow.md` §1.3 proposed for `Matrix/MMatrix` were never written:
+`isMMatrix_iff_complexSpectralRadius_jacobi_lt_one`, `isMMatrix_of_offDiag_nonpos_of_inv_entrywiseNonneg`,
+`IsMMatrix.mono`. That is the wrong layer for them, and the ILU existence theorem wants the same
+results. Moving them is mechanical: the proof bodies transfer verbatim and the surface keeps
+one-line restatements.
+
+Two smaller ones alongside: `Matrix/Order` still lacks `Matrix.EntrywiseLE.transpose` (one line;
+clause (4) of Saad Prop 1.24 is inlined in the surface for want of it), and
+`LinearAlgebra/Sparse/Reordering` should name the degree bound `Matrix.maxDegree_adjGraph_le` —
+it is proved inside `exists_coloring_of_le_maxDegree` and had to be duplicated privately by the
+Chapter 3 surface.
+
 ### R18. More private declarations that a second module has re-derived
 
 * `map_topologicalClosure` (the image of a closure under a surjective linear isometry) is private in
