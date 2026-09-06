@@ -16,7 +16,34 @@ id = "step1"
 id = "equation_5_18"
 
 [[node]]
+id = "energyNorm_sdStep_sq_eq"
+
+[[node]]
+id = "isPositiveReal_inv"
+
+[[node]]
 id = "equation_5_20"
+
+[[node]]
+id = "sinAngleSup"
+
+[[node]]
+id = "norm_mrStep_le_sup_sin"
+
+[[node]]
+id = "example_5_1"
+
+[[node]]
+id = "sdAlg_spec"
+
+[[node]]
+id = "mrAlg_spec"
+
+[[node]]
+id = "rnsdAlg_spec"
+
+[[node]]
+id = "rnsdStep_min"
 
 [[node]]
 id = "norm_residual_mrStep_eq_sin"
@@ -38,3 +65,12 @@ id = "theorem_5_9_tendsto"
 
 [[node]]
 id = "theorem_5_10_step"
+
+[[node]]
+id = "theorem_5_10"
+
+[[node]]
+id = "theorem_5_10_tendsto"
+
+[[node]]
+id = "rnsd_tendsto"

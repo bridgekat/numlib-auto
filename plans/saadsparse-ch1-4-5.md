@@ -1066,6 +1066,11 @@ Backbone: R-1.12 (`VVᵀ = P_K`), `compression.toMatrix_orthonormalBasis`
 (`Numlib/Analysis/InnerProductSpace/Projection/Compression.lean`: `VᵀAV` is the matrix of
 `compression (toEuclideanLin A) K` in the orthonormal basis `V.cols`), `‖V y‖ = ‖y‖` for isometric
 `V`. Class: `needs-equivalence`.
+Written as `theorem_5_7_matrix_eq` (the identity `‖Vᵀb − (VᵀAV)Vᵀx‖ = ‖b − A_m x‖`, from
+`V(Vᵀb − (VᵀAV)Vᵀx) = b − A_m x` and the isometry `norm_toEuclideanLin_of_orthonormal`) and
+`theorem_5_7_matrix` (the bound). The compression API turned out not to be needed: `V Vᵀ = P_K`
+(`Chapter01.toEuclideanLin_mul_conjTranspose`) turns `V (VᵀAV) Vᵀ` into `P_K A P_K` directly, and
+`obliqueProjection_self` identifies `Q_K^K` with `P_K`.
 
 ### §5.3 One-dimensional projection processes (`Chapter05/Section03.lean`)
 
@@ -1142,6 +1147,14 @@ damped-Richardson estimate `ContinuousLinearMap.norm_sub_smul_apply_sq_le` in
 `Numlib/Analysis/InnerProductSpace/Coercive.lean` behind it); the exact identity (5.18) and (5.20) are
 two-line inner-product identities. Class: `surface-only` (§3 item 7 notes (5.18) as a candidate
 for `OneDimensional.lean`).
+Written. Two departures. (i) **The name `equation_5_20` was misused**: it had been given to the
+unnumbered display closing the proof of Theorem 5.9 (the steepest-descent energy identity), which
+is now `energyNorm_sdStep_sq_eq`; `equation_5_20` is Saad's actual (5.20). The book's (5.18) is
+`equation_5_18` and its `sin ∠` reading `norm_residual_mrStep_eq_sin`, both already present.
+(ii) `ρ < 1` does **not** need the compactness of the unit sphere: `theorem_5_10_step` at `b = v`,
+`x = 0` bounds `sin ∠(v, Av)` by `√(1 − μ²/σ²) < 1` *pointwise*, and `Real.iSup_le` takes the
+supremum, so `sinAngleSup_lt_one` avoids the attainment argument entirely. `sinAngleSup` is the
+`⨆` over the subtype of nonzero vectors, with `bddAbove_sinAngle` supplying `BddAbove`.
 
 **R-5.22 Algorithm 5.4 (RNSD) and its convergence.** Book: `v = Aᵀr`, `w = Av`, `α = ‖v‖₂²/‖Av‖₂²`
 (5.21); Alg 5.4 with the recursive residual; each step minimizes `f(x) = ‖b − Ax‖₂²` along

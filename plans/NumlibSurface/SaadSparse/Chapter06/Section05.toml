@@ -52,6 +52,24 @@ id = "equation_6_54"
 id = "equation_6_55"
 
 [[node]]
+id = "iomOfBasis"
+
+[[node]]
+id = "residual_iomOfBasis"
+
+[[node]]
+id = "equation_6_56"
+
+[[node]]
+id = "equation_6_57"
+
+[[node]]
+id = "equation_6_58"
+
+[[node]]
+id = "qmrs_iomOfBasis_eq_qgmres"
+
+[[node]]
 id = "equation_6_62"
 
 [[node]]

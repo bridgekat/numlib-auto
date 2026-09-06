@@ -18,9 +18,12 @@ The book's condition (5.5)–(5.6) is `SaadSparse.Chapter05.IsProjectionApprox`;
 `IsPetrovGalerkin` for `Matrix.toEuclideanLin A` (`isProjectionApprox_iff`), so that every
 statement below specializes a result of `Numlib/LinearSolve/Projection/`.
 
-Left open here: the matrix reading of Theorem 5.7 (R-5.14 of the plan), which needs the
-compression of an operator in an orthonormal basis; and the additive/multiplicative procedures
-of §5.4 (phase 2 of the backbone, `plans/backbone.md` §2.4.4).
+The matrix reading of Theorem 5.7 is `theorem_5_7_matrix_eq` and `theorem_5_7_matrix`: with
+`L = K` and an orthonormal basis `V` of `K`, the isometry `‖V y‖₂ = ‖y‖₂` turns (5.11) into
+`‖Vᵀ b - (Vᵀ A V) Vᵀ x*‖₂ ≤ γ ‖(I - P_K) x*‖₂`, the projected system in the coordinates of `V`.
+
+Left open here: the additive/multiplicative procedures of §5.4 (phase 2 of the backbone,
+`plans/backbone.md` §2.4.4).
 -/
 
 open Matrix Module Submodule Finset
@@ -291,5 +294,87 @@ theorem theorem_5_7 (hd : finrank ℝ K = finrank ℝ L) (h : K ⊓ Lᗮ = ⊥) 
   rw [hAm, ← hQb, ← map_sub]
   congr 1
   rw [map_sub, hstar]
+
+/-! ### Theorem 5.7 in matrix form (§5.2.3) -/
+
+/-- Matrices act on Euclidean space by composition. -/
+private theorem toEuclideanLin_comp {p q r : ℕ} (M : Matrix (Fin p) (Fin q) ℝ)
+    (N : Matrix (Fin q) (Fin r) ℝ) (z : EuclideanSpace ℝ (Fin r)) :
+    (M ⬝ (N ⬝ z)) = ((M * N) ⬝ z) :=
+  congrArg (WithLp.toLp 2) (mulVec_mulVec (WithLp.ofLp z) M N)
+
+private theorem ofLp_toEuclideanLin' {p q : ℕ} (M : Matrix (Fin p) (Fin q) ℝ)
+    (z : EuclideanSpace ℝ (Fin q)) : WithLp.ofLp (M ⬝ z) = M *ᵥ WithLp.ofLp z := rfl
+
+/-- Saad §1.12.2: the projector onto `K` orthogonally to `K` itself is the orthogonal
+projector. -/
+theorem obliqueProjection_self (h : K ⊓ Kᗮ = ⊥) (z : E n) :
+    SaadSparse.obliqueProjection K K rfl h z = K.starProjection z :=
+  (SaadSparse.isProjOnto_iff_eq_obliqueProjection rfl h z _).mp
+    ((SaadSparse.isProjOnto_self_iff_eq_starProjection z _).mpr rfl)
+
+section MatrixForm
+
+variable {V : Matrix (Fin n) (Fin m) ℝ}
+
+/-- A matrix with orthonormal columns is an isometry: `‖V y‖₂ = ‖y‖₂`.  This is what makes the
+coordinate form of Theorem 5.7 say the same thing as the vector form. -/
+theorem norm_toEuclideanLin_of_orthonormal (hV : Vᵀ * V = 1) (y : E m) : ‖(V ⬝ y)‖ = ‖y‖ := by
+  refine (pow_left_inj₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).mp ?_
+  rw [real_norm_sq_eq_dotProduct, real_norm_sq_eq_dotProduct, ofLp_toEuclideanLin',
+    dotProduct_mulVec, ← mulVec_transpose, mulVec_mulVec, hV, one_mulVec]
+
+/-- **Theorem 5.7 in matrix form**, the identity behind it: with `L = K` and `V` an orthonormal
+basis of `K`, `V Vᵀ = P_K` and `b = V Vᵀ b`, so
+`V (Vᵀ b - (Vᵀ A V) Vᵀ x) = b - A_m x` and the two residuals have the same norm. -/
+theorem theorem_5_7_matrix_eq (hV : Vᵀ * V = 1) (hVK : V.IsBasisOf K) (h : K ⊓ Kᗮ = ⊥)
+    (hb : b ∈ K) : ‖(Vᵀ ⬝ b) - ((Vᵀ * A * V) ⬝ (Vᵀ ⬝ x))‖ = ‖b - A_m A K K rfl h x‖ := by
+  have hVVt : toEuclideanLin (V * Vᵀ) = (K.starProjection : (E n) →ₗ[ℝ] (E n)) :=
+    Chapter01.toEuclideanLin_mul_conjTranspose (by rwa [conjTranspose_eq_transpose]) hVK
+  have hP : ∀ z : E n, ((V * Vᵀ) ⬝ z) = K.starProjection z := fun z =>
+    LinearMap.congr_fun hVVt z
+  have h1 : (V ⬝ (Vᵀ ⬝ b)) = b := by
+    rw [toEuclideanLin_comp, hP]
+    exact Submodule.starProjection_eq_self_iff.mpr hb
+  have h2 : (V ⬝ ((Vᵀ * A * V) ⬝ (Vᵀ ⬝ x))) = K.starProjection (A ⬝ K.starProjection x) := by
+    have e1 : (V ⬝ ((Vᵀ * A * V) ⬝ (Vᵀ ⬝ x))) = ((V * (Vᵀ * A * V) * Vᵀ) ⬝ x) := by
+      rw [toEuclideanLin_comp, toEuclideanLin_comp]
+    have e2 : V * (Vᵀ * A * V) * Vᵀ = (V * Vᵀ) * A * (V * Vᵀ) := by
+      simp only [Matrix.mul_assoc]
+    have e3 : (((V * Vᵀ) * A * (V * Vᵀ)) ⬝ x) = ((V * Vᵀ) ⬝ (A ⬝ ((V * Vᵀ) ⬝ x))) := by
+      rw [toEuclideanLin_comp, toEuclideanLin_comp]
+    rw [e1, e2, e3, hP, hP]
+  have hAm : A_m A K K rfl h x
+      = SaadSparse.obliqueProjection K K rfl h (A ⬝ K.starProjection x) := rfl
+  have hkey : (V ⬝ ((Vᵀ ⬝ b) - ((Vᵀ * A * V) ⬝ (Vᵀ ⬝ x)))) = b - A_m A K K rfl h x := by
+    rw [map_sub, h1, h2, hAm, obliqueProjection_self]
+  rw [← hkey, norm_toEuclideanLin_of_orthonormal hV]
+
+/-- **Theorem 5.7 in matrix form** (§5.2.3).  With `L = K` and `V` an orthonormal basis of `K`,
+(5.11) reads `‖Vᵀ b - (Vᵀ A V) Vᵀ x*‖₂ ≤ γ ‖(I - P_K) x*‖₂` with `γ = ‖P_K A (I - P_K)‖₂`: the
+error of the projected system, measured in the coordinates of `V`, is controlled by the part of
+the exact solution that `K` fails to capture. -/
+theorem theorem_5_7_matrix (hV : Vᵀ * V = 1) (hVK : V.IsBasisOf K) (h : K ⊓ Kᗮ = ⊥) (hb : b ∈ K)
+    {xstar : E n} (hstar : (A ⬝ xstar) = b) :
+    ‖(Vᵀ ⬝ b) - ((Vᵀ * A * V) ⬝ (Vᵀ ⬝ xstar))‖ ≤
+      ‖(K.starProjection ∘L LinearMap.toContinuousLinearMap (toEuclideanLin A) ∘L
+          (ContinuousLinearMap.id ℝ (E n) - K.starProjection) : (E n) →L[ℝ] (E n))‖ *
+        ‖xstar - K.starProjection xstar‖ := by
+  have hPP : K.starProjection (K.starProjection xstar) = K.starProjection xstar :=
+    Submodule.starProjection_eq_self_iff.mpr (K.starProjection_apply_mem xstar)
+  have hPz : K.starProjection (xstar - K.starProjection xstar) = 0 := by
+    rw [map_sub, hPP, sub_self]
+  have hTz : (K.starProjection ∘L LinearMap.toContinuousLinearMap (toEuclideanLin A) ∘L
+        (ContinuousLinearMap.id ℝ (E n) - K.starProjection) : (E n) →L[ℝ] (E n))
+        (xstar - K.starProjection xstar)
+      = K.starProjection (A ⬝ (xstar - K.starProjection xstar)) := by
+    simp only [ContinuousLinearMap.coe_comp, Function.comp_apply, _root_.sub_apply,
+      ContinuousLinearMap.coe_id', id_eq, hPz, sub_zero]
+    rfl
+  rw [theorem_5_7_matrix_eq hV hVK h hb, theorem_5_7 rfl h hb hstar, obliqueProjection_self,
+    ← hTz]
+  exact ContinuousLinearMap.le_opNorm _ _
+
+end MatrixForm
 
 end SaadSparse.Chapter05

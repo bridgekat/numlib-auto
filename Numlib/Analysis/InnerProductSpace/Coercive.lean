@@ -136,6 +136,19 @@ the bundled hypothesis is more convenient to apply by name than to unfold. -/
 theorem IsCoerciveWith.re_inner_apply_self {c : ℝ} (h : A.IsCoerciveWith c) (x : E) :
     c * ‖x‖ ^ 2 ≤ RCLike.re (inner 𝕜 (A x) x) := h x
 
+/-- A coercive operator is bounded below: `c ‖x‖ ≤ ‖A x‖`. Cauchy–Schwarz turns the quadratic-form
+bound into a bound on the norm, so that the error of an approximate solution is controlled by its
+residual: `c ‖x - x*‖ ≤ ‖b - A x‖`. No sign condition on `c` is needed. -/
+theorem IsCoerciveWith.norm_le_norm_apply {c : ℝ} (h : A.IsCoerciveWith c) (x : E) :
+    c * ‖x‖ ≤ ‖A x‖ := by
+  rcases eq_or_ne x 0 with rfl | hx
+  · simp
+  have h1 := h x
+  have h2 : RCLike.re (inner 𝕜 (A x) x) ≤ ‖A x‖ * ‖x‖ :=
+    (RCLike.re_le_norm _).trans (norm_inner_le_norm _ _)
+  have hx' : 0 < ‖x‖ := norm_pos_iff.2 hx
+  nlinarith
+
 /-- In finite dimension, coercive iff `re ⟪A x, x⟫ > 0` for all `x ≠ 0`: compactness of the unit
 sphere supplies a uniform constant `c > 0`. -/
 theorem isCoercive_iff_forall_pos [FiniteDimensional 𝕜 E] (A : E →ₗ[𝕜] E) :
@@ -352,15 +365,7 @@ the Lax–Milgram theorem, for an operator that need not be symmetric. -/
 theorem exists_equiv_of_isCoerciveWith {A : E →L[𝕜] E} {c : ℝ} (hc : 0 < c)
     (hA : (A : E →ₗ[𝕜] E).IsCoerciveWith c) :
     ∃ e : E ≃L[𝕜] E, (e : E →L[𝕜] E) = A ∧ ‖(e.symm : E →L[𝕜] E)‖ ≤ 1 / c := by
-  have hlb : ∀ x : E, c * ‖x‖ ≤ ‖A x‖ := by
-    intro x
-    rcases eq_or_ne x 0 with rfl | hx
-    · simp
-    have h1 : c * ‖x‖ ^ 2 ≤ RCLike.re (inner 𝕜 (A x) x) := hA x
-    have h2 : RCLike.re (inner 𝕜 (A x) x) ≤ ‖A x‖ * ‖x‖ :=
-      (RCLike.re_le_norm _).trans (norm_inner_le_norm _ _)
-    have hx' : 0 < ‖x‖ := norm_pos_iff.2 hx
-    nlinarith
+  have hlb : ∀ x : E, c * ‖x‖ ≤ ‖A x‖ := hA.norm_le_norm_apply
   have hanti : AntilipschitzWith (Real.toNNReal c⁻¹) (A : E → E) := by
     refine AddMonoidHomClass.antilipschitz_of_bound A fun x => ?_
     rw [Real.coe_toNNReal _ (by positivity), inv_mul_eq_div, le_div_iff₀ hc]

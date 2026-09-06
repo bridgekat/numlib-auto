@@ -1059,13 +1059,19 @@ item scheduled for a later phase (listed in §4); `out-of-scope` = not formalize
 - **Book statement.** `r_m^I = −h_{m+1,m}(e_mᵀ y_m) v_{m+1} = (h_{m+1,m}/(s_m h_mm^{(m−1)})) γ_{m+1} v_{m+1}`;
   since `h_{m+1,m}/h_mm^{(m)} = tan θ_m`: `γ_{m+1} v_{m+1} = c_m r_m^I` (6.56), `ρ_m^Q = |c_m| ρ_m`
   with `ρ_m = ‖r_m^I‖` (6.57), and `r_m = s_m² r_{m−1} + c_m² r_m^I` (6.58).
-- **Lean surface statement.** `theorem equation_6_56 (hI : IsUnit (HI …)) (hR) : γ … m • vI m = c … m • rI m`;
-  `theorem equation_6_57 : ‖γ … m‖ = ‖c … m‖ * ‖rI m‖`;
-  `theorem equation_6_58 : rQ m = (s … m)^2 • rQ (m-1) + (c … m)^2 • rI m`.
+- **Lean surface statement.** Written, at the same `(u, h)` generality as the rest of §6.5.6:
+  `iomOfBasisY`, `iomOfBasis` (the Galerkin iterate in the basis `u` — IOM for the incomplete
+  orthogonalization, `iomOfBasis_eq_iomFixed`, and FOM for the Arnoldi basis,
+  `iomOfBasis_eq_fomFixed`), `residual_iomOfBasis`, then `equation_6_56`, `equation_6_57`,
+  `equation_6_58`.
 - **Backbone item.** none beyond R13 and the D8 data (the orthonormal instance is §3.5/§3.6,
-  R33/R38).
-- **Proof route.** R13 for `r^I_m`, the FOM-`y` last component `γ_m/h_mm^{(m−1)}` (as in R33),
-  (6.37) and (6.47).
+  R33/R38); the last-component identity is `Krylov.rotated_self_mul_eq_gamma`.
+- **Proof route.** As written, (6.56) is an *unconditional* identity: `c_m = r_mm^{(m−1)}/ρ_m` and
+  `s_m = h_{m+1,m}/ρ_m` share the denominator `ρ_m`, so both sides of (6.56) are
+  `−(r_mm^{(m−1)} h_{m+1,m} e_mᵀ y_m^I)/ρ_m` times `v_{m+1}` and no nonvanishing hypothesis is
+  needed — where the book's route through `tan θ_m` divides by `h_mm^{(m)}`. Only
+  `IsUnit (H_{m+1})` enters, and only to make `y_m^I` solve `H y = β e_1`. (6.57) is (6.56) in
+  norms with `‖v_{m+1}‖ = 1`; (6.58) is (6.55) with (6.56) substituted.
 - **Classification.** `surface-only`.
 
 ### R31. Theorem 6.11 (Freund–Nachtigal bound for DQGMRES)
@@ -1527,10 +1533,35 @@ item scheduled for a later phase (listed in §4); `out-of-scope` = not formalize
   IsCGs A s ↔ (minpoly ℂ A).natDegree ≤ s ∨ (IsStarNormal A ∧ ν A ≤ s - 1)`.
 - **Backbone item.** none missing: `Eigen/Normal.lean` (§4 item 2) is written, and R58 is proved on
   it. What is missing is the proof itself.
-- **Proof route.** Not in the book (reference [121]; a short proof is Liesen–Strakoš 2008 /
-  Faber–Manteuffel 1984). A research-level formalization; the surface carries only the module doc
-  comment's mention (§5).
-- **Classification.** `out-of-scope` (§5, no printed proof; research-level).
+- **Proof route.** The `←` direction *is* reachable from the book's own material and is written:
+  `isCGs_of_natDegree_minpoly_le` (with `deg (minpoly A) ≤ s` every starting vector has grade
+  `≤ s`, so the band condition of `CG(s)`, which only constrains `i + s ≤ j ≤ μ(v_1) - 1`, is
+  vacuous), `isCGs_of_isStarNormal` (Lemma 6.23 then (6.108)) and their disjunction
+  `isCGs_of_natDegree_minpoly_le_or_isStarNormal`. The `→` direction is the Faber–Manteuffel
+  theorem proper, not in the book (reference [121]; the published proofs are Faber–Manteuffel 1984
+  and Liesen–Strakoš 2008). A research-level formalization; deliberately left unwritten rather
+  than weakened, with no `sorry` standing in for it.
+- **Classification.** `out-of-scope` for the `→` direction (§5, no printed proof; research-level);
+  the `←` direction is `direct`, on Lemma 6.23 (R58).
+
+### R59a. §6.10 closing remark — the case `ν(A) ≤ 1`
+- **Book statement.** "It is easy to show that in this case `A` either has a minimal degree `≤ 1`,
+  or is Hermitian, or is of the form `A = e^{iθ}(ρI + B)` where `θ` and `ρ` are real and `B` is
+  skew-Hermitian" — the three cases in which DIOM reduces to an optimal three-term recurrence.
+- **Lean surface statement.** `theorem exists_natDegree_le_one_iff : (∃ q : ℂ[X], q.natDegree ≤ 1 ∧
+  aeval A q = Aᴴ) ↔ ∃ (θ ρ : ℝ) (B), Bᴴ = -B ∧ A = exp (θ * I) • ((ρ : ℂ) • 1 + B)` and, in the
+  book's three-case form, `theorem nu_le_one_iff (hA : IsStarNormal A) : ν A ≤ 1 ↔ (∃ c, A = c • 1)
+  ∨ A.IsHermitian ∨ ∃ (θ ρ : ℝ) (B), Bᴴ = -B ∧ A = exp (θ * I) • ((ρ : ℂ) • 1 + B)`.
+- **Backbone item.** none; `ν`, `exists_natDegree_eq_nu` and `nu_le_natDegree` are already there.
+- **Proof route.** Write `Aᴴ = αI + βA` and conjugate: `(1 - β̄β)A = (ᾱ + β̄α)I`, so either `A` is a
+  scalar matrix or `|β| = 1`. In the second case `β = -e^{-2iθ}` for a real `θ`, the same identity
+  forces `αe^{iθ}` real, and `B = e^{-iθ}A - ρI` with `2ρ = αe^{iθ}` is skew-Hermitian.
+- **Traps.** `IsStarNormal A` must be a hypothesis of `nu_le_one_iff`: `ν` is a `sInf` over a set
+  of degrees that is *empty* for a non-normal `A`, and Lean's `sInf ∅ = 0` would make `ν A ≤ 1`
+  vacuously true. The book's three cases are not disjoint — the third contains the other two (a
+  scalar `c` is `e^{i arg c}(|c| I + 0)`, a Hermitian `A` is `e^{iπ/2}(0 I + (-i)A)`) — which is
+  why `exists_natDegree_le_one_iff` is stated beside it as the sharp form.
+- **Classification.** `surface-only`.
 
 ### R60. (6.109)–(6.112) — real Chebyshev polynomials
 - **Book statement.** `C_k(t) = cos(k cos⁻¹ t)` on `[−1, 1]` (6.109); `C_{k+1} = 2t C_k − C_{k−1}`,
@@ -1880,16 +1911,16 @@ the corresponding surface theorems are written once the item exists.
 * (6.112) as an approximation `≳` and (6.121) `≈`: only the inequality/identity parts are stated
   (R60, R63); the asymptotic remarks after Thm 6.27 ("Chebyshev polynomials are asymptotically
   optimal") are not theorems in the book.
-* Theorem 6.24 (Faber–Manteuffel): stated without proof. The normal-matrix theory it would rest on
-  now exists (§4 item 2), so what is left is the proof, and the known proofs (Faber–Manteuffel 1984,
-  Liesen–Strakoš 2008) are research-level. It appears in `Chapter06/Section10.lean` as a module doc
-  comment mention only, with no `sorry` in the library.
-* The final remark of §6.10 (`ν(A) ≤ 1` iff `A` has minimal degree `≤ 1`, or is Hermitian, or
-  `A = e^{iθ}(ρI + B)` with `B` skew-Hermitian): "easy to show", not numbered; belongs with the
-  normal-matrix items of §4, which now exist, so it is reachable if a second source ever cites
-  it.
-* "QMRS applied to IOM/DIOM yields QGMRES/DQGMRES" (§6.5.8, "can easily be shown"): unnumbered,
-  heavy bookkeeping across D6/D9/D11; postponed until DQGMRES is needed by a second source.
+* Theorem 6.24 (Faber–Manteuffel), the `→` direction only: stated without proof. The normal-matrix
+  theory it would rest on now exists (§4 item 2), so what is left is the proof, and the known
+  proofs (Faber–Manteuffel 1984, Liesen–Strakoš 2008) are research-level. The `←` direction is
+  written (R59, `isCGs_of_natDegree_minpoly_le_or_isStarNormal`), so what is out of scope is
+  exactly "an `s`-term recurrence for every starting vector forces one of the two conditions".
+  No `sorry` in the library stands in for it.
+* "QMRS applied to IOM/DIOM yields QGMRES/DQGMRES" (§6.5.8, "can easily be shown"): **no longer
+  deferred** — it is `qmrs_iomOfBasis_eq_qgmres`, proved once (6.56)–(6.58) exist (R30). The
+  bookkeeping across D6/D9/D11 turned out to be one induction: `τ_m = |γ_{m+1}|` by (6.57) and
+  (6.47), `η_{m+1} = c_m²`, and (6.58) is the QMRS residual recurrence.
 * §6.5.9 alternatives for complex rotations (P-6.27) and the complex Householder GMRES (P-6.28):
   only the book's convention (6.80)–(6.81) is formalized (R20).
 * Problems not cited by the text: P-6.2 (defining `w_j`: absorbed into D4), P-6.4 (variant GMRES with

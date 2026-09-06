@@ -93,7 +93,12 @@ Algorithm 6.12 as a quasi-minimal-residual iterate. The book factors `V_{m+1} = 
 orthonormal, which needs `V_{m+1}` to have full rank; the backbone needs only the two-sided bound
 `c ‖w‖₂ ≤ ‖V_{m+1} w‖₂ ≤ C ‖w‖₂`, whose ratio `C/c` is `κ₂(V_{m+1})`, and no factorization.
 
-Not formalized here (reported to the plan): (6.56)–(6.58), which need the IOM iterate of §6.4.
+(6.56)–(6.58) compare the quasi-residual with the residual of the *Galerkin* iterate built on the
+same basis — IOM or DIOM for the incomplete orthogonalization, FOM for the Arnoldi basis. That
+iterate is `iomOfBasis` (`iomOfBasis_eq_iomFixed`, `iomOfBasis_eq_fomFixed`) and its residual is
+`residual_iomOfBasis`. (6.56) is an identity with no nonvanishing hypothesis, where the book's
+derivation through `tan θ_m` divides by `h_{mm}^{(m)}`; (6.57) is its reading in norms and (6.58)
+is (6.55) with (6.56) substituted.
 
 ## §6.5.7: relations between FOM and GMRES
 
@@ -124,6 +129,12 @@ GMRES" is `Krylov.IsGalerkinIterate.mrs_isMinResIterate`, both from
 `Numlib/Krylov/Relations.lean`. The remaining items — (6.77)–(6.79) and their QMRS analogues —
 are the short inductions the book performs, shared by the single private lemma
 `residual_eq_weighted`. §6.5.8 is real throughout in the book, so this part is written over `ℝ`.
+
+The subsection's closing claim — "QMRS applied to IOM/DIOM yields, in exact arithmetic, the same
+sequence as QGMRES/DQGMRES" — is `qmrs_iomOfBasis_eq_qgmres`. The book's route is the one taken:
+`τ_m` turns out to be the quasi-residual norm `|γ_{m+1}|` (by (6.57) and (6.47), which give
+`1/τ_m² = 1/τ_{m-1}² + 1/ρ_m²`), the smoothing coefficient `η_{m+1}` turns out to be `c_m²`, and
+(6.58) is then exactly the QMRS residual recurrence.
 -/
 
 open scoped Matrix
@@ -1342,6 +1353,100 @@ theorem equation_6_55 {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ : 𝔼} {u : ℕ
     smul_smul, smul_smul, smul_smul,
     h1, h2]
 
+/-! ### (6.56)–(6.58): DQGMRES versus IOM
+
+The book compares the quasi-minimal-residual iterate above with the *Galerkin* iterate built on
+the same, possibly non-orthogonal, basis — IOM or DIOM when the basis is the incomplete
+orthogonalization of Algorithm 6.6 (the book writes `x_m^I`, `r_m^I`), FOM when it is the full
+Arnoldi basis.  That iterate is `iomOfBasis`. -/
+
+/-- The coordinates `y_m^I = H_m⁻¹(β e_1)` of the Galerkin approximation in the basis `u`. -/
+noncomputable def iomOfBasisY (h : ℕ → ℕ → 𝕜) (β : 𝕜) (m : ℕ) : Fin m → 𝕜 :=
+  (Krylov.hessenbergSqOf h m)⁻¹ *ᵥ Krylov.firstVec β m
+
+/-- The Galerkin iterate `x_m^I = x_0 + U_m y_m^I` in the basis `u`: **Algorithm 6.7** (IOM) on
+the incomplete orthogonalization basis, Algorithm 6.4 (FOM) on the Arnoldi basis. -/
+noncomputable def iomOfBasis (x₀ : 𝔼) (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (β : 𝕜) (m : ℕ) : 𝔼 :=
+  x₀ + Matrix.toEuclideanLin (colMatrix u m) (WithLp.toLp 2 (iomOfBasisY h β m))
+
+/-- On the incomplete orthogonalization basis `iomOfBasis` is Algorithm 6.7 (IOM), so
+(6.56)–(6.58) below are the book's statements about `x_m^I`. -/
+theorem iomOfBasis_eq_iomFixed (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (k m : ℕ) :
+    iomOfBasis x₀ (iop A (v₁ A b x₀) k) (iopCoeff A (v₁ A b x₀) k) (β A b x₀ : 𝕜) m
+      = iomFixed A b x₀ k m := by
+  rw [iomOfBasis, iomFixed, iomOfBasisY, iomY, VI, HI, smul_e₁_eq_firstVec]
+
+/-- On the full Arnoldi basis it is Algorithm 6.4 (FOM). -/
+theorem iomOfBasis_eq_fomFixed (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (m : ℕ) :
+    iomOfBasis x₀ (arnoldiCGS A (v₁ A b x₀)) (arnoldiCoeff A (v₁ A b x₀)) (β A b x₀ : 𝕜) m
+      = fomFixed A b x₀ m := by
+  rw [iomOfBasis, fomFixed, iomOfBasisY, fomY, V, H_eq_hessenbergSqOf, smul_e₁_eq_firstVec]
+
+/-- `H_m y_m^I = β e_1` whenever `H_m` is nonsingular, which is what makes `x_m^I` the Galerkin
+approximation rather than an arbitrary element of the affine space. -/
+theorem hessenbergSqOf_mulVec_iomOfBasisY {h : ℕ → ℕ → 𝕜} {β : 𝕜} {m : ℕ}
+    (hH : IsUnit (Krylov.hessenbergSqOf h m)) :
+    Krylov.hessenbergSqOf h m *ᵥ iomOfBasisY h β m = Krylov.firstVec β m := by
+  rw [iomOfBasisY, Matrix.mulVec_mulVec,
+    Matrix.mul_nonsing_inv _ ((Matrix.isUnit_iff_isUnit_det _).1 hH), Matrix.one_mulVec]
+
+/-- **Proposition 6.7 in the basis `u`**: `r_m^I = -h_{m+1,m}(e_mᵀ y_m^I) v_{m+1}`.  Like (6.50)
+this uses only the Hessenberg relation, so the loss of orthogonality is immaterial — the book's
+"the result of Proposition 6.7 is still valid" of §6.4.2. -/
+theorem residual_iomOfBasis {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ : 𝔼} {u : ℕ → 𝔼} {h : ℕ → ℕ → 𝕜}
+    {β : 𝕜} (hu : Krylov.HessenbergRelation (op A) u h) (hr : b - op A x₀ = β • u 0) {m : ℕ}
+    (hH : IsUnit (Krylov.hessenbergSqOf h (m + 1))) :
+    b - op A (iomOfBasis x₀ u h β (m + 1))
+      = -(h (m + 1) m * iomOfBasisY h β (m + 1) (Fin.last m)) • u (m + 1) := by
+  rw [iomOfBasis, toEuclideanLin_colMatrix_apply]
+  exact hu.residual_eq_of_mulVec_eq hr (Nat.succ_pos m) _
+    (hessenbergSqOf_mulVec_iomOfBasisY hH)
+
+/-- **(6.56)**: `γ_{m+1} v_{m+1} = c_m r_m^I`.  Both sides are the scalar
+`-(r_{mm}^{(m-1)} h_{m+1,m} e_mᵀ y_m^I)/ρ_m` times `v_{m+1}`, because `c_m = r_{mm}^{(m-1)}/ρ_m`
+and `s_m = h_{m+1,m}/ρ_m` carry the same denominator.  The book reads the relation off
+`h_{m+1,m}/h_{mm}^{(m)} = tan θ_m`, which divides by `h_{mm}^{(m)}`; the identity as stated needs
+no nonvanishing hypothesis and holds with both sides `0` at a breakdown. -/
+theorem equation_6_56 {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ : 𝔼} {u : ℕ → 𝔼} {h : ℕ → ℕ → 𝕜}
+    {β : 𝕜} (hu : Krylov.HessenbergRelation (op A) u h) (hr : b - op A x₀ = β • u 0) {m : ℕ}
+    (hH : IsUnit (Krylov.hessenbergSqOf h (m + 1))) :
+    γ h β (m + 1) • u (m + 1) = c h m • (b - op A (iomOfBasis x₀ u h β (m + 1))) := by
+  have hg : Krylov.rotated h m m m * iomOfBasisY h β (m + 1) (Fin.last m) = γ h β m :=
+    Krylov.rotated_self_mul_eq_gamma h hu.eq_zero_of_lt β (hessenbergSqOf_mulVec_iomOfBasisY hH)
+  have hsub : Krylov.rotated h m (m + 1) m = h (m + 1) m :=
+    Krylov.rotated_eq_of_le h m (m + 1) m le_rfl
+  have key : γ h β (m + 1)
+      = c h m * -(h (m + 1) m * iomOfBasisY h β (m + 1) (Fin.last m)) := by
+    rw [gamma_succ, ← hg, show c h m = Krylov.givensC h m from rfl,
+      show s h m = Krylov.givensS h m from rfl, Krylov.givensC, Krylov.givensS, hsub]
+    ring
+  rw [residual_iomOfBasis hu hr hH, smul_smul, ← key]
+
+/-- **(6.57)**: `ρ_m^Q = |c_m| ρ_m`, the quasi-residual norm of QGMRES against the true residual
+norm of IOM.  It is (6.56) read in norms, so it needs the basis vector `v_{m+1}` to be a unit
+vector — which the incomplete orthogonalization supplies — and nothing else. -/
+theorem equation_6_57 {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ : 𝔼} {u : ℕ → 𝔼} {h : ℕ → ℕ → 𝕜}
+    {β : 𝕜} (hu : Krylov.HessenbergRelation (op A) u h) (hr : b - op A x₀ = β • u 0) {m : ℕ}
+    (hnorm : ‖u (m + 1)‖ = 1) (hH : IsUnit (Krylov.hessenbergSqOf h (m + 1))) :
+    quasiResidualNorm h β (m + 1)
+      = ‖c h m‖ * ‖b - op A (iomOfBasis x₀ u h β (m + 1))‖ := by
+  have h56 := congrArg norm (equation_6_56 hu hr hH)
+  rwa [norm_smul, norm_smul, hnorm, mul_one] at h56
+
+/-- **(6.58)**: `r_m^Q = s_m² r_{m-1}^Q + c_m² r_m^I`, the residual recurrence of QGMRES and
+DQGMRES with the IOM residual in place of the basis vector.  This is (6.55) with (6.56)
+substituted for `γ_{m+1} v_{m+1}`. -/
+theorem equation_6_58 {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ : 𝔼} {u : ℕ → 𝔼} {h : ℕ → ℕ → 𝕜}
+    {β : 𝕜} (hu : Krylov.HessenbergRelation (op A) u h) (hr : b - op A x₀ = β • u 0) {m : ℕ}
+    (hR : IsUnit (R h m)) (hR' : IsUnit (R h (m + 1)))
+    (hH : IsUnit (Krylov.hessenbergSqOf h (m + 1))) :
+    b - op A (qgmres x₀ u h β (m + 1))
+      = ((‖s h m‖ : 𝕜) ^ 2) • (b - op A (qgmres x₀ u h β m))
+        + ((‖c h m‖ : 𝕜) ^ 2) • (b - op A (iomOfBasis x₀ u h β (m + 1))) := by
+  rw [equation_6_55 hu hr hR hR', ← smul_smul, equation_6_56 hu hr hH, smul_smul,
+    ← RCLike.mul_conj (c h m)]
+  ring_nf
+
 /-- **P-6.25**: (6.54) bounds the growth of `ζ` by one square root per step, so from
 `ζ_{k+1} ≤ 1` one gets `ζ_{m+1} ≤ √(m − k + 1)` for `m ≥ k`. The base hypothesis
 `ζ_{k+1} ≤ 1` is what the truncation supplies: the first `k + 1` incomplete-orthogonalization
@@ -1575,6 +1680,33 @@ theorem dqgmres_eq_qgmres {x₀ : 𝔼} {u : ℕ → 𝔼} {h : ℕ → ℕ → 
         exact Finset.sum_congr rfl fun i _ => by rw [smul_smul, mul_comm]
     _ = ∑ j : Fin m, qgmresY h β m j • u (j : ℕ) :=
         Finset.sum_congr rfl fun j _ => by rw [key j]
+
+/-! ### Nondegeneracy from a nonvanishing `γ` -/
+
+/-- A nonvanishing `γ_{m+1}` forces rotation `m` to be nondegenerate: at a breakdown `s_m = 0`
+and (6.47) makes `γ_{m+1}` vanish. -/
+theorem givensRho_ne_zero_of_gamma_ne_zero {h : ℕ → ℕ → 𝕜} {β : 𝕜} {l : ℕ}
+    (hγ : γ h β (l + 1) ≠ 0) : Krylov.givensRho h l ≠ 0 := fun h0 => hγ (by
+  rw [gamma_succ, show s h l = Krylov.givensS h l from rfl, Krylov.givensS, h0]
+  simp)
+
+/-- `R_k` is nonsingular as soon as `γ_0, …, γ_k` are all nonzero. -/
+theorem isUnit_R_of_gamma_ne_zero {h : ℕ → ℕ → 𝕜} {β : 𝕜}
+    (hh : ∀ i j : ℕ, j + 1 < i → h i j = 0) {k : ℕ} (hγ : ∀ j ≤ k, γ h β j ≠ 0) :
+    IsUnit (R h k) :=
+  (isUnit_R_iff h hh).2 fun l hl => givensRho_ne_zero_of_gamma_ne_zero (hγ (l + 1) (by omega))
+
+/-- Step `0` of Algorithm 6.12 does nothing. -/
+theorem qgmres_zero (x₀ : 𝔼) (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (β : 𝕜) :
+    qgmres x₀ u h β 0 = x₀ := by
+  rw [qgmres, toEuclideanLin_colMatrix_apply]
+  simp
+
+/-- Step `0` of Algorithm 6.7 does nothing. -/
+theorem iomOfBasis_zero (x₀ : 𝔼) (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (β : 𝕜) :
+    iomOfBasis x₀ u h β 0 = x₀ := by
+  rw [iomOfBasis, toEuclideanLin_colMatrix_apply]
+  simp
 
 end QGMRES
 
@@ -2659,6 +2791,101 @@ theorem lemma_6_18 (xO rO : ℕ → 𝔼) {m : ℕ} (h0 : mrsR xO rO m ≠ 0)
       mrsEta xO rO m
         = ‖mrsR xO rO m‖ ^ 2 / (‖mrsR xO rO m‖ ^ 2 + ‖rO (m + 1)‖ ^ 2) :=
   ⟨equation_6_76 xO rO h0 h1 horth, equation_6_77 xO rO horth⟩
+
+/-! ### §6.5.8: QMRS applied to IOM/DIOM yields QGMRES/DQGMRES
+
+The book's "it can easily be shown", proved here from (6.47), (6.57) and (6.58). The QMRS scale
+factor `τ_m` turns out to be exactly the quasi-residual norm `|γ_{m+1}|`, and the smoothing
+coefficient `η_{m+1}` exactly `c_m²`; (6.58) then *is* the QMRS residual recurrence. -/
+
+section QMRSIOM
+
+variable {A : Matrix (Fin n) (Fin n) ℝ} {b x₀ : EuclideanSpace ℝ (Fin n)}
+  {u : ℕ → EuclideanSpace ℝ (Fin n)} {h : ℕ → ℕ → ℝ} {β : ℝ}
+
+/-- **§6.5.8**: quasi-minimal residual smoothing of the IOM/DIOM iterates produces, step for step,
+the QGMRES/DQGMRES iterates, and its scale factor `τ_m` is the quasi-residual norm `|γ_{m+1}|`.
+
+The hypothesis `hγ` — the quasi-residual has not vanished — is the algorithm's own termination
+test; it supplies `c_m ≠ 0` and `s_m ≠ 0` through (6.57) and (6.47), which is what makes `τ_m` and
+`η_{m+1}` well defined. It is stated as a bound `∀ j ≤ m` rather than as `∀ j`, which would be
+unsatisfiable in finite dimension. `hH` is that IOM itself is defined at every step. -/
+theorem qmrs_iomOfBasis_eq_qgmres (hA : IsUnit A)
+    (hu : Krylov.HessenbergRelation (op A) u h) (hr : b - op A x₀ = β • u 0)
+    (hnorm : ∀ i, ‖u i‖ = 1) {m : ℕ} (hγ : ∀ j ≤ m, γ h β j ≠ 0)
+    (hH : ∀ j ≤ m, IsUnit (Krylov.hessenbergSqOf h j)) :
+    qmrs (fun j => iomOfBasis x₀ u h β j) (fun j => b - op A (iomOfBasis x₀ u h β j)) m
+        = (qgmres x₀ u h β m, b - op A (qgmres x₀ u h β m)) ∧
+      qmrsTau (fun j => b - op A (iomOfBasis x₀ u h β j)) m = ‖γ h β m‖ := by
+  induction m with
+  | zero =>
+    have h0 : iomOfBasis x₀ u h β 0 = x₀ := iomOfBasis_zero x₀ u h β
+    refine ⟨by rw [qmrs_zero, h0, qgmres_zero], ?_⟩
+    rw [qmrsTau, h0, hr, norm_smul, hnorm 0, mul_one]
+    rfl
+  | succ m ih =>
+    obtain ⟨ihq, ihτ⟩ := ih (fun j hj => hγ j (by omega)) (fun j hj => hH j (by omega))
+    have hhh := hu.eq_zero_of_lt
+    -- the four quantities of the book's computation
+    have h57 : ‖γ h β (m + 1)‖
+        = ‖c h m‖ * ‖b - op A (iomOfBasis x₀ u h β (m + 1))‖ := by
+      have h := equation_6_57 hu hr (hnorm (m + 1)) (hH (m + 1) le_rfl)
+      rwa [quasiResidualNorm] at h
+    have h47 : ‖γ h β (m + 1)‖ = ‖s h m‖ * ‖γ h β m‖ := by
+      rw [gamma_succ, norm_mul, norm_neg]
+    have hγ1 : ‖γ h β (m + 1)‖ ≠ 0 := norm_ne_zero_iff.2 (hγ (m + 1) le_rfl)
+    have hcc : ‖c h m‖ ≠ 0 := fun hc => hγ1 (by rw [h57, hc, zero_mul])
+    have hss : ‖s h m‖ ≠ 0 := fun hc => hγ1 (by rw [h47, hc, zero_mul])
+    have hgm : ‖γ h β m‖ ≠ 0 := fun hc => hγ1 (by rw [h47, hc, mul_zero])
+    have hp : ‖b - op A (iomOfBasis x₀ u h β (m + 1))‖ ≠ 0 :=
+      fun hc => hγ1 (by rw [h57, hc, mul_zero])
+    have hcs : ‖c h m‖ ^ 2 + ‖s h m‖ ^ 2 = 1 :=
+      norm_c_sq_add_norm_s_sq h (givensRho_ne_zero_of_gamma_ne_zero (hγ (m + 1) le_rfl))
+    have e1 : ‖γ h β (m + 1)‖ ^ 2 = ‖s h m‖ ^ 2 * ‖γ h β m‖ ^ 2 := by rw [h47]; ring
+    have e2 : ‖γ h β (m + 1)‖ ^ 2
+        = ‖c h m‖ ^ 2 * ‖b - op A (iomOfBasis x₀ u h β (m + 1))‖ ^ 2 := by rw [h57]; ring
+    -- `τ_{m+1} = |γ_{m+2}|`
+    have hτ : qmrsTau (fun j => b - op A (iomOfBasis x₀ u h β j)) (m + 1)
+        = ‖γ h β (m + 1)‖ := by
+      have hsum : 1 / ‖γ h β m‖ ^ 2
+            + 1 / ‖b - op A (iomOfBasis x₀ u h β (m + 1))‖ ^ 2
+          = 1 / ‖γ h β (m + 1)‖ ^ 2 := by
+        rw [div_add_div _ _ (pow_ne_zero 2 hgm) (pow_ne_zero 2 hp),
+          div_eq_div_iff (by positivity) (by positivity)]
+        linear_combination (‖b - op A (iomOfBasis x₀ u h β (m + 1))‖ ^ 2) * e1
+          + (‖γ h β m‖ ^ 2) * e2
+          + (‖γ h β m‖ ^ 2 * ‖b - op A (iomOfBasis x₀ u h β (m + 1))‖ ^ 2) * hcs
+      rw [qmrsTau, ihτ, hsum, one_div_one_div, Real.sqrt_sq (norm_nonneg _)]
+    -- `η_{m+1} = c_m²`
+    have hη : qmrsEta (fun j => b - op A (iomOfBasis x₀ u h β j)) m = ‖c h m‖ ^ 2 := by
+      have hden : (0 : ℝ) < ‖γ h β m‖ ^ 2
+          + ‖b - op A (iomOfBasis x₀ u h β (m + 1))‖ ^ 2 :=
+        add_pos_of_pos_of_nonneg (pow_pos (lt_of_le_of_ne (norm_nonneg _) (Ne.symm hgm)) 2)
+          (sq_nonneg _)
+      rw [qmrsEta, ihτ, div_eq_iff hden.ne']
+      linear_combination (-1 : ℝ) * e1 + e2 - (‖γ h β m‖ ^ 2) * hcs
+    -- the residual recurrence (6.58) with `‖s_m‖² = 1 - ‖c_m‖²`
+    have hs2 : ‖s h m‖ ^ 2 = 1 - ‖c h m‖ ^ 2 := by linarith
+    have hRm : IsUnit (R h m) := isUnit_R_of_gamma_ne_zero hhh fun j hj => hγ j (by omega)
+    have hRm1 : IsUnit (R h (m + 1)) := isUnit_R_of_gamma_ne_zero hhh fun j hj => hγ j hj
+    have hres : b - op A (qgmres x₀ u h β (m + 1))
+        = b - op A (qgmres x₀ u h β m + ‖c h m‖ ^ 2 •
+            (iomOfBasis x₀ u h β (m + 1) - qgmres x₀ u h β m)) := by
+      rw [equation_6_58 hu hr hRm hRm1 (hH (m + 1) le_rfl)]
+      simp only [RCLike.ofReal_real_eq_id, id_eq, map_add, map_smul, map_sub]
+      rw [hs2]
+      module
+    have hstep : qgmres x₀ u h β (m + 1)
+        = qgmres x₀ u h β m + ‖c h m‖ ^ 2 •
+            (iomOfBasis x₀ u h β (m + 1) - qgmres x₀ u h β m) :=
+      injective_op_of_isUnit hA (sub_right_injective hres)
+    refine ⟨?_, hτ⟩
+    rw [qmrs_succ, ihq, hη, hstep]
+    simp only [Prod.mk.injEq, true_and]
+    rw [map_add, map_smul, map_sub]
+    module
+
+end QMRSIOM
 
 end Smoothing
 

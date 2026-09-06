@@ -33,6 +33,13 @@ Definition 4.5 as printed uses column sums for all three dominance conditions, w
 Theorems 4.6 and 4.9 use row sums; both forms are stated here, following the backbone's
 `Matrix.IsStrictDiagDominant` (rows) and `Matrix.IsStrictColDiagDominant` (columns).
 
+The third condition of Definition 4.5, *irreducible* diagonal dominance, carries a clause that is
+easy to drop and that both Corollary 4.8 and Theorem 4.9 need: weak dominance at every index **and
+strict dominance at at least one**. The backbone's `Matrix.IsIrreduciblyDiagDominant` keeps it as
+the field `exists_strict` (in the row form, as above). Without it both results are false:
+`!![1, -1; -1, 1]` is irreducible and weakly diagonally dominant yet singular, and its Jacobi
+iteration matrix `!![0, 1; 1, 0]` has spectral radius `1`.
+
 **§4.2.4–4.2.5, symmetric positive definite matrices and Young's theory**: Proposition 4.12, by the
 similarity argument the book uses — for a block anti-diagonal `B` the spectrum is symmetric under
 negation, and the spectrum of `B(α) = α L + α⁻¹ U` does not depend on `α ≠ 0`; Theorem 4.10 (SOR
