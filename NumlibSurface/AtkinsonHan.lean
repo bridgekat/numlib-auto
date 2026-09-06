@@ -41,6 +41,9 @@ import NumlibSurface.AtkinsonHan.Chapter09.Section01
 import NumlibSurface.AtkinsonHan.Chapter09.Section02
 import NumlibSurface.AtkinsonHan.Chapter09.Section03
 import NumlibSurface.AtkinsonHan.Chapter09.Section04
+import NumlibSurface.AtkinsonHan.Chapter10.Section01
+import NumlibSurface.AtkinsonHan.Chapter10.Section02
+import NumlibSurface.AtkinsonHan.Chapter10.Section03
 import NumlibSurface.AtkinsonHan.Chapter10.Section04
 import NumlibSurface.AtkinsonHan.Chapter11.Section02
 import NumlibSurface.AtkinsonHan.Chapter11.Section03
@@ -55,13 +58,13 @@ import NumlibSurface.AtkinsonHan.Chapter12.Section07
 # Atkinson–Han, *Theoretical Numerical Analysis*
 
 The surface library for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A
-Functional Analysis Framework* (3rd ed., Springer, 2009): fifty-one modules, one per section of
+Functional Analysis Framework* (3rd ed., Springer, 2009): fifty-four modules, one per section of
 the book that the project covers, grouped by chapter. Each states the book's results in the book's
 own terms and proves them by specializing the backbone under `Numlib/`. Almost nothing is proved
 here that is not proved there — the surface exists to test the backbone against a published account
 of the subject, and to give a reader of the book a Lean name for every result formalized.
 
-This module imports the fifty-one section modules and adds nothing of its own.
+This module imports the fifty-four section modules and adds nothing of its own.
 
 ## Naming
 
@@ -133,6 +136,9 @@ bilinear-form vocabulary shared by §8.3, §8.7 and Chapters 9–10 directly in 
 | 9.3 | `Chapter09.Section03` | The generalized Galerkin method and Strang's first lemma |
 | 9.4 | `Chapter09.Section04` | The conjugate gradient method in variational form |
 | **10** | | *Finite Element Analysis* |
+| 10.1 | `Chapter10.Section01` | Static condensation and the cubic Hermite element on `[0,1]` |
+| 10.2 | `Chapter10.Section02` | The affine map onto an element: `‖T_K‖ ≤ h_K/ρ̂` |
+| 10.3 | `Chapter10.Section03` | Nodal interpolation under the pullback; regular families |
 | 10.4 | `Chapter10.Section04` | The Aubin–Nitsche lemma |
 | **11** | | *Elliptic Variational Inequalities and Their Numerical Approximations* |
 | 11.2 | `Chapter11.Section02` | Convex minimization and the inequality equivalent to it |
@@ -220,7 +226,14 @@ each section module names the results it leaves out.
 
 * **Sobolev spaces.** §8.1, §8.4, §8.5 and §8.8 are the book's Sobolev-space theory and its
   application to elliptic boundary value problems; §8.6's model-problem computations
-  (8.6.1)–(8.6.20) and Chapter 10 apart from the Aubin–Nitsche lemma are the same material.
+  (8.6.1)–(8.6.20) are the same material.  So is the *core* of Chapter 10, but only the core: the
+  results of that chapter which need a Sobolev space are Theorems 10.3.3, 10.3.4, 10.3.5, Corollary
+  10.3.7, Theorem 10.3.9, Theorem 10.4.1 and (10.4.11) — the interpolation error estimates, which
+  rest on the Bramble–Hilbert lemma of Chapter 7, and the convergence orders that combine them with
+  elliptic regularity — together with the concrete finite element spaces of §10.1 and §10.2, which
+  live in `H¹(0,1)` and `H¹(Ω)`.  Everything else in the chapter is Sobolev-free and is stated:
+  Lemma 10.2.2, Theorem 10.3.1, Definition 10.3.6, Example 10.3.2, the Aubin–Nitsche lemma and the
+  §10.1 algebra.
   Neither is Example 2.4.2 (the derivative extended to `H¹`), nor Example 2.5.9, nor the concrete
   PDE instances of Chapter 9. What survives is the abstract skeleton — §8.2, §8.3, §8.6, §8.7,
   Chapter 9 and §10.4 — which is where the functional analysis lives; the missing part is the

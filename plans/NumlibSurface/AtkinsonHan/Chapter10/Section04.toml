@@ -8,3 +8,22 @@ id = "theorem_10_4_3"
 
 [[node]]
 id = "corollary_10_4_4_abstract"
+
+[[node]]
+id = "exercise_10_4_5"
+kind = "theorem"
+desc = '''Exercise 10.4.5: in polar coordinates the Laplacian is
+`Δu = u_rr + r⁻¹ u_r + r⁻² u_θθ`.
+
+**Not a Sobolev statement**: it is the chain rule applied twice to a `C²` function, and the audit of
+this chapter lists it under MISSING for that reason. Mathlib has `polarCoord`, the partial
+homeomorphism `(x, y) ↦ (r, θ)`, and `Complex.polarCoord`, so the change of variables is available;
+the work is in the second derivatives, which have to be taken as `iteratedFDeriv` or as repeated
+`deriv` along the two coordinate directions of `polarCoord.symm`, and in the hypothesis that pins
+down where the identity holds (`r > 0`, the image of `polarCoord.target`).
+
+Its only use in the book is Exercise 10.4.6, the corner singularity `u = r^{π/ω} sin(πθ/ω)` of the
+Poisson problem on a wedge, which needs `H¹(Ω)` and is out of scope; so this node is worth writing
+for its own sake or not at all. There is no Laplacian in the library yet, and if one is added it
+belongs in the backbone rather than in this file.'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 10.4.5"

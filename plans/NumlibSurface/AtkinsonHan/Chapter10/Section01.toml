@@ -1,0 +1,51 @@
+namespace = "AtkinsonHan.Chapter10"
+
+[[node]]
+id = "exercise_10_1_2"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 10.1.2"
+
+[[node]]
+id = "hermiteShape"
+source = "Atkinson–Han, Theoretical Numerical Analysis, §10.1.3"
+
+[[node]]
+id = "eval_iterate_derivative_hermiteShape"
+source = "Atkinson–Han, Theoretical Numerical Analysis, §10.1.3"
+
+[[node]]
+id = "hermiteShape_mem_degreeLT"
+
+[[node]]
+id = "eq_hermiteShape_combination"
+source = "Atkinson–Han, Theoretical Numerical Analysis, §10.1.3"
+
+[[node]]
+id = "hermiteShapeBasis"
+source = "Atkinson–Han, Theoretical Numerical Analysis, §10.1.3"
+
+[[node]]
+id = "exercise_10_1_3"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 10.1.3"
+
+[[node]]
+id = "equation_10_1_9"
+kind = "theorem"
+desc = '''(10.1.9): the spectral condition number of the stiffness matrix `A = h⁻¹ tridiag(−1, 2,
+−1)` of order `N − 1`, `h = 1/N`, is `(1 + cos πh)/(1 − cos πh)`, so it grows like `h⁻²`.
+
+**Open, and blocked on the backbone, not on Sobolev theory — and not on the eigenvalues either.**
+The audit that suggested this node supposed the eigenvalues of the second-difference matrix to be
+missing; they are not. `Numlib/LinearAlgebra/Matrix/TridiagonalToeplitz` diagonalizes
+`tridiag(a, b, a)` by the discrete sine vectors and gives
+`Matrix.symmTridiagonalToeplitz_hasEigenvalue_iff`: the spectrum of the `n × n` matrix is exactly
+`{b + 2 a cos((k+1)π/(n+1)) : k < n}`. At `a = −1`, `b = 2`, `n = N − 1` those are
+`2 − 2 cos(kπh)` for `k = 1, …, N − 1`, whose extremes are `2 ∓ 2 cos πh`, and the factor `h⁻¹`
+cancels from the ratio.
+
+What is missing is the bridge from the spectrum to the *spectral norm*: `‖A‖₂ = max |λ|` for a
+symmetric matrix, and `‖A⁻¹‖₂ = 1/min λ` for a positive definite one. The enclosure half is
+`Matrix.isSymmetricBoundedBy_symmTridiagonalToeplitz`; the equality needs the norm of a self-adjoint
+operator as a supremum of Rayleigh quotients (the book's Theorem 2.6.4, `Chapter02/Section06`)
+together with attainment at an eigenvector, and belongs in the backbone beside
+`Numlib/Analysis/InnerProductSpace/Coercive`. Write that first, and this node is short.'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, (10.1.9)"

@@ -1,0 +1,18 @@
+namespace = "Approximation"
+
+[[node]]
+id = "nodalInterp"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (10.3.1), (10.3.2)"
+
+[[node]]
+id = "IsNodalBasis"
+
+[[node]]
+id = "IsNodalBasis.nodalInterp_apply_node"
+
+[[node]]
+id = "IsNodalBasis.comp"
+
+[[node]]
+id = "nodalInterp_comp"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 10.3.1"

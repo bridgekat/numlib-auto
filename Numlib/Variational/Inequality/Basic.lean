@@ -31,6 +31,10 @@ representation.
   that map is nonexpansive in its datum, and the damping step is a contraction with factor `√(1 - 2
   c θ + L² θ²)`.  `stampacchia` is the case `j = 0` and
   `existsUnique_isVariationalInequalitySolution_of_isCoercive` the bilinear-form case.
+* `existsUnique_isVariationalInequalitySolution_on` is the same theorem with the two hypotheses on
+  `A` — `IsStronglyMonotoneOnWith` and a Lipschitz bound — required **on `K` only**, which is all
+  the fixed point argument ever uses, since the iterates stay in `K`.  It is what a locally
+  Lipschitz operator satisfies on a bounded piece of `K`, and the global form is its corollary.
 * `IsVariationalInequalitySolution.iff_minty`: Minty's lemma, the equivalent form with `A` evaluated
   at the test point.  It needs no Lipschitz continuity, only continuity of `A` along the segments of
   `K` issuing from `u`.
@@ -65,6 +69,16 @@ def IsStronglyMonotoneWith (𝕜 : Type*) {E : Type*} [RCLike 𝕜] [NormedAddCo
     [InnerProductSpace 𝕜 E] (A : E → E) (c : ℝ) : Prop :=
   ∀ x y, c * ‖x - y‖ ^ 2 ≤ RCLike.re (inner 𝕜 (A x - A y) (x - y))
 
+/-- **Strong monotonicity on a set.**  `IsStronglyMonotoneOnWith 𝕜 A s c` asks for
+`c ‖x - y‖² ≤ re ⟪A x - A y, x - y⟫` at points of `s` only.
+
+The existence theory for a variational inequality over `K` never evaluates `A` outside `K`, so this
+is the hypothesis it really consumes ([han2009theoretical], Remark 11.3.2), and it is what the
+locally Lipschitz form of that theory needs, where the global condition is unavailable. -/
+def IsStronglyMonotoneOnWith (𝕜 : Type*) {E : Type*} [RCLike 𝕜] [NormedAddCommGroup E]
+    [InnerProductSpace 𝕜 E] (A : E → E) (s : Set E) (c : ℝ) : Prop :=
+  ∀ x ∈ s, ∀ y ∈ s, c * ‖x - y‖ ^ 2 ≤ RCLike.re (inner 𝕜 (A x - A y) (x - y))
+
 section StronglyMonotone
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
@@ -73,6 +87,22 @@ variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpac
 theorem IsStronglyMonotoneWith.mono {A : E → E} {c c' : ℝ} (h : IsStronglyMonotoneWith 𝕜 A c)
     (hc : c' ≤ c) : IsStronglyMonotoneWith 𝕜 A c' := fun x y =>
   (mul_le_mul_of_nonneg_right hc (sq_nonneg _)).trans (h x y)
+
+/-- A strongly monotone operator is strongly monotone on every set. -/
+theorem IsStronglyMonotoneWith.isStronglyMonotoneOnWith {A : E → E} {c : ℝ}
+    (h : IsStronglyMonotoneWith 𝕜 A c) (s : Set E) : IsStronglyMonotoneOnWith 𝕜 A s c :=
+  fun x _ y _ => h x y
+
+/-- Strong monotonicity on a set only weakens as its constant shrinks. -/
+theorem IsStronglyMonotoneOnWith.mono {A : E → E} {s : Set E} {c c' : ℝ}
+    (h : IsStronglyMonotoneOnWith 𝕜 A s c) (hc : c' ≤ c) : IsStronglyMonotoneOnWith 𝕜 A s c' :=
+  fun x hx y hy => (mul_le_mul_of_nonneg_right hc (sq_nonneg _)).trans (h x hx y hy)
+
+/-- Real spaces: strong monotonicity on a set, without `re`. -/
+theorem isStronglyMonotoneOnWith_real_iff {F : Type*} [NormedAddCommGroup F]
+    [InnerProductSpace ℝ F] (A : F → F) (s : Set F) (c : ℝ) :
+    IsStronglyMonotoneOnWith ℝ A s c ↔
+      ∀ x ∈ s, ∀ y ∈ s, c * ‖x - y‖ ^ 2 ≤ inner ℝ (A x - A y) (x - y) := Iff.rfl
 
 /-- Real spaces: strong monotonicity without `re`. -/
 theorem isStronglyMonotoneWith_real_iff {F : Type*} [NormedAddCommGroup F]
@@ -121,13 +151,14 @@ section Uniqueness
 variable {A : V → V} {j : V → ℝ} {K : Set V} {c : ℝ}
 
 /-- **Lipschitz dependence on the datum.**  Two solutions of the same variational inequality with
-data `f₁` and `f₂` and a `c`-strongly monotone operator satisfy `‖u₁ - u₂‖ ≤ ‖f₁ - f₂‖ / c`.
+data `f₁` and `f₂` and an operator `c`-strongly monotone on `K` satisfy
+`‖u₁ - u₂‖ ≤ ‖f₁ - f₂‖ / c`.  Both solutions lie in `K`, which is why monotonicity there is enough.
 
 Neither Lipschitz continuity of `A`, nor convexity of `j`, nor closedness of `K` is used.
 [han2009theoretical], Theorem 11.3.1, last clause; the linear case is
 `norm_sub_le_of_strongly_monotone`. -/
-theorem IsVariationalInequalitySolution.norm_sub_le (hc : 0 < c)
-    (hmono : IsStronglyMonotoneWith ℝ A c) {f₁ f₂ u₁ u₂ : V}
+theorem IsVariationalInequalitySolution.norm_sub_le_on (hc : 0 < c)
+    (hmono : IsStronglyMonotoneOnWith ℝ A K c) {f₁ f₂ u₁ u₂ : V}
     (h₁ : IsVariationalInequalitySolution A j f₁ K u₁)
     (h₂ : IsVariationalInequalitySolution A j f₂ K u₂) : ‖u₁ - u₂‖ ≤ ‖f₁ - f₂‖ / c := by
   have e₁ := h₁.2 u₂ h₂.1
@@ -141,7 +172,8 @@ theorem IsVariationalInequalitySolution.norm_sub_le (hc : 0 < c)
   have hkey : inner ℝ (A u₁ - A u₂) (u₁ - u₂) ≤ inner ℝ (f₁ - f₂) (u₁ - u₂) := by
     rw [inner_sub_left, inner_sub_left]
     linarith
-  have hmono' : c * ‖u₁ - u₂‖ ^ 2 ≤ inner ℝ (f₁ - f₂) (u₁ - u₂) := (hmono u₁ u₂).trans hkey
+  have hmono' : c * ‖u₁ - u₂‖ ^ 2 ≤ inner ℝ (f₁ - f₂) (u₁ - u₂) :=
+    (hmono u₁ h₁.1 u₂ h₂.1).trans hkey
   have hcs : inner ℝ (f₁ - f₂) (u₁ - u₂) ≤ ‖f₁ - f₂‖ * ‖u₁ - u₂‖ := real_inner_le_norm _ _
   rw [le_div_iff₀ hc]
   rcases eq_or_lt_of_le (norm_nonneg (u₁ - u₂)) with h | h
@@ -150,15 +182,29 @@ theorem IsVariationalInequalitySolution.norm_sub_le (hc : 0 < c)
     calc ‖u₁ - u₂‖ * c * ‖u₁ - u₂‖ = c * ‖u₁ - u₂‖ ^ 2 := by ring
       _ ≤ ‖f₁ - f₂‖ * ‖u₁ - u₂‖ := hmono'.trans hcs
 
+/-- **Lipschitz dependence on the datum**, for a globally strongly monotone operator. -/
+theorem IsVariationalInequalitySolution.norm_sub_le (hc : 0 < c)
+    (hmono : IsStronglyMonotoneWith ℝ A c) {f₁ f₂ u₁ u₂ : V}
+    (h₁ : IsVariationalInequalitySolution A j f₁ K u₁)
+    (h₂ : IsVariationalInequalitySolution A j f₂ K u₂) : ‖u₁ - u₂‖ ≤ ‖f₁ - f₂‖ / c :=
+  norm_sub_le_on hc (hmono.isStronglyMonotoneOnWith K) h₁ h₂
+
+/-- **Uniqueness**, from strong monotonicity on `K` alone. -/
+theorem IsVariationalInequalitySolution.unique_on (hc : 0 < c)
+    (hmono : IsStronglyMonotoneOnWith ℝ A K c) {f u₁ u₂ : V}
+    (h₁ : IsVariationalInequalitySolution A j f K u₁)
+    (h₂ : IsVariationalInequalitySolution A j f K u₂) : u₁ = u₂ := by
+  have h := IsVariationalInequalitySolution.norm_sub_le_on hc hmono h₁ h₂
+  simp only [sub_self, norm_zero, zero_div] at h
+  exact sub_eq_zero.mp (norm_le_zero_iff.mp h)
+
 /-- **Uniqueness.**  Two solutions of the same variational inequality with a strongly monotone
 operator coincide. [han2009theoretical], Theorem 11.3.1, uniqueness clause. -/
 theorem IsVariationalInequalitySolution.unique (hc : 0 < c)
     (hmono : IsStronglyMonotoneWith ℝ A c) {f u₁ u₂ : V}
     (h₁ : IsVariationalInequalitySolution A j f K u₁)
-    (h₂ : IsVariationalInequalitySolution A j f K u₂) : u₁ = u₂ := by
-  have h := IsVariationalInequalitySolution.norm_sub_le hc hmono h₁ h₂
-  simp only [sub_self, norm_zero, zero_div] at h
-  exact sub_eq_zero.mp (norm_le_zero_iff.mp h)
+    (h₂ : IsVariationalInequalitySolution A j f K u₂) : u₁ = u₂ :=
+  unique_on hc (hmono.isStronglyMonotoneOnWith K) h₁ h₂
 
 end Uniqueness
 
@@ -443,45 +489,47 @@ private theorem existsUnique_id {K : Set V} (hKne : K.Nonempty) (hKcl : IsClosed
     SesqForm.innerSL_isCoerciveWith (innerSL ℝ y) hKne hKcl hKcv hj hjlsc
   exact ⟨z, (hiff z hzK).mp hzmin, fun x hx => huniq x ⟨hx.1, (hiff x hx.1).mpr hx⟩⟩
 
-/-- **Unique solvability of the elliptic variational inequality.** [han2009theoretical], Theorem
-11.3.1: for a nonempty closed convex `K` in a real Hilbert space, an `A` strongly monotone with
-constant `c > 0` and Lipschitz with constant `L`, and a `j` convex and lower semicontinuous on `K`,
-the variational inequality has exactly one solution for every datum `f`.
+/-- **Unique solvability of the elliptic variational inequality, with the hypotheses on `K`
+only.** For a nonempty closed convex `K` in a real Hilbert space, an `A` strongly monotone on `K`
+with constant `c > 0` and Lipschitz on `K` with constant `L`, and a `j` convex and lower
+semicontinuous on `K`, the variational inequality has exactly one solution for every datum `f`.
 
 The map sending `u` to the solution of the auxiliary inequality with operator the identity and datum
 `u - θ (A u - f)` is nonexpansive in its datum, and the damping step `u ↦ u - θ (A u - f)` contracts
-with factor `√(1 - 2 c θ + L² θ²)` for `0 < θ < 2c/L²` (`contractingWith_damped`); the Banach fixed
+with factor `√(1 - 2 c θ + L² θ²)` for `0 < θ < 2c/L²` (`norm_sub_damped_le`); the Banach fixed
 point theorem on the closed set `K` then produces the solution, and
-`IsVariationalInequalitySolution.unique` its uniqueness. -/
-theorem existsUnique_isVariationalInequalitySolution {K : Set V} (hKne : K.Nonempty)
+`IsVariationalInequalitySolution.unique_on` its uniqueness. **Every step of that argument stays
+inside `K`**, which is why the hypotheses are needed nowhere else — the content of
+[han2009theoretical], Remark 11.3.2, and what makes the locally Lipschitz Exercise 11.3.1 a
+corollary: on a bounded piece of `K` a locally Lipschitz operator is Lipschitz. -/
+theorem existsUnique_isVariationalInequalitySolution_on {K : Set V} (hKne : K.Nonempty)
     (hKcl : IsClosed K) (hKcv : Convex ℝ K) {A : V → V} {c L : ℝ} (hc : 0 < c)
-    (hmono : IsStronglyMonotoneWith ℝ A c) (hlip : LipschitzWith (Real.toNNReal L) A)
+    (hmono : IsStronglyMonotoneOnWith ℝ A K c)
+    (hlip : ∀ x ∈ K, ∀ y ∈ K, ‖A x - A y‖ ≤ L * ‖x - y‖)
     {j : V → ℝ} (hj : ConvexOn ℝ K j) (hjlsc : LowerSemicontinuousOn j K) (f : V) :
     ∃! u, IsVariationalInequalitySolution A j f K u := by
   -- replace `L` by `L' = max L 1 > 0`, so that the damping parameter `θ = c / L'²` makes sense
   have hL' : (0 : ℝ) < max L 1 := lt_of_lt_of_le one_pos (le_max_right _ _)
-  have hlip' : LipschitzWith (Real.toNNReal (max L 1)) A :=
-    hlip.weaken (Real.toNNReal_mono (le_max_left _ _))
+  have hlip' : ∀ x ∈ K, ∀ y ∈ K, ‖A x - A y‖ ≤ max L 1 * ‖x - y‖ := fun x hx y hy =>
+    (hlip x hx y hy).trans (mul_le_mul_of_nonneg_right (le_max_left _ _) (norm_nonneg _))
   have hθ : 0 < c / max L 1 ^ 2 := by positivity
-  have hθ' : c / max L 1 ^ 2 < 2 * c / max L 1 ^ 2 := by
-    have h2 : 2 * c / max L 1 ^ 2 = c / max L 1 ^ 2 + c / max L 1 ^ 2 := by ring
-    linarith
-  have hcon := contractingWith_damped (𝕜 := ℝ) hc hL' hmono hlip' f hθ hθ'
   have hk0 : 0 ≤ Real.sqrt (1 - 2 * (c / max L 1 ^ 2) * c
       + (c / max L 1 ^ 2) ^ 2 * max L 1 ^ 2) := Real.sqrt_nonneg _
   have hk1 : Real.sqrt (1 - 2 * (c / max L 1 ^ 2) * c
       + (c / max L 1 ^ 2) ^ 2 * max L 1 ^ 2) < 1 := by
-    have h := hcon.1
-    rw [← NNReal.coe_lt_one, Real.coe_toNNReal _ (Real.sqrt_nonneg _)] at h
-    exact h
-  -- the damping step is a contraction
-  have hdamp : ∀ x y : V, ‖x - (c / max L 1 ^ 2) • (A x - f)
+    have hne : (max L 1 : ℝ) ^ 2 ≠ 0 := by positivity
+    have heq : 1 - 2 * (c / max L 1 ^ 2) * c + (c / max L 1 ^ 2) ^ 2 * max L 1 ^ 2
+        = 1 - c ^ 2 / max L 1 ^ 2 := by field_simp; ring
+    have hpos : (0 : ℝ) < c ^ 2 / max L 1 ^ 2 := by positivity
+    rw [Real.sqrt_lt' one_pos, heq, one_pow]
+    linarith
+  -- the damping step contracts on `K`, where the two hypotheses on `A` hold
+  have hdamp : ∀ x ∈ K, ∀ y ∈ K, ‖x - (c / max L 1 ^ 2) • (A x - f)
       - (y - (c / max L 1 ^ 2) • (A y - f))‖
       ≤ Real.sqrt (1 - 2 * (c / max L 1 ^ 2) * c + (c / max L 1 ^ 2) ^ 2 * max L 1 ^ 2)
         * ‖x - y‖ := by
-    intro x y
-    have h := LipschitzWith.dist_le_mul hcon.2 x y
-    rw [dist_eq_norm, dist_eq_norm, Real.coe_toNNReal _ (Real.sqrt_nonneg _)] at h
+    intro x hx y hy
+    have h := norm_sub_damped_le (𝕜 := ℝ) hθ.le hmono hlip' f hx hy
     simpa only [RCLike.ofReal_real_eq_id, id_eq] using h
   -- the auxiliary problem is uniquely solvable for every datum
   have hjθ : ConvexOn ℝ K (fun v => c / max L 1 ^ 2 * j v) := by
@@ -496,20 +544,39 @@ theorem existsUnique_isVariationalInequalitySolution {K : Set V} (hKne : K.Nonem
         ((fun u => P (u - (c / max L 1 ^ 2) • (A u - f))) y)
       ≤ Real.sqrt (1 - 2 * (c / max L 1 ^ 2) * c + (c / max L 1 ^ 2) ^ 2 * max L 1 ^ 2)
         * dist x y := by
-    intro x _ y _
+    intro x hx y hy
     have hne := IsVariationalInequalitySolution.norm_sub_le one_pos
       (isStronglyMonotoneWith_id (𝕜 := ℝ) (E := V)) (hP (x - (c / max L 1 ^ 2) • (A x - f)))
       (hP (y - (c / max L 1 ^ 2) • (A y - f)))
     rw [div_one] at hne
     rw [dist_eq_norm, dist_eq_norm]
-    exact hne.trans (hdamp x y)
+    exact hne.trans (hdamp x hx y hy)
   obtain ⟨x, ⟨hxK, hxfix⟩, -⟩ :=
     exists_unique_fixedPoint_of_mapsTo hKcl hKne hmaps hk0 hk1 hcontr
   have hsol : IsVariationalInequalitySolution A j f K x := by
     refine (isVarIneq_aux_iff hθ).mp ?_
     have h := hP (x - (c / max L 1 ^ 2) • (A x - f))
     rwa [hxfix] at h
-  exact ⟨x, hsol, fun y hy => IsVariationalInequalitySolution.unique hc hmono hy hsol⟩
+  exact ⟨x, hsol, fun y hy => IsVariationalInequalitySolution.unique_on hc hmono hy hsol⟩
+
+/-- **Unique solvability of the elliptic variational inequality.** [han2009theoretical], Theorem
+11.3.1: for a nonempty closed convex `K` in a real Hilbert space, an `A` strongly monotone with
+constant `c > 0` and Lipschitz with constant `L`, and a `j` convex and lower semicontinuous on `K`,
+the variational inequality has exactly one solution for every datum `f`.
+
+The case of `existsUnique_isVariationalInequalitySolution_on` in which the two hypotheses on `A`
+hold on the whole space. -/
+theorem existsUnique_isVariationalInequalitySolution {K : Set V} (hKne : K.Nonempty)
+    (hKcl : IsClosed K) (hKcv : Convex ℝ K) {A : V → V} {c L : ℝ} (hc : 0 < c)
+    (hmono : IsStronglyMonotoneWith ℝ A c) (hlip : LipschitzWith (Real.toNNReal L) A)
+    {j : V → ℝ} (hj : ConvexOn ℝ K j) (hjlsc : LowerSemicontinuousOn j K) (f : V) :
+    ∃! u, IsVariationalInequalitySolution A j f K u :=
+  existsUnique_isVariationalInequalitySolution_on (L := max L 0) hKne hKcl hKcv hc
+    (hmono.isStronglyMonotoneOnWith K)
+    (fun x _ y _ => by
+      have h := hlip.dist_le_mul x y
+      rwa [dist_eq_norm, dist_eq_norm, Real.coe_toNNReal'] at h)
+    hj hjlsc f
 
 /-- **Stampacchia's theorem.** [han2009theoretical], Theorem 11.3.6: a variational inequality of the
 first kind — `j = 0` — over a nonempty closed convex set with a strongly monotone Lipschitz operator

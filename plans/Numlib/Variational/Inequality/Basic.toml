@@ -23,6 +23,13 @@ id = "existsUnique_isVariationalInequalitySolution"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 11.3.1"
 
 [[node]]
+id = "existsUnique_isVariationalInequalitySolution_on"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 11.3.1 with Remark 11.3.2"
+
+[[node]]
+id = "IsStronglyMonotoneOnWith"
+
+[[node]]
 id = "stampacchia"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 11.3.6"
 

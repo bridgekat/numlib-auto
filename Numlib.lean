@@ -21,6 +21,7 @@ import Numlib.Analysis.Normed.Module.WeakDual
 import Numlib.Analysis.Normed.Operator.BanachSteinhaus
 import Numlib.Analysis.Normed.Operator.CollectivelyCompact
 import Numlib.Analysis.Normed.Operator.Compact
+import Numlib.Analysis.Normed.Operator.Scaling
 import Numlib.Analysis.Normed.Ring.CondNumber
 import Numlib.Analysis.Normed.Ring.Inverse
 import Numlib.Analysis.Wavelet.Haar
@@ -30,6 +31,7 @@ import Numlib.Approximation.Chebyshev
 import Numlib.Approximation.Hermite
 import Numlib.Approximation.Interpolation
 import Numlib.Approximation.Jackson
+import Numlib.Approximation.NodalInterpolation
 import Numlib.Approximation.OrthogonalPolynomial
 import Numlib.Approximation.Quadrature
 import Numlib.Approximation.Trigonometric

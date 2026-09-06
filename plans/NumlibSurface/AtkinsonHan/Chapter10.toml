@@ -1,13 +1,47 @@
 desc = '''
-Atkinson–Han, Chapter 10: finite element analysis. Almost the whole chapter is out of scope for
-want of Sobolev spaces in Mathlib — affine-equivalent finite elements and the scaling of Sobolev
-norms under an affine map (Section 10.2, Lemma 10.2.2, Theorem 10.3.4), the interpolation error
-estimates on the reference element and their transport (Theorems 10.3.3, 10.3.5, Corollary 10.3.7,
-Theorem 10.3.9), which rest on the Bramble–Hilbert lemma and hence on Theorem 7.3.12, and the
-convergence and order results of Section 10.4 (Theorem 10.4.1, Corollary 10.4.4, (10.4.11)), which
-combine them with the elliptic regularity bound (10.4.9).
+Atkinson–Han, Chapter 10: finite element analysis. Four sections: one-dimensional worked examples
+(10.1), triangulations, shape functions and affine-equivalent families (10.2), interpolation error
+estimates via the reference element (10.3), and convergence of the finite element solution (10.4).
 
-One result survives: the Aubin–Nitsche lemma, Theorem 10.4.3, whose duality argument uses only two
-inner product spaces and a continuous embedding of one into the other. It is formalized in
-`Chapter10/Section04`, and it is the only file of this chapter.
+**Which results are out of scope, precisely.** The chapter is not uniformly Sobolev-bound, and an
+earlier version of this plan said it was. The results that genuinely need a Sobolev space are
+
+* Theorem 10.3.3, `|v̂ − Π̂ v̂|_{m,K̂} ≤ c |v̂|_{k+1,K̂}`, which needs `H^{k+1}(K̂)`, the embedding
+  `H^{k+1}(K̂) ↪ C(K̂)` and the Deny–Lions estimate — the Bramble–Hilbert lemma, which is Theorem
+  7.3.12 and is why the whole of Chapter 7 is skipped;
+* Theorem 10.3.4, the transformation `|v̂|_{m,K̂} ≤ c ‖T_K‖^m |det T_K|^{−1/2} |v|_{m,K}` of an `H^m`
+  seminorm under an affine change of variables;
+* Theorem 10.3.5 and Corollary 10.3.7, which combine those two with Lemma 10.2.2;
+* Theorem 10.3.9, the global bound, which adds the additivity of the `H^m` norm over a
+  triangulation;
+* Theorem 10.4.1 and (10.4.11), the convergence orders, which are Céa's inequality plus 10.3.9;
+  the *abstract* half of 10.4.1 is already `Chapter09.corollary_9_1_4`, and what is missing there is
+  only the density of the finite element spaces in `H¹`;
+* Corollary 10.4.4 in the book's own form, whose hypothesis (10.4.9) is `H²` elliptic regularity;
+* the concrete finite element spaces themselves — the model problems of §10.1 and §10.2, the
+  triangulation axioms (1)–(4), and every exercise and example that names a domain.
+
+Everything else in the chapter was merely unwritten. It needs no Sobolev space at all:
+
+* **Lemma 10.2.2** (`Chapter10/Section02`) is metric geometry: a ball of diameter `ρ̂` inside `K̂`
+  and an affine image inside a `K` of diameter `h_K` give `‖T_K‖ ≤ h_K/ρ̂`.
+* **Theorem 10.3.1** (`Chapter10/Section03`) is two lines of algebra: nodal interpolation commutes
+  with a change of variables that carries the nodes and the shape functions along.
+* **Definition 10.3.6** (`Chapter10/Section03`) needs only a diameter and an inscribed ball, and
+  **Example 10.3.2** only barycentric coordinates.
+* **§10.1's algebra** (`Chapter10/Section01`) — the Schur complement of Exercise 10.1.2, the cubic
+  Hermite shape functions of §10.1.3, and the two-element bump of Exercise 10.1.3.
+* **The nodal representation formulas** (`Chapter10/Section02`) — (10.2.23) for `ℙ₂` on the reference
+  triangle, Exercise 10.2.1 for `ℙ₃` on the principal lattice `N̂₃`, and Exercise 10.2.3 for `ℚ_{1,1}`
+  on the reference square, each with the duality of its shape functions to its nodes, which is what
+  the book derives them from.
+* Still open, and open for reasons of *algebra* or of missing Mathlib vocabulary rather than of
+  Sobolev theory: Proposition 10.2.1 (unisolvence of `ℙ_k` on the principal lattice for every `k`;
+  its cases `k = 2, 3` are the two formulas above), Exercise 10.3.3 (the angle criterion, which
+  wants an inradius Mathlib does not have), Exercise 10.4.5 (the Laplacian in polar coordinates),
+  and (10.1.9), the condition number of `tridiag(−1, 2, −1)`, whose eigenvalues the backbone *does*
+  have.
+
+The entries in `Chapter10/Section01.toml`, `Section02.toml`, `Section03.toml` and `Section04.toml`
+carry each obstruction.
 '''

@@ -42,6 +42,8 @@ condition (11.3.2) crosses to Mathlib's `LipschitzWith` by
 * `theorem_11_3_9` — the bilinear-form problems (11.3.12)–(11.3.14).
 * `isBestApprox_energy_of_theorem_11_3_9` — for symmetric `a` and `j = 0` the solution is the best
   approximation to the solution of the variational equation in the energy norm.
+* `exercise_11_3_1` — Theorem 11.3.1 with (11.3.2) weakened to a *local* Lipschitz condition, and
+  `exercise_11_3_1_growth` for its part (a).
 * `exercise_11_3_2`, `exercise_11_3_3`, `exercise_11_3_10`, `exercise_11_3_13`.
 
 ## Deviations from the book
@@ -52,10 +54,15 @@ finite-dimensional subspaces of `V`; the latter implies it, because the segment 
 lies in the span of `u` and `v`.  `continuousWithinAt_segment_of_continuous` records the cheap
 sufficient condition, which already covers the Lipschitz operators of Theorem 11.3.1.
 
+Exercise 11.3.1 is proved through the backbone's
+`existsUnique_isVariationalInequalitySolution_on`, the form of Theorem 11.3.1 whose hypotheses on
+`A` are required on the constraint set alone.  That form is **Remark 11.3.2**, which the book states
+without proof and which the fixed point argument gives for nothing: every iterate stays in `K`.
+
 Not formalized: Theorem 11.3.12 (`W^{2,p}` regularity of the obstacle problem, quoted from
 Brezis–Stampacchia), Examples 11.3.10 and 11.3.11 and the one-dimensional solution formula
-following them, and Exercises 11.3.1, 11.3.4–11.3.9, 11.3.11 and 11.3.12, all of which name a
-domain.
+following them, and Exercises 11.3.4–11.3.9, 11.3.11 and 11.3.12, all of which name a domain and
+hence a Sobolev space.
 -/
 
 open Filter Set Topology
@@ -207,6 +214,180 @@ theorem exercise_11_3_13 (hc₀ : 0 < c₀) (hM : 0 ≤ M) (hmono : Chapter05.St
   · simpa only [isVariationalInequalitySolution_univ_zero_iff] using hex f
   · exact hlipdep f₁ f₂ u₁ u₂ ((isVariationalInequalitySolution_univ_zero_iff A f₁ u₁).2 h₁)
       ((isVariationalInequalitySolution_univ_zero_iff A f₂ u₂).2 h₂)
+
+/-! #### Exercise 11.3.1: a locally Lipschitz operator -/
+
+omit [CompleteSpace V] in
+/-- **Exercise 11.3.1 (a).**  A locally Lipschitz operator satisfies a growth bound
+`|(A v, w)| ≤ m̃(‖v‖) ‖w‖` with `m̃` non-decreasing: take `m̃(s) = m(s) s + ‖A 0‖` and compare `A v`
+with `A 0` on the ball of radius `‖v‖`. -/
+theorem exercise_11_3_1_growth {m : ℝ → ℝ} (hm : Monotone m) (hm0 : ∀ r, 0 ≤ m r)
+    (hlip : ∀ r : ℝ, ∀ v₁ ∈ Metric.closedBall (0 : V) r, ∀ v₂ ∈ Metric.closedBall (0 : V) r,
+      ‖A v₁ - A v₂‖ ≤ m r * ‖v₁ - v₂‖) :
+    ∃ mt : ℝ → ℝ, MonotoneOn mt (Ici 0) ∧ ∀ v w : V, |⟪A v, w⟫_ℝ| ≤ mt ‖v‖ * ‖w‖ := by
+  refine ⟨fun s => m s * s + ‖A 0‖, fun a ha b hb hab => ?_, fun v w => ?_⟩
+  · have h : m a * a ≤ m b * b := mul_le_mul (hm hab) hab ha (hm0 b)
+    linarith
+  · have h := hlip ‖v‖ v (by simp) 0 (by simp [norm_nonneg v])
+    rw [sub_zero] at h
+    have hA : ‖A v‖ ≤ m ‖v‖ * ‖v‖ + ‖A 0‖ := by
+      have h' : ‖A v‖ - ‖A 0‖ ≤ ‖A v - A 0‖ := norm_sub_norm_le _ _
+      linarith
+    exact (abs_real_inner_le_norm _ _).trans (mul_le_mul_of_nonneg_right hA (norm_nonneg w))
+
+omit [CompleteSpace V] in
+/-- **Exercise 11.3.1 (c).**  The a priori bound on a solution: a solution of the variational
+inequality over *any* `K' ⊆ K` containing a fixed `u₀ ∈ K` stays within a distance of `u₀` that
+depends on the datum, on `u₀` and on an affine minorant of `j`, but not on `K'`.
+
+Testing at `u₀` and using strong monotonicity gives `c₀ t² ≤ B + C t` for `t = ‖u - u₀‖`, with
+`B = j(u₀) - ℓ(u₀) - c` from the minorant of Lemma 11.3.5 and `C = ‖ℓ‖ + ‖f - A u₀‖`; the bound
+`(B + C)/c₀ + 1` is a number where the quadratic has overtaken the affine side. -/
+private theorem norm_sub_lt_of_isVariationalInequalitySolution (hc₀ : 0 < c₀)
+    (hmono : Chapter05.StronglyMonotoneWith A c₀) {ℓ : V →L[ℝ] ℝ} {cmin : ℝ}
+    (hmin : ∀ v ∈ K, ℓ v + cmin ≤ j v) {u₀ : V} (hu₀ : u₀ ∈ K) {K' : Set V} (hK' : K' ⊆ K)
+    (hu₀' : u₀ ∈ K') {f u : V} (hu : IsVariationalInequalitySolution A j f K' u) :
+    ‖u - u₀‖ < (j u₀ - ℓ u₀ - cmin + (‖ℓ‖ + ‖f - A u₀‖)) / c₀ + 1 := by
+  have ht0 : (0 : ℝ) ≤ ‖u - u₀‖ := norm_nonneg _
+  have hB : 0 ≤ j u₀ - ℓ u₀ - cmin := by linarith [hmin u₀ hu₀]
+  have hC : 0 ≤ ‖ℓ‖ + ‖f - A u₀‖ := by positivity
+  have hmono' : c₀ * ‖u - u₀‖ ^ 2 ≤ ⟪A u - A u₀, u - u₀⟫_ℝ := hmono u u₀
+  have hvi := hu.2 u₀ hu₀'
+  have hneg : ∀ w : V, ⟪w, u₀ - u⟫_ℝ = -⟪w, u - u₀⟫_ℝ := fun w => by
+    rw [← inner_neg_right]
+    congr 1
+    abel
+  rw [hneg (A u), hneg f] at hvi
+  have hjlow : ℓ u + cmin ≤ j u := hmin u (hK' hu.1)
+  have hlsub : ℓ u = ℓ u₀ + ℓ (u - u₀) := by
+    rw [← map_add]
+    congr 1
+    abel
+  have hlb : -(‖ℓ‖ * ‖u - u₀‖) ≤ ℓ (u - u₀) := by
+    have h : |ℓ (u - u₀)| ≤ ‖ℓ‖ * ‖u - u₀‖ := by
+      simpa [Real.norm_eq_abs] using ℓ.le_opNorm (u - u₀)
+    linarith [(abs_le.mp h).1]
+  have hf : ⟪f, u - u₀⟫_ℝ - ⟪A u₀, u - u₀⟫_ℝ ≤ ‖f - A u₀‖ * ‖u - u₀‖ := by
+    have h := real_inner_le_norm (f - A u₀) (u - u₀)
+    rwa [inner_sub_left] at h
+  rw [inner_sub_left] at hmono'
+  have hkey : c₀ * ‖u - u₀‖ ^ 2
+      ≤ j u₀ - ℓ u₀ - cmin + (‖ℓ‖ + ‖f - A u₀‖) * ‖u - u₀‖ := by nlinarith [hvi, hmono']
+  by_contra hcon
+  push Not at hcon
+  have ht1 : (1 : ℝ) ≤ ‖u - u₀‖ := by
+    have : 0 ≤ (j u₀ - ℓ u₀ - cmin + (‖ℓ‖ + ‖f - A u₀‖)) / c₀ := by positivity
+    linarith
+  have hmul : c₀ * ((j u₀ - ℓ u₀ - cmin + (‖ℓ‖ + ‖f - A u₀‖)) / c₀ + 1)
+      = j u₀ - ℓ u₀ - cmin + (‖ℓ‖ + ‖f - A u₀‖) + c₀ := by
+    field_simp
+  have hct : j u₀ - ℓ u₀ - cmin + (‖ℓ‖ + ‖f - A u₀‖) + c₀ ≤ c₀ * ‖u - u₀‖ := by
+    rw [← hmul]
+    exact mul_le_mul_of_nonneg_left hcon hc₀.le
+  nlinarith [hkey, hct, ht1, hB, hC]
+
+/-- **Exercise 11.3.1.**  Theorem 11.3.1 holds with the Lipschitz condition (11.3.2) weakened to a
+*local* one: `‖A v - A w‖ ≤ m(r) ‖v - w‖` for `v, w` in the ball `V_r = {v : ‖v‖ ≤ r}`.  The
+variational inequality (11.3.3) then still has exactly one solution for every datum, depending
+Lipschitz continuously on it.
+
+The book's proof, and this one: on `K_r = K ∩ V_r` the operator *is* Lipschitz, so Theorem 11.3.1
+applies there — in the form `existsUnique_isVariationalInequalitySolution_on`, whose hypotheses are
+required on the constraint set only (Remark 11.3.2).  Part (c) is
+`norm_sub_lt_of_isVariationalInequalitySolution`: the solution `u_r` satisfies `‖u_r‖ < R₀` for a
+radius `R₀` not depending on `r`.  Part (d) is the segment trick: for `v ∈ K` with `‖v‖ > R₀`, the
+point `v_λ = (1 - λ) u + λ v` with `λ = (R₀ - ‖u‖)/(‖v‖ - ‖u‖)` lies in `K_{R₀}`, and testing there
+gives `λ` times the inequality at `v`, which convexity of `j` lets one divide by `λ > 0`.
+
+Monotonicity of `m` — used in part (a), `exercise_11_3_1_growth` — is not needed here: only the
+existence of a Lipschitz constant on each ball is. -/
+theorem exercise_11_3_1 (hKne : K.Nonempty) (hKcl : IsClosed K) (hKcv : Convex ℝ K) (hc₀ : 0 < c₀)
+    (hmono : Chapter05.StronglyMonotoneWith A c₀) {m : ℝ → ℝ}
+    (hlip : ∀ r : ℝ, ∀ v₁ ∈ Metric.closedBall (0 : V) r, ∀ v₂ ∈ Metric.closedBall (0 : V) r,
+      ‖A v₁ - A v₂‖ ≤ m r * ‖v₁ - v₂‖)
+    (hj : ConvexOn ℝ K j) (hjlsc : LowerSemicontinuousOn j K) :
+    (∀ f : V, ∃! u, IsVariationalInequalitySolution A j f K u) ∧
+      ∀ f₁ f₂ u₁ u₂ : V, IsVariationalInequalitySolution A j f₁ K u₁ →
+        IsVariationalInequalitySolution A j f₂ K u₂ → ‖u₁ - u₂‖ ≤ 1 / c₀ * ‖f₁ - f₂‖ := by
+  obtain ⟨u₀, hu₀⟩ := hKne
+  obtain ⟨ℓ, cmin, hmin⟩ := lemma_11_3_5 ⟨u₀, hu₀⟩ hKcl hj hjlsc
+  refine ⟨fun f => ?_, fun f₁ f₂ u₁ u₂ h₁ h₂ => ?_⟩
+  · -- the radius `R₀ = ‖u₀‖ + ρ` of part (c), which does not depend on the truncation
+    obtain ⟨ρ, hρ0, hρ⟩ : ∃ ρ : ℝ, 0 < ρ ∧ ∀ (K' : Set V) (u : V), K' ⊆ K → u₀ ∈ K' →
+        IsVariationalInequalitySolution A j f K' u → ‖u - u₀‖ < ρ := by
+      refine ⟨(j u₀ - ℓ u₀ - cmin + (‖ℓ‖ + ‖f - A u₀‖)) / c₀ + 1, ?_,
+        fun K' u hK' hu₀' hu =>
+          norm_sub_lt_of_isVariationalInequalitySolution hc₀ hmono hmin hu₀ hK' hu₀' hu⟩
+      have hB : 0 ≤ j u₀ - ℓ u₀ - cmin := by linarith [hmin u₀ hu₀]
+      have : 0 ≤ (j u₀ - ℓ u₀ - cmin + (‖ℓ‖ + ‖f - A u₀‖)) / c₀ := by positivity
+      linarith
+    -- part (b): the truncated problem on `K_{R₀} = K ∩ V_{R₀}` is uniquely solvable
+    have hKRcv : Convex ℝ (K ∩ Metric.closedBall (0 : V) (‖u₀‖ + ρ)) :=
+      hKcv.inter (convex_closedBall 0 _)
+    have hu₀R : u₀ ∈ K ∩ Metric.closedBall (0 : V) (‖u₀‖ + ρ) :=
+      ⟨hu₀, by simpa [mem_closedBall_zero_iff] using (by linarith : ‖u₀‖ ≤ ‖u₀‖ + ρ)⟩
+    obtain ⟨u, hu, -⟩ := existsUnique_isVariationalInequalitySolution_on ⟨u₀, hu₀R⟩
+      (hKcl.inter Metric.isClosed_closedBall) hKRcv hc₀
+      ((isStronglyMonotoneWith_of hmono).isStronglyMonotoneOnWith _)
+      (fun x hx y hy => hlip (‖u₀‖ + ρ) x hx.2 y hy.2)
+      (hj.subset inter_subset_left hKRcv) (hjlsc.mono inter_subset_left) f
+    -- part (c): the solution of the truncated problem is interior to the ball
+    have hunorm : ‖u‖ < ‖u₀‖ + ρ := by
+      have h := hρ _ u inter_subset_left hu₀R hu
+      have htri : ‖u‖ ≤ ‖u₀‖ + ‖u - u₀‖ := by
+        calc ‖u‖ = ‖u₀ + (u - u₀)‖ := by congr 1; abel
+          _ ≤ ‖u₀‖ + ‖u - u₀‖ := norm_add_le _ _
+      linarith
+    -- part (d): it therefore solves the inequality on all of `K`
+    have hsol : IsVariationalInequalitySolution A j f K u := by
+      refine ⟨hu.1.1, fun v hv => ?_⟩
+      rcases le_or_gt ‖v‖ (‖u₀‖ + ρ) with hvle | hvgt
+      · exact hu.2 v ⟨hv, by simpa [mem_closedBall_zero_iff] using hvle⟩
+      · have hden : 0 < ‖v‖ - ‖u‖ := by linarith
+        have hlam0 : 0 < (‖u₀‖ + ρ - ‖u‖) / (‖v‖ - ‖u‖) := div_pos (by linarith) hden
+        have hlam1 : (‖u₀‖ + ρ - ‖u‖) / (‖v‖ - ‖u‖) < 1 := by
+          rw [div_lt_one hden]
+          linarith
+        have hlamv : (‖u₀‖ + ρ - ‖u‖) / (‖v‖ - ‖u‖) * (‖v‖ - ‖u‖) = ‖u₀‖ + ρ - ‖u‖ :=
+          div_mul_cancel₀ _ hden.ne'
+        have hcomb : u + ((‖u₀‖ + ρ - ‖u‖) / (‖v‖ - ‖u‖)) • (v - u)
+            = (1 - (‖u₀‖ + ρ - ‖u‖) / (‖v‖ - ‖u‖)) • u
+              + ((‖u₀‖ + ρ - ‖u‖) / (‖v‖ - ‖u‖)) • v := by
+          rw [sub_smul, one_smul, smul_sub]
+          abel
+        have hmemK : u + ((‖u₀‖ + ρ - ‖u‖) / (‖v‖ - ‖u‖)) • (v - u) ∈ K := by
+          rw [hcomb]
+          exact hKcv hu.1.1 hv (by linarith) hlam0.le (by ring)
+        have hmemball : u + ((‖u₀‖ + ρ - ‖u‖) / (‖v‖ - ‖u‖)) • (v - u)
+            ∈ Metric.closedBall (0 : V) (‖u₀‖ + ρ) := by
+          rw [mem_closedBall_zero_iff, hcomb]
+          have h := norm_add_le ((1 - (‖u₀‖ + ρ - ‖u‖) / (‖v‖ - ‖u‖)) • u)
+            (((‖u₀‖ + ρ - ‖u‖) / (‖v‖ - ‖u‖)) • v)
+          rw [norm_smul, norm_smul, Real.norm_eq_abs, Real.norm_eq_abs,
+            abs_of_nonneg (by linarith : (0:ℝ) ≤ 1 - (‖u₀‖ + ρ - ‖u‖) / (‖v‖ - ‖u‖)),
+            abs_of_nonneg hlam0.le] at h
+          nlinarith [h, hlamv]
+        have hvi := hu.2 _ ⟨hmemK, hmemball⟩
+        have hjw : j (u + ((‖u₀‖ + ρ - ‖u‖) / (‖v‖ - ‖u‖)) • (v - u))
+            ≤ (1 - (‖u₀‖ + ρ - ‖u‖) / (‖v‖ - ‖u‖)) * j u
+              + ((‖u₀‖ + ρ - ‖u‖) / (‖v‖ - ‖u‖)) * j v := by
+          rw [hcomb]
+          exact hj.2 hu.1.1 hv (by linarith) hlam0.le (by ring)
+        have hinner : ∀ w : V,
+            ⟪w, u + ((‖u₀‖ + ρ - ‖u‖) / (‖v‖ - ‖u‖)) • (v - u) - u⟫_ℝ
+              = (‖u₀‖ + ρ - ‖u‖) / (‖v‖ - ‖u‖) * ⟪w, v - u⟫_ℝ := by
+          intro w
+          rw [show u + ((‖u₀‖ + ρ - ‖u‖) / (‖v‖ - ‖u‖)) • (v - u) - u
+              = ((‖u₀‖ + ρ - ‖u‖) / (‖v‖ - ‖u‖)) • (v - u) by abel, real_inner_smul_right]
+        rw [hinner (A u), hinner f] at hvi
+        rw [ge_iff_le]
+        refine le_of_mul_le_mul_left ?_ hlam0
+        linarith [hvi, hjw]
+    exact ⟨u, hsol, fun y hy =>
+      IsVariationalInequalitySolution.unique hc₀ (isStronglyMonotoneWith_of hmono) hy hsol⟩
+  · have h := IsVariationalInequalitySolution.norm_sub_le hc₀ (isStronglyMonotoneWith_of hmono)
+      h₁ h₂
+    rwa [one_div, inv_mul_eq_div]
 
 end Existence
 

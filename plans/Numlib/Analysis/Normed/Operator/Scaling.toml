@@ -1,0 +1,8 @@
+namespace = "ContinuousLinearMap"
+
+[[node]]
+id = "opNorm_le_div_of_norm_le"
+
+[[node]]
+id = "opNorm_le_diam_div"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Lemma 10.2.2"

@@ -1,0 +1,67 @@
+namespace = "AtkinsonHan.Chapter10"
+
+[[node]]
+id = "lemma_10_2_2"
+
+[[node]]
+id = "proposition_10_2_1"
+kind = "theorem"
+desc = '''Proposition 10.2.1: a polynomial of total degree at most `k` on a triangle is uniquely
+determined by its values at the `(k+1)(k+2)/2` points of the principal lattice
+`N̂_k = {Σ tᵢ âᵢ : Σ tᵢ = 1, tᵢ ∈ {0, 1/k, …, 1}}`, i.e. the interpolation problem there is
+unisolvent. Needs `ℙ_k` on a plane affine space — `MvPolynomial (Fin 2) ℝ` cut down by
+`totalDegree ≤ k`, or a span of monomials in barycentric coordinates (`AffineBasis.coord`) — and
+then `Approximation.IsUnisolvent` applies.
+
+**The one genuinely hard non-Sobolev item of the chapter, and hard as algebra, not as analysis.**
+The book quotes it without proof. The standard induction on `k` says that a `ℙ_k` vanishing on the
+lattice vanishes on the line `t₃ = 0`, hence is divisible by the affine form `λ₃`, and that the
+quotient is a `ℙ_{k−1}` vanishing on the smaller lattice; the divisibility of a multivariate
+polynomial by an affine form is the step Mathlib does not hand you.
+
+The cases `k = 2` and `k = 3` do not need it and are proved: `equation_10_2_23` and
+`exercise_10_2_1` give the nodal representation outright, by exhibiting the dual basis and checking
+a polynomial identity, and unisolvence over the space follows from a representation.'''
+deps = ["_root_.Approximation.IsUnisolvent"]
+
+[[node]]
+id = "refBary"
+
+[[node]]
+id = "quadraticNode"
+
+[[node]]
+id = "quadraticShape"
+
+[[node]]
+id = "quadraticShape_isNodalBasis"
+
+[[node]]
+id = "equation_10_2_23"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (10.2.23)"
+
+[[node]]
+id = "cubicNode"
+
+[[node]]
+id = "cubicShape"
+
+[[node]]
+id = "cubicShape_isNodalBasis"
+
+[[node]]
+id = "exercise_10_2_1"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 10.2.1"
+
+[[node]]
+id = "bilinearNode"
+
+[[node]]
+id = "bilinearShape"
+
+[[node]]
+id = "bilinearShape_isNodalBasis"
+
+[[node]]
+id = "exercise_10_2_3"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 10.2.3"

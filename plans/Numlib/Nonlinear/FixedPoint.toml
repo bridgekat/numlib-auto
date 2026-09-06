@@ -20,6 +20,9 @@ id = "exists_unique_fixedPoint_of_mapsTo"
 id = "lipschitzOnWith_of_hasFDerivWithinAt"
 
 [[node]]
+id = "norm_sub_damped_le"
+
+[[node]]
 id = "norm_sub_le_of_strongly_monotone"
 
 [[node]]

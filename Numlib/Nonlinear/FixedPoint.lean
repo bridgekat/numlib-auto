@@ -196,6 +196,33 @@ private theorem norm_sub_smul_sq_le {u w : E} {c L θ : ℝ} (hθ : 0 ≤ θ)
   rw [hexp]
   nlinarith [h1, h2]
 
+omit [CompleteSpace E] in
+/-- **The damped iteration on a set.**  If `T` is strongly monotone with constant `c` and Lipschitz
+with constant `L` *on `s`*, then `x ↦ x - θ (T x - b)` moves two points of `s` no further apart than
+the factor `√(1 - 2θc + θ²L²)`.
+
+This is the estimate `contractingWith_damped` makes globally, and it is what a fixed point argument
+confined to a closed convex set needs: the iterates never leave the set, so the hypotheses on `T`
+are only ever used there.  See `existsUnique_isVariationalInequalitySolution_on`. -/
+theorem norm_sub_damped_le {T : E → E} {s : Set E} {c L θ : ℝ} (hθ : 0 ≤ θ)
+    (hmono : ∀ x ∈ s, ∀ y ∈ s, c * ‖x - y‖ ^ 2 ≤ RCLike.re (inner 𝕜 (T x - T y) (x - y)))
+    (hlip : ∀ x ∈ s, ∀ y ∈ s, ‖T x - T y‖ ≤ L * ‖x - y‖) (b : E) {x y : E} (hx : x ∈ s)
+    (hy : y ∈ s) :
+    ‖x - (θ : 𝕜) • (T x - b) - (y - (θ : 𝕜) • (T y - b))‖
+      ≤ Real.sqrt (1 - 2 * θ * c + θ ^ 2 * L ^ 2) * ‖x - y‖ := by
+  have hsub : x - (θ : 𝕜) • (T x - b) - (y - (θ : 𝕜) • (T y - b))
+      = (x - y) - (θ : 𝕜) • (T x - T y) := by
+    rw [smul_sub, smul_sub, smul_sub]
+    abel
+  rw [hsub]
+  calc ‖(x - y) - (θ : 𝕜) • (T x - T y)‖
+      = Real.sqrt (‖(x - y) - (θ : 𝕜) • (T x - T y)‖ ^ 2) :=
+        (Real.sqrt_sq (norm_nonneg _)).symm
+    _ ≤ Real.sqrt ((1 - 2 * θ * c + θ ^ 2 * L ^ 2) * ‖x - y‖ ^ 2) :=
+        Real.sqrt_le_sqrt (norm_sub_smul_sq_le hθ (hmono x hx y hy) (hlip x hx y hy))
+    _ = Real.sqrt (1 - 2 * θ * c + θ ^ 2 * L ^ 2) * ‖x - y‖ := by
+        rw [Real.sqrt_mul' _ (sq_nonneg _), Real.sqrt_sq (norm_nonneg _)]
+
 -- `hc` and completeness are not needed for the contraction estimate itself (only `hθ'` and
 -- `hθ` are); they are kept so that the statement matches its use in Lax–Milgram.
 set_option linter.unusedVariables false in
@@ -216,21 +243,13 @@ theorem contractingWith_damped {T : E → E} {c L : ℝ} (hc : 0 < c) (hL : 0 < 
   refine ⟨?_, LipschitzWith.of_dist_le_mul fun x y => ?_⟩
   · rw [← NNReal.coe_lt_one, Real.coe_toNNReal _ (Real.sqrt_nonneg _), Real.sqrt_lt' one_pos]
     simpa using hfac
-  · have hw : ‖T x - T y‖ ≤ L * ‖x - y‖ := by
-      have h := hlip.dist_le_mul x y
+  · have hw : ∀ u ∈ (Set.univ : Set E), ∀ v ∈ (Set.univ : Set E), ‖T u - T v‖ ≤ L * ‖u - v‖ := by
+      intro u _ v _
+      have h := hlip.dist_le_mul u v
       rwa [dist_eq_norm, dist_eq_norm, Real.coe_toNNReal _ hL.le] at h
-    have hsub : (x - (θ : 𝕜) • (T x - b)) - (y - (θ : 𝕜) • (T y - b))
-        = (x - y) - (θ : 𝕜) • (T x - T y) := by
-      rw [smul_sub, smul_sub, smul_sub]
-      abel
-    rw [Real.coe_toNNReal _ (Real.sqrt_nonneg _), dist_eq_norm, dist_eq_norm, hsub]
-    calc ‖(x - y) - (θ : 𝕜) • (T x - T y)‖
-        = Real.sqrt (‖(x - y) - (θ : 𝕜) • (T x - T y)‖ ^ 2) :=
-          (Real.sqrt_sq (norm_nonneg _)).symm
-      _ ≤ Real.sqrt ((1 - 2 * θ * c + θ ^ 2 * L ^ 2) * ‖x - y‖ ^ 2) :=
-          Real.sqrt_le_sqrt (norm_sub_smul_sq_le hθ.le (hmono x y) hw)
-      _ = Real.sqrt (1 - 2 * θ * c + θ ^ 2 * L ^ 2) * ‖x - y‖ := by
-          rw [Real.sqrt_mul' _ (sq_nonneg _), Real.sqrt_sq (norm_nonneg _)]
+    rw [Real.coe_toNNReal _ (Real.sqrt_nonneg _), dist_eq_norm, dist_eq_norm]
+    exact norm_sub_damped_le (𝕜 := 𝕜) hθ.le (fun u _ v _ => hmono u v) hw b (Set.mem_univ x)
+      (Set.mem_univ y)
 
 /-- Zarantonello's theorem ([han2009theoretical], Thm 5.1.4): a strongly monotone Lipschitz map on a
 Hilbert space is bijective, with `‖x₁ - x₂‖ ≤ ‖T x₁ - T x₂‖ / c`.  It is the nonlinear counterpart

@@ -24,12 +24,23 @@ boundedness comes from the Lax–Milgram bound `norm_le_of_dualProblem` on the d
 
 ## Not formalized here
 
-Almost the whole of Chapter 10 is out of scope for want of Sobolev spaces in Mathlib.  Left out of
-this file: Theorem 10.4.1 (the convergence order of the finite element method, which needs the
-interpolation error estimate of §10.3), Corollary 10.4.4 in its stated form (its hypothesis
-(10.4.9) is an elliptic regularity bound), and (10.4.11).  The abstract half of Corollary 10.4.4,
-in which the approximation power of the dual solutions is a hypothesis, is
-`corollary_10_4_4_abstract`.
+Theorem 10.4.1, the convergence order `‖u − u_h‖_{1,Ω} ≤ c h^k |u|_{k+1,Ω}` of the finite element
+method; Corollary 10.4.4 in its stated form, whose hypothesis (10.4.9) is an `H²` elliptic
+regularity bound; and (10.4.11).  Each is a Sobolev statement: 10.4.1 is Céa's inequality together
+with the interpolation error estimate of §10.3 (Theorem 10.3.9), whose *abstract* half — Galerkin
+solutions on a monotone family of subspaces with dense union converge — is already
+`Chapter09.corollary_9_1_4`, so what is missing is only the density of the finite element spaces in
+`H¹`.  The abstract half of Corollary 10.4.4, in which the approximation power of the dual
+solutions is a hypothesis rather than a consequence of regularity, is `corollary_10_4_4_abstract`.
+
+Exercise 10.4.5, the Laplacian in polar coordinates, is *not* a Sobolev statement — it is the chain
+rule on a `C²` function — and is planned but not written; the library has no Laplacian, and the
+exercise's only use in the book is the corner singularity of Exercise 10.4.6, which does need a
+Sobolev space.  Exercises 10.4.1–4.4 and 10.4.6 and Example 10.4.2 all name a domain.
+
+The rest of the chapter is *not* out of scope, and the sections that hold it say what they hold:
+`Chapter10.Section01` (the §10.1 algebra), `Chapter10.Section02` (Lemma 10.2.2) and
+`Chapter10.Section03` (Theorem 10.3.1, Example 10.3.2, Definition 10.3.6).
 -/
 
 namespace AtkinsonHan
