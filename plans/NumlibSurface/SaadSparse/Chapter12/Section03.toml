@@ -1,103 +1,64 @@
 namespace = "SaadSparse.Ch12"
-desc = '''
-§12.3, polynomial preconditioners: Neumann polynomials (§12.3.1), Chebyshev acceleration
-(§12.3.2, Algorithm 12.1) and least-squares polynomials (§12.3.3).
-
-The section carries no numbered result, so the surface names the displayed equations. Nearly
-everything specializes `Numlib/LinearSolve/Preconditioner/Polynomial`,
-`Numlib/LinearSolve/Preconditioner/Chebyshev` and
-`Numlib/RingTheory/Polynomial/KernelPolynomial`; the surface contribution is the real-matrix
-reading and the identification of Saad's `T_k` with `Polynomial.Chebyshev.shifted k α β 0`, which
-is the point at which the chapter connects to the Chebyshev min–max theorem of §6.11 that the
-Chapter 6 surface already has.
-
-§12.3.4 (the nonsymmetric case: Chebyshev polynomials on an ellipse, and the Remez algorithm on a
-polygon) is not planned: the ellipse results are Saad Lemma 6.26 / Thm 6.27, already deferred to
-`Numlib/RingTheory/Polynomial/ChebyshevEllipse` in phase 3, and the polygonal case is a numerical
-procedure with no stated theorem.
-'''
 
 [[node]]
 id = "equation_12_3"
-kind = "theorem"
-desc = '''§12.3.1: for `N = I - ω D⁻¹ A`, the truncated Neumann preconditioner
-`M⁻¹ = (I + N + ⋯ + N^s) D⁻¹` satisfies `M⁻¹ A = ω⁻¹ (I - N^{s+1})`, so the polynomial
-preconditioner is `s + 1` steps of the underlying relaxation.'''
-deps = ["Preconditioner.neumannPoly", "Preconditioner.neumannPoly_mul_eq"]
 
 [[node]]
 id = "neumann_isSymmetric_withEnergy"
-kind = "theorem"
-desc = '''Saad's remark closing §12.3.1 (his Exercise 12.1): for symmetric positive definite `A` and `D`,
-`M⁻¹ A` is not symmetric but is self-adjoint with respect to the `D`-inner product, so it may still
-be used with CG.'''
-deps = ["Preconditioner.isSymmetric_withEnergy_aeval_mul"]
+
+[[node]]
+id = "equation_12_4"
 
 [[node]]
 id = "equation_12_5"
-kind = "theorem"
-desc = '''The optimality criterion (12.4)–(12.5): choosing `s ∈ P_k` to minimize
-`max_{λ ∈ E} |1 - λ s λ|` over an interval `E = [α, β]` containing the spectrum bounds
-`‖x - s(A) A x‖ ≤ (max_{[α,β]} |1 - λ s λ|) ‖x‖`, and Saad's remark that with `γ = 0` the minimizer
-is the shifted Chebyshev polynomial of Theorem 6.25.'''
-deps = ["Preconditioner.norm_sub_aeval_mul_apply_le", "Polynomial.Chebyshev.one_div_eval_T_le_sSup_abs_eval_of_eval_zero"]
+
+[[node]]
+id = "T_k_eq_shifted"
 
 [[node]]
 id = "chebyshevIterate"
-kind = "definition"
-desc = '''Algorithm 12.1, Chebyshev acceleration, for a real symmetric positive definite matrix with
-spectrum in `[α, β]`, together with `chebyshevIterate_eq` identifying it with
-`Preconditioner.Chebyshev.iterate` and `T_k_eq_shifted` identifying Saad's residual polynomial
-`T_k(t) = C_k((θ - t)/δ)/C_k(θ/δ)` with `Polynomial.Chebyshev.shifted k α β 0`.'''
-deps = ["Preconditioner.Chebyshev.iterate", "Polynomial.Chebyshev.shifted"]
+
+[[node]]
+id = "equation_12_6"
+
+[[node]]
+id = "equation_12_7"
 
 [[node]]
 id = "equation_12_8"
-kind = "theorem"
-desc = '''The three-term recurrences (12.6)–(12.8): `σ_{k+1} = 2 σ₁ σ_k - σ_{k-1}`,
-`ρ_k = (2 σ₁ - ρ_{k-1})⁻¹`, and `T_{k+1}(t) = ρ_k (2 (σ₁ - t/δ) T_k(t) - ρ_{k-1} T_{k-1}(t))`, and
-the resulting direction recurrence `d_k = ρ_k (ρ_{k-1} d_{k-1} + (2/δ) r_k)` of (12.9).'''
-deps = ["chebyshevIterate", "Preconditioner.Chebyshev.iterate"]
+
+[[node]]
+id = "equation_12_9"
 
 [[node]]
 id = "chebyshev_residual_eq"
-kind = "theorem"
-desc = '''The residual of Algorithm 12.1 is `r_k = T_k(A) r_0`, with the rate
-`‖r_k‖ ≤ 2 ((√κ - 1)/(√κ + 1))^k ‖r_0‖` for `κ = β/α`, and the comparison with a minimal-residual
-Krylov iterate of the same degree.'''
-deps = ["chebyshevIterate", "Preconditioner.Chebyshev.residual_iterate_eq", "Preconditioner.Chebyshev.norm_residual_iterate_le", "Preconditioner.Chebyshev.norm_residual_minRes_le_norm_residual_iterate"]
 
 [[node]]
-id = "leastSquaresResidual"
-kind = "definition"
-desc = '''§12.3.3: the weight `w` on `(α, β)`, the inner product (12.10)
-`⟨p, q⟩_w = ∫_α^β p q w`, the least-squares polynomial `s_{k-1}` minimizing `‖1 - λ s λ‖_w` and the
-residual polynomial `R_k = 1 - λ s_{k-1}(λ)`, with `bilinForm_of_weight` presenting (12.10) as a
-symmetric positive semidefinite `LinearMap.BilinForm ℝ (Polynomial ℝ)`, which is the form the
-backbone statements take.'''
+id = "norm_chebyshev_residual_le"
+
+[[node]]
+id = "norm_residual_minRes_le_chebyshev"
+
+[[node]]
+id = "bilinFormOfWeight"
+
+[[node]]
+id = "bilinFormOfWeight_isSymm"
+
+[[node]]
+id = "bilinFormOfWeight_le"
+
+[[node]]
+id = "IsLeastSquaresResidual"
 
 [[node]]
 id = "equation_12_12"
-kind = "theorem"
-desc = '''The kernel polynomials formula (12.12): `R_k(λ) = (∑_{i ≤ k} q_i(0) q_i(λ)) / ∑_{i ≤ k} q_i(0)²`
-for the orthonormal polynomials `q_i` of the weight `w`, hence (12.13)–(12.14)
-`s_{k-1} = (∑ q_i(0) t_i)/∑ q_i(0)²` with `t_i(λ) = (q_i(0) - q_i(λ))/λ` and the recurrence for
-the `t_i` derived from the three-term recurrence of the `q_i`.'''
-deps = ["leastSquaresResidual", "Polynomial.kernelPolynomial", "Polynomial.bilinForm_kernelPolynomial_le"]
+
+[[node]]
+id = "equation_12_13"
 
 [[node]]
 id = "leastSquaresResidual_orthogonal"
-kind = "theorem"
-desc = '''Saad's second route to `s_{k-1}`: the residual polynomials `R_k` are orthogonal with respect to
-the weight `λ w(λ)`, equivalently the normal equations `⟨1 - λ s_{k-1}(λ), λ Q_j(λ)⟩ = 0` for every
-`Q_j` of degree `< k`.'''
-deps = ["leastSquaresResidual", "Polynomial.bilinForm_kernelPolynomial_mul_X"]
 
 [[node]]
 id = "norm_leastSquaresResidual_le"
-kind = "theorem"
-desc = '''The theoretical consideration closing §12.3.3: for `0 < α < β`,
-`‖R_k‖_w ≤ κ ((β - α)/(β + α))^k` with `κ = ‖1‖_w`, since `(1 - λ/θ)^k` with `θ = (α + β)/2` is an
-admissible competitor. The `α = 0` case, where the decay is only `1/k` and is computed from the
-Gamma function of the Jacobi weights, is not planned: Mathlib has no Jacobi polynomials.'''
-deps = ["leastSquaresResidual", "Polynomial.bilinForm_kernelPolynomial_le_pow"]

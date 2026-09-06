@@ -1634,6 +1634,49 @@ across a rectangular `A` unchanged (Saad §8.1 uses exactly that).
   `ae_eq_bot.mp (Filter.eventually_false_iff_eq_bot.mp …)` and `Measure.restrict_eq_zero`. The last
   two are what turn "almost every point of the set contradicts positivity" into "the set is null".
 
+* **`Basis` is `Module.Basis` in this toolchain.** A bare `Basis ι K V` fails with *unknown
+  identifier* `Basis`, which reads like a missing import; the import is fine and the name is
+  `Module.Basis`, with `Module.Basis.mk`. `Module.finrank_eq_card_basis` and
+  `FiniteDimensional.fintypeBasisIndex` keep their names.
+* `LinearIndependent.span_eq_top_of_card_eq_finrank` takes `[Nonempty ι]`; the primed
+  `…_of_card_eq_finrank'` takes `[FiniteDimensional K V]` instead and is the one to use for
+  `ι = Fin n` with `n` a variable. `Module.finrank_fin_fun 𝕜 : finrank 𝕜 (Fin n → 𝕜) = n`.
+* `Module.End.eigenspace` is an `abbrev` for `genEigenspace μ 1`; `Module.End.eigenspace_def`
+  is `eigenspace f μ = ker (f - μ • 1)` and `Module.End.mem_maxGenEigenspace` is
+  `∃ k : ℕ, ((f - μ • 1) ^ k) m = 0`. `Module.End.eigenspaces_iSupIndep` (not
+  `iSupIndep_eigenspaces`) is the independence, and `iSupIndep_def` unfolds it to
+  `Disjoint (p i) (⨆ j ≠ i, p j)`. After `rintro _ ⟨x, hx, rfl⟩` on a `Submodule.map` the
+  hypothesis is `x ∈ ↑p` (a *set* membership), which `rw [Module.End.mem_eigenspace_iff] at hx`
+  will not match — bind `Module.End.mem_eigenspace_iff.1 hx` as its own `have`.
+* `ContinuousLinearMap.mulLeft` does not exist. Left multiplication by `a` as a continuous linear
+  map is `ContinuousLinearMap.mul 𝕜 R a`, with `mul_apply'` as its `rfl` lemma.
+* `LinearMap.IsSymm` is a **structure** with one field `eq`, not a `∀`-statement: `intro x y`
+  fails with "no binders to introduce" and the constructor is `⟨fun x y => …⟩`. `hsymm.eq x y` is
+  the field.
+* `IntervalIntegrable.continuousOn_mul hf hg : IntervalIntegrable (fun x => g x * f x)`, and
+  `Continuous.mul` supplies `g` in the `Pi` shape `⇑(g₁ * g₂)`, so the result does not match a
+  goal written `fun t => p.eval t * q.eval t * w t`. Give the `have` its type explicitly and the
+  unifier fixes it; the two are defeq.
+* `intervalIntegral.integral_smul` produces `c • ∫ …`, so a bilinear-form smul goal wants
+  `rw [smul_eq_mul, ← intervalIntegral.integral_const_mul]`, not `integral_smul`.
+* `Matrix.PosDef.det_pos` lives in `Mathlib.Analysis.Matrix.PosDef`, and
+  `Matrix.PosDef.mul_mul_conjTranspose_same` + `Matrix.PosDef.diag_pos` is the two-line route to
+  "the diagonal of `L A Lᵀ` is positive". `Matrix.PosDef` unfolds to `And`, so write
+  `Matrix.PosDef.isHermitian hA`, never `hA.isHermitian`.
+* `Matrix.col A = Aᵀ` (`Matrix.col : Matrix m n α → n → m → α`), and
+  `Matrix.linearIndependent_cols_iff_isUnit : LinearIndependent K A.col ↔ IsUnit A` is what turns
+  "the columns are independent eigenvectors" into "`X` is nonsingular".
+* **Two `TopologicalSpace (Matrix n n R)` instances coexist** once `open scoped
+  Matrix.Norms.Frobenius` is in force: the global `instTopologicalSpaceMatrix` and the one from
+  the scoped `NormedAddCommGroup`. They are defeq, so everything *elaborates*, but a `rw` against
+  a hypothesis whose `→L[ℝ]` type you ascribed by hand fails with "did not find the pattern" plus
+  a note that the goal is not type-correct at `implicit` transparency. The fix is not instance
+  surgery: never ascribe the operator type, let it be inferred from the lemma being applied
+  (`have h := Preconditioner.hasFDerivAt_normSq_sub_apply Tterm c m` with `Tterm` written out),
+  and use `change`/`ContinuousLinearMap.ext` rather than `rw` on the derivative.
+* `open scoped … in` and `set_option … in` must both come **before** the docstring; after it the
+  parser reports `unexpected token 'open'; expected 'lemma'`.
+
 ## Design conventions of this library
 
 Decided in `plans/backbone.md` §1.7; the short version for a proof author:

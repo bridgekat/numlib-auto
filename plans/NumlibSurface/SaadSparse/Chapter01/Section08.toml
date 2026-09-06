@@ -1,106 +1,49 @@
 namespace = "SaadSparse.Ch01"
-desc = '''
-Saad §1.8: similarity and the canonical forms - diagonal (§1.8.1), Jordan (§1.8.2), Schur
-(§1.8.3) - and the application to powers of matrices (§1.8.4).
-
-Three of the section's results are already the backbone's, in stronger form: Theorem 1.10 is
-`Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one`, Theorem 1.11 is
-`summable_pow_iff_spectralRadius_lt_one` with `isUnit_one_sub_of_complexSpectralRadius_lt_one`,
-and Theorem 1.12 is Gelfand's formula, which Mathlib has over `ℂ` and which reaches real matrices
-through `Matrix.tendsto_pow_rpow_complexSpectralRadius`. The book proves the first two through the
-Jordan form; the backbone deliberately does not, and the surface follows it (`backbone.md` §1.1
-and §2.1.3).
-
-**Theorem 1.8, the Jordan canonical form, is not planned.** Mathlib has no Jordan form, the book
-states it without proof (citing Halmos), and the backbone's design note records that every use of
-it in the corpus has been replaced by Gelfand's formula or by generalized eigenspaces. The two
-places that would want it - Saad §4.2.1's asymptotic convergence factor and the eigenvalue book's
-Bauer-Fike with Jordan blocks - are already recorded as left out. The multiplicity vocabulary the
-section introduces around it (algebraic and geometric multiplicity, simple, semisimple, defective,
-derogatory) is Mathlib's `Module.End.eigenspace`, `Module.End.maxGenEigenspace` and
-`Polynomial.rootMultiplicity` of the characteristic polynomial, and gets no node.
-
-Theorem 1.9, the Schur form, waits on `Matrix.exists_unitary_conj_upperTriangular` of
-`Numlib/LinearAlgebra/Matrix/Schur`, which is open.
-'''
 
 [[node]]
 id = "IsSimilar"
-kind = "definition"
-desc = '''Definition 1.5: `SaadSparse.Ch01.IsSimilar A B : Prop := ∃ X, IsUnit X ∧ A = X * B * X⁻¹`, with
-the equivalence-relation lemmas (`IsSimilar.refl`, `.symm`, `.trans`), the transport of
-eigenvectors (`u` an eigenvector of `B` gives `X *ᵥ u` for `A`) and the invariance of the
-characteristic polynomial, Problem P-1.9, from Mathlib's `Matrix.charpoly_conj`.'''
+
+[[node]]
+id = "IsSimilar.refl"
+
+[[node]]
+id = "IsSimilar.symm"
+
+[[node]]
+id = "IsSimilar.trans"
+
+[[node]]
+id = "mulVec_eq_smul_of_isSimilar"
+
+[[node]]
+id = "charpoly_eq_of_isSimilar"
 
 [[node]]
 id = "theorem_1_6"
-kind = "theorem"
-desc = '''Theorem 1.6: `A` is diagonalizable - `IsSimilar A (Matrix.diagonal d)` for some `d` - if and
-only if it has `n` linearly independent eigenvectors. Both directions read off `A * X = X * D`
-column by column; the vocabulary is Mathlib's `Module.End.iSup_eigenspace_eq_top` via
-`Matrix.toEuclideanLin`.'''
-deps = ["IsSimilar"]
+
+[[node]]
+id = "diagonalizable_of_injective_eigenvalues"
+
+[[node]]
+id = "isSimilar_diagonal_iff_iSup_eigenspace"
 
 [[node]]
 id = "proposition_1_7"
-kind = "theorem"
-desc = '''Proposition 1.7 and its corollary: `A` over `ℂ` is diagonalizable if and only if every
-eigenvalue is semisimple, that is `Module.End.eigenspace f μ = Module.End.maxGenEigenspace f μ`
-for every `μ`; in particular a matrix with `n` distinct eigenvalues is diagonalizable. From
-`Module.End.iSup_maxGenEigenspace_eq_top` over an algebraically closed field, plus Problem P-1.2
-(eigenvectors for distinct eigenvalues are independent), which is Mathlib's
-`Module.End.iSupIndep_eigenspaces`.'''
-deps = ["theorem_1_6"]
 
 [[node]]
 id = "theorem_1_9"
-kind = "theorem"
-desc = '''Theorem 1.9, the Schur canonical form: for every complex square `A` there is a unitary `Q` with
-`Qᴴ * A * Q` upper triangular, whose diagonal is the multiset of eigenvalues of `A`. The backbone
-statement is `Matrix.exists_unitary_conj_upperTriangular` of `Numlib/LinearAlgebra/Matrix/Schur`,
-which is open. The alternative proof from the Jordan form and a QR factorization (Problem P-1.7) is
-not planned, the Jordan form not being available.'''
-deps = ["_root_.Matrix.exists_unitary_conj_upperTriangular"]
 
 [[node]]
 id = "theorem_1_9_partial"
-kind = "theorem"
-desc = '''The consequences the book draws from Theorem 1.9: the span of the first `k` Schur vectors is
-invariant under `A`, and the partial Schur decomposition `A * Q_k = Q_k * R_k` holds for the
-leading `k` columns and the leading principal `k × k` block. Read off
-`Matrix.exists_unitary_conj_upperTriangular` and `Matrix.BlockTriangular`; the `k = 1` case says
-`q₁` is an eigenvector. The quasi-Schur (real Schur) form with `2 × 2` diagonal blocks is not
-planned: the book states it without proof, nothing in the corpus uses it, and it would need the
-real-block refinement of the Schur module.'''
-deps = ["theorem_1_9"]
 
 [[node]]
 id = "theorem_1_10"
-kind = "theorem"
-desc = '''Theorem 1.10: for a real or complex square matrix, `Tendsto (fun k => A ^ k) atTop (𝓝 0) ↔
-complexSpectralRadius A < 1`. `Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one` of
-`Numlib/LinearAlgebra/Matrix/Complexify`; the book proves the hard direction with the Jordan form,
-the backbone with Gelfand. Cited by Theorem 4.1.'''
-deps = ["_root_.Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one"]
 
 [[node]]
 id = "theorem_1_11"
-kind = "theorem"
-desc = '''Theorem 1.11: `∑ A ^ k` converges if and only if `complexSpectralRadius A < 1`, and then
-`1 - A` is nonsingular with `(1 - A)⁻¹ = ∑ A ^ k`.
-`summable_pow_iff_spectralRadius_lt_one` and `isUnit_one_sub_of_complexSpectralRadius_lt_one`,
-under the scoped `Matrix.Norms.L2Operator` normed-algebra instance. Cited by Theorem 1.29 and by
-§4.1.2.'''
-deps = ["_root_.Matrix.isUnit_one_sub_of_complexSpectralRadius_lt_one", "_root_.summable_pow_iff_spectralRadius_lt_one"]
+
+[[node]]
+id = "theorem_1_11_isUnit"
 
 [[node]]
 id = "theorem_1_12"
-kind = "theorem"
-desc = '''Theorem 1.12, Gelfand's formula: `Tendsto (fun k => ‖A ^ k‖ ^ (1 / k : ℝ)) atTop
-(𝓝 (complexSpectralRadius A).toReal)` for a real matrix under the scoped
-`Matrix.Norms.L2Operator` instance. `Matrix.tendsto_pow_rpow_complexSpectralRadius` of
-`Numlib/LinearAlgebra/Matrix/Complexify`, which is open. The book states it for *any* matrix norm
-and defers the proof to Problem P-1.10; the general consistent-norm form is
-`spectralRadius_le_algebraNorm` of `Numlib/Analysis/Normed/Algebra/SpectralRadius`, also open.
-Cited by Theorem 1.28 and by §4.2.1.'''
-deps = ["_root_.Matrix.tendsto_pow_rpow_complexSpectralRadius"]
