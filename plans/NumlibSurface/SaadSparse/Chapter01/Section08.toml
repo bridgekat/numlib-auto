@@ -51,3 +51,6 @@ id = "theorem_1_12"
 [[node]]
 id = "theorem_1_12_norm"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.12"
+
+[[node]]
+id = "realSchur"

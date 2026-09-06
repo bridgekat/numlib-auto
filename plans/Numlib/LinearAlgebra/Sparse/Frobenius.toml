@@ -1,0 +1,13 @@
+namespace = "Matrix"
+
+[[node]]
+id = "exists_blockTriangular_stronglyConnected"
+
+[[node]]
+id = "exists_perm_submatrix_blockTriangular"
+
+[[node]]
+id = "reflTransGen_adjDigraph_of_path"
+
+[[node]]
+id = "stronglyConnected_of_isPatternIrreducible"

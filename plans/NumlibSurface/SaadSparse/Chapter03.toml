@@ -24,18 +24,16 @@ independent sets, multicolouring - with the bound each one comes with. That is w
   that is a theorem, that the intermediate level sets of a breadth-first traversal are separators,
   is §3.3.3's and is planned there.
 * §3.7, test problems: descriptive.
-* The Frobenius normal form of §3.3.4 - the diagonal blocks of the reduced form are the strongly
-  connected components in a topological order. The book states only the shape, without the
-  ordering condition and without proof; the full statement needs a strongly-connected-component and
-  topological-sort API for digraphs - the condensation, its acyclicity, a linear extension of the
-  reachability preorder on components - that Mathlib does not have. That is a combinatorics build
-  rather than a foreign body of mathematics, so this gap is *unwritten rather than unreachable*,
-  and there is a cheaper first slice: for a pattern-symmetric matrix the components meant are the
-  connected components of a `SimpleGraph`, which Mathlib does have. Two traps for whoever writes
-  it. The book prints only the shape and omits the ordering condition, which is what makes the
-  statement true, so do not formalize it as printed; and the graph here is directed, so the
-  components are the *strongly* connected ones. The two-block characterization, which is what
-  "reducible" means and what Chapter 4 uses, is planned in `Numlib/LinearAlgebra/Sparse/Pattern`.
+* The Frobenius normal form of §3.3.4 is now proved, as `frobenius_normal_form`, over the backbone
+  `Matrix.exists_perm_submatrix_blockTriangular`. The earlier note here budgeted a condensation,
+  its acyclicity and a linear extension of the reachability preorder; none of that was needed. The
+  whole ordering is `Relation.exists_rank_stronglyConnected`, a rank built from two numbers: the
+  count of vertices that reach `i`, which never decreases along an arrow and, when it is equal at
+  the two ends of a path, forces the two ends into one component; and, to separate components the
+  count does not separate, the least index of the component under an arbitrary enumeration of the
+  type. Reading the pair in base `card + 1` is the rank, and no quotient or linear-extension
+  theorem appears. Mathlib does have the components themselves, as
+  `Quiver.stronglyConnectedSetoid`; what it lacks is the ordering, and that is a page.
 * Example 3.3's fill-in claim about the arrow matrix, and Problem P-3.12 (the structural inverse of
   an irreducible matrix is dense). Both need a formal notion of *structural* fill-in or of the
   structural inverse, which the chapter never defines, and the gap is upstream of the statement:

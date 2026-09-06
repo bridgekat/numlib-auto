@@ -1,4 +1,5 @@
 import Numlib.Combinatorics.SimpleGraph.IndepSet
+import Numlib.LinearAlgebra.Sparse.Frobenius
 import Numlib.LinearAlgebra.Sparse.Reordering
 
 /-!
@@ -31,6 +32,10 @@ for an arbitrary pattern.  Symmetry enters only where the *degree* of the symmet
 be bounded by a count of nonzeros in one row, that is in `exists_multicoloring` and in
 `greedy_coloring_bounds`.  For the same reason the level-set statement needs no connectedness: an
 index unreachable from the root has distance zero, on both sides of the comparison.
+
+§3.3.4 gets two: the reducibility characterization `isPatternIrreducible_iff`, and the Frobenius
+normal form `frobenius_normal_form`, whose block index is the topological ordering of the strongly
+connected components of `Numlib/Combinatorics/Relation/StronglyConnected`.
 
 Two things get no declaration.  Reverse Cuthill–McKee is given by the book as an observation of
 George's, with a picture and no statement, and this edition proves no bandwidth or profile bound
@@ -227,8 +232,8 @@ That equivalence is the definition of `Matrix.IsPatternIrreducible`, and the blo
 The hypothesis `2 ≤ n` is necessary: irreducibility asks for a path of *positive* length between
 every pair of indices, so the `1 × 1` zero matrix is reducible while its index type has no proper
 nonempty subset to split.  This is the notion Definition 4.5, Theorem 4.7, Corollary 4.8 and
-Theorem 4.9 of the Chapter 4 surface use.  The full Frobenius normal form — the diagonal blocks
-are the strongly connected components in a topological order — is not proved. -/
+Theorem 4.9 of the Chapter 4 surface use.  The full Frobenius normal form is
+`SaadSparse.Chapter03.frobenius_normal_form` below. -/
 theorem isPatternIrreducible_iff (A : Matrix (Fin n) (Fin n) ℝ) (hn : 2 ≤ n) :
     (A.IsPatternIrreducible ↔ ∀ (σ : Equiv.Perm (Fin n)) (s : Finset (Fin n)),
         s.Nonempty → s ≠ univ → ∃ i ∈ s, ∃ j ∉ s, (A.submatrix σ σ) i j ≠ 0) ∧
@@ -237,5 +242,24 @@ theorem isPatternIrreducible_iff (A : Matrix (Fin n) (Fin n) ℝ) (hn : 2 ≤ n)
   haveI : Nontrivial (Fin n) := Fin.nontrivial_iff_two_le.2 hn
   ⟨isPatternIrreducible_iff_forall_submatrix_not_blockTriangular,
     not_isPatternIrreducible_iff_exists_submatrix_blockTriangular⟩
+
+/-- **Saad §3.3.4, the Frobenius normal form**: a symmetric permutation puts any square matrix in
+block upper triangular form whose diagonal blocks are the strongly connected components of its
+adjacency graph, listed in an order in which every arrow points forward.
+
+The book prints only the shape of the reduced matrix and says that each partition "corresponds to
+a connected component".  Two things are added here to make that a theorem.  The graph is directed,
+so the components meant are the *strongly* connected ones, `Relation.StronglyConnected` of the
+arrow relation `A i j ≠ 0`; and they have to be listed in a topological order, without which no
+permutation triangulates the matrix — that is what `Monotone b` and `Matrix.BlockTriangular`
+together say, `Monotone b` being also what makes each block an interval of consecutive indices.
+The backbone is `Matrix.exists_perm_submatrix_blockTriangular`, and `A.submatrix σ σ` is `P A Pᵀ`
+by `Matrix.submatrix_eq_permMatrix_mul_mul_transpose`.  An irreducible matrix has a single block,
+`Matrix.stronglyConnected_of_isPatternIrreducible`. -/
+theorem frobenius_normal_form (A : Matrix (Fin n) (Fin n) ℝ) :
+    ∃ (σ : Equiv.Perm (Fin n)) (b : Fin n → ℕ), Monotone b ∧
+      (A.submatrix σ σ).BlockTriangular b ∧
+      ∀ i j, b i = b j ↔ Relation.StronglyConnected A.adjDigraph.Adj (σ i) (σ j) :=
+  Matrix.exists_perm_submatrix_blockTriangular A
 
 end SaadSparse.Chapter03

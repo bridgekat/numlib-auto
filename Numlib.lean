@@ -49,6 +49,7 @@ import Numlib.Approximation.Quadrature
 import Numlib.Approximation.Trigonometric
 import Numlib.Approximation.TrigonometricInterpolation
 import Numlib.Approximation.Unisolvent
+import Numlib.Combinatorics.Relation.StronglyConnected
 import Numlib.Combinatorics.SimpleGraph.Coloring
 import Numlib.Combinatorics.SimpleGraph.IndepSet
 import Numlib.Combinatorics.SimpleGraph.LevelSet
@@ -57,6 +58,7 @@ import Numlib.Eigen.Jacobi
 import Numlib.Eigen.KrylovEigen
 import Numlib.Eigen.MinMax
 import Numlib.Eigen.Normal
+import Numlib.Eigen.NumericalRange
 import Numlib.Eigen.Perturbation
 import Numlib.Eigen.PowerMethod
 import Numlib.Eigen.QRAlgorithm
@@ -103,10 +105,12 @@ import Numlib.LinearAlgebra.Matrix.MMatrix
 import Numlib.LinearAlgebra.Matrix.Order
 import Numlib.LinearAlgebra.Matrix.PerronFrobenius
 import Numlib.LinearAlgebra.Matrix.QR
+import Numlib.LinearAlgebra.Matrix.RealSchur
 import Numlib.LinearAlgebra.Matrix.SVD
 import Numlib.LinearAlgebra.Matrix.Schur
 import Numlib.LinearAlgebra.Matrix.SchurComplement
 import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
+import Numlib.LinearAlgebra.Sparse.Frobenius
 import Numlib.LinearAlgebra.Sparse.Pattern
 import Numlib.LinearAlgebra.Sparse.Reordering
 import Numlib.LinearSolve.DomainDecomposition.Schur

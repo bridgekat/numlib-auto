@@ -43,7 +43,25 @@ id = "numericalRadius_le_l2_opNorm"
 id = "spectralRadius_le_numericalRadius"
 
 [[node]]
+id = "fieldOfValues_eq_numericalRange"
+
+[[node]]
+id = "proposition_1_18_convex"
+
+[[node]]
+id = "spectrum_subset_fieldOfValues"
+
+[[node]]
 id = "proposition_1_18"
+
+[[node]]
+id = "numericalRadius_nonneg"
+
+[[node]]
+id = "norm_inner_le_numericalRadius"
+
+[[node]]
+id = "equation_1_36"
 
 [[node]]
 id = "equation_1_34"

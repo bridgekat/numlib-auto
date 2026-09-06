@@ -3,6 +3,7 @@ import Mathlib.Analysis.InnerProductSpace.LinearMap
 import Mathlib.LinearAlgebra.Matrix.IsDiag
 import Numlib.Eigen.MinMax
 import Numlib.Eigen.Normal
+import Numlib.Eigen.NumericalRange
 import NumlibSurface.SaadSparse.Common
 
 /-!
@@ -29,14 +30,12 @@ matrix in decreasing order `λ₁ ≥ ⋯ ≥ λ_n`, which is
 particular order, while the backbone's `LinearMap.IsSymmetric.eigenvalues` is already
 decreasing.
 
-**Not formalized: the convexity half of Proposition 1.18**, the Toeplitz–Hausdorff theorem that
-the field of values of an arbitrary matrix is convex.  Saad states it without proof; the standard
-argument reduces to computing that the field of values of a `2 × 2` matrix is a filled ellipse,
-a self-contained development with no other consumer in this library.  What is proved here is the
-containment `spectrum ℂ A ⊆ fieldOfValues A`, its conditional consequence given convexity, and —
-unconditionally, since there (1.34) suffices — the equality for normal matrices (Theorem 1.17).
-**Also not formalized: the power inequality (1.36)**, `ν(Aᵏ) ≤ ν(A)ᵏ`, which the book attributes
-to the literature and which is Berger's inequality.
+The convexity half of Proposition 1.18 — the Toeplitz–Hausdorff theorem, which Saad states
+without proof — is the backbone's `LinearMap.convex_numericalRange`, and `fieldOfValues` is
+definitionally the `LinearMap.numericalRange` of `Matrix.toEuclideanLin A`.
+The power inequality (1.36), `ν(Aᵏ) ≤ ν(A)ᵏ` — Berger's inequality, which the book attributes to
+the literature — is `SaadSparse.Chapter01.equation_1_36`, over the backbone's
+`LinearMap.norm_inner_pow_le`.
 -/
 
 open Matrix Finset Module.End Polynomial
@@ -256,32 +255,88 @@ theorem numericalRadius_le_l2_opNorm (A : Matrix (Fin n) (Fin n) ℂ) :
     numericalRadius A ≤ ‖A‖ :=
   ciSup_le fun x => norm_rayleigh_le A x
 
-/-- **Saad Proposition 1.18**, the containment that needs no convexity: the field of values of
-a complex square matrix contains its spectrum, since an eigenvalue is the Rayleigh quotient at
-its eigenvector.  Given convexity — the Toeplitz–Hausdorff theorem, which is not proved here —
-the field of values then contains the convex hull of the spectrum; for a normal matrix the two
-are equal unconditionally, which is `SaadSparse.Chapter01.theorem_1_17`. -/
+/-- The field of values is the backbone's `LinearMap.numericalRange` of the operator `x ↦ A x`
+on `EuclideanSpace ℂ (Fin n)`. -/
+theorem fieldOfValues_eq_numericalRange (A : Matrix (Fin n) (Fin n) ℂ) :
+    fieldOfValues A = (Matrix.toEuclideanLin A).numericalRange := rfl
+
+/-- **Saad Proposition 1.18**, the convexity clause: the field of values of an arbitrary matrix
+is convex.  This is the Toeplitz–Hausdorff theorem, which the book states without proof; it is
+the backbone's `LinearMap.convex_numericalRange`. -/
+theorem proposition_1_18_convex (A : Matrix (Fin n) (Fin n) ℂ) : Convex ℝ (fieldOfValues A) :=
+  LinearMap.convex_numericalRange _
+
+/-- **Saad Proposition 1.18**, the containment of the spectrum: an eigenvalue of `A` is the
+Rayleigh quotient of `A` at any of its eigenvectors. -/
+theorem spectrum_subset_fieldOfValues (A : Matrix (Fin n) (Fin n) ℂ) :
+    spectrum ℂ A ⊆ fieldOfValues A := by
+  intro μ hμ
+  obtain ⟨v, hv, hv0⟩ :=
+    Module.End.HasEigenvalue.exists_hasEigenvector
+      ((Matrix.hasEigenvalue_toEuclideanLin_iff A μ).2 hμ)
+  refine ⟨v, hv0, ?_⟩
+  have hvv : (inner ℂ v v : ℂ) ≠ 0 := fun h => hv0 (inner_self_eq_zero.1 h)
+  rw [rayleigh, mem_eigenspace_iff.1 hv, inner_smul_right, mul_div_assoc, div_self hvv, mul_one]
+
+/-- **Saad Proposition 1.18**: the field of values of an arbitrary matrix is a convex set which
+contains the convex hull of its spectrum.  The book's third sentence, that the two are equal for
+a normal matrix, is `SaadSparse.Chapter01.theorem_1_17`. -/
 theorem proposition_1_18 (A : Matrix (Fin n) (Fin n) ℂ) :
-    spectrum ℂ A ⊆ fieldOfValues A ∧
-      (Convex ℝ (fieldOfValues A) → convexHull ℝ (spectrum ℂ A) ⊆ fieldOfValues A) := by
-  have hsub : spectrum ℂ A ⊆ fieldOfValues A := by
-    intro μ hμ
-    obtain ⟨v, hv, hv0⟩ :=
-      Module.End.HasEigenvalue.exists_hasEigenvector
-        ((Matrix.hasEigenvalue_toEuclideanLin_iff A μ).2 hμ)
-    refine ⟨v, hv0, ?_⟩
-    have hvv : (inner ℂ v v : ℂ) ≠ 0 := fun h => hv0 (inner_self_eq_zero.1 h)
-    rw [rayleigh, mem_eigenspace_iff.1 hv, inner_smul_right, mul_div_assoc,
-      div_self hvv, mul_one]
-  exact ⟨hsub, fun hconv => convexHull_min hsub hconv⟩
+    Convex ℝ (fieldOfValues A) ∧ convexHull ℝ (spectrum ℂ A) ⊆ fieldOfValues A :=
+  ⟨proposition_1_18_convex A,
+    convexHull_min (spectrum_subset_fieldOfValues A) (proposition_1_18_convex A)⟩
 
 /-- **Saad §1.9.1**: `ρ(A) ≤ ν(A)`, the first half of the chain `ρ(A) ≤ ν(A) ≤ ‖A‖₂`. -/
 theorem spectralRadius_le_numericalRadius (A : Matrix (Fin n) (Fin n) ℂ) :
     spectralRadius ℂ A ≤ ENNReal.ofReal (numericalRadius A) := by
   refine iSup₂_le fun μ hμ => ?_
-  obtain ⟨x, _, hx⟩ := (proposition_1_18 A).1 hμ
+  obtain ⟨x, _, hx⟩ := spectrum_subset_fieldOfValues A hμ
   rw [← enorm_eq_nnnorm, ← ofReal_norm, ← hx]
   exact ENNReal.ofReal_le_ofReal (norm_rayleigh_le_numericalRadius A x)
+
+/-- The inner product of a Euclidean vector with itself, as a real scalar. -/
+private theorem inner_self_ofReal (x : EuclideanSpace ℂ (Fin n)) :
+    (inner ℂ x x : ℂ) = ((‖x‖ ^ 2 : ℝ) : ℂ) := by
+  rw [inner_self_eq_norm_sq_to_K, Complex.ofReal_pow]; rfl
+
+/-- The numerical radius is nonnegative: the Rayleigh quotient at `0` is `0`. -/
+theorem numericalRadius_nonneg (A : Matrix (Fin n) (Fin n) ℂ) : 0 ≤ numericalRadius A := by
+  simpa [rayleigh] using norm_rayleigh_le_numericalRadius A 0
+
+/-- The numerical radius bounds the quadratic form: `|(A x, x)| ≤ ν(A) ‖x‖²`. -/
+theorem norm_inner_le_numericalRadius (A : Matrix (Fin n) (Fin n) ℂ)
+    (x : EuclideanSpace ℂ (Fin n)) :
+    ‖(inner ℂ x (A ⬝ x) : ℂ)‖ ≤ numericalRadius A * ‖x‖ ^ 2 := by
+  rcases eq_or_ne x 0 with rfl | hx
+  · simp
+  · have hx2 : (0 : ℝ) < ‖x‖ ^ 2 := pow_pos (norm_pos_iff.2 hx) 2
+    have h := norm_rayleigh_le_numericalRadius A x
+    rw [rayleigh, norm_div, inner_self_ofReal, Complex.norm_real, Real.norm_eq_abs,
+      abs_of_nonneg hx2.le, div_le_iff₀ hx2] at h
+    exact h
+
+/-- **Saad (1.36)**, the power inequality for the numerical radius: `ν(Aᵏ) ≤ ν(A)ᵏ`.
+
+The book attributes it to the literature and does not prove it; it is Berger's inequality, and it
+is genuinely a theorem rather than a formality, since the numerical radius is not submultiplicative
+— `ν(AB) ≤ ν(A) ν(B)` is false.  The backbone proof is Pearcy's, an averaging of the resolvents
+`(1 - ωʲ z A)⁻¹` over the `k`-th roots of unity, and needs no unitary dilation:
+`LinearMap.norm_inner_pow_le`. -/
+theorem equation_1_36 (A : Matrix (Fin n) (Fin n) ℂ) {k : ℕ} (hk : 0 < k) :
+    numericalRadius (A ^ k) ≤ numericalRadius A ^ k := by
+  have hnn := numericalRadius_nonneg A
+  have hbound := LinearMap.norm_inner_pow_le (T := Matrix.toEuclideanLin A) hnn
+    (norm_inner_le_numericalRadius A) hk
+  refine ciSup_le fun x => ?_
+  rcases eq_or_ne x 0 with rfl | hx
+  · simp only [rayleigh, inner_zero_left, zero_div, norm_zero]
+    positivity
+  · have hx2 : (0 : ℝ) < ‖x‖ ^ 2 := pow_pos (norm_pos_iff.2 hx) 2
+    have h := hbound x
+    rw [← Matrix.toEuclideanLin_pow] at h
+    rw [rayleigh, norm_div, inner_self_ofReal, Complex.norm_real, Real.norm_eq_abs,
+      abs_of_nonneg hx2.le, div_le_iff₀ hx2]
+    exact h
 
 end FieldOfValues
 

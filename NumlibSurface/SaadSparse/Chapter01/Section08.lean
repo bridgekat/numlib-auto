@@ -5,6 +5,7 @@ import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Basic
 import Numlib.Analysis.Normed.Module.NormEquivalence
 import Numlib.LinearAlgebra.Matrix.Complexify
+import Numlib.LinearAlgebra.Matrix.RealSchur
 import Numlib.LinearAlgebra.Matrix.Schur
 
 /-!
@@ -13,6 +14,9 @@ import Numlib.LinearAlgebra.Matrix.Schur
 Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
 2003, §1.8: similarity and the canonical forms — diagonal (§1.8.1), Jordan (§1.8.2) and Schur
 (§1.8.3) — and the application to powers of matrices (§1.8.4).
+
+§1.8.3 gets both Schur forms: `theorem_1_9` is the complex triangulation and `realSchur` the
+quasi-Schur (real Schur) form, which the book states without proof.
 
 **Theorem 1.8, the Jordan canonical form, is not stated.** Mathlib has no Jordan form, the book
 states it without proof, and nothing in this library needs it: the two results the book derives
@@ -275,8 +279,8 @@ theorem theorem_1_9 (A : Matrix (Fin n) (Fin n) ℂ) :
 first `k` columns of `Q` — is invariant under `A`, which is the *partial* Schur decomposition
 `A Q_k = Q_k R_k`. At `k = 1` it says that `q₁` is an eigenvector of `A`.
 
-The quasi-Schur (real Schur) form with `2 × 2` diagonal blocks is not stated: the book gives it
-without proof and nothing here needs it. -/
+The quasi-Schur (real Schur) form with `2 × 2` diagonal blocks is
+`SaadSparse.Chapter01.realSchur` below. -/
 theorem theorem_1_9_partial {A Q : Matrix (Fin n) (Fin n) ℂ}
     (hQ : Q ∈ Matrix.unitaryGroup (Fin n) ℂ) (hR : (star Q * A * Q).IsUpperTriangular) (k : ℕ)
     {v : Fin n → ℂ} (hv : v ∈ Submodule.span ℂ (Q.col '' {i : Fin n | (i : ℕ) < k})) :
@@ -355,5 +359,24 @@ theorem theorem_1_12_norm (p : Seminorm ℝ (Matrix (Fin n) (Fin n) ℝ))
     (hp : ∀ M : Matrix (Fin n) (Fin n) ℝ, p M = 0 → M = 0) (A : Matrix (Fin n) (Fin n) ℝ) :
     Tendsto (fun k : ℕ => p (A ^ k) ^ (1 / k : ℝ)) atTop (𝓝 A.complexSpectralRadius.toReal) :=
   p.tendsto_rpow_one_div hp (theorem_1_12 A)
+
+/-- **Saad §1.8.3, the quasi-Schur form**, also called the real Schur form: every *real* square
+matrix is orthogonally similar to a quasi upper triangular matrix — block upper triangular with
+diagonal blocks of size `1 × 1` or `2 × 2`, the `2 × 2` blocks carrying the pairs of complex
+conjugate eigenvalues. The book gives it without proof, as a "slight variation" on Theorem 1.9,
+and illustrates it only by the decimal matrices of Example 1.2.
+
+The block structure is the monotone index `p : Fin n → ℕ`: `Monotone p` makes each block an
+interval of consecutive indices, the cardinality bound makes every block `1 × 1` or `2 × 2`, and
+`Matrix.BlockTriangular` says that the entries below the blocks vanish. Theorem 1.9 does not
+specialize to this, because over `ℝ` there need be no eigenvector: the induction has to peel off
+an invariant subspace of dimension one *or two*
+(`LinearMap.exists_invariant_finrank_le_two`), and the backbone is
+`Matrix.exists_orthogonal_conj_quasiUpperTriangular`. -/
+theorem realSchur (A : Matrix (Fin n) (Fin n) ℝ) :
+    ∃ Q ∈ Matrix.orthogonalGroup (Fin n) ℝ, ∃ p : Fin n → ℕ, Monotone p ∧
+      (∀ k, (Finset.univ.filter fun i => p i = k).card ≤ 2) ∧
+      (Qᵀ * A * Q).BlockTriangular p :=
+  Matrix.exists_orthogonal_conj_quasiUpperTriangular A
 
 end SaadSparse.Chapter01

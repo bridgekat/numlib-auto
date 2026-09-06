@@ -26,3 +26,6 @@ id = "greedy_coloring_bounds"
 
 [[node]]
 id = "isPatternIrreducible_iff"
+
+[[node]]
+id = "frobenius_normal_form"

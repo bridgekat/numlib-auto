@@ -1,0 +1,11 @@
+[[node]]
+id = "LinearMap.exists_invariant_finrank_le_two"
+
+[[node]]
+id = "LinearMap.mem_orthogonal_of_adjoint_invariant"
+
+[[node]]
+id = "LinearMap.exists_orthonormalBasis_quasiUpperTriangular"
+
+[[node]]
+id = "Matrix.exists_orthogonal_conj_quasiUpperTriangular"

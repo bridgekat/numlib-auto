@@ -51,8 +51,7 @@ pattern-irreducible exactly when a symmetric permutation puts it in block triang
 `[Nontrivial n]`, and genuinely so: irreducibility asks for a path of *positive* length between
 every pair of indices, so the `1 × 1` zero matrix is reducible while its index type has no proper
 nonempty subset to split. The full Frobenius normal form — the diagonal blocks are the strongly
-connected components, in a topological order — is not proved here; it needs a
-strongly-connected-component and topological-sort API for digraphs that Mathlib does not have.
+connected components, in a topological order — is `Numlib/LinearAlgebra/Sparse/Frobenius`.
 
 ## The pattern of a product
 

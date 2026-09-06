@@ -5,8 +5,13 @@ projectors and conditioning. It is the best-covered chapter of the book: `Basics
 and `Section07`-`Section13` one module per section, and of the 39 numbered results 37 have a
 declaration, the remaining two being the ones the book itself states without proof.
 
-**Nothing here is skipped for want of infrastructure outside numerical analysis.** The four gaps
+**Nothing here is skipped for want of infrastructure outside numerical analysis.** The gaps
 below are all linear algebra, and each is unwritten rather than unreachable except where noted.
+Proposition 1.18 is now complete: its convexity clause, the Toeplitz-Hausdorff theorem, is
+`proposition_1_18_convex`, specializing the backbone's `LinearMap.convex_numericalRange`. The
+`2 x 2` ellipse reduction the plan used to recommend is not the cheapest route - a phase rotation
+makes the quadratic form real along a segment and the intermediate value theorem finishes, with
+no finite dimensionality used.
 
 * **Theorem 1.8, the Jordan canonical form.** The one gap that is a genuine missing-theory skip.
   The *outer* decomposition - a direct sum over the distinct eigenvalues, each summand `λ_i` plus a
@@ -18,22 +23,23 @@ below are all linear algebra, and each is unwritten rather than unreachable exce
   nothing in the corpus consumes it: the book derives Theorems 1.10 and 1.11 from it, and both are
   proved here from Gelfand formula instead. Trap for a future planner: do not accept a statement
   that only asserts block-diagonality by eigenvalue - that is the easy half.
-* **Proposition 1.18, the convexity of the field of values (Toeplitz-Hausdorff).** The containment
-  clause is `proposition_1_18`; the convexity is stated by the book without proof and is not here.
-  The standard argument restricts to the two-dimensional subspace spanned by two vectors realizing
-  two points of the field of values and shows that the field of values of a `2 × 2` matrix is a
-  filled ellipse. Self-contained plane geometry with nothing missing from Mathlib: unwritten, not
-  unreachable. There is no second consumer - `theorem_1_17`, the normal case, is proved
-  unconditionally from (1.34).
-* **(1.36), Berger power inequality `ν(A^k) ≤ ν(A)^k`.** Attributed by the book to the literature
-  and not proved. The classical route is through a unitary dilation, which Mathlib does not have,
-  but Pearcy proof is elementary - an averaging over roots of unity - and needs nothing that is
-  missing. Unwritten rather than unreachable, and with no consumer in the corpus.
-* **§1.8.3, the quasi-Schur (real Schur) form.** Unnumbered in the book, stated without proof and
-  illustrated only by decimal matrices. `Matrix.exists_unitary_conj_upperTriangular` is the complex
-  form and does not specialize: the induction has to be redone over `ℝ`, peeling off a real
-  invariant subspace of dimension one or two, which exists because a complex eigenvector `u + iv`
-  gives the real invariant span of `u` and `v`. Nothing is missing from Mathlib; what the statement
-  costs is an encoding of "block upper triangular with `1 × 1` and `2 × 2` diagonal blocks", and
-  the work is the induction. Unwritten, not unreachable.
+* **(1.36), Berger power inequality `nu(A^k) <= nu(A)^k`** is now proved, as `equation_1_36` over
+  the backbone `LinearMap.norm_inner_pow_le`. Pearcy route is the right one and it is shorter than
+  the plan feared. The only construction is: for `|z| < 1` and a primitive `k`-th root of unity
+  `w`, the operators `B_j = 1 - w^j z A` are strictly accretive, hence invertible, and satisfy
+  `B_j D_j = 1 - z^k A^k` for the geometric sum `D_j`; the `D_j` sum to `k` because the character
+  sums `sum_j w^(jm)` vanish for `0 < m < k`, so `k^-1 sum_j B_j^-1` is a left inverse of
+  `1 - z^k A^k`. The one lemma that does all the work is that an invertible accretive operator has
+  an accretive inverse, which is one line: with `x = B^-1 y`, the two quadratic forms are complex
+  conjugates.
+* **§1.8.3, the quasi-Schur (real Schur) form** is now proved, as `realSchur` over the backbone
+  `Matrix.exists_orthogonal_conj_quasiUpperTriangular`. The plan's route to the invariant subspace
+  - complexify and take the real span of the real and imaginary parts of a complex eigenvector -
+  was not the cheapest: Cayley-Hamilton plus "an irreducible real polynomial has degree at most
+  two" (`Irreducible.natDegree_le_two`, which Mathlib has) gives an irreducible `q` and a nonzero
+  `w` with `q(A) w = 0` directly, and then `span {w, A w}` is invariant. No complexification is
+  used. The encoding of "block upper triangular with `1 x 1` and `2 x 2` diagonal blocks" is a
+  monotone `p : Fin n -> Nat` with `Matrix.BlockTriangular` and fibres of at most two elements;
+  the induction appends `d` vectors at once over `Fin (m + d)` with `Fin.addCases`, and the block
+  bound travels through it in the counting-free form `p i = p j -> i <= j + 1`.
 '''

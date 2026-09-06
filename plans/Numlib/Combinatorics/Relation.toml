@@ -1,0 +1,7 @@
+desc = '''
+Upstreaming candidates about a bare relation on a type, where the graph structure a numerical
+chapter needs is directed and carries loops, so neither `SimpleGraph` nor `Digraph` (which has no
+walks in Mathlib) is the right carrier. `StronglyConnected` has the strongly connected components
+of a relation on a finite type and a topological ordering of them, which is what puts a sparse
+matrix into Frobenius normal form.
+'''

@@ -1,0 +1,17 @@
+[[node]]
+id = "LinearMap.numericalRange"
+
+[[node]]
+id = "LinearMap.mem_numericalRange"
+
+[[node]]
+id = "LinearMap.inner_smul_add_smul_id_div"
+
+[[node]]
+id = "LinearMap.mem_numericalRange_smul_add"
+
+[[node]]
+id = "LinearMap.convex_numericalRange"
+
+[[node]]
+id = "LinearMap.norm_inner_pow_le"

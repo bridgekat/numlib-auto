@@ -6,4 +6,8 @@ matrix reorderings rest on three facts about a finite simple graph: greedy colou
 vertices, and the distance spheres around a root separate the graph. All three are stated in
 `Numlib/Combinatorics/SimpleGraph` in Mathlib's own vocabulary, with no matrix in sight, so that
 they can be upstreamed; the matrix consequences are in `Numlib/LinearAlgebra/Sparse/Reordering`.
+`Relation/StronglyConnected` is the fourth: the strongly connected components of a relation on a
+finite type, together with a topological ordering of them, which is what §3.3.4's Frobenius normal
+form needs and what neither `SimpleGraph` nor `Digraph` supplies (the graph there is directed and
+has loops).
 '''

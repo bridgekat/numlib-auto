@@ -1,0 +1,22 @@
+namespace = "Relation"
+
+[[node]]
+id = "StronglyConnected"
+
+[[node]]
+id = "StronglyConnected.refl"
+
+[[node]]
+id = "StronglyConnected.symm"
+
+[[node]]
+id = "StronglyConnected.trans"
+
+[[node]]
+id = "equivalence_stronglyConnected"
+
+[[node]]
+id = "apply_le_of_reflTransGen"
+
+[[node]]
+id = "exists_rank_stronglyConnected"
