@@ -118,6 +118,15 @@ shared `WithEnergy.projection`) are in `plans/proposals/plan-saad10.md` §1.
   meets Chapter 6, and it means Chebyshev acceleration inherits the min–max optimality already
   proved.
 
+**One erratum.** The last equality of Saad (13.61), `𝒯_h = Null(I_h^H)`, is false. The
+oscillatory subspace is `Null(I_h^H A_h)`, the `A_h`-orthogonal complement of `Ran(I_H^h)`,
+while `Null(I_h^H)` is its Euclidean orthogonal complement; the argument of §13.5.1 compares two
+decompositions with the same first summand and concludes that their second summands agree,
+which does not follow. `SaadSparse.Chapter13.oscillatorySubspace_ne_ker_of_restriction` is a
+counterexample with `tridiag(-1, 2, -1)` of order two. Nothing in the chapter uses the printed
+form: the proof of Theorem 13.3 needs only that the oscillatory subspace is `A_h`-orthogonal to
+`Ran(I_H^h)`.
+
 ## 5. Chapter 11, and the rest of what is not planned
 
 Chapter 11 was read section by section rather than assumed: §11.1–11.4 (forms of parallelism,

@@ -50,6 +50,8 @@ import NumlibSurface.SaadSparse.Chapter12.Section03
 import NumlibSurface.SaadSparse.Chapter13.Section02
 import NumlibSurface.SaadSparse.Chapter13.Section03
 import NumlibSurface.SaadSparse.Chapter13.Section04
+import NumlibSurface.SaadSparse.Chapter13.Section05
+import NumlibSurface.SaadSparse.Chapter13.Section06
 import NumlibSurface.SaadSparse.Chapter14.Section02
 import NumlibSurface.SaadSparse.Chapter14.Section03
 import NumlibSurface.SaadSparse.Chapter14.Section06
@@ -154,6 +156,8 @@ holds the conventions shared by the whole library, and `SaadSparse.Chapter06.Com
 | 13.2 | `Chapter13.Section02` | The model problems and the spectra of the smoothers |
 | 13.3 | `Chapter13.Section03` | Inter-grid operations: prolongation and restriction |
 | 13.4 | `Chapter13.Section04` | The Galerkin coarse problem, Lemma 13.1, the multigrid cycles |
+| 13.5 | `Chapter13.Section05` | The two subspaces, Theorem 13.3, Examples 13.7 and 13.8 |
+| 13.6 | `Chapter13.Section06` | Algebraic multigrid: the quadratic form (13.68)-(13.69) |
 | **14** | | *Domain Decomposition Methods* |
 | 14.2 | `Chapter14.Section02` | Block Gaussian elimination and the Schur complement |
 | 14.3 | `Chapter14.Section03` | The Schwarz alternating procedures |
@@ -204,9 +208,9 @@ the breakdown with no finiteness hypothesis. The book's companion instruction "s
 
 ## Not formalized
 
-Chapters 1 to 9, 12 and 13 are closed but for the items below. The plans that carry the reasoning
-are `plans/saadsparse-ch1-4-5.md`, `plans/saadsparse-ch6.md`, `plans/saadsparse-ch7-9.md` and
-`plans/saadsparse-ch10-14.md`; each of these has a group file under
+Chapter 13 is complete; Chapters 1 to 9 and 12 are closed but for the items below. The plans
+that carry the reasoning are `plans/saadsparse-ch1-4-5.md`, `plans/saadsparse-ch6.md`,
+`plans/saadsparse-ch7-9.md` and `plans/saadsparse-ch10-14.md`; each of these has a group file under
 `plans/NumlibSurface/SaadSparse/` saying what its declarations are to be.
 
 * **§7.4**, the transpose-free variants — the BCG residual and direction polynomials, CGS,
@@ -214,8 +218,6 @@ are `plans/saadsparse-ch1-4-5.md`, `plans/saadsparse-ch6.md`, `plans/saadsparse-
   book, and an unblocked one: §7.3 supplies everything it rests on.
 * **§10.3**, the ILU factorizations — zero patterns (10.11), Theorems 10.1 and 10.2, Proposition
   10.4, ILU(0) and MILU — and **§10.4**, the `M̂` matrices (10.25)–(10.27) with Theorem 10.8.
-* **§13.5–13.6**, algebraic multigrid: the two-level decomposition (13.57)–(13.62) with Theorem
-  13.3 and Examples 13.7–13.8, and the smoothness expansion (13.68).
 * **§14.4–14.5**, the Schur-complement preconditioners: Proposition 14.10 for the preconditioner
   an ILU factorization induces, and (14.49)/(14.55) with Propositions 14.11 and 14.12.
 * Block relaxation (§4.1.1, Algorithms 4.1–4.2), which waits on the backbone's block-projection
