@@ -23,14 +23,6 @@ id = "polyInner_nondegenerate"
 
 [[node]]
 id = "equation_6_85_charpoly_isMinOn"
-kind = "theorem"
-desc = '''§6.6.2 (d), the claim the book cites without proof: the characteristic polynomial of `T_m`
-minimizes `‖p(A) v₁‖ = ‖p‖_{v₁}` over monic polynomials of degree `m` (for `m ≤ μ`).'''
-deps = ["Arnoldi.charpoly_compression_isMinOn"]
 
 [[node]]
 id = "equation_6_85_lanczos_charpoly"
-kind = "theorem"
-desc = '''§6.6.2 (e): the Lanczos algorithm computes `p_{T_m}(A) v₁` up to scaling,
-`aeval Aop (T A v₁ m).charpoly v₁ = (∏_{j<m} β_{j+1}) • v_{m+1}`.'''
-deps = ["lanczosPoly", "Lanczos.aeval_charpoly_tridiag"]

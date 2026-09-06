@@ -1,5 +1,6 @@
 import Numlib.Krylov.Arnoldi
 import Numlib.Krylov.Lanczos
+import Numlib.Krylov.OrthogonalPolynomials
 import Numlib.Krylov.Subspace
 import Numlib.LinearAlgebra.Matrix.Hessenberg
 import NumlibSurface.SaadSparse.Chapter06.Section03
@@ -26,10 +27,12 @@ Everything else in §6.6 and §6.7 is then inherited from the Arnoldi theory of
 §6.6.2 contributes the inner product (6.85), `polyInner`, the isomorphism `p ↦ p(A) v_1` from
 `P_{m-1}` onto `𝒦_m` (`polyToKrylov`, `polyToKrylov_bijective`), its nondegeneracy
 (`polyInner_nondegenerate`) and the Lanczos polynomials `lanczosPoly` with `v_i = q_{i-1}(A) v_1`
-and their orthogonality. The two facts the book cites without proof — that the characteristic
-polynomial of `T_m` minimizes `‖·‖_{v_1}` among monic polynomials of degree `m`, and that the
-Lanczos process computes `p_{T_m}(A) v_1` — need the Ritz-value and orthogonal-polynomial
-material that the backbone plan defers to a later phase, and are not stated here.
+and their orthogonality. The two facts the book cites without proof are
+`equation_6_85_charpoly_isMinOn` — the characteristic polynomial of `T_m` minimizes
+`‖·‖_{v_1}` among the monic polynomials of degree `m` — and `equation_6_85_lanczos_charpoly`,
+that the Lanczos process computes `p_{T_m}(A) v_1` up to the scalar `β_2 β_3 ⋯ β_{m+1}`; both are
+read off the backbone's Ritz-value and orthogonal-polynomial material
+(`Numlib/Eigen/RayleighRitz.lean`, `Numlib/Krylov/OrthogonalPolynomials.lean`).
 
 Indices are `0`-based as in `Chapter06/Section03.lean`: `lanczosV A v₁ j` is the book's `v_{j+1}`,
 `lanczosAlpha A v₁ j` is `α_{j+1}` and `lanczosBeta A v₁ j` is `β_{j+1}`. Definitions are
@@ -548,6 +551,47 @@ theorem equation_6_85_orthogonal_polynomials (hA : A.IsSymm) (hv : ‖v₁‖ = 
   ⟨degree_lanczosPoly A v₁ hi,
     aeval_lanczosPoly A v₁ (isSymmetric_op_of_isSymm hA) hv i,
     fun _ h => polyInner_lanczosPoly A v₁ h⟩
+
+/-- The characteristic polynomial of `T_m` is the one the backbone attaches to the compression of
+`A` to `𝒦_m`: over `ℝ` the entrywise map `algebraMap ℝ ℝ` of `Lanczos.charpoly_tridiag_map` is the
+identity. -/
+private theorem charpoly_T_eq (hA : A.IsSymm) (hv : ‖v₁‖ = 1) {m : ℕ} (hm : m ≤ grade A v₁) :
+    (T A v₁ m).charpoly =
+      LinearMap.charpoly (compression (op A) (Krylov.subspace (op A) v₁ m)) := by
+  have hA' := isSymmetric_op_of_isSymm hA
+  have h := Lanczos.charpoly_tridiag_map hA' v₁ (m := m) (by rwa [← grade_eq])
+  rw [Algebra.algebraMap_self, Polynomial.map_id] at h
+  rw [T_eq_tridiag A v₁ hA' hv, h]
+
+/-- §6.6.2 (d), the property the book states without proof: among the monic polynomials of degree
+`m`, the characteristic polynomial of the tridiagonal matrix `T_m` minimizes
+`‖p‖_{v_1} = ‖p(A) v_1‖`.
+
+This is the backbone's `Arnoldi.charpoly_compression_isMinOn` — `T_m` is the matrix of the
+compression of `A` to `𝒦_m` (6.84) — and the hypothesis `m ≤ μ` is what makes that compression
+have the `m` orthonormal columns the book's `V_m` has. -/
+theorem equation_6_85_charpoly_isMinOn (hA : A.IsSymm) (hv : ‖v₁‖ = 1) {m : ℕ}
+    (hm : m ≤ grade A v₁) :
+    IsMinOn (fun p : ℝ[X] => ‖aeval (op A) p v₁‖) {p : ℝ[X] | p.Monic ∧ p.natDegree = m}
+      (T A v₁ m).charpoly := by
+  rw [charpoly_T_eq A v₁ hA hv hm]
+  exact Arnoldi.charpoly_compression_isMinOn (op A) v₁ (by rwa [← grade_eq])
+
+/-- §6.6.2 (e), the second property the book states without proof: the Lanczos algorithm computes
+`p_{T_m}(A) v_1` up to a scalar, namely `β_2 β_3 ⋯ β_{m+1} v_{m+1}`. In particular the algorithm
+breaks down at step `m` exactly when `p_{T_m}(A) v_1 = 0`. -/
+theorem equation_6_85_lanczos_charpoly (hA : A.IsSymm) (hv : ‖v₁‖ = 1) {m : ℕ}
+    (hm : m ≤ grade A v₁) :
+    aeval (op A) (T A v₁ m).charpoly v₁ =
+      (∏ j ∈ Finset.range m, lanczosBeta A v₁ (j + 1)) • lanczosV A v₁ m := by
+  have hA' := isSymmetric_op_of_isSymm hA
+  have h := Lanczos.aeval_charpoly_tridiag hA' v₁ (m := m) (by rwa [← grade_eq])
+  rw [Algebra.algebraMap_self, Polynomial.map_id, hv, one_mul] at h
+  have hprod : ∀ j ∈ Finset.range m,
+      lanczosBeta A v₁ (j + 1) = Lanczos.beta (op A) v₁ j :=
+    fun j _ => lanczosBeta_succ_eq A v₁ hA' hv j
+  rw [T_eq_tridiag A v₁ hA' hv, h, lanczosV_eq_vec A v₁ hA' hv, Finset.prod_congr rfl hprod]
+  norm_num
 
 end BookResults
 

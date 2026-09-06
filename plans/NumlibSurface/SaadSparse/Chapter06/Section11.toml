@@ -50,29 +50,21 @@ id = "κ"
 
 [[node]]
 id = "ellipse"
-kind = "definition"
-desc = '''The ellipse `E(c, d, a)` of §6.11.2 with centre `c`, focal distance `d` and semi-major axis `a`
-(6.118)–(6.119), as `Set.ellipse` of the backbone, and `E_ρ` as the Joukowski image of `C(0, ρ)`.'''
-deps = ["Complex.joukowski"]
+
+[[node]]
+id = "filledEllipse"
+
+[[node]]
+id = "ChatComplex"
 
 [[node]]
 id = "lemma_6_26"
-kind = "theorem"
-desc = '''Lemma 6.26 (Zarantonello): for `‖γ‖ > ρ`,
-`IsLeast {M | ∃ p : ℂ[X], p.degree ≤ k ∧ p.eval γ = 1 ∧ M = sSup ((‖p.eval ·‖) '' sphere 0 ρ)} ((ρ/‖γ‖)^k)`.'''
-deps = ["Polynomial.zarantonello"]
 
 [[node]]
 id = "theorem_6_27"
-kind = "theorem"
-desc = '''Theorem 6.27 and (6.117): for `ρ ≥ 1` and `γ` not enclosed by `E_ρ`,
-`ρ^k/‖w_γ‖^k ≤ min_{p(γ)=1, deg ≤ k} max_{E_ρ} |p| ≤ (ρ^k + ρ^{-k})/‖w_γ^k + w_γ^{-k}‖`; with
-`ellipse_max_Chat`, (6.119)–(6.120): `max_{E(c,d,a)} |Ĉ_k| = C_k(a/d)/|C_k((c - γ)/d)|`.'''
-deps = ["ellipse", "Polynomial.Chebyshev.ellipse_minimax_bounds", "Polynomial.Chebyshev.sSup_norm_eval_shiftedComplex_ellipse", "Ccomplex"]
+
+[[node]]
+id = "ellipse_max_Chat"
 
 [[node]]
 id = "corollary_6_33"
-kind = "theorem"
-desc = '''Corollary 6.33: for diagonalizable `A = X Λ X⁻¹` with all eigenvalues in `E(c, d, a)`, `0` outside,
-the GMRES residual satisfies `‖r_m‖ ≤ κ₂(X) (C_m(a/d)/|C_m(c/d)|) ‖r₀‖`.'''
-deps = ["theorem_6_27", "epsMin"]

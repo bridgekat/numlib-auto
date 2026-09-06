@@ -1,22 +1,19 @@
 namespace = "SaadSparse.Ch10"
-desc = '''
-§10.8, preconditioners for the normal equations. Only Proposition 10.17 is planned.
 
-§10.8.1 (CGNE/SSOR and CGNR/SSOR) constructs no new object: it is `Numlib/Krylov/NormalEquations`
-preconditioned by the SSOR splitting of `A Aᵀ` or `Aᵀ A`, and the only claim in it — that the
-methods do not break down because `Aᵀ A` and `A Aᵀ` are positive definite for nonsingular `A` — is
-`Krylov.adjoint_comp_isSymmetricCoercive`. §10.8.2 (shifted IC(0)) is an algorithm with an
-empirical discussion of the shift and no theorem. Theorem 10.18 (the incomplete modified
-Gram–Schmidt `L` factor equals the incomplete Cholesky factor of `A Aᵀ` for a pattern closed under
-the given implication) Saad states without proof, citing the literature; it is not planned.
-'''
+[[node]]
+id = "imgsHat"
+
+[[node]]
+id = "imgsQ"
+
+[[node]]
+id = "imgsL"
+
+[[node]]
+id = "imgsLMat"
+
+[[node]]
+id = "imgsQMat"
 
 [[node]]
 id = "proposition_10_17"
-kind = "theorem"
-desc = '''If `A` is nonsingular and nothing is dropped from `Q` (`P_Q = ∅`), the incomplete Gram–Schmidt
-algorithm 10.17 completes and computes an exact factorization `A = L Q` with `Q` nonsingular and
-`L` lower triangular with positive diagonal — even though `Q` is not orthogonal, because entries
-are dropped from `L`. The proof is Saad's: if `l i i = 0` then row `i` of `A` is a combination of
-the previous rows, contradicting nonsingularity.'''
-deps = ["Krylov.adjoint_comp_isSymmetricCoercive"]

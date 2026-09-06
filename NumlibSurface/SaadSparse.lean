@@ -20,8 +20,10 @@ import NumlibSurface.SaadSparse.Chapter06.Section08
 import NumlibSurface.SaadSparse.Chapter06.Section09
 import NumlibSurface.SaadSparse.Chapter06.Section10
 import NumlibSurface.SaadSparse.Chapter06.Section11
+import NumlibSurface.SaadSparse.Chapter06.Section12
 import NumlibSurface.SaadSparse.Chapter09.Section01
 import NumlibSurface.SaadSparse.Chapter10.Section02
+import NumlibSurface.SaadSparse.Chapter10.Section08
 import NumlibSurface.SaadSparse.Chapter14.Section06
 import NumlibSurface.SaadSparse.Common
 
@@ -29,9 +31,9 @@ import NumlibSurface.SaadSparse.Common
 # Saad, *Iterative Methods for Sparse Linear Systems*
 
 The surface library for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition
-(SIAM, 2003): one module per section of the book, covering §1.11–§1.13, §4.1–§4.2, Chapter 5 and
-Chapter 6. Each module states the book's results in the book's own terms — Saad's non-symmetric
-"positive definite", the splitting `A = D - E - F`, the algorithms of Chapter 6 written out as Lean
+(SIAM, 2003): one module per section of the book, covering §1.11–§1.13, §4.1–§4.2, Chapter 5,
+Chapter 6 and §10.8. Each module states the book's results in the book's own terms — Saad's
+non-symmetric "positive definite", the splitting `A = D - E - F`, the algorithms written out as Lean
 functions — and proves them by specializing the general backbone under `Numlib/`. Almost nothing is
 proved here that is not proved there: the surface exists to test the backbone against a published
 account of the subject, and to give a reader of the book a Lean name for every result in it. This
@@ -79,6 +81,8 @@ holds the conventions shared by the whole library, and `SaadSparse.Chapter06.Com
 | 6.9 | `Chapter06.Section09` | GCR, ORTHOMIN, ORTHODIR; Lemma 6.21 |
 | 6.10 | `Chapter06.Section10` | Optimality and the Faber–Manteuffel condition; Prop. 6.22 |
 | 6.11 | `Chapter06.Section11` | Chebyshev min–max, Theorem 6.25, and the convergence bounds |
+| 6.12 | `Chapter06.Section12` | Block Krylov methods: Ruhe's variant, block FOM and block GMRES |
+| 10.8 | `Chapter10.Section08` | Incomplete Gram–Schmidt (Algorithm 10.17); Proposition 10.17 |
 
 There is no `Chapter06.Section01`: §6.1 is the chapter's introduction, and its one substantive
 paragraph is stated with §6.2. `Chapter05.Section01` likewise covers §5.1 together with §5.2, which
@@ -133,16 +137,10 @@ Deferred to a later phase of the backbone, with the plans in `plans/saadsparse-c
   4.11 and 4.13, Propositions 4.14–4.15, Theorem 4.16 and the optimal parameter (4.47).
 * Block relaxation (§4.1.1, Algorithms 4.1–4.2) and the identification of the additive procedure of
   §5.4 with the abstract additive projection process.
-* §6.5.6: (6.56)–(6.58) and Theorem 6.11, which need the IOM iterate and a Gram–Schmidt
-  factorization of the incomplete-orthogonalization basis.
-* §6.6.2: that the characteristic polynomial of `T_m` minimizes `‖·‖_{v₁}` among monic polynomials
-  of degree `m`, and that the Lanczos process computes `p_{T_m}(A) v₁` — Ritz values and orthogonal
-  polynomials.
+* §6.5.6: (6.56)–(6.58), which need the IOM iterate of §6.4 expanded in the
+  incomplete-orthogonalization basis.
 * §6.10: Lemma 6.23 and Theorem 6.24 (Faber–Manteuffel), which wait on the backbone's normal-matrix
   theory. The book itself states Theorem 6.24 without proof.
-* §6.11.2 and §6.11.4: Lemma 6.26 (Zarantonello), Theorem 6.27 and Corollary 6.33, which need
-  complex Chebyshev polynomials on ellipses.
-* §6.12, block Krylov methods, has no module yet.
 
 Left out deliberately: figures, numerical examples and tables, operation counts, implementation
 advice, and the exercises the text does not cite. §1.13's differentiability statement (1.74)–(1.75)

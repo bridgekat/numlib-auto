@@ -145,6 +145,12 @@ id = "qmrs_eq_6_79"
 id = "quasiResidualNorm"
 
 [[node]]
+id = "qgmres_isQuasiMinResIterate"
+
+[[node]]
+id = "theorem_6_11"
+
+[[node]]
 id = "s"
 
 [[node]]

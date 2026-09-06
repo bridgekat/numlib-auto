@@ -2,6 +2,7 @@ import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.Krylov.Arnoldi
 import Numlib.Krylov.Hessenberg
 import Numlib.Krylov.Iterate
+import Numlib.Krylov.QuasiMinRes
 import Numlib.Krylov.Relations
 import Numlib.Krylov.Subspace
 import Numlib.LinearSolve.Projection.Basic
@@ -19,7 +20,7 @@ The data of the system — `r₀ = b - A x₀`, `β = ‖r₀‖₂`, `v₁ = r�
 `e₁`, and `mEff`, which implements the book's "if `h_{j+1,j} = 0` set `m := j`" — are shared with
 `Chapter06/Section04.lean` and live in `Chapter06/Common.lean`. Definitions are polymorphic in `𝕜`,
 so §6.5.9 (complex GMRES) is the same code; the numbered results are stated over `ℝ`, the book's
-generality in §6.5, except in §6.5.9 and Theorem 6.11.
+generality in §6.5, except in §6.5.9.
 
 The file follows the book's order of subsections with one exception: §6.5.3, the Givens layer,
 comes first, because the GMRES iterate of Algorithm 6.9 is *defined* through the triangular factor
@@ -86,9 +87,13 @@ for `Krylov.givensQAux` that (6.53) needs are private here and are a backbone de
 truncation supplies through the orthonormality of the first `k + 1` vectors of the incomplete
 orthogonalization process, which lives in `Chapter06/Section04.lean`.
 
-Not formalized here (reported to the plan): (6.56)–(6.58) and Theorem 6.11, which need the IOM
-iterate of §6.4 and, for Theorem 6.11, a Gram–Schmidt factorization of the IOP basis under the L2
-operator norm. Theorem 6.11 is the book's only complex statement in this part.
+**Theorem 6.11** (Freund–Nachtigal) is `theorem_6_11`, two lines of
+`Krylov.IsQuasiMinResIterate.norm_residual_le_mul` once `qgmres_isQuasiMinResIterate` identifies
+Algorithm 6.12 as a quasi-minimal-residual iterate. The book factors `V_{m+1} = W S` with `W`
+orthonormal, which needs `V_{m+1}` to have full rank; the backbone needs only the two-sided bound
+`c ‖w‖₂ ≤ ‖V_{m+1} w‖₂ ≤ C ‖w‖₂`, whose ratio `C/c` is `κ₂(V_{m+1})`, and no factorization.
+
+Not formalized here (reported to the plan): (6.56)–(6.58), which need the IOM iterate of §6.4.
 
 ## §6.5.7: relations between FOM and GMRES
 
@@ -1397,6 +1402,55 @@ theorem equation_6_51 {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ : 𝔼} {u : ℕ
       ≤ ‖γ h β m‖ * Real.sqrt (((m - k : ℕ) : ℝ) + 1) :=
         mul_le_mul_of_nonneg_left hzz (norm_nonneg _)
     _ = Real.sqrt (((m - k : ℕ) : ℝ) + 1) * ‖γ h β m‖ := mul_comm _ _
+
+
+/-! ### Theorem 6.11: the Freund–Nachtigal bound -/
+
+/-- QGMRES is the backbone's quasi-minimal-residual iterate: `x_m = x_0 + V_m y_m` with `y_m`
+minimizing the quasi-residual `‖β e_1 - H̄_m y‖₂`. This is the identification that carries the
+general quasi-minimal-residual theory of `Numlib/Krylov/QuasiMinRes.lean` — which QMR, TFQMR and
+FGMRES also use — down to Algorithms 6.12 and 6.13. -/
+theorem qgmres_isQuasiMinResIterate (x₀ : 𝔼) (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (β : 𝕜)
+    (hh : ∀ i j : ℕ, j + 1 < i → h i j = 0) {m : ℕ} (hR : IsUnit (R h m)) :
+    Krylov.IsQuasiMinResIterate u h β x₀ m (qgmres x₀ u h β m) :=
+  ⟨qgmresY h β m, (isMinOn_lsq h β hh hR).1, by rw [qgmres, toEuclideanLin_colMatrix_apply]⟩
+
+/-- **Theorem 6.11** (Freund–Nachtigal). Assume that `m` steps of DQGMRES have been taken and
+that the basis `V_{m+1}` produced by the incomplete orthogonalization satisfies
+`c ‖w‖₂ ≤ ‖V_{m+1} w‖₂ ≤ C ‖w‖₂` with `c > 0` — so that `C/c` is its condition number
+`κ₂(V_{m+1})`, the ratio of its extreme singular values. If moreover `v_1, …, v_m` span
+`𝒦_m(A, r_0)`, then **(6.59)**:
+`‖r^Q_m‖₂ ≤ κ₂(V_{m+1}) ‖r^G_m‖₂`, with `r^G_m` the residual of the `m`-th GMRES iterate.
+
+The book proves this by factoring `V_{m+1} = W S` with `W` orthonormal, which needs `V_{m+1}` to
+have full rank; the backbone's `Krylov.IsQuasiMinResIterate.norm_residual_le_mul` needs neither
+the factorization nor the full rank, only the two-sided bound, and gives the same estimate
+against *every* point of `x_0 + span {v_1, …, v_m}` — the GMRES iterate being the point that
+makes it sharpest. -/
+theorem theorem_6_11 {A : Matrix (Fin n) (Fin n) 𝕜} (b x₀ : 𝔼) {u : ℕ → 𝔼} {h : ℕ → ℕ → 𝕜}
+    {β : 𝕜} (hu : Krylov.HessenbergRelation (op A) u h) (hr : b - op A x₀ = β • u 0) {m : ℕ}
+    (hR : IsUnit (R h m)) (hm : m ≤ grade A (v₁ A b x₀))
+    (hRA : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m))
+    (hspan : Submodule.span 𝕜 (Set.range fun i : Fin m => u (i : ℕ))
+      = krylov A (r₀ A b x₀) m)
+    {c C : ℝ} (hc0 : 0 < c)
+    (hc : ∀ w : Fin (m + 1) → 𝕜,
+      c * ‖(WithLp.toLp 2 w : EuclideanSpace 𝕜 (Fin (m + 1)))‖ ≤ ‖∑ i, w i • u (i : ℕ)‖)
+    (hC : ∀ w : Fin (m + 1) → 𝕜,
+      ‖∑ i, w i • u (i : ℕ)‖ ≤ C * ‖(WithLp.toLp 2 w : EuclideanSpace 𝕜 (Fin (m + 1)))‖) :
+    ‖b - op A (qgmres x₀ u h β m)‖ ≤ C / c * ‖b - op A (gmresFixed A b x₀ m)‖ := by
+  have hmem : gmresFixed A b x₀ m - x₀ ∈
+      Submodule.span 𝕜 (Set.range fun i : Fin m => u (i : ℕ)) := by
+    rw [hspan, krylov_eq]
+    exact (gmresFixed_isMinResIterate A b x₀ hm hRA).mem
+  obtain ⟨w, hw⟩ := (Submodule.mem_span_range_iff_exists_fun 𝕜).1 hmem
+  have hxG : gmresFixed A b x₀ m = x₀ + ∑ j, w j • u (j : ℕ) := by
+    rw [hw]
+    abel
+  rw [hxG]
+  exact Krylov.IsQuasiMinResIterate.norm_residual_le_mul
+    (Krylov.HessenbergRelation₂.of_hessenbergRelation hu) hr hc0 hc hC
+    (qgmres_isQuasiMinResIterate x₀ u h β hu.eq_zero_of_lt hR) w
 
 /-! ### Algorithm 6.13 (DQGMRES) -/
 

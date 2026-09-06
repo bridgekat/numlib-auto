@@ -6,6 +6,7 @@ import Numlib.Krylov.Iterate
 import Numlib.Krylov.Subspace
 import Numlib.LinearSolve.Projection.Basic
 import Numlib.LinearSolve.Projection.Optimality
+import Numlib.RingTheory.Polynomial.ChebyshevEllipse
 import Numlib.RingTheory.Polynomial.ChebyshevMinimax
 import NumlibSurface.SaadSparse.Chapter06.Section05
 import NumlibSurface.SaadSparse.Chapter06.Section07
@@ -55,11 +56,24 @@ Everything here is a specialization of the backbone:
   identification `gmresFixed_isMinResIterate` of `Chapter06/Section05.lean`, and Proposition 6.32
   adds the surface bound `norm_aeval_diagonal_mulVec_le` for a diagonalizable complex matrix.
 
-**Deferred to the later phase** (`plans/saadsparse-ch6.md` §4, the complex-ellipse results):
-Lemma 6.26 (Zarantonello) and Theorem 6.27 with the ellipse bound, that is (6.115)–(6.121) apart
-from the definition (6.114), and Corollary 6.33, which depends on Theorem 6.27. They need the
-complex Chebyshev and ellipse theory that the backbone does not yet have; only `Ccomplex` is
-provided here for them.
+## §6.11.2, the complex ellipse
+
+The results on `E(c, d, a)` specialize `Numlib/RingTheory/Polynomial/ChebyshevEllipse.lean`:
+Lemma 6.26 is `Polynomial.zarantonello`, Theorem 6.27 with (6.117) is
+`Polynomial.Chebyshev.ellipse_minimax_bounds`, and (6.119)–(6.120) is
+`Polynomial.Chebyshev.sSup_norm_eval_shiftedComplex_ellipse`.
+
+`ellipse c d ρ` is the backbone's `Set.ellipse`, parameterized by the Joukowski radius `ρ` rather
+than by the semi-major axis `a`: `a = d (ρ + ρ⁻¹)/2` is not invertible without an `arcosh`, and
+every estimate of the section is a function of `ρ`. The book's `C_k(a/d)` survives verbatim,
+because `a/d` *is* `(ρ + ρ⁻¹)/2`.
+
+Corollary 6.33 needs one step the book leaves implicit: its hypothesis places the spectrum
+*inside* the ellipse, while (6.119)–(6.120) bounds `|Ĉ_m|` *on* it. That step is the maximum
+modulus principle on a filled ellipse, `Polynomial.norm_eval_le_of_forall_mem_ellipse`, whose
+proof is not the disc principle but the annulus one — the Joukowski map identifies `w` with
+`w⁻¹`, so the filled ellipse is the image of a closed annulus and the symmetry `Ĉ_m(J w) =
+Ĉ_m(J w⁻¹)` folds its inner boundary circle onto the outer one.
 -/
 
 open scoped Polynomial
@@ -236,6 +250,69 @@ theorem theorem_6_25_value_mid (k : ℕ) (hαβ : α < β) (hγ : γ ∉ Set.Icc
     show (1 : ℝ) + 2 * (γ - β) / (β - α) = 2 * (γ - (α + β) / 2) / (β - α) by field_simp; ring]
 
 end ChebyshevMinimax
+
+/-! ### §6.11.2: the complex ellipse `E(c, d, a)` and the min–max estimates on it -/
+
+section ComplexEllipse
+
+/-- **(6.118)**: the ellipse `E(c, d, a)` with centre `c`, focal semi-distance `d` and semi-major
+axis `a`, as the image `{c + d J(w) : |w| = ρ}` of the circle `C(0, ρ)` under the Joukowski map
+`J(w) = (w + w⁻¹)/2` of (6.115)–(6.116); this is the backbone's `Set.ellipse`, and `E_ρ` of
+§6.11.2 is `ellipse 0 1 ρ`.
+
+The parameter is the Joukowski radius `ρ`, not the semi-major axis `a`. The two determine each
+other through `a = d (ρ + ρ⁻¹)/2` and `b = d (ρ - ρ⁻¹)/2`, but solving for `ρ` needs an `arcosh`,
+and every estimate of §6.11.2 is a function of `ρ`. The book's argument `a/d` of `C_k` survives
+verbatim, because `a/d` *is* `(ρ + ρ⁻¹)/2`. -/
+noncomputable abbrev ellipse (c d : ℂ) (ρ : ℝ) : Set ℂ := Set.ellipse c d ρ
+
+/-- §6.11.2: the region enclosed by the ellipse `E(c, d, a)`, the ellipse itself included. This
+is the book's "the spectrum is enclosed in the ellipse" of Corollary 6.33; it is the union of the
+confocal ellipses `ellipse c d s` with `1 ≤ s ≤ ρ`
+(`Set.filledEllipse_eq_biUnion`). -/
+noncomputable abbrev filledEllipse (c d : ℂ) (ρ : ℝ) : Set ℂ := Set.filledEllipse c d ρ
+
+/-- **(6.119)**: `Ĉ_k(z) = C_k((c - z)/d) / C_k((c - γ)/d)`, the complex counterpart of (6.113):
+the Chebyshev polynomial of the ellipse `E(c, d, a)`, normalized to `1` at `γ`. -/
+noncomputable abbrev ChatComplex (k : ℕ) (c d gam : ℂ) : ℂ[X] :=
+  Polynomial.Chebyshev.shiftedComplex k c d gam
+
+/-- **Lemma 6.26** (Zarantonello). Let `C(0, ρ)` be a circle of centre the origin and radius `ρ`,
+and let `γ` be any point outside it. Then
+`min_{p ∈ P_k, p(γ) = 1} max_{z ∈ C(0, ρ)} |p(z)| = (ρ/|γ|)^k`,
+and the minimum is attained by `(z/γ)^k`. -/
+theorem lemma_6_26 (k : ℕ) {ρ : ℝ} (hρ : 0 < ρ) {gam : ℂ} (hgam : ρ < ‖gam‖) :
+    IsLeast {M : ℝ | ∃ p : ℂ[X], p.degree ≤ k ∧ p.eval gam = 1 ∧
+        M = sSup ((fun z => ‖p.eval z‖) '' Metric.sphere 0 ρ)} ((ρ / ‖gam‖) ^ k) :=
+  Polynomial.zarantonello k hρ hgam
+
+/-- **Theorem 6.27**, **(6.117)**: let `E_ρ` be the ellipse of centre the origin, foci `±1` and
+semi-major axis `(ρ + ρ⁻¹)/2`, and let `γ = J(w_γ)` be a point it does not enclose, so that
+`|w_γ| > ρ`. Then
+`ρ^k/|w_γ|^k ≤ min_{p ∈ P_k, p(γ) = 1} max_{z ∈ E_ρ} |p(z)| ≤ (ρ^k + ρ^{-k})/|w_γ^k + w_γ^{-k}|`.
+
+The lower bound is Lemma 6.26 applied to the polynomial `w ↦ w^k p(J(w))` of degree `2k`; the
+upper bound is the value attained by the normalized Chebyshev polynomial `C_k(z)/C_k(γ)`. -/
+theorem theorem_6_27 (k : ℕ) {ρ : ℝ} (hρ : 1 ≤ ρ) {wgam : ℂ} (hw : ρ < ‖wgam‖) :
+    (ρ / ‖wgam‖) ^ k ≤
+        sInf {M : ℝ | ∃ p : ℂ[X], p.degree ≤ k ∧ p.eval (Complex.joukowski wgam) = 1 ∧
+          M = sSup ((fun z => ‖p.eval z‖) '' ellipse 0 1 ρ)} ∧
+      sInf {M : ℝ | ∃ p : ℂ[X], p.degree ≤ k ∧ p.eval (Complex.joukowski wgam) = 1 ∧
+          M = sSup ((fun z => ‖p.eval z‖) '' ellipse 0 1 ρ)} ≤
+        (ρ ^ k + (ρ ^ k)⁻¹) / ‖wgam ^ k + (wgam ^ k)⁻¹‖ := by
+  obtain ⟨hlow, hmem⟩ := Polynomial.Chebyshev.ellipse_minimax_bounds k hρ hw
+  exact ⟨le_csInf ⟨_, hmem⟩ hlow, csInf_le ⟨_, hlow⟩ hmem⟩
+
+/-- **(6.119)–(6.120)**: the maximum of the normalized Chebyshev polynomial `Ĉ_k` of (6.119) on
+the ellipse `E(c, d, a)` is `C_k(a/d) / |C_k((c - γ)/d)|`, where `a/d = (ρ + ρ⁻¹)/2`. -/
+theorem ellipse_max_Chat (k : ℕ) {ρ : ℝ} (hρ : 1 ≤ ρ) {c d gam : ℂ} (hd : d ≠ 0)
+    (hgam : (Ccomplex k).eval ((c - gam) / d) ≠ 0) :
+    sSup ((fun z => ‖(ChatComplex k c d gam).eval z‖) '' ellipse c d ρ) =
+      (C k).eval ((ρ + ρ⁻¹) / 2) / ‖(Ccomplex k).eval ((c - gam) / d)‖ :=
+  Polynomial.Chebyshev.sSup_norm_eval_shiftedComplex_ellipse k hρ hd hgam
+
+end ComplexEllipse
+
 
 /-! ### §6.11.3–§6.11.4: convergence of the conjugate gradient method and of GMRES -/
 
@@ -766,6 +843,56 @@ theorem proposition_6_32 {A : Matrix (Fin n) (Fin n) ℂ} (b x₀ : 𝔼) (X : M
   have hgoal : ‖b - op A (gmresFixed A b x₀ m)‖ ≤
       ‖X‖ * ‖X⁻¹‖ * ‖r₀ A b x₀‖ * epsMin lam m := le_mul_ciInf (by positivity) key
   exact hgoal.trans_eq (by rw [epsMin]; ring)
+
+
+/-- **Corollary 6.33**: assume that `A` is diagonalizable, `A = X Λ X⁻¹`, and that all its
+eigenvalues are enclosed in the ellipse `E(c, d, a)`, which excludes the origin. Then the `m`-th
+GMRES residual satisfies `‖r_m‖₂ ≤ κ₂(X) (C_m(a/d)/|C_m(c/d)|) ‖r_0‖₂`, with
+`a/d = (ρ + ρ⁻¹)/2`.
+
+The book takes the spectrum to lie *inside* the ellipse while (6.119)–(6.120) bound `|Ĉ_m|` *on*
+it; the step between the two is the maximum modulus principle on the filled ellipse,
+`Polynomial.norm_eval_le_of_forall_mem_ellipse`. The hypothesis that the origin is outside is
+what makes `C_m(c/d) ≠ 0`, so that `Ĉ_m` is a competitor in `ε^{(m)}` at all. -/
+theorem corollary_6_33 {A : Matrix (Fin n) (Fin n) ℂ} (b x₀ : 𝔼) (X : Matrix (Fin n) (Fin n) ℂ)
+    (hX : IsUnit X) (lam : Fin n → ℂ) (hA : A = X * Matrix.diagonal lam * X⁻¹) {c d : ℂ}
+    (hd : d ≠ 0) {ρ : ℝ} (hρ : 1 ≤ ρ) (hlam : ∀ i, lam i ∈ filledEllipse c d ρ)
+    (h0 : (0 : ℂ) ∉ filledEllipse c d ρ) {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀))
+    (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m)) :
+    ‖b - op A (gmresFixed A b x₀ m)‖ ≤
+      ‖X‖ * ‖X⁻¹‖ * ((C m).eval ((ρ + ρ⁻¹) / 2) / ‖(Ccomplex m).eval (c / d)‖) *
+        ‖r₀ A b x₀‖ := by
+  have hρ0 : (0 : ℝ) < ρ := lt_of_lt_of_le one_pos hρ
+  have hne : (Ccomplex m).eval ((c - 0) / d) ≠ 0 :=
+    Polynomial.Chebyshev.eval_T_sub_div_ne_zero_of_notMem_filledEllipse m hρ hd h0
+  have hbdd : BddAbove ((fun z => ‖(ChatComplex m c d 0).eval z‖) '' Set.ellipse c d ρ) :=
+    ((Set.isCompact_ellipse c d hρ0).image
+      (ChatComplex m c d 0).continuous.norm).bddAbove
+  have hle : ∀ z ∈ Set.ellipse c d ρ,
+      ‖(ChatComplex m c d 0).eval z‖ ≤
+        sSup ((fun z => ‖(ChatComplex m c d 0).eval z‖) '' Set.ellipse c d ρ) :=
+    fun z hz => le_csSup hbdd ⟨z, hz, rfl⟩
+  have hMnonneg : 0 ≤ sSup ((fun z => ‖(ChatComplex m c d 0).eval z‖) '' Set.ellipse c d ρ) :=
+    (norm_nonneg _).trans (hle _ (Set.vertex_mem_ellipse c d hρ0.le))
+  -- `ε^{(m)}` is at most the maximum of `|Ĉ_m|` over the filled ellipse, hence over the ellipse
+  have hchain : epsMin lam m ≤ (C m).eval ((ρ + ρ⁻¹) / 2) / ‖(Ccomplex m).eval (c / d)‖ := by
+    have hMval : sSup ((fun z => ‖(ChatComplex m c d 0).eval z‖) '' ellipse c d ρ) =
+        (C m).eval ((ρ + ρ⁻¹) / 2) / ‖(Ccomplex m).eval (c / d)‖ := by
+      rw [ellipse_max_Chat m hρ hd hne, sub_zero]
+    rw [← hMval]
+    refine le_trans (ciInf_le ⟨0, ?_⟩
+      ⟨ChatComplex m c d 0, Polynomial.Chebyshev.shiftedComplex_degree_le m c d 0,
+        Polynomial.Chebyshev.shiftedComplex_eval_self m hd hne⟩) ?_
+    · rintro y ⟨p, rfl⟩
+      dsimp only
+      exact Real.iSup_nonneg fun i => norm_nonneg _
+    · exact Real.iSup_le
+        (fun i => Polynomial.norm_eval_le_of_forall_mem_ellipse hρ hle (hlam i)) hMnonneg
+  calc ‖b - op A (gmresFixed A b x₀ m)‖
+      ≤ ‖X‖ * ‖X⁻¹‖ * epsMin lam m * ‖r₀ A b x₀‖ :=
+        proposition_6_32 b x₀ X hX lam hA hm hR
+    _ ≤ ‖X‖ * ‖X⁻¹‖ * ((C m).eval ((ρ + ρ⁻¹) / 2) / ‖(Ccomplex m).eval (c / d)‖) *
+          ‖r₀ A b x₀‖ := by gcongr
 
 end Diagonalizable
 

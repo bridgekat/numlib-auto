@@ -32,6 +32,11 @@ the maximum modulus principle.
   `Set.ellipse c d ρ` of the shifted, normalized Chebyshev polynomial
   `Ĉ_k(z) = T_k((c - z)/d) / T_k((c - γ)/d)`, namely `T_k(a/d)/|T_k((c - γ)/d)|` where
   `a = d (ρ + ρ⁻¹)/2` is the semi-major axis.
+* `Polynomial.norm_eval_le_of_forall_mem_ellipse`: the maximum modulus principle on the *filled*
+  ellipse `Set.filledEllipse c d ρ`, the region the ellipse encloses. The disc principle does not
+  give it, because the Joukowski parameter domain of a filled ellipse is an annulus rather than a
+  disc; what makes the annulus principle apply with a bound on the outer circle alone is the
+  symmetry `J w⁻¹ = J w`, which sends the inner boundary circle onto the outer one.
 
 ## References
 
@@ -70,6 +75,43 @@ theorem continuousAt_joukowski {w : ℂ} (hw : w ≠ 0) : ContinuousAt joukowski
     (continuousAt_id.add (continuousAt_inv₀ hw)).div_const 2
   exact h
 
+/-- The Joukowski map is complex differentiable away from the origin. -/
+theorem differentiableAt_joukowski {w : ℂ} (hw : w ≠ 0) : DifferentiableAt ℂ joukowski w := by
+  have h1 : DifferentiableAt ℂ (fun z : ℂ => z) w := differentiableAt_id
+  have h2 : DifferentiableAt ℂ (fun z : ℂ => z⁻¹) w := differentiableAt_inv hw
+  have h : DifferentiableAt ℂ (fun z : ℂ => (z + z⁻¹) / 2) w := (h1.add h2).div_const 2
+  exact h
+
+/-- The Joukowski map is odd. -/
+theorem joukowski_neg (w : ℂ) : joukowski (-w) = -joukowski w := by
+  rw [joukowski_def, joukowski_def, inv_neg, ← neg_add, neg_div]
+
+/-- Every complex number is a Joukowski value, and may be written as one at a parameter outside
+the closed unit disc: the quadratic `w² - 2 x w + 1 = 0` has two roots whose product is `1`, and
+`J` takes the same value at both. -/
+theorem exists_joukowski_eq (x : ℂ) : ∃ w : ℂ, 1 ≤ ‖w‖ ∧ joukowski w = x := by
+  obtain ⟨s, hs⟩ : ∃ s : ℂ, s ^ 2 = x ^ 2 - 1 := by
+    rcases eq_or_ne (x ^ 2 - 1) 0 with h | h
+    · exact ⟨0, by rw [h]; ring⟩
+    · refine ⟨Complex.exp (Complex.log (x ^ 2 - 1) / 2), ?_⟩
+      rw [← Complex.exp_nat_mul,
+        show ((2 : ℕ) : ℂ) * (Complex.log (x ^ 2 - 1) / 2) = Complex.log (x ^ 2 - 1) by
+          push_cast; ring,
+        Complex.exp_log h]
+  have hmul : (x + s) * (x - s) = 1 := by
+    rw [show (x + s) * (x - s) = x ^ 2 - s ^ 2 by ring, hs]
+    ring
+  have hne : x + s ≠ 0 := fun h => by rw [h, zero_mul] at hmul; exact zero_ne_one hmul
+  have hinv : (x + s)⁻¹ = x - s := inv_eq_of_mul_eq_one_right hmul
+  have hjou : joukowski (x + s) = x := by
+    rw [joukowski_def, hinv]
+    ring
+  rcases le_or_gt 1 ‖x + s‖ with h | h
+  · exact ⟨x + s, h, hjou⟩
+  · refine ⟨(x + s)⁻¹, ?_, by rw [joukowski_inv, hjou]⟩
+    rw [norm_inv, one_le_inv₀ (norm_pos_iff.2 hne)]
+    exact h.le
+
 end Complex
 
 /-- The ellipse with centre `c`, focal semi-distance `d` and Joukowski parameter `ρ`: the image
@@ -106,6 +148,74 @@ theorem Set.vertex_mem_ellipse (c d : ℂ) {ρ : ℝ} (hρ : 0 ≤ ρ) :
     c + d * Complex.joukowski (ρ : ℂ) ∈ Set.ellipse c d ρ :=
   ⟨(ρ : ℂ), by simp [abs_of_nonneg hρ], rfl⟩
 
+/-- The region enclosed by `Set.ellipse c d ρ`, the ellipse itself included: the image under
+`w ↦ c + d · J w` of the closed annulus `ρ⁻¹ ≤ ‖w‖ ≤ ρ`.
+
+The annulus rather than the disc is the right parameter domain because the Joukowski map
+identifies `w` with `w⁻¹` (`Complex.joukowski_inv`), so it covers the filled ellipse twice and is
+singular at the origin. `Set.filledEllipse_eq_biUnion` presents the same set as the union of the
+confocal ellipses `Set.ellipse c d s` for `1 ≤ s ≤ ρ`, which for `d ≠ 0` and `ρ ≥ 1` is the
+closed elliptical region with foci `c ± d`. -/
+noncomputable def Set.filledEllipse (c d : ℂ) (ρ : ℝ) : Set ℂ :=
+  (fun w => c + d * Complex.joukowski w) '' {w : ℂ | ρ⁻¹ ≤ ‖w‖ ∧ ‖w‖ ≤ ρ}
+
+theorem Set.mem_filledEllipse {c d z : ℂ} {ρ : ℝ} :
+    z ∈ Set.filledEllipse c d ρ ↔
+      ∃ w : ℂ, ρ⁻¹ ≤ ‖w‖ ∧ ‖w‖ ≤ ρ ∧ z = c + d * Complex.joukowski w :=
+  ⟨fun ⟨w, hw, h⟩ => ⟨w, hw.1, hw.2, h.symm⟩, fun ⟨w, h1, h2, h⟩ => ⟨w, ⟨h1, h2⟩, h.symm⟩⟩
+
+/-- The ellipse is part of the region it encloses. -/
+theorem Set.ellipse_subset_filledEllipse (c d : ℂ) {ρ : ℝ} (hρ : 1 ≤ ρ) :
+    Set.ellipse c d ρ ⊆ Set.filledEllipse c d ρ := by
+  rintro z hz
+  obtain ⟨w, hw, rfl⟩ := Set.mem_ellipse.1 hz
+  exact Set.mem_filledEllipse.2
+    ⟨w, by rw [hw]; exact (inv_le_one_of_one_le₀ hρ).trans hρ, hw.le, rfl⟩
+
+/-- The filled ellipse is the union of the confocal ellipses inside it, the degenerate one
+`Set.ellipse c d 1 = [c - d, c + d]` included. -/
+theorem Set.filledEllipse_eq_biUnion (c d : ℂ) {ρ : ℝ} (hρ : 1 ≤ ρ) :
+    Set.filledEllipse c d ρ = ⋃ s ∈ Set.Icc (1 : ℝ) ρ, Set.ellipse c d s := by
+  have hρ0 : (0 : ℝ) < ρ := lt_of_lt_of_le one_pos hρ
+  ext z
+  simp only [Set.mem_iUnion, exists_prop]
+  constructor
+  · intro hz
+    obtain ⟨w, h1, h2, rfl⟩ := Set.mem_filledEllipse.1 hz
+    have hwpos : 0 < ‖w‖ := lt_of_lt_of_le (inv_pos.2 hρ0) h1
+    rcases le_or_gt 1 ‖w‖ with h | h
+    · exact ⟨‖w‖, ⟨h, h2⟩, Set.mem_ellipse.2 ⟨w, rfl, rfl⟩⟩
+    · refine ⟨‖w‖⁻¹, ⟨(one_le_inv₀ hwpos).2 h.le, ?_⟩, Set.mem_ellipse.2 ⟨w⁻¹, ?_, ?_⟩⟩
+      · rwa [inv_le_comm₀ hwpos hρ0]
+      · rw [norm_inv]
+      · rw [Complex.joukowski_inv]
+  · rintro ⟨s, ⟨hs1, hs2⟩, hz⟩
+    obtain ⟨w, hw, rfl⟩ := Set.mem_ellipse.1 hz
+    refine Set.mem_filledEllipse.2 ⟨w, ?_, ?_, rfl⟩
+    · rw [hw]; exact (inv_le_one_of_one_le₀ hρ).trans hs1
+    · rw [hw]; exact hs2
+
+/-- Membership in a filled ellipse is membership of the normalized point `(c - z)/d` in the
+filled ellipse with foci `±1`. -/
+theorem Set.mem_filledEllipse_iff_div {c d : ℂ} (hd : d ≠ 0) {ρ : ℝ} {z : ℂ} :
+    z ∈ Set.filledEllipse c d ρ ↔ (c - z) / d ∈ Set.filledEllipse 0 1 ρ := by
+  constructor
+  · intro hz
+    obtain ⟨w, h1, h2, rfl⟩ := Set.mem_filledEllipse.1 hz
+    refine Set.mem_filledEllipse.2 ⟨-w, by rwa [norm_neg], by rwa [norm_neg], ?_⟩
+    rw [Complex.joukowski_neg, one_mul, zero_add]
+    field_simp
+    ring
+  · intro hz
+    obtain ⟨w, h1, h2, hw⟩ := Set.mem_filledEllipse.1 hz
+    rw [zero_add, one_mul] at hw
+    have hcz : c - z = d * Complex.joukowski w := by
+      rw [← hw]
+      field_simp
+    refine Set.mem_filledEllipse.2 ⟨-w, by rwa [norm_neg], by rwa [norm_neg], ?_⟩
+    rw [Complex.joukowski_neg, mul_neg, ← hcz]
+    ring
+
 namespace Polynomial
 
 /-- The set of the maxima over `K` of the moduli of the complex polynomials of degree at most `k`
@@ -131,6 +241,83 @@ theorem norm_eval_le_of_forall_mem_sphere {q : ℂ[X]} {r C : ℝ} (hr : 0 < r)
   · exact hC w (by rwa [frontier_ball _ hr.ne'] at hw)
   · rw [closure_ball _ hr.ne']
     simpa [Metric.mem_closedBall] using hz
+
+/-- **The maximum modulus principle on a filled ellipse**: a bound on `|p|` that is valid on the
+ellipse `Set.ellipse c d ρ` is valid on the whole region the ellipse encloses.
+
+The disc principle does not apply, because that region is not a disc. What replaces it is the
+maximum principle on the *annulus* `ρ⁻¹ < ‖w‖ < ρ` of Joukowski parameters, whose image is the
+filled ellipse: the symmetry `J w⁻¹ = J w` makes the image of the inner boundary circle
+`‖w‖ = ρ⁻¹` equal to the image of the outer one, so both components of the frontier carry the
+same bound. -/
+theorem norm_eval_le_of_forall_mem_ellipse {p : ℂ[X]} {c d : ℂ} {ρ C : ℝ} (hρ : 1 ≤ ρ)
+    (hC : ∀ z ∈ Set.ellipse c d ρ, ‖p.eval z‖ ≤ C) {z : ℂ}
+    (hz : z ∈ Set.filledEllipse c d ρ) : ‖p.eval z‖ ≤ C := by
+  have hρ0 : (0 : ℝ) < ρ := lt_of_lt_of_le one_pos hρ
+  have hinv0 : (0 : ℝ) < ρ⁻¹ := inv_pos.2 hρ0
+  obtain ⟨w, hw1, hw2, rfl⟩ := Set.mem_filledEllipse.1 hz
+  -- the bound holds on both boundary circles, the inner one by the symmetry `J w⁻¹ = J w`
+  have hbdry : ∀ u : ℂ, ‖u‖ = ρ ∨ ‖u‖ = ρ⁻¹ → ‖p.eval (c + d * Complex.joukowski u)‖ ≤ C := by
+    rintro u (hu | hu)
+    · exact hC _ (Set.mem_ellipse.2 ⟨u, hu, rfl⟩)
+    · have hu0 : u ≠ 0 := by
+        intro h
+        rw [h, norm_zero] at hu
+        exact hinv0.ne hu
+      refine hC _ (Set.mem_ellipse.2 ⟨u⁻¹, ?_, ?_⟩)
+      · rw [norm_inv, hu, inv_inv]
+      · rw [Complex.joukowski_inv]
+  rcases eq_or_lt_of_le hw2 with h2 | h2
+  · exact hbdry w (Or.inl h2)
+  rcases eq_or_lt_of_le hw1 with h1 | h1
+  · exact hbdry w (Or.inr h1.symm)
+  -- the interior of the annulus, where the maximum principle applies
+  set U : Set ℂ := Metric.ball (0 : ℂ) ρ \ Metric.closedBall (0 : ℂ) ρ⁻¹ with hU
+  have hmemU : ∀ u : ℂ, u ∈ U ↔ ρ⁻¹ < ‖u‖ ∧ ‖u‖ < ρ := by
+    intro u
+    rw [hU, Set.mem_sdiff, mem_ball_zero_iff, mem_closedBall_zero_iff, not_le]
+    exact ⟨fun h => ⟨h.2, h.1⟩, fun h => ⟨h.2, h.1⟩⟩
+  have hUopen : IsOpen U := Metric.isOpen_ball.sdiff Metric.isClosed_closedBall
+  have hUbdd : Bornology.IsBounded U := Metric.isBounded_ball.subset Set.sdiff_subset
+  have hclos : ∀ u ∈ closure U, ρ⁻¹ ≤ ‖u‖ ∧ ‖u‖ ≤ ρ := by
+    have hsub : closure U ⊆ Metric.closedBall (0 : ℂ) ρ \ Metric.ball (0 : ℂ) ρ⁻¹ := by
+      refine closure_minimal (fun u hu => ?_)
+        (Metric.isClosed_closedBall.sdiff Metric.isOpen_ball)
+      rw [hmemU] at hu
+      rw [Set.mem_sdiff, mem_closedBall_zero_iff, mem_ball_zero_iff, not_lt]
+      exact ⟨hu.2.le, hu.1.le⟩
+    intro u hu
+    have h := hsub hu
+    rw [Set.mem_sdiff, mem_closedBall_zero_iff, mem_ball_zero_iff, not_lt] at h
+    exact ⟨h.2, h.1⟩
+  have hne0 : ∀ u ∈ closure U, u ≠ 0 := by
+    intro u hu h0
+    have h := (hclos u hu).1
+    rw [h0, norm_zero] at h
+    exact absurd h (not_le.2 hinv0)
+  have hdiffAt : ∀ u ∈ closure U,
+      DifferentiableAt ℂ (fun u : ℂ => p.eval (c + d * Complex.joukowski u)) u := by
+    intro u hu
+    have hg : DifferentiableAt ℂ (fun x : ℂ => p.eval x) (c + d * Complex.joukowski u) :=
+      p.differentiable _
+    have hi : DifferentiableAt ℂ (fun u : ℂ => c + d * Complex.joukowski u) u :=
+      (differentiableAt_const c).add
+        ((differentiableAt_const d).mul (Complex.differentiableAt_joukowski (hne0 u hu)))
+    exact hg.comp u hi
+  have hd : DiffContOnCl ℂ (fun u : ℂ => p.eval (c + d * Complex.joukowski u)) U :=
+    ⟨fun u hu => (hdiffAt u (subset_closure hu)).differentiableWithinAt,
+      fun u hu => (hdiffAt u hu).continuousAt.continuousWithinAt⟩
+  have hfront : ∀ u ∈ frontier U, ‖p.eval (c + d * Complex.joukowski u)‖ ≤ C := by
+    intro u hu
+    rw [hUopen.frontier_eq, Set.mem_sdiff] at hu
+    obtain ⟨huc, huU⟩ := hu
+    rcases eq_or_lt_of_le (hclos u huc).1 with h | h
+    · exact hbdry u (Or.inr h.symm)
+    rcases eq_or_lt_of_le (hclos u huc).2 with h' | h'
+    · exact hbdry u (Or.inl h')
+    · exact absurd ((hmemU u).2 ⟨h, h'⟩) huU
+  exact Complex.norm_le_of_forall_mem_frontier_norm_le hUbdd hd hfront
+    (subset_closure ((hmemU w).2 ⟨h1, h2⟩))
 
 /-! ### Zarantonello's lemma -/
 
@@ -320,6 +507,28 @@ theorem eval_T_joukowski_ne_zero (k : ℕ) {w : ℂ} (hw : 1 < ‖w‖) :
   rw [hk] at hsq
   have := congrArg Complex.re hsq
   norm_num at this
+
+/-- A Chebyshev polynomial has no root outside a filled ellipse with foci `±1`: every root of
+`T_k` lies in `[-1, 1]`, the degenerate member `Set.ellipse 0 1 1` of the confocal family, and so
+inside every `Set.filledEllipse 0 1 ρ` with `ρ ≥ 1`. -/
+theorem eval_T_ne_zero_of_notMem_filledEllipse (k : ℕ) {ρ : ℝ} (hρ : 1 ≤ ρ) {x : ℂ}
+    (hx : x ∉ Set.filledEllipse 0 1 ρ) : (T ℂ (k : ℤ)).eval x ≠ 0 := by
+  obtain ⟨w, hw1, hw⟩ := Complex.exists_joukowski_eq x
+  have hwρ : ρ < ‖w‖ := by
+    by_contra hcon
+    rw [not_lt] at hcon
+    exact hx (Set.mem_filledEllipse.2
+      ⟨w, (inv_le_one_of_one_le₀ hρ).trans hw1, hcon, by rw [zero_add, one_mul, hw]⟩)
+  rw [← hw]
+  exact eval_T_joukowski_ne_zero k (lt_of_le_of_lt hρ hwρ)
+
+/-- The normalization `T_k((c - z)/d) / T_k((c - γ)/d)` of `Polynomial.Chebyshev.shiftedComplex`
+is legitimate whenever the ellipse `Set.ellipse c d ρ` does not enclose `γ`. -/
+theorem eval_T_sub_div_ne_zero_of_notMem_filledEllipse (k : ℕ) {ρ : ℝ} (hρ : 1 ≤ ρ) {c d γ : ℂ}
+    (hd : d ≠ 0) (hγ : γ ∉ Set.filledEllipse c d ρ) :
+    (T ℂ (k : ℤ)).eval ((c - γ) / d) ≠ 0 :=
+  eval_T_ne_zero_of_notMem_filledEllipse k hρ fun h =>
+    hγ ((Set.mem_filledEllipse_iff_div hd).2 h)
 
 /-- The real Chebyshev polynomial at the Joukowski point `(ρ + ρ⁻¹)/2`, which for the ellipse
 `Set.ellipse c d ρ` is the ratio `a/d` of the semi-major axis to the focal semi-distance. -/

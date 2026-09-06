@@ -435,6 +435,24 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   `Pi.addCommMonoid`, while `Fintype.linearIndependent_iff` is stated over `Ring`/`AddCommGroup`;
   `rw [Fintype.linearIndependent_iff] at hX` fails where `Fintype.linearIndependent_iff.1 hX`
   works, because application unifies up to defeq and `rw` does not.
+* **A `local notation` in a `variable` binder also breaks the unused-variable linter.** The known
+  symptom is a section variable becoming an unknown identifier; the other one is
+  `warning: Variable name ‘hr’ is not explicitly referenced` on *every* later theorem of the
+  section, including hypotheses the term proof plainly uses. `variable {v : Fin p → 𝔼}` with
+  `local notation "𝔼" => EuclideanSpace 𝕜 (Fin n)` produced eight such warnings in
+  `Chapter06/Section12`; writing `EuclideanSpace 𝕜 (Fin n)` out in the binder removed all of them.
+  The rest of this project already writes the type out in `variable` lines — that is why.
+* **`(f - g) k` will not elaborate without an expected type for the subtraction.** In a statement
+  such as `∑ k : Fin (m + p), (firstBlockVec g p (m + p) - (Hbar A v m).mulVec y) k • u k`, the
+  `HSub` instance is postponed, the arguments of `Hbar` stay metavariables, and the error is
+  `Function expected at … but this term has type ?m`. It happens in the backbone file too, and is
+  invisible where an equation's other side fixes the type. Ascribe:
+  `((… - … : Fin (m + p) → 𝕜)) k`.
+* **A set-builder membership is defeq but not always elaborable.** `exact h` transports between
+  `u ∈ {v | P v}` and `P u` fine, but an *anonymous constructor* or `Set.mem_inter` against a goal
+  `u ∈ {v | P v} ∩ {v | Q v}` fails with an application type mismatch, because the arguments are
+  elaborated before the expected type is whnf'd. Use `refine ⟨?_, ?_⟩` in tactic mode, or phrase the
+  sets as `Metric.ball` / `Metric.closedBall` and move through `mem_ball_zero_iff`.
 
 ## Tactics
 
@@ -932,6 +950,17 @@ Structural facts worth knowing before planning a proof:
   `Complex.ofReal_add`/`_sub`/`_mul` in the middle of a goal loses to the first `↑(a - b)` that is
   not literally in that shape.
 
+`Set.right_mem_Iic` does not exist; `Set.mem_Iic.2 le_rfl` is the membership. `Finset.range_subset`
+is still not the `iff` one expects, so `range (i + 1) ⊆ range n` from `i : Fin n` is
+`fun j hj => Finset.mem_range.2 (by … omega)`. `Matrix.det_of_lowerTriangular` is now
+`Matrix.det_of_isLowerTriangular`, taking `M.IsLowerTriangular`, an `abbrev` for
+`M.BlockTriangular toDual`. `Matrix.linearIndependent_rows_iff_isUnit` (over a field) is the way
+from `IsUnit A` to independence of the rows, and `Matrix.row A` is `A` definitionally.
+`IsUnit` unfolds to `Exists`, so `hU.nonsing_inv` looks up `Exists.nonsing_inv`: write
+`Matrix.isUnit_nonsing_inv_iff.2 hU`. To get `IsUnit Q` from `L * Q = A` with `A` nonsingular, do
+not invert `L` — `Matrix.det_mul` and `isUnit_of_mul_isUnit_right` are three lines and need no
+triangularity.
+
 Renamed in this toolchain, on top of the list above: `abs_add` to `abs_add_le`;
 `Set.mem_setOf_eq` to `Set.mem_ofPred_eq`; `continuous_finset_sum` to `continuous_finsetSum`;
 `Polynomial.eval_finset_sum` to `Polynomial.eval_finsetSum`.
@@ -942,6 +971,17 @@ More structural facts:
   with `U = Metric.ball 0 r`, plus `frontier_ball` and `closure_ball` — both root-namespace, in
   `Analysis/Normed/Module/RCLike/Real.lean`. That plus the reversed polynomial `∑_{j ≤ k} p_j X^{k-j}`
   is the whole of Zarantonello's lemma.
+* The same theorem does the maximum principle on an **annulus** with no extra Mathlib, and the
+  `frontier` never has to be computed. Take `U = ball 0 ρ \ closedBall 0 ρ⁻¹`
+  (`Metric.isOpen_ball.sdiff Metric.isClosed_closedBall`), bound `closure U` by
+  `closedBall 0 ρ \ ball 0 ρ⁻¹` through `closure_minimal`, and use
+  `IsOpen.frontier_eq : frontier U = closure U \ U`: a frontier point is then in the closed
+  annulus and not in the open one, so its norm is `ρ` or `ρ⁻¹`. Feed the interior point in by
+  `subset_closure`, and handle the two boundary radii of the original claim separately, so
+  `closure U` is never needed exactly. `DiffContOnCl` is a two-field structure, so
+  `⟨fun u hu => (hd u (subset_closure hu)).differentiableWithinAt,
+  fun u hu => (hd u hu).continuousAt.continuousWithinAt⟩` builds it from differentiability at each
+  point of `closure U`.
 * `Polynomial.Chebyshev.T_complex_cosh` at `θ = Complex.log w` gives
   `T_k((w + w⁻¹)/2) = (w^k + w^{-k})/2` in three lines. Mathlib has no `C_n(x + x⁻¹) = x^n + x^{-n}`
   lemma for the Vieta–Lucas polynomials, and none is needed.

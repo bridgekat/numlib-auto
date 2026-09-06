@@ -17,6 +17,18 @@ id = "_root_.Set.ellipse"
 source = "Saad, Iterative Methods for Sparse Linear Systems, (6.115)–(6.116)"
 
 [[node]]
+id = "_root_.Set.filledEllipse"
+source = 'Saad, Iterative Methods for Sparse Linear Systems, Corollary 6.33 (the spectrum enclosed in the ellipse)'
+
+[[node]]
+id = "norm_eval_le_of_forall_mem_ellipse"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Corollary 6.33"
+
+[[node]]
+id = "Chebyshev.eval_T_ne_zero_of_notMem_filledEllipse"
+source = 'Saad, Iterative Methods for Sparse Linear Systems, Corollary 6.33 (the origin outside the ellipse)'
+
+[[node]]
 id = "Chebyshev.sSup_norm_eval_T_ellipse"
 source = "Saad, Iterative Methods for Sparse Linear Systems, (6.117), upper bound"
 
