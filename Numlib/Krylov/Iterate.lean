@@ -6,7 +6,10 @@ import Numlib.LinearSolve.Projection.Optimality
 # Krylov iterates: specifications
 
 The canonical specifications of Krylov subspace methods for `A x = b` started at `x₀`, with
-`r₀ = b - A x₀` and `𝒦_m = 𝒦_m(A, r₀)`:
+`r₀ = b - A x₀` and `𝒦_m = 𝒦_m(A, r₀)`, together with their polynomial characterizations and
+their behaviour at the grade of `r₀`.
+
+## Main definitions
 
 * `Krylov.IsMinResIterate A b x₀ m x`: `x ∈ x₀ + 𝒦_m` minimizes the residual
   (GMRES, MINRES, CR, GCR, ORTHOMIN/ORTHODIR full versions, MINRES-QLP on nonsingular systems);
@@ -17,10 +20,20 @@ The canonical specifications of Krylov subspace methods for `A x = b` started at
 * `Krylov.IsMinNormMinResIterate A b x₀ m x`: least norm among the minimal-residual iterates
   (MINRES-QLP), which is what pins the iterate down on a singular system.
 
-Polynomial characterizations (Saad, *Iterative Methods*[^saad-iterative] Lemma 6.28, 6.31),
-residual structure (Saad Prop 6.7), lucky breakdown / exactness at the grade (Saad Prop 6.10),
-and the minimum-norm property of Krylov solutions of compatible symmetric systems
-(core of Choi[^choi] Thm 2.25).
+## Main statements
+
+* `Krylov.exists_residual_poly`, `Krylov.exists_mem_of_residual_poly`,
+  `Krylov.IsMinResIterate.norm_residual_eq_iInf` and
+  `Krylov.IsGalerkinIterate.energyNorm_error_eq_iInf`: the polynomial characterizations
+  (Saad, *Iterative Methods*[^saad-iterative] Lemma 6.28 and Lemma 6.31);
+* `Krylov.IsGalerkinIterate.residual_mem_span`: the Galerkin residual is a multiple of the next
+  Arnoldi vector (Saad Prop 6.7);
+* `Krylov.IsMinResIterate.apply_eq_of_grade_le`, `Krylov.IsGalerkinIterate.apply_eq_of_grade_le`
+  and `Krylov.grade_le_of_apply_eq`: lucky breakdown and exactness at the grade (Saad Prop 6.10);
+* `Krylov.existsUnique_isMinNormMinResIterate`: the MINRES-QLP iterate is well defined with no
+  hypothesis on `A`;
+* `Krylov.norm_le_of_apply_eq`: an exact Krylov solution of a compatible symmetric system is the
+  minimum-norm solution (core of Choi[^choi] Thm 2.25).
 
 ## References
 
@@ -89,9 +102,10 @@ private theorem aeval_apply_comm (A : E →ₗ[𝕜] E) (p : 𝕜[X]) (u : E) :
   rw [h1, h2, show (aeval A p * A) = aeval A (p * X) by rw [map_mul, aeval_X],
     show (A * aeval A p) = aeval A (X * p) by rw [map_mul, aeval_X], mul_comm]
 
-/-- The constant polynomial `1` is a residual polynomial for every `m`. -/
-private theorem degree_one_le (m : ℕ) : (1 : 𝕜[X]).degree ≤ (m : WithBot ℕ) :=
-  natDegree_le_iff_degree_le.1 (by simp)
+/-- The constant polynomial `1` is a residual polynomial for every `m`.  Named apart from
+Mathlib's `Polynomial.degree_one_le`, which is the same bound at `m = 0`. -/
+private theorem degree_one_le_natCast (m : ℕ) : (1 : 𝕜[X]).degree ≤ (m : WithBot ℕ) :=
+  Polynomial.degree_one_le.trans (by exact_mod_cast Nat.zero_le m)
 
 end PolynomialGlue
 
@@ -103,7 +117,7 @@ theorem exists_residual_poly (hx : x - x₀ ∈ subspace A (b - A x₀) m) :
     ∃ p : 𝕜[X], p.degree ≤ m ∧ p.eval 0 = 1 ∧ b - A x = aeval A p (b - A x₀) := by
   obtain ⟨g, hg, hgx⟩ := (mem_subspace_iff_exists_aeval A (b - A x₀)).1 hx
   refine ⟨1 - X * g, ?_, by simp, ?_⟩
-  · exact le_trans (degree_sub_le _ _) (max_le (degree_one_le m) (degree_X_mul_le hg))
+  · exact le_trans (degree_sub_le _ _) (max_le (degree_one_le_natCast m) (degree_X_mul_le hg))
   · rw [aeval_one_sub_X_mul, hgx, residual_eq_sub_apply_sub A b x₀ x]
 
 /-- Conversely every such `p` arises from some `x ∈ x₀ + 𝒦_m`. -/
@@ -115,7 +129,7 @@ theorem exists_mem_of_residual_poly (p : 𝕜[X]) (hp : p.degree ≤ m) (hp0 : p
   have hgdeg : g.degree < (m : WithBot ℕ) := by
     refine degree_lt_of_degree_X_mul_le (m := m) ?_
     rw [← hg]
-    exact le_trans (degree_sub_le _ _) (max_le (degree_one_le m) hp)
+    exact le_trans (degree_sub_le _ _) (max_le (degree_one_le_natCast m) hp)
   refine ⟨x₀ + aeval A g (b - A x₀), ?_, ?_⟩
   · rw [add_sub_cancel_left]
     exact aeval_apply_mem_subspace A (b - A x₀) hgdeg
@@ -161,7 +175,7 @@ theorem norm_residual_le_norm_aeval (hx : IsMinResIterate A b x₀ m x) (p : �
 theorem norm_residual_eq_iInf (hx : IsMinResIterate A b x₀ m x) :
     ‖b - A x‖ = ⨅ p : {p : 𝕜[X] // p.degree ≤ m ∧ p.eval 0 = 1}, ‖aeval A p.1 (b - A x₀)‖ := by
   have : Nonempty {p : 𝕜[X] // p.degree ≤ (m : WithBot ℕ) ∧ p.eval 0 = 1} :=
-    ⟨⟨1, degree_one_le m, by simp⟩⟩
+    ⟨⟨1, degree_one_le_natCast m, by simp⟩⟩
   have hbdd : BddBelow (Set.range
       fun p : {p : 𝕜[X] // p.degree ≤ (m : WithBot ℕ) ∧ p.eval 0 = 1} =>
         ‖aeval A p.1 (b - A x₀)‖) := by
@@ -232,8 +246,8 @@ theorem grade_le_of_aeval_eq_zero {v : E} [FiniteDimensional 𝕜 (fullSubspace 
   · rw [map_mul, map_mul, Module.End.mul_apply, Module.End.mul_apply, h0, map_zero, map_zero]
 
 /-- Converse of lucky breakdown (Saad, *Iterative Methods*, Prop 6.10 ⇐, P-6.13): an exact
-solution in `x₀ + 𝒦_m`
-forces `grade ≤ m` (no injectivity needed: `r₀ = A q(A) r₀` gives the annihilator `1 - X q`). -/
+solution in `x₀ + 𝒦_m` forces `grade ≤ m`.  No injectivity is needed: `r₀ = A q(A) r₀` gives the
+annihilator `1 - X q`. -/
 theorem grade_le_of_apply_eq [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))]
     (hx : x - x₀ ∈ subspace A (b - A x₀) m) (hAx : A x = b) : grade A (b - A x₀) ≤ m := by
   obtain ⟨p, hp, hp0, hres⟩ := exists_residual_poly hx
@@ -382,7 +396,7 @@ theorem energyNorm_error_eq_iInf (hA : A.IsSymmetricCoercive) (hx : IsGalerkinIt
       ⨅ p : {p : 𝕜[X] // p.degree ≤ m ∧ p.eval 0 = 1},
         energyNorm A (aeval A p.1 (xstar - x₀)) := by
   have : Nonempty {p : 𝕜[X] // p.degree ≤ (m : WithBot ℕ) ∧ p.eval 0 = 1} :=
-    ⟨⟨1, degree_one_le m, by simp⟩⟩
+    ⟨⟨1, degree_one_le_natCast m, by simp⟩⟩
   have hbdd : BddBelow (Set.range
       fun p : {p : 𝕜[X] // p.degree ≤ (m : WithBot ℕ) ∧ p.eval 0 = 1} =>
         energyNorm A (aeval A p.1 (xstar - x₀))) := by
@@ -456,6 +470,9 @@ end IsGalerkinIterate
 
 end Galerkin
 
+/-- For symmetric `A` and a starting vector in the range of `A`, every Krylov subspace of that
+vector avoids the kernel: `𝒦_m(A, b) ≤ (ker A)ᗮ`.  This is what makes a Krylov method on a
+compatible singular system land on the minimum-norm solution. -/
 theorem subspace_le_orthogonal_ker (hA : A.IsSymmetric) {b : E} (hb : b ∈ LinearMap.range A)
     (m : ℕ) : subspace A b m ≤ (LinearMap.ker A)ᗮ := by
   obtain ⟨c, rfl⟩ := hb

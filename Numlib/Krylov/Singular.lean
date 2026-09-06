@@ -413,8 +413,6 @@ end Krylov
 
 namespace Lanczos
 
-open Krylov
-
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
 /-! ### Termination against the number of distinct eigenvalues -/

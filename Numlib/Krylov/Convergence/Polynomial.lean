@@ -194,6 +194,8 @@ theorem isSymmetricCoercive (hA : A.IsSymmetricCoercive) :
   rw [compression.inner_apply A K x x]
   exact hcA (x : E)
 
+/-- The energy inner product of the compression is the restriction of the energy inner product
+of `A`. -/
 theorem energyInner_apply (x y : K) : energyInner (compression A K) x y = energyInner A x y :=
   compression.inner_apply A K x y
 

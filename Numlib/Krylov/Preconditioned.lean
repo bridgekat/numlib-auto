@@ -11,16 +11,25 @@ preconditioner `M` with a linear inverse `M⁻¹` (`Krylov.IsPreconditioner`), t
 the `M`-inner product `⟪M x, y⟫` — Mathlib-style, the type synonym `WithEnergy M`
 of `Numlib/Analysis/InnerProductSpace/Energy` — and in it the preconditioned operator `M⁻¹ A` is
 symmetric whenever `A` is, with quadratic form `⟪A x, x⟫`. Everything the unpreconditioned theory
-proves therefore transports:
+proves therefore transports.
+
+## Main definitions
+
+* `Krylov.IsPreconditioner M Minv`: a symmetric coercive `M` together with a linear inverse;
+* `Krylov.IsPreconditioner.EnergySpace`, `toEnergy`, `energySubmodule`, `energyEnd`: the
+  `M`-inner product space and the transport of vectors, subspaces and operators into it;
+* `Krylov.PCG.State`, `alpha`, `beta`, `step`, `init`, `iterate`: the preconditioned conjugate
+  gradient iteration (Saad, *Iterative Methods*[^saad-iterative] Algorithm 9.1).
+
+## Main statements
 
 * `Krylov.IsPreconditioner.isGalerkin_energyEnd_iff` and
   `Krylov.IsPreconditioner.isMinRes_energyEnd_iff`: the Galerkin condition for
   `M⁻¹ A x = M⁻¹ b` in the `M`-inner product *is* the Galerkin condition for `A x = b` in the
   original one, and the minimal-residual condition there is minimality of `‖b - A x‖_{M⁻¹}`;
 * `Krylov.PCG.iterate_eq_CG_iterate_withEnergy`: the preconditioned conjugate gradient
-  iteration (Saad, *Iterative Methods*[^saad-iterative] Algorithm 9.1) is `CG.iterate` for
-  `M⁻¹ A` in that space — this is the one-line statement "PCG is CG on the preconditioned
-  system";
+  iteration is `CG.iterate` for `M⁻¹ A` in that space — this is the one-line statement "PCG is
+  CG on the preconditioned system";
 * `Krylov.PCG.isGalerkinIterate` and `Krylov.PCG.energyNorm_error_le`: consequently the PCG
   iterate minimizes the `A`-norm of the error over `x₀ + 𝒦_k(M⁻¹ A, M⁻¹ r₀)` and obeys the
   Chebyshev bound with the condition number of the *generalized* eigenvalue problem
@@ -29,7 +38,11 @@ proves therefore transports:
   `Krylov.isMinRes_of_isMinResIterate_rightPreconditioned` (Saad, Proposition 9.1): left and
   right preconditioning search the *same* affine space `x₀ + 𝒦_m(M⁻¹ A, M⁻¹ r₀)`, and differ
   only in the norm they minimize over it — `‖M⁻¹ (b - A x)‖` on the left, `‖b - A x‖` on the
-  right.
+  right;
+* `Krylov.FGMRES.isMinRes` and `Krylov.FGMRES.apply_eq_iff_coeff_eq_zero`: Saad's Propositions
+  9.2 and 9.3 for flexible GMRES, whose search space is not a Krylov subspace at all.
+
+## Implementation notes
 
 The inverse is carried as data rather than deduced from surjectivity of `M`: that is what a
 preconditioner is in practice (a routine that solves `M z = r`), and it keeps the module free of
@@ -86,6 +99,7 @@ noncomputable abbrev energySubmodule (K : Submodule 𝕜 E) : Submodule 𝕜 hM.
 noncomputable def energyEnd (B : E →ₗ[𝕜] E) : hM.EnergySpace →ₗ[𝕜] hM.EnergySpace :=
   (hM.toEnergy).toLinearMap ∘ₗ B ∘ₗ (hM.toEnergy).symm.toLinearMap
 
+/-- The transported operator acts on a transported vector as the original one does. -/
 @[simp]
 theorem energyEnd_apply (B : E →ₗ[𝕜] E) (x : E) :
     hM.energyEnd B (hM.toEnergy x) = hM.toEnergy (B x) := rfl
@@ -335,10 +349,13 @@ theorem iterate_succ (k : ℕ) :
     iterate A Minv b x₀ (k + 1) = step A Minv (iterate A Minv b x₀ k) :=
   Function.iterate_succ_apply' _ _ _
 
+/-- The iterate update `x' = x + α p` of one PCG step. -/
 theorem step_x (s : State E) : (step A Minv s).x = s.x + alpha A Minv s • s.p := rfl
 
+/-- The residual update `r' = r - α A p` of one PCG step. -/
 theorem step_r (s : State E) : (step A Minv s).r = s.r - alpha A Minv s • A s.p := rfl
 
+/-- The direction update `p' = M⁻¹ r' + β p` of one PCG step. -/
 theorem step_p (s : State E) :
     (step A Minv s).p = Minv (step A Minv s).r + beta A Minv s • s.p := rfl
 
@@ -448,8 +465,8 @@ end PCG
 
 namespace FGMRES
 
-/-- **Saad, *Iterative Methods for Sparse Linear Systems*, Proposition 9.2**: the flexible GMRES
-iterate minimizes the residual norm over `x₀ + span {z_0, …, z_{m-1}}`.
+/-- **Saad, *Iterative Methods*, Proposition 9.2**: the flexible GMRES iterate minimizes the
+residual norm over `x₀ + span {z_0, …, z_{m-1}}`.
 
 FGMRES expands the *iterate* in arbitrary preconditioned directions `z_j = M_j⁻¹ v_j` while
 expanding the *residual* in the orthonormal Arnoldi basis `v_i`, so its search space is not a
@@ -527,10 +544,10 @@ private theorem last_ne_zero_of_mulVec_eq {h : ℕ → ℕ → 𝕜} {β : 𝕜}
   rw [Finset.sum_congr rfl fun k _ => by rw [hy0 k, mul_zero]] at h0
   exact hβ (by simpa using h0.symm)
 
-/-- **Saad, *Iterative Methods for Sparse Linear Systems*, Proposition 9.3**: if the residual is
-nonzero, the previous steps have not broken down and the square Hessenberg matrix `H_j` is
-nonsingular, then the flexible GMRES iterate at step `j` is exact exactly when the subdiagonal
-entry `h_{j+1,j}` vanishes.
+/-- **Saad, *Iterative Methods*, Proposition 9.3**: if the residual is nonzero, the previous
+steps have not broken down and the square Hessenberg matrix `H_j` is nonsingular, then the
+flexible GMRES iterate at step `j` is exact exactly when the subdiagonal entry `h_{j+1,j}`
+vanishes.
 
 The nonsingularity of `H_j` is a genuine extra hypothesis in the flexible case: unlike GMRES,
 where `A Z_j = A V_j` and nonsingularity of `A` transfers, the `z_j` are arbitrary. The forward

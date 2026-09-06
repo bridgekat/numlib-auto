@@ -22,6 +22,19 @@ polynomial of the first kind. Only the sharp Chebyshev form needs a strict spect
 `λmin < λmax`, because it divides by `λmax - λmin`; the geometric forms hold for `λmin ≤ λmax`,
 the degenerate case being one where `A` is a scalar and the iterates are exact from step `1`.
 
+## Main statements
+
+* `Krylov.IsGalerkinIterate.energyNorm_error_le_div_eval_T` and
+  `Krylov.IsGalerkinIterate.energyNorm_error_le`: the sharp Chebyshev bound and its geometric
+  form (Saad Thm 6.29, (6.123) and (6.128); Atkinson–Han Thm 5.6.1);
+* `Krylov.IsMinResIterate.norm_residual_le`: the same bound for the residual norm;
+* `Krylov.IsGalerkinIterate.energyNorm_error_succ_le`: the one-step Kantorovich contraction
+  (Atkinson–Han (5.6.4)), and `Krylov.sqrt_ratio_le_ratio` the comparison of the two rates
+  (Atkinson–Han (5.6.6));
+* `Krylov.IsMinResIterate.norm_residual_le_of_isCoerciveWith` and
+  `Krylov.restarted_minRes_tendsto`: convergence of restarted minimal-residual iterations for a
+  bounded coercive `A` (Saad Thm 6.30).
+
 ## References
 
 [^saad-iterative]: Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition,
@@ -49,7 +62,9 @@ optimality statements. -/
 
 variable {lmin lmax : ℝ} (hl : 0 < lmin) (hll : lmin < lmax)
 
-private theorem notMem_Icc_zero (h : 0 < lmin) : (0 : ℝ) ∉ Set.Icc lmin lmax := fun hmem =>
+/-- A spectral interval bounded away from the origin does not contain `0`, which is what makes
+the shifted Chebyshev polynomial normalizable there. -/
+private theorem zero_notMem_Icc (h : 0 < lmin) : (0 : ℝ) ∉ Set.Icc lmin lmax := fun hmem =>
   absurd hmem.1 (not_le.mpr h)
 
 include hl hll
@@ -68,7 +83,7 @@ private theorem one_le_eval_T_ratio (m : ℕ) : 1 ≤ (T ℝ m).eval ((lmax + lm
 private theorem sSup_abs_eval_shifted_zero (m : ℕ) :
     sSup ((fun t => |(shifted m lmin lmax 0).eval t|) '' Set.Icc lmin lmax) =
       1 / (T ℝ m).eval ((lmax + lmin) / (lmax - lmin)) := by
-  rw [sSup_abs_eval_shifted m hll (notMem_Icc_zero hl)]
+  rw [sSup_abs_eval_shifted m hll (zero_notMem_Icc hl)]
   rw [show (lmax + lmin - 2 * 0) / (lmax - lmin) = (lmax + lmin) / (lmax - lmin) by ring_nf]
   rw [abs_of_pos (lt_of_lt_of_le zero_lt_one (one_le_eval_T_ratio hl hll m))]
 
@@ -96,7 +111,7 @@ private theorem chebPoly_degree_le (m : ℕ) : (chebPoly 𝕜 m lmin lmax).degre
 
 include hl hll in
 private theorem chebPoly_eval_zero (m : ℕ) : (chebPoly 𝕜 m lmin lmax).eval 0 = 1 := by
-  rw [chebPoly, eval_zero_map, shifted_eval_self m hll (notMem_Icc_zero hl)]
+  rw [chebPoly, eval_zero_map, shifted_eval_self m hll (zero_notMem_Icc hl)]
   simp
 
 end Chebyshev

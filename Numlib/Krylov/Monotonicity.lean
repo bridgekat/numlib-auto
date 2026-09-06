@@ -9,7 +9,9 @@ Specification-level versions of Fong–Saunders[^fong-saunders] Thm 2.3–2.5 an
 sequence of minimal-residual Krylov iterates of a symmetric coercive system (MINRES, CR, GMRES, …)
 started at `x₀ = 0`, `‖x_k‖` is nondecreasing, `‖x* - x_k‖` and `‖x* - x_k‖_A` are nonincreasing,
 and the normwise relative backward error is nonincreasing. Proved by identifying the iterates with
-the CR iterates (`CR.isMinResIterate` + uniqueness) and using the sign lemma of `CR.lean`.
+the CR iterates (`CR.isMinResIterate` + uniqueness) and using the sign lemma of
+`Numlib/Krylov/CR`. Alongside them, `‖A x_k‖` is nondecreasing from `x₀ = 0`
+(Choi[^choi] Lemma 2.20), which needs neither symmetry nor coercivity.
 
 The same argument run through the CG iterates gives the Galerkin counterparts, which hold on the
 same SPD systems but are older: `‖x_k‖` is nondecreasing from `x₀ = 0`, due to
@@ -20,6 +22,8 @@ is nonincreasing, Hestenes–Stiefel[^hestenes-stiefel] Thm 6:3.
 
 [^fong-saunders]: David Chin-Lung Fong and Michael Saunders, *CG versus MINRES: an empirical
   comparison*, SQU Journal for Science 17 (2012), 44–62.
+[^choi]: Sou-Cheng Choi, *Iterative Methods for Singular Linear Equations and Least-Squares
+  Problems*, PhD thesis, Stanford University, 2006.
 [^steihaug]: Trond Steihaug, *The conjugate gradient method and trust regions in large scale
   optimization*, SIAM Journal on Numerical Analysis 20 (1983), 626–637.
 [^hestenes-stiefel]: Magnus R. Hestenes and Eduard Stiefel, *Methods of conjugate gradients for
@@ -102,8 +106,7 @@ theorem backwardError_antitone {x : ℕ → E} (hx : ∀ k, IsMinResIterate A b 
     linarith
   rw [div_le_div_iff₀ (hden j) (hden i)]
   refine mul_le_mul (norm_residual_antitone hx hij) ?_ (le_of_lt (hden i)) (norm_nonneg _)
-  have := hmono hij
-  simp only at this
+  have hx' : ‖x i‖ ≤ ‖x j‖ := hmono hij
   nlinarith [mul_nonneg hα hnormA]
 
 /-- The special case `‖r_k‖ / ‖x_k‖` (Fong–Saunders, *CG versus MINRES*, (3.5) with `β = 0`),

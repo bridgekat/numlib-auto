@@ -52,7 +52,7 @@ remaining ones `|Q_k| ≤ ∏_{j < k} 2 |λ_j|/(1 - λ_j)`, because `|λ_i - λ_
 the product into the `k`-th power of `Krylov.wintherRate`, which tends to `0` by Cesàro
 convergence (`Krylov.winther_rate_tendsto_zero`).
 
-## The constant
+## Implementation notes
 
 `Krylov.winther` is proved with `c_k = (Δ/δ)^{1/(2k)} (2/k) ∑_{j < k} |λ_j|/(1 - λ_j)`, where
 Atkinson–Han state `(Δ/δ)^{3/(2k)}` in their (5.6.21). The exponent `3/2` is the price of their

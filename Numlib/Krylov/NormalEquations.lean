@@ -150,12 +150,11 @@ theorem isGalerkinIterate_adjoint_comp_iff_isMinRes (m : ℕ) (x : E) :
 `‖x* - y‖` over `y ∈ x₀ + 𝒦_m(Aᴴ A, Aᴴ r₀)` — the same affine space CGNR minimizes the residual
 over, with the other optimality.
 
-Statement correction: the plan asked for `Krylov.IsMinErrorIterate (Aᴴ ∘ A) xstar x₀ m x`.  That
-abbreviation is the SYMMLQ specification, whose subspace carries an extra application of the
-operator: `IsMinErrorIterate B xstar x₀ m` minimizes over `x₀ + B 𝒦_m(B, B (x* - x₀))`, which for
-`B = Aᴴ A` is `x₀ + 𝒦_m(Aᴴ A, Aᴴ A Aᴴ r₀)`, one step short of the space CGNE actually searches.
-The conclusion below is `Krylov.IsMinError` over the space the plan's prose names, and the node
-is renamed accordingly. -/
+The conclusion is `Krylov.IsMinError` over `𝒦_m(Aᴴ A, Aᴴ r₀)` and *not*
+`Krylov.IsMinErrorIterate (Aᴴ ∘ₗ A) xstar x₀ m x`: that abbreviation is the SYMMLQ
+specification, whose subspace carries an extra application of the operator, since
+`IsMinErrorIterate B xstar x₀ m` minimizes over `x₀ + B 𝒦_m(B, B (x* - x₀))`, which for
+`B = Aᴴ A` is `x₀ + 𝒦_m(Aᴴ A, Aᴴ A Aᴴ r₀)` — one step short of the space CGNE searches. -/
 theorem isMinError_of_isGalerkinIterate_comp_adjoint {u₀ u xstar : E} {m : ℕ}
     (hx₀ : x₀ = Astar u₀) (hstar : A xstar = b)
     (hu : IsGalerkinIterate (A ∘ₗ Astar) b u₀ m u) :
@@ -270,10 +269,13 @@ theorem iterate_succ (k : ℕ) :
     iterate A Astar b x₀ (k + 1) = step A Astar (iterate A Astar b x₀ k) :=
   Function.iterate_succ_apply' _ _ _
 
+/-- The iterate update `x' = x + α p` of one CGNR step. -/
 theorem step_x (s : State E) : (step A Astar s).x = s.x + alpha A Astar s • s.p := rfl
 
+/-- The residual update `r' = r - α A p` of one CGNR step. -/
 theorem step_r (s : State E) : (step A Astar s).r = s.r - alpha A Astar s • A s.p := rfl
 
+/-- The direction update `p' = Aᴴ r' + β p` of one CGNR step. -/
 theorem step_p (s : State E) :
     (step A Astar s).p = Astar (step A Astar s).r + beta A Astar s • s.p := rfl
 
@@ -335,7 +337,8 @@ structure State (E : Type*) where
   /-- The search direction. -/
   p : E
 
-/-- The CGNE step length `α = ‖r‖² / ‖p‖²`. -/
+/-- The CGNE step length `α = ‖r‖² / ‖p‖²`.  Unlike the other step lengths of this file it takes
+no operator, so `𝕜` is fixed only by the expected type and call sites read `(alpha s : 𝕜)`. -/
 noncomputable def alpha (s : State E) : 𝕜 := inner 𝕜 s.r s.r / inner 𝕜 s.p s.p
 
 /-- One CGNE step. -/
@@ -364,10 +367,13 @@ theorem iterate_succ (k : ℕ) :
     iterate A Astar b x₀ (k + 1) = step A Astar (iterate A Astar b x₀ k) :=
   Function.iterate_succ_apply' _ _ _
 
+/-- The iterate update `x' = x + α p` of one CGNE step. -/
 theorem step_x (s : State E) : (step A Astar s).x = s.x + (alpha s : 𝕜) • s.p := rfl
 
+/-- The residual update `r' = r - α A p` of one CGNE step. -/
 theorem step_r (s : State E) : (step A Astar s).r = s.r - (alpha s : 𝕜) • A s.p := rfl
 
+/-- The direction update `p' = Aᴴ r' + β p` of one CGNE step. -/
 theorem step_p (s : State E) :
     (step A Astar s).p = Astar (step A Astar s).r + beta A Astar s • s.p := rfl
 

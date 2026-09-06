@@ -5,13 +5,31 @@ import Numlib.Krylov.Iterate
 
 `CR.step` is one step of the CR recurrence (Saad, *Iterative Methods*[^saad-iterative]
 Alg 6.20, Fong–Saunders[^fong-saunders] Table 2.1, Choi[^choi] Table 2.12), with `q = A p`
-carried in the state. Main theorems: CR realises the minimal-residual specification
-(`CR.isMinResIterate`), the orthogonality relations (Fong–Saunders Thm 2.1 / Luenberger), the
-sign properties on SPD systems (Fong–Saunders Thm 2.2), and the resulting monotonicity of
-`‖x_k‖` (Fong–Saunders Thm 2.3, with Steihaug's strict form for a symmetric but possibly
-indefinite `A` in `CR.norm_iterate_lt_of_pos`). Also the general GCR lemma (Saad Lemma 6.21)
-that any `AᴴA`-orthogonal direction sequence spanning the Krylov spaces yields minimal-residual
-iterates.
+carried in the state so that each step applies `A` once.
+
+## Main definitions
+
+* `CR.State`: the iteration state, carrying `x_k`, `r_k`, `p_k` and `q_k = A p_k`;
+* `CR.alpha`, `CR.step`, `CR.init`, `CR.iterate`: the recurrence.
+
+## Main statements
+
+* `CR.isMinResIterate`: CR realises the minimal-residual specification of
+  `Numlib/Krylov/Iterate`, and `CR.isMinResIterate_of_no_breakdown` is the same for a symmetric,
+  possibly indefinite or singular `A` as long as no breakdown occurs;
+* `CR.inner_apply_direction_eq_zero`, `CR.inner_residual_apply_direction_eq_zero`,
+  `CR.inner_residual_apply_residual_eq_zero`: the orthogonality relations
+  (Fong–Saunders Thm 2.1 / Luenberger);
+* `CR.re_alpha_nonneg`, `CR.re_inner_direction_apply_direction_nonneg`,
+  `CR.re_inner_direction_nonneg`, `CR.re_inner_iterate_direction_nonneg`,
+  `CR.re_inner_residual_direction_nonneg`: the sign properties on SPD systems
+  (Fong–Saunders Thm 2.2);
+* `CR.norm_iterate_monotone`, `CR.norm_error_antitone`, `CR.energyNorm_error_antitone`: the
+  resulting monotonicity (Fong–Saunders Thm 2.3–2.5), with Steihaug's strict form for a
+  symmetric but possibly indefinite `A` in `CR.norm_iterate_lt_of_pos`;
+* `Krylov.isMinResIterate_of_orthogonal_directions`: the general GCR lemma (Saad Lemma 6.21),
+  that any `AᴴA`-orthogonal direction sequence spanning the Krylov spaces yields
+  minimal-residual iterates.
 
 ## References
 
@@ -31,9 +49,14 @@ namespace CR
 
 /-- State of the CR iteration: iterate, residual, direction, and `q = A p`. -/
 structure State (E : Type*) where
+  /-- The iterate `x_k`. -/
   x : E
+  /-- The residual `r_k = b - A x_k` (see `CR.residual_eq`). -/
   r : E
+  /-- The search direction `p_k`. -/
   p : E
+  /-- The image `q_k = A p_k` of the search direction (see `CR.q_eq`), carried so that a step
+  applies `A` only to the new residual. -/
   q : E
 
 /-- `α = ⟪r, A r⟫ / ⟪A p, A p⟫`. -/
@@ -112,6 +135,7 @@ private theorem beta_iterate (k : ℕ) : beta A (iterate A b x₀ k) =
 /-- `p₀ = r₀`. -/
 private theorem direction_zero : (iterate A b x₀ 0).p = (iterate A b x₀ 0).r := rfl
 
+/-- The state's residual field is the true residual. -/
 theorem residual_eq (k : ℕ) : (iterate A b x₀ k).r = b - A (iterate A b x₀ k).x := by
   induction k with
   | zero => rfl
@@ -172,17 +196,6 @@ private theorem inner_eq_zero_of_inner_direction {j : ℕ} {v : E}
     rw [hi, map_sub, map_smul, inner_sub_right, inner_smul_right, h _ le_rfl,
       h i (Nat.le_succ i), mul_zero, sub_zero]
 
-/-- `v ⟂ span s` follows from `v ⟂ s`. -/
-private theorem mem_orthogonal_span {s : Set E} {v : E} (h : ∀ u ∈ s, inner 𝕜 u v = 0) :
-    v ∈ (Submodule.span 𝕜 s)ᗮ := by
-  rw [Submodule.mem_orthogonal]
-  intro u hu
-  induction hu using Submodule.span_induction with
-  | mem x hx => exact h x hx
-  | zero => exact inner_zero_left _
-  | add x y _ _ hx hy => rw [inner_add_left, hx, hy, add_zero]
-  | smul c x _ hx => rw [inner_smul_left, hx, mul_zero]
-
 /-- Both `r_k` and `p_k` lie in `𝒦_{k+1}`. -/
 private theorem residual_direction_mem_subspace (k : ℕ) :
     (iterate A b x₀ k).r ∈ subspace A (b - A x₀) (k + 1) ∧
@@ -241,8 +254,6 @@ private theorem iterate_sub_mem (k : ℕ) :
     rw [h]
     exact Submodule.add_mem _ (subspace_mono A (b - A x₀) (Nat.le_succ k) ih)
       (Submodule.smul_mem _ _ (residual_direction_mem_subspace A b x₀ k).2)
-
-private theorem energyNorm_nonneg (x : E) : 0 ≤ energyNorm A x := Real.sqrt_nonneg _
 
 variable {A} (hA : A.IsSymmetricCoercive)
 include hA
@@ -539,7 +550,7 @@ theorem span_direction_eq (k : ℕ) :
 theorem isMinResIterate (k : ℕ) : IsMinResIterate A b x₀ k (iterate A b x₀ k).x := by
   refine IsMinRes.iff_isPetrovGalerkin.2 ⟨iterate_sub_mem A b x₀ k, ?_⟩
   rw [← residual_eq, ← span_direction_eq b x₀ hA k, Submodule.map_span]
-  refine mem_orthogonal_span ?_
+  refine Submodule.mem_orthogonal_span.2 ?_
   rintro _ ⟨_, ⟨i, rfl⟩, rfl⟩
   rw [← inner_conj_symm, inner_residual_apply_direction_eq_zero b x₀ hA i.2, map_zero]
 
@@ -588,8 +599,9 @@ private theorem re_alpha_nonneg' (hAs : A.IsSymmetric)
   rw [alpha_eq_ofReal b x₀ hAs k, RCLike.ofReal_re]
   exact div_nonneg (hnn k) (sq_nonneg _)
 
-/-- Fong–Saunders, *CG versus MINRES*, Thm 2.2 (a)–(b): `α_i ≥ 0`, `β_i ≥ 0` (real,
-nonnegative). -/
+/-- Fong–Saunders, *CG versus MINRES*, Thm 2.2 (a): the step lengths `α_i` are nonnegative
+reals.  Clause (b), the same for the direction coefficients `β_i`, is used only inside this
+module. -/
 theorem re_alpha_nonneg (k : ℕ) : 0 ≤ RCLike.re (alpha A (iterate A b x₀ k)) :=
   re_alpha_nonneg' b x₀ hA.isSymmetric (re_inner_residual_self_nonneg b x₀ hA) k
 
@@ -816,8 +828,9 @@ private theorem re_inner_apply_add (u w : E) :
   simp only [map_add, RCLike.conj_re]
   ring
 
-/-- Fong–Saunders, *CG versus MINRES*, Thm 2.5: `‖x* - x_k‖_A` is nonincreasing (strictly while
-`r_k ≠ 0`). -/
+/-- Fong–Saunders, *CG versus MINRES*, Thm 2.5: `‖x* - x_k‖_A` is nonincreasing.  The paper
+states the strict decrease, which holds while the iteration is still moving; the nonstrict form
+proved here is the one valid at every step, the iterate being stationary past termination. -/
 theorem energyNorm_error_antitone [FiniteDimensional 𝕜 E] {xstar : E} (hstar : A xstar = b) :
     Antitone fun k => energyNorm A (xstar - (iterate A b x₀ k).x) := by
   refine antitone_nat_of_succ_le fun k => ?_
@@ -848,13 +861,12 @@ a symmetric, possibly indefinite `A` and the CR iterates from `x₀ = 0`, if the
 terminates at step `ℓ` and `0 < re ⟪r_j, A r_j⟫` for every `j < ℓ`, then `‖x_i‖ < ‖x_{i+1}‖` for
 every `i < ℓ`.
 
-Statement correction: the plan asked only for `⟪r_j, A r_j⟫ ≠ 0` for `j < ℓ` together with
-positivity for `j < k`.  That is not enough.  The paper's proof of Thm 2.2 (d) expands `r_i` as
-`A (x_ℓ - x_i) = ∑_{m ≥ i} α_m A p_m`, so a single negative `α_m` beyond `k` — that is, a single
-`re ⟪r_m, A r_m⟫ < 0` — can turn `re ⟪r_i, p_j⟫` negative, and the chain (f) ⇒ (d) ⇒ (e) breaks.
-Positivity is therefore assumed up to the termination index, which is how the paper's hypothesis
-reads when it is read globally.  The plan's second hypothesis `0 < re ⟪A p_j, p_j⟫` is then
-redundant: `⟪r_j, A p_j⟫ = ⟪r_j, A r_j⟫ ≠ 0` already forces `A p_j ≠ 0`.
+Positivity is assumed all the way up to the termination index `ℓ`, not merely up to `i`, and
+weakening it to nonvanishing is not enough: the paper's proof of Thm 2.2 (d)
+expands `r_i` as `A (x_ℓ - x_i) = ∑_{m ≥ i} α_m A p_m`, so a single `re ⟪r_m, A r_m⟫ < 0` beyond
+`i` turns `re ⟪r_i, p_j⟫` negative and breaks the chain (f) ⇒ (d) ⇒ (e).  A separate
+nondegeneracy hypothesis `0 < re ⟪A p_j, p_j⟫` would be redundant, since
+`⟪r_j, A p_j⟫ = ⟪r_j, A r_j⟫ ≠ 0` already forces `A p_j ≠ 0`.
 
 Transfers to MINRES through `CR.isMinResIterate_of_no_breakdown`. -/
 theorem norm_iterate_lt_of_pos (hAs : A.IsSymmetric) {ℓ : ℕ}
@@ -911,10 +923,8 @@ omit hA in
 and Least-Squares Problems*): as long as no breakdown occurs (`⟪r_j, A r_j⟫ ≠ 0` and
 `A p_j ≠ 0` for `j < k`), the iterate `x_k` is the minimal-residual iterate.
 
-Statement correction: the skeleton put this theorem inside the `include hA` block, so the
-elaborated statement also carried the ambient `A.IsSymmetricCoercive`, making it a special case
-of `CR.isMinResIterate` rather than the indefinite/singular result the docstring describes.
-`omit hA in` restores the intended generality; nothing else changed. -/
+The section's coercivity hypothesis is deliberately omitted here: carrying it would make this a
+special case of `CR.isMinResIterate` instead of the indefinite or singular statement. -/
 theorem isMinResIterate_of_no_breakdown (hA : A.IsSymmetric) (k : ℕ)
     (h1 : ∀ j < k, inner 𝕜 (iterate A b x₀ j).r (A (iterate A b x₀ j).r) ≠ 0)
     (h2 : ∀ j < k, (iterate A b x₀ j).q ≠ 0) :
@@ -937,7 +947,7 @@ theorem isMinResIterate_of_no_breakdown (hA : A.IsSymmetric) (k : ℕ)
       (subspace_le_dirSpan b x₀ k fun i hi => apply_direction_mem_dirSpan b x₀ i (hdeg i hi))
   refine IsMinRes.iff_isPetrovGalerkin.2 ⟨iterate_sub_mem A b x₀ k, ?_⟩
   rw [← residual_eq, ← hspan, Submodule.map_span]
-  refine mem_orthogonal_span ?_
+  refine Submodule.mem_orthogonal_span.2 ?_
   rintro _ ⟨_, ⟨i, rfl⟩, rfl⟩
   rw [← inner_conj_symm, hinv.rq i i.2, map_zero]
 
@@ -946,9 +956,8 @@ end CR
 namespace Krylov
 
 /-- Saad, *Iterative Methods*, Lemma 6.21 (GCR / ORTHOMIN / ORTHODIR): if `p_0, …, p_{m-1}` are
-`AᴴA`-orthogonal and
-span `𝒦_m(A, r₀)`, then `x_m = x₀ + ∑_j (⟪r_j, A p_j⟫ / ‖A p_j‖²) p_j` (with `r_j` the
-successive residuals) is the minimal-residual iterate. -/
+`AᴴA`-orthogonal and span `𝒦_m(A, r₀)`, then `x_m = x₀ + ∑_j (⟪r_j, A p_j⟫ / ‖A p_j‖²) p_j`
+(with `r_j` the successive residuals) is the minimal-residual iterate. -/
 theorem isMinResIterate_of_orthogonal_directions {A : E →ₗ[𝕜] E} {b x₀ : E} {m : ℕ}
     (p : ℕ → E) (horth : ∀ i < m, ∀ j < m, i ≠ j → inner 𝕜 (A (p i)) (A (p j)) = 0)
     (hne : ∀ i < m, A (p i) ≠ 0)
@@ -989,14 +998,9 @@ theorem isMinResIterate_of_orthogonal_directions {A : E →ₗ[𝕜] E} {b x₀ 
       rw [hres l, inner_sub_right, inner_smul_right, ih (by omega),
         horth i hi l (by omega) (by omega), mul_zero, sub_zero]
   refine IsMinRes.iff_isPetrovGalerkin.2 ⟨hspan ▸ hmem m le_rfl, ?_⟩
-  rw [← hspan, Submodule.map_span, Submodule.mem_orthogonal]
-  intro u hu
-  induction hu using Submodule.span_induction with
-  | mem y hy =>
-    obtain ⟨_, ⟨i, rfl⟩, rfl⟩ := hy
-    exact hstay i i.2 m (by omega) le_rfl
-  | zero => exact inner_zero_left _
-  | add y z _ _ hy hz => rw [inner_add_left, hy, hz, add_zero]
-  | smul c y _ hy => rw [inner_smul_left, hy, mul_zero]
+  rw [← hspan, Submodule.map_span]
+  refine Submodule.mem_orthogonal_span.2 ?_
+  rintro _ ⟨_, ⟨i, rfl⟩, rfl⟩
+  exact hstay i i.2 m (by omega) le_rfl
 
 end Krylov
