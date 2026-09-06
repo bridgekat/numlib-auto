@@ -126,9 +126,11 @@ dependants must add is `[Nontrivial n]` wherever they route through the block-tr
   `LinearSolve/Projection/Optimality` each build it inline.
 * **`IsStronglyMonotoneWith`** in `Nonlinear/FixedPoint` — seven consumers, several in
   `Variational/Inequality`.
-* **`Matrix.EntrywiseLE.pow`** in `LinearAlgebra/Matrix/Order`, and Saad Thm 1.28 and 1.31–1.33.
-  `Matrix/Order.toml` says the last three are "not needed by any surface"; the ILU existence
-  theorem (Saad Thm 10.2) cannot be proved without Thm 1.33, so that sentence needs revising too.
+* **Saad Thm 1.31–1.33** (M-matrix characterizations). `Matrix/Order.toml` says they are "not needed
+  by any surface"; the ILU existence theorem (Saad Thm 10.2) cannot be proved without Thm 1.33, so
+  that sentence needs revising too. `Matrix.EntrywiseLE.pow` and Thm 1.28 are **done**, in
+  `LinearAlgebra/Matrix/PerronFrobenius` rather than in `Matrix/Order` — which is where the plan
+  puts them and where `lint` enforces it.
 * **A projection-gap lemma** in `Analysis/InnerProductSpace/Projection/Angle`: from
   `‖w_j − x_j‖ ≤ δ` for two bases and a coordinate bound, conclude `‖P_X − P_W‖ ≤ M δ`. It is the
   single missing statement for `Krylov.gap_subspaceIterate_le`, which is in turn the only thing
@@ -171,6 +173,35 @@ proof carries over with three substitutions: `Real.map_volume_mul_left` becomes
 and `Measure.quasiMeasurePreserving_smul` is already general. The step expected to need real work is
 `dilationₗ_comp`, where a single `mul_assoc` chain has to split into an outer scalar `smul_smul` and
 an inner argument one. Three call sites in `Haar.lean` then need updating.
+
+### R13. Two Hilbert-space facts are private in a surface file
+
+`Numlib/Analysis/InnerProductSpace/WeakCompactness.lean` should take, from
+`NumlibSurface/AtkinsonHan/Chapter11/Section03.lean`: weak sequential lower semicontinuity of a
+convex continuous functional (`le_of_weak_tendsto_of_eventually_le`) and its eventual form. They are
+about a functional, not about a variational inequality, and Atkinson–Han Thm 11.4.6 wants them too.
+
+The same file should **state the inner-product form of weak convergence itself**. `mem_of_weak_tendsto_of_convex`
+asks for the `StrongDual` form, so every consumer that has convergence of inner products pays for the
+bridge; the Chapter 11 surface has that bridge private today.
+
+Also missing and three lines: `FiniteDifference.IsSolution.mono` (a solution on `[0, T]` restricts
+to `[0, T']`), without which Atkinson–Han Prop 6.2.6 cannot be *stated*. It is private in the
+Chapter 6 surface. And `Numlib/FiniteDifference/LaxEquivalence.lean` should import
+`Mathlib.Analysis.Calculus.Deriv.Slope`, which its consumers currently import for it.
+
+### R14. Two `private` declarations in `Complexify` are the file's natural API
+
+`Numlib/LinearAlgebra/Matrix/PerronFrobenius` had to re-prove both:
+`exists_eigenvector_norm_eq` (25 lines — the spectral radius is attained at a complex eigenvalue
+with an eigenvector) and `norm_toLp_mulVec_le` (2 lines). The first in particular is what anyone
+reaching for `complexSpectralRadius` will want next.
+
+The same pattern elsewhere: `NormedRing.norm_inverse_one_sub_le'` in `Analysis/Normed/Ring/Inverse`
+is private and its public form needs `NormOneClass`, which `X →L[𝕜] X` lacks for trivial `X`; two
+modules have now routed around it. And `Krylov.norm_sum_smul_vec_eq`,
+`mem_subspace_iff_exists_coeffs`, `residual_coeff_eq_zero` in `Krylov/Hessenberg`, plus
+`Lanczos.mulVec_tridiagExt_castSucc`, were duplicated privately by `Krylov/Singular`.
 
 ### R7. Plan bookkeeping
 
