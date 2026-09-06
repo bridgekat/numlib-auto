@@ -272,8 +272,8 @@ theorem theorem_11_3_9 (hM : a.IsBoundedWith M) (hα : 0 < α) (ha : a.IsEllipti
         (u₁ ∈ K ∧ ∀ v ∈ K, a u₁ (v - u₁) + j v - j u₁ ≥ ℓ₁ (v - u₁)) →
         (u₂ ∈ K ∧ ∀ v ∈ K, a u₂ (v - u₂) + j v - j u₂ ≥ ℓ₂ (v - u₂)) →
         ‖u₁ - u₂‖ ≤ 1 / α * ‖ℓ₁ - ℓ₂‖ := by
-  have hcoer : SesqForm.IsCoerciveWith (a.toCLM hM) α := (a.isEllipticWith_iff_isCoerciveWith hM).1
-    ha
+  have hcoer : SesqForm.IsCoerciveWith (a.toCLM hM) α :=
+    (a.isEllipticWith_iff_isCoerciveWith hM).1 ha
   have hmono : IsStronglyMonotoneWith ℝ (BilinForm.toOperator a hM : V → V) α :=
     LinearMap.IsCoerciveWith.isStronglyMonotoneWith
       ((SesqForm.isCoerciveWith_iff_toOperator (a.toCLM hM) α).mp hcoer)

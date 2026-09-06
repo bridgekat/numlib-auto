@@ -75,6 +75,7 @@ private theorem isStronglyMonotoneWith_of (hmono : Chapter05.StronglyMonotoneWit
 /-- The constant `c` of the square-rooted error bounds (11.4.7) and (11.4.27). -/
 private noncomputable def falkConst (c₀ M : ℝ) : ℝ := max (M / c₀) (Real.sqrt (2 / c₀))
 
+/-- The constant of the square-rooted error bounds is nonnegative. -/
 private theorem falkConst_nonneg (hc₀ : 0 < c₀) (hM : 0 ≤ M) : 0 ≤ falkConst c₀ M :=
   le_max_of_le_left (div_nonneg hM hc₀.le)
 
@@ -158,7 +159,7 @@ by Cauchy–Schwarz, the Lipschitz bound and Young's inequality.  No closedness,
 topology is used, and `K_h` need not meet `K`.
 
 For a variational *equation* — `K` a subspace, `j = 0`, `K_h ⊆ K` — both residuals vanish and this
-is Céa's lemma, which this surface has as `AtkinsonHan.Chapter09.theorem_9_1_3`. -/
+is Céa's lemma, which this surface has as `AtkinsonHan.Chapter09.proposition_9_1_3`. -/
 theorem theorem_11_4_2 (hc₀ : 0 < c₀) (hM : 0 ≤ M) (hmono : Chapter05.StronglyMonotoneWith A c₀)
     (hlip : ∀ v₁ v₂ : V, ‖A v₁ - A v₂‖ ≤ M * ‖v₁ - v₂‖)
     (hu : IsVariationalInequalitySolution A j f K u)

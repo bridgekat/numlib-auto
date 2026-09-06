@@ -47,13 +47,6 @@ namespace Chapter10
 
 variable {a : BilinForm V} {ℓ : StrongDual ℝ V} {M c₀ δ : ℝ} {Vh : Submodule ℝ V} {u uh : V}
 
-/-- The infimum over a subspace, as the book writes it, is the distance to that subspace.  This is
-the bridge between the `inf_{v_h ∈ V_h}` of (10.4.5) and the `Metric.infDist` in which
-`corollary_10_4_4_abstract` states its approximation hypothesis. -/
-theorem iInf_norm_sub_eq_infDist (w : V) (K : Submodule ℝ V) :
-    (⨅ v : K, ‖w - (v : V)‖) = Metric.infDist w (K : Set V) := by
-  simp [Metric.infDist_eq_iInf, dist_eq_norm]
-
 /-- The infimum over a subspace is bounded below by `0`. -/
 private theorem bddBelow_norm_sub (w : V) (K : Submodule ℝ V) :
     BddBelow (Set.range fun v : K => ‖w - (v : V)‖) :=
@@ -146,7 +139,8 @@ be approximated from `V_h` to within `δ ‖g‖_H`, then
 In the book `δ = c h` follows from the `H²` regularity bound (10.4.9) together with the
 interpolation error estimate, neither of which is available here.  The approximation hypothesis is
 stated with `Metric.infDist`, the form the backbone's `norm_map_le_of_dual_approx` takes it in;
-`iInf_norm_sub_eq_infDist` identifies it with the book's `inf_{v_h ∈ V_h} ‖φ_g − v_h‖_V`. -/
+`AtkinsonHan.Chapter09.iInf_norm_sub_eq_infDist` identifies it with the book's
+`inf_{v_h ∈ V_h} ‖φ_g − v_h‖_V`. -/
 theorem corollary_10_4_4_abstract (hM : a.IsBoundedWith M) (hδ : 0 ≤ δ) (ι : V →L[ℝ] H)
     (hu : ∀ v, a u v = ℓ v) (huh : GalerkinProblem a ℓ Vh uh)
     (hdual : ∀ g : H, ∃ φ : V, DualProblem a ι g φ ∧

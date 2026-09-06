@@ -16,6 +16,14 @@ from `x₀ = 0`, with `‖·‖` the 2-norm on vectors. This file introduces the
 glue lemmas to the backbone (`Numlib`), and formalizes the unnumbered facts of §1 and §1.1:
 the Lanczos relation `A V_k = V_{k+1} T̲_k` with termination at `ℓ ≤ n`, the parametrization
 `x_k = V_k y_k` of the `k`-th Krylov subspace, and the existence and uniqueness of `x*`.
+
+## Notation
+
+Both notations are `scoped` to the `FongSaunders` namespace and are used throughout §2–§5.
+
+* `⟪x, y⟫_ℝ` is the paper's real inner product `xᵀ y`, that is `inner ℝ x y`.
+* `A ⬝ x` is the paper's matrix–vector product, that is `mulVecE A x = Matrix.toEuclideanLin A x`.
+  It binds tighter than the arithmetic operators, so `r - α • A ⬝ p` parses as expected.
 -/
 
 namespace FongSaunders

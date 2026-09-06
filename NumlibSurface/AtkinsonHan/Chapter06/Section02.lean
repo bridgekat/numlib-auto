@@ -158,8 +158,9 @@ theorem solutionOperator_zero : solutionOperator L hdense hT hc₀ hwp 0 = 1 :=
   (solutionOperator_spec L hdense hT hc₀ hwp).1
 
 /-- `sup_{0 ≤ t ≤ T} ‖S(t)‖ ≤ c₀`, the stability bound of (6.2.3). -/
-theorem norm_solutionOperator_le : ∀ t ∈ Icc (0 : ℝ) T, ‖solutionOperator L hdense hT hc₀ hwp t‖
-    ≤ c₀ := (solutionOperator_spec L hdense hT hc₀ hwp).2.1
+theorem norm_solutionOperator_le :
+    ∀ t ∈ Icc (0 : ℝ) T, ‖solutionOperator L hdense hT hc₀ hwp t‖ ≤ c₀ :=
+  (solutionOperator_spec L hdense hT hc₀ hwp).2.1
 
 /-- `S(t) u₀ = u(t)` for an initial value in the domain of `L`: the solution operator really does
 carry the solution. -/
@@ -259,6 +260,7 @@ def IsConvergent (S C : ℝ → V →L[ℝ] V) (T Δ₀ : ℝ) : Prop :=
     Tendsto (fun i => (m i : ℝ) * Δt i) atTop (𝓝 t) →
     Tendsto (fun i => ‖(C (Δt i) ^ m i - S t) u₀‖) atTop (𝓝 0)
 
+/-- Definition 6.2.9 is the backbone's convergence. -/
 theorem isConvergent_iff (S C : ℝ → V →L[ℝ] V) (T Δ₀ : ℝ) :
     IsConvergent S C T Δ₀ ↔ FiniteDifference.IsConvergent S C T Δ₀ := by
   simp only [IsConvergent, FiniteDifference.IsConvergent, sub_apply]
@@ -268,6 +270,7 @@ the horizon, `m Δt ≤ T` and `0 < Δt ≤ Δ₀`, are bounded in norm uniforml
 def IsStable (C : ℝ → V →L[ℝ] V) (T Δ₀ : ℝ) : Prop :=
   ∃ M₀ : ℝ, ∀ Δt ∈ Ioc (0 : ℝ) Δ₀, ∀ m : ℕ, (m : ℝ) * Δt ≤ T → ‖C Δt ^ m‖ ≤ M₀
 
+/-- Definition 6.2.10 is the backbone's stability, definitionally. -/
 theorem isStable_iff (C : ℝ → V →L[ℝ] V) (T Δ₀ : ℝ) :
     IsStable C T Δ₀ ↔ FiniteDifference.IsStable C T Δ₀ := Iff.rfl
 

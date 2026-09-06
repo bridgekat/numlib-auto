@@ -125,6 +125,58 @@ private theorem div_le_of_two_mul_le {Γ x B : ℝ} (h2 : 2 * Γ ≤ B) (hB : 0 
   rw [div_le_iff₀ hpos]
   nlinarith [mul_pos hB (show (0 : ℝ) < 1 / 2 - x by linarith)]
 
+section ProjectionMap
+
+variable {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V]
+
+/-- The map `F_n v = v + R_n (P_n T v - v)` of §12.7.1, where `e` carries the inverse
+`R_n = (I - P_n T'(u*))⁻¹`.  Its fixed points are the solutions of the projection equation
+`v = P_n T v`, and its increments are the projected linearization remainders, which is what makes
+it a contraction of a small ball about `u*`. -/
+private noncomputable def projectionMap (e : V ≃L[ℝ] V) (P : V →L[ℝ] V) (T : V → V) (v : V) : V :=
+  v + e.symm (P (T v) - v)
+
+/-- The fixed points of `F_n` are exactly the solutions of the projection equation, because
+`R_n` is injective. -/
+private theorem projectionMap_eq_self_iff (e : V ≃L[ℝ] V) (P : V →L[ℝ] V) (T : V → V) (u : V) :
+    projectionMap e P T u = u ↔ P (T u) = u := by
+  have hzero : e.symm (P (T u) - u) = 0 ↔ P (T u) - u = 0 := by
+    refine ⟨fun h => ?_, fun h => by rw [h, map_zero]⟩
+    have hx := congrArg (fun y : V => e y) h
+    simpa using hx
+  rw [projectionMap]
+  refine ⟨fun h => ?_, fun h => by rw [h, sub_self, map_zero, add_zero]⟩
+  rw [← sub_eq_zero]
+  exact hzero.1 (by simpa using sub_eq_zero_of_eq h)
+
+/-- `F_n v - F_n w = R_n P_n (R(v; u*) - R(w; u*))`: the increment of `F_n` sees the nonlinearity
+only through the linearization remainder at `u*`. -/
+private theorem projectionMap_sub (e : V ≃L[ℝ] V) {P : V →L[ℝ] V} {T : V → V}
+    {T' : V → V →L[ℝ] V} {u : V} (he : (e : V →L[ℝ] V) = 1 - P ∘L T' u) (v w : V) :
+    projectionMap e P T v - projectionMap e P T w
+      = e.symm (P (T v - T w - T' u (v - w))) := by
+  have he' : ∀ x : V, e x = x - P (T' u x) := by
+    intro x
+    have hx := congrArg (fun Z : V →L[ℝ] V => Z x) he
+    simpa using hx
+  have hinv : ∀ x : V, e.symm (x - P (T' u x)) = x := fun x => by
+    rw [← he' x]; exact e.symm_apply_apply x
+  have harg : (v - w) - P (T' u (v - w)) + ((P (T v) - v) - (P (T w) - w))
+      = P (T v - T w - T' u (v - w)) := by
+    simp only [map_sub]
+    abel
+  calc projectionMap e P T v - projectionMap e P T w
+      = (v - w) + e.symm ((P (T v) - v) - (P (T w) - w)) := by
+        simp only [projectionMap, map_sub]
+        abel
+    _ = e.symm ((v - w) - P (T' u (v - w))) + e.symm ((P (T v) - v) - (P (T w) - w)) := by
+        rw [hinv (v - w)]
+    _ = e.symm ((v - w) - P (T' u (v - w)) + ((P (T v) - v) - (P (T w) - w))) :=
+        (map_add _ _ _).symm
+    _ = e.symm (P (T v - T w - T' u (v - w))) := by rw [harg]
+
+end ProjectionMap
+
 /-- **The linearization analysis of §12.7.1, with the error bound of Exercise 12.7.3.**  Let `T` be
 completely continuous on an open set `H` of a Banach space, twice differentiable on a closed ball
 about a fixed point `u*` with `‖T''‖ ≤ M` there, and let `I - T'(u*)` be invertible.  Let the
@@ -216,29 +268,12 @@ theorem exercise_12_7_3 {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [
     theorem_12_1_2 (μ := (1 : ℝ)) one_ne_zero (hPidem n) e (by rw [he, one_smul]) (by linarith)
   have hRB : ‖(en.symm : V →L[ℝ] V)‖ ≤ B :=
     hennorm.trans (div_le_of_two_mul_le hBle hB0 hn1)
-  have hen' : ∀ x : V, en x = x - P n (T' ustar x) := by
-    intro x
-    have hx := congrArg (fun Z : V →L[ℝ] V => Z x) hen
-    simpa using hx
-  have hinv : ∀ x : V, en.symm (x - P n (T' ustar x)) = x := fun x => by
-    rw [← hen' x]; exact en.symm_apply_apply x
+  have hen1 : (en : V →L[ℝ] V) = 1 - P n ∘L T' ustar := by rw [hen, one_smul]
   -- the map whose fixed points are the projection solutions
-  obtain ⟨F, hF⟩ : ∃ F : V → V, ∀ v, F v = v + en.symm (P n (T v) - v) := ⟨_, fun _ => rfl⟩
-  have hFsub : ∀ v w : V, F v - F w = en.symm (P n (T v - T w - T' ustar (v - w))) := by
-    intro v w
-    have harg : (v - w) - P n (T' ustar (v - w))
-        + ((P n (T v) - v) - (P n (T w) - w)) = P n (T v - T w - T' ustar (v - w)) := by
-      simp only [map_sub]
-      abel
-    calc F v - F w = (v - w) + en.symm ((P n (T v) - v) - (P n (T w) - w)) := by
-          rw [hF v, hF w]
-          simp only [map_sub]
-          abel
-      _ = en.symm ((v - w) - P n (T' ustar (v - w)))
-            + en.symm ((P n (T v) - v) - (P n (T w) - w)) := by rw [hinv (v - w)]
-      _ = en.symm ((v - w) - P n (T' ustar (v - w))
-            + ((P n (T v) - v) - (P n (T w) - w))) := (map_add _ _ _).symm
-      _ = en.symm (P n (T v - T w - T' ustar (v - w))) := by rw [harg]
+  obtain ⟨F, hF⟩ : ∃ F : V → V, ∀ v, F v = projectionMap en (P n) T v := ⟨_, fun _ => rfl⟩
+  have hFsub : ∀ v w : V, F v - F w = en.symm (P n (T v - T w - T' ustar (v - w))) := fun v w => by
+    rw [hF v, hF w]
+    exact projectionMap_sub en hen1 v w
   -- `F` is a half-contraction of the small ball
   have hcontract : ∀ v ∈ Metric.closedBall ustar r, ∀ w ∈ Metric.closedBall ustar r,
       ‖F v - F w‖ ≤ 1 / 2 * ‖v - w‖ := by
@@ -279,7 +314,8 @@ theorem exercise_12_7_3 {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [
   -- the displacement at the centre is the approximation error of `u*`
   have hcenter : ‖F ustar - ustar‖ ≤ B * ‖ustar - P n ustar‖ := by
     have hid : F ustar - ustar = en.symm (P n ustar - ustar) := by
-      rw [hF ustar, hfix]; abel
+      rw [hF ustar, projectionMap, hfix]
+      abel
     rw [hid]
     calc ‖en.symm (P n ustar - ustar)‖
         ≤ ‖(en.symm : V →L[ℝ] V)‖ * ‖P n ustar - ustar‖ :=
@@ -305,18 +341,9 @@ theorem exercise_12_7_3 {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [
   have hcon : Chapter05.ContractiveOn F (Metric.closedBall ustar r) (1 / 2) :=
     ⟨by norm_num, by norm_num, fun u hu v hv => hcontract u hu v hv⟩
   -- the fixed points of `F` are exactly the projection solutions
-  have hzero : ∀ x : V, en.symm x = 0 ↔ x = 0 := by
-    intro x
-    refine ⟨fun h => ?_, fun h => by rw [h, map_zero]⟩
-    have hx := congrArg (fun y : V => en y) h
-    simpa using hx
-  have hfixiff : ∀ u : V, F u = u ↔ P n (T u) = u := by
-    intro u
+  have hfixiff : ∀ u : V, F u = u ↔ P n (T u) = u := fun u => by
     rw [hF u]
-    refine ⟨fun h => ?_, fun h => by rw [h, sub_self, map_zero, add_zero]⟩
-    have h0 : en.symm (P n (T u) - u) = 0 := by simpa using sub_eq_zero_of_eq h
-    rw [← sub_eq_zero]
-    exact (hzero _).1 h0
+    exact projectionMap_eq_self_iff en (P n) T u
   obtain ⟨u0, ⟨hu0mem, hu0fix⟩, hu0uniq⟩ :=
     (Chapter05.theorem_5_1_3 Metric.isClosed_closedBall ⟨ustar, hcen'⟩ hmaps hcon).1
   refine ⟨⟨u0, ⟨hu0mem, (hfixiff u0).1 hu0fix⟩, ?_⟩, ?_⟩

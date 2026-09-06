@@ -37,10 +37,11 @@ route of the backbone's `existsUnique_isMinOn_energy_add`.  The statement is the
 * `theorem_11_2_1` — the minimization problem (11.2.1) and the variational inequality (11.2.2)
   have the same solutions.
 * `theorem_11_2_2` — the energy of a bounded symmetric `V`-elliptic form has exactly one minimizer
-  on a nonempty closed convex set, and the minimizers are the solutions of the variational
-  inequality.
-* `exercise_11_2_1` — the same over a complex Hilbert space, for a Hermitian `V`-elliptic
-  sesquilinear form.
+  on a nonempty closed convex set; `theorem_11_2_2_iff` — its minimizers are the solutions of the
+  variational inequality.
+* `exercise_11_2_1` — both claims at once over a complex Hilbert space, for a Hermitian
+  `V`-elliptic sesquilinear form.  They stay bundled there because the two halves share the
+  passage to the real form `b(u,v) = re a(u,v)` that is the whole of the proof.
 
 Not formalized: Examples 11.2.3 and 11.2.4, the obstacle problem and the simplified friction
 problem, both of which name a domain and its Sobolev spaces.
@@ -89,11 +90,8 @@ semicontinuous on `K`.  Then the energy
 
   `E v = ½ a(v,v) + j(v) - ℓ(v)`
 
-has exactly one minimizer on `K`, and a point `u ∈ K` minimizes it if and only if
-
-  `a(u, v - u) + j(v) - j(u) ≥ ℓ(v - u)`  for every `v ∈ K`,
-
-which is the variational inequality (11.3.12) of §11.3.
+has exactly one minimizer on `K`.  That the minimizers are the solutions of the variational
+inequality (11.3.12) is `theorem_11_2_2_iff`.
 
 The book derives the existence clause from its Theorem 3.3.12, using the reflexivity of `V`; the
 proof used here is the Hilbert-space one, in which the parallelogram law makes every minimizing
@@ -101,16 +99,27 @@ sequence Cauchy and the affine minorant of Lemma 11.3.5 makes the energy bounded
 theorem theorem_11_2_2 (hM : a.IsBoundedWith M) (hα : 0 < α) (ha : a.IsEllipticWith α)
     (hs : LinearMap.BilinForm.IsSymm a) (ℓ : StrongDual ℝ V) {j : V → ℝ} {K : Set V}
     (hKne : K.Nonempty) (hKcl : IsClosed K) (hKcv : Convex ℝ K) (hj : ConvexOn ℝ K j)
-    (hjlsc : LowerSemicontinuousOn j K) :
-    (∃! u, u ∈ K ∧ IsMinOn (a.energy ℓ + j) K u) ∧
-      ∀ u ∈ K, (IsMinOn (a.energy ℓ + j) K u ↔
-        ∀ v ∈ K, a u (v - u) + j v - j u ≥ ℓ (v - u)) := by
+    (hjlsc : LowerSemicontinuousOn j K) : ∃! u, u ∈ K ∧ IsMinOn (a.energy ℓ + j) K u :=
+  existsUnique_isMinOn_energy_add ((BilinForm.isSymm_iff_isHermitian hM).mp hs) hα
+    ((BilinForm.isEllipticWith_iff_isCoerciveWith hM).mp ha) ℓ hKne hKcl hKcv hj hjlsc
+
+/-- **Theorem 11.2.2**, characterization: `u ∈ K` minimizes `E v = ½ a(v,v) + j(v) - ℓ(v)` over
+`K` if and only if
+
+  `a(u, v - u) + j(v) - j(u) ≥ ℓ(v - u)`  for every `v ∈ K`,
+
+which is the variational inequality (11.3.12) of §11.3, in the `≥` spelling §11.3 uses throughout.
+Neither closedness of `K` nor lower semicontinuity of `j` is needed here; they are what make a
+minimizer exist. -/
+theorem theorem_11_2_2_iff (hM : a.IsBoundedWith M) (hα : 0 < α) (ha : a.IsEllipticWith α)
+    (hs : LinearMap.BilinForm.IsSymm a) (ℓ : StrongDual ℝ V) {j : V → ℝ} {K : Set V}
+    (hKcv : Convex ℝ K) (hj : ConvexOn ℝ K j) {u : V} (hu : u ∈ K) :
+    IsMinOn (a.energy ℓ + j) K u ↔ ∀ v ∈ K, a u (v - u) + j v - j u ≥ ℓ (v - u) := by
   have hh : SesqForm.IsHermitian (𝕜 := ℝ) (a.toCLM hM) :=
     (BilinForm.isSymm_iff_isHermitian hM).mp hs
   have hcoer : SesqForm.IsCoerciveWith (𝕜 := ℝ) (a.toCLM hM) α :=
     (BilinForm.isEllipticWith_iff_isCoerciveWith hM).mp ha
-  refine ⟨existsUnique_isMinOn_energy_add hh hα hcoer ℓ hKne hKcl hKcv hj hjlsc,
-    fun u hu => (isMinOn_energy_add_iff hh hα.le hcoer ℓ hKcv hj hu).trans ?_⟩
+  refine (isMinOn_energy_add_iff hh hα.le hcoer ℓ hKcv hj hu).trans ?_
   exact (isVariationalInequalitySolution_toOperator_iff hM j ℓ K u).trans
     ⟨fun h => h.2, fun h => ⟨hu, h⟩⟩
 

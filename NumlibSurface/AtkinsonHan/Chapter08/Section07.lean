@@ -18,8 +18,11 @@ lemmas `iSup_div_eq_iSup_abs_div` and `iSup_abs_div_eq_opNorm` identify that rea
 the operator norm `‖a u‖` of the functional `a u`, which is the form the backbone's
 `SesqForm₂.InfSupWith` takes; that is the only real work in this section.  (8.7.3) is printed as
 `sup_{u ∈ U} a(u,v) > 0`, but the supremum of a nonzero linear functional is `+∞`, so it is
-formalized as `∃ u, 0 < a(u,v)` -- equivalent, by the same sign flip, to the backbone's
+formalized as `∃ u, 0 < a(u,v)` — equivalent, by the same sign flip, to the backbone's
 `SesqForm₂.IsNondegenerate`.
+
+As in §8.3, the unique solvability (8.7.4) and the stability estimate (8.7.5) are separate
+declarations: `theorem_8_7_1` and `theorem_8_7_1_norm_le`, and likewise for `exercise_8_7_1`.
 -/
 
 open scoped InnerProductSpace
@@ -137,6 +140,7 @@ book's boundedness constant may be used wherever the backbone asks for `‖a‖`
 theorem norm_toCLM_le (hM0 : 0 ≤ M) (hM : a.IsBoundedWith M) : ‖a.toCLM hM‖ ≤ M :=
   LinearMap.mkContinuous₂_norm_le _ hM0 _
 
+/-- The bound used to bundle a two-space form is a bound for the bundled form. -/
 theorem isBoundedWith_toCLM (hM : a.IsBoundedWith M) :
     ∀ u v, ‖a.toCLM hM u v‖ ≤ M * ‖u‖ * ‖v‖ := hM
 
@@ -150,7 +154,7 @@ theorem iSup_div_eq_norm_apply (hM : a.IsBoundedWith M) (u : U) :
     (⨆ v : {v : V // v ≠ 0}, a u v / ‖(v : V)‖) = ‖a.toCLM hM u‖ :=
   iSup_div_eq_opNorm (a.toCLM hM u)
 
-/-- (8.7.3), (9.2.4) as printed -- `sup_{u ∈ U} a(u,v) > 0` -- is `∃ u, 0 < a(u,v)`, and by the
+/-- (8.7.3), (9.2.4) as printed — `sup_{u ∈ U} a(u,v) > 0` — is `∃ u, 0 < a(u,v)`, and by the
 sign flip `u ↦ -u` that is the backbone's `SesqForm₂.IsNondegenerate`. -/
 theorem exists_pos_iff_exists_ne_zero (a : BilinForm₂ U V) (v : V) :
     (∃ u, 0 < a u v) ↔ ∃ u, a u v ≠ 0 := by
@@ -176,6 +180,7 @@ theorem infSup_iff_infSupWith (hM : a.IsBoundedWith M) :
   refine forall_congr' fun u => ?_
   rw [iSup_div_eq_norm_apply hM u]
 
+/-- (8.7.3) is the backbone's `SesqForm₂.IsNondegenerate` for the bundled form. -/
 theorem isNondegenerate_toCLM (hM : a.IsBoundedWith M) (h : ∀ v, v ≠ 0 → ∃ u, 0 < a u v) :
     SesqForm₂.IsNondegenerate (𝕜 := ℝ) (U := U) (V := V) (a.toCLM hM) :=
   fun v hv => (exists_pos_iff_exists_ne_zero a v).mp (h v hv)
@@ -213,28 +218,41 @@ namespace Chapter08
 variable {U V : Type*} [NormedAddCommGroup U] [InnerProductSpace ℝ U] [NormedAddCommGroup V]
   [InnerProductSpace ℝ V]
 
-/-- Theorem 8.7.1 (the generalized Lax–Milgram lemma, due to Nečas): a bounded bilinear form on a
-pair of real Hilbert spaces satisfying the inf–sup condition (8.7.2) and the nondegeneracy
-condition (8.7.3) makes the problem (8.7.4) `a(u,v) = ℓ(v) ∀ v ∈ V` uniquely solvable, with the
-stability estimate (8.7.5) `‖u‖_U ≤ ‖ℓ‖_{V'}/α`. -/
+/-- **Theorem 8.7.1** (the generalized Lax–Milgram lemma, due to Nečas): a bounded bilinear form
+on a pair of real Hilbert spaces satisfying the inf–sup condition (8.7.2) and the nondegeneracy
+condition (8.7.3) makes the problem (8.7.4) `a(u,v) = ℓ(v) ∀ v ∈ V` uniquely solvable.  The
+accompanying stability estimate (8.7.5) is `theorem_8_7_1_norm_le`. -/
 theorem theorem_8_7_1 [CompleteSpace U] [CompleteSpace V] (a : BilinForm₂ U V)
     (ℓ : StrongDual ℝ V) {M α : ℝ} (hα : 0 < α)
     (h871 : a.IsBoundedWith M)
     (h872 : ∀ u, α * ‖u‖ ≤ ⨆ v : {v : V // v ≠ 0}, a u v / ‖(v : V)‖)
     (h873 : ∀ v, v ≠ 0 → ∃ u, 0 < a u v) :
-    (∃! u, ∀ v, a u v = ℓ v) ∧ ∀ u, (∀ v, a u v = ℓ v) → ‖u‖ ≤ ‖ℓ‖ / α := by
-  have hinf : SesqForm₂.InfSupWith (𝕜 := ℝ) (U := U) (V := V) (a.toCLM h871) α :=
-    (BilinForm₂.infSup_iff_infSupWith h871).mp h872
-  have hnd := BilinForm₂.isNondegenerate_toCLM h871 h873
-  exact ⟨SesqForm₂.babuska_necas (a.toCLM h871) ℓ hα hinf hnd,
-    fun u hu => SesqForm₂.norm_le_of_infSupWith (a.toCLM h871) ℓ hα hinf hu⟩
+    ∃! u, ∀ v, a u v = ℓ v :=
+  SesqForm₂.babuska_necas (a.toCLM h871) ℓ hα ((BilinForm₂.infSup_iff_infSupWith h871).mp h872)
+    (BilinForm₂.isNondegenerate_toCLM h871 h873)
+
+/-- The stability estimate (8.7.5) `‖u‖_U ≤ ‖ℓ‖_{V'}/α` accompanying Theorem 8.7.1.  Only the
+inf–sup condition (8.7.2) is used; nondegeneracy is what makes a solution exist, not what bounds
+it. -/
+theorem theorem_8_7_1_norm_le [CompleteSpace U] [CompleteSpace V] (a : BilinForm₂ U V)
+    (ℓ : StrongDual ℝ V) {M α : ℝ} (hα : 0 < α) (h871 : a.IsBoundedWith M)
+    (h872 : ∀ u, α * ‖u‖ ≤ ⨆ v : {v : V // v ≠ 0}, a u v / ‖(v : V)‖) {u : U}
+    (hu : ∀ v, a u v = ℓ v) : ‖u‖ ≤ ‖ℓ‖ / α :=
+  SesqForm₂.norm_le_of_infSupWith (a.toCLM h871) ℓ hα
+    ((BilinForm₂.infSup_iff_infSupWith h871).mp h872) hu
 
 /-- Exercise 8.7.1: Theorem 8.7.1 contains the Lax–Milgram lemma, Theorem 8.3.4. -/
 theorem exercise_8_7_1 [CompleteSpace V] (a : BilinForm V) (ℓ : StrongDual ℝ V) {M α : ℝ}
-    (hM : a.IsBoundedWith M) (hα : 0 < α) (ha : a.IsEllipticWith α) :
-    (∃! u, ∀ v, a u v = ℓ v) ∧ ∀ u, (∀ v, a u v = ℓ v) → ‖u‖ ≤ ‖ℓ‖ / α :=
+    (hM : a.IsBoundedWith M) (hα : 0 < α) (ha : a.IsEllipticWith α) : ∃! u, ∀ v, a u v = ℓ v :=
   theorem_8_7_1 a ℓ hα (BilinForm₂.isBoundedWith_of_isBoundedWith hM) (ha.infSup hM)
-    (fun v hv => ha.exists_pos hα v hv)
+    fun v hv => ha.exists_pos hα v hv
+
+/-- Exercise 8.7.1, the estimate: (8.7.5) specializes to the stability estimate of
+Theorem 8.3.4. -/
+theorem exercise_8_7_1_norm_le [CompleteSpace V] (a : BilinForm V) (ℓ : StrongDual ℝ V)
+    {M α : ℝ} (hM : a.IsBoundedWith M) (hα : 0 < α) (ha : a.IsEllipticWith α) {u : V}
+    (hu : ∀ v, a u v = ℓ v) : ‖u‖ ≤ ‖ℓ‖ / α :=
+  theorem_8_7_1_norm_le a ℓ hα (BilinForm₂.isBoundedWith_of_isBoundedWith hM) (ha.infSup hM) hu
 
 end Chapter08
 

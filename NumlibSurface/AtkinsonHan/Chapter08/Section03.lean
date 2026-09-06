@@ -12,10 +12,10 @@ Analysis Framework*, 3rd edition, Springer, 2009, §8.3.
 
 The data of §8.3 is a real bilinear form `a : V × V → ℝ` on a real normed (later Hilbert) space
 `V`, together with `ℓ ∈ V'`.  Such a form is a `BilinForm V` (`V →ₗ[ℝ] V →ₗ[ℝ] ℝ`), and the
-book's vocabulary -- bounded, positive, strictly positive, strongly positive (= `V`-elliptic),
-symmetric -- is the list of predicates below.  §8.7 and the whole of Chapter 9 are stated in that
+book's vocabulary — bounded, positive, strictly positive, strongly positive (= `V`-elliptic),
+symmetric — is the list of predicates below.  §8.7 and the whole of Chapter 9 are stated in that
 vocabulary, so the dictionary lives here in full, including the facts the book records only later
-as (9.1.3), (9.1.7) and (9.4.2)-(9.4.7); §8.3's own second proof of Theorem 8.3.4 already needs
+as (9.1.3), (9.1.7) and (9.4.2)–(9.4.7); §8.3's own second proof of Theorem 8.3.4 already needs
 the operator `A` of (9.4.5).
 
 `BilinForm.toCLM` bundles a bounded form as a `V →L[ℝ] V →L[ℝ] ℝ`, which *is* the backbone's
@@ -27,15 +27,17 @@ and `BilinForm.energy` is the energy functional `E(v) = ½ a(v,v) − ℓ(v)` of
 
 ## Main results
 
-* `theorem_8_3_1` -- the one-to-one correspondence between `L(V, V')` and the bounded forms.
-* `theorem_8_3_2` -- the minimizer of `E(v) = ½‖v‖² − ℓ(v)` on a nonempty closed convex set.
-* `theorem_8_3_3` -- the same for the energy `E(v) = ½ a(v,v) − ℓ(v)` of a symmetric `V`-elliptic
+* `theorem_8_3_1` — the one-to-one correspondence between `L(V, V')` and the bounded forms.
+* `theorem_8_3_2` — the minimizer of `E(v) = ½‖v‖² − ℓ(v)` on a nonempty closed convex set, with
+  its variational inequality (`theorem_8_3_2_iff`) and its subspace form
+  (`theorem_8_3_2_subspace`).
+* `theorem_8_3_3` — the same for the energy `E(v) = ½ a(v,v) − ℓ(v)` of a symmetric `V`-elliptic
   form, with the variational inequality (8.3.3) and the variational equation (8.3.4).
-* `theorem_8_3_4` -- the Lax–Milgram lemma, with the stability estimate `‖u‖ ≤ ‖ℓ‖/α`.  Both
+* `theorem_8_3_4` — the Lax–Milgram lemma, with the stability estimate `‖u‖ ≤ ‖ℓ‖/α`.  Both
   proofs the book gives are available: the damped fixed-point iteration `P_θ` of the first
   (`contractingWith_damped_sub_smul`) and the closed-range argument of the second
   (`isClosed_range_toOperator`, `bijective_toOperator`).
-* `exercise_8_3_1` -- Lax–Milgram rederived from the strongly monotone Lipschitz theory of §5.1.
+* `exercise_8_3_1` — Lax–Milgram rederived from the strongly monotone Lipschitz theory of §5.1.
 -/
 
 open Filter Topology
@@ -76,15 +78,19 @@ def IsElliptic (a : BilinForm V) : Prop := ∃ α > 0, a.IsEllipticWith α
 
 variable {a : BilinForm V} {M α : ℝ}
 
+/-- A form bounded with a positive constant is bounded. -/
 theorem IsBoundedWith.isBounded (hM : a.IsBoundedWith M) (hM0 : 0 < M) : a.IsBounded :=
   ⟨M, hM0, hM⟩
 
+/-- A form elliptic with a positive constant is `V`-elliptic. -/
 theorem IsEllipticWith.isElliptic (ha : a.IsEllipticWith α) (hα : 0 < α) : a.IsElliptic :=
   ⟨α, hα, ha⟩
 
+/-- Strongly positive implies positive (§8.3). -/
 theorem IsEllipticWith.isPositive (ha : a.IsEllipticWith α) (hα : 0 ≤ α) : a.IsPositive :=
   fun v => le_trans (by positivity) (ha v)
 
+/-- Strongly positive implies strictly positive (§8.3). -/
 theorem IsEllipticWith.isStrictlyPositive (ha : a.IsEllipticWith α) (hα : 0 < α) :
     a.IsStrictlyPositive := fun v hv => lt_of_lt_of_le (by positivity) (ha v)
 
@@ -123,6 +129,8 @@ theorem ofCLM_apply (A : V →L[ℝ] StrongDual ℝ V) (u v : V) : ofCLM A u v =
 theorem isBoundedWith_opNorm (A : V →L[ℝ] StrongDual ℝ V) : (ofCLM A).IsBoundedWith ‖A‖ :=
   fun u v => by rw [ofCLM_apply, ← Real.norm_eq_abs]; exact A.le_opNorm₂ u v
 
+/-- The form of an operator is bounded; the constant `‖A‖ + 1` is used rather than `‖A‖` so that
+it is positive even for `A = 0`, as `IsBounded` requires. -/
 theorem isBounded_ofCLM (A : V →L[ℝ] StrongDual ℝ V) : (ofCLM A).IsBounded :=
   ⟨‖A‖ + 1, by positivity, fun u v =>
     (isBoundedWith_opNorm A u v).trans
@@ -135,6 +143,8 @@ theorem ofCLM_toCLM (hM : a.IsBoundedWith M) : ofCLM (a.toCLM hM) = a := by
   ext u v
   rfl
 
+/-- An operator is recovered from the form it induces: the other half of the correspondence of
+Theorem 8.3.1. -/
 theorem toCLM_ofCLM (A : V →L[ℝ] StrongDual ℝ V) {M : ℝ} (hM : (ofCLM A).IsBoundedWith M) :
     (ofCLM A).toCLM hM = A := by
   ext u v
@@ -155,6 +165,7 @@ noncomputable def theorem_8_3_1 : (V →L[ℝ] StrongDual ℝ V) ≃ {a : BilinF
 Each property of the form `a = ofCLM A` is the corresponding property of `A`, read through
 `⟨A v, v⟩ = a(v,v)`; all but the first are definitional. -/
 
+/-- The form of `A` is bounded with constant `M` exactly when `A` is: `‖A v‖ ≤ M ‖v‖`. -/
 theorem isBoundedWith_ofCLM_iff (A : V →L[ℝ] StrongDual ℝ V) :
     (ofCLM A).IsBoundedWith M ↔ ∀ v, ‖A v‖ ≤ M * ‖v‖ := by
   constructor
@@ -172,15 +183,20 @@ theorem isBoundedWith_ofCLM_iff (A : V →L[ℝ] StrongDual ℝ V) :
     calc ‖A u v‖ ≤ ‖A u‖ * ‖v‖ := (A u).le_opNorm v
       _ ≤ M * ‖u‖ * ‖v‖ := by gcongr; exact h u
 
+/-- The form of `A` is positive exactly when `⟨A v, v⟩ ≥ 0`. -/
 theorem isPositive_ofCLM_iff (A : V →L[ℝ] StrongDual ℝ V) :
     (ofCLM A).IsPositive ↔ ∀ v, 0 ≤ A v v := Iff.rfl
 
+/-- The form of `A` is strictly positive exactly when `⟨A v, v⟩ > 0` off the origin. -/
 theorem isStrictlyPositive_ofCLM_iff (A : V →L[ℝ] StrongDual ℝ V) :
     (ofCLM A).IsStrictlyPositive ↔ ∀ v, v ≠ 0 → 0 < A v v := Iff.rfl
 
+/-- The form of `A` is `V`-elliptic with constant `α` exactly when `A` is strongly monotone with
+that constant, `⟨A v, v⟩ ≥ α ‖v‖²`. -/
 theorem isEllipticWith_ofCLM_iff (A : V →L[ℝ] StrongDual ℝ V) :
     (ofCLM A).IsEllipticWith α ↔ ∀ v, α * ‖v‖ ^ 2 ≤ A v v := Iff.rfl
 
+/-- The form of `A` is symmetric exactly when `⟨A u, v⟩ = ⟨A v, u⟩`. -/
 theorem isSymm_ofCLM_iff (A : V →L[ℝ] StrongDual ℝ V) :
     LinearMap.BilinForm.IsSymm (ofCLM A) ↔ ∀ u v, A u v = A v u := isSymm_iff
 
@@ -193,6 +209,7 @@ noncomputable def energy (a : BilinForm V) (ℓ : StrongDual ℝ V) (v : V) : �
 /-- The energy norm `‖v‖_a = √(a(v,v))` of a symmetric `V`-elliptic form (§8.3, §9.4). -/
 noncomputable def energyNorm (a : BilinForm V) (v : V) : ℝ := Real.sqrt (a v v)
 
+/-- The energy norm is nonnegative, being a square root. -/
 theorem energyNorm_nonneg (a : BilinForm V) (v : V) : 0 ≤ a.energyNorm v := Real.sqrt_nonneg _
 
 end Normed
@@ -208,9 +225,11 @@ variable {a : BilinForm V} {M α : ℝ}
 the backbone's, with the `RCLike.re`/`starRingEnd` decorations of the general theory erased over
 `ℝ` (`SesqForm.isCoerciveWith_real_iff`, `SesqForm.isHermitian_real_iff`). -/
 
+/-- The book's boundedness of `a` is the backbone's boundedness of the bundled form. -/
 theorem isBoundedWith_iff_toCLM {M' : ℝ} (hM : a.IsBoundedWith M) :
     a.IsBoundedWith M' ↔ SesqForm.IsBoundedWith (𝕜 := ℝ) (a.toCLM hM) M' := Iff.rfl
 
+/-- The bound used to bundle a form is a bound for the bundled form. -/
 theorem isBoundedWith_toCLM (hM : a.IsBoundedWith M) :
     SesqForm.IsBoundedWith (𝕜 := ℝ) (a.toCLM hM) M :=
   (isBoundedWith_iff_toCLM hM).mp hM
@@ -219,6 +238,8 @@ theorem isBoundedWith_toCLM (hM : a.IsBoundedWith M) :
 theorem isEllipticWith_iff_isCoerciveWith (hM : a.IsBoundedWith M) :
     a.IsEllipticWith α ↔ SesqForm.IsCoerciveWith (𝕜 := ℝ) (a.toCLM hM) α := Iff.rfl
 
+/-- `V`-ellipticity is Mathlib's `IsCoercive` for the bundled form; the constants differ only by
+the `‖v‖ * ‖v‖` versus `‖v‖ ^ 2` spelling. -/
 theorem isElliptic_iff_isCoercive (hM : a.IsBoundedWith M) :
     a.IsElliptic ↔ IsCoercive (a.toCLM hM) := by
   constructor
@@ -231,9 +252,11 @@ theorem isElliptic_iff_isCoercive (hM : a.IsBoundedWith M) :
 theorem isSymm_iff_isHermitian (hM : a.IsBoundedWith M) :
     LinearMap.BilinForm.IsSymm a ↔ SesqForm.IsHermitian (𝕜 := ℝ) (a.toCLM hM) := isSymm_iff
 
+/-- The surface energy functional is the backbone one. -/
 theorem energy_eq (hM : a.IsBoundedWith M) (ℓ : StrongDual ℝ V) (v : V) :
     a.energy ℓ v = SesqForm.energy (a.toCLM hM) ℓ v := rfl
 
+/-- The surface energy norm is the backbone one. -/
 theorem energyNorm_eq (hM : a.IsBoundedWith M) (v : V) :
     a.energyNorm v = SesqForm.energyNorm (a.toCLM hM) v := rfl
 
@@ -320,21 +343,18 @@ namespace Chapter08
 variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
 
 /-- `u ∈ K` minimizes `f` on `K` iff `f u` is the infimum of `f` over `K`: the passage between
-the book's `E(u) = inf_K E` and Mathlib's `IsMinOn`. -/
+the book's `E(u) = inf_K E` and Mathlib's `IsMinOn`.  The forward direction is Mathlib's
+`IsMinOn.iInf_eq`; only the converse needs `f` bounded below on `K`. -/
 theorem isMinOn_iff_eq_ciInf {X : Type*} {K : Set X} {f : X → ℝ} {u : X} (hu : u ∈ K)
     (hbdd : BddBelow (Set.range fun v : K => f v)) :
-    IsMinOn f K u ↔ f u = ⨅ v : K, f v := by
-  have : Nonempty K := ⟨⟨u, hu⟩⟩
-  rw [isMinOn_iff]
-  constructor
-  · intro h
-    exact le_antisymm (le_ciInf fun v => h (v : X) v.2) (ciInf_le hbdd ⟨u, hu⟩)
-  · intro h v hv
-    rw [h]
-    exact ciInf_le hbdd ⟨v, hv⟩
+    IsMinOn f K u ↔ f u = ⨅ v : K, f v :=
+  ⟨fun h => (h.iInf_eq hu).symm,
+    fun h => isMinOn_iff.mpr fun v hv => h.trans_le (ciInf_le hbdd ⟨v, hv⟩)⟩
 
 /-! ### Theorem 8.3.2: the energy `E(v) = ½‖v‖² − ℓ(v)` -/
 
+/-- The energy of the inner product itself is the functional `E(v) = ½‖v‖² − ℓ(v)` of
+Theorem 8.3.2. -/
 theorem energy_innerSL (ℓ : StrongDual ℝ V) (v : V) :
     SesqForm.energy (innerSL ℝ : SesqForm ℝ V) ℓ v = (1 / 2 : ℝ) * ‖v‖ ^ 2 - ℓ v := by
   simp [SesqForm.energy]
@@ -350,17 +370,22 @@ private theorem innerSL_hermitian : SesqForm.IsHermitian (innerSL ℝ : SesqForm
 private theorem innerSL_coercive : SesqForm.IsCoerciveWith (innerSL ℝ : SesqForm ℝ V) 1 :=
   SesqForm.innerSL_isCoerciveWith
 
-/-- Theorem 8.3.2: on a nonempty closed convex subset `K` of a Hilbert space the functional
-`E(v) = ½‖v‖² − ℓ(v)` has a unique minimizer, and `u ∈ K` is that minimizer exactly when it
-satisfies the variational inequality `(u, v − u) ≥ ℓ(v − u)` for all `v ∈ K`. -/
+/-- Theorem 8.3.2, existence and uniqueness: on a nonempty closed convex subset `K` of a Hilbert
+space the functional `E(v) = ½‖v‖² − ℓ(v)` has a unique minimizer. -/
 theorem theorem_8_3_2 [CompleteSpace V] {K : Set V} (hne : K.Nonempty) (hcl : IsClosed K)
     (hconv : Convex ℝ K) (ℓ : StrongDual ℝ V) :
-    (∃! u, u ∈ K ∧ IsMinOn (fun v => (1 / 2 : ℝ) * ‖v‖ ^ 2 - ℓ v) K u) ∧
-      ∀ u ∈ K, (IsMinOn (fun v => (1 / 2 : ℝ) * ‖v‖ ^ 2 - ℓ v) K u ↔
-        ∀ v ∈ K, ℓ (v - u) ≤ ⟪u, v - u⟫_ℝ) := by
+    ∃! u, u ∈ K ∧ IsMinOn (fun v => (1 / 2 : ℝ) * ‖v‖ ^ 2 - ℓ v) K u := by
   rw [energy_innerSL_eq]
-  refine ⟨SesqForm.existsUnique_isMinOn_energy (innerSL_hermitian (V := V)) ℓ
-      one_pos innerSL_coercive hconv hcl hne, fun u hu => ?_⟩
+  exact SesqForm.existsUnique_isMinOn_energy (innerSL_hermitian (V := V)) ℓ
+    one_pos innerSL_coercive hconv hcl hne
+
+/-- Theorem 8.3.2, characterization: `u ∈ K` minimizes `E(v) = ½‖v‖² − ℓ(v)` over the convex set
+`K` exactly when it satisfies the variational inequality `(u, v − u) ≥ ℓ(v − u)` for all
+`v ∈ K`. -/
+theorem theorem_8_3_2_iff [CompleteSpace V] {K : Set V} (hconv : Convex ℝ K)
+    (ℓ : StrongDual ℝ V) {u : V} (hu : u ∈ K) :
+    IsMinOn (fun v => (1 / 2 : ℝ) * ‖v‖ ^ 2 - ℓ v) K u ↔ ∀ v ∈ K, ℓ (v - u) ≤ ⟪u, v - u⟫_ℝ := by
+  rw [energy_innerSL_eq]
   exact SesqForm.isMinOn_energy_iff_forall_le (innerSL_hermitian (V := V)) ℓ
     one_pos innerSL_coercive hconv hu
 
@@ -486,11 +511,14 @@ theorem norm_le_norm_toOperator [CompleteSpace V] (hM : a.IsBoundedWith M)
   rw [SesqForm.toOperator_apply_eq_rieszRep, SesqForm.norm_rieszRep]
   exact SesqForm.IsCoerciveWith.norm_le_norm_apply (a.toCLM hM) ha u
 
+/-- `R(A)` is closed, by the stability estimate `norm_le_norm_toOperator` and Theorem 8.2.4. -/
 theorem isClosed_range_toOperator [CompleteSpace V] (hM : a.IsBoundedWith M) (hα : 0 < α)
     (ha : a.IsEllipticWith α) :
     IsClosed (LinearMap.range (BilinForm.toOperator a hM : V →ₗ[ℝ] V) : Set V) :=
   ContinuousLinearMap.isClosed_range_of_le_norm _ hα (norm_le_norm_toOperator hM ha)
 
+/-- `R(A)^⊥ = {0}`: a vector orthogonal to the range is orthogonal to its own image, so
+ellipticity forces it to vanish. -/
 theorem orthogonal_range_toOperator [CompleteSpace V] (hM : a.IsBoundedWith M) (hα : 0 < α)
     (ha : a.IsEllipticWith α) :
     (LinearMap.range (BilinForm.toOperator a hM : V →ₗ[ℝ] V))ᗮ = ⊥ := by

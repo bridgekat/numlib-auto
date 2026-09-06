@@ -18,7 +18,7 @@ The book's supremum in (9.2.6) is taken without absolute values; `iSup_div_eq_op
 (§8.7) identifies it with the norm of the functional `a(u_N, ·)` restricted to `V_N`, which is the
 backbone's `IsPetrovGalerkinSolution.DiscreteInfSup`.
 
-Remark 9.2.2 -- the Xu–Zikatanov sharpening `‖u − u_N‖ ≤ (M/α_N) inf_{w_N} ‖u − w_N‖` -- is
+Remark 9.2.2 — the Xu–Zikatanov sharpening `‖u − u_N‖ ≤ (M/α_N) inf_{w_N} ‖u − w_N‖` — is
 `remark_9_2_2`, a specialization of the backbone's
 `IsPetrovGalerkinSolution.norm_sub_le_div_mul_infDist`, which builds the Petrov–Galerkin projector
 `P_N : u ↦ u_N` and bounds `‖P_N‖ ≤ M/α_N` by Kato's lemma; the analytic ingredient is recorded
@@ -120,18 +120,17 @@ theorem theorem_9_2_1_le [FiniteDimensional ℝ UN] [FiniteDimensional ℝ VN] (
   IsPetrovGalerkinSolution.norm_sub_le hdim hαN hM0 (a.isBoundedWith_toCLM hM)
     ((discreteInfSup_iff hM).mp hinfsup) huN hu hw
 
-/-- Theorem 9.2.1 (Babuška): unique solvability of (9.2.5) together with the quasi-optimal error
-bound (9.2.7) `‖u − u_N‖_U ≤ (1 + M/α_N) inf_{w_N ∈ U_N} ‖u − w_N‖_U`. -/
+/-- **Theorem 9.2.1** (Babuška), the quasi-optimal error bound (9.2.7)
+`‖u − u_N‖_U ≤ (1 + M/α_N) inf_{w_N ∈ U_N} ‖u − w_N‖_U`.  Unique solvability of (9.2.5) is the
+companion `theorem_9_2_1_existsUnique`, and `theorem_9_2_1_le` is the same bound against one
+`w_N ∈ U_N` rather than against the infimum. -/
 theorem theorem_9_2_1 [FiniteDimensional ℝ UN] [FiniteDimensional ℝ VN] (hM0 : 0 ≤ M)
     (hM : a.IsBoundedWith M) (hdim : Module.finrank ℝ UN = Module.finrank ℝ VN) (hαN : 0 < αN)
-    (hinfsup : DiscreteInfSup a UN VN αN) (ℓ : StrongDual ℝ V) (hu : ∀ v, a u v = ℓ v) :
-    (∃! uN, PetrovGalerkinProblem a ℓ UN VN uN) ∧
-      ∀ uN, PetrovGalerkinProblem a ℓ UN VN uN →
-        ‖u - uN‖ ≤ (1 + M / αN) * ⨅ wN : UN, ‖u - (wN : U)‖ := by
+    (hinfsup : DiscreteInfSup a UN VN αN) (huN : PetrovGalerkinProblem a ℓ UN VN uN)
+    (hu : ∀ v, a u v = ℓ v) : ‖u - uN‖ ≤ (1 + M / αN) * ⨅ wN : UN, ‖u - (wN : U)‖ := by
   have hC : 0 < 1 + M / αN := by
     have : 0 ≤ M / αN := div_nonneg hM0 hαN.le
     linarith
-  refine ⟨theorem_9_2_1_existsUnique hM hdim hαN hinfsup ℓ, fun uN huN => ?_⟩
   have hkey : ∀ w : UN, ‖u - uN‖ / (1 + M / αN) ≤ ‖u - (w : U)‖ := fun w => by
     rw [div_le_iff₀ hC, mul_comm]
     exact theorem_9_2_1_le hM0 hM hdim hαN hinfsup huN hu w.2

@@ -14,8 +14,8 @@ Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysi
 Analysis Framework*, 3rd edition, Springer, 2009, §9.4.
 
 The variational problem (9.4.1) is turned into the operator equation (9.4.7) `A u = f` through the
-Riesz representation (9.4.5)–(9.4.6), and Algorithm 1 of §9.4 -- written here as `cgIterate`,
-directly in the book's variables `u_k`, `r_k`, `s_k`, `α_k`, `β_k` -- is shown to be the backbone's
+Riesz representation (9.4.5)–(9.4.6), and Algorithm 1 of §9.4 — written here as `cgIterate`,
+directly in the book's variables `u_k`, `r_k`, `s_k`, `α_k`, `β_k` — is shown to be the backbone's
 `CG.iterate` for that operator (`cgIterate_eq`).  All of the algorithm's properties (residual
 orthogonality, `A`-conjugacy of the search directions, the Galerkin/energy-minimization
 characterization, the convergence rates of Theorem 5.6.1) then transfer.
@@ -117,11 +117,17 @@ theorem cgIterate_eq (hM : a.IsBoundedWith M) (ℓ : StrongDual ℝ V) (u₀ : V
     have hstep : cgIterate a hM ℓ u₀ (k + 1) = cgStep a hM ℓ (cgIterate a hM ℓ u₀ k) := by
       rw [cgIterate, cgIterate, Function.iterate_succ_apply']
     rw [hstep, ih, CG.iterate_succ]
-    refine cgStep_eq hM ℓ _ ?_
-    have := CG.residual_eq (BilinForm.toOperator a hM : V →ₗ[ℝ] V) (SesqForm.rieszRep ℓ) u₀ k
-    exact this
+    exact cgStep_eq hM ℓ _
+      (CG.residual_eq (BilinForm.toOperator a hM : V →ₗ[ℝ] V) (SesqForm.rieszRep ℓ) u₀ k)
 
 /-! ### Properties of `A` and `f`, and the operator form of the problem -/
+
+/-- The quadratic form of the operator `A` of (9.4.5) is the form itself, `(A x, x) = a(x,x)`. -/
+private theorem re_inner_toOperator_self (hM : a.IsBoundedWith M) (x : V) :
+    RCLike.re (inner ℝ ((BilinForm.toOperator a hM : V →ₗ[ℝ] V) x) x) = a x x := by
+  rw [show ((BilinForm.toOperator a hM : V →ₗ[ℝ] V)) x = BilinForm.toOperator a hM x from rfl,
+    BilinForm.inner_toOperator hM x x]
+  simp
 
 /-- (9.4.2)–(9.4.3): for a bounded symmetric `V`-elliptic form, `A` is symmetric with quadratic
 form between `α ‖v‖²` and `M ‖v‖²`. -/
@@ -131,18 +137,10 @@ theorem isSymmetricBoundedBy_toOperator (hM : a.IsBoundedWith M)
   isSymmetric := (SesqForm.isHermitian_iff_toOperator_isSymmetric _).mp
     ((BilinForm.isSymm_iff_isHermitian hM).mp hs)
   le_re_inner := fun x => by
-    have h1 : RCLike.re (inner ℝ ((BilinForm.toOperator a hM : V →ₗ[ℝ] V) x) x) = a x x := by
-      rw [show ((BilinForm.toOperator a hM : V →ₗ[ℝ] V)) x = BilinForm.toOperator a hM x from rfl,
-        BilinForm.inner_toOperator hM x x]
-      simp
-    rw [h1]
+    rw [re_inner_toOperator_self hM]
     exact ha x
   re_inner_le := fun x => by
-    have h1 : RCLike.re (inner ℝ ((BilinForm.toOperator a hM : V →ₗ[ℝ] V) x) x) = a x x := by
-      rw [show ((BilinForm.toOperator a hM : V →ₗ[ℝ] V)) x = BilinForm.toOperator a hM x from rfl,
-        BilinForm.inner_toOperator hM x x]
-      simp
-    rw [h1]
+    rw [re_inner_toOperator_self hM]
     calc a x x ≤ |a x x| := le_abs_self _
       _ ≤ M * ‖x‖ * ‖x‖ := hM x x
       _ = M * ‖x‖ ^ 2 := by ring
@@ -210,16 +208,16 @@ theorem cg_energy_rate (hM : a.IsBoundedWith M) (hs : LinearMap.BilinForm.IsSymm
     (CG.isGalerkinIterate _ _ hAc (k + 1)) (toOperator_eq_rieszRep hM ℓ hu)
 
 /-- (5.6.5) for Algorithm 1: `‖u − u_k‖_a ≤ 2 ((√κ − 1)/(√κ + 1))^k ‖u − u_0‖_a` with
-`κ = M/α`.  The hypothesis `α < M` is not needed for this bound (the backbone states it for
-`α ≤ M`); it is kept here only because `cg_converges` below uses it. -/
+`κ = M/α`.  Stated for `α ≤ M`, as the backbone states it; the strict inequality is needed only
+in `cg_converges` below, where it is what makes the ratio less than one. -/
 theorem cg_energy_bound (hM : a.IsBoundedWith M) (hs : LinearMap.BilinForm.IsSymm a) (hα : 0 < α)
-    (hαM : α < M) (ha : a.IsEllipticWith α) (ℓ : StrongDual ℝ V) {u : V} (hu : ∀ v, a u v = ℓ v)
+    (hαM : α ≤ M) (ha : a.IsEllipticWith α) (ℓ : StrongDual ℝ V) {u : V} (hu : ∀ v, a u v = ℓ v)
     (u₀ : V) (k : ℕ) :
     a.energyNorm (u - (cgIterate a hM ℓ u₀ k).x)
       ≤ 2 * ((Real.sqrt (M / α) - 1) / (Real.sqrt (M / α) + 1)) ^ k *
           a.energyNorm (u - u₀) := by
   simp only [BilinForm.energyNorm_eq_energyNorm_toOperator hM, cgIterate_eq hM ℓ u₀]
-  exact Krylov.IsGalerkinIterate.energyNorm_error_le hα hαM.le
+  exact Krylov.IsGalerkinIterate.energyNorm_error_le hα hαM
     (isSymmetricBoundedBy_toOperator hM hs ha)
     (CG.isGalerkinIterate _ _ ((isSymmetricBoundedBy_toOperator hM hs ha).isSymmetricCoercive hα) k)
     (toOperator_eq_rieszRep hM ℓ hu)
@@ -248,7 +246,7 @@ theorem cg_converges (hM : a.IsBoundedWith M) (hs : LinearMap.BilinForm.IsSymm a
   have h1 : Real.sqrt α * ‖u - (cgIterate a hM ℓ u₀ k).x‖
       ≤ a.energyNorm (u - (cgIterate a hM ℓ u₀ k).x) :=
     BilinForm.sqrt_mul_norm_le_energyNorm hM hα.le ha _
-  have h2 := cg_energy_bound hM hs hα hαM ha ℓ hu u₀ k
+  have h2 := cg_energy_bound hM hs hα hαM.le ha ℓ hu u₀ k
   have hrw : 2 * a.energyNorm (u - u₀) / Real.sqrt α * ρ ^ k
       = 2 * a.energyNorm (u - u₀) * ρ ^ k / Real.sqrt α := by ring
   rw [norm_sub_rev, hrw, le_div_iff₀ hsa]

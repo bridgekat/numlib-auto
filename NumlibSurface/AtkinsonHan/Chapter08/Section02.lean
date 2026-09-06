@@ -25,6 +25,12 @@ open scoped InnerProductSpace
 
 namespace AtkinsonHan.Chapter08
 
+/-- The uniqueness step of §8.2: the stability estimate applied to a difference of two solutions
+leaves `c ‖v‖ ≤ 0`, and a positive `c` then forces `v = 0`. -/
+private theorem eq_zero_of_mul_norm_nonpos {V : Type*} [NormedAddCommGroup V] {c : ℝ} (hc : 0 < c)
+    {v : V} (h : c * ‖v‖ ≤ 0) : v = 0 :=
+  norm_le_zero_iff.mp (by nlinarith [norm_nonneg v])
+
 section Normed
 
 variable {V W : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V]
@@ -106,20 +112,17 @@ variable {V W : Type*} [NormedAddCommGroup V] [NormedAddCommGroup W]
 /-- Theorem 8.2.8 (a): if `‖T u − T v‖ ≥ c ‖u − v‖` on `D(T)` with `c > 0`, the (possibly
 nonlinear) equation `T u = w` has at most one solution in `D(T)`. -/
 theorem theorem_8_2_8a {D : Set V} (T : V → W) {c : ℝ} (hc : 0 < c)
-    (hstab : ∀ u ∈ D, ∀ v ∈ D, c * ‖u - v‖ ≤ ‖T u - T v‖) (w : W) :
-    ∀ u₁ ∈ D, ∀ u₂ ∈ D, T u₁ = w → T u₂ = w → u₁ = u₂ := by
-  intro u₁ h₁ u₂ h₂ hw₁ hw₂
+    (hstab : ∀ u ∈ D, ∀ v ∈ D, c * ‖u - v‖ ≤ ‖T u - T v‖) {w : W} {u₁ u₂ : V} (h₁ : u₁ ∈ D)
+    (h₂ : u₂ ∈ D) (hw₁ : T u₁ = w) (hw₂ : T u₂ = w) : u₁ = u₂ := by
   have h := hstab u₁ h₁ u₂ h₂
   rw [hw₁, hw₂, sub_self, norm_zero] at h
-  have hz : ‖u₁ - u₂‖ = 0 := le_antisymm (by nlinarith [norm_nonneg (u₁ - u₂)]) (norm_nonneg _)
-  exact sub_eq_zero.mp (norm_eq_zero.mp hz)
+  exact sub_eq_zero.mp (eq_zero_of_mul_norm_nonpos hc h)
 
 /-- Theorem 8.2.8 (b): if `‖(T u − u) − (T v − v)‖ < ‖u − v‖` for distinct `u, v ∈ D(T)`, the
 equation `T u = w` has at most one solution in `D(T)`. -/
 theorem theorem_8_2_8b {D : Set V} (T : V → V)
-    (hstab : ∀ u ∈ D, ∀ v ∈ D, u ≠ v → ‖(T u - u) - (T v - v)‖ < ‖u - v‖) (w : V) :
-    ∀ u₁ ∈ D, ∀ u₂ ∈ D, T u₁ = w → T u₂ = w → u₁ = u₂ := by
-  intro u₁ h₁ u₂ h₂ hw₁ hw₂
+    (hstab : ∀ u ∈ D, ∀ v ∈ D, u ≠ v → ‖(T u - u) - (T v - v)‖ < ‖u - v‖) {w : V} {u₁ u₂ : V}
+    (h₁ : u₁ ∈ D) (h₂ : u₂ ∈ D) (hw₁ : T u₁ = w) (hw₂ : T u₂ = w) : u₁ = u₂ := by
   by_contra hne
   have h := hstab u₁ h₁ u₂ h₂ hne
   rw [hw₁, hw₂] at h
@@ -165,11 +168,8 @@ theorem theorem_8_2_4 [CompleteSpace V] [CompleteSpace W] (L : V →ₗ.[ℝ] W)
   have hd : L.toFun (y - u) = 0 := by rw [map_sub, hy', hu, sub_self]
   have h : c * ‖((y - u : L.domain) : V)‖ ≤ ‖L.toFun (y - u)‖ := hstab (y - u)
   rw [hd, norm_zero] at h
-  have hz : ‖((y : V) - (u : V))‖ = 0 := by
-    have : ‖((y - u : L.domain) : V)‖ = 0 :=
-      le_antisymm (by nlinarith [norm_nonneg ((y - u : L.domain) : V)]) (norm_nonneg _)
-    simpa using this
-  exact Subtype.ext (sub_eq_zero.mp (norm_eq_zero.mp hz))
+  have hz : ((y : V) - (u : V)) = 0 := by simpa using eq_zero_of_mul_norm_nonpos hc h
+  exact Subtype.ext (sub_eq_zero.mp hz)
 
 /-- The remark after Theorem 8.2.4: for a *continuous* operator, closedness is automatic, and the
 stability estimate together with dense range gives bijectivity. -/
@@ -190,14 +190,14 @@ section StronglyMonotone
 
 variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] [CompleteSpace V]
 
-/-- Exercise 8.2.5: a strongly monotone `L ∈ L(V, V')`, that is one with `⟨L v, v⟩ ≥ c ‖v‖²`,
+/-- Example 8.2.5: a strongly monotone `L ∈ L(V, V')`, that is one with `⟨L v, v⟩ ≥ c ‖v‖²`,
 satisfies the stability estimate (8.2.2) with the same constant `c`, has `R(L)^⊥ = {0}` in the
 duality sense, and is therefore a bijection of `V` onto `V'`.
 
 Over `ℝ` such an `L` *is* a bounded sesquilinear form, and the hypothesis is the backbone's
 `SesqForm.IsCoerciveWith`, so the three conclusions are `IsCoerciveWith.norm_le_norm_apply`,
 a one-line computation, and `SesqForm.laxMilgram`. -/
-theorem exercise_8_2_5 (L : V →L[ℝ] StrongDual ℝ V) {c : ℝ} (hc : 0 < c)
+theorem example_8_2_5 (L : V →L[ℝ] StrongDual ℝ V) {c : ℝ} (hc : 0 < c)
     (hmono : ∀ v, c * ‖v‖ ^ 2 ≤ L v v) :
     (∀ v, c * ‖v‖ ≤ ‖L v‖) ∧ (∀ v, (∀ w, L w v = 0) → v = 0) ∧ Function.Bijective L := by
   have hcoer : SesqForm.IsCoerciveWith (𝕜 := ℝ) L c := hmono
@@ -205,7 +205,7 @@ theorem exercise_8_2_5 (L : V →L[ℝ] StrongDual ℝ V) {c : ℝ} (hc : 0 < c)
     intro v hv
     have h1 : c * ‖v‖ ^ 2 ≤ 0 := (hmono v).trans hv
     have h2 : ‖v‖ ^ 2 ≤ 0 := by nlinarith [sq_nonneg ‖v‖]
-    exact norm_eq_zero.mp (pow_eq_zero_iff two_ne_zero |>.mp (le_antisymm h2 (sq_nonneg _)))
+    exact norm_le_zero_iff.mp (by nlinarith [norm_nonneg v])
   refine ⟨fun v => SesqForm.IsCoerciveWith.norm_le_norm_apply L hcoer v,
     fun v hv => hker v (le_of_eq (hv v)), ?_, ?_⟩
   · intro u₁ u₂ h

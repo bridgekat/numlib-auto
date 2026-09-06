@@ -11,9 +11,10 @@ In §9.3 the discrete space `V_N` need no longer be a subspace of `V`, and the f
 functional are themselves approximated by `a_N` and `ℓ_N`.  The book carries out the analysis on
 `V + V_N` equipped with the discretization-dependent norm `‖·‖_N`; since the theorem is stated
 for one `N` at a time, that space is here simply an abstract real normed space `W`, which is also
-how the backbone states it.  `theorem_9_3_1` is Theorem 9.3.1 (Strang's first lemma) with the error
-bound (9.3.2), and `theorem_9_3_1'` re-attaches the book's data (`V` Hilbert, the exact solution
-`u ∈ V` of (9.1.1), an injection `ι : V → W`), which the proof never uses.
+how the backbone states it.  `theorem_9_3_1` is the error bound (9.3.2) of Theorem 9.3.1 (Strang's
+first lemma) and `theorem_9_3_1_existsUnique` its unique solvability; `theorem_9_3_1'` re-attaches
+the book's data (`V` Hilbert, the exact solution `u ∈ V` of (9.1.1), an injection `ι : V → W`),
+which the proof never uses.
 -/
 
 open Filter Topology
@@ -40,6 +41,7 @@ noncomputable def consistencyError (aN : W →ₗ[ℝ] W →ₗ[ℝ] ℝ) (ℓN 
   ⨆ v : {v : VN // v ≠ 0},
     |aN u ((v : VN) : W) - ℓN ((v : VN) : W)| / ‖((v : VN) : W)‖
 
+/-- The consistency error is nonnegative, being a supremum of quotients of absolute values. -/
 theorem consistencyError_nonneg (aN : W →ₗ[ℝ] W →ₗ[ℝ] ℝ) (ℓN : W →ₗ[ℝ] ℝ)
     (VN : Submodule ℝ W) (u : W) : 0 ≤ consistencyError aN ℓN VN u :=
   Real.iSup_nonneg fun _ => by positivity
@@ -69,22 +71,28 @@ theorem le_consistencyError (hM : ∀ w, ∀ v ∈ VN, |aN w v| ≤ M * ‖w‖ 
     exact le_ciSup (bddAbove_consistency hM hℓ u)
       (⟨⟨w, hw⟩, fun h => hw0 (congrArg Subtype.val h)⟩ : {v : VN // v ≠ 0})
 
-/-- Theorem 9.3.1 (Strang's first lemma): the generalized Galerkin problem (9.3.1) is uniquely
-solvable, and its error obeys (9.3.2)
+/-- Theorem 9.3.1 (Strang's first lemma), unique solvability: (9.3.1) has one solution on a
+finite-dimensional `V_N` on which `a_N` is coercive.  Neither boundedness nor the consistency
+hypothesis is used. -/
+theorem theorem_9_3_1_existsUnique (aN : W →ₗ[ℝ] W →ₗ[ℝ] ℝ) (ℓN : W →ₗ[ℝ] ℝ)
+    (VN : Submodule ℝ W) [FiniteDimensional ℝ VN] (hα₀ : 0 < α₀)
+    (hcoer : ∀ v ∈ VN, α₀ * ‖v‖ ^ 2 ≤ aN v v) : ∃! uN, GeneralizedGalerkinProblem aN ℓN VN uN :=
+  existsUnique_isGeneralizedGalerkinSolution aN ℓN VN hα₀ hcoer
+
+/-- **Theorem 9.3.1** (Strang's first lemma), the error bound (9.3.2)
 
 `‖u − u_N‖_N ≤ (1 + M/α₀) inf_{w_N ∈ V_N} ‖u − w_N‖_N + α₀⁻¹ sup_{v_N ∈ V_N}
   |a_N(u,v_N) − ℓ_N(v_N)|/‖v_N‖_N`,
 
-the sum of an approximation term of Céa type and a consistency term. -/
+the sum of an approximation term of Céa type and a consistency term.  Unique solvability of
+(9.3.1) is `theorem_9_3_1_existsUnique`. -/
 theorem theorem_9_3_1 (aN : W →ₗ[ℝ] W →ₗ[ℝ] ℝ) (ℓN : W →ₗ[ℝ] ℝ) (VN : Submodule ℝ W)
     [FiniteDimensional ℝ VN] (hM0 : 0 ≤ M) (hα₀ : 0 < α₀)
     (hM : ∀ w, ∀ v ∈ VN, |aN w v| ≤ M * ‖w‖ * ‖v‖)
-    (hcoer : ∀ v ∈ VN, α₀ * ‖v‖ ^ 2 ≤ aN v v) (hℓ : ∀ v ∈ VN, |ℓN v| ≤ c₀ * ‖v‖) (u : W) :
-    (∃! uN, GeneralizedGalerkinProblem aN ℓN VN uN) ∧
-      ∀ uN, GeneralizedGalerkinProblem aN ℓN VN uN →
-        ‖u - uN‖ ≤ (1 + M / α₀) * (⨅ w : VN, ‖u - (w : W)‖)
-          + 1 / α₀ * consistencyError aN ℓN VN u := by
-  refine ⟨existsUnique_isGeneralizedGalerkinSolution aN ℓN VN hα₀ hcoer, fun uN huN => ?_⟩
+    (hcoer : ∀ v ∈ VN, α₀ * ‖v‖ ^ 2 ≤ aN v v) (hℓ : ∀ v ∈ VN, |ℓN v| ≤ c₀ * ‖v‖) (u : W)
+    {uN : W} (huN : GeneralizedGalerkinProblem aN ℓN VN uN) :
+    ‖u - uN‖ ≤ (1 + M / α₀) * (⨅ w : VN, ‖u - (w : W)‖)
+      + 1 / α₀ * consistencyError aN ℓN VN u := by
   have hC : 0 < 1 + M / α₀ := by
     have : 0 ≤ M / α₀ := div_nonneg hM0 hα₀.le
     linarith
@@ -114,12 +122,11 @@ theorem theorem_9_3_1' {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ
     (ι : V →ₗ[ℝ] W) (hι : Function.Injective ι) (aN : W →ₗ[ℝ] W →ₗ[ℝ] ℝ) (ℓN : W →ₗ[ℝ] ℝ)
     (VN : Submodule ℝ W) [FiniteDimensional ℝ VN] (hM0 : 0 ≤ M) (hα₀ : 0 < α₀)
     (hM : ∀ w, ∀ v ∈ VN, |aN w v| ≤ M * ‖w‖ * ‖v‖)
-    (hcoer : ∀ v ∈ VN, α₀ * ‖v‖ ^ 2 ≤ aN v v) (hℓ : ∀ v ∈ VN, |ℓN v| ≤ c₀ * ‖v‖) :
-    (∃! uN, GeneralizedGalerkinProblem aN ℓN VN uN) ∧
-      ∀ uN, GeneralizedGalerkinProblem aN ℓN VN uN →
-        ‖ι u - uN‖ ≤ (1 + M / α₀) * (⨅ w : VN, ‖ι u - (w : W)‖)
-          + 1 / α₀ * consistencyError aN ℓN VN (ι u) :=
-  theorem_9_3_1 aN ℓN VN hM0 hα₀ hM hcoer hℓ (ι u)
+    (hcoer : ∀ v ∈ VN, α₀ * ‖v‖ ^ 2 ≤ aN v v) (hℓ : ∀ v ∈ VN, |ℓN v| ≤ c₀ * ‖v‖) {uN : W}
+    (huN : GeneralizedGalerkinProblem aN ℓN VN uN) :
+    ‖ι u - uN‖ ≤ (1 + M / α₀) * (⨅ w : VN, ‖ι u - (w : W)‖)
+      + 1 / α₀ * consistencyError aN ℓN VN (ι u) :=
+  theorem_9_3_1 aN ℓN VN hM0 hα₀ hM hcoer hℓ (ι u) huN
 
 end Strang
 

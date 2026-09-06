@@ -76,6 +76,7 @@ theorem galerkinProblem_iff_mulVec (hM : a.IsBoundedWith M) (ℓ : StrongDual �
 
 /-! ### Exercise 9.1.2: symmetry and positive definiteness of the stiffness matrix -/
 
+/-- The entries of the stiffness matrix, `A_{ij} = a(φ_j, φ_i)`. -/
 theorem stiffnessMatrix_apply (a : BilinForm V) {N : ℕ} (φ : Fin N → V) (i j : Fin N) :
     stiffnessMatrix a φ i j = a (φ j) (φ i) := rfl
 
@@ -85,10 +86,10 @@ theorem stiffnessMatrix_isSymm (hs : LinearMap.BilinForm.IsSymm a) {N : ℕ} (φ
   ext i j
   exact BilinForm.isSymm_iff.mp hs (φ i) (φ j)
 
+/-- Exercise 9.1.2 in Mathlib's spelling: over `ℝ` a symmetric matrix is Hermitian. -/
 theorem stiffnessMatrix_isHermitian (hs : LinearMap.BilinForm.IsSymm a) {N : ℕ} (φ : Fin N → V) :
-    (stiffnessMatrix a φ).IsHermitian := by
-  ext i j
-  exact BilinForm.isSymm_iff.mp hs (φ i) (φ j)
+    (stiffnessMatrix a φ).IsHermitian :=
+  Matrix.isHermitian_iff_isSymm.2 (stiffnessMatrix_isSymm hs φ)
 
 /-- The quadratic form of the stiffness matrix is the form evaluated at the corresponding
 elements of `V_N`. -/
@@ -154,7 +155,10 @@ theorem proposition_9_1_3_le (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀) (ha : a
     ‖u - uN‖ ≤ M / c₀ * ‖u - v‖ :=
   IsGalerkinSolution.norm_sub_le hc₀ (BilinForm.isBoundedWith_toCLM hM) ha huN hu hv
 
-private theorem iInf_norm_sub_eq_infDist (u : V) (K : Submodule ℝ V) :
+/-- The infimum over a subspace, as the book writes it, is the distance to that subspace: the
+bridge between the `inf_{v ∈ V_N}` of (9.1.11) and the `Metric.infDist` the backbone states its
+quasi-optimality bounds in.  §10.4 uses it again for (10.4.5). -/
+theorem iInf_norm_sub_eq_infDist (u : V) (K : Submodule ℝ V) :
     (⨅ v : K, ‖u - (v : V)‖) = Metric.infDist u (K : Set V) := by
   simp [Metric.infDist_eq_iInf, dist_eq_norm]
 

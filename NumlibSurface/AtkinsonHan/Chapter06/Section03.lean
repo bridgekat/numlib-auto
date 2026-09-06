@@ -15,7 +15,9 @@ whose exact values satisfy the same recursion with an extra local truncation err
 such schemes as the two mesh parameters `h_x` and `h_t` are refined, so the definitions below are
 stated for a family indexed by an arbitrary type with a filter along which the mesh is refined;
 that filter is what "as `h_x, h_t → 0`" means.  Theorem 6.3.2 is then one inequality with explicit
-constants, `FiniteDifference.norm_sub_le_of_stable`, together with two limits.
+constants, `FiniteDifference.norm_sub_le_of_stable`, together with two limits; its two claims are
+`theorem_6_3_2` (consistency and stability give convergence) and `theorem_6_3_2'` (order `(p₁, p₂)`
+gives the error estimate).
 
 The book works in `ℝ^{N_x - 1}` and leaves the norm on it unspecified, saying that it will be
 chosen per example — the two worked examples use the maximum norm and a scaled discrete two-norm
@@ -80,10 +82,9 @@ private theorem error_le (hht : ∀ i, 0 ≤ ht i)
     (fun k _ => hu i k) (h0 i) (fun k hk => hstab i k (hle k hk))
     (fun k hk => hτ k (hle k hk.le)) le_rfl
 
-/-- **Theorem 6.3.2.**  A consistent and stable family of two-level schemes is convergent, and its
-error inside the horizon obeys `sup_{m h_t ≤ T} ‖u^m - v^m‖ ≤ M₀ T sup_{m h_t ≤ T} ‖τ^m‖`; if the
-family is moreover of order `(p₁, p₂)` with constant `c` then the error is at most
-`M₀ T c (h_x^{p₁} + h_t^{p₂})`.
+/-- **Theorem 6.3.2**, first claim.  A consistent and stable family of two-level schemes is
+convergent, its error inside the horizon obeying
+`sup_{m h_t ≤ T} ‖u^m - v^m‖ ≤ M₀ T sup_{m h_t ≤ T} ‖τ^m‖`.
 
 The exact values `u` and the computed values `v` obey the same two-level recursion, the exact ones
 carrying the local truncation error `h_t τ^m` of (6.3.6), and they start from the same value. -/
@@ -92,30 +93,35 @@ theorem theorem_6_3_2 {l : Filter ι} (hT : 0 ≤ T) (hht : ∀ i, 0 ≤ ht i)
     (hu : ∀ (i : ι) (m : ℕ), u i (m + 1) = Q i (u i m) + ht i • g i m + ht i • τ i m)
     (h0 : ∀ i : ι, u i 0 = v i 0) (hstab : IsStableScheme ht Q T M₀)
     (hcons : IsConsistentScheme l ht τ T) :
-    IsConvergentScheme l ht u v T ∧
-      ∀ (c : ℝ) (p₁ p₂ : ℕ), IsSchemeOfOrder hx ht τ T c p₁ p₂ →
-        ∀ (i : ι) (m : ℕ), (m : ℝ) * ht i ≤ T →
-          ‖u i m - v i m‖ ≤ M₀ * T * (c * (hx i ^ p₁ + ht i ^ p₂)) := by
-  constructor
-  · intro ε hε
-    have hM : (0 : ℝ) ≤ max M₀ 0 := le_max_right _ _
-    have hMT : (0 : ℝ) ≤ max M₀ 0 * T := mul_nonneg hM hT
-    have hden : (0 : ℝ) < max M₀ 0 * T + 1 := by linarith
-    have hδpos : (0 : ℝ) < ε / (max M₀ 0 * T + 1) := div_pos hε hden
-    filter_upwards [hcons _ hδpos] with i hi
-    intro m hm
-    calc ‖u i m - v i m‖ ≤ M₀ * T * (ε / (max M₀ 0 * T + 1)) :=
-          error_le hht hv hu h0 hstab i hδpos.le hi hm
-      _ ≤ max M₀ 0 * T * (ε / (max M₀ 0 * T + 1)) := by
-          exact mul_le_mul_of_nonneg_right
-            (mul_le_mul_of_nonneg_right (le_max_left _ _) hT) hδpos.le
-      _ ≤ ε := by
-          rw [mul_div_assoc', div_le_iff₀ hden]
-          nlinarith [hε.le]
-  · intro c p₁ p₂ hord i m hm
-    have hδ0 : 0 ≤ c * (hx i ^ p₁ + ht i ^ p₂) :=
-      le_trans (norm_nonneg _) (hord i 0 (by simpa using hT))
-    exact error_le hht hv hu h0 hstab i hδ0 (fun k hk => hord i k hk) hm
+    IsConvergentScheme l ht u v T := by
+  intro ε hε
+  have hM : (0 : ℝ) ≤ max M₀ 0 := le_max_right _ _
+  have hMT : (0 : ℝ) ≤ max M₀ 0 * T := mul_nonneg hM hT
+  have hden : (0 : ℝ) < max M₀ 0 * T + 1 := by linarith
+  have hδpos : (0 : ℝ) < ε / (max M₀ 0 * T + 1) := div_pos hε hden
+  filter_upwards [hcons _ hδpos] with i hi
+  intro m hm
+  calc ‖u i m - v i m‖ ≤ M₀ * T * (ε / (max M₀ 0 * T + 1)) :=
+        error_le hht hv hu h0 hstab i hδpos.le hi hm
+    _ ≤ max M₀ 0 * T * (ε / (max M₀ 0 * T + 1)) :=
+        mul_le_mul_of_nonneg_right
+          (mul_le_mul_of_nonneg_right (le_max_left _ _) hT) hδpos.le
+    _ ≤ ε := by
+        rw [mul_div_assoc', div_le_iff₀ hden]
+        nlinarith [hε.le]
+
+/-- **Theorem 6.3.2**, second claim: a stable family of order `(p₁, p₂)` with constant `c` has
+error at most `M₀ T c (h_x^{p₁} + h_t^{p₂})` inside the horizon.  Consistency is not needed
+separately, being implied by (6.3.7) once the mesh is refined. -/
+theorem theorem_6_3_2' (hT : 0 ≤ T) (hht : ∀ i, 0 ≤ ht i)
+    (hv : ∀ (i : ι) (m : ℕ), v i (m + 1) = Q i (v i m) + ht i • g i m)
+    (hu : ∀ (i : ι) (m : ℕ), u i (m + 1) = Q i (u i m) + ht i • g i m + ht i • τ i m)
+    (h0 : ∀ i : ι, u i 0 = v i 0) (hstab : IsStableScheme ht Q T M₀) {c : ℝ} {p₁ p₂ : ℕ}
+    (hord : IsSchemeOfOrder hx ht τ T c p₁ p₂) (i : ι) {m : ℕ} (hm : (m : ℝ) * ht i ≤ T) :
+    ‖u i m - v i m‖ ≤ M₀ * T * (c * (hx i ^ p₁ + ht i ^ p₂)) := by
+  have hδ0 : 0 ≤ c * (hx i ^ p₁ + ht i ^ p₂) :=
+    le_trans (norm_nonneg _) (hord i 0 (by simpa using hT))
+  exact error_le hht hv hu h0 hstab i hδ0 (fun k hk => hord i k hk) hm
 
 end Theorem632
 

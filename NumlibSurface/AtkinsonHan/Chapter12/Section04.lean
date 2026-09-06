@@ -9,8 +9,7 @@ Analysis Framework*, 3rd edition, Springer, 2009, §12.4.
 Only the abstract half of the section, §12.4.3, is formalized: the perturbation theorem whose
 hypothesis constrains `(T - S) S` rather than `T - S`, the assumptions A1–A3, and Lemma 12.4.7.
 That is the framework which makes the Nyström method analysable, and which §12.5 reuses for
-product integration.  As in §12.1 the book's scalar `λ` is written `μ`, `λ` being Lean's lambda
-binder.
+product integration.
 
 ## Main results
 
@@ -34,8 +33,15 @@ numerical integral operators `K_n u (x) = Σ_j w_j k (x, t_j) u (t_j)` on `C(D)`
 that those operators form a collectively compact, pointwise convergent family, which needs the
 `C(D)` integral-operator toolkit together with a convergent quadrature rule; neither the
 quadrature rule nor its Banach–Steinhaus convergence criterion exists yet.  Once they do,
-`theorem_12_4_4` is one application of `exists_norm_inverse_le_of_isCollectivelyCompactFamily` and
+Theorem 12.4.4 is one application of `exists_norm_inverse_le_of_isCollectivelyCompactFamily` and
 belongs in this file.
+
+## Conventions
+
+As in §12.1 the book's scalar `λ` is written `μ`, `λ` being Lean's lambda binder.  The book's
+family is `K_n` with limit `K`; here the family is `K : ℕ → X →L[𝕜] X` and its limit is `L`, so
+that the family is named once and indexed.  Doc comments below quote the book's `K` and `K_n`,
+which are this file's `L` and `K n`.
 -/
 
 open Filter Topology

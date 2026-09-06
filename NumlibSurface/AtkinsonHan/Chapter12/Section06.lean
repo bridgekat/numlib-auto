@@ -32,6 +32,8 @@ book's scalar `λ` is written `μ`, `λ` being Lean's lambda binder.
 
 ## Conventions
 
+As in §12.4, the book's family `K_n` is `K n` here and its pointwise limit `K` is `L`.
+
 The book states Theorem 12.6.1 for the Nyström operators of §12.4 on `C(D)`.  Its proof uses only
 that the family is collectively compact and pointwise convergent — the assumptions A1–A3 of
 `IsCollectivelyCompactFamily` — so that is the form stated here, and the Nyström case is the

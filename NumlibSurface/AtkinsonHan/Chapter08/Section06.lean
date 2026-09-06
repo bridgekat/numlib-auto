@@ -102,12 +102,12 @@ theorem proposition_8_6_2 (hu : u ∈ A) (hp : p ∈ B) (hbddA : ∀ v ∈ A, Bd
   · rintro ⟨⟨hpu, hleast⟩, hdp, hgreatest⟩
     refine isSaddlePoint_iff.mpr
       (isSaddlePoint_of_isLeast_of_isGreatest hu hp (hbddA u hu) (hbddB p hp) ?_ ?_ ?_)
-    · have h1 : IsLeast (primalObjective L B '' A) (primalObjective L B u) := by
-        rw [hpu]; exact hleast
-      exact h1
-    · have h2 : IsGreatest (dualObjective L A '' B) (dualObjective L A p) := by
-        rw [hdp]; exact hgreatest
-      exact h2
+    · change IsLeast (primalObjective L B '' A) (primalObjective L B u)
+      rw [hpu]
+      exact hleast
+    · change IsGreatest (dualObjective L A '' B) (dualObjective L A p)
+      rw [hdp]
+      exact hgreatest
     · exact hleast.csInf_eq.trans hgreatest.csSup_eq.symm
 
 /-- **(8.6.14)**: at a saddle point the primal and the dual problem have the same value, which is

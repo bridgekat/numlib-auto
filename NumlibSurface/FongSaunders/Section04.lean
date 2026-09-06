@@ -35,9 +35,11 @@ open Krylov Matrix
 
 variable {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} {b : Vec n}
 
+/-- `b − A x_k = r_k` for CR, in the unfolded shape the backbone's residual lemmas produce. -/
 private theorem cr_res (k : ℕ) : b - Matrix.toEuclideanLin A (cr A b k).x = (cr A b k).r :=
   (cr_residual_eq k).symm
 
+/-- `b − A x_k = r_k` for CG, in the unfolded shape the backbone's residual lemmas produce. -/
 private theorem cg_res (k : ℕ) : b - Matrix.toEuclideanLin A (cg A b k).x = (cg A b k).r :=
   (cg_residual_eq k).symm
 

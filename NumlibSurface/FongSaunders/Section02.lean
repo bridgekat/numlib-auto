@@ -581,6 +581,7 @@ theorem cr_term_state (hA : A.PosDef) :
   · obtain ⟨m, hm⟩ : ∃ m, crTerm A b = m + 1 := ⟨crTerm A b - 1, by omega⟩
     rw [hm, crBeta, ← hm, hρ, zero_div]
 
+/-- A CR state in which every vector and `ρ` vanish is a fixed point of `crStep`. -/
 private theorem crStep_eq_self {st : CRState n} (hr : st.r = 0) (hs : st.s = 0) (hρ : st.ρ = 0)
     (hp : st.p = 0) (hq : st.q = 0) : crStep A st = st := by
   obtain ⟨x, r, s, ρ, p, q⟩ := st
