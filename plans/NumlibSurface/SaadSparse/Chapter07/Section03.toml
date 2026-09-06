@@ -1,179 +1,67 @@
 namespace = "SaadSparse.Ch07"
-desc = '''
-Saad §7.3: the biconjugate gradient algorithm (Algorithm 7.3, Proposition 7.2) and QMR
-(Algorithm 7.4, Proposition 7.3, Theorem 7.4, Proposition 7.5, Algorithm 7.5).
-
-BCG is to the two-sided Lanczos process what CG is to the symmetric one: the `LDU` factorization
-`T_m = L_m U_m` and the direction matrices `P_m = V_m U_m⁻¹`, `P*_m = W_m L_m⁻ᴴ` of (7.10)-(7.12)
-turn Algorithm 7.2 into an updatable recurrence, and `bcg_eq_lanczosSolve` is that derivation.
-Proposition 7.2 is the backbone `BCG.inner_residual_dualResidual_eq_zero`.
-
-QMR is not a new algorithm: Algorithm 7.4 is Algorithm 6.13 (DQGMRES) run on the two-sided
-Lanczos basis, so this file *instantiates* the QGMRES layer of `Chapter06/Section05.lean`
-(`qgmres`, `quasiResidualNorm`, `z`, `ζ`, `c`, `s`, `γ`, `qmrs`) at `u := bilanczosV`,
-`h := bilanczosCoeff`, and its numbered results are the backbone quasi-minimal-residual theorems
-of `Numlib/Krylov/QuasiMinRes` read through that instance. In particular Theorem 7.4 and Saad
-Theorem 6.11 are the same theorem, `Krylov.IsQuasiMinResIterate.norm_residual_le_mul`, and the
-conditioning `κ₂(V_{m+1})` enters as the ratio `C/c` of the two-sided bound
-`c ‖y‖₂ ≤ ‖V_{m+1} y‖₂ ≤ C ‖y‖₂`, which exists because `V_{m+1}` has full rank
-(`problem_7_2`) — the hypothesis the book has to assume in Theorem 6.11 and can drop here.
-
-From (7.18) on, the book normalizes the Lanczos vectors to unit 2-norm (a different scaling from
-Algorithm 7.1, admissible by (7.1)); that is the hypothesis `∀ j, ‖v_j‖ = 1` carried by
-`equation_7_20` and everything after it.
-'''
 
 [[node]]
 id = "bcg"
-kind = "definition"
-desc = '''**Algorithm 7.3** (BCG): the state `(x, r, r*, p, p*)` with
-`α_j = (r_j, r*_j)/(A p_j, p*_j)`, `β_j = (r_{j+1}, r*_{j+1})/(r_j, r*_j)`, for matrices; `bcg_eq`
-identifies it with the backbone `BCG.iterate`.'''
-deps = ["BCG.iterate", "w₁"]
 
 [[node]]
 id = "bcg_eq"
-kind = "theorem"
-desc = '''The book's Algorithm 7.3 computes the backbone `BCG.iterate (op A) b x₀ r₀* j`.'''
-deps = ["bcg", "BCG.iterate"]
+
+[[node]]
+id = "BCGNoBreakdown"
 
 [[node]]
 id = "proposition_7_2"
-kind = "theorem"
-desc = '''**Proposition 7.2**, (7.13)-(7.14): `(r_j, r*_i) = 0` and `(A p_j, p*_i) = 0` for `i ≠ j`
-(also P-7.10).'''
-deps = ["bcg_eq", "BCG.inner_residual_dualResidual_eq_zero"]
 
 [[node]]
 id = "bcg_isPetrovGalerkin"
-kind = "theorem"
-desc = '''The BCG iterate `x_m` is the Petrov-Galerkin iterate onto `𝒦_m(A, r₀)` orthogonally to
-`𝒦_m(Aᴴ, r₀*)`, the projection process §7.3.1 opens with.'''
-deps = ["bcg_eq", "proposition_7_2", "IsPetrovGalerkin", "BCG.inner_residual_dualResidual_eq_zero"]
 
 [[node]]
 id = "bcg_eq_lanczosSolve"
-kind = "theorem"
-desc = '''(7.10)-(7.12): with `T_m = L_m U_m` the `LDU` factorization, `P_m = V_m U_m⁻¹` and
-`P*_m = W_m L_m⁻ᴴ`, the BCG iterate equals the Algorithm 7.2 iterate,
-`x_m = x₀ + P_m L_m⁻¹(β e₁)`, and `(P*_m)ᴴ A P_m = 1` (the `A`-biconjugacy of the direction
-matrices). The two-sided analogue of the D-Lanczos derivation of CG in §6.7.'''
-deps = ["bcg", "lanczosSolve", "proposition_7_2"]
 
 [[node]]
 id = "qmr"
-kind = "definition"
-desc = '''**Algorithm 7.4** (QMR): DQGMRES run on the two-sided Lanczos basis. Defined as
-`SaadSparse.Ch06.qgmres x₀ (bilanczosV A v₁ w₁) (bilanczosCoeff A v₁ w₁) β m`, with the
-progressive form of Algorithm 7.4 (the `p_m`, `γ_m` recurrence, which is
-`SaadSparse.Ch06.dqgmres` with `k = 1`) and the equivalence `qmr_eq_dqgmres` between them.'''
-deps = ["SaadSparse.Ch06.qgmres", "SaadSparse.Ch06.dqgmres", "bilanczosCoeff"]
 
 [[node]]
 id = "qmr_isQuasiMinResIterate"
-kind = "theorem"
-desc = '''The QMR iterate satisfies the backbone specification
-`Krylov.IsQuasiMinResIterate (bilanczosV A v₁ w₁) (bilanczosCoeff A v₁ w₁) β x₀ m x_m`: it
-minimizes the quasi-residual `‖β e₁ - T̄_m y‖₂` over `y`, and the corresponding `x` is
-`x₀ + V_m y`. This is the definition of QMR as the book gives it after (7.17), and the hinge of
-the rest of the file.'''
-deps = ["qmr", "Krylov.IsQuasiMinResIterate", "bilanczos_hessenbergRelation", "QMR.IsQuasiMinRes"]
 
 [[node]]
 id = "equation_7_16"
-kind = "theorem"
-desc = '''(7.16)-(7.17): `b - A (x₀ + V_m y) = V_{m+1}(β e₁ - T̄_m y)`, hence
-`‖b - A x‖₂ = ‖V_{m+1}(β e₁ - T̄_m y)‖₂`; if the `v_i` were orthonormal this would be
-`‖β e₁ - T̄_m y‖₂`, as in GMRES.'''
-deps = ["bilanczos_hessenbergRelation", "Krylov.HessenbergRelation.residual_eq"]
 
 [[node]]
 id = "equation_7_18"
-kind = "theorem"
-desc = '''(7.18): the quasi-residual norm satisfies `ρ^Q_m = |s_1 s_2 ⋯ s_m| ‖r₀‖₂ = |s_m| ρ^Q_{m-1}`;
-`SaadSparse.Ch06.quasiResidualNorm` at the Lanczos coefficients, through
-`Krylov.norm_gamma_eq_prod`.'''
-deps = ["qmr", "SaadSparse.Ch06.quasiResidualNorm", "Krylov.norm_gamma_eq_prod"]
 
 [[node]]
 id = "equation_7_19"
-kind = "theorem"
-desc = '''(7.19): `γ_{m+1} v_{m+1} = c_m r_m`, where `r_m` is the actual BCG residual — the two-sided
-form of Saad (6.56); and (7.20) `ρ^Q_m = |c_m| ρ_m` follows for unit Lanczos vectors.'''
-deps = ["qmr", "bcg_eq_lanczosSolve", "SaadSparse.Ch06.c", "SaadSparse.Ch06.γ",
-  "Krylov.HessenbergRelation.residual_eq_of_mulVec_eq"]
 
 [[node]]
 id = "equation_7_20"
-kind = "theorem"
-desc = '''(7.20): `ρ^Q_m = |c_m| ρ_m` with `ρ_m = ‖b - A x_m^{BCG}‖₂`, under the book's normalization
-`‖v_j‖₂ = 1`.'''
-deps = ["equation_7_19"]
 
 [[node]]
 id = "proposition_7_3"
-kind = "theorem"
-desc = '''**Proposition 7.3**, (7.21): `‖b - A x_m‖ ≤ ‖V_{m+1}‖₂ |s_1 ⋯ s_m| ‖r₀‖₂`, together with the
-Cauchy-Schwarz bound `‖V_{m+1}‖₂ ≤ √(m+1)` for unit Lanczos vectors. The specialization of
-`Krylov.IsQuasiMinResIterate.norm_residual_le`.'''
-deps = ["qmr_isQuasiMinResIterate", "Krylov.IsQuasiMinResIterate.norm_residual_le",
-  "equation_7_18", "QMR.norm_residual_le"]
+
+[[node]]
+id = "proposition_7_3_sqrt"
 
 [[node]]
 id = "theorem_7_4"
-kind = "theorem"
-desc = '''**Theorem 7.4**: `‖r^Q_m‖₂ ≤ κ₂(V_{m+1}) ‖r^G_m‖₂`, the QMR residual against the GMRES
-residual after `m` steps. `Krylov.IsQuasiMinResIterate.norm_residual_le_mul` with
-`c = σ_min(V_{m+1})`, `C = σ_max(V_{m+1}) = ‖V_{m+1}‖₂`, both positive because `V_{m+1}` has full
-rank (`problem_7_2`); the book's remark that full rank need not be assumed here, unlike in
-Theorem 6.11, is exactly that.'''
-deps = ["qmr_isQuasiMinResIterate", "Krylov.IsQuasiMinResIterate.norm_residual_le_mul",
-  "problem_7_2", "SaadSparse.Ch06.gmresFixed", "NormedRing.condNumber"]
 
 [[node]]
 id = "equation_7_23"
-kind = "theorem"
-desc = '''(7.23): `1/(ρ^Q_j)² = 1/(ρ^Q_{j-1})² + 1/(ρ_j)²`, the harmonic relation between the QMR
-quasi-residual norms and the BCG residual norms — the two-sided analogue of (6.65).'''
-deps = ["equation_7_20", "Krylov.inv_sq_norm_gamma"]
 
 [[node]]
 id = "equation_7_24"
-kind = "theorem"
-desc = '''(7.24): `ρ^Q_m = (∑_{i ≤ m} 1/ρ_i²)^{-1/2}`, the smoothing property of QMR.'''
-deps = ["equation_7_23", "Krylov.inv_sq_norm_gamma_eq_sum"]
 
 [[node]]
 id = "proposition_7_5"
-kind = "theorem"
-desc = '''**Proposition 7.5**, (7.25): `ρ^Q_m ≤ ρ_{m*} ≤ √(m+1) ρ^Q_m`, where `ρ_{m*}` is the smallest
-BCG residual norm among the first `m` steps.'''
-deps = ["equation_7_24", "Krylov.exists_norm_gamma_div_givensC_le"]
 
 [[node]]
 id = "equation_7_26"
-kind = "theorem"
-desc = '''(7.26)-(7.28): the actual QMR residual is `b - A x^Q_m = γ_{m+1} z_{m+1}` with
-`z_{m+1} = -s_m z_m + c_m v_{m+1}`, hence
-`r^Q_m = s_m² r^Q_{m-1} + c_m γ_{m+1} v_{m+1}`; `SaadSparse.Ch06.equation_6_50` and
-`equation_6_53` at the Lanczos data.'''
-deps = ["qmr", "SaadSparse.Ch06.z", "SaadSparse.Ch06.equation_6_53"]
 
 [[node]]
 id = "equation_7_29"
-kind = "theorem"
-desc = '''(7.29)-(7.31): `r^Q_m = s_m² r^Q_{m-1} + c_m² r_m` and `x^Q_m = s_m² x^Q_{m-1} + c_m² x_m`
-against the BCG iterates, equivalently
-`x^Q_m = x^Q_{m-1} + c_m²(x_m - x^Q_{m-1})`: QMR is a residual smoothing of BCG with parameter
-`c_m²`.'''
-deps = ["equation_7_26", "equation_7_19", "Krylov.IsQuasiMinResIterate.eq_combination"]
 
 [[node]]
 id = "qmrSmoothing"
-kind = "definition"
-desc = '''**Algorithm 7.5** (Zhou-Walker quasi-minimal residual smoothing): `η_j = (ρ^Q_j/ρ_j)²` and
-`x^Q_j = x^Q_{j-1} + η_j (x_j - x^Q_{j-1})` for an arbitrary sequence `x_j` with residual norms
-`ρ_j`, with `ρ^Q_j` computed from (7.23). It is `SaadSparse.Ch06.qmrs`, and
-`qmrSmoothing_eq_qmr` is the book's remark that applying it to the BCG sequence reproduces
-QMR.'''
-deps = ["SaadSparse.Ch06.qmrs", "equation_7_29"]
+
+[[node]]
+id = "qmrSmoothing_eq_qmr"

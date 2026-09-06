@@ -1,92 +1,106 @@
 namespace = "SaadSparse.Ch13"
-desc = '''
-§13.4, the standard multigrid cycles: the Galerkin coarse problem (13.39), the smoother written
-through its error propagation operator (13.40)–(13.42), the two-grid operator (13.43), Lemma 13.1,
-the V- and W-cycles, and the full multigrid error bound (Theorem 13.2).
-
-The V-cycle and W-cycle (Algorithms 13.3–13.4) and full multigrid (Algorithm 13.5) are defined here
-as recursive functions over a hierarchy of levels, because they are what Theorem 13.2 is about; but
-no theorem is proved about the V-cycle itself, and none is stated in the book either — Saad's
-convergence discussion for `γ`-cycles (13.44)–(13.47) is a cost recursion, which is planned as a
-separate node because it is a genuine (elementary) statement about the complexity recurrence
-`C(n) = η n + γ C(n/2)`.
-
-Example 13.2 (in 1-D with full weighting, the Galerkin coarse operator coincides with the coarse
-discretization) is planned: it is a two-line matrix computation and the only concrete check in the
-chapter that the Galerkin coarse problem is the natural one. Saad notes it fails in 2-D.
-'''
 
 [[node]]
 id = "coarseOperator"
-kind = "definition"
-desc = '''Saad (13.39): the Galerkin coarse operator `A_H = I_h^H A_h I_H^h` and right-hand side
-`f^H = I_h^H f^h`, with `coarseOperator_eq_galerkinCoarse` identifying it with
-`Multigrid.galerkinCoarse` through `equation_13_35` (the scaling `2^d` cancels), and its positive
-definiteness for positive definite `A_h` and injective prolongation.'''
-deps = ["prolongation1D", "equation_13_35", "Multigrid.galerkinCoarse", "Multigrid.galerkinCoarse_isSymmetricCoercive"]
+
+[[node]]
+id = "coarseRhs"
+
+[[node]]
+id = "coarseOperator_eq_galerkinCoarse"
+
+[[node]]
+id = "posDef_coarseOperator"
 
 [[node]]
 id = "example_13_2"
-kind = "theorem"
-desc = '''Example 13.2: in one dimension with full weighting, the Galerkin coarse operator of the model
-problem *is* the coarse discretization, `I_h^H (tridiag(-1,2,-1)_n) I_H^h = tridiag(-1,2,-1)_m`.
-Column by column, as in the book. (Saad's Exercise 6 notes that the corresponding statement is
-false in 2-D with full weighting, which is why the Galerkin definition is taken as primary.)'''
-deps = ["coarseOperator", "laplacian1D", "prolongation1D", "restriction1D"]
 
 [[node]]
 id = "smoother"
-kind = "definition"
-desc = '''Saad (13.40)–(13.42): a smoother as an affine iteration `u ← S u + g` with
-`S = I - B A`, `B = (I - S) A⁻¹`, `g = B f`, so that with `f = 0` one step applies `S`; and the
-error and residual after `ν` steps, `d_ν = S^ν d_0`, `r_ν = (I - A B)^ν r_0`. Example 13.3: for
-Jacobi `B = D⁻¹`, for Gauss–Seidel `B = (D - E)⁻¹`, for Richardson `B = ω I`, each read off
-`Numlib/LinearSolve/Stationary/Splitting`.'''
-deps = ["Stationary.Splitting.iterationOperator", "Stationary.Splitting.iterationOperator_eq", "Stationary.step_iterate_sub", "Matrix.jacobiSplitting", "Matrix.gaussSeidelSplitting"]
+
+[[node]]
+id = "smootherStep"
+
+[[node]]
+id = "smoother_eq_smootherOperator"
+
+[[node]]
+id = "equation_13_41"
+
+[[node]]
+id = "equation_13_42"
+
+[[node]]
+id = "smootherStep_iterate_sub"
+
+[[node]]
+id = "smootherStep_iterate_residual"
+
+[[node]]
+id = "example_13_3_jacobi"
+
+[[node]]
+id = "example_13_3_gaussSeidel"
+
+[[node]]
+id = "example_13_3_richardson"
+
+[[node]]
+id = "IsCoarsening"
+
+[[node]]
+id = "isCoarsening_model"
+
+[[node]]
+id = "coarsePreconditioner"
+
+[[node]]
+id = "coarseProjector"
+
+[[node]]
+id = "coarseCorrection"
 
 [[node]]
 id = "equation_13_43"
-kind = "definition"
-desc = '''Algorithm 13.2 and (13.43): the two-grid iteration operator
-`M_H^h = S^{ν₂} (I - I_H^h A_H⁻¹ I_h^H A_h) S^{ν₁}` and the coarse-grid correction
-`T_h^H = I - I_H^h A_H⁻¹ I_h^H A_h`, with `equation_13_43_eq` identifying them with
-`Multigrid.twoGridOperator` and `Multigrid.coarseCorrection`, and the preconditioner reading
-`B_h = I_H^h A_H⁻¹ I_h^H`.'''
-deps = ["coarseOperator", "smoother", "Multigrid.twoGridOperator", "Multigrid.coarseProjection"]
+
+[[node]]
+id = "IsCoarsening.isSymmetricCoercive"
+
+[[node]]
+id = "toEuclideanLin_coarseProjector"
+
+[[node]]
+id = "toEuclideanLin_coarseCorrection"
+
+[[node]]
+id = "equation_13_43_eq"
 
 [[node]]
 id = "lemma_13_1"
-kind = "theorem"
-desc = '''Lemma 13.1: when the coarse matrix is defined by (13.39), the coarse-grid correction operator
-(13.43) is a projector, orthogonal with respect to the `A_h`-inner product, and the range of
-`T_h^H` is `A_h`-orthogonal to the range of `I_H^h`.'''
-deps = ["equation_13_43", "Multigrid.coarseProjection_apply_eq", "Multigrid.range_coarseCorrection"]
 
 [[node]]
-id = "vcycle"
-kind = "definition"
-desc = '''Algorithms 13.3–13.5: the V-cycle, the general `γ`-cycle `MG(A_h, u_0, f, ν₁, ν₂, γ)` and full
-multigrid, as recursive functions over a hierarchy of `p + 1` levels with prolongations and
-restrictions between consecutive ones. Definitions only: the book proves nothing about them
-directly, and their error operators are the composites of the two-grid ones.'''
-deps = ["equation_13_43"]
+id = "lemma_13_1_energyInner"
+
+[[node]]
+id = "lemma_13_1_energyInner_eq_zero"
+
+[[node]]
+id = "Hierarchy"
+
+[[node]]
+id = "Hierarchy.cycle"
+
+[[node]]
+id = "Hierarchy.vcycle"
+
+[[node]]
+id = "Hierarchy.wcycle"
+
+[[node]]
+id = "Hierarchy.fullMultigrid"
 
 [[node]]
 id = "equation_13_44"
-kind = "theorem"
-desc = '''The cost recurrence (13.44)–(13.47): if one level costs `η n_h` and `n_{2h} = n_h/2^d`, then
-`C(n) = η n + γ C(n/2^d)` gives `C(n) ≤ η n /(1 - γ/2^d)` for `γ < 2^d`, so a V-cycle (`γ = 1`) in
-`d` dimensions costs `O(n)` and a W-cycle (`γ = 2`) does too for `d ≥ 2`. Elementary, and the only
-quantitative statement the book makes about the cycles themselves.'''
-deps = ["vcycle"]
 
 [[node]]
 id = "theorem_13_2"
-kind = "theorem"
-desc = '''Theorem 13.2, the full multigrid error bound: under (13.49) `‖u^h - Î_H^h u^H‖ ≤ c₁ h^κ`,
-(13.50) `‖M_h‖ ≤ ξ < 1`, (13.51) `‖Î_H^h‖ ≤ c₂ 2^{-κ}` and (13.52) `c₂ ξ^μ < 1`, the FMG
-approximations satisfy `‖u^h - ũ^h‖ ≤ c₃ c₁ h^κ` on every level with `c₃ = ξ^μ/(1 - c₂ ξ^μ)`.
-Saad's assumption (13.48), that the discrete solution is within `c h^κ` of the sampled continuous
-one, is not used by the theorem (it motivates (13.49)) and is not stated; Example 13.6, which
-verifies it for the 1-D model problem, is out of scope.'''
-deps = ["vcycle", "Multigrid.norm_sub_fullMultigrid_le", "Multigrid.le_of_rec_of_half"]

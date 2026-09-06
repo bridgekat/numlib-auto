@@ -1,84 +1,76 @@
 namespace = "SaadSparse.Ch04"
-desc = '''
-Saad §4.3, alternating direction methods: Algorithm 4.3 (Peaceman-Rachford) and the identities
-(4.49)-(4.52), with the convergence statement the section asserts in prose.
 
-The section has no numbered result. What it has is a splitting `A = H + V` of the discretized
-elliptic operator into its horizontal and vertical three-point differences, one algorithm, four
-display equations, and a paragraph of cited claims. Of those claims exactly one is a theorem
-statement: *when `H` and `V` are symmetric positive definite and the parameter `r` is a positive
-constant, the stationary iteration converges*. It is proved in
-`Numlib/LinearSolve/Stationary/ADI`, from the fact that the Cayley transform of a symmetric
-coercive operator is a strict contraction, and specialized here.
-
-The `A = H + V` splitting itself is not formalized as a discretization: producing `H` and `V` from
-the elliptic operator (2.48) is Chapter 2's business, and Chapter 2's finite-difference matrices
-are all this file needs. What is stated instead is that for the model problem the two summands are
-the one-dimensional Laplacians in the two directions, which is
-`SaadSparse.Ch02.laplacian2D_eq_kroneckerSum` read as `H + V` - the same identity that makes
-`laplacian2D` a Kronecker sum - so the convergence theorem applies to it.
-
-**Not planned, with reasons.** The optimal parameter `r` and the cyclic parameter sequences: the
-book states no formula, no bound and no theorem, and cites Birkhoff-Varga-Young for a theory that
-exists only when `H` and `V` commute; nothing here is a statement to formalize. The claim that on
-the model problem ADI with the optimal `r` has the asymptotic rate of SSOR with the optimal `ω`:
-an asymptotic remark with no constant and no proof. The `O(n² log n)` complexity: an operation
-count cited to Peaceman and Rachford. The parabolic formulation (4.53)-(4.56) and the time-stepping
-pair after it: a semi-discretization of a partial differential equation, with no algebraic
-statement; note that the printed pair is not the image of Algorithm 4.3 under `r = 2 / Δt`, the
-sign patterns differing. And the line-ordering implementation remark, which says that each
-half-step decouples into independent tridiagonal systems: a statement about a data layout, not
-about the iteration.
-'''
+[[node]]
+id = "adiHalfStep"
 
 [[node]]
 id = "adiStep"
-kind = "definition"
-desc = '''Algorithm 4.3, one Peaceman-Rachford sweep with parameter `r`, as a function on `Fin n → ℝ`:
-`adiStep H V r b x` is the `u_{k+1}` produced by solving `(H + r) u_{k+1/2} = (r - V) x + b` and
-then `(V + r) u_{k+1} = (r - H) u_{k+1/2} + b`, with `adiHalfStep` for the intermediate vector.
-Stated for real matrices `H V : Matrix (Fin n) (Fin n) ℝ` with `H + r` and `V + r` nonsingular.'''
+
+[[node]]
+id = "adiHalfStep_spec"
+
+[[node]]
+id = "adiStep_spec"
+
+[[node]]
+id = "G_adi"
+
+[[node]]
+id = "f_adi"
 
 [[node]]
 id = "equation_4_50"
-kind = "theorem"
-desc = '''(4.50)-(4.51): one sweep is the affine map `x ↦ G x + f` with
-`G = (V + r)⁻¹ (H - r) (H + r)⁻¹ (V - r)` and
-`f = (V + r)⁻¹ (1 - (H - r) (H + r)⁻¹) b`, that is
-`adiStep H V r b x = G *ᵥ x + f`. Matrix algebra, and the identification of `G` with
-`Stationary.peacemanRachford` of `Numlib/LinearSolve/Stationary/ADI` through
-`Matrix.toEuclideanCLM`.'''
-deps = ["adiStep", "_root_.Stationary.peacemanRachford"]
+
+[[node]]
+id = "toEuclideanCLM_G_adi"
+
+[[node]]
+id = "toLp_f_adi"
+
+[[node]]
+id = "adiSplitting"
+
+[[node]]
+id = "adiSplitting_m"
 
 [[node]]
 id = "equation_4_52"
-kind = "theorem"
-desc = '''(4.52) and Problem P-4.5: for `r ≠ 0` the sweep is the splitting `A = M - N` of `A = H + V`
-with `M = (H + r) (V + r) / (2 r)` and `N = (H - r) (V - r) / (2 r)`; indeed `M - N = H + V`,
-which needs no commutativity of `H` and `V` since the `H V` terms cancel, and `f = M⁻¹ b`, that is
-`f = 2 r (V + r)⁻¹ (H + r)⁻¹ b`, which is the simpler form the book leaves as Exercise 5.
-`Stationary.peacemanRachfordSplitting` of `Numlib/LinearSolve/Stationary/ADI`.'''
-deps = ["equation_4_50", "_root_.Stationary.peacemanRachfordSplitting"]
+
+[[node]]
+id = "adiSplitting_iterationOperator"
+
+[[node]]
+id = "f_adi_eq"
+
+[[node]]
+id = "f_adi_eq_m_inv_mulVec"
+
+[[node]]
+id = "isUnit_add_smul_one_of_posDef"
+
+[[node]]
+id = "adi_complexSpectralRadius_lt_one"
 
 [[node]]
 id = "adi_converges"
-kind = "theorem"
-desc = '''The convergence claim of §4.3, which the book asserts without proof: if `H` and `V` are real
-symmetric positive definite and `0 < r`, then `complexSpectralRadius G < 1` for the `G` of (4.50),
-and the iterates `(adiStep H V r b)^[k] x₀` converge, for every `x₀` and every `b`, to the solution
-of `(H + V) x = b`. `Stationary.spectralRadius_peacemanRachford_lt_one` and
-`Stationary.tendsto_peacemanRachford` of `Numlib/LinearSolve/Stationary/ADI`, through
-`Matrix.posDef_iff_isSymmetricCoercive` and `Matrix.toEuclideanCLM`. Commutativity of `H` and `V`
-is not needed and is not assumed.'''
-deps = ["equation_4_50", "_root_.Stationary.spectralRadius_peacemanRachford_lt_one", "_root_.Stationary.tendsto_peacemanRachford", "_root_.Matrix.posDef_iff_isSymmetricCoercive"]
+
+[[node]]
+id = "adi_tendsto_inv_mulVec"
+
+[[node]]
+id = "modelH"
+
+[[node]]
+id = "modelV"
+
+[[node]]
+id = "laplacian2D_eq_modelH_add_modelV"
+
+[[node]]
+id = "modelH_posDef"
+
+[[node]]
+id = "modelV_posDef"
 
 [[node]]
 id = "adi_model_problem"
-kind = "theorem"
-desc = '''(4.49) for the model problem: the two-dimensional five-point matrix of Saad §2.2.5 is `H + V`
-with `H` the horizontal and `V` the vertical one-dimensional Laplacian, each positive semidefinite
-and, with the boundary conditions of the model problem, positive definite; hence `adi_converges`
-applies to it for every `r > 0`. The splitting is
-`SaadSparse.Ch02.laplacian2D_eq_kroneckerSum` read as a sum of the two Kronecker factors, and this
-is the only place the chapter needs a discretization at all.'''
-deps = ["adi_converges", "_root_.SaadSparse.Ch02.laplacian2D_eq_kroneckerSum"]

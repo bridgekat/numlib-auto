@@ -12,6 +12,7 @@ import NumlibSurface.SaadSparse.Chapter03.Section02
 import NumlibSurface.SaadSparse.Chapter03.Section03
 import NumlibSurface.SaadSparse.Chapter04.Section01
 import NumlibSurface.SaadSparse.Chapter04.Section02
+import NumlibSurface.SaadSparse.Chapter04.Section03
 import NumlibSurface.SaadSparse.Chapter05.Section01
 import NumlibSurface.SaadSparse.Chapter05.Section03
 import NumlibSurface.SaadSparse.Chapter05.Section04
@@ -29,6 +30,7 @@ import NumlibSurface.SaadSparse.Chapter06.Section11
 import NumlibSurface.SaadSparse.Chapter06.Section12
 import NumlibSurface.SaadSparse.Chapter07.Section01
 import NumlibSurface.SaadSparse.Chapter07.Section02
+import NumlibSurface.SaadSparse.Chapter07.Section03
 import NumlibSurface.SaadSparse.Chapter08.Section01
 import NumlibSurface.SaadSparse.Chapter08.Section02
 import NumlibSurface.SaadSparse.Chapter08.Section03
@@ -37,6 +39,7 @@ import NumlibSurface.SaadSparse.Chapter09.Section01
 import NumlibSurface.SaadSparse.Chapter09.Section02
 import NumlibSurface.SaadSparse.Chapter09.Section03
 import NumlibSurface.SaadSparse.Chapter09.Section04
+import NumlibSurface.SaadSparse.Chapter09.Section05
 import NumlibSurface.SaadSparse.Chapter09.Section06
 import NumlibSurface.SaadSparse.Chapter10.Section02
 import NumlibSurface.SaadSparse.Chapter10.Section05
@@ -44,6 +47,7 @@ import NumlibSurface.SaadSparse.Chapter10.Section08
 import NumlibSurface.SaadSparse.Chapter12.Section03
 import NumlibSurface.SaadSparse.Chapter13.Section02
 import NumlibSurface.SaadSparse.Chapter13.Section03
+import NumlibSurface.SaadSparse.Chapter13.Section04
 import NumlibSurface.SaadSparse.Chapter14.Section02
 import NumlibSurface.SaadSparse.Chapter14.Section03
 import NumlibSurface.SaadSparse.Chapter14.Section06
