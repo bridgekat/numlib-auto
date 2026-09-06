@@ -1,5 +1,8 @@
 import Mathlib.LinearAlgebra.Matrix.PosDef
+import Numlib.Analysis.Matrix.SpectralNorm
+import Numlib.Analysis.Normed.Ring.CondNumber
 import Numlib.Approximation.Hermite
+import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
 
 /-!
 # Atkinson–Han §10.1: one-dimensional finite element examples
@@ -31,6 +34,8 @@ finite-dimensional algebra, and it is what this file holds.
   cubic, which is what makes the four shape functions a basis.
 * `exercise_10_1_3` — a `C¹` piecewise quadratic supported on two neighbouring elements is zero, so
   a conforming finite element method for the beam problem needs degree at least `3`.
+* `stiffnessMatrix` and `equation_10_1_9` — the stiffness matrix `h⁻¹ tridiag(−1, 2, −1)` of the
+  piecewise linear element, and its spectral condition number `(1 + cos πh)/(1 − cos πh)`.
 
 ## Deviations from the book
 
@@ -58,15 +63,13 @@ still needs its inner product, completeness, the embedding into `C[0,1]`, a Poin
 the density of the continuous piecewise linears; that is a backbone module of its own, not a
 paragraph in a surface file.
 
-**(10.1.9)**, the `O(h⁻²)` growth of the condition number of the stiffness matrix
-`h⁻¹ tridiag(−1, 2, −1)`, is blocked on neither.  The eigenvalues `λ_k = 2 − 2 cos(k π h)` are
-already in the backbone (`Matrix.symmTridiagonalToeplitz_hasEigenvalue_iff`); what is missing is the
-identity `‖A‖₂ = max |λ|` for a symmetric matrix, which would let the spectrum be read as a spectral
-norm.
+**(10.1.9)** needs neither: it is stated and proved below, from the eigenvalues
+`λ_k = 2 − 2 cos(k π h)` (`Matrix.symmTridiagonalToeplitz_hasEigenvalue_iff`) and the backbone's
+spectral-norm bridge `Matrix.IsHermitian.l2_opNorm_eq`.
 -/
 
-open Polynomial
-open scoped Matrix
+open Polynomial Real
+open scoped Matrix Matrix.Norms.L2Operator NormedRing
 
 namespace AtkinsonHan.Chapter10
 
@@ -280,5 +283,92 @@ theorem exercise_10_1_3 {a b c : ℝ} (hab : a < b) (hbc : b < c) {p q : ℝ[X]}
     · exact absurd h (sub_ne_zero.mpr hab.ne')
   rw [hα, hβ]
   simp
+
+/-! ### (10.1.9): the condition number of the stiffness matrix -/
+
+/-- **(10.1.9)**, the stiffness matrix of the piecewise linear element for the two-point boundary
+value problem on `(0, 1)` with `N` uniform elements of length `h = 1/N`:
+
+  `A = h⁻¹ tridiag(−1, 2, −1)` of order `N − 1`.
+
+It is indexed here by its order `n = N − 1`, so that `h = 1/(n + 1)` and `h⁻¹ = n + 1`; the entry
+`A i j = h⁻¹ ∫₀¹ φ_i' φ_j'` of the book is the same matrix. -/
+noncomputable def stiffnessMatrix (n : ℕ) : Matrix (Fin n) (Fin n) ℝ :=
+  ((n : ℝ) + 1) • Matrix.symmTridiagonalToeplitz n (-1) 2
+
+/-- **(10.1.9)**: the spectral condition number of the stiffness matrix is
+
+  `Cond₂(A) = ‖A‖₂ ‖A⁻¹‖₂ = (1 + cos πh) / (1 − cos πh)`,
+
+which is `O(h⁻²)` as `h = 1/(n + 1) → 0`.
+
+The eigenvalues of `tridiag(−1, 2, −1)` are `2 − 2 cos(kπh)` for `1 ≤ k ≤ n`, extreme at `k = 1`
+and `k = n`, so the spectrum is enclosed in `[2 − 2 cos πh, 2 + 2 cos πh]` with both ends attained.
+`Matrix.IsHermitian.l2_opNorm_eq` and `Matrix.IsHermitian.l2_opNorm_inv_eq` turn that into the two
+norms, and the factor `h⁻¹` cancels from the ratio by `NormedRing.condNumber_smul`. -/
+theorem equation_10_1_9 (n : ℕ) (hn : 0 < n) :
+    κ (stiffnessMatrix n)
+      = (1 + Real.cos (π / ((n : ℝ) + 1))) / (1 - Real.cos (π / ((n : ℝ) + 1))) := by
+  rw [stiffnessMatrix]
+  set c : ℝ := Real.cos (π / ((n : ℝ) + 1)) with hc
+  set B : Matrix (Fin n) (Fin n) ℝ := Matrix.symmTridiagonalToeplitz n (-1) 2 with hB
+  have hn1 : (0 : ℝ) < (n : ℝ) + 1 := by positivity
+  have hhalf : 0 < Real.sin (π / (2 * ((n : ℝ) + 1))) := by
+    refine Real.sin_pos_of_pos_of_lt_pi (by positivity) ?_
+    rw [div_lt_iff₀ (by positivity)]
+    nlinarith [Real.pi_pos]
+  have hcos : c = 1 - 2 * Real.sin (π / (2 * ((n : ℝ) + 1))) ^ 2 := by
+    rw [hc, ← Real.cos_two_mul_eq_one_sub]
+    congr 1
+    field_simp
+  have hclt : c < 1 := by rw [hcos]; nlinarith
+  have hcpos : 0 ≤ c := by
+    rw [hc]
+    have hpi := Real.pi_pos
+    refine Real.cos_nonneg_of_mem_Icc ⟨by linarith [div_pos hpi hn1], ?_⟩
+    rw [div_le_iff₀ hn1]
+    nlinarith [Nat.one_le_cast (α := ℝ) |>.2 hn]
+  have hm : (0 : ℝ) < 2 - 2 * c := by linarith
+  have hbdd := Matrix.isSymmetricBoundedBy_symmTridiagonalToeplitz n (-1) 2
+  simp only [abs_neg, abs_one, mul_one] at hbdd
+  rw [← hc, ← hB] at hbdd
+  have hHerm : B.IsHermitian := Matrix.symmTridiagonalToeplitz_isHermitian (-1) 2
+  have hIcc : ∀ μ : ℝ, Module.End.HasEigenvalue (Matrix.toEuclideanLin B) μ →
+      μ ∈ Set.Icc (2 - 2 * c) (2 + 2 * c) := fun μ hμ => by
+    simpa using hbdd.re_mem_Icc_of_hasEigenvalue hμ
+  have hmin : Module.End.HasEigenvalue (Matrix.toEuclideanLin B) (2 - 2 * c) := by
+    rw [hB, Matrix.symmTridiagonalToeplitz_hasEigenvalue_iff]
+    refine ⟨⟨0, hn⟩, ?_⟩
+    push_cast
+    rw [hc]
+    ring_nf
+  have hmax : Module.End.HasEigenvalue (Matrix.toEuclideanLin B) (2 + 2 * c) := by
+    rw [hB, Matrix.symmTridiagonalToeplitz_hasEigenvalue_iff]
+    refine ⟨⟨n - 1, Nat.sub_lt hn one_pos⟩, ?_⟩
+    have hcast : ((n - 1 : ℕ) : ℝ) + 1 = (n : ℝ) := by
+      have h1 : (1 : ℕ) ≤ n := hn
+      push_cast [Nat.cast_sub h1]
+      ring
+    have hsub : (n : ℝ) * π / ((n : ℝ) + 1) = π - π / ((n : ℝ) + 1) := by field_simp; ring
+    rw [hcast, hc, hsub, Real.cos_pi_sub]
+    ring
+  have hnormB : ‖B‖ = 2 + 2 * c := by
+    refine hHerm.l2_opNorm_eq (fun μ hμ => ?_) ⟨2 + 2 * c, hmax, by
+      rw [RCLike.re_to_real, abs_of_nonneg (by linarith : (0 : ℝ) ≤ 2 + 2 * c)]⟩
+    obtain ⟨h1, h2⟩ := hIcc μ hμ
+    rw [RCLike.re_to_real, abs_le]
+    constructor <;> linarith
+  have hnormBinv : ‖B⁻¹‖ = (2 - 2 * c)⁻¹ := by
+    refine hHerm.l2_opNorm_inv_eq hm (fun μ hμ => ?_)
+      ⟨2 - 2 * c, hmin, by
+        rw [RCLike.re_to_real, abs_of_nonneg (by linarith : (0 : ℝ) ≤ 2 - 2 * c)]⟩
+    obtain ⟨h1, h2⟩ := hIcc μ hμ
+    rw [RCLike.re_to_real, abs_of_nonneg (by linarith)]
+    linarith
+  rw [NormedRing.condNumber_smul hn1.ne' B, NormedRing.condNumber,
+    ← Matrix.nonsing_inv_eq_ringInverse, hnormB, hnormBinv]
+  have h2 : (2 : ℝ) - 2 * c ≠ 0 := by linarith
+  have h1 : (1 : ℝ) - c ≠ 0 := by linarith
+  field_simp
 
 end AtkinsonHan.Chapter10

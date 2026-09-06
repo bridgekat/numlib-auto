@@ -17,6 +17,7 @@ import Numlib.Analysis.InnerProductSpace.Projection.Angle
 import Numlib.Analysis.InnerProductSpace.Projection.Compression
 import Numlib.Analysis.InnerProductSpace.Projection.ObliqueProjection
 import Numlib.Analysis.InnerProductSpace.WeakCompactness
+import Numlib.Analysis.Matrix.SpectralNorm
 import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.Analysis.Normed.Algebra.SpectralRadius
 import Numlib.Analysis.Normed.Module.NormEquivalence
@@ -139,6 +140,7 @@ import Numlib.LinearSolve.Stationary.Splitting
 import Numlib.Nonlinear.CompletelyContinuous
 import Numlib.Nonlinear.FixedPoint
 import Numlib.Nonlinear.Newton
+import Numlib.RingTheory.MvPolynomial.TotalDegree
 import Numlib.RingTheory.Polynomial.ChebyshevEllipse
 import Numlib.RingTheory.Polynomial.ChebyshevMinimax
 import Numlib.RingTheory.Polynomial.KernelPolynomial

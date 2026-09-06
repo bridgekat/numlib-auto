@@ -1,0 +1,13 @@
+namespace = "MvPolynomial"
+
+[[node]]
+id = "totalDegree_bind₁_le"
+
+[[node]]
+id = "totalDegree_bind₁_le_of_totalDegree_le_one"
+
+[[node]]
+id = "totalDegree_bind₁_eq_of_leftInverse"
+
+[[node]]
+id = "restrictTotalDegree_map_bind₁"

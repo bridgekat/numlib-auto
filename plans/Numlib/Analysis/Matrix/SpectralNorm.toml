@@ -1,0 +1,13 @@
+namespace = "Matrix"
+
+[[node]]
+id = "IsHermitian.ofReal_re_of_hasEigenvalue"
+
+[[node]]
+id = "IsHermitian.l2_opNorm_eq"
+
+[[node]]
+id = "hasEigenvalue_toEuclideanLin_inv_iff"
+
+[[node]]
+id = "IsHermitian.l2_opNorm_inv_eq"
