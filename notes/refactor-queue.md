@@ -203,6 +203,39 @@ modules have now routed around it. And `Krylov.norm_sum_smul_vec_eq`,
 `mem_subspace_iff_exists_coeffs`, `residual_coeff_eq_zero` in `Krylov/Hessenberg`, plus
 `Lanczos.mulVec_tridiagExt_castSucc`, were duplicated privately by `Krylov/Singular`.
 
+### R15. Gram-Schmidt is index-bound, and three modules have paid for it
+
+`Numlib/Analysis/InnerProductSpace/GramSchmidt.lean` states `inner_gramSchmidt_self` and
+`inner_gramSchmidtNormed_self` for `ℕ` only. The proofs are index-generic and go through verbatim
+for any `[LinearOrder ι] [LocallyFiniteOrderBot ι] [WellFoundedLT ι]`. Private copies now exist in
+`LinearAlgebra/Matrix/QR.lean` and in the Saad §1.7 surface, and the `gramSchmidtNormed` span and
+orthogonality facts are private in **three** Krylov modules besides (R4). Generalizing the index
+and making the family public collapses all of it.
+
+Worth adding at the same time: `gramSchmidtNormed` pairwise orthogonality *without* a
+linear-independence hypothesis, which is what makes "modified equals classical Gram-Schmidt"
+unconditional.
+
+### R16. Small lemmas parked in surfaces because an agent could not edit the backbone
+
+* `Numlib/LinearSolve/Multigrid/Basic.lean` wants `coarseProjection_congr_range` (the projector
+  depends on the prolongation only through its range — one line, and the module's own doc comment
+  already relies on it), `coarseProjection_eq_of_scaled` and `coarseProjection_apply_eq_of_smul`
+  (which is what Saad §13.4 will use, since his scaling lands on the coarse operator). All three
+  are in `NumlibSurface/SaadSparse/Chapter13/Section03.lean`, with `range_smul_of_ne_zero`, which
+  should be restated over a field rather than the surface's inner-product variables.
+* `Numlib/LinearAlgebra/Matrix/TridiagonalToeplitz.lean`: make `padZero` and
+  `symmTridiagonalToeplitz_mulVec_apply` public. Saad §2.2 re-derived both to say that the rows of
+  the model matrix *are* the difference equations — a third copy of that argument.
+* `Numlib/Analysis/InnerProductSpace/Coercive.lean` wants `IsSymmetricBoundedBy.smul`: quadratic
+  form bounds scale with a positive constant. Every `1/h²`-scaled model matrix needs it, and Saad
+  §2.2 has it privately.
+* `Numlib/Krylov/Subspace.lean` wants `p(B ∘ A) ∘ B = B ∘ p(A ∘ B)` for every polynomial — Saad's
+  (9.18) — which is three lines from `SemiconjBy.pow_right` and is the operator-level shadow of
+  `Krylov.map_subspace_comp`, already there. It is private in the Saad §9.3 surface.
+* `SaadSparse.Ch06.mgsW` duplicates `SaadSparse.Ch01.mgsRun`; Chapter 6 can import Chapter 1 and
+  drop three private lemmas.
+
 ### R7. Plan bookkeeping
 
 * `plans/NumlibSurface/AtkinsonHan/Chapter05/Section03.toml` should gain `theorem_5_3_17`,
