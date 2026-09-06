@@ -17,6 +17,8 @@ import Mathlib.Topology.Algebra.Module.FiniteDimension
 What Mathlib's `Mathlib.Analysis.Normed.Operator.Compact` does not have, and the classical Riesz
 theory of `μ - K` needs.
 
+## Main statements
+
 * `IsCompactOperator.of_finiteDimensional_range` — a bounded operator of finite rank is compact.
 * `IsCompactOperator.of_tendsto` — an operator-norm limit of compact operators is compact, in the
   sequential form; Mathlib's `isCompactOperator_of_tendsto` is the general filter form.
@@ -35,7 +37,7 @@ theory of `μ - K` needs.
 
 Neither the finiteness of the eigenvalues of modulus at least `ε` nor the closed range needs the
 domain to be complete: Riesz's lemma and the compactness of `K` carry both arguments on their own.
-The Riesz ascent–descent theory — that the chain of null spaces of `(μ - K)ⁿ` stabilises, and that
+The Riesz ascent–descent theory — that the chain of null spaces of `(μ - K)ⁿ` stabilizes, and that
 `ker (μ - K)` and `ker (conj μ - K†)` have equal dimension — is not developed here.
 
 These are Atkinson–Han[^atkinson-han] Propositions 2.8.4 and 2.8.7, Lemma 2.8.13, Theorem 2.8.12

@@ -111,6 +111,20 @@ theorem ConvexOn.add_lineDeriv_le (hf : ConvexOn ℝ K f) {A : V →L[ℝ] ℝ} 
   have hmain := le_of_tendsto hslope hle
   linarith
 
+/-- A linear functional balances the displacements from a convex combination: writing
+`w = a • x + b • y` with `a + b = 1`, the two displacements `x - w` and `y - w` cancel under the
+weights `a` and `b`, so `a * A (x - w) + b * A (y - w) = 0`. -/
+private theorem weighted_apply_sub_combo_eq_zero (A : V →L[ℝ] ℝ) (x y : V) {a b : ℝ}
+    (hab : a + b = 1) :
+    a * A (x - (a • x + b • y)) + b * A (y - (a • x + b • y)) = 0 := by
+  have hz : a • (x - (a • x + b • y)) + b • (y - (a • x + b • y)) = 0 := by
+    have hexp : a • (x - (a • x + b • y)) + b • (y - (a • x + b • y))
+        = (a • x + b • y) - (a + b) • (a • x + b • y) := by module
+    rw [hexp, hab, one_smul, sub_self]
+  have hc := congrArg A hz
+  rw [map_add, map_smul, map_smul, map_zero] at hc
+  simpa [smul_eq_mul] using hc
+
 /-- The tangent minorant inequality forces convexity: if `f u + f' u (v - u) ≤ f v` for all
 `u, v` in a convex set `K`, then `f` is convex on `K`.  No differentiability is used — the
 functionals `f'` are arbitrary. -/
@@ -121,15 +135,7 @@ theorem convexOn_of_add_lineDeriv_le (hK : Convex ℝ K)
   have hwK : a • x + b • y ∈ K := hK hx hy ha hb hab
   have h1 := h _ hwK x hx
   have h2 := h _ hwK y hy
-  have hz : a • (x - (a • x + b • y)) + b • (y - (a • x + b • y)) = 0 := by
-    have hexp : a • (x - (a • x + b • y)) + b • (y - (a • x + b • y))
-        = (a • x + b • y) - (a + b) • (a • x + b • y) := by module
-    rw [hexp, hab, one_smul, sub_self]
-  have hlin : a * f' (a • x + b • y) (x - (a • x + b • y))
-      + b * f' (a • x + b • y) (y - (a • x + b • y)) = 0 := by
-    have hc := congrArg (f' (a • x + b • y)) hz
-    rw [map_add, map_smul, map_smul, map_zero] at hc
-    simpa [smul_eq_mul] using hc
+  have hlin := weighted_apply_sub_combo_eq_zero (f' (a • x + b • y)) x y hab
   have ha1 := mul_le_mul_of_nonneg_left h1 ha
   have hb1 := mul_le_mul_of_nonneg_left h2 hb
   have hsum : a * f (a • x + b • y) + b * f (a • x + b • y) = f (a • x + b • y) := by
@@ -152,10 +158,7 @@ theorem monotone_lineDeriv_of_add_lineDeriv_le
     0 ≤ (f' v - f' u) (v - u) := by
   have h1 := h u hu v hv
   have h2 := h v hv u hu
-  have h3 : f' v (u - v) = -f' v (v - u) := by
-    rw [← map_neg]
-    congr 1
-    abel
+  have h3 : f' v (u - v) = -f' v (v - u) := by rw [← map_neg, neg_sub]
   rw [h3] at h2
   rw [sub_apply]
   linarith
@@ -223,15 +226,7 @@ theorem strictConvexOn_of_add_lineDeriv_lt (hK : Convex ℝ K)
     · exact hxy (sub_eq_zero.mp h')
   have h1 := h _ hwK x hx hwx
   have h2 := h _ hwK y hy hwy
-  have hz : a • (x - (a • x + b • y)) + b • (y - (a • x + b • y)) = 0 := by
-    have hexp : a • (x - (a • x + b • y)) + b • (y - (a • x + b • y))
-        = (a • x + b • y) - (a + b) • (a • x + b • y) := by module
-    rw [hexp, hab, one_smul, sub_self]
-  have hlin : a * f' (a • x + b • y) (x - (a • x + b • y))
-      + b * f' (a • x + b • y) (y - (a • x + b • y)) = 0 := by
-    have hc := congrArg (f' (a • x + b • y)) hz
-    rw [map_add, map_smul, map_smul, map_zero] at hc
-    simpa [smul_eq_mul] using hc
+  have hlin := weighted_apply_sub_combo_eq_zero (f' (a • x + b • y)) x y hab
   have ha1 := mul_lt_mul_of_pos_left h1 ha
   have hb1 := mul_lt_mul_of_pos_left h2 hb
   have hsum : a * f (a • x + b • y) + b * f (a • x + b • y) = f (a • x + b • y) := by
@@ -253,10 +248,7 @@ theorem lineDeriv_sub_pos_of_add_lineDeriv_lt
     (hv : v ∈ K) (huv : u ≠ v) : 0 < (f' v - f' u) (v - u) := by
   have h1 := h u hu v hv huv
   have h2 := h v hv u hu huv.symm
-  have h3 : f' v (u - v) = -f' v (v - u) := by
-    rw [← map_neg]
-    congr 1
-    abel
+  have h3 : f' v (u - v) = -f' v (v - u) := by rw [← map_neg, neg_sub]
   rw [h3] at h2
   rw [sub_apply]
   linarith

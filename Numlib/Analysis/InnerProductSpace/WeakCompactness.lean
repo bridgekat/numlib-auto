@@ -16,12 +16,19 @@ import Mathlib.Topology.Metrizable.Basic
 # Weak sequential compactness in a Hilbert space
 
 Two facts about weak sequential convergence that the convergence analysis of numerical methods for
-variational problems rests on, and that Mathlib states in neither form:
+variational problems rests on, and that Mathlib states in neither form. These are
+Atkinson–Han[^atkinson-han] Theorem 2.7.5 in the Hilbert case, and the consequence of
+Theorem 3.3.11 (Mazur) that makes the second hypothesis of their Theorem 11.4.1 automatic for
+internal approximations.
+
+## Main statements
 
 * `exists_subseq_weak_tendsto` — every norm-bounded sequence in a Hilbert space has a weakly
   convergent subsequence;
 * `mem_of_weak_tendsto_of_convex` — a closed convex subset of a real normed space is sequentially
   weakly closed (Mazur's lemma).
+
+## Implementation notes
 
 The first is the sequential Banach–Alaoglu theorem, which Mathlib has
 (`WeakDual.isSeqCompact_closedBall`) only for the dual of a **separable** normed space. The
@@ -38,10 +45,6 @@ numerical-analysis literature states the hypotheses.
 The general Banach-space statements — reflexivity, Eberlein–Šmulian, weak sequential compactness of
 bounded sets in a reflexive space — are deliberately out of scope: Mathlib has no reflexivity class
 for Banach spaces, and everything the applications need happens in a Hilbert space.
-
-These are Atkinson–Han[^atkinson-han] Theorem 2.7.5 in the Hilbert case, and the consequence of
-Theorem 3.3.11 (Mazur) that makes the second hypothesis of their Theorem 11.4.1 automatic for
-internal approximations.
 
 ## References
 
@@ -89,7 +92,7 @@ theorem exists_subseq_weak_tendsto {u : ℕ → V} {C : ℝ} (hC : ∀ n, ‖u n
     WeakDual.isSeqCompact_closedBall 𝕜 S (0 : StrongDual 𝕜 S) C hxmem
   refine ⟨σ, ((InnerProductSpace.toDual 𝕜 S).symm (WeakDual.toStrongDual a) : V), hσ, fun v => ?_⟩
   -- The projection of `v` onto `S` carries all the information the inner products see.
-  set p : V := S.starProjection v with hpdef
+  set p : V := S.starProjection v
   have hpS : p ∈ S := S.starProjection_apply_mem v
   have hvp : v - p ∈ Sᗮ := S.sub_starProjection_mem_orthogonal v
   have hinner : ∀ z : V, z ∈ S → ⟪z, v⟫_𝕜 = ⟪z, p⟫_𝕜 := by

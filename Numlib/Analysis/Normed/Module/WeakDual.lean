@@ -15,15 +15,16 @@ Weak convergence `vₙ ⇀ u` in a normed space `V` is convergence of `toWeakSpa
 weak topology of `WeakSpace 𝕜 V`, and `tendsto_toWeakSpace_iff` says that this is exactly
 convergence of `ℓ (vₙ)` for every bounded linear functional `ℓ`.
 
-Two facts about it are proved here:
+## Main statements
 
+* `tendsto_toWeakSpace_iff` — weak convergence is pointwise convergence of the bounded linear
+  functionals;
 * `exists_norm_le_of_tendsto_toWeakSpace` — a weakly convergent sequence is bounded in norm, by
   uniform boundedness applied to its image in the double dual;
 * `norm_le_liminf_norm_of_weak_tendsto` — **the norm is weakly sequentially lower semicontinuous**,
-  `‖u‖ ≤ liminf ‖vₙ‖`, by evaluating a norming functional of `u`.
-
-The second is what makes a minimization problem over a weakly closed set solvable: a minimizing
-sequence has a weak limit point whose norm is no larger.
+  `‖u‖ ≤ liminf ‖vₙ‖`, by evaluating a norming functional of `u`. This is what makes a
+  minimization problem over a weakly closed set solvable: a minimizing sequence has a weak limit
+  point whose norm is no larger.
 -/
 
 open Filter Topology Bornology

@@ -8,6 +8,8 @@ by the dilates and integer translates of a single *scaling function* `φ`. This 
 definition as a bundled predicate, derives the orthonormal system of each level and the scaling
 equation, and shows that the Haar system of `Numlib/Analysis/Wavelet/Haar` is an instance.
 
+## Main definitions
+
 * `MeasureTheory.Lp.translationₗᵢ a` is translation, `f ↦ (x ↦ f (x + a))`, as a linear isometry
   of `L²(ℝ)`; it is `MeasureTheory.Lp.compMeasurePreservingₗᵢ` along `x ↦ x + a`, which is measure
   preserving. Dilation, which is not measure preserving, is
@@ -24,6 +26,9 @@ equation, and shows that the Haar system of `Numlib/Analysis/Wavelet/Haar` is an
   stated as `V j = (V 0).map (dilation (2 ^ j))` rather than as the equivalence
   `f ∈ V j ↔ dilation (2 ^ (-j)) f ∈ V 0`, because that is the form a construction proves and the
   form under which images of spans compute.
+
+## Main statements
+
 * `IsMultiresolutionAnalysis.orthonormal_scaled` is Proposition 4.5.2: the system of level `j` is
   orthonormal, and with `IsMultiresolutionAnalysis.eq_topologicalClosure_span_scalingSystem` it is
   a Hilbert basis of `V j`.

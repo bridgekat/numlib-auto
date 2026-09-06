@@ -15,16 +15,19 @@ import Mathlib.Analysis.Normed.Module.HahnBanach
 A normed space has the **Radon–Riesz property** (also called the Kadec–Klee property, or
 property (H)) when weak convergence together with convergence of the norms implies convergence in
 norm. Every uniformly convex space has it, and so does every inner product space, where the proof
-is the expansion of `‖vₙ - u‖²` and needs neither completeness nor uniform convexity.
+is the expansion of `‖vₙ - u‖²` and needs neither completeness nor uniform convexity. Both
+statements are Atkinson–Han[^atkinson-han] Exercises 2.7.3 and 2.7.4 (c).
+
+## Main statements
 
 * `tendsto_of_forall_dual_tendsto_of_tendsto_norm` — the uniformly convex case.
 * `tendsto_of_forall_inner_tendsto_of_tendsto_norm` — the inner product case, as an `iff`.
 
+## Implementation notes
+
 Weak convergence is written in the sequential form `∀ ℓ, Tendsto (fun n => ℓ (v n)) atTop (𝓝 (ℓ u))`
 rather than through a weak topology, because that is the form in which the numerical-analysis
 literature states it and the form the consumers of this module use.
-
-Both statements are Atkinson–Han[^atkinson-han] Exercises 2.7.3 and 2.7.4 (c).
 
 ## References
 
@@ -42,7 +45,7 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [UniformConvexSp
 /-- **The Radon–Riesz property of a uniformly convex space.** If `vₙ ⇀ u` weakly and `‖vₙ‖ → ‖u‖`,
 then `vₙ → u` in norm.
 
-The proof normalises both `vₙ` and `u` by `max ‖vₙ‖ ‖u‖`, so that the two vectors lie in the closed
+The proof normalizes both `vₙ` and `u` by `max ‖vₙ‖ ‖u‖`, so that the two vectors lie in the closed
 unit ball, and tests the sum against a norming functional at `u`: `‖aₙ + bₙ‖ → 2` forces
 `‖aₙ - bₙ‖ → 0` by uniform convexity. -/
 theorem tendsto_of_forall_dual_tendsto_of_tendsto_norm {v : ℕ → E} {u : E}
@@ -59,7 +62,7 @@ theorem tendsto_of_forall_dual_tendsto_of_tendsto_norm {v : ℕ → E} {u : E}
   have htu : Tendsto t atTop (𝓝 ‖u‖) := by
     simpa [ht] using hnorm.max (tendsto_const_nhds (x := ‖u‖))
   have htpos : ∀ n, 0 < t n := fun n => lt_of_lt_of_le hu0 (le_max_right _ _)
-  -- The normalised vectors lie in the closed unit ball.
+  -- The normalized vectors lie in the closed unit ball.
   have hball : ∀ n, ‖(t n)⁻¹ • v n‖ ≤ 1 ∧ ‖(t n)⁻¹ • u‖ ≤ 1 := by
     refine fun n => ⟨?_, ?_⟩ <;>
       rw [norm_smul, norm_inv, Real.norm_eq_abs, abs_of_pos (htpos n),
@@ -98,12 +101,10 @@ theorem tendsto_of_forall_dual_tendsto_of_tendsto_norm {v : ℕ → E} {u : E}
     exact absurd (hconv (hball n).1 (hball n).2 hcon) (by linarith)
   rw [← smul_sub, norm_smul, norm_inv, Real.norm_eq_abs, abs_of_pos (htpos n),
     inv_mul_lt_iff₀ (htpos n)] at hlt
-  have hup : (0 : ℝ) < ‖u‖ + 1 := by positivity
   calc ‖‖v n - u‖‖ = ‖v n - u‖ := by
         rw [Real.norm_eq_abs, abs_of_nonneg (norm_nonneg _)]
     _ < t n * (ε / (‖u‖ + 1)) := hlt
-    _ ≤ (‖u‖ + 1) * (ε / (‖u‖ + 1)) := by
-        exact mul_le_mul_of_nonneg_right hbd.le (by positivity)
+    _ ≤ (‖u‖ + 1) * (ε / (‖u‖ + 1)) := mul_le_mul_of_nonneg_right hbd.le (by positivity)
     _ = ε := by field_simp
 
 end UniformConvex
@@ -112,7 +113,7 @@ section Inner
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
-/-- **The Radon–Riesz property of an inner product space**, as a characterisation of norm
+/-- **The Radon–Riesz property of an inner product space**, as a characterization of norm
 convergence: `vₙ → u` in norm if and only if `⟪vₙ, w⟫ → ⟪u, w⟫` for every `w` and `‖vₙ‖ → ‖u‖`.
 
 The forward direction is continuity of the inner product and of the norm; the converse is the
@@ -136,7 +137,6 @@ theorem tendsto_of_forall_inner_tendsto_of_tendsto_norm {v : ℕ → E} {u : E} 
       rw [heq] at h2
       simpa [norm_sub_sq (𝕜 := 𝕜)] using h2
     rw [tendsto_iff_norm_sub_tendsto_zero]
-    have hsqrt := hsq.sqrt
-    simpa [Real.sqrt_sq, norm_nonneg] using hsqrt
+    simpa [Real.sqrt_sq, norm_nonneg] using hsq.sqrt
 
 end Inner

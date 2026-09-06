@@ -17,6 +17,8 @@ sequence and the orthonormal basis of eigenvectors that the classical spectral t
 self-adjoint operators asserts, in the form that the convergence theory of iterative methods
 consumes: a sequence `ℕ → ℝ` and a `HilbertBasis ℕ`.
 
+## Main definitions
+
 * `ContinuousLinearMap.IsSymmetric.eigenvalueSeq` — the eigenvalues of `T` listed *with
   multiplicity* in decreasing order of modulus. It is built greedily: the `j`-th eigenvector is a
   unit vector realizing the operator norm of `T` on the orthogonal complement of the previous
@@ -63,15 +65,13 @@ afterwards by induction rather than threaded through the definition.
 
 ## References
 
-The theorem is classical; see John B. Conway, *A Course in Functional Analysis*, second edition,
-Springer, 1990, Chapter II §5,[^conway] and Kendall Atkinson and Weimin Han, *Theoretical
-Numerical Analysis: A Functional Analysis Framework*, third edition, Springer, 2009,
-Section 2.8.[^atkinson-han]
+The theorem is classical; see Conway, *A Course in Functional Analysis*[^conway], Chapter II §5,
+and Atkinson–Han[^atkinson-han], Section 2.8.
 
-[^conway]: John B. Conway, *A Course in Functional Analysis*, second edition, Springer, 1990.
+[^conway]: John B. Conway, *A Course in Functional Analysis*, 2nd edition, Springer, 1990.
 
 [^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
-Analysis Framework*, third edition, Springer, 2009.
+  Analysis Framework*, 3rd edition, Springer, 2009.
 -/
 
 open Filter Module.End Submodule
@@ -95,7 +95,7 @@ theorem IsSymmetric.exists_isTopEigenpair [CompleteSpace E] (hT : (T : E →ₗ[
     (hK : IsCompactOperator T) {W : Submodule 𝕜 E} (hW : ∀ x ∈ W, T x ∈ W)
     (hWc : IsClosed (W : Set E)) (hWne : W ≠ ⊥) : ∃ p, IsTopEigenpair T W p := by
   have : CompleteSpace W := hWc.completeSpace_coe
-  set S : W →L[𝕜] W := T.restrict hW with hSdef
+  set S : W →L[𝕜] W := T.restrict hW
   have hSapp : ∀ x : W, (S x : E) = T x := fun _ => rfl
   have hSsym : (S : W →ₗ[𝕜] W).IsSymmetric := hT.restrict_invariant hW
   have hScomp : IsCompactOperator S := hK.restrict' hW
@@ -253,7 +253,7 @@ private theorem tendsto_abs_eigenVal (hK : IsCompactOperator T) :
   have hbdd : BddBelow (Set.range fun n => |eigenVal T n|) :=
     ⟨0, by rintro _ ⟨n, rfl⟩; exact abs_nonneg _⟩
   have htend := tendsto_atTop_ciInf hanti hbdd
-  set c := ⨅ n, |eigenVal T n| with hc
+  set c := ⨅ n, |eigenVal T n|
   have hc0 : (0 : ℝ) ≤ c := le_ciInf fun n => abs_nonneg _
   rcases eq_or_lt_of_le hc0 with h | h
   · rwa [← h] at htend

@@ -289,11 +289,12 @@ section RealAngle
 variable {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
 
 /-- `⟪u, P_K u⟫ = ‖P_K u‖ ^ 2`: the projection is orthogonal, so testing `u` against `P_K u` sees
-only the part of `u` inside `K`. -/
+only the part of `u` inside `K`. The real case of Mathlib's
+`Submodule.re_inner_starProjection_eq_normSq`, in the argument order the angle uses. -/
 theorem real_inner_starProjection_self (K : Submodule ℝ F) [K.HasOrthogonalProjection] (u : F) :
     inner ℝ u (K.starProjection u) = ‖K.starProjection u‖ ^ 2 := by
-  rw [← real_inner_self_eq_norm_sq, ← sub_eq_zero, ← inner_sub_left]
-  exact K.starProjection_inner_eq_zero u _ (K.starProjection_apply_mem u)
+  rw [real_inner_comm]
+  simpa using K.re_inner_starProjection_eq_normSq u
 
 /-- Over `ℝ` the angle with a subspace is Mathlib's angle between `u` and its projection, which
 is what makes `angle` the angle a reader of the eigenvalue literature expects: the acute angle

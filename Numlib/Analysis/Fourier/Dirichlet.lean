@@ -14,16 +14,30 @@ import Mathlib.MeasureTheory.Integral.IntervalIntegral.Periodic
 
 Mathlib has the `L²` theory of Fourier series on the circle and the uniform convergence of an
 absolutely summable series, but no Dirichlet kernel and no pointwise convergence criterion. This
-file supplies both, for a `2 π`-periodic, interval-integrable `f : ℝ → ℝ`:
+file supplies both, for a `2 π`-periodic, interval-integrable `f : ℝ → ℝ`. Atkinson and
+Han[^atkinson-han] state the kernel as (3.7.6)–(3.7.8) and the partial sums as (4.1.1)–(4.1.3).
+Their Theorem 4.1.1 — convergence to the mean of the one-sided limits at a point where the
+one-sided derivatives exist — is the criterion `tendsto_fourierPartialSum_of_dini` applied to that
+mean; `tendsto_fourierPartialSum_of_hasDerivAt` is its corollary at a point of differentiability.
 
-* `dirichletKernel n t = 1 / 2 + ∑_{j = 1}^{n} cos (j t)`, with the closed form
-  `sin ((n + 1/2) t) / (2 sin (t / 2))`;
+## Main definitions
+
+* `dirichletKernel n t = 1 / 2 + ∑_{j = 1}^{n} cos (j t)`, the kernel of the `n`-th partial-sum
+  operator;
+* `fourierCoeffCos` and `fourierCoeffSin`, the real Fourier coefficients `a_j` and `b_j`;
 * `fourierPartialSum f n x = a₀ / 2 + ∑_{j = 1}^{n} (a_j cos (j x) + b_j sin (j x))`, the `n`-th
-  partial sum of the real Fourier series, with the kernel representation
+  partial sum of the real Fourier series.
+
+## Main statements
+
+* `dirichletKernel_eq_sin_div`, the closed form `sin ((n + 1/2) t) / (2 sin (t / 2))`;
+* `fourierPartialSum_eq_integral`, the kernel representation
   `fourierPartialSum f n x = (1 / π) * ∫ t in -π..π, f (x + t) * dirichletKernel n t`;
 * `tendsto_fourierPartialSum_of_dini`, **Dini's criterion**: if
   `t ↦ (f (x + t) + f (x - t) - 2 L) / t` is interval-integrable on `[0, π]` then
   `fourierPartialSum f n x → L`.
+
+## Implementation notes
 
 Everything is stated for a function on `ℝ` rather than on `AddCircle (2 π)`, because the
 hypotheses of a pointwise convergence theorem are about one-sided limits at a real point.
@@ -31,14 +45,11 @@ hypotheses of a pointwise convergence theorem are about one-sided limits at a re
 The proof of Dini's criterion is the classical one: the difference `S_n f x - L` is
 `(1 / π) ∫_0^π g t * sin ((n + 1/2) t)` for
 `g t = (f (x + t) + f (x - t) - 2 L) / (2 sin (t / 2))`, which is integrable under the Dini
-hypothesis because `2 sin (t / 2) ≥ 2 t / π` on `[0, π]`; the Riemann-Lebesgue lemma finishes.
+hypothesis because `2 sin (t / 2) ≥ 2 t / π` on `[0, π]`; the Riemann–Lebesgue lemma finishes.
 Mathlib states that lemma for the Fourier integral over `ℝ`
 (`Real.tendsto_integral_exp_smul_cocompact`), so the form needed here — the integral of
 `g t * sin (r t)` over an interval tends to `0` as `r → ∞` — is obtained by extending `g` by zero,
 which is `tendsto_intervalIntegral_mul_sin`.
-
-Atkinson and Han[^atkinson-han] state the kernel as (3.7.6)-(3.7.8), the partial sums as
-(4.1.1)-(4.1.3), and their Theorem 4.1.1 is `tendsto_fourierPartialSum_of_hasDerivAt`.
 
 ## References
 
@@ -144,6 +155,7 @@ theorem integral_dirichletKernel (n : ℕ) :
   rw [hint n]
   field_simp
 
+/-- The Dirichlet kernel has mean `1 / 2` over the other half period, by evenness. -/
 theorem integral_dirichletKernel_neg (n : ℕ) :
     (1 / π) * ∫ t in -π..(0 : ℝ), dirichletKernel n t = 1 / 2 := by
   have h := intervalIntegral.integral_comp_neg (a := (0 : ℝ)) (b := π) (dirichletKernel n)
@@ -216,7 +228,7 @@ theorem fourierPartialSum_succ (n : ℕ) (x : ℝ) :
 
 /-- **The kernel representation of the partial sums** (Atkinson and Han, *Theoretical Numerical
 Analysis*, (3.7.6) and Exercise 4.1.4): the `n`-th partial sum of the Fourier series of `f` at `x`
-is the mean of `f` against the Dirichlet kernel recentred at `x`. -/
+is the mean of `f` against the Dirichlet kernel recentered at `x`. -/
 theorem fourierPartialSum_eq_integral (n : ℕ) (x : ℝ) :
     fourierPartialSum f n x = (1 / π) * ∫ t in -π..π, f (x + t) * dirichletKernel n t := by
   have hall := intervalIntegrable_of_periodic hf hfi
@@ -280,9 +292,9 @@ theorem fourierPartialSum_eq_integral (n : ℕ) (x : ℝ) :
 
 end Periodic
 
-/-! ### The Riemann-Lebesgue lemma over an interval -/
+/-! ### The Riemann–Lebesgue lemma over an interval -/
 
-/-- The Riemann-Lebesgue lemma in the form the Dirichlet-kernel argument needs: the integral of
+/-- The Riemann–Lebesgue lemma in the form the Dirichlet-kernel argument needs: the integral of
 `g t * sin (r t)` over an interval tends to `0` as `r → ∞`. Obtained from Mathlib's
 `Real.tendsto_integral_exp_smul_cocompact` by extending `g` by zero. -/
 theorem tendsto_intervalIntegral_mul_sin {a b : ℝ} (hab : a ≤ b) {g : ℝ → ℝ}
@@ -352,7 +364,7 @@ variable {f : ℝ → ℝ} (hf : Function.Periodic f (2 * π))
 
 include hf hfi
 
-/-- **Dini's criterion** for the pointwise convergence of a Fourier series: if the symmetrised
+/-- **Dini's criterion** for the pointwise convergence of a Fourier series: if the symmetrized
 difference quotient `t ↦ (f (x + t) + f (x - t) - 2 L) / t` is interval-integrable on `[0, π]`,
 then the Fourier partial sums of `f` at `x` converge to `L`. Every hypothesis under which
 Atkinson and Han, *Theoretical Numerical Analysis*, Theorem 4.1.1 asserts convergence — one-sided
@@ -363,12 +375,7 @@ theorem tendsto_fourierPartialSum_of_dini {x L : ℝ}
   have hall := intervalIntegrable_of_periodic hf hfi
   have hshift : ∀ a b : ℝ, IntervalIntegrable (fun t => f (x + t)) volume a b := fun a b => by
     simpa using (hall (x + a) (x + b)).comp_add_left x
-  have hrefl : ∀ a b : ℝ, IntervalIntegrable (fun t => f (x - t)) volume a b := fun a b => by
-    simpa using (hall (x - a) (x - b)).comp_sub_left x
-  have hφi : ∀ a b : ℝ,
-      IntervalIntegrable (fun t => f (x + t) + f (x - t) - 2 * L) volume a b := fun a b =>
-    ((hshift a b).add (hrefl a b)).sub intervalIntegrable_const
-  -- Step 1: `S_n f x - L` is the mean of the symmetrised difference against the kernel
+  -- Step 1: `S_n f x - L` is the mean of the symmetrized difference against the kernel
   have step1 : ∀ n : ℕ, fourierPartialSum f n x - L
       = (1 / π) * ∫ t in (0 : ℝ)..π, (f (x + t) + f (x - t) - 2 * L) * dirichletKernel n t := by
     intro n
@@ -425,7 +432,7 @@ theorem tendsto_fourierPartialSum_of_dini {x L : ℝ}
       (Filter.Eventually.of_forall fun t ht => ?_))
     have ht0 : t ≠ 0 := ne_of_gt ht.1
     field_simp
-  -- Step 3: Riemann-Lebesgue
+  -- Step 3: Riemann–Lebesgue
   have hRL := tendsto_intervalIntegral_mul_sin (g := fun t =>
     (f (x + t) + f (x - t) - 2 * L) / (2 * Real.sin (t / 2))) Real.pi_pos.le hgi
   have hnat : Tendsto (fun n : ℕ => (n : ℝ) + 1 / 2) atTop atTop :=
@@ -448,9 +455,13 @@ theorem tendsto_fourierPartialSum_of_dini {x L : ℝ}
   have hfinal := this.add_const L
   simpa using hfinal
 
-/-- The consumer form of Dini's criterion (Atkinson and Han, *Theoretical Numerical Analysis*,
-Theorem 4.1.1): a `2 π`-periodic, interval-integrable function that is differentiable at `x` has
-its Fourier series converging to `f x` there. -/
+/-- The consumer form of Dini's criterion: a `2 π`-periodic, interval-integrable function that is
+differentiable at `x` has its Fourier series converging to `f x` there.
+
+This is the corollary at a point of differentiability of Atkinson and Han, *Theoretical Numerical
+Analysis*, Theorem 4.1.1; the theorem itself asks only for the two one-sided derivatives and
+concludes convergence to `(f (x-) + f (x+)) / 2`, which is
+`tendsto_fourierPartialSum_of_dini` applied to that mean. -/
 theorem tendsto_fourierPartialSum_of_hasDerivAt {x c : ℝ} (hd : HasDerivAt f c x) :
     Tendsto (fun n : ℕ => fourierPartialSum f n x) atTop (𝓝 (f x)) := by
   have hall := intervalIntegrable_of_periodic hf hfi

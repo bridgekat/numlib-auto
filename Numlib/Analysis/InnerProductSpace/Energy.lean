@@ -15,6 +15,27 @@ For a symmetric coercive `A`, `⟪x, y⟫_A := ⟪A x, y⟫` is an inner product
 `‖x‖_A := √(re ⟪A x, x⟫)` the associated norm, classically called the energy inner product and
 the energy (or `A`-) norm. `WithEnergy A hA` is a type synonym of `E` carrying this inner
 product, so that Mathlib's orthogonal projection theory applies to `A`-orthogonal projections.
+
+## Main definitions
+
+* `energyInner A x y` and `energyNorm A x`, the energy inner product and the energy norm on `E`
+  itself, defined for every `A` and useful without any hypothesis on it;
+* `WithEnergy A hA`, the type synonym of `E` carrying the energy inner product of a symmetric
+  coercive `A`, together with `WithEnergy.equiv`, the identity `E ≃ₗ[𝕜] WithEnergy A hA` along
+  which Mathlib's inner product theory is imported.
+
+## Notation
+
+Scoped in `Energy`:
+
+* `⟪x, y⟫_[A]` for `energyInner A x y`;
+* `‖x‖_[A]` for `energyNorm A x`.
+
+## Implementation notes
+
+The plain algebraic instances on `WithEnergy A hA` are `local`: only the instances derived from
+`WithEnergy.core` are global, following Mathlib's `Matrix.toInnerProductSpace` pattern, which
+avoids an `AddCommMonoid` diamond between the two routes.
 -/
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
@@ -131,9 +152,7 @@ def ofEnergy : WithEnergy A hA → E := id
 
 section Build
 
--- The plain algebraic instances are *local*: they only serve to state the core, and only the
--- core-derived normed instances are global (Mathlib's `Matrix.toInnerProductSpace` pattern),
--- which avoids an `AddCommMonoid` diamond between the two.
+-- These are *local*: they only serve to state the core.  See the implementation note above.
 local instance addCommGroup : AddCommGroup (WithEnergy A hA) := inferInstanceAs (AddCommGroup E)
 local instance module : Module 𝕜 (WithEnergy A hA) := inferInstanceAs (Module 𝕜 E)
 

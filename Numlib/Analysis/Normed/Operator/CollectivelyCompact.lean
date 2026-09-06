@@ -12,7 +12,7 @@ import Mathlib.Topology.UniformSpace.UniformConvergence
 # Collectively compact families of operators
 
 A family `K : ι → V →L[𝕜] W` is **collectively compact** when the union of the images of one
-neighbourhood of the origin has compact closure — the exact analogue of Mathlib's
+neighborhood of the origin has compact closure — the exact analogue of Mathlib's
 `IsCompactOperator`, so that a constant family is collectively compact precisely when its member is
 a compact operator.
 
@@ -21,8 +21,16 @@ satisfies `‖(K - Kₙ) ∘ Kₙ‖ → 0` even though `‖K - Kₙ‖` does no
 the Nyström method for integral equations of the second kind stable, and it is the hypothesis of
 Anselone's perturbation theorem.
 
-* `IsCollectivelyCompact` — the definition, with `isCollectivelyCompact_const_iff`,
+This is P. Anselone's theory, as presented in Atkinson–Han[^atkinson-han], Section 12.4.3
+(assumptions A1–A3 and Lemma 12.4.7) and Section 12.1 (Lemmas 12.1.3 and 12.1.4).
+
+## Main definitions
+
+* `IsCollectivelyCompact`, with `isCollectivelyCompact_const_iff`,
   `IsCollectivelyCompact.isCompactOperator` and `IsCollectivelyCompact.comp`.
+
+## Main statements
+
 * `IsCollectivelyCompact.isCompactOperator_of_tendsto` — a pointwise limit of a collectively
   compact family is a compact operator.
 * `IsCollectivelyCompact.exists_opNorm_le` — a collectively compact family is uniformly bounded.
@@ -37,9 +45,6 @@ projection methods rest on:
   `M` is a compact operator. With `Aₙ = 1 - Pₙ` this is the estimate `‖K - Pₙ K‖ → 0` that makes a
   projection method for a second-kind equation convergent, and with `Aₙ = K - Kₙ` it is one clause
   of the collective-compactness lemma below; the two should not be proved separately.
-
-This is P. Anselone's theory, as presented in Atkinson–Han[^atkinson-han], Section 12.4.3
-(assumptions A1–A3 and Lemma 12.4.7) and Section 12.1 (Lemmas 12.1.3 and 12.1.4).
 
 ## References
 
@@ -168,7 +173,7 @@ theorem tendsto_opNorm_comp_of_isCompactOperator [CompleteSpace V] {A : ℕ → 
 end UniformOnCompact
 
 /-- A family of operators is **collectively compact** when the union of the images of one
-neighbourhood of the origin is relatively compact.
+neighborhood of the origin is relatively compact.
 
 This is the exact analogue of Mathlib's `IsCompactOperator` for a family, and a constant family is
 collectively compact precisely when its member is a compact operator
@@ -225,7 +230,7 @@ section Limit
 variable {𝕜 V : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
 
 /-- **A pointwise limit of a collectively compact family is a compact operator**, because the
-image of a neighbourhood of the origin under the limit lies in the compact set of the definition.
+image of a neighborhood of the origin under the limit lies in the compact set of the definition.
 Atkinson–Han, *Theoretical Numerical Analysis*, Lemma 12.4.7 (1). -/
 theorem isCompactOperator_of_tendsto {W : Type*} [NormedAddCommGroup W] [NormedSpace 𝕜 W]
     {K : ℕ → V →L[𝕜] W} {L : V →L[𝕜] W} (hK : IsCollectivelyCompact K)

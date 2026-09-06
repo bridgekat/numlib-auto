@@ -19,6 +19,10 @@ bounds the amplification of a relative perturbation of the data in the solution 
 `ContinuousLinearEquiv.condNumber` is the two-space form `κ e = ‖e‖ ‖e⁻¹‖` for an isomorphism
 `e : E ≃L[𝕜] F` of normed spaces, where no junk value is needed; `condNumber_coe` identifies it
 with `NormedRing.condNumber` when `F = E`.
+
+## Notation
+
+`κ a` for `NormedRing.condNumber a`, scoped in `NormedRing`.
 -/
 
 namespace NormedRing

@@ -337,7 +337,7 @@ theorem dyadic_zero_zero : dyadic 0 0 = Set.Ico 0 1 := by
   simp [dyadic]
 
 /-- The Haar scaling function `2 ^ (j / 2) φ (2 ^ j x - k)` for the unit step `φ = 1_[0,1)`: the
-normalised indicator of the dyadic interval `[k 2 ^ (-j), (k + 1) 2 ^ (-j))`, as an element of
+normalized indicator of the dyadic interval `[k 2 ^ (-j), (k + 1) 2 ^ (-j))`, as an element of
 `L²(ℝ)` (Atkinson–Han, *Theoretical Numerical Analysis*, (4.4.1)). -/
 def scalingFun (j k : ℤ) : Lp ℝ 2 (volume : Measure ℝ) :=
   indicatorConstLp 2 (measurableSet_dyadic j k) (volume_dyadic_ne_top j k) (√((2 : ℝ) ^ j))
@@ -396,7 +396,7 @@ theorem inner_scalingFun_of_ne (j : ℤ) {k l : ℤ} (h : k ≠ l) :
   rw [orthonormal_iff_ite] at hon
   simpa [h] using hon k l
 
-/-- The normalising constant of the two-scale relation. -/
+/-- The normalizing constant of the two-scale relation. -/
 private theorem inv_sqrt_two_mul_self : (√2)⁻¹ * (√2)⁻¹ * 2 = 1 := by
   rw [← mul_inv, Real.mul_self_sqrt (by norm_num : (0 : ℝ) ≤ 2)]
   norm_num
@@ -451,7 +451,7 @@ theorem V_eq_map_dilation (j : ℤ) :
   simp only [V]
   rw [map_topologicalClosure, Submodule.map_span, himg]
 
-/-- The two-scale relation: a scaling function of level `j` is the normalised sum of the two
+/-- The two-scale relation: a scaling function of level `j` is the normalized sum of the two
 scaling functions of level `j + 1` supported on its two halves. -/
 theorem scalingFun_two_scale (j k : ℤ) :
     scalingFun j k = (√2)⁻¹ • (scalingFun (j + 1) (2 * k) + scalingFun (j + 1) (2 * k + 1)) := by
@@ -871,7 +871,7 @@ theorem iInf_V_eq_bot : (⨅ j : ℤ, V j) = ⊥ := by
 
 /-- The Haar wavelet `2 ^ (j / 2) ψ (2 ^ j x - k)` for `ψ = φ (2 ·) - φ (2 · - 1)`: the difference
 of the two level-`(j + 1)` scaling functions supported on the halves of the dyadic interval
-`[k 2 ^ (-j), (k + 1) 2 ^ (-j))`, normalised. Atkinson–Han, *Theoretical Numerical Analysis*,
+`[k 2 ^ (-j), (k + 1) 2 ^ (-j))`, normalized. Atkinson–Han, *Theoretical Numerical Analysis*,
 (4.4.2). -/
 def waveletFun (j k : ℤ) : Lp ℝ 2 (volume : Measure ℝ) :=
   (√2)⁻¹ • (scalingFun (j + 1) (2 * k) - scalingFun (j + 1) (2 * k + 1))
@@ -981,6 +981,8 @@ theorem W_le_V_succ (j : ℤ) : W j ≤ V (j + 1) := by
   rintro _ ⟨k, rfl⟩
   exact waveletFun_mem_V_succ j k
 
+/-- Every element of the scaling space of level `j` is orthogonal to the wavelet space of the
+same level. -/
 theorem V_le_orthogonal_W (j : ℤ) : V j ≤ (W j)ᗮ := by
   simp only [W]
   rw [Submodule.orthogonal_closure]
@@ -990,6 +992,8 @@ theorem V_le_orthogonal_W (j : ℤ) : V j ≤ (W j)ᗮ := by
   exact Submodule.mem_orthogonal_span_range fun l => by
     rw [real_inner_comm]; exact inner_scalingFun_waveletFun j k l
 
+/-- The wavelet space of level `j` is orthogonal to the scaling space of the same level, the
+other reading of `V_le_orthogonal_W`. -/
 theorem W_le_orthogonal_V (j : ℤ) : W j ≤ (V j)ᗮ :=
   (Submodule.le_orthogonal_orthogonal _).trans (Submodule.orthogonal_le (V_le_orthogonal_W j))
 
@@ -1043,6 +1047,7 @@ theorem W_eq_inf_orthogonal (j : ℤ) : W j = V (j + 1) ⊓ (V j)ᗮ := by
   ext f
   rw [mem_W_iff, Submodule.mem_inf, mem_orthogonal_V_iff]
 
+/-- The scaling and wavelet spaces of level `j` span the scaling space of level `j + 1`. -/
 theorem sup_V_W (j : ℤ) : V j ⊔ W j = V (j + 1) := by
   refine le_antisymm (sup_le (V_le_V_succ j) (W_le_V_succ j)) fun f hf => ?_
   set g := (V j).starProjection f with hg
@@ -1055,6 +1060,7 @@ theorem sup_V_W (j : ℤ) : V j ⊔ W j = V (j + 1) := by
     (Submodule.mem_sup_right hrW)
   rwa [add_sub_cancel] at this
 
+/-- The scaling and wavelet spaces of the same level meet only in `0`. -/
 theorem disjoint_V_W (j : ℤ) : Disjoint (V j) (W j) := by
   rw [disjoint_iff, Submodule.eq_bot_iff]
   rintro f ⟨hV, hW⟩

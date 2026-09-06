@@ -24,7 +24,7 @@ open scoped ComplexOrder
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
 /-- The `j`-th Gram–Schmidt vector is the component of `f j` orthogonal to the span of the
-previous ones: `f j - gramSchmidt f j ∈ span {f i | i < j}` … -/
+previous ones: the discarded part `f j - gramSchmidt f j` lies in `span {f i | i < j}`. -/
 theorem sub_gramSchmidt_mem_span (f : ℕ → E) (j : ℕ) :
     f j - gramSchmidt 𝕜 f j ∈ Submodule.span 𝕜 (f '' Set.Iio j) := by
   rw [gramSchmidt_def, sub_sub_cancel, ← span_gramSchmidt_Iio 𝕜 f j]
@@ -34,7 +34,8 @@ theorem sub_gramSchmidt_mem_span (f : ℕ → E) (j : ℕ) :
     exact Submodule.subset_span ⟨i, Finset.mem_Iio.1 hi, rfl⟩
   exact hle (Submodule.starProjection_apply_mem _ (f j))
 
-/-- … and `gramSchmidt f j ⟂ span {f i | i < j}`. -/
+/-- The `j`-th Gram–Schmidt vector is orthogonal to the span of the previous ones:
+`gramSchmidt f j ∈ (span {f i | i < j})ᗮ`. -/
 theorem gramSchmidt_mem_orthogonal (f : ℕ → E) (j : ℕ) :
     gramSchmidt 𝕜 f j ∈ (Submodule.span 𝕜 (f '' Set.Iio j))ᗮ := by
   rw [Submodule.mem_orthogonal']

@@ -11,7 +11,9 @@ import Mathlib.Analysis.Normed.Operator.BanachSteinhaus
 
 Mathlib's `banach_steinhaus` is the uniform boundedness principle: a pointwise bounded family of
 operators out of a Banach space is bounded in norm. This file adds the companion that the
-applications use, and which needs neither completeness nor a Baire argument:
+applications use, and which needs neither completeness nor a Baire argument.
+
+## Main statements
 
 * `ContinuousLinearMap.tendsto_of_tendsto_on_dense_of_bounded` — a uniformly bounded family that
   converges pointwise on a dense *set* to a bounded operator converges pointwise everywhere. This
@@ -45,7 +47,7 @@ theorem tendsto_of_tendsto_on_dense_of_bounded {ι : Type*} {l : Filter ι} {s :
     (h : ∀ v ∈ s, Tendsto (fun n => Ln n v) l (𝓝 (L v))) (v : V) :
     Tendsto (fun n => Ln n v) l (𝓝 (L v)) := by
   -- a bound on operator norms may be negative only over an empty index type; replace it
-  set M : ℝ := max C 0 with hMdef
+  set M : ℝ := max C 0
   have hM0 : 0 ≤ M := le_max_right _ _
   have hCM : ∀ n, ‖Ln n‖ ≤ M := fun n => (hC n).trans (le_max_left _ _)
   rw [Metric.tendsto_nhds]

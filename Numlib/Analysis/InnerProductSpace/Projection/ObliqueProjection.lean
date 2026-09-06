@@ -15,13 +15,46 @@ import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 Projectors `P` (`P ∘ P = P`) onto `K` and orthogonal to `L` (`ker P = Lᗮ`): uniqueness from
 range and kernel, existence iff `K ⊓ Lᗮ = ⊥`, the matrix form `P = V (Wᴴ V)⁻¹ Wᴴ` from bases `V`
 of `K` and `W` of `L`, the characterization of the orthogonal projectors as the projectors of
-norm `1`, and Kato's lemma `‖P‖ = ‖1 - P‖`.
+norm `1`, and Kato's lemma `‖P‖ = ‖1 - P‖`[^szyld].
+
+## Main definitions
+
+* `LinearMap.crossGram 𝕜 V W`, the cross Gram matrix `Wᴴ V = (⟪W i, V j⟫)` of two families;
+* `LinearMap.obliqueProjectionOfBases 𝕜 V W`, the projector `V (Wᴴ V)⁻¹ Wᴴ`.
+
+## Main statements
+
+* `LinearMap.IsIdempotentElem.ext_of_range_eq_of_ker_eq` and
+  `LinearMap.existsUnique_isIdempotentElem_of_inf_orthogonal_eq_bot`: a projector is determined
+  by its range and kernel, and one onto `K` along `Lᗮ` exists exactly when `K ⊓ Lᗮ = ⊥`;
+* `LinearMap.obliqueProjectionOfBases_isIdempotentElem`,
+  `LinearMap.range_obliqueProjectionOfBases` and `LinearMap.ker_obliqueProjectionOfBases`: the
+  matrix form is that projector, and reduces to the orthogonal projection when `W = V` is
+  orthonormal;
+* `ContinuousLinearMap.IsIdempotentElem.norm_eq_one_iff_isSymmetric`: a nonzero projector has
+  norm `1` exactly when it is orthogonal;
+* `ContinuousLinearMap.IsIdempotentElem.norm_one_sub_eq`: **Kato's lemma**, `‖1 - P‖ = ‖P‖` for a
+  projector other than `0` and `1`.
+
+## Implementation notes
 
 Kato's lemma rests on `norm_smul_add_smul_eq_norm_add`, an elementary fact about inner product
 spaces: rescaling two vectors so as to exchange their norms does not change the norm of their sum.
+
+## References
+
+[^szyld]: Daniel B. Szyld, *The many proofs of an identity on the norm of oblique projections*,
+  Numerical Algorithms 42, 2006.
 -/
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
+
+/-- The span of a finite family is finite-dimensional. Mathlib has this for a `Finset`
+(`FiniteDimensional.span_finset`) and as a theorem for a finite set
+(`FiniteDimensional.span_of_finite`), but not as an instance for the range of a family. -/
+instance Submodule.finiteDimensional_span_range {ι : Type*} [Finite ι] (V : ι → E) :
+    FiniteDimensional 𝕜 (Submodule.span 𝕜 (Set.range V)) :=
+  Module.Finite.span_of_finite 𝕜 (Set.finite_range V)
 
 /-- Membership in the orthogonal complement of a span is orthogonality to the generators. -/
 private theorem mem_orthogonal_span_range_iff {ι : Type*} (W : ι → E) (x : E) :
@@ -84,8 +117,8 @@ theorem existsUnique_isIdempotentElem_of_inf_orthogonal_eq_bot {K L : Submodule 
     [FiniteDimensional 𝕜 K] [FiniteDimensional 𝕜 L]
     (hdim : Module.finrank 𝕜 K = Module.finrank 𝕜 L) (hKL : K ⊓ Lᗮ = ⊥) :
     ∃! P : E →ₗ[𝕜] E, IsIdempotentElem P ∧ LinearMap.range P = K ∧ LinearMap.ker P = Lᗮ := by
-  set g : E →ₗ[𝕜] L := (L.orthogonalProjectionOnto : E →ₗ[𝕜] L) with hg
-  set f : K →ₗ[𝕜] L := g.comp K.subtype with hf
+  set g : E →ₗ[𝕜] L := (L.orthogonalProjectionOnto : E →ₗ[𝕜] L)
+  set f : K →ₗ[𝕜] L := g.comp K.subtype
   have hinj : Function.Injective f := by
     rw [← LinearMap.ker_eq_bot, Submodule.eq_bot_iff]
     intro x hx
@@ -97,8 +130,8 @@ theorem existsUnique_isIdempotentElem_of_inf_orthogonal_eq_bot {K L : Submodule 
     exact Subtype.ext (Submodule.mem_bot 𝕜 |>.1 hmem)
   have hsurj : Function.Surjective f :=
     (LinearMap.injective_iff_surjective_of_finrank_eq_finrank hdim).1 hinj
-  set e : K ≃ₗ[𝕜] L := LinearEquiv.ofBijective f ⟨hinj, hsurj⟩ with he
-  set P : E →ₗ[𝕜] E := K.subtype.comp ((e.symm : L →ₗ[𝕜] K).comp g) with hPdef
+  set e : K ≃ₗ[𝕜] L := LinearEquiv.ofBijective f ⟨hinj, hsurj⟩
+  set P : E →ₗ[𝕜] E := K.subtype.comp ((e.symm : L →ₗ[𝕜] K).comp g)
   have hPmem : ∀ x, P x ∈ K := fun x => (e.symm (g x)).2
   have hPfix : ∀ y ∈ K, P y = y := by
     intro y hy
@@ -129,10 +162,6 @@ theorem existsUnique_isIdempotentElem_of_inf_orthogonal_eq_bot {K L : Submodule 
     (hQker.trans hker.symm)
 
 section Bases
-
-instance finiteDimensional_span_range {ι : Type*} [Finite ι] (V : ι → E) :
-    FiniteDimensional 𝕜 (Submodule.span 𝕜 (Set.range V)) :=
-  Module.Finite.span_of_finite 𝕜 (Set.finite_range V)
 
 variable {ι : Type*} [Fintype ι] [DecidableEq ι]
 
@@ -309,7 +338,7 @@ private theorem inner_eq_zero_of_norm_eq_one {P : E →L[𝕜] E} (hnorm : ‖P�
   rcases eq_or_ne z 0 with rfl | hzne
   · simp
   have hz2 : (0 : ℝ) < ‖z‖ ^ 2 := pow_pos (norm_pos_iff.2 hzne) 2
-  set c : 𝕜 := inner 𝕜 y z with hc
+  set c : 𝕜 := inner 𝕜 y z
   set θ : ℝ := -(‖z‖ ^ 2)⁻¹ with hθ
   set t : 𝕜 := (θ : 𝕜) * (starRingEnd 𝕜) c with ht
   have hPyz : P (y + t • z) = y := by

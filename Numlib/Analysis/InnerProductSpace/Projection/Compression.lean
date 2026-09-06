@@ -18,6 +18,29 @@ import Mathlib.LinearAlgebra.Matrix.ToLin
 eigenproblems and the Arnoldi/Lanczos matrices `H_m`, `T_m` for linear systems are both the
 compression to a Krylov subspace, and its two error constants are Céa's `‖A‖/c` and the
 Rayleigh–Ritz constant `γ = ‖P_K A (1 - P_K)‖`.
+
+## Main definitions
+
+* `compressionBy Q A`, the compression through an arbitrary projector `Q : E →ₗ[𝕜] K` onto `K`;
+* `compression A K`, the compression through the orthogonal projection, which
+  `compression.eq_compressionBy` identifies with the previous one.
+
+## Main statements
+
+* `compressionBy.aeval_apply_of_forall_pow_mem` and
+  `compressionBy.apply_aeval_of_forall_pow_lt_mem`: polynomials of the compression agree with
+  polynomials of `A` as long as the orbit stays in `K`, which is what makes a Krylov subspace the
+  natural `K`;
+* `compression.inner_apply`, the Galerkin characterization, and `compression.isSymmetric`, the
+  symmetry it gives;
+* `compression.apply_sub_smul_orthogonalProjection`, the residual identity behind the
+  Rayleigh–Ritz eigenvalue error bounds of Saad, *Numerical Methods for Large Eigenvalue
+  Problems*[^saad-eigenvalue], Thm 4.3.
+
+## References
+
+[^saad-eigenvalue]: Yousef Saad, *Numerical Methods for Large Eigenvalue Problems*, 2nd edition,
+  SIAM, 2011.
 -/
 
 open Polynomial

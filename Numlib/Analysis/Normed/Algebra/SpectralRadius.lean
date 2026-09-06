@@ -18,12 +18,17 @@ In a complex unital Banach algebra, `ρ(a) < 1 ↔ aⁿ → 0`, the Neumann seri
 classical consequences of Gelfand's formula for the spectral radius, which Mathlib provides as
 `spectrum.pow_nnnorm_pow_one_div_tendsto_nhds_spectralRadius`.
 
-`spectralRadius_smul` records the absolute homogeneity `ρ(c • a) = ‖c‖ ρ(a)`, which needs no
-analytic input and holds in any algebra over a normed field.
+## Main statements
 
-`spectralRadius_le_algebraNorm` bounds the spectral radius by an *arbitrary* algebra norm on a
-finite-dimensional algebra — "`|λ| ≤ ‖A‖` for any consistent matrix norm" — with no analysis and
-no relation to the norm the algebra already carries.
+* `spectralRadius_smul`, the absolute homogeneity `ρ(c • a) = ‖c‖ ρ(a)`, which needs no analytic
+  input and holds in any algebra over a normed field;
+* `spectralRadius_lt_one_iff_tendsto_pow`, `spectralRadius_lt_one_iff_exists_norm_pow_lt_one` and
+  `summable_pow_iff_spectralRadius_lt_one`, the three criteria in terms of the powers;
+* `exists_norm_pow_le_of_spectralRadius_lt`, geometric decay of the powers at any rate above the
+  spectral radius;
+* `spectralRadius_le_algebraNorm`, bounding the spectral radius by an *arbitrary* algebra norm on
+  a finite-dimensional algebra — "`|λ| ≤ ‖A‖` for any consistent matrix norm" — with no analysis
+  and no relation to the norm the algebra already carries.
 -/
 
 open Filter Topology

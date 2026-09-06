@@ -15,7 +15,13 @@ Quantitative versions of `Units.oneSub` / `Units.add` in a complete normed ring:
 `‖(1 - t)⁻¹‖ ≤ 1 / (1 - ‖t‖)`, `‖(x + t)⁻¹‖ ≤ ‖x⁻¹‖ / (1 - ‖x⁻¹‖ ‖t‖)`, and the two-space
 version for continuous linear equivalences. These are the explicit forms of the classical
 geometric-series (Banach perturbation) estimates for the inverse of a small perturbation of an
-invertible element.
+invertible element, and are stated as Atkinson–Han[^atkinson-han] (2.3.6), Theorem 2.3.5 and its
+displays (2.3.13) and (2.3.14).
+
+## References
+
+[^atkinson-han]: Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
+  Analysis Framework*, 3rd edition, Springer, 2009.
 -/
 
 /-- `u ↦ 1 / (1 - u)` is monotone below `1`. -/
@@ -39,6 +45,8 @@ private theorem norm_inverse_one_sub_le' {R : Type*} [NormedRing R] [HasSummable
   have := tsum_geometric_le_of_norm_lt_one t h
   linarith
 
+/-- The companion of `norm_inverse_one_sub_le'` for the difference from `1`, again assuming only
+`‖1‖ ≤ 1`. -/
 private theorem norm_inverse_one_sub_sub_one_le' {R : Type*} [NormedRing R]
     [HasSummableGeomSeries R] (h₁ : ‖(1 : R)‖ ≤ 1) {t : R} (h : ‖t‖ < 1) :
     ‖Ring.inverse (1 - t) - 1‖ ≤ ‖t‖ / (1 - ‖t‖) := by
@@ -135,7 +143,7 @@ private theorem norm_neg_inv_mul_lt_one {x : Rˣ} {t : R} (h : ‖t‖ < ‖(↑
     ‖(-((↑x⁻¹ : R) * t))‖ < 1 :=
   lt_of_le_of_lt (by rw [norm_neg]; exact norm_mul_le _ _) (norm_inv_mul_lt_one h)
 
-/-- Factorisation `(x + t)⁻¹ = (1 + x⁻¹ t)⁻¹ x⁻¹` behind the two perturbation bounds below. -/
+/-- Factorization `(x + t)⁻¹ = (1 + x⁻¹ t)⁻¹ x⁻¹` behind the two perturbation bounds below. -/
 private theorem inverse_add_eq (x : Rˣ) {t : R} (h : ‖t‖ < ‖(↑x⁻¹ : R)‖⁻¹) :
     Ring.inverse ((x : R) + t)
       = Ring.inverse (1 - -((↑x⁻¹ : R) * t)) * (↑x⁻¹ : R) := by

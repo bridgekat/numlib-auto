@@ -15,6 +15,20 @@ import Mathlib.LinearAlgebra.Matrix.PosDef
 /-!
 # Coercive and symmetric coercive operators
 
+An operator `A` on an inner product space is *coercive* when its quadratic form is bounded below
+by a positive multiple of `‖x‖²`. This module defines the hypothesis in three strengths — a named
+constant, an unnamed one, and a two-sided version enclosing the quadratic form in an interval —
+and proves what each buys: injectivity, positivity in Mathlib's sense, the Rayleigh dictionary
+between the bounds and the eigenvalues in finite dimension, invertibility on a Hilbert space
+(Lax–Milgram), and the reduction of coercivity of a nonsymmetric `A` to coercivity of its
+Hermitian part.
+
+Mathlib's own `IsCoercive` is the same notion for a *bilinear form* `V →L[ℝ] V →L[ℝ] ℝ` over the
+reals; the definitions here are for an operator, over an `RCLike` field, and are the form the
+convergence analysis of iterative methods uses.
+
+## Main definitions
+
 * `LinearMap.IsCoerciveWith A c`: `c ‖x‖² ≤ re ⟪A x, x⟫` for all `x`.
 * `LinearMap.IsCoercive A`: `IsCoerciveWith A c` for some `c > 0`. This is what the numerical
   linear algebra literature calls a "positive definite" matrix when no symmetry is required, and
@@ -25,6 +39,18 @@ import Mathlib.LinearAlgebra.Matrix.PosDef
   `lmin ‖x‖² ≤ re ⟪A x, x⟫ ≤ lmax ‖x‖²` — the quadratic-form way of saying "the spectrum lies in
   `[lmin, lmax]`", the hypothesis of the Kantorovich inequality and of every Chebyshev-type
   convergence bound for a symmetric positive definite operator.
+
+## Main statements
+
+* `LinearMap.IsSymmetric.isCoerciveWith_iff_forall_hasEigenvalue` and
+  `LinearMap.IsSymmetric.isSymmetricBoundedBy_iff_forall_hasEigenvalue`: in finite dimension the
+  quadratic-form bounds are exactly bounds on the eigenvalues;
+* `ContinuousLinearMap.exists_equiv_of_isCoerciveWith`: **Lax–Milgram** for a not necessarily
+  symmetric bounded coercive operator on a Hilbert space, with `‖A⁻¹‖ ≤ 1 / c`;
+* `ContinuousLinearMap.isCoerciveWith_iff_hermitianPart`: coercivity of `A` is coercivity of
+  `½ (A + A†)`;
+* `Matrix.posDef_iff_isSymmetricCoercive`: `Matrix.PosDef` is symmetric coercivity of the
+  Euclidean operator.
 -/
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
@@ -40,7 +66,9 @@ def IsCoercive (A : E →ₗ[𝕜] E) : Prop := ∃ c : ℝ, 0 < c ∧ A.IsCoerc
 
 /-- Symmetric and coercive (SPD / HPD / strongly positive self-adjoint). -/
 structure IsSymmetricCoercive (A : E →ₗ[𝕜] E) : Prop where
+  /-- The operator is symmetric. -/
   isSymmetric : A.IsSymmetric
+  /-- The operator is coercive. -/
   isCoercive : A.IsCoercive
 
 section Aux
@@ -105,7 +133,7 @@ theorem IsCoercive.ker_eq_bot (hA : A.IsCoercive) : LinearMap.ker A = ⊥ :=
 
 /-- The defining inequality of `IsCoerciveWith`, as a lemma: `c ‖x‖² ≤ re ⟪A x, x⟫`. Useful where
 the bundled hypothesis is more convenient to apply by name than to unfold. -/
-theorem IsCoerciveWith.re_inner_apply_self (h : A.IsCoerciveWith c) (x : E) :
+theorem IsCoerciveWith.re_inner_apply_self {c : ℝ} (h : A.IsCoerciveWith c) (x : E) :
     c * ‖x‖ ^ 2 ≤ RCLike.re (inner 𝕜 (A x) x) := h x
 
 /-- In finite dimension, coercive iff `re ⟪A x, x⟫ > 0` for all `x ≠ 0`: compactness of the unit
@@ -142,7 +170,7 @@ section Rayleigh
 
 variable [FiniteDimensional 𝕜 E]
 
-/-- The Rayleigh quotients of a linear map in finite dimension are bounded. -/
+/-- The Rayleigh quotients of a linear map in finite dimension are bounded below. -/
 private theorem bddBelow_rayleigh (A : E →ₗ[𝕜] E) :
     BddBelow (Set.range fun y : {y : E // y ≠ 0} =>
       RCLike.re (inner 𝕜 (A y) y) / ‖(y : E)‖ ^ 2) := by
@@ -152,6 +180,7 @@ private theorem bddBelow_rayleigh (A : E →ₗ[𝕜] E) :
   rw [abs_le] at h
   simpa [ContinuousLinearMap.rayleighQuotient, ContinuousLinearMap.reApplyInnerSelf] using h.1
 
+/-- The Rayleigh quotients of a linear map in finite dimension are bounded above. -/
 private theorem bddAbove_rayleigh (A : E →ₗ[𝕜] E) :
     BddAbove (Set.range fun y : {y : E // y ≠ 0} =>
       RCLike.re (inner 𝕜 (A y) y) / ‖(y : E)‖ ^ 2) := by
@@ -217,8 +246,11 @@ lying in `[lmin, lmax]` (`IsSymmetric.isSymmetricBoundedBy_iff_forall_hasEigenva
 sense in any inner product space, passes to compressions, and is the hypothesis of all
 Chebyshev-type convergence bounds. -/
 structure IsSymmetricBoundedBy (A : E →ₗ[𝕜] E) (lmin lmax : ℝ) : Prop where
+  /-- The operator is symmetric. -/
   isSymmetric : A.IsSymmetric
+  /-- The quadratic form is bounded below by `lmin ‖x‖²`. -/
   le_re_inner : ∀ x, lmin * ‖x‖ ^ 2 ≤ RCLike.re (inner 𝕜 (A x) x)
+  /-- The quadratic form is bounded above by `lmax ‖x‖²`. -/
   re_inner_le : ∀ x, RCLike.re (inner 𝕜 (A x) x) ≤ lmax * ‖x‖ ^ 2
 
 namespace IsSymmetricBoundedBy
@@ -337,8 +369,7 @@ theorem exists_equiv_of_isCoerciveWith {A : E →L[𝕜] E} {c : ℝ} (hc : 0 < 
     rw [LinearMap.ker_eq_bot]
     exact hanti.injective
   have hclosed : IsClosed (LinearMap.range (A : E →ₗ[𝕜] E) : Set E) := by
-    have h : IsClosed (Set.range (A : E → E)) := hanti.isClosed_range A.uniformContinuous
-    exact h
+    exact hanti.isClosed_range A.uniformContinuous
   have : CompleteSpace (LinearMap.range (A : E →ₗ[𝕜] E)) := hclosed.completeSpace_coe
   have hrange : LinearMap.range (A : E →ₗ[𝕜] E) = ⊤ := by
     rw [← Submodule.orthogonal_eq_bot_iff, Submodule.eq_bot_iff]
