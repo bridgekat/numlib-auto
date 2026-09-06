@@ -129,13 +129,13 @@ imports the backbone, the backbone imports no surface, and nothing can quietly r
 ## The books
 
 `NumlibSurface.SaadSparse` is Y. Saad, *Iterative Methods for Sparse Linear Systems* (SIAM, 2nd
-ed., 2003), covering §1.11–1.13, §4.1–4.2 and Chapters 5 and 6. `NumlibSurface.FongSaunders` is
-D. C.-L. Fong and M. A. Saunders, *CG versus MINRES: an empirical comparison* (2012), complete.
-`NumlibSurface.AtkinsonHan` is K. Atkinson and W. Han, *Theoretical Numerical Analysis: A
-Functional Analysis Framework* (Springer, 3rd ed., 2009), covering §2.3–2.5, §3.3–3.7, §5.1–5.4,
-§5.6, §8.2–8.3, §8.7 and Chapter 9. Each book's root module is its index: the section-by-section
-outline, the ambient conventions, what is deferred, and the places where formalizing the book
-corrected it.
+ed., 2003) in fifty-four modules, reaching every chapter of it that states a numbered result.
+`NumlibSurface.FongSaunders` is D. C.-L. Fong and M. A. Saunders, *CG versus MINRES: an empirical
+comparison* (2012), complete, in five. `NumlibSurface.AtkinsonHan` is K. Atkinson and W. Han,
+*Theoretical Numerical Analysis: A Functional Analysis Framework* (Springer, 3rd ed., 2009) in
+fifty, covering Chapters 1 to 6 and 8 to 12 apart from what needs Sobolev spaces on a domain.
+Each book's root module is its index: the section-by-section outline, the ambient conventions,
+what is deferred, and the places where formalizing the book corrected it.
 
 ## How it is organized
 
@@ -146,12 +146,15 @@ is Saad §6.5. A module named `Common` is not a section but the vocabulary its s
 `theorem_6_29` is Saad's Theorem 6.29 and `equation_6_43` is his (6.43). Where one numbered result
 needs several declarations — its clauses, its CG and its MINRES form, a strict beside a nonstrict
 version — a trailing word distinguishes them, as in `theorem_2_2_a` and `theorem_3_1_minres`. A
-book's declarations sit in one flat namespace, and `ChapterNN.SectionNN` is the module for §NN.NN.
+book's declarations sit in the namespace of its chapter, `<Book>.ChapterNN`, spelled as the module
+path spells it.
 
 Each book's reasoning — its conventions, how each book-specific definition maps to the backbone,
-what was deferred and why — is in the Markdown at the root of the plan directory:
-`saadsparse-ch1-4-5.md`, `saadsparse-ch6.md`, `fongsaunders.md`, `atkinsonhan-ch2-3.md`,
-`atkinsonhan-ch5.md`, `atkinsonhan-ch8-9.md`.
+what was deferred and why — is in the Markdown at the root of the plan directory, one file per
+planning pass, named for the chapter range it covers: `saadsparse-ch1-4-5.md`, `saadsparse-ch6.md`,
+`saadsparse-ch7-9.md`, `saadsparse-ch10-14.md`, `fongsaunders.md`, `atkinsonhan-ch1-4.md`,
+`atkinsonhan-ch2-3.md`, `atkinsonhan-ch5.md`, `atkinsonhan-ch6-12.md` and
+`atkinsonhan-ch8-9.md`.
 
 ## References
 

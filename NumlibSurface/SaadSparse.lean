@@ -57,15 +57,16 @@ import NumlibSurface.SaadSparse.Common
 # Saad, *Iterative Methods for Sparse Linear Systems*
 
 The surface library for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition
-(SIAM, 2003): one module per section of the book, covering §1.11–1.13, §4.1–4.2, Chapter 5,
-Chapter 6 and §10.8. Each module states the book's results in the book's own terms — Saad's
-non-symmetric "positive definite", the splitting `A = D - E - F`, the algorithms written out as Lean
-functions — and proves them by specializing the general backbone under `Numlib/`. Almost nothing is
-proved here that is not proved there: the surface exists to test the backbone against a published
-account of the subject, and to give a reader of the book a Lean name for every result in it. This
-module imports the section modules and adds nothing of its own.
+(SIAM, 2003): fifty-four modules, one per section of the book the project covers, reaching every
+chapter that states a numbered result. Each module states the book's results in the book's own
+terms — Saad's non-symmetric "positive definite", the splitting `A = D - E - F`, the algorithms
+written out as Lean functions — and proves them by specializing the general backbone under
+`Numlib/`. Almost nothing is proved here that is not proved there: the surface exists to test the
+backbone against a published account of the subject, and to give a reader of the book a Lean name
+for every result in it. This module imports the section modules and adds nothing of its own.
 
-Plan and per-result book alignment: `plans/saadsparse-ch1-4-5.md`, `plans/saadsparse-ch6.md`.
+Plan and per-result book alignment: `plans/saadsparse-ch1-4-5.md`, `plans/saadsparse-ch6.md`,
+`plans/saadsparse-ch7-9.md` and `plans/saadsparse-ch10-14.md`.
 
 ## Naming
 
@@ -78,8 +79,9 @@ descriptive name (`arnoldiCGS`, `gmresFixed`, `smoothEta`), and each such defini
 equivalence lemma to its backbone counterpart; those lemmas are the load-bearing part of the
 library.
 
-Declarations live in `SaadSparse.ChNN` for the chapter, except in §1.11–1.13, where results about
-a matrix are stated in `Matrix` so that dot notation reads as the book does. `SaadSparse.Common`
+Declarations live in `SaadSparse.ChapterNN` for the chapter — the chapter spelled in full, as the
+module path spells it — except in §1.11–1.13, where results about a matrix are stated in `Matrix`
+so that dot notation reads as the book does. `SaadSparse.Common`
 holds the conventions shared by the whole library, and `SaadSparse.Chapter06.Common` the `r₀`, `β`,
 `v₁`, `e₁`, `mEff` vocabulary shared by every Krylov method of Chapter 6.
 
@@ -88,14 +90,30 @@ holds the conventions shared by the whole library, and `SaadSparse.Chapter06.Com
 | § | module | subject |
 |---|---|---|
 | | `Common` | conventions: the matrix–operator glue, `⬝`, `lambdaMin`/`lambdaMax`, `complexify` |
+| **1** | | *Background in Linear Algebra* |
+| 1.1–1.6 | `Chapter01.Basics` | Matrices, eigenvalues, types of matrices, norms, subspaces |
+| 1.7 | `Chapter01.Section07` | Orthogonal vectors and subspaces; Gram–Schmidt, QR, Householder |
+| 1.8 | `Chapter01.Section08` | Canonical forms: similarity, Jordan, Schur, powers of a matrix |
+| 1.9 | `Chapter01.Section09` | Normal and Hermitian matrices; the field of values |
+| 1.10 | `Chapter01.Section10` | Nonnegative matrices, M-matrices, Perron–Frobenius |
 | 1.11 | `Chapter01.Section11` | Positive-definite matrices; Theorems 1.34 and 1.35 (Bendixson) |
 | 1.12 | `Chapter01.Section12` | Projectors; Lemma 1.36, Prop. 1.37, Theorem 1.38, Cor. 1.39 |
 | 1.13 | `Chapter01.Section13` | Linear systems: existence, matrix `p`-norms, conditioning, (1.76) |
+| **2** | | *Discretization of PDEs* |
+| 2.2 | `Chapter02.Section02` | Finite differences: truncation error, the model matrices, upwind |
+| 2.5 | `Chapter02.Section05` | The finite volume method and its sign structure |
+| **3** | | *Sparse Matrices* |
+| 3.2 | `Chapter03.Section02` | The adjacency graph and the patterns of products |
+| 3.3 | `Chapter03.Section03` | Permutations, reorderings and irreducibility |
+| **4** | | *Basic Iterative Methods* |
 | 4.1 | `Chapter04.Section01` | Jacobi, Gauss–Seidel, SOR, SSOR as splittings; the preconditioners |
-| 4.2 | `Chapter04.Section02` | Convergence: Theorem 4.1, Corollary 4.2, Gershgorin, Prop. 4.12 |
+| 4.2 | `Chapter04.Section02` | Convergence: Theorem 4.1, diagonal dominance, the SOR theory |
+| 4.3 | `Chapter04.Section03` | Alternating direction methods; Peaceman–Rachford |
+| **5** | | *Projection Methods* |
 | 5.1–5.2 | `Chapter05.Section01` | Projection methods; Propositions 5.1–5.6, Theorem 5.7 |
 | 5.3 | `Chapter05.Section03` | One-dimensional processes; Kantorovich, Theorems 5.9 and 5.10 |
 | 5.4 | `Chapter05.Section04` | Additive and multiplicative projection processes |
+| **6** | | *Krylov Subspace Methods, Part I* |
 | 6.1–6.2 | `Chapter06.Section02` | Krylov subspaces and the grade of a vector; Prop. 6.1–6.3 |
 | 6.3 | `Chapter06.Section03` | Arnoldi's method; Propositions 6.4–6.6 |
 | | `Chapter06.Common` | `r₀`, `β`, `v₁`, `e₁`, `mEff` and the `v₁`-to-`r₀` bridge lemmas |
@@ -108,11 +126,42 @@ holds the conventions shared by the whole library, and `SaadSparse.Chapter06.Com
 | 6.10 | `Chapter06.Section10` | Optimality and the Faber–Manteuffel condition; Prop. 6.22 |
 | 6.11 | `Chapter06.Section11` | Chebyshev min–max, Theorem 6.25, and the convergence bounds |
 | 6.12 | `Chapter06.Section12` | Block Krylov methods: Ruhe's variant, block FOM and block GMRES |
+| **7** | | *Krylov Subspace Methods, Part II* |
+| 7.1 | `Chapter07.Section01` | Lanczos biorthogonalization; Proposition 7.1 and the relations |
+| 7.2 | `Chapter07.Section02` | The two-sided Lanczos algorithm as a Petrov–Galerkin process |
+| 7.3 | `Chapter07.Section03` | BCG and QMR; Proposition 7.3, Theorem 7.4, the residual smoothing |
+| **8** | | *Methods Related to the Normal Equations* |
+| 8.1 | `Chapter08.Section01` | The normal equations and their conditioning |
+| 8.2 | `Chapter08.Section02` | Row projection methods: Cimmino, Kaczmarz, NE-SOR |
+| 8.3 | `Chapter08.Section03` | CGNR and CGNE and their optimality properties |
+| 8.4 | `Chapter08.Section04` | Saddle-point problems, Uzawa's method, Example 8.2 |
+| **9** | | *Preconditioned Iterations* |
+| 9.1 | `Chapter09.Section01` | Left, right and split preconditioning, and their conjugacy |
+| 9.2 | `Chapter09.Section02` | Preconditioned CG: the three variants and their equality |
+| 9.3 | `Chapter09.Section03` | Preconditioned GMRES; the `M`-inner-product form |
+| 9.4 | `Chapter09.Section04` | FGMRES and flexible DQGMRES; Propositions 9.2 and 9.3 |
+| 9.5 | `Chapter09.Section05` | Preconditioned CG for the normal equations |
+| 9.6 | `Chapter09.Section06` | The Concus–Golub–Widlund algorithm |
+| **10** | | *Preconditioning Techniques* |
+| 10.2 | `Chapter10.Section02` | Jacobi, SOR and SSOR preconditioners |
+| 10.5 | `Chapter10.Section05` | Approximate inverse preconditioners |
 | 10.8 | `Chapter10.Section08` | Incomplete Gram–Schmidt (Algorithm 10.17); Proposition 10.17 |
+| **12** | | *Parallel Preconditioners* |
+| 12.3 | `Chapter12.Section03` | Polynomial preconditioners |
+| **13** | | *Multigrid Methods* |
+| 13.2 | `Chapter13.Section02` | The model problems and the spectra of the smoothers |
+| 13.3 | `Chapter13.Section03` | Inter-grid operations: prolongation and restriction |
+| 13.4 | `Chapter13.Section04` | The Galerkin coarse problem, Lemma 13.1, the multigrid cycles |
+| **14** | | *Domain Decomposition Methods* |
+| 14.2 | `Chapter14.Section02` | Block Gaussian elimination and the Schur complement |
+| 14.3 | `Chapter14.Section03` | The Schwarz alternating procedures |
+| 14.6 | `Chapter14.Section06` | Graph partitioning and spectral bisection |
 
 There is no `Chapter06.Section01`: §6.1 is the chapter's introduction, and its one substantive
 paragraph is stated with §6.2. `Chapter05.Section01` likewise covers §5.1 together with §5.2, which
-share the book's own numbering (5.1)–(5.11).
+share the book's own numbering (5.1)–(5.11), and `Chapter01.Basics` covers §1.1–1.6 in one module
+because almost all of it is Mathlib restated in Saad's notation. Chapter 11, on parallel
+implementations, has no module: read section by section it states no theorem.
 
 ## The ambient setting
 
@@ -153,25 +202,28 @@ the breakdown with no finiteness hypothesis. The book's companion instruction "s
 
 ## Not formalized
 
-Deferred to a later phase of the backbone, with the plans in `plans/saadsparse-ch1-4-5.md` §3 and
-`plans/saadsparse-ch6.md` §4:
+Chapters 1 to 9, 12 and 13 are closed but for the items below. The plans that carry the reasoning
+are `plans/saadsparse-ch1-4-5.md`, `plans/saadsparse-ch6.md`, `plans/saadsparse-ch7-9.md` and
+`plans/saadsparse-ch10-14.md`; each of these has a group file under
+`plans/NumlibSurface/SaadSparse/` saying what its declarations are to be.
 
-* §4.2.1, the convergence factors and rates, which need `‖complexify A‖ = ‖A‖` for the scoped
-  operator norms before Gelfand's formula transports to a real matrix; Theorem 4.4 on regular
-  splittings and M-matrices; Theorem 4.7 and the *irreducibly* diagonally dominant halves of
-  Corollary 4.8 and Theorem 4.9; and the SOR theory of §4.2.4–4.2.5 — Theorem 4.10, Definitions
-  4.11 and 4.13, Propositions 4.14–4.15, Theorem 4.16 and the optimal parameter (4.47).
-* Block relaxation (§4.1.1, Algorithms 4.1–4.2) and the identification of the additive procedure of
-  §5.4 with the abstract additive projection process.
-* §6.5.6: (6.56)–(6.58), which need the IOM iterate of §6.4 expanded in the
-  incomplete-orthogonalization basis.
-* §6.10: Lemma 6.23 and Theorem 6.24 (Faber–Manteuffel), which wait on the backbone's normal-matrix
-  theory. The book itself states Theorem 6.24 without proof.
+* **§7.4**, the transpose-free variants — the BCG residual and direction polynomials, CGS,
+  BiCGSTAB and TFQMR with their residual identities (7.32)–(7.83). The largest gap left in the
+  book, and an unblocked one: §7.3 supplies everything it rests on.
+* **§10.3**, the ILU factorizations — zero patterns (10.11), Theorems 10.1 and 10.2, Proposition
+  10.4, ILU(0) and MILU — and **§10.4**, the `M̂` matrices (10.25)–(10.27) with Theorem 10.8.
+* **§13.5–13.6**, algebraic multigrid: the two-level decomposition (13.57)–(13.62) with Theorem
+  13.3 and Examples 13.7–13.8, and the smoothness expansion (13.68).
+* **§14.4–14.5**, the Schur-complement preconditioners: Proposition 14.10 for the preconditioner
+  an ILU factorization induces, and (14.49)/(14.55) with Propositions 14.11 and 14.12.
+* Block relaxation (§4.1.1, Algorithms 4.1–4.2), which waits on the backbone's block-projection
+  layer, and one identity of §9.6.
 
 Left out deliberately: figures, numerical examples and tables, operation counts, implementation
-advice, and the exercises the text does not cite. §1.13's differentiability statement (1.74)–(1.75)
-is Mathlib calculus rather than a specialization of the backbone, and the plan lists it as a
-backbone candidate.
+advice, and the exercises the text does not cite. Chapter 11, on parallel implementations, has no
+module at all: read section by section, it states no theorem. §1.13's differentiability statement
+(1.74)–(1.75) is Mathlib calculus rather than a specialization of the backbone, and the plan lists
+it as a backbone candidate.
 
 ## Where the book needs reading with care
 
@@ -198,6 +250,20 @@ the printed statement is not what the proof needs, and the module says so on the
   divides by `β - α`.
 * **Theorem 4.16** reuses the name `M_SOR` for the SOR iteration matrix where (4.26) uses it for
   the preconditioner; the two are named apart here.
+* **Theorem 14.6** needs its subdomains to have no coupling in `A`, which for a positive definite
+  `A` is stronger than the disjointness the statement asks for; `theorem_14_6` carries the
+  hypothesis its proof uses.
+
+Chapter 13 is the one place where the printed text is wrong rather than merely imprecise, in four
+statements, each corrected on the declaration that states it:
+
+* **Example 13.2**'s restriction operator is off by a factor of four: the book's own stencil with
+  full weighting gives a quarter of what it writes, the factor being the ratio of the two mesh
+  squares.
+* **Example 13.3** gives the Gauss–Seidel smoother as `(D - E)⁻¹ F`, where it is `(D - E)⁻¹`.
+* **Lemma 13.1**'s third clause names the restriction where its own proof gives the prolongation.
+* **The two-dimensional V-cycle constant** `7/3` does not follow from the book's own recurrence:
+  the geometric sum is `4/3`.
 
 ## References
 

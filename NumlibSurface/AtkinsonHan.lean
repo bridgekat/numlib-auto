@@ -53,13 +53,13 @@ import NumlibSurface.AtkinsonHan.Chapter12.Section07
 # Atkinson–Han, *Theoretical Numerical Analysis*
 
 The surface library for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A
-Functional Analysis Framework* (3rd ed., Springer, 2009): twenty-nine modules, one per section of
+Functional Analysis Framework* (3rd ed., Springer, 2009): fifty modules, one per section of
 the book that the project covers, grouped by chapter. Each states the book's results in the book's
 own terms and proves them by specializing the backbone under `Numlib/`. Almost nothing is proved
 here that is not proved there — the surface exists to test the backbone against a published account
 of the subject, and to give a reader of the book a Lean name for every result formalized.
 
-This module imports the twenty-nine section modules and adds nothing of its own.
+This module imports the fifty section modules and adds nothing of its own.
 
 ## Naming
 
@@ -71,10 +71,9 @@ norms of Example 2.2.8 — a trailing word tells them apart, as in `proposition_
 `theorem_8_3_3_subspace` and `example_2_2_8_l1`. Book-specific definitions get descriptive names
 instead (`IsBoundedOperator`, `IsSublinear`, `BilinForm`, `BookSplitting`, `HasGateauxDerivAt`,
 `IsSaddlePoint`, `DualProblem`), each with a bridge lemma to the Mathlib or backbone notion it
-agrees with. Declarations live in the flat per-chapter namespaces `AtkinsonHan.Chapter01`,
-`AtkinsonHan.Chapter02`, `AtkinsonHan.Chapter03`, `AtkinsonHan.Chapter05`, `AtkinsonHan.Chapter08`,
-`AtkinsonHan.Chapter09` and `AtkinsonHan.Chapter10`, with the bilinear-form vocabulary shared by
-§8.3, §8.7 and Chapters 9–10 directly in `AtkinsonHan`.
+agrees with. Declarations live in the per-chapter namespaces `AtkinsonHan.ChapterNN`, one per
+chapter the surface covers — the chapter spelled in full, as the module path spells it — with the
+bilinear-form vocabulary shared by §8.3, §8.7 and Chapters 9–10 directly in `AtkinsonHan`.
 
 ## The outline
 
@@ -83,6 +82,7 @@ agrees with. Declarations live in the flat per-chapter namespaces `AtkinsonHan.C
 | **1** | | *Linear Spaces* |
 | 1.1 | `Chapter01.Section01` | Linear spaces: bases and dimension |
 | 1.2 | `Chapter01.Section02` | Normed spaces, equivalence of norms, completion; Fubini |
+| 1.3 | `Chapter01.Section03` | Inner product spaces, Cauchy–Schwarz and the parallelogram law |
 | 1.5 | `Chapter01.Section05` | `Lᵖ`: Young, Hölder, Minkowski, completeness, inclusions |
 | 1.6 | `Chapter01.Section06` | Compact sets: Heine–Borel with Riesz's converse, and Arzelà–Ascoli |
 | **2** | | *Linear Operators on Normed Spaces* |
@@ -92,19 +92,33 @@ agrees with. Declarations live in the flat per-chapter namespaces `AtkinsonHan.C
 | 2.4 | `Chapter02.Section04` | Extension, bounded inverse, conditioning, uniform boundedness |
 | 2.5 | `Chapter02.Section05` | Linear functionals, Hahn–Banach, Riesz representation |
 | 2.6 | `Chapter02.Section06` | Adjoint operators and the norm of a self-adjoint operator |
+| 2.7 | `Chapter02.Section07` | Weak convergence, and where it agrees with norm convergence |
+| 2.8 | `Chapter02.Section08` | Compact operators, their spectrum and the Fredholm alternative |
 | 2.9 | `Chapter02.Section09` | The resolvent operator: perturbation bound and Neumann expansion |
 | **3** | | *Approximation Theory* |
+| 3.1 | `Chapter03.Section01` | The Weierstrass approximation theorems |
 | 3.3 | `Chapter03.Section03` | Best approximation: existence, uniqueness, strict convexity |
 | 3.4 | `Chapter03.Section04` | Best approximation in inner product spaces; projections |
+| 3.5 | `Chapter03.Section05` | The classical orthogonal polynomial families |
 | 3.6 | `Chapter03.Section06` | Projection operators and direct sums |
 | 3.7 | `Chapter03.Section07` | Uniform error bounds: the Lebesgue lemma and non-convergence |
+| **4** | | *Fourier Analysis and Wavelets* |
+| 4.1 | `Chapter04.Section01` | Fourier series on the circle, the coefficients, Parseval |
+| 4.2 | `Chapter04.Section02` | The Fourier transform, its normalization, and Plancherel |
+| 4.3 | `Chapter04.Section03` | The discrete Fourier transform and the matrix `F_n` |
+| 4.4 | `Chapter04.Section04` | Haar wavelets: the scaling function and the wavelet spaces |
+| 4.5 | `Chapter04.Section05` | Multiresolution analysis, with Haar as its instance |
 | **5** | | *Nonlinear Equations and Their Solution by Iteration* |
 | 5.1 | `Chapter05.Section01` | The Banach fixed-point theorem; strongly monotone operators |
 | 5.2 | `Chapter05.Section02` | Iterative methods: the scalar case and matrix splittings |
 | 5.3 | `Chapter05.Section03` | Differential calculus for nonlinear operators; convex functionals |
 | 5.4 | `Chapter05.Section04` | Newton's method, Newton–Kantorovich, and the chord method |
+| 5.5 | `Chapter05.Section05` | Completely continuous vector fields, as far as Mathlib allows |
 | 5.6 | `Chapter05.Section06` | Conjugate gradients for operator equations, with Winther's theorem |
-| **8** | | *Variational Formulations of Elliptic Boundary Value Problems* |
+| **6** | | *Finite Difference Method* |
+| 6.2 | `Chapter06.Section02` | The Lax equivalence theorem for `u' = L u`, `L` a `LinearPMap` |
+| 6.3 | `Chapter06.Section03` | Two-level schemes: consistency, stability and convergence |
+| **8** | | *Weak Formulations of Elliptic Boundary Value Problems* |
 | 8.2 | `Chapter08.Section02` | Existence and uniqueness for operator equations |
 | 8.3 | `Chapter08.Section03` | Bilinear forms and the Lax–Milgram lemma |
 | 8.6 | `Chapter08.Section06` | Saddle points, the primal and dual problems, the minimax equality |
@@ -116,10 +130,23 @@ agrees with. Declarations live in the flat per-chapter namespaces `AtkinsonHan.C
 | 9.4 | `Chapter09.Section04` | The conjugate gradient method in variational form |
 | **10** | | *Finite Element Analysis* |
 | 10.4 | `Chapter10.Section04` | The Aubin–Nitsche lemma |
+| **11** | | *Elliptic Variational Inequalities and Their Numerical Approximations* |
+| 11.2 | `Chapter11.Section02` | Convex minimization and the inequality equivalent to it |
+| 11.3 | `Chapter11.Section03` | Existence, uniqueness and stability for elliptic inequalities |
+| 11.4 | `Chapter11.Section04` | The discrete inequality and Falk's error estimate |
+| **12** | | *Numerical Solution of Fredholm Integral Equations of the Second Kind* |
+| 12.1 | `Chapter12.Section01` | Projection methods for `(μ − K) u = f`: stability and convergence |
+| 12.3 | `Chapter12.Section03` | Iterated projection methods and Sloan's superconvergence |
+| 12.4 | `Chapter12.Section04` | The Nyström method and collectively compact approximation |
+| 12.6 | `Chapter12.Section06` | Two-grid iteration for the discretized equations |
+| 12.7 | `Chapter12.Section07` | Projection methods for nonlinear equations |
 
 A section module imports the section modules it builds on, so the import graph runs forwards
-through the book: §2.2 on §2.1, §3.3 on §2.4, §5.4 on §5.3, §9.1 on §8.3, §9.4 on §5.6 and §9.1,
-§10.4 on §9.1.
+through the book: §2.2 on §2.1, §3.3 on §2.4, §4.5 on §4.4, §5.4 on §5.3, §6.3 on §6.2, §9.1 on
+§8.3, §9.4 on §5.6 and §9.1, §10.4 on §9.1, §11.4 on §11.3, and §§12.3–12.7 on §12.1. Two
+sections reach backwards for a definition rather than restate it: §2.7 takes weak convergence
+from §3.3, which needed it first for Example 3.3.5, and §11.3 takes strong monotonicity from
+§5.1.
 
 ## Ambient conventions
 
@@ -194,10 +221,12 @@ each section module names the results it leaves out.
   PDE instances of Chapter 9. What survives is the abstract skeleton — §8.2, §8.3, §8.6, §8.7,
   Chapter 9 and §10.4 — which is where the functional analysis lives; the missing part is the
   verification that a particular boundary value problem satisfies its hypotheses. The same
-  boundary cuts Chapters 11 and 12 in two: their abstract spines (§11.2–11.4 on elliptic
-  variational inequalities, §12.1, §12.3, §12.4, §12.6 and §12.7 on projection and collectively
-  compact methods for Fredholm equations of the second kind) are planned and not yet written,
-  while their applications live in `H¹₀(Ω)` and are out of scope.
+  boundary cuts Chapters 11 and 12 in two: their abstract spines are formalized — §11.2–11.4 on
+  elliptic variational inequalities, §12.1, §12.3, §12.4, §12.6 and §12.7 on projection and
+  collectively compact methods for Fredholm equations of the second kind — while their
+  applications live in `H¹₀(Ω)` and on a concrete kernel, and are out of scope. So is Chapter 7,
+  which is the Sobolev theory itself, and Chapter 13, which is boundary integral equations on a
+  Sobolev space over a boundary.
 * **Weak compactness in a reflexive space.** Theorems 3.3.8, 3.3.10, 3.3.11 (Mazur), 3.3.12 and
   3.3.14, on minimizers of weakly sequentially lower semicontinuous functionals over a reflexive
   Banach space, and Theorem 8.6.3 (Ekeland–Temam, the existence of a saddle point for a
@@ -222,13 +251,14 @@ and 3.4.9), numerical quadrature (§2.4.4) and Chebyshev equioscillation (Theore
 Schauder's theorems and the rotation properties P1–P5 — and is summarized in `Chapter05.Section03`
 rather than formalized.
 
-Finally, several sections are planned and simply not written yet, each with a group file under
-`plans/NumlibSurface/AtkinsonHan/`: §1.3 (inner product spaces and Gram–Schmidt), §2.7 and §2.8
-(weak convergence; compact operators and the Fredholm alternative), §3.1, §3.2 and §3.5
-(Stone–Weierstrass, interpolation, orthogonal polynomials), §5.5, all of Chapter 4 (Fourier
-analysis and wavelets, which needs no Sobolev space and is unblocked by Mathlib's `SchwartzMap`
-and Plancherel theorems), Chapter 6 (the Lax equivalence theorem), and the abstract spines of
-Chapters 11 and 12.
+One section remains planned and unwritten, with its group file under
+`plans/NumlibSurface/AtkinsonHan/`: **§3.2**, interpolation theory. Its abstract half is waiting on
+the backbone's `Numlib/Approximation/Unisolvent` and `Numlib/Approximation/Hermite`; its error
+estimates (3.2.10)–(3.2.12) for piecewise linear interpolation need Sobolev spaces and are out of
+scope with the rest of that material. Two results of §3.3 are open for a different reason —
+Theorems 3.3.19 and 3.3.20, Chebyshev equioscillation — and most of §3.7 is open for a third: the
+trigonometric-approximation layer that Jackson's theorems and the Fourier projections speak about
+is not yet in Mathlib or in `Numlib`, and §3.7's module lists exactly what is waiting on it.
 
 ## References
 
