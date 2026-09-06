@@ -1,47 +1,31 @@
 namespace = "SaadSparse.Ch13"
-desc = '''
-§13.3, inter-grid operations: linear interpolation (prolongation) and full weighting (restriction),
-in one and two dimensions.
-
-These are matrices, and the section contains three claims about them: the transpose relation
-`I_H^h = 2^d (I_h^H)ᵀ` of (13.35)–(13.37), which is what makes the coarse-grid correction of §13.4
-an energy projector; and the tensor-product factorizations (13.31) and (13.38), which say the 2-D
-operators are Kronecker products of the 1-D ones. All three are computations on explicit matrices,
-and (13.37) is the only one the rest of the chapter uses.
-
-The odd-`n` convention matters: `n = 2 m + 1` interior fine points give `m` interior coarse points,
-`x_i^{2h} = x_{2i}^h`. The plan indexes prolongation as `Fin m → Fin (2 * m + 1)` so that no
-divisibility side conditions appear in the statements.
-'''
 
 [[node]]
 id = "prolongation1D"
-kind = "definition"
-desc = '''Saad (13.30): the 1-D linear interpolation matrix `I_{2h}^h : Fin (2m+1) × Fin m`, with
-`v^h_{2j+1} = v^{2h}_j` and `v^h_{2j} = (v^{2h}_{j-1} + v^{2h}_j)/2` (Saad's indexing shifted to
-`0`-based interior points), the stencil `½[1 2 1]`, and `injective_prolongation1D`, which is the
-hypothesis of `Multigrid.galerkinCoarse_isSymmetricCoercive`.'''
+
+[[node]]
+id = "injection1D"
 
 [[node]]
 id = "restriction1D"
-kind = "definition"
-desc = '''Saad (13.32)–(13.34): the injection `v^{2h}_j = v^h_{2j}` and the full-weighting restriction
-`v^{2h}_j = (v^h_{2j-1} + 2 v^h_{2j} + v^h_{2j+1})/4`, with the row stencil `¼[1 2 1]`.'''
+
+[[node]]
+id = "injective_prolongation1D"
 
 [[node]]
 id = "equation_13_35"
-kind = "theorem"
-desc = '''(13.35) and, in 2-D, (13.36)–(13.37): full weighting is the scaled transpose of linear
-interpolation, `I_{2h}^h = 2^d (I_h^{2h})ᵀ` with `d` the dimension. Hence the coarse-grid
-correction built from the pair is unchanged if the restriction is replaced by the adjoint of the
-prolongation, which is the form the backbone uses
-(`Multigrid.coarseProjection`); `coarseProjection_eq_of_scaled` records that the scaling cancels.'''
-deps = ["prolongation1D", "restriction1D"]
+
+[[node]]
+id = "prolongation2D"
+
+[[node]]
+id = "restriction2D"
 
 [[node]]
 id = "equation_13_31"
-kind = "theorem"
-desc = '''(13.31) and (13.38): the 2-D interpolation and restriction are Kronecker products of the 1-D
-ones, `I_{2h}^h = I_{y,2h}^h ⊗ I_{x,2h}^h` and `I_h^{2h} = I_{y,h}^{2h} ⊗ I_{x,h}^{2h}`, so the
-2-D stencils `¼[1 2 1] ⊗ ¼[1 2 1]` of the section are read off the 1-D ones.'''
-deps = ["prolongation1D", "restriction1D", "Matrix.kroneckerVec"]
+
+[[node]]
+id = "equation_13_38"
+
+[[node]]
+id = "equation_13_37"

@@ -161,6 +161,20 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   including `linter.style.header`, which `lakefile.toml` deliberately disables for this project. The
   result is six copyright-header warnings on every file. Add `-D weak.linter.style.header=false`
   and the output is exactly what `lake build` will say.
+* **A module a branch adds is invisible to `tracker lint` until the library's root import file
+  imports it**, and that file is regenerated on `main`, not edited on a branch. Every node of the
+  new group then reads as `open`, so a plan file written in its finished form (ids only) makes
+  `lint` fail with "is open and has no desc / no kind" — for every agent sharing the worktree, not
+  only for its author. The post-merge answer is visible from a branch only as
+  `lake exe tracker lint --roots Numlib,NumlibSurface,<Your.New.Module>`. That rewrites the shared
+  cache with non-default roots, so the next default command re-checks; a sibling who runs plain
+  `lint` and sees your group's errors should not "fix" your TOML by restoring `kind`/`desc`.
+* **Inserting a private helper between a doc comment and the declaration it documents silently
+  reassigns the doc comment.** If the helper has its own doc comment the parser reports
+  `unexpected token '/--'; expected 'lemma'` at the *second* one, which points nowhere useful; if it
+  does not, the file compiles and the only symptom is `tracker lint` saying the public declaration
+  "has neither a desc nor a doc comment". Add helpers *above* the doc comment, or move the doc
+  comment down in the same edit.
 
 ## Correctness traps
 
@@ -532,6 +546,34 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   the `by` block.** The error surfaces on the continuation line as `unexpected token '('; expected
   ']'`, which reads like a bracket typo. Put a multi-line `nlinarith [...]`/`simp [...]` on its own
   line under the `have`.
+* **A `def` over `ℝ` whose body contains `1 / 2` must be `noncomputable`.** The error names
+  `Real.instDivInvMonoid` and points at the `def`. It cascades: every later `def` built from it
+  reports the same failure naming *your* definition instead of `Real`, so mark the first one and
+  the rest follow.
+* **`rw`'s closing `rfl` does not see through a plain `def`.** `rw [← foo]` that leaves the goal
+  `myDef a b = <the body of myDef a b>` reports "unsolved goals" although the goal is `rfl`: the
+  automatic closing step runs at reducible transparency. Introduce the unfolding explicitly with
+  `have h : myDef a b = … := rfl` and `rw [h]` first.
+* **Do not leave a `Fin` index as an anonymous constructor in a goal `omega` has to see.** With the
+  literal `⟨2 * ↑q + 1, hlt⟩` inside the condition of an `ite`, `rw [ite_eq_right (by omega)]`
+  failed and omega's counterexample listed only the `Fin` bounds — the `≠` hypothesis sitting in
+  context was not among its constraints. Introducing the index opaquely first,
+  `obtain ⟨p, hp⟩ : ∃ p : Fin n, (p : ℕ) = 2 * (q : ℕ) + 1 := ⟨⟨_, by omega⟩, rfl⟩`,
+  makes every later `by omega` succeed, because `hp` is then an ordinary arithmetic hypothesis.
+* A nested algorithm loop — an outer recursion whose inner loop reads the vectors already computed —
+  needs no well-founded machinery beyond a **clamp**: write `fun i => f x (min i j)` in the `j + 1`
+  branch and close it with `decreasing_by exact Nat.lt_succ_of_le (Nat.min_le_right _ _)`. The clamp
+  disappears once and for all through a `congr` lemma for the inner loop ("it reads only the first
+  `k` entries"), which turns the raw equation into the usable `_succ` one. `SaadSparse.Ch06.arnoldiMGS`
+  and `SaadSparse.Ch01.modifiedGramSchmidt` are both written this way.
+* After `rintro ⟨Q', R'⟩ ⟨…⟩` on the uniqueness branch of an `∃!` over a product, the hypotheses come
+  back stated about `(Q', R').1` and `(Q', R').2`, so `rw [hQQ, hRR]` fails to find the pattern in the
+  goal `(Q', R') = (Q, R)`. `exact Prod.ext hQQ hRR` accepts them, since application checks up to defeq.
+* One more way to corrupt a Lean file from Python: building the fragment as
+  `"…\\u2016…".encode().decode('unicode_escape')`. It writes `â\x80\x96` where `‖` was meant, and if
+  the text is a doc comment Lean reports nothing at all — the file builds clean and the mojibake ships.
+  The standing rule (write Lean text with the Write/Edit tool, never through a Python string literal)
+  covers this; the `unicode_escape` round trip is not a workaround for it.
 
 ## Tactics
 
@@ -773,6 +815,20 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
 * `sInf ∅ = 0` in `ℕ` is the same trick one level down: a statement quantified as `∀ i < sInf S`
   needs no "the set is nonempty" hypothesis, because `i < 0` is false. `FongSaunders.steihaug_cr`
   drops the termination hypothesis this way.
+* Once the `ring`-inside-`first` trap above is fixed by putting the discharging branch first
+  (`split_ifs <;> first | (exfalso; omega) | ring`), the *unused tactic* linter can then report
+  "`omega` does nothing". That is not noise: it means `split_ifs` discarded every contradictory
+  branch by itself, so the whole combinator collapses to `split_ifs <;> ring`. Both readings of the
+  same line are worth checking before silencing the linter.
+* `ring` treats `⁻¹` as an atom, so it does **not** prove `a / (n + 1) / 2 = a / (2 * (n + 1))` —
+  the failure is the usual silent "Try this: ring_nf". `rw [div_div, mul_comm ((n : ℝ) + 1) 2]` is
+  the two-step form that works, and `field_simp` needs `n + 1 ≠ 0` for the same goal.
+* `linear_combination` is the right tactic for "solve a linear system of two Taylor expansions":
+  from `f (x + k) - 2 * f x + f (x - k) = P * k ^ 2` and `f (x + k) - f (x - k) = S * (2 * k)`,
+  the value `f (x + k) = f x + k ^ 2 / 2 * P + k * S` is `linear_combination (1/2) * h₂ + (1/2) * h₁`
+  and `f (x - k)` is the same with a minus. `linarith` cannot do it, because `P * k ^ 2` and
+  `k ^ 2 / 2 * P` are different atoms to it. Clear the divisions with `div_eq_iff` **first**:
+  `linear_combination` finishes with `ring1`, which cannot cancel `X / Y * Y`.
 
 * **`simpa using h₁.add h₂` on a `HasDerivAt` goal can fail on instance paths.** `simp` folds
   `fun t => f t + g t` into the `Pi.add` form `f + g`, and the two elaborations pick different
@@ -1851,6 +1907,73 @@ through a stated `Iff` (`isVariationalInequalitySolution_toOperator_iff` in
   `Polynomial.induction_on'` with `SemiconjBy.mul_right (Algebra.commutes a B).symm` for the
   monomials. That is Saad's (9.18), the identity that makes left- and right-preconditioned GMRES
   search the same affine space.
+Taylor's theorem, in the form the finite-difference formulas need:
+
+* Mathlib's `taylor_mean_remainder_lagrange` is stated with `iteratedDerivWithin` over
+  `Set.uIcc x₀ x` and with `taylorWithinEval`, none of which a difference formula wants. The bridge
+  is three lines and is `SaadSparse.Ch02.exists_taylor`:
+  `UniqueDiffOn ℝ (Set.uIcc a b)` is `uniqueDiffOn_Icc (inf_lt_sup.2 hne)` (`uIcc` *is*
+  `Icc (a ⊓ b) (a ⊔ b)`, so `exact` accepts it); `iteratedDerivWithin_eq_iteratedDeriv` converts
+  every coefficient, given `ContDiffAt` at that order and membership in the set; `taylor_within_apply`
+  expands the polynomial; and the hypothesis
+  `DifferentiableOn ℝ (iteratedDerivWithin k f s) (uIoo x₀ x)` is
+  `(hf.differentiable_iteratedDeriv' k).differentiableOn.congr` along the same conversion.
+  `Set.uIoo_of_le` / `uIoo_of_ge` then turn `uIoo x (x + t)` into `Ioo` in either sign of `t`.
+* `ContDiff.differentiable_iteratedDeriv' (m : ℕ) (h : ContDiff 𝕜 (m + 1) f)` and
+  `ContDiff.continuous_iteratedDeriv' (m : ℕ) (h : ContDiff 𝕜 m f)` are the primed, hypothesis-free
+  forms; the unprimed ones take `m < n` and `m ≤ n` in `WithTop ℕ∞`, where `by norm_num` discharges
+  the numeral cases and `by exact_mod_cast h` moves a `ℕ` inequality across.
+* **`HasDerivAt.mul` states its function as `f * g`, not as `fun y => f y * g y`**, so
+  `rw [(hf.mul hg).deriv]` fails against a goal about `deriv (fun t => a t * deriv u t) x` with
+  "did not find `deriv (a * deriv u) x`". Bind it with the lambda form written out —
+  `have hm : HasDerivAt (fun t => a t * deriv u t) (…) x := hf.mul hg` — and the assignment
+  succeeds by defeq; `hm.deriv` then rewrites. Same for `deriv_mul` itself.
+* `iteratedDeriv 2 u x = deriv (deriv u) x` is `iteratedDeriv_succ` then `iteratedDeriv_one`, in
+  that order; `iteratedDeriv_zero` and `iteratedDeriv_one` are function equalities, so `simp only`
+  rewrites them under an application.
+* `Matrix.PosDef.smul (hx : x.PosDef) (ha : 0 < a) : (a • x).PosDef` needs `StarOrderedRing ℝ`,
+  whose instance lives in `Mathlib.Algebra.Order.Star.Real` — an import `Numlib` does not otherwise
+  pull in, and the failure is a bare "failed to synthesize `StarOrderedRing ℝ`" at the *use* site.
+* `Matrix.mulVec_apply_eq_sum` is the `rfl` lemma `(A *ᵥ v) i = ∑ j, A i j * v j`, and
+  `(A * B) i j = ∑ k, A i k * B k j` is `Matrix.mul_apply`; the two are `rfl`-equal when the second
+  factor's column is read as a vector, so `(A * B) i j = (A *ᵥ fun k => B k j) i := rfl` type-checks
+  and is the cheapest way to reuse an eigenvector identity inside a matrix product.
+  `Matrix.mul_diagonal` is `(M * diagonal d) i j = M i j * d j`.
+* `pow_eq_one_iff_of_nonneg (ha : 0 ≤ a) (hn : n ≠ 0) : a ^ n = 1 ↔ a = 1` together with `abs_pow`
+  and `abs_eq` is the short way to "no power of `σ` is `1`" from `σ ≠ 1` and `σ ≠ -1`;
+  `Even.pow_abs`, `Odd.pow_neg_iff` and `one_lt_pow₀` are the three facts that turn `σ < -1` into
+  the sign alternation of `σ ^ i`.
+* `Finset.sum_le_sum_of_subset_of_nonneg` against an explicit pair `{i, j} ⊆ univ.erase k`, with
+  `Finset.sum_pair`, is the cheap way to *refute* a row-sum inequality: a lower bound on two terms
+  is all a counterexample needs, and no sum over `Fin n` has to be evaluated. For the positive
+  direction, "weak diagonal dominance" for a matrix with nonnegative diagonal and nonpositive
+  off-diagonal entries is exactly `0 ≤ ∑ j, A i j`, through `Finset.sum_erase_eq_sub` and
+  `abs_of_nonpos` — one four-line lemma replaces every explicit row computation.
+* `linearIndependent_iff_card_eq_finrank_span` ("a finite family is independent iff its cardinality
+  is the rank of its span") lives in `Mathlib.LinearAlgebra.Dimension.OrzechProperty`, which nothing
+  else here imports, so the name is simply unknown until that import is added. It is the cheap way to
+  transport linear independence along an equality of spans between two families over the same finite
+  index type: three lines, where an induction down the triangular expansion is thirty.
+* Mathlib states orthonormality of `gramSchmidtNormed` only under linear independence
+  (`gramSchmidtNormed_orthonormal`) or on the subtype of nonzero indices
+  (`gramSchmidtNormed_orthonormal'`), but *pairwise orthogonality* holds with no hypothesis at all —
+  one `simp [gramSchmidtNormed, inner_smul_left, inner_smul_right, gramSchmidt_orthogonal 𝕜 x hij]`.
+  That is what makes "modified Gram–Schmidt = classical Gram–Schmidt" and the expansion
+  `x j = ∑ i ≤ j, ⟪q i, x j⟫ • q i` unconditional: at a breakdown both sides are `0`, so no
+  `LinearIndependent` hypothesis is needed anywhere in Saad §1.7.
+* `Matrix.mem_unitaryGroup_iff : A ∈ unitaryGroup n α ↔ A * star A = 1` and `mem_unitaryGroup_iff'`
+  (the other order) take the matrix **implicitly**: `(Matrix.mem_unitaryGroup_iff P).1 hP` fails with
+  "Function expected". Write `Matrix.mem_unitaryGroup_iff.1 hP` and then `Matrix.star_eq_conjTranspose`
+  to reach `P * Pᴴ = 1`.
+* `Matrix.kroneckerMap_transpose` is oriented `Aᵀ ⊗ₖ Bᵀ = (A ⊗ₖ B)ᵀ`, so pulling a transpose *into*
+  a Kronecker product wants `.symm`; `smul_kronecker` and `kronecker_smul` pull a scalar out of the
+  left and right factor respectively, and `smul_smul` then combines the two into `2^d`.
+* `Polynomial.Chebyshev.C R n` is the Vieta–Lucas polynomial `2 T_n(X/2)`
+  (`C_comp_two_mul_X`, `C_eq_two_mul_T_comp_half_mul_X`), and `C_mul_C R m k` at `m = k` with
+  `C_zero : C R 0 = 2` gives the duplication formula `C_{2k} = C_k ^ 2 - 2` in two lines. That is
+  exactly Saad's block cyclic reduction recurrence `B⁽ʳ⁺¹⁾ = (B⁽ʳ⁾)² - 2 I`, so (2.33)/(2.36) is an
+  induction with no analysis in it at all — do not reach for `Polynomial.Chebyshev.T` and a
+  half-argument substitution.
 
 ## Design conventions of this library
 

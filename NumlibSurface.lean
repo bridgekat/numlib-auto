@@ -48,11 +48,13 @@ import NumlibSurface.FongSaunders.Section4
 import NumlibSurface.FongSaunders.Section5
 import NumlibSurface.SaadSparse
 import NumlibSurface.SaadSparse.Chapter01.Basics
+import NumlibSurface.SaadSparse.Chapter01.Section07
 import NumlibSurface.SaadSparse.Chapter01.Section08
 import NumlibSurface.SaadSparse.Chapter01.Section09
 import NumlibSurface.SaadSparse.Chapter01.Section11
 import NumlibSurface.SaadSparse.Chapter01.Section12
 import NumlibSurface.SaadSparse.Chapter01.Section13
+import NumlibSurface.SaadSparse.Chapter02.Section02
 import NumlibSurface.SaadSparse.Chapter02.Section05
 import NumlibSurface.SaadSparse.Chapter03.Section02
 import NumlibSurface.SaadSparse.Chapter04.Section01
@@ -82,6 +84,8 @@ import NumlibSurface.SaadSparse.Chapter10.Section02
 import NumlibSurface.SaadSparse.Chapter10.Section05
 import NumlibSurface.SaadSparse.Chapter10.Section08
 import NumlibSurface.SaadSparse.Chapter12.Section03
+import NumlibSurface.SaadSparse.Chapter13.Section02
+import NumlibSurface.SaadSparse.Chapter13.Section03
 import NumlibSurface.SaadSparse.Chapter14.Section03
 import NumlibSurface.SaadSparse.Chapter14.Section06
 import NumlibSurface.SaadSparse.Common
