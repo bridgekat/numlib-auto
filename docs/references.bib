@@ -4,326 +4,277 @@
 # WARNING: Please only use alphanumeric characters, '-', '_', and ':' for the key of bibliography items!
 # Currently doc-gen does not support characters outside them and will silently errors, causing incomplete reference pages.
 
+# WARNING: LLM-generated or edited entries **must** be marked with a comment `# GENERATED` at the beginning of each entry!
+# These must be reviewed by a human and corrected if necessary.
+
 # To link to an entry in `references.bib`, use one of
 #   [bibkey]
 #   [Author, *Title* (optional location)][bibkey]
 # in a module doc comment or a declaration doc string. A `## References` section
 # listing the entry is not needed and should not be written: the citation is the link.
 
-@Book{            Anselone_1971,
-  author        = {Anselone, Philip M.},
-  title         = {Collectively Compact Operator Approximation Theory and
-                  Applications to Integral Equations},
-  publisher     = {Prentice-Hall, Englewood Cliffs, N.J.},
-  year          = {1971}
+# GENERATED
+@book{anselone1971collectively,
+  title     = {Collectively compact operator approximation theory and applications to integral equations},
+  author    = {Anselone, Philip M},
+  year      = {1971},
+  publisher = {Prentice-Hall},
+  address   = {Englewood Cliffs, N.J.},
+  note      = {With an appendix by Joel Davis}
 }
 
-@Book{            AtkinsonHan_2009,
-  author        = {Atkinson, Kendall and Han, Weimin},
-  title         = {Theoretical Numerical Analysis: A Functional Analysis
-                  Framework},
-  series        = {Texts in Applied Mathematics},
-  volume        = {39},
-  edition       = {3},
-  publisher     = {Springer, New York},
-  year          = {2009},
-  isbn          = {978-1-4419-0457-7},
-  doi           = {10.1007/978-1-4419-0458-4},
-  url           = {https://doi.org/10.1007/978-1-4419-0458-4}
+# GENERATED
+@book{atkinson2005theoretical,
+  title     = {Theoretical numerical analysis: a functional analysis framework},
+  author    = {Atkinson, Kendall and Han, Weimin},
+  series    = {Texts in Applied Mathematics},
+  volume    = {39},
+  edition   = {3},
+  year      = {2009},
+  publisher = {Springer},
+  doi       = {10.1007/978-1-4419-0458-4}
 }
 
-@Article{         Brown_1991,
-  author        = {Brown, Peter N.},
-  title         = {A theoretical comparison of the {A}rnoldi and {GMRES}
-                  algorithms},
-  journal       = {SIAM Journal on Scientific and Statistical Computing},
-  volume        = {12},
-  number        = {1},
-  pages         = {58--78},
-  year          = {1991},
-  doi           = {10.1137/0912003},
-  url           = {https://doi.org/10.1137/0912003}
+@article{brown1991theoretical,
+  title     = {A theoretical comparison of the Arnoldi and GMRES algorithms},
+  author    = {Brown, Peter N},
+  journal   = {SIAM Journal on Scientific and Statistical Computing},
+  volume    = {12},
+  number    = {1},
+  pages     = {58--78},
+  year      = {1991},
+  publisher = {SIAM}
 }
 
-@PhdThesis{       Choi_2006,
-  author        = {Choi, Sou-Cheng},
-  title         = {Iterative Methods for Singular Linear Equations and
-                  Least-Squares Problems},
-  school        = {Stanford University},
-  year          = {2006}
+@phdthesis{choi2006iterative,
+  title  = {Iterative methods for singular linear equations and least-squares problems},
+  author = {Choi, Sou-Cheng},
+  year   = {2006},
+  school = {Stanford University}
 }
 
-@Book{            Conway_1990,
-  author        = {Conway, John B.},
-  title         = {A Course in Functional Analysis},
-  series        = {Graduate Texts in Mathematics},
-  volume        = {96},
-  edition       = {2},
-  publisher     = {Springer, New York},
-  year          = {1990},
-  isbn          = {0-387-97245-5}
+# GENERATED
+@book{conway2019course,
+  title     = {A course in functional analysis},
+  author    = {Conway, John B},
+  series    = {Graduate Texts in Mathematics},
+  volume    = {96},
+  edition   = {2},
+  year      = {1990},
+  publisher = {Springer}
 }
 
-@Article{         CullumGreenbaum_1996,
-  author        = {Cullum, Jane and Greenbaum, Anne},
-  title         = {Relations between {G}alerkin and norm-minimizing iterative
-                  methods for solving linear systems},
-  journal       = {SIAM Journal on Matrix Analysis and Applications},
-  volume        = {17},
-  number        = {2},
-  pages         = {223--247},
-  year          = {1996},
-  doi           = {10.1137/S0895479893246765},
-  url           = {https://doi.org/10.1137/S0895479893246765}
+@article{cullum1996relations,
+  title     = {Relations between Galerkin and norm-minimizing iterative methods for solving linear systems},
+  author    = {Cullum, Jane and Greenbaum, Anne},
+  journal   = {SIAM Journal on Matrix Analysis and Applications},
+  volume    = {17},
+  number    = {2},
+  pages     = {223--247},
+  year      = {1996},
+  publisher = {SIAM}
 }
 
-@Article{         Falk_1974,
-  author        = {Falk, Richard S.},
-  title         = {Error estimates for the approximation of a class of
-                  variational inequalities},
-  journal       = {Mathematics of Computation},
-  volume        = {28},
-  number        = {128},
-  pages         = {963--971},
-  year          = {1974},
-  doi           = {10.1090/S0025-5718-1974-0391502-8},
-  url           = {https://doi.org/10.1090/S0025-5718-1974-0391502-8}
+@article{falk1974error,
+  title   = {Error estimates for the approximation of a class of variational inequalities},
+  author  = {Falk, Richard S},
+  journal = {Mathematics of Computation},
+  volume  = {28},
+  number  = {128},
+  pages   = {963--971},
+  year    = {1974}
 }
 
-@Article{         FongSaunders_2012,
-  author        = {Fong, David Chin-Lung and Saunders, Michael},
-  title         = {{CG} versus {MINRES}: an empirical comparison},
-  journal       = {SQU Journal for Science},
-  volume        = {17},
-  number        = {1},
-  pages         = {44--62},
-  year          = {2012},
-  note          = {Also Report SOL 2011-2R, Department of Management Science
-                  and Engineering, Stanford University, 2011}
+@article{fong2012cg,
+  title   = {CG versus MINRES: An empirical comparison},
+  author  = {Fong, David Chin-Lung and Saunders, Michael},
+  journal = {Sultan Qaboos University Journal for Science},
+  volume  = {17},
+  number  = {1},
+  pages   = {44--62},
+  year    = {2012}
 }
 
-@Article{         FreundNachtigal_1991,
-  author        = {Freund, Roland W. and Nachtigal, Noël M.},
-  title         = {{QMR}: a quasi-minimal residual method for non-{H}ermitian
-                  linear systems},
-  journal       = {Numerische Mathematik},
-  volume        = {60},
-  number        = {1},
-  pages         = {315--339},
-  year          = {1991},
-  doi           = {10.1007/BF01385726},
-  url           = {https://doi.org/10.1007/BF01385726}
+@article{freund1991qmr,
+  title     = {QMR: a quasi-minimal residual method for non-Hermitian linear systems},
+  author    = {Freund, Roland W and Nachtigal, No{\"e}l M},
+  journal   = {Numerische mathematik},
+  volume    = {60},
+  number    = {1},
+  pages     = {315--339},
+  year      = {1991},
+  publisher = {Springer}
 }
 
-@Book{            Greenbaum_1997,
-  author        = {Greenbaum, Anne},
-  title         = {Iterative Methods for Solving Linear Systems},
-  series        = {Frontiers in Applied Mathematics},
-  volume        = {17},
-  publisher     = {Society for Industrial and Applied Mathematics,
-                  Philadelphia, PA},
-  year          = {1997},
-  isbn          = {0-89871-396-X},
-  doi           = {10.1137/1.9781611970937},
-  url           = {https://doi.org/10.1137/1.9781611970937}
+@book{greenbaum1997iterative,
+  title     = {Iterative methods for solving linear systems},
+  author    = {Greenbaum, Anne},
+  year      = {1997},
+  publisher = {SIAM}
 }
 
-@Article{         HestenesStiefel_1952,
-  author        = {Hestenes, Magnus R. and Stiefel, Eduard},
-  title         = {Methods of conjugate gradients for solving linear systems},
-  journal       = {Journal of Research of the National Bureau of Standards},
-  volume        = {49},
-  number        = {6},
-  pages         = {409--436},
-  year          = {1952},
-  doi           = {10.6028/jres.049.044},
-  url           = {https://doi.org/10.6028/jres.049.044}
+# GENERATED
+@article{hestenes1952methods,
+  title   = {Methods of conjugate gradients for solving linear systems},
+  author  = {Hestenes, Magnus R and Stiefel, Eduard},
+  journal = {Journal of research of the National Bureau of Standards},
+  volume  = {49},
+  number  = {6},
+  pages   = {409--436},
+  year    = {1952}
 }
 
-@Book{            Higham_2002,
-  author        = {Higham, Nicholas J.},
-  title         = {Accuracy and Stability of Numerical Algorithms},
-  edition       = {2},
-  publisher     = {Society for Industrial and Applied Mathematics,
-                  Philadelphia, PA},
-  year          = {2002},
-  isbn          = {0-89871-521-0},
-  doi           = {10.1137/1.9780898718027},
-  url           = {https://doi.org/10.1137/1.9780898718027}
+@book{higham2002accuracy,
+  title     = {Accuracy and stability of numerical algorithms},
+  author    = {Higham, Nicholas J},
+  year      = {2002},
+  publisher = {SIAM}
 }
 
-@Book{            Kress_1998,
-  author        = {Kress, Rainer},
-  title         = {Numerical Analysis},
-  series        = {Graduate Texts in Mathematics},
-  volume        = {181},
-  publisher     = {Springer, New York},
-  year          = {1998},
-  isbn          = {0-387-98408-9},
-  doi           = {10.1007/978-1-4612-0599-9},
-  url           = {https://doi.org/10.1007/978-1-4612-0599-9}
+# GENERATED
+@book{kress2012numerical,
+  title     = {Numerical analysis},
+  author    = {Kress, Rainer},
+  series    = {Graduate Texts in Mathematics},
+  volume    = {181},
+  year      = {1998},
+  publisher = {Springer},
+  doi       = {10.1007/978-1-4612-0599-9}
 }
 
-@Book{            Kress_2014,
-  author        = {Kress, Rainer},
-  title         = {Linear Integral Equations},
-  series        = {Applied Mathematical Sciences},
-  volume        = {82},
-  edition       = {3},
-  publisher     = {Springer, New York},
-  year          = {2014},
-  isbn          = {978-1-4614-9592-5},
-  doi           = {10.1007/978-1-4614-9593-2},
-  url           = {https://doi.org/10.1007/978-1-4614-9593-2}
+# GENERATED
+@book{kress1989linear,
+  title     = {Linear integral equations},
+  author    = {Kress, Rainer},
+  series    = {Applied Mathematical Sciences},
+  volume    = {82},
+  edition   = {3},
+  year      = {2014},
+  publisher = {Springer},
+  doi       = {10.1007/978-1-4614-9593-2}
 }
 
-@Article{         KyFan_1960,
-  author        = {Fan, Ky},
-  title         = {Note on {M}-matrices},
-  journal       = {The Quarterly Journal of Mathematics},
-  volume        = {11},
-  number        = {1},
-  pages         = {43--49},
-  year          = {1960},
-  doi           = {10.1093/qmath/11.1.43},
-  url           = {https://doi.org/10.1093/qmath/11.1.43}
+@article{fan1960note,
+  title     = {Note on M-matrices},
+  author    = {Fan, Ky},
+  journal   = {The Quarterly Journal of Mathematics},
+  volume    = {11},
+  number    = {1},
+  pages     = {43--49},
+  year      = {1960},
+  publisher = {Oxford University Press}
 }
 
-@Article{         LaxRichtmyer_1956,
-  author        = {Lax, Peter D. and Richtmyer, Robert D.},
-  title         = {Survey of the stability of linear finite difference
-                  equations},
-  journal       = {Communications on Pure and Applied Mathematics},
-  volume        = {9},
-  number        = {2},
-  pages         = {267--293},
-  year          = {1956},
-  doi           = {10.1002/cpa.3160090206},
-  url           = {https://doi.org/10.1002/cpa.3160090206}
+@article{lax1956survey,
+  title     = {Survey of the stability of linear finite difference equations},
+  author    = {Lax, Peter D and Richtmyer, Robert D},
+  journal   = {Communications on pure and applied mathematics},
+  volume    = {9},
+  number    = {2},
+  pages     = {267--293},
+  year      = {1956},
+  publisher = {Wiley Online Library}
 }
 
-@Article{         MeijerinkVanDerVorst_1977,
-  author        = {Meijerink, J. A. and van der Vorst, H. A.},
-  title         = {An iterative solution method for linear systems of which
-                  the coefficient matrix is a symmetric {M}-matrix},
-  journal       = {Mathematics of Computation},
-  volume        = {31},
-  number        = {137},
-  pages         = {148--162},
-  year          = {1977},
-  doi           = {10.1090/S0025-5718-1977-0438681-4},
-  url           = {https://doi.org/10.1090/S0025-5718-1977-0438681-4}
+# GENERATED
+@article{meijerink1977iterative,
+  title   = {An iterative solution method for linear systems of which the coefficient matrix is a symmetric {M}-matrix},
+  author  = {Meijerink, J. A. and van der Vorst, Henk A.},
+  journal = {Mathematics of computation},
+  volume  = {31},
+  number  = {137},
+  pages   = {148--162},
+  year    = {1977},
+  doi     = {10.1090/S0025-5718-1977-0438681-4}
 }
 
-@Article{         MeurantStrakos_2006,
-  author        = {Meurant, Gérard and Strakoš, Zdeněk},
-  title         = {The {L}anczos and conjugate gradient algorithms in finite
-                  precision arithmetic},
-  journal       = {Acta Numerica},
-  volume        = {15},
-  pages         = {471--542},
-  year          = {2006},
-  doi           = {10.1017/S096249290626001X},
-  url           = {https://doi.org/10.1017/S096249290626001X}
+@article{meurant2006lanczos,
+  title     = {The Lanczos and conjugate gradient algorithms in finite precision arithmetic},
+  author    = {Meurant, G{\'e}rard and Strako{\v{s}}, Zden{\v{e}}k},
+  journal   = {Acta Numerica},
+  volume    = {15},
+  pages     = {471--542},
+  year      = {2006},
+  publisher = {Cambridge University Press}
 }
 
-@Book{            OrtegaRheinboldt_1970,
-  author        = {Ortega, James M. and Rheinboldt, Werner C.},
-  title         = {Iterative Solution of Nonlinear Equations in Several
-                  Variables},
-  publisher     = {Academic Press, New York-London},
-  year          = {1970}
+@book{ortega2000iterative,
+  title     = {Iterative solution of nonlinear equations in several variables},
+  author    = {Ortega, James M and Rheinboldt, Werner C},
+  year      = {2000},
+  publisher = {SIAM}
 }
 
-@Book{            RichtmyerMorton_1967,
-  author        = {Richtmyer, Robert D. and Morton, K. W.},
-  title         = {Difference Methods for Initial-Value Problems},
-  edition       = {2},
-  publisher     = {Interscience Publishers John Wiley \& Sons, New
-                  York-London-Sydney},
-  year          = {1967}
+# GENERATED
+@book{richtmyer1959difference,
+  title     = {Difference methods for initial-value problems},
+  author    = {Richtmyer, Robert D and Morton, K. W.},
+  edition   = {2},
+  year      = {1967},
+  publisher = {Interscience Publishers, John Wiley \& Sons}
 }
 
-@Book{            Saad_2003,
-  author        = {Saad, Yousef},
-  title         = {Iterative Methods for Sparse Linear Systems},
-  edition       = {2},
-  publisher     = {Society for Industrial and Applied Mathematics,
-                  Philadelphia, PA},
-  year          = {2003},
-  isbn          = {0-89871-534-2},
-  doi           = {10.1137/1.9780898718003},
-  url           = {https://doi.org/10.1137/1.9780898718003}
+@book{saad2003iterative,
+  title     = {Iterative methods for sparse linear systems},
+  author    = {Saad, Yousef},
+  year      = {2003},
+  publisher = {SIAM}
 }
 
-@Book{            Saad_2011,
-  author        = {Saad, Yousef},
-  title         = {Numerical Methods for Large Eigenvalue Problems},
-  series        = {Classics in Applied Mathematics},
-  volume        = {66},
-  edition       = {2},
-  publisher     = {Society for Industrial and Applied Mathematics,
-                  Philadelphia, PA},
-  year          = {2011},
-  isbn          = {978-1-611970-72-2},
-  doi           = {10.1137/1.9781611970739},
-  url           = {https://doi.org/10.1137/1.9781611970739}
+@book{saad2011numerical,
+  title     = {Numerical methods for large eigenvalue problems: revised edition},
+  author    = {Saad, Yousef},
+  year      = {2011},
+  publisher = {SIAM}
 }
 
-@Book{            Seneta_1981,
-  author        = {Seneta, E.},
-  title         = {Non-negative Matrices and Markov Chains},
-  series        = {Springer Series in Statistics},
-  edition       = {2},
-  publisher     = {Springer, New York},
-  year          = {1981},
-  isbn          = {0-387-29765-0},
-  doi           = {10.1007/0-387-32792-4},
-  url           = {https://doi.org/10.1007/0-387-32792-4}
+# GENERATED
+@book{seneta1981non,
+  title     = {Non-negative matrices and {M}arkov chains},
+  author    = {Seneta, E},
+  series    = {Springer Series in Statistics},
+  edition   = {2},
+  year      = {1981},
+  publisher = {Springer},
+  doi       = {10.1007/0-387-32792-4}
 }
 
-@Article{         Steihaug_1983,
-  author        = {Steihaug, Trond},
-  title         = {The conjugate gradient method and trust regions in large
-                  scale optimization},
-  journal       = {SIAM Journal on Numerical Analysis},
-  volume        = {20},
-  number        = {3},
-  pages         = {626--637},
-  year          = {1983},
-  doi           = {10.1137/0720042},
-  url           = {https://doi.org/10.1137/0720042}
+@article{steihaug1983conjugate,
+  title     = {The conjugate gradient method and trust regions in large scale optimization},
+  author    = {Steihaug, Trond},
+  journal   = {SIAM Journal on Numerical Analysis},
+  volume    = {20},
+  number    = {3},
+  pages     = {626--637},
+  year      = {1983},
+  publisher = {SIAM}
 }
 
-@PhdThesis{       Weiss_1990,
-  author        = {Weiss, Rüdiger},
-  title         = {Convergence Behavior of Generalized Conjugate Gradient
-                  Methods},
-  school        = {University of Karlsruhe},
-  year          = {1990}
+@phdthesis{weiss1990convergence,
+  title  = {Convergence behavior of generalized conjugate gradient methods},
+  author = {Wei{\ss}, R{\"u}diger},
+  year   = {1990},
+  school = {University of Karlsruhe}
 }
 
-@Article{         Winther_1980,
-  author        = {Winther, Ragnar},
-  title         = {Some superlinear convergence results for the conjugate
-                  gradient method},
-  journal       = {SIAM Journal on Numerical Analysis},
-  volume        = {17},
-  number        = {1},
-  pages         = {14--17},
-  year          = {1980},
-  doi           = {10.1137/0717002},
-  url           = {https://doi.org/10.1137/0717002}
+@article{winther1980some,
+  title     = {Some superlinear convergence results for the conjugate gradient method},
+  author    = {Winther, Ragnar},
+  journal   = {SIAM Journal on Numerical Analysis},
+  volume    = {17},
+  number    = {1},
+  pages     = {14--17},
+  year      = {1980},
+  publisher = {SIAM}
 }
 
-@Article{         ZhouWalker_1994,
-  author        = {Zhou, Lu and Walker, Homer F.},
-  title         = {Residual smoothing techniques for iterative methods},
-  journal       = {SIAM Journal on Scientific Computing},
-  volume        = {15},
-  number        = {2},
-  pages         = {297--312},
-  year          = {1994},
-  doi           = {10.1137/0915021},
-  url           = {https://doi.org/10.1137/0915021}
+@article{zhou1994residual,
+  title     = {Residual smoothing techniques for iterative methods},
+  author    = {Zhou, Lu and Walker, Homer F},
+  journal   = {SIAM Journal on Scientific Computing},
+  volume    = {15},
+  number    = {2},
+  pages     = {297--312},
+  year      = {1994},
+  publisher = {SIAM}
 }
