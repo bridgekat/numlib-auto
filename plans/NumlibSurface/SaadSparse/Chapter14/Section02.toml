@@ -29,3 +29,27 @@ id = "proposition_14_1_3"
 
 [[node]]
 id = "blockGaussianElimination_eq"
+
+[[node]]
+id = "equation_14_16"
+
+[[node]]
+id = "modelSchurEigen"
+
+[[node]]
+id = "modelRoot"
+
+[[node]]
+id = "modelSeq"
+
+[[node]]
+id = "modelRoot_add_inv"
+
+[[node]]
+id = "modelSeq_succ_succ"
+
+[[node]]
+id = "modelSchurEigen_eq"
+
+[[node]]
+id = "modelRoot_lt_modelSchurEigen"

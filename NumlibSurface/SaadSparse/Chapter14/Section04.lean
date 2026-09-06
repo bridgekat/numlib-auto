@@ -28,9 +28,14 @@ method, and §14.4.1 builds the preconditioner for `S` out of one for the whole 
 
 Everything specializes `Numlib/LinearSolve/DomainDecomposition/Schur`.
 
-§14.4.2 (probing: approximating `S` by a banded matrix reconstructed from a few matrix–vector
-products) and §14.4.3 (preconditioning vertex-based Schur complements) are heuristics with no
-stated result and are not formalized.
+§14.4.2 is probing: `S` is dense but its entries decay away from the diagonal, so it is replaced by
+a tridiagonal `T` recovered from three matrix–vector products.  The *use* is a heuristic — the book
+gives no bound on `S - T`, and none holds without hypotheses it does not state — but the
+reconstruction itself is exact, and `probeVec`, `mulVec_probeVec_apply` and `probing_eq` are it: the
+three `3`-periodic vectors, the read-off of one entry per position, and the resulting uniqueness.
+
+§14.4.3 (preconditioning vertex-based Schur complements) is a paragraph of advice with no stated
+result and is not formalized.
 -/
 
 open Matrix DomainDecomposition
@@ -143,5 +148,54 @@ theorem proposition_14_10_of_isILU {P : Set ((Fin p ⊕ₗ Fin q) × (Fin p ⊕�
     show LA * UA = fromBlocks LA.toBlocks₁₁ 0 LA.toBlocks₂₁ LA.toBlocks₂₂
         * fromBlocks UA.toBlocks₁₁ UA.toBlocks₁₂ 0 UA.toBlocks₂₂ from by rw [← hLb, ← hUb]]
   exact DomainDecomposition.inducedPreconditioner_eq hLB hLS hUB hUS
+
+/-! ### §14.4.2: probing -/
+
+/-- **§14.4.2**: the three `3`-periodic probe vectors of the probing technique,
+`w_1 = (1,0,0,1,0,0,…)ᵀ`, `w_2 = (0,1,0,0,1,0,…)ᵀ`, `w_3 = (0,0,1,0,0,1,…)ᵀ`; the book's `w_{r+1}`
+is `probeVec m r`. -/
+def probeVec (m : ℕ) (r : ℕ) : Fin m → ℝ := fun i => if (i : ℕ) % 3 = r then 1 else 0
+
+/-- A tridiagonal matrix vanishes off the three central diagonals, in index arithmetic. -/
+private theorem apply_eq_zero_of_isTridiagonal {T : Matrix (Fin m) (Fin m) ℝ}
+    (hT : T.IsTridiagonal) {i j : Fin m} (h : (i : ℕ) + 1 < (j : ℕ) ∨ (j : ℕ) + 1 < (i : ℕ)) :
+    T i j = 0 := by
+  rcases h with h | h
+  · refine hT i j (Or.inr ⟨⟨(i : ℕ) + 1, lt_of_lt_of_le h j.isLt.le⟩, ?_, ?_⟩) <;>
+      simp [Fin.lt_def, h]
+  · refine hT i j (Or.inl ⟨⟨(j : ℕ) + 1, lt_of_lt_of_le h i.isLt.le⟩, ?_, ?_⟩) <;>
+      simp [Fin.lt_def, h]
+
+/-- **§14.4.2, the probing identity**: applying a tridiagonal `T` to the probe vector of residue
+`r` reads off, in position `i`, the single entry of row `i` whose column is congruent to `r`
+modulo `3`.  Since the three columns `i - 1, i, i + 1` have three distinct residues, every entry
+of `T` appears in exactly one of the three products — which is Saad's "it is easy to recover `T`
+by applying it to three well-chosen vectors". -/
+theorem mulVec_probeVec_apply {T : Matrix (Fin m) (Fin m) ℝ} (hT : T.IsTridiagonal) {i j : Fin m}
+    (hij : (j : ℕ) ≤ (i : ℕ) + 1 ∧ (i : ℕ) ≤ (j : ℕ) + 1) :
+    (T *ᵥ probeVec m ((j : ℕ) % 3)) i = T i j := by
+  rw [Matrix.mulVec_apply_eq_sum]
+  refine (Finset.sum_eq_single j ?_ ?_).trans ?_
+  · intro k _ hkj
+    by_cases hk : (i : ℕ) + 1 < (k : ℕ) ∨ (k : ℕ) + 1 < (i : ℕ)
+    · rw [apply_eq_zero_of_isTridiagonal hT hk, zero_mul]
+    · have hne : ¬ (k : ℕ) % 3 = (j : ℕ) % 3 := fun hmod =>
+        hkj (Fin.ext (by obtain ⟨hij₁, hij₂⟩ := hij; omega))
+      rw [probeVec, ite_eq_right hne, mul_zero]
+  · exact fun h => absurd (Finset.mem_univ j) h
+  · rw [probeVec, ite_eq_left rfl, mul_one]
+
+/-- **§14.4.2**: a tridiagonal matrix is *determined* by the three probe products, so the
+tridiagonal approximation `T` of the Schur complement can be recovered from `S w_1`, `S w_2`,
+`S w_3` alone.  The book states no bound on `S - T`, and none holds without hypotheses it does not
+give; what is exact is this reconstruction. -/
+theorem probing_eq {T T' : Matrix (Fin m) (Fin m) ℝ} (hT : T.IsTridiagonal)
+    (hT' : T'.IsTridiagonal)
+    (h : ∀ r, T *ᵥ probeVec m r = T' *ᵥ probeVec m r) : T = T' := by
+  ext i j
+  by_cases hij : (i : ℕ) + 1 < (j : ℕ) ∨ (j : ℕ) + 1 < (i : ℕ)
+  · rw [apply_eq_zero_of_isTridiagonal hT hij, apply_eq_zero_of_isTridiagonal hT' hij]
+  · rw [← mulVec_probeVec_apply hT ⟨by omega, by omega⟩,
+      ← mulVec_probeVec_apply hT' ⟨by omega, by omega⟩, h]
 
 end SaadSparse.Chapter14

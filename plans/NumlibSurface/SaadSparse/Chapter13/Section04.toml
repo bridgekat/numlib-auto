@@ -104,3 +104,21 @@ id = "equation_13_44"
 
 [[node]]
 id = "theorem_13_2"
+
+[[node]]
+id = "gridSample"
+
+[[node]]
+id = "discreteL2Norm"
+
+[[node]]
+id = "dirichletExt_gridSample"
+
+[[node]]
+id = "example_13_6_truncation"
+
+[[node]]
+id = "example_13_6"
+
+[[node]]
+id = "example_13_6_le"

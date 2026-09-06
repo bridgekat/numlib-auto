@@ -1,0 +1,10 @@
+namespace = "SaadSparse.Chapter12"
+
+[[node]]
+id = "diag_diagonalScaled"
+
+[[node]]
+id = "wingetRegularized"
+
+[[node]]
+id = "equation_12_25"

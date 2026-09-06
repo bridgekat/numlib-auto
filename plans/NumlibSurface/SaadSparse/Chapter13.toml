@@ -8,6 +8,11 @@ The chapter is stated for the *discrete* problems throughout, which is what make
 the matrices are the discrete Laplaceans of `Numlib/LinearAlgebra/Matrix/TridiagonalToeplitz` and
 `Numlib/LinearAlgebra/Matrix/KroneckerSum`, and no differential equation is ever solved. The one
 place where the continuous problem genuinely enters is the discretization-error assumption (13.48)
-of the FMG analysis, which Saad also takes as an assumption; Example 13.6, which verifies it for
-the 1-D model problem from a bound on the fourth derivative of the exact solution, is not planned.
+of the FMG analysis, which Saad also takes as an assumption. Example 13.6, which verifies it for
+the 1-D model problem from a bound on the fourth derivative of the exact solution, *is* surfaced,
+in `Chapter13/Section04.lean`: the analysis of the differential equation is already done in
+`Chapter02/Section02.lean` — (2.12) with a Lagrange remainder — and what remains is a norm estimate
+on a matrix whose spectrum the library knows exactly. Saad's closing display of that example is
+wrong by a missing square; `example_13_6_le` states the corrected form and the module doc records
+the erratum.
 '''

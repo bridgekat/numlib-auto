@@ -120,7 +120,10 @@ import NumlibSurface.SaadSparse.Chapter10.Section03
 import NumlibSurface.SaadSparse.Chapter10.Section04
 import NumlibSurface.SaadSparse.Chapter10.Section05
 import NumlibSurface.SaadSparse.Chapter10.Section08
+import NumlibSurface.SaadSparse.Chapter12.Section02
 import NumlibSurface.SaadSparse.Chapter12.Section03
+import NumlibSurface.SaadSparse.Chapter12.Section04
+import NumlibSurface.SaadSparse.Chapter12.Section07
 import NumlibSurface.SaadSparse.Chapter13.Section02
 import NumlibSurface.SaadSparse.Chapter13.Section03
 import NumlibSurface.SaadSparse.Chapter13.Section04
@@ -151,7 +154,7 @@ imports the backbone, the backbone imports no surface, and nothing can quietly r
 ## The books
 
 `NumlibSurface.SaadSparse` is Y. Saad, *Iterative Methods for Sparse Linear Systems* (SIAM, 2nd
-ed., 2003) in fifty-four modules, reaching every chapter of it that states a numbered result.
+ed., 2003) in fifty-seven modules, reaching every chapter of it that states a numbered result.
 `NumlibSurface.FongSaunders` is D. C.-L. Fong and M. A. Saunders, *CG versus MINRES: an empirical
 comparison* (2012), complete, in five. `NumlibSurface.AtkinsonHan` is K. Atkinson and W. Han,
 *Theoretical Numerical Analysis: A Functional Analysis Framework* (Springer, 3rd ed., 2009) in

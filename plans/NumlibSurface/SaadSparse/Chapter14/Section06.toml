@@ -5,3 +5,12 @@ id = "lapMatrix_quadratic_partition"
 
 [[node]]
 id = "fiedlerVector"
+
+[[node]]
+id = "IsMap"
+
+[[node]]
+id = "IsProperMap"
+
+[[node]]
+id = "iSup_subdomainSpace_eq_top"

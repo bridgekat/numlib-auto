@@ -17,3 +17,12 @@ id = "proposition_14_10"
 
 [[node]]
 id = "proposition_14_10_of_isILU"
+
+[[node]]
+id = "probeVec"
+
+[[node]]
+id = "mulVec_probeVec_apply"
+
+[[node]]
+id = "probing_eq"

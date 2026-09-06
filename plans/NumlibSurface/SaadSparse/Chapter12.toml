@@ -1,15 +1,32 @@
 desc = '''
-Saad, Chapter 12: parallel preconditioners. Only §12.3 (polynomial preconditioners) is surfaced,
-because it is the only section of the chapter with theorem content; the chapter contains no
-numbered result at all.
+Saad, Chapter 12: parallel preconditioners. The chapter states no numbered result of any kind —
+no theorem, proposition, lemma, corollary or numbered definition, only Examples 12.1–12.2 and
+Algorithms 12.1–12.8 — so every node here is named for a displayed equation or for the content it
+carries. Four sections are surfaced.
 
-Skipped, with reasons in `plans/saadsparse-ch10-14.md`: §12.2 (block-Jacobi preconditioners — the
-block splittings of `Numlib/LinearSolve/Stationary/Block`, already planned for Ch. 4/5, with no
-new claim here), §12.4 (multicoloring and red-black ordering — a permutation and the resulting
-`2 × 2` block system, whose only mathematical content is the Schur complement of
-`Numlib/LinearAlgebra/Matrix/SchurComplement` and Property A of
-`Numlib/LinearSolve/Stationary/ConsistentlyOrdered`), §12.5 (multi-elimination ILU / ILUM — a
-recursive independent-set reduction, again a Schur complement, stated as an algorithm), §12.6
-(distributed ILU and SSOR — a data distribution) and §12.7 (approximate inverses,
-element-by-element techniques, parallel row projection — pointers to other chapters).
+* §12.2, `Chapter12/Section02.lean`: the overlapping block-Jacobi residual identity, which is the
+  additive projection process of §5.4 on the coordinate subspaces of the index sets `S_i`, and
+  therefore the same operator as the additive Schwarz procedure of §14.3.3.
+* §12.3, `Chapter12/Section03.lean`: polynomial preconditioners.
+* §12.4, `Chapter12/Section04.lean`: the red–black block structure a 2-colouring produces, and the
+  reduced system on the black unknowns, which is the Schur complement.
+* §12.7.2, `Chapter12/Section07.lean`: the Winget regularization (12.25) and its positive
+  definiteness, which Saad states in one sentence and relegates to Exercise 8.
+
+Not surfaced, checked against the text rather than assumed:
+
+* §12.1 is a taxonomy of coarse- and fine-grain parallel preconditioners in prose, with no claim.
+* §12.5 (multi-elimination ILU and ILUM) defines an independent-set permutation to `fromBlocks D E
+  F C` with `D` diagonal and the reduction `A_{j+1} = C_j - E_j D_j⁻¹ F_j` of (12.21), which is the
+  Schur complement of `Numlib/LinearAlgebra/Matrix/SchurComplement` restated, and the incomplete
+  variant (12.22) with the dropped entries `R_j`, which is the definition of a block ILU. The
+  section claims no property of either; Algorithms 12.4–12.5 are listings.
+* §12.6 (distributed ILU and SSOR) describes interior versus interface nodes, a two-level ordering
+  and message passing, with Algorithms 12.6–12.7. It contains no displayed equation at all.
+* §12.7.1 is a paragraph pointing back to §10.5, and §12.7.3 is Algorithm 12.8, a block form of
+  Gauss–Seidel-NE already covered in general by the material of Chapter 8.
+* (12.15)–(12.16) of §12.3.3, the closed form of the least-squares residual polynomial for the
+  Jacobi weight and its `Γ`-function norm, need `Polynomial.jacobi` with its orthogonality and norm
+  formulas, which Mathlib does not have; the qualitative conclusion Saad draws from them is covered
+  by `Numlib/RingTheory/Polynomial/KernelPolynomial`.
 '''

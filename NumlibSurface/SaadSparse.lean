@@ -49,7 +49,10 @@ import NumlibSurface.SaadSparse.Chapter10.Section03
 import NumlibSurface.SaadSparse.Chapter10.Section04
 import NumlibSurface.SaadSparse.Chapter10.Section05
 import NumlibSurface.SaadSparse.Chapter10.Section08
+import NumlibSurface.SaadSparse.Chapter12.Section02
 import NumlibSurface.SaadSparse.Chapter12.Section03
+import NumlibSurface.SaadSparse.Chapter12.Section04
+import NumlibSurface.SaadSparse.Chapter12.Section07
 import NumlibSurface.SaadSparse.Chapter13.Section02
 import NumlibSurface.SaadSparse.Chapter13.Section03
 import NumlibSurface.SaadSparse.Chapter13.Section04

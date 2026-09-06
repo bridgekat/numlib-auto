@@ -1,0 +1,19 @@
+namespace = "SaadSparse.Chapter12"
+
+[[node]]
+id = "blockJacobiStep"
+
+[[node]]
+id = "isNondegeneratePair_subdomainSpace"
+
+[[node]]
+id = "pairStep_eq"
+
+[[node]]
+id = "blockJacobiStep_eq_additiveStep"
+
+[[node]]
+id = "additiveProjector_eq"
+
+[[node]]
+id = "equation_12_1"

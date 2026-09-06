@@ -25,17 +25,22 @@ on the whole index type — the reading under which (10.10) is `equation_10_10` 
 pivot, which is how the book uses it: the elimination is restarted on the trailing block at every
 step.
 
-Three items of the section get no declaration.
+**Proposition 10.3 is the one place where the loops themselves are written down.**  `Matrix.IsILU`
+abstracts from the loop order on purpose, and it does not imply the proposition: the constraints do
+not determine the factors (`not_unique_isILU0`).  So the two loop orders are transcribed as
+`kijSweep` (Algorithm 10.1) and `ikjSweep` (Algorithm 10.3), with `iluRowOp` the body
+`ope(row(i), row(k))` that both share, and `proposition_10_3` proves they agree.  Neither sweep
+performs Saad's line 1, "for each `(i, j) ∈ P` set `a_ij = 0`": it is common to both algorithms, so
+the statement proved is the stronger one, for an arbitrary starting matrix.
 
-* Proposition 10.3 — the `KIJ` and `IKJ` loop orders produce the same factors — is a statement about
-  two algorithms, and neither is written down anywhere in the library: `Matrix.IsILU` abstracts from
-  the loop order on purpose, and every result of §10.3–10.5 uses only the constraints.
+Two items of the section get no declaration.
+
 * Theorems 10.6 and 10.7 characterize the fill levels by fill-paths in the adjacency graph. They
   need a symbolic model of Gaussian elimination on a graph that nothing else here would use, and
   Theorem 10.6 is quoted from the literature without proof.
-* Algorithms 10.1 and 10.3–10.5 are the loops themselves. "Algorithm 10.1 does not break down", the
-  first clause of Theorem 10.2, is read as the existence of the factors together with the clause
-  `∀ i, U i i ≠ 0` of `theorem_10_2`: no pivot vanishes.
+* Algorithms 10.4 and 10.5 are listings. "Algorithm 10.1 does not break down", the first clause of
+  Theorem 10.2, is read as the existence of the factors together with the clause `∀ i, U i i ≠ 0` of
+  `theorem_10_2`: no pivot vanishes.
 -/
 
 open Matrix Stationary
@@ -300,5 +305,176 @@ theorem milu_residual_diag {P : Set (Fin n × Fin n)} {A L U : Matrix (Fin n) (F
     simpa [Matrix.mulVec, dotProduct] using this
   have hsplit := Finset.add_sum_erase Finset.univ (fun j => (L * U - A) i j) (Finset.mem_univ i)
   linarith [hrow, hsplit]
+
+/-! ### §10.3.1: the two loop orders, and Proposition 10.3 -/
+
+section LoopOrder
+
+variable (P : Set (Fin n × Fin n)) [DecidablePred (· ∈ P)]
+
+/-- Saad's `ope(row(i), row(k))`, lines 3–6 of both Algorithm 10.1 and Algorithm 10.3: with `p` the
+pivot row `k` and `r` the current row `i`, set `r k := r k / p k` and then, for every `j > k` off
+the pattern, `r j := r j - r k * p j`.  Nothing happens at all when `(i, k) ∈ P`. -/
+noncomputable def iluRowOp (i k : Fin n) (p r : Fin n → ℝ) : Fin n → ℝ :=
+  if (i, k) ∈ P then r
+  else fun j =>
+    if j = k then r k / p k
+    else if k < j ∧ (i, j) ∉ P then r j - r k / p k * p j
+    else r j
+
+/-- The `k`-loop of Algorithm 10.3 applied to row `i`: `ope(row(i), row(k))` for
+`k = 0, …, m - 1` in this order, each reading row `k` of `ρ`. -/
+noncomputable def rowOps (ρ : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) (a : Fin n → ℝ) :
+    ℕ → (Fin n → ℝ)
+  | 0 => a
+  | m + 1 => if h : m < n then
+      iluRowOp P i ⟨m, h⟩ (fun j => ρ ⟨m, h⟩ j) (rowOps ρ i a m) else rowOps ρ i a m
+
+/-- **Algorithm 10.3** (the `IKJ` variant), after its outer steps `i = 0, …, I - 1`: at step `i` the
+whole of row `i` is produced from the rows `0, …, i - 1`, which are already final and which the
+step does not modify. -/
+noncomputable def ikjSweep (A : Matrix (Fin n) (Fin n) ℝ) : ℕ → Matrix (Fin n) (Fin n) ℝ
+  | 0 => A
+  | I + 1 => Matrix.of fun i j =>
+      if (i : ℕ) = I then rowOps P (ikjSweep A I) i (fun j' => ikjSweep A I i j') I j
+      else ikjSweep A I i j
+
+/-- **Algorithm 10.1** (the `KIJ` variant), after its outer steps `k = 0, …, K - 1`: at step `k`
+every row `i > k` is updated by `ope(row(i), row(k))`.  The rows are updated independently — each
+reads only its own entries and the pivot row `k`, which the step leaves alone — so this is exactly
+the `i` loop of the algorithm. -/
+noncomputable def kijSweep (A : Matrix (Fin n) (Fin n) ℝ) : ℕ → Matrix (Fin n) (Fin n) ℝ
+  | 0 => A
+  | K + 1 =>
+      if h : K < n then Matrix.of fun i j =>
+        if K < (i : ℕ) then
+          iluRowOp P i ⟨K, h⟩ (fun j' => kijSweep A K ⟨K, h⟩ j') (fun j' => kijSweep A K i j') j
+        else kijSweep A K i j
+      else kijSweep A K
+
+/-- One step of Algorithm 10.3, entry by entry. -/
+theorem ikjSweep_succ_apply (A : Matrix (Fin n) (Fin n) ℝ) (I : ℕ) (i j : Fin n) :
+    ikjSweep P A (I + 1) i j
+      = if (i : ℕ) = I then rowOps P (ikjSweep P A I) i (fun j' => ikjSweep P A I i j') I j
+        else ikjSweep P A I i j := rfl
+
+/-- One step of Algorithm 10.1, entry by entry. -/
+theorem kijSweep_succ_apply (A : Matrix (Fin n) (Fin n) ℝ) {K : ℕ} (h : K < n) (i j : Fin n) :
+    kijSweep P A (K + 1) i j
+      = if K < (i : ℕ) then
+          iluRowOp P i ⟨K, h⟩ (fun j' => kijSweep P A K ⟨K, h⟩ j')
+            (fun j' => kijSweep P A K i j') j
+        else kijSweep P A K i j := by
+  rw [kijSweep, dite_eq_left h]
+  rfl
+
+variable {P}
+
+/-- The `k`-loop only reads the rows `0, …, m - 1`, so two row families agreeing there give the
+same result. -/
+theorem rowOps_congr {ρ σ : Matrix (Fin n) (Fin n) ℝ} (i : Fin n) (a : Fin n → ℝ) {m : ℕ}
+    (h : ∀ k : Fin n, (k : ℕ) < m → (fun j => ρ k j) = fun j => σ k j) :
+    rowOps P ρ i a m = rowOps P σ i a m := by
+  induction m with
+  | zero => rfl
+  | succ m ih =>
+      rw [rowOps, rowOps, ih fun k hk => h k (by omega)]
+      by_cases hm : m < n
+      · rw [dite_eq_left hm, dite_eq_left hm, h ⟨m, hm⟩ (by simp)]
+      · rw [dite_eq_right hm, dite_eq_right hm]
+
+variable (P)
+
+/-- Rows `I, I + 1, …` are untouched after `I` steps of Algorithm 10.3. -/
+theorem ikjSweep_apply_of_le (A : Matrix (Fin n) (Fin n) ℝ) {I : ℕ} {i : Fin n}
+    (h : I ≤ (i : ℕ)) (j : Fin n) : ikjSweep P A I i j = A i j := by
+  induction I with
+  | zero => rfl
+  | succ I ih =>
+      rw [ikjSweep_succ_apply, ite_eq_right (by omega : ¬(i : ℕ) = I)]
+      exact ih (by omega)
+
+/-- Row `i` is final after step `i` of Algorithm 10.3: later steps leave it alone. -/
+theorem ikjSweep_apply_of_lt (A : Matrix (Fin n) (Fin n) ℝ) {I : ℕ} {i : Fin n}
+    (h : (i : ℕ) < I) : ∀ {J : ℕ}, I ≤ J → ∀ j, ikjSweep P A J i j = ikjSweep P A I i j := by
+  intro J
+  induction J with
+  | zero => exact fun hIJ _ => absurd h (by omega)
+  | succ J ih =>
+      intro hIJ j
+      rcases Nat.eq_or_lt_of_le hIJ with heq | hlt
+      · rw [← heq]
+      · rw [ikjSweep_succ_apply, ite_eq_right (by omega : ¬(i : ℕ) = J)]
+        exact ih (by omega) j
+
+/-- **The rows Algorithm 10.3 produces are the fixed point of the row recurrence**: row `i` of the
+output is obtained from row `i` of `A` by `ope(row(i), row(k))` for `k = 0, …, i - 1`, each reading
+the *final* row `k`. -/
+theorem ikjSweep_row (A : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) :
+    (fun j => ikjSweep P A n i j)
+      = rowOps P (ikjSweep P A n) i (fun j => A i j) (i : ℕ) := by
+  have hstep : ∀ j, ikjSweep P A n i j
+      = rowOps P (ikjSweep P A (i : ℕ)) i (fun j' => ikjSweep P A (i : ℕ) i j') (i : ℕ) j := by
+    intro j
+    rw [ikjSweep_apply_of_lt P A (Nat.lt_succ_self _) i.isLt j, ikjSweep_succ_apply,
+      ite_eq_left rfl]
+  have hstart : (fun j' => ikjSweep P A (i : ℕ) i j') = fun j' => A i j' :=
+    funext fun j' => ikjSweep_apply_of_le P A (le_refl _) j'
+  have hrows : rowOps P (ikjSweep P A (i : ℕ)) i (fun j' => ikjSweep P A (i : ℕ) i j') (i : ℕ)
+      = rowOps P (ikjSweep P A n) i (fun j => A i j) (i : ℕ) := by
+    rw [hstart]
+    exact rowOps_congr i _ fun k hk =>
+      funext fun j => (ikjSweep_apply_of_lt P A hk (le_of_lt i.isLt) j).symm
+  exact funext fun j => (hstep j).trans (congrFun hrows j)
+
+/-- **The invariant of Algorithm 10.1**: after `K` outer steps, row `i` has received exactly the
+operations `ope(row(i), row(k))` for `k < min K i`, each reading the *final* row `k` — because the
+pivot row `k` is finished at the moment step `k` uses it and is never touched again. -/
+theorem kijSweep_row (A : Matrix (Fin n) (Fin n) ℝ) (K : ℕ) : ∀ i : Fin n,
+    (fun j => kijSweep P A K i j)
+      = rowOps P (ikjSweep P A n) i (fun j => A i j) (min K (i : ℕ)) := by
+  induction K with
+  | zero => exact fun i => by rw [Nat.zero_min]; rfl
+  | succ K ih =>
+      intro i
+      by_cases hn : K < n
+      · by_cases hKi : K < (i : ℕ)
+        · have hpivot : (fun j => kijSweep P A K (⟨K, hn⟩ : Fin n) j)
+              = fun j => ikjSweep P A n (⟨K, hn⟩ : Fin n) j := by
+            rw [ih ⟨K, hn⟩, ikjSweep_row P A ⟨K, hn⟩]
+            simp
+          have hrow : (fun j => kijSweep P A K i j)
+              = rowOps P (ikjSweep P A n) i (fun j => A i j) K := by
+            rw [ih i, min_eq_left (le_of_lt hKi)]
+          refine funext fun j => ?_
+          rw [kijSweep_succ_apply P A hn, ite_eq_left hKi, hpivot, hrow,
+            min_eq_left (by omega : K + 1 ≤ (i : ℕ)), rowOps, dite_eq_left hn]
+        · refine funext fun j => ?_
+          rw [kijSweep_succ_apply P A hn, ite_eq_right hKi, congrFun (ih i) j,
+            min_eq_right (by omega : (i : ℕ) ≤ K), min_eq_right (by omega : (i : ℕ) ≤ K + 1)]
+      · have hik : (i : ℕ) ≤ K := by omega
+        refine funext fun j => ?_
+        rw [kijSweep, dite_eq_right hn, congrFun (ih i) j, min_eq_right hik,
+          min_eq_right (by omega : (i : ℕ) ≤ K + 1)]
+
+/-- **Saad, Proposition 10.3**: for a static zero pattern, the `KIJ`-based Algorithm 10.1 and the
+`IKJ`-based Algorithm 10.3 produce the same factors.
+
+Saad's own proof rewrites the first two loops of Algorithm 10.1 as a double loop over `k` and `i`
+whose body is `ope(row(i), row(k))` and observes that the two loops may be permuted.  What makes
+that safe is the invariant `kijSweep_row`: whichever order is used, row `i` ends up carrying
+`ope(row(i), row(k))` for `k = 0, …, i - 1` in increasing `k`, each reading the final row `k`.  In
+the `KIJ` order that is because step `k` finishes row `k` before it is used and never returns to
+it; in the `IKJ` order it is the definition.
+
+The pattern must be *static*, as the book warns: both algorithms here read the same `P` throughout,
+and a pattern determined as the elimination proceeds would not have that property. -/
+theorem proposition_10_3 (A : Matrix (Fin n) (Fin n) ℝ) :
+    kijSweep P A n = ikjSweep P A n := by
+  ext i j
+  rw [congrFun (kijSweep_row P A n i) j, min_eq_right (le_of_lt i.isLt),
+    ← congrFun (ikjSweep_row P A i) j]
+
+end LoopOrder
 
 end SaadSparse.Chapter10

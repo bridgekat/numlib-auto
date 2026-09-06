@@ -4,11 +4,17 @@ Prop 14.1), §14.3 (Schwarz alternating procedures, Prop 14.3, Lemma 14.4, Thm 1
 Lemma 14.8), §14.4.1 (induced preconditioners, Prop 14.10), §14.5 (full matrix methods,
 Prop 14.11–14.12) and the spectral-bisection identity of §14.6.3 are surfaced.
 
-Skipped, with reasons in `plans/saadsparse-ch10-14.md`: §14.1 (notation and taxonomy), §14.2.3–14.2.5
+§14.2.4's `S = ∑ S_i` (`equation_14_16`, on the backbone's
+`Matrix.schurComplement_fromBlocks_blockDiagonal'`), the recurrence (14.20) of §14.2.5 read at one
+eigenvalue, §14.4.2's probing reconstruction and Definition 14.13 of §14.6.1 are surfaced too: each
+was skipped as "bookkeeping" or "a heuristic" and each carries an exact statement.
+
+Skipped, with reasons in `plans/saadsparse-ch10-14.md` §5: §14.1 (notation and taxonomy); §14.2.3
 and Theorem 14.2 (the vertex-based partitioning bookkeeping, and the equivalence of the Schwarz
-`y`-iterates with block Gauss–Seidel on the Schur complement, which needs that bookkeeping and
-contributes no reusable mathematics), §14.4.2 (probing, a heuristic), §14.4.3, §14.6.1–14.6.2 and
-§14.6.4 (graph-partitioning definitions and algorithms; Theorem 14.16, the geometric separator
-theorem of Miller–Teng–Thurston–Vavasis, is quoted without proof and is a substantial piece of
-computational geometry).
+`y`-iterates with block Gauss–Seidel on the Schur complement, which needs that bookkeeping); the
+*matrix* form of §14.2.5, which needs the block `LU` factorization of a block tridiagonal matrix
+and a matrix square root; §14.4.3 (a paragraph of advice); and §14.6.2, §14.6.4 with Definitions
+14.14–14.15 and Theorem 14.16 (the geometric separator theorem of Miller–Teng–Thurston–Vavasis,
+quoted without proof and needing stereographic projection into `S^d`, centerpoints and a
+random-great-circle argument; the two definitions exist only to state it).
 '''

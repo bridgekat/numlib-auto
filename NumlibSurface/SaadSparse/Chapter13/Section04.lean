@@ -1,4 +1,6 @@
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.Bounds
 import Numlib.LinearSolve.Multigrid.FullMultigrid
+import NumlibSurface.SaadSparse.Chapter02.Section02
 import NumlibSurface.SaadSparse.Chapter13.Section02
 import NumlibSurface.SaadSparse.Chapter13.Section03
 import NumlibSurface.SaadSparse.Common
@@ -39,6 +41,21 @@ the error operator of a `γ`-cycle is a perturbation of the two-grid one, whose 
 So the two theorems of the section are `equation_13_44`, the cost recurrence, and `theorem_13_2`,
 the full multigrid error bound, which is `Multigrid.norm_sub_fullMultigrid_le` under the book's
 (13.49)–(13.52).
+
+## Example 13.6 and the erratum in it
+
+`example_13_6` is the discretization-error bound of Example 13.6, `‖u^h - u‖_h ≤ c h²`, which is
+what makes the assumption (13.48) of Theorem 13.2 concrete for the one-dimensional model problem.
+The truncation error is Saad's (2.12), already proved in `Chapter02/Section02.lean` with a Lagrange
+remainder, and the bound on `‖A_h⁻¹‖` comes from the spectrum of the model matrix, so nothing new
+about differential equations is needed here — only the discrete `L²` norm `‖v‖_h = h^{1/2}‖v‖₂`
+(`discreteL2Norm`) and the sampling of the exact solution on the grid (`gridSample`).
+
+**The book's closing display is wrong**, and `example_13_6_le` states the corrected form.  Saad
+bounds `‖A_h⁻¹‖ = 1/λ_min` using `sin x / x ≥ 1 - x²/6` at `x = πh/2`, but `λ_min = π² (sin x/x)²`
+carries a *square*, so the bracket in the denominator must be squared too; the printed
+`1 - (πh/2)²/6` is not a lower bound for `(sin x/x)²` — at `h = 1/2` the two sides are `0.8105…`
+and `0.8971…`.  `example_13_6` itself is stated with the exact `λ_min` and is free of the slip.
 
 Not formalized: Algorithm 13.1 (nested iteration), which the book presents only to introduce the
 notation and which full multigrid supersedes; the displayed identity
@@ -669,5 +686,216 @@ theorem theorem_13_2 (H : Hierarchy) {ν₁ ν₂ γ μ : ℕ} {f u : ∀ l, H.V
     hh hhpos hexact hc₁ hξ hlt h1349 (fun l => ?_) h1351 l
   rw [Hierarchy.fullMultigrid_succ]
   exact norm_sub_iterate_le hξ (h1350 l) μ _
+
+/-! ### §13.4.4 Example 13.6: the discretization error of the 1-D model problem -/
+
+section DiscretizationError
+
+open Real
+
+/-- Example 13.6: the grid function of a continuous `u`, sampled at the interior points
+`x_i = i h` of `Ω_h`.  Saad writes it `u` again; the `0`-based Lean index `i : Fin n` is the
+book's `i + 1`. -/
+noncomputable def gridSample (n : ℕ) (h : ℝ) (u : ℝ → ℝ) : EuclideanSpace ℝ (Fin n) :=
+  WithLp.toLp 2 fun i : Fin n => u ((((i : ℕ) : ℝ) + 1) * h)
+
+/-- The entries of `gridSample`: the value of `u` at the `i`-th interior grid point. -/
+theorem gridSample_apply (h : ℝ) (u : ℝ → ℝ) (i : Fin n) :
+    WithLp.ofLp (gridSample n h u) i = u ((((i : ℕ) : ℝ) + 1) * h) := rfl
+
+/-- Example 13.6: the discrete `L²` norm on `Ω_h`, `‖v‖_h = h^{1/2} ‖v‖₂`. -/
+noncomputable def discreteL2Norm (h : ℝ) (v : EuclideanSpace ℝ (Fin n)) : ℝ := √h * ‖v‖
+
+/-- The Dirichlet extension of a sampled `u` is `u` itself at every grid index `0, …, n + 1`,
+boundary points included: that is exactly what `u(0) = u(1) = 0` buys, and it is what lets the
+rows of the model matrix be read as centered second differences of `u` with no special case at
+the two ends. -/
+theorem dirichletExt_gridSample {h : ℝ} {u : ℝ → ℝ} (hh : h = 1 / ((n : ℝ) + 1))
+    (hu0 : u 0 = 0) (hu1 : u 1 = 0) {k : ℕ} (hk : k ≤ n + 1) :
+    Chapter02.dirichletExt (WithLp.ofLp (gridSample n h u)) k = u ((k : ℝ) * h) := by
+  have hn1 : ((n : ℝ) + 1) ≠ 0 := by positivity
+  match k with
+  | 0 => rw [Chapter02.dirichletExt_zero]; simpa using hu0.symm
+  | (m + 1) =>
+    by_cases hm : m < n
+    · rw [Chapter02.dirichletExt_succ, dite_eq_left hm, gridSample_apply]
+      push_cast
+      ring_nf
+    · have hmn : m = n := by omega
+      subst hmn
+      rw [Chapter02.dirichletExt_of_gt _ (by omega)]
+      have hx : ((m : ℕ) + 1 : ℝ) * h = 1 := by rw [hh]; field_simp
+      push_cast
+      rw [hx, hu1]
+
+/-- **Example 13.6, the truncation error**: for `u` of class `C⁴` solving `-u'' = f` with
+homogeneous Dirichlet conditions, every component of `f^h - A_h u` is `(h²/12) u⁴(ξ_i)` for some
+`ξ_i` in `(x_i - h, x_i + h)`, hence bounded by `K h²/12` with `K` a bound on `|u⁴|` over `[0,1]`.
+This is Saad's use of (2.12), `SaadSparse.Chapter02.equation_2_12`. -/
+theorem example_13_6_truncation {h : ℝ} (hh : h = 1 / ((n : ℝ) + 1)) {u f : ℝ → ℝ}
+    (hu : ContDiff ℝ 4 u) (hu0 : u 0 = 0) (hu1 : u 1 = 0)
+    (hf : ∀ x, f x = -iteratedDeriv 2 u x) {K : ℝ}
+    (hK : ∀ x ∈ Set.Icc (0 : ℝ) 1, |iteratedDeriv 4 u x| ≤ K) (i : Fin n) :
+    |WithLp.ofLp (gridSample n h f - (Chapter02.laplacian1D n h ⬝ gridSample n h u)) i|
+      ≤ K * h ^ 2 / 12 := by
+  have hn1 : (0 : ℝ) < (n : ℝ) + 1 := by positivity
+  have hh0 : 0 < h := by rw [hh]; positivity
+  have hi : ((i : ℕ) : ℝ) + 1 ≤ (n : ℝ) := by
+    exact_mod_cast Nat.succ_le_of_lt i.isLt
+  obtain ⟨ξ, hξ, hEq⟩ := Chapter02.equation_2_12 hu ((((i : ℕ) : ℝ) + 1) * h) hh0
+  have hAu : WithLp.ofLp (Chapter02.laplacian1D n h ⬝ gridSample n h u) i
+      = (-u ((((i : ℕ) : ℝ) + 1) * h - h) + 2 * u ((((i : ℕ) : ℝ) + 1) * h)
+          - u ((((i : ℕ) : ℝ) + 1) * h + h)) / h ^ 2 := by
+    rw [ofLp_toEuclideanLin, Chapter02.laplacian1D_mulVec_apply,
+      dirichletExt_gridSample hh hu0 hu1 (by omega : (i : ℕ) ≤ n + 1),
+      dirichletExt_gridSample hh hu0 hu1 (by omega : (i : ℕ) + 1 ≤ n + 1),
+      dirichletExt_gridSample hh hu0 hu1 (by omega : (i : ℕ) + 2 ≤ n + 1)]
+    push_cast
+    ring_nf
+  have hval : WithLp.ofLp (gridSample n h f - (Chapter02.laplacian1D n h ⬝ gridSample n h u)) i
+      = h ^ 2 / 12 * iteratedDeriv 4 u ξ := by
+    rw [WithLp.ofLp_sub, Pi.sub_apply, gridSample_apply, hAu, hf]
+    have h2 : (u ((((i : ℕ) : ℝ) + 1) * h + h) - 2 * u ((((i : ℕ) : ℝ) + 1) * h)
+        + u ((((i : ℕ) : ℝ) + 1) * h - h)) / h ^ 2
+          = iteratedDeriv 2 u ((((i : ℕ) : ℝ) + 1) * h) + h ^ 2 / 12 * iteratedDeriv 4 u ξ := hEq
+    field_simp at h2 ⊢
+    linarith
+  have hmem : ξ ∈ Set.Icc (0 : ℝ) 1 := by
+    obtain ⟨hl, hr⟩ := hξ
+    constructor
+    · have : (0 : ℝ) ≤ (((i : ℕ) : ℝ) + 1) * h - h := by
+        have : (0 : ℝ) ≤ ((i : ℕ) : ℝ) * h := by positivity
+        nlinarith
+      linarith
+    · have hone : ((n : ℝ) + 1) * h = 1 := by rw [hh]; field_simp
+      have hub : (((i : ℕ) : ℝ) + 1) * h + h ≤ 1 := by
+        rw [← hone]
+        nlinarith [mul_nonneg (sub_nonneg.2 hi) hh0.le]
+      linarith
+  rw [hval, abs_mul, abs_of_nonneg (by positivity : (0 : ℝ) ≤ h ^ 2 / 12)]
+  have := hK ξ hmem
+  nlinarith [abs_nonneg (iteratedDeriv 4 u ξ), sq_nonneg h]
+
+/-- **Example 13.6**, the discretization error of the one-dimensional model problem:
+`‖u^h - u‖_h ≤ K h⁴/(48 sin²(πh/2))`, where `u^h` solves `A_h u^h = f^h`, `u` is the exact solution
+sampled on the grid and `K` bounds `|u⁴|` on `[0,1]`.
+
+Saad's chain is `‖u^h - u‖_h = ‖A_h⁻¹(f^h - A_h u)‖_h ≤ ‖A_h⁻¹‖_h ‖f^h - A_h u‖_h`, with
+`‖A_h⁻¹‖_h = 1/λ_min(A_h)` and `λ_min(A_h) = 4 sin²(πh/2)/h²` from (13.7); no inverse appears here,
+because the same bound is `λ_min ‖e‖ ≤ ‖A_h e‖`
+(`LinearMap.IsCoerciveWith.norm_le_norm_apply`) applied to the error `e` directly.  The
+`h^{1/2}` in the discrete `L²` norm is what turns the componentwise bound `K h²/12` into a bound on
+the whole vector without a factor `√n`.  The conclusion is (13.48) with `κ = 2`. -/
+theorem example_13_6 {h : ℝ} (hh : h = 1 / ((n : ℝ) + 1)) {u f : ℝ → ℝ}
+    (hu : ContDiff ℝ 4 u) (hu0 : u 0 = 0) (hu1 : u 1 = 0)
+    (hf : ∀ x, f x = -iteratedDeriv 2 u x) {K : ℝ}
+    (hK : ∀ x ∈ Set.Icc (0 : ℝ) 1, |iteratedDeriv 4 u x| ≤ K)
+    {uh : EuclideanSpace ℝ (Fin n)}
+    (huh : (Chapter02.laplacian1D n h ⬝ uh) = gridSample n h f) :
+    discreteL2Norm h (uh - gridSample n h u) ≤ K * h ^ 4 / (48 * sin (π * h / 2) ^ 2) := by
+  have hn1 : (0 : ℝ) < (n : ℝ) + 1 := by positivity
+  have hh0 : 0 < h := by rw [hh]; positivity
+  have hh1 : h ≤ 1 := by
+    rw [hh, div_le_one hn1]
+    linarith [Nat.cast_nonneg (α := ℝ) n]
+  have hK0 : (0 : ℝ) ≤ K := le_trans (abs_nonneg _) (hK 0 ⟨le_refl 0, zero_le_one⟩)
+  have hang : π / (2 * ((n : ℝ) + 1)) = π * h / 2 := by
+    rw [hh]; field_simp
+  have hsin : 0 < sin (π * h / 2) := by
+    refine Real.sin_pos_of_pos_of_lt_pi (by positivity) ?_
+    nlinarith [Real.pi_pos]
+  set M : ℝ := 4 * sin (π * h / 2) ^ 2 / h ^ 2 with hM
+  have hMpos : 0 < M := by rw [hM]; positivity
+  set e : EuclideanSpace ℝ (Fin n) := uh - gridSample n h u with he
+  set r : EuclideanSpace ℝ (Fin n) :=
+    gridSample n h f - (Chapter02.laplacian1D n h ⬝ gridSample n h u) with hr
+  have hAe : (Chapter02.laplacian1D n h ⬝ e) = r := by rw [he, hr, map_sub, huh]
+  have hbdd := Chapter02.laplacian1D_isSymmetricBoundedBy n hh0.ne'
+  rw [hang] at hbdd
+  have hcoer : M * ‖e‖ ≤ ‖r‖ := by
+    have := LinearMap.IsCoerciveWith.norm_le_norm_apply hbdd.isCoerciveWith e
+    rwa [hAe] at this
+  have hnormr : √h * ‖r‖ ≤ K * h ^ 2 / 12 := by
+    have hpt : ∀ i : Fin n, ‖WithLp.ofLp r i‖ ^ 2 ≤ (K * h ^ 2 / 12) ^ 2 := by
+      intro i
+      rw [Real.norm_eq_abs]
+      exact pow_le_pow_left₀ (abs_nonneg _)
+        (example_13_6_truncation hh hu hu0 hu1 hf hK i) 2
+    have hsum : ‖r‖ ^ 2 ≤ (n : ℝ) * (K * h ^ 2 / 12) ^ 2 := by
+      rw [EuclideanSpace.norm_sq_eq]
+      calc ∑ i, ‖WithLp.ofLp r i‖ ^ 2 ≤ ∑ _i : Fin n, (K * h ^ 2 / 12) ^ 2 :=
+            Finset.sum_le_sum fun i _ => hpt i
+        _ = (n : ℝ) * (K * h ^ 2 / 12) ^ 2 := by
+            rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
+    have hhn : h * (n : ℝ) ≤ 1 := by
+      rw [hh, div_mul_eq_mul_div, one_mul, div_le_one hn1]
+      linarith
+    have hsq : (√h * ‖r‖) ^ 2 ≤ (K * h ^ 2 / 12) ^ 2 := by
+      rw [mul_pow, Real.sq_sqrt hh0.le]
+      nlinarith [sq_nonneg (K * h ^ 2 / 12), norm_nonneg r, Nat.cast_nonneg (α := ℝ) n]
+    calc √h * ‖r‖ = √((√h * ‖r‖) ^ 2) := (Real.sqrt_sq (by positivity)).symm
+      _ ≤ √((K * h ^ 2 / 12) ^ 2) := Real.sqrt_le_sqrt hsq
+      _ = K * h ^ 2 / 12 := Real.sqrt_sq (by positivity)
+  have hfinal : M * discreteL2Norm h e ≤ K * h ^ 2 / 12 := by
+    rw [discreteL2Norm, ← mul_assoc, mul_comm M (√h), mul_assoc]
+    exact le_trans (by nlinarith [Real.sqrt_nonneg h]) hnormr
+  rw [le_div_iff₀ (by positivity)]
+  have hkey := mul_le_mul_of_nonneg_left hfinal (by positivity : (0 : ℝ) ≤ 12 * h ^ 2)
+  have hMe : 12 * h ^ 2 * (M * discreteL2Norm h e)
+      = discreteL2Norm h e * (48 * sin (π * h / 2) ^ 2) := by
+    rw [hM]; field_simp; ring
+  rw [hMe] at hkey
+  calc discreteL2Norm h e * (48 * sin (π * h / 2) ^ 2) ≤ 12 * h ^ 2 * (K * h ^ 2 / 12) := hkey
+    _ = K * h ^ 4 := by ring
+
+/-- **Example 13.6, Saad's closing display** — with the exponent the derivation requires.  Saad
+bounds `1/λ_min` by `1/(π²(1 - (πh/2)²/6))` and concludes
+`‖u^h - u‖_h ≤ K h²/(12 π² (1 - (πh/2)²/6))`.  That is not what his own step gives: `λ_min` is
+`π² (sin x / x)²` at `x = πh/2`, and `sin x / x ≥ 1 - x²/6` bounds the *square* by `(1 - x²/6)²`,
+not by `1 - x²/6`.  The printed inequality is false: at `h = 1/2` one has
+`(sin x / x)² = 0.8105… < 0.8971… = 1 - x²/6`.  The statement here carries the square, which is
+what the argument proves and is only slightly weaker.  It needs no hypothesis on `h` beyond
+`h = 1/(n+1)`, since `πh/2 ≤ 2` already makes the bracket positive. -/
+theorem example_13_6_le {h : ℝ} (hh : h = 1 / ((n : ℝ) + 1)) {u f : ℝ → ℝ}
+    (hu : ContDiff ℝ 4 u) (hu0 : u 0 = 0) (hu1 : u 1 = 0)
+    (hf : ∀ x, f x = -iteratedDeriv 2 u x) {K : ℝ}
+    (hK : ∀ x ∈ Set.Icc (0 : ℝ) 1, |iteratedDeriv 4 u x| ≤ K)
+    {uh : EuclideanSpace ℝ (Fin n)}
+    (huh : (Chapter02.laplacian1D n h ⬝ uh) = gridSample n h f) :
+    discreteL2Norm h (uh - gridSample n h u)
+      ≤ K * h ^ 2 / (12 * π ^ 2 * (1 - (π * h / 2) ^ 2 / 6) ^ 2) := by
+  have hn1 : (0 : ℝ) < (n : ℝ) + 1 := by positivity
+  have hh0 : 0 < h := by rw [hh]; positivity
+  have hh1 : h ≤ 1 := by
+    rw [hh, div_le_one hn1]
+    linarith [Nat.cast_nonneg (α := ℝ) n]
+  have hK0 : (0 : ℝ) ≤ K := le_trans (abs_nonneg _) (hK 0 ⟨le_refl 0, zero_le_one⟩)
+  have hx : (0 : ℝ) ≤ π * h / 2 := by positivity
+  have hpimul : π * h ≤ π := by
+    have := mul_le_mul_of_nonneg_left hh1 Real.pi_pos.le
+    linarith
+  have hxle : π * h / 2 ≤ 2 := by linarith [Real.pi_le_four]
+  have hden : (0 : ℝ) < 1 - (π * h / 2) ^ 2 / 6 := by nlinarith [hx, hxle]
+  have hlow : (π * h / 2) * (1 - (π * h / 2) ^ 2 / 6) ≤ sin (π * h / 2) := by
+    have h1 := Real.sin_ge_sub_cube hx
+    have h2 : (π * h / 2) * (1 - (π * h / 2) ^ 2 / 6)
+        = π * h / 2 - (π * h / 2) ^ 3 / 6 := by ring
+    rw [h2]
+    exact h1
+  have hsq : (π * h / 2) ^ 2 * (1 - (π * h / 2) ^ 2 / 6) ^ 2 ≤ sin (π * h / 2) ^ 2 := by
+    rw [← mul_pow]
+    exact pow_le_pow_left₀ (by positivity) hlow 2
+  have hsin : 0 < sin (π * h / 2) := by
+    refine Real.sin_pos_of_pos_of_lt_pi (by positivity) ?_
+    nlinarith [Real.pi_pos]
+  refine le_trans (example_13_6 hh hu hu0 hu1 hf hK huh) ?_
+  rw [div_le_div_iff₀ (by positivity) (by positivity)]
+  have h2 := mul_le_mul_of_nonneg_left hsq (by positivity : (0 : ℝ) ≤ 48 * K * h ^ 2)
+  have heq : 48 * K * h ^ 2 * ((π * h / 2) ^ 2 * (1 - (π * h / 2) ^ 2 / 6) ^ 2)
+      = K * h ^ 4 * (12 * π ^ 2 * (1 - (π * h / 2) ^ 2 / 6) ^ 2) := by ring
+  rw [heq] at h2
+  linarith
+
+end DiscretizationError
 
 end SaadSparse.Chapter13

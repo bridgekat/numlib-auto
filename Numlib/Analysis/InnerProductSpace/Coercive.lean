@@ -138,7 +138,8 @@ theorem IsCoerciveWith.re_inner_apply_self {c : ℝ} (h : A.IsCoerciveWith c) (x
 
 /-- A coercive operator is bounded below: `c ‖x‖ ≤ ‖A x‖`. Cauchy–Schwarz turns the quadratic-form
 bound into a bound on the norm, so that the error of an approximate solution is controlled by its
-residual: `c ‖x - x*‖ ≤ ‖b - A x‖`. No sign condition on `c` is needed. -/
+residual, `c ‖x - x*‖ ≤ ‖b - A x‖`, and a coercivity constant bounds the inverse,
+`‖A⁻¹ y‖ ≤ ‖y‖ / c`. No sign condition on `c` is needed. -/
 theorem IsCoerciveWith.norm_le_norm_apply {c : ℝ} (h : A.IsCoerciveWith c) (x : E) :
     c * ‖x‖ ≤ ‖A x‖ := by
   rcases eq_or_ne x 0 with rfl | hx

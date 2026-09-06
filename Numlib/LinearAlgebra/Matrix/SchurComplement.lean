@@ -17,7 +17,7 @@ For `A : Matrix (m ⊕ n) (m ⊕ n) R`, the *Schur complement* of the `(1,1)` bl
 written `S = C - F B⁻¹ E` in the notation of [saad2003iterative] (14.5). Mathlib's
 `Mathlib.LinearAlgebra.Matrix.SchurComplement` carries the block LDU identity, the determinant
 formulas and the positive *semi*definite criterion, but names no Schur complement and proves nothing
-about its inverse. This file adds the name and the four facts a domain-decomposition method needs:
+about its inverse. This file adds the name and the facts a domain-decomposition method needs:
 
 * the block LU and LDU factorizations `Matrix.fromBlocks_eq_mul_schurComplement` and
   `Matrix.fromBlocks_eq_mul_fromBlocks_schurComplement`;
@@ -27,7 +27,12 @@ about its inverse. This file adds the name and the four facts a domain-decomposi
   the `(2,2)` block of `A⁻¹` is `S⁻¹`, which is what lets a preconditioner for the interface system
   be built out of a solver for `A`;
 * `Matrix.PosDef.schurComplement`: the Schur complement of a positive definite matrix is positive
-  definite. Mathlib has only the positive semidefinite equivalence `Matrix.PosDef.fromBlocks₁₁`.
+  definite. Mathlib has only the positive semidefinite equivalence `Matrix.PosDef.fromBlocks₁₁`;
+* `Matrix.schurComplement_fromBlocks_blockDiagonal'`: the Schur complement is *additive over the
+  subdomains*, `S = ∑ S_i`, when the interior block is block diagonal and the interface block is a
+  sum of local contributions. This is what every preconditioner assembled from local Schur
+  complements rests on, and `Matrix.inv_blockDiagonal'` and `Matrix.mul_blockDiagonal'_mul` are the
+  two block-diagonal identities it is built from.
 
 `Matrix.schurComplementSingle` is the `1 × 1`-pivot case, one step of Gaussian elimination, which is
 the form incomplete factorizations use ([saad2003iterative] Theorem 10.1).
@@ -168,6 +173,53 @@ theorem toBlocks₂₂_inv_eq_inv_schurComplement {A : Matrix (m ⊕ n) (m ⊕ n
   rfl
 
 end Inverse
+
+section Additive
+
+variable {o : Type*} [Fintype o] [DecidableEq o] {m' : o → Type*}
+variable [∀ i, Fintype (m' i)] [∀ i, DecidableEq (m' i)] [CommRing R]
+
+/-- The inverse of a block diagonal matrix is the block diagonal matrix of the inverses. -/
+theorem inv_blockDiagonal' (M : ∀ i, Matrix (m' i) (m' i) R) (hM : ∀ i, IsUnit (M i)) :
+    (blockDiagonal' M)⁻¹ = blockDiagonal' fun i => (M i)⁻¹ := by
+  refine inv_eq_right_inv ?_
+  have h : (fun i => M i * (M i)⁻¹) = (1 : ∀ i, Matrix (m' i) (m' i) R) := funext fun i => by
+    rw [Pi.one_apply]
+    exact mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).1 (hM i))
+  rw [← blockDiagonal'_mul, h, blockDiagonal'_one]
+
+omit [∀ i, DecidableEq (m' i)] in
+/-- A product `F D E` whose middle factor is block diagonal is the sum, over the blocks, of the
+products of the corresponding blocks of `F`, `D` and `E`. -/
+theorem mul_blockDiagonal'_mul {n : Type*} (F : Matrix n (Σ i, m' i) R)
+    (M : ∀ i, Matrix (m' i) (m' i) R) (E : Matrix (Σ i, m' i) n R) :
+    F * blockDiagonal' M * E
+      = ∑ i, F.submatrix id (Sigma.mk i) * M i * E.submatrix (Sigma.mk i) id := by
+  ext a b
+  rw [Matrix.sum_apply]
+  simp only [mul_apply, submatrix_apply, id_eq, ← Finset.univ_sigma_univ, Finset.sum_sigma]
+  refine Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun l _ => ?_
+  refine congrArg₂ _ ?_ rfl
+  refine (Fintype.sum_eq_single i fun j hj => Finset.sum_eq_zero fun k _ => ?_).trans
+    (Finset.sum_congr rfl fun k _ => ?_)
+  · rw [blockDiagonal'_apply_ne _ _ _ hj, mul_zero]
+  · rw [blockDiagonal'_apply_eq]
+
+/-- **The Schur complement is additive over the subdomains**: if the interior block is block
+diagonal, `B = diag(B_1, …, B_s)`, and the interface block is a sum `C = ∑ C_i` of local
+contributions, then the Schur complement is the sum of the local Schur complements,
+`S = ∑ (C_i - F_i B_i⁻¹ E_i)`.  This is [saad2003iterative], (14.16); the derivation there is
+finite-element, but the identity is block algebra and holds for any such decomposition. -/
+theorem schurComplement_fromBlocks_blockDiagonal' {n : Type*} (B : ∀ i, Matrix (m' i) (m' i) R)
+    (E : Matrix (Σ i, m' i) n R) (F : Matrix n (Σ i, m' i) R) (C : o → Matrix n n R)
+    (hB : ∀ i, IsUnit (B i)) :
+    (fromBlocks (blockDiagonal' B) E F (∑ i, C i)).schurComplement
+      = ∑ i, (fromBlocks (B i) (E.submatrix (Sigma.mk i) id) (F.submatrix id (Sigma.mk i))
+          (C i)).schurComplement := by
+  simp only [schurComplement_fromBlocks]
+  rw [inv_blockDiagonal' B hB, mul_blockDiagonal'_mul, Finset.sum_sub_distrib]
+
+end Additive
 
 section PosDef
 

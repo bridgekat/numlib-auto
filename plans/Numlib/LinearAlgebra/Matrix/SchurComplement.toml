@@ -43,3 +43,13 @@ source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 14.1 (2
 [[node]]
 id = "schurComplementSingle"
 source = "Saad, Iterative Methods for Sparse Linear Systems, (10.10)"
+
+[[node]]
+id = "inv_blockDiagonal'"
+
+[[node]]
+id = "mul_blockDiagonal'_mul"
+
+[[node]]
+id = "schurComplement_fromBlocks_blockDiagonal'"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (14.16)"

@@ -1,6 +1,7 @@
 import Mathlib.Analysis.Matrix.Hermitian
 import Mathlib.Combinatorics.SimpleGraph.LapMatrix
 import Numlib.Eigen.MinMax
+import NumlibSurface.SaadSparse.Chapter14.Section03
 
 /-!
 # Saad §14.6: graph partitioning
@@ -13,6 +14,11 @@ Mathlib's graph Laplacian.
   minimization: for a partition vector `p` with entries `±1`, the Laplacian quadratic form
   `pᵀ L p` counts the edges the partition cuts.  The double sum counts each cut edge twice, so the
   value is `4 n_c` in Saad's notation, where `n_c` is the number of cut edges.
+* `IsMap` and `IsProperMap` are Definition 14.13, the covering family of subsets and the
+  distinction between a proper and an overlapping partition, and `iSup_subdomainSpace_eq_top` is
+  what the definition buys here: the subdomain spaces of a map span the whole space, so a family
+  that is not a map leaves an unknown untouched by every subdomain solve and Assumption 1 of
+  §14.3.4 fails outright.
 * `fiedlerVector` is its continuous relaxation, which is the reason for Algorithm 14.7: the
   minimum of the Rayleigh quotient of `L` over the nonzero vectors orthogonal to the constant
   vector `e` is the second smallest eigenvalue of `L`, attained at the Fiedler vector.  Minimizing
@@ -22,9 +28,14 @@ Mathlib's graph Laplacian.
 
 ## Not formalized here
 
-Definitions 14.13 (a map of a vertex set), 14.14 (`k`-ply neighborhood systems) and 14.15
-(`(α, k)`-overlap graphs) exist only to state Theorem 14.16, the geometric separator theorem of
-Miller, Teng, Thurston and Vavasis, which Saad quotes without proof.  §14.6.2 (coordinate and
+Definitions 14.14 (`k`-ply neighborhood systems in `ℝ^d`) and 14.15 (`(α, k)`-overlap graphs)
+exist only to state Theorem 14.16, the geometric separator theorem of Miller, Teng, Thurston and
+Vavasis, which Saad quotes without proof and which needs stereographic projection into `S^d`, the
+existence of a centerpoint of a finite set and a random-great-circle argument — none of which
+Mathlib has.  Two definitions with nothing behind them are worth less than the note that says so,
+so they go with the theorem.  Definition 14.13 is a different case and is stated above: it is the
+vocabulary of §14.3 as well as of §14.6, and it comes with a bridge to how the library states the
+Schwarz hypotheses.  §14.6.2 (coordinate and
 inertial bisection), §14.6.4 (level-set expansion, the pseudo-peripheral node heuristic, recursive
 graph bisection, multinode expansion) and Algorithms 14.7–14.10 are heuristics with no claim
 attached.
@@ -222,5 +233,47 @@ theorem fiedlerVector (hconn : G.Connected) {m : ℕ}
       exact (mul_eq_zero.1 hxo).resolve_left hcne
   rw [hset]
   exact isLeast_rayleighQuotient_orthogonal_last hL hn
+
+/-! ### §14.6.1: Definition 14.13, a map of the vertex set -/
+
+section Map
+
+variable {n : ℕ} {ι : Type*}
+
+/-- **Definition 14.13**: a *map* of the vertex set is a family of subsets `V_1, …, V_s` whose
+union is the whole set.  The book's vertex set is the index set of the unknowns, so the family here
+is the family `S` of §14.3.1 and the definition is the covering condition on it. -/
+def IsMap (S : ι → Finset (Fin n)) : Prop := ∀ j : Fin n, ∃ i, j ∈ S i
+
+/-- **Definition 14.13**, second half: the map is a *proper partition* when the subsets are
+pairwise disjoint, and an *overlapping partition* otherwise.  §14.3's Schwarz procedures are stated
+for the overlapping case, and a proper partition is the block Jacobi / block Gauss–Seidel of
+Chapter 4. -/
+def IsProperMap (S : ι → Finset (Fin n)) : Prop :=
+  IsMap S ∧ ∀ i i', i ≠ i' → Disjoint (S i) (S i')
+
+variable {𝕜 : Type*} [RCLike 𝕜]
+
+/-- **What Definition 14.13 buys**: the subdomain spaces of a map span the whole space.  This is the
+bridge between Saad's combinatorial vocabulary and the analytic hypotheses of §14.3 — a family that
+is not a map leaves some unknown untouched by every subdomain solve, so no Schwarz procedure built
+on it can converge, and Assumption 1 (`IsStableDecomposition`) fails outright. -/
+theorem iSup_subdomainSpace_eq_top {S : ι → Finset (Fin n)} (h : IsMap S) :
+    ⨆ i, subdomainSpace 𝕜 (S i) = ⊤ := by
+  refine top_unique ?_
+  have hbasis : (⊤ : Submodule 𝕜 (EuclideanSpace 𝕜 (Fin n)))
+      = Submodule.span 𝕜 (Set.range fun j : Fin n => EuclideanSpace.single j (1 : 𝕜)) := by
+    have hb := (EuclideanSpace.basisFun (ι := Fin n) (𝕜 := 𝕜)).toBasis.span_eq
+    rw [← hb]
+    exact congrArg _ (congrArg Set.range (funext fun j => by
+      rw [OrthonormalBasis.coe_toBasis, EuclideanSpace.basisFun_apply]))
+  rw [hbasis, Submodule.span_le]
+  rintro _ ⟨j, rfl⟩
+  obtain ⟨i, hi⟩ := h j
+  refine Submodule.mem_iSup_of_mem i ?_
+  rw [subdomainSpace]
+  exact Submodule.subset_span ⟨⟨j, hi⟩, rfl⟩
+
+end Map
 
 end SaadSparse.Chapter14

@@ -1,0 +1,7 @@
+namespace = "SaadSparse.Chapter12"
+
+[[node]]
+id = "isDiag_submatrix_of_coloring"
+
+[[node]]
+id = "equation_12_18"

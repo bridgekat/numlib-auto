@@ -47,3 +47,24 @@ id = "milu_mulVec_one"
 
 [[node]]
 id = "milu_residual_diag"
+
+[[node]]
+id = "iluRowOp"
+
+[[node]]
+id = "rowOps"
+
+[[node]]
+id = "ikjSweep"
+
+[[node]]
+id = "kijSweep"
+
+[[node]]
+id = "ikjSweep_row"
+
+[[node]]
+id = "kijSweep_row"
+
+[[node]]
+id = "proposition_10_3"
