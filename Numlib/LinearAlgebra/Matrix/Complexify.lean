@@ -171,6 +171,14 @@ noncomputable def complexSpectralRadius (A : Matrix n n ℝ) : ENNReal :=
 @[simp] theorem complexSpectralRadius_zero : complexSpectralRadius (0 : Matrix n n ℝ) = 0 := by
   rw [complexSpectralRadius, complexify_zero, spectrum.spectralRadius_zero]
 
+/-- A matrix and its transpose have the same spectral radius, their characteristic polynomials
+being equal (Mathlib: `Matrix.spectrum_transpose`).  This is what turns a Perron eigenvector of
+`Aᵀ` into a *left* Perron eigenvector of `A` at the same eigenvalue. -/
+@[simp] theorem complexSpectralRadius_transpose (A : Matrix n n ℝ) :
+    complexSpectralRadius Aᵀ = complexSpectralRadius A := by
+  rw [complexSpectralRadius, complexSpectralRadius, complexify_transpose, spectralRadius,
+    spectralRadius, spectrum_transpose]
+
 /-- The spectral radius is absolutely homogeneous. -/
 theorem complexSpectralRadius_smul (c : ℝ) (A : Matrix n n ℝ) :
     complexSpectralRadius (c • A) = ‖c‖₊ * complexSpectralRadius A := by

@@ -1,0 +1,9 @@
+namespace = "SaadSparse.Chapter02"
+
+[[node]]
+id = "medialTriangle_angle_eq"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 2.4"
+
+[[node]]
+id = "cornerTriangle_angle_eq"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 2.4"

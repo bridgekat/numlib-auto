@@ -27,12 +27,24 @@ independent sets, multicolouring - with the bound each one comes with. That is w
 * The Frobenius normal form of §3.3.4 - the diagonal blocks of the reduced form are the strongly
   connected components in a topological order. The book states only the shape, without the
   ordering condition and without proof; the full statement needs a strongly-connected-component and
-  topological-sort API for digraphs that Mathlib does not have. The two-block characterization,
-  which is what "reducible" means and what Chapter 4 uses, is planned in
-  `Numlib/LinearAlgebra/Sparse/Pattern`.
+  topological-sort API for digraphs - the condensation, its acyclicity, a linear extension of the
+  reachability preorder on components - that Mathlib does not have. That is a combinatorics build
+  rather than a foreign body of mathematics, so this gap is *unwritten rather than unreachable*,
+  and there is a cheaper first slice: for a pattern-symmetric matrix the components meant are the
+  connected components of a `SimpleGraph`, which Mathlib does have. Two traps for whoever writes
+  it. The book prints only the shape and omits the ordering condition, which is what makes the
+  statement true, so do not formalize it as printed; and the graph here is directed, so the
+  components are the *strongly* connected ones. The two-block characterization, which is what
+  "reducible" means and what Chapter 4 uses, is planned in `Numlib/LinearAlgebra/Sparse/Pattern`.
 * Example 3.3's fill-in claim about the arrow matrix, and Problem P-3.12 (the structural inverse of
   an irreducible matrix is dense). Both need a formal notion of *structural* fill-in or of the
-  structural inverse, which the chapter never defines. The mathematical kernel of P-3.12 -
+  structural inverse, which the chapter never defines, and the gap is upstream of the statement:
+  there is no LU factorization anywhere in `Numlib`. Neither piece is exotic - an LU factorization
+  under nonvanishing leading principal minors, and a symbolic model in which the pattern of the
+  factors is quantified over all values compatible with the pattern, so that accidental
+  cancellation cannot make the claim false - so this too is *unwritten rather than unreachable*;
+  it is simply out of the corpus's way, the present corpus being entirely iterative. Do the
+  symbolic-pattern model once and both claims follow. The mathematical kernel of P-3.12 -
   `(1 + A) ^ (n - 1)` is entrywise positive for an irreducible nonnegative `A` - is planned, as
   `Matrix.IsIrreducible.entrywisePos_one_add_pow`.
 * Bandwidth, profile, envelope and skyline. This edition defines none of them and proves no bound

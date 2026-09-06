@@ -1,0 +1,16 @@
+namespace = "Seminorm"
+
+[[node]]
+id = "exists_le_mul_norm"
+
+[[node]]
+id = "continuous_of_finiteDimensional"
+
+[[node]]
+id = "exists_mul_norm_le"
+
+[[node]]
+id = "exists_bounds"
+
+[[node]]
+id = "tendsto_rpow_one_div"

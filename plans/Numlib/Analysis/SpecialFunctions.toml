@@ -1,0 +1,3 @@
+desc = '''
+Special functions that Mathlib has only in part, on the paths their Mathlib homes would have.
+'''

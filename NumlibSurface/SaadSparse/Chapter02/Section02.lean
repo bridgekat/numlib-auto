@@ -2,6 +2,7 @@ import Mathlib.Algebra.Order.Star.Real
 import Mathlib.Analysis.Calculus.Taylor
 import Mathlib.Analysis.SpecialFunctions.ExpDeriv
 import Mathlib.RingTheory.Polynomial.Chebyshev
+import Numlib.Analysis.SpecialFunctions.Chebyshev
 import Numlib.LinearAlgebra.Matrix.KroneckerSum
 import Numlib.LinearAlgebra.Matrix.MMatrix
 import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
@@ -41,6 +42,13 @@ Textual points fixed here rather than reproduced: the interior index range of §
 transposed and are stated here as `p` systems of size `m`, which is what Algorithm 2.1 line 2 says;
 and the `1/h²` scaling of §2.2.3, which the book writes on the right-hand side of the scalar
 equation and on the matrix in the display, is used in the matrix convention only.
+
+Two claims of the chapter are here only in part, and the reasons are with them: the sixth-order
+accuracy of the nine-point stencil (d) of Figure 2.4 on harmonic functions, which needs the
+equality of mixed partial derivatives in a form Mathlib does not have for a curried
+`u : ℝ → ℝ → ℝ` (the second-order accuracy of both nine-point stencils *is* proved,
+`ninePointC_error` and `ninePointD_error`); and the stability of plain block cyclic reduction
+against Buneman's variant, which the book asserts with no analysis anywhere.
 
 The module imports §2.5 for the positive/negative-part identity
 `SaadSparse.Chapter02.equation_2_53`, which is the same algebraic fact as the upwind combination
@@ -276,6 +284,204 @@ theorem equation_2_17 {u : ℝ → ℝ → ℝ} (h₁ : ∀ y, ContDiff ℝ 4 fu
   rw [div_eq_iff (by positivity : (h : ℝ) ^ 2 ≠ 0)]
   rw [div_eq_iff (by positivity : (h : ℝ) ^ 2 ≠ 0)] at hv1 hv2
   linear_combination hv1 + hv2
+
+/-! #### §2.2.2 The nine-point stencils of Figure 2.4
+
+The two nine-point formulas are combinations of the five-point stencil (2.17) with the *diagonal*
+one, the same five-point pattern on the two diagonal lines: Problem P-2.4 gives the recipe, `1/3`
+of one plus `2/3` of the other and the reverse combination. Figure 2.4 itself is an image the text
+extraction does not reproduce, so the coefficients below come from that recipe.
+
+The whole analysis rests on one exact identity among the nine values, `diagonal_eq` below: the
+diagonal stencil is `δ²ₓ + δ²_y + (h²/2) δ²ₓ δ²_y`, so each nine-point formula is the five-point
+one plus a multiple of `h²` times the *product* of the two one-dimensional second differences. No
+two-variable Taylor expansion is needed anywhere: every error term below comes from applying the
+one-dimensional `equation_2_12` along a grid line.
+
+**Not formalized: the sixth-order clause.** Saad also says that (d) is sixth order accurate on
+harmonic functions. The expansion above continues
+`= Δu + (h²/12) Δ²u + (h⁴/360) Δ(∂⁴₁ + 4∂²₁∂²₂ + ∂⁴₂)u + O(h⁶)`, and both correction terms are
+`Δ` of something, hence zero when `Δu` vanishes identically. Collapsing them to that form needs
+the equality of the mixed partial derivatives `∂²₁∂²₂u = ∂²₂∂²₁u`, and the terms the expansion
+produces are in a fixed order: without Clairaut's theorem the `h⁴` bracket cannot be rewritten as
+`Δ` of anything. Mathlib has Clairaut for the second `fderiv` of a function on a normed space
+(`second_derivative_symmetric`), but nothing that transports it to the iterated *partial*
+derivatives of a curried `u : ℝ → ℝ → ℝ`, which is the form this file works in and the form the
+statement below is in; building that bridge, and then iterating it to order six, is what the
+sixth-order clause costs. -/
+
+/-- The centred second difference quotient in the first variable,
+`δ²ₓ u (x, y) = (u(x + h, y) - 2u(x, y) + u(x - h, y))/h²`, kept as a function of both variables so
+that it can be differenced again. -/
+noncomputable def diffX (u : ℝ → ℝ → ℝ) (h : ℝ) : ℝ → ℝ → ℝ :=
+  fun x y => (u (x + h) y - 2 * u x y + u (x - h) y) / h ^ 2
+
+/-- The centred second difference quotient in the second variable,
+`δ²_y u (x, y) = (u(x, y + h) - 2u(x, y) + u(x, y - h))/h²`. -/
+noncomputable def diffY (u : ℝ → ℝ → ℝ) (h : ℝ) : ℝ → ℝ → ℝ :=
+  fun x y => (u x (y + h) - 2 * u x y + u x (y - h)) / h ^ 2
+
+/-- Saad Figure 2.3(b), the **diagonal (skewed) stencil**: the five-point pattern taken on the two
+diagonal lines through `(x, y)`, where the mesh spacing is `h√2`, hence the `2h²`. -/
+noncomputable def diagonalStencil (u : ℝ → ℝ → ℝ) (h x y : ℝ) : ℝ :=
+  (u (x + h) (y + h) + u (x + h) (y - h) + u (x - h) (y + h) + u (x - h) (y - h)
+    - 4 * u x y) / (2 * h ^ 2)
+
+/-- Saad Figure 2.4(c), the nine-point stencil `(1/(3h²))[(N + S + E + W) + (NE + NW + SE + SW)
+- 8 C]`: `1/3` of the five-point formula (2.17) plus `2/3` of the diagonal one. -/
+noncomputable def ninePointC (u : ℝ → ℝ → ℝ) (h x y : ℝ) : ℝ :=
+  (u (x + h) y + u (x - h) y + u x (y + h) + u x (y - h)
+    + (u (x + h) (y + h) + u (x + h) (y - h) + u (x - h) (y + h) + u (x - h) (y - h))
+    - 8 * u x y) / (3 * h ^ 2)
+
+/-- Saad Figure 2.4(d), the nine-point stencil `(1/(6h²))[4(N + S + E + W) + (NE + NW + SE + SW)
+- 20 C]`: `2/3` of the five-point formula (2.17) plus `1/3` of the diagonal one.  This is the
+formula the book singles out as sixth order accurate on harmonic functions. -/
+noncomputable def ninePointD (u : ℝ → ℝ → ℝ) (h x y : ℝ) : ℝ :=
+  (4 * (u (x + h) y + u (x - h) y + u x (y + h) + u x (y - h))
+    + (u (x + h) (y + h) + u (x + h) (y - h) + u (x - h) (y + h) + u (x - h) (y - h))
+    - 20 * u x y) / (6 * h ^ 2)
+
+/-- **The diagonal stencil is `δ²ₓ + δ²_y + (h²/2) δ²ₓ δ²_y`**, exactly: an identity among the
+nine grid values that assumes nothing about `u`.  Grouping the four diagonal points into the two
+second differences in `y` at `x ± h` and averaging is what produces the extra product term. -/
+theorem diagonalStencil_eq (u : ℝ → ℝ → ℝ) {h : ℝ} (hh : h ≠ 0) (x y : ℝ) :
+    diagonalStencil u h x y
+      = diffX u h x y + diffY u h x y + h ^ 2 / 2 * diffX (diffY u h) h x y := by
+  simp only [diagonalStencil, diffX, diffY]
+  field_simp
+  ring
+
+/-- Saad Figure 2.4(c) as a five-point formula plus a product correction,
+`(c) = δ²ₓ + δ²_y + (h²/3) δ²ₓ δ²_y`. -/
+theorem ninePointC_eq (u : ℝ → ℝ → ℝ) {h : ℝ} (hh : h ≠ 0) (x y : ℝ) :
+    ninePointC u h x y
+      = diffX u h x y + diffY u h x y + h ^ 2 / 3 * diffX (diffY u h) h x y := by
+  simp only [ninePointC, diffX, diffY]
+  field_simp
+  ring
+
+/-- Saad Figure 2.4(d) as a five-point formula plus a product correction,
+`(d) = δ²ₓ + δ²_y + (h²/6) δ²ₓ δ²_y`. -/
+theorem ninePointD_eq (u : ℝ → ℝ → ℝ) {h : ℝ} (hh : h ≠ 0) (x y : ℝ) :
+    ninePointD u h x y
+      = diffX u h x y + diffY u h x y + h ^ 2 / 6 * diffX (diffY u h) h x y := by
+  simp only [ninePointD, diffX, diffY]
+  field_simp
+  ring
+
+/-- The **second symmetric difference is a second derivative at an intermediate point**:
+`(w(t + h) - 2w(t) + w(t - h))/h² = w''(θ)` for some `θ` in `[t - h, t + h]`.  Two Lagrange
+remainders of order two, added, and the intermediate value theorem applied to `w''`. -/
+private theorem exists_secondDifference {w : ℝ → ℝ} (hw : ContDiff ℝ 2 w) (t : ℝ) {h : ℝ}
+    (hh : 0 < h) :
+    ∃ θ ∈ Set.Icc (t - h) (t + h),
+      (w (t + h) - 2 * w t + w (t - h)) / h ^ 2 = iteratedDeriv 2 w θ := by
+  have hw2 : ContDiff ℝ ((1 : ℕ) + 1 : ℕ) w := by exact_mod_cast hw
+  obtain ⟨b, hb, hvb⟩ := exists_taylor hw2 t (ne_of_gt hh)
+  obtain ⟨a, ha, hva⟩ := exists_taylor hw2 t (neg_ne_zero.2 (ne_of_gt hh))
+  rw [Set.uIoo_of_le (by linarith)] at hb
+  rw [Set.uIoo_of_ge (by linarith), show t + -h = t - h by ring] at ha
+  rw [show t + -h = t - h by ring] at hva
+  obtain ⟨θ, hθ, hmid⟩ := exists_mid (m := 2) (by exact_mod_cast hw) ha hb
+  refine ⟨θ, hθ, ?_⟩
+  simp only [Finset.sum_range_succ, Finset.sum_range_zero, iteratedDeriv_zero,
+    iteratedDeriv_one] at hvb hva
+  norm_num [Nat.factorial] at hvb hva
+  rw [hmid, div_eq_iff (by positivity : (h : ℝ) ^ 2 ≠ 0)]
+  linear_combination hvb + hva
+
+/-- The second derivative of the fixed combination that a centred second difference is. -/
+private theorem iteratedDeriv_two_comb {f g k : ℝ → ℝ} (hf : ContDiff ℝ 2 f) (hg : ContDiff ℝ 2 g)
+    (hk : ContDiff ℝ 2 k) (c : ℝ) (t : ℝ) :
+    iteratedDeriv 2 (fun s => (f s - 2 * g s + k s) / c) t
+      = (iteratedDeriv 2 f t - 2 * iteratedDeriv 2 g t + iteratedDeriv 2 k t) / c := by
+  have hg2 : ContDiff ℝ 2 fun s => 2 * g s := contDiff_const.mul hg
+  have hfg : ContDiff ℝ 2 fun s => f s - 2 * g s := hf.sub hg2
+  rw [iteratedDeriv_div_const, iteratedDeriv_fun_add hfg.contDiffAt hk.contDiffAt,
+    iteratedDeriv_fun_sub hf.contDiffAt hg2.contDiffAt, iteratedDeriv_const_mul 2 hg.contDiffAt]
+
+/-- **The product difference `δ²ₓ δ²_y u` is a mixed fourth derivative at an intermediate point**,
+`∂²₂∂²₁u(θ, ζ)`: the second symmetric difference in `x` of the second symmetric difference in `y`,
+each replaced by a second derivative through `exists_secondDifference`.  The hypothesis `h₁₂` is
+the mixed regularity that "`u` of class `C⁴`" supplies and that the separate-variable hypotheses
+of this file do not. -/
+private theorem exists_diffX_diffY {u : ℝ → ℝ → ℝ} (h₁ : ∀ y, ContDiff ℝ 4 fun t => u t y)
+    (h₁₂ : ∀ t, ContDiff ℝ 2 fun s => iteratedDeriv 2 (fun r => u r s) t)
+    (x y : ℝ) {h : ℝ} (hh : 0 < h) :
+    ∃ θ ∈ Set.Icc (x - h) (x + h), ∃ ζ ∈ Set.Icc (y - h) (y + h),
+      diffX (diffY u h) h x y
+        = iteratedDeriv 2 (fun s => iteratedDeriv 2 (fun r => u r s) θ) ζ := by
+  have hle : (2 : WithTop ℕ∞) ≤ 4 := by norm_num
+  have hv : ContDiff ℝ 2 fun t => diffY u h t y := by
+    simp only [diffY]
+    exact ((((h₁ (y + h)).of_le hle).sub (contDiff_const.mul ((h₁ y).of_le hle))).add
+      ((h₁ (y - h)).of_le hle)).div_const _
+  obtain ⟨θ, hθ, hveq⟩ := exists_secondDifference hv x hh
+  obtain ⟨ζ, hζ, hzeq⟩ := exists_secondDifference (h₁₂ θ) y hh
+  refine ⟨θ, hθ, ζ, hζ, ?_⟩
+  have hcomb : iteratedDeriv 2 (fun t => diffY u h t y) θ
+      = (iteratedDeriv 2 (fun t => u t (y + h)) θ - 2 * iteratedDeriv 2 (fun t => u t y) θ
+        + iteratedDeriv 2 (fun t => u t (y - h)) θ) / h ^ 2 := by
+    simp only [diffY]
+    exact iteratedDeriv_two_comb ((h₁ (y + h)).of_le hle) ((h₁ y).of_le hle)
+      ((h₁ (y - h)).of_le hle) _ θ
+  rw [show diffX (diffY u h) h x y
+      = ((fun t => diffY u h t y) (x + h) - 2 * (fun t => diffY u h t y) x
+        + (fun t => diffY u h t y) (x - h)) / h ^ 2 from rfl, hveq, hcomb, ← hzeq]
+
+/-- **Saad §2.2.2, Figure 2.4(d): the nine-point formula is second order accurate.**  For `u` of
+class `C⁴` along each grid line, with the mixed regularity `h₁₂`, there are four intermediate
+points at which
+`(d) - Δu = h² (∂⁴₁u(ξ, y)/12 + ∂⁴₂u(x, η)/12 + ∂²₂∂²₁u(θ, ζ)/6)`.
+The first two terms are the five-point error of (2.17); the third is the price of the product
+correction `(h²/6) δ²ₓ δ²_y` that `ninePointD_eq` exhibits. -/
+theorem ninePointD_error {u : ℝ → ℝ → ℝ} (h₁ : ∀ y, ContDiff ℝ 4 fun t => u t y)
+    (h₂ : ∀ x, ContDiff ℝ 4 fun t => u x t)
+    (h₁₂ : ∀ t, ContDiff ℝ 2 fun s => iteratedDeriv 2 (fun r => u r s) t)
+    (x y : ℝ) {h : ℝ} (hh : 0 < h) :
+    ∃ ξ ∈ Set.Icc (x - h) (x + h), ∃ η ∈ Set.Icc (y - h) (y + h),
+      ∃ θ ∈ Set.Icc (x - h) (x + h), ∃ ζ ∈ Set.Icc (y - h) (y + h),
+      ninePointD u h x y
+          - (iteratedDeriv 2 (fun t => u t y) x + iteratedDeriv 2 (fun t => u x t) y)
+        = h ^ 2 * (iteratedDeriv 4 (fun t => u t y) ξ / 12
+            + iteratedDeriv 4 (fun t => u x t) η / 12
+            + iteratedDeriv 2 (fun s => iteratedDeriv 2 (fun r => u r s) θ) ζ / 6) := by
+  obtain ⟨ξ, hξ, hx2⟩ := equation_2_12 (h₁ y) x hh
+  obtain ⟨η, hη, hy2⟩ := equation_2_12 (h₂ x) y hh
+  obtain ⟨θ, hθ, ζ, hζ, hxy⟩ := exists_diffX_diffY h₁ h₁₂ x y hh
+  refine ⟨ξ, hξ, η, hη, θ, hθ, ζ, hζ, ?_⟩
+  rw [ninePointD_eq u hh.ne' x y, hxy, show diffX u h x y
+      = ((fun t => u t y) (x + h) - 2 * (fun t => u t y) x + (fun t => u t y) (x - h)) / h ^ 2
+      from rfl, hx2, show diffY u h x y
+      = ((fun t => u x t) (y + h) - 2 * (fun t => u x t) y + (fun t => u x t) (y - h)) / h ^ 2
+      from rfl, hy2]
+  ring
+
+/-- **Saad §2.2.2, Figure 2.4(c): the other nine-point formula is second order accurate.**  Same
+statement as `ninePointD_error` with the product correction weighted `1/3` instead of `1/6`, which
+is the reverse combination of Problem P-2.4. -/
+theorem ninePointC_error {u : ℝ → ℝ → ℝ} (h₁ : ∀ y, ContDiff ℝ 4 fun t => u t y)
+    (h₂ : ∀ x, ContDiff ℝ 4 fun t => u x t)
+    (h₁₂ : ∀ t, ContDiff ℝ 2 fun s => iteratedDeriv 2 (fun r => u r s) t)
+    (x y : ℝ) {h : ℝ} (hh : 0 < h) :
+    ∃ ξ ∈ Set.Icc (x - h) (x + h), ∃ η ∈ Set.Icc (y - h) (y + h),
+      ∃ θ ∈ Set.Icc (x - h) (x + h), ∃ ζ ∈ Set.Icc (y - h) (y + h),
+      ninePointC u h x y
+          - (iteratedDeriv 2 (fun t => u t y) x + iteratedDeriv 2 (fun t => u x t) y)
+        = h ^ 2 * (iteratedDeriv 4 (fun t => u t y) ξ / 12
+            + iteratedDeriv 4 (fun t => u x t) η / 12
+            + iteratedDeriv 2 (fun s => iteratedDeriv 2 (fun r => u r s) θ) ζ / 3) := by
+  obtain ⟨ξ, hξ, hx2⟩ := equation_2_12 (h₁ y) x hh
+  obtain ⟨η, hη, hy2⟩ := equation_2_12 (h₂ x) y hh
+  obtain ⟨θ, hθ, ζ, hζ, hxy⟩ := exists_diffX_diffY h₁ h₁₂ x y hh
+  refine ⟨ξ, hξ, η, hη, θ, hθ, ζ, hζ, ?_⟩
+  rw [ninePointC_eq u hh.ne' x y, hxy, show diffX u h x y
+      = ((fun t => u t y) (x + h) - 2 * (fun t => u t y) x + (fun t => u t y) (x - h)) / h ^ 2
+      from rfl, hx2, show diffY u h x y
+      = ((fun t => u x t) (y + h) - 2 * (fun t => u x t) y + (fun t => u x t) (y - h)) / h ^ 2
+      from rfl, hy2]
+  ring
 
 end Truncation
 
@@ -1211,9 +1417,10 @@ private theorem chebyshevC_two_mul (k : ℤ) :
   rw [sub_self, Polynomial.Chebyshev.C_zero, show k + k = 2 * k by ring] at hC
   linear_combination -hC
 
-/-- Saad (2.33) and (2.36): the block cyclic reduction sequence is the Vieta–Lucas polynomial
-`C_{2^r}` evaluated at `B`, and `C_m` is `2 T_m(·/2)` — so `B⁽ʳ⁾ = 2 T_{2^r}(B/2)`, which is
-(2.36).  The induction step is the duplication formula `C_{2k} = C_k² - 2`. -/
+/-- Saad (2.33): the block cyclic reduction sequence is the Vieta–Lucas polynomial `C_{2^r}`
+evaluated at `B`, and `C_m` is `2 T_m(·/2)`, so `B⁽ʳ⁾ = 2 T_{2^r}(B/2)`.  The induction step is the
+duplication formula `C_{2k} = C_k² - 2`.  The root factorization of that polynomial is (2.36),
+`equation_2_36` below. -/
 theorem equation_2_33 {p : ℕ} (B : Matrix (Fin p) (Fin p) ℝ) (r : ℕ) :
     cyclicReduction B r = Polynomial.aeval B (Polynomial.Chebyshev.C ℝ ((2 : ℤ) ^ r)) := by
   induction r with
@@ -1241,6 +1448,43 @@ theorem cyclicReduction_mulVec_of_mulVec_eq_smul {p : ℕ} {B : Matrix (Fin p) (
       chebyshevC_two_mul, Matrix.sub_mulVec, pow_two (cyclicReduction B r),
       ← Matrix.mulVec_mulVec, ih, Matrix.mulVec_smul, ih, htwo, hev]
     module
+
+/-- Evaluating a product of monic linear factors at a matrix: `aeval` is multiplicative, and the
+image is an ordered product because the matrices do not commute in general — these particular ones
+do, being polynomials in `B`, but nothing in the statement needs that. -/
+private theorem aeval_prod_X_sub_C {p : ℕ} (B : Matrix (Fin p) (Fin p) ℝ) (c : ℕ → ℝ) (m : ℕ) :
+    Polynomial.aeval B (∏ k ∈ Finset.range m, (Polynomial.X - Polynomial.C (c k)))
+      = ((List.range m).map fun k => B - c k • (1 : Matrix (Fin p) (Fin p) ℝ)).prod := by
+  induction m with
+  | zero => simp
+  | succ m ih =>
+    rw [Finset.prod_range_succ, map_mul, ih, List.range_succ, List.map_append, List.prod_append]
+    simp [Algebra.algebraMap_eq_smul_one]
+
+/-- **Saad (2.36)**, the root factorization of the cyclic reduction operator:
+`B⁽ʳ⁾ = ∏_{i=1}^{h} (B - λ_i^{(r)} I)` with `h = 2^r` and `λ_i^{(r)} = 2 cos((2i - 1)π/(2h))`, so
+that the solves with `B⁽ʳ⁾` on lines 5 and 14 of Algorithm 2.2 split into `h` tridiagonal solves.
+The product below runs over `i = 0, …, h - 1` and writes the node as `2 cos((2i + 1)π/(2h))`, which
+is the book's list of `h` nodes with the index shifted by one; it is a `List.prod` because the
+matrices carry no commutative multiplication, although these factors do commute.
+
+It is the backbone's `Polynomial.Chebyshev.C_natCast_eq_prod` — the Vieta–Lucas polynomial `C_h` is
+monic of degree `h` with the `h` distinct real roots above — carried across the algebra map
+`Polynomial.aeval B` by (2.33). -/
+theorem equation_2_36 {p : ℕ} (B : Matrix (Fin p) (Fin p) ℝ) (r : ℕ) :
+    cyclicReduction B r = ((List.range (2 ^ r)).map fun i : ℕ =>
+        B - (2 * Real.cos ((2 * i + 1) * π / (2 * 2 ^ r))) •
+          (1 : Matrix (Fin p) (Fin p) ℝ)).prod := by
+  have hne : (2 : ℕ) ^ r ≠ 0 := (Nat.two_pow_pos r).ne'
+  have hcast : ((2 ^ r : ℕ) : ℤ) = (2 : ℤ) ^ r := by push_cast; ring
+  rw [equation_2_33, ← hcast, Polynomial.Chebyshev.C_natCast_eq_prod hne, aeval_prod_X_sub_C]
+  refine congrArg List.prod (List.map_congr_left fun k _ => ?_)
+  have hnode : Polynomial.Chebyshev.rootNode (2 ^ r) k
+      = 2 * Real.cos ((2 * k + 1) * π / (2 * 2 ^ r)) := by
+    rw [Polynomial.Chebyshev.rootNode]
+    push_cast
+    ring_nf
+  rw [hnode]
 
 end TwoDimensional
 

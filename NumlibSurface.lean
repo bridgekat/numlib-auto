@@ -73,6 +73,8 @@ import NumlibSurface.SaadSparse.Chapter01.Section11
 import NumlibSurface.SaadSparse.Chapter01.Section12
 import NumlibSurface.SaadSparse.Chapter01.Section13
 import NumlibSurface.SaadSparse.Chapter02.Section02
+import NumlibSurface.SaadSparse.Chapter02.Section03
+import NumlibSurface.SaadSparse.Chapter02.Section04
 import NumlibSurface.SaadSparse.Chapter02.Section05
 import NumlibSurface.SaadSparse.Chapter03.Section02
 import NumlibSurface.SaadSparse.Chapter03.Section03

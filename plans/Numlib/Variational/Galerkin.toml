@@ -81,3 +81,28 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Remark 9.2.2"
 [[node]]
 id = "IsPetrovGalerkinSolution.norm_sub_le_div_mul_infDist"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Remark 9.2.2, (9.2.10)"
+
+[[node]]
+id = "SesqForm.gramMatrix"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (2.44)"
+
+[[node]]
+id = "SesqForm.gramMatrix_apply"
+
+[[node]]
+id = "SesqForm.gramMatrix_isHermitian"
+
+[[node]]
+id = "IsGalerkinSolution.iff_gramMatrix_mulVec"
+
+[[node]]
+id = "SesqForm.dotProduct_gramMatrix_mulVec"
+
+[[node]]
+id = "SesqForm.dotProduct_gramMatrix_mulVec_real"
+
+[[node]]
+id = "SesqForm.gramMatrix_dotProduct_pos"
+
+[[node]]
+id = "SesqForm.gramMatrix_posDef"

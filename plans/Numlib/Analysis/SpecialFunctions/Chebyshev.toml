@@ -1,0 +1,22 @@
+namespace = "Polynomial.Chebyshev"
+
+[[node]]
+id = "rootNode"
+
+[[node]]
+id = "eval_C_two_mul_cos"
+
+[[node]]
+id = "natDegree_C_natCast"
+
+[[node]]
+id = "monic_C_natCast"
+
+[[node]]
+id = "injOn_rootNode"
+
+[[node]]
+id = "roots_C_real"
+
+[[node]]
+id = "C_natCast_eq_prod"

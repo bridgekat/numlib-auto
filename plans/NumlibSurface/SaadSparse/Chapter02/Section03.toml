@@ -1,0 +1,60 @@
+namespace = "SaadSparse.Chapter02"
+
+[[node]]
+id = "energyForm"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 2.3"
+
+[[node]]
+id = "energyForm_symm"
+
+[[node]]
+id = "energyForm_bilinear"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 2.3"
+
+[[node]]
+id = "stiffnessMatrix"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (2.44)"
+
+[[node]]
+id = "loadVector"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (2.44)"
+
+[[node]]
+id = "equation_2_44"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (2.44)"
+
+[[node]]
+id = "stiffnessMatrix_apply"
+
+[[node]]
+id = "stiffness_isSymm"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 2.3"
+
+[[node]]
+id = "dotProduct_stiffnessMatrix_mulVec"
+
+[[node]]
+id = "stiffness_posDef"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 2.3"
+
+[[node]]
+id = "stiffnessMatrix_mulVec_apply"
+
+[[node]]
+id = "not_isUnit_stiffnessMatrix"
+
+[[node]]
+id = "neumann_not_isUnit"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 2.3"
+
+[[node]]
+id = "elementMatrix"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (2.45)"
+
+[[node]]
+id = "equation_2_45"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (2.45)"
+
+[[node]]
+id = "equation_2_46"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (2.46)"

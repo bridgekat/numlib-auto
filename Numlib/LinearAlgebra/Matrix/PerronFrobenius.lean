@@ -4,7 +4,9 @@ to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.LinearAlgebra.Matrix.PerronFrobenius`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
-import Mathlib.LinearAlgebra.Eigenspace.Basic
+import Mathlib.LinearAlgebra.Charpoly.ToMatrix
+import Mathlib.LinearAlgebra.Eigenspace.Zero
+import Mathlib.LinearAlgebra.FiniteDimensional.Basic
 import Mathlib.LinearAlgebra.Matrix.Irreducible.Defs
 import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.LinearAlgebra.Matrix.Order
@@ -25,10 +27,14 @@ The spectral theory of matrices that are nonnegative for the entrywise order `Ma
 
 * **The Perron–Frobenius theorem for an irreducible matrix.** An irreducible nonnegative matrix on a
   nonempty index type has an entrywise *positive* eigenvector for its spectral radius
-  (`Matrix.IsIrreducible.exists_pos_hasEigenvector_complexSpectralRadius`), and that eigenvalue is
-  geometrically simple (`Matrix.IsIrreducible.finrank_eigenspace_complexSpectralRadius_eq_one`).
-  Irreducibility is Mathlib's `Matrix.IsIrreducible`: entrywise nonnegative, with the quiver of its
-  positive entries strongly connected.
+  (`Matrix.IsIrreducible.exists_pos_hasEigenvector_complexSpectralRadius`) and, on the transpose, an
+  entrywise positive *left* eigenvector for the same one
+  (`Matrix.IsIrreducible.exists_pos_vecMul_eq`). That eigenvalue is geometrically simple
+  (`Matrix.IsIrreducible.finrank_eigenspace_complexSpectralRadius_eq_one`), algebraically simple
+  (`Matrix.IsIrreducible.rootMultiplicity_charpoly_complexSpectralRadius`) and, on two or more
+  indices, positive (`Matrix.IsIrreducible.complexSpectralRadius_pos`). Irreducibility is Mathlib's
+  `Matrix.IsIrreducible`: entrywise nonnegative, with the quiver of its positive entries strongly
+  connected.
 
 ## Implementation notes
 
@@ -52,9 +58,15 @@ Geometric simplicity is then a one-line extremal argument: for another eigenvect
 `ρ`, the scalar `t = sup_i w i / x i` makes `t • x - w` a nonnegative eigenvector with a vanishing
 entry, so it is zero.
 
-*Algebraic* simplicity of the Perron eigenvalue, which is what "simple" means in [saad2003iterative]
-Theorem 1.25, is not proved here: it needs the derivative of the characteristic polynomial through
-the adjugate.
+*Algebraic* simplicity, which is what "simple" means in [saad2003iterative] Theorem 1.25, is proved
+without the derivative of the characteristic polynomial that the standard accounts differentiate
+through the adjugate. What has to be excluded is a Jordan chain of length two: if `A v - ρ v` is
+itself an eigenvector then, the eigenspace being spanned by the positive Perron vector `x`, it is
+`c • x`, and pairing with the positive *left* Perron vector `y` gives
+`y ᵀ (A v - ρ v) = ρ (y ᵀ v) - ρ (y ᵀ v) = 0` while `y ᵀ x > 0`, so `c = 0`. Every generalized
+eigenvector then collapses to an eigenvector by induction on the nilpotency index, and
+`LinearMap.finrank_maxGenEigenspace_eq` turns the resulting one-dimensional generalized eigenspace
+into a simple root of the characteristic polynomial.
 -/
 
 open Filter Topology
@@ -533,6 +545,121 @@ theorem IsIrreducible.finrank_eigenspace_complexSpectralRadius_eq_one [Nonempty 
       rw [hzero] at hpos
       simp at hpos
   rw [hspan, finrank_span_singleton hxne]
+
+/-! ### The Perron eigenvalue is positive, and algebraically simple -/
+
+/-- The **left** Perron eigenvector of an irreducible nonnegative matrix: an entrywise positive `y`
+with `yᵀ A = ρ(A) yᵀ`.  It is the Perron eigenvector of `Aᵀ`, which is irreducible with the same
+spectral radius. -/
+theorem IsIrreducible.exists_pos_vecMul_eq [Nonempty n] (hA : A.IsIrreducible) :
+    ∃ y : n → ℝ, (∀ i, 0 < y i) ∧ y ᵥ* A = (complexSpectralRadius A).toReal • y := by
+  obtain ⟨y, hypos, hy⟩ := hA.transpose.exists_pos_hasEigenvector_complexSpectralRadius
+  rw [complexSpectralRadius_transpose, mulVec_transpose] at hy
+  exact ⟨y, hypos, hy⟩
+
+/-- **The Perron eigenvalue of an irreducible matrix is positive** as soon as there are two
+indices: `ρ(A) = 0` would make the positive Perron vector a null vector of `A`, forcing `A = 0`,
+and the zero matrix on two or more indices is not irreducible. -/
+theorem IsIrreducible.complexSpectralRadius_pos [Nontrivial n] (hA : A.IsIrreducible) :
+    0 < (complexSpectralRadius A).toReal := by
+  obtain ⟨x, hxpos, hx⟩ := hA.exists_pos_hasEigenvector_complexSpectralRadius
+  rcases ENNReal.toReal_nonneg.lt_or_eq with h | h
+  · exact h
+  · exfalso
+    have hAx : A *ᵥ x = 0 := by rw [hx, ← h, zero_smul]
+    have hzero : A = 0 := by
+      ext i j
+      have hsum : ∑ k, A i k * x k = 0 := congrFun hAx i
+      have hnn : ∀ k ∈ Finset.univ, 0 ≤ A i k * x k := fun k _ =>
+        mul_nonneg (hA.nonneg i k) (hxpos k).le
+      have := (Finset.sum_eq_zero_iff_of_nonneg hnn).1 hsum j (Finset.mem_univ j)
+      rcases mul_eq_zero.1 this with h' | h'
+      · simpa using h'
+      · exact absurd h' (hxpos j).ne'
+    obtain ⟨i, j, hij⟩ := exists_pair_ne n
+    obtain ⟨k, hk, hpos⟩ :=
+      (isIrreducible_iff_exists_pow_pos hA.nonneg).1 hA i j
+    rw [hzero, zero_pow hk.ne'] at hpos
+    simp at hpos
+
+/-- **No Jordan chain of length two at the Perron eigenvalue.**  If `A v - ρ v` is itself an
+eigenvector of `A` at `ρ`, then it is zero.
+
+The eigenspace at `ρ` is one-dimensional and spanned by the positive Perron vector `x`, so
+`A v - ρ v = c • x`; pairing with the positive *left* Perron vector `y` gives
+`y ⬝ᵥ (A v - ρ v) = ρ (y ⬝ᵥ v) - ρ (y ⬝ᵥ v) = 0`, while `y ⬝ᵥ x > 0`, so `c = 0`. -/
+private theorem IsIrreducible.mulVec_eq_smul_of_mem_eigenspace [Nonempty n] (hA : A.IsIrreducible)
+    {v : n → ℝ} (hv : A *ᵥ (A *ᵥ v - (complexSpectralRadius A).toReal • v)
+      = (complexSpectralRadius A).toReal • (A *ᵥ v - (complexSpectralRadius A).toReal • v)) :
+    A *ᵥ v = (complexSpectralRadius A).toReal • v := by
+  set ρ := (complexSpectralRadius A).toReal with hρ
+  obtain ⟨x, hxpos, hx⟩ := hA.exists_pos_hasEigenvector_complexSpectralRadius
+  obtain ⟨y, hypos, hy⟩ := hA.exists_pos_vecMul_eq
+  set w : n → ℝ := A *ᵥ v - ρ • v with hw
+  have hxmem : x ∈ Module.End.eigenspace A.mulVecLin ρ := Module.End.mem_eigenspace_iff.2 hx
+  have hwmem : w ∈ Module.End.eigenspace A.mulVecLin ρ := Module.End.mem_eigenspace_iff.2 hv
+  have hxne : (⟨x, hxmem⟩ : Module.End.eigenspace A.mulVecLin ρ) ≠ 0 := fun h => by
+    have := congrArg Subtype.val h
+    exact (hxpos (Classical.arbitrary n)).ne' (congrFun this (Classical.arbitrary n))
+  obtain ⟨c, hc⟩ := (finrank_eq_one_iff_of_nonzero' (⟨x, hxmem⟩ :
+      Module.End.eigenspace A.mulVecLin ρ) hxne).1
+    hA.finrank_eigenspace_complexSpectralRadius_eq_one ⟨w, hwmem⟩
+  have hcx : c • x = w := congrArg Subtype.val hc
+  have hyw : y ⬝ᵥ w = 0 := by
+    rw [hw, dotProduct_sub, dotProduct_mulVec, hy, smul_dotProduct, dotProduct_smul, ← hρ,
+      sub_self]
+  have hyx : 0 < y ⬝ᵥ x :=
+    Finset.sum_pos (fun i _ => mul_pos (hypos i) (hxpos i)) Finset.univ_nonempty
+  have hc0 : c = 0 := by
+    have := hyw
+    rw [← hcx, dotProduct_smul, smul_eq_mul] at this
+    rcases mul_eq_zero.1 this with h | h
+    · exact h
+    · exact absurd h hyx.ne'
+  have hw0 : w = 0 := by rw [← hcx, hc0, zero_smul]
+  rw [hw, sub_eq_zero] at hw0
+  exact hw0
+
+/-- **The generalized eigenspace at the Perron eigenvalue is the eigenspace**: an irreducible
+nonnegative matrix has no generalized eigenvector of rank two or more at `ρ(A)`. -/
+theorem IsIrreducible.maxGenEigenspace_complexSpectralRadius [Nonempty n] (hA : A.IsIrreducible) :
+    Module.End.maxGenEigenspace A.mulVecLin (complexSpectralRadius A).toReal
+      = Module.End.eigenspace A.mulVecLin (complexSpectralRadius A).toReal := by
+  set ρ := (complexSpectralRadius A).toReal with hρ
+  set g : Module.End ℝ (n → ℝ) := A.mulVecLin - ρ • 1 with hg
+  have hgapp : ∀ u : n → ℝ, g u = A *ᵥ u - ρ • u := fun u => by
+    simp [hg]
+  have key : ∀ k : ℕ, ∀ u : n → ℝ, (g ^ k) u = 0 → g u = 0 := by
+    intro k
+    induction k with
+    | zero => intro u hu; simp only [pow_zero, Module.End.one_apply] at hu; simp [hu]
+    | succ k ih =>
+      intro u hu
+      rw [pow_succ, Module.End.mul_apply] at hu
+      have h1 : g (g u) = 0 := ih (g u) hu
+      have h2 : A *ᵥ (A *ᵥ u - ρ • u) = ρ • (A *ᵥ u - ρ • u) := by
+        have := h1
+        rw [hgapp u, hgapp (A *ᵥ u - ρ • u), sub_eq_zero] at this
+        exact this
+      rw [hgapp u, sub_eq_zero]
+      exact hA.mulVec_eq_smul_of_mem_eigenspace h2
+  refine le_antisymm (fun u hu => ?_) Module.End.eigenspace_le_maxGenEigenspace
+  obtain ⟨k, hk⟩ := (Module.End.mem_maxGenEigenspace _ _ u).1 hu
+  have := key k u hk
+  rw [hgapp u, sub_eq_zero] at this
+  exact Module.End.mem_eigenspace_iff.2 this
+
+/-- **The Perron eigenvalue of an irreducible matrix is algebraically simple**
+([saad2003iterative], Theorem 1.25, where "simple" means exactly this): `ρ(A)` is a simple root of
+the characteristic polynomial. The geometric statement
+`Matrix.IsIrreducible.finrank_eigenspace_complexSpectralRadius_eq_one` becomes the algebraic one
+because the generalized eigenspace at `ρ(A)` is the eigenspace. -/
+theorem IsIrreducible.rootMultiplicity_charpoly_complexSpectralRadius [Nonempty n]
+    (hA : A.IsIrreducible) :
+    A.charpoly.rootMultiplicity (complexSpectralRadius A).toReal = 1 := by
+  rw [← charpoly_mulVecLin A, ← LinearMap.finrank_maxGenEigenspace_eq,
+    hA.maxGenEigenspace_complexSpectralRadius,
+    hA.finrank_eigenspace_complexSpectralRadius_eq_one]
 
 end Perron
 

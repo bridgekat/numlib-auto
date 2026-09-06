@@ -17,6 +17,7 @@ import Numlib.Analysis.InnerProductSpace.Projection.ObliqueProjection
 import Numlib.Analysis.InnerProductSpace.WeakCompactness
 import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.Analysis.Normed.Algebra.SpectralRadius
+import Numlib.Analysis.Normed.Module.NormEquivalence
 import Numlib.Analysis.Normed.Module.WeakDual
 import Numlib.Analysis.Normed.Operator.BanachSteinhaus
 import Numlib.Analysis.Normed.Operator.CollectivelyCompact
@@ -24,6 +25,7 @@ import Numlib.Analysis.Normed.Operator.Compact
 import Numlib.Analysis.Normed.Operator.Scaling
 import Numlib.Analysis.Normed.Ring.CondNumber
 import Numlib.Analysis.Normed.Ring.Inverse
+import Numlib.Analysis.SpecialFunctions.Chebyshev
 import Numlib.Analysis.Wavelet.Haar
 import Numlib.Analysis.Wavelet.Multiresolution
 import Numlib.Approximation.BestApprox
@@ -80,6 +82,7 @@ import Numlib.Krylov.QuasiMinRes
 import Numlib.Krylov.Relations
 import Numlib.Krylov.Singular
 import Numlib.Krylov.Subspace
+import Numlib.LinearAlgebra.Matrix.Assembly
 import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.LinearAlgebra.Matrix.Hessenberg
 import Numlib.LinearAlgebra.Matrix.KroneckerSum

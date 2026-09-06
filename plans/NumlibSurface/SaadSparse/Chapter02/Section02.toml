@@ -134,3 +134,42 @@ id = "equation_2_33"
 
 [[node]]
 id = "cyclicReduction_mulVec_of_mulVec_eq_smul"
+
+[[node]]
+id = "diffX"
+
+[[node]]
+id = "diffY"
+
+[[node]]
+id = "diagonalStencil"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Figure 2.3(b)"
+
+[[node]]
+id = "diagonalStencil_eq"
+
+[[node]]
+id = "ninePointC"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Figure 2.4(c)"
+
+[[node]]
+id = "ninePointC_eq"
+
+[[node]]
+id = "ninePointC_error"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 2.2.2"
+
+[[node]]
+id = "ninePointD"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Figure 2.4(d)"
+
+[[node]]
+id = "ninePointD_eq"
+
+[[node]]
+id = "ninePointD_error"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 2.2.2"
+
+[[node]]
+id = "equation_2_36"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (2.36)"

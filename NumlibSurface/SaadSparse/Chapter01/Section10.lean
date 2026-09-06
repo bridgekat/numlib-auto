@@ -20,15 +20,15 @@ gets a declaration of its own here.  Saad's `ρ(A)` for a real matrix is
 `Matrix.complexSpectralRadius A`, the spectral radius of the complexification: `spectrum ℝ` of a
 real matrix is not the spectral radius.
 
-Two clauses of the book are weaker here than in print.
+Theorem 1.25 calls the Perron eigenvalue *simple*, and both readings of the word are proved:
+`theorem_1_25_simple` is the one-dimensionality of the eigenspace and `theorem_1_25_algSimple` is
+simplicity as a root of the characteristic polynomial, which is what the book means.
+`theorem_1_25_pos` adds the positivity of `ρ(A)` on two or more indices, which the printed
+statement does not claim.
 
-* Theorem 1.25 calls the Perron eigenvalue *simple*.  Only **geometric** simplicity is proved
-  (`theorem_1_25_simple`); algebraic simplicity needs the derivative of the characteristic
-  polynomial through the adjugate, which nothing else in the corpus wants.  The book's clause that
-  `ρ(A)` is *positive* is likewise not claimed.
-* Theorems 1.31–1.33 are stated with the Jacobi iteration matrix written out as `1 - D⁻¹ A`;
-  `theorem_1_31_jacobi` identifies it with the iteration operator of the Jacobi splitting of
-  `Numlib/LinearSolve/Stationary/Splitting.lean`, which is the form §4.1 uses.
+Theorems 1.31–1.33 are stated with the Jacobi iteration matrix written out as `1 - D⁻¹ A`;
+`theorem_1_31_jacobi` identifies it with the iteration operator of the Jacobi splitting of
+`Numlib/LinearSolve/Stationary/Splitting.lean`, which is the form §4.1 uses.
 
 Saad's Problem P-1.33 asks whether clause (4) of Definition 1.30 — the nonnegativity of the
 inverse — is redundant in the way Theorem 1.32 shows clause (1) to be.  It is not, and the answer
@@ -124,13 +124,30 @@ theorem theorem_1_25 [NeZero n] {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsIrred
 
 /-- **Saad Theorem 1.25**, the simplicity clause, in its geometric form: the Perron eigenvalue of
 an irreducible nonnegative matrix has a one-dimensional eigenspace.
-`Matrix.IsIrreducible.finrank_eigenspace_complexSpectralRadius_eq_one`.  *Algebraic* simplicity,
-which is what "simple" means in the book, is not proved: it needs the derivative of the
-characteristic polynomial through the adjugate. -/
+`Matrix.IsIrreducible.finrank_eigenspace_complexSpectralRadius_eq_one`. -/
 theorem theorem_1_25_simple [NeZero n] {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsIrreducible) :
     Module.finrank ℝ
         (Module.End.eigenspace A.mulVecLin A.complexSpectralRadius.toReal) = 1 :=
   hA.finrank_eigenspace_complexSpectralRadius_eq_one
+
+/-- **Saad Theorem 1.25**, the simplicity clause in the sense the word carries in the book:
+`ρ(A)` is an *algebraically* simple eigenvalue, a simple root of the characteristic polynomial.
+`Matrix.IsIrreducible.rootMultiplicity_charpoly_complexSpectralRadius`, which gets there from the
+geometric statement by ruling out a Jordan chain of length two with the positive left Perron
+eigenvector. -/
+theorem theorem_1_25_algSimple [NeZero n] {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsIrreducible) :
+    A.charpoly.rootMultiplicity A.complexSpectralRadius.toReal = 1 :=
+  hA.rootMultiplicity_charpoly_complexSpectralRadius
+
+/-- The Perron eigenvalue of an irreducible matrix on two or more indices is **positive**.  The
+book does not print this clause in Theorem 1.25, but it is the reason the theorem is worth
+anything for an irreducible matrix that happens to have a zero diagonal, and §1.10's applications
+to M-matrices use it.  `Matrix.IsIrreducible.complexSpectralRadius_pos`: `ρ(A) = 0` would make the
+positive Perron vector a null vector, forcing `A = O`, which is reducible on two indices. -/
+theorem theorem_1_25_pos {A : Matrix (Fin n) (Fin n) ℝ} (hn : 2 ≤ n) (hA : A.IsIrreducible) :
+    0 < A.complexSpectralRadius.toReal :=
+  haveI : Nontrivial (Fin n) := Fin.nontrivial_iff_two_le.2 hn
+  hA.complexSpectralRadius_pos
 
 /-! ### The spectral radius of a nonnegative matrix (Theorems 1.28 and 1.29) -/
 

@@ -3,6 +3,7 @@ import Mathlib.LinearAlgebra.Basis.VectorSpace
 import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
 import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Basic
+import Numlib.Analysis.Normed.Module.NormEquivalence
 import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.LinearAlgebra.Matrix.Schur
 
@@ -27,8 +28,13 @@ relation, it transports eigenvectors, and it preserves the characteristic polyno
 P-1.9).
 
 Theorems 1.10, 1.11 and 1.12 are the backbone's, in stronger form, and are restated here in the
-book's words. Theorem 1.12, Gelfand's formula, is stated for the Euclidean operator norm; the book
-states it for an arbitrary matrix norm and defers the proof to Problem P-1.10.
+book's words. Theorem 1.12, Gelfand's formula, comes twice: `theorem_1_12` in the Euclidean
+operator norm, which is the norm the backbone proves it for, and `theorem_1_12_norm` for an
+arbitrary matrix norm, which is what the book states and defers to Problem P-1.10. The second
+follows from the first because all norms on a finite-dimensional space are equivalent and the
+equivalence constants disappear under a `k`-th root
+(`Numlib/Analysis/Normed/Module/NormEquivalence.lean`); no consistency condition on the norm is
+used.
 -/
 
 open Matrix Filter Topology
@@ -330,10 +336,24 @@ theorem theorem_1_11_isUnit {A : Matrix (Fin n) (Fin n) ℝ} (h : A.complexSpect
 
 open scoped Matrix.Norms.L2Operator in
 /-- **Saad Theorem 1.12**, Gelfand's formula: `‖A^k‖^{1/k} → ρ(A)`. Stated for the Euclidean
-operator norm; the book states it for any matrix norm and defers the proof to Problem P-1.10.
-Cited by Theorem 1.28 and by §4.2.1. -/
+operator norm, which is the one the backbone proves it for; `theorem_1_12_norm` is the book's own
+statement, for an arbitrary matrix norm. Cited by Theorem 1.28 and by §4.2.1. -/
 theorem theorem_1_12 (A : Matrix (Fin n) (Fin n) ℝ) :
     Tendsto (fun k : ℕ => ‖A ^ k‖ ^ (1 / k : ℝ)) atTop (𝓝 A.complexSpectralRadius.toReal) :=
   Matrix.tendsto_pow_rpow_complexSpectralRadius A
+
+open scoped Matrix.Norms.L2Operator in
+/-- **Saad Theorem 1.12 for an arbitrary matrix norm**, which is how the book states it, deferring
+the proof to Problem P-1.10: `p(A^k)^{1/k} → ρ(A)` for every norm `p` on the matrices.
+
+A matrix norm in the sense of (1.7)–(1.9) is exactly a `Seminorm ℝ` — nonnegative, absolutely
+homogeneous, subadditive — that is definite, and `p` here carries the definiteness as the
+hypothesis `hp`. The consistency condition (1.11) of §1.4 is *not* needed: matrix norms all being
+equivalent, the limit is the same for every one of them, which is
+`Seminorm.tendsto_rpow_one_div`. -/
+theorem theorem_1_12_norm (p : Seminorm ℝ (Matrix (Fin n) (Fin n) ℝ))
+    (hp : ∀ M : Matrix (Fin n) (Fin n) ℝ, p M = 0 → M = 0) (A : Matrix (Fin n) (Fin n) ℝ) :
+    Tendsto (fun k : ℕ => p (A ^ k) ^ (1 / k : ℝ)) atTop (𝓝 A.complexSpectralRadius.toReal) :=
+  p.tendsto_rpow_one_div hp (theorem_1_12 A)
 
 end SaadSparse.Chapter01

@@ -31,3 +31,17 @@ source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.25"
 [[node]]
 id = "IsIrreducible.finrank_eigenspace_complexSpectralRadius_eq_one"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.25 (geometric simplicity)"
+
+[[node]]
+id = "IsIrreducible.exists_pos_vecMul_eq"
+
+[[node]]
+id = "IsIrreducible.complexSpectralRadius_pos"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.25"
+
+[[node]]
+id = "IsIrreducible.maxGenEigenspace_complexSpectralRadius"
+
+[[node]]
+id = "IsIrreducible.rootMultiplicity_charpoly_complexSpectralRadius"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.25"

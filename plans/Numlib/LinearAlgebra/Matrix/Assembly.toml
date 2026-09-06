@@ -1,0 +1,27 @@
+namespace = "Matrix"
+
+[[node]]
+id = "connectivity"
+
+[[node]]
+id = "connectivity_apply"
+
+[[node]]
+id = "connectivity_eq_submatrix_one"
+
+[[node]]
+id = "connectivity_apply_of_injective"
+
+[[node]]
+id = "transpose_connectivity_mulVec"
+
+[[node]]
+id = "connectivity_mul_submatrix_mul_transpose"
+
+[[node]]
+id = "eq_sum_connectivity_mul_submatrix_mul_transpose"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (2.45)"
+
+[[node]]
+id = "mulVec_eq_sum_connectivity"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (2.46)"

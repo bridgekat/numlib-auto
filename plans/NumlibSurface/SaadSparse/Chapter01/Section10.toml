@@ -35,3 +35,11 @@ id = "theorem_1_32"
 
 [[node]]
 id = "theorem_1_33"
+
+[[node]]
+id = "theorem_1_25_algSimple"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.25"
+
+[[node]]
+id = "theorem_1_25_pos"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.25"

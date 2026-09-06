@@ -303,6 +303,103 @@ theorem IsGalerkinSolution.tendsto {a : SesqForm 𝕜 V} {ℓ : V →L[𝕜] �
   tendsto_of_forall_norm_sub_le hmono hdense (fun n => (hN n).1)
     fun n _ hw => (hN n).norm_sub_le hc hM ha hstar hw
 
+/-! ### The stiffness matrix of a form in a finite family
+
+The matrix `A_{ij} = a(φ_j, φ_i)` — the *stiffness matrix* of the finite element literature, the
+Gram matrix of `φ` in the energy inner product when `a` is Hermitian and coercive. It is the matrix
+of `IsGalerkinSolution.iff_mulVec` above, and the two facts a linear solver needs about it,
+Hermitian symmetry and positive definiteness, come straight from the corresponding properties of
+the form. -/
+
+section GramMatrix
+
+variable {ι : Type*}
+
+namespace SesqForm
+
+/-- The **stiffness matrix** (Gram matrix) `A_{ij} = a(φ_j, φ_i)` of a bounded form in a family of
+vectors. The index order is the one that makes the Galerkin problem the linear system `A ξ = b`
+with `b_i = ℓ (φ i)`, as in `IsGalerkinSolution.iff_mulVec`. -/
+def gramMatrix (a : SesqForm 𝕜 V) (φ : ι → V) : Matrix ι ι 𝕜 :=
+  Matrix.of fun i j => a (φ j) (φ i)
+
+/-- The entries of the stiffness matrix, `A i j = a (φ j) (φ i)`: the form is evaluated with the
+*column* index first, which is what makes the Galerkin condition read as `A ξ = b`. -/
+@[simp]
+theorem gramMatrix_apply (a : SesqForm 𝕜 V) (φ : ι → V) (i j : ι) :
+    a.gramMatrix φ i j = a (φ j) (φ i) := rfl
+
+/-- A Hermitian form has a Hermitian stiffness matrix. -/
+theorem gramMatrix_isHermitian {a : SesqForm 𝕜 V} (h : a.IsHermitian) (φ : ι → V) :
+    (a.gramMatrix φ).IsHermitian := by
+  ext i j
+  simpa only [Matrix.conjTranspose_apply, gramMatrix_apply, RCLike.star_def]
+    using (h (φ j) (φ i)).symm
+
+variable [Fintype ι]
+
+/-- The Galerkin problem as the linear system `A ξ = b` in the stiffness matrix.  This is
+`IsGalerkinSolution.iff_mulVec` with the matrix named. -/
+theorem _root_.IsGalerkinSolution.iff_gramMatrix_mulVec {a : SesqForm 𝕜 V} {ℓ : V →L[𝕜] 𝕜}
+    {K : Submodule 𝕜 V} (φ : Module.Basis ι 𝕜 K) (ξ : ι → 𝕜) :
+    IsGalerkinSolution a ℓ K (∑ j, ξ j • (φ j : V)) ↔
+      (a.gramMatrix fun i => (φ i : V)).mulVec (star ξ) = fun i => ℓ (φ i) :=
+  IsGalerkinSolution.iff_mulVec φ ξ
+
+/-- The quadratic form of the stiffness matrix is the form itself, evaluated at the two elements
+the coefficient vectors expand to.  The conjugation on `ξ` is the one `a` carries in its first
+slot, and disappears over real scalars. -/
+theorem dotProduct_gramMatrix_mulVec (a : SesqForm 𝕜 V) (φ : ι → V) (ξ η : ι → 𝕜) :
+    η ⬝ᵥ (a.gramMatrix φ).mulVec (star ξ) = a (∑ j, ξ j • φ j) (∑ i, η i • φ i) := by
+  have hfirst : ∀ w : V, a (∑ j, ξ j • φ j) w = ∑ j, starRingEnd 𝕜 (ξ j) * a (φ j) w := by
+    intro w
+    simp [map_sum, map_smulₛₗ, smul_eq_mul]
+  have hsecond : a (∑ j, ξ j • φ j) (∑ i, η i • φ i)
+      = ∑ i, η i * a (∑ j, ξ j • φ j) (φ i) := by
+    simp [map_sum, smul_eq_mul]
+  rw [hsecond]
+  simp only [hfirst, Matrix.mulVec, dotProduct, gramMatrix_apply, Pi.star_apply,
+    starRingEnd_apply, Finset.mul_sum]
+  exact Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun j _ => by ring
+
+end SesqForm
+
+section Real
+
+variable [Fintype ι] {W : Type*} [NormedAddCommGroup W] [InnerProductSpace ℝ W]
+
+/-- Over real scalars the quadratic form of the stiffness matrix is `ηᵀ A ξ = a(φ_ξ, φ_η)` with no
+conjugation, where `φ_ξ = ∑ ξ_i φ_i`. -/
+theorem SesqForm.dotProduct_gramMatrix_mulVec_real (a : SesqForm ℝ W) (φ : ι → W) (ξ η : ι → ℝ) :
+    η ⬝ᵥ (a.gramMatrix φ).mulVec ξ = a (∑ j, ξ j • φ j) (∑ i, η i • φ i) :=
+  a.dotProduct_gramMatrix_mulVec φ ξ η
+
+/-- Coercivity of the form makes the quadratic form of the stiffness matrix strictly positive off
+the origin, provided the family is linearly independent.  Symmetry is not needed for this half. -/
+theorem SesqForm.gramMatrix_dotProduct_pos {a : SesqForm ℝ W} {c : ℝ} (hc : 0 < c)
+    (ha : a.IsCoerciveWith c) {φ : ι → W} (hφ : LinearIndependent ℝ φ) {ξ : ι → ℝ}
+    (hξ : ξ ≠ 0) : 0 < ξ ⬝ᵥ (a.gramMatrix φ).mulVec ξ := by
+  rw [a.dotProduct_gramMatrix_mulVec_real φ ξ ξ]
+  have hne : (∑ j, ξ j • φ j) ≠ 0 := fun h =>
+    hξ (funext fun i => Fintype.linearIndependent_iff.mp hφ ξ h i)
+  have hnorm : 0 < ‖(∑ j, ξ j • φ j : W)‖ := norm_pos_iff.mpr hne
+  exact lt_of_lt_of_le (mul_pos hc (pow_pos hnorm 2)) (ha _)
+
+set_option linter.unusedFintypeInType false in
+/-- The stiffness matrix of a symmetric coercive real form in a linearly independent family is
+positive definite.  This is why the linear systems of the finite element method are solved by
+conjugate gradients: the coercivity constant of the form is inherited by the matrix. -/
+theorem SesqForm.gramMatrix_posDef {a : SesqForm ℝ W} {c : ℝ} (hc : 0 < c)
+    (hsymm : a.IsHermitian) (ha : a.IsCoerciveWith c) {φ : ι → W}
+    (hφ : LinearIndependent ℝ φ) : (a.gramMatrix φ).PosDef :=
+  Matrix.PosDef.of_dotProduct_mulVec_pos (a.gramMatrix_isHermitian hsymm φ) fun ξ hξ => by
+    rw [show star ξ = ξ from funext fun i => star_trivial (ξ i)]
+    exact SesqForm.gramMatrix_dotProduct_pos hc ha hφ hξ
+
+end Real
+
+end GramMatrix
+
 namespace IsPetrovGalerkinSolution
 
 variable {U : Type*} [NormedAddCommGroup U] [InnerProductSpace 𝕜 U] {a : SesqForm₂ 𝕜 U V}

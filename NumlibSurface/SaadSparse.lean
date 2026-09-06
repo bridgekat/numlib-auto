@@ -7,6 +7,8 @@ import NumlibSurface.SaadSparse.Chapter01.Section11
 import NumlibSurface.SaadSparse.Chapter01.Section12
 import NumlibSurface.SaadSparse.Chapter01.Section13
 import NumlibSurface.SaadSparse.Chapter02.Section02
+import NumlibSurface.SaadSparse.Chapter02.Section03
+import NumlibSurface.SaadSparse.Chapter02.Section04
 import NumlibSurface.SaadSparse.Chapter02.Section05
 import NumlibSurface.SaadSparse.Chapter03.Section02
 import NumlibSurface.SaadSparse.Chapter03.Section03
@@ -108,6 +110,8 @@ holds the conventions shared by the whole library, and `SaadSparse.Chapter06.Com
 | 1.13 | `Chapter01.Section13` | Linear systems: existence, matrix `p`-norms, conditioning, (1.76) |
 | **2** | | *Discretization of PDEs* |
 | 2.2 | `Chapter02.Section02` | Finite differences: truncation error, the model matrices, upwind |
+| 2.3 | `Chapter02.Section03` | Finite elements: the Galerkin system, stiffness matrix, assembly |
+| 2.4 | `Chapter02.Section04` | Mesh refinement: the midpoint refinement preserves angles |
 | 2.5 | `Chapter02.Section05` | The finite volume method and its sign structure |
 | **3** | | *Sparse Matrices* |
 | 3.2 | `Chapter03.Section02` | The adjacency graph and the patterns of products |

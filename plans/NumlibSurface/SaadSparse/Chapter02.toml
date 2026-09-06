@@ -3,50 +3,67 @@ Saad, Chapter 2: the discretization of partial differential equations.
 
 The chapter has **no numbered definition, theorem, proposition, corollary or lemma** - everything
 of theorem character is asserted in running prose - so the surface is organized around what is
-actually provable and what the rest of the book actually cites. Two files:
+actually provable and what the rest of the book actually cites. Four files:
 
-* `Section02` covers §2.2, finite differences: the Taylor truncation errors of §2.2.1, the model
-  matrices of §2.2.3 and §2.2.5, the exactly solvable convection-diffusion problem of §2.2.4 with
-  its oscillation criterion and its sign structure, and the spectral facts of §2.2.6 on which the
-  fast Poisson solvers rest. These are the model problems the whole book runs its experiments on,
-  and they are elementary linear algebra and one-variable calculus.
+* `Section02` covers §2.2, finite differences: the Taylor truncation errors of §2.2.1-2.2.2,
+  including both nine-point stencils of Figure 2.4, the model matrices of §2.2.3 and §2.2.5, the
+  exactly solvable convection-diffusion problem of §2.2.4 with its oscillation criterion and its
+  sign structure, and the spectral facts of §2.2.6 on which the fast Poisson solvers rest,
+  including the root factorization (2.36) that makes the cyclic-reduction solves tridiagonal.
+  These are the model problems the whole book runs its experiments on, and they are elementary
+  linear algebra and one-variable calculus.
+* `Section03` covers the algebraic half of §2.3, the finite element method: the bilinearity of the
+  energy form, the Galerkin system (2.44), the symmetry and positive definiteness of the stiffness
+  matrix, the singularity of the pure-Neumann system, and the assembly identities (2.45)-(2.46).
+* `Section04` covers the one mathematical claim of §2.4, that the midpoint refinement of a
+  triangle preserves its angles.
 * `Section05` covers §2.5, the finite volume method, whose one substantive claim - the
   semi-discrete operator is a weakly diagonally dominant Z-matrix - is a finite sum identity
   resting on the vanishing of the sum of the outward edge vectors of a polygon.
 
-**Not planned, with reasons.**
+**The continuum layer of §2.1, §2.3 and §2.5 is skipped, and this is the whole of what the chapter
+loses.** Three pieces of Mathlib are missing and every skipped item needs one of them.
 
-* §2.1 (elliptic operators, boundary conditions, the convection-diffusion equation) is modelling:
-  the definitions of the Laplacian, of Dirichlet, Neumann and Cauchy conditions and of the general
-  elliptic operator, and the observations that Neumann conditions are a special case of Cauchy
-  ones and that they do not determine the solution up to a constant. Formalizing them means
-  building partial differential equations on a planar domain, which is not numerical-analysis
-  work and which nothing later in the book uses: Chapters 4-13 use only the matrices.
-* §2.2.2's nine-point stencils and the claim that one of them is sixth order for harmonic
-  functions. The stencils appear only in Figure 2.4, an image; Problem P-2.4 gives the recipe that
-  would reconstruct them, and nothing in the corpus cites the result.
-* §2.2.6's Buneman recurrences (2.31)-(2.35) and the claim that block cyclic reduction is unstable
-  while Buneman's variant is stable. The recurrences are an algorithm; the stability claim is made
-  without any analysis anywhere in the book, so there is nothing to state. The operation counts
-  are not mathematical statements.
-* §2.3, the finite element method. This is the honest casualty of the chapter. Its algebraic
-  content - the bilinearity of `a`, the nodal basis, the Galerkin reduction to a linear system,
-  the symmetry and positive definiteness of the stiffness matrix, the assembly
-  `A = ∑ P_e A_{K_e} P_eᵀ`, and the singularity of the pure-Neumann system - is already in the
-  library in abstract form, as `Numlib/Variational/Forms` and `Numlib/Variational/Galerkin` with
-  the Atkinson–Han Chapter 9 surface, where the stiffness matrix is the Gram matrix of a basis in
-  the energy inner product and is positive definite for exactly Saad's reason. What is missing is
-  only the *concrete* finite element space: a triangulation of a planar domain, piecewise-affine
-  functions on it, and integration over triangles. That is a substantial build in plane geometry
-  and measure theory with no numerical-analysis content, and the one place the chapter really
-  needs analysis - Green's formula (2.40) on a domain with a smooth boundary, which also carries
-  §2.3's Neumann equation (2.47) and §2.5's (2.49) - would need the divergence theorem with a
-  boundary measure and an outward normal field, which Mathlib has only for boxes. Note for the
-  record that the chapter never states a Céa lemma, a Lax–Milgram theorem, an interpolation
-  estimate or any convergence result, and never uses a property of `H¹(Ω)`: the Sobolev framing of
-  §2.3 is decorative, and no Sobolev theory is needed to formalize anything the chapter proves.
-* §2.4, mesh generation and refinement. Its one claim with content - connecting the midpoints of a
-  triangle preserves the angles - is the midsegment theorem of elementary Euclidean geometry, with
-  no numerical-analysis content and no consumer; the rest of the section is descriptive text
-  around figures, and it states no shape-regularity condition to formalize.
+* *A divergence theorem with a boundary measure and an outward normal field.* Mathlib's divergence
+  theorem is for boxes. A planar domain with a smooth boundary needs the arclength measure on the
+  boundary curve and a unit normal along it, and neither exists. This is what §2.3's (2.37),
+  (2.38)-(2.40) - Green's formula, the load-bearing one - and its corollary `a(u,v) = -(Δu, v)`
+  need, and with them §2.3's Neumann equation (2.47), §2.5's weak form and its cell balance
+  (2.49). It is also what §2.1's one assertion of substance needs, that Neumann conditions leave
+  the solution determined only up to a constant: that claim is trivial once `Δ` on an open planar
+  domain and the outward normal derivative on its boundary exist, and impossible to state before.
+* *Sobolev spaces on an open set.* Mathlib has no `W^{k,p}(Ω)`, hence no trace and no `H¹₀(Ω)`, so
+  the weak formulation (2.41) cannot be stated. Worth recording against expectation: the chapter
+  never uses a property of `H¹(Ω)` and states no Céa lemma, no Lax-Milgram theorem, no
+  interpolation estimate and no convergence result, so *no Sobolev theory is needed to prove
+  anything §2.3 asserts* - only to state (2.41) faithfully.
+* *A triangulation of a planar domain.* Mathlib has simplicial complexes but nothing relating one
+  to a domain `Ω`, and no integration over its cells. So `Ω_h = ∪ K_i` and the mesh size, the
+  discrete space `V_h` with its nodal basis (2.42), and the sparsity of the stiffness matrix -
+  `α_{ij} ≠ 0` only when `i` and `j` share a triangle - are all out of reach, as is §2.4's subject,
+  the refinement of a triangulation, of which only the angle claim survives as a statement about a
+  single triangle.
+
+Everything else of §2.3 is *algebraic* and is in `Section03`, with the concrete input each
+statement would draw from the missing geometry taken as an explicit hypothesis: that `a` is
+coercive on `V_h`, that the constant function lies in `V_h` under pure Neumann conditions, that
+the element forms are supported on their own elements.
+
+**Also not planned, with reasons.**
+
+* The sixth-order accuracy of the nine-point stencil (d) of Figure 2.4 on harmonic functions. The
+  second-order accuracy of both stencils is proved; the sixth-order clause needs the `h²` and `h⁴`
+  corrections rewritten as `Δ` of something, which needs the mixed partial derivatives commuted.
+  Mathlib has Clairaut theorem for the second `fderiv` of a map between normed spaces and nothing
+  that transports it to iterated *partial* derivatives of a curried `u : ℝ → ℝ → ℝ`, which is the
+  form §2.2 works in. That bridge, iterated to order six, is what the clause costs: it is
+  unwritten rather than unreachable.
+* §2.2.6 Buneman recurrences (2.31)-(2.35) and the claim that block cyclic reduction is unstable
+  while Buneman variant is stable. The recurrences are an algorithm; the stability claim is made
+  without any analysis anywhere in the book, so there is nothing to state. The operation counts are
+  not mathematical statements.
+* §2.4 shape-regularity condition. The section says the angles "must satisfy certain bounds" and
+  never writes a bound down.
+* §2.5 cell averages (2.50)-(2.51) *as approximations*. The book itself calls them crude and
+  states no error bound anywhere; the algebraic object they produce is covered.
 '''
