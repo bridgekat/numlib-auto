@@ -26,3 +26,9 @@ id = "loadVector"
 
 [[node]]
 id = "stiffnessMatrix"
+
+[[node]]
+id = "Chapter09.proposition_9_1_3_le"
+
+[[node]]
+id = "Chapter09.proposition_9_1_3_sqrt"

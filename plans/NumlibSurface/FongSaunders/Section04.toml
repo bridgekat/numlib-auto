@@ -17,3 +17,6 @@ id = "steihaug_cg"
 
 [[node]]
 id = "steihaug_cr"
+
+[[node]]
+id = "equation_4_1_minres"

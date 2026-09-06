@@ -23,3 +23,21 @@ id = "theorem_5_1_3"
 
 [[node]]
 id = "theorem_5_1_4"
+
+[[node]]
+id = "example_5_1_1_tendsto_iff"
+
+[[node]]
+id = "theorem_5_1_3_existsUnique"
+
+[[node]]
+id = "equation_5_1_4"
+
+[[node]]
+id = "equation_5_1_5"
+
+[[node]]
+id = "equation_5_1_6"
+
+[[node]]
+id = "theorem_5_1_3_tendsto"

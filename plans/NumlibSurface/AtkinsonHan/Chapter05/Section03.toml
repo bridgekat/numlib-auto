@@ -5,3 +5,54 @@ id = "HasGateauxDerivAt"
 
 [[node]]
 id = "example_5_3_10"
+
+[[node]]
+id = "proposition_5_3_3"
+
+[[node]]
+id = "proposition_5_3_5"
+
+[[node]]
+id = "proposition_5_3_6"
+
+[[node]]
+id = "proposition_5_3_7"
+
+[[node]]
+id = "example_5_3_8"
+
+[[node]]
+id = "proposition_5_3_11"
+
+[[node]]
+id = "proposition_5_3_11_iSup"
+
+[[node]]
+id = "corollary_5_3_12"
+
+[[node]]
+id = "proposition_5_3_13"
+
+[[node]]
+id = "proposition_5_3_15_fst"
+
+[[node]]
+id = "proposition_5_3_15_snd"
+
+[[node]]
+id = "equation_5_3_8"
+
+[[node]]
+id = "proposition_5_3_15_of_partial"
+
+[[node]]
+id = "theorem_5_3_17"
+
+[[node]]
+id = "theorem_5_3_18"
+
+[[node]]
+id = "theorem_5_3_19"
+
+[[node]]
+id = "theorem_5_3_19_submodule"

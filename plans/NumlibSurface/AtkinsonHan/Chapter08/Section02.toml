@@ -2,3 +2,27 @@ namespace = "AtkinsonHan.Chapter08"
 
 [[node]]
 id = "isClosed_iff_seq"
+
+[[node]]
+id = "theorem_8_2_8a_linear"
+
+[[node]]
+id = "theorem_8_2_8a"
+
+[[node]]
+id = "theorem_8_2_8b"
+
+[[node]]
+id = "theorem_8_2_1"
+
+[[node]]
+id = "theorem_8_2_4"
+
+[[node]]
+id = "theorem_8_2_4_continuous"
+
+[[node]]
+id = "example_8_2_5"
+
+[[node]]
+id = "theorem_8_2_7_hilbert"

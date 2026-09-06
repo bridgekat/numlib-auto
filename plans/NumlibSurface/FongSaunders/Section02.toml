@@ -161,3 +161,6 @@ id = "theorem_2_5_minres"
 
 [[node]]
 id = "two_phi_eq"
+
+[[node]]
+id = "theorem_2_5_minres_antitone"

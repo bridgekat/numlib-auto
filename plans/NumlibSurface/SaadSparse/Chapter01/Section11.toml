@@ -1,19 +1,36 @@
-namespace = "Matrix"
+# The module states its matrix vocabulary in `Matrix`, so that dot notation reads as the book does,
+# and its numbered results in `SaadSparse.Chapter01`. Two namespaces, so the ids are absolute and
+# the group declares no `namespace` of its own.
 
 [[node]]
-id = "IsPositiveReal"
+id = "Matrix.IsPositiveReal"
 
 [[node]]
-id = "IsSPD"
+id = "Matrix.IsSPD"
 
 [[node]]
-id = "IsSelfAdjointWrt"
+id = "Matrix.IsSelfAdjointWrt"
 
 [[node]]
-id = "energyInner"
+id = "Matrix.energyInner"
 
 [[node]]
-id = "hermitianPart"
+id = "Matrix.hermitianPart"
 
 [[node]]
-id = "skewPart"
+id = "Matrix.skewPart"
+
+[[node]]
+id = "SaadSparse.Chapter01.theorem_1_34"
+
+[[node]]
+id = "SaadSparse.Chapter01.theorem_1_34'"
+
+[[node]]
+id = "SaadSparse.Chapter01.theorem_1_35"
+
+[[node]]
+id = "SaadSparse.Chapter01.theorem_1_35_re"
+
+[[node]]
+id = "SaadSparse.Chapter01.theorem_1_35_im"

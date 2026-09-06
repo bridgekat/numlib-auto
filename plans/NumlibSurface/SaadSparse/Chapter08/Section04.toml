@@ -47,3 +47,6 @@ id = "regularizedSchur"
 
 [[node]]
 id = "example_8_2"
+
+[[node]]
+id = "equation_8_30_unique"

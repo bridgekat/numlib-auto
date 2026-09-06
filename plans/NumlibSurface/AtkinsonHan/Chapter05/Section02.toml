@@ -17,3 +17,12 @@ id = "theorem_5_2_3"
 
 [[node]]
 id = "theorem_5_2_4"
+
+[[node]]
+id = "theorem_5_2_1"
+
+[[node]]
+id = "theorem_5_2_1_deriv"
+
+[[node]]
+id = "theorem_5_2_2_fredholm"

@@ -20,3 +20,21 @@ id = "equation_5_20"
 
 [[node]]
 id = "norm_residual_mrStep_eq_sin"
+
+[[node]]
+id = "lemma_5_8"
+
+[[node]]
+id = "theorem_5_9_step"
+
+[[node]]
+id = "theorem_5_9_factor_lt_one"
+
+[[node]]
+id = "theorem_5_9"
+
+[[node]]
+id = "theorem_5_9_tendsto"
+
+[[node]]
+id = "theorem_5_10_step"

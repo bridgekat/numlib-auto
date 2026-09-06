@@ -17,3 +17,9 @@ id = "equation_2_55"
 
 [[node]]
 id = "equation_2_55_isDiagDominant"
+
+[[node]]
+id = "equation_2_55_apply_self"
+
+[[node]]
+id = "equation_2_55_apply_ne"

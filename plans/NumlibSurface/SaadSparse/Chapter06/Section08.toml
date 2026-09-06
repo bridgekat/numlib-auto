@@ -5,3 +5,15 @@ id = "crStep"
 
 [[node]]
 id = "cr_eq_CR"
+
+[[node]]
+id = "algorithm_6_20_orthogonality"
+
+[[node]]
+id = "algorithm_6_20_isMinResIterate"
+
+[[node]]
+id = "algorithm_6_20_isMinResIterate_of_no_breakdown"
+
+[[node]]
+id = "algorithm_6_20_eq_alg_6_9"

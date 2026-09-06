@@ -14,3 +14,27 @@ id = "R_A"
 
 [[node]]
 id = "projStep"
+
+[[node]]
+id = "proposition_5_1_i"
+
+[[node]]
+id = "proposition_5_1_ii"
+
+[[node]]
+id = "proposition_5_2"
+
+[[node]]
+id = "proposition_5_3"
+
+[[node]]
+id = "proposition_5_4"
+
+[[node]]
+id = "proposition_5_5_char"
+
+[[node]]
+id = "proposition_5_6"
+
+[[node]]
+id = "theorem_5_7"

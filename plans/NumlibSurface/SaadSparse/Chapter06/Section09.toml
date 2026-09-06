@@ -5,3 +5,12 @@ id = "gcrRestarted"
 
 [[node]]
 id = "orthomin_eq_gcr"
+
+[[node]]
+id = "equation_6_104"
+
+[[node]]
+id = "lemma_6_21"
+
+[[node]]
+id = "algorithm_6_21_eq_gmres"

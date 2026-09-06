@@ -56,3 +56,24 @@ id = "iopCoeff"
 
 [[node]]
 id = "iop_eq_6_7"
+
+[[node]]
+id = "equation_6_16_17_unique"
+
+[[node]]
+id = "proposition_6_7"
+
+[[node]]
+id = "proposition_6_7_iom"
+
+[[node]]
+id = "equation_6_18_iom"
+
+[[node]]
+id = "algorithm_6_8_eq_alg_6_7"
+
+[[node]]
+id = "proposition_6_8"
+
+[[node]]
+id = "algorithm_6_6_eq_alg_6_2"

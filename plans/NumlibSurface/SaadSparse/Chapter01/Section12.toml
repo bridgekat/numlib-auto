@@ -21,3 +21,15 @@ id = "SaadSparse.IsProjOnto"
 
 [[node]]
 id = "SaadSparse.obliqueProjection"
+
+[[node]]
+id = "SaadSparse.Chapter01.lemma_1_36"
+
+[[node]]
+id = "SaadSparse.Chapter01.proposition_1_37"
+
+[[node]]
+id = "SaadSparse.Chapter01.theorem_1_38"
+
+[[node]]
+id = "SaadSparse.Chapter01.corollary_1_39"

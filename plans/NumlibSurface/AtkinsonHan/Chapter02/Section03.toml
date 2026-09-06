@@ -29,3 +29,6 @@ id = "example_2_3_2_integral"
 
 [[node]]
 id = "example_2_3_4_volterra"
+
+[[node]]
+id = "example_2_3_2_bound"
