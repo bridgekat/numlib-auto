@@ -50,10 +50,13 @@ import NumlibSurface.AtkinsonHan.Chapter11.Section02
 import NumlibSurface.AtkinsonHan.Chapter11.Section03
 import NumlibSurface.AtkinsonHan.Chapter11.Section04
 import NumlibSurface.AtkinsonHan.Chapter12.Section01
+import NumlibSurface.AtkinsonHan.Chapter12.Section02
 import NumlibSurface.AtkinsonHan.Chapter12.Section03
 import NumlibSurface.AtkinsonHan.Chapter12.Section04
 import NumlibSurface.AtkinsonHan.Chapter12.Section06
 import NumlibSurface.AtkinsonHan.Chapter12.Section07
+import NumlibSurface.AtkinsonHan.Chapter13.Section01
+import NumlibSurface.AtkinsonHan.Chapter13.Section02
 import NumlibSurface.FongSaunders
 import NumlibSurface.FongSaunders.Section01
 import NumlibSurface.FongSaunders.Section02
