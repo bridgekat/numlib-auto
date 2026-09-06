@@ -2,7 +2,9 @@ import Mathlib.Analysis.InnerProductSpace.Spectrum
 import Mathlib.MeasureTheory.Measure.Haar.InnerProductSpace
 import Numlib.Analysis.InnerProductSpace.CompactSpectral
 import Numlib.Analysis.Normed.Operator.Compact
+import Numlib.Analysis.Normed.Operator.Riesz
 import Numlib.IntegralEquations.Basic
+import Numlib.IntegralEquations.WeaklySingular
 import NumlibSurface.AtkinsonHan.Chapter02.Section04
 
 /-!
@@ -31,14 +33,22 @@ range are `Numlib/Analysis/Normed/Operator/Compact`.
   gives a finite-rank operator, its range in the span of the `β i`, with `‖K‖ ≤ ∑ ‖β i‖ ∫ |γ i|`.
 * `example_2_8_8`, `example_2_8_8_interval` — an integral operator with a continuous kernel is
   compact on `C(D)` for a compact region `D ⊆ ℝ^d`, and on `C[a, b]`.
+* `equation_2_8_2`, `equation_2_8_5`, `equation_2_8_6_le`,
+  `isCompactOperator_of_isAdmissibleKernel` — §2.8.1: a kernel integrable in `y` and satisfying
+  (A₁)–(A₂) gives a bounded, compact operator on `C(D)`, with the oscillation estimate (2.8.5) in
+  terms of the modulus of continuity in the mean (2.8.3).
 * `theorem_2_8_10` — the Fredholm alternative, with `theorem_2_8_10_inverse` for the bounded
   inverse the book gets from its own Theorem 2.4.3.
 * `theorem_2_8_12_1`, `theorem_2_8_12_2`, `theorem_2_8_12_4` — the eigenvalues accumulate only at
   `0`, the nonzero eigenspaces are finite-dimensional, and `range (λ - K)` is closed.
+* `theorem_2_8_12_3`, `theorem_2_8_12_5`, `theorem_2_8_12_6` — the Riesz index `ν(λ)` of a nonzero
+  eigenvalue, the decomposition (2.8.28) into `K`-invariant summands at that index, and the
+  Fredholm alternative for an operator only some power of which is compact.
 * `lemma_2_8_13` — Schauder's theorem.
 * `theorem_2_8_14`, `theorem_2_8_14_isCompl` — solvability of `(λ - K) u = f` and the orthogonal
-  decomposition (2.8.30) it gives; `theorem_2_8_14_hasEigenvalue_adjoint` for the half of clause (1)
-  that needs no ascent–descent theory, that `conj λ` is an eigenvalue of `K*`.
+  decomposition (2.8.30) it gives; `theorem_2_8_14_hasEigenvalue_adjoint` and `theorem_2_8_14_dim`
+  for clause (1), that `conj λ` is an eigenvalue of `K*` and that the two null spaces have equal
+  dimension.
 * `theorem_2_8_15`, `theorem_2_8_15_eigenvalue_real`, `theorem_2_8_15_index`,
   `theorem_2_8_15_closure_range`, `theorem_2_8_15_enumeration` — the spectral theorem for compact
   self-adjoint operators, the reality of the eigenvalues, the index-one clause
@@ -51,13 +61,12 @@ The book writes `λ` for the scalar of the second-kind equation; `λ` is a keywo
 written `l` below. The book states §2.8 over a general scalar field and specializes to real or
 complex scalars; the statements here are over `RCLike 𝕜`, as elsewhere in this surface.
 
-Not stated here: §2.8.1's conditions (A₁)–(A₂) for an integral operator with a *weakly singular*
-kernel to be compact, and the two Examples that instantiate them, 2.8.2 (`log |cos x − cos y|`) and
-2.8.9 (`|x − y|^{-γ}`) — both need the modulus `ω(h) = sup_{‖x−z‖ ≤ h} ∫ |k (x, y) − k (z, y)| dy`
-and an operator for a kernel that is merely integrable in `y`, neither of which the backbone has.
-The continuous-kernel case, which is what Chapters 12 and 13 use, is `example_2_8_8`. Also not
-stated: the parts of Theorem 2.8.12 and Theorem 2.8.14 that need the Riesz ascent–descent theory,
-which the backbone module does not develop.
+Not stated here: the two Examples that instantiate §2.8.1's conditions, 2.8.2
+(`log |cos x − cos y|`) and 2.8.9 (`|x − y|^{-γ}`). The framework they need is now
+`Numlib/IntegralEquations/WeaklySingular` and appears below; what is missing is the verification of
+(A₁) for those two kernels, which is a genuine integral estimate. Nor is the *equality* in (2.8.6)
+stated, only `equation_2_8_6_le`. The continuous-kernel case, which is what Chapters 12 and 13 use,
+is `example_2_8_8`.
 -/
 
 open Filter Topology Metric Module.End
@@ -192,6 +201,51 @@ theorem example_2_8_8_interval {a b : ℝ} (hab : a ≤ b)
 
 end IntegralOperators
 
+/-! ### §2.8.1: integral operators with a weakly singular kernel -/
+
+section WeaklySingular
+
+open MeasureTheory IntegralOperator
+
+variable {d : ℕ} {D : Set (EuclideanSpace ℝ (Fin d))} [CompactSpace D] {k : D × D → ℝ}
+  (hk : IsAdmissibleKernel (regionMeasure D) k)
+
+include hk
+
+/-- **(2.8.2).** For a kernel integrable in its second variable and satisfying the conditions
+(A₁)–(A₂) of §2.8.1, `K v (x) = ∫_D k (x, y) v (y) dy` is an operator on `C(D)`. The book's
+`ω(h) → 0` is `IntegralOperator.IsAdmissibleKernel.tendsto_kernelModulus`, and (A₂), the bound
+(2.8.4), is `IntegralOperator.IsAdmissibleKernel.bddAbove_integral_abs`. -/
+theorem equation_2_8_2 (u : C(D, ℝ)) (x : D) :
+    admissibleKernelCLM hk u x = ∫ y, k (x, y) * u y ∂(regionMeasure D) :=
+  rfl
+
+/-- **(2.8.5).** `|K v (x) − K v (z)| ≤ ω(‖x − z‖) ‖v‖_∞`, with `ω` the modulus of continuity in
+the mean (2.8.3) of the kernel. This is what makes the image of the unit ball equicontinuous. -/
+theorem equation_2_8_5 (u : C(D, ℝ)) (x z : D) :
+    |admissibleKernelCLM hk u x - admissibleKernelCLM hk u z|
+      ≤ kernelModulus (regionMeasure D) k (dist x z) * ‖u‖ :=
+  hk.abs_admissibleKernelCLM_sub_le u x z
+
+/-- **(2.8.6)**, the inequality the book's equality contains: `‖K‖ ≤ sup_x ∫_D |k (x, y)| dy`. The
+reverse inequality needs a continuous `v` of norm one that nearly realises the sign of a row of the
+kernel; for a merely integrable row that is the density of `C(D)` in `L¹(D)`, which the backbone
+does not have. For a continuous kernel the equality is `IntegralOperator.norm_kernelCLM`. -/
+theorem equation_2_8_6_le :
+    ‖admissibleKernelCLM hk‖ ≤ ⨆ x, ∫ y, |k (x, y)| ∂(regionMeasure D) :=
+  norm_admissibleKernelCLM_le hk
+
+/-- The conclusion of §2.8.1: **an integral operator whose kernel satisfies (A₁)–(A₂) is compact
+on `C(D)`**, by Arzelà–Ascoli (Theorem 1.6.3) applied to the image of the unit ball, which is
+uniformly bounded by (2.8.6) and equicontinuous by (2.8.5). Examples 2.8.2 and 2.8.9 are the two
+instances the book gives; neither is stated here, because neither kernel has been shown to satisfy
+(A₁). -/
+theorem isCompactOperator_of_isAdmissibleKernel :
+    IsCompactOperator (admissibleKernelCLM hk) :=
+  isCompactOperator_admissibleKernelCLM hk
+
+end WeaklySingular
+
 section Banach
 
 variable {𝕜 V W : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
@@ -276,6 +330,72 @@ theorem theorem_2_8_12_4 {K : V →L[𝕜] V} (hK : IsCompactOperator K) {l : �
     IsClosed ((LinearMap.range ((l • (1 : V →L[𝕜] V) - K) : V →ₗ[𝕜] V)) : Set V) :=
   hK.isClosed_range_smul_sub hl
 
+/-- Injectivity of `l - K` says exactly that `l` is not an eigenvalue. -/
+private theorem ker_smul_one_sub_ne_bot {K : V →L[𝕜] V} {l : 𝕜}
+    (hev : HasEigenvalue (K : Module.End 𝕜 V) l) :
+    ((l • (1 : V →L[𝕜] V) - K) ^ 1).ker ≠ ⊥ := by
+  rw [pow_one]
+  intro h
+  refine hev (Submodule.eq_bot_iff _ |>.2 fun u hu => ?_)
+  rw [mem_eigenspace_iff] at hu
+  have hu' : K u = l • u := hu
+  exact (Submodule.eq_bot_iff _).1 h u (by simp [hu'])
+
+/-- **Theorem 2.8.12 (3).** Every nonzero eigenvalue `l` of a compact operator has a finite index
+`ν(l) ≥ 1`: the null spaces `N((l - K)^j)` increase strictly up to `j = ν(l)` and are constant
+from there on (2.8.27), and `N((l - K)^{ν(l)})` is finite dimensional. -/
+theorem theorem_2_8_12_3 {K : V →L[𝕜] V} (hK : IsCompactOperator K) {l : 𝕜} (hl : l ≠ 0)
+    (hev : HasEigenvalue (K : Module.End 𝕜 V) l) :
+    ∃ ν : ℕ, 1 ≤ ν ∧
+      (∀ j < ν, ((l • (1 : V →L[𝕜] V) - K) ^ j).ker
+        < ((l • (1 : V →L[𝕜] V) - K) ^ (j + 1)).ker) ∧
+      (∀ j, ν ≤ j → ((l • (1 : V →L[𝕜] V) - K) ^ j).ker
+        = ((l • (1 : V →L[𝕜] V) - K) ^ ν).ker) ∧
+      FiniteDimensional 𝕜 (((l • (1 : V →L[𝕜] V) - K) ^ ν).ker) := by
+  obtain ⟨ν, hstrict, hstab, -, -⟩ := hK.exists_riesz_index hl
+  refine ⟨ν, ?_, hstrict, hstab, hK.finiteDimensional_ker_pow hl ν⟩
+  by_contra hν
+  refine ker_smul_one_sub_ne_bot hev ?_
+  rw [hstab 1 (by omega), ← hstab 0 (by omega), pow_zero]
+  exact Submodule.eq_bot_iff _ |>.2 fun u hu => by simpa using hu
+
+/-- **Theorem 2.8.12 (5).** At the index `ν(l)` of Theorem 2.8.12 (3) the space splits as
+`V = N((l - K)^{ν(l)}) ⊕ R((l - K)^{ν(l)})` (2.8.28), and both summands are invariant under `K`.
+The `ν` produced here is the same one: it is characterised by the two chain clauses, which are
+those of `theorem_2_8_12_3`. -/
+theorem theorem_2_8_12_5 {K : V →L[𝕜] V} (hK : IsCompactOperator K) {l : 𝕜} (hl : l ≠ 0) :
+    ∃ ν : ℕ,
+      (∀ j < ν, ((l • (1 : V →L[𝕜] V) - K) ^ j).ker
+        < ((l • (1 : V →L[𝕜] V) - K) ^ (j + 1)).ker) ∧
+      (∀ j, ν ≤ j → ((l • (1 : V →L[𝕜] V) - K) ^ j).ker
+        = ((l • (1 : V →L[𝕜] V) - K) ^ ν).ker) ∧
+      IsCompl (((l • (1 : V →L[𝕜] V) - K) ^ ν).ker)
+        (((l • (1 : V →L[𝕜] V) - K) ^ ν).range) ∧
+      (∀ u ∈ ((l • (1 : V →L[𝕜] V) - K) ^ ν).ker,
+        K u ∈ ((l • (1 : V →L[𝕜] V) - K) ^ ν).ker) ∧
+      (∀ u ∈ ((l • (1 : V →L[𝕜] V) - K) ^ ν).range,
+        K u ∈ ((l • (1 : V →L[𝕜] V) - K) ^ ν).range) := by
+  obtain ⟨ν, hstrict, hstab, -, hcompl⟩ := hK.exists_riesz_index hl
+  exact ⟨ν, hstrict, hstab, hcompl, fun u hu => IsCompactOperator.mapsTo_ker_pow K l ν hu,
+    fun u hu => IsCompactOperator.mapsTo_range_pow K l ν hu⟩
+
+/-- **Theorem 2.8.12 (6).** The Fredholm alternative survives when only a power `K^m` of the
+operator is compact: `(l - K) u = f` is uniquely solvable for every `f` exactly when the
+homogeneous equation has only the trivial solution. -/
+theorem theorem_2_8_12_6 [CompleteSpace V] {K : V →L[𝕜] V} {m : ℕ}
+    (hK : IsCompactOperator (K ^ m)) {l : 𝕜}
+    (hl : l ≠ 0) :
+    (∀ f : V, ∃! u : V, (l • (1 : V →L[𝕜] V) - K) u = f) ↔
+      ∀ u : V, (l • (1 : V →L[𝕜] V) - K) u = 0 → u = 0 := by
+  constructor
+  · intro h u hu
+    obtain ⟨z, -, huniq⟩ := h 0
+    rw [huniq u hu, ← huniq 0 (by simp)]
+  · intro hinj
+    have hbij := ContinuousLinearMap.isUnit_iff_bijective.1
+      (hK.isUnit_smul_one_sub_of_isCompactOperator_pow hl hinj)
+    exact fun f => hbij.existsUnique f
+
 end Banach
 
 /-! ### Lemma 2.8.13, Theorem 2.8.14 and Theorem 2.8.15: the Hilbert space case -/
@@ -320,8 +440,7 @@ eigenvalue of a compact `K` on a Hilbert space then `conj λ` is an eigenvalue o
 Were it not, the Fredholm alternative applied to the compact `K*` would make `conj λ - K*`
 bijective, while `theorem_2_8_14` read for `K*` says its range is `(ker (λ - K))ᗮ`, a proper
 subspace because `λ` *is* an eigenvalue of `K`. The other half of the clause, the equality of
-dimensions `dim N(λ - K) = dim N(conj λ - K*)` — that `λ - K` has Fredholm index zero — is not
-stated: it needs the Riesz ascent–descent theory, which the backbone does not develop. -/
+dimensions, is `theorem_2_8_14_dim`. -/
 theorem theorem_2_8_14_hasEigenvalue_adjoint {K : V →L[𝕜] V} (hK : IsCompactOperator K) {l : 𝕜}
     (hl : l ≠ 0) (hev : HasEigenvalue (K : Module.End 𝕜 V) l) :
     HasEigenvalue ((ContinuousLinearMap.adjoint K : V →L[𝕜] V) : Module.End 𝕜 V)
@@ -354,6 +473,17 @@ theorem theorem_2_8_14_hasEigenvalue_adjoint {K : V →L[𝕜] V} (hK : IsCompac
     simp [hu']
   rw [hbot, Submodule.mem_bot] at hker
   exact hker
+
+/-- **Theorem 2.8.14 (1)**, the dimension clause: for compact `K` on a Hilbert space and `λ ≠ 0`,
+`dim N(λ - K) = dim N(conj λ - K*)`. Equivalently `λ - K` has Fredholm index zero, so the
+second-kind equation `(λ - K) u = f` has exactly as many independent homogeneous solutions as the
+adjoint equation has, which is what makes the solvability criterion (2.8.29) of `theorem_2_8_14` a
+set of conditions of that same size. -/
+theorem theorem_2_8_14_dim {K : V →L[𝕜] V} (hK : IsCompactOperator K) {l : 𝕜} (hl : l ≠ 0) :
+    Module.finrank 𝕜 ((l • (1 : V →L[𝕜] V) - K).ker)
+      = Module.finrank 𝕜 (((starRingEnd 𝕜) l • (1 : V →L[𝕜] V)
+          - ContinuousLinearMap.adjoint K).ker) :=
+  hK.finrank_ker_eq_finrank_ker_adjoint hl
 
 /-- **Theorem 2.8.15**, the **spectral theorem** for a compact self-adjoint operator on a
 Hilbert space: the eigenvectors span a dense subspace, so an orthonormal basis of eigenvectors

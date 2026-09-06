@@ -1,70 +1,26 @@
-desc = '''
-The Riesz ascent–descent theory of `μ - K` for a compact operator `K`: Atkinson–Han Theorem 2.8.12
-clauses (3), (5) and (6), and Theorem 2.8.14 clause (1).
-
-`Numlib/Analysis/Normed/Operator/Compact` proves what the second-kind equation needs directly — the
-eigenvalues accumulate only at `0`, the nonzero eigenspaces are finite-dimensional, the range of
-`μ - K` is closed, Schauder's theorem, and the solvability criterion on a Hilbert space. What it
-deliberately leaves out is the chain structure: that the null spaces of `(μ - K)^j` strictly
-increase to a finite index `ν(μ)` and then stabilize, that `V = N((μ - K)^ν) ⊕ R((μ - K)^ν)` with
-both summands `K`-invariant, and the consequence `dim N(μ - K) = dim N(conj μ - K†)`, which says
-that `μ - K` has Fredholm index zero.
-
-The argument is Riesz's lemma on an almost-orthogonal element of a proper closed subspace, which
-Mathlib has as `riesz_lemma`; the consequences it does not have. This is the largest single body of
-theory Atkinson–Han Chapter 2 asks for that the project has not built, and the book states it
-without proof. Its consumers are Theorem 2.8.12 (3), (5), (6), Theorem 2.8.14 (1), the enumeration
-clause of Theorem 2.8.15, and Theorem 2.9.4 (the Riesz spectral projection, which is out of scope
-for a second reason — contour integrals of operator-valued functions). Phase 4.
-'''
+[[node]]
+id = "IsCompactOperator.exists_le_of_chain"
 
 [[node]]
-id = "IsCompactOperator.ker_pow_strictMono"
-kind = "theorem"
-desc = '''
-For compact `K` and `μ ≠ 0`, the null spaces `N((μ • 1 - K)^j)` increase, and as long as two
-consecutive ones differ the increase is strict: there is an `ν` with
-`N((μ • 1 - K)^j) < N((μ • 1 - K)^(j+1))` for `j < ν` and equality from `ν` on. Riesz's lemma gives
-an almost-orthogonal element of each proper inclusion, and compactness of `K` forbids an infinite
-such sequence in the unit ball.
-'''
+id = "IsCompactOperator.finiteDimensional_ker_pow"
 
 [[node]]
-id = "IsCompactOperator.exists_ascent"
-kind = "theorem"
-desc = '''
-Atkinson–Han Theorem 2.8.12 (3): the *index* `ν(μ)` of a nonzero eigenvalue of a compact operator
-is finite, and `N((μ • 1 - K)^(ν(μ)))` is finite-dimensional.
-'''
-deps = ["IsCompactOperator.ker_pow_strictMono",
-  "IsCompactOperator.finite_setOf_hasEigenvalue_norm_le"]
+id = "IsCompactOperator.exists_ker_pow_succ_le"
 
 [[node]]
-id = "IsCompactOperator.isCompl_ker_pow_range_pow"
-kind = "theorem"
-desc = '''
-Atkinson–Han Theorem 2.8.12 (5): `V = N((μ • 1 - K)^ν) ⊕ R((μ • 1 - K)^ν)` at the index `ν = ν(μ)`,
-with both summands invariant under `K`.
-'''
-deps = ["IsCompactOperator.exists_ascent", "IsCompactOperator.isClosed_range_smul_sub"]
+id = "IsCompactOperator.exists_range_pow_le_succ"
+
+[[node]]
+id = "IsCompactOperator.exists_riesz_index"
+
+[[node]]
+id = "IsCompactOperator.isUnit_smul_one_sub_of_isCompactOperator_pow"
+
+[[node]]
+id = "IsCompactOperator.hasEigenvalue_or_mem_resolventSet_of_isCompactOperator_pow"
+
+[[node]]
+id = "IsCompactOperator.finrank_ker_adjoint_le"
 
 [[node]]
 id = "IsCompactOperator.finrank_ker_eq_finrank_ker_adjoint"
-kind = "theorem"
-desc = '''
-Atkinson–Han Theorem 2.8.14 (1): on a Hilbert space, for compact `K` and `μ ≠ 0`,
-`conj μ` is an eigenvalue of `K†` whenever `μ` is one of `K`, and
-`finrank (ker (μ • 1 - K)) = finrank (ker (conj μ • 1 - K†))` — that is, `μ • 1 - K` has Fredholm
-index zero. The usual proof runs through the ascent–descent decomposition above.
-'''
-deps = ["IsCompactOperator.isCompl_ker_pow_range_pow", "IsCompactOperator.adjoint",
-  "IsCompactOperator.range_smul_sub_eq_orthogonal_ker_adjoint"]
-
-[[node]]
-id = "IsCompactOperator.hasEigenvalue_or_mem_resolventSet_of_pow"
-kind = "theorem"
-desc = '''
-Atkinson–Han Theorem 2.8.12 (6): the Fredholm alternative and the clauses above survive when only
-some power `K^m` is compact, because `μ^m • 1 - K^m` factors through `μ • 1 - K`.
-'''
-deps = ["IsCompactOperator.exists_ascent"]

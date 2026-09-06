@@ -23,6 +23,7 @@ import Numlib.Analysis.Normed.Module.WeakDual
 import Numlib.Analysis.Normed.Operator.BanachSteinhaus
 import Numlib.Analysis.Normed.Operator.CollectivelyCompact
 import Numlib.Analysis.Normed.Operator.Compact
+import Numlib.Analysis.Normed.Operator.Riesz
 import Numlib.Analysis.Normed.Operator.Scaling
 import Numlib.Analysis.Normed.Ring.CondNumber
 import Numlib.Analysis.Normed.Ring.Inverse
@@ -65,8 +66,10 @@ import Numlib.FloatingPoint.InnerProduct
 import Numlib.FloatingPoint.Model
 import Numlib.FloatingPoint.Stationary
 import Numlib.IntegralEquations.Basic
+import Numlib.IntegralEquations.L2Kernel
 import Numlib.IntegralEquations.Nystrom
 import Numlib.IntegralEquations.SecondKind
+import Numlib.IntegralEquations.WeaklySingular
 import Numlib.Krylov.Arnoldi
 import Numlib.Krylov.BiLanczos
 import Numlib.Krylov.Block

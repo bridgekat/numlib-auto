@@ -1,5 +1,6 @@
 import Mathlib.Analysis.InnerProductSpace.Rayleigh
 import Mathlib.Analysis.Normed.Module.RCLike.Basic
+import Numlib.IntegralEquations.L2Kernel
 
 /-!
 # Atkinson–Han §2.6: adjoint operators
@@ -26,6 +27,10 @@ its arguments reversed below.
   exactly when they commute, and every real polynomial in a self-adjoint operator is self-adjoint.
 * `theorem_2_6_5`, `exercise_2_6_3` — `‖L‖ = sup_{‖v‖ = 1} |(L v, v)|` for self-adjoint `L`, and
   the bound `|(L u, v)| ≤ ‖L‖ ‖u‖ ‖v‖` that goes with it.
+* `example_2_6_1`, `example_2_6_1_apply`, `example_2_6_1_adjoint`,
+  `example_2_6_1_isSelfAdjoint` — the integral operator of a square-integrable kernel on
+  `L²(a, b)`: `‖K‖ ≤ B`, the defining formula, the transposed-kernel adjoint, and
+  self-adjointness exactly for a symmetric kernel.
 
 ## Conventions
 
@@ -33,22 +38,18 @@ Theorem 2.6.5 carries a `[Nontrivial V]` hypothesis: on the zero space the unit 
 the supremum the book writes has no meaning. The quantity `(L v, v)` of the book is real for a
 self-adjoint `L`, and is written `RCLike.re (inner 𝕜 v (L v))` below.
 
-## Not formalized here
-
-**Example 2.6.1**, the `L²` kernel operator. For a kernel with
-`B = (∫∫ |k (x, y)|² dx dy)^{1/2} < ∞` the operator `K v (x) = ∫ k (x, y) v (y) dy` is bounded on
-`L²(a, b)` with `‖K‖ ≤ B`; its adjoint is the transposed kernel `k (y, x)`, so `K` is self-adjoint
-exactly when `k` is symmetric. None of this is stated. Mathlib has no Hilbert–Schmidt operators, and
-the backbone's `IntegralOperator.kernelCLM` is the operator on `C(X, ℝ)` for a *continuous* kernel,
-which is a different object; an `L²` kernel operator would be a new backbone module.
+## Conventions, continued
 
 `equation_2_6_1` above is the *displayed relation* (2.6.1), `(L v, w) = (v, L* w)`, which defines
 the adjoint in general — it is not Example 2.6.1, and neither it nor `equation_2_6_3` and
-`equation_2_6_4` says anything about integral operators. §2.8.3's kernel bound `‖K‖ ≤ B` is the same
-missing statement under a second number.
+`equation_2_6_4` says anything about integral operators. Example 2.6.1 is the group of
+`example_2_6_1` declarations below, over the backbone module `Numlib/IntegralEquations/L2Kernel`;
+§2.8.3's bound (2.8.16)–(2.8.17) is the same statement under a second number, and
+`example_2_6_1` carries both.
+
 -/
 
-open Metric RCLike
+open Metric RCLike Set
 open scoped InnerProduct
 
 namespace AtkinsonHan.Chapter02
@@ -170,5 +171,51 @@ theorem exercise_2_6_3 (hL : IsSelfAdjoint L) (u v : V) :
     _ = ‖L‖ * ‖u‖ * ‖v‖ := by ring
 
 end Norm
+
+/-! ### Example 2.6.1: the integral operator of a square-integrable kernel -/
+
+section L2Kernel
+
+open MeasureTheory Real
+
+variable {a b : ℝ} {k : ℝ × ℝ → ℝ}
+  (hk : MemLp k 2 ((volume.restrict (Icc a b)).prod (volume.restrict (Icc a b))))
+
+include hk
+
+/-- **Example 2.6.1.** For a kernel with
+`B = (∫∫ |k (x, y)|² dx dy)^{1/2} < ∞` the integral operator `K v (x) = ∫ k (x, y) v (y) dy` is
+bounded on `L²(a, b)`, with `‖K‖ ≤ B`. This is also (2.8.16)–(2.8.17) of §2.8.3, where `B` is
+called the Hilbert–Schmidt norm of `K`. -/
+theorem example_2_6_1 : ‖IntegralOperator.l2KernelCLM hk‖ ≤
+    √(∫ p, k p ^ 2 ∂((volume.restrict (Icc a b)).prod (volume.restrict (Icc a b)))) :=
+  IntegralOperator.norm_l2KernelCLM_le hk
+
+/-- **Example 2.6.1**, the defining formula: `K v (x) = ∫ k (x, y) v (y) dy` for almost every `x`,
+an element of `L²(a, b)` being an almost-everywhere class. -/
+theorem example_2_6_1_apply (v : Lp ℝ 2 (volume.restrict (Icc a b))) :
+    IntegralOperator.l2KernelCLM hk v =ᵐ[volume.restrict (Icc a b)]
+      fun x => ∫ y, k (x, y) * v y ∂(volume.restrict (Icc a b)) :=
+  IntegralOperator.l2KernelCLM_apply_ae hk v
+
+/-- **Example 2.6.1**, the adjoint: `K* v (y) = ∫ k (x, y) v (x) dx`, the integral operator of the
+transposed kernel. -/
+theorem example_2_6_1_adjoint (v : Lp ℝ 2 (volume.restrict (Icc a b))) :
+    ContinuousLinearMap.adjoint (IntegralOperator.l2KernelCLM hk) v
+        =ᵐ[volume.restrict (Icc a b)]
+      fun y => ∫ x, k (x, y) * v x ∂(volume.restrict (Icc a b)) := by
+  rw [IntegralOperator.adjoint_l2KernelCLM hk]
+  exact IntegralOperator.l2KernelCLM_apply_ae _ v
+
+/-- **Example 2.6.1**, self-adjointness: `K` is self-adjoint exactly when `k (x, y) = k (y, x)`.
+Almost everywhere, since an element of `L²` is an almost-everywhere class and the kernel of the
+zero operator is null only up to a null set. -/
+theorem example_2_6_1_isSelfAdjoint :
+    IsSelfAdjoint (IntegralOperator.l2KernelCLM hk) ↔
+      ∀ᵐ p ∂((volume.restrict (Icc a b)).prod (volume.restrict (Icc a b))),
+        k p = k (p.2, p.1) :=
+  IntegralOperator.isSelfAdjoint_l2KernelCLM_iff hk
+
+end L2Kernel
 
 end AtkinsonHan.Chapter02

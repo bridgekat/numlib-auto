@@ -64,18 +64,38 @@ id = "example_2_8_8_interval"
 id = "theorem_2_8_15_index"
 
 [[node]]
+id = "equation_2_8_2"
+
+[[node]]
+id = "equation_2_8_5"
+
+[[node]]
+id = "equation_2_8_6_le"
+
+[[node]]
+id = "isCompactOperator_of_isAdmissibleKernel"
+
+[[node]]
 id = "example_2_8_2"
 kind = "theorem"
 desc = '''
 Example 2.8.2: `k (x, y) = log |cos x − cos y|` on `[0, π]` is the kernel of a compact integral
-operator on `C[0, π]`, by the factorisation `k = |x − y|^{-1/2} · (|x − y|^{1/2} log |cos x − cos y|)`
-and the splitting rule (2.8.9). Open: it needs the (A₁)–(A₂) framework of §2.8.1, planned as
-`Numlib/IntegralEquations/WeaklySingular`. Not blocked on infrastructure that does not exist —
-Arzelà–Ascoli is available — but on the modulus `ω(h)` and an operator for a kernel that is only
-integrable in `y`. Deferred for priority: no consumer before Chapter 13.
+operator on `C[0, π]`, by the factorisation
+`k = |x − y|^{-1/2} · (|x − y|^{1/2} log |cos x − cos y|)` and the splitting rule (2.8.9).
+
+The (A₁)–(A₂) framework it waits on now exists (`Numlib/IntegralEquations/WeaklySingular`), and so
+does the splitting rule, as `IntegralOperator.IsAdmissibleKernel.mul_continuousMap`. What is left
+is the one genuinely analytic step, and it is not a formality: showing that
+`k (x, y) = |x − y|^{-1/2}` satisfies (A₁) on an interval, i.e. that
+`∫ ||x − y|^{-1/2} − |z − y|^{-1/2}| dy → 0` uniformly as `|x − z| → 0`. Dominated convergence
+gives the pointwise limit but not the uniformity; the textbook argument splits the integral into a
+neighbourhood of the two singularities, where the integrand is bounded by
+`|x − y|^{-1/2} + |z − y|^{-1/2}` and the interval is short, and the rest, where the integrand is
+uniformly small. Both halves need `intervalIntegral` estimates for `t ^ (-1/2)`. Nothing before
+Chapter 13 consumes this.
 '''
 deps = ["IntegralOperator.isCompactOperator_admissibleKernelCLM",
-  "IntegralOperator.isAdmissibleKernel_of_isAdmissibleKernel_mul_continuous"]
+  "IntegralOperator.IsAdmissibleKernel.mul_continuousMap"]
 
 [[node]]
 id = "example_2_8_9"
@@ -83,53 +103,28 @@ kind = "theorem"
 desc = '''
 Example 2.8.9: `k (x, y) = |x − y|^{-γ}` with `0 < γ < 1` gives a compact operator on `C[a, b]`,
 because the truncations `kₙ` of (2.8.15) are continuous with
-`‖K − Kₙ‖ = 2γ / ((1 − γ) n^{1-γ}) → 0`. Open for the same reason as Example 2.8.2, plus the
-explicit norm computation, which is a real integral estimate rather than a formality.
+`‖K − Kₙ‖ = 2γ / ((1 − γ) n^{1-γ}) → 0`.
+
+Same missing step as Example 2.8.2, and one more: the book's route through the truncations still
+needs the operator of the singular kernel to exist on `C[a, b]`, which is (A₁) again, and then the
+explicit computation of `‖K − Kₙ‖`, which is an exact integral. Note that
+`IntegralOperator.norm_admissibleKernelCLM_le` gives only `≤` for the norm of an admissible-kernel
+operator, so the book's `‖K − Kₙ‖ = 2γ / ((1 − γ) n^{1-γ})` would have to be weakened to a bound —
+which is all that `proposition_2_8_7` needs.
 '''
 deps = ["IntegralOperator.isCompactOperator_admissibleKernelCLM", "proposition_2_8_7"]
 
 [[node]]
 id = "theorem_2_8_12_3"
-kind = "theorem"
-desc = '''
-Theorem 2.8.12 (3): each nonzero eigenvalue `λ` of a compact `K` has a finite index `ν(λ)` — the null
-spaces `N((λ - K)^j)` strictly increase to `j = ν(λ)` and then stabilize — and `N((λ - K)^{ν(λ)})` is
-finite-dimensional. Open: it needs the Riesz ascent–descent theory, planned as
-`Numlib/Analysis/Normed/Operator/Riesz`. Clauses (1), (2) and (4) are `theorem_2_8_12_1`, `_2` and
-`_4`.
-'''
-deps = ["IsCompactOperator.exists_ascent"]
 
 [[node]]
 id = "theorem_2_8_12_5"
-kind = "theorem"
-desc = '''
-Theorem 2.8.12 (5): `V = N((λ - K)^{ν(λ)}) ⊕ R((λ - K)^{ν(λ)})`, both summands `K`-invariant. Same
-obstruction as `theorem_2_8_12_3`.
-'''
-deps = ["IsCompactOperator.isCompl_ker_pow_range_pow"]
 
 [[node]]
 id = "theorem_2_8_12_6"
-kind = "theorem"
-desc = '''
-Theorem 2.8.12 (6): the Fredholm alternative and clauses (1)–(5) survive when only `K^m` is compact
-for some `m > 1`. Same obstruction as `theorem_2_8_12_3`.
-'''
-deps = ["IsCompactOperator.hasEigenvalue_or_mem_resolventSet_of_pow"]
 
 [[node]]
 id = "theorem_2_8_14_dim"
-kind = "theorem"
-desc = '''
-The *dimension* half of Theorem 2.8.14 (1): for compact `K` on a Hilbert space and `λ ≠ 0` an
-eigenvalue, `dim N(λ - K) = dim N(conj λ - K*)` — that is, `λ - K` has Fredholm index zero. Open:
-the usual proof goes through the ascent–descent theory of Theorem 2.8.12 (3), so the two are planned
-together. The other half of the clause, that `conj λ` is an eigenvalue of `K*` at all, needs none of
-that and is proved, as `theorem_2_8_14_hasEigenvalue_adjoint`. Clause (2) is `theorem_2_8_14` and
-`theorem_2_8_14_isCompl`.
-'''
-deps = ["IsCompactOperator.finrank_ker_eq_finrank_ker_adjoint"]
 
 [[node]]
 id = "theorem_2_8_15_enumeration"
