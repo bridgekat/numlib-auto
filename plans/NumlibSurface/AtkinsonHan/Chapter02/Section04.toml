@@ -26,15 +26,6 @@ id = "theorem_2_4_5"
 
 [[node]]
 id = "equation_2_4_4"
-kind = "theorem"
-desc = '''(2.4.4) / Exercise 2.4.2: `‖L_n‖ = ∑ |w_i|` for the quadrature functional `L_n v = ∑ w_i v(x_i)`
-on `C[0, 1]` with distinct nodes.'''
-deps = ["Quadrature.functional", "Quadrature.norm_functional"]
 
 [[node]]
 id = "quadrature_convergence"
-kind = "theorem"
-desc = '''§2.4.4: if the rules `L_n` are exact on polynomials of degree `≤ d(n)` with `d(n) → ∞`, then
-`L_n v → L v` for every `v ∈ C[0, 1]` iff `sup_n ∑ |w_i^{(n)}| < ∞`; with `exercise_2_4_3`, convergence
-for nonnegative weights.'''
-deps = ["Quadrature.tendsto_iff_bddAbove_sum_abs", "Quadrature.tendsto_of_nonneg", "theorem_2_4_5"]

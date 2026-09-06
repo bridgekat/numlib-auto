@@ -1,4 +1,5 @@
 import Numlib.Analysis.Normed.Ring.CondNumber
+import Numlib.Approximation.Quadrature
 import Mathlib.Analysis.Normed.Operator.BanachSteinhaus
 import Mathlib.Analysis.RCLike.Basic
 import Mathlib.Analysis.Normed.Operator.Banach
@@ -24,14 +25,12 @@ The book's `cond(L) = ‖L⁻¹‖ ‖L‖` is defined here as `AtkinsonHan.Ch02
 * `theorem_2_4_4` — the principle of uniform boundedness.
 * `theorem_2_4_5` — the Banach–Steinhaus theorem on a dense subspace.
 * `tendsto_of_tendsto_on_dense_of_bounded` — its ε/3 half, in the generality it is proved in.
+* `equation_2_4_4`, `quadrature_convergence` — §2.4.4, the convergence of numerical quadrature.
 
 ## Not formalized here
 
-§2.4.4 (convergence of numerical quadrature) is deferred: it needs the quadrature functional
-`Lₙ v = ∑ᵢ wᵢ v(xᵢ)` on `C[0, 1]` and the norm formula (2.4.4) `‖Lₙ‖ = ∑ᵢ |wᵢ|`, whose proof
-requires a norm-one continuous function with prescribed signs at the nodes. See the section
-`Quadrature` below and `plans/backbone.md` §5.1.4 (phase 3). Example 2.4.2 (extension of the
-derivative to `H¹`) is out of scope: Sobolev spaces are not planned.
+Example 2.4.2 (extension of the derivative to `H¹`) is out of scope: Sobolev spaces are not
+planned.
 -/
 
 open Filter Topology Bornology NNReal
@@ -188,20 +187,33 @@ theorem theorem_2_4_5 [CompleteSpace V] (L : V →L[𝕜] W) (Ln : ℕ → V →
   rintro ⟨hdense, C, hC⟩
   exact tendsto_of_tendsto_on_dense_of_bounded hV₀ hC hdense
 
-/-! ### §2.4.4: convergence of numerical quadrature (deferred)
+/-! ### §2.4.4: convergence of numerical quadrature
 
 The book studies the quadrature functionals `Lₙ v = ∑_{i=0}^{n} wᵢ⁽ⁿ⁾ v(xᵢ⁽ⁿ⁾)` on `C[0,1]`,
-approximating `L v = ∫₀¹ w v`, and proves
+approximating `L v = ∫₀¹ w v`. Both results are the backbone's, specialized to `[0, 1]`; the
+quadrature functional is `Quadrature.functional` of `Numlib/Approximation/Quadrature`. -/
 
-* (2.4.4) `‖Lₙ‖ = ∑ᵢ |wᵢ⁽ⁿ⁾|` (Exercise 2.4.2);
-* if `Lₙ = L` on `𝒫_{d(n)}` with `d(n) → ∞`, then `Lₙ v → L v` for all `v ∈ C[0,1]` if and only
-  if `sup_n ∑ᵢ |wᵢ⁽ⁿ⁾| < ∞`;
-* (Exercise 2.4.3) if in addition `wᵢ⁽ⁿ⁾ ≥ 0`, convergence always holds.
+/-- **(2.4.4)** (Exercise 2.4.2). The norm of the quadrature functional
+`Lₙ v = ∑ᵢ wᵢ v(xᵢ)` on `C[0, 1]` is the absolute sum of its weights, provided the nodes are
+distinct. -/
+theorem equation_2_4_4 {n : ℕ} (w : Fin n → ℝ) {x : Fin n → Set.Icc (0 : ℝ) 1}
+    (hx : Function.Injective x) : ‖Quadrature.functional w x‖ = ∑ i, |w i| :=
+  Quadrature.norm_functional w hx
 
-These are deferred to the quadrature phase (`plans/backbone.md` §5.1.4, Deferred backbone item 2):
-the criterion follows from `theorem_2_4_5` and the density of polynomials
-(`polynomialFunctions_closure_eq_top`), but (2.4.4) needs the construction of a norm-one
-continuous function taking prescribed signs at the nodes, which is genuinely new material.
--/
+/-- **§2.4.4** and **Exercise 2.4.3**, the convergence of numerical quadrature. Let the rules
+`Lₖ v = ∑ᵢ wᵢ⁽ᵏ⁾ v(xᵢ⁽ᵏ⁾)` at distinct nodes of `[0, 1]` be exact for `L` on the polynomials of
+degree at most `d k`, with `d k → ∞`. Then `Lₖ v → L v` for every `v ∈ C[0, 1]` if and only if the
+absolute sums of the weights are bounded; and if the weights are nonnegative, convergence always
+holds. -/
+theorem quadrature_convergence {m d : ℕ → ℕ} {w : ∀ k, Fin (m k) → ℝ}
+    {x : ∀ k, Fin (m k) → Set.Icc (0 : ℝ) 1} (hx : ∀ k, Function.Injective (x k))
+    {L : C(Set.Icc (0 : ℝ) 1, ℝ) →L[ℝ] ℝ} (hd : Tendsto d atTop atTop)
+    (hexact : ∀ k, Quadrature.IsExactOn L (w k) (x k) (d k)) :
+    ((∀ v, Tendsto (fun k => Quadrature.functional (w k) (x k) v) atTop (𝓝 (L v))) ↔
+        ∃ C, ∀ k, ∑ i, |w k i| ≤ C) ∧
+      ((∀ k i, 0 ≤ w k i) →
+        ∀ v, Tendsto (fun k => Quadrature.functional (w k) (x k) v) atTop (𝓝 (L v))) :=
+  ⟨Quadrature.tendsto_iff_bddAbove_sum_abs hx hd hexact,
+    fun hw => Quadrature.tendsto_of_nonneg hx hd hexact hw⟩
 
 end AtkinsonHan.Ch02

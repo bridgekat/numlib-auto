@@ -1,62 +1,16 @@
 namespace = "AtkinsonHan.Ch02"
-desc = '''
-Atkinson-Han §2.7: weak convergence, weak compactness, and the two modes of convergence of a
-sequence of operators.
-
-Definition 2.7.1 (weak convergence of a sequence) is already in this surface, as
-`AtkinsonHan.Ch03.WeakSeqTendsto`, introduced in §3.3 for Example 3.3.5 before its own section was
-planned. This section reuses it rather than defining a second copy; the proposal file asks for the
-definition to be moved here, where the book puts it, and for §3.3 to import it.
-
-The heart of the section, Theorem 2.7.5 — a Banach space is reflexive if and only if every bounded
-sequence has a weakly convergent subsequence — is **not planned**. It is the Eberlein-Šmulian
-theorem together with Kakutani's characterisation of reflexivity, and Mathlib has neither
-reflexivity as a class nor Banach-Alaoglu in a form that would give it. Everything in the book
-that consumes it (Theorems 3.3.8, 3.3.10-3.3.12, 3.3.14 and Mazur's lemma) is already recorded as
-unplanned in `Numlib/Variational/Minimization`; this section adds Definition 2.7.4 and Theorem
-2.7.5 to that list rather than opening a second front. Example 2.7.3's uniform-integrability
-criterion (Dunford-Pettis) is not planned for the same reason.
-
-What *is* planned is everything that does not need reflexivity: the boundedness of a weakly
-convergent sequence, the Riemann-Lebesgue example, and the Radon-Riesz property.
-'''
 
 [[node]]
 id = "proposition_2_7_2"
-kind = "theorem"
-desc = '''Proposition 2.7.2: a weakly convergent sequence in a normed space is bounded. Uniform boundedness
-applied to the images of the `uₙ` in the double dual, with Corollary 2.5.6 to recover `‖uₙ‖`. The
-proof already exists in this surface as the private
-`AtkinsonHan.Ch03.exists_norm_le_of_weakSeqTendsto`; the proposal file asks for it to be promoted
-to `Numlib/Analysis/Normed/Module/WeakDual`, and this node is then that lemma restated with the
-book's number.'''
-deps = ["theorem_2_4_4", "corollary_2_5_6"]
 
 [[node]]
 id = "example_2_7_3"
-kind = "theorem"
-desc = '''Example 2.7.3: `sin (n x) ⇀ 0` in `L²(0, 2π)` but not in norm — the Riemann-Lebesgue lemma read
-through Parseval. The weak convergence is `tsum_sq_realFourierCoeff` (the Fourier coefficients of a
-fixed `f` are square-summable, hence tend to `0`) together with the Riesz representation of the
-dual of `L²`; `‖sin (n ·)‖_{L²(0,2π)} = √π ≠ 0` gives the failure of norm convergence.'''
-deps = ["tsum_sq_realFourierCoeff", "theorem_2_5_5"]
 
 [[node]]
 id = "exercise_2_7_2"
-kind = "theorem"
-desc = '''Exercise 2.7.2: `uₙ ⇀ u` implies `‖u‖ ≤ liminf ‖uₙ‖`, with an example where the inequality is
-strict. This is already `AtkinsonHan.Ch03.example_3_3_5` (the book proves it twice); the node is
-the backbone `norm_le_liminf_norm_of_weak_tendsto` once §3.3's proof moves there, and the strict
-example is `sin (n ·)` of Example 2.7.3, whose weak limit is `0`.'''
-deps = ["norm_le_liminf_norm_of_weak_tendsto", "AtkinsonHan.Ch03.example_3_3_5", "example_2_7_3"]
+
+[[node]]
+id = "exercise_2_7_3"
 
 [[node]]
 id = "exercise_2_7_4"
-kind = "theorem"
-desc = '''Exercises 2.7.3 and 2.7.4 (a), (c), the Radon-Riesz property: in an inner product space, and more
-generally in a uniformly convex Banach space, `uₙ → u` if and only if `uₙ ⇀ u` and `‖uₙ‖ → ‖u‖`.
-The backbone `tendsto_of_forall_inner_tendsto_of_tendsto_norm` and
-`tendsto_of_forall_dual_tendsto_of_tendsto_norm` of `Numlib/Analysis/Convex/Uniform`; part (a),
-that a Hilbert space is uniformly convex, is Mathlib's `InnerProductSpace.toUniformConvexSpace`.
-Part (b), that `Lᵖ` is uniformly convex by the Clarkson inequalities, is not planned.'''
-deps = ["tendsto_of_forall_inner_tendsto_of_tendsto_norm", "tendsto_of_forall_dual_tendsto_of_tendsto_norm"]

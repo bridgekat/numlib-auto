@@ -1,46 +1,16 @@
 namespace = "AtkinsonHan.Ch03"
-desc = '''
-Atkinson-Han §3.5: orthogonal polynomials for a weight on `[-1, 1]`, the truncated expansion as a
-best `L²_w` approximation, and the Legendre and Chebyshev families.
 
-The section states no numbered result — it is the book's catalogue of the families that §3.7 and
-Chapter 5 cite — so the nodes here are the displayed formulas (3.5.1)-(3.5.9). They rest on the
-backbone `Numlib/Approximation/OrthogonalPolynomial`, which is where the general family attached to
-a measure lives, and they are what `Numlib/Approximation/Quadrature`'s Gauss rules need.
+[[node]]
+id = "weightMeasure"
 
-The weighted space `L²_w(-1, 1)` of (3.5.1) is `Lp ℝ 2 ((volume.restrict (Ioo (-1) 1)).withDensity w)`;
-no surface definition is needed beyond an abbreviation.
-
-Not planned: the Sobolev-norm error estimates for `P_N u` and `P_{1,N} u` quoted after (3.5.2) and
-(3.5.7). They need `Hˢ(-1, 1)`, and the book itself refers the reader elsewhere for them.
-'''
+[[node]]
+id = "isWeight_weightMeasure"
 
 [[node]]
 id = "equation_3_5_2"
-kind = "theorem"
-desc = '''(3.5.1)-(3.5.2): for a weight `w > 0` integrable on `(-1, 1)`, the space `L²_w(-1, 1)` is a Hilbert
-space, and the truncated expansion `P_N u = ∑_{n ≤ N} ξₙ pₙ` with `ξₙ = (u, pₙ)_w/‖pₙ‖²_w` in the
-orthogonal polynomials is the best approximation of `u` from `𝒫_N`, i.e. the orthogonal projection.
-The backbone `OrthogonalPolynomial.isBestApprox_truncation`; the book notes that this is an
-instance of (3.4.6), which is `equation_3_4_6` of §3.4.'''
-deps = ["OrthogonalPolynomial.family", "OrthogonalPolynomial.isBestApprox_truncation", "equation_3_4_6"]
 
 [[node]]
 id = "equation_3_5_5"
-kind = "theorem"
-desc = '''(3.5.3)-(3.5.6), the Legendre family: the Jacobi weight at `α = β = 0` is Lebesgue measure, the
-Rodrigues formula (3.5.4) defines `Lₙ`, they are orthogonal with `(Lₘ, Lₙ)₀ = 2δₘₙ/(2n+1)` (3.5.5),
-and they satisfy the recursion (3.5.6) and the Legendre differential equation. The backbone
-`Polynomial.legendre`, `Polynomial.integral_legendre_mul_legendre` and
-`Polynomial.legendre_recurrence`.'''
-deps = ["_root_.Polynomial.legendre", "_root_.Polynomial.integral_legendre_mul_legendre", "_root_.Polynomial.legendre_recurrence"]
 
 [[node]]
 id = "equation_3_5_9"
-kind = "theorem"
-desc = '''(3.5.8)-(3.5.9), the Chebyshev family: for the weight `(1 - x²)^{-1/2}` the orthogonal polynomials
-are `Tₙ (x) = cos (n arccos x)`, with `(Tₘ, Tₙ)_w = (π/2) cₙ δₘₙ` (`c₀ = 2`, `cₙ = 1`) and the
-recursion `T_{n+1} = 2 x Tₙ - T_{n-1}`. Mathlib's `Polynomial.Chebyshev.T`,
-`Polynomial.Chebyshev.T_real_cos` and `T_add_two`, with the backbone
-`Polynomial.Chebyshev.integral_T_mul_T_div_sqrt` for the orthogonality.'''
-deps = ["_root_.Polynomial.Chebyshev.integral_T_mul_T_div_sqrt"]

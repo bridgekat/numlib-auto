@@ -1589,6 +1589,50 @@ across a rectangular `A` unchanged (Saad §8.1 uses exactly that).
   factor only: `‖T v‖ = √(‖T v‖²) ≤ √(c ‖v‖²) = √c ‖v‖` goes through for negative `c` too, both
   sides being `0`. Check which of the book's clauses the estimate actually consumes before
   importing its hypotheses.
+* **`norm_inner_le_norm` and `parallelogram_law_with_norm` take both `𝕜` *and* `E` explicitly.**
+  `Mathlib/Analysis/InnerProductSpace/Basic.lean` has `variable (𝕜) (E)` in force, so
+  `norm_inner_le_norm 𝕜 u v` fails with "the argument `u` has type `E` but is expected to have type
+  `Type u_1`" — which reads like a universe problem. Write
+  `norm_inner_le_norm (𝕜 := 𝕜) (E := E) u v`.
+* `innerSL_apply` and `innerSL_apply_coe` do not exist. After `HasSum.mapL (innerSL 𝕜 x)` the
+  hypothesis is phrased with `⇑(innerSL 𝕜 x)` and no `simp only` will turn it into `inner`; instead
+  give the `have` its type — `have h : HasSum (fun i => inner 𝕜 x (f i)) (inner 𝕜 x a) := hs.mapL
+  (innerSL 𝕜 x)` — which typechecks by defeq, and then `simp only [...] at h` works.
+* `hasSum_ite_eq j a` now carries a `SummationFilter` argument, and `HasSum.unique h₁ h₂ : a = b`
+  with `h₁ : HasSum f a`: `(hasSum_ite_eq j (a j)).unique h` already has the orientation
+  `a j = ⟪v j, u⟫`, so the `.symm` one writes by reflex is wrong.
+* `Int.le_induction` is deprecated in favour of **`Int.leInduction`**; the case names `base` and
+  `succ` are unchanged.
+* `MvPolynomial.comp_aeval_apply` takes the family `f : σ → S₁` as an **explicit first argument**,
+  before the `AlgHom`. Written without it, the elaborator reads the algebra hom as the family and
+  reports "Invalid field `symm`: the environment does not contain `Function.symm`". With
+  `ContinuousMap.evalAlgHom ℝ ℝ x : C(X, ℝ) →ₐ[ℝ] ℝ` as that hom, it is the whole bridge from
+  `(MvPolynomial.aeval φ p) x` to `MvPolynomial.eval (fun i => φ i x) p` — `aeval` into `ℝ` *is*
+  `eval` by `rfl`, so `exact` closes the residue. That is Stone–Weierstrass in `d` variables in ten
+  lines.
+* A real-linear map `C(X, ℂ) →ₗ[ℝ] C(X, ℝ)` (taking real parts, say) must be marked
+  `noncomputable`: the `Module ℝ C(X, ℂ)` instance goes through `instCommCStarAlgebraComplex`.
+  The error names that instance and nothing about the map.
+* **To carry a density statement from the complex exponentials to the real trigonometric system,
+  induct on Re *and* Im together.** `span_fourier_closure_eq_top` lives in `C(AddCircle T, ℂ)`;
+  `Submodule.span_induction` over `span ℂ` has a `smul` case with a *complex* scalar, and
+  `Re (c • P) = c.re • Re P - c.im • Im P` mixes the two parts, so a predicate about `Re` alone is
+  not preserved. The conjunction is, and the rest is `‖Re z‖ ≤ ‖z‖` with `ContinuousMap.norm_le`.
+* `Subalgebra.SeparatesPoints A` unfolds to `Set.SeparatesPoints ((↑· : C(X,ℝ) → X → ℝ) '' ↑A)`, so
+  the witness is `⟨⇑g, ⟨g, hg, rfl⟩, hne⟩` — a bare `⟨g, hg, hne⟩` does not typecheck.
+* `Submodule.topologicalClosure_coe` plus `Metric.mem_closure_iff` is the way into a
+  `topologicalClosure = ⊤` statement: `rw [← SetLike.mem_coe, Submodule.topologicalClosure_coe,
+  Metric.mem_closure_iff]`. `Submodule.topologicalClosure_mono` exists and is what turns a
+  containment of spans into a containment of closures.
+* `MeasureTheory.integrable_withDensity_iff (hf : Measurable f) (hflt : ∀ᵐ x ∂μ, f x < ∞)` orients
+  as `Integrable g (μ.withDensity f) ↔ Integrable (fun x => g x * (f x).toReal) μ` — the density is
+  the **right** factor. For a weight `w > 0` on an interval, `ENNReal.toReal_ofReal (hpos …).le`
+  under `ae_restrict_mem measurableSet_Ioo` removes the `toReal`, and `Integrable.mono'` against
+  `hint.abs` beats `Integrable.bdd_mul`, whose bound is global rather than almost-everywhere.
+* "The measure of the complement of a finite set is nonzero" for a `withDensity` measure is
+  `withDensity_apply _ hsc`, `Measure.restrict_restrict hsc`, `lintegral_eq_zero_iff`, then
+  `ae_eq_bot.mp (Filter.eventually_false_iff_eq_bot.mp …)` and `Measure.restrict_eq_zero`. The last
+  two are what turn "almost every point of the set contradicts positivity" into "the set is null".
 
 ## Design conventions of this library
 

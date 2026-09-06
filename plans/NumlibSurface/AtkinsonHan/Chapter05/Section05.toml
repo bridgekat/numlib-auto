@@ -1,32 +1,7 @@
 namespace = "AtkinsonHan.Ch05"
-desc = '''
-Atkinson–Han Section 5.5, completely continuous vector fields. The section is a summary: Brouwer's
-theorem (5.5.1), Schauder's theorem (5.5.4) and the five properties P1–P5 of the rotation of a
-completely continuous vector field are quoted from Krasnoselskii and Zeidler without proof, and
-Mathlib has neither a Brouwer theorem nor degree theory. Only two items are formalized: the
-definition of a compact and of a completely continuous nonlinear operator, and Proposition 5.5.5,
-which is the one statement of the section that later chapters actually use — it is what lets
-Section 12.7 linearize a nonlinear fixed point problem into a second-kind linear equation.
-
-Left out with the reason, and recorded here rather than in a file: Theorem 5.5.1 (Brouwer),
-Example 5.5.2 (a Lipschitz self-map of the unit ball of a Hilbert space without a fixed point,
-which is formalizable but has no consumer), Theorem 5.5.4 (Schauder), and Section 5.5.1 in its
-entirety.
-'''
 
 [[node]]
 id = "IsCompletelyContinuousOn"
-kind = "definition"
-desc = '''Definition 5.5.3, second half: `T : K ⊆ V → W` is completely continuous when it is a
-compact map (`IsCompactMap` of `Numlib/Nonlinear/CompletelyContinuous`, the book's first half) and
-continuous on `K`. The two halves are separate because for a nonlinear map compactness does not
-imply continuity, unlike for a linear one, where the notion is Mathlib's `IsCompactOperator`.'''
-deps = ["_root_.IsCompactMap"]
 
 [[node]]
 id = "proposition_5_5_5"
-kind = "theorem"
-desc = '''Proposition 5.5.5: the Fréchet derivative at an interior point of a completely continuous
-operator on an open set of a Banach space is a compact linear operator, so that the Fredholm
-alternative applies to `I - T'(v₀)`.'''
-deps = ["IsCompletelyContinuousOn", "IsCompactMap.isCompactOperator_hasFDerivAt"]
