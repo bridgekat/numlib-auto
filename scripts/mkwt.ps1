@@ -3,9 +3,10 @@
 #   pwsh -File scripts/mkwt.ps1 -Name kryeig
 #
 # Creates ../numlib-wt/<Name> on a new branch `agent/<Name>` off HEAD, junctions its
-# `.lake/packages` and its `tools/tracker` to the main checkout's (so Mathlib and the tracker
-# binary are shared, never re-downloaded and never rebuilt), and copies the project's own
-# `.lake/build` so the worktree starts warm: `lake build` in it is a no-op until a file changes.
+# `.lake/packages` and its `tools/tracker` to the main checkout's (so Mathlib and the tracker binary
+# are shared, never re-downloaded and never rebuilt), links `books/` if this checkout has it, and
+# copies the project's own `.lake/build` so the worktree starts warm: `lake build` in it is a no-op
+# until a file changes.
 #
 # Never run `lake update` in a worktree: the packages are shared with every other worktree.
 
@@ -36,6 +37,15 @@ git -C $wt submodule update --init tools/tracker
 if ($LASTEXITCODE -ne 0) { throw "git submodule update failed" }
 Remove-Item -Recurse -Force (Join-Path $wt "tools\tracker\.lake") -ErrorAction SilentlyContinue
 cmd /c mklink /J "$wt\tools\tracker\.lake" "$root\tools\tracker\.lake" | Out-Null
+
+# The books, if this checkout has them. `books/` is a local, gitignored junction to a corpus that
+# sits beside the repository -- see `notes/lean-lessons.md` -- and a worktree needs one of its own,
+# because `../numlib-books` does not resolve from `numlib-wt/<name>/`. Absent, this is a no-op.
+if (Test-Path "$root\books") {
+  # `.Target` is a string on PowerShell 7, not an array: indexing it yields one character.
+  $booksTarget = @((Get-Item "$root\books").Target)[0]
+  cmd /c mklink /J "$wt\books" "$booksTarget" | Out-Null
+}
 
 # Start warm.
 robocopy "$root\.lake\build" "$wt\.lake\build" /E /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null

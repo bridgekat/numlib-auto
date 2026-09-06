@@ -15,7 +15,7 @@ $wt = Join-Path (Join-Path $wtRoot "numlib-wt") $Name
 
 if (Test-Path $wt) {
   # `rmdir` on a junction removes the link, not the target; Remove-Item -Recurse would follow it.
-  foreach ($link in @("$wt\.lake\packages", "$wt\tools\tracker\.lake")) {
+  foreach ($link in @("$wt\.lake\packages", "$wt\tools\tracker\.lake", "$wt\books")) {
     if (Test-Path $link) { cmd /c rmdir "$link" | Out-Null }
   }
   Remove-Item -Recurse -Force $wt

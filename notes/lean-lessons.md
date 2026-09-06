@@ -6,6 +6,37 @@ something a note would have prevented. Keep entries short and specific: symptom,
 
 Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/packages/mathlib`.
 
+## The books, and where they are
+
+This formalization works from a corpus that lives *outside* the repository, in a checkout
+beside it. That is a local arrangement of this machine and this effort, not part of the
+library, which is why it is written here and not in `README.md`: nothing published depends on
+it, and a reader who clones the project will not have it.
+
+`books/` at the repository root is a symlink to that checkout, `.gitignore`d, holding one
+directory per book with an OCR'd Markdown transcription beside the PDF.
+`scripts/mkwt.ps1` gives every worktree its own link, so `books/<book>/<book>.md` is the same
+path from the main checkout and from any agent's worktree. **Use that path, not
+`../numlib-books`** — the relative one resolves from the main checkout and *not* from
+`numlib-wt/<name>/`, where every sub-agent actually works, and agents were silently unable to
+open a book for most of a day because of it.
+
+The three books being formalized:
+
+* `books/iterative-methods-for-sparse-linear-systems-saad/`
+* `books/theoretical-numerical-analysis-atkinson-han/`
+* `books/cg-versus-minres-an-empirical-comparison/` (Fong and Saunders)
+
+Five more are there for reference as PDFs only: Higham, Kress, Choi, Meurant and Strakos, and
+Saad's eigenvalue book.
+
+The Markdown is machine-transcribed, so its formulae are LaTeX of variable quality and the
+headings are the reliable index: `grep -n '^#' books/<book>/<book>.md` prints the table of
+contents with line numbers. Read the book when a planned statement is unclear. The plan is a
+summary and the book is the authority, and enough planned statements have turned out to be
+false or mis-transcribed — a hypothesis that cannot hold, an equality that is an inequality —
+that checking the source is part of the work rather than a last resort.
+
 ## Working in this repository
 
 * **Commit as you go**, one commit per module or per coherent group of proofs. A session rate limit
