@@ -23,3 +23,11 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Section 3.3.4"
 [[node]]
 id = "IsUnisolvent.interpCLM"
 source = "Atkinson–Han, Theoretical Numerical Analysis, (3.2.3), Example 3.6.5"
+
+[[node]]
+id = "IsUnisolvent.isGreatest_norm_interpCLM"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Section 3.7.3"
+
+[[node]]
+id = "IsUnisolvent.norm_interpCLM"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Section 3.7.3"

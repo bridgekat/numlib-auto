@@ -9,6 +9,7 @@ import Numlib.Analysis.Normed.Module.WeakDual
 import Numlib.Approximation.BestApprox
 import Numlib.Approximation.Chebyshev
 import Numlib.Variational.Minimization
+import Numlib.Variational.WeakMinimization
 
 /-!
 # Atkinson–Han §3.3: best approximation
@@ -27,9 +28,11 @@ sequential and topological lower semicontinuity.
 
 ## Book-specific definitions
 
-* `WeakSeqTendsto` — weak sequential convergence (Definition 3.3.3), only the sequential form;
-  `tendsto_toWeakSpace_iff_weakSeqTendsto` identifies it with convergence in Mathlib's
-  `WeakSpace` topology, which is the form the backbone's lemmas take.
+* `WeakSeqTendsto` — weak sequential convergence (Definition 3.3.3), only the sequential form and
+  over any `RCLike 𝕜`; `tendsto_toWeakSpace_iff_weakSeqTendsto` identifies it with convergence in
+  Mathlib's `WeakSpace` topology, and `weakSeqTendsto_iff_root` with the backbone's real-scalar
+  `_root_.WeakSeqTendsto`, in which the direct method of `Numlib.Variational.WeakMinimization` is
+  stated.
 * `AreSeparated`, `AreStrictlySeparated` — Definition 3.3.6.
 * `IsStrictlyNormed` — §3.3.4, equivalent to Mathlib's `StrictConvexSpace ℝ V`.
 * `polyLE`, `rho` — the space `𝒫ₙ` of polynomials of degree `≤ n` on `[a, b]` and the best
@@ -44,8 +47,14 @@ Definition 3.3.9 (a coercive functional) is the backbone's `IsCoerciveFunctional
 * `example_3_3_5` — the norm is weakly sequentially lower semicontinuous.
 * `theorem_3_3_7`, `theorem_3_3_7'` — strict separation of a compact convex set from a disjoint
   closed convex set, in either order.
+* `theorem_3_3_8`, `theorem_3_3_10`, `theorem_3_3_12` — existence of minimizers in a reflexive
+  Banach space, on a bounded weakly closed set, on an unbounded one with a coercive functional, and
+  on a closed convex set with a convex functional.
+* `theorem_3_3_11`, `theorem_3_3_11_isWeakSeqClosed`, `theorem_3_3_11_weakSeqLsc` — Mazur's lemma
+  and its two corollaries.
 * `theorem_3_3_13` — existence (and uniqueness) of minimizers on finite-dimensional closed sets.
-* `theorem_3_3_15`, `theorem_3_3_16`, `example_3_3_17` — existence of best approximations.
+* `theorem_3_3_14`, `theorem_3_3_15`, `theorem_3_3_16`, `example_3_3_17` — existence of best
+  approximations.
 * `theorem_3_3_18`, `theorem_3_3_21` — uniqueness under strict convexity of `‖·‖ᵖ`, resp. strict
   normedness.
 * `theorem_3_3_19`, `theorem_3_3_19_equioscillates`, `theorem_3_3_19_alternation` — the Chebyshev
@@ -55,11 +64,22 @@ Definition 3.3.9 (a coercive functional) is the backbone's `IsCoerciveFunctional
 * `exercise_3_3_8`, `exercise_3_3_8_rpow`, `exercise_3_3_9` — inner product spaces satisfy
   both criteria.
 
-## Not formalized here
+## Reflexivity
 
-Theorems 3.3.8, 3.3.10, 3.3.11 (Mazur), 3.3.12 and 3.3.14 concern minimizers in reflexive Banach
-spaces; they wait on weak sequential compactness (the book's Thm 2.7.5), which Mathlib does not
-have.
+Theorems 3.3.8, 3.3.10, 3.3.12 and 3.3.14 assume a reflexive Banach space, and Mathlib has no
+reflexivity class. What their proofs use of reflexivity is the book's own characterization of it,
+Theorem 2.7.5: every bounded sequence has a weakly convergent subsequence. That property is the
+class `WeaklySeqCompactSpace` of `Numlib.Variational.WeakMinimization`, and it is the hypothesis
+carried here in place of reflexivity; every Hilbert space is an instance of it, which is where this
+corpus applies these theorems. The book itself says as much in the paragraph before its
+Theorem 3.3.13: "the reflexivity of `V` is used only to extract a weakly convergent subsequence
+from a bounded sequence in `K`".
+
+The book's "weakly sequentially lower semicontinuous" is `WeakSeqLowerSemicontinuousOn`, which is
+phrased as `∀ y < f u, ∀ᶠ n, y < f (vₙ)` rather than as the book's `f u ≤ liminf f (vₙ)`. The two
+agree whenever `f (vₙ)` is bounded below, but a real `liminf` is junk (namely `0`) for a sequence
+that is not, and with the literal transcription Theorem 3.3.8 is false: on `K = [0, 1]` the
+function `f 0 = 0`, `f x = -1/x` satisfies it and has no minimum.
 
 Theorems 3.3.19 and 3.3.20 are stated here and proved from the backbone
 `Numlib/Approximation/Chebyshev.lean`; the book's `𝕋ₙ` is the backbone's `trigPolyLE (2π) n` and
@@ -181,6 +201,12 @@ theorem tendsto_toWeakSpace_iff_weakSeqTendsto {v : ℕ → V} {u : V} :
       WeakSeqTendsto 𝕜 v u :=
   tendsto_toWeakSpace_iff
 
+/-- Over the reals, Definition 3.3.3 is the backbone's `WeakSeqTendsto`, in which
+`Numlib.Variational.WeakMinimization` states the direct method. -/
+theorem weakSeqTendsto_iff_root {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] {v : ℕ → V}
+    {u : V} : WeakSeqTendsto ℝ v u ↔ _root_.WeakSeqTendsto v u :=
+  Iff.rfl
+
 /-- **Example 3.3.5.** The norm is weakly sequentially lower semicontinuous:
 `vₙ ⇀ u` implies `‖u‖ ≤ liminf ‖vₙ‖`. The book proves the same statement again as
 Exercise 2.7.2; both specialize the backbone's `norm_le_liminf_norm_of_weak_tendsto`. -/
@@ -212,6 +238,83 @@ theorem theorem_3_3_7' {A B : Set E} (hA : Convex ℝ A) (hB : Convex ℝ B) (hA
     (geometric_hahn_banach_closed_compact hA hAc hB hBc hdisj)
 
 end Separation
+
+/-! ### Theorems 3.3.8–3.3.14: minimizers in a reflexive Banach space -/
+
+section Reflexive
+
+variable {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V]
+
+set_option linter.unusedVariables false in
+/-- **Theorem 3.3.8.** A weakly sequentially lower semicontinuous functional on a nonempty bounded
+weakly sequentially closed subset of a reflexive Banach space attains its minimum.
+
+Reflexivity enters only through the book's own characterization of it (their Theorem 2.7.5), that
+every bounded sequence has a weakly convergent subsequence; that is the class
+`WeaklySeqCompactSpace`. Completeness is the book's hypothesis and is not used.
+
+`IsWeakSeqClosed K` is the book's "weakly closed": their Definition 3.3.3 defines it sequentially,
+as "`vₙ ∈ K` and `vₙ ⇀ v` imply `v ∈ K`". -/
+theorem theorem_3_3_8 [CompleteSpace V] [WeaklySeqCompactSpace V] {K : Set V} {f : V → ℝ}
+    (hne : K.Nonempty) (hbd : IsBounded K) (hKc : IsWeakSeqClosed K)
+    (hf : WeakSeqLowerSemicontinuousOn f K) : ∃ u ∈ K, IsMinOn f K u :=
+  exists_isMinOn_of_isWeakSeqClosed hne hbd hKc hf
+
+set_option linter.unusedVariables false in
+/-- **Theorem 3.3.10.** The boundedness of `K` in Theorem 3.3.8 may be traded for coercivity of the
+functional: the book cuts the problem down to the sublevel set `{v ∈ K | f v ≤ f v₀}`, which
+coercivity makes bounded. -/
+theorem theorem_3_3_10 [CompleteSpace V] [WeaklySeqCompactSpace V] {K : Set V} {f : V → ℝ}
+    (hne : K.Nonempty) (hKc : IsWeakSeqClosed K) (hf : WeakSeqLowerSemicontinuousOn f K)
+    (hcoer : IsCoerciveFunctionalOn f K) : ∃ u ∈ K, IsMinOn f K u :=
+  exists_isMinOn_of_isCoerciveFunctionalOn hne hKc hf hcoer
+
+/-- **Theorem 3.3.11** (Mazur's lemma). If `vₙ ⇀ u` in a normed space, then there are convex
+combinations `uₙ = ∑_{i=n}^{N(n)} λᵢ⁽ⁿ⁾ vᵢ` of the tails of the sequence with `‖uₙ - u‖ → 0`. No
+reflexivity is needed. -/
+theorem theorem_3_3_11 {v : ℕ → V} {u : V} (h : WeakSeqTendsto ℝ v u) :
+    ∃ (N : ℕ → ℕ) (lam : ℕ → ℕ → ℝ), (∀ n, n ≤ N n) ∧ (∀ n i, 0 ≤ lam n i) ∧
+      (∀ n, ∑ i ∈ Finset.Icc n (N n), lam n i = 1) ∧
+      Tendsto (fun n => ∑ i ∈ Finset.Icc n (N n), lam n i • v i) atTop (𝓝 u) :=
+  exists_seq_convexCombination_tendsto h
+
+/-- **Theorem 3.3.11**, first corollary: a closed convex set is weakly sequentially closed, so the
+weak hypothesis of Theorems 3.3.8 and 3.3.10 is implied by the ordinary one. "Weakly closed" is
+`IsWeakSeqClosed`, the book's Definition 3.3.3. -/
+theorem theorem_3_3_11_isWeakSeqClosed {K : Set V} (hconv : Convex ℝ K) (hcl : IsClosed K) :
+    IsWeakSeqClosed K :=
+  hconv.isWeakSeqClosed hcl
+
+/-- **Theorem 3.3.11**, second corollary: a convex lower semicontinuous functional is weakly
+sequentially lower semicontinuous, its sublevel sets being convex. -/
+theorem theorem_3_3_11_weakSeqLsc {K : Set V} {f : V → ℝ} (hf : ConvexOn ℝ K f)
+    (hlsc : LowerSemicontinuousOn f K) : WeakSeqLowerSemicontinuousOn f K :=
+  hf.weakSeqLowerSemicontinuousOn hlsc
+
+set_option linter.unusedVariables false in
+/-- **Theorem 3.3.12.** In a reflexive Banach space, a convex lower semicontinuous functional on a
+nonempty closed convex set attains its minimum, provided the set is bounded or the functional is
+coercive. Every hypothesis here is for the norm topology: the two corollaries of Mazur's lemma
+convert them to the weak hypotheses of Theorems 3.3.8 and 3.3.10.
+
+This is the infinite-dimensional twin of `theorem_3_3_13`, and `theorem_3_3_13_unique` is the
+uniqueness clause of both. -/
+theorem theorem_3_3_12 [CompleteSpace V] [WeaklySeqCompactSpace V] {K : Set V} {f : V → ℝ}
+    (hne : K.Nonempty) (hcl : IsClosed K) (hconv : Convex ℝ K) (hf : ConvexOn ℝ K f)
+    (hlsc : LowerSemicontinuousOn f K)
+    (h : IsBounded K ∨ IsCoerciveFunctionalOn f K) : ∃ u ∈ K, IsMinOn f K u :=
+  exists_isMinOn_of_convexOn hne hcl hconv hf hlsc h
+
+set_option linter.unusedVariables false in
+/-- **Theorem 3.3.14.** In a reflexive Banach space every point has a best approximation from a
+nonempty closed convex set: the distance to the point is convex, continuous and coercive, so this
+is the coercive case of Theorem 3.3.12. It is the infinite-dimensional twin of `theorem_3_3_15`;
+in a Hilbert space it is `theorem_3_4_3`. -/
+theorem theorem_3_3_14 [CompleteSpace V] [WeaklySeqCompactSpace V] {K : Set V} (hne : K.Nonempty)
+    (hcl : IsClosed K) (hconv : Convex ℝ K) (u : V) : ∃ uhat, IsBestApprox K u uhat :=
+  exists_isBestApprox_of_convex hne hcl hconv u
+
+end Reflexive
 
 /-! ### Theorem 3.3.13: minimizers on finite-dimensional closed sets -/
 

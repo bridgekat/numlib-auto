@@ -1,6 +1,8 @@
 import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.Analysis.InnerProductSpace.l2Space
+import Numlib.Analysis.Fourier.TrigonometricBasis
 import Numlib.Approximation.BestApprox
+import Numlib.Approximation.OrthogonalPolynomial
 import NumlibSurface.AtkinsonHan.Chapter03.Section03
 
 /-!
@@ -25,12 +27,17 @@ case) and its `(u − û, v)` is `inner 𝕜 v (u - uhat)`.
 * `theorem_3_4_7` — the orthogonal projection operator, (3.4.3)–(3.4.5).
 * `equation_3_4_6`, `hilbertBasis_expansion` — least squares from an orthonormal family and the
   expansion of `u`.
+* `example_3_4_8` — the normalized Legendre polynomials `Lₙ = √((2n+1)/2) Pₙ` are a Hilbert basis of
+  `L²(-1, 1)`, so the truncated Legendre expansion is the best approximation from `𝒫N`,
+  converges to `u`, and satisfies Parseval's equality. Completeness comes from the backbone's
+  `OrthogonalPolynomial.hilbertBasisOfDegreeEq`, which is Weierstrass plus the density of the
+  continuous functions in `L²`.
+* `example_3_4_9` — the same for the real trigonometric system on `L²(0, 2π)`: the best `L²`
+  approximation from `𝕋ₙ` is the `n`-th partial sum of the Fourier series, and the series
+  converges in `L²`.
 
-## Not formalized here
-
-Example 3.4.8 (Legendre least squares) and Example 3.4.9 (Fourier series in `L²(0, 2π)`) need
-`L²` function spaces, which are out of scope. §3.5 (orthogonal polynomials) is cited only as a
-black box; (3.5.2) is the instance of `equation_3_4_6` for an orthonormal polynomial family.
+The book's `L²_w(-1, 1)` of §3.5 is `Lp ℝ 2 (weightMeasure w)` there, and (3.5.2) is the instance of
+`equation_3_4_6` for an orthonormal polynomial family.
 -/
 
 open Filter Topology
@@ -175,5 +182,189 @@ theorem hilbertBasis_expansion {ι : Type*} (b : HilbertBasis ι 𝕜 H) (u : H)
   simpa [b.repr_apply_apply] using b.hasSum_repr u
 
 end Hilbert
+
+/-! ### Example 3.4.8: least squares by Legendre polynomials in `L²(-1, 1)` -/
+
+section Legendre
+
+open MeasureTheory OrthogonalPolynomial Polynomial Real
+
+/-- The **normalized Legendre polynomials** `Lₙ = √((2n + 1)/2) Pₙ` of Example 3.4.8: the Legendre
+polynomials of (3.5.4) scaled to unit `L²(-1, 1)` norm, by the orthogonality relation (3.5.5)
+`(Pₘ, Pₙ) = 2 δₘₙ/(2n + 1)`. -/
+noncomputable def legendreNormalized (n : ℕ) : ℝ[X] :=
+  C (√((2 * (n : ℝ) + 1) / 2)) * legendre n
+
+private theorem sqrt_coeff_pos (n : ℕ) : 0 < √((2 * (n : ℝ) + 1) / 2) :=
+  Real.sqrt_pos.2 (by positivity)
+
+/-- The `n`-th normalized Legendre polynomial has degree `n`. -/
+theorem degree_legendreNormalized (n : ℕ) : (legendreNormalized n).degree = n := by
+  rw [legendreNormalized, degree_C_mul (sqrt_coeff_pos n).ne', degree_legendre]
+
+/-- The Legendre weight is carried by `[-1, 1]`, so Weierstrass applies to it. -/
+theorem legendreMeasure_compl_Icc : legendreMeasure (Set.Icc (-1 : ℝ) 1)ᶜ = 0 := by
+  have hempty : (Set.Icc (-1 : ℝ) 1)ᶜ ∩ Set.Ioo (-1 : ℝ) 1 = ∅ :=
+    Set.eq_empty_iff_forall_notMem.2 fun x hx => hx.1 (Set.Ioo_subset_Icc_self hx.2)
+  rw [legendreMeasure, Measure.restrict_apply' measurableSet_Ioo, hempty, measure_empty]
+
+/-- The normalized Legendre polynomials as elements of `L²(-1, 1)`. -/
+noncomputable def legendreLp (n : ℕ) : Lp ℝ 2 legendreMeasure :=
+  isWeight_legendreMeasure.toLpₗ (legendreNormalized n)
+
+/-- The normalized Legendre polynomials are orthonormal in `L²(-1, 1)`: this is (3.5.5) with the
+normalizing factor `√((2n + 1)/2)` put in. -/
+theorem orthonormal_legendreLp : Orthonormal ℝ legendreLp := by
+  have hbase : ∀ m n : ℕ, inner ℝ (legendreLp m) (legendreLp n)
+      = (√((2 * (m : ℝ) + 1) / 2) * √((2 * (n : ℝ) + 1) / 2)) *
+        (if m = n then 2 / (2 * (n : ℝ) + 1) else 0) := by
+    intro m n
+    have hval : ∀ x : ℝ, (legendreNormalized m).eval x * (legendreNormalized n).eval x
+        = (√((2 * (m : ℝ) + 1) / 2) * √((2 * (n : ℝ) + 1) / 2)) *
+          ((legendre m).eval x * (legendre n).eval x) := by
+      intro x
+      simp only [legendreNormalized, eval_mul, eval_C]
+      ring
+    rw [legendreLp, legendreLp, IsWeight.inner_toLpₗ]
+    simp only [hval]
+    rw [integral_const_mul, integral_legendreMeasure, integral_legendre_mul_legendre]
+  have hinner : ∀ m n : ℕ, inner ℝ (legendreLp m) (legendreLp n)
+      = if m = n then (1 : ℝ) else 0 := by
+    intro m n
+    rw [hbase m n]
+    split_ifs with h
+    · subst h
+      rw [Real.mul_self_sqrt (by positivity : (0 : ℝ) ≤ (2 * (m : ℝ) + 1) / 2)]
+      have h2 : (2 * (m : ℝ) + 1) ≠ 0 := by positivity
+      field_simp
+    · rw [mul_zero]
+  constructor
+  · intro n
+    have h : ‖legendreLp n‖ ^ 2 = 1 := by
+      rw [← real_inner_self_eq_norm_sq, hinner n n]
+      simp
+    nlinarith [norm_nonneg (legendreLp n)]
+  · intro m n hmn
+    rw [hinner m n]
+    simp [hmn]
+
+/-- **Example 3.4.8**, the completeness half: the normalized Legendre polynomials form a Hilbert
+basis of `L²(-1, 1)`. Orthonormality is (3.5.5); completeness is the density of the polynomials,
+which is Weierstrass together with the density of the continuous functions in `L²`. -/
+noncomputable def legendreHilbertBasis : HilbertBasis ℕ ℝ (Lp ℝ 2 legendreMeasure) :=
+  hilbertBasisOfDegreeEq isWeight_legendreMeasure legendreMeasure_compl_Icc
+    degree_legendreNormalized orthonormal_legendreLp
+
+/-- The Legendre Hilbert basis is the family of normalized Legendre polynomials. -/
+@[simp]
+theorem coe_legendreHilbertBasis : ⇑legendreHilbertBasis = legendreLp :=
+  coe_hilbertBasisOfDegreeEq _ _ _ _
+
+/-- **Example 3.4.8.** For the Legendre weight on `(-1, 1)`:
+
+* the normalized Legendre polynomials `Lₙ` are orthonormal;
+* `P_N u = ∑_{i ≤ N} (u, Lᵢ) Lᵢ` is the best `L²(-1, 1)` approximation of `u` by polynomials of
+  degree at most `N`, by (3.4.6);
+* `‖u - P_N u‖ → 0`, so `u = ∑_i (u, Lᵢ) Lᵢ` in `L²(-1, 1)`; and
+* Parseval's equality `‖u‖² = ∑_i (u, Lᵢ)²` holds.
+
+The last two are the content of the example: they say that the `Lₙ` are not merely orthonormal but
+complete, which is where Weierstrass enters. -/
+theorem example_3_4_8 (N : ℕ) (u : Lp ℝ 2 legendreMeasure) :
+    Orthonormal ℝ legendreLp ∧
+      IsBestApprox
+        ((Polynomial.degreeLE ℝ N).map isWeight_legendreMeasure.toLpₗ :
+          Set (Lp ℝ 2 legendreMeasure))
+        u (∑ k ∈ Finset.range (N + 1), inner ℝ (legendreLp k) u • legendreLp k) ∧
+      HasSum (fun n => inner ℝ (legendreLp n) u • legendreLp n) u ∧
+      Tendsto
+        (fun N => ‖u - ∑ k ∈ Finset.range (N + 1), inner ℝ (legendreLp k) u • legendreLp k‖)
+        atTop (𝓝 0) ∧
+      HasSum (fun n => inner ℝ (legendreLp n) u ^ 2) (‖u‖ ^ 2) := by
+  have hsum : HasSum (fun n => inner ℝ (legendreLp n) u • legendreLp n) u := by
+    simpa only [coe_legendreHilbertBasis, HilbertBasis.repr_apply_apply] using
+      legendreHilbertBasis.hasSum_repr u
+  have htend : Tendsto
+      (fun N => ∑ k ∈ Finset.range (N + 1), inner ℝ (legendreLp k) u • legendreLp k) atTop (𝓝 u) :=
+    hsum.tendsto_sum_nat.comp (Filter.tendsto_add_atTop_nat 1)
+  refine ⟨orthonormal_legendreLp, ?_, hsum, ?_, ?_⟩
+  · have h := isBestApprox_truncation_of_degree_eq isWeight_legendreMeasure
+      degree_legendreNormalized orthonormal_legendreLp N u
+    rw [Fin.sum_univ_eq_sum_range fun k =>
+      inner ℝ (isWeight_legendreMeasure.toLpₗ (legendreNormalized k)) u •
+        isWeight_legendreMeasure.toLpₗ (legendreNormalized k)] at h
+    exact h
+  · simpa only [norm_sub_rev] using tendsto_iff_norm_sub_tendsto_zero.1 htend
+  · have h := legendreHilbertBasis.hasSum_inner_mul_inner u u
+    rw [real_inner_self_eq_norm_sq] at h
+    refine h.congr_fun fun n => ?_
+    rw [coe_legendreHilbertBasis, real_inner_comm, sq]
+
+end Legendre
+
+/-! ### Example 3.4.9: least squares by trigonometric polynomials in `L²(0, 2π)` -/
+
+section Fourier
+
+open MeasureTheory Real
+
+/-- The book's `𝕋ₙ` inside `L²(0, 2π)`: the image of the trigonometric polynomials of degree at
+most `n` under the inclusion `C(ℝ/2πℤ, ℝ) → L²`. -/
+noncomputable def trigPolyLpLE (n : ℕ) :
+    Submodule ℝ (Lp ℝ 2 (AddCircle.haarAddCircle : Measure (AddCircle (2 * π)))) :=
+  (trigPolyLE (2 * π) n).map
+    (ContinuousMap.toLp (E := ℝ) 2 AddCircle.haarAddCircle ℝ).toLinearMap
+
+/-- `𝕋ₙ` inside `L²` is spanned by the members of the trigonometric system of index at most
+`n`. -/
+theorem trigPolyLpLE_eq_span (n : ℕ) :
+    trigPolyLpLE n = Submodule.span ℝ (trigLp (2 * π) '' Set.Icc (-(n : ℤ)) n) := by
+  rw [trigPolyLpLE, trigPolyLE, Submodule.map_span, ← Set.image_comp]
+  rfl
+
+/-- **Example 3.4.9.** For `f ∈ L²(0, 2π)`:
+
+* the best `L²` approximation of `f` from `𝕋ₙ` is the `n`-th partial sum of its Fourier series,
+  `S_n f = ∑_{|m| ≤ n} (f, φₘ) φₘ` in the real trigonometric system `φ = trigFun (2π)`; and
+* letting `n → ∞` gives the Fourier expansion (3.4.10) of `f` in `L²`.
+
+**Normalization.** The measure here is `AddCircle.haarAddCircle`, the *probability* Haar measure of
+the circle, so the inner product is `(2π)⁻¹ ∫_{-π}^{π}` and `trigFun (2π)` is `√(2π)` times the
+book's orthonormal system `1/√(2π), cos (j x)/√π, sin (j x)/√π` of Theorem 1.3.13. The two
+rescalings cancel in `(f, φₘ) φₘ`, so the three assertions are the book's verbatim; only the
+numerical value of `‖·‖` differs, by the constant `√(2π)`. (`equation_3_7_5` of §3.7 uses the
+unnormalized measure of the same circle instead, because there the constant `√(2π)` is the
+statement.)
+
+The book writes the partial sum in the classical coefficients as
+`a₀/2 + ∑_{j ≤ n} (aⱼ cos (j x) + bⱼ sin (j x))`, with `aⱼ, bⱼ` the integrals (3.4.9) = (4.1.2)
+that Chapter 4 works with; the dictionary between those and the coefficients `(f, φₘ)` against the
+orthonormal system is `AtkinsonHan.Chapter04.equation_4_1_3_const`, `_cos` and `_sin`, which supply
+the factors `2` and `√2`. -/
+theorem example_3_4_9 (n : ℕ)
+    (f : Lp ℝ 2 (AddCircle.haarAddCircle : Measure (AddCircle (2 * π)))) :
+    IsBestApprox (trigPolyLpLE n : Set (Lp ℝ 2 AddCircle.haarAddCircle)) f
+        (trigPartialSum n f) ∧
+      trigPartialSum n f
+        = ∑ m ∈ Finset.Icc (-(n : ℤ)) n, inner ℝ (trigLp (2 * π) m) f • trigLp (2 * π) m ∧
+      HasSum
+        (fun m : ℤ => realFourierCoeff (f : AddCircle (2 * π) → ℝ) m • trigLp (2 * π) m) f := by
+  classical
+  have hcoeff : trigPartialSum n f
+      = ∑ m ∈ Finset.Icc (-(n : ℤ)) n, inner ℝ (trigLp (2 * π) m) f • trigLp (2 * π) m :=
+    Finset.sum_congr rfl fun m _ => by rw [inner_trigLp]
+  refine ⟨?_, hcoeff, hasSum_trigSeries f⟩
+  have hspan : (((Finset.Icc (-(n : ℤ)) n).image (trigLp (2 * π)) : Finset _) :
+      Set (Lp ℝ 2 (AddCircle.haarAddCircle : Measure (AddCircle (2 * π)))))
+      = trigLp (2 * π) '' Set.Icc (-(n : ℤ)) n := by
+    rw [Finset.coe_image, Finset.coe_Icc]
+  have hproj := isBestApprox_starProjection
+    (Submodule.span ℝ (((Finset.Icc (-(n : ℤ)) n).image (trigLp (2 * π)) : Finset _) :
+      Set (Lp ℝ 2 (AddCircle.haarAddCircle : Measure (AddCircle (2 * π)))))) f
+  rw [equation_3_4_6 orthonormal_trigFun _ f, hspan] at hproj
+  rw [trigPolyLpLE_eq_span, hcoeff]
+  exact hproj
+
+end Fourier
 
 end AtkinsonHan.Chapter03

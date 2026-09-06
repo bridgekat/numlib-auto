@@ -43,6 +43,7 @@ import Numlib.Approximation.OrthogonalDecomposition
 import Numlib.Approximation.OrthogonalPolynomial
 import Numlib.Approximation.Quadrature
 import Numlib.Approximation.Trigonometric
+import Numlib.Approximation.TrigonometricInterpolation
 import Numlib.Approximation.Unisolvent
 import Numlib.Combinatorics.SimpleGraph.Coloring
 import Numlib.Combinatorics.SimpleGraph.IndepSet
@@ -139,6 +140,7 @@ import Numlib.Variational.Inequality.Basic
 import Numlib.Variational.LaxMilgram
 import Numlib.Variational.Minimization
 import Numlib.Variational.ProjectionMethod
+import Numlib.Variational.WeakMinimization
 
 /-!
 # Numlib

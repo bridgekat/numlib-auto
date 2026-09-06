@@ -11,3 +11,15 @@ id = "corollary_3_1_3"
 
 [[node]]
 id = "corollary_3_1_4"
+
+[[node]]
+id = "theorem_3_1_5"
+kind = "theorem"
+desc = '''Muntz's theorem: for `0 < l_1 < l_2 < ... -> infinity`, the span of `{x^{l_j}}` is dense in
+`L^2(0, 1)` if and only if `sum 1 / l_j = infinity`.
+
+Not attempted. The missing machinery is the Muntz-Szasz theorem itself, which is a development of
+its own -- the Gram determinant of the system `{x^{l_j}}` in `L^2(0, 1)`, whose explicit Cauchy-type
+product is what turns the divergence of `sum 1 / l_j` into density, or the Blaschke-product proof
+through Hardy space theory. Mathlib has neither. Nothing else in the corpus depends on it, and
+`Section01.lean` records it as not formalized.'''

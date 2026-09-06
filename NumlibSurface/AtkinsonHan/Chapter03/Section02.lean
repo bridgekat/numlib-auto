@@ -1,4 +1,5 @@
 import Mathlib.LinearAlgebra.Vandermonde
+import Numlib.Approximation.DividedDifference
 import Numlib.Approximation.Hermite
 
 /-!
@@ -20,7 +21,8 @@ and trigonometric interpolation.
 * `equation_3_2_1`, `equation_3_2_2`, `equation_3_2_3` — Lagrange interpolation: unique solvability
   in `𝒫ₙ`, the Vandermonde determinant `∏_{j > i} (xⱼ − xᵢ)`, and Lagrange's formula with its
   cardinal basis `φᵢ (xⱼ) = δᵢⱼ`.
-* `proposition_3_2_4` — the error formula `f(x) − pₙ(x) = ωₙ(x) f⁽ⁿ⁺¹⁾(ξₓ) / (n + 1)!`.
+* `proposition_3_2_4` — the error formula `f(x) − pₙ(x) = ωₙ(x) f⁽ⁿ⁺¹⁾(ξₓ) / (n + 1)!`, and
+  `equation_3_2_5` its divided-difference form `f(x) − pₙ(x) = ωₙ(x) f[x₀, …, xₙ, x]`.
 * `equation_3_2_6`, `exercise_3_2_6`, `equation_3_2_6_general` and
   `equation_3_2_6_general_error` — Hermite interpolation at simple nodes and with multiplicities,
   with the error formula in both forms.
@@ -56,8 +58,8 @@ carried out once and for all in `Numlib/Approximation/Chebyshev`.
 
 * The `H²(a, b)` estimates (3.2.10)–(3.2.12) for piecewise linear interpolation, which need Sobolev
   spaces; they are out of scope with the rest of that material.
-* The divided-difference form (3.2.5) of the Lagrange error and the Newton form of the interpolant,
-  which the book only cites.
+* The Newton form of the interpolant, which the book only cites; (3.2.5), the divided-difference
+  form of the error, is `equation_3_2_5` above and rests on `DividedDifference.newton`.
 * Example 3.2.5 and Table 3.1, which are numerical illustrations.
 -/
 
@@ -212,6 +214,20 @@ theorem proposition_3_2_4 {f : ℝ → ℝ} (hf : ContDiff ℝ ((n + 1 : ℕ) : 
     rw [hev, sub_self, Finset.prod_eq_zero (Finset.mem_univ (0 : Fin (n + 1)))
       (by rw [hxt 0, sub_self])]
     simp
+
+/-- **(3.2.5).** The divided-difference form of the Lagrange interpolation error: with `pₙ` the
+interpolant of `f` at the `n + 1` distinct nodes `x₀, …, xₙ` and `x` none of them,
+
+`f(x) - pₙ(x) = ωₙ(x) f[x₀, …, xₙ, x]`,   `ωₙ(x) = ∏ᵢ (x - xᵢ)`,
+
+with `f[·]` the Newton divided difference of order `n + 1`. Unlike Proposition 3.2.4 it asks nothing
+of `f` beyond its values at the nodes and at `x`; the book states it in passing and uses it for the
+Newton form of the interpolant. -/
+theorem equation_3_2_5 {f : ℝ → ℝ} {x : Fin (n + 1) → ℝ} (hx : Function.Injective x) {t : ℝ}
+    (ht : ∀ i, x i ≠ t) :
+    f t - (Lagrange.interpolate Finset.univ x fun i => f (x i)).eval t
+      = (∏ i, (t - x i)) * DividedDifference.newton f (Fin.snoc x t) :=
+  DividedDifference.sub_eval_interpolate_eq_newton f hx ht
 
 end Lagrange
 

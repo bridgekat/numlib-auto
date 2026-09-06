@@ -12,10 +12,9 @@ its infimum as soon as `K` is bounded, or the functional is coercive on `K` in t
 needs to be convex: convexity enters only in the uniqueness clause `IsMinOn.eq_of_strictConvexOn`.
 
 The infinite-dimensional theorems of the same section — existence on a closed convex set of a
-*reflexive* space — are not stated here.  They rest on weak sequential compactness of bounded sets
-in a reflexive space, which Mathlib does not have; stating them with that compactness as an explicit
-hypothesis would misrepresent them.  When Mathlib acquires reflexivity they belong in this module,
-with the existence of best approximations in a reflexive space as the first corollary.
+*reflexive* space — are in `Numlib.Variational.WeakMinimization`.  They rest on weak sequential
+compactness of bounded sets, which is what reflexivity is used for and which that module carries as
+the class `WeaklySeqCompactSpace`, Mathlib having no reflexivity class of its own.
 -/
 
 open Bornology

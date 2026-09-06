@@ -25,3 +25,17 @@ id = "continuous_firstOrder"
 
 [[node]]
 id = "continuous_secondOrder"
+
+[[node]]
+id = "newton"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (3.2.5)"
+
+[[node]]
+id = "newton_eq_coeff"
+
+[[node]]
+id = "sub_eval_interpolate_eq_newton"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (3.2.5)"
+
+[[node]]
+id = "newton_pair"

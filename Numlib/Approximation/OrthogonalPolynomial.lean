@@ -1,8 +1,11 @@
 import Mathlib.Algebra.Polynomial.Sequence
 import Mathlib.Analysis.Calculus.Deriv.Polynomial
+import Mathlib.Analysis.InnerProductSpace.l2Space
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Orthogonality
+import Mathlib.MeasureTheory.Function.ContinuousMapDense
 import Mathlib.MeasureTheory.Function.L2Space
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
+import Mathlib.Topology.ContinuousMap.Weierstrass
 import Numlib.Approximation.BestApprox
 
 /-!
@@ -40,7 +43,14 @@ recurrence, the orthonormal family obtained by scaling it, and the truncated exp
 * `OrthogonalPolynomial.exists_injective_family_eq_prod`: `family μ n` has `n` distinct real roots —
   the nodes of the `n`-point Gauss quadrature rule of `μ`.
 * `OrthogonalPolynomial.isBestApprox_truncation`: the truncated expansion is the best `L²(μ)`
-  approximation by polynomials of degree at most `N`.
+  approximation by polynomials of degree at most `N`, and
+  `OrthogonalPolynomial.isBestApprox_truncation_of_degree_eq` the same for a family that is already
+  orthonormal.
+* `OrthogonalPolynomial.IsWeight.denseRange_toLpₗ`: for a weight carried by a compact interval the
+  polynomials are dense in `L²(μ)`, by Weierstrass; hence
+  `OrthogonalPolynomial.hilbertBasis`, the orthonormal polynomials as a Hilbert basis of `L²(μ)`,
+  and `OrthogonalPolynomial.hilbertBasisOfDegreeEq` for any orthonormal family with one polynomial
+  of each degree.
 * `Polynomial.legendre_recurrence`, `Polynomial.legendre_ode` and
   `Polynomial.integral_legendre_mul_legendre` for the Legendre family, with
   `OrthogonalPolynomial.family_eq_legendre` identifying its monic rescaling with the general
@@ -888,6 +898,160 @@ theorem isBestApprox_truncation (hw : IsWeight μ) (N : ℕ) (u : Lp ℝ 2 μ) :
     rw [hw.inner_toLpₗ, integral_family_mul_family hw hne, mul_zero]
   · intro h
     exact absurd (Finset.mem_univ j) h
+
+/-! ### Completeness: the orthonormal polynomials as a Hilbert basis
+
+For a weight carried by a compact interval the polynomials are dense in `L²(μ)`, so an orthonormal
+family of polynomials with one member of each degree is a Hilbert basis: the expansion of `u`
+converges in `L²(μ)` and Parseval's identity holds. -/
+
+namespace IsWeight
+
+/-- **The polynomials are dense in `L²(μ)`** when the weight is carried by a compact interval.
+
+Three steps: the bounded continuous functions are dense in `L²` of a finite Borel measure on `ℝ`
+(`BoundedContinuousFunction.toLp_denseRange`); Weierstrass approximates one of them uniformly on the
+interval; and for a finite measure carried by that interval a uniform bound is an `L²` bound
+(`MeasureTheory.Lp.norm_le_of_ae_bound`). -/
+theorem denseRange_toLpₗ (hw : IsWeight μ) {a b : ℝ} (hsupp : μ (Set.Icc a b)ᶜ = 0) :
+    DenseRange (hw.toLpₗ : ℝ[X] → Lp ℝ 2 μ) := by
+  have := hw.isFiniteMeasure
+  -- a uniform bound is an `L²` bound, with a constant depending only on the total mass
+  obtain ⟨M, hM0, hMle⟩ : ∃ M : ℝ, 0 ≤ M ∧ ∀ (F : Lp ℝ 2 μ) (C : ℝ), 0 ≤ C →
+      (∀ᵐ x ∂μ, ‖F x‖ ≤ C) → ‖F‖ ≤ M * C := by
+    refine ⟨_, ?_, fun F C hC h => Lp.norm_le_of_ae_bound hC h⟩
+    positivity
+  have hae : ∀ᵐ x ∂μ, x ∈ Set.Icc a b := by
+    rw [MeasureTheory.ae_iff]
+    exact hsupp
+  rw [Metric.denseRange_iff]
+  intro F ε hε
+  set δ : ℝ := ε / 2 / (M + 1) with hδ
+  have hδ0 : 0 < δ := by positivity
+  -- a bounded continuous function close to `F` in `L²`
+  obtain ⟨g, hg⟩ := Metric.denseRange_iff.1
+    (BoundedContinuousFunction.toLp_denseRange (p := 2) ℝ μ ℝ (by simp)) F (ε / 2) (by linarith)
+  -- a polynomial uniformly close to it on the interval
+  obtain ⟨p, hp⟩ := exists_polynomial_near_continuousMap a b
+    ((g : C(ℝ, ℝ)).restrict (Set.Icc a b)) δ hδ0
+  refine ⟨p, lt_of_le_of_lt (dist_triangle F (BoundedContinuousFunction.toLp 2 μ ℝ g)
+    (hw.toLpₗ p)) ?_⟩
+  have hkey : ∀ y ∈ Set.Icc a b, |Polynomial.eval y p - g y| ≤ δ := by
+    intro y hy
+    have h := ContinuousMap.norm_coe_le_norm
+      (p.toContinuousMapOn (Set.Icc a b) - (g : C(ℝ, ℝ)).restrict (Set.Icc a b)) ⟨y, hy⟩
+    simpa [Real.norm_eq_abs] using h.trans hp.le
+  have hbound : ‖BoundedContinuousFunction.toLp 2 μ ℝ g - hw.toLpₗ p‖ ≤ M * δ := by
+    refine hMle _ δ hδ0.le ?_
+    filter_upwards [Lp.coeFn_sub (BoundedContinuousFunction.toLp 2 μ ℝ g) (hw.toLpₗ p),
+      BoundedContinuousFunction.coeFn_toLp (p := 2) (𝕜 := ℝ) (μ := μ) g, hw.coeFn_toLpₗ p, hae]
+      with x hsub hgx hpx hx
+    rw [hsub, Pi.sub_apply, hgx, hpx, Real.norm_eq_abs, abs_sub_comm]
+    exact hkey x hx
+  have hM1 : (0 : ℝ) < M + 1 := by linarith
+  have hd : δ * (M + 1) = ε / 2 := by rw [hδ]; field_simp
+  have hMδ : M * δ < ε / 2 := by nlinarith
+  have hdist : dist (BoundedContinuousFunction.toLp 2 μ ℝ g) (hw.toLpₗ p) ≤ M * δ := by
+    rw [dist_eq_norm]; exact hbound
+  linarith
+
+end IsWeight
+
+/-- A family of polynomials with one member of each degree spans, in `L²(μ)`, the whole image of the
+polynomials. -/
+theorem span_range_toLpₗ (hw : IsWeight μ) {q : ℕ → ℝ[X]} (hdeg : ∀ n, (q n).degree = n) :
+    Submodule.span ℝ (Set.range (⇑hw.toLpₗ ∘ q)) = LinearMap.range hw.toLpₗ := by
+  have hunit : ∀ i, IsUnit (q i).leadingCoeff := by
+    intro i
+    refine isUnit_iff_ne_zero.2 (Polynomial.leadingCoeff_ne_zero.2 fun h => ?_)
+    have := hdeg i
+    rw [h, Polynomial.degree_zero] at this
+    simp at this
+  rw [Set.range_comp, Submodule.span_image,
+    Polynomial.Sequence.span (S := ⟨q, hdeg⟩) hunit, Submodule.map_top]
+
+/-- The span of the first `N + 1` members of a family of polynomials with one member of each degree
+is, in `L²(μ)`, the image of the polynomials of degree at most `N`. -/
+theorem map_degreeLE_toLpₗ_of_degree_eq (hw : IsWeight μ) {q : ℕ → ℝ[X]}
+    (hdeg : ∀ n, (q n).degree = n) (N : ℕ) :
+    (Polynomial.degreeLE ℝ N).map hw.toLpₗ =
+      Submodule.span ℝ (Set.range fun k : Fin (N + 1) => hw.toLpₗ (q k)) := by
+  have hunit : ∀ i ≤ N, IsUnit (q i).leadingCoeff := by
+    intro i _
+    refine isUnit_iff_ne_zero.2 (Polynomial.leadingCoeff_ne_zero.2 fun h => ?_)
+    have := hdeg i
+    rw [h, Polynomial.degree_zero] at this
+    simp at this
+  rw [← Polynomial.Sequence.span_degreeLE (S := ⟨q, hdeg⟩) hunit, Submodule.map_span]
+  congr 1
+  ext y
+  constructor
+  · rintro ⟨z, ⟨k, hk, rfl⟩, rfl⟩
+    exact ⟨⟨k, Nat.lt_succ_of_le hk⟩, rfl⟩
+  · rintro ⟨k, rfl⟩
+    exact ⟨q k, ⟨k, Nat.lt_succ_iff.mp k.2, rfl⟩, rfl⟩
+
+/-- **The truncated expansion in an orthonormal polynomial family is the best `L²(μ)`
+approximation** by polynomials of degree at most `N`. This is `isBestApprox_truncation` for a family
+that is already normalized, where the coefficients are the plain inner products. -/
+theorem isBestApprox_truncation_of_degree_eq (hw : IsWeight μ) {q : ℕ → ℝ[X]}
+    (hdeg : ∀ n, (q n).degree = n) (hon : Orthonormal ℝ fun n => hw.toLpₗ (q n)) (N : ℕ)
+    (u : Lp ℝ 2 μ) :
+    IsBestApprox ((Polynomial.degreeLE ℝ N).map hw.toLpₗ : Set (Lp ℝ 2 μ)) u
+      (∑ k : Fin (N + 1), inner ℝ (hw.toLpₗ (q k)) u • hw.toLpₗ (q k)) := by
+  classical
+  have hon' : Orthonormal ℝ fun k : Fin (N + 1) => hw.toLpₗ (q k) :=
+    hon.comp (fun k : Fin (N + 1) => (k : ℕ)) Fin.val_injective
+  rw [map_degreeLE_toLpₗ_of_degree_eq hw hdeg N, isBestApprox_sum_iff]
+  intro j
+  simp [orthonormal_iff_ite.1 hon' j]
+
+/-- **An orthonormal family of polynomials with one member of each degree is a Hilbert basis of
+`L²(μ)`**, provided the weight is carried by a compact interval so that Weierstrass applies. -/
+noncomputable def hilbertBasisOfDegreeEq (hw : IsWeight μ) {a b : ℝ}
+    (hsupp : μ (Set.Icc a b)ᶜ = 0) {q : ℕ → ℝ[X]} (hdeg : ∀ n, (q n).degree = n)
+    (hon : Orthonormal ℝ fun n => hw.toLpₗ (q n)) : HilbertBasis ℕ ℝ (Lp ℝ 2 μ) := by
+  refine HilbertBasis.mk hon ?_
+  rw [show (Set.range fun n => hw.toLpₗ (q n)) = Set.range (⇑hw.toLpₗ ∘ q) from rfl,
+    span_range_toLpₗ hw hdeg]
+  intro x _
+  have hx : x ∈ closure (Set.range ⇑hw.toLpₗ) := hw.denseRange_toLpₗ hsupp x
+  rwa [← LinearMap.coe_range, ← Submodule.topologicalClosure_coe] at hx
+
+/-- The Hilbert basis built from a family of polynomials is that family. -/
+@[simp]
+theorem coe_hilbertBasisOfDegreeEq (hw : IsWeight μ) {a b : ℝ} (hsupp : μ (Set.Icc a b)ᶜ = 0)
+    {q : ℕ → ℝ[X]} (hdeg : ∀ n, (q n).degree = n)
+    (hon : Orthonormal ℝ fun n => hw.toLpₗ (q n)) :
+    ⇑(hilbertBasisOfDegreeEq hw hsupp hdeg hon) = fun n => hw.toLpₗ (q n) :=
+  HilbertBasis.coe_mk hon _
+
+/-- The orthonormal polynomials of a weight are orthonormal in `L²(μ)`. -/
+theorem orthonormal_toLpₗ_orthonormalFamily (hw : IsWeight μ) :
+    Orthonormal ℝ fun n => hw.toLpₗ (orthonormalFamily μ n) := by
+  constructor
+  · intro n
+    have h : ‖hw.toLpₗ (orthonormalFamily μ n)‖ ^ 2 = 1 := by
+      rw [← real_inner_self_eq_norm_sq, hw.inner_toLpₗ]
+      simpa only [← sq] using integral_orthonormalFamily_sq hw n
+    nlinarith [norm_nonneg (hw.toLpₗ (orthonormalFamily μ n))]
+  · intro m n hmn
+    rw [hw.inner_toLpₗ]
+    exact integral_orthonormalFamily_mul hw hmn
+
+/-- **The orthonormal polynomials of a weight carried by a compact interval form a Hilbert basis of
+`L²(μ)`**: every `u ∈ L²(μ)` is the sum of its orthogonal expansion, and Parseval's identity holds.
+This is the completeness that [han2009theoretical] Example 3.4.8 asserts for the Legendre family. -/
+noncomputable def hilbertBasis (hw : IsWeight μ) {a b : ℝ} (hsupp : μ (Set.Icc a b)ᶜ = 0) :
+    HilbertBasis ℕ ℝ (Lp ℝ 2 μ) :=
+  hilbertBasisOfDegreeEq hw hsupp (degree_orthonormalFamily hw)
+    (orthonormal_toLpₗ_orthonormalFamily hw)
+
+/-- The Hilbert basis of a weight is its family of orthonormal polynomials. -/
+@[simp]
+theorem coe_hilbertBasis (hw : IsWeight μ) {a b : ℝ} (hsupp : μ (Set.Icc a b)ᶜ = 0) :
+    ⇑(hilbertBasis hw hsupp) = fun n => hw.toLpₗ (orthonormalFamily μ n) :=
+  coe_hilbertBasisOfDegreeEq _ _ _ _
 
 end OrthogonalPolynomial
 

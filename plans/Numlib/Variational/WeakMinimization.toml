@@ -1,0 +1,62 @@
+[[node]]
+id = "WeakSeqTendsto"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 3.3.3"
+
+[[node]]
+id = "weakSeqTendsto_iff_tendsto_toWeakSpace"
+
+[[node]]
+id = "WeakSeqTendsto.comp"
+
+[[node]]
+id = "WeakSeqTendsto.of_tendsto"
+
+[[node]]
+id = "WeaklySeqCompactSpace"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 2.7.5"
+
+[[node]]
+id = "IsWeakSeqClosed"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.8"
+
+[[node]]
+id = "WeakSeqLowerSemicontinuousOn"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.8"
+
+[[node]]
+id = "WeakSeqLowerSemicontinuousOn.mono"
+
+[[node]]
+id = "exists_convexCombination_norm_sub_lt"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.11"
+
+[[node]]
+id = "exists_seq_convexCombination_tendsto"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.11"
+
+[[node]]
+id = "Convex.isWeakSeqClosed"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.11"
+
+[[node]]
+id = "ConvexOn.weakSeqLowerSemicontinuousOn"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.11"
+
+[[node]]
+id = "IsWeakSeqClosed.exists_subseq_weakSeqTendsto"
+
+[[node]]
+id = "exists_isMinOn_of_isWeakSeqClosed"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.8"
+
+[[node]]
+id = "exists_isMinOn_of_isCoerciveFunctionalOn"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.10"
+
+[[node]]
+id = "exists_isMinOn_of_convexOn"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.12"
+
+[[node]]
+id = "exists_isBestApprox_of_convex"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.14"

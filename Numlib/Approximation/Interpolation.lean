@@ -454,88 +454,16 @@ theorem interpCLM_isUnisolvent_polyLE {x : Fin (n + 1) → X} (hx : Function.Inj
   exact Finset.sum_congr rfl fun i _ => by rw [cardinalBasisCM_isUnisolvent_polyLE hx i]
 
 /-- **The Lebesgue constant.** The operator norm of the interpolation operator is the largest value
-of the Lebesgue function `t ↦ ∑ i, |ℓ_i t|`.
-
-The upper bound is the triangle inequality. The lower bound needs a continuous function of norm at
-most `1` taking the sign of `ℓ_i t₀` at the node `x i`: the combination `∑ i, sign (ℓ_i t₀) • ℓ_i`
-already takes those values at the nodes, and the Tietze extension theorem replaces it by a function
-with the same values whose range lies in `[-1, 1]`.
+of the Lebesgue function `t ↦ ∑ i, |ℓ_i t|`. It is the polynomial case of
+`Approximation.IsUnisolvent.isGreatest_norm_interpCLM`.
 
 Reference: [han2009theoretical], §3.7.3. -/
 theorem isGreatest_norm_interpolateCLM [Nonempty X] {x : Fin (n + 1) → X}
     (hx : Function.Injective x) :
     IsGreatest (Set.range fun t : X => ∑ i, |basisCM x i t|) ‖interpolateCLM x‖ := by
-  classical
-  have hcont : Continuous fun t : X => ∑ i, |basisCM x i t| :=
-    continuous_finsetSum _ fun i _ => (basisCM x i).continuous.abs
-  obtain ⟨t₀, -, hmax⟩ := isCompact_univ.exists_isMaxOn Set.univ_nonempty hcont.continuousOn
-  set M : ℝ := ∑ i, |basisCM x i t₀| with hM
-  have hmax' : ∀ t : X, (∑ i, |basisCM x i t|) ≤ M := fun t => hmax (Set.mem_univ t)
-  have hMnn : (0 : ℝ) ≤ M := by
-    rw [hM]
-    positivity
-  -- the upper bound
-  have hle : ‖interpolateCLM x‖ ≤ M := by
-    refine ContinuousLinearMap.opNorm_le_bound _ hMnn fun f => ?_
-    rw [ContinuousMap.norm_le _ (by positivity)]
-    intro t
-    rw [Real.norm_eq_abs, interpolateCLM_apply]
-    calc |∑ i, f (x i) * basisCM x i t| ≤ ∑ i, |f (x i) * basisCM x i t| :=
-          Finset.abs_sum_le_sum_abs _ _
-      _ = ∑ i, |f (x i)| * |basisCM x i t| := by simp [abs_mul]
-      _ ≤ ∑ i, ‖f‖ * |basisCM x i t| := by
-          refine Finset.sum_le_sum fun i _ => ?_
-          have hfi := f.norm_coe_le_norm (x i)
-          rw [Real.norm_eq_abs] at hfi
-          exact mul_le_mul_of_nonneg_right hfi (abs_nonneg _)
-      _ = ‖f‖ * ∑ i, |basisCM x i t| := by rw [Finset.mul_sum]
-      _ ≤ M * ‖f‖ := by
-          rw [mul_comm]
-          exact mul_le_mul_of_nonneg_right (hmax' t) (norm_nonneg _)
-  -- the lower bound
-  have hge : M ≤ ‖interpolateCLM x‖ := by
-    set σ : Fin (n + 1) → ℝ := fun i => if 0 ≤ basisCM x i t₀ then 1 else -1 with hσ
-    have hσmul : ∀ i, σ i * basisCM x i t₀ = |basisCM x i t₀| := by
-      intro i
-      by_cases hb : 0 ≤ basisCM x i t₀
-      · simp [hσ, hb, abs_of_nonneg hb]
-      · simp [hσ, hb, abs_of_neg (not_le.mp hb)]
-    have hσmem : ∀ i, σ i ∈ Set.Icc (-1 : ℝ) 1 := by
-      intro i
-      by_cases hb : 0 ≤ basisCM x i t₀ <;> simp [hσ, hb, Set.mem_Icc]
-    set h : C(X, ℝ) := ∑ i, σ i • basisCM x i with hh
-    have hnode : ∀ j, h (x j) = σ j := fun j => by
-      rw [hh]
-      exact sum_smul_basisCM_apply_node hx σ j
-    have hclosed : IsClosed (Set.range x) := (Set.finite_range x).isClosed
-    have hrange : ∀ u : (Set.range x : Set X),
-        (h.restrict (Set.range x)) u ∈ Set.Icc (-1 : ℝ) 1 := by
-      rintro ⟨-, i, rfl⟩
-      rw [ContinuousMap.restrict_apply, hnode i]
-      exact hσmem i
-    obtain ⟨f, hfmem, hfeq⟩ := ContinuousMap.exists_restrict_eq_forall_mem_of_closed
-      (h.restrict (Set.range x)) hrange ⟨0, by norm_num⟩ hclosed
-    have hfnode : ∀ j, f (x j) = σ j := by
-      intro j
-      have hcongr := congrArg (fun g : C((Set.range x : Set X), ℝ) => g ⟨x j, ⟨j, rfl⟩⟩) hfeq
-      simp only [ContinuousMap.restrict_apply] at hcongr
-      rw [hcongr, hnode j]
-    have hfnorm : ‖f‖ ≤ 1 := by
-      rw [ContinuousMap.norm_le _ zero_le_one]
-      intro u
-      rw [Real.norm_eq_abs, abs_le]
-      exact ⟨(hfmem u).1, (hfmem u).2⟩
-    have hval : interpolateCLM x f t₀ = M := by
-      rw [interpolateCLM_apply, hM]
-      exact Finset.sum_congr rfl fun i _ => by rw [hfnode i, hσmul i]
-    calc M = |interpolateCLM x f t₀| := by rw [hval, abs_of_nonneg hMnn]
-      _ ≤ ‖interpolateCLM x f‖ := by
-          have hb := (interpolateCLM x f).norm_coe_le_norm t₀
-          rwa [Real.norm_eq_abs] at hb
-      _ ≤ ‖interpolateCLM x‖ * ‖f‖ := (interpolateCLM x).le_opNorm f
-      _ ≤ ‖interpolateCLM x‖ * 1 := mul_le_mul_of_nonneg_left hfnorm (norm_nonneg _)
-      _ = ‖interpolateCLM x‖ := mul_one _
-  exact ⟨⟨t₀, (le_antisymm hle hge).symm⟩, by rintro _ ⟨t, rfl⟩; exact (hmax' t).trans hge⟩
+  have h := (isUnisolvent_polyLE hx).isGreatest_norm_interpCLM
+  rw [interpCLM_isUnisolvent_polyLE hx] at h
+  simpa only [cardinalBasisCM_isUnisolvent_polyLE hx] using h
 
 /-- The operator norm of the interpolation operator is the supremum of the Lebesgue function. -/
 theorem norm_interpolateCLM [Nonempty X] {x : Fin (n + 1) → X} (hx : Function.Injective x) :

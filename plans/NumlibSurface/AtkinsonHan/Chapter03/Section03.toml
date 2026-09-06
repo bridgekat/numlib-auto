@@ -50,3 +50,27 @@ id = "theorem_3_3_7'"
 
 [[node]]
 id = "exercise_3_3_8_rpow"
+
+[[node]]
+id = "theorem_3_3_8"
+
+[[node]]
+id = "theorem_3_3_10"
+
+[[node]]
+id = "theorem_3_3_11"
+
+[[node]]
+id = "theorem_3_3_11_isWeakSeqClosed"
+
+[[node]]
+id = "theorem_3_3_11_weakSeqLsc"
+
+[[node]]
+id = "theorem_3_3_12"
+
+[[node]]
+id = "theorem_3_3_14"
+
+[[node]]
+id = "weakSeqTendsto_iff_root"

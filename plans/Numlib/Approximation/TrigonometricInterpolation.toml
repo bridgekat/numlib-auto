@@ -1,0 +1,36 @@
+namespace = "PeriodicCont"
+
+[[node]]
+id = "dirichletShiftCM"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (3.7.19)"
+
+[[node]]
+id = "dirichletShiftCM_coe"
+
+[[node]]
+id = "dirichletShiftCM_mem_trigPolyLE"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 3.7.5"
+
+[[node]]
+id = "dirichletKernel_node_sub"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 3.7.5"
+
+[[node]]
+id = "trigInterpCLM_eq_sum_dirichletShiftCM"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (3.7.19)"
+
+[[node]]
+id = "trigInterpCLM_coe_apply"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (3.7.19)"
+
+[[node]]
+id = "dirichletShiftCM_apply_node"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 3.7.5"
+
+[[node]]
+id = "cardinalBasisCM_trigInterpNode"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 3.7.5"
+
+[[node]]
+id = "isGreatest_norm_trigInterpCLM"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (3.7.20)"

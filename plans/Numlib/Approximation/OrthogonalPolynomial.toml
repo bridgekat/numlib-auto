@@ -69,3 +69,32 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.7.3"
 [[node]]
 id = "orthonormalFamily_recurrence"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Exercises 3.5.5–3.5.6"
+
+[[node]]
+id = "IsWeight.denseRange_toLpₗ"
+
+[[node]]
+id = "span_range_toLpₗ"
+
+[[node]]
+id = "map_degreeLE_toLpₗ_of_degree_eq"
+
+[[node]]
+id = "isBestApprox_truncation_of_degree_eq"
+
+[[node]]
+id = "hilbertBasisOfDegreeEq"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 3.4.8"
+
+[[node]]
+id = "coe_hilbertBasisOfDegreeEq"
+
+[[node]]
+id = "orthonormal_toLpₗ_orthonormalFamily"
+
+[[node]]
+id = "hilbertBasis"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 3.4.8"
+
+[[node]]
+id = "coe_hilbertBasis"

@@ -1,4 +1,5 @@
 import Mathlib.Analysis.Calculus.IteratedDeriv.Defs
+import Mathlib.MeasureTheory.Function.LpSpace.ContinuousFunctions
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
 import Mathlib.Topology.Instances.AddCircle.Defs
 import Mathlib.Topology.MetricSpace.Holder
@@ -7,6 +8,7 @@ import Numlib.Approximation.BestApprox
 import Numlib.Approximation.Jackson
 import Numlib.Approximation.OrthogonalPolynomial
 import Numlib.Approximation.Trigonometric
+import Numlib.Approximation.TrigonometricInterpolation
 import Numlib.Krylov.OrthogonalPolynomials
 
 /-!
@@ -30,20 +32,23 @@ The section's two abstract ingredients are formalized here:
 * `IsPeriodicCont`, `PeriodicCont`, `HolderClass`, `HolderClassIcc` — the function spaces
   `C_p(2π)`, `C_p^{k,α}(2π)` and `C^{k,α}[−1, 1]` that Theorems 3.7.1–3.7.2 speak about,
   as definitions only.
+* `equation_3_7_5` — `‖f - 𝓕ₙ f‖_{L²} ≤ √(2π) ‖f - 𝓕ₙ f‖_∞`, the `L²` norm being taken
+  against the standard measure of the circle, of total mass `2π`.
 * `equation_3_7_6`, `equation_3_7_8`, `equation_3_7_9` — the Dirichlet-kernel representation of
   the Fourier projection `𝓕ₙ`, the closed form of `Dₙ`, and `‖𝓕ₙ‖ = Lₙ`;
-  `norm_fourierProj_asymptotics` is the two-sided `Lₙ ≍ log n` that stands in for (3.7.10).
+  `norm_fourierProj_asymptotics` is the two-sided `Lₙ ≍ log n` that stands in for (3.7.10), and
+  `exists_not_tendsto_fourierProj` is what the book draws from it: a continuous periodic function
+  whose Fourier series does not converge uniformly.
 * `theorem_3_7_1` — **Jackson's theorem** for `C_p^{k,α}(2π)`, a specialization of the backbone's
   `Jackson.infDist_le_of_holder_deriv'`; `equation_3_7_11` and `equation_3_7_12` combine it with
   the Lebesgue lemma to give the rate `c_k log n / n^{k+α}` for the Fourier partial sums.
 * `theorem_3_7_3`, `theorem_3_7_3_confluent` — the Christoffel–Darboux identity for the
   orthonormal polynomials of a weight, in the quotient form the book states and in its confluent
   case `x = t`.
+* `equation_3_7_19` — the Dirichlet-kernel form of the trigonometric interpolatory projection
+  `𝓘ₙ` at the equispaced nodes.
 
 ## Not formalized here
-
-Everything else in §3.7 is deferred to the trigonometric-approximation phase of the backbone,
-because none of the objects it speaks about exist yet in Mathlib or in `Numlib`:
 
 * (3.7.1)–(3.7.2) and **Theorem 3.7.2**, the polynomial half of Jackson's theorem on `[−1, 1]`:
   the transfer of Theorem 3.7.1 through `x = cos θ` is not in the backbone, so the constant `d_k`
@@ -52,12 +57,13 @@ because none of the objects it speaks about exist yet in Mathlib or in `Numlib`:
   halves with different constants, `(4/π²) log n ≤ Lₙ ≤ 1 + log (2 n + 1)`, which is what the
   divergence argument and the convergence rate consume, so `norm_fourierProj_asymptotics` carries
   that name rather than the equation's.
-* (3.7.12), (3.7.22): the resulting `c_k log n / n^{k+α}` bounds.
 * (3.7.13)–(3.7.17): the least-squares projection `P_N` on a weighted `L²_w(−1, 1)`, its kernel
-  `K(x, t)` and `‖P_N‖ = max_x ∫ |K(x, t)| dt`.
-* **Example 3.7.4** (the Chebyshev kernel) and §3.7.3 ((3.7.19) trigonometric Lagrange formula,
-  (3.7.20) `‖𝓘ₙ‖ ≤ 1 + (2/π) log n`), which need interpolatory projections.
-* (3.7.5) `‖f − 𝓕ₙ f‖₂ ≤ √(2π) ‖f − 𝓕ₙ f‖_∞`, which needs `L²` function spaces.
+  `K(x, t)` and `‖P_N‖ = max_x ∫ |K(x, t)| dt`; and **Example 3.7.4**, the Chebyshev kernel, which
+  needs them together with the sharp constant of (3.7.10).
+* (3.7.20) `‖𝓘ₙ‖ ≤ 1 + (2/π) log n` (Rivlin) and, with it, (3.7.21)–(3.7.22): the interpolatory
+  projection itself is the backbone's `trigInterpCLM` and its Dirichlet-kernel form is
+  `equation_3_7_19` below, but the bound on its norm — the plan node
+  `norm_trigInterpCLM_le` — is not proved.
 -/
 
 open Filter Topology
@@ -205,7 +211,71 @@ theorem norm_fourierProj_asymptotics (n : ℕ) :
   rw [norm_fourierProj]
   exact ⟨log_le_lebesgueConstant n, lebesgueConstant_le n⟩
 
+/-- **(3.7.5)**: `‖f - 𝓕ₙ f‖_{L²(-π, π)} ≤ √(2π) ‖f - 𝓕ₙ f‖_∞` for a continuous `2π`-periodic `f`.
+
+The `L²` norm is taken against the standard measure of `ℝ/2πℤ`, which has total mass `2π` and is
+the Lebesgue measure of one period; the constant `√(2π)` is the square root of that mass, and the
+inequality holds for the difference `f - q` with any `q`, not just `q = 𝓕ₙ f`. -/
+theorem equation_3_7_5 (n : ℕ) (f : PeriodicCont) :
+    ‖ContinuousMap.toLp (E := ℝ) 2 (MeasureTheory.volume : MeasureTheory.Measure
+        (AddCircle (2 * π))) ℝ (f - fourierProj n f)‖
+      ≤ √(2 * π) * ‖f - fourierProj n f‖ := by
+  have h2pi : (0 : ℝ) ≤ 2 * π := by positivity
+  have hmass : (MeasureTheory.measureUnivNNReal
+      (MeasureTheory.volume : MeasureTheory.Measure (AddCircle (2 * π))) : ℝ) = 2 * π := by
+    rw [MeasureTheory.measureUnivNNReal, AddCircle.measure_univ, ENNReal.ofReal,
+      ENNReal.toNNReal_coe, Real.coe_toNNReal _ h2pi]
+  have hop : ‖(ContinuousMap.toLp (E := ℝ) 2 (MeasureTheory.volume : MeasureTheory.Measure
+      (AddCircle (2 * π))) ℝ)‖ ≤ √(2 * π) := by
+    refine (ContinuousMap.toLp_norm_le (E := ℝ) (p := 2) (𝕜 := ℝ)
+      (μ := (MeasureTheory.volume : MeasureTheory.Measure (AddCircle (2 * π))))).trans ?_
+    rw [Real.sqrt_eq_rpow, hmass]
+    norm_num
+  refine (ContinuousLinearMap.le_opNorm _ _).trans ?_
+  exact mul_le_mul_of_nonneg_right hop (norm_nonneg _)
+
+/-- **The Fourier series of a continuous periodic function need not converge uniformly.** The
+Lebesgue constants `Lₙ = ‖𝓕ₙ‖` grow like `log n`, so they are unbounded, and
+`exists_not_tendsto_of_not_bddAbove` produces an `f ∈ C_p(2π)` with `𝓕ₙ f ↛ f`. This is the point
+[han2009theoretical] draw from (3.7.10). -/
+theorem exists_not_tendsto_fourierProj :
+    ∃ f : PeriodicCont, ¬ Tendsto (fun n => fourierProj n f) atTop (𝓝 f) := by
+  refine exists_not_tendsto_of_not_bddAbove (fun n => fourierProj n) fun hbd => ?_
+  obtain ⟨C, hC⟩ := hbd
+  have hlog : Tendsto (fun n : ℕ => 4 / π ^ 2 * Real.log n) atTop atTop :=
+    Filter.Tendsto.const_mul_atTop (by positivity)
+      (Real.tendsto_log_atTop.comp tendsto_natCast_atTop_atTop)
+  obtain ⟨n, hn⟩ := (hlog.eventually_gt_atTop C).exists
+  exact absurd (hC ⟨n, rfl⟩) (not_le.2 (lt_of_lt_of_le hn (norm_fourierProj_asymptotics n).1))
+
 end FourierProjection
+
+/-! ### §3.7.3, (3.7.19): the trigonometric interpolatory projection -/
+
+section TrigonometricInterpolation
+
+open Real _root_.PeriodicCont
+
+/-- **(3.7.19)**: the trigonometric interpolant of `f ∈ C_p(2π)` at the `2 n + 1` equispaced nodes
+`xⱼ = 2π j/(2 n + 1)` of (3.2.16) is
+
+`𝓘ₙ f (x) = (2/(2 n + 1)) ∑_{j=0}^{2n} Dₙ(x - xⱼ) f(xⱼ)`,
+
+the discrete analogue of the Dirichlet-kernel formula (3.7.6) for the Fourier projection: the
+cardinal functions of the interpolation problem are the recentred kernels
+`2 Dₙ(· - xⱼ)/(2 n + 1)` (Exercise 3.7.5).
+
+The operator norm `‖𝓘ₙ‖ ≤ 1 + (2/π) log n` of (3.7.20) is not proved; it is the plan node
+`norm_trigInterpCLM_le`. -/
+theorem equation_3_7_19 (n : ℕ) (f : PeriodicCont) (x : ℝ) :
+    trigInterpCLM (2 * π) n f ↑x
+      = 2 / (2 * (n : ℝ) + 1) *
+        ∑ j : Fin (2 * n + 1),
+          dirichletKernel n (x - (j : ℕ) * (2 * π) / (2 * n + 1)) *
+            f (trigInterpNode (2 * π) n j) :=
+  trigInterpCLM_coe_apply n f x
+
+end TrigonometricInterpolation
 
 /-! ### Theorem 3.7.1 and (3.7.11)–(3.7.12): Jackson's theorem and the Fourier series -/
 

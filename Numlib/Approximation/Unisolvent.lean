@@ -1,5 +1,6 @@
 import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
+import Mathlib.Topology.TietzeExtension
 import Numlib.Approximation.Chebyshev
 
 /-!
@@ -39,6 +40,10 @@ is **unisolvent** when it has exactly one solution for every datum. The material
   bounded projection of `C(X, ℝ)` onto the subspace it interpolates in. It is the general form of
   the Lagrange interpolation operator of `Numlib/Approximation/Interpolation`, and it is what turns
   a Haar subspace into a projection operator with no formula for a cardinal basis.
+* `Approximation.IsUnisolvent.isGreatest_norm_interpCLM` and
+  `Approximation.IsUnisolvent.norm_interpCLM` give its operator norm as the largest value of the
+  Lebesgue function `t ↦ ∑ i, |φᵢ t|` — the Lebesgue constant of the interpolation scheme, which is
+  what the uniform error bounds of [han2009theoretical] §3.7.3 are stated in terms of.
 -/
 
 open scoped Matrix
@@ -297,6 +302,99 @@ theorem IsUnisolvent.range_interpCLM
     exact h.interpCLM_mem f
   · intro g hg
     exact ⟨g, h.interpCLM_eq_self hg⟩
+
+/-- **The Lebesgue constant of an interpolation projection.** The operator norm of the projection
+`f ↦ ∑ i, f (x i) • φ_i` is the largest value of its *Lebesgue function* `t ↦ ∑ i, |φ_i t|`.
+
+The upper bound is the triangle inequality. The lower bound needs a continuous function of norm at
+most `1` taking the sign of `φ_i t₀` at the node `x i`: the combination `∑ i, sign (φ_i t₀) • φ_i`
+already takes those values at the nodes, and the Tietze extension theorem replaces it by a function
+with the same values whose range lies in `[-1, 1]`.
+
+Reference: [han2009theoretical], §3.7.3. -/
+theorem IsUnisolvent.isGreatest_norm_interpCLM [Nonempty X] [T2Space X]
+    (h : IsUnisolvent W fun i => ContinuousMap.evalCLM ℝ (x i)) :
+    IsGreatest (Set.range fun t : X => ∑ i, |h.cardinalBasisCM i t|) ‖h.interpCLM‖ := by
+  classical
+  have hcont : Continuous fun t : X => ∑ i, |h.cardinalBasisCM i t| :=
+    continuous_finsetSum _ fun i _ => (h.cardinalBasisCM i).continuous.abs
+  obtain ⟨t₀, -, hmax⟩ := isCompact_univ.exists_isMaxOn Set.univ_nonempty hcont.continuousOn
+  set M : ℝ := ∑ i, |h.cardinalBasisCM i t₀| with hM
+  have hmax' : ∀ t : X, (∑ i, |h.cardinalBasisCM i t|) ≤ M := fun t => hmax (Set.mem_univ t)
+  have hMnn : (0 : ℝ) ≤ M := by
+    rw [hM]
+    positivity
+  -- the upper bound
+  have hle : ‖h.interpCLM‖ ≤ M := by
+    refine ContinuousLinearMap.opNorm_le_bound _ hMnn fun f => ?_
+    rw [ContinuousMap.norm_le _ (by positivity)]
+    intro t
+    rw [Real.norm_eq_abs, IsUnisolvent.interpCLM_apply]
+    calc |∑ i, f (x i) * h.cardinalBasisCM i t| ≤ ∑ i, |f (x i) * h.cardinalBasisCM i t| :=
+          Finset.abs_sum_le_sum_abs _ _
+      _ = ∑ i, |f (x i)| * |h.cardinalBasisCM i t| := by simp [abs_mul]
+      _ ≤ ∑ i, ‖f‖ * |h.cardinalBasisCM i t| := by
+          refine Finset.sum_le_sum fun i _ => ?_
+          have hfi := f.norm_coe_le_norm (x i)
+          rw [Real.norm_eq_abs] at hfi
+          exact mul_le_mul_of_nonneg_right hfi (abs_nonneg _)
+      _ = ‖f‖ * ∑ i, |h.cardinalBasisCM i t| := by rw [Finset.mul_sum]
+      _ ≤ M * ‖f‖ := by
+          rw [mul_comm]
+          exact mul_le_mul_of_nonneg_right (hmax' t) (norm_nonneg _)
+  -- the lower bound
+  have hge : M ≤ ‖h.interpCLM‖ := by
+    set σ : Fin d → ℝ := fun i => if 0 ≤ h.cardinalBasisCM i t₀ then 1 else -1 with hσ
+    have hσmul : ∀ i, σ i * h.cardinalBasisCM i t₀ = |h.cardinalBasisCM i t₀| := by
+      intro i
+      by_cases hb : 0 ≤ h.cardinalBasisCM i t₀
+      · simp [hσ, hb, abs_of_nonneg hb]
+      · simp [hσ, hb, abs_of_neg (not_le.mp hb)]
+    have hσmem : ∀ i, σ i ∈ Set.Icc (-1 : ℝ) 1 := by
+      intro i
+      by_cases hb : 0 ≤ h.cardinalBasisCM i t₀ <;> simp [hσ, hb, Set.mem_Icc]
+    set g : C(X, ℝ) := ∑ i, σ i • h.cardinalBasisCM i with hg
+    have hnode : ∀ j, g (x j) = σ j := by
+      intro j
+      rw [hg]
+      simp only [ContinuousMap.coe_sum, Finset.sum_apply, ContinuousMap.smul_apply, smul_eq_mul,
+        IsUnisolvent.cardinalBasisCM_apply_node]
+      simp
+    have hclosed : IsClosed (Set.range x) := (Set.finite_range x).isClosed
+    have hrange : ∀ u : (Set.range x : Set X),
+        (g.restrict (Set.range x)) u ∈ Set.Icc (-1 : ℝ) 1 := by
+      rintro ⟨-, i, rfl⟩
+      rw [ContinuousMap.restrict_apply, hnode i]
+      exact hσmem i
+    obtain ⟨f, hfmem, hfeq⟩ := ContinuousMap.exists_restrict_eq_forall_mem_of_closed
+      (g.restrict (Set.range x)) hrange ⟨0, by norm_num⟩ hclosed
+    have hfnode : ∀ j, f (x j) = σ j := by
+      intro j
+      have hcongr := congrArg (fun G : C((Set.range x : Set X), ℝ) => G ⟨x j, ⟨j, rfl⟩⟩) hfeq
+      simp only [ContinuousMap.restrict_apply] at hcongr
+      rw [hcongr, hnode j]
+    have hfnorm : ‖f‖ ≤ 1 := by
+      rw [ContinuousMap.norm_le _ zero_le_one]
+      intro u
+      rw [Real.norm_eq_abs, abs_le]
+      exact ⟨(hfmem u).1, (hfmem u).2⟩
+    have hval : h.interpCLM f t₀ = M := by
+      rw [IsUnisolvent.interpCLM_apply, hM]
+      exact Finset.sum_congr rfl fun i _ => by rw [hfnode i, hσmul i]
+    calc M = |h.interpCLM f t₀| := by rw [hval, abs_of_nonneg hMnn]
+      _ ≤ ‖h.interpCLM f‖ := by
+          have hb := (h.interpCLM f).norm_coe_le_norm t₀
+          rwa [Real.norm_eq_abs] at hb
+      _ ≤ ‖h.interpCLM‖ * ‖f‖ := h.interpCLM.le_opNorm f
+      _ ≤ ‖h.interpCLM‖ * 1 := mul_le_mul_of_nonneg_left hfnorm (norm_nonneg _)
+      _ = ‖h.interpCLM‖ := mul_one _
+  exact ⟨⟨t₀, (le_antisymm hle hge).symm⟩, by rintro _ ⟨t, rfl⟩; exact (hmax' t).trans hge⟩
+
+/-- The operator norm of an interpolation projection is the supremum of its Lebesgue function. -/
+theorem IsUnisolvent.norm_interpCLM [Nonempty X] [T2Space X]
+    (h : IsUnisolvent W fun i => ContinuousMap.evalCLM ℝ (x i)) :
+    ‖h.interpCLM‖ = sSup (Set.range fun t : X => ∑ i, |h.cardinalBasisCM i t|) :=
+  h.isGreatest_norm_interpCLM.csSup_eq.symm
 
 end InterpCLM
 

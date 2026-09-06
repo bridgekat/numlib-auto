@@ -1,3 +1,4 @@
+import Mathlib.LinearAlgebra.Lagrange
 import Mathlib.MeasureTheory.Integral.DominatedConvergence
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.IntegrationByParts
 
@@ -25,9 +26,15 @@ order on the diagonal — the parametrized double-layer kernel of a plane curve 
 continuous extension that can be *defined*, not merely proved to exist, by cancelling the divided
 differences against each other.
 
+A second section carries the classical object at `m + 1` distinct nodes, `f[v₀, …, v_m]`, whose use
+is the divided-difference form of the interpolation error, `f(t) - p(t) = ω(t) f[v₀, …, v_m, t]`.
+Mathlib has the top coefficient of an interpolating polynomial as `Lagrange.coeff_eq_sum` but not
+the name or the error formula.
+
 ## Main definitions
 
 * `DividedDifference.firstOrder`, `DividedDifference.secondOrder`.
+* `DividedDifference.newton` — the Newton divided difference `f[v₀, …, v_m]` at `m + 1` nodes.
 
 ## Main statements
 
@@ -35,11 +42,17 @@ differences against each other.
   identities, which are what make the definitions divided differences.
 * `DividedDifference.firstOrder_self`, `DividedDifference.secondOrder_self` — the diagonal values.
 * `DividedDifference.continuous_firstOrder`, `DividedDifference.continuous_secondOrder`.
+* `DividedDifference.newton_eq_coeff` — the Newton divided difference is the coefficient of `X^m`
+  in the interpolating polynomial, and `DividedDifference.newton_pair` identifies the two-node case
+  with `firstOrder`.
+* `DividedDifference.sub_eval_interpolate_eq_newton` — the divided-difference form of the
+  interpolation error.
 
 ## References
 
 The Hermite–Genocchi formula is classical; see [han2009theoretical], §3.2, and
 [kress1998numerical], §8.2. The use made of it here is [han2009theoretical], (13.1.33)–(13.1.34).
+The divided-difference form of the interpolation error is [han2009theoretical], (3.2.5).
 -/
 
 open MeasureTheory Set
@@ -160,5 +173,140 @@ theorem continuous_secondOrder (hc'' : Continuous f'') :
     Continuous fun p : ℝ × ℝ => secondOrder f'' p.1 p.2 :=
   intervalIntegral.continuous_parametric_intervalIntegral_of_continuous'
     (f := fun (p : ℝ × ℝ) (θ : ℝ) => (1 - θ) * f'' ((p.2 - p.1) * θ + p.1)) (by fun_prop) 0 1
+
+/-! ### The Newton divided differences at finitely many nodes
+
+The divided difference of the previous section is the two-node one, written so as to survive the
+collision of its nodes. This section is the classical object at `m + 1` distinct nodes: the
+coefficient `f[v₀, …, v_m]` of the Newton form of the interpolating polynomial. -/
+
+open Polynomial
+
+/-- The **Newton divided difference** `f[v₀, …, v_m]` of `f` at the `m + 1` nodes `v`, in its
+explicit form `∑ᵢ f(vᵢ) / ∏_{j ≠ i} (vᵢ - vⱼ)`.
+
+For distinct nodes it is the coefficient of `X^m` in the polynomial interpolating `f` at them
+(`DividedDifference.newton_eq_coeff`) — its *leading* coefficient exactly when that interpolant has
+degree `m`, and `0` when it has lower degree. That is the property the theory uses; the explicit
+form is taken as the definition because it is visibly symmetric in the nodes and needs no
+hypothesis. -/
+noncomputable def newton {m : ℕ} (f : ℝ → ℝ) (v : Fin (m + 1) → ℝ) : ℝ :=
+  ∑ i, f (v i) / ∏ j ∈ Finset.univ.erase i, (v i - v j)
+
+/-- **The Newton divided difference is the coefficient of `X^m` in the interpolating polynomial.**
+This is `Lagrange.coeff_eq_sum` read backwards. -/
+theorem newton_eq_coeff {m : ℕ} (f : ℝ → ℝ) {v : Fin (m + 1) → ℝ} (hv : Function.Injective v) :
+    newton f v = (Lagrange.interpolate Finset.univ v fun i => f (v i)).coeff m := by
+  have hcard : (Finset.univ : Finset (Fin (m + 1))).card = m + 1 := by simp
+  have hdeg : (Lagrange.interpolate Finset.univ v fun i => f (v i)).degree
+      < (Finset.univ : Finset (Fin (m + 1))).card :=
+    Lagrange.degree_interpolate_lt _ hv.injOn
+  have h := Lagrange.coeff_eq_sum (v := v) hv.injOn hdeg
+  rw [hcard, Nat.add_sub_cancel] at h
+  simp only [newton]
+  rw [h]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  simp only [Lagrange.eval_interpolate_at_node _ hv.injOn (Finset.mem_univ i)]
+
+/-- **The divided-difference form of the interpolation error** ([han2009theoretical], (3.2.5)): if
+`p` interpolates `f` at the `m + 1` distinct nodes `v₀, …, v_m` and `t` is none of them, then
+
+`f(t) - p(t) = ω(t) · f[v₀, …, v_m, t]`,   `ω(t) = ∏ᵢ (t - vᵢ)`.
+
+Unlike the mean-value form `ω(t) f⁽ᵐ⁺¹⁾(ξ)/(m + 1)!` it asks nothing of `f` beyond its values.
+
+The proof is Newton's form of the interpolant: the interpolant `q` at the enlarged node set differs
+from `p` by `f[v₀, …, v_m, t] ω`, because subtracting that multiple of `ω` from `q` leaves a
+polynomial of degree at most `m` that still takes the values of `f` at `v₀, …, v_m`. -/
+theorem sub_eval_interpolate_eq_newton {m : ℕ} (f : ℝ → ℝ) {v : Fin (m + 1) → ℝ}
+    (hv : Function.Injective v) {t : ℝ} (ht : ∀ i, v i ≠ t) :
+    f t - (Lagrange.interpolate Finset.univ v fun i => f (v i)).eval t
+      = (∏ i, (t - v i)) * newton f (Fin.snoc v t) := by
+  classical
+  set w : Fin (m + 2) → ℝ := Fin.snoc v t with hwdef
+  have hwcast : ∀ i : Fin (m + 1), w i.castSucc = v i := by
+    intro i; rw [hwdef]; simp
+  have hwlast : w (Fin.last (m + 1)) = t := by rw [hwdef]; simp
+  have hwinj : Function.Injective w := by
+    intro a b hab
+    induction a using Fin.lastCases with
+    | last =>
+      induction b using Fin.lastCases with
+      | last => rfl
+      | cast j => rw [hwlast, hwcast] at hab; exact absurd hab.symm (ht j)
+    | cast i =>
+      induction b using Fin.lastCases with
+      | last => rw [hwlast, hwcast] at hab; exact absurd hab (ht i)
+      | cast j => rw [hwcast, hwcast] at hab; rw [hv hab]
+  set c : ℝ := newton f w with hcdef
+  set q : ℝ[X] := Lagrange.interpolate Finset.univ w fun j => f (w j) with hqdef
+  set ω : ℝ[X] := Lagrange.nodal Finset.univ v with hωdef
+  -- the top coefficient of the enlarged interpolant is the divided difference
+  have hqc : q.coeff (m + 1) = c := (newton_eq_coeff f hwinj).symm
+  have hqdeg : q.degree < ((m + 2 : ℕ) : WithBot ℕ) := by
+    have h := Lagrange.degree_interpolate_lt (s := (Finset.univ : Finset (Fin (m + 2))))
+      (fun j => f (w j)) hwinj.injOn
+    have hcard : (Finset.univ : Finset (Fin (m + 2))).card = m + 2 := by simp
+    rw [hcard] at h
+    rw [hqdef]
+    exact h
+  have hωdeg : ω.degree = ((m + 1 : ℕ) : WithBot ℕ) := by
+    rw [hωdef, Lagrange.degree_nodal]
+    simp
+  have hωcoeff : ω.coeff (m + 1) = 1 := by
+    have hnd : ω.natDegree = m + 1 := by rw [hωdef, Lagrange.natDegree_nodal]; simp
+    rw [← hnd, ← Polynomial.leadingCoeff, hωdef]
+    exact Lagrange.nodal_monic
+  -- subtracting `c ω` from the enlarged interpolant drops the degree back to `m`
+  have hdeglt : (q - C c * ω).degree < ((m + 1 : ℕ) : WithBot ℕ) := by
+    refine (Polynomial.degree_lt_iff_coeff_zero _ _).2 fun k hk => ?_
+    have hk' : m + 1 ≤ k := by exact_mod_cast hk
+    rw [Polynomial.coeff_sub, Polynomial.coeff_C_mul]
+    rcases eq_or_lt_of_le hk' with heq | hlt
+    · rw [← heq, hqc, hωcoeff, mul_one, sub_self]
+    · have h1 : q.coeff k = 0 :=
+        Polynomial.coeff_eq_zero_of_degree_lt (hqdeg.trans_le (by exact_mod_cast hlt))
+      have h2 : ω.coeff k = 0 :=
+        Polynomial.coeff_eq_zero_of_degree_lt (hωdeg ▸ (by exact_mod_cast hlt))
+      rw [h1, h2, mul_zero, sub_zero]
+  have hvals : ∀ i ∈ (Finset.univ : Finset (Fin (m + 1))),
+      (q - C c * ω).eval (v i) = f (v i) := by
+    intro i _
+    have hq : q.eval (v i) = f (v i) := by
+      have h := Lagrange.eval_interpolate_at_node (fun j => f (w j)) hwinj.injOn
+        (Finset.mem_univ i.castSucc)
+      rwa [hwcast] at h
+    rw [Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_C, hωdef,
+      Lagrange.eval_nodal_at_node (Finset.mem_univ i), mul_zero, sub_zero, hq]
+  have hcard1 : (Finset.univ : Finset (Fin (m + 1))).card = m + 1 := by simp
+  have hp : q - C c * ω = Lagrange.interpolate Finset.univ v fun i => f (v i) :=
+    Lagrange.eq_interpolate_of_eval_eq (fun i => f (v i)) hv.injOn
+      (by rw [hcard1]; exact hdeglt) hvals
+  -- evaluate at `t`
+  have hqt : q.eval t = f t := by
+    have h := Lagrange.eval_interpolate_at_node (fun j => f (w j)) hwinj.injOn
+      (Finset.mem_univ (Fin.last (m + 1)))
+    rwa [hwlast] at h
+  have hωt : ω.eval t = ∏ i, (t - v i) := by rw [hωdef, Lagrange.eval_nodal]
+  have := congrArg (Polynomial.eval t) hp
+  rw [Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_C, hqt, hωt] at this
+  rw [← this]
+  ring
+
+/-- The Newton divided difference at two distinct nodes is the difference quotient, hence the value
+of `DividedDifference.firstOrder` there: the two sections describe the same object. -/
+theorem newton_pair (hf : ∀ x, HasDerivAt f (f' x) x) (hc' : Continuous f') {s t : ℝ}
+    (hst : s ≠ t) : newton f ![t, s] = firstOrder f' s t := by
+  have hne : s - t ≠ 0 := sub_ne_zero.2 hst
+  have hval : newton f ![t, s] = (f s - f t) / (s - t) := by
+    rw [newton, Fin.sum_univ_two]
+    simp only [Matrix.cons_val_zero, Matrix.cons_val_one]
+    rw [show (Finset.univ.erase (0 : Fin 2)) = {1} from rfl,
+      show (Finset.univ.erase (1 : Fin 2)) = {0} from rfl]
+    simp only [Finset.prod_singleton, Matrix.cons_val_zero, Matrix.cons_val_one]
+    field_simp
+    ring
+  rw [hval, sub_eq_mul_firstOrder hf hc' s t]
+  field_simp
 
 end DividedDifference

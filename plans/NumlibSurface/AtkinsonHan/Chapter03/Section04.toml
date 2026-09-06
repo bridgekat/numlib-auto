@@ -35,3 +35,36 @@ id = "theorem_3_4_7"
 
 [[node]]
 id = "proposition_3_4_4'"
+
+[[node]]
+id = "legendreNormalized"
+
+[[node]]
+id = "degree_legendreNormalized"
+
+[[node]]
+id = "legendreMeasure_compl_Icc"
+
+[[node]]
+id = "legendreLp"
+
+[[node]]
+id = "orthonormal_legendreLp"
+
+[[node]]
+id = "legendreHilbertBasis"
+
+[[node]]
+id = "coe_legendreHilbertBasis"
+
+[[node]]
+id = "example_3_4_8"
+
+[[node]]
+id = "trigPolyLpLE"
+
+[[node]]
+id = "trigPolyLpLE_eq_span"
+
+[[node]]
+id = "example_3_4_9"
