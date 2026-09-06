@@ -54,7 +54,7 @@ desc = '''§10.3.2: ILU(0), the incomplete factorization with `P` the off-diagon
 (`Matrix.IsILU0`), with `theorem_10_2_ilu0` specializing Thm 10.2 to it, and the observation that
 the constraints do not determine `L` and `U` uniquely (Saad's remark before Algorithm 10.4) stated
 as a non-uniqueness example on a small matrix.'''
-deps = ["Matrix.IsILU.zeroPattern", "theorem_10_2"]
+deps = ["Matrix.zeroPattern", "Matrix.IsILU0", "theorem_10_2"]
 
 [[node]]
 id = "definition_10_5"

@@ -2,6 +2,7 @@ import Mathlib.Topology.Instances.Matrix
 import Mathlib.Topology.Order.MonotoneConvergence
 import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.LinearAlgebra.Matrix.Order
+import Numlib.LinearAlgebra.Matrix.PerronFrobenius
 
 /-!
 # The nonnegative Neumann criterion, and M-matrices
@@ -156,5 +157,126 @@ theorem diag_pos (i : n) : 0 < A i i := by
     (hA.inv_entrywiseNonneg.apply i i))) (by norm_num)
 
 end IsMMatrix
+
+/-! ### Equivalent characterizations, and the comparison theorem -/
+
+section Comparison
+
+variable {A B : Matrix n n ℝ}
+
+/-- The entries of the Jacobi operator `1 - D⁻¹ A`, with `D` the diagonal of `A`. -/
+private theorem one_sub_diagInv_mul_apply (A : Matrix n n ℝ) (i j : n) :
+    ((1 : Matrix n n ℝ) - diagonal (fun i => (A i i)⁻¹) * A) i j
+      = (1 : Matrix n n ℝ) i j - (A i i)⁻¹ * A i j := by
+  rw [sub_apply, diagonal_mul]
+
+/-- The Jacobi operator `1 - D⁻¹ A` of a matrix with positive diagonal and nonpositive
+off-diagonal entries is entrywise nonnegative. -/
+private theorem entrywiseNonneg_one_sub_diagInv_mul (hoff : ∀ i j, i ≠ j → A i j ≤ 0)
+    (hdiag : ∀ i, 0 < A i i) :
+    ((1 : Matrix n n ℝ) - diagonal (fun i => (A i i)⁻¹) * A).EntrywiseNonneg := by
+  refine entrywiseNonneg_iff.2 fun i j => ?_
+  rw [one_sub_diagInv_mul_apply]
+  rcases eq_or_ne i j with rfl | hij
+  · rw [one_apply_eq, inv_mul_cancel₀ (hdiag i).ne', sub_self]
+  · have h : (A i i)⁻¹ * A i j ≤ 0 :=
+      mul_nonpos_of_nonneg_of_nonpos (inv_nonneg.2 (hdiag i).le) (hoff i j hij)
+    rw [one_apply_ne hij]
+    linarith
+
+/-- `D⁻¹ D = 1` for the diagonal `D` of a matrix with a nowhere vanishing diagonal. -/
+private theorem diagInv_mul_diag (hdiag : ∀ i, A i i ≠ 0) :
+    (diagonal fun i => (A i i)⁻¹) * (diagonal fun i => A i i) = 1 := by
+  rw [diagonal_mul_diagonal,
+    show (fun i => (A i i)⁻¹ * A i i) = fun _ : n => (1 : ℝ) from
+      funext fun i => inv_mul_cancel₀ (hdiag i),
+    diagonal_one]
+
+/-- `D D⁻¹ = 1` for the diagonal `D` of a matrix with a nowhere vanishing diagonal. -/
+private theorem diag_mul_diagInv (hdiag : ∀ i, A i i ≠ 0) :
+    (diagonal fun i => A i i) * (diagonal fun i => (A i i)⁻¹) = 1 := by
+  rw [diagonal_mul_diagonal,
+    show (fun i => A i i * (A i i)⁻¹) = fun _ : n => (1 : ℝ) from
+      funext fun i => mul_inv_cancel₀ (hdiag i),
+    diagonal_one]
+
+/-- **The spectral characterization of an M-matrix** (Saad, *Iterative Methods for Sparse Linear
+Systems*, Theorem 1.31): a real matrix with positive diagonal and nonpositive off-diagonal entries
+is an M-matrix exactly when the spectral radius of its Jacobi operator `1 - D⁻¹ A` is less
+than one, `D` being the diagonal of `A`.
+
+Both directions are the nonnegative Neumann criterion
+`Matrix.EntrywiseNonneg.complexSpectralRadius_lt_one_iff` applied to `B = 1 - D⁻¹ A`, whose
+complement is `1 - B = D⁻¹ A`: nonsingularity of `D⁻¹ A` is nonsingularity of `A`, and
+`(D⁻¹ A)⁻¹ = A⁻¹ D` is entrywise nonnegative exactly when `A⁻¹` is, the diagonal being
+positive. -/
+theorem isMMatrix_iff_complexSpectralRadius_lt_one (hoff : ∀ i j, i ≠ j → A i j ≤ 0)
+    (hdiag : ∀ i, 0 < A i i) :
+    A.IsMMatrix
+      ↔ ((1 : Matrix n n ℝ) - diagonal (fun i => (A i i)⁻¹) * A).complexSpectralRadius < 1 := by
+  have hne : ∀ i, A i i ≠ 0 := fun i => (hdiag i).ne'
+  have hDU : IsUnit (diagonal fun i => (A i i)⁻¹ : Matrix n n ℝ) :=
+    ⟨⟨_, _, diagInv_mul_diag hne, diag_mul_diagInv hne⟩, rfl⟩
+  rw [(entrywiseNonneg_one_sub_diagInv_mul hoff hdiag).complexSpectralRadius_lt_one_iff,
+    sub_sub_cancel]
+  constructor
+  · intro hA
+    have hdet : IsUnit A.det := (isUnit_iff_isUnit_det _).1 hA.isUnit
+    refine ⟨hDU.mul hA.isUnit, ?_⟩
+    have hinv : ((diagonal fun i => (A i i)⁻¹) * A)⁻¹ = A⁻¹ * diagonal fun i => A i i := by
+      refine Matrix.inv_eq_right_inv ?_
+      rw [Matrix.mul_assoc, ← Matrix.mul_assoc A, mul_nonsing_inv A hdet, Matrix.one_mul,
+        diagInv_mul_diag hne]
+    refine entrywiseNonneg_iff.2 fun i j => ?_
+    rw [hinv, mul_diagonal]
+    exact mul_nonneg (hA.inv_entrywiseNonneg.apply i j) (hdiag j).le
+  · rintro ⟨hu, hnn⟩
+    have hdetA : IsUnit A.det := by
+      have h := (isUnit_iff_isUnit_det _).1 hu
+      rw [det_mul] at h
+      exact isUnit_of_mul_isUnit_right h
+    refine ⟨hoff, (isUnit_iff_isUnit_det _).2 hdetA, ?_⟩
+    have hinv : A⁻¹ = ((diagonal fun i => (A i i)⁻¹) * A)⁻¹ * diagonal fun i => (A i i)⁻¹ := by
+      refine Matrix.inv_eq_left_inv ?_
+      rw [Matrix.mul_assoc, nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).1 hu)]
+    refine entrywiseNonneg_iff.2 fun i j => ?_
+    rw [hinv, mul_diagonal]
+    exact mul_nonneg (hnn.apply i j) (inv_nonneg.2 (hdiag j).le)
+
+/-- **The comparison theorem for M-matrices** (Saad, *Iterative Methods for Sparse Linear
+Systems*, Theorem 1.33): a matrix that dominates an M-matrix entrywise and still has nonpositive
+off-diagonal entries is itself an M-matrix.
+
+The diagonals satisfy `0 < A i i ≤ B i i`, and entrywise
+`0 ≤ₑ 1 - D_B⁻¹ B ≤ₑ 1 - D_A⁻¹ A`, because `A i j / A i i ≤ B i j / B i i` for a nonpositive
+numerator that increases and a positive denominator that increases with it. Monotonicity of the
+spectral radius (`Matrix.complexSpectralRadius_le_of_entrywiseLE`) and
+`Matrix.isMMatrix_iff_complexSpectralRadius_lt_one` do the rest.
+
+This is what makes the *dropping* step of an incomplete factorization legitimate: discarding a
+nonpositive off-diagonal entry moves the matrix up in the entrywise order. -/
+theorem IsMMatrix.of_entrywiseLE (hA : A.IsMMatrix) (hAB : A ≤ₑ B)
+    (hoff : ∀ i j, i ≠ j → B i j ≤ 0) : B.IsMMatrix := by
+  have hdiagA : ∀ i, 0 < A i i := hA.diag_pos
+  have hdiagB : ∀ i, 0 < B i i := fun i => (hdiagA i).trans_le (hAB i i)
+  refine (isMMatrix_iff_complexSpectralRadius_lt_one hoff hdiagB).2 ?_
+  refine lt_of_le_of_lt (complexSpectralRadius_le_of_entrywiseLE
+    (entrywiseNonneg_one_sub_diagInv_mul hoff hdiagB) fun i j => ?_)
+    ((isMMatrix_iff_complexSpectralRadius_lt_one hA.offDiag_nonpos hdiagA).1 hA)
+  rw [one_sub_diagInv_mul_apply, one_sub_diagInv_mul_apply]
+  rcases eq_or_ne i j with rfl | hij
+  · rw [inv_mul_cancel₀ (hdiagA i).ne', inv_mul_cancel₀ (hdiagB i).ne']
+  · have hb : B i j ≤ 0 := hoff i j hij
+    have h1 : A i j * (A i i)⁻¹ ≤ B i j * (A i i)⁻¹ :=
+      mul_le_mul_of_nonneg_right (hAB i j) (inv_nonneg.2 (hdiagA i).le)
+    have h2 : B i j * (A i i)⁻¹ ≤ B i j * (B i i)⁻¹ := by
+      have hinv : (B i i)⁻¹ ≤ (A i i)⁻¹ := inv_anti₀ (hdiagA i) (hAB i i)
+      nlinarith
+    have : (A i i)⁻¹ * A i j ≤ (B i i)⁻¹ * B i j := by
+      rw [mul_comm ((A i i)⁻¹), mul_comm ((B i i)⁻¹)]
+      linarith
+    linarith
+
+end Comparison
 
 end Matrix

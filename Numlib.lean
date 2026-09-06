@@ -90,6 +90,7 @@ import Numlib.LinearSolve.Multigrid.TwoGrid
 import Numlib.LinearSolve.Perturbation
 import Numlib.LinearSolve.Preconditioner.ApproximateInverse
 import Numlib.LinearSolve.Preconditioner.Chebyshev
+import Numlib.LinearSolve.Preconditioner.ILU
 import Numlib.LinearSolve.Preconditioner.Polynomial
 import Numlib.LinearSolve.Projection.Additive
 import Numlib.LinearSolve.Projection.Basic

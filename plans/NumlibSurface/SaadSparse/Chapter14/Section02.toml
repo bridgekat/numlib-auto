@@ -1,42 +1,31 @@
 namespace = "SaadSparse.Ch14"
-desc = '''
-§14.2.1–14.2.2, block Gaussian elimination and the properties of the Schur complement. The
-partitioning is the edge-based one of (14.2): interior variables `x` first, interface variables `y`
-last, so the matrix is `fromBlocks B E F C` over `Fin p ⊕ Fin q` and no reindexing is needed.
-
-Algorithm 14.1 is recorded as a function so that Proposition 14.1's three consequences have
-something to be about; every statement specializes
-`Numlib/LinearAlgebra/Matrix/SchurComplement`.
-'''
 
 [[node]]
 id = "schurComplement"
-kind = "definition"
-desc = '''(14.5): the Schur complement `S = C - F B⁻¹ E` associated with the interface variables, that is
-`Matrix.schurComplement` of `fromBlocks B E F C`, together with the reduced right-hand side
-`g' = g - F B⁻¹ f` of (14.4), the restriction `R_y (x, y) = y`, and Algorithm 14.1 as a function.'''
-deps = ["Matrix.schurComplement"]
+
+[[node]]
+id = "schurComplement_eq"
+
+[[node]]
+id = "reducedRhs"
+
+[[node]]
+id = "blockGaussianElimination"
 
 [[node]]
 id = "equation_14_6"
-kind = "theorem"
-desc = '''(14.6): the block LU factorization
-`fromBlocks B E F C = fromBlocks 1 0 (F B⁻¹) 1 * fromBlocks B E 0 S`, so the Schur complement is
-the `(2,2)` block of the `U` factor; and (14.7), the block inverse.'''
-deps = ["schurComplement", "Matrix.fromBlocks_eq_mul_schurComplement", "Matrix.inv_fromBlocks_eq"]
 
 [[node]]
-id = "proposition_14_1"
-kind = "theorem"
-desc = '''Proposition 14.1, in three clauses: (1) if `A` is nonsingular and `B` is nonsingular then `S` is
-nonsingular; (2) if `A` is symmetric positive definite then so is `S`; (3) `S⁻¹ y = R_y A⁻¹ (0, y)`
-for every `y`.'''
-deps = ["equation_14_6", "Matrix.isUnit_schurComplement", "Matrix.PosDef.schurComplement", "Matrix.toBlocks₂₂_inv_eq_inv_schurComplement"]
+id = "equation_14_7"
+
+[[node]]
+id = "proposition_14_1_1"
+
+[[node]]
+id = "proposition_14_1_2"
+
+[[node]]
+id = "proposition_14_1_3"
 
 [[node]]
 id = "blockGaussianElimination_eq"
-kind = "theorem"
-desc = '''Algorithm 14.1 solves the system: with `E' = B⁻¹ E`, `f' = B⁻¹ f`, `g' = g - F f'`,
-`S = C - F E'`, `y = S⁻¹ g'` and `x = f' - E' y`, the pair `(x, y)` solves `A (x, y) = (f, g)`.
-Substitution, using (14.3)–(14.4).'''
-deps = ["schurComplement", "proposition_14_1"]

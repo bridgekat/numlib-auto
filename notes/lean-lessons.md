@@ -583,6 +583,13 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   The standing rule (write Lean text with the Write/Edit tool, never through a Python string literal)
   covers this; the `unicode_escape` round trip is not a workaround for it.
 
+* **`structure S extends P : Prop where` is the old syntax and now warns.** Write
+  `structure S (args) : Prop extends P args where`; the parent projection is `toP`.
+* **Dot notation cannot start from a `Prop`.** With `Matrix.IsMHat H : Prop` and a structure
+  `Matrix.IsMHat.IsDiagDominant (H : Matrix n n ℝ) : Prop` beside it, `H.IsMHat.IsDiagDominant`
+  fails with *"Field projection operates on types of the form `C ...`"* — `H.IsMHat` is a `Prop`,
+  not a type constructor. Write `Matrix.IsMHat.IsDiagDominant H` out.
+
 ## Tactics
 
 * `module` is the right tactic for vector identities with symbolic scalars; `abel` cannot move
@@ -903,6 +910,9 @@ Pinned toolchain: Lean `v4.34.0-rc2`, Mathlib `v4.34.0-rc2` under `.lake/package
   opaque (which is the point — see the `set` warnings above), and `simpa [hFdef]` then makes no
   progress on a goal such as `Tendsto F atTop (𝓝 0)`, where `F` is not applied. Close it with
   `Filter.Tendsto.congr (fun n => (hFdef n).symm) h` against the unfolded limit.
+
+* An `Orthonormal 𝕜 (fun i : Fin m => f ↑i)` goal opened with `refine ⟨fun i => ?_, …⟩` arrives
+  as the beta redex `‖(fun i => f ↑i) i‖ = 1`, against which every `rw` misses. `dsimp only` first.
 
 ## Mathlib names and API
 
@@ -2185,6 +2195,35 @@ Structural facts from the approximation layer:
   into two lines. Splitting `∫₀^π` at the first zero `π/(2n+1)` of the numerator, bounding below
   it by the value at the origin and above it by `π/(2t)`, gives `L_n ≤ 1 + log (2n+1)` in about
   seventy lines (`PeriodicCont.lebesgueConstant_le`).
+
+* **`Matrix.mul_eq_one_comm` does not exist**; the one that applies is the root
+  `_root_.mul_eq_one_comm` of `Mathlib/Algebra/Group/Monoid.lean`, for an
+  `IsDedekindFiniteMonoid`, which square matrices over a commutative ring are. Inside
+  `namespace Matrix` the qualified spelling fails with *unknown constant* and the bare one is
+  shadowed, so write the `_root_.` form. With it, `A * B = 1` gives `IsUnit A` as
+  `⟨⟨_, _, h, _root_.mul_eq_one_comm.1 h⟩, rfl⟩`, and `Matrix.inv_eq_right_inv h` gives `A⁻¹ = B`.
+* `Matrix.diagonal_mul_diagonal` beta-reduces: its right-hand side arrives as
+  `diagonal fun i => d₁ i * d₂ i`, not as `diagonal (d₁ * d₂)`. A following
+  `rw [show ((f) * (g) : n → ℝ) = 1 from …]` therefore does not match — state the `show` as
+  `(fun i => f i * g i) = fun _ : n => (1 : ℝ)` and finish with `Matrix.diagonal_one`.
+* **One step of Gaussian elimination is better done on the whole index type than on a subtype.**
+  `Matrix.elimStep M p = M - N M` with `N` the multiplier matrix (`Matrix.elimMultipliers`,
+  supported in column `p` below the diagonal) satisfies `N · N = 0`, so `1 + N` is a unit with
+  inverse `1 - N` and `elimStep M p = (1 + N)⁻¹ M` — all of it `noncomm_ring`-level algebra with no
+  reindexing. The Schur complement on `{i // i ≠ p}` is the same step read on a smaller index type,
+  and every induction that accumulates factors (`LU`, `ILU`) is far easier in the fixed-index form.
+  In particular `M₁⁻¹ = M⁻¹ (1 + N)` is `M⁻¹` off column `p` and
+  `(M p p)⁻¹ (δ_{ip} - ∑_{c < p} M⁻¹ i c · M c p)` in it, which proves Ky Fan's theorem at *every*
+  pivot; Saad's textbook argument only covers the first one.
+* `SaadSparse.Ch06.lsq h β m` and `Krylov.quasiResidual h β m` are the same function on the nose,
+  so `Ch06.isMinOn_lsq` — the Givens minimizer `y = R_m⁻¹ g_m` — feeds `Krylov.FGMRES.isMinRes` and
+  `Krylov.FGMRES.apply_eq_iff_coeff_eq_zero` with no bridge lemma. That is the whole of Saad
+  §9.4 once the two-family Hessenberg relation is in hand.
+* A Hessenberg coefficient function defined *piecewise* — `‖w_j‖` on the subdiagonal, `⟪ v_i, A z_j ⟫`
+  above it and `0` below — satisfies `Krylov.HessenbergRelation₂` **unconditionally**, breakdown
+  included, because `‖w‖ • (‖w‖⁻¹ • w) = w` holds at `w = 0` too. Defining it as `⟪ v_i, A z_j ⟫`
+  throughout instead makes the relation depend on orthonormality of the basis, and the whole
+  no-breakdown argument has to be run first.
 
 ## Design conventions of this library
 

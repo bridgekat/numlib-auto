@@ -12,3 +12,11 @@ id = "Matrix.IsMMatrix"
 
 [[node]]
 id = "Matrix.IsMMatrix.diag_pos"
+
+[[node]]
+id = "Matrix.isMMatrix_iff_complexSpectralRadius_lt_one"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.31"
+
+[[node]]
+id = "Matrix.IsMMatrix.of_entrywiseLE"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.33"

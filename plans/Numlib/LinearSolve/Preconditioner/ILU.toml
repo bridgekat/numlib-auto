@@ -1,146 +1,56 @@
 namespace = "Matrix"
-desc = '''
-Incomplete `LU` factorization: Saad, *Iterative Methods for Sparse Linear Systems*, §10.3–10.4.
-
-`A = L U - R` where `L` is unit lower triangular, `U` upper triangular, both vanish on a
-prescribed zero pattern `P`, and `L U` agrees with `A` off `P`. The definition is *declarative*
-(`Matrix.IsILU`), not an algorithm: the constraints of Saad §10.3.2 are exactly what the
-downstream theorems use, all the loop orders of §10.3.1 (`KIJ`, `IKJ`) satisfy them, and the
-factorization they produce is not unique anyway. Saad's Proposition 10.4 is then a one-line
-consequence of the definition, and ILU(0) and ILU(p) are the instances `P = zeros of A` and
-`P = {(i,j) : lev_ij > p}`.
-
-The theorem of the chapter is the existence result of Ky Fan (Saad Thm 10.1) and Meijerink–van der
-Vorst (Saad Thm 10.2): for an M-matrix and any zero pattern avoiding the diagonal, the
-factorization exists, does not break down, and `A = L U - R` is a *regular* splitting, hence
-convergent. This is the difficult proof of the group (★★★).
-
-**Route for `IsMMatrix.exists_isILU`.** Induct on the index set. One step of Gaussian elimination
-is the Schur complement by the pivot entry, `Matrix.schurComplementSingle` of
-`Numlib/LinearAlgebra/Matrix/SchurComplement`; Ky Fan's theorem (Saad Thm 10.1) says that this
-Schur complement of an M-matrix is an M-matrix, by Saad's three checks — off-diagonal entries stay
-nonpositive because `a_ij - a_ip a_pj / a_pp ≤ a_ij ≤ 0`; nonsingularity from the factorization
-`A = L_1 A_1`; and `A_1⁻¹ e_j = A⁻¹ L_1⁻¹ e_j = A⁻¹ e_j ≥ 0` for `j ≠ p`. Dropping entries only
-*increases* off-diagonal entries towards zero, so the dropped matrix `Ã_1` satisfies
-`A_1 ≤ Ã_1` entrywise with nonpositive off-diagonal entries, and Saad Thm 1.33 (comparison of
-M-matrices) makes it an M-matrix again. Both facts are stated for the M-matrix predicate
-`Matrix.IsMMatrix` of `Numlib/LinearSolve/Stationary/RegularSplitting`, and Thm 1.33 has to be
-added there (see `plans/proposals/plan-saad10.md`). The bookkeeping that assembles `L` and `U` out
-of the elimination steps is Saad's own (10.12): `L = (L_{n-1} ⋯ L_1)⁻¹`, `U = Ã_{n-1}`, and
-`R = ∑ R_k` because the first `k` rows and columns of `R_k` vanish.
-
-If that induction proves too expensive, the fallback that keeps the chapter honest is the
-*unmodified* case `P = ∅`: `A = L U` exactly, which is the M-matrix `LU` existence theorem, and
-Saad Thm 10.2 for a general `P` can then be marked open. Do not weaken `Matrix.IsILU` instead: the
-declarative definition is what the surface and the domain-decomposition chapter consume.
-'''
 
 [[node]]
 id = "IsILU"
-kind = "definition"
-desc = '''`Matrix.IsILU P A L U : Prop` for a zero pattern `P : Set (n × n)` on a linearly ordered index
-type: `L i i = 1`, `L i j = 0` for `i < j`, `U i j = 0` for `j < i`, `L` and `U` vanish on `P`, and
-`(L * U) i j = A i j` for `(i, j) ∉ P`. Saad §10.3.2's definition of the ILU factors, stated as a
-constraint rather than as an algorithm, so that every loop order of §10.3.1 satisfies it.'''
-source = "Saad, Iterative Methods for Sparse Linear Systems, Section 10.3.2"
 
 [[node]]
 id = "IsILU.sub_eq_zero_of_notMem"
-kind = "theorem"
-desc = '''Saad Proposition 10.4: `A = L U - R` with `R = L * U - A` supported in the zero pattern,
-`(i, j) ∉ P → (L * U - A) i j = 0`. Immediate from `IsILU.agree`; it is worth a name because it is
-the form in which the residual matrix `R` is used in the regular-splitting statement and in
-Saad §10.5's error analysis `L⁻¹ E U⁻¹`.'''
-deps = ["IsILU"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 10.4"
 
 [[node]]
-id = "IsILU.zeroPattern"
-kind = "definition"
-desc = '''`Matrix.zeroPattern A = {p | A p.1 p.2 = 0 ∧ p.1 ≠ p.2}`, the off-diagonal zero pattern of `A`,
-and `Matrix.IsILU0 A L U := IsILU (zeroPattern A) A L U`, Saad's ILU(0) (§10.3.2): `L` and `U`
-have the sparsity of the lower and upper parts of `A`, and `L U` matches `A` wherever `A` is
-nonzero. `zeroPattern_diag_notMem` records that the pattern avoids the diagonal, which is the
-hypothesis of the existence theorem.'''
-deps = ["IsILU"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, Section 10.3.2, Algorithm 10.4"
+id = "zeroPattern"
+
+[[node]]
+id = "IsILU0"
 
 [[node]]
 id = "IsMMatrix.isMMatrix_schurComplementSingle"
-kind = "theorem"
-desc = '''Ky Fan's theorem, Saad Theorem 10.1: the matrix obtained from an M-matrix by one step of
-Gaussian elimination is an M-matrix — that is, `A.IsMMatrix → (A.schurComplementSingle p).IsMMatrix`
-for any pivot index `p`. Three checks, as in the book: off-diagonal entries
-`a_ij - a_ip a_pj / a_pp` stay nonpositive; nonsingularity from `A = L_1 A_1` with `L_1` unipotent;
-and `A_1⁻¹ e_j = A⁻¹ L_1⁻¹ e_j = A⁻¹ e_j ≥ 0` for `j ≠ p`, `A_1⁻¹ e_p = e_p / a_pp`.'''
-deps = ["Matrix.IsMMatrix", "Matrix.schurComplementSingle", "Matrix.EntrywiseNonneg"]
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 10.1"
+
+[[node]]
+id = "elimMultipliers"
+
+[[node]]
+id = "elimMul"
+
+[[node]]
+id = "elimStep"
+
+[[node]]
+id = "IsMMatrix.isMMatrix_elimStep"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 10.1"
 
 [[node]]
 id = "IsMMatrix.exists_isILU"
-kind = "theorem"
-desc = '''Saad Theorem 10.2 (Meijerink–van der Vorst): for a real M-matrix `A` and any zero pattern `P`
-avoiding the diagonal, the incomplete factorization exists and `A = L U - R` is a *regular*
-splitting: `∃ L U, Matrix.IsILU P A L U ∧ IsUnit (L * U) ∧ EntrywiseNonneg (L * U)⁻¹ ∧
-EntrywiseNonneg (L * U - A)`. The difficult proof of the group; the induction is described in the
-module note, and it needs Saad Thm 1.33 (an entrywise-larger matrix with nonpositive off-diagonal
-entries is again an M-matrix) in
-`Numlib/LinearSolve/Stationary/RegularSplitting`.'''
-deps = ["IsILU", "Matrix.IsMMatrix", "Matrix.EntrywiseNonneg", "IsMMatrix.isMMatrix_schurComplementSingle", "Matrix.EntrywiseLE.mul_of_entrywiseNonneg_left"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 10.2"
 
 [[node]]
 id = "IsILU.isRegular"
-kind = "theorem"
-desc = '''The reading of Saad Thm 10.2 as a `Stationary.Splitting.IsRegular` for the splitting with
-`M = L * U`, so that `Stationary.Splitting.IsRegular.complexSpectralRadius_lt_one_of_isMMatrix`
-applies and the ILU-preconditioned fixed-point iteration converges. This is the sentence Saad
-draws after Thm 10.2 and the reason the theorem is stated with a regular splitting in its
-conclusion.'''
-deps = ["IsMMatrix.exists_isILU", "Stationary.Splitting.IsRegular", "Stationary.Splitting.IsRegular.complexSpectralRadius_lt_one_of_isMMatrix"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 10.2"
 
 [[node]]
 id = "IsMILU"
-kind = "definition"
-desc = '''Modified ILU (Saad §10.3.5): `Matrix.IsMILU P A L U` strengthens `IsILU` off the diagonal but
-requires only that the *row sums* match on the diagonal, `(L * U) *ᵥ 1 = A *ᵥ 1`; the dropped
-entries of each row are lumped into the diagonal of `U` instead of being discarded. The defining
-property `IsMILU.mulVec_one` (Saad's `A e = L U e`) is what makes MILU exact on constants, which is
-its entire justification.'''
-deps = ["IsILU"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, Section 10.3.5, (10.21)"
 
 [[node]]
 id = "IsILU.dropStrategy_rowSum"
-kind = "theorem"
-desc = '''The row-sum identity behind MILU, Saad (10.21): if `L, U` satisfy the `IsILU` constraints off
-the diagonal and each diagonal entry of `U` is corrected by the row sum of the dropped entries,
-then `(L * U) *ᵥ 1 = A *ᵥ 1` and the corrected residual `R' = (r e) e_iᵀ - r` has zero row sums.
-The general statement is about the matrix `R`: `R *ᵥ 1 = 0 ↔ (L * U) *ᵥ 1 = A *ᵥ 1`.'''
-deps = ["IsMILU", "IsILU.sub_eq_zero_of_notMem"]
-source = "Saad, Iterative Methods for Sparse Linear Systems, (10.21)"
 
 [[node]]
 id = "IsMHat"
-kind = "definition"
-desc = '''Saad's `M̂`-matrix, (10.25)–(10.27): `h i i > 0` for `i < n` and `h n n ≥ 0`, `h i j ≤ 0` off the
-diagonal, and `∑_{j > i} h i j < 0` for `i < n` (each row but the last has a nonzero entry strictly
-to the right of the diagonal). Weaker than `Matrix.IsMMatrix`: no nonsingularity and no
-nonnegative inverse are asked for. `Matrix.IsMHat.IsDiagDominant` adds nonnegative row sums, which
-is Saad's "diagonally dominant `M̂` matrix", the hypothesis of the ILUT existence theorem.'''
 source = "Saad, Iterative Methods for Sparse Linear Systems, (10.25)–(10.27)"
 
 [[node]]
 id = "IsMHat.ilut_rows"
-kind = "theorem"
-desc = '''Saad Theorem 10.8, the ILUT existence result. For a diagonally dominant `M̂` matrix and the
-row recurrence `u^{k+1} = u^k - l_k u_{k,*} - r^k` of (10.23) — with the drop-strategy
-modification of §10.4.2, that the entry of largest modulus to the right of the diagonal is never
-dropped — the rows satisfy, for every `k`: `u^k i j ≤ 0` for `j ≠ i`; the row sums increase,
-`rs(u^k) ≥ rs(u^{k-1}) ≥ 0`; and `u^k i i > 0` for `i < n`, `u^k n n ≥ 0`, so no pivot vanishes.
-Stated over the abstract data (the rows `u : ℕ → n → ℝ`, the multipliers `l : ℕ → ℝ` and the
-dropped rows `r : ℕ → n → ℝ`) with the drop condition as a hypothesis, so that no ILUT algorithm
-has to be written down; induction on `k`, exactly as in the book.'''
-deps = ["IsMHat"]
 source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 10.8"
+
+[[node]]
+id = "IsILU.complexSpectralRadius_lt_one"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 10.2"
