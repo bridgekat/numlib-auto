@@ -7,10 +7,22 @@ id = "fredholm"
 id = "urysohn"
 
 [[node]]
+id = "kernelCLM"
+
+[[node]]
+id = "norm_kernelCLM"
+
+[[node]]
 id = "norm_fredholm"
 
 [[node]]
 id = "lipschitzWith_urysohn"
+
+[[node]]
+id = "urysohnDerivKernel"
+
+[[node]]
+id = "hasFDerivAt_urysohn"
 
 [[node]]
 id = "volterra"

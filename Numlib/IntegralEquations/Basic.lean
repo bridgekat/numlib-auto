@@ -1,8 +1,10 @@
+import Mathlib.Analysis.Calculus.MeanValue
 import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.MeasureTheory.Integral.DominatedConvergence
 import Mathlib.Topology.ContinuousMap.Compact
 import Mathlib.Topology.Algebra.Order.Floor
 import Mathlib.Topology.MetricSpace.Contracting
+import Mathlib.Topology.UniformSpace.HeineCantor
 
 /-!
 # Integral operators on a compact interval
@@ -11,12 +13,20 @@ The Fredholm, Urysohn and Volterra integral operators on the Banach space `C(Set
 continuous real functions on a compact interval, and the estimates on which the classical existence
 theorems for integral equations of the second kind rest.
 
+* `IntegralOperator.kernelCLM` is the bounded operator `u ↦ (x ↦ ∫ y, k (x, y) * u y dμ)` on
+  `C(X, ℝ)` for a compact space `X` with a finite Borel measure `μ`, and
+  `IntegralOperator.norm_kernelCLM` computes its operator norm as `⨆ x, ∫ y, |k (x, y)| dμ`. The
+  statement is at that generality because a compact interval and a circle are both instances, and
+  the argument uses nothing of either.
 * `IntegralOperator.fredholm` is the bounded operator `u ↦ (x ↦ ∫ y in a..b, k (x, y) * u y)`
-  attached to a continuous kernel, and `IntegralOperator.norm_fredholm` computes its operator norm
-  as `⨆ x, ∫ y in a..b, |k (x, y)|`.
+  attached to a continuous kernel, the case `X = Set.Icc a b` of the above
+  (`IntegralOperator.fredholm_eq_kernelCLM`), and `IntegralOperator.norm_fredholm` computes its
+  operator norm as `⨆ x, ∫ y in a..b, |k (x, y)|`.
 * `IntegralOperator.urysohn` is its nonlinear companion `u ↦ (x ↦ ∫ y in a..b, k (x, y, u y))`,
   Lipschitz with constant `L * (b - a)` when the kernel is `L`-Lipschitz in its last argument
-  (`IntegralOperator.lipschitzWith_urysohn`).
+  (`IntegralOperator.lipschitzWith_urysohn`), and Fréchet differentiable with derivative the
+  Fredholm operator of the kernel `∂_z k (x, y, u y)` when that partial derivative is continuous
+  (`IntegralOperator.hasFDerivAt_urysohn`).
 * `IntegralOperator.volterra` is the Volterra operator `u ↦ (t ↦ ∫ s in a..t, k (t, s, u s))`, whose
   iterates contract like `(M (b - a)) ^ m / m !` (`IntegralOperator.norm_iterate_volterra_sub_le`),
   so that some power of it is a contraction however large the Lipschitz constant `M` is.
@@ -37,7 +47,7 @@ be clamped back into `Set.Icc a b` by `Set.projIcc`.
 
 open MeasureTheory Metric Set
 
-open scoped Interval Nat NNReal
+open scoped Interval Nat NNReal Topology
 
 namespace IntegralOperator
 
@@ -69,6 +79,198 @@ theorem coe_projIcc_of_mem {y : ℝ} (hy : y ∈ Icc a b) :
   rw [projIcc_of_mem hab hy]
 
 end Clamp
+
+/-! ### Kernel operators on a compact space -/
+
+section Kernel
+
+variable {X : Type*} [TopologicalSpace X] [CompactSpace X] [MeasurableSpace X] [BorelSpace X]
+  (μ : Measure X) [IsFiniteMeasure μ]
+
+/-- A continuous function on a compact space is integrable for every finite measure. -/
+theorem integrable_of_continuousMap (u : C(X, ℝ)) : Integrable u μ :=
+  (integrable_const ‖u‖).mono' (by fun_prop)
+    (Filter.Eventually.of_forall fun x => u.norm_coe_le_norm x)
+
+/-- A row `y ↦ k (x, y)` of a continuous kernel is integrable for every finite measure. -/
+theorem integrable_kernel_row (k : C(X × X, ℝ)) (x : X) : Integrable (fun y => k (x, y)) μ := by
+  have hc : Continuous fun y : X => k (x, y) := k.continuous.comp (by fun_prop)
+  exact (integrable_const ‖k‖).mono' hc.aestronglyMeasurable
+    (Filter.Eventually.of_forall fun y => k.norm_coe_le_norm _)
+
+/-- The integrand `y ↦ k (x, y) u y` of a kernel operator is integrable for every finite
+measure. -/
+theorem integrable_kernel_mul (k : C(X × X, ℝ)) (u : C(X, ℝ)) (x : X) :
+    Integrable (fun y => k (x, y) * u y) μ := by
+  have hc : Continuous fun y : X => k (x, y) * u y :=
+    (k.continuous.comp (by fun_prop)).mul u.continuous
+  refine (integrable_const (‖k‖ * ‖u‖)).mono' hc.aestronglyMeasurable
+    (Filter.Eventually.of_forall fun y => ?_)
+  rw [norm_mul]
+  exact mul_le_mul (k.norm_coe_le_norm _) (u.norm_coe_le_norm _) (norm_nonneg _) (norm_nonneg _)
+
+/-- The integral of a continuous kernel against a continuous function depends continuously on the
+row index.
+
+A compact space carries no uniform structure to appeal to, so the uniformity in `y` that the
+estimate needs comes from the tube lemma in the form
+`IsCompact.eventually_forall_of_forall_eventually`. -/
+theorem continuous_integral_kernel (k : C(X × X, ℝ)) (u : C(X, ℝ)) :
+    Continuous fun x => ∫ y, k (x, y) * u y ∂μ := by
+  refine continuous_iff_continuousAt.2 fun x₀ => Metric.tendsto_nhds.2 fun ε hε => ?_
+  have hmnn : (0 : ℝ) ≤ μ.real univ := measureReal_nonneg
+  set c : ℝ := ‖u‖ * μ.real univ with hc
+  have hc0 : (0 : ℝ) ≤ c := mul_nonneg (norm_nonneg u) hmnn
+  have hc1 : (0 : ℝ) < c + 1 := by linarith
+  have hη : (0 : ℝ) < ε / (c + 1) := by positivity
+  have hev : ∀ᶠ x in 𝓝 x₀, ∀ y ∈ (univ : Set X), |k (x, y) - k (x₀, y)| < ε / (c + 1) := by
+    refine isCompact_univ.eventually_forall_of_forall_eventually fun y _ => ?_
+    have hcont : Continuous fun z : X × X => |k (z.1, z.2) - k (x₀, z.2)| := by fun_prop
+    have hlim : Filter.Tendsto (fun z : X × X => |k (z.1, z.2) - k (x₀, z.2)|)
+        (𝓝 (x₀, y)) (𝓝 0) := by simpa using hcont.tendsto (x₀, y)
+    exact hlim.eventually_lt_const hη
+  filter_upwards [hev] with x hx
+  have hsub : (∫ y, k (x, y) * u y ∂μ) - ∫ y, k (x₀, y) * u y ∂μ
+      = ∫ y, (k (x, y) - k (x₀, y)) * u y ∂μ := by
+    rw [← integral_sub (integrable_kernel_mul μ k u x) (integrable_kernel_mul μ k u x₀)]
+    exact integral_congr_ae (Filter.Eventually.of_forall fun y => by ring)
+  have hbound : ∀ y : X, ‖(k (x, y) - k (x₀, y)) * u y‖ ≤ ε / (c + 1) * ‖u‖ := by
+    intro y
+    rw [norm_mul]
+    refine mul_le_mul ?_ (u.norm_coe_le_norm y) (norm_nonneg _) hη.le
+    rw [Real.norm_eq_abs]
+    exact (hx y (mem_univ y)).le
+  rw [Real.dist_eq, hsub, ← Real.norm_eq_abs]
+  calc ‖∫ y, (k (x, y) - k (x₀, y)) * u y ∂μ‖
+      ≤ ε / (c + 1) * ‖u‖ * μ.real univ :=
+        norm_integral_le_of_norm_le_const (Filter.Eventually.of_forall hbound)
+    _ = ε * c / (c + 1) := by rw [hc]; field_simp
+    _ < ε := by rw [div_lt_iff₀ hc1]; nlinarith
+
+/-- The integral of a row of a continuous kernel depends continuously on the row index. -/
+theorem continuous_integral_row (k : C(X × X, ℝ)) : Continuous fun x => ∫ y, k (x, y) ∂μ := by
+  simpa using continuous_integral_kernel μ k 1
+
+/-- **The kernel integral operator** `u ↦ (x ↦ ∫ y, k (x, y) u y dμ)` of a continuous kernel
+`k : C(X × X, ℝ)`, as a bounded linear operator on the Banach space `C(X, ℝ)` of continuous real
+functions on a compact space `X` carrying a finite Borel measure `μ`.
+
+This is the Fredholm integral operator at the generality at which the norm formula
+`IntegralOperator.norm_kernelCLM` holds: `IntegralOperator.fredholm` is the case of a compact
+interval with Lebesgue measure (`IntegralOperator.fredholm_eq_kernelCLM`), and a convolution
+operator on a circle is another instance. -/
+noncomputable def kernelCLM (k : C(X × X, ℝ)) : C(X, ℝ) →L[ℝ] C(X, ℝ) :=
+  LinearMap.mkContinuous
+    { toFun := fun u => ⟨fun x => ∫ y, k (x, y) * u y ∂μ, continuous_integral_kernel μ k u⟩
+      map_add' := fun u v => by
+        ext x
+        simp only [ContinuousMap.coe_mk, ContinuousMap.add_apply]
+        rw [← integral_add (integrable_kernel_mul μ k u x) (integrable_kernel_mul μ k v x)]
+        exact integral_congr_ae (Filter.Eventually.of_forall fun y => by ring)
+      map_smul' := fun r u => by
+        ext x
+        simp only [ContinuousMap.coe_mk, ContinuousMap.smul_apply, RingHom.id_apply, smul_eq_mul]
+        rw [← integral_const_mul]
+        exact integral_congr_ae (Filter.Eventually.of_forall fun y => by ring) }
+    (‖k‖ * μ.real univ) fun u => by
+      have hmnn : (0 : ℝ) ≤ μ.real univ := measureReal_nonneg
+      rw [ContinuousMap.norm_le _ (mul_nonneg (mul_nonneg (norm_nonneg k) hmnn) (norm_nonneg u))]
+      intro x
+      simp only [LinearMap.coe_mk, AddHom.coe_mk, ContinuousMap.coe_mk]
+      have hle : ∀ y : X, ‖k (x, y) * u y‖ ≤ ‖k‖ * ‖u‖ := fun y => by
+        rw [norm_mul]
+        exact mul_le_mul (k.norm_coe_le_norm _) (u.norm_coe_le_norm _) (norm_nonneg _)
+          (norm_nonneg _)
+      calc ‖∫ y, k (x, y) * u y ∂μ‖
+          ≤ ‖k‖ * ‖u‖ * μ.real univ :=
+            norm_integral_le_of_norm_le_const (Filter.Eventually.of_forall hle)
+        _ = ‖k‖ * μ.real univ * ‖u‖ := by ring
+
+@[simp]
+theorem kernelCLM_apply (k : C(X × X, ℝ)) (u : C(X, ℝ)) (x : X) :
+    kernelCLM μ k u x = ∫ y, k (x, y) * u y ∂μ :=
+  rfl
+
+/-- Every row integral of the kernel bounds the operator norm of a kernel operator from above;
+this is the easy half of `IntegralOperator.norm_kernelCLM`. -/
+theorem norm_kernelCLM_le {k : C(X × X, ℝ)} {C : ℝ} (hC : 0 ≤ C)
+    (h : ∀ x, (∫ y, |k (x, y)| ∂μ) ≤ C) : ‖kernelCLM μ k‖ ≤ C := by
+  refine ContinuousLinearMap.opNorm_le_bound _ hC fun u => ?_
+  rw [ContinuousMap.norm_le _ (mul_nonneg hC (norm_nonneg u))]
+  intro x
+  have hint : (∫ y, |k (x, y) * u y| ∂μ) ≤ ∫ y, |k (x, y)| * ‖u‖ ∂μ := by
+    refine integral_mono (integrable_kernel_mul μ k u x).abs
+      ((integrable_kernel_row μ k x).abs.mul_const ‖u‖) fun y => ?_
+    rw [abs_mul]
+    exact mul_le_mul_of_nonneg_left (u.norm_coe_le_norm _) (abs_nonneg _)
+  rw [kernelCLM_apply, Real.norm_eq_abs]
+  calc |∫ y, k (x, y) * u y ∂μ|
+      ≤ ∫ y, |k (x, y) * u y| ∂μ := abs_integral_le_integral_abs
+    _ ≤ ∫ y, |k (x, y)| * ‖u‖ ∂μ := hint
+    _ = (∫ y, |k (x, y)| ∂μ) * ‖u‖ := integral_mul_const _ _
+    _ ≤ C * ‖u‖ := mul_le_mul_of_nonneg_right (h x) (norm_nonneg u)
+
+/-- **The operator norm of a kernel integral operator** on a compact space is the largest row
+integral of its kernel, `‖K‖ = max_x ∫ |k (x, y)| dμ y` (Atkinson and Han, *Theoretical Numerical
+Analysis*, (2.2.8), there for a compact interval).
+
+The lower bound comes from testing `K` against `y ↦ k (x₀, y) / (|k (x₀, y)| + δ)`, a continuous
+function of norm at most one that approximates the sign of `k (x₀, ·)`; the elementary inequality
+`t² / (|t| + δ) ≥ |t| - δ` is the whole of it, so no convergence theorem is needed. -/
+theorem norm_kernelCLM [Nonempty X] (k : C(X × X, ℝ)) :
+    ‖kernelCLM μ k‖ = ⨆ x, ∫ y, |k (x, y)| ∂μ := by
+  have hmnn : (0 : ℝ) ≤ μ.real univ := measureReal_nonneg
+  -- the row integral, as a continuous function of the row index
+  set g : C(X, ℝ) :=
+    ⟨fun x => ∫ y, |k (x, y)| ∂μ, continuous_integral_row μ ⟨fun p => |k p|, k.continuous.abs⟩⟩
+    with hg
+  have hgapp : ∀ x, g x = ∫ y, |k (x, y)| ∂μ := fun _ => rfl
+  have hgnonneg : ∀ x, 0 ≤ g x := fun _ => integral_nonneg fun _ => abs_nonneg _
+  obtain ⟨x₀, -, hx₀⟩ := isCompact_univ.exists_isMaxOn Set.univ_nonempty g.continuous.continuousOn
+  have hmax : ∀ x, g x ≤ g x₀ := fun x => isMaxOn_iff.1 hx₀ x (mem_univ x)
+  have hsup : ⨆ x, ∫ y, |k (x, y)| ∂μ = g x₀ :=
+    le_antisymm (ciSup_le hmax) (le_ciSup ⟨g x₀, by rintro _ ⟨x, rfl⟩; exact hmax x⟩ x₀)
+  rw [hsup]
+  refine le_antisymm (norm_kernelCLM_le μ (hgnonneg x₀) hmax) ?_
+  -- the lower bound: test against a continuous approximation of the sign of `k (x₀, ·)`
+  have hlow : ∀ δ : ℝ, 0 < δ → g x₀ - δ * μ.real univ ≤ ‖kernelCLM μ k‖ := by
+    intro δ hδ
+    have hpos : ∀ y : X, (0 : ℝ) < |k (x₀, y)| + δ := fun y =>
+      add_pos_of_nonneg_of_pos (abs_nonneg _) hδ
+    set w : C(X, ℝ) :=
+      { toFun := fun y => k (x₀, y) / (|k (x₀, y)| + δ)
+        continuous_toFun := Continuous.div (by fun_prop) (by fun_prop) fun y => (hpos y).ne' }
+      with hw
+    have hwapp : ∀ y : X, w y = k (x₀, y) / (|k (x₀, y)| + δ) := fun _ => rfl
+    have hwnorm : ‖w‖ ≤ 1 := by
+      rw [ContinuousMap.norm_le _ zero_le_one]
+      intro y
+      rw [Real.norm_eq_abs, hwapp, abs_div, abs_of_pos (hpos y), div_le_one (hpos y)]
+      linarith [abs_nonneg (k (x₀, y))]
+    have hpt : ∀ y : X, |k (x₀, y)| - δ ≤ k (x₀, y) * w y := by
+      intro y
+      rw [hwapp, ← mul_div_assoc, le_div_iff₀ (hpos y)]
+      nlinarith [abs_mul_abs_self (k (x₀, y)), mul_pos hδ hδ]
+    have hkey : g x₀ - δ * μ.real univ ≤ kernelCLM μ k w x₀ := by
+      have h1 : (∫ y, (|k (x₀, y)| - δ) ∂μ) ≤ ∫ y, k (x₀, y) * w y ∂μ :=
+        integral_mono ((integrable_kernel_row μ k x₀).abs.sub (integrable_const δ))
+          (integrable_kernel_mul μ k w x₀) hpt
+      rw [integral_sub (integrable_kernel_row μ k x₀).abs (integrable_const δ), integral_const,
+        smul_eq_mul, mul_comm (μ.real univ) δ] at h1
+      rwa [hgapp, kernelCLM_apply]
+    calc g x₀ - δ * μ.real univ ≤ kernelCLM μ k w x₀ := hkey
+      _ ≤ ‖kernelCLM μ k w‖ := (kernelCLM μ k w).apply_le_norm x₀
+      _ ≤ ‖kernelCLM μ k‖ * ‖w‖ := (kernelCLM μ k).le_opNorm w
+      _ ≤ ‖kernelCLM μ k‖ := by nlinarith [norm_nonneg (kernelCLM μ k), norm_nonneg w]
+  refine le_of_forall_pos_le_add fun η hη => ?_
+  have hb1 : (0 : ℝ) < μ.real univ + 1 := by linarith
+  have hd : (0 : ℝ) < η / (μ.real univ + 1) := by positivity
+  have hsmall : η / (μ.real univ + 1) * μ.real univ ≤ η := by
+    rw [div_mul_eq_mul_div, div_le_iff₀ hb1]
+    nlinarith
+  linarith [hlow _ hd]
+
+end Kernel
 
 /-! ### The Urysohn and Fredholm operators -/
 
@@ -141,96 +343,65 @@ theorem fredholm_eq_urysohn (k : C(Icc a b × Icc a b, ℝ)) (u : C(Icc a b, ℝ
     fredholm hab k u = urysohn hab ⟨fun p => k (p.1, p.2.1) * p.2.2, by fun_prop⟩ u :=
   rfl
 
-/-- Every row integral of the kernel bounds the operator norm of a Fredholm operator from below;
+/-- Lebesgue measure on the compact interval `Set.Icc a b`, read on the subtype: the measure
+against which `IntegralOperator.fredholm` integrates. -/
+noncomputable def iccMeasure (a b : ℝ) : Measure (Icc a b) :=
+  Measure.comap Subtype.val volume
+
+instance : IsFiniteMeasure (iccMeasure a b) where
+  measure_univ_lt_top := by
+    have h : (iccMeasure a b) univ = (volume.restrict (Icc a b)) univ := by
+      rw [← map_comap_subtype_coe (measurableSet_Icc (a := a) (b := b)) (volume : Measure ℝ),
+        Measure.map_apply measurable_subtype_coe MeasurableSet.univ, Set.preimage_univ]
+      rfl
+    rw [h, Measure.restrict_apply_univ, Real.volume_Icc]
+    exact ENNReal.ofReal_lt_top
+
+/-- An integral over the subtype `Set.Icc a b` is the interval integral of the clamped
+integrand. -/
+theorem integral_iccMeasure (hab : a ≤ b) (f : ℝ → ℝ) :
+    ∫ y : Icc a b, f y ∂iccMeasure a b = ∫ y in a..b, f y := by
+  rw [iccMeasure, integral_subtype_comap measurableSet_Icc, integral_Icc_eq_integral_Ioc,
+    ← intervalIntegral.integral_of_le hab]
+
+/-- **The Fredholm operator of a compact interval is the kernel operator of Lebesgue measure on
+that interval**, which is what lets the interval theory specialize the general one on a compact
+space. -/
+theorem fredholm_eq_kernelCLM (k : C(Icc a b × Icc a b, ℝ)) :
+    fredholm hab k = kernelCLM (iccMeasure a b) k := by
+  ext u x
+  rw [fredholm_apply, kernelCLM_apply,
+    ← integral_iccMeasure hab fun y => k (x, projIcc a b hab y) * u (projIcc a b hab y)]
+  refine integral_congr_ae (Filter.Eventually.of_forall fun y => ?_)
+  dsimp only
+  rw [projIcc_val]
+
+/-- The row integrals of the kernel operator of `IntegralOperator.iccMeasure` are the interval
+integrals of the clamped rows. -/
+theorem integral_iccMeasure_abs (k : C(Icc a b × Icc a b, ℝ)) (x : Icc a b) :
+    ∫ y, |k (x, y)| ∂iccMeasure a b = ∫ y in a..b, |k (x, projIcc a b hab y)| := by
+  rw [← integral_iccMeasure hab fun y => |k (x, projIcc a b hab y)|]
+  refine integral_congr_ae (Filter.Eventually.of_forall fun y => ?_)
+  dsimp only
+  rw [projIcc_val]
+
+/-- Every row integral of the kernel bounds the operator norm of a Fredholm operator from above;
 this is the easy half of `IntegralOperator.norm_fredholm`. -/
 theorem norm_fredholm_le {k : C(Icc a b × Icc a b, ℝ)} {C : ℝ} (hC : 0 ≤ C)
     (h : ∀ x, (∫ y in a..b, |k (x, projIcc a b hab y)|) ≤ C) : ‖fredholm hab k‖ ≤ C := by
-  refine ContinuousLinearMap.opNorm_le_bound _ (by positivity) fun u => ?_
-  rw [ContinuousMap.norm_le _ (by positivity)]
-  intro x
-  have hint : (∫ y in a..b, |k (x, projIcc a b hab y) * u (projIcc a b hab y)|)
-      ≤ ∫ y in a..b, |k (x, projIcc a b hab y)| * ‖u‖ := by
-    refine intervalIntegral.integral_mono_on hab (Continuous.intervalIntegrable (by fun_prop) _ _)
-      (Continuous.intervalIntegrable (by fun_prop) _ _) fun y _ => ?_
-    rw [abs_mul]
-    exact mul_le_mul_of_nonneg_left (u.norm_coe_le_norm _) (abs_nonneg _)
-  calc ‖fredholm hab k u x‖
-      = |∫ y in a..b, k (x, projIcc a b hab y) * u (projIcc a b hab y)| := rfl
-    _ ≤ ∫ y in a..b, |k (x, projIcc a b hab y) * u (projIcc a b hab y)| :=
-        intervalIntegral.abs_integral_le_integral_abs hab
-    _ ≤ ∫ y in a..b, |k (x, projIcc a b hab y)| * ‖u‖ := hint
-    _ = (∫ y in a..b, |k (x, projIcc a b hab y)|) * ‖u‖ := intervalIntegral.integral_mul_const _ _
-    _ ≤ C * ‖u‖ := mul_le_mul_of_nonneg_right (h x) (norm_nonneg u)
+  rw [fredholm_eq_kernelCLM hab k]
+  refine norm_kernelCLM_le _ hC fun x => ?_
+  rw [integral_iccMeasure_abs hab k x]
+  exact h x
 
 /-- **The operator norm of a Fredholm integral operator** is the largest row integral of its kernel,
-`‖K‖ = max_x ∫ |k (x, y)| dy` (Atkinson and Han, *Theoretical Numerical Analysis*, (2.2.8)).
-
-The lower bound comes from testing `K` against `y ↦ k (x₀, y) / (|k (x₀, y)| + ε)`, a continuous
-function of norm at most one that approximates the sign of `k (x₀, ·)`. -/
+`‖K‖ = max_x ∫ |k (x, y)| dy` (Atkinson and Han, *Theoretical Numerical Analysis*, (2.2.8)): the
+specialization of `IntegralOperator.norm_kernelCLM` to a compact interval with Lebesgue measure. -/
 theorem norm_fredholm (k : C(Icc a b × Icc a b, ℝ)) :
     ‖fredholm hab k‖ = ⨆ x, ∫ y in a..b, |k (x, projIcc a b hab y)| := by
   have hne : Nonempty (Icc a b) := ⟨⟨a, left_mem_Icc.2 hab⟩⟩
-  have hba : (0 : ℝ) ≤ b - a := sub_nonneg.2 hab
-  -- the row integral, as a continuous function of the row index
-  set g : C(Icc a b, ℝ) :=
-    { toFun := fun x => ∫ y in a..b, |k (x, projIcc a b hab y)|
-      continuous_toFun := by
-        apply intervalIntegral.continuous_parametric_intervalIntegral_of_continuous'
-          (f := fun (x : Icc a b) (y : ℝ) => |k (x, projIcc a b hab y)|)
-        exact (k.continuous.comp (by fun_prop)).abs } with hg
-  have hgapp : ∀ x, g x = ∫ y in a..b, |k (x, projIcc a b hab y)| := fun _ => rfl
-  have hgnonneg : ∀ x, 0 ≤ g x := fun x =>
-    intervalIntegral.integral_nonneg hab fun y _ => abs_nonneg _
-  obtain ⟨x₀, -, hx₀⟩ := isCompact_univ.exists_isMaxOn Set.univ_nonempty g.continuous.continuousOn
-  have hmax : ∀ x, g x ≤ g x₀ := fun x => isMaxOn_iff.1 hx₀ x (mem_univ x)
-  have hsup : ⨆ x, ∫ y in a..b, |k (x, projIcc a b hab y)| = g x₀ :=
-    le_antisymm (ciSup_le hmax) (le_ciSup ⟨g x₀, by rintro _ ⟨x, rfl⟩; exact hmax x⟩ x₀)
-  rw [hsup]
-  refine le_antisymm (norm_fredholm_le hab (hgnonneg x₀) hmax) ?_
-  -- the lower bound: test against a continuous approximation of the sign of `k (x₀, ·)`
-  have hlow : ∀ δ : ℝ, 0 < δ → g x₀ - δ * (b - a) ≤ ‖fredholm hab k‖ := by
-    intro δ hδ
-    have hpos : ∀ y : Icc a b, (0 : ℝ) < |k (x₀, y)| + δ := fun y =>
-      add_pos_of_nonneg_of_pos (abs_nonneg _) hδ
-    set w : C(Icc a b, ℝ) :=
-      { toFun := fun y => k (x₀, y) / (|k (x₀, y)| + δ)
-        continuous_toFun := Continuous.div (by fun_prop) (by fun_prop) fun y => (hpos y).ne' }
-      with hw
-    have hwapp : ∀ y : Icc a b, w y = k (x₀, y) / (|k (x₀, y)| + δ) := fun _ => rfl
-    have hwnorm : ‖w‖ ≤ 1 := by
-      rw [ContinuousMap.norm_le _ zero_le_one]
-      intro y
-      rw [Real.norm_eq_abs, hwapp, abs_div, abs_of_pos (hpos y), div_le_one (hpos y)]
-      linarith [abs_nonneg (k (x₀, y)), (abs_abs (k (x₀, y))).ge, (abs_abs (k (x₀, y))).le]
-    have hpt : ∀ y ∈ Icc a b, |k (x₀, projIcc a b hab y)| - δ
-        ≤ k (x₀, projIcc a b hab y) * w (projIcc a b hab y) := by
-      intro y _
-      have hden := hpos (projIcc a b hab y)
-      rw [hwapp, ← mul_div_assoc, le_div_iff₀ hden]
-      nlinarith [abs_mul_abs_self (k (x₀, projIcc a b hab y)), mul_pos hδ hδ]
-    have hval : fredholm hab k w x₀
-        = ∫ y in a..b, k (x₀, projIcc a b hab y) * w (projIcc a b hab y) := rfl
-    have key : g x₀ - δ * (b - a) ≤ fredholm hab k w x₀ := by
-      have h1 : (∫ y in a..b, (|k (x₀, projIcc a b hab y)| - δ))
-          ≤ ∫ y in a..b, k (x₀, projIcc a b hab y) * w (projIcc a b hab y) :=
-        intervalIntegral.integral_mono_on hab (Continuous.intervalIntegrable (by fun_prop) _ _)
-          (Continuous.intervalIntegrable (by fun_prop) _ _) hpt
-      rw [intervalIntegral.integral_sub (Continuous.intervalIntegrable (by fun_prop) _ _)
-        (Continuous.intervalIntegrable (by fun_prop) _ _), intervalIntegral.integral_const,
-        smul_eq_mul] at h1
-      rw [hgapp, hval]
-      linarith
-    calc g x₀ - δ * (b - a) ≤ fredholm hab k w x₀ := key
-      _ ≤ ‖fredholm hab k w‖ := (fredholm hab k w).apply_le_norm x₀
-      _ ≤ ‖fredholm hab k‖ * ‖w‖ := (fredholm hab k).le_opNorm w
-      _ ≤ ‖fredholm hab k‖ := by nlinarith [norm_nonneg (fredholm hab k), norm_nonneg w]
-  refine le_of_forall_pos_le_add fun η hη => ?_
-  have hb1 : (0 : ℝ) < b - a + 1 := by linarith
-  have hd : (0 : ℝ) < η / (b - a + 1) := by positivity
-  have hsmall : η / (b - a + 1) * (b - a) ≤ η := by
-    rw [div_mul_eq_mul_div, div_le_iff₀ hb1]
-    nlinarith
-  linarith [hlow _ hd]
+  rw [fredholm_eq_kernelCLM hab k, norm_kernelCLM]
+  exact iSup_congr fun x => integral_iccMeasure_abs hab k x
 
 /-- **A Urysohn operator is Lipschitz** with constant `L (b - a)` when its kernel is `L`-Lipschitz
 in its last argument, uniformly in the other two (Atkinson and Han, *Theoretical Numerical
@@ -265,6 +436,155 @@ theorem lipschitzWith_urysohn {k : C(Icc a b × Icc a b × ℝ, ℝ)} {L : ℝ�
       (Continuous.intervalIntegrable (by fun_prop) _ _) hpt
     _ = L * (b - a) * dist u v := by
         rw [intervalIntegral.integral_const]; simp [smul_eq_mul]; ring
+
+/-- The kernel `(x, y) ↦ ∂_z k (x, y, u y)` of the Fréchet derivative of the Urysohn operator of
+`k` at `u`, where `kz` is the partial derivative of `k` in its last argument. -/
+noncomputable def urysohnDerivKernel (kz : C(Icc a b × Icc a b × ℝ, ℝ)) (u : C(Icc a b, ℝ)) :
+    C(Icc a b × Icc a b, ℝ) :=
+  ⟨fun p => kz (p.1, p.2, u p.2), by fun_prop⟩
+
+@[simp]
+theorem urysohnDerivKernel_apply (kz : C(Icc a b × Icc a b × ℝ, ℝ)) (u : C(Icc a b, ℝ))
+    (x y : Icc a b) : urysohnDerivKernel kz u (x, y) = kz (x, y, u y) :=
+  rfl
+
+/-- **The Fréchet derivative of a Urysohn operator** at `u` is the Fredholm operator whose kernel
+is `∂_z k (x, y, u y)` (Atkinson and Han, *Theoretical Numerical Analysis*, Example 5.3.10).
+
+The hypothesis is the one the book makes: `k` has a partial derivative `kz` in its last argument,
+and `kz` is continuous on the whole of `Icc a b × Icc a b × ℝ`.
+
+Mathlib has no differentiation-under-the-integral-sign lemma in the supremum norm, so the estimate
+is written out. Its only analytic ingredient is that `kz` is uniformly continuous on the compact
+tube `Icc a b × Icc a b × Icc (-(‖u‖ + 1)) (‖u‖ + 1)` around the graph of `u`: given `ε > 0` that
+provides a `δ` such that `‖v - u‖ < δ` forces
+`|k (x, y, v y) - k (x, y, u y) - kz (x, y, u y) (v y - u y)| ≤ ε |v y - u y|`, by the mean value
+inequality applied to `z ↦ k (x, y, z) - kz (x, y, u y) z` on the segment from `u y` to `v y`;
+integrating in `y` and taking the supremum in `x` is then the whole of the `o(‖v - u‖)` bound. -/
+theorem hasFDerivAt_urysohn {k kz : C(Icc a b × Icc a b × ℝ, ℝ)}
+    (hk : ∀ (x y : Icc a b) (z : ℝ), HasDerivAt (fun t => k (x, y, t)) (kz (x, y, z)) z)
+    (u : C(Icc a b, ℝ)) :
+    HasFDerivAt (urysohn hab k) (fredholm hab (urysohnDerivKernel kz u)) u := by
+  have hba : (0 : ℝ) ≤ b - a := sub_nonneg.2 hab
+  rw [hasFDerivAt_iff_isLittleO, Asymptotics.isLittleO_iff]
+  intro ε hε
+  obtain ⟨ε', hε'pos, hε'le⟩ : ∃ ε' : ℝ, 0 < ε' ∧ ε' * (b - a) ≤ ε := by
+    refine ⟨ε / (b - a + 1), div_pos hε (by linarith), ?_⟩
+    rw [div_mul_eq_mul_div, div_le_iff₀ (by linarith)]
+    nlinarith
+  -- `kz` is uniformly continuous on a compact tube around the graph of `u`
+  set S : Set (Icc a b × Icc a b × ℝ) :=
+    univ ×ˢ univ ×ˢ Icc (-(‖u‖ + 1)) (‖u‖ + 1) with hSdef
+  have hmemS : ∀ (x y : Icc a b) (t : ℝ), |t| ≤ ‖u‖ + 1 → (x, y, t) ∈ S := by
+    intro x y t ht
+    simp only [hSdef, Set.mem_prod, Set.mem_univ, true_and, Set.mem_Icc]
+    exact abs_le.1 ht
+  have hScomp : IsCompact S := isCompact_univ.prod (isCompact_univ.prod isCompact_Icc)
+  obtain ⟨δ₀, hδ₀, hδ⟩ := Metric.uniformContinuousOn_iff.mp
+    (hScomp.uniformContinuousOn_of_continuous kz.continuous.continuousOn) ε' hε'pos
+  filter_upwards [Metric.ball_mem_nhds u (lt_min hδ₀ one_pos)] with v hv
+  have hvun : ‖v - u‖ < min δ₀ 1 := by
+    rw [← dist_eq_norm]; exact Metric.mem_ball.mp hv
+  have hd : ∀ y : Icc a b, |v y - u y| ≤ ‖v - u‖ := fun y => by
+    have h := (v - u).norm_coe_le_norm y
+    rwa [ContinuousMap.sub_apply, Real.norm_eq_abs] at h
+  -- the pointwise estimate, uniform in the two space variables
+  have hkey : ∀ x y : Icc a b,
+      |k (x, y, v y) - k (x, y, u y) - kz (x, y, u y) * (v y - u y)| ≤ ε' * ‖v - u‖ := by
+    intro x y
+    have hy1 : |v y - u y| ≤ ‖v - u‖ := hd y
+    have hy1' := abs_le.1 hy1
+    have huy : |u y| ≤ ‖u‖ := by
+      have h := u.norm_coe_le_norm y; rwa [Real.norm_eq_abs] at h
+    have hvu1 : ‖v - u‖ ≤ 1 := (hvun.trans_le (min_le_right _ _)).le
+    have hsub : ∀ t ∈ uIcc (u y) (v y), |t - u y| ≤ ‖v - u‖ := by
+      intro t ht
+      have h1 : uIcc (u y) (v y) ⊆ Icc (u y - ‖v - u‖) (u y + ‖v - u‖) :=
+        Set.uIcc_subset_Icc ⟨by linarith [norm_nonneg (v - u)], by
+          linarith [norm_nonneg (v - u)]⟩ ⟨by linarith [hy1'.1], by linarith [hy1'.2]⟩
+      have h2 := Set.mem_Icc.1 (h1 ht)
+      exact abs_le.2 ⟨by linarith [h2.1], by linarith [h2.2]⟩
+    have hR : ∀ t ∈ uIcc (u y) (v y), |t| ≤ ‖u‖ + 1 := by
+      intro t ht
+      have h1 := hsub t ht
+      have h2 := abs_sub_abs_le_abs_sub t (u y)
+      linarith
+    have hbnd : ∀ t ∈ uIcc (u y) (v y), ‖kz (x, y, t) - kz (x, y, u y)‖ ≤ ε' := by
+      intro t ht
+      have hdist : dist ((x, y, t) : Icc a b × Icc a b × ℝ) (x, y, u y) < δ₀ := by
+        have hde : dist ((x, y, t) : Icc a b × Icc a b × ℝ) (x, y, u y) = |t - u y| := by
+          simp [Prod.dist_eq, Real.dist_eq]
+        rw [hde]
+        exact lt_of_le_of_lt (hsub t ht) (hvun.trans_le (min_le_left _ _))
+      have h := hδ _ (hmemS x y t (hR t ht)) _ (hmemS x y (u y) (by linarith)) hdist
+      rw [Real.dist_eq] at h
+      rw [Real.norm_eq_abs]
+      exact h.le
+    have hderiv : ∀ t ∈ uIcc (u y) (v y),
+        HasDerivWithinAt (fun z => k (x, y, z) - kz (x, y, u y) * z)
+          (kz (x, y, t) - kz (x, y, u y)) (uIcc (u y) (v y)) t := by
+      intro t _
+      have h1 : HasDerivAt (fun z : ℝ => kz (x, y, u y) * z) (kz (x, y, u y)) t := by
+        simpa using (hasDerivAt_id t).const_mul (kz (x, y, u y))
+      exact ((hk x y t).sub h1).hasDerivWithinAt
+    have hmv := (convex_uIcc (u y) (v y)).norm_image_sub_le_of_norm_hasDerivWithin_le
+      hderiv hbnd Set.left_mem_uIcc Set.right_mem_uIcc
+    have hmv2 : |k (x, y, v y) - kz (x, y, u y) * v y
+        - (k (x, y, u y) - kz (x, y, u y) * u y)| ≤ ε' * |v y - u y| := by
+      simpa [Real.norm_eq_abs] using hmv
+    calc |k (x, y, v y) - k (x, y, u y) - kz (x, y, u y) * (v y - u y)|
+        = |k (x, y, v y) - kz (x, y, u y) * v y
+            - (k (x, y, u y) - kz (x, y, u y) * u y)| := by congr 1; ring
+      _ ≤ ε' * |v y - u y| := hmv2
+      _ ≤ ε' * ‖v - u‖ := mul_le_mul_of_nonneg_left hy1 hε'pos.le
+  -- the error of the linearisation, as one integral
+  have hvalue : ∀ x : Icc a b,
+      (urysohn hab k v - urysohn hab k u - fredholm hab (urysohnDerivKernel kz u) (v - u)) x
+        = ∫ y in a..b, (k (x, projIcc a b hab y, v (projIcc a b hab y))
+            - k (x, projIcc a b hab y, u (projIcc a b hab y))
+            - kz (x, projIcc a b hab y, u (projIcc a b hab y))
+              * (v (projIcc a b hab y) - u (projIcc a b hab y))) := by
+    intro x
+    have hA : IntervalIntegrable (fun y => k (x, projIcc a b hab y, v (projIcc a b hab y)))
+        volume a b := Continuous.intervalIntegrable (by fun_prop) _ _
+    have hB : IntervalIntegrable (fun y => k (x, projIcc a b hab y, u (projIcc a b hab y)))
+        volume a b := Continuous.intervalIntegrable (by fun_prop) _ _
+    have hC : IntervalIntegrable (fun y => kz (x, projIcc a b hab y, u (projIcc a b hab y))
+        * (v (projIcc a b hab y) - u (projIcc a b hab y))) volume a b :=
+      Continuous.intervalIntegrable (by fun_prop) _ _
+    have hAB : IntervalIntegrable (fun y => k (x, projIcc a b hab y, v (projIcc a b hab y))
+        - k (x, projIcc a b hab y, u (projIcc a b hab y))) volume a b :=
+      Continuous.intervalIntegrable (by fun_prop) _ _
+    rw [intervalIntegral.integral_sub hAB hC, intervalIntegral.integral_sub hA hB]
+    simp only [ContinuousMap.sub_apply, urysohn_apply, fredholm_apply,
+      urysohnDerivKernel_apply]
+  have hnorm : ‖urysohn hab k v - urysohn hab k u
+      - fredholm hab (urysohnDerivKernel kz u) (v - u)‖ ≤ ε' * ‖v - u‖ * (b - a) := by
+    rw [ContinuousMap.norm_le _
+      (mul_nonneg (mul_nonneg hε'pos.le (norm_nonneg _)) hba)]
+    intro x
+    rw [Real.norm_eq_abs, hvalue x]
+    calc |∫ y in a..b, (k (x, projIcc a b hab y, v (projIcc a b hab y))
+            - k (x, projIcc a b hab y, u (projIcc a b hab y))
+            - kz (x, projIcc a b hab y, u (projIcc a b hab y))
+              * (v (projIcc a b hab y) - u (projIcc a b hab y)))|
+        ≤ ∫ y in a..b, |k (x, projIcc a b hab y, v (projIcc a b hab y))
+            - k (x, projIcc a b hab y, u (projIcc a b hab y))
+            - kz (x, projIcc a b hab y, u (projIcc a b hab y))
+              * (v (projIcc a b hab y) - u (projIcc a b hab y))| :=
+          intervalIntegral.abs_integral_le_integral_abs hab
+      _ ≤ ∫ _y in a..b, ε' * ‖v - u‖ :=
+          intervalIntegral.integral_mono_on hab
+            (Continuous.intervalIntegrable (by fun_prop) _ _)
+            (Continuous.intervalIntegrable (by fun_prop) _ _)
+            (fun y _ => hkey x (projIcc a b hab y))
+      _ = ε' * ‖v - u‖ * (b - a) := by
+          rw [intervalIntegral.integral_const, smul_eq_mul]; ring
+  calc ‖urysohn hab k v - urysohn hab k u
+        - fredholm hab (urysohnDerivKernel kz u) (v - u)‖
+      ≤ ε' * ‖v - u‖ * (b - a) := hnorm
+    _ = ε' * (b - a) * ‖v - u‖ := by ring
+    _ ≤ ε * ‖v - u‖ := mul_le_mul_of_nonneg_right hε'le (norm_nonneg _)
 
 end Fredholm
 

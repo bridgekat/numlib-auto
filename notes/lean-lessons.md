@@ -1709,6 +1709,62 @@ across a rectangular `A` unchanged (Saad §8.1 uses exactly that).
 * `omega` cannot see through `↑(⟨m - 1, h⟩ : Fin m)`: a goal `(i : ℕ) = ↑(⟨m - 1, h⟩ : Fin m)` is
   opaque to it. State the arithmetic as `have hval : (i : ℕ) = m - 1 := by omega` and feed that to
   `Fin.ext`, which closes the coercion by defeq.
+* **A compact space carries no uniformity, so "uniform continuity of the kernel" is not available**
+  when a parametric-integral argument is generalized from `Icc a b` to an abstract compact `X`.
+  Mathlib's `continuous_of_dominated` is no help either — it needs `[FirstCountableTopology X]`.
+  The replacement is the tube lemma in filter form,
+  `IsCompact.eventually_forall_of_forall_eventually isCompact_univ`, which turns "for each `y`, the
+  kernel is close to `k (x₀, y)` near `(x₀, y)`" into "for `x` near `x₀`, uniformly in `y`". That is
+  the whole of `IntegralOperator.continuous_integral_kernel`.
+* **For a Taylor/mean-value estimate on a segment that may be degenerate, use the mean value
+  *inequality* on `Set.uIcc`, not the mean value equality.**
+  `Convex.norm_image_sub_le_of_norm_hasDerivWithin_le hderiv hbound (convex_uIcc _ _)
+  Set.left_mem_uIcc Set.right_mem_uIcc` gives `‖f b - f a‖ ≤ C ‖b - a‖` with no `a < b` hypothesis,
+  so the case `b = a` costs nothing; `exists_hasDerivAt_eq_slope` would need a case split and an
+  orientation. Applied to `z ↦ k (x, y, z) - ∂_z k (x, y, u y) * z` it is exactly the
+  `o(‖h‖)` estimate of `IntegralOperator.hasFDerivAt_urysohn`. Its conclusion arrives with a beta
+  redex in `f`, so bind it with `simpa [Real.norm_eq_abs] using hmv` rather than using it in a
+  `calc` directly.
+* `Measure.Subtype.measureSpace` is **not** a global instance (Mathlib enables it locally), so to
+  view a compact interval as a measure space write `Measure.comap Subtype.val volume` explicitly.
+  `MeasureTheory.integral_subtype_comap measurableSet_Icc` is the bridge to a set integral, and
+  `integral_Icc_eq_integral_Ioc` with `intervalIntegral.integral_of_le` finishes the trip to an
+  interval integral. `IsFiniteMeasure` for it is four lines through `map_comap_subtype_coe`.
+* `Metric.uniformContinuousOn_iff` with `IsCompact.uniformContinuousOn_of_continuous`
+  (`Mathlib.Topology.UniformSpace.HeineCantor`, which `Numlib` does not otherwise import) is the
+  ε-δ form of Heine–Cantor on a compact subset. On a product like
+  `Icc a b × Icc a b × ℝ` the distance between two points differing only in the last coordinate is
+  computed by `simp [Prod.dist_eq, Real.dist_eq]`.
+* Integrating over `AddCircle T`: `AddCircle.intervalIntegral_preimage T t f :
+  ∫ a in t..t + T, f ↑a = ∫ b, f b` recentres the circle integral at any real `t`, and composing it
+  with `intervalIntegral.integral_comp_add_left` gives `∫ y, F y = ∫ r in -π..π, F ↑(s + r)` for
+  every `s` — which is what makes a convolution kernel's row integral independent of the row.
+  `AddCircle.integral_haarAddCircle : ∫ t, f t ∂haarAddCircle = T⁻¹ • ∫ t, f t` is the
+  normalization bridge to the probability measure. The coercion `ℝ → AddCircle T` is a quotient
+  map, so `(↑(s + r) : AddCircle T) = ↑s + ↑r` and `↑v - ↑u = ↑(v - u)` are both `rfl`; there is no
+  need to hunt for a `coe_add` lemma. `AddCircle.coe_add_period` is periodicity, and
+  `induction x using QuotientAddGroup.induction_on with | _ s => …` names a representative.
+* **`field_simp` on a goal containing a `Finset.sum` normalizes the summand**, and it can normalize
+  the two sides differently: one side ends as `∑ x, cos (↑x * v - ↑x * u)` and the other as
+  `∑ x, cos (v * ↑x - u * ↑x)`, after which nothing closes the goal. When the sum is meant to be an
+  atom, avoid `field_simp`: rewrite the inverses by hand (`mul_inv`) and let `ring` treat the sum as
+  an atom.
+* `fun_prop` can time out at `isDefEq` on `AEStronglyMeasurable (fun y => k (x, y)) μ` for
+  `k : C(X × X, ℝ)` while succeeding on `AEStronglyMeasurable ⇑u μ`. Bind the continuity first,
+  `have hc : Continuous fun y => k (x, y) := k.continuous.comp (by fun_prop)`, and use
+  `hc.aestronglyMeasurable`. It also fails outright on a goal displayed with `Mul.mul` rather than
+  `*` (which is how it arrives from an anonymous-constructor `⟨_, by fun_prop⟩`); write the
+  `Continuous.mul` term.
+* `MeasureTheory.integral_finset_sum` is deprecated in favour of `integral_finsetSum`.
+* `Fintype.card_Icc` (for `Set.Icc` in a `LocallyFiniteOrder`) with `Int.card_Icc` computes
+  `Fintype.card ↥(Set.Icc (-(n : ℤ)) n) = 2 * n + 1` in one `omega`. To get a span over such a set
+  into the shape `finrank_span_eq_card` wants, rewrite with `Set.range_comp` and `Subtype.range_coe`
+  rather than with `Set.image_eq_range`: the latter produces `fun x => f ↑x`, which does not match
+  the lemma's `f ∘ Subtype.val`.
+* `LinearIndependent.of_comp f h` needs no injectivity of `f`, so orthonormality in `L²` gives
+  linear independence of a family of *continuous* functions in one line through
+  `(ContinuousMap.toLp p μ 𝕜).toLinearMap`; passing the `→L` bundled map instead of its
+  `.toLinearMap` sends the elaborator into a `whnf` timeout.
 
 ## Design conventions of this library
 

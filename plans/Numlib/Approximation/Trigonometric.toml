@@ -1,74 +1,41 @@
-desc = '''
-Trigonometric approximation of continuous periodic functions: the Fourier projection `𝓕_n` on
-`C_p(2π)`, the Dirichlet kernel and the Lebesgue constants `L_n = ‖𝓕_n‖` with Zygmund's
-asymptotics `L_n = (4/π²) log n + O(1)`, and Jackson's theorems (Atkinson–Han, *Theoretical
-Numerical Analysis*, §3.7.1–3.7.2: Thm 3.7.1 for `C_p^{k,α}(2π)` and Thm 3.7.2 for `C^{k,α}[-1, 1]`
-through `x = cos θ`), with the consequences (3.7.11)–(3.7.12) and (3.7.22) through the Lebesgue
-lemma of `Numlib/Approximation/BestApprox`. Phase 3; none of these objects exist in Mathlib, which
-has Fourier series on `AddCircle` in `L²` (`fourierBasis`, `hasSum_fourier_series_L2`) but not the
-uniform theory.
+[[node]]
+id = "PeriodicCont.dirichletCM"
 
-Jackson's theorem is the hard item: the standard proof convolves with the Jackson kernel
-`(sin(nθ/2)/sin(θ/2))⁴` normalized, and estimates moduli of continuity. Everything downstream
-(the `log n / n^{k+α}` bounds, Atkinson–Han Ex 3.7.4 on the Chebyshev kernel, and the
-non-convergence of Fourier series for some continuous function, whose abstract Banach–Steinhaus
-half is already `exists_not_tendsto_of_not_bddAbove` in the Atkinson–Han surface) is bookkeeping
-on top of it and of `‖𝓕_n‖ = L_n`.
-
-**Prerequisites, checked while the rest of `Numlib/Approximation` was written.** This module cannot
-be started before `Numlib/Analysis/Fourier/Dirichlet` exists: the plan is explicit that
-`PeriodicCont.fourierProj` is `fourierPartialSum` restricted to `C_p(2π)` and that a second
-Dirichlet kernel must not be introduced, so `dirichletKernel`, `fourierPartialSum` and
-`fourierPartialSum_eq_integral` are now listed among the dependencies of `fourierProj` and the
-group is not ready until they are proved. Two further things the module will need and that nothing
-supplies yet:
-
-* a subspace of `C(AddCircle (2π), ℝ)` of the trigonometric polynomials of degree at most `n`, to
-  be the range of the projection. `Numlib/Analysis/Fourier/TrigonometricBasis` is the natural home;
-  `Numlib/Approximation/Chebyshev`'s `isBestApprox_trig_iff_equioscillates` and
-  `Numlib/Approximation/Interpolation`'s `trigInterpCLM` want the same object, so it should be
-  defined once, there, and not three times here.
-* a **periodic analogue of the integral-operator norm formula**. `IntegralOperator.norm_fredholm`
-  of `Numlib/IntegralEquations/Basic` computes `‖fredholm hab k‖ = ⨆ x, ∫ y in a..b, |k (x, y)|`
-  for a kernel operator on `C(Icc a b, ℝ)`; the Fourier projection is a convolution on
-  `C(AddCircle (2π), ℝ)`, which is not that operator, so `norm_fourierProj` cannot cite it and no
-  longer lists it as a dependency. The *proof* transfers verbatim — the upper bound is the
-  triangle inequality, and the lower bound evaluates at a continuous function of norm one
-  approximating `sign (k (x, ·))`, obtained from Tietze on the compact set where the kernel is far
-  from zero — so the economical fix is to restate `norm_fredholm` for a kernel operator on
-  `C(X, ℝ)` for a compact space `X` with a finite Borel measure, of which both the interval and the
-  circle are instances, and to have `Numlib/IntegralEquations/Basic` specialize it. That is a
-  change to a module outside this group.
-'''
+[[node]]
+id = "PeriodicCont.fourierKernel"
 
 [[node]]
 id = "PeriodicCont.fourierProj"
-kind = "definition"
-desc = '''The Fourier projection `𝓕_n : C_p(2π) →L[ℝ] C_p(2π)` onto the trigonometric polynomials of
-degree `≤ n`, `𝓕_n f (x) = (1/π) ∫ f(t) D_n(x - t) dt` with the Dirichlet kernel
-`D_n(θ) = 1/2 + ∑_{j≤n} cos jθ = sin((n + 1/2)θ)/(2 sin(θ/2))` (Atkinson–Han (3.7.6)–(3.7.8));
-`isIdempotentElem_fourierProj` and `range_fourierProj`. Built from `fourierPartialSum` of
-`Numlib/Analysis/Fourier/Dirichlet` rather than from a second Dirichlet kernel of its own: what is
-added here is that the partial sum of a *continuous* periodic function is again one, that the map
-is bounded, and that it is the projection onto the trigonometric polynomials.'''
-deps = ["dirichletKernel", "fourierPartialSum", "fourierPartialSum_eq_integral"]
-source = "Atkinson–Han, Theoretical Numerical Analysis, (3.7.6)–(3.7.8)"
+
+[[node]]
+id = "PeriodicCont.fourierProj_coe"
+
+[[node]]
+id = "PeriodicCont.fourierKernel_eq_sum"
+
+[[node]]
+id = "PeriodicCont.fourierProj_eq_self"
+
+[[node]]
+id = "PeriodicCont.isIdempotentElem_fourierProj"
+
+[[node]]
+id = "PeriodicCont.range_fourierProj"
+
+[[node]]
+id = "PeriodicCont.lebesgueConstant"
+
+[[node]]
+id = "PeriodicCont.lebesgueConstant_eq"
 
 [[node]]
 id = "PeriodicCont.norm_fourierProj"
-kind = "theorem"
-desc = '''`‖𝓕_n‖ = L_n := (1/π) ∫_{-π}^{π} |D_n(θ)| dθ` (Atkinson–Han (3.7.9)), and Zygmund's asymptotics
-`L_n = (4/π²) log n + O(1)` (Atkinson–Han (3.7.10)), at least in the form `L_n ≥ (4/π²) log n`,
-which is what the non-convergence argument needs.
 
-The equality is the integral-operator norm formula for a *convolution on the circle*, which is not
-`IntegralOperator.norm_fredholm` — that computes the norm of a kernel operator on `C(Icc a b, ℝ)`
-— so this node no longer lists it as a dependency. Either restate that formula for a kernel
-operator on `C(X, ℝ)` over a compact `X` with a finite measure, which covers both, or repeat its
-two-line argument here: `≤` is the triangle inequality, and `≥` evaluates at a continuous function
-of norm one approximating `sign (D_n (x - ·))`.'''
-deps = ["PeriodicCont.fourierProj"]
-source = "Atkinson–Han, Theoretical Numerical Analysis, (3.7.9)–(3.7.10)"
+[[node]]
+id = "PeriodicCont.norm_sub_fourierProj_le"
+
+[[node]]
+id = "PeriodicCont.log_le_lebesgueConstant"
 
 [[node]]
 id = "jackson_trig"
@@ -76,9 +43,13 @@ kind = "theorem"
 desc = '''Jackson's theorem (Atkinson–Han Thm 3.7.1): for `g ∈ C_p^{k,α}(2π)`, `k ≥ 0`, `0 < α ≤ 1`, with
 Hölder constant `M_k` of `g^{(k)}`, the best uniform trigonometric approximation of degree `n ≥ 1`
 satisfies `ρ_n(g) ≤ (1 + π²/2)^{k+1} M_k / n^{k+α}`; by the Jackson kernel and induction on `k`.
-The largest single item of the module, and independent of the Fourier projection except through the
-space of trigonometric polynomials it measures the distance to.'''
-deps = ["PeriodicCont.fourierProj"]
+
+Not attempted. It is the largest single item of the module and it is independent of the Fourier
+projection: the only thing it shares with the rest is the subspace `trigPolyLE (2 π) n` that it
+measures the distance to, which now exists. The proof convolves with the normalized Jackson kernel
+`(sin (n θ / 2) / sin (θ / 2))⁴` and estimates moduli of continuity; none of the projection theory
+proved here is used by it.'''
+deps = ["trigPolyLE"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.7.1"
 
 [[node]]
@@ -86,16 +57,7 @@ id = "jackson_poly"
 kind = "theorem"
 desc = '''Atkinson–Han Thm 3.7.2: for `f ∈ C^{k,α}[-1, 1]`, the best uniform polynomial approximation of
 degree `n` satisfies `ρ_n(f) ≤ d_k M_k / n^{k+α}` with `d_k = (1 + π²/2)^{k+1} ...` as in the book,
-through `g(θ) = f(cos θ)` and `jackson_trig` ((3.7.1)–(3.7.2)).'''
+through `g(θ) = f(cos θ)` and `jackson_trig` ((3.7.1)–(3.7.2)). Not attempted, because
+`jackson_trig` is not.'''
 deps = ["jackson_trig"]
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.7.2"
-
-[[node]]
-id = "PeriodicCont.norm_sub_fourierProj_le"
-kind = "theorem"
-desc = '''Atkinson–Han (3.7.11)–(3.7.12): `‖f - 𝓕_n f‖ ≤ (1 + L_n) ρ_n(f) ≤ c_k log n / n^{k+α}` for
-`f ∈ C_p^{k,α}(2π)`; the Lebesgue lemma `norm_sub_apply_le_of_isIdempotentElem` with
-`norm_fourierProj` and `jackson_trig`; likewise (3.7.22) for trigonometric interpolation with
-Rivlin's bound.'''
-deps = ["PeriodicCont.norm_fourierProj", "jackson_trig", "norm_sub_apply_le_of_isIdempotentElem"]
-source = "Atkinson–Han, Theoretical Numerical Analysis, (3.7.11)–(3.7.12), (3.7.22)"

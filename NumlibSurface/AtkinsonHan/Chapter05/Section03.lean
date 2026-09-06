@@ -1,5 +1,6 @@
 import Numlib.Analysis.Calculus.MeanValue
 import Numlib.Analysis.Convex.Gateaux
+import Numlib.IntegralEquations.Basic
 import Mathlib.Analysis.Calculus.LineDeriv.Basic
 import Mathlib.Analysis.Calculus.FDeriv.Bilinear
 import Mathlib.Analysis.Calculus.FDeriv.Partial
@@ -20,6 +21,7 @@ from Mathlib's `HasLineDerivAt`; the identification is `HasFDerivAt.hasGateauxDe
 Contents: uniqueness of the Fréchet derivative (Definition 5.3.1), Proposition 5.3.3
 (differentiable ⇒ continuous), Proposition 5.3.4 (Fréchet ⇒ Gâteaux, and the two converses),
 Propositions 5.3.5–5.3.7 (sum, product and chain rules), Example 5.3.8 (affine maps),
+Example 5.3.10 (the Fréchet derivative of the Urysohn integral operator),
 Proposition 5.3.11 (mean value inequality (5.3.7)), Corollary 5.3.12, Proposition 5.3.13 (the
 second-order Taylor remainder) together with the Lipschitz-derivative form
 `norm_sub_sub_fderiv_le_half_mul_sq` used again in §5.4, and Definition 5.3.14 with
@@ -30,10 +32,9 @@ the variational inequality (5.3.10) and, over a subspace, the variational equati
 those four are specializations of `Numlib.Analysis.Convex.Gateaux`, which owns the general
 statements and their proofs.
 
-Left out, with the reason: Examples 5.3.9 (Jacobian) and 5.3.10 (the Fréchet derivative of the
-Urysohn operator; needs the phase-3 `C[a,b]` integral-operator toolkit and differentiation under
-the integral sign), Corollary 5.3.16 (the `C¹` form of Proposition 5.3.15; a restatement, not
-used downstream), and the exercises — see `plans/atkinsonhan-ch5.md` §4.
+Left out, with the reason: Example 5.3.9 (Jacobian), Corollary 5.3.16 (the `C¹` form of
+Proposition 5.3.15; a restatement, not used downstream), and the exercises — see
+`plans/atkinsonhan-ch5.md` §4.
 
 §5.5 (completely continuous vector fields) is summarized rather than formalized: Theorem 5.5.1
 (Brouwer), Example 5.5.2, Definition 5.5.3 (compact and completely continuous nonlinear
@@ -105,6 +106,21 @@ theorem example_5_3_8 (L : V₁ →L[ℝ] V₂) (b : V₂) (u₀ : V₁) :
   L.hasFDerivAt.add_const b
 
 end Frechet
+
+section Urysohn
+
+open IntegralOperator
+
+/-- **Example 5.3.10**: the Fréchet derivative of the Urysohn integral operator
+`u ↦ (x ↦ ∫_a^b k(x, y, u(y)) dy)` on `C[a, b]` is the Fredholm operator with kernel
+`∂_u k(x, y, u(y))`. -/
+theorem example_5_3_10 {a b : ℝ} (hab : a ≤ b) {k kz : C(Icc a b × Icc a b × ℝ, ℝ)}
+    (hk : ∀ (x y : Icc a b) (z : ℝ), HasDerivAt (fun t => k (x, y, t)) (kz (x, y, z)) z)
+    (u : C(Icc a b, ℝ)) :
+    HasFDerivAt (urysohn hab k) (fredholm hab (urysohnDerivKernel kz u)) u :=
+  hasFDerivAt_urysohn hab hk u
+
+end Urysohn
 
 section Gateaux
 

@@ -41,14 +41,21 @@ dictionary as (4.1.6). The normalisation used here — `‖trigFun T n‖ = 1` i
 * `trigFun T n : C(AddCircle T, ℝ)`, the real trigonometric system;
 * `trigLp T n : Lp ℝ 2 haarAddCircle`, the same as an element of `L²`;
 * `realFourierCoeff f n`, the coefficient of `f` against `trigFun T n`;
-* `trigBasis T : HilbertBasis ℤ ℝ (Lp ℝ 2 haarAddCircle)`.
+* `trigBasis T : HilbertBasis ℤ ℝ (Lp ℝ 2 haarAddCircle)`;
+* `trigPolyLE T n`, the subspace of `C(AddCircle T, ℝ)` of the trigonometric polynomials of degree
+  at most `n`, spanned by the `trigFun T m` with `|m| ≤ n`.
 
 ## Main results
 
 * `orthonormal_trigFun`: the system is orthonormal;
 * `realFourierCoeff_eq_fourierCoeff`: the dictionary to Mathlib's complex `fourierCoeff`;
 * `hasSum_trigSeries`: the real Fourier series of an `L²` function converges to it in `L²`;
-* `tsum_sq_realFourierCoeff`: Parseval's identity in real form.
+* `tsum_sq_realFourierCoeff`: Parseval's identity in real form;
+* `mem_trigPolyLE_iff`, `linearIndependent_trigFun` and `finrank_trigPolyLE`: the trigonometric
+  polynomials of degree at most `n` are the linear combinations of the `trigFun T m` with
+  `|m| ≤ n`, and they form a space of dimension `2 n + 1`.  That space is what the Fourier
+  projection and trigonometric interpolation project onto, and the Haar subspace of the
+  trigonometric equioscillation theorem, so it is defined once here rather than in each of them.
 
 ## References
 
@@ -223,6 +230,15 @@ theorem realFourierCoeff_apply (f : AddCircle T → ℝ) (n : ℤ) :
 theorem realFourierCoeff_zero (f : AddCircle T → ℝ) :
     realFourierCoeff f 0 = ∫ x : AddCircle T, f x ∂haarAddCircle := by
   simp [realFourierCoeff_apply]
+
+/-- The real Fourier coefficients of a member of the real trigonometric system: the system is its
+own coefficient sequence.  This is `orthonormal_trigFun` read on the continuous functions rather
+than on `L²`, and it is what makes the Fourier projection of `Numlib/Approximation/Trigonometric`
+fix the trigonometric polynomials. -/
+@[simp]
+theorem realFourierCoeff_trigFun (i j : ℤ) :
+    realFourierCoeff (trigFun T i) j = if i = j then 1 else 0 :=
+  integral_trigFun_mul i j
 
 /-- The complex Fourier coefficients of a real-valued function are conjugate-symmetric. -/
 theorem fourierCoeff_ofReal_neg (f : AddCircle T → ℝ) (n : ℤ) :
@@ -402,5 +418,86 @@ theorem tsum_sq_realFourierCoeff (f : Lp ℝ 2 (@haarAddCircle T hT)) :
   refine tsum_congr fun n => ?_
   rw [real_inner_comm, inner_trigLp]
   ring
+
+end Circle
+
+/-! ### The trigonometric polynomials of degree at most `n` -/
+
+/-- The **trigonometric polynomials of degree at most `n`** on the circle of circumference `T`:
+the subspace of `C(AddCircle T, ℝ)` spanned by the members `trigFun T m` of the real trigonometric
+system with `|m| ≤ n`, that is, by the constant together with the cosines and the sines of
+frequencies `1, …, n`.
+
+This is the subspace that the Fourier projection and trigonometric interpolation project onto, and
+the Haar subspace of the trigonometric equioscillation theorem. It is `2 n + 1`-dimensional
+(`finrank_trigPolyLE`). -/
+noncomputable def trigPolyLE (T : ℝ) (n : ℕ) : Submodule ℝ C(AddCircle T, ℝ) :=
+  span ℝ (trigFun T '' Set.Icc (-(n : ℤ)) n)
+
+variable {n : ℕ}
+
+theorem mem_Icc_iff_natAbs_le {m : ℤ} : m ∈ Set.Icc (-(n : ℤ)) n ↔ m.natAbs ≤ n := by
+  rw [Set.mem_Icc]
+  omega
+
+/-- Each member of the real trigonometric system of index at most `n` in absolute value is a
+trigonometric polynomial of degree at most `n`. -/
+theorem trigFun_mem_trigPolyLE {m : ℤ} (hm : m.natAbs ≤ n) : trigFun T m ∈ trigPolyLE T n :=
+  subset_span ⟨m, mem_Icc_iff_natAbs_le.2 hm, rfl⟩
+
+/-- The trigonometric polynomials of degree at most `n` are exactly the linear combinations of the
+`2 n + 1` members of the real trigonometric system of index at most `n` in absolute value. -/
+theorem mem_trigPolyLE_iff {f : C(AddCircle T, ℝ)} :
+    f ∈ trigPolyLE T n ↔ ∃ c : ℤ → ℝ, f = ∑ m ∈ Finset.Icc (-(n : ℤ)) n, c m • trigFun T m := by
+  constructor
+  · intro hf
+    induction hf using Submodule.span_induction with
+    | mem x hx =>
+      obtain ⟨m, hm, rfl⟩ := hx
+      refine ⟨fun j => if j = m then 1 else 0, ?_⟩
+      rw [Finset.sum_eq_single m (fun j _ hj => by simp [hj]) fun hm' => ?_]
+      · simp
+      · exact absurd (Finset.mem_Icc.2 (Set.mem_Icc.1 hm)) hm'
+    | zero => exact ⟨0, by simp⟩
+    | add x y _ _ hx hy =>
+      obtain ⟨cx, rfl⟩ := hx
+      obtain ⟨cy, rfl⟩ := hy
+      exact ⟨cx + cy, by simp [← Finset.sum_add_distrib, add_smul]⟩
+    | smul r x _ hx =>
+      obtain ⟨c, rfl⟩ := hx
+      exact ⟨r • c, by simp [Finset.smul_sum, smul_smul]⟩
+  · rintro ⟨c, rfl⟩
+    exact sum_mem fun m hm =>
+      Submodule.smul_mem _ _ (subset_span ⟨m, Set.mem_Icc.2 (Finset.mem_Icc.1 hm), rfl⟩)
+
+/-- The trigonometric polynomials of degree at most `n` form an increasing family of subspaces. -/
+theorem trigPolyLE_mono {m n : ℕ} (h : m ≤ n) : trigPolyLE T m ≤ trigPolyLE T n :=
+  span_mono (Set.image_mono fun _j hj => mem_Icc_iff_natAbs_le.2
+    ((mem_Icc_iff_natAbs_le.1 hj).trans h))
+
+instance : FiniteDimensional ℝ (trigPolyLE T n) :=
+  FiniteDimensional.span_of_finite ℝ ((Set.finite_Icc _ _).image _)
+
+section Circle
+
+variable [hT : Fact (0 < T)]
+
+/-- The real trigonometric system is linearly independent in `C(AddCircle T, ℝ)`, because it is
+orthonormal in `L²` and the inclusion of the continuous functions is linear. -/
+theorem linearIndependent_trigFun : LinearIndependent ℝ (trigFun T) :=
+  orthonormal_trigFun.linearIndependent.of_comp
+    (ContinuousMap.toLp (E := ℝ) 2 AddCircle.haarAddCircle ℝ).toLinearMap
+
+/-- **The trigonometric polynomials of degree at most `n` form a space of dimension `2 n + 1`**:
+the constant, and a cosine and a sine for each frequency `1, …, n`. -/
+theorem finrank_trigPolyLE (T : ℝ) [Fact (0 < T)] (n : ℕ) :
+    Module.finrank ℝ (trigPolyLE T n) = 2 * n + 1 := by
+  have hrange : trigFun T '' Set.Icc (-(n : ℤ)) n
+      = Set.range (trigFun T ∘ (Subtype.val : ↑(Set.Icc (-(n : ℤ)) (n : ℤ)) → ℤ)) := by
+    rw [Set.range_comp, Subtype.range_coe]
+  rw [trigPolyLE, hrange,
+    finrank_span_eq_card (linearIndependent_trigFun.comp _ Subtype.val_injective),
+    Fintype.card_Icc, Int.card_Icc]
+  omega
 
 end Circle

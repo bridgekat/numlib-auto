@@ -27,3 +27,18 @@ id = "hasSum_trigSeries"
 
 [[node]]
 id = "tsum_sq_realFourierCoeff"
+
+[[node]]
+id = "trigPolyLE"
+
+[[node]]
+id = "trigFun_mem_trigPolyLE"
+
+[[node]]
+id = "mem_trigPolyLE_iff"
+
+[[node]]
+id = "linearIndependent_trigFun"
+
+[[node]]
+id = "finrank_trigPolyLE"
