@@ -29,6 +29,14 @@ basis (`Matrix.sineOrthonormalBasis`); the spectrum consists of exactly the `n` 
 and `tridiag(-1, 2, -1)`, whose eigenvalues are `4 sin²((k + 1)π / (2(n + 1)))`, is positive
 definite.
 
+`Matrix.tridiagonalToeplitz n a b c` is the general `tridiag(a, b, c)`, with possibly different
+off-diagonals. When they have the same sign, `a c ≥ 0`, the diagonal similarity `diag(1, d, d², …)`
+with `d² = a / c` turns it into a symmetric one whose off-diagonal squares to `a c`, so its
+eigenvalues are again a cosine family, `b + 2 √(a c) cos((k + 1)π / (n + 1))`
+(`Matrix.tridiagonalToeplitz_hasEigenvalue_iff`). A sign in the off-diagonal only reflects the
+family, `k ↦ n - 1 - k`, and the degenerate case `a c = 0` is a triangular matrix whose only
+eigenvalue is `b` — which the same formula gives.
+
 This is the model problem of [saad2003iterative], §2.2.3 and §2.2.6, and of [kress1998numerical],
 §4. The module knows nothing about differential equations: the claim that these matrices discretize
 `-u''` belongs to a textbook surface, and the two-dimensional five-point Laplacian is the Kronecker
@@ -556,5 +564,189 @@ theorem posDef_symmTridiagonalToeplitz_neg_one_two (n : ℕ) :
   rw [hcos]
   simp only [abs_neg, abs_one]
   nlinarith [hhalf]
+
+/-! ### The general tridiagonal Toeplitz matrix
+
+A tridiagonal Toeplitz matrix with off-diagonals of the *same sign* is a diagonal similarity away
+from a symmetric one, so its spectrum is again a cosine family.  The similarity is
+`diag(1, d, d², …)` with `d² = a / c`, which turns the pair `(a, c)` of off-diagonals into the
+constant `c d`, whose square is `a c`. -/
+
+section General
+
+variable (c : ℝ)
+
+/-- The tridiagonal Toeplitz matrix `tridiag(a, b, c)`: `b` on the diagonal, `a` on the
+subdiagonal, `c` on the superdiagonal and `0` elsewhere.  `Matrix.symmTridiagonalToeplitz n a b` is
+the case `c = a`. -/
+def tridiagonalToeplitz (n : ℕ) (a b c : ℝ) : Matrix (Fin n) (Fin n) ℝ :=
+  Matrix.of fun i j =>
+    if (i : ℕ) = j then b else if (j : ℕ) + 1 = i then a else if (i : ℕ) + 1 = j then c else 0
+
+/-- The entries of `tridiag(a, b, c)`. -/
+theorem tridiagonalToeplitz_apply (i j : Fin n) :
+    tridiagonalToeplitz n a b c i j =
+      if (i : ℕ) = j then b else if (j : ℕ) + 1 = i then a else
+        if (i : ℕ) + 1 = j then c else 0 := rfl
+
+/-- The symmetric tridiagonal Toeplitz matrix is the case of equal off-diagonals. -/
+theorem symmTridiagonalToeplitz_eq_tridiagonalToeplitz (n : ℕ) (a b : ℝ) :
+    symmTridiagonalToeplitz n a b = tridiagonalToeplitz n a b a := by
+  ext i j
+  rw [symmTridiagonalToeplitz_apply', tridiagonalToeplitz_apply]
+  split_ifs with h1 h2 h3 h4 <;> first | rfl | omega
+
+/-- Transposition exchanges the two off-diagonals. -/
+theorem tridiagonalToeplitz_transpose (n : ℕ) (a b c : ℝ) :
+    (tridiagonalToeplitz n a b c)ᵀ = tridiagonalToeplitz n c b a := by
+  ext i j
+  rw [transpose_apply, tridiagonalToeplitz_apply, tridiagonalToeplitz_apply]
+  split_ifs <;> first | rfl | omega
+
+/-- `diag(1, d, d², …)` as a unit of the matrix ring, for `d ≠ 0`. -/
+private noncomputable def diagPowUnit (n : ℕ) {d : ℝ} (hd : d ≠ 0) :
+    (Matrix (Fin n) (Fin n) ℝ)ˣ where
+  val := diagonal fun i : Fin n => d ^ (i : ℕ)
+  inv := diagonal fun i : Fin n => (d ^ (i : ℕ))⁻¹
+  val_inv := by
+    rw [diagonal_mul_diagonal, ← diagonal_one]
+    congr 1
+    funext i
+    simp [mul_inv_cancel₀ (pow_ne_zero (i : ℕ) hd)]
+  inv_val := by
+    rw [diagonal_mul_diagonal, ← diagonal_one]
+    congr 1
+    funext i
+    simp [inv_mul_cancel₀ (pow_ne_zero (i : ℕ) hd)]
+
+/-- The symmetrizing similarity: with `d² = a / c`, `tridiag(a, b, c) · diag(1, d, d², …)` and
+`diag(1, d, d², …) · tridiag(c d, b, c d)` agree.  The scaling multiplies the superdiagonal by `d`
+and divides the subdiagonal by `d`, and `d² = a / c` is exactly what makes the two results equal. -/
+private theorem tridiagonalToeplitz_mul_diagonal_pow (n : ℕ) (a b c d : ℝ) (hc : c ≠ 0)
+    (hd : d ^ 2 = a / c) :
+    tridiagonalToeplitz n a b c * diagonal (fun i : Fin n => d ^ (i : ℕ))
+      = diagonal (fun i : Fin n => d ^ (i : ℕ)) * symmTridiagonalToeplitz n (c * d) b := by
+  have hac : c * d ^ 2 = a := by rw [hd]; field_simp
+  ext i j
+  rw [mul_diagonal, diagonal_mul, tridiagonalToeplitz_apply, symmTridiagonalToeplitz_apply']
+  by_cases h1 : (i : ℕ) = j
+  · rw [ite_eq_left h1, ite_eq_left h1, h1]
+    ring
+  rw [ite_eq_right h1, ite_eq_right h1]
+  by_cases h2 : (j : ℕ) + 1 = i
+  · rw [ite_eq_left h2, ite_eq_left (Or.inr h2), ← h2, pow_succ]
+    rw [← hac]
+    ring
+  rw [ite_eq_right h2]
+  by_cases h3 : (i : ℕ) + 1 = j
+  · rw [ite_eq_left h3, ite_eq_left (Or.inl h3), ← h3, pow_succ]
+    ring
+  · rw [ite_eq_right h3, ite_eq_right (by tauto)]
+    ring
+
+/-- Reflecting the index `k ↦ n - 1 - k` negates `cos((k + 1)π/(n + 1))`, so the cosine family is
+unchanged when the amplitude changes sign. -/
+private theorem exists_eq_add_cos_neg_iff (n : ℕ) (b t μ : ℝ) :
+    (∃ k : Fin n, μ = b + 2 * (-t) * Real.cos ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1))) ↔
+      ∃ k : Fin n, μ = b + 2 * t * Real.cos ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1)) := by
+  have hn : ((n : ℝ) + 1) ≠ 0 := by positivity
+  have hcos : ∀ k : Fin n, Real.cos ((((k.rev : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1))
+      = -Real.cos ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1)) := by
+    intro k
+    have hval : ((k.rev : ℕ) : ℝ) + 1 = ((n : ℝ) + 1) - (((k : ℕ) : ℝ) + 1) := by
+      have hle : (k : ℕ) + 1 ≤ n := k.isLt
+      rw [Fin.val_rev, Nat.cast_sub hle]
+      push_cast
+      ring
+    rw [hval, ← Real.cos_pi_sub]
+    congr 1
+    field_simp
+  constructor
+  · rintro ⟨k, rfl⟩
+    exact ⟨k.rev, by rw [hcos]; ring⟩
+  · rintro ⟨k, rfl⟩
+    exact ⟨k.rev, by rw [hcos]; ring⟩
+
+/-- A tridiagonal Toeplitz matrix with a vanishing superdiagonal is lower triangular, so its
+spectrum is the single diagonal entry (and is empty for `n = 0`). -/
+private theorem mem_spectrum_tridiagonalToeplitz_super_zero (n : ℕ) (a b μ : ℝ) :
+    μ ∈ spectrum ℝ (tridiagonalToeplitz n a b 0) ↔ ∃ _k : Fin n, μ = b := by
+  set M : Matrix (Fin n) (Fin n) ℝ :=
+    algebraMap ℝ (Matrix (Fin n) (Fin n) ℝ) μ - tridiagonalToeplitz n a b 0 with hM
+  have hentry : ∀ i j : Fin n, M i j
+      = (if i = j then μ else 0) - tridiagonalToeplitz n a b 0 i j := by
+    intro i j
+    rw [hM, sub_apply, algebraMap_matrix_apply]
+    simp
+  have hlow : M.IsLowerTriangular := by
+    intro i j hij
+    rw [OrderDual.toDual_lt_toDual] at hij
+    have hne : ¬ (i = j) := ne_of_lt hij
+    have hne' : ¬ ((i : ℕ) = j) := fun h => hne (Fin.ext h)
+    rw [hentry, ite_eq_right hne, tridiagonalToeplitz_apply, ite_eq_right hne',
+      ite_eq_right (by omega)]
+    split_ifs <;> ring
+  have hdiag : ∀ i : Fin n, M i i = μ - b := by
+    intro i
+    rw [hentry, ite_eq_left rfl, tridiagonalToeplitz_apply, ite_eq_left rfl]
+  have hdet : M.det = (μ - b) ^ n := by
+    rw [det_of_isLowerTriangular M hlow]
+    simp [hdiag]
+  rw [spectrum.mem_iff, ← hM, Matrix.isUnit_iff_isUnit_det, hdet, isUnit_iff_ne_zero, not_not,
+    pow_eq_zero_iff', sub_eq_zero]
+  constructor
+  · rintro ⟨hμ, hn⟩
+    exact ⟨⟨0, Nat.pos_of_ne_zero hn⟩, hμ⟩
+  · rintro ⟨k, hμ⟩
+    exact ⟨hμ, by have := k.isLt; omega⟩
+
+/-- **The spectrum of a tridiagonal Toeplitz matrix** whose two off-diagonals have the same sign:
+the eigenvalues of `tridiag(a, b, c)` with `a c ≥ 0` are the `n` numbers
+`b + 2 √(a c) cos((k + 1)π/(n + 1))`.
+
+For `a c > 0` the matrix is `diag(1, d, d², …)`-similar to `tridiag(√(ac), b, √(ac))` up to a sign
+in the off-diagonal, and a sign there only reflects the cosine family; for `a c = 0` the matrix is
+triangular and its only eigenvalue is `b`, which the formula also gives. -/
+theorem tridiagonalToeplitz_hasEigenvalue_iff (n : ℕ) (a b c : ℝ) (hac : 0 ≤ a * c) (μ : ℝ) :
+    Module.End.HasEigenvalue (toEuclideanLin (tridiagonalToeplitz n a b c)) μ ↔
+      ∃ k : Fin n, μ = b + 2 * Real.sqrt (a * c)
+        * Real.cos ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1)) := by
+  rw [hasEigenvalue_toEuclideanLin_iff]
+  rcases eq_or_ne c 0 with rfl | hc
+  · rw [mem_spectrum_tridiagonalToeplitz_super_zero]
+    simp
+  rcases eq_or_ne a 0 with rfl | ha
+  · have htr : tridiagonalToeplitz n 0 b c = (tridiagonalToeplitz n c b 0)ᵀ := by
+      rw [tridiagonalToeplitz_transpose]
+    rw [htr, spectrum_transpose, mem_spectrum_tridiagonalToeplitz_super_zero]
+    simp
+  -- the nondegenerate case: a diagonal similarity to a symmetric tridiagonal Toeplitz matrix
+  have hacpos : 0 < a * c := lt_of_le_of_ne hac (Ne.symm (mul_ne_zero ha hc))
+  have hc2 : 0 < c ^ 2 := lt_of_le_of_ne (sq_nonneg c) (Ne.symm (pow_ne_zero 2 hc))
+  have hdiv : 0 < a / c := by
+    have hrw : a / c = a * c / c ^ 2 := by field_simp
+    rw [hrw]
+    exact div_pos hacpos hc2
+  set d : ℝ := Real.sqrt (a / c) with hddef
+  have hd : d ≠ 0 := ne_of_gt (Real.sqrt_pos.2 hdiv)
+  have hd2 : d ^ 2 = a / c := Real.sq_sqrt hdiv.le
+  set u : (Matrix (Fin n) (Fin n) ℝ)ˣ := diagPowUnit n hd with hu
+  have huval : (u : Matrix (Fin n) (Fin n) ℝ) = diagonal fun i : Fin n => d ^ (i : ℕ) := rfl
+  have hconj : (u : Matrix (Fin n) (Fin n) ℝ) * symmTridiagonalToeplitz n (c * d) b
+      * (↑u⁻¹ : Matrix (Fin n) (Fin n) ℝ) = tridiagonalToeplitz n a b c := by
+    rw [huval, ← tridiagonalToeplitz_mul_diagonal_pow n a b c d hc hd2, mul_assoc, ← huval,
+      u.mul_inv, mul_one]
+  rw [← hconj, spectrum.units_conjugate, ← hasEigenvalue_toEuclideanLin_iff,
+    symmTridiagonalToeplitz_hasEigenvalue_iff]
+  have hsq : (c * d) ^ 2 = a * c := by
+    rw [mul_pow, hd2]
+    field_simp
+  have habs : |c * d| = Real.sqrt (a * c) := by
+    rw [← hsq, Real.sqrt_sq_eq_abs]
+  rcases abs_choice (c * d) with h | h
+  · rw [← habs, h]
+  · rw [← habs, ← exists_eq_add_cos_neg_iff, h]
+
+end General
 
 end Matrix

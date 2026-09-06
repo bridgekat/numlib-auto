@@ -5,3 +5,26 @@ id = "IsCompletelyContinuousOn"
 
 [[node]]
 id = "proposition_5_5_5"
+
+[[node]]
+id = "example_5_5_2"
+kind = "theorem"
+desc = '''
+Example 5.5.2: on a Hilbert space with an orthonormal basis, the map
+`T(v) = t (1 - ‖v‖) φ₁ + ∑_j α_j φ_{j+1}` sends the closed unit ball into itself, is Lipschitz
+with constant `k`, and has no fixed point, for `k > 1` and `0 < t ≤ min(1, √(k² - 1))`. It is what
+shows that the extra hypotheses of Schauder theorem (Theorem 5.5.4) cannot be dropped.
+
+Open. The item is formalizable today - a fixed point would force `α_j = α_{j-1}` for every `j`,
+hence `α = 0` off the first coordinate, and then `t(1 - ‖v‖) = α₁` with `‖v‖ = |α₁|` has no
+solution - but the map has to be *constructed*, not assumed: stating it with `T` as a hypothesis
+would make the statement vacuous, since its content is that such a `T` exists. The construction
+needs the unilateral shift on a Hilbert space given by a `HilbertBasis ℕ`, which Mathlib does not
+have; it has to be built on `lp (fun _ : ℕ => ℝ) 2` and transported through `HilbertBasis.repr`.
+Nothing in this corpus consumes the example.
+
+Note also that the condition `0 < t ≤ √(k² - 1)` the book gives yields the Lipschitz constant but
+not `T(K) ⊆ K`: since `‖T v‖² = t² (1 - ‖v‖)² + ‖v‖²`, the map sends the unit ball into itself
+exactly when `t ≤ 1`, so the three claims together need `t ≤ min(1, √(k² - 1))`.
+'''
+deps = ["IsCompletelyContinuousOn"]

@@ -61,3 +61,6 @@ source = "Saad, Iterative Methods for Sparse Linear Systems, Section 4.2.1"
 [[node]]
 id = "exists_limsup_norm_pow_mulVec_rpow_eq"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Section 4.2.1"
+
+[[node]]
+id = "tendsto_pow_rpow_linfty_opNorm"

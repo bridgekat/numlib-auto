@@ -274,7 +274,7 @@ for `n ≥ 1`).
 **Ex 5.1.2** (`Tᵐ` contractive; cited by Thm 5.2.3).
 Book: `K` nonempty closed, `T : K → K` continuous, `Tᵐ` a contraction for some `m ≥ 1` ⇒ `T` has a unique fixed
 point in `K` and `u_{n+1} = T u_n` converges.
-Lean: `theorem example_5_1_2 … (hc : ContinuousOn T K) {m : ℕ} (hm : 0 < m) {α : ℝ} (hα : ContractiveOn (T^[m]) K α) : (∃! u, u ∈ K ∧ T u = u) ∧ ∀ u₀ ∈ K, ∃ u ∈ K, T u = u ∧ Tendsto (fun n => T^[n] u₀) atTop (𝓝 u)`.
+Lean: `theorem exercise_5_1_2 … (hc : ContinuousOn T K) {m : ℕ} (hm : 0 < m) {α : ℝ} (hα : ContractiveOn (T^[m]) K α) : (∃! u, u ∈ K ∧ T u = u) ∧ ∀ u₀ ∈ K, ∃ u ∈ K, T u = u ∧ Tendsto (fun n => T^[n] u₀) atTop (𝓝 u)`.
 Backbone (`Numlib/Nonlinear/FixedPoint.lean`, whole space):
 `exists_unique_fixedPoint_of_iterate_contractingWith [Nonempty α] [CompleteSpace α] (hT : Continuous T) (hm : 0 < m) (hK : ContractingWith K T^[m]) : ∃! x, T x = x`
 (`[Nonempty α]` is needed: the empty metric space is complete and every self-map of it is a

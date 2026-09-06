@@ -1,8 +1,12 @@
+import Mathlib.Analysis.Calculus.ContDiff.Defs
+import Mathlib.Analysis.Calculus.Deriv.Comp
 import Mathlib.Analysis.Calculus.Deriv.MeanValue
 import Mathlib.Analysis.Calculus.Deriv.Pow
 import Mathlib.Analysis.Calculus.FDeriv.Bilinear
 import Mathlib.Analysis.Calculus.FDeriv.Partial
+import Mathlib.Analysis.Calculus.FDeriv.Pi
 import Mathlib.Analysis.Calculus.LineDeriv.Basic
+import Mathlib.LinearAlgebra.Matrix.ToLin
 import Numlib.Analysis.Calculus.MeanValue
 import Numlib.Analysis.Convex.Gateaux
 import Numlib.IntegralEquations.Basic
@@ -35,10 +39,12 @@ agree.  So only the Gâteaux derivative needs a definition here.
   `hasFDerivAt_of_hasGateauxDerivAt_continuousAt` — Proposition 5.3.4, Fréchet ⇒ Gâteaux and its
   two converses (uniformity in the direction; continuity of `u ↦ A u`).
 * `proposition_5_3_5`, `proposition_5_3_6`, `proposition_5_3_7` — the sum, product and chain
-  rules, with `HasGateauxDerivAt.add` and `HasGateauxDerivAt.const_smul` for the Gâteaux
-  versions.
-* `example_5_3_8`, `example_5_3_10` — the derivative of an affine map, and of the Urysohn
-  integral operator on `C[a, b]`.
+  rules, with `HasGateauxDerivAt.add`, `HasGateauxDerivAt.const_smul` and
+  `HasGateauxDerivAt.comp` (the mixed Gâteaux ∘ Fréchet clause of Proposition 5.3.7) for the
+  Gâteaux versions.
+* `example_5_3_8`, `example_5_3_9`, `example_5_3_10` — the derivative of an affine map, the
+  Jacobian matrix of a map between coordinate spaces, and the derivative of the Urysohn integral
+  operator on `C[a, b]`.
 * `proposition_5_3_11`, `proposition_5_3_11_iSup`, `corollary_5_3_12` — the mean value
   inequality (5.3.7), in the two forms the book gives, and the vanishing-derivative corollary.
 * `proposition_5_3_13` and `norm_sub_sub_fderiv_le_half_mul_sq` — the second-order Taylor
@@ -46,7 +52,9 @@ agree.  So only the Gâteaux derivative needs a definition here.
   second is what (5.4.5) and the Newton–Kantorovich theorem of §5.4 rest on.
 * `proposition_5_3_15_fst`, `proposition_5_3_15_snd`, `proposition_5_3_15_of_partial`,
   `equation_5_3_8` — Definition 5.3.14 and Proposition 5.3.15 on partial derivatives, in both
-  directions, with the total derivative as the sum of the partials.
+  directions, with the total derivative as the sum of the partials; `corollary_5_3_16` is the
+  `C¹` form, an equivalence between differentiability on a neighbourhood with a continuous
+  derivative and continuity of the two partial derivatives there.
 * `theorem_5_3_17`, `theorem_5_3_18`, `theorem_5_3_19`, `theorem_5_3_19_submodule` — §5.3.4:
   convexity through the tangent plane inequality and through monotonicity of the derivative,
   their strict versions, and a minimizer characterised by the variational inequality (5.3.10)
@@ -55,8 +63,8 @@ agree.  So only the Gâteaux derivative needs a definition here.
 
 ## Not formalized here
 
-Example 5.3.9 (the Jacobian matrix), Corollary 5.3.16 (the `C¹` form of Proposition 5.3.15 — a
-restatement, not used downstream) and the exercises; see `plans/atkinsonhan-ch5.md` §4.
+The exercises of §5.3; see `plans/atkinsonhan-ch5.md` §4.  Every numbered result of the section is
+stated.
 -/
 
 open Filter Set Topology
@@ -121,6 +129,27 @@ theorem example_5_3_8 (L : V₁ →L[ℝ] V₂) (b : V₂) (u₀ : V₁) :
     HasFDerivAt (fun v => L v + b) L u₀ :=
   L.hasFDerivAt.add_const b
 
+/-- **Example 5.3.9**: for `T : K ⊆ ℝᵐ → ℝⁿ` the Fréchet derivative at `v₀` is the `n × m`
+**Jacobian matrix** `(∂Tᵢ/∂xⱼ)(v₀)`: the `(i, j)` entry of the matrix of `T'(v₀)` is the derivative
+of the `i`-th component of `T` along the `j`-th coordinate, the other coordinates held at `v₀`.
+
+The partial derivative is written as a genuine `HasDerivAt` of the coordinate section
+`s ↦ Tᵢ(v₀ with its j-th entry replaced by s)`, which is what `∂Tᵢ/∂xⱼ` means. -/
+theorem example_5_3_9 {m n : ℕ} {T : (Fin m → ℝ) → (Fin n → ℝ)}
+    {A : (Fin m → ℝ) →L[ℝ] (Fin n → ℝ)} {v₀ : Fin m → ℝ} (hT : HasFDerivAt T A v₀)
+    (i : Fin n) (j : Fin m) :
+    HasDerivAt (fun s : ℝ => T (Function.update v₀ j s) i)
+      (LinearMap.toMatrix' (A : (Fin m → ℝ) →ₗ[ℝ] Fin n → ℝ) i j) (v₀ j) := by
+  have hupd : HasDerivAt (Function.update v₀ j) (Pi.single j (1 : ℝ)) (v₀ j) := by
+    have h := (hasFDerivAt_update (𝕜 := ℝ) (i := j) v₀ (v₀ j)).hasDerivAt
+    refine h.congr_deriv ?_
+    ext k
+    by_cases hk : k = j <;> simp [hk]
+  have hcomp : HasDerivAt (fun s : ℝ => T (Function.update v₀ j s)) (A (Pi.single j 1)) (v₀ j) :=
+    hT.comp_hasDerivAt_of_eq (v₀ j) hupd (by rw [Function.update_eq_self])
+  exact (ContinuousLinearMap.proj (R := ℝ) (φ := fun _ : Fin n => ℝ)
+    i).hasFDerivAt.comp_hasDerivAt (v₀ j) hcomp
+
 end Frechet
 
 section Urysohn
@@ -176,6 +205,18 @@ theorem HasGateauxDerivAt.const_smul {f : V → W} {A : V →L[ℝ] W} {u₀ : V
     (hf : HasGateauxDerivAt f A u₀) (c : ℝ) :
     HasGateauxDerivAt (fun u => c • f u) (c • A) u₀ := fun h =>
   HasDerivAt.const_smul c (hf h)
+
+/-- **Proposition 5.3.7**, second clause (the mixed chain rule): if `f` has a *Gâteaux* derivative
+`A` at `u₀` and `g` a *Fréchet* derivative `B` at `f(u₀)`, then `g ∘ f` has the Gâteaux derivative
+`B A` at `u₀`.  Only the outer map needs to be Fréchet differentiable, because the composite is
+tested one direction at a time and along each direction `g` is composed with a curve.
+
+`proposition_5_3_7` is the Fréchet ∘ Fréchet clause of the same proposition. -/
+theorem HasGateauxDerivAt.comp {X : Type*} [NormedAddCommGroup X] [NormedSpace ℝ X] {f : V → W}
+    {g : W → X} {A : V →L[ℝ] W} {B : W →L[ℝ] X} {u₀ : V} (hg : HasFDerivAt g B (f u₀))
+    (hf : HasGateauxDerivAt f A u₀) : HasGateauxDerivAt (fun u => g (f u)) (B.comp A) u₀ := by
+  intro h
+  exact hg.comp_hasDerivAt_of_eq 0 (hf h) (by simp)
 
 /-- **Proposition 5.3.4**(ii): if the difference quotients converge *uniformly* over the unit
 sphere of directions, the Gâteaux derivative is a Fréchet derivative. -/
@@ -360,6 +401,53 @@ theorem proposition_5_3_15_of_partial {f : U → V → W} {f₁ : U → V → U 
     (df₂ : ∀ᶠ q in 𝓝 p, HasFDerivAt (f q.1 ·) (↿f₂ q) q.2) (cf₁ : ContinuousAt (↿f₁) p)
     (cf₂ : ContinuousAt (↿f₂) p) : HasFDerivAt (↿f) ((↿f₁ p).coprod (↿f₂ p)) p :=
   (hasStrictFDerivAt_uncurry_coprod df₁ df₂ cf₁ cf₂).hasFDerivAt
+
+/-- Post-composition with a fixed continuous linear map is continuous on the space of operators;
+this is what carries continuity of the total derivative to continuity of a partial one and back. -/
+private theorem continuous_comp_right {X Y Z : Type*} [NormedAddCommGroup X] [NormedSpace ℝ X]
+    [NormedAddCommGroup Y] [NormedSpace ℝ Y] [NormedAddCommGroup Z] [NormedSpace ℝ Z]
+    (L : X →L[ℝ] Y) : Continuous fun B : Y →L[ℝ] Z => B.comp L :=
+  ((ContinuousLinearMap.compL ℝ X Y Z).flip L).continuous
+
+/-- **Corollary 5.3.16**: `f(u, v)` is continuously Fréchet differentiable in a neighbourhood of
+`(u₀, v₀)` if and only if the partial derivatives `f_u` and `f_v` exist and are continuous in a
+neighbourhood of `(u₀, v₀)`.
+
+`ContDiffAt ℝ 1 (↿f) p` is the left-hand side: being `C¹` *at* a point means, in Mathlib as in the
+book, being differentiable on a neighbourhood with a derivative continuous there.  The forward
+direction is `proposition_5_3_15_fst`/`_snd` at every point of that neighbourhood; the backward
+one is `proposition_5_3_15_of_partial`, applied at every point rather than only at `p`, which is
+what upgrades a single Fréchet derivative to a continuously differentiable one. -/
+theorem corollary_5_3_16 {f : U → V → W} {p : U × V} :
+    ContDiffAt ℝ 1 (↿f) p ↔
+      ∃ (f₁ : U → V → U →L[ℝ] W) (f₂ : U → V → V →L[ℝ] W) (s : Set (U × V)), s ∈ 𝓝 p ∧
+        (∀ q ∈ s, HasFDerivAt (f · q.2) (↿f₁ q) q.1) ∧
+        (∀ q ∈ s, HasFDerivAt (f q.1 ·) (↿f₂ q) q.2) ∧
+        ContinuousOn (↿f₁) s ∧ ContinuousOn (↿f₂) s := by
+  constructor
+  · intro hf
+    obtain ⟨F, s, hs, hFc, hFd⟩ := contDiffAt_one_iff.1 hf
+    refine ⟨fun a b => (F (a, b)).comp (ContinuousLinearMap.inl ℝ U V),
+      fun a b => (F (a, b)).comp (ContinuousLinearMap.inr ℝ U V), s, hs,
+      fun q hq => proposition_5_3_15_fst (hFd q hq),
+      fun q hq => proposition_5_3_15_snd (hFd q hq), ?_, ?_⟩
+    · exact (continuous_comp_right (ContinuousLinearMap.inl ℝ U V)).comp_continuousOn hFc
+    · exact (continuous_comp_right (ContinuousLinearMap.inr ℝ U V)).comp_continuousOn hFc
+  · rintro ⟨f₁, f₂, s, hs, hd₁, hd₂, hc₁, hc₂⟩
+    obtain ⟨t, hts, hto, hpt⟩ := mem_nhds_iff.1 hs
+    have hcop : Continuous fun z : (U →L[ℝ] W) × (V →L[ℝ] W) => z.1.coprod z.2 := by
+      simp only [← ContinuousLinearMap.comp_fst_add_comp_snd]
+      exact ((continuous_comp_right (ContinuousLinearMap.fst ℝ U V)).comp continuous_fst).add
+        ((continuous_comp_right (ContinuousLinearMap.snd ℝ U V)).comp continuous_snd)
+    refine contDiffAt_one_iff.2
+      ⟨fun q => (↿f₁ q).coprod (↿f₂ q), t, hto.mem_nhds hpt, ?_, fun q hq => ?_⟩
+    · exact hcop.comp_continuousOn (((hc₁.mono hts).prodMk (hc₂.mono hts)))
+    · have hq' : t ∈ 𝓝 q := hto.mem_nhds hq
+      refine proposition_5_3_15_of_partial ?_ ?_ ?_ ?_
+      · filter_upwards [hq'] with r hr using hd₁ r (hts hr)
+      · filter_upwards [hq'] with r hr using hd₂ r (hts hr)
+      · exact (hc₁.mono hts).continuousAt hq'
+      · exact (hc₂.mono hts).continuousAt hq'
 
 end Partial
 

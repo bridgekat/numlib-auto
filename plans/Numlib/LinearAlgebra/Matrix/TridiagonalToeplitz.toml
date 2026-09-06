@@ -36,3 +36,18 @@ id = "symmTridiagonalToeplitz_hasEigenvalue_iff"
 [[node]]
 id = "posDef_symmTridiagonalToeplitz_neg_one_two"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Section 2.2.3"
+
+[[node]]
+id = "tridiagonalToeplitz"
+
+[[node]]
+id = "tridiagonalToeplitz_apply"
+
+[[node]]
+id = "symmTridiagonalToeplitz_eq_tridiagonalToeplitz"
+
+[[node]]
+id = "tridiagonalToeplitz_transpose"
+
+[[node]]
+id = "tridiagonalToeplitz_hasEigenvalue_iff"

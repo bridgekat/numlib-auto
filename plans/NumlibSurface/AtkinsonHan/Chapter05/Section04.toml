@@ -29,3 +29,31 @@ id = "equation_5_4_2"
 
 [[node]]
 id = "equation_5_4_7"
+
+[[node]]
+id = "equation_5_4_8"
+
+[[node]]
+id = "equation_5_4_10"
+
+[[node]]
+id = "equation_5_4_12"
+
+[[node]]
+id = "example_5_4_bvp"
+kind = "theorem"
+desc = '''
+Section 5.4.2, the two-point boundary value problem `u'' = f(t, u)` on `(0, 1)` with
+`u(0) = u(1) = 0`: taking `U = C²₀[0, 1]` and `F(u)(t) = u''(t) - f(t, u(t))`, the Frechet
+derivative is `F'(u)(y)(t) = y''(t) - ∂f/∂u(t, u(t)) y(t)`, so each Newton step solves a
+linearized two-point boundary value problem.
+
+Open, and blocked on the backbone. The obstruction is the space: `C^k[a, b]` as a Banach space
+under `∑_{j ≤ k} ‖u^(j)‖_∞`, and its subspace `C²₀[0, 1] = {v : v 0 = v 1 = 0}`, exist neither
+here nor in Mathlib (`ContDiffMapSupportedIn` is a seminormed space of compactly supported
+functions and is not this). That space is reusable — Atkinson-Han section 1.4 defines it — so it
+belongs in the backbone; once it is there the derivative is easy, since `u ↦ u''` is a bounded
+linear map `C²₀ → C⁰` and `u ↦ f(·, u(·))` is a Nemytskii operator differentiable by the argument
+of `example_5_3_10`.
+'''
+deps = ["example_5_3_10"]

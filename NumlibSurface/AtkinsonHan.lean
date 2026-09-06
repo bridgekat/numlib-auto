@@ -30,6 +30,7 @@ import NumlibSurface.AtkinsonHan.Chapter05.Section03
 import NumlibSurface.AtkinsonHan.Chapter05.Section04
 import NumlibSurface.AtkinsonHan.Chapter05.Section05
 import NumlibSurface.AtkinsonHan.Chapter05.Section06
+import NumlibSurface.AtkinsonHan.Chapter06.Section01
 import NumlibSurface.AtkinsonHan.Chapter06.Section02
 import NumlibSurface.AtkinsonHan.Chapter06.Section03
 import NumlibSurface.AtkinsonHan.Chapter08.Section02
@@ -118,6 +119,7 @@ bilinear-form vocabulary shared by §8.3, §8.7 and Chapters 9–10 directly in 
 | 5.5 | `Chapter05.Section05` | Completely continuous vector fields, as far as Mathlib allows |
 | 5.6 | `Chapter05.Section06` | Conjugate gradients for operator equations, with Winther's theorem |
 | **6** | | *Finite Difference Method* |
+| 6.1 | `Chapter06.Section01` | The four difference quotients and their orders (6.1.1)–(6.1.4) |
 | 6.2 | `Chapter06.Section02` | The Lax equivalence theorem for `u' = L u`, `L` a `LinearPMap` |
 | 6.3 | `Chapter06.Section03` | Two-level schemes: consistency, stability and convergence |
 | **8** | | *Weak Formulations of Elliptic Boundary Value Problems* |

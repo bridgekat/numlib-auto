@@ -1,3 +1,5 @@
+import Mathlib.Algebra.Order.Chebyshev
+import Mathlib.Analysis.PSeries
 import Numlib.Analysis.InnerProductSpace.Coercive
 import Numlib.Analysis.InnerProductSpace.Energy
 import Numlib.Krylov.CG
@@ -45,6 +47,14 @@ definite in the sense of (5.6.3), `√m ‖v‖ ≤ ‖v‖_A ≤ √M ‖v‖` 
   *Some superlinear convergence results for the conjugate gradient method*, for `A = I - K`, with
   the setting (5.6.7)–(5.6.9) as `isSymmetricBoundedBy_of_one_sub` and the linear rate (5.6.10)
   as `equation_5_6_10`.
+* `equation_5_6_8`, `equation_5_6_9` — (5.6.8) and (5.6.9) in the eigenbasis: `A = I - K` is
+  positive definite exactly when `δ > 0`, and then `‖A‖ = Δ`, `‖A⁻¹‖ = 1/δ`, with `Δ` and `δ` the
+  supremum and infimum of the `1 - λ_j`. `norm_le_of_isSymmetricBoundedBy` is the
+  quadratic-form-to-operator-norm step behind `‖A‖ ≤ Δ`.
+* `tau`, `theorem_5_6_3_a`, `theorem_5_6_3_b` — Theorem 5.6.3, the two decay rates for the
+  Cesàro average `τ_ℓ = (1/ℓ) ∑_{j < ℓ} |λ_j|/(1 - λ_j)` that drives the superlinear estimate:
+  `ℓ^{-1/2}` for a Hilbert-Schmidt kernel and `ℓ^{-1}` for a `Cᵖ` symmetric one.
+  `wintherRate_eq_tau` identifies `τ_k` inside the backbone's rate.
 
 ## Conventions
 
@@ -60,8 +70,17 @@ book's `(Δ/δ)^{3/(2k)}` prefactor and has the same limit `0`.
 
 ## Not formalized here
 
-Theorem 5.6.3, the rates for Hilbert–Schmidt and `Cᵖ` kernels, which needs that same enumeration
-together with kernel regularity; see `plans/atkinsonhan-ch5.md` §3 item 3 and §4.
+The step *from compactness of `K` to the eigen-decomposition*: (5.6.7)–(5.6.9) are stated with a
+`HilbertBasis ℕ ℝ V` of eigenvectors as data, not derived from `K` being compact and self-adjoint.
+Mathlib has the spectral theorem for compact self-adjoint operators, but no decreasing enumeration
+of the eigenvalues of one as an `ℕ`-sequence, which is what (5.6.8) asks for; see
+`plans/atkinsonhan-ch5.md` §3 item 3.
+
+The two quantitative inputs of Theorem 5.6.3 are hypotheses rather than conclusions, for the same
+kind of reason: `∑_j λ_j² = ‖K‖²_HS` is Theorem 2.8.15 of the book and Mathlib has no
+Hilbert-Schmidt norm for kernel operators on `C(Icc a b × Icc a b, ℝ)`; and the eigenvalue decay
+`|λ_j| ≤ M j^{-(p+1/2)}` for a `Cᵖ` symmetric kernel is what the book itself quotes from Fenyő and
+Stolle, eigenvalue asymptotics of a kind Mathlib does not have.
 -/
 
 open Filter Topology
@@ -402,6 +421,162 @@ theorem isSymmetricBoundedBy_of_one_sub (hAK : (A : V →ₗ[ℝ] V) = 1 - (K : 
     (ContinuousLinearMap.isSelfAdjoint_iff_isSymmetric.mp hK) φ
     (fun j => by simpa using hlam j) hlow hupp
 
+omit [CompleteSpace V] in
+/-- The eigenrelation `A φ_j = (1 − λ_j) φ_j` behind (5.6.8) and (5.6.9). -/
+theorem apply_eigenvector (hAK : (A : V →ₗ[ℝ] V) = 1 - (K : V →ₗ[ℝ] V)) (φ : HilbertBasis ℕ ℝ V)
+    (hlam : ∀ j, K (φ j) = lam j • φ j) (j : ℕ) : A (φ j) = (1 - lam j) • φ j := by
+  have h' : (A : V →ₗ[ℝ] V) (φ j) = ((1 : V →ₗ[ℝ] V) - (K : V →ₗ[ℝ] V)) (φ j) := by rw [hAK]
+  have h : A (φ j) = φ j - K (φ j) := by simpa using h'
+  rw [h, hlam j, sub_smul, one_smul]
+
+omit [CompleteSpace V] in
+/-- Each `1 − λ_j` is at most `‖A‖`: it is the eigenvalue of `A` at the unit vector `φ_j`. -/
+theorem one_sub_le_norm (hAK : (A : V →ₗ[ℝ] V) = 1 - (K : V →ₗ[ℝ] V)) (φ : HilbertBasis ℕ ℝ V)
+    (hlam : ∀ j, K (φ j) = lam j • φ j) (hδ : 0 < δ) (hlow : ∀ j, δ ≤ 1 - lam j) (j : ℕ) :
+    1 - lam j ≤ ‖A‖ := by
+  have hpos : 0 < 1 - lam j := lt_of_lt_of_le hδ (hlow j)
+  have hnorm : ‖φ j‖ = 1 := φ.orthonormal.1 j
+  have hle := A.le_opNorm (φ j)
+  rw [apply_eigenvector hAK φ hlam j, norm_smul, hnorm, Real.norm_eq_abs, abs_of_pos hpos] at hle
+  linarith [hle]
+
+omit [CompleteSpace V] in
+/-- Every term of `τ_ℓ` is bounded by `‖(I − K)⁻¹‖`: the eigenvalues of `(I − K)⁻¹` are the
+`1/(1 − λ_j)`, and an eigenvalue of a bounded operator is at most its norm. -/
+theorem one_div_one_sub_le_norm_symm (hAK : (A : V →ₗ[ℝ] V) = 1 - (K : V →ₗ[ℝ] V))
+    (φ : HilbertBasis ℕ ℝ V) (hlam : ∀ j, K (φ j) = lam j • φ j) (hδ : 0 < δ)
+    (hlow : ∀ j, δ ≤ 1 - lam j) (e : V ≃L[ℝ] V) (he : (e : V →L[ℝ] V) = A) (j : ℕ) :
+    1 / (1 - lam j) ≤ ‖(e.symm : V →L[ℝ] V)‖ := by
+  have hpos : 0 < 1 - lam j := lt_of_lt_of_le hδ (hlow j)
+  have hnorm : ‖φ j‖ = 1 := φ.orthonormal.1 j
+  have hA : A (φ j) = (1 - lam j) • φ j := apply_eigenvector hAK φ hlam j
+  have he' : ∀ x : V, e x = A x := fun x => by rw [← he]; rfl
+  have hsymm : (e.symm : V →L[ℝ] V) (φ j) = (1 - lam j)⁻¹ • φ j := by
+    have hfwd : e ((1 - lam j)⁻¹ • φ j) = φ j := by
+      rw [he', map_smul, hA, smul_smul, inv_mul_cancel₀ hpos.ne', one_smul]
+    calc (e.symm : V →L[ℝ] V) (φ j) = e.symm (φ j) := rfl
+      _ = e.symm (e ((1 - lam j)⁻¹ • φ j)) := by rw [hfwd]
+      _ = (1 - lam j)⁻¹ • φ j := e.symm_apply_apply _
+  have hle := ContinuousLinearMap.le_opNorm (e.symm : V →L[ℝ] V) (φ j)
+  rw [hsymm, norm_smul, hnorm, mul_one, Real.norm_eq_abs,
+    abs_of_pos (inv_pos.2 hpos)] at hle
+  rw [one_div]
+  linarith [hle]
+
+omit [CompleteSpace V] in
+/-- Quadratic-form bounds give an operator-norm bound: if `A` is symmetric with
+`m ‖x‖² ≤ ⟪A x, x⟫ ≤ M ‖x‖²` and `m > 0`, then `‖A‖ ≤ M`.  Cauchy–Schwarz for the energy inner
+product (`LinearMap.IsSymmetricCoercive.abs_energyInner_le`) applied to `x` and `A x` turns the
+bound on the quadratic form into a bound on the norm. -/
+theorem norm_le_of_isSymmetricBoundedBy {A : V →L[ℝ] V} {m M : ℝ} (hm : 0 < m) (hM : 0 ≤ M)
+    (hA : (A : V →ₗ[ℝ] V).IsSymmetricBoundedBy m M) : ‖A‖ ≤ M := by
+  have hcoer := hA.isSymmetricCoercive hm
+  have hen : ∀ y : V, energyNorm (A : V →ₗ[ℝ] V) y ≤ Real.sqrt M * ‖y‖ := by
+    intro y
+    have hsq : energyNorm (A : V →ₗ[ℝ] V) y ^ 2 ≤ (Real.sqrt M * ‖y‖) ^ 2 := by
+      rw [hcoer.energyNorm_sq, mul_pow, Real.sq_sqrt hM]
+      exact hA.re_inner_le y
+    have h1 := Real.sqrt_le_sqrt hsq
+    rwa [Real.sqrt_sq (energyNorm_nonneg _ y), Real.sqrt_sq (by positivity)] at h1
+  refine ContinuousLinearMap.opNorm_le_bound A hM fun x => ?_
+  rcases eq_or_ne (A x) 0 with h0 | h0
+  · rw [h0, norm_zero]
+    positivity
+  have hAxpos : 0 < ‖A x‖ := norm_pos_iff.2 h0
+  have hcs := hcoer.abs_energyInner_le x (A x)
+  have hval : ‖energyInner (A : V →ₗ[ℝ] V) x (A x)‖ = ‖A x‖ ^ 2 := by
+    rw [energyInner]
+    simp
+  rw [hval] at hcs
+  have hbound : ‖A x‖ ^ 2 ≤ (Real.sqrt M * ‖x‖) * (Real.sqrt M * ‖A x‖) :=
+    hcs.trans (mul_le_mul (hen x) (hen (A x)) (energyNorm_nonneg _ _) (by positivity))
+  have hMM : Real.sqrt M * Real.sqrt M = M := Real.mul_self_sqrt hM
+  have heq : Real.sqrt M * ‖x‖ * (Real.sqrt M * ‖A x‖) = M * ‖x‖ * ‖A x‖ := by
+    have hre : Real.sqrt M * ‖x‖ * (Real.sqrt M * ‖A x‖)
+        = Real.sqrt M * Real.sqrt M * (‖x‖ * ‖A x‖) := by ring
+    rw [hre, hMM]; ring
+  rw [heq, pow_two] at hbound
+  exact le_of_mul_le_mul_right hbound hAxpos
+
+/-- **(5.6.8)**: in the setting of Theorem 5.6.2, `A = I − K` is positive definite in the sense of
+(5.6.3) exactly when `δ = 1 − sup_j λ_j > 0`, `δ` being the infimum of the `1 − λ_j`.
+
+Positivity at the eigenvector `φ_j` forces the coercivity constant below every `1 − λ_j`, hence
+below their infimum; conversely `δ > 0` is itself a coercivity constant, by Parseval in the
+eigenbasis (`isSymmetricBoundedBy_of_one_sub`). -/
+theorem equation_5_6_8 (hAK : (A : V →ₗ[ℝ] V) = 1 - (K : V →ₗ[ℝ] V)) (hK : IsSelfAdjoint K)
+    (φ : HilbertBasis ℕ ℝ V) (hlam : ∀ j, K (φ j) = lam j • φ j) (hlow : ∀ j, δ ≤ 1 - lam j)
+    (hinf : ∀ ε > 0, ∃ j, 1 - lam j < δ + ε) (hupp : ∀ j, 1 - lam j ≤ Δ) :
+    (∃ m > 0, (A : V →ₗ[ℝ] V).IsCoerciveWith m) ↔ 0 < δ := by
+  constructor
+  · rintro ⟨m, hm, hcoer⟩
+    have hj : ∀ j, m ≤ 1 - lam j := by
+      intro j
+      have h := hcoer (φ j)
+      have hval : (A : V →ₗ[ℝ] V) (φ j) = (1 - lam j) • φ j := apply_eigenvector hAK φ hlam j
+      simpa [hval, real_inner_smul_left, real_inner_self_eq_norm_sq, φ.orthonormal.1 j] using h
+    refine lt_of_lt_of_le hm (le_of_forall_pos_le_add fun ε hε => ?_)
+    obtain ⟨j, hjlt⟩ := hinf ε hε
+    exact le_of_lt (lt_of_le_of_lt (hj j) hjlt)
+  · intro hδ
+    exact ⟨δ, hδ, (isSymmetricBoundedBy_of_one_sub hAK hK φ hlam hlow hupp).isCoerciveWith⟩
+
+/-- **(5.6.9)**: in the setting of Theorem 5.6.2, `‖A‖ = Δ` and `‖A⁻¹‖ = 1/δ`, with `Δ` the
+supremum and `δ` the infimum of the `1 − λ_j`.  The inequalities `‖A‖ ≤ Δ` and `‖A⁻¹‖ ≤ 1/δ` are
+the quadratic-form bounds of `isSymmetricBoundedBy_of_one_sub`; the reverse ones are the values of
+`A` and of `A⁻¹` at the unit eigenvectors `φ_j`, which come arbitrarily close to `Δ` and to `δ`. -/
+theorem equation_5_6_9 (hAK : (A : V →ₗ[ℝ] V) = 1 - (K : V →ₗ[ℝ] V)) (hK : IsSelfAdjoint K)
+    (φ : HilbertBasis ℕ ℝ V) (hlam : ∀ j, K (φ j) = lam j • φ j) (hδ : 0 < δ)
+    (hlow : ∀ j, δ ≤ 1 - lam j) (hupp : ∀ j, 1 - lam j ≤ Δ)
+    (hsup : ∀ ε > 0, ∃ j, Δ - ε < 1 - lam j) (hinf : ∀ ε > 0, ∃ j, 1 - lam j < δ + ε)
+    (e : V ≃L[ℝ] V) (he : (e : V →L[ℝ] V) = A) :
+    ‖A‖ = Δ ∧ ‖(e.symm : V →L[ℝ] V)‖ = 1 / δ := by
+  have hbdd := isSymmetricBoundedBy_of_one_sub hAK hK φ hlam hlow hupp
+  have hΔ : 0 < Δ := lt_of_lt_of_le hδ ((hlow 0).trans (hupp 0))
+  constructor
+  · refine le_antisymm (norm_le_of_isSymmetricBoundedBy hδ hΔ.le hbdd) ?_
+    refine le_of_forall_pos_le_add fun ε hε => ?_
+    obtain ⟨j, hj⟩ := hsup ε hε
+    have := one_sub_le_norm hAK φ hlam hδ hlow j
+    linarith
+  · -- `‖A⁻¹‖ ≤ 1/δ` from coercivity, `≥` from the eigenvector nearest the infimum
+    have hle : ‖(e.symm : V →L[ℝ] V)‖ ≤ 1 / δ := by
+      refine ContinuousLinearMap.opNorm_le_bound _ (by positivity) fun y => ?_
+      have hAx : A ((e.symm : V →L[ℝ] V) y) = y := by
+        rw [← he]
+        exact e.apply_symm_apply y
+      have hco : δ * ‖(e.symm : V →L[ℝ] V) y‖ ^ 2
+          ≤ inner ℝ (A ((e.symm : V →L[ℝ] V) y)) ((e.symm : V →L[ℝ] V) y) := by
+        simpa using hbdd.le_re_inner ((e.symm : V →L[ℝ] V) y)
+      rw [hAx] at hco
+      have hcs : inner ℝ y ((e.symm : V →L[ℝ] V) y) ≤ ‖y‖ * ‖(e.symm : V →L[ℝ] V) y‖ :=
+        real_inner_le_norm _ _
+      rcases eq_or_lt_of_le (norm_nonneg ((e.symm : V →L[ℝ] V) y)) with hx0 | hx0
+      · rw [← hx0]
+        positivity
+      · rw [div_mul_eq_mul_div, one_mul, le_div_iff₀ hδ]
+        nlinarith [hco, hcs, hx0]
+    refine le_antisymm hle ?_
+    have hpos : 0 < ‖(e.symm : V →L[ℝ] V)‖ := by
+      have h0 := one_div_one_sub_le_norm_symm hAK φ hlam hδ hlow e he 0
+      have hjpos : 0 < 1 - lam 0 := lt_of_lt_of_le hδ (hlow 0)
+      have hd : 0 < 1 / (1 - lam 0) := by positivity
+      linarith
+    -- `1/‖A⁻¹‖` is a lower bound for the `1 - λ_j`, hence at most their infimum `δ`
+    have hlb : 1 / ‖(e.symm : V →L[ℝ] V)‖ ≤ δ := by
+      refine le_of_forall_pos_le_add fun ε hε => ?_
+      obtain ⟨j, hj⟩ := hinf ε hε
+      have hjpos : 0 < 1 - lam j := lt_of_lt_of_le hδ (hlow j)
+      have h2 := one_div_one_sub_le_norm_symm hAK φ hlam hδ hlow e he j
+      rw [div_le_iff₀ hjpos] at h2
+      have h1 : 1 / ‖(e.symm : V →L[ℝ] V)‖ ≤ 1 - lam j := by
+        rw [div_le_iff₀ hpos]
+        linarith [mul_comm ‖(e.symm : V →L[ℝ] V)‖ (1 - lam j)]
+      linarith
+    rw [div_le_iff₀ hpos] at hlb
+    rw [div_le_iff₀ hδ]
+    linarith [mul_comm δ ‖(e.symm : V →L[ℝ] V)‖]
+
 /-- **(5.6.10)**: for `A = I − K` with `δ ≤ 1 − λ_j ≤ Δ`, the linear rate of (5.6.4) reads
 `(Δ − δ)/(Δ + δ)`.  It is (5.6.4) with `m = δ` and `M = Δ`, the eigenvalue enclosure of `A`. -/
 theorem equation_5_6_10 (hAK : (A : V →ₗ[ℝ] V) = 1 - (K : V →ₗ[ℝ] V)) (hK : IsSelfAdjoint K)
@@ -436,6 +611,144 @@ theorem theorem_5_6_2 (hAK : (A : V →ₗ[ℝ] V) = 1 - (K : V →ₗ[ℝ] V)) 
   rw [cg_u]
   exact Krylov.winther hAK (ContinuousLinearMap.isSelfAdjoint_iff_isSymmetric.mp hK) φ
     (fun j => by simpa using hlam j) hanti hδ hlow hupp hstar k
+
+/-- §5.6, **`τ_ℓ`** of Theorem 5.6.3: the Cesàro average
+`τ_ℓ = (1/ℓ) ∑_{j < ℓ} |λ_j| / (1 − λ_j)` of the eigenvalue ratios of `K`, which is what makes the
+superlinear rate of Theorem 5.6.2 tend to `0`.  The book indexes the eigenvalues from `1`; here
+they are indexed from `0`, so the book's `λ_j` is `lam (j - 1)`. -/
+noncomputable def tau (lam : ℕ → ℝ) (ℓ : ℕ) : ℝ :=
+  (ℓ : ℝ)⁻¹ * ∑ j ∈ Finset.range ℓ, |lam j| / (1 - lam j)
+
+/-- `τ_k` is the whole of `Krylov.wintherRate` beside its `(Δ/δ)^{1/(2k)}` prefactor: the book's
+rate (5.6.21) is `(Δ/δ)^{3/(2k)} · 2 τ_k`, and the backbone proves the sharper form with the
+exponent `1/(2k)`. -/
+theorem wintherRate_eq_tau (lam : ℕ → ℝ) (δ Δ : ℝ) (k : ℕ) :
+    Krylov.wintherRate lam δ Δ k = (Δ / δ) ^ (1 / (2 * k : ℝ)) * (2 * tau lam k) := by
+  simp only [Krylov.wintherRate, tau]
+  ring
+
+
+omit [CompleteSpace V] in
+/-- **Theorem 5.6.3(a)**: for a self-adjoint Hilbert–Schmidt `K`, the Cesàro average `τ_ℓ` is
+squeezed between `(1/ℓ) |λ₁| / (1 − λ₁)` and `ℓ^{-1/2} ‖K‖_HS ‖(I − K)⁻¹‖`.  So `τ_ℓ → 0` at the
+rate `ℓ^{-1/2}`, which is what makes the conjugate gradient method superlinearly convergent for a
+second-kind equation with a Hilbert–Schmidt kernel, and the lower bound shows the rate cannot be
+read off the leading eigenvalue alone.
+
+The Hilbert–Schmidt norm enters only through `∑_j λ_j² = ‖K‖²_HS`, which is the hypothesis `hHS`
+with `S = ‖K‖_HS`: that identity is Theorem 2.8.15 of the book, and Mathlib has no
+Hilbert–Schmidt norm for the kernel operators of `C(Icc a b × Icc a b, ℝ)` to derive it from.  The
+upper bound is then Cauchy–Schwarz applied to `∑_{j < ℓ} |λ_j|`, which is exactly why the exponent
+is `-1/2`; `1/√ℓ` is written for the book's `ℓ^{-1/2}`. -/
+theorem theorem_5_6_3_a (hAK : (A : V →ₗ[ℝ] V) = 1 - (K : V →ₗ[ℝ] V)) (φ : HilbertBasis ℕ ℝ V)
+    (hlam : ∀ j, K (φ j) = lam j • φ j) (hδ : 0 < δ) (hlow : ∀ j, δ ≤ 1 - lam j) (e : V ≃L[ℝ] V)
+    (he : (e : V →L[ℝ] V) = A) {S : ℝ} (hS : 0 ≤ S) (hHS : HasSum (fun j => lam j ^ 2) (S ^ 2))
+    {ℓ : ℕ} (hℓ : 0 < ℓ) :
+    (ℓ : ℝ)⁻¹ * (|lam 0| / (1 - lam 0)) ≤ tau lam ℓ ∧
+      tau lam ℓ ≤ S * ‖(e.symm : V →L[ℝ] V)‖ / Real.sqrt ℓ := by
+  have hℓ0 : (0 : ℝ) < ℓ := by exact_mod_cast hℓ
+  have hterm : ∀ j, 0 ≤ |lam j| / (1 - lam j) := fun j =>
+    div_nonneg (abs_nonneg _) (le_of_lt (lt_of_lt_of_le hδ (hlow j)))
+  have hC : 0 ≤ ‖(e.symm : V →L[ℝ] V)‖ := norm_nonneg _
+  refine ⟨mul_le_mul_of_nonneg_left ?_ (by positivity), ?_⟩
+  · exact Finset.single_le_sum (fun j _ => hterm j) (Finset.mem_range.2 hℓ)
+  -- the upper bound: bound each ratio by `|λ_j| ‖(I − K)⁻¹‖`, then Cauchy–Schwarz
+  have hsum1 : ∑ j ∈ Finset.range ℓ, |lam j| / (1 - lam j)
+      ≤ (∑ j ∈ Finset.range ℓ, |lam j|) * ‖(e.symm : V →L[ℝ] V)‖ := by
+    rw [Finset.sum_mul]
+    refine Finset.sum_le_sum fun j _ => ?_
+    rw [div_eq_mul_one_div]
+    exact mul_le_mul_of_nonneg_left
+      (one_div_one_sub_le_norm_symm hAK φ hlam hδ hlow e he j) (abs_nonneg _)
+  have hpartial : ∑ j ∈ Finset.range ℓ, lam j ^ 2 ≤ S ^ 2 :=
+    sum_le_hasSum (Finset.range ℓ) (fun j _ => sq_nonneg _) hHS
+  have hcs : (∑ j ∈ Finset.range ℓ, |lam j|) ^ 2
+      ≤ (ℓ : ℝ) * ∑ j ∈ Finset.range ℓ, lam j ^ 2 := by
+    have h := sq_sum_le_card_mul_sum_sq (s := Finset.range ℓ) (f := fun j => |lam j|)
+    simpa [sq_abs] using h
+  have hnn : 0 ≤ ∑ j ∈ Finset.range ℓ, |lam j| := Finset.sum_nonneg fun j _ => abs_nonneg _
+  have hsqrt : Real.sqrt ℓ * Real.sqrt ℓ = (ℓ : ℝ) := Real.mul_self_sqrt hℓ0.le
+  have hsqrtpos : 0 < Real.sqrt ℓ := Real.sqrt_pos.2 hℓ0
+  have habs : ∑ j ∈ Finset.range ℓ, |lam j| ≤ Real.sqrt ℓ * S := by
+    have hy : 0 ≤ Real.sqrt ℓ * S := mul_nonneg hsqrtpos.le hS
+    have hsq2 : (Real.sqrt ℓ * S) ^ 2 = (ℓ : ℝ) * S ^ 2 := by
+      rw [mul_pow, pow_two (Real.sqrt ℓ), hsqrt]
+    have h1 : (∑ j ∈ Finset.range ℓ, |lam j|) ^ 2 ≤ (Real.sqrt ℓ * S) ^ 2 := by
+      rw [hsq2]
+      exact hcs.trans (mul_le_mul_of_nonneg_left hpartial hℓ0.le)
+    have h2 := Real.sqrt_le_sqrt h1
+    rwa [Real.sqrt_sq hnn, Real.sqrt_sq hy] at h2
+  have hmain : ∑ j ∈ Finset.range ℓ, |lam j| / (1 - lam j)
+      ≤ Real.sqrt ℓ * S * ‖(e.symm : V →L[ℝ] V)‖ :=
+    hsum1.trans (mul_le_mul_of_nonneg_right habs hC)
+  have hfin : (ℓ : ℝ)⁻¹ * (Real.sqrt ℓ * S * ‖(e.symm : V →L[ℝ] V)‖)
+      = S * ‖(e.symm : V →L[ℝ] V)‖ / Real.sqrt ℓ := by
+    rw [eq_div_iff hsqrtpos.ne']
+    have hre : (ℓ : ℝ)⁻¹ * (Real.sqrt ℓ * S * ‖(e.symm : V →L[ℝ] V)‖) * Real.sqrt ℓ
+        = (ℓ : ℝ)⁻¹ * (Real.sqrt ℓ * Real.sqrt ℓ) * (S * ‖(e.symm : V →L[ℝ] V)‖) := by ring
+    rw [hre, hsqrt, inv_mul_cancel₀ hℓ0.ne', one_mul]
+  rw [tau]
+  calc (ℓ : ℝ)⁻¹ * ∑ j ∈ Finset.range ℓ, |lam j| / (1 - lam j)
+      ≤ (ℓ : ℝ)⁻¹ * (Real.sqrt ℓ * S * ‖(e.symm : V →L[ℝ] V)‖) :=
+        mul_le_mul_of_nonneg_left hmain (by positivity)
+    _ = S * ‖(e.symm : V →L[ℝ] V)‖ / Real.sqrt ℓ := hfin
+
+omit [CompleteSpace V] in
+/-- **Theorem 5.6.3(b)**: if the eigenvalues of `K` decay like `j^{-(p + 1/2)}` — which the book
+quotes from Fenyő and Stolle for a symmetric kernel with continuous partial derivatives up to order
+`p ≥ 1` — then `τ_ℓ ≤ (M/ℓ) ζ(p + 1/2) ‖(I − K)⁻¹‖`, one full order faster than the `ℓ^{-1/2}` of
+part (a).
+
+The decay is the hypothesis `hdecay`, not a conclusion: deriving it from smoothness of the kernel
+is eigenvalue asymptotics for smooth kernels, of which Mathlib has nothing.  `ζ(p + 1/2)` is
+written as the sum `∑' n, 1 / n^{p + 1/2}`, whose `n = 0` term vanishes. -/
+theorem theorem_5_6_3_b (hAK : (A : V →ₗ[ℝ] V) = 1 - (K : V →ₗ[ℝ] V)) (φ : HilbertBasis ℕ ℝ V)
+    (hlam : ∀ j, K (φ j) = lam j • φ j) (hδ : 0 < δ) (hlow : ∀ j, δ ≤ 1 - lam j) (e : V ≃L[ℝ] V)
+    (he : (e : V →L[ℝ] V) = A) {p M : ℝ} (hp : 1 ≤ p) (hM : 0 ≤ M)
+    (hdecay : ∀ j : ℕ, |lam j| ≤ M * (1 / ((j : ℝ) + 1) ^ (p + 1 / 2))) {ℓ : ℕ} (hℓ : 0 < ℓ) :
+    tau lam ℓ ≤ M / ℓ * (∑' n : ℕ, 1 / (n : ℝ) ^ (p + 1 / 2)) * ‖(e.symm : V →L[ℝ] V)‖ := by
+  have hℓ0 : (0 : ℝ) < ℓ := by exact_mod_cast hℓ
+  have hq : (1 : ℝ) < p + 1 / 2 := by linarith
+  have hq0 : (0 : ℝ) < p + 1 / 2 := by linarith
+  have hsummable : Summable fun n : ℕ => 1 / (n : ℝ) ^ (p + 1 / 2) :=
+    Real.summable_one_div_nat_rpow.2 hq
+  have hC : 0 ≤ ‖(e.symm : V →L[ℝ] V)‖ := norm_nonneg _
+  have hstep : ∀ j : ℕ, |lam j| / (1 - lam j)
+      ≤ M * (1 / ((j : ℝ) + 1) ^ (p + 1 / 2)) * ‖(e.symm : V →L[ℝ] V)‖ := by
+    intro j
+    calc |lam j| / (1 - lam j) = |lam j| * (1 / (1 - lam j)) := div_eq_mul_one_div _ _
+      _ ≤ |lam j| * ‖(e.symm : V →L[ℝ] V)‖ :=
+          mul_le_mul_of_nonneg_left
+            (one_div_one_sub_le_norm_symm hAK φ hlam hδ hlow e he j) (abs_nonneg _)
+      _ ≤ M * (1 / ((j : ℝ) + 1) ^ (p + 1 / 2)) * ‖(e.symm : V →L[ℝ] V)‖ :=
+          mul_le_mul_of_nonneg_right (hdecay j) hC
+  have hshift : ∑ j ∈ Finset.range ℓ, 1 / ((j : ℝ) + 1) ^ (p + 1 / 2)
+      = ∑ n ∈ Finset.range (ℓ + 1), 1 / (n : ℝ) ^ (p + 1 / 2) := by
+    rw [Finset.sum_range_succ' (fun n => 1 / (n : ℝ) ^ (p + 1 / 2)) ℓ]
+    simp only [Nat.cast_zero, Real.zero_rpow (ne_of_gt hq0), div_zero, add_zero, Nat.cast_add,
+      Nat.cast_one]
+  have hzeta : ∑ j ∈ Finset.range ℓ, 1 / ((j : ℝ) + 1) ^ (p + 1 / 2)
+      ≤ ∑' n : ℕ, 1 / (n : ℝ) ^ (p + 1 / 2) := by
+    rw [hshift]
+    refine hsummable.sum_le_tsum _ fun n _ => ?_
+    positivity
+  have hsum : ∑ j ∈ Finset.range ℓ, |lam j| / (1 - lam j)
+      ≤ M * (∑' n : ℕ, 1 / (n : ℝ) ^ (p + 1 / 2)) * ‖(e.symm : V →L[ℝ] V)‖ := by
+    calc ∑ j ∈ Finset.range ℓ, |lam j| / (1 - lam j)
+        ≤ ∑ j ∈ Finset.range ℓ, M * (1 / ((j : ℝ) + 1) ^ (p + 1 / 2))
+            * ‖(e.symm : V →L[ℝ] V)‖ := Finset.sum_le_sum fun j _ => hstep j
+      _ = M * ‖(e.symm : V →L[ℝ] V)‖
+            * ∑ j ∈ Finset.range ℓ, 1 / ((j : ℝ) + 1) ^ (p + 1 / 2) := by
+          rw [Finset.mul_sum]
+          exact Finset.sum_congr rfl fun j _ => by ring
+      _ ≤ M * ‖(e.symm : V →L[ℝ] V)‖ * ∑' n : ℕ, 1 / (n : ℝ) ^ (p + 1 / 2) :=
+          mul_le_mul_of_nonneg_left hzeta (by positivity)
+      _ = M * (∑' n : ℕ, 1 / (n : ℝ) ^ (p + 1 / 2)) * ‖(e.symm : V →L[ℝ] V)‖ := by ring
+  rw [tau]
+  calc (ℓ : ℝ)⁻¹ * ∑ j ∈ Finset.range ℓ, |lam j| / (1 - lam j)
+      ≤ (ℓ : ℝ)⁻¹ * (M * (∑' n : ℕ, 1 / (n : ℝ) ^ (p + 1 / 2))
+          * ‖(e.symm : V →L[ℝ] V)‖) := mul_le_mul_of_nonneg_left hsum (by positivity)
+    _ = M / ℓ * (∑' n : ℕ, 1 / (n : ℝ) ^ (p + 1 / 2)) * ‖(e.symm : V →L[ℝ] V)‖ := by ring
 
 end Superlinear
 

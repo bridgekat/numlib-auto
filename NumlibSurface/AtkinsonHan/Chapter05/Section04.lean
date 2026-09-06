@@ -30,6 +30,10 @@ The book's iteration (5.4.2), `u_{n+1} = u_n - [F'(u_n)]⁻¹ F(u_n)`, is the ba
 * `equation_5_4_11`, `exercise_5_4_5` — the modified Newton (chord) method with a frozen
   derivative, whose convergence is linear rather than quadratic.
 * `equation_5_4_7` — Newton's method for a nonlinear system in `ℝᵈ`.
+* `equation_5_4_8`, `equation_5_4_10`, `equation_5_4_12` — §5.4.2 applied to the nonlinear
+  integral equation `u(t) = ∫ₐᵇ k(t, s, u(s)) ds`: the derivative of `F = I − K` is `I` minus a
+  Fredholm operator, so one Newton step is the solution of one *linear* integral equation of the
+  second kind, and the modified method solves it with a kernel frozen at `u₀`.
 
 ## Conventions
 
@@ -38,8 +42,14 @@ the book prints it; `theorem_5_4_2_unique` explains why the closed form is false
 
 ## Not formalized here
 
-The applications (5.4.8)–(5.4.10) and (5.4.12), which need the phase-3 `C[a, b]`
-integral-operator toolkit; see §4 of `plans/atkinsonhan-ch5.md`.
+The two-point boundary value problem `u'' = f(t, u)`, `u(0) = u(1) = 0` of §5.4.2, whose Newton
+linearization is a linear boundary value problem.  The obstruction is the space: the book works in
+`U = C²₀[0, 1]`, and neither this project nor Mathlib has `Cᵏ[a, b]` as a Banach space under
+`∑_{j ≤ k} ‖u^{(j)}‖_∞` — Mathlib's `ContDiffMapSupportedIn` is a *seminormed* space of compactly
+supported functions and is not it.  That space is backbone material and reusable (Atkinson–Han
+§1.4 defines it), and once it exists the derivative computation is easy: `u ↦ u''` is a bounded
+linear map `C²₀ → C⁰` and `u ↦ f(·, u(·))` is a Nemytskii operator, differentiable by the argument
+of `example_5_3_10`.
 -/
 
 open Filter Metric Topology
@@ -378,5 +388,87 @@ theorem equation_5_4_7 {d : ℕ} {F : EuclideanSpace ℝ (Fin d) → EuclideanSp
   refine ⟨newtonStep_sub_eq e he, by abel⟩
 
 end System
+
+section IntegralEquation
+
+open Set IntegralOperator
+
+variable {a b : ℝ}
+
+/-- **(5.4.8)**: the Fréchet derivative of the operator `F(u) = u − K(u)` of the nonlinear integral
+equation, `K` the Urysohn operator of `k`, is `F'(u) = I − K'(u)` — the identity minus the Fredholm
+operator whose kernel is `∂_u k(t, s, u(s))`.  This is Example 5.3.10 (`example_5_3_10`) together
+with the derivative of the identity. -/
+theorem equation_5_4_8 (hab : a ≤ b) {k kz : C(Icc a b × Icc a b × ℝ, ℝ)}
+    (hk : ∀ (x y : Icc a b) (z : ℝ), HasDerivAt (fun t => k (x, y, t)) (kz (x, y, z)) z)
+    (u : C(Icc a b, ℝ)) :
+    HasFDerivAt (fun v => v - urysohn hab k v) (1 - fredholm hab (urysohnDerivKernel kz u)) u :=
+  (hasFDerivAt_id u).sub (example_5_3_10 hab hk u)
+
+/-- `I − K` applied to a function, evaluated at a point: the left-hand side of a linear integral
+equation of the second kind. -/
+private theorem one_sub_fredholm_apply (hab : a ≤ b) (K : C(Icc a b × Icc a b, ℝ))
+    (v : C(Icc a b, ℝ)) (t : Icc a b) :
+    (1 - fredholm hab K) v t
+      = v t - ∫ s in a..b, K (t, projIcc a b hab s) * v (projIcc a b hab s) :=
+  rfl
+
+/-- **(5.4.9)–(5.4.10)**: Newton's method for the nonlinear integral equation
+`F(u)(t) = u(t) − ∫ₐᵇ k(t, s, u(s)) ds = 0`.  Writing `δ_{n+1} = u_{n+1} − u_n`, the step (5.4.9)
+`F'(u_n) δ_{n+1} = −F(u_n)` is the **linear** integral equation (5.4.10)
+
+`δ_{n+1}(t) − ∫ₐᵇ ∂_u k(t, s, u_n(s)) δ_{n+1}(s) ds = −F(u_n)(t)`,
+
+a Fredholm equation of the second kind whose kernel is the partial derivative of `k` along the
+current iterate.  So each Newton step for a nonlinear integral equation costs the solution of one
+linear one.
+
+Invertibility of `F'(u_n)` is a hypothesis in the book too; it is carried here as the equivalence
+`e`, exactly as in `equation_5_4_7`. -/
+theorem equation_5_4_10 (hab : a ≤ b) {k kz : C(Icc a b × Icc a b × ℝ, ℝ)}
+    {F : C(Icc a b, ℝ) → C(Icc a b, ℝ)} (hF : ∀ v, F v = v - urysohn hab k v)
+    {F' : C(Icc a b, ℝ) → C(Icc a b, ℝ) →L[ℝ] C(Icc a b, ℝ)}
+    (hF' : ∀ v, F' v = 1 - fredholm hab (urysohnDerivKernel kz v)) (u : C(Icc a b, ℝ))
+    (e : C(Icc a b, ℝ) ≃L[ℝ] C(Icc a b, ℝ))
+    (he : (e : C(Icc a b, ℝ) →L[ℝ] C(Icc a b, ℝ)) = F' u) (t : Icc a b) :
+    Newton.step F F' u t - u t
+        - ∫ s in a..b, kz (t, projIcc a b hab s, u (projIcc a b hab s))
+            * (Newton.step F F' u (projIcc a b hab s) - u (projIcc a b hab s))
+      = -(u t - ∫ s in a..b, k (t, projIcc a b hab s, u (projIcc a b hab s))) := by
+  have h := newtonStep_sub_eq (F := F) e he
+  rw [hF' u, hF u] at h
+  have h2 := congrArg (fun w : C(Icc a b, ℝ) => w t) h
+  simp only [one_sub_fredholm_apply hab, ContinuousMap.sub_apply, ContinuousMap.neg_apply,
+    urysohnDerivKernel_apply, urysohn_apply] at h2
+  exact h2
+
+/-- **(5.4.11)–(5.4.12)**: the modified Newton method for the same equation freezes the kernel of
+the linearization at the starting function `u₀`, so that every step solves the linear integral
+equation
+
+`δ_{n+1}(t) − ∫ₐᵇ ∂_u k(t, s, u₀(s)) δ_{n+1}(s) ds = −F(u_n)(t)`
+
+with one and the same kernel — which is what makes the modified method cheap, and, by
+`exercise_5_4_5`, only linearly convergent. -/
+theorem equation_5_4_12 (hab : a ≤ b) {k kz : C(Icc a b × Icc a b × ℝ, ℝ)}
+    {F : C(Icc a b, ℝ) → C(Icc a b, ℝ)} (hF : ∀ v, F v = v - urysohn hab k v)
+    (u₀ : C(Icc a b, ℝ)) (A : C(Icc a b, ℝ) ≃L[ℝ] C(Icc a b, ℝ))
+    (hA : (A : C(Icc a b, ℝ) →L[ℝ] C(Icc a b, ℝ))
+      = 1 - fredholm hab (urysohnDerivKernel kz u₀)) (u : C(Icc a b, ℝ)) (t : Icc a b) :
+    Newton.chordStep F A u t - u t
+        - ∫ s in a..b, kz (t, projIcc a b hab s, u₀ (projIcc a b hab s))
+            * (Newton.chordStep F A u (projIcc a b hab s) - u (projIcc a b hab s))
+      = -(u t - ∫ s in a..b, k (t, projIcc a b hab s, u (projIcc a b hab s))) := by
+  have hsub : Newton.chordStep F A u - u = -(A.symm (F u)) := by
+    rw [Newton.chordStep]; abel
+  have h : (A : C(Icc a b, ℝ) →L[ℝ] C(Icc a b, ℝ)) (Newton.chordStep F A u - u) = -F u := by
+    rw [hsub, ContinuousLinearEquiv.coe_coe, map_neg, ContinuousLinearEquiv.apply_symm_apply]
+  rw [hA, hF u] at h
+  have h2 := congrArg (fun w : C(Icc a b, ℝ) => w t) h
+  simp only [one_sub_fredholm_apply hab, ContinuousMap.sub_apply, ContinuousMap.neg_apply,
+    urysohnDerivKernel_apply, urysohn_apply] at h2
+  exact h2
+
+end IntegralEquation
 
 end AtkinsonHan.Chapter05

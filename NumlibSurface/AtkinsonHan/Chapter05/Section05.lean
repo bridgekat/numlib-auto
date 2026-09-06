@@ -29,9 +29,19 @@ formalized, and they are the ones later chapters use.
 
 ## Not formalized here
 
-Theorem 5.5.1 (Brouwer), Example 5.5.2 (a Lipschitz self-map of the unit ball of a Hilbert space
-without a fixed point), Theorem 5.5.4 (Schauder), and §5.5.1 in its entirety: the rotation of a
-completely continuous vector field and its properties P1–P5.
+Theorem 5.5.1 (Brouwer), Theorem 5.5.4 (Schauder) and §5.5.1 in its entirety — the rotation of a
+completely continuous vector field and its properties P1–P5.  The obstruction is the same for all
+three and is a missing theory, not a missing proof: Mathlib has no Brouwer fixed-point theorem and
+no degree theory of any kind, and the book quotes each of them without proof.
+
+Example 5.5.2, the `k`-Lipschitz self-map `T(v) = t(1 - ‖v‖) φ₁ + ∑_j α_j φ_{j+1}` of the closed
+unit ball of a Hilbert space with no fixed point, which is what shows that the extra hypotheses of
+Schauder's theorem cannot be dropped.  Its obstruction is different in kind: it is formalizable
+today, but the map has to be *constructed*, and that needs the **unilateral shift** on a Hilbert
+space given by a `HilbertBasis ℕ`, which Mathlib does not have — the shift must be built on
+`lp (fun _ : ℕ => ℝ) 2` and transported through `HilbertBasis.repr`.  Stating the example with `T`
+as a hypothesis rather than a construction would make it vacuous, since its whole content is that
+such a `T` exists.  Nothing in this corpus consumes it.
 -/
 
 namespace AtkinsonHan.Chapter05

@@ -30,7 +30,7 @@ work of the file is the dictionary between the book's `‖T u - T v‖ ≤ α �
 * `theorem_5_1_3` — **Banach fixed-point theorem**, assembled from
   `theorem_5_1_3_existsUnique`, `theorem_5_1_3_tendsto` and the error bounds `equation_5_1_4`
   (a priori), `equation_5_1_5` (a posteriori) and `equation_5_1_6` (linear rate).
-* `example_5_1_2` — a continuous map one of whose iterates is contractive still has a unique
+* `exercise_5_1_2` — a continuous map one of whose iterates is contractive still has a unique
   fixed point; this is what Theorem 5.2.3 uses for the Volterra equation.
 * `theorem_5_1_4` — a strongly monotone Lipschitz operator on a real Hilbert space is a
   bijection, with the stability estimate (5.1.11).
@@ -256,10 +256,10 @@ theorem theorem_5_1_3 (hK : IsClosed K) (hne : K.Nonempty) (hT : MapsTo T K K)
       fun n => equation_5_1_4 hK hT hα hu hfix hu₀ n, fun n => equation_5_1_5 hT hα hu hfix hu₀ n,
       fun n => equation_5_1_6 hT hα hu hfix hu₀ n⟩⟩
 
-/-- **Example 5.1.2** (cited by Theorem 5.2.3): if `T : K → K` is continuous and some iterate
+/-- **Exercise 5.1.2** (cited by Theorem 5.2.3): if `T : K → K` is continuous and some iterate
 `T^[m]`, `m ≥ 1`, is contractive on `K`, then `T` still has a unique fixed point in `K` and
 `u_{n+1} = T u_n` converges to it from every `u₀ ∈ K`. -/
-theorem example_5_1_2 (hK : IsClosed K) (hne : K.Nonempty) (hT : MapsTo T K K)
+theorem exercise_5_1_2 (hK : IsClosed K) (hne : K.Nonempty) (hT : MapsTo T K K)
     (hc : ContinuousOn T K) {m : ℕ} (hm : 0 < m) (hα : ContractiveOn T^[m] K α) :
     (∃! u, u ∈ K ∧ T u = u) ∧
       ∀ u₀ ∈ K, ∃ u ∈ K, T u = u ∧ Tendsto (fun n => T^[n] u₀) atTop (𝓝 u) := by

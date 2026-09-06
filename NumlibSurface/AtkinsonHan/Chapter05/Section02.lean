@@ -38,27 +38,59 @@ and `Numlib/IntegralEquations/Basic.lean`.
 * `BookSplitting.tendsto_of_opNorm_lt_one` — §5.2.2(b), convergence when `‖N⁻¹ M‖ < 1`;
   `complexSpectralRadius_lt_one_of_opNorm_lt_one` is the implication `‖G‖ < 1 ⇒ r_σ(G) < 1`
   behind it.
+* `complexSpectralRadius_le_opNorm` — §5.2.2, relation 1, `r_σ(A) ≤ ‖A‖`, and
+  `tendsto_pow_rpow_complexSpectralRadius` — relation 3, Gelfand's formula
+  `‖Aᵏ‖^{1/k} → r_σ(A)`; both for the operator norm induced by the maximum norm on `ℝ^d`.
 * `tendsto_pow_iff_complexSpectralRadius_lt_one` — §5.2.2(c), `Gᵏ → 0` iff `r_σ(G) < 1`.
 * `BookSplitting.forall_tendsto_iff`,
   `BookSplitting.forall_tendsto_iff_complexSpectralRadius_lt_one` — §5.2.2(d), convergence from
   every `x₀` iff `(N⁻¹M)ᵏ → 0` iff `r_σ(N⁻¹M) < 1`.
-* `theorem_5_2_2_fredholm` — §5.2.3, the linear Fredholm equation of the second kind, whose
+* `equation_5_2_7` — §5.2.3, the linear Fredholm equation of the second kind, whose
   contractivity constant is `|λ|⁻¹ ‖K‖` with `‖K‖` the norm formula (2.2.8).
 * `theorem_5_2_2` — the nonlinear Urysohn form (5.2.10).
 * `theorem_5_2_3` — the Volterra equation, where no smallness of the kernel is needed because
   the factorial estimate on the iterated kernels makes some power of the operator contract and
-  Example 5.1.2 applies.
+  Exercise 5.1.2 applies.
 * `theorem_5_2_4` — §5.2.4, the Picard iteration for the initial value problem, in the weighted
   (Bielecki) norm in which the Picard operator itself contracts.
 
 ## Not formalized here
 
+* §5.2.2, relation 2, the **ε-norm theorem**: for every `ε > 0` there is a matrix operator norm
+  with `r_σ(A) ≤ ‖A‖_{A,ε} ≤ r_σ(A) + ε`, whence `r_σ(A) = inf ‖A‖` over matrix operator norms.
+  The book quotes it from Ortega and Rheinboldt.  The obstruction is that its proof needs an
+  upper-triangularization of `A` over `ℂ` and the diagonal scaling `diag(δ, δ², …)` that shrinks
+  the off-diagonal entries; Mathlib has neither Schur triangularization nor a Jordan normal form,
+  so the triangularizing basis would have to be built from
+  `Module.End.iSup_maxGenEigenspace_eq_top` first, and that is a backbone project of its own.
+* The remark after Theorem 5.2.3, that its hypotheses on `[a, ∞)` give a unique solution in
+  `C[a, ∞)` whose restrictions are the solutions on each `[a, b]`.  The obstruction is the kernel
+  type: `IntegralOperator.volterra` and the whole `C[a, b]` toolkit it belongs to are
+  interval-indexed by construction, so the remark needs a second, `Ici a`-indexed kernel type in
+  the backbone together with the compatibility argument gluing the per-interval solutions, and
+  nothing else in the corpus would use it.  The mathematical content — that the solution on
+  `[a, b']` restricts to the solution on `[a, b]` — is already the uniqueness clause of
+  `theorem_5_2_3` on `[a, b]`.
+* The **differential form of Theorem 5.2.4**: for `f` continuous on
+  `Q_b = {(t, u) : |t - t₀| ≤ a, ‖u - z‖ ≤ b}` and `L`-Lipschitz in `u` there, with
+  `M = max_{Q_b} ‖f‖` and `a₀ = min(a, b/M)`, the initial value problem `u' = f(t, u)`,
+  `u(t₀) = z` has a unique continuously differentiable solution on `[t₀ - a₀, t₀ + a₀]`.
+  `theorem_5_2_4` below states the *fixed-point half* only: a scalar equation, a one-sided
+  interval, a global Lipschitz hypothesis in `u` and no ball constraint, concluding about the
+  fixed point of the Picard operator in the Bielecki space rather than about a differentiable
+  solution.  The obstruction is a gap between the two halves of Mathlib's ODE API:
+  `IsPicardLindelof` carries exactly the book's hypotheses, but
+  `IsPicardLindelof.exists_eq_forall_mem_Icc_hasDerivWithinAt` does not assert that the solution
+  it produces stays inside `‖u - z‖ ≤ b`, while `ODE_solution_unique_of_mem_Icc` needs both
+  solutions to lie there — so existence and uniqueness cannot be composed.  Supplying the missing
+  containment means an exit-time argument (Mathlib's conditional fencing lemma wants a *strict*
+  derivative bound, and the book allows the extremal case `M a₀ = b`) or a radial retraction of
+  `f` onto the ball, whose Lipschitz constant in a general normed space Mathlib does not have.
+
 Theorem 5.2.4 is stated for the integral equation (the fixed-point form of the initial value
 problem) on an interval to the right of `t₀`, for a scalar equation whose right-hand side is
 globally Lipschitz in `u`; that is the part of the book's theorem whose proof is Bielecki's
-contraction argument.  The differential form of the local existence and uniqueness statement, in
-a Banach space and on a two-sided interval around `t₀` with the ball constraint `‖u - z‖ ≤ b`, is
-Mathlib's `IsPicardLindelof` and is not re-derived here.
+contraction argument.
 -/
 
 open Filter Set Topology
@@ -274,13 +306,10 @@ theorem BookSplitting.forall_tendsto_iff_complexSpectralRadius_lt_one {A : Matri
     (Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one s.iterMatrix)
 
 /-- §5.2.2, relation 1, in the form the book uses it: an operator norm of the iteration matrix
-below `1` forces `r_σ < 1`, hence convergence.  The inequality `r_σ(G) ≤ ‖G‖` for an arbitrary
-submultiplicative, absolutely homogeneous, positive definite matrix norm is the backbone's
-`Matrix.complexSpectralRadius_le_of_norm`, and its instance for the maximum absolute row sum —
-which is `‖mulVecCLM G‖`, by Mathlib's `Matrix.linfty_opNorm_eq_opNorm` — is
-`Matrix.complexSpectralRadius_le_linfty_opNNNorm`.  Both are stated under the scoped norm
-instance on `Matrix ι ι ℝ` that this file deliberately does not open, so the proof below goes
-through `Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one` instead. -/
+below `1` forces `r_σ < 1`, hence convergence.  The inequality itself is
+`complexSpectralRadius_le_opNorm` below; the proof here goes through
+`Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one` instead, which needs no matrix norm at
+all. -/
 theorem complexSpectralRadius_lt_one_of_opNorm_lt_one {G : Matrix ι ι ℝ}
     (hG : ‖mulVecCLM G‖ < 1) : Matrix.complexSpectralRadius G < 1 := by
   rw [← Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one, tendsto_pow_zero_iff_mulVec]
@@ -293,6 +322,39 @@ theorem complexSpectralRadius_lt_one_of_opNorm_lt_one {G : Matrix ι ι ℝ}
   have hlim : Tendsto (fun k : ℕ => ‖mulVecCLM G‖ ^ k * ‖v‖) atTop (𝓝 0) := by
     simpa using (tendsto_pow_atTop_nhds_zero_of_lt_one (norm_nonneg _) hG).mul_const ‖v‖
   exact squeeze_zero_norm hb hlim
+
+open scoped Matrix.Norms.Operator in
+/-- **§5.2.2, relation 1**: `r_σ(A) ≤ ‖A‖` for a matrix operator norm — here the one induced by
+the maximum norm on `ℝ^d`, which is the maximum absolute row sum and is `‖mulVecCLM A‖` by
+Mathlib's `Matrix.linfty_opNorm_eq_opNorm`.  The backbone proves the inequality for an arbitrary
+submultiplicative, absolutely homogeneous, positive definite matrix norm
+(`Matrix.complexSpectralRadius_le_of_norm`); the instance used here is
+`Matrix.complexSpectralRadius_le_linfty_opNNNorm`.
+
+The spectral radius is `ENNReal`-valued, and finite for a matrix over a finite index type
+(`Matrix.complexSpectralRadius_ne_top`), so `toReal` loses nothing. -/
+theorem complexSpectralRadius_le_opNorm (G : Matrix ι ι ℝ) :
+    (Matrix.complexSpectralRadius G).toReal ≤ ‖mulVecCLM G‖ :=
+  calc (Matrix.complexSpectralRadius G).toReal
+      ≤ ((‖G‖₊ : ENNReal)).toReal :=
+        ENNReal.toReal_mono ENNReal.coe_ne_top (Matrix.complexSpectralRadius_le_linfty_opNNNorm G)
+    _ = ‖G‖ := by simp
+    _ = ‖mulVecCLM G‖ := Matrix.linfty_opNorm_eq_opNorm G
+
+open scoped Matrix.Norms.Operator in
+/-- **§5.2.2, relation 3** (Gelfand's formula): `‖Aᵏ‖^{1/k} → r_σ(A)`, so the spectral radius is
+the asymptotic rate of the iteration whatever the norm.  Stated for the maximum-absolute-row-sum
+operator norm, which is the one relation 1 above is stated in; the backbone's
+`Matrix.tendsto_pow_rpow_linfty_opNorm` is the same limit written on `Matrix ι ι ℝ` itself.
+
+The book's "any matrix norm, not necessarily induced by a vector norm" is the same limit, since
+two norms on a finite-dimensional space differ by a factor `C` with `C^{1/k} → 1`. -/
+theorem tendsto_pow_rpow_complexSpectralRadius (G : Matrix ι ι ℝ) :
+    Tendsto (fun k : ℕ => ‖mulVecCLM (G ^ k)‖ ^ (1 / k : ℝ)) atTop
+      (𝓝 (Matrix.complexSpectralRadius G).toReal) := by
+  refine (Matrix.tendsto_pow_rpow_linfty_opNorm G).congr fun k => ?_
+  congr 1
+  exact Matrix.linfty_opNorm_eq_opNorm (G ^ k)
 
 section Classical
 
@@ -370,11 +432,11 @@ private theorem theorem_5_1_3_univ {T : V → V} {α : ℝ} (hα : ContractiveOn
   obtain ⟨u, -, hfix, hlim, h1, h2, h3⟩ := hconv u₀ (mem_univ u₀)
   exact ⟨u, hfix, hlim, h1, h2, h3⟩
 
-/-- Example 5.1.2 on the whole space: it is enough that some power of `T` be contractive. -/
-private theorem example_5_1_2_univ {T : V → V} {α : ℝ} (hc : Continuous T) {m : ℕ} (hm : 0 < m)
+/-- Exercise 5.1.2 on the whole space: it is enough that some power of `T` be contractive. -/
+private theorem exercise_5_1_2_univ {T : V → V} {α : ℝ} (hc : Continuous T) {m : ℕ} (hm : 0 < m)
     (hα : ContractiveOn T^[m] univ α) :
     (∃! u, T u = u) ∧ ∀ u₀ : V, ∃ u, T u = u ∧ Tendsto (fun n => T^[n] u₀) atTop (𝓝 u) := by
-  obtain ⟨huniq, hconv⟩ := example_5_1_2 isClosed_univ ⟨(0 : V), mem_univ 0⟩ (mapsTo_univ T univ)
+  obtain ⟨huniq, hconv⟩ := exercise_5_1_2 isClosed_univ ⟨(0 : V), mem_univ 0⟩ (mapsTo_univ T univ)
     hc.continuousOn hm hα
   refine ⟨by simpa using huniq, fun u₀ => ?_⟩
   obtain ⟨u, -, hfix, hlim⟩ := hconv u₀ (mem_univ u₀)
@@ -421,7 +483,7 @@ private theorem iterate_volterra_add (hab : a ≤ b) (k : C(Icc a b × Icc a b �
 f(x)`, written as the fixed-point problem `u = λ⁻¹ (K u + f)` of (5.2.7).  Its contractivity
 constant is `α = |λ|⁻¹ max_x ∫ₐᵇ |k(x, y)| dy` by the norm formula (2.2.8), and (5.2.8) `α < 1` is
 exactly what Theorem 5.1.3 asks for. -/
-theorem theorem_5_2_2_fredholm (hab : a ≤ b) (k : C(Icc a b × Icc a b, ℝ)) (f : C(Icc a b, ℝ))
+theorem equation_5_2_7 (hab : a ≤ b) (k : C(Icc a b × Icc a b, ℝ)) (f : C(Icc a b, ℝ))
     {lam : ℝ} (hlam : |lam|⁻¹ * (⨆ x, ∫ y in a..b, |k (x, projIcc a b hab y)|) < 1)
     (T : C(Icc a b, ℝ) → C(Icc a b, ℝ))
     (hT : ∀ (u : C(Icc a b, ℝ)) (x : Icc a b),
@@ -485,7 +547,7 @@ theorem theorem_5_2_2 (hab : a ≤ b) {k : C(Icc a b × Icc a b × ℝ, ℝ)} {M
 the equation has a unique solution in `C[a, b]` and the iteration (5.2.16) converges to it from
 every starting point: no smallness hypothesis is needed, because the factorial estimate of
 `IntegralOperator.norm_iterate_volterra_sub_le` makes some power of the operator a contraction,
-and Example 5.1.2 applies. -/
+and Exercise 5.1.2 applies. -/
 theorem theorem_5_2_3 (hab : a ≤ b) {k : C(Icc a b × Icc a b × ℝ, ℝ)} {M : ℝ≥0}
     (hk : ∀ t s : Icc a b, LipschitzWith M fun z => k (t, s, z)) (f : C(Icc a b, ℝ))
     (T : C(Icc a b, ℝ) → C(Icc a b, ℝ))
@@ -497,7 +559,7 @@ theorem theorem_5_2_3 (hab : a ≤ b) {k : C(Icc a b × Icc a b × ℝ, ℝ)} {M
   subst hTeq
   obtain ⟨m, hm, hcw⟩ :=
     exists_contractingWith_iterate_volterra hab (lipschitzWith_shiftKernel hk f)
-  refine example_5_1_2_univ
+  refine exercise_5_1_2_univ
     ((lipschitzWith_volterra hab hk).continuous.add continuous_const) hm
     ⟨NNReal.coe_nonneg _, by exact_mod_cast hcw.1, fun u _ v _ => ?_⟩
   rw [iterate_volterra_add hab k f m u, iterate_volterra_add hab k f m v,

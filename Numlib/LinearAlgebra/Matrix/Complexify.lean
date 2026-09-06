@@ -43,7 +43,9 @@ corollaries at the end of the file.
 * `Matrix.l2_opNorm_complexify`, `Matrix.linfty_opNorm_complexify` and
   `Matrix.frobenius_norm_complexify`: complexification changes none of the three norms, which is
   what transports every statement about `‖A ^ k‖` to `ℂ`.
-* `Matrix.tendsto_pow_rpow_complexSpectralRadius`: **Gelfand's formula** for a real matrix.
+* `Matrix.tendsto_pow_rpow_complexSpectralRadius` and
+  `Matrix.tendsto_pow_rpow_linfty_opNorm`: **Gelfand's formula** for a real matrix, in the
+  Euclidean operator norm and in the maximum-absolute-row-sum norm.
 * `Matrix.limsup_norm_pow_mulVec_rpow_le` and
   `Matrix.exists_limsup_norm_pow_mulVec_rpow_eq`: the spectral radius bounds every specific
   convergence factor `limsup (‖Gᵏ d₀‖/‖d₀‖) ^ (1/k)`, and some `d₀` attains it.
@@ -413,6 +415,26 @@ theorem complexSpectralRadius_ne_top (A : Matrix n n ℝ) : complexSpectralRadiu
 entrywise, and complexification does not change the absolute value of an entry. -/
 theorem linfty_opNorm_complexify (A : Matrix n n ℝ) : ‖complexify A‖ = ‖A‖ := by
   simp only [linfty_opNorm_def, complexify, Matrix.map_apply, Complex.nnnorm_real]
+
+/-- **Gelfand's formula in the maximum-absolute-row-sum norm**: `‖A ^ k‖ ^ (1 / k) → ρ(A)`, the
+spectral radius being the complex one.  It is the argument of
+`Matrix.tendsto_pow_rpow_complexSpectralRadius` with `Matrix.linfty_opNorm_complexify` in place of
+`Matrix.l2_opNorm_complexify`; the limit is the same, since two norms on a finite-dimensional space
+differ by a factor `C` with `C ^ (1 / k) → 1`.  This is the norm that
+`Matrix.linfty_opNorm_eq_opNorm` identifies with the operator norm of `A` acting on `n → ℝ` with
+the supremum norm. -/
+theorem tendsto_pow_rpow_linfty_opNorm (A : Matrix n n ℝ) :
+    Tendsto (fun k : ℕ => ‖A ^ k‖ ^ (1 / k : ℝ)) atTop
+      (𝓝 (complexSpectralRadius A).toReal) := by
+  have _ : CompleteSpace (Matrix n n ℂ) := FiniteDimensional.complete ℂ _
+  have hnorm : ∀ k : ℕ, ‖(complexify A) ^ k‖ = ‖A ^ k‖ := fun k => by
+    rw [← complexify_pow, linfty_opNorm_complexify]
+  have hgel := spectrum.pow_norm_pow_one_div_tendsto_nhds_spectralRadius (complexify A)
+  simp only [hnorm] at hgel
+  have h := (ENNReal.tendsto_toReal (complexSpectralRadius_ne_top A)).comp hgel
+  refine h.congr fun k => ?_
+  simp only [Function.comp_apply]
+  exact ENNReal.toReal_ofReal (Real.rpow_nonneg (norm_nonneg _) _)
 
 end Operator
 

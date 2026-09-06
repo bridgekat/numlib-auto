@@ -1,4 +1,5 @@
 import Numlib.FiniteDifference.TwoLevel
+import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
 
 /-!
 # Atkinson–Han §6.3: two-level difference schemes
@@ -26,13 +27,22 @@ arbitrary real normed space, which is more faithful than fixing `EuclideanSpace 
 not less.  The truncation error `τ^m` is data of the statement, defined by the relation (6.3.6)
 that the exact values satisfy, rather than a derived quantity.
 
+Exercise 6.3.1, the eigenvalues of a tridiagonal Toeplitz matrix, is `exercise_6_3_1`; it is the
+one piece of the section's concrete material with independent interest, and its content lives in
+the backbone as `Matrix.tridiagonalToeplitz_hasEigenvalue_iff`.
+
+## Not formalized here
+
 Examples 6.3.3 and 6.3.4 (the forward and backward schemes for the heat equation, in the maximum
-norm and in the discrete two-norm) and Exercises 6.3.1–6.3.3 are not formalized: they are Taylor
-expansions of a solution assumed smooth together with the eigenvalues of a tridiagonal Toeplitz
-matrix, and they exercise nothing in the theory above.
+norm and in the discrete two-norm) and Exercises 6.3.2–6.3.3 (Crank–Nicolson and the generalized
+midpoint scheme).  The obstruction is a partial differential equation, not a missing algebraic
+fact: each of them Taylor-expands a solution of the heat equation that the book assumes smooth
+without proof, and Mathlib has no parabolic theory to supply it.  What they would then produce is
+an instance of `theorem_6_3_2'` exercising nothing new.
 -/
 
 open Filter Set
+open scoped Real
 
 namespace AtkinsonHan.Chapter06
 
@@ -124,5 +134,28 @@ theorem theorem_6_3_2' (hT : 0 ≤ T) (hht : ∀ i, 0 ≤ ht i)
   exact error_le hht hv hu h0 hstab i hδ0 (fun k hk => hord i k hk) hm
 
 end Theorem632
+
+section Toeplitz
+
+/-- **Exercise 6.3.1**: for `a, b, c ∈ ℝ` with `b c ≥ 0`, the `N × N` tridiagonal Toeplitz matrix
+`Q` with `a` on the diagonal, `b` on the subdiagonal and `c` on the superdiagonal has the `N`
+eigenvalues
+
+`λ_j = a + 2 √(b c) cos(jπ / (N + 1))`,  `1 ≤ j ≤ N`
+
+(here indexed by `j : Fin N`, so that the book's `j` is `j + 1`).  This is the backbone's
+`Matrix.tridiagonalToeplitz_hasEigenvalue_iff`, whose argument order is `tridiag(sub, diag, super)`
+rather than the book's `(diag, sub, super)`.
+
+It is the spectral fact behind Examples 6.3.3 and 6.3.4, where the stability of the forward and
+backward schemes for the heat equation is read off the eigenvalues of `tridiag(-1, 2, -1)` — the
+symmetric case `b = c`, which the backbone treats directly. -/
+theorem exercise_6_3_1 (N : ℕ) (a b c : ℝ) (hbc : 0 ≤ b * c) (μ : ℝ) :
+    Module.End.HasEigenvalue (Matrix.toEuclideanLin (Matrix.tridiagonalToeplitz N b a c)) μ ↔
+      ∃ j : Fin N, μ = a + 2 * Real.sqrt (b * c)
+        * Real.cos ((((j : ℕ) : ℝ) + 1) * π / ((N : ℝ) + 1)) :=
+  Matrix.tridiagonalToeplitz_hasEigenvalue_iff N b a c hbc μ
+
+end Toeplitz
 
 end AtkinsonHan.Chapter06
