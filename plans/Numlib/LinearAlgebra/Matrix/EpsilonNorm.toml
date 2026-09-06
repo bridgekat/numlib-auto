@@ -1,0 +1,5 @@
+[[node]]
+id = "Matrix.complexSpectralRadius_toReal_le_of_forall_mulVec_le"
+
+[[node]]
+id = "Matrix.exists_seminorm_forall_mulVec_le"

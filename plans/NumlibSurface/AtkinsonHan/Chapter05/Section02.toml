@@ -35,44 +35,7 @@ id = "tendsto_pow_rpow_complexSpectralRadius"
 
 [[node]]
 id = "exists_opNorm_le_complexSpectralRadius_add"
-kind = "theorem"
-desc = '''
-Section 5.2.2, relation 2, the epsilon-norm theorem: for every `ε > 0` there is a matrix operator
-norm with `r_σ(A) ≤ ‖A‖_{A,ε} ≤ r_σ(A) + ε`, so that `r_σ(A)` is the infimum of `‖A‖` over all
-matrix operator norms. The book quotes it from Ortega and Rheinboldt.
-
-Open, and blocked on the backbone. The proof needs an upper-triangularization of `A` over `ℂ`
-followed by the diagonal scaling `D_δ = diag(δ, δ², …)`, which shrinks the strictly upper
-triangular entries below `ε`. Mathlib has neither Schur triangularization nor a Jordan normal
-form; the usable entry point is `Module.End.iSup_maxGenEigenspace_eq_top` in
-`Mathlib/LinearAlgebra/Eigenspace/Triangularizable.lean`, from which a triangularizing basis has
-to be built by hand, and that basis — with the scaling that goes with it — is the backbone item
-this node waits for. Nothing in the corpus consumes the result.
-'''
-deps = ["Matrix.complexSpectralRadius"]
 
 [[node]]
 id = "theorem_5_2_4_ode"
-kind = "theorem"
-desc = '''
-Theorem 5.2.4 in its differential form: for `f` continuous on
-`Q_b = {(t, u) : |t - t₀| ≤ a, ‖u - z‖ ≤ b}` and `L`-Lipschitz in `u` there, with
-`M = max_{Q_b} ‖f‖` and `a₀ = min(a, b/M)`, the initial value problem `u' = f(t, u)`, `u(t₀) = z`
-has a unique continuously differentiable solution on `[t₀ - a₀, t₀ + a₀]`, to which the Picard
-iteration converges. `theorem_5_2_4` states only the fixed-point half of this - scalar, one-sided,
-globally Lipschitz, no ball constraint - so this is the one place in the chapter where a covered
-name does not state the theorem of the book.
 
-Open, and blocked on a gap between the two halves of the ODE API of Mathlib rather than on a
-missing theory. `IsPicardLindelof f t₀ z b 0 M L` carries exactly the hypotheses of the book, with
-`a₀` its `min a (r / L)`, but `IsPicardLindelof.exists_eq_forall_mem_Icc_hasDerivWithinAt` does not
-assert that the solution it produces stays inside `‖u - z‖ ≤ b`, and
-`ODE_solution_unique_of_mem_Icc` requires both solutions to lie there - so existence and uniqueness
-cannot be composed into the statement of the book. Supplying the containment means either an
-exit-time argument (the conditional fencing lemma
-`image_le_of_liminf_slope_right_lt_deriv_boundary` wants a *strict* derivative bound, and the
-extremal case `M a₀ = b` the book allows then needs two limiting steps) or replacing `f` by its
-composition with the radial retraction onto the ball, whose Lipschitz constant in a general normed
-space is not in Mathlib. Either is a self-contained backbone item.
-'''
-deps = ["theorem_5_2_4"]

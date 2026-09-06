@@ -1036,6 +1036,38 @@ theorem hasPropertyA_of_isConsistentlyOrdered {A : Matrix (Fin n) (Fin n) ℂ}
     tauto
   · rw [hlow i j hgt hA, Nat.even_add_one]
 
+/-- **Saad §4.2.5** (the second bullet after Proposition 4.15, repeated as Problem P-4.6): `A` has
+Property A *if and only if* some symmetric permutation `PᵀAP` of it is consistently ordered.
+
+For `⇐` the permuted matrix has Property A by the previous result, and Property A is invariant
+under symmetric permutations.  For `⇒`, order the set `S` of Definition 4.11 before its complement:
+the stable sort of the two-valued labelling `c i = if i ∈ S then 0 else 1` does that, and `c`
+composed with it is the consistent ordering.  A nonzero off-diagonal entry joins the two parts, so
+the two labels differ, and they are `0` then `1` in the direction Definition 4.13 demands because
+the sorted labelling is nondecreasing. -/
+theorem hasPropertyA_iff_exists_isConsistentlyOrdered (A : Matrix (Fin n) (Fin n) ℂ) :
+    HasPropertyA A ↔ ∃ σ : Equiv.Perm (Fin n), IsConsistentlyOrdered (A.submatrix σ σ) := by
+  classical
+  constructor
+  · rintro ⟨S, hS⟩
+    set c : Fin n → ℕ := fun i => if i ∈ S then 0 else 1 with hc
+    set σ := Tuple.sort c with hσ
+    have hmono : Monotone (c ∘ σ) := Tuple.monotone_sort c
+    have key : ∀ i j : Fin n, i ≠ j → A (σ i) (σ j) ≠ 0 →
+        ((c ∘ σ) i = 0 ∧ (c ∘ σ) j = 1) ∨ ((c ∘ σ) i = 1 ∧ (c ∘ σ) j = 0) := by
+      intro i j hij hA
+      have h := hS (σ i) (σ j) hA fun h => hij (σ.injective h)
+      by_cases hi : σ i ∈ S
+      · exact Or.inl ⟨by simp [hc, hi], by simp [hc, h.mp hi]⟩
+      · exact Or.inr ⟨by simp [hc, hi], by simp [hc, not_not.mp fun hj => hi (h.mpr hj)]⟩
+    refine ⟨σ, c ∘ σ, fun i j hji hA => ?_, fun i j hij hA => ?_⟩
+    · have hle := hmono hji.le
+      rcases key i j hji.ne' hA with ⟨h1, h2⟩ | ⟨h1, h2⟩ <;> omega
+    · have hle := hmono hij.le
+      rcases key i j hij.ne hA with ⟨h1, h2⟩ | ⟨h1, h2⟩ <;> omega
+  · rintro ⟨σ, hσ⟩
+    exact (hasPropertyA_reindex A σ).mp (hasPropertyA_of_isConsistentlyOrdered hσ)
+
 /-- **Saad, Proposition 4.15**: the book's labelling definition of a consistent ordering implies the
 spectral one that Young's theory uses — the spectrum of `α L + α⁻¹ U` does not depend on `α ≠ 0`,
 `L` and `U` being the strict parts of the Jacobi iteration matrix. -/

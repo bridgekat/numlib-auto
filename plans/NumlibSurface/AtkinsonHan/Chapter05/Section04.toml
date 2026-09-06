@@ -50,10 +50,25 @@ linearized two-point boundary value problem.
 
 Open, and blocked on the backbone. The obstruction is the space: `C^k[a, b]` as a Banach space
 under `∑_{j ≤ k} ‖u^(j)‖_∞`, and its subspace `C²₀[0, 1] = {v : v 0 = v 1 = 0}`, exist neither
-here nor in Mathlib (`ContDiffMapSupportedIn` is a seminormed space of compactly supported
-functions and is not this). That space is reusable — Atkinson-Han section 1.4 defines it — so it
+here nor in Mathlib. That space is reusable — Atkinson-Han section 1.4 defines it — so it
 belongs in the backbone; once it is there the derivative is easy, since `u ↦ u''` is a bounded
 linear map `C²₀ → C⁰` and `u ↦ f(·, u(·))` is a Nemytskii operator differentiable by the argument
 of `example_5_3_10`.
+
+Three points, each checked in Mathlib rather than inferred, are why the space is a project rather
+than a definition.
+
+1. `ContDiffMapSupportedIn` is not a candidate. Beyond carrying a seminorm family rather than a
+   norm, its fields are `ContDiff ℝ n f` on the whole space and `EqOn f 0 Kᶜ`, so membership for
+   `u ∈ C²₀[0, 1]` would force `u'(0) = u'(1) = 0` as well.
+2. `∑_{j ≤ k} ‖u^(j)‖_∞` on `{u : ℝ → ℝ // ContDiffOn ℝ k u (Icc a b)}` is only a seminorm, being
+   blind to the values off `[a, b]`. The representation that avoids both a quotient and calculus on
+   a subtype is the tuple of derivatives, `{p : Fin (k+1) → C(Icc a b, ℝ) // p (j+1) is the
+   derivative of p j}`, normed by `∑_j ‖p j‖_∞`.
+3. Completeness does not follow from `hasDerivAt_of_tendstoUniformlyOn` or
+   `hasFDerivAt_of_tendstoUniformlyOn`: both require an **open** set, and `Icc a b` is not open, so
+   the endpoints are uncovered. The working route on a closed interval is
+   `u_n t = u_n a + ∫ₐᵗ u_n'`, a limit under the integral, and the fundamental theorem of calculus,
+   which gives `HasDerivWithinAt` at the endpoints as well.
 '''
 deps = ["example_5_3_10"]

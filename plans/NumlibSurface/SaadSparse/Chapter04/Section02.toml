@@ -163,6 +163,9 @@ id = "isConsistentlyOrdered_of_isTMatrix"
 id = "hasPropertyA_of_isConsistentlyOrdered"
 
 [[node]]
+id = "hasPropertyA_iff_exists_isConsistentlyOrdered"
+
+[[node]]
 id = "IsConsistentlyOrdered.matrix_isConsistentlyOrdered"
 
 [[node]]

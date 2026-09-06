@@ -1,0 +1,4 @@
+desc = '''
+Ordinary differential equations: what Mathlib's `Mathlib.Analysis.ODE` lacks for the textbook
+statements of the Picard–Lindelöf theorem.
+'''

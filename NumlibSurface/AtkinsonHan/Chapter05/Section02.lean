@@ -1,5 +1,7 @@
+import Numlib.Analysis.ODE.PicardLindelof
 import Numlib.IntegralEquations.Basic
 import Numlib.LinearAlgebra.Matrix.Complexify
+import Numlib.LinearAlgebra.Matrix.EpsilonNorm
 import Numlib.LinearAlgebra.Matrix.Hessenberg
 import Numlib.LinearSolve.Stationary.Basic
 import Numlib.LinearSolve.Stationary.Splitting
@@ -41,6 +43,9 @@ and `Numlib/IntegralEquations/Basic.lean`.
 * `complexSpectralRadius_le_opNorm` — §5.2.2, relation 1, `r_σ(A) ≤ ‖A‖`, and
   `tendsto_pow_rpow_complexSpectralRadius` — relation 3, Gelfand's formula
   `‖Aᵏ‖^{1/k} → r_σ(A)`; both for the operator norm induced by the maximum norm on `ℝ^d`.
+* `exists_opNorm_le_complexSpectralRadius_add` — §5.2.2, relation 2, the **ε-norm theorem**: a
+  vector norm whose induced operator norm of `A` lies in `[r_σ(A), r_σ(A) + ε]`, so that `r_σ(A)`
+  is the infimum of `‖A‖` over the operator matrix norms.
 * `tendsto_pow_iff_complexSpectralRadius_lt_one` — §5.2.2(c), `Gᵏ → 0` iff `r_σ(G) < 1`.
 * `BookSplitting.forall_tendsto_iff`,
   `BookSplitting.forall_tendsto_iff_complexSpectralRadius_lt_one` — §5.2.2(d), convergence from
@@ -52,17 +57,13 @@ and `Numlib/IntegralEquations/Basic.lean`.
   the factorial estimate on the iterated kernels makes some power of the operator contract and
   Exercise 5.1.2 applies.
 * `theorem_5_2_4` — §5.2.4, the Picard iteration for the initial value problem, in the weighted
-  (Bielecki) norm in which the Picard operator itself contracts.
+  (Bielecki) norm in which the Picard operator itself contracts, and `theorem_5_2_4_ode` — the
+  differential form of the same theorem, in a Banach space and on the two-sided interval
+  `[t₀ - a₀, t₀ + a₀]` with `a₀ = min(a, b/M)`: a unique continuously differentiable solution of
+  `u' = f(t, u)`, `u(t₀) = z` with values in `‖u - z‖ ≤ b`.
 
 ## Not formalized here
 
-* §5.2.2, relation 2, the **ε-norm theorem**: for every `ε > 0` there is a matrix operator norm
-  with `r_σ(A) ≤ ‖A‖_{A,ε} ≤ r_σ(A) + ε`, whence `r_σ(A) = inf ‖A‖` over matrix operator norms.
-  The book quotes it from Ortega and Rheinboldt.  The obstruction is that its proof needs an
-  upper-triangularization of `A` over `ℂ` and the diagonal scaling `diag(δ, δ², …)` that shrinks
-  the off-diagonal entries; Mathlib has neither Schur triangularization nor a Jordan normal form,
-  so the triangularizing basis would have to be built from
-  `Module.End.iSup_maxGenEigenspace_eq_top` first, and that is a backbone project of its own.
 * The remark after Theorem 5.2.3, that its hypotheses on `[a, ∞)` give a unique solution in
   `C[a, ∞)` whose restrictions are the solutions on each `[a, b]`.  The obstruction is the kernel
   type: `IntegralOperator.volterra` and the whole `C[a, b]` toolkit it belongs to are
@@ -71,26 +72,15 @@ and `Numlib/IntegralEquations/Basic.lean`.
   nothing else in the corpus would use it.  The mathematical content — that the solution on
   `[a, b']` restricts to the solution on `[a, b]` — is already the uniqueness clause of
   `theorem_5_2_3` on `[a, b]`.
-* The **differential form of Theorem 5.2.4**: for `f` continuous on
-  `Q_b = {(t, u) : |t - t₀| ≤ a, ‖u - z‖ ≤ b}` and `L`-Lipschitz in `u` there, with
-  `M = max_{Q_b} ‖f‖` and `a₀ = min(a, b/M)`, the initial value problem `u' = f(t, u)`,
-  `u(t₀) = z` has a unique continuously differentiable solution on `[t₀ - a₀, t₀ + a₀]`.
-  `theorem_5_2_4` below states the *fixed-point half* only: a scalar equation, a one-sided
-  interval, a global Lipschitz hypothesis in `u` and no ball constraint, concluding about the
-  fixed point of the Picard operator in the Bielecki space rather than about a differentiable
-  solution.  The obstruction is a gap between the two halves of Mathlib's ODE API:
-  `IsPicardLindelof` carries exactly the book's hypotheses, but
-  `IsPicardLindelof.exists_eq_forall_mem_Icc_hasDerivWithinAt` does not assert that the solution
-  it produces stays inside `‖u - z‖ ≤ b`, while `ODE_solution_unique_of_mem_Icc` needs both
-  solutions to lie there — so existence and uniqueness cannot be composed.  Supplying the missing
-  containment means an exit-time argument (Mathlib's conditional fencing lemma wants a *strict*
-  derivative bound, and the book allows the extremal case `M a₀ = b`) or a radial retraction of
-  `f` onto the ball, whose Lipschitz constant in a general normed space Mathlib does not have.
 
-Theorem 5.2.4 is stated for the integral equation (the fixed-point form of the initial value
-problem) on an interval to the right of `t₀`, for a scalar equation whose right-hand side is
-globally Lipschitz in `u`; that is the part of the book's theorem whose proof is Bielecki's
-contraction argument.
+`theorem_5_2_4` is the book's theorem for the integral equation (the fixed-point form of the initial
+value problem) on an interval to the right of `t₀`, for a scalar equation whose right-hand side is
+globally Lipschitz in `u`; that is the part whose proof is Bielecki's contraction argument.  The
+book's own statement is the differential one, and `theorem_5_2_4_ode` states that, in the book's
+generality, on `Numlib/Analysis/ODE/PicardLindelof.lean`: Mathlib's own
+`IsPicardLindelof.exists_eq_forall_mem_Icc_hasDerivWithinAt` does not say that the solution it
+produces stays inside `‖u - z‖ ≤ b`, which `ODE_solution_unique_of_mem_Icc` needs, and the backbone
+file supplies exactly that containment.
 -/
 
 open Filter Set Topology
@@ -340,6 +330,31 @@ theorem complexSpectralRadius_le_opNorm (G : Matrix ι ι ℝ) :
         ENNReal.toReal_mono ENNReal.coe_ne_top (Matrix.complexSpectralRadius_le_linfty_opNNNorm G)
     _ = ‖G‖ := by simp
     _ = ‖mulVecCLM G‖ := Matrix.linfty_opNorm_eq_opNorm G
+
+/-- **§5.2.2, relation 2** (the ε-norm theorem): for every `ε > 0` there is a vector norm
+`‖·‖_{A,ε}` on `ℝ^d`, equivalent to the maximum norm, whose induced operator norm of `A` satisfies
+`r_σ(A) ≤ ‖A‖_{A,ε} ≤ r_σ(A) + ε`; hence `r_σ(A)` is the infimum of `‖A‖` over the operator matrix
+norms, relation 1 giving the other inequality for every one of them.
+
+The induced operator norm `‖A‖_p` of a vector norm `p` is the least `c ≥ 0` with `p (A x) ≤ c p x`
+for every `x`, so the last two clauses say exactly `‖A‖_p ≤ r_σ(A) + ε` and `r_σ(A) ≤ ‖A‖_p`, with
+no need to name the induced norm.  The first two clauses say that `p` is equivalent to the maximum
+norm, which is what makes it a norm and its induced operator norm finite.
+
+The book quotes this from Ortega and Rheinboldt, whose proof triangularizes `A` and shrinks the
+off-diagonal entries by the scaling `diag(δ, δ², …)`.  The backbone's
+`Matrix.exists_seminorm_forall_mulVec_le` takes the shorter route through Gelfand's formula,
+`p x = ∑_{j<k} c⁻ʲ ‖Aʲ x‖` for `c = r_σ(A) + ε` and `k` with `‖Aᵏ‖ ≤ cᵏ`; the reverse inequality is
+`Matrix.complexSpectralRadius_toReal_le_of_forall_mulVec_le`. -/
+theorem exists_opNorm_le_complexSpectralRadius_add (A : Matrix ι ι ℝ) {ε : ℝ} (hε : 0 < ε) :
+    ∃ p : Seminorm ℝ (ι → ℝ), (∀ x, ‖x‖ ≤ p x) ∧ (∃ C, ∀ x, p x ≤ C * ‖x‖) ∧
+      (∀ x, p (A *ᵥ x) ≤ ((Matrix.complexSpectralRadius A).toReal + ε) * p x) ∧
+      ∀ c : ℝ, 0 ≤ c → (∀ x, p (A *ᵥ x) ≤ c * p x) →
+        (Matrix.complexSpectralRadius A).toReal ≤ c := by
+  obtain ⟨p, hlow, ⟨C, hup⟩, hA⟩ := Matrix.exists_seminorm_forall_mulVec_le A hε
+  exact ⟨p, hlow, ⟨C, hup⟩, hA, fun c hc hcA =>
+    Matrix.complexSpectralRadius_toReal_le_of_forall_mulVec_le A p one_pos
+      (by simpa using hlow) hup hc hcA⟩
 
 open scoped Matrix.Norms.Operator in
 /-- **§5.2.2, relation 3** (Gelfand's formula): `‖Aᵏ‖^{1/k} → r_σ(A)`, so the spectral radius is
@@ -627,6 +642,63 @@ theorem theorem_5_2_4 {t₀ t₁ : ℝ} (ht : t₀ ≤ t₁) {g : C(Icc t₀ t�
       = volterra ht k (Bielecki.equiv u) - volterra ht k (Bielecki.equiv v) := by abel
   rw [← map_sub, hcancel]
   exact h
+
+/-- **Theorem 5.2.4** (Picard–Lindelöf), the differential form.  Let `f` be continuous on the box
+`Q_b = {(t, u) : |t - t₀| ≤ a, ‖u - z‖ ≤ b}` of a Banach space, Lipschitz in `u` there with constant
+`L`, let `M` bound `‖f‖` on `Q_b`, and put `a₀ = min(a, b/M)`.  Then the initial value problem
+`u' = f(t, u)`, `u(t₀) = z` has exactly one continuously differentiable solution on
+`[t₀ - a₀, t₀ + a₀]` taking values in `‖u - z‖ ≤ b`.
+
+Confinement to the ball is not an extra demand but part of the book's statement: `f` is given only
+on `Q_b`, so a solution of the book's problem is by definition one that stays there.  It is also
+what makes uniqueness meaningful — off the box the differential equation says nothing.
+"Continuously differentiable" is the fourth clause: the derivative `t ↦ f(t, u(t))` is continuous.
+
+The four constants of the book are exactly the four of Mathlib's `IsPicardLindelof` — `b` its ball
+radius, `M` its bound on the field, `L` its Lipschitz constant, and `a₀` the largest half-length its
+field `mul_max_le` permits — so the proof is
+`IsPicardLindelof.exists_unique_mem_closedBall_hasDerivWithinAt`.  The other half of the book's
+theorem, the convergence of Picard's iteration, is `theorem_5_2_4` above. -/
+theorem theorem_5_2_4_ode {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [CompleteSpace E]
+    {f : ℝ → E → E} {t₀ a b M a₀ : ℝ} {L : ℝ≥0} {z : E} (ha : 0 < a) (hb : 0 < b) (hM : 0 < M)
+    (hcont : ContinuousOn (fun p : ℝ × E => f p.1 p.2)
+      (Icc (t₀ - a) (t₀ + a) ×ˢ Metric.closedBall z b))
+    (hlip : ∀ t ∈ Icc (t₀ - a) (t₀ + a), LipschitzOnWith L (f t) (Metric.closedBall z b))
+    (hbdd : ∀ t ∈ Icc (t₀ - a) (t₀ + a), ∀ u ∈ Metric.closedBall z b, ‖f t u‖ ≤ M)
+    (ha₀ : a₀ = min a (b / M)) :
+    ∃ u : ℝ → E, u t₀ = z ∧
+      (∀ t ∈ Icc (t₀ - a₀) (t₀ + a₀), u t ∈ Metric.closedBall z b) ∧
+      (∀ t ∈ Icc (t₀ - a₀) (t₀ + a₀),
+        HasDerivWithinAt u (f t (u t)) (Icc (t₀ - a₀) (t₀ + a₀)) t) ∧
+      ContinuousOn (fun t => f t (u t)) (Icc (t₀ - a₀) (t₀ + a₀)) ∧
+      ∀ v : ℝ → E, v t₀ = z → (∀ t ∈ Icc (t₀ - a₀) (t₀ + a₀), v t ∈ Metric.closedBall z b) →
+        (∀ t ∈ Icc (t₀ - a₀) (t₀ + a₀),
+          HasDerivWithinAt v (f t (v t)) (Icc (t₀ - a₀) (t₀ + a₀)) t) →
+        EqOn u v (Icc (t₀ - a₀) (t₀ + a₀)) := by
+  obtain ⟨bn, rfl⟩ : ∃ bn : ℝ≥0, (bn : ℝ) = b := ⟨b.toNNReal, Real.coe_toNNReal b hb.le⟩
+  obtain ⟨Mn, rfl⟩ : ∃ Mn : ℝ≥0, (Mn : ℝ) = M := ⟨M.toNNReal, Real.coe_toNNReal M hM.le⟩
+  have ha₀pos : 0 < a₀ := ha₀ ▸ lt_min ha (by positivity)
+  have hmem₀ : t₀ ∈ Icc (t₀ - a₀) (t₀ + a₀) := ⟨by linarith, by linarith⟩
+  have hsub : Icc (t₀ - a₀) (t₀ + a₀) ⊆ Icc (t₀ - a) (t₀ + a) := by
+    have h : a₀ ≤ a := ha₀ ▸ min_le_left _ _
+    exact Icc_subset_Icc (by linarith) (by linarith)
+  have hmulmax : (Mn : ℝ) * max (t₀ + a₀ - t₀) (t₀ - (t₀ - a₀)) ≤ (bn : ℝ) - ((0 : ℝ≥0) : ℝ) := by
+    have h1 : a₀ ≤ (bn : ℝ) / Mn := ha₀ ▸ min_le_right _ _
+    have h2 : (Mn : ℝ) * a₀ ≤ bn := by
+      have h := mul_le_mul_of_nonneg_left h1 hM.le
+      rwa [mul_div_cancel₀ _ hM.ne'] at h
+    simpa using h2
+  have hpl : IsPicardLindelof f (⟨t₀, hmem₀⟩ : Icc (t₀ - a₀) (t₀ + a₀)) z bn 0 Mn L := by
+    refine ⟨fun t ht => hlip t (hsub ht), fun u hu => ?_,
+      fun t ht u hu => hbdd t (hsub ht) u hu, hmulmax⟩
+    exact hcont.comp (f := fun t : ℝ => (t, u)) (by fun_prop) fun t ht => ⟨hsub ht, hu⟩
+  obtain ⟨u, hu₀, humem, hu, huniq⟩ :=
+    hpl.exists_unique_mem_closedBall_hasDerivWithinAt (Metric.mem_closedBall_self le_rfl)
+      ⟨by linarith, by linarith⟩
+  refine ⟨u, hu₀, humem, hu, ?_, huniq⟩
+  exact hcont.comp (f := fun t : ℝ => (t, u t))
+    (continuousOn_id.prodMk fun t ht => (hu t ht).continuousWithinAt)
+    fun t ht => ⟨hsub ht, humem t ht⟩
 
 end IntegralEquations
 

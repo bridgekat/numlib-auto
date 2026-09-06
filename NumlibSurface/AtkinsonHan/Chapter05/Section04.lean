@@ -45,11 +45,31 @@ the book prints it; `theorem_5_4_2_unique` explains why the closed form is false
 The two-point boundary value problem `u'' = f(t, u)`, `u(0) = u(1) = 0` of §5.4.2, whose Newton
 linearization is a linear boundary value problem.  The obstruction is the space: the book works in
 `U = C²₀[0, 1]`, and neither this project nor Mathlib has `Cᵏ[a, b]` as a Banach space under
-`∑_{j ≤ k} ‖u^{(j)}‖_∞` — Mathlib's `ContDiffMapSupportedIn` is a *seminormed* space of compactly
-supported functions and is not it.  That space is backbone material and reusable (Atkinson–Han
-§1.4 defines it), and once it exists the derivative computation is easy: `u ↦ u''` is a bounded
-linear map `C²₀ → C⁰` and `u ↦ f(·, u(·))` is a Nemytskii operator, differentiable by the argument
-of `example_5_3_10`.
+`∑_{j ≤ k} ‖u^{(j)}‖_∞`.  That space is backbone material and reusable (Atkinson–Han §1.4 defines
+it), and once it exists the derivative computation is easy: `u ↦ u''` is a bounded linear map
+`C²₀ → C⁰` and `u ↦ f(·, u(·))` is a Nemytskii operator, differentiable by the argument of
+`example_5_3_10`.
+
+Three things about that space were checked rather than assumed, and are what make it a project of
+its own rather than a definition.
+
+* `ContDiffMapSupportedIn` (`Mathlib/Analysis/Distribution/ContDiffMapSupportedIn.lean`) is not it,
+  and not merely because its topology is given by a family of seminorms: its two fields demand
+  `ContDiff ℝ n f` on the *whole* space and `EqOn f 0 Kᶜ`, so a `u ∈ C²₀[0, 1]` belongs to it only
+  when `u'(0) = u'(1) = 0` as well, which is not the boundary condition of the problem.
+* The carrier needs a decision that a definition alone does not make: `∑_{j ≤ k} ‖u^{(j)}‖_∞` is
+  only a *seminorm* on `{u : ℝ → ℝ // ContDiffOn ℝ k u (Icc a b)}`, since it does not see the
+  values off `[a, b]`.  The representation that avoids the quotient and calculus on a subtype is
+  the tuple of derivatives, `{p : Fin (k+1) → C(Icc a b, ℝ) // p (j+1) is the derivative of p j}`,
+  whose norm
+  `∑_j ‖p j‖_∞` is a genuine norm and whose completeness reduces to that of `C(Icc a b, ℝ)`.
+* Completeness cannot be had from Mathlib's uniform-limit-of-derivatives lemmas as they stand:
+  `hasDerivAt_of_tendstoUniformlyOn` and `hasFDerivAt_of_tendstoUniformlyOn`
+  (`Mathlib/Analysis/Calculus/UniformLimitsDeriv.lean`) both require the set to be **open**, and
+  `Icc a b` is not, so the endpoints are not covered.  The route that does work on a closed interval
+  is the integral one: `u_n t = u_n a + ∫ₐᵗ u_n'`, pass to the limit under the integral by uniform
+  convergence on a compact, and read the derivative back off the fundamental theorem of calculus,
+  which gives `HasDerivWithinAt` at the endpoints too.
 -/
 
 open Filter Metric Topology

@@ -26,6 +26,7 @@ import Numlib.Analysis.Normed.Operator.Compact
 import Numlib.Analysis.Normed.Operator.Scaling
 import Numlib.Analysis.Normed.Ring.CondNumber
 import Numlib.Analysis.Normed.Ring.Inverse
+import Numlib.Analysis.ODE.PicardLindelof
 import Numlib.Analysis.Sobolev.Periodic
 import Numlib.Analysis.SpecialFunctions.Chebyshev
 import Numlib.Analysis.Wavelet.Haar
@@ -90,6 +91,7 @@ import Numlib.Krylov.Singular
 import Numlib.Krylov.Subspace
 import Numlib.LinearAlgebra.Matrix.Assembly
 import Numlib.LinearAlgebra.Matrix.Complexify
+import Numlib.LinearAlgebra.Matrix.EpsilonNorm
 import Numlib.LinearAlgebra.Matrix.Hessenberg
 import Numlib.LinearAlgebra.Matrix.KroneckerSum
 import Numlib.LinearAlgebra.Matrix.MMatrix
