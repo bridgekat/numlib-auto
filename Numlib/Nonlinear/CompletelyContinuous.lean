@@ -7,12 +7,12 @@ import Mathlib.Analysis.Normed.Operator.Compact.Basic
 
 A map `T` defined on a subset `K` of a normed space is a **compact map** when it carries every
 bounded subset of `K` to a relatively compact set, and **completely continuous** when it is in
-addition continuous. For a *linear* map on the whole space compactness already forces continuity
-and the notion is Mathlib's `IsCompactOperator`; for a nonlinear map continuity is an independent
+addition continuous. For a *linear* map on the whole space compactness already forces continuity and
+the notion is Mathlib's `IsCompactOperator`; for a nonlinear map continuity is an independent
 hypothesis, which is why the two words are needed.
 
-* `IsCompactMap T K` is the predicate, and `isCompactMap_univ_iff_isCompactOperator` identifies
-  it with `IsCompactOperator` for a linear map on the whole space.
+* `IsCompactMap T K` is the predicate, and `isCompactMap_univ_iff_isCompactOperator` identifies it
+  with `IsCompactOperator` for a linear map on the whole space.
 * `IsCompactMap.isCompactOperator_hasFDerivAt`: the Fréchet derivative of a compact map at an
   interior point is a **compact linear operator**. This is what licenses the Fredholm alternative
   for `1 - T'(v₀)`, and so it is the bridge from a nonlinear fixed point problem `u = T u` to the
@@ -25,9 +25,9 @@ a totally bounded set. Continuity of `T` is not used: differentiability at the o
 together with compactness on bounded sets is enough, so the hypothesis is weaker than the
 "completely continuous" of the source.
 
-These are [Atkinson–Han][han2009theoretical] Definition 5.5.3 and Proposition 5.5.5. Brouwer's and
-Schauder's fixed point theorems, and the rotation of a completely continuous vector field, are not
-here: Mathlib has neither a Brouwer theorem nor degree theory.
+These are [han2009theoretical] Definition 5.5.3 and Proposition 5.5.5. Brouwer's and Schauder's
+fixed point theorems, and the rotation of a completely continuous vector field, are not here:
+Mathlib has neither a Brouwer theorem nor degree theory.
 -/
 
 open Metric Set Bornology
@@ -74,9 +74,9 @@ variable {𝕜 V W : Type*} [NontriviallyNormedField 𝕜]
   [NormedAddCommGroup V] [NormedSpace 𝕜 V] [NormedAddCommGroup W] [NormedSpace 𝕜 W]
   [CompleteSpace W]
 
-/-- **The Fréchet derivative of a compact map is a compact operator** (Atkinson–Han, *Theoretical
-Numerical Analysis*, Proposition 5.5.5). If `T` is a compact map on a neighbourhood `K` of `v₀` and
-is Fréchet differentiable at `v₀` with derivative `A`, then `A` is a compact operator.
+/-- **The Fréchet derivative of a compact map is a compact operator** ([han2009theoretical],
+Proposition 5.5.5). If `T` is a compact map on a neighbourhood `K` of `v₀` and is Fréchet
+differentiable at `v₀` with derivative `A`, then `A` is a compact operator.
 
 Note that `T` is not assumed continuous: differentiability at `v₀` is all the smoothness the proof
 uses, so the statement applies to a completely continuous operator in particular. -/

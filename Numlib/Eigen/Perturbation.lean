@@ -15,55 +15,53 @@ import Numlib.Eigen.Normal
 /-!
 # Eigenvalue perturbation and a posteriori bounds
 
-Residual bounds for approximate eigenpairs of symmetric operators ([Saad, *Numerical Methods for
-Large Eigenvalue Problems*][saad2011numerical], Cor 3.3, Lemma 3.2, Thm 3.8–3.9 for Kato–Temple;
-[Meurant–Strakoš][meurant2006lanczos] §2.1; [Choi][choi2006iterative] §2.4), Bauer–Fike for
-diagonalizable matrices (Saad, *Large Eigenvalue Problems*, Thm 3.6; [Kress][kress1998numerical]
-Problem 7.6), the backward error of an approximate eigenpair (Saad, *Large Eigenvalue Problems*,
-Prop 3.4), Bendixson ([Saad, *Iterative Methods for Sparse Linear Systems*][saad2003iterative], Thm
-1.35) and Rayleigh-quotient bounds.
+Residual bounds for approximate eigenpairs of symmetric operators ([saad2011numerical], Cor 3.3,
+Lemma 3.2, Thm 3.8–3.9 for Kato–Temple; [meurant2006lanczos] §2.1; [choi2006iterative] §2.4),
+Bauer–Fike for diagonalizable matrices ([saad2011numerical], Thm 3.6; [kress1998numerical] Problem
+7.6), the backward error of an approximate eigenpair ([saad2011numerical], Prop 3.4), Bendixson
+([saad2003iterative], Thm 1.35) and Rayleigh-quotient bounds.
 
-Throughout, an approximate eigenpair of `A` is a unit vector `x` together with a scalar `θ`
-(usually the Rayleigh quotient `θ = re⟪A x, x⟫`), and `r = A x - θ x` is its residual; the
-bounds below turn `‖r‖` into a distance from `θ` to the spectrum.
+Throughout, an approximate eigenpair of `A` is a unit vector `x` together with a scalar `θ` (usually
+the Rayleigh quotient `θ = re⟪A x, x⟫`), and `r = A x - θ x` is its residual; the bounds below turn
+`‖r‖` into a distance from `θ` to the spectrum.
 
 ## The eigenvector, the condition numbers and the pseudospectrum
 
 `LinearMap.IsSymmetric.sin_angle_le_norm_residual_div` is the residual bound for the eigen*vector*
-(Saad, *Large Eigenvalue Problems*, Thm 3.9): a small residual and a separated eigenvalue force a
-small angle between `x` and the eigenspace.  The subspace really has to be the eigenspace and not
-the line through a single eigenvector, which is what the printed statement uses; the two agree
-exactly when the eigenvalue is simple, and that case is
+([saad2011numerical], Thm 3.9): a small residual and a separated eigenvalue force a small angle
+between `x` and the eigenspace.  The subspace really has to be the eigenspace and not the line
+through a single eigenvector, which is what the printed statement uses; the two agree exactly when
+the eigenvalue is simple, and that case is
 `LinearMap.IsSymmetric.sin_angle_span_singleton_le_norm_residual_div`.  The theorem's doc comment
 carries the three-by-three counterexample to the line form at a multiple eigenvalue.
 
-`Module.End.eigenvalueCondNumber` is the sensitivity of a simple eigenvalue (Saad, Def 3.1), the
-reciprocal cosine of the angle between the right and the left eigenvector.  It is at least one,
-it is one for a normal operator, and it is what bounds the first-order motion of the eigenvalue
-under a perturbation: `Module.End.deriv_eigenvalue_perturbation` computes the derivative of a
-differentiable branch of eigenvalues of `A + t B` as `⟪w, B u⟫ / ⟪w, u⟫`, and
+`Module.End.eigenvalueCondNumber` is the sensitivity of a simple eigenvalue ([saad2011numerical],
+Def 3.1), the reciprocal cosine of the angle between the right and the left eigenvector.  It is at
+least one, it is one for a normal operator, and it is what bounds the first-order motion of the
+eigenvalue under a perturbation: `Module.End.deriv_eigenvalue_perturbation` computes the derivative
+of a differentiable branch of eigenvalues of `A + t B` as `⟪w, B u⟫ / ⟪w, u⟫`, and
 `Module.End.norm_deriv_eigenvalue_perturbation_le` bounds it by `‖B‖` times the condition number.
 The branch is a hypothesis, not a conclusion: producing it needs the implicit function theorem on
 `det (A + t B - μ)`, and the plan records that as still open.
 
-`ContinuousLinearMap.pseudospectrum` is the `ε`-pseudospectrum (Saad, Def 3.3).  It is defined by
-the approximate-eigenvector form `∃ w, ‖w‖ = 1 ∧ ‖A w - z w‖ < ε`, his (3.55), rather than by the
-resolvent norm, so that no convention about the resolvent on the spectrum is needed;
-`ContinuousLinearMap.mem_pseudospectrum_iff` is the backward-error characterization of his
-Prop 3.7, with the strict inequality `‖B‖ < ε` that the equivalence actually needs.
+`ContinuousLinearMap.pseudospectrum` is the `ε`-pseudospectrum ([saad2011numerical], Def 3.3).  It
+is defined by the approximate-eigenvector form `∃ w, ‖w‖ = 1 ∧ ‖A w - z w‖ < ε`, his (3.55), rather
+than by the resolvent norm, so that no convention about the resolvent on the spectrum is needed;
+`ContinuousLinearMap.mem_pseudospectrum_iff` is the backward-error characterization of his Prop 3.7,
+with the strict inequality `‖B‖ < ε` that the equivalence actually needs.
 
-Two books by Saad are cited in this file and are kept apart by their short titles:
+Two books by [saad2011numerical] are cited in this file and are kept apart by their short titles:
 *Large Eigenvalue Problems* and *Iterative Methods*.  Bauer–Fike, Gershgorin, Kato–Temple and
-Bendixson are the classical names of the results; the numbered forms used here are the ones
-proved in the cited texts.
+Bendixson are the classical names of the results; the numbered forms used here are the ones proved
+in the cited texts.
 -/
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
 /-- The sine of the angle depends only on the subspace, so two spellings of the same subspace give
 the same value even when their `HasOrthogonalProjection` instances are found by different routes.
-Rewriting a subspace under `sinAngle` directly fails, the instance argument depending on it.
-This is the twin of `Submodule.tanAngle_congr`. -/
+Rewriting a subspace under `sinAngle` directly fails, the instance argument depending on it. This is
+the twin of `Submodule.tanAngle_congr`. -/
 theorem Submodule.sinAngle_congr {K L : Submodule 𝕜 E} [K.HasOrthogonalProjection]
     [L.HasOrthogonalProjection] (h : K = L) (u : E) : K.sinAngle u = L.sinAngle u := by
   subst h
@@ -76,8 +74,8 @@ include hA
 
 /-! ### Diagonalization bookkeeping
 
-All the symmetric bounds below are inequalities between the sums
-`∑ i, f (λ i) ‖⟪v i, x⟫‖²` over an orthonormal eigenbasis `v` with eigenvalues `λ`. -/
+All the symmetric bounds below are inequalities between the sums `∑ i, f (λ i) ‖⟪v i, x⟫‖²` over an
+orthonormal eigenbasis `v` with eigenvalues `λ`. -/
 
 private theorem repr_sub_smul {n : ℕ} (hn : Module.finrank 𝕜 E = n) (θ : ℝ) (x : E) (i : Fin n) :
     (hA.eigenvectorBasis hn).repr (A x - (θ : 𝕜) • x) i =
@@ -94,9 +92,9 @@ private theorem norm_residual_sq {n : ℕ} (hn : Module.finrank 𝕜 E = n) (θ 
   refine Finset.sum_congr rfl fun i _ => ?_
   rw [hA.repr_sub_smul hn, norm_mul, mul_pow, RCLike.norm_ofReal, sq_abs]
 
-/-- The identity behind Saad, *Large Eigenvalue Problems*, Lemma 3.2 and the Kato–Temple bounds:
-for a unit vector `x` with Rayleigh quotient `θ = re⟪A x, x⟫`, residual `r = A x - θ x` and
-eigenbasis coefficients `c`, `∑ (λ - u)(λ - v) ‖c‖² = ‖r‖² + (θ - u)(θ - v)`. -/
+/-- The identity behind [saad2011numerical], Lemma 3.2 and the Kato–Temple bounds: for a unit vector
+`x` with Rayleigh quotient `θ = re⟪A x, x⟫`, residual `r = A x - θ x` and eigenbasis coefficients
+`c`, `∑ (λ - u)(λ - v) ‖c‖² = ‖r‖² + (θ - u)(θ - v)`. -/
 private theorem sum_quadratic {n : ℕ} (hn : Module.finrank 𝕜 E = n) {x : E} (hx : ‖x‖ = 1)
     (u v : ℝ) :
     ∑ i, (hA.eigenvalues hn i - u) * (hA.eigenvalues hn i - v) *
@@ -128,8 +126,8 @@ private theorem quadratic_nonneg {n : ℕ} (hn : Module.finrank 𝕜 E = n) {x :
   rw [← hA.sum_quadratic hn hx u v]
   exact Finset.sum_nonneg fun i _ => mul_nonneg (h i) (sq_nonneg _)
 
-/-- Residual bound (Saad, *Large Eigenvalue Problems*, Cor 3.3): some eigenvalue lies within
-`‖A x - θ x‖ / ‖x‖` of `θ`. -/
+/-- Residual bound ([saad2011numerical], Cor 3.3): some eigenvalue lies within `‖A x - θ x‖ / ‖x‖`
+of `θ`. -/
 theorem exists_hasEigenvalue_dist_le (θ : ℝ) {x : E} (hx : x ≠ 0) :
     ∃ μ : 𝕜, Module.End.HasEigenvalue A μ ∧ ‖μ - (θ : 𝕜)‖ ≤ ‖A x - (θ : 𝕜) • x‖ / ‖x‖ := by
   set n := Module.finrank 𝕜 E with hn'
@@ -155,9 +153,8 @@ theorem exists_hasEigenvalue_dist_le (θ : ℝ) {x : E} (hx : x ≠ 0) :
       sq_abs (hA.eigenvalues hn i₀ - θ), sq_abs (hA.eigenvalues hn i - θ)]
   exact le_of_sq_le_sq key (norm_nonneg _)
 
-/-- Saad, *Large Eigenvalue Problems*, Lemma 3.2: with `θ = re⟪A x, x⟫` (`‖x‖ = 1`) and an
-interval `(α, β) ∋ θ` free of eigenvalues, `(β - θ)(θ - α) ≤ ‖r‖²` for the residual
-`r = A x - θ x`. -/
+/-- [saad2011numerical], Lemma 3.2: with `θ = re⟪A x, x⟫` (`‖x‖ = 1`) and an interval `(α, β) ∋ θ`
+free of eigenvalues, `(β - θ)(θ - α) ≤ ‖r‖²` for the residual `r = A x - θ x`. -/
 theorem rayleigh_gap_le_norm_residual_sq {x : E} (hx : ‖x‖ = 1) {α β : ℝ}
     (hαβ : α < RCLike.re (inner 𝕜 (A x) x) ∧ RCLike.re (inner 𝕜 (A x) x) < β)
     (hfree : ∀ μ : 𝕜, Module.End.HasEigenvalue A μ → RCLike.re μ ∉ Set.Ioo α β) :
@@ -185,15 +182,15 @@ theorem rayleigh_gap_le_norm_residual_sq {x : E} (hx : ‖x‖ = 1) {α β : ℝ
 -- one. Keeping it makes the statement faithful, and it is what the caller
 -- `abs_sub_rayleigh_le_norm_residual_sq_div` has to hand anyway.
 set_option linter.unusedVariables false in
-/-- Kato–Temple (Saad, *Large Eigenvalue Problems*, Thm 3.8): if `(a, b)` contains the Rayleigh
-quotient `θ = re⟪A x, x⟫` of a unit vector `x` and exactly one eigenvalue `λ`, then
-`-‖r‖²/(b - θ) ≤ λ - θ ≤ ‖r‖²/(θ - a)` for the residual `r = A x - θ x`.
+/-- Kato–Temple ([saad2011numerical], Thm 3.8): if `(a, b)` contains the Rayleigh quotient `θ = re⟪A
+x, x⟫` of a unit vector `x` and exactly one eigenvalue `λ`, then `-‖r‖²/(b - θ) ≤ λ - θ ≤ ‖r‖²/(θ -
+a)` for the residual `r = A x - θ x`.
 
 The denominators here are the ones the proof produces: the *lower* bound is controlled by the
 distance from `θ` to the right end `b`, and the *upper* bound by the distance to the left end `a`.
-Exchanging the two denominators gives a false statement: for `A = diag(0, 10)` and `x` with
-`‖x‖ = 1`, `x₂² = 3/5`, one gets `θ = 6`, `‖r‖² = 24`,
-and `(a, b) = (5, 20)` contains only the eigenvalue `10`, yet `10 - 6 = 4 > 24/(20 - 6)`. -/
+Exchanging the two denominators gives a false statement: for `A = diag(0, 10)` and `x` with `‖x‖ =
+1`, `x₂² = 3/5`, one gets `θ = 6`, `‖r‖² = 24`, and `(a, b) = (5, 20)` contains only the eigenvalue
+`10`, yet `10 - 6 = 4 > 24/(20 - 6)`. -/
 theorem kato_temple {x : E} (hx : ‖x‖ = 1) {a b : ℝ} {μ : 𝕜} (hμ : Module.End.HasEigenvalue A μ)
     (hab : a < RCLike.re (inner 𝕜 (A x) x) ∧ RCLike.re (inner 𝕜 (A x) x) < b)
     (hμab : RCLike.re μ ∈ Set.Ioo a b)
@@ -241,9 +238,9 @@ theorem kato_temple {x : E} (hx : ‖x‖ = 1) {a b : ℝ} {μ : 𝕜} (hμ : Mo
     rw [le_div_iff₀ (by linarith : (0 : ℝ) < θ - a)]
     nlinarith [h]
 
-/-- Saad, *Large Eigenvalue Problems*, Cor 3.4: `|λ - θ| ≤ ‖r‖² / δ`, where `θ = re⟪A x, x⟫` is
-the Rayleigh quotient of a unit vector `x`, `r = A x - θ x` its residual, and `δ` the gap from
-`θ` to the eigenvalues other than `λ`. -/
+/-- [saad2011numerical], Cor 3.4: `|λ - θ| ≤ ‖r‖² / δ`, where `θ = re⟪A x, x⟫` is the Rayleigh
+quotient of a unit vector `x`, `r = A x - θ x` its residual, and `δ` the gap from `θ` to the
+eigenvalues other than `λ`. -/
 theorem abs_sub_rayleigh_le_norm_residual_sq_div {x : E} (hx : ‖x‖ = 1) {μ : 𝕜}
     (hμ : Module.End.HasEigenvalue A μ) {δ : ℝ} (hδ : 0 < δ)
     (hgap : ∀ μ' : 𝕜, Module.End.HasEigenvalue A μ' → μ' ≠ μ →
@@ -305,8 +302,8 @@ corresponding eigenvalue is separated from the rest of the spectrum. -/
 /-- On the orthogonal complement of the `lam`-eigenspace the shifted operator `A - θ` is bounded
 below by the separation `δ` of `lam` from the other eigenvalues: `δ ‖q‖ ≤ ‖(A - θ) q‖`.
 
-In the eigenvector basis the coordinates of `q` vanish at every index whose eigenvalue is `lam`,
-so the sum defining `‖(A - θ) q‖²` runs only over the indices where the separation applies. -/
+In the eigenvector basis the coordinates of `q` vanish at every index whose eigenvalue is `lam`, so
+the sum defining `‖(A - θ) q‖²` runs only over the indices where the separation applies. -/
 private theorem mul_norm_le_norm_sub_smul_of_mem_orthogonal {n : ℕ}
     (hn : Module.finrank 𝕜 E = n) {lam θ δ : ℝ} (hδ : 0 ≤ δ)
     (hsep : ∀ i, hA.eigenvalues hn i ≠ lam → δ ≤ |hA.eigenvalues hn i - θ|)
@@ -329,25 +326,24 @@ private theorem mul_norm_le_norm_sub_smul_of_mem_orthogonal {n : ℕ}
       nlinarith [sq_abs (hA.eigenvalues hn i - θ), abs_nonneg (hA.eigenvalues hn i - θ)]
   exact le_of_sq_le_sq hsq (norm_nonneg _)
 
-/-- **The eigenvector residual bound** (Saad, *Large Eigenvalue Problems*, Thm 3.9): for a unit
-vector `x` with Rayleigh quotient `θ = re⟪A x, x⟫` and residual `r = A x - θ x`, and a real
-number `lam` separated by `δ > 0` from every eigenvalue of `A` other than `lam` itself,
-`sin ∠(x, ker (A - lam)) ≤ ‖r‖/δ`.
+/-- **The eigenvector residual bound** ([saad2011numerical], Thm 3.9): for a unit vector `x` with
+Rayleigh quotient `θ = re⟪A x, x⟫` and residual `r = A x - θ x`, and a real number `lam` separated
+by `δ > 0` from every eigenvalue of `A` other than `lam` itself, `sin ∠(x, ker (A - lam)) ≤ ‖r‖/δ`.
 
 The subspace is the **eigenspace** of `lam`, not the line through one eigenvector for it: with a
-multiple eigenvalue the statement about a line is false, as `A = diag(1, 1, 5)` with `x` the
-second basis vector shows -- there `r = 0` and `δ = 4`, yet the angle to the line through the
-first basis vector is a right angle.  Saad takes `δ` to bound `A - θ` from below on the orthogonal
+multiple eigenvalue the statement about a line is false, as `A = diag(1, 1, 5)` with `x` the second
+basis vector shows -- there `r = 0` and `δ = 4`, yet the angle to the line through the first basis
+vector is a right angle. [saad2011numerical] takes `δ` to bound `A - θ` from below on the orthogonal
 complement of that line, which it does only when `lam` is a simple eigenvalue; the simple case is
 `sin_angle_span_singleton_le_norm_residual_div` below.
 
-No hypothesis says that `lam` is an eigenvalue at all.  When it is not, the eigenspace is `⊥`,
-the left-hand side is `1`, and the separation applies at every index, so the bound still holds.
+No hypothesis says that `lam` is an eigenvalue at all.  When it is not, the eigenspace is `⊥`, the
+left-hand side is `1`, and the separation applies at every index, so the bound still holds.
 
 The proof splits `x` into `p + q` along the eigenspace and its complement.  The residual splits
-accordingly as `(lam - θ) p + (A - θ) q`, whose two terms are orthogonal because the eigenspace of
-a symmetric operator is invariant and so is its complement, and Pythagoras then discards the `p`
-term. -/
+accordingly as `(lam - θ) p + (A - θ) q`, whose two terms are orthogonal because the eigenspace of a
+symmetric operator is invariant and so is its complement, and Pythagoras then discards the `p` term.
+-/
 theorem sin_angle_le_norm_residual_div {n : ℕ} (hn : Module.finrank 𝕜 E = n) {x : E}
     (hx : ‖x‖ = 1) {lam δ : ℝ} (hδ : 0 < δ)
     (hsep : ∀ i, hA.eigenvalues hn i ≠ lam →
@@ -391,9 +387,9 @@ theorem sin_angle_le_norm_residual_div {n : ℕ} (hn : Module.finrank 𝕜 E = n
     _ = δ * ‖x - W.starProjection x‖ := by rw [Submodule.sinAngle_mul_norm]
     _ ≤ _ := hle
 
-/-- **The eigenvector residual bound at a simple eigenvalue**, which is Saad, *Large Eigenvalue
-Problems*, Thm 3.9 as printed: when the `lam`-eigenspace is a line, the angle it bounds is the
-angle to any eigenvector `u` for `lam`.
+/-- **The eigenvector residual bound at a simple eigenvalue**, which is [saad2011numerical], Thm 3.9
+as printed: when the `lam`-eigenspace is a line, the angle it bounds is the angle to any eigenvector
+`u` for `lam`.
 
 Simplicity is what the printed proof needs and does not state: it takes `δ` to bound `A - θ` from
 below on `u`'s orthogonal complement, and at a multiple eigenvalue that complement still meets the
@@ -414,9 +410,9 @@ theorem sin_angle_span_singleton_le_norm_residual_div {n : ℕ} (hn : Module.fin
 
 end LinearMap.IsSymmetric
 
-/-- Backward error of an approximate eigenpair (Saad, *Large Eigenvalue Problems*, Prop 3.4):
-the least `‖ΔA‖` with `(A - ΔA) u = θ u` (`‖u‖ = 1`) is `‖A u - θ u‖`, attained by the rank-one
-perturbation `r uᴴ` built from the residual `r = A u - θ u`. -/
+/-- Backward error of an approximate eigenpair ([saad2011numerical], Prop 3.4): the least `‖ΔA‖`
+with `(A - ΔA) u = θ u` (`‖u‖ = 1`) is `‖A u - θ u‖`, attained by the rank-one perturbation `r uᴴ`
+built from the residual `r = A u - θ u`. -/
 theorem isLeast_eigen_backwardError (A : E →L[𝕜] E) {u : E} (hu : ‖u‖ = 1) (θ : 𝕜) :
     IsLeast {ε : ℝ | ∃ ΔA : E →L[𝕜] E, (A - ΔA) u = θ • u ∧ ‖ΔA‖ = ε} ‖A u - θ • u‖ := by
   have huu : inner 𝕜 u u = (1 : 𝕜) := by
@@ -435,9 +431,8 @@ theorem isLeast_eigen_backwardError (A : E →L[𝕜] E) {u : E} (hu : ‖u‖ =
       _ ≤ ‖ΔA‖ * ‖u‖ := ΔA.le_opNorm u
       _ = ‖ΔA‖ := by rw [hu, mul_one]
 
-/-- Bendixson's theorem (Saad, *Iterative Methods*, Thm 1.35): the real part of every eigenvalue
-of a bounded operator lies between the extreme eigenvalues of its symmetric part
-`H = (A + A†)/2`. -/
+/-- Bendixson's theorem ([saad2003iterative], Thm 1.35): the real part of every eigenvalue of a
+bounded operator lies between the extreme eigenvalues of its symmetric part `H = (A + A†)/2`. -/
 theorem re_hasEigenvalue_mem_Icc_of_symmetricPart {A H : E →ₗ[𝕜] E} {lmin lmax : ℝ}
     (hH : H.IsSymmetricBoundedBy lmin lmax)
     (hHA : ∀ x, RCLike.re (inner 𝕜 (H x) x) = RCLike.re (inner 𝕜 (A x) x)) {μ : 𝕜}
@@ -456,20 +451,18 @@ theorem re_hasEigenvalue_mem_Icc_of_symmetricPart {A H : E →ₗ[𝕜] E} {lmin
 
 /-! ### The condition number of a simple eigenvalue
 
-Saad, *Large Eigenvalue Problems*, Def 3.1 measures the sensitivity of a simple eigenvalue by
-`‖u‖ ‖w‖ / |⟪w, u⟫|` for a right eigenvector `u` and a left eigenvector `w`, that is, by the
-reciprocal cosine of the angle between them.  The quantity is scale invariant, so it depends on
-the eigenvalue alone whenever the eigenvalue is simple, its two eigenvectors being determined up
-to scale. -/
+[saad2011numerical], Def 3.1 measures the sensitivity of a simple eigenvalue by `‖u‖ ‖w‖ / |⟪w, u⟫|`
+for a right eigenvector `u` and a left eigenvector `w`, that is, by the reciprocal cosine of the
+angle between them.  The quantity is scale invariant, so it depends on the eigenvalue alone whenever
+the eigenvalue is simple, its two eigenvectors being determined up to scale. -/
 
-/-- **The condition number of a simple eigenvalue** (Saad, *Large Eigenvalue Problems*, Def 3.1):
-`‖u‖ ‖w‖ / ‖⟪w, u⟫‖` for a right eigenvector `u` (`A u = μ u`) and a left eigenvector `w`
-(`A† w = conj μ • w`).
+/-- **The condition number of a simple eigenvalue** ([saad2011numerical], Def 3.1): `‖u‖ ‖w‖ / ‖⟪w,
+u⟫‖` for a right eigenvector `u` (`A u = μ u`) and a left eigenvector `w` (`A† w = conj μ • w`).
 
-The definition mentions neither the operator nor the eigenvalue, because it does not depend on
-them: it is `1 / cos ∠(u, w)`, and by `Module.End.eigenvalueCondNumber_smul` it is unchanged when
-either eigenvector is rescaled, so at a *simple* eigenvalue — where each of the two eigenvectors
-spans a line — it is a function of the eigenvalue.  The junk value at `⟪w, u⟫ = 0` is `0`;
+The definition mentions neither the operator nor the eigenvalue, because it does not depend on them:
+it is `1 / cos ∠(u, w)`, and by `Module.End.eigenvalueCondNumber_smul` it is unchanged when either
+eigenvector is rescaled, so at a *simple* eigenvalue — where each of the two eigenvectors spans a
+line — it is a function of the eigenvalue.  The junk value at `⟪w, u⟫ = 0` is `0`;
 `Module.End.one_le_eigenvalueCondNumber` therefore assumes the inner product nonzero, which for a
 simple eigenvalue is a theorem rather than a hypothesis. -/
 noncomputable def Module.End.eigenvalueCondNumber (𝕜 : Type*) {E : Type*} [RCLike 𝕜]
@@ -500,8 +493,8 @@ theorem one_le_eigenvalueCondNumber {u w : E} (h : (inner 𝕜 w u : 𝕜) ≠ 0
   exact norm_inner_le_norm w u
 
 /-- A **normal** operator is perfectly conditioned at every simple eigenvalue: its left and right
-eigenvectors span the same line (`LinearMap.IsStarNormal.eigenspace_adjoint`), so the angle
-between them is zero and the condition number is `1`. -/
+eigenvectors span the same line (`LinearMap.IsStarNormal.eigenspace_adjoint`), so the angle between
+them is zero and the condition number is `1`. -/
 theorem eigenvalueCondNumber_eq_one_of_isStarNormal [FiniteDimensional 𝕜 E]
     {A : E →ₗ[𝕜] E} (hA : IsStarNormal A) {μ : 𝕜} {u w : E} (hu : A u = μ • u) (hu0 : u ≠ 0)
     (hw : A.adjoint w = (starRingEnd 𝕜) μ • w) (hw0 : w ≠ 0)
@@ -526,26 +519,24 @@ theorem eigenvalueCondNumber_eq_one_of_isStarNormal [FiniteDimensional 𝕜 E]
 
 /-! ### First-order perturbation of a simple eigenvalue
 
-Along a differentiable branch of eigenpairs of `A + t B` the eigenvalue moves at the rate
-`⟪w, B u⟫ / ⟪w, u⟫`, whose modulus is at most `‖B‖` times the condition number of the eigenvalue.
-Saad, *Large Eigenvalue Problems*, §3.2.1 displays exactly this computation.
+Along a differentiable branch of eigenpairs of `A + t B` the eigenvalue moves at the rate `⟪w, B u⟫
+/ ⟪w, u⟫`, whose modulus is at most `‖B‖` times the condition number of the eigenvalue.
+[saad2011numerical], §3.2.1 displays exactly this computation.
 
 The branch is assumed here, not constructed: producing it from the simplicity of the eigenvalue is
-the implicit function theorem applied to `(t, μ) ↦ det (A + t B - μ)`, whose `μ`-derivative at
-`(0, λ)` is nonzero precisely because the root is simple. -/
+the implicit function theorem applied to `(t, μ) ↦ det (A + t B - μ)`, whose `μ`-derivative at `(0,
+λ)` is nonzero precisely because the root is simple. -/
 
-/-- **The derivative of a simple eigenvalue** (Saad, *Large Eigenvalue Problems*, §3.2.1): along a
-differentiable branch `t ↦ (μ t, u t)` of eigenpairs of `A + t B`, with `w` a left eigenvector of
-`A` for `λ = μ 0` not orthogonal to `u 0`, the eigenvalue's derivative at `0` is
-`⟪w, B (u 0)⟫ / ⟪w, u 0⟫`.
+/-- **The derivative of a simple eigenvalue** ([saad2011numerical], §3.2.1): along a differentiable
+branch `t ↦ (μ t, u t)` of eigenpairs of `A + t B`, with `w` a left eigenvector of `A` for `λ = μ 0`
+not orthogonal to `u 0`, the eigenvalue's derivative at `0` is `⟪w, B (u 0)⟫ / ⟪w, u 0⟫`.
 
-The left-eigenvector hypothesis is stated as `⟪w, A y⟫ = λ ⟪w, y⟫` for every `y`, which is what
-the proof tests the differentiated eigenvalue equation against; it is equivalent to
-`A† w = conj λ • w` in finite dimension, and needs no adjoint to state.
+The left-eigenvector hypothesis is stated as `⟪w, A y⟫ = λ ⟪w, y⟫` for every `y`, which is what the
+proof tests the differentiated eigenvalue equation against; it is equivalent to `A† w = conj λ • w`
+in finite dimension, and needs no adjoint to state.
 
-Differentiating `A (u t) + t B (u t) = μ t • u t` at `t = 0` gives
-`A u' + B (u 0) = μ 0 • u' + μ' • u 0`, and testing against `w` cancels the two terms carrying
-the unknown `u'`. -/
+Differentiating `A (u t) + t B (u t) = μ t • u t` at `t = 0` gives `A u' + B (u 0) = μ 0 • u' + μ' •
+u 0`, and testing against `w` cancels the two terms carrying the unknown `u'`. -/
 theorem deriv_eigenvalue_perturbation {A B : E →L[𝕜] E} {u : 𝕜 → E}
     {mu : 𝕜 → 𝕜} {u' : E} {mu' lam : 𝕜} {w : E}
     (hu : HasDerivAt u u' 0) (hmu : HasDerivAt mu mu' 0)
@@ -573,9 +564,9 @@ theorem deriv_eigenvalue_perturbation {A B : E →L[𝕜] E} {u : 𝕜 → E}
     linear_combination htest
   rw [hmul, mul_div_assoc, div_self hne, mul_one]
 
-/-- **The condition number bounds the first-order sensitivity** (Saad, *Large Eigenvalue
-Problems*, §3.2.1): the rate at which a simple eigenvalue moves under the perturbation `t B` is at
-most `‖B‖` times its condition number.
+/-- **The condition number bounds the first-order sensitivity** ([saad2011numerical], §3.2.1): the
+rate at which a simple eigenvalue moves under the perturbation `t B` is at most `‖B‖` times its
+condition number.
 
 No normalization of `u 0` or of `w` is needed: both sides are scale invariant. -/
 theorem norm_deriv_eigenvalue_perturbation_le {A B : E →L[𝕜] E} {u : 𝕜 → E}
@@ -601,22 +592,22 @@ end Module.End
 
 /-! ### Pseudospectra
 
-The `ε`-pseudospectrum of `A` (Saad, *Large Eigenvalue Problems*, Def 3.3) is the set of scalars
-that are eigenvalues of some perturbation of `A` of norm below `ε`.  Saad defines it by the
+The `ε`-pseudospectrum of `A` ([saad2011numerical], Def 3.3) is the set of scalars that are
+eigenvalues of some perturbation of `A` of norm below `ε`. [saad2011numerical] defines it by the
 resolvent, `‖(A - z)⁻¹‖ > ε⁻¹`, with the convention that the resolvent norm is infinite on the
 spectrum; the equivalent form taken here as the definition,
 
 `z ∈ pseudospectrum ε A ↔ ∃ w, ‖w‖ = 1 ∧ ‖A w - z w‖ < ε`,
 
-is his (3.55), needs no convention at the spectrum — an exact eigenvector has residual `0` — and
-is what the perturbation statements consume. -/
+is his (3.55), needs no convention at the spectrum — an exact eigenvector has residual `0` — and is
+what the perturbation statements consume. -/
 
-/-- The **`ε`-pseudospectrum** of `A` (Saad, *Large Eigenvalue Problems*, Def 3.3, in the form of
-his (3.55)): the scalars `z` for which some unit vector is an eigenvector to within `ε`.
+/-- The **`ε`-pseudospectrum** of `A` ([saad2011numerical], Def 3.3, in the form of his (3.55)): the
+scalars `z` for which some unit vector is an eigenvector to within `ε`.
 
 `ContinuousLinearMap.mem_pseudospectrum_iff` identifies this with the backward-error form, and
-`ContinuousLinearMap.spectrum_subset_pseudospectrum` records that it contains the spectrum,
-which is why no convention about the resolvent at the spectrum is needed. -/
+`ContinuousLinearMap.spectrum_subset_pseudospectrum` records that it contains the spectrum, which is
+why no convention about the resolvent at the spectrum is needed. -/
 def ContinuousLinearMap.pseudospectrum (ε : ℝ) (A : E →L[𝕜] E) : Set 𝕜 :=
   {z | ∃ w : E, ‖w‖ = 1 ∧ ‖A w - z • w‖ < ε}
 
@@ -626,16 +617,16 @@ namespace ContinuousLinearMap
 theorem mem_pseudospectrum {ε : ℝ} {A : E →L[𝕜] E} {z : 𝕜} :
     z ∈ pseudospectrum ε A ↔ ∃ w : E, ‖w‖ = 1 ∧ ‖A w - z • w‖ < ε := Iff.rfl
 
-/-- **The backward-error characterization of the pseudospectrum** (Saad, *Large Eigenvalue
-Problems*, Prop 3.7, (iv) ↔ (v)): `z` is in the `ε`-pseudospectrum exactly when it is an
-eigenvalue of some `A - B` with `‖B‖ < ε`.
+/-- **The backward-error characterization of the pseudospectrum** ([saad2011numerical], Prop 3.7,
+(iv) ↔ (v)): `z` is in the `ε`-pseudospectrum exactly when it is an eigenvalue of some `A - B` with
+`‖B‖ < ε`.
 
 Forwards, the perturbation is the rank-one one of `isLeast_eigen_backwardError`, built from the
-residual of the approximate eigenvector; backwards, an eigenvector of `A - B` has residual `B w`
-for `A`.  The book states (v) with `‖B‖ ≤ ε`, but its own proof of (v) ⇒ (iv) needs the strict
+residual of the approximate eigenvector; backwards, an eigenvector of `A - B` has residual `B w` for
+`A`.  The book states (v) with `‖B‖ ≤ ε`, but its own proof of (v) ⇒ (iv) needs the strict
 inequality, and with `≤` the equivalence is false: for `A = 0` every `z` of modulus `ε` satisfies
-the right-hand side, with the perturbation `B = -z • 1` of norm exactly `ε`, and none satisfies
-the left, `‖0 - z • w‖` being `ε` at every unit `w`. -/
+the right-hand side, with the perturbation `B = -z • 1` of norm exactly `ε`, and none satisfies the
+left, `‖0 - z • w‖` being `ε` at every unit `w`. -/
 theorem mem_pseudospectrum_iff {ε : ℝ} (A : E →L[𝕜] E) (z : 𝕜) :
     z ∈ pseudospectrum ε A ↔
       ∃ B : E →L[𝕜] E, ‖B‖ < ε ∧ Module.End.HasEigenvalue ((A - B : E →L[𝕜] E) :
@@ -676,9 +667,9 @@ theorem mem_pseudospectrum_iff {ε : ℝ} (A : E →L[𝕜] E) (z : 𝕜) :
         _ < ε := hB
 
 /-- Every eigenvalue lies in every pseudospectrum of positive radius: an exact eigenvector has
-residual `0`.  With `Module.End.hasEigenvalue_iff_mem_spectrum` this is the inclusion
-`σ(A) ⊆ Λ_ε(A)`, and it is the reason the residual form of the definition needs no convention
-about the resolvent norm on the spectrum. -/
+residual `0`.  With `Module.End.hasEigenvalue_iff_mem_spectrum` this is the inclusion `σ(A) ⊆
+Λ_ε(A)`, and it is the reason the residual form of the definition needs no convention about the
+resolvent norm on the spectrum. -/
 theorem mem_pseudospectrum_of_hasEigenvalue {ε : ℝ} (hε : 0 < ε) {A : E →L[𝕜] E} {z : 𝕜}
     (hz : Module.End.HasEigenvalue (A : E →ₗ[𝕜] E) z) : z ∈ pseudospectrum ε A := by
   obtain ⟨w, hw, hw0⟩ := hz.exists_hasEigenvector
@@ -698,9 +689,9 @@ open scoped Matrix.Norms.L2Operator
 
 variable {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- Bauer–Fike (Saad, *Large Eigenvalue Problems*, Thm 3.6; Kress, *Numerical Analysis*,
-Problem 7.6): for a diagonalizable `A = X D X⁻¹` and `μ ∈ σ(A + ΔA)`,
-`dist(μ, σ(A)) ≤ κ₂(X) ‖ΔA‖₂`, where `κ₂(X) = ‖X‖₂ ‖X⁻¹‖₂`. -/
+/-- Bauer–Fike ([saad2011numerical], Thm 3.6; [kress1998numerical], Problem 7.6): for a
+diagonalizable `A = X D X⁻¹` and `μ ∈ σ(A + ΔA)`, `dist(μ, σ(A)) ≤ κ₂(X) ‖ΔA‖₂`, where `κ₂(X) = ‖X‖₂
+‖X⁻¹‖₂`. -/
 theorem bauer_fike (X : Matrix n n ℂ) (d : n → ℂ) (hX : IsUnit X) (ΔA : Matrix n n ℂ) {μ : ℂ}
     (hμ : μ ∈ spectrum ℂ (X * Matrix.diagonal d * X⁻¹ + ΔA)) :
     ∃ i, ‖μ - d i‖ ≤ NormedRing.condNumber X * ‖ΔA‖ := by
@@ -791,8 +782,8 @@ theorem bauer_fike (X : Matrix n n ℂ) (d : n → ℂ) (hX : IsUnit X) (ΔA : M
   calc ‖μ - d i₀‖ ≤ ‖X⁻¹‖ * ‖ΔA‖ * ‖X‖ := h3
     _ = ‖X‖ * ‖X⁻¹‖ * ‖ΔA‖ := by ring
 
-/-- Residual form of Bauer–Fike: for a unit approximate eigenpair `(θ, u)` of a diagonalizable
-`A = X D X⁻¹`, `dist(θ, σ(A)) ≤ κ₂(X) ‖A u - θ u‖`, where `κ₂(X) = ‖X‖₂ ‖X⁻¹‖₂`. -/
+/-- Residual form of Bauer–Fike: for a unit approximate eigenpair `(θ, u)` of a diagonalizable `A =
+X D X⁻¹`, `dist(θ, σ(A)) ≤ κ₂(X) ‖A u - θ u‖`, where `κ₂(X) = ‖X‖₂ ‖X⁻¹‖₂`. -/
 theorem bauer_fike_residual (X : Matrix n n ℂ) (d : n → ℂ) (hX : IsUnit X)
     {u : EuclideanSpace ℂ n} (hu : ‖u‖ = 1) (θ : ℂ) :
     ∃ i, ‖θ - d i‖ ≤ NormedRing.condNumber X *
@@ -834,10 +825,9 @@ theorem bauer_fike_residual (X : Matrix n n ℂ) (d : n → ℂ) (hX : IsUnit X)
   obtain ⟨i, hi⟩ := bauer_fike X d hX (-M) hspec
   exact ⟨i, by rwa [norm_neg, hMnorm] at hi⟩
 
-/-- Gershgorin discs, union form (Saad, *Large Eigenvalue Problems*, Thm 3.11; Kress,
-*Numerical Analysis*, Thm 7.7): the spectrum is contained in the union over `i` of the discs
-centred at `a_ii` with radius `∑_{j ≠ i} |a_ij|`.  Mathlib's `eigenvalue_mem_ball` is the
-pointwise version. -/
+/-- Gershgorin discs, union form ([saad2011numerical], Thm 3.11; [kress1998numerical], Thm 7.7): the
+spectrum is contained in the union over `i` of the discs centred at `a_ii` with radius `∑_{j ≠ i}
+|a_ij|`.  Mathlib's `eigenvalue_mem_ball` is the pointwise version. -/
 theorem spectrum_subset_iUnion_closedBall (A : Matrix n n ℂ) :
     spectrum ℂ A ⊆ ⋃ i, Metric.closedBall (A i i) (∑ j ∈ Finset.univ.erase i, ‖A i j‖) := by
   intro μ hμ
@@ -845,12 +835,12 @@ theorem spectrum_subset_iUnion_closedBall (A : Matrix n n ℂ) :
   obtain ⟨i, hi⟩ := _root_.eigenvalue_mem_ball (Module.End.hasEigenvalue_iff_mem_spectrum.mpr hμ)
   exact Set.mem_iUnion.mpr ⟨i, hi⟩
 
-/-- The column-sum Gershgorin theorem (Saad, *Large Eigenvalue Problems*, Thm 3.11; Saad,
-*Iterative Methods*, Thm 4.6, column form): the spectrum is contained in the union over `j` of the
-discs centred at `a_jj` with radius `∑_{i ≠ j} |a_ij|`.
+/-- The column-sum Gershgorin theorem ([saad2011numerical], Thm 3.11; [saad2003iterative], Thm 4.6,
+column form): the spectrum is contained in the union over `j` of the discs centred at `a_jj` with
+radius `∑_{i ≠ j} |a_ij|`.
 
-A matrix and its transpose have the same spectrum, so this is the row form applied to the
-transpose. -/
+A matrix and its transpose have the same spectrum, so this is the row form applied to the transpose.
+-/
 theorem spectrum_subset_iUnion_closedBall_col (A : Matrix n n ℂ) :
     spectrum ℂ A ⊆ ⋃ j, Metric.closedBall (A j j) (∑ i ∈ Finset.univ.erase j, ‖A i j‖) := by
   intro μ hμ

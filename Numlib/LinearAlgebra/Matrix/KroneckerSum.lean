@@ -10,32 +10,32 @@ import Numlib.Analysis.Matrix.ToEuclideanLin
 /-!
 # The Kronecker sum and separation of variables
 
-The **Kronecker sum** of `A : Matrix m m R` and `B : Matrix n n R` is
-`A ⊕ₖ B = A ⊗ₖ 1 + 1 ⊗ₖ B : Matrix (m × n) (m × n) R`, the matrix of the operator
-`x ⊗ y ↦ A x ⊗ y + x ⊗ B y`.  Mathlib has the Kronecker *product* `A ⊗ₖ B` and its algebra but
-neither this construction nor any spectral statement about it, and this file supplies both.
+The **Kronecker sum** of `A : Matrix m m R` and `B : Matrix n n R` is `A ⊕ₖ B = A ⊗ₖ 1 + 1 ⊗ₖ B :
+Matrix (m × n) (m × n) R`, the matrix of the operator `x ⊗ y ↦ A x ⊗ y + x ⊗ B y`.  Mathlib has the
+Kronecker *product* `A ⊗ₖ B` and its algebra but neither this construction nor any spectral
+statement about it, and this file supplies both.
 
-The point is separation of variables.  On the elementary tensor `kroneckerVec v w`, whose
-`(i, j)` entry is `v i * w j`, one has
+The point is separation of variables.  On the elementary tensor `kroneckerVec v w`, whose `(i, j)`
+entry is `v i * w j`, one has
 
 `(A ⊕ₖ B) *ᵥ (v ⊗ w) = (A *ᵥ v) ⊗ w + v ⊗ (B *ᵥ w)`,
 
-so an eigenvector `v` of `A` for `σ` and an eigenvector `w` of `B` for `μ` produce an
-eigenvector `v ⊗ w` of `A ⊕ₖ B` for `σ + μ`.  Because the elementary tensors of two orthonormal
-bases are again an orthonormal basis (`Matrix.kroneckerOrthonormalBasis`, whose whole proof is
-`⟪v ⊗ w, v' ⊗ w'⟫ = ⟪v, v'⟫ ⟪w, w'⟫`), those eigenvectors exhaust the space: the spectrum of a
-Kronecker sum of two diagonalizable matrices is the sum set of the two spectra, and a repeated
-value `σ_k + μ_l` still corresponds to independent eigenvectors.
+so an eigenvector `v` of `A` for `σ` and an eigenvector `w` of `B` for `μ` produce an eigenvector `v
+⊗ w` of `A ⊕ₖ B` for `σ + μ`.  Because the elementary tensors of two orthonormal bases are again an
+orthonormal basis (`Matrix.kroneckerOrthonormalBasis`, whose whole proof is `⟪v ⊗ w, v' ⊗ w'⟫ = ⟪v,
+v'⟫ ⟪w, w'⟫`), those eigenvectors exhaust the space: the spectrum of a Kronecker sum of two
+diagonalizable matrices is the sum set of the two spectra, and a repeated value `σ_k + μ_l` still
+corresponds to independent eigenvectors.
 
 The spectral consequence is stated without naming an eigenvalue: quadratic-form bounds and
 coercivity constants simply **add** under a Kronecker sum
 (`Matrix.isSymmetricBoundedBy_kroneckerSum`, `Matrix.isCoerciveWith_kroneckerSum`,
 `Matrix.posDef_kroneckerSum`).  That is proved by fibring `m × n` in both directions, with no
-eigenvector in sight, and it is how a two-dimensional model problem enters a convergence
-estimate: the five-point Laplacean is the Kronecker sum of two copies of the tridiagonal
-Toeplitz matrix of `Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz`, and the bounds of that
-module add.  [Saad, *Iterative Methods for Sparse Linear Systems*][saad2003iterative], §13.2 writes
-the tensor sum as `T_x ⊕ T_y` and states its eigenvalues without proof.
+eigenvector in sight, and it is how a two-dimensional model problem enters a convergence estimate:
+the five-point Laplacean is the Kronecker sum of two copies of the tridiagonal Toeplitz matrix of
+`Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz`, and the bounds of that module add.
+[saad2003iterative], §13.2 writes the tensor sum as `T_x ⊕ T_y` and states its eigenvalues without
+proof.
 
 ## Main definitions
 
@@ -47,8 +47,8 @@ the tensor sum as `T_x ⊕ T_y` and states its eigenvalues without proof.
 ## Main statements
 
 * `Matrix.kroneckerSum_mulVec_kroneckerVec`, the Leibniz rule on an elementary tensor, and
-  `Matrix.kroneckerSum_mulVec_kroneckerVec_of_mulVec_eq_smul`, the separation of variables it
-  gives: eigenvalues add.
+  `Matrix.kroneckerSum_mulVec_kroneckerVec_of_mulVec_eq_smul`, the separation of variables it gives:
+  eigenvalues add.
 * `Matrix.isCoerciveWith_kroneckerSum`, `Matrix.isSymmetricBoundedBy_kroneckerSum` and
   `Matrix.posDef_kroneckerSum`: quadratic-form bounds add, with no eigenvalue named.
 
@@ -59,8 +59,7 @@ the tensor sum as `T_x ⊕ T_y` and states its eigenvalues without proof.
 ## Implementation notes
 
 Everything here is indexed by the product type `m × n`, matching Mathlib's `kroneckerMap`; a
-consumer that wants `Fin (n₁ * n₂)` reindexes with `Matrix.reindex` and a `Fin`-product
-equivalence.
+consumer that wants `Fin (n₁ * n₂)` reindexes with `Matrix.reindex` and a `Fin`-product equivalence.
 -/
 
 open scoped Matrix Kronecker
@@ -160,15 +159,14 @@ theorem kronecker_mulVec [Fintype m] [Fintype n] (A : Matrix l m R) (B : Matrix 
 
 variable [DecidableEq m] [DecidableEq n]
 
-/-- The Leibniz rule for a Kronecker sum on an elementary tensor (Saad, *Iterative Methods for
-Sparse Linear Systems*, (13.13)). -/
+/-- The Leibniz rule for a Kronecker sum on an elementary tensor ([saad2003iterative], (13.13)). -/
 theorem kroneckerSum_mulVec_kroneckerVec [Fintype m] [Fintype n] (A : Matrix m m R)
     (B : Matrix n n R) (v : m → R) (w : n → R) :
     (A ⊕ₖ B) *ᵥ kroneckerVec v w = kroneckerVec (A *ᵥ v) w + kroneckerVec v (B *ᵥ w) := by
   rw [kroneckerSum, add_mulVec, kronecker_mulVec, kronecker_mulVec, one_mulVec, one_mulVec]
 
-/-- Separation of variables: an eigenvector `v` of `A` for `σ` and an eigenvector `w` of `B` for
-`μ` give an eigenvector `v ⊗ w` of `A ⊕ₖ B` for `σ + μ`. -/
+/-- Separation of variables: an eigenvector `v` of `A` for `σ` and an eigenvector `w` of `B` for `μ`
+give an eigenvector `v ⊗ w` of `A ⊕ₖ B` for `σ + μ`. -/
 theorem kroneckerSum_mulVec_kroneckerVec_of_mulVec_eq_smul [Fintype m] [Fintype n]
     {A : Matrix m m R} {B : Matrix n n R} {v : m → R} {w : n → R} {σ μ : R}
     (hv : A *ᵥ v = σ • v) (hw : B *ᵥ w = μ • w) :
@@ -186,8 +184,8 @@ open scoped ComplexOrder
 
 variable {𝕜 : Type*} [RCLike 𝕜] {m n : Type*} [Fintype m] [Fintype n]
 
-/-- The inner product of two elementary tensors factors: `⟪v ⊗ w, v' ⊗ w'⟫ = ⟪v, v'⟫ ⟪w, w'⟫`.
-This one line is the whole proof that tensors of orthonormal bases are orthonormal. -/
+/-- The inner product of two elementary tensors factors: `⟪v ⊗ w, v' ⊗ w'⟫ = ⟪v, v'⟫ ⟪w, w'⟫`. This
+one line is the whole proof that tensors of orthonormal bases are orthonormal. -/
 theorem kroneckerVec_inner (v v' : m → 𝕜) (w w' : n → 𝕜) :
     inner 𝕜 (WithLp.toLp 2 (kroneckerVec v w)) (WithLp.toLp 2 (kroneckerVec v' w'))
       = inner 𝕜 (WithLp.toLp 2 v) (WithLp.toLp 2 v')
@@ -222,9 +220,9 @@ private theorem norm_sq_eq_sum_rowFibre (z : EuclideanSpace 𝕜 (m × n)) :
 
 variable [DecidableEq m] [DecidableEq n]
 
-/-- The elementary tensors of two orthonormal bases form an orthonormal basis of
-`EuclideanSpace 𝕜 (m × n)`.  With `Matrix.kroneckerSum_mulVec_kroneckerVec_of_mulVec_eq_smul`
-this exhibits *all* eigenpairs of a Kronecker sum of two diagonalizable matrices. -/
+/-- The elementary tensors of two orthonormal bases form an orthonormal basis of `EuclideanSpace 𝕜
+(m × n)`.  With `Matrix.kroneckerSum_mulVec_kroneckerVec_of_mulVec_eq_smul` this exhibits *all*
+eigenpairs of a Kronecker sum of two diagonalizable matrices. -/
 noncomputable def kroneckerOrthonormalBasis (u : OrthonormalBasis m 𝕜 (EuclideanSpace 𝕜 m))
     (u' : OrthonormalBasis n 𝕜 (EuclideanSpace 𝕜 n)) :
     OrthonormalBasis (m × n) 𝕜 (EuclideanSpace 𝕜 (m × n)) :=
@@ -290,9 +288,8 @@ private theorem inner_one_kronecker_right (B : Matrix n n 𝕜) (z : EuclideanSp
     = ((1 : Matrix m m 𝕜) ⊗ₖ B) *ᵥ WithLp.ofLp z from rfl, hfib i j]
   rfl
 
-/-- The quadratic form of a Kronecker sum splits into the quadratic form of `A` on the column
-fibres plus that of `B` on the row fibres.  No eigenvector, and no diagonalizability, is
-involved. -/
+/-- The quadratic form of a Kronecker sum splits into the quadratic form of `A` on the column fibres
+plus that of `B` on the row fibres.  No eigenvector, and no diagonalizability, is involved. -/
 private theorem re_inner_kroneckerSum (A : Matrix m m 𝕜) (B : Matrix n n 𝕜)
     (z : EuclideanSpace 𝕜 (m × n)) :
     RCLike.re (inner 𝕜 (toEuclideanLin (A ⊕ₖ B) z) z)
@@ -313,8 +310,8 @@ theorem isCoerciveWith_kroneckerSum {A : Matrix m m 𝕜} {B : Matrix n n 𝕜} 
   · rw [norm_sq_eq_sum_rowFibre z, Finset.mul_sum]
     exact Finset.sum_le_sum fun i _ => hB (rowFibre z i)
 
-/-- Quadratic-form bounds add under a Kronecker sum: this is the form in which a
-two-dimensional model problem enters every convergence estimate, and it names no eigenvalue. -/
+/-- Quadratic-form bounds add under a Kronecker sum: this is the form in which a two-dimensional
+model problem enters every convergence estimate, and it names no eigenvalue. -/
 theorem isSymmetricBoundedBy_kroneckerSum {A : Matrix m m 𝕜} {B : Matrix n n 𝕜}
     {a₁ b₁ a₂ b₂ : ℝ} (hA : (toEuclideanLin A).IsSymmetricBoundedBy a₁ b₁)
     (hB : (toEuclideanLin B).IsSymmetricBoundedBy a₂ b₂) :

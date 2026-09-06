@@ -6,40 +6,37 @@ import Numlib.LinearSolve.Stationary.Splitting
 /-!
 # The Galerkin coarse problem and the coarse-grid correction
 
-Given a symmetric coercive `A` on an inner product space `E` and a *prolongation*
-`Pr : F →ₗ[𝕜] E` from a finite-dimensional coarse space `F`, the **Galerkin coarse operator** is
-`A_H = Pr† A Pr` (`Multigrid.galerkinCoarse`) and the **coarse-grid correction** is
-`T = 1 - Pr A_H⁻¹ Pr† A` (`Multigrid.coarseCorrection`).  This is [Saad, *Iterative Methods for
-Sparse Linear Systems*][saad2003iterative], §13.4.1–13.4.2 and §13.5.1.
+Given a symmetric coercive `A` on an inner product space `E` and a *prolongation* `Pr : F →ₗ[𝕜] E`
+from a finite-dimensional coarse space `F`, the **Galerkin coarse operator** is `A_H = Pr† A Pr`
+(`Multigrid.galerkinCoarse`) and the **coarse-grid correction** is `T = 1 - Pr A_H⁻¹ Pr† A`
+(`Multigrid.coarseCorrection`).  This is [saad2003iterative], §13.4.1–13.4.2 and §13.5.1.
 
-The design decision of this module is to *define* the coarse-grid projector
-`Q = Pr A_H⁻¹ Pr† A` as the `A`-orthogonal projector onto `range Pr` — that is, as
-`Submodule.starProjection` in the energy space `WithEnergy A hA` of
-`Numlib/Analysis/InnerProductSpace/Energy.lean`, transported back along `WithEnergy.equiv` — and to
-prove the formula `Q x = Pr y` for `A_H y = Pr† (A x)` afterwards
-(`Multigrid.coarseProjection_apply_eq`).  Stated that way, the classical facts about the
-correction are the projection theory the library already has:
+The design decision of this module is to *define* the coarse-grid projector `Q = Pr A_H⁻¹ Pr† A` as
+the `A`-orthogonal projector onto `range Pr` — that is, as `Submodule.starProjection` in the energy
+space `WithEnergy A hA` of `Numlib/Analysis/InnerProductSpace/Energy.lean`, transported back along
+`WithEnergy.equiv` — and to prove the formula `Q x = Pr y` for `A_H y = Pr† (A x)` afterwards
+(`Multigrid.coarseProjection_apply_eq`).  Stated that way, the classical facts about the correction
+are the projection theory the library already has:
 
 * it is the Galerkin step of `Numlib/LinearSolve/Projection/Basic` on the subspace `range Pr`
   (`Multigrid.isGalerkin_coarseSolve`), so `IsGalerkin.energyNorm_le` says that it minimizes the
   energy norm of the error over `x + range Pr`;
-* the splitting of the space into the "smooth" and "oscillatory" subspaces is
-  `starProjection`'s own range/kernel API: `range Q = ker (1 - Q) = range Pr` and
-  `range (1 - Q) = ker Q = ker (Pr† A)`, and the two are complementary
-  (`Multigrid.range_coarseProjection`, `Multigrid.ker_coarseCorrection`,
-  `Multigrid.range_coarseCorrection`, `Multigrid.ker_coarseProjection`,
-  `Multigrid.isCompl_range_ker`).
+* the splitting of the space into the "smooth" and "oscillatory" subspaces is `starProjection`'s own
+  range/kernel API: `range Q = ker (1 - Q) = range Pr` and `range (1 - Q) = ker Q = ker (Pr† A)`,
+  and the two are complementary (`Multigrid.range_coarseProjection`,
+  `Multigrid.ker_coarseCorrection`, `Multigrid.range_coarseCorrection`,
+  `Multigrid.ker_coarseProjection`, `Multigrid.isCompl_range_ker`).
 
-No mesh appears anywhere: a prolongation is any linear map into `E`, and a smoother is given by
-its **error propagation operator** `S = 1 - B A` (`Multigrid.smootherOperator`), never by the
-iteration itself, because every statement of the theory is about the error.  The classical
-smoothers are the iteration operators of `Numlib/LinearSolve/Stationary/Splitting`
-(`Multigrid.smootherOperator_eq_iterationOperator`).  The two-grid error propagation operator
-`S^ν₂ (1 - Q) S^ν₁` is `Multigrid.twoGridOperator`.
+No mesh appears anywhere: a prolongation is any linear map into `E`, and a smoother is given by its
+**error propagation operator** `S = 1 - B A` (`Multigrid.smootherOperator`), never by the iteration
+itself, because every statement of the theory is about the error.  The classical smoothers are the
+iteration operators of `Numlib/LinearSolve/Stationary/Splitting`
+(`Multigrid.smootherOperator_eq_iterationOperator`).  The two-grid error propagation operator `S^ν₂
+(1 - Q) S^ν₁` is `Multigrid.twoGridOperator`.
 
-The coarse space is finite-dimensional throughout — that is what makes the `A`-orthogonal
-projection onto `range Pr` exist — and `E` is finite-dimensional wherever `Pr†` appears, which is
-what `LinearMap.adjoint` needs.
+The coarse space is finite-dimensional throughout — that is what makes the `A`-orthogonal projection
+onto `range Pr` exist — and `E` is finite-dimensional wherever `Pr†` appears, which is what
+`LinearMap.adjoint` needs.
 -/
 
 namespace Multigrid
@@ -51,7 +48,7 @@ variable {𝕜 E F : Type*} [RCLike 𝕜]
 /-! ### The Galerkin coarse operator -/
 
 /-- The **Galerkin coarse operator** `A_H = Pr† A Pr` of a prolongation `Pr : F →ₗ[𝕜] E`
-(Saad, *Iterative Methods for Sparse Linear Systems*, (13.39)). -/
+([saad2003iterative], (13.39)). -/
 noncomputable def galerkinCoarse [FiniteDimensional 𝕜 E] (A : E →ₗ[𝕜] E) (Pr : F →ₗ[𝕜] E) :
     F →ₗ[𝕜] F :=
   LinearMap.adjoint Pr ∘ₗ A ∘ₗ Pr
@@ -86,17 +83,17 @@ section Projector
 
 variable (A : E →ₗ[𝕜] E) (hA : A.IsSymmetricCoercive) (Pr : F →ₗ[𝕜] E)
 
-/-- Saad's coarse-grid projector `Q_h = I_H^h A_H⁻¹ I_h^H A_h`, *defined* as the `A`-orthogonal
-projector onto the range of the prolongation: the orthogonal projector of the energy space
-`WithEnergy A hA` onto the image of `range Pr`, read back on `E`.  The formula
-`Q x = Pr (A_H⁻¹ (Pr† (A x)))` is `Multigrid.coarseProjection_apply_eq`. -/
+/-- [saad2003iterative] coarse-grid projector `Q_h = I_H^h A_H⁻¹ I_h^H A_h`, *defined* as the
+`A`-orthogonal projector onto the range of the prolongation: the orthogonal projector of the energy
+space `WithEnergy A hA` onto the image of `range Pr`, read back on `E`.  The formula `Q x = Pr
+(A_H⁻¹ (Pr† (A x)))` is `Multigrid.coarseProjection_apply_eq`. -/
 noncomputable def coarseProjection : E →ₗ[𝕜] E :=
   (WithEnergy.equiv A hA).symm.toLinearMap ∘ₗ
     (WithEnergy.submoduleMap A hA (LinearMap.range Pr)).starProjection.toLinearMap ∘ₗ
       (WithEnergy.equiv A hA).toLinearMap
 
-/-- Saad's coarse-grid correction operator `T_h^H = I - Q_h` (Saad, *Iterative Methods for Sparse
-Linear Systems*, (13.43)), the error propagation operator of one coarse-grid correction. -/
+/-- [saad2003iterative] coarse-grid correction operator `T_h^H = I - Q_h` ([saad2003iterative],
+(13.43)), the error propagation operator of one coarse-grid correction. -/
 noncomputable def coarseCorrection : E →ₗ[𝕜] E := 1 - coarseProjection A hA Pr
 
 /-- The coarse-grid correction removes the coarse-grid projection, `T x = x - Q x`. -/
@@ -131,8 +128,8 @@ theorem coarseProjection_apply_of_mem {x : E} (hx : x ∈ LinearMap.range Pr) :
   (WithEnergy.equiv A hA).injective
     (Submodule.starProjection_eq_self_iff.2 ((WithEnergy.equiv_mem_submoduleMap_iff A hA).2 hx))
 
-/-- Saad (13.59): the range of the coarse-grid projector is the range of the prolongation, the
-"smooth" subspace `𝒮_h`. -/
+/-- [saad2003iterative] (13.59): the range of the coarse-grid projector is the range of the
+prolongation, the "smooth" subspace `𝒮_h`. -/
 @[simp]
 theorem range_coarseProjection :
     LinearMap.range (coarseProjection A hA Pr) = LinearMap.range Pr := by
@@ -140,7 +137,7 @@ theorem range_coarseProjection :
   rintro _ ⟨x, rfl⟩
   exact coarseProjection_apply_mem A hA Pr x
 
-/-- Saad (13.60): the coarse-grid correction annihilates exactly the range of the
+/-- [saad2003iterative] (13.60): the coarse-grid correction annihilates exactly the range of the
 prolongation. -/
 @[simp]
 theorem ker_coarseCorrection :
@@ -154,8 +151,8 @@ section Adjoint
 
 variable [FiniteDimensional 𝕜 E]
 
-/-- Energy orthogonality to the range of the prolongation is exactly `Pr† A x = 0`, which is why
-the "oscillatory" subspace of Saad (13.61) is the kernel of `Pr† A`. -/
+/-- Energy orthogonality to the range of the prolongation is exactly `Pr† A x = 0`, which is why the
+"oscillatory" subspace of [saad2003iterative] (13.61) is the kernel of `Pr† A`. -/
 theorem equiv_mem_orthogonal_iff (x : E) :
     WithEnergy.equiv A hA x ∈ (WithEnergy.submoduleMap A hA (LinearMap.range Pr))ᗮ
       ↔ LinearMap.adjoint Pr (A x) = 0 := by
@@ -175,10 +172,10 @@ theorem equiv_mem_orthogonal_iff (x : E) :
     obtain ⟨v, rfl⟩ := hz
     exact (key v).trans (by rw [h, inner_zero_right])
 
-/-- **Saad's Lemma 13.1**: the Galerkin coarse-grid projector is the `A`-orthogonal projector onto
-the range of the prolongation.  Concretely, if `y` solves the coarse problem
-`A_H y = Pr† (A x)`, then `Q x = Pr y`, which is the formula `Q = Pr A_H⁻¹ Pr† A` of Saad (13.43)
-written without an inverse. -/
+/-- **[saad2003iterative] Lemma 13.1**: the Galerkin coarse-grid projector is the `A`-orthogonal
+projector onto the range of the prolongation.  Concretely, if `y` solves the coarse problem `A_H y =
+Pr† (A x)`, then `Q x = Pr y`, which is the formula `Q = Pr A_H⁻¹ Pr† A` of [saad2003iterative]
+(13.43) written without an inverse. -/
 theorem coarseProjection_apply_eq {x : E} {y : F}
     (hy : galerkinCoarse A Pr y = LinearMap.adjoint Pr (A x)) :
     coarseProjection A hA Pr x = Pr y := by
@@ -190,8 +187,8 @@ theorem coarseProjection_apply_eq {x : E} {y : F}
   refine (equiv_mem_orthogonal_iff A hA Pr (x - Pr y)).2 ?_
   rw [map_sub, map_sub, ← galerkinCoarse_apply A Pr y, hy, sub_self]
 
-/-- Saad (13.61): the kernel of the coarse-grid projector is the kernel of `Pr† A`, the
-"oscillatory" subspace `𝒯_h`. -/
+/-- [saad2003iterative] (13.61): the kernel of the coarse-grid projector is the kernel of `Pr† A`,
+the "oscillatory" subspace `𝒯_h`. -/
 @[simp]
 theorem ker_coarseProjection :
     LinearMap.ker (coarseProjection A hA Pr) = LinearMap.ker (LinearMap.adjoint Pr ∘ₗ A) := by
@@ -202,7 +199,8 @@ theorem ker_coarseProjection :
   exact ⟨fun h => by rw [h, map_zero],
     fun h => (WithEnergy.equiv A hA).injective (by simpa using h)⟩
 
-/-- Saad (13.61): the range of the coarse-grid correction is the kernel of `Pr† A`. -/
+/-- [saad2003iterative] (13.61): the range of the coarse-grid correction is the kernel of `Pr† A`.
+-/
 @[simp]
 theorem range_coarseCorrection :
     LinearMap.range (coarseCorrection A hA Pr) = LinearMap.ker (LinearMap.adjoint Pr ∘ₗ A) := by
@@ -214,8 +212,8 @@ theorem range_coarseCorrection :
   · rw [coarseCorrection_apply, LinearMap.mem_ker.1 hx, sub_zero]
 
 include hA in
-/-- Saad (13.59): `E` is the direct sum of the smooth subspace `range Pr` and the oscillatory
-subspace `ker (Pr† A)`, the ranges of the coarse-grid projector and of the coarse-grid
+/-- [saad2003iterative] (13.59): `E` is the direct sum of the smooth subspace `range Pr` and the
+oscillatory subspace `ker (Pr† A)`, the ranges of the coarse-grid projector and of the coarse-grid
 correction. -/
 theorem isCompl_range_ker :
     IsCompl (LinearMap.range Pr) (LinearMap.ker (LinearMap.adjoint Pr ∘ₗ A)) := by
@@ -236,8 +234,8 @@ theorem isCompl_range_ker :
 /-- The coarse-grid correction is the Galerkin projection method of
 `Numlib/LinearSolve/Projection/Basic` on the subspace `range Pr`: solving the coarse residual
 equation `A_H δ = Pr† (b - A x)` and adding `Pr δ` produces a Galerkin iterate.  Consequently
-`IsGalerkin.energyNorm_le` bounds its error in the energy norm by that of every point of
-`x + range Pr`. -/
+`IsGalerkin.energyNorm_le` bounds its error in the energy norm by that of every point of `x + range
+Pr`. -/
 theorem isGalerkin_coarseSolve {b x : E} {d : F}
     (hd : galerkinCoarse A Pr d = LinearMap.adjoint Pr (b - A x)) :
     IsGalerkin A b x (LinearMap.range Pr) (x + Pr d) := by
@@ -249,8 +247,8 @@ theorem isGalerkin_coarseSolve {b x : E} {d : F}
   rw [← inner_conj_symm, ← LinearMap.adjoint_inner_left Pr, hzero, inner_zero_left, map_zero]
 
 /-- The same statement in terms of the projector: the coarse-grid correction of `x` towards the
-solution `x*` is `x + Q (x* - x)`, a Galerkin iterate on `range Pr`, and the error it leaves is
-`T (x* - x)`. -/
+solution `x*` is `x + Q (x* - x)`, a Galerkin iterate on `range Pr`, and the error it leaves is `T
+(x* - x)`. -/
 theorem isGalerkin_coarseProjection {b x xstar : E} (hstar : A xstar = b) :
     IsGalerkin A b x (LinearMap.range Pr) (x + coarseProjection A hA Pr (xstar - x)) := by
   refine ⟨by simpa using coarseProjection_apply_mem A hA Pr (xstar - x),
@@ -276,8 +274,8 @@ end Projector
 /-! ### Smoothers and the two-grid operator -/
 
 /-- The **error propagation operator** of a smoother with approximate inverse `B`: `S = 1 - B A`
-(Saad, *Iterative Methods for Sparse Linear Systems*, (13.40)–(13.42)).  A smoother enters the
-theory only through this operator, because every statement of the theory is about the error. -/
+([saad2003iterative], (13.40)–(13.42)).  A smoother enters the theory only through this operator,
+because every statement of the theory is about the error. -/
 def smootherOperator (A B : E →ₗ[𝕜] E) : E →ₗ[𝕜] E := 1 - B ∘ₗ A
 
 /-- The smoother propagates the error by `x ↦ x - B (A x)`. -/
@@ -293,8 +291,8 @@ theorem smootherOperator_eq_iterationOperator {A : Module.End 𝕜 E} (s : Stati
   rfl
 
 /-- The error propagation operator `M_H^h` of the two-grid cycle with `ν₁` pre-smoothing steps and
-`ν₂` post-smoothing steps around one coarse-grid correction (Saad, *Iterative Methods for Sparse
-Linear Systems*, Algorithm 13.2). -/
+`ν₂` post-smoothing steps around one coarse-grid correction ([saad2003iterative], Algorithm 13.2).
+-/
 noncomputable def twoGridOperator (A : E →ₗ[𝕜] E) (hA : A.IsSymmetricCoercive) (Pr : F →ₗ[𝕜] E)
     (S : E →ₗ[𝕜] E) (nu1 nu2 : ℕ) : E →ₗ[𝕜] E :=
   (S ^ nu2) ∘ₗ coarseCorrection A hA Pr ∘ₗ (S ^ nu1)

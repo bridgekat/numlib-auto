@@ -17,11 +17,11 @@ splittings; and `Matrix.abs A`, written `A.abs`, is the matrix of the absolute v
 entries. Together they carry the componentwise calculus behind the convergence theory of regular
 splittings and behind rounding-error analysis: monotonicity of a product in either factor when the
 other one is nonnegative (`Matrix.EntrywiseLE.mul_of_entrywiseNonneg_left` and
-`Matrix.EntrywiseLE.mul_of_entrywiseNonneg_right`, which is [Saad][saad2003iterative] §1.10, Prop
-1.26, and whose clause-by-clause companions are his Prop 1.24), the stability of nonnegativity under
-sums, products, powers and matrix-vector multiplication, and the triangle inequality for a product,
-`(A * B).abs ≤ₑ A.abs * B.abs` (`Matrix.abs_mul_entrywiseLE`), which is the matrix form of the
-componentwise bounds of [Higham][higham2002accuracy] §3.5.
+`Matrix.EntrywiseLE.mul_of_entrywiseNonneg_right`, which is [saad2003iterative] §1.10, Prop 1.26,
+and whose clause-by-clause companions are his Prop 1.24), the stability of nonnegativity under sums,
+products, powers and matrix-vector multiplication, and the triangle inequality for a product, `(A *
+B).abs ≤ₑ A.abs * B.abs` (`Matrix.abs_mul_entrywiseLE`), which is the matrix form of the
+componentwise bounds of [higham2002accuracy] §3.5.
 
 ## Notation
 
@@ -38,8 +38,8 @@ every statement about either of them ambiguous.
 
 Vectors are plain `Pi` types, and there the entrywise order and absolute value *are* the canonical
 `≤` and `|·|`. So the statements that mix the two — `Matrix.abs_mulVec_le`,
-`Matrix.EntrywiseNonneg.mulVec_nonneg` — use `≤` and `|·|` on the vector side and `≤ₑ` and `.abs`
-on the matrix side.
+`Matrix.EntrywiseNonneg.mulVec_nonneg` — use `≤` and `|·|` on the vector side and `≤ₑ` and `.abs` on
+the matrix side.
 -/
 
 namespace Matrix
@@ -65,15 +65,15 @@ def EntrywiseLE (A B : Matrix m n α) : Prop := ∀ i j, A i j ≤ B i j
 theorem entrywiseLE_iff {A B : Matrix m n α} : A ≤ₑ B ↔ ∀ i j, A i j ≤ B i j := Iff.rfl
 
 /-- A matrix is *entrywise nonnegative* when `0 ≤ₑ A`; this is the relation written `A ≥ 0` in
-Saad, *Iterative Methods for Sparse Linear Systems*, §1.10. -/
+[saad2003iterative], §1.10. -/
 def EntrywiseNonneg [Zero α] (A : Matrix m n α) : Prop := (0 : Matrix m n α) ≤ₑ A
 
 /-- Entrywise nonnegativity, unfolded. -/
 theorem entrywiseNonneg_iff [Zero α] {A : Matrix m n α} :
     A.EntrywiseNonneg ↔ ∀ i j, 0 ≤ A i j := Iff.rfl
 
-/-- The defining property of an entrywise nonnegative matrix, with the zero matrix already
-evaluated at `i`, `j`. -/
+/-- The defining property of an entrywise nonnegative matrix, with the zero matrix already evaluated
+at `i`, `j`. -/
 theorem EntrywiseNonneg.apply [Zero α] {A : Matrix m n α} (hA : A.EntrywiseNonneg) (i : m) (j : n) :
     0 ≤ A i j := hA i j
 
@@ -122,8 +122,8 @@ theorem EntrywiseNonneg.add (hA : A.EntrywiseNonneg) (hB : B.EntrywiseNonneg) :
     (A + B).EntrywiseNonneg :=
   fun i j => add_nonneg (hA.apply i j) (hB.apply i j)
 
-/-- A finite sum of entrywise nonnegative matrices is entrywise nonnegative; this is what makes
-the partial sums of a Neumann series `∑ Bᵏ` of a nonnegative `B` nonnegative. -/
+/-- A finite sum of entrywise nonnegative matrices is entrywise nonnegative; this is what makes the
+partial sums of a Neumann series `∑ Bᵏ` of a nonnegative `B` nonnegative. -/
 theorem EntrywiseNonneg.sum {s : Finset ι} {f : ι → Matrix m n α}
     (hf : ∀ i ∈ s, (f i).EntrywiseNonneg) : (∑ i ∈ s, f i).EntrywiseNonneg := by
   intro i j
@@ -145,9 +145,9 @@ variable [Lattice α] [AddGroup α]
 
 /-- The entrywise absolute value of a matrix, `A.abs i j = |A i j|`.
 
-Beware that inside `namespace Matrix` the bare name `abs` refers to this function rather than to
-the lattice absolute value `_root_.abs`; the notation `|·|` is unaffected, and continues to mean
-the lattice absolute value of a scalar or of a vector. -/
+Beware that inside `namespace Matrix` the bare name `abs` refers to this function rather than to the
+lattice absolute value `_root_.abs`; the notation `|·|` is unaffected, and continues to mean the
+lattice absolute value of a scalar or of a vector. -/
 def abs (A : Matrix m n α) : Matrix m n α := A.map (|·|)
 
 /-- The entries of `A.abs` are the absolute values of the entries of `A`. -/
@@ -183,16 +183,16 @@ theorem entrywiseNonneg_one [DecidableEq n] : (1 : Matrix n n α).EntrywiseNonne
   · exact zero_le_one
   · exact le_rfl
 
-/-- Multiplying on the left by an entrywise nonnegative matrix is monotone for the entrywise
-order (Saad, *Iterative Methods for Sparse Linear Systems*, Prop 1.26). -/
+/-- Multiplying on the left by an entrywise nonnegative matrix is monotone for the entrywise order
+([saad2003iterative], Prop 1.26). -/
 theorem EntrywiseLE.mul_of_entrywiseNonneg_left [Fintype l] {C : Matrix m l α}
     {A B : Matrix l n α} (hC : C.EntrywiseNonneg) (hAB : A ≤ₑ B) : C * A ≤ₑ C * B := by
   intro i j
   simp only [Matrix.mul_apply]
   exact Finset.sum_le_sum fun k _ => mul_le_mul_of_nonneg_left (hAB k j) (hC.apply i k)
 
-/-- Multiplying on the right by an entrywise nonnegative matrix is monotone for the entrywise
-order (Saad, *Iterative Methods for Sparse Linear Systems*, Prop 1.26). -/
+/-- Multiplying on the right by an entrywise nonnegative matrix is monotone for the entrywise order
+([saad2003iterative], Prop 1.26). -/
 theorem EntrywiseLE.mul_of_entrywiseNonneg_right [Fintype l] {C : Matrix l n α}
     {A B : Matrix m l α} (hC : C.EntrywiseNonneg) (hAB : A ≤ₑ B) : A * C ≤ₑ B * C := by
   intro i j
@@ -242,8 +242,7 @@ section Ring
 variable [Ring α] [LinearOrder α] [IsOrderedRing α]
 
 /-- The entrywise triangle inequality for a matrix product, `|A * B| ≤ |A| |B|` in the notation of
-the books: the matrix form of the componentwise bounds of Higham, *Accuracy and Stability of
-Numerical Algorithms*, §3.5. -/
+the books: the matrix form of the componentwise bounds of [higham2002accuracy], §3.5. -/
 theorem abs_mul_entrywiseLE [Fintype l] (A : Matrix m l α) (B : Matrix l n α) :
     (A * B).abs ≤ₑ A.abs * B.abs := by
   intro i j

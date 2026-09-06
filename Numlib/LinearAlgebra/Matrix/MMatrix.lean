@@ -8,17 +8,17 @@ import Numlib.LinearAlgebra.Matrix.PerronFrobenius
 # The nonnegative Neumann criterion, and M-matrices
 
 For an entrywise nonnegative real matrix `B`, the spectral radius is below `1` exactly when `1 - B`
-is invertible with an entrywise nonnegative inverse ([Saad][saad2003iterative], Theorem 1.29), and
-an *M-matrix* is a matrix with nonpositive off-diagonal entries that is invertible with a
-nonnegative inverse (his Definition 1.30). Both are statements about the entrywise order of
+is invertible with an entrywise nonnegative inverse ([saad2003iterative], Theorem 1.29), and an
+*M-matrix* is a matrix with nonpositive off-diagonal entries that is invertible with a nonnegative
+inverse (his Definition 1.30). Both are statements about the entrywise order of
 `Numlib/LinearAlgebra/Matrix/Order` and the spectral radius of
 `Numlib/LinearAlgebra/Matrix/Complexify`, and neither mentions an iteration; the splittings that
 consume them are in `Numlib/LinearSolve/Stationary/RegularSplitting`.
 
 ## Main definitions
 
-* `Matrix.IsMMatrix`: Saad's Definition 1.30, as a three-field structure; the remaining clause of
-  the book, positivity of the diagonal, is the derived `Matrix.IsMMatrix.diag_pos`.
+* `Matrix.IsMMatrix`: [saad2003iterative] Definition 1.30, as a three-field structure; the remaining
+  clause of the book, positivity of the diagonal, is the derived `Matrix.IsMMatrix.diag_pos`.
 
 ## Main results
 
@@ -43,12 +43,11 @@ nonnegative and the nonnegative matrices are closed, so `C` is nonnegative.
 
 Backwards is where the textbooks invoke Perron–Frobenius: `ρ(B)` is an eigenvalue of a nonnegative
 `B` with a nonnegative eigenvector, and testing `C` against it forces `ρ(B) < 1`. That is not
-needed. If `C` is nonnegative then `Bᵏ C` is too, so the identity exhibits every partial sum
-`∑_{j < k} Bʲ` as *bounded above by `C`*, entry by entry; the partial sums are also nondecreasing,
-because the terms are nonnegative. A bounded monotone sequence of reals converges, so its
-increments `Bᵏ` tend to `0` entrywise, which is `ρ(B) < 1`. The whole argument is monotone
-convergence in `ℝ`, one entry at a time, and it needs no eigenvector, no irreducibility and no
-compactness.
+needed. If `C` is nonnegative then `Bᵏ C` is too, so the identity exhibits every partial sum `∑_{j <
+k} Bʲ` as *bounded above by `C`*, entry by entry; the partial sums are also nondecreasing, because
+the terms are nonnegative. A bounded monotone sequence of reals converges, so its increments `Bᵏ`
+tend to `0` entrywise, which is `ρ(B) < 1`. The whole argument is monotone convergence in `ℝ`, one
+entry at a time, and it needs no eigenvector, no irreducibility and no compactness.
 
 The irreducible Perron–Frobenius theorem is a separate development, in
 `Numlib/LinearAlgebra/Matrix/PerronFrobenius`; neither statement implies the other cheaply.
@@ -77,8 +76,8 @@ theorem EntrywiseNonneg.of_tendsto {ι : Type*} {l : Filter ι} [l.NeBot] {f : �
 
 variable [Fintype n] [DecidableEq n]
 
-/-- The partial sums of the Neumann series of `B`, in closed form: if `C` is a right inverse of
-`1 - B` then `∑_{j < k} Bʲ = C - Bᵏ C`.
+/-- The partial sums of the Neumann series of `B`, in closed form: if `C` is a right inverse of `1 -
+B` then `∑_{j < k} Bʲ = C - Bᵏ C`.
 
 Only a right inverse is needed, and the proof is `Finset.geom_sum_mul_neg` multiplied by `C`. -/
 theorem geom_sum_eq_sub_pow_mul {B C : Matrix n n ℝ} (hC : (1 - B) * C = 1) (k : ℕ) :
@@ -89,13 +88,13 @@ theorem geom_sum_eq_sub_pow_mul {B C : Matrix n n ℝ} (hC : (1 - B) * C = 1) (k
     _ = (1 - B ^ k) * C := by rw [geom_sum_mul_neg]
     _ = C - B ^ k * C := by rw [sub_mul, one_mul]
 
-/-- **The nonnegative Neumann criterion** (Saad, *Iterative Methods for Sparse Linear Systems*,
-Theorem 1.29): an entrywise nonnegative real matrix `B` has spectral radius less than `1` if and
-only if `1 - B` is invertible with an entrywise nonnegative inverse.
+/-- **The nonnegative Neumann criterion** ([saad2003iterative], Theorem 1.29): an entrywise
+nonnegative real matrix `B` has spectral radius less than `1` if and only if `1 - B` is invertible
+with an entrywise nonnegative inverse.
 
-The forward direction is the Neumann series with nonnegative terms; the backward direction reads
-the same series as a monotone sequence bounded above by `(1 - B)⁻¹`. See the module
-documentation: no Perron–Frobenius theorem is involved. -/
+The forward direction is the Neumann series with nonnegative terms; the backward direction reads the
+same series as a monotone sequence bounded above by `(1 - B)⁻¹`. See the module documentation: no
+Perron–Frobenius theorem is involved. -/
 theorem EntrywiseNonneg.complexSpectralRadius_lt_one_iff {B : Matrix n n ℝ}
     (hB : B.EntrywiseNonneg) :
     B.complexSpectralRadius < 1 ↔ IsUnit (1 - B) ∧ (1 - B)⁻¹.EntrywiseNonneg := by
@@ -130,10 +129,9 @@ theorem EntrywiseNonneg.complexSpectralRadius_lt_one_iff {B : Matrix n n ℝ}
     have := (hlim.comp (tendsto_add_atTop_nat 1)).sub hlim
     simpa [Function.comp_def, sum_range_succ] using this
 
-/-- **M-matrix** (Saad, *Iterative Methods for Sparse Linear Systems*, Definition 1.30): the
-off-diagonal entries are nonpositive, the matrix is invertible, and the inverse is entrywise
-nonnegative. Saad's definition also lists `0 < A i i`, which follows: see
-`Matrix.IsMMatrix.diag_pos`. -/
+/-- **M-matrix** ([saad2003iterative], Definition 1.30): the off-diagonal entries are nonpositive,
+the matrix is invertible, and the inverse is entrywise nonnegative. [saad2003iterative] definition
+also lists `0 < A i i`, which follows: see `Matrix.IsMMatrix.diag_pos`. -/
 structure IsMMatrix (A : Matrix n n ℝ) : Prop where
   /-- The off-diagonal entries are nonpositive. -/
   offDiag_nonpos : ∀ i j, i ≠ j → A i j ≤ 0
@@ -147,10 +145,10 @@ namespace IsMMatrix
 variable {A : Matrix n n ℝ} (hA : A.IsMMatrix)
 include hA
 
-/-- The diagonal entries of an M-matrix are positive — the *first* clause of Saad's Definition
-1.30, which his Theorem 1.32 shows the other three to imply. Reading `(A A⁻¹) i i = 1` entrywise,
-every off-diagonal term
-`A i k * A⁻¹ k i` is nonpositive, so `A i i * A⁻¹ i i ≥ 1`, which forces both factors positive. -/
+/-- The diagonal entries of an M-matrix are positive — the *first* clause of [saad2003iterative]
+Definition 1.30, which his Theorem 1.32 shows the other three to imply. Reading `(A A⁻¹) i i = 1`
+entrywise, every off-diagonal term `A i k * A⁻¹ k i` is nonpositive, so `A i i * A⁻¹ i i ≥ 1`, which
+forces both factors positive. -/
 theorem diag_pos (i : n) : 0 < A i i := by
   have hdet : IsUnit A.det := isUnit_iff_isUnit_det _ |>.1 hA.isUnit
   have hrow : ∑ k, A i k * A⁻¹ k i = 1 := by
@@ -181,8 +179,8 @@ private theorem one_sub_diagInv_mul_apply (A : Matrix n n ℝ) (i j : n) :
       = (1 : Matrix n n ℝ) i j - (A i i)⁻¹ * A i j := by
   rw [sub_apply, diagonal_mul]
 
-/-- The Jacobi operator `1 - D⁻¹ A` of a matrix with positive diagonal and nonpositive
-off-diagonal entries is entrywise nonnegative. -/
+/-- The Jacobi operator `1 - D⁻¹ A` of a matrix with positive diagonal and nonpositive off-diagonal
+entries is entrywise nonnegative. -/
 private theorem entrywiseNonneg_one_sub_diagInv_mul (hoff : ∀ i j, i ≠ j → A i j ≤ 0)
     (hdiag : ∀ i, 0 < A i i) :
     ((1 : Matrix n n ℝ) - diagonal (fun i => (A i i)⁻¹) * A).EntrywiseNonneg := by
@@ -211,16 +209,14 @@ private theorem diag_mul_diagInv (hdiag : ∀ i, A i i ≠ 0) :
       funext fun i => mul_inv_cancel₀ (hdiag i),
     diagonal_one]
 
-/-- **The spectral characterization of an M-matrix** (Saad, *Iterative Methods for Sparse Linear
-Systems*, Theorem 1.31): a real matrix with positive diagonal and nonpositive off-diagonal entries
-is an M-matrix exactly when the spectral radius of its Jacobi operator `1 - D⁻¹ A` is less
-than one, `D` being the diagonal of `A`.
+/-- **The spectral characterization of an M-matrix** ([saad2003iterative], Theorem 1.31): a real
+matrix with positive diagonal and nonpositive off-diagonal entries is an M-matrix exactly when the
+spectral radius of its Jacobi operator `1 - D⁻¹ A` is less than one, `D` being the diagonal of `A`.
 
 Both directions are the nonnegative Neumann criterion
 `Matrix.EntrywiseNonneg.complexSpectralRadius_lt_one_iff` applied to `B = 1 - D⁻¹ A`, whose
-complement is `1 - B = D⁻¹ A`: nonsingularity of `D⁻¹ A` is nonsingularity of `A`, and
-`(D⁻¹ A)⁻¹ = A⁻¹ D` is entrywise nonnegative exactly when `A⁻¹` is, the diagonal being
-positive. -/
+complement is `1 - B = D⁻¹ A`: nonsingularity of `D⁻¹ A` is nonsingularity of `A`, and `(D⁻¹ A)⁻¹ =
+A⁻¹ D` is entrywise nonnegative exactly when `A⁻¹` is, the diagonal being positive. -/
 theorem isMMatrix_iff_complexSpectralRadius_lt_one (hoff : ∀ i j, i ≠ j → A i j ≤ 0)
     (hdiag : ∀ i, 0 < A i i) :
     A.IsMMatrix
@@ -254,14 +250,14 @@ theorem isMMatrix_iff_complexSpectralRadius_lt_one (hoff : ∀ i j, i ≠ j → 
     rw [hinv, mul_diagonal]
     exact mul_nonneg (hnn.apply i j) (inv_nonneg.2 (hdiag j).le)
 
-/-- **The comparison theorem for M-matrices** (Saad, *Iterative Methods for Sparse Linear
-Systems*, Theorem 1.33): a matrix that dominates an M-matrix entrywise and still has nonpositive
-off-diagonal entries is itself an M-matrix.
+/-- **The comparison theorem for M-matrices** ([saad2003iterative], Theorem 1.33): a matrix that
+dominates an M-matrix entrywise and still has nonpositive off-diagonal entries is itself an
+M-matrix.
 
-The diagonals satisfy `0 < A i i ≤ B i i`, and entrywise
-`0 ≤ₑ 1 - D_B⁻¹ B ≤ₑ 1 - D_A⁻¹ A`, because `A i j / A i i ≤ B i j / B i i` for a nonpositive
-numerator that increases and a positive denominator that increases with it. Monotonicity of the
-spectral radius (`Matrix.complexSpectralRadius_le_of_entrywiseLE`) and
+The diagonals satisfy `0 < A i i ≤ B i i`, and entrywise `0 ≤ₑ 1 - D_B⁻¹ B ≤ₑ 1 - D_A⁻¹ A`, because
+`A i j / A i i ≤ B i j / B i i` for a nonpositive numerator that increases and a positive
+denominator that increases with it. Monotonicity of the spectral radius
+(`Matrix.complexSpectralRadius_le_of_entrywiseLE`) and
 `Matrix.isMMatrix_iff_complexSpectralRadius_lt_one` do the rest.
 
 This is what makes the *dropping* step of an incomplete factorization legitimate: discarding a

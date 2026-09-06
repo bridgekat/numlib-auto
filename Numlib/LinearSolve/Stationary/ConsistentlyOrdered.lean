@@ -10,18 +10,17 @@ import Numlib.LinearSolve.Stationary.Splitting
 # Consistently ordered matrices and Young's theory of SOR
 
 The relation between the eigenvalues of the Jacobi iteration matrix `B` and those of the SOR
-iteration matrix `G_ω` for a *consistently ordered* matrix ([Saad][saad2003iterative] §4.2.5;
-[Kress][kress1998numerical] §4.2).
+iteration matrix `G_ω` for a *consistently ordered* matrix ([saad2003iterative] §4.2.5;
+[kress1998numerical] §4.2).
 
 Write `A = D - E - F` for the splitting of `A` into its diagonal part and the negatives of its
 strictly lower and strictly upper parts, and put `L = D⁻¹ E`, `U = D⁻¹ F`, so that the Jacobi
-iteration matrix is `B = L + U`.  Following Kress, `A` is *consistently ordered*
-(`Matrix.IsConsistentlyOrdered`) when the spectrum of the scaled matrix
-`C(α) = α L + α⁻¹ U` is the same for every `α ≠ 0`.  This is the property the proofs use;
-Saad's combinatorial definition — a labelling `c` of the indices with `c j = c i - 1` for every
-nonzero entry below the diagonal and `c j = c i + 1` above it — implies it
-(`Matrix.isConsistentlyOrdered_of_labelling`), and tridiagonal matrices are the basic example
-(`Matrix.IsTridiagonal.isConsistentlyOrdered`).
+iteration matrix is `B = L + U`.  Following [kress1998numerical], `A` is *consistently ordered*
+(`Matrix.IsConsistentlyOrdered`) when the spectrum of the scaled matrix `C(α) = α L + α⁻¹ U` is the
+same for every `α ≠ 0`.  This is the property the proofs use; [saad2003iterative] combinatorial
+definition — a labelling `c` of the indices with `c j = c i - 1` for every nonzero entry below the
+diagonal and `c j = c i + 1` above it — implies it (`Matrix.isConsistentlyOrdered_of_labelling`),
+and tridiagonal matrices are the basic example (`Matrix.IsTridiagonal.isConsistentlyOrdered`).
 
 The main theorem (`Matrix.IsConsistentlyOrdered.mem_spectrum_jacobi_iff_sor`) is that for `ω ≠ 0`
 and `λ ≠ 0` linked to `μ` by `(λ + ω - 1)² = λ ω² μ²`, the number `μ` is an eigenvalue of `B`
@@ -29,19 +28,18 @@ exactly when `λ` is an eigenvalue of `G_ω`.  Its proof is the identity
 
 `λ 1 - G_ω = (D - ω E)⁻¹ D ((λ + ω - 1) 1 - ω (λ L + U))`
 
-together with `λ L + U = α (α L + α⁻¹ U)` for a square root `α` of `λ`, which turns the pencil
-into a resolvent of `C(α)`.  At `ω = 1` the relation reads `λ = μ²`, whence
-`ρ(G_GS) = ρ(B)²` (`Matrix.IsConsistentlyOrdered.spectralRadius_gaussSeidel_eq_sq`):
-Gauss–Seidel converges twice as fast as Jacobi.
+together with `λ L + U = α (α L + α⁻¹ U)` for a square root `α` of `λ`, which turns the pencil into
+a resolvent of `C(α)`.  At `ω = 1` the relation reads `λ = μ²`, whence `ρ(G_GS) = ρ(B)²`
+(`Matrix.IsConsistentlyOrdered.spectralRadius_gaussSeidel_eq_sq`): Gauss–Seidel converges twice as
+fast as Jacobi.
 
 For a consistently ordered matrix whose Jacobi eigenvalues are *real*, the same relation gives
 Young's closed formula for the SOR spectral radius
-(`Matrix.IsConsistentlyOrdered.spectralRadius_sor_eq`): with `t = ω ρ(B)/2` and
-`d = t² - (ω - 1)`, it is `(t + √d)²` when `d ≥ 0` and `ω - 1` when `d < 0`, which is what
-`Matrix.youngRadius` computes.  Minimizing that over `0 < ω < 2` gives the optimal relaxation
-parameter `ω_opt = 2/(1 + √(1 - ρ(B)²))` (`Matrix.optimalRelaxation`), where the discriminant
-vanishes and the radius is `ω_opt - 1`
-(`Matrix.IsConsistentlyOrdered.isMinOn_complexSpectralRadius_sor`).
+(`Matrix.IsConsistentlyOrdered.spectralRadius_sor_eq`): with `t = ω ρ(B)/2` and `d = t² - (ω - 1)`,
+it is `(t + √d)²` when `d ≥ 0` and `ω - 1` when `d < 0`, which is what `Matrix.youngRadius`
+computes.  Minimizing that over `0 < ω < 2` gives the optimal relaxation parameter `ω_opt = 2/(1 +
+√(1 - ρ(B)²))` (`Matrix.optimalRelaxation`), where the discriminant vanishes and the radius is
+`ω_opt - 1` (`Matrix.IsConsistentlyOrdered.isMinOn_complexSpectralRadius_sor`).
 
 Everything is stated over `ℂ`, where square roots exist; real matrices enter through
 `Matrix.complexify`.
@@ -59,13 +57,13 @@ section Parts
 
 variable {𝕜 : Type*} [Field 𝕜]
 
-/-- The strictly lower part `L = D⁻¹ E` of the Jacobi iteration matrix, for the splitting
-`A = D - E - F` into the diagonal part and the negatives of the strict triangular parts. -/
+/-- The strictly lower part `L = D⁻¹ E` of the Jacobi iteration matrix, for the splitting `A = D - E
+- F` into the diagonal part and the negatives of the strict triangular parts. -/
 noncomputable def jacobiLower (A : Matrix n n 𝕜) : Matrix n n 𝕜 :=
   -(diagPart A)⁻¹ * strictLower A
 
-/-- The strictly upper part `U = D⁻¹ F` of the Jacobi iteration matrix, for the splitting
-`A = D - E - F` into the diagonal part and the negatives of the strict triangular parts. -/
+/-- The strictly upper part `U = D⁻¹ F` of the Jacobi iteration matrix, for the splitting `A = D - E
+- F` into the diagonal part and the negatives of the strict triangular parts. -/
 noncomputable def jacobiUpper (A : Matrix n n 𝕜) : Matrix n n 𝕜 :=
   -(diagPart A)⁻¹ * strictUpper A
 
@@ -121,19 +119,19 @@ end Parts
 
 section Def
 
-/-- Kress's definition of a *consistently ordered* matrix: the spectrum of the scaled matrix
-`C(α) = α L + α⁻¹ U` does not depend on `α ≠ 0`, where `L` and `U` are the strictly lower and
-strictly upper parts `Matrix.jacobiLower`, `Matrix.jacobiUpper` of the Jacobi iteration matrix
-`B = L + U`.  This is the property that Young's theory uses; the combinatorial conditions of
-`Matrix.isConsistentlyOrdered_of_labelling` and `Matrix.IsTridiagonal.isConsistentlyOrdered`
-are sufficient for it. -/
+/-- [kress1998numerical] definition of a *consistently ordered* matrix: the spectrum of the scaled
+matrix `C(α) = α L + α⁻¹ U` does not depend on `α ≠ 0`, where `L` and `U` are the strictly lower and
+strictly upper parts `Matrix.jacobiLower`, `Matrix.jacobiUpper` of the Jacobi iteration matrix `B =
+L + U`.  This is the property that Young's theory uses; the combinatorial conditions of
+`Matrix.isConsistentlyOrdered_of_labelling` and `Matrix.IsTridiagonal.isConsistentlyOrdered` are
+sufficient for it. -/
 def IsConsistentlyOrdered (A : Matrix n n ℂ) : Prop :=
   ∀ α : ℂ, α ≠ 0 →
     spectrum ℂ (α • jacobiLower A + α⁻¹ • jacobiUpper A) =
       spectrum ℂ (jacobiLower A + jacobiUpper A)
 
-/-- Consistent ordering follows from a similarity: it is enough that `C(α)` be conjugate to
-`C(1) = B` by a unit for each `α ≠ 0`. -/
+/-- Consistent ordering follows from a similarity: it is enough that `C(α)` be conjugate to `C(1) =
+B` by a unit for each `α ≠ 0`. -/
 theorem isConsistentlyOrdered_of_conj {A : Matrix n n ℂ}
     (h : ∀ α : ℂ, α ≠ 0 → ∃ u : (Matrix n n ℂ)ˣ,
       α • jacobiLower A + α⁻¹ • jacobiUpper A =
@@ -154,10 +152,10 @@ private noncomputable def diagonalUnits (d : n → ℂ) (hd : ∀ i, d i ≠ 0) 
     rw [diagonal_mul_diagonal, ← diagonal_one]
     exact congrArg _ (funext fun i => inv_mul_cancel₀ (hd i))
 
-/-- Saad's combinatorial definition implies Kress's: a labelling `c` of the indices such that
-`c i = c j + 1` for every nonzero entry `A i j` strictly below the diagonal and `c j = c i + 1`
-for every nonzero entry strictly above it makes `A` consistently ordered, the similarity being
-by the diagonal matrix `diag (α ^ c i)`. -/
+/-- [saad2003iterative] combinatorial definition implies [kress1998numerical]: a labelling `c` of
+the indices such that `c i = c j + 1` for every nonzero entry `A i j` strictly below the diagonal
+and `c j = c i + 1` for every nonzero entry strictly above it makes `A` consistently ordered, the
+similarity being by the diagonal matrix `diag (α ^ c i)`. -/
 theorem isConsistentlyOrdered_of_labelling {A : Matrix n n ℂ} (h : IsUnit (diagPart A))
     (c : n → ℕ) (hlow : ∀ i j, j < i → A i j ≠ 0 → c i = c j + 1)
     (hupp : ∀ i j, i < j → A i j ≠ 0 → c j = c i + 1) :
@@ -230,16 +228,16 @@ section Blocks
 
 variable {p q : Type*} [Fintype p] [Fintype q] [DecidableEq p] [DecidableEq q]
 
-/-- The block sign matrix `diag (1, -1)`, as a unit; conjugating by it turns a block
-anti-diagonal matrix into its negative. -/
+/-- The block sign matrix `diag (1, -1)`, as a unit; conjugating by it turns a block anti-diagonal
+matrix into its negative. -/
 private def blockSignUnits : (Matrix (p ⊕ q) (p ⊕ q) ℂ)ˣ where
   val := fromBlocks 1 0 0 (-1)
   inv := fromBlocks 1 0 0 (-1)
   val_inv := by rw [fromBlocks_multiply]; simp [← fromBlocks_one]
   inv_val := by rw [fromBlocks_multiply]; simp [← fromBlocks_one]
 
-/-- Saad's Proposition 4.12: the spectrum of a block anti-diagonal matrix is symmetric about the
-origin.  Conjugating by `diag (1, -1)` turns such a matrix into its negative. -/
+/-- [saad2003iterative] Proposition 4.12: the spectrum of a block anti-diagonal matrix is symmetric
+about the origin.  Conjugating by `diag (1, -1)` turns such a matrix into its negative. -/
 theorem neg_mem_spectrum_fromBlocks_zero_zero (B₁₂ : Matrix p q ℂ) (B₂₁ : Matrix q p ℂ) {μ : ℂ}
     (hμ : μ ∈ spectrum ℂ (fromBlocks 0 B₁₂ B₂₁ 0)) :
     -μ ∈ spectrum ℂ (fromBlocks 0 B₁₂ B₂₁ 0) := by
@@ -281,8 +279,8 @@ private theorem isUnit_diagPart_add_smul_strictLower {A : Matrix n n ℂ} (h : I
   rw [hm, isUnit_smul_iff hω]
   exact (sorSplitting A h hω).isUnit
 
-/-- The pencil identity behind Young's theory: `λ 1 - G_ω` is `(D - ω E)⁻¹ D` times the pencil
-`(λ + ω - 1) 1 - ω (λ L + U)`, in which the parameter `λ` appears only in front of `L`. -/
+/-- The pencil identity behind Young's theory: `λ 1 - G_ω` is `(D - ω E)⁻¹ D` times the pencil `(λ +
+ω - 1) 1 - ω (λ L + U)`, in which the parameter `λ` appears only in front of `L`. -/
 theorem smul_one_sub_sor_iterationOperator (A : Matrix n n ℂ) (h : IsUnit (diagPart A)) {ω : ℂ}
     (hω : ω ≠ 0) (l : ℂ) :
     l • (1 : Matrix n n ℂ) - (sorSplitting A h hω).iterationOperator =
@@ -319,9 +317,9 @@ theorem mem_spectrum_sor_iff (A : Matrix n n ℂ) (h : IsUnit (diagPart A)) {ω 
   rw [spectrum.mem_iff, Algebra.algebraMap_eq_smul_one,
     smul_one_sub_sor_iterationOperator A h hω l, ← hu.unit_spec, Units.isUnit_units_mul]
 
-/-- For a consistently ordered matrix the spectrum of the Jacobi iteration matrix is symmetric
-about the origin: the case `α = -1` of consistent ordering says that `B` and `-B` have the same
-spectrum. -/
+/-- For a consistently ordered matrix the spectrum of the Jacobi iteration matrix is symmetric about
+the origin: the case `α = -1` of consistent ordering says that `B` and `-B` have the same spectrum.
+-/
 theorem IsConsistentlyOrdered.neg_mem_spectrum_jacobi_iff {A : Matrix n n ℂ}
     (hA : A.IsConsistentlyOrdered) (h : IsUnit (diagPart A)) {μ : ℂ} :
     -μ ∈ spectrum ℂ (jacobiSplitting A h).iterationOperator ↔
@@ -333,10 +331,10 @@ theorem IsConsistentlyOrdered.neg_mem_spectrum_jacobi_iff {A : Matrix n n ℂ}
   rw [hneg] at hspec
   rw [← jacobiLower_add_jacobiUpper A h, ← Set.mem_neg, spectrum.neg_eq, hspec]
 
-/-- **Young's eigenvalue relation** (Saad, *Iterative Methods*, Thm 4.16; Kress,
-*Numerical Analysis*, (4.8)): for a consistently ordered matrix, `ω ≠ 0` and `λ ≠ 0` bound to `μ`
-by `(λ + ω - 1)² = λ ω² μ²`, the number `μ` is an eigenvalue of the Jacobi iteration matrix `B`
-if and only if `λ` is an eigenvalue of the SOR iteration matrix `G_ω`. -/
+/-- **Young's eigenvalue relation** ([saad2003iterative], Thm 4.16; [kress1998numerical], (4.8)):
+for a consistently ordered matrix, `ω ≠ 0` and `λ ≠ 0` bound to `μ` by `(λ + ω - 1)² = λ ω² μ²`, the
+number `μ` is an eigenvalue of the Jacobi iteration matrix `B` if and only if `λ` is an eigenvalue
+of the SOR iteration matrix `G_ω`. -/
 theorem IsConsistentlyOrdered.mem_spectrum_jacobi_iff_sor {A : Matrix n n ℂ}
     (hA : A.IsConsistentlyOrdered) (h : IsUnit (diagPart A)) {ω : ℂ} (hω : ω ≠ 0) {l μ : ℂ}
     (hl : l ≠ 0) (hrel : (l + ω - 1) ^ 2 = l * ω ^ 2 * μ ^ 2) :
@@ -374,11 +372,11 @@ theorem IsConsistentlyOrdered.mem_spectrum_jacobi_iff_sor {A : Matrix n n ℂ}
   · rw [sub_eq_zero] at hz; rw [hz]
   · rw [eq_neg_of_add_eq_zero_left hz, hA.neg_mem_spectrum_jacobi_iff h]
 
-/-- **Gauss–Seidel converges twice as fast as Jacobi** (Kress, *Numerical Analysis*, Cor 4.16):
-for a consistently ordered matrix the spectral radius of the Gauss–Seidel iteration matrix is the
-square of that of the Jacobi iteration matrix.  This is the case `ω = 1` of
-`Matrix.IsConsistentlyOrdered.mem_spectrum_jacobi_iff_sor`, where the eigenvalue relation reads
-`λ = μ²`. -/
+/-- **Gauss–Seidel converges twice as fast as Jacobi** ([kress1998numerical], Cor 4.16): for a
+consistently ordered matrix the spectral radius of the Gauss–Seidel iteration matrix is the square
+of that of the Jacobi iteration matrix.  This is the case `ω = 1` of
+`Matrix.IsConsistentlyOrdered.mem_spectrum_jacobi_iff_sor`, where the eigenvalue relation reads `λ =
+μ²`. -/
 theorem IsConsistentlyOrdered.spectralRadius_gaussSeidel_eq_sq {A : Matrix n n ℂ}
     (hA : A.IsConsistentlyOrdered) (h : IsUnit (diagPart A)) :
     spectralRadius ℂ (gaussSeidelSplitting A h).iterationOperator =
@@ -415,18 +413,18 @@ end SOR
 
 section Young
 
-/-- The modulus of the dominant root of Young's quadratic `(λ + ω - 1)² = λ ω² μ²`, as a function
-of the relaxation parameter `ω` and of the modulus `r` of the Jacobi eigenvalue `μ`.
+/-- The modulus of the dominant root of Young's quadratic `(λ + ω - 1)² = λ ω² μ²`, as a function of
+the relaxation parameter `ω` and of the modulus `r` of the Jacobi eigenvalue `μ`.
 
 Writing `t = ω r / 2` and `d = t² - (ω - 1)`, the two roots are `(t ± √d)²` when `d ≥ 0` and a
-conjugate pair of modulus `ω - 1` when `d < 0`.  Since `Real.sqrt` of a negative number is `0`,
-the maximum below is `(t + √d)²` in the first case and `ω - 1` in the second, so it covers both:
-see `Matrix.youngRadius_of_le` and `Matrix.youngRadius_of_lt`. -/
+conjugate pair of modulus `ω - 1` when `d < 0`.  Since `Real.sqrt` of a negative number is `0`, the
+maximum below is `(t + √d)²` in the first case and `ω - 1` in the second, so it covers both: see
+`Matrix.youngRadius_of_le` and `Matrix.youngRadius_of_lt`. -/
 noncomputable def youngRadius (ω r : ℝ) : ℝ :=
   max ((ω * r / 2 + Real.sqrt ((ω * r / 2) ^ 2 - (ω - 1))) ^ 2) (ω - 1)
 
-/-- When the discriminant is nonnegative the two roots of Young's quadratic are real and the
-larger one is `(ω r/2 + √((ω r/2)² - (ω - 1)))²`. -/
+/-- When the discriminant is nonnegative the two roots of Young's quadratic are real and the larger
+one is `(ω r/2 + √((ω r/2)² - (ω - 1)))²`. -/
 theorem youngRadius_of_le {ω r : ℝ} (ht : 0 ≤ ω * r) (h : ω - 1 ≤ (ω * r / 2) ^ 2) :
     youngRadius ω r = (ω * r / 2 + Real.sqrt ((ω * r / 2) ^ 2 - (ω - 1))) ^ 2 := by
   refine max_eq_left ?_
@@ -460,8 +458,8 @@ theorem youngRadius_mono {ω : ℝ} (hω : 0 ≤ ω) {r₁ r₂ : ℝ} (hr₁ : 
 
 /-- **The modulus bound of Young's quadratic.**  Any root `λ` of `(λ + ω - 1)² = λ (2t)²` has
 modulus at most `max ((t + √(t² - (ω - 1)))², ω - 1)`.  Writing `λ = z²` and choosing the sign of
-`z` so that `λ + ω - 1 = 2 t z`, the number `w = z - t` satisfies `w² = t² - (ω - 1)`; its real
-part is bounded by `√(t² - (ω-1))` when that is real, and vanishes when it is not. -/
+`z` so that `λ + ω - 1 = 2 t z`, the number `w = z - t` satisfies `w² = t² - (ω - 1)`; its real part
+is bounded by `√(t² - (ω-1))` when that is real, and vanishes when it is not. -/
 private theorem norm_le_young_aux {ω t : ℝ} (ht : 0 ≤ t) {l : ℂ}
     (hrel : (l + (ω : ℂ) - 1) ^ 2 = l * (2 * (t : ℂ)) ^ 2) :
     ‖l‖ ≤ max ((t + Real.sqrt (t ^ 2 - (ω - 1))) ^ 2) (ω - 1) := by
@@ -521,8 +519,8 @@ private theorem sq_eq_sq_norm_of_im_eq_zero {μ : ℂ} (h : μ.im = 0) :
   conv_lhs => rw [hre]
   rw [hnorm, ← Complex.ofReal_pow, ← Complex.ofReal_pow, sq_abs]
 
-/-- Any eigenvalue `λ` of the SOR iteration matrix attached by Young's relation to a *real*
-Jacobi eigenvalue `μ` of modulus at most `r` satisfies `‖λ‖ ≤ youngRadius ω r`. -/
+/-- Any eigenvalue `λ` of the SOR iteration matrix attached by Young's relation to a *real* Jacobi
+eigenvalue `μ` of modulus at most `r` satisfies `‖λ‖ ≤ youngRadius ω r`. -/
 theorem norm_le_youngRadius {ω r : ℝ} (hω : 0 ≤ ω) {l μ : ℂ} (hμim : μ.im = 0) (hμ : ‖μ‖ ≤ r)
     (hrel : (l + (ω : ℂ) - 1) ^ 2 = l * (ω : ℂ) ^ 2 * μ ^ 2) :
     ‖l‖ ≤ youngRadius ω r := by
@@ -537,8 +535,8 @@ theorem norm_le_youngRadius {ω r : ℝ} (hω : 0 ≤ ω) {l μ : ℂ} (hμim : 
   rw [youngRadius] at hmono
   exact hmono
 
-/-- **Young's radius is attained.**  For every `ω ≥ 0` and `r ≥ 0` there is a root `λ` of
-`(λ + ω - 1)² = λ ω² r²` with `‖λ‖ = youngRadius ω r`. -/
+/-- **Young's radius is attained.**  For every `ω ≥ 0` and `r ≥ 0` there is a root `λ` of `(λ + ω -
+1)² = λ ω² r²` with `‖λ‖ = youngRadius ω r`. -/
 theorem exists_norm_eq_youngRadius {ω r : ℝ} (hω : 0 ≤ ω) (hr : 0 ≤ r) :
     ∃ l : ℂ, (l + (ω : ℂ) - 1) ^ 2 = l * (ω : ℂ) ^ 2 * ((r : ℝ) : ℂ) ^ 2 ∧
       ‖l‖ = youngRadius ω r := by
@@ -625,8 +623,8 @@ private theorem exists_norm_eq_spectralRadius (M : Matrix n n ℂ) (hne : (spect
     exact ENNReal.ofReal_le_ofReal (hmax μ hμ)
   · rw [coe_nnnorm_eq_ofReal]
 
-/-- Every nonzero eigenvalue of the SOR iteration matrix of a consistently ordered matrix comes
-from an eigenvalue of the Jacobi matrix through Young's relation. -/
+/-- Every nonzero eigenvalue of the SOR iteration matrix of a consistently ordered matrix comes from
+an eigenvalue of the Jacobi matrix through Young's relation. -/
 theorem IsConsistentlyOrdered.exists_mem_spectrum_jacobi {A : Matrix n n ℂ}
     (hA : A.IsConsistentlyOrdered) (h : IsUnit (diagPart A)) {ω : ℂ} (hω : ω ≠ 0) {l : ℂ}
     (hl : l ≠ 0) (hmem : l ∈ spectrum ℂ (sorSplitting A h hω).iterationOperator) :
@@ -642,11 +640,11 @@ theorem IsConsistentlyOrdered.exists_mem_spectrum_jacobi {A : Matrix n n ℂ}
   exact ⟨(l + ω - 1) / (ω * α),
     (hA.mem_spectrum_jacobi_iff_sor h hω hl hrel).mpr hmem, hrel⟩
 
-/-- **Young's formula for the SOR spectral radius** (Kress, *Numerical Analysis*, Thm 4.15;
-Saad, *Iterative Methods*, (4.47)).  For a consistently ordered matrix whose Jacobi iteration
-matrix has real eigenvalues, the spectral radius of the SOR iteration matrix at a relaxation
-parameter `ω > 0` is `Matrix.youngRadius ω ρ(B)`: it is `ω - 1` while the discriminant
-`(ω ρ(B)/2)² - (ω - 1)` is negative and `(ω ρ(B)/2 + √((ω ρ(B)/2)² - (ω - 1)))²` otherwise.
+/-- **Young's formula for the SOR spectral radius** ([kress1998numerical], Thm 4.15;
+[saad2003iterative], (4.47)).  For a consistently ordered matrix whose Jacobi iteration matrix has
+real eigenvalues, the spectral radius of the SOR iteration matrix at a relaxation parameter `ω > 0`
+is `Matrix.youngRadius ω ρ(B)`: it is `ω - 1` while the discriminant `(ω ρ(B)/2)² - (ω - 1)` is
+negative and `(ω ρ(B)/2 + √((ω ρ(B)/2)² - (ω - 1)))²` otherwise.
 
 The upper bound is `Matrix.norm_le_youngRadius` applied to the Jacobi eigenvalue attached to each
 SOR eigenvalue by `Matrix.IsConsistentlyOrdered.exists_mem_spectrum_jacobi`, together with the
@@ -685,17 +683,17 @@ theorem IsConsistentlyOrdered.spectralRadius_sor_eq {A : Matrix n n ℂ} [Nonemp
       refine le_iSup₂_of_le l hmem ?_
       rw [coe_nnnorm_eq_ofReal, hnorm]
 
-/-- The optimal relaxation parameter `ω_opt = 2 / (1 + √(1 - r²))` of Young's theory, as a
-function of the spectral radius `r` of the Jacobi iteration matrix.  It is the value of `ω` at
-which the discriminant of Young's quadratic vanishes. -/
+/-- The optimal relaxation parameter `ω_opt = 2 / (1 + √(1 - r²))` of Young's theory, as a function
+of the spectral radius `r` of the Jacobi iteration matrix.  It is the value of `ω` at which the
+discriminant of Young's quadratic vanishes. -/
 noncomputable def optimalRelaxation (r : ℝ) : ℝ := 2 / (1 + Real.sqrt (1 - r ^ 2))
 
 section Optimal
 
 variable {r : ℝ}
 
-/-- The three facts about `√(1 - r²)` that every computation with the optimal parameter needs:
-its square is `1 - r²`, it is positive, and it is at most `1`. -/
+/-- The three facts about `√(1 - r²)` that every computation with the optimal parameter needs: its
+square is `1 - r²`, it is positive, and it is at most `1`. -/
 private theorem sqrt_one_sub_sq_facts (hr0 : 0 ≤ r) (hr1 : r < 1) :
     Real.sqrt (1 - r ^ 2) ^ 2 = 1 - r ^ 2 ∧ 0 < Real.sqrt (1 - r ^ 2) ∧
       Real.sqrt (1 - r ^ 2) ≤ 1 := by
@@ -717,8 +715,8 @@ theorem optimalRelaxation_lt_two (hr0 : 0 ≤ r) (hr1 : r < 1) : optimalRelaxati
   rw [optimalRelaxation, div_lt_iff₀ (by linarith)]
   linarith
 
-/-- The defining property of the optimal parameter: the discriminant of Young's quadratic
-vanishes there, `(ω_opt r / 2)² = ω_opt - 1`. -/
+/-- The defining property of the optimal parameter: the discriminant of Young's quadratic vanishes
+there, `(ω_opt r / 2)² = ω_opt - 1`. -/
 theorem sq_optimalRelaxation (hr0 : 0 ≤ r) (hr1 : r < 1) :
     (optimalRelaxation r * r / 2) ^ 2 = optimalRelaxation r - 1 := by
   obtain ⟨hq2, hq0, -⟩ := sqrt_one_sub_sq_facts hr0 hr1
@@ -744,10 +742,10 @@ theorem youngRadius_optimalRelaxation (hr0 : 0 ≤ r) (hr1 : r < 1) :
     rw [hsq]; ring
   rw [youngRadius_of_le hnn (by linarith), hzero, Real.sqrt_zero, add_zero, hsq]
 
-/-- **The optimal relaxation parameter minimizes Young's radius on `(0, 2)`.**  For `ω ≥ ω_opt`
-the radius is `ω - 1`, which increases; for `ω ≤ ω_opt` the discriminant is nonnegative and the
-dominant root `(ω r/2 + √d)²` is at least `(ω_opt r/2)² = ω_opt - 1`, because
-`√d ≥ ω_opt r/2 - ω r/2` reduces to `(2 - ω_opt)(ω_opt - ω) ≥ 0`. -/
+/-- **The optimal relaxation parameter minimizes Young's radius on `(0, 2)`.**  For `ω ≥ ω_opt` the
+radius is `ω - 1`, which increases; for `ω ≤ ω_opt` the discriminant is nonnegative and the dominant
+root `(ω r/2 + √d)²` is at least `(ω_opt r/2)² = ω_opt - 1`, because `√d ≥ ω_opt r/2 - ω r/2`
+reduces to `(2 - ω_opt)(ω_opt - ω) ≥ 0`. -/
 theorem youngRadius_optimalRelaxation_le (hr0 : 0 ≤ r) (hr1 : r < 1) {ω : ℝ}
     (hω0 : 0 < ω) : youngRadius (optimalRelaxation r) r ≤ youngRadius ω r := by
   have hc1 := one_le_optimalRelaxation hr0 hr1
@@ -820,13 +818,12 @@ private theorem toReal_spectralRadius_lt_one {M : Matrix n n ℂ}
   rw [← ENNReal.toReal_one, ENNReal.toReal_lt_toReal hne ENNReal.one_ne_top]
   exact hlt
 
-/-- **The optimal relaxation parameter** (Saad, *Iterative Methods*, (4.47); Kress,
-*Numerical Analysis*, Thm 4.15).  For a consistently ordered matrix whose Jacobi iteration matrix
-has real eigenvalues and spectral radius `< 1`, the parameter
-`ω_opt = 2/(1 + √(1 - ρ(B)²))` minimizes the SOR spectral radius over `0 < ω < 2`.  The value
-there is `ω_opt - 1` (`Matrix.IsConsistentlyOrdered.spectralRadius_sor_optimalRelaxation`), and
-SOR converges for every `0 < ω < 2`
-(`Matrix.IsConsistentlyOrdered.spectralRadius_sor_lt_one`). -/
+/-- **The optimal relaxation parameter** ([saad2003iterative], (4.47); [kress1998numerical], Thm
+4.15).  For a consistently ordered matrix whose Jacobi iteration matrix has real eigenvalues and
+spectral radius `< 1`, the parameter `ω_opt = 2/(1 + √(1 - ρ(B)²))` minimizes the SOR spectral
+radius over `0 < ω < 2`.  The value there is `ω_opt - 1`
+(`Matrix.IsConsistentlyOrdered.spectralRadius_sor_optimalRelaxation`), and SOR converges for every
+`0 < ω < 2` (`Matrix.IsConsistentlyOrdered.spectralRadius_sor_lt_one`). -/
 theorem IsConsistentlyOrdered.isMinOn_complexSpectralRadius_sor
     (hA : A.IsConsistentlyOrdered) (h : IsUnit (diagPart A))
     (hreal : ∀ μ ∈ spectrum ℂ (jacobiSplitting A h).iterationOperator, μ.im = 0)

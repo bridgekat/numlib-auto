@@ -5,18 +5,18 @@ import Numlib.LinearSolve.Projection.Optimality
 /-!
 # Krylov iterates: specifications
 
-The canonical specifications of Krylov subspace methods for `A x = b` started at `x₀`, with
-`r₀ = b - A x₀` and `𝒦_m = 𝒦_m(A, r₀)`, together with their polynomial characterizations and
-their behaviour at the grade of `r₀`.
+The canonical specifications of Krylov subspace methods for `A x = b` started at `x₀`, with `r₀ = b
+- A x₀` and `𝒦_m = 𝒦_m(A, r₀)`, together with their polynomial characterizations and their behaviour
+at the grade of `r₀`.
 
 ## Main definitions
 
-* `Krylov.IsMinResIterate A b x₀ m x`: `x ∈ x₀ + 𝒦_m` minimizes the residual
-  (GMRES, MINRES, CR, GCR, ORTHOMIN/ORTHODIR full versions, MINRES-QLP on nonsingular systems);
-* `Krylov.IsGalerkinIterate A b x₀ m x`: `x ∈ x₀ + 𝒦_m`, `r ⟂ 𝒦_m`
-  (FOM, CG, D-Lanczos, the Lanczos method);
-* `Krylov.IsMinErrorIterate A xstar x₀ m x`: minimal Euclidean error `‖xstar - x‖` over
-  `x₀ + A 𝒦_m(A, A (xstar - x₀))` (SYMMLQ; CGNE / Craig on `A Aᵀ`);
+* `Krylov.IsMinResIterate A b x₀ m x`: `x ∈ x₀ + 𝒦_m` minimizes the residual (GMRES, MINRES, CR,
+  GCR, ORTHOMIN/ORTHODIR full versions, MINRES-QLP on nonsingular systems);
+* `Krylov.IsGalerkinIterate A b x₀ m x`: `x ∈ x₀ + 𝒦_m`, `r ⟂ 𝒦_m` (FOM, CG, D-Lanczos, the Lanczos
+  method);
+* `Krylov.IsMinErrorIterate A xstar x₀ m x`: minimal Euclidean error `‖xstar - x‖` over `x₀ + A
+  𝒦_m(A, A (xstar - x₀))` (SYMMLQ; CGNE / Craig on `A Aᵀ`);
 * `Krylov.IsMinNormMinResIterate A b x₀ m x`: least norm among the minimal-residual iterates
   (MINRES-QLP), which is what pins the iterate down on a singular system.
 
@@ -25,15 +25,16 @@ their behaviour at the grade of `r₀`.
 * `Krylov.exists_residual_poly`, `Krylov.exists_mem_of_residual_poly`,
   `Krylov.IsMinResIterate.norm_residual_eq_iInf` and
   `Krylov.IsGalerkinIterate.energyNorm_error_eq_iInf`: the polynomial characterizations
-  ([Saad, *Iterative Methods*][saad2003iterative] Lemma 6.28 and Lemma 6.31);
+  ([saad2003iterative] Lemma 6.28 and Lemma 6.31);
 * `Krylov.IsGalerkinIterate.residual_mem_span`: the Galerkin residual is a multiple of the next
-  Arnoldi vector (Saad Prop 6.7);
-* `Krylov.IsMinResIterate.apply_eq_of_grade_le`, `Krylov.IsGalerkinIterate.apply_eq_of_grade_le`
-  and `Krylov.grade_le_of_apply_eq`: lucky breakdown and exactness at the grade (Saad Prop 6.10);
+  Arnoldi vector ([saad2003iterative] Prop 6.7);
+* `Krylov.IsMinResIterate.apply_eq_of_grade_le`, `Krylov.IsGalerkinIterate.apply_eq_of_grade_le` and
+  `Krylov.grade_le_of_apply_eq`: lucky breakdown and exactness at the grade ([saad2003iterative]
+  Prop 6.10);
 * `Krylov.existsUnique_isMinNormMinResIterate`: the MINRES-QLP iterate is well defined with no
   hypothesis on `A`;
 * `Krylov.norm_le_of_apply_eq`: an exact Krylov solution of a compatible symmetric system is the
-  minimum-norm solution (core of [Choi][choi2006iterative] Thm 2.25).
+  minimum-norm solution (core of [choi2006iterative] Thm 2.25).
 -/
 
 open Polynomial Krylov
@@ -50,9 +51,9 @@ abbrev IsMinResIterate (A : E →ₗ[𝕜] E) (b x₀ : E) (m : ℕ) (x : E) : P
 abbrev IsGalerkinIterate (A : E →ₗ[𝕜] E) (b x₀ : E) (m : ℕ) (x : E) : Prop :=
   IsGalerkin A b x₀ (subspace A (b - A x₀) m) x
 
-/-- Minimal-error Krylov iterate at step `m` (SYMMLQ / CGNE specification): minimal `‖x* - x‖`
-over `x₀ + A 𝒦_m(A, r₀)` with `r₀ = A (x* - x₀)` (`= b - A x₀` when `A x* = b`). The target `x*`
-is explicit so that the specification is meaningful for singular `A`. -/
+/-- Minimal-error Krylov iterate at step `m` (SYMMLQ / CGNE specification): minimal `‖x* - x‖` over
+`x₀ + A 𝒦_m(A, r₀)` with `r₀ = A (x* - x₀)` (`= b - A x₀` when `A x* = b`). The target `x*` is
+explicit so that the specification is meaningful for singular `A`. -/
 abbrev IsMinErrorIterate (A : E →ₗ[𝕜] E) (xstar x₀ : E) (m : ℕ) (x : E) : Prop :=
   IsMinError xstar x₀ ((subspace A (A (xstar - x₀)) m).map A) x
 
@@ -95,8 +96,8 @@ private theorem aeval_apply_comm (A : E →ₗ[𝕜] E) (p : 𝕜[X]) (u : E) :
   rw [h1, h2, show (aeval A p * A) = aeval A (p * X) by rw [map_mul, aeval_X],
     show (A * aeval A p) = aeval A (X * p) by rw [map_mul, aeval_X], mul_comm]
 
-/-- The constant polynomial `1` is a residual polynomial for every `m`.  Named apart from
-Mathlib's `Polynomial.degree_one_le`, which is the same bound at `m = 0`. -/
+/-- The constant polynomial `1` is a residual polynomial for every `m`.  Named apart from Mathlib's
+`Polynomial.degree_one_le`, which is the same bound at `m = 0`. -/
 private theorem degree_one_le_natCast (m : ℕ) : (1 : 𝕜[X]).degree ≤ (m : WithBot ℕ) :=
   Polynomial.degree_one_le.trans (by exact_mod_cast Nat.zero_le m)
 
@@ -104,8 +105,8 @@ end PolynomialGlue
 
 variable {A : E →ₗ[𝕜] E} {b x₀ : E} {m : ℕ} {x : E}
 
-/-- Residual polynomials: for `x ∈ x₀ + 𝒦_m(A, r₀)` there is `p` with `deg p ≤ m`, `p 0 = 1`
-and `b - A x = p(A) r₀`. -/
+/-- Residual polynomials: for `x ∈ x₀ + 𝒦_m(A, r₀)` there is `p` with `deg p ≤ m`, `p 0 = 1` and `b
+- A x = p(A) r₀`. -/
 theorem exists_residual_poly (hx : x - x₀ ∈ subspace A (b - A x₀) m) :
     ∃ p : 𝕜[X], p.degree ≤ m ∧ p.eval 0 = 1 ∧ b - A x = aeval A p (b - A x₀) := by
   obtain ⟨g, hg, hgx⟩ := (mem_subspace_iff_exists_aeval A (b - A x₀)).1 hx
@@ -145,17 +146,17 @@ theorem exists_isMinResIterate (A : E →ₗ[𝕜] E) (b x₀ : E) (m : ℕ) :
 
 /-- With `A` injective the minimal-residual iterate at step `m` exists and is unique. Existence
 holds for every `A` (`exists_isMinResIterate`), since the minimal residual is the part of `r₀`
-orthogonal to `A 𝒦_m`; injectivity is what makes the *iterate* unique and not merely its
-residual. -/
+orthogonal to `A 𝒦_m`; injectivity is what makes the *iterate* unique and not merely its residual.
+-/
 theorem existsUnique_isMinResIterate_of_injective (hA : Function.Injective A) (b x₀ : E)
     (m : ℕ) : ∃! x, IsMinResIterate A b x₀ m x :=
   existsUnique_isMinRes_of_injOn b x₀ _ hA.injOn
 
 namespace IsMinResIterate
 
-/-- The minimal-residual iterate beats every competitor polynomial: `‖b - A x‖ ≤ ‖p(A) r₀‖` for
-each `p` of degree at most `m` with `p 0 = 1`. Every such `p` is the residual polynomial of some
-point of `x₀ + 𝒦_m` (`exists_mem_of_residual_poly`), over which `x` minimizes. This is the half of
+/-- The minimal-residual iterate beats every competitor polynomial: `‖b - A x‖ ≤ ‖p(A) r₀‖` for each
+`p` of degree at most `m` with `p 0 = 1`. Every such `p` is the residual polynomial of some point of
+`x₀ + 𝒦_m` (`exists_mem_of_residual_poly`), over which `x` minimizes. This is the half of
 `norm_residual_eq_iInf` that convergence proofs use: exhibit one polynomial small on the spectrum
 and its bound transfers to the residual. -/
 theorem norm_residual_le_norm_aeval (hx : IsMinResIterate A b x₀ m x) (p : 𝕜[X])
@@ -164,7 +165,7 @@ theorem norm_residual_le_norm_aeval (hx : IsMinResIterate A b x₀ m x) (p : �
   rw [← hres]
   exact hx.min y hy
 
-/-- Saad, *Iterative Methods*, Lemma 6.31: `‖r_m‖ = min {‖p(A) r₀‖ : deg p ≤ m, p 0 = 1}`. -/
+/-- [saad2003iterative], Lemma 6.31: `‖r_m‖ = min {‖p(A) r₀‖ : deg p ≤ m, p 0 = 1}`. -/
 theorem norm_residual_eq_iInf (hx : IsMinResIterate A b x₀ m x) :
     ‖b - A x‖ = ⨅ p : {p : 𝕜[X] // p.degree ≤ m ∧ p.eval 0 = 1}, ‖aeval A p.1 (b - A x₀)‖ := by
   have : Nonempty {p : 𝕜[X] // p.degree ≤ (m : WithBot ℕ) ∧ p.eval 0 = 1} :=
@@ -185,8 +186,8 @@ theorem norm_residual_antitone {x : ℕ → E} (hx : ∀ k, IsMinResIterate A b 
     Antitone fun k => ‖b - A (x k)‖ :=
   fun k l hkl => (hx k).norm_residual_le (hx l) (subspace_mono A (b - A x₀) hkl)
 
-/-- Lucky breakdown (Saad, *Iterative Methods*, Prop 6.10): at `m ≥ grade` the minimal-residual
-iterate is exact provided `A` is injective on `𝒦_grade`. -/
+/-- Lucky breakdown ([saad2003iterative], Prop 6.10): at `m ≥ grade` the minimal-residual iterate is
+exact provided `A` is injective on `𝒦_grade`. -/
 theorem apply_eq_of_grade_le [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))]
     (hx : IsMinResIterate A b x₀ m x) (hm : grade A (b - A x₀) ≤ m)
     (hinj : Set.InjOn A (subspace A (b - A x₀) (grade A (b - A x₀)))) : A x = b := by
@@ -238,9 +239,9 @@ theorem grade_le_of_aeval_eq_zero {v : E} [FiniteDimensional 𝕜 (fullSubspace 
     omega
   · rw [map_mul, map_mul, Module.End.mul_apply, Module.End.mul_apply, h0, map_zero, map_zero]
 
-/-- Converse of lucky breakdown (Saad, *Iterative Methods*, Prop 6.10 ⇐, P-6.13): an exact
-solution in `x₀ + 𝒦_m` forces `grade ≤ m`.  No injectivity is needed: `r₀ = A q(A) r₀` gives the
-annihilator `1 - X q`. -/
+/-- Converse of lucky breakdown ([saad2003iterative], Prop 6.10 ⇐, P-6.13): an exact solution in `x₀
++ 𝒦_m` forces `grade ≤ m`.  No injectivity is needed: `r₀ = A q(A) r₀` gives the annihilator `1 - X
+q`. -/
 theorem grade_le_of_apply_eq [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))]
     (hx : x - x₀ ∈ subspace A (b - A x₀) m) (hAx : A x = b) : grade A (b - A x₀) ≤ m := by
   obtain ⟨p, hp, hp0, hres⟩ := exists_residual_poly hx
@@ -250,10 +251,10 @@ theorem grade_le_of_apply_eq [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀
 
 /-! ### The minimum-norm minimal-residual iterate -/
 
-/-- The MINRES-QLP specification: the minimum-norm element of the set of minimal-residual
-iterates over `x₀ + 𝒦_m`.  On a singular system that set is a whole affine subspace
-(`Krylov.isMinResIterate_iff_sub_mem`) and the plain minimal-residual specification does not
-pin the iterate down; asking in addition for least norm does, with no hypothesis on `A`
+/-- The MINRES-QLP specification: the minimum-norm element of the set of minimal-residual iterates
+over `x₀ + 𝒦_m`.  On a singular system that set is a whole affine subspace
+(`Krylov.isMinResIterate_iff_sub_mem`) and the plain minimal-residual specification does not pin the
+iterate down; asking in addition for least norm does, with no hypothesis on `A`
 (`Krylov.existsUnique_isMinNormMinResIterate`).  When `A` is injective this is just
 `Krylov.IsMinResIterate` again, since that already has a unique solution. -/
 structure IsMinNormMinResIterate (A : E →ₗ[𝕜] E) (b x₀ : E) (m : ℕ) (x : E) : Prop where
@@ -262,9 +263,9 @@ structure IsMinNormMinResIterate (A : E →ₗ[𝕜] E) (b x₀ : E) (m : ℕ) (
   /-- `x` has least norm among the minimizers. -/
   norm_le : ∀ y, IsMinResIterate A b x₀ m y → ‖x‖ ≤ ‖y‖
 
-/-- The minimal-residual iterates at step `m` form the affine subspace `x₁ + (𝒦_m ⊓ ker A)`
-through any one of them `x₁`: they all share the residual (`Krylov.IsMinRes.residual_unique`),
-so they differ by elements of `𝒦_m` that `A` kills. -/
+/-- The minimal-residual iterates at step `m` form the affine subspace `x₁ + (𝒦_m ⊓ ker A)` through
+any one of them `x₁`: they all share the residual (`Krylov.IsMinRes.residual_unique`), so they
+differ by elements of `𝒦_m` that `A` kills. -/
 theorem isMinResIterate_iff_sub_mem {x₁ : E} (hx₁ : IsMinResIterate A b x₀ m x₁) :
     IsMinResIterate A b x₀ m x ↔
       x - x₁ ∈ subspace A (b - A x₀) m ⊓ LinearMap.ker A := by
@@ -298,11 +299,11 @@ private theorem isMinNormMinResIterate_iff_isMinError {x₁ : E} (hx₁ : IsMinR
     have := hmin y ((isMinResIterate_iff_sub_mem hx₁).1 hy)
     rwa [hnorm, hnorm] at this
 
-/-- The minimum-norm minimal-residual iterate exists and is unique, with no hypothesis on `A`:
-the minimal-residual iterates form a nonempty translate of the finite-dimensional subspace
-`𝒦_m ⊓ ker A`, and a nonempty affine subspace of an inner product space has a unique element
-of least norm.  This is what makes the MINRES-QLP iterate well defined on a singular system,
-where `Krylov.existsUnique_isMinResIterate_of_injective` does not apply. -/
+/-- The minimum-norm minimal-residual iterate exists and is unique, with no hypothesis on `A`: the
+minimal-residual iterates form a nonempty translate of the finite-dimensional subspace `𝒦_m ⊓ ker
+A`, and a nonempty affine subspace of an inner product space has a unique element of least norm.
+This is what makes the MINRES-QLP iterate well defined on a singular system, where
+`Krylov.existsUnique_isMinResIterate_of_injective` does not apply. -/
 theorem existsUnique_isMinNormMinResIterate (A : E →ₗ[𝕜] E) (b x₀ : E) (m : ℕ) :
     ∃! x, IsMinNormMinResIterate A b x₀ m x := by
   obtain ⟨x₁, hx₁⟩ := exists_isMinResIterate A b x₀ m
@@ -330,8 +331,8 @@ theorem exists_isMinErrorIterate (A : E →ₗ[𝕜] E) (xstar x₀ : E) (m : �
 
 /-- The minimal-error iterate is unique, with no hypothesis on `A` at all: it is the nearest point
 of the affine space `x₀ + A 𝒦_m` to `x*`, and nearest points are unique by the parallelogram law
-however degenerate `A` is. Contrast `existsUnique_isMinResIterate_of_injective`, where uniqueness
-of the *iterate* costs an injectivity assumption. -/
+however degenerate `A` is. Contrast `existsUnique_isMinResIterate_of_injective`, where uniqueness of
+the *iterate* costs an injectivity assumption. -/
 theorem IsMinErrorIterate.unique {xstar x' : E} (hx : IsMinErrorIterate A xstar x₀ m x)
     (hx' : IsMinErrorIterate A xstar x₀ m x') : x = x' :=
   IsMinError.unique hx hx'
@@ -346,12 +347,11 @@ end MinError
 
 section Galerkin
 
-/-- For coercive `A` the Galerkin iterate over `𝒦_m` exists and is unique at every step, so FOM
-and CG are well defined with no further hypothesis. Coercivity excludes the one obstruction: a
-nonzero `z ∈ 𝒦_m` with `A z ⟂ 𝒦_m`, which would leave the Galerkin condition underdetermined.
-Without it the iterate can genuinely fail to exist;
-`Krylov.existsUnique_isGalerkinIterate_iff_isUnit` ties existence and uniqueness to invertibility
-of the compressed Hessenberg matrix. -/
+/-- For coercive `A` the Galerkin iterate over `𝒦_m` exists and is unique at every step, so FOM and
+CG are well defined with no further hypothesis. Coercivity excludes the one obstruction: a nonzero
+`z ∈ 𝒦_m` with `A z ⟂ 𝒦_m`, which would leave the Galerkin condition underdetermined. Without it the
+iterate can genuinely fail to exist; `Krylov.existsUnique_isGalerkinIterate_iff_isUnit` ties
+existence and uniqueness to invertibility of the compressed Hessenberg matrix. -/
 theorem existsUnique_isGalerkinIterate_of_isCoercive (hA : A.IsCoercive) (b x₀ : E) (m : ℕ) :
     ∃! x, IsGalerkinIterate A b x₀ m x :=
   existsUnique_isGalerkin_of_isCoercive b x₀ _ hA
@@ -368,11 +368,11 @@ private theorem error_eq_aeval (hA : A.IsSymmetricCoercive) {xstar y : E} (hstar
   rw [← hl, hres, hr, aeval_apply_comm]
 
 /-- Energy-norm counterpart of `Krylov.IsMinResIterate.norm_residual_le_norm_aeval`, for symmetric
-coercive `A`: `‖x* - x‖_A ≤ ‖p(A) (x* - x₀)‖_A` for each `p` of degree at most `m` with `p 0 = 1`.
-A competitor's residual polynomial doubles as its error polynomial, because `A` commutes with
-`p(A)`, so the energy-optimality of the Galerkin iterate turns each such `p` into a bound. This is
-the half of `energyNorm_error_eq_iInf` (Saad, *Iterative Methods*, Lemma 6.28) that the Chebyshev
-convergence bounds consume. -/
+coercive `A`: `‖x* - x‖_A ≤ ‖p(A) (x* - x₀)‖_A` for each `p` of degree at most `m` with `p 0 = 1`. A
+competitor's residual polynomial doubles as its error polynomial, because `A` commutes with `p(A)`,
+so the energy-optimality of the Galerkin iterate turns each such `p` into a bound. This is the half
+of `energyNorm_error_eq_iInf` ([saad2003iterative], Lemma 6.28) that the Chebyshev convergence
+bounds consume. -/
 theorem energyNorm_error_le_energyNorm_aeval (hA : A.IsSymmetricCoercive)
     (hx : IsGalerkinIterate A b x₀ m x) {xstar : E} (hstar : A xstar = b) (p : 𝕜[X])
     (hp : p.degree ≤ m) (hp0 : p.eval 0 = 1) :
@@ -381,8 +381,8 @@ theorem energyNorm_error_le_energyNorm_aeval (hA : A.IsSymmetricCoercive)
   rw [← error_eq_aeval hA hstar hres]
   exact IsGalerkin.energyNorm_le hA hx hstar hy
 
-/-- Saad, *Iterative Methods*, Lemma 6.28: for symmetric coercive `A`,
-`‖x* - x_m‖_A = min {‖p(A) (x* - x₀)‖_A : deg p ≤ m, p 0 = 1}`. -/
+/-- [saad2003iterative], Lemma 6.28: for symmetric coercive `A`, `‖x* - x_m‖_A = min {‖p(A) (x* -
+x₀)‖_A : deg p ≤ m, p 0 = 1}`. -/
 theorem energyNorm_error_eq_iInf (hA : A.IsSymmetricCoercive) (hx : IsGalerkinIterate A b x₀ m x)
     {xstar : E} (hstar : A xstar = b) :
     energyNorm A (xstar - x) =
@@ -402,8 +402,8 @@ theorem energyNorm_error_eq_iInf (hA : A.IsSymmetricCoercive) (hx : IsGalerkinIt
   rw [error_eq_aeval hA hstar hres]
   exact ciInf_le hbdd ⟨p, hp, hp0⟩
 
-/-- Saad, *Iterative Methods*, Prop 6.7: the Galerkin residual is a multiple of the next
-Arnoldi vector. -/
+/-- [saad2003iterative], Prop 6.7: the Galerkin residual is a multiple of the next Arnoldi vector.
+-/
 theorem residual_mem_span (hx : IsGalerkinIterate A b x₀ m x) :
     b - A x ∈ 𝕜 ∙ Arnoldi.vec A (b - A x₀) m := by
   have hIio : Set.Iio (m + 1) = Set.Iio m ∪ {m} := by
@@ -440,8 +440,8 @@ theorem inner_residual_eq_zero {m' : ℕ} {x' : E} (hx : IsGalerkinIterate A b x
   · exact key m m' x x' hx hx' hlt
   · rw [← inner_conj_symm, key m' m x' x hx' hx hlt, map_zero]
 
-/-- Galerkin iterates are exact at the grade (Saad, *Iterative Methods*, Prop 5.6 +
-Saad Prop 6.10). -/
+/-- Galerkin iterates are exact at the grade ([saad2003iterative], Prop 5.6 + [saad2003iterative]
+Prop 6.10). -/
 theorem apply_eq_of_grade_le [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))]
     (hx : IsGalerkinIterate A b x₀ m x) (hm : grade A (b - A x₀) ≤ m) : A x = b := by
   refine hx.eq_of_invt ?_ ?_ ?_
@@ -480,9 +480,8 @@ theorem subspace_le_orthogonal_ker (hA : A.IsSymmetric) {b : E} (hb : b ∈ Line
     rw [pow_succ, Module.End.mul_apply, LinearMap.mem_ker.1 hz, map_zero]
   rw [hpow, ← hA.pow ((i : ℕ) + 1) z c, hz0, inner_zero_left]
 
-/-- Any exact Krylov solution of a compatible system with symmetric `A` is the minimum-norm
-solution (abstract core of Choi, *Iterative Methods for Singular Linear Equations and
-Least-Squares Problems*, Thm 2.25 / Thm 3.1): `𝒦_m(A, b) ≤ (ker A)ᗮ`. -/
+/-- Any exact Krylov solution of a compatible system with symmetric `A` is the minimum-norm solution
+(abstract core of [choi2006iterative], Thm 2.25 / Thm 3.1): `𝒦_m(A, b) ≤ (ker A)ᗮ`. -/
 theorem norm_le_of_apply_eq (hA : A.IsSymmetric) {b x : E} {m : ℕ} (hx : x ∈ subspace A b m)
     (hAx : A x = b) (y : E) (hy : A y = b) : ‖x‖ ≤ ‖y‖ := by
   have hker : y - x ∈ LinearMap.ker A := by

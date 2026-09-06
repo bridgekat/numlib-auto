@@ -17,35 +17,33 @@ Zarantonello's lemma and the complex min–max estimates on an ellipse.
 
 The Joukowski map `J w = (w + w⁻¹)/2` carries the circle of radius `ρ` about the origin onto an
 ellipse with foci `±1` and semi-axes `(ρ ± ρ⁻¹)/2`, and carries `w ↦ w^k` to the Chebyshev
-polynomial: `T_k (J w) = (w^k + w^{-k})/2`. Everything here follows from that identity and from
-the maximum modulus principle. This is [Saad, *Iterative Methods for Sparse Linear
-Systems*][saad2003iterative], §6.11.2 and [Saad, *Numerical Methods for Large Eigenvalue
-Problems*][saad2011numerical], §4.4.
+polynomial: `T_k (J w) = (w^k + w^{-k})/2`. Everything here follows from that identity and from the
+maximum modulus principle. This is [saad2003iterative], §6.11.2 and [saad2011numerical], §4.4.
 
 ## Main definitions
 
 * `Complex.joukowski`: the map `w ↦ (w + w⁻¹)/2`.
-* `Set.ellipse c d ρ` and `Set.filledEllipse c d ρ`: the image under `w ↦ c + d · J w` of the
-  circle of radius `ρ`, and of the closed annulus `ρ⁻¹ ≤ ‖w‖ ≤ ρ` it bounds.
-* `Polynomial.normalizedSupNorms k γ K`: the sup norms over `K` of the polynomials of degree at
-  most `k` normalized by `p γ = 1`, the competitors in a min–max problem on `K`.
-* `Polynomial.Chebyshev.shiftedComplex`: `T_k((c - z)/d) / T_k((c - γ)/d)`, the complex
-  counterpart of `Polynomial.Chebyshev.shifted`.
+* `Set.ellipse c d ρ` and `Set.filledEllipse c d ρ`: the image under `w ↦ c + d · J w` of the circle
+  of radius `ρ`, and of the closed annulus `ρ⁻¹ ≤ ‖w‖ ≤ ρ` it bounds.
+* `Polynomial.normalizedSupNorms k γ K`: the sup norms over `K` of the polynomials of degree at most
+  `k` normalized by `p γ = 1`, the competitors in a min–max problem on `K`.
+* `Polynomial.Chebyshev.shiftedComplex`: `T_k((c - z)/d) / T_k((c - γ)/d)`, the complex counterpart
+  of `Polynomial.Chebyshev.shifted`.
 
 ## Main results
 
-* `Polynomial.zarantonello`: among the complex polynomials of degree at most `k` normalized by
-  `p γ = 1`, the least attainable maximum modulus on the circle of radius `ρ < ‖γ‖` is
-  `(ρ/‖γ‖)^k`, attained by `(X/γ)^k`.
+* `Polynomial.zarantonello`: among the complex polynomials of degree at most `k` normalized by `p γ
+  = 1`, the least attainable maximum modulus on the circle of radius `ρ < ‖γ‖` is `(ρ/‖γ‖)^k`,
+  attained by `(X/γ)^k`.
 * `Polynomial.Chebyshev.sSup_norm_eval_T_ellipse`: the maximum of `|T_k|` on the ellipse
   `Set.ellipse 0 1 ρ` is `(ρ^k + ρ^{-k})/2`.
-* `Polynomial.Chebyshev.ellipse_minimax_bounds`: the two-sided estimate of the same min–max value
-  on an ellipse, which is the source of the Chebyshev convergence bound for a Krylov method whose
+* `Polynomial.Chebyshev.ellipse_minimax_bounds`: the two-sided estimate of the same min–max value on
+  an ellipse, which is the source of the Chebyshev convergence bound for a Krylov method whose
   spectrum is enclosed in an ellipse.
 * `Polynomial.Chebyshev.sSup_norm_eval_shiftedComplex_ellipse`: the maximum on the ellipse
-  `Set.ellipse c d ρ` of the shifted, normalized Chebyshev polynomial
-  `Ĉ_k(z) = T_k((c - z)/d) / T_k((c - γ)/d)`, namely `T_k(a/d)/|T_k((c - γ)/d)|` where
-  `a = d (ρ + ρ⁻¹)/2` is the semi-major axis.
+  `Set.ellipse c d ρ` of the shifted, normalized Chebyshev polynomial `Ĉ_k(z) = T_k((c - z)/d) /
+  T_k((c - γ)/d)`, namely `T_k(a/d)/|T_k((c - γ)/d)|` where `a = d (ρ + ρ⁻¹)/2` is the semi-major
+  axis.
 * `Polynomial.norm_eval_le_of_forall_mem_ellipse`: the maximum modulus principle on the *filled*
   ellipse `Set.filledEllipse c d ρ`, the region the ellipse encloses. The disc principle does not
   give it, because the Joukowski parameter domain of a filled ellipse is an annulus rather than a
@@ -57,9 +55,9 @@ open Polynomial Polynomial.Chebyshev
 
 namespace Complex
 
-/-- The Joukowski map `w ↦ (w + w⁻¹)/2`. It carries the circle of radius `ρ` about the origin
-onto the ellipse with foci `±1` and semi-axes `(ρ + ρ⁻¹)/2` and `(ρ - ρ⁻¹)/2`, and it is the
-change of variable that turns the Chebyshev polynomial `T_k` into `w ↦ (w^k + w^{-k})/2`. -/
+/-- The Joukowski map `w ↦ (w + w⁻¹)/2`. It carries the circle of radius `ρ` about the origin onto
+the ellipse with foci `±1` and semi-axes `(ρ + ρ⁻¹)/2` and `(ρ - ρ⁻¹)/2`, and it is the change of
+variable that turns the Chebyshev polynomial `T_k` into `w ↦ (w^k + w^{-k})/2`. -/
 noncomputable def joukowski (w : ℂ) : ℂ := (w + w⁻¹) / 2
 
 /-- The Joukowski map, unfolded. -/
@@ -94,9 +92,9 @@ theorem differentiableAt_joukowski {w : ℂ} (hw : w ≠ 0) : DifferentiableAt �
 theorem joukowski_neg (w : ℂ) : joukowski (-w) = -joukowski w := by
   rw [joukowski_def, joukowski_def, inv_neg, ← neg_add, neg_div]
 
-/-- Every complex number is a Joukowski value, and may be written as one at a parameter outside
-the closed unit disc: the quadratic `w² - 2 x w + 1 = 0` has two roots whose product is `1`, and
-`J` takes the same value at both. -/
+/-- Every complex number is a Joukowski value, and may be written as one at a parameter outside the
+closed unit disc: the quadratic `w² - 2 x w + 1 = 0` has two roots whose product is `1`, and `J`
+takes the same value at both. -/
 theorem exists_joukowski_eq (x : ℂ) : ∃ w : ℂ, 1 ≤ ‖w‖ ∧ joukowski w = x := by
   obtain ⟨s, hs⟩ : ∃ s : ℂ, s ^ 2 = x ^ 2 - 1 := by
     rcases eq_or_ne (x ^ 2 - 1) 0 with h | h
@@ -122,10 +120,10 @@ theorem exists_joukowski_eq (x : ℂ) : ∃ w : ℂ, 1 ≤ ‖w‖ ∧ joukowski
 
 end Complex
 
-/-- The ellipse with centre `c`, focal semi-distance `d` and Joukowski parameter `ρ`: the image
-of the circle of radius `ρ` about the origin under `w ↦ c + d · J w`. For `d ≠ 0` and `ρ ≥ 1` it
-is the ellipse with foci `c ± d`, semi-major axis `d (ρ + ρ⁻¹)/2` and semi-minor axis
-`d (ρ - ρ⁻¹)/2`; `Set.ellipse 0 1 ρ` is the ellipse `E_ρ` with foci `±1`. -/
+/-- The ellipse with centre `c`, focal semi-distance `d` and Joukowski parameter `ρ`: the image of
+the circle of radius `ρ` about the origin under `w ↦ c + d · J w`. For `d ≠ 0` and `ρ ≥ 1` it is the
+ellipse with foci `c ± d`, semi-major axis `d (ρ + ρ⁻¹)/2` and semi-minor axis `d (ρ - ρ⁻¹)/2`;
+`Set.ellipse 0 1 ρ` is the ellipse `E_ρ` with foci `±1`. -/
 noncomputable def Set.ellipse (c d : ℂ) (ρ : ℝ) : Set ℂ :=
   (fun w => c + d * Complex.joukowski w) '' Metric.sphere 0 ρ
 
@@ -139,8 +137,8 @@ theorem Set.mem_ellipse {c d z : ℂ} {ρ : ℝ} :
   simp only [Set.ellipse_def, Set.mem_image, mem_sphere_zero_iff_norm]
   exact ⟨fun ⟨w, hw, h⟩ => ⟨w, hw, h.symm⟩, fun ⟨w, hw, h⟩ => ⟨w, hw, h.symm⟩⟩
 
-/-- An ellipse is compact, being the image of a circle under a map continuous away from the
-origin. -/
+/-- An ellipse is compact, being the image of a circle under a map continuous away from the origin.
+-/
 theorem Set.isCompact_ellipse (c d : ℂ) {ρ : ℝ} (hρ : 0 < ρ) :
     IsCompact (Set.ellipse c d ρ) := by
   refine (isCompact_sphere (0 : ℂ) ρ).image_of_continuousOn (fun w hw => ?_)
@@ -152,20 +150,20 @@ theorem Set.isCompact_ellipse (c d : ℂ) {ρ : ℝ} (hρ : 0 < ρ) :
   exact (continuousAt_const.add
     (continuousAt_const.mul (Complex.continuousAt_joukowski hw0))).continuousWithinAt
 
-/-- The vertex `c + d (ρ + ρ⁻¹)/2` of the ellipse, the point at which the Chebyshev maxima
-below are attained. -/
+/-- The vertex `c + d (ρ + ρ⁻¹)/2` of the ellipse, the point at which the Chebyshev maxima below are
+attained. -/
 theorem Set.vertex_mem_ellipse (c d : ℂ) {ρ : ℝ} (hρ : 0 ≤ ρ) :
     c + d * Complex.joukowski (ρ : ℂ) ∈ Set.ellipse c d ρ :=
   ⟨(ρ : ℂ), by simp [abs_of_nonneg hρ], rfl⟩
 
-/-- The region enclosed by `Set.ellipse c d ρ`, the ellipse itself included: the image under
-`w ↦ c + d · J w` of the closed annulus `ρ⁻¹ ≤ ‖w‖ ≤ ρ`.
+/-- The region enclosed by `Set.ellipse c d ρ`, the ellipse itself included: the image under `w ↦ c
++ d · J w` of the closed annulus `ρ⁻¹ ≤ ‖w‖ ≤ ρ`.
 
-The annulus rather than the disc is the right parameter domain because the Joukowski map
-identifies `w` with `w⁻¹` (`Complex.joukowski_inv`), so it covers the filled ellipse twice and is
-singular at the origin. `Set.filledEllipse_eq_biUnion` presents the same set as the union of the
-confocal ellipses `Set.ellipse c d s` for `1 ≤ s ≤ ρ`, which for `d ≠ 0` and `ρ ≥ 1` is the
-closed elliptical region with foci `c ± d`. -/
+The annulus rather than the disc is the right parameter domain because the Joukowski map identifies
+`w` with `w⁻¹` (`Complex.joukowski_inv`), so it covers the filled ellipse twice and is singular at
+the origin. `Set.filledEllipse_eq_biUnion` presents the same set as the union of the confocal
+ellipses `Set.ellipse c d s` for `1 ≤ s ≤ ρ`, which for `d ≠ 0` and `ρ ≥ 1` is the closed elliptical
+region with foci `c ± d`. -/
 noncomputable def Set.filledEllipse (c d : ℂ) (ρ : ℝ) : Set ℂ :=
   (fun w => c + d * Complex.joukowski w) '' {w : ℂ | ρ⁻¹ ≤ ‖w‖ ∧ ‖w‖ ≤ ρ}
 
@@ -206,8 +204,8 @@ theorem Set.filledEllipse_eq_biUnion (c d : ℂ) {ρ : ℝ} (hρ : 1 ≤ ρ) :
     · rw [hw]; exact (inv_le_one_of_one_le₀ hρ).trans hs1
     · rw [hw]; exact hs2
 
-/-- Membership in a filled ellipse is membership of the normalized point `(c - z)/d` in the
-filled ellipse with foci `±1`. -/
+/-- Membership in a filled ellipse is membership of the normalized point `(c - z)/d` in the filled
+ellipse with foci `±1`. -/
 theorem Set.mem_filledEllipse_iff_div {c d : ℂ} (hd : d ≠ 0) {ρ : ℝ} {z : ℂ} :
     z ∈ Set.filledEllipse c d ρ ↔ (c - z) / d ∈ Set.filledEllipse 0 1 ρ := by
   constructor
@@ -230,8 +228,8 @@ theorem Set.mem_filledEllipse_iff_div {c d : ℂ} (hd : d ≠ 0) {ρ : ℝ} {z :
 namespace Polynomial
 
 /-- The set of the maxima over `K` of the moduli of the complex polynomials of degree at most `k`
-that are normalized to take the value `1` at `γ`: the competitors in the Chebyshev min–max
-problem on `K`. -/
+that are normalized to take the value `1` at `γ`: the competitors in the Chebyshev min–max problem
+on `K`. -/
 def normalizedSupNorms (k : ℕ) (γ : ℂ) (K : Set ℂ) : Set ℝ :=
   {M | ∃ p : ℂ[X], p.degree ≤ k ∧ p.eval γ = 1 ∧ M = sSup ((fun z => ‖p.eval z‖) '' K)}
 
@@ -243,8 +241,8 @@ theorem mem_normalizedSupNorms {k : ℕ} {γ : ℂ} {K : Set ℂ} {M : ℝ} :
 
 /-! ### The maximum modulus principle for polynomials -/
 
-/-- The maximum modulus principle for a polynomial on a disc: a bound valid on the circle of
-radius `r` is valid on the whole closed disc. -/
+/-- The maximum modulus principle for a polynomial on a disc: a bound valid on the circle of radius
+`r` is valid on the whole closed disc. -/
 theorem norm_eval_le_of_forall_mem_sphere {q : ℂ[X]} {r C : ℝ} (hr : 0 < r)
     (hC : ∀ w ∈ Metric.sphere (0 : ℂ) r, ‖q.eval w‖ ≤ C) {z : ℂ} (hz : ‖z‖ ≤ r) :
     ‖q.eval z‖ ≤ C := by
@@ -259,9 +257,8 @@ ellipse `Set.ellipse c d ρ` is valid on the whole region the ellipse encloses.
 
 The disc principle does not apply, because that region is not a disc. What replaces it is the
 maximum principle on the *annulus* `ρ⁻¹ < ‖w‖ < ρ` of Joukowski parameters, whose image is the
-filled ellipse: the symmetry `J w⁻¹ = J w` makes the image of the inner boundary circle
-`‖w‖ = ρ⁻¹` equal to the image of the outer one, so both components of the frontier carry the
-same bound. -/
+filled ellipse: the symmetry `J w⁻¹ = J w` makes the image of the inner boundary circle `‖w‖ = ρ⁻¹`
+equal to the image of the outer one, so both components of the frontier carry the same bound. -/
 theorem norm_eval_le_of_forall_mem_ellipse {p : ℂ[X]} {c d : ℂ} {ρ C : ℝ} (hρ : 1 ≤ ρ)
     (hC : ∀ z ∈ Set.ellipse c d ρ, ‖p.eval z‖ ≤ C) {z : ℂ}
     (hz : z ∈ Set.filledEllipse c d ρ) : ‖p.eval z‖ ≤ C := by
@@ -333,8 +330,8 @@ theorem norm_eval_le_of_forall_mem_ellipse {p : ℂ[X]} {c d : ℂ} {ρ C : ℝ}
 
 /-! ### Zarantonello's lemma -/
 
-/-- The reversal of `p` at degree `k`, `∑_{j ≤ k} p_j X^{k-j}`, whose value at `w ≠ 0` is
-`w^k p(w⁻¹)`. -/
+/-- The reversal of `p` at degree `k`, `∑_{j ≤ k} p_j X^{k-j}`, whose value at `w ≠ 0` is `w^k
+p(w⁻¹)`. -/
 private noncomputable def reverseAt (k : ℕ) (p : ℂ[X]) : ℂ[X] :=
   ∑ j ∈ Finset.range (k + 1), Polynomial.C (p.coeff j) * X ^ (k - j)
 
@@ -357,14 +354,13 @@ private theorem reverseAt_eval {k : ℕ} {p : ℂ[X]} (hp : p.natDegree ≤ k) {
   rw [pow_sub₀ w hw hjk, inv_pow]
   ring
 
-/-- **Zarantonello's lemma**. Among the complex polynomials `p` of degree at most `k` normalized
-by `p γ = 1`, the least attainable maximum of `|p|` on the circle of radius `ρ < ‖γ‖` about the
-origin is `(ρ/‖γ‖)^k`, and it is attained by `(X/γ)^k`.
+/-- **Zarantonello's lemma**. Among the complex polynomials `p` of degree at most `k` normalized by
+`p γ = 1`, the least attainable maximum of `|p|` on the circle of radius `ρ < ‖γ‖` about the origin
+is `(ρ/‖γ‖)^k`, and it is attained by `(X/γ)^k`.
 
-This is the complex counterpart of the Chebyshev min–max theorem on an interval, and the source
-of the lower bound in the ellipse estimate `Polynomial.Chebyshev.ellipse_minimax_bounds`
-(Saad, *Iterative Methods for Sparse Linear Systems*, Lemma 6.26, and Saad, *Numerical
-Methods for Large Eigenvalue Problems*, Lemma 4.3). -/
+This is the complex counterpart of the Chebyshev min–max theorem on an interval, and the source of
+the lower bound in the ellipse estimate `Polynomial.Chebyshev.ellipse_minimax_bounds`
+([saad2003iterative], Lemma 6.26, and [saad2011numerical], Lemma 4.3). -/
 theorem zarantonello (k : ℕ) {ρ : ℝ} (hρ : 0 < ρ) {γ : ℂ} (hγ : ρ < ‖γ‖) :
     IsLeast (normalizedSupNorms k γ (Metric.sphere 0 ρ)) ((ρ / ‖γ‖) ^ k) := by
   have hγ0 : γ ≠ 0 := by
@@ -419,8 +415,8 @@ theorem zarantonello (k : ℕ) {ρ : ℝ} (hρ : 0 < ρ) {γ : ℂ} (hγ : ρ < 
       _ = sSup S := by
           rw [← mul_assoc, ← mul_pow, mul_inv_cancel₀ hρ.ne', one_pow, one_mul]
 
-/-- The polynomial `w ↦ w^k · p(J w)` of degree at most `2k`, used to transport Zarantonello's
-lemma from a circle to an ellipse. -/
+/-- The polynomial `w ↦ w^k · p(J w)` of degree at most `2k`, used to transport Zarantonello's lemma
+from a circle to an ellipse. -/
 private noncomputable def joukowskiLift (k : ℕ) (p : ℂ[X]) : ℂ[X] :=
   ∑ j ∈ Finset.range (k + 1), Polynomial.C (p.coeff j / 2 ^ j) * (X ^ 2 + 1) ^ j * X ^ (k - j)
 
@@ -485,8 +481,8 @@ theorem norm_eval_T_neg (k : ℤ) (x : ℂ) : ‖(T ℂ k).eval (-x)‖ = ‖(T 
   rw [T_eval_neg, norm_mul]
   rcases Int.units_eq_one_or k.negOnePow with h | h <;> rw [h] <;> simp
 
-/-- Outside the unit circle the Chebyshev polynomial does not vanish on the Joukowski image;
-this is what makes the normalization `T_k(z)/T_k(γ)` legitimate for `γ` outside an ellipse. -/
+/-- Outside the unit circle the Chebyshev polynomial does not vanish on the Joukowski image; this is
+what makes the normalization `T_k(z)/T_k(γ)` legitimate for `γ` outside an ellipse. -/
 theorem eval_T_joukowski_ne_zero (k : ℕ) {w : ℂ} (hw : 1 < ‖w‖) :
     (T ℂ (k : ℤ)).eval (Complex.joukowski w) ≠ 0 := by
   have hw0 : w ≠ 0 := by
@@ -518,9 +514,9 @@ theorem eval_T_joukowski_ne_zero (k : ℕ) {w : ℂ} (hw : 1 < ‖w‖) :
   have := congrArg Complex.re hsq
   norm_num at this
 
-/-- A Chebyshev polynomial has no root outside a filled ellipse with foci `±1`: every root of
-`T_k` lies in `[-1, 1]`, the degenerate member `Set.ellipse 0 1 1` of the confocal family, and so
-inside every `Set.filledEllipse 0 1 ρ` with `ρ ≥ 1`. -/
+/-- A Chebyshev polynomial has no root outside a filled ellipse with foci `±1`: every root of `T_k`
+lies in `[-1, 1]`, the degenerate member `Set.ellipse 0 1 1` of the confocal family, and so inside
+every `Set.filledEllipse 0 1 ρ` with `ρ ≥ 1`. -/
 theorem eval_T_ne_zero_of_notMem_filledEllipse (k : ℕ) {ρ : ℝ} (hρ : 1 ≤ ρ) {x : ℂ}
     (hx : x ∉ Set.filledEllipse 0 1 ρ) : (T ℂ (k : ℤ)).eval x ≠ 0 := by
   obtain ⟨w, hw1, hw⟩ := Complex.exists_joukowski_eq x
@@ -532,8 +528,8 @@ theorem eval_T_ne_zero_of_notMem_filledEllipse (k : ℕ) {ρ : ℝ} (hρ : 1 ≤
   rw [← hw]
   exact eval_T_joukowski_ne_zero k (lt_of_le_of_lt hρ hwρ)
 
-/-- The normalization `T_k((c - z)/d) / T_k((c - γ)/d)` of `Polynomial.Chebyshev.shiftedComplex`
-is legitimate whenever the ellipse `Set.ellipse c d ρ` does not enclose `γ`. -/
+/-- The normalization `T_k((c - z)/d) / T_k((c - γ)/d)` of `Polynomial.Chebyshev.shiftedComplex` is
+legitimate whenever the ellipse `Set.ellipse c d ρ` does not enclose `γ`. -/
 theorem eval_T_sub_div_ne_zero_of_notMem_filledEllipse (k : ℕ) {ρ : ℝ} (hρ : 1 ≤ ρ) {c d γ : ℂ}
     (hd : d ≠ 0) (hγ : γ ∉ Set.filledEllipse c d ρ) :
     (T ℂ (k : ℤ)).eval ((c - γ) / d) ≠ 0 :=
@@ -589,8 +585,8 @@ private theorem isGreatest_norm_eval_T_sphere (k : ℕ) {ρ : ℝ} (hρ : 1 ≤ 
     rw [norm_inv, hnk] at h
     linarith
 
-/-- The image of an ellipse under `z ↦ |T_k((c - z)/d)|` is the image of the parameter circle
-under `w ↦ |T_k(J w)|`: the sign introduced by `(c - z)/d = -J w` is invisible to the modulus. -/
+/-- The image of an ellipse under `z ↦ |T_k((c - z)/d)|` is the image of the parameter circle under
+`w ↦ |T_k(J w)|`: the sign introduced by `(c - z)/d = -J w` is invisible to the modulus. -/
 private theorem image_norm_eval_T_ellipse (k : ℕ) {c d : ℂ} (hd : d ≠ 0) (ρ : ℝ) :
     (fun z => ‖(T ℂ (k : ℤ)).eval ((c - z) / d)‖) '' Set.ellipse c d ρ
       = (fun w => ‖(T ℂ (k : ℤ)).eval (Complex.joukowski w)‖) '' Metric.sphere 0 ρ := by
@@ -601,9 +597,8 @@ private theorem image_norm_eval_T_ellipse (k : ℕ) {c d : ℂ} (hd : d ≠ 0) (
     ring
   rw [hcz, norm_eval_T_neg]
 
-/-- The maximum of `|T_k|` on the ellipse `E_ρ` with foci `±1` and semi-axes `(ρ ± ρ⁻¹)/2` is
-`(ρ^k + ρ^{-k})/2`, attained at the vertex `J ρ = (ρ + ρ⁻¹)/2` (Saad, *Iterative Methods for
-Sparse Linear Systems*, (6.117)). -/
+/-- The maximum of `|T_k|` on the ellipse `E_ρ` with foci `±1` and semi-axes `(ρ ± ρ⁻¹)/2` is `(ρ^k
++ ρ^{-k})/2`, attained at the vertex `J ρ = (ρ + ρ⁻¹)/2` ([saad2003iterative], (6.117)). -/
 theorem sSup_norm_eval_T_ellipse (k : ℕ) {ρ : ℝ} (hρ : 1 ≤ ρ) :
     sSup ((fun z => ‖(T ℂ (k : ℤ)).eval z‖) '' Set.ellipse 0 1 ρ) = (ρ ^ k + (ρ ^ k)⁻¹) / 2 := by
   have himg : (fun z => ‖(T ℂ (k : ℤ)).eval z‖) '' Set.ellipse 0 1 ρ
@@ -618,12 +613,11 @@ theorem sSup_norm_eval_T_ellipse (k : ℕ) {ρ : ℝ} (hρ : 1 ≤ ρ) :
 
 /-- The two-sided estimate of the Chebyshev min–max value on the ellipse `E_ρ`.
 
-For `ρ ≥ 1` and a normalization point `γ = J w_γ` lying outside `E_ρ`, that is with
-`‖w_γ‖ > ρ`, every polynomial `p` of degree at most `k` with `p γ = 1` has maximum modulus at
-least `(ρ/‖w_γ‖)^k` on `E_ρ`, and the normalized Chebyshev polynomial `T_k(z)/T_k(γ)` attains
-the value `(ρ^k + ρ^{-k})/‖w_γ^k + w_γ^{-k}‖` (Saad, *Iterative Methods for Sparse Linear
-Systems*, Theorem 6.27, and Saad, *Numerical Methods for Large Eigenvalue Problems*,
-Theorem 4.9). -/
+For `ρ ≥ 1` and a normalization point `γ = J w_γ` lying outside `E_ρ`, that is with `‖w_γ‖ > ρ`,
+every polynomial `p` of degree at most `k` with `p γ = 1` has maximum modulus at least `(ρ/‖w_γ‖)^k`
+on `E_ρ`, and the normalized Chebyshev polynomial `T_k(z)/T_k(γ)` attains the value `(ρ^k +
+ρ^{-k})/‖w_γ^k + w_γ^{-k}‖` ([saad2003iterative], Theorem 6.27, and [saad2011numerical], Theorem
+4.9). -/
 theorem ellipse_minimax_bounds (k : ℕ) {ρ : ℝ} (hρ : 1 ≤ ρ) {wγ : ℂ} (hw : ρ < ‖wγ‖) :
     (ρ / ‖wγ‖) ^ k ∈
         lowerBounds (normalizedSupNorms k (Complex.joukowski wγ) (Set.ellipse 0 1 ρ)) ∧
@@ -736,10 +730,9 @@ theorem ellipse_minimax_bounds (k : ℕ) {ρ : ℝ} (hρ : 1 ≤ ρ) {wγ : ℂ}
 
 /-! ### The shifted, normalized Chebyshev polynomial on a general ellipse -/
 
-/-- The shifted, normalized complex Chebyshev polynomial
-`Ĉ_k(z) = T_k((c - z)/d) / T_k((c - γ)/d)`, which takes the value `1` at `γ`. It is the complex
-counterpart of `Polynomial.Chebyshev.shifted` (Saad, *Iterative Methods for Sparse Linear
-Systems*, (6.119)). -/
+/-- The shifted, normalized complex Chebyshev polynomial `Ĉ_k(z) = T_k((c - z)/d) / T_k((c - γ)/d)`,
+which takes the value `1` at `γ`. It is the complex counterpart of `Polynomial.Chebyshev.shifted`
+([saad2003iterative], (6.119)). -/
 noncomputable def shiftedComplex (k : ℕ) (c d γ : ℂ) : ℂ[X] :=
   Polynomial.C ((T ℂ (k : ℤ)).eval ((c - γ) / d))⁻¹ *
     (T ℂ (k : ℤ)).comp (Polynomial.C (c / d) - Polynomial.C d⁻¹ * X)
@@ -771,10 +764,9 @@ theorem shiftedComplex_eval_self (k : ℕ) {c d γ : ℂ} (hd : d ≠ 0)
     (hγ : (T ℂ (k : ℤ)).eval ((c - γ) / d) ≠ 0) : (shiftedComplex k c d γ).eval γ = 1 := by
   rw [shiftedComplex_eval k hd, div_self hγ]
 
-/-- The maximum on the ellipse `E(c, d, a)` of the shifted, normalized Chebyshev polynomial
-`Ĉ_k(z) = T_k((c - z)/d)/T_k((c - γ)/d)` is `T_k(a/d)/|T_k((c - γ)/d)|`, where
-`a/d = (ρ + ρ⁻¹)/2` is the ratio of the semi-major axis to the focal semi-distance (Saad,
-*Iterative Methods for Sparse Linear Systems*, (6.119)–(6.120)). -/
+/-- The maximum on the ellipse `E(c, d, a)` of the shifted, normalized Chebyshev polynomial `Ĉ_k(z)
+= T_k((c - z)/d)/T_k((c - γ)/d)` is `T_k(a/d)/|T_k((c - γ)/d)|`, where `a/d = (ρ + ρ⁻¹)/2` is the
+ratio of the semi-major axis to the focal semi-distance ([saad2003iterative], (6.119)–(6.120)). -/
 theorem sSup_norm_eval_shiftedComplex_ellipse (k : ℕ) {ρ : ℝ} (hρ : 1 ≤ ρ) {c d γ : ℂ}
     (hd : d ≠ 0) (hγ : (T ℂ (k : ℤ)).eval ((c - γ) / d) ≠ 0) :
     sSup ((fun z => ‖(shiftedComplex k c d γ).eval z‖) '' Set.ellipse c d ρ) =

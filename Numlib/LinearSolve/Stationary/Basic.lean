@@ -11,15 +11,15 @@ import Numlib.Analysis.Normed.Ring.Inverse
 # Stationary (affine) iterations
 
 `Stationary.step G f x = G x + f`. Convergence for all data iff the spectral radius satisfies `ρ(G)
-< 1` ([Saad][saad2003iterative] Thm 4.1, in a complex Banach space for `⇒` and in finite dimension
-for `⇐`; [Kress][kress1998numerical] Thm 4.1), the contraction case `‖G‖ < 1` with a priori / a
-posteriori bounds (Kress Thm 3.48, [Atkinson–Han][han2009theoretical] §5.2.2), and the error
-propagation `x_k - x* = G^k (x₀ - x*)`.
+< 1` ([saad2003iterative] Thm 4.1, in a complex Banach space for `⇒` and in finite dimension for
+`⇐`; [kress1998numerical] Thm 4.1), the contraction case `‖G‖ < 1` with a priori / a posteriori
+bounds ([kress1998numerical] Thm 3.48, [han2009theoretical] §5.2.2), and the error propagation `x_k
+- x* = G^k (x₀ - x*)`.
 
 The spectral radius is also the *sharp* asymptotic convergence factor: no starting vector decays
 faster than `ρ(G)` in the sense of the limsup of `(‖G^k d₀‖/‖d₀‖)^{1/k}`
-(`Stationary.limsup_norm_pow_apply_rpow_le_spectralRadius`), and in finite dimension an
-eigenvector of a dominant eigenvalue attains it
+(`Stationary.limsup_norm_pow_apply_rpow_le_spectralRadius`), and in finite dimension an eigenvector
+of a dominant eigenvalue attains it
 (`Stationary.exists_limsup_norm_pow_apply_rpow_eq_spectralRadius`).
 -/
 
@@ -32,8 +32,8 @@ variable {𝕜 E : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] 
 /-- One affine step `x ↦ G x + f`. -/
 def step (G : E →L[𝕜] E) (f : E) (x : E) : E := G x + f
 
-/-- Submultiplicativity of the operator norm, including the exponent `0`, where `NormOneClass`
-is unavailable because `E` may be trivial. -/
+/-- Submultiplicativity of the operator norm, including the exponent `0`, where `NormOneClass` is
+unavailable because `E` may be trivial. -/
 private theorem norm_pow_le_pow_norm (G : E →L[𝕜] E) (k : ℕ) : ‖G ^ k‖ ≤ ‖G‖ ^ k := by
   induction k with
   | zero =>
@@ -61,16 +61,15 @@ theorem step_fixed_iff (x : E) : step G f x = x ↔ (1 - G) x = f := by
   rw [step, sub_apply, one_apply_eq_self, sub_eq_iff_eq_add, eq_comm, add_comm f]
 
 /-- Contraction case `‖G‖ < 1`: the affine step is a contraction with constant `‖G‖`
-(Kress, *Numerical Analysis*, Thm 3.48; Atkinson–Han, *Theoretical Numerical Analysis*,
-§5.2.2). -/
+([kress1998numerical], Thm 3.48; [han2009theoretical], §5.2.2). -/
 theorem contractingWith (hG : ‖G‖ < 1) :
     ContractingWith ⟨‖G‖, norm_nonneg _⟩ (step G f) := by
   refine ⟨by exact_mod_cast hG, LipschitzWith.of_dist_le_mul fun x y => ?_⟩
   simp only [step, dist_eq_norm, add_sub_add_right_eq_sub, ← map_sub]
   exact G.le_opNorm _
 
-/-- The distance to a fixed point is controlled by a single step; the estimate behind both the
-a priori and the a posteriori bound. -/
+/-- The distance to a fixed point is controlled by a single step; the estimate behind both the a
+priori and the a posteriori bound. -/
 private theorem norm_sub_fixed_le (hG : ‖G‖ < 1) {x' : E} (hfix : G x' + f = x') (x₀ : E) :
     ‖x₀ - x'‖ ≤ ‖step G f x₀ - x₀‖ / (1 - ‖G‖) := by
   have h1 : step G f x₀ - x' = G (x₀ - x') := by
@@ -118,10 +117,10 @@ variable {F : Type*} [NormedAddCommGroup F] [NormedSpace ℂ F]
 private theorem subsingleton_clm [Subsingleton F] : Subsingleton (F →L[ℂ] F) :=
   ⟨fun _ _ => by ext x; exact Subsingleton.elim _ _⟩
 
-/-- Neumann: a spectral radius `ρ(G) < 1` makes `1 - G` invertible, so the affine iteration has
-the unique fixed point `(1 - G)⁻¹ f`.  The Banach-algebra form
-`_root_.isUnit_one_sub_of_spectralRadius_lt_one` assumes `NormOneClass`, which `F →L[ℂ] F`
-satisfies only for nontrivial `F`; on a trivial `F` every operator is a unit anyway. -/
+/-- Neumann: a spectral radius `ρ(G) < 1` makes `1 - G` invertible, so the affine iteration has the
+unique fixed point `(1 - G)⁻¹ f`.  The Banach-algebra form
+`_root_.isUnit_one_sub_of_spectralRadius_lt_one` assumes `NormOneClass`, which `F →L[ℂ] F` satisfies
+only for nontrivial `F`; on a trivial `F` every operator is a unit anyway. -/
 theorem isUnit_one_sub_of_spectralRadius_lt_one [CompleteSpace F] (G : F →L[ℂ] F)
     (hG : spectralRadius ℂ G < 1) : IsUnit (1 - G) := by
   rcases subsingleton_or_nontrivial F with _ | _
@@ -129,8 +128,8 @@ theorem isUnit_one_sub_of_spectralRadius_lt_one [CompleteSpace F] (G : F →L[�
     exact isUnit_of_subsingleton _
   · exact _root_.isUnit_one_sub_of_spectralRadius_lt_one hG
 
-/-- Saad, *Iterative Methods*, Thm 4.1 (⇒), in any complex Banach space: a spectral radius
-`ρ(G) < 1` gives convergence for every `f, x₀` to the unique fixed point `(1 - G)⁻¹ f`. -/
+/-- [saad2003iterative], Thm 4.1 (⇒), in any complex Banach space: a spectral radius `ρ(G) < 1`
+gives convergence for every `f, x₀` to the unique fixed point `(1 - G)⁻¹ f`. -/
 theorem tendsto_of_spectralRadius_lt_one [CompleteSpace F] (G : F →L[ℂ] F)
     (hG : spectralRadius ℂ G < 1) (f x₀ : F) :
     Tendsto (fun k => (step G f)^[k] x₀) atTop (𝓝 (Ring.inverse (1 - G) f)) := by
@@ -148,8 +147,8 @@ theorem tendsto_of_spectralRadius_lt_one [CompleteSpace F] (G : F →L[ℂ] F)
     refine squeeze_zero_norm (fun k => (G ^ k).le_opNorm _) ?_
     simpa using hpow.norm.mul_const ‖x₀ - Ring.inverse (1 - G) f‖
 
-/-- Saad, *Iterative Methods*, Thm 4.1 (⇐), in finite dimension: convergence of `G^k x₀ → 0`
-for all `x₀` forces the spectral radius to satisfy `ρ(G) < 1`. -/
+/-- [saad2003iterative], Thm 4.1 (⇐), in finite dimension: convergence of `G^k x₀ → 0` for all `x₀`
+forces the spectral radius to satisfy `ρ(G) < 1`. -/
 theorem spectralRadius_lt_one_of_forall_tendsto [FiniteDimensional ℂ F] (G : F →L[ℂ] F)
     (h : ∀ x₀, Tendsto (fun k => (G ^ k) x₀) atTop (𝓝 0)) : spectralRadius ℂ G < 1 := by
   have : CompleteSpace F := FiniteDimensional.complete ℂ F
@@ -177,8 +176,8 @@ theorem spectralRadius_lt_one_of_forall_tendsto [FiniteDimensional ℂ F] (G : F
     intro i
     simpa [Function.comp_def, hΦ] using h (b i)
 
-/-- Saad, *Iterative Methods*, Thm 4.1 as an equivalence in finite dimension: the iteration
-converges from every `f` and `x₀` iff the spectral radius satisfies `ρ(G) < 1`. -/
+/-- [saad2003iterative], Thm 4.1 as an equivalence in finite dimension: the iteration converges from
+every `f` and `x₀` iff the spectral radius satisfies `ρ(G) < 1`. -/
 theorem forall_tendsto_iff_spectralRadius_lt_one [FiniteDimensional ℂ F] (G : F →L[ℂ] F) :
     (∀ f x₀, ∃ x, Tendsto (fun k => (step G f)^[k] x₀) atTop (𝓝 x)) ↔
       spectralRadius ℂ G < 1 := by
@@ -232,9 +231,9 @@ private theorem tendsto_const_rpow_one_div {C : ℝ} (hC : 0 < C) :
   refine h1.congr fun k => ?_
   rw [Function.comp_apply, ← Real.rpow_def_of_pos hC]
 
-/-- **No starting vector beats the spectral radius.**  The limsup of the `k`-th root of the
-relative growth `‖G^k d₀‖ / ‖d₀‖` is at most `ρ(G)`, for every `d₀`: the geometric bound
-`‖G^k‖ ≤ C r^k` valid for each `r > ρ(G)` gives `(‖G^k d₀‖/‖d₀‖)^{1/k} ≤ C^{1/k} r → r`.
+/-- **No starting vector beats the spectral radius.**  The limsup of the `k`-th root of the relative
+growth `‖G^k d₀‖ / ‖d₀‖` is at most `ρ(G)`, for every `d₀`: the geometric bound `‖G^k‖ ≤ C r^k`
+valid for each `r > ρ(G)` gives `(‖G^k d₀‖/‖d₀‖)^{1/k} ≤ C^{1/k} r → r`.
 
 `Stationary.exists_limsup_norm_pow_apply_rpow_eq_spectralRadius` exhibits a `d₀` attaining the
 bound, so `ρ(G)` is the sharp asymptotic convergence factor of the stationary iteration. -/
@@ -290,10 +289,9 @@ theorem limsup_norm_pow_apply_rpow_le_spectralRadius [CompleteSpace F] (G : F �
   exact (hbound k hk1).trans hk2.le
 
 /-- **The sharp convergence factor of a stationary iteration.**  In finite dimension the bound of
-`Stationary.limsup_norm_pow_apply_rpow_le_spectralRadius` is attained: an eigenvector of a
-dominant eigenvalue is a starting error whose asymptotic decay rate is exactly `ρ(G)`.  Together
-the two say that the spectral radius *is* the worst-case asymptotic convergence factor of the
-iteration. -/
+`Stationary.limsup_norm_pow_apply_rpow_le_spectralRadius` is attained: an eigenvector of a dominant
+eigenvalue is a starting error whose asymptotic decay rate is exactly `ρ(G)`.  Together the two say
+that the spectral radius *is* the worst-case asymptotic convergence factor of the iteration. -/
 theorem exists_limsup_norm_pow_apply_rpow_eq_spectralRadius [FiniteDimensional ℂ F] [Nontrivial F]
     (G : F →L[ℂ] F) :
     ∃ d₀ : F, d₀ ≠ 0 ∧

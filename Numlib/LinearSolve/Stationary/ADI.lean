@@ -4,52 +4,47 @@ import Numlib.LinearSolve.Stationary.Splitting
 /-!
 # The alternating direction implicit iteration
 
-The Peaceman–Rachford sweep splits a two-term operator `H + V` into two half-steps, each of
-which inverts only one of the terms:
+The Peaceman–Rachford sweep splits a two-term operator `H + V` into two half-steps, each of which
+inverts only one of the terms:
 
 `(H + r) x_{k+1/2} = (r - V) x_k + b`,   `(V + r) x_{k+1} = (r - H) x_{k+1/2} + b`.
 
-Composing them is the affine iteration `x ↦ P x + f` with
-`P = (V + r)⁻¹ (H - r) (H + r)⁻¹ (V - r)` (`Stationary.peacemanRachford`) and
-`f = (V + r)⁻¹ (1 - (H - r)(H + r)⁻¹) b` (`Stationary.peacemanRachfordConst`), and it comes from
-the splitting `H + V = M - N` with `M = (2r)⁻¹ (H + r)(V + r)` and `N = (2r)⁻¹ (H - r)(V - r)`
-(`Stationary.peacemanRachfordSplitting`).
+Composing them is the affine iteration `x ↦ P x + f` with `P = (V + r)⁻¹ (H - r) (H + r)⁻¹ (V - r)`
+(`Stationary.peacemanRachford`) and `f = (V + r)⁻¹ (1 - (H - r)(H + r)⁻¹) b`
+(`Stationary.peacemanRachfordConst`), and it comes from the splitting `H + V = M - N` with `M =
+(2r)⁻¹ (H + r)(V + r)` and `N = (2r)⁻¹ (H - r)(V - r)` (`Stationary.peacemanRachfordSplitting`).
 
-**The whole convergence proof is one inequality.**  For `A` with `re ⟪A x, x⟫ ≥ c ‖x‖²` and
-`r > 0`,
+**The whole convergence proof is one inequality.**  For `A` with `re ⟪A x, x⟫ ≥ c ‖x‖²` and `r > 0`,
 
 `‖A x - r x‖² + 4 r c ‖x‖² ≤ ‖A x + r x‖²`,
 
 which is nothing but the expansion of both sides
-(`Stationary.norm_sub_smul_sq_add_le_norm_add_smul_sq`).  It says that the Cayley transform
-`(A - r)(A + r)⁻¹` is a strict contraction, with the explicit factor
-`1 - 4 r c / (‖A‖ + r)²` (`Stationary.norm_cayley_lt_one`).  Conjugating `P` by `V + r` turns it
-into the product of the two Cayley transforms of `H` and of `V`, so that product is a strict
-contraction, `P` is similar to it, and the iterates converge from any starting vector
-(`Stationary.tendsto_peacemanRachford`).
+(`Stationary.norm_sub_smul_sq_add_le_norm_add_smul_sq`).  It says that the Cayley transform `(A -
+r)(A + r)⁻¹` is a strict contraction, with the explicit factor `1 - 4 r c / (‖A‖ + r)²`
+(`Stationary.norm_cayley_lt_one`).  Conjugating `P` by `V + r` turns it into the product of the two
+Cayley transforms of `H` and of `V`, so that product is a strict contraction, `P` is similar to it,
+and the iterates converge from any starting vector (`Stationary.tendsto_peacemanRachford`).
 
 Three things the usual framing obscures.
 
 * **No commutativity of `H` and `V` is used anywhere.**  The commutativity hypothesis of the
-  literature belongs to the theory of the optimal parameter *sequence*, which is not treated
-  here; the splitting identity `M - N = H + V` needs none of it either, the `H V` terms
-  cancelling on their own.
-* **No symmetry is used either.**  Coercivity alone — `re ⟪H x, x⟫ ≥ c ‖x‖²` with `c > 0`,
-  which is what "symmetric positive definite" gives — carries the whole argument, so the
-  theorem covers nonsymmetric `H` and `V` as well.
-* **`‖P‖ < 1` is false in general**, and only the *conjugated* operator
-  `(V + r) P (V + r)⁻¹` is a contraction in the operator norm
-  (`Stationary.norm_conj_peacemanRachford_lt_one`).  What `P` itself satisfies is the spectral
-  radius bound `Stationary.spectralRadius_peacemanRachford_lt_one`, and that is what convergence
-  rests on.
+  literature belongs to the theory of the optimal parameter *sequence*, which is not treated here;
+  the splitting identity `M - N = H + V` needs none of it either, the `H V` terms cancelling on
+  their own.
+* **No symmetry is used either.**  Coercivity alone — `re ⟪H x, x⟫ ≥ c ‖x‖²` with `c > 0`, which is
+  what "symmetric positive definite" gives — carries the whole argument, so the theorem covers
+  nonsymmetric `H` and `V` as well.
+* **`‖P‖ < 1` is false in general**, and only the *conjugated* operator `(V + r) P (V + r)⁻¹` is a
+  contraction in the operator norm (`Stationary.norm_conj_peacemanRachford_lt_one`).  What `P`
+  itself satisfies is the spectral radius bound `Stationary.spectralRadius_peacemanRachford_lt_one`,
+  and that is what convergence rests on.
 
-Everything is stated in an inner product space, complete where an inverse is needed; matrices
-reach it through `Matrix.toEuclideanCLM`.  The Cayley inequality is an upstreaming candidate on
-its own and should move beside the coercivity API as soon as a second consumer appears.
+Everything is stated in an inner product space, complete where an inverse is needed; matrices reach
+it through `Matrix.toEuclideanCLM`.  The Cayley inequality is an upstreaming candidate on its own
+and should move beside the coercivity API as soon as a second consumer appears.
 
-This is [Saad, *Iterative Methods for Sparse Linear Systems*][saad2003iterative], §4.3: Algorithm
-4.3 and the identities (4.50)–(4.52).  The book states no numbered result there and asserts the
-convergence claim in one sentence.
+This is [saad2003iterative], §4.3: Algorithm 4.3 and the identities (4.50)–(4.52).  The book states
+no numbered result there and asserts the convergence claim in one sentence.
 -/
 
 open Filter Topology
@@ -60,10 +55,10 @@ variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpac
 
 /-! ### The Cayley contraction inequality -/
 
-/-- The inequality behind every statement in this file: for `A` coercive with constant `c` and
-`r > 0`, `‖A x - r x‖² + 4 r c ‖x‖² ≤ ‖A x + r x‖²`.  Both sides expand to
-`‖A x‖² ± 2 r re ⟪A x, x⟫ + r² ‖x‖²`, so the whole content is that the cross term is bounded
-below by coercivity.  Neither symmetry, nor completeness, nor finite dimension is used. -/
+/-- The inequality behind every statement in this file: for `A` coercive with constant `c` and `r >
+0`, `‖A x - r x‖² + 4 r c ‖x‖² ≤ ‖A x + r x‖²`.  Both sides expand to `‖A x‖² ± 2 r re ⟪A x, x⟫ + r²
+‖x‖²`, so the whole content is that the cross term is bounded below by coercivity.  Neither
+symmetry, nor completeness, nor finite dimension is used. -/
 theorem norm_sub_smul_sq_add_le_norm_add_smul_sq {A : E →ₗ[𝕜] E} {c : ℝ}
     (hA : A.IsCoerciveWith c) {r : ℝ} (hr : 0 < r) (x : E) :
     ‖A x - (r : 𝕜) • x‖ ^ 2 + 4 * r * c * ‖x‖ ^ 2 ≤ ‖A x + (r : 𝕜) • x‖ ^ 2 := by
@@ -84,8 +79,8 @@ theorem norm_sub_smul_lt_norm_add_smul {A : E →ₗ[𝕜] E} {c : ℝ} (hA : A.
   have hlt : ‖A x - (r : 𝕜) • x‖ ^ 2 < ‖A x + (r : 𝕜) • x‖ ^ 2 := by linarith
   exact lt_of_pow_lt_pow_left₀ 2 (norm_nonneg _) hlt
 
-/-- `A + r` is coercive with constant `c + r`, since the shift adds `r ‖x‖²` to the quadratic
-form. -/
+/-- `A + r` is coercive with constant `c + r`, since the shift adds `r ‖x‖²` to the quadratic form.
+-/
 theorem isCoerciveWith_add_smul_one {A : E →L[𝕜] E} {c : ℝ}
     (hA : (A : E →ₗ[𝕜] E).IsCoerciveWith c) {r : ℝ} :
     ((A + (r : 𝕜) • (1 : E →L[𝕜] E) : E →L[𝕜] E) : E →ₗ[𝕜] E).IsCoerciveWith (c + r) := by
@@ -104,8 +99,8 @@ section Cayley
 
 variable [CompleteSpace E]
 
-/-- `A + r` is invertible for a coercive `A` and `r > 0`: it is coercive with constant `c + r`,
-and Lax–Milgram supplies the inverse. -/
+/-- `A + r` is invertible for a coercive `A` and `r > 0`: it is coercive with constant `c + r`, and
+Lax–Milgram supplies the inverse. -/
 theorem isUnit_add_smul_one {A : E →L[𝕜] E} {c : ℝ} (hc : 0 < c)
     (hA : (A : E →ₗ[𝕜] E).IsCoerciveWith c) {r : ℝ} (hr : 0 < r) :
     IsUnit (A + (r : 𝕜) • (1 : E →L[𝕜] E)) := by
@@ -117,9 +112,9 @@ theorem isUnit_add_smul_one {A : E →L[𝕜] E} {c : ℝ} (hc : 0 < c)
   rw [← ContinuousLinearEquiv.unitsEquiv_apply 𝕜 E, MulEquiv.apply_symm_apply]
   rfl
 
-/-- The Cayley transform is a pointwise strict contraction, with the explicit factor
-`1 - 4 r c / (‖A‖ + r)²`.  Applying the Cayley inequality at `x = (A + r)⁻¹ y` and using
-`‖y‖ ≤ (‖A‖ + r) ‖x‖` is the whole proof. -/
+/-- The Cayley transform is a pointwise strict contraction, with the explicit factor `1 - 4 r c /
+(‖A‖ + r)²`.  Applying the Cayley inequality at `x = (A + r)⁻¹ y` and using `‖y‖ ≤ (‖A‖ + r) ‖x‖` is
+the whole proof. -/
 theorem norm_cayley_apply_sq_le {A : E →L[𝕜] E} {c : ℝ} (hc : 0 < c)
     (hA : (A : E →ₗ[𝕜] E).IsCoerciveWith c) {r : ℝ} (hr : 0 < r) (y : E) :
     ‖((A - (r : 𝕜) • 1) * Ring.inverse (A + (r : 𝕜) • 1)) y‖ ^ 2
@@ -160,8 +155,8 @@ theorem norm_cayley_apply_sq_le {A : E →L[𝕜] E} {c : ℝ} (hc : 0 < c)
   rw [hLHS, sub_mul, one_mul]
   linarith
 
-/-- The Cayley transform `(A - r)(A + r)⁻¹` of a coercive operator is a strict contraction.
-This is the Mathlib-shaped statement of the file, and an upstreaming candidate on its own. -/
+/-- The Cayley transform `(A - r)(A + r)⁻¹` of a coercive operator is a strict contraction. This is
+the Mathlib-shaped statement of the file, and an upstreaming candidate on its own. -/
 theorem norm_cayley_lt_one {A : E →L[𝕜] E} {c : ℝ} (hc : 0 < c)
     (hA : (A : E →ₗ[𝕜] E).IsCoerciveWith c) {r : ℝ} (hr : 0 < r) :
     ‖(A - (r : 𝕜) • 1) * Ring.inverse (A + (r : 𝕜) • 1)‖ < 1 := by
@@ -203,23 +198,24 @@ end Cayley
 
 /-! ### The Peaceman–Rachford sweep -/
 
-/-- Saad's (4.50): the iteration operator of one Peaceman–Rachford sweep with parameter `r`. -/
+/-- [saad2003iterative] (4.50): the iteration operator of one Peaceman–Rachford sweep with parameter
+`r`. -/
 noncomputable def peacemanRachford (H V : E →L[𝕜] E) (r : ℝ) : E →L[𝕜] E :=
   Ring.inverse (V + (r : 𝕜) • 1) * (H - (r : 𝕜) • 1) * Ring.inverse (H + (r : 𝕜) • 1) *
     (V - (r : 𝕜) • 1)
 
-/-- Saad's (4.51): the affine part of one Peaceman–Rachford sweep. -/
+/-- [saad2003iterative] (4.51): the affine part of one Peaceman–Rachford sweep. -/
 noncomputable def peacemanRachfordConst (H V : E →L[𝕜] E) (r : ℝ) (b : E) : E :=
   Ring.inverse (V + (r : 𝕜) • 1) ((1 - (H - (r : 𝕜) • 1) * Ring.inverse (H + (r : 𝕜) • 1)) b)
 
-/-- One sweep of Saad's Algorithm 4.3 written as its two half-steps: solve
-`(H + r) x_{k+1/2} = (r - V) x_k + b`, then `(V + r) x_{k+1} = (r - H) x_{k+1/2} + b`. -/
+/-- One sweep of [saad2003iterative] Algorithm 4.3 written as its two half-steps: solve `(H + r)
+x_{k+1/2} = (r - V) x_k + b`, then `(V + r) x_{k+1} = (r - H) x_{k+1/2} + b`. -/
 noncomputable def peacemanRachfordSweep (H V : E →L[𝕜] E) (r : ℝ) (b x : E) : E :=
   Ring.inverse (V + (r : 𝕜) • 1)
     (((r : 𝕜) • 1 - H) (Ring.inverse (H + (r : 𝕜) • 1) (((r : 𝕜) • 1 - V) x + b)) + b)
 
-/-- The two half-steps of [Saad, *Iterative Methods*][saad2003iterative] Algorithm 4.3, composed,
-are the affine step of its (4.50)–(4.51). -/
+/-- The two half-steps of [saad2003iterative] Algorithm 4.3, composed, are the affine step of its
+(4.50)–(4.51). -/
 theorem peacemanRachford_step_eq (H V : E →L[𝕜] E) (r : ℝ) (b x : E) :
     step (peacemanRachford H V r) (peacemanRachfordConst H V r b) x
       = peacemanRachfordSweep H V r b x := by
@@ -254,9 +250,9 @@ private theorem commute_add_sub_smul_one (H : E →L[𝕜] E) (r : ℝ) :
   simp only [mul_sub, sub_mul, add_mul, mul_add, smul_one_mul_comm]
   abel
 
-/-- Saad's (4.52): the splitting `H + V = M - N` behind the Peaceman–Rachford sweep, with
-`M = (2r)⁻¹ (H + r)(V + r)`.  The identity `M - N = H + V` is pure ring algebra: the `H V` terms
-cancel, so no commutativity of `H` and `V` is used. -/
+/-- [saad2003iterative] (4.52): the splitting `H + V = M - N` behind the Peaceman–Rachford sweep,
+with `M = (2r)⁻¹ (H + r)(V + r)`.  The identity `M - N = H + V` is pure ring algebra: the `H V`
+terms cancel, so no commutativity of `H` and `V` is used. -/
 noncomputable def peacemanRachfordSplitting (H V : E →L[𝕜] E) {r : ℝ} (hr : r ≠ 0)
     (hH : IsUnit (H + (r : 𝕜) • 1)) (hV : IsUnit (V + (r : 𝕜) • 1)) :
     Splitting (H + V) :=
@@ -266,13 +262,13 @@ noncomputable def peacemanRachfordSplitting (H V : E →L[𝕜] E) {r : ℝ} (hr
 
 variable {hr : r ≠ 0} {hH : IsUnit (H + (r : 𝕜) • 1)} {hV : IsUnit (V + (r : 𝕜) • 1)}
 
-/-- The preconditioner of Saad's (4.52) is `M = (2r)⁻¹ (H + r)(V + r)`. -/
+/-- The preconditioner of [saad2003iterative] (4.52) is `M = (2r)⁻¹ (H + r)(V + r)`. -/
 theorem peacemanRachfordSplitting_m :
     (peacemanRachfordSplitting H V hr hH hV).m
       = (2 * (r : 𝕜))⁻¹ • ((H + (r : 𝕜) • 1) * (V + (r : 𝕜) • 1)) := rfl
 
-/-- The complementary part of Saad's (4.52).  The `H V` terms cancel in `M - (H + V)`, which is
-why the splitting needs no commutativity. -/
+/-- The complementary part of [saad2003iterative] (4.52).  The `H V` terms cancel in `M - (H + V)`,
+which is why the splitting needs no commutativity. -/
 theorem peacemanRachfordSplitting_n :
     (peacemanRachfordSplitting H V hr hH hV).n
       = (2 * (r : 𝕜))⁻¹ • ((H - (r : 𝕜) • 1) * (V - (r : 𝕜) • 1)) := by
@@ -286,8 +282,8 @@ theorem peacemanRachfordSplitting_n :
     module
   rw [hn, ← hexp, smul_sub, smul_smul, inv_mul_cancel₀ hs, one_smul]
 
-/-- The iteration operator of Saad's splitting (4.52) is the sweep operator (4.50).  The two
-differ by `(H + r)⁻¹ (H - r) = (H - r)(H + r)⁻¹`, a commutation of `H` with itself. -/
+/-- The iteration operator of [saad2003iterative] splitting (4.52) is the sweep operator (4.50).
+The two differ by `(H + r)⁻¹ (H - r) = (H - r)(H + r)⁻¹`, a commutation of `H` with itself. -/
 theorem peacemanRachfordSplitting_iterationOperator :
     (peacemanRachfordSplitting H V hr hH hV).iterationOperator = peacemanRachford H V r := by
   have hmu := (peacemanRachfordSplitting H V hr hH hV).isUnit
@@ -311,8 +307,8 @@ theorem peacemanRachfordSplitting_iterationOperator :
     _ = (H - (r : 𝕜) • 1) * (V - (r : 𝕜) • 1) := by
         rw [Ring.mul_inverse_cancel _ hH]; noncomm_ring
 
-/-- Saad's Problem P-4.5: the preconditioner of the splitting inverts to
-`2 r (V + r)⁻¹ (H + r)⁻¹`. -/
+/-- [saad2003iterative] Problem P-4.5: the preconditioner of the splitting inverts to `2 r (V + r)⁻¹
+(H + r)⁻¹`. -/
 theorem peacemanRachfordSplitting_ringInverse_m :
     Ring.inverse (peacemanRachfordSplitting H V hr hH hV).m
       = Ring.inverse (V + (r : 𝕜) • 1) *
@@ -355,7 +351,7 @@ theorem peacemanRachfordSplitting_ringInverse_m :
     _ = _ := by rw [Ring.inverse_mul_cancel _ hmu, one_mul]
 
 /-- The affine part (4.51) of the sweep is `M⁻¹ b` for the splitting's preconditioner `M`
-(Saad, Problem P-4.5). -/
+([saad2003iterative], Problem P-4.5). -/
 theorem peacemanRachfordSplitting_const (b : E) :
     Ring.inverse (peacemanRachfordSplitting H V hr hH hV).m b
       = peacemanRachfordConst H V r b := by
@@ -385,11 +381,11 @@ theorem peacemanRachford_conj (hV : IsUnit (V + (r : 𝕜) • (1 : E →L[𝕜]
             Ring.inverse (V + (r : 𝕜) • 1)) := by noncomm_ring
     _ = _ := by rw [Ring.mul_inverse_cancel _ hV, one_mul]; noncomm_ring
 
-/-- The convergence theorem Saad asserts in §4.3 without proof, in its sharp operator form: the
-sweep operator conjugated by `V + r` — the product of the two Cayley transforms — is a strict
-contraction.  Neither symmetry nor commutativity of `H` and `V` is used.  The *unconjugated*
-`Stationary.peacemanRachford` need not have norm below one, which is why the statement is made
-here and the spectral radius bound is derived from it. -/
+/-- The convergence theorem [saad2003iterative] asserts in §4.3 without proof, in its sharp operator
+form: the sweep operator conjugated by `V + r` — the product of the two Cayley transforms — is a
+strict contraction.  Neither symmetry nor commutativity of `H` and `V` is used.  The *unconjugated*
+`Stationary.peacemanRachford` need not have norm below one, which is why the statement is made here
+and the spectral radius bound is derived from it. -/
 theorem norm_conj_peacemanRachford_lt_one (hH : (H : E →ₗ[𝕜] E).IsCoercive)
     (hV : (V : E →ₗ[𝕜] E).IsCoercive) (hr : 0 < r) :
     ‖(V + (r : 𝕜) • 1) * peacemanRachford H V r * Ring.inverse (V + (r : 𝕜) • 1)‖ < 1 := by
@@ -403,9 +399,9 @@ theorem norm_conj_peacemanRachford_lt_one (hH : (H : E →ₗ[𝕜] E).IsCoerciv
     norm_nonneg ((V - (r : 𝕜) • (1 : E →L[𝕜] E)) * Ring.inverse (V + (r : 𝕜) • 1))]
 
 omit [CompleteSpace E] in
-/-- A power of a conjugate grows no faster than the conjugated power of the norm: this is what
-turns "the sweep is similar to a contraction" into "the errors go to zero", with the constant
-`‖u⁻¹‖ ‖u‖` absorbed once and for all.  The conjugation identity is `Units.conj_pow'`. -/
+/-- A power of a conjugate grows no faster than the conjugated power of the norm: this is what turns
+"the sweep is similar to a contraction" into "the errors go to zero", with the constant `‖u⁻¹‖ ‖u‖`
+absorbed once and for all.  The conjugation identity is `Units.conj_pow'`. -/
 private theorem norm_pow_conj_le {u : (E →L[𝕜] E)ˣ} {P Q : E →L[𝕜] E}
     (hP : (↑u⁻¹ : E →L[𝕜] E) * Q * ↑u = P) (k : ℕ) :
     ‖P ^ k‖ ≤ ‖(↑u⁻¹ : E →L[𝕜] E)‖ * ‖Q‖ ^ k * ‖(u : E →L[𝕜] E)‖ := by
@@ -447,8 +443,8 @@ theorem spectralRadius_peacemanRachford_lt_one (hH : (H : E →ₗ[𝕜] E).IsCo
     refine lt_of_le_of_lt hle ?_
     rwa [ENNReal.coe_lt_one_iff, ← NNReal.coe_lt_one, coe_nnnorm]
 
-/-- Convergence of the Peaceman–Rachford iteration from any starting vector and for any
-parameter `r > 0`: the theorem Saad asserts in §4.3 in one sentence.  The iterates of one sweep
+/-- Convergence of the Peaceman–Rachford iteration from any starting vector and for any parameter `r
+> 0`: the theorem [saad2003iterative] asserts in §4.3 in one sentence.  The iterates of one sweep
 converge to the solution of `(H + V) x = b`.  No commutativity of `H` and `V` is used, and no
 symmetry either. -/
 theorem tendsto_peacemanRachford (hH : (H : E →ₗ[𝕜] E).IsCoercive)

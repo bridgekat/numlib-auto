@@ -11,39 +11,38 @@ import Numlib.Approximation.BestApprox
 /-!
 # Best uniform approximation and equioscillation
 
-Best uniform approximation of a continuous function on a compact subset of the line by
-polynomials of degree at most `n`, and the alternation (equioscillation) that characterizes it.
-The material is [Atkinson–Han, *Theoretical Numerical Analysis*][han2009theoretical] Thm 3.3.19 and
-[Kress, *Numerical Analysis*][kress1998numerical] §8.2.
+Best uniform approximation of a continuous function on a compact subset of the line by polynomials
+of degree at most `n`, and the alternation (equioscillation) that characterizes it. The material is
+[han2009theoretical] Thm 3.3.19 and [kress1998numerical] §8.2.
 
 ## Main definitions
 
-* `polyLE X n` is the subspace of `C(X, ℝ)` of the restrictions of the real polynomials of
-  degree at most `n`.
-* `HaarCondition V d` says that no nonzero element of `V` vanishes at `d` distinct points of `X`.
-  It is what the alternation arguments use about polynomials, and it holds for `polyLE X n` with
-  `d = n + 1` (`haarCondition_polyLE`), as it does for the trigonometric polynomials of degree at
-  most `n` on a circle. The dimension is carried as a parameter rather than read off as
-  `Module.finrank`, so that no rank computation is needed at a use site.
-* `Equioscillates g m` says that `g` attains `± ‖g‖` with alternating signs at `m` increasing
-  points of `X`.
+* `polyLE X n` is the subspace of `C(X, ℝ)` of the restrictions of the real polynomials of degree at
+  most `n`.
+* `HaarCondition V d` says that no nonzero element of `V` vanishes at `d` distinct points of `X`. It
+  is what the alternation arguments use about polynomials, and it holds for `polyLE X n` with `d = n
+  + 1` (`haarCondition_polyLE`), as it does for the trigonometric polynomials of degree at most `n`
+  on a circle. The dimension is carried as a parameter rather than read off as `Module.finrank`, so
+  that no rank computation is needed at a use site.
+* `Equioscillates g m` says that `g` attains `± ‖g‖` with alternating signs at `m` increasing points
+  of `X`.
 
 ## Main results
 
-* `le_infDist_of_alternates` is the de la Vallée-Poussin lower bound: an alternation of length
-  `n + 2` for the error of *any* competitor bounds the distance to `polyLE X n` from below. Its
-  immediate consequence `isBestApprox_of_equioscillates` is the sufficiency half of Chebyshev's
+* `le_infDist_of_alternates` is the de la Vallée-Poussin lower bound: an alternation of length `n +
+  2` for the error of *any* competitor bounds the distance to `polyLE X n` from below. Its immediate
+  consequence `isBestApprox_of_equioscillates` is the sufficiency half of Chebyshev's
   equioscillation theorem.
 * `IsBestApprox.exists_card_eq_of_interpolation` is the half with content in the other direction:
   the error of a best approximation attains its maximum modulus at `d` distinct points, because
   otherwise an element of the subspace interpolating the error at the extreme points gives a
-  direction of improvement. Its hypothesis, that the subspace takes prescribed values at fewer
-  than `d` points, holds for `polyLE X n` by Lagrange's formula
-  (`IsBestApprox.exists_card_eq_of_polyLE`) and for a `d`-dimensional Haar subspace by
-  `HaarCondition.exists_mem_forall_eq`, the interpolation property of a Haar system.
-* `IsBestApprox.unique_of_polyLE` and `IsBestApprox.unique_of_haarCondition`, the uniqueness of
-  the best uniform approximation, follow from it and the Haar condition through the midpoint of
-  two best approximations.
+  direction of improvement. Its hypothesis, that the subspace takes prescribed values at fewer than
+  `d` points, holds for `polyLE X n` by Lagrange's formula (`IsBestApprox.exists_card_eq_of_polyLE`)
+  and for a `d`-dimensional Haar subspace by `HaarCondition.exists_mem_forall_eq`, the interpolation
+  property of a Haar system.
+* `IsBestApprox.unique_of_polyLE` and `IsBestApprox.unique_of_haarCondition`, the uniqueness of the
+  best uniform approximation, follow from it and the Haar condition through the midpoint of two best
+  approximations.
 * `isBestApprox_iff_equioscillates` is **Chebyshev's equioscillation theorem** itself, of which
   `IsBestApprox.equioscillates_of_polyLE` is the direction with content: the exchange argument
   builds, out of a maximal alternation shorter than `n + 2`, a polynomial that
@@ -54,8 +53,8 @@ The material is [Atkinson–Han, *Theoretical Numerical Analysis*][han2009theore
 
 open scoped Polynomial
 
-/-- The subspace of `C(X, ℝ)` of the restrictions to `X` of the real polynomial functions of
-degree at most `n`. -/
+/-- The subspace of `C(X, ℝ)` of the restrictions to `X` of the real polynomial functions of degree
+at most `n`. -/
 noncomputable def polyLE (X : Set ℝ) (n : ℕ) : Submodule ℝ C(X, ℝ) :=
   (Polynomial.degreeLE ℝ n).map (Polynomial.toContinuousMapOnAlgHom X).toLinearMap
 
@@ -78,8 +77,8 @@ computation. -/
 def HaarCondition {X : Type*} [TopologicalSpace X] (V : Submodule ℝ C(X, ℝ)) (d : ℕ) : Prop :=
   ∀ g ∈ V, g ≠ 0 → ∀ s : Finset X, (∀ t ∈ s, g t = 0) → s.card < d
 
-/-- The polynomials of degree at most `n` satisfy the Haar condition in dimension `n + 1`:
-a nonzero polynomial of degree at most `n` has at most `n` roots. -/
+/-- The polynomials of degree at most `n` satisfy the Haar condition in dimension `n + 1`: a nonzero
+polynomial of degree at most `n` has at most `n` roots. -/
 theorem haarCondition_polyLE (X : Set ℝ) (n : ℕ) : HaarCondition (polyLE X n) (n + 1) := by
   intro g hg hg0 s hs
   by_contra hcard
@@ -100,8 +99,8 @@ theorem haarCondition_polyLE (X : Set ℝ) (n : ℕ) : HaarCondition (polyLE X n
   simp [hgP t, hP0]
 
 /-- **A Haar system interpolates.** A subspace of dimension `d` satisfying the Haar condition in
-dimension `d` takes prescribed values at any `d` distinct points: the evaluation map into
-`Fin d → ℝ` is injective by the Haar condition, hence surjective because the dimensions agree. -/
+dimension `d` takes prescribed values at any `d` distinct points: the evaluation map into `Fin d →
+ℝ` is injective by the Haar condition, hence surjective because the dimensions agree. -/
 theorem HaarCondition.exists_forall_apply_eq {X : Type*} [TopologicalSpace X]
     {V : Submodule ℝ C(X, ℝ)} {d : ℕ} [FiniteDimensional ℝ V] (hV : HaarCondition V d)
     (hdim : Module.finrank ℝ V = d) {x : Fin d → X} (hx : Function.Injective x)
@@ -153,9 +152,9 @@ theorem HaarCondition.exists_mem_forall_eq {X : Type*} [TopologicalSpace X] [Inf
   have hval := hgval (e ⟨t, Finset.mem_union_left _ ht⟩)
   simpa [hx] using hval
 
-/-- `Equioscillates g m`: the function `g` attains `± ‖g‖` with alternating signs at `m`
-increasing points of `X`, the alternation condition in Chebyshev's characterization of a best
-uniform approximation. -/
+/-- `Equioscillates g m`: the function `g` attains `± ‖g‖` with alternating signs at `m` increasing
+points of `X`, the alternation condition in Chebyshev's characterization of a best uniform
+approximation. -/
 def Equioscillates {X : Set ℝ} [CompactSpace X] (g : C(X, ℝ)) (m : ℕ) : Prop :=
   ∃ (σ : ℝ) (x : Fin m → X), (σ = 1 ∨ σ = -1) ∧ StrictMono (fun i => (x i : ℝ)) ∧
     ∀ i : Fin m, g (x i) = σ * (-1) ^ (i : ℕ) * ‖g‖
@@ -171,15 +170,15 @@ private theorem exists_root_of_mul_neg {F : ℝ → ℝ} (hF : Continuous F) {u 
       intermediate_value_Ioo huv.le hF.continuousOn (Set.mem_Ioo.mpr ⟨hu, hv⟩)
     exact ⟨z, hz, hz0⟩
 
-/-- **De la Vallée-Poussin's lower bound.** If the error `f - q` of some competitor `q` of degree
-at most `n` alternates in sign at `n + 2` increasing points of `X` with values of modulus at
-least `ε`, then no polynomial of degree at most `n` approximates `f` better than `ε`.
+/-- **De la Vallée-Poussin's lower bound.** If the error `f - q` of some competitor `q` of degree at
+most `n` alternates in sign at `n + 2` increasing points of `X` with values of modulus at least `ε`,
+then no polynomial of degree at most `n` approximates `f` better than `ε`.
 
-The proof is the Haar condition for `polyLE X n`: were some `p` closer than `ε`, the difference
-`p - q` would inherit the alternation, hence have `n + 1` roots by the intermediate value
-theorem, hence vanish — contradicting the alternation itself.
+The proof is the Haar condition for `polyLE X n`: were some `p` closer than `ε`, the difference `p -
+q` would inherit the alternation, hence have `n + 1` roots by the intermediate value theorem, hence
+vanish — contradicting the alternation itself.
 
-Reference: Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 3.3.19. -/
+Reference: [han2009theoretical], Theorem 3.3.19. -/
 theorem le_infDist_of_alternates {X : Set ℝ} [CompactSpace X] {n : ℕ} {f q : C(X, ℝ)}
     (hq : q ∈ polyLE X n) {ε σ : ℝ} (hσ : σ = 1 ∨ σ = -1) {x : Fin (n + 2) → X}
     (hmono : StrictMono fun i => (x i : ℝ))
@@ -252,7 +251,7 @@ theorem le_infDist_of_alternates {X : Set ℝ} [CompactSpace X] {n : ℕ} {f q :
 /-- The sufficiency half of Chebyshev's equioscillation theorem: a polynomial whose error
 equioscillates at `n + 2` points is a best uniform approximation.
 
-Reference: Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 3.3.19. -/
+Reference: [han2009theoretical], Theorem 3.3.19. -/
 theorem isBestApprox_of_equioscillates {X : Set ℝ} [CompactSpace X] {n : ℕ} {f p : C(X, ℝ)}
     (hp : p ∈ polyLE X n) (h : Equioscillates (f - p) (n + 2)) :
     IsBestApprox (polyLE X n : Set C(X, ℝ)) f p := by
@@ -283,10 +282,10 @@ private theorem exists_abs_eq_norm {X : Set ℝ} [CompactSpace X] [Nonempty X] (
   intro u
   simpa using hmax (Set.mem_univ u)
 
-/-- **A direction of improvement.** If some `q` has the same strict sign as `g` at every point
-where `|g|` attains its maximum, then `g - λ q` is strictly smaller than `g` in sup norm for all
-small `λ > 0`: away from the extreme set there is room to spare, and at the extreme set the
-correction has the right sign. -/
+/-- **A direction of improvement.** If some `q` has the same strict sign as `g` at every point where
+`|g|` attains its maximum, then `g - λ q` is strictly smaller than `g` in sup norm for all small `λ
+> 0`: away from the extreme set there is room to spare, and at the extreme set the correction has
+the right sign. -/
 private theorem exists_norm_sub_smul_lt {X : Set ℝ} [CompactSpace X] [Nonempty X]
     {g q : C(X, ℝ)} (hE : 0 < ‖g‖) (hsign : ∀ t : X, |g t| = ‖g‖ → 0 < g t * q t) :
     ∃ lam : ℝ, 0 < lam ∧ ‖g - lam • q‖ < ‖g‖ := by
@@ -342,17 +341,17 @@ private theorem exists_norm_sub_smul_lt {X : Set ℝ} [CompactSpace X] [Nonempty
       · nlinarith [neg_abs_le (g t)]
       · nlinarith
 
-/-- **The error of a best uniform approximation from an interpolating subspace attains its
-maximum modulus at `d` points.** This is the half of the Chebyshev characterization that has
-content: if the error attained its maximum modulus at fewer than `d` points, then an element `q`
-of the subspace interpolating the error at those points makes `p + c q` a strictly better
-approximation once `c > 0` is small enough.
+/-- **The error of a best uniform approximation from an interpolating subspace attains its maximum
+modulus at `d` points.** This is the half of the Chebyshev characterization that has content: if the
+error attained its maximum modulus at fewer than `d` points, then an element `q` of the subspace
+interpolating the error at those points makes `p + c q` a strictly better approximation once `c > 0`
+is small enough.
 
 The hypothesis is what a Haar system of dimension `d` supplies
-(`HaarCondition.exists_mem_forall_eq`), and what Lagrange interpolation supplies for the
-polynomials of degree at most `n`, with `d = n + 1`.
+(`HaarCondition.exists_mem_forall_eq`), and what Lagrange interpolation supplies for the polynomials
+of degree at most `n`, with `d = n + 1`.
 
-Reference: Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 3.3.19. -/
+Reference: [han2009theoretical], Theorem 3.3.19. -/
 theorem IsBestApprox.exists_card_eq_of_interpolation {X : Set ℝ} [CompactSpace X] [Infinite X]
     {d : ℕ} {V : Submodule ℝ C(X, ℝ)} {f p : C(X, ℝ)}
     (hinterp : ∀ S : Finset X, S.card < d → ∀ y : X → ℝ, ∃ q ∈ V, ∀ t ∈ S, q t = y t)
@@ -410,10 +409,10 @@ theorem IsBestApprox.exists_card_eq_of_interpolation {X : Set ℝ} [CompactSpace
   exact absurd hbetter (not_le.mpr hlt)
 
 /-- **The error of a best uniform approximation attains its maximum modulus at `n + 1` distinct
-points.** The polynomial case of `IsBestApprox.exists_card_eq_of_interpolation`, whose
-interpolation hypothesis is Lagrange's formula at the extreme points.
+points.** The polynomial case of `IsBestApprox.exists_card_eq_of_interpolation`, whose interpolation
+hypothesis is Lagrange's formula at the extreme points.
 
-Reference: Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 3.3.19. -/
+Reference: [han2009theoretical], Theorem 3.3.19. -/
 theorem IsBestApprox.exists_card_eq_of_polyLE {X : Set ℝ} [CompactSpace X] [Infinite X] {n : ℕ}
     {f p : C(X, ℝ)} (hp : IsBestApprox (polyLE X n : Set C(X, ℝ)) f p) :
     ∃ S : Finset X, S.card = n + 1 ∧ ∀ t ∈ S, |(f - p) t| = ‖f - p‖ := by
@@ -460,16 +459,15 @@ private theorem eq_of_abs_sub_midpoint_eq {X : Set ℝ} [CompactSpace X] {K : Se
   rcases abs_cases ((2 : ℝ)⁻¹ * (f t - p₁ t) + (2 : ℝ)⁻¹ * (f t - p₂ t)) with
     ⟨he, -⟩ | ⟨he, -⟩ <;> rw [he] at hmax <;> linarith
 
-/-- **Uniqueness of the best uniform approximation from a Haar subspace.** Two best
-approximations of the same function by elements of a `d`-dimensional subspace satisfying the Haar
-condition in dimension `d` agree.
+/-- **Uniqueness of the best uniform approximation from a Haar subspace.** Two best approximations
+of the same function by elements of a `d`-dimensional subspace satisfying the Haar condition in
+dimension `d` agree.
 
-Their midpoint is a best approximation too, its error attains the common minimal norm at `d`
-points, and at each of those the two errors must agree; the Haar condition then forces the two
-elements to be equal.
+Their midpoint is a best approximation too, its error attains the common minimal norm at `d` points,
+and at each of those the two errors must agree; the Haar condition then forces the two elements to
+be equal.
 
-Reference: Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 3.3.19; Kress, *Numerical
-Analysis*, §8.2. -/
+Reference: [han2009theoretical], Theorem 3.3.19; [kress1998numerical], §8.2. -/
 theorem IsBestApprox.unique_of_haarCondition {X : Set ℝ} [CompactSpace X] [Infinite X] {d : ℕ}
     {V : Submodule ℝ C(X, ℝ)} [FiniteDimensional ℝ V] (hV : HaarCondition V d)
     (hdim : Module.finrank ℝ V = d) {f p₁ p₂ : C(X, ℝ)}
@@ -495,7 +493,7 @@ Their midpoint is a best approximation too, its error attains the common minimal
 points, and at each of those the two errors must agree; the Haar condition then forces the two
 polynomials to be equal.
 
-Reference: Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 3.3.19. -/
+Reference: [han2009theoretical], Theorem 3.3.19. -/
 theorem IsBestApprox.unique_of_polyLE {X : Set ℝ} [CompactSpace X] [Infinite X] {n : ℕ}
     {f p₁ p₂ : C(X, ℝ)} (h₁ : IsBestApprox (polyLE X n : Set C(X, ℝ)) f p₁)
     (h₂ : IsBestApprox (polyLE X n : Set C(X, ℝ)) f p₂) : p₁ = p₂ := by
@@ -531,11 +529,10 @@ theorem Equioscillates.mono {X : Set ℝ} [CompactSpace X] {g : C(X, ℝ)} {m k 
 subspace has the same strict sign as the error at every point of the extreme set: such an element
 would be a direction of improvement.
 
-It is the analytic half of Chebyshev's equioscillation theorem — the other half is the
-combinatorial construction of such an element out of a short alternation.
+It is the analytic half of Chebyshev's equioscillation theorem — the other half is the combinatorial
+construction of such an element out of a short alternation.
 
-Reference: Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 3.3.19; Kress, *Numerical
-Analysis*, §8.2. -/
+Reference: [han2009theoretical], Theorem 3.3.19; [kress1998numerical], §8.2. -/
 theorem IsBestApprox.exists_mul_nonpos {X : Set ℝ} [CompactSpace X] [Nonempty X]
     {V : Submodule ℝ C(X, ℝ)} {f p : C(X, ℝ)} (hp : IsBestApprox (V : Set C(X, ℝ)) f p)
     (hE : 0 < ‖f - p‖) {q : C(X, ℝ)} (hq : q ∈ V) :
@@ -549,8 +546,8 @@ theorem IsBestApprox.exists_mul_nonpos {X : Set ℝ} [CompactSpace X] [Nonempty 
 
 /-! ### Chebyshev's equioscillation theorem -/
 
-/-- An alternation written with a single constant: `g` takes the values `± c` alternately, with
-`|c| = ‖g‖`. This is the form the construction below produces, and it is an alternation. -/
+/-- An alternation written with a single constant: `g` takes the values `± c` alternately, with `|c|
+= ‖g‖`. This is the form the construction below produces, and it is an alternation. -/
 private theorem equioscillates_of_alternating {X : Set ℝ} [CompactSpace X] {g : C(X, ℝ)} {m : ℕ}
     {w : Fin m → X} (hmono : StrictMono fun i => (w i : ℝ)) {c : ℝ} (hc : |c| = ‖g‖)
     (hval : ∀ i, g (w i) = (-1) ^ (i : ℕ) * c) : Equioscillates g m := by
@@ -620,19 +617,19 @@ private theorem equioscillates_succ_of_forall_gt {X : Set ℝ} [CompactSpace X] 
 
 /-- **A nonzero real trigonometric polynomial of degree at most `n` has at most `2 n` zeros in a
 period.** This is the Haar condition for the trigonometric polynomials — the analogue of
-`haarCondition_polyLE`, in the dimension `2 n + 1` of that space — and it is what the
-trigonometric equioscillation theorem and trigonometric interpolation rest on.
+`haarCondition_polyLE`, in the dimension `2 n + 1` of that space — and it is what the trigonometric
+equioscillation theorem and trigonometric interpolation rest on.
 
 The proof is the substitution `z = exp (2 π i x / T)`, which is injective on a period: under it a
-real trigonometric polynomial of degree at most `n` becomes `z ^ (-n)` times an algebraic
-polynomial of degree at most `2 n` evaluated at `z`, and a nonzero polynomial has no more roots
-than its degree.
+real trigonometric polynomial of degree at most `n` becomes `z ^ (-n)` times an algebraic polynomial
+of degree at most `2 n` evaluated at `z`, and a nonzero polynomial has no more roots than its
+degree.
 
-The hypothesis is stated as an explicit combination of the real trigonometric system rather than
-as membership in a subspace of trigonometric polynomials, so that this file needs nothing from the
+The hypothesis is stated as an explicit combination of the real trigonometric system rather than as
+membership in a subspace of trigonometric polynomials, so that this file needs nothing from the
 Fourier layer beyond `Numlib/Analysis/Fourier/TrigonometricBasis`'s system itself.
 
-Reference: Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 3.3.20. -/
+Reference: [han2009theoretical], Theorem 3.3.20. -/
 theorem card_le_two_mul_of_forall_trigFun_eq_zero {T : ℝ} (hT : T ≠ 0) {n : ℕ}
     {f : C(AddCircle T, ℝ)} {c : ℤ → ℝ}
     (hf : f = ∑ m ∈ Finset.Icc (-(n : ℤ)) n, c m • trigFun T m) (hne : f ≠ 0)
@@ -738,9 +735,9 @@ theorem card_le_two_mul_of_forall_trigFun_eq_zero {T : ℝ} (hT : T ≠ 0) {n : 
     _ ≤ Q.natDegree := Polynomial.card_roots' Q
     _ ≤ 2 * n := hQdeg
 
-/-- **A longest alternation.** A nonzero `g` on a compact nonempty space alternates once, at a
-point of maximum modulus; so if it does not alternate `n + 2` times, there is a greatest length
-`m` at which it alternates, and `1 ≤ m ≤ n + 1`. -/
+/-- **A longest alternation.** A nonzero `g` on a compact nonempty space alternates once, at a point
+of maximum modulus; so if it does not alternate `n + 2` times, there is a greatest length `m` at
+which it alternates, and `1 ≤ m ≤ n + 1`. -/
 private theorem exists_maximal_equioscillates {X : Set ℝ} [CompactSpace X] [Nonempty X] {n : ℕ}
     {g : C(X, ℝ)} (hcon : ¬ Equioscillates g (n + 2)) :
     ∃ m : ℕ, 1 ≤ m ∧ m ≤ n + 1 ∧ Equioscillates g m ∧ ∀ k, m < k → ¬ Equioscillates g k := by
@@ -766,12 +763,12 @@ private theorem exists_maximal_equioscillates {X : Set ℝ} [CompactSpace X] [No
 times, then a polynomial of degree at most `n` has the sign of the error at every extreme point,
 which `IsBestApprox.exists_mul_nonpos` forbids.
 
-The polynomial is built from an alternation `z` of the greatest possible length `m ≤ n + 1`,
-chosen among those of length `m` to minimize `∑ z i`. Minimality says that no extreme point of the
-sign of `z j` lies strictly between `z (j-1)` and `z j`; maximality says that the alternation
-cannot be extended at either end. Between consecutive `z j` the last extreme point of the sign of
-`z j` is separated from `z (j+1)` by a point `y j`, and `∏ (y j - x)`, scaled by the sign of
-`z 0`, is the polynomial. -/
+The polynomial is built from an alternation `z` of the greatest possible length `m ≤ n + 1`, chosen
+among those of length `m` to minimize `∑ z i`. Minimality says that no extreme point of the sign of
+`z j` lies strictly between `z (j-1)` and `z j`; maximality says that the alternation cannot be
+extended at either end. Between consecutive `z j` the last extreme point of the sign of `z j` is
+separated from `z (j+1)` by a point `y j`, and `∏ (y j - x)`, scaled by the sign of `z 0`, is the
+polynomial. -/
 private theorem exists_improving_of_not_equioscillates {X : Set ℝ} [CompactSpace X] [Nonempty X]
     {n : ℕ} {g : C(X, ℝ)} (hE : 0 < ‖g‖) (hcon : ¬ Equioscillates g (n + 2)) :
     ∃ q ∈ polyLE X n, ∀ t : X, |g t| = ‖g‖ → 0 < g t * q t := by
@@ -1159,12 +1156,11 @@ private theorem exists_improving_of_not_equioscillates {X : Set ℝ} [CompactSpa
   rw [happ, hQeval t]
   exact hmain t htabs
 
-/-- **Chebyshev's equioscillation theorem, the direction with content**: the error of a best
-uniform approximation of degree at most `n` attains `± ‖f - p‖` with alternating signs at `n + 2`
-increasing points.
+/-- **Chebyshev's equioscillation theorem, the direction with content**: the error of a best uniform
+approximation of degree at most `n` attains `± ‖f - p‖` with alternating signs at `n + 2` increasing
+points.
 
-Reference: Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 3.3.19; Kress, *Numerical
-Analysis*, §8.2. -/
+Reference: [han2009theoretical], Theorem 3.3.19; [kress1998numerical], §8.2. -/
 theorem IsBestApprox.equioscillates_of_polyLE {X : Set ℝ} [CompactSpace X] [Infinite X] {n : ℕ}
     {f p : C(X, ℝ)} (hp : IsBestApprox (polyLE X n : Set C(X, ℝ)) f p) :
     Equioscillates (f - p) (n + 2) := by
@@ -1181,14 +1177,13 @@ theorem IsBestApprox.equioscillates_of_polyLE {X : Set ℝ} [CompactSpace X] [In
     exact absurd (hsign t ht) (not_lt.mpr hle)
 
 /-- **Chebyshev's equioscillation theorem.** A polynomial of degree at most `n` is a best uniform
-approximation of `f` on a compact infinite subset of the line exactly when its error attains
-`± ‖f - p‖` with alternating signs at `n + 2` increasing points.
+approximation of `f` on a compact infinite subset of the line exactly when its error attains `± ‖f -
+p‖` with alternating signs at `n + 2` increasing points.
 
 Sufficiency is `isBestApprox_of_equioscillates`, from de la Vallée-Poussin's bound; necessity is
 `IsBestApprox.equioscillates_of_polyLE`, the exchange argument.
 
-Reference: Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 3.3.19; Kress, *Numerical
-Analysis*, §8.2. -/
+Reference: [han2009theoretical], Theorem 3.3.19; [kress1998numerical], §8.2. -/
 theorem isBestApprox_iff_equioscillates {X : Set ℝ} [CompactSpace X] [Infinite X] {n : ℕ}
     {f p : C(X, ℝ)} (hp : p ∈ polyLE X n) :
     IsBestApprox (polyLE X n : Set C(X, ℝ)) f p ↔ Equioscillates (f - p) (n + 2) :=

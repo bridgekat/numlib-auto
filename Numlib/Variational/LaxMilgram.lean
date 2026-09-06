@@ -6,19 +6,18 @@ import Numlib.Variational.Forms
 /-!
 # Lax–Milgram, Babuška–Nečas, and existence theory for variational problems
 
-* `SesqForm.laxMilgram`: a bounded coercive form on a Hilbert space is uniquely solvable,
-  `‖u‖ ≤ ‖ℓ‖ / c` ([Atkinson–Han][han2009theoretical] Thm 8.3.4; [Kress][kress1998numerical] Thm
-  11.13 in operator form, Cor 11.16 for forms; Mathlib's `IsCoercive.continuousLinearEquivOfBilin`
-  is the real case); proof routes: Riesz + `ContinuousLinearMap.exists_equiv_of_isCoerciveWith`
-  (Atkinson–Han's second proof of Thm 8.3.4) or the damped fixed-point iteration (their first proof,
-  `contractingWith_damped`).
-* `SesqForm.isMinOn_energy_iff`: for Hermitian coercive forms, the solution is the unique
-  minimizer of the energy (Atkinson–Han Thm 8.3.3; [Saad][saad2003iterative] Prop 5.2 in operator
-  form), on subspaces and on closed convex sets (variational inequalities, Atkinson–Han (8.3.3)).
-* `SesqForm₂.babuska_necas`: the generalized Lax–Milgram lemma (Atkinson–Han Thm 8.7.1) under the
-  inf–sup condition and nondegeneracy, with `‖u‖ ≤ ‖ℓ‖ / α` (8.7.5).
-* Existence via a priori estimates (Atkinson–Han Thm 8.2.1–8.2.4): bounded-below operators with
-  closed / dense range, including the closed-operator version.
+* `SesqForm.laxMilgram`: a bounded coercive form on a Hilbert space is uniquely solvable, `‖u‖ ≤ ‖ℓ‖
+  / c` ([han2009theoretical] Thm 8.3.4; [kress1998numerical] Thm 11.13 in operator form, Cor 11.16
+  for forms; Mathlib's `IsCoercive.continuousLinearEquivOfBilin` is the real case); proof routes:
+  Riesz + `ContinuousLinearMap.exists_equiv_of_isCoerciveWith` ([han2009theoretical] second proof of
+  Thm 8.3.4) or the damped fixed-point iteration (their first proof, `contractingWith_damped`).
+* `SesqForm.isMinOn_energy_iff`: for Hermitian coercive forms, the solution is the unique minimizer
+  of the energy ([han2009theoretical] Thm 8.3.3; [saad2003iterative] Prop 5.2 in operator form), on
+  subspaces and on closed convex sets (variational inequalities, [han2009theoretical] (8.3.3)).
+* `SesqForm₂.babuska_necas`: the generalized Lax–Milgram lemma ([han2009theoretical] Thm 8.7.1)
+  under the inf–sup condition and nondegeneracy, with `‖u‖ ≤ ‖ℓ‖ / α` (8.7.5).
+* Existence via a priori estimates ([han2009theoretical] Thm 8.2.1–8.2.4): bounded-below operators
+  with closed / dense range, including the closed-operator version.
 -/
 
 variable {𝕜 V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [InnerProductSpace 𝕜 V] [CompleteSpace V]
@@ -27,18 +26,18 @@ section BoundedBelow
 
 /-! ### Bounded-below operators
 
-The two workhorses of Atkinson–Han, *Theoretical Numerical Analysis*, §8.2 — a bounded-below
-operator has closed range, and if in addition its range is dense then it is bijective.  They stand
-at the head of the file because `SesqForm₂.babuska_necas` maps between two different spaces and
-needs them in that generality; the rest of §8.2 is the `APriori` section at the end. -/
+The two workhorses of [han2009theoretical], §8.2 — a bounded-below operator has closed range, and if
+in addition its range is dense then it is bijective.  They stand at the head of the file because
+`SesqForm₂.babuska_necas` maps between two different spaces and needs them in that generality; the
+rest of §8.2 is the `APriori` section at the end. -/
 
 variable {U W : Type*} [NormedAddCommGroup U] [InnerProductSpace 𝕜 U] [CompleteSpace U]
   [NormedAddCommGroup W] [InnerProductSpace 𝕜 W] [CompleteSpace W]
 
 omit [CompleteSpace U] [CompleteSpace W] in
-/-- A lower bound `c ‖v‖ ≤ ‖L v‖` with `c > 0` says exactly that `L` is antilipschitz with
-constant `c⁻¹`.  Everything the a priori estimate buys — injectivity, a closed range, a bounded
-inverse on the range — is a consequence of that one reading. -/
+/-- A lower bound `c ‖v‖ ≤ ‖L v‖` with `c > 0` says exactly that `L` is antilipschitz with constant
+`c⁻¹`.  Everything the a priori estimate buys — injectivity, a closed range, a bounded inverse on
+the range — is a consequence of that one reading. -/
 theorem ContinuousLinearMap.antilipschitzWith_of_le_norm (L : U →L[𝕜] W) {c : ℝ} (hc : 0 < c)
     (h : ∀ v, c * ‖v‖ ≤ ‖L v‖) : AntilipschitzWith (Real.toNNReal c⁻¹) L := by
   refine L.antilipschitz_of_bound fun v => ?_
@@ -46,18 +45,18 @@ theorem ContinuousLinearMap.antilipschitzWith_of_le_norm (L : U →L[𝕜] W) {c
   exact h v
 
 omit [CompleteSpace W] in
-/-- Atkinson–Han, *Theoretical Numerical Analysis*, Thm 8.2.1: a bounded-below operator
-`c ‖v‖ ≤ ‖L v‖` on a complete space has closed range. -/
+/-- [han2009theoretical], Thm 8.2.1: a bounded-below operator `c ‖v‖ ≤ ‖L v‖` on a complete space
+has closed range. -/
 theorem ContinuousLinearMap.isClosed_range_of_le_norm (L : U →L[𝕜] W) {c : ℝ} (hc : 0 < c)
     (h : ∀ v, c * ‖v‖ ≤ ‖L v‖) : IsClosed (LinearMap.range (L : U →ₗ[𝕜] W) : Set W) := by
   rw [LinearMap.coe_range]
   exact (L.antilipschitzWith_of_le_norm hc h).isClosed_range L.uniformContinuous
 
-/-- Atkinson–Han, *Theoretical Numerical Analysis*, Thm 8.2.4: a bounded-below operator whose
-range is dense is bijective.  The bound `c ‖v‖ ≤ ‖L v‖` gives injectivity and a closed range, and
-the hypothesis `(range L)ᗮ = ⊥` — no nonzero vector is orthogonal to the range — then forces that
-closed range to be all of `W`.  This is the closed-range route to Lax–Milgram and to
-`SesqForm₂.babuska_necas`, where the two hypotheses are coercivity and nondegeneracy. -/
+/-- [han2009theoretical], Thm 8.2.4: a bounded-below operator whose range is dense is bijective.
+The bound `c ‖v‖ ≤ ‖L v‖` gives injectivity and a closed range, and the hypothesis `(range L)ᗮ = ⊥`
+— no nonzero vector is orthogonal to the range — then forces that closed range to be all of `W`.
+This is the closed-range route to Lax–Milgram and to `SesqForm₂.babuska_necas`, where the two
+hypotheses are coercivity and nondegeneracy. -/
 theorem ContinuousLinearMap.bijective_of_le_norm_of_orthogonal_range_eq_bot (L : U →L[𝕜] W)
     {c : ℝ} (hc : 0 < c) (h : ∀ v, c * ‖v‖ ≤ ‖L v‖)
     (hdense : (LinearMap.range (L : U →ₗ[𝕜] W))ᗮ = ⊥) : Function.Bijective L := by
@@ -85,9 +84,9 @@ private theorem exists_equiv_toOperator {c : ℝ} (hc : 0 < c) (ha : a.IsCoerciv
     ((a.isCoerciveWith_iff_toOperator c).mp ha)
   exact ⟨e, fun u => by rw [← he]; rfl, he'⟩
 
-/-- Lax–Milgram (Atkinson–Han, *Theoretical Numerical Analysis*, Thm 8.3.4): a bounded coercive
-form is uniquely solvable, that is, for every continuous functional `ℓ` there is exactly one `u`
-with `a u v = ℓ v` for all `v`. -/
+/-- Lax–Milgram ([han2009theoretical], Thm 8.3.4): a bounded coercive form is uniquely solvable,
+that is, for every continuous functional `ℓ` there is exactly one `u` with `a u v = ℓ v` for all
+`v`. -/
 theorem laxMilgram {c : ℝ} (hc : 0 < c) (ha : a.IsCoerciveWith c) : ∃! u, ∀ v, a u v = ℓ v := by
   obtain ⟨e, hEq, -⟩ := a.exists_equiv_toOperator hc ha
   refine ⟨e.symm (rieszRep ℓ), ?_, ?_⟩
@@ -113,21 +112,19 @@ theorem norm_le_of_forall_apply_eq {c : ℝ} (hc : 0 < c) (ha : a.IsCoerciveWith
 
 omit [CompleteSpace V] in
 /-- Lipschitz dependence on the data: the solution map `ℓ ↦ u` is `1 / c`-Lipschitz
-(Atkinson–Han, *Theoretical Numerical Analysis*, (5.1.11), stated there for strongly monotone
-maps). -/
+([han2009theoretical], (5.1.11), stated there for strongly monotone maps). -/
 theorem norm_sub_le_of_forall_apply_eq {c : ℝ} (hc : 0 < c) (ha : a.IsCoerciveWith c)
     {ℓ₁ ℓ₂ : V →L[𝕜] 𝕜} {u₁ u₂ : V} (h₁ : ∀ v, a u₁ v = ℓ₁ v) (h₂ : ∀ v, a u₂ v = ℓ₂ v) :
     ‖u₁ - u₂‖ ≤ ‖ℓ₁ - ℓ₂‖ / c :=
   a.norm_le_of_forall_apply_eq (ℓ₁ - ℓ₂) hc ha fun v => by
     simp [map_sub, h₁, h₂]
 
-/-- The solution operator `ℓ ↦ u` for the variational problem `a u v = ℓ v` (Atkinson–Han,
-*Theoretical Numerical Analysis*, problem (8.3.5)) is a continuous *conjugate-linear* equivalence
-`V' ≃L⋆ V`.
+/-- The solution operator `ℓ ↦ u` for the variational problem `a u v = ℓ v` ([han2009theoretical],
+problem (8.3.5)) is a continuous *conjugate-linear* equivalence `V' ≃L⋆ V`.
 
-The statement was corrected from `≃L[𝕜]`/`→L[𝕜]` to `≃L⋆[𝕜]`/`→L⋆[𝕜]`: since `a` is
-conjugate-linear in its first slot, `a (μ • u) v = conj μ * a u v`, so the solution map satisfies
-`S (μ • ℓ) = conj μ • S ℓ` and is conjugate-linear. Over `ℝ` the two notions coincide. -/
+The statement was corrected from `≃L[𝕜]`/`→L[𝕜]` to `≃L⋆[𝕜]`/`→L⋆[𝕜]`: since `a` is conjugate-linear
+in its first slot, `a (μ • u) v = conj μ * a u v`, so the solution map satisfies `S (μ • ℓ) = conj μ
+• S ℓ` and is conjugate-linear. Over `ℝ` the two notions coincide. -/
 theorem exists_solutionEquiv {c : ℝ} (hc : 0 < c) (ha : a.IsCoerciveWith c) :
     ∃ S : (V →L[𝕜] 𝕜) ≃L⋆[𝕜] V, (∀ ℓ v, a (S ℓ) v = ℓ v) ∧
       ‖(S : (V →L[𝕜] 𝕜) →L⋆[𝕜] V)‖ ≤ 1 / c := by
@@ -145,10 +142,9 @@ theorem exists_solutionEquiv {c : ℝ} (hc : 0 < c) (ha : a.IsCoerciveWith c) :
       _ = ‖(e.symm : V →L[𝕜] V)‖ * ‖ℓ'‖ := by rw [norm_rieszRep]
       _ ≤ 1 / c * ‖ℓ'‖ := by gcongr
 
-/-- The first of the two proofs of Lax–Milgram in Atkinson–Han, *Theoretical Numerical Analysis*,
-Thm 8.3.4: the damped iteration `u ↦ u - θ (A u - f)` is a contraction with factor
-`√(1 - 2θc + θ²‖a‖²)` for `0 < θ < 2c / ‖a‖²`, so the Banach fixed-point theorem produces the
-solution (see `contractingWith_damped`,
+/-- The first of the two proofs of Lax–Milgram in [han2009theoretical], Thm 8.3.4: the damped
+iteration `u ↦ u - θ (A u - f)` is a contraction with factor `√(1 - 2θc + θ²‖a‖²)` for `0 < θ < 2c /
+‖a‖²`, so the Banach fixed-point theorem produces the solution (see `contractingWith_damped`,
 `ContinuousLinearMap.norm_sub_smul_apply_sq_le`). -/
 theorem contractingWith_damped_toOperator {c : ℝ} (hc : 0 < c) (ha : a.IsCoerciveWith c)
     (ha0 : 0 < ‖a‖) {θ : ℝ} (hθ : 0 < θ) (hθ' : θ < 2 * c / ‖a‖ ^ 2) :
@@ -166,10 +162,10 @@ theorem contractingWith_damped_toOperator {c : ℝ} (hc : 0 < c) (ha : a.IsCoerc
   exact contractingWith_damped (𝕜 := 𝕜) hc ha0 hmono hlip (rieszRep ℓ) hθ hθ'
 
 omit [CompleteSpace V] in
-/-- Expansion of the energy around a point for a Hermitian form:
-`E(u + w) - E(u) = re (a u w) - re (ℓ w) + ½ re (a w w)`.  The linear term is the Gâteaux
-derivative and the quadratic term is what coercivity controls, so this one identity carries both
-directions of the equivalence between the variational problem and minimizing `E`. -/
+/-- Expansion of the energy around a point for a Hermitian form: `E(u + w) - E(u) = re (a u w) - re
+(ℓ w) + ½ re (a w w)`.  The linear term is the Gâteaux derivative and the quadratic term is what
+coercivity controls, so this one identity carries both directions of the equivalence between the
+variational problem and minimizing `E`. -/
 theorem energy_add_sub_energy (ha : a.IsHermitian) (u w : V) :
     a.energy ℓ (u + w) - a.energy ℓ u
       = RCLike.re (a u w) - RCLike.re (ℓ w) + (1 / 2 : ℝ) * RCLike.re (a w w) := by
@@ -190,8 +186,8 @@ theorem energy_smul_sub_energy (ha : a.IsHermitian) (u v : V) (t : ℝ) :
     RingHom.id_apply, RCLike.re_ofReal_mul]
   ring
 
-/-- If a quadratic `t ↦ t δ + ½ t² q` with `q ≥ 0` is nonnegative for every real `t`, then
-`δ = 0`. -/
+/-- If a quadratic `t ↦ t δ + ½ t² q` with `q ≥ 0` is nonnegative for every real `t`, then `δ = 0`.
+-/
 private theorem eq_zero_of_forall_quadratic_nonneg {δ q : ℝ} (hq : 0 ≤ q)
     (h : ∀ t : ℝ, 0 ≤ t * δ + (1 / 2 : ℝ) * t ^ 2 * q) : δ = 0 := by
   by_contra hδ
@@ -213,11 +209,10 @@ theorem continuous_energy {V : Type*} [NormedAddCommGroup V] [InnerProductSpace 
   rw [hE]
   exact (continuous_const.mul hq).sub ℓ.continuous
 
-/-- Parallelogram identity for the energy of a symmetric real form:
-`E x + E y - 2 E ((x + y) / 2) = ¼ a (x - y) (x - y)`.  On a coercive form the right-hand side is
-bounded below by `(c/4) ‖x - y‖²`, which is what makes a minimizing sequence Cauchy; the midpoint
-is written as a convex combination so that convexity of the constraint set applies to it
-directly. -/
+/-- Parallelogram identity for the energy of a symmetric real form: `E x + E y - 2 E ((x + y) / 2) =
+¼ a (x - y) (x - y)`.  On a coercive form the right-hand side is bounded below by `(c/4) ‖x - y‖²`,
+which is what makes a minimizing sequence Cauchy; the midpoint is written as a convex combination so
+that convexity of the constraint set applies to it directly. -/
 theorem energy_parallelogram {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
     {a : SesqForm ℝ V} (ha : a.IsHermitian) (ℓ : V →L[ℝ] ℝ) (x y : V) :
     a.energy ℓ x + a.energy ℓ y - 2 * a.energy ℓ ((1 / 2 : ℝ) • x + (1 / 2 : ℝ) • y)
@@ -234,10 +229,10 @@ variable {a} (ha : a.IsHermitian)
 include ha
 
 omit [CompleteSpace V] in
-/-- Atkinson–Han, *Theoretical Numerical Analysis*, Thm 8.3.3 (subspace / whole-space case): for a
-Hermitian coercive form, `u` solves `a u v = ℓ v` for all `v ∈ K` iff `u ∈ K` minimizes the energy
-on the subspace `K`.  Taking `K = ⊤` recovers the equivalence of the variational problem with
-minimizing `E` over the whole space. -/
+/-- [han2009theoretical], Thm 8.3.3 (subspace / whole-space case): for a Hermitian coercive form,
+`u` solves `a u v = ℓ v` for all `v ∈ K` iff `u ∈ K` minimizes the energy on the subspace `K`.
+Taking `K = ⊤` recovers the equivalence of the variational problem with minimizing `E` over the
+whole space. -/
 theorem isMinOn_energy_iff {c : ℝ} (hc : 0 < c) (hcoer : a.IsCoerciveWith c) (K : Submodule 𝕜 V)
     {u : V} (hu : u ∈ K) : IsMinOn (a.energy ℓ) K u ↔ ∀ v ∈ K, a u v = ℓ v := by
   constructor
@@ -273,10 +268,10 @@ theorem isMinOn_energy_iff {c : ℝ} (hc : 0 < c) (hcoer : a.IsCoerciveWith c) (
     linarith
 
 omit ha in
-/-- On a nonempty closed convex set `K` (real scalars), the energy minimizer is characterized by
-the variational inequality `re (a u (v - u)) ≥ re (ℓ (v - u))` for all `v ∈ K` (Atkinson–Han,
-*Theoretical Numerical Analysis*, (8.3.3)).  On a subspace the inequality can be applied to both
-`v` and `2u - v`, which is how it collapses to the equality of `isMinOn_energy_iff`. -/
+/-- On a nonempty closed convex set `K` (real scalars), the energy minimizer is characterized by the
+variational inequality `re (a u (v - u)) ≥ re (ℓ (v - u))` for all `v ∈ K` ([han2009theoretical],
+(8.3.3)).  On a subspace the inequality can be applied to both `v` and `2u - v`, which is how it
+collapses to the equality of `isMinOn_energy_iff`. -/
 theorem isMinOn_energy_iff_forall_le {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
     [CompleteSpace V] {a : SesqForm ℝ V} (ha : a.IsHermitian) (ℓ : V →L[ℝ] ℝ) {c : ℝ}
     (hc : 0 < c) (hcoer : a.IsCoerciveWith c) {K : Set V} (hK : Convex ℝ K) {u : V} (hu : u ∈ K) :
@@ -321,8 +316,8 @@ theorem isMinOn_energy_iff_forall_le {V : Type*} [NormedAddCommGroup V] [InnerPr
 
 omit ha in
 /-- Existence and uniqueness of the energy minimizer on a nonempty closed convex set
-(Atkinson–Han, *Theoretical Numerical Analysis*, Thm 8.3.3, which routes through their Thm 3.3.12
-on minimizing a coercive, convex, lower semicontinuous functional; compare Mathlib's
+([han2009theoretical], Thm 8.3.3, which routes through their Thm 3.3.12 on minimizing a coercive,
+convex, lower semicontinuous functional; compare Mathlib's
 `exists_norm_eq_iInf_of_complete_convex`).  The proof below is instead a direct minimizing-sequence
 argument, using the parallelogram identity for the energy to get a Cauchy estimate. -/
 theorem existsUnique_isMinOn_energy {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
@@ -423,12 +418,11 @@ theorem existsUnique_isMinOn_energy {V : Type*} [NormedAddCommGroup V] [InnerPro
 omit [CompleteSpace V] in
 /-- The energy identity `E(v) - E(u) = ½ ‖v - u‖_a²` at the solution `u`: completing the square
 turns minimizing `E` into minimizing the energy-norm distance to `u`, which is why the two
-formulations agree.  This is the computation inside the proof of Atkinson–Han, *Theoretical
-Numerical Analysis*, Thm 8.3.3, and inside the proof of Saad, *Iterative Methods for Sparse Linear
-Systems*, Prop 5.2 in operator form.
+formulations agree.  This is the computation inside the proof of [han2009theoretical], Thm 8.3.3,
+and inside the proof of [saad2003iterative], Prop 5.2 in operator form.
 
-A positivity hypothesis `hpos` was added: without it the right-hand side is `0` whenever
-`re (a w w) < 0` (take `a = -⟪·,·⟫`, `ℓ = 0`, `u = 0`), while the left-hand side is not. -/
+A positivity hypothesis `hpos` was added: without it the right-hand side is `0` whenever `re (a w w)
+< 0` (take `a = -⟪·,·⟫`, `ℓ = 0`, `u = 0`), while the left-hand side is not. -/
 theorem energy_sub_energy_eq (hpos : a.IsCoerciveWith 0) {u : V} (hu : ∀ v, a u v = ℓ v) (v : V) :
     a.energy ℓ v - a.energy ℓ u = (1 / 2 : ℝ) * a.energyNorm (v - u) ^ 2 := by
   have huv : u + (v - u) = v := by abel
@@ -446,15 +440,15 @@ namespace SesqForm₂
 variable {U : Type*} [NormedAddCommGroup U] [InnerProductSpace 𝕜 U] [CompleteSpace U]
   (a : SesqForm₂ 𝕜 U V) (ℓ : V →L[𝕜] 𝕜)
 
-/-- The two-space Riesz operator `B : U →L[𝕜] V` with `⟪B u, v⟫ = a u v`; the composite of `a`
-with `InnerProductSpace.toDual.symm`, exactly as `continuousLinearMapOfBilin` in the one-space
-case. Both factors are conjugate-linear, so `B` is linear. -/
+/-- The two-space Riesz operator `B : U →L[𝕜] V` with `⟪B u, v⟫ = a u v`; the composite of `a` with
+`InnerProductSpace.toDual.symm`, exactly as `continuousLinearMapOfBilin` in the one-space case. Both
+factors are conjugate-linear, so `B` is linear. -/
 private noncomputable def toOperator₂ : U →L[𝕜] V :=
   (InnerProductSpace.toDual 𝕜 V).symm.toContinuousLinearEquiv.toContinuousLinearMap.comp a
 
 omit [CompleteSpace U] in
-/-- The defining property of `toOperator₂`: the inner product against `toOperator₂ a u` is the
-form `a u`. -/
+/-- The defining property of `toOperator₂`: the inner product against `toOperator₂ a u` is the form
+`a u`. -/
 private theorem inner_toOperator₂ (u : U) (v : V) : inner 𝕜 (toOperator₂ a u) v = a u v := by
   simp [toOperator₂]
 
@@ -464,8 +458,8 @@ private theorem norm_toOperator₂_apply (u : U) : ‖toOperator₂ a u‖ = ‖
   (InnerProductSpace.toDual 𝕜 V).symm.norm_map (a u)
 
 omit [CompleteSpace U] in
-/-- The two-space problem `a u v = ℓ v` for all `v` is the operator equation
-`toOperator₂ a u = rieszRep ℓ`. -/
+/-- The two-space problem `a u v = ℓ v` for all `v` is the operator equation `toOperator₂ a u =
+rieszRep ℓ`. -/
 private theorem forall_apply_eq_iff_toOperator₂_eq (u : U) :
     (∀ v, a u v = ℓ v) ↔ toOperator₂ a u = SesqForm.rieszRep ℓ := by
   constructor
@@ -475,10 +469,10 @@ private theorem forall_apply_eq_iff_toOperator₂_eq (u : U) :
   · intro h v
     rw [← inner_toOperator₂, h, SesqForm.inner_rieszRep]
 
-/-- Generalized Lax–Milgram / Babuška–Nečas (Atkinson–Han, *Theoretical Numerical Analysis*,
-Thm 8.7.1, a result they attribute to Nečas): under the inf–sup condition and nondegeneracy,
-`a u v = ℓ v ∀ v` is uniquely solvable.  The inf–sup condition supplies injectivity and closed
-range, nondegeneracy supplies density of the range. -/
+/-- Generalized Lax–Milgram / Babuška–Nečas ([han2009theoretical], Thm 8.7.1, a result they
+attribute to Nečas): under the inf–sup condition and nondegeneracy, `a u v = ℓ v ∀ v` is uniquely
+solvable.  The inf–sup condition supplies injectivity and closed range, nondegeneracy supplies
+density of the range. -/
 theorem babuska_necas {α : ℝ} (hα : 0 < α) (hinf : a.InfSupWith α) (hnd : a.IsNondegenerate) :
     ∃! u, ∀ v, a u v = ℓ v := by
   have hbound : ∀ u : U, α * ‖u‖ ≤ ‖toOperator₂ a u‖ := fun u => by
@@ -497,8 +491,8 @@ theorem babuska_necas {α : ℝ} (hα : 0 < α) (hinf : a.InfSupWith α) (hnd : 
   exact hinj (((forall_apply_eq_iff_toOperator₂_eq a ℓ y).mp hy).trans hu.symm)
 
 omit [CompleteSpace V] [CompleteSpace U] in
-/-- The stability estimate `‖u‖ ≤ ‖ℓ‖ / α` for the two-space problem, with `α` the inf–sup
-constant (Atkinson–Han, *Theoretical Numerical Analysis*, (8.7.5)). -/
+/-- The stability estimate `‖u‖ ≤ ‖ℓ‖ / α` for the two-space problem, with `α` the inf–sup constant
+([han2009theoretical], (8.7.5)). -/
 theorem norm_le_of_infSupWith {α : ℝ} (hα : 0 < α) (hinf : a.InfSupWith α) {u : U}
     (hu : ∀ v, a u v = ℓ v) : ‖u‖ ≤ ‖ℓ‖ / α := by
   rw [le_div_iff₀ hα, mul_comm]
@@ -506,14 +500,14 @@ theorem norm_le_of_infSupWith {α : ℝ} (hα : 0 < α) (hinf : a.InfSupWith α)
     _ = ‖ℓ‖ := by rw [ContinuousLinearMap.ext hu]
 
 omit [CompleteSpace V] [CompleteSpace U] in
-/-- The inf–sup condition is necessary: if the problem is well posed with `‖u‖ ≤ C ‖ℓ‖` for all
-`ℓ`, then `a.InfSupWith (1 / C)`.  This is the converse of Atkinson–Han, *Theoretical Numerical
-Analysis*, Thm 8.7.1 (they state only the forward direction, and attribute the theorem to Nečas).
+/-- The inf–sup condition is necessary: if the problem is well posed with `‖u‖ ≤ C ‖ℓ‖` for all `ℓ`,
+then `a.InfSupWith (1 / C)`.  This is the converse of [han2009theoretical], Thm 8.7.1 (they state
+only the forward direction, and attribute the theorem to Nečas).
 
 The injectivity hypothesis `hinj` was added: "well posed" in the source statement means *unique*
-solvability, and mere existence of some bounded solution is not enough (take `V = 0` and
-`U ≠ 0`: every `ℓ` is `0` and `u = 0` is a solution with `‖u‖ ≤ C ‖ℓ‖`, but `‖a u‖ = 0` for all
-`u`, so no inf–sup constant exists). -/
+solvability, and mere existence of some bounded solution is not enough (take `V = 0` and `U ≠ 0`:
+every `ℓ` is `0` and `u = 0` is a solution with `‖u‖ ≤ C ‖ℓ‖`, but `‖a u‖ = 0` for all `u`, so no
+inf–sup constant exists). -/
 theorem infSupWith_of_forall_exists {C : ℝ} (hC : 0 < C) (hinj : ∀ u : U, (∀ v, a u v = 0) → u = 0)
     (h : ∀ ℓ : V →L[𝕜] 𝕜, ∃ u, (∀ v, a u v = ℓ v) ∧ ‖u‖ ≤ C * ‖ℓ‖) :
     a.InfSupWith (1 / C) := by
@@ -533,20 +527,19 @@ section APriori
 
 /-! ### Existence from a priori estimates
 
-Following Atkinson–Han, *Theoretical Numerical Analysis*, §8.2: a lower bound `c ‖v‖ ≤ ‖L v‖`,
-which in applications comes from an a priori estimate for the problem being solved, already
-delivers injectivity and closed range, and hence solvability once the range is dense.  The bounded
-case is `ContinuousLinearMap.isClosed_range_of_le_norm` and
-`ContinuousLinearMap.bijective_of_le_norm_of_orthogonal_range_eq_bot` at the head of this file;
-what remains here is the closed-operator version and the quantitative estimate. -/
+Following [han2009theoretical], §8.2: a lower bound `c ‖v‖ ≤ ‖L v‖`, which in applications comes
+from an a priori estimate for the problem being solved, already delivers injectivity and closed
+range, and hence solvability once the range is dense.  The bounded case is
+`ContinuousLinearMap.isClosed_range_of_le_norm` and
+`ContinuousLinearMap.bijective_of_le_norm_of_orthogonal_range_eq_bot` at the head of this file; what
+remains here is the closed-operator version and the quantitative estimate. -/
 
 variable {W : Type*} [NormedAddCommGroup W] [InnerProductSpace 𝕜 W] [CompleteSpace W]
 
 omit [CompleteSpace W] in
-/-- Atkinson–Han, *Theoretical Numerical Analysis*, Thm 8.2.4 (closed-operator version): a closed,
-bounded-below, densely defined operator `L : V →ₗ.[𝕜] W` has closed range.  Closedness of the graph
-replaces continuity: it is what lets the limit of a convergent sequence of images be recognized as
-an image. -/
+/-- [han2009theoretical], Thm 8.2.4 (closed-operator version): a closed, bounded-below, densely
+defined operator `L : V →ₗ.[𝕜] W` has closed range.  Closedness of the graph replaces continuity: it
+is what lets the limit of a convergent sequence of images be recognized as an image. -/
 theorem LinearPMap.isClosed_range_of_isClosed_of_le_norm (L : V →ₗ.[𝕜] W) (hL : L.IsClosed)
     {c : ℝ} (hc : 0 < c) (h : ∀ v : L.domain, c * ‖(v : V)‖ ≤ ‖L v‖) :
     _root_.IsClosed (LinearMap.range L.toFun : Set W) := by
@@ -578,9 +571,9 @@ theorem LinearPMap.isClosed_range_of_isClosed_of_le_norm (L : V →ₗ.[𝕜] W)
   exact ⟨y, hy⟩
 
 omit [CompleteSpace V] [CompleteSpace W] in
-/-- The a priori (stability) estimate `‖v‖ ≤ C ‖L v‖` of Atkinson–Han, *Theoretical Numerical
-Analysis*, (8.2.2), is equivalent to injectivity with continuous inverse on the range; here the
-quantitative form `‖L⁻¹ w‖ ≤ C ‖w‖`. -/
+/-- The a priori (stability) estimate `‖v‖ ≤ C ‖L v‖` of [han2009theoretical], (8.2.2), is
+equivalent to injectivity with continuous inverse on the range; here the quantitative form `‖L⁻¹ w‖
+≤ C ‖w‖`. -/
 theorem ContinuousLinearMap.norm_le_of_le_norm (L : V →L[𝕜] W) {c : ℝ} (hc : 0 < c)
     (h : ∀ v, c * ‖v‖ ≤ ‖L v‖) {v : V} {w : W} (hv : L v = w) : ‖v‖ ≤ ‖w‖ / c := by
   rw [le_div_iff₀ hc, mul_comm, ← hv]

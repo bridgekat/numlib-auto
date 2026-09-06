@@ -10,10 +10,10 @@ import Numlib.Krylov.Arnoldi
 
 ## Main definitions
 
-A *Ritz pair* of `A` on a subspace `K` is a pair `(θ, u)` with `u ∈ K`, `u ≠ 0` and the residual
-`A u - θ • u` orthogonal to `K`. This is the eigenvalue twin of the Galerkin condition for a
-linear system: `Krylov.IsRitzPair` is to `Module.End.HasEigenvector` what `IsGalerkin` is to
-`A x = b`, and both are conditions on the same object, the compression `compression A K` of
+A *Ritz pair* of `A` on a subspace `K` is a pair `(θ, u)` with `u ∈ K`, `u ≠ 0` and the residual `A
+u - θ • u` orthogonal to `K`. This is the eigenvalue twin of the Galerkin condition for a linear
+system: `Krylov.IsRitzPair` is to `Module.End.HasEigenvector` what `IsGalerkin` is to `A x = b`, and
+both are conditions on the same object, the compression `compression A K` of
 `Numlib.Analysis.InnerProductSpace.Projection.Compression`. Accordingly
 `Krylov.isRitzPair_iff_hasEigenvector` says that a Ritz pair is exactly an eigenpair of the
 compression, and needs no more than an inner product and an orthogonal projection onto `K` — no
@@ -25,28 +25,28 @@ compression `compressionBy Q A` through any projector `Q` onto `K` along `Lᗮ`.
 
 Two consequences need nothing beyond the definitions.
 
-* Exactness (`Krylov.IsRitzPair.hasEigenvector_of_invt`): on an `A`-invariant `K` a Ritz pair is
-  an exact eigenpair, because its residual then lies in `K ⊓ Kᗮ = ⊥`.
+* Exactness (`Krylov.IsRitzPair.hasEigenvector_of_invt`): on an `A`-invariant `K` a Ritz pair is an
+  exact eigenpair, because its residual then lies in `K ⊓ Kᗮ = ⊥`.
 * The a priori residual bound (`Krylov.compression_residual_le` and its companion): with the
   coupling constant `γ = ‖P_K A (1 - P_K)‖` and an exact eigenpair `(μ, u)` of `A`, the Ritz
   residual of `P_K u` is controlled by the part of `u` that `K` fails to capture. The constant
   enters as a hypothesis `‖P_K (A x)‖ ≤ γ ‖x‖` for `x ∈ Kᗮ`, so the statement applies to an
   unbounded `A` and to a `γ` obtained by other means than an operator norm — for a symmetric `A`
   compressed to a Krylov subspace `γ` is the single Hessenberg entry `h_{m+1,m}`. When `A` is
-  bounded and `γ` really is the operator norm,
-  `Krylov.norm_starProjection_apply_le_opNorm` supplies the hypothesis.
-* The same bound for an *oblique* compression `A_m = Q A P_K`
-  (`Krylov.compressionBy_residual_le` and `Krylov.compressionBy_residual_le'`): the search space
-  `K` is projected onto by an arbitrary projector `Q`, while the distance to `u` is still measured
-  orthogonally, which is what keeps the right-hand side `‖(1 - P_K) u‖`. The constant is a bound
-  on `Q (A - μ)` and not on `Q A`: unlike `P_K (1 - P_K)`, the composite `Q (1 - P_K)` need not
-  vanish, so the shift does not drop out of the residual identity.
+  bounded and `γ` really is the operator norm, `Krylov.norm_starProjection_apply_le_opNorm` supplies
+  the hypothesis.
+* The same bound for an *oblique* compression `A_m = Q A P_K` (`Krylov.compressionBy_residual_le`
+  and `Krylov.compressionBy_residual_le'`): the search space `K` is projected onto by an arbitrary
+  projector `Q`, while the distance to `u` is still measured orthogonally, which is what keeps the
+  right-hand side `‖(1 - P_K) u‖`. The constant is a bound on `Q (A - μ)` and not on `Q A`: unlike
+  `P_K (1 - P_K)`, the composite `Q (1 - P_K)` need not vanish, so the shift does not drop out of
+  the residual identity.
 
 When `A` is symmetric the picture sharpens, and this is where the module meets Courant–Fischer in
 `Numlib.Eigen.MinMax` and the angle vocabulary of
 `Numlib.Analysis.InnerProductSpace.Projection.Angle`. Everything below is stated with the angles
-`K.sinAngle u` and `K.tanAngle u` of an eigenvector `u` to the subspace it is approximated from,
-and with `(𝕜 ∙ ũ).sinAngle u` for the angle between `u` and a Ritz vector `ũ`;
+`K.sinAngle u` and `K.tanAngle u` of an eigenvector `u` to the subspace it is approximated from, and
+with `(𝕜 ∙ ũ).sinAngle u` for the angle between `u` and a Ritz vector `ũ`;
 `Submodule.sinAngle_span_singleton_comm` is what makes the latter a symmetric notion.
 
 * A Ritz value is the Rayleigh quotient of its Ritz vector
@@ -54,83 +54,79 @@ and with `(𝕜 ∙ ũ).sinAngle u` for the angle between `u` and a Ritz vector 
   (`Krylov.IsRitzPair.conj_eq`), and it therefore lies between the extreme eigenvalues of `A`
   (`Krylov.IsRitzPair.mem_Icc`).
 * **The variational characterization of the Ritz values**
-  (`LinearMap.IsSymmetric.isGreatest_eigenvalues_compression`): the `i`-th Ritz value is the
-  max–min value of the Rayleigh quotient of `A` over the `(i + 1)`-dimensional subspaces *of `K`*.
-  It is Courant–Fischer applied to the compression and read back on `E`, which is possible because
-  the Rayleigh quotient of `compression A K` at `y : K` is the Rayleigh quotient of `A` at `y`
+  (`LinearMap.IsSymmetric.isGreatest_eigenvalues_compression`): the `i`-th Ritz value is the max–min
+  value of the Rayleigh quotient of `A` over the `(i + 1)`-dimensional subspaces *of `K`*. It is
+  Courant–Fischer applied to the compression and read back on `E`, which is possible because the
+  Rayleigh quotient of `compression A K` at `y : K` is the Rayleigh quotient of `A` at `y`
   (`Krylov.rayleighQuotient_compression`).
-* **Cauchy interlacing** (`LinearMap.IsSymmetric.eigenvalues_compression_le`): the `i`-th Ritz
-  value is at most the `i`-th eigenvalue of `A`, both sorted decreasingly, because the max–min
-  over the subspaces of `K` ranges over fewer competitors than the max–min over all subspaces
-  of `E`. `LinearMap.IsSymmetric.eigenvalues_compression_mono` is the same argument between two
-  nested approximation spaces: every Ritz value increases when the space grows, which is why
-  expanding the space in Davidson's method can only help.
-* **The error of the largest Ritz value** (`LinearMap.IsSymmetric.ritz_value_error_le`):
-  `0 ≤ λ₁ - θ₁ ≤ C tan²θ(u₁, K)` for an eigenvector `u₁` of the largest eigenvalue `λ₁`. The left
-  inequality is interlacing; the right one combines
-  `LinearMap.IsSymmetric.abs_sub_rayleighQuotient_starProjection_le`, which bounds the error of
-  the Rayleigh quotient at `P_K u₁` alone, with the fact that this quotient is at most the largest
-  Ritz value. The constant `C` bounds the quadratic form of `A - λ₁`, which is the house form of
-  `‖A - λ₁‖` in this library; `Krylov.abs_re_inner_sub_le_opNorm` is the operator-norm reading.
+* **Cauchy interlacing** (`LinearMap.IsSymmetric.eigenvalues_compression_le`): the `i`-th Ritz value
+  is at most the `i`-th eigenvalue of `A`, both sorted decreasingly, because the max–min over the
+  subspaces of `K` ranges over fewer competitors than the max–min over all subspaces of `E`.
+  `LinearMap.IsSymmetric.eigenvalues_compression_mono` is the same argument between two nested
+  approximation spaces: every Ritz value increases when the space grows, which is why expanding the
+  space in Davidson's method can only help.
+* **The error of the largest Ritz value** (`LinearMap.IsSymmetric.ritz_value_error_le`): `0 ≤ λ₁ -
+  θ₁ ≤ C tan²θ(u₁, K)` for an eigenvector `u₁` of the largest eigenvalue `λ₁`. The left inequality
+  is interlacing; the right one combines
+  `LinearMap.IsSymmetric.abs_sub_rayleighQuotient_starProjection_le`, which bounds the error of the
+  Rayleigh quotient at `P_K u₁` alone, with the fact that this quotient is at most the largest Ritz
+  value. The constant `C` bounds the quadratic form of `A - λ₁`, which is the house form of `‖A -
+  λ₁‖` in this library; `Krylov.abs_re_inner_sub_le_opNorm` is the operator-norm reading.
 * **The error of the `i`-th Ritz value**
   (`LinearMap.IsSymmetric.ritz_value_error_le_of_forall_inner_eq_zero`): the same statement at a
   general index, `0 ≤ λ_i - θ_i ≤ C (‖u_i - y‖/‖y‖)²` for any nonzero `y ∈ K` orthogonal to the
-  first `i` Ritz vectors. What replaces the projection `P_K u₁` of the leading case is a
-  competitor for Rayleigh's *recursive* characterization of the `i`-th eigenvalue of the
-  compression, and the underlying estimate,
-  `LinearMap.IsSymmetric.abs_sub_rayleighQuotient_le`, holds for an arbitrary competitor. Saad's
-  own display is the case `y = P_K u_i - P_W u_i` with `W` the span of the leading Ritz vectors,
-  where `Submodule.norm_sub_sub_starProjection_sq` evaluates the numerator as
-  `‖(1 - P_K) u_i‖² + ‖P_W u_i‖²`.
+  first `i` Ritz vectors. What replaces the projection `P_K u₁` of the leading case is a competitor
+  for Rayleigh's *recursive* characterization of the `i`-th eigenvalue of the compression, and the
+  underlying estimate, `LinearMap.IsSymmetric.abs_sub_rayleighQuotient_le`, holds for an arbitrary
+  competitor. [saad2011numerical] own display is the case `y = P_K u_i - P_W u_i` with `W` the span
+  of the leading Ritz vectors, where `Submodule.norm_sub_sub_starProjection_sq` evaluates the
+  numerator as `‖(1 - P_K) u_i‖² + ‖P_W u_i‖²`.
 * **The error of the Ritz vector** (`LinearMap.IsSymmetric.sin_angle_ritzVector_le`): there is a
-  Ritz vector `ũ` for a given Ritz value `θ` with
-  `sin θ(u, ũ) ≤ √(1 + γ²/δ²) sin θ(u, K)`, where `γ` is the coupling constant above and `δ`
-  bounds `‖(A_K - λ) z‖` from below by `δ ‖z‖` on the part of `K` orthogonal to the `θ`-eigenspace
-  of the compression. That hypothesis is the separation of `λ` from the *other* Ritz values, and
-  `LinearMap.IsSymmetric.mul_norm_le_norm_sub_smul` derives it from exactly that separation.
-  `LinearMap.IsSymmetric.abs_ritz_value_sub_le` closes the loop by bounding `|θ - λ|` by
-  `C sin²θ(u, ũ)`.
+  Ritz vector `ũ` for a given Ritz value `θ` with `sin θ(u, ũ) ≤ √(1 + γ²/δ²) sin θ(u, K)`, where
+  `γ` is the coupling constant above and `δ` bounds `‖(A_K - λ) z‖` from below by `δ ‖z‖` on the
+  part of `K` orthogonal to the `θ`-eigenspace of the compression. That hypothesis is the separation
+  of `λ` from the *other* Ritz values, and `LinearMap.IsSymmetric.mul_norm_le_norm_sub_smul` derives
+  it from exactly that separation. `LinearMap.IsSymmetric.abs_ritz_value_sub_le` closes the loop by
+  bounding `|θ - λ|` by `C sin²θ(u, ũ)`.
 
-A word on `γ`. The constant of `Krylov.compression_residual_le` and of the vector bound is
-`‖P_K A (1 - P_K)‖`, *not* `‖(1 - P_K) A P_K‖`. For a Krylov subspace built by the Arnoldi process
-the second of the two is the single Hessenberg entry `h_{m+1,m}`, and the two agree exactly when
-`A` is symmetric, each being then the adjoint of the other. So `γ = h_{m+1,m}` may be used
-throughout the symmetric results below, and may *not* be used by a nonsymmetric consumer of
+A word on `γ`. The constant of `Krylov.compression_residual_le` and of the vector bound is `‖P_K A
+(1 - P_K)‖`, *not* `‖(1 - P_K) A P_K‖`. For a Krylov subspace built by the Arnoldi process the
+second of the two is the single Hessenberg entry `h_{m+1,m}`, and the two agree exactly when `A` is
+symmetric, each being then the adjoint of the other. So `γ = h_{m+1,m}` may be used throughout the
+symmetric results below, and may *not* be used by a nonsymmetric consumer of
 `Krylov.compression_residual_le`.
 
-The last two results are the Arnoldi specializations. `Arnoldi.charpoly_compression_isMinOn` is
-the optimality of the characteristic polynomial of the Hessenberg matrix: it minimizes `‖p(A) b‖`
-over monic `p` of degree `m`, because Cayley–Hamilton makes `p(A) b` orthogonal to the Krylov
-subspace while every competitor differs from it by an element of that subspace.
-`Arnoldi.norm_ritz_residual_eq` is the cheap residual that makes the Arnoldi method practical:
-for an eigenpair `(θ, y)` of the Hessenberg matrix the residual norm of the Ritz vector `V_m y`
-is `h_{m+1,m} |y_m|`, one already-computed number times one entry of the small eigenvector, with
-no operation on the large space at all. Both hold past breakdown: the first up to and including
-the step at which the process terminates, the second with no hypothesis at all.
+The last two results are the Arnoldi specializations. `Arnoldi.charpoly_compression_isMinOn` is the
+optimality of the characteristic polynomial of the Hessenberg matrix: it minimizes `‖p(A) b‖` over
+monic `p` of degree `m`, because Cayley–Hamilton makes `p(A) b` orthogonal to the Krylov subspace
+while every competitor differs from it by an element of that subspace.
+`Arnoldi.norm_ritz_residual_eq` is the cheap residual that makes the Arnoldi method practical: for
+an eigenpair `(θ, y)` of the Hessenberg matrix the residual norm of the Ritz vector `V_m y` is
+`h_{m+1,m} |y_m|`, one already-computed number times one entry of the small eigenvector, with no
+operation on the large space at all. Both hold past breakdown: the first up to and including the
+step at which the process terminates, the second with no hypothesis at all.
 
 ## References
 
-Every result here is from [Saad, *Numerical Methods for Large Eigenvalue
-Problems*][saad2011numerical]: §4.3 for the Ritz pairs, for the exactness on an invariant subspace
-(Prop 4.3, with the remark preceding Thm 4.7 for the oblique case) and for the residual bounds
-with `γ` (Thm 4.3, whose oblique companion is Thm 4.7); §4.3.2 for the Hermitian bounds — the
-variational characterization of the Ritz values and the interlacing that follows from it (Prop
-4.4 and Cor 4.1), the error of the Rayleigh quotient at `P_K u` and of the largest Ritz value
-(Lemma 4.1 and Thm 4.5), and the error of the Ritz vector with the reverse bound on the Ritz
-value (Thm 4.6 and Prop 4.5); §6.1–6.2 for the optimality of the characteristic polynomial (Thm
-6.1, resting on the polynomial compression identity Prop 6.4 that
+Every result here is from [saad2011numerical]: §4.3 for the Ritz pairs, for the exactness on an
+invariant subspace (Prop 4.3, with the remark preceding Thm 4.7 for the oblique case) and for the
+residual bounds with `γ` (Thm 4.3, whose oblique companion is Thm 4.7); §4.3.2 for the Hermitian
+bounds — the variational characterization of the Ritz values and the interlacing that follows from
+it (Prop 4.4 and Cor 4.1), the error of the Rayleigh quotient at `P_K u` and of the largest Ritz
+value (Lemma 4.1 and Thm 4.5), and the error of the Ritz vector with the reverse bound on the Ritz
+value (Thm 4.6 and Prop 4.5); §6.1–6.2 for the optimality of the characteristic polynomial (Thm 6.1,
+resting on the polynomial compression identity Prop 6.4 that
 `Numlib.Analysis.InnerProductSpace.Projection.Compression` proves) and for the cheap Arnoldi
-residual (Prop 6.8). The Courant–Fischer theorem the Hermitian bounds rest on is Thm 1.9 of the
-same book, proved in `Numlib.Eigen.MinMax`.
+residual (Prop 6.8). The Courant–Fischer theorem the Hermitian bounds rest on is Thm 1.9 of the same
+book, proved in `Numlib.Eigen.MinMax`.
 
-Saad states Thm 4.5 for every index, with the leading Ritz vectors projected out; the general
-index is `LinearMap.IsSymmetric.ritz_value_error_le_of_forall_inner_eq_zero`, which takes the
-competitor as data rather than constructing it from a spectral projector, and the case `i = 1`
+[saad2011numerical] states Thm 4.5 for every index, with the leading Ritz vectors projected out; the
+general index is `LinearMap.IsSymmetric.ritz_value_error_le_of_forall_inner_eq_zero`, which takes
+the competitor as data rather than constructing it from a spectral projector, and the case `i = 1`
 is `LinearMap.IsSymmetric.ritz_value_error_le`, where the projection is the identity. Thm 4.6 is
-stated as Saad states it, as the existence of *some* Ritz vector for the given Ritz value — the
-one produced is the projection of `P_K u` onto the `θ`-eigenspace of the compression, and when
-that projection vanishes the bound is vacuous, its right-hand side being then at least `1`.
-
+stated as [saad2011numerical] states it, as the existence of *some* Ritz vector for the given Ritz
+value — the one produced is the projection of `P_K u` onto the `θ`-eigenspace of the compression,
+and when that projection vanishes the bound is vacuous, its right-hand side being then at least `1`.
 -/
 
 open Polynomial
@@ -144,10 +140,10 @@ namespace Submodule
 Four facts about `Submodule.starProjection` and about the angles of
 `Numlib.Analysis.InnerProductSpace.Projection.Angle` that the Hermitian bounds below need. -/
 
-/-- Pythagoras against the best approximation: for `v ∈ K` the error `u - v` splits into the
-error `u - P_K u` of the orthogonal projection, which lies in `Kᗮ`, and the vector `P_K u - v`,
-which lies in `K`.  Taking `v = 0` recovers the usual splitting of `‖u‖ ^ 2`, and the identity is
-the reason `P_K u` is the best approximation of `u` from `K`. -/
+/-- Pythagoras against the best approximation: for `v ∈ K` the error `u - v` splits into the error
+`u - P_K u` of the orthogonal projection, which lies in `Kᗮ`, and the vector `P_K u - v`, which lies
+in `K`.  Taking `v = 0` recovers the usual splitting of `‖u‖ ^ 2`, and the identity is the reason
+`P_K u` is the best approximation of `u` from `K`. -/
 theorem norm_sub_sq_eq_add_of_mem (K : Submodule 𝕜 E) [K.HasOrthogonalProjection] (u : E) {v : E}
     (hv : v ∈ K) :
     ‖u - v‖ ^ 2 = ‖u - K.starProjection u‖ ^ 2 + ‖K.starProjection u - v‖ ^ 2 := by
@@ -160,17 +156,17 @@ theorem norm_sub_sq_eq_add_of_mem (K : Submodule 𝕜 E) [K.HasOrthogonalProject
   simp only [pow_two]
   exact norm_add_sq_eq_norm_sq_add_norm_sq_of_inner_eq_zero _ _ h2
 
-/-- The orthogonal projection onto the line through `v` sends `u` to `v` itself exactly when `u`
-and `v` have the same inner product against `v`.  This is how a vector is recognised as the
-projection of another one onto its own line, which is what turns the Ritz vector produced by
+/-- The orthogonal projection onto the line through `v` sends `u` to `v` itself exactly when `u` and
+`v` have the same inner product against `v`.  This is how a vector is recognised as the projection
+of another one onto its own line, which is what turns the Ritz vector produced by
 `LinearMap.IsSymmetric.sin_angle_ritzVector_le` into an angle. -/
 theorem starProjection_span_singleton_eq_self {v u : E}
     (h : inner 𝕜 v u = inner 𝕜 v v) : (𝕜 ∙ v).starProjection u = v :=
   Submodule.eq_starProjection_of_mem_orthogonal (Submodule.mem_span_singleton_self v)
     (Submodule.mem_orthogonal_singleton_iff_inner_right.2 (by rw [inner_sub_right, h, sub_self]))
 
-/-- The cosine of the angle from a vector to the line through another one is the normalized
-inner product: on lines, `Submodule.cosAngle` is the ordinary cosine between two vectors. -/
+/-- The cosine of the angle from a vector to the line through another one is the normalized inner
+product: on lines, `Submodule.cosAngle` is the ordinary cosine between two vectors. -/
 theorem cosAngle_span_singleton {v : E} (hv : v ≠ 0) (w : E) :
     (𝕜 ∙ v).cosAngle w = ‖inner 𝕜 v w‖ / (‖v‖ * ‖w‖) := by
   have hv' : ‖v‖ ≠ 0 := norm_ne_zero_iff.2 hv
@@ -180,8 +176,8 @@ theorem cosAngle_span_singleton {v : E} (hv : v ≠ 0) (w : E) :
 
 /-- The angle between two vectors is symmetric.  Mathlib has no angle between a vector and a
 subspace, so this is the statement that the one-sided `Submodule.sinAngle` does specialize to a
-symmetric notion on lines; it is what lets the eigenvector bound and the eigenvalue bound below
-be written with the same `sin θ(u, ũ)`. -/
+symmetric notion on lines; it is what lets the eigenvector bound and the eigenvalue bound below be
+written with the same `sin θ(u, ũ)`. -/
 theorem sinAngle_span_singleton_comm {v w : E} (hv : v ≠ 0) (hw : w ≠ 0) :
     (𝕜 ∙ v).sinAngle w = (𝕜 ∙ w).sinAngle v := by
   have hnorm : ‖inner 𝕜 v w‖ = ‖inner 𝕜 w v‖ := by
@@ -193,12 +189,13 @@ theorem sinAngle_span_singleton_comm {v w : E} (hv : v ≠ 0) (hw : w ≠ 0) :
   rw [hcos] at h1
   exact (pow_left_inj₀ (sinAngle_nonneg _ _) (sinAngle_nonneg _ _) two_ne_zero).1 (by linarith)
 
-/-- Stripping from `u` its best approximation from `K` *outside* a subspace `W ≤ K` splits the
-error orthogonally: `‖u - (P_K u - P_W u)‖² = ‖u - P_K u‖² + ‖P_W u‖²`.
+/-- Stripping from `u` its best approximation from `K` *outside* a subspace `W ≤ K` splits the error
+orthogonally: `‖u - (P_K u - P_W u)‖² = ‖u - P_K u‖² + ‖P_W u‖²`.
 
-This is the estimate behind Saad's Theorem 4.5 for a general index, where `W` is the span of the
-Ritz vectors already computed and `P_K u - P_W u` is the competitor orthogonal to them.  Saad
-states it as an inequality; it is an equality, because `P_W` annihilates `u - P_K u`. -/
+This is the estimate behind [saad2011numerical] Theorem 4.5 for a general index, where `W` is the
+span of the Ritz vectors already computed and `P_K u - P_W u` is the competitor orthogonal to them.
+[saad2011numerical] states it as an inequality; it is an equality, because `P_W` annihilates `u -
+P_K u`. -/
 theorem norm_sub_sub_starProjection_sq (W K : Submodule 𝕜 E) [W.HasOrthogonalProjection]
     [K.HasOrthogonalProjection] (hWK : W ≤ K) (u : E) :
     ‖u - (K.starProjection u - W.starProjection u)‖ ^ 2
@@ -219,9 +216,9 @@ namespace Krylov
 /-! ### Ritz pairs and oblique Ritz pairs -/
 
 /-- Oblique (Petrov–Galerkin) Ritz pair: `u` is a nonzero element of the trial space `K` whose
-residual `A u - θ • u` is orthogonal to the test space `L`.  For `L = K` this is `IsRitzPair`,
-and `isObliqueRitzPair_iff_hasEigenvector` identifies it with an eigenpair of the oblique
-compression `compressionBy Q A` through any projector `Q` onto `K` along `Lᗮ`. -/
+residual `A u - θ • u` is orthogonal to the test space `L`.  For `L = K` this is `IsRitzPair`, and
+`isObliqueRitzPair_iff_hasEigenvector` identifies it with an eigenpair of the oblique compression
+`compressionBy Q A` through any projector `Q` onto `K` along `Lᗮ`. -/
 structure IsObliqueRitzPair (A : E →ₗ[𝕜] E) (K L : Submodule 𝕜 E) (θ : 𝕜) (u : E) : Prop where
   /-- The Ritz vector lies in the trial space. -/
   mem : u ∈ K
@@ -256,12 +253,12 @@ theorem isRitzPair_iff_isObliqueRitzPair :
     IsRitzPair A K θ u ↔ IsObliqueRitzPair A K K θ u :=
   ⟨IsRitzPair.isObliqueRitzPair, IsObliqueRitzPair.isRitzPair⟩
 
-/-- An oblique Ritz pair is exactly an eigenvector of the oblique compression `compressionBy Q A`
-of `Numlib.Analysis.InnerProductSpace.Projection.Compression`, for any projector `Q : E →ₗ K`
-onto the trial space (`Q x = x` on `K`) whose kernel is the orthogonal complement `Lᗮ` of the
-test space.  Such a `Q` exists exactly when `K ⊓ Lᗮ = ⊥`, by
-`LinearMap.existsUnique_isIdempotentElem_of_inf_orthogonal_eq_bot`, and the projectors
-`V (Wᴴ V)⁻¹ Wᴴ` built from bases of `K` and `L` are the concrete instances. -/
+/-- An oblique Ritz pair is exactly an eigenvector of the oblique compression `compressionBy Q A` of
+`Numlib.Analysis.InnerProductSpace.Projection.Compression`, for any projector `Q : E →ₗ K` onto the
+trial space (`Q x = x` on `K`) whose kernel is the orthogonal complement `Lᗮ` of the test space.
+Such a `Q` exists exactly when `K ⊓ Lᗮ = ⊥`, by
+`LinearMap.existsUnique_isIdempotentElem_of_inf_orthogonal_eq_bot`, and the projectors `V (Wᴴ V)⁻¹
+Wᴴ` built from bases of `K` and `L` are the concrete instances. -/
 theorem isObliqueRitzPair_iff_hasEigenvector (A : E →ₗ[𝕜] E) {K L : Submodule 𝕜 E}
     {Q : E →ₗ[𝕜] K} (hQ : ∀ x : K, Q x = x) (hker : LinearMap.ker Q = Lᗮ) (θ : 𝕜) (u : K) :
     IsObliqueRitzPair A K L θ (u : E) ↔ Module.End.HasEigenvector (compressionBy Q A) θ u := by
@@ -275,8 +272,8 @@ theorem isObliqueRitzPair_iff_hasEigenvector (A : E →ₗ[𝕜] E) {K L : Submo
 /-- A Ritz pair is exactly an eigenvector of the compression `compression A K`: the Rayleigh–Ritz
 condition on `E` and the eigenvalue problem on the subspace `K` are the same statement.  The Ritz
 vector is written `(u : E)` on the left and `u : K` on the right; `IsRitzPair.hasEigenvector` and
-`isRitzPair_of_hasEigenvector` are the two directions in the forms that avoid producing the
-coercion by hand. -/
+`isRitzPair_of_hasEigenvector` are the two directions in the forms that avoid producing the coercion
+by hand. -/
 theorem isRitzPair_iff_hasEigenvector (A : E →ₗ[𝕜] E) (K : Submodule 𝕜 E)
     [K.HasOrthogonalProjection] (θ : 𝕜) (u : K) :
     IsRitzPair A K θ (u : E) ↔ Module.End.HasEigenvector (compression A K) θ u := by
@@ -303,12 +300,11 @@ theorem isRitzPair_of_hasEigenvector (A : E →ₗ[𝕜] E) (K : Submodule 𝕜 
     (h : Module.End.HasEigenvector (compression A K) θ u) : IsRitzPair A K θ (u : E) :=
   (isRitzPair_iff_hasEigenvector A K θ u).2 h
 
-/-- Exactness on invariant subspaces, oblique form (Saad, *Numerical Methods for Large Eigenvalue
-Problems*, the remark that precedes the oblique residual bound): if the trial space `K` is
-`A`-invariant then every oblique Ritz pair on it is an exact eigenpair, *whatever* the test space
-`L` — the residual lies in `K` because `K` is invariant and in `Lᗮ` by the Petrov–Galerkin
-condition, and `K ⊓ Lᗮ = ⊥` is exactly the nondegeneracy condition under which the oblique
-projector onto `K` along `Lᗮ` exists at all. -/
+/-- Exactness on invariant subspaces, oblique form ([saad2011numerical], the remark that precedes
+the oblique residual bound): if the trial space `K` is `A`-invariant then every oblique Ritz pair on
+it is an exact eigenpair, *whatever* the test space `L` — the residual lies in `K` because `K` is
+invariant and in `Lᗮ` by the Petrov–Galerkin condition, and `K ⊓ Lᗮ = ⊥` is exactly the
+nondegeneracy condition under which the oblique projector onto `K` along `Lᗮ` exists at all. -/
 theorem IsObliqueRitzPair.hasEigenvector_of_invt (h : IsObliqueRitzPair A K L θ u)
     (hK : K ∈ Module.End.invtSubmodule A) (hKL : K ⊓ Lᗮ = ⊥) :
     Module.End.HasEigenvector A θ u := by
@@ -319,10 +315,9 @@ theorem IsObliqueRitzPair.hasEigenvector_of_invt (h : IsObliqueRitzPair A K L θ
   rw [hKL, Submodule.mem_bot, sub_eq_zero] at hmem
   exact hmem
 
-/-- Exactness on invariant subspaces (Saad, *Numerical Methods for Large Eigenvalue Problems*):
-if `K` is `A`-invariant then every Ritz pair of `A` on `K` is an exact eigenpair of `A`.  The
-residual then lies in `K` as well as in `Kᗮ`, hence is zero; no orthogonal projection onto `K`
-and no finite dimension are involved. -/
+/-- Exactness on invariant subspaces ([saad2011numerical]): if `K` is `A`-invariant then every Ritz
+pair of `A` on `K` is an exact eigenpair of `A`.  The residual then lies in `K` as well as in `Kᗮ`,
+hence is zero; no orthogonal projection onto `K` and no finite dimension are involved. -/
 theorem IsRitzPair.hasEigenvector_of_invt (h : IsRitzPair A K θ u)
     (hK : K ∈ Module.End.invtSubmodule A) : Module.End.HasEigenvector A θ u :=
   h.isObliqueRitzPair.hasEigenvector_of_invt hK K.inf_orthogonal_eq_bot
@@ -334,8 +329,8 @@ theorem IsRitzPair.hasEigenvalue_of_invt (h : IsRitzPair A K θ u)
 
 /-! ### A Ritz value is a Rayleigh quotient -/
 
-/-- The Galerkin condition as a scalar equation: testing the residual against the Ritz vector
-itself gives `⟪u, A u⟫ = θ ‖u‖ ^ 2`, so the Ritz vector determines the Ritz value. -/
+/-- The Galerkin condition as a scalar equation: testing the residual against the Ritz vector itself
+gives `⟪u, A u⟫ = θ ‖u‖ ^ 2`, so the Ritz vector determines the Ritz value. -/
 theorem IsRitzPair.inner_self_apply (h : IsRitzPair A K θ u) :
     inner 𝕜 u (A u) = θ * ((‖u‖ ^ 2 : ℝ) : 𝕜) := by
   have h0 := (Submodule.mem_orthogonal K _).1 h.residual_mem_orthogonal u h.mem
@@ -356,9 +351,9 @@ theorem IsRitzPair.re_inner_apply_self (h : IsRitzPair A K θ u) :
     RCLike.ofReal_im]
   ring
 
-/-- A Ritz value is the Rayleigh quotient of its Ritz vector.  No symmetry is needed: the
-Galerkin condition alone forces it, which is why a Rayleigh–Ritz procedure computes a Ritz value
-as a Rayleigh quotient. -/
+/-- A Ritz value is the Rayleigh quotient of its Ritz vector.  No symmetry is needed: the Galerkin
+condition alone forces it, which is why a Rayleigh–Ritz procedure computes a Ritz value as a
+Rayleigh quotient. -/
 theorem IsRitzPair.rayleighQuotient_eq (h : IsRitzPair A K θ u) :
     A.rayleighQuotient u = RCLike.re θ := by
   have hn : (0 : ℝ) < ‖u‖ ^ 2 := by
@@ -367,9 +362,9 @@ theorem IsRitzPair.rayleighQuotient_eq (h : IsRitzPair A K θ u) :
   rw [LinearMap.rayleighQuotient, h.re_inner_apply_self, mul_div_assoc,
     div_self (ne_of_gt hn), mul_one]
 
-/-- A Ritz value of a symmetric operator is real, as an eigenvalue of the symmetric compression
-must be.  Over `𝕜 = ℝ` this is vacuous; over `ℂ` it is what makes the bounds below, which compare
-`θ` with real eigenvalues, statements about `θ` itself. -/
+/-- A Ritz value of a symmetric operator is real, as an eigenvalue of the symmetric compression must
+be.  Over `𝕜 = ℝ` this is vacuous; over `ℂ` it is what makes the bounds below, which compare `θ`
+with real eigenvalues, statements about `θ` itself. -/
 theorem IsRitzPair.conj_eq (hA : A.IsSymmetric) (h : IsRitzPair A K θ u) :
     (starRingEnd 𝕜) θ = θ := by
   have hn : ((‖u‖ ^ 2 : ℝ) : 𝕜) ≠ 0 := by
@@ -377,19 +372,19 @@ theorem IsRitzPair.conj_eq (hA : A.IsSymmetric) (h : IsRitzPair A K θ u) :
   refine mul_right_cancel₀ hn ?_
   rw [← h.inner_apply_self, hA u u, h.inner_self_apply]
 
-/-- The Rayleigh quotient of the compression at `y : K` is the Rayleigh quotient of `A` at `y`:
-the projection is invisible against a test vector taken from `K`.  This is what makes the
-variational characterizations of the Ritz values and of the eigenvalues of `A` comparable, and it
-is the whole content of Cauchy interlacing. -/
+/-- The Rayleigh quotient of the compression at `y : K` is the Rayleigh quotient of `A` at `y`: the
+projection is invisible against a test vector taken from `K`.  This is what makes the variational
+characterizations of the Ritz values and of the eigenvalues of `A` comparable, and it is the whole
+content of Cauchy interlacing. -/
 theorem rayleighQuotient_compression (A : E →ₗ[𝕜] E) (K : Submodule 𝕜 E)
     [K.HasOrthogonalProjection] (y : K) :
     (compression A K).rayleighQuotient y = A.rayleighQuotient (y : E) := by
   rw [LinearMap.rayleighQuotient, LinearMap.rayleighQuotient, compression.inner_apply]
   rfl
 
-/-- Every Ritz value of a symmetric `A` lies between the extreme eigenvalues of `A`, because it
-is a Rayleigh quotient of `A` and `LinearMap.IsSymmetric.rayleighQuotient_mem_Icc` traps those.
-The sharper statement, that the `i`-th Ritz value is at most the `i`-th eigenvalue, is
+/-- Every Ritz value of a symmetric `A` lies between the extreme eigenvalues of `A`, because it is a
+Rayleigh quotient of `A` and `LinearMap.IsSymmetric.rayleighQuotient_mem_Icc` traps those. The
+sharper statement, that the `i`-th Ritz value is at most the `i`-th eigenvalue, is
 `LinearMap.IsSymmetric.eigenvalues_compression_le`. -/
 theorem IsRitzPair.mem_Icc [FiniteDimensional 𝕜 E] {n : ℕ} (hA : A.IsSymmetric)
     (hn : Module.finrank 𝕜 E = n + 1) (h : IsRitzPair A K θ u) :
@@ -406,12 +401,12 @@ private theorem coe_compression_sub_smul (A : E →ₗ[𝕜] E) (K : Submodule �
     ((compression A K (K.orthogonalProjectionOnto u) - μ • K.orthogonalProjectionOnto u : K) : E)
       = K.starProjection (A (K.starProjection u)) - μ • K.starProjection u := rfl
 
-/-- A bounded `A` satisfies the coupling hypothesis of `compression_residual_le` with
-`γ = ‖P_K A (1 - P_K)‖`, the constant of Saad, *Numerical Methods for Large Eigenvalue Problems*.
-The residual bounds themselves take `γ` as a hypothesis rather than as this operator norm, so
-that they apply to an unbounded `A` and to the sharper values of `γ` that a particular `K`
-provides — for a symmetric `A` and a Krylov subspace built by the Arnoldi process `γ` is one
-Hessenberg entry, `Arnoldi.starProjection_apply_vec` being the adjoint statement. -/
+/-- A bounded `A` satisfies the coupling hypothesis of `compression_residual_le` with `γ = ‖P_K A (1
+- P_K)‖`, the constant of [saad2011numerical]. The residual bounds themselves take `γ` as a
+hypothesis rather than as this operator norm, so that they apply to an unbounded `A` and to the
+sharper values of `γ` that a particular `K` provides — for a symmetric `A` and a Krylov subspace
+built by the Arnoldi process `γ` is one Hessenberg entry, `Arnoldi.starProjection_apply_vec` being
+the adjoint statement. -/
 theorem norm_starProjection_apply_le_opNorm (A : E →L[𝕜] E) (K : Submodule 𝕜 E)
     [K.HasOrthogonalProjection] {x : E} (hx : x ∈ Kᗮ) :
     ‖K.starProjection (A x)‖
@@ -425,16 +420,15 @@ theorem norm_starProjection_apply_le_opNorm (A : E →L[𝕜] E) (K : Submodule 
     _ ≤ ‖K.starProjection ∘L (A ∘L (1 - K.starProjection))‖ * ‖x‖ :=
         ContinuousLinearMap.le_opNorm _ _
 
-/-- Residual bound for the Ritz pair produced by an exact eigenpair (Saad, *Numerical Methods for
-Large Eigenvalue Problems*): if `A u = μ • u` and the coupling `P_K A` is bounded by `γ` on `Kᗮ`,
-then `‖(A_K - μ) P_K u‖ ≤ γ ‖(1 - P_K) u‖`.  So a subspace that captures `u` well carries a Ritz
-pair with a small residual, and the whole error analysis of Rayleigh–Ritz reduces to estimating
-the distance from `u` to `K`.
+/-- Residual bound for the Ritz pair produced by an exact eigenpair ([saad2011numerical]): if `A u =
+μ • u` and the coupling `P_K A` is bounded by `γ` on `Kᗮ`, then `‖(A_K - μ) P_K u‖ ≤ γ ‖(1 - P_K)
+u‖`.  So a subspace that captures `u` well carries a Ritz pair with a small residual, and the whole
+error analysis of Rayleigh–Ritz reduces to estimating the distance from `u` to `K`.
 
-The proof is one line from the residual identity
-`compression.apply_sub_smul_orthogonalProjection`, which says that the left-hand side is
-`-P_K (A ((1 - P_K) u))`.  No hypothesis of finite dimension, completeness, symmetry, or
-normalization of `u` is used; both sides are homogeneous of degree one in `u`. -/
+The proof is one line from the residual identity `compression.apply_sub_smul_orthogonalProjection`,
+which says that the left-hand side is `-P_K (A ((1 - P_K) u))`.  No hypothesis of finite dimension,
+completeness, symmetry, or normalization of `u` is used; both sides are homogeneous of degree one in
+`u`. -/
 theorem compression_residual_le {A : E →ₗ[𝕜] E} {K : Submodule 𝕜 E} [K.HasOrthogonalProjection]
     {γ : ℝ} (hγ : ∀ x ∈ Kᗮ, ‖K.starProjection (A x)‖ ≤ γ * ‖x‖) {μ : 𝕜} {u : E}
     (hu : A u = μ • u) :
@@ -443,11 +437,11 @@ theorem compression_residual_le {A : E →ₗ[𝕜] E} {K : Submodule 𝕜 E} [K
   rw [compression.apply_sub_smul_orthogonalProjection A K hu, norm_neg]
   exact hγ _ (K.sub_starProjection_mem_orthogonal u)
 
-/-- The residual of the *whole* eigenvector, rather than of its projection: under the hypotheses
-of `compression_residual_le`, `‖(A_K - μ) u‖ ≤ √(|μ|² + γ²) ‖(1 - P_K) u‖`, where `A_K` is read as
-the operator `P_K A P_K` on the whole space.  The extra `|μ|²` is exactly the term `-μ (1 - P_K) u`,
-which is orthogonal to the residual of `compression_residual_le`, so the constant `√(|μ|² + γ²)`
-is what the Pythagorean identity gives and cannot be improved by this argument. -/
+/-- The residual of the *whole* eigenvector, rather than of its projection: under the hypotheses of
+`compression_residual_le`, `‖(A_K - μ) u‖ ≤ √(|μ|² + γ²) ‖(1 - P_K) u‖`, where `A_K` is read as the
+operator `P_K A P_K` on the whole space.  The extra `|μ|²` is exactly the term `-μ (1 - P_K) u`,
+which is orthogonal to the residual of `compression_residual_le`, so the constant `√(|μ|² + γ²)` is
+what the Pythagorean identity gives and cannot be improved by this argument. -/
 theorem compression_residual_le' {A : E →ₗ[𝕜] E} {K : Submodule 𝕜 E} [K.HasOrthogonalProjection]
     {γ : ℝ} (hγ : ∀ x ∈ Kᗮ, ‖K.starProjection (A x)‖ ≤ γ * ‖x‖) {μ : 𝕜} {u : E}
     (hu : A u = μ • u) :
@@ -485,18 +479,17 @@ theorem compression_residual_le' {A : E →ₗ[𝕜] E} {K : Submodule 𝕜 E} [
 
 An oblique projection method takes a search subspace `K` and a test subspace `L`, and its
 compression is `A_m = Q_K^L A P_K` for the projector `Q_K^L` onto `K` along `Lᗮ`
-(Saad, *Numerical Methods for Large Eigenvalue Problems*, §4.3.3).  Composing with the
-*orthogonal* `P_K` on the right is what makes `A_m` vanish on `Kᗮ`, so that the a priori bounds
-are again in terms of `‖(1 - P_K) u‖`.  Only the projector `Q` is oblique here; the distance from
-`u` to `K` is still measured orthogonally. -/
+([saad2011numerical], §4.3.3).  Composing with the *orthogonal* `P_K` on the right is what makes
+`A_m` vanish on `Kᗮ`, so that the a priori bounds are again in terms of `‖(1 - P_K) u‖`.  Only the
+projector `Q` is oblique here; the distance from `u` to `K` is still measured orthogonally. -/
 
-/-- The oblique residual identity: for any projector `Q` onto `K` and an exact eigenpair
-`(μ, u)`, `(A_m - μ) P_K u = -Q (A - μ) (1 - P_K) u`.
+/-- The oblique residual identity: for any projector `Q` onto `K` and an exact eigenpair `(μ, u)`,
+`(A_m - μ) P_K u = -Q (A - μ) (1 - P_K) u`.
 
 Unlike the orthogonal case (`compression.apply_sub_smul_orthogonalProjection`) the shift `μ` does
-not drop out of the right-hand side, because `Q (1 - P_K)` need not vanish when `Q` is oblique.
-That is why the constant of `Krylov.compressionBy_residual_le` is a bound on `Q (A - μ)` and not
-on `Q A`. -/
+not drop out of the right-hand side, because `Q (1 - P_K)` need not vanish when `Q` is oblique. That
+is why the constant of `Krylov.compressionBy_residual_le` is a bound on `Q (A - μ)` and not on `Q
+A`. -/
 theorem compressionBy_apply_sub_smul_orthogonalProjection {A : E →ₗ[𝕜] E} {K : Submodule 𝕜 E}
     [K.HasOrthogonalProjection] {Q : E →ₗ[𝕜] K} (hQ : ∀ x : K, Q x = x) {μ : 𝕜} {u : E}
     (hu : A u = μ • u) :
@@ -512,14 +505,12 @@ theorem compressionBy_apply_sub_smul_orthogonalProjection {A : E →ₗ[𝕜] E}
     Submodule.coe_smul, hQP, neg_neg]
   rfl
 
-/-- **The oblique residual bound** (Saad, *Numerical Methods for Large Eigenvalue Problems*,
-Thm 4.7, first inequality): with `Q` a projector onto `K` and `γ` bounding `Q (A - μ)` on `Kᗮ`,
-the Ritz pair `(μ, P_K u)` of the oblique compression `A_m = Q A P_K` has residual
-`‖(A_m - μ) P_K u‖ ≤ γ ‖(1 - P_K) u‖`.
+/-- **The oblique residual bound** ([saad2011numerical], Thm 4.7, first inequality): with `Q` a
+projector onto `K` and `γ` bounding `Q (A - μ)` on `Kᗮ`, the Ritz pair `(μ, P_K u)` of the oblique
+compression `A_m = Q A P_K` has residual `‖(A_m - μ) P_K u‖ ≤ γ ‖(1 - P_K) u‖`.
 
-The twin of `Krylov.compression_residual_le`, with the constant supplied as a hypothesis in the
-same style; taking `Q = P_K` recovers that theorem, since `P_K (A - μ) x = P_K (A x)` for
-`x ∈ Kᗮ`. -/
+The twin of `Krylov.compression_residual_le`, with the constant supplied as a hypothesis in the same
+style; taking `Q = P_K` recovers that theorem, since `P_K (A - μ) x = P_K (A x)` for `x ∈ Kᗮ`. -/
 theorem compressionBy_residual_le {A : E →ₗ[𝕜] E} {K : Submodule 𝕜 E}
     [K.HasOrthogonalProjection] {Q : E →ₗ[𝕜] K} (hQ : ∀ x : K, Q x = x) {γ : ℝ} {μ : 𝕜}
     (hγ : ∀ x ∈ Kᗮ, ‖(Q (A x - μ • x) : E)‖ ≤ γ * ‖x‖) {u : E} (hu : A u = μ • u) :
@@ -528,8 +519,8 @@ theorem compressionBy_residual_le {A : E →ₗ[𝕜] E} {K : Submodule 𝕜 E}
   rw [compressionBy_apply_sub_smul_orthogonalProjection hQ hu, norm_neg]
   exact hγ _ (K.sub_starProjection_mem_orthogonal u)
 
-/-- **The oblique residual bound for the whole eigenvector** (Saad, *Numerical Methods for Large
-Eigenvalue Problems*, Thm 4.7, second inequality): `‖(A_m - μ) u‖ ≤ √(|μ|² + γ²) ‖(1 - P_K) u‖`.
+/-- **The oblique residual bound for the whole eigenvector** ([saad2011numerical], Thm 4.7, second
+inequality): `‖(A_m - μ) u‖ ≤ √(|μ|² + γ²) ‖(1 - P_K) u‖`.
 
 `A_m = Q A P_K` kills `Kᗮ`, so `(A_m - μ) u = (A_m - μ) P_K u - μ (1 - P_K) u`, and the two terms
 lie in `K` and in `Kᗮ`; Pythagoras gives the constant, exactly as in
@@ -566,9 +557,9 @@ theorem compressionBy_residual_le' {A : E →ₗ[𝕜] E} {K : Submodule 𝕜 E}
 
 /-! ### The shifted quadratic form
 
-The Hermitian bounds all read a difference of an eigenvalue and a Rayleigh quotient as the
-quadratic form of `A - λ`, and their hypothesis is a bound on that form.  These are the three
-facts about it that the proofs use. -/
+The Hermitian bounds all read a difference of an eigenvalue and a Rayleigh quotient as the quadratic
+form of `A - λ`, and their hypothesis is a bound on that form.  These are the three facts about it
+that the proofs use. -/
 
 /-- The quadratic form of `A - λ` in real form. -/
 private theorem re_inner_sub (A : E →ₗ[𝕜] E) (lam : ℝ) (x : E) :
@@ -609,11 +600,11 @@ private theorem inner_sub_shift (hA : A.IsSymmetric) {lam : ℝ} (hu : A u = (la
   rw [show -w + (1 : 𝕜) • u = u - w by module] at h1
   rw [h1, inner_shift_neg]
 
-/-- An `A` bounded in operator norm satisfies the quadratic-form hypothesis of the Hermitian
-bounds with `C = ‖A - λ‖`, by Cauchy–Schwarz.  As with `γ`, the bounds themselves take `C` as a
-hypothesis rather than as this operator norm, so that they apply to an unbounded `A` and to a
-sharper `C` obtained by other means; this is the same choice
-`Numlib.Eigen.MinMax` makes for Weyl's inequality. -/
+/-- An `A` bounded in operator norm satisfies the quadratic-form hypothesis of the Hermitian bounds
+with `C = ‖A - λ‖`, by Cauchy–Schwarz.  As with `γ`, the bounds themselves take `C` as a hypothesis
+rather than as this operator norm, so that they apply to an unbounded `A` and to a sharper `C`
+obtained by other means; this is the same choice `Numlib.Eigen.MinMax` makes for Weyl's inequality.
+-/
 theorem abs_re_inner_sub_le_opNorm (A : E →L[𝕜] E) (lam : ℝ) (x : E) :
     |RCLike.re (inner 𝕜 (A x) x) - lam * ‖x‖ ^ 2|
       ≤ ‖A - (lam : 𝕜) • (1 : E →L[𝕜] E)‖ * ‖x‖ ^ 2 := by
@@ -643,19 +634,19 @@ open Krylov
 
 For a symmetric `A` the Ritz values are the max–min values of the Rayleigh quotient over the
 subspaces of `K`, which is Courant–Fischer applied to the compression, and the errors of both the
-Ritz values and the Ritz vectors are controlled by the angle between the exact eigenvector and
-`K`.  These are the sharp bounds of the Rayleigh–Ritz procedure. -/
+Ritz values and the Ritz vectors are controlled by the angle between the exact eigenvector and `K`.
+These are the sharp bounds of the Rayleigh–Ritz procedure. -/
 
-/-- **Courant–Fischer for the Ritz values**: the `i`-th Ritz value of a symmetric `A` on `K` is
-the max–min value of the Rayleigh quotient *of `A`* over the `(i + 1)`-dimensional subspaces of
-`K`.  It is Courant–Fischer applied to the compression, restated on `E`: the Rayleigh quotient of
-`compression A K` at `y : K` is that of `A` at `y` (`Krylov.rayleighQuotient_compression`), and
-the `(i + 1)`-dimensional subspaces of `K` correspond to those of the subtype under
-`Submodule.map K.subtype` and `Submodule.comap K.subtype`.
+/-- **Courant–Fischer for the Ritz values**: the `i`-th Ritz value of a symmetric `A` on `K` is the
+max–min value of the Rayleigh quotient *of `A`* over the `(i + 1)`-dimensional subspaces of `K`.  It
+is Courant–Fischer applied to the compression, restated on `E`: the Rayleigh quotient of
+`compression A K` at `y : K` is that of `A` at `y` (`Krylov.rayleighQuotient_compression`), and the
+`(i + 1)`-dimensional subspaces of `K` correspond to those of the subtype under `Submodule.map
+K.subtype` and `Submodule.comap K.subtype`.
 
 Stated as an `IsGreatest` over an explicit set of reals, following
-`LinearMap.IsSymmetric.isGreatest_eigenvalues`, which the `iSup`/`iInf` forms would decorate with
-a junk value. -/
+`LinearMap.IsSymmetric.isGreatest_eigenvalues`, which the `iSup`/`iInf` forms would decorate with a
+junk value. -/
 theorem isGreatest_eigenvalues_compression [FiniteDimensional 𝕜 E] {A : E →ₗ[𝕜] E}
     (hA : A.IsSymmetric) (K : Submodule 𝕜 E) {m : ℕ} (hm : Module.finrank 𝕜 K = m) (i : Fin m) :
     IsGreatest {c : ℝ | ∃ S : Submodule 𝕜 E, S ≤ K ∧ Module.finrank 𝕜 S = (i : ℕ) + 1 ∧
@@ -678,8 +669,8 @@ theorem isGreatest_eigenvalues_compression [FiniteDimensional 𝕜 E] {A : E →
       exact hTb _ hy fun h => hy0 (Subtype.ext h)
 
 /-- **Cauchy interlacing**, from below: for a symmetric `A` on a finite-dimensional space and any
-subspace `K`, the `i`-th eigenvalue of the compression `compression A K` — that is, the `i`-th
-Ritz value — is at most the `i`-th eigenvalue of `A`, both families being sorted decreasingly.
+subspace `K`, the `i`-th eigenvalue of the compression `compression A K` — that is, the `i`-th Ritz
+value — is at most the `i`-th eigenvalue of `A`, both families being sorted decreasingly.
 
 It is `isGreatest_eigenvalues_compression` against `LinearMap.IsSymmetric.isGreatest_eigenvalues`:
 the max–min defining the `i`-th Ritz value ranges over the `(i + 1)`-dimensional subspaces of `K`,
@@ -694,13 +685,12 @@ theorem eigenvalues_compression_le [FiniteDimensional 𝕜 E] {A : E →ₗ[𝕜
   obtain ⟨⟨S, -, hS, hb⟩, -⟩ := hA.isGreatest_eigenvalues_compression K hm i
   exact (hA.isGreatest_eigenvalues hn (Fin.castLE hmn i)).2 ⟨S, hS, hb⟩
 
-/-- **The Ritz values increase with the subspace**, which is the mechanism behind the
-convergence of Davidson's method (Saad, *Numerical Methods for Large Eigenvalue Problems*,
-Thm 8.1): enlarging the approximation space can only improve every Ritz value, both families
-being sorted decreasingly.
+/-- **The Ritz values increase with the subspace**, which is the mechanism behind the convergence of
+Davidson's method ([saad2011numerical], Thm 8.1): enlarging the approximation space can only improve
+every Ritz value, both families being sorted decreasingly.
 
-It is `isGreatest_eigenvalues_compression` twice: the max–min for `K` ranges over the
-`(i + 1)`-dimensional subspaces of `K`, that for `K'` over those of `K'`, and the first family is
+It is `isGreatest_eigenvalues_compression` twice: the max–min for `K` ranges over the `(i +
+1)`-dimensional subspaces of `K`, that for `K'` over those of `K'`, and the first family is
 contained in the second, so a bound witnessed inside `K` is a competitor inside `K'`.  Cauchy
 interlacing `eigenvalues_compression_le` is the extreme case `K' = ⊤`, proved the same way. -/
 theorem eigenvalues_compression_mono [FiniteDimensional 𝕜 E] {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric)
@@ -713,14 +703,14 @@ theorem eigenvalues_compression_mono [FiniteDimensional 𝕜 E] {A : E →ₗ[�
     ⟨S, hSK.trans hKK', ?_, hb⟩
   simpa using hS
 
-/-- If `W` sits inside the `θ`-eigenspace of a symmetric `T` and `T - lam` is bounded below by
-`δ` on `Wᗮ`, then `δ ‖y - P_W y‖ ≤ ‖(T - lam) y‖` for *every* `y`, not only for `y ∈ Wᗮ`.
+/-- If `W` sits inside the `θ`-eigenspace of a symmetric `T` and `T - lam` is bounded below by `δ`
+on `Wᗮ`, then `δ ‖y - P_W y‖ ≤ ‖(T - lam) y‖` for *every* `y`, not only for `y ∈ Wᗮ`.
 
-The component of `y` in `W` contributes `(θ - lam) P_W y`, which is orthogonal to the
-contribution `(T - lam)(y - P_W y)` of the other component, because `W` is `T`-invariant and `T`
-is symmetric, so `Wᗮ` is `T`-invariant too.  Pythagoras then discards the `W` term.  This is the
-step of Saad's eigenvector bound that turns a small residual into a small angle to the eigenspace
-of the nearest Ritz value. -/
+The component of `y` in `W` contributes `(θ - lam) P_W y`, which is orthogonal to the contribution
+`(T - lam)(y - P_W y)` of the other component, because `W` is `T`-invariant and `T` is symmetric, so
+`Wᗮ` is `T`-invariant too.  Pythagoras then discards the `W` term.  This is the step of
+[saad2011numerical] eigenvector bound that turns a small residual into a small angle to the
+eigenspace of the nearest Ritz value. -/
 theorem mul_norm_sub_starProjection_le {T : E →ₗ[𝕜] E} (hT : T.IsSymmetric) {W : Submodule 𝕜 E}
     [W.HasOrthogonalProjection] {θ lam δ : ℝ} (hW : ∀ q ∈ W, T q = (θ : 𝕜) • q)
     (hδ : ∀ z ∈ Wᗮ, δ * ‖z‖ ≤ ‖T z - (lam : 𝕜) • z‖) (y : E) :
@@ -755,13 +745,13 @@ theorem mul_norm_sub_starProjection_le {T : E →ₗ[𝕜] E} (hT : T.IsSymmetri
     sq_nonneg ‖((θ : 𝕜) - (lam : 𝕜)) • W.starProjection y‖,
     norm_nonneg (y - W.starProjection y)]
 
-/-- The lower bound `mul_norm_sub_starProjection_le` asks for, from the separation of `lam` from
-the eigenvalues of `T` other than `θ`.  Expanded in an eigenvector basis, `(T - lam) z` has
-coordinates `(θ_i - lam) c_i`, and `z ⟂ ker (T - θ)` kills the coordinates with `θ_i = θ`, so
-every surviving one is scaled by at least `δ`.
+/-- The lower bound `mul_norm_sub_starProjection_le` asks for, from the separation of `lam` from the
+eigenvalues of `T` other than `θ`.  Expanded in an eigenvector basis, `(T - lam) z` has coordinates
+`(θ_i - lam) c_i`, and `z ⟂ ker (T - θ)` kills the coordinates with `θ_i = θ`, so every surviving
+one is scaled by at least `δ`.
 
-For `T = compression A K` this says exactly what Saad's `δ` is: the distance from the exact
-eigenvalue `lam` to the set of Ritz values other than `θ`. -/
+For `T = compression A K` this says exactly what [saad2011numerical] `δ` is: the distance from the
+exact eigenvalue `lam` to the set of Ritz values other than `θ`. -/
 theorem mul_norm_le_norm_sub_smul [FiniteDimensional 𝕜 E] {n : ℕ} {T : E →ₗ[𝕜] E}
     (hT : T.IsSymmetric) (hn : Module.finrank 𝕜 E = n) {θ lam δ : ℝ} (hδ0 : 0 ≤ δ)
     (hsep : ∀ i : Fin n, hT.eigenvalues hn i ≠ θ → δ ≤ |hT.eigenvalues hn i - lam|)
@@ -797,16 +787,16 @@ theorem mul_norm_le_norm_sub_smul [FiniteDimensional 𝕜 E] {n : ℕ} {T : E �
       exact mul_le_mul_of_nonneg_right hsq2 (sq_nonneg _)
   exact le_of_sq_le_sq hsq (norm_nonneg _)
 
-/-- **Saad's Lemma 4.2**: for a symmetric `A`, an eigenpair `(lam, u)` and any nonzero competitor
-`y`, the Rayleigh quotient at `y` differs from `lam` by at most `C (‖u - y‖/‖y‖)²`, where `C`
-bounds the quadratic form of `A - lam` (Saad, *Numerical Methods for Large Eigenvalue Problems*,
-Lemma 4.1 for `y = P_K u` and Lemma 4.2 in general).
+/-- **[saad2011numerical] Lemma 4.2**: for a symmetric `A`, an eigenpair `(lam, u)` and any nonzero
+competitor `y`, the Rayleigh quotient at `y` differs from `lam` by at most `C (‖u - y‖/‖y‖)²`, where
+`C` bounds the quadratic form of `A - lam` ([saad2011numerical], Lemma 4.1 for `y = P_K u` and Lemma
+4.2 in general).
 
-The mechanism is that the quadratic form of `A - lam` has `u` in its kernel and is symmetric, so
-it takes the same value at `y` as at `u - y`:
-`⟪(A - lam) y, y⟫ = ⟪(A - lam)(u - y), (u - y)⟫`.  Dividing by `‖y‖²` gives the ratio.  Nothing
-here is special to a projection: the whole Rayleigh–Ritz eigenvalue analysis is this lemma
-applied to a competitor chosen inside the approximation space. -/
+The mechanism is that the quadratic form of `A - lam` has `u` in its kernel and is symmetric, so it
+takes the same value at `y` as at `u - y`: `⟪(A - lam) y, y⟫ = ⟪(A - lam)(u - y), (u - y)⟫`.
+Dividing by `‖y‖²` gives the ratio.  Nothing here is special to a projection: the whole
+Rayleigh–Ritz eigenvalue analysis is this lemma applied to a competitor chosen inside the
+approximation space. -/
 theorem abs_sub_rayleighQuotient_le {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric) {lam C : ℝ}
     (hC : ∀ x : E, |RCLike.re (inner 𝕜 (A x) x) - lam * ‖x‖ ^ 2| ≤ C * ‖x‖ ^ 2)
     {u : E} (hu : A u = (lam : 𝕜) • u) {y : E} (hy : y ≠ 0) :
@@ -824,15 +814,14 @@ theorem abs_sub_rayleighQuotient_le {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric) 
   rw [hrw, abs_div, abs_of_pos hvpos, div_le_iff₀ hvpos, hcancel, abs_sub_comm, key]
   exact hC _
 
-/-- The error of the Rayleigh quotient at the projection of an eigenvector: for a symmetric `A`,
-an eigenpair `(lam, u)` and a subspace `K` that captures some of `u`,
-`|lam - μ_A(P_K u)| ≤ C tan²θ(u, K)`, where `C` bounds the quadratic form of `A - lam`.
+/-- The error of the Rayleigh quotient at the projection of an eigenvector: for a symmetric `A`, an
+eigenpair `(lam, u)` and a subspace `K` that captures some of `u`, `|lam - μ_A(P_K u)| ≤ C tan²θ(u,
+K)`, where `C` bounds the quadratic form of `A - lam`.
 
 The identity behind it is that `(A - lam) P_K u = -(A - lam)(1 - P_K) u`, so that testing against
 `P_K u` and using the symmetry of `A - lam` and `(A - lam) u = 0` moves the whole quadratic form
-onto the part of `u` that `K` misses:
-`⟪(A - lam) P_K u, P_K u⟫ = ⟪(A - lam)(1 - P_K) u, (1 - P_K) u⟫`.  Dividing by `‖P_K u‖ ^ 2` turns
-`‖(1 - P_K) u‖ ^ 2 / ‖P_K u‖ ^ 2` into `tan²θ(u, K)`.
+onto the part of `u` that `K` misses: `⟪(A - lam) P_K u, P_K u⟫ = ⟪(A - lam)(1 - P_K) u, (1 - P_K)
+u⟫`.  Dividing by `‖P_K u‖ ^ 2` turns `‖(1 - P_K) u‖ ^ 2 / ‖P_K u‖ ^ 2` into `tan²θ(u, K)`.
 
 The hypothesis `P_K u ≠ 0` is genuine, and not only because `tanAngle` is junk there: with `u`
 orthogonal to `K` the left-hand side is `|lam|` and the right-hand side is `0`. -/
@@ -845,8 +834,8 @@ theorem abs_sub_rayleighQuotient_starProjection_le {A : E →ₗ[𝕜] E} (hA : 
   rwa [← K.tanAngle_mul_norm hPu, mul_div_assoc, div_self (norm_ne_zero_iff.2 hPu), mul_one] at h
 
 /-- The error of the largest Ritz value: for a symmetric `A` with largest eigenvalue `λ₁` and an
-eigenvector `u` for it, the largest Ritz value `θ₁` on `K` satisfies
-`0 ≤ λ₁ - θ₁ ≤ C tan²θ(u, K)`, with `C` bounding the quadratic form of `A - λ₁`.
+eigenvector `u` for it, the largest Ritz value `θ₁` on `K` satisfies `0 ≤ λ₁ - θ₁ ≤ C tan²θ(u, K)`,
+with `C` bounding the quadratic form of `A - λ₁`.
 
 The lower bound is `eigenvalues_compression_le` at `i = 0`.  For the upper bound, `P_K u` is a
 nonzero element of `K`, so the Rayleigh quotient of `A` there is at most `θ₁`, and
@@ -875,21 +864,20 @@ theorem ritz_value_error_le [FiniteDimensional 𝕜 E] {A : E →ₗ[𝕜] E} (h
   rw [hz] at h3
   exact ⟨by linarith, by linarith⟩
 
-/-- **The error of the `i`-th Ritz value** (Saad, *Numerical Methods for Large Eigenvalue
-Problems*, Thm 4.5): if `y` is a nonzero vector of `K` orthogonal to the first `i` Ritz vectors,
-then `0 ≤ λ_i - θ_i ≤ C (‖u_i - y‖/‖y‖)²`, with `u_i` an eigenvector of `A` for `λ_i` and `C`
-bounding the quadratic form of `A - λ_i`.
+/-- **The error of the `i`-th Ritz value** ([saad2011numerical], Thm 4.5): if `y` is a nonzero
+vector of `K` orthogonal to the first `i` Ritz vectors, then `0 ≤ λ_i - θ_i ≤ C (‖u_i - y‖/‖y‖)²`,
+with `u_i` an eigenvector of `A` for `λ_i` and `C` bounding the quadratic form of `A - λ_i`.
 
 The lower bound is Cauchy interlacing.  For the upper bound, `y` competes in Rayleigh's recursive
 characterization of the `i`-th eigenvalue of the compression
 (`isGreatest_rayleighQuotient_orthogonal`), so its Rayleigh quotient is at most `θ_i`, and
 `abs_sub_rayleighQuotient_le` bounds `λ_i` minus that quotient.  Only the orthogonality to the
-previous Ritz vectors is used, which is what the name records; `ritz_value_error_le` is the case
-`i = 0`, where the condition is empty and `y = P_K u` is the natural competitor.
+previous Ritz vectors is used, which is what the name records; `ritz_value_error_le` is the case `i
+= 0`, where the condition is empty and `y = P_K u` is the natural competitor.
 
-Saad's own display is the case `y = P_K u_i - P_W u_i` for `W` the span of the Ritz vectors
-already computed: `Submodule.norm_sub_sub_starProjection_sq` evaluates the numerator there as
-`‖(1 - P_K) u_i‖² + ‖P_W u_i‖²`, which is his `‖(I - P_K)u_i‖² + ‖Q̃_i u_i‖²`. -/
+[saad2011numerical] own display is the case `y = P_K u_i - P_W u_i` for `W` the span of the Ritz
+vectors already computed: `Submodule.norm_sub_sub_starProjection_sq` evaluates the numerator there
+as `‖(1 - P_K) u_i‖² + ‖P_W u_i‖²`, which is his `‖(I - P_K)u_i‖² + ‖Q̃_i u_i‖²`. -/
 theorem ritz_value_error_le_of_forall_inner_eq_zero [FiniteDimensional 𝕜 E]
     {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric) {K : Submodule 𝕜 E} {n m : ℕ}
     (hn : Module.finrank 𝕜 E = n) (hm : Module.finrank 𝕜 K = m) (hmn : m ≤ n) (i : Fin m)
@@ -911,21 +899,20 @@ theorem ritz_value_error_le_of_forall_inner_eq_zero [FiniteDimensional 𝕜 E]
   have h3 := hA.eigenvalues_compression_le K hn hm hmn i
   exact ⟨by linarith, by linarith⟩
 
-/-- The error of the Ritz vector: for a symmetric `A`, an eigenpair `(lam, u)` and a Ritz value
-`θ` on `K`, there is a Ritz vector `w` for `θ` with
-`sin θ(u, w) ≤ √(1 + γ² / δ²) sin θ(u, K)`.  Here `γ` is the coupling constant of
-`Krylov.compression_residual_le` and `δ` bounds `‖(A_K - lam) z‖` from below by `δ ‖z‖ ` on the
-part of `K` orthogonal to the `θ`-eigenspace of the compression; by
+/-- The error of the Ritz vector: for a symmetric `A`, an eigenpair `(lam, u)` and a Ritz value `θ`
+on `K`, there is a Ritz vector `w` for `θ` with `sin θ(u, w) ≤ √(1 + γ² / δ²) sin θ(u, K)`.  Here
+`γ` is the coupling constant of `Krylov.compression_residual_le` and `δ` bounds `‖(A_K - lam) z‖`
+from below by `δ ‖z‖ ` on the part of `K` orthogonal to the `θ`-eigenspace of the compression; by
 `mul_norm_le_norm_sub_smul` that hypothesis is the separation of `lam` from the Ritz values other
-than `θ`.  So an approximation subspace at a small angle to an eigenvector contains a Ritz vector
-at a comparably small angle to it, provided the corresponding Ritz value is well separated.
+than `θ`.  So an approximation subspace at a small angle to an eigenvector contains a Ritz vector at
+a comparably small angle to it, provided the corresponding Ritz value is well separated.
 
 The Ritz vector produced is the projection `w` of `P_K u` onto the `θ`-eigenspace of the
-compression, for which `P_{𝕜 ∙ w} u = w`, so that `‖u - w‖ ^ 2` splits by Pythagoras into
-`‖u - P_K u‖ ^ 2`, the part `K` misses, and `‖P_K u - w‖ ^ 2`, which the residual bound and the
-separation bound together control by `(γ / δ) ‖u - P_K u‖`.  Where that projection vanishes the
-inequality is vacuous — its right-hand side is then at least `1` — and any Ritz vector for `θ`
-serves, which is why the statement is an existence and why `θ` is assumed to be a Ritz value. -/
+compression, for which `P_{𝕜 ∙ w} u = w`, so that `‖u - w‖ ^ 2` splits by Pythagoras into `‖u - P_K
+u‖ ^ 2`, the part `K` misses, and `‖P_K u - w‖ ^ 2`, which the residual bound and the separation
+bound together control by `(γ / δ) ‖u - P_K u‖`.  Where that projection vanishes the inequality is
+vacuous — its right-hand side is then at least `1` — and any Ritz vector for `θ` serves, which is
+why the statement is an existence and why `θ` is assumed to be a Ritz value. -/
 theorem sin_angle_ritzVector_le {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric) {K : Submodule 𝕜 E}
     [FiniteDimensional 𝕜 K] {γ δ θ lam : ℝ} (hδ0 : 0 < δ)
     (hγ : ∀ x ∈ Kᗮ, ‖K.starProjection (A x)‖ ≤ γ * ‖x‖)
@@ -1021,18 +1008,17 @@ theorem sin_angle_ritzVector_le {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric) {K :
       exact hsqle
     exact le_of_sq_le_sq hb hnn
 
-/-- The reverse bound: a Ritz pair `(θ, w)` of a symmetric `A` and an eigenpair `(lam, u)`
-satisfy `|θ - lam| ≤ C sin²θ(u, w)`, with `C` bounding the quadratic form of `A - lam`.  So the
-Ritz value is accurate to second order in the angle between the Ritz vector and the eigenvector,
-which is why a Rayleigh–Ritz eigenvalue is much better than its eigenvector.
+/-- The reverse bound: a Ritz pair `(θ, w)` of a symmetric `A` and an eigenpair `(lam, u)` satisfy
+`|θ - lam| ≤ C sin²θ(u, w)`, with `C` bounding the quadratic form of `A - lam`.  So the Ritz value
+is accurate to second order in the angle between the Ritz vector and the eigenvector, which is why a
+Rayleigh–Ritz eigenvalue is much better than its eigenvector.
 
 The proof is the same trick as `abs_sub_rayleighQuotient_starProjection_le`: since `(A - lam) u`
-vanishes and `A - lam` is symmetric, the quadratic form of `A - lam` is unchanged by subtracting
-any multiple of `u`, so `(θ - lam) ‖w‖ ^ 2` may be evaluated at `w - P_{𝕜 ∙ u} w`, whose norm is
-`sin θ(u, w) ‖w‖`.
+vanishes and `A - lam` is symmetric, the quadratic form of `A - lam` is unchanged by subtracting any
+multiple of `u`, so `(θ - lam) ‖w‖ ^ 2` may be evaluated at `w - P_{𝕜 ∙ u} w`, whose norm is `sin
+θ(u, w) ‖w‖`.
 
-Chained with `sin_angle_ritzVector_le` this bounds `|θ - lam|` by
-`C (1 + γ² / δ²) sin²θ(u, K)`. -/
+Chained with `sin_angle_ritzVector_le` this bounds `|θ - lam|` by `C (1 + γ² / δ²) sin²θ(u, K)`. -/
 theorem abs_ritz_value_sub_le {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric) {K : Submodule 𝕜 E}
     [K.HasOrthogonalProjection] {lam C : ℝ}
     (hC : ∀ x : E, |RCLike.re (inner 𝕜 (A x) x) - lam * ‖x‖ ^ 2| ≤ C * ‖x‖ ^ 2)
@@ -1085,10 +1071,10 @@ section Charpoly
 
 variable [FiniteDimensional 𝕜 (fullSubspace A b)]
 
-/-- Cayley–Hamilton on the compression: the characteristic polynomial `p` of the compression of
-`A` to `𝒦_m` satisfies `p(A) b ⟂ 𝒦_m`.  It is `p(A_K) b = 0` read back on `E` through
-`compressionBy.apply_aeval_of_forall_pow_lt_mem`, which needs the Krylov vectors only up to
-`A^{m-1} b` and so does not require `𝒦_m` to be `A`-invariant. -/
+/-- Cayley–Hamilton on the compression: the characteristic polynomial `p` of the compression of `A`
+to `𝒦_m` satisfies `p(A) b ⟂ 𝒦_m`.  It is `p(A_K) b = 0` read back on `E` through
+`compressionBy.apply_aeval_of_forall_pow_lt_mem`, which needs the Krylov vectors only up to `A^{m-1}
+b` and so does not require `𝒦_m` to be `A`-invariant. -/
 theorem aeval_charpoly_mem_orthogonal {m : ℕ} (hm : m ≤ grade A b) :
     aeval A (LinearMap.charpoly (compression A (subspace A b m))) b ∈ (subspace A b m)ᗮ := by
   rcases Nat.eq_zero_or_pos m with rfl | hm0
@@ -1107,23 +1093,21 @@ theorem aeval_charpoly_mem_orthogonal {m : ℕ} (hm : m ≤ grade A b) :
   rw [← Submodule.orthogonalProjectionOnto_eq_zero_iff]
   exact h
 
-/-- Saad, *Numerical Methods for Large Eigenvalue Problems*: the characteristic polynomial of the
-compression of `A` to `𝒦_m(A, b)` — equivalently, of the Arnoldi matrix `H_m`, by
-`Arnoldi.hessenbergSq_eq_toMatrix_compression` — minimizes `‖p(A) b‖` over all monic polynomials
-`p` of degree `m`.
+/-- [saad2011numerical]: the characteristic polynomial of the compression of `A` to `𝒦_m(A, b)` —
+equivalently, of the Arnoldi matrix `H_m`, by `Arnoldi.hessenbergSq_eq_toMatrix_compression` —
+minimizes `‖p(A) b‖` over all monic polynomials `p` of degree `m`.
 
 The proof is a best-approximation argument in `𝒦_m`: the characteristic polynomial `c` satisfies
 `c(A) b ⟂ 𝒦_m` by `aeval_charpoly_mem_orthogonal`, while any competing monic `p` of degree `m`
 differs from `c` by a polynomial of degree `< m`, so `p(A) b - c(A) b ∈ 𝒦_m`.  The two components
-are orthogonal and the Pythagorean identity gives `‖c(A) b‖ ≤ ‖p(A) b‖`.  The bound holds up to
-and including `m = grade A b`, where the minimum value is `0`.
+are orthogonal and the Pythagorean identity gives `‖c(A) b‖ ≤ ‖p(A) b‖`.  The bound holds up to and
+including `m = grade A b`, where the minimum value is `0`.
 
 The hypothesis `m ≤ grade A b` is the one the source leaves implicit by speaking of "the"
-characteristic polynomial of `V_mᴴ A V_m` for an orthonormal basis `V_m` of `𝒦_m` with `m`
-columns: that basis exists exactly when `dim 𝒦_m = m`, which is `m ≤ grade A b`.  It is needed
-here for the same reason, since the degree of the characteristic polynomial is `dim 𝒦_m`, and
-past the grade the competitor set contains polynomials of a degree the compression cannot
-reach. -/
+characteristic polynomial of `V_mᴴ A V_m` for an orthonormal basis `V_m` of `𝒦_m` with `m` columns:
+that basis exists exactly when `dim 𝒦_m = m`, which is `m ≤ grade A b`.  It is needed here for the
+same reason, since the degree of the characteristic polynomial is `dim 𝒦_m`, and past the grade the
+competitor set contains polynomials of a degree the compression cannot reach. -/
 theorem charpoly_compression_isMinOn {m : ℕ} (hm : m ≤ grade A b) :
     IsMinOn (fun p : 𝕜[X] => ‖aeval A p b‖) {p : 𝕜[X] | p.Monic ∧ p.natDegree = m}
       (LinearMap.charpoly (compression A (subspace A b m))) := by
@@ -1168,8 +1152,8 @@ private theorem inner_vec_sum [FiniteDimensional 𝕜 (fullSubspace A b)] {m : �
   · intro h
     exact absurd (Finset.mem_univ i) h
 
-/-- The Hessenberg matrix is the matrix of `A` in the Arnoldi coordinates:
-`⟪v_i, A (V_m y)⟫ = (H_m y)_i`. -/
+/-- The Hessenberg matrix is the matrix of `A` in the Arnoldi coordinates: `⟪v_i, A (V_m y)⟫ = (H_m
+y)_i`. -/
 private theorem inner_vec_apply_sum {m : ℕ} (y : Fin m → 𝕜) (i : Fin m) :
     inner 𝕜 (vec A b i) (A (∑ j, y j • vec A b j))
       = (hessenbergSq A b m).mulVec y i := by
@@ -1177,11 +1161,11 @@ private theorem inner_vec_apply_sum {m : ℕ} (y : Fin m → 𝕜) (i : Fin m) :
   refine Finset.sum_congr rfl fun j _ => ?_
   rw [map_smul, inner_smul_right, hessenbergSq, Matrix.of_apply, coeff, mul_comm]
 
-/-- Saad, *Numerical Methods for Large Eigenvalue Problems*: an eigenpair `(θ, y)` of the Arnoldi
-matrix `H_m` yields the Ritz pair `(θ, V_m y)` of `A` on `𝒦_m`.  It is the Rayleigh–Ritz
-condition tested against the Arnoldi vectors, which span `𝒦_m` and, below the grade, are
-orthonormal, so that `⟪v_i, V_m y⟫ = y_i` and `⟪v_i, A (V_m y)⟫ = (H_m y)_i`.  This is what makes
-the residual formula below a statement about Ritz pairs. -/
+/-- [saad2011numerical]: an eigenpair `(θ, y)` of the Arnoldi matrix `H_m` yields the Ritz pair `(θ,
+V_m y)` of `A` on `𝒦_m`.  It is the Rayleigh–Ritz condition tested against the Arnoldi vectors,
+which span `𝒦_m` and, below the grade, are orthonormal, so that `⟪v_i, V_m y⟫ = y_i` and `⟪v_i, A
+(V_m y)⟫ = (H_m y)_i`.  This is what makes the residual formula below a statement about Ritz pairs.
+-/
 theorem isRitzPair_of_mulVec_eq_smul [FiniteDimensional 𝕜 (fullSubspace A b)] {m : ℕ}
     (hm : m ≤ grade A b) {y : Fin m → 𝕜} (hy0 : y ≠ 0) {θ : 𝕜}
     (h : (hessenbergSq A b m).mulVec y = θ • y) :
@@ -1205,18 +1189,16 @@ private theorem hessenberg_mulVec_last (m : ℕ) (y : Fin (m + 1) → 𝕜) :
   rw [hessenberg, Matrix.of_apply, Fin.val_last,
     coeff_eq_zero_of_lt A b (Nat.succ_lt_succ (Fin.val_lt_last hj)), zero_mul]
 
-/-- The rows of the rectangular Hessenberg matrix above the last are the rows of the square
-one. -/
+/-- The rows of the rectangular Hessenberg matrix above the last are the rows of the square one. -/
 private theorem hessenberg_mulVec_castSucc (m : ℕ) (y : Fin (m + 1) → 𝕜) (i : Fin (m + 1)) :
     (hessenberg A b (m + 1)).mulVec y i.castSucc = (hessenbergSq A b (m + 1)).mulVec y i := by
   simp [Matrix.mulVec, dotProduct, hessenberg, hessenbergSq]
 
-/-- Saad, *Numerical Methods for Large Eigenvalue Problems*: for an eigenpair `(θ, y)` of the
-Arnoldi matrix `H_m` the residual of the Ritz vector `ũ = V_m y` is a single Arnoldi vector,
-`(A - θ) ũ = h_{m+1,m} y_m v_{m+1}`.  Everything but the last row of the Arnoldi relation
-`A V_m = V_{m+1} H̄_m` is cancelled by the eigenvalue equation, and the last row of `H̄_m` has the
-single entry `h_{m+1,m}` by the Hessenberg structure.  No hypothesis on the grade is needed:
-after breakdown both `v_{m+1}` and `h_{m+1,m}` are `0`. -/
+/-- [saad2011numerical]: for an eigenpair `(θ, y)` of the Arnoldi matrix `H_m` the residual of the
+Ritz vector `ũ = V_m y` is a single Arnoldi vector, `(A - θ) ũ = h_{m+1,m} y_m v_{m+1}`.  Everything
+but the last row of the Arnoldi relation `A V_m = V_{m+1} H̄_m` is cancelled by the eigenvalue
+equation, and the last row of `H̄_m` has the single entry `h_{m+1,m}` by the Hessenberg structure.
+No hypothesis on the grade is needed: after breakdown both `v_{m+1}` and `h_{m+1,m}` are `0`. -/
 theorem apply_sub_smul_sum_eq (m : ℕ) (y : Fin (m + 1) → 𝕜) (θ : 𝕜)
     (hy : (hessenbergSq A b (m + 1)).mulVec y = θ • y) :
     A (∑ j, y j • vec A b j) - θ • ∑ j, y j • vec A b j
@@ -1237,16 +1219,15 @@ theorem apply_sub_smul_sum_eq (m : ℕ) (y : Fin (m + 1) → 𝕜) (θ : 𝕜)
   rw [Finset.sum_congr rfl fun i _ => hcast i, ← Finset.smul_sum]
   abel
 
-/-- Saad, *Numerical Methods for Large Eigenvalue Problems*: the cheap Arnoldi residual.  For an
-eigenpair `(θ, y)` of the Arnoldi matrix `H_m`, the residual norm of the Ritz vector
-`ũ = V_m y` is `‖(A - θ) ũ‖ = h_{m+1,m} |y_m|` — the product of one subdiagonal Hessenberg entry
-with the last coordinate of the small eigenvector.  It costs nothing to evaluate, which is what
-makes a restarted Arnoldi method practical: the accuracy of a Ritz pair is known without ever
-forming `ũ`.
+/-- [saad2011numerical]: the cheap Arnoldi residual.  For an eigenpair `(θ, y)` of the Arnoldi
+matrix `H_m`, the residual norm of the Ritz vector `ũ = V_m y` is `‖(A - θ) ũ‖ = h_{m+1,m} |y_m|` —
+the product of one subdiagonal Hessenberg entry with the last coordinate of the small eigenvector.
+It costs nothing to evaluate, which is what makes a restarted Arnoldi method practical: the accuracy
+of a Ritz pair is known without ever forming `ũ`.
 
-The hypothesis is the eigenvalue equation of the small matrix; `isRitzPair_of_mulVec_eq_smul`
-says that below the grade it is exactly the statement that `(θ, ũ)` is a Ritz pair of `A` on
-`𝒦_m`.  The identity holds past breakdown as well, both sides being `0` there. -/
+The hypothesis is the eigenvalue equation of the small matrix; `isRitzPair_of_mulVec_eq_smul` says
+that below the grade it is exactly the statement that `(θ, ũ)` is a Ritz pair of `A` on `𝒦_m`.  The
+identity holds past breakdown as well, both sides being `0` there. -/
 theorem norm_ritz_residual_eq (m : ℕ) (y : Fin (m + 1) → 𝕜) (θ : 𝕜)
     (hy : (hessenbergSq A b (m + 1)).mulVec y = θ • y) :
     ‖A (∑ j, y j • vec A b j) - θ • ∑ j, y j • vec A b j‖

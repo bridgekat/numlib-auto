@@ -13,56 +13,54 @@ functional `j : V → ℝ` and a datum `f : V`, the *elliptic variational inequa
 
 `IsVariationalInequalitySolution A j f K u` is that specification. One predicate covers all the
 forms the literature distinguishes: the inequality *of the first kind* is `j = 0`, the inequality
-*of the second kind* is `K = Set.univ`, and the bilinear-form problems are `A = a.toOperator`.
-The datum is a vector rather than a functional, the two being interchangeable by the Riesz
+*of the second kind* is `K = Set.univ`, and the bilinear-form problems are `A = a.toOperator`. The
+datum is a vector rather than a functional, the two being interchangeable by the Riesz
 representation.
 
-* `IsVariationalInequalitySolution.norm_sub_le` and `.unique`: strong monotonicity alone gives
-  `‖u₁ - u₂‖ ≤ ‖f₁ - f₂‖ / c`, hence uniqueness.
+* `IsVariationalInequalitySolution.norm_sub_le` and `.unique`: strong monotonicity alone gives `‖u₁
+  - u₂‖ ≤ ‖f₁ - f₂‖ / c`, hence uniqueness.
 * `existsUnique_isMinOn_energy_add`: the minimizer of `E v = ½ a v v + j v - ℓ v` over a nonempty
-  closed convex set exists and is unique.  This is the existence engine, proved in the Hilbert
-  space itself: `j` has a continuous affine minorant, so `E` is bounded below, and the
-  parallelogram identity `E x + E y - 2 E ((x + y)/2) ≥ (c/4) ‖x - y‖²` makes every minimizing
-  sequence Cauchy.
+  closed convex set exists and is unique.  This is the existence engine, proved in the Hilbert space
+  itself: `j` has a continuous affine minorant, so `E` is bounded below, and the parallelogram
+  identity `E x + E y - 2 E ((x + y)/2) ≥ (c/4) ‖x - y‖²` makes every minimizing sequence Cauchy.
 * `isMinOn_energy_add_iff`: that minimizer is characterized by the variational inequality — the
   specialization of `isMinOn_add_iff_forall_le` to the quadratic functional.
 * `existsUnique_isVariationalInequalitySolution`: unique solvability for a strongly monotone
   Lipschitz `A` and a convex lower semicontinuous `j`, by a fixed point of the map sending `u` to
-  the solution of the auxiliary inequality with operator the identity and datum
-  `u - θ (A u - f)`; that map is nonexpansive in its datum, and the damping step is a contraction
-  with factor `√(1 - 2 c θ + L² θ²)`.  `stampacchia` is the case `j = 0` and
+  the solution of the auxiliary inequality with operator the identity and datum `u - θ (A u - f)`;
+  that map is nonexpansive in its datum, and the damping step is a contraction with factor `√(1 - 2
+  c θ + L² θ²)`.  `stampacchia` is the case `j = 0` and
   `existsUnique_isVariationalInequalitySolution_of_isCoercive` the bilinear-form case.
-* `IsVariationalInequalitySolution.iff_minty`: Minty's lemma, the equivalent form with `A`
-  evaluated at the test point.  It needs no Lipschitz continuity, only continuity of `A` along the
-  segments of `K` issuing from `u`.
+* `IsVariationalInequalitySolution.iff_minty`: Minty's lemma, the equivalent form with `A` evaluated
+  at the test point.  It needs no Lipschitz continuity, only continuity of `A` along the segments of
+  `K` issuing from `u`.
 * `IsVariationalInequalitySolution.isBestApprox_energy`, `.iff_of_isCone` and
-  `.iff_of_isPositiveHomogeneous`: the energy-projection reading, the cone form and the
-  positively homogeneous form.
+  `.iff_of_isPositiveHomogeneous`: the energy-projection reading, the cone form and the positively
+  homogeneous form.
 
 `IsVariationalInequalitySolution` unfolds to `And` and `IsStronglyMonotoneWith` to a `∀`, so dot
 notation on a hypothesis of either type can resolve in the wrong namespace; write the lemma names
 out in full.
 
 Strong monotonicity is bundled here as `IsStronglyMonotoneWith`, whose unfolding is exactly the
-hypothesis `zarantonello` and `contractingWith_damped` take, so the two compose with no
-translation lemma.
+hypothesis `zarantonello` and `contractingWith_damped` take, so the two compose with no translation
+lemma.
 
-The material is Chapter 11 of [Atkinson–Han][han2009theoretical]: (11.3.3), (11.3.8), (11.3.9) and
-(11.3.12)–(11.3.14) for the problem, Theorem 11.2.2 for the equivalence with minimization,
-Theorem 11.3.1 for unique solvability, Theorem 11.3.6 (Stampacchia) and Theorem 11.3.9 for its
-specializations, Lemma 11.3.8 for Minty's lemma, and Exercises 11.3.3 and 11.3.10 for the last
-two.
+The material is Chapter 11 of [han2009theoretical]: (11.3.3), (11.3.8), (11.3.9) and
+(11.3.12)–(11.3.14) for the problem, Theorem 11.2.2 for the equivalence with minimization, Theorem
+11.3.1 for unique solvability, Theorem 11.3.6 (Stampacchia) and Theorem 11.3.9 for its
+specializations, Lemma 11.3.8 for Minty's lemma, and Exercises 11.3.3 and 11.3.10 for the last two.
 -/
 
 open Filter Set Topology
 
-/-- **Strong monotonicity.**  `IsStronglyMonotoneWith 𝕜 A c` is
-`c ‖x - y‖² ≤ re ⟪A x - A y, x - y⟫` for all `x, y`: the nonlinear counterpart of coercivity of an
-operator, and the hypothesis of Zarantonello's theorem and of the existence theory for variational
-inequalities.  For a linear `A` it is `LinearMap.IsCoerciveWith`.
+/-- **Strong monotonicity.**  `IsStronglyMonotoneWith 𝕜 A c` is `c ‖x - y‖² ≤ re ⟪A x - A y, x - y⟫`
+for all `x, y`: the nonlinear counterpart of coercivity of an operator, and the hypothesis of
+Zarantonello's theorem and of the existence theory for variational inequalities.  For a linear `A`
+it is `LinearMap.IsCoerciveWith`.
 
-The scalar field is an explicit argument, as in `inner 𝕜 x y`, because it is not determined by
-`A : E → E`. -/
+The scalar field is an explicit argument, as in `inner 𝕜 x y`, because it is not determined by `A :
+E → E`. -/
 def IsStronglyMonotoneWith (𝕜 : Type*) {E : Type*} [RCLike 𝕜] [NormedAddCommGroup E]
     [InnerProductSpace 𝕜 E] (A : E → E) (c : ℝ) : Prop :=
   ∀ x y, c * ‖x - y‖ ^ 2 ≤ RCLike.re (inner 𝕜 (A x - A y) (x - y))
@@ -105,8 +103,8 @@ private theorem lowerSemicontinuousOn_const_mul {α : Type*} [TopologicalSpace �
 
 variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
 
-/-- **The elliptic variational inequality.**  `IsVariationalInequalitySolution A j f K u` says
-that `u` lies in `K` and
+/-- **The elliptic variational inequality.**  `IsVariationalInequalitySolution A j f K u` says that
+`u` lies in `K` and
 
   `⟪f, v - u⟫ ≤ ⟪A u, v - u⟫ + j v - j u`  for every `v ∈ K`.
 
@@ -114,8 +112,7 @@ The inequality of the first kind is `j = 0`, the inequality of the second kind i
 and the bilinear-form problems are `A = a.toOperator`; the datum is a vector `f`, which the Riesz
 representation makes interchangeable with a functional.
 
-Atkinson–Han, *Theoretical Numerical Analysis*, (11.3.3), (11.3.8), (11.3.9) and
-(11.3.12)–(11.3.14). -/
+[han2009theoretical], (11.3.3), (11.3.8), (11.3.9) and (11.3.12)–(11.3.14). -/
 def IsVariationalInequalitySolution (A : V → V) (j : V → ℝ) (f : V) (K : Set V) (u : V) : Prop :=
   u ∈ K ∧ ∀ v ∈ K, inner ℝ f (v - u) ≤ inner ℝ (A u) (v - u) + j v - j u
 
@@ -127,7 +124,7 @@ variable {A : V → V} {j : V → ℝ} {K : Set V} {c : ℝ}
 data `f₁` and `f₂` and a `c`-strongly monotone operator satisfy `‖u₁ - u₂‖ ≤ ‖f₁ - f₂‖ / c`.
 
 Neither Lipschitz continuity of `A`, nor convexity of `j`, nor closedness of `K` is used.
-Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 11.3.1, last clause; the linear case is
+[han2009theoretical], Theorem 11.3.1, last clause; the linear case is
 `norm_sub_le_of_strongly_monotone`. -/
 theorem IsVariationalInequalitySolution.norm_sub_le (hc : 0 < c)
     (hmono : IsStronglyMonotoneWith ℝ A c) {f₁ f₂ u₁ u₂ : V}
@@ -154,8 +151,7 @@ theorem IsVariationalInequalitySolution.norm_sub_le (hc : 0 < c)
       _ ≤ ‖f₁ - f₂‖ * ‖u₁ - u₂‖ := hmono'.trans hcs
 
 /-- **Uniqueness.**  Two solutions of the same variational inequality with a strongly monotone
-operator coincide.  Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 11.3.1, uniqueness
-clause. -/
+operator coincide. [han2009theoretical], Theorem 11.3.1, uniqueness clause. -/
 theorem IsVariationalInequalitySolution.unique (hc : 0 < c)
     (hmono : IsStronglyMonotoneWith ℝ A c) {f u₁ u₂ : V}
     (h₁ : IsVariationalInequalitySolution A j f K u₁)
@@ -218,16 +214,16 @@ section Minimization
 
 variable [CompleteSpace V]
 
-/-- **Existence and uniqueness of the constrained minimizer.**  For a bounded symmetric
-`V`-elliptic form `a`, a functional `ℓ`, and a `j` convex and lower semicontinuous on a nonempty
-closed convex `K`, the functional `E v = ½ a v v + j v - ℓ v` has exactly one minimizer on `K`.
+/-- **Existence and uniqueness of the constrained minimizer.**  For a bounded symmetric `V`-elliptic
+form `a`, a functional `ℓ`, and a `j` convex and lower semicontinuous on a nonempty closed convex
+`K`, the functional `E v = ½ a v v + j v - ℓ v` has exactly one minimizer on `K`.
 
-Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 11.2.2, existence clause.  The proof
-stays in the Hilbert space instead of invoking the direct method in a reflexive space: `j` has a
-continuous affine minorant (`ConvexOn.exists_affine_le_of_lt`, the book's Lemma 11.3.5), so `E` is
-bounded below, and ellipticity together with convexity of `j` gives
-`E v + E w - 2 E ((v + w)/2) ≥ (c/4) ‖v - w‖²`, which makes every minimizing sequence Cauchy.
-Mathlib's `exists_norm_eq_iInf_of_complete_convex` is the case `a = inner`, `j = 0`. -/
+[han2009theoretical], Theorem 11.2.2, existence clause.  The proof stays in the Hilbert space
+instead of invoking the direct method in a reflexive space: `j` has a continuous affine minorant
+(`ConvexOn.exists_affine_le_of_lt`, the book's Lemma 11.3.5), so `E` is bounded below, and
+ellipticity together with convexity of `j` gives `E v + E w - 2 E ((v + w)/2) ≥ (c/4) ‖v - w‖²`,
+which makes every minimizing sequence Cauchy. Mathlib's `exists_norm_eq_iInf_of_complete_convex` is
+the case `a = inner`, `j = 0`. -/
 theorem existsUnique_isMinOn_energy_add {a : SesqForm ℝ V} (ha : a.IsHermitian) {c : ℝ}
     (hc : 0 < c) (hcoer : a.IsCoerciveWith c) (ℓ : V →L[ℝ] ℝ) {j : V → ℝ} {K : Set V}
     (hKne : K.Nonempty) (hKcl : IsClosed K) (hKcv : Convex ℝ K) (hj : ConvexOn ℝ K j)
@@ -352,17 +348,16 @@ theorem existsUnique_isMinOn_energy_add {a : SesqForm ℝ V} (ha : a.IsHermitian
   exact ⟨u, ⟨huK, hminon⟩, fun z hz => huniq z hz.1 hz.2 u huK hminon⟩
 
 /-- **The constrained minimizer is characterized by a variational inequality.**  For a symmetric
-positive semidefinite form `a`, a functional `ℓ` and a `j` convex on a convex `K`, a point
-`u ∈ K` minimizes `E v = ½ a v v + j v - ℓ v` over `K` if and only if
+positive semidefinite form `a`, a functional `ℓ` and a `j` convex on a convex `K`, a point `u ∈ K`
+minimizes `E v = ½ a v v + j v - ℓ v` over `K` if and only if
 
   `ℓ (v - u) ≤ a u (v - u) + j v - j u`  for every `v ∈ K`,
 
 which is the variational inequality with operator `a.toOperator` and datum `rieszRep ℓ`.
 
-This is the specialization of `isMinOn_add_iff_forall_le` to the quadratic functional, whose
-Gâteaux derivative at `u` is `v ↦ a u v - ℓ v`.  Atkinson–Han, *Theoretical Numerical Analysis*,
-Theorem 11.2.2, characterization clause; the case `j = 0` with `K` a subspace is
-`SesqForm.isMinOn_energy_iff`. -/
+This is the specialization of `isMinOn_add_iff_forall_le` to the quadratic functional, whose Gâteaux
+derivative at `u` is `v ↦ a u v - ℓ v`. [han2009theoretical], Theorem 11.2.2, characterization
+clause; the case `j = 0` with `K` a subspace is `SesqForm.isMinOn_energy_iff`. -/
 theorem isMinOn_energy_add_iff {a : SesqForm ℝ V} (ha : a.IsHermitian) {c : ℝ} (hc : 0 ≤ c)
     (hcoer : a.IsCoerciveWith c) (ℓ : V →L[ℝ] ℝ) {j : V → ℝ} {K : Set V} (hKcv : Convex ℝ K)
     (hj : ConvexOn ℝ K j) {u : V} (hu : u ∈ K) :
@@ -390,8 +385,8 @@ end Minimization
 
 section Existence
 
-/-- The fixed-point reformulation: `u` solves the variational inequality exactly when it solves
-the auxiliary inequality with operator the identity and datum `u - θ (A u - f)`. -/
+/-- The fixed-point reformulation: `u` solves the variational inequality exactly when it solves the
+auxiliary inequality with operator the identity and datum `u - θ (A u - f)`. -/
 private theorem isVarIneq_aux_iff {A : V → V} {j : V → ℝ} {f : V} {K : Set V} {θ : ℝ}
     (hθ : 0 < θ) {u : V} :
     IsVariationalInequalitySolution (fun w => w) (fun v => θ * j v) (u - θ • (A u - f)) K u ↔
@@ -448,16 +443,15 @@ private theorem existsUnique_id {K : Set V} (hKne : K.Nonempty) (hKcl : IsClosed
     SesqForm.innerSL_isCoerciveWith (innerSL ℝ y) hKne hKcl hKcv hj hjlsc
   exact ⟨z, (hiff z hzK).mp hzmin, fun x hx => huniq x ⟨hx.1, (hiff x hx.1).mpr hx⟩⟩
 
-/-- **Unique solvability of the elliptic variational inequality.**  Atkinson–Han, *Theoretical
-Numerical Analysis*, Theorem 11.3.1: for a nonempty closed convex `K` in a real Hilbert space, an
-`A` strongly monotone with constant `c > 0` and Lipschitz with constant `L`, and a `j` convex and
-lower semicontinuous on `K`, the variational inequality has exactly one solution for every datum
-`f`.
+/-- **Unique solvability of the elliptic variational inequality.** [han2009theoretical], Theorem
+11.3.1: for a nonempty closed convex `K` in a real Hilbert space, an `A` strongly monotone with
+constant `c > 0` and Lipschitz with constant `L`, and a `j` convex and lower semicontinuous on `K`,
+the variational inequality has exactly one solution for every datum `f`.
 
-The map sending `u` to the solution of the auxiliary inequality with operator the identity and
-datum `u - θ (A u - f)` is nonexpansive in its datum, and the damping step `u ↦ u - θ (A u - f)`
-contracts with factor `√(1 - 2 c θ + L² θ²)` for `0 < θ < 2c/L²` (`contractingWith_damped`); the
-Banach fixed point theorem on the closed set `K` then produces the solution, and
+The map sending `u` to the solution of the auxiliary inequality with operator the identity and datum
+`u - θ (A u - f)` is nonexpansive in its datum, and the damping step `u ↦ u - θ (A u - f)` contracts
+with factor `√(1 - 2 c θ + L² θ²)` for `0 < θ < 2c/L²` (`contractingWith_damped`); the Banach fixed
+point theorem on the closed set `K` then produces the solution, and
 `IsVariationalInequalitySolution.unique` its uniqueness. -/
 theorem existsUnique_isVariationalInequalitySolution {K : Set V} (hKne : K.Nonempty)
     (hKcl : IsClosed K) (hKcv : Convex ℝ K) {A : V → V} {c L : ℝ} (hc : 0 < c)
@@ -517,10 +511,10 @@ theorem existsUnique_isVariationalInequalitySolution {K : Set V} (hKne : K.Nonem
     rwa [hxfix] at h
   exact ⟨x, hsol, fun y hy => IsVariationalInequalitySolution.unique hc hmono hy hsol⟩
 
-/-- **Stampacchia's theorem.**  Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 11.3.6:
-a variational inequality of the first kind — `j = 0` — over a nonempty closed convex set with a
-strongly monotone Lipschitz operator has exactly one solution; it depends Lipschitz continuously
-on the datum by `IsVariationalInequalitySolution.norm_sub_le`.
+/-- **Stampacchia's theorem.** [han2009theoretical], Theorem 11.3.6: a variational inequality of the
+first kind — `j = 0` — over a nonempty closed convex set with a strongly monotone Lipschitz operator
+has exactly one solution; it depends Lipschitz continuously on the datum by
+`IsVariationalInequalitySolution.norm_sub_le`.
 
 Kept under its classical name because that is what a reader looks for.  It generalizes the
 Lax–Milgram lemma `SesqForm.laxMilgram`, which is the case where `K` is the whole space and `A` is
@@ -532,15 +526,14 @@ theorem stampacchia {K : Set V} (hKne : K.Nonempty) (hKcl : IsClosed K) (hKcv : 
   existsUnique_isVariationalInequalitySolution hKne hKcl hKcv hc hmono hlip
     (convexOn_const 0 hKcv) lowerSemicontinuousOn_const f
 
-/-- **The bilinear-form version.**  Atkinson–Han, *Theoretical Numerical Analysis*,
-Theorem 11.3.9: for a bounded `V`-elliptic form `a` — not assumed symmetric — a functional `ℓ`,
-and a `j` convex and lower semicontinuous on a nonempty closed convex `K`, the variational
-inequality
+/-- **The bilinear-form version.** [han2009theoretical], Theorem 11.3.9: for a bounded `V`-elliptic
+form `a` — not assumed symmetric — a functional `ℓ`, and a `j` convex and lower semicontinuous on a
+nonempty closed convex `K`, the variational inequality
 
   `u ∈ K`,  `ℓ (v - u) ≤ a u (v - u) + j v - j u`  for all `v ∈ K`
 
-has exactly one solution.  Taking `j = 0` gives the inequality of the first kind and
-`K = Set.univ` that of the second kind, and the solution depends Lipschitz continuously on `ℓ` by
+has exactly one solution.  Taking `j = 0` gives the inequality of the first kind and `K = Set.univ`
+that of the second kind, and the solution depends Lipschitz continuously on `ℓ` by
 `IsVariationalInequalitySolution.norm_sub_le`.
 
 Immediate from `existsUnique_isVariationalInequalitySolution` applied to `A = a.toOperator`, whose
@@ -563,18 +556,17 @@ end Existence
 
 /-! ### Minty's lemma and the special forms -/
 
-/-- **Minty's lemma.**  Atkinson–Han, *Theoretical Numerical Analysis*, Lemma 11.3.8: for a
-monotone `A` and a `j` convex on a convex `K`, a point `u ∈ K` solves the variational inequality
-if and only if the *test* inequality
+/-- **Minty's lemma.** [han2009theoretical], Lemma 11.3.8: for a monotone `A` and a `j` convex on a
+convex `K`, a point `u ∈ K` solves the variational inequality if and only if the *test* inequality
 
   `⟪f, v - u⟫ ≤ ⟪A v, v - u⟫ + j v - j u`  for every `v ∈ K`
 
 holds, that is, with `A` evaluated at the test point rather than at the solution.
 
-One direction is monotonicity; the other substitutes `u + t (v - u)`, uses convexity of `j` and
-lets `t` tend to `0`, so that only continuity of `A` along the segments of `K` issuing from `u` is
-needed — no Lipschitz continuity anywhere.  The value of the lemma is that the Minty form is
-stable under weak limits. -/
+One direction is monotonicity; the other substitutes `u + t (v - u)`, uses convexity of `j` and lets
+`t` tend to `0`, so that only continuity of `A` along the segments of `K` issuing from `u` is needed
+— no Lipschitz continuity anywhere.  The value of the lemma is that the Minty form is stable under
+weak limits. -/
 theorem IsVariationalInequalitySolution.iff_minty {A : V → V} {j : V → ℝ} {f : V} {K : Set V}
     (hKcv : Convex ℝ K) (hj : ConvexOn ℝ K j) (hmono : IsStronglyMonotoneWith ℝ A 0) {u : V}
     (hu : u ∈ K)
@@ -617,14 +609,12 @@ theorem IsVariationalInequalitySolution.iff_minty {A : V → V} {j : V → ℝ} 
     refine ge_of_tendsto hlim ?_
     filter_upwards [Ioo_mem_nhdsGT (zero_lt_one' ℝ)] with t ht using hseg t ht
 
-/-- **The variational inequality as an energy projection.**  For a symmetric coercive `A` and
-`j = 0`, the solution `u` of the variational inequality over a convex `K` is the best
-approximation, in the energy inner product of `A`, to the solution `w` of the unconstrained
-equation `A w = f`.
+/-- **The variational inequality as an energy projection.**  For a symmetric coercive `A` and `j =
+0`, the solution `u` of the variational inequality over a convex `K` is the best approximation, in
+the energy inner product of `A`, to the solution `w` of the unconstrained equation `A w = f`.
 
 So the inequality is solved by solving the variational equation and projecting onto `K` in the
-energy inner product.  Atkinson–Han, *Theoretical Numerical Analysis*, the remark following
-Example 11.3.11. -/
+energy inner product. [han2009theoretical], the remark following Example 11.3.11. -/
 theorem IsVariationalInequalitySolution.isBestApprox_energy {A : V →ₗ[ℝ] V}
     (hA : A.IsSymmetricCoercive) {K : Set V} (hKcv : Convex ℝ K) {f w u : V} (hw : A w = f)
     (hsol : IsVariationalInequalitySolution A 0 f K u) :
@@ -640,9 +630,9 @@ theorem IsVariationalInequalitySolution.isBestApprox_energy {A : V →ₗ[ℝ] V
   rw [← map_sub, ← map_sub, WithEnergy.inner_equiv, energyInner, map_sub, hw, inner_sub_left]
   linarith
 
-/-- **The cone form.**  Atkinson–Han, *Theoretical Numerical Analysis*, Exercise 11.3.3: when `K`
-is a convex cone and `j = 0`, the variational inequality is equivalent to the pair of relations
-`⟪f, v⟫ ≤ ⟪A u, v⟫` for all `v ∈ K` and `⟪A u, u⟫ = ⟪f, u⟫`.
+/-- **The cone form.** [han2009theoretical], Exercise 11.3.3: when `K` is a convex cone and `j = 0`,
+the variational inequality is equivalent to the pair of relations `⟪f, v⟫ ≤ ⟪A u, v⟫` for all `v ∈
+K` and `⟪A u, u⟫ = ⟪f, u⟫`.
 
 Testing at `2u` and at `0` gives the equality, and testing at `u + v` the inequality; conversely
 subtracting the equality from the inequality at `v` returns the variational inequality. -/
@@ -676,10 +666,9 @@ theorem IsVariationalInequalitySolution.iff_of_isCone {A : V → V} {f : V} {K :
     simp only [Pi.zero_apply, sub_zero, add_zero]
     linarith
 
-/-- **The positively homogeneous form.**  Atkinson–Han, *Theoretical Numerical Analysis*,
-Exercise 11.3.10: for an inequality of the second kind — `K = Set.univ` — whose `j` is convex and
-positively homogeneous, the inequality is equivalent to `⟪f, v⟫ ≤ ⟪A u, v⟫ + j v` for every `v`
-together with `⟪A u, u⟫ + j u = ⟪f, u⟫`.
+/-- **The positively homogeneous form.** [han2009theoretical], Exercise 11.3.10: for an inequality
+of the second kind — `K = Set.univ` — whose `j` is convex and positively homogeneous, the inequality
+is equivalent to `⟪f, v⟫ ≤ ⟪A u, v⟫ + j v` for every `v` together with `⟪A u, u⟫ + j u = ⟪f, u⟫`.
 
 Convexity and positive homogeneity make `j` subadditive, which is what turns the test at `u + v`
 into the inequality at `v`; this identity is behind the Lagrange multiplier reformulation of a

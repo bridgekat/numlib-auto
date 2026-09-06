@@ -8,12 +8,12 @@ import Mathlib.Analysis.SpecialFunctions.Pow.Real
 A real normed space is a `StrictConvexSpace ℝ V` as soon as some power `‖·‖ ^ p`, `p ≥ 1`, is a
 strictly convex function on `V`: `StrictConvexSpace.of_strictConvexOn_norm_rpow`. This is the form
 in which the hypothesis appears in the uniqueness theorem for best approximations from a convex set
-of [Atkinson–Han][han2009theoretical], whose conclusion is Mathlib's `StrictConvexSpace ℝ V` here.
+of [han2009theoretical], whose conclusion is Mathlib's `StrictConvexSpace ℝ V` here.
 
 On an inner product space the hypothesis holds with `p = 2`: `strictConvexOn_norm_sq`, in the
 natural-power form, and `strictConvexOn_norm_rpow_two` in the real-power form the criterion above
-consumes. The proof is the identity `a ‖x‖² + b ‖y‖² - ‖a x + b y‖² = a b ‖x - y‖²` for
-`a + b = 1`, a form of the parallelogram law.
+consumes. The proof is the identity `a ‖x‖² + b ‖y‖² - ‖a x + b y‖² = a b ‖x - y‖²` for `a + b = 1`,
+a form of the parallelogram law.
 -/
 
 section Rpow
@@ -44,8 +44,8 @@ section InnerProduct
 
 variable {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℝ H]
 
-/-- On a real inner product space the squared norm is a strictly convex function, because
-`a ‖x‖² + b ‖y‖² - ‖a x + b y‖² = a b ‖x - y‖²` whenever `a + b = 1`. -/
+/-- On a real inner product space the squared norm is a strictly convex function, because `a ‖x‖² +
+b ‖y‖² - ‖a x + b y‖² = a b ‖x - y‖²` whenever `a + b = 1`. -/
 theorem strictConvexOn_norm_sq : StrictConvexOn ℝ (Set.univ : Set H) fun v : H => ‖v‖ ^ 2 := by
   refine ⟨convex_univ, fun x _ y _ hxy a b ha hb hab => ?_⟩
   have hexp : ‖a • x + b • y‖ ^ 2

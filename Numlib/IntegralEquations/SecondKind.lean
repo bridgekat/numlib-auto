@@ -7,24 +7,24 @@ import Numlib.Variational.ProjectionMethod
 # Equations of the second kind
 
 The abstract theory of the operator equation `(μ - K) u = f` on a Banach space and of its
-approximations: what makes a projection method, a Nyström method or a two-grid iteration for such
-an equation stable and convergent.  Everything here is operator theory — no kernel, no quadrature
-and no function space — although the consumers are integral equations, which is why the module
-sits beside `Numlib.IntegralEquations.Basic`.  The account followed is Chapter 12 of [Atkinson–Han,
-*Theoretical Numerical Analysis*][han2009theoretical].
+approximations: what makes a projection method, a Nyström method or a two-grid iteration for such an
+equation stable and convergent.  Everything here is operator theory — no kernel, no quadrature and
+no function space — although the consumers are integral equations, which is why the module sits
+beside `Numlib.IntegralEquations.Basic`.  The account followed is Chapter 12 of
+[han2009theoretical].
 
-Invertible operators are carried as a `ContinuousLinearEquiv` together with an equation
-identifying its coercion, so that every bound below is about a genuine inverse and never about the
-junk value of `Ring.inverse`.
+Invertible operators are carried as a `ContinuousLinearEquiv` together with an equation identifying
+its coercion, so that every bound below is about a genuine inverse and never about the junk value of
+`Ring.inverse`.
 
 ## Projection methods
 
 `(μ - K) u = f` is approximated by `(μ - P K) uₙ = P f` with `uₙ` in the range of an idempotent `P`,
-which is `IsProjectionMethodSolution` ([Kress][kress1998numerical]).  The qualitative stability of
-that approximation is `exists_isProjectionMethodSolution_of_isCompactOperator`; what is added here
-is the quantitative two-sided estimate.  Everything follows from the purely algebraic error equation
-`(μ - P K) (u - uₙ) = μ (u - P u)` (`sub_projection_eq`): `exists_equiv_of_projection` perturbs `μ -
-K` into `μ - P K` by the geometric series as soon as `‖K - P K‖` is small, and
+which is `IsProjectionMethodSolution` ([kress1998numerical]).  The qualitative stability of that
+approximation is `exists_isProjectionMethodSolution_of_isCompactOperator`; what is added here is the
+quantitative two-sided estimate.  Everything follows from the purely algebraic error equation `(μ -
+P K) (u - uₙ) = μ (u - P u)` (`sub_projection_eq`): `exists_equiv_of_projection` perturbs `μ - K`
+into `μ - P K` by the geometric series as soon as `‖K - P K‖` is small, and
 `norm_smul_sub_le_of_projection` together with `norm_sub_le_of_projection` sandwiches the error `‖u
 - uₙ‖` between two multiples of the approximation error `‖u - P u‖`, so that the two tend to zero at
 exactly the same rate.  For a compact `K` and projections converging pointwise to the identity, `‖K
@@ -32,23 +32,22 @@ exactly the same rate.  For a compact `K` and projections converging pointwise t
 available.
 
 `exists_equiv_smul_sub_comp_comm` is Jacobson's identity, `(μ - B A)⁻¹ = (1 + B (μ - A B)⁻¹ A) / μ`
-whenever `μ - A B` is invertible, and `isUnit_smul_sub_comp_comm` is its qualitative form.  With
-`A = P` and `B = K` it ties the projection equations to the equations satisfied by Sloan's
-**iterated projection solution** `iterated μ K f uₙ = (f + K uₙ) / μ`, whose error equation
-`iterated_error_eq` carries an extra factor `1 - P` inside `K` — the source of Sloan
-superconvergence.
+whenever `μ - A B` is invertible, and `isUnit_smul_sub_comp_comm` is its qualitative form.  With `A
+= P` and `B = K` it ties the projection equations to the equations satisfied by Sloan's **iterated
+projection solution** `iterated μ K f uₙ = (f + K uₙ) / μ`, whose error equation `iterated_error_eq`
+carries an extra factor `1 - P` inside `K` — the source of Sloan superconvergence.
 
 ## Collectively compact approximation
 
-This is Anselone's theory [anselone1971collectively].  `exists_equiv_of_isCompactOperator` is
-**Anselone's perturbation theorem**: a compact `S` with `‖(μ - T)⁻¹‖ ‖(T - S) S‖ < ‖μ‖` inherits the
-invertibility of `μ - T`, with an explicit bound on `‖(μ - S)⁻¹‖`.  The hypothesis is on `(T - S) S`
-and not on `T - S`, which is what makes the theorem apply to quadrature approximations of an
-integral operator, where `‖T - S‖` does not tend to zero while `‖(T - Sₙ) Sₙ‖` does
-(`IsCollectivelyCompact.tendsto_opNorm_sub_comp`).  Compactness enters only through the Fredholm
-alternative, which promotes the injectivity of `μ - S` — all that the geometric series delivers — to
-invertibility.  `norm_sub_le` is the companion error estimate, controlled by the consistency error
-`‖T u - S u‖` at the exact solution.
+This is [anselone1971collectively] theory [anselone1971collectively].
+`exists_equiv_of_isCompactOperator` is **[anselone1971collectively] perturbation theorem**: a
+compact `S` with `‖(μ - T)⁻¹‖ ‖(T - S) S‖ < ‖μ‖` inherits the invertibility of `μ - T`, with an
+explicit bound on `‖(μ - S)⁻¹‖`.  The hypothesis is on `(T - S) S` and not on `T - S`, which is what
+makes the theorem apply to quadrature approximations of an integral operator, where `‖T - S‖` does
+not tend to zero while `‖(T - Sₙ) Sₙ‖` does (`IsCollectivelyCompact.tendsto_opNorm_sub_comp`).
+Compactness enters only through the Fredholm alternative, which promotes the injectivity of `μ - S`
+— all that the geometric series delivers — to invertibility.  `norm_sub_le` is the companion error
+estimate, controlled by the consistency error `‖T u - S u‖` at the exact solution.
 
 ## The two-grid iteration
 
@@ -57,8 +56,8 @@ corrected with the *coarse* inverse `(μ - Kₘ)⁻¹`, the only inverse ever fo
 multiplied at each step by `twoGridOperator`, that is by `(μ - Kₘ)⁻¹ (Kₙ - Kₘ) Kₙ / μ`
 (`twoGrid_error_eq`), so the iteration converges geometrically as soon as that operator is a
 contraction (`tendsto_twoGridIterate`).  The factor `(Kₙ - Kₘ) Kₙ` is again of the shape that
-collective compactness makes small, so for such a family the contraction hypothesis holds once
-both indices are large (`eventually_norm_twoGridOperator_lt_one`).
+collective compactness makes small, so for such a family the contraction hypothesis holds once both
+indices are large (`eventually_norm_twoGridOperator_lt_one`).
 -/
 
 open Filter Topology
@@ -69,13 +68,13 @@ variable {𝕜 X : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup X] 
 
 /-! ### Projection methods -/
 
-/-- **The error equation of a projection method** for an equation of the second kind: if
-`(μ - K) u = f` and `uₙ` solves the projected equation `P ((μ - K) uₙ) = P f` inside the range of
-the idempotent `P`, then `(μ - P K) (u - uₙ) = μ (u - P u)`.
+/-- **The error equation of a projection method** for an equation of the second kind: if `(μ - K) u
+= f` and `uₙ` solves the projected equation `P ((μ - K) uₙ) = P f` inside the range of the
+idempotent `P`, then `(μ - P K) (u - uₙ) = μ (u - P u)`.
 
 Nothing but linearity is used — no boundedness of `K`, no invertibility, no compactness — and both
 bounds of `norm_smul_sub_le_of_projection` and `norm_sub_le_of_projection` are read off it.
-[Atkinson–Han][han2009theoretical] (12.1.27). -/
+[han2009theoretical] (12.1.27). -/
 theorem sub_projection_eq {μ : 𝕜} {K P : X →L[𝕜] X} (hP : IsIdempotentElem P) {f u un : X}
     (hu : (μ • 1 - K : X →L[𝕜] X) u = f)
     (hun : IsProjectionMethodSolution ((μ • 1 - K : X →L[𝕜] X) : X →ₗ[𝕜] X) f P un) :
@@ -94,12 +93,12 @@ theorem sub_projection_eq {μ : 𝕜} {K P : X →L[𝕜] X} (hP : IsIdempotentE
   rw [hlhs, h2, sub_self, sub_zero, ← smul_sub]
 
 /-- **Stability of a projection method** for an equation of the second kind: if `μ - K` is
-invertible and `‖(μ - K)⁻¹‖ ‖K - P K‖ < 1`, then `μ - P K` is invertible as well, with
-`‖(μ - P K)⁻¹‖ ≤ ‖(μ - K)⁻¹‖ / (1 - ‖(μ - K)⁻¹‖ ‖K - P K‖)`.
+invertible and `‖(μ - K)⁻¹‖ ‖K - P K‖ < 1`, then `μ - P K` is invertible as well, with `‖(μ - P
+K)⁻¹‖ ≤ ‖(μ - K)⁻¹‖ / (1 - ‖(μ - K)⁻¹‖ ‖K - P K‖)`.
 
 This is the geometric series applied to `μ - P K = (μ - K) + (K - P K)`; for a compact `K` and
 projections converging pointwise to the identity the hypothesis holds for all large `n`, by
-`tendsto_opNorm_comp_of_isCompactOperator`.  [Atkinson–Han][han2009theoretical] Theorem 12.1.2. -/
+`tendsto_opNorm_comp_of_isCompactOperator`. [han2009theoretical] Theorem 12.1.2. -/
 theorem exists_equiv_of_projection [CompleteSpace X] {μ : 𝕜} {K P : X →L[𝕜] X} (e : X ≃L[𝕜] X)
     (he : (e : X →L[𝕜] X) = μ • 1 - K)
     (h : ‖(e.symm : X →L[𝕜] X)‖ * ‖K - P ∘L K‖ < 1) :
@@ -110,10 +109,9 @@ theorem exists_equiv_of_projection [CompleteSpace X] {μ : 𝕜} {K P : X →L[�
     ContinuousLinearEquiv.exists_symm_norm_le_of_add e (K - P ∘L K) h
   exact ⟨e', by rw [he'coe, he]; abel, he'norm⟩
 
-/-- The lower half of the two-sided estimate for a projection method: the approximation error
-`‖u - P u‖` is at most a multiple of the method's error `‖u - uₙ‖`, so the method can converge no
-faster than the trial space approximates the solution.  [Atkinson–Han][han2009theoretical]
-(12.1.24). -/
+/-- The lower half of the two-sided estimate for a projection method: the approximation error `‖u -
+P u‖` is at most a multiple of the method's error `‖u - uₙ‖`, so the method can converge no faster
+than the trial space approximates the solution. [han2009theoretical] (12.1.24). -/
 theorem norm_smul_sub_le_of_projection {μ : 𝕜} {K P : X →L[𝕜] X} (hP : IsIdempotentElem P)
     {f u un : X} (hu : (μ • 1 - K : X →L[𝕜] X) u = f)
     (hun : IsProjectionMethodSolution ((μ • 1 - K : X →L[𝕜] X) : X →ₗ[𝕜] X) f P un) :
@@ -123,13 +121,13 @@ theorem norm_smul_sub_le_of_projection {μ : 𝕜} {K P : X →L[𝕜] X} (hP : 
     _ = ‖(μ • 1 - P ∘L K : X →L[𝕜] X) (u - un)‖ := by rw [hkey]
     _ ≤ ‖(μ • 1 - P ∘L K : X →L[𝕜] X)‖ * ‖u - un‖ := ContinuousLinearMap.le_opNorm _ _
 
-/-- The upper half of the two-sided estimate for a projection method: the error is at most
-`‖μ‖ ‖(μ - P K)⁻¹‖` times the approximation error `‖u - P u‖`.
+/-- The upper half of the two-sided estimate for a projection method: the error is at most `‖μ‖ ‖(μ
+- P K)⁻¹‖` times the approximation error `‖u - P u‖`.
 
 Together with `norm_smul_sub_le_of_projection` and the uniform bound on `‖(μ - P K)⁻¹‖` of
-`exists_equiv_of_projection`, this says that `‖u - uₙ‖` and `‖u - Pₙ u‖` tend to zero at exactly
-the same rate, which is the complete convergence analysis of collocation and Galerkin methods for
-equations of the second kind.  [Atkinson–Han][han2009theoretical] Theorem 12.1.2, (12.1.24). -/
+`exists_equiv_of_projection`, this says that `‖u - uₙ‖` and `‖u - Pₙ u‖` tend to zero at exactly the
+same rate, which is the complete convergence analysis of collocation and Galerkin methods for
+equations of the second kind. [han2009theoretical] Theorem 12.1.2, (12.1.24). -/
 theorem norm_sub_le_of_projection {μ : 𝕜} {K P : X →L[𝕜] X} (hP : IsIdempotentElem P)
     {e' : X ≃L[𝕜] X} (he' : (e' : X →L[𝕜] X) = μ • 1 - P ∘L K) {f u un : X}
     (hu : (μ • 1 - K : X →L[𝕜] X) u = f)
@@ -145,15 +143,13 @@ theorem norm_sub_le_of_projection {μ : 𝕜} {K P : X →L[𝕜] X} (hP : IsIde
 
 /-! ### Jacobson's identity -/
 
-/-- Composition of operators of a space into itself is the multiplication of its endomorphism
-ring.  The two spellings are definitionally equal; this moves between them where ring lemmas are
-wanted. -/
+/-- Composition of operators of a space into itself is the multiplication of its endomorphism ring.
+The two spellings are definitionally equal; this moves between them where ring lemmas are wanted. -/
 private theorem comp_eq_mul (C D : X →L[𝕜] X) : C ∘L D = C * D := rfl
 
-/-- **Jacobson's identity**, [Atkinson–Han][han2009theoretical] Lemma 12.3.1: for bounded operators
-`A`,
-`B` on a Banach space and a nonzero `μ`, an inverse of `μ - A B` produces one of `μ - B A`, namely
-`(μ - B A)⁻¹ = (1 + B (μ - A B)⁻¹ A) / μ`.
+/-- **Jacobson's identity**, [han2009theoretical] Lemma 12.3.1: for bounded operators `A`, `B` on a
+Banach space and a nonzero `μ`, an inverse of `μ - A B` produces one of `μ - B A`, namely `(μ - B
+A)⁻¹ = (1 + B (μ - A B)⁻¹ A) / μ`.
 
 With `A = P` and `B = K` it says that the projection equations `(μ - P K) uₙ = P f` and the
 equations `(μ - K P) ûₙ = f` of the iterated projection solution are solvable together, and the
@@ -201,8 +197,8 @@ theorem exists_equiv_smul_sub_comp_comm {μ : 𝕜} (hμ : μ ≠ 0) {A B : X �
     rw [smul_mul_assoc, hstep, smul_smul, inv_mul_cancel₀ hμ, one_smul]
   exact ⟨ContinuousLinearEquiv.ofUnit ⟨_, _, hGF, hFG⟩, rfl, by ext x; rfl⟩
 
-/-- **Jacobson's identity** as an equivalence: `μ - A B` is invertible if and only if `μ - B A`
-is.  [Atkinson–Han][han2009theoretical] Lemma 12.3.1. -/
+/-- **Jacobson's identity** as an equivalence: `μ - A B` is invertible if and only if `μ - B A` is.
+[han2009theoretical] Lemma 12.3.1. -/
 theorem isUnit_smul_sub_comp_comm {μ : 𝕜} (hμ : μ ≠ 0) (A B : X →L[𝕜] X) :
     IsUnit (μ • 1 - A ∘L B : X →L[𝕜] X) ↔ IsUnit (μ • 1 - B ∘L A : X →L[𝕜] X) := by
   have key : ∀ C D : X →L[𝕜] X, IsUnit (μ • 1 - C ∘L D : X →L[𝕜] X) →
@@ -218,11 +214,11 @@ theorem isUnit_smul_sub_comp_comm {μ : 𝕜} (hμ : μ ≠ 0) (A B : X →L[�
 
 /-- **Sloan's iterated projection solution** `ûₙ = (f + K uₙ) / μ` of the equation `(μ - K) u = f`:
 one fixed-point sweep applied to the projection solution `uₙ`, which improves on it whatever the
-size of `‖K‖`.  [Atkinson–Han][han2009theoretical] (12.3.1). -/
+size of `‖K‖`. [han2009theoretical] (12.3.1). -/
 def iterated (μ : 𝕜) (K : X →L[𝕜] X) (f un : X) : X := μ⁻¹ • (f + K un)
 
 /-- The iterated solution projects back onto the projection solution, `P ûₙ = uₙ`.
-[Atkinson–Han][han2009theoretical] (12.3.2). -/
+[han2009theoretical] (12.3.2). -/
 theorem apply_iterated {μ : 𝕜} (hμ : μ ≠ 0) {K P : X →L[𝕜] X} (hP : IsIdempotentElem P) {f un : X}
     (hun : IsProjectionMethodSolution ((μ • 1 - K : X →L[𝕜] X) : X →ₗ[𝕜] X) f P un) :
     P (iterated μ K f un) = un := by
@@ -234,7 +230,7 @@ theorem apply_iterated {μ : 𝕜} (hμ : μ ≠ 0) {K P : X →L[𝕜] X} (hP :
   rw [sub_add_cancel, smul_smul, inv_mul_cancel₀ hμ, one_smul]
 
 /-- The iterated solution solves the equation `(μ - K P) ûₙ = f`, which is Jacobson's companion of
-the projection equations.  [Atkinson–Han][han2009theoretical] (12.3.3). -/
+the projection equations. [han2009theoretical] (12.3.3). -/
 theorem smul_sub_comp_iterated {μ : 𝕜} (hμ : μ ≠ 0) {K P : X →L[𝕜] X} (hP : IsIdempotentElem P)
     {f un : X} (hun : IsProjectionMethodSolution ((μ • 1 - K : X →L[𝕜] X) : X →ₗ[𝕜] X) f P un) :
     (μ • 1 - K ∘L P : X →L[𝕜] X) (iterated μ K f un) = f := by
@@ -243,12 +239,11 @@ theorem smul_sub_comp_iterated {μ : 𝕜} (hμ : μ ≠ 0) {K P : X →L[𝕜] 
   simp only [iterated, smul_smul, mul_inv_cancel₀ hμ, one_smul]
   abel
 
-/-- **The error equation of the iterated projection solution**,
-`(μ - K P) (u - ûₙ) = K (1 - P) u`.
+/-- **The error equation of the iterated projection solution**, `(μ - K P) (u - ûₙ) = K (1 - P) u`.
 
 The right-hand side carries an extra factor `1 - P` inside `K`, which is the source of Sloan
-superconvergence: the error is bounded by `‖K ∘ (1 - P)‖ ‖u - P u‖`, one power of the
-approximation error better than `‖u - uₙ‖`.  [Atkinson–Han][han2009theoretical] (12.3.11). -/
+superconvergence: the error is bounded by `‖K ∘ (1 - P)‖ ‖u - P u‖`, one power of the approximation
+error better than `‖u - uₙ‖`. [han2009theoretical] (12.3.11). -/
 theorem iterated_error_eq {μ : 𝕜} (hμ : μ ≠ 0) {K P : X →L[𝕜] X} (hP : IsIdempotentElem P)
     {f u un : X} (hu : (μ • 1 - K : X →L[𝕜] X) u = f)
     (hun : IsProjectionMethodSolution ((μ • 1 - K : X →L[𝕜] X) : X →ₗ[𝕜] X) f P un) :
@@ -259,12 +254,11 @@ theorem iterated_error_eq {μ : 𝕜} (hμ : μ ≠ 0) {K P : X →L[𝕜] X} (h
   simp only [sub_apply, smul_apply, one_apply_eq_self, ContinuousLinearMap.comp_apply, map_sub]
   abel
 
-/-! ### Anselone's perturbation theorem -/
+/-! ### [anselone1971collectively] perturbation theorem -/
 
-/-- **Anselone's perturbation theorem**, [Atkinson–Han][han2009theoretical] Theorem 12.4.3: let `S`
-and
-`T` be bounded operators on a Banach space with `S` compact, let `μ ≠ 0` be such that `μ - T` is
-invertible, and assume `‖(μ - T)⁻¹‖ ‖(T - S) S‖ < ‖μ‖`.  Then `μ - S` is invertible and
+/-- **[anselone1971collectively] perturbation theorem**, [han2009theoretical] Theorem 12.4.3: let
+`S` and `T` be bounded operators on a Banach space with `S` compact, let `μ ≠ 0` be such that `μ -
+T` is invertible, and assume `‖(μ - T)⁻¹‖ ‖(T - S) S‖ < ‖μ‖`.  Then `μ - S` is invertible and
 
 `‖(μ - S)⁻¹‖ ≤ (1 + ‖(μ - T)⁻¹‖ ‖S‖) / (‖μ‖ - ‖(μ - T)⁻¹‖ ‖(T - S) S‖)`.
 
@@ -273,10 +267,10 @@ quadrature approximations of an integral operator, where `‖T - S‖` does not 
 collectively compact pointwise convergent family `‖(T - Sₙ) Sₙ‖ → 0` holds by
 `IsCollectivelyCompact.tendsto_opNorm_sub_comp`.
 
-The candidate inverse `(1 + (μ - T)⁻¹ S) / μ` satisfies
-`(1 + (μ - T)⁻¹ S) (μ - S) / μ = 1 + (μ - T)⁻¹ (T - S) S / μ`, whose right-hand side is a unit by
-the geometric series; that makes `μ - S` injective, and compactness of `S` is used **only** to
-promote injectivity to invertibility through the Fredholm alternative. -/
+The candidate inverse `(1 + (μ - T)⁻¹ S) / μ` satisfies `(1 + (μ - T)⁻¹ S) (μ - S) / μ = 1 + (μ -
+T)⁻¹ (T - S) S / μ`, whose right-hand side is a unit by the geometric series; that makes `μ - S`
+injective, and compactness of `S` is used **only** to promote injectivity to invertibility through
+the Fredholm alternative. -/
 theorem exists_equiv_of_isCompactOperator [CompleteSpace X] {μ : 𝕜} (hμ : μ ≠ 0)
     {S T : X →L[𝕜] X} (hS : IsCompactOperator S) {e : X ≃L[𝕜] X}
     (he : (e : X →L[𝕜] X) = μ • 1 - T)
@@ -394,7 +388,7 @@ with `μ - S` invertible, then `‖u - z‖ ≤ ‖(μ - S)⁻¹‖ ‖T u - S u
 
 The right-hand side is the consistency error *at the exact solution* rather than an operator norm,
 which together with the uniform bound of `exists_equiv_of_isCompactOperator` is the complete
-convergence analysis of the Nyström method.  [Atkinson–Han][han2009theoretical] (12.4.24). -/
+convergence analysis of the Nyström method. [han2009theoretical] (12.4.24). -/
 theorem norm_sub_le {μ : 𝕜} {S T : X →L[𝕜] X} {e : X ≃L[𝕜] X}
     (he : (e : X →L[𝕜] X) = μ • 1 - S) {f u z : X} (hu : (μ • 1 - T : X →L[𝕜] X) u = f)
     (hz : (μ • 1 - S : X →L[𝕜] X) z = f) :
@@ -414,23 +408,21 @@ theorem norm_sub_le {μ : 𝕜} {S T : X →L[𝕜] X} {e : X ≃L[𝕜] X}
 def residual (μ : 𝕜) (K : X →L[𝕜] X) (f u : X) : X := f - (μ • 1 - K : X →L[𝕜] X) u
 
 /-- **The two-grid residual correction step** for the fine equation `(μ - Kₙ) u = f`,
-[Atkinson–Han][han2009theoretical] (12.6.20)–(12.6.22): the residual `r = f - (μ - Kₙ) u` is
-corrected by `u ↦ u + (r + (μ - Kₘ)⁻¹ (Kₙ r)) / μ`, where `e` is the *coarse* equivalence, `↑e = μ -
-Kₘ`.  The coarse inverse plays the role of the approximate inverse of a residual correction method,
-and is
-the only inverse that is ever formed. -/
+[han2009theoretical] (12.6.20)–(12.6.22): the residual `r = f - (μ - Kₙ) u` is corrected by `u ↦ u +
+(r + (μ - Kₘ)⁻¹ (Kₙ r)) / μ`, where `e` is the *coarse* equivalence, `↑e = μ - Kₘ`.  The coarse
+inverse plays the role of the approximate inverse of a residual correction method, and is the only
+inverse that is ever formed. -/
 def twoGridStep (μ : 𝕜) (e : X ≃L[𝕜] X) (Kn : X →L[𝕜] X) (f u : X) : X :=
   u + μ⁻¹ • (residual μ Kn f u + e.symm (Kn (residual μ Kn f u)))
 
-/-- The operator by which the error of `twoGridStep` is multiplied at each step,
-`(μ - Kₘ)⁻¹ (Kₙ - Kₘ) Kₙ / μ`, where `e` is the coarse equivalence `↑e = μ - Kₘ`.
-[Atkinson–Han][han2009theoretical] (12.6.28). -/
+/-- The operator by which the error of `twoGridStep` is multiplied at each step, `(μ - Kₘ)⁻¹ (Kₙ -
+Kₘ) Kₙ / μ`, where `e` is the coarse equivalence `↑e = μ - Kₘ`. [han2009theoretical] (12.6.28). -/
 def twoGridOperator (μ : 𝕜) (e : X ≃L[𝕜] X) (Km Kn : X →L[𝕜] X) : X →L[𝕜] X :=
   μ⁻¹ • ((e.symm : X →L[𝕜] X) ∘L ((Kn - Km) ∘L Kn))
 
-/-- **The error equation of the two-grid iteration**, [Atkinson–Han][han2009theoretical]
-(12.6.27)–(12.6.28): one step multiplies the error by `twoGridOperator`.  The factor `Kₙ - Kₘ`
-appears composed with `Kₙ`, which is the shape that collective compactness makes small. -/
+/-- **The error equation of the two-grid iteration**, [han2009theoretical] (12.6.27)–(12.6.28): one
+step multiplies the error by `twoGridOperator`.  The factor `Kₙ - Kₘ` appears composed with `Kₙ`,
+which is the shape that collective compactness makes small. -/
 theorem twoGrid_error_eq {μ : 𝕜} (hμ : μ ≠ 0) {e : X ≃L[𝕜] X} {Km Kn : X →L[𝕜] X}
     (he : (e : X →L[𝕜] X) = μ • 1 - Km) {f ustar : X}
     (hstar : (μ • 1 - Kn : X →L[𝕜] X) ustar = f) (u : X) :
@@ -470,10 +462,9 @@ theorem norm_sub_twoGridStep_iterate_le {μ : 𝕜} (hμ : μ ≠ 0) {e : X ≃L
           mul_le_mul_of_nonneg_left ih (norm_nonneg _)
       _ = ‖twoGridOperator μ e Km Kn‖ ^ (k + 1) * ‖ustar - u₀‖ := by ring
 
-/-- **Convergence of the two-grid iteration**, [Atkinson–Han][han2009theoretical] Theorem 12.6.1: as
-soon
-as the error operator `twoGridOperator` is a contraction, the two-grid iterates converge to the
-solution of the fine equation, geometrically and from every starting point.
+/-- **Convergence of the two-grid iteration**, [han2009theoretical] Theorem 12.6.1: as soon as the
+error operator `twoGridOperator` is a contraction, the two-grid iterates converge to the solution of
+the fine equation, geometrically and from every starting point.
 
 For a collectively compact pointwise convergent family the contraction hypothesis holds once both
 indices are large enough, which is `eventually_norm_twoGridOperator_lt_one`. -/
@@ -515,8 +506,8 @@ converging pointwise to `L`, the norm `‖(L - Kₘ) ∘ Kₙ‖` is eventually 
 This is `IsCollectivelyCompact.tendsto_opNorm_sub_comp` with the two indices separated, and the
 proof is that lemma's: the convergence `Kₘ → L` is uniform on the compact set that contains the
 image of one ball under *every* member of the family, so the index of that member is free.  The
-statement belongs in `Numlib.Analysis.Normed.Operator.CollectivelyCompact` beside its companion
-and lives here only because this module does not own that file. -/
+statement belongs in `Numlib.Analysis.Normed.Operator.CollectivelyCompact` beside its companion and
+lives here only because this module does not own that file. -/
 theorem eventually_forall_opNorm_sub_comp_lt [CompleteSpace X] {K : ℕ → X →L[𝕜] X}
     {L : X →L[𝕜] X} (hK : IsCollectivelyCompact K)
     (hL : ∀ x, Tendsto (fun n => K n x) atTop (𝓝 (L x))) {ε : ℝ} (hε : 0 < ε) :
@@ -542,11 +533,11 @@ theorem eventually_forall_opNorm_sub_comp_lt [CompleteSpace X] {K : ℕ → X �
   rw [heq]
   linarith
 
-/-- **The two-grid iteration is eventually a contraction**, [Atkinson–Han][han2009theoretical]
-Theorem 12.6.1: for a collectively compact family `Kₚ` converging pointwise to `L` with `μ - L`
-invertible, every sufficiently large coarse index `m` makes the coarse operator `μ - Kₘ`
-invertible and makes `twoGridOperator` a contraction for *every* fine index `n ≥ m`.  With
-`tendsto_twoGridIterate` this is the convergence of the two-grid method.
+/-- **The two-grid iteration is eventually a contraction**, [han2009theoretical] Theorem 12.6.1: for
+a collectively compact family `Kₚ` converging pointwise to `L` with `μ - L` invertible, every
+sufficiently large coarse index `m` makes the coarse operator `μ - Kₘ` invertible and makes
+`twoGridOperator` a contraction for *every* fine index `n ≥ m`.  With `tendsto_twoGridIterate` this
+is the convergence of the two-grid method.
 
 The uniform bound on the coarse inverses is `exists_equiv_of_isCompactOperator` together with
 `IsCollectivelyCompact.exists_opNorm_le`; the smallness of `(Kₙ - Kₘ) Kₙ` splits into the diagonal

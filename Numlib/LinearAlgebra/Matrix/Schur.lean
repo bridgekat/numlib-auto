@@ -22,10 +22,9 @@ diagonal of `R` then carries the eigenvalues of `A` with their multiplicities, s
 characteristic polynomial of a triangular matrix is the product of `X - r_ii` and conjugation does
 not change it.
 
-This is the classical triangulation of [Saad, *Iterative Methods for Sparse Linear
-Systems*][saad2003iterative] (Theorem 1.9) and [Saad, *Numerical Methods for Large Eigenvalue
-Problems*][saad2011numerical] (Theorem 1.5), the source of the *Schur vectors* that deflation
-techniques for non-normal matrices work with.
+This is the classical triangulation of [saad2003iterative] (Theorem 1.9) and [saad2011numerical]
+(Theorem 1.5), the source of the *Schur vectors* that deflation techniques for non-normal matrices
+work with.
 
 ## Main results
 
@@ -40,12 +39,12 @@ techniques for non-normal matrices work with.
 ## Implementation notes
 
 The induction is on the dimension, and it descends through the orthogonal complement of an
-eigenvector **of the adjoint**: if `A† w = ν w` then `(𝕜 ∙ w)ᗮ` is invariant under `A`, because
-`⟪w, A y⟫ = ⟪A† w, y⟫ = conj ν ⟪w, y⟫`. Descending through an eigenvector of `A` itself would leave
-a complement that is *not* invariant, and would force the compression `P A|_W` and its orthogonal
-projector into the induction. With the adjoint the inductive step needs only
-`LinearMap.restrict`, and the new basis vector is appended at the *end* by `Fin.snoc`, which is
-where an invariant hyperplane puts it.
+eigenvector **of the adjoint**: if `A† w = ν w` then `(𝕜 ∙ w)ᗮ` is invariant under `A`, because `⟪w,
+A y⟫ = ⟪A† w, y⟫ = conj ν ⟪w, y⟫`. Descending through an eigenvector of `A` itself would leave a
+complement that is *not* invariant, and would force the compression `P A|_W` and its orthogonal
+projector into the induction. With the adjoint the inductive step needs only `LinearMap.restrict`,
+and the new basis vector is appended at the *end* by `Fin.snoc`, which is where an invariant
+hyperplane puts it.
 
 Only `Module.End.exists_eigenvalue` uses `[IsAlgClosed 𝕜]`; over `ℝ` the statement is false, as a
 plane rotation shows.
@@ -58,16 +57,16 @@ namespace LinearMap
 variable {𝕜 : Type*} [RCLike 𝕜] {E : Type*} [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
   [FiniteDimensional 𝕜 E]
 
-/-- The orthogonal complement of an eigenvector of the adjoint is invariant under the operator:
-`⟪w, A y⟫ = ⟪A† w, y⟫ = conj ν ⟪w, y⟫` vanishes with `⟪w, y⟫`. -/
+/-- The orthogonal complement of an eigenvector of the adjoint is invariant under the operator: `⟪w,
+A y⟫ = ⟪A† w, y⟫ = conj ν ⟪w, y⟫` vanishes with `⟪w, y⟫`. -/
 theorem mem_orthogonal_singleton_of_adjoint_apply_eq_smul {A : E →ₗ[𝕜] E} {w : E} {ν : 𝕜}
     (hw : A.adjoint w = ν • w) {y : E} (hy : y ∈ (𝕜 ∙ w)ᗮ) : A y ∈ (𝕜 ∙ w)ᗮ := by
   rw [Submodule.mem_orthogonal_singleton_iff_inner_right] at hy ⊢
   rw [← LinearMap.adjoint_inner_left A y w, hw, inner_smul_left, hy, mul_zero]
 
 /-- Schur's theorem in the form the induction produces: an orthonormal basis in which the matrix
-entries of `A` below the diagonal, `⟪b i, A (b j)⟫` for `j < i`, all vanish. The space is
-quantified inside the statement because the induction descends to a hyperplane of it. -/
+entries of `A` below the diagonal, `⟪b i, A (b j)⟫` for `j < i`, all vanish. The space is quantified
+inside the statement because the induction descends to a hyperplane of it. -/
 private theorem exists_orthonormalBasis_forall_inner_eq_zero (𝕜 : Type*) [RCLike 𝕜]
     [IsAlgClosed 𝕜] (n : ℕ) :
     ∀ {E : Type*} [NormedAddCommGroup E] [InnerProductSpace 𝕜 E] [FiniteDimensional 𝕜 E],
@@ -147,10 +146,10 @@ private theorem exists_orthonormalBasis_forall_inner_eq_zero (𝕜 : Type*) [RCL
 
 variable [IsAlgClosed 𝕜]
 
-/-- **Schur's theorem**, operator form: an operator on a finite-dimensional inner product space
-over an algebraically closed field has an orthonormal basis in which its matrix is upper
-triangular. The proof is an induction on the dimension through the orthogonal complement of an
-eigenvector of the adjoint, which is an invariant hyperplane. -/
+/-- **Schur's theorem**, operator form: an operator on a finite-dimensional inner product space over
+an algebraically closed field has an orthonormal basis in which its matrix is upper triangular. The
+proof is an induction on the dimension through the orthogonal complement of an eigenvector of the
+adjoint, which is an invariant hyperplane. -/
 theorem exists_orthonormalBasis_upperTriangular {n : ℕ} (hn : finrank 𝕜 E = n) (A : E →ₗ[𝕜] E) :
     ∃ b : OrthonormalBasis (Fin n) 𝕜 E,
       (LinearMap.toMatrix b.toBasis b.toBasis A).IsUpperTriangular := by
@@ -160,9 +159,9 @@ theorem exists_orthonormalBasis_upperTriangular {n : ℕ} (hn : finrank 𝕜 E =
     OrthonormalBasis.coe_toBasis_repr_apply, OrthonormalBasis.repr_apply_apply]
   exact hb i j hji
 
-/-- The Schur basis described by its flag: each initial segment `b 0, …, b j` spans an
-`A`-invariant subspace, which is what makes the matrix of `A` upper triangular. These are the
-*Schur vectors* of `A`. -/
+/-- The Schur basis described by its flag: each initial segment `b 0, …, b j` spans an `A`-invariant
+subspace, which is what makes the matrix of `A` upper triangular. These are the *Schur vectors* of
+`A`. -/
 theorem exists_orthonormalBasis_forall_mem_span {n : ℕ} (hn : finrank 𝕜 E = n) (A : E →ₗ[𝕜] E) :
     ∃ b : OrthonormalBasis (Fin n) 𝕜 E,
       ∀ j : Fin n, A (b j) ∈ Submodule.span 𝕜 (b '' Set.Iic j) := by

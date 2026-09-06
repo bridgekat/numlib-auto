@@ -2,38 +2,37 @@ import Numlib.Krylov.Iterate
 import Numlib.Krylov.Lanczos
 
 /-!
-# The conjugate gradient recurrence (Hestenes–Stiefel)
+# The conjugate gradient recurrence ([hestenes1952methods])
 
-`CG.step` is one step of the two-term CG recurrence ([Saad, *Iterative Methods*][saad2003iterative]
-Alg 6.18, [Atkinson–Han][han2009theoretical] (5.6.2)/§9.4, [Fong–Saunders][fong2012cg] Table 2.1,
-[Meurant–Strakoš][meurant2006lanczos] (3.2), [Choi][choi2006iterative] Table 2.7), and `CG.iterate`
-iterates it from `CG.init`.
+`CG.step` is one step of the two-term CG recurrence ([saad2003iterative] Alg 6.18,
+[han2009theoretical] (5.6.2)/§9.4, [fong2012cg] Table 2.1, [meurant2006lanczos] (3.2),
+[choi2006iterative] Table 2.7), and `CG.iterate` iterates it from `CG.init`.
 
 ## Main definitions
 
 * `CG.State`: the iteration state, carrying the iterate `x_k`, the residual `r_k` and the search
   direction `p_k`;
 * `CG.alpha`, `CG.beta`, `CG.step`, `CG.init`, `CG.iterate`: the two-term recurrence;
-* `CG.gamma`, `CG.rho`: the coefficients of the three-term form
-  (Saad, *Iterative Methods*, §6.7.2 and (6.97)).
+* `CG.gamma`, `CG.rho`: the coefficients of the three-term form ([saad2003iterative], §6.7.2 and
+  (6.97)).
 
 ## Main statements
 
-* `CG.isGalerkinIterate`: CG realises the Galerkin specification of `Numlib/Krylov/Iterate`,
-  hence minimizes the energy norm of the error;
+* `CG.isGalerkinIterate`: CG realises the Galerkin specification of `Numlib/Krylov/Iterate`, hence
+  minimizes the energy norm of the error;
 * `CG.inner_residual_eq_zero`, `CG.inner_apply_direction_eq_zero`: the orthogonality invariants
-  (Saad Prop 6.20);
-* `CG.arnoldi_vec_eq`: the CG residuals are the Lanczos vectors up to sign
-  (Saad (6.87), (6.99); Meurant–Strakoš (3.4)), which is what lets the surface read the Lanczos
+  ([saad2003iterative] Prop 6.20);
+* `CG.arnoldi_vec_eq`: the CG residuals are the Lanczos vectors up to sign ([saad2003iterative]
+  (6.87), (6.99); [meurant2006lanczos] (3.4)), which is what lets the surface read the Lanczos
   tridiagonal off the CG coefficients;
 * `CG.energyNorm_error_sq_sub`, `CG.energyNorm_error_sq_eq_sum`, `CG.norm_error_antitone`,
-  `CG.energyNorm_error_antitone`: the [Hestenes–Stiefel][hestenes1952methods] error identities and
-  the monotonicity they give (Hestenes–Stiefel Thm 6:1, 6:3);
+  `CG.energyNorm_error_antitone`: the [hestenes1952methods] error identities and the monotonicity
+  they give ([hestenes1952methods] Thm 6:1, 6:3);
 * `CG.norm_iterate_monotone` and `CG.norm_iterate_lt_of_re_inner_apply_direction_pos`:
-  [Steihaug's][steihaug1983conjugate] theorem, the second in his form for a symmetric but possibly
-  indefinite `A`;
+  [steihaug1983conjugate] theorem, the second in his form for a symmetric but possibly indefinite
+  `A`;
 * `CG.iterate_succ_eq_three_term`, `CG.residual_succ_eq_three_term`: the three-term form
-  (Saad §6.7.2, Alg 6.19).
+  ([saad2003iterative] §6.7.2, Alg 6.19).
 -/
 
 open Krylov
@@ -85,8 +84,8 @@ variable (A : E →ₗ[𝕜] E) (b x₀ : E)
 
 @[simp] theorem iterate_zero : iterate A b x₀ 0 = init A b x₀ := rfl
 
-/-- The recurrence: state `k + 1` is one `CG.step` applied to state `k`. This is the orientation
-the algorithm is read in; `Function.iterate` reduces by peeling a step off the front instead, so
+/-- The recurrence: state `k + 1` is one `CG.step` applied to state `k`. This is the orientation the
+algorithm is read in; `Function.iterate` reduces by peeling a step off the front instead, so
 unfolding `(step A)^[k+1]` directly gives an extra step applied to the *initial* state. -/
 theorem iterate_succ (k : ℕ) : iterate A b x₀ (k + 1) = step A (iterate A b x₀ k) :=
   Function.iterate_succ_apply' _ _ _
@@ -152,8 +151,8 @@ theorem step_eq_self_of_residual_eq_zero (s : State E) (hr : s.r = 0) (hp : s.p 
   obtain ⟨x, r, p⟩ := s
   simp_all [step]
 
-/-- Once the residual vanishes at step `k`, every later state equals the state at `k`.  The
-form with the index written as `k + j` is `CG.iterate_eq_of_residual_eq_zero`. -/
+/-- Once the residual vanishes at step `k`, every later state equals the state at `k`.  The form
+with the index written as `k + j` is `CG.iterate_eq_of_residual_eq_zero`. -/
 theorem iterate_eq_of_residual_eq_zero' {k : ℕ} (hk : (iterate A b x₀ k).r = 0) (l : ℕ)
     (hl : k ≤ l) : iterate A b x₀ l = iterate A b x₀ k := by
   induction l with
@@ -189,8 +188,8 @@ private theorem beta_mul_inner_self (k : ℕ) :
       inner_zero_left]
   · rw [beta_iterate, div_mul_cancel₀ _ h]
 
-/-- Each residual is a combination of two consecutive directions, so orthogonality to the
-directions gives orthogonality to the residuals. -/
+/-- Each residual is a combination of two consecutive directions, so orthogonality to the directions
+gives orthogonality to the residuals. -/
 private theorem inner_residual_eq_zero_of_inner_direction {j : ℕ} {v : E}
     (h : ∀ l ≤ j, inner 𝕜 v (iterate A b x₀ l).p = 0) :
     inner 𝕜 v (iterate A b x₀ j).r = 0 := by
@@ -297,7 +296,7 @@ private theorem resSpan_le_dirSpan (k : ℕ) : resSpan A b x₀ k ≤ dirSpan A 
 variable {A} (hA : A.IsSymmetricCoercive)
 include hA
 
-/-! ### The joint induction (Saad, *Iterative Methods*, Prop 6.20) -/
+/-! ### The joint induction ([saad2003iterative], Prop 6.20) -/
 
 private theorem re_inner_apply_self_nonneg (x : E) : 0 ≤ RCLike.re (inner 𝕜 (A x) x) := by
   obtain ⟨c, hc, h⟩ := hA.isCoercive
@@ -320,8 +319,8 @@ private theorem conj_alpha (hAs : A.IsSymmetric) (s : State E) :
   rw [alpha, map_div₀, inner_self_conj, inner_conj_symm, ← hAs]
 
 omit hA in
-/-- `α_k ⟪A p_k, p_k⟫ = ⟪r_k, r_k⟫`, valid also at a breakdown.  `hdeg` is the only thing
-coercivity is used for here, so any nondegeneracy hypothesis that supplies it will do. -/
+/-- `α_k ⟪A p_k, p_k⟫ = ⟪r_k, r_k⟫`, valid also at a breakdown.  `hdeg` is the only thing coercivity
+is used for here, so any nondegeneracy hypothesis that supplies it will do. -/
 private theorem alpha_mul_inner_apply_direction' (k : ℕ)
     (hdeg : inner 𝕜 (A (iterate A b x₀ k).p) (iterate A b x₀ k).p = 0 →
       (iterate A b x₀ k).p = 0)
@@ -357,9 +356,8 @@ private theorem inner_apply_direction_eq_zero_of {j : ℕ} {v : E}
       rw [← inner_smul_right, alpha_smul_apply_direction, inner_sub_right, h1, h2, sub_zero]
     exact (mul_eq_zero.1 h).resolve_left hα
 
-/-- The joint CG invariant at step `k` (Saad, *Iterative Methods*, Prop 6.20): the residual is
-orthogonal to all earlier search directions, the current direction is `A`-conjugate to all
-earlier ones, and
+/-- The joint CG invariant at step `k` ([saad2003iterative], Prop 6.20): the residual is orthogonal
+to all earlier search directions, the current direction is `A`-conjugate to all earlier ones, and
 `⟪r_k, p_k⟫ = ⟪r_k, r_k⟫`. -/
 private structure Invariant (A : E →ₗ[𝕜] E) (b x₀ : E) (k : ℕ) : Prop where
   /-- `r_k ⟂ p_j` for `j < k`. -/
@@ -371,9 +369,9 @@ private structure Invariant (A : E →ₗ[𝕜] E) (b x₀ : E) (k : ℕ) : Prop
     inner 𝕜 (iterate A b x₀ k).r (iterate A b x₀ k).r
 
 omit hA in
-/-- The invariant under the one fact coercivity is used for: a direction whose `A`-norm
-degenerates is itself zero.  Besides that only symmetry of `A` enters, which is what lets
-Steihaug's indefinite theorem below reuse the whole induction. -/
+/-- The invariant under the one fact coercivity is used for: a direction whose `A`-norm degenerates
+is itself zero.  Besides that only symmetry of `A` enters, which is what lets
+[steihaug1983conjugate] indefinite theorem below reuse the whole induction. -/
 private theorem invariant_of (hAs : A.IsSymmetric) (k : ℕ) :
     (∀ j < k, inner 𝕜 (A (iterate A b x₀ j).p) (iterate A b x₀ j).p = 0 →
       (iterate A b x₀ j).p = 0) → Invariant A b x₀ k := by
@@ -452,7 +450,7 @@ theorem iterate_eq_of_residual_eq_zero {k : ℕ} (hr : (iterate A b x₀ k).r = 
     iterate A b x₀ (k + j) = iterate A b x₀ k :=
   iterate_eq_of_residual_eq_zero' A b x₀ hr (k + j) (Nat.le_add_right k j)
 
-/-- Saad, *Iterative Methods*, Prop 6.20 (i): residuals are mutually orthogonal. -/
+/-- [saad2003iterative], Prop 6.20 (i): residuals are mutually orthogonal. -/
 theorem inner_residual_eq_zero {i j : ℕ} (h : i ≠ j) :
     inner 𝕜 (iterate A b x₀ i).r (iterate A b x₀ j).r = 0 := by
   have key : ∀ m n : ℕ, n < m → inner 𝕜 (iterate A b x₀ m).r (iterate A b x₀ n).r = 0 :=
@@ -462,7 +460,7 @@ theorem inner_residual_eq_zero {i j : ℕ} (h : i ≠ j) :
   · rw [← inner_conj_symm, key j i h', map_zero]
   · exact key i j h'
 
-/-- Saad, *Iterative Methods*, Prop 6.20 (ii): directions are `A`-conjugate. -/
+/-- [saad2003iterative], Prop 6.20 (ii): directions are `A`-conjugate. -/
 theorem inner_apply_direction_eq_zero {i j : ℕ} (h : i ≠ j) :
     inner 𝕜 (A (iterate A b x₀ i).p) (iterate A b x₀ j).p = 0 := by
   rcases lt_or_gt_of_ne h with h' | h'
@@ -476,11 +474,10 @@ theorem inner_residual_direction_eq_zero {i j : ℕ} (h : j < i) :
 
 /-- `⟪r_i, p_j⟫ = ‖r_j‖²` for `i ≤ j`.
 
-The right-hand side is `‖r_j‖²`, not `‖r_i‖²`: expanding
-`p_j = ∑_{l ≤ j} (∏_{m=l}^{j-1} β_m) r_l` and using `∏_{m=i}^{j-1} β_m = ‖r_j‖²/‖r_i‖²` gives
-`⟪r_i, p_j⟫ = ‖r_j‖²`, and already `⟪r₀, p₁⟫ = β₀ ‖r₀‖² = ‖r₁‖²`.  The two readings agree at
-`i = j`, which is the only case the companion statement `CG.inner_residual_direction_eq_zero`
-leaves open. -/
+The right-hand side is `‖r_j‖²`, not `‖r_i‖²`: expanding `p_j = ∑_{l ≤ j} (∏_{m=l}^{j-1} β_m) r_l`
+and using `∏_{m=i}^{j-1} β_m = ‖r_j‖²/‖r_i‖²` gives `⟪r_i, p_j⟫ = ‖r_j‖²`, and already `⟪r₀, p₁⟫ =
+β₀ ‖r₀‖² = ‖r₁‖²`.  The two readings agree at `i = j`, which is the only case the companion
+statement `CG.inner_residual_direction_eq_zero` leaves open. -/
 theorem inner_residual_direction_eq {i j : ℕ} (h : i ≤ j) :
     inner 𝕜 (iterate A b x₀ i).r (iterate A b x₀ j).p =
       (‖(iterate A b x₀ j).r‖ ^ 2 : ℝ) := by
@@ -552,10 +549,10 @@ theorem span_residual_eq (k : ℕ) :
     ((subspace_le_dirSpan b x₀ hA k).trans (dirSpan_le_resSpan A b x₀ k))
 
 set_option linter.unusedSectionVars false in
-/-- CG stays in the affine Krylov space: `x_k ∈ x₀ + 𝒦_k(A, r₀)`. This is the membership half of
-the Galerkin specification `CG.isGalerkinIterate`, and it follows from the recurrence alone —
-each correction is a multiple of a direction `p_j ∈ 𝒦_{j+1}`. The section's symmetry and
-coercivity hypothesis appears in the signature but is not used by the proof. -/
+/-- CG stays in the affine Krylov space: `x_k ∈ x₀ + 𝒦_k(A, r₀)`. This is the membership half of the
+Galerkin specification `CG.isGalerkinIterate`, and it follows from the recurrence alone — each
+correction is a multiple of a direction `p_j ∈ 𝒦_{j+1}`. The section's symmetry and coercivity
+hypothesis appears in the signature but is not used by the proof. -/
 theorem iterate_sub_mem (k : ℕ) : (iterate A b x₀ k).x - x₀ ∈ subspace A (b - A x₀) k := by
   induction k with
   | zero => simp [init]
@@ -661,8 +658,8 @@ private theorem leading (k : ℕ) :
       (Submodule.smul_mem _ _ (Submodule.smul_mem _ _ hmem))
 
 omit hA in
-/-- Gram–Schmidt normalises with a *positive* leading coefficient:
-`⟪gramSchmidtNormed f n, f n⟫ = ‖gramSchmidt f n‖ ≥ 0`. -/
+/-- Gram–Schmidt normalises with a *positive* leading coefficient: `⟪gramSchmidtNormed f n, f n⟫ =
+‖gramSchmidt f n‖ ≥ 0`. -/
 private theorem inner_gramSchmidtNormed_self (f : ℕ → E) (n : ℕ) :
     inner 𝕜 (InnerProductSpace.gramSchmidtNormed 𝕜 f n) (f n) =
       ((‖InnerProductSpace.gramSchmidt 𝕜 f n‖ : ℝ) : 𝕜) := by
@@ -684,10 +681,10 @@ private theorem inner_gramSchmidtNormed_self (f : ℕ → E) (n : ℕ) :
     rw [sq, ← mul_assoc, inv_mul_cancel₀ h0, one_mul]
 
 /-- CG residuals are the Lanczos vectors up to sign: `v_k = (-1)^k r_k / ‖r_k‖`
-(Saad, *Iterative Methods*, (6.87), (6.99); Meurant–Strakoš (3.4)).  Saad's (6.99) records only
-that `r_j` is *some* multiple of the Lanczos vector, which is all §6.7.3 needs, since it reads
-the tridiagonal entries off quotients and absolute values.  The scalar is pinned here, its sign
-coming from the leading coefficient `∏_{j<k} (-α_j)` of `r_k`. -/
+([saad2003iterative], (6.87), (6.99); [meurant2006lanczos] (3.4)). [saad2003iterative] (6.99)
+records only that `r_j` is *some* multiple of the Lanczos vector, which is all §6.7.3 needs, since
+it reads the tridiagonal entries off quotients and absolute values.  The scalar is pinned here, its
+sign coming from the leading coefficient `∏_{j<k} (-α_j)` of `r_k`. -/
 theorem arnoldi_vec_eq (k : ℕ) (hr : (iterate A b x₀ k).r ≠ 0) :
     Arnoldi.vec A (b - A x₀) k =
       ((-1 : 𝕜) ^ k * (‖(iterate A b x₀ k).r‖⁻¹ : ℝ)) • (iterate A b x₀ k).r := by
@@ -787,10 +784,10 @@ theorem residual_eq_zero_of_grade_le [FiniteDimensional 𝕜 (fullSubspace A (b 
   rw [residual_eq, sub_eq_zero]
   exact ((isGalerkinIterate b x₀ hA k).apply_eq_of_grade_le hk).symm
 
-/-- Sharpness of `CG.residual_eq_zero_of_grade_le`: before the grade the residual is still
-nonzero, so CG takes exactly `grade A r₀` steps, never fewer. A vanishing `r_k` would make `x_k`
-an exact solution inside `x₀ + 𝒦_k`, and an exact Krylov solution at step `k` forces the grade
-down to `k` (`Krylov.grade_le_of_apply_eq`). -/
+/-- Sharpness of `CG.residual_eq_zero_of_grade_le`: before the grade the residual is still nonzero,
+so CG takes exactly `grade A r₀` steps, never fewer. A vanishing `r_k` would make `x_k` an exact
+solution inside `x₀ + 𝒦_k`, and an exact Krylov solution at step `k` forces the grade down to `k`
+(`Krylov.grade_le_of_apply_eq`). -/
 theorem residual_ne_zero_of_lt_grade [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))] {k : ℕ}
     (hk : k < grade A (b - A x₀)) : (iterate A b x₀ k).r ≠ 0 := by
   intro h
@@ -806,8 +803,8 @@ private theorem alpha_eq_ofReal (hAs : A.IsSymmetric) (k : ℕ) : alpha A (itera
   rw [RCLike.ofReal_div, ← inner_self_eq_ofReal_norm_sq, inner_apply_self_ofReal hAs, alpha]
 
 omit hA in
-/-- The step length is nonnegative as soon as the current direction has nonnegative `A`-norm,
-which for a coercive `A` is automatic (`CG.re_alpha_nonneg`). -/
+/-- The step length is nonnegative as soon as the current direction has nonnegative `A`-norm, which
+for a coercive `A` is automatic (`CG.re_alpha_nonneg`). -/
 private theorem re_alpha_nonneg' (hAs : A.IsSymmetric) {k : ℕ}
     (h : 0 ≤ RCLike.re (inner 𝕜 (A (iterate A b x₀ k).p) (iterate A b x₀ k).p)) :
     0 ≤ RCLike.re (alpha A (iterate A b x₀ k)) := by
@@ -842,7 +839,7 @@ private theorem re_beta_mul (k : ℕ) (z : 𝕜) :
       RCLike.re (beta A (iterate A b x₀ k)) * RCLike.re z := by
   rw [beta_eq_ofReal b x₀ k, RCLike.re_ofReal_mul, RCLike.ofReal_re]
 
-/-- `⟪p_i, p_j⟫ ≥ 0` for CG on SPD systems (ingredient of Steihaug's theorem). -/
+/-- `⟪p_i, p_j⟫ ≥ 0` for CG on SPD systems (ingredient of [steihaug1983conjugate] theorem). -/
 theorem re_inner_direction_nonneg (i j : ℕ) :
     0 ≤ RCLike.re (inner 𝕜 (iterate A b x₀ i).p (iterate A b x₀ j).p) := by
   have key : ∀ m n : ℕ, m ≤ n →
@@ -888,8 +885,8 @@ section Errors
 variable {xstar : E} (hstar : A xstar = b)
 include hstar
 
-/-- Hestenes–Stiefel Thm 6:1 / Meurant–Strakoš Thm 11:
-`‖ε_k‖_A² - ‖ε_{k+1}‖_A² = α_k ‖r_k‖²`. -/
+/-- [hestenes1952methods] Thm 6:1 / [meurant2006lanczos] Thm 11: `‖ε_k‖_A² - ‖ε_{k+1}‖_A² = α_k
+‖r_k‖²`. -/
 theorem energyNorm_error_sq_sub (k : ℕ) :
     energyNorm A (xstar - (iterate A b x₀ k).x) ^ 2 -
         energyNorm A (xstar - (iterate A b x₀ (k + 1)).x) ^ 2 =
@@ -953,13 +950,14 @@ theorem energyNorm_error_sq_eq_sum [FiniteDimensional 𝕜 (fullSubspace A (b - 
     rw [show k + (grade A (b - A x₀) - k) = grade A (b - A x₀) by omega] at hn
     rw [hn, hzero _ le_rfl, add_zero]
 
-/-- Hestenes–Stiefel Thm 6:3 / Meurant–Strakoš Thm 12: the Euclidean error is nonincreasing.
+/-- [hestenes1952methods] Thm 6:3 / [meurant2006lanczos] Thm 12: the Euclidean error is
+nonincreasing.
 
-The finite-dimensionality hypothesis is not decoration: both this proof and the Hestenes–Stiefel
-argument go through the expansion `x* - x_k = ∑_{j ≥ k} α_j p_j`, that is through finite
-termination of the recurrence, which is also what `CG.energyNorm_error_sq_eq_sum` above needs.
-Dropping it turns the statement into an infinite-dimensional convergence result, which is not
-proved here.  Contrast `CG.energyNorm_error_antitone`, whose one-step identity needs no such
+The finite-dimensionality hypothesis is not decoration: both this proof and the
+[hestenes1952methods] argument go through the expansion `x* - x_k = ∑_{j ≥ k} α_j p_j`, that is
+through finite termination of the recurrence, which is also what `CG.energyNorm_error_sq_eq_sum`
+above needs. Dropping it turns the statement into an infinite-dimensional convergence result, which
+is not proved here.  Contrast `CG.energyNorm_error_antitone`, whose one-step identity needs no such
 hypothesis. -/
 theorem norm_error_antitone [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))] :
     Antitone fun k => ‖xstar - (iterate A b x₀ k).x‖ := by
@@ -984,8 +982,8 @@ theorem norm_error_antitone [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀)
   nlinarith [norm_nonneg (xstar - (iterate A b x₀ (k + 1)).x),
     norm_nonneg (xstar - (iterate A b x₀ k).x)]
 
-/-- The energy norm of the CG error never increases: one step subtracts the nonnegative amount
-`α_k ‖r_k‖²` from its square (`CG.energyNorm_error_sq_sub`). Unlike the Euclidean statement
+/-- The energy norm of the CG error never increases: one step subtracts the nonnegative amount `α_k
+‖r_k‖²` from its square (`CG.energyNorm_error_sq_sub`). Unlike the Euclidean statement
 `CG.norm_error_antitone`, this needs no finite-dimensionality, because the identity behind it is
 local to a single step rather than an expansion of the whole remaining error. -/
 theorem energyNorm_error_antitone :
@@ -999,16 +997,16 @@ theorem energyNorm_error_antitone :
 
 end Errors
 
-/-! ### Steihaug's theorem, for a symmetric but possibly indefinite operator
+/-! ### [steihaug1983conjugate] theorem, for a symmetric but possibly indefinite operator
 
-Coercivity enters the sign lemmas above only through `0 ≤ re ⟪A p_j, p_j⟫` and the
-nondegeneracy it gives.  Assuming that quantity *positive* at the steps taken so far — which is
-precisely what a trust-region method monitors — runs the same chain on a symmetric, possibly
-indefinite `A`, and makes the conclusion strict. -/
+Coercivity enters the sign lemmas above only through `0 ≤ re ⟪A p_j, p_j⟫` and the nondegeneracy it
+gives.  Assuming that quantity *positive* at the steps taken so far — which is precisely what a
+trust-region method monitors — runs the same chain on a symmetric, possibly indefinite `A`, and
+makes the conclusion strict. -/
 
 omit hA in
-/-- The invariant at every step up to `k`, when the directions taken so far have positive
-`A`-norm. -/
+/-- The invariant at every step up to `k`, when the directions taken so far have positive `A`-norm.
+-/
 private theorem invariant_le (hAs : A.IsSymmetric) {k : ℕ}
     (hpos : ∀ j < k, 0 < RCLike.re (inner 𝕜 (A (iterate A b x₀ j).p) (iterate A b x₀ j).p))
     {m : ℕ} (hm : m ≤ k) : Invariant A b x₀ m := by
@@ -1078,8 +1076,8 @@ private theorem re_inner_direction_nonneg' (hAs : A.IsSymmetric) {k : ℕ}
     exact key j hj i hi h
 
 omit hA in
-/-- `re ⟪x_m - x_l, p_j⟫ ≥ 0` up to step `k`
-(`CG.re_inner_sub_iterate_direction_nonneg` localized). -/
+/-- `re ⟪x_m - x_l, p_j⟫ ≥ 0` up to step `k` (`CG.re_inner_sub_iterate_direction_nonneg` localized).
+-/
 private theorem re_inner_sub_iterate_direction_nonneg' (hAs : A.IsSymmetric) {k : ℕ}
     (hpos : ∀ j < k, 0 < RCLike.re (inner 𝕜 (A (iterate A b x₀ j).p) (iterate A b x₀ j).p))
     {l m : ℕ} (hlm : l ≤ m) (hm : m ≤ k) {j : ℕ} (hj : j ≤ k) :
@@ -1100,12 +1098,12 @@ private theorem re_inner_sub_iterate_direction_nonneg' (hAs : A.IsSymmetric) {k 
         (re_inner_direction_nonneg' b x₀ hAs hpos (by omega) hj))
 
 omit hA in
-/-- Steihaug's theorem for a symmetric, possibly indefinite `A`: started at `x₀ = 0`, the CG
-iterates grow in norm at every step whose direction has positive `A`-norm,
-`‖x_i‖ < ‖x_{i+1}‖` for `i < k` whenever `0 < re ⟪A p_j, p_j⟫` for all `j < k`.  This is the
-hypothesis a trust-region method can check as it goes, and it is what makes the CG path leave
-the trust region monotonically.  The coercive `CG.norm_iterate_monotone` is the corollary in
-which the hypothesis holds at every step the iteration moves at all. -/
+/-- [steihaug1983conjugate] theorem for a symmetric, possibly indefinite `A`: started at `x₀ = 0`,
+the CG iterates grow in norm at every step whose direction has positive `A`-norm, `‖x_i‖ <
+‖x_{i+1}‖` for `i < k` whenever `0 < re ⟪A p_j, p_j⟫` for all `j < k`.  This is the hypothesis a
+trust-region method can check as it goes, and it is what makes the CG path leave the trust region
+monotonically.  The coercive `CG.norm_iterate_monotone` is the corollary in which the hypothesis
+holds at every step the iteration moves at all. -/
 theorem norm_iterate_lt_of_re_inner_apply_direction_pos (hAs : A.IsSymmetric) {k : ℕ}
     (hpos : ∀ j < k, 0 < RCLike.re (inner 𝕜 (A (iterate A b 0 j).p) (iterate A b 0 j).p))
     {i : ℕ} (hi : i < k) : ‖(iterate A b 0 i).x‖ < ‖(iterate A b 0 (i + 1)).x‖ := by
@@ -1137,8 +1135,8 @@ theorem norm_iterate_lt_of_re_inner_apply_direction_pos (hAs : A.IsSymmetric) {k
     nlinarith [hnz]
   nlinarith [norm_nonneg (iterate A b 0 i).x, norm_nonneg (iterate A b 0 (i + 1)).x]
 
-/-- Steihaug: `‖x_k‖` is nondecreasing for CG started at `x₀ = 0`.  A coercive `A` makes
-`0 < re ⟪A p_j, p_j⟫` hold at every step before the residual dies
+/-- [steihaug1983conjugate]: `‖x_k‖` is nondecreasing for CG started at `x₀ = 0`.  A coercive `A`
+makes `0 < re ⟪A p_j, p_j⟫` hold at every step before the residual dies
 (`CG.re_inner_apply_direction_pos`), and once it dies the iterate stops moving. -/
 theorem norm_iterate_monotone : Monotone fun k => ‖(iterate A b 0 k).x‖ := by
   refine monotone_nat_of_le_succ fun k => ?_
@@ -1155,26 +1153,25 @@ section ThreeTerm
 omit hA
 variable (A)
 
-/-! ### The three-term form (Saad, *Iterative Methods*, §6.7.2, Alg 6.19)
+/-! ### The three-term form ([saad2003iterative], §6.7.2, Alg 6.19)
 
-`γ_m = ⟪r_m, r_m⟫ / ⟪A r_m, r_m⟫`, `ρ_0 = 1`,
-`ρ_m = (1 - (γ_m/γ_{m-1}) (‖r_m‖²/‖r_{m-1}‖²) / ρ_{m-1})⁻¹` (Saad (6.97)),
-`r_{m+1} = ρ_m (r_m - γ_m A r_m) + (1 - ρ_m) r_{m-1}` (Saad (6.96)) and
-`x_{m+1} = ρ_m (x_m + γ_m r_m) + (1 - ρ_m) x_{m-1}` (Saad (6.98)).
+`γ_m = ⟪r_m, r_m⟫ / ⟪A r_m, r_m⟫`, `ρ_0 = 1`, `ρ_m = (1 - (γ_m/γ_{m-1}) (‖r_m‖²/‖r_{m-1}‖²) /
+ρ_{m-1})⁻¹` ([saad2003iterative] (6.97)), `r_{m+1} = ρ_m (r_m - γ_m A r_m) + (1 - ρ_m) r_{m-1}`
+([saad2003iterative] (6.96)) and `x_{m+1} = ρ_m (x_m + γ_m r_m) + (1 - ρ_m) x_{m-1}`
+([saad2003iterative] (6.98)).
 
-The sign in the last relation is `+`, where the book prints `-` in (6.98) and in Alg 6.19.
-The `+` is what the book's own (6.96) forces: applying `b - A ·` to the `x`-recurrence and
-using `ρ_m + (1 - ρ_m) = 1` turns `x_m ± γ_m r_m` into `r_m ∓ γ_m A r_m`.  It is also what
-makes the first step `x_1 = x_0 + γ_0 r_0` give `⟪r_1, r_0⟫ = 0`, which is the property the
-book asks that step to have. -/
+The sign in the last relation is `+`, where the book prints `-` in (6.98) and in Alg 6.19. The `+`
+is what the book's own (6.96) forces: applying `b - A ·` to the `x`-recurrence and using `ρ_m + (1 -
+ρ_m) = 1` turns `x_m ± γ_m r_m` into `r_m ∓ γ_m A r_m`.  It is also what makes the first step `x_1 =
+x_0 + γ_0 r_0` give `⟪r_1, r_0⟫ = 0`, which is the property the book asks that step to have. -/
 
-/-- `γ_m = ⟪r_m, r_m⟫ / ⟪A r_m, r_m⟫` (Saad, *Iterative Methods*, §6.7.2, the scalar of
-Alg 6.19 line 3; the book states it between (6.96) and (6.97) without a number). -/
+/-- `γ_m = ⟪r_m, r_m⟫ / ⟪A r_m, r_m⟫` ([saad2003iterative], §6.7.2, the scalar of Alg 6.19 line 3;
+the book states it between (6.96) and (6.97) without a number). -/
 noncomputable def gamma (m : ℕ) : 𝕜 :=
   inner 𝕜 (iterate A b x₀ m).r (iterate A b x₀ m).r /
     inner 𝕜 (A (iterate A b x₀ m).r) (iterate A b x₀ m).r
 
-/-- `ρ_m` of Saad, *Iterative Methods*, (6.97), with `ρ_0 = 1`. -/
+/-- `ρ_m` of [saad2003iterative], (6.97), with `ρ_0 = 1`. -/
 noncomputable def rho : ℕ → 𝕜
   | 0 => 1
   | m + 1 => (1 - gamma A b x₀ (m + 1) / gamma A b x₀ m *
@@ -1210,9 +1207,9 @@ private theorem alpha_ne_zero (hA : A.IsSymmetricCoercive) {k : ℕ}
   div_ne_zero (fun h => hk (inner_self_eq_zero.1 h))
     (inner_apply_direction_self_ne_zero b x₀ hA hk)
 
-/-- The Hestenes–Stiefel identity `α_m ⟪A p_{m+1}, p_{m+1}⟫ = α_m ⟪A r_{m+1}, r_{m+1}⟫ -
-β_m ⟪r_{m+1}, r_{m+1}⟫`, the bridge between the two- and three-term recurrences.  It holds
-without any nondegeneracy hypothesis. -/
+/-- The [hestenes1952methods] identity `α_m ⟪A p_{m+1}, p_{m+1}⟫ = α_m ⟪A r_{m+1}, r_{m+1}⟫ - β_m
+⟪r_{m+1}, r_{m+1}⟫`, the bridge between the two- and three-term recurrences.  It holds without any
+nondegeneracy hypothesis. -/
 private theorem alpha_mul_inner_apply_direction_succ (hA : A.IsSymmetricCoercive) (m : ℕ) :
     alpha A (iterate A b x₀ m) *
         inner 𝕜 (A (iterate A b x₀ (m + 1)).p) (iterate A b x₀ (m + 1)).p =
@@ -1268,8 +1265,8 @@ private theorem rho_succ_eq_div (hA : A.IsSymmetricCoercive) (m : ℕ)
     linear_combination -hK
   rw [rho_succ b x₀ m, hX, inv_div]
 
-/-- `α_m = ρ_m γ_m` (Saad, *Iterative Methods*, §6.7.2): the bridge between the step length of
-the two-term recurrence and the two coefficients of the three-term one. -/
+/-- `α_m = ρ_m γ_m` ([saad2003iterative], §6.7.2): the bridge between the step length of the
+two-term recurrence and the two coefficients of the three-term one. -/
 private theorem alpha_eq_rho_mul_gamma (hA : A.IsSymmetricCoercive) (m : ℕ)
     (hr : ∀ j ≤ m, (iterate A b x₀ j).r ≠ 0) :
     alpha A (iterate A b x₀ m) = rho A b x₀ m * gamma A b x₀ m := by
@@ -1304,9 +1301,9 @@ private theorem alpha_mul_rho_succ_sub_one (hA : A.IsSymmetricCoercive) (m : ℕ
   field_simp
   linear_combination -hK - beta A (iterate A b x₀ m) * ha'
 
-/-- Saad, *Iterative Methods*, (6.98): `x_{m+1} = ρ_m (x_m + γ_m r_m) + (1 - ρ_m) x_{m-1}`
-(with `x_{-1}` read as `x_0`, harmless since `1 - ρ_0 = 0`), valid while `r_j ≠ 0` for `j ≤ m`.
-The sign of `γ_m r_m` is `+` and not the `-` the book prints; see the section header above. -/
+/-- [saad2003iterative], (6.98): `x_{m+1} = ρ_m (x_m + γ_m r_m) + (1 - ρ_m) x_{m-1}` (with `x_{-1}`
+read as `x_0`, harmless since `1 - ρ_0 = 0`), valid while `r_j ≠ 0` for `j ≤ m`. The sign of `γ_m
+r_m` is `+` and not the `-` the book prints; see the section header above. -/
 theorem iterate_succ_eq_three_term (hA : A.IsSymmetricCoercive) (m : ℕ)
     (hr : ∀ j ≤ m, (iterate A b x₀ j).r ≠ 0) :
     (iterate A b x₀ (m + 1)).x =
@@ -1335,8 +1332,8 @@ theorem iterate_succ_eq_three_term (hA : A.IsSymmetricCoercive) (m : ℕ)
     · field_simp
       linear_combination hrho
 
-/-- Saad, *Iterative Methods*, (6.96), the residual form of the three-term recurrence:
-`r_{m+1} = ρ_m (r_m - γ_m A r_m) + (1 - ρ_m) r_{m-1}`. -/
+/-- [saad2003iterative], (6.96), the residual form of the three-term recurrence: `r_{m+1} = ρ_m (r_m
+- γ_m A r_m) + (1 - ρ_m) r_{m-1}`. -/
 theorem residual_succ_eq_three_term (hA : A.IsSymmetricCoercive) (m : ℕ)
     (hr : ∀ j ≤ m, (iterate A b x₀ j).r ≠ 0) :
     (iterate A b x₀ (m + 1)).r =

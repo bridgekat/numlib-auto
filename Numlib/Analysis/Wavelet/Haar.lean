@@ -14,11 +14,10 @@ decomposition and reconstruction formulas relating consecutive levels.
 
 Two design points fix the shape of the module.
 
-*The spaces are closed subspaces, not spans of finite combinations.* The scaling space of a level
-is defined here as `(span ℝ (range (scalingFun j))).topologicalClosure`, so that
-"orthonormal basis", the nesting `V j ≤ V (j+1)`, `⨅ j, V j = ⊥` and the density of `⨆ j, V j` all
-read in `L²`; the set of *finite* linear combinations of the scaling functions is its dense
-subspace.
+*The spaces are closed subspaces, not spans of finite combinations.* The scaling space of a level is
+defined here as `(span ℝ (range (scalingFun j))).topologicalClosure`, so that "orthonormal basis",
+the nesting `V j ≤ V (j+1)`, `⨅ j, V j = ⊥` and the density of `⨆ j, V j` all read in `L²`; the set
+of *finite* linear combinations of the scaling functions is its dense subspace.
 
 *Dilation is a unitary of `L²(ℝ)`, and it comes first.* `MeasureTheory.Lp.dilationₗᵢ c` sends `f` to
 `x ↦ |c| ^ (1/2) * f (c * x)`; every scale-invariance statement goes through it. Mathlib has
@@ -43,9 +42,7 @@ quasi-measure preserving, so the underlying map on `α →ₘ[μ] β` is built f
 
 ## References
 
-The material is [Atkinson–Han][han2009theoretical] §4.4 (Theorems 4.4.1–4.4.4). None of it is in
-Mathlib.
-
+The material is [han2009theoretical] §4.4 (Theorems 4.4.1–4.4.4). None of it is in Mathlib.
 -/
 
 open scoped ENNReal Pointwise
@@ -58,8 +55,8 @@ variable {c d : ℝ}
 
 /-! ### Auxiliary facts about the scaling `x ↦ c * x` of `ℝ` -/
 
-/-- Multiplication by a nonzero constant is quasi-measure-preserving for the Lebesgue measure
-on `ℝ`. -/
+/-- Multiplication by a nonzero constant is quasi-measure-preserving for the Lebesgue measure on
+`ℝ`. -/
 private theorem qmp_const_mul (hc : c ≠ 0) :
     Measure.QuasiMeasurePreserving (fun x : ℝ => c * x) volume volume := by
   refine ⟨measurable_const_mul c, ?_⟩
@@ -304,8 +301,8 @@ namespace Haar
 
 open MeasureTheory Real
 
-/-- The dyadic interval `[k 2 ^ (-j), (k + 1) 2 ^ (-j))`, the support of the Haar scaling
-function `Haar.scalingFun j k`. -/
+/-- The dyadic interval `[k 2 ^ (-j), (k + 1) 2 ^ (-j))`, the support of the Haar scaling function
+`Haar.scalingFun j k`. -/
 def dyadic (j k : ℤ) : Set ℝ := Set.Ico ((k : ℝ) * 2 ^ (-j)) (((k : ℝ) + 1) * 2 ^ (-j))
 
 theorem measurableSet_dyadic (j k : ℤ) : MeasurableSet (dyadic j k) := measurableSet_Ico
@@ -337,7 +334,7 @@ theorem dyadic_zero_zero : dyadic 0 0 = Set.Ico 0 1 := by
 
 /-- The Haar scaling function `2 ^ (j / 2) φ (2 ^ j x - k)` for the unit step `φ = 1_[0,1)`: the
 normalized indicator of the dyadic interval `[k 2 ^ (-j), (k + 1) 2 ^ (-j))`, as an element of
-`L²(ℝ)` (Atkinson–Han, *Theoretical Numerical Analysis*, (4.4.1)). -/
+`L²(ℝ)` ([han2009theoretical], (4.4.1)). -/
 def scalingFun (j k : ℤ) : Lp ℝ 2 (volume : Measure ℝ) :=
   indicatorConstLp 2 (measurableSet_dyadic j k) (volume_dyadic_ne_top j k) (√((2 : ℝ) ^ j))
 
@@ -363,8 +360,8 @@ theorem scalingFun_eq_dilation (j k : ℤ) :
   rw [abs_of_pos hpos, ← Real.sqrt_eq_rpow]
   simp
 
-/-- Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 4.4.1 (1): the scaling functions of a
-fixed level are orthonormal in `L²(ℝ)`. -/
+/-- [han2009theoretical], Theorem 4.4.1 (1): the scaling functions of a fixed level are orthonormal
+in `L²(ℝ)`. -/
 theorem orthonormal_scalingFun (j : ℤ) : Orthonormal ℝ (scalingFun j) := by
   have hpos : (0 : ℝ) < 2 ^ j := by positivity
   rw [orthonormal_iff_ite]
@@ -402,8 +399,8 @@ private theorem inv_sqrt_two_mul_self : (√2)⁻¹ * (√2)⁻¹ * 2 = 1 := by
 
 /-! ### The scaling spaces -/
 
-/-- The level-`j` Haar scaling space: the closed span in `L²(ℝ)` of the scaling functions of
-level `j`. Atkinson–Han's `V_j`, the set of *finite* linear combinations, is its dense subspace. -/
+/-- The level-`j` Haar scaling space: the closed span in `L²(ℝ)` of the scaling functions of level
+`j`. [han2009theoretical] `V_j`, the set of *finite* linear combinations, is its dense subspace. -/
 def V (j : ℤ) : Submodule ℝ (Lp ℝ 2 (volume : Measure ℝ)) :=
   (Submodule.span ℝ (Set.range (scalingFun j))).topologicalClosure
 
@@ -425,8 +422,8 @@ theorem mem_orthogonal_V_iff (j : ℤ) (f : Lp ℝ 2 (volume : Measure ℝ)) :
 def hilbertBasis_V (j : ℤ) : HilbertBasis ℤ ℝ (V j) :=
   (orthonormal_scalingFun j).hilbertBasisTopologicalClosure
 
-/-- The image of the closure of a subspace under a surjective linear isometry is the closure of
-the image. -/
+/-- The image of the closure of a subspace under a surjective linear isometry is the closure of the
+image. -/
 private theorem map_topologicalClosure
     (D : Lp ℝ 2 (volume : Measure ℝ) ≃ₗᵢ[ℝ] Lp ℝ 2 (volume : Measure ℝ))
     (K : Submodule ℝ (Lp ℝ 2 (volume : Measure ℝ))) :
@@ -437,8 +434,8 @@ private theorem map_topologicalClosure
     Submodule.map_coe]
   exact D.toHomeomorph.image_closure _
 
-/-- Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 4.4.1 (2), scale invariance:
-`V j` is the image of `V 0` under the dilation by `2 ^ j`. -/
+/-- [han2009theoretical], Theorem 4.4.1 (2), scale invariance: `V j` is the image of `V 0` under the
+dilation by `2 ^ j`. -/
 theorem V_eq_map_dilation (j : ℤ) :
     V j = (V 0).map
       (Lp.dilationₗᵢ ((2 : ℝ) ^ j) (zpow_ne_zero j two_ne_zero)).toLinearEquiv.toLinearMap := by
@@ -450,8 +447,8 @@ theorem V_eq_map_dilation (j : ℤ) :
   simp only [V]
   rw [map_topologicalClosure, Submodule.map_span, himg]
 
-/-- The two-scale relation: a scaling function of level `j` is the normalized sum of the two
-scaling functions of level `j + 1` supported on its two halves. -/
+/-- The two-scale relation: a scaling function of level `j` is the normalized sum of the two scaling
+functions of level `j + 1` supported on its two halves. -/
 theorem scalingFun_two_scale (j k : ℤ) :
     scalingFun j k = (√2)⁻¹ • (scalingFun (j + 1) (2 * k) + scalingFun (j + 1) (2 * k + 1)) := by
   have ht : (0 : ℝ) < 2 ^ (-(j + 1)) := by positivity
@@ -477,7 +474,7 @@ theorem scalingFun_two_scale (j k : ℤ) :
   rw [zpow_add_one₀ (two_ne_zero' ℝ), Real.sqrt_mul (by positivity)]
   field_simp
 
-/-- Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 4.4.1 (3), nesting. -/
+/-- [han2009theoretical], Theorem 4.4.1 (3), nesting. -/
 theorem V_le_V_succ (j : ℤ) : V j ≤ V (j + 1) := by
   refine Submodule.topologicalClosure_minimal _ ?_ (isClosed_V (j + 1))
   rw [Submodule.span_le]
@@ -529,8 +526,8 @@ private theorem coeFn_sum_indicatorConstLp (j : ℤ) (s : Finset ℤ) (c : ℤ �
 
 /-! ### The dyadic step approximation -/
 
-/-- The level-`j` dyadic step function of `g`, cut off outside the window
-`[-M 2 ^ (-j), M 2 ^ (-j))`. -/
+/-- The level-`j` dyadic step function of `g`, cut off outside the window `[-M 2 ^ (-j), M 2 ^
+(-j))`. -/
 private def stepFun (g : ℝ → ℝ) (j M : ℤ) : ℝ → ℝ := fun x =>
   ∑ k ∈ Finset.Ico (-M) M, (dyadic j k).indicator (fun _ => g ((k : ℝ) * 2 ^ (-j))) x
 
@@ -561,8 +558,8 @@ private theorem coeFn_stepLp (g : ℝ → ℝ) (j M : ℤ) :
   rw [stepLp_eq_sum]
   exact coeFn_sum_indicatorConstLp j _ _
 
-/-- A continuous function with compact support is approximated in `L²` by its dyadic step
-functions. -/
+/-- A continuous function with compact support is approximated in `L²` by its dyadic step functions.
+-/
 private theorem exists_step_approx (g : ℝ → ℝ) (hgc : Continuous g) (hgs : HasCompactSupport g)
     {ε : ℝ} (hε : 0 < ε) :
     ∃ j M : ℤ, eLpNorm (g - stepFun g j M) 2 volume ≤ ENNReal.ofReal ε := by
@@ -682,8 +679,8 @@ private theorem exists_step_approx (g : ℝ → ℝ) (hgc : Continuous g) (hgs :
 
 /-! ### Density -/
 
-/-- Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 4.4.1 (4), density: the union of the
-scaling spaces is dense in `L²(ℝ)`. -/
+/-- [han2009theoretical], Theorem 4.4.1 (4), density: the union of the scaling spaces is dense in
+`L²(ℝ)`. -/
 theorem topologicalClosure_iSup_V : (⨆ j : ℤ, V j).topologicalClosure = ⊤ := by
   refine Submodule.dense_iff_topologicalClosure_eq_top.mp fun f => ?_
   rw [Metric.mem_closure_iff]
@@ -801,8 +798,8 @@ private theorem inner_scalingFun_cross_zero {j i l k m : ℤ} (hsub : dyadic i k
     hempty]
   simp
 
-/-- The level-`i` scaling coefficients of an element of `V j`, `j ≤ i`, are controlled by
-`2 ^ ((j - i) / 2)`. -/
+/-- The level-`i` scaling coefficients of an element of `V j`, `j ≤ i`, are controlled by `2 ^ ((j -
+i) / 2)`. -/
 private theorem abs_inner_scalingFun_le {j i : ℤ} (hji : j ≤ i) (k : ℤ)
     {f : Lp ℝ 2 (volume : Measure ℝ)} (hf : f ∈ V j) :
     |inner ℝ (scalingFun i k) f| ≤ √((2 : ℝ) ^ (j - i)) * ‖f‖ := by
@@ -848,8 +845,7 @@ private theorem inner_scalingFun_eq_zero_of_mem_iInf {f : Lp ℝ 2 (volume : Mea
     rwa [div_mul_cancel₀ _ (by positivity : (‖f‖ + 1) ≠ 0)] at h1
   linarith
 
-/-- Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 4.4.1 (5), separation: the scaling
-spaces intersect in `0`. -/
+/-- [han2009theoretical], Theorem 4.4.1 (5), separation: the scaling spaces intersect in `0`. -/
 theorem iInf_V_eq_bot : (⨅ j : ℤ, V j) = ⊥ := by
   rw [Submodule.eq_bot_iff]
   intro f hf
@@ -869,9 +865,8 @@ theorem iInf_V_eq_bot : (⨅ j : ℤ, V j) = ⊥ := by
 /-! ### The wavelet functions and wavelet spaces -/
 
 /-- The Haar wavelet `2 ^ (j / 2) ψ (2 ^ j x - k)` for `ψ = φ (2 ·) - φ (2 · - 1)`: the difference
-of the two level-`(j + 1)` scaling functions supported on the halves of the dyadic interval
-`[k 2 ^ (-j), (k + 1) 2 ^ (-j))`, normalized. Atkinson–Han, *Theoretical Numerical Analysis*,
-(4.4.2). -/
+of the two level-`(j + 1)` scaling functions supported on the halves of the dyadic interval `[k 2 ^
+(-j), (k + 1) 2 ^ (-j))`, normalized. [han2009theoretical], (4.4.2). -/
 def waveletFun (j k : ℤ) : Lp ℝ 2 (volume : Measure ℝ) :=
   (√2)⁻¹ • (scalingFun (j + 1) (2 * k) - scalingFun (j + 1) (2 * k + 1))
 
@@ -879,9 +874,9 @@ theorem waveletFun_eq (j k : ℤ) :
     waveletFun j k = (√2)⁻¹ • (scalingFun (j + 1) (2 * k) - scalingFun (j + 1) (2 * k + 1)) :=
   rfl
 
-/-- The Haar wavelet in closed form: it is `√(2 ^ j)` on the left half of the dyadic interval
-`[k 2 ^ (-j), (k + 1) 2 ^ (-j))` and `-√(2 ^ j)` on the right half, which is
-`2 ^ (j / 2) ψ (2 ^ j x - k)` for `ψ = 1_[0,1/2) - 1_[1/2,1)`. -/
+/-- The Haar wavelet in closed form: it is `√(2 ^ j)` on the left half of the dyadic interval `[k 2
+^ (-j), (k + 1) 2 ^ (-j))` and `-√(2 ^ j)` on the right half, which is `2 ^ (j / 2) ψ (2 ^ j x - k)`
+for `ψ = 1_[0,1/2) - 1_[1/2,1)`. -/
 theorem waveletFun_eq_sub_indicator (j k : ℤ) :
     waveletFun j k =
       indicatorConstLp 2 (measurableSet_dyadic (j + 1) (2 * k))
@@ -925,8 +920,7 @@ theorem waveletFun_mem_W (j k : ℤ) : waveletFun j k ∈ W j :=
 def hilbertBasis_W (j : ℤ) : HilbertBasis ℤ ℝ (W j) :=
   (orthonormal_waveletFun j).hilbertBasisTopologicalClosure
 
-/-- The level-`(j + 1)` scaling functions in terms of the level-`j` scaling function and
-wavelet. -/
+/-- The level-`(j + 1)` scaling functions in terms of the level-`j` scaling function and wavelet. -/
 theorem scalingFun_succ_eq (j k : ℤ) :
     scalingFun (j + 1) (2 * k) = (√2)⁻¹ • (scalingFun j k + waveletFun j k) ∧
       scalingFun (j + 1) (2 * k + 1) = (√2)⁻¹ • (scalingFun j k - waveletFun j k) := by
@@ -980,8 +974,8 @@ theorem W_le_V_succ (j : ℤ) : W j ≤ V (j + 1) := by
   rintro _ ⟨k, rfl⟩
   exact waveletFun_mem_V_succ j k
 
-/-- Every element of the scaling space of level `j` is orthogonal to the wavelet space of the
-same level. -/
+/-- Every element of the scaling space of level `j` is orthogonal to the wavelet space of the same
+level. -/
 theorem V_le_orthogonal_W (j : ℤ) : V j ≤ (W j)ᗮ := by
   simp only [W]
   rw [Submodule.orthogonal_closure]
@@ -991,8 +985,8 @@ theorem V_le_orthogonal_W (j : ℤ) : V j ≤ (W j)ᗮ := by
   exact Submodule.mem_orthogonal_span_range fun l => by
     rw [real_inner_comm]; exact inner_scalingFun_waveletFun j k l
 
-/-- The wavelet space of level `j` is orthogonal to the scaling space of the same level, the
-other reading of `V_le_orthogonal_W`. -/
+/-- The wavelet space of level `j` is orthogonal to the scaling space of the same level, the other
+reading of `V_le_orthogonal_W`. -/
 theorem W_le_orthogonal_V (j : ℤ) : W j ≤ (V j)ᗮ :=
   (Submodule.le_orthogonal_orthogonal _).trans (Submodule.orthogonal_le (V_le_orthogonal_W j))
 
@@ -1016,9 +1010,9 @@ private theorem V_succ_le_topologicalClosure_sup (j : ℤ) :
       (Submodule.mem_sup_left (scalingFun_mem_V j k))
       (Submodule.mem_sup_right (waveletFun_mem_W j k))))
 
-/-- Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 4.4.2: an element of `V (j + 1)`
-lies in `W j` exactly when it is orthogonal to every scaling function of level `j`; in terms of
-the coefficients `a k = ⟪scalingFun (j+1) k, f⟫` this says `a (2k+1) = -a (2k)`. -/
+/-- [han2009theoretical], Theorem 4.4.2: an element of `V (j + 1)` lies in `W j` exactly when it is
+orthogonal to every scaling function of level `j`; in terms of the coefficients `a k = ⟪scalingFun
+(j+1) k, f⟫` this says `a (2k+1) = -a (2k)`. -/
 theorem mem_W_iff (j : ℤ) (f : Lp ℝ 2 (volume : Measure ℝ)) :
     f ∈ W j ↔ f ∈ V (j + 1) ∧ ∀ k : ℤ, inner ℝ (scalingFun j k) f = 0 := by
   refine ⟨fun h => ⟨W_le_V_succ j h, (mem_orthogonal_V_iff j f).1 (W_le_orthogonal_V j h)⟩,
@@ -1082,9 +1076,8 @@ theorem isCompl_V_W (j : ℤ) :
 
 /-! ### Decomposition and reconstruction -/
 
-/-- Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 4.4.3, the decomposition (analysis)
-step: the level-`j` scaling and wavelet coefficients of `f` from its level-`(j + 1)` scaling
-coefficients. -/
+/-- [han2009theoretical], Theorem 4.4.3, the decomposition (analysis) step: the level-`j` scaling
+and wavelet coefficients of `f` from its level-`(j + 1)` scaling coefficients. -/
 theorem decomposition (j k : ℤ) (f : Lp ℝ 2 (volume : Measure ℝ)) :
     inner ℝ (scalingFun j k) f =
         (√2)⁻¹ * (inner ℝ (scalingFun (j + 1) (2 * k)) f +
@@ -1096,8 +1089,8 @@ theorem decomposition (j k : ℤ) (f : Lp ℝ 2 (volume : Measure ℝ)) :
   · rw [scalingFun_two_scale j k, real_inner_smul_left, inner_add_left]
   · rw [waveletFun, real_inner_smul_left, inner_sub_left]
 
-/-- Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 4.4.4, the reconstruction (synthesis)
-step, inverse to `Haar.decomposition`. -/
+/-- [han2009theoretical], Theorem 4.4.4, the reconstruction (synthesis) step, inverse to
+`Haar.decomposition`. -/
 theorem reconstruction (j k : ℤ) (f : Lp ℝ 2 (volume : Measure ℝ)) :
     inner ℝ (scalingFun (j + 1) (2 * k)) f =
         (√2)⁻¹ * (inner ℝ (scalingFun j k) f + inner ℝ (waveletFun j k) f) ∧

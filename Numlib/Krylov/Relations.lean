@@ -3,14 +3,13 @@ import Numlib.Krylov.Iterate
 /-!
 # Relations between Galerkin and minimal-residual iterates
 
-Residual smoothing ([Weiss][weiss1990convergence]; [Saad, *Iterative Methods*][saad2003iterative]
-Lemma 6.18) and the [Cullum–Greenbaum][cullum1996relations] / [Brown][brown1991theoretical]
-relations between FOM and GMRES residuals (Saad Prop 6.12–6.17, (6.65), Cor 6.14;
-[Fong–Saunders][fong2012cg] (4.1); [Greenbaum][greenbaum1997iterative] Lemma 5.4.1), proved at the
-specification level without any factorization.
+Residual smoothing ([weiss1990convergence]; [saad2003iterative] Lemma 6.18) and the
+[cullum1996relations] / [brown1991theoretical] relations between FOM and GMRES residuals
+([saad2003iterative] Prop 6.12–6.17, (6.65), Cor 6.14; [fong2012cg] (4.1); [greenbaum1997iterative]
+Lemma 5.4.1), proved at the specification level without any factorization.
 
-Throughout, `r^F_m` denotes the residual `b - A x` of the Galerkin (FOM) iterate over `x₀ + 𝒦_m`
-and `r^G_m` that of the minimal-residual (GMRES) iterate over the same affine space.
+Throughout, `r^F_m` denotes the residual `b - A x` of the Galerkin (FOM) iterate over `x₀ + 𝒦_m` and
+`r^G_m` that of the minimal-residual (GMRES) iterate over the same affine space.
 -/
 
 open Krylov Polynomial
@@ -20,15 +19,15 @@ variable {A : E →ₗ[𝕜] E} {b x₀ : E}
 
 namespace Krylov
 
-/-- Weiss's residual smoothing step: `r' = s + η (r - s)` with the residual-minimizing `η`. -/
+/-- [weiss1990convergence] residual smoothing step: `r' = s + η (r - s)` with the
+residual-minimizing `η`. -/
 noncomputable def smoothingCoeff (s r : E) : 𝕜 := inner 𝕜 (r - s) (-s) / (‖r - s‖ ^ 2 : ℝ)
 
 section Smoothing
 
 variable {s r : E}
 
-/-- For orthogonal `s`, `r` the smoothing coefficient is the real number
-`‖s‖² / (‖r‖² + ‖s‖²)`. -/
+/-- For orthogonal `s`, `r` the smoothing coefficient is the real number `‖s‖² / (‖r‖² + ‖s‖²)`. -/
 theorem smoothingCoeff_eq (horth : inner 𝕜 r s = 0) :
     (smoothingCoeff s r : 𝕜) = ((‖s‖ ^ 2 / (‖r‖ ^ 2 + ‖s‖ ^ 2) : ℝ) : 𝕜) := by
   have hnum : inner 𝕜 (r - s) (-s) = ((‖s‖ ^ 2 : ℝ) : 𝕜) := by
@@ -71,9 +70,9 @@ private theorem norm_smoothing_sq (hs : s ≠ 0) (hr : r ≠ 0) (horth : inner �
   field_simp
   ring
 
-/-- Saad, *Iterative Methods*, Lemma 6.18 (Weiss's smoothing lemma): if `r ⟂ s'` where
-`s' = s + η (r - s)` is the residual-minimizing combination and `r ⟂ s`, then
-`1/‖s'‖² = 1/‖s‖² + 1/‖r‖²`. -/
+/-- [saad2003iterative], Lemma 6.18 ([weiss1990convergence] smoothing lemma): if `r ⟂ s'` where `s'
+= s + η (r - s)` is the residual-minimizing combination and `r ⟂ s`, then `1/‖s'‖² = 1/‖s‖² +
+1/‖r‖²`. -/
 theorem inv_sq_norm_smoothing {s r : E} (hs : s ≠ 0) (hr : r ≠ 0)
     (horth : inner 𝕜 r s = 0) :
     let s' := s + (smoothingCoeff s r : 𝕜) • (r - s)
@@ -104,8 +103,8 @@ theorem subspace_succ_eq_sup (A : E →ₗ[𝕜] E) (v : E) (m : ℕ) :
   · rw [h]
     exact Submodule.mem_sup_right (Submodule.mem_span_singleton_self _)
 
-/-- The Galerkin residual at step `m + 1` is orthogonal to the minimal-residual residual at
-step `m`. -/
+/-- The Galerkin residual at step `m + 1` is orthogonal to the minimal-residual residual at step
+`m`. -/
 private theorem inner_residual_minRes_galerkin (hG : IsMinResIterate A b x₀ m xG)
     (hF : IsGalerkinIterate A b x₀ (m + 1) xF) : inner 𝕜 (b - A xG) (b - A xF) = 0 :=
   IsPetrovGalerkin.inner_residual_eq_zero hF (residual_mem_subspace_succ hG.mem)
@@ -116,8 +115,8 @@ theorem residual_smoothing_step (η : 𝕜) (xG xF : E) :
   simp only [map_add, map_smul, map_sub]
   module
 
-/-- `A 𝒦_{m+1} = A 𝒦_m ⊔ 𝕜 (r^F_{m+1} - r^G_m)`, the key decomposition behind the
-residual-smoothing proof of the Cullum–Greenbaum relation. Only `r^G_m ≠ 0` is needed. -/
+/-- `A 𝒦_{m+1} = A 𝒦_m ⊔ 𝕜 (r^F_{m+1} - r^G_m)`, the key decomposition behind the residual-smoothing
+proof of the [greenbaum1997iterative] [cullum1996relations] relation. Only `r^G_m ≠ 0` is needed. -/
 private theorem map_subspace_succ_eq_sup_span' (hG : IsMinResIterate A b x₀ m xG)
     (hF : IsGalerkinIterate A b x₀ (m + 1) xF) (hG0 : b - A xG ≠ 0) :
     (subspace A (b - A x₀) (m + 1)).map A =
@@ -157,9 +156,10 @@ private theorem map_subspace_succ_eq_sup_span' (hG : IsMinResIterate A b x₀ m 
       (Submodule.mem_sup_right (Submodule.smul_mem _ _ (Submodule.mem_span_singleton_self _)))
 
 set_option linter.unusedVariables false in
-/-- The step from `A 𝒦_m` to `A 𝒦_{m+1}` is spanned by `r^F_{m+1} - r^G_m` (the Galerkin residual
-at `m + 1` minus the minimal-residual residual at `m`), the key step of the residual-smoothing
-proof of the Cullum–Greenbaum relation: `A 𝒦_{m+1} = A 𝒦_m ⊔ 𝕜 ∙ (r^F_{m+1} - r^G_m)`. -/
+/-- The step from `A 𝒦_m` to `A 𝒦_{m+1}` is spanned by `r^F_{m+1} - r^G_m` (the Galerkin residual at
+`m + 1` minus the minimal-residual residual at `m`), the key step of the residual-smoothing proof of
+the [greenbaum1997iterative] [cullum1996relations] relation: `A 𝒦_{m+1} = A 𝒦_m ⊔ 𝕜 ∙ (r^F_{m+1} -
+r^G_m)`. -/
 theorem map_subspace_succ_eq_sup_span {m : ℕ} {xG xF : E} (hG : IsMinResIterate A b x₀ m xG)
     (hF : IsGalerkinIterate A b x₀ (m + 1) xF) (hF0 : b - A xF ≠ 0)
     (hinj : Function.Injective A) [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))]
@@ -170,8 +170,8 @@ theorem map_subspace_succ_eq_sup_span {m : ℕ} {xG xF : E} (hG : IsMinResIterat
   have hAx : A xG = b := (sub_eq_zero.1 hG0).symm
   exact absurd (grade_le_of_apply_eq hG.mem hAx) (by omega)
 
-/-- One residual-smoothing step turns the minimal-residual iterate at `m` and the Galerkin
-iterate at `m + 1` into the minimal-residual iterate at `m + 1`. -/
+/-- One residual-smoothing step turns the minimal-residual iterate at `m` and the Galerkin iterate
+at `m + 1` into the minimal-residual iterate at `m + 1`. -/
 private theorem smoothing_isMinResIterate (hG : IsMinResIterate A b x₀ m xG)
     (hF : IsGalerkinIterate A b x₀ (m + 1) xF) (hG0 : b - A xG ≠ 0) :
     IsMinResIterate A b x₀ (m + 1)
@@ -220,8 +220,8 @@ section Relations
 
 variable {m : ℕ} {xG xG' xF : E}
 
-/-- Cullum–Greenbaum (Saad, *Iterative Methods*, (6.65)):
-`1/‖r_{m+1}^G‖² = 1/‖r_m^G‖² + 1/‖r_{m+1}^F‖²`. -/
+/-- [cullum1996relations] ([saad2003iterative], (6.65)): `1/‖r_{m+1}^G‖² = 1/‖r_m^G‖² +
+1/‖r_{m+1}^F‖²`. -/
 theorem inv_sq_norm_residual_minRes {m : ℕ} {xG xG' xF : E}
     (hG : IsMinResIterate A b x₀ m xG) (hG' : IsMinResIterate A b x₀ (m + 1) xG')
     (hF : IsGalerkinIterate A b x₀ (m + 1) xF) (h0 : b - A xG' ≠ 0) :
@@ -250,8 +250,8 @@ theorem norm_residual_minRes_le_galerkin {m : ℕ} {xG xF : E}
     ‖b - A xG‖ ≤ ‖b - A xF‖ :=
   hG.min xF hF.mem
 
-/-- Saad, *Iterative Methods*, Cor 6.14: `1/‖r_m^G‖² = ∑_{i ≤ m} 1/‖r_i^F‖²` when all Galerkin
-iterates exist. -/
+/-- [saad2003iterative], Cor 6.14: `1/‖r_m^G‖² = ∑_{i ≤ m} 1/‖r_i^F‖²` when all Galerkin iterates
+exist. -/
 theorem inv_sq_norm_residual_minRes_eq_sum {m : ℕ} {xG : E} {xF : ℕ → E}
     (hG : IsMinResIterate A b x₀ m xG) (hF : ∀ i ≤ m, IsGalerkinIterate A b x₀ i (xF i))
     (h0 : b - A xG ≠ 0) :
@@ -341,7 +341,7 @@ private theorem galerkin_residual_eq_zero_of_minRes (hG : IsMinResIterate A b x�
   exact inner_self_eq_zero.1
     (IsPetrovGalerkin.inner_residual_eq_zero hF hFmem)
 
-/-- Saad, *Iterative Methods*, Prop 6.15: `min_{i ≤ m} ‖r_i^F‖ ≤ √(m+1) ‖r_m^G‖`. -/
+/-- [saad2003iterative], Prop 6.15: `min_{i ≤ m} ‖r_i^F‖ ≤ √(m+1) ‖r_m^G‖`. -/
 theorem exists_norm_residual_galerkin_le {m : ℕ} {xG : E} {xF : ℕ → E}
     (hG : IsMinResIterate A b x₀ m xG) (hF : ∀ i ≤ m, IsGalerkinIterate A b x₀ i (xF i)) :
     ∃ i ≤ m, ‖b - A (xF i)‖ ≤ Real.sqrt (m + 1) * ‖b - A xG‖ := by
@@ -375,9 +375,8 @@ theorem exists_norm_residual_galerkin_le {m : ℕ} {xG : E} {xF : ℕ → E}
   rw [heq] at hkey
   exact lt_irrefl _ hkey
 
-/-- Iterate relation (Saad, *Iterative Methods*, (6.74)): `x_m^G = s_m² x_{m-1}^G + c_m² x_m^F`
-with
-`c_m² = ‖r_m^G‖² / ‖r_m^F‖²`. -/
+/-- Iterate relation ([saad2003iterative], (6.74)): `x_m^G = s_m² x_{m-1}^G + c_m² x_m^F` with `c_m²
+= ‖r_m^G‖² / ‖r_m^F‖²`. -/
 theorem minRes_eq_combination {m : ℕ} {xG xG' xF : E}
     (hG : IsMinResIterate A b x₀ m xG) (hG' : IsMinResIterate A b x₀ (m + 1) xG')
     (hF : IsGalerkinIterate A b x₀ (m + 1) xF) (hinj : Function.Injective A)
@@ -414,8 +413,8 @@ theorem minRes_eq_combination {m : ℕ} {xG xG' xF : E}
   module
 
 /-- The Galerkin iterate over `x₀ + K` exists as soon as the compression `P_K A|_K` of `A` to a
-finite-dimensional `K` is injective: injective is then surjective, so the projected equation
-`P_K A z = P_K r₀` has a solution, and `x₀ + z` is the iterate. This is the half of
+finite-dimensional `K` is injective: injective is then surjective, so the projected equation `P_K A
+z = P_K r₀` has a solution, and `x₀ + z` is the iterate. This is the half of
 `Krylov.existsUnique_isGalerkinIterate_iff_isUnit` that does not need coordinates. -/
 private theorem exists_isGalerkin_of_injective_compression {K : Submodule 𝕜 E}
     [FiniteDimensional 𝕜 K]
@@ -433,8 +432,9 @@ private theorem exists_isGalerkin_of_injective_compression {K : Submodule 𝕜 E
       Submodule.inner_starProjection_right hw]
   rw [map_add, ← sub_sub, inner_sub_right, h1, sub_self]
 
-/-- Brown (Saad, *Iterative Methods*, Prop 6.17): the minimal-residual iteration stagnates at
-step `m + 1` (`‖r_{m+1}^G‖ = ‖r_m^G‖ ≠ 0`) iff no Galerkin iterate exists at step `m + 1`. -/
+/-- [brown1991theoretical] ([saad2003iterative], Prop 6.17): the minimal-residual iteration
+stagnates at step `m + 1` (`‖r_{m+1}^G‖ = ‖r_m^G‖ ≠ 0`) iff no Galerkin iterate exists at step `m +
+1`. -/
 theorem norm_residual_minRes_eq_iff_not_exists_galerkin {m : ℕ}
     {xG xG' : E} (hG : IsMinResIterate A b x₀ m xG) (hG' : IsMinResIterate A b x₀ (m + 1) xG')
     (h0 : b - A xG' ≠ 0) [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))]
@@ -521,9 +521,9 @@ theorem norm_residual_minRes_eq_iff_not_exists_galerkin {m : ℕ}
 
 end Relations
 
-/-- Weiss's minimal-residual smoothing (Saad, *Iterative Methods*, Alg 6.14) of a sequence of
-iterates `xO`: `xS 0 = xO 0`, `xS (m+1) = xS m + η_m (xO (m+1) - xS m)` with `η_m` minimizing
-the residual on the line. -/
+/-- [weiss1990convergence] minimal-residual smoothing ([saad2003iterative], Alg 6.14) of a sequence
+of iterates `xO`: `xS 0 = xO 0`, `xS (m+1) = xS m + η_m (xO (m+1) - xS m)` with `η_m` minimizing the
+residual on the line. -/
 noncomputable def mrs (A : E →ₗ[𝕜] E) (b : E) (xO : ℕ → E) : ℕ → E
   | 0 => xO 0
   | m + 1 => mrs A b xO m +
@@ -538,9 +538,9 @@ private theorem smoothingCoeff_zero_left (r : E) : (smoothingCoeff (0 : E) r : �
   simp [smoothingCoeff]
 
 set_option linter.unusedVariables false in
-/-- Saad, *Iterative Methods*, §6.5.8 (Weiss; Zhou–Walker, *Residual smoothing techniques for
-iterative methods*): minimal-residual smoothing of the Galerkin (FOM) iterates produces the
-minimal-residual (GMRES) iterates. -/
+/-- [saad2003iterative], §6.5.8 ([weiss1990convergence]; [zhou1994residual], *Residual smoothing
+techniques for iterative methods*): minimal-residual smoothing of the Galerkin (FOM) iterates
+produces the minimal-residual (GMRES) iterates. -/
 theorem IsGalerkinIterate.mrs_isMinResIterate {xO : ℕ → E} (hinj : Function.Injective A) (m : ℕ)
     (hO : ∀ i ≤ m, IsGalerkinIterate A b x₀ i (xO i)) :
     IsMinResIterate A b x₀ m (mrs A b xO m) := by
@@ -586,12 +586,12 @@ theorem smul_combination_eq {S rho : ℝ} (hS : 0 < S) (hr : 0 < rho) (u v : E) 
     field_simp
   rw [smul_smul, ← RCLike.ofReal_mul, e1, smul_add, smul_smul, ← RCLike.ofReal_mul, e2]
 
-/-- Saad, *Iterative Methods*, (6.79): the residual produced by minimal-residual smoothing of the
-Galerkin (FOM) iterates is the weighted average of their residuals, each weighted by `1/‖r^F_j‖²`
-and the whole normalised by the sum of the weights. Read together with
+/-- [saad2003iterative], (6.79): the residual produced by minimal-residual smoothing of the Galerkin
+(FOM) iterates is the weighted average of their residuals, each weighted by `1/‖r^F_j‖²` and the
+whole normalised by the sum of the weights. Read together with
 `Krylov.IsGalerkinIterate.mrs_isMinResIterate`, which identifies the smoothed sequence with the
 minimal-residual (GMRES) iterates, it exhibits `r^G_m` as that average — the vector form of the
-Cullum–Greenbaum relation `1/‖r^G_m‖² = ∑_{j ≤ m} 1/‖r^F_j‖²`. -/
+[greenbaum1997iterative] [cullum1996relations] relation `1/‖r^G_m‖² = ∑_{j ≤ m} 1/‖r^F_j‖²`. -/
 theorem residual_mrs_eq {xO : ℕ → E} (hinj : Function.Injective A) (m : ℕ)
     (hO : ∀ i ≤ m, IsGalerkinIterate A b x₀ i (xO i)) (h0 : ∀ j ≤ m, b - A (xO j) ≠ 0) :
     b - A (mrs A b xO m) =

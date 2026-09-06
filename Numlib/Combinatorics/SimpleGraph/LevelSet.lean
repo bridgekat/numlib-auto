@@ -11,19 +11,19 @@ import Mathlib.Combinatorics.SimpleGraph.Metric
 # Distance spheres of a simple graph, and their separating property
 
 `SimpleGraph.sphere G v k` is the set of vertices at distance exactly `k` from `v` and reachable
-from it: the `k`-th *level set* of a breadth-first traversal rooted at `v`. The spheres are
-pairwise disjoint and cover the connected component of `v` (`SimpleGraph.pairwiseDisjoint_sphere`,
+from it: the `k`-th *level set* of a breadth-first traversal rooted at `v`. The spheres are pairwise
+disjoint and cover the connected component of `v` (`SimpleGraph.pairwiseDisjoint_sphere`,
 `SimpleGraph.iUnion_sphere`), and the one fact that makes them useful is that an edge changes the
 distance to the root by at most one (`SimpleGraph.dist_le_dist_add_one_of_adj`,
-`SimpleGraph.abs_dist_sub_dist_le_one_of_adj`). Hence no edge joins two spheres whose indices
-differ by two or more (`SimpleGraph.not_adj_of_two_le_dist_sub_dist`), so every sphere separates
-the spheres below it from the spheres above it (`SimpleGraph.isSeparator_sphere`).
+`SimpleGraph.abs_dist_sub_dist_le_one_of_adj`). Hence no edge joins two spheres whose indices differ
+by two or more (`SimpleGraph.not_adj_of_two_le_dist_sub_dist`), so every sphere separates the
+spheres below it from the spheres above it (`SimpleGraph.isSeparator_sphere`).
 
 This is the graph-theoretic content behind the level-set reorderings of a sparse matrix — the
-Cuthill–McKee ordering and the separators of nested dissection — of [Saad][saad2003iterative] §3.3.3
-and §3.6.2: a reordering that lists the vertices in order of their distance to a root makes the
-matrix block tridiagonal. The algorithm is not needed for that, because the sets a breadth-first
-search marks at step `k` are exactly the distance spheres, so the theorems below are stated about
+Cuthill–McKee ordering and the separators of nested dissection — of [saad2003iterative] §3.3.3 and
+§3.6.2: a reordering that lists the vertices in order of their distance to a root makes the matrix
+block tridiagonal. The algorithm is not needed for that, because the sets a breadth-first search
+marks at step `k` are exactly the distance spheres, so the theorems below are stated about
 `SimpleGraph.dist` and about no traversal.
 -/
 
@@ -34,14 +34,14 @@ variable {V : Type*} {G : SimpleGraph V} {u v w : V} {k l : ℕ}
 /-! ### An edge changes the distance to a root by at most one -/
 
 /-- Appending an edge to a geodesic: if `u` and `w` are adjacent then `w` is at most one step
-further from `v` than `u` is. No reachability hypothesis is needed, because if `v` reaches
-neither of them both distances are `0`. -/
+further from `v` than `u` is. No reachability hypothesis is needed, because if `v` reaches neither
+of them both distances are `0`. -/
 theorem dist_le_dist_add_one_of_adj (h : G.Adj u w) (v : V) : G.dist v w ≤ G.dist v u + 1 := by
   have h' := h.reachable.dist_triangle_right (G := G) v
   rwa [dist_eq_one_iff_adj.2 h] at h'
 
-/-- The symmetric form of `SimpleGraph.dist_le_dist_add_one_of_adj`: the distances to a root of
-the two endpoints of an edge differ by at most one. -/
+/-- The symmetric form of `SimpleGraph.dist_le_dist_add_one_of_adj`: the distances to a root of the
+two endpoints of an edge differ by at most one. -/
 theorem abs_dist_sub_dist_le_one_of_adj (h : G.Adj u w) (v : V) :
     |(G.dist v u : ℤ) - (G.dist v w : ℤ)| ≤ 1 := by
   have h₁ := dist_le_dist_add_one_of_adj h v

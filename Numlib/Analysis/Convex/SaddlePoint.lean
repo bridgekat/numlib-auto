@@ -4,8 +4,8 @@ import Mathlib.Order.ConditionallyCompleteLattice.Basic
 /-!
 # Saddle points and the minimax equality
 
-For `L : α → β → ℝ` and sets `A ⊆ α`, `B ⊆ β`, a pair `(u, p)` is a *saddle point* of `L` on
-`A × B` when
+For `L : α → β → ℝ` and sets `A ⊆ α`, `B ⊆ β`, a pair `(u, p)` is a *saddle point* of `L` on `A × B`
+when
 
   `L u q ≤ L u p ≤ L v p`  for all `v ∈ A` and `q ∈ B`,
 
@@ -15,8 +15,8 @@ module is that a saddle point is exactly a point where the two extremal problems
   `min_{v ∈ A} sup_{q ∈ B} L v q`  and  `max_{q ∈ B} inf_{v ∈ A} L v q`
 
 are both solved and have the common value `L u p`.  In the applications the first is a primal
-problem and the second its dual, and the equality of the two values is the absence of a duality
-gap; this is the shape of the dual formulation of a boundary value problem.
+problem and the second its dual, and the equality of the two values is the absence of a duality gap;
+this is the shape of the dual formulation of a boundary value problem.
 
 Nothing here is convex analysis: `A` and `B` are bare sets, `L` an arbitrary real function, and
 every proof is order arithmetic.  The one trap is that `sSup` and `sInf` take junk values on
@@ -27,13 +27,13 @@ Not proved here: the existence of a saddle point for a convex–concave `L` on c
 of a reflexive Banach space, which needs weak compactness of bounded sets in a reflexive space.
 
 The definition and the equivalence are Definition 8.6.1 and Proposition 8.6.2 of
-[Atkinson–Han][han2009theoretical].
+[han2009theoretical].
 -/
 
 variable {α β : Type*} {L : α → β → ℝ} {A : Set α} {B : Set β} {u : α} {p : β}
 
-/-- `(u, p)` is a saddle point of `L : α → β → ℝ` on `A × B`: `u ∈ A`, `p ∈ B`, and
-`L u q ≤ L u p ≤ L v p` for every `v ∈ A` and `q ∈ B`. -/
+/-- `(u, p)` is a saddle point of `L : α → β → ℝ` on `A × B`: `u ∈ A`, `p ∈ B`, and `L u q ≤ L u p ≤
+L v p` for every `v ∈ A` and `q ∈ B`. -/
 structure IsSaddlePoint (L : α → β → ℝ) (A : Set α) (B : Set β) (u : α) (p : β) : Prop where
   /-- The first component lies in the first set. -/
   mem_left : u ∈ A
@@ -61,8 +61,8 @@ theorem isLeast_image (h : IsSaddlePoint L A B u p) :
     IsLeast ((fun v => L v p) '' A) (L u p) :=
   ⟨⟨u, h.mem_left, rfl⟩, by rintro _ ⟨v, hv, rfl⟩; exact h.le_apply v hv⟩
 
-/-- `sSup (L u '' B) = L u p`: the primal objective `v ↦ sup_{q ∈ B} L v q` takes the value
-`L u p` at `u`. -/
+/-- `sSup (L u '' B) = L u p`: the primal objective `v ↦ sup_{q ∈ B} L v q` takes the value `L u p`
+at `u`. -/
 theorem sSup_image_eq (h : IsSaddlePoint L A B u p) : sSup (L u '' B) = L u p :=
   h.isGreatest_image.csSup_eq
 
@@ -80,9 +80,9 @@ theorem isLeast_sSup (h : IsSaddlePoint L A B u p) (hbdd : ∀ v ∈ A, BddAbove
   rintro _ ⟨v, hv, rfl⟩
   exact (h.le_apply v hv).trans (le_csSup (hbdd v hv) ⟨p, h.mem_right, rfl⟩)
 
-/-- At a saddle point the dual objective `q ↦ inf_{v ∈ A} L v q` attains its greatest value on
-`B`, at `p`, and that value is again `L u p`.  With `IsSaddlePoint.isLeast_sSup` this is the
-minimax equality: the primal minimum and the dual maximum are both `L u p`. -/
+/-- At a saddle point the dual objective `q ↦ inf_{v ∈ A} L v q` attains its greatest value on `B`,
+at `p`, and that value is again `L u p`.  With `IsSaddlePoint.isLeast_sSup` this is the minimax
+equality: the primal minimum and the dual maximum are both `L u p`. -/
 theorem isGreatest_sInf (h : IsSaddlePoint L A B u p)
     (hbdd : ∀ q ∈ B, BddBelow ((fun v => L v q) '' A)) :
     IsGreatest ((fun q => sInf ((fun v => L v q) '' A)) '' B) (L u p) := by
@@ -92,9 +92,9 @@ theorem isGreatest_sInf (h : IsSaddlePoint L A B u p)
 
 end IsSaddlePoint
 
-/-- The converse of `IsSaddlePoint.isLeast_sSup` and `IsSaddlePoint.isGreatest_sInf`: if the
-primal objective attains its minimum over `A` at `u`, the dual objective attains its maximum over
-`B` at `p`, and the two extremal values agree, then `(u, p)` is a saddle point of `L`.
+/-- The converse of `IsSaddlePoint.isLeast_sSup` and `IsSaddlePoint.isGreatest_sInf`: if the primal
+objective attains its minimum over `A` at `u`, the dual objective attains its maximum over `B` at
+`p`, and the two extremal values agree, then `(u, p)` is a saddle point of `L`.
 
 What the proof needs is only that the primal value at `u` equals the dual value at `p`, and the
 three hypotheses on the extremal problems say exactly that: the two `IsLeast`/`IsGreatest`

@@ -10,35 +10,33 @@ import Numlib.Approximation.Chebyshev
 # Polynomial interpolation and its error
 
 Lagrange interpolation at `n + 1` distinct nodes, with the classical error formula `f(t) - p(t) =
-f^{(n+1)}(ξ)/(n+1)! ∏ (t - x_i)`. The material is [Atkinson–Han, *Theoretical Numerical
-Analysis*][han2009theoretical] §3.2 and [Kress, *Numerical Analysis*][kress1998numerical] §8.1 and
-§8.3.
+f^{(n+1)}(ξ)/(n+1)! ∏ (t - x_i)`. The material is [han2009theoretical] §3.2 and [kress1998numerical]
+§8.1 and §8.3.
 
 ## Main definitions
 
 * `Lagrange.basisCM x i` and `Lagrange.interpolateCLM x` are the Lagrange basis functions and the
   interpolation operator on `C(X, ℝ)`, for a compact `X ⊆ ℝ`.
-* `piecewiseLinearRamp` and `piecewiseLinearInterpCLM` are the clamped ramp of a subinterval and
-  the piecewise-linear interpolation operator on a partition, which is a combination of ramps.
+* `piecewiseLinearRamp` and `piecewiseLinearInterpCLM` are the clamped ramp of a subinterval and the
+  piecewise-linear interpolation operator on a partition, which is a combination of ramps.
 
 ## Main results
 
-* `exists_iteratedDeriv_eq_zero_of_forall_eq_zero` is the **generalized Rolle theorem**: a
-  `C^{n+1}` function vanishing at `n + 2` points of `[a, b]` has a zero of its `(n+1)`-st
-  derivative strictly inside `[a, b]`. Applied to `s ↦ f s - p s - c ∏ (s - x_i)` with `c` chosen
-  to make the value at `t` vanish, it gives the error formula
-  `Lagrange.exists_sub_interpolate_eq`.
-* `Lagrange.isGreatest_norm_interpolateCLM` and `Lagrange.norm_interpolateCLM` identify the
-  operator norm of the interpolation operator with the **Lebesgue constant** of its nodes, the
-  largest value of `t ↦ ∑ i, |ℓ_i t|`.
+* `exists_iteratedDeriv_eq_zero_of_forall_eq_zero` is the **generalized Rolle theorem**: a `C^{n+1}`
+  function vanishing at `n + 2` points of `[a, b]` has a zero of its `(n+1)`-st derivative strictly
+  inside `[a, b]`. Applied to `s ↦ f s - p s - c ∏ (s - x_i)` with `c` chosen to make the value at
+  `t` vanish, it gives the error formula `Lagrange.exists_sub_interpolate_eq`.
+* `Lagrange.isGreatest_norm_interpolateCLM` and `Lagrange.norm_interpolateCLM` identify the operator
+  norm of the interpolation operator with the **Lebesgue constant** of its nodes, the largest value
+  of `t ↦ ∑ i, |ℓ_i t|`.
 * `norm_piecewiseLinearInterpCLM` says that piecewise-linear interpolation has norm one, and
-  `norm_sub_piecewiseLinearInterpCLM_le` bounds its error on a mesh of size `h` by
-  `h² ‖f''‖ / 8` — the two-node case of the same error formula.
+  `norm_sub_piecewiseLinearInterpCLM_le` bounds its error on a mesh of size `h` by `h² ‖f''‖ / 8` —
+  the two-node case of the same error formula.
 
 ## Implementation notes
 
-The bound on the piecewise-linear error by the modulus of continuity of a merely continuous `f`
-is not stated: nothing in the library defines a modulus of continuity yet.
+The bound on the piecewise-linear error by the modulus of continuity of a merely continuous `f` is
+not stated: nothing in the library defines a modulus of continuity yet.
 -/
 
 open scoped Polynomial
@@ -119,7 +117,7 @@ private theorem exists_eq_zero_aux {a b : ℝ} :
 /-- **The generalized Rolle theorem.** A function of class `C^{n+1}` that vanishes at `n + 2`
 distinct points of `[a, b]` has a zero of its `(n + 1)`-st derivative strictly inside `[a, b]`.
 
-Reference: Kress, *Numerical Analysis*, §8.1. -/
+Reference: [kress1998numerical], §8.1. -/
 theorem exists_iteratedDeriv_eq_zero_of_forall_eq_zero {n : ℕ} {a b : ℝ}
     {f : ℝ → ℝ} (hf : ContDiff ℝ ((n + 1 : ℕ) : WithTop ℕ∞) f) {s : Finset ℝ}
     (hcard : n + 2 ≤ s.card) (hsub : ∀ t ∈ s, t ∈ Set.Icc a b) (hzero : ∀ t ∈ s, f t = 0) :
@@ -174,11 +172,10 @@ namespace Lagrange
 
 /-- **The Lagrange interpolation error formula.** For `f` of class `C^{n+1}` and `n + 1` distinct
 nodes in `[a, b]`, the error of the interpolating polynomial at a point `t` of `[a, b]` is
-`f^{(n+1)}(ξ)/(n+1)!` times the nodal polynomial `∏ (t - x_i)`, for some `ξ` strictly inside
-`[a, b]`.
+`f^{(n+1)}(ξ)/(n+1)!` times the nodal polynomial `∏ (t - x_i)`, for some `ξ` strictly inside `[a,
+b]`.
 
-Reference: Kress, *Numerical Analysis*, Theorem 8.4; Atkinson–Han, *Theoretical Numerical Analysis*,
-§3.2. -/
+Reference: [kress1998numerical], Theorem 8.4; [han2009theoretical], §3.2. -/
 theorem exists_sub_interpolate_eq {n : ℕ} {a b : ℝ} (hab : a < b) {f : ℝ → ℝ}
     (hf : ContDiff ℝ ((n + 1 : ℕ) : WithTop ℕ∞) f) {v : Fin (n + 1) → ℝ}
     (hv : Function.Injective v) (hvmem : ∀ i, v i ∈ Set.Icc a b) {t : ℝ} (ht : t ∈ Set.Icc a b) :
@@ -286,13 +283,12 @@ omit [CompactSpace X] in
 theorem basisCM_apply (x : Fin (n + 1) → X) (i : Fin (n + 1)) (t : X) :
     basisCM x i t = (Lagrange.basis Finset.univ (fun j => (x j : ℝ)) i).eval (t : ℝ) := rfl
 
-/-- The **Lagrange interpolation operator** at `n + 1` distinct nodes of a compact `X ⊆ ℝ`:
-the bounded projection `f ↦ ∑ i, f (x i) • ℓ_i` of `C(X, ℝ)` onto the polynomials of degree at
-most `n`. It is the projection `P` of the Lebesgue lemma
-`norm_sub_apply_le_of_isIdempotentElem`, whose operator norm is the Lebesgue constant of the
-nodes.
+/-- The **Lagrange interpolation operator** at `n + 1` distinct nodes of a compact `X ⊆ ℝ`: the
+bounded projection `f ↦ ∑ i, f (x i) • ℓ_i` of `C(X, ℝ)` onto the polynomials of degree at most `n`.
+It is the projection `P` of the Lebesgue lemma `norm_sub_apply_le_of_isIdempotentElem`, whose
+operator norm is the Lebesgue constant of the nodes.
 
-Reference: Atkinson–Han, *Theoretical Numerical Analysis*, Example 3.6.5. -/
+Reference: [han2009theoretical], Example 3.6.5. -/
 noncomputable def interpolateCLM (x : Fin (n + 1) → X) : C(X, ℝ) →L[ℝ] C(X, ℝ) :=
   ∑ i, (ContinuousMap.evalCLM (R := ℝ) (x i)).smulRight (basisCM x i)
 
@@ -342,8 +338,8 @@ theorem range_interpolateCLM {x : Fin (n + 1) → X} (hx : Function.Injective x)
       exact hPval (x i)
     rw [hnodes, ← hP, hPval t]
 
-/-- The interpolation operator is a projection: it fixes the polynomials of degree at most
-`n`, in particular its own values. -/
+/-- The interpolation operator is a projection: it fixes the polynomials of degree at most `n`, in
+particular its own values. -/
 theorem isIdempotentElem_interpolateCLM {x : Fin (n + 1) → X} (hx : Function.Injective x) :
     IsIdempotentElem (interpolateCLM x) := by
   have h : ∀ f : C(X, ℝ), interpolateCLM x (interpolateCLM x f) = interpolateCLM x f := by
@@ -379,15 +375,15 @@ theorem sum_smul_basisCM_apply_node {x : Fin (n + 1) → X} (hx : Function.Injec
   · intro hj
     exact absurd (Finset.mem_univ j) hj
 
-/-- **The Lebesgue constant.** The operator norm of the interpolation operator is the largest
-value of the Lebesgue function `t ↦ ∑ i, |ℓ_i t|`.
+/-- **The Lebesgue constant.** The operator norm of the interpolation operator is the largest value
+of the Lebesgue function `t ↦ ∑ i, |ℓ_i t|`.
 
-The upper bound is the triangle inequality. The lower bound needs a continuous function of norm
-at most `1` taking the sign of `ℓ_i t₀` at the node `x i`: the combination
-`∑ i, sign (ℓ_i t₀) • ℓ_i` already takes those values at the nodes, and the Tietze extension
-theorem replaces it by a function with the same values whose range lies in `[-1, 1]`.
+The upper bound is the triangle inequality. The lower bound needs a continuous function of norm at
+most `1` taking the sign of `ℓ_i t₀` at the node `x i`: the combination `∑ i, sign (ℓ_i t₀) • ℓ_i`
+already takes those values at the nodes, and the Tietze extension theorem replaces it by a function
+with the same values whose range lies in `[-1, 1]`.
 
-Reference: Atkinson–Han, *Theoretical Numerical Analysis*, §3.7.3. -/
+Reference: [han2009theoretical], §3.7.3. -/
 theorem isGreatest_norm_interpolateCLM [Nonempty X] {x : Fin (n + 1) → X}
     (hx : Function.Injective x) :
     IsGreatest (Set.range fun t : X => ∑ i, |basisCM x i t|) ‖interpolateCLM x‖ := by
@@ -487,18 +483,17 @@ noncomputable def piecewiseLinearRamp (a b u v : ℝ) : C(Set.Icc a b, ℝ) :=
 theorem piecewiseLinearRamp_apply (a b u v : ℝ) (t : Set.Icc a b) :
     piecewiseLinearRamp a b u v t = min (max ((t : ℝ) - u) 0) (v - u) := rfl
 
-/-- **Piecewise-linear interpolation** on the partition `a = x 0 < x 1 < ⋯ < x (n + 1) = b` of
-`[a, b]`: the bounded operator on `C([a, b], ℝ)` sending `f` to the continuous function that
-agrees with `f` at every node and is affine on every subinterval.
+/-- **Piecewise-linear interpolation** on the partition `a = x 0 < x 1 < ⋯ < x (n + 1) = b` of `[a,
+b]`: the bounded operator on `C([a, b], ℝ)` sending `f` to the continuous function that agrees with
+`f` at every node and is affine on every subinterval.
 
-The operator is written as the value at the first node plus the ramps of the subintervals scaled
-by the divided differences of `f`, which makes linearity, boundedness and continuity immediate;
-`piecewiseLinearInterpCLM_apply_of_mem` is the equivalent local description on one subinterval.
-The nodes are given as a sequence, of which only `x 0, …, x (n + 1)` are used, so that the index
+The operator is written as the value at the first node plus the ramps of the subintervals scaled by
+the divided differences of `f`, which makes linearity, boundedness and continuity immediate;
+`piecewiseLinearInterpCLM_apply_of_mem` is the equivalent local description on one subinterval. The
+nodes are given as a sequence, of which only `x 0, …, x (n + 1)` are used, so that the index
 arithmetic of the subintervals stays in `ℕ`.
 
-Reference: Atkinson–Han, *Theoretical Numerical Analysis*, §3.2.3 and Exercise 3.6.6; Kress,
-*Numerical Analysis*, §8.3. -/
+Reference: [han2009theoretical], §3.2.3 and Exercise 3.6.6; [kress1998numerical], §8.3. -/
 noncomputable def piecewiseLinearInterpCLM {a b : ℝ} (n : ℕ) (x : ℕ → Set.Icc a b) :
     C(Set.Icc a b, ℝ) →L[ℝ] C(Set.Icc a b, ℝ) :=
   (ContinuousMap.evalCLM ℝ (x 0)).smulRight 1 +
@@ -558,9 +553,8 @@ private theorem exists_mem_subinterval (hfirst : (x 0 : ℝ) = a) (hlast : (x (n
   have := S.le_max' _ hmem
   omega
 
-/-- **The local description of the piecewise-linear interpolant.** On the subinterval
-`[x j, x (j + 1)]` it is the affine function through `(x j, f (x j))` and
-`(x (j + 1), f (x (j + 1)))`. -/
+/-- **The local description of the piecewise-linear interpolant.** On the subinterval `[x j, x (j +
+1)]` it is the affine function through `(x j, f (x j))` and `(x (j + 1), f (x (j + 1)))`. -/
 theorem piecewiseLinearInterpCLM_apply_of_mem (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ))
     (f : C(Set.Icc a b, ℝ)) {j : ℕ} (hj : j ≤ n) {t : Set.Icc a b}
     (h1 : (x j : ℝ) ≤ (t : ℝ)) (h2 : (t : ℝ) ≤ (x (j + 1) : ℝ)) :
@@ -650,8 +644,8 @@ theorem isIdempotentElem_piecewiseLinearInterpCLM
       piecewiseLinearInterpCLM_apply_node hstep f (by omega)]
   exact ContinuousLinearMap.ext h
 
-/-- The piecewise-linear interpolant never exceeds the function in sup norm: on each subinterval
-its value is a convex combination of two values of the function. -/
+/-- The piecewise-linear interpolant never exceeds the function in sup norm: on each subinterval its
+value is a convex combination of two values of the function. -/
 theorem norm_piecewiseLinearInterpCLM_apply_le
     (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ)) (hfirst : (x 0 : ℝ) = a)
     (hlast : (x (n + 1) : ℝ) = b) (f : C(Set.Icc a b, ℝ)) :
@@ -679,7 +673,7 @@ theorem norm_piecewiseLinearInterpCLM_apply_le
 onto the continuous piecewise-linear functions of the partition, which is what makes its Lebesgue
 constant the best possible.
 
-Reference: Atkinson–Han, *Theoretical Numerical Analysis*, Exercise 3.6.6. -/
+Reference: [han2009theoretical], Exercise 3.6.6. -/
 theorem norm_piecewiseLinearInterpCLM (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ))
     (hfirst : (x 0 : ℝ) = a) (hlast : (x (n + 1) : ℝ) = b) :
     ‖piecewiseLinearInterpCLM n x‖ = 1 := by
@@ -697,20 +691,18 @@ theorem norm_piecewiseLinearInterpCLM (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i 
     rw [hfix, hone, mul_one] at this
     exact this
 
-/-- **The error of piecewise-linear interpolation.** On a partition of `[a, b]` of mesh at most
-`h`, the piecewise-linear interpolant of a `C²` function differs from it by at most
-`h² ‖f''‖ / 8`.
+/-- **The error of piecewise-linear interpolation.** On a partition of `[a, b]` of mesh at most `h`,
+the piecewise-linear interpolant of a `C²` function differs from it by at most `h² ‖f''‖ / 8`.
 
 The function is given as a `C²` map `ℝ → ℝ` agreeing with `f` on `[a, b]`, since `C(Icc a b, ℝ)`
 carries no derivative; only the values of the second derivative on `[a, b]` are used.
 
 The route is `piecewiseLinearInterpCLM_apply_of_mem`: on `[x j, x (j+1)]` the interpolant is the
 affine function through the two node values, hence the Lagrange interpolant at those two nodes, so
-`Lagrange.exists_sub_interpolate_eq` at `n = 1` applies on the subinterval, and
-`|(t - u)(t - v)| ≤ (v - u)²/4` finishes it.
+`Lagrange.exists_sub_interpolate_eq` at `n = 1` applies on the subinterval, and `|(t - u)(t - v)| ≤
+(v - u)²/4` finishes it.
 
-Reference: Atkinson–Han, *Theoretical Numerical Analysis*, (3.2.9); Kress, *Numerical Analysis*,
-§8.3. -/
+Reference: [han2009theoretical], (3.2.9); [kress1998numerical], §8.3. -/
 theorem norm_sub_piecewiseLinearInterpCLM_le (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ))
     (hfirst : (x 0 : ℝ) = a) (hlast : (x (n + 1) : ℝ) = b) {g : ℝ → ℝ}
     (hg : ContDiff ℝ ((2 : ℕ) : WithTop ℕ∞) g) {f : C(Set.Icc a b, ℝ)}

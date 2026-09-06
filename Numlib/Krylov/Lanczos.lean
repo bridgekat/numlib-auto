@@ -4,15 +4,12 @@ import Numlib.Krylov.Arnoldi
 /-!
 # The symmetric Lanczos process
 
-For symmetric `A` the Arnoldi coefficients are real and tridiagonal
-([Saad, *Iterative Methods*][saad2003iterative] Thm 6.19 /
-[Saad, *Large Eigenvalue Problems*][saad2011numerical] Thm 6.2), which gives the three-term
-recurrence `A v_j = β_j v_{j-1} + α_j v_j + β_{j+1} v_{j+1}`
-(Saad, *Iterative Methods*, Alg 6.15, [Choi][choi2006iterative] §2.1,
-[Meurant–Strakoš][meurant2006lanczos] §2.1, [Fong–Saunders][fong2012cg] §1). Indexing is
-`0`-based: `alpha A b j = ⟪v_j, A v_j⟫` and
-`beta A b j = h_{j+1,j} = ‖w_j‖ ≥ 0`, so `A v_{j+1} = beta j • v_j + alpha (j+1) • v_{j+1} +
-beta (j+1) • v_{j+2}`.
+For symmetric `A` the Arnoldi coefficients are real and tridiagonal ([saad2003iterative] Thm 6.19 /
+[saad2011numerical] Thm 6.2), which gives the three-term recurrence `A v_j = β_j v_{j-1} + α_j v_j +
+β_{j+1} v_{j+1}` ([saad2003iterative], Alg 6.15, [choi2006iterative] §2.1, [meurant2006lanczos]
+§2.1, [fong2012cg] §1). Indexing is `0`-based: `alpha A b j = ⟪v_j, A v_j⟫` and `beta A b j =
+h_{j+1,j} = ‖w_j‖ ≥ 0`, so `A v_{j+1} = beta j • v_j + alpha (j+1) • v_{j+1} + beta (j+1) •
+v_{j+2}`.
 -/
 
 open Krylov
@@ -24,8 +21,8 @@ namespace Arnoldi
 variable {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric) (b : E)
 include hA
 
-/-- For symmetric `A` the Arnoldi coefficient array is Hermitian: `h i j = conj (h j i)`. With
-the Hessenberg structure of `coeff_eq_zero_of_lt` this is what forces tridiagonality. -/
+/-- For symmetric `A` the Arnoldi coefficient array is Hermitian: `h i j = conj (h j i)`. With the
+Hessenberg structure of `coeff_eq_zero_of_lt` this is what forces tridiagonality. -/
 theorem coeff_conj_of_isSymmetric (i j : ℕ) : coeff A b i j = starRingEnd 𝕜 (coeff A b j i) := by
   rw [coeff, coeff, inner_conj_symm, hA]
 
@@ -59,7 +56,7 @@ theorem beta_nonneg (j : ℕ) : 0 ≤ beta A b j := norm_nonneg _
 theorem coe_beta (j : ℕ) : (beta A b j : 𝕜) = Arnoldi.coeff A b (j + 1) j :=
   (Arnoldi.coeff_succ_self A b j).symm
 
-/-- The real symmetric tridiagonal Lanczos matrix `T_m` (Saad, *Iterative Methods*, (6.84)). -/
+/-- The real symmetric tridiagonal Lanczos matrix `T_m` ([saad2003iterative], (6.84)). -/
 noncomputable def tridiag (m : ℕ) : Matrix (Fin m) (Fin m) ℝ :=
   Matrix.of fun i j =>
     if (i : ℕ) = j then alpha A b i
@@ -75,8 +72,8 @@ noncomputable def tridiagExt (m : ℕ) : Matrix (Fin (m + 1)) (Fin m) ℝ :=
     else if (j : ℕ) + 1 = i then beta A b j
     else 0
 
-/-- Entrywise description of `T_m`. The two matrices share it: `T_m` and `T̄_m` have the same
-entry function, read at different index ranges. -/
+/-- Entrywise description of `T_m`. The two matrices share it: `T_m` and `T̄_m` have the same entry
+function, read at different index ranges. -/
 theorem tridiag_apply {m : ℕ} (i j : Fin m) :
     tridiag A b m i j =
       if (i : ℕ) = j then alpha A b i
@@ -150,8 +147,8 @@ private theorem mulVec_tridiagExt_last (m : ℕ) (y : Fin (m + 1) → 𝕜) :
 variable {A} (hA : A.IsSymmetric)
 include hA
 
-/-- The diagonal coefficient is the diagonal Arnoldi entry: `α_j = h_{j,j}`. The real part taken
-in `alpha` loses nothing, because for symmetric `A` that entry is already real. -/
+/-- The diagonal coefficient is the diagonal Arnoldi entry: `α_j = h_{j,j}`. The real part taken in
+`alpha` loses nothing, because for symmetric `A` that entry is already real. -/
 theorem coe_alpha (j : ℕ) : (alpha A b j : 𝕜) = Arnoldi.coeff A b j j :=
   (Arnoldi.coeff_diag_re_of_isSymmetric hA b j).symm
 
@@ -174,8 +171,8 @@ theorem apply_vec_zero :
     Arnoldi.apply_vec_of_le A b (j := 0) (n := 1 + 1) (by omega),
     Finset.sum_range_succ, Finset.sum_range_one]
 
-/-- Three-term recurrence (Saad, *Iterative Methods*, Alg 6.15 and the display opening §6.6.2):
-`A v_{j+1} = β_j v_j + α_{j+1} v_{j+1} + β_{j+1} v_{j+2}`. -/
+/-- Three-term recurrence ([saad2003iterative], Alg 6.15 and the display opening §6.6.2): `A v_{j+1}
+= β_j v_j + α_{j+1} v_{j+1} + β_{j+1} v_{j+2}`. -/
 theorem apply_vec (j : ℕ) :
     A (Arnoldi.vec A b (j + 1)) =
       (beta A b j : 𝕜) • Arnoldi.vec A b j + (alpha A b (j + 1) : 𝕜) • Arnoldi.vec A b (j + 1) +
@@ -196,8 +193,8 @@ theorem w_succ_eq (j : ℕ) :
 
 -- `hA` is not needed here: `beta` is `‖w‖` and `Arnoldi.coeff_succ_self_eq_zero_iff` is general.
 set_option linter.unusedSectionVars false in
-/-- Lanczos breaks down exactly at the grade: `β_j = 0` iff `grade ≤ j + 1`, so the recurrence
-runs with nonzero `β` for as long as there is a new direction to find. -/
+/-- Lanczos breaks down exactly at the grade: `β_j = 0` iff `grade ≤ j + 1`, so the recurrence runs
+with nonzero `β` for as long as there is a new direction to find. -/
 theorem beta_eq_zero_iff [FiniteDimensional 𝕜 (fullSubspace A b)] (j : ℕ) :
     beta A b j = 0 ↔ grade A b ≤ j + 1 := by
   rw [← Arnoldi.coeff_succ_self_eq_zero_iff A b j, ← coe_beta A b j, RCLike.ofReal_eq_zero]
@@ -241,23 +238,22 @@ private theorem coeff_eq_ite (i j : ℕ) :
         · exact Arnoldi.coeff_eq_zero_of_isSymmetric hA b (by omega)
         · exact Arnoldi.coeff_eq_zero_of_lt A b (by omega)
 
-/-- `H_m = T_m` for symmetric `A` (Saad, *Iterative Methods*, Thm 6.19). -/
+/-- `H_m = T_m` for symmetric `A` ([saad2003iterative], Thm 6.19). -/
 theorem hessenbergSq_eq_map_tridiag (m : ℕ) :
     Arnoldi.hessenbergSq A b m = (tridiag A b m).map (algebraMap ℝ 𝕜) := by
   ext i j
   exact coeff_eq_ite b hA i j
 
-/-- `H̄_m = T̄_m` for symmetric `A`: the rectangular form of Saad, *Iterative Methods*,
-Thm 6.19. -/
+/-- `H̄_m = T̄_m` for symmetric `A`: the rectangular form of [saad2003iterative], Thm 6.19. -/
 theorem hessenberg_eq_map_tridiagExt (m : ℕ) :
     Arnoldi.hessenberg A b m = (tridiagExt A b m).map (algebraMap ℝ 𝕜) := by
   ext i j
   exact coeff_eq_ite b hA i j
 
-/-- `A V_m = V_m T_m + β_m v_m e_mᵀ`, the symmetric case of Saad, *Iterative Methods*, (6.6),
-where `H_m = T_m` by Thm 6.19; coordinate form.
-Written at `m + 1` steps, so that the number of steps is positive and the vector `v_{m+1}` that
-falls outside `V_{m+1}` is the one carrying the rank-one correction. -/
+/-- `A V_m = V_m T_m + β_m v_m e_mᵀ`, the symmetric case of [saad2003iterative], (6.6), where `H_m =
+T_m` by Thm 6.19; coordinate form. Written at `m + 1` steps, so that the number of steps is positive
+and the vector `v_{m+1}` that falls outside `V_{m+1}` is the one carrying the rank-one correction.
+-/
 theorem apply_sum (m : ℕ) (y : Fin (m + 1) → 𝕜) :
     A (∑ j, y j • Arnoldi.vec A b j) =
       ∑ i : Fin (m + 1), ((tridiag A b (m + 1)).map (algebraMap ℝ 𝕜)).mulVec y i •
@@ -273,8 +269,8 @@ theorem apply_sum (m : ℕ) (y : Fin (m + 1) → 𝕜) :
   rw [Arnoldi.apply_sum A b (m + 1) y, hessenberg_eq_map_tridiagExt b hA (m + 1),
     Fin.sum_univ_castSucc, mulVec_tridiagExt_last A b m y, Fin.val_last, hsum]
 
-/-- Termination (Choi, *Iterative Methods for Singular Linear Equations and Least-Squares
-Problems*, (2.4)): at `ℓ = grade`, `A V_ℓ = V_ℓ T_ℓ` and `𝒦_ℓ` is invariant. -/
+/-- Termination ([choi2006iterative], (2.4)): at `ℓ = grade`, `A V_ℓ = V_ℓ T_ℓ` and `𝒦_ℓ` is
+invariant. -/
 theorem apply_sum_grade [FiniteDimensional 𝕜 (fullSubspace A b)] (y : Fin (grade A b) → 𝕜) :
     A (∑ j, y j • Arnoldi.vec A b j) =
       ∑ i : Fin (grade A b),

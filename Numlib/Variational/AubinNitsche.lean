@@ -4,27 +4,26 @@ import Numlib.Variational.Galerkin
 # The Aubin–Nitsche duality argument
 
 An error bound for a Galerkin approximation measured in a norm *weaker* than the one the form is
-coercive in.  The setting is two inner product spaces `V` and `H` and a continuous linear map
-`ι : V →L[𝕜] H`, standing for the embedding of the energy space into the pivot space; in the
-finite element application it is `H¹(Ω) ⊆ L²(Ω)`, but nothing below needs a function space.
+coercive in.  The setting is two inner product spaces `V` and `H` and a continuous linear map `ι : V
+→L[𝕜] H`, standing for the embedding of the energy space into the pivot space; in the finite element
+application it is `H¹(Ω) ⊆ L²(Ω)`, but nothing below needs a function space.
 
 Given an error `e : V` that is orthogonal to a subspace `K` in the form `a`, and a solution `φ` of
-the *dual* problem `a v φ = ⟪ι v, ι e⟫` for all `v`, testing the dual problem at `v = e` gives
-`‖ι e‖² = a e φ`; orthogonality then replaces `φ` by `φ - w` for any `w ∈ K`, and boundedness of
-the form finishes:
+the *dual* problem `a v φ = ⟪ι v, ι e⟫` for all `v`, testing the dual problem at `v = e` gives `‖ι
+e‖² = a e φ`; orthogonality then replaces `φ` by `φ - w` for any `w ∈ K`, and boundedness of the
+form finishes:
 
   `‖ι e‖² ≤ M ‖e‖ ‖φ - w‖`.
 
-That is the whole of the argument, and `norm_map_sq_le_of_dual` states it pointwise — no
-infimum, no supremum, and no existence claim for `φ`.  `norm_map_le_of_dual_approx` is the form in
-which it is used: if the dual solutions can be approximated from `K` to within `δ` times the norm
-of the datum, the error in the weaker norm gains the whole factor `δ`, `‖ι e‖ ≤ M δ ‖e‖`.  In a
-finite element space `δ` is of order `h`, which is where the extra power of `h` in an `L²` error
-estimate comes from; the bound on `δ` itself is elliptic regularity theory and is not part of the
-argument.
+That is the whole of the argument, and `norm_map_sq_le_of_dual` states it pointwise — no infimum, no
+supremum, and no existence claim for `φ`.  `norm_map_le_of_dual_approx` is the form in which it is
+used: if the dual solutions can be approximated from `K` to within `δ` times the norm of the datum,
+the error in the weaker norm gains the whole factor `δ`, `‖ι e‖ ≤ M δ ‖e‖`.  In a finite element
+space `δ` is of order `h`, which is where the extra power of `h` in an `L²` error estimate comes
+from; the bound on `δ` itself is elliptic regularity theory and is not part of the argument.
 
 The theorem is due to Aubin and to Nitsche; the account followed here is Theorem 10.4.3 and
-Corollary 10.4.4 of [Atkinson–Han][han2009theoretical].
+Corollary 10.4.4 of [han2009theoretical].
 -/
 
 variable {𝕜 V H : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [InnerProductSpace 𝕜 V]
@@ -35,8 +34,8 @@ variable {𝕜 V H : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [InnerProductSp
 
   `‖ι e‖ ^ 2 ≤ M * ‖e‖ * ‖φ - w‖`  for every `w ∈ K`.
 
-Testing the dual problem at `v = e` turns `‖ι e‖ ^ 2` into `a e φ`, orthogonality replaces `φ` by
-`φ - w`, and boundedness of `a` does the rest. -/
+Testing the dual problem at `v = e` turns `‖ι e‖ ^ 2` into `a e φ`, orthogonality replaces `φ` by `φ
+- w`, and boundedness of `a` does the rest. -/
 theorem norm_map_sq_le_of_dual {a : SesqForm 𝕜 V} {M : ℝ} (hM : a.IsBoundedWith M)
     {K : Submodule 𝕜 V} (ι : V →L[𝕜] H) {e : V} (horth : ∀ v ∈ K, a e v = 0) {φ : V}
     (hφ : ∀ v : V, a v φ = inner 𝕜 (ι v) (ι e)) {w : V} (hw : w ∈ K) :

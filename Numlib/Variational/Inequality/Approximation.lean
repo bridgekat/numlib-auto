@@ -24,33 +24,33 @@ Cauchy–Schwarz, Lipschitz continuity and Young's inequality turns it into
 
   `(c/2) ‖u - u_h‖² ≤ R j v u_h + R j v_h u + (L²/(2c)) ‖u - v_h‖²`,
 
-which is `norm_sub_le_of_isVariationalInequalitySolution`, Falk's generalized Céa lemma.  It is
-pure algebra: no closedness, no convexity, no topology and no limit.  Everything else in the module
-is a specialization.
+which is `norm_sub_le_of_isVariationalInequalitySolution`, [falk1974error] generalized Céa lemma.
+It is pure algebra: no closedness, no convexity, no topology and no limit.  Everything else in the
+module is a specialization.
 
-* `norm_sub_le_of_isVariationalInequalitySolution_of_subset`: for an *internal* approximation,
-  `K_h ⊆ K`, the choice `v = u_h` kills the first residual.
+* `norm_sub_le_of_isVariationalInequalitySolution_of_subset`: for an *internal* approximation, `K_h
+  ⊆ K`, the choice `v = u_h` kills the first residual.
 * `tendsto_of_isVariationalInequalitySolution_of_subset`: hence internal approximations converge as
   soon as the constraint sets approximate `K` pointwise and `j` is continuous on `K`.  **No weak
   compactness is used**, which is why this and not the external theorem is the statement a
   finite-element analysis should cite.
 * `tendsto_of_isVariationalInequalitySolution`: the general external case, where the discrete sets
   are not inside `K`.  This one does need weak compactness — a bounded sequence has a weakly
-  convergent subsequence, whose limit lies in `K` by hypothesis and solves the continuous
-  inequality by Minty's lemma, which is stable under weak limits precisely because it evaluates the
-  operator at the *test* point.
+  convergent subsequence, whose limit lies in `K` by hypothesis and solves the continuous inequality
+  by Minty's lemma, which is stable under weak limits precisely because it evaluates the operator at
+  the *test* point.
 * `norm_sub_le_of_isVariationalInequalitySolution_of_le`: replacing `j` on the discrete set by a
   larger `j_h` costs one insertion of `j u_h ≤ j_h u_h`.
-* `norm_sub_le_of_regularization`: two problems on the whole space whose functionals differ by
-  `c₁ ε` have solutions within `√(2 c₁ ε / c)`.
+* `norm_sub_le_of_regularization`: two problems on the whole space whose functionals differ by `c₁
+  ε` have solutions within `√(2 c₁ ε / c)`.
 
-The bounds are stated squared, as the proofs establish them, rather than as the book's
-`‖u - u_h‖ ≤ C inf (‖u - v_h‖ + |R v_h u|^{1/2})`: the infima follow by `le_ciInf` and the square
-root by `Real.sqrt_le_sqrt` together with `√(x + y) ≤ √x + √y`, and neither step belongs in the
-statement of the estimate.
+The bounds are stated squared, as the proofs establish them, rather than as the book's `‖u - u_h‖ ≤
+C inf (‖u - v_h‖ + |R v_h u|^{1/2})`: the infima follow by `le_ciInf` and the square root by
+`Real.sqrt_le_sqrt` together with `√(x + y) ≤ √x + √y`, and neither step belongs in the statement of
+the estimate.
 
-The material is Section 11.4 of [Atkinson–Han][han2009theoretical] — Theorems 11.4.1, 11.4.2 and
-11.4.7 and Exercises 11.4.2 and 11.4.3 — and the error bound is due to [Falk][falk1974error].
+The material is Section 11.4 of [han2009theoretical] — Theorems 11.4.1, 11.4.2 and 11.4.7 and
+Exercises 11.4.2 and 11.4.3 — and the error bound is due to [falk1974error].
 -/
 
 open Filter Set Topology
@@ -81,8 +81,8 @@ private theorem varIneq_core (hmono : IsStronglyMonotoneWith ℝ A c)
   simp only [RCLike.re_to_real, inner_sub_left, inner_sub_right] at hm h1 h2 ⊢
   linarith
 
-/-- Young's inequality in the shape Falk's lemma needs: `c p² ≤ R + M p q` with `M² ≤ L²` gives
-`(c/2) p² ≤ R + (L²/(2c)) q²`. -/
+/-- Young's inequality in the shape [falk1974error] lemma needs: `c p² ≤ R + M p q` with `M² ≤ L²`
+gives `(c/2) p² ≤ R + (L²/(2c)) q²`. -/
 private theorem sq_le_of_le_add_mul {c M Lr p q R : ℝ} (hc : 0 < c) (hML : M ^ 2 ≤ Lr ^ 2)
     (h : c * p ^ 2 ≤ R + M * p * q) : c / 2 * p ^ 2 ≤ R + Lr ^ 2 / (2 * c) * q ^ 2 := by
   have h2c : (0 : ℝ) < 2 * c := by linarith
@@ -101,9 +101,9 @@ private theorem inner_sub_apply_le (hlip : LipschitzWith L.toNNReal A) (x y z : 
   refine (real_inner_le_norm _ _).trans (mul_le_mul_of_nonneg_right ?_ (norm_nonneg _))
   simpa only [dist_eq_norm] using hlip.dist_le_mul x y
 
-/-- **Falk's generalized Céa lemma.**  Let `u` solve the variational inequality over `K` and let
-`u_h` solve it over `K_h`, with the same strongly monotone Lipschitz operator, the same datum and
-the same convex term.  Then for every `v ∈ K` and every `v_h ∈ K_h`
+/-- **[falk1974error] generalized Céa lemma.**  Let `u` solve the variational inequality over `K`
+and let `u_h` solve it over `K_h`, with the same strongly monotone Lipschitz operator, the same
+datum and the same convex term.  Then for every `v ∈ K` and every `v_h ∈ K_h`
 
   `(c/2) ‖u - u_h‖² ≤ R v u_h + R v_h u + (L²/(2c)) ‖u - v_h‖²`,
 
@@ -114,7 +114,7 @@ Purely algebraic: no closedness, convexity, topology or limit is used, and `K_h`
 For a variational equation — `K` a subspace, `j = 0`, `K_h ⊆ K` — both residuals vanish and this is
 Céa's lemma.
 
-Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 11.4.2 and (11.4.7). -/
+[han2009theoretical], Theorem 11.4.2 and (11.4.7). -/
 theorem norm_sub_le_of_isVariationalInequalitySolution (hc : 0 < c)
     (hmono : IsStronglyMonotoneWith ℝ A c) (hlip : LipschitzWith L.toNNReal A)
     (hu : IsVariationalInequalitySolution A j f K u)
@@ -131,14 +131,14 @@ theorem norm_sub_le_of_isVariationalInequalitySolution (hc : 0 < c)
   · exact (varIneq_core hmono hu huh hv hvh).trans
       (by linarith [inner_sub_apply_le hlip u uh (u - vh)])
 
-/-- **The internal-approximation form of Falk's lemma.**  When the discrete solution lies in `K` —
-in particular when `K_h ⊆ K` — the first residual of
+/-- **The internal-approximation form of [falk1974error] lemma.**  When the discrete solution lies
+in `K` — in particular when `K_h ⊆ K` — the first residual of
 `norm_sub_le_of_isVariationalInequalitySolution` vanishes, at `v = u_h`, and only the residual at
 the discrete test point remains:
 
   `(c/2) ‖u - u_h‖² ≤ R v_h u + (L²/(2c)) ‖u - v_h‖²`.
 
-Atkinson–Han, *Theoretical Numerical Analysis*, the display following Theorem 11.4.2. -/
+[han2009theoretical], the display following Theorem 11.4.2. -/
 theorem norm_sub_le_of_isVariationalInequalitySolution_of_subset (hc : 0 < c)
     (hmono : IsStronglyMonotoneWith ℝ A c) (hlip : LipschitzWith L.toNNReal A)
     (hu : IsVariationalInequalitySolution A j f K u)
@@ -149,15 +149,15 @@ theorem norm_sub_le_of_isVariationalInequalitySolution_of_subset (hc : 0 < c)
   have h := norm_sub_le_of_isVariationalInequalitySolution hc hmono hlip hu huh huhK hvh
   simpa using h
 
-/-- **Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 11.4.7.**  A method that replaces the
-convex term `j` on the discrete set by a *larger* functional `j_h` — the property enjoyed by the
-numerical-integration construction of the book's (11.4.28) — obeys the same estimate with the
-residual measured by `j_h`:
+/-- **[han2009theoretical], Theorem 11.4.7.**  A method that replaces the convex term `j` on the
+discrete set by a *larger* functional `j_h` — the property enjoyed by the numerical-integration
+construction of the book's (11.4.28) — obeys the same estimate with the residual measured by `j_h`:
 
-  `(c/2) ‖u - u_h‖² ≤ R_h v_h u + (L²/(2c)) ‖u - v_h‖²`,
-  `R_h v_h u = ⟪A u, v_h - u⟫ + j_h v_h - j u - ⟪f, v_h - u⟫`.
+  `(c/2) ‖u - u_h‖² ≤ R_h v_h u + (L²/(2c)) ‖u - v_h‖²`, `R_h v_h u = ⟪A u, v_h - u⟫ + j_h v_h - j u
+  - ⟪f, v_h - u⟫`.
 
-The algebra is Falk's, with the single inequality `j u_h ≤ j_h u_h` inserted at `v = u_h`. -/
+The algebra is [falk1974error], with the single inequality `j u_h ≤ j_h u_h` inserted at `v = u_h`.
+-/
 theorem norm_sub_le_of_isVariationalInequalitySolution_of_le (hc : 0 < c)
     (hmono : IsStronglyMonotoneWith ℝ A c) (hlip : LipschitzWith L.toNNReal A)
     (hu : IsVariationalInequalitySolution A j f K u)
@@ -175,14 +175,14 @@ theorem norm_sub_le_of_isVariationalInequalitySolution_of_le (hc : 0 < c)
     simp only [sub_self, inner_zero_right] at hcore
     linarith [inner_sub_apply_le hlip u uh (u - vh)]
 
-/-- **Atkinson–Han, *Theoretical Numerical Analysis*, Exercise 11.4.3 and (11.4.20).**  If a
-regularized functional satisfies `|j_ε v - j v| ≤ c₁ ε` everywhere, then the solution of the
-regularized inequality on the whole space is within `√(2 c₁ ε / c)` of the solution of the original
-one: the a priori bound with exponent `β = 1/2`.
+/-- **[han2009theoretical], Exercise 11.4.3 and (11.4.20).**  If a regularized functional satisfies
+`|j_ε v - j v| ≤ c₁ ε` everywhere, then the solution of the regularized inequality on the whole
+space is within `√(2 c₁ ε / c)` of the solution of the original one: the a priori bound with
+exponent `β = 1/2`.
 
-Both residuals of the core estimate are bounded by `c₁ ε` and its cross term vanishes, at
-`v = u_ε` and `v_h = u`, so neither Lipschitz continuity nor Young's inequality is used and the
-constant is the sharp one. -/
+Both residuals of the core estimate are bounded by `c₁ ε` and its cross term vanishes, at `v = u_ε`
+and `v_h = u`, so neither Lipschitz continuity nor Young's inequality is used and the constant is
+the sharp one. -/
 theorem norm_sub_le_of_regularization {jeps : V → ℝ} {c₁ ε : ℝ} (hc : 0 < c)
     (hmono : IsStronglyMonotoneWith ℝ A c)
     (hu : IsVariationalInequalitySolution A j f univ u)
@@ -204,11 +204,11 @@ theorem norm_sub_le_of_regularization {jeps : V → ℝ} {c₁ ε : ℝ} (hc : 0
 
 end Core
 
-/-- The part of Falk's bound that does not see the discrete solution — the residual of the
-continuous solution at the approximating point, together with the Young term — tends to zero
-along any sequence `w n → u` on which the values of `j` converge.  Both convergence theorems
-below run the same argument on it, differing only in how they get `hjw`: the internal one from
-continuity of `j` on `K`, the external one from continuity on the whole space. -/
+/-- The part of [falk1974error] bound that does not see the discrete solution — the residual of the
+continuous solution at the approximating point, together with the Young term — tends to zero along
+any sequence `w n → u` on which the values of `j` converge.  Both convergence theorems below run the
+same argument on it, differing only in how they get `hjw`: the internal one from continuity of `j`
+on `K`, the external one from continuity on the whole space. -/
 private theorem tendsto_falk_majorant {A : V → V} {j : V → ℝ} {f u : V} {c L : ℝ} {w : ℕ → V}
     (hw : Tendsto w atTop (𝓝 u)) (hjw : Tendsto (fun n => j (w n)) atTop (𝓝 (j u))) :
     Tendsto (fun n => (inner ℝ (A u) (w n - u) + j (w n) - j u - inner ℝ f (w n - u))
@@ -234,10 +234,9 @@ section Internal
 variable {A : V → V} {j : V → ℝ} {f : V} {K : Set V} {Kh : ℕ → Set V} {c L : ℝ} {u : V}
   {uh : ℕ → V}
 
-/-- **Convergence of internal approximations.**  Atkinson–Han, *Theoretical Numerical Analysis*,
-Exercise 11.4.2.  Let `K_h n ⊆ K` be nonempty sets whose points approximate `u` — there is a
-sequence `w n ∈ K_h n` with `w n → u` — and let `j` be continuous on `K`.  Then the discrete
-solutions converge to `u` in norm.
+/-- **Convergence of internal approximations.** [han2009theoretical], Exercise 11.4.2.  Let `K_h n ⊆
+K` be nonempty sets whose points approximate `u` — there is a sequence `w n ∈ K_h n` with `w n → u`
+— and let `j` be continuous on `K`.  Then the discrete solutions converge to `u` in norm.
 
 Straight from `norm_sub_le_of_isVariationalInequalitySolution_of_subset`: the residual `R (w n) u`
 tends to `0` along the approximating sequence, and so does `‖u - w n‖`.  **No weak compactness is
@@ -285,12 +284,12 @@ end Internal
 /-! ### Weak sequential lower semicontinuity of a convex continuous functional -/
 
 /-- Symmetry of the real inner product, with the arguments in the order they appear on the left.
-Mathlib's `real_inner_comm a b` is `⟪b, a⟫ = ⟪a, b⟫`, so aiming it at a particular occurrence
-needs the arguments reversed; this wrapper spares every call site that reversal. -/
+Mathlib's `real_inner_comm a b` is `⟪b, a⟫ = ⟪a, b⟫`, so aiming it at a particular occurrence needs
+the arguments reversed; this wrapper spares every call site that reversal. -/
 private theorem inner_comm' (a b : V) : inner ℝ a b = inner ℝ b a := real_inner_comm _ _
 
-/-- Weak convergence written with the vector on the left is weak convergence with it on the
-right; over `ℝ` the inner product is symmetric. -/
+/-- Weak convergence written with the vector on the left is weak convergence with it on the right;
+over `ℝ` the inner product is symmetric. -/
 private theorem tendsto_inner_of_weak {v : ℕ → V} {z : V}
     (hw : ∀ y : V, Tendsto (fun k => inner ℝ (v k) y) atTop (𝓝 (inner ℝ z y))) (y : V) :
     Tendsto (fun k => inner ℝ y (v k)) atTop (𝓝 (inner ℝ y z)) := by
@@ -311,8 +310,8 @@ private theorem mem_of_weak_tendsto {S : Set V} (hconv : Convex ℝ S) (hclosed 
     rw [inner_comm' x (SesqForm.rieszRep l), SesqForm.inner_rieszRep]
   simpa only [hcomm] using hw (SesqForm.rieszRep l)
 
-/-- **A convex continuous functional is weakly sequentially lower semicontinuous.**  Its
-sublevel sets are closed and convex, so Mazur's lemma applies to them. -/
+/-- **A convex continuous functional is weakly sequentially lower semicontinuous.**  Its sublevel
+sets are closed and convex, so Mazur's lemma applies to them. -/
 private theorem le_of_weak_tendsto_of_eventually_le {j : V → ℝ} {α : ℝ}
     (hjcv : ConvexOn ℝ univ j) (hjc : Continuous j) {v : ℕ → V} {z : V}
     (hw : ∀ y : V, Tendsto (fun k => inner ℝ (v k) y) atTop (𝓝 (inner ℝ z y)))
@@ -348,8 +347,8 @@ section External
 variable [CompleteSpace V] {A : V → V} {j : V → ℝ} {f : V} {K : Set V} {Kh : ℕ → Set V}
   {c L : ℝ} {u : V} {uh : ℕ → V}
 
-/-- **Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 11.4.1.**  The general convergence
-theorem, in which the discrete constraint sets need not lie inside `K`.  Assume
+/-- **[han2009theoretical], Theorem 11.4.1.**  The general convergence theorem, in which the
+discrete constraint sets need not lie inside `K`.  Assume
 
 * `j` is convex and continuous on the whole space;
 * every point of `K` is a limit of points of the `K_h n`;
@@ -357,12 +356,12 @@ theorem, in which the discrete constraint sets need not lie inside `K`.  Assume
 
 Then the discrete solutions converge to `u` in norm.
 
-Three steps.  The discrete solutions are bounded, by testing at an approximation of `u` and using
-an affine minorant of `j`.  A weakly convergent subsequence has its limit `z` in `K`, and `z`
-solves the continuous inequality: the discrete inequalities in Minty's form pass to the weak limit,
-because Minty's form evaluates the operator at the *test* point, and `j` is weakly sequentially
-lower semicontinuous, being convex and continuous.  Hence `z = u`, and the same estimate upgrades
-weak convergence to norm convergence.
+Three steps.  The discrete solutions are bounded, by testing at an approximation of `u` and using an
+affine minorant of `j`.  A weakly convergent subsequence has its limit `z` in `K`, and `z` solves
+the continuous inequality: the discrete inequalities in Minty's form pass to the weak limit, because
+Minty's form evaluates the operator at the *test* point, and `j` is weakly sequentially lower
+semicontinuous, being convex and continuous.  Hence `z = u`, and the same estimate upgrades weak
+convergence to norm convergence.
 
 For internal approximations the third hypothesis is `mem_of_weak_tendsto_of_convex`, and the
 weak-compactness step is not needed at all — see

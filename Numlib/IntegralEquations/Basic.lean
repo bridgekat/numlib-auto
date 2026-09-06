@@ -12,15 +12,14 @@ import Mathlib.Topology.UniformSpace.HeineCantor
 The Fredholm, Urysohn and Volterra integral operators on the Banach space `C(Set.Icc a b, ℝ)` of
 continuous real functions on a compact interval, and the estimates on which the classical existence
 theorems for integral equations of the second kind rest.  The operators, their norms and the
-factorial estimate are as in [Atkinson–Han, *Theoretical Numerical Analysis*][han2009theoretical],
-§2.2, §2.3 and §5.2, which every declaration below cites; [Kress, *Linear Integral
-Equations*][kress1989linear], is the standard monograph on the same material.
+factorial estimate are as in [han2009theoretical], §2.2, §2.3 and §5.2, which every declaration
+below cites; [kress1989linear], is the standard monograph on the same material.
 
-* `IntegralOperator.kernelCLM` is the bounded operator `u ↦ (x ↦ ∫ y, k (x, y) * u y dμ)` on
-  `C(X, ℝ)` for a compact space `X` with a finite Borel measure `μ`, and
-  `IntegralOperator.norm_kernelCLM` computes its operator norm as `⨆ x, ∫ y, |k (x, y)| dμ`. The
-  statement is at that generality because a compact interval and a circle are both instances, and
-  the argument uses nothing of either.
+* `IntegralOperator.kernelCLM` is the bounded operator `u ↦ (x ↦ ∫ y, k (x, y) * u y dμ)` on `C(X,
+  ℝ)` for a compact space `X` with a finite Borel measure `μ`, and `IntegralOperator.norm_kernelCLM`
+  computes its operator norm as `⨆ x, ∫ y, |k (x, y)| dμ`. The statement is at that generality
+  because a compact interval and a circle are both instances, and the argument uses nothing of
+  either.
 * `IntegralOperator.fredholm` is the bounded operator `u ↦ (x ↦ ∫ y in a..b, k (x, y) * u y)`
   attached to a continuous kernel, the case `X = Set.Icc a b` of the above
   (`IntegralOperator.fredholm_eq_kernelCLM`), and `IntegralOperator.norm_fredholm` computes its
@@ -33,9 +32,9 @@ Equations*][kress1989linear], is the standard monograph on the same material.
 * `IntegralOperator.volterra` is the Volterra operator `u ↦ (t ↦ ∫ s in a..t, k (t, s, u s))`, whose
   iterates contract like `(M (b - a)) ^ m / m !` (`IntegralOperator.norm_iterate_volterra_sub_le`),
   so that some power of it is a contraction however large the Lipschitz constant `M` is.
-* `IntegralOperator.Bielecki` is the same vector space under the weighted norm
-  `‖u‖ = ⨆ t, exp (-(β (t - a))) * |u t|`, in which a Volterra operator is already a contraction,
-  with constant `M / β` (`IntegralOperator.contractingWith_volterra_bielecki`).
+* `IntegralOperator.Bielecki` is the same vector space under the weighted norm `‖u‖ = ⨆ t, exp (-(β
+  (t - a))) * |u t|`, in which a Volterra operator is already a contraction, with constant `M / β`
+  (`IntegralOperator.contractingWith_volterra_bielecki`).
 
 Every operator here carries a proof `hab : a ≤ b`, which is what lets the real integration variable
 be clamped back into `Set.Icc a b` by `Set.projIcc`.
@@ -55,8 +54,7 @@ section Clamp
 
 variable (hab : a ≤ b)
 
-/-- The clamping map `Set.projIcc a b hab` of the line onto the compact interval is
-continuous. -/
+/-- The clamping map `Set.projIcc a b hab` of the line onto the compact interval is continuous. -/
 @[fun_prop]
 theorem continuous_projIcc : Continuous (projIcc a b hab) :=
   continuous_induced_rng.2 (continuous_const.max (continuous_const.min continuous_id))
@@ -98,8 +96,7 @@ theorem integrable_kernel_row (k : C(X × X, ℝ)) (x : X) : Integrable (fun y =
   exact (integrable_const ‖k‖).mono' hc.aestronglyMeasurable
     (Filter.Eventually.of_forall fun y => k.norm_coe_le_norm _)
 
-/-- The integrand `y ↦ k (x, y) u y` of a kernel operator is integrable for every finite
-measure. -/
+/-- The integrand `y ↦ k (x, y) u y` of a kernel operator is integrable for every finite measure. -/
 theorem integrable_kernel_mul (k : C(X × X, ℝ)) (u : C(X, ℝ)) (x : X) :
     Integrable (fun y => k (x, y) * u y) μ := by
   have hc : Continuous fun y : X => k (x, y) * u y :=
@@ -151,8 +148,8 @@ theorem continuous_integral_kernel (k : C(X × X, ℝ)) (u : C(X, ℝ)) :
 theorem continuous_integral_row (k : C(X × X, ℝ)) : Continuous fun x => ∫ y, k (x, y) ∂μ := by
   simpa using continuous_integral_kernel μ k 1
 
-/-- **The kernel integral operator** `u ↦ (x ↦ ∫ y, k (x, y) u y dμ)` of a continuous kernel
-`k : C(X × X, ℝ)`, as a bounded linear operator on the Banach space `C(X, ℝ)` of continuous real
+/-- **The kernel integral operator** `u ↦ (x ↦ ∫ y, k (x, y) u y dμ)` of a continuous kernel `k :
+C(X × X, ℝ)`, as a bounded linear operator on the Banach space `C(X, ℝ)` of continuous real
 functions on a compact space `X` carrying a finite Borel measure `μ`.
 
 This is the Fredholm integral operator at the generality at which the norm formula
@@ -192,8 +189,8 @@ theorem kernelCLM_apply (k : C(X × X, ℝ)) (u : C(X, ℝ)) (x : X) :
     kernelCLM μ k u x = ∫ y, k (x, y) * u y ∂μ :=
   rfl
 
-/-- Every row integral of the kernel bounds the operator norm of a kernel operator from above;
-this is the easy half of `IntegralOperator.norm_kernelCLM`. -/
+/-- Every row integral of the kernel bounds the operator norm of a kernel operator from above; this
+is the easy half of `IntegralOperator.norm_kernelCLM`. -/
 theorem norm_kernelCLM_le {k : C(X × X, ℝ)} {C : ℝ} (hC : 0 ≤ C)
     (h : ∀ x, (∫ y, |k (x, y)| ∂μ) ≤ C) : ‖kernelCLM μ k‖ ≤ C := by
   refine ContinuousLinearMap.opNorm_le_bound _ hC fun u => ?_
@@ -212,8 +209,8 @@ theorem norm_kernelCLM_le {k : C(X × X, ℝ)} {C : ℝ} (hC : 0 ≤ C)
     _ ≤ C * ‖u‖ := mul_le_mul_of_nonneg_right (h x) (norm_nonneg u)
 
 /-- **The operator norm of a kernel integral operator** on a compact space is the largest row
-integral of its kernel, `‖K‖ = max_x ∫ |k (x, y)| dμ y` (Atkinson and Han, *Theoretical Numerical
-Analysis*, (2.2.8), there for a compact interval).
+integral of its kernel, `‖K‖ = max_x ∫ |k (x, y)| dμ y` ([han2009theoretical], (2.2.8), there for a
+compact interval).
 
 The lower bound comes from testing `K` against `y ↦ k (x₀, y) / (|k (x₀, y)| + δ)`, a continuous
 function of norm at most one that approximates the sign of `k (x₀, ·)`; the elementary inequality
@@ -281,7 +278,7 @@ variable (hab : a ≤ b)
 
 /-- The Urysohn integral operator of a continuous kernel `k : Icc a b × Icc a b × ℝ → ℝ`, the
 nonlinear Fredholm operator `u ↦ (x ↦ ∫ y in a..b, k (x, y, u y))` on `C(Icc a b, ℝ)`
-(Atkinson and Han, *Theoretical Numerical Analysis*, (5.2.9)). -/
+([han2009theoretical], (5.2.9)). -/
 noncomputable def urysohn (k : C(Icc a b × Icc a b × ℝ, ℝ)) (u : C(Icc a b, ℝ)) :
     C(Icc a b, ℝ) where
   toFun x := ∫ y in a..b, k (x, projIcc a b hab y, u (projIcc a b hab y))
@@ -297,8 +294,8 @@ theorem urysohn_apply (k : C(Icc a b × Icc a b × ℝ, ℝ)) (u : C(Icc a b, �
   rfl
 
 /-- The Fredholm integral operator of a continuous kernel `k : Icc a b × Icc a b → ℝ`, as a bounded
-linear operator `u ↦ (x ↦ ∫ y in a..b, k (x, y) * u y)` on `C(Icc a b, ℝ)`
-(Atkinson and Han, *Theoretical Numerical Analysis*, (5.2.7)). -/
+linear operator `u ↦ (x ↦ ∫ y in a..b, k (x, y) * u y)` on `C(Icc a b, ℝ)` ([han2009theoretical],
+(5.2.7)). -/
 noncomputable def fredholm (k : C(Icc a b × Icc a b, ℝ)) :
     C(Icc a b, ℝ) →L[ℝ] C(Icc a b, ℝ) :=
   LinearMap.mkContinuous
@@ -346,8 +343,8 @@ theorem fredholm_eq_urysohn (k : C(Icc a b × Icc a b, ℝ)) (u : C(Icc a b, ℝ
     fredholm hab k u = urysohn hab ⟨fun p => k (p.1, p.2.1) * p.2.2, by fun_prop⟩ u :=
   rfl
 
-/-- Lebesgue measure on the compact interval `Set.Icc a b`, read on the subtype: the measure
-against which `IntegralOperator.fredholm` integrates. -/
+/-- Lebesgue measure on the compact interval `Set.Icc a b`, read on the subtype: the measure against
+which `IntegralOperator.fredholm` integrates. -/
 noncomputable def iccMeasure (a b : ℝ) : Measure (Icc a b) :=
   Measure.comap Subtype.val volume
 
@@ -362,16 +359,14 @@ instance : IsFiniteMeasure (iccMeasure a b) where
     rw [h, Measure.restrict_apply_univ, Real.volume_Icc]
     exact ENNReal.ofReal_lt_top
 
-/-- An integral over the subtype `Set.Icc a b` is the interval integral of the clamped
-integrand. -/
+/-- An integral over the subtype `Set.Icc a b` is the interval integral of the clamped integrand. -/
 theorem integral_iccMeasure (hab : a ≤ b) (f : ℝ → ℝ) :
     ∫ y : Icc a b, f y ∂iccMeasure a b = ∫ y in a..b, f y := by
   rw [iccMeasure, integral_subtype_comap measurableSet_Icc, integral_Icc_eq_integral_Ioc,
     ← intervalIntegral.integral_of_le hab]
 
-/-- **The Fredholm operator of a compact interval is the kernel operator of Lebesgue measure on
-that interval**, which is what lets the interval theory specialize the general one on a compact
-space. -/
+/-- **The Fredholm operator of a compact interval is the kernel operator of Lebesgue measure on that
+interval**, which is what lets the interval theory specialize the general one on a compact space. -/
 theorem fredholm_eq_kernelCLM (k : C(Icc a b × Icc a b, ℝ)) :
     fredholm hab k = kernelCLM (iccMeasure a b) k := by
   ext u x
@@ -400,8 +395,8 @@ theorem norm_fredholm_le {k : C(Icc a b × Icc a b, ℝ)} {C : ℝ} (hC : 0 ≤ 
   exact h x
 
 /-- **The operator norm of a Fredholm integral operator** is the largest row integral of its kernel,
-`‖K‖ = max_x ∫ |k (x, y)| dy` (Atkinson and Han, *Theoretical Numerical Analysis*, (2.2.8)): the
-specialization of `IntegralOperator.norm_kernelCLM` to a compact interval with Lebesgue measure. -/
+`‖K‖ = max_x ∫ |k (x, y)| dy` ([han2009theoretical], (2.2.8)): the specialization of
+`IntegralOperator.norm_kernelCLM` to a compact interval with Lebesgue measure. -/
 theorem norm_fredholm (k : C(Icc a b × Icc a b, ℝ)) :
     ‖fredholm hab k‖ = ⨆ x, ∫ y in a..b, |k (x, projIcc a b hab y)| := by
   have hne : Nonempty (Icc a b) := ⟨⟨a, left_mem_Icc.2 hab⟩⟩
@@ -409,8 +404,7 @@ theorem norm_fredholm (k : C(Icc a b × Icc a b, ℝ)) :
   exact iSup_congr fun x => integral_iccMeasure_abs hab k x
 
 /-- **A Urysohn operator is Lipschitz** with constant `L (b - a)` when its kernel is `L`-Lipschitz
-in its last argument, uniformly in the other two (Atkinson and Han, *Theoretical Numerical
-Analysis*, Theorem 5.2.2). -/
+in its last argument, uniformly in the other two ([han2009theoretical], Theorem 5.2.2). -/
 theorem lipschitzWith_urysohn {k : C(Icc a b × Icc a b × ℝ, ℝ)} {L : ℝ≥0}
     (hk : ∀ x y : Icc a b, LipschitzWith L fun z => k (x, y, z)) :
     LipschitzWith (L * (b - a).toNNReal) (urysohn hab k) := by
@@ -442,8 +436,8 @@ theorem lipschitzWith_urysohn {k : C(Icc a b × Icc a b × ℝ, ℝ)} {L : ℝ�
     _ = L * (b - a) * dist u v := by
         rw [intervalIntegral.integral_const]; simp [smul_eq_mul]; ring
 
-/-- The kernel `(x, y) ↦ ∂_z k (x, y, u y)` of the Fréchet derivative of the Urysohn operator of
-`k` at `u`, where `kz` is the partial derivative of `k` in its last argument. -/
+/-- The kernel `(x, y) ↦ ∂_z k (x, y, u y)` of the Fréchet derivative of the Urysohn operator of `k`
+at `u`, where `kz` is the partial derivative of `k` in its last argument. -/
 noncomputable def urysohnDerivKernel (kz : C(Icc a b × Icc a b × ℝ, ℝ)) (u : C(Icc a b, ℝ)) :
     C(Icc a b × Icc a b, ℝ) :=
   ⟨fun p => kz (p.1, p.2, u p.2), by fun_prop⟩
@@ -454,8 +448,8 @@ theorem urysohnDerivKernel_apply (kz : C(Icc a b × Icc a b × ℝ, ℝ)) (u : C
     (x y : Icc a b) : urysohnDerivKernel kz u (x, y) = kz (x, y, u y) :=
   rfl
 
-/-- **The Fréchet derivative of a Urysohn operator** at `u` is the Fredholm operator whose kernel
-is `∂_z k (x, y, u y)` (Atkinson and Han, *Theoretical Numerical Analysis*, Example 5.3.10).
+/-- **The Fréchet derivative of a Urysohn operator** at `u` is the Fredholm operator whose kernel is
+`∂_z k (x, y, u y)` ([han2009theoretical], Example 5.3.10).
 
 The hypothesis is the one the book makes: `k` has a partial derivative `kz` in its last argument,
 and `kz` is continuous on the whole of `Icc a b × Icc a b × ℝ`.
@@ -463,10 +457,10 @@ and `kz` is continuous on the whole of `Icc a b × Icc a b × ℝ`.
 Mathlib has no differentiation-under-the-integral-sign lemma in the supremum norm, so the estimate
 is written out. Its only analytic ingredient is that `kz` is uniformly continuous on the compact
 tube `Icc a b × Icc a b × Icc (-(‖u‖ + 1)) (‖u‖ + 1)` around the graph of `u`: given `ε > 0` that
-provides a `δ` such that `‖v - u‖ < δ` forces
-`|k (x, y, v y) - k (x, y, u y) - kz (x, y, u y) (v y - u y)| ≤ ε |v y - u y|`, by the mean value
-inequality applied to `z ↦ k (x, y, z) - kz (x, y, u y) z` on the segment from `u y` to `v y`;
-integrating in `y` and taking the supremum in `x` is then the whole of the `o(‖v - u‖)` bound. -/
+provides a `δ` such that `‖v - u‖ < δ` forces `|k (x, y, v y) - k (x, y, u y) - kz (x, y, u y) (v y
+- u y)| ≤ ε |v y - u y|`, by the mean value inequality applied to `z ↦ k (x, y, z) - kz (x, y, u y)
+z` on the segment from `u y` to `v y`; integrating in `y` and taking the supremum in `x` is then the
+whole of the `o(‖v - u‖)` bound. -/
 theorem hasFDerivAt_urysohn {k kz : C(Icc a b × Icc a b × ℝ, ℝ)}
     (hk : ∀ (x y : Icc a b) (z : ℝ), HasDerivAt (fun t => k (x, y, t)) (kz (x, y, z)) z)
     (u : C(Icc a b, ℝ)) :
@@ -612,8 +606,7 @@ theorem mulKernel_apply (k : C(Icc a b × Icc a b, ℝ)) (x y : Icc a b) (z : �
   rfl
 
 /-- The Volterra integral operator of a continuous kernel `k : Icc a b × Icc a b × ℝ → ℝ`, the map
-`u ↦ (t ↦ ∫ s in a..t, k (t, s, u s))` on `C(Icc a b, ℝ)` (Atkinson and Han, *Theoretical
-Numerical Analysis*, Section 5.2.3). -/
+`u ↦ (t ↦ ∫ s in a..t, k (t, s, u s))` on `C(Icc a b, ℝ)` ([han2009theoretical], Section 5.2.3). -/
 noncomputable def volterra (k : C(Icc a b × Icc a b × ℝ, ℝ)) (u : C(Icc a b, ℝ)) :
     C(Icc a b, ℝ) where
   toFun t := ∫ s in a..(t : ℝ), k (t, projIcc a b hab s, u (projIcc a b hab s))
@@ -672,14 +665,14 @@ theorem volterraCLM_apply (k : C(Icc a b × Icc a b, ℝ)) (u : C(Icc a b, ℝ))
     volterraCLM hab k u t = ∫ s in a..(t : ℝ), k (t, projIcc a b hab s) * u (projIcc a b hab s) :=
   rfl
 
-/-- The linear Volterra operator is the Volterra operator of the kernel
-`(t, s, z) ↦ k (t, s) * z`. -/
+/-- The linear Volterra operator is the Volterra operator of the kernel `(t, s, z) ↦ k (t, s) * z`.
+-/
 theorem coe_volterraCLM (k : C(Icc a b × Icc a b, ℝ)) :
     ⇑(volterraCLM hab k) = volterra hab (mulKernel k) :=
   rfl
 
-/-- The factorial estimate of `IntegralOperator.norm_iterate_volterra_sub_le`, pointwise in `t`:
-the error of the `m`-th Volterra iterate at `t` is controlled by `(M (t - a)) ^ m / m !`. -/
+/-- The factorial estimate of `IntegralOperator.norm_iterate_volterra_sub_le`, pointwise in `t`: the
+error of the `m`-th Volterra iterate at `t` is controlled by `(M (t - a)) ^ m / m !`. -/
 theorem abs_iterate_volterra_sub_apply_le {k : C(Icc a b × Icc a b × ℝ, ℝ)} {M : ℝ≥0}
     (hk : ∀ t s : Icc a b, LipschitzWith M fun z => k (t, s, z)) (u v : C(Icc a b, ℝ)) (m : ℕ)
     (t : Icc a b) :
@@ -738,11 +731,10 @@ theorem abs_iterate_volterra_sub_apply_le {k : C(Icc a b × Icc a b × ℝ, ℝ)
           push_cast
           field_simp
 
-/-- **The factorial estimate for the iterates of a Volterra operator** (Atkinson and Han,
-*Theoretical Numerical Analysis*, proof of Theorem 5.2.3): if the kernel is `M`-Lipschitz in its
-last argument, then the `m`-th iterate of the Volterra operator is Lipschitz with the constant
-`(M (b - a)) ^ m / m !`, which tends to `0`; hence some power of a Volterra operator is a
-contraction, whatever `M` is. -/
+/-- **The factorial estimate for the iterates of a Volterra operator** ([han2009theoretical], proof
+of Theorem 5.2.3): if the kernel is `M`-Lipschitz in its last argument, then the `m`-th iterate of
+the Volterra operator is Lipschitz with the constant `(M (b - a)) ^ m / m !`, which tends to `0`;
+hence some power of a Volterra operator is a contraction, whatever `M` is. -/
 theorem norm_iterate_volterra_sub_le {k : C(Icc a b × Icc a b × ℝ, ℝ)} {M : ℝ≥0}
     (hk : ∀ t s : Icc a b, LipschitzWith M fun z => k (t, s, z)) (u v : C(Icc a b, ℝ)) (m : ℕ) :
     ‖(volterra hab k)^[m] u - (volterra hab k)^[m] v‖
@@ -773,7 +765,7 @@ theorem lipschitzWith_volterra {k : C(Icc a b × Icc a b × ℝ, ℝ)} {M : ℝ�
   exact h
 
 /-- Some power of a Volterra operator is a contraction in the supremum norm, whatever the Lipschitz
-constant of its kernel (Atkinson and Han, *Theoretical Numerical Analysis*, Theorem 5.2.3). -/
+constant of its kernel ([han2009theoretical], Theorem 5.2.3). -/
 theorem exists_contractingWith_iterate_volterra {k : C(Icc a b × Icc a b × ℝ, ℝ)} {M : ℝ≥0}
     (hk : ∀ t s : Icc a b, LipschitzWith M fun z => k (t, s, z)) :
     ∃ m : ℕ, 0 < m ∧
@@ -788,8 +780,8 @@ theorem exists_contractingWith_iterate_volterra {k : C(Icc a b × Icc a b × ℝ
   · rw [dist_eq_norm, dist_eq_norm, Real.coe_toNNReal _ hnn]
     exact norm_iterate_volterra_sub_le hab hk u v m
 
-/-- A power of a bounded operator acts as the iterate of its underlying function, which is what
-lets a contraction statement about the iterates be read as one about the powers. -/
+/-- A power of a bounded operator acts as the iterate of its underlying function, which is what lets
+a contraction statement about the iterates be read as one about the powers. -/
 private theorem coe_clm_pow (L : C(Icc a b, ℝ) →L[ℝ] C(Icc a b, ℝ)) (n : ℕ) :
     ⇑(L ^ n) = (⇑L)^[n] :=
   hom_coe_pow _ rfl (fun _ _ => rfl) _ _
@@ -802,9 +794,9 @@ theorem lipschitzWith_mulKernel (k : C(Icc a b × Icc a b, ℝ)) (x y : Icc a b)
     ← mul_sub, abs_mul]
   exact mul_le_mul_of_nonneg_right (k.norm_coe_le_norm _) (abs_nonneg _)
 
-/-- **The factorial estimate for the powers of a linear Volterra operator** (Atkinson and Han,
-*Theoretical Numerical Analysis*, Exercise 2.3.4): `‖L ^ m‖ ≤ (‖k‖ (b - a)) ^ m / m !`, so the
-powers of `L` tend to `0` in norm and `λ - L` is invertible for every nonzero `λ`. -/
+/-- **The factorial estimate for the powers of a linear Volterra operator** ([han2009theoretical],
+Exercise 2.3.4): `‖L ^ m‖ ≤ (‖k‖ (b - a)) ^ m / m !`, so the powers of `L` tend to `0` in norm and
+`λ - L` is invertible for every nonzero `λ`. -/
 theorem norm_volterraCLM_pow_le (k : C(Icc a b × Icc a b, ℝ)) (m : ℕ) :
     ‖volterraCLM hab k ^ m‖ ≤ (‖k‖ * (b - a)) ^ m / m ! := by
   have hba : (0 : ℝ) ≤ b - a := sub_nonneg.2 hab
@@ -834,16 +826,15 @@ supremum norm `‖u‖ = ⨆ t, exp (-(β (t - a))) * |u t|`.
 For `0 ≤ β` this norm is equivalent to the supremum norm (`Bielecki.norm_le_norm_equiv` and
 `Bielecki.exp_mul_norm_equiv_le_norm`), so the space is again a Banach space and convergence in it
 is uniform convergence; what the weight buys is that a Volterra operator becomes a contraction
-outright, with constant `M / β` (Atkinson and Han, *Theoretical Numerical Analysis*, proof of
-Theorem 5.2.4). -/
+outright, with constant `M / β` ([han2009theoretical], proof of Theorem 5.2.4). -/
 def Bielecki (a b β : ℝ) : Type := C(Icc a b, ℝ)
 
 namespace Bielecki
 
 variable {a b β : ℝ}
 
-/-- The Bielecki space carries the additive group of `C(Icc a b, ℝ)`, of which it is a type
-synonym: only the norm differs. -/
+/-- The Bielecki space carries the additive group of `C(Icc a b, ℝ)`, of which it is a type synonym:
+only the norm differs. -/
 instance : AddCommGroup (Bielecki a b β) := inferInstanceAs (AddCommGroup C(Icc a b, ℝ))
 
 /-- Likewise for the real vector space structure. -/
@@ -854,8 +845,8 @@ isometry; the two norms are equivalent by `Bielecki.norm_le_norm_equiv` and
 `Bielecki.exp_mul_norm_equiv_le_norm`. -/
 def equiv : Bielecki a b β ≃ₗ[ℝ] C(Icc a b, ℝ) := LinearEquiv.refl ℝ _
 
-/-- The weighting map `u ↦ (t ↦ exp (-(β (t - a))) * u t)`, whose supremum norm is by definition
-the Bielecki norm. -/
+/-- The weighting map `u ↦ (t ↦ exp (-(β (t - a))) * u t)`, whose supremum norm is by definition the
+Bielecki norm. -/
 noncomputable def weight : Bielecki a b β →ₗ[ℝ] C(Icc a b, ℝ) where
   toFun u := ⟨fun t => Real.exp (-(β * ((t : ℝ) - a))) * equiv u t, by fun_prop⟩
   map_add' u v := by ext t; simp [mul_add]
@@ -902,8 +893,8 @@ theorem weight_surjective : Function.Surjective (weight : Bielecki a b β → C(
     ← Real.exp_add]
   simp
 
-/-- The Bielecki space is complete, being isometrically isomorphic to `C(Icc a b, ℝ)`.  This is
-what makes it a legitimate home for the Banach fixed-point theorem. -/
+/-- The Bielecki space is complete, being isometrically isomorphic to `C(Icc a b, ℝ)`.  This is what
+makes it a legitimate home for the Banach fixed-point theorem. -/
 instance : CompleteSpace (Bielecki a b β) :=
   (isometry_weight.isUniformInducing.completeSpace_congr weight_surjective).2 inferInstance
 
@@ -937,8 +928,8 @@ theorem norm_le_norm_equiv (hβ : 0 ≤ β) (u : Bielecki a b β) : ‖u‖ ≤ 
     _ = |equiv u t| := one_mul _
     _ ≤ ‖equiv u‖ := habs
 
-/-- For a nonnegative weight the supremum norm is at most `exp (β (b - a))` times the Bielecki
-norm. -/
+/-- For a nonnegative weight the supremum norm is at most `exp (β (b - a))` times the Bielecki norm.
+-/
 theorem norm_equiv_le (hβ : 0 ≤ β) (u : Bielecki a b β) :
     ‖equiv u‖ ≤ Real.exp (β * (b - a)) * ‖u‖ := by
   rw [ContinuousMap.norm_le _ (by positivity)]
@@ -964,14 +955,14 @@ theorem exp_mul_norm_equiv_le_norm (hβ : 0 ≤ β) (u : Bielecki a b β) :
 
 end Bielecki
 
-/-- The Volterra operator read on the Bielecki space, where it is a contraction with constant
-`M / β` whenever its kernel is `M`-Lipschitz in its last argument. -/
+/-- The Volterra operator read on the Bielecki space, where it is a contraction with constant `M /
+β` whenever its kernel is `M`-Lipschitz in its last argument. -/
 noncomputable def volterraBielecki (hab : a ≤ b) (k : C(Icc a b × Icc a b × ℝ, ℝ)) (β : ℝ) :
     Bielecki a b β → Bielecki a b β :=
   fun u => Bielecki.equiv.symm (volterra hab k (Bielecki.equiv u))
 
-/-- The defining formula of `IntegralOperator.volterraBielecki`: read through `Bielecki.equiv` it
-is the Volterra operator itself, only the norm on the space having changed. -/
+/-- The defining formula of `IntegralOperator.volterraBielecki`: read through `Bielecki.equiv` it is
+the Volterra operator itself, only the norm on the space having changed. -/
 @[simp]
 theorem equiv_volterraBielecki (hab : a ≤ b) (k : C(Icc a b × Icc a b × ℝ, ℝ)) (β : ℝ)
     (u : Bielecki a b β) :
@@ -987,8 +978,8 @@ theorem equiv_iterate_volterraBielecki (hab : a ≤ b) (k : C(Icc a b × Icc a b
   | zero => rfl
   | succ n ih => rw [Function.iterate_succ_apply, Function.iterate_succ_apply, ih]; rfl
 
-/-- The elementary integral behind Bielecki's trick:
-`∫_a^t e^{β (s - a)} ds = (e^{β (t - a)} - 1)/β`. -/
+/-- The elementary integral behind Bielecki's trick: `∫_a^t e^{β (s - a)} ds = (e^{β (t - a)} -
+1)/β`. -/
 theorem integral_exp_mul_sub (hβ : β ≠ 0) (a t : ℝ) :
     (∫ s in a..t, Real.exp (β * (s - a))) = (Real.exp (β * (t - a)) - 1) / β := by
   have hderiv : ∀ x ∈ uIcc a t,
@@ -1004,8 +995,7 @@ theorem integral_exp_mul_sub (hβ : β ≠ 0) (a t : ℝ) :
 /-- **A Volterra operator is a contraction in the Bielecki norm**, with constant `M / β`: this is
 Bielecki's proof of the Picard–Lindelöf theorem, in which the weight `e^{-β (t - a)}` absorbs the
 Lipschitz constant of the kernel instead of the factorial estimate of
-`IntegralOperator.norm_iterate_volterra_sub_le` (Atkinson and Han, *Theoretical Numerical
-Analysis*, proof of Theorem 5.2.4). -/
+`IntegralOperator.norm_iterate_volterra_sub_le` ([han2009theoretical], proof of Theorem 5.2.4). -/
 theorem contractingWith_volterra_bielecki (hab : a ≤ b) {k : C(Icc a b × Icc a b × ℝ, ℝ)} {M : ℝ≥0}
     (hk : ∀ t s : Icc a b, LipschitzWith M fun z => k (t, s, z)) {β : ℝ} (hβ : (M : ℝ) < β) :
     ContractingWith ((M : ℝ) / β).toNNReal (volterraBielecki hab k β) := by

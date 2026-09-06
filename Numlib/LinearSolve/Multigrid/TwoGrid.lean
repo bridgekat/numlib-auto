@@ -5,27 +5,27 @@ import Numlib.LinearSolve.Multigrid.Basic
 
 The two-grid error propagation operator `S^ν₂ (1 - Q) S^ν₁` of
 `Numlib/LinearSolve/Multigrid/Basic.lean` contracts the energy norm as soon as two constants are
-available ([Saad, *Iterative Methods for Sparse Linear Systems*][saad2003iterative], §13.5.2):
+available ([saad2003iterative], §13.5.2):
 
 * a **smoothing property** `‖S e‖_A² ≤ ‖e‖_A² - α q(A e)²` (`Multigrid.IsSmootherWith`): the
   smoother is `A`-nonexpansive, and what it removes is measured by a seminorm `q` of the residual;
-* an **approximation property** `∃ c ∈ Vc, p (e - c)² ≤ β ‖e‖_A²`
-  (`Multigrid.IsApproximationWith`): the coarse space approximates in a second seminorm `p`.
+* an **approximation property** `∃ c ∈ Vc, p (e - c)² ≤ β ‖e‖_A²` (`Multigrid.IsApproximationWith`):
+  the coarse space approximates in a second seminorm `p`.
 
-Neither can be proved by linear algebra — they are estimates about a discretization, and a book
-that supplies them for its own finite-element spaces inherits everything here.  What the two
-seminorms have to share is only the duality `‖⟪u, w⟫‖ ≤ q u * p w`, which is
-`Multigrid.IsDualSeminormPair`; the classical pair `p = ‖·‖_D`, `q = ‖·‖_{D⁻¹}` for a symmetric
-positive definite `D` is `Multigrid.isDualSeminormPair_energy`, and the Cauchy–Schwarz pair
-`p = q = ‖·‖` is `Multigrid.isDualSeminormPair_norm`.
+Neither can be proved by linear algebra — they are estimates about a discretization, and a book that
+supplies them for its own finite-element spaces inherits everything here.  What the two seminorms
+have to share is only the duality `‖⟪u, w⟫‖ ≤ q u * p w`, which is `Multigrid.IsDualSeminormPair`;
+the classical pair `p = ‖·‖_D`, `q = ‖·‖_{D⁻¹}` for a symmetric positive definite `D` is
+`Multigrid.isDualSeminormPair_energy`, and the Cauchy–Schwarz pair `p = q = ‖·‖` is
+`Multigrid.isDualSeminormPair_norm`.
 
-The geometric half of the argument is `Multigrid.energyNorm_le_of_isApproximationWith`: an error
-in the range of the coarse-grid correction is `A`-orthogonal to the coarse space, so
-`‖e‖_A² = ⟪A e, e - c⟫` for every coarse `c`, and the duality together with the approximation
-property turns that into `‖e‖_A ≤ √β q(A e)`.  Feeding it into the smoothing property gives the
-rate `√(1 - α/β)` (`Multigrid.energyNorm_twoGrid_le`,
-`Multigrid.energyNorm_twoGridOperator_le`), and comparing the two bounds on one nonzero error
-shows `α ≤ β` (`Multigrid.IsSmootherWith.le_of_isApproximationWith`).
+The geometric half of the argument is `Multigrid.energyNorm_le_of_isApproximationWith`: an error in
+the range of the coarse-grid correction is `A`-orthogonal to the coarse space, so `‖e‖_A² = ⟪A e, e
+- c⟫` for every coarse `c`, and the duality together with the approximation property turns that into
+`‖e‖_A ≤ √β q(A e)`.  Feeding it into the smoothing property gives the rate `√(1 - α/β)`
+(`Multigrid.energyNorm_twoGrid_le`, `Multigrid.energyNorm_twoGridOperator_le`), and comparing the
+two bounds on one nonzero error shows `α ≤ β`
+(`Multigrid.IsSmootherWith.le_of_isApproximationWith`).
 
 The only concrete smoothing property proved here is the Richardson/weighted-Jacobi one,
 `Multigrid.isSmootherWith_richardson`: for `S = 1 - ω D⁻¹ A` the constant is `α = ω (2 - ω γ)`,
@@ -41,11 +41,10 @@ variable {𝕜 E F : Type*} [RCLike 𝕜]
 
 /-! ### A dual pair of seminorms -/
 
-/-- Two nonnegative functions on `E` that are dual to each other for the inner product:
-`‖⟪u, w⟫‖ ≤ q u * p w`.  This is the only relation between the seminorms of the smoothing and
-approximation properties that the two-grid theorem uses, so it is what the theorem assumes
-(Saad, *Iterative Methods for Sparse Linear Systems*, (13.62)–(13.63), where `q = ‖·‖_{D⁻¹}` and
-`p = ‖·‖_D`). -/
+/-- Two nonnegative functions on `E` that are dual to each other for the inner product: `‖⟪u, w⟫‖ ≤
+q u * p w`.  This is the only relation between the seminorms of the smoothing and approximation
+properties that the two-grid theorem uses, so it is what the theorem assumes ([saad2003iterative],
+(13.62)–(13.63), where `q = ‖·‖_{D⁻¹}` and `p = ‖·‖_D`). -/
 structure IsDualSeminormPair (𝕜 : Type*) [RCLike 𝕜] {E : Type*} [NormedAddCommGroup E]
     [InnerProductSpace 𝕜 E] (p q : E → ℝ) : Prop where
   /-- The seminorm measuring the second argument is nonnegative. -/
@@ -61,7 +60,7 @@ theorem isDualSeminormPair_norm : IsDualSeminormPair 𝕜 (norm : E → ℝ) (no
 
 /-- For a right inverse `Dinv` of a symmetric coercive `D`, the energy norm of `D` and the energy
 norm of `Dinv` are dual: `‖⟪u, w⟫‖ ≤ ‖u‖_{D⁻¹} ‖w‖_D`.  With `D` the diagonal part of `A` this is
-the pair Saad states the smoothing and approximation properties with. -/
+the pair [saad2003iterative] states the smoothing and approximation properties with. -/
 theorem isDualSeminormPair_energy {D Dinv : E →ₗ[𝕜] E} (hD : D.IsSymmetricCoercive)
     (hinv : ∀ u, D (Dinv u) = u) :
     IsDualSeminormPair 𝕜 (energyNorm D) (energyNorm Dinv) := by
@@ -76,17 +75,17 @@ theorem isDualSeminormPair_energy {D Dinv : E →ₗ[𝕜] E} (hD : D.IsSymmetri
 
 /-! ### The two named hypotheses -/
 
-/-- **The smoothing property** (Saad, *Iterative Methods for Sparse Linear Systems*, (13.62)):
-the error propagation operator `S` of the smoother reduces the energy norm by an amount measured
-by the seminorm `q` of the residual, `‖S e‖_A² ≤ ‖e‖_A² - α q(A e)²`.  It cannot be proved by
-linear algebra alone; `Multigrid.isSmootherWith_richardson` is the one case the theory verifies. -/
+/-- **The smoothing property** ([saad2003iterative], (13.62)): the error propagation operator `S` of
+the smoother reduces the energy norm by an amount measured by the seminorm `q` of the residual, `‖S
+e‖_A² ≤ ‖e‖_A² - α q(A e)²`.  It cannot be proved by linear algebra alone;
+`Multigrid.isSmootherWith_richardson` is the one case the theory verifies. -/
 def IsSmootherWith (A : E →ₗ[𝕜] E) (q : E → ℝ) (S : E →ₗ[𝕜] E) (α : ℝ) : Prop :=
   ∀ e, energyNorm A (S e) ^ 2 ≤ energyNorm A e ^ 2 - α * q (A e) ^ 2
 
-/-- **The approximation property** of a coarse space (Saad, *Iterative Methods for Sparse Linear
-Systems*, (13.63)): every error is approximated from `Vc` to within `β ‖e‖_A²` in the seminorm
-`p`.  Stated with an existential rather than an infimum, which is what an interpolation estimate
-provides and what the convergence proof consumes. -/
+/-- **The approximation property** of a coarse space ([saad2003iterative], (13.63)): every error is
+approximated from `Vc` to within `β ‖e‖_A²` in the seminorm `p`.  Stated with an existential rather
+than an infimum, which is what an interpolation estimate provides and what the convergence proof
+consumes. -/
 def IsApproximationWith (A : E →ₗ[𝕜] E) (p : E → ℝ) (Vc : Submodule 𝕜 E) (β : ℝ) : Prop :=
   ∀ e, ∃ c ∈ Vc, p (e - c) ^ 2 ≤ β * energyNorm A e ^ 2
 
@@ -94,8 +93,8 @@ namespace IsSmootherWith
 
 variable {A : E →ₗ[𝕜] E} {q : E → ℝ} {S : E →ₗ[𝕜] E} {α : ℝ}
 
-/-- A smoother with a nonnegative constant is `A`-nonexpansive: it never increases the energy
-norm of the error. -/
+/-- A smoother with a nonnegative constant is `A`-nonexpansive: it never increases the energy norm
+of the error. -/
 theorem energyNorm_le (h : IsSmootherWith A q S α) (hα : 0 ≤ α) (e : E) :
     energyNorm A (S e) ≤ energyNorm A e := by
   refine energyNorm_le_of_sq_le ((h e).trans ?_)
@@ -120,8 +119,8 @@ section Geometry
 variable (A : E →ₗ[𝕜] E) (hA : A.IsSymmetricCoercive) (Pr : F →ₗ[𝕜] E)
 
 /-- The coarse-grid correction is the `A`-orthogonal projection onto the complement of the coarse
-space, hence nonexpansive for the energy norm.  This is what lets the smoothing steps of a cycle
-be counted separately from the correction. -/
+space, hence nonexpansive for the energy norm.  This is what lets the smoothing steps of a cycle be
+counted separately from the correction. -/
 theorem energyNorm_coarseCorrection_le (v : E) :
     energyNorm A (coarseCorrection A hA Pr v) ≤ energyNorm A v := by
   refine energyNorm_le_of_sq_le ?_
@@ -143,11 +142,10 @@ section Convergence
 variable {A : E →ₗ[𝕜] E} {hA : A.IsSymmetricCoercive} {Pr : F →ₗ[𝕜] E}
   {p q : E → ℝ} {α β : ℝ} [FiniteDimensional 𝕜 E]
 
-/-- **The geometric half of Saad's Theorem 13.3** (Saad, *Iterative Methods for Sparse Linear
-Systems*): an error left by the coarse-grid correction is `A`-orthogonal to the coarse space, so
-the approximation property bounds its energy norm by the dual seminorm of its residual,
-`‖e‖_A ≤ √β q(A e)`.  It is the statement the rate of the two-grid cycle and the inequality
-`α ≤ β` both come from. -/
+/-- **The geometric half of [saad2003iterative] Theorem 13.3** ([saad2003iterative]): an error left
+by the coarse-grid correction is `A`-orthogonal to the coarse space, so the approximation property
+bounds its energy norm by the dual seminorm of its residual, `‖e‖_A ≤ √β q(A e)`.  It is the
+statement the rate of the two-grid cycle and the inequality `α ≤ β` both come from. -/
 theorem energyNorm_le_of_isApproximationWith (hpq : IsDualSeminormPair 𝕜 p q)
     (happ : IsApproximationWith A p (LinearMap.range Pr) β) {e : E}
     (he : e ∈ LinearMap.range (coarseCorrection A hA Pr)) :
@@ -180,8 +178,8 @@ theorem energyNorm_le_of_isApproximationWith (hpq : IsDualSeminormPair 𝕜 p q)
   · rw [← hzero']
     exact mul_nonneg (Real.sqrt_nonneg β) hq
 
-/-- The square of `Multigrid.energyNorm_le_of_isApproximationWith`, which is the form both
-halves of Saad's Theorem 13.3 consume. -/
+/-- The square of `Multigrid.energyNorm_le_of_isApproximationWith`, which is the form both halves of
+[saad2003iterative] Theorem 13.3 consume. -/
 private theorem energyNorm_sq_le_of_isApproximationWith (hβ : 0 ≤ β)
     (hpq : IsDualSeminormPair 𝕜 p q)
     (happ : IsApproximationWith A p (LinearMap.range Pr) β) {e : E}
@@ -194,9 +192,10 @@ private theorem energyNorm_sq_le_of_isApproximationWith (hβ : 0 ≤ β)
     _ = Real.sqrt β ^ 2 * q (A e) ^ 2 := by ring
     _ = β * q (A e) ^ 2 := by rw [Real.sq_sqrt hβ]
 
-/-- **Saad's Theorem 13.3**, the constants: if a smoothing property and an approximation property
-hold for the same dual pair, and some error left by the coarse-grid correction is nonzero, then
-`α ≤ β`.  The nondegeneracy is needed: on the zero space every pair of constants qualifies. -/
+/-- **[saad2003iterative] Theorem 13.3**, the constants: if a smoothing property and an
+approximation property hold for the same dual pair, and some error left by the coarse-grid
+correction is nonzero, then `α ≤ β`.  The nondegeneracy is needed: on the zero space every pair of
+constants qualifies. -/
 theorem IsSmootherWith.le_of_isApproximationWith {S : E →ₗ[𝕜] E}
     (hsm : IsSmootherWith A q S α) (hpq : IsDualSeminormPair 𝕜 p q)
     (happ : IsApproximationWith A p (LinearMap.range Pr) β)
@@ -220,9 +219,9 @@ theorem IsSmootherWith.le_of_isApproximationWith {S : E →ₗ[𝕜] E}
   have hnn : 0 ≤ energyNorm A (S e) ^ 2 := sq_nonneg _
   exact le_of_mul_le_mul_right (by linarith) (pow_pos hqpos 2)
 
-/-- **Saad's Theorem 13.3** (Saad, *Iterative Methods for Sparse Linear Systems*): one coarse-grid
-correction followed by one smoothing step contracts the energy norm of the error by the factor
-`√(1 - α/β)`, which depends on nothing but the two constants. -/
+/-- **[saad2003iterative] Theorem 13.3** ([saad2003iterative]): one coarse-grid correction followed
+by one smoothing step contracts the energy norm of the error by the factor `√(1 - α/β)`, which
+depends on nothing but the two constants. -/
 theorem energyNorm_twoGrid_le {S : E →ₗ[𝕜] E} (hsm : IsSmootherWith A q S α)
     (hpq : IsDualSeminormPair 𝕜 p q)
     (happ : IsApproximationWith A p (LinearMap.range Pr) β) (hα : 0 ≤ α) (hβ : 0 < β) (v : E) :
@@ -274,9 +273,9 @@ theorem energyNorm_twoGrid_le {S : E →ₗ[𝕜] E} (hsm : IsSmootherWith A q S
     rw [h3]
     exact mul_nonneg (Real.sqrt_nonneg _) (energyNorm_nonneg A v)
 
-/-- **Saad's Theorem 13.3** for the full cycle: with `ν₁` pre-smoothing and at least one
-post-smoothing step, the two-grid error propagation operator contracts the energy norm by
-`√(1 - α/β)`.  The extra smoothing steps can only help, being `A`-nonexpansive. -/
+/-- **[saad2003iterative] Theorem 13.3** for the full cycle: with `ν₁` pre-smoothing and at least
+one post-smoothing step, the two-grid error propagation operator contracts the energy norm by `√(1 -
+α/β)`.  The extra smoothing steps can only help, being `A`-nonexpansive. -/
 theorem energyNorm_twoGridOperator_le {S : E →ₗ[𝕜] E} (hsm : IsSmootherWith A q S α)
     (hpq : IsDualSeminormPair 𝕜 p q)
     (happ : IsApproximationWith A p (LinearMap.range Pr) β) (hα : 0 ≤ α) (hβ : 0 < β)
@@ -297,12 +296,11 @@ end Convergence
 
 /-! ### The one smoothing property that is a theorem -/
 
-/-- **The smoothing property of a damped preconditioned Richardson iteration** (Saad, *Iterative
-Methods for Sparse Linear Systems*, Example 13.8 and Exercise 13.15).  For `S = 1 - ω D⁻¹ A` with
-`Dinv` a right inverse of a symmetric coercive `D` and `γ` a bound of the quadratic form of `A`
-by that of `D`, the smoothing property holds with `q = ‖·‖_{D⁻¹}` and `α = ω (2 - ω γ)`, which is
-positive exactly for `0 < ω < 2/γ`.  Richardson is `D = 1`, weighted Jacobi is `D` the diagonal
-part of `A`. -/
+/-- **The smoothing property of a damped preconditioned Richardson iteration** ([saad2003iterative],
+Example 13.8 and Exercise 13.15).  For `S = 1 - ω D⁻¹ A` with `Dinv` a right inverse of a symmetric
+coercive `D` and `γ` a bound of the quadratic form of `A` by that of `D`, the smoothing property
+holds with `q = ‖·‖_{D⁻¹}` and `α = ω (2 - ω γ)`, which is positive exactly for `0 < ω < 2/γ`.
+Richardson is `D = 1`, weighted Jacobi is `D` the diagonal part of `A`. -/
 theorem isSmootherWith_richardson {A D Dinv : E →ₗ[𝕜] E} (hA : A.IsSymmetricCoercive)
     (hD : D.IsSymmetricCoercive) (hinv : ∀ u, D (Dinv u) = u) {γ : ℝ}
     (hγ : ∀ x, RCLike.re (inner 𝕜 (A x) x) ≤ γ * RCLike.re (inner 𝕜 (D x) x)) (ω : ℝ) :

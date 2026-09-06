@@ -15,7 +15,7 @@ A normal operator on a finite-dimensional inner product space is diagonalizable,
 pairwise orthogonal, they are the eigenspaces of its adjoint at the conjugate eigenvalues, and its
 adjoint is a polynomial in it. This is the spectral theorem for normal operators, and the last
 statement is the algebraic form of it that the Faber–Manteuffel theory of short-recurrence Krylov
-methods needs ([Saad, *Iterative Methods for Sparse Linear Systems*][saad2003iterative], §6.10).
+methods needs ([saad2003iterative], §6.10).
 
 ## Main results
 
@@ -23,25 +23,23 @@ The route avoids both Schur triangulation and the Jordan form, neither of which 
 
 * `LinearMap.IsStarNormal.norm_adjoint_apply`: a normal `A` satisfies `‖A† v‖ = ‖A v‖`, hence
   `LinearMap.IsStarNormal.ker_adjoint_eq_ker`, `ker A† = ker A`.
-* `LinearMap.IsStarNormal.ker_pow`: a normal `N` satisfies `ker Nᵏ = ker N` for `k ≠ 0`. Indeed
-  if `N (N x) = 0` then `N x ∈ ker N = ker N†`, so `0 = ⟪N† (N x), x⟫ = ‖N x‖²`.
+* `LinearMap.IsStarNormal.ker_pow`: a normal `N` satisfies `ker Nᵏ = ker N` for `k ≠ 0`. Indeed if
+  `N (N x) = 0` then `N x ∈ ker N = ker N†`, so `0 = ⟪N† (N x), x⟫ = ‖N x‖²`.
 * A scalar shift of a normal operator is normal (`LinearMap.IsStarNormal.sub_smul_one`), so the
   previous item applied to `A - μ` says that a normal operator has no generalized eigenvectors:
   `LinearMap.IsStarNormal.maxGenEigenspace_eq_eigenspace`.
 * Over an algebraically closed field the maximal generalized eigenspaces span
   (`Module.End.iSup_maxGenEigenspace_eq_top`), so the *eigenspaces* of a normal operator span:
-  `LinearMap.IsStarNormal.iSup_eigenspace_eq_top`. That is diagonalizability, with no
-  triangulation theorem in sight.
+  `LinearMap.IsStarNormal.iSup_eigenspace_eq_top`. That is diagonalizability, with no triangulation
+  theorem in sight.
 * The same shift argument identifies the eigenspaces of `A` and of `A†`
   (`LinearMap.IsStarNormal.eigenspace_adjoint`); the two operators share their eigenvectors, and
-  their eigenvalues are conjugate. Conversely, an operator sharing its eigenvectors with its
-  adjoint is normal (`LinearMap.isStarNormal_of_adjoint_apply_eq_smul`), since the same inner
-  product that forces the eigenvalues to be conjugate also forbids generalized eigenvectors.
-* Distinct eigenvalues give orthogonal eigenspaces
-  (`LinearMap.IsStarNormal.inner_eq_zero_of_ne`,
-  `LinearMap.IsStarNormal.orthogonalFamily_eigenspaces`), and with diagonalizability the
-  eigenspaces decompose the space orthogonally
-  (`LinearMap.IsStarNormal.direct_sum_isInternal`), exactly as
+  their eigenvalues are conjugate. Conversely, an operator sharing its eigenvectors with its adjoint
+  is normal (`LinearMap.isStarNormal_of_adjoint_apply_eq_smul`), since the same inner product that
+  forces the eigenvalues to be conjugate also forbids generalized eigenvectors.
+* Distinct eigenvalues give orthogonal eigenspaces (`LinearMap.IsStarNormal.inner_eq_zero_of_ne`,
+  `LinearMap.IsStarNormal.orthogonalFamily_eigenspaces`), and with diagonalizability the eigenspaces
+  decompose the space orthogonally (`LinearMap.IsStarNormal.direct_sum_isInternal`), exactly as
   `LinearMap.IsSymmetric.direct_sum_isInternal` does in the self-adjoint case.
 * Finally, a polynomial taking the value `conj μ` at every eigenvalue `μ` evaluates to `A†`
   (`LinearMap.IsStarNormal.aeval_eq_adjoint_of_eval_eq`), and Lagrange interpolation supplies one
@@ -51,13 +49,13 @@ The route avoids both Schur triangulation and the Jordan form, neither of which 
 ## Implementation notes
 
 Only the statements that need the eigenspaces to span assume `[IsAlgClosed 𝕜]`. Everything else —
-the norm identity, the kernels, the shift, and the eigenspace identity in the direction
-`A ⟹ A†` — holds over `ℝ` as well.
+the norm identity, the kernels, the shift, and the eigenspace identity in the direction `A ⟹ A†` —
+holds over `ℝ` as well.
 
-Dot notation does not reach these lemmas: they live in the `LinearMap` and `Matrix` namespaces
-while the hypothesis `IsStarNormal A` is a root-level structure, so a normality hypothesis `hA`
-has to be passed as `LinearMap.IsStarNormal.ker_adjoint_eq_ker hA` and not as
-`hA.ker_adjoint_eq_ker`. This follows Mathlib's `ContinuousLinearMap.IsStarNormal` lemmas.
+Dot notation does not reach these lemmas: they live in the `LinearMap` and `Matrix` namespaces while
+the hypothesis `IsStarNormal A` is a root-level structure, so a normality hypothesis `hA` has to be
+passed as `LinearMap.IsStarNormal.ker_adjoint_eq_ker hA` and not as `hA.ker_adjoint_eq_ker`. This
+follows Mathlib's `ContinuousLinearMap.IsStarNormal` lemmas.
 -/
 
 open Module End Polynomial
@@ -71,9 +69,9 @@ variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpac
 
 /-! ### Normality through norms -/
 
-/-- A normal operator and its adjoint have the same norm at every vector: `‖A† v‖ = ‖A v‖`.
-Both sides are the quadratic form of a Gram operator, `⟪v, (A† A) v⟫` and `⟪v, (A A†) v⟫`, and
-normality says those two operators are equal. -/
+/-- A normal operator and its adjoint have the same norm at every vector: `‖A† v‖ = ‖A v‖`. Both
+sides are the quadratic form of a Gram operator, `⟪v, (A† A) v⟫` and `⟪v, (A A†) v⟫`, and normality
+says those two operators are equal. -/
 theorem IsStarNormal.norm_adjoint_apply (hA : IsStarNormal A) (v : E) :
     ‖A.adjoint v‖ = ‖A v‖ := by
   have hc : A * A.adjoint = A.adjoint * A := by
@@ -122,8 +120,8 @@ theorem adjoint_sub_smul_one (A : E →ₗ[𝕜] E) (μ : 𝕜) :
 
 /-! ### No generalized eigenvectors
 
-The three lemmas below take as hypothesis only that the shifted operator kills a vector whenever
-it does, `ker N ≤ ker N†`, which is what both a normality hypothesis and a shared-eigenvector
+The three lemmas below take as hypothesis only that the shifted operator kills a vector whenever it
+does, `ker N ≤ ker N†`, which is what both a normality hypothesis and a shared-eigenvector
 hypothesis supply. -/
 
 private theorem apply_eq_zero_of_ker_le {N : E →ₗ[𝕜] E}
@@ -163,8 +161,8 @@ private theorem maxGenEigenspace_eq_eigenspace_of_ker_le {A : E →ₗ[𝕜] E} 
     rw [ker_pow_succ_of_ker_le h j, ← eigenspace_def] at hmem
     exact hmem
 
-/-- For a normal `N`, `N (N x) = 0` forces `N x = 0`: the vector `N x` lies in `ker N = ker N†`,
-so `‖N x‖² = ⟪N† (N x), x⟫ = 0`. -/
+/-- For a normal `N`, `N (N x) = 0` forces `N x = 0`: the vector `N x` lies in `ker N = ker N†`, so
+`‖N x‖² = ⟪N† (N x), x⟫ = 0`. -/
 theorem IsStarNormal.apply_eq_zero_of_apply_apply_eq_zero (hN : IsStarNormal N) {x : E}
     (h : N (N x) = 0) : N x = 0 :=
   apply_eq_zero_of_ker_le (fun y hy => (IsStarNormal.adjoint_apply_eq_zero_iff hN y).2 hy) h
@@ -176,8 +174,8 @@ theorem IsStarNormal.ker_pow (hN : IsStarNormal N) {k : ℕ} (hk : k ≠ 0) :
   exact ker_pow_succ_of_ker_le (fun y hy => (IsStarNormal.adjoint_apply_eq_zero_iff hN y).2 hy) j
 
 /-- A normal operator has no generalized eigenvectors: every maximal generalized eigenspace is
-already an eigenspace. This is `LinearMap.IsStarNormal.ker_pow` applied to the normal operator
-`A - μ`. -/
+already an eigenspace. This is `LinearMap.IsStarNormal.ker_pow` applied to the normal operator `A -
+μ`. -/
 theorem IsStarNormal.maxGenEigenspace_eq_eigenspace (hA : IsStarNormal A) (μ : 𝕜) :
     maxGenEigenspace A μ = eigenspace A μ :=
   maxGenEigenspace_eq_eigenspace_of_ker_le fun y hy =>
@@ -209,16 +207,15 @@ theorem IsStarNormal.iSup_eigenspace_eq_top [IsAlgClosed 𝕜] (hA : IsStarNorma
 /-! ### A normal operator and its adjoint share their eigenvectors -/
 
 /-- **A normal operator and its adjoint have the same eigenvectors**, with conjugate eigenvalues
-(Saad, *Iterative Methods for Sparse Linear Systems*, Lemma 1.15, the easy direction):
-`ker (A† - conj μ)` equals `ker (A - μ)`, because `A - μ` is normal and a normal operator has the
-same kernel as its adjoint. -/
+([saad2003iterative], Lemma 1.15, the easy direction): `ker (A† - conj μ)` equals `ker (A - μ)`,
+because `A - μ` is normal and a normal operator has the same kernel as its adjoint. -/
 theorem IsStarNormal.eigenspace_adjoint (hA : IsStarNormal A) (μ : 𝕜) :
     eigenspace A.adjoint (conj μ) = eigenspace A μ := by
   rw [eigenspace_def, eigenspace_def, ← adjoint_sub_smul_one A μ]
   exact IsStarNormal.ker_adjoint_eq_ker (IsStarNormal.sub_smul_one hA μ)
 
-/-- The eigenvalue of `A†` at a shared eigenvector is forced to be the conjugate one:
-`⟪x, A† x⟫ = ⟪A x, x⟫` reads as `ν ‖x‖² = conj μ ‖x‖²`. -/
+/-- The eigenvalue of `A†` at a shared eigenvector is forced to be the conjugate one: `⟪x, A† x⟫ =
+⟪A x, x⟫` reads as `ν ‖x‖² = conj μ ‖x‖²`. -/
 private theorem adjoint_apply_eq_conj_smul {A : E →ₗ[𝕜] E} {μ ν : 𝕜} {x : E} (hx : A x = μ • x)
     (hν : A.adjoint x = ν • x) : A.adjoint x = conj μ • x := by
   rcases eq_or_ne x 0 with rfl | hx0
@@ -228,11 +225,11 @@ private theorem adjoint_apply_eq_conj_smul {A : E →ₗ[𝕜] E} {μ ν : 𝕜}
     have hxx : (inner 𝕜 x x : 𝕜) ≠ 0 := fun hc => hx0 (inner_self_eq_zero.1 hc)
     rw [hν, mul_right_cancel₀ hxx h]
 
-/-- **An operator that shares its eigenvectors with its adjoint is normal**
-(Saad, *Iterative Methods for Sparse Linear Systems*, Lemma 1.15, the substantial direction).
-The inner product `⟪x, A† x⟫ = ⟪A x, x⟫` forces the adjoint eigenvalue to be `conj μ`; the same
-identity applied to `(A - μ) u = x` forces `‖x‖² = 0`, so there are no generalized eigenvectors and
-`A` is diagonalizable; and on each eigenspace `A† A` and `A A†` both act as `|μ|²`. -/
+/-- **An operator that shares its eigenvectors with its adjoint is normal** ([saad2003iterative],
+Lemma 1.15, the substantial direction). The inner product `⟪x, A† x⟫ = ⟪A x, x⟫` forces the adjoint
+eigenvalue to be `conj μ`; the same identity applied to `(A - μ) u = x` forces `‖x‖² = 0`, so there
+are no generalized eigenvectors and `A` is diagonalizable; and on each eigenspace `A† A` and `A A†`
+both act as `|μ|²`. -/
 theorem isStarNormal_of_adjoint_apply_eq_smul [IsAlgClosed 𝕜] {A : E →ₗ[𝕜] E}
     (h : ∀ (μ : 𝕜) (x : E), A x = μ • x → ∃ ν : 𝕜, A.adjoint x = ν • x) : IsStarNormal A := by
   have hconj : ∀ (μ : 𝕜) (x : E), x ∈ eigenspace A μ → A.adjoint x = conj μ • x := by
@@ -257,9 +254,9 @@ theorem isStarNormal_of_adjoint_apply_eq_smul [IsAlgClosed 𝕜] {A : E →ₗ[�
 
 /-! ### The spectral theorem for normal operators -/
 
-/-- **The eigenspaces of a normal operator are mutually orthogonal.** If `A x = μ x` and
-`A y = ν y` then `conj μ ⟪x, y⟫ = ⟪A x, y⟫ = ⟪x, A† y⟫ = conj ν ⟪x, y⟫`, using that `y` is an
-eigenvector of `A†` for `conj ν`. -/
+/-- **The eigenspaces of a normal operator are mutually orthogonal.** If `A x = μ x` and `A y = ν y`
+then `conj μ ⟪x, y⟫ = ⟪A x, y⟫ = ⟪x, A† y⟫ = conj ν ⟪x, y⟫`, using that `y` is an eigenvector of
+`A†` for `conj ν`. -/
 theorem IsStarNormal.inner_eq_zero_of_ne (hA : IsStarNormal A) {μ ν : 𝕜} (hμν : μ ≠ ν) {x y : E}
     (hx : x ∈ eigenspace A μ) (hy : y ∈ eigenspace A ν) : (inner 𝕜 x y : 𝕜) = 0 := by
   have hy' : A.adjoint y = conj ν • y :=
@@ -281,8 +278,8 @@ theorem IsStarNormal.orthogonalFamily_eigenspaces (hA : IsStarNormal A) :
   rintro μ ν hμν ⟨x, hx⟩ ⟨y, hy⟩
   exact IsStarNormal.inner_eq_zero_of_ne hA hμν hx hy
 
-/-- The orthogonal family of eigenspaces, indexed by the eigenvalues rather than by all
-scalars; this is the form `OrthogonalFamily.isInternal_iff` consumes. -/
+/-- The orthogonal family of eigenspaces, indexed by the eigenvalues rather than by all scalars;
+this is the form `OrthogonalFamily.isInternal_iff` consumes. -/
 theorem IsStarNormal.orthogonalFamily_eigenspaces' (hA : IsStarNormal A) :
     OrthogonalFamily 𝕜 (fun μ : Eigenvalues A => eigenspace A μ) fun μ =>
       (eigenspace A μ).subtypeₗᵢ :=
@@ -315,9 +312,8 @@ theorem IsStarNormal.aeval_eq_adjoint_of_eval_eq [IsAlgClosed 𝕜] (hA : IsStar
     rw [aeval_apply_of_mem_apply_eq_smul (mem_eigenspace_iff.1 hx), h2,
       hq μ (hasEigenvalue_of_hasEigenvector ⟨hx, hx0⟩)]
 
-/-- **The adjoint of a normal operator is a polynomial in it.** Take `q` interpolating
-`z ↦ conj z` at the finitely many eigenvalues and apply
-`LinearMap.IsStarNormal.aeval_eq_adjoint_of_eval_eq`.
+/-- **The adjoint of a normal operator is a polynomial in it.** Take `q` interpolating `z ↦ conj z`
+at the finitely many eigenvalues and apply `LinearMap.IsStarNormal.aeval_eq_adjoint_of_eval_eq`.
 
 No degree bound is asserted, since a caller can reduce any such `q` modulo an annihilating
 polynomial of `A`. -/
@@ -342,8 +338,8 @@ product space over an algebraically closed field.  The eigenspaces are mutually 
 decompose the space (`LinearMap.IsStarNormal.direct_sum_isInternal`), so an orthonormal basis of
 each assembles into one of the whole space, subordinate to the decomposition.  This is the
 counterpart of `LinearMap.IsSymmetric.eigenvectorBasis` for normal rather than self-adjoint
-operators; unlike there the eigenvalues are not real, so
-`LinearMap.IsStarNormal.eigenvalues` takes values in `𝕜` and no ordering is imposed. -/
+operators; unlike there the eigenvalues are not real, so `LinearMap.IsStarNormal.eigenvalues` takes
+values in `𝕜` and no ordering is imposed. -/
 noncomputable def IsStarNormal.eigenvectorBasis (hA : IsStarNormal A)
     (hn : Module.finrank 𝕜 E = n) : OrthonormalBasis (Fin n) 𝕜 E :=
   (IsStarNormal.direct_sum_isInternal hA).subordinateOrthonormalBasis hn
@@ -408,9 +404,8 @@ theorem aeval_eq_conjTranspose_iff {A : Matrix n n 𝕜} {q : 𝕜[X]} :
 
 /-- **The conjugate transpose of a normal matrix is a polynomial in the matrix**: over an
 algebraically closed field a normal `A` satisfies `Aᴴ = q(A)` for some `q`. This is
-`LinearMap.IsStarNormal.exists_aeval_eq_adjoint` transported along the algebra equivalence
-between matrices and operators on Euclidean space, under which the conjugate transpose is the
-adjoint. -/
+`LinearMap.IsStarNormal.exists_aeval_eq_adjoint` transported along the algebra equivalence between
+matrices and operators on Euclidean space, under which the conjugate transpose is the adjoint. -/
 theorem IsStarNormal.exists_aeval_eq_conjTranspose [IsAlgClosed 𝕜] {A : Matrix n n 𝕜}
     (hA : IsStarNormal A) : ∃ q : 𝕜[X], aeval A q = Aᴴ := by
   obtain ⟨q, hq⟩ :=
@@ -434,13 +429,12 @@ private theorem exists_orthonormalBasis_eigenvector [IsAlgClosed 𝕜] {A : Matr
   rw [OrthonormalBasis.reindex_apply]
   simpa [toLpLin_apply] using congrArg WithLp.ofLp h
 
-/-- **The spectral theorem for normal matrices**: a square matrix over an algebraically closed
-field is normal exactly when it is unitarily similar to a diagonal matrix.  The forward direction
+/-- **The spectral theorem for normal matrices**: a square matrix over an algebraically closed field
+is normal exactly when it is unitarily similar to a diagonal matrix.  The forward direction
 assembles the orthonormal eigenbasis `LinearMap.IsStarNormal.eigenvectorBasis` into the
 change-of-basis matrix; the converse is a computation with diagonal matrices, which commute with
 their conjugate transposes.  This is the counterpart of `Matrix.IsHermitian.spectral_theorem` for
-normal rather than Hermitian matrices (Saad, *Iterative Methods for Sparse Linear Systems*,
-Thm 1.14). -/
+normal rather than Hermitian matrices ([saad2003iterative], Thm 1.14). -/
 theorem IsStarNormal.spectral_theorem [IsAlgClosed 𝕜] {A : Matrix n n 𝕜} :
     IsStarNormal A ↔
       ∃ U ∈ Matrix.unitaryGroup n 𝕜, ∃ d : n → 𝕜, Uᴴ * A * U = Matrix.diagonal d := by

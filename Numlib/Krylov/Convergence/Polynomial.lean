@@ -11,10 +11,9 @@ import Numlib.Analysis.InnerProductSpace.Projection.Compression
 dimension (via `LinearMap.IsSymmetric.eigenvectorBasis`), and the real-interval form used by the
 Chebyshev bounds: for `A.IsSymmetricBoundedBy a b`, `‖p(A) x‖ ≤ sup_{[a,b]} |p| ‖x‖` in *any* inner
 product space, obtained by compressing `A` to the finite-dimensional `span {x, A x, …, A^(deg p) x}`
-(the "compression trick"; [Saad, *Iterative Methods*][saad2003iterative] Lemma 6.28/6.31 proofs,
-[Saad, *Large Eigenvalue Problems*][saad2011numerical] Lemma 6.1, [Atkinson–Han][han2009theoretical]
-(5.6.16)–(5.6.19), [Meurant–Strakoš][meurant2006lanczos] (3.7)–(3.8)). The Hilbert-space version via
-the continuous functional calculus is a phase-2 alternative, not needed for the statements.
+(the "compression trick"; [saad2003iterative] Lemma 6.28/6.31 proofs, [saad2011numerical] Lemma 6.1,
+[han2009theoretical] (5.6.16)–(5.6.19), [meurant2006lanczos] (3.7)–(3.8)). The Hilbert-space version
+via the continuous functional calculus is a phase-2 alternative, not needed for the statements.
 -/
 
 open Polynomial
@@ -40,9 +39,9 @@ private theorem repr_pow_apply {n : ℕ} (hn : Module.finrank 𝕜 E = n) (k : �
       rw [pow_succ, Module.End.mul_apply, ih, hA.eigenvectorBasis_apply_self_apply hn]
       ring
 
-/-- In the eigenvector basis, `p(A)` acts diagonally by `p(λ)`.  This is the expansion behind
-every bound on `p(A)` in terms of the values of `p` on the spectrum, here and in the Krylov
-eigenvalue estimates. -/
+/-- In the eigenvector basis, `p(A)` acts diagonally by `p(λ)`.  This is the expansion behind every
+bound on `p(A)` in terms of the values of `p` on the spectrum, here and in the Krylov eigenvalue
+estimates. -/
 theorem repr_aeval_apply {n : ℕ} (hn : Module.finrank 𝕜 E = n) (p : 𝕜[X]) (x : E)
     (i : Fin n) :
     (hA.eigenvectorBasis hn).repr (aeval A p x) i =
@@ -125,10 +124,10 @@ theorem im_eq_zero_of_hasEigenvalue {μ : 𝕜} (hμ : Module.End.HasEigenvalue 
 
 end LinearMap.IsSymmetric
 
-/-- Saad, *Iterative Methods*, Prop 6.32 (diagonalizable `A`): if `A` is conjugate by `X` to an
-operator `D` whose polynomial images satisfy `‖p(D) y‖ ≤ C ‖y‖`, then `‖p(A) x‖ ≤ κ(X) C ‖x‖`,
-where `κ(X) = ‖X‖ ‖X⁻¹‖` is the condition number of `X`. Stated with `D` symmetric so that the
-finite-dimensional bound above applies. -/
+/-- [saad2003iterative], Prop 6.32 (diagonalizable `A`): if `A` is conjugate by `X` to an operator
+`D` whose polynomial images satisfy `‖p(D) y‖ ≤ C ‖y‖`, then `‖p(A) x‖ ≤ κ(X) C ‖x‖`, where `κ(X) =
+‖X‖ ‖X⁻¹‖` is the condition number of `X`. Stated with `D` symmetric so that the finite-dimensional
+bound above applies. -/
 theorem norm_aeval_apply_le_of_conj {A D : E →ₗ[𝕜] E} (X : E ≃L[𝕜] E)
     (hconj : A = (X : E →ₗ[𝕜] E) ∘ₗ D ∘ₗ (X.symm : E →ₗ[𝕜] E)) (hD : D.IsSymmetric) {C : ℝ}
     (p : 𝕜[X]) (hC : ∀ μ : 𝕜, Module.End.HasEigenvalue D μ → ‖p.eval μ‖ ≤ C) (x : E) :
@@ -157,8 +156,8 @@ section Compression
 
 /-! ### The compression trick
 
-Everything a Krylov method does in `m` steps happens inside the finite-dimensional
-`𝒦_{m+1}`, on which `A` acts (up to the last step) as its compression. -/
+Everything a Krylov method does in `m` steps happens inside the finite-dimensional `𝒦_{m+1}`, on
+which `A` acts (up to the last step) as its compression. -/
 
 namespace compression
 
@@ -181,14 +180,14 @@ theorem isSymmetricCoercive (hA : A.IsSymmetricCoercive) :
   rw [compression.inner_apply A K x x]
   exact hcA (x : E)
 
-/-- The energy inner product of the compression is the restriction of the energy inner product
-of `A`. -/
+/-- The energy inner product of the compression is the restriction of the energy inner product of
+`A`. -/
 theorem energyInner_apply (x y : K) : energyInner (compression A K) x y = energyInner A x y :=
   compression.inner_apply A K x y
 
 /-- Measuring a vector of `K` in the energy norm of the compression gives the same number as
-measuring it in the energy norm of `A`. This is what lets the compression trick carry an
-energy-norm bound proved in the finite-dimensional `K` back to `E` with no constant lost. -/
+measuring it in the energy norm of `A`. This is what lets the compression trick carry an energy-norm
+bound proved in the finite-dimensional `K` back to `E` with no constant lost. -/
 theorem energyNorm_apply (x : K) : energyNorm (compression A K) x = energyNorm A x := by
   rw [energyNorm, energyNorm, compression.inner_apply A K x x]
 
@@ -203,8 +202,8 @@ private theorem bddAbove_image_abs_eval (p : ℝ[X]) (a b : ℝ) :
     BddAbove ((fun t => |p.eval t|) '' Set.Icc a b) :=
   (isCompact_Icc.image p.continuous.abs).bddAbove
 
-/-- For a symmetric operator with quadratic form in `[a, b]`, the values of a real polynomial at
-the (real) eigenvalues are bounded by its sup over `[a, b]`. -/
+/-- For a symmetric operator with quadratic form in `[a, b]`, the values of a real polynomial at the
+(real) eigenvalues are bounded by its sup over `[a, b]`. -/
 private theorem norm_eval_map_le_sSup {A : E →ₗ[𝕜] E} {a b : ℝ}
     (hA : A.IsSymmetricBoundedBy a b) (p : ℝ[X]) {μ : 𝕜}
     (hμ : Module.End.HasEigenvalue A μ) :
@@ -225,8 +224,8 @@ end Interval
 
 section CompressionSpace
 
-/-- The Krylov subspace used by the compression trick: it contains `x` and `p(A) x` can be
-computed inside it. -/
+/-- The Krylov subspace used by the compression trick: it contains `x` and `p(A) x` can be computed
+inside it. -/
 private noncomputable def compressionSpace (A : E →ₗ[𝕜] E) (d : ℕ) (x : E) : Submodule 𝕜 E :=
   Submodule.span 𝕜 (Set.range fun i : Fin (d + 1) => (A ^ (i : ℕ)) x)
 

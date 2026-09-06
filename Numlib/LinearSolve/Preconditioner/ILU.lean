@@ -5,24 +5,23 @@ import Numlib.LinearSolve.Stationary.RegularSplitting
 /-!
 # Incomplete `LU` factorizations
 
-An *incomplete* `LU` factorization of a square matrix `A` is a pair `L`, `U` — unit lower
-triangular and upper triangular — that both vanish on a prescribed *zero pattern*
-`P ⊆ n × n` and whose product agrees with `A` off that pattern. Writing `R = L U - A` for the
-residual, `A = L U - R` is a splitting of `A` whose `M` factor is cheap to apply, and `R` is
-supported in `P`.
+An *incomplete* `LU` factorization of a square matrix `A` is a pair `L`, `U` — unit lower triangular
+and upper triangular — that both vanish on a prescribed *zero pattern* `P ⊆ n × n` and whose product
+agrees with `A` off that pattern. Writing `R = L U - A` for the residual, `A = L U - R` is a
+splitting of `A` whose `M` factor is cheap to apply, and `R` is supported in `P`.
 
 ## The declarative definition
 
 `Matrix.IsILU P A L U` states exactly the five constraints above, and not an algorithm.
-[Saad][saad2003iterative] §10.3.1 gives several loop orders (`KIJ`, `IKJ`) that compute such
-factors, proves that two of them agree, and observes before Algorithm 10.4 that the factors are in
-general not unique. Each loop order produces factors satisfying `Matrix.IsILU`, every downstream
-statement of §10.3–10.5 uses only these constraints, and no uniqueness is available to be exploited;
-so the constraints are the definition here. `Matrix.IsILU0`, taking `P` to be the off-diagonal zero
-pattern `Matrix.zeroPattern A` of `A` itself, is the level-zero factorization `ILU(0)`.
+[saad2003iterative] §10.3.1 gives several loop orders (`KIJ`, `IKJ`) that compute such factors,
+proves that two of them agree, and observes before Algorithm 10.4 that the factors are in general
+not unique. Each loop order produces factors satisfying `Matrix.IsILU`, every downstream statement
+of §10.3–10.5 uses only these constraints, and no uniqueness is available to be exploited; so the
+constraints are the definition here. `Matrix.IsILU0`, taking `P` to be the off-diagonal zero pattern
+`Matrix.zeroPattern A` of `A` itself, is the level-zero factorization `ILU(0)`.
 
-`Matrix.IsMILU` is the *modified* variant of §10.3.5: the constraints hold off the diagonal, and
-the diagonal is chosen so that the row sums of `L U` and of `A` agree, which is what makes the
+`Matrix.IsMILU` is the *modified* variant of §10.3.5: the constraints hold off the diagonal, and the
+diagonal is chosen so that the row sums of `L U` and of `A` agree, which is what makes the
 preconditioner exact on constant vectors.
 
 ## Existence for M-matrices
@@ -30,20 +29,19 @@ preconditioner exact on constant vectors.
 The theorem of the chapter is that an M-matrix (`Matrix.IsMMatrix`) admits an incomplete
 factorization for *every* zero pattern avoiding the diagonal, that no pivot vanishes, and that `A =
 L U - R` is then a regular splitting, hence a convergent iteration (`Matrix.IsMMatrix.exists_isILU`
-and `Matrix.IsILU.isRegular`). This is due to [Meijerink and van der Vorst][meijerink1977iterative];
-the induction rests on Ky Fan's theorem [fan1960note], that one step of Gaussian elimination applied
-to an M-matrix produces an M-matrix (`Matrix.IsMMatrix.isMMatrix_schurComplementSingle`), and on the
-comparison theorem `Matrix.IsMMatrix.of_entrywiseLE` of `Numlib/LinearAlgebra/Matrix/MMatrix`, which
-is what makes the *dropping* step legitimate: discarding a nonpositive off-diagonal entry moves the
-matrix up in the entrywise order, and an entrywise-larger matrix with nonpositive off-diagonal
-entries is again an M-matrix.
+and `Matrix.IsILU.isRegular`). This is due to [meijerink1977iterative]; the induction rests on
+[fan1960note] theorem [fan1960note], that one step of Gaussian elimination applied to an M-matrix
+produces an M-matrix (`Matrix.IsMMatrix.isMMatrix_schurComplementSingle`), and on the comparison
+theorem `Matrix.IsMMatrix.of_entrywiseLE` of `Numlib/LinearAlgebra/Matrix/MMatrix`, which is what
+makes the *dropping* step legitimate: discarding a nonpositive off-diagonal entry moves the matrix
+up in the entrywise order, and an entrywise-larger matrix with nonpositive off-diagonal entries is
+again an M-matrix.
 
-The elimination step is taken in the form `Matrix.elimStep`, which keeps the index type fixed:
-it is `G⁻¹ A` for the unipotent `G = Matrix.elimMul A p` carrying the multipliers of column `p`,
-so the accumulated `L` factor is a product of such matrices and no reindexing appears. The
-`1 × 1`-pivot Schur complement `Matrix.schurComplementSingle` of
-`Numlib/LinearAlgebra/Matrix/SchurComplement` is the same step read on the smaller index type, and
-Ky Fan's theorem is stated there.
+The elimination step is taken in the form `Matrix.elimStep`, which keeps the index type fixed: it is
+`G⁻¹ A` for the unipotent `G = Matrix.elimMul A p` carrying the multipliers of column `p`, so the
+accumulated `L` factor is a product of such matrices and no reindexing appears. The `1 × 1`-pivot
+Schur complement `Matrix.schurComplementSingle` of `Numlib/LinearAlgebra/Matrix/SchurComplement` is
+the same step read on the smaller index type, and [fan1960note] theorem is stated there.
 
 ## Threshold factorizations
 
@@ -67,11 +65,11 @@ section ZeroPattern
 
 variable [Zero α]
 
-/-- **The off-diagonal zero pattern of `A`** (Saad, *Iterative Methods for Sparse Linear Systems*,
-§10.3.2): the positions off the diagonal at which `A` vanishes.
+/-- **The off-diagonal zero pattern of `A`** ([saad2003iterative], §10.3.2): the positions off the
+diagonal at which `A` vanishes.
 
-Taking it as the zero pattern of an incomplete factorization gives `ILU(0)`, whose factors have
-the sparsity of the lower and upper parts of `A`. -/
+Taking it as the zero pattern of an incomplete factorization gives `ILU(0)`, whose factors have the
+sparsity of the lower and upper parts of `A`. -/
 def zeroPattern (A : Matrix n n α) : Set (n × n) := {p | A p.1 p.2 = 0 ∧ p.1 ≠ p.2}
 
 /-- Membership in the off-diagonal zero pattern, entry by entry. -/
@@ -107,9 +105,9 @@ structure IsILUFactors (P : Set (n × n)) (L U : Matrix n n α) : Prop where
   /-- `U` vanishes on the zero pattern. -/
   u_eq_zero_of_mem : ∀ i j, (i, j) ∈ P → U i j = 0
 
-/-- **An incomplete `LU` factorization** of `A` for the zero pattern `P` (Saad, *Iterative Methods
-for Sparse Linear Systems*, §10.3.2): `L` is unit lower triangular, `U` is upper triangular, both
-vanish on `P`, and `L U` agrees with `A` off `P`.
+/-- **An incomplete `LU` factorization** of `A` for the zero pattern `P` ([saad2003iterative],
+§10.3.2): `L` is unit lower triangular, `U` is upper triangular, both vanish on `P`, and `L U`
+agrees with `A` off `P`.
 
 The definition is a constraint rather than an algorithm: every loop order of §10.3.1 produces
 factors satisfying it, and the factors it describes are not unique. See the module documentation. -/
@@ -117,23 +115,21 @@ structure IsILU (P : Set (n × n)) (A L U : Matrix n n α) : Prop extends IsILUF
   /-- Off the zero pattern, the product of the factors reproduces `A`. -/
   agree : ∀ i j, (i, j) ∉ P → (L * U) i j = A i j
 
-/-- **The modified incomplete `LU` factorization** `MILU` (Saad, *Iterative Methods for Sparse
-Linear Systems*, §10.3.5): the shape constraints of `Matrix.IsILU` hold, the product reproduces
-`A` off the diagonal and off `P`, and on the diagonal the *row sums* agree,
-`(L U) e = A e` for `e` the vector of ones.
+/-- **The modified incomplete `LU` factorization** `MILU` ([saad2003iterative], §10.3.5): the shape
+constraints of `Matrix.IsILU` hold, the product reproduces `A` off the diagonal and off `P`, and on
+the diagonal the *row sums* agree, `(L U) e = A e` for `e` the vector of ones.
 
-The entries that an ordinary incomplete factorization discards are added to the diagonal instead,
-so the preconditioner is exact on constant vectors; that is the whole of its justification. -/
+The entries that an ordinary incomplete factorization discards are added to the diagonal instead, so
+the preconditioner is exact on constant vectors; that is the whole of its justification. -/
 structure IsMILU (P : Set (n × n)) (A L U : Matrix n n α) : Prop extends IsILUFactors P L U where
   /-- Off the diagonal and off the zero pattern, the product of the factors reproduces `A`. -/
   agree_of_ne : ∀ i j, i ≠ j → (i, j) ∉ P → (L * U) i j = A i j
   /-- The row sums of `L U` and of `A` agree. -/
   mulVec_one : (L * U) *ᵥ 1 = A *ᵥ 1
 
-/-- **`ILU(0)`** (Saad, *Iterative Methods for Sparse Linear Systems*, §10.3.2, Algorithm 10.4):
-the incomplete factorization whose zero pattern is the off-diagonal zero pattern of `A` itself, so
-that `L` and `U` have the sparsity of the lower and upper parts of `A` and `L U` matches `A`
-wherever `A` is nonzero. -/
+/-- **`ILU(0)`** ([saad2003iterative], §10.3.2, Algorithm 10.4): the incomplete factorization whose
+zero pattern is the off-diagonal zero pattern of `A` itself, so that `L` and `U` have the sparsity
+of the lower and upper parts of `A` and `L U` matches `A` wherever `A` is nonzero. -/
 abbrev IsILU0 (A L U : Matrix n n α) : Prop := IsILU A.zeroPattern A L U
 
 end Defs
@@ -142,8 +138,8 @@ section Residual
 
 variable [Fintype n] [Preorder n] [Ring α] {P : Set (n × n)} {A L U : Matrix n n α}
 
-/-- **Saad's Proposition 10.4** (*Iterative Methods for Sparse Linear Systems*): an incomplete
-factorization writes `A = L U - R` with the residual `R = L U - A` supported in the zero
+/-- **[saad2003iterative] Proposition 10.4** (*Iterative Methods for Sparse Linear Systems*): an
+incomplete factorization writes `A = L U - R` with the residual `R = L U - A` supported in the zero
 pattern.
 
 This is the form in which `R` enters the regular-splitting statement `Matrix.IsILU.isRegular` and
@@ -153,9 +149,8 @@ theorem IsILU.sub_eq_zero_of_notMem (h : IsILU P A L U) {i j : n} (hij : (i, j) 
   rw [sub_apply, h.agree i j hij, sub_self]
 
 omit [Preorder n] in
-/-- **The row-sum identity behind `MILU`** (Saad, *Iterative Methods for Sparse Linear Systems*,
-(10.21)): a residual `R = L U - A` has vanishing row sums exactly when the row sums of `L U` and
-of `A` agree.
+/-- **The row-sum identity behind `MILU`** ([saad2003iterative], (10.21)): a residual `R = L U - A`
+has vanishing row sums exactly when the row sums of `L U` and of `A` agree.
 
 Correcting each diagonal entry of `U` by the row sum of the entries dropped in that row is what
 makes the left-hand side hold, and the right-hand side is the defining property
@@ -190,12 +185,12 @@ private theorem sum_ne_eq_mulVec_sub (A : Matrix n n K) (X : n → K) (p t : n) 
     ← Finset.add_sum_erase _ (fun j => A t j * X j) (Finset.mem_univ p)]
   ring
 
-/-- **The defining property of the `1 × 1`-pivot Schur complement.** If `X` is a vector whose
-image under `A` vanishes in the pivot row, then the Schur complement applied to the restriction of
-`X` reproduces the remaining rows of `A X`.
+/-- **The defining property of the `1 × 1`-pivot Schur complement.** If `X` is a vector whose image
+under `A` vanishes in the pivot row, then the Schur complement applied to the restriction of `X`
+reproduces the remaining rows of `A X`.
 
-This is the whole content of one step of Gaussian elimination: `X` is recovered from its
-restriction by back-substitution in the pivot row, `A p p X p = -∑_{j ≠ p} A p j X j`. -/
+This is the whole content of one step of Gaussian elimination: `X` is recovered from its restriction
+by back-substitution in the pivot row, `A p p X p = -∑_{j ≠ p} A p j X j`. -/
 theorem schurComplementSingle_mulVec_of_apply_eq_zero (A : Matrix n n K) {p : n}
     (hpp : A p p ≠ 0) {X : n → K} (hX : (A *ᵥ X) p = 0) (i : {x : n // x ≠ p}) :
     (A.schurComplementSingle p *ᵥ fun t : {x : n // x ≠ p} => X t.1) i = (A *ᵥ X) i.1 := by
@@ -238,16 +233,15 @@ theorem schurComplementSingle_mul_submatrix_inv {A : Matrix n n K} {p : n} (hA :
     · rw [Matrix.one_apply_ne (Subtype.coe_injective.ne hij), Matrix.one_apply_ne hij]
   exact h.trans hone
 
-/-- The `1 × 1`-pivot Schur complement of a nonsingular matrix with a nonzero pivot is
-nonsingular. -/
+/-- The `1 × 1`-pivot Schur complement of a nonsingular matrix with a nonzero pivot is nonsingular.
+-/
 theorem isUnit_schurComplementSingle {A : Matrix n n K} {p : n} (hA : IsUnit A) (hpp : A p p ≠ 0) :
     IsUnit (A.schurComplementSingle p) :=
   have h := schurComplementSingle_mul_submatrix_inv hA hpp
   ⟨⟨_, _, h, _root_.mul_eq_one_comm.1 h⟩, rfl⟩
 
-/-- **The inverse of the `1 × 1`-pivot Schur complement** is the submatrix of `A⁻¹` on the
-indices other than the pivot — the `1 × 1`-pivot form of
-`Matrix.toBlocks₂₂_inv_eq_inv_schurComplement`. -/
+/-- **The inverse of the `1 × 1`-pivot Schur complement** is the submatrix of `A⁻¹` on the indices
+other than the pivot — the `1 × 1`-pivot form of `Matrix.toBlocks₂₂_inv_eq_inv_schurComplement`. -/
 theorem inv_schurComplementSingle {A : Matrix n n K} {p : n} (hA : IsUnit A) (hpp : A p p ≠ 0) :
     (A.schurComplementSingle p)⁻¹ = A⁻¹.submatrix Subtype.val Subtype.val :=
   Matrix.inv_eq_right_inv (schurComplementSingle_mul_submatrix_inv hA hpp)
@@ -258,14 +252,14 @@ section KyFan
 
 variable [Fintype n] [DecidableEq n]
 
-/-- **Ky Fan's theorem** (Saad, *Iterative Methods for Sparse Linear Systems*, Theorem 10.1): the
-matrix obtained from an M-matrix by one step of Gaussian elimination is again an M-matrix.
+/-- **[fan1960note] theorem** ([saad2003iterative], Theorem 10.1): the matrix obtained from an
+M-matrix by one step of Gaussian elimination is again an M-matrix.
 
-The three checks are the book's. Off the diagonal, `a_ij - a_ip a_pj / a_pp ≤ a_ij ≤ 0`, because
-the subtracted term is a product of two nonpositive entries and a positive pivot. Nonsingularity
-and the nonnegativity of the inverse are one identity, `Matrix.inv_schurComplementSingle`: the
-inverse of the Schur complement is the submatrix of `A⁻¹` on the indices other than the pivot,
-which is the content of Saad's `A_1⁻¹ e_j = A⁻¹ e_j`. -/
+The three checks are the book's. Off the diagonal, `a_ij - a_ip a_pj / a_pp ≤ a_ij ≤ 0`, because the
+subtracted term is a product of two nonpositive entries and a positive pivot. Nonsingularity and the
+nonnegativity of the inverse are one identity, `Matrix.inv_schurComplementSingle`: the inverse of
+the Schur complement is the submatrix of `A⁻¹` on the indices other than the pivot, which is the
+content of [saad2003iterative] `A_1⁻¹ e_j = A⁻¹ e_j`. -/
 theorem IsMMatrix.isMMatrix_schurComplementSingle {A : Matrix n n ℝ} (hA : A.IsMMatrix) (p : n) :
     (A.schurComplementSingle p).IsMMatrix := by
   have hpp : 0 < A p p := hA.diag_pos p
@@ -281,19 +275,19 @@ theorem IsMMatrix.isMMatrix_schurComplementSingle {A : Matrix n n ℝ} (hA : A.I
 
 end KyFan
 
-/-! ### Threshold factorizations and Saad's `M̂` matrices -/
+/-! ### Threshold factorizations and [saad2003iterative] `M̂` matrices -/
 
 section MHat
 
 variable [Fintype n] [LinearOrder n]
 
-/-- **Saad's `M̂` matrix** (*Iterative Methods for Sparse Linear Systems*, (10.25)-(10.27)):
-the diagonal entries are positive except possibly in the last row, where they need only be
-nonnegative; the off-diagonal entries are nonpositive; and in every row but the last the entries
-strictly to the right of the diagonal have a strictly negative sum.
+/-- **[saad2003iterative] `M̂` matrix** (*Iterative Methods for Sparse Linear Systems*,
+(10.25)-(10.27)): the diagonal entries are positive except possibly in the last row, where they need
+only be nonnegative; the off-diagonal entries are nonpositive; and in every row but the last the
+entries strictly to the right of the diagonal have a strictly negative sum.
 
-This is strictly weaker than `Matrix.IsMMatrix`: neither nonsingularity nor a nonnegative inverse
-is required. It is the class for which the threshold factorization `ILUT` of §10.4 is shown not to
+This is strictly weaker than `Matrix.IsMMatrix`: neither nonsingularity nor a nonnegative inverse is
+required. It is the class for which the threshold factorization `ILUT` of §10.4 is shown not to
 break down. "The last row" is the row indexed by the greatest element, `IsMax i`. -/
 structure IsMHat (H : Matrix n n ℝ) : Prop where
   /-- The diagonal entries are positive away from the last row. -/
@@ -302,8 +296,8 @@ structure IsMHat (H : Matrix n n ℝ) : Prop where
   diag_nonneg_of_isMax : ∀ i, IsMax i → 0 ≤ H i i
   /-- The off-diagonal entries are nonpositive. -/
   offDiag_nonpos : ∀ i j, i ≠ j → H i j ≤ 0
-  /-- In every row but the last, the entries to the right of the diagonal sum to a strictly
-  negative number: each such row has a nonzero entry strictly to the right of the diagonal. -/
+  /-- In every row but the last, the entries to the right of the diagonal sum to a strictly negative
+  number: each such row has a nonzero entry strictly to the right of the diagonal. -/
   sum_gt_neg : ∀ i, ¬ IsMax i → ∑ j ∈ Finset.univ.filter (fun j => i < j), H i j < 0
 
 /-- Every diagonal entry of an `M̂` matrix is nonnegative. -/
@@ -312,15 +306,15 @@ theorem IsMHat.diag_nonneg {H : Matrix n n ℝ} (hH : H.IsMHat) (i : n) : 0 ≤ 
   · exact hH.diag_nonneg_of_isMax i hi
   · exact (hH.diag_pos i hi).le
 
-/-- **A diagonally dominant `M̂` matrix** (Saad, *Iterative Methods for Sparse Linear Systems*,
-§10.4.1): an `M̂` matrix all of whose row sums are nonnegative. This is the hypothesis of the
-`ILUT` existence theorem `Matrix.IsMHat.ilut_rows`. -/
+/-- **A diagonally dominant `M̂` matrix** ([saad2003iterative], §10.4.1): an `M̂` matrix all of
+whose row sums are nonnegative. This is the hypothesis of the `ILUT` existence theorem
+`Matrix.IsMHat.ilut_rows`. -/
 structure IsMHat.IsDiagDominant (H : Matrix n n ℝ) : Prop extends IsMHat H where
   /-- Every row sum is nonnegative. -/
   rowSum_nonneg : ∀ i, 0 ≤ ∑ j, H i j
 
-/-- The sum over the entries strictly to the right of `d` dominates the sum over all entries
-other than `d`, when those entries are nonpositive. -/
+/-- The sum over the entries strictly to the right of `d` dominates the sum over all entries other
+than `d`, when those entries are nonpositive. -/
 private theorem sum_erase_le_sum_gt (x : n → ℝ) (d : n) (hoff : ∀ j, j ≠ d → x j ≤ 0) :
     ∑ j ∈ Finset.univ.erase d, x j ≤ ∑ j ∈ Finset.univ.filter (fun j => d < j), x j := by
   have hsub : Finset.univ.filter (fun j => d < j) ⊆ Finset.univ.erase d := fun j hj =>
@@ -347,8 +341,8 @@ private theorem pos_of_sum_nonneg_of_sum_gt_neg (x : n → ℝ) (d : n) (hoff : 
   have h2 := sum_erase_le_sum_gt x d hoff
   linarith
 
-/-- **Saad's Theorem 10.8** (*Iterative Methods for Sparse Linear Systems*), the existence result
-for the threshold factorization `ILUT`.
+/-- **[saad2003iterative] Theorem 10.8** (*Iterative Methods for Sparse Linear Systems*), the
+existence result for the threshold factorization `ILUT`.
 
 The data is the row recurrence (10.23) of §10.4.1 rather than an algorithm: `u k` is the working
 copy of row `d` after `k` elimination steps, `w k` is the pivot row used at step `k` — a row of the
@@ -361,11 +355,11 @@ modulus to the right of the diagonal is never dropped.
 
 The conclusion is the book's, for every `k`: the row stays nonpositive off its diagonal; its sum
 stays nonnegative and never decreases; the entries to the right of the diagonal still sum to a
-strictly negative number; and the pivot `u k d` is therefore strictly positive, so the
-factorization does not break down.
+strictly negative number; and the pivot `u k d` is therefore strictly positive, so the factorization
+does not break down.
 
 In the last row, where the hypothesis `¬ IsMax d` fails and (10.27) is vacuous, the first two
-clauses alone give `0 ≤ u k d`, which is Saad's `u^n_n ≥ 0`. -/
+clauses alone give `0 ≤ u k d`, which is [saad2003iterative] `u^n_n ≥ 0`. -/
 theorem IsMHat.ilut_rows {H : Matrix n n ℝ} (hH : IsMHat.IsDiagDominant H) {d : n}
     (hd : ¬ IsMax d) (u w : ℕ → n → ℝ) (l : ℕ → ℝ) (r : ℕ → n → ℝ) (p : ℕ → n)
     (hu0 : u 0 = H d) (hrec : ∀ k, u (k + 1) = u k - l k • w k - r k)
@@ -452,9 +446,9 @@ section ElimStep
 
 variable [Fintype n] [LinearOrder n] [DecidableEq n] {M : Matrix n n ℝ} {p : n}
 
-/-- **The multipliers of one step of Gaussian elimination** at the pivot `p`: the entries
-`M i p / M p p` in column `p` and in the rows below `p`, and zero elsewhere. It is nilpotent of
-square zero, because its only nonzero column is indexed by `p` and its row `p` vanishes. -/
+/-- **The multipliers of one step of Gaussian elimination** at the pivot `p`: the entries `M i p / M
+p p` in column `p` and in the rows below `p`, and zero elsewhere. It is nilpotent of square zero,
+because its only nonzero column is indexed by `p` and its row `p` vanishes. -/
 noncomputable def elimMultipliers (M : Matrix n n ℝ) (p : n) : Matrix n n ℝ :=
   Matrix.of fun i j => if p < i ∧ j = p then M i p * (M p p)⁻¹ else 0
 
@@ -465,20 +459,20 @@ noncomputable def elimMul (M : Matrix n n ℝ) (p : n) : Matrix n n ℝ :=
 /-- **One step of Gaussian elimination** at the pivot `p`, on the whole index type: the rows
 strictly below `p` have `M i p / M p p` times row `p` subtracted from them, and every other row is
 left alone. Keeping the index type fixed is what lets the accumulated `L` factor of an incomplete
-factorization be a product of `Matrix.elimMul`s, with no reindexing anywhere; the same step read
-on the index type without `p` is `Matrix.schurComplementSingle`. -/
+factorization be a product of `Matrix.elimMul`s, with no reindexing anywhere; the same step read on
+the index type without `p` is `Matrix.schurComplementSingle`. -/
 noncomputable def elimStep (M : Matrix n n ℝ) (p : n) : Matrix n n ℝ :=
   M - elimMultipliers M p * M
 
 omit [Fintype n] in
-/-- Entries of the multiplier matrix: `M i p / M p p` in column `p` below the pivot, zero
-elsewhere. -/
+/-- Entries of the multiplier matrix: `M i p / M p p` in column `p` below the pivot, zero elsewhere.
+-/
 @[simp]
 theorem elimMultipliers_apply (M : Matrix n n ℝ) (p i j : n) :
     elimMultipliers M p i j = if p < i ∧ j = p then M i p * (M p p)⁻¹ else 0 := rfl
 
-/-- The multipliers of one row: the product `N M` has the correction of one elimination step as
-its entries. -/
+/-- The multipliers of one row: the product `N M` has the correction of one elimination step as its
+entries. -/
 theorem elimMultipliers_mul_apply (M : Matrix n n ℝ) (p i j : n) :
     (elimMultipliers M p * M) i j = if p < i then M i p * (M p p)⁻¹ * M p j else 0 := by
   rw [Matrix.mul_apply]
@@ -487,8 +481,8 @@ theorem elimMultipliers_mul_apply (M : Matrix n n ℝ) (p i j : n) :
     simp [hi]
   · simp [hi]
 
-/-- Entries of the eliminated matrix: the rows below the pivot lose `M i p / M p p` times row
-`p`, and every other row is unchanged. -/
+/-- Entries of the eliminated matrix: the rows below the pivot lose `M i p / M p p` times row `p`,
+and every other row is unchanged. -/
 theorem elimStep_apply (M : Matrix n n ℝ) (p i j : n) :
     elimStep M p i j = M i j - if p < i then M i p * (M p p)⁻¹ * M p j else 0 := by
   rw [elimStep, Matrix.sub_apply, elimMultipliers_mul_apply]
@@ -546,8 +540,8 @@ theorem inv_elimMul (M : Matrix n n ℝ) (p : n) :
     (elimMul M p)⁻¹ = 1 - elimMultipliers M p :=
   Matrix.inv_eq_right_inv (elimMul_mul_one_sub M p)
 
-/-- **The factorization of one elimination step**: `M = G M₁` with `G` the unipotent factor and
-`M₁` the eliminated matrix. -/
+/-- **The factorization of one elimination step**: `M = G M₁` with `G` the unipotent factor and `M₁`
+the eliminated matrix. -/
 theorem elimMul_mul_elimStep (M : Matrix n n ℝ) (p : n) : elimMul M p * elimStep M p = M := by
   rw [elimStep, elimMul, Matrix.mul_sub, add_mul, Matrix.one_mul, add_mul, Matrix.one_mul,
     ← Matrix.mul_assoc, elimMultipliers_mul_self, Matrix.zero_mul, add_zero]
@@ -570,15 +564,14 @@ private theorem sum_split_at (p : n) (f : n → ℝ) :
   exact Finset.disjoint_left.2 fun c hc hc' =>
     absurd ((Finset.mem_filter.1 hc).2.trans (Finset.mem_filter.1 hc').2) (lt_irrefl c)
 
-/-- **Ky Fan's theorem on the whole index type** (Saad, *Iterative Methods for Sparse Linear
-Systems*, Theorem 10.1): one step of Gaussian elimination applied to an M-matrix produces an
-M-matrix.
+/-- **[fan1960note] theorem on the whole index type** ([saad2003iterative], Theorem 10.1): one step
+of Gaussian elimination applied to an M-matrix produces an M-matrix.
 
-Off the diagonal the argument is the book's. For the inverse, `M₁ = (1 - N) M` gives
-`M₁⁻¹ = M⁻¹ (1 + N)`, which agrees with `M⁻¹` off the pivot column, and in the pivot column is
-`(M p p)⁻¹ (δ_{ip} - ∑_{c < p} M⁻¹ i c M c p)`, a nonnegative number because `M⁻¹` is nonnegative
-and the off-diagonal entries of `M` are nonpositive. Saad's own argument covers only the first
-pivot, where the pivot column of `M₁` is `M p p e_p`; this form of it works at every pivot. -/
+Off the diagonal the argument is the book's. For the inverse, `M₁ = (1 - N) M` gives `M₁⁻¹ = M⁻¹ (1
++ N)`, which agrees with `M⁻¹` off the pivot column, and in the pivot column is `(M p p)⁻¹ (δ_{ip} -
+∑_{c < p} M⁻¹ i c M c p)`, a nonnegative number because `M⁻¹` is nonnegative and the off-diagonal
+entries of `M` are nonpositive. [saad2003iterative] own argument covers only the first pivot, where
+the pivot column of `M₁` is `M p p e_p`; this form of it works at every pivot. -/
 theorem IsMMatrix.isMMatrix_elimStep {M : Matrix n n ℝ} (hM : M.IsMMatrix) (p : n) :
     (elimStep M p).IsMMatrix := by
   have hpp : 0 < M p p := hM.diag_pos p
@@ -675,8 +668,8 @@ private theorem dropPattern_of_notMem {P : Set (n × n)} {M : Matrix n n ℝ} {i
   simp [dropPattern, h]
 
 omit [LinearOrder n] in
-/-- A matrix with nonpositive off-diagonal entries is moved up in the entrywise order by
-dropping entries off the diagonal, and keeps its nonpositive off-diagonal entries. -/
+/-- A matrix with nonpositive off-diagonal entries is moved up in the entrywise order by dropping
+entries off the diagonal, and keeps its nonpositive off-diagonal entries. -/
 private theorem isMMatrix_dropPattern {P : Set (n × n)} (hP : ∀ i, (i, i) ∉ P)
     {M : Matrix n n ℝ} (hM : M.IsMMatrix) : (dropPattern P M).IsMMatrix := by
   refine hM.of_entrywiseLE (fun i j => ?_) fun i j hij => ?_
@@ -689,10 +682,10 @@ private theorem isMMatrix_dropPattern {P : Set (n × n)} (hP : ∀ i, (i, i) ∉
     · rw [dropPattern_of_notMem h]
       exact hM.offDiag_nonpos i j hij
 
-/-- The invariant of the induction that proves Saad's Theorem 10.2: after `k` elimination steps,
-`L` is the accumulated unipotent factor, `M` the working matrix, and `L M - A` the residual
-accumulated so far. `rank` is the position of an index in the increasing enumeration, so that
-"`rank j < k`" is "column `j` has already been eliminated". -/
+/-- The invariant of the induction that proves [saad2003iterative] Theorem 10.2: after `k`
+elimination steps, `L` is the accumulated unipotent factor, `M` the working matrix, and `L M - A`
+the residual accumulated so far. `rank` is the position of an index in the increasing enumeration,
+so that "`rank j < k`" is "column `j` has already been eliminated". -/
 private structure ILUState (P : Set (n × n)) (A : Matrix n n ℝ) (rank : n → ℕ) (k : ℕ)
     (L M : Matrix n n ℝ) : Prop where
   /-- `L` has a unit diagonal. -/
@@ -718,19 +711,18 @@ private structure ILUState (P : Set (n × n)) (A : Matrix n n ℝ) (rank : n →
   /-- The residual is supported in the zero pattern. -/
   res_pattern : ∀ i j, (i, j) ∉ P → (L * M - A) i j = 0
 
-/-- **Meijerink and van der Vorst's theorem** (Saad, *Iterative Methods for Sparse Linear
-Systems*, Theorem 10.2): a real M-matrix has an incomplete `LU` factorization for every zero
-pattern avoiding the diagonal, no pivot vanishes, and the resulting splitting `A = L U - R` is
-regular — the product `L U` is nonsingular with a nonnegative inverse, and the residual is
-entrywise nonnegative.
+/-- **[meijerink1977iterative] and van der Vorst's theorem** ([saad2003iterative], Theorem 10.2): a
+real M-matrix has an incomplete `LU` factorization for every zero pattern avoiding the diagonal, no
+pivot vanishes, and the resulting splitting `A = L U - R` is regular — the product `L U` is
+nonsingular with a nonnegative inverse, and the residual is entrywise nonnegative.
 
-The induction is over the pivots in increasing order. At each step the working matrix is
-eliminated below the pivot (`Matrix.elimStep`), which keeps it an M-matrix by Ky Fan's theorem
-(`Matrix.IsMMatrix.isMMatrix_elimStep`), and the entries in the zero pattern are then dropped,
-which moves it *up* in the entrywise order and so keeps it an M-matrix by the comparison theorem
-`Matrix.IsMMatrix.of_entrywiseLE`. The accumulated factor `L` differs from the identity only in
-the columns already eliminated, which is what makes the dropped mass pass through it unchanged and
-makes the residual a sum of nonnegative matrices.
+The induction is over the pivots in increasing order. At each step the working matrix is eliminated
+below the pivot (`Matrix.elimStep`), which keeps it an M-matrix by [fan1960note] theorem
+(`Matrix.IsMMatrix.isMMatrix_elimStep`), and the entries in the zero pattern are then dropped, which
+moves it *up* in the entrywise order and so keeps it an M-matrix by the comparison theorem
+`Matrix.IsMMatrix.of_entrywiseLE`. The accumulated factor `L` differs from the identity only in the
+columns already eliminated, which is what makes the dropped mass pass through it unchanged and makes
+the residual a sum of nonnegative matrices.
 
 See `Matrix.IsILU.isRegular` for the reading of the conclusion as a
 `Stationary.Splitting.IsRegular`, and hence for the convergence of the iteration it defines. -/
@@ -907,10 +899,10 @@ section Regular
 variable [Fintype n] [LinearOrder n] [DecidableEq n]
 variable {P : Set (n × n)} {A L U : Matrix n n ℝ}
 
-/-- **The splitting defined by an incomplete factorization is regular** (Saad, *Iterative Methods
-for Sparse Linear Systems*, the sentence drawn after Theorem 10.2): with `M = L U` nonsingular and
-entrywise nonnegatively invertible, and the residual nonnegative on the zero pattern, `A = M - N`
-is a regular splitting — off the pattern the residual vanishes, by Saad's Proposition 10.4.
+/-- **The splitting defined by an incomplete factorization is regular** ([saad2003iterative], the
+sentence drawn after Theorem 10.2): with `M = L U` nonsingular and entrywise nonnegatively
+invertible, and the residual nonnegative on the zero pattern, `A = M - N` is a regular splitting —
+off the pattern the residual vanishes, by [saad2003iterative] Proposition 10.4.
 
 Combined with `Stationary.Splitting.IsRegular.complexSpectralRadius_lt_one_of_isMMatrix`, this is
 the convergence of the `ILU`-preconditioned fixed-point iteration for an M-matrix. -/
@@ -924,9 +916,9 @@ theorem IsILU.isRegular (h : IsILU P A L U) (hu : IsUnit (L * U))
     · exact hres i j hij
     · exact (h.sub_eq_zero_of_notMem hij).ge
 
-/-- The `ILU`-preconditioned fixed-point iteration for an M-matrix converges: the spectral radius
-of its iteration operator is less than one (Saad, *Iterative Methods for Sparse Linear Systems*,
-the corollary drawn from Theorem 10.2). -/
+/-- The `ILU`-preconditioned fixed-point iteration for an M-matrix converges: the spectral radius of
+its iteration operator is less than one ([saad2003iterative], the corollary drawn from Theorem
+10.2). -/
 theorem IsILU.complexSpectralRadius_lt_one (hA : A.IsMMatrix) (h : IsILU P A L U)
     (hu : IsUnit (L * U)) (hinv : ((L * U)⁻¹).EntrywiseNonneg)
     (hres : ∀ i j, (i, j) ∈ P → 0 ≤ (L * U - A) i j) :

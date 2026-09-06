@@ -12,22 +12,21 @@ import Numlib.LinearAlgebra.Sparse.Pattern
 /-!
 # What a graph ordering does to the pattern of a matrix
 
-Each of the three reorderings of [Saad][saad2003iterative] §3.3.3 — level sets (breadth-first
-search, Cuthill–McKee), independent sets, multicolouring — is a *labelling* of the vertices of
+Each of the three reorderings of [saad2003iterative] §3.3.3 — level sets (breadth-first search,
+Cuthill–McKee), independent sets, multicolouring — is a *labelling* of the vertices of
 `Matrix.adjGraph A`, and each gives a block structure of `A.submatrix σ σ` for any permutation `σ`
 compatible with the labelling. The graph-theoretic content lives in
 `Numlib/Combinatorics/SimpleGraph`; what is here is only the translation to matrix entries, and it
 is stated for the labelling rather than for a permutation, so that no algorithm has to be
 formalized:
 
-* `Matrix.abs_dist_sub_dist_le_one_of_apply_ne_zero`: a nonzero off-diagonal entry joins two
-  indices whose distances to a root differ by at most one, so
-  `Matrix.apply_eq_zero_of_dist_lt` says that a distance-monotone reordering is block
-  tridiagonal with the level sets as its blocks;
-* `Matrix.apply_eq_zero_of_coloring_eq`: two indices of the same colour of a proper colouring of
-  the pattern graph carry no entry, so the diagonal blocks of a colour-grouped reordering are
-  diagonal matrices, and `Matrix.apply_eq_zero_of_isIndepSet` is the two-class case, Saad's block
-  form (3.3) with a diagonal leading block;
+* `Matrix.abs_dist_sub_dist_le_one_of_apply_ne_zero`: a nonzero off-diagonal entry joins two indices
+  whose distances to a root differ by at most one, so `Matrix.apply_eq_zero_of_dist_lt` says that a
+  distance-monotone reordering is block tridiagonal with the level sets as its blocks;
+* `Matrix.apply_eq_zero_of_coloring_eq`: two indices of the same colour of a proper colouring of the
+  pattern graph carry no entry, so the diagonal blocks of a colour-grouped reordering are diagonal
+  matrices, and `Matrix.apply_eq_zero_of_isIndepSet` is the two-class case, [saad2003iterative]
+  block form (3.3) with a diagonal leading block;
 * `Matrix.exists_coloring_of_le_maxDegree`: a symmetric pattern with at most `ν` off-diagonal
   nonzeros in each row always admits such a labelling into `ν + 1` classes, because
   `Matrix.maxDegree_adjGraph_le` turns the row count into a degree bound.
@@ -55,19 +54,19 @@ variable {n R : Type*} [Zero R] {A : Matrix n n R}
 
 /-! ### Level-set orderings -/
 
-/-- **Saad §3.3.3, the property that makes level sets separators**: the distances to a root of
-the two indices of a nonzero off-diagonal entry differ by at most one. -/
+/-- **[saad2003iterative] §3.3.3, the property that makes level sets separators**: the distances to
+a root of the two indices of a nonzero off-diagonal entry differ by at most one. -/
 theorem abs_dist_sub_dist_le_one_of_apply_ne_zero {i j : n} (h : A i j ≠ 0) (hij : i ≠ j)
     (v : n) : |(A.adjGraph.dist v i : ℤ) - (A.adjGraph.dist v j : ℤ)| ≤ 1 :=
   SimpleGraph.abs_dist_sub_dist_le_one_of_adj (adjGraph_adj.2 ⟨hij, Or.inl h⟩) v
 
-/-- **A level-set ordering is block tridiagonal** (Saad, *Iterative Methods for Sparse Linear
-Systems*, §3.3.3): an entry whose row is two or more levels below its column vanishes.
+/-- **A level-set ordering is block tridiagonal** ([saad2003iterative], §3.3.3): an entry whose row
+is two or more levels below its column vanishes.
 
-Stated for the labelling `i ↦ dist v i` rather than for a permutation: for any `σ` along which
-that labelling is monotone, this says that `A.submatrix σ σ` is block tridiagonal with the level
-sets `SimpleGraph.sphere (adjGraph A) v k` as its blocks, which is what a breadth-first or
-Cuthill–McKee reordering produces.
+Stated for the labelling `i ↦ dist v i` rather than for a permutation: for any `σ` along which that
+labelling is monotone, this says that `A.submatrix σ σ` is block tridiagonal with the level sets
+`SimpleGraph.sphere (adjGraph A) v k` as its blocks, which is what a breadth-first or Cuthill–McKee
+reordering produces.
 
 The hypothesis is `dist v i + 2 ≤ dist v j`, not `dist v i < dist v j`: adjacent levels do carry
 entries, and only a gap of two or more forces a zero. -/
@@ -79,8 +78,8 @@ theorem apply_eq_zero_of_dist_lt {i j : n} (v : n)
   rw [abs_le] at this
   omega
 
-/-- The mirror image of `Matrix.apply_eq_zero_of_dist_lt`: an entry whose column is two or
-more levels below its row vanishes. -/
+/-- The mirror image of `Matrix.apply_eq_zero_of_dist_lt`: an entry whose column is two or more
+levels below its row vanishes. -/
 theorem apply_eq_zero_of_dist_lt' {i j : n} (v : n)
     (h : A.adjGraph.dist v j + 2 ≤ A.adjGraph.dist v i) : A i j = 0 := by
   by_contra h0
@@ -91,33 +90,32 @@ theorem apply_eq_zero_of_dist_lt' {i j : n} (v : n)
 
 /-! ### Multicolour and independent-set orderings -/
 
-/-- **A multicolour ordering has diagonal diagonal blocks** (Saad, *Iterative Methods for Sparse
-Linear Systems*, §3.3.3): two distinct indices of the same colour of a proper colouring of the
-pattern graph carry no entry.
+/-- **A multicolour ordering has diagonal diagonal blocks** ([saad2003iterative], §3.3.3): two
+distinct indices of the same colour of a proper colouring of the pattern graph carry no entry.
 
-With two colours this is Saad's Property A (Definition 4.11) and his (4.42). -/
+With two colours this is [saad2003iterative] Property A (Definition 4.11) and his (4.42). -/
 theorem apply_eq_zero_of_coloring_eq {α : Type*} (c : A.adjGraph.Coloring α) {i j : n}
     (hij : i ≠ j) (h : c i = c j) : A i j = 0 := by
   by_contra h0
   exact c.valid (adjGraph_adj.2 ⟨hij, Or.inl h0⟩) h
 
-/-- **An independent set is a diagonal block** (Saad, *Iterative Methods for Sparse Linear
-Systems*, §3.3.3): the entries between two distinct indices of an independent set of the pattern
-graph vanish, which is the diagonal leading block of Saad's block form (3.3). -/
+/-- **An independent set is a diagonal block** ([saad2003iterative], §3.3.3): the entries between
+two distinct indices of an independent set of the pattern graph vanish, which is the diagonal
+leading block of [saad2003iterative] block form (3.3). -/
 theorem apply_eq_zero_of_isIndepSet {s : Set n} (hs : A.adjGraph.IsIndepSet s) {i j : n}
     (hi : i ∈ s) (hj : j ∈ s) (hij : i ≠ j) : A i j = 0 := by
   by_contra h0
   exact (SimpleGraph.isIndepSet_iff _).1 hs hi hj hij (adjGraph_adj.2 ⟨hij, Or.inl h0⟩)
 
-/-- **The degree of the pattern graph counts one row** (Saad, *Iterative Methods for Sparse Linear
-Systems*, §3.3.3): for a matrix with a symmetric pattern, the maximum degree of `Matrix.adjGraph`
-is bounded by any bound on the number of off-diagonal nonzeros in a row.
+/-- **The degree of the pattern graph counts one row** ([saad2003iterative], §3.3.3): for a matrix
+with a symmetric pattern, the maximum degree of `Matrix.adjGraph` is bounded by any bound on the
+number of off-diagonal nonzeros in a row.
 
 This is the one step of §3.3.3 that needs pattern symmetry, and it needs it because `adjGraph` is
 the *symmetrized*, loopless graph: it joins `i` to `j` when either of `A i j`, `A j i` is nonzero,
 so without symmetry the degree at `i` counts the nonzeros of column `i` as well. The count on the
-right excludes the diagonal, Saad's adjacency graph having a self-loop at every nonzero diagonal
-entry while the reorderings act on the loopless graph. -/
+right excludes the diagonal, [saad2003iterative] adjacency graph having a self-loop at every nonzero
+diagonal entry while the reorderings act on the loopless graph. -/
 theorem maxDegree_adjGraph_le [Fintype n] [DecidableEq n] [DecidableEq R]
     [DecidableRel A.adjGraph.Adj] {ν : ℕ} (hsymm : ∀ i j, A i j ≠ 0 → A j i ≠ 0)
     (hrow : ∀ i, #{j ∈ univ | j ≠ i ∧ A i j ≠ 0} ≤ ν) : A.adjGraph.maxDegree ≤ ν := by
@@ -127,10 +125,10 @@ theorem maxDegree_adjGraph_le [Fintype n] [DecidableEq n] [DecidableEq R]
   rw [SimpleGraph.mem_neighborFinset, adjGraph_adj] at hj
   exact Finset.mem_filter.2 ⟨Finset.mem_univ j, hj.1.symm, hj.2.elim id fun h => hsymm _ _ h⟩
 
-/-- **A multicolour ordering with `ν + 1` blocks always exists** (Saad, *Iterative Methods for
-Sparse Linear Systems*, §3.3.3 and Problem P-3.10): a matrix with a symmetric pattern and at most
-`ν` off-diagonal nonzeros in each row admits a labelling of its indices by `Fin (ν + 1)` in which
-two distinct indices of the same label carry no entry.
+/-- **A multicolour ordering with `ν + 1` blocks always exists** ([saad2003iterative], §3.3.3 and
+Problem P-3.10): a matrix with a symmetric pattern and at most `ν` off-diagonal nonzeros in each row
+admits a labelling of its indices by `Fin (ν + 1)` in which two distinct indices of the same label
+carry no entry.
 
 The greedy colouring bound `SimpleGraph.colorable_maxDegree_add_one` applied to the pattern graph,
 whose degree is bounded by `Matrix.maxDegree_adjGraph_le`. -/

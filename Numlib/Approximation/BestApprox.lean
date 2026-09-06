@@ -8,16 +8,17 @@ import Mathlib.Topology.MetricSpace.HausdorffDistance
 # Best approximation
 
 `IsBestApprox K u v`: `v ∈ K` minimizes `‖u - v‖` over `K`. Existence from finite-dimensional
-subspaces ([Atkinson–Han][han2009theoretical] Thm 3.3.16, [Kress][kress1998numerical] Thm 3.50),
-uniqueness in strictly convex spaces (Atkinson–Han Thm 3.3.21), the Hilbert-space characterizations
-(Atkinson–Han Lemma 3.4.1, Thm 3.4.6; Kress Thm 3.51) as glue to Mathlib's orthogonal projection,
-and the Lebesgue lemma for projections (Atkinson–Han (3.7.11), (3.7.14), (3.7.21)).
+subspaces ([han2009theoretical] Thm 3.3.16, [kress1998numerical] Thm 3.50), uniqueness in strictly
+convex spaces ([han2009theoretical] Thm 3.3.21), the Hilbert-space characterizations
+([han2009theoretical] Lemma 3.4.1, Thm 3.4.6; [kress1998numerical] Thm 3.51) as glue to Mathlib's
+orthogonal projection, and the Lebesgue lemma for projections ([han2009theoretical] (3.7.11),
+(3.7.14), (3.7.21)).
 
 ## Main definitions
 
 * `IsBestApprox K u v` says that `v ∈ K` minimizes the distance from `u` to `K`.
-  `isBestApprox_iff_norm_sub_eq_infDist` identifies it with the metric description
-  `‖u - v‖ = Metric.infDist u K`, so either may be used as the definition.
+  `isBestApprox_iff_norm_sub_eq_infDist` identifies it with the metric description `‖u - v‖ =
+  Metric.infDist u K`, so either may be used as the definition.
 
 ## Main results
 
@@ -25,14 +26,14 @@ and the Lebesgue lemma for projections (Atkinson–Han (3.7.11), (3.7.14), (3.7.
   `exists_isBestApprox_of_isClosed_of_finiteDimensional`: existence, by compactness of a closed
   bounded set in a finite-dimensional subspace.
 * `IsBestApprox.unique`: uniqueness from a convex set in a strictly convex space.
-* `isBestApprox_iff_inner_le_zero`, `isBestApprox_iff_mem_orthogonal`,
-  `isBestApprox_starProjection` and `IsBestApprox.eq_starProjection`: in an inner product space
-  the best approximation from a subspace is the orthogonal projection, and from a convex set it
-  is characterized variationally. `isBestApprox_sum_iff` is the normal equations in a basis.
-* `norm_sub_apply_le_of_isIdempotentElem`: the **Lebesgue lemma**, `‖u - P u‖ ≤ (1 + ‖P‖)
-  dist(u, range P)` for a bounded projection `P`, with the sharper
-  `norm_sub_apply_le_of_isIdempotentElem'` by `‖1 - P‖`. This is the abstract form of the
-  quasi-optimality estimates that projection methods satisfy.
+* `isBestApprox_iff_inner_le_zero`, `isBestApprox_iff_mem_orthogonal`, `isBestApprox_starProjection`
+  and `IsBestApprox.eq_starProjection`: in an inner product space the best approximation from a
+  subspace is the orthogonal projection, and from a convex set it is characterized variationally.
+  `isBestApprox_sum_iff` is the normal equations in a basis.
+* `norm_sub_apply_le_of_isIdempotentElem`: the **Lebesgue lemma**, `‖u - P u‖ ≤ (1 + ‖P‖) dist(u,
+  range P)` for a bounded projection `P`, with the sharper `norm_sub_apply_le_of_isIdempotentElem'`
+  by `‖1 - P‖`. This is the abstract form of the quasi-optimality estimates that projection methods
+  satisfy.
 -/
 
 section Normed
@@ -42,8 +43,8 @@ variable {V : Type*} [SeminormedAddCommGroup V]
 /-- `v ∈ K` is a best approximation of `u` from `K`. -/
 def IsBestApprox (K : Set V) (u v : V) : Prop := v ∈ K ∧ ∀ w ∈ K, ‖u - v‖ ≤ ‖u - w‖
 
-/-- A best approximation attains the distance from `u` to `K`: the infimum defining
-`Metric.infDist` is a minimum, realized at `v`. -/
+/-- A best approximation attains the distance from `u` to `K`: the infimum defining `Metric.infDist`
+is a minimum, realized at `v`. -/
 theorem IsBestApprox.norm_sub_eq_infDist {K : Set V} {u v : V} (h : IsBestApprox K u v) :
     ‖u - v‖ = Metric.infDist u K := by
   refine le_antisymm ((Metric.le_infDist ⟨v, h.1⟩).2 fun w hw => ?_) ?_
@@ -51,8 +52,8 @@ theorem IsBestApprox.norm_sub_eq_infDist {K : Set V} {u v : V} (h : IsBestApprox
   · rw [← dist_eq_norm]; exact Metric.infDist_le_dist_of_mem h.1
 
 /-- Conversely, an element of `K` sitting at distance `Metric.infDist u K` from `u` is a best
-approximation. So the pointwise minimality of `IsBestApprox` and the metric description agree,
-and either may be used as the definition. -/
+approximation. So the pointwise minimality of `IsBestApprox` and the metric description agree, and
+either may be used as the definition. -/
 theorem isBestApprox_iff_norm_sub_eq_infDist {K : Set V} {u v : V} (hv : v ∈ K) :
     IsBestApprox K u v ↔ ‖u - v‖ = Metric.infDist u K := by
   refine ⟨IsBestApprox.norm_sub_eq_infDist, fun h => ⟨hv, fun w hw => ?_⟩⟩
@@ -70,8 +71,8 @@ private theorem sub_combo {a b : ℝ} (hab : a + b = 1) (u v₁ v₂ : V) :
     a • (u - v₁) + b • (u - v₂) = u - (a • v₁ + b • v₂) := by
   rw [smul_sub, smul_sub, sub_add_sub_comm, ← add_smul, hab, one_smul]
 
-/-- The set of best approximations from a convex set is convex
-(Atkinson–Han, *Theoretical Numerical Analysis*, Thm 3.3.12). -/
+/-- The set of best approximations from a convex set is convex ([han2009theoretical], Thm 3.3.12).
+-/
 theorem convex_setOf_isBestApprox {K : Set V} (hK : Convex ℝ K) (u : V) :
     Convex ℝ {v | IsBestApprox K u v} := by
   rintro v₁ h₁ v₂ h₂ a b ha hb hab
@@ -116,15 +117,15 @@ private theorem exists_isBestApprox_aux [CompleteSpace 𝕜] [LocallyCompactSpac
   · exact isMinOn_iff.1 hmin ⟨z, hKS hz⟩ ⟨hz, hz'⟩
   · exact hwT.2.trans (not_le.1 hz').le
 
-/-- Best approximations from finite-dimensional subspaces exist (Atkinson–Han, *Theoretical
-Numerical Analysis*, Thm 3.3.16; Kress, *Numerical Analysis*, Thm 3.50). -/
+/-- Best approximations from finite-dimensional subspaces exist ([han2009theoretical], Thm 3.3.16;
+[kress1998numerical], Thm 3.50). -/
 theorem exists_isBestApprox_of_finiteDimensional [CompleteSpace 𝕜] [LocallyCompactSpace 𝕜]
     (K : Submodule 𝕜 V) [FiniteDimensional 𝕜 K] (u : V) :
     ∃ v, IsBestApprox (K : Set V) u v :=
   exists_isBestApprox_aux K.closed_of_finiteDimensional ⟨0, K.zero_mem⟩ K le_rfl u
 
 /-- Best approximations from closed convex finite-dimensional sets exist (a closed subset of a
-finite-dimensional subspace); Atkinson–Han, *Theoretical Numerical Analysis*, Thm 3.3.15. -/
+finite-dimensional subspace); [han2009theoretical], Thm 3.3.15. -/
 theorem exists_isBestApprox_of_isClosed_of_finiteDimensional [CompleteSpace 𝕜]
     [LocallyCompactSpace 𝕜] {K : Set V} (hK : IsClosed K) (hne : K.Nonempty) (S : Submodule 𝕜 V)
     [FiniteDimensional 𝕜 S] (hKS : K ⊆ S) (u : V) :
@@ -138,7 +139,7 @@ section Uniqueness
 variable {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [StrictConvexSpace ℝ V]
 
 /-- In a strictly convex space, best approximations from a convex set are unique
-(Atkinson–Han, *Theoretical Numerical Analysis*, Thm 3.3.21). -/
+([han2009theoretical], Thm 3.3.21). -/
 theorem IsBestApprox.unique {K : Set V} (hK : Convex ℝ K) {u v₁ v₂ : V} (h₁ : IsBestApprox K u v₁)
     (h₂ : IsBestApprox K u v₂) : v₁ = v₂ := by
   by_contra hne
@@ -155,10 +156,9 @@ section RealHilbert
 
 variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
 
-/-- Variational characterization on convex sets in a real inner product space
-(Atkinson–Han, *Theoretical Numerical Analysis*, Lemma 3.4.1): `v` is a best approximation of `u`
-from convex `K` iff `⟪u - v, w - v⟫ ≤ 0` for all `w ∈ K`
-(Mathlib: `norm_eq_iInf_iff_real_inner_le_zero`). -/
+/-- Variational characterization on convex sets in a real inner product space ([han2009theoretical],
+Lemma 3.4.1): `v` is a best approximation of `u` from convex `K` iff `⟪u - v, w - v⟫ ≤ 0` for all `w
+∈ K` (Mathlib: `norm_eq_iInf_iff_real_inner_le_zero`). -/
 theorem isBestApprox_iff_inner_le_zero {K : Set V} (hK : Convex ℝ K) {u v : V} (hv : v ∈ K) :
     IsBestApprox K u v ↔ ∀ w ∈ K, inner ℝ (u - v) (w - v) ≤ 0 := by
   rw [isBestApprox_iff_norm_sub_eq_infDist hv, Metric.infDist_eq_iInf]
@@ -166,7 +166,7 @@ theorem isBestApprox_iff_inner_le_zero {K : Set V} (hK : Convex ℝ K) {u v : V}
   exact norm_eq_iInf_iff_real_inner_le_zero hK hv
 
 /-- The metric projection onto a convex set is monotone and non-expansive, in pairs form
-(Atkinson–Han, *Theoretical Numerical Analysis*, Prop 3.4.4). -/
+([han2009theoretical], Prop 3.4.4). -/
 theorem IsBestApprox.dist_le_dist {K : Set V} (hK : Convex ℝ K) {u₁ u₂ v₁ v₂ : V}
     (h₁ : IsBestApprox K u₁ v₁) (h₂ : IsBestApprox K u₂ v₂) :
     0 ≤ inner ℝ (v₁ - v₂) (u₁ - u₂) ∧ ‖v₁ - v₂‖ ≤ ‖u₁ - u₂‖ := by
@@ -202,8 +202,8 @@ private theorem mem_orthogonal_span_range_iff {ι : Type*} (u : ι → V) (x : V
     exact fun j => inner_eq_zero_symm.2 (h j)
   exact hle hy
 
-/-- For subspaces, best approximation iff the error is orthogonal (Atkinson–Han, *Theoretical
-Numerical Analysis*, Thm 3.4.6; Kress, *Numerical Analysis*, Thm 3.51). -/
+/-- For subspaces, best approximation iff the error is orthogonal ([han2009theoretical], Thm 3.4.6;
+[kress1998numerical], Thm 3.51). -/
 theorem isBestApprox_iff_mem_orthogonal (K : Submodule 𝕜 V) {u v : V} (hv : v ∈ K) :
     IsBestApprox (K : Set V) u v ↔ u - v ∈ Kᗮ := by
   rw [isBestApprox_iff_norm_sub_eq_infDist hv, Metric.infDist_eq_iInf]
@@ -212,23 +212,22 @@ theorem isBestApprox_iff_mem_orthogonal (K : Submodule 𝕜 V) {u v : V} (hv : v
   exact K.norm_eq_iInf_iff_inner_eq_zero hv
 
 /-- The best approximation from a subspace with an orthogonal projection is `P_K u`
-(Atkinson–Han, *Theoretical Numerical Analysis*, Thm 3.4.6 and Thm 3.4.7;
-Kress, *Numerical Analysis*, Thm 3.52). -/
+([han2009theoretical], Thm 3.4.6 and Thm 3.4.7; [kress1998numerical], Thm 3.52). -/
 theorem isBestApprox_starProjection (K : Submodule 𝕜 V) [K.HasOrthogonalProjection] (u : V) :
     IsBestApprox (K : Set V) u (K.starProjection u) :=
   (isBestApprox_iff_mem_orthogonal K (K.starProjection_apply_mem u)).2
     (K.sub_starProjection_mem_orthogonal u)
 
-/-- Uniqueness in a subspace with an orthogonal projection: the orthogonal projection is the
-*only* best approximation from `K`. With `isBestApprox_starProjection` this identifies the
-metric projection onto a closed subspace of a Hilbert space with `Submodule.starProjection`. -/
+/-- Uniqueness in a subspace with an orthogonal projection: the orthogonal projection is the *only*
+best approximation from `K`. With `isBestApprox_starProjection` this identifies the metric
+projection onto a closed subspace of a Hilbert space with `Submodule.starProjection`. -/
 theorem IsBestApprox.eq_starProjection (K : Submodule 𝕜 V) [K.HasOrthogonalProjection] {u v : V}
     (h : IsBestApprox (K : Set V) u v) : v = K.starProjection u :=
   (Submodule.eq_starProjection_of_mem_orthogonal h.1
     ((isBestApprox_iff_mem_orthogonal K h.1).1 h)).symm
 
-/-- The normal equations (Kress, *Numerical Analysis*, Cor 3.53): with a basis `u i` of `K`,
-`∑ a i • u i` is the best approximation of `w` iff `∑_i a i ⟪u j, u i⟫ = ⟪u j, w⟫` for all `j`. -/
+/-- The normal equations ([kress1998numerical], Cor 3.53): with a basis `u i` of `K`, `∑ a i • u i`
+is the best approximation of `w` iff `∑_i a i ⟪u j, u i⟫ = ⟪u j, w⟫` for all `j`. -/
 theorem isBestApprox_sum_iff {ι : Type*} [Fintype ι] (u : ι → V) (a : ι → 𝕜) (w : V) :
     IsBestApprox (Submodule.span 𝕜 (Set.range u) : Set V) w (∑ i, a i • u i) ↔
       ∀ j, ∑ i, a i * inner 𝕜 (u j) (u i) = inner 𝕜 (u j) w := by
@@ -274,11 +273,10 @@ theorem norm_sub_apply_le_of_isIdempotentElem_of_mem (P : V →L[𝕜] V) (hP : 
   gcongr
   exact P.le_opNorm _
 
-/-- Lebesgue lemma: for a bounded projection `P` (`P ∘ P = P`) onto `S = range P`,
-`‖u - P u‖ ≤ (1 + ‖P‖) dist(u, S)`. That is, `P u` is a quasi-best approximation from `S`, with
-`1 + ‖P‖` as the quasi-optimality constant. This is the abstract form of the estimates
-Atkinson–Han, *Theoretical Numerical Analysis*, (3.7.11), (3.7.14) and (3.7.21) make for
-particular projection methods. -/
+/-- Lebesgue lemma: for a bounded projection `P` (`P ∘ P = P`) onto `S = range P`, `‖u - P u‖ ≤ (1 +
+‖P‖) dist(u, S)`. That is, `P u` is a quasi-best approximation from `S`, with `1 + ‖P‖` as the
+quasi-optimality constant. This is the abstract form of the estimates [han2009theoretical],
+(3.7.11), (3.7.14) and (3.7.21) make for particular projection methods. -/
 theorem norm_sub_apply_le_of_isIdempotentElem (P : V →L[𝕜] V) (hP : IsIdempotentElem P) (u : V) :
     ‖u - P u‖ ≤ (1 + ‖P‖) * Metric.infDist u (LinearMap.range (P : V →ₗ[𝕜] V) : Set V) :=
   le_mul_infDist (by positivity) ⟨0, zero_mem _⟩ fun _ hq =>
@@ -295,8 +293,7 @@ theorem norm_sub_apply_le_of_isIdempotentElem' (P : V →L[𝕜] V) (hP : IsIdem
   rw [key]
   exact ((1 : V →L[𝕜] V) - P).le_opNorm _
 
-/-- A nonzero bounded projection has norm `≥ 1`
-(Atkinson–Han, *Theoretical Numerical Analysis*, Exercise 3.6.7). -/
+/-- A nonzero bounded projection has norm `≥ 1` ([han2009theoretical], Exercise 3.6.7). -/
 theorem one_le_norm_of_isIdempotentElem {P : V →L[𝕜] V} (hP : IsIdempotentElem P) (h0 : P ≠ 0) :
     1 ≤ ‖P‖ := by
   have hpos : 0 < ‖P‖ := norm_pos_iff.2 h0

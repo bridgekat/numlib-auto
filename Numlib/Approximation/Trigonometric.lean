@@ -8,10 +8,9 @@ import Numlib.IntegralEquations.Basic
 /-!
 # Trigonometric approximation of continuous periodic functions
 
-The space of continuous `2 π`-periodic real functions is `C(AddCircle (2 π), ℝ)`, and the
-`n`-th **Fourier projection** on it is `PeriodicCont.fourierProj n`, the kernel operator of the
-Dirichlet kernel `D_n (y - x) / π`. The material is [Atkinson–Han, *Theoretical Numerical
-Analysis*][han2009theoretical] §3.7.
+The space of continuous `2 π`-periodic real functions is `C(AddCircle (2 π), ℝ)`, and the `n`-th
+**Fourier projection** on it is `PeriodicCont.fourierProj n`, the kernel operator of the Dirichlet
+kernel `D_n (y - x) / π`. The material is [han2009theoretical] §3.7.
 
 ## Main definitions
 
@@ -25,11 +24,10 @@ Analysis*][han2009theoretical] §3.7.
 The Fourier projection is the partial-sum operator of a Fourier series
 (`PeriodicCont.fourierProj_coe`), a bounded projection onto the trigonometric polynomials of degree
 at most `n` (`PeriodicCont.range_fourierProj` and `PeriodicCont.isIdempotentElem_fourierProj`), and
-its operator norm is the `n`-th **Lebesgue constant**
-(`PeriodicCont.norm_fourierProj`), which grows at least like `(4/π²) log n`
-(`PeriodicCont.log_le_lebesgueConstant`) — so it is unbounded — and at most like `log (2 n + 1)`
-(`PeriodicCont.lebesgueConstant_le`). `PeriodicCont.norm_sub_fourierProj_le` is the Lebesgue
-lemma that these two bounds feed.
+its operator norm is the `n`-th **Lebesgue constant** (`PeriodicCont.norm_fourierProj`), which grows
+at least like `(4/π²) log n` (`PeriodicCont.log_le_lebesgueConstant`) — so it is unbounded — and at
+most like `log (2 n + 1)` (`PeriodicCont.lebesgueConstant_le`).
+`PeriodicCont.norm_sub_fourierProj_le` is the Lebesgue lemma that these two bounds feed.
 
 ## Implementation notes
 
@@ -37,30 +35,29 @@ Nothing here duplicates `Numlib/Analysis/Fourier/Dirichlet`: the Dirichlet kerne
 sums are that module's, and what is added is that the partial sum of a *continuous* periodic
 function is again one, that the map is bounded, and that it is the projection onto the subspace
 `trigPolyLE (2 π) n` of `Numlib/Analysis/Fourier/TrigonometricBasis`. The norm identity is the
-operator-norm formula for a kernel operator on a compact space,
-`IntegralOperator.norm_kernelCLM` of `Numlib/IntegralEquations/Basic`, which is stated at exactly
-the generality that covers a circle as well as an interval.
+operator-norm formula for a kernel operator on a compact space, `IntegralOperator.norm_kernelCLM` of
+`Numlib/IntegralEquations/Basic`, which is stated at exactly the generality that covers a circle as
+well as an interval.
 
-The two facts that make everything work are the two forms of the kernel: it is a function of
-`y - x` built from the Dirichlet kernel (`PeriodicCont.fourierKernel_apply`), which gives the
-partial-sum representation and the norm; and it is the reproducing kernel
-`(2 π)⁻¹ ∑_{|m| ≤ n} e_m(x) e_m(y)` of the real trigonometric system
-(`PeriodicCont.fourierKernel_eq_sum`), which gives the range and the idempotency with no
-orthogonality computation of its own — the orthonormality of the system is
+The two facts that make everything work are the two forms of the kernel: it is a function of `y - x`
+built from the Dirichlet kernel (`PeriodicCont.fourierKernel_apply`), which gives the partial-sum
+representation and the norm; and it is the reproducing kernel `(2 π)⁻¹ ∑_{|m| ≤ n} e_m(x) e_m(y)` of
+the real trigonometric system (`PeriodicCont.fourierKernel_eq_sum`), which gives the range and the
+idempotency with no orthogonality computation of its own — the orthonormality of the system is
 `realFourierCoeff_trigFun`.
 
 ## Not done here
 
-Jackson's theorems ([Atkinson and Han][han2009theoretical], Theorems 3.7.1 and 3.7.2), which bound
-the best uniform trigonometric approximation of a Hölder function by `M_k / n^{k+α}`, are not
-formalized; they are independent of the Fourier projection except through the subspace `trigPolyLE
-(2 π) n` that they measure the distance to, and their proof is a separate construction (convolution
-with the Jackson kernel `(sin (n θ / 2) / sin (θ / 2))⁴`). Of Zygmund's asymptotic `L_n = (4/π²) log
-n + O(1)` the two halves are proved with different constants — `log_le_lebesgueConstant` has the
-sharp `4/π²` below, `lebesgueConstant_le` the crude `1 + log (2 n + 1)` above — which is all that
-the divergence argument and the convergence rate (3.7.12) consume. What is proved of Atkinson and
-Han's (3.7.11) is the Lebesgue-lemma half, `‖f - 𝓕_n f‖ ≤ (1 + L_n) dist (f, 𝕋_n)`, which is what
-the projection contributes; the rate then follows from it and Jackson's theorem.
+Jackson's theorems ([han2009theoretical], Theorems 3.7.1 and 3.7.2), which bound the best uniform
+trigonometric approximation of a Hölder function by `M_k / n^{k+α}`, are not formalized; they are
+independent of the Fourier projection except through the subspace `trigPolyLE (2 π) n` that they
+measure the distance to, and their proof is a separate construction (convolution with the Jackson
+kernel `(sin (n θ / 2) / sin (θ / 2))⁴`). Of Zygmund's asymptotic `L_n = (4/π²) log n + O(1)` the
+two halves are proved with different constants — `log_le_lebesgueConstant` has the sharp `4/π²`
+below, `lebesgueConstant_le` the crude `1 + log (2 n + 1)` above — which is all that the divergence
+argument and the convergence rate (3.7.12) consume. What is proved of Atkinson and Han's (3.7.11) is
+the Lebesgue-lemma half, `‖f - 𝓕_n f‖ ≤ (1 + L_n) dist (f, 𝕋_n)`, which is what the projection
+contributes; the rate then follows from it and Jackson's theorem.
 -/
 
 open MeasureTheory Metric Set
@@ -110,8 +107,8 @@ theorem trigFun_coe_of_neg {j : ℤ} (hj : j < 0) (t : ℝ) :
   have h : -(2 * π * (j : ℝ) * t / (2 * π)) = -(j : ℝ) * t := by field_simp
   rw [trigFun_coe_apply_of_neg hj, h]
 
-/-- The Dirichlet kernel as a continuous function on the circle: it is the trigonometric
-polynomial `1/2 + ∑_{j = 1}^{n} (√2)⁻¹ e_j`, whose value at `↑t` is `dirichletKernel n t`
+/-- The Dirichlet kernel as a continuous function on the circle: it is the trigonometric polynomial
+`1/2 + ∑_{j = 1}^{n} (√2)⁻¹ e_j`, whose value at `↑t` is `dirichletKernel n t`
 (`PeriodicCont.dirichletCM_coe`). -/
 noncomputable def dirichletCM (n : ℕ) : C(AddCircle (2 * π), ℝ) :=
   (2 : ℝ)⁻¹ • (1 : C(AddCircle (2 * π), ℝ))
@@ -135,8 +132,8 @@ theorem dirichletCM_coe (n : ℕ) (t : ℝ) : dirichletCM n ↑t = dirichletKern
 
 /-! ### The Fourier projection -/
 
-/-- The kernel `(x, y) ↦ D_n (y - x) / π` of the Fourier projection (Atkinson and Han,
-*Theoretical Numerical Analysis*, (3.7.6)). -/
+/-- The kernel `(x, y) ↦ D_n (y - x) / π` of the Fourier projection ([han2009theoretical], (3.7.6)).
+-/
 noncomputable def fourierKernel (n : ℕ) : C(AddCircle (2 * π) × AddCircle (2 * π), ℝ) :=
   (π⁻¹ : ℝ) • (dirichletCM n).comp ⟨fun p => p.2 - p.1, by fun_prop⟩
 
@@ -146,12 +143,12 @@ theorem fourierKernel_apply (n : ℕ) (x y : AddCircle (2 * π)) :
     fourierKernel n (x, y) = π⁻¹ * dirichletCM n (y - x) :=
   rfl
 
-/-- **The Fourier projection** `𝓕_n` on the space `C(AddCircle (2 π), ℝ)` of continuous
-`2 π`-periodic functions: the kernel operator of the Dirichlet kernel,
-`𝓕_n f (x) = (1/π) ∫ f(y) D_n (y - x) dy` (Atkinson and Han, *Theoretical Numerical Analysis*,
-(3.7.6)–(3.7.8)). It is the partial-sum operator of the Fourier series
-(`PeriodicCont.fourierProj_coe`) and the projection onto the trigonometric polynomials of degree
-at most `n` (`PeriodicCont.range_fourierProj`, `PeriodicCont.isIdempotentElem_fourierProj`). -/
+/-- **The Fourier projection** `𝓕_n` on the space `C(AddCircle (2 π), ℝ)` of continuous `2
+π`-periodic functions: the kernel operator of the Dirichlet kernel, `𝓕_n f (x) = (1/π) ∫ f(y) D_n (y
+- x) dy` ([han2009theoretical], (3.7.6)–(3.7.8)). It is the partial-sum operator of the Fourier
+series (`PeriodicCont.fourierProj_coe`) and the projection onto the trigonometric polynomials of
+degree at most `n` (`PeriodicCont.range_fourierProj`, `PeriodicCont.isIdempotentElem_fourierProj`).
+-/
 noncomputable def fourierProj (n : ℕ) :
     C(AddCircle (2 * π), ℝ) →L[ℝ] C(AddCircle (2 * π), ℝ) :=
   IntegralOperator.kernelCLM volume (fourierKernel n)
@@ -169,8 +166,7 @@ theorem integral_addCircle_eq (F : AddCircle (2 * π) → ℝ) (s : ℝ) :
   rw [← h, ← intervalIntegral.integral_comp_add_left (fun t : ℝ => F ↑t) s]
 
 /-- **The Fourier projection is the partial-sum operator of the Fourier series** of
-`Numlib/Analysis/Fourier/Dirichlet` (Atkinson and Han, *Theoretical Numerical Analysis*,
-(3.7.6)). -/
+`Numlib/Analysis/Fourier/Dirichlet` ([han2009theoretical], (3.7.6)). -/
 theorem fourierProj_coe (n : ℕ) (f : C(AddCircle (2 * π), ℝ)) (s : ℝ) :
     fourierProj n f ↑s = fourierPartialSum (fun t : ℝ => f ↑t) n s := by
   have hcont : Continuous fun t : ℝ => f ↑t :=
@@ -226,8 +222,8 @@ theorem fourierKernel_eq_sum (n : ℕ) (x y : AddCircle (2 * π)) :
       simp only [ContinuousMap.one_apply, one_mul, mul_inv]
       ring
 
-/-- The Fourier projection expanded in the real trigonometric system: its coefficients are the
-real Fourier coefficients (Atkinson and Han, *Theoretical Numerical Analysis*, (4.1.1)). -/
+/-- The Fourier projection expanded in the real trigonometric system: its coefficients are the real
+Fourier coefficients ([han2009theoretical], (4.1.1)). -/
 theorem fourierProj_eq_sum (n : ℕ) (f : C(AddCircle (2 * π), ℝ)) :
     fourierProj n f
       = ∑ m ∈ Finset.Icc (-(n : ℤ)) n,
@@ -262,8 +258,8 @@ theorem fourierProj_mem (n : ℕ) (f : C(AddCircle (2 * π), ℝ)) :
   mem_trigPolyLE_iff.2 ⟨fun m => realFourierCoeff (f : AddCircle (2 * π) → ℝ) m,
     fourierProj_eq_sum n f⟩
 
-/-- The Fourier projection fixes each member of the real trigonometric system of index at most
-`n`. -/
+/-- The Fourier projection fixes each member of the real trigonometric system of index at most `n`.
+-/
 theorem fourierProj_trigFun {n : ℕ} {m : ℤ} (hm : m.natAbs ≤ n) :
     fourierProj n (trigFun (2 * π) m) = trigFun (2 * π) m := by
   rw [fourierProj_eq_sum]
@@ -301,14 +297,14 @@ theorem range_fourierProj (n : ℕ) :
 /-! ### The Lebesgue constants -/
 
 /-- The `n`-th **Lebesgue constant** `L_n = (1/π) ∫_{-π}^{π} |D_n(θ)| dθ`, the operator norm of the
-`n`-th Fourier projection (Atkinson and Han, *Theoretical Numerical Analysis*, (3.7.9)). -/
+`n`-th Fourier projection ([han2009theoretical], (3.7.9)). -/
 noncomputable def lebesgueConstant (n : ℕ) : ℝ :=
   (1 / π) * ∫ t in -π..π, |dirichletKernel n t|
 
-/-- **The operator norm of the Fourier projection is the Lebesgue constant** (Atkinson and Han,
-*Theoretical Numerical Analysis*, (3.7.9)): the operator-norm formula
-`IntegralOperator.norm_kernelCLM` for a kernel operator on a compact space, whose row integrals are
-here independent of the row because the kernel is a function of `y - x`. -/
+/-- **The operator norm of the Fourier projection is the Lebesgue constant** ([han2009theoretical],
+(3.7.9)): the operator-norm formula `IntegralOperator.norm_kernelCLM` for a kernel operator on a
+compact space, whose row integrals are here independent of the row because the kernel is a function
+of `y - x`. -/
 theorem norm_fourierProj (n : ℕ) : ‖fourierProj n‖ = lebesgueConstant n := by
   have hπ : (0 : ℝ) < π := Real.pi_pos
   have hconst : ∀ x : AddCircle (2 * π),
@@ -329,12 +325,11 @@ theorem norm_fourierProj (n : ℕ) : ‖fourierProj n‖ = lebesgueConstant n :=
   simp only [hconst]
   exact ciSup_const
 
-/-- **The Lebesgue lemma for the Fourier projection** (Atkinson and Han, *Theoretical Numerical
-Analysis*, (3.7.11)): the error of the `n`-th partial sum of the Fourier series of a continuous
-periodic function is at most `1 + L_n` times its distance to the trigonometric polynomials of
-degree at most `n`. Combined with a bound on the best approximation — Jackson's theorem, which is
-not formalized here — and with the growth of `L_n`, this is the uniform convergence rate
-(3.7.12). -/
+/-- **The Lebesgue lemma for the Fourier projection** ([han2009theoretical], (3.7.11)): the error of
+the `n`-th partial sum of the Fourier series of a continuous periodic function is at most `1 + L_n`
+times its distance to the trigonometric polynomials of degree at most `n`. Combined with a bound on
+the best approximation — Jackson's theorem, which is not formalized here — and with the growth of
+`L_n`, this is the uniform convergence rate (3.7.12). -/
 theorem norm_sub_fourierProj_le (n : ℕ) (f : C(AddCircle (2 * π), ℝ)) :
     ‖f - fourierProj n f‖
       ≤ (1 + lebesgueConstant n) * infDist f (trigPolyLE (2 * π) n : Set _) := by
@@ -487,9 +482,9 @@ private theorem log_le_sum_inv (n : ℕ) :
   · refine le_trans (Real.log_le_log (by exact_mod_cast hn) ?_) key
     linarith
 
-/-- **Zygmund's lower bound for the Lebesgue constants**, `(4/π²) log n ≤ L_n` (Atkinson and Han,
-*Theoretical Numerical Analysis*, (3.7.10), the half of the asymptotics
-`L_n = (4/π²) log n + O(1)` that the divergence argument needs).
+/-- **Zygmund's lower bound for the Lebesgue constants**, `(4/π²) log n ≤ L_n`
+([han2009theoretical], (3.7.10), the half of the asymptotics `L_n = (4/π²) log n + O(1)` that the
+divergence argument needs).
 
 The Lebesgue constants are therefore unbounded, which is why the Fourier series of some continuous
 periodic function fails to converge uniformly. -/
@@ -515,8 +510,8 @@ theorem log_le_lebesgueConstant (n : ℕ) :
 
 /-! ### An upper bound for the Lebesgue constants -/
 
-/-- The Dirichlet kernel is bounded by its value `n + 1/2` at the origin: it is a sum of `n`
-cosines and a half. -/
+/-- The Dirichlet kernel is bounded by its value `n + 1/2` at the origin: it is a sum of `n` cosines
+and a half. -/
 private theorem abs_dirichletKernel_le (n : ℕ) (t : ℝ) :
     |dirichletKernel n t| ≤ (n : ℝ) + 1 / 2 := by
   rw [dirichletKernel_apply]
@@ -530,8 +525,8 @@ private theorem abs_dirichletKernel_le (n : ℕ) (t : ℝ) :
   linarith
 
 /-- Away from the origin the Dirichlet kernel is bounded uniformly in `n`, by `π / (2 t)`: the
-numerator of the closed form (3.7.8) is at most one and Jordan's inequality
-`Real.mul_le_sin` bounds the denominator below by `2 t / π`. -/
+numerator of the closed form (3.7.8) is at most one and Jordan's inequality `Real.mul_le_sin` bounds
+the denominator below by `2 t / π`. -/
 private theorem abs_dirichletKernel_le_div (n : ℕ) {t : ℝ} (ht0 : 0 < t) (htp : t ≤ π) :
     |dirichletKernel n t| ≤ π / 2 * t⁻¹ := by
   have hπ : (0 : ℝ) < π := Real.pi_pos
@@ -554,9 +549,9 @@ private theorem abs_dirichletKernel_le_div (n : ℕ) {t : ℝ} (ht0 : 0 < t) (ht
 
 /-- **The Lebesgue constants grow no faster than `log n`**: `L_n ≤ 1 + log (2 n + 1)`.
 
-Together with `log_le_lebesgueConstant` this is the two-sided `L_n ≍ log n` that [Atkinson and
-Han][han2009theoretical] state sharply as `L_n = (4/π²) log n + O(1)` in (3.7.10); the constant here
-is not the sharp one, but the upper bound is what the uniform convergence rate (3.7.12) consumes.
+Together with `log_le_lebesgueConstant` this is the two-sided `L_n ≍ log n` that
+[han2009theoretical] state sharply as `L_n = (4/π²) log n + O(1)` in (3.7.10); the constant here is
+not the sharp one, but the upper bound is what the uniform convergence rate (3.7.12) consumes.
 
 The split is at `π / (2 n + 1)`, the first zero of the numerator of the closed form: below it the
 kernel is bounded by `n + 1/2`, which contributes `π/2`; above it Jordan's inequality gives the

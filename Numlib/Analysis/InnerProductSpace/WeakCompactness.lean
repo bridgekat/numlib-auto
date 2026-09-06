@@ -17,9 +17,9 @@ import Mathlib.Topology.Metrizable.Basic
 
 Two facts about weak sequential convergence that the convergence analysis of numerical methods for
 variational problems rests on, and that Mathlib states in neither form. These are
-[Atkinson–Han][han2009theoretical] Theorem 2.7.5 in the Hilbert case, and the consequence of
-Theorem 3.3.11 (Mazur) that makes the second hypothesis of their Theorem 11.4.1 automatic for
-internal approximations.
+[han2009theoretical] Theorem 2.7.5 in the Hilbert case, and the consequence of Theorem 3.3.11
+(Mazur) that makes the second hypothesis of their Theorem 11.4.1 automatic for internal
+approximations.
 
 ## Main statements
 
@@ -38,9 +38,9 @@ sequence — a separable, complete subspace — transporting to its dual by the 
 orthogonal projection onto that span: a vector outside the span contributes nothing to any of the
 inner products involved.
 
-Weak convergence is written in the sequential forms `∀ v, ⟪uₙ, v⟫ → ⟪w, v⟫` and
-`∀ ℓ, ℓ (uₙ) → ℓ w` rather than through a weak topology, because those are the forms in which the
-numerical-analysis literature states the hypotheses.
+Weak convergence is written in the sequential forms `∀ v, ⟪uₙ, v⟫ → ⟪w, v⟫` and `∀ ℓ, ℓ (uₙ) → ℓ w`
+rather than through a weak topology, because those are the forms in which the numerical-analysis
+literature states the hypotheses.
 
 The general Banach-space statements — reflexivity, Eberlein–Šmulian, weak sequential compactness of
 bounded sets in a reflexive space — are deliberately out of scope: Mathlib has no reflexivity class
@@ -58,9 +58,9 @@ variable {𝕜 V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [InnerProductSpac
 `u` in a complete inner product space has a subsequence converging weakly: there are a strictly
 monotone `σ` and a vector `w` with `⟪u (σ k), v⟫ → ⟪w, v⟫` for every `v`.
 
-Mathlib's sequential Banach–Alaoglu theorem needs a separable space; the closed span of the range
-of `u` is separable and complete, and the orthogonal projection onto it carries the weak limit
-found there back to the whole space. -/
+Mathlib's sequential Banach–Alaoglu theorem needs a separable space; the closed span of the range of
+`u` is separable and complete, and the orthogonal projection onto it carries the weak limit found
+there back to the whole space. -/
 theorem exists_subseq_weak_tendsto {u : ℕ → V} {C : ℝ} (hC : ∀ n, ‖u n‖ ≤ C) :
     ∃ (σ : ℕ → ℕ) (w : V), StrictMono σ ∧
       ∀ v : V, Tendsto (fun k => ⟪u (σ k), v⟫_𝕜) atTop (𝓝 ⟪w, v⟫_𝕜) := by
@@ -114,9 +114,9 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 convex set `K` and `uₙ ⇀ w` weakly, then `w ∈ K`.
 
 Hahn–Banach separation of `w` from `K` produces a functional that contradicts the convergence.
-Stated over `ℝ`, which is where the variational applications use it; it is what makes the
-"weak limits stay in the constraint set" hypothesis automatic for internal approximations, whose
-discrete constraint sets are contained in the continuous one. -/
+Stated over `ℝ`, which is where the variational applications use it; it is what makes the "weak
+limits stay in the constraint set" hypothesis automatic for internal approximations, whose discrete
+constraint sets are contained in the continuous one. -/
 theorem mem_of_weak_tendsto_of_convex {K : Set E} (hconv : Convex ℝ K) (hclosed : IsClosed K)
     {u : ℕ → E} {w : E} (hu : ∀ n, u n ∈ K)
     (hw : ∀ ℓ : StrongDual ℝ E, Tendsto (fun n => ℓ (u n)) atTop (𝓝 (ℓ w))) :

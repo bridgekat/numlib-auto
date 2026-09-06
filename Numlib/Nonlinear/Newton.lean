@@ -8,10 +8,10 @@ import Numlib.Nonlinear.FixedPoint
 
 `Newton.step F F' x = x - (F' x)⁻¹ (F x)` with `ContinuousLinearMap.inverse` (`0` when `F' x` is not
 invertible), local quadratic convergence when `F'(x*)` is invertible and `F'` is Lipschitz —
-`‖e_{k+1}‖ ≤ (L ‖F'(x*)⁻¹‖ / 2) ‖e_k‖²` ([Atkinson–Han][han2009theoretical] Thm 5.4.1;
-[Kress][kress1998numerical] Cor 6.15 with Thm 6.20) — and the Newton–Kantorovich theorem with the a
-priori bound (Atkinson–Han Thm 5.4.2; Kress Thm 6.14), proved by the majorant method of
-[Ortega–Rheinboldt][ortega2000iterative] through `Newton.majorant`.
+`‖e_{k+1}‖ ≤ (L ‖F'(x*)⁻¹‖ / 2) ‖e_k‖²` ([han2009theoretical] Thm 5.4.1; [kress1998numerical] Cor
+6.15 with Thm 6.20) — and the Newton–Kantorovich theorem with the a priori bound
+([han2009theoretical] Thm 5.4.2; [kress1998numerical] Thm 6.14), proved by the majorant method of
+[ortega2000iterative] through `Newton.majorant`.
 
 Both rest on the sharp second-order mean value inequality
 `Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le`, in
@@ -33,8 +33,8 @@ noncomputable def step (Fn : E → F) (F' : E → E →L[𝕜] F) (x : E) : E :=
 noncomputable def iterate (Fn : E → F) (F' : E → E →L[𝕜] F) (x₀ : E) (k : ℕ) : E :=
   (step Fn F')^[k] x₀
 
-/-- The Newton recurrence `x_{k+1} = x_k - (F' x_k)⁻¹ (F x_k)`: the iterates advance by a step
-taken at the *last* point rather than the first, which is the form every induction below uses. -/
+/-- The Newton recurrence `x_{k+1} = x_k - (F' x_k)⁻¹ (F x_k)`: the iterates advance by a step taken
+at the *last* point rather than the first, which is the form every induction below uses. -/
 theorem iterate_succ (Fn : E → F) (F' : E → E →L[𝕜] F) (x₀ : E) (k : ℕ) :
     iterate Fn F' x₀ (k + 1) = step Fn F' (iterate Fn F' x₀ k) :=
   Function.iterate_succ_apply' _ _ _
@@ -45,8 +45,8 @@ theorem step_eq_self_of_eq_zero (Fn : E → F) (F' : E → E →L[𝕜] F) {x : 
   simp [step, hx]
 
 /-- One step of the **modified, or chord, Newton method**, `x ↦ x - A⁻¹ (F x)`, in which the
-derivative is frozen at a single invertible operator `A` instead of being recomputed and inverted
-at every iterate.  The usual choice is `A = F' x₀`.
+derivative is frozen at a single invertible operator `A` instead of being recomputed and inverted at
+every iterate.  The usual choice is `A = F' x₀`.
 
 Unlike `Newton.step`, this never breaks down: `A` is an equivalence, so `A⁻¹` is a genuine inverse
 and no junk value is involved.  The price is that the convergence is only linear
@@ -75,12 +75,11 @@ The theorems below carry two hypotheses that are not in the informal statement:
 `[IsRCLikeNormedField 𝕜]` and `[NormedSpace ℝ E]`.  They are needed because every proof here goes
 through the mean value inequality `Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le`, which
 is available only over `ℝ`/`ℂ`.  This is not a defect of the proofs: over a general
-`NontriviallyNormedField` the statements are false.  For a counterexample take
-`𝕜 = E = F = 𝔽ₚ((t))`, `Fn x = x + x ^ p` and `F' x = 1`.  In characteristic `p`,
-`(x + h) ^ p = x ^ p + h ^ p` and `‖h ^ p‖ = ‖h‖ ^ p = o (‖h‖)`, so `HasFDerivAt Fn 1 x` for every
-`x`; `F'` is constant, hence `L`-Lipschitz with `L = 0`; and `Fn 0 = 0`.  With `e = 1` the
-conclusion of `norm_step_sub_le` reads `‖step Fn F' x‖ ≤ 0`, while
-`step Fn F' x = x - (x + x ^ p) = -x ^ p ≠ 0` for `x ≠ 0`. -/
+`NontriviallyNormedField` the statements are false.  For a counterexample take `𝕜 = E = F =
+𝔽ₚ((t))`, `Fn x = x + x ^ p` and `F' x = 1`.  In characteristic `p`, `(x + h) ^ p = x ^ p + h ^ p`
+and `‖h ^ p‖ = ‖h‖ ^ p = o (‖h‖)`, so `HasFDerivAt Fn 1 x` for every `x`; `F'` is constant, hence
+`L`-Lipschitz with `L = 0`; and `Fn 0 = 0`.  With `e = 1` the conclusion of `norm_step_sub_le` reads
+`‖step Fn F' x‖ ≤ 0`, while `step Fn F' x = x - (x + x ^ p) = -x ^ p ≠ 0` for `x ≠ 0`. -/
 
 variable [CompleteSpace E] [CompleteSpace F] [IsRCLikeNormedField 𝕜] [NormedSpace ℝ E]
 
@@ -122,11 +121,11 @@ private theorem norm_sub_apply_le {Fn : E → F} {F' : E → E →L[𝕜] F} {xs
     (Metric.mem_ball_self hr) fun z hz => hL z hz x hx
 
 omit [CompleteSpace F] in
-/-- Local quadratic convergence (Atkinson–Han, *Theoretical Numerical Analysis*, Thm 5.4.1; Kress,
-*Numerical Analysis*, Cor 6.15 with Thm 6.20): if `F` is differentiable near a root `x*` with
-`F'(x*)` invertible (inverse `e`) and `F'` is `L`-Lipschitz on a ball, then on a smaller ball the
-Newton step satisfies `‖step x - x*‖ ≤ C ‖x - x*‖²`.  The radius is shrunk far enough that `F' x`
-is still invertible, by the Neumann series, with `‖(F' x)⁻¹‖ ≤ 2 ‖(F' x*)⁻¹‖`. -/
+/-- Local quadratic convergence ([han2009theoretical], Thm 5.4.1; [kress1998numerical], Cor 6.15
+with Thm 6.20): if `F` is differentiable near a root `x*` with `F'(x*)` invertible (inverse `e`) and
+`F'` is `L`-Lipschitz on a ball, then on a smaller ball the Newton step satisfies `‖step x - x*‖ ≤ C
+‖x - x*‖²`.  The radius is shrunk far enough that `F' x` is still invertible, by the Neumann series,
+with `‖(F' x)⁻¹‖ ≤ 2 ‖(F' x*)⁻¹‖`. -/
 theorem exists_ball_norm_step_sub_le {Fn : E → F} {F' : E → E →L[𝕜] F} {xstar : E}
     (hstar : Fn xstar = 0) (e : E ≃L[𝕜] F) (he : (e : E →L[𝕜] F) = F' xstar) {r L : ℝ}
     (hr : 0 < r) (hF : ∀ x ∈ Metric.ball xstar r, HasFDerivAt Fn (F' x) x)
@@ -181,9 +180,8 @@ theorem exists_ball_norm_step_sub_le {Fn : E → F} {F' : E → E →L[𝕜] F} 
     _ = K * L' * ‖x - xstar‖ ^ 2 := by rw [norm_sub_rev xstar x]; ring
 
 omit [CompleteSpace E] [CompleteSpace F] [IsRCLikeNormedField 𝕜] [NormedSpace ℝ E] in
-/-- If `F' z` is invertible with inverse `e.symm`, the Newton step at `z` is
-`z - (F' z)⁻¹ (Fn z)`, written with the equivalence rather than the junk-valued
-`ContinuousLinearMap.inverse`. -/
+/-- If `F' z` is invertible with inverse `e.symm`, the Newton step at `z` is `z - (F' z)⁻¹ (Fn z)`,
+written with the equivalence rather than the junk-valued `ContinuousLinearMap.inverse`. -/
 private theorem step_sub_self {Fn : E → F} {F' : E → E →L[𝕜] F} {z : E} (e : E ≃L[𝕜] F)
     (he : (e : E →L[𝕜] F) = F' z) : step Fn F' z - z = -(e.symm (Fn z)) := by
   have hinv : (F' z).inverse = (e.symm : F →L[𝕜] E) := by
@@ -281,19 +279,19 @@ section Kantorovich
 
 /-! ### The Newton–Kantorovich theorem
 
-The proof follows the majorant method of Ortega–Rheinboldt, *Iterative Solution of Nonlinear
+The proof follows the majorant method of [ortega2000iterative], *Iterative Solution of Nonlinear
 Equations in Several Variables*: the Newton iterates of `Fn` are dominated by the Newton iterates
-`t_k` of the scalar quadratic `p t = (L / 2) t ^ 2 - t / β + η / β`, whose smaller root is
-`t* = (1 - √(1 - 2 β L η)) / (β L)`.  Instead of `t_k` itself the development below carries the
-normalized quantity `majorant u k = 1 - β L t_k`, where `u = √(1 - 2 β L η)`: in that variable the
-three parameters `β`, `L`, `η` collapse into one, the scalar Newton recursion becomes the
-Babylonian iteration for `√(u ^ 2)`, and the majorant relation driving the induction becomes the
-identity `Newton.majorant_sq_div`. -/
+`t_k` of the scalar quadratic `p t = (L / 2) t ^ 2 - t / β + η / β`, whose smaller root is `t* = (1
+- √(1 - 2 β L η)) / (β L)`.  Instead of `t_k` itself the development below carries the normalized
+quantity `majorant u k = 1 - β L t_k`, where `u = √(1 - 2 β L η)`: in that variable the three
+parameters `β`, `L`, `η` collapse into one, the scalar Newton recursion becomes the Babylonian
+iteration for `√(u ^ 2)`, and the majorant relation driving the induction becomes the identity
+`Newton.majorant_sq_div`. -/
 
-/-- The normalized Kantorovich majorant.  With `u = √(1 - 2 β L η)` and `t_k` the Newton sequence
-of the scalar majorant polynomial `p t = (L / 2) t ^ 2 - t / β + η / β` started at `t_0 = 0`, one
-has `majorant u k = 1 - β L t_k`; the Newton recursion for `p` turns into the Babylonian iteration
-`s ↦ (s ^ 2 + u ^ 2) / (2 s)` for `√(u ^ 2) = u` started at `s_0 = 1`.
+/-- The normalized Kantorovich majorant.  With `u = √(1 - 2 β L η)` and `t_k` the Newton sequence of
+the scalar majorant polynomial `p t = (L / 2) t ^ 2 - t / β + η / β` started at `t_0 = 0`, one has
+`majorant u k = 1 - β L t_k`; the Newton recursion for `p` turns into the Babylonian iteration `s ↦
+(s ^ 2 + u ^ 2) / (2 s)` for `√(u ^ 2) = u` started at `s_0 = 1`.
 
 This makes the two facts the vector induction needs — `majorant u k` decreases to `u`, and
 `(majorant u k - majorant u (k + 1)) ^ 2 / (2 majorant u (k + 1))` is the next increment — pure
@@ -309,8 +307,8 @@ noncomputable def majorant (u : ℝ) : ℕ → ℝ
 theorem majorant_succ (u : ℝ) (k : ℕ) :
     majorant u (k + 1) = (majorant u k ^ 2 + u ^ 2) / (2 * majorant u k) := rfl
 
-/-- The majorant never vanishes, so every scalar iterate `t_k` stays strictly below `1 / (β L)`
-and the perturbed derivatives stay invertible. -/
+/-- The majorant never vanishes, so every scalar iterate `t_k` stays strictly below `1 / (β L)` and
+the perturbed derivatives stay invertible. -/
 theorem majorant_pos (u : ℝ) (k : ℕ) : 0 < majorant u k := by
   induction k with
   | zero => norm_num
@@ -364,9 +362,9 @@ theorem majorant_le_one {u : ℝ} (hu : 0 ≤ u) (hu1 : u ≤ 1) (k : ℕ) : maj
   | zero => simp
   | succ k ih => exact le_trans (majorant_succ_le hu hu1 k) ih
 
-/-- The defining relation of the Newton majorant, in the form the vector induction consumes:
-one Newton step of size `(majorant u k - majorant u (k + 1)) / (β L)` produces a residual whose
-Newton step has size `(majorant u (k + 1) - majorant u (k + 2)) / (β L)`. -/
+/-- The defining relation of the Newton majorant, in the form the vector induction consumes: one
+Newton step of size `(majorant u k - majorant u (k + 1)) / (β L)` produces a residual whose Newton
+step has size `(majorant u (k + 1) - majorant u (k + 2)) / (β L)`. -/
 theorem majorant_sq_div (u : ℝ) (k : ℕ) :
     (majorant u k - majorant u (k + 1)) ^ 2 / (2 * majorant u (k + 1))
       = majorant u (k + 1) - majorant u (k + 2) := by
@@ -376,9 +374,9 @@ theorem majorant_sq_div (u : ℝ) (k : ℕ) :
   field_simp
   ring
 
-/-- The majorant halves at worst, so it stays above `2 ^ (-k)`.  This is what makes the *sharp*
-a priori bound `Newton.majorant_sub_le_pow` come out of the quadratic recursion, and it is an
-equality in the critical case `u = 0`. -/
+/-- The majorant halves at worst, so it stays above `2 ^ (-k)`.  This is what makes the *sharp* a
+priori bound `Newton.majorant_sub_le_pow` come out of the quadratic recursion, and it is an equality
+in the critical case `u = 0`. -/
 theorem inv_two_pow_le_majorant (u : ℝ) (k : ℕ) : (1 / 2 : ℝ) ^ k ≤ majorant u k := by
   induction k with
   | zero => simp
@@ -393,9 +391,9 @@ theorem inv_two_pow_le_majorant (u : ℝ) (k : ℕ) : (1 / 2 : ℝ) ^ k ≤ majo
 
 /-- **The sharp quadratic decay of the majorant**, `majorant u k - u ≤ (1 - u) ^ (2 ^ k) / 2 ^ k`.
 
-Since `1 - u ≤ 1 - u ^ 2` this improves `Newton.majorant_sub_le`, with equality in the critical
-case `u = 0`, and it is the a priori bound Atkinson–Han state.  The proof is the Newton square law
-`Newton.majorant_succ_sub` together with `Newton.inv_two_pow_le_majorant`. -/
+Since `1 - u ≤ 1 - u ^ 2` this improves `Newton.majorant_sub_le`, with equality in the critical case
+`u = 0`, and it is the a priori bound [han2009theoretical] state.  The proof is the Newton square
+law `Newton.majorant_succ_sub` together with `Newton.inv_two_pow_le_majorant`. -/
 theorem majorant_sub_le_pow {u : ℝ} (hu : 0 ≤ u) (hu1 : u ≤ 1) (k : ℕ) :
     majorant u k - u ≤ (1 - u) ^ (2 ^ k) / 2 ^ k := by
   induction k with
@@ -420,8 +418,8 @@ theorem majorant_sub_le_pow {u : ℝ} (hu : 0 ≤ u) (hu1 : u ≤ 1) (k : ℕ) :
       mul_nonneg (mul_nonneg (sq_nonneg (majorant u k - u)) hm.le) (sub_nonneg.2 hinv), hb]
 
 /-- The Kantorovich uniqueness recursion in the majorant variable: the majorant sequence shifted by
-`u` obeys `(u + s_k) ^ 2 / (2 s_k) = u + s_{k+1}`, which is why a second zero at distance
-`t** = (1 + u) / (β L)` from `x₀` is exactly the borderline case. -/
+`u` obeys `(u + s_k) ^ 2 / (2 s_k) = u + s_{k+1}`, which is why a second zero at distance `t** = (1
++ u) / (β L)` from `x₀` is exactly the borderline case. -/
 theorem majorant_add_sq_div (u : ℝ) (k : ℕ) :
     (u + majorant u k) ^ 2 / (2 * majorant u k) = u + majorant u (k + 1) := by
   have h0 := majorant_ne_zero u k
@@ -477,8 +475,8 @@ theorem majorant_sub_le {u : ℝ} (hu : 0 ≤ u) (hu1 : u ≤ 1) (k : ℕ) :
 variable [CompleteSpace E] [IsRCLikeNormedField 𝕜] [NormedSpace ℝ E]
 
 omit [IsRCLikeNormedField 𝕜] [NormedSpace ℝ E] in
-/-- Perturbation along the ball: `F' z` is invertible as soon as `β L ‖z - x₀‖ < 1`, with
-`‖(F' z)⁻¹‖ ≤ β / (1 - β L ‖z - x₀‖)`.  This is the Banach lemma in the two-space form of
+/-- Perturbation along the ball: `F' z` is invertible as soon as `β L ‖z - x₀‖ < 1`, with `‖(F'
+z)⁻¹‖ ≤ β / (1 - β L ‖z - x₀‖)`.  This is the Banach lemma in the two-space form of
 `ContinuousLinearEquiv.exists_symm_norm_le_of_add`. -/
 private theorem exists_equiv_of_dist_le {F' : E → E →L[𝕜] F} {x₀ : E} {r β L : ℝ} (hβ0 : 0 ≤ β)
     (e : E ≃L[𝕜] F) (he : (e : E →L[𝕜] F) = F' x₀) (hβ' : ‖(e.symm : F →L[𝕜] E)‖ ≤ β)
@@ -523,8 +521,8 @@ private theorem norm_apply_step_le {Fn : E → F} {F' : E → E →L[𝕜] F} {x
   simpa using htay
 
 omit [CompleteSpace E] [IsRCLikeNormedField 𝕜] [NormedSpace ℝ E] in
-/-- A point within the `k`-th scalar iterate of `x₀` lies in the ball on which the hypotheses of
-the Newton–Kantorovich theorem hold. -/
+/-- A point within the `k`-th scalar iterate of `x₀` lies in the ball on which the hypotheses of the
+Newton–Kantorovich theorem hold. -/
 private theorem mem_closedBall_of_le_majorant {x₀ : E} {r β L u : ℝ} (hA : 0 < β * L) (hu0 : 0 ≤ u)
     (hu1 : u ≤ 1) (hr : (1 - u) / (β * L) ≤ r) {j : ℕ} {z : E}
     (hz : ‖z - x₀‖ ≤ (1 - majorant u j) / (β * L)) : z ∈ Metric.closedBall x₀ r := by
@@ -556,9 +554,9 @@ private theorem exists_equiv_of_le_majorant {F' : E → E →L[𝕜] F} {x₀ : 
   gcongr
   linarith
 
-/-- The invariant carried by the Kantorovich induction: the `k`-th Newton iterate stays within
-`t_k = (1 - majorant u k) / (β L)` of `x₀`, and the `k`-th Newton increment is bounded by the
-scalar increment `t_{k+1} - t_k`. -/
+/-- The invariant carried by the Kantorovich induction: the `k`-th Newton iterate stays within `t_k
+= (1 - majorant u k) / (β L)` of `x₀`, and the `k`-th Newton increment is bounded by the scalar
+increment `t_{k+1} - t_k`. -/
 private theorem kantorovich_invariant {Fn : E → F} {F' : E → E →L[𝕜] F} {x₀ : E} {r β η L u : ℝ}
     (hβ : 0 < β) (hL : 0 < L) (e : E ≃L[𝕜] F) (he : (e : E →L[𝕜] F) = F' x₀)
     (hβ' : ‖(e.symm : F →L[𝕜] E)‖ ≤ β) (hη' : ‖e.symm (Fn x₀)‖ ≤ η)
@@ -687,8 +685,8 @@ private theorem norm_iterate_sub_le_majorant {Fn : E → F} {F' : E → E →L[�
       norm_iterate_sub_iterate_le hβ hL e he hβ' hη' hF hLip hu0 hu1 hueta hr hm⟩)
   rwa [norm_sub_rev] at h2
 
-/-- Newton–Kantorovich, stated with the limit `u` of the majorant supplied as a parameter through
-`2 β L η = 1 - u ^ 2`; `Newton.kantorovich` instantiates `u = √(1 - 2 β L η)`. -/
+/-- Newton–Kantorovich, stated with the limit `u` of the majorant supplied as a parameter through `2
+β L η = 1 - u ^ 2`; `Newton.kantorovich` instantiates `u = √(1 - 2 β L η)`. -/
 private theorem kantorovich_of_sq {Fn : E → F} {F' : E → E →L[𝕜] F} {x₀ : E} {r β η L u : ℝ}
     (hβ : 0 < β) (hL : 0 < L) (e : E ≃L[𝕜] F) (he : (e : E →L[𝕜] F) = F' x₀)
     (hβ' : ‖(e.symm : F →L[𝕜] E)‖ ≤ β) (hη' : ‖e.symm (Fn x₀)‖ ≤ η)
@@ -784,16 +782,15 @@ private theorem kantorovich_of_sq {Fn : E → F} {F' : E → E →L[𝕜] F} {x�
     gcongr
     exact majorant_sub_le hu0 hu1 k
 
-/-- Newton–Kantorovich (Atkinson–Han, *Theoretical Numerical Analysis*, Thm 5.4.2; Kress,
-*Numerical Analysis*, Thm 6.14): if `‖(F' x₀)⁻¹‖ ≤ β`,
-`‖(F' x₀)⁻¹ F x₀‖ ≤ η`, `F'` is `L`-Lipschitz on the ball of radius `r` around `x₀`,
-`h := β L η ≤ 1/2` and `t* := (1 - √(1 - 2h)) / (β L) ≤ r`, then the Newton iterates stay in the
-ball, converge to a root `x*` with `‖x* - x₀‖ ≤ t*`, and
-`‖x_k - x*‖ ≤ (2h)^(2^k) η / (2^k h)` (a priori bound, `h > 0`).
+/-- Newton–Kantorovich ([han2009theoretical], Thm 5.4.2; [kress1998numerical], Thm 6.14): if `‖(F'
+x₀)⁻¹‖ ≤ β`, `‖(F' x₀)⁻¹ F x₀‖ ≤ η`, `F'` is `L`-Lipschitz on the ball of radius `r` around `x₀`, `h
+:= β L η ≤ 1/2` and `t* := (1 - √(1 - 2h)) / (β L) ≤ r`, then the Newton iterates stay in the ball,
+converge to a root `x*` with `‖x* - x₀‖ ≤ t*`, and `‖x_k - x*‖ ≤ (2h)^(2^k) η / (2^k h)` (a priori
+bound, `h > 0`).
 
 Unlike `exists_ball_norm_step_sub_le`, every hypothesis here is checkable at the starting point:
 existence of the root is a conclusion, not an assumption.  The proof is the majorant argument of
-Ortega–Rheinboldt, *Iterative Solution of Nonlinear Equations in Several Variables*, carried by
+[ortega2000iterative], *Iterative Solution of Nonlinear Equations in Several Variables*, carried by
 `Newton.majorant`. -/
 theorem kantorovich {Fn : E → F} {F' : E → E →L[𝕜] F} {x₀ : E} {r β η L : ℝ} (hβ : 0 < β)
     (hL : 0 < L) (hη : 0 ≤ η) (e : E ≃L[𝕜] F) (he : (e : E →L[𝕜] F) = F' x₀)
@@ -814,14 +811,13 @@ theorem kantorovich {Fn : E → F} {F' : E → E →L[𝕜] F} {x₀ : E} {r β 
   have hu1 : Real.sqrt (1 - 2 * (β * L * η)) ≤ 1 := by nlinarith
   exact kantorovich_of_sq hβ hL e he hβ' hη' hF hLip hu0 hu1 (by linarith) hr
 
-/-- **The sharp a priori bound of the Newton–Kantorovich theorem**:
-`‖x_k - x*‖ ≤ (1 - √(1 - 2h))^(2^k) / (2^k β L)` with `h = β L η`.
+/-- **The sharp a priori bound of the Newton–Kantorovich theorem**: `‖x_k - x*‖ ≤ (1 - √(1 -
+2h))^(2^k) / (2^k β L)` with `h = β L η`.
 
-It improves the bound `(2h)^(2^k) η / (2^k h)` carried by `Newton.kantorovich`, because
-`1 - √(1 - 2h) ≤ 2h`, and the two agree in the critical case `h = 1/2`.  Both are the same
-estimate `‖x_k - x*‖ ≤ (t* - t_k)` against the scalar majorant sequence; only the closed-form
-bound on `t* - t_k` differs, `Newton.majorant_sub_le_pow` here in place of
-`Newton.majorant_sub_le`.
+It improves the bound `(2h)^(2^k) η / (2^k h)` carried by `Newton.kantorovich`, because `1 - √(1 -
+2h) ≤ 2h`, and the two agree in the critical case `h = 1/2`.  Both are the same estimate `‖x_k - x*‖
+≤ (t* - t_k)` against the scalar majorant sequence; only the closed-form bound on `t* - t_k`
+differs, `Newton.majorant_sub_le_pow` here in place of `Newton.majorant_sub_le`.
 
 The limit `xstar` is supplied as a hypothesis rather than produced, since `Newton.kantorovich`
 produces it under exactly these hypotheses; any limit of the iterates is that one. -/
@@ -860,8 +856,8 @@ zero at a doubly exponential rate, and starting at it does not move: uniqueness 
 **open** ball of radius `t**`, and fails on its boundary, where the scalar majorant polynomial
 itself has its second root. -/
 
-/-- The uniqueness recursion: a zero `y` of `Fn` at normalized distance `c (1 + u)` from `x₀`
-stays at normalized distance `c ^ (2 ^ k) (u + majorant u k)` from the `k`-th Newton iterate. -/
+/-- The uniqueness recursion: a zero `y` of `Fn` at normalized distance `c (1 + u)` from `x₀` stays
+at normalized distance `c ^ (2 ^ k) (u + majorant u k)` from the `k`-th Newton iterate. -/
 private theorem norm_sub_iterate_le_of_eq_zero {Fn : E → F} {F' : E → E →L[𝕜] F} {x₀ : E}
     {r β η L u c : ℝ} (hβ : 0 < β) (hL : 0 < L) (e : E ≃L[𝕜] F) (he : (e : E →L[𝕜] F) = F' x₀)
     (hβ' : ‖(e.symm : F →L[𝕜] E)‖ ≤ β) (hη' : ‖e.symm (Fn x₀)‖ ≤ η)
@@ -927,8 +923,8 @@ private theorem norm_sub_iterate_le_of_eq_zero {Fn : E → F} {F' : E → E →L
       _ = c ^ 2 ^ (k + 1) * (u + majorant u (k + 1)) := by
           rw [majorant_add_sq_div, ← pow_mul, ← pow_succ]
 
-/-- Under the uniqueness recursion the Newton iterates converge to the second zero as well, hence
-to the same point.  The two admissible starting positions are `c < 1` (strictly inside the ball of
+/-- Under the uniqueness recursion the Newton iterates converge to the second zero as well, hence to
+the same point.  The two admissible starting positions are `c < 1` (strictly inside the ball of
 radius `t**`) and `c = 1` with `u = 0` (the critical case, where `t** = t*` and the closed ball is
 still a uniqueness domain). -/
 private theorem tendsto_iterate_of_eq_zero {Fn : E → F} {F' : E → E →L[𝕜] F} {x₀ : E}
@@ -982,13 +978,13 @@ private theorem tendsto_iterate_of_eq_zero {Fn : E → F} {F' : E → E →L[�
   nlinarith [hbound k]
 
 /-- **The uniqueness clause of the Newton–Kantorovich theorem.** Under the hypotheses of
-`Newton.kantorovich`, the zero produced is the only one in the *open* ball of radius
-`t** = (1 + √(1 - 2h)) / (β L)` around `x₀` that lies in the region where the hypotheses hold.
+`Newton.kantorovich`, the zero produced is the only one in the *open* ball of radius `t** = (1 + √(1
+- 2h)) / (β L)` around `x₀` that lies in the region where the hypotheses hold.
 
-The ball cannot be closed when `h < 1/2`: the scalar majorant polynomial
-`p t = (L/2) t² - t/β + η/β` satisfies every hypothesis at `x₀ = 0` and has a second zero at
-distance exactly `t**`.  For the closed ball of radius `t*` — including the critical case
-`h = 1/2`, where `t* = t**` — see `Newton.kantorovich_unique_closedBall`. -/
+The ball cannot be closed when `h < 1/2`: the scalar majorant polynomial `p t = (L/2) t² - t/β +
+η/β` satisfies every hypothesis at `x₀ = 0` and has a second zero at distance exactly `t**`.  For
+the closed ball of radius `t*` — including the critical case `h = 1/2`, where `t* = t**` — see
+`Newton.kantorovich_unique_closedBall`. -/
 theorem kantorovich_unique {Fn : E → F} {F' : E → E →L[𝕜] F} {x₀ : E} {r β η L : ℝ}
     (hβ : 0 < β) (hL : 0 < L) (hη : 0 ≤ η) (e : E ≃L[𝕜] F) (he : (e : E →L[𝕜] F) = F' x₀)
     (hβ' : ‖(e.symm : F →L[𝕜] E)‖ ≤ β) (hη' : ‖e.symm (Fn x₀)‖ ≤ η)
@@ -1018,10 +1014,10 @@ theorem kantorovich_unique {Fn : E → F} {F' : E → E →L[𝕜] F} {x₀ : E}
   · rw [div_lt_one hupos]; linarith
   · rw [div_mul_cancel₀ _ hupos.ne']
 
-/-- **Uniqueness in the closed ball of radius `t*`.** Under the hypotheses of
-`Newton.kantorovich`, the zero produced is the only one in `closedBall x₀ t*`, the ball the
-existence statement puts it in.  This is the form that survives the critical case `h = 1/2`, where
-`t* = t**` and `Newton.kantorovich_unique` only covers the open ball. -/
+/-- **Uniqueness in the closed ball of radius `t*`.** Under the hypotheses of `Newton.kantorovich`,
+the zero produced is the only one in `closedBall x₀ t*`, the ball the existence statement puts it
+in.  This is the form that survives the critical case `h = 1/2`, where `t* = t**` and
+`Newton.kantorovich_unique` only covers the open ball. -/
 theorem kantorovich_unique_closedBall {Fn : E → F} {F' : E → E →L[𝕜] F} {x₀ : E} {r β η L : ℝ}
     (hβ : 0 < β) (hL : 0 < L) (hη : 0 ≤ η) (e : E ≃L[𝕜] F) (he : (e : E →L[𝕜] F) = F' x₀)
     (hβ' : ‖(e.symm : F →L[𝕜] E)‖ ≤ β) (hη' : ‖e.symm (Fn x₀)‖ ≤ η)
@@ -1057,17 +1053,17 @@ theorem kantorovich_unique_closedBall {Fn : E → F} {F' : E → E →L[𝕜] F}
   · rw [div_mul_cancel₀ _ hupos.ne']
     exact hle
 
-/-- **Newton–Kantorovich localized at the first iterate** (Atkinson–Han's sharper form): the zero
-lies in the small ball `closedBall x₁ (t* - η)` around the *first* Newton iterate
-`x₁ = step Fn F' x₀`, and it is enough for the hypotheses on `F` to hold on a convex set `D`
-containing `x₀` and that small ball — `closedBall x₀ t*`, which `Newton.kantorovich` asks for, is
-in general strictly larger.
+/-- **Newton–Kantorovich localized at the first iterate** ([han2009theoretical] sharper form): the
+zero lies in the small ball `closedBall x₁ (t* - η)` around the *first* Newton iterate `x₁ = step Fn
+F' x₀`, and it is enough for the hypotheses on `F` to hold on a convex set `D` containing `x₀` and
+that small ball — `closedBall x₀ t*`, which `Newton.kantorovich` asks for, is in general strictly
+larger.
 
-The proof restarts the majorant sequence one step later.  At `x₁` the Neumann bound gives
-`‖(F' x₁)⁻¹‖ ≤ β / s₁` and the sharp Taylor estimate gives `‖(F' x₁)⁻¹ F x₁‖ ≤ η₁`, where
-`s₁ = (1 + u²) / 2` is the first majorant value; the Kantorovich number of the restarted problem is
-`((1 - u²) / (1 + u²))² / 2 ≤ 1/2` and its `t*` is exactly `t* - η = (1 - u)² / (2 β L)`, so
-`Newton.kantorovich` applies at `x₁` with no room to spare. -/
+The proof restarts the majorant sequence one step later.  At `x₁` the Neumann bound gives `‖(F'
+x₁)⁻¹‖ ≤ β / s₁` and the sharp Taylor estimate gives `‖(F' x₁)⁻¹ F x₁‖ ≤ η₁`, where `s₁ = (1 + u²) /
+2` is the first majorant value; the Kantorovich number of the restarted problem is `((1 - u²) / (1 +
+u²))² / 2 ≤ 1/2` and its `t*` is exactly `t* - η = (1 - u)² / (2 β L)`, so `Newton.kantorovich`
+applies at `x₁` with no room to spare. -/
 theorem kantorovich_of_closedBall_step {Fn : E → F} {F' : E → E →L[𝕜] F} {x₀ : E} {D : Set E}
     {β η L : ℝ} (hβ : 0 < β) (hL : 0 < L) (hη : 0 ≤ η) (e : E ≃L[𝕜] F)
     (he : (e : E →L[𝕜] F) = F' x₀) (hβ' : ‖(e.symm : F →L[𝕜] E)‖ ≤ β)
@@ -1189,16 +1185,16 @@ section Chord
 
 /-! ### The chord method
 
-Freezing the derivative at a fixed invertible `A` turns the Newton map into
-`x ↦ x - A⁻¹ (F x)`, whose derivative at a root `x*` is `1 - A⁻¹ F'(x*)`.  Convergence is
-therefore linear with the factor `‖1 - A⁻¹ F'(x*)‖`, provided that factor is `< 1`, which is the
-statement that `A` is a good enough approximation of `F'(x*)`.  With `A = F' x₀` and `x₀` close to
-`x*` it is, by continuity of `F'`. -/
+Freezing the derivative at a fixed invertible `A` turns the Newton map into `x ↦ x - A⁻¹ (F x)`,
+whose derivative at a root `x*` is `1 - A⁻¹ F'(x*)`.  Convergence is therefore linear with the
+factor `‖1 - A⁻¹ F'(x*)‖`, provided that factor is `< 1`, which is the statement that `A` is a good
+enough approximation of `F'(x*)`.  With `A = F' x₀` and `x₀` close to `x*` it is, by continuity of
+`F'`. -/
 
 variable [IsRCLikeNormedField 𝕜] [NormedSpace ℝ E]
 
-/-- One chord step measured from a root: the frozen-derivative defect `1 - A⁻¹ F'(x*)` acts
-linearly on the error, and what is left is the second-order Taylor remainder. -/
+/-- One chord step measured from a root: the frozen-derivative defect `1 - A⁻¹ F'(x*)` acts linearly
+on the error, and what is left is the second-order Taylor remainder. -/
 theorem norm_chordStep_sub_le {Fn : E → F} {F' : E → E →L[𝕜] F} {xstar : E} {r L : ℝ}
     (hstar : Fn xstar = 0) (A : E ≃L[𝕜] F)
     (hF : ∀ x ∈ Metric.closedBall xstar r, HasFDerivAt Fn (F' x) x)
@@ -1235,12 +1231,12 @@ theorem norm_chordStep_sub_le {Fn : E → F} {F' : E → E →L[𝕜] F} {xstar 
 
 /-- **Linear convergence of the chord method.** If `F'` is Lipschitz around a root `x*` and the
 frozen derivative `A` satisfies `‖1 - A⁻¹ F'(x*)‖ < 1`, then from every start close enough to `x*`
-the chord iterates converge to `x*`, with the geometric error bound
-`‖x_k - x*‖ ≤ q^k ‖x₀ - x*‖` for a factor `q < 1`.
+the chord iterates converge to `x*`, with the geometric error bound `‖x_k - x*‖ ≤ q^k ‖x₀ - x*‖` for
+a factor `q < 1`.
 
 The factor cannot be improved to a quadratic rate: the error operator `1 - A⁻¹ F'(x*)` is a fixed
-nonzero operator, so the leading term of the error is exactly linear.  The Newton method is the
-case where that operator vanishes at the root, and `Newton.exists_ball_norm_step_sub_le` is the
+nonzero operator, so the leading term of the error is exactly linear.  The Newton method is the case
+where that operator vanishes at the root, and `Newton.exists_ball_norm_step_sub_le` is the
 corresponding quadratic bound.  No completeness is needed, since the limit `x*` is a hypothesis
 rather than a conclusion. -/
 theorem tendsto_chordIterate {Fn : E → F} {F' : E → E →L[𝕜] F} {xstar : E} {r L : ℝ}

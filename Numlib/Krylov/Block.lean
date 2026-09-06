@@ -4,39 +4,37 @@ import Numlib.Krylov.Hessenberg
 /-!
 # Block Krylov subspaces and the block Arnoldi process
 
-The block Krylov subspace of a finite family `v : Fin p → M` is
-`Krylov.blockSubspace A v m = ⨆ i, Krylov.subspace A (v i) m`, the span of the vectors
-`A^j (v i)` with `j < m`. Enumerating that family in the order `(j, i)` — the `k`-th vector is
-`Krylov.blockSeq A v k = A^(k / p) (v (k % p))`, so that consecutive blocks of `p` indices carry
-one more power of `A` — turns the block process into an ordinary Gram–Schmidt
-orthonormalization: `BlockArnoldi.vec` is `gramSchmidtNormed` of `Krylov.blockSeq`, which is
-Ruhe's variant of the block Arnoldi process ([Saad, *Iterative Methods for Sparse Linear
-Systems*][saad2003iterative], Algorithm 6.24). The block methods of [Saad, *Numerical Methods for
-Large Eigenvalue Problems*][saad2011numerical], Ch. 6 use the same vectors.
+The block Krylov subspace of a finite family `v : Fin p → M` is `Krylov.blockSubspace A v m = ⨆ i,
+Krylov.subspace A (v i) m`, the span of the vectors `A^j (v i)` with `j < m`. Enumerating that
+family in the order `(j, i)` — the `k`-th vector is `Krylov.blockSeq A v k = A^(k / p) (v (k % p))`,
+so that consecutive blocks of `p` indices carry one more power of `A` — turns the block process into
+an ordinary Gram–Schmidt orthonormalization: `BlockArnoldi.vec` is `gramSchmidtNormed` of
+`Krylov.blockSeq`, which is Ruhe's variant of the block Arnoldi process ([saad2003iterative],
+Algorithm 6.24). The block methods of [saad2011numerical], Ch. 6 use the same vectors.
 
 Because `A (blockSeq A v k) = blockSeq A v (k + p)`, the vectors satisfy a banded Hessenberg
 relation of bandwidth `p`, `A v_k = ∑_{i ≤ k + p} h_{ik} v_i`, that is `A V_m = V_{m+p} H̄_m`
-(Saad, (6.129)–(6.130)). This is recorded as `Krylov.BandRelation`, which at `p = 1` is
-`Krylov.HessenbergRelation` (`Krylov.bandRelation_one_iff`); for `p = 1` the whole file
+([saad2011numerical], (6.129)–(6.130)). This is recorded as `Krylov.BandRelation`, which at `p = 1`
+is `Krylov.HessenbergRelation` (`Krylov.bandRelation_one_iff`); for `p = 1` the whole file
 specializes to `Numlib/Krylov/Arnoldi`, `BlockArnoldi.vec_one` and
 `BlockArnoldi.hessenbergRelation_one`.
 
-The blockwise algorithms (Saad, Algorithms 6.22–6.23: a block orthogonalization followed by a QR
-factorization of the resulting block) are described by their specification rather than by an
-implementation. `IsBlockArnoldiBasis A v u` says that `u` is orthonormal and spans
-the same flag as the enumerated block Krylov family — which any QR convention achieves — and
-`BlockArnoldi.blockVec_eq_vec` says that such a `u` *is* `BlockArnoldi.vec` under the
-Gram–Schmidt sign convention, and agrees with it up to unimodular scalars in general
-(`IsBlockArnoldiBasis.exists_norm_eq_one_smul_vec`). That is Saad's "mathematical
+The blockwise algorithms ([saad2011numerical], Algorithms 6.22–6.23: a block orthogonalization
+followed by a QR factorization of the resulting block) are described by their specification rather
+than by an implementation. `IsBlockArnoldiBasis A v u` says that `u` is orthonormal and spans the
+same flag as the enumerated block Krylov family — which any QR convention achieves — and
+`BlockArnoldi.blockVec_eq_vec` says that such a `u` *is* `BlockArnoldi.vec` under the Gram–Schmidt
+sign convention, and agrees with it up to unimodular scalars in general
+(`IsBlockArnoldiBasis.exists_norm_eq_one_smul_vec`). That is [saad2011numerical] "mathematical
 equivalence" of Algorithms 6.23 and 6.24, and it is the flag-uniqueness principle of
 `Numlib/Analysis/InnerProductSpace/GramSchmidt`.
 
-The residual formula `B - A X = V_{m+p} (E₁ R - H̄_m Y)` (Saad, (6.135)) holds column by column
-for any band relation, so block FOM and block GMRES — `IsGalerkin` and `IsMinRes` on the block
-subspace, one right-hand side at a time — are the small banded systems (6.135)–(6.136):
-`BlockArnoldi.isGalerkin_iff_mulVec_eq` and `BlockArnoldi.isMinRes_iff`. Ruhe's variant makes
-sense at every step `m`, and `BlockArnoldi.span_vec_eq_blockSubspace` identifies the space it
-builds with the block Krylov subspace exactly at the multiples of `p`.
+The residual formula `B - A X = V_{m+p} (E₁ R - H̄_m Y)` ([saad2011numerical], (6.135)) holds column
+by column for any band relation, so block FOM and block GMRES — `IsGalerkin` and `IsMinRes` on the
+block subspace, one right-hand side at a time — are the small banded systems (6.135)–(6.136):
+`BlockArnoldi.isGalerkin_iff_mulVec_eq` and `BlockArnoldi.isMinRes_iff`. Ruhe's variant makes sense
+at every step `m`, and `BlockArnoldi.span_vec_eq_blockSubspace` identifies the space it builds with
+the block Krylov subspace exactly at the multiples of `p`.
 -/
 
 open InnerProductSpace
@@ -78,8 +76,8 @@ theorem blockSeq_mul_add (j : ℕ) (i : Fin p) : blockSeq A v (j * p + (i : ℕ)
 theorem blockSeq_of_p_eq_zero (v : Fin 0 → M) (k : ℕ) : blockSeq A v k = 0 := by
   simp [blockSeq, blockPad]
 
-/-- One power of `A` shifts the enumeration by exactly one block. This single identity is what
-gives the block Arnoldi vectors their bandwidth-`p` Hessenberg structure. -/
+/-- One power of `A` shifts the enumeration by exactly one block. This single identity is what gives
+the block Arnoldi vectors their bandwidth-`p` Hessenberg structure. -/
 theorem apply_blockSeq (k : ℕ) : A (blockSeq A v k) = blockSeq A v (k + p) := by
   rcases Nat.eq_zero_or_pos p with rfl | hp
   · rw [blockSeq_of_p_eq_zero, blockSeq_of_p_eq_zero, map_zero]
@@ -91,8 +89,8 @@ theorem blockSeq_one (v : Fin 1 → M) (k : ℕ) : blockSeq A v k = (A ^ k) (v 0
   rw [blockSeq, Nat.div_one, Nat.mod_one]
   rfl
 
-/-- The `m`-th block Krylov subspace `𝒦_m(A, v_0) + ⋯ + 𝒦_m(A, v_{p-1})`
-(Saad, *Iterative Methods*, §6.12). -/
+/-- The `m`-th block Krylov subspace `𝒦_m(A, v_0) + ⋯ + 𝒦_m(A, v_{p-1})` ([saad2003iterative],
+§6.12). -/
 def blockSubspace (A : Module.End R M) {p : ℕ} (v : Fin p → M) (m : ℕ) : Submodule R M :=
   ⨆ i, subspace A (v i) m
 
@@ -119,8 +117,8 @@ theorem blockSubspace_zero : blockSubspace A v 0 = ⊥ := by
 theorem blockSubspace_one (v : Fin 1 → M) (m : ℕ) :
     blockSubspace A v m = subspace A (v 0) m := iSup_unique _
 
-/-- The generators of the block Krylov subspace, listed as a `Fin m × Fin p` family and as the
-first `m * p` entries of the block Krylov sequence. -/
+/-- The generators of the block Krylov subspace, listed as a `Fin m × Fin p` family and as the first
+`m * p` entries of the block Krylov sequence. -/
 private theorem range_eq_blockSeq_image (m : ℕ) :
     (Set.range fun q : Fin m × Fin p => (A ^ (q.1 : ℕ)) (v q.2)) =
       blockSeq A v '' Set.Iio (m * p) := by
@@ -143,8 +141,8 @@ private theorem range_eq_blockSeq_image (m : ℕ) :
     rw [blockSeq, blockPad]
     simp [Nat.mod_lt k hp]
 
-/-- Saad, *Iterative Methods*, §6.12: the block Krylov subspace is spanned by the `A^j (v i)`
-with `j < m`. -/
+/-- [saad2003iterative], §6.12: the block Krylov subspace is spanned by the `A^j (v i)` with `j <
+m`. -/
 theorem blockSubspace_eq_span (m : ℕ) :
     blockSubspace A v m =
       Submodule.span R (Set.range fun q : Fin m × Fin p => (A ^ (q.1 : ℕ)) (v q.2)) := by
@@ -156,8 +154,8 @@ theorem blockSubspace_eq_span (m : ℕ) :
     rintro _ ⟨⟨j, i⟩, rfl⟩
     exact subspace_le_blockSubspace A v i m (pow_apply_mem_subspace A (v i) j.isLt)
 
-/-- The block Krylov subspace is spanned by the first `m * p` entries of the block Krylov
-sequence: the form in which it matches Gram–Schmidt spans. -/
+/-- The block Krylov subspace is spanned by the first `m * p` entries of the block Krylov sequence:
+the form in which it matches Gram–Schmidt spans. -/
 theorem blockSubspace_eq_span_image_Iio (m : ℕ) :
     blockSubspace A v m = Submodule.span R (blockSeq A v '' Set.Iio (m * p)) := by
   rw [blockSubspace_eq_span, range_eq_blockSeq_image]
@@ -166,15 +164,15 @@ end BlockSequence
 
 /-! ### Band relations
 
-`Krylov.HessenbergRelation` has bandwidth `1`. The block Arnoldi vectors satisfy the same
-relation with bandwidth `p`, and the residual formula is the same computation. -/
+`Krylov.HessenbergRelation` has bandwidth `1`. The block Arnoldi vectors satisfy the same relation
+with bandwidth `p`, and the residual formula is the same computation. -/
 
 section BandMatrix
 
 variable {𝕜 : Type*}
 
 /-- The `(m + p) × m` band Hessenberg matrix `H̄_m` of a coefficient function `h`
-(Saad, *Iterative Methods*, (6.129)). -/
+([saad2003iterative], (6.129)). -/
 def bandOf (h : ℕ → ℕ → 𝕜) (p m : ℕ) : Matrix (Fin (m + p)) (Fin m) 𝕜 :=
   Matrix.of fun i j => h i j
 
@@ -188,8 +186,8 @@ section Band
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
 /-- A sequence `v` satisfying the banded Hessenberg relation `A v_j = ∑_{i ≤ j+p} h i j v_i` of
-bandwidth `p` (Saad, *Iterative Methods*, (6.129)–(6.130)), without orthogonality. The case
-`p = 1` is `Krylov.HessenbergRelation` (`Krylov.bandRelation_one_iff`). -/
+bandwidth `p` ([saad2003iterative], (6.129)–(6.130)), without orthogonality. The case `p = 1` is
+`Krylov.HessenbergRelation` (`Krylov.bandRelation_one_iff`). -/
 structure BandRelation (A : E →ₗ[𝕜] E) (v : ℕ → E) (h : ℕ → ℕ → 𝕜) (p : ℕ) : Prop where
   /-- `A v_j` is a combination of `v_0, …, v_{j+p}` with the coefficients `h`. -/
   apply_eq : ∀ j, A (v j) = ∑ i ∈ Finset.range (j + p + 1), h i j • v i
@@ -198,7 +196,7 @@ structure BandRelation (A : E →ₗ[𝕜] E) (v : ℕ → E) (h : ℕ → ℕ �
 
 /-- `E₁ g`: the vector of `𝕜^n` whose first `p` entries are `g 0, …, g_{p-1}` and whose remaining
 entries vanish. It is the coordinate vector of a right-hand side expanded in the first block of
-Arnoldi vectors (Saad, *Iterative Methods*, (6.135)). -/
+Arnoldi vectors ([saad2003iterative], (6.135)). -/
 def firstBlockVec (g : ℕ → 𝕜) (p n : ℕ) : Fin n → 𝕜 := fun i => if (i : ℕ) < p then g i else 0
 
 /-- A single right-hand side: `E₁ g` is `β e₁`. -/
@@ -207,8 +205,8 @@ theorem firstBlockVec_one (β : 𝕜) (n : ℕ) :
   funext i
   simp [firstBlockVec, firstVec]
 
-/-- Bandwidth `1` is the ordinary Hessenberg relation, so `Arnoldi.hessenbergRelation` is the
-`p = 1` case of `BlockArnoldi.hessenbergRelation` (`BlockArnoldi.hessenbergRelation_one`). -/
+/-- Bandwidth `1` is the ordinary Hessenberg relation, so `Arnoldi.hessenbergRelation` is the `p =
+1` case of `BlockArnoldi.hessenbergRelation` (`BlockArnoldi.hessenbergRelation_one`). -/
 theorem bandRelation_one_iff {A : E →ₗ[𝕜] E} {v : ℕ → E} {h : ℕ → ℕ → 𝕜} :
     BandRelation A v h 1 ↔ HessenbergRelation A v h :=
   ⟨fun hv => ⟨hv.apply_eq, hv.eq_zero_of_lt⟩, fun hv => ⟨hv.apply_eq, hv.eq_zero_of_lt⟩⟩
@@ -226,7 +224,7 @@ private theorem apply_eq_range (j n : ℕ) (hj : j + p + 1 ≤ n) :
   rw [Finset.mem_range] at hi'
   rw [hv.eq_zero_of_lt i j (by omega), zero_smul]
 
-/-- `A V_m = V_{m+p} H̄_m` (Saad, *Iterative Methods*, (6.129)) in coordinates. -/
+/-- `A V_m = V_{m+p} H̄_m` ([saad2003iterative], (6.129)) in coordinates. -/
 theorem apply_sum (m : ℕ) (y : Fin m → 𝕜) :
     A (∑ j, y j • v j) = ∑ i : Fin (m + p), (bandOf h p m).mulVec y i • v i := by
   rw [map_sum]
@@ -242,9 +240,9 @@ theorem apply_sum (m : ℕ) (y : Fin m → 𝕜) :
   rw [Finset.sum_smul]
   exact Finset.sum_congr rfl fun j _ => by rw [mul_comm]
 
-/-- Saad, *Iterative Methods*, (6.135): if the starting residual is `V_p g`, the residual of
-`x₀ + V_m y` is `V_{m+p} (E₁ g - H̄_m y)`. This is the block residual formula, read one
-right-hand side at a time. -/
+/-- [saad2003iterative], (6.135): if the starting residual is `V_p g`, the residual of `x₀ + V_m y`
+is `V_{m+p} (E₁ g - H̄_m y)`. This is the block residual formula, read one right-hand side at a
+time. -/
 theorem residual_eq {b x₀ : E} {g : ℕ → 𝕜} (hr : b - A x₀ = ∑ i ∈ Finset.range p, g i • v i)
     (m : ℕ) (y : Fin m → 𝕜) :
     b - A (x₀ + ∑ j, y j • v j) =
@@ -285,10 +283,10 @@ open Krylov
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
-/-- The specification of a block Arnoldi implementation (Saad, *Iterative Methods for Sparse
-Linear Systems*, Algorithms 6.22–6.23): an orthonormal sequence `u` spanning the same flag as the
-block Krylov sequence. Every choice of QR factorization inside a block produces such a sequence,
-and `BlockArnoldi.blockVec_eq_vec` identifies it with the vectors of Ruhe's variant. -/
+/-- The specification of a block Arnoldi implementation ([saad2003iterative], Algorithms 6.22–6.23):
+an orthonormal sequence `u` spanning the same flag as the block Krylov sequence. Every choice of QR
+factorization inside a block produces such a sequence, and `BlockArnoldi.blockVec_eq_vec` identifies
+it with the vectors of Ruhe's variant. -/
 structure IsBlockArnoldiBasis (A : E →ₗ[𝕜] E) {p : ℕ} (v : Fin p → E) (u : ℕ → E) : Prop where
   /-- The vectors are orthonormal, so no breakdown has occurred. -/
   orthonormal : Orthonormal 𝕜 u
@@ -300,15 +298,14 @@ namespace BlockArnoldi
 
 /-! ### Gram–Schmidt with breakdown
 
-The block Arnoldi vectors are `gramSchmidtNormed` of the block Krylov sequence, hence `0` from
-the first linear dependence onwards. These auxiliary lemmas are the hypothesis-free facts about
+The block Arnoldi vectors are `gramSchmidtNormed` of the block Krylov sequence, hence `0` from the
+first linear dependence onwards. These auxiliary lemmas are the hypothesis-free facts about
 `gramSchmidtNormed` that survive breakdown; they are stated for an arbitrary sequence because
 nothing about the Krylov structure enters. -/
 
 section GramSchmidtAux
 
-/-- The companion of `Submodule.mem_orthogonal_span` with the roles of the two slots
-exchanged. -/
+/-- The companion of `Submodule.mem_orthogonal_span` with the roles of the two slots exchanged. -/
 private theorem inner_eq_zero_of_mem_span {s : Set E} {x y : E}
     (hx : ∀ u ∈ s, inner 𝕜 u x = (0 : 𝕜)) (hy : y ∈ Submodule.span 𝕜 s) :
     inner 𝕜 x y = 0 :=
@@ -360,8 +357,8 @@ private theorem sub_sum_inner_smul_gsn_mem_orthogonal (x : E) (n : ℕ) :
   · intro hk'
     exact absurd (Finset.mem_range.2 hk) hk'
 
-/-- Every element of the span of the first `n` Gram–Schmidt vectors is its own orthonormal
-expansion in them; the vectors that vanish after breakdown contribute nothing. -/
+/-- Every element of the span of the first `n` Gram–Schmidt vectors is its own orthonormal expansion
+in them; the vectors that vanish after breakdown contribute nothing. -/
 private theorem eq_sum_inner_smul_gsn {x : E} {n : ℕ}
     (hx : x ∈ Submodule.span 𝕜 (gramSchmidtNormed 𝕜 f '' Set.Iio n)) :
     x = ∑ i ∈ Finset.range n, inner 𝕜 (gramSchmidtNormed 𝕜 f i) x • gramSchmidtNormed 𝕜 f i := by
@@ -378,21 +375,20 @@ end GramSchmidtAux
 
 /-! ### The block Arnoldi vectors -/
 
-/-- The block Arnoldi vectors, Ruhe's variant (Saad, *Iterative Methods for Sparse Linear
-Systems*, Algorithm 6.24): the Gram–Schmidt orthonormalization of the block Krylov sequence, one
-vector at a time. As for `Arnoldi.vec`, the vectors are `0` after breakdown. -/
+/-- The block Arnoldi vectors, Ruhe's variant ([saad2003iterative], Algorithm 6.24): the
+Gram–Schmidt orthonormalization of the block Krylov sequence, one vector at a time. As for
+`Arnoldi.vec`, the vectors are `0` after breakdown. -/
 noncomputable def vec (A : E →ₗ[𝕜] E) {p : ℕ} (v : Fin p → E) : ℕ → E :=
   gramSchmidtNormed 𝕜 (blockSeq A v)
 
-/-- The band Hessenberg coefficients `h i k = ⟪v_i, A v_k⟫`
-(Saad, *Iterative Methods*, (6.130)). -/
+/-- The band Hessenberg coefficients `h i k = ⟪v_i, A v_k⟫` ([saad2003iterative], (6.130)). -/
 noncomputable def coeff (A : E →ₗ[𝕜] E) {p : ℕ} (v : Fin p → E) (i k : ℕ) : 𝕜 :=
   inner 𝕜 (vec A v i) (A (vec A v k))
 
 variable (A : E →ₗ[𝕜] E) {p : ℕ} (v : Fin p → E)
 
-/-- The definition of the block Arnoldi vectors, in the form in which the Gram–Schmidt lemmas
-apply. -/
+/-- The definition of the block Arnoldi vectors, in the form in which the Gram–Schmidt lemmas apply.
+-/
 theorem vec_eq_gramSchmidtNormed : vec A v = gramSchmidtNormed 𝕜 (blockSeq A v) := rfl
 
 /-- The band coefficients are the inner products against `A v_k`. -/
@@ -402,13 +398,13 @@ theorem coeff_apply (i k : ℕ) : coeff A v i k = inner 𝕜 (vec A v i) (A (vec
 theorem norm_vec_eq_one_of_ne_zero {k : ℕ} (h : vec A v k ≠ 0) : ‖vec A v k‖ = 1 :=
   gramSchmidtNormed_unit_length' h
 
-/-- Distinct block Arnoldi vectors are orthogonal, at every pair of indices and with no
-hypothesis: past breakdown they are `0`. -/
+/-- Distinct block Arnoldi vectors are orthogonal, at every pair of indices and with no hypothesis:
+past breakdown they are `0`. -/
 theorem inner_vec_eq_zero {i j : ℕ} (h : i ≠ j) : inner 𝕜 (vec A v i) (vec A v j) = 0 :=
   inner_gsn_eq_zero _ h
 
-/-- Saad, *Iterative Methods*, §6.12: the block Arnoldi vectors that survive the process are
-orthonormal. -/
+/-- [saad2003iterative], §6.12: the block Arnoldi vectors that survive the process are orthonormal.
+-/
 theorem orthonormal_vec {n : ℕ} (h : ∀ k < n, vec A v k ≠ 0) :
     Orthonormal 𝕜 fun i : Fin n => vec A v (i : ℕ) :=
   ⟨fun i => norm_vec_eq_one_of_ne_zero A v (h i i.isLt),
@@ -419,9 +415,8 @@ theorem span_vec (n : ℕ) :
     Submodule.span 𝕜 (vec A v '' Set.Iio n) = Submodule.span 𝕜 (blockSeq A v '' Set.Iio n) :=
   span_gsn_Iio _ n
 
-/-- Saad, *Iterative Methods*, §6.12: the first `m * p` block Arnoldi vectors span the `m`-th
-block Krylov subspace. Ruhe's variant reaches the block Krylov subspaces exactly at the multiples
-of `p`. -/
+/-- [saad2003iterative], §6.12: the first `m * p` block Arnoldi vectors span the `m`-th block Krylov
+subspace. Ruhe's variant reaches the block Krylov subspaces exactly at the multiples of `p`. -/
 theorem span_vec_eq_blockSubspace (m : ℕ) :
     Submodule.span 𝕜 (vec A v '' Set.Iio (m * p)) = blockSubspace A v m := by
   rw [span_vec, blockSubspace_eq_span_image_Iio]
@@ -449,7 +444,7 @@ theorem apply_vec_mem (k : ℕ) :
   have h := map_span_blockSeq_le A v (k + 1) ⟨_, vec_mem_span A v k, rfl⟩
   rwa [show k + 1 + p = k + p + 1 by omega] at h
 
-/-- Band structure (Saad, *Iterative Methods*, (6.130)): `h i k = 0` for `i > k + p`. -/
+/-- Band structure ([saad2003iterative], (6.130)): `h i k = 0` for `i > k + p`. -/
 theorem coeff_eq_zero_of_lt {i k : ℕ} (h : k + p < i) : coeff A v i k = 0 := by
   rw [coeff_apply]
   refine inner_eq_zero_of_mem_span (s := vec A v '' Set.Iio i) ?_ ?_
@@ -458,13 +453,13 @@ theorem coeff_eq_zero_of_lt {i k : ℕ} (h : k + p < i) : coeff A v i k = 0 := b
   · exact Submodule.span_mono (Set.image_mono (Set.Iio_subset_Iio (by omega)))
       (apply_vec_mem A v k)
 
-/-- Saad, *Iterative Methods*, (6.129): `A v_k = ∑_{i ≤ k + p} h_{ik} v_i`. -/
+/-- [saad2003iterative], (6.129): `A v_k = ∑_{i ≤ k + p} h_{ik} v_i`. -/
 theorem apply_vec (k : ℕ) :
     A (vec A v k) = ∑ i ∈ Finset.range (k + p + 1), coeff A v i k • vec A v i :=
   eq_sum_inner_smul_gsn (blockSeq A v) (apply_vec_mem A v k)
 
-/-- Saad, *Iterative Methods*, (6.129)–(6.130): the block Arnoldi vectors satisfy the band
-Hessenberg relation of bandwidth `p`, `A V_m = V_{m+p} H̄_m`. -/
+/-- [saad2003iterative], (6.129)–(6.130): the block Arnoldi vectors satisfy the band Hessenberg
+relation of bandwidth `p`, `A V_m = V_{m+p} H̄_m`. -/
 theorem hessenbergRelation : BandRelation A (vec A v) (coeff A v) p :=
   ⟨apply_vec A v, fun _ _ h => coeff_eq_zero_of_lt A v h⟩
 
@@ -497,11 +492,11 @@ namespace BlockArnoldi
 variable {A : E →ₗ[𝕜] E} {p : ℕ} {v : Fin p → E} {u : ℕ → E}
 
 open scoped ComplexOrder in
-/-- Saad, *Iterative Methods*, §6.12: Algorithms 6.23 (a block orthogonalization followed by a QR
+/-- [saad2003iterative], §6.12: Algorithms 6.23 (a block orthogonalization followed by a QR
 factorization of the block) and 6.24 (Ruhe's variant) are mathematically equivalent. Under the
-Gram–Schmidt sign convention `⟪u_k, f_k⟫ > 0` — the convention Gram–Schmidt QR itself
-satisfies — the vectors coincide exactly; for any other QR they agree up to unimodular scalars,
-which is `IsBlockArnoldiBasis.exists_norm_eq_one_smul_vec`. -/
+Gram–Schmidt sign convention `⟪u_k, f_k⟫ > 0` — the convention Gram–Schmidt QR itself satisfies —
+the vectors coincide exactly; for any other QR they agree up to unimodular scalars, which is
+`IsBlockArnoldiBasis.exists_norm_eq_one_smul_vec`. -/
 theorem blockVec_eq_vec (hu : IsBlockArnoldiBasis A v u) {k : ℕ}
     (hpos : 0 < inner 𝕜 (u k) (blockSeq A v k)) : u k = vec A v k :=
   eq_gramSchmidtNormed_of_re_inner_pos hu.orthonormal hu.span_eq k hpos
@@ -513,8 +508,8 @@ namespace IsBlockArnoldiBasis
 variable {A : E →ₗ[𝕜] E} {p : ℕ} {v : Fin p → E} {u : ℕ → E} (hu : IsBlockArnoldiBasis A v u)
 include hu
 
-/-- Saad, *Iterative Methods*, §6.12: whatever QR factorization the blockwise algorithm uses, its
-vectors are those of Ruhe's variant up to unimodular scalars. -/
+/-- [saad2003iterative], §6.12: whatever QR factorization the blockwise algorithm uses, its vectors
+are those of Ruhe's variant up to unimodular scalars. -/
 theorem exists_norm_eq_one_smul_vec (k : ℕ) :
     ∃ ε : 𝕜, ‖ε‖ = 1 ∧ u k = ε • BlockArnoldi.vec A v k :=
   exists_norm_eq_one_smul_gramSchmidtNormed hu.orthonormal hu.span_eq k
@@ -543,7 +538,7 @@ namespace BlockArnoldi
 variable (A : E →ₗ[𝕜] E) {p : ℕ} (v : Fin p → E)
 
 /-- The `(m + p) × m` band Hessenberg matrix `H̄_m` of the block Arnoldi process
-(Saad, *Iterative Methods*, (6.129)). -/
+([saad2003iterative], (6.129)). -/
 noncomputable def hessenberg (m : ℕ) : Matrix (Fin (m + p)) (Fin m) 𝕜 := bandOf (coeff A v) p m
 
 /-- The square `m × m` band Hessenberg matrix `H_m`. -/
@@ -572,9 +567,9 @@ theorem sum_smul_vec_mem (n : ℕ) (y : Fin n → 𝕜) :
     ∑ j, y j • vec A v (j : ℕ) ∈ Submodule.span 𝕜 (vec A v '' Set.Iio n) :=
   (mem_span_vec_iff A v n _).2 ⟨y, rfl⟩
 
-/-- The block QR of the starting residuals, `R₀ = V_p R` (Saad, *Iterative Methods*, (6.135)):
-every vector of the first block Krylov subspace is a combination of the first `p` block Arnoldi
-vectors. This is the shape of the hypothesis of `BlockArnoldi.residual_eq`. -/
+/-- The block QR of the starting residuals, `R₀ = V_p R` ([saad2003iterative], (6.135)): every
+vector of the first block Krylov subspace is a combination of the first `p` block Arnoldi vectors.
+This is the shape of the hypothesis of `BlockArnoldi.residual_eq`. -/
 theorem exists_coeffs_of_mem_blockSubspace_one {x : E} (hx : x ∈ blockSubspace A v 1) :
     ∃ g : ℕ → 𝕜, x = ∑ i ∈ Finset.range p, g i • vec A v i := by
   rw [← span_vec_eq_blockSubspace, one_mul] at hx
@@ -586,18 +581,17 @@ theorem exists_coeffs_of_mem_blockSubspace_one {x : E} (hx : x ∈ blockSubspace
 
 variable {b x₀ : E} {g : ℕ → 𝕜} {m : ℕ}
 
-/-- Saad, *Iterative Methods*, (6.135): with the starting residual expanded in the first block,
-`R₀ = V_p R`, the residual of `X₀ + V_m Y` is `V_{m+p} (E₁ R - H̄_m Y)`, read one right-hand side
-at a time. -/
+/-- [saad2003iterative], (6.135): with the starting residual expanded in the first block, `R₀ = V_p
+R`, the residual of `X₀ + V_m Y` is `V_{m+p} (E₁ R - H̄_m Y)`, read one right-hand side at a time.
+-/
 theorem residual_eq (hr : b - A x₀ = ∑ i ∈ Finset.range p, g i • vec A v i) (y : Fin m → 𝕜) :
     b - A (x₀ + ∑ j, y j • vec A v (j : ℕ)) =
       ∑ i : Fin (m + p), (firstBlockVec g p (m + p) - (hessenberg A v m).mulVec y) i •
         vec A v (i : ℕ) :=
   (hessenbergRelation A v).residual_eq hr m y
 
-/-- Saad, *Iterative Methods*, (6.136): as long as the process has not broken down, the residual
-norm of the `i`-th right-hand side is the Euclidean norm of the small coordinate residual
-`ḡ - H̄_m y`. -/
+/-- [saad2003iterative], (6.136): as long as the process has not broken down, the residual norm of
+the `i`-th right-hand side is the Euclidean norm of the small coordinate residual `ḡ - H̄_m y`. -/
 theorem norm_residual_eq (hon : Orthonormal 𝕜 fun i : Fin (m + p) => vec A v (i : ℕ))
     (hr : b - A x₀ = ∑ i ∈ Finset.range p, g i • vec A v i) (y : Fin m → 𝕜) :
     ‖b - A (x₀ + ∑ j, y j • vec A v (j : ℕ))‖ =
@@ -606,8 +600,8 @@ theorem norm_residual_eq (hon : Orthonormal 𝕜 fun i : Fin (m + p) => vec A v 
   rw [residual_eq A v hr y]
   exact norm_sum_smul_eq hon _
 
-/-- Block FOM (Saad, *Iterative Methods*, §6.12): the Galerkin condition over
-`x₀ + span {v_0, …, v_{m-1}}` is the small square band system `H_m y = E₁ g`. -/
+/-- Block FOM ([saad2003iterative], §6.12): the Galerkin condition over `x₀ + span {v_0, …,
+v_{m-1}}` is the small square band system `H_m y = E₁ g`. -/
 theorem isGalerkin_iff_mulVec_eq (hon : Orthonormal 𝕜 fun i : Fin (m + p) => vec A v (i : ℕ))
     (hr : b - A x₀ = ∑ i ∈ Finset.range p, g i • vec A v i) (y : Fin m → 𝕜) :
     IsGalerkin A b x₀ (Submodule.span 𝕜 (vec A v '' Set.Iio m))
@@ -641,9 +635,8 @@ theorem isGalerkin_iff_mulVec_eq (hon : Orthonormal 𝕜 fun i : Fin (m + p) => 
     rw [hcz ⟨j, hj⟩, hy, sub_self] at h1
     exact h1
 
-/-- Block GMRES (Saad, *Iterative Methods*, (6.136)): minimizing the residual over
-`x₀ + span {v_0, …, v_{m-1}}` is the small banded least-squares problem
-`min ‖E₁ g - H̄_m y‖₂`. -/
+/-- Block GMRES ([saad2003iterative], (6.136)): minimizing the residual over `x₀ + span {v_0, …,
+v_{m-1}}` is the small banded least-squares problem `min ‖E₁ g - H̄_m y‖₂`. -/
 theorem isMinRes_iff (hon : Orthonormal 𝕜 fun i : Fin (m + p) => vec A v (i : ℕ))
     (hr : b - A x₀ = ∑ i ∈ Finset.range p, g i • vec A v i) (y : Fin m → 𝕜) :
     IsMinRes A b x₀ (Submodule.span 𝕜 (vec A v '' Set.Iio m))

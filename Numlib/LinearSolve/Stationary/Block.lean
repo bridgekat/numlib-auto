@@ -4,19 +4,19 @@ import Numlib.LinearSolve.Stationary.Splitting
 /-!
 # Block splittings and block relaxation
 
-The block form of the classical iterations ([Saad][saad2003iterative] §4.1.1, (4.15)–(4.17),
-Algorithms 4.1–4.2 in the non-overlapping case). The block structure is a *labelling*
-`π : n → ι` of the index set by a linearly ordered type of block labels, and the block-diagonal,
-strict block-lower and strict block-upper parts of `A` are the entries with `π i = π j`,
-`π j < π i` and `π i < π j` respectively (`Matrix.blockDiagPart`, `Matrix.blockStrictLower`,
-`Matrix.blockStrictUpper`). They add up to `A`
-(`Matrix.blockDiagPart_add_blockStrictLower_add_blockStrictUpper`), which is Saad's
-`A = D - E - F` of (4.15) with `E = -blockStrictLower π A` and `F = -blockStrictUpper π A`.
+The block form of the classical iterations ([saad2003iterative] §4.1.1, (4.15)–(4.17), Algorithms
+4.1–4.2 in the non-overlapping case). The block structure is a *labelling* `π : n → ι` of the index
+set by a linearly ordered type of block labels, and the block-diagonal, strict block-lower and
+strict block-upper parts of `A` are the entries with `π i = π j`, `π j < π i` and `π i < π j`
+respectively (`Matrix.blockDiagPart`, `Matrix.blockStrictLower`, `Matrix.blockStrictUpper`). They
+add up to `A` (`Matrix.blockDiagPart_add_blockStrictLower_add_blockStrictUpper`), which is
+[saad2003iterative] `A = D - E - F` of (4.15) with `E = -blockStrictLower π A` and `F =
+-blockStrictUpper π A`.
 
 The point splittings of `Numlib/LinearSolve/Stationary/Splitting.lean` are the case `π = id`
 (`Matrix.blockDiagPart_id`, `Matrix.blockStrictLower_id`, `Matrix.blockStrictUpper_id`), and the
-block Jacobi, Gauss–Seidel and SOR splittings (Saad (4.16), Algorithms 4.1–4.2) are built here
-exactly as the point ones are, under the invertibility of the block diagonal.
+block Jacobi, Gauss–Seidel and SOR splittings ([saad2003iterative] (4.16), Algorithms 4.1–4.2) are
+built here exactly as the point ones are, under the invertibility of the block diagonal.
 
 ## Implementation notes
 
@@ -26,8 +26,8 @@ diagonal blocks over `Finset.univ.image π`: adding the strict block-lower part 
 block, hence changes no determinant. So no finiteness of the label type `ι` is needed, only a
 `LinearOrder` on it.
 
-Overlapping blocks — Saad's general Algorithm 4.1, in which the index sets need not partition
-`n` — are not formalized; the book proves no theorem about them.
+Overlapping blocks — [saad2003iterative] general Algorithm 4.1, in which the index sets need not
+partition `n` — are not formalized; the book proves no theorem about them.
 -/
 
 namespace Matrix
@@ -42,8 +42,8 @@ section Parts
 
 variable [Zero R]
 
-/-- The **block diagonal part** of `A` for the block labelling `π`: the entries whose row and
-column carry the same label, Saad's `D` of (4.15). -/
+/-- The **block diagonal part** of `A` for the block labelling `π`: the entries whose row and column
+carry the same label, [saad2003iterative] `D` of (4.15). -/
 def blockDiagPart [DecidableEq ι] (π : n → ι) (A : Matrix n n R) : Matrix n n R :=
   Matrix.of fun i j => if π i = π j then A i j else 0
 
@@ -52,7 +52,8 @@ def blockDiagPart [DecidableEq ι] (π : n → ι) (A : Matrix n n R) : Matrix n
 theorem blockDiagPart_apply [DecidableEq ι] (π : n → ι) (A : Matrix n n R) (i j : n) :
     blockDiagPart π A i j = if π i = π j then A i j else 0 := rfl
 
-/-- The **strict block-lower part** of `A` for the block labelling `π`, Saad's `-E` of (4.15). -/
+/-- The **strict block-lower part** of `A` for the block labelling `π`, [saad2003iterative] `-E` of
+(4.15). -/
 def blockStrictLower [LinearOrder ι] (π : n → ι) (A : Matrix n n R) : Matrix n n R :=
   Matrix.of fun i j => if π j < π i then A i j else 0
 
@@ -61,7 +62,8 @@ def blockStrictLower [LinearOrder ι] (π : n → ι) (A : Matrix n n R) : Matri
 theorem blockStrictLower_apply [LinearOrder ι] (π : n → ι) (A : Matrix n n R) (i j : n) :
     blockStrictLower π A i j = if π j < π i then A i j else 0 := rfl
 
-/-- The **strict block-upper part** of `A` for the block labelling `π`, Saad's `-F` of (4.15). -/
+/-- The **strict block-upper part** of `A` for the block labelling `π`, [saad2003iterative] `-F` of
+(4.15). -/
 def blockStrictUpper [LinearOrder ι] (π : n → ι) (A : Matrix n n R) : Matrix n n R :=
   Matrix.of fun i j => if π i < π j then A i j else 0
 
@@ -76,8 +78,8 @@ section Decomposition
 
 variable [LinearOrder ι] [AddCommMonoid R] (π : n → ι) (A : Matrix n n R)
 
-/-- **Saad (4.15)**: a matrix is the sum of its block-diagonal, strict block-lower and strict
-block-upper parts, which in Saad's letters is `A = D - E - F`. -/
+/-- **[saad2003iterative] (4.15)**: a matrix is the sum of its block-diagonal, strict block-lower
+and strict block-upper parts, which in [saad2003iterative] letters is `A = D - E - F`. -/
 theorem blockDiagPart_add_blockStrictLower_add_blockStrictUpper :
     blockDiagPart π A + blockStrictLower π A + blockStrictUpper π A = A := by
   ext i j
@@ -140,9 +142,9 @@ private theorem det_smul_add_blockStrictLower (c : 𝕜) (A : Matrix n n 𝕜) :
     = (c • blockDiagPart π A) i.1 j.1
   simp [hij]
 
-/-- **The block-lower factor of a block relaxation is invertible** as soon as the block diagonal
-is: it is block triangular with the same diagonal blocks. This is what makes the block
-Gauss–Seidel and block SOR splittings well defined. -/
+/-- **The block-lower factor of a block relaxation is invertible** as soon as the block diagonal is:
+it is block triangular with the same diagonal blocks. This is what makes the block Gauss–Seidel and
+block SOR splittings well defined. -/
 theorem isUnit_smul_blockDiagPart_add_blockStrictLower {c : 𝕜} (hc : c ≠ 0)
     (h : IsUnit (blockDiagPart π A)) :
     IsUnit (c • blockDiagPart π A + blockStrictLower π A) := by
@@ -150,14 +152,14 @@ theorem isUnit_smul_blockDiagPart_add_blockStrictLower {c : 𝕜} (hc : c ≠ 0)
   rw [det_smul_add_blockStrictLower, det_smul, isUnit_iff_ne_zero] at *
   exact mul_ne_zero (pow_ne_zero _ hc) h
 
-/-- `D - E`, the block-lower part of `A` in Saad's letters, is invertible as soon as the block
-diagonal of `A` is. -/
+/-- `D - E`, the block-lower part of `A` in [saad2003iterative] letters, is invertible as soon as
+the block diagonal of `A` is. -/
 theorem isUnit_blockDiagPart_add_blockStrictLower (h : IsUnit (blockDiagPart π A)) :
     IsUnit (blockDiagPart π A + blockStrictLower π A) := by
   simpa using isUnit_smul_blockDiagPart_add_blockStrictLower (c := (1 : 𝕜)) one_ne_zero h
 
-/-- **Block Jacobi** (Saad, *Iterative Methods for Sparse Linear Systems*, (4.16)): `M = D`,
-the block diagonal part. With `π = id` it is `Matrix.jacobiSplitting`. -/
+/-- **Block Jacobi** ([saad2003iterative], (4.16)): `M = D`, the block diagonal part. With `π = id`
+it is `Matrix.jacobiSplitting`. -/
 noncomputable def blockJacobiSplitting (π : n → ι) (A : Matrix n n 𝕜)
     (h : IsUnit (blockDiagPart π A)) : Splitting A :=
   ⟨blockDiagPart π A, h⟩
@@ -169,8 +171,8 @@ theorem blockJacobiSplitting_n (π : n → ι) (A : Matrix n n 𝕜) (h : IsUnit
   rw [eq_neg_iff_add_eq_zero, sub_add_eq_add_sub, ← add_assoc,
     blockDiagPart_add_blockStrictLower_add_blockStrictUpper, sub_self]
 
-/-- **Block Gauss–Seidel** (Saad, *Iterative Methods for Sparse Linear Systems*, Algorithm 4.1):
-`M = D - E`, the block-lower part. With `π = id` it is `Matrix.gaussSeidelSplitting`. -/
+/-- **Block Gauss–Seidel** ([saad2003iterative], Algorithm 4.1): `M = D - E`, the block-lower part.
+With `π = id` it is `Matrix.gaussSeidelSplitting`. -/
 noncomputable def blockGaussSeidelSplitting (π : n → ι) (A : Matrix n n 𝕜)
     (h : IsUnit (blockDiagPart π A)) : Splitting A :=
   ⟨blockDiagPart π A + blockStrictLower π A, isUnit_blockDiagPart_add_blockStrictLower h⟩
@@ -184,8 +186,8 @@ theorem blockGaussSeidelSplitting_n (π : n → ι) (A : Matrix n n 𝕜)
   rw [eq_neg_iff_add_eq_zero, sub_add_eq_add_sub,
     blockDiagPart_add_blockStrictLower_add_blockStrictUpper, sub_self]
 
-/-- **Block SOR** (Saad, *Iterative Methods for Sparse Linear Systems*, Algorithm 4.2) with
-parameter `ω`: `M = ω⁻¹ (D - ω E)`. With `π = id` it is `Matrix.sorSplitting`. -/
+/-- **Block SOR** ([saad2003iterative], Algorithm 4.2) with parameter `ω`: `M = ω⁻¹ (D - ω E)`. With
+`π = id` it is `Matrix.sorSplitting`. -/
 noncomputable def blockSorSplitting (π : n → ι) (A : Matrix n n 𝕜)
     (h : IsUnit (blockDiagPart π A)) {ω : 𝕜} (hω : ω ≠ 0) : Splitting A :=
   ⟨ω⁻¹ • blockDiagPart π A + blockStrictLower π A,

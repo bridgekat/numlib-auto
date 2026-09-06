@@ -12,10 +12,10 @@ import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 /-!
 # Oblique projectors
 
-Projectors `P` (`P ∘ P = P`) onto `K` and orthogonal to `L` (`ker P = Lᗮ`): uniqueness from
-range and kernel, existence iff `K ⊓ Lᗮ = ⊥`, the matrix form `P = V (Wᴴ V)⁻¹ Wᴴ` from bases `V`
-of `K` and `W` of `L`, the characterization of the orthogonal projectors as the projectors of
-norm `1`, and Kato's lemma `‖P‖ = ‖1 - P‖` [szyld2006many].
+Projectors `P` (`P ∘ P = P`) onto `K` and orthogonal to `L` (`ker P = Lᗮ`): uniqueness from range
+and kernel, existence iff `K ⊓ Lᗮ = ⊥`, the matrix form `P = V (Wᴴ V)⁻¹ Wᴴ` from bases `V` of `K`
+and `W` of `L`, the characterization of the orthogonal projectors as the projectors of norm `1`, and
+Kato's lemma `‖P‖ = ‖1 - P‖` [szyld2006many].
 
 ## Main definitions
 
@@ -25,14 +25,13 @@ norm `1`, and Kato's lemma `‖P‖ = ‖1 - P‖` [szyld2006many].
 ## Main statements
 
 * `LinearMap.IsIdempotentElem.ext_of_range_eq_of_ker_eq` and
-  `LinearMap.existsUnique_isIdempotentElem_of_inf_orthogonal_eq_bot`: a projector is determined
-  by its range and kernel, and one onto `K` along `Lᗮ` exists exactly when `K ⊓ Lᗮ = ⊥`;
-* `LinearMap.obliqueProjectionOfBases_isIdempotentElem`,
-  `LinearMap.range_obliqueProjectionOfBases` and `LinearMap.ker_obliqueProjectionOfBases`: the
-  matrix form is that projector, and reduces to the orthogonal projection when `W = V` is
-  orthonormal;
-* `ContinuousLinearMap.IsIdempotentElem.norm_eq_one_iff_isSymmetric`: a nonzero projector has
-  norm `1` exactly when it is orthogonal;
+  `LinearMap.existsUnique_isIdempotentElem_of_inf_orthogonal_eq_bot`: a projector is determined by
+  its range and kernel, and one onto `K` along `Lᗮ` exists exactly when `K ⊓ Lᗮ = ⊥`;
+* `LinearMap.obliqueProjectionOfBases_isIdempotentElem`, `LinearMap.range_obliqueProjectionOfBases`
+  and `LinearMap.ker_obliqueProjectionOfBases`: the matrix form is that projector, and reduces to
+  the orthogonal projection when `W = V` is orthonormal;
+* `ContinuousLinearMap.IsIdempotentElem.norm_eq_one_iff_isSymmetric`: a nonzero projector has norm
+  `1` exactly when it is orthogonal;
 * `ContinuousLinearMap.IsIdempotentElem.norm_one_sub_eq`: **Kato's lemma**, `‖1 - P‖ = ‖P‖` for a
   projector other than `0` and `1`.
 
@@ -89,8 +88,8 @@ theorem IsIdempotentElem.ext_of_range_eq_of_ker_eq {P Q : E →ₗ[𝕜] E} (hP 
     exact LinearMap.mem_range_self P x
   rw [h2, h3]
 
-/-- `P x` is the unique element of `K` with `x - P x ⟂ L`, for a projector `P` with range `K`
-and kernel `Lᗮ`. -/
+/-- `P x` is the unique element of `K` with `x - P x ⟂ L`, for a projector `P` with range `K` and
+kernel `Lᗮ`. -/
 theorem IsIdempotentElem.apply_eq_iff {P : E →ₗ[𝕜] E} (hP : IsIdempotentElem P)
     {K L : Submodule 𝕜 E} (hr : LinearMap.range P = K) (hk : LinearMap.ker P = Lᗮ) (x y : E) :
     P x = y ↔ y ∈ K ∧ x - y ∈ Lᗮ := by
@@ -166,8 +165,8 @@ variable (𝕜)
 noncomputable def crossGram (V W : ι → E) : Matrix ι ι 𝕜 :=
   Matrix.of fun i j => inner 𝕜 (W i) (V j)
 
-/-- The projector `V (Wᴴ V)⁻¹ Wᴴ` onto `span V` orthogonally to `span W`
-(as a linear map; junk when `Wᴴ V` is singular). -/
+/-- The projector `V (Wᴴ V)⁻¹ Wᴴ` onto `span V` orthogonally to `span W` (as a linear map; junk when
+`Wᴴ V` is singular). -/
 noncomputable def obliqueProjectionOfBases (V W : ι → E) : E →ₗ[𝕜] E where
   toFun x := ∑ j, (crossGram 𝕜 V W)⁻¹.mulVec (fun i => inner 𝕜 (W i) x) j • V j
   map_add' := by
@@ -221,8 +220,8 @@ private theorem inner_apply_eq (x : E) (i : ι) :
   rw [obliqueProjectionOfBases_apply, h, Matrix.mulVec_mulVec, crossGram_mul_inv V W hVW,
     Matrix.one_mulVec]
 
-/-- `V (Wᴴ V)⁻¹ Wᴴ` really is a projector, as soon as the cross Gram matrix `Wᴴ V` is
-invertible; it fixes every `V`-combination, and its own values are `V`-combinations. -/
+/-- `V (Wᴴ V)⁻¹ Wᴴ` really is a projector, as soon as the cross Gram matrix `Wᴴ V` is invertible; it
+fixes every `V`-combination, and its own values are `V`-combinations. -/
 theorem obliqueProjectionOfBases_isIdempotentElem :
     IsIdempotentElem (obliqueProjectionOfBases 𝕜 V W) := by
   refine LinearMap.ext fun x => ?_
@@ -232,8 +231,8 @@ theorem obliqueProjectionOfBases_isIdempotentElem :
       = fun i => inner 𝕜 (W i) x from funext fun i => inner_apply_eq V W hVW x i]
   rfl
 
-/-- `V (Wᴴ V)⁻¹ Wᴴ` projects *onto* `span V`: its range is exactly the space spanned by the
-columns of `V`. -/
+/-- `V (Wᴴ V)⁻¹ Wᴴ` projects *onto* `span V`: its range is exactly the space spanned by the columns
+of `V`. -/
 theorem range_obliqueProjectionOfBases :
     LinearMap.range (obliqueProjectionOfBases 𝕜 V W) = Submodule.span 𝕜 (Set.range V) := by
   refine le_antisymm ?_ ?_
@@ -262,8 +261,8 @@ theorem ker_obliqueProjectionOfBases :
       show (fun i => inner 𝕜 (W i) x) = 0 from funext h, Matrix.mulVec_zero]
     simp
 
-/-- The Petrov–Galerkin condition satisfied by the projector: the error `x - P x` is orthogonal
-to `span W`, the test space. -/
+/-- The Petrov–Galerkin condition satisfied by the projector: the error `x - P x` is orthogonal to
+`span W`, the test space. -/
 theorem sub_obliqueProjectionOfBases_apply_mem_orthogonal (x : E) :
     x - obliqueProjectionOfBases 𝕜 V W x ∈ (Submodule.span 𝕜 (Set.range W))ᗮ := by
   rw [mem_orthogonal_span_range_iff]
@@ -289,8 +288,8 @@ end Bases
 
 end LinearMap
 
-/-- If `s * t = 1` and `s` rescales `u` to the norm of `v`, then `t` rescales `v` to the norm
-of `u`. -/
+/-- If `s * t = 1` and `s` rescales `u` to the norm of `v`, then `t` rescales `v` to the norm of
+`u`. -/
 private theorem norm_smul_eq_of_mul_eq_one {s t : ℝ} (ht : 0 < t) (hst : s * t = 1) {u v : E}
     (huv : s * ‖u‖ = ‖v‖) : ‖(t : 𝕜) • v‖ = ‖u‖ := by
   rw [norm_smul, RCLike.norm_ofReal, abs_of_pos ht]
@@ -298,10 +297,10 @@ private theorem norm_smul_eq_of_mul_eq_one {s t : ℝ} (ht : 0 < t) (hst : s * t
 
 /-- Rescaling two vectors so as to exchange their norms leaves the norm of their sum unchanged.
 
-If the real scalars `s`, `t` satisfy `s * t = 1` and `s * ‖u‖ = ‖v‖`, then `‖s • u‖ = ‖v‖` and
-`‖t • v‖ = ‖u‖`, while the cross term `re ⟪s • u, t • v⟫ = s * t * re ⟪u, v⟫` is left alone, so the
-two expansions of the squared norm agree term by term. This is the geometric ingredient of Kato's
-lemma on the norm of an oblique projection. -/
+If the real scalars `s`, `t` satisfy `s * t = 1` and `s * ‖u‖ = ‖v‖`, then `‖s • u‖ = ‖v‖` and `‖t •
+v‖ = ‖u‖`, while the cross term `re ⟪s • u, t • v⟫ = s * t * re ⟪u, v⟫` is left alone, so the two
+expansions of the squared norm agree term by term. This is the geometric ingredient of Kato's lemma
+on the norm of an oblique projection. -/
 theorem norm_smul_add_smul_eq_norm_add {s t : ℝ} (hs : 0 < s) (hst : s * t = 1) (u v : E)
     (huv : s * ‖u‖ = ‖v‖) : ‖(s : 𝕜) • u + (t : 𝕜) • v‖ = ‖u + v‖ := by
   have ht : 0 < t := by nlinarith
@@ -403,10 +402,10 @@ private theorem norm_le_opNorm_mul_norm_add_aux {Q : E →L[𝕜] E} {s t : ℝ}
     _ ≤ ‖Q‖ * ‖(s : 𝕜) • u + (t : 𝕜) • v‖ := Q.le_opNorm _
     _ = ‖Q‖ * ‖u + v‖ := by rw [norm_smul_add_smul_eq_norm_add hs hst u v huv]
 
-/-- Kato's exchange estimate: if a bounded operator `Q` annihilates `u` and fixes `v`, both
-nonzero, then `‖u‖ ≤ ‖Q‖ * ‖u + v‖`, even though `Q (u + v) = v` carries no information about
-`u`. Indeed `Q` maps the rescaled vector `(‖v‖/‖u‖) • u + (‖u‖/‖v‖) • v`, which by
-`norm_smul_add_smul_eq_norm_add` still has norm `‖u + v‖`, to a vector of norm exactly `‖u‖`. -/
+/-- Kato's exchange estimate: if a bounded operator `Q` annihilates `u` and fixes `v`, both nonzero,
+then `‖u‖ ≤ ‖Q‖ * ‖u + v‖`, even though `Q (u + v) = v` carries no information about `u`. Indeed `Q`
+maps the rescaled vector `(‖v‖/‖u‖) • u + (‖u‖/‖v‖) • v`, which by `norm_smul_add_smul_eq_norm_add`
+still has norm `‖u + v‖`, to a vector of norm exactly `‖u‖`. -/
 theorem norm_le_opNorm_mul_norm_add {Q : E →L[𝕜] E} {u v : E} (hu : u ≠ 0) (hv : v ≠ 0)
     (hQu : Q u = 0) (hQv : Q v = v) : ‖u‖ ≤ ‖Q‖ * ‖u + v‖ := by
   have ha : ‖u‖ ≠ 0 := norm_ne_zero_iff.2 hu
@@ -416,8 +415,8 @@ theorem norm_le_opNorm_mul_norm_add {Q : E →L[𝕜] E} {u v : E} (hu : u ≠ 0
   · field_simp
   · field_simp
 
-/-- Half of Kato's lemma: a bounded projector `P ≠ 1` satisfies `‖P‖ ≤ ‖1 - P‖`. Applied to
-`1 - P` as well, this gives the equality `ContinuousLinearMap.IsIdempotentElem.norm_one_sub_eq`. -/
+/-- Half of Kato's lemma: a bounded projector `P ≠ 1` satisfies `‖P‖ ≤ ‖1 - P‖`. Applied to `1 - P`
+as well, this gives the equality `ContinuousLinearMap.IsIdempotentElem.norm_one_sub_eq`. -/
 private theorem norm_le_norm_one_sub {P : E →L[𝕜] E} (hP : IsIdempotentElem P) (h1 : P ≠ 1) :
     ‖P‖ ≤ ‖1 - P‖ := by
   refine P.opNorm_le_bound (norm_nonneg _) fun x => ?_
@@ -442,12 +441,12 @@ private theorem norm_le_norm_one_sub {P : E →L[𝕜] E} (hP : IsIdempotentElem
       _ = ‖1 - P‖ * ‖x‖ := by rw [hsum]
 
 /-- Kato's lemma: for a bounded projector `P ≠ 0, 1` on an inner product space, `‖P‖ = ‖1 - P‖`
-(Szyld, *The many proofs of an identity on the norm of oblique projections*, 2006).
+([szyld2006many]).
 
 The proof is the exchange trick `ContinuousLinearMap.norm_le_opNorm_mul_norm_add` applied to the
 decomposition `x = P x + (1 - P) x`: rescaling the two components so as to swap their norms fixes
-the norm of `x` and turns `‖P x‖` into `‖(1 - P) y‖`, whence `‖P‖ ≤ ‖1 - P‖`; the reverse
-inequality is the same statement for `1 - P`. -/
+the norm of `x` and turns `‖P x‖` into `‖(1 - P) y‖`, whence `‖P‖ ≤ ‖1 - P‖`; the reverse inequality
+is the same statement for `1 - P`. -/
 theorem IsIdempotentElem.norm_one_sub_eq {P : E →L[𝕜] E} (hP : IsIdempotentElem P) (h0 : P ≠ 0)
     (h1 : P ≠ 1) : ‖1 - P‖ = ‖P‖ := by
   have hQ1 : (1 : E →L[𝕜] E) - P ≠ 1 := fun h => h0 (sub_eq_self.1 h)

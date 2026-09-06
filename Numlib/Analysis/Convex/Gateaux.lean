@@ -13,29 +13,28 @@ are equivalent:
 * the tangent functional at each point is a global minorant, `f u + f' u (v - u) ≤ f v`;
 * the gradient is a monotone operator, `0 ≤ (f' v - f' u) (v - u)`.
 
-`convexOn_iff_forall_add_lineDeriv_le` and `convexOn_iff_monotone_lineDeriv` are those
-equivalences, `strictConvexOn_iff_forall_add_lineDeriv_lt` and
-`strictConvexOn_iff_forall_lineDeriv_sub_pos` their strict forms.  A minimizer of `f` over `K` is
-then characterized by a variational inequality, `isMinOn_iff_forall_lineDeriv_nonneg`, which
-collapses to a variational equation when `K` is a subspace
-(`isMinOn_iff_forall_lineDeriv_eq_zero`) and survives the addition of a second, possibly
-non-differentiable, convex term (`isMinOn_add_iff_forall_le`).  The last is what turns a
-constrained convex minimization problem into an elliptic variational inequality.
+`convexOn_iff_forall_add_lineDeriv_le` and `convexOn_iff_monotone_lineDeriv` are those equivalences,
+`strictConvexOn_iff_forall_add_lineDeriv_lt` and `strictConvexOn_iff_forall_lineDeriv_sub_pos` their
+strict forms.  A minimizer of `f` over `K` is then characterized by a variational inequality,
+`isMinOn_iff_forall_lineDeriv_nonneg`, which collapses to a variational equation when `K` is a
+subspace (`isMinOn_iff_forall_lineDeriv_eq_zero`) and survives the addition of a second, possibly
+non-differentiable, convex term (`isMinOn_add_iff_forall_le`).  The last is what turns a constrained
+convex minimization problem into an elliptic variational inequality.
 
 The bounded linear representation `f' : V → V →L[ℝ] ℝ` is data rather than something derived:
-`HasLineDerivAt` gives one scalar per direction and does not bundle those scalars into a
-functional, and the classical Gâteaux derivative is required to be bounded and linear.  The
-hypothesis is therefore always written out as `∀ u ∈ K, ∀ h, HasLineDerivAt ℝ f (f' u h) u h`.
-There is no separate `fderiv` version: `HasFDerivAt.hasLineDerivAt` specializes every statement
-below, and a Fréchet derivative is a stronger hypothesis than the applications have.
+`HasLineDerivAt` gives one scalar per direction and does not bundle those scalars into a functional,
+and the classical Gâteaux derivative is required to be bounded and linear.  The hypothesis is
+therefore always written out as `∀ u ∈ K, ∀ h, HasLineDerivAt ℝ f (f' u h) u h`. There is no
+separate `fderiv` version: `HasFDerivAt.hasLineDerivAt` specializes every statement below, and a
+Fréchet derivative is a stronger hypothesis than the applications have.
 
 `HasLineDerivAt.hasDerivAt_line` is the parameter translation that all of this rests on — a line
 derivative at `u + t • h` is the derivative of `s ↦ f (u + s • h)` at `s = t` — and is stated here
-for a general normed target because it belongs with the one-dimensional restriction argument and
-has no other home yet.
+for a general normed target because it belongs with the one-dimensional restriction argument and has
+no other home yet.
 
 The material is classical; it is stated as Theorems 5.3.17–5.3.19 and Theorem 11.2.1 of
-[Atkinson–Han][han2009theoretical].
+[han2009theoretical].
 -/
 
 open Filter Set Topology
@@ -87,9 +86,8 @@ private theorem exists_lineDeriv_eq_sub (hK : Convex ℝ K)
   simp only [h1v, h0v, sub_zero, div_one] at hcslope
   exact ⟨c, hc, hK.add_smul_sub_mem hu hv ⟨hc.1.le, hc.2.le⟩, hcslope⟩
 
-/-- A convex functional lies above each of its tangent functionals: if `f` is convex on `K` and
-has the directional derivatives `A h` at `u ∈ K`, then `f u + A (v - u) ≤ f v` for every
-`v ∈ K`. -/
+/-- A convex functional lies above each of its tangent functionals: if `f` is convex on `K` and has
+the directional derivatives `A h` at `u ∈ K`, then `f u + A (v - u) ≤ f v` for every `v ∈ K`. -/
 theorem ConvexOn.add_lineDeriv_le (hf : ConvexOn ℝ K f) {A : V →L[ℝ] ℝ} {u v : V} (hu : u ∈ K)
     (hv : v ∈ K) (hA : ∀ h, HasLineDerivAt ℝ f (A h) u h) : f u + A (v - u) ≤ f v := by
   have hslope : Tendsto (fun t : ℝ => t⁻¹ • (f (u + t • (v - u)) - f u)) (𝓝[>] (0 : ℝ))
@@ -106,9 +104,9 @@ theorem ConvexOn.add_lineDeriv_le (hf : ConvexOn ℝ K f) {A : V →L[ℝ] ℝ} 
   have hmain := le_of_tendsto hslope hle
   linarith
 
-/-- A linear functional balances the displacements from a convex combination: writing
-`w = a • x + b • y` with `a + b = 1`, the two displacements `x - w` and `y - w` cancel under the
-weights `a` and `b`, so `a * A (x - w) + b * A (y - w) = 0`. -/
+/-- A linear functional balances the displacements from a convex combination: writing `w = a • x + b
+• y` with `a + b = 1`, the two displacements `x - w` and `y - w` cancel under the weights `a` and
+`b`, so `a * A (x - w) + b * A (y - w) = 0`. -/
 private theorem weighted_apply_sub_combo_eq_zero (A : V →L[ℝ] ℝ) (x y : V) {a b : ℝ}
     (hab : a + b = 1) :
     a * A (x - (a • x + b • y)) + b * A (y - (a • x + b • y)) = 0 := by
@@ -120,9 +118,9 @@ private theorem weighted_apply_sub_combo_eq_zero (A : V →L[ℝ] ℝ) (x y : V)
   rw [map_add, map_smul, map_smul, map_zero] at hc
   simpa [smul_eq_mul] using hc
 
-/-- The tangent minorant inequality forces convexity: if `f u + f' u (v - u) ≤ f v` for all
-`u, v` in a convex set `K`, then `f` is convex on `K`.  No differentiability is used — the
-functionals `f'` are arbitrary. -/
+/-- The tangent minorant inequality forces convexity: if `f u + f' u (v - u) ≤ f v` for all `u, v`
+in a convex set `K`, then `f` is convex on `K`.  No differentiability is used — the functionals `f'`
+are arbitrary. -/
 theorem convexOn_of_add_lineDeriv_le (hK : Convex ℝ K)
     (h : ∀ u ∈ K, ∀ v ∈ K, f u + f' u (v - u) ≤ f v) : ConvexOn ℝ K f := by
   refine ⟨hK, ?_⟩
@@ -146,8 +144,8 @@ theorem convexOn_iff_forall_add_lineDeriv_le (hK : Convex ℝ K)
   ⟨fun hf u hu _v hv => ConvexOn.add_lineDeriv_le hf hu hv (hG u hu),
     convexOn_of_add_lineDeriv_le hK⟩
 
-/-- The tangent minorant inequality makes the gradient a monotone operator.  Adding the
-inequality at `u` to the inequality at `v` cancels the values of `f`. -/
+/-- The tangent minorant inequality makes the gradient a monotone operator.  Adding the inequality
+at `u` to the inequality at `v` cancels the values of `f`. -/
 theorem monotone_lineDeriv_of_add_lineDeriv_le
     (h : ∀ u ∈ K, ∀ v ∈ K, f u + f' u (v - u) ≤ f v) {u : V} (hu : u ∈ K) {v : V} (hv : v ∈ K) :
     0 ≤ (f' v - f' u) (v - u) := by
@@ -181,9 +179,9 @@ theorem convexOn_iff_monotone_lineDeriv (hK : Convex ℝ K)
     ⟨fun h _ hu _ hv => monotone_lineDeriv_of_add_lineDeriv_le h hu hv,
       fun h _ hu _ hv => add_lineDeriv_le_of_monotone_lineDeriv hK hG h hu hv⟩
 
-/-- A strictly convex functional lies strictly above each of its tangent functionals at every
-other point of `K`.  Applying the nonstrict inequality at the midpoint of `[u, v]` is what turns
-the inequality strict. -/
+/-- A strictly convex functional lies strictly above each of its tangent functionals at every other
+point of `K`.  Applying the nonstrict inequality at the midpoint of `[u, v]` is what turns the
+inequality strict. -/
 theorem StrictConvexOn.add_lineDeriv_lt (hf : StrictConvexOn ℝ K f) {A : V →L[ℝ] ℝ} {u v : V}
     (hu : u ∈ K) (hv : v ∈ K) (huv : u ≠ v) (hA : ∀ h, HasLineDerivAt ℝ f (A h) u h) :
     f u + A (v - u) < f v := by
@@ -269,8 +267,8 @@ theorem add_lineDeriv_lt_of_lineDeriv_sub_pos (hK : Convex ℝ K)
   have hkey : f' u (v - u) < f' (u + c • (v - u)) (v - u) := by nlinarith [hc.1]
   linarith
 
-/-- Strict convexity of a functional with directional derivatives on a convex set is exactly
-strict monotonicity of its gradient, `0 < (f' v - f' u) (v - u)` for `u ≠ v`. -/
+/-- Strict convexity of a functional with directional derivatives on a convex set is exactly strict
+monotonicity of its gradient, `0 < (f' v - f' u) (v - u)` for `u ≠ v`. -/
 theorem strictConvexOn_iff_forall_lineDeriv_sub_pos (hK : Convex ℝ K)
     (hG : ∀ u ∈ K, ∀ h, HasLineDerivAt ℝ f (f' u h) u h) :
     StrictConvexOn ℝ K f ↔ ∀ u ∈ K, ∀ v ∈ K, u ≠ v → 0 < (f' v - f' u) (v - u) :=
@@ -280,8 +278,8 @@ theorem strictConvexOn_iff_forall_lineDeriv_sub_pos (hK : Convex ℝ K)
 
 /-- The variational inequality of a constrained minimizer, with a second convex term that need not
 be differentiable: for `f` convex with directional derivatives `f'` and `j` convex on a convex set
-`K`, a point `u ∈ K` minimizes `f + j` over `K` if and only if
-`0 ≤ f' u (v - u) + j v - j u` for every `v ∈ K`.
+`K`, a point `u ∈ K` minimizes `f + j` over `K` if and only if `0 ≤ f' u (v - u) + j v - j u` for
+every `v ∈ K`.
 
 This is the statement that turns a constrained convex minimization problem into an elliptic
 variational inequality. -/
@@ -313,18 +311,18 @@ theorem isMinOn_add_iff_forall_le (hf : ConvexOn ℝ K f) (hj : ConvexOn ℝ K j
     linarith
 
 /-- The variational inequality of a constrained minimizer: for `f` convex with directional
-derivatives `f'` on a convex set `K`, a point `u ∈ K` minimizes `f` over `K` if and only if
-`0 ≤ f' u (v - u)` for every `v ∈ K`.  The case `j = 0` of `isMinOn_add_iff_forall_le`. -/
+derivatives `f'` on a convex set `K`, a point `u ∈ K` minimizes `f` over `K` if and only if `0 ≤ f'
+u (v - u)` for every `v ∈ K`.  The case `j = 0` of `isMinOn_add_iff_forall_le`. -/
 theorem isMinOn_iff_forall_lineDeriv_nonneg (hf : ConvexOn ℝ K f)
     (hG : ∀ u ∈ K, ∀ h, HasLineDerivAt ℝ f (f' u h) u h) {u : V} (hu : u ∈ K) :
     IsMinOn f K u ↔ ∀ v ∈ K, 0 ≤ f' u (v - u) := by
   have hzero : ConvexOn ℝ K (0 : V → ℝ) := convexOn_const 0 hf.1
   simpa using isMinOn_add_iff_forall_le hf hzero hG hu
 
-/-- Over a subspace the variational inequality of `isMinOn_iff_forall_lineDeriv_nonneg` collapses
-to a variational equation: `u` minimizes `f` over the subspace `K` if and only if `f' u v = 0` for
-every `v ∈ K`.  Both `v` and `-v` are admissible directions, which is what removes the
-inequality. -/
+/-- Over a subspace the variational inequality of `isMinOn_iff_forall_lineDeriv_nonneg` collapses to
+a variational equation: `u` minimizes `f` over the subspace `K` if and only if `f' u v = 0` for
+every `v ∈ K`.  Both `v` and `-v` are admissible directions, which is what removes the inequality.
+-/
 theorem isMinOn_iff_forall_lineDeriv_eq_zero {K : Submodule ℝ V}
     (hf : ConvexOn ℝ (K : Set V) f)
     (hG : ∀ u ∈ (K : Set V), ∀ h, HasLineDerivAt ℝ f (f' u h) u h) {u : V} (hu : u ∈ K) :

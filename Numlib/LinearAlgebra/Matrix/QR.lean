@@ -14,42 +14,40 @@ import Numlib.Analysis.InnerProductSpace.GramSchmidt
 /-!
 # Householder reflectors and the QR factorization
 
-A **Householder reflector** `Matrix.householder w = 1 - 2 w wᴴ` is the reflection in the
-hyperplane orthogonal to a unit vector `w`; it is Hermitian, involutive and therefore unitary.
-Its defining property is that one reflector annihilates every entry of a vector but one
-(`Matrix.householder_mulVec_eq_smul_single`), and an induction over the columns then
-triangularizes any matrix by a product of reflectors
-(`Matrix.exists_unitary_mul_upperTriangular`).
+A **Householder reflector** `Matrix.householder w = 1 - 2 w wᴴ` is the reflection in the hyperplane
+orthogonal to a unit vector `w`; it is Hermitian, involutive and therefore unitary. Its defining
+property is that one reflector annihilates every entry of a vector but one
+(`Matrix.householder_mulVec_eq_smul_single`), and an induction over the columns then triangularizes
+any matrix by a product of reflectors (`Matrix.exists_unitary_mul_upperTriangular`).
 
 The same factorization is reached from the other end by orthonormalizing the columns:
-`Matrix.exists_qr` factors a matrix with linearly independent columns as `X = Q R` with
-`Qᴴ Q = 1` and `R` upper triangular of positive diagonal, taking `Q` to be
-`InnerProductSpace.gramSchmidtNormed` of the columns and `R i j = ⟪Q i, X j⟫`.  The two routes
-meet at `Matrix.qr_unique`: the factorization with a positive diagonal is unique, so a product
-of reflectors, classical Gram–Schmidt and modified Gram–Schmidt all compute the same `Q` and the
-same `R`.
+`Matrix.exists_qr` factors a matrix with linearly independent columns as `X = Q R` with `Qᴴ Q = 1`
+and `R` upper triangular of positive diagonal, taking `Q` to be
+`InnerProductSpace.gramSchmidtNormed` of the columns and `R i j = ⟪Q i, X j⟫`.  The two routes meet
+at `Matrix.qr_unique`: the factorization with a positive diagonal is unique, so a product of
+reflectors, classical Gram–Schmidt and modified Gram–Schmidt all compute the same `Q` and the same
+`R`.
 
 Nothing here is numerical: no stability, no operation count, no pivoting.
 
-This serves [Saad, *Iterative Methods for Sparse Linear Systems*][saad2003iterative], §1.7 — the
-reflector (1.20), its defining conditions (1.21)–(1.26), the factorization (1.19), the
-triangularization (1.27)–(1.28) and Algorithm 1.3 — and [Kress, *Numerical
-Analysis*][kress1998numerical], §5.
+This serves [saad2003iterative], §1.7 — the reflector (1.20), its defining conditions (1.21)–(1.26),
+the factorization (1.19), the triangularization (1.27)–(1.28) and Algorithm 1.3 — and
+[kress1998numerical], §5.
 
 ## Main definitions
 
 * `Matrix.householder`: the reflector `1 - 2 w wᴴ` in the hyperplane orthogonal to `w`.
-* `Matrix.phase`: the unit-modulus phase of a scalar, `1` at zero; Saad's `sign`.
+* `Matrix.phase`: the unit-modulus phase of a scalar, `1` at zero; [saad2003iterative] `sign`.
 * `Matrix.householderAxis`, `Matrix.householderVec`: the axis `x + sign(x i) ‖x‖ eᵢ` of the
   reflector that annihilates every entry of `x` but the `i`-th, and its normalization.
 
 ## Main results
 
-* `Matrix.householder_mulVec_eq_smul_single`: one reflector annihilates every entry of a vector
-  but one.
+* `Matrix.householder_mulVec_eq_smul_single`: one reflector annihilates every entry of a vector but
+  one.
 * `Matrix.exists_unitary_mul_upperTriangular`: a product of reflectors triangularizes any matrix.
-* `Matrix.exists_qr`: the Gram–Schmidt factorization `X = Q R` of a matrix with linearly
-  independent columns, and its converse `Matrix.linearIndependent_of_qr`.
+* `Matrix.exists_qr`: the Gram–Schmidt factorization `X = Q R` of a matrix with linearly independent
+  columns, and its converse `Matrix.linearIndependent_of_qr`.
 * `Matrix.qr_unique`: the factorization with a positive diagonal is unique, so all three
   constructions compute the same pair.
 -/
@@ -95,8 +93,8 @@ private theorem normalize_apply_eq_zero {v : n → 𝕜} {r : n} (h : v r = 0) :
 
 variable [DecidableEq n]
 
-/-- The Householder reflector `1 - 2 w wᴴ`, the reflection in the hyperplane orthogonal to `w`
-when `w` is a unit vector, and the identity when `w = 0`. -/
+/-- The Householder reflector `1 - 2 w wᴴ`, the reflection in the hyperplane orthogonal to `w` when
+`w` is a unit vector, and the identity when `w = 0`. -/
 def householder (w : n → 𝕜) : Matrix n n 𝕜 := 1 - (2 : 𝕜) • vecMulVec w (star w)
 
 omit [Fintype n] in
@@ -157,8 +155,7 @@ theorem householder_mem_unitaryGroup {w : n → 𝕜} (hw : star w ⬝ᵥ w = 1)
   have hs : (star (householder w) : Matrix n n 𝕜) = householder w := isHermitian_householder w
   rw [hs, householder_mul_self hw]
 
-/-- The reflector built from an unnormalized axis `v` sends `x` to
-`x - (2 ⟪v, x⟫ / ⟪v, v⟫) v`. -/
+/-- The reflector built from an unnormalized axis `v` sends `x` to `x - (2 ⟪v, x⟫ / ⟪v, v⟫) v`. -/
 private theorem householder_normalize_mulVec {v : n → 𝕜} (hv : v ≠ 0) (x : n → 𝕜) :
     householder (normalize v) *ᵥ x = x - (2 * (star v ⬝ᵥ x) / (star v ⬝ᵥ v)) • v := by
   have hN := ofReal_norm_toLp_ne_zero hv
@@ -169,7 +166,8 @@ private theorem householder_normalize_mulVec {v : n → 𝕜} (hv : v ≠ 0) (x 
 
 /-! ### The reflector that annihilates a column below one entry -/
 
-/-- The unit-modulus phase of a scalar, and `1` at zero: the `sign` of Saad's (1.22). -/
+/-- The unit-modulus phase of a scalar, and `1` at zero: the `sign` of [saad2003iterative] (1.22).
+-/
 noncomputable def phase (z : 𝕜) : 𝕜 := if z = 0 then 1 else ((‖z‖ : 𝕜))⁻¹ * z
 
 /-- The phase of `0` is `1`, by convention. -/
@@ -185,8 +183,8 @@ theorem norm_phase (z : 𝕜) : ‖phase z‖ = 1 := by
   · rw [ite_eq_right h, norm_mul, norm_inv, RCLike.norm_ofReal,
       abs_of_nonneg (norm_nonneg z), inv_mul_cancel₀ (norm_ne_zero_iff.2 h)]
 
-/-- The defining property of the phase: `conj (sign z) * z = |z|`, a nonnegative real.  This is
-what makes the denominator of Saad's (1.22) bounded away from zero. -/
+/-- The defining property of the phase: `conj (sign z) * z = |z|`, a nonnegative real.  This is what
+makes the denominator of [saad2003iterative] (1.22) bounded away from zero. -/
 theorem conj_phase_mul_self (z : 𝕜) : starRingEnd 𝕜 (phase z) * z = ((‖z‖ : 𝕜)) := by
   rw [phase]
   by_cases h : z = 0
@@ -195,14 +193,14 @@ theorem conj_phase_mul_self (z : 𝕜) : starRingEnd 𝕜 (phase z) * z = ((‖z
     have hz : ((‖z‖ : 𝕜)) ≠ 0 := by simpa using norm_ne_zero_iff.2 h
     field_simp
 
-/-- Saad's (1.22): the axis `x + sign(x i) ‖x‖ e_i` of the reflector that annihilates every entry
-of `x` but the `i`-th. -/
+/-- [saad2003iterative] (1.22): the axis `x + sign(x i) ‖x‖ e_i` of the reflector that annihilates
+every entry of `x` but the `i`-th. -/
 noncomputable def householderAxis (x : n → 𝕜) (i : n) : n → 𝕜 :=
   x + (phase (x i) * ((‖(WithLp.toLp 2 x : EuclideanSpace 𝕜 n)‖ : 𝕜)))
     • (Pi.single i 1 : n → 𝕜)
 
-/-- Saad's (1.22): the unit vector whose reflector annihilates every entry of `x` but the
-`i`-th. -/
+/-- [saad2003iterative] (1.22): the unit vector whose reflector annihilates every entry of `x` but
+the `i`-th. -/
 noncomputable def householderVec (x : n → 𝕜) (i : n) : n → 𝕜 := normalize (householderAxis x i)
 
 /-- Away from the pivot the reflector's axis agrees with the vector it is built from. -/
@@ -236,8 +234,8 @@ private theorem star_householderAxis_dotProduct (x : n → 𝕜) (i : n) :
   linear_combination
     ((‖(WithLp.toLp 2 x : EuclideanSpace 𝕜 n)‖ : 𝕜)) * conj_phase_mul_self (x i)
 
-/-- `⟪v, v⟫ = 2 ⟪v, x⟫` for the Householder axis `v`: the sign choice is exactly what makes the
-two agree up to the factor two. -/
+/-- `⟪v, v⟫ = 2 ⟪v, x⟫` for the Householder axis `v`: the sign choice is exactly what makes the two
+agree up to the factor two. -/
 private theorem star_householderAxis_dotProduct_self (x : n → 𝕜) (i : n) :
     star (householderAxis x i) ⬝ᵥ householderAxis x i
       = 2 * (star (householderAxis x i) ⬝ᵥ x) := by
@@ -284,9 +282,9 @@ theorem householder_householderVec_mem_unitaryGroup {x : n → 𝕜} (hx : x ≠
     householder (householderVec x i) ∈ Matrix.unitaryGroup n 𝕜 :=
   householder_mem_unitaryGroup (star_dotProduct_householderVec_self hx i)
 
-/-- Saad's (1.21)–(1.22): the Householder reflector in the hyperplane orthogonal to
-`w = (x + sign(x i) ‖x‖ e_i) / ‖x + sign(x i) ‖x‖ e_i‖` sends `x` to `(- sign(x i) ‖x‖) e_i`, so
-a single reflector annihilates every entry of `x` but the `i`-th. -/
+/-- [saad2003iterative] (1.21)–(1.22): the Householder reflector in the hyperplane orthogonal to `w
+= (x + sign(x i) ‖x‖ e_i) / ‖x + sign(x i) ‖x‖ e_i‖` sends `x` to `(- sign(x i) ‖x‖) e_i`, so a
+single reflector annihilates every entry of `x` but the `i`-th. -/
 theorem householder_mulVec_eq_smul_single {x : n → 𝕜} (hx : x ≠ 0) (i : n) :
     householder (householderVec x i) *ᵥ x
       = (-(phase (x i) * ((‖(WithLp.toLp 2 x : EuclideanSpace 𝕜 n)‖ : 𝕜))))
@@ -307,9 +305,8 @@ section Triangular
 
 variable {N M : ℕ}
 
-/-- One step of [Saad, *Iterative Methods*][saad2003iterative] Algorithm 1.3: a reflector
-supported on the rows from `k` on annihilates the
-`k`-th column below the diagonal without disturbing the columns already cleared. -/
+/-- One step of [saad2003iterative] Algorithm 1.3: a reflector supported on the rows from `k` on
+annihilates the `k`-th column below the diagonal without disturbing the columns already cleared. -/
 private theorem triangular_step (X : Matrix (Fin N) (Fin M) 𝕜) (k : ℕ)
     {P : Matrix (Fin N) (Fin N) 𝕜} (hP : P ∈ Matrix.unitaryGroup (Fin N) 𝕜)
     (hT : ∀ (i : Fin N) (j : Fin M), (j : ℕ) < k → (j : ℕ) < (i : ℕ) → (P * X) i j = 0) :
@@ -379,9 +376,9 @@ private theorem triangular_step (X : Matrix (Fin N) (Fin M) 𝕜) (k : ℕ)
       rw [Pi.add_apply, Pi.smul_apply, smul_eq_mul, ite_eq_right (show ¬((i : ℕ) < k) by omega),
         Pi.single_eq_of_ne hine, mul_zero, add_zero]
 
-/-- Saad's (1.27)–(1.28) and Algorithm 1.3: every matrix is carried to upper triangular form (in
-the rectangular sense, zero strictly below the diagonal) by a unitary matrix, namely a product of
-at most as many Householder reflectors as the matrix has columns. -/
+/-- [saad2003iterative] (1.27)–(1.28) and Algorithm 1.3: every matrix is carried to upper triangular
+form (in the rectangular sense, zero strictly below the diagonal) by a unitary matrix, namely a
+product of at most as many Householder reflectors as the matrix has columns. -/
 theorem exists_unitary_mul_upperTriangular (X : Matrix (Fin N) (Fin M) 𝕜) :
     ∃ P ∈ Matrix.unitaryGroup (Fin N) 𝕜,
       ∀ (i : Fin N) (j : Fin M), (j : ℕ) < (i : ℕ) → (P * X) i j = 0 := by
@@ -432,8 +429,8 @@ private theorem upperTriangular_mul_diag {A B : Matrix (Fin M) (Fin M) 𝕜}
   · rw [hB h, mul_zero]
 
 /-- A unitary upper triangular matrix with positive diagonal is the identity.  This is the
-flag-uniqueness argument of `Numlib.Analysis.InnerProductSpace.GramSchmidt` at matrix level, and
-it is what makes the QR factorization with a positive diagonal unique. -/
+flag-uniqueness argument of `Numlib.Analysis.InnerProductSpace.GramSchmidt` at matrix level, and it
+is what makes the QR factorization with a positive diagonal unique. -/
 private theorem eq_one_of_isUpperTriangular_of_unitary {S : Matrix (Fin M) (Fin M) 𝕜}
     (hS : S.IsUpperTriangular) (hu : Sᴴ * S = 1) (hd : ∀ j, 0 < S j j) : S = 1 := by
   have key : ∀ m : ℕ, ∀ j : Fin M, (j : ℕ) = m →
@@ -491,9 +488,9 @@ private theorem eq_one_of_isUpperTriangular_of_unitary {S : Matrix (Fin M) (Fin 
   rw [key (j : ℕ) j rfl i, one_apply]
 
 /-- Uniqueness of the QR factorization with a positive diagonal: this is what identifies the
-reflector product of `Matrix.exists_unitary_mul_upperTriangular` with the Gram–Schmidt
-factorization of `Matrix.exists_qr`, and either of them with the modified Gram–Schmidt one, with
-no need to compare the constructions. -/
+reflector product of `Matrix.exists_unitary_mul_upperTriangular` with the Gram–Schmidt factorization
+of `Matrix.exists_qr`, and either of them with the modified Gram–Schmidt one, with no need to
+compare the constructions. -/
 theorem qr_unique {N : ℕ} {X Q₁ Q₂ : Matrix (Fin N) (Fin M) 𝕜}
     {R₁ R₂ : Matrix (Fin M) (Fin M) 𝕜} (hX₁ : X = Q₁ * R₁) (hX₂ : X = Q₂ * R₂)
     (hQ₁ : Q₁ᴴ * Q₁ = 1) (hQ₂ : Q₂ᴴ * Q₂ = 1)
@@ -579,11 +576,11 @@ private theorem inner_gramSchmidtNormed_self (f : ι → E) (j : ι) :
   · simp [h]
   · rw [sq, ← mul_assoc, inv_mul_cancel₀ h, one_mul]
 
-/-- Saad's (1.19): a matrix whose columns are linearly independent factors as `X = Q R` with
-orthonormal columns in `Q` and `R` upper triangular of positive diagonal.  The factors are the
+/-- [saad2003iterative] (1.19): a matrix whose columns are linearly independent factors as `X = Q R`
+with orthonormal columns in `Q` and `R` upper triangular of positive diagonal.  The factors are the
 Gram–Schmidt orthonormalization of the columns and the matrix `R i j = ⟪Q i, X j⟫` of the
-coefficients, which is Saad's Algorithm 1.1; Algorithm 1.2 (modified Gram–Schmidt) computes the
-same pair, by `Matrix.qr_unique`. -/
+coefficients, which is [saad2003iterative] Algorithm 1.1; Algorithm 1.2 (modified Gram–Schmidt)
+computes the same pair, by `Matrix.qr_unique`. -/
 theorem exists_qr {N M : ℕ} (X : Matrix (Fin N) (Fin M) 𝕜) (hX : LinearIndependent 𝕜 Xᵀ) :
     ∃ (Q : Matrix (Fin N) (Fin M) 𝕜) (R : Matrix (Fin M) (Fin M) 𝕜),
       X = Q * R ∧ Qᴴ * Q = 1 ∧ R.IsUpperTriangular ∧ ∀ j, 0 < R.diag j := by
@@ -652,8 +649,8 @@ theorem exists_qr {N M : ℕ} (X : Matrix (Fin N) (Fin M) 𝕜) (hX : LinearInde
     rw [diag_apply, Matrix.of_apply, inner_gramSchmidtNormed_self]
     exact pos_iff_exists_ofReal.2 ⟨‖gramSchmidt 𝕜 f j‖, norm_pos_iff.2 (hgne j), rfl⟩
 
-/-- The converse of `Matrix.exists_qr`: a factorization with orthonormal columns and an
-invertible upper triangular factor forces the columns of `X` to be linearly independent. -/
+/-- The converse of `Matrix.exists_qr`: a factorization with orthonormal columns and an invertible
+upper triangular factor forces the columns of `X` to be linearly independent. -/
 theorem linearIndependent_of_qr {N M : ℕ} {X Q : Matrix (Fin N) (Fin M) 𝕜}
     {R : Matrix (Fin M) (Fin M) 𝕜} (hX : X = Q * R) (hQ : Qᴴ * Q = 1)
     (hR : R.IsUpperTriangular) (hd : ∀ j, 0 < R.diag j) : LinearIndependent 𝕜 Xᵀ := by

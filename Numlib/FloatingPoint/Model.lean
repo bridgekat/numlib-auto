@@ -12,16 +12,15 @@ import Mathlib.Tactic.Ring
 
 Rounding is described here by a *relation* rather than by a function: a `RoundingModel K` on an
 ordered field `K` fixes a unit roundoff `u` and says which values `y` are admissible results of
-rounding `x`, namely those with `|y - x| ≤ u |x|`, equivalently `y = x (1 + δ)` with `|δ| ≤ u`.
-A theorem proved in the model therefore holds for *every* rounding rule meeting the bound, and,
-when the theorem is about an algorithm, for every evaluation order that its statement spells out.
-A concrete format is plugged in later by exhibiting its rounding relation as a `RoundingModel`.
+rounding `x`, namely those with `|y - x| ≤ u |x|`, equivalently `y = x (1 + δ)` with `|δ| ≤ u`. A
+theorem proved in the model therefore holds for *every* rounding rule meeting the bound, and, when
+the theorem is about an algorithm, for every evaluation order that its statement spells out. A
+concrete format is plugged in later by exhibiting its rounding relation as a `RoundingModel`.
 
-The bookkeeping constants are those of [Higham, *Accuracy and Stability of Numerical
-Algorithms*][higham2002accuracy]: `gamma u n = n u / (1 - n u)`, and `IsRelPert u n x y`
-says that `y = x (1 + θ)` for some `|θ| ≤ gamma u n`.  The two facts that drive every error
-analysis are that a product of `n` factors `(1 + δ_i)^{±1}` is `1 + θ` with `|θ| ≤ gamma u n`
-(`abs_prod_one_add_sub_one_le_gamma`), and that relative perturbations compose by adding their
+The bookkeeping constants are those of [higham2002accuracy]: `gamma u n = n u / (1 - n u)`, and
+`IsRelPert u n x y` says that `y = x (1 + θ)` for some `|θ| ≤ gamma u n`.  The two facts that drive
+every error analysis are that a product of `n` factors `(1 + δ_i)^{±1}` is `1 + θ` with `|θ| ≤ gamma
+u n` (`abs_prod_one_add_sub_one_le_gamma`), and that relative perturbations compose by adding their
 orders (`IsRelPert.trans`, `IsRelPert.mul`, `IsRelPert.div`).
 -/
 
@@ -33,9 +32,9 @@ variable {K : Type*} [Field K] [LinearOrder K] [IsStrictOrderedRing K]
 
 /-! ### The rounding relation -/
 
-/-- **The standard model of floating-point arithmetic** (Higham, *Accuracy and Stability of
-Numerical Algorithms*, (2.4)): a unit roundoff `u` together with a relation saying which values are
-admissible roundings, each within a relative error `u` of its argument.
+/-- **The standard model of floating-point arithmetic** ([higham2002accuracy], (2.4)): a unit
+roundoff `u` together with a relation saying which values are admissible roundings, each within a
+relative error `u` of its argument.
 
 The relation is not required to be functional, total or deterministic, so a theorem stated for a
 `RoundingModel` holds for every rounding rule obeying the bound — which is exactly the strength an
@@ -50,7 +49,8 @@ structure RoundingModel (K : Type*) [Field K] [LinearOrder K] [IsStrictOrderedRi
   /-- Every admissible rounding has relative error at most the unit roundoff. -/
   abs_sub_le : ∀ {x y : K}, Rounds x y → |y - x| ≤ u * |x|
 
-/-- Higham's form of the model: an admissible rounding of `x` is `x (1 + δ)` for some `|δ| ≤ u`. -/
+/-- [higham2002accuracy] form of the model: an admissible rounding of `x` is `x (1 + δ)` for some
+`|δ| ≤ u`. -/
 theorem RoundingModel.Rounds.exists_delta {m : RoundingModel K} {x y : K} (h : m.Rounds x y) :
     ∃ δ : K, |δ| ≤ m.u ∧ y = x * (1 + δ) := by
   rcases eq_or_ne x 0 with rfl | hx
@@ -65,9 +65,9 @@ theorem RoundingModel.Rounds.exists_delta {m : RoundingModel K} {x y : K} (h : m
 
 /-! ### The constants `γ_n` -/
 
-/-- Higham's constant `γ_n = n u / (1 - n u)` (*Accuracy and Stability of Numerical Algorithms*,
-Lemma 3.1), the bound on the relative error accumulated by `n` roundings.  It is meaningful under
-the hypothesis `n u < 1`, which every statement below carries. -/
+/-- [higham2002accuracy] constant `γ_n = n u / (1 - n u)` (*Accuracy and Stability of Numerical
+Algorithms*, Lemma 3.1), the bound on the relative error accumulated by `n` roundings.  It is
+meaningful under the hypothesis `n u < 1`, which every statement below carries. -/
 def gamma (u : K) (n : ℕ) : K := n * u / (1 - n * u)
 
 omit [LinearOrder K] [IsStrictOrderedRing K] in
@@ -107,13 +107,12 @@ theorem le_gamma_one {u : K} (hu : 0 ≤ u) (h : u < 1) : u ≤ gamma u 1 := by
 
 /-! ### Products of rounding factors -/
 
-/-- **Higham's Lemma 3.1** (*Accuracy and Stability of Numerical Algorithms*): a product of `n`
-factors `(1 + δ_i)^{ρ_i}` with `|δ_i| ≤ u` and `ρ_i = ±1` differs from `1` by at most `γ_n`,
+/-- **[higham2002accuracy] Lemma 3.1** (*Accuracy and Stability of Numerical Algorithms*): a product
+of `n` factors `(1 + δ_i)^{ρ_i}` with `|δ_i| ≤ u` and `ρ_i = ±1` differs from `1` by at most `γ_n`,
 provided `n u < 1`.
 
-Every factor lies between `1 - u` and `(1 - u)⁻¹`, so the product lies between `(1 - u)^n` and
-`(1 - u)^{-n}`, and Bernoulli's inequality `1 - n u ≤ (1 - u)^n` turns the latter bound into
-`1 + γ_n`. -/
+Every factor lies between `1 - u` and `(1 - u)⁻¹`, so the product lies between `(1 - u)^n` and `(1 -
+u)^{-n}`, and Bernoulli's inequality `1 - n u ≤ (1 - u)^n` turns the latter bound into `1 + γ_n`. -/
 theorem abs_prod_one_add_sub_one_le_gamma {u : K} (hu : 0 ≤ u) {n : ℕ} (hnu : (n : K) * u < 1)
     {δ : Fin n → K} (hδ : ∀ i, |δ i| ≤ u) {ρ : Fin n → ℤ} (hρ : ∀ i, ρ i = 1 ∨ ρ i = -1) :
     |∏ i, (1 + δ i) ^ (ρ i) - 1| ≤ gamma u n := by
@@ -187,16 +186,16 @@ theorem abs_prod_one_add_sub_one_le_gamma {u : K} (hu : 0 ≤ u) {n : ℕ} (hnu 
 /-! ### Relative perturbations -/
 
 /-- `IsRelPert u n x y` says that `y = x (1 + θ)` for some `|θ| ≤ γ_n`: the value `y` is `x` to
-within a relative perturbation of order `n` in a model of unit roundoff `u`.  This is Higham's
-`θ_n` notation (*Accuracy and Stability of Numerical Algorithms*, Lemma 3.1), turned into a
-relation so that it composes. -/
+within a relative perturbation of order `n` in a model of unit roundoff `u`.  This is
+[higham2002accuracy] `θ_n` notation (*Accuracy and Stability of Numerical Algorithms*, Lemma 3.1),
+turned into a relation so that it composes. -/
 def IsRelPert (u : K) (n : ℕ) (x y : K) : Prop := ∃ θ : K, |θ| ≤ gamma u n ∧ y = x * (1 + θ)
 
 /-- No perturbation at all is a relative perturbation of order `0`. -/
 theorem IsRelPert.refl (u : K) (x : K) : IsRelPert u 0 x x := ⟨0, by simp, by simp⟩
 
-/-- A relative perturbation of order `m` is one of every larger order `n`, since `γ_n` grows
-with `n`. -/
+/-- A relative perturbation of order `m` is one of every larger order `n`, since `γ_n` grows with
+`n`. -/
 theorem IsRelPert.mono {u : K} (hu : 0 ≤ u) {m n : ℕ} (hmn : m ≤ n) (h : (n : K) * u < 1)
     {x y : K} (hxy : IsRelPert u m x y) : IsRelPert u n x y := by
   obtain ⟨θ, hθ, rfl⟩ := hxy
@@ -224,8 +223,8 @@ private theorem add_add_mul_div_le {x y : K} (hx : 0 ≤ x) (hy : 0 ≤ y) (h : 
   rw [heq]
   exact div_nonneg (mul_nonneg hx hy) (by positivity)
 
-/-- **Higham's Lemma 3.3** (*Accuracy and Stability of Numerical Algorithms*):
-`γ_j + γ_k + γ_j γ_k ≤ γ_{j+k}`, which is `(1 + γ_j)(1 + γ_k) ≤ 1 + γ_{j+k}`. -/
+/-- **[higham2002accuracy] Lemma 3.3** (*Accuracy and Stability of Numerical Algorithms*): `γ_j +
+γ_k + γ_j γ_k ≤ γ_{j+k}`, which is `(1 + γ_j)(1 + γ_k) ≤ 1 + γ_{j+k}`. -/
 theorem gamma_add_gamma_add_mul_le {u : K} (hu : 0 ≤ u) {j k : ℕ}
     (h : ((j + k : ℕ) : K) * u < 1) :
     gamma u j + gamma u k + gamma u j * gamma u k ≤ gamma u (j + k) := by
@@ -236,8 +235,8 @@ theorem gamma_add_gamma_add_mul_le {u : K} (hu : 0 ≤ u) {j k : ℕ}
   have hmain := add_add_mul_div_le (x := (j : K) * u) (y := (k : K) * u) hj hk h
   rwa [gamma_def, gamma_def, gamma_def, hcast]
 
-/-- The scalar inequality behind `IsRelPert.div`, `γ_k + γ_j + γ_{k+2j} γ_j ≤ γ_{k+2j}`, written
-out with `x = k u` and `y = j u`. -/
+/-- The scalar inequality behind `IsRelPert.div`, `γ_k + γ_j + γ_{k+2j} γ_j ≤ γ_{k+2j}`, written out
+with `x = k u` and `y = j u`. -/
 private theorem add_add_mul_div_le_div {x y : K} (hx : 0 ≤ x) (hy : 0 ≤ y) (h : x + 2 * y < 1) :
     x / (1 - x) + y / (1 - y)
         + (x + 2 * y) / (1 - (x + 2 * y)) * (y / (1 - y))
@@ -254,8 +253,8 @@ private theorem add_add_mul_div_le_div {x y : K} (hx : 0 ≤ x) (hy : 0 ≤ y) (
   rw [heq]
   exact div_nonneg (mul_nonneg hy (by linarith)) (by positivity)
 
-/-- The form of Higham's Lemma 3.3 that division needs:
-`γ_k + γ_j + γ_{k+2j} γ_j ≤ γ_{k+2j}`. -/
+/-- The form of [higham2002accuracy] Lemma 3.3 that division needs: `γ_k + γ_j + γ_{k+2j} γ_j ≤
+γ_{k+2j}`. -/
 theorem gamma_add_gamma_add_mul_le_of_add_two_mul {u : K} (hu : 0 ≤ u) {k j : ℕ}
     (h : ((k + 2 * j : ℕ) : K) * u < 1) :
     gamma u k + gamma u j + gamma u (k + 2 * j) * gamma u j ≤ gamma u (k + 2 * j) := by
@@ -266,8 +265,8 @@ theorem gamma_add_gamma_add_mul_le_of_add_two_mul {u : K} (hu : 0 ≤ u) {k j : 
   have hmain := add_add_mul_div_le_div (x := (k : K) * u) (y := (j : K) * u) hk hj h
   rwa [gamma_def, gamma_def, gamma_def, hcast]
 
-/-- **Relative perturbations compose**: `(1 + θ_k)(1 + θ_j) = 1 + θ_{k+j}` (Higham, *Accuracy and
-Stability of Numerical Algorithms*, Lemma 3.3). -/
+/-- **Relative perturbations compose**: `(1 + θ_k)(1 + θ_j) = 1 + θ_{k+j}` ([higham2002accuracy],
+Lemma 3.3). -/
 theorem IsRelPert.trans {u : K} (hu : 0 ≤ u) {k j : ℕ} (h : ((k + j : ℕ) : K) * u < 1)
     {x y z : K} (h₁ : IsRelPert u k x y) (h₂ : IsRelPert u j y z) : IsRelPert u (k + j) x z := by
   obtain ⟨θ₁, hθ₁, rfl⟩ := h₁
@@ -288,7 +287,7 @@ theorem IsRelPert.trans {u : K} (hu : 0 ≤ u) {k j : ℕ} (h : ((k + j : ℕ) :
     _ ≤ gamma u (k + j) := gamma_add_gamma_add_mul_le hu h
 
 /-- **Products of relative perturbations**: a perturbation of order `k` times one of order `j` is
-one of order `k + j` (Higham, *Accuracy and Stability of Numerical Algorithms*, Lemma 3.3). -/
+one of order `k + j` ([higham2002accuracy], Lemma 3.3). -/
 theorem IsRelPert.mul {u : K} (hu : 0 ≤ u) {k j : ℕ} (h : ((k + j : ℕ) : K) * u < 1)
     {x y z w : K} (h₁ : IsRelPert u k x y) (h₂ : IsRelPert u j z w) :
     IsRelPert u (k + j) (x * z) (y * w) := by
@@ -300,8 +299,7 @@ theorem IsRelPert.mul {u : K} (hu : 0 ≤ u) {k j : ℕ} (h : ((k + j : ℕ) : K
   exact hmid.trans hu h hlast
 
 /-- **Quotients of relative perturbations**: dividing a perturbation of order `k` by one of order
-`j` gives one of order `k + 2 j` (Higham, *Accuracy and Stability of Numerical Algorithms*,
-Lemma 3.3). -/
+`j` gives one of order `k + 2 j` ([higham2002accuracy], Lemma 3.3). -/
 theorem IsRelPert.div {u : K} (hu : 0 ≤ u) {k j : ℕ} (h : ((k + 2 * j : ℕ) : K) * u < 1)
     {x y z w : K} (h₁ : IsRelPert u k x y) (h₂ : IsRelPert u j z w) :
     IsRelPert u (k + 2 * j) (x / z) (y / w) := by

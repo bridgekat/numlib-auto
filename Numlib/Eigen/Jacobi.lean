@@ -15,24 +15,24 @@ import Mathlib.LinearAlgebra.Matrix.Trace
 Jacobi's method drives a real symmetric matrix towards a diagonal one by a sequence of plane
 rotations, each chosen to annihilate one off-diagonal entry. The quantity it decreases is the
 **off-diagonal mass** `N(A)² = ∑_{i ≠ j} |a_ij|²`, and the whole of the classical analysis is the
-identity `N(UᵀAU)² = N(A)² - 2 a_jk²` for the rotation `U` that annihilates `a_jk` ([Kress,
-*Numerical Analysis*][kress1998numerical], Lemma 7.13), together with the observation that the
-largest off-diagonal entry carries at least a fraction `1/(n² - n)` of the mass.
+identity `N(UᵀAU)² = N(A)² - 2 a_jk²` for the rotation `U` that annihilates `a_jk`
+([kress1998numerical], Lemma 7.13), together with the observation that the largest off-diagonal
+entry carries at least a fraction `1/(n² - n)` of the mass.
 
 ## Main definitions
 
-* `Matrix.offDiagNormSq`: Kress's `N(A)²`.
+* `Matrix.offDiagNormSq`: [kress1998numerical] `N(A)²`.
 * `Matrix.planeRotation`: the rotation of the `(j,k)`-plane by a given cosine and sine.
-* `Matrix.jacobiRotation`, `Matrix.jacobiStep`: the rotation annihilating `a_jk`, and the
-  similarity it induces.
-* `Matrix.classicalJacobiIterate`: the classical method, annihilating a largest off-diagonal
-  entry at each step.
+* `Matrix.jacobiRotation`, `Matrix.jacobiStep`: the rotation annihilating `a_jk`, and the similarity
+  it induces.
+* `Matrix.classicalJacobiIterate`: the classical method, annihilating a largest off-diagonal entry
+  at each step.
 
 ## Main results
 
 * `Matrix.offDiagNormSq_jacobiStep`: `N(UᵀAU)² = N(A)² - 2 a_jk²`.
-* `Matrix.offDiagNormSq_classicalJacobiIterate_le`: the geometric decay
-  `N(A_ν)² ≤ (1 - 2/(n² - n))^ν N(A)²`.
+* `Matrix.offDiagNormSq_classicalJacobiIterate_le`: the geometric decay `N(A_ν)² ≤ (1 - 2/(n² -
+  n))^ν N(A)²`.
 * `Matrix.tendsto_offDiagNormSq_classicalJacobiIterate`: the off-diagonal mass tends to `0`.
 * `Matrix.charpoly_classicalJacobiIterate`: every iterate is orthogonally similar to `A`, so the
   eigenvalues never move.
@@ -43,11 +43,11 @@ The method is stated for **real symmetric** matrices, which is what a plane rota
 angle can diagonalize: for a complex Hermitian matrix a rotation with one real parameter cannot
 annihilate a complex `a_jk`, and one needs a phase as well.
 
-The rotation angle is parametrized by its tangent `t`, the root `t = θ + √(θ²+1)` of
-`t² - 2θt - 1 = 0` with `θ = (a_kk - a_jj)/(2 a_jk)`, rather than by the angle itself: the
-annihilation identity is then a polynomial identity in `c` and `s`, provable by
-`linear_combination`, and no trigonometry is needed. The numerically preferable root, the one of
-smaller modulus, differs only in stability and not in the statements proved here.
+The rotation angle is parametrized by its tangent `t`, the root `t = θ + √(θ²+1)` of `t² - 2θt - 1 =
+0` with `θ = (a_kk - a_jj)/(2 a_jk)`, rather than by the angle itself: the annihilation identity is
+then a polynomial identity in `c` and `s`, provable by `linear_combination`, and no trigonometry is
+needed. The numerically preferable root, the one of smaller modulus, differs only in stability and
+not in the statements proved here.
 -/
 
 open Finset
@@ -62,9 +62,9 @@ section OffDiag
 
 variable {𝕜 : Type*} [RCLike 𝕜]
 
-/-- The **off-diagonal mass** of a matrix, `N(A)² = ∑_{i ≠ j} ‖a_ij‖²`; Kress writes it `N(A)²`.
-Jacobi's method is the statement that a plane rotation annihilating `a_jk` decreases it by
-exactly `2 ‖a_jk‖²`. -/
+/-- The **off-diagonal mass** of a matrix, `N(A)² = ∑_{i ≠ j} ‖a_ij‖²`; [kress1998numerical] writes
+it `N(A)²`. Jacobi's method is the statement that a plane rotation annihilating `a_jk` decreases it
+by exactly `2 ‖a_jk‖²`. -/
 noncomputable def offDiagNormSq (A : Matrix n n 𝕜) : ℝ :=
   ∑ i, ∑ j ∈ Finset.univ.erase i, ‖A i j‖ ^ 2
 
@@ -72,8 +72,8 @@ noncomputable def offDiagNormSq (A : Matrix n n 𝕜) : ℝ :=
 theorem offDiagNormSq_nonneg (A : Matrix n n 𝕜) : 0 ≤ offDiagNormSq A :=
   Finset.sum_nonneg fun _ _ => Finset.sum_nonneg fun _ _ => sq_nonneg _
 
-/-- The off-diagonal mass and the diagonal mass make up the squared Frobenius norm
-`∑ i, ∑ j, ‖a_ij‖²` (Kress, *Numerical Analysis*, Lemma 7.8). -/
+/-- The off-diagonal mass and the diagonal mass make up the squared Frobenius norm `∑ i, ∑ j,
+‖a_ij‖²` ([kress1998numerical], Lemma 7.8). -/
 theorem offDiagNormSq_add_sum_diag_sq (A : Matrix n n 𝕜) :
     offDiagNormSq A + ∑ i, ‖A i i‖ ^ 2 = ∑ i, ∑ j, ‖A i j‖ ^ 2 := by
   rw [offDiagNormSq, ← Finset.sum_add_distrib]
@@ -189,8 +189,8 @@ theorem trace_transpose_mul_self (A : Matrix n n ℝ) :
   simp only [Matrix.trace, Matrix.diag_apply, Matrix.mul_apply, Matrix.transpose_apply, sq]
   exact Finset.sum_comm
 
-/-- Over the reals the off-diagonal mass is the sum of the squares of the off-diagonal
-entries, the norm bars being redundant. -/
+/-- Over the reals the off-diagonal mass is the sum of the squares of the off-diagonal entries, the
+norm bars being redundant. -/
 theorem offDiagNormSq_real (A : Matrix n n ℝ) :
     offDiagNormSq A = ∑ i, ∑ q ∈ Finset.univ.erase i, (A i q) ^ 2 := by
   simp [offDiagNormSq, Real.norm_eq_abs, sq_abs]
@@ -221,9 +221,9 @@ section Jacobi
 
 variable (A : Matrix n n ℝ) (j k : n)
 
-/-- The tangent of the Jacobi angle: the root `t = θ + √(θ² + 1)` of `t² - 2θt - 1 = 0`, where
-`θ = (a_kk - a_jj)/(2 a_jk)`. It is `0` when `a_jk` already vanishes, so that the rotation is
-then the identity. -/
+/-- The tangent of the Jacobi angle: the root `t = θ + √(θ² + 1)` of `t² - 2θt - 1 = 0`, where `θ =
+(a_kk - a_jj)/(2 a_jk)`. It is `0` when `a_jk` already vanishes, so that the rotation is then the
+identity. -/
 noncomputable def jacobiTan : ℝ :=
   if A j k = 0 then 0
   else (A k k - A j j) / (2 * A j k) + Real.sqrt (((A k k - A j j) / (2 * A j k)) ^ 2 + 1)
@@ -234,9 +234,8 @@ noncomputable def jacobiCos : ℝ := 1 / Real.sqrt (1 + jacobiTan A j k ^ 2)
 /-- The sine of the Jacobi angle. -/
 noncomputable def jacobiSin : ℝ := jacobiTan A j k * jacobiCos A j k
 
-/-- The **Jacobi rotation** of `A` in the `(j,k)`-plane: the plane rotation whose angle is chosen
-so that the similarity it induces annihilates the entry `a_jk`
-(Kress, *Numerical Analysis*, Lemma 7.13). -/
+/-- The **Jacobi rotation** of `A` in the `(j,k)`-plane: the plane rotation whose angle is chosen so
+that the similarity it induces annihilates the entry `a_jk` ([kress1998numerical], Lemma 7.13). -/
 noncomputable def jacobiRotation : Matrix n n ℝ :=
   planeRotation j k (jacobiCos A j k) (jacobiSin A j k)
 
@@ -331,8 +330,8 @@ theorem conj_planeRotation_apply_jk (hjk : j ≠ k) (M : Matrix n n ℝ) :
 
 variable (A : Matrix n n ℝ)
 
-/-- **The Jacobi step annihilates the chosen off-diagonal entry**
-(Kress, *Numerical Analysis*, Lemma 7.13). -/
+/-- **The Jacobi step annihilates the chosen off-diagonal entry** ([kress1998numerical], Lemma
+7.13). -/
 theorem jacobiStep_apply_eq_zero (hA : A.IsSymm) (hjk : j ≠ k) : jacobiStep A j k j k = 0 := by
   have hsym : A k j = A j k := hA.apply j k
   rw [jacobiStep, jacobiRotation, conj_planeRotation_apply_jk hjk, hsym]
@@ -360,8 +359,9 @@ theorem jacobiStep_apply_diag_of_ne (hjk : j ≠ k) {i : n} (hij : i ≠ j) (hik
   rw [jacobiStep, jacobiRotation, conj_planeRotation_apply_of_ne hjk A hij hik hij hik]
 
 omit [Fintype n] [DecidableEq n] in
-/-- The algebraic core of Kress's Lemma 7.13: a rotation that annihilates the off-diagonal
-entry `w` of a symmetric two-by-two block moves exactly `2w²` of mass onto the diagonal. -/
+/-- The algebraic core of [kress1998numerical] Lemma 7.13: a rotation that annihilates the
+off-diagonal entry `w` of a symmetric two-by-two block moves exactly `2w²` of mass onto the
+diagonal. -/
 private theorem sq_add_sq_of_rotation {u v w : ℝ} (h1 : c ^ 2 + s ^ 2 = 1)
     (h2 : (c ^ 2 - s ^ 2) * w + c * s * (v - u) = 0) :
     (c ^ 2 * u + 2 * (c * s) * w + s ^ 2 * v) ^ 2
@@ -390,9 +390,9 @@ theorem sum_diag_sq_jacobiStep (hA : A.IsSymm) (hjk : j ≠ k) :
     htail, jacobiStep_apply_jj A hA hjk, jacobiStep_apply_kk A hA hjk]
   linarith [hpoly]
 
-/-- **Kress, *Numerical Analysis*, Lemma 7.13**: a Jacobi step decreases the off-diagonal mass
-by exactly twice the square of the annihilated entry. The Frobenius mass is unchanged by the
-orthogonal similarity, and the two-by-two block moves `2 a_jk²` of it onto the diagonal. -/
+/-- **[kress1998numerical], Lemma 7.13**: a Jacobi step decreases the off-diagonal mass by exactly
+twice the square of the annihilated entry. The Frobenius mass is unchanged by the orthogonal
+similarity, and the two-by-two block moves `2 a_jk²` of it onto the diagonal. -/
 theorem offDiagNormSq_jacobiStep (hA : A.IsSymm) (hjk : j ≠ k) :
     offDiagNormSq (jacobiStep A j k) = offDiagNormSq A - 2 * (A j k) ^ 2 := by
   have hF : ∑ i, ∑ q, ((jacobiStep A j k) i q) ^ 2 = ∑ i, ∑ q, (A i q) ^ 2 := by
@@ -415,9 +415,9 @@ theorem isSymm_jacobiStep {A : Matrix n n ℝ} (hA : A.IsSymm) (j k : n) :
   rw [Matrix.IsSymm, jacobiStep, Matrix.transpose_mul, Matrix.transpose_mul,
     Matrix.transpose_transpose, hA, ← Matrix.mul_assoc]
 
-/-- A matrix with at most one index has no off-diagonal entries, so no off-diagonal mass. This
-is the degenerate case that the geometric decay below has to dispose of separately, the factor
-`1/(n² - n)` being meaningless there. -/
+/-- A matrix with at most one index has no off-diagonal entries, so no off-diagonal mass. This is
+the degenerate case that the geometric decay below has to dispose of separately, the factor `1/(n² -
+n)` being meaningless there. -/
 theorem offDiagNormSq_eq_zero_of_card_le_one (h : Fintype.card n ≤ 1) (A : Matrix n n ℝ) :
     offDiagNormSq A = 0 := by
   refine Finset.sum_eq_zero fun i _ => Finset.sum_eq_zero fun q hq => ?_
@@ -452,30 +452,30 @@ private theorem exists_maxOffDiagPair_aux (A : Matrix n n ℝ) :
     exact ⟨p, fun _ => hp⟩
   · exact ⟨(Classical.arbitrary n, Classical.arbitrary n), fun h => absurd h hn⟩
 
-/-- A pair of distinct indices at which `A` has a largest off-diagonal entry in absolute value.
-When the index type has fewer than two elements no such pair exists and the value is junk; the
-two facts about it, `Matrix.maxOffDiagPair_ne` and `Matrix.abs_le_abs_maxOffDiagPair`, both
-assume `2 ≤ Fintype.card n`. -/
+/-- A pair of distinct indices at which `A` has a largest off-diagonal entry in absolute value. When
+the index type has fewer than two elements no such pair exists and the value is junk; the two facts
+about it, `Matrix.maxOffDiagPair_ne` and `Matrix.abs_le_abs_maxOffDiagPair`, both assume `2 ≤
+Fintype.card n`. -/
 noncomputable def maxOffDiagPair (A : Matrix n n ℝ) : n × n :=
   (exists_maxOffDiagPair_aux A).choose
 
 omit [DecidableEq n] in
-/-- The two indices of `Matrix.maxOffDiagPair` are distinct, so the pair really is off the
-diagonal. -/
+/-- The two indices of `Matrix.maxOffDiagPair` are distinct, so the pair really is off the diagonal.
+-/
 theorem maxOffDiagPair_ne (A : Matrix n n ℝ) (hn : 2 ≤ Fintype.card n) :
     (maxOffDiagPair A).1 ≠ (maxOffDiagPair A).2 :=
   ((exists_maxOffDiagPair_aux A).choose_spec hn).1
 
 omit [DecidableEq n] in
-/-- `Matrix.maxOffDiagPair` really is a maximizing pair: no off-diagonal entry has larger
-modulus. -/
+/-- `Matrix.maxOffDiagPair` really is a maximizing pair: no off-diagonal entry has larger modulus.
+-/
 theorem abs_le_abs_maxOffDiagPair (A : Matrix n n ℝ) (hn : 2 ≤ Fintype.card n) (q : n × n)
     (hq : q.1 ≠ q.2) :
     |A q.1 q.2| ≤ |A (maxOffDiagPair A).1 (maxOffDiagPair A).2| :=
   ((exists_maxOffDiagPair_aux A).choose_spec hn).2 q hq
 
 /-- The **classical Jacobi method**: each step annihilates a largest off-diagonal entry of the
-current matrix (Kress, *Numerical Analysis*, Section 7.3). -/
+current matrix ([kress1998numerical], Section 7.3). -/
 noncomputable def classicalJacobiIterate (A : Matrix n n ℝ) : ℕ → Matrix n n ℝ
   | 0 => A
   | ν + 1 => jacobiStep (classicalJacobiIterate A ν)
@@ -492,8 +492,7 @@ theorem classicalJacobiIterate_succ (A : Matrix n n ℝ) (ν : ℕ) :
       = jacobiStep (classicalJacobiIterate A ν) (maxOffDiagPair (classicalJacobiIterate A ν)).1
         (maxOffDiagPair (classicalJacobiIterate A ν)).2 := rfl
 
-/-- Every iterate of the classical method is symmetric, each step being an orthogonal
-similarity. -/
+/-- Every iterate of the classical method is symmetric, each step being an orthogonal similarity. -/
 theorem isSymm_classicalJacobiIterate {A : Matrix n n ℝ} (hA : A.IsSymm) :
     ∀ ν, (classicalJacobiIterate A ν).IsSymm
   | 0 => hA
@@ -521,8 +520,8 @@ theorem offDiagNormSq_le_mul_sq (A : Matrix n n ℝ) {j k : n}
   rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
   ring
 
-/-- One step of the classical method multiplies the off-diagonal mass by at most
-`1 - 2/(n² - n)`. -/
+/-- One step of the classical method multiplies the off-diagonal mass by at most `1 - 2/(n² - n)`.
+-/
 theorem offDiagNormSq_jacobiStep_maxOffDiagPair_le {A : Matrix n n ℝ} (hA : A.IsSymm)
     (hn : 2 ≤ Fintype.card n) :
     offDiagNormSq (jacobiStep A (maxOffDiagPair A).1 (maxOffDiagPair A).2)
@@ -540,8 +539,8 @@ theorem offDiagNormSq_jacobiStep_maxOffDiagPair_le {A : Matrix n n ℝ} (hA : A.
   rw [hexp]
   linarith
 
-/-- **Kress, *Numerical Analysis*, proof of Theorem 7.14**: the off-diagonal mass of the classical
-Jacobi iterates decays geometrically, `N(A_ν)² ≤ (1 - 2/(n² - n))^ν N(A)²`. -/
+/-- **[kress1998numerical], proof of Theorem 7.14**: the off-diagonal mass of the classical Jacobi
+iterates decays geometrically, `N(A_ν)² ≤ (1 - 2/(n² - n))^ν N(A)²`. -/
 theorem offDiagNormSq_classicalJacobiIterate_le {A : Matrix n n ℝ} (hA : A.IsSymm) (ν : ℕ) :
     offDiagNormSq (classicalJacobiIterate A ν)
       ≤ (1 - 2 / ((Fintype.card n : ℝ) ^ 2 - Fintype.card n)) ^ ν * offDiagNormSq A := by
@@ -568,8 +567,8 @@ theorem offDiagNormSq_classicalJacobiIterate_le {A : Matrix n n ℝ} (hA : A.IsS
         _ = _ := by ring
 
 omit [Nonempty n] in
-/-- Every Jacobi step is an orthogonal similarity, so it leaves the characteristic polynomial —
-and with it the eigenvalues — alone. -/
+/-- Every Jacobi step is an orthogonal similarity, so it leaves the characteristic polynomial — and
+with it the eigenvalues — alone. -/
 theorem charpoly_jacobiStep (A : Matrix n n ℝ) {j k : n} (hjk : j ≠ k) :
     (jacobiStep A j k).charpoly = A.charpoly := by
   have hU : (jacobiRotation A j k)ᵀ * jacobiRotation A j k = 1 :=
@@ -590,7 +589,7 @@ theorem charpoly_classicalJacobiIterate {A : Matrix n n ℝ} (hn : 2 ≤ Fintype
     exact charpoly_classicalJacobiIterate hn ν
 
 /-- **The classical Jacobi method drives the off-diagonal mass to zero** (the first half of
-Kress, *Numerical Analysis*, Theorem 7.14): the iterates converge to a diagonal matrix, and by
+[kress1998numerical], Theorem 7.14): the iterates converge to a diagonal matrix, and by
 `Matrix.charpoly_classicalJacobiIterate` they all carry the characteristic polynomial of `A`. -/
 theorem tendsto_offDiagNormSq_classicalJacobiIterate {A : Matrix n n ℝ} (hA : A.IsSymm)
     (hn : 2 ≤ Fintype.card n) :

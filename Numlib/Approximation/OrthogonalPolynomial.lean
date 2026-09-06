@@ -13,10 +13,10 @@ recurrence, and the truncated expansion as a best `L²(μ)` approximation.
 
 ## Main definitions
 
-* `OrthogonalPolynomial.IsWeight μ` is the standing hypothesis: every moment of `μ` is finite,
-  and `μ` is not carried by a finite set. The first makes every polynomial square integrable, the
-  second makes `∫ p² ∂μ` strictly positive for `p ≠ 0`, so that the Gram–Schmidt process on the
-  monomials never stalls.
+* `OrthogonalPolynomial.IsWeight μ` is the standing hypothesis: every moment of `μ` is finite, and
+  `μ` is not carried by a finite set. The first makes every polynomial square integrable, the second
+  makes `∫ p² ∂μ` strictly positive for `p ≠ 0`, so that the Gram–Schmidt process on the monomials
+  never stalls.
 * `OrthogonalPolynomial.family μ n` is the outcome of that process, rescaled to be monic; it is
   defined for every `μ`, but only under `IsWeight μ` is it orthogonal.
   `OrthogonalPolynomial.normSq`, `OrthogonalPolynomial.alpha` and `OrthogonalPolynomial.beta` are
@@ -27,12 +27,11 @@ recurrence, and the truncated expansion as a best `L²(μ)` approximation.
 ## Main results
 
 * `OrthogonalPolynomial.integral_family_mul_family` and
-  `OrthogonalPolynomial.integral_family_mul_of_degree_lt`: the family is orthogonal, and each
-  member is orthogonal to every polynomial of lower degree.
-* `OrthogonalPolynomial.three_term_recurrence`:
-  `p_{n+2} = (X - a_{n+1}) p_{n+1} - b_n p_n`.
-* `OrthogonalPolynomial.exists_injective_family_eq_prod`: `family μ n` has `n` distinct real
-  roots — the nodes of the `n`-point Gauss quadrature rule of `μ`.
+  `OrthogonalPolynomial.integral_family_mul_of_degree_lt`: the family is orthogonal, and each member
+  is orthogonal to every polynomial of lower degree.
+* `OrthogonalPolynomial.three_term_recurrence`: `p_{n+2} = (X - a_{n+1}) p_{n+1} - b_n p_n`.
+* `OrthogonalPolynomial.exists_injective_family_eq_prod`: `family μ n` has `n` distinct real roots —
+  the nodes of the `n`-point Gauss quadrature rule of `μ`.
 * `OrthogonalPolynomial.isBestApprox_truncation`: the truncated expansion is the best `L²(μ)`
   approximation by polynomials of degree at most `N`.
 * `Polynomial.legendre_recurrence`, `Polynomial.legendre_ode` and
@@ -42,8 +41,7 @@ recurrence, and the truncated expansion as a best `L²(μ)` approximation.
 
 ## References
 
-The material is [Atkinson–Han][han2009theoretical] §3.5 and [Kress][kress1998numerical] §9.3.
-
+The material is [han2009theoretical] §3.5 and [kress1998numerical] §9.3.
 -/
 
 open MeasureTheory Polynomial
@@ -60,8 +58,8 @@ Nothing in Mathlib says when a real polynomial keeps its sign, and the Gauss-qua
 needs exactly that: a polynomial whose real roots all have even multiplicity does not change sign.
 -/
 
-/-- **A real polynomial without real roots has constant sign**, by the intermediate value
-theorem. -/
+/-- **A real polynomial without real roots has constant sign**, by the intermediate value theorem.
+-/
 theorem forall_pos_or_forall_neg_of_forall_eval_ne_zero {p : ℝ[X]} (h : ∀ x : ℝ, p.eval x ≠ 0) :
     (∀ x, 0 < p.eval x) ∨ (∀ x, p.eval x < 0) := by
   by_cases hpos : ∀ x, 0 < p.eval x
@@ -80,8 +78,8 @@ theorem forall_pos_or_forall_neg_of_forall_eval_ne_zero {p : ℝ[X]} (h : ∀ x 
   exact h c hc
 
 /-- **A real polynomial all of whose real roots have even multiplicity does not change sign.**
-Splitting off the square of the product of its linear factors leaves a polynomial with no real
-root, which has constant sign by the intermediate value theorem. -/
+Splitting off the square of the product of its linear factors leaves a polynomial with no real root,
+which has constant sign by the intermediate value theorem. -/
 theorem forall_nonneg_or_forall_nonpos_of_even_rootMultiplicity {p : ℝ[X]} (hp : p ≠ 0)
     (heven : ∀ r : ℝ, Even (p.rootMultiplicity r)) :
     (∀ x, 0 ≤ p.eval x) ∨ (∀ x, p.eval x ≤ 0) := by
@@ -132,9 +130,9 @@ variable {μ : Measure ℝ}
 
 /-! ### The standing hypothesis -/
 
-/-- A measure on `ℝ` admitting a family of orthogonal polynomials: all its moments are finite,
-and it is not carried by a finite set. The second condition is what makes `∫ p ^ 2 ∂μ` positive
-for every nonzero polynomial `p`, since a polynomial vanishes only on a finite set. -/
+/-- A measure on `ℝ` admitting a family of orthogonal polynomials: all its moments are finite, and
+it is not carried by a finite set. The second condition is what makes `∫ p ^ 2 ∂μ` positive for
+every nonzero polynomial `p`, since a polynomial vanishes only on a finite set. -/
 structure IsWeight (μ : Measure ℝ) : Prop where
   /-- Every moment of `μ` is finite. -/
   integrable_pow (n : ℕ) : Integrable (fun x : ℝ => x ^ n) μ
@@ -283,8 +281,8 @@ private theorem degree_X_mul_family_lt (μ : Measure ℝ) {k n : ℕ} (h : k + 1
   norm_cast
   omega
 
-/-- The `family` as a `Polynomial.Sequence`, so that Mathlib's spanning and independence lemmas
-for degree-graded sequences apply to it. -/
+/-- The `family` as a `Polynomial.Sequence`, so that Mathlib's spanning and independence lemmas for
+degree-graded sequences apply to it. -/
 def sequence (μ : Measure ℝ) : Polynomial.Sequence ℝ :=
   ⟨family μ, degree_family μ⟩
 
@@ -344,8 +342,8 @@ private theorem integral_family_mul_family_of_lt (hw : IsWeight μ) :
     · intro hj'
       exact absurd (Finset.mem_range.mpr hj) hj'
 
-/-- Orthogonality of the family, [Atkinson–Han][han2009theoretical] §3.5: distinct members are
-orthogonal in `L²(μ)`. -/
+/-- Orthogonality of the family, [han2009theoretical] §3.5: distinct members are orthogonal in
+`L²(μ)`. -/
 theorem integral_family_mul_family (hw : IsWeight μ) {m n : ℕ} (hmn : m ≠ n) :
     ∫ x, (family μ m).eval x * (family μ n).eval x ∂μ = 0 := by
   rcases lt_or_gt_of_ne hmn with h | h
@@ -367,8 +365,8 @@ theorem exists_eq_sum_family (μ : Measure ℝ) {n : ℕ} {q : ℝ[X]} (hq : q.d
   exact ⟨c, by simpa using hc.symm⟩
 
 /-- The family is orthogonal to every polynomial of lower degree. This is the form in which
-orthogonality is used: in the Gauss quadrature and best-approximation arguments the second factor
-is an arbitrary polynomial, not another member of the family. -/
+orthogonality is used: in the Gauss quadrature and best-approximation arguments the second factor is
+an arbitrary polynomial, not another member of the family. -/
 theorem integral_family_mul_of_degree_lt (hw : IsWeight μ) {n : ℕ} {q : ℝ[X]}
     (hq : q.degree < n) : ∫ x, (family μ n).eval x * q.eval x ∂μ = 0 := by
   obtain ⟨c, rfl⟩ := exists_eq_sum_family μ hq
@@ -382,8 +380,8 @@ theorem integral_family_mul_of_degree_lt (hw : IsWeight μ) {n : ℕ} {q : ℝ[X
   rw [integral_const_mul, integral_family_mul_family hw (Nat.ne_of_gt (Finset.mem_range.mp hk)),
     mul_zero]
 
-/-- The expansion of a polynomial of degree `< n` in the orthogonal family, with the
-Fourier coefficients `⟪q, p_k⟫ / ‖p_k‖²` made explicit. -/
+/-- The expansion of a polynomial of degree `< n` in the orthogonal family, with the Fourier
+coefficients `⟪q, p_k⟫ / ‖p_k‖²` made explicit. -/
 theorem eq_sum_family (hw : IsWeight μ) {n : ℕ} {q : ℝ[X]} (hq : q.degree < n) :
     q = ∑ k ∈ Finset.range n,
       ((∫ x, q.eval x * (family μ k).eval x ∂μ) / normSq μ k) • family μ k := by
@@ -408,8 +406,8 @@ theorem eq_sum_family (hw : IsWeight μ) {n : ℕ} {q : ℝ[X]} (hq : q.degree <
   refine Finset.sum_congr rfl fun j hj => ?_
   rw [hcoeff j hj, mul_div_assoc, div_self (normSq_ne_zero hw j), mul_one]
 
-/-- A polynomial of degree `< n` orthogonal to `family μ 0, …, family μ (n-1)` is zero: those
-`n` polynomials span the polynomials of degree `< n`. -/
+/-- A polynomial of degree `< n` orthogonal to `family μ 0, …, family μ (n-1)` is zero: those `n`
+polynomials span the polynomials of degree `< n`. -/
 theorem eq_zero_of_degree_lt (hw : IsWeight μ) {n : ℕ} {q : ℝ[X]} (hq : q.degree < n)
     (h : ∀ k < n, ∫ x, q.eval x * (family μ k).eval x ∂μ = 0) : q = 0 := by
   rw [eq_sum_family hw hq]
@@ -421,9 +419,9 @@ theorem eq_zero_of_degree_lt (hw : IsWeight μ) {n : ℕ} {q : ℝ[X]} (hq : q.d
 /-- The `n`-th orthogonal polynomial changes sign at least `n` times: it has at least `n` roots of
 odd multiplicity.
 
-This is the classical argument. If it changed sign at fewer than `n` points, the product of
-`family μ n` with the monic polynomial vanishing at those points would have every real root of
-even multiplicity, hence constant sign by
+This is the classical argument. If it changed sign at fewer than `n` points, the product of `family
+μ n` with the monic polynomial vanishing at those points would have every real root of even
+multiplicity, hence constant sign by
 `Polynomial.forall_nonneg_or_forall_nonpos_of_even_rootMultiplicity`, while orthogonality to every
 polynomial of lower degree forces its integral against `μ` to vanish. -/
 private theorem le_card_odd_rootMultiplicity (hw : IsWeight μ) (n : ℕ) :
@@ -495,7 +493,7 @@ private theorem le_card_odd_rootMultiplicity (hw : IsWeight μ) (n : ℕ) :
 product of the corresponding linear factors. These roots are the nodes of the `n`-point Gauss
 quadrature rule of `μ`.
 
-Reference: Kress, *Numerical Analysis*, §9.3; Atkinson–Han, *Theoretical Numerical Analysis*, §3.5.
+Reference: [kress1998numerical], §9.3; [han2009theoretical], §3.5.
 -/
 theorem exists_injective_family_eq_prod (hw : IsWeight μ) (n : ℕ) :
     ∃ x : Fin n → ℝ, Function.Injective x ∧ family μ n = ∏ i, (X - C (x i)) := by
@@ -572,8 +570,8 @@ private theorem degree_X_mul_family_sub_lt (μ : Measure ℝ) (n : ℕ) :
       (monic_family μ (n + 1)).leadingCoeff, one_mul]
   simpa [h1] using degree_sub_lt_left (h1.trans h2.symm) hne hlc
 
-/-- `⟪X p_{n+1}, p_n⟫ = ‖p_{n+1}‖²`, because `X p_n` is `p_{n+1}` plus a polynomial of degree
-`< n + 1`. -/
+/-- `⟪X p_{n+1}, p_n⟫ = ‖p_{n+1}‖²`, because `X p_n` is `p_{n+1}` plus a polynomial of degree `< n +
+1`. -/
 private theorem integral_X_mul_family_succ_mul_family (hw : IsWeight μ) (n : ℕ) :
     ∫ x, x * (family μ (n + 1)).eval x * (family μ n).eval x ∂μ = normSq μ (n + 1) := by
   have hsplit : ∀ x : ℝ, x * (family μ (n + 1)).eval x * (family μ n).eval x =
@@ -609,9 +607,8 @@ private theorem integral_X_mul_family_mul_self (μ : Measure ℝ) (m : ℕ) :
       = ∫ x, x * (family μ m).eval x ^ 2 ∂μ :=
   integral_congr_ae (Filter.Eventually.of_forall fun x => by ring)
 
-/-- The three-term recurrence for the monic orthogonal polynomials of `μ`,
-[Atkinson–Han][han2009theoretical] Exercises 3.5.5–3.5.6: `p_{n+2} = (X - a_{n+1}) p_{n+1} - b_n
-p_n`. -/
+/-- The three-term recurrence for the monic orthogonal polynomials of `μ`, [han2009theoretical]
+Exercises 3.5.5–3.5.6: `p_{n+2} = (X - a_{n+1}) p_{n+1} - b_n p_n`. -/
 theorem three_term_recurrence (hw : IsWeight μ) (n : ℕ) :
     family μ (n + 2) =
       (X - C (alpha μ (n + 1))) * family μ (n + 1) - C (beta μ n) * family μ n := by
@@ -711,8 +708,8 @@ theorem inner_toLpₗ (hw : IsWeight μ) (p q : ℝ[X]) :
 
 end IsWeight
 
-/-- The span of `family μ 0, …, family μ N` in `L²(μ)` is the image of the polynomials of
-degree `≤ N`. -/
+/-- The span of `family μ 0, …, family μ N` in `L²(μ)` is the image of the polynomials of degree `≤
+N`. -/
 theorem map_degreeLE_toLpₗ (hw : IsWeight μ) (N : ℕ) :
     (Polynomial.degreeLE ℝ N).map hw.toLpₗ =
       Submodule.span ℝ (Set.range fun k : Fin (N + 1) => hw.toLpₗ (family μ k)) := by
@@ -726,9 +723,8 @@ theorem map_degreeLE_toLpₗ (hw : IsWeight μ) (N : ℕ) :
   · rintro ⟨k, rfl⟩
     exact ⟨family μ k, ⟨k, Nat.lt_succ_iff.mp k.2, rfl⟩, rfl⟩
 
-/-- [Atkinson–Han][han2009theoretical] (3.5.2): the truncated expansion
-`∑_{k ≤ N} (⟪u, p_k⟫ / ‖p_k‖²) p_k` is the best `L²(μ)` approximation of `u` by polynomials of
-degree at most `N`. -/
+/-- [han2009theoretical] (3.5.2): the truncated expansion `∑_{k ≤ N} (⟪u, p_k⟫ / ‖p_k‖²) p_k` is the
+best `L²(μ)` approximation of `u` by polynomials of degree at most `N`. -/
 theorem isBestApprox_truncation (hw : IsWeight μ) (N : ℕ) (u : Lp ℝ 2 μ) :
     IsBestApprox ((Polynomial.degreeLE ℝ N).map hw.toLpₗ : Set (Lp ℝ 2 μ)) u
       (∑ k : Fin (N + 1),
@@ -779,8 +775,8 @@ private lemma iterate_derivative_quad_mul (g : ℝ[X]) (k : ℕ) :
 
 /-! ### The Legendre polynomials -/
 
-/-- The `n`-th Legendre polynomial, defined by Rodrigues' formula
-`Pₙ = (2ⁿ n!)⁻¹ (d/dx)ⁿ (x² - 1)ⁿ`. -/
+/-- The `n`-th Legendre polynomial, defined by Rodrigues' formula `Pₙ = (2ⁿ n!)⁻¹ (d/dx)ⁿ (x² -
+1)ⁿ`. -/
 def legendre (n : ℕ) : ℝ[X] :=
   C ((2 ^ n * n ! : ℝ)⁻¹) * derivative^[n] ((X ^ 2 - 1) ^ n)
 
@@ -939,8 +935,7 @@ theorem derivative_legendre_succ (n : ℕ) :
     refine mul_left_cancel₀ (C_ne_zero.mpr (legFac_ne_zero (j + 1))) ?_
     linear_combination -hbox
 
-/-- The Legendre differential equation
-`(x² - 1) Pₙ'' + 2x Pₙ' = n (n + 1) Pₙ`. -/
+/-- The Legendre differential equation `(x² - 1) Pₙ'' + 2x Pₙ' = n (n + 1) Pₙ`. -/
 theorem legendre_ode (n : ℕ) :
     (X ^ 2 - 1 : ℝ[X]) * derivative (derivative (legendre n)) + 2 * X * derivative (legendre n)
       = (n : ℝ[X]) * ((n : ℝ[X]) + 1) * legendre n := by
@@ -1072,8 +1067,8 @@ private lemma legInt_derivative_quad_mul (p : ℝ[X]) :
   rw [legInt_derivative]
   simp
 
-/-- The Wronskian-type identity behind orthogonality: a consequence of the two Legendre
-differential equations. -/
+/-- The Wronskian-type identity behind orthogonality: a consequence of the two Legendre differential
+equations. -/
 private lemma derivative_wronskian (m n : ℕ) :
     derivative ((X ^ 2 - 1 : ℝ[X]) *
         (derivative (legendre m) * legendre n - legendre m * derivative (legendre n)))
@@ -1243,8 +1238,8 @@ theorem integral_legendre_mul_of_degree_lt {n : ℕ} {p : ℝ[X]} (hp : p.degree
   rw [integral_const_mul, integral_legendreMeasure,
     integral_legendre_mul_legendre_of_ne (Nat.ne_of_gt (Finset.mem_range.mp hk)), mul_zero]
 
-/-- The monic rescaling of `Polynomial.legendre n` is the `n`-th orthogonal polynomial of
-Lebesgue measure on `(-1, 1)`: the Legendre family is an instance of the general theory. -/
+/-- The monic rescaling of `Polynomial.legendre n` is the `n`-th orthogonal polynomial of Lebesgue
+measure on `(-1, 1)`: the Legendre family is an instance of the general theory. -/
 theorem family_eq_legendre (n : ℕ) :
     family legendreMeasure n = C ((legendre n).leadingCoeff)⁻¹ * legendre n := by
   have hlc : (legendre n).leadingCoeff ≠ 0 := leadingCoeff_ne_zero.2 (legendre_ne_zero n)
@@ -1295,8 +1290,8 @@ namespace Polynomial.Chebyshev
 
 open Real
 
-/-- [Atkinson–Han][han2009theoretical] (3.5.8)–(3.5.9): the Chebyshev polynomials are orthogonal on
-`(-1, 1)` for the weight `(1 - x²)^{-1/2}`. -/
+/-- [han2009theoretical] (3.5.8)–(3.5.9): the Chebyshev polynomials are orthogonal on `(-1, 1)` for
+the weight `(1 - x²)^{-1/2}`. -/
 theorem integral_T_mul_T_div_sqrt (m n : ℕ) :
     ∫ x in (-1 : ℝ)..1, (T ℝ m).eval x * (T ℝ n).eval x / √(1 - x ^ 2) =
       if m ≠ n then 0 else if n = 0 then π else π / 2 := by

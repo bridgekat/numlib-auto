@@ -3,13 +3,12 @@ import Numlib.Krylov.Hessenberg
 /-!
 # Perturbed Arnoldi and Lanczos relations
 
-A finite-precision Arnoldi or Lanczos process does not produce the exact relation
-`A v_j = ∑_{i ≤ j+1} h_ij v_i` with an orthonormal `v`; it produces that relation up to a residual
-`F_j` of small norm, with vectors that are orthonormal only up to a defect
-([Meurant–Strakoš][meurant2006lanczos] Thm 14, after Paige).  This module isolates that as a
-hypothesis, `Arnoldi.IsPerturbedRelation`, so that the exact-arithmetic identities can be restated
-with the perturbation carried along and applied to computed quantities once a rounding model
-supplies the two bounds.
+A finite-precision Arnoldi or Lanczos process does not produce the exact relation `A v_j = ∑_{i ≤
+j+1} h_ij v_i` with an orthonormal `v`; it produces that relation up to a residual `F_j` of small
+norm, with vectors that are orthonormal only up to a defect ([meurant2006lanczos] Thm 14, after
+Paige).  This module isolates that as a hypothesis, `Arnoldi.IsPerturbedRelation`, so that the
+exact-arithmetic identities can be restated with the perturbation carried along and applied to
+computed quantities once a rounding model supplies the two bounds.
 
 The structure is indexed by the number of steps `m`: `A v_j` is expanded for `j < m`, and the
 orthogonality defect is controlled for the `m + 1` vectors `v_0, …, v_m` that those expansions
@@ -17,11 +16,11 @@ involve.  The exact process is the instance with `F = 0` and both bounds `0`
 (`Arnoldi.hessenbergRelation_isPerturbedRelation`), which needs `m < grade` because the Arnoldi
 vectors from the grade onwards are zero rather than unit.
 
-What is carried along is the coordinate form of the residual, [Saad,
-*Iterative Methods*][saad2003iterative], (6.27). `Arnoldi.IsPerturbedRelation.residual_eq` and
-`norm_residual_sub_le` bound the gap between the true residual and the small-problem residual
-`V_{m+1} (β e₁ - H̄_m y)` that an implementation monitors, and `abs_norm_sq_sub_sum_le` does the
-same for the Pythagoras identity that turns coordinates into norms.
+What is carried along is the coordinate form of the residual, [saad2003iterative], (6.27).
+`Arnoldi.IsPerturbedRelation.residual_eq` and `norm_residual_sub_le` bound the gap between the true
+residual and the small-problem residual `V_{m+1} (β e₁ - H̄_m y)` that an implementation monitors,
+and `abs_norm_sq_sub_sum_le` does the same for the Pythagoras identity that turns coordinates into
+norms.
 -/
 
 open Krylov Finset
@@ -30,14 +29,13 @@ variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpac
 
 namespace Arnoldi
 
-/-- **A perturbed Hessenberg relation over `m` steps**: `A v_j = ∑_{i ≤ j+1} h_ij v_i + F_j` for
-`j < m`, with `‖F_j‖ ≤ ε`, `h` upper Hessenberg, and the vectors `v_0, …, v_m` orthonormal up to a
+/-- **A perturbed Hessenberg relation over `m` steps**: `A v_j = ∑_{i ≤ j+1} h_ij v_i + F_j` for `j
+< m`, with `‖F_j‖ ≤ ε`, `h` upper Hessenberg, and the vectors `v_0, …, v_m` orthonormal up to a
 defect `ε'` in every inner product.
 
-This is the hypothesis a finite-precision Arnoldi or Lanczos process satisfies (Meurant and
-Strakoš, *The Lanczos and conjugate gradient algorithms in finite precision arithmetic*,
-Theorem 14, with `ε` and `ε'` of order `u ‖A‖`); the exact process is the case `ε = ε' = 0` and
-`F = 0`. -/
+This is the hypothesis a finite-precision Arnoldi or Lanczos process satisfies (Meurant and Strakoš,
+*The Lanczos and conjugate gradient algorithms in finite precision arithmetic*, Theorem 14, with `ε`
+and `ε'` of order `u ‖A‖`); the exact process is the case `ε = ε' = 0` and `F = 0`. -/
 structure IsPerturbedRelation (A : E →ₗ[𝕜] E) (v : ℕ → E) (h : ℕ → ℕ → 𝕜) (F : ℕ → E) (m : ℕ)
     (ε ε' : ℝ) : Prop where
   /-- The Arnoldi expansion of `A v_j`, up to the residual `F_j`. -/
@@ -87,9 +85,9 @@ theorem apply_sum (y : Fin m → 𝕜) :
   simp only [hessenbergOf, Matrix.mulVec, dotProduct, Matrix.of_apply]
   exact Finset.sum_congr rfl fun j _ => mul_comm _ _
 
-/-- **The perturbed form of `Krylov.HessenbergRelation.residual_eq`** (Saad, *Iterative Methods
-for Sparse Linear Systems*, (6.27)): with `r₀ = β v₀`, the residual of `x₀ + V_m y` is
-`V_{m+1} (β e₁ - H̄_m y)` minus the residual combination `∑_j y_j F_j`. -/
+/-- **The perturbed form of `Krylov.HessenbergRelation.residual_eq`** ([saad2003iterative], (6.27)):
+with `r₀ = β v₀`, the residual of `x₀ + V_m y` is `V_{m+1} (β e₁ - H̄_m y)` minus the residual
+combination `∑_j y_j F_j`. -/
 theorem residual_eq {b x₀ : E} {β : 𝕜} (hr : b - A x₀ = β • v 0) (y : Fin m → 𝕜) :
     b - A (x₀ + ∑ j, y j • v j)
       = (∑ i : Fin (m + 1), (firstVec β (m + 1) - (hessenbergOf h m).mulVec y) i • v i)
@@ -123,9 +121,9 @@ theorem norm_residual_sub_le {b x₀ : E} {β : 𝕜} (hr : b - A x₀ = β • 
         exact mul_le_mul_of_nonneg_left (hv.norm_F_le j j.isLt) (norm_nonneg _)
     _ = ε * ∑ j, ‖y j‖ := by rw [← Finset.sum_mul, mul_comm]
 
-/-- **The orthogonality defect in the Pythagoras identity**: `‖∑ c_i v_i‖²` differs from
-`∑ |c_i|²` by at most `ε' (∑ |c_i|)²`, so at `ε' = 0` the coordinates carry the norm exactly, and
-in general the small-problem norm is the true norm up to a term of order `ε'`. -/
+/-- **The orthogonality defect in the Pythagoras identity**: `‖∑ c_i v_i‖²` differs from `∑ |c_i|²`
+by at most `ε' (∑ |c_i|)²`, so at `ε' = 0` the coordinates carry the norm exactly, and in general
+the small-problem norm is the true norm up to a term of order `ε'`. -/
 theorem abs_norm_sq_sub_sum_le (c : Fin (m + 1) → 𝕜) :
     |‖∑ i, c i • v i‖ ^ 2 - ∑ i, ‖c i‖ ^ 2| ≤ ε' * (∑ i, ‖c i‖) ^ 2 := by
   classical

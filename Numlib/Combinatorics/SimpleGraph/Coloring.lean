@@ -11,28 +11,27 @@ import Mathlib.Combinatorics.SimpleGraph.Finite
 /-!
 # Greedy colouring of a finite simple graph
 
-`SimpleGraph.greedyColoring G v` colours the vertices of a finite simple graph, along a linear
-order on the vertex type, with the least natural number that no already-coloured neighbour of `v`
-carries. It is a proper colouring (`SimpleGraph.greedyColoring_isColoring`) and it uses at most
-`G.maxDegree + 1` colours (`SimpleGraph.greedyColoring_le_maxDegree`), because at each vertex the
-colours ruled out are the values at its earlier neighbours, of which there are at most
-`G.degree v`. Since the bound does not depend on the order, every finite simple graph satisfies
-`G.Colorable (G.maxDegree + 1)` (`SimpleGraph.colorable_maxDegree_add_one`) — a brick Mathlib's
-colouring files, which relate `chromaticNumber` to no degree at all, do not have.
+`SimpleGraph.greedyColoring G v` colours the vertices of a finite simple graph, along a linear order
+on the vertex type, with the least natural number that no already-coloured neighbour of `v` carries.
+It is a proper colouring (`SimpleGraph.greedyColoring_isColoring`) and it uses at most `G.maxDegree
++ 1` colours (`SimpleGraph.greedyColoring_le_maxDegree`), because at each vertex the colours ruled
+out are the values at its earlier neighbours, of which there are at most `G.degree v`. Since the
+bound does not depend on the order, every finite simple graph satisfies `G.Colorable (G.maxDegree +
+1)` (`SimpleGraph.colorable_maxDegree_add_one`) — a brick Mathlib's colouring files, which relate
+`chromaticNumber` to no degree at all, do not have.
 
-On a bipartite graph greedy is optimal, but only if the order is a traversal order: if every
-vertex that is not the least of its connected component has an *earlier neighbour*, then
-`G.greedyColoring v ≤ 1` for every `v` (`SimpleGraph.greedyColoring_le_one_of_isBipartite`).
-The hypothesis cannot be dropped. On the path `0 — 2 — 3 — 1` with the order `0 < 1 < 2 < 3`,
-vertex `1` is not the least of its connected component and has no earlier neighbour; greedy then
-gives colour `0` to `0` and to `1`, colour `1` to `2` and colour `2` to `3`, so it uses three
-colours on a two-colourable graph.
+On a bipartite graph greedy is optimal, but only if the order is a traversal order: if every vertex
+that is not the least of its connected component has an *earlier neighbour*, then `G.greedyColoring
+v ≤ 1` for every `v` (`SimpleGraph.greedyColoring_le_one_of_isBipartite`). The hypothesis cannot be
+dropped. On the path `0 — 2 — 3 — 1` with the order `0 < 1 < 2 < 3`, vertex `1` is not the least of
+its connected component and has no earlier neighbour; greedy then gives colour `0` to `0` and to
+`1`, colour `1` to `2` and colour `2` to `3`, so it uses three colours on a two-colourable graph.
 
-Both facts are used by the multicolour reorderings of a sparse matrix in [Saad][saad2003iterative]
-§3.3.3: the diagonal blocks of an ordering that groups the indices by colour are diagonal
-matrices, so `G.maxDegree + 1` blocks always suffice, and two blocks suffice when the adjacency
-graph is bipartite. No traversal is formalized: greedy colouring is a function of the order alone,
-and the orders the book's algorithms produce are the ones satisfying the hypothesis above.
+Both facts are used by the multicolour reorderings of a sparse matrix in [saad2003iterative] §3.3.3:
+the diagonal blocks of an ordering that groups the indices by colour are diagonal matrices, so
+`G.maxDegree + 1` blocks always suffice, and two blocks suffice when the adjacency graph is
+bipartite. No traversal is formalized: greedy colouring is a function of the order alone, and the
+orders the book's algorithms produce are the ones satisfying the hypothesis above.
 
 ## Implementation notes
 
@@ -71,8 +70,8 @@ decreasing_by exact card_filter_lt_lt_card_filter_lt ‹_›
 
 variable [Fintype V]
 
-/-- The defining equation of `SimpleGraph.greedyColoring`, which a `termination_by`
-definition does not give by `rfl`. -/
+/-- The defining equation of `SimpleGraph.greedyColoring`, which a `termination_by` definition does
+not give by `rfl`. -/
 theorem greedyColoring_def (v : V) :
     G.greedyColoring v = sInf {k | ∀ w, w < v → G.Adj w v → G.greedyColoring w ≠ k} := by
   rw [greedyColoring]
@@ -162,9 +161,9 @@ theorem card_greedyExcludedColors_le_degree (v : V) :
     exact mem_image.2 ⟨w, (mem_neighborFinset G v w).2 hadj.symm, hc⟩
   exact (card_le_card hsub).trans card_image_le
 
-/-- The greedy colouring uses at most `G.maxDegree + 1` colours: at `v` the excluded colours are
-the values at the earlier neighbours of `v`, at most `G.degree v ≤ G.maxDegree` of them, so the
-least natural number outside them is at most `G.maxDegree`. -/
+/-- The greedy colouring uses at most `G.maxDegree + 1` colours: at `v` the excluded colours are the
+values at the earlier neighbours of `v`, at most `G.degree v ≤ G.maxDegree` of them, so the least
+natural number outside them is at most `G.maxDegree`. -/
 theorem greedyColoring_le_maxDegree (v : V) : G.greedyColoring v ≤ G.maxDegree :=
   ((greedyColoring_le_card_excludedColors v).trans
     (G.card_greedyExcludedColors_le_degree v)).trans (G.degree_le_maxDegree v)
@@ -175,8 +174,8 @@ namespace SimpleGraph
 
 variable {V : Type*} [Fintype V] (G : SimpleGraph V) [DecidableRel G.Adj]
 
-/-- Every finite simple graph can be coloured with `G.maxDegree + 1` colours: greedy colouring
-along any linear order on the vertices does it, and the bound does not depend on the order. -/
+/-- Every finite simple graph can be coloured with `G.maxDegree + 1` colours: greedy colouring along
+any linear order on the vertices does it, and the bound does not depend on the order. -/
 theorem colorable_maxDegree_add_one : G.Colorable (G.maxDegree + 1) := by
   let _ : LinearOrder V := LinearOrder.lift' (Fintype.equivFin V) (Equiv.injective _)
   exact (colorable_iff_exists_bdd_nat_coloring _).2
@@ -192,8 +191,8 @@ variable {V : Type*} [Fintype V] [LinearOrder V] {G : SimpleGraph V}
 private theorem fin_two_eq_of_ne_of_ne {a b c : Fin 2} (ha : a ≠ c) (hb : b ≠ c) : a = b := by
   revert ha hb; revert a b c; decide
 
-/-- With three values of `Fin 2` of which two differ, being equal to one is failing to be equal
-to the other. -/
+/-- With three values of `Fin 2` of which two differ, being equal to one is failing to be equal to
+the other. -/
 private theorem fin_two_eq_iff_ne {a b c : Fin 2} (h : b ≠ c) : a = c ↔ ¬ a = b := by
   revert h; revert a b c; decide
 
@@ -201,9 +200,9 @@ private theorem fin_two_eq_iff_ne {a b c : Fin 2} (h : b ≠ c) : a = c ↔ ¬ a
 private theorem nat_eq_iff_ne {x y z : ℕ} (hx : x ≤ 1) (hy : y ≤ 1) (hz : z ≤ 1) (h : y ≠ z) :
     x = z ↔ ¬ x = y := by omega
 
-/-- The induction behind `SimpleGraph.greedyColoring_le_one_of_isBipartite`: along a traversal
-order the greedy colouring of a two-colourable graph is a two-colouring, and below every vertex it
-agrees with the given one up to a swap. -/
+/-- The induction behind `SimpleGraph.greedyColoring_le_one_of_isBipartite`: along a traversal order
+the greedy colouring of a two-colourable graph is a two-colouring, and below every vertex it agrees
+with the given one up to a swap. -/
 private theorem greedyColoring_le_one_aux (C : G.Coloring (Fin 2))
     (hord : ∀ v : V, (∃ u, u < v ∧ G.Reachable u v) → ∃ w, w < v ∧ G.Adj w v) (v : V) :
     G.greedyColoring v ≤ 1 ∧
@@ -257,8 +256,8 @@ private theorem greedyColoring_le_one_aux (C : G.Coloring (Fin 2))
     rw [hexcl, card_empty] at h
     omega
 
-/-- Greedy colouring is optimal on a bipartite graph, provided the order is a traversal order:
-if `G` is two-colourable and every vertex that is not the least of its connected component has an
+/-- Greedy colouring is optimal on a bipartite graph, provided the order is a traversal order: if
+`G` is two-colourable and every vertex that is not the least of its connected component has an
 earlier neighbour, then `G.greedyColoring v ≤ 1` for every `v`.
 
 The hypothesis on the order is necessary; the module docstring has a four-vertex path on which

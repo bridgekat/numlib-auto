@@ -7,28 +7,26 @@ import Numlib.LinearSolve.Stationary.Splitting
 /-!
 # Stationary iterations for symmetric positive definite systems
 
-The convergence theory of the classical splittings when the matrix is symmetric positive
-definite, stated at the operator level wherever the proof allows.
+The convergence theory of the classical splittings when the matrix is symmetric positive definite,
+stated at the operator level wherever the proof allows.
 
-* `Stationary.Splitting.spectralRadius_lt_one_of_isSymmetricCoercive` is the
-  **Householder–John / Ostrowski–Reich theorem** ([Saad][saad2003iterative] Thm 4.10;
-  [Kress][kress1998numerical] Thm 4.12): for a symmetric coercive `A` on a
-  finite-dimensional complex inner product space and a splitting `A = M - N` whose
-  `Q = M + Mᴴ - A` is coercive, the iteration operator `M⁻¹ N` has spectral radius `< 1`.
+* `Stationary.Splitting.spectralRadius_lt_one_of_isSymmetricCoercive` is the **Householder–John /
+  Ostrowski–Reich theorem** ([saad2003iterative] Thm 4.10; [kress1998numerical] Thm 4.12): for a
+  symmetric coercive `A` on a finite-dimensional complex inner product space and a splitting `A = M
+  - N` whose `Q = M + Mᴴ - A` is coercive, the iteration operator `M⁻¹ N` has spectral radius `< 1`.
   `Stationary.Splitting.isCoercive_of_spectralRadius_lt_one` is its converse: with `Q` coercive,
   convergence forces `A` to be positive definite.
   `Matrix.sorSplitting_complexSpectralRadius_lt_one_iff_posDef` assembles the two into the SOR
   equivalence for a real symmetric matrix with positive diagonal and `0 < ω < 2`.
-* `Stationary.Splitting.richardson_complexSpectralRadius_eq` and its companions compute the
-  spectral radius of Richardson's iteration `G_α = 1 - α A`, characterize convergence as
-  `0 < α < 2/λmax` and minimize the radius at `α = 2/(λmin + λmax)` ([Saad][saad2003iterative]
-  Example 4.1; [Atkinson–Han][han2009theoretical] Exercise 5.2.3).
-* `Matrix.jorSplitting` is Jacobi over-relaxation, `M = ω⁻¹ D`, whose optimal parameter is
-  `2/(2 - λmax - λmin)` for a Jacobi matrix with real eigenvalues ([Kress][kress1998numerical] Thm
-  4.9).
+* `Stationary.Splitting.richardson_complexSpectralRadius_eq` and its companions compute the spectral
+  radius of Richardson's iteration `G_α = 1 - α A`, characterize convergence as `0 < α < 2/λmax` and
+  minimize the radius at `α = 2/(λmin + λmax)` ([saad2003iterative] Example 4.1;
+  [han2009theoretical] Exercise 5.2.3).
+* `Matrix.jorSplitting` is Jacobi over-relaxation, `M = ω⁻¹ D`, whose optimal parameter is `2/(2 -
+  λmax - λmin)` for a Jacobi matrix with real eigenvalues ([kress1998numerical] Thm 4.9).
 * `Matrix.det_sorSplitting_iterationOperator` computes `det G_ω = (1 - ω)ⁿ`, from which
   `Matrix.lt_two_of_sorSplitting_complexSpectralRadius_lt_one` reads off **Kahan's necessary
-  condition** `0 < ω < 2` for SOR to converge ([Kress][kress1998numerical] Thm 4.11).
+  condition** `0 < ω < 2` for SOR to converge ([kress1998numerical] Thm 4.11).
 
 Everything spectral is stated over `ℂ`, because the real spectrum of a real matrix is the wrong
 object: `Matrix.complexSpectralRadius` is the spectral radius of the complexification, and the
@@ -47,8 +45,8 @@ section Operator
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℂ E] [FiniteDimensional ℂ E]
 
-/-- The quadratic form of `Q = M + Mᴴ - A` is `2 re ⟪M x, x⟫ - re ⟪A x, x⟫`: the adjoint
-contributes the conjugate of the form of `M`. -/
+/-- The quadratic form of `Q = M + Mᴴ - A` is `2 re ⟪M x, x⟫ - re ⟪A x, x⟫`: the adjoint contributes
+the conjugate of the form of `M`. -/
 private theorem re_inner_hermitianSum (M A : E →L[ℂ] E) (x : E) :
     (inner ℂ ((M + ContinuousLinearMap.adjoint M - A) x) x : ℂ).re
       = 2 * (inner ℂ (M x) x : ℂ).re - (inner ℂ (A x) x : ℂ).re := by
@@ -60,8 +58,8 @@ private theorem re_inner_hermitianSum (M A : E →L[ℂ] E) (x : E) :
   ring
 
 omit [FiniteDimensional ℂ E] in
-/-- `M (x - G x) = A x` for the iteration operator `G = 1 - M⁻¹ A`: the increment of one step is
-the preconditioned residual. -/
+/-- `M (x - G x) = A x` for the iteration operator `G = 1 - M⁻¹ A`: the increment of one step is the
+preconditioned residual. -/
 private theorem apply_sub_iterationOperator {A : E →L[ℂ] E} (s : Splitting A) (e : E) :
     s.m (e - s.iterationOperator e) = A e := by
   have hop : s.iterationOperator e = e - (Ring.inverse s.m) (A e) := by
@@ -69,10 +67,9 @@ private theorem apply_sub_iterationOperator {A : E →L[ℂ] E} (s : Splitting A
   have hd : e - s.iterationOperator e = (Ring.inverse s.m) (A e) := by rw [hop]; abel
   rw [hd, ← mul_apply_eq_comp, Ring.mul_inverse_cancel _ s.isUnit, one_apply_eq_self]
 
-/-- **The energy identity of a splitting.**  For symmetric `A` the `A`-form drops in one step of
-the iteration by exactly the `Q`-form of the increment, `Q = M + Mᴴ - A`:
-`⟪A e, e⟫ - ⟪A G e, G e⟫ = ⟪Q (e - G e), e - G e⟫`.  Both halves of the Householder–John
-theorem are read off this identity. -/
+/-- **The energy identity of a splitting.**  For symmetric `A` the `A`-form drops in one step of the
+iteration by exactly the `Q`-form of the increment, `Q = M + Mᴴ - A`: `⟪A e, e⟫ - ⟪A G e, G e⟫ = ⟪Q
+(e - G e), e - G e⟫`.  Both halves of the Householder–John theorem are read off this identity. -/
 private theorem energy_identity {A : E →L[ℂ] E} (s : Splitting A)
     (hA : (A : E →ₗ[ℂ] E).IsSymmetric) (e : E) :
     (inner ℂ (A e) e : ℂ) - (inner ℂ (A (s.iterationOperator e)) (s.iterationOperator e) : ℂ)
@@ -94,14 +91,14 @@ private theorem energy_identity {A : E →L[ℂ] E} (s : Splitting A)
   ring
 
 /-- **The Householder–John / Ostrowski–Reich theorem**, in operator form.  If `A` is symmetric
-coercive on a finite-dimensional complex inner product space and `A = M - N` is a splitting whose
-`Q = M + Mᴴ - A` is coercive, then the iteration operator `M⁻¹ N` has spectral radius `< 1`, so
-the stationary iteration converges (Saad, *Iterative Methods for Sparse Linear Systems*, Thm 4.10;
-Kress, *Numerical Analysis*, Thm 4.12 is the case `M = ω⁻¹ D - E`).
+coercive on a finite-dimensional complex inner product space and `A = M - N` is a splitting whose `Q
+= M + Mᴴ - A` is coercive, then the iteration operator `M⁻¹ N` has spectral radius `< 1`, so the
+stationary iteration converges ([saad2003iterative], Thm 4.10; [kress1998numerical], Thm 4.12 is the
+case `M = ω⁻¹ D - E`).
 
-The proof is the Rayleigh-quotient identity at an eigenpair `M⁻¹ N x = μ x`: it gives
-`A x = (1 - μ) M x`, and comparing the `A`- and `Q`-forms at `x` yields
-`(1 - |μ|²) ⟪A x, x⟫ = |1 - μ|² ⟪Q x, x⟫`, where both forms are positive. -/
+The proof is the Rayleigh-quotient identity at an eigenpair `M⁻¹ N x = μ x`: it gives `A x = (1 - μ)
+M x`, and comparing the `A`- and `Q`-forms at `x` yields `(1 - |μ|²) ⟪A x, x⟫ = |1 - μ|² ⟪Q x, x⟫`,
+where both forms are positive. -/
 theorem spectralRadius_lt_one_of_isSymmetricCoercive {A : E →L[ℂ] E} (s : Splitting A)
     (hA : (A : E →ₗ[ℂ] E).IsSymmetricCoercive)
     (hQ : ((s.m + ContinuousLinearMap.adjoint s.m - A : E →L[ℂ] E) : E →ₗ[ℂ] E).IsCoercive) :
@@ -187,9 +184,9 @@ theorem spectralRadius_lt_one_of_isSymmetricCoercive {A : E →L[ℂ] E} (s : Sp
       nlinarith [norm_nonneg μ]
     exact_mod_cast hmu
 
-/-- **The converse of the Householder–John theorem** (Saad, *Iterative Methods for Sparse Linear
-Systems*, Thm 4.10, "only if").  For symmetric `A` and a splitting with coercive
-`Q = M + Mᴴ - A`, convergence of the iteration forces `A` to be coercive, i.e. positive definite.
+/-- **The converse of the Householder–John theorem** ([saad2003iterative], Thm 4.10, "only if").
+For symmetric `A` and a splitting with coercive `Q = M + Mᴴ - A`, convergence of the iteration
+forces `A` to be coercive, i.e. positive definite.
 
 Along the error sequence `e_{k+1} = M⁻¹ N e_k` the energy identity makes `k ↦ ⟪A e_k, e_k⟫`
 nonincreasing, and it tends to `0` because `e_k → 0`; so `⟪A e₀, e₀⟫ ≥ ⟪A e₁, e₁⟫ ≥ 0`, with the
@@ -277,8 +274,8 @@ open Stationary
 
 variable {n : Type*} [Fintype n] [DecidableEq n]
 
-/-- The spectral radius of a real matrix is `K` as soon as every complex eigenvalue has modulus
-at most `K` and one of them attains it. -/
+/-- The spectral radius of a real matrix is `K` as soon as every complex eigenvalue has modulus at
+most `K` and one of them attains it. -/
 private theorem complexSpectralRadius_eq_of_forall_le {X : Matrix n n ℝ} {K : ℝ}
     (hle : ∀ μ ∈ spectrum ℂ (complexify X), ‖μ‖ ≤ K)
     (hmem : ∃ μ ∈ spectrum ℂ (complexify X), ‖μ‖ = K) :
@@ -367,8 +364,8 @@ private theorem IsHermitian.spectrum_complexify_eq {X : Matrix n n ℝ} (hX : X.
     exact (ofReal_mem_spectrum_complexify_iff X r).mpr hr
 
 /-- Coercivity of a real symmetric matrix with a given constant is coercivity of its
-complexification with the same constant: both say that the eigenvalues are at least that
-constant, and the two spectra correspond under `Matrix.complexify`. -/
+complexification with the same constant: both say that the eigenvalues are at least that constant,
+and the two spectra correspond under `Matrix.complexify`. -/
 private theorem isCoerciveWith_toEuclideanLin_complexify_iff {X : Matrix n n ℝ}
     (hX : X.IsHermitian) (c : ℝ) :
     (toEuclideanLin (complexify X)).IsCoerciveWith c ↔ (toEuclideanLin X).IsCoerciveWith c := by
@@ -428,9 +425,9 @@ private def complexifyRingHom : Matrix n n ℝ →+* Matrix n n ℂ where
   map_zero' := complexify_zero
   map_add' := complexify_add
 
-/-- A splitting of a real matrix, carried to the corresponding operator on `EuclideanSpace ℂ n`
-by `Matrix.complexify` and `Matrix.toEuclideanCLM`.  This is the bridge that lets the operator
-form of the Householder–John theorem be applied to a real matrix. -/
+/-- A splitting of a real matrix, carried to the corresponding operator on `EuclideanSpace ℂ n` by
+`Matrix.complexify` and `Matrix.toEuclideanCLM`.  This is the bridge that lets the operator form of
+the Householder–John theorem be applied to a real matrix. -/
 private noncomputable def complexSplitting {a : Matrix n n ℝ} (s : Stationary.Splitting a) :
     Stationary.Splitting (toEuclideanCLM (n := n) (𝕜 := ℂ) (complexify a)) where
   m := toEuclideanCLM (n := n) (𝕜 := ℂ) (complexify s.m)
@@ -463,9 +460,9 @@ private theorem le_of_spectrum_subset {X : Matrix n n ℝ} {lmin lmax : ℝ}
   rw [Complex.ofReal_inj] at hre
   exact hre ▸ hr.2
 
-/-- `t ↦ max |1 - t a| |1 - t b|` is bounded below by `(b - a)/(b + a)` for `0 < a ≤ b`: the
-convex combination with weights `b/(a+b)`, `a/(a+b)` of `1 - t a` and `-(1 - t b)` is that
-constant, whatever `t` is. -/
+/-- `t ↦ max |1 - t a| |1 - t b|` is bounded below by `(b - a)/(b + a)` for `0 < a ≤ b`: the convex
+combination with weights `b/(a+b)`, `a/(a+b)` of `1 - t a` and `-(1 - t b)` is that constant,
+whatever `t` is. -/
 private theorem le_max_abs_one_sub_mul {a b : ℝ} (ha : 0 < a) (hab : a ≤ b) (t : ℝ) :
     (b - a) / (b + a) ≤ max |1 - t * a| |1 - t * b| := by
   have hb : 0 < b := ha.trans_le hab
@@ -474,9 +471,8 @@ private theorem le_max_abs_one_sub_mul {a b : ℝ} (ha : 0 < a) (hab : a ≤ b) 
   rw [div_le_iff₀ (by linarith : (0 : ℝ) < b + a)]
   nlinarith [mul_le_mul_of_nonneg_left hA hb.le, mul_le_mul_of_nonneg_left hB ha.le]
 
-/-- At `t = 2/(a + b)` the two branches of `max |1 - t a| |1 - t b|` are equal, and the common
-value `(b - a)/(b + a)` is the lower bound of `le_max_abs_one_sub_mul`: the minimum is attained
-there. -/
+/-- At `t = 2/(a + b)` the two branches of `max |1 - t a| |1 - t b|` are equal, and the common value
+`(b - a)/(b + a)` is the lower bound of `le_max_abs_one_sub_mul`: the minimum is attained there. -/
 private theorem max_abs_one_sub_mul_optimal {a b : ℝ} (ha : 0 < a) (hab : a ≤ b) :
     max |1 - 2 / (a + b) * a| |1 - 2 / (a + b) * b| = (b - a) / (b + a) := by
   have hb : 0 < b := ha.trans_le hab
@@ -485,8 +481,8 @@ private theorem max_abs_one_sub_mul_optimal {a b : ℝ} (ha : 0 < a) (hab : a �
   have h2 : 1 - 2 / (a + b) * b = -((b - a) / (b + a)) := by field_simp; ring
   rw [h1, h2, abs_neg, abs_of_nonneg (div_nonneg (by linarith) (by linarith)), max_self]
 
-/-- The spectral radius of `1 - α A` for a real symmetric `A` whose eigenvalues fill
-`[lmin, lmax]`. -/
+/-- The spectral radius of `1 - α A` for a real symmetric `A` whose eigenvalues fill `[lmin, lmax]`.
+-/
 private theorem complexSpectralRadius_one_sub_smul {A : Matrix n n ℝ} (hA : A.IsHermitian)
     {lmin lmax : ℝ} (hsub : spectrum ℝ A ⊆ Set.Icc lmin lmax) (hmin : lmin ∈ spectrum ℝ A)
     (hmax : lmax ∈ spectrum ℝ A) {α : ℝ} (hα : α ≠ 0) :
@@ -513,7 +509,7 @@ variable {n : Type*} [Fintype n] [DecidableEq n]
 /-- **Richardson's iteration** `G_α = 1 - α A` for a real symmetric `A` whose eigenvalues fill
 `[lmin, lmax]`: `ρ(G_α) = max |1 - α lmin| |1 - α lmax|`.  The spectrum of `G_α` is the image of
 that of `A` under `t ↦ 1 - α t`, and `|·|` is convex, so the largest value sits at an endpoint
-(Saad, *Iterative Methods for Sparse Linear Systems*, Example 4.1). -/
+([saad2003iterative], Example 4.1). -/
 theorem richardson_complexSpectralRadius_eq {A : Matrix n n ℝ} (hA : A.IsHermitian)
     {lmin lmax : ℝ} (hsub : spectrum ℝ A ⊆ Set.Icc lmin lmax) (hmin : lmin ∈ spectrum ℝ A)
     (hmax : lmax ∈ spectrum ℝ A) {α : ℝ} (hα : α ≠ 0) :
@@ -521,9 +517,8 @@ theorem richardson_complexSpectralRadius_eq {A : Matrix n n ℝ} (hA : A.IsHermi
       = ENNReal.ofReal (max |1 - α * lmin| |1 - α * lmax|) := by
   rw [richardson_iterationOperator, complexSpectralRadius_one_sub_smul hA hsub hmin hmax hα]
 
-/-- Richardson's iteration for a symmetric positive definite `A` converges exactly for
-`0 < α < 2/λmax` (Saad, *Iterative Methods for Sparse Linear Systems*, Example 4.1;
-Atkinson–Han, *Theoretical Numerical Analysis*, Exercise 5.2.3). -/
+/-- Richardson's iteration for a symmetric positive definite `A` converges exactly for `0 < α <
+2/λmax` ([saad2003iterative], Example 4.1; [han2009theoretical], Exercise 5.2.3). -/
 theorem richardson_complexSpectralRadius_lt_one_iff {A : Matrix n n ℝ} (hA : A.IsHermitian)
     {lmin lmax : ℝ} (hsub : spectrum ℝ A ⊆ Set.Icc lmin lmax) (hmin : lmin ∈ spectrum ℝ A)
     (hmax : lmax ∈ spectrum ℝ A) (hpos : 0 < lmin) {α : ℝ} (hα : α ≠ 0) :
@@ -540,10 +535,10 @@ theorem richardson_complexSpectralRadius_lt_one_iff {A : Matrix n n ℝ} (hA : A
   · rintro ⟨h1, h2⟩
     refine ⟨⟨?_, ?_⟩, ?_, ?_⟩ <;> nlinarith
 
-/-- **The optimal Richardson parameter** is `α = 2/(λmin + λmax)`: it minimizes the spectral
-radius of `G_α = 1 - α A` over `α > 0` (Saad, *Iterative Methods for Sparse Linear Systems*,
-Example 4.1).  The iteration operator is `Stationary.Splitting.richardson_iterationOperator`;
-the minimum value is `richardson_complexSpectralRadius_optimal_eq`. -/
+/-- **The optimal Richardson parameter** is `α = 2/(λmin + λmax)`: it minimizes the spectral radius
+of `G_α = 1 - α A` over `α > 0` ([saad2003iterative], Example 4.1).  The iteration operator is
+`Stationary.Splitting.richardson_iterationOperator`; the minimum value is
+`richardson_complexSpectralRadius_optimal_eq`. -/
 theorem isMinOn_richardson_complexSpectralRadius {A : Matrix n n ℝ} (hA : A.IsHermitian)
     {lmin lmax : ℝ} (hsub : spectrum ℝ A ⊆ Set.Icc lmin lmax) (hmin : lmin ∈ spectrum ℝ A)
     (hmax : lmax ∈ spectrum ℝ A) (hpos : 0 < lmin) :
@@ -557,9 +552,8 @@ theorem isMinOn_richardson_complexSpectralRadius {A : Matrix n n ℝ} (hA : A.Is
     max_abs_one_sub_mul_optimal hpos hle]
   exact ENNReal.ofReal_le_ofReal (le_max_abs_one_sub_mul hpos hle α)
 
-/-- The value of the optimal Richardson spectral radius, `(λmax - λmin)/(λmax + λmin)` (Saad,
-*Iterative Methods for Sparse Linear Systems*, Example 4.1): one less two over the condition
-number plus one. -/
+/-- The value of the optimal Richardson spectral radius, `(λmax - λmin)/(λmax + λmin)`
+([saad2003iterative], Example 4.1): one less two over the condition number plus one. -/
 theorem richardson_complexSpectralRadius_optimal_eq {A : Matrix n n ℝ} (hA : A.IsHermitian)
     {lmin lmax : ℝ} (hsub : spectrum ℝ A ⊆ Set.Icc lmin lmax) (hmin : lmin ∈ spectrum ℝ A)
     (hmax : lmax ∈ spectrum ℝ A) (hpos : 0 < lmin) :
@@ -592,8 +586,8 @@ private theorem ringInverse_smul {R 𝕜 : Type*} [Ring R] [Field 𝕜] [Algebra
     rw [smul_mul_smul_comm, inv_mul_cancel₀ hc, Ring.inverse_mul_cancel _ hm, one_smul]
   exact Ring.inverse_unit ⟨c • m, c⁻¹ • Ring.inverse m, h1, h2⟩
 
-/-- **Jacobi over-relaxation**: the splitting with `M = ω⁻¹ D` of a matrix with invertible
-diagonal.  Its iteration operator is the relaxation `(1 - ω) + ω B` of the Jacobi one
+/-- **Jacobi over-relaxation**: the splitting with `M = ω⁻¹ D` of a matrix with invertible diagonal.
+Its iteration operator is the relaxation `(1 - ω) + ω B` of the Jacobi one
 (`Matrix.jorSplitting_iterationOperator`), so `ω = 1` is Jacobi itself. -/
 noncomputable def jorSplitting {𝕜 : Type*} [Field 𝕜] (A : Matrix n n 𝕜)
     (h : IsUnit (diagPart A)) {ω : 𝕜} (hω : ω ≠ 0) : Splitting A :=
@@ -601,8 +595,8 @@ noncomputable def jorSplitting {𝕜 : Type*} [Field 𝕜] (A : Matrix n n 𝕜)
     rw [Algebra.smul_def]
     exact ((isUnit_iff_ne_zero.mpr (inv_ne_zero hω)).map (algebraMap 𝕜 (Matrix n n 𝕜))).mul h⟩
 
-/-- The JOR iteration matrix `(1 - ω) 1 + ω B` is the relaxation of the Jacobi iteration matrix
-`B = -D⁻¹ (E + F)` towards the identity. -/
+/-- The JOR iteration matrix `(1 - ω) 1 + ω B` is the relaxation of the Jacobi iteration matrix `B =
+-D⁻¹ (E + F)` towards the identity. -/
 theorem jorSplitting_iterationOperator {𝕜 : Type*} [Field 𝕜] (A : Matrix n n 𝕜)
     (h : IsUnit (diagPart A)) {ω : 𝕜} (hω : ω ≠ 0) :
     (jorSplitting A h hω).iterationOperator
@@ -614,9 +608,9 @@ theorem jorSplitting_iterationOperator {𝕜 : Type*} [Field 𝕜] (A : Matrix n
   module
 
 /-- **The optimal relaxation parameter of JOR** is `ω = 2/(2 - λmax - λmin)`, where `λmin` and
-`λmax` are the extreme eigenvalues of the Jacobi matrix `B`, assumed real (Kress, *Numerical
-Analysis*, Thm 4.9).  Only `λmax < 1` is used, which is half of the convergence of the Jacobi
-iteration; the JOR iteration operator is `Matrix.jorSplitting_iterationOperator`. -/
+`λmax` are the extreme eigenvalues of the Jacobi matrix `B`, assumed real ([kress1998numerical], Thm
+4.9).  Only `λmax < 1` is used, which is half of the convergence of the Jacobi iteration; the JOR
+iteration operator is `Matrix.jorSplitting_iterationOperator`. -/
 theorem jorSplitting_isMinOn_complexSpectralRadius {A : Matrix n n ℝ} (h : IsUnit (diagPart A))
     {lmin lmax : ℝ}
     (hsub : spectrum ℂ (complexify (jacobiSplitting A h).iterationOperator) ⊆
@@ -646,9 +640,8 @@ theorem jorSplitting_isMinOn_complexSpectralRadius {A : Matrix n n ℝ} (h : IsU
 variable [LinearOrder n]
 
 /-- **The determinant of the SOR iteration matrix** is `(1 - ω)ⁿ`: it is the inverse of the lower
-triangular `D - ωE`, whose diagonal is that of `A`, times the upper triangular
-`(1 - ω) D + ωF`, whose diagonal is `(1 - ω)` times that of `A` (Kress, *Numerical Analysis*,
-proof of Thm 4.11). -/
+triangular `D - ωE`, whose diagonal is that of `A`, times the upper triangular `(1 - ω) D + ωF`,
+whose diagonal is `(1 - ω)` times that of `A` ([kress1998numerical], proof of Thm 4.11). -/
 theorem det_sorSplitting_iterationOperator {𝕜 : Type*} [Field 𝕜] (A : Matrix n n 𝕜)
     (h : IsUnit (diagPart A)) {ω : 𝕜} (hω : ω ≠ 0) :
     (A.sorSplitting h hω).iterationOperator.det = (1 - ω) ^ Fintype.card n := by
@@ -671,9 +664,8 @@ theorem det_sorSplitting_iterationOperator {𝕜 : Type*} [Field 𝕜] (A : Matr
   field_simp
 
 /-- **Kahan's necessary condition**: the SOR iteration can converge only for `0 < ω < 2`
-(Kress, *Numerical Analysis*, Thm 4.11).  The powers of the iteration matrix tend to `0`, so its
-determinant `(1 - ω)ⁿ` has modulus `< 1`, which for a nonempty index type forces
-`|1 - ω| < 1`. -/
+([kress1998numerical], Thm 4.11).  The powers of the iteration matrix tend to `0`, so its
+determinant `(1 - ω)ⁿ` has modulus `< 1`, which for a nonempty index type forces `|1 - ω| < 1`. -/
 theorem lt_two_of_sorSplitting_complexSpectralRadius_lt_one [Nonempty n] {A : Matrix n n ℝ}
     (h : IsUnit (diagPart A)) {ω : ℝ} (hω : ω ≠ 0)
     (hρ : complexSpectralRadius (A.sorSplitting h hω).iterationOperator < 1) :
@@ -688,9 +680,8 @@ theorem lt_two_of_sorSplitting_complexSpectralRadius_lt_one [Nonempty n] {A : Ma
   rw [pow_lt_one_iff_of_nonneg (abs_nonneg _) Fintype.card_ne_zero, abs_lt] at hdet
   exact ⟨by linarith [hdet.2], by linarith [hdet.1]⟩
 
-/-- The Householder–John matrix `Q = M + Mᴴ - A` of the SOR splitting of a symmetric `A` is
-`(2/ω - 1) D`: the strictly lower part of `M` and the strictly upper part of `Mᴴ` reassemble
-`A - D`. -/
+/-- The Householder–John matrix `Q = M + Mᴴ - A` of the SOR splitting of a symmetric `A` is `(2/ω -
+1) D`: the strictly lower part of `M` and the strictly upper part of `Mᴴ` reassemble `A - D`. -/
 private theorem sorSplitting_m_add_conjTranspose_sub {A : Matrix n n ℝ} (hA : A.IsHermitian)
     (h : IsUnit (diagPart A)) {ω : ℝ} (hω : ω ≠ 0) :
     (A.sorSplitting h hω).m + ((A.sorSplitting h hω).m)ᴴ - A = (2 / ω - 1) • diagPart A := by
@@ -710,10 +701,9 @@ private theorem sorSplitting_m_add_conjTranspose_sub {A : Matrix n n ℝ} (hA : 
     ring
   · simp [hm, hij, hij.ne, hij.ne', asymm hij, hsymm j i]
 
-/-- **The Ostrowski–Reich theorem for SOR** (Saad, *Iterative Methods for Sparse Linear Systems*,
-Thm 4.10; Kress, *Numerical Analysis*, Thm 4.12).  For a real symmetric `A` with positive diagonal
-and a relaxation parameter `0 < ω < 2`, the SOR iteration converges exactly when `A` is positive
-definite.
+/-- **The Ostrowski–Reich theorem for SOR** ([saad2003iterative], Thm 4.10; [kress1998numerical],
+Thm 4.12).  For a real symmetric `A` with positive diagonal and a relaxation parameter `0 < ω < 2`,
+the SOR iteration converges exactly when `A` is positive definite.
 
 Both directions are the operator statements
 `Stationary.Splitting.spectralRadius_lt_one_of_isSymmetricCoercive` and

@@ -6,22 +6,22 @@ import Numlib.Krylov.Relations
 # Hessenberg relations, FOM/GMRES coordinates and Givens rotations
 
 * `Krylov.HessenbergRelation A v h`: a sequence `v` with `A v_j = ∑_{i ≤ j+1} h i j v_i`
-  ([Saad, *Iterative Methods*][saad2003iterative] (6.6)–(6.7)), *without* orthogonality, so that the
-  residual formulas Saad (6.18), (6.27) and Prop 6.7 apply verbatim to IOM/DIOM/DQGMRES and
-  (Saad Ch. 7) to the bi-Lanczos basis of QMR; Arnoldi is the instance
+  ([saad2003iterative] (6.6)–(6.7)), *without* orthogonality, so that the residual formulas
+  [saad2003iterative] (6.18), (6.27) and Prop 6.7 apply verbatim to IOM/DIOM/DQGMRES and
+  ([saad2003iterative] Ch. 7) to the bi-Lanczos basis of QMR; Arnoldi is the instance
   `Arnoldi.hessenbergRelation`.
-* FOM and GMRES in coordinates (Saad (6.16)–(6.17), (6.28)–(6.30)): for `m ≤ grade`, the
-  Galerkin iterate is `x₀ + V_m y` with `H_m y = β e₁`, exists uniquely iff `H_m` is a unit,
-  and the minimal-residual iterate is `x₀ + V_m y` with `y` the least-squares solution of
-  `H̄_m y ≈ β e₁`.
+* FOM and GMRES in coordinates ([saad2003iterative] (6.16)–(6.17), (6.28)–(6.30)): for `m ≤ grade`,
+  the Galerkin iterate is `x₀ + V_m y` with `H_m y = β e₁`, exists uniquely iff `H_m` is a unit, and
+  the minimal-residual iterate is `x₀ + V_m y` with `y` the least-squares solution of `H̄_m y ≈ β
+  e₁`.
 * Givens rotations, indexed by `ℕ` (no `Fin` casts): the progressive QR factorization of the
   Hessenberg coefficients `h`, the parameters `c_k, s_k, ρ_k`, the transformed right-hand side `γ_k,
-  g_k` with `γ_{k+1} = -s_k γ_k` (Saad (6.37), (6.44)–(6.47), (6.80)–(6.81);
-  [Choi][choi2006iterative] §2.2.3; [Fong–Saunders][fong2012cg] §4.2), `‖r_m‖ = |γ_m|` (Saad
-  (6.42)), and the spec-level identifications `|s_m| = ‖r^G_{m+1}‖ / ‖r^G_m‖`, `|c_m| = ‖r^G_{m+1}‖
-  / ‖r^F_{m+1}‖`, `H_{m+1}` unit iff `c_m ≠ 0` (Saad Prop 6.9, (6.75), Lemma 6.16). Because the
-  rotations are computed from the infinite coefficient function, prefix stability across `m` is
-  automatic.
+  g_k` with `γ_{k+1} = -s_k γ_k` ([saad2003iterative] (6.37), (6.44)–(6.47), (6.80)–(6.81);
+  [choi2006iterative] §2.2.3; [fong2012cg] §4.2), `‖r_m‖ = |γ_m|` ([saad2003iterative] (6.42)), and
+  the spec-level identifications `|s_m| = ‖r^G_{m+1}‖ / ‖r^G_m‖`, `|c_m| = ‖r^G_{m+1}‖ /
+  ‖r^F_{m+1}‖`, `H_{m+1}` unit iff `c_m ≠ 0` ([saad2003iterative] Prop 6.9, (6.75), Lemma 6.16).
+  Because the rotations are computed from the infinite coefficient function, prefix stability across
+  `m` is automatic.
 
 Here `r^G_m` is the residual of the minimal-residual (GMRES) iterate and `r^F_m` that of the
 Galerkin (FOM) iterate, both over `x₀ + 𝒦_m`.
@@ -44,8 +44,8 @@ def hessenbergSqOf (h : ℕ → ℕ → 𝕜) (m : ℕ) : Matrix (Fin m) (Fin m)
 /-- `β e₁ ∈ 𝕜^m`. -/
 def firstVec (β : 𝕜) (m : ℕ) : Fin m → 𝕜 := fun i => if (i : ℕ) = 0 then β else 0
 
-/-- A sequence `v` satisfying the Hessenberg relation `A v_j = ∑_{i ≤ j+1} h i j v_i` with `h`
-upper Hessenberg (Saad, *Iterative Methods*, (6.6)–(6.9) without orthogonality). -/
+/-- A sequence `v` satisfying the Hessenberg relation `A v_j = ∑_{i ≤ j+1} h i j v_i` with `h` upper
+Hessenberg ([saad2003iterative], (6.6)–(6.9) without orthogonality). -/
 structure HessenbergRelation (A : E →ₗ[𝕜] E) (v : ℕ → E) (h : ℕ → ℕ → 𝕜) : Prop where
   /-- The expansion of `A v_j` in the vectors up to `v_{j+1}`. -/
   apply_eq : ∀ j, A (v j) = ∑ i ∈ range (j + 2), h i j • v i
@@ -69,7 +69,7 @@ private theorem apply_eq_range (j N : ℕ) (hj : j + 2 ≤ N) :
   rw [Finset.mem_range] at hi'
   rw [hv.eq_zero_of_lt i j (by omega), zero_smul]
 
-/-- `A V_m = V_{m+1} H̄_m` (Saad, *Iterative Methods*, (6.7)) in coordinates. -/
+/-- `A V_m = V_{m+1} H̄_m` ([saad2003iterative], (6.7)) in coordinates. -/
 theorem apply_sum (m : ℕ) (y : Fin m → 𝕜) :
     A (∑ j, y j • v j) = ∑ i : Fin (m + 1), (hessenbergOf h m).mulVec y i • v i := by
   rw [map_sum]
@@ -84,8 +84,8 @@ theorem apply_sum (m : ℕ) (y : Fin m → 𝕜) :
   rw [Finset.sum_smul]
   exact Finset.sum_congr rfl fun j _ => by rw [mul_comm]
 
-/-- Saad, *Iterative Methods*, (6.27): with `r₀ = β v₀`, the residual of `x₀ + V_m y` is
-`V_{m+1} (β e₁ - H̄_m y)`. -/
+/-- [saad2003iterative], (6.27): with `r₀ = β v₀`, the residual of `x₀ + V_m y` is `V_{m+1} (β e₁ -
+H̄_m y)`. -/
 theorem residual_eq {b x₀ : E} {β : 𝕜} (hr : b - A x₀ = β • v 0) (m : ℕ) (y : Fin m → 𝕜) :
     b - A (x₀ + ∑ j, y j • v j) =
       ∑ i : Fin (m + 1), (firstVec β (m + 1) - (hessenbergOf h m).mulVec y) i • v i := by
@@ -106,8 +106,8 @@ theorem residual_eq {b x₀ : E} {β : 𝕜} (hr : b - A x₀ = β • v 0) (m :
   rw [hsplit, hAx, ← hr]
   abel
 
-/-- Saad, *Iterative Methods*, Prop 6.7 / (6.18): if `H_m y = β e₁` then the residual of
-`x₀ + V_m y` is `-(h_{m,m-1} y_{m-1}) v_m`. -/
+/-- [saad2003iterative], Prop 6.7 / (6.18): if `H_m y = β e₁` then the residual of `x₀ + V_m y` is
+`-(h_{m,m-1} y_{m-1}) v_m`. -/
 theorem residual_eq_of_mulVec_eq {b x₀ : E} {β : 𝕜} (hr : b - A x₀ = β • v 0) {m : ℕ}
     (hm : 0 < m) (y : Fin m → 𝕜) (hy : (hessenbergSqOf h m).mulVec y = firstVec β m) :
     b - A (x₀ + ∑ j, y j • v j) = -(h m (m - 1) * y ⟨m - 1, by omega⟩) • v m := by
@@ -160,13 +160,13 @@ theorem hessenberg_eq (m : ℕ) : hessenberg A b m = hessenbergOf (coeff A b) m 
 /-- `H_m` of the Arnoldi process is the square Hessenberg matrix of its coefficients. -/
 theorem hessenbergSq_eq (m : ℕ) : hessenbergSq A b m = hessenbergSqOf (coeff A b) m := rfl
 
-/-- The Arnoldi vectors and coefficients satisfy the Hessenberg relation (for every `j`, also
-after breakdown where both sides vanish). -/
+/-- The Arnoldi vectors and coefficients satisfy the Hessenberg relation (for every `j`, also after
+breakdown where both sides vanish). -/
 theorem hessenbergRelation : HessenbergRelation A (vec A b) (coeff A b) :=
   ⟨apply_vec A b, fun _ _ hij => coeff_eq_zero_of_lt A b hij⟩
 
-/-- `β v₀ = r₀`: the first Arnoldi vector is the normalized starting vector (and both sides
-vanish when `b = 0`). -/
+/-- `β v₀ = r₀`: the first Arnoldi vector is the normalized starting vector (and both sides vanish
+when `b = 0`). -/
 theorem smul_vec_zero : (‖b‖ : 𝕜) • vec A b 0 = b := by
   rcases eq_or_ne b 0 with rfl | hb
   · simp
@@ -198,8 +198,8 @@ private theorem span_range_vec (m : ℕ) :
   · rintro ⟨j, hj, rfl⟩
     exact ⟨⟨j, hj⟩, rfl⟩
 
-/-- Membership in `𝒦_m` is the existence of Arnoldi coordinates: `z ∈ 𝒦_m` iff `z = V_m y` for
-some `y : Fin m → 𝕜`. -/
+/-- Membership in `𝒦_m` is the existence of Arnoldi coordinates: `z ∈ 𝒦_m` iff `z = V_m y` for some
+`y : Fin m → 𝕜`. -/
 theorem mem_subspace_iff_exists_coeffs (m : ℕ) (z : E) :
     z ∈ subspace A r m ↔ ∃ y : Fin m → 𝕜, z = ∑ j, y j • Arnoldi.vec A r (j : ℕ) := by
   rw [← span_range_vec A r m, Submodule.mem_span_range_iff_exists_fun]
@@ -345,8 +345,7 @@ section Coordinates
 
 variable {A : E →ₗ[𝕜] E} {b x₀ : E} [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))]
 
-/-- Saad, *Iterative Methods*, (6.28): for `m ≤ grade`,
-`‖b - A (x₀ + V_m y)‖ = ‖β e₁ - H̄_m y‖₂`. -/
+/-- [saad2003iterative], (6.28): for `m ≤ grade`, `‖b - A (x₀ + V_m y)‖ = ‖β e₁ - H̄_m y‖₂`. -/
 theorem norm_residual_eq_norm_firstVec_sub_mulVec {m : ℕ} (hm : m ≤ grade A (b - A x₀))
     (y : Fin m → 𝕜) :
     ‖b - A (x₀ + ∑ j, y j • Arnoldi.vec A (b - A x₀) j)‖ =
@@ -356,8 +355,8 @@ theorem norm_residual_eq_norm_firstVec_sub_mulVec {m : ℕ} (hm : m ≤ grade A 
     (Arnoldi.smul_vec_zero A (b - A x₀)).symm m y]
   exact norm_sum_smul_vec_eq A (b - A x₀) _ (residual_coeff_eq_zero A (b - A x₀) hm y)
 
-/-- FOM (Saad, *Iterative Methods*, (6.16)–(6.17)): `x₀ + V_m y` is the Galerkin iterate iff
-`H_m y = β e₁`. -/
+/-- FOM ([saad2003iterative], (6.16)–(6.17)): `x₀ + V_m y` is the Galerkin iterate iff `H_m y = β
+e₁`. -/
 theorem isGalerkinIterate_iff_mulVec_eq {m : ℕ} (hm : m ≤ grade A (b - A x₀)) (y : Fin m → 𝕜) :
     IsGalerkinIterate A b x₀ m (x₀ + ∑ j, y j • Arnoldi.vec A (b - A x₀) j) ↔
       (Arnoldi.hessenbergSq A (b - A x₀) m).mulVec y = firstVec (‖b - A x₀‖ : 𝕜) m := by
@@ -376,11 +375,11 @@ theorem isGalerkinIterate_iff_mulVec_eq {m : ℕ} (hm : m ≤ grade A (b - A x�
     rw [hres]
     exact (mem_orthogonal_iff_mulVec_eq A (b - A x₀) hm y).mpr hy
 
-/-- FOM in coordinates, in point form: for `m ≤ grade`, a point is the Galerkin iterate over
-`x₀ + 𝒦_m` exactly when it is `x₀ + V_m y` for some solution `y` of the small square system
-`H_m y = β e₁`, with `β = ‖r₀‖`. The companion `Krylov.isGalerkinIterate_iff_mulVec_eq` starts
-from a given coordinate vector; quantifying it away here is what lets solvability of the
-Hessenberg system be traded for existence and uniqueness of the iterate
+/-- FOM in coordinates, in point form: for `m ≤ grade`, a point is the Galerkin iterate over `x₀ +
+𝒦_m` exactly when it is `x₀ + V_m y` for some solution `y` of the small square system `H_m y = β
+e₁`, with `β = ‖r₀‖`. The companion `Krylov.isGalerkinIterate_iff_mulVec_eq` starts from a given
+coordinate vector; quantifying it away here is what lets solvability of the Hessenberg system be
+traded for existence and uniqueness of the iterate
 (`Krylov.existsUnique_isGalerkinIterate_iff_isUnit`). -/
 theorem isGalerkinIterate_iff_exists_mulVec_eq {m : ℕ} (hm : m ≤ grade A (b - A x₀)) (x : E) :
     IsGalerkinIterate A b x₀ m x ↔
@@ -397,8 +396,8 @@ theorem isGalerkinIterate_iff_exists_mulVec_eq {m : ℕ} (hm : m ≤ grade A (b 
   · rintro ⟨y, hy, rfl⟩
     exact (isGalerkinIterate_iff_mulVec_eq hm y).mpr hy
 
-/-- FOM is well defined iff `H_m` is nonsingular (Saad, *Iterative Methods*, §6.4,
-Props 6.12–6.17's hypothesis). -/
+/-- FOM is well defined iff `H_m` is nonsingular ([saad2003iterative], §6.4, Props 6.12–6.17's
+hypothesis). -/
 theorem existsUnique_isGalerkinIterate_iff_isUnit {m : ℕ} (hm : m ≤ grade A (b - A x₀)) :
     (∃! x, IsGalerkinIterate A b x₀ m x) ↔ IsUnit (Arnoldi.hessenbergSq A (b - A x₀) m) := by
   constructor
@@ -429,8 +428,8 @@ theorem existsUnique_isGalerkinIterate_iff_isUnit {m : ℕ} (hm : m ≤ grade A 
     rw [hx'e, hyy]
 
 omit [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))] in
-/-- Saad, *Iterative Methods*, Prop 6.7 for Arnoldi: the Galerkin residual is
-`-(h_{m,m-1} y_{m-1}) v_m`. -/
+/-- [saad2003iterative], Prop 6.7 for Arnoldi: the Galerkin residual is `-(h_{m,m-1} y_{m-1}) v_m`.
+-/
 theorem residual_galerkin_eq {m : ℕ} (hm : 0 < m) (y : Fin m → 𝕜)
     (hy : (Arnoldi.hessenbergSq A (b - A x₀) m).mulVec y = firstVec (‖b - A x₀‖ : 𝕜) m) :
     b - A (x₀ + ∑ j, y j • Arnoldi.vec A (b - A x₀) j) =
@@ -439,8 +438,8 @@ theorem residual_galerkin_eq {m : ℕ} (hm : 0 < m) (y : Fin m → 𝕜)
   (Arnoldi.hessenbergRelation A (b - A x₀)).residual_eq_of_mulVec_eq
     (Arnoldi.smul_vec_zero A (b - A x₀)).symm hm y hy
 
-/-- GMRES (Saad, *Iterative Methods*, (6.29)–(6.30)): `x₀ + V_m y` is the minimal-residual
-iterate iff `y` minimizes `‖β e₁ - H̄_m z‖₂`. -/
+/-- GMRES ([saad2003iterative], (6.29)–(6.30)): `x₀ + V_m y` is the minimal-residual iterate iff `y`
+minimizes `‖β e₁ - H̄_m z‖₂`. -/
 theorem isMinResIterate_iff_isMinOn {m : ℕ} (hm : m ≤ grade A (b - A x₀)) (y : Fin m → 𝕜) :
     IsMinResIterate A b x₀ m (x₀ + ∑ j, y j • Arnoldi.vec A (b - A x₀) j) ↔
       IsMinOn (fun z : Fin m → 𝕜 => ‖(WithLp.toLp 2 (firstVec (‖b - A x₀‖ : 𝕜) (m + 1) -
@@ -478,11 +477,11 @@ section Givens
 
 /-! ### Givens rotations, `ℕ`-indexed
 
-`rotated h k` is the coefficient function after the first `k` rotations; rotation `k` acts on
-rows `k, k+1` and annihilates the entry `(k+1, k)`. With `a = (rotated h k) k k`,
-`d = (rotated h k) (k+1) k`, `ρ_k = √(|a|² + |d|²)`, `c_k = a / ρ_k`, `s_k = d / ρ_k`, the rotation
-is `[[c̄_k, s̄_k], [-s_k, c_k]]` (Saad, *Iterative Methods*, (6.80) for complex `𝕜`; `s_k` is
-real for Arnoldi coefficients). -/
+`rotated h k` is the coefficient function after the first `k` rotations; rotation `k` acts on rows
+`k, k+1` and annihilates the entry `(k+1, k)`. With `a = (rotated h k) k k`, `d = (rotated h k)
+(k+1) k`, `ρ_k = √(|a|² + |d|²)`, `c_k = a / ρ_k`, `s_k = d / ρ_k`, the rotation is `[[c̄_k, s̄_k],
+[-s_k, c_k]]` ([saad2003iterative], (6.80) for complex `𝕜`; `s_k` is real for Arnoldi coefficients).
+-/
 
 /-- The Hessenberg coefficients after `k` Givens rotations. -/
 noncomputable def rotated (h : ℕ → ℕ → 𝕜) : ℕ → ℕ → ℕ → 𝕜
@@ -508,8 +507,8 @@ noncomputable def givensC (k : ℕ) : 𝕜 := rotated h k k k / (givensRho h k :
 /-- `s_k = h_{k+1,k} / ρ_k`. -/
 noncomputable def givensS (k : ℕ) : 𝕜 := rotated h k (k + 1) k / (givensRho h k : 𝕜)
 
-/-- `γ_0 = β`, `γ_{k+1} = -s_k γ_k` (Saad, *Iterative Methods*, (6.47)): the last entry of the
-rotated right-hand side. -/
+/-- `γ_0 = β`, `γ_{k+1} = -s_k γ_k` ([saad2003iterative], (6.47)): the last entry of the rotated
+right-hand side. -/
 noncomputable def gamma (β : 𝕜) : ℕ → 𝕜
   | 0 => β
   | k + 1 => -givensS h k * gamma β k
@@ -517,11 +516,11 @@ noncomputable def gamma (β : 𝕜) : ℕ → 𝕜
 /-- `g_k = c̄_k γ_k`: the `k`-th entry of `Q_m (β e₁)` for `k < m`. -/
 noncomputable def gvec (β : 𝕜) (k : ℕ) : 𝕜 := starRingEnd 𝕜 (givensC h k) * gamma h β k
 
-/-- Saad, *Iterative Methods*, (6.47): the last entry of the rotated right-hand side obeys
-`γ_{k+1} = -s_k γ_k`. This is the second defining clause of `Krylov.gamma` stated as a rewritable
-equation. Since `‖r_m‖ = |γ_m|` (`Krylov.IsMinResIterate.norm_residual_eq_norm_gamma`), it is the
-residual recurrence of the minimal-residual iteration, and the induction step behind
-`‖γ_m‖ = ∏_{k<m} |s_k| ‖β‖`. -/
+/-- [saad2003iterative], (6.47): the last entry of the rotated right-hand side obeys `γ_{k+1} = -s_k
+γ_k`. This is the second defining clause of `Krylov.gamma` stated as a rewritable equation. Since
+`‖r_m‖ = |γ_m|` (`Krylov.IsMinResIterate.norm_residual_eq_norm_gamma`), it is the residual
+recurrence of the minimal-residual iteration, and the induction step behind `‖γ_m‖ = ∏_{k<m} |s_k|
+‖β‖`. -/
 theorem gamma_succ (β : 𝕜) (k : ℕ) : gamma h β (k + 1) = -givensS h k * gamma h β k := rfl
 
 /-- Unfolding of `rotated` at a successor, in terms of `givensC` and `givensS`. -/
@@ -552,7 +551,7 @@ private theorem rotated_eq_zero_of_givensRho_eq_zero {k : ℕ} (hρ : givensRho 
   exact ⟨norm_eq_zero.mp (pow_eq_zero_iff (two_ne_zero) |>.mp h1),
     norm_eq_zero.mp (pow_eq_zero_iff (two_ne_zero) |>.mp h2)⟩
 
-/-- `‖γ_m‖ = ∏_{k < m} |s_k| ‖β‖` (Saad, *Iterative Methods*, (6.47)). -/
+/-- `‖γ_m‖ = ∏_{k < m} |s_k| ‖β‖` ([saad2003iterative], (6.47)). -/
 theorem norm_gamma_eq_prod (β : 𝕜) (m : ℕ) :
     ‖gamma h β m‖ = (∏ k ∈ range m, ‖givensS h k‖) * ‖β‖ := by
   induction m with
@@ -720,8 +719,8 @@ private theorem givensMatrix_apply_of_col_ne (k m : ℕ) (p q : Fin (m + 1)) (h1
   simp [givensMatrix, h1, h2]
 
 /-- A Givens rotation is unitary, provided the pair of entries it acts on does not vanish. It
-differs from the identity only in the four entries indexed by rows and columns `k` and `k + 1`,
-and `|c_k|² + |s_k|² = 1` makes that two-by-two block unitary. -/
+differs from the identity only in the four entries indexed by rows and columns `k` and `k + 1`, and
+`|c_k|² + |s_k|² = 1` makes that two-by-two block unitary. -/
 theorem givensMatrix_mem_unitaryGroup (k m : ℕ) (hk : k < m) (hρ : givensRho h k ≠ 0) :
     givensMatrix h k m ∈ Matrix.unitaryGroup (Fin (m + 1)) 𝕜 := by
   have hkm : k < m + 1 := by omega
@@ -815,8 +814,8 @@ theorem givensQAux_succ (n m : ℕ) :
   rw [givensQAux, givensQAux, List.range_succ, List.map_append, List.reverse_append]
   simp
 
-/-- The rotation matrices are stable in `m`: the leading block of `Ω_k` at size `m + 2` is `Ω_k`
-at size `m + 1`. -/
+/-- The rotation matrices are stable in `m`: the leading block of `Ω_k` at size `m + 2` is `Ω_k` at
+size `m + 1`. -/
 theorem givensMatrix_castSucc (k m : ℕ) (i j : Fin (m + 1)) :
     givensMatrix h k (m + 1) i.castSucc j.castSucc = givensMatrix h k m i j := by
   simp only [givensMatrix, Matrix.of_apply, Fin.val_castSucc, Fin.castSucc_inj]
@@ -883,8 +882,8 @@ theorem givensQAux_mul_hessenbergOf {n m : ℕ} (hn : n ≤ m) :
       rw [givensQAux_succ, Matrix.mul_assoc, ih (by omega),
         givensMatrix_mul_hessenbergOf_rotated h n m (by omega)]
 
-/-- `Q_m H̄_m = R̄_m` (Saad, *Iterative Methods*, (6.38)–(6.39)): the rotated coefficients form
-the triangular factor. -/
+/-- `Q_m H̄_m = R̄_m` ([saad2003iterative], (6.38)–(6.39)): the rotated coefficients form the
+triangular factor. -/
 theorem givensQ_mul_hessenbergOf (m : ℕ) :
     givensQ h m * hessenbergOf h m = hessenbergOf (rotated h m) m :=
   givensQAux_mul_hessenbergOf h le_rfl
@@ -900,9 +899,9 @@ theorem givensQAux_mem_unitaryGroup {n m : ℕ} (hn : n ≤ m) (hρ : ∀ k < n,
   exact givensMatrix_mem_unitaryGroup h k m (by omega) (hρ k hk)
 
 /-- The accumulated rotation `Q_m = Ω_{m-1} ⋯ Ω_0` is unitary as long as no single rotation
-degenerates. This is what makes `Q_m` a Euclidean isometry, so that the least-squares quantity
-`‖β e₁ - H̄_m y‖` may be read off the triangular factor `R̄_m = Q_m H̄_m` instead — the route to
-`‖r_m‖ = |γ_m|`. -/
+degenerates. This is what makes `Q_m` a Euclidean isometry, so that the least-squares quantity `‖β
+e₁ - H̄_m y‖` may be read off the triangular factor `R̄_m = Q_m H̄_m` instead — the route to `‖r_m‖
+= |γ_m|`. -/
 theorem givensQ_mem_unitaryGroup (m : ℕ) (hρ : ∀ k < m, givensRho h k ≠ 0) :
     givensQ h m ∈ Matrix.unitaryGroup (Fin (m + 1)) 𝕜 :=
   givensQAux_mem_unitaryGroup h le_rfl hρ
@@ -949,8 +948,8 @@ theorem gvecTrunc_of_lt (β : 𝕜) {n i : ℕ} (hi : i < n) :
 theorem gvecTrunc_of_gt (β : 𝕜) {n i : ℕ} (hi : n < i) : gvecTrunc h β n i = 0 := by
   simp [gvecTrunc, Nat.not_lt.mpr hi.le, hi.ne']
 
-/-- The first `n` rotations turn `β e₁` into `(g_0, …, g_{n-1}, γ_n, 0, …)`
-(Saad, *Iterative Methods*, (6.44)–(6.46)). -/
+/-- The first `n` rotations turn `β e₁` into `(g_0, …, g_{n-1}, γ_n, 0, …)` ([saad2003iterative],
+(6.44)–(6.46)). -/
 theorem givensQAux_mulVec_firstVec (β : 𝕜) (m : ℕ) : ∀ n, n ≤ m →
     (givensQAux h n m).mulVec (firstVec β (m + 1)) =
       fun i : Fin (m + 1) => gvecTrunc h β n (i : ℕ) := by
@@ -983,7 +982,7 @@ theorem givensQAux_mulVec_firstVec (β : 𝕜) (m : ℕ) : ∀ n, n ≤ m →
         · rw [gvecTrunc_of_lt h β hi, gvecTrunc_of_lt h β (by omega)]
         · rw [gvecTrunc_of_gt h β (by omega), gvecTrunc_of_gt h β (by omega)]
 
-/-- `Q_m (β e₁) = (g_0, …, g_{m-1}, γ_m)` (Saad, *Iterative Methods*, (6.40), (6.44)–(6.47)). -/
+/-- `Q_m (β e₁) = (g_0, …, g_{m-1}, γ_m)` ([saad2003iterative], (6.40), (6.44)–(6.47)). -/
 theorem givensQ_mulVec_firstVec (β : 𝕜) (m : ℕ) :
     (givensQ h m).mulVec (firstVec β (m + 1)) =
       fun i : Fin (m + 1) => if (i : ℕ) < m then gvec h β i else gamma h β m := by
@@ -1011,8 +1010,7 @@ theorem givensC_eq_zero_iff (k : ℕ) : givensC h k = 0 ↔ rotated h k k k = 0 
 theorem givensRho_ne_zero_of_rotated_ne_zero {k : ℕ} (hk : rotated h k k k ≠ 0) :
     givensRho h k ≠ 0 := fun h0 => hk (rotated_eq_zero_of_givensRho_eq_zero h h0).1
 
-/-- The diagonal of the triangular factor is `ρ_0, …, ρ_{n-1}` (Saad, *Iterative Methods*,
-(6.37)). -/
+/-- The diagonal of the triangular factor is `ρ_0, …, ρ_{n-1}` ([saad2003iterative], (6.37)). -/
 theorem rotated_diag (hh : ∀ i j, j + 1 < i → h i j = 0) {n j : ℕ} (hj : j < n) :
     rotated h n j j = (givensRho h j : 𝕜) := by
   induction n with
@@ -1056,9 +1054,9 @@ theorem isUnit_hessenbergSqOf_rotated_self (hh : ∀ i j, j + 1 < i → h i j = 
 
 /-! #### The least-squares residual in rotated coordinates -/
 
-/-- Saad, *Iterative Methods*, (6.41): the `m` rotations are an isometry taking the
-least-squares residual `β e₁ - H̄_m y` to `(g_m - R_m y, γ_m)`, so its square norm splits into the
-part the triangular system can annihilate and the fixed remainder `|γ_m|²`. -/
+/-- [saad2003iterative], (6.41): the `m` rotations are an isometry taking the least-squares residual
+`β e₁ - H̄_m y` to `(g_m - R_m y, γ_m)`, so its square norm splits into the part the triangular
+system can annihilate and the fixed remainder `|γ_m|²`. -/
 theorem norm_sq_firstVec_sub_mulVec_eq (hh : ∀ i j, j + 1 < i → h i j = 0) {m : ℕ}
     (hρ : ∀ k < m, givensRho h k ≠ 0) (β : 𝕜) (y : Fin m → 𝕜) :
     ‖(WithLp.toLp 2 (firstVec β (m + 1) - (hessenbergOf h m).mulVec y) :
@@ -1095,8 +1093,8 @@ theorem rotated_succ_row_eq_zero_of_givensRho_eq_zero (hh : ∀ i j, j + 1 < i �
     rw [hjm', rotated_succ_self h m, hρm]
     simp
 
-/-- When rotation `m` degenerates, `c_m = 0`, hence the rotated right-hand side entry
-`g_m = c̄_m γ_m` vanishes. -/
+/-- When rotation `m` degenerates, `c_m = 0`, hence the rotated right-hand side entry `g_m = c̄_m
+γ_m` vanishes. -/
 theorem gvec_eq_zero_of_givensRho_eq_zero {m : ℕ} (hρm : givensRho h m = 0) (β : 𝕜) :
     gvec h β m = 0 := by
   rw [gvec, (givensC_eq_zero_iff h m).mpr (rotated_eq_zero_of_givensRho_eq_zero h hρm).1,
@@ -1130,9 +1128,9 @@ private theorem norm_sq_split_aux {N : ℕ} (F : Fin (N + 2) → 𝕜) (G : Fin 
   rw [h1, hlast, norm_zero, h2, Finset.sum_add_distrib, h4]
   ring
 
-/-- The breakdown analogue of `norm_sq_firstVec_sub_mulVec_eq`: if rotation `m` degenerates
-(`ρ_m = 0`, so both entries it acts on already vanish) then the first `m` rotations still split
-the least-squares residual of step `m + 1`, but the remainder is `|γ_m|`, not `|γ_{m+1}| = 0`. -/
+/-- The breakdown analogue of `norm_sq_firstVec_sub_mulVec_eq`: if rotation `m` degenerates (`ρ_m =
+0`, so both entries it acts on already vanish) then the first `m` rotations still split the
+least-squares residual of step `m + 1`, but the remainder is `|γ_m|`, not `|γ_{m+1}| = 0`. -/
 theorem norm_sq_firstVec_sub_mulVec_eq_of_breakdown (hh : ∀ i j, j + 1 < i → h i j = 0) {m : ℕ}
     (hρ : ∀ k < m, givensRho h k ≠ 0) (hρm : givensRho h m = 0) (β : 𝕜) (y : Fin (m + 1) → 𝕜) :
     ‖(WithLp.toLp 2 (firstVec β (m + 2) - (hessenbergOf h (m + 1)).mulVec y) :
@@ -1224,8 +1222,8 @@ theorem hessenbergSqOf_rotated_mulVec {m : ℕ} (y : Fin (m + 1) → 𝕜) (i : 
   rw [Matrix.mulVec_mulVec, givensQAux_mul_hessenbergOf h (by omega)]
   rfl
 
-/-- `H_{m+1} y = 0` implies `R_{m+1} y = 0`: the extra Hessenberg row is invisible to the first
-`m + 1` rotated equations. -/
+/-- `H_{m+1} y = 0` implies `R_{m+1} y = 0`: the extra Hessenberg row is invisible to the first `m +
+1` rotated equations. -/
 theorem mulVec_rotated_eq_zero_of_mulVec_eq_zero {m : ℕ} {y : Fin (m + 1) → 𝕜}
     (hy : (hessenbergSqOf h (m + 1)).mulVec y = 0) :
     (hessenbergSqOf (rotated h m) (m + 1)).mulVec y = 0 := by
@@ -1238,8 +1236,8 @@ theorem mulVec_rotated_eq_zero_of_mulVec_eq_zero {m : ℕ} {y : Fin (m + 1) → 
   rw [e, hy]
   rfl
 
-/-- Saad, *Iterative Methods*, Prop 6.7 in coordinates: if `H_{m+1} y = β e₁` then the
-rectangular residual `β e₁ - H̄_{m+1} y` is carried by its last entry alone. -/
+/-- [saad2003iterative], Prop 6.7 in coordinates: if `H_{m+1} y = β e₁` then the rectangular
+residual `β e₁ - H̄_{m+1} y` is carried by its last entry alone. -/
 theorem firstVec_sub_mulVec_apply_of_mulVec_eq (hh : ∀ i j, j + 1 < i → h i j = 0) (β : 𝕜)
     {m : ℕ} {y : Fin (m + 1) → 𝕜}
     (hy : (hessenbergSqOf h (m + 1)).mulVec y = firstVec β (m + 1)) (l : Fin (m + 2)) :
@@ -1265,7 +1263,7 @@ theorem firstVec_sub_mulVec_apply_of_mulVec_eq (hh : ∀ i j, j + 1 < i → h i 
     rw [Pi.sub_apply, e1, e2, hy, sub_self, ite_eq_right hl]
 
 /-- The Galerkin residual in coordinates: `‖β e₁ - H̄_{m+1} y‖₂ = |h_{m+1,m} y_m|`
-(Saad, *Iterative Methods*, (6.18)). -/
+([saad2003iterative], (6.18)). -/
 theorem norm_firstVec_sub_mulVec_of_mulVec_eq (hh : ∀ i j, j + 1 < i → h i j = 0) (β : 𝕜)
     {m : ℕ} {y : Fin (m + 1) → 𝕜}
     (hy : (hessenbergSqOf h (m + 1)).mulVec y = firstVec β (m + 1)) :
@@ -1286,8 +1284,8 @@ theorem norm_firstVec_sub_mulVec_of_mulVec_eq (hh : ∀ i j, j + 1 < i → h i j
   have hs := congrArg Real.sqrt hsq
   rwa [Real.sqrt_sq (norm_nonneg _), Real.sqrt_sq (norm_nonneg _)] at hs
 
-/-- Saad, *Iterative Methods*, (6.43): if `H_{m+1} y = β e₁` then the last of the rotated
-equations reads `r_mm y_m = γ_m`. -/
+/-- [saad2003iterative], (6.43): if `H_{m+1} y = β e₁` then the last of the rotated equations reads
+`r_mm y_m = γ_m`. -/
 theorem rotated_self_mul_eq_gamma (hh : ∀ i j, j + 1 < i → h i j = 0) (β : 𝕜) {m : ℕ}
     {y : Fin (m + 1) → 𝕜}
     (hy : (hessenbergSqOf h (m + 1)).mulVec y = firstVec β (m + 1)) :
@@ -1332,7 +1330,7 @@ theorem givensRho_arnoldi_ne_zero {k : ℕ} (hk : k + 1 < grade A (b - A x₀)) 
   exact absurd ((Arnoldi.coeff_succ_self_eq_zero_iff A (b - A x₀) k).mp h1) (by omega)
 
 /-- `γ_m ≠ 0` strictly below the grade: every `s_k` and the initial residual are nonzero
-(Saad, *Iterative Methods*, (6.47)). -/
+([saad2003iterative], (6.47)). -/
 theorem gamma_arnoldi_ne_zero {m : ℕ} (hm : m < grade A (b - A x₀)) :
     gamma (Arnoldi.coeff A (b - A x₀)) (‖b - A x₀‖ : 𝕜) m ≠ 0 := by
   have hr : b - A x₀ ≠ 0 := by
@@ -1351,8 +1349,8 @@ theorem gamma_arnoldi_ne_zero {m : ℕ} (hm : m < grade A (b - A x₀)) :
   · simp only [RCLike.norm_ofReal, abs_norm, ne_eq, norm_eq_zero]
     exact hr
 
-/-- A minimum of `P` over a family whose square splits as `D + G²`, with `D` attaining `0`,
-forces `D = 0` and `P = G`. The arithmetic core of the Givens residual identities. -/
+/-- A minimum of `P` over a family whose square splits as `D + G²`, with `D` attaining `0`, forces
+`D = 0` and `P = G`. The arithmetic core of the Givens residual identities. -/
 private theorem eq_of_min_split {P Q D G : ℝ} (hP2 : P ^ 2 = D + G ^ 2) (hQ2 : Q ^ 2 = G ^ 2)
     (hP : 0 ≤ P) (hQ : 0 ≤ Q) (hD : 0 ≤ D) (hG : 0 ≤ G) (hPQ : P ≤ Q) : D = 0 ∧ P = G := by
   have hD0 : D = 0 := le_antisymm (by nlinarith) hD
@@ -1360,9 +1358,9 @@ private theorem eq_of_min_split {P Q D G : ℝ} (hP2 : P ^ 2 = D + G ^ 2) (hQ2 :
   rw [hD0, zero_add] at hP2
   nlinarith
 
-/-- The minimal-residual iterate in rotated coordinates, when no rotation degenerates: its
-residual norm is `|γ_m|` and its coordinate vector solves the triangular system `R_m y = g_m`
-(Saad, *Iterative Methods*, (6.41)–(6.43)). -/
+/-- The minimal-residual iterate in rotated coordinates, when no rotation degenerates: its residual
+norm is `|γ_m|` and its coordinate vector solves the triangular system `R_m y = g_m`
+([saad2003iterative], (6.41)–(6.43)). -/
 private theorem minres_rotated_of_givensRho_ne_zero {m : ℕ} (hm : m ≤ grade A (b - A x₀))
     (hρ : ∀ k < m, givensRho (Arnoldi.coeff A (b - A x₀)) k ≠ 0) {x : E}
     (hx : IsMinResIterate A b x₀ m x) :
@@ -1405,8 +1403,8 @@ private theorem minres_rotated_of_givensRho_ne_zero {m : ℕ} (hm : m ≤ grade 
   rw [hxe, norm_residual_eq_norm_firstVec_sub_mulVec hm y]
   exact hPG
 
-/-- The breakdown case of `IsMinResIterate.exists_mulVec_rotated_eq`: some rotation before step
-`m` degenerates. -/
+/-- The breakdown case of `IsMinResIterate.exists_mulVec_rotated_eq`: some rotation before step `m`
+degenerates. -/
 private theorem minres_rotated_of_breakdown {m : ℕ} (hm : m ≤ grade A (b - A x₀))
     (hρ : ¬∀ k < m, givensRho (Arnoldi.coeff A (b - A x₀)) k ≠ 0) {x : E}
     (hx : IsMinResIterate A b x₀ m x) :
@@ -1488,24 +1486,24 @@ private theorem minres_rotated_of_breakdown {m : ℕ} (hm : m ≤ grade A (b - A
   rw [norm_eq_zero, WithLp.toLp_eq_zero] at hvz
   exact ⟨y, (sub_eq_zero.mp hvz).symm, hxe⟩
 
-/-- Saad, *Iterative Methods*, (6.42), Prop 6.9(3): `‖r^G_m‖ = |γ_m|`.
+/-- [saad2003iterative], (6.42), Prop 6.9(3): `‖r^G_m‖ = |γ_m|`.
 
-The hypothesis `m < grade` is strict, and cannot be weakened to `m ≤ grade`: with `m = grade`
-the statement is **false**.  Counterexample: `𝕜 = E = ℝ`, `A = 0`, `b = 1`, `x₀ = 0`.  Then
-`r₀ = 1`, `𝒦_∞ = ℝ` so `grade = 1`, and `m = 1 ≤ grade`.  Every `x` is a minimal-residual
-iterate with `‖b - A x‖ = 1`, while `h₀₀ = ⟪v₀, A v₀⟫ = 0` and `h₁₀ = 0` give `ρ₀ = 0`,
-hence `s₀ = 0 / 0 = 0` and `γ₁ = -s₀ γ₀ = 0`.  With `m < grade` one gets
-`Arnoldi.coeff A r₀ (k+1) k ≠ 0`, hence `ρ_k ≠ 0`, for every `k < m`, which is what the proof
-needs (`givensQ` unitary and `R_m` nonsingular).  The `m = grade` case is covered by
-`IsMinResIterate.norm_residual_eq_norm_gamma_of_givensRho_ne_zero`, which assumes exactly that. -/
+The hypothesis `m < grade` is strict, and cannot be weakened to `m ≤ grade`: with `m = grade` the
+statement is **false**.  Counterexample: `𝕜 = E = ℝ`, `A = 0`, `b = 1`, `x₀ = 0`.  Then `r₀ = 1`,
+`𝒦_∞ = ℝ` so `grade = 1`, and `m = 1 ≤ grade`.  Every `x` is a minimal-residual iterate with `‖b - A
+x‖ = 1`, while `h₀₀ = ⟪v₀, A v₀⟫ = 0` and `h₁₀ = 0` give `ρ₀ = 0`, hence `s₀ = 0 / 0 = 0` and `γ₁ =
+-s₀ γ₀ = 0`.  With `m < grade` one gets `Arnoldi.coeff A r₀ (k+1) k ≠ 0`, hence `ρ_k ≠ 0`, for every
+`k < m`, which is what the proof needs (`givensQ` unitary and `R_m` nonsingular).  The `m = grade`
+case is covered by `IsMinResIterate.norm_residual_eq_norm_gamma_of_givensRho_ne_zero`, which assumes
+exactly that. -/
 theorem IsMinResIterate.norm_residual_eq_norm_gamma {m : ℕ} (hm : m < grade A (b - A x₀)) {x : E}
     (hx : IsMinResIterate A b x₀ m x) :
     ‖b - A x‖ = ‖gamma (Arnoldi.coeff A (b - A x₀)) (‖b - A x₀‖ : 𝕜) m‖ :=
   (minres_rotated_of_givensRho_ne_zero hm.le
     (fun k hk => givensRho_arnoldi_ne_zero (by omega)) hx).1
 
-/-- Saad, *Iterative Methods*, (6.42) at the boundary `m = grade`: `‖r^G_m‖ = |γ_m|` holds for
-every `m ≤ grade` at which no rotation has degenerated, which is the hypothesis
+/-- [saad2003iterative], (6.42) at the boundary `m = grade`: `‖r^G_m‖ = |γ_m|` holds for every `m ≤
+grade` at which no rotation has degenerated, which is the hypothesis
 `IsMinResIterate.norm_residual_eq_norm_gamma` derives from `m < grade`. -/
 theorem IsMinResIterate.norm_residual_eq_norm_gamma_of_givensRho_ne_zero {m : ℕ}
     (hm : m ≤ grade A (b - A x₀))
@@ -1514,13 +1512,13 @@ theorem IsMinResIterate.norm_residual_eq_norm_gamma_of_givensRho_ne_zero {m : �
     ‖b - A x‖ = ‖gamma (Arnoldi.coeff A (b - A x₀)) (‖b - A x₀‖ : 𝕜) m‖ :=
   (minres_rotated_of_givensRho_ne_zero hm hρ hx).1
 
-/-- Saad, *Iterative Methods*, (6.43)/(6.30): the minimal-residual iterate is `x₀ + V_m y` with
-`R_m y = g_m`.
+/-- [saad2003iterative], (6.43)/(6.30): the minimal-residual iterate is `x₀ + V_m y` with `R_m y =
+g_m`.
 
-Unlike `IsMinResIterate.norm_residual_eq_norm_gamma` this holds up to and including `m = grade`.
-At the boundary the last rotation may degenerate (`ρ_{m-1} = 0`), and then `R_m` is singular — but
-its last row and the last entry `g_{m-1} = c̄_{m-1} γ_{m-1}` of the right-hand side both vanish, so
-the system is still consistent and the minimal-residual coordinates solve it. -/
+Unlike `IsMinResIterate.norm_residual_eq_norm_gamma` this holds up to and including `m = grade`. At
+the boundary the last rotation may degenerate (`ρ_{m-1} = 0`), and then `R_m` is singular — but its
+last row and the last entry `g_{m-1} = c̄_{m-1} γ_{m-1}` of the right-hand side both vanish, so the
+system is still consistent and the minimal-residual coordinates solve it. -/
 theorem IsMinResIterate.exists_mulVec_rotated_eq {m : ℕ} (hm : m ≤ grade A (b - A x₀)) {x : E}
     (hx : IsMinResIterate A b x₀ m x) :
     ∃ y : Fin m → 𝕜, (hessenbergSqOf (rotated (Arnoldi.coeff A (b - A x₀)) m) m).mulVec y =
@@ -1530,19 +1528,19 @@ theorem IsMinResIterate.exists_mulVec_rotated_eq {m : ℕ} (hm : m ≤ grade A (
   · exact (minres_rotated_of_givensRho_ne_zero hm hρ hx).2
   · exact minres_rotated_of_breakdown hm hρ hx
 
-/-- `|s_m| = ‖r^G_{m+1}‖ / ‖r^G_m‖` (Saad, *Iterative Methods*, (6.47), Prop 6.9).
+/-- `|s_m| = ‖r^G_{m+1}‖ / ‖r^G_m‖` ([saad2003iterative], (6.47), Prop 6.9).
 
 As for `norm_residual_eq_norm_gamma`, the hypothesis `m + 1 < grade` is strict: the same
-counterexample (`𝕜 = E = ℝ`, `A = 0`, `b = 1`, `x₀ = 0`,
-`m = 0`, `grade = 1`) has `‖b - A x'‖ = 1` but `‖s₀‖ * ‖b - A x‖ = 0`. -/
+counterexample (`𝕜 = E = ℝ`, `A = 0`, `b = 1`, `x₀ = 0`, `m = 0`, `grade = 1`) has `‖b - A x'‖ = 1`
+but `‖s₀‖ * ‖b - A x‖ = 0`. -/
 theorem IsMinResIterate.norm_residual_succ_eq {m : ℕ} (hm : m + 1 < grade A (b - A x₀)) {x x' : E}
     (hx : IsMinResIterate A b x₀ m x) (hx' : IsMinResIterate A b x₀ (m + 1) x') :
     ‖b - A x'‖ = ‖givensS (Arnoldi.coeff A (b - A x₀)) m‖ * ‖b - A x‖ := by
   rw [hx'.norm_residual_eq_norm_gamma hm, hx.norm_residual_eq_norm_gamma (by omega),
     gamma_succ, norm_mul, norm_neg]
 
-/-- `H_{m+1}` is nonsingular iff `c_m ≠ 0` (Saad, *Iterative Methods*, Prop 6.9(1) /
-Lemma 6.16, `m + 1 ≤ grade`). -/
+/-- `H_{m+1}` is nonsingular iff `c_m ≠ 0` ([saad2003iterative], Prop 6.9(1) / Lemma 6.16, `m + 1 ≤
+grade`). -/
 theorem isUnit_hessenbergSq_iff_givensC_ne_zero {m : ℕ} (hm : m + 1 ≤ grade A (b - A x₀)) :
     IsUnit (Arnoldi.hessenbergSq A (b - A x₀) (m + 1)) ↔
       givensC (Arnoldi.coeff A (b - A x₀)) m ≠ 0 := by
@@ -1578,7 +1576,7 @@ theorem isUnit_hessenbergSq_iff_givensC_ne_zero {m : ℕ} (hm : m + 1 ≤ grade 
       (by rw [hw2, Matrix.mulVec_zero])
     exact sub_eq_zero.mp hzz
 
-/-- Saad, *Iterative Methods*, (6.75) / Prop 6.12: `‖r^F_{m+1}‖ = ‖r^G_{m+1}‖ / |c_m|`.
+/-- [saad2003iterative], (6.75) / Prop 6.12: `‖r^F_{m+1}‖ = ‖r^G_{m+1}‖ / |c_m|`.
 
 No hypothesis `c_m ≠ 0` is needed, even though the right-hand side would then be `0` by Lean's
 convention for division: with `m + 1 ≤ grade` the existence of a Galerkin iterate already forces
@@ -1635,8 +1633,8 @@ theorem IsGalerkinIterate.norm_residual_eq_div_norm_givensC {m : ℕ}
   linear_combination ‖givensS (Arnoldi.coeff A (b - A x₀)) m‖ * hkey'
 
 omit [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))] in
-/-- The rotation `s_m` is real and nonnegative for Arnoldi coefficients
-(Saad, *Iterative Methods*, §6.5.9). -/
+/-- The rotation `s_m` is real and nonnegative for Arnoldi coefficients ([saad2003iterative],
+§6.5.9). -/
 theorem givensS_arnoldi_eq (m : ℕ) :
     givensS (Arnoldi.coeff A (b - A x₀)) m =
       (‖Arnoldi.w A (b - A x₀) m‖ / givensRho (Arnoldi.coeff A (b - A x₀)) m : ℝ) := by

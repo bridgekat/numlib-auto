@@ -4,12 +4,12 @@ import Numlib.LinearSolve.Projection.Optimality
 /-!
 # One-dimensional projection processes
 
-The projection step with `K = span {v}`, `L = span {w}` ([Saad][saad2003iterative] (5.12)–(5.13)),
-and its three classical instances, written with the residual `r = b - A x`: steepest descent
-(`v = w = r`), minimal residual iteration (`v = r`, `w = A r`), and residual-norm steepest
-descent (`v = A† r`, `w = A v`). Convergence: Kantorovich's inequality (Saad Lemma 5.8), the
-steepest-descent rate (Saad Thm 5.9) and the minimal-residual rate (Saad Thm 5.10, valid for
-bounded coercive operators on any inner product space).
+The projection step with `K = span {v}`, `L = span {w}` ([saad2003iterative] (5.12)–(5.13)), and its
+three classical instances, written with the residual `r = b - A x`: steepest descent (`v = w = r`),
+minimal residual iteration (`v = r`, `w = A r`), and residual-norm steepest descent (`v = A† r`, `w
+= A v`). Convergence: Kantorovich's inequality ([saad2003iterative] Lemma 5.8), the steepest-descent
+rate ([saad2003iterative] Thm 5.9) and the minimal-residual rate ([saad2003iterative] Thm 5.10,
+valid for bounded coercive operators on any inner product space).
 -/
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
@@ -27,8 +27,8 @@ theorem IsSymmetric.re_inner_comm {C : F →ₗ[𝕜] F} (hC : C.IsSymmetric) (w
 namespace IsSymmetricBoundedBy
 
 /-- **Polarization**: for a symmetric operator the numerical radius controls the norm. If the
-quadratic form of `C` lies in `[-d, d] ‖·‖²` then `‖C u‖ ≤ d ‖u‖`. This is the substitute for
-the spectral theorem in all the estimates below. -/
+quadratic form of `C` lies in `[-d, d] ‖·‖²` then `‖C u‖ ≤ d ‖u‖`. This is the substitute for the
+spectral theorem in all the estimates below. -/
 theorem norm_apply_le {C : F →ₗ[𝕜] F} {d : ℝ} (hC : C.IsSymmetricBoundedBy (-d) d) (u : F) :
     ‖C u‖ ≤ d * ‖u‖ := by
   have hpol : ∀ w z : F, 4 * RCLike.re (inner 𝕜 (C w) z) ≤ 2 * d * (‖w‖ ^ 2 + ‖z‖ ^ 2) := by
@@ -74,8 +74,8 @@ theorem norm_apply_le {C : F →ₗ[𝕜] F} {d : ℝ} (hC : C.IsSymmetricBounde
   rw [hnormz, hinnerz] at hkey
   nlinarith [hkey, hupos]
 
-/-- The quadratic-form version of the operator inequality `(A - lmin)(lmax - A) ≥ 0`:
-`‖A u‖² + lmin lmax ‖u‖² ≤ (lmin + lmax) re ⟪A u, u⟫`. -/
+/-- The quadratic-form version of the operator inequality `(A - lmin)(lmax - A) ≥ 0`: `‖A u‖² + lmin
+lmax ‖u‖² ≤ (lmin + lmax) re ⟪A u, u⟫`. -/
 theorem norm_apply_sq_add_le {B : F →ₗ[𝕜] F} {lmin lmax : ℝ}
     (hB : B.IsSymmetricBoundedBy lmin lmax) (u : F) :
     ‖B u‖ ^ 2 + lmin * lmax * ‖u‖ ^ 2 ≤ (lmin + lmax) * RCLike.re (inner 𝕜 (B u) u) := by
@@ -107,10 +107,9 @@ theorem norm_apply_sq_add_le {B : F →ₗ[𝕜] F} {lmin lmax : ℝ}
     RCLike.norm_ofReal, mul_pow, sq_abs] at hsq
   linarith
 
-/-- **Degenerate spectral interval**: a symmetric operator whose quadratic form is exactly
-`l ‖u‖²` is the scalar `l`. This is the `lmin = lmax` case of `LinearMap.IsSymmetricBoundedBy`,
-and it is what makes the Chebyshev convergence bounds true (indeed trivial) without a strict
-spectral gap. -/
+/-- **Degenerate spectral interval**: a symmetric operator whose quadratic form is exactly `l ‖u‖²`
+is the scalar `l`. This is the `lmin = lmax` case of `LinearMap.IsSymmetricBoundedBy`, and it is
+what makes the Chebyshev convergence bounds true (indeed trivial) without a strict spectral gap. -/
 theorem apply_eq_smul {B : F →ₗ[𝕜] F} {l : ℝ} (hB : B.IsSymmetricBoundedBy l l) (u : F) :
     B u = (l : 𝕜) • u := by
   have hre : RCLike.re (inner 𝕜 (B u) u) = l * ‖u‖ ^ 2 :=
@@ -154,16 +153,16 @@ end LinearMap
 
 namespace Projection
 
-/-- One projection step onto `span {v}` orthogonally to `span {w}`:
-`x ↦ x + (⟪r, w⟫ / ⟪A v, w⟫) v` with `r = b - A x` (Saad, *Iterative Methods*, (5.12)). -/
+/-- One projection step onto `span {v}` orthogonally to `span {w}`: `x ↦ x + (⟪r, w⟫ / ⟪A v, w⟫) v`
+with `r = b - A x` ([saad2003iterative], (5.12)). -/
 noncomputable def step1 (A : E →ₗ[𝕜] E) (b : E) (v w : E) (x : E) : E :=
   x + (inner 𝕜 w (b - A x) / inner 𝕜 w (A v)) • v
 
 variable {A : E →ₗ[𝕜] E} {b : E}
 
-/-- The one-dimensional step meets the Petrov–Galerkin specification for `K = span {v}` and
-`L = span {w}`, under the nondegeneracy condition `⟪w, A v⟫ ≠ 0` that makes its denominator
-nonzero.  The three instances below differ only in how `v` and `w` are chosen. -/
+/-- The one-dimensional step meets the Petrov–Galerkin specification for `K = span {v}` and `L =
+span {w}`, under the nondegeneracy condition `⟪w, A v⟫ ≠ 0` that makes its denominator nonzero.  The
+three instances below differ only in how `v` and `w` are chosen. -/
 theorem step1_isPetrovGalerkin (v w x : E) (h : inner 𝕜 w (A v) ≠ 0) :
     IsPetrovGalerkin A b x (𝕜 ∙ v) (𝕜 ∙ w) (step1 A b v w x) := by
   refine ⟨?_, ?_⟩
@@ -176,18 +175,18 @@ theorem step1_isPetrovGalerkin (v w x : E) (h : inner 𝕜 w (A v) ≠ 0) :
     field_simp
     ring
 
-/-- Steepest descent step (Saad, *Iterative Methods*, Alg 5.2): `v = w = r` with the residual
-`r = b - A x`. -/
+/-- Steepest descent step ([saad2003iterative], Alg 5.2): `v = w = r` with the residual `r = b - A
+x`. -/
 noncomputable def steepestDescentStep (A : E →ₗ[𝕜] E) (b : E) (x : E) : E :=
   step1 A b (b - A x) (b - A x) x
 
-/-- Minimal residual iteration step (Saad, *Iterative Methods*, Alg 5.3): `v = r`, `w = A r`
-with the residual `r = b - A x`. -/
+/-- Minimal residual iteration step ([saad2003iterative], Alg 5.3): `v = r`, `w = A r` with the
+residual `r = b - A x`. -/
 noncomputable def minResStep (A : E →ₗ[𝕜] E) (b : E) (x : E) : E :=
   step1 A b (b - A x) (A (b - A x)) x
 
-/-- Residual-norm steepest descent step (Saad, *Iterative Methods*, Alg 5.4): `v = A† r`,
-`w = A v` with the residual `r = b - A x` and `A†` the adjoint of `A`. -/
+/-- Residual-norm steepest descent step ([saad2003iterative], Alg 5.4): `v = A† r`, `w = A v` with
+the residual `r = b - A x` and `A†` the adjoint of `A`. -/
 noncomputable def residualNormSDStep [CompleteSpace E] (A : E →L[𝕜] E) (b : E) (x : E) : E :=
   step1 (A : E →ₗ[𝕜] E) b ((ContinuousLinearMap.adjoint A) (b - A x))
     (A ((ContinuousLinearMap.adjoint A) (b - A x))) x
@@ -227,9 +226,8 @@ theorem minResStep_isMinRes (x : E) (hA : A.IsCoercive) :
     refine step1_isPetrovGalerkin (b - A x) (A (b - A x)) x fun hcon => ?_
     exact h0 (hA.injective (by rw [map_zero]; exact inner_self_eq_zero.1 hcon))
 
-/-- Kantorovich's inequality (Saad, *Iterative Methods*, Lemma 5.8): for symmetric coercive
-`A` with spectrum in `[λmin, λmax]`,
-`re⟪A x, x⟫ · re⟪A⁻¹ x, x⟫ ≤ (λmax + λmin)² / (4 λmax λmin) ‖x‖⁴`. -/
+/-- Kantorovich's inequality ([saad2003iterative], Lemma 5.8): for symmetric coercive `A` with
+spectrum in `[λmin, λmax]`, `re⟪A x, x⟫ · re⟪A⁻¹ x, x⟫ ≤ (λmax + λmin)² / (4 λmax λmin) ‖x‖⁴`. -/
 theorem kantorovich_inequality {lmin lmax : ℝ} (hl : 0 < lmin)
     (hA : A.IsSymmetricBoundedBy lmin lmax) (x : E) {y : E} (hy : A y = x) :
     RCLike.re (inner 𝕜 (A x) x) * RCLike.re (inner 𝕜 y x) ≤
@@ -305,9 +303,9 @@ private theorem energyNorm_sub_smul_apply_sq (hAc : A.IsSymmetricCoercive) (d : 
   rw [hsym]
   ring
 
-/-- **The steepest-descent step in closed form**: with the residual `r = b - A x` and
-`q = re ⟪ A r, r ⟫`, the step is `x ↦ x + (‖r‖²/q) r`.  The step length is real because the
-quadratic form of a symmetric operator is.  Both convergence statements below start here. -/
+/-- **The steepest-descent step in closed form**: with the residual `r = b - A x` and `q = re ⟪ A r,
+r ⟫`, the step is `x ↦ x + (‖r‖²/q) r`.  The step length is real because the quadratic form of a
+symmetric operator is.  Both convergence statements below start here. -/
 private theorem steepestDescentStep_eq (hsym : A.IsSymmetric) (x : E) :
     steepestDescentStep A b x
       = x + ((‖b - A x‖ ^ 2 / RCLike.re (inner 𝕜 (A (b - A x)) (b - A x)) : ℝ) : 𝕜)
@@ -323,8 +321,8 @@ private theorem steepestDescentStep_eq (hsym : A.IsSymmetric) (x : E) :
       ← RCLike.ofReal_pow, ← RCLike.ofReal_div, RCLike.ofReal_re]
   rw [steepestDescentStep, step1, hscal]
 
-/-- Saad, *Iterative Methods*, Thm 5.9: steepest descent contracts the energy norm of the error
-by the factor `(λmax - λmin)/(λmax + λmin)`. -/
+/-- [saad2003iterative], Thm 5.9: steepest descent contracts the energy norm of the error by the
+factor `(λmax - λmin)/(λmax + λmin)`. -/
 theorem energyNorm_steepestDescentStep_le {lmin lmax : ℝ} (hl : 0 < lmin)
     (hA : A.IsSymmetricBoundedBy lmin lmax) {xstar : E} (hstar : A xstar = b) (x : E) :
     energyNorm A (xstar - steepestDescentStep A b x) ≤
@@ -388,8 +386,8 @@ theorem energyNorm_steepestDescentStep_le {lmin lmax : ℝ} (hl : 0 < lmin)
   have hfin := Real.sqrt_le_sqrt hsq
   rwa [Real.sqrt_sq (energyNorm_nonneg _ _), Real.sqrt_sq (mul_nonneg hcnn henn)] at hfin
 
-/-- Saad, *Iterative Methods*, Thm 5.10: for a bounded operator with `c ‖x‖² ≤ re⟪A x, x⟫`, the
-minimal residual iteration contracts the residual by the factor `√(1 - c² / ‖A‖²)`. -/
+/-- [saad2003iterative], Thm 5.10: for a bounded operator with `c ‖x‖² ≤ re⟪A x, x⟫`, the minimal
+residual iteration contracts the residual by the factor `√(1 - c² / ‖A‖²)`. -/
 theorem norm_residual_minResStep_le {A : E →L[𝕜] E} {c : ℝ} (hc : 0 < c)
     (hA : (A : E →ₗ[𝕜] E).IsCoerciveWith c) (b x : E) :
     ‖b - A (minResStep (A : E →ₗ[𝕜] E) b x)‖ ≤
@@ -429,12 +427,12 @@ theorem norm_residual_minResStep_le {A : E →L[𝕜] E} {c : ℝ} (hc : 0 < c)
     have hfin := Real.sqrt_le_sqrt hsq
     rwa [Real.sqrt_sq (norm_nonneg _), Real.sqrt_mul hknn, Real.sqrt_sq (norm_nonneg _)] at hfin
 
-/-- The exact one-step identity for the minimal residual iteration (Saad, *Iterative Methods*,
-(5.18)): with the residual `r = b - A x` and the new residual `r′ = b - A x′`,
-`‖r′‖² = ‖r‖² (1 - ‖⟪A r, r⟫‖² / (‖r‖² ‖A r‖²))`, the book’s `‖r′‖ = ‖r‖ sin ∠(r, A r)`.
-No hypothesis is needed: at a breakdown (`r = 0` or `A r = 0`) the step does nothing and both
-sides read `‖r‖²`, because division by zero is zero.  Bounding the quotient below is what turns
-this identity into the contraction of `norm_residual_minResStep_le`. -/
+/-- The exact one-step identity for the minimal residual iteration ([saad2003iterative], (5.18)):
+with the residual `r = b - A x` and the new residual `r′ = b - A x′`, `‖r′‖² = ‖r‖² (1 - ‖⟪A r, r⟫‖²
+/ (‖r‖² ‖A r‖²))`, the book’s `‖r′‖ = ‖r‖ sin ∠(r, A r)`. No hypothesis is needed: at a breakdown
+(`r = 0` or `A r = 0`) the step does nothing and both sides read `‖r‖²`, because division by zero is
+zero.  Bounding the quotient below is what turns this identity into the contraction of
+`norm_residual_minResStep_le`. -/
 theorem norm_residual_minResStep_sq_eq (x : E) :
     ‖b - A (minResStep A b x)‖ ^ 2
       = ‖b - A x‖ ^ 2 *
@@ -473,11 +471,11 @@ theorem norm_residual_minResStep_sq_eq (x : E) :
   field_simp
   ring
 
-/-- The exact one-step identity for steepest descent (Saad, *Iterative Methods*, the display
-preceding Lemma 5.8, that is (5.20)): for the error `d = xstar - x` and the residual
-`r = A d = b - A x`, `‖d′‖_A² = ‖d‖_A² (1 - ⟪r, r⟫² / (⟪A r, r⟫ ⟪A⁻¹ r, r⟫))`, where
-`⟪r, r⟫ = ‖r‖²` and `⟪A⁻¹ r, r⟫ = ⟪d, A d⟫ = ‖d‖_A²`.  Bounding the quotient below by
-Kantorovich’s inequality is exactly the proof of `energyNorm_steepestDescentStep_le`. -/
+/-- The exact one-step identity for steepest descent ([saad2003iterative], the display preceding
+Lemma 5.8, that is (5.20)): for the error `d = xstar - x` and the residual `r = A d = b - A x`,
+`‖d′‖_A² = ‖d‖_A² (1 - ⟪r, r⟫² / (⟪A r, r⟫ ⟪A⁻¹ r, r⟫))`, where `⟪r, r⟫ = ‖r‖²` and `⟪A⁻¹ r, r⟫ =
+⟪d, A d⟫ = ‖d‖_A²`.  Bounding the quotient below by Kantorovich’s inequality is exactly the proof of
+`energyNorm_steepestDescentStep_le`. -/
 theorem energyNorm_steepestDescentStep_sq_eq (hA : A.IsSymmetricCoercive) {xstar : E}
     (hstar : A xstar = b) (x : E) :
     energyNorm A (xstar - steepestDescentStep A b x) ^ 2
@@ -508,9 +506,9 @@ theorem energyNorm_steepestDescentStep_sq_eq (hA : A.IsSymmetricCoercive) {xstar
   ring
 
 /-- The contraction corollary shared by the convergence theorems of this file: if the errors of a
-sequence of iterates contract by a factor `ρ < 1` in some functional `N` that dominates the norm
-up to a constant — any norm equivalent to the norm of `E`, an energy norm, or the residual norm of
-a coercive operator — then the iterates converge to `xstar`. -/
+sequence of iterates contract by a factor `ρ < 1` in some functional `N` that dominates the norm up
+to a constant — any norm equivalent to the norm of `E`, an energy norm, or the residual norm of a
+coercive operator — then the iterates converge to `xstar`. -/
 theorem tendsto_of_forall_norm_succ_le {N : E → ℝ} {C ρ : ℝ} {xseq : ℕ → E} {xstar : E}
     (hN : ∀ v : E, ‖v‖ ≤ C * N v) (hN0 : ∀ v : E, 0 ≤ N v) (hρ0 : 0 ≤ ρ) (hρ1 : ρ < 1)
     (h : ∀ k, N (xstar - xseq (k + 1)) ≤ ρ * N (xstar - xseq k)) :

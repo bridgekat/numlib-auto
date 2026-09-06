@@ -6,11 +6,10 @@ import Numlib.Approximation.Interpolation
 /-!
 # Hermite interpolation
 
-Interpolation of a function and its derivatives at finitely many nodes: given distinct nodes
-`x i` and multiplicities `m i`, the Hermite interpolant is the polynomial of degree less than
-`∑ i, (m i + 1)` whose derivatives of order `j ≤ m i` agree with those of `f` at `x i`. The
-material is [Atkinson–Han, *Theoretical Numerical Analysis*][han2009theoretical] §3.2.2 and [Kress,
-*Numerical Analysis*][kress1998numerical] §8.1.
+Interpolation of a function and its derivatives at finitely many nodes: given distinct nodes `x i`
+and multiplicities `m i`, the Hermite interpolant is the polynomial of degree less than `∑ i, (m i +
+1)` whose derivatives of order `j ≤ m i` agree with those of `f` at `x i`. The material is
+[han2009theoretical] §3.2.2 and [kress1998numerical] §8.1.
 
 ## Main definitions
 
@@ -23,17 +22,17 @@ material is [Atkinson–Han, *Theoretical Numerical Analysis*][han2009theoretica
 ## Main results
 
 * `Hermite.exists_iteratedDeriv_eq_zero` is **Rolle's theorem with multiplicities**: a function
-  whose zeros in `[a, b]`, counted with multiplicity, number `N + 2` has a vanishing derivative
-  of order `N + 1` somewhere in `[a, b]`. It strengthens the
-  `exists_iteratedDeriv_eq_zero_of_forall_eq_zero` of `Numlib/Approximation/Interpolation`, which
-  is the case of simple zeros, and it is the only real work of the module.
-* `Hermite.isUnisolvent` is unique solvability of the Hermite problem. Injectivity of the
-  problem is that a nonzero polynomial cannot have more roots, counted with multiplicity, than
-  its degree; surjectivity is then a dimension count, the data space and the polynomials of
-  degree less than `∑ (m i + 1)` having the same finite dimension.
-* `Hermite.exists_sub_interpolate_eq` is the error formula
-  `f(t) - p(t) = f^{(N+1)}(ξ)/(N+1)! ∏ (t - x i)^{m i + 1}`, proved from the Rolle theorem exactly
-  as the Lagrange error formula is proved from the simple one.
+  whose zeros in `[a, b]`, counted with multiplicity, number `N + 2` has a vanishing derivative of
+  order `N + 1` somewhere in `[a, b]`. It strengthens the
+  `exists_iteratedDeriv_eq_zero_of_forall_eq_zero` of `Numlib/Approximation/Interpolation`, which is
+  the case of simple zeros, and it is the only real work of the module.
+* `Hermite.isUnisolvent` is unique solvability of the Hermite problem. Injectivity of the problem is
+  that a nonzero polynomial cannot have more roots, counted with multiplicity, than its degree;
+  surjectivity is then a dimension count, the data space and the polynomials of degree less than `∑
+  (m i + 1)` having the same finite dimension.
+* `Hermite.exists_sub_interpolate_eq` is the error formula `f(t) - p(t) = f^{(N+1)}(ξ)/(N+1)! ∏ (t -
+  x i)^{m i + 1}`, proved from the Rolle theorem exactly as the Lagrange error formula is proved
+  from the simple one.
 
 ## Implementation notes
 
@@ -47,14 +46,14 @@ namespace Hermite
 
 /-! ### Rolle's theorem with multiplicities -/
 
-/-- The induction behind Rolle's theorem with multiplicities, phrased over an explicit sequence
-`F` of successive derivatives and a multiplicity function `Z`: if `F 0` vanishes at each point of
-`s` to the order `Z` prescribes, and those orders sum to `k + 1`, then `F k` vanishes somewhere
-in `[a, b]`.
+/-- The induction behind Rolle's theorem with multiplicities, phrased over an explicit sequence `F`
+of successive derivatives and a multiplicity function `Z`: if `F 0` vanishes at each point of `s` to
+the order `Z` prescribes, and those orders sum to `k + 1`, then `F k` vanishes somewhere in `[a,
+b]`.
 
-Each node of multiplicity `Z t` contributes a zero of multiplicity `Z t - 1` of `F 1`, and each
-of the `s.card - 1` gaps between consecutive nodes contributes one more by Rolle's theorem, so
-the orders available to `F 1` sum to `k`. -/
+Each node of multiplicity `Z t` contributes a zero of multiplicity `Z t - 1` of `F 1`, and each of
+the `s.card - 1` gaps between consecutive nodes contributes one more by Rolle's theorem, so the
+orders available to `F 1` sum to `k`. -/
 private theorem exists_eq_zero_mult_aux {a b : ℝ} :
     ∀ (k : ℕ) (F : ℕ → ℝ → ℝ),
       (∀ j < k, ∀ t : ℝ, HasDerivAt (F j) (F (j + 1) t) t) →
@@ -191,8 +190,7 @@ For `m = 0` and `n = N + 2` this is `exists_iteratedDeriv_eq_zero_of_forall_eq_z
 conclusion is the sharper `Set.Ioo a b`; with multiplicities the open interval is out of reach,
 since a single node of multiplicity `N + 2` may be an endpoint.
 
-Reference: Kress, *Numerical Analysis*, §8.1; Atkinson–Han, *Theoretical Numerical Analysis*,
-§3.2.2. -/
+Reference: [kress1998numerical], §8.1; [han2009theoretical], §3.2.2. -/
 theorem exists_iteratedDeriv_eq_zero {N n : ℕ} {a b : ℝ} {g : ℝ → ℝ}
     (hg : ContDiff ℝ ((N + 1 : ℕ) : WithTop ℕ∞) g) {x : Fin n → ℝ}
     (hx : Function.Injective x) (hmem : ∀ i, x i ∈ Set.Icc a b) {m : Fin n → ℕ}
@@ -241,9 +239,9 @@ section Nodal
 
 variable {n : ℕ}
 
-/-- The **nodal polynomial** of nodes `x` with multiplicities `m`: the monic polynomial
-`∏ i, (X - x i) ^ (m i + 1)`, of degree `∑ i, (m i + 1)`. It vanishes at `x i` together with its
-first `m i` derivatives, and it carries the error of Hermite interpolation. -/
+/-- The **nodal polynomial** of nodes `x` with multiplicities `m`: the monic polynomial `∏ i, (X - x
+i) ^ (m i + 1)`, of degree `∑ i, (m i + 1)`. It vanishes at `x i` together with its first `m i`
+derivatives, and it carries the error of Hermite interpolation. -/
 noncomputable def nodal (x : Fin n → ℝ) (m : Fin n → ℕ) : ℝ[X] :=
   ∏ i, (Polynomial.X - Polynomial.C (x i)) ^ (m i + 1)
 
@@ -308,9 +306,9 @@ section Unisolvent
 
 variable {n : ℕ}
 
-/-- **A polynomial of degree less than `∑ (m i + 1)` vanishing to order `m i + 1` at each node
-is zero.** This is the injectivity half of unisolvence: the nodal polynomial would divide it,
-and the nodal polynomial has degree `∑ (m i + 1)`. -/
+/-- **A polynomial of degree less than `∑ (m i + 1)` vanishing to order `m i + 1` at each node is
+zero.** This is the injectivity half of unisolvence: the nodal polynomial would divide it, and the
+nodal polynomial has degree `∑ (m i + 1)`. -/
 theorem eq_zero_of_forall_eval_iterate_derivative_eq_zero {M : ℕ} {x : Fin n → ℝ}
     (hx : Function.Injective x) {m : Fin n → ℕ} (hM : ∑ i, (m i + 1) = M) {p : ℝ[X]}
     (hdeg : p.degree < (M : WithBot ℕ))
@@ -326,8 +324,8 @@ theorem eq_zero_of_forall_eval_iterate_derivative_eq_zero {M : ℕ} {x : Fin n �
     rw [Polynomial.degree_eq_natDegree (monic_nodal x m).ne_zero, natDegree_nodal, hM]
   exact absurd (hnodal ▸ Polynomial.degree_le_of_dvd hdvd hp0) (not_le.mpr hdeg)
 
-/-- The Hermite data of a polynomial of degree less than `M`: the values at `x i` of its
-derivatives of order `j ≤ m i`, as a linear map. -/
+/-- The Hermite data of a polynomial of degree less than `M`: the values at `x i` of its derivatives
+of order `j ≤ m i`, as a linear map. -/
 private noncomputable def dataMap (x : Fin n → ℝ) (m : Fin n → ℕ) (M : ℕ) :
     Polynomial.degreeLT ℝ M →ₗ[ℝ] ((i : Fin n) × Fin (m i + 1)) → ℝ where
   toFun p k := (Polynomial.derivative^[(k.2 : ℕ)] (p : ℝ[X])).eval (x k.1)
@@ -354,14 +352,14 @@ private theorem dataMap_bijective {M : ℕ} {x : Fin n → ℝ} (hx : Function.I
   exact ⟨hinj, (LinearMap.injective_iff_surjective_of_finrank_eq_finrank hdim).mp hinj⟩
 
 /-- **Unisolvence of the Hermite interpolation problem**: for distinct nodes `x i` with
-multiplicities `m i` summing to `M`, and prescribed values `y i j`, there is exactly one
-polynomial of degree less than `M` whose `j`-th derivative takes the value `y i j` at `x i` for
-every `j ≤ m i`.
+multiplicities `m i` summing to `M`, and prescribed values `y i j`, there is exactly one polynomial
+of degree less than `M` whose `j`-th derivative takes the value `y i j` at `x i` for every `j ≤ m
+i`.
 
-Injectivity is `eq_zero_of_forall_eval_iterate_derivative_eq_zero`; existence is then the
-equality of dimensions of the polynomials of degree less than `M` and of the data.
+Injectivity is `eq_zero_of_forall_eval_iterate_derivative_eq_zero`; existence is then the equality
+of dimensions of the polynomials of degree less than `M` and of the data.
 
-Reference: Atkinson–Han, *Theoretical Numerical Analysis*, §3.2.2 and (3.2.6). -/
+Reference: [han2009theoretical], §3.2.2 and (3.2.6). -/
 theorem isUnisolvent {M : ℕ} {x : Fin n → ℝ} (hx : Function.Injective x) {m : Fin n → ℕ}
     (hM : ∑ i, (m i + 1) = M) (y : Fin n → ℕ → ℝ) :
     ∃! p : ℝ[X], p.degree < (M : WithBot ℕ) ∧
@@ -390,14 +388,14 @@ variable {n : ℕ} {x : Fin n → ℝ} {m : Fin n → ℕ} {f : ℝ → ℝ}
 
 open scoped Classical in
 /-- **The Hermite interpolant** of `f` at the nodes `x` with multiplicities `m`: the unique
-polynomial of degree less than `∑ i, (m i + 1)` whose derivatives of order `j ≤ m i` agree at
-`x i` with those of `f`. For `m = 0` it is `Lagrange.interpolate`
+polynomial of degree less than `∑ i, (m i + 1)` whose derivatives of order `j ≤ m i` agree at `x i`
+with those of `f`. For `m = 0` it is `Lagrange.interpolate`
 (`Hermite.interpolate_zero_eq_lagrange`).
 
-It is junk (namely `0`) when the nodes are not distinct, in which case the interpolation problem
-is not solvable in general.
+It is junk (namely `0`) when the nodes are not distinct, in which case the interpolation problem is
+not solvable in general.
 
-Reference: Atkinson–Han, *Theoretical Numerical Analysis*, §3.2.2. -/
+Reference: [han2009theoretical], §3.2.2. -/
 noncomputable def interpolate (x : Fin n → ℝ) (m : Fin n → ℕ) (f : ℝ → ℝ) : ℝ[X] :=
   if h : Function.Injective x then
     (isUnisolvent h (M := ∑ i, (m i + 1)) rfl fun i j => iteratedDeriv j f (x i)).choose
@@ -422,8 +420,8 @@ theorem eval_iterate_derivative_interpolate (hx : Function.Injective x) (i : Fin
     (Polynomial.derivative^[j] (interpolate x m f)).eval (x i) = iteratedDeriv j f (x i) :=
   (interpolate_spec hx m f).2 i j hj
 
-/-- The Hermite interpolant is the only polynomial of degree less than `∑ (m i + 1)` matching
-`f` and its derivatives at the nodes. -/
+/-- The Hermite interpolant is the only polynomial of degree less than `∑ (m i + 1)` matching `f`
+and its derivatives at the nodes. -/
 theorem eq_interpolate (hx : Function.Injective x) {p : ℝ[X]}
     (hdeg : p.degree < ((∑ i, (m i + 1) : ℕ) : WithBot ℕ))
     (hval : ∀ i, ∀ j ≤ m i,
@@ -454,15 +452,14 @@ end Interpolate
 
 /-- **The Hermite interpolation error formula.** For `f` of class `C^{N+1}` on `[a, b]`, distinct
 nodes `x i` in `[a, b]` with multiplicities `m i` summing to `N + 1`, and any `t ∈ [a, b]`, the
-error of the Hermite interpolant at `t` is `f^{(N+1)}(ξ)/(N+1)!` times the nodal polynomial
-`∏ i, (t - x i)^{m i + 1}`, for some `ξ ∈ [a, b]`.
+error of the Hermite interpolant at `t` is `f^{(N+1)}(ξ)/(N+1)!` times the nodal polynomial `∏ i, (t
+- x i)^{m i + 1}`, for some `ξ ∈ [a, b]`.
 
 As in the Lagrange case the proof subtracts a multiple of the nodal polynomial chosen so that the
 auxiliary function vanishes at `t` as well; its zeros then number `N + 2` with multiplicity, and
 `Hermite.exists_iteratedDeriv_eq_zero` applies.
 
-Reference: Atkinson–Han, *Theoretical Numerical Analysis*, §3.2.2; Kress, *Numerical Analysis*,
-§8.1. -/
+Reference: [han2009theoretical], §3.2.2; [kress1998numerical], §8.1. -/
 theorem exists_sub_interpolate_eq {N n : ℕ} {a b : ℝ} {f : ℝ → ℝ}
     (hf : ContDiff ℝ ((N + 1 : ℕ) : WithTop ℕ∞) f) {x : Fin n → ℝ}
     (hx : Function.Injective x) (hxmem : ∀ i, x i ∈ Set.Icc a b) {m : Fin n → ℕ}

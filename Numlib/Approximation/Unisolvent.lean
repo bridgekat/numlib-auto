@@ -6,27 +6,27 @@ import Numlib.Approximation.Chebyshev
 # The abstract interpolation problem
 
 Given a subspace `Vₙ` of a normed space `V` and `n` bounded linear functionals `L i`, the
-*interpolation problem* asks for a `u ∈ Vₙ` with `L i u = b i` for prescribed data `b`. The
-problem is **unisolvent** when it has exactly one solution for every datum. The material is
-[Atkinson–Han, *Theoretical Numerical Analysis*][han2009theoretical] §3.2 and §3.3.4.
+*interpolation problem* asks for a `u ∈ Vₙ` with `L i u = b i` for prescribed data `b`. The problem
+is **unisolvent** when it has exactly one solution for every datum. The material is
+[han2009theoretical] §3.2 and §3.3.4.
 
 ## Main definitions
 
 * `Approximation.interpMap Vₙ L` is the linear map `u ↦ (L i u)` from `Vₙ` to `Fin n → 𝕜`.
-* `Approximation.IsUnisolvent Vₙ L` says that the interpolation problem has exactly one solution
-  for every datum, equivalently that `interpMap` is bijective
+* `Approximation.IsUnisolvent Vₙ L` says that the interpolation problem has exactly one solution for
+  every datum, equivalently that `interpMap` is bijective
   (`Approximation.isUnisolvent_iff_bijective`).
 * `Approximation.IsUnisolvent.interpolate` is the resulting interpolation operator, a linear
   equivalence from the data to the subspace.
 
 ## Main results
 
-* In a basis `v` of `Vₙ` the map is the matrix `(L i (v j))`, so unisolvence is the nonvanishing
-  of its determinant, `Approximation.isUnisolvent_iff_det_ne_zero`. Since the left-hand side does
-  not mention the basis, the determinant condition does not depend on it.
+* In a basis `v` of `Vₙ` the map is the matrix `(L i (v j))`, so unisolvence is the nonvanishing of
+  its determinant, `Approximation.isUnisolvent_iff_det_ne_zero`. Since the left-hand side does not
+  mention the basis, the determinant condition does not depend on it.
 * `Approximation.isUnisolvent_tfae` collects the four classical forms: unique solvability, linear
-  independence of the functionals over `Vₙ`, triviality of the homogeneous problem, and
-  solvability for every datum.
+  independence of the functionals over `Vₙ`, triviality of the homogeneous problem, and solvability
+  for every datum.
 * `Approximation.haarCondition_iff_isUnisolvent` is the bridge to the Haar condition of
   `Numlib/Approximation/Chebyshev`: a subspace of `C(X, ℝ)` of dimension `n` satisfies the Haar
   condition in dimension `n` exactly when every family of `n` distinct point evaluations is
@@ -52,10 +52,10 @@ def interpMap (Vₙ : Submodule 𝕜 V) (L : Fin n → StrongDual 𝕜 V) : Vₙ
 theorem interpMap_apply (Vₙ : Submodule 𝕜 V) (L : Fin n → StrongDual 𝕜 V) (u : Vₙ)
     (i : Fin n) : interpMap Vₙ L u i = L i (u : V) := rfl
 
-/-- **The interpolation problem is unisolvent** when, for every datum `b`, there is exactly one
-`u` in the subspace `Vₙ` with `L i u = b i` for all `i`.
+/-- **The interpolation problem is unisolvent** when, for every datum `b`, there is exactly one `u`
+in the subspace `Vₙ` with `L i u = b i` for all `i`.
 
-Reference: Atkinson–Han, *Theoretical Numerical Analysis*, Definition 3.2.1 and Theorem 3.2.3. -/
+Reference: [han2009theoretical], Definition 3.2.1 and Theorem 3.2.3. -/
 def IsUnisolvent (Vₙ : Submodule 𝕜 V) (L : Fin n → StrongDual 𝕜 V) : Prop :=
   ∀ b : Fin n → 𝕜, ∃! u : Vₙ, ∀ i, L i (u : V) = b i
 
@@ -75,8 +75,8 @@ variable (v : Module.Basis (Fin n) 𝕜 Vₙ)
 
 include v
 
-/-- In a basis of the subspace, the interpolation map is multiplication by the matrix
-`(L i (v j))`. -/
+/-- In a basis of the subspace, the interpolation map is multiplication by the matrix `(L i (v j))`.
+-/
 theorem interpMap_eq_mulVec (u : Vₙ) :
     interpMap Vₙ L u = (Matrix.of fun i j => L i (v j : V)) *ᵥ v.equivFun u := by
   have hu : (u : V) = ∑ j, v.equivFun u j • (v j : V) := by
@@ -88,14 +88,13 @@ theorem interpMap_eq_mulVec (u : Vₙ) :
   simp only [map_smul, smul_eq_mul, Matrix.mulVec, dotProduct, Matrix.of_apply]
   exact Finset.sum_congr rfl fun j _ => mul_comm _ _
 
-/-- The interpolation map is the matrix of the problem composed with the coordinate isomorphism
-of the basis. -/
+/-- The interpolation map is the matrix of the problem composed with the coordinate isomorphism of
+the basis. -/
 private theorem coe_interpMap_eq :
     ⇑(interpMap Vₙ L) = (Matrix.of fun i j => L i (v j : V)).mulVec ∘ v.equivFun :=
   funext fun u => interpMap_eq_mulVec v u
 
-/-- The homogeneous problem has only the trivial solution exactly when the matrix is
-invertible. -/
+/-- The homogeneous problem has only the trivial solution exactly when the matrix is invertible. -/
 private theorem injective_interpMap_iff_isUnit :
     Function.Injective (interpMap Vₙ L) ↔ IsUnit (Matrix.of fun i j => L i (v j : V)) := by
   classical
@@ -117,10 +116,10 @@ theorem isUnisolvent_iff_isUnit :
     fun h => ⟨(injective_interpMap_iff_isUnit v).2 h, (surjective_interpMap_iff_isUnit v).2 h⟩⟩
 
 /-- **The determinant criterion.** For a basis `v` of the `n`-dimensional subspace `Vₙ`, the
-interpolation problem is unisolvent exactly when `det (L i (v j)) ≠ 0`. The left-hand side does
-not mention the basis, so neither does the nonvanishing of the determinant.
+interpolation problem is unisolvent exactly when `det (L i (v j)) ≠ 0`. The left-hand side does not
+mention the basis, so neither does the nonvanishing of the determinant.
 
-Reference: Atkinson–Han, *Theoretical Numerical Analysis*, Lemma 3.2.2. -/
+Reference: [han2009theoretical], Lemma 3.2.2. -/
 theorem isUnisolvent_iff_det_ne_zero :
     IsUnisolvent Vₙ L ↔ (Matrix.of fun i j => L i (v j : V)).det ≠ 0 := by
   classical
@@ -129,17 +128,17 @@ theorem isUnisolvent_iff_det_ne_zero :
 /-- **The homogeneous form.** The problem is unisolvent exactly when the only element of `Vₙ`
 annihilated by every functional is `0`.
 
-Reference: Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 3.2.3. -/
+Reference: [han2009theoretical], Theorem 3.2.3. -/
 theorem isUnisolvent_iff_forall_eq_zero :
     IsUnisolvent Vₙ L ↔ ∀ u : Vₙ, (∀ i, L i (u : V) = 0) → u = 0 := by
   rw [isUnisolvent_iff_isUnit v, ← injective_interpMap_iff_isUnit v,
     injective_iff_map_eq_zero (interpMap Vₙ L)]
   exact forall_congr' fun u => imp_congr_left (funext_iff (g := (0 : Fin n → 𝕜)))
 
-/-- **The solvability form.** The problem is unisolvent exactly when it is solvable for every
-datum; on an `n`-dimensional subspace with `n` functionals, existence already forces uniqueness.
+/-- **The solvability form.** The problem is unisolvent exactly when it is solvable for every datum;
+on an `n`-dimensional subspace with `n` functionals, existence already forces uniqueness.
 
-Reference: Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 3.2.3. -/
+Reference: [han2009theoretical], Theorem 3.2.3. -/
 theorem isUnisolvent_iff_forall_exists :
     IsUnisolvent Vₙ L ↔ ∀ b : Fin n → 𝕜, ∃ u : Vₙ, ∀ i, L i (u : V) = b i := by
   rw [isUnisolvent_iff_isUnit v, ← surjective_interpMap_iff_isUnit v]
@@ -149,11 +148,11 @@ theorem isUnisolvent_iff_forall_exists :
   · obtain ⟨u, hu⟩ := h b
     exact ⟨u, funext hu⟩
 
-/-- **Linear independence of the functionals over the subspace**, the form in which Atkinson–Han
-state the definition: the restrictions of `L i` to `Vₙ` are linearly independent in the dual of
-`Vₙ`.
+/-- **Linear independence of the functionals over the subspace**, the form in which
+[han2009theoretical] state the definition: the restrictions of `L i` to `Vₙ` are linearly
+independent in the dual of `Vₙ`.
 
-Reference: Atkinson–Han, *Theoretical Numerical Analysis*, Definition 3.2.1 and Theorem 3.2.3. -/
+Reference: [han2009theoretical], Definition 3.2.1 and Theorem 3.2.3. -/
 theorem isUnisolvent_iff_linearIndependent :
     IsUnisolvent Vₙ L ↔
       LinearIndependent 𝕜 fun i => (L i : V →ₗ[𝕜] 𝕜).domRestrict Vₙ := by
@@ -172,7 +171,7 @@ theorem isUnisolvent_iff_linearIndependent :
 /-- **The four equivalent forms of unisolvence**: unique solvability, linear independence of the
 functionals over `Vₙ`, triviality of the homogeneous problem, and solvability for every datum.
 
-Reference: Atkinson–Han, *Theoretical Numerical Analysis*, Theorem 3.2.3. -/
+Reference: [han2009theoretical], Theorem 3.2.3. -/
 theorem isUnisolvent_tfae :
     List.TFAE
       [IsUnisolvent Vₙ L,
@@ -188,10 +187,10 @@ end Matrix
 
 /-! ### The interpolation operator -/
 
-/-- **The interpolation operator** of a unisolvent problem: the linear equivalence from the data
-`b` to the unique element of `Vₙ` interpolating them.
+/-- **The interpolation operator** of a unisolvent problem: the linear equivalence from the data `b`
+to the unique element of `Vₙ` interpolating them.
 
-Reference: Atkinson–Han, *Theoretical Numerical Analysis*, (3.2.3). -/
+Reference: [han2009theoretical], (3.2.3). -/
 noncomputable def IsUnisolvent.interpolate (h : IsUnisolvent Vₙ L) : (Fin n → 𝕜) ≃ₗ[𝕜] Vₙ :=
   (LinearEquiv.ofBijective (interpMap Vₙ L) (isUnisolvent_iff_bijective.mp h)).symm
 
@@ -214,7 +213,7 @@ theorem IsUnisolvent.eq_interpolate (h : IsUnisolvent Vₙ L) {b : Fin n → �
 `C(X, ℝ)` of dimension `n`, no nonzero element vanishes at `n` distinct points exactly when the
 interpolation problem at every `n` distinct points is uniquely solvable.
 
-Reference: Atkinson–Han, *Theoretical Numerical Analysis*, §3.3.4. -/
+Reference: [han2009theoretical], §3.3.4. -/
 theorem haarCondition_iff_isUnisolvent {X : Type*} [TopologicalSpace X] [CompactSpace X]
     (Vₙ : Submodule ℝ C(X, ℝ)) [FiniteDimensional ℝ Vₙ] (hdim : Module.finrank ℝ Vₙ = n) :
     HaarCondition Vₙ n ↔

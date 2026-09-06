@@ -33,8 +33,8 @@ even- and odd-indexed halves of the input, at the cost of one multiplication per
 An implementation of the fast Fourier transform and its operation count are algorithmic and are not
 formalized here; the theorem content is exactly the identity above.
 
-[Atkinson and Han][han2009theoretical] state the matrix in Section 4.3, the inversion formula as
-Theorem 4.3.2 and the radix-2 identity as (4.3.8)–(4.3.9).
+[han2009theoretical] state the matrix in Section 4.3, the inversion formula as Theorem 4.3.2 and the
+radix-2 identity as (4.3.8)–(4.3.9).
 -/
 
 open Complex
@@ -43,9 +43,9 @@ open scoped ComplexConjugate Real
 
 namespace Matrix
 
-/-- The discrete Fourier transform matrix `F_n` of order `n`, with entries `ω ^ (j k)` for
-`ω = exp (2 π i / n)` the standard primitive `n`-th root of unity. The discrete Fourier transform
-of `y : Fin n → ℂ` is `(dft n)ᴴ *ᵥ y`, whose `k`-th entry is `∑ j, ω ^ (-(j k)) * y j`. -/
+/-- The discrete Fourier transform matrix `F_n` of order `n`, with entries `ω ^ (j k)` for `ω = exp
+(2 π i / n)` the standard primitive `n`-th root of unity. The discrete Fourier transform of `y : Fin
+n → ℂ` is `(dft n)ᴴ *ᵥ y`, whose `k`-th entry is `∑ j, ω ^ (-(j k)) * y j`. -/
 noncomputable def dft (n : ℕ) : Matrix (Fin n) (Fin n) ℂ :=
   .of fun j k => Complex.exp (2 * π * I / n) ^ ((j : ℕ) * (k : ℕ))
 
@@ -87,8 +87,8 @@ theorem conjTranspose_dft_apply {n : ℕ} (j k : Fin n) :
     Nat.mul_comm (j : ℕ) (k : ℕ)]
   rfl
 
-/-- The discrete Fourier transform of `y` as an explicit sum:
-`((dft n)ᴴ *ᵥ y) k = ∑ j, ω ^ (-(j k)) * y j`. -/
+/-- The discrete Fourier transform of `y` as an explicit sum: `((dft n)ᴴ *ᵥ y) k = ∑ j, ω ^ (-(j k))
+* y j`. -/
 theorem conjTranspose_dft_mulVec_apply {n : ℕ} (y : Fin n → ℂ) (k : Fin n) :
     ((dft n)ᴴ *ᵥ y) k
       = ∑ j : Fin n, (Complex.exp (2 * π * I / n))⁻¹ ^ ((j : ℕ) * (k : ℕ)) * y j := by
@@ -98,8 +98,8 @@ theorem conjTranspose_dft_mulVec_apply {n : ℕ} (y : Fin n → ℂ) (k : Fin n)
 /-! ### The bridge to `ZMod.dft` -/
 
 /-- `ZMod n ≃ Fin n` through `ZMod.val`. This is `(ZMod.finEquiv n).symm` up to definitional
-unfolding, but the direct form is stated for a variable `n`, so that the value of the forward map
-is `⟨j.val, _⟩` by `rfl` rather than only after `n` is known to be a successor. -/
+unfolding, but the direct form is stated for a variable `n`, so that the value of the forward map is
+`⟨j.val, _⟩` by `rfl` rather than only after `n` is known to be a successor. -/
 private def zmodFinEquiv (n : ℕ) [NeZero n] : ZMod n ≃ Fin n where
   toFun j := ⟨j.val, j.val_lt⟩
   invFun l := ((l : ℕ) : ZMod n)
@@ -144,7 +144,7 @@ private theorem geom_sum_of_pow_eq_one {ζ : ℂ} {n : ℕ} (hζ : ζ ^ n = 1) :
 
 /-- **The columns of the discrete Fourier transform matrix are orthogonal**: `(dft n)ᴴ * dft n` is
 `n` times the identity. This is the content of the inversion formula for the discrete Fourier
-transform (Atkinson and Han, *Theoretical Numerical Analysis*, Theorem 4.3.2). -/
+transform ([han2009theoretical], Theorem 4.3.2). -/
 theorem conjTranspose_dft_mul_dft (n : ℕ) :
     (dft n)ᴴ * dft n = (n : ℂ) • (1 : Matrix (Fin n) (Fin n) ℂ) := by
   rcases Nat.eq_zero_or_pos n with rfl | hn
@@ -184,24 +184,23 @@ theorem dft_mul_conjTranspose_dft (n : ℕ) :
   rw [hinv, Matrix.mul_smul] at hright
   rw [← hright, smul_smul, mul_inv_cancel₀ hn', one_smul]
 
-/-- The inverse of the matrix of the discrete Fourier transform (Atkinson and Han, *Theoretical
-Numerical Analysis*, (4.3.3)). -/
+/-- The inverse of the matrix of the discrete Fourier transform ([han2009theoretical], (4.3.3)). -/
 theorem inv_conjTranspose_dft (n : ℕ) [NeZero n] :
     ((dft n)ᴴ)⁻¹ = (n : ℂ)⁻¹ • dft n := by
   have hn' : (n : ℂ) ≠ 0 := Nat.cast_ne_zero.mpr (NeZero.ne n)
   refine Matrix.inv_eq_right_inv ?_
   rw [Matrix.mul_smul, conjTranspose_dft_mul_dft, smul_smul, inv_mul_cancel₀ hn', one_smul]
 
-/-- **The inverse discrete Fourier transform** (Atkinson and Han, *Theoretical Numerical Analysis*,
-(4.3.4)): `y j = (1/n) * ∑ k, ω ^ (j k) * ŷ k`. -/
+/-- **The inverse discrete Fourier transform** ([han2009theoretical], (4.3.4)): `y j = (1/n) * ∑ k,
+ω ^ (j k) * ŷ k`. -/
 theorem dft_mulVec_conjTranspose_dft_mulVec {n : ℕ} (y : Fin n → ℂ) :
     dft n *ᵥ ((dft n)ᴴ *ᵥ y) = (n : ℂ) • y := by
   rw [Matrix.mulVec_mulVec, dft_mul_conjTranspose_dft, Matrix.smul_mulVec, Matrix.one_mulVec]
 
 /-! ### The radix-2 identity -/
 
-/-- `Fin n × Fin 2 ≃ Fin (2 n)` by `(m, r) ↦ 2 m + r`, the even-odd splitting of an index of
-length `2 n`. Mathlib's `finProdFinEquiv` is the same map into `Fin (n * 2)`; the form here avoids
+/-- `Fin n × Fin 2 ≃ Fin (2 n)` by `(m, r) ↦ 2 m + r`, the even-odd splitting of an index of length
+`2 n`. Mathlib's `finProdFinEquiv` is the same map into `Fin (n * 2)`; the form here avoids
 transporting along `Nat.mul_comm` in every use. -/
 private def finTwoMulEquiv (n : ℕ) : Fin n × Fin 2 ≃ Fin (2 * n) where
   toFun p := ⟨2 * (p.1 : ℕ) + (p.2 : ℕ), by omega⟩
@@ -256,10 +255,10 @@ private theorem conjTranspose_dft_mulVec_two_mul {n : ℕ} (y : Fin (2 * n) → 
   rw [hpow m]
   ring
 
-/-- **The radix-2 (Cooley–Tukey) identity**, first half (Atkinson and Han, *Theoretical Numerical
-Analysis*, (4.3.8)): the first `n` entries of a transform of length `2 n` are `E k + ω⁻ᵏ * O k`,
-with `E` and `O` the length-`n` transforms of the even- and odd-indexed halves of the input and
-`ω = exp (2 π i / (2 n))`. This is the correctness statement of the fast Fourier transform. -/
+/-- **The radix-2 (Cooley–Tukey) identity**, first half ([han2009theoretical], (4.3.8)): the first
+`n` entries of a transform of length `2 n` are `E k + ω⁻ᵏ * O k`, with `E` and `O` the length-`n`
+transforms of the even- and odd-indexed halves of the input and `ω = exp (2 π i / (2 n))`. This is
+the correctness statement of the fast Fourier transform. -/
 theorem dft_radix_two {n : ℕ} (y : Fin (2 * n) → ℂ) (k : Fin n) :
     ((dft (2 * n))ᴴ *ᵥ y) ⟨(k : ℕ), by omega⟩
       = ((dft n)ᴴ *ᵥ fun m : Fin n => y ⟨2 * (m : ℕ), by omega⟩) k
@@ -267,9 +266,9 @@ theorem dft_radix_two {n : ℕ} (y : Fin (2 * n) → ℂ) (k : Fin n) :
           * ((dft n)ᴴ *ᵥ fun m : Fin n => y ⟨2 * (m : ℕ) + 1, by omega⟩) k :=
   conjTranspose_dft_mulVec_two_mul y _ k (Nat.mod_eq_of_lt k.isLt)
 
-/-- **The radix-2 (Cooley–Tukey) identity**, second half (Atkinson and Han, *Theoretical Numerical
-Analysis*, (4.3.9)): the last `n` entries of a transform of length `2 n` reuse the same two
-length-`n` transforms and the same twiddle factor, with a minus sign. -/
+/-- **The radix-2 (Cooley–Tukey) identity**, second half ([han2009theoretical], (4.3.9)): the last
+`n` entries of a transform of length `2 n` reuse the same two length-`n` transforms and the same
+twiddle factor, with a minus sign. -/
 theorem dft_radix_two_add {n : ℕ} (y : Fin (2 * n) → ℂ) (k : Fin n) :
     ((dft (2 * n))ᴴ *ᵥ y) ⟨(k : ℕ) + n, by omega⟩
       = ((dft n)ᴴ *ᵥ fun m : Fin n => y ⟨2 * (m : ℕ), by omega⟩) k

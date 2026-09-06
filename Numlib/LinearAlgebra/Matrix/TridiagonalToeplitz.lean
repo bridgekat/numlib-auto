@@ -11,31 +11,28 @@ import Numlib.LinearAlgebra.Matrix.Hessenberg
 /-!
 # The symmetric tridiagonal Toeplitz matrix and its discrete sine eigenbasis
 
-`Matrix.symmTridiagonalToeplitz n a b` is `tridiag(a, b, a)`: the `n × n` real matrix with `b`
-on the diagonal and `a` on both off-diagonals.  It is diagonalized, for every `a` and `b` at
-once, by the **discrete sine vectors** `Matrix.sineVec n k`, whose `j`-th entry is
-`sin((j + 1)(k + 1)π / (n + 1))`, with eigenvalue `b + 2 a cos((k + 1)π / (n + 1))`.
+`Matrix.symmTridiagonalToeplitz n a b` is `tridiag(a, b, a)`: the `n × n` real matrix with `b` on
+the diagonal and `a` on both off-diagonals.  It is diagonalized, for every `a` and `b` at once, by
+the **discrete sine vectors** `Matrix.sineVec n k`, whose `j`-th entry is `sin((j + 1)(k + 1)π / (n
++ 1))`, with eigenvalue `b + 2 a cos((k + 1)π / (n + 1))`.
 
-The whole content is the trigonometric identity
-`sin((j - 1)θ) + sin((j + 1)θ) = 2 cos θ sin(jθ)`, applied at `θ_k = (k + 1)π / (n + 1)`.  The
-first and last rows of the matrix are the same identity with the missing neighbour supplied by
-the boundary values `sin 0 = 0` and `sin((n + 1)θ_k) = 0`, which is exactly why the sine vectors
-are the eigenvectors of a *tridiagonal* Toeplitz matrix.
+The whole content is the trigonometric identity `sin((j - 1)θ) + sin((j + 1)θ) = 2 cos θ sin(jθ)`,
+applied at `θ_k = (k + 1)π / (n + 1)`.  The first and last rows of the matrix are the same identity
+with the missing neighbour supplied by the boundary values `sin 0 = 0` and `sin((n + 1)θ_k) = 0`,
+which is exactly why the sine vectors are the eigenvectors of a *tridiagonal* Toeplitz matrix.
 
-Everything else follows: the sine vectors are pairwise orthogonal, of squared length
-`(n + 1) / 2` (`Matrix.dotProduct_sineVec`), so after the normalization `√(2 / (n + 1))` they
-form an orthonormal basis (`Matrix.sineOrthonormalBasis`); the spectrum consists of exactly the
-`n` numbers `b + 2 a cos θ_k` (`Matrix.symmTridiagonalToeplitz_hasEigenvalue_iff`); the
-quadratic form is enclosed in `[b - 2|a| cos(π/(n+1)), b + 2|a| cos(π/(n+1))]`
-(`Matrix.isSymmetricBoundedBy_symmTridiagonalToeplitz`); and `tridiag(-1, 2, -1)`, whose
-eigenvalues are `4 sin²((k + 1)π / (2(n + 1)))`, is positive definite.
+Everything else follows: the sine vectors are pairwise orthogonal, of squared length `(n + 1) / 2`
+(`Matrix.dotProduct_sineVec`), so after the normalization `√(2 / (n + 1))` they form an orthonormal
+basis (`Matrix.sineOrthonormalBasis`); the spectrum consists of exactly the `n` numbers `b + 2 a cos
+θ_k` (`Matrix.symmTridiagonalToeplitz_hasEigenvalue_iff`); the quadratic form is enclosed in `[b -
+2|a| cos(π/(n+1)), b + 2|a| cos(π/(n+1))]` (`Matrix.isSymmetricBoundedBy_symmTridiagonalToeplitz`);
+and `tridiag(-1, 2, -1)`, whose eigenvalues are `4 sin²((k + 1)π / (2(n + 1)))`, is positive
+definite.
 
-This is the model problem of [Saad, *Iterative Methods for Sparse Linear
-Systems*][saad2003iterative], §2.2.3 and §2.2.6, and of [Kress, *Numerical
-Analysis*][kress1998numerical], §4. The module knows nothing about differential equations: the claim
-that these matrices discretize `-u''` belongs to a textbook surface, and the two-dimensional
-five-point Laplacian is the Kronecker sum of two of them, in
-`Numlib.LinearAlgebra.Matrix.KroneckerSum`.
+This is the model problem of [saad2003iterative], §2.2.3 and §2.2.6, and of [kress1998numerical],
+§4. The module knows nothing about differential equations: the claim that these matrices discretize
+`-u''` belongs to a textbook surface, and the two-dimensional five-point Laplacian is the Kronecker
+sum of two of them, in `Numlib.LinearAlgebra.Matrix.KroneckerSum`.
 -/
 
 open Finset
@@ -47,8 +44,8 @@ variable {n : ℕ} (a b : ℝ)
 
 /-! ### The matrix -/
 
-/-- The symmetric tridiagonal Toeplitz matrix `tridiag(a, b, a)`: `b` on the diagonal, `a` on
-both off-diagonals and `0` elsewhere. -/
+/-- The symmetric tridiagonal Toeplitz matrix `tridiag(a, b, a)`: `b` on the diagonal, `a` on both
+off-diagonals and `0` elsewhere. -/
 def symmTridiagonalToeplitz (n : ℕ) (a b : ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   Matrix.of fun i j => if i = j then b else if (i : ℕ) + 1 = j ∨ (j : ℕ) + 1 = i then a else 0
 
@@ -94,8 +91,8 @@ theorem symmTridiagonalToeplitz_isHermitian : (symmTridiagonalToeplitz n a b).Is
     symmTridiagonalToeplitz_apply']
   split_ifs <;> first | rfl | (exfalso; omega)
 
-/-- A symmetric tridiagonal Toeplitz matrix is tridiagonal in the sense of
-`Matrix.IsTridiagonal`. -/
+/-- A symmetric tridiagonal Toeplitz matrix is tridiagonal in the sense of `Matrix.IsTridiagonal`.
+-/
 theorem symmTridiagonalToeplitz_isTridiagonal :
     (symmTridiagonalToeplitz n a b).IsTridiagonal := by
   rintro i j (⟨k, hjk, hki⟩ | ⟨k, hik, hkj⟩)
@@ -107,8 +104,8 @@ theorem symmTridiagonalToeplitz_isTridiagonal :
 /-! ### The action on a vector -/
 
 /-- A vector on `Fin n`, shifted up by one and extended by zero to all of `ℕ`.  It turns the
-three-term row of a tridiagonal matrix into a uniform formula: the missing neighbours at the
-first and last rows are supplied by the padding. -/
+three-term row of a tridiagonal matrix into a uniform formula: the missing neighbours at the first
+and last rows are supplied by the padding. -/
 private def padZero (v : Fin n → ℝ) : ℕ → ℝ
   | 0 => 0
   | m + 1 => if h : m < n then v ⟨m, h⟩ else 0
@@ -151,8 +148,8 @@ private theorem sum_ite_val_succ_eq (c : ℝ) (v : Fin n → ℝ) (m : ℕ) :
     simp only [h]
     exact sum_ite_val_eq c v m
 
-/-- The three-term row of a symmetric tridiagonal Toeplitz matrix, uniformly across the first,
-the last and the interior rows. -/
+/-- The three-term row of a symmetric tridiagonal Toeplitz matrix, uniformly across the first, the
+last and the interior rows. -/
 private theorem symmTridiagonalToeplitz_mulVec_apply (v : Fin n → ℝ) (i : Fin n) :
     (symmTridiagonalToeplitz n a b *ᵥ v) i
       = a * padZero v (i : ℕ) + b * padZero v ((i : ℕ) + 1) + a * padZero v ((i : ℕ) + 2) := by
@@ -170,8 +167,8 @@ private theorem symmTridiagonalToeplitz_mulVec_apply (v : Fin n → ℝ) (i : Fi
 
 /-! ### The discrete sine vectors -/
 
-/-- The `k`-th discrete sine vector on `Fin n`, `j ↦ sin((j + 1)(k + 1)π / (n + 1))`: an
-eigenvector of every `Matrix.symmTridiagonalToeplitz n a b`. -/
+/-- The `k`-th discrete sine vector on `Fin n`, `j ↦ sin((j + 1)(k + 1)π / (n + 1))`: an eigenvector
+of every `Matrix.symmTridiagonalToeplitz n a b`. -/
 noncomputable def sineVec (n : ℕ) (k : Fin n) : Fin n → ℝ :=
   fun j => Real.sin (((j : ℕ) + 1) * (((k : ℕ) + 1) * π / (n + 1)))
 
@@ -185,8 +182,8 @@ theorem angle_pos (n : ℕ) (k : Fin n) : 0 < (((k : ℕ) : ℝ) + 1) * π / ((n
   have hn : (0 : ℝ) < (n : ℝ) + 1 := by positivity
   positivity
 
-/-- The angle `θ_k = (k + 1)π / (n + 1)` is below `π`, which is why the `n` eigenvalues
-`b + 2 a cos θ_k` are distinct. -/
+/-- The angle `θ_k = (k + 1)π / (n + 1)` is below `π`, which is why the `n` eigenvalues `b + 2 a cos
+θ_k` are distinct. -/
 theorem angle_lt_pi (n : ℕ) (k : Fin n) : (((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1) < π := by
   have hn : (0 : ℝ) < (n : ℝ) + 1 := by positivity
   have hk : ((k : ℕ) : ℝ) + 1 < (n : ℝ) + 1 := by
@@ -231,10 +228,10 @@ private theorem padZero_sineVec (k : Fin n) {m : ℕ} (hm : m ≤ n + 1) :
       push_cast
       rw [hrw, Real.sin_int_mul_pi]
 
-/-- The eigenpairs of the symmetric tridiagonal Toeplitz matrix: the `k`-th discrete sine vector
-is an eigenvector with eigenvalue `b + 2 a cos((k + 1)π / (n + 1))`, for every `a` and `b` at
-once.  Row by row this is `sin((j - 1)θ) + sin((j + 1)θ) = 2 cos θ sin(jθ)`, the first and last
-rows included thanks to `sin 0 = 0` and `sin((n + 1)θ_k) = 0`. -/
+/-- The eigenpairs of the symmetric tridiagonal Toeplitz matrix: the `k`-th discrete sine vector is
+an eigenvector with eigenvalue `b + 2 a cos((k + 1)π / (n + 1))`, for every `a` and `b` at once.
+Row by row this is `sin((j - 1)θ) + sin((j + 1)θ) = 2 cos θ sin(jθ)`, the first and last rows
+included thanks to `sin 0 = 0` and `sin((n + 1)θ_k) = 0`. -/
 theorem symmTridiagonalToeplitz_mulVec_sineVec (k : Fin n) :
     symmTridiagonalToeplitz n a b *ᵥ sineVec n k
       = (b + 2 * a * Real.cos ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1))) • sineVec n k := by
@@ -267,8 +264,8 @@ theorem sineVec_ne_zero (k : Fin n) : sineVec n k ≠ 0 := by
 
 /-! ### Orthogonality of the sine basis -/
 
-/-- The telescoping identity `2 sin φ ∑_{j<M} cos(2(j+1)φ) = sin((2M+1)φ) - sin φ`, from
-`sin(x + φ) - sin(x - φ) = 2 cos x sin φ`. -/
+/-- The telescoping identity `2 sin φ ∑_{j<M} cos(2(j+1)φ) = sin((2M+1)φ) - sin φ`, from `sin(x + φ)
+- sin(x - φ) = 2 cos x sin φ`. -/
 private theorem two_sin_mul_sum_cos (φ : ℝ) (M : ℕ) :
     2 * Real.sin φ * ∑ j ∈ Finset.range M, Real.cos (2 * ((j : ℝ) + 1) * φ)
       = Real.sin ((2 * (M : ℝ) + 1) * φ) - Real.sin φ := by
@@ -282,8 +279,8 @@ private theorem two_sin_mul_sum_cos (φ : ℝ) (M : ℕ) :
     rw [h1, h2, Real.sin_add, Real.sin_sub]
     ring_nf
 
-/-- The cosine sum at a sine-basis angle: `∑_{j<n} cos(2(j+1)θ_k) = -1`, because
-`sin((2n+1)θ_k) = -sin θ_k`. -/
+/-- The cosine sum at a sine-basis angle: `∑_{j<n} cos(2(j+1)θ_k) = -1`, because `sin((2n+1)θ_k) =
+-sin θ_k`. -/
 private theorem sum_cos_two_mul_angle (k : Fin n) :
     ∑ j ∈ Finset.range n,
         Real.cos (2 * ((j : ℝ) + 1) * ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1))) = -1 := by
@@ -330,10 +327,10 @@ private theorem sum_sineVec_mul_self (k : Fin n) :
     hsum, sum_cos_two_mul_angle k]
   ring
 
-/-- Orthogonality of the discrete sine basis:
-`sineVec n k ⬝ᵥ sineVec n l = if k = l then (n + 1) / 2 else 0`.  Off the diagonal this is the
-orthogonality of eigenvectors of the symmetric matrix `tridiag(1, 0, 1)` belonging to the
-distinct eigenvalues `2 cos θ_k`; on the diagonal it is a telescoping cosine sum. -/
+/-- Orthogonality of the discrete sine basis: `sineVec n k ⬝ᵥ sineVec n l = if k = l then (n + 1) /
+2 else 0`.  Off the diagonal this is the orthogonality of eigenvectors of the symmetric matrix
+`tridiag(1, 0, 1)` belonging to the distinct eigenvalues `2 cos θ_k`; on the diagonal it is a
+telescoping cosine sum. -/
 theorem dotProduct_sineVec (k l : Fin n) :
     sineVec n k ⬝ᵥ sineVec n l = if k = l then ((n : ℝ) + 1) / 2 else 0 := by
   by_cases hkl : k = l
@@ -369,8 +366,8 @@ theorem dotProduct_sineVec (k l : Fin n) :
 
 /-! ### The orthonormal sine basis -/
 
-/-- The inner product of two discrete sine vectors, in the `EuclideanSpace` form that the
-spectral statements need. -/
+/-- The inner product of two discrete sine vectors, in the `EuclideanSpace` form that the spectral
+statements need. -/
 theorem inner_toLp_sineVec (k l : Fin n) :
     inner ℝ (WithLp.toLp 2 (sineVec n k)) (WithLp.toLp 2 (sineVec n l))
       = if k = l then ((n : ℝ) + 1) / 2 else 0 := by
@@ -390,8 +387,8 @@ theorem orthonormal_sineVec (n : ℕ) :
     field_simp
   · rw [ite_eq_right h, ite_eq_right h, mul_zero, mul_zero]
 
-/-- The normalized discrete sine vectors as an orthonormal basis of `EuclideanSpace ℝ (Fin n)`.
-It diagonalizes every `Matrix.symmTridiagonalToeplitz n a b` at once: the symmetric tridiagonal
+/-- The normalized discrete sine vectors as an orthonormal basis of `EuclideanSpace ℝ (Fin n)`. It
+diagonalizes every `Matrix.symmTridiagonalToeplitz n a b` at once: the symmetric tridiagonal
 Toeplitz matrices are a family with this one common eigenbasis. -/
 noncomputable def sineOrthonormalBasis (n : ℕ) :
     OrthonormalBasis (Fin n) ℝ (EuclideanSpace ℝ (Fin n)) :=
@@ -431,8 +428,8 @@ theorem sineOrthonormalBasis_hasEigenvector (k : Fin n) :
 
 /-! ### The spectrum and the quadratic form -/
 
-/-- The sine basis exhausts the spectrum: the eigenvalues of `tridiag(a, b, a)` are exactly the
-`n` numbers `b + 2 a cos((k + 1)π / (n + 1))`. -/
+/-- The sine basis exhausts the spectrum: the eigenvalues of `tridiag(a, b, a)` are exactly the `n`
+numbers `b + 2 a cos((k + 1)π / (n + 1))`. -/
 theorem symmTridiagonalToeplitz_hasEigenvalue_iff (μ : ℝ) :
     Module.End.HasEigenvalue (toEuclideanLin (symmTridiagonalToeplitz n a b)) μ ↔
       ∃ k : Fin n, μ = b + 2 * a * Real.cos ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1)) := by
@@ -469,9 +466,9 @@ theorem symmTridiagonalToeplitz_hasEigenvalue_iff (μ : ℝ) :
   · rintro ⟨k, rfl⟩
     exact Module.End.hasEigenvalue_of_hasEigenvector (sineOrthonormalBasis_hasEigenvector a b k)
 
-/-- The quadratic-form bounds of `tridiag(a, b, a)` from bounds on its eigenvalues, through the
-sine eigenbasis.  This is the shape in which every convergence estimate consumes the spectrum of
-the model problem: no eigenvalue is ever named. -/
+/-- The quadratic-form bounds of `tridiag(a, b, a)` from bounds on its eigenvalues, through the sine
+eigenbasis.  This is the shape in which every convergence estimate consumes the spectrum of the
+model problem: no eigenvalue is ever named. -/
 theorem isSymmetricBoundedBy_symmTridiagonalToeplitz_of_mem_Icc {lmin lmax : ℝ}
     (h : ∀ k : Fin n, b + 2 * a * Real.cos ((((k : ℕ) : ℝ) + 1) * π / ((n : ℝ) + 1))
       ∈ Set.Icc lmin lmax) :
@@ -502,10 +499,10 @@ theorem isSymmetricBoundedBy_symmTridiagonalToeplitz_of_mem_Icc {lmin lmax : ℝ
   · rw [RCLike.re_to_real, hquad, hnorm, Finset.mul_sum]
     exact Finset.sum_le_sum fun k _ => mul_le_mul_of_nonneg_right (h k).2 (sq_nonneg _)
 
-/-- The spectrum of `tridiag(a, b, a)` in quadratic-form form: it is enclosed in
-`[b - 2|a| cos(π/(n+1)), b + 2|a| cos(π/(n+1))]`, and both ends are attained, at `k = n - 1` and
-at `k = 0`.  This is the sharp version of the crude bound `[b - 2|a|, b + 2|a|]`, and it is what
-makes the condition number of the model problem grow like `(n + 1)²`. -/
+/-- The spectrum of `tridiag(a, b, a)` in quadratic-form form: it is enclosed in `[b - 2|a|
+cos(π/(n+1)), b + 2|a| cos(π/(n+1))]`, and both ends are attained, at `k = n - 1` and at `k = 0`.
+This is the sharp version of the crude bound `[b - 2|a|, b + 2|a|]`, and it is what makes the
+condition number of the model problem grow like `(n + 1)²`. -/
 theorem isSymmetricBoundedBy_symmTridiagonalToeplitz (n : ℕ) (a b : ℝ) :
     (toEuclideanLin (symmTridiagonalToeplitz n a b)).IsSymmetricBoundedBy
       (b - 2 * |a| * Real.cos (π / ((n : ℝ) + 1)))
@@ -531,18 +528,18 @@ theorem isSymmetricBoundedBy_symmTridiagonalToeplitz (n : ℕ) (a b : ℝ) :
   rcases abs_cases a with ⟨ha, _⟩ | ⟨ha, _⟩ <;> rw [ha] <;>
     exact ⟨by nlinarith [hupper, hlower], by nlinarith [hupper, hlower]⟩
 
-/-- `tridiag(a, b, a)` is positive definite when the diagonal dominates strictly, `2|a| < b`.
-The boundary case `2|a| = b`, which is the model Laplacian `tridiag(-1, 2, -1)`, needs the sharp
-cosine bound instead: see `Matrix.posDef_symmTridiagonalToeplitz_neg_one_two`. -/
+/-- `tridiag(a, b, a)` is positive definite when the diagonal dominates strictly, `2|a| < b`. The
+boundary case `2|a| = b`, which is the model Laplacian `tridiag(-1, 2, -1)`, needs the sharp cosine
+bound instead: see `Matrix.posDef_symmTridiagonalToeplitz_neg_one_two`. -/
 theorem posDef_symmTridiagonalToeplitz (n : ℕ) {a b : ℝ} (h : 2 * |a| < b) :
     (symmTridiagonalToeplitz n a b).PosDef := by
   rw [posDef_iff_isSymmetricCoercive]
   refine (isSymmetricBoundedBy_symmTridiagonalToeplitz n a b).isSymmetricCoercive ?_
   nlinarith [Real.cos_le_one (π / ((n : ℝ) + 1)), abs_nonneg a]
 
-/-- The one-dimensional model Laplacian `tridiag(-1, 2, -1)` is positive definite: its
-eigenvalues are `2 - 2 cos θ_k = 4 sin²(θ_k / 2)`, which lie in `(0, 4)`.  Its diagonal
-dominance is not strict, so what does the work is `cos(π/(n+1)) < 1`. -/
+/-- The one-dimensional model Laplacian `tridiag(-1, 2, -1)` is positive definite: its eigenvalues
+are `2 - 2 cos θ_k = 4 sin²(θ_k / 2)`, which lie in `(0, 4)`.  Its diagonal dominance is not strict,
+so what does the work is `cos(π/(n+1)) < 1`. -/
 theorem posDef_symmTridiagonalToeplitz_neg_one_two (n : ℕ) :
     (symmTridiagonalToeplitz n (-1) 2).PosDef := by
   rw [posDef_iff_isSymmetricCoercive]

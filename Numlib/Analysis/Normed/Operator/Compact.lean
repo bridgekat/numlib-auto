@@ -23,13 +23,13 @@ theory of `μ - K` needs.
 * `IsCompactOperator.of_tendsto` — an operator-norm limit of compact operators is compact, in the
   sequential form; Mathlib's `isCompactOperator_of_tendsto` is the general filter form.
 * `IsCompactOperator.adjoint` — **Schauder's theorem**: the adjoint of a compact operator between
-  Hilbert spaces is compact. The proof needs no finite-rank approximation: `K` composed with `K†`
-  is compact, and `‖K† z‖² ≤ ‖K (K† z)‖ ‖z‖` turns a finite net for `K ∘ K†` on the unit ball into
-  a finite net for `K†`.
+  Hilbert spaces is compact. The proof needs no finite-rank approximation: `K` composed with `K†` is
+  compact, and `‖K† z‖² ≤ ‖K (K† z)‖ ‖z‖` turns a finite net for `K ∘ K†` on the unit ball into a
+  finite net for `K†`.
 * `IsCompactOperator.finite_setOf_hasEigenvalue_norm_le` — for `ε > 0` only finitely many
   eigenvalues have modulus at least `ε`, so the eigenvalues of a compact operator can accumulate
-  only at `0`. Riesz's lemma applied to the strictly increasing chain of spans of eigenvectors
-  for distinct eigenvalues.
+  only at `0`. Riesz's lemma applied to the strictly increasing chain of spans of eigenvectors for
+  distinct eigenvalues.
 * `IsCompactOperator.isClosed_range_smul_sub` — the range of `μ • 1 - K` is closed for `μ ≠ 0`.
 * `IsCompactOperator.range_smul_sub_eq_orthogonal_ker_adjoint` — the solvability criterion on a
   Hilbert space: `range (μ • 1 - K) = (ker (conj μ • 1 - K†))ᗮ`, so `(μ • 1 - K) u = f` is solvable
@@ -40,8 +40,8 @@ domain to be complete: Riesz's lemma and the compactness of `K` carry both argum
 The Riesz ascent–descent theory — that the chain of null spaces of `(μ - K)ⁿ` stabilizes, and that
 `ker (μ - K)` and `ker (conj μ - K†)` have equal dimension — is not developed here.
 
-These are [Atkinson–Han][han2009theoretical] Propositions 2.8.4 and 2.8.7, Lemma 2.8.13, Theorem
-2.8.12 clauses (1) and (4), and Theorem 2.8.14 clause (2).
+These are [han2009theoretical] Propositions 2.8.4 and 2.8.7, Lemma 2.8.13, Theorem 2.8.12 clauses
+(1) and (4), and Theorem 2.8.14 clause (2).
 -/
 
 open Filter Topology Metric Set
@@ -76,9 +76,9 @@ variable {𝕜 : Type*} [NontriviallyNormedField 𝕜] {E F : Type*}
   [SeminormedAddCommGroup E] [NormedSpace 𝕜 E]
   [NormedAddCommGroup F] [NormedSpace 𝕜 F] [CompleteSpace F]
 
-/-- **An operator-norm limit of compact operators is compact**, when the codomain is complete.
-This is the sequential form; Mathlib's `isCompactOperator_of_tendsto` is the general filter form,
-and `isClosed_setOfPred_isCompactOperator` the closedness that both rest on. -/
+/-- **An operator-norm limit of compact operators is compact**, when the codomain is complete. This
+is the sequential form; Mathlib's `isCompactOperator_of_tendsto` is the general filter form, and
+`isClosed_setOfPred_isCompactOperator` the closedness that both rest on. -/
 theorem of_tendsto {A : ℕ → E →L[𝕜] F} {f : E →L[𝕜] F} (hA : ∀ n, IsCompactOperator (A n))
     (h : Tendsto (fun n => ‖A n - f‖) atTop (𝓝 0)) : IsCompactOperator f :=
   isCompactOperator_of_tendsto (tendsto_iff_norm_sub_tendsto_zero.2 h) (.of_forall hA)
@@ -183,8 +183,8 @@ only finitely many eigenvalues `μ` with `ε ≤ ‖μ‖`.
 
 If there were infinitely many, the spans `Vₙ` of the first `n` eigenvectors would form a strictly
 increasing chain of finite-dimensional, hence closed, subspaces; Riesz's lemma produces `wₙ ∈ Vₙ₊₁`
-of bounded norm at distance at least `1` from `Vₙ`, and `(T - μₙ) Vₙ₊₁ ⊆ Vₙ` makes the points
-`T wₙ` pairwise at distance at least `ε`, which no sequence in a compact set can be. -/
+of bounded norm at distance at least `1` from `Vₙ`, and `(T - μₙ) Vₙ₊₁ ⊆ Vₙ` makes the points `T wₙ`
+pairwise at distance at least `ε`, which no sequence in a compact set can be. -/
 theorem finite_setOf_hasEigenvalue_norm_le {T : X →L[𝕜] X} (hT : IsCompactOperator T) {ε : ℝ}
     (hε : 0 < ε) :
     {μ : 𝕜 | Module.End.HasEigenvalue (T : Module.End 𝕜 X) μ ∧ ε ≤ ‖μ‖}.Finite := by
@@ -308,8 +308,8 @@ section ClosedRange
 
 variable {𝕜 X : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup X] [NormedSpace 𝕜 X]
 
-/-- Every vector has a representative modulo a submodule whose norm is within `1` of the distance
-to that submodule. -/
+/-- Every vector has a representative modulo a submodule whose norm is within `1` of the distance to
+that submodule. -/
 private theorem exists_almost_minimal (N : Submodule 𝕜 X) (v : X) :
     ∃ z ∈ N, ∀ t ∈ N, ‖v - z‖ ≤ ‖v - z - t‖ + 1 := by
   have hne : (N : Set X).Nonempty := ⟨0, N.zero_mem⟩
@@ -323,8 +323,8 @@ private theorem exists_almost_minimal (N : Submodule 𝕜 X) (v : X) :
   rw [dist_eq_norm] at hzlt
   linarith
 
-/-- An almost minimal representative modulo `ker (μ • 1 - K)` has norm controlled by the norm of
-its image: `μ • 1 - K` is bounded below modulo its kernel. -/
+/-- An almost minimal representative modulo `ker (μ • 1 - K)` has norm controlled by the norm of its
+image: `μ • 1 - K` is bounded below modulo its kernel. -/
 private theorem exists_bound {K : X →L[𝕜] X} (hK : IsCompactOperator K) {μ : 𝕜} (hμ : μ ≠ 0) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ v : X,
       (∀ t ∈ (μ • (1 : X →L[𝕜] X) - K).ker, ‖v‖ ≤ ‖v - t‖ + 1) →
@@ -468,11 +468,11 @@ section Solvability
 
 variable {𝕜 X : Type*} [RCLike 𝕜] [NormedAddCommGroup X] [InnerProductSpace 𝕜 X] [CompleteSpace X]
 
-/-- **The solvability criterion for a second-kind equation** (the "Fredholm alternative" in the
-form used to solve `(μ - K) u = f`): on a Hilbert space, for a compact `K` and `μ ≠ 0`,
-`range (μ • 1 - K) = (ker (conj μ • 1 - K†))ᗮ`. So the equation `(μ • 1 - K) u = f` is solvable
-exactly when `f` is orthogonal to every solution of the homogeneous adjoint equation, and
-`X = ker (conj μ • 1 - K†) ⊕ range (μ • 1 - K)`.
+/-- **The solvability criterion for a second-kind equation** (the "Fredholm alternative" in the form
+used to solve `(μ - K) u = f`): on a Hilbert space, for a compact `K` and `μ ≠ 0`, `range (μ • 1 -
+K) = (ker (conj μ • 1 - K†))ᗮ`. So the equation `(μ • 1 - K) u = f` is solvable exactly when `f` is
+orthogonal to every solution of the homogeneous adjoint equation, and `X = ker (conj μ • 1 - K†) ⊕
+range (μ • 1 - K)`.
 
 The inclusion of the range in the orthogonal complement is formal; equality is
 `isClosed_range_smul_sub`. -/

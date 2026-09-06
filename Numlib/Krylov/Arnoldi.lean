@@ -8,17 +8,15 @@ import Numlib.LinearSolve.Projection.Basic
 /-!
 # Arnoldi's process
 
-The Arnoldi vectors are the Gram–Schmidt orthonormalization of the Krylov sequence
-`b, A b, A² b, …` (`InnerProductSpace.gramSchmidtNormed`), which is `0` after breakdown. This
-gives orthonormality, `span {v₀, …, v_{m-1}} = 𝒦_m` ([Saad, *Iterative
-Methods*][saad2003iterative], Prop 6.4), breakdown iff grade (Prop 6.6), the Hessenberg structure
-of `h i j = ⟪v i, A v j⟫` and the Arnoldi relation `A v_j = ∑_{i ≤ j+1} h i j v_i`
-(Prop 6.5, (6.9)), and the identification with the classical recurrence
-`w_j = A v_j - ∑_{i ≤ j} h_{ij} v_i`, `v_{j+1} = w_j / ‖w_j‖` (Alg 6.1), all from that book.
-Also the basis-free form `(1 - P_m) A P_m = h_{m+1,m} v_{m+1} v_mᴴ`, where `P_m` is the
-orthogonal projection onto `𝒦_m` ([Saad, *Large Eigenvalue Problems*][saad2011numerical], P-6.1,
-which measures the invariance defect of `𝒦_m` by `‖(I - P_m) A P_m‖`). Indices are `0`-based:
-`v 0 = b / ‖b‖`.
+The Arnoldi vectors are the Gram–Schmidt orthonormalization of the Krylov sequence `b, A b, A² b, …`
+(`InnerProductSpace.gramSchmidtNormed`), which is `0` after breakdown. This gives orthonormality,
+`span {v₀, …, v_{m-1}} = 𝒦_m` ([saad2003iterative], Prop 6.4), breakdown iff grade (Prop 6.6), the
+Hessenberg structure of `h i j = ⟪v i, A v j⟫` and the Arnoldi relation `A v_j = ∑_{i ≤ j+1} h i j
+v_i` (Prop 6.5, (6.9)), and the identification with the classical recurrence `w_j = A v_j - ∑_{i ≤
+j} h_{ij} v_i`, `v_{j+1} = w_j / ‖w_j‖` (Alg 6.1), all from that book. Also the basis-free form `(1
+- P_m) A P_m = h_{m+1,m} v_{m+1} v_mᴴ`, where `P_m` is the orthogonal projection onto `𝒦_m`
+([saad2011numerical], P-6.1, which measures the invariance defect of `𝒦_m` by `‖(I - P_m) A P_m‖`).
+Indices are `0`-based: `v 0 = b / ‖b‖`.
 -/
 
 open Krylov
@@ -118,9 +116,9 @@ theorem vec_zero (hb : b ≠ 0) : vec A b 0 = (‖b‖⁻¹ : 𝕜) • b := by
     simp
   rw [vec_eq_smul_gs, h0]
 
-/-- Breakdown at step `j` is exactly the closing up of the Krylov sequence there: `v_j = 0` iff
-`A^j b` already lies in `𝒦_j`. The form of `Arnoldi.vec_eq_zero_iff` that needs no
-finite-dimensionality. -/
+/-- Breakdown at step `j` is exactly the closing up of the Krylov sequence there: `v_j = 0` iff `A^j
+b` already lies in `𝒦_j`. The form of `Arnoldi.vec_eq_zero_iff` that needs no finite-dimensionality.
+-/
 theorem vec_eq_zero_iff_pow_apply_mem (j : ℕ) :
     vec A b j = 0 ↔ (A ^ j) b ∈ subspace A b j := by
   rw [← gs_eq_zero_iff, vec_eq_smul_gs, smul_eq_zero]
@@ -132,8 +130,8 @@ theorem vec_eq_zero_iff_pow_apply_mem (j : ℕ) :
 theorem norm_vec_eq_one_of_ne_zero {j : ℕ} (h : vec A b j ≠ 0) : ‖vec A b j‖ = 1 :=
   InnerProductSpace.gramSchmidtNormed_unit_length' h
 
-/-- `v_j` lies in `𝒦_{j+1}`: orthonormalizing the `j`-th Krylov vector only combines
-`b, A b, …, A^j b`. -/
+/-- `v_j` lies in `𝒦_{j+1}`: orthonormalizing the `j`-th Krylov vector only combines `b, A b, …, A^j
+b`. -/
 theorem vec_mem_subspace (j : ℕ) : vec A b j ∈ subspace A b (j + 1) := by
   rw [vec_eq_smul_gs]
   exact Submodule.smul_mem _ _ (gs_mem_subspace A b j.lt_succ_self)
@@ -142,19 +140,19 @@ theorem vec_mem_subspace (j : ℕ) : vec A b j ∈ subspace A b (j + 1) := by
 theorem vec_mem_subspace_of_lt {i m : ℕ} (h : i < m) : vec A b i ∈ subspace A b m :=
   subspace_mono A b h (vec_mem_subspace A b i)
 
-/-- `v_j` is orthogonal to all of `𝒦_j`, that is, to every earlier Arnoldi vector at once; this
-is what Gram–Schmidt subtracts off. -/
+/-- `v_j` is orthogonal to all of `𝒦_j`, that is, to every earlier Arnoldi vector at once; this is
+what Gram–Schmidt subtracts off. -/
 theorem vec_mem_orthogonal (j : ℕ) : vec A b j ∈ (subspace A b j)ᗮ := by
   rw [vec_eq_smul_gs]
   exact Submodule.smul_mem _ _ (gs_mem_orthogonal A b j)
 
-/-- Distinct Arnoldi vectors are orthogonal, at every pair of indices and with no hypothesis on
-the grade: past breakdown the vectors are `0`, and the inner product vanishes for that reason. -/
+/-- Distinct Arnoldi vectors are orthogonal, at every pair of indices and with no hypothesis on the
+grade: past breakdown the vectors are `0`, and the inner product vanishes for that reason. -/
 theorem inner_vec_eq_zero {i j : ℕ} (h : i ≠ j) : inner 𝕜 (vec A b i) (vec A b j) = 0 := by
   rw [vec_eq_smul_gs, vec_eq_smul_gs, inner_smul_left, inner_smul_right, gs_orthogonal A b h]
   simp
 
-/-- Saad, *Iterative Methods*, Prop 6.4: the Arnoldi vectors span the Krylov subspaces. -/
+/-- [saad2003iterative], Prop 6.4: the Arnoldi vectors span the Krylov subspaces. -/
 theorem span_vec (m : ℕ) : Submodule.span 𝕜 (vec A b '' Set.Iio m) = subspace A b m := by
   rw [subspace_eq_span_gs_image]
   exact InnerProductSpace.span_gramSchmidtNormed (fun i : ℕ => (A ^ i) b) (Set.Iio m)
@@ -163,17 +161,17 @@ section FiniteDimensional
 
 variable [FiniteDimensional 𝕜 (fullSubspace A b)]
 
-/-- Saad, *Iterative Methods*, Prop 6.6: breakdown at step `j` iff `j ≥ grade`. -/
+/-- [saad2003iterative], Prop 6.6: breakdown at step `j` iff `j ≥ grade`. -/
 theorem vec_eq_zero_iff (j : ℕ) : vec A b j = 0 ↔ grade A b ≤ j := by
   rw [vec_eq_zero_iff_pow_apply_mem, grade_le_iff]
 
-/-- Below the grade the Arnoldi vectors are genuine unit vectors; from the grade onwards they
-are `0`, by `vec_eq_zero_iff`. -/
+/-- Below the grade the Arnoldi vectors are genuine unit vectors; from the grade onwards they are
+`0`, by `vec_eq_zero_iff`. -/
 theorem norm_vec_eq_one_of_lt_grade {j : ℕ} (h : j < grade A b) : ‖vec A b j‖ = 1 :=
   norm_vec_eq_one_of_ne_zero A b (fun hz => absurd ((vec_eq_zero_iff A b j).1 hz) (not_le.2 h))
 
-/-- Saad, *Iterative Methods*, Prop 6.4: the Arnoldi vectors up to the grade — exactly the ones
-that survive the process — form an orthonormal family. -/
+/-- [saad2003iterative], Prop 6.4: the Arnoldi vectors up to the grade — exactly the ones that
+survive the process — form an orthonormal family. -/
 theorem orthonormal : Orthonormal 𝕜 (fun i : Fin (grade A b) => vec A b i) :=
   ⟨fun i => norm_vec_eq_one_of_lt_grade A b i.2,
     fun _ _ hij => inner_vec_eq_zero A b fun h => hij (Fin.val_injective h)⟩
@@ -197,8 +195,8 @@ private theorem sub_sum_inner_smul_vec_mem_orthogonal (x : E) (m : ℕ) :
   · intro hk'
     exact absurd (Finset.mem_range.2 hk) hk'
 
-/-- Every element of `𝒦_m` is its own orthonormal expansion in the Arnoldi vectors (the vectors
-that vanish after breakdown contribute nothing). -/
+/-- Every element of `𝒦_m` is its own orthonormal expansion in the Arnoldi vectors (the vectors that
+vanish after breakdown contribute nothing). -/
 theorem eq_sum_inner_smul_vec {x : E} {m : ℕ} (hx : x ∈ subspace A b m) :
     x = ∑ i ∈ Finset.range m, inner 𝕜 (vec A b i) x • vec A b i := by
   have hy : x - ∑ i ∈ Finset.range m, inner 𝕜 (vec A b i) x • vec A b i ∈ subspace A b m :=
@@ -209,9 +207,9 @@ theorem eq_sum_inner_smul_vec {x : E} {m : ℕ} (hx : x ∈ subspace A b m) :
   rw [inner_self_eq_zero, sub_eq_zero] at h0
   exact h0
 
-/-- A vector of `𝒦_{m+1}` orthogonal to `𝒦_m` is the multiple `⟪v_m, x⟫ • v_m` of the `m`-th
-Arnoldi vector: in the expansion of `Arnoldi.eq_sum_inner_smul_vec` only the last coefficient
-survives. This is the step that turns "the new direction" into a scalar. -/
+/-- A vector of `𝒦_{m+1}` orthogonal to `𝒦_m` is the multiple `⟪v_m, x⟫ • v_m` of the `m`-th Arnoldi
+vector: in the expansion of `Arnoldi.eq_sum_inner_smul_vec` only the last coefficient survives. This
+is the step that turns "the new direction" into a scalar. -/
 theorem eq_inner_smul_vec {x : E} {m : ℕ} (hx : x ∈ subspace A b (m + 1))
     (hxo : x ∈ (subspace A b m)ᗮ) :
     x = inner 𝕜 (vec A b m) x • vec A b m := by
@@ -251,8 +249,8 @@ noncomputable def orthonormalBasis [FiniteDimensional 𝕜 (fullSubspace A b)] {
     (hm : m ≤ grade A b) : OrthonormalBasis (Fin m) 𝕜 (subspace A b m) :=
   OrthonormalBasis.mk (orthonormal_vecIn A b hm) (span_vecIn A b)
 
-/-- The orthonormal basis of `𝒦_m` is made of the Arnoldi vectors themselves, so any statement
-about it may be read back in terms of `vec`. -/
+/-- The orthonormal basis of `𝒦_m` is made of the Arnoldi vectors themselves, so any statement about
+it may be read back in terms of `vec`. -/
 @[simp]
 theorem coe_orthonormalBasis_apply [FiniteDimensional 𝕜 (fullSubspace A b)] {m : ℕ}
     (hm : m ≤ grade A b) (i : Fin m) : (orthonormalBasis A b hm i : E) = vec A b i :=
@@ -269,15 +267,15 @@ theorem coeff_eq_zero_of_lt {i j : ℕ} (h : j + 1 < i) : coeff A b i j = 0 := b
     (map_subspace_le A b (j + 1) ⟨_, vec_mem_subspace A b j, rfl⟩) ?_
   exact Submodule.orthogonal_le (subspace_mono A b (by omega)) (vec_mem_orthogonal A b i)
 
-/-- Arnoldi relation `A v_j = ∑_{i ≤ j+1} h i j v_i` (Saad, *Iterative Methods*, (6.9)). -/
+/-- Arnoldi relation `A v_j = ∑_{i ≤ j+1} h i j v_i` ([saad2003iterative], (6.9)). -/
 theorem apply_vec (j : ℕ) :
     A (vec A b j) = ∑ i ∈ Finset.range (j + 2), coeff A b i j • vec A b i := by
   have hx : A (vec A b j) ∈ subspace A b (j + 1 + 1) :=
     map_subspace_le A b (j + 1) ⟨_, vec_mem_subspace A b j, rfl⟩
   simpa [coeff] using eq_sum_inner_smul_vec A b hx
 
-/-- The Arnoldi relation with the sum padded out to any length `n ≥ j + 2`: the extra terms
-carry Hessenberg-zero coefficients, so lengthening the range costs nothing. -/
+/-- The Arnoldi relation with the sum padded out to any length `n ≥ j + 2`: the extra terms carry
+Hessenberg-zero coefficients, so lengthening the range costs nothing. -/
 theorem apply_vec_of_le {j n : ℕ} (h : j + 2 ≤ n) :
     A (vec A b j) = ∑ i ∈ Finset.range n, coeff A b i j • vec A b i := by
   rw [apply_vec]
@@ -286,14 +284,14 @@ theorem apply_vec_of_le {j n : ℕ} (h : j + 2 ≤ n) :
   rw [Finset.mem_range, not_lt] at hi
   rw [coeff_eq_zero_of_lt A b (by omega), zero_smul]
 
-/-- The unnormalized next vector `w_j = A v_j - ∑_{i ≤ j} h i j v_i`
-(Saad, *Iterative Methods*, Alg 6.1, line 4). -/
+/-- The unnormalized next vector `w_j = A v_j - ∑_{i ≤ j} h i j v_i` ([saad2003iterative], Alg 6.1,
+line 4). -/
 noncomputable def w (j : ℕ) : E :=
   A (vec A b j) - ∑ i ∈ Finset.range (j + 1), coeff A b i j • vec A b i
 
-/-- `w_j` is exactly the component of `A v_j` orthogonal to `𝒦_{j+1}`: subtracting the
-coefficients of Saad, *Iterative Methods*, Alg 6.1 is the same as removing the orthogonal
-projection onto the space built so far. -/
+/-- `w_j` is exactly the component of `A v_j` orthogonal to `𝒦_{j+1}`: subtracting the coefficients
+of [saad2003iterative], Alg 6.1 is the same as removing the orthogonal projection onto the space
+built so far. -/
 theorem w_eq_sub_starProjection (j : ℕ) :
     w A b j = A (vec A b j) - (subspace A b (j + 1)).starProjection (A (vec A b j)) := by
   rw [w]
@@ -305,10 +303,10 @@ theorem w_eq_sub_starProjection (j : ℕ) :
     exact Submodule.inner_left_of_mem_orthogonal hy
       (sub_sum_inner_smul_vec_mem_orthogonal A b (A (vec A b j)) (j + 1))
 
-/-- Saad, *Iterative Methods*, (6.108), the band structure established in the proof of Prop 6.22
-and generalizing Lanczos tridiagonality: if `A` has an adjoint `B` (`⟪A x, y⟫ = ⟪x, B y⟫`) with
-`B v ∈ 𝒦_s(A, v)` for every `v`, then `h i j = 0` for `i + s ≤ j`. (Prop 6.22 itself draws from
-this the equivalence of DIOM(s) with FOM.) -/
+/-- [saad2003iterative], (6.108), the band structure established in the proof of Prop 6.22 and
+generalizing Lanczos tridiagonality: if `A` has an adjoint `B` (`⟪A x, y⟫ = ⟪x, B y⟫`) with `B v ∈
+𝒦_s(A, v)` for every `v`, then `h i j = 0` for `i + s ≤ j`. (Prop 6.22 itself draws from this the
+equivalence of DIOM(s) with FOM.) -/
 theorem coeff_eq_zero_of_adjoint_mem {B : E →ₗ[𝕜] E} (hB : ∀ x y, inner 𝕜 (A x) y = inner 𝕜 x (B y))
     {s : ℕ} (hs : ∀ v, B v ∈ subspace A v s) {i j : ℕ} (h : i + s ≤ j) : coeff A b i j = 0 := by
   have hle : subspace A (vec A b i) s ≤ subspace A b j := by
@@ -365,8 +363,7 @@ theorem coeff_succ_self (j : ℕ) : coeff A b (j + 1) j = (‖w A b j‖ : 𝕜)
     Submodule.inner_left_of_mem_orthogonal (Submodule.starProjection_apply_mem _ _)
       (vec_mem_orthogonal A b (j + 1)), add_zero]
 
-/-- Saad, *Iterative Methods*, Alg 6.1, line 7: `v_{j+1} = w_j / ‖w_j‖` (and `0` on
-breakdown). -/
+/-- [saad2003iterative], Alg 6.1, line 7: `v_{j+1} = w_j / ‖w_j‖` (and `0` on breakdown). -/
 theorem vec_succ_eq (j : ℕ) : vec A b (j + 1) = (‖w A b j‖⁻¹ : 𝕜) • w A b j := by
   rcases eq_or_ne (gs A b j) 0 with h0 | h0
   · have h1 : gs A b (j + 1) = 0 := by
@@ -384,25 +381,25 @@ private theorem w_eq_zero_iff (j : ℕ) : w A b j = 0 ↔ vec A b (j + 1) = 0 :=
   by_contra h0
   exact smul_ne_zero (inv_ne_zero (by simpa using norm_ne_zero_iff.2 h0)) h0 h
 
-/-- Breakdown read off the Hessenberg matrix (Saad, *Iterative Methods*, Prop 6.6): the
-subdiagonal entry `h_{j+1,j}` vanishes exactly when the process has stopped by step `j + 1`. -/
+/-- Breakdown read off the Hessenberg matrix ([saad2003iterative], Prop 6.6): the subdiagonal entry
+`h_{j+1,j}` vanishes exactly when the process has stopped by step `j + 1`. -/
 theorem coeff_succ_self_eq_zero_iff [FiniteDimensional 𝕜 (fullSubspace A b)] (j : ℕ) :
     coeff A b (j + 1) j = 0 ↔ grade A b ≤ j + 1 := by
   rw [coeff_succ_self, RCLike.ofReal_eq_zero, norm_eq_zero, w_eq_zero_iff, vec_eq_zero_iff]
 
 /-! ### The Hessenberg matrices -/
 
-/-- The `(m+1) × m` Hessenberg matrix `H̄_m` (Saad, *Iterative Methods*, Prop 6.5). -/
+/-- The `(m+1) × m` Hessenberg matrix `H̄_m` ([saad2003iterative], Prop 6.5). -/
 noncomputable def hessenberg (m : ℕ) : Matrix (Fin (m + 1)) (Fin m) 𝕜 :=
   Matrix.of fun i j => coeff A b i j
 
-/-- The square Hessenberg matrix `H_m`: `H̄_m` with its last row deleted
-(Saad, *Iterative Methods*, Prop 6.5). -/
+/-- The square Hessenberg matrix `H_m`: `H̄_m` with its last row deleted ([saad2003iterative], Prop
+6.5). -/
 noncomputable def hessenbergSq (m : ℕ) : Matrix (Fin m) (Fin m) 𝕜 :=
   Matrix.of fun i j => coeff A b i j
 
-/-- `H̄_m` is upper Hessenberg: it vanishes more than one place below the diagonal. The matrix
-form of `coeff_eq_zero_of_lt`. -/
+/-- `H̄_m` is upper Hessenberg: it vanishes more than one place below the diagonal. The matrix form
+of `coeff_eq_zero_of_lt`. -/
 theorem hessenberg_isUpperHessenbergRect (m : ℕ) :
     (hessenberg A b m).IsUpperHessenbergRect := fun _ _ h => coeff_eq_zero_of_lt A b h
 
@@ -412,7 +409,7 @@ theorem hessenbergSq_isUpperHessenberg (m : ℕ) : (hessenbergSq A b m).IsUpperH
   rw [Fin.lt_def] at hjk hki
   exact coeff_eq_zero_of_lt A b (by omega)
 
-/-- `A V_m = V_{m+1} H̄_m` (Saad, *Iterative Methods*, (6.7)), coordinate form. -/
+/-- `A V_m = V_{m+1} H̄_m` ([saad2003iterative], (6.7)), coordinate form. -/
 theorem apply_sum (m : ℕ) (y : Fin m → 𝕜) :
     A (∑ j, y j • vec A b j) = ∑ i : Fin (m + 1), (hessenberg A b m).mulVec y i • vec A b i := by
   rw [map_sum]
@@ -430,8 +427,8 @@ theorem apply_sum (m : ℕ) (y : Fin m → 𝕜) :
     simp [Matrix.mulVec, dotProduct, hessenberg, mul_comm]
   rw [hmv, Finset.sum_smul]
 
-/-- `H_m = V_mᴴ A V_m` is the matrix of the compression of `A` to `𝒦_m`
-(Saad, *Iterative Methods*, (6.8), Prop 6.5). -/
+/-- `H_m = V_mᴴ A V_m` is the matrix of the compression of `A` to `𝒦_m` ([saad2003iterative], (6.8),
+Prop 6.5). -/
 theorem hessenbergSq_eq_toMatrix_compression [FiniteDimensional 𝕜 (fullSubspace A b)] {m : ℕ}
     (hm : m ≤ grade A b) :
     hessenbergSq A b m =
@@ -441,8 +438,8 @@ theorem hessenbergSq_eq_toMatrix_compression [FiniteDimensional 𝕜 (fullSubspa
   ext i j
   simp [hessenbergSq, coeff]
 
-/-- Basis-free form of the Arnoldi relation: `(1 - P_m) A P_m = h_{m+1,m} v_{m+1} v_mᴴ`, hence
-`‖P_m A (1 - P_m)‖`-type identities (Saad, *Large Eigenvalue Problems*, Prop 6.6, P-6.1). -/
+/-- Basis-free form of the Arnoldi relation: `(1 - P_m) A P_m = h_{m+1,m} v_{m+1} v_mᴴ`, hence `‖P_m
+A (1 - P_m)‖`-type identities ([saad2011numerical], Prop 6.6, P-6.1). -/
 theorem starProjection_apply_vec (m : ℕ) :
     A (vec A b m) - (subspace A b (m + 1)).starProjection (A (vec A b m)) =
       coeff A b (m + 1) m • vec A b (m + 1) := by

@@ -5,37 +5,37 @@ import Numlib.Krylov.Lanczos
 /-!
 # Krylov methods on singular and incompatible symmetric systems
 
-The behaviour of the minimal-residual iteration when `A` is symmetric but singular, and when
-`A x = b` has no solution at all, following [Choi][choi2006iterative] Ch. 2–3.
+The behaviour of the minimal-residual iteration when `A` is symmetric but singular, and when `A x =
+b` has no solution at all, following [choi2006iterative] Ch. 2–3.
 
-* **Termination.** The full Krylov space of `b` misses the range of `A` only in the direction of
-  `b` itself (`Krylov.fullSubspace_le_span_sup_range`), so the grade is at most `rank A + 1`, and
-  at most `rank A` when `b ∈ range A` (`Krylov.grade_le_finrank_range_add_one`,
-  `Krylov.grade_le_finrank_range`).  Counting distinct eigenvalues instead of dimensions,
-  a vector lying in the span of the eigenspaces of `t` scalars has grade at most `t`
+* **Termination.** The full Krylov space of `b` misses the range of `A` only in the direction of `b`
+  itself (`Krylov.fullSubspace_le_span_sup_range`), so the grade is at most `rank A + 1`, and at
+  most `rank A` when `b ∈ range A` (`Krylov.grade_le_finrank_range_add_one`,
+  `Krylov.grade_le_finrank_range`).  Counting distinct eigenvalues instead of dimensions, a vector
+  lying in the span of the eigenspaces of `t` scalars has grade at most `t`
   (`Krylov.grade_le_card_of_mem_iSup_eigenspace`); for symmetric `A` in finite dimension the
   eigenspaces span, which turns this into a bound by the number of *nonzero* eigenvalues
   (`Lanczos.grade_le_card_eigenvalues`, `Lanczos.grade_le_card_eigenvalues_of_mem_range`).
-* **Compatible singular systems.** For `b ∈ range A` the minimal-residual iterate from `x₀ = 0`
-  at `m ≥ grade` solves `A x = b` and is the minimum-norm solution, that is `A⁺ b`
+* **Compatible singular systems.** For `b ∈ range A` the minimal-residual iterate from `x₀ = 0` at
+  `m ≥ grade` solves `A x = b` and is the minimum-norm solution, that is `A⁺ b`
   (`Krylov.IsMinResIterate.isLeast_norm_of_grade_le`).
 * **Incompatible systems.** At `m ≥ grade` the residual of *any* minimal-residual iterate is
   annihilated by `A`, hence orthogonal to `range A`
   (`Krylov.IsMinResIterate.residual_mem_orthogonal_range_of_grade_le`), so the iterate already
-  solves the least-squares problem over the whole space.  The minimum-norm minimal-residual
-  iterate — the MINRES-QLP specification — is in addition orthogonal to `ker A`, so it is the
-  minimum-norm least-squares solution `A⁺ b`
-  (`Krylov.IsMinNormMinResIterate.isLeast_norm_of_grade_le`).  Every minimal-residual iterate is
-  `X b` for a `{2,3}`-inverse `X` of `A` (`Krylov.IsMinResIterate.exists_generalizedInverse`).
+  solves the least-squares problem over the whole space.  The minimum-norm minimal-residual iterate
+  — the MINRES-QLP specification — is in addition orthogonal to `ker A`, so it is the minimum-norm
+  least-squares solution `A⁺ b` (`Krylov.IsMinNormMinResIterate.isLeast_norm_of_grade_le`).  Every
+  minimal-residual iterate is `X b` for a `{2,3}`-inverse `X` of `A`
+  (`Krylov.IsMinResIterate.exists_generalizedInverse`).
 * **Residual norms and the tridiagonal matrix.** The Lanczos reading of the Givens layer of
   `Numlib/Krylov/Hessenberg`: `‖r_m‖ = ‖r₀‖ ∏_{k<m} |s_k|`
-  (`Krylov.IsMinResIterate.norm_residual_eq_prod_givensS`), and every bound on `A` is inherited
-  by the tridiagonal matrices `T̄_m` and `T_m`
-  (`Lanczos.norm_toEuclideanLin_tridiagExt_le`, `Lanczos.norm_toEuclideanLin_tridiag_le`).
+  (`Krylov.IsMinResIterate.norm_residual_eq_prod_givensS`), and every bound on `A` is inherited by
+  the tridiagonal matrices `T̄_m` and `T_m` (`Lanczos.norm_toEuclideanLin_tridiagExt_le`,
+  `Lanczos.norm_toEuclideanLin_tridiag_le`).
 
-Everything about the specification level (`Krylov.IsMinResIterate`,
-`Krylov.IsMinNormMinResIterate` of `Numlib/Krylov/Iterate`) needs only symmetry of `A` and finite
-grade; the eigenvalue counts and the `T̄_m` bounds are where finite dimension enters.
+Everything about the specification level (`Krylov.IsMinResIterate`, `Krylov.IsMinNormMinResIterate`
+of `Numlib/Krylov/Iterate`) needs only symmetry of `A` and finite grade; the eigenvalue counts and
+the `T̄_m` bounds are where finite dimension enters.
 -/
 
 open Polynomial Krylov
@@ -52,8 +52,8 @@ variable {K V : Type*} [Field K] [AddCommGroup V] [Module K V]
 private theorem apply_pow_apply (A : Module.End K V) (v : V) (i : ℕ) :
     A ((A ^ i) v) = (A ^ (i + 1)) v := by rw [pow_succ']; rfl
 
-/-- The full Krylov space of `v` lies in `K ∙ v ⊔ range A`: only the zeroth power `A⁰ v = v`
-escapes the range of `A`. -/
+/-- The full Krylov space of `v` lies in `K ∙ v ⊔ range A`: only the zeroth power `A⁰ v = v` escapes
+the range of `A`. -/
 theorem fullSubspace_le_span_sup_range (A : Module.End K V) (v : V) :
     fullSubspace A v ≤ (K ∙ v) ⊔ LinearMap.range A := by
   refine Submodule.span_le.2 ?_
@@ -71,17 +71,15 @@ theorem fullSubspace_le_range (A : Module.End K V) {v : V} (hv : v ∈ LinearMap
   | zero => exact hv
   | succ i => exact ⟨(A ^ i) v, apply_pow_apply A v i⟩
 
-/-- Choi, *Iterative Methods for Singular Linear Equations and Least-Squares Problems*,
-Proposition 2.2 and Corollary 2.3, compatible case: a Krylov method started at a right-hand side
-in the range of `A` terminates within `rank A` steps. -/
+/-- [choi2006iterative], Proposition 2.2 and Corollary 2.3, compatible case: a Krylov method started
+at a right-hand side in the range of `A` terminates within `rank A` steps. -/
 theorem grade_le_finrank_range [FiniteDimensional K V] (A : Module.End K V) {v : V}
     (hv : v ∈ LinearMap.range A) : grade A v ≤ Module.finrank K (LinearMap.range A) :=
   Submodule.finrank_mono (fullSubspace_le_range A hv)
 
-/-- Choi, *Iterative Methods for Singular Linear Equations and Least-Squares Problems*,
-Corollary 2.3: the Krylov sequence of any starting vector terminates within `rank A + 1` steps,
-one more than the compatible bound of `Krylov.grade_le_finrank_range` because the starting vector
-itself need not lie in the range. -/
+/-- [choi2006iterative], Corollary 2.3: the Krylov sequence of any starting vector terminates within
+`rank A + 1` steps, one more than the compatible bound of `Krylov.grade_le_finrank_range` because
+the starting vector itself need not lie in the range. -/
 theorem grade_le_finrank_range_add_one [FiniteDimensional K V] (A : Module.End K V) (v : V) :
     grade A v ≤ Module.finrank K (LinearMap.range A) + 1 := by
   have h1 : grade A v ≤ Module.finrank K ((K ∙ v) ⊔ LinearMap.range A : Submodule K V) :=
@@ -96,9 +94,8 @@ theorem grade_le_finrank_range_add_one [FiniteDimensional K V] (A : Module.End K
 
 /-- If `v` lies in the span of the eigenspaces of the `S.card` scalars of `S`, then the monic
 polynomial `∏_{μ ∈ S} (X - μ)` annihilates `v`, so the Krylov sequence of `v` terminates within
-`S.card` steps.  This is the algebraic core of Choi, *Iterative Methods for Singular Linear
-Equations and Least-Squares Problems*, Theorem 2.4; the symmetry of `A` enters only through the
-spectral decomposition that puts `v` in such a span. -/
+`S.card` steps.  This is the algebraic core of [choi2006iterative], Theorem 2.4; the symmetry of `A`
+enters only through the spectral decomposition that puts `v` in such a span. -/
 theorem grade_le_card_of_mem_iSup_eigenspace {A : Module.End K V} {v : V}
     [FiniteDimensional K (fullSubspace A v)] {S : Finset K}
     (hv : v ∈ ⨆ μ ∈ S, Module.End.eigenspace A μ) : grade A v ≤ S.card := by
@@ -124,9 +121,10 @@ end Grade
 
 /-! ### The minimal-residual iterate at termination
 
-The specifications of `Numlib/Krylov/Iterate` are stated over `x₀ + 𝒦_m(A, b - A x₀)`; Choi's
-minimum-norm results are about the start `x₀ = 0`, where the search space is `𝒦_m(A, b)` itself.
-The three lemmas below only remove the `b - A 0` that the general form leaves behind. -/
+The specifications of `Numlib/Krylov/Iterate` are stated over `x₀ + 𝒦_m(A, b - A x₀)`;
+[choi2006iterative] minimum-norm results are about the start `x₀ = 0`, where the search space is
+`𝒦_m(A, b)` itself. The three lemmas below only remove the `b - A 0` that the general form leaves
+behind. -/
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 variable {A : E →ₗ[𝕜] E} {b x : E} {m : ℕ}
@@ -153,8 +151,8 @@ private theorem range_le_orthogonal_ker (hA : A.IsSymmetric) :
   rw [← hA.orthogonal_range]
   exact Submodule.le_orthogonal_orthogonal _
 
-/-- For symmetric `A` and a compatible right-hand side, `A` is injective on every Krylov subspace
-of `b`: those subspaces avoid `ker A` because they lie in `(ker A)ᗮ`. -/
+/-- For symmetric `A` and a compatible right-hand side, `A` is injective on every Krylov subspace of
+`b`: those subspaces avoid `ker A` because they lie in `(ker A)ᗮ`. -/
 theorem injOn_subspace_of_mem_range (hA : A.IsSymmetric) (hb : b ∈ LinearMap.range A) (m : ℕ) :
     Set.InjOn A (subspace A b m : Set E) := by
   intro z hz w hw hzw
@@ -167,11 +165,10 @@ theorem injOn_subspace_of_mem_range (hA : A.IsSymmetric) (hb : b ∈ LinearMap.r
 
 namespace IsMinResIterate
 
-/-- Choi, *Iterative Methods for Singular Linear Equations and Least-Squares Problems*,
-Theorem 2.25, exactness half: a compatible singular system is solved exactly at termination.
-Symmetry supplies the injectivity of `A` on `𝒦_grade` that
-`Krylov.IsMinResIterate.apply_eq_of_grade_le` asks for, because `b ∈ range A` puts the whole
-Krylov space in `(ker A)ᗮ`. -/
+/-- [choi2006iterative], Theorem 2.25, exactness half: a compatible singular system is solved
+exactly at termination. Symmetry supplies the injectivity of `A` on `𝒦_grade` that
+`Krylov.IsMinResIterate.apply_eq_of_grade_le` asks for, because `b ∈ range A` puts the whole Krylov
+space in `(ker A)ᗮ`. -/
 theorem apply_eq_of_mem_range_of_grade_le [FiniteDimensional 𝕜 (fullSubspace A b)]
     (hA : A.IsSymmetric) (hb : b ∈ LinearMap.range A) (hm : grade A b ≤ m)
     (hx : IsMinResIterate A b 0 m x) : A x = b := by
@@ -182,11 +179,11 @@ theorem apply_eq_of_mem_range_of_grade_le [FiniteDimensional 𝕜 (fullSubspace 
   · rw [map_zero, sub_zero]
     exact injOn_subspace_of_mem_range hA hb _
 
-/-- **Choi, *Iterative Methods for Singular Linear Equations and Least-Squares Problems*,
-Theorem 2.25.** On a compatible system with symmetric `A`, the minimal-residual iterate from
-`x₀ = 0` at `m ≥ grade` is the minimum-norm solution of `A x = b`, that is, the pseudoinverse
-solution `A⁺ b`.  Exactness is `Krylov.IsMinResIterate.apply_eq_of_mem_range_of_grade_le` and
-minimality is `Krylov.norm_le_of_apply_eq`, which only needs `𝒦_m(A, b) ≤ (ker A)ᗮ`. -/
+/-- **[choi2006iterative], Theorem 2.25.** On a compatible system with symmetric `A`, the
+minimal-residual iterate from `x₀ = 0` at `m ≥ grade` is the minimum-norm solution of `A x = b`,
+that is, the pseudoinverse solution `A⁺ b`.  Exactness is
+`Krylov.IsMinResIterate.apply_eq_of_mem_range_of_grade_le` and minimality is
+`Krylov.norm_le_of_apply_eq`, which only needs `𝒦_m(A, b) ≤ (ker A)ᗮ`. -/
 theorem isLeast_norm_of_grade_le [FiniteDimensional 𝕜 (fullSubspace A b)] (hA : A.IsSymmetric)
     (hb : b ∈ LinearMap.range A) (hm : grade A b ≤ m) (hx : IsMinResIterate A b 0 m x) :
     IsLeast (norm '' {y : E | A y = b}) ‖x‖ := by
@@ -197,10 +194,10 @@ theorem isLeast_norm_of_grade_le [FiniteDimensional 𝕜 (fullSubspace A b)] (hA
   rintro _ ⟨y, hy, rfl⟩
   exact norm_le_of_apply_eq hA hxm hAx y hy
 
-/-- At termination the minimal-residual residual is annihilated by `A`.  The Krylov space
-`𝒦_m = 𝒦_grade` is `A`-invariant and contains both `b` and `x`, so it contains the residual;
-symmetry turns the Petrov–Galerkin condition `r ⟂ A 𝒦_m` into `A r ⟂ 𝒦_m`, and a vector of
-`𝒦_m ⊓ 𝒦_mᗮ` vanishes. -/
+/-- At termination the minimal-residual residual is annihilated by `A`.  The Krylov space `𝒦_m =
+𝒦_grade` is `A`-invariant and contains both `b` and `x`, so it contains the residual; symmetry turns
+the Petrov–Galerkin condition `r ⟂ A 𝒦_m` into `A r ⟂ 𝒦_m`, and a vector of `𝒦_m ⊓ 𝒦_mᗮ` vanishes.
+-/
 theorem apply_residual_eq_zero_of_grade_le [FiniteDimensional 𝕜 (fullSubspace A b)]
     (hA : A.IsSymmetric) (hm : grade A b ≤ m) (hx : IsMinResIterate A b 0 m x) :
     A (b - A x) = 0 := by
@@ -235,10 +232,9 @@ theorem residual_mem_orthogonal_range_of_grade_le [FiniteDimensional 𝕜 (fullS
   rintro _ ⟨u, rfl⟩
   rw [hA u (b - A x), apply_residual_eq_zero_of_grade_le hA hm hx, inner_zero_right]
 
-/-- At termination the minimal-residual iterate minimizes the residual over the **whole** space,
-not merely over `𝒦_m`: the Krylov space has grown large enough to contain the least-squares
-solution.  This is the first half of Choi, *Iterative Methods for Singular Linear Equations and
-Least-Squares Problems*, Theorem 3.1. -/
+/-- At termination the minimal-residual iterate minimizes the residual over the **whole** space, not
+merely over `𝒦_m`: the Krylov space has grown large enough to contain the least-squares solution.
+This is the first half of [choi2006iterative], Theorem 3.1. -/
 theorem norm_residual_le_of_grade_le [FiniteDimensional 𝕜 (fullSubspace A b)] (hA : A.IsSymmetric)
     (hm : grade A b ≤ m) (hx : IsMinResIterate A b 0 m x) (y : E) : ‖b - A x‖ ≤ ‖b - A y‖ := by
   have h0 : inner 𝕜 (b - A x) (A x - A y) = (0 : 𝕜) := by
@@ -250,18 +246,17 @@ theorem norm_residual_le_of_grade_le [FiniteDimensional 𝕜 (fullSubspace A b)]
     rw [hsplit, norm_add_sq_eq_norm_sq_add_norm_sq_of_inner_eq_zero _ _ h0]
   nlinarith [norm_nonneg (b - A x), norm_nonneg (b - A y), norm_nonneg (A x - A y)]
 
-/-- **Choi, *Iterative Methods for Singular Linear Equations and Least-Squares Problems*,
-Theorem 2.27**, `{2,3}` half: every minimal-residual iterate is `X b` for a `{2,3}`-inverse `X`
-of `A`, that is, for an `X` with `X A X = X` and `A X` self-adjoint.
+/-- **[choi2006iterative], Theorem 2.27**, `{2,3}` half: every minimal-residual iterate is `X b` for
+a `{2,3}`-inverse `X` of `A`, that is, for an `X` with `X A X = X` and `A X` self-adjoint.
 
-The witness is the rank-one map `z ↦ ⟪A x, z⟫ / ⟪A x, A x⟫ • x`, for which `A X` is the
-orthogonal projection onto `𝕜 ∙ A x`; the only input is the Petrov–Galerkin condition
-`⟪A x, b - A x⟫ = 0`, which every minimal-residual iterate satisfies.  So no termination
-hypothesis is needed, and — this being the flip side — the statement is weak: what carries the
-content of Choi's theorem is the *particular* `X` read off the QLP factorization, and the
-strengthening to a `{1,2,3}`-inverse (`A X A = A`) when `𝒦_m` contains `range A`, neither of
-which is formalized here.  The hypothesis `A x ≠ 0` cannot be dropped: for `A = 0` the only
-`{2,3}`-inverse is `0`, so no nonzero `x` is of the form `X b`. -/
+The witness is the rank-one map `z ↦ ⟪A x, z⟫ / ⟪A x, A x⟫ • x`, for which `A X` is the orthogonal
+projection onto `𝕜 ∙ A x`; the only input is the Petrov–Galerkin condition `⟪A x, b - A x⟫ = 0`,
+which every minimal-residual iterate satisfies.  So no termination hypothesis is needed, and — this
+being the flip side — the statement is weak: what carries the content of [choi2006iterative] theorem
+is the *particular* `X` read off the QLP factorization, and the strengthening to a `{1,2,3}`-inverse
+(`A X A = A`) when `𝒦_m` contains `range A`, neither of which is formalized here.  The hypothesis `A
+x ≠ 0` cannot be dropped: for `A = 0` the only `{2,3}`-inverse is `0`, so no nonzero `x` is of the
+form `X b`. -/
 theorem exists_generalizedInverse (hx : IsMinResIterate A b 0 m x) (hAx : A x ≠ 0) :
     ∃ X : E →ₗ[𝕜] E, X ∘ₗ A ∘ₗ X = X ∧ (A ∘ₗ X).IsSymmetric ∧ X b = x := by
   have hne : inner 𝕜 (A x) (A x) ≠ (0 : 𝕜) := fun h => hAx (inner_self_eq_zero.1 h)
@@ -288,11 +283,10 @@ theorem exists_generalizedInverse (hx : IsMinResIterate A b 0 m x) (hAx : A x �
     ring
   · rw [hX, hAxb, hcinv, one_smul]
 
-/-- Choi, *Iterative Methods for Singular Linear Equations and Least-Squares Problems*, (2.21):
-the minimal-residual norm after `m` steps is `‖r₀‖` times the moduli of the Givens sines.  For
-symmetric `A` the coefficient function `Arnoldi.coeff A r₀` is the tridiagonal `T̄`
-(`Lanczos.hessenberg_eq_map_tridiagExt`), so these are the sines of Choi's Lanczos rotations; the
-identity itself needs no symmetry. -/
+/-- [choi2006iterative], (2.21): the minimal-residual norm after `m` steps is `‖r₀‖` times the
+moduli of the Givens sines.  For symmetric `A` the coefficient function `Arnoldi.coeff A r₀` is the
+tridiagonal `T̄` (`Lanczos.hessenberg_eq_map_tridiagExt`), so these are the sines of
+[choi2006iterative] Lanczos rotations; the identity itself needs no symmetry. -/
 theorem norm_residual_eq_prod_givensS {x₀ : E} [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))]
     (hm : m < grade A (b - A x₀)) (hx : IsMinResIterate A b x₀ m x) :
     ‖b - A x‖ =
@@ -318,10 +312,10 @@ theorem inner_eq_zero_of_mem (hx : IsMinNormMinResIterate A b 0 m x) {z : E}
     (Submodule.zero_mem (subspace A b m ⊓ LinearMap.ker A)) hmin hz
   rwa [sub_zero] at h
 
-/-- At termination the minimum-norm minimal-residual iterate is orthogonal to `ker A`.  The
-Krylov space sits in `𝕜 ∙ r ⊔ (ker A)ᗮ` with `r = b - A x` the residual, which at termination
-lies in `ker A` (`Krylov.IsMinResIterate.apply_residual_eq_zero_of_grade_le`) and in `𝒦_m`; the
-minimum-norm condition kills the `r`-component. -/
+/-- At termination the minimum-norm minimal-residual iterate is orthogonal to `ker A`.  The Krylov
+space sits in `𝕜 ∙ r ⊔ (ker A)ᗮ` with `r = b - A x` the residual, which at termination lies in `ker
+A` (`Krylov.IsMinResIterate.apply_residual_eq_zero_of_grade_le`) and in `𝒦_m`; the minimum-norm
+condition kills the `r`-component. -/
 theorem mem_orthogonal_ker_of_grade_le [FiniteDimensional 𝕜 (fullSubspace A b)]
     (hA : A.IsSymmetric) (hm : grade A b ≤ m) (hx : IsMinNormMinResIterate A b 0 m x) :
     x ∈ (LinearMap.ker A)ᗮ := by
@@ -364,12 +358,11 @@ theorem mem_orthogonal_ker_of_grade_le [FiniteDimensional 𝕜 (fullSubspace A b
   rw [← hpq, hαzero, zero_add]
   exact hq
 
-/-- **Choi, *Iterative Methods for Singular Linear Equations and Least-Squares Problems*,
-Theorem 3.1.** For symmetric `A` and `m ≥ grade`, the minimum-norm minimal-residual iterate from
-`x₀ = 0` — the MINRES-QLP specification — is the minimum-norm least-squares solution `A⁺ b`: it
-minimizes `‖b - A y‖` over the whole space, and has least norm among the minimizers.  No
-compatibility of the system and no injectivity of `A` is assumed; that is exactly what the
-minimum-norm clause of `Krylov.IsMinNormMinResIterate` buys over
+/-- **[choi2006iterative], Theorem 3.1.** For symmetric `A` and `m ≥ grade`, the minimum-norm
+minimal-residual iterate from `x₀ = 0` — the MINRES-QLP specification — is the minimum-norm
+least-squares solution `A⁺ b`: it minimizes `‖b - A y‖` over the whole space, and has least norm
+among the minimizers.  No compatibility of the system and no injectivity of `A` is assumed; that is
+exactly what the minimum-norm clause of `Krylov.IsMinNormMinResIterate` buys over
 `Krylov.IsMinResIterate.isLeast_norm_of_grade_le`. -/
 theorem isLeast_norm_of_grade_le [FiniteDimensional 𝕜 (fullSubspace A b)] (hA : A.IsSymmetric)
     (hm : grade A b ≤ m) (hx : IsMinNormMinResIterate A b 0 m x) :
@@ -451,24 +444,23 @@ private theorem range_le_iSup_eigenspace (hA : A.IsSymmetric) {S : Finset 𝕜}
       have hev : A z = μ • z := Module.End.mem_eigenspace_iff.1 hz
       rw [Module.End.mem_eigenspace_iff, hev, map_smul, hev]
 
-/-- Choi, *Iterative Methods for Singular Linear Equations and Least-Squares Problems*,
-Theorem 2.4, compatible case: if `b` lies in the range of the symmetric `A` and `S` collects the
-nonzero eigenvalues of `A`, then the Lanczos process on `b` terminates within `S.card` steps.
+/-- [choi2006iterative], Theorem 2.4, compatible case: if `b` lies in the range of the symmetric `A`
+and `S` collects the nonzero eigenvalues of `A`, then the Lanczos process on `b` terminates within
+`S.card` steps.
 
-Choi counts only the eigenvalues along which `b` has a nonzero component; that sharper form is
-`Krylov.grade_le_card_of_mem_iSup_eigenspace` applied to the smaller `S`, of which this is the
-corollary that needs no knowledge of the components. -/
+[choi2006iterative] counts only the eigenvalues along which `b` has a nonzero component; that
+sharper form is `Krylov.grade_le_card_of_mem_iSup_eigenspace` applied to the smaller `S`, of which
+this is the corollary that needs no knowledge of the components. -/
 theorem grade_le_card_eigenvalues_of_mem_range (hA : A.IsSymmetric) {S : Finset 𝕜}
     (hS : ∀ μ : 𝕜, μ ≠ 0 → Module.End.HasEigenvalue A μ → μ ∈ S) {b : E}
     (hb : b ∈ LinearMap.range A) : grade A b ≤ S.card :=
   grade_le_card_of_mem_iSup_eigenspace (range_le_iSup_eigenspace hA hS hb)
 
-/-- **Choi, *Iterative Methods for Singular Linear Equations and Least-Squares Problems*,
-Theorem 2.4.** If `S` collects the nonzero eigenvalues of the symmetric `A`, then the Lanczos
-process on any `b` terminates within `S.card + 1` steps — one more than the compatible bound of
-`Lanczos.grade_le_card_eigenvalues_of_mem_range`, the extra step paying for the component of `b`
-in `ker A`.  As there, Choi's sharper count over the eigenvalues along which `b` actually has a
-component is `Krylov.grade_le_card_of_mem_iSup_eigenspace`. -/
+/-- **[choi2006iterative], Theorem 2.4.** If `S` collects the nonzero eigenvalues of the symmetric
+`A`, then the Lanczos process on any `b` terminates within `S.card + 1` steps — one more than the
+compatible bound of `Lanczos.grade_le_card_eigenvalues_of_mem_range`, the extra step paying for the
+component of `b` in `ker A`.  As there, [choi2006iterative] sharper count over the eigenvalues along
+which `b` actually has a component is `Krylov.grade_le_card_of_mem_iSup_eigenspace`. -/
 theorem grade_le_card_eigenvalues (hA : A.IsSymmetric) {S : Finset 𝕜}
     (hS : ∀ μ : 𝕜, μ ≠ 0 → Module.End.HasEigenvalue A μ → μ ∈ S) (b : E) :
     grade A b ≤ S.card + 1 := by
@@ -517,10 +509,10 @@ private theorem norm_sum_smul_vec {N : ℕ} (hN : N ≤ grade A b) (c : Fin N �
   rw [← Real.sqrt_sq (norm_nonneg (∑ i, c i • Arnoldi.vec A b (i : ℕ))),
     ← Real.sqrt_sq (norm_nonneg (WithLp.toLp 2 c : EuclideanSpace 𝕜 (Fin N))), hsq, hrhs]
 
-/-- Choi, *Iterative Methods for Singular Linear Equations and Least-Squares Problems*,
-Lemma 2.31, `‖T̄_m‖ ≤ ‖A‖`, in the form that needs no norm on the space of operators: every
-bound `C` for `A` is a bound for the extended tridiagonal matrix `T̄_m`.  The reason is
-`A V_m = V_{m+1} T̄_m` with `V_{m+1}` an isometry on coordinates, which holds up to the grade. -/
+/-- [choi2006iterative], Lemma 2.31, `‖T̄_m‖ ≤ ‖A‖`, in the form that needs no norm on the space of
+operators: every bound `C` for `A` is a bound for the extended tridiagonal matrix `T̄_m`.  The
+reason is `A V_m = V_{m+1} T̄_m` with `V_{m+1}` an isometry on coordinates, which holds up to the
+grade. -/
 theorem norm_toEuclideanLin_tridiagExt_le (hA : A.IsSymmetric) {C : ℝ}
     (hC : ∀ z : E, ‖A z‖ ≤ C * ‖z‖) {m : ℕ} (hm : m + 1 ≤ grade A b)
     (y : EuclideanSpace 𝕜 (Fin m)) :
@@ -538,9 +530,8 @@ theorem norm_toEuclideanLin_tridiagExt_le (hA : A.IsSymmetric) {C : ℝ}
   rw [hlhs, ← hrhs]
   exact hC _
 
-/-- Choi, *Iterative Methods for Singular Linear Equations and Least-Squares Problems*,
-Lemma 2.31, `‖T_m‖ ≤ ‖T̄_m‖ ≤ ‖A‖`: the square Lanczos matrix is the leading block of the
-extended one, so it inherits every bound on `A`. -/
+/-- [choi2006iterative], Lemma 2.31, `‖T_m‖ ≤ ‖T̄_m‖ ≤ ‖A‖`: the square Lanczos matrix is the
+leading block of the extended one, so it inherits every bound on `A`. -/
 theorem norm_toEuclideanLin_tridiag_le (hA : A.IsSymmetric) {C : ℝ}
     (hC : ∀ z : E, ‖A z‖ ≤ C * ‖z‖) {m : ℕ} (hm : m + 1 ≤ grade A b)
     (y : EuclideanSpace 𝕜 (Fin m)) :

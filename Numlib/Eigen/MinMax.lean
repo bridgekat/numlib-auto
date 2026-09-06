@@ -9,56 +9,53 @@ decreasing order as `hT.eigenvalues hn : Fin n → ℝ`, are the max–min and m
 Rayleigh quotient `T.rayleighQuotient x = re ⟪T x, x⟫ / ‖x‖ ^ 2` over subspaces: `λ i` is the
 largest number that bounds the Rayleigh quotient from below on some subspace of dimension `i + 1`,
 and the smallest number that bounds it from above on some subspace of dimension `n - i`. This is the
-min–max theorem of Courant, Fischer, Poincaré and Weyl, stated as the two formulas of [Saad,
-*Numerical Methods for Large Eigenvalue Problems*][saad2011numerical], Thm 1.9, and as [Kress,
-*Numerical Analysis*][kress1998numerical], Thm 7.4.  Mathlib has only the two extreme eigenvalues,
-through `LinearMap.IsSymmetric.hasEigenvalue_iSup_of_finiteDimensional` and its `iInf` twin.
+min–max theorem of Courant, Fischer, Poincaré and Weyl, stated as the two formulas of
+[saad2011numerical], Thm 1.9, and as [kress1998numerical], Thm 7.4.  Mathlib has only the two
+extreme eigenvalues, through `LinearMap.IsSymmetric.hasEigenvalue_iSup_of_finiteDimensional` and its
+`iInf` twin.
 
-Both books index the eigenvalues from `1` in decreasing order, so their `λ_k` is
-`hT.eigenvalues hn i` for `i = k - 1`, and their subspace dimensions `k` and `n + 1 - k` read
-here as `i + 1` and `n - i`.
+Both books index the eigenvalues from `1` in decreasing order, so their `λ_k` is `hT.eigenvalues hn
+i` for `i = k - 1`, and their subspace dimensions `k` and `n + 1 - k` read here as `i + 1` and `n -
+i`.
 
 ## Main results
 
 * `LinearMap.IsSymmetric.exists_mem_ne_zero_rayleighQuotient_le` and
-  `LinearMap.IsSymmetric.le_rayleighQuotient_of_mem_eigenvectorSpan_Iic`: the two directions.
-  Every subspace of dimension at least `i + 1` carries a nonzero vector whose Rayleigh quotient
-  is at most `λ i`, by the dimension count `(i + 1) + (n - i) > n` against the span of the
-  eigenvectors for the eigenvalues from the `i`-th on; and `λ i` is a lower bound for the
-  Rayleigh quotient on the span of the eigenvectors for the `i + 1` largest eigenvalues, which
-  has dimension `i + 1`.  These two statements are what a consumer usually wants.
-* `LinearMap.IsSymmetric.isGreatest_eigenvalues` and
-  `LinearMap.IsSymmetric.isLeast_eigenvalues`: the same, as an `IsGreatest`/`IsLeast` over an
-  explicit set of reals, with no junk values.
+  `LinearMap.IsSymmetric.le_rayleighQuotient_of_mem_eigenvectorSpan_Iic`: the two directions. Every
+  subspace of dimension at least `i + 1` carries a nonzero vector whose Rayleigh quotient is at most
+  `λ i`, by the dimension count `(i + 1) + (n - i) > n` against the span of the eigenvectors for the
+  eigenvalues from the `i`-th on; and `λ i` is a lower bound for the Rayleigh quotient on the span
+  of the eigenvectors for the `i + 1` largest eigenvalues, which has dimension `i + 1`.  These two
+  statements are what a consumer usually wants.
+* `LinearMap.IsSymmetric.isGreatest_eigenvalues` and `LinearMap.IsSymmetric.isLeast_eigenvalues`:
+  the same, as an `IsGreatest`/`IsLeast` over an explicit set of reals, with no junk values.
 * `LinearMap.IsSymmetric.eigenvalues_eq_iSup_iInf` and
-  `LinearMap.IsSymmetric.eigenvalues_eq_iInf_iSup`: the classical `max min` and `min max`
-  formulas.
-* `LinearMap.IsSymmetric.isGreatest_rayleighQuotient_orthogonal`: Rayleigh's recursive form,
-  the maximum over the vectors orthogonal to the `i` leading eigenvectors.
-* `LinearMap.IsSymmetric.abs_eigenvalues_sub_le`: Weyl's inequality, one eigenvalue index at a
-  time.
+  `LinearMap.IsSymmetric.eigenvalues_eq_iInf_iSup`: the classical `max min` and `min max` formulas.
+* `LinearMap.IsSymmetric.isGreatest_rayleighQuotient_orthogonal`: Rayleigh's recursive form, the
+  maximum over the vectors orthogonal to the `i` leading eigenvectors.
+* `LinearMap.IsSymmetric.abs_eigenvalues_sub_le`: Weyl's inequality, one eigenvalue index at a time.
 
 ## Implementation notes
 
-The `⨆`/`⨅` forms quantify over *subtypes*, `{S : Submodule 𝕜 E // finrank 𝕜 S = i + 1}` and
-`{x : E // x ∈ S ∧ x ≠ 0}`, rather than over all subspaces and all vectors with a nested
-`⨆ _ : P, ·`.  The latter is junk: an `iSup` over a false proposition is `sSup ∅ = 0` in `ℝ`, so
-it would silently truncate the statement at `0`.  The `IsGreatest` and `IsLeast` forms carry no
-`iSup` at all and are the recommended interface.
+The `⨆`/`⨅` forms quantify over *subtypes*, `{S : Submodule 𝕜 E // finrank 𝕜 S = i + 1}` and `{x : E
+// x ∈ S ∧ x ≠ 0}`, rather than over all subspaces and all vectors with a nested `⨆ _ : P, ·`.  The
+latter is junk: an `iSup` over a false proposition is `sSup ∅ = 0` in `ℝ`, so it would silently
+truncate the statement at `0`.  The `IsGreatest` and `IsLeast` forms carry no `iSup` at all and are
+the recommended interface.
 
-Weyl's inequality is stated with a hypothesised bound `∀ x, ‖(A - B) x‖ ≤ C * ‖x‖` rather than
-with an operator norm, because `E →ₗ[𝕜] E` carries no norm and the hypothesised form does not
-force a topology on the consumer.  `LinearMap.IsSymmetric.abs_eigenvalues_sub_le_opNorm` is the
-corollary for continuous linear maps.  Its workhorse
-`LinearMap.IsSymmetric.eigenvalues_le_add_of_re_inner_le` is weaker still: it asks only for the
-quadratic-form bound `re ⟪A x, x⟫ ≤ re ⟪B x, x⟫ + C ‖x‖ ^ 2` that Kress's proof actually uses,
-which is the form this library prefers for spectral hypotheses.
+Weyl's inequality is stated with a hypothesised bound `∀ x, ‖(A - B) x‖ ≤ C * ‖x‖` rather than with
+an operator norm, because `E →ₗ[𝕜] E` carries no norm and the hypothesised form does not force a
+topology on the consumer.  `LinearMap.IsSymmetric.abs_eigenvalues_sub_le_opNorm` is the corollary
+for continuous linear maps.  Its workhorse `LinearMap.IsSymmetric.eigenvalues_le_add_of_re_inner_le`
+is weaker still: it asks only for the quadratic-form bound `re ⟪A x, x⟫ ≤ re ⟪B x, x⟫ + C ‖x‖ ^ 2`
+that [kress1998numerical] proof actually uses, which is the form this library prefers for spectral
+hypotheses.
 -/
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
-/-- Two subspaces whose dimensions add up to more than the dimension of the ambient space meet in
-a nonzero vector.  This is the dimension count behind Courant–Fischer. -/
+/-- Two subspaces whose dimensions add up to more than the dimension of the ambient space meet in a
+nonzero vector.  This is the dimension count behind Courant–Fischer. -/
 theorem Submodule.exists_mem_inf_ne_zero {K V : Type*} [DivisionRing K] [AddCommGroup V]
     [Module K V] [FiniteDimensional K V] {S W : Submodule K V}
     (h : Module.finrank K V < Module.finrank K S + Module.finrank K W) :
@@ -73,10 +70,9 @@ theorem Submodule.exists_mem_inf_ne_zero {K V : Type*} [DivisionRing K] [AddComm
 
 namespace LinearMap
 
-/-- The *Rayleigh quotient* of a linear map `T` (over `ℝ` or `ℂ`) at a vector `x` is the real
-number `re ⟪T x, x⟫ / ‖x‖ ^ 2`.  This is the `LinearMap` twin of
-`ContinuousLinearMap.rayleighQuotient`; the two agree by
-`ContinuousLinearMap.rayleighQuotient_eq_toLinearMap`. -/
+/-- The *Rayleigh quotient* of a linear map `T` (over `ℝ` or `ℂ`) at a vector `x` is the real number
+`re ⟪T x, x⟫ / ‖x‖ ^ 2`.  This is the `LinearMap` twin of `ContinuousLinearMap.rayleighQuotient`;
+the two agree by `ContinuousLinearMap.rayleighQuotient_eq_toLinearMap`. -/
 noncomputable abbrev rayleighQuotient (T : E →ₗ[𝕜] E) (x : E) : ℝ :=
   RCLike.re (inner 𝕜 (T x) x) / ‖x‖ ^ 2
 
@@ -86,14 +82,14 @@ meaningful; every statement below excludes `x = 0` explicitly. -/
 theorem rayleighQuotient_apply_zero (T : E →ₗ[𝕜] E) : T.rayleighQuotient 0 = 0 := by
   simp [rayleighQuotient]
 
-/-- At a unit vector the Rayleigh quotient is just the quadratic form, which is how the
-approximate eigenpairs of `Numlib.Eigen.Perturbation` are stated. -/
+/-- At a unit vector the Rayleigh quotient is just the quadratic form, which is how the approximate
+eigenpairs of `Numlib.Eigen.Perturbation` are stated. -/
 theorem rayleighQuotient_of_norm_eq_one (T : E →ₗ[𝕜] E) {x : E} (hx : ‖x‖ = 1) :
     T.rayleighQuotient x = RCLike.re (inner 𝕜 (T x) x) := by
   rw [rayleighQuotient, hx, one_pow, div_one]
 
-/-- The Rayleigh quotient is invariant under rescaling, so a bound at a nonzero vector transfers
-to its normalization. -/
+/-- The Rayleigh quotient is invariant under rescaling, so a bound at a nonzero vector transfers to
+its normalization. -/
 theorem rayleighQuotient_smul (T : E →ₗ[𝕜] E) (x : E) {c : 𝕜} (hc : c ≠ 0) :
     T.rayleighQuotient (c • x) = T.rayleighQuotient x := by
   have hc2 : ‖c‖ ^ 2 ≠ 0 := pow_ne_zero 2 (norm_ne_zero_iff.mpr hc)
@@ -123,8 +119,8 @@ include hT
 
 /-! ### The eigenbasis expansion
 
-Every statement below is read off the coordinates of a vector in the orthonormal eigenvector
-basis `hT.eigenvectorBasis hn`, in which the norm and the quadratic form are the two sums here. -/
+Every statement below is read off the coordinates of a vector in the orthonormal eigenvector basis
+`hT.eigenvectorBasis hn`, in which the norm and the quadratic form are the two sums here. -/
 
 /-- Parseval's identity in the eigenvector basis. -/
 theorem norm_sq_eq_sum_norm_repr_sq (x : E) :
@@ -143,9 +139,9 @@ theorem re_inner_apply_self_eq_sum (x : E) :
     OrthonormalBasis.repr_apply_apply]
   simp
 
-/-- The quadratic form of the shift `c - T` in the eigenvector basis:
-`c ‖x‖² - re ⟪T x, x⟫ = ∑ i, (c - λ i) ‖⟪v i, x⟫‖²`.  This is the form in which an eigenvalue
-minus a Rayleigh quotient is estimated, one eigenbasis coordinate at a time. -/
+/-- The quadratic form of the shift `c - T` in the eigenvector basis: `c ‖x‖² - re ⟪T x, x⟫ = ∑ i,
+(c - λ i) ‖⟪v i, x⟫‖²`.  This is the form in which an eigenvalue minus a Rayleigh quotient is
+estimated, one eigenbasis coordinate at a time. -/
 theorem mul_norm_sq_sub_re_inner_eq_sum (c : ℝ) (x : E) :
     c * ‖x‖ ^ 2 - RCLike.re (inner 𝕜 (T x) x) =
       ∑ i, (c - hT.eigenvalues hn i) * ‖(hT.eigenvectorBasis hn).repr x i‖ ^ 2 := by
@@ -170,8 +166,8 @@ theorem rayleighQuotient_eigenvectorBasis (i : Fin n) :
 
 /-- The span of the eigenvectors of `T` indexed by `s`, taken in the orthonormal eigenvector basis
 `hT.eigenvectorBasis hn` whose eigenvalues `hT.eigenvalues hn` decrease.  The two cases used by
-Courant–Fischer are `s = Finset.Iic i`, the eigenvectors for the `i + 1` largest eigenvalues, and
-`s = Finset.Ici i`, the eigenvectors for the `n - i` smallest ones. -/
+Courant–Fischer are `s = Finset.Iic i`, the eigenvectors for the `i + 1` largest eigenvalues, and `s
+= Finset.Ici i`, the eigenvectors for the `n - i` smallest ones. -/
 noncomputable def eigenvectorSpan (s : Finset (Fin n)) : Submodule 𝕜 E :=
   Submodule.span 𝕜 (hT.eigenvectorBasis hn '' s)
 
@@ -195,8 +191,8 @@ theorem eigenvectorSpan_univ : hT.eigenvectorSpan hn Finset.univ = ⊤ :=
     absurd (Finset.mem_univ i) hi
 
 /-- The span of `s.card` eigenvectors has dimension `s.card`, the eigenvector basis being
-orthonormal and hence linearly independent.  This is the dimension bookkeeping of
-Courant–Fischer. -/
+orthonormal and hence linearly independent.  This is the dimension bookkeeping of Courant–Fischer.
+-/
 theorem finrank_eigenvectorSpan (s : Finset (Fin n)) :
     Module.finrank 𝕜 (hT.eigenvectorSpan hn s) = s.card := by
   have hli : LinearIndependent 𝕜 fun j : (s : Set (Fin n)) => hT.eigenvectorBasis hn j :=
@@ -206,8 +202,8 @@ theorem finrank_eigenvectorSpan (s : Finset (Fin n)) :
 
 /-! ### Bounds on the Rayleigh quotient over a span of eigenvectors -/
 
-/-- On the span of the eigenvectors indexed by `s`, the quadratic form is bounded above by any
-upper bound for the eigenvalues indexed by `s`. -/
+/-- On the span of the eigenvectors indexed by `s`, the quadratic form is bounded above by any upper
+bound for the eigenvalues indexed by `s`. -/
 theorem re_inner_apply_self_le_of_mem_eigenvectorSpan {s : Finset (Fin n)} {c : ℝ}
     (hc : ∀ i ∈ s, hT.eigenvalues hn i ≤ c) {x : E} (hx : x ∈ hT.eigenvectorSpan hn s) :
     RCLike.re (inner 𝕜 (T x) x) ≤ c * ‖x‖ ^ 2 := by
@@ -218,8 +214,8 @@ theorem re_inner_apply_self_le_of_mem_eigenvectorSpan {s : Finset (Fin n)} {c : 
   · rw [(hT.mem_eigenvectorSpan_iff hn).mp hx i hi]
     simp
 
-/-- On the span of the eigenvectors indexed by `s`, the quadratic form is bounded below by any
-lower bound for the eigenvalues indexed by `s`. -/
+/-- On the span of the eigenvectors indexed by `s`, the quadratic form is bounded below by any lower
+bound for the eigenvalues indexed by `s`. -/
 theorem le_re_inner_apply_self_of_mem_eigenvectorSpan {s : Finset (Fin n)} {c : ℝ}
     (hc : ∀ i ∈ s, c ≤ hT.eigenvalues hn i) {x : E} (hx : x ∈ hT.eigenvectorSpan hn s) :
     c * ‖x‖ ^ 2 ≤ RCLike.re (inner 𝕜 (T x) x) := by
@@ -269,9 +265,9 @@ theorem rayleighQuotient_mem_Icc {m : ℕ} (hn : Module.finrank 𝕜 E = m + 1) 
 /-! ### The two directions of Courant–Fischer -/
 
 /-- **Courant–Fischer, first direction.** Every subspace of dimension at least `i + 1` carries a
-nonzero vector whose Rayleigh quotient is at most the `i`-th eigenvalue.  The proof is the
-dimension count `(i + 1) + (n - i) > n` against the span of the eigenvectors for the eigenvalues
-from the `i`-th on. -/
+nonzero vector whose Rayleigh quotient is at most the `i`-th eigenvalue.  The proof is the dimension
+count `(i + 1) + (n - i) > n` against the span of the eigenvectors for the eigenvalues from the
+`i`-th on. -/
 theorem exists_mem_ne_zero_rayleighQuotient_le (i : Fin n) {S : Submodule 𝕜 E}
     (hS : (i : ℕ) + 1 ≤ Module.finrank 𝕜 S) :
     ∃ x ∈ S, x ≠ 0 ∧ T.rayleighQuotient x ≤ hT.eigenvalues hn i := by
@@ -310,8 +306,8 @@ theorem le_rayleighQuotient_of_mem_eigenvectorSpan_Iic (i : Fin n) {x : E}
     (fun _j hj => hT.eigenvalues_antitone hn (Finset.mem_Iic.mp hj)) hx hx0
 
 /-- **Courant–Fischer, second direction, dual form.** The `i`-th eigenvalue bounds the Rayleigh
-quotient from above throughout the span of the eigenvectors for the `n - i` smallest eigenvalues,
-a subspace of dimension `n - i`; this is where the min–max is attained. -/
+quotient from above throughout the span of the eigenvectors for the `n - i` smallest eigenvalues, a
+subspace of dimension `n - i`; this is where the min–max is attained. -/
 theorem rayleighQuotient_le_of_mem_eigenvectorSpan_Ici (i : Fin n) {x : E}
     (hx : x ∈ hT.eigenvectorSpan hn (Finset.Ici i)) (hx0 : x ≠ 0) :
     T.rayleighQuotient x ≤ hT.eigenvalues hn i :=
@@ -329,11 +325,10 @@ theorem mem_eigenvectorSpan_Ici_iff {i : Fin n} {x : E} :
 
 /-! ### Courant–Fischer -/
 
-/-- **Courant–Fischer, max–min form**, as an `IsGreatest` over an explicit set of reals: the
-`i`-th eigenvalue in decreasing order is the largest number that bounds the Rayleigh quotient
-from below on some subspace of dimension `i + 1`.  This is the second formula of Saad,
-*Numerical Methods for Large Eigenvalue Problems*, Thm 1.9.  The form carries no `iSup`, hence no
-junk value. -/
+/-- **Courant–Fischer, max–min form**, as an `IsGreatest` over an explicit set of reals: the `i`-th
+eigenvalue in decreasing order is the largest number that bounds the Rayleigh quotient from below on
+some subspace of dimension `i + 1`.  This is the second formula of [saad2011numerical], Thm 1.9.
+The form carries no `iSup`, hence no junk value. -/
 theorem isGreatest_eigenvalues (i : Fin n) :
     IsGreatest {c : ℝ | ∃ S : Submodule 𝕜 E, Module.finrank 𝕜 S = (i : ℕ) + 1 ∧
       ∀ x ∈ S, x ≠ 0 → c ≤ T.rayleighQuotient x} (hT.eigenvalues hn i) := by
@@ -345,10 +340,9 @@ theorem isGreatest_eigenvalues (i : Fin n) :
     exact (hc x hxS hx0).trans hxle
 
 /-- **Courant–Fischer, min–max form**, as an `IsLeast` over an explicit set of reals: the `i`-th
-eigenvalue in decreasing order is the smallest number that bounds the Rayleigh quotient from
-above on some subspace of dimension `n - i`.  This is the first formula of Saad, *Numerical
-Methods for Large Eigenvalue Problems*, Thm 1.9, and Kress, *Numerical Analysis*, Thm 7.4.  The
-form carries no `iInf`, hence no junk value. -/
+eigenvalue in decreasing order is the smallest number that bounds the Rayleigh quotient from above
+on some subspace of dimension `n - i`.  This is the first formula of [saad2011numerical], Thm 1.9,
+and [kress1998numerical], Thm 7.4.  The form carries no `iInf`, hence no junk value. -/
 theorem isLeast_eigenvalues (i : Fin n) :
     IsLeast {c : ℝ | ∃ S : Submodule 𝕜 E, Module.finrank 𝕜 S = n - (i : ℕ) ∧
       ∀ x ∈ S, x ≠ 0 → T.rayleighQuotient x ≤ c} (hT.eigenvalues hn i) := by
@@ -359,10 +353,10 @@ theorem isLeast_eigenvalues (i : Fin n) :
     obtain ⟨x, hxS, hx0, hxle⟩ := hT.exists_mem_ne_zero_le_rayleighQuotient hn i hS.ge
     exact hxle.trans (hc x hxS hx0)
 
-/-- **Courant–Fischer, max–min form** (Saad, *Numerical Methods for Large Eigenvalue Problems*,
-Thm 1.9, second formula).  The `i`-th eigenvalue in decreasing order is the maximum over subspaces
-of dimension `i + 1` of the minimum of the Rayleigh quotient on the subspace.
-`LinearMap.IsSymmetric.isGreatest_eigenvalues` is the same statement without an `iSup`. -/
+/-- **Courant–Fischer, max–min form** ([saad2011numerical], Thm 1.9, second formula).  The `i`-th
+eigenvalue in decreasing order is the maximum over subspaces of dimension `i + 1` of the minimum of
+the Rayleigh quotient on the subspace. `LinearMap.IsSymmetric.isGreatest_eigenvalues` is the same
+statement without an `iSup`. -/
 theorem eigenvalues_eq_iSup_iInf (i : Fin n) :
     hT.eigenvalues hn i =
       ⨆ S : {S : Submodule 𝕜 E // Module.finrank 𝕜 S = (i : ℕ) + 1},
@@ -393,11 +387,11 @@ theorem eigenvalues_eq_iSup_iInf (i : Fin n) :
   obtain ⟨x, hxS, hx0, hxle⟩ := hT.exists_mem_ne_zero_rayleighQuotient_le hn i S.2.ge
   exact (ciInf_le (hbdd _) ⟨x, hxS, hx0⟩).trans hxle
 
-/-- **Courant–Fischer, min–max form** (Saad, *Numerical Methods for Large Eigenvalue Problems*,
-Thm 1.9, first formula; Kress, *Numerical Analysis*, Thm 7.4).  The `i`-th eigenvalue in
-decreasing order is the minimum over subspaces of dimension `n - i` (that is, of codimension `i`)
-of the maximum of the Rayleigh quotient on the subspace.
-`LinearMap.IsSymmetric.isLeast_eigenvalues` is the same statement without an `iInf`. -/
+/-- **Courant–Fischer, min–max form** ([saad2011numerical], Thm 1.9, first formula;
+[kress1998numerical], Thm 7.4).  The `i`-th eigenvalue in decreasing order is the minimum over
+subspaces of dimension `n - i` (that is, of codimension `i`) of the maximum of the Rayleigh quotient
+on the subspace. `LinearMap.IsSymmetric.isLeast_eigenvalues` is the same statement without an
+`iInf`. -/
 theorem eigenvalues_eq_iInf_iSup (i : Fin n) :
     hT.eigenvalues hn i =
       ⨅ S : {S : Submodule 𝕜 E // Module.finrank 𝕜 S = n - (i : ℕ)},
@@ -429,11 +423,11 @@ theorem eigenvalues_eq_iInf_iSup (i : Fin n) :
   obtain ⟨x, hxS, hx0, hxle⟩ := hT.exists_mem_ne_zero_le_rayleighQuotient hn i S.2.ge
   exact hxle.trans (le_ciSup (hbdd _) ⟨x, hxS, hx0⟩)
 
-/-- **Rayleigh's recursive characterization** (Saad, *Numerical Methods for Large Eigenvalue
-Problems*, Thm 1.10; Kress, *Numerical Analysis*, Thm 7.3): the `i`-th eigenvalue is the greatest
-Rayleigh quotient among the nonzero vectors orthogonal to the eigenvectors for the `i` preceding
-eigenvalues, and it is attained at the `i`-th eigenvector.  For `i = 0` the orthogonality
-condition is vacuous and this is the largest eigenvalue as a global maximum.
+/-- **Rayleigh's recursive characterization** ([saad2011numerical], Thm 1.10; [kress1998numerical],
+Thm 7.3): the `i`-th eigenvalue is the greatest Rayleigh quotient among the nonzero vectors
+orthogonal to the eigenvectors for the `i` preceding eigenvalues, and it is attained at the `i`-th
+eigenvector.  For `i = 0` the orthogonality condition is vacuous and this is the largest eigenvalue
+as a global maximum.
 
 Unlike the min–max form it needs the eigenvectors for the larger eigenvalues, which is why the
 min–max form is the one used for a priori bounds. -/
@@ -457,8 +451,8 @@ variable [FiniteDimensional 𝕜 E] {n : ℕ} {A B : E →ₗ[𝕜] E}
 
 /-- Monotonicity of the eigenvalues in the operator, with slack: if the quadratic form of `A`
 exceeds that of `B` by at most `C ‖x‖ ^ 2`, then every eigenvalue of `A` exceeds the corresponding
-eigenvalue of `B` by at most `C`.  This is the quadratic-form hypothesis that Kress's proof of
-Weyl's inequality (Kress, *Numerical Analysis*, Cor 7.5) actually uses. -/
+eigenvalue of `B` by at most `C`.  This is the quadratic-form hypothesis that [kress1998numerical]
+proof of Weyl's inequality ([kress1998numerical], Cor 7.5) actually uses. -/
 theorem eigenvalues_le_add_of_re_inner_le (hA : A.IsSymmetric) (hB : B.IsSymmetric)
     (hn : Module.finrank 𝕜 E = n) {C : ℝ}
     (h : ∀ x : E, RCLike.re (inner 𝕜 (A x) x) ≤ RCLike.re (inner 𝕜 (B x) x) + C * ‖x‖ ^ 2)
@@ -495,8 +489,8 @@ theorem eigenvalues_sub_le (hA : A.IsSymmetric) (hB : B.IsSymmetric)
   rw [LinearMap.sub_apply] at h2
   linarith
 
-/-- **Weyl's inequality** (Kress, *Numerical Analysis*, Cor 7.5): the `i`-th eigenvalues of two
-symmetric operators differ by at most any bound `C` on the perturbation `A - B`. -/
+/-- **Weyl's inequality** ([kress1998numerical], Cor 7.5): the `i`-th eigenvalues of two symmetric
+operators differ by at most any bound `C` on the perturbation `A - B`. -/
 theorem abs_eigenvalues_sub_le (hA : A.IsSymmetric) (hB : B.IsSymmetric)
     (hn : Module.finrank 𝕜 E = n) {C : ℝ} (hC : ∀ x : E, ‖(A - B) x‖ ≤ C * ‖x‖) (i : Fin n) :
     |hA.eigenvalues hn i - hB.eigenvalues hn i| ≤ C := by

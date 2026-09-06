@@ -6,32 +6,31 @@ import Numlib.RingTheory.Polynomial.ChebyshevMinimax
 # Chebyshev acceleration
 
 The parameter-free three-term iteration whose residuals are the shifted Chebyshev polynomials of an
-interval `[α, β]` enclosing the spectrum of a symmetric operator ([Saad, *Iterative Methods for
-Sparse Linear Systems*][saad2003iterative], §12.3.2 and Algorithm 12.1; [Kress, *Numerical
-Analysis*][kress1998numerical], §4.4). One step costs one operator application and no inner product
-at all, which is the practical point of the method.
+interval `[α, β]` enclosing the spectrum of a symmetric operator ([saad2003iterative], §12.3.2 and
+Algorithm 12.1; [kress1998numerical], §4.4). One step costs one operator application and no inner
+product at all, which is the practical point of the method.
 
-The residual polynomial is already in the library: it is
-`Polynomial.Chebyshev.shifted k α β 0` of `Numlib/RingTheory/Polynomial/ChebyshevMinimax`, which
-evaluates to `C_k((θ - t)/δ) / C_k(θ/δ)` for `θ = (β + α)/2` and `δ = (β - α)/2`. So this module
-names the iteration (`Chebyshev.State`, `Chebyshev.step`, `Chebyshev.iterate`), proves that its
-residuals are that polynomial applied to `r₀` (`Chebyshev.residual_iterate_eq`), and reads off the
-rate from what is already proved about `shifted`.
+The residual polynomial is already in the library: it is `Polynomial.Chebyshev.shifted k α β 0` of
+`Numlib/RingTheory/Polynomial/ChebyshevMinimax`, which evaluates to `C_k((θ - t)/δ) / C_k(θ/δ)` for
+`θ = (β + α)/2` and `δ = (β - α)/2`. So this module names the iteration (`Chebyshev.State`,
+`Chebyshev.step`, `Chebyshev.iterate`), proves that its residuals are that polynomial applied to
+`r₀` (`Chebyshev.residual_iterate_eq`), and reads off the rate from what is already proved about
+`shifted`.
 
 Chebyshev acceleration is *not* a Krylov-optimal method: its iterate lies in the same affine space
 as GMRES and CG (`Chebyshev.mem_krylov_subspace_iterate_x_sub`) but minimizes nothing, which is why
-`Chebyshev.norm_residual_iterate_le` is a one-sided bound and why a minimal-residual method is
-never worse (`Chebyshev.norm_residual_minRes_le_norm_residual_iterate`). That comparison is the
-standard argument for preferring CG when inner products are affordable.
+`Chebyshev.norm_residual_iterate_le` is a one-sided bound and why a minimal-residual method is never
+worse (`Chebyshev.norm_residual_minRes_le_norm_residual_iterate`). That comparison is the standard
+argument for preferring CG when inner products are affordable.
 
 ## Implementation notes
 
-The scalar sequences of Saad (12.6)–(12.7) are `Chebyshev.sigma`, `σ_k = C_k(θ/δ)`, and
-`Chebyshev.rho`, `ρ_k = σ_k/σ_{k+1}`. `Chebyshev.resPoly` and `Chebyshev.dirPoly` are the
+The scalar sequences of [saad2003iterative] (12.6)–(12.7) are `Chebyshev.sigma`, `σ_k = C_k(θ/δ)`,
+and `Chebyshev.rho`, `ρ_k = σ_k/σ_{k+1}`. `Chebyshev.resPoly` and `Chebyshev.dirPoly` are the
 polynomials with `r_k = P_k(A) r₀` and `d_k = Q_k(A) r₀`; the identity that drives everything is
 `P_{k+1} = P_k - X Q_k` together with the three-term recurrence of the residual polynomials
-(`Chebyshev.resPoly_add_two`, the recurrence Saad writes as (12.8)) and the scalar identity
-`ρ_{k+1} (2 σ₁ - ρ_k) = 1` (`Chebyshev.rho_succ_mul`).
+(`Chebyshev.resPoly_add_two`, the recurrence [saad2003iterative] writes as (12.8)) and the scalar
+identity `ρ_{k+1} (2 σ₁ - ρ_k) = 1` (`Chebyshev.rho_succ_mul`).
 
 `Chebyshev.resPoly_add_two` is really a statement about `Polynomial.Chebyshev.shifted` and belongs
 beside it in `Numlib/RingTheory/Polynomial/ChebyshevMinimax`; it is proved here only because that
@@ -48,10 +47,10 @@ variable {θ δ : ℝ}
 
 /-! ### The scalar sequences -/
 
-/-- `σ_k = C_k(θ/δ)`, the Chebyshev values of Saad (12.7). -/
+/-- `σ_k = C_k(θ/δ)`, the Chebyshev values of [saad2003iterative] (12.7). -/
 noncomputable def sigma (θ δ : ℝ) (k : ℕ) : ℝ := (T ℝ (k : ℤ)).eval (θ / δ)
 
-/-- `ρ_k = σ_k/σ_{k+1}`, the scalar of Saad (12.6) that the iteration carries. -/
+/-- `ρ_k = σ_k/σ_{k+1}`, the scalar of [saad2003iterative] (12.6) that the iteration carries. -/
 noncomputable def rho (θ δ : ℝ) (k : ℕ) : ℝ := sigma θ δ k / sigma θ δ (k + 1)
 
 /-- The defining quotient of `ρ_k`, in a form `rw` can use. -/
@@ -63,7 +62,8 @@ theorem rho_eq_div_sigma (θ δ : ℝ) (k : ℕ) : rho θ δ k = sigma θ δ k /
 @[simp] theorem sigma_one (θ δ : ℝ) : sigma θ δ 1 = θ / δ := by
   simp [sigma, Polynomial.Chebyshev.T_one]
 
-/-- The three-term recurrence of Saad (12.7), inherited from `Polynomial.Chebyshev.T`. -/
+/-- The three-term recurrence of [saad2003iterative] (12.7), inherited from
+`Polynomial.Chebyshev.T`. -/
 theorem sigma_add_two (θ δ : ℝ) (k : ℕ) :
     sigma θ δ (k + 2) = 2 * (θ / δ) * sigma θ δ (k + 1) - sigma θ δ k := by
   have h2 : ((k + 2 : ℕ) : ℤ) = (k : ℤ) + 2 := by push_cast; ring
@@ -97,19 +97,19 @@ theorem rho_pos (k : ℕ) : 0 < rho θ δ k :=
   rw [rho, sigma_zero, sigma_one]
   field_simp
 
-/-- `2 σ₁ - ρ_k = σ_{k+2}/σ_{k+1}`, the shape of the denominator in Saad (12.6). -/
+/-- `2 σ₁ - ρ_k = σ_{k+2}/σ_{k+1}`, the shape of the denominator in [saad2003iterative] (12.6). -/
 theorem two_mul_sigma_one_sub_rho (k : ℕ) :
     2 * (θ / δ) - rho θ δ k = sigma θ δ (k + 2) / sigma θ δ (k + 1) := by
   have h1 := sigma_ne_zero hδ hθδ (k + 1)
   rw [rho, sigma_add_two]
   field_simp
 
-/-- The recurrence the algorithm uses to update its scalar, Saad (12.6). -/
+/-- The recurrence the algorithm uses to update its scalar, [saad2003iterative] (12.6). -/
 theorem rho_succ (k : ℕ) : rho θ δ (k + 1) = (2 * (θ / δ) - rho θ δ k)⁻¹ := by
   rw [two_mul_sigma_one_sub_rho hδ hθδ, inv_div, rho]
 
-/-- The identity that turns the polynomial three-term recurrence into the vector recurrence for
-the search direction: `ρ_{k+1} (2 σ₁ - ρ_k) = 1`. -/
+/-- The identity that turns the polynomial three-term recurrence into the vector recurrence for the
+search direction: `ρ_{k+1} (2 σ₁ - ρ_k) = 1`. -/
 theorem rho_succ_mul (k : ℕ) : rho θ δ (k + 1) * (2 * (θ / δ) - rho θ δ k) = 1 := by
   have h1 := sigma_ne_zero hδ hθδ (k + 1)
   have h2 := sigma_ne_zero hδ hθδ (k + 2)
@@ -120,11 +120,11 @@ end Positive
 
 /-! ### The residual and direction polynomials -/
 
-/-- The affine map `t ↦ (θ - t)/δ` of Saad §12.3.2, as a polynomial. -/
+/-- The affine map `t ↦ (θ - t)/δ` of [saad2003iterative] §12.3.2, as a polynomial. -/
 noncomputable def shift (θ δ : ℝ) : ℝ[X] := C (θ / δ) - C δ⁻¹ * X
 
-/-- The residual polynomial of the `k`-th Chebyshev step: `shifted k α β 0` for the interval
-`[α, β] = [θ - δ, θ + δ]`. -/
+/-- The residual polynomial of the `k`-th Chebyshev step: `shifted k α β 0` for the interval `[α, β]
+= [θ - δ, θ + δ]`. -/
 noncomputable def resPoly (θ δ : ℝ) (k : ℕ) : ℝ[X] := shifted k (θ - δ) (θ + δ) 0
 
 /-- The direction polynomial of the `k`-th Chebyshev step, so that `d_k = Q_k(A) r₀`. -/
@@ -133,8 +133,8 @@ noncomputable def dirPoly (θ δ : ℝ) : ℕ → ℝ[X]
   | k + 1 => C (rho θ δ k * rho θ δ (k + 1)) * dirPoly θ δ k +
       C (2 * rho θ δ (k + 1) / δ) * resPoly θ δ (k + 1)
 
-/-- The `k`-th residual polynomial has degree at most `k`, so the `k`-th residual lies in the
-`k`-th Krylov subspace. -/
+/-- The `k`-th residual polynomial has degree at most `k`, so the `k`-th residual lies in the `k`-th
+Krylov subspace. -/
 theorem degree_resPoly_le (θ δ : ℝ) (k : ℕ) : (resPoly θ δ k).degree ≤ (k : WithBot ℕ) :=
   shifted_degree_le k (θ - δ) (θ + δ) 0
 
@@ -159,9 +159,9 @@ theorem resPoly_one (hδ : δ ≠ 0) (hθ : θ ≠ 0) : resPoly θ δ 1 = 1 - C 
     eval_C]
   field_simp
 
-/-- The three-term recurrence of the residual polynomials, Saad (12.8). It is the Chebyshev
-recurrence `C_{k+2} = 2 t C_{k+1} - C_k` divided by `σ_{k+2}`, and it is what makes the vector
-recurrence of Algorithm 12.1 produce Chebyshev residuals. -/
+/-- The three-term recurrence of the residual polynomials, [saad2003iterative] (12.8). It is the
+Chebyshev recurrence `C_{k+2} = 2 t C_{k+1} - C_k` divided by `σ_{k+2}`, and it is what makes the
+vector recurrence of Algorithm 12.1 produce Chebyshev residuals. -/
 theorem resPoly_add_two (hδ : 0 < δ) (hθδ : δ < θ) (k : ℕ) :
     resPoly θ δ (k + 2) =
       C (2 * rho θ δ (k + 1)) * (shift θ δ * resPoly θ δ (k + 1)) -
@@ -184,8 +184,8 @@ theorem resPoly_add_two (hδ : 0 < δ) (hθδ : δ < θ) (k : ℕ) :
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
   {A : E →ₗ[𝕜] E} {b x₀ : E}
 
-/-- The state of Saad Algorithm 12.1: iterate, residual, search direction and the scalar
-`ρ_k = σ_k/σ_{k+1}`. -/
+/-- The state of [saad2003iterative] Algorithm 12.1: iterate, residual, search direction and the
+scalar `ρ_k = σ_k/σ_{k+1}`. -/
 @[ext]
 structure State (E : Type*) where
   /-- The iterate `x_k`. -/
@@ -194,11 +194,11 @@ structure State (E : Type*) where
   r : E
   /-- The search direction `d_k`, so that `x_{k+1} = x_k + d_k`. -/
   d : E
-  /-- The scalar `ρ_k = σ_k/σ_{k+1}` of Saad (12.6). -/
+  /-- The scalar `ρ_k = σ_k/σ_{k+1}` of [saad2003iterative] (12.6). -/
   ρ : ℝ
 
-/-- One step of Saad Algorithm 12.1: `x' = x + d`, `r' = r - A d`, `ρ' = (2 σ₁ - ρ)⁻¹` and
-`d' = ρ ρ' • d + (2 ρ'/δ) • r'`, with `σ₁ = θ/δ`. No inner product is computed. -/
+/-- One step of [saad2003iterative] Algorithm 12.1: `x' = x + d`, `r' = r - A d`, `ρ' = (2 σ₁ -
+ρ)⁻¹` and `d' = ρ ρ' • d + (2 ρ'/δ) • r'`, with `σ₁ = θ/δ`. No inner product is computed. -/
 noncomputable def step (A : E →ₗ[𝕜] E) (θ δ : ℝ) (s : State E) : State E :=
   let r' := s.r - A s.d
   let ρ' := (2 * (θ / δ) - s.ρ)⁻¹
@@ -231,11 +231,10 @@ theorem step_x (s : State E) : (step A θ δ s).x = s.x + s.d := rfl
 /-- The residual follows the iterate, `r' = r - A d`. -/
 theorem step_r (s : State E) : (step A θ δ s).r = s.r - A s.d := rfl
 
-/-- The scalar recurrence of Saad (12.6), `ρ' = (2 σ₁ - ρ)⁻¹`. -/
+/-- The scalar recurrence of [saad2003iterative] (12.6), `ρ' = (2 σ₁ - ρ)⁻¹`. -/
 theorem step_ρ (s : State E) : (step A θ δ s).ρ = (2 * (θ / δ) - s.ρ)⁻¹ := rfl
 
-/-- The three-term recurrence for the search direction,
-`d' = ρ ρ' d + (2 ρ'/δ) r'`. -/
+/-- The three-term recurrence for the search direction, `d' = ρ ρ' d + (2 ρ'/δ) r'`. -/
 theorem step_d (s : State E) :
     (step A θ δ s).d = ((s.ρ * (step A θ δ s).ρ : ℝ) : 𝕜) • s.d +
       ((2 * (step A θ δ s).ρ / δ : ℝ) : 𝕜) • (step A θ δ s).r := rfl
@@ -314,8 +313,8 @@ private theorem iterate_invariant (A : E →ₗ[𝕜] E) (b x₀ : E) (hδ : 0 <
           C (rho θ δ k * rho θ δ (k + 1)) * hXQ
 
 /-- The residual of the `k`-th Chebyshev step is the shifted Chebyshev polynomial of `[α, β]`
-applied to the initial residual (Saad §12.3.2): with `θ = (β + α)/2` and `δ = (β - α)/2`,
-`r_k = (shifted k α β 0)(A) r₀`. This is the identification that makes Chebyshev acceleration
+applied to the initial residual ([saad2003iterative] §12.3.2): with `θ = (β + α)/2` and `δ = (β -
+α)/2`, `r_k = (shifted k α β 0)(A) r₀`. This is the identification that makes Chebyshev acceleration
 inherit the min–max optimality already proved for `Polynomial.Chebyshev.shifted`. -/
 theorem residual_iterate_eq {α β : ℝ} (hα : 0 < α) (hαβ : α < β) (k : ℕ) :
     (iterate A b x₀ ((β + α) / 2) ((β - α) / 2) k).r =
@@ -372,8 +371,8 @@ private theorem iterate_x_eq (A : E →ₗ[𝕜] E) (b x₀ : E) (hδ : 0 < δ) 
         Polynomial.map_add, map_add]
       simp [add_assoc]
 
-/-- The Chebyshev iterate lies in the same affine space `x₀ + 𝒦_k(A, r₀)` as the `k`-th GMRES or
-CG iterate; it simply does not minimize anything there. -/
+/-- The Chebyshev iterate lies in the same affine space `x₀ + 𝒦_k(A, r₀)` as the `k`-th GMRES or CG
+iterate; it simply does not minimize anything there. -/
 theorem mem_krylov_subspace_iterate_x_sub {α β : ℝ} (hα : 0 < α) (hαβ : α < β) (k : ℕ) :
     (iterate A b x₀ ((β + α) / 2) ((β - α) / 2) k).x - x₀ ∈ Krylov.subspace A (b - A x₀) k := by
   have hδ : (0 : ℝ) < (β - α) / 2 := by linarith
@@ -384,9 +383,9 @@ theorem mem_krylov_subspace_iterate_x_sub {α β : ℝ} (hα : 0 < α) (hαβ : 
 
 /-! ### The convergence rate -/
 
-/-- The convergence rate of Chebyshev acceleration: for a symmetric `A` whose quadratic form lies
-in `[α, β]` with `0 < α < β`, the `k`-th residual satisfies
-`‖r_k‖ ≤ (1 / C_k((β + α)/(β - α))) ‖r₀‖`, which is the min–max value of the interval. -/
+/-- The convergence rate of Chebyshev acceleration: for a symmetric `A` whose quadratic form lies in
+`[α, β]` with `0 < α < β`, the `k`-th residual satisfies `‖r_k‖ ≤ (1 / C_k((β + α)/(β - α))) ‖r₀‖`,
+which is the min–max value of the interval. -/
 theorem norm_residual_iterate_le {α β : ℝ} (hA : A.IsSymmetricBoundedBy α β) (hα : 0 < α)
     (hαβ : α < β) (k : ℕ) :
     ‖(iterate A b x₀ ((β + α) / 2) ((β - α) / 2) k).r‖ ≤
@@ -401,8 +400,7 @@ theorem norm_residual_iterate_le {α β : ℝ} (hA : A.IsSymmetricBoundedBy α �
     show (β + α - 2 * (0 : ℝ)) / (β - α) = (β + α) / (β - α) by ring, abs_of_pos hT] at h
   rwa [residual_iterate_eq hα hαβ]
 
-/-- The classical `√κ` form of the rate: `‖r_k‖ ≤ 2 ((√κ - 1)/(√κ + 1))^k ‖r₀‖` for
-`κ = β/α`. -/
+/-- The classical `√κ` form of the rate: `‖r_k‖ ≤ 2 ((√κ - 1)/(√κ + 1))^k ‖r₀‖` for `κ = β/α`. -/
 theorem norm_residual_iterate_le_pow {α β : ℝ} (hA : A.IsSymmetricBoundedBy α β) (hα : 0 < α)
     (hαβ : α < β) (k : ℕ) :
     ‖(iterate A b x₀ ((β + α) / 2) ((β - α) / 2) k).r‖ ≤
@@ -418,10 +416,10 @@ theorem norm_residual_iterate_le_pow {α β : ℝ} (hA : A.IsSymmetricBoundedBy 
   have h := one_div_eval_T_le_two_mul_pow hκ k
   rwa [hrw] at h
 
-/-- A minimal-residual Krylov iterate of the same degree is never worse than the Chebyshev
-iterate, because the Chebyshev residual polynomial is only one competitor in the minimization.
-This is why Chebyshev acceleration is used where inner products are expensive, and why its
-analysis is a one-sided bound. -/
+/-- A minimal-residual Krylov iterate of the same degree is never worse than the Chebyshev iterate,
+because the Chebyshev residual polynomial is only one competitor in the minimization. This is why
+Chebyshev acceleration is used where inner products are expensive, and why its analysis is a
+one-sided bound. -/
 theorem norm_residual_minRes_le_norm_residual_iterate {α β : ℝ} (hα : 0 < α) (hαβ : α < β)
     {y : E} {k : ℕ} (hy : Krylov.IsMinResIterate A b x₀ k y) :
     ‖b - A y‖ ≤ ‖(iterate A b x₀ ((β + α) / 2) ((β - α) / 2) k).r‖ := by

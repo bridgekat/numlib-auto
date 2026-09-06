@@ -12,49 +12,48 @@ import Numlib.Analysis.Normed.Operator.BanachSteinhaus
 For a consistent one-step approximation of a well-posed abstract initial value problem in a Banach
 space, stability and convergence are the same thing.
 
-**The initial value problem.**  `L : V →ₗ.[𝕜] V` is a densely defined, generally unbounded
-operator.  A *solution* on `[0, T]` is a curve `u` taking values in the domain of `L` there, whose
-derivative within `Icc 0 T` is `L` applied to it — a derivative *within* the closed interval is
-exactly the one-sided convention at the two endpoints, so no case split is needed
+**The initial value problem.**  `L : V →ₗ.[𝕜] V` is a densely defined, generally unbounded operator.
+A *solution* on `[0, T]` is a curve `u` taking values in the domain of `L` there, whose derivative
+within `Icc 0 T` is `L` applied to it — a derivative *within* the closed interval is exactly the
+one-sided convention at the two endpoints, so no case split is needed
 (`FiniteDifference.IsSolution`).  The problem is *well posed* (`FiniteDifference.IsWellPosed`) when
-every initial value in the domain has a solution and any two solutions satisfy
-`‖u t - ū t‖ ≤ c₀ ‖u₀ - ū₀‖` on `Icc 0 T`; that bound with `u₀ = ū₀` is uniqueness, which is
+every initial value in the domain has a solution and any two solutions satisfy `‖u t - ū t‖ ≤ c₀ ‖u₀
+- ū₀‖` on `Icc 0 T`; that bound with `u₀ = ū₀` is uniqueness, which is
 `FiniteDifference.IsWellPosed.eqOn`.  The solution map is then linear and bounded on the dense
 domain, so it extends to bounded operators `S t : V →L[𝕜] V`
 (`FiniteDifference.exists_solutionOperator`), and `S t u₀` for `u₀` outside the domain is the
 *generalized solution*.
 
-**What the equivalence theorem uses** is only `S 0 = 1` and strong continuity of `t ↦ S t u` on
-`Icc 0 T`, so it is stated for a family `S` rather than reconstructed from `L`; the bridge from the
+**What the equivalence theorem uses** is only `S 0 = 1` and strong continuity of `t ↦ S t u` on `Icc
+0 T`, so it is stated for a family `S` rather than reconstructed from `L`; the bridge from the
 initial value problem is `exists_solutionOperator`, and the semigroup property
 `solutionOperator_add` is recorded because the sources state it but is **not** a hypothesis
-anywhere.  Keeping the two apart makes the equivalence usable for any evolution family and keeps
-the `LinearPMap` machinery out of the interesting proof.
+anywhere.  Keeping the two apart makes the equivalence usable for any evolution family and keeps the
+`LinearPMap` machinery out of the interesting proof.
 
 **The three properties** are `Prop`-valued predicates on the pair `(S, C)`, not bundles of data: a
 scheme *is* consistent, stable or convergent.  `FiniteDifference.IsConsistent` is written with the
 division cleared, `‖C Δt (S t u₀) - S (t + Δt) u₀‖ ≤ ε Δt`, so that no `Δt⁻¹` occurs;
-`FiniteDifference.IsConvergent` quantifies over *sequences* of step sizes and step counts with
-`m Δt → t`, because the limit is along an arbitrary refinement of the discrete time and not along
-one sequence of step sizes.
+`FiniteDifference.IsConvergent` quantifies over *sequences* of step sizes and step counts with `m Δt
+→ t`, because the limit is along an arbitrary refinement of the discrete time and not along one
+sequence of step sizes.
 
 **The two directions** of `FiniteDifference.isStable_iff_isConvergent`.  Forward: the telescoping
-identity behind `FiniteDifference.norm_iterate_sub_le`, whose sum stability bounds by
-`M₀ (m Δt) ε`, plus continuity of `t ↦ S t u₀` to pass from `m Δt` to `t`, and then the ε/3 density
-argument for initial values outside the dense set on which consistency is assumed.  Backward: a
-uniformly bounded `C` makes the step sizes bounded away from zero harmless, so instability produces
-step sizes tending to zero; the discrete times then have a convergent subsequence, along which
-convergence bounds every orbit and the uniform boundedness principle bounds the operator norms.
-Both directions rest on `Numlib/Analysis/Normed/Operator/BanachSteinhaus`, which is the only reason
-the theorem asks for `[CompleteSpace V]`.
+identity behind `FiniteDifference.norm_iterate_sub_le`, whose sum stability bounds by `M₀ (m Δt) ε`,
+plus continuity of `t ↦ S t u₀` to pass from `m Δt` to `t`, and then the ε/3 density argument for
+initial values outside the dense set on which consistency is assumed.  Backward: a uniformly bounded
+`C` makes the step sizes bounded away from zero harmless, so instability produces step sizes tending
+to zero; the discrete times then have a convergent subsequence, along which convergence bounds every
+orbit and the uniform boundedness principle bounds the operator norms. Both directions rest on
+`Numlib/Analysis/Normed/Operator/BanachSteinhaus`, which is the only reason the theorem asks for
+`[CompleteSpace V]`.
 
 `FiniteDifference.norm_iterate_sub_le` is the order of convergence read off the same telescoping
 estimate: an inequality with explicit constants, no limit and no order symbol.
 
-The material is Section 6.2 of [Atkinson–Han][han2009theoretical] (Definitions 6.2.1, 6.2.2, 6.2.3,
-6.2.7, 6.2.9 and 6.2.10, Propositions 6.2.5 and 6.2.6, Theorem 6.2.11 and Corollary 6.2.12); the
-theorem is due to [Lax and Richtmyer][lax1956survey], and Chapter 3 of Richtmyer and Morton is the
-standard account.
+The material is Section 6.2 of [han2009theoretical] (Definitions 6.2.1, 6.2.2, 6.2.3, 6.2.7, 6.2.9
+and 6.2.10, Propositions 6.2.5 and 6.2.6, Theorem 6.2.11 and Corollary 6.2.12); the theorem is due
+to [lax1956survey], and Chapter 3 of Richtmyer and Morton is the standard account.
 -/
 
 open Filter Set Topology
@@ -74,19 +73,19 @@ curve takes values in the domain of the densely defined operator `L` there, and 
 *within* `Icc 0 T` is `L` applied to it.  Taking the derivative within the closed interval is what
 gives the one-sided limits at the two endpoints, so the two ends need no special case.
 
-Atkinson–Han, *Theoretical Numerical Analysis*, Definition 6.2.1 and (6.2.2). -/
+[han2009theoretical], Definition 6.2.1 and (6.2.2). -/
 def IsSolution (L : V →ₗ.[𝕜] V) (T : ℝ) (u₀ : V) (u : ℝ → V) : Prop :=
   u 0 = u₀ ∧ ∀ t ∈ Icc (0 : ℝ) T, ∃ h : u t ∈ L.domain,
     HasDerivWithinAt u (L ⟨u t, h⟩) (Icc 0 T) t
 
 /-- **Well-posedness** of the abstract initial value problem on `Icc 0 T` with stability constant
-`c₀`: every initial value in the domain of `L` has a solution, and any two solutions satisfy
-`‖u t - ū t‖ ≤ c₀ ‖u₀ - ū₀‖` on `Icc 0 T`.
+`c₀`: every initial value in the domain of `L` has a solution, and any two solutions satisfy `‖u t -
+ū t‖ ≤ c₀ ‖u₀ - ū₀‖` on `Icc 0 T`.
 
 The second clause with `u₀ = ū₀` is uniqueness of the solution on `Icc 0 T`, which is
 `FiniteDifference.IsWellPosed.eqOn`, so uniqueness is not assumed separately.
 
-Atkinson–Han, *Theoretical Numerical Analysis*, Definition 6.2.2 and (6.2.3). -/
+[han2009theoretical], Definition 6.2.2 and (6.2.3). -/
 def IsWellPosed (L : V →ₗ.[𝕜] V) (T c₀ : ℝ) : Prop :=
   (∀ u₀ ∈ L.domain, ∃ u, IsSolution L T u₀ u) ∧
     ∀ u₀ ū₀ u ū, IsSolution L T u₀ u → IsSolution L T ū₀ ū →
@@ -125,9 +124,9 @@ private theorem isSolution_add {L : V →ₗ.[𝕜] V} {T : ℝ} {u₀ ū₀ : V
   rw [hL]
   exact HasDerivWithinAt.add hd1 hd2
 
-/-- **The semigroup property.**  Atkinson–Han, *Theoretical Numerical Analysis*, Proposition 6.2.6:
-the solution operators satisfy `S (t₁ + t₀) = S t₁ ∘L S t₀` for `t₀, t₁ ≥ 0` with `t₁ + t₀ ≤ T`,
-by time-translation invariance of the equation and uniqueness of solutions.
+/-- **The semigroup property.** [han2009theoretical], Proposition 6.2.6: the solution operators
+satisfy `S (t₁ + t₀) = S t₁ ∘L S t₀` for `t₀, t₁ ≥ 0` with `t₁ + t₀ ≤ T`, by time-translation
+invariance of the equation and uniqueness of solutions.
 
 `S` is asked to represent the solution at every horizon `T' ≤ T`, not only at `T`: translating a
 solution back by `t₀` produces a solution on `Icc 0 (T - t₀)`, and it is the representation *there*
@@ -188,16 +187,16 @@ private theorem isSolution_smul {L : V →ₗ.[𝕜] V} {T : ℝ} {u₀ : V} {u 
   exact HasDerivWithinAt.const_smul c hd1
 
 /-- **The solution operators.**  For a well-posed problem on `Icc 0 T` with a dense domain there is
-a family of bounded operators `S t : V →L[𝕜] V` with `S 0 = 1`, `‖S t‖ ≤ c₀` on `Icc 0 T`, and
-`S t u₀` the value at `t` of the solution with initial value `u₀` whenever `u₀` lies in the domain
-of `L`.
+a family of bounded operators `S t : V →L[𝕜] V` with `S 0 = 1`, `‖S t‖ ≤ c₀` on `Icc 0 T`, and `S t
+u₀` the value at `t` of the solution with initial value `u₀` whenever `u₀` lies in the domain of
+`L`.
 
 The solution map at time `t` is linear on the domain — sums and scalar multiples of solutions are
 solutions, and the solution is unique — and bounded by `c₀`, by comparison with the zero solution;
-it therefore extends uniquely to the whole space along the dense inclusion of the domain.  The
-value `S t u₀` at an initial value outside the domain is the *generalized solution* of
-Atkinson–Han, *Theoretical Numerical Analysis*, Definition 6.2.3, and the extension theorem the
-book cites there is `ContinuousLinearMap.extend`.
+it therefore extends uniquely to the whole space along the dense inclusion of the domain.  The value
+`S t u₀` at an initial value outside the domain is the *generalized solution* of
+[han2009theoretical], Definition 6.2.3, and the extension theorem the book cites there is
+`ContinuousLinearMap.extend`.
 
 The family produced here is defined for every real `t` by clamping the parameter into `Icc 0 T`,
 which is why every clause about it carries the membership hypothesis. -/
@@ -270,10 +269,10 @@ end InitialValueProblem
 
 /-! ### Strong continuity of a uniformly bounded family -/
 
-/-- **Atkinson–Han, *Theoretical Numerical Analysis*, Proposition 6.2.5.**  A family of operators
-that is uniformly bounded on a set `P` of parameters and strongly continuous there on a dense set
-of vectors is strongly continuous on `P` at *every* vector.  So the generalized solution is
-continuous in time even though only the genuine solutions were assumed differentiable.
+/-- **[han2009theoretical], Proposition 6.2.5.**  A family of operators that is uniformly bounded on
+a set `P` of parameters and strongly continuous there on a dense set of vectors is strongly
+continuous on `P` at *every* vector.  So the generalized solution is continuous in time even though
+only the genuine solutions were assumed differentiable.
 
 An instance of the Banach–Steinhaus density criterion
 `ContinuousLinearMap.tendsto_of_tendsto_on_dense_of_bounded`, stated for an arbitrary parameter set
@@ -295,26 +294,25 @@ theorem continuousOn_of_dense {D : Set V} (hD : Dense D) {S : ℝ → V →L[�
 uniformly in `t ∈ Icc 0 T`.
 
 The division is cleared — the condition reads `‖C Δt (S t u₀) - S (t + Δt) u₀‖ ≤ ε Δt` — so that no
-`Δt⁻¹` occurs anywhere.  Atkinson–Han, *Theoretical Numerical Analysis*, Definition 6.2.7. -/
+`Δt⁻¹` occurs anywhere. [han2009theoretical], Definition 6.2.7. -/
 def IsConsistent (S C : ℝ → V →L[𝕜] V) (T Δ₀ : ℝ) (D : Set V) : Prop :=
   Dense D ∧ ∀ u₀ ∈ D, ∀ ε > (0 : ℝ), ∃ δ > (0 : ℝ), ∀ Δt ∈ Ioc (0 : ℝ) Δ₀, Δt < δ →
     ∀ t ∈ Icc (0 : ℝ) T, ‖C Δt (S t u₀) - S (t + Δt) u₀‖ ≤ ε * Δt
 
 /-- **Stability** of the scheme `C` on `Icc 0 T` for step sizes in `Ioc 0 Δ₀`: the powers taken
-within the horizon are bounded in norm, uniformly in the step size.  Atkinson–Han, *Theoretical
-Numerical Analysis*, Definition 6.2.10; the power is taken in the monoid of bounded operators. -/
+within the horizon are bounded in norm, uniformly in the step size. [han2009theoretical], Definition
+6.2.10; the power is taken in the monoid of bounded operators. -/
 def IsStable (C : ℝ → V →L[𝕜] V) (T Δ₀ : ℝ) : Prop :=
   ∃ M₀ : ℝ, ∀ Δt ∈ Ioc (0 : ℝ) Δ₀, ∀ m : ℕ, (m : ℝ) * Δt ≤ T → ‖C Δt ^ m‖ ≤ M₀
 
 /-- **Convergence** of the scheme `C` to the evolution family `S` on `Icc 0 T` for step sizes in
 `Ioc 0 Δ₀`: along every refinement — every pair of sequences of step sizes `Δt i ∈ Ioc 0 Δ₀` and
-step counts `m i` staying within the horizon, with `Δt i → 0` and the discrete times
-`m i · Δt i → t` — the discrete solution converges to `S t u₀`, for every `u₀` and every
-`t ∈ Icc 0 T`.
+step counts `m i` staying within the horizon, with `Δt i → 0` and the discrete times `m i · Δt i →
+t` — the discrete solution converges to `S t u₀`, for every `u₀` and every `t ∈ Icc 0 T`.
 
 The sequences are quantified over because the limit is along an arbitrary refinement whose discrete
-time tends to `t`, not along a single sequence of step sizes.  Atkinson–Han, *Theoretical Numerical
-Analysis*, Definition 6.2.9. -/
+time tends to `t`, not along a single sequence of step sizes. [han2009theoretical], Definition
+6.2.9. -/
 def IsConvergent (S C : ℝ → V →L[𝕜] V) (T Δ₀ : ℝ) : Prop :=
   ∀ t ∈ Icc (0 : ℝ) T, ∀ u₀ : V, ∀ (Δt : ℕ → ℝ) (m : ℕ → ℕ), (∀ i, Δt i ∈ Ioc (0 : ℝ) Δ₀) →
     (∀ i, (m i : ℝ) * Δt i ≤ T) → Tendsto Δt atTop (𝓝 0) →
@@ -355,9 +353,9 @@ private theorem norm_iterate_sub_le_aux (C : V →L[𝕜] V) (M₀ δ : ℝ) :
       _ ≤ M₀ * δ + n * (M₀ * δ) := add_le_add h1 h2
       _ = (n + 1 : ℕ) * (M₀ * δ) := by push_cast; ring
 
-/-- The discrete evolution differs from the sampled exact evolution by the accumulated local
-errors: if the powers of `C` up to `m` are bounded by `M₀` and every local error on the grid of
-step `Δt` is at most `δ`, then `‖C ^ m u₀ - S (m Δt) u₀‖ ≤ m M₀ δ`. -/
+/-- The discrete evolution differs from the sampled exact evolution by the accumulated local errors:
+if the powers of `C` up to `m` are bounded by `M₀` and every local error on the grid of step `Δt` is
+at most `δ`, then `‖C ^ m u₀ - S (m Δt) u₀‖ ≤ m M₀ δ`. -/
 private theorem norm_iterate_sub_le_grid {S : ℝ → V →L[𝕜] V} {C : V →L[𝕜] V} (hS0 : S 0 = 1)
     (M₀ δ Δt : ℝ) (u₀ : V) (m : ℕ) (hC : ∀ i ≤ m, ‖C ^ i‖ ≤ M₀)
     (hloc : ∀ i < m, ‖C (S ((i : ℝ) * Δt) u₀) - S ((i : ℝ) * Δt + Δt) u₀‖ ≤ δ) :
@@ -373,9 +371,9 @@ private theorem norm_iterate_sub_le_grid {S : ℝ → V →L[𝕜] V} {C : V →
     rfl
   rwa [hz] at h
 
-/-- **Order of convergence.**  Atkinson–Han, *Theoretical Numerical Analysis*, Corollary 6.2.12: if
-the scheme is stable with constant `M₀` up to step `m` and the local error at the initial value
-`u₀` satisfies `‖C Δt (S t u₀) - S (t + Δt) u₀‖ ≤ c Δt ^ (k + 1)` uniformly on `Icc 0 T`, then
+/-- **Order of convergence.** [han2009theoretical], Corollary 6.2.12: if the scheme is stable with
+constant `M₀` up to step `m` and the local error at the initial value `u₀` satisfies `‖C Δt (S t u₀)
+- S (t + Δt) u₀‖ ≤ c Δt ^ (k + 1)` uniformly on `Icc 0 T`, then
 
   `‖(C Δt) ^ m u₀ - S T u₀‖ ≤ M₀ T c Δt ^ k`  whenever `m Δt = T`.
 
@@ -429,10 +427,10 @@ private theorem isStable_of_isStable_below {C : ℝ → V →L[𝕜] V} {T Δ₀
     exact (norm_pow_le_pow hc₁ ((hC Δt hΔt).trans (le_max_left _ _)) m).trans
       (pow_le_pow_right₀ hc₁ hmle)
 
-/-- **The Lax equivalence theorem.**  Atkinson–Han, *Theoretical Numerical Analysis*,
-Theorem 6.2.11.  For an evolution family `S` with `S 0 = 1` that is strongly continuous on
-`Icc 0 T`, and a family `C` of one-step operators that is uniformly bounded in norm and consistent
-on a dense set of initial values, the scheme is stable if and only if it is convergent.
+/-- **The Lax equivalence theorem.** [han2009theoretical], Theorem 6.2.11.  For an evolution family
+`S` with `S 0 = 1` that is strongly continuous on `Icc 0 T`, and a family `C` of one-step operators
+that is uniformly bounded in norm and consistent on a dense set of initial values, the scheme is
+stable if and only if it is convergent.
 
 Forward: telescope the error over the grid, bound the accumulated local errors by `M₀ (m Δt) ε`
 using stability, pass from the discrete time `m Δt` to `t` by strong continuity of `S`, and go from

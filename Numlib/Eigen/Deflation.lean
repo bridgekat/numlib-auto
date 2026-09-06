@@ -12,25 +12,24 @@ Wielandt's choice is
 
 `wielandtDeflate A u v σ = A - σ • (x ↦ ⟪v, x⟫ u)`,
 
-for any `v` normalized by `⟪v, u⟫ = 1`
-([Saad, *Numerical Methods for Large Eigenvalue Problems*][saad2011numerical], §4.2.1).
+for any `v` normalized by `⟪v, u⟫ = 1` ([saad2011numerical], §4.2.1).
 
 ## Main definitions
 
-* `LinearMap.wielandtDeflate A u v σ` is the deflation itself, the rank-one modification
-  `A - σ u vᴴ`.
+* `LinearMap.wielandtDeflate A u v σ` is the deflation itself, the rank-one modification `A - σ u
+  vᴴ`.
 
 ## Main results
 
 ### The spectrum of the deflated operator
 
-`LinearMap.charpoly_wielandtDeflate` is the theorem of Wielandt (Saad, Thm 4.2) in the form that
-records multiplicities:
+`LinearMap.charpoly_wielandtDeflate` is the theorem of Wielandt ([saad2011numerical], Thm 4.2) in
+the form that records multiplicities:
 
 `(wielandtDeflate A u v σ).charpoly * (X - C l) = A.charpoly * (X - C (l - σ))`.
 
-Dividing out the common factor, the multiset of eigenvalues of the deflated operator is that of
-`A` with one copy of `l` replaced by `l - σ`. `LinearMap.hasEigenvalue_wielandtDeflate_iff` is the
+Dividing out the common factor, the multiset of eigenvalues of the deflated operator is that of `A`
+with one copy of `l` replaced by `l - σ`. `LinearMap.hasEigenvalue_wielandtDeflate_iff` is the
 set-level reading, and `LinearMap.hasEigenvalue_wielandtDeflate` says that `l - σ` is always an
 eigenvalue of the deflated operator, `u` still being an eigenvector for it.
 
@@ -39,27 +38,27 @@ so the two operators induce the *same* map on the quotient `E ⧸ (𝕜 ∙ u)`,
 invariant for both, with `A` acting on it as `l` and the deflated operator as `l - σ`. Hence both
 determinants `det (t - A)` and `det (t - A₁)` factor through the same quotient determinant
 (`LinearMap.det_eq_det_mul_det`), with cofactors `t - l` and `t - l + σ`; the polynomial identity
-follows because a field of characteristic zero is infinite (`Polynomial.funext`). No basis
-adapted to `u` and no block matrix is ever constructed.
+follows because a field of characteristic zero is infinite (`Polynomial.funext`). No basis adapted
+to `u` and no block matrix is ever constructed.
 
-The book's own argument is `LinearMap.wielandtDeflate_adjoint_apply_of_ne` (Saad, Prop 4.1): a
-left eigenvector of `A` for an eigenvalue `μ ≠ l` is orthogonal to `u` and therefore survives the
-deflation untouched. That statement is proved here as well, since it is what says the deflation
-leaves the *left* eigenvectors alone; it is not strong enough on its own to give the
+The book's own argument is `LinearMap.wielandtDeflate_adjoint_apply_of_ne` ([saad2011numerical],
+Prop 4.1): a left eigenvector of `A` for an eigenvalue `μ ≠ l` is orthogonal to `u` and therefore
+survives the deflation untouched. That statement is proved here as well, since it is what says the
+deflation leaves the *left* eigenvectors alone; it is not strong enough on its own to give the
 multiplicities.
 
 ### The Schur–Wielandt choice
 
-Taking `v = u` for a unit eigenvector `u` — Saad's Prop 4.1, and the reason Algorithm 4.4 is
-called Schur–Wielandt deflation — preserves the Schur vectors of `A`. A Schur factorization is a
-complete flag of invariant subspaces, each containing `u`, and what preserving it amounts to is
+Taking `v = u` for a unit eigenvector `u` — [saad2011numerical] Prop 4.1, and the reason Algorithm
+4.4 is called Schur–Wielandt deflation — preserves the Schur vectors of `A`. A Schur factorization
+is a complete flag of invariant subspaces, each containing `u`, and what preserving it amounts to is
 `LinearMap.schurWielandtDeflate_invtSubmodule`: an `A`-invariant subspace containing `u` is
 invariant for the deflated operator. Mathlib has no Schur form, and none is needed to state or to
 use this; the flag is exactly the data the statement quantifies over.
 
-Nothing in that theorem uses `v = u` or the normalization: only `u ∈ S`. The block deflation
-`A - Q Σ Qᴴ` of Saad's Prop 4.2 is `LinearMap.wielandtDeflate` iterated over the columns of `Q`
-(`LinearMap.wielandtDeflate_wielandtDeflate` composes two steps into one rank-two modification),
+Nothing in that theorem uses `v = u` or the normalization: only `u ∈ S`. The block deflation `A - Q
+Σ Qᴴ` of [saad2011numerical] Prop 4.2 is `LinearMap.wielandtDeflate` iterated over the columns of
+`Q` (`LinearMap.wielandtDeflate_wielandtDeflate` composes two steps into one rank-two modification),
 and the same theorem applies at each step.
 -/
 
@@ -71,11 +70,11 @@ namespace LinearMap
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
-/-- **Wielandt's deflation** of `A` at the vector `u` with the shift `σ`, the rank-one
-modification `A - σ u vᴴ` of Saad, *Numerical Methods for Large Eigenvalue Problems*, (4.6).
+/-- **Wielandt's deflation** of `A` at the vector `u` with the shift `σ`, the rank-one modification
+`A - σ u vᴴ` of [saad2011numerical], (4.6).
 
-The vector `v` is arbitrary; it is normalized by `⟪v, u⟫ = 1` in every statement about the
-spectrum, and the choice `v = u` for a unit eigenvector `u` is the Schur–Wielandt one. -/
+The vector `v` is arbitrary; it is normalized by `⟪v, u⟫ = 1` in every statement about the spectrum,
+and the choice `v = u` for a unit eigenvector `u` is the Schur–Wielandt one. -/
 noncomputable def wielandtDeflate (A : E →ₗ[𝕜] E) (u v : E) (σ : 𝕜) : E →ₗ[𝕜] E :=
   A - σ • (toSpanSingleton 𝕜 E u ∘ₗ innerₛₗ 𝕜 v)
 
@@ -96,15 +95,15 @@ theorem wielandtDeflate_apply_of_inner_eq_zero {A : E →ₗ[𝕜] E} {u v x : E
     (hx : (inner 𝕜 v x : 𝕜) = 0) : wielandtDeflate A u v σ x = A x := by
   simp [hx]
 
-/-- **The computed eigenvalue is displaced by the shift.** With the normalization `⟪v, u⟫ = 1`,
-the deflated operator has `u` as an eigenvector for `l - σ`. -/
+/-- **The computed eigenvalue is displaced by the shift.** With the normalization `⟪v, u⟫ = 1`, the
+deflated operator has `u` as an eigenvector for `l - σ`. -/
 theorem wielandtDeflate_apply_self {A : E →ₗ[𝕜] E} {u v : E} {l : 𝕜}
     (hv : (inner 𝕜 v u : 𝕜) = 1) (hu : A u = l • u) (σ : 𝕜) :
     wielandtDeflate A u v σ u = (l - σ) • u := by
   simp [hu, hv, sub_smul]
 
-/-- Two deflations compose into a rank-two modification: this is how the several-vector deflation
-`A - Q Σ Qᴴ` of Saad, *Numerical Methods for Large Eigenvalue Problems*, Prop 4.2 arises. -/
+/-- Two deflations compose into a rank-two modification: this is how the several-vector deflation `A
+- Q Σ Qᴴ` of [saad2011numerical], Prop 4.2 arises. -/
 theorem wielandtDeflate_wielandtDeflate (A : E →ₗ[𝕜] E) (u v u' v' : E) (σ σ' : 𝕜) (x : E) :
     wielandtDeflate (wielandtDeflate A u v σ) u' v' σ' x
       = A x - (σ * inner 𝕜 v x) • u - (σ' * inner 𝕜 v' x) • u' := by
@@ -162,12 +161,12 @@ private theorem eval_charpoly_mul_of_sub_mem_span {A B : E →ₗ[𝕜] E} {u : 
     det_restrict_span hA hu0, det_restrict_span hB hu0, hquot]
   ring
 
-/-- **Wielandt's theorem** (Saad, *Numerical Methods for Large Eigenvalue Problems*, Thm 4.2),
-with multiplicities: deflating the eigenpair `(l, u)` with the shift `σ` replaces one copy of `l`
-in the characteristic polynomial by `l - σ` and changes nothing else.
+/-- **Wielandt's theorem** ([saad2011numerical], Thm 4.2), with multiplicities: deflating the
+eigenpair `(l, u)` with the shift `σ` replaces one copy of `l` in the characteristic polynomial by
+`l - σ` and changes nothing else.
 
-The normalization `⟪v, u⟫ = 1` is the hypothesis of the book; it already forces `u ≠ 0`, so no
-such hypothesis is stated. -/
+The normalization `⟪v, u⟫ = 1` is the hypothesis of the book; it already forces `u ≠ 0`, so no such
+hypothesis is stated. -/
 theorem charpoly_wielandtDeflate {A : E →ₗ[𝕜] E} {u v : E} {l : 𝕜}
     (hv : (inner 𝕜 v u : 𝕜) = 1) (hu : A u = l • u) (σ : 𝕜) :
     (wielandtDeflate A u v σ).charpoly * (X - C l) = A.charpoly * (X - C (l - σ)) := by
@@ -181,8 +180,8 @@ theorem charpoly_wielandtDeflate {A : E →ₗ[𝕜] E} {u v : E} {l : 𝕜}
       simpa using Submodule.neg_mem _ (sub_wielandtDeflate_mem_span A u v σ x)) t
 
 omit [FiniteDimensional 𝕜 E] in
-/-- The shifted eigenvalue really is an eigenvalue of the deflated operator: `u` is an
-eigenvector for it. -/
+/-- The shifted eigenvalue really is an eigenvalue of the deflated operator: `u` is an eigenvector
+for it. -/
 theorem hasEigenvalue_wielandtDeflate {A : E →ₗ[𝕜] E} {u v : E} {l : 𝕜}
     (hv : (inner 𝕜 v u : 𝕜) = 1) (hu : A u = l • u) (σ : 𝕜) :
     Module.End.HasEigenvalue (wielandtDeflate A u v σ) (l - σ) := by
@@ -193,8 +192,8 @@ theorem hasEigenvalue_wielandtDeflate {A : E →ₗ[𝕜] E} {u v : E} {l : 𝕜
     ⟨Module.End.mem_eigenspace_iff.2 (wielandtDeflate_apply_self hv hu σ), hu0⟩
 
 /-- **The spectrum away from the two moved points is unchanged.** Every scalar other than the
-computed eigenvalue `l` and its image `l - σ` is an eigenvalue of the deflated operator exactly
-when it is one of `A` (Saad, *Numerical Methods for Large Eigenvalue Problems*, Thm 4.2). -/
+computed eigenvalue `l` and its image `l - σ` is an eigenvalue of the deflated operator exactly when
+it is one of `A` ([saad2011numerical], Thm 4.2). -/
 theorem hasEigenvalue_wielandtDeflate_iff {A : E →ₗ[𝕜] E} {u v : E} {l μ : 𝕜}
     (hv : (inner 𝕜 v u : 𝕜) = 1) (hu : A u = l • u) (σ : 𝕜) (hμ : μ ≠ l) (hμ' : μ ≠ l - σ) :
     Module.End.HasEigenvalue (wielandtDeflate A u v σ) μ ↔ Module.End.HasEigenvalue A μ := by
@@ -210,14 +209,13 @@ theorem hasEigenvalue_wielandtDeflate_iff {A : E →ₗ[𝕜] E} {u v : E} {l μ
     rw [h, zero_mul] at key
     exact (mul_eq_zero.1 key).resolve_right (sub_ne_zero.2 hμ)
 
-/-- **Left eigenvectors survive the deflation** (Saad, *Numerical Methods for Large Eigenvalue
-Problems*, Prop 4.1, and the mechanism of his proof of Thm 4.2): a left eigenvector `w` of `A`,
-that is an eigenvector of the adjoint for the conjugate eigenvalue, belonging to an eigenvalue
-`μ ≠ l`, is orthogonal to `u` and is a left eigenvector of the deflated operator for the same
-eigenvalue.
+/-- **Left eigenvectors survive the deflation** ([saad2011numerical], Prop 4.1, and the mechanism of
+his proof of Thm 4.2): a left eigenvector `w` of `A`, that is an eigenvector of the adjoint for the
+conjugate eigenvalue, belonging to an eigenvalue `μ ≠ l`, is orthogonal to `u` and is a left
+eigenvector of the deflated operator for the same eigenvalue.
 
-Orthogonality is the classical argument: `⟪w, A u⟫` equals `l ⟪w, u⟫` on one side and `μ ⟪w, u⟫`
-on the other, and `μ ≠ l`. -/
+Orthogonality is the classical argument: `⟪w, A u⟫` equals `l ⟪w, u⟫` on one side and `μ ⟪w, u⟫` on
+the other, and `μ ≠ l`. -/
 theorem wielandtDeflate_adjoint_apply_of_ne {A : E →ₗ[𝕜] E} {u v w : E} {l μ : 𝕜}
     (hu : A u = l • u) (hw : A.adjoint w = conj μ • w) (hne : μ ≠ l) (σ : 𝕜) :
     (inner 𝕜 w u : 𝕜) = 0 ∧
@@ -238,16 +236,15 @@ theorem wielandtDeflate_adjoint_apply_of_ne {A : E →ₗ[𝕜] E} {u v w : E} {
 
 end Spectrum
 
-/-- **Schur–Wielandt deflation preserves the invariant flag** (Saad, *Numerical Methods for Large
-Eigenvalue Problems*, Prop 4.1): an `A`-invariant subspace containing the deflation vector `u` is
-invariant for the deflated operator.
+/-- **Schur–Wielandt deflation preserves the invariant flag** ([saad2011numerical], Prop 4.1): an
+`A`-invariant subspace containing the deflation vector `u` is invariant for the deflated operator.
 
 The Schur vectors of `A` are, up to phase, determined by the complete flag of invariant subspaces
-they span, and every member of the flag of a Schur factorization whose first vector is `u`
-contains `u`; so this is the coordinate-free content of "the Schur vectors are unchanged", and it
-needs neither a Schur factorization — which Mathlib does not have — nor the choice `v = u` nor a
-normalization. Saad's several-vector deflation `A - Q Σ Qᴴ` (his Prop 4.2) is this theorem applied
-once per column of `Q`, through `LinearMap.wielandtDeflate_wielandtDeflate`. -/
+they span, and every member of the flag of a Schur factorization whose first vector is `u` contains
+`u`; so this is the coordinate-free content of "the Schur vectors are unchanged", and it needs
+neither a Schur factorization — which Mathlib does not have — nor the choice `v = u` nor a
+normalization. [saad2011numerical] several-vector deflation `A - Q Σ Qᴴ` (his Prop 4.2) is this
+theorem applied once per column of `Q`, through `LinearMap.wielandtDeflate_wielandtDeflate`. -/
 theorem schurWielandtDeflate_invtSubmodule {A : E →ₗ[𝕜] E} {u : E} {S : Submodule 𝕜 E}
     (hS : S ∈ Module.End.invtSubmodule A) (hu : u ∈ S) (v : E) (σ : 𝕜) :
     S ∈ Module.End.invtSubmodule (wielandtDeflate A u v σ) := by

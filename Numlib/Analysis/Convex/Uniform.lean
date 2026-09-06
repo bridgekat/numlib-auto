@@ -12,11 +12,11 @@ import Mathlib.Analysis.Normed.Module.HahnBanach
 /-!
 # The Radon–Riesz property
 
-A normed space has the **Radon–Riesz property** (also called the Kadec–Klee property, or
-property (H)) when weak convergence together with convergence of the norms implies convergence in
-norm. Every uniformly convex space has it, and so does every inner product space, where the proof
-is the expansion of `‖vₙ - u‖²` and needs neither completeness nor uniform convexity. Both
-statements are [Atkinson–Han][han2009theoretical] Exercises 2.7.3 and 2.7.4 (c).
+A normed space has the **Radon–Riesz property** (also called the Kadec–Klee property, or property
+(H)) when weak convergence together with convergence of the norms implies convergence in norm. Every
+uniformly convex space has it, and so does every inner product space, where the proof is the
+expansion of `‖vₙ - u‖²` and needs neither completeness nor uniform convexity. Both statements are
+[han2009theoretical] Exercises 2.7.3 and 2.7.4 (c).
 
 ## Main statements
 
@@ -41,8 +41,8 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [UniformConvexSp
 then `vₙ → u` in norm.
 
 The proof normalizes both `vₙ` and `u` by `max ‖vₙ‖ ‖u‖`, so that the two vectors lie in the closed
-unit ball, and tests the sum against a norming functional at `u`: `‖aₙ + bₙ‖ → 2` forces
-`‖aₙ - bₙ‖ → 0` by uniform convexity. -/
+unit ball, and tests the sum against a norming functional at `u`: `‖aₙ + bₙ‖ → 2` forces `‖aₙ - bₙ‖
+→ 0` by uniform convexity. -/
 theorem tendsto_of_forall_dual_tendsto_of_tendsto_norm {v : ℕ → E} {u : E}
     (hweak : ∀ ℓ : StrongDual ℝ E, Tendsto (fun n => ℓ (v n)) atTop (𝓝 (ℓ u)))
     (hnorm : Tendsto (fun n => ‖v n‖) atTop (𝓝 ‖u‖)) :

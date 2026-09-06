@@ -14,42 +14,40 @@ For `A : Matrix (m ⊕ n) (m ⊕ n) R`, the *Schur complement* of the `(1,1)` bl
 
 `A.schurComplement = A.toBlocks₂₂ - A.toBlocks₂₁ * A.toBlocks₁₁⁻¹ * A.toBlocks₁₂`,
 
-written `S = C - F B⁻¹ E` in the notation of [Saad][saad2003iterative] (14.5). Mathlib's
+written `S = C - F B⁻¹ E` in the notation of [saad2003iterative] (14.5). Mathlib's
 `Mathlib.LinearAlgebra.Matrix.SchurComplement` carries the block LDU identity, the determinant
-formulas and the positive *semi*definite criterion, but names no Schur complement and proves
-nothing about its inverse. This file adds the name and the four facts a domain-decomposition
-method needs:
+formulas and the positive *semi*definite criterion, but names no Schur complement and proves nothing
+about its inverse. This file adds the name and the four facts a domain-decomposition method needs:
 
 * the block LU and LDU factorizations `Matrix.fromBlocks_eq_mul_schurComplement` and
   `Matrix.fromBlocks_eq_mul_fromBlocks_schurComplement`;
 * `Matrix.isUnit_schurComplement_iff`: with an invertible `(1,1)` block, the whole matrix is
   nonsingular exactly when its Schur complement is;
-* `Matrix.inv_fromBlocks_eq`, the block inverse, and
-  `Matrix.toBlocks₂₂_inv_eq_inv_schurComplement`: the `(2,2)` block of `A⁻¹` is `S⁻¹`, which is
-  what lets a preconditioner for the interface system be built out of a solver for `A`;
+* `Matrix.inv_fromBlocks_eq`, the block inverse, and `Matrix.toBlocks₂₂_inv_eq_inv_schurComplement`:
+  the `(2,2)` block of `A⁻¹` is `S⁻¹`, which is what lets a preconditioner for the interface system
+  be built out of a solver for `A`;
 * `Matrix.PosDef.schurComplement`: the Schur complement of a positive definite matrix is positive
   definite. Mathlib has only the positive semidefinite equivalence `Matrix.PosDef.fromBlocks₁₁`.
 
-`Matrix.schurComplementSingle` is the `1 × 1`-pivot case, one step of Gaussian elimination, which
-is the form incomplete factorizations use ([Saad][saad2003iterative] Theorem 10.1).
+`Matrix.schurComplementSingle` is the `1 × 1`-pivot case, one step of Gaussian elimination, which is
+the form incomplete factorizations use ([saad2003iterative] Theorem 10.1).
 
 ## Implementation notes
 
-The hypotheses are `IsUnit`, not `Invertible`, because that is the form a nonsingularity
-hypothesis takes downstream; each proof turns them into `Invertible` instances internally and
+The hypotheses are `IsUnit`, not `Invertible`, because that is the form a nonsingularity hypothesis
+takes downstream; each proof turns them into `Invertible` instances internally and
 `Matrix.invOf_eq_nonsing_inv` reconciles `⅟` with `⁻¹`.
 
-Indexing is by a sum type `m ⊕ n` throughout, so that `Matrix.toBlocks₁₁ … Matrix.toBlocks₂₂`
-apply and no reindexing equivalence appears in the statements.
+Indexing is by a sum type `m ⊕ n` throughout, so that `Matrix.toBlocks₁₁ … Matrix.toBlocks₂₂` apply
+and no reindexing equivalence appears in the statements.
 
 ## TODO
 
 Connect `Matrix.schurComplementSingle` to `Matrix.schurComplement`, by the identity
-`A.schurComplementSingle p = (A.submatrix e e).schurComplement` for
-`e = Equiv.sumCompl (· = p) : {i // i = p} ⊕ {i // i ≠ p} ≃ n`. It needs the inverse of the
-`1 × 1` block, which is `Matrix.adjugate_subsingleton` (the adjugate of a subsingleton-indexed
-matrix is `1`) together with `Matrix.det_unique`, and then the collapse of a sum over a `Unique`
-index type.
+`A.schurComplementSingle p = (A.submatrix e e).schurComplement` for `e = Equiv.sumCompl (· = p) : {i
+// i = p} ⊕ {i // i ≠ p} ≃ n`. It needs the inverse of the `1 × 1` block, which is
+`Matrix.adjugate_subsingleton` (the adjugate of a subsingleton-indexed matrix is `1`) together with
+`Matrix.det_unique`, and then the collapse of a sum over a `Unique` index type.
 -/
 
 namespace Matrix
@@ -60,11 +58,11 @@ section Def
 
 variable [Fintype m] [DecidableEq m] [CommRing R]
 
-/-- The **Schur complement** of the `(1,1)` block of a `2 × 2` block matrix,
-`S = C - F B⁻¹ E` in the notation of Saad, *Iterative Methods for Sparse Linear Systems*, (14.5).
+/-- The **Schur complement** of the `(1,1)` block of a `2 × 2` block matrix, `S = C - F B⁻¹ E` in
+the notation of [saad2003iterative], (14.5).
 
-It is `noncomputable` because `Matrix.inv` is, and it is junk when the `(1,1)` block is
-singular, `Matrix.inv` being junk there. -/
+It is `noncomputable` because `Matrix.inv` is, and it is junk when the `(1,1)` block is singular,
+`Matrix.inv` being junk there. -/
 noncomputable def schurComplement (A : Matrix (m ⊕ n) (m ⊕ n) R) : Matrix n n R :=
   A.toBlocks₂₂ - A.toBlocks₂₁ * A.toBlocks₁₁⁻¹ * A.toBlocks₁₂
 
@@ -84,9 +82,9 @@ section Factorization
 variable [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n] [CommRing R]
 variable {B : Matrix m m R} {E : Matrix m n R} {F : Matrix n m R} {C : Matrix n n R}
 
-/-- **The block LU factorization** of a block matrix with a nonsingular `(1,1)` block (Saad,
-*Iterative Methods for Sparse Linear Systems*, (14.6)): the second factor is block upper
-triangular with the Schur complement in its `(2,2)` corner. -/
+/-- **The block LU factorization** of a block matrix with a nonsingular `(1,1)` block
+([saad2003iterative], (14.6)): the second factor is block upper triangular with the Schur complement
+in its `(2,2)` corner. -/
 theorem fromBlocks_eq_mul_fromBlocks_schurComplement (hB : IsUnit B) :
     fromBlocks B E F C
       = fromBlocks 1 0 (F * B⁻¹) 1 * fromBlocks B E 0 (fromBlocks B E F C).schurComplement := by
@@ -94,9 +92,9 @@ theorem fromBlocks_eq_mul_fromBlocks_schurComplement (hB : IsUnit B) :
   simp only [schurComplement_fromBlocks, fromBlocks_multiply, Matrix.one_mul, Matrix.mul_one,
     Matrix.mul_zero, Matrix.zero_mul, add_zero, Matrix.mul_assoc, hinv, add_sub_cancel]
 
-/-- **The block LDU factorization** of a block matrix with a nonsingular `(1,1)` block (Saad,
-*Iterative Methods for Sparse Linear Systems*, (14.52)): the middle factor is `1 ⊕ S`, and the
-two outer factors are unipotent block triangular. -/
+/-- **The block LDU factorization** of a block matrix with a nonsingular `(1,1)` block
+([saad2003iterative], (14.52)): the middle factor is `1 ⊕ S`, and the two outer factors are
+unipotent block triangular. -/
 theorem fromBlocks_eq_mul_schurComplement (hB : IsUnit B) :
     fromBlocks B E F C
       = fromBlocks 1 0 (F * B⁻¹) 1 * fromBlocks 1 0 0 (fromBlocks B E F C).schurComplement
@@ -114,8 +112,8 @@ section IsUnit
 
 variable [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n] [CommRing R]
 
-/-- **Saad Proposition 14.1 (1)**: with a nonsingular `(1,1)` block, a block matrix is nonsingular
-exactly when its Schur complement is. -/
+/-- **[saad2003iterative] Proposition 14.1 (1)**: with a nonsingular `(1,1)` block, a block matrix
+is nonsingular exactly when its Schur complement is. -/
 theorem isUnit_schurComplement_iff {A : Matrix (m ⊕ n) (m ⊕ n) R} (hB : IsUnit A.toBlocks₁₁) :
     IsUnit A.schurComplement ↔ IsUnit A := by
   let _ := hB.invertible
@@ -123,7 +121,7 @@ theorem isUnit_schurComplement_iff {A : Matrix (m ⊕ n) (m ⊕ n) R} (hB : IsUn
   rw [schurComplement_eq, h1, ← isUnit_fromBlocks_iff_of_invertible₁₁, fromBlocks_toBlocks]
 
 /-- The Schur complement of a nonsingular block matrix with a nonsingular `(1,1)` block is
-nonsingular (Saad, *Iterative Methods for Sparse Linear Systems*, Proposition 14.1 (1)). -/
+nonsingular ([saad2003iterative], Proposition 14.1 (1)). -/
 theorem isUnit_schurComplement {A : Matrix (m ⊕ n) (m ⊕ n) R} (hB : IsUnit A.toBlocks₁₁)
     (hA : IsUnit A) : IsUnit A.schurComplement :=
   (isUnit_schurComplement_iff hB).2 hA
@@ -140,9 +138,8 @@ section Inverse
 variable [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n] [CommRing R]
 variable {B : Matrix m m R} {E : Matrix m n R} {F : Matrix n m R} {C : Matrix n n R}
 
-/-- **The block inverse** of a nonsingular block matrix with a nonsingular `(1,1)` block (Saad,
-*Iterative Methods for Sparse Linear Systems*, (14.7)), with `S = C - F B⁻¹ E` the Schur
-complement in the `(2,2)` corner. -/
+/-- **The block inverse** of a nonsingular block matrix with a nonsingular `(1,1)` block
+([saad2003iterative], (14.7)), with `S = C - F B⁻¹ E` the Schur complement in the `(2,2)` corner. -/
 theorem inv_fromBlocks_eq (hB : IsUnit B) (hA : IsUnit (fromBlocks B E F C)) :
     (fromBlocks B E F C)⁻¹
       = fromBlocks (B⁻¹ + B⁻¹ * E * (C - F * B⁻¹ * E)⁻¹ * F * B⁻¹)
@@ -160,9 +157,9 @@ theorem inv_fromBlocks_eq (hB : IsUnit B) (hA : IsUnit (fromBlocks B E F C)) :
     rw [invOf_eq_nonsing_inv, hSB]
   rw [← invOf_eq_nonsing_inv (fromBlocks B E F C), invOf_fromBlocks₁₁_eq B E F C, hSinv, hBinv]
 
-/-- **Saad Proposition 14.1 (3)**: the `(2,2)` block of the inverse of a block matrix is the
-inverse of its Schur complement. This is the identity that lets a preconditioner for the interface
-system `S y = g` be built out of a solver for the whole matrix. -/
+/-- **[saad2003iterative] Proposition 14.1 (3)**: the `(2,2)` block of the inverse of a block matrix
+is the inverse of its Schur complement. This is the identity that lets a preconditioner for the
+interface system `S y = g` be built out of a solver for the whole matrix. -/
 theorem toBlocks₂₂_inv_eq_inv_schurComplement {A : Matrix (m ⊕ n) (m ⊕ n) R}
     (hB : IsUnit A.toBlocks₁₁) (hA : IsUnit A) :
     (A⁻¹).toBlocks₂₂ = A.schurComplement⁻¹ := by
@@ -179,13 +176,13 @@ variable [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n]
 
 set_option linter.unusedDecidableInType false in
 set_option linter.unusedFintypeInType false in
-/-- **Saad Proposition 14.1 (2)**: the Schur complement of a Hermitian positive definite matrix is
-Hermitian positive definite.
+/-- **[saad2003iterative] Proposition 14.1 (2)**: the Schur complement of a Hermitian positive
+definite matrix is Hermitian positive definite.
 
 Mathlib's `Matrix.PosDef.fromBlocks₁₁` gives only the positive *semi*definite equivalence; the
 strict form comes from `Matrix.toBlocks₂₂_inv_eq_inv_schurComplement`, since `A⁻¹` is positive
-definite, a principal submatrix of a positive definite matrix is positive definite, and the
-inverse of a positive definite matrix is positive definite. -/
+definite, a principal submatrix of a positive definite matrix is positive definite, and the inverse
+of a positive definite matrix is positive definite. -/
 theorem PosDef.schurComplement {A : Matrix (m ⊕ n) (m ⊕ n) K} (hA : A.PosDef) :
     A.schurComplement.PosDef := by
   have h11 : A.toBlocks₁₁.PosDef := Matrix.PosDef.submatrix hA Sum.inl_injective
@@ -201,11 +198,11 @@ section Single
 
 variable {K : Type*} [Field K]
 
-/-- **One step of Gaussian elimination**, the `1 × 1`-pivot Schur complement: for a pivot index
-`p`, the matrix `A i j - A i p (A p p)⁻¹ A p j` on the indices other than `p`. It is the trailing
-block of the matrix `A₁` of Saad, *Iterative Methods for Sparse Linear Systems*, Theorem 10.1 —
-his `A₁` is square on all `n` indices, keeping the pivot row and a zeroed pivot column — and it is
-the matrix whose incomplete factorizations the theory of Chapter 10 studies. -/
+/-- **One step of Gaussian elimination**, the `1 × 1`-pivot Schur complement: for a pivot index `p`,
+the matrix `A i j - A i p (A p p)⁻¹ A p j` on the indices other than `p`. It is the trailing block
+of the matrix `A₁` of [saad2003iterative], Theorem 10.1 — his `A₁` is square on all `n` indices,
+keeping the pivot row and a zeroed pivot column — and it is the matrix whose incomplete
+factorizations the theory of Chapter 10 studies. -/
 noncomputable def schurComplementSingle (A : Matrix n n K) (p : n) :
     Matrix {i : n // i ≠ p} {i : n // i ≠ p} K :=
   Matrix.of fun i j => A i.1 j.1 - A i.1 p * (A p p)⁻¹ * A p j.1

@@ -6,32 +6,32 @@ import Numlib.LinearSolve.Projection.Additive
 # The abstract Schwarz theory
 
 A **Schwarz method** solves a linear system by repeatedly solving it on a family of subspaces
-([Saad, *Iterative Methods for Sparse Linear Systems*][saad2003iterative], §14.3).
-The whole convergence theory is a statement about a finite family `V : ℕ → Submodule 𝕜 H` of
-subspaces of an inner product space and their orthogonal projectors `P i = (V i).starProjection`:
+([saad2003iterative], §14.3). The whole convergence theory is a statement about a finite family `V :
+ℕ → Submodule 𝕜 H` of subspaces of an inner product space and their orthogonal projectors `P i = (V
+i).starProjection`:
 
 * the **additive** operator `A_J = ∑_{i < s} P i` (`Schwarz.additiveOperator`), which is the
   preconditioned operator of the additive method;
-* the **multiplicative** error operator `Q_s = (1 - P_{s-1}) ⋯ (1 - P_0)` (`Schwarz.errorOp`),
-  which is what one sweep of the multiplicative method does to the error.
+* the **multiplicative** error operator `Q_s = (1 - P_{s-1}) ⋯ (1 - P_0)` (`Schwarz.errorOp`), which
+  is what one sweep of the multiplicative method does to the error.
 
-No domain, mesh or restriction matrix occurs anywhere.  The classical subdomain projector
-`P_i = R_iᵀ A_i⁻¹ R_i A` of a symmetric coercive `A` *is* the orthogonal projector onto
-`range R_iᵀ` in the energy inner product, and the local matrix `A_i = R_i A R_iᵀ` is the Galerkin
-coarse operator of that subspace; so the theory below is stated in a plain inner product space and
-applied with `H = WithEnergy A hA`.  `Schwarz.energyProjection` is that transport, and
-`Schwarz.error_multiplicativeStep_eq_errorOp` and `Schwarz.error_additiveStep_eq` identify a
-Schwarz sweep with the multiplicative and additive projection processes of
-`Numlib/LinearSolve/Projection/Additive.lean`: those act on residuals, these on errors, and the
-two are conjugate by `A`.
+No domain, mesh or restriction matrix occurs anywhere.  The classical subdomain projector `P_i =
+R_iᵀ A_i⁻¹ R_i A` of a symmetric coercive `A` *is* the orthogonal projector onto `range R_iᵀ` in the
+energy inner product, and the local matrix `A_i = R_i A R_iᵀ` is the Galerkin coarse operator of
+that subspace; so the theory below is stated in a plain inner product space and applied with `H =
+WithEnergy A hA`.  `Schwarz.energyProjection` is that transport, and
+`Schwarz.error_multiplicativeStep_eq_errorOp` and `Schwarz.error_additiveStep_eq` identify a Schwarz
+sweep with the multiplicative and additive projection processes of
+`Numlib/LinearSolve/Projection/Additive.lean`: those act on residuals, these on errors, and the two
+are conjugate by `A`.
 
 ## The two hypotheses
 
 Convergence rests on two constants that no amount of linear algebra can produce, because they are
 statements about a discretization:
 
-* `Schwarz.IsStableDecompositionWith V s K₀` — every vector splits over the family with
-  `∑ ‖w i‖² ≤ K₀ ‖u‖²`.  It bounds the smallest eigenvalue of `A_J` from below by `1/K₀`
+* `Schwarz.IsStableDecompositionWith V s K₀` — every vector splits over the family with `∑ ‖w i‖² ≤
+  K₀ ‖u‖²`.  It bounds the smallest eigenvalue of `A_J` from below by `1/K₀`
   (`Schwarz.le_re_inner_additiveOperator`), while the largest is at most the number of subspaces
   (`Schwarz.re_inner_additiveOperator_le`), or at most the number of colours in a colouring of the
   family by mutual orthogonality (`Schwarz.re_inner_additiveOperator_le_of_coloring`).  The two
@@ -53,9 +53,9 @@ variable {𝕜 H : Type*} [RCLike 𝕜] [NormedAddCommGroup H] [InnerProductSpac
 
 /-! ### The vector-valued Cauchy–Schwarz inequality -/
 
-/-- **The vector-valued Cauchy–Schwarz inequality**: `∑ re ⟪x i, y i⟫` is bounded by the product
-of the root-mean-square norms of the two families.  Cauchy–Schwarz termwise, then the
-Cauchy–Schwarz inequality for finite sums of reals. -/
+/-- **The vector-valued Cauchy–Schwarz inequality**: `∑ re ⟪x i, y i⟫` is bounded by the product of
+the root-mean-square norms of the two families.  Cauchy–Schwarz termwise, then the Cauchy–Schwarz
+inequality for finite sums of reals. -/
 theorem inner_sum_le {ι : Type*} (t : Finset ι) (x y : ι → H) :
     ∑ i ∈ t, RCLike.re (inner 𝕜 (x i) (y i))
       ≤ Real.sqrt (∑ i ∈ t, ‖x i‖ ^ 2) * Real.sqrt (∑ i ∈ t, ‖y i‖ ^ 2) :=
@@ -80,8 +80,8 @@ theorem re_inner_starProjection_self (u : H) :
     exact h
   rw [← inner_conj_symm, h2, RCLike.conj_re, inner_self_eq_norm_sq]
 
-/-- An orthogonal projector may be dropped from the second argument of an inner product whose
-first argument already lies in the subspace. -/
+/-- An orthogonal projector may be dropped from the second argument of an inner product whose first
+argument already lies in the subspace. -/
 theorem inner_starProjection_starProjection (a b : H) :
     inner 𝕜 (K.starProjection a) (K.starProjection b) = inner 𝕜 (K.starProjection a) b := by
   have hidem : K.starProjection (K.starProjection b) = K.starProjection b :=
@@ -91,8 +91,8 @@ theorem inner_starProjection_starProjection (a b : H) :
 
 end Projectors
 
-/-- **Bessel's inequality for a pairwise orthogonal family of subspaces**: the squared norms of
-the projections of one vector add up to at most its squared norm. -/
+/-- **Bessel's inequality for a pairwise orthogonal family of subspaces**: the squared norms of the
+projections of one vector add up to at most its squared norm. -/
 theorem sum_norm_starProjection_sq_le_of_pairwise_orthogonal {ι : Type*} (t : Finset ι)
     (W : ι → Submodule 𝕜 H) [∀ i, (W i).HasOrthogonalProjection]
     (horth : ∀ i ∈ t, ∀ j ∈ t, i ≠ j → W i ⟂ W j) (u : H) :
@@ -126,11 +126,11 @@ theorem sum_norm_starProjection_sq_le_of_pairwise_orthogonal {ι : Type*} (t : F
 
 variable (V : ℕ → Submodule 𝕜 H) [∀ i, (V i).HasOrthogonalProjection]
 
-/-- **A stable decomposition** over the family `V 0, …, V (s-1)` with constant `K₀`: every vector
-is a sum of vectors of the subspaces whose squared norms add up to at most `K₀ ‖u‖²`.  This is
-the hypothesis that the subspaces cover the space stably; it is not a consequence of the algebra,
-and for a finite-element family it is exactly what an overlapping-subdomain partition of unity
-provides. -/
+/-- **A stable decomposition** over the family `V 0, …, V (s-1)` with constant `K₀`: every vector is
+a sum of vectors of the subspaces whose squared norms add up to at most `K₀ ‖u‖²`.  This is the
+hypothesis that the subspaces cover the space stably; it is not a consequence of the algebra, and
+for a finite-element family it is exactly what an overlapping-subdomain partition of unity provides.
+-/
 def IsStableDecompositionWith (s : ℕ) (K₀ : ℝ) : Prop :=
   ∀ u : H, ∃ w : ℕ → H, (∀ i ∈ Finset.range s, w i ∈ V i) ∧ ∑ i ∈ Finset.range s, w i = u ∧
     ∑ i ∈ Finset.range s, ‖w i‖ ^ 2 ≤ K₀ * ‖u‖ ^ 2
@@ -138,8 +138,8 @@ def IsStableDecompositionWith (s : ℕ) (K₀ : ℝ) : Prop :=
 /-- **A strengthened Cauchy–Schwarz inequality** with constant `K₁`: for every set `S` of pairs of
 indices below `s`, the corresponding sum of inner products of projections is bounded by `K₁` times
 the product of the root-mean-square norms of the two families of projections.  It measures how far
-the subspaces are from being mutually orthogonal: pairwise orthogonal subspaces admit `K₁ = 0`,
-and the plain Cauchy–Schwarz inequality always gives `K₁ = s`. -/
+the subspaces are from being mutually orthogonal: pairwise orthogonal subspaces admit `K₁ = 0`, and
+the plain Cauchy–Schwarz inequality always gives `K₁ = s`. -/
 def IsStrengthenedCauchySchwarzWith (s : ℕ) (K₁ : ℝ) : Prop :=
   ∀ S : Finset (ℕ × ℕ), S ⊆ Finset.range s ×ˢ Finset.range s → ∀ x y : ℕ → H,
     ∑ ij ∈ S, RCLike.re (inner 𝕜 ((V ij.1).starProjection (x ij.1))
@@ -150,8 +150,8 @@ def IsStrengthenedCauchySchwarzWith (s : ℕ) (K₁ : ℝ) : Prop :=
 /-! ### The additive Schwarz operator -/
 
 /-- **The additive Schwarz operator** `A_J = ∑_{i < s} P i`, the sum of the orthogonal projectors
-onto the subspaces.  Read in the energy inner product of `A`, it is the preconditioned operator
-`M⁻¹ A` of the additive Schwarz method. -/
+onto the subspaces.  Read in the energy inner product of `A`, it is the preconditioned operator `M⁻¹
+A` of the additive Schwarz method. -/
 noncomputable def additiveOperator (s : ℕ) : H →L[𝕜] H :=
   ∑ i ∈ Finset.range s, (V i).starProjection
 
@@ -183,9 +183,9 @@ theorem re_inner_additiveOperator_nonneg (s : ℕ) (u : H) :
   rw [re_inner_additiveOperator]
   exact Finset.sum_nonneg fun i _ => sq_nonneg _
 
-/-- **The largest eigenvalue of the additive Schwarz operator is at most the number of
-subspaces**: `re ⟪A_J u, u⟫ ≤ s ‖u‖²`.  Each projector is norm non-increasing, and the quadratic
-form is the sum of the squared norms of the projections. -/
+/-- **The largest eigenvalue of the additive Schwarz operator is at most the number of subspaces**:
+`re ⟪A_J u, u⟫ ≤ s ‖u‖²`.  Each projector is norm non-increasing, and the quadratic form is the sum
+of the squared norms of the projections. -/
 theorem re_inner_additiveOperator_le (s : ℕ) (u : H) :
     RCLike.re (inner 𝕜 (additiveOperator V s u) u) ≤ s * ‖u‖ ^ 2 := by
   rw [re_inner_additiveOperator]
@@ -196,11 +196,11 @@ theorem re_inner_additiveOperator_le (s : ℕ) (u : H) :
         nlinarith [norm_nonneg ((V i).starProjection u)]
     _ = s * ‖u‖ ^ 2 := by rw [Finset.sum_const, Finset.card_range, nsmul_eq_mul]
 
-/-- **The largest eigenvalue of the additive Schwarz operator is at most the number of colours**:
-if the subspaces are coloured so that two subspaces of the same colour are orthogonal, then
-`re ⟪A_J u, u⟫ ≤ (card κ) ‖u‖²`.  Each colour class contributes at most `‖u‖²` by Bessel's
-inequality, so a colouring of the interaction graph of the subdomains replaces the crude bound by
-the number of subspaces. -/
+/-- **The largest eigenvalue of the additive Schwarz operator is at most the number of colours**: if
+the subspaces are coloured so that two subspaces of the same colour are orthogonal, then `re ⟪A_J u,
+u⟫ ≤ (card κ) ‖u‖²`.  Each colour class contributes at most `‖u‖²` by Bessel's inequality, so a
+colouring of the interaction graph of the subdomains replaces the crude bound by the number of
+subspaces. -/
 theorem re_inner_additiveOperator_le_of_coloring {κ : Type*} [Fintype κ] (s : ℕ)
     (col : ℕ → κ)
     (horth : ∀ i ∈ Finset.range s, ∀ j ∈ Finset.range s, i ≠ j → col i = col j → V i ⟂ V j)
@@ -219,11 +219,11 @@ theorem re_inner_additiveOperator_le_of_coloring {κ : Type*} [Fintype κ] (s : 
     _ = Fintype.card κ * ‖u‖ ^ 2 := by
         rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
 
-/-- **The smallest eigenvalue of the additive Schwarz operator is at least `1/K₀`**: under a
-stable decomposition with constant `K₀`, `‖u‖²/K₀ ≤ re ⟪A_J u, u⟫`.  Writing `u = ∑ w i` with
-`w i ∈ V i`, each `⟪w i, u⟫` equals `⟪w i, P i u⟫` because `P i` fixes `w i`, and the
-vector-valued Cauchy–Schwarz inequality turns `‖u‖²` into the product of the two root-mean-square
-norms; the stable decomposition bounds one of them. -/
+/-- **The smallest eigenvalue of the additive Schwarz operator is at least `1/K₀`**: under a stable
+decomposition with constant `K₀`, `‖u‖²/K₀ ≤ re ⟪A_J u, u⟫`.  Writing `u = ∑ w i` with `w i ∈ V i`,
+each `⟪w i, u⟫` equals `⟪w i, P i u⟫` because `P i` fixes `w i`, and the vector-valued
+Cauchy–Schwarz inequality turns `‖u‖²` into the product of the two root-mean-square norms; the
+stable decomposition bounds one of them. -/
 theorem le_re_inner_additiveOperator {s : ℕ} {K₀ : ℝ}
     (hst : IsStableDecompositionWith V s K₀) (u : H) :
     ‖u‖ ^ 2 / K₀ ≤ RCLike.re (inner 𝕜 (additiveOperator V s u) u) := by
@@ -287,12 +287,11 @@ theorem le_re_inner_additiveOperator {s : ℕ} {K₀ : ℝ}
   rw [div_le_iff₀ hK₀pos]
   linarith
 
-/-- **The spectral equivalence of the additive Schwarz preconditioner** (Saad, *Iterative Methods
-for Sparse Linear Systems*, Theorems 14.5 and 14.7 together): under a stable decomposition with
-constant `K₀`, the quadratic form of `A_J` is enclosed between `1/K₀` and the number of subspaces.
-This is the hypothesis every Chebyshev-type convergence bound of the library takes, so the
-condition number of the additive Schwarz preconditioned system is at most `s K₀` with no further
-estimate. -/
+/-- **The spectral equivalence of the additive Schwarz preconditioner** ([saad2003iterative],
+Theorems 14.5 and 14.7 together): under a stable decomposition with constant `K₀`, the quadratic
+form of `A_J` is enclosed between `1/K₀` and the number of subspaces. This is the hypothesis every
+Chebyshev-type convergence bound of the library takes, so the condition number of the additive
+Schwarz preconditioned system is at most `s K₀` with no further estimate. -/
 theorem isSymmetricBoundedBy_additiveOperator {s : ℕ} {K₀ : ℝ}
     (hst : IsStableDecompositionWith V s K₀) :
     (additiveOperator V s : H →ₗ[𝕜] H).IsSymmetricBoundedBy (1 / K₀) s :=
@@ -328,11 +327,11 @@ theorem energyNorm_error_le [Nontrivial H] {s : ℕ} {K₀ : ℝ} (hK₀ : 0 < K
 
 /-! ### The multiplicative Schwarz sweep -/
 
-/-- **The error propagation operator of a multiplicative Schwarz sweep**: `Q 0 = 1` and
-`Q (i+1) = (1 - P i) ∘ Q i`, so that `Q s = (1 - P_{s-1}) ⋯ (1 - P_0)` corrects on the subspaces
-in the order `0, 1, …, s-1`.  Indexed by `ℕ` rather than by `Fin s` so that the recursion is
-definitional and the prefixes `Q 0, Q 1, …` are all available at once, which is what the
-telescoping identity `Schwarz.norm_errorOp_sq_eq` needs. -/
+/-- **The error propagation operator of a multiplicative Schwarz sweep**: `Q 0 = 1` and `Q (i+1) =
+(1 - P i) ∘ Q i`, so that `Q s = (1 - P_{s-1}) ⋯ (1 - P_0)` corrects on the subspaces in the order
+`0, 1, …, s-1`.  Indexed by `ℕ` rather than by `Fin s` so that the recursion is definitional and the
+prefixes `Q 0, Q 1, …` are all available at once, which is what the telescoping identity
+`Schwarz.norm_errorOp_sq_eq` needs. -/
 noncomputable def errorOp : ℕ → H →L[𝕜] H
   | 0 => 1
   | i + 1 => (1 - (V i).starProjection) ∘L errorOp i
@@ -350,9 +349,9 @@ theorem errorOp_succ (i : ℕ) :
 theorem errorOp_succ_apply (i : ℕ) (v : H) :
     errorOp V (i + 1) v = errorOp V i v - (V i).starProjection (errorOp V i v) := rfl
 
-/-- **Saad's Lemma 14.4** (Saad, *Iterative Methods for Sparse Linear Systems*), in the form
-(14.35): what a multiplicative sweep adds to the iterate is `∑_{i < s} P i Q i`.  Equivalently,
-the sweep is the fixed-point iteration whose preconditioned operator is `1 - Q s`. -/
+/-- **[saad2003iterative] Lemma 14.4** ([saad2003iterative]), in the form (14.35): what a
+multiplicative sweep adds to the iterate is `∑_{i < s} P i Q i`.  Equivalently, the sweep is the
+fixed-point iteration whose preconditioned operator is `1 - Q s`. -/
 theorem one_sub_errorOp_eq_sum (s : ℕ) :
     1 - errorOp V s = ∑ i ∈ Finset.range s, (V i).starProjection ∘L errorOp V i := by
   induction s with
@@ -369,10 +368,9 @@ theorem sub_errorOp_apply (s : ℕ) (v : H) :
   have h := congrArg (fun T : H →L[𝕜] H => T v) (one_sub_errorOp_eq_sum V s)
   simpa using h
 
-/-- **The telescoping identity of a multiplicative sweep** (Saad, *Iterative Methods for Sparse
-Linear Systems*, (14.39)): `‖Q s v‖² = ‖v‖² - ∑_{i < s} ‖P i (Q i v)‖²`.  In particular a sweep
-never increases the norm of the error, and the sum on the right is exactly what the convergence
-rate has to be bounded below by. -/
+/-- **The telescoping identity of a multiplicative sweep** ([saad2003iterative], (14.39)): `‖Q s v‖²
+= ‖v‖² - ∑_{i < s} ‖P i (Q i v)‖²`.  In particular a sweep never increases the norm of the error,
+and the sum on the right is exactly what the convergence rate has to be bounded below by. -/
 theorem norm_errorOp_sq_eq (s : ℕ) (v : H) :
     ‖errorOp V s v‖ ^ 2
       = ‖v‖ ^ 2 - ∑ i ∈ Finset.range s, ‖(V i).starProjection (errorOp V i v)‖ ^ 2 := by
@@ -416,13 +414,12 @@ private theorem sum_range_sum_range_eq (s : ℕ) (f : ℕ → ℕ → ℝ) :
   simp only [Finset.mem_range] at hi
   omega
 
-/-- **Saad's Lemma 14.8** (Saad, *Iterative Methods for Sparse Linear Systems*): under a
-strengthened Cauchy–Schwarz inequality with constant `K₁`, the projections of a vector are
-controlled by the projections of the partially swept vectors,
-`∑_{i < s} ‖P i v‖² ≤ (1 + K₁)² ∑_{i < s} ‖P i (Q i v)‖²`.  Splitting `P i v` along
-`v = Q i v + (1 - Q i) v` and expanding the second half by (14.35) gives a diagonal sum, bounded
-by the vector-valued Cauchy–Schwarz inequality, and a strictly lower triangular sum, bounded by
-the assumption. -/
+/-- **[saad2003iterative] Lemma 14.8** ([saad2003iterative]): under a strengthened Cauchy–Schwarz
+inequality with constant `K₁`, the projections of a vector are controlled by the projections of the
+partially swept vectors, `∑_{i < s} ‖P i v‖² ≤ (1 + K₁)² ∑_{i < s} ‖P i (Q i v)‖²`.  Splitting `P i
+v` along `v = Q i v + (1 - Q i) v` and expanding the second half by (14.35) gives a diagonal sum,
+bounded by the vector-valued Cauchy–Schwarz inequality, and a strictly lower triangular sum, bounded
+by the assumption. -/
 theorem sum_norm_starProjection_sq_le {s : ℕ} {K₁ : ℝ}
     (hcs : IsStrengthenedCauchySchwarzWith V s K₁) (v : H) :
     ∑ i ∈ Finset.range s, ‖(V i).starProjection v‖ ^ 2
@@ -476,12 +473,11 @@ theorem sum_norm_starProjection_sq_le {s : ℕ} {K₁ : ℝ}
   refine le_sq_mul_of_le_mul_sqrt hX hY (hsum.trans_le ?_)
   linarith
 
-/-- **Saad's Theorem 14.9** (Saad, *Iterative Methods for Sparse Linear Systems*): under a stable
-decomposition with constant `K₀` and a strengthened Cauchy–Schwarz inequality with constant `K₁`,
-one multiplicative Schwarz sweep contracts the norm of the error by the factor
-`√(1 - 1/(K₀ (1 + K₁)²))`, which depends on nothing but the two constants — in particular not on
-the number of subdomains.  Read in the energy inner product, this is contraction of the energy
-norm of the error. -/
+/-- **[saad2003iterative] Theorem 14.9** ([saad2003iterative]): under a stable decomposition with
+constant `K₀` and a strengthened Cauchy–Schwarz inequality with constant `K₁`, one multiplicative
+Schwarz sweep contracts the norm of the error by the factor `√(1 - 1/(K₀ (1 + K₁)²))`, which depends
+on nothing but the two constants — in particular not on the number of subdomains.  Read in the
+energy inner product, this is contraction of the energy norm of the error. -/
 theorem norm_errorOp_le {s : ℕ} {K₀ K₁ : ℝ} (hK₀ : 0 < K₀) (hK₁ : 0 ≤ K₁)
     (hst : IsStableDecompositionWith V s K₀)
     (hcs : IsStrengthenedCauchySchwarzWith V s K₁) (v : H) :
@@ -519,11 +515,11 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
 /-- **The Schwarz subdomain projector** of a symmetric coercive `A`: the `A`-orthogonal projector
 onto a finite-dimensional subspace `K`, obtained by transporting `Submodule.starProjection` of the
-energy space `WithEnergy A hA` back along `WithEnergy.equiv`.  Classically it is written
-`R_iᵀ A_i⁻¹ R_i A` for a boolean restriction `R_i` with `range R_iᵀ = K`, and
-`Schwarz.energyProjection_eq_of_galerkinCoarse` is that formula; the definition here needs neither
-a basis of `K` nor an inverse.  It is `Multigrid.coarseProjection` with the subspace given
-directly instead of as the range of a prolongation. -/
+energy space `WithEnergy A hA` back along `WithEnergy.equiv`.  Classically it is written `R_iᵀ A_i⁻¹
+R_i A` for a boolean restriction `R_i` with `range R_iᵀ = K`, and
+`Schwarz.energyProjection_eq_of_galerkinCoarse` is that formula; the definition here needs neither a
+basis of `K` nor an inverse.  It is `Multigrid.coarseProjection` with the subspace given directly
+instead of as the range of a prolongation. -/
 noncomputable def energyProjection (A : E →ₗ[𝕜] E) (hA : A.IsSymmetricCoercive)
     (K : Submodule 𝕜 E) [FiniteDimensional 𝕜 K] : E →ₗ[𝕜] E :=
   (WithEnergy.equiv A hA).symm.toLinearMap ∘ₗ
@@ -533,8 +529,8 @@ noncomputable def energyProjection (A : E →ₗ[𝕜] E) (hA : A.IsSymmetricCoe
 variable (A : E →ₗ[𝕜] E) (hA : A.IsSymmetricCoercive) (K : Submodule 𝕜 E)
   [FiniteDimensional 𝕜 K]
 
-/-- Read in the energy space, the subdomain projector is the orthogonal projector onto the image
-of `K`; this is its definition, and the bridge every proof below crosses. -/
+/-- Read in the energy space, the subdomain projector is the orthogonal projector onto the image of
+`K`; this is its definition, and the bridge every proof below crosses. -/
 @[simp]
 theorem equiv_energyProjection (x : E) :
     WithEnergy.equiv A hA (energyProjection A hA K x)
@@ -576,17 +572,16 @@ theorem energyProjection_isGalerkin {b x xstar : E} (hstar : A xstar = b) :
   exact (congrArg (starRingEnd 𝕜) h0).trans (map_zero _)
 
 /-- The Schwarz subdomain projector agrees with the coarse-grid projector of
-`Numlib/LinearSolve/Multigrid/Basic.lean` on the range of a prolongation: they are one object,
-seen once with the subspace named and once with a map onto it. -/
+`Numlib/LinearSolve/Multigrid/Basic.lean` on the range of a prolongation: they are one object, seen
+once with the subspace named and once with a map onto it. -/
 theorem energyProjection_range {F : Type*} [NormedAddCommGroup F] [InnerProductSpace 𝕜 F]
     [FiniteDimensional 𝕜 F] (Pr : F →ₗ[𝕜] E) :
     energyProjection A hA (LinearMap.range Pr) = Multigrid.coarseProjection A hA Pr :=
   rfl
 
-/-- **Saad's formula `P_i = R_iᵀ A_i⁻¹ R_i A`** (Saad, *Iterative Methods for Sparse Linear
-Systems*, (14.24)) written without an inverse: if `y` solves the subdomain problem
-`A_i y = R_i A x` for the Galerkin subdomain operator `A_i = R_i A R_iᵀ`, then the subdomain
-projection of `x` is `R_iᵀ y`. -/
+/-- **[saad2003iterative] formula `P_i = R_iᵀ A_i⁻¹ R_i A`** ([saad2003iterative], (14.24)) written
+without an inverse: if `y` solves the subdomain problem `A_i y = R_i A x` for the Galerkin subdomain
+operator `A_i = R_i A R_iᵀ`, then the subdomain projection of `x` is `R_iᵀ y`. -/
 theorem energyProjection_eq_of_galerkinCoarse {F : Type*} [NormedAddCommGroup F]
     [InnerProductSpace 𝕜 F] [FiniteDimensional 𝕜 F] [FiniteDimensional 𝕜 E] (Pr : F →ₗ[𝕜] E)
     {x : E} {y : F} (hy : Multigrid.galerkinCoarse A Pr y = LinearMap.adjoint Pr (A x)) :
@@ -616,8 +611,8 @@ theorem isNondegeneratePair_self {A : E →ₗ[𝕜] E} (hA : A.IsSymmetricCoerc
   simp at hpos
 
 /-- **One subdomain solve is one Schwarz projection**: the error left by a Petrov–Galerkin step on
-the pair `(K, K)` is `(1 - P) e` for the `A`-orthogonal projector `P` onto `K`.  Saad's residual
-projectors of §5.4 and his error projectors of §14.3 are conjugate by `A`, and this is that
+the pair `(K, K)` is `(1 - P) e` for the `A`-orthogonal projector `P` onto `K`. [saad2003iterative]
+residual projectors of §5.4 and his error projectors of §14.3 are conjugate by `A`, and this is that
 conjugation. -/
 theorem equiv_error_pairStep {A : E →ₗ[𝕜] E} (hA : A.IsSymmetricCoercive) {b : E}
     (K : Submodule 𝕜 E) [FiniteDimensional 𝕜 K]
@@ -629,10 +624,10 @@ theorem equiv_error_pairStep {A : E →ₗ[𝕜] E} (hA : A.IsSymmetricCoercive)
     Projection.pairStep_isPetrovGalerkin h y
   rw [IsGalerkin.error_eq_starProjection hA hg hstar, Submodule.starProjection_orthogonal']
 
-/-- **A multiplicative Schwarz sweep is a multiplicative projection sweep** (Saad, *Iterative
-Methods for Sparse Linear Systems*, Algorithm 5.6 and §14.3.1): the error left by sweeping over
-the subspaces `W 0, …, W (s-1)` in order is `Q s` applied to the initial error, read in the energy
-inner product.  Everything proved about `Schwarz.errorOp` therefore applies to the sweep. -/
+/-- **A multiplicative Schwarz sweep is a multiplicative projection sweep** ([saad2003iterative],
+Algorithm 5.6 and §14.3.1): the error left by sweeping over the subspaces `W 0, …, W (s-1)` in order
+is `Q s` applied to the initial error, read in the energy inner product.  Everything proved about
+`Schwarz.errorOp` therefore applies to the sweep. -/
 theorem error_multiplicativeStep_eq_errorOp {A : E →ₗ[𝕜] E} (hA : A.IsSymmetricCoercive) {b : E}
     (W : ℕ → Submodule 𝕜 E) [∀ i, FiniteDimensional 𝕜 (W i)]
     (h : ∀ i, Projection.IsNondegeneratePair A (W i) (W i)) {xstar : E} (hstar : A xstar = b)
@@ -653,11 +648,10 @@ theorem error_multiplicativeStep_eq_errorOp {A : E →ₗ[𝕜] E} (hA : A.IsSym
       rw [hstep, equiv_error_pairStep hA (W s) (h s) hstar, ih, errorOp_succ_apply]
       rfl
 
-/-- **An additive Schwarz sweep is an additive projection sweep** (Saad, *Iterative Methods for
-Sparse Linear Systems*, Algorithm 5.5 and §14.3.2): with unit weights, the error left by adding
-all the subdomain corrections at once is `1 - A_J` applied to the initial error, for the additive
-Schwarz operator `A_J = ∑ P i` of the family.  With `ι = Fin s` the operator is
-`Schwarz.additiveOperator`, by `Finset.sum_range`. -/
+/-- **An additive Schwarz sweep is an additive projection sweep** ([saad2003iterative], Algorithm
+5.5 and §14.3.2): with unit weights, the error left by adding all the subdomain corrections at once
+is `1 - A_J` applied to the initial error, for the additive Schwarz operator `A_J = ∑ P i` of the
+family.  With `ι = Fin s` the operator is `Schwarz.additiveOperator`, by `Finset.sum_range`. -/
 theorem error_additiveStep_eq {ι : Type*} [Fintype ι] {A : E →ₗ[𝕜] E}
     (hA : A.IsSymmetricCoercive) {b : E} (W : ι → Submodule 𝕜 E)
     [∀ i, FiniteDimensional 𝕜 (W i)]

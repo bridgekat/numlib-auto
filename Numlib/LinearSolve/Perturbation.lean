@@ -11,13 +11,13 @@ import Numlib.Analysis.Normed.Ring.Inverse
 # Perturbation theory for linear systems
 
 Normwise error bounds for `A x = b` in terms of the condition number `κ(A) = ‖A‖ ‖A⁻¹‖`
-([Saad][saad2003iterative] §1.13.2 (1.76), [Atkinson–Han][han2009theoretical] (2.4.1),
-[Kress][kress1998numerical] Thm 5.3, [Higham][higham2002accuracy] Thm 7.2), the residual–error
-relation, and the Rigal–Gaches formula for the normwise backward error (Higham Thm 7.1,
-[Fong–Saunders][fong2012cg] (3.2)–(3.3)).  The normwise backward error of an approximate solution
-`y`, relative to tolerances `α` on `A` and `β` on `b`, is the least `ξ` for which `y` solves exactly
-some system `(A + ΔA) y = b + Δb` with `‖ΔA‖ ≤ ξ α ‖A‖` and `‖Δb‖ ≤ ξ β ‖b‖`; the Rigal–Gaches
-theorem evaluates it in closed form as `‖b - A y‖ / (α ‖A‖ ‖y‖ + β ‖b‖)`.
+([saad2003iterative] §1.13.2 (1.76), [han2009theoretical] (2.4.1), [kress1998numerical] Thm 5.3,
+[higham2002accuracy] Thm 7.2), the residual–error relation, and the Rigal–Gaches formula for the
+normwise backward error ([higham2002accuracy] Thm 7.1, [fong2012cg] (3.2)–(3.3)).  The normwise
+backward error of an approximate solution `y`, relative to tolerances `α` on `A` and `β` on `b`, is
+the least `ξ` for which `y` solves exactly some system `(A + ΔA) y = b + Δb` with `‖ΔA‖ ≤ ξ α ‖A‖`
+and `‖Δb‖ ≤ ξ β ‖b‖`; the Rigal–Gaches theorem evaluates it in closed form as `‖b - A y‖ / (α ‖A‖
+‖y‖ + β ‖b‖)`.
 -/
 
 open NormedRing
@@ -28,9 +28,9 @@ section TwoSpace
 
 variable {F : Type*} [NormedAddCommGroup F] [NormedSpace 𝕜 F]
 
-/-- **The two-space residual–error relation** (Atkinson–Han, *Theoretical Numerical Analysis*,
-(2.4.1)): for an isomorphism `L : E ≃L[𝕜] F` of normed spaces, the relative error of the solution
-of `L v = w` is at most `κ L` times the relative error of the data.
+/-- **The two-space residual–error relation** ([han2009theoretical], (2.4.1)): for an isomorphism `L
+: E ≃L[𝕜] F` of normed spaces, the relative error of the solution of `L v = w` is at most `κ L`
+times the relative error of the data.
 
 The single-space `relative_error_le_condNumber_mul_relative_residual` is the case `F = E`. -/
 theorem ContinuousLinearEquiv.relative_error_le_condNumber_mul_relative_residual (L : E ≃L[𝕜] F)
@@ -59,7 +59,7 @@ theorem ContinuousLinearEquiv.relative_error_le_condNumber_mul_relative_residual
 end TwoSpace
 
 /-- Residual–error relation: `‖x - y‖ / ‖x‖ ≤ κ(A) ‖b - A y‖ / ‖b‖`, where `κ(A) = ‖A‖ ‖A⁻¹‖`
-(Atkinson–Han, *Theoretical Numerical Analysis*, (2.4.1)).  It is the case `F = E` of
+([han2009theoretical], (2.4.1)).  It is the case `F = E` of
 `ContinuousLinearEquiv.relative_error_le_condNumber_mul_relative_residual`, with `w' = A y`. -/
 theorem relative_error_le_condNumber_mul_relative_residual (A : E ≃L[𝕜] E) {b x y : E}
     (hx : A x = b) (hb : b ≠ 0) :
@@ -67,10 +67,9 @@ theorem relative_error_le_condNumber_mul_relative_residual (A : E ≃L[𝕜] E) 
   rw [ContinuousLinearEquiv.condNumber_coe]
   exact A.relative_error_le_condNumber_mul_relative_residual hx rfl hb
 
-/-- Normwise perturbation bound (Saad, *Iterative Methods*, (1.76); Kress, *Numerical Analysis*,
-Thm 5.3; Higham, *Accuracy and Stability*, Thm 7.2): if `A x = b`, `(A + ΔA) y = b + Δb` and
-`‖A⁻¹‖ ‖ΔA‖ < 1` then
-`‖y - x‖/‖x‖ ≤ κ(A)/(1 - ‖A⁻¹‖‖ΔA‖) (‖ΔA‖/‖A‖ + ‖Δb‖/‖b‖)`. -/
+/-- Normwise perturbation bound ([saad2003iterative], (1.76); [kress1998numerical], Thm 5.3;
+[higham2002accuracy], *Accuracy and Stability*, Thm 7.2): if `A x = b`, `(A + ΔA) y = b + Δb` and
+`‖A⁻¹‖ ‖ΔA‖ < 1` then `‖y - x‖/‖x‖ ≤ κ(A)/(1 - ‖A⁻¹‖‖ΔA‖) (‖ΔA‖/‖A‖ + ‖Δb‖/‖b‖)`. -/
 theorem relative_error_le_condNumber [CompleteSpace E] (A : E ≃L[𝕜] E) (ΔA : E →L[𝕜] E)
     {b Δb x y : E} (hx : A x = b) (hy : ((A : E →L[𝕜] E) + ΔA) y = b + Δb)
     (hsmall : ‖(A.symm : E →L[𝕜] E)‖ * ‖ΔA‖ < 1) (hx0 : x ≠ 0) (hb : b ≠ 0) :
@@ -136,10 +135,10 @@ section BackwardError
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
-/-- The normwise backward error of `y` for `A x = b` with tolerances `α` on `A` and `β` on `b`:
-`‖b - A y‖ / (α ‖A‖ ‖y‖ + β ‖b‖)`.  By the Rigal–Gaches theorem (`isLeast_backwardError`) this
-is the least `ξ` for which `y` solves exactly some `(A + ΔA) y = b + Δb` with `‖ΔA‖ ≤ ξ α ‖A‖`
-and `‖Δb‖ ≤ ξ β ‖b‖` (Fong–Saunders, *CG versus MINRES*, (3.2)). -/
+/-- The normwise backward error of `y` for `A x = b` with tolerances `α` on `A` and `β` on `b`: `‖b
+- A y‖ / (α ‖A‖ ‖y‖ + β ‖b‖)`.  By the Rigal–Gaches theorem (`isLeast_backwardError`) this is the
+least `ξ` for which `y` solves exactly some `(A + ΔA) y = b + Δb` with `‖ΔA‖ ≤ ξ α ‖A‖` and `‖Δb‖ ≤
+ξ β ‖b‖` ([fong2012cg], (3.2)). -/
 noncomputable def backwardError (A : E →L[𝕜] E) (b y : E) (α β : ℝ) : ℝ :=
   ‖b - A y‖ / (α * ‖A‖ * ‖y‖ + β * ‖b‖)
 
@@ -153,9 +152,9 @@ private theorem backwardError_nonneg (A : E →L[𝕜] E) (b y : E) {α β : ℝ
   rw [backwardError_def]
   positivity
 
-/-- The optimal perturbations (Fong–Saunders, *CG versus MINRES*, (3.3)):
-`ΔA = ((1 - ω) / ‖y‖²) r ⊗ y`, `Δb = -ω r`, with `r = b - A y` and
-`ω = β ‖b‖ / (α ‖A‖ ‖y‖ + β ‖b‖)`.  They attain the backward error exactly. -/
+/-- The optimal perturbations ([fong2012cg], (3.3)): `ΔA = ((1 - ω) / ‖y‖²) r ⊗ y`, `Δb = -ω r`,
+with `r = b - A y` and `ω = β ‖b‖ / (α ‖A‖ ‖y‖ + β ‖b‖)`.  They attain the backward error exactly.
+-/
 theorem exists_optimal_perturbation (A : E →L[𝕜] E) (b y : E) {α β : ℝ} (hα : 0 ≤ α)
     (hβ : 0 ≤ β) (hpos : 0 < α * ‖A‖ * ‖y‖ + β * ‖b‖) :
     ∃ (ΔA : E →L[𝕜] E) (Δb : E), (A + ΔA) y = b + Δb ∧
@@ -205,9 +204,9 @@ theorem exists_optimal_perturbation (A : E →L[𝕜] E) (b y : E) {α β : ℝ}
         hωdef]
       field_simp
 
-/-- The Rigal–Gaches theorem (Higham, *Accuracy and Stability*, Thm 7.1):
-`backwardError A b y α β` is the least `ξ` such that `(A + ΔA) y = b + Δb` for some
-`‖ΔA‖ ≤ ξ α ‖A‖`, `‖Δb‖ ≤ ξ β ‖b‖`. -/
+/-- The Rigal–Gaches theorem ([higham2002accuracy], *Accuracy and Stability*, Thm 7.1):
+`backwardError A b y α β` is the least `ξ` such that `(A + ΔA) y = b + Δb` for some `‖ΔA‖ ≤ ξ α
+‖A‖`, `‖Δb‖ ≤ ξ β ‖b‖`. -/
 theorem isLeast_backwardError (A : E →L[𝕜] E) (b y : E) {α β : ℝ} (hα : 0 ≤ α) (hβ : 0 ≤ β)
     (hpos : 0 < α * ‖A‖ * ‖y‖ + β * ‖b‖) :
     IsLeast {ξ : ℝ | ∃ (ΔA : E →L[𝕜] E) (Δb : E), (A + ΔA) y = b + Δb ∧
@@ -227,8 +226,8 @@ theorem isLeast_backwardError (A : E →L[𝕜] E) (b y : E) {α β : ℝ} (hα 
       _ ≤ ξ * α * ‖A‖ * ‖y‖ + ξ * β * ‖b‖ := by gcongr
       _ = ξ * (α * ‖A‖ * ‖y‖ + β * ‖b‖) := by ring
 
-/-- Stopping rule (Fong–Saunders, *CG versus MINRES*, (3.4)): with `r = b - A y`,
-`backwardError ≤ ξ ↔ ‖r‖ ≤ ξ (α ‖A‖ ‖y‖ + β ‖b‖)`. -/
+/-- Stopping rule ([fong2012cg], (3.4)): with `r = b - A y`, `backwardError ≤ ξ ↔ ‖r‖ ≤ ξ (α ‖A‖ ‖y‖
++ β ‖b‖)`. -/
 theorem backwardError_le_iff (A : E →L[𝕜] E) (b y : E) {α β ξ : ℝ}
     (hpos : 0 < α * ‖A‖ * ‖y‖ + β * ‖b‖) :
     backwardError A b y α β ≤ ξ ↔ ‖b - A y‖ ≤ ξ * (α * ‖A‖ * ‖y‖ + β * ‖b‖) := by
@@ -236,11 +235,10 @@ theorem backwardError_le_iff (A : E →L[𝕜] E) (b y : E) {α β ξ : ℝ}
 
 end BackwardError
 
-/-- **First-order perturbation theory for a linear system** (Saad, *Iterative Methods for Sparse
-Linear Systems*, (1.74)–(1.75); Kress, *Numerical Analysis*, Thm 5.3; Higham, *Accuracy and
-Stability of Numerical Algorithms*, Ch. 7): for an isomorphism `A`, a perturbation direction `B`
-of the operator and `e` of the right-hand side, the solution of `(A + ε B) x(ε) = b + ε e` is
-differentiable in `ε` at `0`, with derivative `A⁻¹ (e - B (A⁻¹ b))`.
+/-- **First-order perturbation theory for a linear system** ([saad2003iterative], (1.74)–(1.75);
+[kress1998numerical], Thm 5.3; [higham2002accuracy], Ch. 7): for an isomorphism `A`, a perturbation
+direction `B` of the operator and `e` of the right-hand side, the solution of `(A + ε B) x(ε) = b +
+ε e` is differentiable in `ε` at `0`, with derivative `A⁻¹ (e - B (A⁻¹ b))`.
 
 The solution is written with `Ring.inverse` in the algebra `E →L[𝕜] E`, whose junk value is
 irrelevant here: `A` is a unit, so `A + ε B` is one for all small `ε` and the map differentiated

@@ -3,37 +3,35 @@ import Numlib.Krylov.Hessenberg
 /-!
 # The two-sided Lanczos process
 
-The Lanczos biorthogonalization of [Saad, *Iterative Methods for Sparse Linear
-Systems*][saad2003iterative], Alg 7.1: two sequences `v_j` and `w_j`, built from a starting pair
-with `⟪w₁, v₁⟫ = 1` by the coupled three-term recurrences
+The Lanczos biorthogonalization of [saad2003iterative], Alg 7.1: two sequences `v_j` and `w_j`,
+built from a starting pair with `⟪w₁, v₁⟫ = 1` by the coupled three-term recurrences
 
 ```
 δ_{j+1} v_{j+1} = A v_j - α_j v_j - β_j v_{j-1},
 conj β_{j+1} w_{j+1} = Aᴴ w_j - conj α_j w_j - conj δ_j w_{j-1},
 ```
 
-with `α_j = ⟪w_j, A v_j⟫`, `δ_{j+1} = |⟪ŵ_{j+1}, v̂_{j+1}⟫|^{1/2}` and
-`β_{j+1} = ⟪ŵ_{j+1}, v̂_{j+1}⟫ / δ_{j+1}`, the normalization that keeps `⟪w_j, v_j⟫ = 1`.
-The adjoint enters as a second operator `B` with `⟪A x, y⟫ = ⟪x, B y⟫`, taken as data because the
-ambient space is neither assumed complete nor finite-dimensional.
+with `α_j = ⟪w_j, A v_j⟫`, `δ_{j+1} = |⟪ŵ_{j+1}, v̂_{j+1}⟫|^{1/2}` and `β_{j+1} = ⟪ŵ_{j+1},
+v̂_{j+1}⟫ / δ_{j+1}`, the normalization that keeps `⟪w_j, v_j⟫ = 1`. The adjoint enters as a second
+operator `B` with `⟪A x, y⟫ = ⟪x, B y⟫`, taken as data because the ambient space is neither assumed
+complete nor finite-dimensional.
 
-The main results are Saad's Prop 7.1: the two families are biorthogonal
-(`BiLanczos.inner_vec_dualVec`), they span `𝒦_m(A, v₁)` and `𝒦_m(B, w₁)`
-(`BiLanczos.span_vec`, `BiLanczos.span_dualVec`), and `W_mᴴ A V_m = T_m` for the tridiagonal
-coefficient array (`BiLanczos.inner_dualVec_apply_vec`). The relation `A V_m = V_{m+1} T̄_m` is a
+The main results are [saad2003iterative] Prop 7.1: the two families are biorthogonal
+(`BiLanczos.inner_vec_dualVec`), they span `𝒦_m(A, v₁)` and `𝒦_m(B, w₁)` (`BiLanczos.span_vec`,
+`BiLanczos.span_dualVec`), and `W_mᴴ A V_m = T_m` for the tridiagonal coefficient array
+(`BiLanczos.inner_dualVec_apply_vec`). The relation `A V_m = V_{m+1} T̄_m` is a
 `Krylov.HessenbergRelation` of `Numlib/Krylov/Hessenberg` with a basis that is *not* orthonormal
-(`BiLanczos.hessenbergRelation`), so the residual formula
-`Krylov.HessenbergRelation.residual_eq` applies verbatim.
+(`BiLanczos.hessenbergRelation`), so the residual formula `Krylov.HessenbergRelation.residual_eq`
+applies verbatim.
 
-The two methods built on the process are here as well. `BCG` is the biconjugate gradient
-algorithm (Alg 7.3): its residuals are biorthogonal and its directions `A`-biconjugate
-(`BCG.inner_residual_dualResidual_eq_zero`,
-`BCG.inner_dualDirection_apply_direction_eq_zero`, Prop 7.2), which makes its iterate the
-Petrov–Galerkin iterate with `L = 𝒦_m(Aᴴ, r*₀)` (`BCG.isPetrovGalerkin`). `QMR` minimizes the
-*quasi*-residual `‖β e₁ - T̄_m y‖` rather than the residual itself (`QMR.IsQuasiMinRes`,
-(7.15)–(7.17)); `QMR.norm_residual_le_norm_quasiResidual` is Prop 7.3 and
-`QMR.norm_residual_le` is Thm 7.4, the comparison `‖r^Q_m‖ ≤ κ₂(V_{m+1}) ‖r^G_m‖` with the
-GMRES residual. Because an abstract inner product space has no matrix `V_{m+1}`, the two
+The two methods built on the process are here as well. `BCG` is the biconjugate gradient algorithm
+(Alg 7.3): its residuals are biorthogonal and its directions `A`-biconjugate
+(`BCG.inner_residual_dualResidual_eq_zero`, `BCG.inner_dualDirection_apply_direction_eq_zero`, Prop
+7.2), which makes its iterate the Petrov–Galerkin iterate with `L = 𝒦_m(Aᴴ, r*₀)`
+(`BCG.isPetrovGalerkin`). `QMR` minimizes the *quasi*-residual `‖β e₁ - T̄_m y‖` rather than the
+residual itself (`QMR.IsQuasiMinRes`, (7.15)–(7.17)); `QMR.norm_residual_le_norm_quasiResidual` is
+Prop 7.3 and `QMR.norm_residual_le` is Thm 7.4, the comparison `‖r^Q_m‖ ≤ κ₂(V_{m+1}) ‖r^G_m‖` with
+the GMRES residual. Because an abstract inner product space has no matrix `V_{m+1}`, the two
 singular-value bounds `c ‖z‖ ≤ ‖∑ z_i v_i‖ ≤ C ‖z‖` on the coordinate map are hypotheses and
 `κ₂(V_{m+1})` is `C / c`.
 
@@ -48,8 +46,8 @@ variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpac
 
 namespace BiLanczos
 
-/-- The state of the two-sided Lanczos recurrence at step `j`: the current pair `(v_j, w_j)`,
-the previous pair, and the two scalars the next step consumes. -/
+/-- The state of the two-sided Lanczos recurrence at step `j`: the current pair `(v_j, w_j)`, the
+previous pair, and the two scalars the next step consumes. -/
 structure State (𝕜 E : Type*) where
   /-- The primal vector `v_j`. -/
   v : E
@@ -71,12 +69,11 @@ noncomputable def stepAlpha (A : E →ₗ[𝕜] E) (s : State 𝕜 E) : 𝕜 := 
 noncomputable def stepVhat (A : E →ₗ[𝕜] E) (s : State 𝕜 E) : E :=
   A s.v - stepAlpha A s • s.v - s.beta • s.vPrev
 
-/-- The unnormalized dual vector `ŵ_{j+1} = B w_j - conj α_j w_j - conj δ_j w_{j-1}` of one
-step. -/
+/-- The unnormalized dual vector `ŵ_{j+1} = B w_j - conj α_j w_j - conj δ_j w_{j-1}` of one step. -/
 noncomputable def stepWhat (A B : E →ₗ[𝕜] E) (s : State 𝕜 E) : E :=
   B s.w - starRingEnd 𝕜 (stepAlpha A s) • s.w - starRingEnd 𝕜 s.delta • s.wPrev
 
-/-- One step of Saad, *Iterative Methods*, Alg 7.1. -/
+/-- One step of [saad2003iterative], Alg 7.1. -/
 noncomputable def step (A B : E →ₗ[𝕜] E) (s : State 𝕜 E) : State 𝕜 E :=
   let vh := stepVhat A s
   let wh := stepWhat A B s
@@ -146,18 +143,18 @@ theorem state_succ (j : ℕ) : state A B v₁ w₁ (j + 1) = step A B (state A B
   Function.iterate_succ_apply' _ _ _
 
 /-- The unnormalized next primal vector: `v̂_{j+1} = A v_j - α_j v_j - β_j v_{j-1}`
-(Saad, *Iterative Methods*, Alg 7.1, line 5). -/
+([saad2003iterative], Alg 7.1, line 5). -/
 theorem vhat_eq (j : ℕ) : vhat A B v₁ w₁ j =
     A (vec A B v₁ w₁ j) - alpha A B v₁ w₁ j • vec A B v₁ w₁ j -
       beta A B v₁ w₁ j • vecPrev A B v₁ w₁ j := rfl
 
 /-- The unnormalized next dual vector: `ŵ_{j+1} = Aᴴ w_j - conj α_j w_j - conj δ_j w_{j-1}`
-(Saad, *Iterative Methods*, Alg 7.1, line 6). -/
+([saad2003iterative], Alg 7.1, line 6). -/
 theorem dualVhat_eq (j : ℕ) : dualVhat A B v₁ w₁ j =
     B (dualVec A B v₁ w₁ j) - starRingEnd 𝕜 (alpha A B v₁ w₁ j) • dualVec A B v₁ w₁ j -
       starRingEnd 𝕜 (delta A B v₁ w₁ j) • dualVecPrev A B v₁ w₁ j := rfl
 
-/-- `α_j = ⟪w_j, A v_j⟫` (Saad, *Iterative Methods*, Alg 7.1, line 4). -/
+/-- `α_j = ⟪w_j, A v_j⟫` ([saad2003iterative], Alg 7.1, line 4). -/
 theorem alpha_eq (j : ℕ) :
     alpha A B v₁ w₁ j = inner 𝕜 (dualVec A B v₁ w₁ j) (A (vec A B v₁ w₁ j)) := rfl
 
@@ -168,24 +165,23 @@ theorem alpha_eq (j : ℕ) :
     dualVecPrev A B v₁ w₁ (j + 1) = dualVec A B v₁ w₁ j := by
   rw [dualVecPrev, state_succ]; rfl
 
-/-- `δ_{j+1} = |⟪ŵ_{j+1}, v̂_{j+1}⟫|^{1/2}` (Saad, *Iterative Methods*, Alg 7.1, line 7). -/
+/-- `δ_{j+1} = |⟪ŵ_{j+1}, v̂_{j+1}⟫|^{1/2}` ([saad2003iterative], Alg 7.1, line 7). -/
 theorem delta_succ (j : ℕ) :
     delta A B v₁ w₁ (j + 1) = ((Real.sqrt ‖zeta A B v₁ w₁ j‖ : ℝ) : 𝕜) := by
   rw [delta, state_succ]; rfl
 
-/-- `β_{j+1} = ⟪ŵ_{j+1}, v̂_{j+1}⟫ / δ_{j+1}` (Saad, *Iterative Methods*, Alg 7.1, line 8). -/
+/-- `β_{j+1} = ⟪ŵ_{j+1}, v̂_{j+1}⟫ / δ_{j+1}` ([saad2003iterative], Alg 7.1, line 8). -/
 theorem beta_succ (j : ℕ) :
     beta A B v₁ w₁ (j + 1) = zeta A B v₁ w₁ j / delta A B v₁ w₁ (j + 1) := by
   rw [delta_succ, beta, state_succ]; rfl
 
-/-- `v_{j+1} = v̂_{j+1} / δ_{j+1}` (Saad, *Iterative Methods*, Alg 7.1, line 10), and `0` on
-breakdown. -/
+/-- `v_{j+1} = v̂_{j+1} / δ_{j+1}` ([saad2003iterative], Alg 7.1, line 10), and `0` on breakdown. -/
 theorem vec_succ (j : ℕ) :
     vec A B v₁ w₁ (j + 1) = (delta A B v₁ w₁ (j + 1))⁻¹ • vhat A B v₁ w₁ j := by
   rw [delta_succ, vec, state_succ]; rfl
 
-/-- `w_{j+1} = ŵ_{j+1} / conj β_{j+1}` (Saad, *Iterative Methods*, Alg 7.1, line 9), and `0` on
-breakdown. -/
+/-- `w_{j+1} = ŵ_{j+1} / conj β_{j+1}` ([saad2003iterative], Alg 7.1, line 9), and `0` on breakdown.
+-/
 theorem dualVec_succ (j : ℕ) : dualVec A B v₁ w₁ (j + 1) =
     (starRingEnd 𝕜 (beta A B v₁ w₁ (j + 1)))⁻¹ • dualVhat A B v₁ w₁ j := by
   rw [beta_succ, delta_succ, dualVec, state_succ]; rfl
@@ -228,8 +224,8 @@ theorem smul_dualVec_succ {j : ℕ} (h : delta A B v₁ w₁ (j + 1) ≠ 0) :
     simpa using (beta_succ_ne_zero_iff A B v₁ w₁ j).2 h
   rw [dualVec_succ, smul_smul, mul_inv_cancel₀ hb, one_smul]
 
-/-- The normalization of [Saad, *Iterative Methods*][saad2003iterative] Algorithm 7.1: off
-breakdown, `⟪w_{j+1}, v_{j+1}⟫ = 1`. -/
+/-- The normalization of [saad2003iterative] Algorithm 7.1: off breakdown, `⟪w_{j+1}, v_{j+1}⟫ = 1`.
+-/
 theorem inner_dualVec_vec_succ {j : ℕ} (h : delta A B v₁ w₁ (j + 1) ≠ 0) :
     inner 𝕜 (dualVec A B v₁ w₁ (j + 1)) (vec A B v₁ w₁ (j + 1)) = 1 := by
   have hz : zeta A B v₁ w₁ j ≠ 0 := fun hc =>
@@ -240,15 +236,14 @@ theorem inner_dualVec_vec_succ {j : ℕ} (h : delta A B v₁ w₁ (j + 1) ≠ 0)
 
 /-! ### The three-term recurrences -/
 
-/-- Saad, *Iterative Methods*, (7.3): `A v_j = β_j v_{j-1} + α_j v_j + δ_{j+1} v_{j+1}`. -/
+/-- [saad2003iterative], (7.3): `A v_j = β_j v_{j-1} + α_j v_j + δ_{j+1} v_{j+1}`. -/
 theorem apply_vec {j : ℕ} (h : delta A B v₁ w₁ (j + 1) ≠ 0) :
     A (vec A B v₁ w₁ j) = beta A B v₁ w₁ j • vecPrev A B v₁ w₁ j +
       alpha A B v₁ w₁ j • vec A B v₁ w₁ j + delta A B v₁ w₁ (j + 1) • vec A B v₁ w₁ (j + 1) := by
   rw [smul_vec_succ A B v₁ w₁ h, vhat_eq]
   abel
 
-/-- Saad, *Iterative Methods*, (7.4): `B w_j = conj δ_j w_{j-1} + conj α_j w_j +
-conj β_{j+1} w_{j+1}`. -/
+/-- [saad2003iterative], (7.4): `B w_j = conj δ_j w_{j-1} + conj α_j w_j + conj β_{j+1} w_{j+1}`. -/
 theorem apply_dualVec {j : ℕ} (h : delta A B v₁ w₁ (j + 1) ≠ 0) :
     B (dualVec A B v₁ w₁ j) =
       starRingEnd 𝕜 (delta A B v₁ w₁ j) • dualVecPrev A B v₁ w₁ j +
@@ -257,8 +252,8 @@ theorem apply_dualVec {j : ℕ} (h : delta A B v₁ w₁ (j + 1) ≠ 0) :
   rw [smul_dualVec_succ A B v₁ w₁ h, dualVhat_eq]
   abel
 
-/-- The tridiagonal coefficient array of the process (Saad, *Iterative Methods*, (7.5)): `α` on
-the diagonal, `δ` on the subdiagonal and `β` on the superdiagonal. -/
+/-- The tridiagonal coefficient array of the process ([saad2003iterative], (7.5)): `α` on the
+diagonal, `δ` on the subdiagonal and `β` on the superdiagonal. -/
 noncomputable def coeff (i j : ℕ) : 𝕜 :=
   if i = j then alpha A B v₁ w₁ i
   else if i = j + 1 then delta A B v₁ w₁ i
@@ -353,19 +348,19 @@ end Recurrence
 
 /-! ### Biorthogonality
 
-Saad, *Iterative Methods*, Prop 7.1. The hypotheses of the whole section are bundled as
-`BiLanczos.NoBreakdown`: `B` is the adjoint of `A`, the starting pair is normalized, and no
-`δ` vanishes before step `m`. -/
+[saad2003iterative], Prop 7.1. The hypotheses of the whole section are bundled as
+`BiLanczos.NoBreakdown`: `B` is the adjoint of `A`, the starting pair is normalized, and no `δ`
+vanishes before step `m`. -/
 
 section Biorthogonality
 
 variable {A B : E →ₗ[𝕜] E} {v₁ w₁ : E}
 
-/-- The two-sided Lanczos process of `A`, with `B` the adjoint of `A`, started at the pair
-`(v₁, w₁)`, runs without breakdown through step `m`. -/
+/-- The two-sided Lanczos process of `A`, with `B` the adjoint of `A`, started at the pair `(v₁,
+w₁)`, runs without breakdown through step `m`. -/
 structure NoBreakdown (A B : E →ₗ[𝕜] E) (v₁ w₁ : E) (m : ℕ) : Prop where
-  /-- `B` is the adjoint of `A`. It is taken as data because the ambient space is assumed
-  neither complete nor finite-dimensional. -/
+  /-- `B` is the adjoint of `A`. It is taken as data because the ambient space is assumed neither
+  complete nor finite-dimensional. -/
   adjoint : ∀ x y, inner 𝕜 (A x) y = inner 𝕜 x (B y)
   /-- The starting pair is normalized: `⟪w₁, v₁⟫ = 1`. -/
   inner_start : inner 𝕜 w₁ v₁ = 1
@@ -469,14 +464,14 @@ private theorem biorth {m : ℕ} (h : NoBreakdown A B v₁ w₁ m) : Biorth A B 
     simpa using h.inner_start
   | succ m ih => exact biorth_succ h (ih (h.mono (Nat.le_succ m)))
 
-/-- Saad, *Iterative Methods*, Prop 7.1: the primal and dual two-sided Lanczos vectors are
-biorthogonal, `⟪w_i, v_j⟫ = δ_{ij}`, as long as the process has not broken down. -/
+/-- [saad2003iterative], Prop 7.1: the primal and dual two-sided Lanczos vectors are biorthogonal,
+`⟪w_i, v_j⟫ = δ_{ij}`, as long as the process has not broken down. -/
 theorem inner_dualVec_vec {m : ℕ} (h : NoBreakdown A B v₁ w₁ m) {i j : ℕ} (hi : i ≤ m)
     (hj : j ≤ m) :
     inner 𝕜 (dualVec A B v₁ w₁ i) (vec A B v₁ w₁ j) = if i = j then 1 else 0 :=
   biorth h i hi j hj
 
-/-- Saad, *Iterative Methods*, Prop 7.1, in the other order: `⟪v_i, w_j⟫ = δ_{ij}`. -/
+/-- [saad2003iterative], Prop 7.1, in the other order: `⟪v_i, w_j⟫ = δ_{ij}`. -/
 theorem inner_vec_dualVec {m : ℕ} (h : NoBreakdown A B v₁ w₁ m) {i j : ℕ} (hi : i ≤ m)
     (hj : j ≤ m) :
     inner 𝕜 (vec A B v₁ w₁ i) (dualVec A B v₁ w₁ j) = if i = j then 1 else 0 := by
@@ -485,8 +480,8 @@ theorem inner_vec_dualVec {m : ℕ} (h : NoBreakdown A B v₁ w₁ m) {i j : ℕ
   · simp [hij]
   · simp [hij, Ne.symm hij]
 
-/-- Saad, *Iterative Methods*, Prop 7.1: `W_mᴴ A V_m = T_m`, the tridiagonal coefficient array
-is the oblique compression of `A` to `𝒦_m(A, v₁)` along `𝒦_m(B, w₁)`. -/
+/-- [saad2003iterative], Prop 7.1: `W_mᴴ A V_m = T_m`, the tridiagonal coefficient array is the
+oblique compression of `A` to `𝒦_m(A, v₁)` along `𝒦_m(B, w₁)`. -/
 theorem inner_dualVec_apply_vec {m : ℕ} (h : NoBreakdown A B v₁ w₁ (m + 1)) {i j : ℕ}
     (hi : i ≤ m + 1) (hj : j ≤ m) :
     inner 𝕜 (dualVec A B v₁ w₁ i) (A (vec A B v₁ w₁ j)) = coeff A B v₁ w₁ i j := by
@@ -518,11 +513,11 @@ section Relation
 
 variable {A B : E →ₗ[𝕜] E} {v₁ w₁ : E}
 
-/-- The process suffers no *serious* breakdown: whenever `δ_{j+1}` vanishes, the primal
-recurrence has already terminated. This holds generically and at a regular termination
-`v̂_{j+1} = 0`, and it is exactly what the Hessenberg relation needs — a serious breakdown
-(`⟪ŵ_{j+1}, v̂_{j+1}⟫ = 0` with `v̂_{j+1} ≠ 0`) genuinely destroys it, since the relation then
-has no vector to expand `A v_j` along. -/
+/-- The process suffers no *serious* breakdown: whenever `δ_{j+1}` vanishes, the primal recurrence
+has already terminated. This holds generically and at a regular termination `v̂_{j+1} = 0`, and it
+is exactly what the Hessenberg relation needs — a serious breakdown (`⟪ŵ_{j+1}, v̂_{j+1}⟫ = 0` with
+`v̂_{j+1} ≠ 0`) genuinely destroys it, since the relation then has no vector to expand `A v_j`
+along. -/
 structure NoSeriousBreakdown (A B : E →ₗ[𝕜] E) (v₁ w₁ : E) : Prop where
   /-- At a breakdown the primal recurrence has already terminated. -/
   vhat_eq_zero : ∀ j, delta A B v₁ w₁ (j + 1) = 0 → vhat A B v₁ w₁ j = 0
@@ -542,8 +537,8 @@ theorem NoSeriousBreakdown.apply_vec (h : NoSeriousBreakdown A B v₁ w₁) (j :
   rw [← h.vhat_eq_smul j, vhat_eq]
   abel
 
-/-- Saad, *Iterative Methods*, (7.3): `A V_m = V_{m+1} T̄_m` is a `Krylov.HessenbergRelation`
-whose basis is biorthogonal rather than orthonormal, so the residual formula
+/-- [saad2003iterative], (7.3): `A V_m = V_{m+1} T̄_m` is a `Krylov.HessenbergRelation` whose basis
+is biorthogonal rather than orthonormal, so the residual formula
 `Krylov.HessenbergRelation.residual_eq` applies to it verbatim. -/
 theorem hessenbergRelation (h : NoSeriousBreakdown A B v₁ w₁) :
     Krylov.HessenbergRelation A (vec A B v₁ w₁) (coeff A B v₁ w₁) where
@@ -584,7 +579,7 @@ private theorem pow_apply_mem_span {m : ℕ} (h : NoBreakdown A B v₁ w₁ m) {
     rw [hpow]
     exact map_span_le h (le_of_lt hk) ⟨_, ih (by omega), rfl⟩
 
-/-- Saad, *Iterative Methods*, Prop 7.1: the primal vectors are a basis of `𝒦_m(A, v₁)`. -/
+/-- [saad2003iterative], Prop 7.1: the primal vectors are a basis of `𝒦_m(A, v₁)`. -/
 theorem span_vec {m : ℕ} (h : NoBreakdown A B v₁ w₁ m) :
     Submodule.span 𝕜 (vec A B v₁ w₁ '' Set.Iio m) = Krylov.subspace A v₁ m := by
   refine le_antisymm (Submodule.span_le.2 ?_) ?_
@@ -626,7 +621,7 @@ private theorem pow_apply_mem_dualSpan {m : ℕ} (h : NoBreakdown A B v₁ w₁ 
     rw [hpow]
     exact map_dualSpan_le h (le_of_lt hk) ⟨_, ih (by omega), rfl⟩
 
-/-- Saad, *Iterative Methods*, Prop 7.1: the dual vectors are a basis of `𝒦_m(Aᴴ, w₁)`. -/
+/-- [saad2003iterative], Prop 7.1: the dual vectors are a basis of `𝒦_m(Aᴴ, w₁)`. -/
 theorem span_dualVec {m : ℕ} (h : NoBreakdown A B v₁ w₁ m) :
     Submodule.span 𝕜 (dualVec A B v₁ w₁ '' Set.Iio m) = Krylov.subspace B w₁ m := by
   refine le_antisymm (Submodule.span_le.2 ?_) ?_
@@ -646,7 +641,7 @@ end BiLanczos
 
 namespace BCG
 
-/-- State of the biconjugate gradient iteration (Saad, *Iterative Methods*, Alg 7.3). -/
+/-- State of the biconjugate gradient iteration ([saad2003iterative], Alg 7.3). -/
 @[ext]
 structure State (E : Type*) where
   /-- The iterate `x_k`. -/
@@ -660,12 +655,13 @@ structure State (E : Type*) where
   /-- The shadow direction `p*_k`. -/
   ps : E
 
-/-- The BCG step length `⟪r*, r⟫ / ⟪p*, A p⟫`, which is Saad's `(r_j, r*_j)/(A p_j, p*_j)` read
-in Mathlib's convention, where the inner product is conjugate-linear in its *first* argument. -/
+/-- The BCG step length `⟪r*, r⟫ / ⟪p*, A p⟫`, which is [saad2003iterative] `(r_j, r*_j)/(A p_j,
+p*_j)` read in Mathlib's convention, where the inner product is conjugate-linear in its *first*
+argument. -/
 noncomputable def stepAlpha (A : E →ₗ[𝕜] E) (s : State E) : 𝕜 :=
   inner 𝕜 s.rs s.r / inner 𝕜 s.ps (A s.p)
 
-/-- One step of Saad, *Iterative Methods*, Alg 7.3, with `B` the adjoint of `A`. -/
+/-- One step of [saad2003iterative], Alg 7.3, with `B` the adjoint of `A`. -/
 noncomputable def step (A B : E →ₗ[𝕜] E) (s : State E) : State E :=
   let a := stepAlpha A s
   let r' := s.r - a • A s.p
@@ -722,32 +718,32 @@ theorem iterate_succ (k : ℕ) :
 
 @[simp] theorem dualDirection_zero : dualDirection A B b x₀ rs₀ 0 = rs₀ := rfl
 
-/-- `x_{k+1} = x_k + α_k p_k` (Saad, *Iterative Methods*, Alg 7.3, line 5). -/
+/-- `x_{k+1} = x_k + α_k p_k` ([saad2003iterative], Alg 7.3, line 5). -/
 theorem iterate_succ_x (k : ℕ) : (iterate A B b x₀ rs₀ (k + 1)).x =
     (iterate A B b x₀ rs₀ k).x + alpha A B b x₀ rs₀ k • direction A B b x₀ rs₀ k := by
   simp only [alpha, residual, dualResidual, direction, dualDirection, iterate_succ]
   rfl
 
-/-- `r_{k+1} = r_k - α_k A p_k` (Saad, *Iterative Methods*, Alg 7.3, line 6). -/
+/-- `r_{k+1} = r_k - α_k A p_k` ([saad2003iterative], Alg 7.3, line 6). -/
 theorem residual_succ (k : ℕ) : residual A B b x₀ rs₀ (k + 1) =
     residual A B b x₀ rs₀ k - alpha A B b x₀ rs₀ k • A (direction A B b x₀ rs₀ k) := by
   simp only [alpha, residual, dualResidual, direction, dualDirection, iterate_succ]
   rfl
 
-/-- `r*_{k+1} = r*_k - conj α_k Aᴴ p*_k` (Saad, *Iterative Methods*, Alg 7.3, line 7). -/
+/-- `r*_{k+1} = r*_k - conj α_k Aᴴ p*_k` ([saad2003iterative], Alg 7.3, line 7). -/
 theorem dualResidual_succ (k : ℕ) : dualResidual A B b x₀ rs₀ (k + 1) =
     dualResidual A B b x₀ rs₀ k -
       starRingEnd 𝕜 (alpha A B b x₀ rs₀ k) • B (dualDirection A B b x₀ rs₀ k) := by
   simp only [alpha, residual, dualResidual, direction, dualDirection, iterate_succ]
   rfl
 
-/-- `p_{k+1} = r_{k+1} + β_k p_k` (Saad, *Iterative Methods*, Alg 7.3, line 9). -/
+/-- `p_{k+1} = r_{k+1} + β_k p_k` ([saad2003iterative], Alg 7.3, line 9). -/
 theorem direction_succ (k : ℕ) : direction A B b x₀ rs₀ (k + 1) =
     residual A B b x₀ rs₀ (k + 1) + beta A B b x₀ rs₀ k • direction A B b x₀ rs₀ k := by
   simp only [beta, residual, dualResidual, direction, iterate_succ]
   rfl
 
-/-- `p*_{k+1} = r*_{k+1} + conj β_k p*_k` (Saad, *Iterative Methods*, Alg 7.3, line 10). -/
+/-- `p*_{k+1} = r*_{k+1} + conj β_k p*_k` ([saad2003iterative], Alg 7.3, line 10). -/
 theorem dualDirection_succ (k : ℕ) : dualDirection A B b x₀ rs₀ (k + 1) =
     dualResidual A B b x₀ rs₀ (k + 1) +
       starRingEnd 𝕜 (beta A B b x₀ rs₀ k) • dualDirection A B b x₀ rs₀ k := by
@@ -762,8 +758,8 @@ theorem residual_eq (k : ℕ) :
   | succ k ih =>
     rw [residual_succ, iterate_succ_x, ih, map_add, map_smul, sub_sub, direction]
 
-/-- Telescoping the shadow recurrence: `α_k ⟪p*_k, A y⟫ = ⟪r*_k, y⟫ - ⟪r*_{k+1}, y⟫`, the only
-way `B` enters the shadow residuals. -/
+/-- Telescoping the shadow recurrence: `α_k ⟪p*_k, A y⟫ = ⟪r*_k, y⟫ - ⟪r*_{k+1}, y⟫`, the only way
+`B` enters the shadow residuals. -/
 theorem mul_inner_dualDirection_apply (hB : ∀ x y, inner 𝕜 (A x) y = inner 𝕜 x (B y)) (k : ℕ)
     (y : E) :
     alpha A B b x₀ rs₀ k * inner 𝕜 (dualDirection A B b x₀ rs₀ k) (A y) =
@@ -828,9 +824,8 @@ section Biorthogonality
 
 variable {A B : E →ₗ[𝕜] E} {b x₀ rs₀ : E}
 
-/-- The biconjugate gradient iteration runs without breakdown through step `m`: `B` is the
-adjoint of `A`, and neither denominator of Saad, *Iterative Methods*, Alg 7.3 vanishes before
-step `m`. -/
+/-- The biconjugate gradient iteration runs without breakdown through step `m`: `B` is the adjoint
+of `A`, and neither denominator of [saad2003iterative], Alg 7.3 vanishes before step `m`. -/
 structure NoBreakdown (A B : E →ₗ[𝕜] E) (b x₀ rs₀ : E) (m : ℕ) : Prop where
   /-- `B` is the adjoint of `A`. -/
   adjoint : ∀ x y, inner 𝕜 (A x) y = inner 𝕜 x (B y)
@@ -852,8 +847,8 @@ theorem NoBreakdown.alpha_ne_zero {m : ℕ} (h : NoBreakdown A B b x₀ rs₀ m)
     alpha A B b x₀ rs₀ k ≠ 0 :=
   div_ne_zero (h.inner_residual_ne_zero k hk) (h.inner_apply_direction_ne_zero k hk)
 
-/-- The invariant of Saad, *Iterative Methods*, Prop 7.2 up to step `m`: the residuals are
-biorthogonal and the directions are `A`-biconjugate. -/
+/-- The invariant of [saad2003iterative], Prop 7.2 up to step `m`: the residuals are biorthogonal
+and the directions are `A`-biconjugate. -/
 private def Biorth (A B : E →ₗ[𝕜] E) (b x₀ rs₀ : E) (m : ℕ) : Prop :=
   (∀ i ≤ m, ∀ j ≤ m, i ≠ j →
       inner 𝕜 (dualResidual A B b x₀ rs₀ j) (residual A B b x₀ rs₀ i) = 0) ∧
@@ -997,15 +992,15 @@ private theorem biorth {m : ℕ} (h : NoBreakdown A B b x₀ rs₀ m) : Biorth A
         exact absurd rfl hij
   | succ m ih => exact biorth_succ h (ih (h.mono (Nat.le_succ m)))
 
-/-- Saad, *Iterative Methods*, Prop 7.2: the BCG residuals are biorthogonal,
-`⟪r*_j, r_i⟫ = 0` for `i ≠ j`. -/
+/-- [saad2003iterative], Prop 7.2: the BCG residuals are biorthogonal, `⟪r*_j, r_i⟫ = 0` for `i ≠
+j`. -/
 theorem inner_residual_dualResidual_eq_zero {m : ℕ} (h : NoBreakdown A B b x₀ rs₀ m) {i j : ℕ}
     (hi : i ≤ m) (hj : j ≤ m) (hij : i ≠ j) :
     inner 𝕜 (dualResidual A B b x₀ rs₀ j) (residual A B b x₀ rs₀ i) = 0 :=
   (biorth h).1 i hi j hj hij
 
-/-- Saad, *Iterative Methods*, Prop 7.2: the BCG directions are `A`-biconjugate,
-`⟪p*_j, A p_i⟫ = 0` for `i ≠ j`. -/
+/-- [saad2003iterative], Prop 7.2: the BCG directions are `A`-biconjugate, `⟪p*_j, A p_i⟫ = 0` for
+`i ≠ j`. -/
 theorem inner_dualDirection_apply_direction_eq_zero {m : ℕ} (h : NoBreakdown A B b x₀ rs₀ m)
     {i j : ℕ} (hi : i ≤ m) (hj : j ≤ m) (hij : i ≠ j) :
     inner 𝕜 (dualDirection A B b x₀ rs₀ j) (A (direction A B b x₀ rs₀ i)) = 0 :=
@@ -1065,8 +1060,8 @@ private theorem pow_apply_mem_dualSpan {m : ℕ} (h : NoBreakdown A B b x₀ rs�
     rw [hpow]
     exact hmap ⟨_, ih (by omega), rfl⟩
 
-/-- The shadow Krylov space is spanned by the shadow residuals, which is what makes the BCG
-residual orthogonal to all of it. -/
+/-- The shadow Krylov space is spanned by the shadow residuals, which is what makes the BCG residual
+orthogonal to all of it. -/
 theorem subspace_le_span_dualResidual {m : ℕ} (h : NoBreakdown A B b x₀ rs₀ m) :
     Krylov.subspace B rs₀ m ≤ Submodule.span 𝕜 (dualResidual A B b x₀ rs₀ '' Set.Iio m) := by
   rw [Krylov.subspace_eq_span_image_Iio, Submodule.span_le]
@@ -1087,8 +1082,8 @@ private theorem inner_eq_zero_of_mem_span {m : ℕ} (h : NoBreakdown A B b x₀ 
   | add y z _ _ hy hz => rw [inner_add_left, hy, hz, add_zero]
   | smul c y _ hy => rw [inner_smul_left, hy, mul_zero]
 
-/-- Saad, *Iterative Methods*, Prop 7.2: the BCG iterate is the Petrov–Galerkin iterate with
-`K = 𝒦_m(A, r₀)` and `L = 𝒦_m(Aᴴ, r*₀)`. -/
+/-- [saad2003iterative], Prop 7.2: the BCG iterate is the Petrov–Galerkin iterate with `K = 𝒦_m(A,
+r₀)` and `L = 𝒦_m(Aᴴ, r*₀)`. -/
 theorem isPetrovGalerkin {m : ℕ} (h : NoBreakdown A B b x₀ rs₀ m) :
     IsPetrovGalerkin A b x₀ (Krylov.subspace A (b - A x₀) m) (Krylov.subspace B rs₀ m)
       (iterate A B b x₀ rs₀ m).x where
@@ -1103,9 +1098,9 @@ end BCG
 
 /-! ### The quasi-minimal residual method
 
-QMR minimizes the *quasi-residual*, the coordinate vector of the residual in the two-sided
-Lanczos basis, rather than the residual itself; because the basis is not orthonormal the two
-differ, and the price is the conditioning of `V_{m+1}` (Saad, *Iterative Methods*, §7.3). -/
+QMR minimizes the *quasi-residual*, the coordinate vector of the residual in the two-sided Lanczos
+basis, rather than the residual itself; because the basis is not orthonormal the two differ, and the
+price is the conditioning of `V_{m+1}` ([saad2003iterative], §7.3). -/
 
 open BiLanczos
 
@@ -1117,9 +1112,9 @@ private theorem range_eq_image_Iio {α : Type*} (f : ℕ → α) (m : ℕ) :
   simp only [Set.mem_range, Set.mem_image, Set.mem_Iio, Fin.exists_iff]
   tauto
 
-/-- The quasi-residual `β e₁ - T̄_m y` of the two-sided Lanczos relation
-(Saad, *Iterative Methods*, (7.13)): the coordinate vector, in the basis `v_0, …, v_m`, of the
-residual of `x₀ + V_m y` when `b - A x₀ = β v₁`. -/
+/-- The quasi-residual `β e₁ - T̄_m y` of the two-sided Lanczos relation ([saad2003iterative],
+(7.13)): the coordinate vector, in the basis `v_0, …, v_m`, of the residual of `x₀ + V_m y` when `b
+- A x₀ = β v₁`. -/
 noncomputable def quasiResidual (A B : E →ₗ[𝕜] E) (v₁ w₁ : E) (β : 𝕜) (m : ℕ) (y : Fin m → 𝕜) :
     EuclideanSpace 𝕜 (Fin (m + 1)) :=
   WithLp.toLp 2 (Krylov.firstVec β (m + 1) -
@@ -1132,19 +1127,19 @@ theorem quasiResidual_def (A B : E →ₗ[𝕜] E) (v₁ w₁ : E) (β : 𝕜) (
 
 variable {A B : E →ₗ[𝕜] E} {v₁ w₁ : E}
 
-/-- The quasi-minimal-residual specification (Saad, *Iterative Methods*, (7.15)–(7.17)): `x` is
-`x₀ + V_m y` for a coordinate vector `y` minimizing the quasi-residual `‖β e₁ - T̄_m y‖`, where
-`b - A x₀ = β v₁`. Replacing the true residual `‖V_{m+1} (β e₁ - T̄_m y)‖` by the norm of its
-coordinate vector turns the step into a small least-squares problem; the price is the factor
-`κ₂(V_{m+1})` of `QMR.norm_residual_le`. -/
+/-- The quasi-minimal-residual specification ([saad2003iterative], (7.15)–(7.17)): `x` is `x₀ + V_m
+y` for a coordinate vector `y` minimizing the quasi-residual `‖β e₁ - T̄_m y‖`, where `b - A x₀ = β
+v₁`. Replacing the true residual `‖V_{m+1} (β e₁ - T̄_m y)‖` by the norm of its coordinate vector
+turns the step into a small least-squares problem; the price is the factor `κ₂(V_{m+1})` of
+`QMR.norm_residual_le`. -/
 def IsQuasiMinRes (A B : E →ₗ[𝕜] E) (v₁ w₁ : E) (β : 𝕜) (x₀ : E) (m : ℕ) (x : E) : Prop :=
   ∃ y : Fin m → 𝕜, x = x₀ + ∑ j, y j • BiLanczos.vec A B v₁ w₁ (j : ℕ) ∧
     IsMinOn (fun z => ‖quasiResidual A B v₁ w₁ β m z‖) Set.univ y
 
-/-- Saad, *Iterative Methods*, Prop 7.3: the true residual of a point of `x₀ + 𝒦_m` is at most
-`‖V_{m+1}‖` times its quasi-residual. The bound `C` on the coordinate map is a hypothesis
-because in an abstract inner product space there is no matrix to take a norm of; for
-`E = 𝕜^n` it is the largest singular value of `V_{m+1}`. -/
+/-- [saad2003iterative], Prop 7.3: the true residual of a point of `x₀ + 𝒦_m` is at most `‖V_{m+1}‖`
+times its quasi-residual. The bound `C` on the coordinate map is a hypothesis because in an abstract
+inner product space there is no matrix to take a norm of; for `E = 𝕜^n` it is the largest singular
+value of `V_{m+1}`. -/
 theorem norm_residual_le_norm_quasiResidual (h : NoSeriousBreakdown A B v₁ w₁) {b x₀ : E}
     {β : 𝕜} (hr : b - A x₀ = β • v₁) {m : ℕ} {C : ℝ}
     (hC : ∀ z : Fin (m + 1) → 𝕜, ‖∑ i, z i • vec A B v₁ w₁ (i : ℕ)‖ ≤
@@ -1155,9 +1150,9 @@ theorem norm_residual_le_norm_quasiResidual (h : NoSeriousBreakdown A B v₁ w�
   rw [(hessenbergRelation h).residual_eq hr m y, quasiResidual_def]
   exact hC _
 
-/-- Saad, *Iterative Methods*, Prop 7.3, Givens form: when no rotation of the progressive QR
-factorization of `T̄_m` degenerates, the minimal quasi-residual is `|γ_m|`, which
-`Krylov.norm_gamma_eq_prod` writes as `|s_m| ⋯ |s_1| |β|`. -/
+/-- [saad2003iterative], Prop 7.3, Givens form: when no rotation of the progressive QR factorization
+of `T̄_m` degenerates, the minimal quasi-residual is `|γ_m|`, which `Krylov.norm_gamma_eq_prod`
+writes as `|s_m| ⋯ |s_1| |β|`. -/
 theorem norm_quasiResidual_eq_norm_gamma {m : ℕ} {β : 𝕜}
     (hρ : ∀ k < m, givensRho (BiLanczos.coeff A B v₁ w₁) k ≠ 0) {y : Fin m → 𝕜}
     (hy : IsMinOn (fun z => ‖quasiResidual A B v₁ w₁ β m z‖) Set.univ y) :
@@ -1194,11 +1189,11 @@ theorem norm_quasiResidual_eq_norm_gamma {m : ℕ} {β : 𝕜}
   have h1 := Real.sqrt_le_sqrt hsq
   rwa [Real.sqrt_sq (norm_nonneg _), Real.sqrt_sq (norm_nonneg _)] at h1
 
-/-- Saad, *Iterative Methods*, Thm 7.4: the QMR residual is within `κ₂(V_{m+1}) = C / c` of the
-GMRES residual over the same affine space, where `c` and `C` are the extreme singular values of
-the coordinate map `z ↦ V_{m+1} z`. The GMRES iterate lies in the same affine space, so its
-coordinate vector is a competitor for the quasi-residual minimization; `c` converts its
-quasi-residual back into a true residual and `C` converts the QMR one forward. -/
+/-- [saad2003iterative], Thm 7.4: the QMR residual is within `κ₂(V_{m+1}) = C / c` of the GMRES
+residual over the same affine space, where `c` and `C` are the extreme singular values of the
+coordinate map `z ↦ V_{m+1} z`. The GMRES iterate lies in the same affine space, so its coordinate
+vector is a competitor for the quasi-residual minimization; `c` converts its quasi-residual back
+into a true residual and `C` converts the QMR one forward. -/
 theorem norm_residual_le (hs : NoSeriousBreakdown A B v₁ w₁) {m : ℕ}
     (hnb : NoBreakdown A B v₁ w₁ m) {b x₀ : E} {β : 𝕜} (hr : b - A x₀ = β • v₁)
     {c C : ℝ} (hc0 : 0 < c) (hC0 : 0 ≤ C)

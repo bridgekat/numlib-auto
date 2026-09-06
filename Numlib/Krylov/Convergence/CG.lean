@@ -6,34 +6,33 @@ import Numlib.RingTheory.Polynomial.ChebyshevMinimax
 /-!
 # Chebyshev convergence bounds for Galerkin (CG) and minimal-residual iterates
 
-For symmetric `A` with `λmin ‖x‖² ≤ re ⟪A x, x⟫ ≤ λmax ‖x‖²` (`LinearMap.IsSymmetricBoundedBy`,
-in any inner product space: the proofs go through the compression of `A` to `𝒦_{m+1}`) and *any*
-sequence of Galerkin iterates (CG, D-Lanczos, …):
-`‖x* - x_m‖_A ≤ ‖x* - x₀‖_A / T_m((λmax + λmin)/(λmax - λmin)) ≤ 2 ((√κ-1)/(√κ+1))^m ‖x* - x₀‖_A`
-([Saad, *Iterative Methods*][saad2003iterative] Thm 6.29, (6.123)–(6.128);
-[Atkinson–Han][han2009theoretical] Thm 5.6.1; [Meurant–Strakoš][meurant2006lanczos] (3.9)). The
-minimal-residual analogue for the residual norm, and Saad Thm 6.30 (restarted minimal-residual
-iterations converge for coercive `A`). Also the one-step Kantorovich contraction
-`‖x* - x_{m+1}‖_A ≤ ((λmax - λmin)/(λmax + λmin)) ‖x* - x_m‖_A` (Atkinson–Han (5.6.4)), which
-compares a Galerkin step with a steepest-descent step.
+For symmetric `A` with `λmin ‖x‖² ≤ re ⟪A x, x⟫ ≤ λmax ‖x‖²` (`LinearMap.IsSymmetricBoundedBy`, in
+any inner product space: the proofs go through the compression of `A` to `𝒦_{m+1}`) and *any*
+sequence of Galerkin iterates (CG, D-Lanczos, …): `‖x* - x_m‖_A ≤ ‖x* - x₀‖_A / T_m((λmax +
+λmin)/(λmax - λmin)) ≤ 2 ((√κ-1)/(√κ+1))^m ‖x* - x₀‖_A` ([saad2003iterative] Thm 6.29,
+(6.123)–(6.128); [han2009theoretical] Thm 5.6.1; [meurant2006lanczos] (3.9)). The minimal-residual
+analogue for the residual norm, and [saad2003iterative] Thm 6.30 (restarted minimal-residual
+iterations converge for coercive `A`). Also the one-step Kantorovich contraction `‖x* - x_{m+1}‖_A ≤
+((λmax - λmin)/(λmax + λmin)) ‖x* - x_m‖_A` ([han2009theoretical] (5.6.4)), which compares a
+Galerkin step with a steepest-descent step.
 
 Here `κ = λmax / λmin` is the spectral condition number and `T_m` the degree-`m` Chebyshev
-polynomial of the first kind. Only the sharp Chebyshev form needs a strict spectral gap
-`λmin < λmax`, because it divides by `λmax - λmin`; the geometric forms hold for `λmin ≤ λmax`,
-the degenerate case being one where `A` is a scalar and the iterates are exact from step `1`.
+polynomial of the first kind. Only the sharp Chebyshev form needs a strict spectral gap `λmin <
+λmax`, because it divides by `λmax - λmin`; the geometric forms hold for `λmin ≤ λmax`, the
+degenerate case being one where `A` is a scalar and the iterates are exact from step `1`.
 
 ## Main statements
 
 * `Krylov.IsGalerkinIterate.energyNorm_error_le_div_eval_T` and
-  `Krylov.IsGalerkinIterate.energyNorm_error_le`: the sharp Chebyshev bound and its geometric
-  form (Saad Thm 6.29, (6.123) and (6.128); Atkinson–Han Thm 5.6.1);
+  `Krylov.IsGalerkinIterate.energyNorm_error_le`: the sharp Chebyshev bound and its geometric form
+  ([saad2003iterative] Thm 6.29, (6.123) and (6.128); [han2009theoretical] Thm 5.6.1);
 * `Krylov.IsMinResIterate.norm_residual_le`: the same bound for the residual norm;
 * `Krylov.IsGalerkinIterate.energyNorm_error_succ_le`: the one-step Kantorovich contraction
-  (Atkinson–Han (5.6.4)), and `Krylov.sqrt_ratio_le_ratio` the comparison of the two rates
-  (Atkinson–Han (5.6.6));
-* `Krylov.IsMinResIterate.norm_residual_le_of_isCoerciveWith` and
-  `Krylov.restarted_minRes_tendsto`: convergence of restarted minimal-residual iterations for a
-  bounded coercive `A` (Saad Thm 6.30).
+  ([han2009theoretical] (5.6.4)), and `Krylov.sqrt_ratio_le_ratio` the comparison of the two rates
+  ([han2009theoretical] (5.6.6));
+* `Krylov.IsMinResIterate.norm_residual_le_of_isCoerciveWith` and `Krylov.restarted_minRes_tendsto`:
+  convergence of restarted minimal-residual iterations for a bounded coercive `A`
+  ([saad2003iterative] Thm 6.30).
 -/
 
 open Polynomial Polynomial.Chebyshev Krylov
@@ -48,13 +47,13 @@ section Chebyshev
 /-! ### The residual polynomial
 
 `shifted m lmin lmax 0` is the Chebyshev polynomial of `[lmin, lmax]` normalized to `1` at `0`;
-mapping it into `𝕜` gives the competitor polynomial of the Galerkin / minimal-residual
-optimality statements. -/
+mapping it into `𝕜` gives the competitor polynomial of the Galerkin / minimal-residual optimality
+statements. -/
 
 variable {lmin lmax : ℝ} (hl : 0 < lmin) (hll : lmin < lmax)
 
-/-- A spectral interval bounded away from the origin does not contain `0`, which is what makes
-the shifted Chebyshev polynomial normalizable there. -/
+/-- A spectral interval bounded away from the origin does not contain `0`, which is what makes the
+shifted Chebyshev polynomial normalizable there. -/
 private theorem zero_notMem_Icc (h : 0 < lmin) : (0 : ℝ) ∉ Set.Icc lmin lmax := fun hmem =>
   absurd hmem.1 (not_le.mpr h)
 
@@ -64,13 +63,12 @@ private theorem one_le_ratio : 1 ≤ (lmax + lmin) / (lmax - lmin) := by
   rw [le_div_iff₀ (by linarith)]
   linarith
 
-/-- The Chebyshev value appearing in Saad, *Iterative Methods*, (6.123) is at least `1`, in
-particular positive. -/
+/-- The Chebyshev value appearing in [saad2003iterative], (6.123) is at least `1`, in particular
+positive. -/
 private theorem one_le_eval_T_ratio (m : ℕ) : 1 ≤ (T ℝ m).eval ((lmax + lmin) / (lmax - lmin)) :=
   one_le_eval_T (one_le_ratio hl hll) m
 
-/-- The minimax value of Saad, *Iterative Methods*: the sup of `|shifted|` over
-`[lmin, lmax]`. -/
+/-- The minimax value of [saad2003iterative]: the sup of `|shifted|` over `[lmin, lmax]`. -/
 private theorem sSup_abs_eval_shifted_zero (m : ℕ) :
     sSup ((fun t => |(shifted m lmin lmax 0).eval t|) '' Set.Icc lmin lmax) =
       1 / (T ℝ m).eval ((lmax + lmin) / (lmax - lmin)) := by
@@ -78,7 +76,7 @@ private theorem sSup_abs_eval_shifted_zero (m : ℕ) :
   rw [show (lmax + lmin - 2 * 0) / (lmax - lmin) = (lmax + lmin) / (lmax - lmin) by ring_nf]
   rw [abs_of_pos (lt_of_lt_of_le zero_lt_one (one_le_eval_T_ratio hl hll m))]
 
-/-- The geometric form of the minimax value (Saad, *Iterative Methods*, (6.128)). -/
+/-- The geometric form of the minimax value ([saad2003iterative], (6.128)). -/
 private theorem sSup_abs_eval_shifted_le (m : ℕ) :
     sSup ((fun t => |(shifted m lmin lmax 0).eval t|) '' Set.Icc lmin lmax) ≤
       2 * ((Real.sqrt (lmax / lmin) - 1) / (Real.sqrt (lmax / lmin) + 1)) ^ m := by
@@ -117,16 +115,16 @@ because the steepest-descent point lies in the next Krylov space. -/
 variable {lmin lmax : ℝ} (hl : 0 < lmin) (hA : A.IsSymmetricBoundedBy lmin lmax)
 include hl hA
 
-/-- One step of a Galerkin iteration (CG, FOM, D-Lanczos) contracts the energy norm of the error
-by the Kantorovich factor `(λmax - λmin)/(λmax + λmin)`:
-`‖x* - x_{m+1}‖_A ≤ ((λmax - λmin)/(λmax + λmin)) ‖x* - x_m‖_A`.
+/-- One step of a Galerkin iteration (CG, FOM, D-Lanczos) contracts the energy norm of the error by
+the Kantorovich factor `(λmax - λmin)/(λmax + λmin)`: `‖x* - x_{m+1}‖_A ≤ ((λmax - λmin)/(λmax +
+λmin)) ‖x* - x_m‖_A`.
 
 The Galerkin iterate over `𝒦_{m+1}` minimizes the energy norm of the error there
 (`IsGalerkin.energyNorm_le`), and the steepest-descent point taken from `x_m` is a competitor in
-that affine space, so the steepest-descent rate (Saad, *Iterative Methods*, Thm 5.9, proved from
-Kantorovich's inequality) applies. Together with `sqrt_ratio_le_ratio` this is the weaker,
-one-step form of the Chebyshev bound `IsGalerkinIterate.energyNorm_error_le`
-(Atkinson–Han, (5.6.4) versus (5.6.5)). -/
+that affine space, so the steepest-descent rate ([saad2003iterative], Thm 5.9, proved from
+Kantorovich's inequality) applies. Together with `sqrt_ratio_le_ratio` this is the weaker, one-step
+form of the Chebyshev bound `IsGalerkinIterate.energyNorm_error_le` ([han2009theoretical], (5.6.4)
+versus (5.6.5)). -/
 theorem IsGalerkinIterate.energyNorm_error_succ_le {m : ℕ} {x y xstar : E}
     (hx : IsGalerkinIterate A b x₀ m x) (hy : IsGalerkinIterate A b x₀ (m + 1) y)
     (hstar : A xstar = b) :
@@ -149,8 +147,8 @@ section StrictGap
 variable {lmin lmax : ℝ} (hl : 0 < lmin) (hll : lmin < lmax) (hA : A.IsSymmetricBoundedBy lmin lmax)
 include hl hll hA
 
-/-- Sharp Chebyshev form (Saad, *Iterative Methods*, (6.123)):
-`‖x* - x_m‖_A ≤ ‖x* - x₀‖_A / T_m((λmax+λmin)/(λmax-λmin))`.
+/-- Sharp Chebyshev form ([saad2003iterative], (6.123)): `‖x* - x_m‖_A ≤ ‖x* - x₀‖_A /
+T_m((λmax+λmin)/(λmax-λmin))`.
 
 Unlike the geometric bound `IsGalerkinIterate.energyNorm_error_le`, this one genuinely needs the
 strict spectral gap `λmin < λmax`: its right-hand side divides by `λmax - λmin`. -/
@@ -173,16 +171,16 @@ section Degenerate
 /-! ### The degenerate spectral interval `λmin = λmax`
 
 `A.IsSymmetricBoundedBy l l` says that the quadratic form of `A` is exactly `l ‖x‖²`, which for a
-symmetric operator forces `A` to be the scalar `l`
-(`LinearMap.IsSymmetricBoundedBy.apply_eq_smul`). The solution then already lies in `x₀ + 𝒦_1`, so
-every Krylov iterate from step `1` on is exact and the geometric bounds below hold with a
-vanishing right-hand side. This is why they need no strict spectral gap. -/
+symmetric operator forces `A` to be the scalar `l` (`LinearMap.IsSymmetricBoundedBy.apply_eq_smul`).
+The solution then already lies in `x₀ + 𝒦_1`, so every Krylov iterate from step `1` on is exact and
+the geometric bounds below hold with a vanishing right-hand side. This is why they need no strict
+spectral gap. -/
 
 variable {l : ℝ} (hl : 0 < l) (hA : A.IsSymmetricBoundedBy l l)
 include hl hA
 
-/-- If the quadratic form of `A` is exactly `l ‖x‖²` with `l > 0` then `A` is the invertible
-scalar `l`, so the solution of `A x = b` lies in `x₀ + 𝒦_m(A, b - A x₀)` already for `m = 1`. -/
+/-- If the quadratic form of `A` is exactly `l ‖x‖²` with `l > 0` then `A` is the invertible scalar
+`l`, so the solution of `A x = b` lies in `x₀ + 𝒦_m(A, b - A x₀)` already for `m = 1`. -/
 theorem sub_mem_subspace_of_isSymmetricBoundedBy_self {xstar : E} (hstar : A xstar = b) {m : ℕ}
     (hm : 1 ≤ m) : xstar - x₀ ∈ subspace A (b - A x₀) m := by
   have hl0 : (l : 𝕜) ≠ 0 := RCLike.ofReal_ne_zero.2 hl.ne'
@@ -205,12 +203,12 @@ section Symmetric
 variable {lmin lmax : ℝ} (hl : 0 < lmin) (hll : lmin ≤ lmax) (hA : A.IsSymmetricBoundedBy lmin lmax)
 include hl hll hA
 
-/-- Saad, *Iterative Methods*, Thm 6.29 / Atkinson–Han (5.6.5): with `κ = λmax / λmin`,
-`‖x* - x_m‖_A ≤ 2 ((√κ - 1)/(√κ + 1))^m ‖x* - x₀‖_A`.
+/-- [saad2003iterative], Thm 6.29 / [han2009theoretical] (5.6.5): with `κ = λmax / λmin`, `‖x* -
+x_m‖_A ≤ 2 ((√κ - 1)/(√κ + 1))^m ‖x* - x₀‖_A`.
 
 No strict spectral gap is needed. When `λmin = λmax` the operator is a scalar
-(`sub_mem_subspace_of_isSymmetricBoundedBy_self`), `κ = 1` makes the factor `0`, and the iterate
-is exact for `m ≥ 1`; for `m = 0` the bound reads `‖x* - x₀‖_A ≤ 2 ‖x* - x₀‖_A`. -/
+(`sub_mem_subspace_of_isSymmetricBoundedBy_self`), `κ = 1` makes the factor `0`, and the iterate is
+exact for `m ≥ 1`; for `m = 0` the bound reads `‖x* - x₀‖_A ≤ 2 ‖x* - x₀‖_A`. -/
 theorem IsGalerkinIterate.energyNorm_error_le {m : ℕ} {x xstar : E}
     (hx : IsGalerkinIterate A b x₀ m x) (hstar : A xstar = b) :
     energyNorm A (xstar - x) ≤
@@ -266,7 +264,7 @@ theorem IsMinResIterate.norm_residual_le {m : ℕ} {x : E} (hx : IsMinResIterate
 
 end Symmetric
 
-/-- One-step comparison (Atkinson–Han (5.6.6)): `(√κ - 1)/(√κ + 1) ≤ (κ - 1)/(κ + 1)`. -/
+/-- One-step comparison ([han2009theoretical] (5.6.6)): `(√κ - 1)/(√κ + 1) ≤ (κ - 1)/(κ + 1)`. -/
 theorem sqrt_ratio_le_ratio {κ : ℝ} (hκ : 1 ≤ κ) :
     (Real.sqrt κ - 1) / (Real.sqrt κ + 1) ≤ (κ - 1) / (κ + 1) := by
   have hs : 1 ≤ Real.sqrt κ := by
@@ -276,9 +274,9 @@ theorem sqrt_ratio_le_ratio {κ : ℝ} (hκ : 1 ≤ κ) :
   rw [div_le_div_iff₀ (by linarith) (by linarith)]
   nlinarith [mul_nonneg (sub_nonneg.2 hs) (by linarith : (0 : ℝ) ≤ 2 * Real.sqrt κ)]
 
-/-- Saad, *Iterative Methods*, Thm 6.30: for a bounded coercive `A`, restarted minimal-residual
-iterations (each cycle a minimal-residual iterate over `𝒦_m`, `m ≥ 1`) converge: each cycle
-contracts the residual by at least `√(1 - c²/‖A‖²)`, where `c` is the coercivity constant. -/
+/-- [saad2003iterative], Thm 6.30: for a bounded coercive `A`, restarted minimal-residual iterations
+(each cycle a minimal-residual iterate over `𝒦_m`, `m ≥ 1`) converge: each cycle contracts the
+residual by at least `√(1 - c²/‖A‖²)`, where `c` is the coercivity constant. -/
 theorem IsMinResIterate.norm_residual_le_of_isCoerciveWith {A : E →L[𝕜] E} {c : ℝ} (hc : 0 < c)
     (hA : (A : E →ₗ[𝕜] E).IsCoerciveWith c) {b x₀ x : E} {m : ℕ} (hm : 1 ≤ m)
     (hx : IsMinResIterate (A : E →ₗ[𝕜] E) b x₀ m x) :
@@ -293,13 +291,13 @@ theorem IsMinResIterate.norm_residual_le_of_isCoerciveWith {A : E →L[𝕜] E} 
     exact Submodule.smul_mem _ _ (self_mem_subspace _ _ hm)
   exact (hx.min _ hmem).trans (Projection.norm_residual_minResStep_le hc hA b x₀)
 
-/-- Saad, *Iterative Methods*, Thm 6.30: restarted minimal-residual iteration converges for a
-bounded coercive `A`. Each cycle of `m ≥ 1` steps restarts from the previous cycle's output and
-contracts the residual by the factor `√(1 - c²/‖A‖²) < 1` of
+/-- [saad2003iterative], Thm 6.30: restarted minimal-residual iteration converges for a bounded
+coercive `A`. Each cycle of `m ≥ 1` steps restarts from the previous cycle's output and contracts
+the residual by the factor `√(1 - c²/‖A‖²) < 1` of
 `Krylov.IsMinResIterate.norm_residual_le_of_isCoerciveWith`, so the residual norms tend to `0`
-geometrically. Coercivity alone is what does this: it keeps `r` and `A r` from becoming
-orthogonal, so a single step of the cycle already gains a fixed fraction. No spectral hypothesis
-and no finite dimension are needed. -/
+geometrically. Coercivity alone is what does this: it keeps `r` and `A r` from becoming orthogonal,
+so a single step of the cycle already gains a fixed fraction. No spectral hypothesis and no finite
+dimension are needed. -/
 theorem restarted_minRes_tendsto {A : E →L[𝕜] E} {c : ℝ} (hc : 0 < c)
     (hA : (A : E →ₗ[𝕜] E).IsCoerciveWith c) {b : E} {m : ℕ} (hm : 1 ≤ m) (x : ℕ → E)
     (hx : ∀ k, IsMinResIterate (A : E →ₗ[𝕜] E) b (x k) m (x (k + 1))) :

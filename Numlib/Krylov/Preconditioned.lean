@@ -8,39 +8,39 @@ import Numlib.Krylov.QuasiMinRes
 
 Preconditioning is a change of inner product, not a new algorithm. For a symmetric coercive
 preconditioner `M` with a linear inverse `M⁻¹` (`Krylov.IsPreconditioner`), the space `E` carries
-the `M`-inner product `⟪M x, y⟫` — Mathlib-style, the type synonym `WithEnergy M`
-of `Numlib/Analysis/InnerProductSpace/Energy` — and in it the preconditioned operator `M⁻¹ A` is
+the `M`-inner product `⟪M x, y⟫` — Mathlib-style, the type synonym `WithEnergy M` of
+`Numlib/Analysis/InnerProductSpace/Energy` — and in it the preconditioned operator `M⁻¹ A` is
 symmetric whenever `A` is, with quadratic form `⟪A x, x⟫`. Everything the unpreconditioned theory
 proves therefore transports.
 
 ## Main definitions
 
 * `Krylov.IsPreconditioner M Minv`: a symmetric coercive `M` together with a linear inverse;
-* `Krylov.IsPreconditioner.EnergySpace`, `toEnergy`, `energySubmodule`, `energyEnd`: the
-  `M`-inner product space and the transport of vectors, subspaces and operators into it;
+* `Krylov.IsPreconditioner.EnergySpace`, `toEnergy`, `energySubmodule`, `energyEnd`: the `M`-inner
+  product space and the transport of vectors, subspaces and operators into it;
 * `Krylov.PCG.State`, `alpha`, `beta`, `step`, `init`, `iterate`: the preconditioned conjugate
-  gradient iteration ([Saad, *Iterative Methods*][saad2003iterative] Algorithm 9.1).
+  gradient iteration ([saad2003iterative] Algorithm 9.1).
 
 ## Main statements
 
 * `Krylov.IsPreconditioner.isGalerkin_energyEnd_iff` and
-  `Krylov.IsPreconditioner.isMinRes_energyEnd_iff`: the Galerkin condition for
-  `M⁻¹ A x = M⁻¹ b` in the `M`-inner product *is* the Galerkin condition for `A x = b` in the
-  original one, and the minimal-residual condition there is minimality of `‖b - A x‖_{M⁻¹}`;
-* `Krylov.PCG.iterate_eq_CG_iterate_withEnergy`: the preconditioned conjugate gradient
-  iteration is `CG.iterate` for `M⁻¹ A` in that space — this is the one-line statement "PCG is
-  CG on the preconditioned system";
-* `Krylov.PCG.isGalerkinIterate` and `Krylov.PCG.energyNorm_error_le`: consequently the PCG
-  iterate minimizes the `A`-norm of the error over `x₀ + 𝒦_k(M⁻¹ A, M⁻¹ r₀)` and obeys the
-  Chebyshev bound with the condition number of the *generalized* eigenvalue problem
-  `A x = λ M x`, which is the condition number of `M⁻¹ A`;
+  `Krylov.IsPreconditioner.isMinRes_energyEnd_iff`: the Galerkin condition for `M⁻¹ A x = M⁻¹ b` in
+  the `M`-inner product *is* the Galerkin condition for `A x = b` in the original one, and the
+  minimal-residual condition there is minimality of `‖b - A x‖_{M⁻¹}`;
+* `Krylov.PCG.iterate_eq_CG_iterate_withEnergy`: the preconditioned conjugate gradient iteration is
+  `CG.iterate` for `M⁻¹ A` in that space — this is the one-line statement "PCG is CG on the
+  preconditioned system";
+* `Krylov.PCG.isGalerkinIterate` and `Krylov.PCG.energyNorm_error_le`: consequently the PCG iterate
+  minimizes the `A`-norm of the error over `x₀ + 𝒦_k(M⁻¹ A, M⁻¹ r₀)` and obeys the Chebyshev bound
+  with the condition number of the *generalized* eigenvalue problem `A x = λ M x`, which is the
+  condition number of `M⁻¹ A`;
 * `Krylov.exists_aeval_of_isMinResIterate_preconditioned` and
-  `Krylov.isMinRes_of_isMinResIterate_rightPreconditioned` (Saad, Proposition 9.1): left and
-  right preconditioning search the *same* affine space `x₀ + 𝒦_m(M⁻¹ A, M⁻¹ r₀)`, and differ
-  only in the norm they minimize over it — `‖M⁻¹ (b - A x)‖` on the left, `‖b - A x‖` on the
+  `Krylov.isMinRes_of_isMinResIterate_rightPreconditioned` ([saad2003iterative], Proposition 9.1):
+  left and right preconditioning search the *same* affine space `x₀ + 𝒦_m(M⁻¹ A, M⁻¹ r₀)`, and
+  differ only in the norm they minimize over it — `‖M⁻¹ (b - A x)‖` on the left, `‖b - A x‖` on the
   right;
-* `Krylov.FGMRES.isMinRes` and `Krylov.FGMRES.apply_eq_iff_coeff_eq_zero`: Saad's Propositions
-  9.2 and 9.3 for flexible GMRES, whose search space is not a Krylov subspace at all.
+* `Krylov.FGMRES.isMinRes` and `Krylov.FGMRES.apply_eq_iff_coeff_eq_zero`: [saad2003iterative]
+  Propositions 9.2 and 9.3 for flexible GMRES, whose search space is not a Krylov subspace at all.
 
 ## Implementation notes
 
@@ -55,8 +55,8 @@ variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpac
 
 namespace Krylov
 
-/-- A preconditioner: a symmetric coercive `M` together with a linear right inverse `Minv`,
-which is then a two-sided inverse (`Krylov.IsPreconditioner.inv_apply`) and itself symmetric
+/-- A preconditioner: a symmetric coercive `M` together with a linear right inverse `Minv`, which is
+then a two-sided inverse (`Krylov.IsPreconditioner.inv_apply`) and itself symmetric
 (`Krylov.IsPreconditioner.isSymmetric_inv`). -/
 structure IsPreconditioner (M Minv : E →ₗ[𝕜] E) : Prop where
   /-- The preconditioner is symmetric coercive, so `⟪M x, y⟫` is an inner product. -/
@@ -103,9 +103,9 @@ theorem energyEnd_apply (B : E →ₗ[𝕜] E) (x : E) :
 theorem norm_toEnergy_sq (x : E) : ‖hM.toEnergy x‖ ^ 2 = RCLike.re (inner 𝕜 (M x) x) := by
   rw [WithEnergy.norm_equiv, hM.isSymmetricCoercive.energyNorm_sq]
 
-/-- The `M`-inner product of `w` with a preconditioned vector is the original inner product:
-`⟪w, M⁻¹ u⟫_M = ⟪w, u⟫`.  This is the identity that makes preconditioning a change of inner
-product and nothing more. -/
+/-- The `M`-inner product of `w` with a preconditioned vector is the original inner product: `⟪w,
+M⁻¹ u⟫_M = ⟪w, u⟫`.  This is the identity that makes preconditioning a change of inner product and
+nothing more. -/
 theorem inner_toEnergy_inv (w u : E) :
     inner 𝕜 (hM.toEnergy w) (hM.toEnergy (Minv u)) = inner 𝕜 w u := by
   rw [WithEnergy.inner_equiv, energyInner, ← hM.isSymmetric_inv, hM.inv_apply]
@@ -123,8 +123,8 @@ theorem inner_energyEnd_right (x y : E) :
   rw [energyEnd_apply, WithEnergy.inner_equiv, energyInner, LinearMap.comp_apply,
     ← hM.isSymmetric_inv, hM.inv_apply]
 
-/-- The energy norm of `M⁻¹ A` in the `M`-inner product is the energy norm of `A` in the
-original one.  So the Chebyshev bounds proved for `M⁻¹ A` there are bounds on `‖x* - x_k‖_A`. -/
+/-- The energy norm of `M⁻¹ A` in the `M`-inner product is the energy norm of `A` in the original
+one.  So the Chebyshev bounds proved for `M⁻¹ A` there are bounds on `‖x* - x_k‖_A`. -/
 theorem energyNorm_energyEnd (x : E) :
     energyNorm (hM.energyEnd (Minv ∘ₗ A)) (hM.toEnergy x) = energyNorm A x := by
   rw [energyNorm, energyNorm, hM.inner_energyEnd_left A x x]
@@ -155,10 +155,10 @@ theorem subspace_energyEnd (B : E →ₗ[𝕜] E) (v : E) (m : ℕ) :
     exact ⟨i, hM.pow_energyEnd B i v⟩
 
 /-- **The Galerkin condition is preconditioning-invariant.**  A Galerkin iterate for the
-preconditioned system `M⁻¹ A x = M⁻¹ b` in the `M`-inner product is a Galerkin iterate for
-`A x = b` in the original inner product, over the same subspace, and conversely.  This is what
-makes every optimality statement of `Numlib/Krylov/Iterate` available to a preconditioned
-method with no new proof. -/
+preconditioned system `M⁻¹ A x = M⁻¹ b` in the `M`-inner product is a Galerkin iterate for `A x = b`
+in the original inner product, over the same subspace, and conversely.  This is what makes every
+optimality statement of `Numlib/Krylov/Iterate` available to a preconditioned method with no new
+proof. -/
 theorem isGalerkin_energyEnd_iff (b x₀ : E) (K : Submodule 𝕜 E) (x : E) :
     IsGalerkin (hM.energyEnd (Minv ∘ₗ A)) (hM.toEnergy (Minv b)) (hM.toEnergy x₀)
         (hM.energySubmodule K) (hM.toEnergy x) ↔ IsGalerkin A b x₀ K x := by
@@ -181,17 +181,17 @@ theorem isGalerkin_energyEnd_iff (b x₀ : E) (K : Submodule 𝕜 E) (x : E) :
     rw [show (hM.toEnergy).toLinearMap v = hM.toEnergy v from rfl, hres, hM.inner_toEnergy_inv]
     exact (Submodule.mem_orthogonal _ _).1 horth v hv
 
-/-- The `M`-norm of a preconditioned vector is the `M⁻¹`-norm of the vector:
-`‖M⁻¹ u‖_M² = re ⟪u, M⁻¹ u⟫`.  So the residual norm that a left-preconditioned minimal-residual
-method minimizes is `‖b - A x‖_{M⁻¹}`. -/
+/-- The `M`-norm of a preconditioned vector is the `M⁻¹`-norm of the vector: `‖M⁻¹ u‖_M² = re ⟪u,
+M⁻¹ u⟫`.  So the residual norm that a left-preconditioned minimal-residual method minimizes is `‖b -
+A x‖_{M⁻¹}`. -/
 theorem norm_toEnergy_inv_sq (u : E) :
     ‖hM.toEnergy (Minv u)‖ ^ 2 = RCLike.re (inner 𝕜 u (Minv u)) := by
   rw [hM.norm_toEnergy_sq, hM.apply_inv]
 
-/-- **The minimal-residual condition is preconditioning-invariant too.**  Minimizing the residual
-of the preconditioned system `M⁻¹ A x = M⁻¹ b` in the `M`-inner product is minimizing the
-`M⁻¹`-norm of the true residual `b - A x`, which is what left-preconditioned GMRES and MINRES
-do (Saad, *Iterative Methods*, §9.3.1). -/
+/-- **The minimal-residual condition is preconditioning-invariant too.**  Minimizing the residual of
+the preconditioned system `M⁻¹ A x = M⁻¹ b` in the `M`-inner product is minimizing the `M⁻¹`-norm of
+the true residual `b - A x`, which is what left-preconditioned GMRES and MINRES do
+([saad2003iterative], §9.3.1). -/
 theorem isMinRes_energyEnd_iff (b x₀ : E) (K : Submodule 𝕜 E) (x : E) :
     IsMinRes (hM.energyEnd (Minv ∘ₗ A)) (hM.toEnergy (Minv b)) (hM.toEnergy x₀)
         (hM.energySubmodule K) (hM.toEnergy x) ↔
@@ -221,9 +221,9 @@ theorem isMinRes_energyEnd_iff (b x₀ : E) (K : Submodule 𝕜 E) (x : E) :
     exact hmin y hz
 
 /-- Generalized eigenvalue bounds `λmin ⟪M x, x⟫ ≤ ⟪A x, x⟫ ≤ λmax ⟪M x, x⟫` are exactly the
-quadratic form bounds of `M⁻¹ A` in the `M`-inner product, which is the shape in which the
-Chebyshev convergence theory consumes them.  `λmax / λmin` is the condition number of `M⁻¹ A`,
-the quantity preconditioning exists to reduce. -/
+quadratic form bounds of `M⁻¹ A` in the `M`-inner product, which is the shape in which the Chebyshev
+convergence theory consumes them.  `λmax / λmin` is the condition number of `M⁻¹ A`, the quantity
+preconditioning exists to reduce. -/
 theorem isSymmetricBoundedBy_energyEnd (hA : A.IsSymmetric) {lmin lmax : ℝ}
     (hmin : ∀ x : E, lmin * RCLike.re (inner 𝕜 (M x) x) ≤ RCLike.re (inner 𝕜 (A x) x))
     (hmax : ∀ x : E, RCLike.re (inner 𝕜 (A x) x) ≤ lmax * RCLike.re (inner 𝕜 (M x) x)) :
@@ -262,13 +262,14 @@ theorem isSymmetricCoercive_energyEnd (hA : A.IsSymmetric) {c : ℝ} (hc : 0 < c
 
 end IsPreconditioner
 
-/-! ### Left and right preconditioning search the same space (Saad, Proposition 9.1) -/
+/-! ### Left and right preconditioning search the same space ([saad2003iterative], Proposition 9.1)
+-/
 
 variable {M Minv A : E →ₗ[𝕜] E}
 
-/-- Saad, *Iterative Methods*, Proposition 9.1 (left preconditioning): the left-preconditioned
-minimal-residual iterate — the one minimizing `‖M⁻¹ (b - A x)‖` — has the form
-`x = x₀ + s(M⁻¹ A) M⁻¹ r₀` with `deg s < m`. -/
+/-- [saad2003iterative], Proposition 9.1 (left preconditioning): the left-preconditioned
+minimal-residual iterate — the one minimizing `‖M⁻¹ (b - A x)‖` — has the form `x = x₀ + s(M⁻¹ A)
+M⁻¹ r₀` with `deg s < m`. -/
 theorem exists_aeval_of_isMinResIterate_preconditioned
     {b x₀ : E} {m : ℕ} {x : E} (hx : IsMinResIterate (Minv ∘ₗ A) (Minv b) x₀ m x) :
     ∃ s : 𝕜[X], s.degree < m ∧ x = x₀ + aeval (Minv ∘ₗ A) s (Minv (b - A x₀)) := by
@@ -279,10 +280,10 @@ theorem exists_aeval_of_isMinResIterate_preconditioned
   obtain ⟨s, hs, hsx⟩ := (mem_subspace_iff_exists_aeval _ _).1 hmem
   exact ⟨s, hs, by rw [hsx]; abel⟩
 
-/-- Saad, *Iterative Methods*, Proposition 9.1 (right preconditioning): the right-preconditioned
-iterate for `A M⁻¹ u = b`, mapped back by `x = M⁻¹ u`, lies in the *same* affine space
-`x₀ + 𝒦_m(M⁻¹ A, M⁻¹ r₀)` as the left-preconditioned one, and there it minimizes the true
-residual `‖b - A x‖` rather than the preconditioned one. -/
+/-- [saad2003iterative], Proposition 9.1 (right preconditioning): the right-preconditioned iterate
+for `A M⁻¹ u = b`, mapped back by `x = M⁻¹ u`, lies in the *same* affine space `x₀ + 𝒦_m(M⁻¹ A, M⁻¹
+r₀)` as the left-preconditioned one, and there it minimizes the true residual `‖b - A x‖` rather
+than the preconditioned one. -/
 theorem isMinRes_of_isMinResIterate_rightPreconditioned {b x₀ : E} {m : ℕ} {u₀ u : E}
     (hx₀ : x₀ = Minv u₀) (hu : IsMinResIterate (A ∘ₗ Minv) b u₀ m u) :
     IsMinRes A b x₀ (subspace (Minv ∘ₗ A) (Minv (b - A x₀)) m) (Minv u) := by
@@ -300,12 +301,12 @@ theorem isMinRes_of_isMinResIterate_rightPreconditioned {b x₀ : E} {m : ℕ} {
     have h := hu.min (u₀ + w) (by rw [hr, add_sub_cancel_left]; exact hw)
     rwa [hyu, ← LinearMap.comp_apply, ← LinearMap.comp_apply (f := A)]
 
-/-! ### The preconditioned conjugate gradient iteration (Saad, Algorithm 9.1) -/
+/-! ### The preconditioned conjugate gradient iteration ([saad2003iterative], Algorithm 9.1) -/
 
 namespace PCG
 
-/-- State of the preconditioned CG iteration: iterate, residual `r = b - A x`, and search
-direction.  The preconditioned residual `z = M⁻¹ r` is recomputed rather than stored. -/
+/-- State of the preconditioned CG iteration: iterate, residual `r = b - A x`, and search direction.
+The preconditioned residual `z = M⁻¹ r` is recomputed rather than stored. -/
 structure State (E : Type*) where
   /-- The current iterate. -/
   x : E
@@ -318,7 +319,7 @@ structure State (E : Type*) where
 noncomputable def alpha (A Minv : E →ₗ[𝕜] E) (s : State E) : 𝕜 :=
   inner 𝕜 s.r (Minv s.r) / inner 𝕜 (A s.p) s.p
 
-/-- One PCG step (Saad, *Iterative Methods*, Algorithm 9.1). -/
+/-- One PCG step ([saad2003iterative], Algorithm 9.1). -/
 noncomputable def step (A Minv : E →ₗ[𝕜] E) (s : State E) : State E :=
   let α := alpha A Minv s
   let r' := s.r - α • A s.p
@@ -354,10 +355,10 @@ theorem step_r (s : State E) : (step A Minv s).r = s.r - alpha A Minv s • A s.
 theorem step_p (s : State E) :
     (step A Minv s).p = Minv (step A Minv s).r + beta A Minv s • s.p := rfl
 
-/-- **PCG is CG on the preconditioned system.**  Transported to the `M`-inner product space, the
-PCG iterate and search direction are those of `CG.iterate` for `M⁻¹ A` with right-hand side
-`M⁻¹ b`, and the CG residual is `M⁻¹` of the PCG residual, which is the true residual `b - A x`.
-This is Saad, *Iterative Methods*, §9.2.1: everything proved of `CG.iterate` holds of PCG. -/
+/-- **PCG is CG on the preconditioned system.**  Transported to the `M`-inner product space, the PCG
+iterate and search direction are those of `CG.iterate` for `M⁻¹ A` with right-hand side `M⁻¹ b`, and
+the CG residual is `M⁻¹` of the PCG residual, which is the true residual `b - A x`. This is
+[saad2003iterative], §9.2.1: everything proved of `CG.iterate` holds of PCG. -/
 theorem iterate_eq_CG_iterate_withEnergy {M : E →ₗ[𝕜] E} (hM : IsPreconditioner M Minv) (k : ℕ) :
     hM.toEnergy (iterate A Minv b x₀ k).x
         = (CG.iterate (hM.energyEnd (Minv ∘ₗ A)) (hM.toEnergy (Minv b)) (hM.toEnergy x₀) k).x ∧
@@ -411,9 +412,9 @@ theorem residual_eq {M : E →ₗ[𝕜] E} (hM : IsPreconditioner M Minv) (k : �
 
 variable {A Minv b x₀}
 
-/-- The PCG iterate is the Galerkin iterate of `A x = b` over the *preconditioned* Krylov space
-`x₀ + 𝒦_k(M⁻¹ A, M⁻¹ r₀)`, in the original inner product.  In particular it minimizes the
-`A`-norm of the error there (`Krylov.IsGalerkin.energyNorm_le`). -/
+/-- The PCG iterate is the Galerkin iterate of `A x = b` over the *preconditioned* Krylov space `x₀
++ 𝒦_k(M⁻¹ A, M⁻¹ r₀)`, in the original inner product.  In particular it minimizes the `A`-norm of
+the error there (`Krylov.IsGalerkin.energyNorm_le`). -/
 theorem isGalerkinIterate {M : E →ₗ[𝕜] E} (hM : IsPreconditioner M Minv) (hA : A.IsSymmetric)
     {c : ℝ} (hc : 0 < c)
     (hcoer : ∀ x : E, c * RCLike.re (inner 𝕜 (M x) x) ≤ RCLike.re (inner 𝕜 (A x) x)) (k : ℕ) :
@@ -431,11 +432,11 @@ theorem isGalerkinIterate {M : E →ₗ[𝕜] E} (hM : IsPreconditioner M Minv) 
     hM.subspace_energyEnd, ← toEnergy_iterate_x A Minv b x₀ hM k] at hgal
   exact (hM.isGalerkin_energyEnd_iff A b x₀ _ _).1 hgal
 
-/-- The Chebyshev bound for PCG (Saad, *Iterative Methods*, §9.2): with the generalized
-eigenvalues of `A x = λ M x` in `[λmin, λmax]` and `κ = λmax / λmin`,
-`‖x* - x_k‖_A ≤ 2 ((√κ - 1)/(√κ + 1))^k ‖x* - x₀‖_A`.  The bound is the unpreconditioned one
-transported: the energy norm of `M⁻¹ A` in the `M`-inner product is the `A`-norm, so
-preconditioning changes only which condition number appears. -/
+/-- The Chebyshev bound for PCG ([saad2003iterative], §9.2): with the generalized eigenvalues of `A
+x = λ M x` in `[λmin, λmax]` and `κ = λmax / λmin`, `‖x* - x_k‖_A ≤ 2 ((√κ - 1)/(√κ + 1))^k ‖x* -
+x₀‖_A`.  The bound is the unpreconditioned one transported: the energy norm of `M⁻¹ A` in the
+`M`-inner product is the `A`-norm, so preconditioning changes only which condition number appears.
+-/
 theorem energyNorm_error_le {M : E →ₗ[𝕜] E} (hM : IsPreconditioner M Minv) (hA : A.IsSymmetric)
     {lmin lmax : ℝ} (hl : 0 < lmin) (hll : lmin ≤ lmax)
     (hmin : ∀ x : E, lmin * RCLike.re (inner 𝕜 (M x) x) ≤ RCLike.re (inner 𝕜 (A x) x))
@@ -460,13 +461,13 @@ end PCG
 
 namespace FGMRES
 
-/-- **Saad, *Iterative Methods*, Proposition 9.2**: the flexible GMRES iterate minimizes the
-residual norm over `x₀ + span {z_0, …, z_{m-1}}`.
+/-- **[saad2003iterative], Proposition 9.2**: the flexible GMRES iterate minimizes the residual norm
+over `x₀ + span {z_0, …, z_{m-1}}`.
 
 FGMRES expands the *iterate* in arbitrary preconditioned directions `z_j = M_j⁻¹ v_j` while
-expanding the *residual* in the orthonormal Arnoldi basis `v_i`, so its search space is not a
-Krylov subspace; what makes the minimization work is only the two-family relation
-`A Z_m = V_{m+1} H̄_m` of Saad (9.22) together with orthonormality of `V_{m+1}`. This is
+expanding the *residual* in the orthonormal Arnoldi basis `v_i`, so its search space is not a Krylov
+subspace; what makes the minimization work is only the two-family relation `A Z_m = V_{m+1} H̄_m` of
+[saad2003iterative] (9.22) together with orthonormality of `V_{m+1}`. This is
 `Krylov.IsQuasiMinResIterate.isMinOn_norm_residual` with the minimizer given explicitly. -/
 theorem isMinRes {A : E →ₗ[𝕜] E} {z v : ℕ → E} {h : ℕ → ℕ → 𝕜} {b x₀ : E} {β : 𝕜}
     (hv : HessenbergRelation₂ A z v h) (hr : b - A x₀ = β • v 0) {m : ℕ}
@@ -491,8 +492,8 @@ private theorem mulVec_hessenbergOf_last {h : ℕ → ℕ → 𝕜} (hH : ∀ i 
 /-- **Back substitution in a Hessenberg system**: if the subdiagonal entries `h_{i+1,i}` do not
 vanish and `H_m y = β e₁` with `β ≠ 0`, then the last coordinate of `y` is nonzero.
 
-Were it zero, the last equation would force the one before it to vanish, and so on down to
-`y_0 = 0`; the first equation would then read `0 = β`. -/
+Were it zero, the last equation would force the one before it to vanish, and so on down to `y_0 =
+0`; the first equation would then read `0 = β`. -/
 private theorem last_ne_zero_of_mulVec_eq {h : ℕ → ℕ → 𝕜} {β : 𝕜} (hβ : β ≠ 0) {m : ℕ}
     (hm : 0 < m) (hH : ∀ i k, k + 1 < i → h i k = 0)
     (hsub : ∀ i, i + 1 < m → h (i + 1) i ≠ 0) {y : Fin m → 𝕜}
@@ -539,15 +540,14 @@ private theorem last_ne_zero_of_mulVec_eq {h : ℕ → ℕ → 𝕜} {β : 𝕜}
   rw [Finset.sum_congr rfl fun k _ => by rw [hy0 k, mul_zero]] at h0
   exact hβ (by simpa using h0.symm)
 
-/-- **Saad, *Iterative Methods*, Proposition 9.3**: if the residual is nonzero, the previous
-steps have not broken down and the square Hessenberg matrix `H_j` is nonsingular, then the
-flexible GMRES iterate at step `j` is exact exactly when the subdiagonal entry `h_{j+1,j}`
-vanishes.
+/-- **[saad2003iterative], Proposition 9.3**: if the residual is nonzero, the previous steps have
+not broken down and the square Hessenberg matrix `H_j` is nonsingular, then the flexible GMRES
+iterate at step `j` is exact exactly when the subdiagonal entry `h_{j+1,j}` vanishes.
 
-The nonsingularity of `H_j` is a genuine extra hypothesis in the flexible case: unlike GMRES,
-where `A Z_j = A V_j` and nonsingularity of `A` transfers, the `z_j` are arbitrary. The forward
-direction is back substitution in `H_j y = β e₁`; the reverse builds the exact solution from
-`H_j⁻¹ (β e₁)` and uses minimality. -/
+The nonsingularity of `H_j` is a genuine extra hypothesis in the flexible case: unlike GMRES, where
+`A Z_j = A V_j` and nonsingularity of `A` transfers, the `z_j` are arbitrary. The forward direction
+is back substitution in `H_j y = β e₁`; the reverse builds the exact solution from `H_j⁻¹ (β e₁)`
+and uses minimality. -/
 theorem apply_eq_iff_coeff_eq_zero {A : E →ₗ[𝕜] E} {z v : ℕ → E} {h : ℕ → ℕ → 𝕜} {b x₀ : E}
     {β : 𝕜} (hv : HessenbergRelation₂ A z v h) (hr : b - A x₀ = β • v 0) (hβ : β ≠ 0)
     {j : ℕ} (hj : 0 < j) (hsub : ∀ i, i + 1 < j → h (i + 1) i ≠ 0)

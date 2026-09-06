@@ -16,20 +16,20 @@ import Mathlib.LinearAlgebra.Matrix.Permutation
 # The pattern of a matrix and the graphs it defines
 
 The *pattern* of a square matrix is the set of positions where it is nonzero, and the graph of the
-pattern is what the sparse-matrix reorderings of [Saad][saad2003iterative] §3.2–3.3 act on. Three
-carriers are needed, because the book uses all three:
+pattern is what the sparse-matrix reorderings of [saad2003iterative] §3.2–3.3 act on. Three carriers
+are needed, because the book uses all three:
 
-* `Matrix.adjDigraph A : Digraph n` has an arrow `i ⟶ j` exactly when `A i j ≠ 0`. This is Saad's
-  adjacency graph: it is *directed*, and it *has a self-loop* at every nonzero diagonal entry, so
-  `SimpleGraph` is the wrong carrier for it.
-* `Matrix.adjGraph A : SimpleGraph n` is the symmetrized, loopless graph — `i` and `j` are
-  adjacent when `i ≠ j` and one of `A i j`, `A j i` is nonzero. This is the graph the reorderings
-  of §3.3.3 act on, and for a matrix with a symmetric pattern it carries the same information as
-  the digraph off the diagonal (`Matrix.adjGraph_adj_iff_of_isSymm`).
+* `Matrix.adjDigraph A : Digraph n` has an arrow `i ⟶ j` exactly when `A i j ≠ 0`. This is
+  [saad2003iterative] adjacency graph: it is *directed*, and it *has a self-loop* at every nonzero
+  diagonal entry, so `SimpleGraph` is the wrong carrier for it.
+* `Matrix.adjGraph A : SimpleGraph n` is the symmetrized, loopless graph — `i` and `j` are adjacent
+  when `i ≠ j` and one of `A i j`, `A j i` is nonzero. This is the graph the reorderings of §3.3.3
+  act on, and for a matrix with a symmetric pattern it carries the same information as the digraph
+  off the diagonal (`Matrix.adjGraph_adj_iff_of_isSymm`).
 * `Matrix.adjQuiver A : Quiver n` is the same relation once more, in the shape Mathlib's path API
   consumes, since `Digraph` has no walks. It is `Matrix.toQuiver` of the entrywise norm, so it is
-  *definitionally* the quiver of Mathlib's `Matrix.IsIrreducible`, and no path has to be
-  transported between the two.
+  *definitionally* the quiver of Mathlib's `Matrix.IsIrreducible`, and no path has to be transported
+  between the two.
 
 A symmetric permutation is a relabelling of all three: `Matrix.adjDigraph_submatrix_adj` and its
 packaged form `Matrix.adjGraphIso`. A nonsymmetric one is not, which is the book's warning and the
@@ -37,20 +37,21 @@ reason its reorderings are always `A.submatrix σ σ`.
 
 ## Irreducibility
 
-`Matrix.IsPatternIrreducible A` is Saad's irreducibility (§3.3.4): the adjacency digraph is
-strongly connected. It is defined as `Matrix.IsIrreducible (A.map ‖·‖)`, because Mathlib's
-`Matrix.IsIrreducible` is stated for entrywise nonnegative matrices only, while Saad's notion
-applies to an arbitrary matrix; the entrywise norm is nonnegative and vanishes exactly where the
-matrix does, so it carries an arbitrary pattern into Mathlib's setting. For an entrywise
-nonnegative real matrix the two agree (`Matrix.isPatternIrreducible_iff_isIrreducible`).
+`Matrix.IsPatternIrreducible A` is [saad2003iterative] irreducibility (§3.3.4): the adjacency
+digraph is strongly connected. It is defined as `Matrix.IsIrreducible (A.map ‖·‖)`, because
+Mathlib's `Matrix.IsIrreducible` is stated for entrywise nonnegative matrices only, while
+[saad2003iterative] notion applies to an arbitrary matrix; the entrywise norm is nonnegative and
+vanishes exactly where the matrix does, so it carries an arbitrary pattern into Mathlib's setting.
+For an entrywise nonnegative real matrix the two agree
+(`Matrix.isPatternIrreducible_iff_isIrreducible`).
 
 The theorem of the section is the reducibility characterization
 `Matrix.isPatternIrreducible_iff_forall_submatrix_not_blockTriangular`: a matrix fails to be
-pattern-irreducible exactly when a symmetric permutation puts it in block triangular form. It
-needs `[Nontrivial n]`, and genuinely so: irreducibility asks for a path of *positive* length
-between every pair of indices, so the `1 × 1` zero matrix is reducible while its index type has no
-proper nonempty subset to split. The full Frobenius normal form — the diagonal blocks are the
-strongly connected components, in a topological order — is not proved here; it needs a
+pattern-irreducible exactly when a symmetric permutation puts it in block triangular form. It needs
+`[Nontrivial n]`, and genuinely so: irreducibility asks for a path of *positive* length between
+every pair of indices, so the `1 × 1` zero matrix is reducible while its index type has no proper
+nonempty subset to split. The full Frobenius normal form — the diagonal blocks are the strongly
+connected components, in a topological order — is not proved here; it needs a
 strongly-connected-component and topological-sort API for digraphs that Mathlib does not have.
 
 ## The pattern of a product
@@ -58,8 +59,8 @@ strongly-connected-component and topological-sort API for digraphs that Mathlib 
 Every claim of the book about the pattern of a product assumes away numerical cancellation. The
 unconditional half is `Matrix.exists_apply_ne_zero_of_mul_apply_ne_zero`: a nonzero entry of `A B`
 forces a nonzero entry of `A` and one of `B` in the matching positions, hence
-`Matrix.exists_path_length_of_pow_apply_ne_zero`, a nonzero entry of `A ^ k` forces a path of
-length `k` in the adjacency quiver. The converse is false by cancellation and true for entrywise
+`Matrix.exists_path_length_of_pow_apply_ne_zero`, a nonzero entry of `A ^ k` forces a path of length
+`k` in the adjacency quiver. The converse is false by cancellation and true for entrywise
 nonnegative matrices, where it is `Matrix.mul_apply_pos_of_pos_of_pos` here and Mathlib's
 `Matrix.pow_apply_pos_iff_nonempty_path` for powers.
 -/
@@ -76,8 +77,8 @@ section Zero
 
 variable [Zero R] [Zero S]
 
-/-- Saad's adjacency graph of a square matrix: the digraph on the index type with an arrow
-`i ⟶ j` exactly when `A i j ≠ 0`. It is directed, and it has a self-loop at every nonzero
+/-- [saad2003iterative] adjacency graph of a square matrix: the digraph on the index type with an
+arrow `i ⟶ j` exactly when `A i j ≠ 0`. It is directed, and it has a self-loop at every nonzero
 diagonal entry. -/
 def adjDigraph (A : Matrix n n R) : Digraph n where
   Adj i j := A i j ≠ 0
@@ -91,27 +92,27 @@ theorem adjDigraph_adj {A : Matrix n n R} {i j : n} : A.adjDigraph.Adj i j ↔ A
 theorem adjDigraph_transpose_adj {A : Matrix n n R} {i j : n} :
     Aᵀ.adjDigraph.Adj i j ↔ A.adjDigraph.Adj j i := Iff.rfl
 
-/-- The adjacency digraph only sees the pattern, so an entrywise map that vanishes exactly at zero
-— the norm, or the inclusion of the reals in the complexes — leaves it unchanged. -/
+/-- The adjacency digraph only sees the pattern, so an entrywise map that vanishes exactly at zero —
+the norm, or the inclusion of the reals in the complexes — leaves it unchanged. -/
 theorem adjDigraph_map (A : Matrix n n R) (f : R → S) (hf : ∀ x, f x = 0 ↔ x = 0) :
     (A.map f).adjDigraph = A.adjDigraph := by
   ext i j
   simp [adjDigraph, hf]
 
-/-- The undirected, loopless graph of the pattern of a square matrix: `i` and `j` are adjacent
-when `i ≠ j` and at least one of `A i j`, `A j i` is nonzero. This is the graph the sparse-matrix
+/-- The undirected, loopless graph of the pattern of a square matrix: `i` and `j` are adjacent when
+`i ≠ j` and at least one of `A i j`, `A j i` is nonzero. This is the graph the sparse-matrix
 reorderings act on. -/
 def adjGraph (A : Matrix n n R) : SimpleGraph n := SimpleGraph.fromRel fun i j => A i j ≠ 0
 
-/-- The edges of the pattern graph: distinct indices carrying a nonzero entry one way or
-the other. -/
+/-- The edges of the pattern graph: distinct indices carrying a nonzero entry one way or the other.
+-/
 @[simp]
 theorem adjGraph_adj {A : Matrix n n R} {i j : n} :
     A.adjGraph.Adj i j ↔ i ≠ j ∧ (A i j ≠ 0 ∨ A j i ≠ 0) :=
   SimpleGraph.fromRel_adj _ _ _
 
-/-- If the pattern of `A` is symmetric then off the diagonal the undirected graph and the
-adjacency digraph carry the same information. -/
+/-- If the pattern of `A` is symmetric then off the diagonal the undirected graph and the adjacency
+digraph carry the same information. -/
 theorem adjGraph_adj_iff_of_forall_ne_zero {A : Matrix n n R}
     (hA : ∀ i j, A i j ≠ 0 → A j i ≠ 0) {i j : n} :
     A.adjGraph.Adj i j ↔ i ≠ j ∧ A.adjDigraph.Adj i j := by
@@ -132,8 +133,8 @@ variable [Norm R]
 
 /-- The pattern of a square matrix as a quiver, with an arrow `i ⟶ j` for every nonzero entry.
 
-It is defined as `Matrix.toQuiver` of the entrywise norm, so that it is *definitionally* the
-quiver Mathlib's `Matrix.IsIrreducible` is stated over; `Matrix.nonempty_adjQuiver_hom_iff` and
+It is defined as `Matrix.toQuiver` of the entrywise norm, so that it is *definitionally* the quiver
+Mathlib's `Matrix.IsIrreducible` is stated over; `Matrix.nonempty_adjQuiver_hom_iff` and
 `Matrix.adjHom` are the dictionary to `Matrix.adjDigraph`. A quiver is needed beside the digraph
 only because `Digraph` has no walks in Mathlib. -/
 @[instance_reducible]
@@ -145,8 +146,8 @@ section Normed
 
 variable [NormedAddCommGroup R] {A : Matrix n n R}
 
-/-- The arrows of the adjacency quiver are the nonzero entries, so it carries the same
-relation as `Matrix.adjDigraph`. -/
+/-- The arrows of the adjacency quiver are the nonzero entries, so it carries the same relation as
+`Matrix.adjDigraph`. -/
 @[simp]
 theorem nonempty_adjQuiver_hom_iff {i j : n} :
     Nonempty (@Quiver.Hom n A.adjQuiver i j) ↔ A i j ≠ 0 :=
@@ -175,8 +176,8 @@ section Submatrix
 
 variable [Zero R]
 
-/-- Saad §3.3.2: a symmetric permutation of a matrix is a relabelling of its adjacency digraph.
-The statement is definitional. -/
+/-- [saad2003iterative] §3.3.2: a symmetric permutation of a matrix is a relabelling of its
+adjacency digraph. The statement is definitional. -/
 theorem adjDigraph_submatrix_adj (A : Matrix n n R) (σ : Equiv.Perm n) (i j : n) :
     (A.submatrix σ σ).adjDigraph.Adj i j ↔ A.adjDigraph.Adj (σ i) (σ j) := Iff.rfl
 
@@ -216,7 +217,8 @@ section PermMatrix
 
 variable [Fintype n] [DecidableEq n] [NonAssocSemiring R]
 
-/-- Saad's `P A Pᵀ` form of a symmetric permutation, for `P` the permutation matrix of `σ`. -/
+/-- [saad2003iterative] `P A Pᵀ` form of a symmetric permutation, for `P` the permutation matrix of
+`σ`. -/
 theorem submatrix_eq_permMatrix_mul_mul_transpose (A : Matrix n n R) (σ : Equiv.Perm n) :
     A.submatrix σ σ = σ.permMatrix R * A * (σ.permMatrix R)ᵀ := by
   rw [transpose_permMatrix]
@@ -233,9 +235,9 @@ section Mul
 
 variable [Fintype n]
 
-/-- The pattern of a product is contained in the composite of the patterns: a nonzero entry of
-`A * B` forces matching nonzero entries of `A` and of `B`. No hypothesis is needed for this
-direction; the converse fails by cancellation. -/
+/-- The pattern of a product is contained in the composite of the patterns: a nonzero entry of `A *
+B` forces matching nonzero entries of `A` and of `B`. No hypothesis is needed for this direction;
+the converse fails by cancellation. -/
 theorem exists_apply_ne_zero_of_mul_apply_ne_zero [NonUnitalNonAssocSemiring R]
     {A B : Matrix n n R} {i j : n} (h : (A * B) i j ≠ 0) : ∃ k, A i k ≠ 0 ∧ B k j ≠ 0 := by
   by_contra! hc
@@ -249,8 +251,8 @@ theorem exists_apply_ne_zero_of_mul_apply_ne_zero [NonUnitalNonAssocSemiring R]
 /-- The converse, for entrywise nonnegative matrices, where no cancellation can happen: a nonzero
 entry of `A` and a matching nonzero entry of `B` force a nonzero entry of `A * B`.
 
-Saad's Problem P-3.5, that the patterns of `A` and of `B` are contained in that of `A * B` when
-both have a nonzero diagonal, is this at `k = j` and at `k = i`. -/
+[saad2003iterative] Problem P-3.5, that the patterns of `A` and of `B` are contained in that of `A *
+B` when both have a nonzero diagonal, is this at `k = j` and at `k = i`. -/
 theorem mul_apply_pos_of_pos_of_pos [Semiring R] [PartialOrder R] [IsStrictOrderedRing R]
     {A B : Matrix n n R} (hA : ∀ i j, 0 ≤ A i j) (hB : ∀ i j, 0 ≤ B i j) {i j k : n}
     (h₁ : 0 < A i k) (h₂ : 0 < B k j) : 0 < (A * B) i j := by
@@ -258,8 +260,8 @@ theorem mul_apply_pos_of_pos_of_pos [Semiring R] [PartialOrder R] [IsStrictOrder
   exact Finset.sum_pos' (fun l _ => mul_nonneg (hA i l) (hB l j))
     ⟨k, Finset.mem_univ k, mul_pos h₁ h₂⟩
 
-/-- A nonzero entry of `A ^ k` forces a path of length `k` in the adjacency quiver: Saad §3.2.1,
-in the direction that needs no hypothesis. -/
+/-- A nonzero entry of `A ^ k` forces a path of length `k` in the adjacency quiver:
+[saad2003iterative] §3.2.1, in the direction that needs no hypothesis. -/
 theorem exists_path_length_of_pow_apply_ne_zero [DecidableEq n] [NormedRing R]
     (A : Matrix n n R) (k : ℕ) {i j : n} (h : (A ^ k) i j ≠ 0) :
     letI := A.adjQuiver
@@ -283,13 +285,13 @@ end Mul
 
 section Irreducible
 
-/-- Saad's irreducibility of an arbitrary square matrix over a normed additive group: the
-adjacency digraph is strongly connected, in the sense that any two indices are joined by a path of
-positive length in `Matrix.adjQuiver`.
+/-- [saad2003iterative] irreducibility of an arbitrary square matrix over a normed additive group:
+the adjacency digraph is strongly connected, in the sense that any two indices are joined by a path
+of positive length in `Matrix.adjQuiver`.
 
-It is `Matrix.IsIrreducible` of the entrywise norm, which is nonnegative and vanishes exactly
-where the matrix does; Mathlib's predicate is available only for entrywise nonnegative matrices,
-and this is the composite that carries an arbitrary pattern into it. -/
+It is `Matrix.IsIrreducible` of the entrywise norm, which is nonnegative and vanishes exactly where
+the matrix does; Mathlib's predicate is available only for entrywise nonnegative matrices, and this
+is the composite that carries an arbitrary pattern into it. -/
 def IsPatternIrreducible [Norm R] (A : Matrix n n R) : Prop := (A.map (‖·‖)).IsIrreducible
 
 variable [NormedAddCommGroup R] {A : Matrix n n R}
@@ -324,7 +326,7 @@ theorem isPatternIrreducible_iff_nonempty_path [Nontrivial n] :
   · exact absurd (Path.eq_of_length_zero p hp) (Ne.symm hk)
   · simpa [Path.length_comp] using Nat.lt_of_lt_of_le hp (Nat.le_add_right _ _)
 
-/-- For an entrywise nonnegative real matrix, Saad's irreducibility is Mathlib's. -/
+/-- For an entrywise nonnegative real matrix, [saad2003iterative] irreducibility is Mathlib's. -/
 theorem isPatternIrreducible_iff_isIrreducible {A : Matrix n n ℝ} (hA : ∀ i j, 0 ≤ A i j) :
     A.IsPatternIrreducible ↔ A.IsIrreducible := by
   have h : A.map (‖·‖) = A := by
@@ -332,8 +334,8 @@ theorem isPatternIrreducible_iff_isIrreducible {A : Matrix n n ℝ} (hA : ∀ i 
     simp [Real.norm_eq_abs, abs_of_nonneg (hA i j)]
   rw [IsPatternIrreducible, h]
 
-/-- Relabelling by a permutation carries paths of the pattern quiver of `B.submatrix σ σ` to
-paths of the pattern quiver of `B`. -/
+/-- Relabelling by a permutation carries paths of the pattern quiver of `B.submatrix σ σ` to paths
+of the pattern quiver of `B`. -/
 private noncomputable abbrev submatrixPrefunctor (B : Matrix n n R) (σ : Equiv.Perm n) :
     @Prefunctor n (B.submatrix σ σ).adjQuiver n B.adjQuiver :=
   @Prefunctor.mk n (B.submatrix σ σ).adjQuiver n B.adjQuiver σ fun {_ _} e => e
@@ -364,14 +366,14 @@ theorem IsPatternIrreducible.submatrix (h : A.IsPatternIrreducible) (σ : Equiv.
 
 variable [Fintype n]
 
-/-- The core of Saad's reducibility characterization: a matrix on at least two indices fails to be
-pattern-irreducible exactly when the indices split into a proper nonempty part `s` and its
-complement with every entry from `s` to the complement zero — in matrix terms, exactly when `A` is
-already in block triangular form for that split.
+/-- The core of [saad2003iterative] reducibility characterization: a matrix on at least two indices
+fails to be pattern-irreducible exactly when the indices split into a proper nonempty part `s` and
+its complement with every entry from `s` to the complement zero — in matrix terms, exactly when `A`
+is already in block triangular form for that split.
 
 `[Nontrivial n]` is necessary: irreducibility asks for a path of *positive* length between every
-pair of indices, so the `1 × 1` zero matrix is reducible while its index type has no proper
-nonempty subset. -/
+pair of indices, so the `1 × 1` zero matrix is reducible while its index type has no proper nonempty
+subset. -/
 theorem not_isPatternIrreducible_iff_exists_forall_apply_eq_zero [Nontrivial n] :
     ¬ A.IsPatternIrreducible ↔
       ∃ s : Finset n, s.Nonempty ∧ s ≠ Finset.univ ∧ ∀ i ∈ s, ∀ j ∉ s, A i j = 0 := by
@@ -422,9 +424,9 @@ theorem not_isPatternIrreducible_iff_exists_forall_apply_eq_zero [Nontrivial n] 
     obtain ⟨p, -⟩ := hirr.exists_pos_length_path i j
     exact hj (hstay j p)
 
-/-- Saad §3.3.4: a matrix on at least two indices is pattern-irreducible exactly when no symmetric
-permutation puts it in block triangular form — for every permutation and every proper nonempty set
-of indices, some entry leads out of the set.
+/-- [saad2003iterative] §3.3.4: a matrix on at least two indices is pattern-irreducible exactly when
+no symmetric permutation puts it in block triangular form — for every permutation and every proper
+nonempty set of indices, some entry leads out of the set.
 
 The negation, `Matrix.not_isPatternIrreducible_iff_exists_submatrix_blockTriangular`, is the form
 the book states. Neither says anything about the finer Frobenius normal form, whose diagonal blocks
@@ -446,7 +448,7 @@ theorem isPatternIrreducible_iff_forall_submatrix_not_blockTriangular [Nontrivia
     obtain ⟨i, hi, j, hj, hij⟩ := h 1 s hs hsu
     exact hij (by simpa using hzero i hi j hj)
 
-/-- Saad §3.3.4 in the book's own words: a matrix on at least two indices fails to be
+/-- [saad2003iterative] §3.3.4 in the book's own words: a matrix on at least two indices fails to be
 pattern-irreducible exactly when a symmetric permutation puts it in block triangular form. -/
 theorem not_isPatternIrreducible_iff_exists_submatrix_blockTriangular [Nontrivial n] :
     ¬ A.IsPatternIrreducible ↔

@@ -15,7 +15,7 @@ Quantitative versions of `Units.oneSub` / `Units.add` in a complete normed ring:
 (1 - ‖t‖)`, `‖(x + t)⁻¹‖ ≤ ‖x⁻¹‖ / (1 - ‖x⁻¹‖ ‖t‖)`, and the two-space version for continuous linear
 equivalences. These are the explicit forms of the classical geometric-series (Banach perturbation)
 estimates for the inverse of a small perturbation of an invertible element, and are stated as
-[Atkinson–Han][han2009theoretical] (2.3.6), Theorem 2.3.5 and its displays (2.3.13) and (2.3.14).
+[han2009theoretical] (2.3.6), Theorem 2.3.5 and its displays (2.3.13) and (2.3.14).
 -/
 
 /-- `u ↦ 1 / (1 - u)` is monotone below `1`. -/
@@ -88,8 +88,7 @@ theorem isUnit_one_sub_of_norm_pow_lt_one {t : R} {m : ℕ} (h : ‖t ^ m‖ < 1
   exact ((commute_one_sub_geom_sum t m).isUnit_mul_iff.mp hprod).1
 
 /-- The bound accompanying `isUnit_one_sub_of_norm_pow_lt_one`, in the form given by
-Atkinson–Han, *Theoretical Numerical Analysis*, (2.3.6):
-`‖(1 - t)⁻¹‖ ≤ (∑_{i < m} ‖t^i‖) / (1 - ‖t^m‖)`. -/
+[han2009theoretical], (2.3.6): `‖(1 - t)⁻¹‖ ≤ (∑_{i < m} ‖t^i‖) / (1 - ‖t^m‖)`. -/
 theorem norm_inverse_one_sub_le_of_norm_pow_lt_one {t : R} {m : ℕ} (h : ‖t ^ m‖ < 1) :
     ‖Ring.inverse (1 - t)‖ ≤ (∑ i ∈ Finset.range m, ‖t ^ i‖) / (1 - ‖t ^ m‖) := by
   have hunit : IsUnit (1 - t) := isUnit_one_sub_of_norm_pow_lt_one h
@@ -170,8 +169,8 @@ theorem norm_inverse_add_le (x : Rˣ) (t : R) (h : ‖t‖ < ‖(↑x⁻¹ : R)�
           (one_div_one_sub_le_one_div_one_sub hle (norm_inv_mul_lt_one h))
     _ = ‖(↑x⁻¹ : R)‖ / (1 - ‖(↑x⁻¹ : R)‖ * ‖t‖) := by ring
 
-/-- Perturbation bound for the change in the inverse:
-`‖(x + t)⁻¹ - x⁻¹‖ ≤ ‖x⁻¹‖² ‖t‖ / (1 - ‖x⁻¹‖ ‖t‖)`. -/
+/-- Perturbation bound for the change in the inverse: `‖(x + t)⁻¹ - x⁻¹‖ ≤ ‖x⁻¹‖² ‖t‖ / (1 - ‖x⁻¹‖
+‖t‖)`. -/
 theorem norm_inverse_add_sub_le (x : Rˣ) (t : R) (h : ‖t‖ < ‖(↑x⁻¹ : R)‖⁻¹) :
     ‖Ring.inverse ((x : R) + t) - ↑x⁻¹‖ ≤
       ‖(↑x⁻¹ : R)‖ ^ 2 * ‖t‖ / (1 - ‖(↑x⁻¹ : R)‖ * ‖t‖) := by
@@ -196,11 +195,11 @@ namespace ContinuousLinearEquiv
 variable {𝕜 E F : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
   [NormedAddCommGroup F] [NormedSpace 𝕜 F] [CompleteSpace E]
 
-/-- Two-space perturbation theorem, in the form of Atkinson–Han, *Theoretical Numerical
-Analysis*, Thm 2.3.5: if `e : E ≃L F` and `‖e⁻¹‖ ‖t‖ < 1` then `e + t` is invertible with
-`‖(e + t)⁻¹‖ ≤ ‖e⁻¹‖ / (1 - ‖e⁻¹‖ ‖t‖)` (Atkinson–Han (2.3.13)) and
-`‖(e + t)⁻¹ - e⁻¹‖ ≤ ‖e⁻¹‖² ‖t‖ / (1 - ‖e⁻¹‖ ‖t‖)` (Atkinson–Han (2.3.14)). Completeness of `E`
-suffices here, whereas Atkinson–Han Thm 2.3.5 assumes one of the two spaces complete. -/
+/-- Two-space perturbation theorem, in the form of [han2009theoretical], Thm 2.3.5: if `e : E ≃L F`
+and `‖e⁻¹‖ ‖t‖ < 1` then `e + t` is invertible with `‖(e + t)⁻¹‖ ≤ ‖e⁻¹‖ / (1 - ‖e⁻¹‖ ‖t‖)`
+([han2009theoretical] (2.3.13)) and `‖(e + t)⁻¹ - e⁻¹‖ ≤ ‖e⁻¹‖² ‖t‖ / (1 - ‖e⁻¹‖ ‖t‖)`
+([han2009theoretical] (2.3.14)). Completeness of `E` suffices here, whereas [han2009theoretical] Thm
+2.3.5 assumes one of the two spaces complete. -/
 theorem exists_symm_norm_le_of_add (e : E ≃L[𝕜] F) (t : E →L[𝕜] F)
     (h : ‖(e.symm : F →L[𝕜] E)‖ * ‖t‖ < 1) :
     ∃ e' : E ≃L[𝕜] F, (e' : E →L[𝕜] F) = (e : E →L[𝕜] F) + t ∧
@@ -251,9 +250,9 @@ theorem exists_symm_norm_le_of_add (e : E ≃L[𝕜] F) (t : E →L[𝕜] F)
       _ = ‖(e.symm : F →L[𝕜] E)‖ ^ 2 * ‖t‖ / (1 - ‖(e.symm : F →L[𝕜] E)‖ * ‖t‖) := by ring
 
 omit [CompleteSpace E] in
-/-- Consistency plus stability gives convergence: `‖v - vₙ‖ ≤ ‖Lₙ⁻¹‖ ‖(L - Lₙ) v‖` when
-`L v = Lₙ vₙ`, so a uniform bound on `‖Lₙ⁻¹‖` (stability) turns the consistency error
-`‖(L - Lₙ) v‖ → 0` into `vₙ → v`. -/
+/-- Consistency plus stability gives convergence: `‖v - vₙ‖ ≤ ‖Lₙ⁻¹‖ ‖(L - Lₙ) v‖` when `L v = Lₙ
+vₙ`, so a uniform bound on `‖Lₙ⁻¹‖` (stability) turns the consistency error `‖(L - Lₙ) v‖ → 0` into
+`vₙ → v`. -/
 theorem norm_sub_le_of_apply_eq (L : E →L[𝕜] F) (Ln : E ≃L[𝕜] F) {v vn : E}
     (h : L v = Ln vn) : ‖v - vn‖ ≤ ‖(Ln.symm : F →L[𝕜] E)‖ * ‖(L - Ln) v‖ := by
   have hv : (Ln.symm : F →L[𝕜] E) ((L - (Ln : E →L[𝕜] F)) v) = vn - v := by simp [h]

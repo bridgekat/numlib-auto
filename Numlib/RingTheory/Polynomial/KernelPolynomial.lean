@@ -15,18 +15,18 @@ import Mathlib.Topology.Order.Compact
 
 The least-squares counterpart of the Chebyshev min–max problem of
 `Numlib/RingTheory/Polynomial/ChebyshevMinimax`. Both minimize over `{p : deg p ≤ k, p γ = 1}`;
-Chebyshev minimizes the sup norm on an interval, the kernel polynomial minimizes the quadratic
-form of a symmetric bilinear form `B` on `ℝ[X]`.
+Chebyshev minimizes the sup norm on an interval, the kernel polynomial minimizes the quadratic form
+of a symmetric bilinear form `B` on `ℝ[X]`.
 
-Everything is stated for a family `q : ℕ → ℝ[X]` with `deg (q i) = i` which is orthonormal for
-`B`, so that `q 0, …, q k` is a basis of the polynomials of degree at most `k`. No measure theory
+Everything is stated for a family `q : ℕ → ℝ[X]` with `deg (q i) = i` which is orthonormal for `B`,
+so that `q 0, …, q k` is a basis of the polynomials of degree at most `k`. No measure theory
 appears: the weighted form `B p r = ∫ p r w` is one instance, but nothing in the proofs uses the
-integral, and the discrete forms arising from a spectral measure are covered by the same
-statements. Positive semidefiniteness is not assumed: on the polynomials of degree at most `k` it
-is a consequence of orthonormality (`Polynomial.bilinForm_self_nonneg_of_degree_le`).
+integral, and the discrete forms arising from a spectral measure are covered by the same statements.
+Positive semidefiniteness is not assumed: on the polynomials of degree at most `k` it is a
+consequence of orthonormality (`Polynomial.bilinForm_self_nonneg_of_degree_le`).
 
-The mathematical content is Cauchy–Schwarz: minimizing `‖x‖` over the affine hyperplane
-`{⟪y, x⟫ = 1}` of an inner product space gives `x = ‖y‖⁻² • y` and the value `1 / ‖y‖`
+The mathematical content is Cauchy–Schwarz: minimizing `‖x‖` over the affine hyperplane `{⟪y, x⟫ =
+1}` of an inner product space gives `x = ‖y‖⁻² • y` and the value `1 / ‖y‖`
 (`isLeast_of_inner_eq_one`). With `y` the vector of values `q i γ`, that is the kernel polynomial
 formula.
 
@@ -40,9 +40,8 @@ formula.
 * `Polynomial.bilinForm_kernelPolynomial_le_pow`: geometric decay of the minimum value for a form
   supported on `[α, β]` with `0 < α < β`.
 
-The material follows [Saad, *Iterative Methods for Sparse Linear Systems*][saad2003iterative],
-§12.3.3. Saad's explicit Jacobi-weight formula and the Gamma-function evaluation of the minimum are
-not here: they need Jacobi polynomials.
+The material follows [saad2003iterative], §12.3.3. [saad2003iterative] explicit Jacobi-weight
+formula and the Gamma-function evaluation of the minimum are not here: they need Jacobi polynomials.
 -/
 
 open Polynomial
@@ -70,9 +69,9 @@ namespace Polynomial
 
 /-! ### A family of polynomials with all degrees spans -/
 
-/-- A family of polynomials with `deg (q i) = i` spans the polynomials of degree at most `k`:
-every such `p` is a linear combination of `q 0, …, q k`. This is what makes an orthonormal family
-of that shape a basis of the competitors in the minimization problems below. -/
+/-- A family of polynomials with `deg (q i) = i` spans the polynomials of degree at most `k`: every
+such `p` is a linear combination of `q 0, …, q k`. This is what makes an orthonormal family of that
+shape a basis of the competitors in the minimization problems below. -/
 theorem exists_sum_smul_of_degree_le {K : Type*} [Field K] {q : ℕ → K[X]}
     (hdeg : ∀ i, (q i).degree = i) :
     ∀ (k : ℕ) {p : K[X]}, p.degree ≤ k →
@@ -150,8 +149,8 @@ private theorem eval_sum_smul (γ : ℝ) (k : ℕ) (c : ℕ → ℝ) :
   simp [eval_finsetSum]
 
 /-- On the polynomials of degree at most `k`, orthonormality of `q 0, …, q k` already makes `B`
-positive semidefinite: the quadratic form is a sum of squares. This is why no positivity
-hypothesis on `B` appears anywhere in this file. -/
+positive semidefinite: the quadratic form is a sum of squares. This is why no positivity hypothesis
+on `B` appears anywhere in this file. -/
 theorem bilinForm_self_nonneg_of_degree_le
     (horth : ∀ i j, B (q i) (q j) = if i = j then 1 else 0) (hdeg : ∀ i, (q i).degree = i)
     {k : ℕ} {p : ℝ[X]} (hp : p.degree ≤ k) : 0 ≤ B p p := by
@@ -180,8 +179,8 @@ private theorem sum_inv_mul_self {S : ℝ} {k : ℕ} {y : ℕ → ℝ}
   rw [Finset.sum_congr rfl fun i _ => (by ring : S⁻¹ * y i * y i = S⁻¹ * y i ^ 2),
     ← Finset.mul_sum, hy, inv_mul_cancel₀ hS]
 
-/-- The kernel polynomial has degree at most `k`, one of the two conditions making it an
-admissible competitor. -/
+/-- The kernel polynomial has degree at most `k`, one of the two conditions making it an admissible
+competitor. -/
 theorem kernelPolynomial_degree_le (hdeg : ∀ i, (q i).degree = i) (γ : ℝ) (k : ℕ) :
     (kernelPolynomial q γ k).degree ≤ k := by
   refine (degree_smul_le _ _).trans ((degree_sum_le _ _).trans (Finset.sup_le fun i hi => ?_))
@@ -189,17 +188,17 @@ theorem kernelPolynomial_degree_le (hdeg : ∀ i, (q i).degree = i) (γ : ℝ) (
   rw [hdeg i]
   exact_mod_cast Nat.lt_succ_iff.mp (Finset.mem_range.mp hi)
 
-/-- The kernel polynomial takes the value `1` at `γ`, the other condition making it admissible.
-The normalizing sum must be nonzero, which says exactly that some `q i` with `i ≤ k` does not
-vanish at `γ`. -/
+/-- The kernel polynomial takes the value `1` at `γ`, the other condition making it admissible. The
+normalizing sum must be nonzero, which says exactly that some `q i` with `i ≤ k` does not vanish at
+`γ`. -/
 theorem kernelPolynomial_eval {γ : ℝ} {k : ℕ}
     (hS : ∑ i ∈ Finset.range (k + 1), (q i).eval γ ^ 2 ≠ 0) :
     (kernelPolynomial q γ k).eval γ = 1 := by
   rw [kernelPolynomial_eq, eval_sum_smul]
   exact sum_inv_mul_self rfl hS
 
-/-- The quadratic form at the kernel polynomial is the reciprocal of the normalizing sum, which
-is Saad's minimum value. -/
+/-- The quadratic form at the kernel polynomial is the reciprocal of the normalizing sum, which is
+[saad2003iterative] minimum value. -/
 theorem bilinForm_kernelPolynomial_self
     (horth : ∀ i j, B (q i) (q j) = if i = j then 1 else 0) {γ : ℝ} {k : ℕ}
     (hS : ∑ i ∈ Finset.range (k + 1), (q i).eval γ ^ 2 ≠ 0) :
@@ -221,9 +220,9 @@ private theorem inner_toLp {n : ℕ} (f g : ℕ → ℝ) :
   rw [PiLp.inner_apply, ← Fin.sum_univ_eq_sum_range (fun i => g i * f i) n]
   exact Finset.sum_congr rfl fun i _ => by simp [RCLike.inner_apply]
 
-/-- Saad's optimality claim for the kernel polynomial: among the polynomials of degree at most
-`k` taking the value `1` at `γ`, it minimizes the quadratic form of `B`, and the minimum value is
-`(∑_{i ≤ k} q i γ ^ 2)⁻¹`. Expand a competitor in the orthonormal family and apply
+/-- [saad2003iterative] optimality claim for the kernel polynomial: among the polynomials of degree
+at most `k` taking the value `1` at `γ`, it minimizes the quadratic form of `B`, and the minimum
+value is `(∑_{i ≤ k} q i γ ^ 2)⁻¹`. Expand a competitor in the orthonormal family and apply
 `isLeast_of_inner_eq_one` to the vector of values `q i γ`. -/
 theorem bilinForm_kernelPolynomial_le
     (horth : ∀ i j, B (q i) (q j) = if i = j then 1 else 0) (hdeg : ∀ i, (q i).degree = i)
@@ -257,8 +256,8 @@ theorem bilinForm_kernelPolynomial_le
 
 /-! ### The normal equations -/
 
-/-- If `0 ≤ 2 t a + t ^ 2 c` for every real `t` and `0 ≤ c`, then `a = 0`: the first-order
-condition at an interior minimum of a real quadratic. -/
+/-- If `0 ≤ 2 t a + t ^ 2 c` for every real `t` and `0 ≤ c`, then `a = 0`: the first-order condition
+at an interior minimum of a real quadratic. -/
 private theorem eq_zero_of_forall_nonneg {a c : ℝ} (hc : 0 ≤ c)
     (h : ∀ t : ℝ, 0 ≤ 2 * t * a + t ^ 2 * c) : a = 0 := by
   have key : ∀ a' : ℝ, (∀ t : ℝ, 0 ≤ 2 * t * a' + t ^ 2 * c) → a' ≤ 0 := by
@@ -279,8 +278,8 @@ private theorem eq_zero_of_forall_nonneg {a c : ℝ} (hc : 0 ≤ c)
 
 /-- The residual polynomials are orthogonal for the shifted form: with `R = kernelPolynomial q 0 k`,
 `B (X * p) R = 0` for every `p` of degree less than `k`. These are the normal equations of the
-least-squares problem, read off the optimality of `R` by varying along the admissible directions
-`X * p`, which are exactly the directions preserving both `deg ≤ k` and the value `1` at `0`. -/
+least-squares problem, read off the optimality of `R` by varying along the admissible directions `X
+* p`, which are exactly the directions preserving both `deg ≤ k` and the value `1` at `0`. -/
 theorem bilinForm_kernelPolynomial_mul_X (hsymm : B.IsSymm)
     (horth : ∀ i j, B (q i) (q j) = if i = j then 1 else 0) (hdeg : ∀ i, (q i).degree = i)
     {k : ℕ} (hS : ∑ i ∈ Finset.range (k + 1), (q i).eval 0 ^ 2 ≠ 0)
@@ -321,11 +320,11 @@ private theorem bddAbove_image_abs_eval (p : ℝ[X]) (a b : ℝ) :
     BddAbove ((fun t => |p.eval t|) '' Set.Icc a b) :=
   (isCompact_Icc.image p.continuous.abs).bddAbove
 
-/-- The geometric bound of Saad §12.3.3 for `0 < α < β`. A form "supported on `[α, β]`" — meaning
-`B p p ≤ (sup_{[α,β]} |p|) ^ 2 * B 1 1`, which the weighted form `B p r = ∫_α^β p r w` with
-`w ≥ 0` satisfies by monotonicity of the integral — makes the least-squares residual polynomial
-decay geometrically, because `(1 - X / θ) ^ k` with `θ = (α + β) / 2` is an admissible competitor
-whose sup on `[α, β]` is at most `((β - α) / (β + α)) ^ k`. -/
+/-- The geometric bound of [saad2003iterative] §12.3.3 for `0 < α < β`. A form "supported on `[α,
+β]`" — meaning `B p p ≤ (sup_{[α,β]} |p|) ^ 2 * B 1 1`, which the weighted form `B p r = ∫_α^β p r
+w` with `w ≥ 0` satisfies by monotonicity of the integral — makes the least-squares residual
+polynomial decay geometrically, because `(1 - X / θ) ^ k` with `θ = (α + β) / 2` is an admissible
+competitor whose sup on `[α, β]` is at most `((β - α) / (β + α)) ^ k`. -/
 theorem bilinForm_kernelPolynomial_le_pow
     (horth : ∀ i j, B (q i) (q j) = if i = j then 1 else 0) (hdeg : ∀ i, (q i).degree = i)
     {α β : ℝ} (hα : 0 < α) (hαβ : α < β)

@@ -4,28 +4,28 @@ import Mathlib.Analysis.Normed.Operator.Basic
 /-!
 # Two-level difference schemes: consistency and stability give convergence
 
-A *two-level scheme* advances an approximation by a fixed amplification operator and a source
-term, `v^{m+1} = Q v^m + h g^m`, where `h` is the step in the evolution variable.  The exact values
-`u^m` of the problem being approximated satisfy the same recursion up to a local truncation error,
-`u^{m+1} = Q u^m + h g^m + h τ^m`.  Subtracting, the error `e^m = u^m - v^m` obeys
-`e^{m+1} = Q e^m + h τ^m` with `e^0 = 0`, whose closed form is
+A *two-level scheme* advances an approximation by a fixed amplification operator and a source term,
+`v^{m+1} = Q v^m + h g^m`, where `h` is the step in the evolution variable.  The exact values `u^m`
+of the problem being approximated satisfy the same recursion up to a local truncation error,
+`u^{m+1} = Q u^m + h g^m + h τ^m`.  Subtracting, the error `e^m = u^m - v^m` obeys `e^{m+1} = Q e^m
++ h τ^m` with `e^0 = 0`, whose closed form is
 
   `e^m = h ∑_{l < m} Q^{m - 1 - l} τ^l`.
 
-So the whole theory of this scheme is a geometric-sum estimate: if the powers of `Q` are bounded
-by `M₀` up to step `N` (*stability*) and the truncation errors are bounded by `δ`
-(*consistency*), then over a fixed horizon `N h ≤ T` the error never exceeds `M₀ T δ`.  That is
+So the whole theory of this scheme is a geometric-sum estimate: if the powers of `Q` are bounded by
+`M₀` up to step `N` (*stability*) and the truncation errors are bounded by `δ` (*consistency*), then
+over a fixed horizon `N h ≤ T` the error never exceeds `M₀ T δ`.  That is
 `FiniteDifference.norm_sub_le_of_stable`; the closed form itself is
 `FiniteDifference.sub_eq_smul_sum`, and the two are the whole content of the module.
 
 The statement is an inequality with explicit constants: no limit, no order symbol, and no family
-indexed by a mesh parameter.  Consistency, order, stability and convergence *of a family* of
-schemes as the mesh is refined are each this inequality together with a limit, and belong wherever
-that family is defined.  The space is a real normed space, because the step `h` is a real scalar
-acting on its elements.
+indexed by a mesh parameter.  Consistency, order, stability and convergence *of a family* of schemes
+as the mesh is refined are each this inequality together with a limit, and belong wherever that
+family is defined.  The space is a real normed space, because the step `h` is a real scalar acting
+on its elements.
 
-The result is Theorem 6.3.2 of [Atkinson–Han][han2009theoretical], where `δ = c (h_x^{p₁} + h^{p₂})`
-turns it into the convergence order of a scheme.
+The result is Theorem 6.3.2 of [han2009theoretical], where `δ = c (h_x^{p₁} + h^{p₂})` turns it into
+the convergence order of a scheme.
 -/
 
 namespace FiniteDifference
@@ -38,8 +38,8 @@ solution is
 
   `u^k - v^k = h ∑_{l < k} Q^{k - 1 - l} (τ^l)`.
 
-Nothing but linearity of `Q` is used: no bound on the powers of `Q`, none on the truncation
-errors, and no sign condition on `h`. -/
+Nothing but linearity of `Q` is used: no bound on the powers of `Q`, none on the truncation errors,
+and no sign condition on `h`. -/
 theorem sub_eq_smul_sum {Q : E →L[ℝ] E} {u v g τ : ℕ → E} {h : ℝ} {N : ℕ}
     (hv : ∀ m < N, v (m + 1) = Q (v m) + h • g m)
     (hu : ∀ m < N, u (m + 1) = Q (u m) + h • g m + h • τ m) (h0 : u 0 = v 0) {k : ℕ}
@@ -65,11 +65,11 @@ theorem sub_eq_smul_sum {Q : E →L[ℝ] E} {u v g τ : ℕ → E} {h : ℝ} {N 
       · simp
     rw [hu n hnN, hv n hnN, hstep, hn, map_smul, map_sum, hrhs, smul_add]
 
-/-- **Convergence of a stable, consistent two-level scheme.**  Let `Q : E →L[ℝ] E`, let the
-computed values `v` satisfy `v^{m+1} = Q v^m + h g^m` and the exact values `u` satisfy
-`u^{m+1} = Q u^m + h g^m + h τ^m` for `m < N`, with the same starting value.  If the scheme is
-stable up to step `N`, `‖Q ^ m‖ ≤ M₀` for `m ≤ N`, the horizon is finite, `N h ≤ T`, and the local
-truncation errors satisfy `‖τ^m‖ ≤ δ`, then
+/-- **Convergence of a stable, consistent two-level scheme.**  Let `Q : E →L[ℝ] E`, let the computed
+values `v` satisfy `v^{m+1} = Q v^m + h g^m` and the exact values `u` satisfy `u^{m+1} = Q u^m + h
+g^m + h τ^m` for `m < N`, with the same starting value.  If the scheme is stable up to step `N`, `‖Q
+^ m‖ ≤ M₀` for `m ≤ N`, the horizon is finite, `N h ≤ T`, and the local truncation errors satisfy
+`‖τ^m‖ ≤ δ`, then
 
   `‖u^m - v^m‖ ≤ M₀ * T * δ`  for every `m ≤ N`.
 

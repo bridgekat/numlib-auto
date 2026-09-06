@@ -7,12 +7,12 @@ import Numlib.LinearSolve.Stationary.Basic
 # Fixed-point iterations
 
 Glue around Mathlib's `ContractingWith` for the Banach fixed-point theorem with the a priori, a
-posteriori and linear-rate bounds ([Atkinson–Han][han2009theoretical] Thm 5.1.3, estimates
-(5.1.4)–(5.1.6); [Kress][kress1998numerical] Thm 3.45–3.46), the `T^m`-contraction variant
-(Atkinson–Han Exercise 5.1.2, Kress Problem 3.17), the derivative criterion `sup ‖T'‖ < 1` (Kress
-Thm 6.8; Atkinson–Han give the scalar case in the remark following their Thm 5.2.1), and
-Zarantonello's theorem for strongly monotone Lipschitz maps on Hilbert spaces (Atkinson–Han Thm
-5.1.4, the nonlinear Lax–Milgram).
+posteriori and linear-rate bounds ([han2009theoretical] Thm 5.1.3, estimates (5.1.4)–(5.1.6);
+[kress1998numerical] Thm 3.45–3.46), the `T^m`-contraction variant ([han2009theoretical] Exercise
+5.1.2, [kress1998numerical] Problem 3.17), the derivative criterion `sup ‖T'‖ < 1`
+([kress1998numerical] Thm 6.8; [han2009theoretical] give the scalar case in the remark following
+their Thm 5.2.1), and Zarantonello's theorem for strongly monotone Lipschitz maps on Hilbert spaces
+([han2009theoretical] Thm 5.1.4, the nonlinear Lax–Milgram).
 -/
 
 open Filter Topology
@@ -25,8 +25,8 @@ namespace ContractingWith
 
 variable {K : NNReal} {f : α → α}
 
-/-- Linear rate of convergence: `dist (f^[n+1] x) x* ≤ K dist (f^[n] x) x*`, so the error is cut
-by the factor `K` at every step (Atkinson–Han, *Theoretical Numerical Analysis*, (5.1.6)). -/
+/-- Linear rate of convergence: `dist (f^[n+1] x) x* ≤ K dist (f^[n] x) x*`, so the error is cut by
+the factor `K` at every step ([han2009theoretical], (5.1.6)). -/
 theorem dist_iterate_succ_fixedPoint_le [Nonempty α] [CompleteSpace α] (hf : ContractingWith K f)
     (x : α) (n : ℕ) :
     dist (f^[n + 1] x) (fixedPoint f hf) ≤ K * dist (f^[n] x) (fixedPoint f hf) := by
@@ -67,8 +67,8 @@ private theorem one_sub_mul_dist_le {f : α → α} {s : Set α} {K : ℝ}
   linarith
 
 /-- Banach fixed point on a closed subset mapped into itself: existence and uniqueness in the set.
-This is the setting of Atkinson–Han, *Theoretical Numerical Analysis*, Thm 5.1.3, and of Kress,
-*Numerical Analysis*, Thm 3.45; the contraction hypothesis is only required on `s`. -/
+This is the setting of [han2009theoretical], Thm 5.1.3, and of [kress1998numerical], Thm 3.45; the
+contraction hypothesis is only required on `s`. -/
 theorem exists_unique_fixedPoint_of_mapsTo [CompleteSpace α] {f : α → α} {s : Set α}
     (hs : IsClosed s) (hne : s.Nonempty) (hmaps : Set.MapsTo f s s) {K : ℝ} (hK0 : 0 ≤ K)
     (hK : K < 1) (hf : ∀ x ∈ s, ∀ y ∈ s, dist (f x) (f y) ≤ K * dist x y) :
@@ -93,8 +93,7 @@ theorem exists_unique_fixedPoint_of_mapsTo [CompleteSpace α] {f : α → α} {s
 set_option linter.unusedVariables false in
 /-- A priori bound on a closed invariant subset: `dist (f^[n] x₀) x* ≤ K^n / (1 - K) * dist (f x₀)
 x₀`, so the number of iterations needed for a prescribed accuracy can be read off before iterating
-(Atkinson–Han, *Theoretical Numerical Analysis*, (5.1.4); Kress, *Numerical Analysis*,
-Thm 3.46). -/
+([han2009theoretical], (5.1.4); [kress1998numerical], Thm 3.46). -/
 theorem dist_iterate_le_of_mapsTo [CompleteSpace α] {f : α → α} {s : Set α} (hs : IsClosed s)
     (hmaps : Set.MapsTo f s s) {K : ℝ} (hK0 : 0 ≤ K) (hK : K < 1)
     (hf : ∀ x ∈ s, ∀ y ∈ s, dist (f x) (f y) ≤ K * dist x y) {x' : α} (hx' : x' ∈ s)
@@ -113,12 +112,12 @@ theorem dist_iterate_le_of_mapsTo [CompleteSpace α] {f : α → α} {s : Set α
 -- they belong to the textbook statement (Atkinson–Han, *Theoretical Numerical Analysis*,
 -- Exercise 5.1.2).
 set_option linter.unusedVariables false in
-/-- Atkinson–Han, *Theoretical Numerical Analysis*, Exercise 5.1.2, and Kress, *Numerical
-Analysis*, Problem 3.17: a continuous `T` whose iterate `T^[m]` is a contraction has a unique fixed
-point, and `T^[n] x → x*` for every `x`.  `T` itself need not be a contraction in any metric.
+/-- [han2009theoretical], Exercise 5.1.2, and [kress1998numerical], Problem 3.17: a continuous `T`
+whose iterate `T^[m]` is a contraction has a unique fixed point, and `T^[n] x → x*` for every `x`.
+`T` itself need not be a contraction in any metric.
 
-`[Nonempty α]` was added to the statement: the empty metric space is complete and every self-map
-of it is a contraction, so without it the conclusion `∃! x, T x = x` is false. -/
+`[Nonempty α]` was added to the statement: the empty metric space is complete and every self-map of
+it is a contraction, so without it the conclusion `∃! x, T x = x` is false. -/
 theorem exists_unique_fixedPoint_of_iterate_contractingWith [Nonempty α] [CompleteSpace α]
     {T : α → α} (hT : Continuous T) {m : ℕ} (hm : 0 < m) {K : NNReal}
     (hK : ContractingWith K T^[m]) : ∃! x, T x = x :=
@@ -127,12 +126,12 @@ theorem exists_unique_fixedPoint_of_iterate_contractingWith [Nonempty α] [Compl
 
 -- Continuity of `T` is again not needed: `T^[m]` already pins the limit down.
 set_option linter.unusedVariables false in
-/-- Convergence for the `T^[m]`-contraction criterion (Atkinson–Han, *Theoretical Numerical
-Analysis*, Exercise 5.1.2; Kress, *Numerical Analysis*, Problem 3.17): from every starting point
-the whole orbit `T^[n] x` converges to a fixed point of `T` itself, although `T` need be a
-contraction in no metric.  The orbit splits into the `m` interleaved subsequences
-`k ↦ T^[m k + j] x`, each of which iterates the contraction `T^[m]` and hence converges to its
-one fixed point; taking the largest of the `m` thresholds makes the whole orbit converge. -/
+/-- Convergence for the `T^[m]`-contraction criterion ([han2009theoretical], Exercise 5.1.2;
+[kress1998numerical], Problem 3.17): from every starting point the whole orbit `T^[n] x` converges
+to a fixed point of `T` itself, although `T` need be a contraction in no metric.  The orbit splits
+into the `m` interleaved subsequences `k ↦ T^[m k + j] x`, each of which iterates the contraction
+`T^[m]` and hence converges to its one fixed point; taking the largest of the `m` thresholds makes
+the whole orbit converge. -/
 theorem tendsto_iterate_of_iterate_contractingWith [CompleteSpace α] {T : α → α}
     (hT : Continuous T) {m : ℕ} (hm : 0 < m) {K : NNReal} (hK : ContractingWith K T^[m]) (x : α) :
     ∃ x', T x' = x' ∧ Tendsto (fun n => T^[n] x) atTop (𝓝 x') := by
@@ -161,11 +160,10 @@ section Derivative
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- The derivative criterion for contractivity: a differentiable self-map of a convex set with
-`sup ‖T'‖ ≤ q` is `q`-Lipschitz there, hence a contraction when `q < 1`.  This is Kress,
-*Numerical Analysis*, Thm 6.8; Atkinson–Han, *Theoretical Numerical Analysis*, give the scalar case
-in the remark following their Thm 5.2.1.  (Mathlib:
-`Convex.lipschitzOnWith_of_nnnorm_hasFDerivWithin_le`.) -/
+/-- The derivative criterion for contractivity: a differentiable self-map of a convex set with `sup
+‖T'‖ ≤ q` is `q`-Lipschitz there, hence a contraction when `q < 1`.  This is [kress1998numerical],
+Thm 6.8; [han2009theoretical], give the scalar case in the remark following their Thm 5.2.1.
+(Mathlib: `Convex.lipschitzOnWith_of_nnnorm_hasFDerivWithin_le`.) -/
 theorem lipschitzOnWith_of_hasFDerivWithinAt {T : E → E} {T' : E → E →L[ℝ] E} {s : Set E}
     (hs : Convex ℝ s) (hT : ∀ x ∈ s, HasFDerivWithinAt T (T' x) s x) {q : NNReal}
     (hT' : ∀ x ∈ s, ‖T' x‖₊ ≤ q) : LipschitzOnWith q T s :=
@@ -178,8 +176,8 @@ section Zarantonello
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E] [CompleteSpace E]
 
 omit [CompleteSpace E] in
-/-- The algebraic heart of the damped iteration: `‖u - θ w‖² ≤ (1 - 2θc + θ²L²) ‖u‖²` whenever
-`c ‖u‖² ≤ re ⟪w, u⟫` and `‖w‖ ≤ L ‖u‖`. -/
+/-- The algebraic heart of the damped iteration: `‖u - θ w‖² ≤ (1 - 2θc + θ²L²) ‖u‖²` whenever `c
+‖u‖² ≤ re ⟪w, u⟫` and `‖w‖ ≤ L ‖u‖`. -/
 private theorem norm_sub_smul_sq_le {u w : E} {c L θ : ℝ} (hθ : 0 ≤ θ)
     (hmono : c * ‖u‖ ^ 2 ≤ RCLike.re (inner 𝕜 w u)) (hw : ‖w‖ ≤ L * ‖u‖) :
     ‖u - (θ : 𝕜) • w‖ ^ 2 ≤ (1 - 2 * θ * c + θ ^ 2 * L ^ 2) * ‖u‖ ^ 2 := by
@@ -202,11 +200,10 @@ private theorem norm_sub_smul_sq_le {u w : E} {c L θ : ℝ} (hθ : 0 ≤ θ)
 -- `hθ` are); they are kept so that the statement matches its use in Lax–Milgram.
 set_option linter.unusedVariables false in
 set_option linter.unusedSectionVars false in
-/-- The damped iteration `x ↦ x - θ (T x - b)` contracts with factor `√(1 - 2θc + θ²L²)` for
-`0 < θ < 2c/L²`.  Its fixed points are exactly the solutions of `T x = b`, so this is what converts
-strong monotonicity into an application of the Banach fixed-point theorem: it is the proof of
-Atkinson–Han, *Theoretical Numerical Analysis*, Thm 5.1.4, and also their first proof of the
-Lax–Milgram lemma. -/
+/-- The damped iteration `x ↦ x - θ (T x - b)` contracts with factor `√(1 - 2θc + θ²L²)` for `0 < θ
+< 2c/L²`.  Its fixed points are exactly the solutions of `T x = b`, so this is what converts strong
+monotonicity into an application of the Banach fixed-point theorem: it is the proof of
+[han2009theoretical], Thm 5.1.4, and also their first proof of the Lax–Milgram lemma. -/
 theorem contractingWith_damped {T : E → E} {c L : ℝ} (hc : 0 < c) (hL : 0 < L)
     (hmono : ∀ x y, c * ‖x - y‖ ^ 2 ≤ RCLike.re (inner 𝕜 (T x - T y) (x - y)))
     (hlip : LipschitzWith (Real.toNNReal L) T) (b : E) {θ : ℝ} (hθ : 0 < θ)
@@ -235,9 +232,9 @@ theorem contractingWith_damped {T : E → E} {c L : ℝ} (hc : 0 < c) (hL : 0 < 
       _ = Real.sqrt (1 - 2 * θ * c + θ ^ 2 * L ^ 2) * ‖x - y‖ := by
           rw [Real.sqrt_mul' _ (sq_nonneg _), Real.sqrt_sq (norm_nonneg _)]
 
-/-- Zarantonello's theorem (Atkinson–Han, *Theoretical Numerical Analysis*, Thm 5.1.4): a strongly
-monotone Lipschitz map on a Hilbert space is bijective, with `‖x₁ - x₂‖ ≤ ‖T x₁ - T x₂‖ / c`.  It
-is the nonlinear counterpart of Lax–Milgram: strong monotonicity plays the role of coercivity. -/
+/-- Zarantonello's theorem ([han2009theoretical], Thm 5.1.4): a strongly monotone Lipschitz map on a
+Hilbert space is bijective, with `‖x₁ - x₂‖ ≤ ‖T x₁ - T x₂‖ / c`.  It is the nonlinear counterpart
+of Lax–Milgram: strong monotonicity plays the role of coercivity. -/
 theorem zarantonello {T : E → E} {c L : ℝ} (hc : 0 < c)
     (hmono : ∀ x y, c * ‖x - y‖ ^ 2 ≤ RCLike.re (inner 𝕜 (T x - T y) (x - y)))
     (hlip : LipschitzWith (Real.toNNReal L) T) (b : E) : ∃! x, T x = b := by
@@ -260,8 +257,8 @@ theorem zarantonello {T : E → E} {c L : ℝ} (hc : 0 < c)
   exact ⟨xstar, (hiff _).mp hfix, fun y hy => huniq y ((hiff y).mpr hy)⟩
 
 set_option linter.unusedSectionVars false in
-/-- Lipschitz dependence on the right-hand side: the inverse of a strongly monotone map is
-`1 / c`-Lipschitz (Atkinson–Han, *Theoretical Numerical Analysis*, (5.1.11)). -/
+/-- Lipschitz dependence on the right-hand side: the inverse of a strongly monotone map is `1 /
+c`-Lipschitz ([han2009theoretical], (5.1.11)). -/
 theorem norm_sub_le_of_strongly_monotone {T : E → E} {c : ℝ} (hc : 0 < c)
     (hmono : ∀ x y, c * ‖x - y‖ ^ 2 ≤ RCLike.re (inner 𝕜 (T x - T y) (x - y))) {x₁ x₂ b₁ b₂ : E}
     (h₁ : T x₁ = b₁) (h₂ : T x₂ = b₂) : ‖x₁ - x₂‖ ≤ ‖b₁ - b₂‖ / c := by

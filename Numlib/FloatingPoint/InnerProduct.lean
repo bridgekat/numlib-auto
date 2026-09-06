@@ -6,33 +6,32 @@ import Numlib.LinearAlgebra.Matrix.Order
 /-!
 # Rounding errors of inner products and matrix products
 
-The componentwise error bounds of [Higham][higham2002accuracy] §3.1–3.5 for recursive summation,
-inner products, matrix–vector products and matrix products, in the relational model of
+The componentwise error bounds of [higham2002accuracy] §3.1–3.5 for recursive summation, inner
+products, matrix–vector products and matrix products, in the relational model of
 `Numlib/FloatingPoint/Model.lean`.
 
 Everything here is about an *explicit evaluation order*: `RoundsSumFrom m s l t` says that `t`
 arises from the partial sum `s` by adding the terms of the list `l` from left to right, rounding
-after each addition, and `RoundsSum m l s` is the recursive summation `s₁ = x₁`,
-`sᵢ = fl(sᵢ₋₁ + xᵢ)`.  `RoundsDot m x y s` computes an inner product as the recursive sum, in some
-order of the indices, of the rounded products `fl(xᵢ yᵢ)`; the order is existentially quantified,
-so a theorem about it holds whatever order an implementation uses.  Because the rounding relation
-is not a function, every statement quantifies over all admissible roundings at once.
+after each addition, and `RoundsSum m l s` is the recursive summation `s₁ = x₁`, `sᵢ = fl(sᵢ₋₁ +
+xᵢ)`.  `RoundsDot m x y s` computes an inner product as the recursive sum, in some order of the
+indices, of the rounded products `fl(xᵢ yᵢ)`; the order is existentially quantified, so a theorem
+about it holds whatever order an implementation uses.  Because the rounding relation is not a
+function, every statement quantifies over all admissible roundings at once.
 
-The bounds are Higham's:
+The bounds are [higham2002accuracy]:
 
 * `abs_sub_le_of_roundsSum` — `|ŝ - ∑ xᵢ| ≤ γ_{n-1} ∑ |xᵢ|`;
-* `abs_sub_le_of_roundsDot` — `|fl(xᵀy) - xᵀy| ≤ γ_n |x|ᵀ|y|`, with the backward form
-  `fl(xᵀy) = (x + Δx)ᵀ y`, `|Δx| ≤ γ_n |x|`, as `exists_roundsDot_eq_dotProduct_add`;
+* `abs_sub_le_of_roundsDot` — `|fl(xᵀy) - xᵀy| ≤ γ_n |x|ᵀ|y|`, with the backward form `fl(xᵀy) = (x
+  + Δx)ᵀ y`, `|Δx| ≤ γ_n |x|`, as `exists_roundsDot_eq_dotProduct_add`;
 * `abs_sub_le_of_roundsMulVec` and `abs_sub_entrywiseLE_of_roundsMul` — `|ŷ - A x| ≤ γ_n |A| |x|`
-  and `|Ĉ - A B| ≤ γ_n |A| |B|`, in the entrywise order of
-  `Numlib/LinearAlgebra/Matrix/Order.lean`.
+  and `|Ĉ - A B| ≤ γ_n |A| |B|`, in the entrywise order of `Numlib/LinearAlgebra/Matrix/Order.lean`.
 
-The uniform bound `‖ŷ - A x‖_∞ ≤ γ_n ‖A‖_∞ ‖x‖_∞` is `abs_sub_le_of_roundsMulVec_of_abs_le`,
-stated with row sums and an entrywise bound on `x` rather than with norms, since the scalar field
-here carries an order but no norm.
+The uniform bound `‖ŷ - A x‖_∞ ≤ γ_n ‖A‖_∞ ‖x‖_∞` is `abs_sub_le_of_roundsMulVec_of_abs_le`, stated
+with row sums and an entrywise bound on `x` rather than with norms, since the scalar field here
+carries an order but no norm.
 
-Every proof rests on one scalar step, `FloatingPoint.gamma_mul_one_add_add_le`, that is
-`γ_k (1 + u) + u ≤ γ_{k+1}`: one more rounding raises the order of a relative perturbation by one.
+Every proof rests on one scalar step, `FloatingPoint.gamma_mul_one_add_add_le`, that is `γ_k (1 + u)
++ u ≤ γ_{k+1}`: one more rounding raises the order of a relative perturbation by one.
 -/
 
 open Finset
@@ -45,8 +44,8 @@ variable {K : Type*} [Field K] [LinearOrder K] [IsStrictOrderedRing K]
 
 /-! ### The scalar step -/
 
-/-- One more rounding raises the order of a relative perturbation by one:
-`γ_k (1 + u) + u ≤ γ_{k+1}`.  This is Higham's Lemma 3.3 together with `u ≤ γ₁`. -/
+/-- One more rounding raises the order of a relative perturbation by one: `γ_k (1 + u) + u ≤
+γ_{k+1}`.  This is [higham2002accuracy] Lemma 3.3 together with `u ≤ γ₁`. -/
 theorem gamma_mul_one_add_add_le {u : K} (hu : 0 ≤ u) (hu1 : u < 1) {k : ℕ}
     (h : ((k + 1 : ℕ) : K) * u < 1) : gamma u k * (1 + u) + u ≤ gamma u (k + 1) := by
   have hcast : ((k + 1 : ℕ) : K) * u = (k : K) * u + u := by push_cast; ring
@@ -61,8 +60,8 @@ theorem gamma_mul_one_add_add_le {u : K} (hu : 0 ≤ u) (hu1 : u < 1) {k : ℕ}
 /-! ### Recursive summation -/
 
 /-- `RoundsSumFrom m s l t`: starting from the partial sum `s`, the terms of the list `l` are added
-from left to right, one rounding per addition, and `t` is an admissible result.  The relation is
-not functional, so a theorem proved about it holds for every admissible sequence of roundings. -/
+from left to right, one rounding per addition, and `t` is an admissible result.  The relation is not
+functional, so a theorem proved about it holds for every admissible sequence of roundings. -/
 inductive RoundsSumFrom (m : RoundingModel K) : K → List K → K → Prop
   /-- Adding no terms leaves the partial sum unchanged. -/
   | nil (s : K) : RoundsSumFrom m s [] s
@@ -70,10 +69,9 @@ inductive RoundsSumFrom (m : RoundingModel K) : K → List K → K → Prop
   | cons {s x t r : K} {l : List K} (ht : m.Rounds (s + x) t) (hr : RoundsSumFrom m t l r) :
       RoundsSumFrom m s (x :: l) r
 
-/-- `RoundsSum m l s`: `s` is an admissible floating-point value of the **recursive summation**
-`s₁ = x₁`, `sᵢ = fl(sᵢ₋₁ + xᵢ)` of the list `l` (Higham, *Accuracy and Stability of Numerical
-Algorithms*, §3.1).  The first term enters unrounded, so a list of length `n` costs `n - 1`
-roundings. -/
+/-- `RoundsSum m l s`: `s` is an admissible floating-point value of the **recursive summation** `s₁
+= x₁`, `sᵢ = fl(sᵢ₋₁ + xᵢ)` of the list `l` ([higham2002accuracy], §3.1).  The first term enters
+unrounded, so a list of length `n` costs `n - 1` roundings. -/
 def RoundsSum (m : RoundingModel K) : List K → K → Prop
   | [], s => s = 0
   | x :: l, s => RoundsSumFrom m x l s
@@ -94,9 +92,9 @@ private theorem sum_map_abs_nonneg (l : List K) : 0 ≤ (l.map (|·|)).sum :=
     obtain ⟨z, -, rfl⟩ := List.mem_map.1 hy
     exact abs_nonneg z
 
-/-- **Higham's bound for recursive summation from a partial sum** (*Accuracy and Stability of
-Numerical Algorithms*, (3.2)–(3.3)): adding the `k` terms of `l` to `s`, one rounding per
-addition, perturbs the exact value `s + ∑ lᵢ` by at most `γ_k (|s| + ∑ |lᵢ|)`. -/
+/-- **[higham2002accuracy] bound for recursive summation from a partial sum** (*Accuracy and
+Stability of Numerical Algorithms*, (3.2)–(3.3)): adding the `k` terms of `l` to `s`, one rounding
+per addition, perturbs the exact value `s + ∑ lᵢ` by at most `γ_k (|s| + ∑ |lᵢ|)`. -/
 theorem abs_sub_le_of_roundsSumFrom {m : RoundingModel K} (hu : m.u < 1) {s : K} {l : List K}
     {t : K} (h : RoundsSumFrom m s l t) (hlu : ((l.length : ℕ) : K) * m.u < 1) :
     |t - (s + l.sum)| ≤ gamma m.u l.length * (|s| + (l.map (|·|)).sum) := by
@@ -143,8 +141,8 @@ theorem abs_sub_le_of_roundsSumFrom {m : RoundingModel K} (hu : m.u < 1) {s : K}
             (mul_le_mul_of_nonneg_right hmono hS)
       _ = gamma m.u (l.length + 1) * (|s| + (|x| + (l.map (|·|)).sum)) := by ring
 
-/-- **Higham's bound for recursive summation** (*Accuracy and Stability of Numerical Algorithms*,
-(3.2)–(3.3)): a computed sum of `n` numbers differs from the exact sum by at most
+/-- **[higham2002accuracy] bound for recursive summation** (*Accuracy and Stability of Numerical
+Algorithms*, (3.2)–(3.3)): a computed sum of `n` numbers differs from the exact sum by at most
 `γ_{n-1} ∑ |xᵢ|`. -/
 theorem abs_sub_le_of_roundsSum {m : RoundingModel K} (hu : m.u < 1) {l : List K} {s : K}
     (h : RoundsSum m l s) (hlu : ((l.length - 1 : ℕ) : K) * m.u < 1) :
@@ -161,18 +159,17 @@ variable {ι : Type*}
 
 /-- `RoundsDot m x y s`: `s` is an admissible floating-point value of the inner product `xᵀ y`,
 computed as the recursive summation, in some order `o` of the indices, of the rounded products
-`fl(xᵢ yᵢ)` (Higham, *Accuracy and Stability of Numerical Algorithms*, §3.1).  The order is
-existentially quantified, so a theorem about `RoundsDot` holds for every order in which an
-implementation may accumulate the products. -/
+`fl(xᵢ yᵢ)` ([higham2002accuracy], §3.1).  The order is existentially quantified, so a theorem about
+`RoundsDot` holds for every order in which an implementation may accumulate the products. -/
 def RoundsDot (m : RoundingModel K) (x y : ι → K) (s : K) : Prop :=
   ∃ (o : List ι) (p : ι → K), o.Nodup ∧ (∀ i, i ∈ o) ∧ (∀ i, m.Rounds (x i * y i) (p i)) ∧
     RoundsSum m (o.map p) s
 
 variable [Fintype ι]
 
-/-- **Higham's inner-product bound** (*Accuracy and Stability of Numerical Algorithms*, (3.4)):
-a computed inner product of two vectors of length `n` satisfies `|fl(xᵀy) - xᵀy| ≤ γ_n |x|ᵀ|y|`,
-whatever the order of accumulation. -/
+/-- **[higham2002accuracy] inner-product bound** (*Accuracy and Stability of Numerical Algorithms*,
+(3.4)): a computed inner product of two vectors of length `n` satisfies `|fl(xᵀy) - xᵀy| ≤ γ_n
+|x|ᵀ|y|`, whatever the order of accumulation. -/
 theorem abs_sub_le_of_roundsDot {m : RoundingModel K} (hu : m.u < 1)
     (hcard : (Fintype.card ι : K) * m.u < 1) {x y : ι → K} {s : K} (h : RoundsDot m x y s) :
     |s - x ⬝ᵥ y| ≤ gamma m.u (Fintype.card ι) * (|x| ⬝ᵥ |y|) := by
@@ -241,8 +238,8 @@ theorem abs_sub_le_of_roundsDot {m : RoundingModel K} (hu : m.u < 1)
       _ ≤ gamma m.u (n + 1) * ∑ i, |x i| * |y i| := mul_le_mul_of_nonneg_right hstep hD0
 
 /-- The elementary redistribution behind the backward form of an error bound: a residual `r` no
-larger than `c ∑ |aᵢ| |bᵢ|` is realised by a componentwise perturbation of `a` of relative
-size `c`. -/
+larger than `c ∑ |aᵢ| |bᵢ|` is realised by a componentwise perturbation of `a` of relative size `c`.
+-/
 private theorem exists_dot_eq_of_abs_le {c r : K} (hc : 0 ≤ c) {a b : ι → K}
     (h : |r| ≤ c * ∑ i, |a i| * |b i|) :
     ∃ d : ι → K, (∀ i, |d i| ≤ c * |a i|) ∧ ∑ i, d i * b i = r := by
@@ -280,9 +277,10 @@ private theorem exists_dot_eq_of_abs_le {c r : K} (hc : 0 ≤ c) {a b : ι → K
         _ = c * θ * ∑ i, |a i| * |b i| := by rw [Finset.mul_sum]
         _ = r := hθr
 
-/-- **The backward form of Higham's inner-product bound** (*Accuracy and Stability of Numerical
-Algorithms*, (3.5)): a computed inner product is the exact inner product of a componentwise
-relative perturbation of `x` with `y`, `fl(xᵀ y) = (x + Δx)ᵀ y` with `|Δx| ≤ γ_n |x|`. -/
+/-- **The backward form of [higham2002accuracy] inner-product bound** (*Accuracy and Stability of
+Numerical Algorithms*, (3.5)): a computed inner product is the exact inner product of a
+componentwise relative perturbation of `x` with `y`, `fl(xᵀ y) = (x + Δx)ᵀ y` with `|Δx| ≤ γ_n |x|`.
+-/
 theorem exists_roundsDot_eq_dotProduct_add {m : RoundingModel K} (hu : m.u < 1)
     (hcard : (Fintype.card ι : K) * m.u < 1) {x y : ι → K} {s : K} (h : RoundsDot m x y s) :
     ∃ dx : ι → K, (∀ i, |dx i| ≤ gamma m.u (Fintype.card ι) * |x i|) ∧ s = (x + dx) ⬝ᵥ y := by
@@ -302,22 +300,22 @@ theorem exists_roundsDot_eq_dotProduct_add {m : RoundingModel K} (hu : m.u < 1)
 variable {μ ν ρ : Type*}
 
 /-- `RoundsMulVec m A x ŷ`: every entry of `ŷ` is an admissible computed inner product of the
-corresponding row of `A` with `x`, which is how a matrix–vector product is evaluated (Higham,
-*Accuracy and Stability of Numerical Algorithms*, §3.5). -/
+corresponding row of `A` with `x`, which is how a matrix–vector product is evaluated
+([higham2002accuracy], §3.5). -/
 def RoundsMulVec (m : RoundingModel K) (A : Matrix μ ν K) (x : ν → K) (yhat : μ → K) : Prop :=
   ∀ i, RoundsDot m (A i) x (yhat i)
 
-/-- `RoundsMul m A B Ĉ`: every entry of `Ĉ` is an admissible computed inner product of a row of
-`A` with a column of `B`. -/
+/-- `RoundsMul m A B Ĉ`: every entry of `Ĉ` is an admissible computed inner product of a row of `A`
+with a column of `B`. -/
 def RoundsMul (m : RoundingModel K) (A : Matrix μ ν K) (B : Matrix ν ρ K) (C : Matrix μ ρ K) :
     Prop :=
   ∀ i j, RoundsDot m (A i) (fun k => B k j) (C i j)
 
 variable [Fintype ν]
 
-/-- **Higham's matrix–vector bound** (*Accuracy and Stability of Numerical Algorithms*, (3.12)):
-a computed matrix–vector product satisfies `|ŷ - A x| ≤ γ_n |A| |x|` entrywise, `n` being the
-inner dimension. -/
+/-- **[higham2002accuracy] matrix–vector bound** (*Accuracy and Stability of Numerical Algorithms*,
+(3.12)): a computed matrix–vector product satisfies `|ŷ - A x| ≤ γ_n |A| |x|` entrywise, `n` being
+the inner dimension. -/
 theorem abs_sub_le_of_roundsMulVec {m : RoundingModel K} (hu : m.u < 1)
     (hcard : (Fintype.card ν : K) * m.u < 1) {A : Matrix μ ν K} {x : ν → K} {yhat : μ → K}
     (h : RoundsMulVec m A x yhat) :
@@ -330,8 +328,8 @@ theorem abs_sub_le_of_roundsMulVec {m : RoundingModel K} (hu : m.u < 1)
   rw [hlhs, hrhs]
   exact hi
 
-/-- **Higham's matrix–matrix bound** (*Accuracy and Stability of Numerical Algorithms*, (3.13)):
-a computed matrix product satisfies `|Ĉ - A B| ≤ γ_n |A| |B|` in the entrywise order. -/
+/-- **[higham2002accuracy] matrix–matrix bound** (*Accuracy and Stability of Numerical Algorithms*,
+(3.13)): a computed matrix product satisfies `|Ĉ - A B| ≤ γ_n |A| |B|` in the entrywise order. -/
 theorem abs_sub_entrywiseLE_of_roundsMul {m : RoundingModel K} (hu : m.u < 1)
     (hcard : (Fintype.card ν : K) * m.u < 1) {A : Matrix μ ν K} {B : Matrix ν ρ K}
     {C : Matrix μ ρ K} (h : RoundsMul m A B C) :
@@ -345,8 +343,8 @@ theorem abs_sub_entrywiseLE_of_roundsMul {m : RoundingModel K} (hu : m.u < 1)
   exact hij
 
 /-- The uniform (`∞`-norm) form of `abs_sub_le_of_roundsMulVec`: if every entry of `x` is at most
-`c` in absolute value, then every entry of the computed residual is at most `γ_n` times the row
-sum of `|A|` times `c`.  This is `‖ŷ - A x‖_∞ ≤ γ_n ‖A‖_∞ ‖x‖_∞` written without a norm, since the
+`c` in absolute value, then every entry of the computed residual is at most `γ_n` times the row sum
+of `|A|` times `c`.  This is `‖ŷ - A x‖_∞ ≤ γ_n ‖A‖_∞ ‖x‖_∞` written without a norm, since the
 scalar field carries only an order. -/
 theorem abs_sub_le_of_roundsMulVec_of_abs_le {m : RoundingModel K} (hu : m.u < 1)
     (hcard : (Fintype.card ν : K) * m.u < 1) {A : Matrix μ ν K} {x : ν → K} {yhat : μ → K}

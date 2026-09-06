@@ -12,24 +12,23 @@ import Numlib.LinearAlgebra.Matrix.Order
 /-!
 # Perron–Frobenius theory of entrywise nonnegative matrices
 
-The spectral theory of matrices that are nonnegative for the entrywise order `Matrix.EntrywiseLE`
-of `Numlib/LinearAlgebra/Matrix/Order.lean`. Two groups of results:
+The spectral theory of matrices that are nonnegative for the entrywise order `Matrix.EntrywiseLE` of
+`Numlib/LinearAlgebra/Matrix/Order.lean`. Two groups of results:
 
 * **Monotonicity.** Powers (`Matrix.EntrywiseLE.pow`), the maximum-absolute-row-sum norm
   (`Matrix.EntrywiseLE.linfty_opNorm_le`), the Euclidean operator norm
   (`Matrix.EntrywiseLE.l2_opNorm_le`) and the spectral radius
-  (`Matrix.complexSpectralRadius_le_of_entrywiseLE`) are all monotone in a nonnegative matrix.
-  The spectral radius here is `Matrix.complexSpectralRadius` of
+  (`Matrix.complexSpectralRadius_le_of_entrywiseLE`) are all monotone in a nonnegative matrix. The
+  spectral radius here is `Matrix.complexSpectralRadius` of
   `Numlib/LinearAlgebra/Matrix/Complexify.lean`, the spectral radius of the complexification;
   `spectralRadius ℝ` of a real matrix is not the spectral radius.
 
-* **The Perron–Frobenius theorem for an irreducible matrix.** An irreducible nonnegative matrix on
-  a nonempty index type has an entrywise *positive* eigenvector for its spectral radius
+* **The Perron–Frobenius theorem for an irreducible matrix.** An irreducible nonnegative matrix on a
+  nonempty index type has an entrywise *positive* eigenvector for its spectral radius
   (`Matrix.IsIrreducible.exists_pos_hasEigenvector_complexSpectralRadius`), and that eigenvalue is
-  geometrically simple
-  (`Matrix.IsIrreducible.finrank_eigenspace_complexSpectralRadius_eq_one`). Irreducibility is
-  Mathlib's `Matrix.IsIrreducible`: entrywise nonnegative, with the quiver of its positive entries
-  strongly connected.
+  geometrically simple (`Matrix.IsIrreducible.finrank_eigenspace_complexSpectralRadius_eq_one`).
+  Irreducibility is Mathlib's `Matrix.IsIrreducible`: entrywise nonnegative, with the quiver of its
+  positive entries strongly connected.
 
 ## Implementation notes
 
@@ -38,12 +37,11 @@ The combinatorial core is `Matrix.IsIrreducible.entrywisePos_one_add_pow`: for i
 `Sₖ = {j | 0 < ((1 + A) ^ k) i j}` grow: they are nondecreasing, `Sₖ₊₁` is determined by `Sₖ`, so
 they stabilise as soon as two consecutive ones agree, and irreducibility forbids stabilising short
 of everything. Hence each step before saturation gains at least one index, and `N - 1` steps
-suffice. This replaces the argument the standard accounts give — shortening a quiver path below
-`N`, as in Seneta, *Non-negative Matrices and Markov Chains* — for which Mathlib has no
-lemma.
+suffice. This replaces the argument the standard accounts give — shortening a quiver path below `N`,
+as in Seneta, *Non-negative Matrices and Markov Chains* — for which Mathlib has no lemma.
 
-The Perron eigenvector is obtained without any maximisation. An eigenvalue `μ` of maximal modulus
-of the complexification has an eigenvector `y`, and the entrywise modulus `z = ‖y ·‖` satisfies the
+The Perron eigenvector is obtained without any maximisation. An eigenvalue `μ` of maximal modulus of
+the complexification has an eigenvector `y`, and the entrywise modulus `z = ‖y ·‖` satisfies the
 *subinvariance* `ρ • z ≤ A *ᵥ z` with `z` nonnegative and nonzero. If the slack were nonzero,
 multiplying by the positive matrix `(1 + A) ^ (N - 1)` — which commutes with `A` — would give a
 positive `u` with `(ρ + ε) • u ≤ A *ᵥ u` for some `ε > 0`, whence `(ρ + ε) ^ k ≤ ‖A ^ k‖` for every
@@ -54,9 +52,9 @@ Geometric simplicity is then a one-line extremal argument: for another eigenvect
 `ρ`, the scalar `t = sup_i w i / x i` makes `t • x - w` a nonnegative eigenvector with a vanishing
 entry, so it is zero.
 
-*Algebraic* simplicity of the Perron eigenvalue, which is what "simple" means in
-[Saad][saad2003iterative] Theorem 1.25, is not proved here: it needs the derivative of the
-characteristic polynomial through the adjugate.
+*Algebraic* simplicity of the Perron eigenvalue, which is what "simple" means in [saad2003iterative]
+Theorem 1.25, is not proved here: it needs the derivative of the characteristic polynomial through
+the adjugate.
 -/
 
 open Filter Topology
@@ -72,8 +70,8 @@ section OrderedSemiring
 
 variable {α : Type*} [Semiring α] [PartialOrder α] [IsOrderedRing α]
 
-/-- **Powers are monotone in a nonnegative matrix**: if `0 ≤ₑ A` and `A ≤ₑ B` then
-`A ^ k ≤ₑ B ^ k` (Saad, *Iterative Methods for Sparse Linear Systems*, Corollary 1.27). -/
+/-- **Powers are monotone in a nonnegative matrix**: if `0 ≤ₑ A` and `A ≤ₑ B` then `A ^ k ≤ₑ B ^ k`
+([saad2003iterative], Corollary 1.27). -/
 theorem EntrywiseLE.pow [Fintype n] [DecidableEq n] {A B : Matrix n n α}
     (hA : A.EntrywiseNonneg) (hAB : A ≤ₑ B) (k : ℕ) : A ^ k ≤ₑ B ^ k := by
   have hB : B.EntrywiseNonneg := hA.trans hAB
@@ -102,17 +100,17 @@ section Operator
 
 open scoped Matrix.Norms.Operator
 
-/-- **The maximum-absolute-row-sum norm is monotone on nonnegative matrices** (Saad, *Iterative
-Methods for Sparse Linear Systems*, Proposition 1.24, clause 5): if `0 ≤ₑ A` and `A ≤ₑ B` then
-`‖A‖ ≤ ‖B‖` for the norm scoped in `Matrix.Norms.Operator`. -/
+/-- **The maximum-absolute-row-sum norm is monotone on nonnegative matrices** ([saad2003iterative],
+Proposition 1.24, clause 5): if `0 ≤ₑ A` and `A ≤ₑ B` then `‖A‖ ≤ ‖B‖` for the norm scoped in
+`Matrix.Norms.Operator`. -/
 theorem EntrywiseLE.linfty_opNorm_le {A B : Matrix m n ℝ} (hA : A.EntrywiseNonneg)
     (hAB : A ≤ₑ B) : ‖A‖ ≤ ‖B‖ := by
   rw [linfty_opNorm_def, linfty_opNorm_def, NNReal.coe_le_coe]
   refine Finset.sup_mono_fun fun i _ => Finset.sum_le_sum fun j _ => ?_
   exact nnnorm_le_nnnorm_of_le (hA.apply i j) (hAB i j)
 
-/-- The transposed form of `Matrix.EntrywiseLE.linfty_opNorm_le`: the maximum absolute *column*
-sum, Saad's `‖·‖₁`, is monotone on nonnegative matrices too. -/
+/-- The transposed form of `Matrix.EntrywiseLE.linfty_opNorm_le`: the maximum absolute *column* sum,
+[saad2003iterative] `‖·‖₁`, is monotone on nonnegative matrices too. -/
 theorem EntrywiseLE.linfty_opNorm_transpose_le {A B : Matrix m n ℝ} (hA : A.EntrywiseNonneg)
     (hAB : A ≤ₑ B) : ‖Aᵀ‖ ≤ ‖Bᵀ‖ :=
   EntrywiseLE.linfty_opNorm_le (fun i j => hA.apply j i) fun i j => hAB j i
@@ -140,9 +138,9 @@ private theorem norm_toLp_abs (a : n → ℝ) :
 
 variable [DecidableEq n]
 
-/-- **The Euclidean operator norm is monotone on nonnegative matrices** (Saad, *Iterative Methods
-for Sparse Linear Systems*, Problem P-1.28): if `0 ≤ₑ A` and `A ≤ₑ B` then `‖A‖ ≤ ‖B‖` for the
-norm scoped in `Matrix.Norms.L2Operator`.
+/-- **The Euclidean operator norm is monotone on nonnegative matrices** ([saad2003iterative],
+Problem P-1.28): if `0 ≤ₑ A` and `A ≤ₑ B` then `‖A‖ ≤ ‖B‖` for the norm scoped in
+`Matrix.Norms.L2Operator`.
 
 The argument is entrywise: `|A *ᵥ d| ≤ A *ᵥ |d| ≤ B *ᵥ |d|`, and `|d|` has the norm of `d`. -/
 theorem EntrywiseLE.l2_opNorm_le {A B : Matrix n n ℝ} (hA : A.EntrywiseNonneg)
@@ -175,11 +173,11 @@ theorem EntrywiseLE.l2_opNorm_le {A B : Matrix n n ℝ} (hA : A.EntrywiseNonneg)
 
 /-! ### Monotonicity of the spectral radius -/
 
-/-- **The spectral radius is monotone on nonnegative matrices** (Saad, *Iterative Methods for
-Sparse Linear Systems*, Theorem 1.28): if `0 ≤ₑ A` and `A ≤ₑ B` then `ρ(A) ≤ ρ(B)`.
+/-- **The spectral radius is monotone on nonnegative matrices** ([saad2003iterative], Theorem 1.28):
+if `0 ≤ₑ A` and `A ≤ₑ B` then `ρ(A) ≤ ρ(B)`.
 
-Gelfand's formula turns the monotonicity of the powers and of the operator norm into monotonicity
-of the limit `‖X ^ k‖ ^ (1 / k) → ρ(X)`. -/
+Gelfand's formula turns the monotonicity of the powers and of the operator norm into monotonicity of
+the limit `‖X ^ k‖ ^ (1 / k) → ρ(X)`. -/
 theorem complexSpectralRadius_le_of_entrywiseLE {A B : Matrix n n ℝ} (hA : A.EntrywiseNonneg)
     (hAB : A ≤ₑ B) : complexSpectralRadius A ≤ complexSpectralRadius B := by
   have hreal : (complexSpectralRadius A).toReal ≤ (complexSpectralRadius B).toReal := by
@@ -234,9 +232,9 @@ private theorem pow_entrywiseLE_one_add_pow (hA : ∀ i j, 0 ≤ A i j) (k : ℕ
   EntrywiseLE.pow hA (self_entrywiseLE_one_add A) k
 
 open scoped Classical in
-/-- The set of indices reached from `i` in exactly `k` steps of `1 + A`, that is, the support of
-the `i`-th row of `(1 + A) ^ k`. Since `1 + A` dominates the identity, these sets increase with
-`k`, and each one determines the next. -/
+/-- The set of indices reached from `i` in exactly `k` steps of `1 + A`, that is, the support of the
+`i`-th row of `(1 + A) ^ k`. Since `1 + A` dominates the identity, these sets increase with `k`, and
+each one determines the next. -/
 private noncomputable def reach (A : Matrix n n ℝ) (i : n) (k : ℕ) : Finset n :=
   Finset.univ.filter fun j => 0 < ((1 + A) ^ k) i j
 
@@ -260,8 +258,8 @@ private theorem reach_mono (hA : ∀ i j, 0 ≤ A i j) (i : n) {k l : ℕ} (hkl 
     reach A i k ⊆ reach A i l :=
   monotone_nat_of_le_succ (fun k => reach_subset_succ hA i k) hkl
 
-/-- One step of the reach recursion: `reach A i (k + 1)` is the set of indices adjacent, for
-`1 + A`, to some index of `reach A i k`. -/
+/-- One step of the reach recursion: `reach A i (k + 1)` is the set of indices adjacent, for `1 +
+A`, to some index of `reach A i k`. -/
 private theorem mem_reach_succ_iff (hA : ∀ i j, 0 ≤ A i j) (i : n) (k : ℕ) (l : n) :
     l ∈ reach A i (k + 1) ↔ ∃ j ∈ reach A i k, 0 < (1 + A) j l := by
   have hB := entrywiseNonneg_one_add hA
@@ -316,8 +314,8 @@ private theorem reach_eq_univ_or_card (hA : A.IsIrreducible) (i : n) (k : ℕ) :
     have := Finset.card_lt_card hss
     omega
 
-/-- **The Wielandt positivity lemma**: for an irreducible nonnegative matrix on `N` indices,
-`(1 + A) ^ (N - 1)` is entrywise positive.
+/-- **The Wielandt positivity lemma**: for an irreducible nonnegative matrix on `N` indices, `(1 +
+A) ^ (N - 1)` is entrywise positive.
 
 Every positive entry of `(1 + A) ^ k` records a walk of length at most `k` in the pattern of `A`,
 and the support of a row of `(1 + A) ^ k` grows by at least one index at every step until it is
@@ -430,10 +428,9 @@ private theorem le_complexSpectralRadius_of_pos [Nonempty n] (hA : ∀ i j, 0 �
     _ ≤ ‖A ^ k‖ ^ (1 / k : ℝ) :=
         Real.rpow_le_rpow (pow_nonneg ht k) (hnorm k) (by positivity)
 
-/-- **The Perron–Frobenius theorem for an irreducible matrix** (Saad, *Iterative Methods for
-Sparse Linear Systems*, Theorem 1.25, which the book states without proof): an irreducible
-nonnegative real matrix on a nonempty index type has an entrywise *positive* eigenvector for its
-spectral radius.
+/-- **The Perron–Frobenius theorem for an irreducible matrix** ([saad2003iterative], Theorem 1.25,
+which the book states without proof): an irreducible nonnegative real matrix on a nonempty index
+type has an entrywise *positive* eigenvector for its spectral radius.
 
 The eigenvector is the entrywise modulus of a complex eigenvector for an eigenvalue of maximal
 modulus, which is subinvariant; the Wielandt positivity lemma
@@ -490,12 +487,11 @@ theorem IsIrreducible.exists_pos_hasEigenvector_complexSpectralRadius [Nonempty 
     exact absurd h2 (lt_irrefl 0)
 
 /-- **The Perron eigenvalue of an irreducible matrix is geometrically simple**: the eigenspace of
-`A` at its spectral radius, over the reals, has rank one (Saad, *Iterative Methods for Sparse
-Linear Systems*, Theorem 1.25; the book says "simple", meaning algebraically simple, which is a
-stronger statement not proved here).
+`A` at its spectral radius, over the reals, has rank one ([saad2003iterative], Theorem 1.25; the
+book says "simple", meaning algebraically simple, which is a stronger statement not proved here).
 
-If `w` is another eigenvector and `x` the positive Perron vector, then `t = sup_i (w i / x i)`
-makes `t • x - w` a nonnegative eigenvector with a vanishing entry, so it is zero. -/
+If `w` is another eigenvector and `x` the positive Perron vector, then `t = sup_i (w i / x i)` makes
+`t • x - w` a nonnegative eigenvector with a vanishing entry, so it is zero. -/
 theorem IsIrreducible.finrank_eigenspace_complexSpectralRadius_eq_one [Nonempty n]
     (hA : A.IsIrreducible) :
     Module.finrank ℝ
