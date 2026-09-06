@@ -354,7 +354,7 @@ Then for each `f ∈ W` the equation `L u = f` has a unique solution `u ∈ D(L)
 
 **Ex 8.2.5.** `V` Hilbert, `L ∈ L(V, V')` strongly monotone (`⟨L v, v⟩ ≥ c‖v‖²`) ⇒ (8.2.2) with the
 same `c`, `R(L)^⊥ = {0}` (in the duality sense), hence `L u = f` uniquely solvable for all `f ∈ V'`.
-* Lean: `theorem exercise_8_2_5 [CompleteSpace V] (L : V →L[ℝ] StrongDual ℝ V) {c} (hc : 0 < c)
+* Lean: `theorem example_8_2_5 [CompleteSpace V] (L : V →L[ℝ] StrongDual ℝ V) {c} (hc : 0 < c)
   (hmono : ∀ v, c * ‖v‖ ^ 2 ≤ L v v) : (∀ v, c * ‖v‖ ≤ ‖L v‖) ∧ (∀ v, (∀ w, L w v = 0) → v = 0) ∧
   Function.Bijective L`.
 * Backbone: `L` is a `SesqForm ℝ V` by defeq and `hmono` is `L.IsCoerciveWith c`
