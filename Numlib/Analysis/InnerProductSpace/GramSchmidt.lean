@@ -22,10 +22,24 @@ namespace InnerProductSpace
 open scoped ComplexOrder
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
+variable {ι : Type*} [LinearOrder ι] [LocallyFiniteOrderBot ι] [WellFoundedLT ι]
+
+/-- **Gram–Schmidt preserves the span of every lower set of indices**, not only of an `Iic` or an
+`Iio`: a lower set is the union of the `Iic` of its members, and `span_gramSchmidt_Iic` applies to
+each. -/
+theorem span_gramSchmidt_of_isLowerSet (f : ι → E) {J : Set ι} (hJ : IsLowerSet J) :
+    Submodule.span 𝕜 (gramSchmidt 𝕜 f '' J) = Submodule.span 𝕜 (f '' J) := by
+  have hcover : J = ⋃ i ∈ J, Set.Iic i := by
+    ext y
+    simp only [Set.mem_iUnion, Set.mem_Iic, exists_prop]
+    exact ⟨fun hy => ⟨y, hy, le_rfl⟩, fun ⟨_, hi, hyi⟩ => hJ hyi hi⟩
+  rw [hcover, Set.image_iUnion₂, Set.image_iUnion₂, Submodule.span_iUnion₂,
+    Submodule.span_iUnion₂]
+  exact iSup_congr fun i => iSup_congr fun _ => span_gramSchmidt_Iic 𝕜 f i
 
 /-- The `j`-th Gram–Schmidt vector is the component of `f j` orthogonal to the span of the
 previous ones: the discarded part `f j - gramSchmidt f j` lies in `span {f i | i < j}`. -/
-theorem sub_gramSchmidt_mem_span (f : ℕ → E) (j : ℕ) :
+theorem sub_gramSchmidt_mem_span (f : ι → E) (j : ι) :
     f j - gramSchmidt 𝕜 f j ∈ Submodule.span 𝕜 (f '' Set.Iio j) := by
   rw [gramSchmidt_def, sub_sub_cancel, ← span_gramSchmidt_Iio 𝕜 f j]
   refine Submodule.sum_mem _ fun i hi => ?_
@@ -36,7 +50,7 @@ theorem sub_gramSchmidt_mem_span (f : ℕ → E) (j : ℕ) :
 
 /-- The `j`-th Gram–Schmidt vector is orthogonal to the span of the previous ones:
 `gramSchmidt f j ∈ (span {f i | i < j})ᗮ`. -/
-theorem gramSchmidt_mem_orthogonal (f : ℕ → E) (j : ℕ) :
+theorem gramSchmidt_mem_orthogonal (f : ι → E) (j : ι) :
     gramSchmidt 𝕜 f j ∈ (Submodule.span 𝕜 (f '' Set.Iio j))ᗮ := by
   rw [Submodule.mem_orthogonal']
   intro u hu
@@ -49,7 +63,7 @@ theorem gramSchmidt_mem_orthogonal (f : ℕ → E) (j : ℕ) :
 
 /-- `⟪gramSchmidt f j, f j⟫ = ‖gramSchmidt f j‖²`: the Gram–Schmidt vector is the orthogonal
 component of `f j`. -/
-private theorem inner_gramSchmidt_self (f : ℕ → E) (j : ℕ) :
+private theorem inner_gramSchmidt_self (f : ι → E) (j : ι) :
     inner 𝕜 (gramSchmidt 𝕜 f j) (f j) = ((‖gramSchmidt 𝕜 f j‖ : 𝕜)) ^ 2 := by
   conv_lhs => rw [gramSchmidt_def'' 𝕜 f j]
   rw [inner_add_right, inner_sum, inner_self_eq_norm_sq_to_K]
@@ -58,7 +72,7 @@ private theorem inner_gramSchmidt_self (f : ℕ → E) (j : ℕ) :
   rw [inner_smul_right, gramSchmidt_orthogonal 𝕜 f (Finset.mem_Iio.1 hi).ne', mul_zero]
 
 /-- `⟪gramSchmidtNormed f j, f j⟫ = ‖gramSchmidt f j‖ ≥ 0`. -/
-theorem inner_gramSchmidtNormed_self (f : ℕ → E) (j : ℕ) :
+theorem inner_gramSchmidtNormed_self (f : ι → E) (j : ι) :
     inner 𝕜 (gramSchmidtNormed 𝕜 f j) (f j) = (‖gramSchmidt 𝕜 f j‖ : 𝕜) := by
   rw [gramSchmidtNormed, inner_smul_left, inner_gramSchmidt_self, RCLike.conj_inv,
     RCLike.conj_ofReal]
@@ -68,15 +82,17 @@ theorem inner_gramSchmidtNormed_self (f : ℕ → E) (j : ℕ) :
 
 /-- Flag uniqueness: an orthonormal family spanning the same flag as `f` differs from
 `gramSchmidtNormed 𝕜 f` by unimodular scalars. -/
-theorem exists_norm_eq_one_smul_gramSchmidtNormed {f u : ℕ → E} (hu : Orthonormal 𝕜 u)
+theorem exists_norm_eq_one_smul_gramSchmidtNormed {f u : ι → E} (hu : Orthonormal 𝕜 u)
     (hspan : ∀ j, Submodule.span 𝕜 (u '' Set.Iic j) = Submodule.span 𝕜 (f '' Set.Iic j))
-    (j : ℕ) : ∃ ε : 𝕜, ‖ε‖ = 1 ∧ u j = ε • gramSchmidtNormed 𝕜 f j := by
+    (j : ι) : ∃ ε : 𝕜, ‖ε‖ = 1 ∧ u j = ε • gramSchmidtNormed 𝕜 f j := by
   have hIio : Submodule.span 𝕜 (u '' Set.Iio j) = Submodule.span 𝕜 (f '' Set.Iio j) := by
-    cases j with
-    | zero => simp
-    | succ k =>
-      rw [show Set.Iio (k + 1) = Set.Iic k from Set.ext fun _ => Nat.lt_succ_iff]
-      exact hspan k
+    have hcover : Set.Iio j = ⋃ i ∈ Set.Iio j, Set.Iic i := by
+      ext x
+      simp only [Set.mem_iUnion, Set.mem_Iio, Set.mem_Iic, exists_prop]
+      exact ⟨fun hx => ⟨x, hx, le_rfl⟩, fun ⟨_, hi, hxi⟩ => lt_of_le_of_lt hxi hi⟩
+    rw [hcover, Set.image_iUnion₂, Set.image_iUnion₂, Submodule.span_iUnion₂,
+      Submodule.span_iUnion₂]
+    exact iSup_congr fun i => iSup_congr fun _ => hspan i
   have huperp : u j ∈ (Submodule.span 𝕜 (f '' Set.Iio j))ᗮ := by
     rw [← hIio, Submodule.mem_orthogonal']
     intro w hw
@@ -84,7 +100,7 @@ theorem exists_norm_eq_one_smul_gramSchmidtNormed {f u : ℕ → E} (hu : Orthon
         LinearMap.ker ((innerSL 𝕜 (u j) : E →L[𝕜] 𝕜) : E →ₗ[𝕜] 𝕜) := by
       rw [Submodule.span_le]
       rintro _ ⟨i, hi, rfl⟩
-      exact hu.2 (Nat.ne_of_gt hi)
+      exact hu.2 hi.ne'
     exact hle hw
   have hmem : u j ∈ Submodule.span 𝕜 (f '' Set.Iic j) := by
     rw [← hspan j]
@@ -140,9 +156,9 @@ The hypothesis is positivity of `⟪u_j, f_j⟫` in `𝕜` (`RCLike` order, i.e.
 positive real), not merely of its real part: over `ℂ` a unimodular factor `ε` with `re ε > 0` is
 not forced to be `1`, so the `re`-only version of this statement is false. Over `ℝ` the two
 hypotheses agree. -/
-theorem eq_gramSchmidtNormed_of_re_inner_pos {f u : ℕ → E} (hu : Orthonormal 𝕜 u)
+theorem eq_gramSchmidtNormed_of_re_inner_pos {f u : ι → E} (hu : Orthonormal 𝕜 u)
     (hspan : ∀ j, Submodule.span 𝕜 (u '' Set.Iic j) = Submodule.span 𝕜 (f '' Set.Iic j))
-    (j : ℕ) (hpos : 0 < inner 𝕜 (u j) (f j)) : u j = gramSchmidtNormed 𝕜 f j := by
+    (j : ι) (hpos : 0 < inner 𝕜 (u j) (f j)) : u j = gramSchmidtNormed 𝕜 f j := by
   obtain ⟨ε, hε, hue⟩ := exists_norm_eq_one_smul_gramSchmidtNormed hu hspan j
   rw [hue, inner_smul_left, inner_gramSchmidtNormed_self] at hpos
   have hconj : (starRingEnd 𝕜) ε = 1 :=

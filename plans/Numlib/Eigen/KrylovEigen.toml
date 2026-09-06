@@ -70,23 +70,38 @@ id = "Lanczos.sin_angle_ritzVector_le"
 source = "Saad, Numerical Methods for Large Eigenvalue Problems, Section 6.6.3"
 
 [[node]]
+id = "Arnoldi.norm_sub_starProjection_le_of_eval_eq_one"
+
+[[node]]
+id = "Arnoldi.norm_sub_starProjection_le_mul"
+
+[[node]]
 id = "Arnoldi.norm_sub_starProjection_le_iInf"
-kind = "theorem"
-desc = '''Saad-eig Lemma 6.2, the non-Hermitian angle bound: for diagonalizable `A` with `v₁ = ∑ α_k u_k`
-in a unit eigenbasis and `α_i ≠ 0`, `‖(1 - P_m) u_i‖ ≤ ξ_i ε_i^{(m)}` where
-`ξ_i = ∑_{k ≠ i} |α_k|/|α_i|` and `ε_i^{(m)} = min {max_{λ ∈ σ(A) \ {λ_i}} |p(λ)| : deg p ≤ m - 1, p(λ_i) = 1}`;
-the non-symmetric twin of `Lanczos.tan_angle_eq_iInf`, with the triangle inequality in place of
-Pythagoras.'''
-deps = ["Lanczos.tan_angle_eq_iInf", "Krylov.subspace", "Krylov.mem_subspace_iff_exists_aeval"]
-source = "Saad, Numerical Methods for Large Eigenvalue Problems, Lemma 6.2"
 
 [[node]]
 id = "Arnoldi.norm_sub_starProjection_le_of_mem_closedBall"
+
+[[node]]
+id = "Arnoldi.norm_sub_starProjection_le_of_mem_ellipse"
 kind = "theorem"
-desc = '''Saad-eig Prop 6.10 and Thm 6.8: if all eigenvalues but `λ₁` lie in the disc `C(c, ρ)` then
-`ε_1^{(m)} ≤ (ρ/|λ₁ - c|)^{m-1}` (the polynomial `((z - c)/(λ₁ - c))^{m-1}`, optimal by
-Zarantonello); if they lie in the ellipse `E(c, d, a)` then
-`ε_1^{(m)} ≤ C_{m-1}(a/d)/|C_{m-1}((λ₁ - c)/d)|` by the ellipse maximum of
-`Numlib/RingTheory/Polynomial/ChebyshevEllipse`. Phase 3 with that module.'''
-deps = ["Arnoldi.norm_sub_starProjection_le_iInf", "Polynomial.zarantonello", "Polynomial.Chebyshev.sSup_norm_eval_shiftedComplex_ellipse"]
-source = "Saad, Numerical Methods for Large Eigenvalue Problems, Proposition 6.10 and Theorem 6.8"
+desc = '''Saad-eig Thm 6.8, the ellipse half of the estimate that
+`Arnoldi.norm_sub_starProjection_le_of_mem_closedBall` proves for a disc: if all eigenvalues but
+`λ_i` lie *inside* the ellipse centred at `c` with focal distance `d` and semi-axis `a`, then
+`ε_i^{(m)} ≤ C_{m-1}(a/d)/|C_{m-1}((λ_i - c)/d)|`, whence
+`‖(1 - P_m) u_i‖ ≤ ξ_i C_{m-1}(a/d)/|C_{m-1}((λ_i - c)/d)|`.
+
+Not attempted, and the obstruction is one specific missing lemma rather than the Chebyshev theory,
+which is done: `Polynomial.Chebyshev.sSup_norm_eval_shiftedComplex_ellipse` computes the maximum of
+the normalized shifted Chebyshev polynomial over `Set.ellipse c d ρ`, and `Set.ellipse` is the
+ellipse *curve* — the image of a circle under the Joukowski map — not the closed region it bounds.
+Saad's hypothesis places the eigenvalues inside, so a maximum-modulus step is needed to pass from
+the curve to its interior. `Polynomial.norm_eval_le_of_forall_mem_sphere` of
+`Numlib/RingTheory/Polynomial/ChebyshevEllipse` is exactly that step for a disc, proved from
+`Complex.norm_le_of_forall_mem_frontier_norm_le`; the ellipse version needs the interior region
+named as a set and its frontier identified with `Set.ellipse c d ρ`, neither of which exists. A
+cheaper alternative that dodges the question, not attempted either: state the theorem with the
+hypothesis `λ_k ∈ Set.ellipse c d ρ_k` for some `ρ_k ≤ ρ` — every point inside lies on a smaller
+confocal ellipse — which is Saad's hypothesis in a form the existing lemma can consume, at the cost
+of the consumer having to produce the `ρ_k`.'''
+deps = ["Arnoldi.norm_sub_starProjection_le_mul", "Polynomial.Chebyshev.sSup_norm_eval_shiftedComplex_ellipse"]
+source = "Saad, Numerical Methods for Large Eigenvalue Problems, Theorem 6.8"

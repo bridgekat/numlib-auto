@@ -76,21 +76,31 @@ kind = "theorem"
 desc = '''Gershgorin disc counting (Saad-eig Thm 3.12): if the union `S` of `m` of the discs is disjoint
 from the other discs, `S` contains exactly `m` eigenvalues with multiplicity.
 
-Still open, and the obstruction was re-checked against the current Mathlib rather than assumed.
-The standard proof deforms `D + t H` from the diagonal `t = 0` to `A` at `t = 1` and follows the
-roots, so it needs the continuity of the roots of a monic polynomial family in its coefficients.
-Mathlib has neither that nor Rouché's theorem: grepping the whole of `Mathlib/Analysis` for a
-continuity statement about `Polynomial.roots` turns up nothing, and `Rouch` does not occur in the
-library at all. The eigenvalue-counting argument also needs a locally constant integer (the number
-of roots inside `S`), which in Mathlib terms would be the constancy of a continuous `ℕ`-valued
-function on `[0, 1]`; that part is easy once the count is known to be continuous.
+Still open. The statement was re-read in the book text (`books/numerical-methods-for-large-eigenvalue-problems-saad.txt`,
+Thm 3.12) and is as stated; his proof is the homotopy `A(t) = D + tH` from the diagonal at `t = 0`
+to `A` at `t = 1` together with "by a continuity argument, as `t` increases to 1, the branches of
+eigenvalues will stay in their respective discs". That continuity of the branches is the whole of
+what is missing, and it is not in Mathlib: grepping `Mathlib/Analysis` and `Mathlib/Topology` for a
+continuity statement about `Polynomial.roots` turns up nothing, and neither `Rouche` nor an argument
+principle nor a residue theorem occurs anywhere in the library (checked again while the QR nodes
+were proved).
 
-An alternative route avoiding root continuity, not attempted: the number of eigenvalues in `S` is
-the rank of the Riesz spectral projector, and `Submodule.finrank_eq_of_gap_lt_one`
-(`Numlib/Analysis/InnerProductSpace/Projection/Angle`) already says that a projector family with
-`‖P - Q‖ < 1` has constant rank. What is missing there is the projector itself, which is a contour
-integral of the resolvent — Mathlib has the Cauchy integral formula only for `ℂ`-valued functions,
-not for operator-valued ones.'''
+**The previously recorded alternative route was misdiagnosed and is in better shape than the note
+said.** It said "Mathlib has the Cauchy integral formula only for `ℂ`-valued functions, not for
+operator-valued ones". That is false: `Mathlib/Analysis/Complex/CauchyIntegral.lean` is stated for
+`{E} [NormedAddCommGroup E] [NormedSpace ℂ E]` throughout, so
+`Complex.two_pi_I_inv_smul_circleIntegral_sub_inv_smul_of_differentiable_on_off_countable` already
+applies to operator-valued integrands; and the resolvent is already known to be differentiable on
+the resolvent set, as `spectrum.hasDerivAt_resolvent_const_left` in
+`Mathlib/Analysis/Normed/Algebra/GelfandFormula.lean`. What is still missing on that route is the
+step the Cauchy formula does *not* give: the integral of a function with poles *inside* the
+contour. Mathlib has no residue theorem and no Laurent decomposition, so the Riesz projector
+`P = (2πi)^{-1} ∮ (z - A)^{-1} dz` cannot be shown idempotent, let alone of the right rank. Once it
+existed, `Submodule.finrank_eq_of_gap_lt_one`
+(`Numlib/Analysis/InnerProductSpace/Projection/Angle`) would finish the counting, as the old note
+said. Neither route was attempted; both statements above about Mathlib were checked by grep, the
+statement about what remains on the Riesz route is a judgement and should be treated as a
+conjecture.'''
 deps = ["Matrix.spectrum_subset_iUnion_closedBall"]
 source = "Saad, Numerical Methods for Large Eigenvalue Problems, Theorem 3.12"
 
@@ -98,42 +108,32 @@ source = "Saad, Numerical Methods for Large Eigenvalue Problems, Theorem 3.12"
 id = "Module.End.hasDerivAt_eigenvalue_perturbation"
 kind = "theorem"
 desc = '''The *existence* of a differentiable branch of eigenvalues of `A + t E` through a simple
-eigenvalue `λ` of `A`. The derivative formula itself is done:
-`Module.End.deriv_eigenvalue_perturbation` computes `λ'(0) = ⟪w, E u⟫/⟪w, u⟫` for any branch that is
+eigenvalue `l` of `A`. The derivative formula itself is done:
+`Module.End.deriv_eigenvalue_perturbation` computes `l'(0) = <w, E u>/<w, u>` for any branch that is
 differentiable at `0`, and `Module.End.norm_deriv_eigenvalue_perturbation_le` bounds it by
-`‖E‖ * eigenvalueCondNumber`, which is Saad-eig §3.2.1 in full apart from the branch.
+`||E|| * eigenvalueCondNumber`, which is Saad-eig 3.2.1 in full apart from the branch.
 
-What remains is the implicit function theorem applied to `f (t, μ) = det (A + t E - μ)`, a
-polynomial in two variables whose `μ`-derivative at `(0, λ)` is nonzero exactly because `λ` is a
-simple root of the characteristic polynomial. Mathlib's implicit function theorem is
-`HasStrictFDerivAt.implicitFunction` in `Mathlib/Analysis/Calculus/Implicit.lean`; it is stated
-through `ImplicitFunctionData`, which wants the domain split as a product with a complemented
-kernel. For a scalar equation on `ℂ × ℂ` that split is available, so this is bookkeeping rather
-than missing mathematics, but it is a real piece of it: the derivative of `μ ↦ det (A - μ)` has to
-be identified with the derivative of the characteristic polynomial (`Polynomial.hasDerivAt`,
-through `LinearMap.eval_charpoly`), and simplicity has to be turned into `∂f/∂μ ≠ 0`
-(`Polynomial.isRoot_derivative_iff` at a root of multiplicity one).'''
+What remains is the implicit function theorem applied to `f (t, mu) = det (A + t E - mu)`. Two
+things were checked while the QR nodes were proved, and they change the shape of the note.
+
+* **Mathlib has no differentiability of a determinant in its entries.** Grepping
+  `Mathlib/Analysis` and `Mathlib/LinearAlgebra` for `contDiff_det`, `Differentiable ... det`,
+  `HasFDerivAt ... det` finds nothing. `Matrix.det` is a polynomial in the entries, so this is
+  routine, but it has to be written before any implicit-function argument can start. This is the
+  first concrete missing piece and the old note did not mention it.
+* The implicit function theorem itself is `HasStrictFDerivAt.implicitFunction` in
+  `Mathlib/Analysis/Calculus/Implicit.lean`, and it parametrizes the solution set by `ker f'`, not
+  by `t`, so extracting `mu(t)` from it needs a further step. **A cheaper route, not attempted:**
+  the *inverse* function theorem applied to `F (t, mu) = (t, f (t, mu))` on `𝕜 × 𝕜`, whose
+  derivative at `(0, l)` is invertible exactly because `∂f/∂mu (0, l) ≠ 0`; then
+  `mu t := (F.localInverse (t, 0)).2` is differentiable by composition and satisfies
+  `f (t, mu t) = 0` because `F` fixes the first coordinate. That avoids `ImplicitFunctionData`
+  entirely.
+
+Simplicity still has to be turned into `∂f/∂mu (0, l) ≠ 0`, through
+`Module.End.eval_charpoly : f.charpoly.eval t = (algebraMap _ _ t - f).det` and
+`Polynomial.isRoot_derivative_iff` at a root of multiplicity one. The route as a whole is
+bookkeeping rather than missing mathematics, but it is three distinct pieces of it, and the
+determinant's differentiability is the one that has to be built from scratch.'''
 deps = ["Module.End.eigenvalueCondNumber", "Module.End.deriv_eigenvalue_perturbation"]
 source = "Saad, Numerical Methods for Large Eigenvalue Problems, Section 3.2.1"
-
-[[node]]
-id = "Module.End.eigenvectorCondNumber"
-kind = "definition"
-desc = '''The condition number of an eigenvector (Saad-eig Def 3.2): `‖S(λ) (1 - P)‖` for the reduced
-resolvent `S(λ)` and the spectral projector `P` of `λ`; and its Hermitian value
-`1/dist (λ, σ(A) \\ {λ})` (his (3.45), `eigenvectorCondNumber_eq_inv_dist_of_isSymmetric`), which
-is the `1/δ` of `sin_angle_le_norm_residual_div`.
-
-Not attempted. The pieces exist in the library but not in a module this one can see. `P` is the
-*oblique* spectral projector of a set of eigenvalues, which is `Krylov.spectralProjector` of
-`Numlib/Eigen/PowerMethod`, and `A - λ` restricted to its kernel is invertible, so the reduced
-resolvent is definable there; `Numlib/Eigen/Perturbation` imports none of the Krylov layer and
-should not. Deciding where the definition lives is the first question, and it is a plan question
-rather than a proof one — a candidate is a new `Numlib/Eigen/SpectralProjector.lean` holding
-`Krylov.spectralProjector` and this, below both modules.
-
-The Hermitian value is the only consequence the plan asks for, and it is already available in a
-usable form without the definition: it is the `1/δ` of
-`LinearMap.IsSymmetric.sin_angle_le_norm_residual_div`, where `δ` is supplied as a hypothesis
-rather than computed from the spectrum.'''
-source = "Saad, Numerical Methods for Large Eigenvalue Problems, Definition 3.2"

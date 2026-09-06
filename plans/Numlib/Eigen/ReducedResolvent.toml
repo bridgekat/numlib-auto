@@ -1,0 +1,44 @@
+namespace = "Module.End"
+
+[[node]]
+id = "mapsTo_sub_smul_one"
+
+[[node]]
+id = "injective_restrict_sub_smul_one"
+
+[[node]]
+id = "reducedResolventEquiv"
+
+[[node]]
+id = "reducedResolvent"
+
+[[node]]
+id = "reducedResolvent_apply_sub_smul"
+
+[[node]]
+id = "reducedResolvent_apply_of_mem_maxGenEigenspace"
+
+[[node]]
+id = "eigenvectorCondNumber"
+
+[[node]]
+id = "norm_reducedResolvent_apply_le"
+
+[[node]]
+id = "eigenvectorCondNumber_eq_inv_dist_of_isSymmetric"
+kind = "theorem"
+desc = '''Saad-eig (3.45): for a symmetric (Hermitian) operator the condition number of an eigenvector
+is `1 / dist (l, spectrum A \ {l})`, which is the `1 / delta` of
+`LinearMap.IsSymmetric.sin_angle_le_norm_residual_div`.
+
+Not attempted. The obstruction is a mismatch of settings rather than a missing theorem: the reduced
+resolvent of this module is built from the *oblique* `Krylov.spectralProjector` over a normed space
+with `[IsAlgClosed 𝕜]`, while the Hermitian evaluation needs an inner product, the orthogonal
+eigenspace decomposition and `Module.End.IsSymmetric`, none of which this module assumes. Once the
+two are put side by side the proof is the spectral theorem: on the eigenspace of `mu` the reduced
+resolvent acts as `1 / (mu - l)`, so its norm is the largest of those, and the largest is attained
+because the spectrum of a symmetric operator in finite dimension is finite. The evaluation is
+therefore best placed in a module that imports both this one and `Numlib/Eigen/Normal`, or after
+`Krylov.spectralProjector` has been shown to agree with `Submodule.starProjection` for a normal
+operator -- an agreement that is itself worth a node and does not exist yet.'''
+source = "Saad, Numerical Methods for Large Eigenvalue Problems, (3.45)"

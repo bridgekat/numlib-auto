@@ -84,76 +84,15 @@ id = "Krylov.tendsto_starProjection_subspaceIterate"
 
 [[node]]
 id = "Krylov.gap_subspaceIterate_le"
-kind = "theorem"
-desc = '''The gap form of the subspace-iteration bound:
-`Submodule.gap M (Krylov.subspaceIterate A S k) ≤ C * (r / rho) ^ k`, with
-`M = ⨆ μ, ⨆ _ : p μ, A.maxGenEigenspace μ` the dominant invariant subspace and `rho` the smallest
-modulus among the selected eigenvalues.
 
-This is **not** Saad's Theorem 5.2, which is per-eigenvector and is proved as
-`Krylov.exists_norm_sub_starProjection_subspaceIterate_le`. The gap form is strictly stronger:
-`Submodule.sinAngle_le_gap` derives the distance bound for *every* vector of `M` from a gap bound,
-while Theorem 5.2 supplies it only for the eigenvectors of `M`. It *is* a book result, though not
-Saad's: Kress, *Numerical Analysis*, Lemma 7.18 states exactly `‖P_{A^k S} - P_T‖ ≤ M rho^k` with
-`rho = |lambda_{m+1}/lambda_m|`, for diagonalizable `A`, `T` the span of the `m` dominant
-eigenvectors, `dim S = m` and `S ∩ U = {0}` with `U` the span of the remaining eigenvectors. (The
-display carrying that inequality is an image in the scan and did not survive `pdftotext`; the
-statement is read off the surrounding prose and the proof, which ends by bounding
-`‖P_{A^k S} eta - P_T eta‖`. Treat the constant's exact shape as unconfirmed.) Kress Thm 7.19
-(orthogonal iteration) and Thm 7.20 (QR) are corollaries of it, so this node is on the path to
-both.
+[[node]]
+id = "Krylov.exists_gap_subspaceIterate_le"
 
-**The obstruction is not what the first reading of Saad suggested.** Kress's proof does *not* go
-through Saad's (3.8), does not need a uniform decay estimate on `W`, and does not need the decay
-of `(A|_M)^{-k}`: it only ever applies the per-vector decay to the `m` vectors of one basis. Its
-three steps are
+[[node]]
+id = "Krylov.isCompl_span_image"
 
-1. a basis `z_1, ..., z_m` of `S` with `z_j = x_j + u_j`, `u_j ∈ U` -- which is
-   `Krylov.existsUnique_mem_spectralProjector_eq`, already proved, applied to each `x_j`;
-2. `w_j(k) := lambda_j^{-k} A^k z_j = x_j + lambda_j^{-k} A^k u_j` is a basis of `A^k S` with
-   `‖w_j(k) - x_j‖ ≤ L rho^k` -- which is
-   `Krylov.exists_norm_inv_pow_smul_pow_apply_sub_le`, already proved, one vector at a time;
-3. **a quantitative continuity of `family ↦ starProjection (span family)`**: from
-   `‖w_j(k) - x_j‖ ≤ delta` conclude `‖P_{span w(k)} - P_{span x}‖ ≤ M delta`. This is the whole
-   of what is missing. Kress does it by writing both projections through their normal equations
-   and treating the second Gram system as a perturbation of the first (his Thm 5.3, a condition
-   number bound). Mathlib has no Gram-matrix formula for `Submodule.starProjection` and no
-   Lipschitz bound for the projector in terms of a basis.
-
-An alternative to step 3, not attempted and therefore a conjecture: bound the two one-sided
-quantities directly by expanding in the two bases -- `‖(1 - P_{span w}) P_{span x}‖ ≤ m * kappa *
-delta` where `kappa` bounds the coordinate functionals, and symmetrically with the conditioning of
-the perturbed basis, which is uniform once `delta` is small -- and then combine them with
-`P_K - P_L = P_K (1 - P_L) - (1 - P_K) P_L` and `‖P_K (1 - P_L)‖ = ‖(1 - P_L) P_K‖`. That last
-step is the `≤` half of Saad's (3.8), the one `Numlib/Analysis/InnerProductSpace/Projection/Angle`
-left out for want of `[CompleteSpace E]`; here it is free, since the statement is already under
-`[FiniteDimensional 𝕜 E]`. Either way the work is the projector's dependence on its spanning
-family, not anything about `A`.
-
-Nothing above was attempted; it is an assessment of Kress's printed proof.
-
-Re-checked while the inverse-iteration nodes were proved, and still accurate. Two Mathlib
-ingredients the alternative route would use do exist, which narrows what is missing to the
-projector bound alone: the coordinate bound `kappa` for a basis of a finite-dimensional subspace is
-`Basis.coord` composed with `LinearMap.continuous_of_finiteDimensional`, and
-`|| P_X (1 - P_W) || = || (1 - P_W) P_X ||` is `ContinuousLinearMap.adjoint` plus
-`Submodule.starProjection` being self-adjoint, free here because finite dimension gives
-completeness. A concrete way to get the second one-sided bound from the first, also not attempted:
-the map `T : X -> W` sending `sum c_j x_j` to `sum c_j w_j` satisfies `|| T y - y || <= kappa m
-delta || y ||`, so for `kappa m delta < 1` it is injective, hence bijective onto `W` by equality of
-dimensions, with `|| T inverse || <= 1/(1 - kappa m delta)`; the distance from `z in W` to `X` is
-then at most `kappa m delta / (1 - kappa m delta)` times `|| z ||`. That would make the missing
-brick one statement -- from `|| w_j - x_j || <= delta` and a coordinate bound for `x`, conclude
-`|| P_X - P_W || <= M delta` -- whose natural home is
-`Numlib/Analysis/InnerProductSpace/Projection/Angle`.'''
-deps = [
-  "Krylov.exists_norm_sub_starProjection_subspaceIterate_le",
-  "Krylov.exists_norm_inv_pow_smul_pow_apply_sub_le",
-  "Krylov.existsUnique_mem_spectralProjector_eq",
-  "Submodule.gap",
-  "Submodule.sinAngle_le_gap",
-]
-source = "Kress, Numerical Analysis, Lemma 7.18; Saad, Numerical Methods for Large Eigenvalue Problems, Section 3.1"
+[[node]]
+id = "Krylov.exists_gap_subspaceIterate_span_image_le"
 
 [[node]]
 id = "Krylov.inverseIterate"

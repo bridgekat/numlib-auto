@@ -42,6 +42,14 @@ norm bound and a Chebyshev min–max.
   the first `i` Ritz vectors because the competitor polynomial vanishes at the corresponding Ritz
   values.
 
+* `Arnoldi.norm_sub_starProjection_le_iInf`: the same variational idea without symmetry.  For a
+  diagonalizable `A` with unit eigenvectors `u_k` and `v = ∑ α_k u_k`, the distance from `u_i` to
+  `𝒦_m(A, v)` is bounded by a minimum over the same polynomials, now weighted by the expansion
+  coefficients; `Arnoldi.norm_sub_starProjection_le_of_mem_closedBall` is the geometric decay
+  `ξ_i (ρ/‖λ_i - c‖)^(m-1)` that a disc enclosing the rest of the spectrum gives, with `ξ_i = ∑_{k ≠
+  i} ‖α_k‖/‖α_i‖`.  The triangle inequality replaces Pythagoras, which is why the factor `ξ_i`
+  appears where the symmetric bounds have none.
+
 The angle bound and the Ritz value bound each come in two forms: one taking as data an interval
 `[lo, hi]` enclosing the eigenvalues after the `i`-th (`…_of_mem_Icc`), which is the general
 statement and carries the sharper constant `λ_i - lo` in place of `λ_1 - λ_n`, and one specializing
@@ -1076,3 +1084,139 @@ theorem sin_angle_ritzVector_le {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric) (v :
     (fun _x hx => Arnoldi.norm_starProjection_apply_le_of_mem_orthogonal A v hA hm hx) hθ hδ hu hu0
 
 end Lanczos
+
+/-! ### The distance to a Krylov subspace without symmetry
+
+For a diagonalizable operator the variational argument still gives a one-sided bound, with the
+triangle inequality in place of the Pythagoras of the symmetric case.  The price is the factor
+`ξ_i = ∑_{k ≠ i} ‖α_k‖ / ‖α_i‖`, which measures how much of the starting vector lies away from the
+eigenvector being approximated. -/
+
+namespace Arnoldi
+
+section Diagonalizable
+
+variable {ι : Type*} [Fintype ι] [DecidableEq ι] {A : E →ₗ[𝕜] E} {u : ι → E} {lam α : ι → 𝕜}
+  {v : E} {i : ι} {m : ℕ}
+
+/-- **The distance from an eigenvector to a Krylov subspace, for one competitor polynomial.**  If
+`A u_k = λ_k u_k` for a family of vectors `u_k` and the starting vector expands as `v = ∑ α_k u_k`,
+then every polynomial `p` of degree less than `m` normalized by `p λ_i = 1` gives
+
+`‖u_i - P_m u_i‖ ≤ (∑_{k ≠ i} ‖α_k‖ ‖p λ_k‖ ‖u_k‖) / ‖α_i‖`,
+
+`P_m` being the orthogonal projection onto `𝒦_m(A, v)`.
+
+The competitor vector is `α_i⁻¹ p(A) v`, whose `u_i`-component is exactly `u_i`; what is left over
+is the combination of the other `u_k` weighted by `p` at their eigenvalues.  Neither linear
+independence of the family, nor invertibility of `A`, nor any symmetry is used: only that `v` is the
+stated combination of eigenvectors, so the family may repeat an eigenvalue or omit part of the
+spectrum. -/
+theorem norm_sub_starProjection_le_of_eval_eq_one (hu : ∀ k, A (u k) = lam k • u k)
+    (hv : v = ∑ k, α k • u k) (hα : α i ≠ 0) {p : 𝕜[X]} (hdeg : p.degree < m)
+    (hp : p.eval (lam i) = 1) :
+    ‖u i - (subspace A v m).starProjection (u i)‖ ≤
+      (∑ k ∈ Finset.univ.erase i, ‖α k‖ * ‖p.eval (lam k)‖ * ‖u k‖) / ‖α i‖ := by
+  have hmem : (aeval A p) v ∈ subspace A v m :=
+    (Krylov.mem_subspace_iff_exists_aeval A v).2 ⟨p, hdeg, rfl⟩
+  refine ((isBestApprox_starProjection _ (u i)).2 _ (Submodule.smul_mem _ (α i)⁻¹ hmem)).trans ?_
+  have hexp : (α i)⁻¹ • (aeval A p) v
+      = ∑ k, ((α i)⁻¹ * α k * p.eval (lam k)) • u k := by
+    rw [hv, map_sum, Finset.smul_sum]
+    refine Finset.sum_congr rfl fun k _ => ?_
+    rw [map_smul, Polynomial.aeval_apply_of_apply_eq_smul (hu k), smul_smul, smul_smul]
+  have hsplit : ∑ k, ((α i)⁻¹ * α k * p.eval (lam k)) • u k
+      = u i + ∑ k ∈ Finset.univ.erase i, ((α i)⁻¹ * α k * p.eval (lam k)) • u k := by
+    rw [← Finset.add_sum_erase _ _ (Finset.mem_univ i), hp, mul_one, inv_mul_cancel₀ hα, one_smul]
+  have hdiff : u i - (α i)⁻¹ • (aeval A p) v
+      = -∑ k ∈ Finset.univ.erase i, ((α i)⁻¹ * α k * p.eval (lam k)) • u k := by
+    rw [hexp, hsplit]; abel
+  rw [hdiff, norm_neg, Finset.sum_div]
+  refine (norm_sum_le _ _).trans (Finset.sum_le_sum fun k _ => le_of_eq ?_)
+  rw [norm_smul, norm_mul, norm_mul, norm_inv]
+  ring
+
+/-- **[saad2011numerical], Lemma 6.2**: for a diagonalizable `A` with unit eigenvectors `u_k` and a
+starting vector `v = ∑ α_k u_k` with `α_i ≠ 0`, the distance from `u_i` to the Krylov subspace
+`𝒦_m(A, v)` is at most `ξ_i M`, where `ξ_i = ∑_{k ≠ i} ‖α_k‖ / ‖α_i‖` and `M` bounds a competitor
+polynomial `p` of degree less than `m` with `p λ_i = 1` at the other eigenvalues.
+
+The bound `M` is supplied rather than computed, in the manner of this library's other polynomial
+estimates; `Arnoldi.norm_sub_starProjection_le_iInf` is the form that takes the best `p`, and
+`Arnoldi.norm_sub_starProjection_le_of_mem_closedBall` is the explicit estimate that follows from a
+disc enclosing the rest of the spectrum. -/
+theorem norm_sub_starProjection_le_mul (hu : ∀ k, A (u k) = lam k • u k) (hu1 : ∀ k, ‖u k‖ = 1)
+    (hv : v = ∑ k, α k • u k) (hα : α i ≠ 0) {p : 𝕜[X]} (hdeg : p.degree < m)
+    (hp : p.eval (lam i) = 1) {M : ℝ} (hM : ∀ k ≠ i, ‖p.eval (lam k)‖ ≤ M) :
+    ‖u i - (subspace A v m).starProjection (u i)‖ ≤
+      (∑ k ∈ Finset.univ.erase i, ‖α k‖ / ‖α i‖) * M := by
+  refine (norm_sub_starProjection_le_of_eval_eq_one hu hv hα hdeg hp).trans ?_
+  rw [Finset.sum_div, Finset.sum_mul]
+  refine Finset.sum_le_sum fun k hk => ?_
+  rw [hu1 k, mul_one]
+  calc ‖α k‖ * ‖p.eval (lam k)‖ / ‖α i‖
+      = ‖α k‖ / ‖α i‖ * ‖p.eval (lam k)‖ := by ring
+    _ ≤ ‖α k‖ / ‖α i‖ * M :=
+        mul_le_mul_of_nonneg_left (hM k (Finset.ne_of_mem_erase hk)) (by positivity)
+
+/-- **[saad2011numerical], Lemma 6.2 with the optimal polynomial.**  The distance from `u_i` to
+`𝒦_m(A, v)` is at most the minimum, over the polynomials `p` of degree less than `m` normalized by
+`p λ_i = 1`, of `(∑_{k ≠ i} ‖α_k‖ ‖p λ_k‖ ‖u_k‖) / ‖α_i‖`.
+
+The source bounds each `‖p λ_k‖` by their maximum `ε_i^{(m)}` and states the result as
+`ξ_i ε_i^{(m)}` with `ξ_i = ∑_{k ≠ i} ‖α_k‖ / ‖α_i‖`; keeping the weights inside the sum is sharper
+and is what `Arnoldi.norm_sub_starProjection_le_mul` coarsens to the printed form.
+
+Some step must be taken: at `m = 0` the Krylov subspace is trivial, the left-hand side is `‖u_i‖`,
+and the index type is empty, so the infimum has the junk value `0`. -/
+theorem norm_sub_starProjection_le_iInf (hu : ∀ k, A (u k) = lam k • u k)
+    (hv : v = ∑ k, α k • u k) (hα : α i ≠ 0) (hm : 0 < m) :
+    ‖u i - (subspace A v m).starProjection (u i)‖ ≤
+      ⨅ p : {p : 𝕜[X] // p.degree < m ∧ p.eval (lam i) = 1},
+        (∑ k ∈ Finset.univ.erase i, ‖α k‖ * ‖(p : 𝕜[X]).eval (lam k)‖ * ‖u k‖) / ‖α i‖ := by
+  have hone : (1 : 𝕜[X]).degree < (m : ℕ) := by
+    rw [Polynomial.degree_one]
+    exact_mod_cast hm
+  have : Nonempty {p : 𝕜[X] // p.degree < m ∧ p.eval (lam i) = 1} := ⟨⟨1, hone, by simp⟩⟩
+  exact le_ciInf fun p => norm_sub_starProjection_le_of_eval_eq_one hu hv hα p.2.1 p.2.2
+
+/-- **[saad2011numerical], Proposition 6.10**: if every eigenvalue other than `λ_i` lies in the
+closed disc of centre `c` and radius `ρ`, then the distance from `u_i` to `𝒦_m(A, v)` decays
+geometrically,
+
+`‖u_i - P_m u_i‖ ≤ ξ_i (ρ / ‖λ_i - c‖)^(m-1)`,
+
+with `ξ_i = ∑_{k ≠ i} ‖α_k‖ / ‖α_i‖`.  The competitor is `p(z) = ((z - c)/(λ_i - c))^(m-1)`, which
+`Polynomial.zarantonello` shows to be optimal on a circle.
+
+The bound is informative exactly when `ρ < ‖λ_i - c‖`, that is when the disc separates `λ_i` from
+the rest of the spectrum; no hypothesis enforces that, since the inequality holds regardless. -/
+theorem norm_sub_starProjection_le_of_mem_closedBall (hu : ∀ k, A (u k) = lam k • u k)
+    (hu1 : ∀ k, ‖u k‖ = 1) (hv : v = ∑ k, α k • u k) (hα : α i ≠ 0) (hm : 0 < m) {c : 𝕜} {ρ : ℝ}
+    (hc : lam i ≠ c) (hρ : ∀ k ≠ i, ‖lam k - c‖ ≤ ρ) :
+    ‖u i - (subspace A v m).starProjection (u i)‖ ≤
+      (∑ k ∈ Finset.univ.erase i, ‖α k‖ / ‖α i‖) * (ρ / ‖lam i - c‖) ^ (m - 1) := by
+  have hci : lam i - c ≠ 0 := sub_ne_zero.2 hc
+  have hcnorm : (0 : ℝ) < ‖lam i - c‖ := norm_pos_iff.2 hci
+  have hev : ∀ z : 𝕜, ((C (lam i - c)⁻¹ * (X - C c)) ^ (m - 1) : 𝕜[X]).eval z
+      = ((lam i - c)⁻¹ * (z - c)) ^ (m - 1) := by
+    intro z; simp
+  have hdeg : ((C (lam i - c)⁻¹ * (X - C c)) ^ (m - 1) : 𝕜[X]).degree < (m : ℕ) := by
+    refine lt_of_le_of_lt (Polynomial.degree_le_of_natDegree_le (n := m - 1) ?_) ?_
+    · have h1 : (C (lam i - c)⁻¹ * (X - C c) : 𝕜[X]).natDegree ≤ 1 := by compute_degree
+      calc ((C (lam i - c)⁻¹ * (X - C c)) ^ (m - 1) : 𝕜[X]).natDegree
+          ≤ (m - 1) * (C (lam i - c)⁻¹ * (X - C c) : 𝕜[X]).natDegree :=
+            Polynomial.natDegree_pow_le
+        _ ≤ (m - 1) * 1 := by gcongr
+        _ = m - 1 := by ring
+    · exact_mod_cast Nat.sub_lt hm one_pos
+  refine norm_sub_starProjection_le_mul hu hu1 hv hα hdeg ?_ ?_
+  · rw [hev, inv_mul_cancel₀ hci, one_pow]
+  · intro k hk
+    rw [hev, norm_pow, norm_mul, norm_inv, ← div_eq_inv_mul]
+    gcongr
+    exact hρ k hk
+
+end Diagonalizable
+
+end Arnoldi

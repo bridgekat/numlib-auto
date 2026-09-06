@@ -2,6 +2,7 @@ import Mathlib.Analysis.RCLike.Basic
 import Mathlib.Analysis.SpecificLimits.Basic
 import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
 import Mathlib.LinearAlgebra.Projection
+import Numlib.Analysis.InnerProductSpace.Projection.Angle
 import Numlib.Approximation.BestApprox
 
 /-!
@@ -106,10 +107,16 @@ between subspaces.
 
 The gap of `Numlib.Analysis.InnerProductSpace.Projection.Angle` says more than any of these:
 `Submodule.sinAngle_le_gap` turns a bound on `gap M S_k` into the same distance bound for *every*
-vector of the dominant invariant subspace `M`, whereas the theorem above gives it only for the
-eigenvectors of `M`. That stronger statement is a real theorem of the literature —
-[kress1998numerical], Lemma 7.18, for diagonalizable `A` — and it is not proved here; the route and
-what it still needs are recorded in the plan.
+vector of the dominant invariant subspace `M`, whereas the theorems above give it only for the
+eigenvectors of `M`. That stronger statement is [kress1998numerical], Lemma 7.18, and it is
+`Krylov.gap_subspaceIterate_le`, with `Krylov.exists_gap_subspaceIterate_le` its spectral
+packaging. Its extra ingredient over the per-eigenvector bound is the quantitative continuity
+`Submodule.gap_le_of_forall_norm_sub_le` of a projector in a spanning family of its subspace: the
+`m` scaled iterates `l_j^{-k} A^k s_j` span `S_k` and converge to the eigenvectors `x_j` one at a
+time, which is the per-eigenvector estimate again, and the gap follows from the whole family
+converging at once. `M` has to be spanned by *eigen*vectors there, which is
+[kress1998numerical]'s diagonalizability; a Jordan block among the selected eigenvalues costs a
+polynomial factor and breaks the clean rate.
 
 ## The spectral projector of a set of eigenvalues
 
@@ -977,6 +984,280 @@ theorem tendsto_starProjection_subspaceIterate [IsAlgClosed 𝕜] [FiniteDimensi
   refine squeeze_zero_norm (fun k => ?_) hbound
   rw [norm_norm, norm_sub_rev]
   exact hC k
+
+/-! ### The gap form of the subspace-iteration bound
+
+`Krylov.norm_sub_starProjection_subspaceIterate_le` measures the convergence one eigenvector at a
+time. What the QR algorithm and orthogonal iteration need instead is the *gap*
+`‖P_M - P_{A^k S}‖`, which bounds the distance to `A^k S` of **every** vector of `M` at once
+(`Submodule.sinAngle_le_gap`) and is therefore strictly stronger. -/
+
+private theorem span_range_smul_eq {ι : Type*} (c : ι → 𝕜) (hc : ∀ j, c j ≠ 0) (v : ι → E) :
+    Submodule.span 𝕜 (Set.range fun j => c j • v j) = Submodule.span 𝕜 (Set.range v) := by
+  refine le_antisymm (Submodule.span_le.2 ?_) (Submodule.span_le.2 ?_)
+  · rintro _ ⟨j, rfl⟩
+    exact Submodule.smul_mem _ _ (Submodule.subset_span ⟨j, rfl⟩)
+  · rintro _ ⟨j, rfl⟩
+    have hvj : v j = (c j)⁻¹ • (c j • v j) := by
+      rw [smul_smul, inv_mul_cancel₀ (hc j), one_smul]
+    rw [hvj]
+    exact Submodule.smul_mem _ _ (Submodule.subset_span ⟨j, rfl⟩)
+
+/-- **The gap form of the subspace-iteration bound**, in the form the proof consumes: no spectrum,
+no algebraically closed field and no finite dimension of the ambient space.
+
+Let `M` be spanned by eigenvectors `x j` with eigenvalues `l j` of modulus at least `ρ`, let the
+starting subspace `S` be spanned by a family `s j`, and suppose each discrepancy `s j - x j` has an
+orbit bounded by `C r^k`. Then the gap between `M` and the `k`-th iterate `A^k S` is `O((r/ρ)^k)`.
+
+This is [kress1998numerical], Lemma 7.18, at his hypotheses read off the proof rather than off the
+statement: he assumes `A` diagonalizable with `S ∩ U = {0}` for the invariant complement `U`, which
+delivers exactly the family `s` (through the spectral projector) and the decay `C r^k`. The
+spectral packaging is `Krylov.exists_gap_subspaceIterate_le`.
+
+The proof is `Submodule.gap_le_of_forall_norm_sub_le` applied to the two spanning families `x` and
+`w j = l j^{-k} A^k (s j)`: the second spans `A^k S` because scaling by nonzero scalars does not
+change a span, and it converges to the first at the stated rate by
+`Krylov.norm_inv_pow_smul_pow_apply_sub_le`. The smallness hypothesis of that lemma holds only from
+some step on, so the constant absorbs the finitely many earlier steps, where the gap is at most `1`
+(`Submodule.gap_le_one`); the case `r = 0` is separate because `(r/ρ)^k` then vanishes and leaves no
+room to absorb anything — there the iterates are *equal* to `M` from step `1` on. -/
+theorem gap_subspaceIterate_le {ι : Type*} [Finite ι] {M : Submodule 𝕜 E}
+    [FiniteDimensional 𝕜 M] [FiniteDimensional 𝕜 S] {x s : ι → E} {l : ι → 𝕜} {C r ρ : ℝ}
+    (hxli : LinearIndependent 𝕜 x) (hM : M = Submodule.span 𝕜 (Set.range x))
+    (hS : S = Submodule.span 𝕜 (Set.range s)) (heig : ∀ j, A (x j) = l j • x j)
+    (hl0 : ∀ j, l j ≠ 0) (hρ : 0 < ρ) (hlρ : ∀ j, ρ ≤ ‖l j‖) (hr : 0 ≤ r) (hrρ : r < ρ)
+    (hC : ∀ j k, ‖(A ^ k) (s j - x j)‖ ≤ C * r ^ k) :
+    ∃ D : ℝ, ∀ k, M.gap (subspaceIterate A S k) ≤ D * (r / ρ) ^ k := by
+  cases nonempty_fintype ι
+  have hq0 : 0 ≤ r / ρ := div_nonneg hr hρ.le
+  have hq1 : r / ρ < 1 := (div_lt_one hρ).2 hrρ
+  have hC'0 : (0 : ℝ) ≤ max C 0 := le_max_right _ _
+  set w : ℕ → ι → E := fun k j => (l j ^ k)⁻¹ • (A ^ k) (s j) with hwdef
+  have hwx : ∀ k j, ‖w k j - x j‖ ≤ max C 0 * (r / ρ) ^ k := by
+    intro k j
+    have hCj : ∀ n, ‖(A ^ n) (s j - x j)‖ ≤ max C 0 * r ^ n := fun n =>
+      (hC j n).trans (mul_le_mul_of_nonneg_right (le_max_left C 0) (pow_nonneg hr n))
+    have h1 := norm_inv_pow_smul_pow_apply_sub_le (A := A) (hl0 j) (heig j) hCj k
+    rw [add_sub_cancel] at h1
+    refine h1.trans ?_
+    gcongr
+    exact hlρ j
+  have hspan : ∀ k, subspaceIterate A S k = Submodule.span 𝕜 (Set.range (w k)) := by
+    intro k
+    rw [subspaceIterate, hS, Submodule.map_span, ← Set.range_comp]
+    exact (span_range_smul_eq _ (fun j => inv_ne_zero (pow_ne_zero k (hl0 j))) _).symm
+  obtain ⟨κ, hκ, hκb⟩ := hxli.exists_forall_sum_norm_le
+  have main : ∀ k, κ * (max C 0 * (r / ρ) ^ k) ≤ 1 / 2 →
+      M.gap (subspaceIterate A S k) ≤ 3 * (κ * (max C 0 * (r / ρ) ^ k)) := fun k hk =>
+    Submodule.gap_le_of_forall_norm_sub_le M _ hM (hspan k) hκ.le (by positivity) hκb (hwx k) hk
+  have htriv : ∀ k, M.gap (subspaceIterate A S k) ≤ 1 := fun k => M.gap_le_one _
+  rcases eq_or_lt_of_le hr with hr0 | hrpos
+  · refine ⟨3 * κ * max C 0 + 1, fun k => ?_⟩
+    have hqz : r / ρ = 0 := by rw [← hr0, zero_div]
+    match k with
+    | 0 => simpa using (htriv 0).trans (by nlinarith)
+    | (n + 1) =>
+      have hz : (r / ρ) ^ (n + 1) = 0 := by rw [hqz]; simp
+      rw [hz, mul_zero]
+      have h := main (n + 1) (by rw [hz]; norm_num)
+      rw [hz, mul_zero, mul_zero, mul_zero] at h
+      exact h
+  · have htend : Tendsto (fun k : ℕ => κ * (max C 0 * (r / ρ) ^ k)) atTop (𝓝 0) := by
+      have h := tendsto_pow_atTop_nhds_zero_of_lt_one hq0 hq1
+      simpa using ((h.const_mul (max C 0)).const_mul κ)
+    obtain ⟨k₀, hk₀⟩ := Filter.eventually_atTop.1
+      (htend.eventually_lt_const (by norm_num : (0 : ℝ) < 1 / 2))
+    refine ⟨3 * κ * max C 0 + (ρ / r) ^ k₀, fun k => ?_⟩
+    rcases le_or_gt k₀ k with hk | hk
+    · have h := main k (hk₀ k hk).le
+      have hpow : (0 : ℝ) ≤ (r / ρ) ^ k := pow_nonneg hq0 k
+      nlinarith [pow_nonneg (div_nonneg hρ.le hrpos.le) k₀]
+    · have hge : (1 : ℝ) ≤ ρ / r := (one_le_div hrpos).2 hrρ.le
+      have h2 : (ρ / r) ^ k ≤ (ρ / r) ^ k₀ := pow_le_pow_right₀ hge hk.le
+      have h3 : (ρ / r) ^ k * (r / ρ) ^ k = 1 := by
+        rw [← mul_pow, div_mul_div_comm, mul_comm ρ r, div_self (by positivity), one_pow]
+      have hpow : (0 : ℝ) ≤ (r / ρ) ^ k := pow_nonneg hq0 k
+      have h1 : (1 : ℝ) ≤ (ρ / r) ^ k₀ * (r / ρ) ^ k := by nlinarith
+      have hgap := htriv k
+      nlinarith [mul_nonneg (mul_nonneg (by norm_num : (0 : ℝ) ≤ 3) hκ.le) hC'0]
+
+/-- **The gap form of the subspace-iteration bound**, at the spectral hypotheses of
+[saad2011numerical], Thm 5.2 and [kress1998numerical], Lemma 7.18: the dominant invariant subspace
+`M = ⨆_{p μ} maxGenEigenspace A μ` is at gap `O((r/ρ)^k)` from the `k`-th iterate `A^k S`, where `ρ`
+bounds the selected eigenvalues from below and `r` the discarded ones from above.
+
+`M` is required to be spanned by *eigen*vectors `x` — that is, the selected eigenvalues are
+semi-simple, which is [kress1998numerical]'s diagonalizability read locally. A nontrivial Jordan
+block among them would contribute a polynomial factor `k^{N-1}` and make the clean rate `(r/ρ)^k`
+false at `r` exactly the subdominant modulus, the same phenomenon that
+`Krylov.exists_norm_pow_apply_le_of_mem_maxGenEigenspace` handles with a strict `r`. The family `x`
+is data rather than a conclusion because nothing else in this file constructs a basis of a
+supremum of eigenspaces.
+
+Everything else is supplied by the spectral projector:
+`Krylov.existsUnique_mem_spectralProjector_eq` produces the preimages `s j ∈ S` of the `x j`, a
+dimension count promotes them to a spanning family
+of `S`, and `Krylov.exists_norm_pow_apply_le_of_mem_iSup` bounds the orbit of each discrepancy
+`s j - x j`, which lies in the discarded invariant subspace. -/
+theorem exists_gap_subspaceIterate_le [IsAlgClosed 𝕜] [FiniteDimensional 𝕜 E] {p : 𝕜 → Prop}
+    {ι : Type*} [Finite ι] {x : ι → E} {l : ι → 𝕜} {r ρ : ℝ}
+    (hdisj : Disjoint S (⨆ μ, ⨆ _ : ¬ p μ, A.maxGenEigenspace μ))
+    (hrank : Module.finrank 𝕜 S = Module.finrank 𝕜 ↥(⨆ μ, ⨆ _ : p μ, A.maxGenEigenspace μ))
+    (hxli : LinearIndependent 𝕜 x)
+    (hM : (⨆ μ, ⨆ _ : p μ, A.maxGenEigenspace μ) = Submodule.span 𝕜 (Set.range x))
+    (heig : ∀ j, A (x j) = l j • x j) (hρ : 0 < ρ) (hlρ : ∀ j, ρ ≤ ‖l j‖)
+    (hr : 0 ≤ r) (hrρ : r < ρ) (hspec : ∀ μ, ¬ p μ → A.HasEigenvalue μ → ‖μ‖ < r) :
+    ∃ D : ℝ, ∀ k, (⨆ μ, ⨆ _ : p μ, A.maxGenEigenspace μ).gap (subspaceIterate A S k)
+      ≤ D * (r / ρ) ^ k := by
+  cases nonempty_fintype ι
+  have hxM : ∀ j, x j ∈ (⨆ μ, ⨆ _ : p μ, A.maxGenEigenspace μ) := fun j => by
+    rw [hM]; exact Submodule.subset_span ⟨j, rfl⟩
+  choose s hs using fun j => (existsUnique_mem_spectralProjector_eq hdisj hrank (hxM j)).exists
+  have hsS : ∀ j, s j ∈ S := fun j => (hs j).1
+  have hsP : ∀ j, spectralProjector A p (s j) = x j := fun j => (hs j).2
+  have hsli : LinearIndependent 𝕜 s := by
+    have hcomp : LinearIndependent 𝕜 fun j => spectralProjector A p (s j) := by
+      simpa only [hsP] using hxli
+    exact hcomp.of_comp (spectralProjector A p)
+  have hcard : Module.finrank 𝕜 ↥(Submodule.span 𝕜 (Set.range s)) = Fintype.card ι :=
+    finrank_span_eq_card hsli
+  have hSspan : S = Submodule.span 𝕜 (Set.range s) := by
+    refine (Submodule.eq_of_le_of_finrank_le ?_ ?_).symm
+    · exact Submodule.span_le.2 (by rintro _ ⟨j, rfl⟩; exact hsS j)
+    · rw [hcard, hrank, hM, finrank_span_eq_card hxli]
+  have hC : ∀ j, ∃ C : ℝ, ∀ k, ‖(A ^ k) (s j - x j)‖ ≤ C * r ^ k := by
+    intro j
+    refine exists_norm_pow_apply_le_of_mem_iSup ?_ hspec
+    rw [← hsP j]
+    exact sub_spectralProjector_mem (s j)
+  choose Cf hCf using hC
+  refine gap_subspaceIterate_le hxli hM hSspan heig (fun j => ?_) hρ hlρ hr hrρ
+    (C := ∑ j, max (Cf j) 0) (fun j k => ?_)
+  · exact norm_pos_iff.1 (hρ.trans_le (hlρ j))
+  · refine (hCf j k).trans (mul_le_mul_of_nonneg_right ?_ (pow_nonneg hr k))
+    exact (le_max_left _ _).trans
+      (Finset.single_le_sum (fun i _ => le_max_right (Cf i) 0) (Finset.mem_univ j))
+
+/-- **A basis splits the space along any set of indices**: the span of the vectors indexed by `J`
+and the span of the rest are complementary. -/
+theorem isCompl_span_image [FiniteDimensional 𝕜 E] {ι : Type*} {x : ι → E}
+    (hx : LinearIndependent 𝕜 x) (hxtop : Submodule.span 𝕜 (Set.range x) = ⊤) (J : Set ι) :
+    IsCompl (Submodule.span 𝕜 (x '' J)) (Submodule.span 𝕜 (x '' Jᶜ)) where
+  disjoint := hx.disjoint_span_image disjoint_compl_right
+  codisjoint := by
+    rw [codisjoint_iff, ← Submodule.span_union, ← Set.image_union, Set.union_compl_self,
+      Set.image_univ, hxtop]
+
+/-- The starting subspace maps *onto* the span of the selected basis vectors under the projection
+along the complementary span: the projection is injective on it by general position, so its image
+has the same dimension. -/
+private theorem map_projection_eq [FiniteDimensional 𝕜 E] {ι : Type*} {x : ι → E}
+    (hx : LinearIndependent 𝕜 x) (hxtop : Submodule.span 𝕜 (Set.range x) = ⊤) {J : Set ι}
+    {S : Submodule 𝕜 E} (hdisj : Disjoint S (Submodule.span 𝕜 (x '' Jᶜ)))
+    (hrank : Module.finrank 𝕜 S = Module.finrank 𝕜 ↥(Submodule.span 𝕜 (x '' J))) :
+    S.map (Submodule.projection _ _ (isCompl_span_image hx hxtop J))
+      = Submodule.span 𝕜 (x '' J) := by
+  set Q := Submodule.projection (Submodule.span 𝕜 (x '' J)) (Submodule.span 𝕜 (x '' Jᶜ))
+    (isCompl_span_image hx hxtop J) with hQ
+  have hker : LinearMap.ker Q = Submodule.span 𝕜 (x '' Jᶜ) := Submodule.ker_projection _
+  have hinj : Set.InjOn Q S :=
+    LinearMap.injOn_of_disjoint_ker (le_refl (S : Set E)) (by rw [hker]; exact hdisj)
+  have hkerc : LinearMap.ker (Q ∘ₗ S.subtype) = ⊥ := by
+    rw [LinearMap.ker_eq_bot']
+    rintro ⟨v, hv⟩ hv0
+    simpa using hinj hv (Submodule.zero_mem S) (by simpa using hv0)
+  have hrange : LinearMap.range (Q ∘ₗ S.subtype) = S.map Q := by
+    rw [LinearMap.range_comp, Submodule.range_subtype]
+  have hfin : Module.finrank 𝕜 ↥(S.map Q) = Module.finrank 𝕜 S := by
+    have h := (Q ∘ₗ S.subtype).finrank_range_add_finrank_ker
+    rw [hkerc, hrange] at h
+    simpa using h
+  have hle : S.map Q ≤ Submodule.span 𝕜 (x '' J) := by
+    rw [← Submodule.range_projection (isCompl_span_image hx hxtop J)]
+    exact LinearMap.map_le_range
+  exact Submodule.eq_of_le_of_finrank_le hle (by rw [hfin, hrank])
+
+/-- **The subspace-iteration bound in its book form** ([kress1998numerical], Lemma 7.18): for a
+diagonalizable `A` with eigenbasis `x` and eigenvalues `l`, and a starting subspace `S` of the right
+dimension meeting the complementary invariant subspace `span (x '' Jᶜ)` only in `0`, the gap between
+`span (x '' J)` and the `k`-th iterate `A^k S` is `O((r/ρ)^k)`, where `ρ` bounds the selected
+eigenvalues from below and `r` the discarded ones from above.
+
+This is `Krylov.gap_subspaceIterate_le` supplied with the data [kress1998numerical]'s hypotheses
+determine: the projection along `span (x '' Jᶜ)` carries `S` bijectively onto `span (x '' J)`
+(`Krylov.isCompl_span_image` and a dimension count), so each `x j` has a unique preimage `s j ∈ S`,
+the family `s` spans `S`, and each discrepancy `s j - x j` lies in `span (x '' Jᶜ)`, where the orbit
+of `A` decays like `r^k` because the family is an eigenbasis.  Unlike
+`Krylov.exists_gap_subspaceIterate_le` it needs no spectral projector and no algebraically closed
+field: diagonalizability is the eigenbasis `x`, which is given. -/
+theorem exists_gap_subspaceIterate_span_image_le [FiniteDimensional 𝕜 E]
+    {ι : Type*} [Finite ι] {A : Module.End 𝕜 E} {x : ι → E} {l : ι → 𝕜}
+    {J : Set ι} {S : Submodule 𝕜 E} {r ρ : ℝ}
+    (hx : LinearIndependent 𝕜 x) (hxtop : Submodule.span 𝕜 (Set.range x) = ⊤)
+    (heig : ∀ j, A (x j) = l j • x j)
+    (hρ : 0 < ρ) (hJρ : ∀ j ∈ J, ρ ≤ ‖l j‖) (hr : 0 ≤ r) (hrρ : r < ρ)
+    (hJr : ∀ k ∉ J, ‖l k‖ ≤ r)
+    (hdisj : Disjoint S (Submodule.span 𝕜 (x '' Jᶜ)))
+    (hrank : Module.finrank 𝕜 S = Module.finrank 𝕜 ↥(Submodule.span 𝕜 (x '' J))) :
+    ∃ D : ℝ, ∀ ν, (Submodule.span 𝕜 (x '' J)).gap (subspaceIterate A S ν) ≤ D * (r / ρ) ^ ν := by
+  classical
+  cases nonempty_fintype ι
+  have hpow : ∀ (i : ι) (ν : ℕ), (A ^ ν) (x i) = l i ^ ν • x i := by
+    intro i ν
+    induction ν with
+    | zero => simp
+    | succ ν ih =>
+      rw [pow_succ', Module.End.mul_apply, ih, map_smul, heig i, smul_smul, ← pow_succ]
+  set Q := Submodule.projection (Submodule.span 𝕜 (x '' J)) (Submodule.span 𝕜 (x '' Jᶜ))
+    (isCompl_span_image hx hxtop J) with hQ
+  have hker : LinearMap.ker Q = Submodule.span 𝕜 (x '' Jᶜ) := Submodule.ker_projection _
+  have hmapeq : S.map Q = Submodule.span 𝕜 (x '' J) := map_projection_eq hx hxtop hdisj hrank
+  -- the family indexed by `J`
+  have hxJ : ∀ j : ↥J, x ↑j ∈ Submodule.span 𝕜 (x '' J) := fun j =>
+    Submodule.subset_span ⟨↑j, j.2, rfl⟩
+  choose s hsS hsQ using fun j : ↥J => Submodule.mem_map.1 (hmapeq ▸ hxJ j)
+  have hxli : LinearIndependent 𝕜 fun j : ↥J => x ↑j := hx.comp _ Subtype.val_injective
+  have hrangex : Set.range (fun j : ↥J => x ↑j) = x '' J := by
+    rw [← Set.image_eq_range]
+  have hsli : LinearIndependent 𝕜 s := by
+    have hcomp : LinearIndependent 𝕜 fun j : ↥J => Q (s j) := by
+      simpa only [hsQ] using hxli
+    exact hcomp.of_comp Q
+  have hcardJ : Module.finrank 𝕜 ↥(Submodule.span 𝕜 (Set.range s)) = Fintype.card ↥J :=
+    finrank_span_eq_card hsli
+  have hSspan : S = Submodule.span 𝕜 (Set.range s) := by
+    refine (Submodule.eq_of_le_of_finrank_le ?_ ?_).symm
+    · exact Submodule.span_le.2 (by rintro _ ⟨j, rfl⟩; exact hsS j)
+    · rw [hcardJ, hrank, ← hrangex, finrank_span_eq_card hxli]
+  -- the decay of each discrepancy
+  have hdecay : ∀ j : ↥J, ∃ C : ℝ, ∀ ν, ‖(A ^ ν) (s j - x ↑j)‖ ≤ C * r ^ ν := by
+    intro j
+    have hmem : s j - x ↑j ∈ Submodule.span 𝕜 (x '' Jᶜ) := by
+      rw [← hker, LinearMap.mem_ker, map_sub, hsQ j,
+        Submodule.projection_apply_of_mem_left _ (hxJ j), sub_self]
+    have hrangec : Submodule.span 𝕜 (Set.range fun k : ↥(Jᶜ) => x ↑k)
+        = Submodule.span 𝕜 (x '' Jᶜ) := by
+      rw [← Set.image_eq_range]
+    rw [← hrangec] at hmem
+    obtain ⟨c, hc⟩ := (Submodule.mem_span_range_iff_exists_fun 𝕜).1 hmem
+    refine ⟨∑ k : ↥(Jᶜ), ‖c k‖ * ‖x ↑k‖, fun ν => ?_⟩
+    rw [← hc, map_sum, Finset.sum_mul]
+    refine (norm_sum_le _ _).trans (Finset.sum_le_sum fun k _ => ?_)
+    rw [map_smul, hpow ↑k ν, smul_smul, norm_smul, norm_mul, norm_pow]
+    calc ‖c k‖ * ‖l ↑k‖ ^ ν * ‖x ↑k‖ ≤ ‖c k‖ * r ^ ν * ‖x ↑k‖ := by
+          gcongr
+          exact hJr ↑k k.2
+      _ = ‖c k‖ * ‖x ↑k‖ * r ^ ν := by ring
+  choose Cf hCf using hdecay
+  refine gap_subspaceIterate_le hxli (congrArg (Submodule.span 𝕜) hrangex.symm) hSspan
+    (fun j => heig ↑j) (fun j => ?_) hρ (fun j => hJρ ↑j j.2) hr hrρ
+    (C := ∑ j : ↥J, max (Cf j) 0) (fun j ν => ?_)
+  · exact norm_pos_iff.1 (hρ.trans_le (hJρ ↑j j.2))
+  · refine (hCf j ν).trans (mul_le_mul_of_nonneg_right ?_ (pow_nonneg hr ν))
+    exact (le_max_left _ _).trans
+      (Finset.single_le_sum (fun i _ => le_max_right (Cf i) 0) (Finset.mem_univ j))
+
 
 end SubspaceIteration
 
