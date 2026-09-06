@@ -1,58 +1,22 @@
 namespace = "AtkinsonHan.Ch12"
-desc = '''
-Atkinson–Han Section 12.4, the Nyström method — but only its abstract half, Section 12.4.3, the
-theory of collectively compact operator approximations.
-
-Formalized: Theorem 12.4.3, the perturbation theorem whose hypothesis is a bound on `‖(T - S) S‖`
-rather than on `‖T - S‖`, with the inverse bound (12.4.23) and the error bound (12.4.24); the
-assumptions A1–A3 of Section 12.4.3 and Lemma 12.4.7 in all four of its clauses. This is the
-framework that makes the Nyström method analysable, and the book says so: it is what lets the
-error analysis be extended to product integration in Section 12.5.
-
-Not formalized: Lemma 12.4.2 and Theorem 12.4.4, which instantiate the framework for the numerical
-integral operators `K_n u (x) = Σ w_j k(x, t_j) u(t_j)` on `C(D)`. Their content is that those
-operators form a collectively compact pointwise convergent family, which needs the `C(D)`
-integral-operator toolkit of `Numlib/IntegralEquations/Basic` together with a convergent quadrature
-rule — the Banach–Steinhaus criterion of `Numlib/Approximation/Quadrature`. When those exist,
-`theorem_12_4_4` is one application of `theorem_12_4_3` and belongs in this file; it is named in
-the proposal, not planned as a node here.
-'''
 
 [[node]]
 id = "theorem_12_4_3"
-kind = "theorem"
-desc = '''Theorem 12.4.3: `V` Banach, `S`, `T` bounded with `S` compact, `λ ≠ 0` and `λ - T`
-bijective; if `‖(T - S) S‖ < |λ| / ‖(λ - T)⁻¹‖` ((12.4.22)) then `(λ - S)⁻¹` exists and is bounded
-by (12.4.23), and the solutions of `(λ - T) u = f` and `(λ - S) z = f` satisfy
-`‖u - z‖ ≤ ‖(λ - S)⁻¹‖ ‖T u - S u‖` ((12.4.24)). The hypothesis is on `(T - S) S`, not on `T - S`,
-which is exactly why the theorem applies where the geometric series theorem does not.'''
-deps = ["SecondKind.exists_equiv_of_isCompactOperator", "SecondKind.norm_sub_le"]
 
 [[node]]
 id = "IsCollectivelyCompactFamily"
-kind = "definition"
-desc = '''Assumptions A1–A3 of Section 12.4.3: `V` a Banach space, `K` and the `K_n` bounded linear
-operators on `V`, `K_n u → K u` for every `u`, and the set `{K_n v : n ≥ 1, ‖v‖ ≤ 1}` (12.4.53)
-with compact closure — a *collectively compact family of pointwise convergent operators*.'''
-deps = ["IsCollectivelyCompact"]
 
 [[node]]
-id = "lemma_12_4_7"
-kind = "theorem"
-desc = '''Lemma 12.4.7, all four clauses: under A1–A3, (1) `K` is compact; (2) the `K_n` are
-uniformly bounded; (3) `‖(K - K_n) M‖ → 0` for every compact `M`; (4) `‖(K - K_n) K_n‖ → 0`, which
-is the hypothesis (12.4.22) of Theorem 12.4.3 for large `n`.'''
-deps = ["IsCollectivelyCompactFamily", "IsCollectivelyCompact.isCompactOperator_of_tendsto",
-  "IsCollectivelyCompact.exists_opNorm_le", "tendsto_opNorm_comp_of_isCompactOperator",
-  "IsCollectivelyCompact.tendsto_opNorm_sub_comp"]
+id = "lemma_12_4_7_a"
+
+[[node]]
+id = "lemma_12_4_7_b"
+
+[[node]]
+id = "lemma_12_4_7_c"
+
+[[node]]
+id = "lemma_12_4_7_d"
 
 [[node]]
 id = "exists_norm_inverse_le_of_isCollectivelyCompactFamily"
-kind = "theorem"
-desc = '''The abstract half of Theorem 12.4.4: for a collectively compact pointwise convergent
-family `K_n` with `λ - K` bijective, there is `N` such that for `n ≥ N` the inverses
-`(λ - K_n)⁻¹` exist and are uniformly bounded by (12.4.32), and
-`‖u - u_n‖ ≤ c ‖(K - K_n) u‖`. The book states this for the Nyström operators on `C(D)`; every
-step of its proof is Lemma 12.4.7 followed by Theorem 12.4.3, so the abstract statement is the one
-worth having, and the Nyström instance is deferred with Lemma 12.4.2.'''
-deps = ["theorem_12_4_3", "lemma_12_4_7"]

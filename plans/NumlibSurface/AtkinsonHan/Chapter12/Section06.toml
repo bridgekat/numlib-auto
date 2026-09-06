@@ -41,4 +41,4 @@ desc = '''Theorem 12.6.1, abstract form: for a collectively compact pointwise co
 `u_n^{(κ)} → u_n` as `κ → ∞` for every such `n`. The book states it for the Nyström operators, but
 its proof uses only the compact closure of `{K_p v : p ≥ 1, ‖v‖ ≤ 1}` and the uniform bound on the
 coarse inverses.'''
-deps = ["equation_12_6_27", "SecondKind.tendsto_twoGridIterate", "lemma_12_4_7"]
+deps = ["equation_12_6_27", "SecondKind.tendsto_twoGridIterate", "lemma_12_4_7_d"]

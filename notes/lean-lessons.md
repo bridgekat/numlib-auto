@@ -1974,6 +1974,47 @@ Taylor's theorem, in the form the finite-difference formulas need:
   exactly Saad's block cyclic reduction recurrence `B⁽ʳ⁺¹⁾ = (B⁽ʳ⁾)² - 2 I`, so (2.33)/(2.36) is an
   induction with no analysis in it at all — do not reach for `Polynomial.Chebyshev.T` and a
   half-argument substitution.
+* **The bridge between `AddCircle T` and one period of `ℝ` needs no integrability.**
+  `AddCircle.intervalIntegral_preimage T t f : ∫ a in t..t + T, f ↑a = ∫ b : AddCircle T, f b` and
+  `AddCircle.integral_haarAddCircle : ∫ t, f t ∂haarAddCircle = T⁻¹ • ∫ t, f t` are both stated for
+  an *arbitrary* `f`, so `∫ b, f b ∂haarAddCircle = T⁻¹ * ∫ x in t..t + T, f ↑x` holds with no
+  hypothesis at all — both sides are the junk value `0` when `f` is not integrable. That is what
+  makes the whole `L¹(-π, π)`-versus-`L²(AddCircle 2π)` dictionary of Atkinson–Han §4.1
+  hypothesis-free. The `t + T` in the endpoint has to be rewritten by hand
+  (`show -π + 2 * π = π by ring`); `norm_num` does not reach inside the integral bounds.
+* **Folding a `ℤ`-indexed `HasSum` onto `ℕ`** — the shape every classical Fourier series is written
+  in — is two Mathlib lemmas and no `Equiv`: `HasSum.nat_add_neg : HasSum f S → HasSum (fun n : ℕ
+  => f n + f (-n)) (S + f 0)` pairs `n` with `-n` and double-counts the origin, and
+  `HasSum.update h 0 (f 0)` corrects it, giving `HasSum (fun j => if j = 0 then f 0 else f j +
+  f (-j)) S` after `Function.update_apply`. `HasSum.nat_add_neg_add_one` pairs `n` with `-(n+1)`
+  instead and is the wrong one for a symmetric series.
+* **`field_simp` rewrites `√2 * √2` into `√2 ^ 2`**, after which `Real.mul_self_sqrt` no longer
+  matches and `ring` fails on a goal whose two sides differ only by that. Finish with
+  `Real.sq_sqrt (h : 0 ≤ a) : √a ^ 2 = a` instead — and check whether `field_simp` closed the goal
+  already, because it often does and the trailing `rw`/`ring` then errors with "No goals".
+* `ContinuousMap.toLp_denseRange` takes its arguments as `(E) (μ) (𝕜) (hp : p ≠ ∞)`, with the
+  exponent implicit, so it reads `ContinuousMap.toLp_denseRange ℝ haarAddCircle ℝ hp (p := p)`.
+  With it, "a dense subset of `C(X, ℝ)` has dense image in `Lᵖ`" is three lines:
+  `image_closure_subset_closure_image (map_continuous _)` puts `range toLp` inside
+  `closure (toLp '' s)`, and `closure_minimal … isClosed_closure` applied to `denseRange x`
+  finishes. There is no `DenseRange.dense_image`.
+* **`DFunLike.congr_fun hP x` for `hP : IsIdempotentElem P` gives `(P * P) x = P x`,** which is
+  *defeq* to `P (P x) = P x` but not syntactically equal, so `rw [DFunLike.congr_fun hP x]` fails
+  with "did not find an occurrence of `(P * P) x`" on a goal that visibly contains `P (P x)`. Bind
+  it first, `have hPP : P (P x) = P x := DFunLike.congr_fun hP x`, where the ascription does the
+  defeq check, and rewrite with `hPP`.
+* An `ExistsUnique` goal reached through `simp only [hiff]` arrives with **one** of its two
+  components beta-unreduced: the existence half is `(fun un ↦ …) a` and defeats `rw`, while the
+  uniqueness half, after `intro y hy`, is already reduced. So `dsimp only` belongs on the first
+  bullet only; putting it on both fails with "dsimp made no progress", which reads like the first
+  one was wrong.
+* `Metric.tendsto_nhdsWithin_nhds` is what turns a *one-sided* limit hypothesis into an ε–δ bound:
+  `Tendsto q (𝓝[>] 0) (𝓝 c) ↔ ∀ ε > 0, ∃ δ > 0, ∀ ⦃t⦄, t ∈ Set.Ioi 0 → dist t 0 < δ → dist (q t) c
+  < ε`. With it, Atkinson–Han's Theorem 4.1.1 (convergence to `(f(x-) + f(x+))/2` at a jump) is the
+  backbone's Dini criterion plus the observation that the symmetrised quotient is the *sum* of the
+  two one-sided quotients, hence bounded near `0`; the hypothesis "one-sided limits and one-sided
+  derivatives exist" is exactly `Tendsto (fun t => (f (x + t) - fR) / t) (𝓝[>] 0) (𝓝 cR)`, which
+  carries both at once.
 
 ## Design conventions of this library
 

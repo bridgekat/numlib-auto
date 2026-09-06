@@ -1,66 +1,28 @@
 namespace = "AtkinsonHan.Ch12"
-desc = '''
-Atkinson–Han Section 12.1, projection methods for `(λ - K) u = f`: the general theoretical
-framework of Section 12.1.3.
-
-The book's `V` is a Banach space, `V_n` a sequence of finite-dimensional subspaces and
-`P_n : V → V_n` a bounded projection; the surface states everything for a single bounded idempotent
-`P` where the book states it for a sequence, and quantifies over `n` only where a limit is taken.
-`(12.1.18)`, `P (λ - K) u_n = P f` with `u_n ∈ V_n`, and `(12.1.19)`, `(λ - P K) u_n = P f` with
-`u_n ∈ V`, are equivalent, and the surface records that equivalence; the backbone predicate is
-`IsProjectionMethodSolution` of `Numlib/Variational/ProjectionMethod`.
-
-Sections 12.1.1 and 12.1.2, the collocation and Galerkin methods and their linear systems
-(12.1.5), (12.1.14), are definitions specialized to `C(D)` and `L²(D)`; they are not formalized
-here, and the abstract statement is what the rest of the chapter uses.
-'''
 
 [[node]]
 id = "IsProjectionSolution"
-kind = "definition"
-desc = '''(12.1.18) and (12.1.19): `u_n ∈ range P` with `P ((λ - K) u_n) = P f`, equivalently
-`(λ - P K) u_n = P f` for `u_n ∈ V`; with the equivalence of the two, and `‖P‖ ≥ 1` for a nonzero
-bounded projection ((12.1.17)).'''
-deps = ["IsProjectionMethodSolution"]
+
+[[node]]
+id = "equation_12_1_17"
 
 [[node]]
 id = "lemma_12_1_3"
-kind = "theorem"
-desc = '''Lemma 12.1.3: a pointwise convergent sequence of bounded linear operators on a Banach
-space converges uniformly on compact subsets.'''
-deps = ["tendstoUniformlyOn_of_tendsto_of_isCompact"]
 
 [[node]]
 id = "lemma_12_1_4"
-kind = "theorem"
-desc = '''Lemma 12.1.4: if `P_n u → u` for every `u` in a Banach space and `K` is a compact
-operator, then `‖K - P_n K‖ → 0`, so the hypothesis (12.1.21) of Theorem 12.1.2 holds for every
-compact `K`.'''
-deps = ["lemma_12_1_3", "tendsto_opNorm_comp_of_isCompactOperator"]
 
 [[node]]
 id = "theorem_12_1_2"
-kind = "theorem"
-desc = '''Theorem 12.1.2: for `K` bounded, `λ - K` bijective and `‖K - P_n K‖` small enough
-((12.1.25), which follows from (12.1.21)), the operators `(λ - P_n K)⁻¹` exist and are uniformly
-bounded (12.1.22); the error satisfies `u - u_n = λ (λ - P_n K)⁻¹ (u - P_n u)` (12.1.23) and the
-two-sided estimate (12.1.24), so `‖u - u_n‖` and `‖u - P_n u‖` tend to zero at exactly the same
-rate.'''
-deps = ["IsProjectionSolution", "SecondKind.sub_projection_eq", "SecondKind.norm_sub_le_of_projection"]
+
+[[node]]
+id = "equation_12_1_23"
+
+[[node]]
+id = "equation_12_1_24"
 
 [[node]]
 id = "exercise_12_1_3"
-kind = "theorem"
-desc = '''Exercise 12.1.3: the upper bound in (12.1.24) can be sharpened to
-`‖u - u_n‖ ≤ |λ| (1 + γ_n) ‖(λ - K)⁻¹‖ ‖u - P_n u‖` with `γ_n → 0`, so the asymptotic constant is
-that of the exact inverse.'''
-deps = ["theorem_12_1_2", "SecondKind.norm_sub_le_of_projection"]
 
 [[node]]
 id = "exercise_12_1_4"
-kind = "theorem"
-desc = '''Exercise 12.1.4: splitting the error (12.1.31) as
-`e_n^{(1)} = λ (λ - K)⁻¹ (u - P_n u)` plus a remainder, the remainder satisfies
-`‖e_n^{(2)}‖ ≤ δ_n ‖e_n^{(1)}‖` with `δ_n → 0`; the leading term of the error is therefore
-computable from the exact inverse alone.'''
-deps = ["theorem_12_1_2"]
