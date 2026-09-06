@@ -1,106 +1,49 @@
 namespace = "SaadSparse.Ch08"
-desc = '''
-Saad §8.4: saddle-point problems — the block system (8.30), Uzawa's method (Algorithm 8.6),
-Corollary 8.1, the Arrow-Hurwicz algorithm (Algorithm 8.7) and the regularized Schur complement
-of Example 8.2.
-
-Three things carry the section. `equation_8_30` is the Karush-Kuhn-Tucker statement: for
-symmetric coercive `A`, `(x, y)` solves the block system iff `x` minimizes
-`f(x) = ½(A x, x) - (x, b)` subject to `Bᴴ x = c`, with `y` the multiplier; the proof is one
-line of algebra, `f(x') - f(x) = ½(A(x' - x), x' - x) ≥ 0` for admissible `x'`. `schur_posDef` is
-the structural lemma: `S = Bᴴ A⁻¹ B` is symmetric positive definite when `A` is and `B` is
-injective (the general operator form is proposed for
-`Numlib/Analysis/InnerProductSpace/Coercive` in `plans/proposals/saad-ch7-9.md`). Corollary 8.1
-is then `Stationary.tendsto_of_spectralRadius_lt_one` for the Richardson iteration on `S`, since
-eliminating `x` from Algorithm 8.6 leaves exactly `y_{k+1} = y_k + ω (g - S y_k)` with
-`g = Bᴴ A⁻¹ b - c` (8.32); the spectral condition `0 < ω < 2/λ_max(S)` and the optimum
-`2/(λ_min + λ_max)` are Example 4.1 again.
-
-Not planned: **P-8.9**, the inexact-Uzawa convergence analysis (it needs a perturbed
-fixed-point theorem that no other source in the corpus asks for), and **P-8.6**, the singular
-consistent system `P A P x = P b`, which belongs with `Numlib/Krylov/Singular`.
-'''
 
 [[node]]
 id = "saddleMatrix"
-kind = "definition"
-desc = '''(8.30): the block matrix `[[A, B], [Bᴴ, 0]]` acting on `(x, y)`, and its regularized form
-`[[A, B], [Bᴴ, ρ C]]` of Example 8.2; `A : Matrix (Fin n) (Fin n) 𝕜` symmetric coercive,
-`B : Matrix (Fin n) (Fin m) 𝕜` of full column rank.'''
-deps = ["Matrix.posDef_iff_isSymmetricCoercive"]
+
+[[node]]
+id = "saddleObjective"
 
 [[node]]
 id = "equation_8_30"
-kind = "theorem"
-desc = '''(8.28)-(8.30): for `A` symmetric positive definite, `(x, y)` solves `A x + B y = b`,
-`Bᴴ x = c` iff `x` minimizes `f(z) = ½(A z, z) - (z, b)` over `{z | Bᴴ z = c}` and `y` is the
-associated Lagrange multiplier; the solution of the block system is the saddle point of
-`L(x, y) = f(x) + (y, Bᴴ x - c)`.'''
-deps = ["saddleMatrix", "LinearMap.IsSymmetricCoercive", "IsGalerkin.quadratic_le"]
 
 [[node]]
 id = "schur"
-kind = "definition"
-desc = '''The Schur complement `S = Bᴴ A⁻¹ B` of the block system and the reduced right-hand side
-`g = Bᴴ A⁻¹ b - c` of (8.32); `schur_eq` states that `y` solves `S y = g` iff `(x, y)` solves
-(8.30) with `x = A⁻¹ (b - B y)`.'''
-deps = ["saddleMatrix"]
+
+[[node]]
+id = "schurRhs"
+
+[[node]]
+id = "schur_eq"
 
 [[node]]
 id = "schur_posDef"
-kind = "theorem"
-desc = '''If `A` is symmetric positive definite and `B` has full column rank then `S = Bᴴ A⁻¹ B` is
-symmetric positive definite (the first half of Corollary 8.1); `(S y, y) = (A⁻¹ (B y), B y) > 0`
-for `y ≠ 0`, using `B` injective and `A⁻¹` positive definite.'''
-deps = ["schur", "Matrix.posDef_iff_isSymmetricCoercive", "LinearMap.IsSymmetricCoercive"]
 
 [[node]]
 id = "uzawa"
-kind = "definition"
-desc = '''**Algorithm 8.6** (Uzawa): `x_{k+1} = A⁻¹ (b - B y_k)`, `y_{k+1} = y_k + ω (Bᴴ x_{k+1} - c)`.'''
-deps = ["saddleMatrix"]
 
 [[node]]
 id = "equation_8_32"
-kind = "theorem"
-desc = '''(8.31)-(8.32): eliminating `x` from Algorithm 8.6 gives
-`y_{k+1} = y_k + ω (g - S y_k)`, the Richardson iteration for `S y = g`; and **P-8.7**, Uzawa is
-the fixed-point iteration of the splitting `M = [[A, 0], [-ω Bᴴ, 1]]`,
-`N = [[0, -B], [0, 1]]`.'''
-deps = ["uzawa", "schur", "Stationary.Splitting.richardson", "Stationary.Splitting.iterationOperator"]
+
+[[node]]
+id = "uzawa_eq_splitting"
 
 [[node]]
 id = "corollary_8_1"
-kind = "theorem"
-desc = '''**Corollary 8.1**: for `A` symmetric positive definite and `B` of full rank, `S` is symmetric
-positive definite and Uzawa's algorithm converges iff `0 < ω < 2/λ_max(S)`, the optimal parameter
-being `ω_opt = 2/(λ_min(S) + λ_max(S))`.'''
-deps = ["equation_8_32", "schur_posDef", "SaadSparse.Ch04.example_4_1_spectralRadius",
-  "Stationary.tendsto_of_spectralRadius_lt_one"]
 
 [[node]]
 id = "equation_8_32_isMinRes"
-kind = "theorem"
-desc = '''For `c = 0` the reduced system (8.32) is the normal-equations system for minimizing the
-`A⁻¹`-norm of `b - B y`: `(b - B y, B w)_{A⁻¹} = 0` for all `w` iff `Bᴴ A⁻¹ B y = Bᴴ A⁻¹ b`, so
-the block form (8.30) is a set of normal equations for `B y = b` in the `A⁻¹` inner product
-(`WithEnergy (A⁻¹)`). Saad's explanation of why the Stokes preconditioners of the section work.'''
-deps = ["schur", "IsGalerkin", "WithEnergy", "IsGalerkin.iff_energyNorm_min"]
 
 [[node]]
 id = "arrowHurwicz"
-kind = "definition"
-desc = '''**Algorithm 8.7** (Arrow-Hurwicz): `x_{k+1} = x_k + ε (b - A x_k - B y_k)`,
-`y_{k+1} = y_k + ω (Bᴴ x_{k+1} - c)`, one gradient step in place of the exact solve of Uzawa;
-`arrowHurwicz_eq_block` is the book's block form
-`[[1, 0], [-ω Bᴴ, 1]] (x_{k+1}, y_{k+1}) = [[1 - εA, -εB], [0, 1]] (x_k, y_k) + (ε b, -ω c)`,
-which exhibits it as a stationary iteration of `Stationary.Splitting`.'''
-deps = ["uzawa", "Stationary.Splitting.iterationOperator"]
+
+[[node]]
+id = "arrowHurwicz_eq_block"
+
+[[node]]
+id = "regularizedSchur"
 
 [[node]]
 id = "example_8_2"
-kind = "theorem"
-desc = '''**Example 8.2**: for the regularization `C = Bᴴ B`, the modified Schur complement is
-`S = Bᴴ (ρ - A⁻¹) B`, which is positive definite when `ρ ≥ 1/λ_min(A)` and negative definite when
-`ρ ≤ 1/λ_max(A)`.'''
-deps = ["schur_posDef", "LinearMap.IsSymmetricBoundedBy"]

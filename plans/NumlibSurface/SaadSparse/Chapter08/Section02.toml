@@ -1,128 +1,46 @@
 namespace = "SaadSparse.Ch08"
-desc = '''
-Saad §8.2: row projection methods — the NE-SOR sweep (Algorithm 8.1, Kaczmarz), the NR-SOR sweep
-(Algorithm 8.2) and Cimmino's method (Algorithm 8.3, with its block form (8.26)-(8.27)).
 
-The section is a specialization of §5.3-§5.4, and this file says so declaration by declaration:
-
-* one NE-SOR relaxation `x := x + δ_i Aᴴ e_i`, `δ_i = ω (β_i - (Aᴴ e_i, x))/‖Aᴴ e_i‖²`, is the
-  one-dimensional Petrov-Galerkin step `Projection.step1` with `K = span {Aᴴ e_i}` and
-  `L = span {e_i}` (equivalently the Galerkin step for `A Aᴴ u = b` on `span {e_i}`, read in the
-  variable `x = Aᴴ u`);
-* one NR-SOR relaxation `x := x + δ_i e_i`, `δ_i = ω (r, A e_i)/‖A e_i‖²`, is the
-  one-dimensional minimal-residual step `SaadSparse.Ch05.mrStep` along `e_i`, equivalently the
-  Galerkin step for `Aᴴ A x = Aᴴ b` on `span {e_i}`;
-* the two sweeps are `SaadSparse.Ch05.multiplicativeSweep` over the coordinate family;
-* Cimmino is `SaadSparse.Ch05.additiveStep` over the same family for `Aᴴ A x = Aᴴ b`, with the
-  residual identity (8.25) `r_new = (1 - ω ∑ P_i) r` and the orthogonal projectors (8.24)
-  `P_i r = ((r, A e_i)/‖A e_i‖²) A e_i` onto the columns of `A`;
-* with unit columns Cimmino is the Richardson iteration on the normal equations, so its
-  convergence interval `0 < ω < 2/λ_max(Aᴴ A)` and optimum `2/(λ_min + λ_max)` are Example 4.1
-  (`SaadSparse.Ch04.example_4_1_spectralRadius`).
-
-The block form replaces `span {e_i}` by `span {e_j : j ∈ π_i}` and the scalar division by the
-least-squares problem `min_d ‖r - A_i d‖₂`, which is the same statement with a
-higher-dimensional `K_i`. The row-versus-column duality Saad mentions (P-8.3) is the exchange of
-`A` and `Aᴴ` and is not planned separately.
-'''
+[[node]]
+id = "coordFamily"
 
 [[node]]
 id = "neSorStep"
-kind = "definition"
-desc = '''**Algorithm 8.1**, one relaxation: `x := x + δ_i Aᴴ e_i` with
-`δ_i = ω (β_i - (Aᴴ e_i, x))/‖Aᴴ e_i‖₂²` — Kaczmarz's row projection, (8.11)-(8.15). `neSorSweep`
-is the forward sweep `i = 1, …, n`.'''
-deps = ["Projection.step1"]
 
 [[node]]
 id = "neSorStep_isPetrovGalerkin"
-kind = "theorem"
-desc = '''(8.12)-(8.15): for `ω = 1` the NE-SOR relaxation is the Petrov-Galerkin step onto
-`K = span {Aᴴ e_i}` orthogonally to `L = span {e_i}`, equivalently the Galerkin step for
-`A Aᴴ u = b` onto `span {e_i}` read through `x = Aᴴ u`; so the new residual has vanishing `i`-th
-component.'''
-deps = ["neSorStep", "Projection.step1_isPetrovGalerkin", "IsPetrovGalerkin"]
 
 [[node]]
 id = "nrSorStep"
-kind = "definition"
-desc = '''**Algorithm 8.2**, one relaxation: `x := x + δ_i e_i`, `r := r - δ_i A e_i` with
-`δ_i = ω (r, A e_i)/‖A e_i‖₂²` — (8.16)-(8.18). `nrSorSweep` is the forward sweep.'''
-deps = ["SaadSparse.Ch05.mrStep"]
 
 [[node]]
 id = "nrSorStep_isGalerkin"
-kind = "theorem"
-desc = '''(8.17)-(8.18): for `ω = 1` the NR-SOR relaxation is the minimal-residual step
-`SaadSparse.Ch05.mrStep` along `e_i`, equivalently the Galerkin step for `Aᴴ A x = Aᴴ b` onto
-`span {e_i}`; so the new normal-equations residual has vanishing `i`-th component.'''
-deps = ["nrSorStep", "SaadSparse.Ch05.mrStep", "IsGalerkin", "Projection.minResStep_isMinRes"]
 
 [[node]]
 id = "sorSweep_eq_multiplicativeSweep"
-kind = "theorem"
-desc = '''Both sweeps are multiplicative projection processes: `nrSorSweep A b 1` is
-`SaadSparse.Ch05.multiplicativeSweep` for `Aᴴ A x = Aᴴ b` over the coordinate family, and
-`neSorSweep` the same for `A Aᴴ u = b` read in `x = Aᴴ u`. The block Gauss-Seidel pattern of
-Saad §5.4 with `K_i = span {e_i}`.'''
-deps = ["neSorStep", "nrSorStep", "SaadSparse.Ch05.multiplicativeSweep",
-  "Projection.multiplicativeStep"]
+
+[[node]]
+id = "neSorSweep_eq_multiplicativeStep"
 
 [[node]]
 id = "cimmino"
-kind = "definition"
-desc = '''**Algorithm 8.3** (Cimmino-NR): `δ_i = ω (r, A e_i)/‖A e_i‖₂²` computed from the *same*
-residual for every `i`, then `x := x + ∑ δ_i e_i` and `r := r - A d` — (8.19)-(8.21).'''
-deps = ["nrSorStep"]
 
 [[node]]
 id = "cimmino_eq_additiveStep"
-kind = "theorem"
-desc = '''Cimmino's method is the additive projection process of §5.4 for the normal equations:
-`cimmino A b ω x = SaadSparse.Ch05.additiveStep 𝒱 (Aᴴ * A) ω (Aᴴ *ᵥ b) x` with `𝒱` the family of
-coordinate axes. Saad's own remark: "each instance is mathematically equivalent to an orthogonal
-projection step for `Aᴴ A x = Aᴴ b` with `K = span {e_i}`".'''
-deps = ["cimmino", "SaadSparse.Ch05.additiveStep", "Projection.additiveStep"]
 
 [[node]]
 id = "equation_8_24"
-kind = "theorem"
-desc = '''(8.24): `P_i r = ((r, A e_i)/‖A e_i‖₂²) A e_i` is the orthogonal projector onto the span of
-the `i`-th column of `A`; the least-squares instance `L_i = A K_i` of Saad (5.22)
-(`SaadSparse.Ch05.leastSquares_P_i_eq_starProjection`).'''
-deps = ["cimmino", "SaadSparse.Ch05.P_i", "SaadSparse.Ch05.leastSquares_P_i_eq_starProjection"]
 
 [[node]]
 id = "equation_8_25"
-kind = "theorem"
-desc = '''(8.23)-(8.25): the Cimmino residual satisfies `r_new = (1 - ω ∑_i P_i) r`; and **P-8.8**,
-`x_new = x + ω A⁻¹ (∑_i P_i) r` for nonsingular `A`.'''
-deps = ["cimmino", "equation_8_24", "Projection.residual_additiveStep"]
 
 [[node]]
 id = "cimmino_eq_richardson"
-kind = "theorem"
-desc = '''If the columns of `A` have unit 2-norm then `d = ω Aᴴ r` and Cimmino's step is
-`x_new = x + ω (Aᴴ b - Aᴴ A x)`, the Richardson iteration for the normal equations
-(`Stationary.Splitting.richardson`); **P-8.2**, the general case is Richardson preconditioned by
-the diagonal of `Aᴴ A`.'''
-deps = ["cimmino", "Stationary.Splitting.richardson", "Stationary.Splitting.iterationOperator"]
 
 [[node]]
 id = "equation_8_22"
-kind = "theorem"
-desc = '''(8.22): Cimmino with normalized columns converges for every `0 < ω < 2/λ_max(Aᴴ A)`, with
-optimal parameter `ω_opt = 2/(λ_min + λ_max)` — Example 4.1 applied to the symmetric positive
-definite `Aᴴ A`.'''
-deps = ["cimmino_eq_richardson", "SaadSparse.Ch04.example_4_1_spectralRadius",
-  "Krylov.adjoint_comp_isSymmetricCoercive"]
 
 [[node]]
 id = "blockCimmino"
-kind = "definition"
-desc = '''(8.26)-(8.27): the block form of Cimmino for a partition `π_1, …, π_p` of the columns,
-`x_new = x + ω ∑_i E_i d_i` with `d_i = (A_iᴴ A_i)⁻¹ A_iᴴ r`, `A_i = A E_i`; and the statement
-that `d_i` solves `min_d ‖r - A_i d‖₂`, so each substep reduces the residual as much as the
-columns of `A_i` allow, and the residual identity (8.25) holds with `P_i` the orthogonal
-projector onto the range of `A_i`.'''
-deps = ["cimmino", "SaadSparse.Ch05.additiveStep", "SaadSparse.Ch05.ProjFamily", "IsMinRes"]
+
+[[node]]
+id = "blockCimmino_isMinRes"

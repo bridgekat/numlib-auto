@@ -1,35 +1,10 @@
 namespace = "SaadSparse.Ch07"
-desc = '''
-Saad §7.2: the two-sided Lanczos algorithm for linear systems (Algorithm 7.2) and the residual
-formula (7.9).
-
-Three declarations. The algorithm is `x_m = x₀ + V_m T_m⁻¹(β e₁)`, the FOM-shaped iterate of the
-Hessenberg relation of §7.1, so it is the Petrov-Galerkin iterate onto `𝒦_m(A, v₁)` orthogonally
-to `𝒦_m(Aᴴ, w₁)`, and (7.9) is `Krylov.HessenbergRelation.residual_eq_of_mulVec_eq` — the same
-lemma that gives Saad (6.18) for FOM and (6.87) for the symmetric Lanczos method, here with a
-basis that is not orthonormal, which is why the factor `‖v_{j+1}‖` survives.
-'''
 
 [[node]]
 id = "lanczosSolve"
-kind = "definition"
-desc = '''**Algorithm 7.2**: `y_m = T_m⁻¹ (β e₁)` and `x_m = x₀ + V_m y_m`, the two-sided Lanczos
-method for `A x = b` started from `v₁ = r₀/β` and an arbitrary `w₁` with `(v₁, w₁) = 1`.'''
-deps = ["T", "bilanczosV", "SaadSparse.Ch06.v₁"]
 
 [[node]]
 id = "lanczosSolve_isPetrovGalerkin"
-kind = "theorem"
-desc = '''If `T_m` is nonsingular and no breakdown occurs before step `m`, the Algorithm 7.2 iterate is
-the Petrov-Galerkin iterate `IsPetrovGalerkin (op A) b x₀ (𝒦_m(A, v₁)) (𝒦_m(Aᴴ, w₁)) x_m` — the
-projection process the chapter opens with.'''
-deps = ["lanczosSolve", "IsPetrovGalerkin", "proposition_7_1_span", "equation_7_5"]
 
 [[node]]
 id = "equation_7_9"
-kind = "theorem"
-desc = '''(7.9): `‖b - A x_j‖₂ = |δ_{j+1} (e_jᵀ y_j)| ‖v_{j+1}‖₂`, so the residual norm is available
-without forming the iterate. The analogue of (6.18) and (6.87); the factor `‖v_{j+1}‖₂` is what
-replaces `1` when the basis is only biorthogonal.'''
-deps = ["lanczosSolve", "bilanczos_hessenbergRelation",
-  "Krylov.HessenbergRelation.residual_eq_of_mulVec_eq"]

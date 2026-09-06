@@ -2016,6 +2016,44 @@ Taylor's theorem, in the form the finite-difference formulas need:
   derivatives exist" is exactly `Tendsto (fun t => (f (x + t) - fR) / t) (𝓝[>] 0) (𝓝 cR)`, which
   carries both at once.
 
+* **A one-dimensional `Projection.pairStep` *is* `Projection.step1`**, and the proof is three
+  lines: both meet `IsPetrovGalerkin A b x (𝕜 ∙ v) (𝕜 ∙ w)`, and `IsPetrovGalerkin.eq_of_forall`
+  with `IsNondegeneratePair.eq_zero_of_mem_orthogonal` identifies them. State the bridge as
+  `pairStep A b K L h x = step1 A b v w x` with hypotheses `K = 𝕜 ∙ v`, `L = 𝕜 ∙ w` and open the
+  proof with `subst`: `rw [hK] at hpg` fails with "motive is not type correct", because the type
+  of `pairStep A b K L h x` mentions `K` in its `FiniteDimensional` instance and in `h`. Inside
+  the lemma `K` is a bound variable, so `subst` goes through, and the lemma then applies at any
+  concrete `K` (`𝒲.subspace i`, a literal span). This is the whole of Saad §8.2 — Kaczmarz,
+  NR-SOR and Cimmino are one-dimensional pairs.
+* `SaadSparse.Ch05.multiplicativeSweep` and `additiveStep` are **Galerkin-only**: they are built
+  from `projStep A b (V i) (V i)`, test space equal to trial space. A row projection method whose
+  test space differs (NE-SOR / Kaczmarz: `K_i = span {Aᴴ e_i}`, `L_i = span {e_i}`) is not an
+  instance of them, and has to be stated with the backbone's `Projection.multiplicativeStep`
+  directly.
+* `SaadSparse.Ch05.step1` and `Projection.step1` are `rfl`-equal but not syntactically equal, so
+  `rw [← surfaceStepLemma] at h` never fires on a hypothesis produced by
+  `Projection.step1_isPetrovGalerkin`. Produce the hypothesis on the surface side instead —
+  `Ch05.isProjectionApprox_iff.1 (Ch05.step1_isProjectionApprox …)` — and the rewrite matches.
+* **`rw` at a hypothesis whose type carries an instance argument depending on the term being
+  rewritten fails; `simp only` at it succeeds.** `Submodule.starProjection` needs
+  `HasOrthogonalProjection`, so rewriting `Submodule.map A (𝕜 ∙ v) = 𝕜 ∙ (A v)` inside
+  `… = ↑(Submodule.map A (𝕜 ∙ v)).starProjection` is a motive error under `rw` and goes through
+  under `simp only`.
+* `Matrix.toEuclideanLin` is a `LinearEquiv` in the *matrix*, so `M ↦ (M ⬝ v)` is additive,
+  homogeneous and sends `0`, `1`, `-M`, `M - N`, `r • M` where you expect — but none of those
+  applied forms is a Mathlib lemma. Four one-line companions proved through
+  `WithLp.ofLp_injective 2` and `Matrix.{zero,one,neg,sub,smul}_mulVec` make every block-matrix
+  identity (`fromBlocks_mulVec` plus `Sum.elim_add_add`) a two-line `simp only` and `abel`.
+  `NumlibSurface/SaadSparse/Chapter08/Section04.lean` has them.
+* `EuclideanSpace.single_apply` is deprecated in favour of `PiLp.single_apply`, which takes the
+  exponent and the field explicitly; `simp [Pi.single_apply]` reaches the same goal without
+  naming either.
+* `Matrix.PosDef.inv` is stated over a `[PartialOrder K] [StarRing K]`, so for an `RCLike 𝕜` it
+  needs `open scoped ComplexOrder`; without it `hA.inv` is an unknown field.
+* In a Python patch script `𝒱` is `\U0001d4b1` and `𝒲` is `\U0001d4b2`. Writing either as a
+  surrogate pair makes `assert s.count(old) == 1` fail for no visible reason — which is the good
+  outcome, since the assertion fires before the file is opened for writing.
+
 ## Design conventions of this library
 
 Decided in `plans/backbone.md` §1.7; the short version for a proof author:
