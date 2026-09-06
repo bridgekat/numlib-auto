@@ -13,6 +13,7 @@ import NumlibSurface.AtkinsonHan.Chapter02.Section07
 import NumlibSurface.AtkinsonHan.Chapter02.Section08
 import NumlibSurface.AtkinsonHan.Chapter02.Section09
 import NumlibSurface.AtkinsonHan.Chapter03.Section01
+import NumlibSurface.AtkinsonHan.Chapter03.Section02
 import NumlibSurface.AtkinsonHan.Chapter03.Section03
 import NumlibSurface.AtkinsonHan.Chapter03.Section04
 import NumlibSurface.AtkinsonHan.Chapter03.Section05
@@ -53,13 +54,13 @@ import NumlibSurface.AtkinsonHan.Chapter12.Section07
 # Atkinson–Han, *Theoretical Numerical Analysis*
 
 The surface library for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A
-Functional Analysis Framework* (3rd ed., Springer, 2009): fifty modules, one per section of
+Functional Analysis Framework* (3rd ed., Springer, 2009): fifty-one modules, one per section of
 the book that the project covers, grouped by chapter. Each states the book's results in the book's
 own terms and proves them by specializing the backbone under `Numlib/`. Almost nothing is proved
 here that is not proved there — the surface exists to test the backbone against a published account
 of the subject, and to give a reader of the book a Lean name for every result formalized.
 
-This module imports the fifty section modules and adds nothing of its own.
+This module imports the fifty-one section modules and adds nothing of its own.
 
 ## Naming
 
@@ -97,6 +98,7 @@ bilinear-form vocabulary shared by §8.3, §8.7 and Chapters 9–10 directly in 
 | 2.9 | `Chapter02.Section09` | The resolvent operator: perturbation bound and Neumann expansion |
 | **3** | | *Approximation Theory* |
 | 3.1 | `Chapter03.Section01` | The Weierstrass approximation theorems |
+| 3.2 | `Chapter03.Section02` | Interpolation: Lagrange, Hermite, piecewise linear, trigonometric |
 | 3.3 | `Chapter03.Section03` | Best approximation: existence, uniqueness, strict convexity |
 | 3.4 | `Chapter03.Section04` | Best approximation in inner product spaces; projections |
 | 3.5 | `Chapter03.Section05` | The classical orthogonal polynomial families |
@@ -251,14 +253,12 @@ and 3.4.9), numerical quadrature (§2.4.4) and Chebyshev equioscillation (Theore
 Schauder's theorems and the rotation properties P1–P5 — and is summarized in `Chapter05.Section03`
 rather than formalized.
 
-One section remains planned and unwritten, with its group file under
-`plans/NumlibSurface/AtkinsonHan/`: **§3.2**, interpolation theory. Its abstract half is waiting on
-the backbone's `Numlib/Approximation/Unisolvent` and `Numlib/Approximation/Hermite`; its error
-estimates (3.2.10)–(3.2.12) for piecewise linear interpolation need Sobolev spaces and are out of
-scope with the rest of that material. Two results of §3.3 are open for a different reason —
-Theorems 3.3.19 and 3.3.20, Chebyshev equioscillation — and most of §3.7 is open for a third: the
-trigonometric-approximation layer that Jackson's theorems and the Fourier projections speak about
-is not yet in Mathlib or in `Numlib`, and §3.7's module lists exactly what is waiting on it.
+Two results of §3.3 are open — Theorems 3.3.19 and 3.3.20, Chebyshev equioscillation — and most
+of §3.7 is open for a different reason: the trigonometric-approximation layer that Jackson's
+theorems and the Fourier projections speak about is not yet in Mathlib or in `Numlib`, and §3.7's
+module lists exactly what is waiting on it. Of §3.2 everything is formalized except the `H²(a, b)`
+estimates (3.2.10)–(3.2.12) for piecewise linear interpolation, which need Sobolev spaces and are
+out of scope with the rest of that material.
 
 ## References
 

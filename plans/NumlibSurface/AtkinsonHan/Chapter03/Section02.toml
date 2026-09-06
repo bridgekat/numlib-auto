@@ -1,87 +1,64 @@
 namespace = "AtkinsonHan.Chapter03"
-desc = '''
-Atkinson–Han §3.2: interpolation theory — the abstract interpolation problem and its unique
-solvability, Lagrange interpolation with its error formula, Hermite interpolation, piecewise linear
-interpolation, and trigonometric interpolation.
-
-The abstract framework of §3.2 is the backbone `Numlib/Approximation/Unisolvent`; the Lagrange and
-piecewise-linear operators and the Lagrange error formula are `Numlib/Approximation/Interpolation`;
-Hermite interpolation is `Numlib/Approximation/Hermite`. This section states each of the book's
-results by specialising them, and it is where §3.6's Examples 3.6.5-3.6.6 (interpolation as a
-projection operator) get their objects.
-
-Not planned: the `H²(a, b)` error estimates (3.2.10)-(3.2.12) for piecewise linear interpolation,
-which need Sobolev spaces; the divided-difference form (3.2.5) of the error and the Newton form of
-the interpolant, which the book only cites; Example 3.2.5 and Table 3.1 (numerical illustrations).
-'''
 
 [[node]]
 id = "definition_3_2_1"
-kind = "theorem"
-desc = '''Definition 3.2.1: the functionals `L₁, …, Lₙ` are linearly independent over `Vₙ`. The backbone
-`Approximation.IsUnisolvent` with `isUnisolvent_iff_linearIndependent`, which is the book's
-formulation; the node is the bridge lemma naming the book's condition.'''
-deps = ["Approximation.IsUnisolvent"]
 
 [[node]]
 id = "lemma_3_2_2"
-kind = "theorem"
-desc = '''Lemma 3.2.2: linear independence of the functionals over `Vₙ` holds if and only if
-`det (Lᵢ vⱼ) ≠ 0` for a basis `v` of `Vₙ`; the backbone `Approximation.isUnisolvent_iff_det_ne_zero`.'''
-deps = ["Approximation.isUnisolvent_iff_det_ne_zero", "definition_3_2_1"]
 
 [[node]]
 id = "theorem_3_2_3"
-kind = "theorem"
-desc = '''Theorem 3.2.3: the four equivalent forms of unique solvability of the interpolation problem; the
-backbone `Approximation.isUnisolvent_tfae`.'''
-deps = ["Approximation.isUnisolvent_tfae", "definition_3_2_1"]
+
+[[node]]
+id = "equation_3_2_1"
 
 [[node]]
 id = "equation_3_2_2"
-kind = "theorem"
-desc = '''§3.2.1, (3.2.1)-(3.2.3): Lagrange interpolation at `n + 1` distinct nodes is uniquely solvable in
-`𝒫ₙ`, the Vandermonde determinant (3.2.2) is `∏_{j > i} (xⱼ - xᵢ) ≠ 0`, and the interpolant is
-given by Lagrange's formula (3.2.3) in the basis `φᵢ` with `φᵢ (xⱼ) = δᵢⱼ`. Mathlib's
-`Matrix.det_vandermonde`, `Lagrange.basis` and `Lagrange.interpolate` with the backbone
-`Lagrange.interpolateCLM`; the book's three proofs of unique solvability (determinant, homogeneous
-problem, explicit formula) are the three routes, and the surface takes the explicit one.'''
-deps = ["theorem_3_2_3", "Lagrange.interpolateCLM"]
+
+[[node]]
+id = "equation_3_2_2_ne_zero"
+
+[[node]]
+id = "equation_3_2_3"
+
+[[node]]
+id = "equation_3_2_3_delta"
 
 [[node]]
 id = "proposition_3_2_4"
-kind = "theorem"
-desc = '''Proposition 3.2.4 with (3.2.4): for `f ∈ Cⁿ⁺¹[a, b]` and every `x` there is `ξₓ` between the
-extreme points with `f x - pₙ x = ωₙ(x) f^{(n+1)}(ξₓ)/(n+1)!`, `ωₙ(x) = ∏ (x - xᵢ)`. The backbone
-`Lagrange.exists_sub_interpolate_eq`.'''
-deps = ["Lagrange.exists_sub_interpolate_eq", "equation_3_2_2"]
 
 [[node]]
 id = "equation_3_2_6"
-kind = "theorem"
-desc = '''§3.2.2, (3.2.6) and its generalisation, Hermite interpolation: for distinct nodes and
-multiplicities `mᵢ` there is exactly one `p ∈ 𝒫_N`, `N = ∑ (mᵢ + 1) - 1`, matching `f` and its
-derivatives up to order `mᵢ` at `xᵢ`, and for `f ∈ C^{N+1}[a, b]` the error is
-`f^{(N+1)}(ξₓ)/(N+1)! ∏ (x - xᵢ)^{mᵢ+1}`. The backbone `Hermite.isUnisolvent`,
-`Hermite.interpolate` and `Hermite.exists_sub_interpolate_eq`; Exercise 3.2.6 is the case `mᵢ = 1`.'''
-deps = ["Hermite.isUnisolvent", "Hermite.interpolate", "Hermite.exists_sub_interpolate_eq"]
+
+[[node]]
+id = "exercise_3_2_6"
+
+[[node]]
+id = "equation_3_2_6_general"
+
+[[node]]
+id = "equation_3_2_6_general_error"
+
+[[node]]
+id = "equation_3_2_7"
+
+[[node]]
+id = "equation_3_2_7_unique"
+
+[[node]]
+id = "equation_3_2_8"
 
 [[node]]
 id = "equation_3_2_9"
-kind = "theorem"
-desc = '''§3.2.3, (3.2.7)-(3.2.9): the piecewise linear interpolant of `f ∈ C[a, b]` on a partition of mesh
-`h` exists, is unique, is given by (3.2.7), and satisfies `‖f - Π f‖_∞ ≤ ω(f, h)` for continuous
-`f` and `‖f - Π f‖_∞ ≤ h²/8 ‖f''‖_∞` for `f ∈ C²[a, b]`. The backbone
-`piecewiseLinearInterpCLM`; the modulus-of-continuity bound (3.2.8) is requested as an addition to
-that node in the proposal file.'''
-deps = ["piecewiseLinearInterpCLM", "proposition_3_2_4"]
+
+[[node]]
+id = "equation_3_2_13"
+
+[[node]]
+id = "equation_3_2_16"
 
 [[node]]
 id = "equation_3_2_17"
-kind = "theorem"
-desc = '''§3.2.4, (3.2.13)-(3.2.17): trigonometric interpolation at `2n + 1` distinct nodes in `[0, 2π)` has
-exactly one solution in `𝕋ₙ`, by the substitution `z = e^{ix}` of (3.2.15) which turns it into
-complex Lagrange interpolation at the distinct points `zⱼ = e^{ixⱼ}`. Unisolvence transported along
-that substitution (`Approximation.isUnisolvent_tfae` with the Vandermonde determinant), and the
-operator itself is the backbone `trigInterpCLM` for the equispaced nodes (3.2.16).'''
-deps = ["theorem_3_2_3", "trigInterpCLM", "equation_3_2_2"]
+
+[[node]]
+id = "equation_3_2_17_equispaced"

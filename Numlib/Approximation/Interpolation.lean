@@ -4,14 +4,15 @@ import Mathlib.Analysis.Calculus.IteratedDeriv.Lemmas
 import Mathlib.Analysis.Calculus.LocalExtr.Rolle
 import Mathlib.LinearAlgebra.Lagrange
 import Mathlib.Topology.TietzeExtension
-import Numlib.Approximation.Chebyshev
+import Numlib.Approximation.Unisolvent
 
 /-!
-# Polynomial interpolation and its error
+# Interpolation on continuous function spaces
 
 Lagrange interpolation at `n + 1` distinct nodes, with the classical error formula `f(t) - p(t) =
-f^{(n+1)}(ξ)/(n+1)! ∏ (t - x_i)`. The material is [han2009theoretical] §3.2 and [kress1998numerical]
-§8.1 and §8.3.
+f^{(n+1)}(ξ)/(n+1)! ∏ (t - x_i)`; piecewise-linear interpolation on a partition; and trigonometric
+interpolation at the equispaced nodes of a period. The material is [han2009theoretical] §3.2 and
+[kress1998numerical] §8.1 and §8.3.
 
 ## Main definitions
 
@@ -19,6 +20,10 @@ f^{(n+1)}(ξ)/(n+1)! ∏ (t - x_i)`. The material is [han2009theoretical] §3.2 
   interpolation operator on `C(X, ℝ)`, for a compact `X ⊆ ℝ`.
 * `piecewiseLinearRamp` and `piecewiseLinearInterpCLM` are the clamped ramp of a subinterval and the
   piecewise-linear interpolation operator on a partition, which is a combination of ramps.
+* `trigInterpNode T n` are the `2 n + 1` equispaced nodes `j T / (2 n + 1)` of a period, and
+  `trigInterpCLM T n` is trigonometric interpolation at them.
+* `ContinuousMap.modulusOfContinuity f δ` is the modulus of continuity `ω(f, δ)`, the largest change
+  of `f` over pairs of points at distance at most `δ`.
 
 ## Main results
 
@@ -31,12 +36,23 @@ f^{(n+1)}(ξ)/(n+1)! ∏ (t - x_i)`. The material is [han2009theoretical] §3.2 
   of `t ↦ ∑ i, |ℓ_i t|`.
 * `norm_piecewiseLinearInterpCLM` says that piecewise-linear interpolation has norm one, and
   `norm_sub_piecewiseLinearInterpCLM_le` bounds its error on a mesh of size `h` by `h² ‖f''‖ / 8` —
-  the two-node case of the same error formula.
+  the two-node case of the same error formula. `norm_sub_piecewiseLinearInterpCLM_le_modulus` is the
+  companion bound `ω(f, h)` for a merely continuous `f`.
+* `Lagrange.isUnisolvent_polyLE` reads Lagrange interpolation as the abstract interpolation problem
+  of `Numlib/Approximation/Unisolvent` for the subspace `polyLE X n` and the point evaluations at
+  the nodes, and `Lagrange.interpCLM_isUnisolvent_polyLE` identifies `Lagrange.interpolateCLM` with
+  the interpolation projection of that problem.
+* `haarCondition_trigPolyLE` and `isUnisolvent_trigPolyLE`: a nonzero trigonometric polynomial of
+  degree at most `n` has at most `2 n` zeros in a period, so interpolation by such polynomials at
+  `2 n + 1` distinct nodes has exactly one solution. `trigInterpCLM` is the resulting bounded
+  projection onto `trigPolyLE T n` at the equispaced nodes.
 
 ## Implementation notes
 
-The bound on the piecewise-linear error by the modulus of continuity of a merely continuous `f` is
-not stated: nothing in the library defines a modulus of continuity yet.
+Trigonometric interpolation has no formula for its cardinal basis here: the operator is built from
+unisolvence, which is the Haar condition `card_le_two_mul_of_forall_trigFun_eq_zero` of
+`Numlib/Approximation/Chebyshev` — the substitution `z = e^{2 π i x / T}` turning a trigonometric
+polynomial into an algebraic one — together with the dimension count `finrank_trigPolyLE`.
 -/
 
 open scoped Polynomial
@@ -375,6 +391,68 @@ theorem sum_smul_basisCM_apply_node {x : Fin (n + 1) → X} (hx : Function.Injec
   · intro hj
     exact absurd (Finset.mem_univ j) hj
 
+/-! ### Lagrange interpolation as a unisolvent problem -/
+
+omit [CompactSpace X] in
+/-- The Lagrange basis functions of `n + 1` distinct nodes are polynomials of degree at most `n`,
+so every combination of them is. -/
+theorem sum_smul_basisCM_mem_polyLE {x : Fin (n + 1) → X} (hx : Function.Injective x)
+    (c : Fin (n + 1) → ℝ) : (∑ i, c i • basisCM x i) ∈ polyLE X n := by
+  have hinj : Function.Injective fun j => (x j : ℝ) := Subtype.val_injective.comp hx
+  refine mem_polyLE_iff.mpr
+    ⟨Lagrange.interpolate Finset.univ (fun j => (x j : ℝ)) c, ?_, fun t => ?_⟩
+  · have h := Lagrange.degree_interpolate_le (s := (Finset.univ : Finset (Fin (n + 1))))
+      (r := c) hinj.injOn
+    rwa [Finset.card_univ, Fintype.card_fin, Nat.add_sub_cancel] at h
+  · rw [Lagrange.interpolate_apply, Polynomial.eval_finsetSum, ContinuousMap.sum_apply]
+    exact Finset.sum_congr rfl fun i _ => by simp [basisCM_apply]
+
+/-- **Lagrange interpolation is unisolvent**: at `n + 1` distinct nodes of `X` there is exactly one
+polynomial of degree at most `n` taking prescribed values. This is the interpolation problem of
+`Numlib/Approximation/Unisolvent` for the space `polyLE X n` and the point evaluations at the
+nodes. -/
+theorem isUnisolvent_polyLE {x : Fin (n + 1) → X} (hx : Function.Injective x) :
+    Approximation.IsUnisolvent (polyLE X n) fun i => ContinuousMap.evalCLM ℝ (x i) := by
+  classical
+  intro b
+  refine ⟨⟨∑ i, b i • basisCM x i, sum_smul_basisCM_mem_polyLE hx b⟩,
+    fun i => sum_smul_basisCM_apply_node hx b i, ?_⟩
+  rintro ⟨u, hu⟩ hval
+  refine Subtype.ext ?_
+  by_contra hne
+  have hmem : u - ∑ i, b i • basisCM x i ∈ polyLE X n :=
+    Submodule.sub_mem _ hu (sum_smul_basisCM_mem_polyLE hx b)
+  have hne0 : u - ∑ i, b i • basisCM x i ≠ 0 := sub_ne_zero.mpr hne
+  have hzero : ∀ t ∈ Finset.univ.image x, (u - ∑ i, b i • basisCM x i) t = 0 := by
+    intro t ht
+    obtain ⟨i, -, rfl⟩ := Finset.mem_image.mp ht
+    rw [ContinuousMap.sub_apply, sum_smul_basisCM_apply_node hx b i]
+    exact sub_eq_zero.mpr (hval i)
+  have hcard : (Finset.univ.image x).card = n + 1 := by
+    rw [Finset.card_image_of_injective _ hx, Finset.card_univ, Fintype.card_fin]
+  exact absurd (haarCondition_polyLE X n _ hmem hne0 _ hzero) (by omega)
+
+/-- The cardinal basis of the Lagrange interpolation problem is the Lagrange basis. -/
+theorem cardinalBasisCM_isUnisolvent_polyLE {x : Fin (n + 1) → X} (hx : Function.Injective x)
+    (i : Fin (n + 1)) : (isUnisolvent_polyLE hx).cardinalBasisCM i = basisCM x i := by
+  have h := (isUnisolvent_polyLE hx).eq_interpolate (b := Pi.single i (1 : ℝ))
+    (u := ⟨basisCM x i, ?_⟩) ?_
+  · exact congrArg Subtype.val h.symm
+  · simpa using sum_smul_basisCM_mem_polyLE hx (Pi.single i (1 : ℝ))
+  · intro j
+    by_cases hij : j = i
+    · subst hij
+      simpa using basisCM_apply_node_self hx j
+    · simpa [Pi.single_apply, hij] using basisCM_apply_node_ne (Ne.symm hij) (x := x)
+
+/-- **The Lagrange interpolation operator is the interpolation projection** of the unisolvent
+problem it solves. -/
+theorem interpCLM_isUnisolvent_polyLE {x : Fin (n + 1) → X} (hx : Function.Injective x) :
+    (isUnisolvent_polyLE hx).interpCLM = interpolateCLM x := by
+  refine ContinuousLinearMap.ext fun f => ContinuousMap.ext fun t => ?_
+  rw [Approximation.IsUnisolvent.interpCLM_apply, interpolateCLM_apply]
+  exact Finset.sum_congr rfl fun i _ => by rw [cardinalBasisCM_isUnisolvent_polyLE hx i]
+
 /-- **The Lebesgue constant.** The operator norm of the interpolation operator is the largest value
 of the Lebesgue function `t ↦ ∑ i, |ℓ_i t|`.
 
@@ -466,6 +544,45 @@ theorem norm_interpolateCLM [Nonempty X] {x : Fin (n + 1) → X} (hx : Function.
 
 end Lagrange
 
+/-! ### The modulus of continuity -/
+
+namespace ContinuousMap
+
+variable {X : Type*} [PseudoMetricSpace X]
+
+/-- The **modulus of continuity** of a continuous function at the scale `δ`: the largest change
+`|f u - f v|` of its value over pairs of points at distance at most `δ`.
+
+It is a supremum, so it takes the junk value `0` when the set of such changes is empty or unbounded;
+on a compact space it is a genuine supremum (`ContinuousMap.le_modulusOfContinuity`), and it tends
+to `0` with `δ` exactly because a continuous function on a compact space is uniformly continuous. -/
+noncomputable def modulusOfContinuity (f : C(X, ℝ)) (δ : ℝ) : ℝ :=
+  sSup ((fun p : X × X => |f p.1 - f p.2|) '' {p : X × X | dist p.1 p.2 ≤ δ})
+
+variable [CompactSpace X] (f : C(X, ℝ)) {δ : ℝ}
+
+theorem bddAbove_modulusOfContinuity_image :
+    BddAbove ((fun p : X × X => |f p.1 - f p.2|) '' {p : X × X | dist p.1 p.2 ≤ δ}) := by
+  refine ⟨2 * ‖f‖, ?_⟩
+  rintro r ⟨⟨u, v⟩, -, rfl⟩
+  have hu : |f u| ≤ ‖f‖ := by simpa using f.norm_coe_le_norm u
+  have hv : |f v| ≤ ‖f‖ := by simpa using f.norm_coe_le_norm v
+  calc |f u - f v| ≤ |f u| + |f v| := abs_sub _ _
+    _ ≤ 2 * ‖f‖ := by linarith
+
+/-- The modulus of continuity bounds every change of value over a distance at most `δ`. -/
+theorem le_modulusOfContinuity {u v : X} (huv : dist u v ≤ δ) :
+    |f u - f v| ≤ f.modulusOfContinuity δ :=
+  le_csSup (bddAbove_modulusOfContinuity_image f) ⟨(u, v), huv, rfl⟩
+
+/-- The modulus of continuity is nonnegative at every nonnegative scale. -/
+theorem modulusOfContinuity_nonneg [Nonempty X] (hδ : 0 ≤ δ) : 0 ≤ f.modulusOfContinuity δ := by
+  obtain ⟨u⟩ := ‹Nonempty X›
+  have := le_modulusOfContinuity f (u := u) (v := u) (by simpa using hδ)
+  simpa using this
+
+end ContinuousMap
+
 /-! ### Piecewise-linear interpolation -/
 
 /-- The **clamped ramp** of `[u, v]`: the continuous function that vanishes below `u`, rises with
@@ -527,7 +644,7 @@ private theorem le_node_of_le (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : �
   | succ k hk ih => exact fun hk1 => (ih (by omega)).trans (hstep k (by omega)).le
 
 /-- Every point of `[a, b]` lies in one of the subintervals of the partition. -/
-private theorem exists_mem_subinterval (hfirst : (x 0 : ℝ) = a) (hlast : (x (n + 1) : ℝ) = b)
+theorem exists_mem_subinterval (hfirst : (x 0 : ℝ) = a) (hlast : (x (n + 1) : ℝ) = b)
     (t : Set.Icc a b) :
     ∃ j ≤ n, (x j : ℝ) ≤ (t : ℝ) ∧ (t : ℝ) ≤ (x (j + 1) : ℝ) := by
   classical
@@ -787,4 +904,131 @@ theorem norm_sub_piecewiseLinearInterpCLM_le (hstep : ∀ i ≤ n, (x i : ℝ) <
         mul_le_mul (by linarith [hM ξ hξmem]) hprod (abs_nonneg _) (by linarith)
     _ = h ^ 2 / 8 * M := by ring
 
+/-- **The piecewise-linear interpolation error for a merely continuous function.** On a partition
+of `[a, b]` of mesh at most `h`, the piecewise-linear interpolant of a continuous `f` differs from
+it by at most the modulus of continuity `ω(f, h)`.
+
+On each subinterval the interpolant is a convex combination of the two node values, so the error is
+the same convex combination of `f(t) - f(x j)` and `f(t) - f(x (j+1))`, and both nodes are within
+`h` of `t`.
+
+Reference: [han2009theoretical], (3.2.8); [kress1998numerical], §8.3. -/
+theorem norm_sub_piecewiseLinearInterpCLM_le_modulus
+    (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ)) (hfirst : (x 0 : ℝ) = a)
+    (hlast : (x (n + 1) : ℝ) = b) (f : C(Set.Icc a b, ℝ)) {h : ℝ}
+    (hmesh : ∀ i ≤ n, (x (i + 1) : ℝ) - (x i : ℝ) ≤ h) :
+    ‖f - piecewiseLinearInterpCLM n x f‖ ≤ f.modulusOfContinuity h := by
+  have hne : Nonempty (Set.Icc a b) := ⟨x 0⟩
+  have hh0 : 0 ≤ h := le_trans (sub_nonneg.mpr (hstep 0 (Nat.zero_le n)).le)
+    (hmesh 0 (Nat.zero_le n))
+  rw [ContinuousMap.norm_le _ (f.modulusOfContinuity_nonneg hh0)]
+  intro t
+  obtain ⟨j, hj, h1, h2⟩ := exists_mem_subinterval hfirst hlast t
+  have hd : (0 : ℝ) < (x (j + 1) : ℝ) - (x j : ℝ) := sub_pos.mpr (hstep j hj)
+  set θ : ℝ := ((t : ℝ) - (x j : ℝ)) / ((x (j + 1) : ℝ) - (x j : ℝ)) with hθ
+  have hθ0 : 0 ≤ θ := div_nonneg (by linarith) hd.le
+  have hθ1 : θ ≤ 1 := (div_le_one hd).mpr (by linarith)
+  have hval : piecewiseLinearInterpCLM n x f t = (1 - θ) * f (x j) + θ * f (x (j + 1)) := by
+    rw [piecewiseLinearInterpCLM_apply_of_mem hstep f hj h1 h2, ← hθ]
+    ring
+  have e1 : |f t - f (x j)| ≤ f.modulusOfContinuity h := by
+    refine ContinuousMap.le_modulusOfContinuity f ?_
+    rw [Subtype.dist_eq, Real.dist_eq, abs_of_nonneg (by linarith)]
+    exact le_trans (by linarith) (hmesh j hj)
+  have e2 : |f t - f (x (j + 1))| ≤ f.modulusOfContinuity h := by
+    refine ContinuousMap.le_modulusOfContinuity f ?_
+    rw [Subtype.dist_eq, Real.dist_eq, abs_of_nonpos (by linarith)]
+    exact le_trans (by linarith) (hmesh j hj)
+  have hrw : f t - ((1 - θ) * f (x j) + θ * f (x (j + 1)))
+      = (1 - θ) * (f t - f (x j)) + θ * (f t - f (x (j + 1))) := by ring
+  rw [ContinuousMap.sub_apply, Real.norm_eq_abs, hval, hrw]
+  calc |(1 - θ) * (f t - f (x j)) + θ * (f t - f (x (j + 1)))|
+      ≤ |(1 - θ) * (f t - f (x j))| + |θ * (f t - f (x (j + 1)))| := abs_add_le _ _
+    _ = (1 - θ) * |f t - f (x j)| + θ * |f t - f (x (j + 1))| := by
+        rw [abs_mul, abs_mul, abs_of_nonneg (by linarith : (0:ℝ) ≤ 1 - θ), abs_of_nonneg hθ0]
+    _ ≤ (1 - θ) * f.modulusOfContinuity h + θ * f.modulusOfContinuity h := by gcongr
+    _ = f.modulusOfContinuity h := by ring
+
 end PiecewiseLinear
+
+/-! ### Trigonometric interpolation -/
+
+section Trigonometric
+
+/-- **The Haar condition for trigonometric polynomials**: a nonzero trigonometric polynomial of
+degree at most `n` vanishes at fewer than `2 n + 1` points of a period. -/
+theorem haarCondition_trigPolyLE (T : ℝ) [hT : Fact (0 < T)] (n : ℕ) :
+    HaarCondition (trigPolyLE T n) (2 * n + 1) := by
+  intro g hg hg0 s hs
+  obtain ⟨c, hc⟩ := mem_trigPolyLE_iff.mp hg
+  have := card_le_two_mul_of_forall_trigFun_eq_zero hT.out.ne' hc hg0 hs
+  omega
+
+/-- **Trigonometric interpolation at `2 n + 1` distinct nodes of a period is unisolvent.** -/
+theorem isUnisolvent_trigPolyLE (T : ℝ) [Fact (0 < T)] {n : ℕ}
+    {x : Fin (2 * n + 1) → AddCircle T} (hx : Function.Injective x) :
+    Approximation.IsUnisolvent (trigPolyLE T n) fun i => ContinuousMap.evalCLM ℝ (x i) :=
+  (Approximation.haarCondition_iff_isUnisolvent (trigPolyLE T n)
+    (finrank_trigPolyLE T n)).mp (haarCondition_trigPolyLE T n) x hx
+
+/-- The `2 n + 1` **equispaced nodes** of a period: `x j = j T / (2 n + 1)`. -/
+noncomputable def trigInterpNode (T : ℝ) (n : ℕ) (j : Fin (2 * n + 1)) : AddCircle T :=
+  (((j : ℕ) * T / (2 * n + 1) : ℝ) : AddCircle T)
+
+theorem injective_trigInterpNode (T : ℝ) [hT : Fact (0 < T)] (n : ℕ) :
+    Function.Injective (trigInterpNode T n) := by
+  have hd : (0 : ℝ) < 2 * n + 1 := by positivity
+  have hmem : ∀ j : Fin (2 * n + 1),
+      ((j : ℕ) * T / (2 * n + 1) : ℝ) ∈ Set.Ico (0 : ℝ) (0 + T) := by
+    intro j
+    have hj : ((j : ℕ) : ℝ) < 2 * n + 1 := by exact_mod_cast j.2
+    refine ⟨div_nonneg (mul_nonneg (Nat.cast_nonneg _) hT.out.le) hd.le, ?_⟩
+    rw [zero_add, div_lt_iff₀ hd]
+    nlinarith [hT.out]
+  intro j k hjk
+  have heq := (AddCircle.coe_eq_coe_iff_of_mem_Ico (hmem j) (hmem k)).mp hjk
+  have h3 : ((j : ℕ) : ℝ) * T = ((k : ℕ) : ℝ) * T := by
+    have := congrArg (fun r : ℝ => r * (2 * (n : ℝ) + 1)) heq
+    simpa [div_mul_cancel₀, hd.ne'] using this
+  exact Fin.ext (by exact_mod_cast mul_right_cancel₀ hT.out.ne' h3)
+
+/-- **Trigonometric interpolation** at the `2 n + 1` equispaced nodes of a period: the bounded
+projection of `C(AddCircle T, ℝ)` onto the trigonometric polynomials of degree at most `n`. -/
+noncomputable def trigInterpCLM (T : ℝ) [Fact (0 < T)] (n : ℕ) :
+    C(AddCircle T, ℝ) →L[ℝ] C(AddCircle T, ℝ) :=
+  (isUnisolvent_trigPolyLE T (injective_trigInterpNode T n)).interpCLM
+
+variable {T : ℝ} [Fact (0 < T)] {n : ℕ}
+
+@[simp]
+theorem trigInterpCLM_apply_node (f : C(AddCircle T, ℝ)) (j : Fin (2 * n + 1)) :
+    trigInterpCLM T n f (trigInterpNode T n j) = f (trigInterpNode T n j) :=
+  (isUnisolvent_trigPolyLE T (injective_trigInterpNode T n)).interpCLM_apply_node f j
+
+theorem trigInterpCLM_mem (f : C(AddCircle T, ℝ)) : trigInterpCLM T n f ∈ trigPolyLE T n :=
+  (isUnisolvent_trigPolyLE T (injective_trigInterpNode T n)).interpCLM_mem f
+
+theorem trigInterpCLM_eq_self {g : C(AddCircle T, ℝ)} (hg : g ∈ trigPolyLE T n) :
+    trigInterpCLM T n g = g :=
+  (isUnisolvent_trigPolyLE T (injective_trigInterpNode T n)).interpCLM_eq_self hg
+
+theorem range_trigInterpCLM :
+    LinearMap.range (trigInterpCLM T n : C(AddCircle T, ℝ) →ₗ[ℝ] C(AddCircle T, ℝ))
+      = trigPolyLE T n :=
+  (isUnisolvent_trigPolyLE T (injective_trigInterpNode T n)).range_interpCLM
+
+theorem isIdempotentElem_trigInterpCLM : IsIdempotentElem (trigInterpCLM T n) :=
+  (isUnisolvent_trigPolyLE T (injective_trigInterpNode T n)).isIdempotentElem_interpCLM
+
+theorem eq_trigInterpCLM {f g : C(AddCircle T, ℝ)} (hg : g ∈ trigPolyLE T n)
+    (hval : ∀ j, g (trigInterpNode T n j) = f (trigInterpNode T n j)) :
+    g = trigInterpCLM T n f := by
+  set h := isUnisolvent_trigPolyLE T (injective_trigInterpNode T n)
+  have h1 : (⟨g, hg⟩ : trigPolyLE T n)
+      = h.interpolate fun j => f (trigInterpNode T n j) := h.eq_interpolate hval
+  have h2 : (⟨trigInterpCLM T n f, trigInterpCLM_mem f⟩ : trigPolyLE T n)
+      = h.interpolate fun j => f (trigInterpNode T n j) :=
+    h.eq_interpolate fun j => trigInterpCLM_apply_node f j
+  exact congrArg Subtype.val (h1.trans h2.symm)
+
+end Trigonometric

@@ -18,6 +18,9 @@ is **unisolvent** when it has exactly one solution for every datum. The material
   (`Approximation.isUnisolvent_iff_bijective`).
 * `Approximation.IsUnisolvent.interpolate` is the resulting interpolation operator, a linear
   equivalence from the data to the subspace.
+* For a point-evaluation problem on `C(X, ℝ)`, `Approximation.IsUnisolvent.cardinalBasisCM` is the
+  cardinal basis `φ i (x j) = δ i j` of the problem, and
+  `Approximation.IsUnisolvent.interpCLM` is the interpolation projection `f ↦ ∑ i, f (x i) • φ i`.
 
 ## Main results
 
@@ -31,6 +34,11 @@ is **unisolvent** when it has exactly one solution for every datum. The material
   `Numlib/Approximation/Chebyshev`: a subspace of `C(X, ℝ)` of dimension `n` satisfies the Haar
   condition in dimension `n` exactly when every family of `n` distinct point evaluations is
   unisolvent over it. Both say that a nonzero element has fewer than `n` zeros.
+* `Approximation.IsUnisolvent.range_interpCLM` and
+  `Approximation.IsUnisolvent.isIdempotentElem_interpCLM` say that the interpolation projection is a
+  bounded projection of `C(X, ℝ)` onto the subspace it interpolates in. It is the general form of
+  the Lagrange interpolation operator of `Numlib/Approximation/Interpolation`, and it is what turns
+  a Haar subspace into a projection operator with no formula for a cardinal basis.
 -/
 
 open scoped Matrix
@@ -206,6 +214,91 @@ theorem IsUnisolvent.apply_interpolate (h : IsUnisolvent Vₙ L) (b : Fin n → 
 theorem IsUnisolvent.eq_interpolate (h : IsUnisolvent Vₙ L) {b : Fin n → 𝕜} {u : Vₙ}
     (hu : ∀ i, L i (u : V) = b i) : u = h.interpolate b :=
   ((h b).unique hu) fun i => h.apply_interpolate b i
+
+/-! ### The interpolation projection at unisolvent nodes -/
+
+section InterpCLM
+
+variable {X : Type*} [TopologicalSpace X] [CompactSpace X] {d : ℕ}
+  {W : Submodule ℝ C(X, ℝ)} {x : Fin d → X}
+
+/-- The **cardinal basis** of a unisolvent point-evaluation problem: `cardinalBasisCM h i` is the
+unique element of the subspace taking the value `1` at the node `x i` and `0` at the others. For
+polynomials it is the `i`-th Lagrange basis function. -/
+noncomputable def IsUnisolvent.cardinalBasisCM
+    (h : IsUnisolvent W fun i => ContinuousMap.evalCLM ℝ (x i)) (i : Fin d) : C(X, ℝ) :=
+  (h.interpolate (Pi.single i 1) : C(X, ℝ))
+
+theorem IsUnisolvent.cardinalBasisCM_mem
+    (h : IsUnisolvent W fun i => ContinuousMap.evalCLM ℝ (x i)) (i : Fin d) :
+    h.cardinalBasisCM i ∈ W :=
+  (h.interpolate (Pi.single i 1)).2
+
+@[simp]
+theorem IsUnisolvent.cardinalBasisCM_apply_node
+    (h : IsUnisolvent W fun i => ContinuousMap.evalCLM ℝ (x i)) (i j : Fin d) :
+    h.cardinalBasisCM i (x j) = if j = i then 1 else 0 := by
+  have := h.apply_interpolate (Pi.single i (1 : ℝ)) j
+  simpa [IsUnisolvent.cardinalBasisCM, Pi.single_apply] using this
+
+/-- **The interpolation projection** of a unisolvent point-evaluation problem: the bounded operator
+`f ↦ ∑ i, f (x i) • φ_i` of `C(X, ℝ)` onto the subspace `W`, where `φ_i` is the cardinal basis. -/
+noncomputable def IsUnisolvent.interpCLM
+    (h : IsUnisolvent W fun i => ContinuousMap.evalCLM ℝ (x i)) : C(X, ℝ) →L[ℝ] C(X, ℝ) :=
+  ∑ i, (ContinuousMap.evalCLM ℝ (x i)).smulRight (h.cardinalBasisCM i)
+
+theorem IsUnisolvent.interpCLM_apply
+    (h : IsUnisolvent W fun i => ContinuousMap.evalCLM ℝ (x i)) (f : C(X, ℝ)) (t : X) :
+    h.interpCLM f t = ∑ i, f (x i) * h.cardinalBasisCM i t := by
+  simp [IsUnisolvent.interpCLM]
+
+theorem IsUnisolvent.interpCLM_mem
+    (h : IsUnisolvent W fun i => ContinuousMap.evalCLM ℝ (x i)) (f : C(X, ℝ)) :
+    h.interpCLM f ∈ W := by
+  have : h.interpCLM f = ∑ i, f (x i) • h.cardinalBasisCM i := by
+    ext t; simp [IsUnisolvent.interpCLM_apply]
+  rw [this]
+  exact Submodule.sum_mem _ fun i _ => Submodule.smul_mem _ _ (h.cardinalBasisCM_mem i)
+
+@[simp]
+theorem IsUnisolvent.interpCLM_apply_node
+    (h : IsUnisolvent W fun i => ContinuousMap.evalCLM ℝ (x i)) (f : C(X, ℝ)) (j : Fin d) :
+    h.interpCLM f (x j) = f (x j) := by
+  rw [IsUnisolvent.interpCLM_apply]
+  rw [Finset.sum_eq_single j]
+  · simp
+  · intro i _ hij
+    simp [Ne.symm hij]
+  · intro hj
+    exact absurd (Finset.mem_univ j) hj
+
+/-- The interpolation projection fixes the subspace it projects onto. -/
+theorem IsUnisolvent.interpCLM_eq_self
+    (h : IsUnisolvent W fun i => ContinuousMap.evalCLM ℝ (x i)) {g : C(X, ℝ)} (hg : g ∈ W) :
+    h.interpCLM g = g := by
+  have h1 : (⟨h.interpCLM g, h.interpCLM_mem g⟩ : W) = h.interpolate fun i => g (x i) :=
+    h.eq_interpolate fun i => h.interpCLM_apply_node g i
+  have h2 : (⟨g, hg⟩ : W) = h.interpolate fun i => g (x i) :=
+    h.eq_interpolate fun _ => rfl
+  exact congrArg Subtype.val (h1.trans h2.symm)
+
+/-- The interpolation projection is idempotent. -/
+theorem IsUnisolvent.isIdempotentElem_interpCLM
+    (h : IsUnisolvent W fun i => ContinuousMap.evalCLM ℝ (x i)) :
+    IsIdempotentElem h.interpCLM :=
+  ContinuousLinearMap.ext fun f => h.interpCLM_eq_self (h.interpCLM_mem f)
+
+/-- The range of the interpolation projection is the subspace it interpolates in. -/
+theorem IsUnisolvent.range_interpCLM
+    (h : IsUnisolvent W fun i => ContinuousMap.evalCLM ℝ (x i)) :
+    LinearMap.range (h.interpCLM : C(X, ℝ) →ₗ[ℝ] C(X, ℝ)) = W := by
+  apply le_antisymm
+  · rintro g ⟨f, rfl⟩
+    exact h.interpCLM_mem f
+  · intro g hg
+    exact ⟨g, h.interpCLM_eq_self hg⟩
+
+end InterpCLM
 
 /-! ### The Haar condition -/
 

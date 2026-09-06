@@ -14,6 +14,7 @@ import NumlibSurface.AtkinsonHan.Chapter02.Section07
 import NumlibSurface.AtkinsonHan.Chapter02.Section08
 import NumlibSurface.AtkinsonHan.Chapter02.Section09
 import NumlibSurface.AtkinsonHan.Chapter03.Section01
+import NumlibSurface.AtkinsonHan.Chapter03.Section02
 import NumlibSurface.AtkinsonHan.Chapter03.Section03
 import NumlibSurface.AtkinsonHan.Chapter03.Section04
 import NumlibSurface.AtkinsonHan.Chapter03.Section05

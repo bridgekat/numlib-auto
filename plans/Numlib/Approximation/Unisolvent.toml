@@ -19,3 +19,7 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, (3.2.3)"
 [[node]]
 id = "haarCondition_iff_isUnisolvent"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Section 3.3.4"
+
+[[node]]
+id = "IsUnisolvent.interpCLM"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (3.2.3), Example 3.6.5"
