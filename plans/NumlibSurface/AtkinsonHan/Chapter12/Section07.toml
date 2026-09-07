@@ -11,18 +11,3 @@ id = "exercise_12_7_3"
 
 [[node]]
 id = "equation_12_7_13"
-kind = "theorem"
-desc = '''
-(12.7.13), the sharp projection error bound for a nonlinear equation:
-`norm (u* - u_n) <= norm ((I - T'(u*))^{-1}) (1 + gamma_n) norm (u* - P_n u*)` with
-`gamma_n -> 0`.
-
-`exercise_12_7_3` already gives the same bound with a fixed constant `c = 2 norm R_n`; what is new
-is that the asymptotic constant is the one built from the *exact* inverse. The book quotes it from
-Atkinson-Potra without proof, so formalizing means reconstructing that argument;
-`exercise_12_1_3` and `exercise_12_1_4` are the linear analogues and are proved, and the same
-telescoping should work with the remainder bound of `lemma_12_7_1` absorbed into `gamma_n`.
-
-Worth doing last: the practically useful bound is already there.
-'''
-deps = ["exercise_12_7_3", "lemma_12_7_1", "exercise_12_1_3"]

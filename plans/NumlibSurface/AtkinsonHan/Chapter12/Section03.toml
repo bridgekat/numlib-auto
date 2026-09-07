@@ -24,19 +24,51 @@ kind = "theorem"
 desc = '''
 Theorem 12.3.3, superconvergence of iterated piecewise *quadratic* collocation. For
 `u` in `C^4[a, b]` and a kernel continuously differentiable in `y`,
-`norm (u - u_n)_inf <= (sqrt 3 |lambda| M / 27) h^3 norm (u^(3))_inf` and the iterated solution
-satisfies `norm (u - u_hat_n)_inf <= c h^4`, hence
+`norm (u - u_n)_inf <= (sqrt 3 |lambda| M / 27) h^3 norm (u^(3))_inf` (12.3.32) and the iterated
+solution satisfies `norm (u - u_hat_n)_inf <= c h^4` (12.3.33), hence
 `max_j |u(x_j) - u_n(x_j)| = O(h^4)` at the breakpoints (12.3.34).
 
-The two operator bounds are free: `theorem_12_1_2` and `equation_12_3_11` give them. What is
-missing is (a) the piecewise quadratic interpolatory projection -- `Numlib/Approximation/
-Interpolation` has `piecewiseLinearInterpCLM` and no higher degree -- with its error constant
-`sqrt 3 h^3 / 27` against `norm (f^(3))`; and (b) (12.3.31), `K (I - P_n) u = O(h^4)`, which is the
-cancellation of the odd moment of the quadratic interpolation error over each panel and is the real
-theorem. (b) is a moment / integration-by-parts argument on one panel followed by a sum, and it is
-where the "even degree gains one power of `h`, odd degree does not" phenomenon lives.
+The two operator bounds are free: `theorem_12_1_2` and `equation_12_3_11` give them, and (12.3.34)
+is one line from `equation_12_3_2`, since `P_n u_hat_n = u_n` makes the two agree at the nodes.
+Two ingredients are missing.
 
-Do not state it before the piecewise quadratic operator exists. Clause (12.3.34) is one line from
-`equation_12_3_2` once (12.3.33) is in hand.
+(a) **The piecewise quadratic interpolatory projection**, with its error constant `sqrt 3 h^3 / 27`
+against `norm (f^(3))`. This is the same missing item as `lemma_12_5_5`, and the note there
+describes it: `piecewiseLinearInterpCLM` is written as a sum of clamped ramps, a device special to
+degree one, and degree two needs a genuine gluing of panel interpolants. Mathlib's
+`ContinuousMap.liftCover'` (a finite closed cover with agreeing local maps) is the tool; the
+cover is the panels `[x_{2k-2}, x_{2k}]`, and the local maps agree because the two interpolants
+sharing a breakpoint both take the value of `u` there. Linearity and boundedness of the glued
+operator are then proved pointwise, by choosing the panel containing the evaluation point.
+The panel error bound is `Lagrange.exists_sub_interpolate_eq` at `n = 2` plus
+`max |(y - alpha)(y - m)(y - beta)| = 2 sqrt 3 h^3 / 9` on the panel, which divided by `3! = 6`
+gives the book's `sqrt 3 h^3 / 27`.
+
+(b) **(12.3.31)**, `K (I - P_n) u = O(h^4)`. **The book's proof is not the cheapest route, and the
+route it takes is blocked.** The book writes the interpolation error on a panel as
+`omega(y) u[x_{2k-2}, x_{2k-1}, x_{2k}, y]`, integrates by parts against the antiderivative of
+`omega`, and needs `d/dy u[v_0, v_1, v_2, y] = u[v_0, v_1, v_2, y, y]`, a divided-difference
+calculus that `Numlib/Approximation/DividedDifference` does not have (it carries Hermite-Genocchi
+at orders one and two, `newton` at `m + 1` nodes, and the error form
+`sub_eval_interpolate_eq_newton`, but no derivative rule and no fourth-order mean value form).
+
+A shorter route avoids divided differences entirely. On one panel `[alpha, beta]` of length `2h`,
+split `k(x, y) = k(x, alpha) + (k(x, y) - k(x, alpha))`:
+
+* the first part contributes `k(x, alpha) int_alpha^beta (u - P_n u)`, and `int_alpha^beta P_n u`
+  is exactly **Simpson's rule** for `u` on the panel (the integral of the quadratic interpolant),
+  so that integral is the Simpson panel error, `O(h^5 norm (u^(4)))`;
+* the second part is bounded by `L (2h) * norm (u - P_n u)_inf * (2h) = O(h) O(h^3) O(h) = O(h^5)`,
+  using only a Lipschitz bound `L` on `k` in `y` -- weaker than the book's `C^1`.
+
+Summing over the `(b - a)/(2h)` panels gives `O(h^4)`. What this needs beyond (a) is the **Simpson
+panel error**, `|int_alpha^beta g - (h/3)(g(alpha) + 4 g(m) + g(beta))| <= c h^5 norm (g^(4))`,
+which `Numlib/Approximation/CompositeQuadrature` does not have -- it defines `Quadrature.simpsonSum`
+and proves only its convergence -- but which is the same Peano-kernel integration by parts, four
+times, that `Quadrature.abs_sub_trapezoidSum_add_le` already carries out for the trapezoidal rule.
+
+So the order of work is: the Simpson panel error in `Numlib/Approximation/CompositeQuadrature`, the
+degree-`m` (or at least degree-two) piecewise interpolation operator in
+`Numlib/Approximation/Interpolation`, then (12.3.31), then this node.
 '''
 deps = ["equation_12_3_11", "theorem_12_1_2", "equation_12_3_2"]

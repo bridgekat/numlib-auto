@@ -10,29 +10,30 @@ Banach space, they do not mention a kernel or a quadrature rule, and they are wh
 chapter rests on.
 
 The concrete body is the estimation, for a particular family of subspaces, of the approximation
-error `‖u - P_n u‖` or the quadrature error `‖(K - K_n) u‖`. Three of its four parts are now
-formalized:
+error `‖u - P_n u‖` or the quadrature error `‖(K - K_n) u‖`. It is now formalized except at four
+nodes:
 
-* Section 12.2.1, piecewise linear collocation (`Chapter12/Section02`), on
-  `Numlib/Approximation/Interpolation`;
-* Lemma 12.4.2 and Theorem 12.4.4, the Nyström operators (`Chapter12/Section04`), on the new
-  `Numlib/IntegralEquations/Nystrom` — which is where the collective compactness of the Nyström
-  family and the composed quadrature error `e_n` live;
-* Example 12.4.5 and its Euler–Maclaurin form (12.4.39) (`Chapter12/Section04`), on the new
-  `Numlib/Approximation/CompositeQuadrature` — which is where composite rules, the Riemann sum
-  theorem and the Peano identities for the trapezoidal rule live.
+* Section 12.2 entire (`Chapter12/Section02`): piecewise linear collocation and Galerkin on
+  `Numlib/Approximation/Interpolation` and the `L²(a, b)` bridge built there from
+  `IntegralOperator.iccMeasure` and `ContinuousMap.toLp`; trigonometric collocation and the two
+  halves of the Fourier method on `Numlib/Approximation/{Jackson, TrigonometricInterpolation}` and
+  `Numlib/Analysis/Fourier/Truncation`.
+* Section 12.4 entire (`Chapter12/Section04`), on `Numlib/IntegralEquations/Nystrom` and
+  `Numlib/Approximation/CompositeQuadrature`, including the asymptotic expansion of the Nyström
+  error (Example 12.4.6) -- whose last clause carries the smoothness of the auxiliary solution
+  `gamma` as a hypothesis, that being the book's own unproved "by a similar argument".
+* Theorem 12.5.1 and Example 12.5.2 (`Chapter12/Section05`), on
+  `Numlib/IntegralEquations/WeaklySingular`; the product integration operator itself is defined
+  there, in the surface, and belongs beside `IntegralOperator.admissibleKernelCLM`.
+* Sections 12.6 and 12.7.1 (`Chapter12/Section06`, `Chapter12/Section07`), including the sharp
+  error bound (12.7.13).
 
-What is left, with the obstruction recorded on each node: Sections 12.2.2–12.2.4 (trigonometric
-collocation and the two Galerkin methods — the `O(log n)` Lebesgue constant, and an `L²(a, b)`
-bridge that the library does not have; note that the *trigonometric* half of the `L²` bridge now
-exists, as `trigProjCLM` of `Numlib/Analysis/Fourier/Truncation`, and that the piecewise linear
-half additionally needs an `L²` interpolation estimate, since the book's bound is against
-`‖u''‖_{L²}` and the library's is against `‖u''‖_∞`); Theorem 12.3.3 (piecewise *quadratic*
-interpolation, absent from the backbone, and the odd-moment cancellation (12.3.31)); Example 12.4.6
-(the expansion of the Nyström error, for which the scalar Euler–Maclaurin expansion is now
-available but its uniformity in the row variable is not); and the whole of Section 12.5 (product
-integration for weakly singular kernels), which waits on
-`Numlib/IntegralEquations/WeaklySingular` and on piecewise polynomial interpolation of degree `m`.
+What is left is two items of backbone approximation theory and one of regularity theory, each
+recorded in full on its node: Theorem 12.3.3 and Lemma 12.5.5 both wait on a piecewise polynomial
+interpolation operator of degree `m` (and 12.3.3 in addition on the Simpson panel error, which
+`Numlib/Approximation/CompositeQuadrature` does not carry); Theorem 12.5.6 waits on Lemma 12.5.5;
+and Theorem 12.5.4 waits on differentiation under a weakly singular integral sign, to bootstrap the
+regularity of the solution.
 
 Also left out: Section 12.7.2, the homotopy argument, which needs the rotation and index of a
 completely continuous vector field (Section 5.5.1) — no Mathlib degree theory, and the book quotes

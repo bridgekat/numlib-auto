@@ -28,9 +28,14 @@ is a single bounded idempotent `P`.
 
 ## Not formalized here
 
-Theorem 12.3.3, a piecewise quadratic collocation error estimate on `C[a, b]` needing `u ∈ C⁴` and
-an interpolation error bound; the concrete parts of §12.3.2; and the linear system for the
-iterated collocation solution.
+Theorem 12.3.3, the superconvergence of iterated piecewise *quadratic* collocation.  Its two
+operator bounds are `theorem_12_1_2` and `equation_12_3_11` above; what it needs beyond them is a
+piecewise quadratic interpolation operator, which `Numlib/Approximation/Interpolation` does not
+have, and the odd-moment cancellation (12.3.31).  The plan node records a route to (12.3.31) that
+avoids the book's divided-difference calculus: on each panel the integral of the quadratic
+interpolant is Simpson's rule, so splitting `k (x, y) = k (x, α) + (k (x, y) - k (x, α))` turns
+(12.3.31) into the Simpson panel error plus a term of size `h · h³ · h`.  Also left out: the
+concrete parts of §12.3.2 and the linear system for the iterated collocation solution.
 
 ## Conventions
 

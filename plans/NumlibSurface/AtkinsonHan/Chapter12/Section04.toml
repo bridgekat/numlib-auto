@@ -45,20 +45,9 @@ id = "equation_12_4_39"
 source = "Atkinson–Han, Theoretical Numerical Analysis, (12.4.39)"
 
 [[node]]
+id = "equation_12_4_44"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (12.4.44)"
+
+[[node]]
 id = "example_12_4_6"
-kind = "theorem"
-desc = '''
-Example 12.4.6, the asymptotic error expansion of the Nystrom solution: for a `C^4` kernel and a
-`C^4` solution, `u - u_n = h^2 gamma + O(h^4)`, where `gamma` itself solves an integral equation
-whose data is the Euler-Maclaurin boundary term; hence Richardson extrapolation raises the order.
-
-The operator half is easy -- `(lambda - K_n)(u - u_n) = (K - K_n) u` is `SecondKind.norm_sub_le`
--- and the Euler-Maclaurin expansion it needs, (12.4.39), is now `equation_12_4_39`.
-
-What is still missing is the step from one integrand to the Nystrom error *kernel*: the expansion
-`u - u_n = h^2 gamma + O(h^4)` requires (12.4.39) applied to `k(t, .) u(.)` uniformly in `t`, with
-the boundary term `d/ds [k(t, s) u(s)]` at the endpoints as the data of the integral equation that
-`gamma` solves. So the remaining content is the identification of `gamma` and the uniformity of the
-`O(h^4)`, not the scalar expansion. Lowest priority of the section.
-'''
-deps = ["equation_12_4_39", "theorem_12_4_4"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 12.4.6"

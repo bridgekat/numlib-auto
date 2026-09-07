@@ -21,15 +21,16 @@ projection equations into a contraction of a small ball about `u*`.
   and its three bounds (12.7.5), (12.7.6) and (12.7.7), the last being Exercise 12.7.1.
 * `exercise_12_7_3` — for all large `n` the projection equation `u_n = P_n T u_n` has a unique
   solution in a fixed ball about `u*`, and `‖u* - u_n‖ ≤ c ‖u* - P_n u*‖`.
+* `equation_12_7_13` — the same bound with the asymptotically sharp constant,
+  `‖u* - u_n‖ ≤ ‖(I - T'(u*))⁻¹‖ (1 + γ_n) ‖u* - P_n u*‖` with `γ_n → 0`.
 
 ## Not formalized here
 
 §12.7.2, the homotopy argument, which computes the index of `Φ_n(v) = v - P_n T v` from that of
 `Φ(v) = v - T v` using the rotation of a completely continuous vector field (properties P1–P5 of
 §5.5.1): Mathlib has no degree theory, and the book quotes those properties without proof.  Also
-(12.7.13), the sharp error bound with `γ_n → 0`, which the book quotes from Atkinson's paper
-rather than proving; §12.7.3, the nonlinear systems (12.7.21) and (12.7.24) for the Urysohn and
-Hammerstein equations, which are implementation; and Exercises 12.7.4–12.7.7.
+§12.7.3, the nonlinear systems (12.7.21) and (12.7.24) for the Urysohn and Hammerstein equations,
+which are implementation; and Exercises 12.7.4–12.7.7.
 
 ## Conventions
 
@@ -38,9 +39,10 @@ closed bounded convex `B ⊆ H`.  Only the derivatives at the points of the conv
 the second derivative there are used, so those are the hypotheses: continuity of `T''` never
 enters, and neither does boundedness of `B`.
 
-Exercise 12.7.3 replaces the sharp constant of (12.7.13) by a fixed one, which is what is claimed
-here.  The contraction constant produced is `1/2`, and the error constant is twice the uniform
-bound on `‖(I - P_n T'(u*))⁻¹‖`.
+Exercise 12.7.3 replaces the sharp constant of (12.7.13) by a fixed one; the contraction constant
+produced is `1/2`, and the error constant is twice the uniform bound on `‖(I - P_n T'(u*))⁻¹‖`.
+Its radius is also reported to be at most the radius `ρ` of differentiability, which is what lets
+`equation_12_7_13` use the second-order bound (12.7.5) at the solutions it produces.
 -/
 
 open Filter Topology
@@ -213,7 +215,7 @@ theorem exercise_12_7_3 {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [
     {e : V ≃L[ℝ] V} (he : (e : V →L[ℝ] V) = 1 - T' ustar)
     {P : ℕ → V →L[ℝ] V} (hPidem : ∀ n, IsIdempotentElem (P n))
     (hP : ∀ v, Tendsto (fun n => P n v) atTop (𝓝 v)) :
-    ∃ c r : ℝ, 0 < r ∧ ∀ᶠ n in atTop,
+    ∃ c r : ℝ, 0 < r ∧ r ≤ ρ ∧ ∀ᶠ n in atTop,
       (∃! un : V, un ∈ Metric.closedBall ustar r ∧ P n (T un) = un) ∧
         ∀ un ∈ Metric.closedBall ustar r, P n (T un) = un →
           ‖ustar - un‖ ≤ c * ‖ustar - P n ustar‖ := by
@@ -250,7 +252,7 @@ theorem exercise_12_7_3 {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [
   -- (12.7.7) on the small ball
   have h7 := (lemma_12_7_1 (convex_closedBall ustar r) (fun z hz => hT z (hsub hz))
     (fun z hz => hT' z (hsub hz)) (fun z hz => hM z (hsub hz))).2.2
-  refine ⟨2 * B, r, hr0, ?_⟩
+  refine ⟨2 * B, r, hr0, hrρ, ?_⟩
   have heps1 : ∀ᶠ n in atTop,
       ‖(e.symm : V →L[ℝ] V)‖ * ‖T' ustar - P n ∘L T' ustar‖ < 1 / 2 := by
     have h0 : Tendsto (fun n => ‖(e.symm : V →L[ℝ] V)‖ * ‖T' ustar - P n ∘L T' ustar‖)
@@ -359,5 +361,156 @@ theorem exercise_12_7_3 {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [
       rw [norm_sub_rev]; exact hcenter
     have h3 : ‖F ustar - F un‖ ≤ 1 / 2 * ‖ustar - un‖ := hcontract ustar hcen' un hun
     linarith
+
+/-- **(12.7.13), the sharp error bound for the projection method of §12.7.1.**  Under the
+hypotheses of `exercise_12_7_3` there is a sequence `γ_n → 0` and a radius `r > 0` such that, for
+all large `n`, the projection equation `u_n = P_n T u_n` has exactly one solution in the closed
+ball of radius `r` about the fixed point `u*`, and that solution satisfies
+
+`‖u* - u_n‖ ≤ ‖(I - T'(u*))⁻¹‖ (1 + γ_n) ‖u* - P_n u*‖`.
+
+What is new against `exercise_12_7_3` is the constant: there it is a fixed multiple of the uniform
+bound on the *perturbed* inverses `(I - P_n T'(u*))⁻¹`, here it is asymptotically the norm of the
+*exact* inverse, exactly as in Exercise 12.1.3 for a linear equation.  The book quotes the bound
+from Atkinson's paper without proof; the argument reconstructed here is the linear one with the
+nonlinearity absorbed into `γ_n`.
+
+Subtracting `u_n = P_n T u_n` from `u* = T u*` and inserting the linearization gives the exact
+identity
+
+`(I - P_n T'(u*)) (u* - u_n) = (u* - P_n u*) - P_n R(u_n; u*)`,
+
+so `‖u* - u_n‖ ≤ ‖R_n‖ (‖u* - P_n u*‖ + ‖P_n‖ · ½ M ‖u* - u_n‖²)` by (12.7.5).  The crude bound of
+Exercise 12.7.3 makes `‖u* - u_n‖` itself `𝓞(‖u* - P_n u*‖)`, so the quadratic term is
+`δ_n ‖u* - u_n‖` with `δ_n → 0` and can be moved to the left; and `‖R_n‖ ≤ ‖(I - T'(u*))⁻¹‖ (1 +
+2 ‖(I - T'(u*))⁻¹‖ ‖T'(u*) - P_n T'(u*)‖)` is Theorem 12.1.2.  Both corrections tend to one, which
+is `γ_n`. -/
+theorem equation_12_7_13 {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [CompleteSpace V]
+    {T : V → V} {T' : V → V →L[ℝ] V} {T'' : V → V →L[ℝ] V →L[ℝ] V}
+    {H : Set V} (hH : IsOpen H) (hcc : Chapter05.IsCompletelyContinuousOn T H)
+    {ustar : V} (hmem : ustar ∈ H) (hfix : T ustar = ustar) {ρ : ℝ} (hρ : 0 < ρ)
+    (hT : ∀ z ∈ Metric.closedBall ustar ρ, HasFDerivAt T (T' z) z)
+    (hT' : ∀ z ∈ Metric.closedBall ustar ρ, HasFDerivAt T' (T'' z) z)
+    {M : ℝ} (hM : ∀ z ∈ Metric.closedBall ustar ρ, ‖T'' z‖ ≤ M)
+    {e : V ≃L[ℝ] V} (he : (e : V →L[ℝ] V) = 1 - T' ustar)
+    {P : ℕ → V →L[ℝ] V} (hPidem : ∀ n, IsIdempotentElem (P n))
+    (hP : ∀ v, Tendsto (fun n => P n v) atTop (𝓝 v)) :
+    ∃ γ : ℕ → ℝ, Tendsto γ atTop (𝓝 0) ∧ ∃ r : ℝ, 0 < r ∧ ∀ᶠ n in atTop,
+      (∃! un : V, un ∈ Metric.closedBall ustar r ∧ P n (T un) = un) ∧
+        ∀ un ∈ Metric.closedBall ustar r, P n (T un) = un →
+          ‖ustar - un‖ ≤ ‖(e.symm : V →L[ℝ] V)‖ * (1 + γ n) * ‖ustar - P n ustar‖ := by
+  have hcen : ustar ∈ Metric.closedBall ustar ρ := Metric.mem_closedBall_self hρ.le
+  have hcomp : IsCompactOperator (T' ustar) :=
+    Chapter05.proposition_5_5_5 hcc hH hmem (hT ustar hcen)
+  have hconv : Tendsto (fun n => ‖T' ustar - P n ∘L T' ustar‖) atTop (𝓝 0) := lemma_12_1_4 hcomp hP
+  obtain ⟨Cp, hCp⟩ : ∃ C : ℝ, ∀ n, ‖P n‖ ≤ C :=
+    banach_steinhaus fun x => by
+      obtain ⟨m, hm⟩ := ((hP x).norm).bddAbove_range
+      exact ⟨m, fun n => hm ⟨n, rfl⟩⟩
+  have hCp0 : (0 : ℝ) ≤ Cp := le_trans (norm_nonneg _) (hCp 0)
+  have hM0 : (0 : ℝ) ≤ M := le_trans (norm_nonneg _) (hM ustar hcen)
+  obtain ⟨c, r, hr0, hrρ, hev⟩ := exercise_12_7_3 hH hcc hmem hfix hρ hT hT' hM he hPidem hP
+  have hsub : Metric.closedBall ustar r ⊆ Metric.closedBall ustar ρ :=
+    Metric.closedBall_subset_closedBall hrρ
+  -- (12.7.5) at the base point `u*`
+  have h5 := (lemma_12_7_1 (convex_closedBall ustar ρ) hT hT' hM).2.1
+  -- the approximation error of the fixed point tends to zero
+  have hPu : Tendsto (fun n => ‖ustar - P n ustar‖) atTop (𝓝 0) := by
+    have h1 : Tendsto (fun n => ustar - P n ustar) atTop (𝓝 (ustar - ustar)) :=
+      tendsto_const_nhds.sub (hP ustar)
+    rw [sub_self] at h1
+    simpa using h1.norm
+  set A : ℝ := ‖(e.symm : V →L[ℝ] V)‖ with hAdef
+  have hA0 : (0 : ℝ) ≤ A := norm_nonneg _
+  refine ⟨fun n => (1 + 2 * (A * ‖T' ustar - P n ∘L T' ustar‖)) *
+    (1 + 2 * (A * Cp * M * |c| * ‖ustar - P n ustar‖)) - 1, ?_, r, hr0, ?_⟩
+  · have h1 : Tendsto (fun n => 1 + 2 * (A * ‖T' ustar - P n ∘L T' ustar‖)) atTop (𝓝 1) := by
+      have h := (hconv.const_mul A).const_mul 2
+      rw [mul_zero, mul_zero] at h
+      simpa using tendsto_const_nhds.add h
+    have h2 : Tendsto (fun n => 1 + 2 * (A * Cp * M * |c| * ‖ustar - P n ustar‖))
+        atTop (𝓝 1) := by
+      have h := (hPu.const_mul (A * Cp * M * |c|)).const_mul 2
+      rw [mul_zero, mul_zero] at h
+      simpa using tendsto_const_nhds.add h
+    have h := (h1.mul h2).sub_const 1
+    simpa using h
+  have hsmall : ∀ᶠ n in atTop, A * ‖T' ustar - P n ∘L T' ustar‖ < 1 / 2 := by
+    have h0 : Tendsto (fun n => A * ‖T' ustar - P n ∘L T' ustar‖) atTop (𝓝 0) := by
+      simpa using hconv.const_mul A
+    exact h0.eventually (eventually_lt_nhds (by norm_num))
+  have hδsmall : ∀ᶠ n in atTop, A * Cp * M * |c| * ‖ustar - P n ustar‖ ≤ 1 / 2 := by
+    have h0 : Tendsto (fun n => A * Cp * M * |c| * ‖ustar - P n ustar‖) atTop (𝓝 0) := by
+      simpa using hPu.const_mul (A * Cp * M * |c|)
+    exact (h0.eventually (eventually_lt_nhds (by norm_num))).mono fun n h => h.le
+  filter_upwards [hev, hsmall, hδsmall] with n hn hns hnδ
+  refine ⟨hn.1, fun un hun hunfix => ?_⟩
+  set s : ℝ := A * ‖T' ustar - P n ∘L T' ustar‖ with hsdef
+  set p : ℝ := ‖ustar - P n ustar‖ with hpdef
+  set δ : ℝ := A * Cp * M * |c| * p with hδdef
+  have hs0 : (0 : ℝ) ≤ s := by positivity
+  have hp0 : (0 : ℝ) ≤ p := norm_nonneg _
+  have hδ0 : (0 : ℝ) ≤ δ := by positivity
+  obtain ⟨en, hen, hennorm, -⟩ :=
+    theorem_12_1_2 (μ := (1 : ℝ)) one_ne_zero (hPidem n) e (by rw [he, one_smul]) (by linarith)
+  have hen1 : (en : V →L[ℝ] V) = 1 - P n ∘L T' ustar := by rw [hen, one_smul]
+  set Rn : ℝ := ‖(en.symm : V →L[ℝ] V)‖ with hRndef
+  have hRn0 : (0 : ℝ) ≤ Rn := norm_nonneg _
+  have hpos : (0 : ℝ) < 1 - s := by linarith
+  have hRnle : Rn ≤ A * (1 + 2 * s) := by
+    refine hennorm.trans ?_
+    rw [div_le_iff₀ hpos]
+    nlinarith [mul_nonneg (mul_nonneg hA0 hs0) (show (0 : ℝ) ≤ 1 - 2 * s by linarith)]
+  have hRn2 : Rn ≤ 2 * A := by
+    refine hennorm.trans ?_
+    rw [div_le_iff₀ hpos]
+    nlinarith [mul_nonneg hA0 (show (0 : ℝ) ≤ 1 - 2 * s by linarith)]
+  -- the exact error identity
+  have hkey : (en : V →L[ℝ] V) (ustar - un)
+      = (ustar - P n ustar) - P n (linearizationRemainder T T' ustar un) := by
+    rw [hen1]
+    simp only [sub_apply, one_apply_eq_self, ContinuousLinearMap.comp_apply,
+      linearizationRemainder, map_sub, hfix, hunfix]
+    abel
+  have hsol : ustar - un
+      = en.symm ((ustar - P n ustar) - P n (linearizationRemainder T T' ustar un)) := by
+    rw [← hkey, ContinuousLinearEquiv.coe_coe, en.symm_apply_apply]
+  set x : ℝ := ‖ustar - un‖ with hxdef
+  have hx0 : (0 : ℝ) ≤ x := norm_nonneg _
+  have hR : ‖linearizationRemainder T T' ustar un‖ ≤ M / 2 * x ^ 2 := h5 ustar hcen un (hsub hun)
+  have hinner : ‖(ustar - P n ustar) - P n (linearizationRemainder T T' ustar un)‖
+      ≤ p + Cp * (M / 2 * x ^ 2) := by
+    have h1 : ‖P n (linearizationRemainder T T' ustar un)‖ ≤ Cp * (M / 2 * x ^ 2) :=
+      ((P n).le_opNorm _).trans (mul_le_mul (hCp n) hR (norm_nonneg _) hCp0)
+    have h2 : ‖(ustar - P n ustar) - P n (linearizationRemainder T T' ustar un)‖
+        ≤ p + ‖P n (linearizationRemainder T T' ustar un)‖ := norm_sub_le _ _
+    linarith
+  have hmain : x ≤ Rn * (p + Cp * (M / 2 * x ^ 2)) := by
+    calc x = ‖en.symm ((ustar - P n ustar) - P n (linearizationRemainder T T' ustar un))‖ :=
+          congrArg norm hsol
+      _ ≤ Rn * ‖(ustar - P n ustar) - P n (linearizationRemainder T T' ustar un)‖ :=
+          ContinuousLinearMap.le_opNorm (en.symm : V →L[ℝ] V) _
+      _ ≤ Rn * (p + Cp * (M / 2 * x ^ 2)) := mul_le_mul_of_nonneg_left hinner hRn0
+  have hcrude : x ≤ |c| * p := le_trans (hn.2 un hun hunfix) (by nlinarith [le_abs_self c])
+  -- the quadratic term is `δ x` with `δ → 0`
+  have hquad : Rn * (Cp * (M / 2 * x ^ 2)) ≤ δ * x := by
+    have hq : (0 : ℝ) ≤ Cp * (M / 2) := by positivity
+    have h0 : Rn * x ≤ 2 * A * (|c| * p) :=
+      (mul_le_mul_of_nonneg_right hRn2 hx0).trans
+        (mul_le_mul_of_nonneg_left hcrude (by positivity))
+    have h1 : Rn * (Cp * (M / 2 * x ^ 2)) ≤ 2 * A * (Cp * (M / 2 * (|c| * p) * x)) := by
+      have h2 := mul_le_mul_of_nonneg_right h0 (mul_nonneg hq hx0)
+      nlinarith [h2]
+    calc Rn * (Cp * (M / 2 * x ^ 2)) ≤ 2 * A * (Cp * (M / 2 * (|c| * p) * x)) := h1
+      _ = δ * x := by rw [hδdef]; ring
+  have hstep : x * (1 - δ) ≤ Rn * p := by nlinarith
+  have hfinal : x ≤ Rn * p * (1 + 2 * δ) := by
+    nlinarith [mul_le_mul_of_nonneg_right hstep (show (0 : ℝ) ≤ 1 + 2 * δ by linarith),
+      mul_nonneg (mul_nonneg hx0 hδ0) (show (0 : ℝ) ≤ 1 - 2 * δ by linarith)]
+  calc x ≤ Rn * p * (1 + 2 * δ) := hfinal
+    _ ≤ A * (1 + 2 * s) * p * (1 + 2 * δ) := by
+        have := mul_le_mul_of_nonneg_right hRnle hp0
+        nlinarith
+    _ = A * (1 + ((1 + 2 * s) * (1 + 2 * δ) - 1)) * p := by ring
 
 end AtkinsonHan.Chapter12

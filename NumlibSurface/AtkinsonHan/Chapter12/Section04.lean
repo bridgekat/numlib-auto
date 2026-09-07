@@ -39,15 +39,20 @@ makes the Nyström method analysable, and which §12.5 reuses for product integr
 * `equation_12_4_39` — its asymptotic form `-(h²/12) [g'(b) - g'(a)] + O(h⁴)`, the first
   Euler–Maclaurin term, with the explicit remainder `(b - a) h⁴ ‖g⁗‖_∞ / 720`.  The book quotes
   this one from the literature; it is `Quadrature.abs_sub_trapezoidSum_add_le`.
+* `equation_12_4_44` — the same expansion for the Nyström *consistency error*, uniformly in the row
+  variable: `‖(K - K_n) u - h² d‖_∞ ≤ (b - a) h⁴ M₄ / 720`.  The hypotheses on the row integrands
+  `y ↦ k (t, y) u (y)` are carried as a family `G t` of `C⁴` functions with a bound on the fourth
+  derivatives that does not depend on `t`, which is what makes the estimate uniform.
+* `example_12_4_6` — the asymptotic error expansion `u - u_n = h² γ + O(h⁴)` of the Nyström
+  solution, with `γ` the solution of the book's auxiliary integral equation, in the two forms
+  described in its doc comment.
 
 ## Not formalized here
 
-Example 12.4.6, the `h²`-expansion of the *Nyström* error that justifies Richardson extrapolation.
-Its operator half is `SecondKind.norm_sub_le`; what is missing is the expansion `u - u_n = h² γ +
-O(h⁴)` with `γ` itself the solution of an integral equation whose data is the Euler–Maclaurin
-boundary term of `equation_12_4_39` applied to the *kernel* in the second variable, uniformly in
-the first.  That is a statement about the Nyström error kernel and not about a single integrand,
-and it is what remains.
+Nothing of §12.4 except the *unconditional* form of the last clause of Example 12.4.6.  The book's
+"by a similar argument, `r_n = O(h⁴)`" needs `‖(K - K_n) γ‖ = O(h²)`, hence the smoothness of the
+solution `γ` of the auxiliary equation, hence differentiation under the integral sign; here that
+bound is a hypothesis of the clause that needs it, and everything else is proved.
 
 ## Conventions
 
@@ -435,5 +440,252 @@ theorem equation_12_4_39 {a b : ℝ} (hab : a < b) {N : ℕ} (hN : 0 < N) {h : �
     (fun t _ => (hd1 t).hasDerivAt) (fun t _ => (hd2 t).hasDerivAt)
     (fun t _ => (hd3 t).hasDerivAt) hcont4.continuousOn (by rw [← hiter]; exact hM)
   rwa [Quadrature.trapezoidSum_eq hN, hxN] at hbound
+
+/-! ### The asymptotic error expansion of the Nyström solution -/
+
+section Expansion
+
+open IntegralOperator MeasureTheory
+
+/-- The error identity of a second kind equation, in the form the asymptotic expansion needs: if
+`(λ - K) u = f` and `(λ - K_n) u_n = f` and `(λ - K_n) γ_n = d`, then
+
+`u - u_n - r γ_n = (λ - K_n)⁻¹ [(K - K_n) u - r d]`
+
+for every scalar `r`.  At `r = 0` it is (12.4.45). -/
+private theorem sub_smul_eq_symm {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] {μ : ℝ}
+    {K Kn : V →L[ℝ] V} {en : V ≃L[ℝ] V} (hen : (en : V →L[ℝ] V) = μ • 1 - Kn)
+    {u un f d γn : V} (hu : (μ • 1 - K : V →L[ℝ] V) u = f)
+    (hun : (μ • 1 - Kn : V →L[ℝ] V) un = f) (hγn : (μ • 1 - Kn : V →L[ℝ] V) γn = d) (r : ℝ) :
+    u - un - r • γn = en.symm (K u - Kn u - r • d) := by
+  have e0 : (μ • 1 - Kn : V →L[ℝ] V) (u - un) = K u - Kn u := by
+    rw [map_sub, hun, ← hu]
+    simp only [sub_apply, smul_apply, one_apply_eq_self]
+    abel
+  have e1 : (μ • 1 - Kn : V →L[ℝ] V) (u - un - r • γn) = K u - Kn u - r • d := by
+    rw [map_sub, map_smul, hγn, e0]
+  rw [← e1, ← hen, ContinuousLinearEquiv.coe_coe, en.symm_apply_apply]
+
+/-- The auxiliary solutions of the exact and of the approximate equation differ by
+`γ_n - γ = (λ - K_n)⁻¹ (K_n - K) γ`, which is what makes `γ_n → γ`. -/
+private theorem sub_aux_eq_symm {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] {μ : ℝ}
+    {K Kn : V →L[ℝ] V} {en : V ≃L[ℝ] V} (hen : (en : V →L[ℝ] V) = μ • 1 - Kn)
+    {d γ γn : V} (hγ : (μ • 1 - K : V →L[ℝ] V) γ = d)
+    (hγn : (μ • 1 - Kn : V →L[ℝ] V) γn = d) :
+    γn - γ = en.symm (Kn γ - K γ) := by
+  have e1 : (μ • 1 - Kn : V →L[ℝ] V) (γn - γ) = Kn γ - K γ := by
+    rw [map_sub, hγn, ← hγ]
+    simp only [sub_apply, smul_apply, one_apply_eq_self]
+    abel
+  rw [← e1, ← hen, ContinuousLinearEquiv.coe_coe, en.symm_apply_apply]
+
+variable {a b : ℝ}
+
+/-- **(12.4.44), the asymptotic error formula of the Nyström method with the trapezoidal rule,
+uniformly in the row variable.**  Let `K` be the integral operator of a continuous kernel on
+`[a, b]`, let `K_n` be the Nyström operator of a rule that *is* the composite trapezoidal rule on
+the uniform mesh of `N` panels — that is what `hquad` says — and let the row integrands
+`y ↦ k (t, y) u (y)` be given by a family `G t` of `C⁴` functions on the line with a bound `M₄` on
+the fourth derivatives that is uniform in `t`.  Then
+
+`‖(K - K_n) u - h² d‖_∞ ≤ (b - a) h⁴ M₄ / 720`,
+`d (t) = -(1/12) [∂_y (k (t, y) u (y))]_{y = a}^{y = b}`,
+
+which is (12.4.44) with the `O(h⁴)` made explicit.
+
+This is `equation_12_4_39` applied at each row `t`; what makes it *uniform* is that the hypotheses
+are carried as a family, so that the constant `M₄` does not depend on `t`.  Everything else is the
+identification of `IntegralOperator.nystromCLM` with `Quadrature.trapezoidSum` on the clamped
+integrand, which `hquad` and `IntegralOperator.nystromCLM_apply_eq_functional` supply. -/
+theorem equation_12_4_44 (hab : a < b) (k : C(Set.Icc a b × Set.Icc a b, ℝ))
+    {N : ℕ} (hN : 0 < N) {h : ℝ} (hh : h = (b - a) / N)
+    {m : ℕ} {w : Fin m → ℝ} {x : Fin m → Set.Icc a b}
+    (hquad : ∀ v : C(Set.Icc a b, ℝ), Quadrature.functional w x v
+      = Quadrature.trapezoidSum (fun y => v (Set.projIcc a b hab.le y)) a h N)
+    (u : C(Set.Icc a b, ℝ)) {G : Set.Icc a b → ℝ → ℝ}
+    (hG : ∀ t, ContDiff ℝ 4 (G t))
+    (hGval : ∀ t y : Set.Icc a b, k (t, y) * u y = G t (y : ℝ))
+    {M₄ : ℝ} (hM₄ : ∀ t : Set.Icc a b, ∀ y ∈ Set.Icc a b, |iteratedDeriv 4 (G t) y| ≤ M₄)
+    {d : C(Set.Icc a b, ℝ)}
+    (hd : ∀ t : Set.Icc a b, d t = -(1 / 12) * (deriv (G t) b - deriv (G t) a)) :
+    ‖kernelCLM (iccMeasure a b) k u - nystromCLM w x k u - h ^ 2 • d‖
+      ≤ (b - a) * h ^ 4 * M₄ / 720 := by
+  have hab' : a ≤ b := hab.le
+  have hNR : (0 : ℝ) < (N : ℝ) := by exact_mod_cast hN
+  have hh0 : 0 < h := by
+    rw [hh]
+    exact div_pos (by linarith) hNR
+  have hbN : a + (N : ℝ) * h = b := by
+    rw [hh]
+    field_simp
+    ring
+  have hnode : ∀ r : ℝ, 0 ≤ r → r ≤ (N : ℝ) → a + r * h ∈ Set.Icc a b := by
+    intro r hr0 hrN
+    refine ⟨by nlinarith, ?_⟩
+    nlinarith
+  have hM0 : (0 : ℝ) ≤ M₄ :=
+    le_trans (abs_nonneg _) (hM₄ ⟨a, Set.left_mem_Icc.2 hab'⟩ a (Set.left_mem_Icc.2 hab'))
+  have hKu : ∀ t : Set.Icc a b, kernelCLM (iccMeasure a b) k u t = ∫ y in a..b, G t y := by
+    intro t
+    rw [← fredholm_eq_kernelCLM hab' k, fredholm_apply]
+    refine intervalIntegral.integral_congr fun y hy => ?_
+    rw [Set.uIcc_of_le hab'] at hy
+    rw [hGval t (Set.projIcc a b hab' y), coe_projIcc_of_mem hab' hy]
+  have hKnu : ∀ t : Set.Icc a b,
+      nystromCLM w x k u t = Quadrature.trapezoidSum (G t) a h N := by
+    intro t
+    have hcl : ∀ r : ℝ, r ∈ Set.Icc a b →
+        (rowMul k u t) (Set.projIcc a b hab' r) = G t r := by
+      intro r hr
+      rw [rowMul_apply, hGval t (Set.projIcc a b hab' r), coe_projIcc_of_mem hab' hr]
+    rw [nystromCLM_apply_eq_functional, hquad, Quadrature.trapezoidSum, Quadrature.trapezoidSum]
+    refine Finset.sum_congr rfl fun j hj => ?_
+    have hjlt : j < N := Finset.mem_range.1 hj
+    have hjN : (j : ℝ) ≤ (N : ℝ) := by exact_mod_cast hjlt.le
+    have hj1 : (j : ℝ) + 1 ≤ (N : ℝ) := by exact_mod_cast hjlt
+    rw [hcl _ (hnode _ (Nat.cast_nonneg j) hjN), hcl _ (hnode _ (by positivity) hj1)]
+  rw [ContinuousMap.norm_le _ (by positivity)]
+  intro t
+  have htrap : Quadrature.trapezoidSum (G t) a h N
+      = h * ((G t a + G t b) / 2 + ∑ j ∈ Finset.Ico 1 N, G t (a + j * h)) := by
+    rw [Quadrature.trapezoidSum_eq hN, hbN]
+  have hval : (kernelCLM (iccMeasure a b) k u - nystromCLM w x k u - h ^ 2 • d) t
+      = (∫ y in a..b, G t y)
+        - h * ((G t a + G t b) / 2 + ∑ j ∈ Finset.Ico 1 N, G t (a + j * h))
+        + h ^ 2 / 12 * (deriv (G t) b - deriv (G t) a) := by
+    rw [ContinuousMap.sub_apply, ContinuousMap.sub_apply, ContinuousMap.smul_apply, smul_eq_mul,
+      hKu t, hKnu t, htrap, hd t]
+    ring
+  rw [hval, Real.norm_eq_abs]
+  exact equation_12_4_39 hab hN hh (hG t) (hM₄ t)
+
+/-- **Example 12.4.6, the asymptotic error expansion of the Nyström solution.**  In the setting of
+`equation_12_4_44`, let `λ ≠ 0` be such that `λ - K` is invertible and let the quadrature rules
+have uniformly bounded absolute weight sums.  Then the book's auxiliary function `γ`, the solution
+of
+
+`λ γ (x) - ∫_a^b k (x, y) γ (y) dy = -(1/12) [∂_y (k (x, y) u (y))]_{y = a}^{y = b}`,
+
+exists, `‖(K - K_n) γ‖ → 0`, and for all large `n` the same equation with `K` replaced by `K_n` has
+a solution `γ_n` with
+
+* `‖u - u_n - h_n² γ_n‖_∞ ≤ c (b - a) h_n⁴ M₄ / 720` — this is (12.4.49), with `γ_n` in place of
+  `γ` and the `O(h⁴)` made explicit;
+* `‖γ_n - γ‖ ≤ c ‖(K - K_n) γ‖`, so `γ_n → γ` and `u - u_n = h_n² γ + o(h_n²)`;
+* and, whenever `‖(K - K_n) γ‖ ≤ c₂ h_n²`,
+  `‖u - u_n - h_n² γ‖ ≤ c (b - a) h_n⁴ M₄ / 720 + c c₂ h_n⁴`, which is (12.4.49) with the book's
+  `γ` itself.
+
+The last hypothesis is what the *smoothness of `γ`* buys — (12.4.43) applied to the row integrands
+`k (·, y) γ (y)` gives it as soon as those are `C²` uniformly — and it is the one place where this
+statement is conditional.  It is exactly the book's "by a similar argument, it can also be shown
+that `r_n = O(h⁴)`": proving it outright means differentiating `γ = (1/λ) (d + K γ)` twice under
+the integral sign, for which the library has no machinery.  Everything else — the expansion
+(12.4.44) uniformly in the row variable, the identity (12.4.45) and the convergence `γ_n → γ` — is
+proved here.
+
+The proof replaces the book's `ε_n = (λ - K)⁻¹ (K - K_n) u` by the exactly computable
+`h_n² γ_n = (λ - K_n)⁻¹ (h_n² d)`: then `(λ - K_n)(u - u_n - h_n² γ_n) = (K - K_n) u - h_n² d`,
+whose norm `equation_12_4_44` bounds, and `(λ - K_n)(γ_n - γ) = (K_n - K) γ`. -/
+theorem example_12_4_6 (hab : a < b) (k : C(Set.Icc a b × Set.Icc a b, ℝ))
+    {N : ℕ → ℕ} (hN : ∀ n, 0 < N n) {hs : ℕ → ℝ} (hhs : ∀ n, hs n = (b - a) / N n)
+    (hlim : Tendsto hs atTop (𝓝 0))
+    {m : ℕ → ℕ} {w : ∀ n, Fin (m n) → ℝ} {x : ∀ n, Fin (m n) → Set.Icc a b} {W : ℝ}
+    (hW : ∀ n, ∑ j, |w n j| ≤ W)
+    (hquad : ∀ n, ∀ v : C(Set.Icc a b, ℝ), Quadrature.functional (w n) (x n) v
+      = Quadrature.trapezoidSum (fun y => v (Set.projIcc a b hab.le y)) a (hs n) (N n))
+    {μ : ℝ} (hμ : μ ≠ 0) {e : C(Set.Icc a b, ℝ) ≃L[ℝ] C(Set.Icc a b, ℝ)}
+    (he : (e : C(Set.Icc a b, ℝ) →L[ℝ] C(Set.Icc a b, ℝ))
+      = μ • 1 - kernelCLM (iccMeasure a b) k)
+    (u : C(Set.Icc a b, ℝ)) {G : Set.Icc a b → ℝ → ℝ} (hG : ∀ t, ContDiff ℝ 4 (G t))
+    (hGval : ∀ t y : Set.Icc a b, k (t, y) * u y = G t (y : ℝ))
+    {M₄ : ℝ} (hM₄ : ∀ t : Set.Icc a b, ∀ y ∈ Set.Icc a b, |iteratedDeriv 4 (G t) y| ≤ M₄)
+    {d : C(Set.Icc a b, ℝ)}
+    (hd : ∀ t : Set.Icc a b, d t = -(1 / 12) * (deriv (G t) b - deriv (G t) a)) :
+    ∃ (γ : C(Set.Icc a b, ℝ)) (c : ℝ),
+      (μ • 1 - kernelCLM (iccMeasure a b) k :
+        C(Set.Icc a b, ℝ) →L[ℝ] C(Set.Icc a b, ℝ)) γ = d ∧
+      Tendsto (fun n => ‖kernelCLM (iccMeasure a b) k γ - nystromCLM (w n) (x n) k γ‖)
+        atTop (𝓝 0) ∧
+      ∀ᶠ n in atTop, ∃ γn : C(Set.Icc a b, ℝ),
+        (μ • 1 - nystromCLM (w n) (x n) k :
+          C(Set.Icc a b, ℝ) →L[ℝ] C(Set.Icc a b, ℝ)) γn = d ∧
+        ‖γn - γ‖ ≤ c * ‖kernelCLM (iccMeasure a b) k γ - nystromCLM (w n) (x n) k γ‖ ∧
+        ∀ f un : C(Set.Icc a b, ℝ),
+          (μ • 1 - kernelCLM (iccMeasure a b) k :
+            C(Set.Icc a b, ℝ) →L[ℝ] C(Set.Icc a b, ℝ)) u = f →
+          (μ • 1 - nystromCLM (w n) (x n) k :
+            C(Set.Icc a b, ℝ) →L[ℝ] C(Set.Icc a b, ℝ)) un = f →
+          ‖u - un - hs n ^ 2 • γn‖ ≤ c * ((b - a) * hs n ^ 4 * M₄ / 720) ∧
+          ∀ c₂ : ℝ,
+            ‖kernelCLM (iccMeasure a b) k γ - nystromCLM (w n) (x n) k γ‖ ≤ c₂ * hs n ^ 2 →
+            ‖u - un - hs n ^ 2 • γ‖
+              ≤ c * ((b - a) * hs n ^ 4 * M₄ / 720) + c * c₂ * hs n ^ 4 := by
+  have hab' : a ≤ b := hab.le
+  have hQ : ∀ v : C(Set.Icc a b, ℝ),
+      Tendsto (fun n => Quadrature.functional (w n) (x n) v) atTop
+        (𝓝 (integralCLM (iccMeasure a b) v)) := by
+    intro v
+    have hcont : ContinuousOn (fun y : ℝ => v (Set.projIcc a b hab' y)) (Set.Icc a b) :=
+      (continuous_apply_projIcc hab' v).continuousOn
+    have hint : integralCLM (iccMeasure a b) v = ∫ y in a..b, v (Set.projIcc a b hab' y) := by
+      rw [integralCLM_apply, ← integral_iccMeasure hab' fun y => v (Set.projIcc a b hab' y)]
+      exact integral_congr_ae (Filter.Eventually.of_forall fun y => by simp)
+    rw [hint]
+    refine (Quadrature.tendsto_trapezoidSum (g := fun y : ℝ => v (Set.projIcc a b hab' y))
+      hab' hcont hN hhs hlim).congr fun n => ?_
+    rw [hquad n v]
+  have hfam := isCollectivelyCompactFamily_nystromCLM (iccMeasure a b) k hW hQ
+  obtain ⟨c₀, hc₀⟩ := theorem_12_4_4 (ν := iccMeasure a b) hμ k hW hQ he
+  have hγ : (μ • 1 - kernelCLM (iccMeasure a b) k :
+      C(Set.Icc a b, ℝ) →L[ℝ] C(Set.Icc a b, ℝ)) (e.symm d) = d := by
+    rw [← he, ContinuousLinearEquiv.coe_coe, e.apply_symm_apply]
+  refine ⟨e.symm d, c₀, hγ, ?_, ?_⟩
+  · have h1 : Tendsto (fun n => nystromCLM (w n) (x n) k (e.symm d)) atTop
+        (𝓝 (kernelCLM (iccMeasure a b) k (e.symm d))) := hfam.tendsto (e.symm d)
+    have h2 : Tendsto (fun n => kernelCLM (iccMeasure a b) k (e.symm d)
+        - nystromCLM (w n) (x n) k (e.symm d)) atTop
+        (𝓝 (kernelCLM (iccMeasure a b) k (e.symm d)
+          - kernelCLM (iccMeasure a b) k (e.symm d))) := tendsto_const_nhds.sub h1
+    rw [sub_self] at h2
+    simpa using h2.norm
+  filter_upwards [hc₀] with n hn
+  obtain ⟨en, hencoe, hennorm, -⟩ := hn
+  have hc00 : (0 : ℝ) ≤ c₀ := le_trans (norm_nonneg _) hennorm
+  have hsym : ∀ v : C(Set.Icc a b, ℝ), ‖en.symm v‖ ≤ c₀ * ‖v‖ := fun v =>
+    (ContinuousLinearMap.le_opNorm (en.symm : C(Set.Icc a b, ℝ) →L[ℝ] C(Set.Icc a b, ℝ)) v).trans
+      (mul_le_mul_of_nonneg_right hennorm (norm_nonneg v))
+  have hγn : (μ • 1 - nystromCLM (w n) (x n) k :
+      C(Set.Icc a b, ℝ) →L[ℝ] C(Set.Icc a b, ℝ)) (en.symm d) = d := by
+    rw [← hencoe, ContinuousLinearEquiv.coe_coe, en.apply_symm_apply]
+  have hgap : ‖en.symm d - e.symm d‖
+      ≤ c₀ * ‖kernelCLM (iccMeasure a b) k (e.symm d)
+        - nystromCLM (w n) (x n) k (e.symm d)‖ := by
+    rw [sub_aux_eq_symm hencoe hγ hγn]
+    refine (hsym _).trans (mul_le_mul_of_nonneg_left (le_of_eq ?_) hc00)
+    exact norm_sub_rev _ _
+  refine ⟨en.symm d, hγn, hgap, fun f un hu hun => ?_⟩
+  have hbase : ‖u - un - hs n ^ 2 • en.symm d‖ ≤ c₀ * ((b - a) * hs n ^ 4 * M₄ / 720) := by
+    rw [sub_smul_eq_symm hencoe hu hun hγn (hs n ^ 2)]
+    refine (hsym _).trans (mul_le_mul_of_nonneg_left ?_ hc00)
+    exact equation_12_4_44 hab k (hN n) (hhs n) (hquad n) u hG hGval hM₄ hd
+  refine ⟨hbase, fun c₂ hc₂ => ?_⟩
+  have hsq : (0 : ℝ) ≤ hs n ^ 2 := sq_nonneg _
+  have hsplit : u - un - hs n ^ 2 • e.symm d
+      = (u - un - hs n ^ 2 • en.symm d) + hs n ^ 2 • (en.symm d - e.symm d) := by
+    rw [smul_sub]
+    abel
+  calc ‖u - un - hs n ^ 2 • e.symm d‖
+      ≤ ‖u - un - hs n ^ 2 • en.symm d‖ + ‖hs n ^ 2 • (en.symm d - e.symm d)‖ := by
+        rw [hsplit]
+        exact norm_add_le _ _
+    _ = ‖u - un - hs n ^ 2 • en.symm d‖ + hs n ^ 2 * ‖en.symm d - e.symm d‖ := by
+        rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg hsq]
+    _ ≤ c₀ * ((b - a) * hs n ^ 4 * M₄ / 720) + hs n ^ 2 * (c₀ * (c₂ * hs n ^ 2)) := by
+        gcongr
+        exact hgap.trans (mul_le_mul_of_nonneg_left hc₂ hc00)
+    _ = c₀ * ((b - a) * hs n ^ 4 * M₄ / 720) + c₀ * c₂ * hs n ^ 4 := by ring
+
+end Expansion
 
 end AtkinsonHan.Chapter12

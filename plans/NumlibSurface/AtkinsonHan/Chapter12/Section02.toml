@@ -5,94 +5,36 @@ id = "equation_12_2_5"
 
 [[node]]
 id = "equation_12_2_17"
-kind = "theorem"
-desc = '''
-(12.2.17)-(12.2.18), trigonometric collocation. For `V_n` the trigonometric polynomials of degree at
-most `n` on `C_p(2 pi)` and `P_n` interpolation at the `2n + 1` equidistant nodes,
-`norm (K - P_n K) -> 0` and Theorem 12.1.2 applies -- although `P_n u -> u` fails for a general
-continuous `u`, so Lemma 12.1.4 is *not* the route.
 
-This is the case the book uses to show that (12.1.21) can hold without pointwise convergence of the
-projections. The estimate is on `P_n K` directly, as a degenerate-kernel operator, so it needs a
-bound on `norm ((I - P_n) k(., y))` uniform in `y`, hence a modulus-of-continuity argument for the
-kernel together with the `O(log n)` Lebesgue constant of trigonometric interpolation.
+[[node]]
+id = "iccToLp"
 
-Obstruction: `trigInterpCLM` exists in `Numlib/Approximation/Interpolation`, but its Lebesgue
-constant does not -- `Numlib/Approximation/Interpolation.toml` carries `norm_trigInterpCLM_le`
-(Rivlin's bound, Atkinson-Han (3.7.20)) as an open node, and this entry waits on it. Do
-`equation_12_2_5` and `equation_12_2_19` first.
-'''
-deps = ["equation_12_2_5", "theorem_12_1_2", "trigInterpCLM", "norm_trigInterpCLM_le"]
+[[node]]
+id = "measureReal_iccMeasure_univ"
+
+[[node]]
+id = "norm_iccToLp_le"
+
+[[node]]
+id = "piecewiseLinearLp"
+
+[[node]]
+id = "piecewiseLinearProjCLM"
+
+[[node]]
+id = "norm_sub_piecewiseLinearProjCLM_le"
+
+[[node]]
+id = "tendsto_piecewiseLinearProjCLM"
 
 [[node]]
 id = "equation_12_2_19"
-kind = "theorem"
-desc = '''
-**(12.2.19), the piecewise linear Galerkin method of section 12.2.3.** For `P_n` the
-`L^2`-orthogonal projection onto the continuous piecewise linear functions of a partition of mesh
-`h_n -> 0`, `norm (K - P_n K) -> 0`, the Galerkin equations are uniquely solvable for all large `n`,
-and for `u` in `C^2[a, b]`
-
-`norm (u - u_n)_{L^2} <= |lambda| M norm (u - P_n u)_{L^2}
-   <= |lambda| M sqrt(b - a) norm (u - I_n u)_inf <= |lambda| M sqrt(b - a) h^2 norm (u'')_inf / 8`.
-
-**The previous plan and the chapter audit both mis-numbered this node as (12.2.24) and stated its
-bound as `c h^2 norm (u'')_{L^2}`.** Both are wrong, and the second wrong in a way that matters:
-(12.2.24) is in section 12.2.4 and is the *Fourier* truncation error `norm (u - P_n u)_{L^2} <=
-(c/n^r) norm u_{H^r}`, while section 12.2.3 ends at (12.2.21) and its error bound is (12.2.19),
-which the book derives through the *uniform* norm of the interpolation error, exactly as displayed
-above. So no `L^2` interpolation estimate is needed here, and
-`norm_sub_piecewiseLinearInterpCLM_le` is the whole of the approximation-theoretic input.
-
-Obstruction: the library still has no bridge from `C(Icc a b, R)` to `L^2(a, b)`. What is needed is
-`MeasureTheory.Measure.Subtype.measureSpace` made a local instance on `Icc a b` (Mathlib declares
-it as a *local* instance only), the finiteness and weak regularity of that measure, the submodule
-of `Lp R 2 volume` spanned by the images of the piecewise linear functions under
-`ContinuousMap.toLp`, its `HasOrthogonalProjection` instance (finite-dimensional, so automatic),
-the bound `norm (toLp f) <= sqrt (b - a) norm f_inf`, and the density of the continuous functions
-(`ContinuousMap.toLp_denseRange`) composed with `tendsto_piecewiseLinearInterpCLM`.
-`Numlib/Analysis/Fourier/Truncation` is the same construction carried out on `AddCircle T`, where
-the measure-theoretic instances are all supplied by Mathlib, and is worth copying.
-'''
-deps = ["theorem_12_1_2", "lemma_12_1_4", "tendsto_piecewiseLinearInterpCLM",
-  "isBestApprox_starProjection", "norm_sub_piecewiseLinearInterpCLM_le"]
 
 [[node]]
 id = "equation_12_2_24"
-kind = "theorem"
-desc = '''
-**(12.2.24)-(12.2.25), the trigonometric Galerkin method of section 12.2.4 in `L^2(0, 2 pi)`.** With
-`P_n` the Fourier truncation, `norm (u - P_n u)_{L^2} <= (c/n^r) norm u_{H^r}` for `u` in
-`H^r(0, 2 pi)`, and hence `norm (u - u_n) <= c |lambda| M n^{-r} norm u_{H^r}`.
 
-The *convergence* half is free and is the same three lines as
-`AtkinsonHan.Chapter13.equation_13_3_14`: `trigProjCLM` of `Numlib/Analysis/Fourier/Truncation` is
-idempotent of norm one and converges pointwise, so `lemma_12_1_4` and `theorem_12_1_2` apply
-verbatim on `Lp R 2 haarAddCircle`.
-
-Obstruction: only the *rate*. It needs the periodic Sobolev norm on the same space, that is a
-bridge between `Numlib/Analysis/Sobolev/Periodic` (which is a weighted `l^2` over the Fourier
-index) and `Lp R 2 haarAddCircle` through `trigBasis.repr`. With that, (12.2.24) is one line of
-weighted-tail estimation.
-'''
-deps = ["theorem_12_1_2", "lemma_12_1_4", "trigProjCLM", "tendsto_trigProjCLM"]
+[[node]]
+id = "equation_12_2_25"
 
 [[node]]
 id = "equation_12_2_27"
-kind = "theorem"
-desc = '''
-**(12.2.27) and the uniform convergence paragraph of section 12.2.4.** With `P_n` the Fourier
-truncation regarded on the *continuous* periodic functions `C_p(2 pi)`, `norm P_n = O(log n)`, so
-Lemma 12.1.4 fails; but for a kernel Holder continuous in its first variable uniformly in the
-second, `norm (K - P_n K) <= c log n / n^alpha` still tends to zero, and Theorem 12.1.2 gives a
-complete convergence analysis in the uniform norm.
-
-Renamed from `equation_12_2_29`, which is not an equation of the book: section 12.2 ends at
-(12.2.27), and the bound on `norm (K - P_n K)` in that paragraph is displayed without a number.
-
-Lowest priority of the chapter. Its content is the `O(log n)` Lebesgue constant of the Fourier
-projection, Atkinson-Han (3.7.9)-(3.7.10), which belongs in `Numlib/Analysis/Fourier/Dirichlet`
-and is shared with section 3.7; formalize it there and this entry becomes the same three lines as
-`equation_12_2_17`.
-'''
-deps = ["equation_12_2_17"]
