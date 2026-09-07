@@ -101,3 +101,30 @@ id = "theorem_2_8_15_enumeration"
 
 [[node]]
 id = "theorem_2_8_14_hasEigenvalue_adjoint"
+
+[[node]]
+id = "definition_2_8_3"
+kind = "definition"
+desc = '''Definition 2.8.3: a linear operator `K : V → W` is of finite rank when its range `R(K)`
+is finite dimensional. Not formalized: this is Mathlib's `FiniteDimensional 𝕜 (LinearMap.range K)`,
+which is exactly the hypothesis `proposition_2_8_4` takes; the surface uses it directly rather than
+naming it again.'''
+
+[[node]]
+id = "definition_2_8_11"
+kind = "definition"
+desc = '''Definition 2.8.11: `λ` is an eigenvalue of `K : V → V` with eigenvector `u ≠ 0` when
+`K u = λ u`. Not formalized: this is Mathlib's `Module.End.HasEigenvalue` and
+`Module.End.HasEigenvector`, in which `theorem_2_8_10`, `theorem_2_8_12_1`, `theorem_2_8_12_2` and
+the spectral theorem of this section are already stated.'''
+
+[[node]]
+id = "example_2_8_16"
+kind = "theorem"
+desc = '''Example 2.8.16: on the unit sphere `D ⊆ ℝ³`, the single-layer operator
+`K v(x) = ∫_D v(y) / ‖x - y‖ dS_y` (2.8.33) is compact on `L²(D)`; its eigenfunctions are the
+spherical harmonics, with `K φ_k = 4π/(2k + 1) φ_k` (2.8.34) and `dim N(μ_k - K) = 2k + 1` for
+`μ_k = 4π/(2k + 1)`, and they form a basis of `L²(D)` in agreement with Theorem 2.8.15. Not
+formalized: the book states it without proof, citing Mikhlin for the compactness, and it needs both
+the surface measure of the sphere as an integration theory — Mathlib has `Measure.toSphere` but no
+integration formula in this shape — and spherical harmonics, of which Mathlib has none.'''

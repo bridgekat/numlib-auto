@@ -2,6 +2,7 @@ namespace = "AtkinsonHan.Chapter02"
 
 [[node]]
 id = "IsSublinear"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 2.5.4"
 
 [[node]]
 id = "corollary_2_5_6"
@@ -17,3 +18,35 @@ id = "theorem_2_5_5"
 
 [[node]]
 id = "theorem_2_5_8"
+
+[[node]]
+id = "example_2_5_1"
+kind = "theorem"
+desc = '''Example 2.5.1: for a bounded open `Ω ⊆ ℝ^d` and `1 ≤ p < ∞`, every `ℓ ∈ (Lᵖ(Ω))'` is
+`ℓ(v) = ∫_Ω u v` (2.5.1) for a unique `u ∈ L^{p'}(Ω)` with `1/p + 1/p' = 1`, and every such `u`
+gives a bounded functional, so `(Lᵖ(Ω))' = L^{p'}(Ω)`; the dual of `L^∞(Ω)` is strictly larger
+than `L¹(Ω)`. Not formalized: the book states it without proof as "a well-known result", and
+Mathlib has no `Lᵖ`–`L^{p'}` duality isometry — nothing under `MeasureTheory/Function/LpSpace/`
+provides one — so a proof would be a Radon–Nikodym development of its own. §2.5's module doc
+records the exclusion.'''
+
+[[node]]
+id = "example_2_5_3"
+kind = "theorem"
+desc = '''Example 2.5.3: on the subspace `V₀ ⊆ L^∞(0, 1)` of cosets of continuous functions, point
+evaluation `ℓ_c([v]) = v(c)` (2.5.3) is well defined with `‖ℓ_c‖ = 1`, so Theorem 2.5.2 extends it
+to `ℓ̂_c ∈ (L^∞(0, 1))'` of norm `1` — a point evaluation for merely measurable functions, which
+keeps the bounds `m ≤ ℓ̂_c([v]) ≤ M` from a neighbourhood of `c` and agrees with `v(c)` at a point
+of continuity. Not formalized: its point is that `ℓ̂_c` lies in `(L^∞)'` outside `L¹`, which needs
+the `Lᵖ` duality of Example 2.5.1 to have content, as §2.5's module doc records; the extension
+step itself is `theorem_2_5_2`.'''
+
+[[node]]
+id = "example_2_5_9"
+kind = "theorem"
+desc = '''Example 2.5.9: the Riesz representation theorem identifies `(L²(Ω))'` with `L²(Ω)`, and,
+less obviously, gives for `ℓ(v) = v(c)` on `H¹(a, b)` a representer `u` solving (2.5.8),
+`∫_a^b (u' v' + u v) = v(c)` for all `v ∈ H¹(a, b)` — the generalized solution of
+`-u'' + u = δ(x - c)`. Not formalized: the `L²` half is `theorem_2_5_8` read on `L²(Ω)`, and the
+`H¹(a, b)` half needs Sobolev spaces on an interval, which `plans/backbone.md` puts out of scope,
+as §2.5's module doc records.'''

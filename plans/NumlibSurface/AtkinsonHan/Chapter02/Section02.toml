@@ -35,3 +35,19 @@ id = "theorem_2_2_10"
 
 [[node]]
 id = "equation_2_2_8"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 2.2.9"
+
+[[node]]
+id = "definition_2_2_1"
+kind = "definition"
+desc = '''Definition 2.2.1: an operator `L : V → W` between linear spaces is linear when
+`L (α₁ v₁ + α₂ v₂) = α₁ L v₁ + α₂ L v₂`, equivalently additive and homogeneous. Not formalized:
+this is Mathlib's `LinearMap`, and the book's `𝓛(V, W)` of bounded linear operators is
+`V →L[𝕜] W`; §2.2's module doc records the correspondence rather than restating it.'''
+
+[[node]]
+id = "example_2_2_7"
+kind = "theorem"
+desc = '''Example 2.2.7: the identity operator on a normed space belongs to `𝓛(V)` and has
+operator norm `‖I‖ = 1`. Not formalized: this is Mathlib's `ContinuousLinearMap.norm_id`, as
+§2.2's module doc records.'''

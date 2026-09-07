@@ -5,9 +5,11 @@ id = "IsDirectSum"
 
 [[node]]
 id = "IsOrthogonalProjectionOperator"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 3.6.3, (3.6.2)"
 
 [[node]]
 id = "IsProjectionOperator"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 3.6.3"
 
 [[node]]
 id = "example_3_6_7"
@@ -50,3 +52,11 @@ id = "exercise_3_6_1"
 
 [[node]]
 id = "proposition_3_6_9_c'"
+
+[[node]]
+id = "example_3_6_4"
+kind = "theorem"
+desc = '''Example 3.6.4: Figure 3.4's orthogonal decomposition of a vector of `ℝ²`, which defines
+the orthogonal projection `P` onto a line `V₁`; when `V₁` is the `x₁`-axis, `P v = (v₁, 0)`. Not
+formalized: it is an illustration of Definition 3.6.3 attached to a figure, with no consumer later
+in the book, as §3.6's module doc records.'''

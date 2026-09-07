@@ -14,3 +14,32 @@ id = "exercise_2_7_3"
 
 [[node]]
 id = "exercise_2_7_4"
+
+[[node]]
+id = "definition_2_7_4"
+kind = "definition"
+desc = '''Definition 2.7.4: a normed space `V` is reflexive when the canonical embedding into its
+double dual is onto, `(V')' = V`. Not formalized: Mathlib has no reflexivity class for normed
+spaces, and nothing in the book consumes the definition except Theorem 2.7.5, whose right-hand
+side the surface takes as a hypothesis instead; §2.7's module doc records this. The node
+`exercise_2_7_4` in this group is Exercise 2.7.4, the Radon–Riesz property in a uniformly convex
+space, and is a different result.'''
+
+[[node]]
+id = "theorem_2_7_5"
+kind = "theorem"
+desc = '''Theorem 2.7.5: a Banach space is reflexive if and only if every bounded sequence in it
+has a subsequence converging weakly to an element of the space. Not formalized: this is the
+Eberlein–Šmulian theorem together with Kakutani's characterization of reflexivity, and Mathlib has
+neither; where the book applies it (Theorems 3.3.8, 3.3.10, 3.3.12, 3.3.14) the surface assumes the
+right-hand property directly, as Mathlib's `WeaklySeqCompactSpace`. §2.7's module doc records
+this.'''
+
+[[node]]
+id = "definition_2_7_6"
+kind = "definition"
+desc = '''Definition 2.7.6: a sequence of operators `Lₙ : V → W` converges *strongly* to `L` when
+`‖L - Lₙ‖ → 0`, and *weak-∗* (or pointwise) to `L` when `Lₙ v → L v` for every `v ∈ V`. Not
+formalized: these are `Filter.Tendsto` for the operator norm on `V →L[𝕜] W` and pointwise
+`Filter.Tendsto` respectively, both Mathlib notions under different names; §2.4's Banach–Steinhaus
+material and Chapters 12–13 use them in that form.'''

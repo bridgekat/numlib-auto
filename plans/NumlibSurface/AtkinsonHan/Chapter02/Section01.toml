@@ -2,6 +2,50 @@ namespace = "AtkinsonHan.Chapter02"
 
 [[node]]
 id = "IsBoundedOperator"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 2.1.6"
 
 [[node]]
 id = "example_2_1_7"
+
+[[node]]
+id = "definition_2_1_1"
+kind = "definition"
+desc = '''Definition 2.1.1: an operator `T : V → W` is injective when `v₁ ≠ v₂` implies
+`T v₁ ≠ T v₂`, surjective when its range `R(T)` is all of `W`, and a bijection when it is both, in
+which case `T⁻¹ : W → V` is defined by `v = T⁻¹ w ⟺ w = T v`. Not formalized: these are Mathlib's
+`Function.Injective`, `Function.Surjective`, `Function.Bijective` and `Equiv`, with the domain,
+range and null set of the surrounding discussion being `Set.univ`, `Set.range` and `T ⁻¹' {0}`
+(`LinearMap.range` and `LinearMap.ker` for a linear operator); §2.1's module doc records the
+correspondence rather than restating it.'''
+
+[[node]]
+id = "example_2_1_2"
+kind = "theorem"
+desc = '''Example 2.1.2: the identity operator `I : V → V` on a linear space is a bijection, and
+its inverse is again the identity. Not formalized: it is an illustration of Definition 2.1.1 with
+no consumer later in the book, and it is Mathlib's `Function.bijective_id`; §2.1's module doc
+records the exclusion.'''
+
+[[node]]
+id = "example_2_1_3"
+kind = "theorem"
+desc = '''Example 2.1.3: for `L v = A v` with `A ∈ ℝ^{m×n}` (or `ℂ^{m×n}`), `L` is injective if and
+only if `rank A = n`, and surjective if and only if `rank A = m`. Not formalized: it is an
+illustration of Definition 2.1.1 quoting standard linear algebra — the book gives no proof and
+nothing later in the book uses it; §2.1's module doc records the exclusion.'''
+
+[[node]]
+id = "example_2_1_4"
+kind = "theorem"
+desc = '''Example 2.1.4: the differentiation operator `d/dx : C¹[0, 1] ⊆ C[0, 1] → C[0, 1]` is
+surjective and not injective, its null set being the constant functions. Not formalized: the
+operator is read on the domain `C¹[0, 1]`, which Mathlib does not have as a space, and §2.1's
+module doc records the exclusion; the book itself only says the surjectivity "can be verified".'''
+
+[[node]]
+id = "example_2_1_5"
+kind = "theorem"
+desc = '''Example 2.1.5: `D : v ↦ (v', v(0))` is a bijection from `C¹[0, 1]` onto
+`C[0, 1] × ℝ`, repairing the non-injectivity of `d/dx` of Example 2.1.4. Not formalized: like
+Example 2.1.4 it is read on `C¹[0, 1]`, which Mathlib does not have as a space, and §2.1's module
+doc records the exclusion.'''

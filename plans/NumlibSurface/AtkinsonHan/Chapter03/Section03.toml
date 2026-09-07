@@ -74,3 +74,55 @@ id = "theorem_3_3_14"
 
 [[node]]
 id = "weakSeqTendsto_iff_root"
+
+[[node]]
+id = "WeakSeqTendsto"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 2.7.1"
+
+[[node]]
+id = "AreSeparated"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 3.3.6"
+
+[[node]]
+id = "AreStrictlySeparated"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 3.3.6"
+
+[[node]]
+id = "definition_3_3_1"
+kind = "definition"
+desc = '''Definition 3.3.1: `K ⊆ V` is convex when `λ u + (1 - λ) v ∈ K` for all `u, v ∈ K` and
+`λ ∈ (0, 1)`, whence by induction every convex combination of elements of `K` lies in `K` (3.3.1).
+Not formalized: this is Mathlib's `Convex ℝ K` — the book's open interval and Mathlib's closed one
+agree, by `convex_iff_openSegment_subset` — and (3.3.1) is `Convex.sum_mem`, as §3.3's module doc
+records.'''
+
+[[node]]
+id = "definition_3_3_2"
+kind = "definition"
+desc = '''Definition 3.3.2: `f : K → ℝ` on a convex `K` is convex when
+`f (λ u + (1 - λ) v) ≤ λ f u + (1 - λ) f v` for `λ ∈ [0, 1]`, and strictly convex when the
+inequality is strict for `u ≠ v` and `λ ∈ (0, 1)`. Not formalized: these are Mathlib's
+`ConvexOn ℝ K f` and `StrictConvexOn ℝ K f`, in which `theorem_3_3_12`, `theorem_3_3_13_unique` and
+`theorem_3_3_11_weakSeqLsc` are stated, as §3.3's module doc records.'''
+
+[[node]]
+id = "definition_3_3_3"
+kind = "definition"
+desc = '''Definition 3.3.3: `K ⊆ V` is closed when `vₙ ∈ K` and `vₙ → v` imply `v ∈ K`, and weakly
+closed when `vₙ ∈ K` and `vₙ ⇀ v` imply `v ∈ K`; a weakly closed set is closed, and the converse
+fails in infinite dimensions. Not formalized: the sequential and topological readings of "closed"
+agree in a metric space (Mathlib's `isSeqClosed_iff_isClosed`), so the first half is `IsClosed`;
+the second is the backbone's `IsWeakSeqClosed` (`Numlib/Variational/WeakMinimization`), which
+`theorem_3_3_8`, `theorem_3_3_10` and `theorem_3_3_11_isWeakSeqClosed` take directly. The relation
+`⇀` itself is the surface's `WeakSeqTendsto`, the book's Definition 2.7.1.'''
+
+[[node]]
+id = "definition_3_3_4"
+kind = "definition"
+desc = '''Definition 3.3.4: `f : K → ℝ` is (sequentially) lower semicontinuous when `vₙ ∈ K` and
+`vₙ → v ∈ K` imply `f v ≤ liminf f vₙ`, and weakly sequentially lower semicontinuous when the same
+holds for `vₙ ⇀ v ∈ K`; w.l.s.c. implies l.s.c. Not formalized: the first is Mathlib's
+`LowerSemicontinuousOn`, sequential and topological lower semicontinuity agreeing in a metric
+space, and the second is the backbone's `WeakSeqLowerSemicontinuousOn`
+(`Numlib/Variational/WeakMinimization`), which `theorem_3_3_8`, `theorem_3_3_10` and
+`theorem_3_3_11_weakSeqLsc` take directly; §3.3's module doc records the correspondence.'''
