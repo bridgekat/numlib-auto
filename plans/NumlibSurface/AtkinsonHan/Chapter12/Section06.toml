@@ -14,3 +14,14 @@ id = "equation_12_6_27"
 
 [[node]]
 id = "theorem_12_6_1"
+
+[[node]]
+id = "example_12_6_2"
+kind = "theorem"
+desc = '''
+Example 12.6.2 (§12.6.3): the two-grid iteration of §12.6.1 applied to
+`λ u(x) - ∫_0^1 k_γ(x + y) u(y) dy = y(x)` with the Poisson kernel `k_γ`, whose eigenvalues and
+eigenfunctions are known, reporting the measured iteration counts and error reduction.
+Not formalized: it is an illustration — a numerical run of the iteration on one kernel, with no
+claim beyond the tables.
+'''

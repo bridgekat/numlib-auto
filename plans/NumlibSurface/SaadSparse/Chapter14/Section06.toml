@@ -8,9 +8,49 @@ id = "fiedlerVector"
 
 [[node]]
 id = "IsMap"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Definition 14.13"
 
 [[node]]
 id = "IsProperMap"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Definition 14.13"
 
 [[node]]
 id = "iSup_subdomainSpace_eq_top"
+
+[[node]]
+id = "definition_14_14"
+kind = "definition"
+desc = '''
+Definition 14.14 (§14.6.2): a `k`-ply neighborhood system in `ℝ^d` is a set of `n` closed disks
+`D_1, …, D_n` such that no point of `ℝ^d` is strictly interior to more than `k` of them.
+Not formalized: it exists only to state the geometric separator theorem of Miller, Teng, Thurston
+and Vavasis, which Saad quotes without proof and which needs stereographic projection into `S^d`,
+the existence of a centerpoint of a finite set and a random-great-circle argument, none of which
+Mathlib has; §14.6's module doc records that grouping.
+'''
+
+[[node]]
+id = "definition_14_15"
+kind = "definition"
+desc = '''
+Definition 14.15 (§14.6.2): for `α ≥ 1` and a `k`-ply neighborhood system `D_1, …, D_n`, the
+`(α, k)`-overlap graph has vertex set `{1, …, n}` and an edge `(i, j)` exactly when
+`D_i ∩ α·D_j ≠ ∅` and `D_j ∩ α·D_i ≠ ∅`. Not formalized: like the neighborhood system it defines
+over, it exists only to state the geometric separator theorem Saad quotes without proof, whose
+proof needs machinery Mathlib has not got; §14.6's module doc records that grouping.
+'''
+
+[[node]]
+id = "theorem_14_16"
+kind = "theorem"
+desc = '''
+Saad Theorem 14.16 (§14.6.2), the geometric separator theorem of Miller, Teng, Thurston and
+Vavasis: the vertices of an `n`-vertex `(α, k)`-overlap graph in `d` dimensions split into `A`,
+`B`, `C` with no edge between `A` and `B`, with `|A|, |B| ≤ n (d + 1) / (d + 2)`, and with
+`|C| = O(α k^{1/d} n^{(d-1)/d})`. (The node `equation_14_16` of this chapter is Saad's display
+(14.16), a different object with a colliding number.) Not formalized: Saad quotes it without
+proof, and its proof needs stereographic projection into `S^d`, the existence of a centerpoint of
+a finite set and a random-great-circle argument, none of which Mathlib has; `definition_14_14` and
+`definition_14_15`, which exist only to state it, are excluded with it, and §14.6's module doc
+records the grouping.
+'''

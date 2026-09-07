@@ -2,6 +2,7 @@ namespace = "SaadSparse.Chapter03"
 
 [[node]]
 id = "proposition_3_2"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Definition 3.1"
 
 [[node]]
 id = "adjGraph_submatrix"
@@ -29,3 +30,43 @@ id = "isPatternIrreducible_iff"
 
 [[node]]
 id = "frobenius_normal_form"
+
+[[node]]
+id = "example_3_5"
+kind = "theorem"
+desc = '''Example 3.5: the independent set algorithms of §3.3.3 run on the finite element mesh of
+Figure 2.10, where every strategy returns the nodes of the earlier levels of refinement, which the
+book conjectures may be a maximum independent set. Not formalized: it is an illustration — a
+reported run on one figure's mesh, with the optimality left as a "may well be".'''
+
+[[node]]
+id = "example_3_6"
+kind = "theorem"
+desc = '''Example 3.6: the greedy multicoloring algorithm (Algorithm 3.6) run on the finite element
+mesh of Figure 2.10, which it colours with four colours, shown in Figure 3.10. Not formalized: it
+is an illustration; the general bounds it illustrates are `greedy_coloring_bounds` and
+`exists_multicoloring`.'''
+
+[[node]]
+id = "example_3_4"
+kind = "theorem"
+desc = '''Example 3.4 (§3.3.3): the starting node matters for the Cuthill-McKee and reverse
+Cuthill-McKee orderings — on the mesh of Figure 2.10 the earlier illustration started at node 3,
+and starting at node 1 instead gives the matrix of Figure 3.8, better suited to banded or skyline
+solvers. Not formalized: it is an illustration — two reorderings of one mesh compared in figures,
+and the bandwidth and profile it compares them by are quantities this edition never defines and
+proves no bound about, as the chapter group's desc records.'''
+
+[[node]]
+id = "example_3_3"
+kind = "theorem"
+desc = '''
+Example 3.3 (§3.3.2): the "arrow" (or star) matrix of Figure 3.4 and its adjacency graph,
+reordered by the reversing permutation `9, 8, …, 1` into the matrix of Figure 3.5; Gaussian
+elimination on the reordered matrix creates no fill-in, whereas on the original it fills `L` and
+`U` densely after the first step. (The node `equation_3_3` of this group is Saad's display (3.3),
+a different object with a colliding number.) Not formalized: the claim is about *structural*
+fill-in, a notion this chapter never defines, and the gap is upstream of it — there is no LU
+factorization anywhere in `Numlib`, so there is nothing to state the pattern of. The chapter
+group's desc records the same, together with what a symbolic-pattern model would cost.
+'''

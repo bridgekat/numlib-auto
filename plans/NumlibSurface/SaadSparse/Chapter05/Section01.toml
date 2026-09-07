@@ -41,3 +41,13 @@ id = "theorem_5_7"
 
 [[node]]
 id = "theorem_5_7_matrix"
+
+[[node]]
+id = "example_5_2"
+kind = "theorem"
+desc = '''Example 5.2 (§5.1.2): with `A = fromBlocks 0 1 1 1` of order `2m` and
+`V = W = [e_1, …, e_m]`, the matrix `A` is nonsingular while `Wᵀ A V` is the zero block and so is
+singular — the counterexample that makes the hypotheses of Proposition 5.1 necessary. This is real
+work, not an exclusion: it is a two-line instance of `isUnit_transpose_mul_mul_iff`, the general
+characterization stated just after it, at the subspace `K = L = span {e_1, …, e_m}`, where `e_1` is
+a nonzero vector of `K` with `A e_1 = e_{m+1} ⟂ L`.'''

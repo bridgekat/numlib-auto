@@ -122,3 +122,21 @@ id = "example_13_6"
 
 [[node]]
 id = "example_13_6_le"
+
+[[node]]
+id = "example_13_4"
+kind = "theorem"
+desc = '''Example 13.4 (§13.4.3): measured V-cycle convergence factors for the 2-D model Poisson
+problem (13.47) on a 33 x 33 grid, `N = 961`, with weighted Jacobi, Gauss-Seidel and red-black
+Gauss-Seidel smoothers and nine choices of the pre- and post-smoothing counts, reported as Table
+13.1. Not formalized: it is an illustration — measured convergence factors, with the comparison
+between smoothers drawn from the table and not proved.'''
+
+[[node]]
+id = "example_13_5"
+kind = "theorem"
+desc = '''Example 13.5 (§13.4.4): the full multigrid cycle on the same model Poisson problem, run at
+`n_x = n_y = 9, 17, 33, 65, 129`, with the 2-norm of the achieved error plotted against the
+discretization error for three FMG schemes in Figure 13.8. Not formalized: it is an illustration —
+measured error norms in a figure; the bound the figure illustrates is the discretization-error
+assumption of the FMG analysis, which `example_13_6_le` states.'''

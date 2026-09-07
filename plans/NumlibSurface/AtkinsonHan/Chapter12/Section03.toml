@@ -35,3 +35,18 @@ id = "norm_kernelCLM_sub_quadInterpCLM_le"
 
 [[node]]
 id = "theorem_12_3_3"
+
+[[node]]
+id = "example_12_3_2"
+kind = "theorem"
+desc = '''
+Example 12.3.2 (§12.3.1): the iterated Galerkin method for
+`λ u(x) - ∫_0^1 e^{xy} u(y) dy = f(x)` with `λ = 50` and `u = e^x`, over the *discontinuous*
+piecewise linear functions on a uniform mesh of width `h = 1/n`, where
+`‖(I - P_n) K*‖ = O(h²)` and `‖u - P_n u‖ = O(h²)` give `‖u - u_n‖ = O(h²)` (12.3.19) and the
+superconvergent `‖u - û_n‖ = O(h⁴)` (12.3.20), confirmed by Table 12.2.
+
+Not formalized: it is an illustration -- a worked instance of the section's own bounds on one
+kernel with a table of measured errors. Its general content, the iterated projection solution and
+its error identity, is `lemma_12_3_1` and the rest of §12.3.
+'''

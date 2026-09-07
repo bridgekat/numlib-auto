@@ -17,3 +17,13 @@ id = "equation_10_5"
 
 [[node]]
 id = "equation_10_6"
+
+[[node]]
+id = "example_10_1"
+kind = "theorem"
+desc = '''
+Example 10.1 (§10.2): Table 10.1, the result of running GMRES with SGS preconditioning (SSOR at
+`ω = 1`) on the five test problems of §3.7. (The node `theorem_10_1` of this chapter is Saad's
+Theorem 10.1, a different result with a colliding number.) Not formalized: it is an illustration —
+measured iteration counts, flop counts, residuals and errors, with no claim to state.
+'''

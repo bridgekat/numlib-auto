@@ -23,6 +23,7 @@ id = "restriction2D"
 
 [[node]]
 id = "equation_13_31"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Example 13.1"
 
 [[node]]
 id = "equation_13_38"

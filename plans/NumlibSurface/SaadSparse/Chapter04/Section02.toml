@@ -95,6 +95,7 @@ id = "example_4_1_opt"
 
 [[node]]
 id = "IsRegularSplitting"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Definition 4.3"
 
 [[node]]
 id = "isRegularSplitting_iff"
@@ -143,6 +144,7 @@ id = "theorem_4_10_tendsto"
 
 [[node]]
 id = "HasPropertyA"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Definition 4.11"
 
 [[node]]
 id = "hasPropertyA_iff_toBlocks_isDiag"
@@ -152,6 +154,7 @@ id = "hasPropertyA_reindex"
 
 [[node]]
 id = "IsConsistentlyOrdered"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Definition 4.13"
 
 [[node]]
 id = "IsTMatrix"
@@ -188,3 +191,17 @@ id = "theorem_4_1"
 
 [[node]]
 id = "corollary_4_2_lp"
+
+[[node]]
+id = "definition_4_5"
+kind = "definition"
+desc = '''Definition 4.5: `A` is (weakly) diagonally dominant when `|a_jj| ≥ ∑_{i ≠ j} |a_ij|` for
+every `j`, strictly diagonally dominant when the inequality is strict, and irreducibly diagonally
+dominant when `A` is irreducible and weakly dominant — a clause the book states loosely, since both
+Corollary 4.8 and Theorem 4.9 also need strict dominance in at least one row. Not formalized: these
+are the backbone's `Matrix.IsStrictDiagDominant` and `Matrix.IsStrictColDiagDominant`, and
+`Matrix.IsIrreduciblyDiagDominant` with `Matrix.IsIrreduciblyColDiagDominant`, of
+`Numlib/LinearSolve/Stationary/DiagDominant.lean`, whose `exists_strict` field carries the missing
+clause; weak dominance alone has no named predicate and is written out where it is used. §4.2's
+module doc records the correspondence, and the row/column discrepancy in the printed definition,
+rather than restating them.'''

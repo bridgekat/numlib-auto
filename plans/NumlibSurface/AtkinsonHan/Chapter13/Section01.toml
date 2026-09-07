@@ -52,3 +52,37 @@ id = "kelvin"
 
 [[node]]
 id = "kelvin_harmonic"
+
+[[node]]
+id = "theorem_13_1_1"
+kind = "theorem"
+source = "Atkinson-Han, Theoretical Numerical Analysis, Theorem 13.1.1; the OCR's Theorem 13.1.31 is a garbled reference to it"
+desc = '''
+Theorem 13.1.1 (§13.1): for `f` continuous on a boundary `S` that admits a twice continuously
+differentiable parametrization, the interior Dirichlet problem has a unique solution, and the
+interior Neumann problem has a solution, unique up to an additive constant, exactly when
+`∫_S f dS = 0`.
+
+Not formalized: it is the classical existence theory for the planar Laplace equation, which the
+book quotes from its own Chapter 8 rather than proving here. Either route is out of reach: the
+variational one needs `H^1_0` of a planar region and a trace theorem, and the potential-theoretic
+one is the layer-potential machinery the rest of §13.1 is skipped for -- Green's identities on a
+piecewise smooth region and the jump relations, neither of which Mathlib supports, since it has no
+surface measure and no normal field on a curve. The chapter group's desc records the same.
+'''
+
+[[node]]
+id = "theorem_13_1_2"
+kind = "theorem"
+desc = '''
+Theorem 13.1.2 (§13.1), the divergence theorem: for `F` on the closure of a planar region with
+both components in `C^1`, `∫_Ω ∇ · F dΩ = -∫_Γ F · n dΓ`, with `n` the *inner* normal, the sign
+convention the chapter keeps throughout.
+
+Not formalized: Mathlib's divergence theorem
+(`MeasureTheory.integral_divergence_of_hasFDerivAt_off_countable`) is for boxes. A piecewise smooth
+multiply connected planar region needs the arclength measure on the boundary curve and a unit
+normal field along it, and Mathlib has neither. This is the result Green's identities
+(13.1.5)-(13.1.6) and the representation formula (13.1.23) are derived from, so it carries the
+whole skipped half of §13.1 with it, exactly as the chapter group's desc records.
+'''

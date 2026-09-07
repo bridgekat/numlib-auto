@@ -91,3 +91,13 @@ id = "norm_sub_gradedSym_le"
 
 [[node]]
 id = "theorem_12_5_6"
+
+[[node]]
+id = "example_12_5_3"
+kind = "theorem"
+desc = '''Example 12.5.3 (§12.5.2): product integration for
+`u(x) - ∫_0^π u(y) log |cos x - cos y| dy = 1`, showing that the obvious splitting of the kernel
+into `|x - y|^{1/2} log |cos x - cos y|` times `|x - y|^{-1/2}` gives a continuous but
+nondifferentiable `l`, so a better splitting is needed, and reporting the errors of the product
+trapezoidal and product Simpson rules. Not formalized: it is an illustration — a worked kernel
+splitting and a table of measured errors; the rates it displays are the section's own theorems.'''

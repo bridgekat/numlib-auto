@@ -26,3 +26,14 @@ id = "exercise_12_1_3"
 
 [[node]]
 id = "exercise_12_1_4"
+
+[[node]]
+id = "example_12_1_1"
+kind = "theorem"
+desc = '''Example 12.1.1 (§12.1.1): takes `V_n = span {1, x, …, x^n}` and `P_n` the Lagrange
+interpolatory projection (12.1.10) at `n + 1` nodes, notes that `P_n g = 0` exactly when `g`
+vanishes at the nodes (12.1.11), and so rewrites the collocation condition (12.1.5) as
+`P_n (λ - K) u_n = P_n f` (12.1.12). Not formalized: it is an illustration — the projection and its
+properties are `AtkinsonHan.Chapter03.example_3_6_5`, and (12.1.12) is `IsProjectionSolution` read
+at that `P_n`; §12.1's module doc records that the collocation and Galerkin subsections are left
+out because nothing later in the chapter uses them.'''

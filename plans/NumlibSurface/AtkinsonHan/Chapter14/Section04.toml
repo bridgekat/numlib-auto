@@ -17,3 +17,19 @@ id = "lemma_14_4_1_injective"
 
 [[node]]
 id = "lemma_14_4_1"
+
+[[node]]
+id = "example_14_4_2"
+kind = "theorem"
+desc = '''
+Example 14.4.2 (§14.4.1): the spectral Galerkin method of §14.4 run with the orthonormal ridge
+polynomials `phi_{m,k}` of (14.2.5) as a basis of the polynomials and
+`psi_{m,k} = (1 - x^2 - y^2) phi_{m,k}` (14.4.14) as a basis of the trial space, on the Dirichlet
+problem `-Delta u + e^{s - t} u = g` transplanted from the region `D` to the unit disk by the
+mapping `s = x - y + a x^2`, `t = x + y`, with the transplanted coefficients `A`, `gamma`, `f`
+written out and the error shown in Figure 14.3.
+
+Not formalized: it is an illustration -- a numerical run whose errors are read off a figure. Its
+setting is §14.4, which the chapter group's desc records as needing `H^1_0` of the disk, a space
+Mathlib has no weak derivative on an open set to build.
+'''

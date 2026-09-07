@@ -20,12 +20,15 @@ id = "equation_14_7"
 
 [[node]]
 id = "proposition_14_1_1"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 14.1"
 
 [[node]]
 id = "proposition_14_1_2"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 14.1"
 
 [[node]]
 id = "proposition_14_1_3"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 14.1"
 
 [[node]]
 id = "blockGaussianElimination_eq"

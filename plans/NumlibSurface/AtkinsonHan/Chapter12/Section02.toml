@@ -38,3 +38,13 @@ id = "equation_12_2_25"
 
 [[node]]
 id = "equation_12_2_27"
+
+[[node]]
+id = "example_12_2_1"
+kind = "theorem"
+desc = '''Example 12.2.1 (§12.2.1): piecewise linear collocation applied to
+`λ u(x) - ∫_0^b e^{xy} u(y) dy = f(x)` with `b = 1`, `λ = 5`, for the two solutions
+`u = e^{-x} cos x` and `u = √x`, whose measured errors in Table 12.1 fall at the rates `O(h²)` and
+`O(h^{1.5})` respectively — the second reflecting the singular derivative of `√x` at the origin.
+Not formalized: it is an illustration — measured errors and their ratios, with the rates it
+displays proved in general by the section's own bound (12.2.5).'''

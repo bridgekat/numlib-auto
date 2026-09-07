@@ -17,3 +17,15 @@ id = "imgsQMat"
 
 [[node]]
 id = "proposition_10_17"
+
+[[node]]
+id = "theorem_10_18"
+kind = "theorem"
+desc = '''Saad Theorem 10.18 (§10.8.3): for an `n x m` matrix `A` with `B = A Aᵀ`, if the
+zero-pattern set `P_L` satisfies `(i, j) ∈ P_L` and `(i, k) ∉ P_L` implies `(j, k) ∈ P_L` whenever
+`i < j` and `i < k`, then the `L` produced by the incomplete Gram-Schmidt algorithm of §10.8.3 with
+that pattern is exactly the `L` factor of the incomplete Cholesky factorization of `B` with the
+same pattern. Not formalized: the incomplete Gram-Schmidt side is built — `imgsL`, `imgsLMat` and
+`proposition_10_17` — but there is no incomplete Cholesky factorization in the library, no `IsIC`
+companion to `Matrix.IsILU` for the other side of the identity, and Saad states the theorem without
+proof, citing the literature. §10.8's module doc records the same.'''

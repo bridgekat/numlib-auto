@@ -1,0 +1,41 @@
+namespace = "SaadSparse.Chapter03"
+desc = '''
+Saad §3.4, storage schemes: the coordinate format, compressed sparse row and column, the modified
+sparse row format, the diagonal format and Ellpack-Itpack.
+
+The section states no theorem, proposition, lemma, corollary or numbered definition. It is
+data-structure description with three worked examples, and the only formalizable content would be a
+round-trip correctness specification of each format, which the book never writes and nothing in the
+corpus needs; `plans/NumlibSurface/SaadSparse/Chapter03.toml` records that judgement. No module
+corresponds to this group, and none is planned: it exists so that the section's three numbered
+examples are on the record.
+'''
+
+[[node]]
+id = "example_3_7"
+kind = "theorem"
+desc = '''
+Example 3.7: the 5 x 5 matrix with twelve nonzero entries `1.` to `12.` written out in the
+coordinate format, as the arrays `AA`, `JR`, `JC` in an arbitrary order, and then in compressed
+sparse row format as `AA`, `JA`, `IA`, and in modified sparse row format as `AA`, `JA`.
+Not formalized: it is an illustration of a storage layout, and asserts nothing about the matrix.
+'''
+
+[[node]]
+id = "example_3_8"
+kind = "theorem"
+desc = '''
+Example 3.8: a 5 x 5 matrix with three nonzero diagonals written out in the diagonal format, as
+the rectangular array `DIAG` together with the offset array `IOFF = (-1, 0, 2)`. Not formalized:
+it is an illustration of a storage layout, and asserts nothing about the matrix.
+'''
+
+[[node]]
+id = "example_3_9"
+kind = "theorem"
+desc = '''
+Example 3.9: the matrix of Example 3.8 written out in the Ellpack-Itpack format, as the `n x Nd`
+arrays `COEF` and `JCOEF`, with the short rows padded by zeros whose column numbers are chosen
+arbitrarily. Not formalized: it is an illustration of a storage layout, and its arrays are given
+only as a figure the OCR does not reproduce.
+'''

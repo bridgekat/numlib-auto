@@ -33,3 +33,18 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 14.1.1"
 [[node]]
 id = "image_mulVec_diagonal_ellipsoid"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 14.1.1"
+
+[[node]]
+id = "theorem_14_1_1"
+kind = "theorem"
+desc = '''
+Theorem 14.1.1 (§14.1), Ragozin's multivariate Jackson theorem: for `f ∈ C^k(𝔹_d)` there are
+polynomials `p_n ∈ Π_n^d` with `‖f - p_n‖_∞ ≤ (c(k, d) / n^k) [‖f‖_{*,k} / n + ω_k(f, 1/n)]`, the
+constant depending only on `k` and `d`. (The node `exercise_14_1_1` of this group is Exercise
+14.1.1, a different result with a colliding number.) Not formalized: the book quotes it without
+proof, and its proof runs through approximation on the sphere `S^d`, needing spherical harmonics,
+a surface measure on `S^d` and a convolution structure on it -- Mathlib has none of the three. The
+statement also needs the moduli of continuity `ω_k(f, h)` and the norm `‖f‖_{*,k}`, which nothing
+in Mathlib or in this library defines and which have no other consumer here while this theorem is
+out of reach. The chapter group's desc records both halves of that.
+'''

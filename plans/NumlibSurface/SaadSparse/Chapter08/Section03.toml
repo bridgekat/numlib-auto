@@ -23,3 +23,10 @@ id = "subspace_adjoint_eq"
 
 [[node]]
 id = "cgnr_norm_residual_le"
+
+[[node]]
+id = "example_8_1"
+kind = "theorem"
+desc = '''Example 8.1 (§8.3.1): Table 8.1, the result of running CGNR without preconditioning on
+three of the test problems of §3.7. Not formalized: it is an illustration — measured iteration
+counts and errors, with no claim to state.'''

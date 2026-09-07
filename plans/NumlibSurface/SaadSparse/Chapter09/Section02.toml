@@ -74,3 +74,13 @@ id = "problem_9_8c"
 
 [[node]]
 id = "problem_9_8c_ssor"
+
+[[node]]
+id = "example_9_1"
+kind = "theorem"
+desc = '''Example 9.1 (§9.2.2): an operation count for Eisenstat's implementation on a five-point
+finite difference matrix, where `Nz(A) ≈ 5n` gives `19n` operations for the standard
+implementation against `13n` for Eisenstat's, and `29n` against `23n` once the rest of the
+conjugate gradient step is included. Not formalized: it is an illustration — an arithmetic
+operation count, which §9.2's plan already excludes as not mathematics; the algebraic content of
+§9.2.2, the identity (9.8) and the action of Algorithm 9.3, is planned separately.'''

@@ -41,3 +41,16 @@ id = "example_1_1"
 
 [[node]]
 id = "equation_1_18"
+
+[[node]]
+id = "definition_1_1"
+kind = "definition"
+desc = '''
+Definition 1.1 (§1.2): a complex scalar `λ` is an eigenvalue of a square matrix `A` when
+`A u = λ u` for some nonzero `u ∈ ℂⁿ`, `u` is then an eigenvector for `λ`, and the set of
+eigenvalues is the spectrum `σ(A)`. (The node `example_1_1` of this group is Saad's Example 1.1, a
+different result with a colliding number.) Not formalized: this is Mathlib's
+`Module.End.HasEigenvalue` and `spectrum`, reached from a matrix by
+`Matrix.hasEigenvalue_toEuclideanLin_iff`, and §1.1-1.6's module doc records the correspondence
+rather than restating it.
+'''

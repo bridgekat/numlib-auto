@@ -87,3 +87,33 @@ the diagonal and `0` at `γ = kh`, `0 < |k| ≤ n` — and the same decompositio
 `g` in `Π_{n-1}^2` gives `int_{-1}^1 U_n(t) q(t) sqrt(1-t^2) dt = 0`, the orthogonality to
 `Π_{n-1}^2`. Estimated at 700 lines. Nothing else in the chapter waits on it.'''
 deps = ["orthPolySpace", "finrank_orthPolySpace_two"]
+
+[[node]]
+id = "theorem_14_2_4"
+kind = "theorem"
+desc = '''
+Theorem 14.2.4 (§14.2.2): the orthogonal projection `P_n`, read as an operator from `C(𝔹₂)` to
+`Π_n^2 ⊆ C(𝔹₂)`, has `‖P_n‖ = O(n)` (14.2.16).
+
+Not formalized: the book quotes it from Yuan Xu without proof. The reduction to
+`‖P_n‖ = sup_x ∫ |G_n(x, y)| dy` is available, as `IntegralOperator.norm_kernelCLM` -- it is the
+book's own (2.2.8) -- but the `O(n)` bound on that integral is an estimate on Jacobi polynomials
+through the closed form (14.2.14)-(14.2.15) of the reproducing kernel, and Mathlib has neither
+Jacobi nor Gegenbauer polynomials. The chapter group's desc records the same.
+'''
+
+[[node]]
+id = "theorem_14_2_5"
+kind = "theorem"
+desc = '''
+Theorem 14.2.5 (§14.2.2): for `f ∈ C^k(𝔹₂)` with `k ≥ 1`,
+`‖f - P_n f‖_∞ ≤ (c₁(k) / n^{k-1}) [‖f‖_{*,k} / n + ω_k(f, 1/n)]` (14.2.17), so `P_n f → f`
+uniformly for `f ∈ C¹(𝔹₂)`; and, with the Banach-Steinhaus theorem, (14.2.16) gives some
+`f ∈ C(𝔹₂)` for which `P_n f` does not converge uniformly, though it always converges in
+`L²(𝔹₂)`.
+
+Not formalized: it is literally `equation_14_2_13` -- the quasi-optimality
+`‖f - P_n f‖ ≤ (1 + ‖P_n‖) E_n(f)` -- combined with `theorem_14_2_4` and `theorem_14_1_1`, both of
+which are out of reach; the combination is one line and becomes available the moment they do. The
+chapter group's desc records the same.
+'''

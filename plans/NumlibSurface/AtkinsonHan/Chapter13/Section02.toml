@@ -70,3 +70,47 @@ source = "Atkinson-Han, Theoretical Numerical Analysis, (13.2.31)-(13.2.32) and 
 [[node]]
 id = "exercise_13_3_1"
 source = "Atkinson-Han, Theoretical Numerical Analysis, Exercise 13.3.1"
+
+[[node]]
+id = "example_13_2_1"
+kind = "theorem"
+desc = '''
+Example 13.2.1 (§13.2): the interior Dirichlet problem solved by the Nystrom method on the ellipse
+`r(t) = (a cos t, b sin t)`, for which the double layer kernel (13.1.33) collapses to
+`k(t, s) = kappa((s + t)/2)` with `kappa(theta) = -ab / (2 (a^2 sin^2 theta + b^2 cos^2 theta))`,
+and the measured densities and errors of Table 13.1 for `(a, b) = (1, 2), (1, 5), (1, 8)`.
+
+Not formalized: it is an illustration -- a numerical run of `equation_13_2_4` on one curve, whose
+only general content is the kernel identity, a computation from `doubleLayerKernel` and
+`equation_13_1_33` that nothing else in the chapter uses, and whose tables are measured errors.
+'''
+
+[[node]]
+id = "example_13_2_2"
+kind = "theorem"
+desc = '''
+Example 13.2.2 (§13.2.1): a continuation of Example 13.2.1 for `(a, b) = (1, 5)` and `n = 32`,
+tabulating the error in the potentials `u_n` and `u_{n, m}` along the radial line
+`c(q) = q (a cos (pi/4), b sin (pi/4))` and observing that the error is some twenty times smaller
+than the bound (13.2.21) predicts, and that increasing `m` reduces the error until the error of
+`u - u_n` dominates.
+
+Not formalized: it is an illustration -- measured errors in two tables and three figures. The bound
+it is compared against is (13.2.21), which is part of the potential theory this chapter skips: its
+derivation is the maximum principle plus the jump relation, as `equation_13_2_19` records.
+'''
+
+[[node]]
+id = "example_13_2_3"
+kind = "theorem"
+desc = '''
+Example 13.2.3 (§13.2.2): the exterior Neumann problem outside the ellipse
+`r(t) = (a cos t, b sin t)`, with the known harmonic solution `u(x, y) = x / (x^2 + y^2)` supplying
+the boundary data, solved by the Nystrom method on a system of order `m = 2n + 1`; Table 13.3
+reports the errors for `(a, b) = (1, 2)`.
+
+Not formalized: it is an illustration -- measured errors for one curve and one solution. The method
+it illustrates is §13.2.2, which is skipped because the splitting it rests on identifies `A` as a
+bijection onto `H^1(2 pi)`, the periodic Sobolev scale the chapter group's desc records as the
+obstruction there.
+'''
