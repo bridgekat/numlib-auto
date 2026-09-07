@@ -30,9 +30,9 @@ makes the Nyström method analysable, and which §12.5 reuses for product integr
   solution.
 * `isCollectivelyCompactFamily_nystromCLM` — the Nyström operators of a sequence of convergent
   quadrature rules with uniformly bounded absolute weight sums satisfy A1–A3.
-* `lemma_12_4_2_a`–`lemma_12_4_2_c` — the three clauses of Lemma 12.4.2: the identities (12.4.14)
-  expressing `(K - K_n) K` and `(K - K_n) K_n` through the single kernel `e_n`, the norm formulas
-  (12.4.16)–(12.4.17), and (12.4.18), that both norms tend to zero.
+* `lemma_12_4_2_a`–`lemma_12_4_2_c` — the three clauses of Lemma 12.4.2: the identities
+  (12.4.14)–(12.4.15) expressing `(K - K_n) K` and `(K - K_n) K_n` through the single kernel `e_n`,
+  the norm formulas (12.4.16)–(12.4.17), and (12.4.18), that both norms tend to zero.
 * `theorem_12_4_4` — the Nyström instance of the abstract theorem.
 * `example_12_4_5` — the composite trapezoidal rule error `-h² (b - a) g''(ξ) / 12`, an instance
   of `Quadrature.sub_composite_trapezoid_eq` in `Numlib/Approximation/CompositeQuadrature`.
@@ -286,7 +286,7 @@ theorem lemma_12_4_2_a [SecondCountableTopology D] [Nonempty D] {m : ℕ} (w : F
   rw [kernelCLM_sub_nystromCLM_comp_kernelCLM ν w x k, norm_kernelCLM]
 
 /-- **Lemma 12.4.2, second clause.**  `(K - K_n) K_n` is the *Nyström* operator of the same kernel
-`e_n` (12.4.14), and hence its norm is the largest absolute weight sum of `e_n` (12.4.17). -/
+`e_n` (12.4.15), and hence its norm is the largest absolute weight sum of `e_n` (12.4.17). -/
 theorem lemma_12_4_2_b [T2Space D] [Nonempty D] {m : ℕ} {w : Fin m → ℝ} {x : Fin m → D}
     (hx : Function.Injective x) (k : C(D × D, ℝ)) :
     (kernelCLM ν k - nystromCLM w x k) ∘L nystromCLM w x k
