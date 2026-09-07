@@ -8,3 +8,14 @@ id = "theorem_1_6_2_converse"
 
 [[node]]
 id = "theorem_1_6_3"
+
+[[node]]
+id = "definition_1_6_1"
+kind = "definition"
+desc = '''
+Definition 1.6.1: (a) `S` is compact when every open cover of it has a finite subcover;
+(b) equivalently in a normed space, when every sequence in `S` has a subsequence converging in `S`;
+(c) `S` is precompact when its closure is compact.  Not formalized: these are Mathlib's
+`IsCompact`, `IsSeqCompact` and `IsCompact (closure S)`, named in §1.6's module doc, and the
+equivalence of (a) and (b) on a metric space is `UniformSpace.isCompact_iff_isSeqCompact`.
+'''

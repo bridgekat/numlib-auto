@@ -2,3 +2,158 @@ namespace = "AtkinsonHan.Chapter01"
 
 [[node]]
 id = "theorem_1_1_10"
+
+[[node]]
+id = "definition_1_1_1"
+kind = "definition"
+desc = '''
+Definition 1.1.1: a linear (vector) space over `𝕂 = ℝ` or `ℂ` is a set with an addition and a
+scalar multiplication satisfying commutativity, associativity, a zero, negatives, `1 v = v`,
+`α (β v) = (α β) v`, and the two distributive laws.  Not formalized: this is Mathlib's `Module 𝕂 V`
+over an `AddCommGroup V`, and §1.1's module doc records the correspondence rather than restating
+it — a surface `def IsLinearSpace` would carry no information.
+'''
+
+[[node]]
+id = "example_1_1_2"
+kind = "definition"
+desc = '''
+Example 1.1.2: the standard linear spaces — `ℝ` and `ℂ`; `ℝ^d` and `ℂ^d`; `C(Ω)` and `C(Ω̄)` for an
+open `Ω ⊆ ℝ^d`; `C(D)` for an arbitrary `D ⊆ ℝ^d`; `Cᵐ(Ω)` and `Cᵐ(Ω̄)`; and the `2π`-periodic
+spaces `C_p(2π)` and `C_p^k(2π)`.  Not formalized: an illustration of Definition 1.1.1, and each
+space is a Mathlib type or predicate already — `EuclideanSpace ℝ (Fin d)`, `ContinuousMap`
+(`C(X, ℝ)`), `ContDiff ℝ m`, and `AddCircle (2 * π)` for the periodic ones, which is how §1.3 and
+Chapter 4 of this surface reach them.
+'''
+
+[[node]]
+id = "definition_1_1_3"
+kind = "definition"
+desc = '''
+Definition 1.1.3: a subspace of a linear space is a subset closed under addition and scalar
+multiplication, and is itself a linear space.  Not formalized: this is Mathlib's `Submodule`, named
+in §1.1's module doc.
+'''
+
+[[node]]
+id = "example_1_1_4"
+kind = "theorem"
+desc = '''
+Example 1.1.4: in `ℝ³` the plane `{(x₁, x₂, 0)}` is a subspace, while the translate
+`{(x₁, x₂, 1)}` is not — it is an affine set, that subspace shifted by `(0, 0, 1)`.
+Not formalized: an illustration of Definition 1.1.3, and the two objects are Mathlib's `Submodule`
+and `AffineSubspace`.
+'''
+
+[[node]]
+id = "definition_1_1_5"
+kind = "definition"
+desc = '''
+Definition 1.1.5: `v₁, …, vₙ` are linearly dependent if some non-trivial combination `∑ αᵢ vᵢ`
+vanishes, and linearly independent otherwise.  Not formalized: this is Mathlib's
+`LinearIndependent`, named in §1.1's module doc.
+'''
+
+[[node]]
+id = "example_1_1_6"
+kind = "theorem"
+desc = '''
+Example 1.1.6: `d` vectors of `ℝ^d` are linearly independent if and only if the determinant of the
+matrix whose columns they are is nonzero.  Not formalized: an illustration of Definition 1.1.5,
+and Mathlib has it as `Matrix.linearIndependent_rows_iff_isUnit` together with
+`Matrix.isUnit_iff_isUnit_det`.
+'''
+
+[[node]]
+id = "example_1_1_7"
+kind = "theorem"
+desc = '''
+Example 1.1.7: `1, x, x², …, xⁿ` are linearly independent in `C[0, 1]`, seen by differentiating a
+vanishing combination `n` times and evaluating at `0`.  Not formalized: an illustration of
+Definition 1.1.5; the monomials are a Mathlib basis of `R[X]` (`Polynomial.basisMonomials`), and a
+polynomial vanishing on the infinite set `[0, 1]` is zero by `Polynomial.eq_zero_of_infinite_isRoot`.
+'''
+
+[[node]]
+id = "definition_1_1_8"
+kind = "definition"
+desc = '''
+Definition 1.1.8: the span of `v₁, …, vₙ` is the set of their linear combinations, a subspace.
+Not formalized: this is Mathlib's `Submodule.span`, named in §1.1's module doc.
+'''
+
+[[node]]
+id = "definition_1_1_9"
+kind = "definition"
+desc = '''
+Definition 1.1.9: a linear space is finite dimensional if it has a finite maximal independent set,
+called a basis; otherwise it is infinite dimensional.  Not formalized: this is Mathlib's
+`Module.Basis` with `FiniteDimensional`, named in §1.1's module doc; `theorem_1_1_10` is the
+numbered result the definition exists to state.
+'''
+
+[[node]]
+id = "example_1_1_11"
+kind = "theorem"
+desc = '''
+Example 1.1.11: `ℝ^d` is `d`-dimensional, with canonical basis the coordinate vectors `eᵢ`.
+Not formalized: an illustration of Definition 1.1.9 and `theorem_1_1_10`; the basis is Mathlib's
+`Pi.basisFun` and the dimension count is `Module.finrank_pi`, or `finrank_euclideanSpace` in the
+`EuclideanSpace` form this surface uses.
+'''
+
+[[node]]
+id = "example_1_1_12"
+kind = "theorem"
+desc = '''
+Example 1.1.12: `dim 𝔽ₙ = n + 1` with basis `1, x, …, xⁿ`, and the subspace
+`𝔽_{n,0} = {p ∈ 𝔽ₙ | p 0 = p 1 = 0}` has basis `x(1 - x), …, x^{n-1}(1 - x)`, so
+`dim 𝔽_{n,0} = dim 𝔽ₙ - 2`.  Not formalized: an illustration of Definition 1.1.9; `𝔽ₙ` is Mathlib's
+`Polynomial.degreeLT R (n + 1)` with `Polynomial.degreeLTEquiv`, and the two-point-constrained
+subspace has no Mathlib form but no consumer either.
+'''
+
+[[node]]
+id = "definition_1_1_13"
+kind = "definition"
+desc = '''
+Definition 1.1.13: a linear function (mapping, operator, transformation) is additive and
+homogeneous.  Not formalized: this is Mathlib's `LinearMap`, named in §1.1's module doc; Chapter 2
+of the book develops the notion and this surface follows it there.
+'''
+
+[[node]]
+id = "definition_1_1_14"
+kind = "definition"
+desc = '''
+Definition 1.1.14: two linear spaces are isomorphic when a linear bijection joins them.
+Not formalized: this is Mathlib's `LinearEquiv`, named in §1.1's module doc.
+'''
+
+[[node]]
+id = "example_1_1_15"
+kind = "theorem"
+desc = '''
+Example 1.1.15: `𝔽_k` is a subspace of `C[0, 1]`, and `a₀ + a₁ x + ⋯ + a_k x^k ↦ (a₀, …, a_k)` is
+an isomorphism `𝔽_k ≅ ℝ^{k+1}`.  Not formalized: an illustration of Definition 1.1.14, and the
+isomorphism is Mathlib's `Polynomial.degreeLTEquiv`.
+'''
+
+[[node]]
+id = "definition_1_1_16"
+kind = "definition"
+desc = '''
+Definition 1.1.16: the Cartesian product `U × V` with componentwise addition and scalar
+multiplication is a linear space.  Not formalized: this is Mathlib's `Prod` with its `Module`
+instance, named in §1.1's module doc.
+'''
+
+[[node]]
+id = "example_1_1_17"
+kind = "theorem"
+desc = '''
+Example 1.1.17: `ℝ² = ℝ × ℝ`, and generally `ℝ^d` is the `d`-fold product of `ℝ`.  Not formalized:
+an illustration of Definition 1.1.16; in Mathlib `ℝ^d` is the dependent product `Fin d → ℝ`
+(`EuclideanSpace ℝ (Fin d)`) rather than an iterated binary `Prod`, and nothing in the surface
+needs the identification.
+'''

@@ -26,3 +26,4 @@ id = "theorem_1_5_6"
 
 [[node]]
 id = "theorem_1_5_6_open"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 1.5.6; Example 1.2.19, which states the same density for a bounded open set"
