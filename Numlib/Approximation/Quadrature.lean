@@ -1,3 +1,4 @@
+import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 import Mathlib.Tactic.Positivity.Finset
 import Mathlib.Topology.ContinuousMap.Weierstrass
 import Mathlib.Topology.TietzeExtension
@@ -10,9 +11,9 @@ import Numlib.Approximation.OrthogonalPolynomial
 
 A quadrature rule is the bounded linear functional `f ↦ ∑ i, w i * f (x i)` on the continuous
 functions of a compact space: finitely many *nodes* `x i` with *weights* `w i`, approximating an
-integral. This file has the rule itself, its norm, and the criterion by which a sequence of rules
-converges for every continuous integrand. The material is [han2009theoretical] §2.4 and
-[kress1998numerical] §9.1 and §9.3.
+integral. This file has the rule itself, its norm, the criterion by which a sequence of rules
+converges for every continuous integrand, and Peano's kernel representation of the error of a
+single rule. The material is [han2009theoretical] §2.4 and [kress1998numerical] §9.1--§9.3.
 
 ## Main definitions
 
@@ -21,6 +22,9 @@ converges for every continuous integrand. The material is [han2009theoretical] �
   polynomials of degree at most `d`, and `Quadrature.degreeOfExactness` is the largest such `d`.
 * `Quadrature.IsInterpolatory L w x` says that the weights are the values of `L` at the Lagrange
   basis functions of the nodes.
+* `Quadrature.truncPow m y t` is the truncated power `(y - t)_+^m`, and
+  `Quadrature.peanoKernel a b w z m` is the Peano kernel of the rule with weights `w` at nodes `z`:
+  the error functional applied to `(· - t)_+^m`, divided by `m!`.
 
 ## Main results
 
@@ -42,6 +46,20 @@ converges for every continuous integrand. The material is [han2009theoretical] �
   and `Quadrature.not_forall_eq_integral_of_degree_le` says that no `n`-point rule does better. Both
   are stated about polynomials and a measure rather than through `IsExactOn`, which lives on `C(X,
   ℝ)` for a compact `X` and would need the weight to be carried by `X`.
+* `Quadrature.error_eq_integral_peanoKernel` is **Peano's kernel theorem**: a rule exact on the
+  polynomials of degree at most `m` has, at an integrand of class `C^{m+1}`, the error
+  `∫_a^b K(t) f^{(m+1)}(t) dt` with `K` the Peano kernel; and
+  `Quadrature.abs_error_le_integral_abs_peanoKernel` is the bound it is used for.  Unlike the rest
+  of this file the statement is not about an arbitrary target functional: the interchange it rests
+  on needs the target to be the integral itself, so it is stated for `f ↦ ∫ t in a..b, f t` and for
+  a rule given by plain real nodes and weights.
+
+  The proof needs no Fubini step.  `Quadrature.eq_taylorSum_add_integral` is Taylor's formula with
+  the integral remainder in the derivative-family form used here, and
+  `Quadrature.integral_eq_taylorSum_add_integral` is the same telescoping identity with the kernel
+  `(b - t)^{m+1}/(m+1)!`, which is exactly the integral over the panel of the pointwise remainder;
+  applying the first at each node and the second over the panel puts both halves of the error on
+  one interval.
 -/
 
 open Filter Topology
@@ -465,5 +483,515 @@ theorem not_forall_eq_integral_of_degree_le (hw : IsWeight μ) {n : ℕ} (x w : 
   exact absurd hpos (lt_irrefl 0)
 
 end Gauss
+
+/-! ### Peano's kernel theorem -/
+
+section Peano
+
+open MeasureTheory
+
+variable {F : ℕ → ℝ → ℝ}
+
+/-- The telescoping sum behind Taylor's formula with the integral remainder: for a chain of
+derivatives `F 0, F 1, …, F (m + 1)` the function `s ↦ ∑_{k ≤ m} F k s (v - s)^k / k!` has
+derivative `(v - t)^m F (m + 1) t / m!` at `t`, every other term cancelling against its
+neighbour. -/
+private theorem hasDerivAt_taylorSum {v x : ℝ} :
+    ∀ m : ℕ, (∀ k ≤ m, HasDerivAt (F k) (F (k + 1) x) x) →
+      HasDerivAt (fun t => ∑ k ∈ Finset.range (m + 1), F k t * (v - t) ^ k / (k.factorial : ℝ))
+        ((v - x) ^ m / (m.factorial : ℝ) * F (m + 1) x) x := by
+  have hvt : HasDerivAt (fun t : ℝ => v - t) (-1) x := (hasDerivAt_id x).const_sub v
+  intro m
+  induction m with
+  | zero =>
+    intro hF
+    simpa using hF 0 le_rfl
+  | succ m ih =>
+    intro hF
+    have h1 := ih fun k hk => hF k (by omega)
+    have h2 : HasDerivAt (fun t => F (m + 1) t * (v - t) ^ (m + 1) / ((m + 1).factorial : ℝ))
+        ((F (m + 1 + 1) x * (v - x) ^ (m + 1)
+            + F (m + 1) x * ((m + 1 : ℕ) * (v - x) ^ m * (-1))) / ((m + 1).factorial : ℝ)) x :=
+      ((hF (m + 1) le_rfl).mul (hvt.pow (m + 1))).div_const _
+    have h3 : HasDerivAt
+        (fun t => (∑ k ∈ Finset.range (m + 1), F k t * (v - t) ^ k / (k.factorial : ℝ))
+          + F (m + 1) t * (v - t) ^ (m + 1) / ((m + 1).factorial : ℝ))
+        ((v - x) ^ m / (m.factorial : ℝ) * F (m + 1) x
+          + (F (m + 1 + 1) x * (v - x) ^ (m + 1)
+              + F (m + 1) x * ((m + 1 : ℕ) * (v - x) ^ m * (-1))) /
+            ((m + 1).factorial : ℝ)) x := h1.add h2
+    have hsplit : (fun t => ∑ k ∈ Finset.range (m + 1 + 1), F k t * (v - t) ^ k / (k.factorial : ℝ))
+        = fun t => (∑ k ∈ Finset.range (m + 1), F k t * (v - t) ^ k / (k.factorial : ℝ))
+          + F (m + 1) t * (v - t) ^ (m + 1) / ((m + 1).factorial : ℝ) := by
+      funext t
+      rw [Finset.sum_range_succ]
+    rw [hsplit]
+    convert h3 using 1
+    have hfac : ((m + 1).factorial : ℝ) = ((m : ℝ) + 1) * (m.factorial : ℝ) := by
+      rw [Nat.factorial_succ]
+      push_cast
+      ring
+    have hne : (m.factorial : ℝ) ≠ 0 := Nat.cast_ne_zero.2 (Nat.factorial_ne_zero m)
+    rw [hfac]
+    push_cast
+    field_simp
+    ring
+
+/-- The telescoping sum behind the *integrated* Taylor formula: `s ↦ ∑_{k ≤ m} F k s (b - s)^{k+1} /
+(k+1)!` has derivative `(b - t)^{m+1} F (m + 1) t / (m + 1)! - F 0 t`.  Integrating it over `[a, b]`
+gives `∫_a^b F 0` as the integral of the Taylor polynomial plus a single remainder integral, with no
+Fubini step. -/
+private theorem hasDerivAt_integratedTaylorSum {b x : ℝ} :
+    ∀ m : ℕ, (∀ k ≤ m, HasDerivAt (F k) (F (k + 1) x) x) →
+      HasDerivAt
+        (fun t => ∑ k ∈ Finset.range (m + 1),
+          F k t * (b - t) ^ (k + 1) / ((k + 1).factorial : ℝ))
+        ((b - x) ^ (m + 1) / ((m + 1).factorial : ℝ) * F (m + 1) x - F 0 x) x := by
+  have hvt : HasDerivAt (fun t : ℝ => b - t) (-1) x := (hasDerivAt_id x).const_sub b
+  intro m
+  induction m with
+  | zero =>
+    intro hF
+    have hsplit : (fun t => ∑ k ∈ Finset.range (0 + 1),
+          F k t * (b - t) ^ (k + 1) / ((k + 1).factorial : ℝ))
+        = fun t => F 0 t * (b - t) ^ (0 + 1) / ((0 + 1).factorial : ℝ) := by
+      funext t
+      rw [Finset.sum_range_one]
+    have h : HasDerivAt (fun t => F 0 t * (b - t) ^ (0 + 1) / ((0 + 1).factorial : ℝ))
+        ((F (0 + 1) x * (b - x) ^ (0 + 1)
+            + F 0 x * ((0 + 1 : ℕ) * (b - x) ^ 0 * (-1))) / ((0 + 1).factorial : ℝ)) x :=
+      ((hF 0 le_rfl).mul (hvt.pow (0 + 1))).div_const _
+    rw [hsplit]
+    convert h using 1
+    have hfac : ((0 + 1).factorial : ℝ) = 1 := by norm_num
+    rw [hfac]
+    push_cast
+    ring
+  | succ m ih =>
+    intro hF
+    have h1 := ih fun k hk => hF k (by omega)
+    have h2 : HasDerivAt
+        (fun t => F (m + 1) t * (b - t) ^ (m + 1 + 1) / ((m + 1 + 1).factorial : ℝ))
+        ((F (m + 1 + 1) x * (b - x) ^ (m + 1 + 1)
+            + F (m + 1) x * ((m + 1 + 1 : ℕ) * (b - x) ^ (m + 1) * (-1))) /
+          ((m + 1 + 1).factorial : ℝ)) x :=
+      ((hF (m + 1) le_rfl).mul (hvt.pow (m + 1 + 1))).div_const _
+    have h3 : HasDerivAt
+        (fun t => (∑ k ∈ Finset.range (m + 1),
+            F k t * (b - t) ^ (k + 1) / ((k + 1).factorial : ℝ))
+          + F (m + 1) t * (b - t) ^ (m + 1 + 1) / ((m + 1 + 1).factorial : ℝ))
+        (((b - x) ^ (m + 1) / ((m + 1).factorial : ℝ) * F (m + 1) x - F 0 x)
+          + (F (m + 1 + 1) x * (b - x) ^ (m + 1 + 1)
+              + F (m + 1) x * ((m + 1 + 1 : ℕ) * (b - x) ^ (m + 1) * (-1))) /
+            ((m + 1 + 1).factorial : ℝ)) x := h1.add h2
+    have hsplit : (fun t => ∑ k ∈ Finset.range (m + 1 + 1),
+          F k t * (b - t) ^ (k + 1) / ((k + 1).factorial : ℝ))
+        = fun t => (∑ k ∈ Finset.range (m + 1),
+            F k t * (b - t) ^ (k + 1) / ((k + 1).factorial : ℝ))
+          + F (m + 1) t * (b - t) ^ (m + 1 + 1) / ((m + 1 + 1).factorial : ℝ) := by
+      funext t
+      rw [Finset.sum_range_succ]
+    rw [hsplit]
+    convert h3 using 1
+    have hfac : ((m + 1 + 1).factorial : ℝ) = ((m : ℝ) + 1 + 1) * ((m + 1).factorial : ℝ) := by
+      rw [Nat.factorial_succ]
+      push_cast
+      ring
+    have hne : ((m + 1).factorial : ℝ) ≠ 0 := Nat.cast_ne_zero.2 (Nat.factorial_ne_zero (m + 1))
+    rw [hfac]
+    push_cast
+    field_simp
+    ring
+
+/-- **Taylor's formula with the integral remainder**, for a chain of derivatives on an interval:
+`F 0 v = ∑_{k ≤ m} F k u (v - u)^k / k! + ∫_u^v (v - t)^m F (m + 1) t / m! dt`.
+
+This is Mathlib's `taylor_integral_remainder` in the derivative-family form the quadrature
+statements use, and it is proved from the telescoping identity above rather than by `m + 1`
+integrations by parts. -/
+theorem eq_taylorSum_add_integral {u v : ℝ} {m : ℕ}
+    (hF : ∀ k ≤ m, ∀ t ∈ Set.uIcc u v, HasDerivAt (F k) (F (k + 1) t) t)
+    (hint : IntervalIntegrable (F (m + 1)) volume u v) :
+    F 0 v = (∑ k ∈ Finset.range (m + 1), F k u * (v - u) ^ k / (k.factorial : ℝ))
+      + ∫ t in u..v, (v - t) ^ m / (m.factorial : ℝ) * F (m + 1) t := by
+  have hΦ : ∀ t ∈ Set.uIcc u v,
+      HasDerivAt (fun s => ∑ k ∈ Finset.range (m + 1), F k s * (v - s) ^ k / (k.factorial : ℝ))
+        ((v - t) ^ m / (m.factorial : ℝ) * F (m + 1) t) t :=
+    fun t ht => hasDerivAt_taylorSum m fun k hk => hF k hk t ht
+  have hi : IntervalIntegrable
+      (fun t => (v - t) ^ m / (m.factorial : ℝ) * F (m + 1) t) volume u v :=
+    hint.continuousOn_mul (by fun_prop)
+  have hftc := intervalIntegral.integral_eq_sub_of_hasDerivAt hΦ hi
+  have hv : (∑ k ∈ Finset.range (m + 1), F k v * (v - v) ^ k / (k.factorial : ℝ)) = F 0 v := by
+    rw [Finset.sum_eq_single 0]
+    · simp
+    · intro k _ hk
+      rw [sub_self, zero_pow hk]
+      ring
+    · intro h
+      exact absurd (Finset.mem_range.2 (Nat.succ_pos m)) h
+  rw [hv] at hftc
+  linarith
+
+/-- **The integrated Taylor formula.**  `∫_a^b F 0` is the integral of the Taylor polynomial of `F`
+at `a`, whose value is `∑_{k ≤ m} F k a (b - a)^{k+1}/(k+1)!`, plus one remainder integral against
+the kernel `(b - t)^{m+1}/(m+1)!`.
+
+This is what replaces the Fubini step in the usual proof of Peano's theorem: the double integral
+`∫_a^b ∫_a^x (x - t)^m F^{(m+1)}(t) dt dx` never has to be formed. -/
+theorem integral_eq_taylorSum_add_integral {a b : ℝ} {m : ℕ}
+    (hF : ∀ k ≤ m, ∀ t ∈ Set.uIcc a b, HasDerivAt (F k) (F (k + 1) t) t)
+    (hint : IntervalIntegrable (F (m + 1)) volume a b) :
+    (∫ t in a..b, F 0 t)
+      = (∑ k ∈ Finset.range (m + 1), F k a * (b - a) ^ (k + 1) / ((k + 1).factorial : ℝ))
+        + ∫ t in a..b, (b - t) ^ (m + 1) / ((m + 1).factorial : ℝ) * F (m + 1) t := by
+  have hΨ : ∀ t ∈ Set.uIcc a b,
+      HasDerivAt (fun s => ∑ k ∈ Finset.range (m + 1),
+          F k s * (b - s) ^ (k + 1) / ((k + 1).factorial : ℝ))
+        ((b - t) ^ (m + 1) / ((m + 1).factorial : ℝ) * F (m + 1) t - F 0 t) t :=
+    fun t ht => hasDerivAt_integratedTaylorSum m fun k hk => hF k hk t ht
+  have hc0 : ContinuousOn (F 0) (Set.uIcc a b) := fun t ht =>
+    (hF 0 (Nat.zero_le m) t ht).continuousAt.continuousWithinAt
+  have hi0 : IntervalIntegrable (F 0) volume a b := hc0.intervalIntegrable
+  have hi1 : IntervalIntegrable
+      (fun t => (b - t) ^ (m + 1) / ((m + 1).factorial : ℝ) * F (m + 1) t) volume a b :=
+    hint.continuousOn_mul (by fun_prop)
+  have hftc := intervalIntegral.integral_eq_sub_of_hasDerivAt hΨ (hi1.sub hi0)
+  rw [intervalIntegral.integral_sub hi1 hi0] at hftc
+  have hb : (∑ k ∈ Finset.range (m + 1),
+      F k b * (b - b) ^ (k + 1) / ((k + 1).factorial : ℝ)) = 0 := by
+    refine Finset.sum_eq_zero fun k _ => ?_
+    rw [sub_self, zero_pow (Nat.succ_ne_zero k)]
+    ring
+  rw [hb] at hftc
+  linarith
+
+/-- **The truncated power** `(y - t)_+^m`: it is `(y - t)^m` for `t ≤ y` and `0` beyond, so that
+`t ↦ (y - t)_+^m` is the piece of the monomial that Peano's kernel integrates against. -/
+noncomputable def truncPow (m : ℕ) (y t : ℝ) : ℝ := if t ≤ y then (y - t) ^ m else 0
+
+/-- The truncated power as the indicator of a half line, in the truncated variable. -/
+theorem truncPow_eq_indicator (m : ℕ) (y : ℝ) :
+    truncPow m y = (Set.Iic y).indicator fun t => (y - t) ^ m := by
+  funext t
+  by_cases h : t ≤ y <;> simp [truncPow, h]
+
+/-- The truncated power as the indicator of a half line, in the other variable. -/
+theorem truncPow_flip_eq_indicator (m : ℕ) (t : ℝ) :
+    (fun y => truncPow m y t) = (Set.Ici t).indicator fun y => (y - t) ^ m := by
+  funext y
+  by_cases h : t ≤ y <;> simp [truncPow, h]
+
+/-- The truncated power is interval integrable in the variable it is truncated at. -/
+theorem intervalIntegrable_truncPow (m : ℕ) (y u v : ℝ) :
+    IntervalIntegrable (truncPow m y) volume u v := by
+  have hc : IntervalIntegrable (fun t : ℝ => (y - t) ^ m) volume u v :=
+    Continuous.intervalIntegrable (by fun_prop) u v
+  rw [intervalIntegrable_iff] at hc ⊢
+  rw [truncPow_eq_indicator]
+  exact hc.indicator measurableSet_Iic
+
+/-- The truncated power is interval integrable in the variable it is a power of. -/
+theorem intervalIntegrable_truncPow_flip (m : ℕ) (t u v : ℝ) :
+    IntervalIntegrable (fun y => truncPow m y t) volume u v := by
+  have hc : IntervalIntegrable (fun y : ℝ => (y - t) ^ m) volume u v :=
+    Continuous.intervalIntegrable (by fun_prop) u v
+  rw [intervalIntegrable_iff] at hc ⊢
+  rw [truncPow_flip_eq_indicator]
+  exact hc.indicator measurableSet_Ici
+
+/-- Integrating against a truncated power over the whole panel is integrating against the plain
+power over the part of the panel below the truncation point. -/
+theorem integral_truncPow_mul {a b y : ℝ} {m : ℕ} {g : ℝ → ℝ} (hay : a ≤ y) (hyb : y ≤ b)
+    (hg : ContinuousOn g (Set.Icc a b)) :
+    (∫ t in a..b, truncPow m y t * g t) = ∫ t in a..y, (y - t) ^ m * g t := by
+  have hsub1 : Set.uIcc a y ⊆ Set.Icc a b := by
+    rw [Set.uIcc_of_le hay]
+    exact Set.Icc_subset_Icc le_rfl hyb
+  have hsub2 : Set.uIcc y b ⊆ Set.Icc a b := by
+    rw [Set.uIcc_of_le hyb]
+    exact Set.Icc_subset_Icc hay le_rfl
+  have h1 : IntervalIntegrable (fun t => truncPow m y t * g t) volume a y :=
+    (intervalIntegrable_truncPow m y a y).mul_continuousOn (hg.mono hsub1)
+  have h2 : IntervalIntegrable (fun t => truncPow m y t * g t) volume y b :=
+    (intervalIntegrable_truncPow m y y b).mul_continuousOn (hg.mono hsub2)
+  have e1 : (∫ t in a..y, truncPow m y t * g t) = ∫ t in a..y, (y - t) ^ m * g t := by
+    refine intervalIntegral.integral_congr fun t ht => ?_
+    rw [Set.uIcc_of_le hay] at ht
+    simp [truncPow, ht.2]
+  have e2 : (∫ t in y..b, truncPow m y t * g t) = 0 := by
+    rw [intervalIntegral.integral_of_le hyb,
+      MeasureTheory.setIntegral_congr_fun measurableSet_Ioc
+        (g := fun _ : ℝ => (0 : ℝ)) fun t ht => by
+          have hty : ¬ t ≤ y := not_le.2 ht.1
+          simp [truncPow, hty],
+      MeasureTheory.integral_zero]
+  rw [← intervalIntegral.integral_add_adjacent_intervals h1 h2, e1, e2, add_zero]
+
+/-- The integral of the truncated power in its *upper* variable:
+`∫_a^b (x - t)_+^m dx = (b - t)^{m+1}/(m + 1)` for `t` in the panel. -/
+theorem integral_truncPow_flip {a b t : ℝ} {m : ℕ} (hat : a ≤ t) (htb : t ≤ b) :
+    (∫ x in a..b, truncPow m x t) = (b - t) ^ (m + 1) / ((m : ℝ) + 1) := by
+  have e1 : (∫ x in a..t, truncPow m x t) = 0 := by
+    rw [intervalIntegral.integral_of_le hat, MeasureTheory.integral_Ioc_eq_integral_Ioo,
+      MeasureTheory.setIntegral_congr_fun measurableSet_Ioo
+        (g := fun _ : ℝ => (0 : ℝ)) fun x hx => by
+          have hxt : ¬ t ≤ x := not_le.2 hx.2
+          simp [truncPow, hxt],
+      MeasureTheory.integral_zero]
+  have e2 : (∫ x in t..b, truncPow m x t) = ∫ x in t..b, (x - t) ^ m := by
+    refine intervalIntegral.integral_congr fun x hx => ?_
+    rw [Set.uIcc_of_le htb] at hx
+    simp [truncPow, hx.1]
+  have e3 : (∫ x in t..b, (x - t) ^ m) = (b - t) ^ (m + 1) / ((m : ℝ) + 1) := by
+    have hD : ∀ x ∈ Set.uIcc t b,
+        HasDerivAt (fun s : ℝ => (s - t) ^ (m + 1) / ((m : ℝ) + 1)) ((x - t) ^ m) x := by
+      intro x _
+      have h : HasDerivAt (fun s : ℝ => (s - t) ^ (m + 1) / ((m : ℝ) + 1))
+          (((m + 1 : ℕ) : ℝ) * (x - t) ^ m * 1 / ((m : ℝ) + 1)) x :=
+        (((hasDerivAt_id x).sub_const t).pow (m + 1)).div_const _
+      convert h using 1
+      have hm : ((m : ℝ) + 1) ≠ 0 := by positivity
+      push_cast
+      field_simp
+    rw [intervalIntegral.integral_eq_sub_of_hasDerivAt hD
+      (Continuous.intervalIntegrable (by fun_prop) _ _)]
+    simp
+  rw [← intervalIntegral.integral_add_adjacent_intervals
+    (intervalIntegrable_truncPow_flip m t a t) (intervalIntegrable_truncPow_flip m t t b),
+    e1, e2, e3, zero_add]
+
+/-- **The Peano kernel** of the rule with weights `w` at nodes `z` on `[a, b]`, at order `m`: the
+error functional applied to the truncated power `(· - t)_+^m`, divided by `m!`.
+
+`Quadrature.peanoKernel_eq` gives its closed form `(b - t)^{m+1}/(m+1)! - ∑ᵢ wᵢ (zᵢ - t)_+^m/m!`
+on the panel, and `Quadrature.error_eq_integral_peanoKernel` is Peano's theorem. -/
+noncomputable def peanoKernel {n : ℕ} (a b : ℝ) (w z : Fin n → ℝ) (m : ℕ) (t : ℝ) : ℝ :=
+  ((∫ x in a..b, truncPow m x t) - ∑ i, w i * truncPow m (z i) t) / (m.factorial : ℝ)
+
+/-- The closed form of the Peano kernel on the panel. -/
+theorem peanoKernel_eq {n : ℕ} {a b : ℝ} (w z : Fin n → ℝ) (m : ℕ) {t : ℝ}
+    (ht : t ∈ Set.Icc a b) :
+    peanoKernel a b w z m t
+      = (b - t) ^ (m + 1) / ((m + 1).factorial : ℝ)
+        - ∑ i, w i * truncPow m (z i) t / (m.factorial : ℝ) := by
+  have hfac : ((m + 1).factorial : ℝ) = ((m : ℝ) + 1) * (m.factorial : ℝ) := by
+    rw [Nat.factorial_succ]
+    push_cast
+    ring
+  have hne : (m.factorial : ℝ) ≠ 0 := Nat.cast_ne_zero.2 (Nat.factorial_ne_zero m)
+  have hm : ((m : ℝ) + 1) ≠ 0 := by positivity
+  rw [peanoKernel, integral_truncPow_flip ht.1 ht.2, hfac, sub_div, Finset.sum_div]
+  congr 1
+  field_simp
+
+/-- **Peano's kernel theorem.**  A rule with weights `w` at nodes `z` in `[a, b]` that integrates
+every polynomial of degree at most `m` exactly has, at an integrand `F 0` carrying a chain of
+derivatives `F 1, …, F (m + 1)` on `[a, b]`, the error
+
+`∫_a^b F 0 - ∑ᵢ wᵢ F 0 (zᵢ) = ∫_a^b K(t) F (m + 1) t dt`,
+
+with `K = Quadrature.peanoKernel a b w z m` the error functional applied to the truncated power
+`(· - t)_+^m` and divided by `m!`.
+
+Taylor's formula with the integral remainder, applied once over the panel
+(`Quadrature.integral_eq_taylorSum_add_integral`) and once at each node
+(`Quadrature.eq_taylorSum_add_integral`), splits both halves of the error into the Taylor
+polynomial — which exactness annihilates — plus a remainder integral.  The truncated power is what
+puts the node remainders on the same interval as the panel remainder, and the finitely many node
+remainders come out of the integral by linearity, so no Fubini step is needed.
+
+Reference: [kress1998numerical], §9.2. -/
+theorem error_eq_integral_peanoKernel {a b : ℝ} {n m : ℕ} (hab : a ≤ b) {w z : Fin n → ℝ}
+    (hz : ∀ i, z i ∈ Set.Icc a b)
+    (hF : ∀ k ≤ m, ∀ t ∈ Set.Icc a b, HasDerivAt (F k) (F (k + 1) t) t)
+    (hc : ContinuousOn (F (m + 1)) (Set.Icc a b))
+    (hexact : ∀ p : ℝ[X], p.degree ≤ (m : WithBot ℕ) →
+      (∫ t in a..b, p.eval t) = ∑ i, w i * p.eval (z i)) :
+    (∫ t in a..b, F 0 t) - ∑ i, w i * F 0 (z i)
+      = ∫ t in a..b, peanoKernel a b w z m t * F (m + 1) t := by
+  have huIcc : Set.uIcc a b = Set.Icc a b := Set.uIcc_of_le hab
+  have hint : IntervalIntegrable (F (m + 1)) volume a b :=
+    ContinuousOn.intervalIntegrable (by rw [huIcc]; exact hc)
+  -- exactness on the shifted monomials
+  have hmono : ∀ k ≤ m, (∫ t in a..b, (t - a) ^ k) = ∑ i, w i * (z i - a) ^ k := by
+    intro k hk
+    have hdeg : ((Polynomial.X - Polynomial.C a) ^ k).degree ≤ (m : WithBot ℕ) := by
+      have h1 : ((Polynomial.X - Polynomial.C a) ^ k).degree = (k : WithBot ℕ) := by
+        simp [Polynomial.degree_pow, Polynomial.degree_X_sub_C]
+      rw [h1]
+      exact_mod_cast hk
+    simpa using hexact _ hdeg
+  -- the moments of the shifted monomials
+  have hpow : ∀ k : ℕ, (∫ t in a..b, (t - a) ^ k) = (b - a) ^ (k + 1) / ((k : ℝ) + 1) := by
+    intro k
+    have hD : ∀ x ∈ Set.uIcc a b,
+        HasDerivAt (fun s : ℝ => (s - a) ^ (k + 1) / ((k : ℝ) + 1)) ((x - a) ^ k) x := by
+      intro x _
+      have h : HasDerivAt (fun s : ℝ => (s - a) ^ (k + 1) / ((k : ℝ) + 1))
+          (((k + 1 : ℕ) : ℝ) * (x - a) ^ k * 1 / ((k : ℝ) + 1)) x :=
+        (((hasDerivAt_id x).sub_const a).pow (k + 1)).div_const _
+      convert h using 1
+      have hk : ((k : ℝ) + 1) ≠ 0 := by positivity
+      push_cast
+      field_simp
+    rw [intervalIntegral.integral_eq_sub_of_hasDerivAt hD
+      (Continuous.intervalIntegrable (by fun_prop) _ _)]
+    simp
+  -- exactness, applied to the Taylor polynomial of `F` at `a`
+  have hkey : (∑ k ∈ Finset.range (m + 1), F k a * (b - a) ^ (k + 1) / ((k + 1).factorial : ℝ))
+      = ∑ i, w i * ∑ k ∈ Finset.range (m + 1), F k a * (z i - a) ^ k / (k.factorial : ℝ) := by
+    have step : ∀ k ∈ Finset.range (m + 1),
+        F k a * (b - a) ^ (k + 1) / ((k + 1).factorial : ℝ)
+          = ∑ i, w i * (F k a * (z i - a) ^ k / (k.factorial : ℝ)) := by
+      intro k hk
+      have hk' : k ≤ m := Nat.lt_succ_iff.1 (Finset.mem_range.1 hk)
+      have h1 : (b - a) ^ (k + 1) / ((k : ℝ) + 1) = ∑ i, w i * (z i - a) ^ k := by
+        rw [← hpow k, hmono k hk']
+      have hfac : ((k + 1).factorial : ℝ) = ((k : ℝ) + 1) * (k.factorial : ℝ) := by
+        rw [Nat.factorial_succ]
+        push_cast
+        ring
+      have hkne : (k.factorial : ℝ) ≠ 0 := Nat.cast_ne_zero.2 (Nat.factorial_ne_zero k)
+      have hk1 : ((k : ℝ) + 1) ≠ 0 := by positivity
+      calc F k a * (b - a) ^ (k + 1) / ((k + 1).factorial : ℝ)
+          = F k a / (k.factorial : ℝ) * ((b - a) ^ (k + 1) / ((k : ℝ) + 1)) := by
+            rw [hfac]
+            field_simp
+        _ = F k a / (k.factorial : ℝ) * ∑ i, w i * (z i - a) ^ k := by rw [h1]
+        _ = ∑ i, w i * (F k a * (z i - a) ^ k / (k.factorial : ℝ)) := by
+            rw [Finset.mul_sum]
+            exact Finset.sum_congr rfl fun i _ => by ring
+    rw [Finset.sum_congr rfl step, Finset.sum_comm]
+    exact Finset.sum_congr rfl fun i _ => (Finset.mul_sum _ _ _).symm
+  -- the panel half of the error
+  have hleft : (∫ t in a..b, F 0 t)
+      = (∑ k ∈ Finset.range (m + 1), F k a * (b - a) ^ (k + 1) / ((k + 1).factorial : ℝ))
+        + ∫ t in a..b, (b - t) ^ (m + 1) / ((m + 1).factorial : ℝ) * F (m + 1) t :=
+    integral_eq_taylorSum_add_integral (by rw [huIcc]; exact hF) hint
+  -- the rule half of the error, node by node
+  have hright : ∀ i, F 0 (z i)
+      = (∑ k ∈ Finset.range (m + 1), F k a * (z i - a) ^ k / (k.factorial : ℝ))
+        + ∫ t in a..b, truncPow m (z i) t / (m.factorial : ℝ) * F (m + 1) t := by
+    intro i
+    have haz : a ≤ z i := (hz i).1
+    have hzb : z i ≤ b := (hz i).2
+    have hsub : Set.uIcc a (z i) ⊆ Set.Icc a b := by
+      rw [Set.uIcc_of_le haz]
+      exact Set.Icc_subset_Icc le_rfl hzb
+    have h := eq_taylorSum_add_integral (F := F) (u := a) (v := z i) (m := m)
+      (fun k hk t ht => hF k hk t (hsub ht)) (hint.mono_set (by rw [huIcc]; exact hsub))
+    rw [h]
+    congr 1
+    calc (∫ t in a..(z i), (z i - t) ^ m / (m.factorial : ℝ) * F (m + 1) t)
+        = ∫ t in a..(z i), (z i - t) ^ m * (F (m + 1) t / (m.factorial : ℝ)) :=
+          intervalIntegral.integral_congr fun t _ => by ring
+      _ = ∫ t in a..b, truncPow m (z i) t * (F (m + 1) t / (m.factorial : ℝ)) :=
+          (integral_truncPow_mul haz hzb (hc.div_const _)).symm
+      _ = ∫ t in a..b, truncPow m (z i) t / (m.factorial : ℝ) * F (m + 1) t :=
+          intervalIntegral.integral_congr fun t _ => by ring
+  -- integrability of the pieces
+  have hRint : ∀ i, IntervalIntegrable
+      (fun t => w i * (truncPow m (z i) t / (m.factorial : ℝ) * F (m + 1) t)) volume a b := by
+    intro i
+    have h := (intervalIntegrable_truncPow m (z i) a b).mul_continuousOn
+      (g := fun t => w i * (F (m + 1) t / (m.factorial : ℝ)))
+      (by rw [huIcc]; exact (hc.div_const _).const_smul (w i))
+    have hfun : (fun t => truncPow m (z i) t * (w i * (F (m + 1) t / (m.factorial : ℝ))))
+        = fun t => w i * (truncPow m (z i) t / (m.factorial : ℝ) * F (m + 1) t) := by
+      funext t
+      ring
+    rwa [hfun] at h
+  have hsumint : IntervalIntegrable
+      (fun t => ∑ i, w i * (truncPow m (z i) t / (m.factorial : ℝ) * F (m + 1) t)) volume a b := by
+    have h := IntervalIntegrable.sum (μ := volume) (a := a) (b := b) Finset.univ
+      fun i (_ : i ∈ Finset.univ) => hRint i
+    have hfun : (∑ i ∈ Finset.univ,
+          fun t => w i * (truncPow m (z i) t / (m.factorial : ℝ) * F (m + 1) t))
+        = fun t => ∑ i, w i * (truncPow m (z i) t / (m.factorial : ℝ) * F (m + 1) t) := by
+      funext t
+      rw [Finset.sum_apply]
+    rwa [hfun] at h
+  have hi1 : IntervalIntegrable
+      (fun t => (b - t) ^ (m + 1) / ((m + 1).factorial : ℝ) * F (m + 1) t) volume a b :=
+    hint.continuousOn_mul (by fun_prop)
+  -- the kernel integral, expanded
+  have hK : (∫ t in a..b, peanoKernel a b w z m t * F (m + 1) t)
+      = (∫ t in a..b, (b - t) ^ (m + 1) / ((m + 1).factorial : ℝ) * F (m + 1) t)
+        - ∑ i, w i * ∫ t in a..b, truncPow m (z i) t / (m.factorial : ℝ) * F (m + 1) t := by
+    have e0 : (∫ t in a..b, peanoKernel a b w z m t * F (m + 1) t)
+        = ∫ t in a..b, ((b - t) ^ (m + 1) / ((m + 1).factorial : ℝ) * F (m + 1) t
+            - ∑ i, w i * (truncPow m (z i) t / (m.factorial : ℝ) * F (m + 1) t)) := by
+      refine intervalIntegral.integral_congr fun t ht => ?_
+      rw [huIcc] at ht
+      rw [peanoKernel_eq w z m ht, sub_mul, Finset.sum_mul]
+      congr 1
+      exact Finset.sum_congr rfl fun i _ => by ring
+    rw [e0, intervalIntegral.integral_sub hi1 hsumint,
+      intervalIntegral.integral_finsetSum fun i _ => hRint i]
+    congr 1
+    exact Finset.sum_congr rfl fun i _ => intervalIntegral.integral_const_mul _ _
+  have hsumF : ∑ i, w i * F 0 (z i)
+      = (∑ i, w i * ∑ k ∈ Finset.range (m + 1), F k a * (z i - a) ^ k / (k.factorial : ℝ))
+        + ∑ i, w i * ∫ t in a..b, truncPow m (z i) t / (m.factorial : ℝ) * F (m + 1) t := by
+    rw [← Finset.sum_add_distrib]
+    exact Finset.sum_congr rfl fun i _ => by rw [hright i]; ring
+  rw [hK, hleft, hsumF, hkey]
+  ring
+
+/-- **The Peano error bound.**  Under the hypotheses of `Quadrature.error_eq_integral_peanoKernel`,
+the error is at most the `L¹` norm of the kernel times a bound on `F (m + 1)`. -/
+theorem abs_error_le_integral_abs_peanoKernel {a b : ℝ} {n m : ℕ} (hab : a ≤ b) {w z : Fin n → ℝ}
+    {M : ℝ} (hz : ∀ i, z i ∈ Set.Icc a b)
+    (hF : ∀ k ≤ m, ∀ t ∈ Set.Icc a b, HasDerivAt (F k) (F (k + 1) t) t)
+    (hc : ContinuousOn (F (m + 1)) (Set.Icc a b))
+    (hexact : ∀ p : ℝ[X], p.degree ≤ (m : WithBot ℕ) →
+      (∫ t in a..b, p.eval t) = ∑ i, w i * p.eval (z i))
+    (hM : ∀ t ∈ Set.Icc a b, |F (m + 1) t| ≤ M) :
+    |(∫ t in a..b, F 0 t) - ∑ i, w i * F 0 (z i)|
+      ≤ (∫ t in a..b, |peanoKernel a b w z m t|) * M := by
+  have huIcc : Set.uIcc a b = Set.Icc a b := Set.uIcc_of_le hab
+  have hint : IntervalIntegrable (F (m + 1)) volume a b :=
+    ContinuousOn.intervalIntegrable (by rw [huIcc]; exact hc)
+  -- the kernel is integrable on the panel: on it, it is the closed form
+  have hclosed : ∀ t ∈ Set.uIcc a b, peanoKernel a b w z m t
+      = (b - t) ^ (m + 1) / ((m + 1).factorial : ℝ)
+        - ∑ i, w i * truncPow m (z i) t / (m.factorial : ℝ) := by
+    intro t ht
+    rw [huIcc] at ht
+    exact peanoKernel_eq w z m ht
+  have hKint : IntervalIntegrable (peanoKernel a b w z m) volume a b := by
+    have hbase : IntervalIntegrable (fun t => (b - t) ^ (m + 1) / ((m + 1).factorial : ℝ)
+        - ∑ i, w i * truncPow m (z i) t / (m.factorial : ℝ)) volume a b := by
+      refine (Continuous.intervalIntegrable (by fun_prop) a b).sub ?_
+      have h := IntervalIntegrable.sum (μ := volume) (a := a) (b := b) Finset.univ
+        fun i (_ : i ∈ Finset.univ) =>
+          ((intervalIntegrable_truncPow m (z i) a b).const_mul (w i)).div_const
+            ((m.factorial : ℝ))
+      have hfun : (∑ i ∈ Finset.univ, fun t => w i * truncPow m (z i) t / (m.factorial : ℝ))
+          = fun t => ∑ i, w i * truncPow m (z i) t / (m.factorial : ℝ) := by
+        funext t
+        rw [Finset.sum_apply]
+      rwa [hfun] at h
+    exact hbase.congr fun t ht => (hclosed t (Set.uIoc_subset_uIcc ht)).symm
+  have hMnn : 0 ≤ M := le_trans (abs_nonneg _) (hM a (Set.left_mem_Icc.2 hab))
+  have habs : IntervalIntegrable (fun t => |peanoKernel a b w z m t|) volume a b := hKint.abs
+  have hprod : IntervalIntegrable
+      (fun t => |peanoKernel a b w z m t * F (m + 1) t|) volume a b := by
+    have := (hKint.mul_continuousOn (by rw [huIcc]; exact hc)).abs
+    exact this
+  have hbdd : IntervalIntegrable (fun t => |peanoKernel a b w z m t| * M) volume a b :=
+    habs.mul_const M
+  rw [error_eq_integral_peanoKernel hab hz hF hc hexact]
+  calc |∫ t in a..b, peanoKernel a b w z m t * F (m + 1) t|
+      ≤ ∫ t in a..b, |peanoKernel a b w z m t * F (m + 1) t| :=
+        intervalIntegral.abs_integral_le_integral_abs hab
+    _ ≤ ∫ t in a..b, |peanoKernel a b w z m t| * M := by
+        refine intervalIntegral.integral_mono_on hab hprod hbdd fun t ht => ?_
+        rw [abs_mul]
+        exact mul_le_mul_of_nonneg_left (hM t ht) (abs_nonneg _)
+    _ = (∫ t in a..b, |peanoKernel a b w z m t|) * M := intervalIntegral.integral_mul_const _ _
+
+end Peano
 
 end Quadrature

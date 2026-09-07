@@ -73,67 +73,78 @@ id = "ContinuousLinearMap.mem_pseudospectrum_of_hasEigenvalue"
 [[node]]
 id = "Matrix.card_spectrum_of_disjoint_gershgorin"
 kind = "theorem"
-desc = '''Gershgorin disc counting (Saad-eig Thm 3.12): if the union `S` of `m` of the discs is disjoint
+desc = '''
+Gershgorin disc counting (Saad-eig Thm 3.12): if the union `S` of `m` of the discs is disjoint
 from the other discs, `S` contains exactly `m` eigenvalues with multiplicity.
 
-Still open. The statement was re-read in the book text (`books/numerical-methods-for-large-eigenvalue-problems-saad.txt`,
-Thm 3.12) and is as stated; his proof is the homotopy `A(t) = D + tH` from the diagonal at `t = 0`
-to `A` at `t = 1` together with "by a continuity argument, as `t` increases to 1, the branches of
-eigenvalues will stay in their respective discs". That continuity of the branches is the whole of
-what is missing, and it is not in Mathlib: grepping `Mathlib/Analysis` and `Mathlib/Topology` for a
-continuity statement about `Polynomial.roots` turns up nothing, and neither `Rouche` nor an argument
-principle nor a residue theorem occurs anywhere in the library (checked again while the QR nodes
-were proved).
+Still open, and of the five open backbone nodes this is the one whose obstruction has survived every
+check. The statement was re-read in the book text (Thm 3.12 of
+`books/numerical-methods-for-large-eigenvalue-problems-saad.txt`) and is as quoted; his proof is the
+homotopy `A(t) = D + tH` together with "by a continuity argument, as `t` increases to 1, the branches
+of eigenvalues will stay in their respective discs". That continuity of the branches is the whole of
+what is missing.
 
-**The previously recorded alternative route was misdiagnosed and is in better shape than the note
-said.** It said "Mathlib has the Cauchy integral formula only for `ℂ`-valued functions, not for
-operator-valued ones". That is false: `Mathlib/Analysis/Complex/CauchyIntegral.lean` is stated for
-`{E} [NormedAddCommGroup E] [NormedSpace ℂ E]` throughout, so
-`Complex.two_pi_I_inv_smul_circleIntegral_sub_inv_smul_of_differentiable_on_off_countable` already
-applies to operator-valued integrands; and the resolvent is already known to be differentiable on
-the resolvent set, as `spectrum.hasDerivAt_resolvent_const_left` in
-`Mathlib/Analysis/Normed/Algebra/GelfandFormula.lean`. What is still missing on that route is the
-step the Cauchy formula does *not* give: the integral of a function with poles *inside* the
-contour. Mathlib has no residue theorem and no Laurent decomposition, so the Riesz projector
-`P = (2πi)^{-1} ∮ (z - A)^{-1} dz` cannot be shown idempotent, let alone of the right rank. Once it
-existed, `Submodule.finrank_eq_of_gap_lt_one`
-(`Numlib/Analysis/InnerProductSpace/Projection/Angle`) would finish the counting, as the old note
-said. Neither route was attempted; both statements above about Mathlib were checked by grep, the
-statement about what remains on the Riesz route is a judgement and should be treated as a
-conjecture.'''
+**What the pinned Mathlib does and does not have, re-grepped.** `Rouche` does not occur; no residue
+theorem occurs (`Mathlib/Analysis/Calculus/LogDeriv` mentions a logarithmic residue at a simple zero
+and nothing more); there is no continuity statement about `Polynomial.roots` anywhere under
+`Mathlib/Analysis` or `Mathlib/Topology`. The Cauchy integral formula *is* Banach-valued
+(`Mathlib/Analysis/Complex/CauchyIntegral.lean` carries `{E} [NormedAddCommGroup E] [NormedSpace ℂ E]`
+throughout) and the resolvent is already differentiable off the spectrum
+(`spectrum.hasDerivAt_resolvent_const_left`), so an earlier note claiming otherwise was wrong; but
+the Cauchy formula wants the integrand differentiable *inside* the contour, and the resolvent has
+poles there, so the Riesz projector `P = (2πi)⁻¹ ∮ (z - A)⁻¹ dz` cannot be shown idempotent by it.
+
+**A third route, elementary and not attempted, which needs no complex analysis at all.** All the
+homotopy needs is that the number of roots of a monic polynomial in a compact set `S` is locally
+constant when the roots stay in `S ∪ S'` with `S, S'` disjoint compact. Split `p = q r` with `q`
+monic carrying the roots in `S`; multiplication of monic polynomials, read in coefficients, is a
+polynomial map `𝕜^k × 𝕜^{n-k} → 𝕜^n` whose derivative at `(q, r)` is `(q̇, ṙ) ↦ q̇ r + q ṙ`,
+surjective exactly because `gcd (q, r) = 1`, so the inverse function theorem gives a *continuous
+factorization* of every nearby monic polynomial. That the factors keep their roots where they were
+is then the one-sided estimate `min_i |β - α_i|^n ≤ |p (β)| = |p (β) - p̃ (β)|`, which is three
+lines. This replaces Rouché by `HasStrictFDerivAt.localInverse` plus Bézout, both of which Mathlib
+has; the cost is the coefficient-level calculus of the multiplication map. Whether that is cheaper
+than proving Rouché outright is a judgement, not a measurement.
+'''
 deps = ["Matrix.spectrum_subset_iUnion_closedBall"]
 source = "Saad, Numerical Methods for Large Eigenvalue Problems, Theorem 3.12"
 
 [[node]]
 id = "Module.End.hasDerivAt_eigenvalue_perturbation"
 kind = "theorem"
-desc = '''The *existence* of a differentiable branch of eigenvalues of `A + t E` through a simple
-eigenvalue `l` of `A`. The derivative formula itself is done:
+desc = '''
+The *existence* of a differentiable branch of eigenvalues of `A + t E` through a simple eigenvalue
+`l` of `A`. The derivative formula itself is done:
 `Module.End.deriv_eigenvalue_perturbation` computes `l'(0) = <w, E u>/<w, u>` for any branch that is
 differentiable at `0`, and `Module.End.norm_deriv_eigenvalue_perturbation_le` bounds it by
 `||E|| * eigenvalueCondNumber`, which is Saad-eig 3.2.1 in full apart from the branch.
 
-What remains is the implicit function theorem applied to `f (t, mu) = det (A + t E - mu)`. Two
-things were checked while the QR nodes were proved, and they change the shape of the note.
+**Mathlib still has no differentiability of a determinant in its entries** — re-grepped: no
+`contDiff_det`, no `HasFDerivAt … det`, nothing. So any route through `f (t, μ) = det (A + t E - μ)`
+has to build that first, and then still has to extract `μ (t)` from `HasStrictFDerivAt.implicitFunction`,
+which parametrizes the solution set by `ker f'` rather than by `t`.
 
-* **Mathlib has no differentiability of a determinant in its entries.** Grepping
-  `Mathlib/Analysis` and `Mathlib/LinearAlgebra` for `contDiff_det`, `Differentiable ... det`,
-  `HasFDerivAt ... det` finds nothing. `Matrix.det` is a polynomial in the entries, so this is
-  routine, but it has to be written before any implicit-function argument can start. This is the
-  first concrete missing piece and the old note did not mention it.
-* The implicit function theorem itself is `HasStrictFDerivAt.implicitFunction` in
-  `Mathlib/Analysis/Calculus/Implicit.lean`, and it parametrizes the solution set by `ker f'`, not
-  by `t`, so extracting `mu(t)` from it needs a further step. **A cheaper route, not attempted:**
-  the *inverse* function theorem applied to `F (t, mu) = (t, f (t, mu))` on `𝕜 × 𝕜`, whose
-  derivative at `(0, l)` is invertible exactly because `∂f/∂mu (0, l) ≠ 0`; then
-  `mu t := (F.localInverse (t, 0)).2` is differentiable by composition and satisfies
-  `f (t, mu t) = 0` because `F` fixes the first coordinate. That avoids `ImplicitFunctionData`
-  entirely.
+**A route that needs neither the determinant nor an implicit/inverse function theorem, not
+attempted.** It is Saad's own derivation made into a contraction. Let `P` be the spectral projector
+of the simple eigenvalue `l`, `P z = φ (z) • u`, and `S = S(l) (1 - P)` the reduced resolvent of
+`Numlib/Eigen/ReducedResolvent`, which satisfies `S (A - l) y = y` on `ker P`. Looking for
+`u (t) = u + y (t)` with `P y = 0`, the eigenvalue equation splits under `P` and `1 - P` into
 
-Simplicity still has to be turned into `∂f/∂mu (0, l) ≠ 0`, through
-`Module.End.eval_charpoly : f.charpoly.eval t = (algebraMap _ _ t - f).det` and
-`Polynomial.isRoot_derivative_iff` at a root of multiplicity one. The route as a whole is
-bookkeeping rather than missing mathematics, but it is three distinct pieces of it, and the
-determinant's differentiability is the one that has to be built from scratch.'''
+  `μ = l + t φ (E (u + y))`,        `y = t · S [φ (E (u + y)) • y - (1 - P) (E (u + y))]`.
+
+The second is `y = t G (t, y)` with `G` bounded and Lipschitz in `y` near `(0, 0)`, so Banach's
+fixed point theorem gives a unique small `y (t)` for small `t`; and then `y (t) → 0` forces
+`y (t)/t → G (0, 0)`, which *is* `HasDerivAt y (G (0,0)) 0` because `y 0 = 0`. No linearization
+theorem is invoked: the differentiability falls out of the fixed-point equation itself. `μ` is then
+differentiable by composition, and `Module.End.deriv_eigenvalue_perturbation` names `μ' (0)`.
+
+Note that the existing `Module.End.deriv_eigenvalue_perturbation` takes its eigen-relation for *all*
+`t`; a branch built this way exists only near `0`, so this node should be stated with
+`∀ᶠ t in 𝓝 0` and the derivative formula reproved in that form (its proof is local anyway).
+
+Nothing above was attempted in Lean, and the claim that the contraction closes is a derivation on
+paper, not a measurement.
+'''
 deps = ["Module.End.eigenvalueCondNumber", "Module.End.deriv_eigenvalue_perturbation"]
 source = "Saad, Numerical Methods for Large Eigenvalue Problems, Section 3.2.1"
+

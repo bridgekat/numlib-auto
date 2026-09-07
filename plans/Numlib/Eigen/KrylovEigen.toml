@@ -83,25 +83,4 @@ id = "Arnoldi.norm_sub_starProjection_le_of_mem_closedBall"
 
 [[node]]
 id = "Arnoldi.norm_sub_starProjection_le_of_mem_ellipse"
-kind = "theorem"
-desc = '''Saad-eig Thm 6.8, the ellipse half of the estimate that
-`Arnoldi.norm_sub_starProjection_le_of_mem_closedBall` proves for a disc: if all eigenvalues but
-`λ_i` lie *inside* the ellipse centred at `c` with focal distance `d` and semi-axis `a`, then
-`ε_i^{(m)} ≤ C_{m-1}(a/d)/|C_{m-1}((λ_i - c)/d)|`, whence
-`‖(1 - P_m) u_i‖ ≤ ξ_i C_{m-1}(a/d)/|C_{m-1}((λ_i - c)/d)|`.
-
-Not attempted, and the obstruction is one specific missing lemma rather than the Chebyshev theory,
-which is done: `Polynomial.Chebyshev.sSup_norm_eval_shiftedComplex_ellipse` computes the maximum of
-the normalized shifted Chebyshev polynomial over `Set.ellipse c d ρ`, and `Set.ellipse` is the
-ellipse *curve* — the image of a circle under the Joukowski map — not the closed region it bounds.
-Saad's hypothesis places the eigenvalues inside, so a maximum-modulus step is needed to pass from
-the curve to its interior. `Polynomial.norm_eval_le_of_forall_mem_sphere` of
-`Numlib/RingTheory/Polynomial/ChebyshevEllipse` is exactly that step for a disc, proved from
-`Complex.norm_le_of_forall_mem_frontier_norm_le`; the ellipse version needs the interior region
-named as a set and its frontier identified with `Set.ellipse c d ρ`, neither of which exists. A
-cheaper alternative that dodges the question, not attempted either: state the theorem with the
-hypothesis `λ_k ∈ Set.ellipse c d ρ_k` for some `ρ_k ≤ ρ` — every point inside lies on a smaller
-confocal ellipse — which is Saad's hypothesis in a form the existing lemma can consume, at the cost
-of the consumer having to produce the `ρ_k`.'''
-deps = ["Arnoldi.norm_sub_starProjection_le_mul", "Polynomial.Chebyshev.sSup_norm_eval_shiftedComplex_ellipse"]
 source = "Saad, Numerical Methods for Large Eigenvalue Problems, Theorem 6.8"

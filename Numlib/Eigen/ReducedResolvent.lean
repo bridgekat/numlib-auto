@@ -1,3 +1,4 @@
+import Numlib.Eigen.Normal
 import Numlib.Eigen.PowerMethod
 
 /-!
@@ -21,6 +22,16 @@ which determines it, and its norm is the condition number of the eigenvector,
 `P u(t) = u`, the eigenvector moves at the rate `u'(0) = -S(l)(1 - P) B u`, so
 `‖u'(0)‖ ≤ Cond(u) ‖B‖ ‖u‖`.
 
+For a **normal** operator the condition number is computed:
+`Module.End.eigenvectorCondNumber_eq_inv_infDist_of_isStarNormal` is
+`Cond(u) = 1 / dist (l, σ(A) \ {l})`, with
+`Module.End.eigenvectorCondNumber_eq_inv_dist_of_isSymmetric` the Hermitian case
+[saad2011numerical] states as (3.45).  On the eigenspace of `μ` the reduced resolvent is
+multiplication by `(μ - l)⁻¹` (`Module.End.reducedResolvent_apply_of_mem_eigenspace`, which needs no
+normality), and for a normal operator those eigenspaces are orthogonal and span, so the operator
+norm is the largest `|μ - l|⁻¹`; the spectrum is finite, so the largest is attained.  Both sides are
+`0` when `l` is the only eigenvalue.
+
 ## Implementation notes
 
 Everything here rests on the splitting `Krylov.isCompl_maxGenEigenspace` of
@@ -30,8 +41,10 @@ orthogonal one, so no inner product is used and the ambient space is only a norm
 `IsAlgClosed 𝕜` and `FiniteDimensional 𝕜 E` are what make the generalized eigenspaces span and the
 restricted `A - l` surjective from injective; both are the hypotheses of the splitting.
 
-The Hermitian value `Cond(u) = 1 / dist (l, σ(A) \ {l})` ([saad2011numerical]'s (3.45)) is not
-proved here; the plan records it.
+The condition number of a normal operator is evaluated in a section of its own, which reintroduces
+`E` with an inner product; no identification of `Krylov.spectralProjector` with
+`Submodule.starProjection` is needed for it, only that the projector kills the complementary
+invariant subspace.
 
 ## References
 
@@ -205,5 +218,170 @@ theorem eigenvectorCondNumber_nonneg : 0 ≤ eigenvectorCondNumber A l := norm_n
 theorem norm_reducedResolvent_apply_le (x : E) :
     ‖reducedResolvent A l x‖ ≤ eigenvectorCondNumber A l * ‖x‖ :=
   (LinearMap.toContinuousLinearMap (reducedResolvent A l)).le_opNorm x
+
+/-! ### The condition number of an eigenvector of a normal operator -/
+
+section Normal
+
+variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
+variable [IsAlgClosed 𝕜] [FiniteDimensional 𝕜 E] {A : Module.End 𝕜 E} {l : 𝕜}
+
+/-- **On the eigenspace of `μ ≠ l` the reduced resolvent is multiplication by `(μ - l)⁻¹`**: there
+`A - l` is multiplication by `μ - l`, and the spectral projector of `l` vanishes.  No normality is
+needed for this. -/
+theorem reducedResolvent_apply_of_mem_eigenspace {μ : 𝕜} (hμ : μ ≠ l) {x : E}
+    (hx : x ∈ A.eigenspace μ) : reducedResolvent A l x = (μ - l)⁻¹ • x := by
+  have hμl : μ - l ≠ 0 := sub_ne_zero.2 hμ
+  have hAx : A x = μ • x := Module.End.mem_eigenspace_iff.1 hx
+  have hmem : (μ - l)⁻¹ • x ∈ ⨆ ν, ⨆ _ : ¬ ν = l, A.maxGenEigenspace ν :=
+    Submodule.mem_iSup_of_mem μ (Submodule.mem_iSup_of_mem hμ
+      (Submodule.smul_mem _ _ (Module.End.eigenspace_le_maxGenEigenspace hx)))
+  have hAy : (A - l • (1 : Module.End 𝕜 E)) ((μ - l)⁻¹ • x) = x := by
+    have hstep : (A - l • (1 : Module.End 𝕜 E)) x = (μ - l) • x := by
+      simp [hAx, sub_smul]
+    rw [map_smul, hstep, smul_smul, inv_mul_cancel₀ hμl, one_smul]
+  have hP : Krylov.spectralProjector A (· = l) ((μ - l)⁻¹ • x) = 0 :=
+    Krylov.spectralProjector_apply_eq_zero_iff.2 hmem
+  have h := reducedResolvent_apply_sub_smul A l ((μ - l)⁻¹ • x)
+  rwa [hAy, hP, sub_zero] at h
+
+/-- The reduced resolvent on the eigenvector basis of a normal operator: it scales the `j`-th basis
+vector by `(λ_j - l)⁻¹`, or kills it when `λ_j = l`. -/
+theorem reducedResolvent_apply_eigenvectorBasis (hA : IsStarNormal A) {n : ℕ}
+    (hn : Module.finrank 𝕜 E = n) (l : 𝕜) (j : Fin n) :
+    reducedResolvent A l (LinearMap.IsStarNormal.eigenvectorBasis hA hn j)
+      = (if LinearMap.IsStarNormal.eigenvalues hA hn j = l then 0
+          else (LinearMap.IsStarNormal.eigenvalues hA hn j - l)⁻¹) •
+        LinearMap.IsStarNormal.eigenvectorBasis hA hn j := by
+  have hmem : LinearMap.IsStarNormal.eigenvectorBasis hA hn j
+      ∈ A.eigenspace (LinearMap.IsStarNormal.eigenvalues hA hn j) :=
+    Module.End.mem_eigenspace_iff.2 (LinearMap.IsStarNormal.apply_eigenvectorBasis hA hn j)
+  by_cases h : LinearMap.IsStarNormal.eigenvalues hA hn j = l
+  · rw [ite_eq_left h, zero_smul]
+    refine reducedResolvent_apply_of_mem_maxGenEigenspace A l ?_
+    rw [← h]
+    exact Module.End.eigenspace_le_maxGenEigenspace hmem
+  · rw [ite_eq_right h]
+    exact reducedResolvent_apply_of_mem_eigenspace h hmem
+
+/-- Every eigenvalue of the eigenvector basis lies in the spectrum. -/
+private theorem eigenvalues_mem_spectrum (hA : IsStarNormal A) {n : ℕ}
+    (hn : Module.finrank 𝕜 E = n) (j : Fin n) :
+    LinearMap.IsStarNormal.eigenvalues hA hn j ∈ spectrum 𝕜 A := by
+  refine Module.End.hasEigenvalue_iff_mem_spectrum.1 (Module.End.hasEigenvalue_of_hasEigenvector
+    (x := LinearMap.IsStarNormal.eigenvectorBasis hA hn j) ⟨?_, ?_⟩)
+  · exact Module.End.mem_eigenspace_iff.2 (LinearMap.IsStarNormal.apply_eigenvectorBasis hA hn j)
+  · exact (LinearMap.IsStarNormal.eigenvectorBasis hA hn).toBasis.ne_zero j
+
+/-- The reduced resolvent of a normal operator moves no vector by more than
+`1 / dist (l, σ(A) \ {l})` times its length: in the orthonormal eigenvector basis it is a diagonal
+operator whose entries are the `(μ - l)⁻¹`. -/
+theorem norm_reducedResolvent_apply_le_inv_infDist (hA : IsStarNormal A) (l : 𝕜) (x : E) :
+    ‖reducedResolvent A l x‖ ≤ (Metric.infDist l (spectrum 𝕜 A \ {l}))⁻¹ * ‖x‖ := by
+  classical
+  set n := Module.finrank 𝕜 E with hnn
+  have hn : Module.finrank 𝕜 E = n := rfl
+  set b := LinearMap.IsStarNormal.eigenvectorBasis hA hn with hb
+  set lam := LinearMap.IsStarNormal.eigenvalues hA hn with hlam
+  set δ := Metric.infDist l (spectrum 𝕜 A \ {l}) with hδ
+  have hδ0 : 0 ≤ δ := Metric.infDist_nonneg
+  set c : Fin n → 𝕜 := fun j => if lam j = l then 0 else (lam j - l)⁻¹ with hc
+  -- every diagonal entry is at most `δ⁻¹` in modulus
+  have hcbound : ∀ j, ‖c j‖ ≤ δ⁻¹ := by
+    intro j
+    by_cases h : lam j = l
+    · have hcj : c j = 0 := by
+        simp only [hc]
+        exact ite_eq_left h
+      rw [hcj, norm_zero]
+      exact inv_nonneg.2 hδ0
+    · have hmem : lam j ∈ spectrum 𝕜 A \ {l} :=
+        ⟨eigenvalues_mem_spectrum hA hn j, by simpa using h⟩
+      have hfin : (spectrum 𝕜 A \ {l}).Finite :=
+        (Module.End.finite_spectrum A).subset Set.sdiff_subset
+      have hne : (spectrum 𝕜 A \ {l}).Nonempty := ⟨lam j, hmem⟩
+      have hlnot : l ∉ spectrum 𝕜 A \ {l} := fun hcon => hcon.2 rfl
+      have hδpos : 0 < δ := (hfin.isClosed.notMem_iff_infDist_pos hne).1 hlnot
+      have hle : δ ≤ ‖lam j - l‖ := by
+        have h2 := Metric.infDist_le_dist_of_mem (x := l) hmem
+        rw [dist_eq_norm, norm_sub_rev] at h2
+        rw [hδ]
+        exact h2
+      have hcj : c j = (lam j - l)⁻¹ := by
+        simp only [hc]
+        exact ite_eq_right h
+      rw [hcj, norm_inv]
+      exact inv_anti₀ hδpos hle
+  -- the reduced resolvent is diagonal in the eigenvector basis
+  have hSx : reducedResolvent A l x
+      = b.repr.symm (WithLp.toLp 2 fun j => b.repr x j * c j) := by
+    rw [← OrthonormalBasis.sum_repr_symm]
+    conv_lhs => rw [← b.sum_repr x]
+    rw [map_sum]
+    refine Finset.sum_congr rfl fun j _ => ?_
+    rw [map_smul, hb, reducedResolvent_apply_eigenvectorBasis hA hn l j, smul_smul]
+  have hnormS : ‖reducedResolvent A l x‖ = √(∑ j, ‖b.repr x j * c j‖ ^ 2) := by
+    rw [hSx, LinearIsometryEquiv.norm_map, EuclideanSpace.norm_eq]
+  have hnormx : ‖x‖ = √(∑ j, ‖b.repr x j‖ ^ 2) := by
+    conv_lhs => rw [← b.repr.norm_map x]
+    rw [EuclideanSpace.norm_eq]
+  rw [hnormS, hnormx]
+  have hsum : ∑ j, ‖b.repr x j * c j‖ ^ 2 ≤ (δ⁻¹) ^ 2 * ∑ j, ‖b.repr x j‖ ^ 2 := by
+    rw [Finset.mul_sum]
+    refine Finset.sum_le_sum fun j _ => ?_
+    rw [norm_mul, mul_pow]
+    calc ‖b.repr x j‖ ^ 2 * ‖c j‖ ^ 2 ≤ ‖b.repr x j‖ ^ 2 * (δ⁻¹) ^ 2 := by
+          gcongr
+          exact hcbound j
+      _ = (δ⁻¹) ^ 2 * ‖b.repr x j‖ ^ 2 := by ring
+  calc √(∑ j, ‖b.repr x j * c j‖ ^ 2) ≤ √((δ⁻¹) ^ 2 * ∑ j, ‖b.repr x j‖ ^ 2) :=
+        Real.sqrt_le_sqrt hsum
+    _ = δ⁻¹ * √(∑ j, ‖b.repr x j‖ ^ 2) := by
+        rw [Real.sqrt_mul (by positivity), Real.sqrt_sq (inv_nonneg.2 hδ0)]
+
+/-- **The condition number of an eigenvector of a normal operator** ([saad2011numerical], (3.45)):
+`Cond(u) = 1 / dist (l, σ(A) \ {l})`.
+
+On the eigenspace of `μ` the reduced resolvent is multiplication by `(μ - l)⁻¹`, and the eigenspaces
+of a normal operator are orthogonal and span, so the operator norm is the largest of the `|μ - l|⁻¹`
+over the other eigenvalues; the largest is attained because the spectrum is finite.  Both sides are
+`0` when `l` is the only eigenvalue, `Metric.infDist` to the empty set being `0`. -/
+theorem eigenvectorCondNumber_eq_inv_infDist_of_isStarNormal (hA : IsStarNormal A) (l : 𝕜) :
+    eigenvectorCondNumber A l = (Metric.infDist l (spectrum 𝕜 A \ {l}))⁻¹ := by
+  set δ := Metric.infDist l (spectrum 𝕜 A \ {l}) with hδ
+  have hδ0 : 0 ≤ δ := Metric.infDist_nonneg
+  refine le_antisymm (ContinuousLinearMap.opNorm_le_bound _ (inv_nonneg.2 hδ0) fun x => ?_) ?_
+  · exact norm_reducedResolvent_apply_le_inv_infDist hA l x
+  · rcases Set.eq_empty_or_nonempty (spectrum 𝕜 A \ {l}) with hemp | hne
+    · rw [hδ, hemp, Metric.infDist_empty, inv_zero]
+      exact eigenvectorCondNumber_nonneg A l
+    · have hfin : (spectrum 𝕜 A \ {l}).Finite :=
+        (Module.End.finite_spectrum A).subset Set.sdiff_subset
+      obtain ⟨μ, hμ, hdist⟩ := hfin.isCompact.exists_infDist_eq_dist hne l
+      have hμl : μ ≠ l := fun h => hμ.2 (by simpa using h)
+      obtain ⟨x, hxmem, hx0⟩ :=
+        (Module.End.hasEigenvalue_iff_mem_spectrum.2 hμ.1).exists_hasEigenvector
+      have hxnorm : 0 < ‖x‖ := norm_pos_iff.2 hx0
+      have hval : reducedResolvent A l x = (μ - l)⁻¹ • x :=
+        reducedResolvent_apply_of_mem_eigenspace hμl hxmem
+      have hdelta : δ = ‖μ - l‖ := by
+        rw [hδ, hdist, dist_eq_norm, norm_sub_rev]
+      have hnorm : ‖reducedResolvent A l x‖ = δ⁻¹ * ‖x‖ := by
+        rw [hval, norm_smul, norm_inv, hdelta]
+      have hle := norm_reducedResolvent_apply_le A l x
+      rw [hnorm] at hle
+      exact le_of_mul_le_mul_right (by linarith) hxnorm
+
+/-- **The condition number of an eigenvector of a Hermitian operator** ([saad2011numerical],
+(3.45)), the case of `Module.End.eigenvectorCondNumber_eq_inv_infDist_of_isStarNormal` the source
+states: for a symmetric `A` the condition number of the eigenvector of `l` is
+`1 / dist (l, σ(A) \ {l})`, the `1 / δ` of
+`LinearMap.IsSymmetric.sin_angle_le_norm_residual_div`. -/
+theorem eigenvectorCondNumber_eq_inv_dist_of_isSymmetric (hA : A.IsSymmetric) (l : 𝕜) :
+    eigenvectorCondNumber A l = (Metric.infDist l (spectrum 𝕜 A \ {l}))⁻¹ :=
+  eigenvectorCondNumber_eq_inv_infDist_of_isStarNormal
+    ((LinearMap.isSymmetric_iff_isSelfAdjoint A).1 hA).isStarNormal l
+
+end Normal
 
 end Module.End

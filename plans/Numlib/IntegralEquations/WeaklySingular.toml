@@ -38,20 +38,4 @@ id = "IsAdmissibleKernel.mul_continuousMap"
 
 [[node]]
 id = "norm_admissibleKernelCLM"
-kind = "theorem"
-desc = '''
-The *equality* `‖admissibleKernelCLM hk‖ = ⨆ x, ∫ y, |k (x, y)| ∂μ`, equation (2.8.6) of
-Atkinson–Han §2.8.1. Only `norm_admissibleKernelCLM_le` is proved.
 
-The missing half is the lower bound, and the obstruction is precise: to show
-`‖K‖ ≥ ∫ |k (x₀, y)| dμ - δ` one needs a *continuous* `w` with `‖w‖ ≤ 1` and
-`∫ k (x₀, y) w y dμ ≥ ∫ |k (x₀, y)| dμ - δ`, that is, a continuous approximation to the sign of the
-row `k (x₀, ·)`. `IntegralOperator.norm_kernelCLM` builds one by hand because a *continuous* row is
-uniformly approximable; for a row that is merely integrable this is the density of `C(X, ℝ)` in
-`L¹(μ)`. Mathlib has that density only through
-`MeasureTheory.Lp.boundedContinuousFunction_dense`, which wants `μ` weakly regular on a locally
-compact space and lands in `Lp`, so transporting it to the integral form above is a small project
-of its own. It was not attempted here; nothing in the book's later chapters uses the equality for a
-singular kernel.
-'''
-deps = ["admissibleKernelCLM", "norm_kernelCLM"]

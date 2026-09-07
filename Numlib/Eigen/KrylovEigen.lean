@@ -1,6 +1,7 @@
 import Numlib.Analysis.InnerProductSpace.Projection.Angle
 import Numlib.Eigen.RayleighRitz
 import Numlib.Krylov.Convergence.Polynomial
+import Numlib.RingTheory.Polynomial.ChebyshevEllipse
 import Numlib.RingTheory.Polynomial.ChebyshevMinimax
 
 /-!
@@ -49,6 +50,11 @@ norm bound and a Chebyshev min–max.
   `ξ_i (ρ/‖λ_i - c‖)^(m-1)` that a disc enclosing the rest of the spectrum gives, with `ξ_i = ∑_{k ≠
   i} ‖α_k‖/‖α_i‖`.  The triangle inequality replaces Pythagoras, which is why the factor `ξ_i`
   appears where the symmetric bounds have none.
+* `Arnoldi.norm_sub_starProjection_le_of_mem_ellipse` is the same estimate for an *ellipse*
+  enclosing the rest of the spectrum, with the Chebyshev ratio `C_{m-1}(a/d)/|C_{m-1}((λ_i - c)/d)|`
+  in place of the geometric factor.  Its competitor is the shifted, normalized Chebyshev polynomial
+  of `Numlib/RingTheory/Polynomial/ChebyshevEllipse`, whose maximum on the boundary ellipse is known
+  and travels into the region the ellipse encloses by the maximum modulus principle there.
 
 The angle bound and the Ritz value bound each come in two forms: one taking as data an interval
 `[lo, hi]` enclosing the eigenvalues after the `i`-th (`…_of_mem_Icc`), which is the general
@@ -1218,5 +1224,49 @@ theorem norm_sub_starProjection_le_of_mem_closedBall (hu : ∀ k, A (u k) = lam 
     exact hρ k hk
 
 end Diagonalizable
+
+section Ellipse
+
+variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℂ E]
+variable {ι : Type*} [Fintype ι] [DecidableEq ι] {A : E →ₗ[ℂ] E} {u : ι → E} {lam α : ι → ℂ}
+  {v : E} {i : ι} {m : ℕ}
+
+/-- **[saad2011numerical], Theorem 6.8**, the ellipse counterpart of
+`Arnoldi.norm_sub_starProjection_le_of_mem_closedBall`: if every eigenvalue other than `λ_i` lies in
+the region bounded by the ellipse with centre `c`, focal semi-distance `d` and parameter `ρ`, and
+`λ_i` lies outside it, then
+
+`‖u_i - P_m u_i‖ ≤ ξ_i C_{m-1}(a/d) / |C_{m-1}((λ_i - c)/d)|`,
+
+with `ξ_i = ∑_{k ≠ i} ‖α_k‖/‖α_i‖` and `a/d = (ρ + ρ⁻¹)/2` the ratio of the semi-major axis to the
+focal semi-distance.  The competitor is the shifted, normalized Chebyshev polynomial
+`Polynomial.Chebyshev.shiftedComplex (m - 1) c d λ_i`, whose maximum on the ellipse is computed by
+`Polynomial.Chebyshev.sSup_norm_eval_shiftedComplex_ellipse` and carried into the enclosed region by
+the maximum modulus principle
+`Polynomial.Chebyshev.norm_eval_shiftedComplex_le_of_mem_filledEllipse`.
+
+The source writes `T_k` for the real Chebyshev polynomial in the numerator and for the complex one
+in the denominator; both appear here, over `ℝ` and over `ℂ`.  Being outside the region is what makes
+the denominator nonzero, by
+`Polynomial.Chebyshev.eval_T_sub_div_ne_zero_of_notMem_filledEllipse`. -/
+theorem norm_sub_starProjection_le_of_mem_ellipse (hu : ∀ k, A (u k) = lam k • u k)
+    (hu1 : ∀ k, ‖u k‖ = 1) (hv : v = ∑ k, α k • u k) (hα : α i ≠ 0) (hm : 0 < m) {c d : ℂ}
+    {ρ : ℝ} (hρ : 1 ≤ ρ) (hd : d ≠ 0) (hi : lam i ∉ Set.filledEllipse c d ρ)
+    (hlam : ∀ k ≠ i, lam k ∈ Set.filledEllipse c d ρ) :
+    ‖u i - (subspace A v m).starProjection (u i)‖
+      ≤ (∑ k ∈ Finset.univ.erase i, ‖α k‖ / ‖α i‖) *
+        ((T ℝ ((m - 1 : ℕ) : ℤ)).eval ((ρ + ρ⁻¹) / 2)
+          / ‖(T ℂ ((m - 1 : ℕ) : ℤ)).eval ((c - lam i) / d)‖) := by
+  have hγ : (T ℂ ((m - 1 : ℕ) : ℤ)).eval ((c - lam i) / d) ≠ 0 :=
+    Polynomial.Chebyshev.eval_T_sub_div_ne_zero_of_notMem_filledEllipse (m - 1) hρ hd hi
+  have hdeg : (Polynomial.Chebyshev.shiftedComplex (m - 1) c d (lam i)).degree < (m : ℕ) := by
+    refine lt_of_le_of_lt (Polynomial.Chebyshev.shiftedComplex_degree_le (m - 1) c d (lam i)) ?_
+    exact_mod_cast Nat.sub_lt hm one_pos
+  refine norm_sub_starProjection_le_mul hu hu1 hv hα hdeg
+    (Polynomial.Chebyshev.shiftedComplex_eval_self (m - 1) hd hγ) fun k hk => ?_
+  exact Polynomial.Chebyshev.norm_eval_shiftedComplex_le_of_mem_filledEllipse (m - 1) hρ hd hγ
+    (hlam k hk)
+
+end Ellipse
 
 end Arnoldi

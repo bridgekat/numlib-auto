@@ -29,28 +29,43 @@ id = "not_forall_eq_integral_of_degree_le"
 source = "Kress, Numerical Analysis, Section 9.3"
 
 [[node]]
+id = "eq_taylorSum_add_integral"
+
+[[node]]
+id = "integral_eq_taylorSum_add_integral"
+
+[[node]]
+id = "truncPow"
+
+[[node]]
+id = "truncPow_eq_indicator"
+
+[[node]]
+id = "truncPow_flip_eq_indicator"
+
+[[node]]
+id = "intervalIntegrable_truncPow"
+
+[[node]]
+id = "intervalIntegrable_truncPow_flip"
+
+[[node]]
+id = "integral_truncPow_mul"
+
+[[node]]
+id = "integral_truncPow_flip"
+
+[[node]]
+id = "peanoKernel"
+source = "Kress, Numerical Analysis, Section 9.2"
+
+[[node]]
+id = "peanoKernel_eq"
+
+[[node]]
 id = "error_eq_integral_peanoKernel"
-kind = "theorem"
-desc = '''Peano's kernel theorem (Kress Thm 9.2-style): for a rule exact on polynomials of degree at most `m`
-and `f` of class `C^{m+1}[a, b]`, the error `E f = int f - functional w x f` is
-`int K(t) f^{(m+1)}(t) dt` with the Peano kernel `K(t) = (1/m!) E_x((. - t)_+^m)`, the error
-functional applied to the truncated power; and the corollary `|E f| <= norm K_1 * norm f^{(m+1)}_inf`.
+source = "Kress, Numerical Analysis, Section 9.2"
 
-Unlike the rest of this module the statement is not about an arbitrary target functional: the
-interchange `E(s -> int g(s, t) dt) = int E(g(., t)) dt` needs `L` to be the integral itself, so the
-node should be stated for `L f = int x in a..b, f x`.
-
-**The obstruction recorded here has shrunk: the pinned Mathlib now has the integral form of
-Taylor's theorem.** `Mathlib/Analysis/Calculus/Taylor.lean` has `taylor_integral_remainder` (and
-`taylor_integral_remainder_of_absolutelyContinuous`), `f x - taylorWithinEval f n (uIcc x0 x) x0 x
-= int_{x0}^{x} ((x-t)^n / n!) . f^{(n+1)}(t) dt` under `ContDiffOn` of order `n+1`, beside the
-mean-value forms. What used to be part 1 of this node, and was the part worth a node of its own, is
-therefore free. What is left is:
-
-1. the extension of the inner integral to `[a, b]` by the truncated power, which is where the
-   kernel's `(. - t)_+^m` comes from and where the integrand stops being smooth in `x`;
-2. the Fubini step `MeasureTheory.integral_integral_swap` on the continuous integrand
-   `(x, t) -> (x-t)_+^m f^(m+1)(t)` over the rectangle, the sum half of `E` being finite and hence
-   free.'''
-deps = ["functional", "IsInterpolatory"]
+[[node]]
+id = "abs_error_le_integral_abs_peanoKernel"
 source = "Kress, Numerical Analysis, Section 9.2"

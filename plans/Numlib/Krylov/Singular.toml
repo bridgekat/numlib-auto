@@ -50,22 +50,48 @@ source = "Choi, Iterative Methods for Singular Linear Equations and Least-Square
 [[node]]
 id = "Lanczos.apply_residual_minRes_eq"
 kind = "theorem"
-desc = '''Choi Lemma 2.19: `A r_k = ‖r_k‖ (γ_{k+1}^{(1)} • v_{k+1} + δ_{k+2}^{(1)} • v_{k+2})` and hence
+desc = '''
+Choi Lemma 2.19: `A r_k = ‖r_k‖ (γ_{k+1}^{(1)} v_{k+1} + δ_{k+2}^{(1)} v_{k+2})` and hence
 `‖A r_k‖ = ‖r_k‖ √((γ_{k+1}^{(1)})² + (δ_{k+2}^{(1)})²)`, in terms of the entries of the rotated
-tridiagonal factor; and Lemma 2.20, `‖A x_k‖² = ‖t_k‖²` for the rotated right-hand side, which
-makes `‖A x_k‖` computable from the small problem.
+tridiagonal factor; and Lemma 2.20, `‖A x_k‖ = ‖t_k‖` for the rotated right-hand side.
 
-**Blocked on the source.** `books/iterative-methods-for-singular-linear-equations-and-least-squares-problems-choi.pdf`
-is password-protected and cannot be opened, and this desc is the only record of the statement; it
-names `γ^{(1)}_{k+1}` and `δ^{(1)}_{k+2}` without saying which entries of which rotated matrix they
-are, so the coefficients cannot be pinned down without the book. What *is* determined, and is the
-structural half of the lemma, is that `A r_k` lies in `span {v_k, v_{k+1}}` — `A r_k ∈ 𝒦_{k+2}`
-because `r_k ∈ 𝒦_{k+1}`, and `A r_k ⟂ 𝒦_k` because `⟪v_j, A r_k⟫ = ⟪A v_j, r_k⟫` vanishes for
-`j < k` by minimality of the residual over `A 𝒦_k` — so that
-`‖A r_k‖² = |⟪v_k, A r_k⟫|² + |⟪v_{k+1}, A r_k⟫|²`, with the two coefficients computable from
-`Lanczos.residual_minRes_succ_eq` (now proved) and the three-term `Lanczos.apply_vec`: writing
-`r_k = γ_k ∑_i conj (Q_k)_{k,i} v_i`, the coefficient of `v_j` in `A r_k` is
-`γ_k conj ((T̄_k q)_j)` for `q` the last row of `Q_k`. Anyone attempting this should first check that
-form against Choi's `γ^{(1)}`/`δ^{(1)}` rather than guess the normalization.'''
-deps = ["Lanczos.residual_minRes_succ_eq", "Krylov.rotated", "Krylov.gvec", "Lanczos.apply_vec"]
-source = "Choi, Iterative Methods for Singular Linear Equations and Least-Squares Problems, Lemmas 2.19 and 2.20"
+**No longer blocked on the source, and the superscript-(1) quantities are pinned down.** The book
+is readable as `books/iterative-methods-for-singular-linear-equations-and-least-squares-problems-choi.txt`
+(`pdftotext`; the Read tool wrongly reports the PDFs as password-protected). Lemma 2.19 is at line
+2190 of that file, the pseudocode defining its quantities at lines 2040-2105, and the display (2.22)
+just after. What they are: `Q_{k,k+1}`, the rotation acting on rows `k, k+1`, sends
+
+  row k    [ γ_k^{(1)}  δ_{k+1}^{(1)}  0        ]      [ γ_k^{(2)}  δ_{k+1}^{(2)}  ε_{k+1}^{(1)} ]
+  row k+1  [ β_{k+1}    α_{k+1}        β_{k+2}  ]  to  [ 0          γ_{k+1}^{(1)}  δ_{k+2}^{(1)} ]
+
+so `γ_{k+1}^{(1)} = s_k δ_{k+1}^{(1)} - c_k α_{k+1}` and `δ_{k+2}^{(1)} = -c_k β_{k+2}`, exactly as
+the printed recurrences say. A superscript `(j)` counts how many rotations have touched the entry.
+
+**In this library's indexing that is `Krylov.rotated`, and nothing new has to be defined.** With
+`h = Arnoldi.coeff A (b - A x₀)`, the library's rotation `j` acts on rows `j, j+1` and `rotated h k`
+is the coefficient matrix after `k` rotations, so Choi's row `k+1` is row `k` here and Choi's
+rotation `Q_{k,k+1}` is rotation `k-1`. Hence, at library step `m`,
+
+  `γ_{m+1}^{(1)} = rotated h m m m`   and   `δ_{m+2}^{(1)} = rotated h m m (m + 1)`,
+
+the first of which is already the numerator of `Krylov.givensC h m`.
+
+**The route, derived but not written in Lean.** `Krylov.IsMinResIterate.residual_eq_gamma_smul_sum`
+gives `r_m = γ_m ∑_i conj (Q_m)_{m,i} v_i`. Apply `A` through the Arnoldi relation
+`A v_i = ∑_l h_{l,i} v_l`: the coefficient of `v_l` in `A r_m` is `γ_m ∑_i conj (Q_m)_{m,i} h_{l,i}`.
+For the *symmetric* case `h` is real and symmetric in its square part, so that sum is
+`conj ((Q_m H)_{m,l}) = conj (rotated h m m l)` for `l ≤ m`, and for `l = m + 1` only `i = m`
+survives, giving `h_{m+1,m} conj (Q_m)_{m,m} = conj (rotated h m m (m+1))` by the same symmetry.
+Upper-triangularity of `rotated h m` kills `l < m`, which is the orthogonality `A r_m ⟂ 𝒦_m`, and
+what is left is Choi's two coefficients. The library lemma that supplies `Q_m H = rotated h m` is
+`Krylov.givensQAux_mul_hessenbergOf` at width `m + 2` (`Krylov.givensQ_mul_hessenbergOf` is the
+square version and stops one column short of `δ^{(1)}`); `Krylov.givensQAux_castSucc` relates its
+last row to that of `givensQ h m`.
+
+What has to be built is therefore the bookkeeping around `hessenbergOf` at width `m + 2` and the
+symmetry `Arnoldi.coeff` inherits from `A.IsSymmetric`; no missing mathematics is known. The
+estimate is a conjecture: none of the above was attempted in Lean.
+'''
+deps = ["Lanczos.residual_minRes_succ_eq", "Krylov.IsMinResIterate.residual_eq_gamma_smul_sum"]
+source = "Choi, Iterative Methods for Singular Linear Equations and Least-Squares Problems, Lemma 2.19"
+

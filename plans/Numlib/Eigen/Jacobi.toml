@@ -39,41 +39,52 @@ source = "Kress, Numerical Analysis, Theorem 7.14"
 [[node]]
 id = "tendsto_classicalJacobiIterate"
 kind = "theorem"
-desc = '''Kress Thm 7.14, the half that is still open: the classical Jacobi iterates converge to a
-*diagonal matrix* whose diagonal entries are the eigenvalues of `A` as a multiset.
+desc = '''
+Kress Thm 7.14, the half that is still open: the classical Jacobi iterates converge to a *diagonal
+matrix* whose diagonal entries are the eigenvalues of `A` as a multiset.
 
-**Kress does not prove his own statement.** His Theorem 7.14 reads "the sequence `(A_v)` converges
-to a diagonal matrix with the eigenvalues of `A` as diagonal elements", but the proof printed under
-it establishes only `N(A_v) <= q^v N(A_0)`, i.e. that the off-diagonal mass tends to `0` -- which is
-`tendsto_offDiagNormSq_classicalJacobiIterate`, already proved. The convergence of the matrix
-sequence itself is a separate classical theorem (Forsythe-Henrici), and the book gives no argument
-for it. So this node asks for more than its source supplies, and the work has to be found
-elsewhere. (Read in `books/numerical-analysis-kress.txt`; the proof is four displayed lines and
-ends at `N(A_v) -> 0`.)
+**Kress does not prove his own statement.** His proof establishes only `N(A_v) ≤ q^v N(A_0)`, i.e.
+`tendsto_offDiagNormSq_classicalJacobiIterate`, already proved. Convergence of the matrix sequence
+is a separate classical theorem (Forsythe–Henrici) for which the book gives no argument, so this
+node asks for more than its source supplies.
 
-**The statement is nevertheless true, and the route is this.** Let `D` be the set of diagonal
-matrices whose diagonal is a permutation of the eigenvalues of `A`; it is finite.
+**The statement is true, and the route is this.** Let `D` be the (finite) set of diagonal matrices
+whose diagonal is a permutation of the eigenvalues of `A`.
 
-1. `dist (A_v, D) -> 0`. The off-diagonal part vanishes, and the diagonal entries of a symmetric
-   matrix, sorted, are within the operator norm of the off-diagonal part of the sorted eigenvalues
-   -- Weyl's inequality applied to `A_v = diag A_v + (A_v - diag A_v)`. The eigenvalues of `A_v`
-   are those of `A` by `charpoly_classicalJacobiIterate`.
-2. `||A_{v+1} - A_v|| -> 0`. One Jacobi rotation changes the matrix by `O(N(A_v))`: the rotated
-   2x2 block moves by `O(a_pq)` even when the angle is near `pi/4`, and every other entry it
-   touches is an off-diagonal entry, hence already small. **This step is what the old note
-   missed**, and it is the one that pins the permutation down.
+1. `dist (A_v, D) → 0`.
+2. `‖A_{v+1} - A_v‖ → 0`.
 3. With `eps` a third of the smallest distance between distinct points of `D`, steps 1 and 2 make
-   the nearest point of `D` to `A_v` eventually constant, so `A_v` converges to it.
+   the nearest point of `D` to `A_v` eventually constant, so `A_v` converges to it. (A bounded
+   sequence whose limit points lie in a finite set need not converge; the small-step estimate of 2
+   is what rules the wandering out.)
 
-The old note said "a compactness argument is needed to pin down the ordering". That is not enough
-on its own: a bounded sequence whose limit points lie in a finite set need not converge, and it is
-the small-step estimate of 2 that rules the wandering out. The Gershgorin bound the old note
-proposed for step 1 is weaker than Weyl and does not give a matching of the *multiset*.
+**Step 1 is in better shape than an earlier note said: Weyl's inequality is already proved here.**
+`LinearMap.IsSymmetric.abs_eigenvalues_sub_le` and its operator-norm form
+`…abs_eigenvalues_sub_le_opNorm`, in `Numlib/Eigen/MinMax`, give `|λ_i(X) - λ_i(Y)| ≤ ‖X - Y‖` for
+Mathlib's sorted `IsSymmetric.eigenvalues`. Applied to `A_v = diag A_v + (A_v - diag A_v)` that is
+exactly the comparison step 1 needs, and the earlier suggestion to use Gershgorin instead is both
+weaker and unnecessary. What step 1 still needs, and what was checked and found missing:
 
-Nothing above was attempted. Step 1 needs a Weyl inequality for symmetric matrices in the sorted
-form, which `Numlib/Eigen/MinMax` should be able to supply from Courant-Fischer but does not state;
-step 2 is an explicit computation with `Matrix.jacobiStep`; step 3 is elementary. Treat the effort
-estimate as a conjecture: no part of it was written in Lean.'''
-deps = ["tendsto_offDiagNormSq_classicalJacobiIterate", "charpoly_classicalJacobiIterate",
-  "spectrum_subset_iUnion_closedBall"]
+* **invariance of the sorted eigenvalues under unitary conjugation.** `charpoly_classicalJacobiIterate`
+  says the iterates share a characteristic polynomial, but nothing connects `Matrix.charpoly` to
+  Mathlib's `LinearMap.IsSymmetric.eigenvalues`, which is defined from `eigenvectorBasis`. The
+  cheap route is not through the charpoly at all: the min–max sets of
+  `LinearMap.IsSymmetric.isGreatest_eigenvalues` are visibly invariant under a unitary change of
+  variable, since it permutes the subspaces of each dimension and preserves Rayleigh quotients, so
+  `λ_i(U⁻¹ T U) = λ_i(T)` is about sixty lines from what `Numlib/Eigen/MinMax` already exports. This
+  belongs in `MinMax`, not here.
+* **the matching permutation.** Weyl compares *sorted* diagonals with *sorted* eigenvalues; turning
+  that into "`diag A_v` is close to some member of `D`" needs the permutation that sorts the
+  diagonal, i.e. `Tuple.sort`. Elementary, fiddly.
+
+Step 2 is an explicit computation with `Matrix.jacobiStep`: the rotated 2×2 block moves by
+`O(|a_pq|)` even when the angle is near `π/4`, and every other entry the rotation touches is an
+off-diagonal entry, hence already `O(√(N(A_v)))`. Step 3 is elementary.
+
+Nothing above was attempted in Lean; treat the effort estimate as a conjecture. What *was* checked
+is that `abs_eigenvalues_sub_le` exists and that no lemma relating `Matrix.charpoly` to
+`IsSymmetric.eigenvalues` does.
+'''
+deps = ["tendsto_offDiagNormSq_classicalJacobiIterate", "charpoly_classicalJacobiIterate"]
 source = "Kress, Numerical Analysis, Theorem 7.14"
+

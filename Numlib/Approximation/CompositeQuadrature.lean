@@ -40,11 +40,15 @@ continuity bound, and the mean value form of the composite trapezoidal error.
   `-(h²/12) [g'(b) - g'(a)]` up to `(b - a) h⁴ ‖g⁗‖_∞ / 720`.  Two further integrations by parts
   of the Peano identity give it, `Quadrature.integral_peanoKernel_mul_eq`, and it is the form that
   justifies Richardson extrapolation.
+* `Quadrature.sub_simpson_eq_integral_peanoKernel`, the one-panel Peano identity for Simpson's
+  rule, whose kernel is the *piecewise* cubic `(t - α)³(3t - α - 2β)/72` on the left half of the
+  panel and its mirror image on the right, and `Quadrature.sub_composite_simpson_eq`, the
+  composite mean value form `∫_a^b g - simpsonSum g a h N = -h⁴ (b - a) g⁗(ξ)/2880`.
 
 ## References
 
 The composite rules and the trapezoidal error are [han2009theoretical] Example 12.4.5 and
-[kress1998numerical] §9.4.
+[kress1998numerical] §9.4; Simpson's error is [kress1998numerical] §9.4.
 -/
 
 open Filter MeasureTheory Set Topology
@@ -791,6 +795,368 @@ theorem abs_sub_trapezoidSum_add_le (hab : a < b) {N : ℕ} (hN : 0 < N) (hh : h
         ring
 
 end EulerMaclaurin
+
+/-! ### The composite Simpson error -/
+
+section SimpsonError
+
+variable {a b h : ℝ} {g g' g'' g₃ g₄ : ℝ → ℝ}
+
+/-- **The telescoping identity behind a fourth order Peano kernel.**  If `p` has four derivatives
+and the fourth one is `1`, then `p g⁗ - g` is the derivative of `p g''' - p' g'' + p'' g' - p''' g`,
+so integrating it over a panel is a single application of the fundamental theorem of calculus in
+place of the four integrations by parts it replaces. -/
+private theorem integral_quartic_kernel_sub {p p₁ p₂ p₃ : ℝ → ℝ} {u v : ℝ}
+    (hp : ∀ x : ℝ, HasDerivAt p (p₁ x) x) (hp₁ : ∀ x : ℝ, HasDerivAt p₁ (p₂ x) x)
+    (hp₂ : ∀ x : ℝ, HasDerivAt p₂ (p₃ x) x) (hp₃ : ∀ x : ℝ, HasDerivAt p₃ 1 x)
+    (hg : ∀ x ∈ Set.uIcc u v, HasDerivAt g (g' x) x)
+    (hg' : ∀ x ∈ Set.uIcc u v, HasDerivAt g' (g'' x) x)
+    (hg'' : ∀ x ∈ Set.uIcc u v, HasDerivAt g'' (g₃ x) x)
+    (hg₃ : ∀ x ∈ Set.uIcc u v, HasDerivAt g₃ (g₄ x) x)
+    (hg₄ : IntervalIntegrable g₄ volume u v) :
+    (∫ t in u..v, p t * g₄ t) - ∫ t in u..v, g t
+      = (p v * g₃ v - p₁ v * g'' v + p₂ v * g' v - p₃ v * g v)
+        - (p u * g₃ u - p₁ u * g'' u + p₂ u * g' u - p₃ u * g u) := by
+  have hdp : Differentiable ℝ p := fun y => (hp y).differentiableAt
+  have hcg : ContinuousOn g (Set.uIcc u v) := fun y hy =>
+    (hg y hy).continuousAt.continuousWithinAt
+  have hpg : IntervalIntegrable (fun t => p t * g₄ t) volume u v :=
+    hg₄.continuousOn_mul hdp.continuous.continuousOn
+  have hgi : IntervalIntegrable g volume u v := hcg.intervalIntegrable
+  have hΦ : ∀ y ∈ Set.uIcc u v,
+      HasDerivAt (fun t => p t * g₃ t - p₁ t * g'' t + p₂ t * g' t - p₃ t * g t)
+        (p y * g₄ y - g y) y := by
+    intro y hy
+    have h1 := (hp y).mul (hg₃ y hy)
+    have h2 := (hp₁ y).mul (hg'' y hy)
+    have h3 := (hp₂ y).mul (hg' y hy)
+    have h4 := (hp₃ y).mul (hg y hy)
+    have h : HasDerivAt (fun t => p t * g₃ t - p₁ t * g'' t + p₂ t * g' t - p₃ t * g t)
+        (p₁ y * g₃ y + p y * g₄ y - (p₂ y * g'' y + p₁ y * g₃ y)
+          + (p₃ y * g' y + p₂ y * g'' y) - (1 * g y + p₃ y * g' y)) y :=
+      ((h1.sub h2).add h3).sub h4
+    convert h using 1
+    ring
+  rw [← intervalIntegral.integral_sub hpg hgi]
+  exact intervalIntegral.integral_eq_sub_of_hasDerivAt hΦ (hpg.sub hgi)
+
+/-- **The Peano identity for Simpson's rule on one panel.**  Simpson's kernel is *piecewise*
+cubic: `(t - α)³(3t - α - 2β)/72` on the left half of the panel and its mirror image
+`(t - β)³(3t - β - 2α)/72` on the right.  Each half is a quartic whose fourth derivative is `1`,
+so `Quadrature.integral_quartic_kernel_sub` applies on each half; the boundary terms at the
+midpoint cancel, because the two halves agree there to second order and their third derivatives
+are opposite, and what survives is exactly Simpson's weights `(1, 4, 1)/6`. -/
+theorem sub_simpson_eq_integral_peanoKernel {α β : ℝ}
+    (hg : ∀ x ∈ Set.uIcc α β, HasDerivAt g (g' x) x)
+    (hg' : ∀ x ∈ Set.uIcc α β, HasDerivAt g' (g'' x) x)
+    (hg'' : ∀ x ∈ Set.uIcc α β, HasDerivAt g'' (g₃ x) x)
+    (hg₃ : ∀ x ∈ Set.uIcc α β, HasDerivAt g₃ (g₄ x) x)
+    (hg₄ : IntervalIntegrable g₄ volume α β) :
+    (∫ t in α..β, g t) - (β - α) / 6 * (g α + 4 * g ((α + β) / 2) + g β)
+      = (∫ t in α..(α + β) / 2, (t - α) ^ 3 * (3 * t - α - 2 * β) / 72 * g₄ t)
+        + ∫ t in (α + β) / 2..β, (t - β) ^ 3 * (3 * t - β - 2 * α) / 72 * g₄ t := by
+  have hmem : (α + β) / 2 ∈ Set.uIcc α β := by
+    rcases le_total α β with hle | hle
+    · rw [Set.uIcc_of_le hle]; exact ⟨by linarith, by linarith⟩
+    · rw [Set.uIcc_of_ge hle]; exact ⟨by linarith, by linarith⟩
+  have hsubL : Set.uIcc α ((α + β) / 2) ⊆ Set.uIcc α β :=
+    Set.uIcc_subset_uIcc Set.left_mem_uIcc hmem
+  have hsubR : Set.uIcc ((α + β) / 2) β ⊆ Set.uIcc α β :=
+    Set.uIcc_subset_uIcc hmem Set.right_mem_uIcc
+  -- the four derivatives of the half kernel, in a form symmetric in the two endpoints
+  have hd3 : ∀ γ δ y : ℝ, HasDerivAt (fun t : ℝ => (6 * t - 5 * γ - δ) / 6) 1 y := by
+    intro γ δ y
+    have h : HasDerivAt (fun t : ℝ => (6 * t - 5 * γ - δ) / 6) (6 * 1 / 6) y :=
+      ((((hasDerivAt_id y).const_mul 6).sub_const (5 * γ)).sub_const δ).div_const 6
+    convert h using 1
+    norm_num
+  have hd2 : ∀ γ δ y : ℝ, HasDerivAt (fun t : ℝ => (t - γ) * (3 * t - 2 * γ - δ) / 6)
+      ((6 * y - 5 * γ - δ) / 6) y := by
+    intro γ δ y
+    have h : HasDerivAt (fun t : ℝ => (t - γ) * (3 * t - 2 * γ - δ) / 6)
+        ((1 * (3 * y - 2 * γ - δ) + (y - γ) * (3 * 1)) / 6) y :=
+      (((hasDerivAt_id y).sub_const γ).mul
+        ((((hasDerivAt_id y).const_mul 3).sub_const (2 * γ)).sub_const δ)).div_const 6
+    convert h using 1
+    ring
+  have hd1 : ∀ γ δ y : ℝ, HasDerivAt (fun t : ℝ => (t - γ) ^ 2 * (2 * t - γ - δ) / 12)
+      ((y - γ) * (3 * y - 2 * γ - δ) / 6) y := by
+    intro γ δ y
+    have h : HasDerivAt (fun t : ℝ => (t - γ) ^ 2 * (2 * t - γ - δ) / 12)
+        ((2 * (y - γ) ^ 1 * 1 * (2 * y - γ - δ) + (y - γ) ^ 2 * (2 * 1)) / 12) y :=
+      ((((hasDerivAt_id y).sub_const γ).pow 2).mul
+        ((((hasDerivAt_id y).const_mul 2).sub_const γ).sub_const δ)).div_const 12
+    convert h using 1
+    ring
+  have hd0 : ∀ γ δ y : ℝ, HasDerivAt (fun t : ℝ => (t - γ) ^ 3 * (3 * t - γ - 2 * δ) / 72)
+      ((y - γ) ^ 2 * (2 * y - γ - δ) / 12) y := by
+    intro γ δ y
+    have h : HasDerivAt (fun t : ℝ => (t - γ) ^ 3 * (3 * t - γ - 2 * δ) / 72)
+        ((3 * (y - γ) ^ 2 * 1 * (3 * y - γ - 2 * δ) + (y - γ) ^ 3 * (3 * 1)) / 72) y :=
+      ((((hasDerivAt_id y).sub_const γ).pow 3).mul
+        ((((hasDerivAt_id y).const_mul 3).sub_const γ).sub_const (2 * δ))).div_const 72
+    convert h using 1
+    ring
+  have hL := integral_quartic_kernel_sub (u := α) (v := (α + β) / 2)
+    (g := g) (g' := g') (g'' := g'') (g₃ := g₃) (g₄ := g₄)
+    (p := fun t : ℝ => (t - α) ^ 3 * (3 * t - α - 2 * β) / 72)
+    (p₁ := fun t : ℝ => (t - α) ^ 2 * (2 * t - α - β) / 12)
+    (p₂ := fun t : ℝ => (t - α) * (3 * t - 2 * α - β) / 6)
+    (p₃ := fun t : ℝ => (6 * t - 5 * α - β) / 6)
+    (hd0 α β) (hd1 α β) (hd2 α β) (hd3 α β)
+    (fun y hy => hg y (hsubL hy)) (fun y hy => hg' y (hsubL hy))
+    (fun y hy => hg'' y (hsubL hy)) (fun y hy => hg₃ y (hsubL hy)) (hg₄.mono_set hsubL)
+  have hR := integral_quartic_kernel_sub (u := (α + β) / 2) (v := β)
+    (g := g) (g' := g') (g'' := g'') (g₃ := g₃) (g₄ := g₄)
+    (p := fun t : ℝ => (t - β) ^ 3 * (3 * t - β - 2 * α) / 72)
+    (p₁ := fun t : ℝ => (t - β) ^ 2 * (2 * t - β - α) / 12)
+    (p₂ := fun t : ℝ => (t - β) * (3 * t - 2 * β - α) / 6)
+    (p₃ := fun t : ℝ => (6 * t - 5 * β - α) / 6)
+    (hd0 β α) (hd1 β α) (hd2 β α) (hd3 β α)
+    (fun y hy => hg y (hsubR hy)) (fun y hy => hg' y (hsubR hy))
+    (fun y hy => hg'' y (hsubR hy)) (fun y hy => hg₃ y (hsubR hy)) (hg₄.mono_set hsubR)
+  have hgL : IntervalIntegrable g volume α ((α + β) / 2) :=
+    ContinuousOn.intervalIntegrable fun y hy =>
+      (hg y (hsubL hy)).continuousAt.continuousWithinAt
+  have hgR : IntervalIntegrable g volume ((α + β) / 2) β :=
+    ContinuousOn.intervalIntegrable fun y hy =>
+      (hg y (hsubR hy)).continuousAt.continuousWithinAt
+  have hadd : (∫ t in α..(α + β) / 2, g t) + (∫ t in (α + β) / 2..β, g t) = ∫ t in α..β, g t :=
+    intervalIntegral.integral_add_adjacent_intervals hgL hgR
+  linarith [hL, hR, hadd]
+
+/-- The left half of Simpson's Peano kernel integrates to `-(β - α)⁵/5760` over the left half
+panel. -/
+theorem integral_simpsonKernel_left {α β : ℝ} :
+    (∫ t in α..(α + β) / 2, (t - α) ^ 3 * (3 * t - α - 2 * β) / 72) = -(β - α) ^ 5 / 5760 := by
+  have hF : ∀ y ∈ Set.uIcc α ((α + β) / 2),
+      HasDerivAt (fun t : ℝ => (t - α) ^ 5 / 120 - (β - α) * (t - α) ^ 4 / 144)
+        ((y - α) ^ 3 * (3 * y - α - 2 * β) / 72) y := by
+    intro y _
+    have h : HasDerivAt (fun t : ℝ => (t - α) ^ 5 / 120 - (β - α) * (t - α) ^ 4 / 144)
+        (5 * (y - α) ^ 4 * 1 / 120 - (β - α) * (4 * (y - α) ^ 3 * 1) / 144) y :=
+      ((((hasDerivAt_id y).sub_const α).pow 5).div_const 120).sub
+        (((((hasDerivAt_id y).sub_const α).pow 4).const_mul (β - α)).div_const 144)
+    convert h using 1
+    ring
+  rw [intervalIntegral.integral_eq_sub_of_hasDerivAt hF
+    (Continuous.intervalIntegrable (by fun_prop) _ _)]
+  ring
+
+/-- The right half of Simpson's Peano kernel integrates to `-(β - α)⁵/5760` over the right half
+panel, so the whole kernel integrates to `-(β - α)⁵/2880`. -/
+theorem integral_simpsonKernel_right {α β : ℝ} :
+    (∫ t in (α + β) / 2..β, (t - β) ^ 3 * (3 * t - β - 2 * α) / 72) = -(β - α) ^ 5 / 5760 := by
+  have hF : ∀ y ∈ Set.uIcc ((α + β) / 2) β,
+      HasDerivAt (fun t : ℝ => (t - β) ^ 5 / 120 - (α - β) * (t - β) ^ 4 / 144)
+        ((y - β) ^ 3 * (3 * y - β - 2 * α) / 72) y := by
+    intro y _
+    have h : HasDerivAt (fun t : ℝ => (t - β) ^ 5 / 120 - (α - β) * (t - β) ^ 4 / 144)
+        (5 * (y - β) ^ 4 * 1 / 120 - (α - β) * (4 * (y - β) ^ 3 * 1) / 144) y :=
+      ((((hasDerivAt_id y).sub_const β).pow 5).div_const 120).sub
+        (((((hasDerivAt_id y).sub_const β).pow 4).const_mul (α - β)).div_const 144)
+    convert h using 1
+    ring
+  rw [intervalIntegral.integral_eq_sub_of_hasDerivAt hF
+    (Continuous.intervalIntegrable (by fun_prop) _ _)]
+  ring
+
+/-- An integral against a nonpositive kernel is bounded above by the kernel's integral times a
+lower bound for the other factor. -/
+private theorem integral_nonpos_kernel_mul_le {f k : ℝ → ℝ} {u v c : ℝ} (huv : u ≤ v)
+    (hk : ContinuousOn k (Set.Icc u v)) (hf : ContinuousOn f (Set.Icc u v))
+    (hknp : ∀ t ∈ Set.Icc u v, k t ≤ 0) (hc : ∀ t ∈ Set.Icc u v, c ≤ f t) :
+    (∫ t in u..v, k t * f t) ≤ c * ∫ t in u..v, k t := by
+  have huIcc : Set.uIcc u v = Set.Icc u v := Set.uIcc_of_le huv
+  have h1 : IntervalIntegrable (fun t => k t * f t) volume u v :=
+    ContinuousOn.intervalIntegrable (by rw [huIcc]; exact hk.mul hf)
+  have h2 : IntervalIntegrable (fun t => k t * c) volume u v :=
+    ContinuousOn.intervalIntegrable (by rw [huIcc]; exact hk.mul continuousOn_const)
+  have h := intervalIntegral.integral_mono_on huv h1 h2 fun t ht =>
+    mul_le_mul_of_nonpos_left (hc t ht) (hknp t ht)
+  rw [intervalIntegral.integral_mul_const] at h
+  linarith
+
+/-- An integral against a nonpositive kernel is bounded below by the kernel's integral times an
+upper bound for the other factor. -/
+private theorem le_integral_nonpos_kernel_mul {f k : ℝ → ℝ} {u v c : ℝ} (huv : u ≤ v)
+    (hk : ContinuousOn k (Set.Icc u v)) (hf : ContinuousOn f (Set.Icc u v))
+    (hknp : ∀ t ∈ Set.Icc u v, k t ≤ 0) (hc : ∀ t ∈ Set.Icc u v, f t ≤ c) :
+    (c * ∫ t in u..v, k t) ≤ ∫ t in u..v, k t * f t := by
+  have huIcc : Set.uIcc u v = Set.Icc u v := Set.uIcc_of_le huv
+  have h1 : IntervalIntegrable (fun t => k t * f t) volume u v :=
+    ContinuousOn.intervalIntegrable (by rw [huIcc]; exact hk.mul hf)
+  have h2 : IntervalIntegrable (fun t => k t * c) volume u v :=
+    ContinuousOn.intervalIntegrable (by rw [huIcc]; exact hk.mul continuousOn_const)
+  have h := intervalIntegral.integral_mono_on huv h2 h1 fun t ht =>
+    mul_le_mul_of_nonpos_left (hc t ht) (hknp t ht)
+  rw [intervalIntegral.integral_mul_const] at h
+  linarith
+
+/-- **One Simpson panel, bounded by the extreme values of `g⁗`.**  Simpson's Peano kernel is
+nonpositive on both halves of the panel and integrates to `-(β - α)⁵/2880`, so for
+`c ≤ g⁗ ≤ M` on the panel the error lies between `M (-(β - α)⁵/2880)` and `c (-(β - α)⁵/2880)`.
+This sign definiteness is what lets the intermediate value theorem collect the panels of a
+composite rule into one value of `g⁗`. -/
+theorem sub_simpson_mem_Icc {α β c M : ℝ} (hαβ : α ≤ β)
+    (hg : ∀ x ∈ Set.Icc α β, HasDerivAt g (g' x) x)
+    (hg' : ∀ x ∈ Set.Icc α β, HasDerivAt g' (g'' x) x)
+    (hg'' : ∀ x ∈ Set.Icc α β, HasDerivAt g'' (g₃ x) x)
+    (hg₃ : ∀ x ∈ Set.Icc α β, HasDerivAt g₃ (g₄ x) x) (hc₄ : ContinuousOn g₄ (Set.Icc α β))
+    (hlo : ∀ t ∈ Set.Icc α β, c ≤ g₄ t) (hhi : ∀ t ∈ Set.Icc α β, g₄ t ≤ M) :
+    (∫ t in α..β, g t) - (β - α) / 6 * (g α + 4 * g ((α + β) / 2) + g β)
+      ∈ Set.Icc (M * (-(β - α) ^ 5 / 2880)) (c * (-(β - α) ^ 5 / 2880)) := by
+  have huIcc : Set.uIcc α β = Set.Icc α β := Set.uIcc_of_le hαβ
+  have hαm : α ≤ (α + β) / 2 := by linarith
+  have hmβ : (α + β) / 2 ≤ β := by linarith
+  have hsubL : Set.Icc α ((α + β) / 2) ⊆ Set.Icc α β := Set.Icc_subset_Icc le_rfl hmβ
+  have hsubR : Set.Icc ((α + β) / 2) β ⊆ Set.Icc α β := Set.Icc_subset_Icc hαm le_rfl
+  have hkey := sub_simpson_eq_integral_peanoKernel (g := g) (g' := g') (g'' := g'') (g₃ := g₃)
+    (g₄ := g₄) (by rw [huIcc]; exact hg) (by rw [huIcc]; exact hg')
+    (by rw [huIcc]; exact hg'') (by rw [huIcc]; exact hg₃)
+    (ContinuousOn.intervalIntegrable (by rw [huIcc]; exact hc₄))
+  -- the two halves of the kernel are nonpositive
+  have hkL : ∀ t ∈ Set.Icc α ((α + β) / 2), (t - α) ^ 3 * (3 * t - α - 2 * β) / 72 ≤ 0 := by
+    intro t ht
+    have h1 : (0 : ℝ) ≤ (t - α) ^ 3 := pow_nonneg (by linarith [ht.1]) 3
+    have h2 : 3 * t - α - 2 * β ≤ 0 := by linarith [ht.2]
+    have := mul_nonpos_of_nonneg_of_nonpos h1 h2
+    linarith
+  have hkR : ∀ t ∈ Set.Icc ((α + β) / 2) β, (t - β) ^ 3 * (3 * t - β - 2 * α) / 72 ≤ 0 := by
+    intro t ht
+    have h0 : t - β ≤ 0 := by linarith [ht.2]
+    have h1 : (t - β) ^ 3 ≤ 0 := by
+      have hcube : (t - β) ^ 3 = (t - β) * (t - β) ^ 2 := by ring
+      rw [hcube]
+      exact mul_nonpos_of_nonpos_of_nonneg h0 (sq_nonneg _)
+    have h2 : (0 : ℝ) ≤ 3 * t - β - 2 * α := by linarith [ht.1]
+    have := mul_nonpos_of_nonpos_of_nonneg h1 h2
+    linarith
+  have hcL : ContinuousOn (fun t : ℝ => (t - α) ^ 3 * (3 * t - α - 2 * β) / 72)
+      (Set.Icc α ((α + β) / 2)) := by fun_prop
+  have hcR : ContinuousOn (fun t : ℝ => (t - β) ^ 3 * (3 * t - β - 2 * α) / 72)
+      (Set.Icc ((α + β) / 2) β) := by fun_prop
+  have hupL := integral_nonpos_kernel_mul_le hαm hcL (hc₄.mono hsubL) hkL
+    fun t ht => hlo t (hsubL ht)
+  have hupR := integral_nonpos_kernel_mul_le hmβ hcR (hc₄.mono hsubR) hkR
+    fun t ht => hlo t (hsubR ht)
+  have hloL := le_integral_nonpos_kernel_mul hαm hcL (hc₄.mono hsubL) hkL
+    fun t ht => hhi t (hsubL ht)
+  have hloR := le_integral_nonpos_kernel_mul hmβ hcR (hc₄.mono hsubR) hkR
+    fun t ht => hhi t (hsubR ht)
+  rw [integral_simpsonKernel_left] at hupL hloL
+  rw [integral_simpsonKernel_right] at hupR hloR
+  rw [Set.mem_Icc, hkey]
+  constructor <;> linarith
+
+/-- **The composite Simpson rule error in mean value form.**  For `g` of class `C⁴` on `[a, b]`
+and the uniform mesh `h = (b - a)/N`,
+
+`∫_a^b g - (h/6) ∑_j (g(x_j) + 4 g(x_j + h/2) + g(x_{j+1})) = -(h⁴ (b - a)/2880) g⁗(ξ)`
+
+for some `ξ` in `[a, b]`.  This is the extra order that a smooth integrand buys over the mere
+convergence of `Quadrature.tendsto_simpsonSum`.  The panel error is
+`Quadrature.sub_simpson_mem_Icc`; Simpson's Peano kernel does not change sign, so each panel error
+lies between `-h⁵ M/2880` and `-h⁵ m/2880` with `m` and `M` the extreme values of `g⁗`, and the
+intermediate value theorem collects the `N` panels into one value of `g⁗`. -/
+theorem sub_composite_simpson_eq (hab : a < b) {N : ℕ} (hN : 0 < N) (hh : h = (b - a) / N)
+    (hg : ∀ x ∈ Set.Icc a b, HasDerivAt g (g' x) x)
+    (hg' : ∀ x ∈ Set.Icc a b, HasDerivAt g' (g'' x) x)
+    (hg'' : ∀ x ∈ Set.Icc a b, HasDerivAt g'' (g₃ x) x)
+    (hg₃ : ∀ x ∈ Set.Icc a b, HasDerivAt g₃ (g₄ x) x) (hc₄ : ContinuousOn g₄ (Set.Icc a b)) :
+    ∃ ξ ∈ Set.Icc a b,
+      (∫ t in a..b, g t) - simpsonSum g a h N = -(h ^ 4 * (b - a) / 2880) * g₄ ξ := by
+  have hNR : (0 : ℝ) < N := Nat.cast_pos.mpr hN
+  have hhpos : 0 < h := by rw [hh]; positivity
+  set x : ℕ → ℝ := fun j => a + j * h with hxdef
+  have hx0 : x 0 = a := by simp [hxdef]
+  have hxN : x N = b := by
+    have hc : (N : ℝ) * ((b - a) / N) = b - a := by field_simp
+    simp only [hxdef, hh, hc]
+    ring
+  have hxstep : ∀ j : ℕ, x (j + 1) - x j = h := by
+    intro j; rw [hxdef]; push_cast; ring
+  have hxmono : ∀ j : ℕ, x j ≤ x (j + 1) := fun j => by linarith [hxstep j, hhpos]
+  have hxmem : ∀ j ≤ N, x j ∈ Set.Icc a b := fun j hj =>
+    mem_Icc_of_partition hx0 hxN (fun j _ => hxmono j) hj
+  have hxsub : ∀ j < N, Set.Icc (x j) (x (j + 1)) ⊆ Set.Icc a b := fun j hj =>
+    Set.Icc_subset_Icc (hxmem j hj.le).1 (hxmem (j + 1) hj).2
+  -- the extreme values of the fourth derivative
+  obtain ⟨u, hu, hmin⟩ := (isCompact_Icc (a := a) (b := b)).exists_isMinOn
+    ⟨a, Set.left_mem_Icc.2 hab.le⟩ hc₄
+  obtain ⟨v, hv, hmax⟩ := (isCompact_Icc (a := a) (b := b)).exists_isMaxOn
+    ⟨a, Set.left_mem_Icc.2 hab.le⟩ hc₄
+  set S : ℝ := -(h ^ 4 * (b - a) / 2880) with hS
+  have hSneg : S < 0 := by
+    have h4 : 0 < h ^ 4 := pow_pos hhpos 4
+    have hba : 0 < b - a := by linarith
+    rw [hS]
+    nlinarith
+  -- the two sided bound on one panel
+  have hbound : ∀ j < N,
+      g₄ v * (-h ^ 5 / 2880) ≤ (∫ t in (x j)..(x (j + 1)), g t)
+          - h / 6 * (g (x j) + 4 * g (x j + h / 2) + g (x (j + 1)))
+      ∧ (∫ t in (x j)..(x (j + 1)), g t)
+          - h / 6 * (g (x j) + 4 * g (x j + h / 2) + g (x (j + 1)))
+        ≤ g₄ u * (-h ^ 5 / 2880) := by
+    intro j hj
+    have hsub := hxsub j hj
+    have hmid : (x j + x (j + 1)) / 2 = x j + h / 2 := by linarith [hxstep j]
+    have hlen : x (j + 1) - x j = h := hxstep j
+    have hmem := sub_simpson_mem_Icc (g := g) (g' := g') (g'' := g'') (g₃ := g₃) (g₄ := g₄)
+      (c := g₄ u) (M := g₄ v) (hxmono j) (fun y hy => hg y (hsub hy))
+      (fun y hy => hg' y (hsub hy)) (fun y hy => hg'' y (hsub hy))
+      (fun y hy => hg₃ y (hsub hy)) (hc₄.mono hsub) (fun t ht => hmin (hsub ht))
+      (fun t ht => hmax (hsub ht))
+    rw [Set.mem_Icc, hmid, hlen] at hmem
+    exact ⟨hmem.1, hmem.2⟩
+  -- the error as a sum of panel errors
+  have hint : ∀ j < N, IntervalIntegrable g volume (x j) (x (j + 1)) := by
+    intro j hj
+    refine ContinuousOn.intervalIntegrable fun y hy => ?_
+    exact (hg y (hxsub j hj (by rwa [Set.uIcc_of_le (hxmono j)] at hy))).continuousAt
+      |>.continuousWithinAt
+  have hsimp : simpsonSum g a h N
+      = ∑ j ∈ Finset.range N, h / 6 * (g (x j) + 4 * g (x j + h / 2) + g (x (j + 1))) := by
+    rw [simpsonSum]
+    refine Finset.sum_congr rfl fun j _ => ?_
+    simp only [hxdef]
+    push_cast
+    ring
+  have hsplit : (∫ t in a..b, g t) - simpsonSum g a h N
+      = ∑ j ∈ Finset.range N, ((∫ t in (x j)..(x (j + 1)), g t)
+          - h / 6 * (g (x j) + 4 * g (x j + h / 2) + g (x (j + 1)))) := by
+    rw [hsimp, ← hx0, ← hxN, ← intervalIntegral.sum_integral_adjacent_intervals hint,
+      ← Finset.sum_sub_distrib]
+  -- sum the panel bounds
+  have hNh : (N : ℝ) * h = b - a := by rw [hh]; field_simp
+  have hsumS : ∑ _j ∈ Finset.range N, (-h ^ 5 / 2880) = S := by
+    rw [Finset.sum_const, Finset.card_range, nsmul_eq_mul, hS, ← hNh]
+    ring
+  set E : ℝ := (∫ t in a..b, g t) - simpsonSum g a h N with hE
+  have hlow : g₄ v * S ≤ E := by
+    rw [hsplit, ← hsumS, Finset.mul_sum]
+    exact Finset.sum_le_sum fun j hj => (hbound j (Finset.mem_range.mp hj)).1
+  have hhigh : E ≤ g₄ u * S := by
+    rw [hsplit, ← hsumS, Finset.mul_sum]
+    exact Finset.sum_le_sum fun j hj => (hbound j (Finset.mem_range.mp hj)).2
+  -- the intermediate value theorem
+  have hcmem : E / S ∈ Set.uIcc (g₄ u) (g₄ v) := by
+    have h1 : g₄ u ≤ E / S := by
+      rw [le_div_iff_of_neg hSneg]
+      linarith [hhigh]
+    have h2 : E / S ≤ g₄ v := by
+      rw [div_le_iff_of_neg hSneg]
+      linarith [hlow]
+    exact Set.mem_uIcc_of_le h1 h2
+  have huv : Set.uIcc u v ⊆ Set.Icc a b := Set.uIcc_subset_Icc hu hv
+  obtain ⟨ξ, hξ, hξval⟩ := intermediate_value_uIcc (hc₄.mono huv) hcmem
+  refine ⟨ξ, huv hξ, ?_⟩
+  have hSne : S ≠ 0 := ne_of_lt hSneg
+  rw [hξval, mul_comm]
+  exact (div_mul_cancel₀ E hSne).symm
+
+end SimpsonError
 
 section Circle
 

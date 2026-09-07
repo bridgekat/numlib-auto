@@ -43,3 +43,7 @@ source = "Saad, Iterative Methods for Sparse Linear Systems, (6.119)"
 [[node]]
 id = "Chebyshev.sSup_norm_eval_shiftedComplex_ellipse"
 source = "Saad, Iterative Methods for Sparse Linear Systems, (6.119)–(6.120)"
+
+[[node]]
+id = "Chebyshev.norm_eval_shiftedComplex_le_of_mem_filledEllipse"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (6.119)–(6.120)"

@@ -75,24 +75,18 @@ id = "abs_sub_trapezoidSum_add_le"
 source = "Atkinson–Han, Theoretical Numerical Analysis, (12.4.39)"
 
 [[node]]
+id = "sub_simpson_eq_integral_peanoKernel"
+source = "Kress, Numerical Analysis, Section 9.4"
+
+[[node]]
+id = "integral_simpsonKernel_left"
+
+[[node]]
+id = "integral_simpsonKernel_right"
+
+[[node]]
+id = "sub_simpson_mem_Icc"
+
+[[node]]
 id = "sub_composite_simpson_eq"
-kind = "theorem"
-desc = '''
-The composite Simpson error in mean value form,
-`int_a^b g - simpsonSum g a h N = -(h^4 (b - a) / 2880) g^(4)(xi)` for `g` in `C^4[a, b]` and some
-`xi` in `[a, b]`.
-
-`tendsto_simpsonSum` already gives the *convergence* of the rule -- Simpson weights are
-nonnegative and sum to one, so the Riemann sum bound applies unchanged -- and this node is the
-extra order that a smooth integrand buys.
-
-Obstruction: the Peano kernel of Simpson's rule is *piecewise* cubic, `(t - alpha)^3 (3 t - 2 beta
-- alpha)/72` on the left half of the panel and its mirror image on the right, so the two
-integrations by parts of `sub_trapezoid_eq_integral_peanoKernel` become four, on each half panel
-separately, with the matching conditions at the midpoint to check. Nothing in it is deep; it is
-four times the bookkeeping of the trapezoidal case. Once it exists the sign-definiteness argument
-of `sub_composite_trapezoid_eq` (extreme values of `g^(4)`, then the intermediate value theorem)
-carries over verbatim, since the Simpson kernel does not change sign either.
-'''
-deps = ["simpsonSum", "sub_trapezoid_eq_integral_peanoKernel"]
 source = "Kress, Numerical Analysis, Section 9.4"

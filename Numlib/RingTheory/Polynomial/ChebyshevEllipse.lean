@@ -788,4 +788,20 @@ theorem sSup_norm_eval_shiftedComplex_ellipse (k : ℕ) {ρ : ℝ} (hρ : 1 ≤ 
   rw [hscaled.csSup_eq, eval_T_joukowski_real k hρ]
   ring
 
+/-- **The shifted, normalized Chebyshev polynomial is bounded on the whole filled ellipse** by its
+maximum on the boundary ellipse, `T_k(a/d)/|T_k((c - γ)/d)|` with `a/d = (ρ + ρ⁻¹)/2`.
+
+`Polynomial.Chebyshev.sSup_norm_eval_shiftedComplex_ellipse` computes the maximum on the ellipse
+itself; `Polynomial.norm_eval_le_of_forall_mem_ellipse` carries it inside. -/
+theorem norm_eval_shiftedComplex_le_of_mem_filledEllipse (k : ℕ) {ρ : ℝ} (hρ : 1 ≤ ρ) {c d γ : ℂ}
+    (hd : d ≠ 0) (hγ : (T ℂ (k : ℤ)).eval ((c - γ) / d) ≠ 0) {z : ℂ}
+    (hz : z ∈ Set.filledEllipse c d ρ) :
+    ‖(shiftedComplex k c d γ).eval z‖
+      ≤ (T ℝ (k : ℤ)).eval ((ρ + ρ⁻¹) / 2) / ‖(T ℂ (k : ℤ)).eval ((c - γ) / d)‖ := by
+  have hρ0 : (0 : ℝ) < ρ := lt_of_lt_of_le one_pos hρ
+  refine Polynomial.norm_eval_le_of_forall_mem_ellipse hρ (fun y hy => ?_) hz
+  rw [← sSup_norm_eval_shiftedComplex_ellipse k hρ hd hγ]
+  exact le_csSup (((Set.isCompact_ellipse c d hρ0).image
+    (shiftedComplex k c d γ).continuous.norm).bddAbove) ⟨y, hy, rfl⟩
+
 end Polynomial.Chebyshev
