@@ -53,6 +53,10 @@ of degree at most `n`, and the alternation (equioscillation) that characterizes 
   `haarCondition_trigPolyLE` it gives `IsBestApprox.unique_of_trigPolyLE` and, with the
   finite-dimensionality of the subspace, `existsUnique_isBestApprox_trigPolyLE`;
   `existsUnique_isBestApprox_polyLE` is the polynomial counterpart.
+* `EquioscillatesCircle` is the alternation on the circle, at `2 n + 2` points of a period, and
+  `le_infDist_of_alternates_trig`, `isBestApprox_of_equioscillatesCircle` are the de la
+  Vallée-Poussin bound and the sufficiency half of the equioscillation theorem there. The necessity
+  half needs the cyclic form of the exchange argument and is not proved.
 
 The interpolation and uniqueness arguments — everything but the alternation itself, which is stated
 for a subset of the line because it speaks of increasing points — hold on an arbitrary compact
@@ -801,6 +805,138 @@ theorem existsUnique_isBestApprox_polyLE {X : Set ℝ} [CompactSpace X] [Infinit
     (f : C(X, ℝ)) : ∃! p : C(X, ℝ), IsBestApprox (polyLE X n : Set C(X, ℝ)) f p := by
   obtain ⟨p, hp⟩ := exists_isBestApprox_of_finiteDimensional (polyLE X n) f
   exact ⟨p, hp, fun q hq => hq.unique_of_polyLE hp⟩
+
+/-! ### Equioscillation on the circle
+
+The trigonometric analogue of `Equioscillates` and of the de la Vallée-Poussin bound. The
+alternation count is `2 n + 2`, one more than the dimension `2 n + 1` of `trigPolyLE T n`, exactly
+as `n + 2` is one more than the dimension `n + 1` of `polyLE X n`.
+-/
+
+/-- `EquioscillatesCircle g m`: the function `g` on the circle of circumference `T` attains `± ‖g‖`
+with alternating signs at `m` points of one period, listed by increasing real representatives in a
+half-open period `[a, a + T)`.
+
+This is `Equioscillates` transported to the circle. The period is taken half-open because its two
+endpoints are the same point of the circle, and the base point `a` is existentially quantified
+because the circle has no distinguished one. -/
+def EquioscillatesCircle {T : ℝ} [Fact (0 < T)] (g : C(AddCircle T, ℝ)) (m : ℕ) : Prop :=
+  ∃ (σ a : ℝ) (x : Fin m → ℝ), (σ = 1 ∨ σ = -1) ∧ StrictMono x ∧
+    (∀ i, x i ∈ Set.Ico a (a + T)) ∧ ∀ i : Fin m, g ↑(x i) = σ * (-1) ^ (i : ℕ) * ‖g‖
+
+/-- Distinct points of a half-open period stay distinct on the circle. -/
+theorem injOn_coe_Ico {T : ℝ} [hT : Fact (0 < T)] {a : ℝ} :
+    Set.InjOn (fun t : ℝ => (t : AddCircle T)) (Set.Ico a (a + T)) := by
+  intro u hu v hv huv
+  have h := congrArg (AddCircle.equivIco T a) huv
+  rw [AddCircle.equivIco_coe_eq hu, AddCircle.equivIco_coe_eq hv] at h
+  exact congrArg Subtype.val h
+
+/-- **De la Vallée-Poussin's lower bound for trigonometric approximation.** If the error `f - q` of
+some competitor `q ∈ 𝕋ₙ` alternates in sign at `2 n + 2` increasing points of one period with values
+of modulus at least `ε`, then no trigonometric polynomial of degree at most `n` approximates `f`
+better than `ε`.
+
+The proof is the Haar condition `haarCondition_trigPolyLE`: were some `p` closer than `ε`, the
+difference `p - q` would inherit the alternation, hence have `2 n + 1` distinct zeros in a period by
+the intermediate value theorem, hence vanish — contradicting the alternation itself. -/
+theorem le_infDist_of_alternates_trig {T : ℝ} [hT : Fact (0 < T)] {n : ℕ}
+    {f q : C(AddCircle T, ℝ)} (hq : q ∈ trigPolyLE T n) {ε σ a : ℝ} (hσ : σ = 1 ∨ σ = -1)
+    {x : Fin (2 * n + 2) → ℝ} (hmono : StrictMono x) (hx : ∀ i, x i ∈ Set.Ico a (a + T))
+    (hval : ∀ i : Fin (2 * n + 2), ε ≤ σ * (-1) ^ (i : ℕ) * (f ↑(x i) - q ↑(x i))) :
+    ε ≤ Metric.infDist f (trigPolyLE T n : Set C(AddCircle T, ℝ)) := by
+  classical
+  have hsgn : ∀ i : Fin (2 * n + 2), |σ * (-1) ^ (i : ℕ)| = 1 := by
+    intro i
+    rw [abs_mul, abs_pow, abs_neg, abs_one, one_pow, mul_one]
+    rcases hσ with h | h <;> simp [h]
+  refine (Metric.le_infDist ⟨0, (trigPolyLE T n).zero_mem⟩).2 ?_
+  rintro p hp
+  rw [dist_eq_norm]
+  by_contra hcon
+  push Not at hcon
+  set g : C(AddCircle T, ℝ) := p - q with hgdef
+  have hgcont : Continuous fun t : ℝ => g ↑t :=
+    g.continuous.comp (AddCircle.continuous_mk' T)
+  have hgpos : ∀ i : Fin (2 * n + 2), 0 < σ * (-1) ^ (i : ℕ) * g ↑(x i) := by
+    intro i
+    have h1 : |f ↑(x i) - p ↑(x i)| ≤ ‖f - p‖ := by
+      have := (f - p).norm_coe_le_norm (↑(x i) : AddCircle T)
+      simpa using this
+    have h2 : σ * (-1) ^ (i : ℕ) * (f ↑(x i) - p ↑(x i)) ≤ ‖f - p‖ := by
+      calc σ * (-1) ^ (i : ℕ) * (f ↑(x i) - p ↑(x i))
+          ≤ |σ * (-1) ^ (i : ℕ) * (f ↑(x i) - p ↑(x i))| := le_abs_self _
+        _ = |f ↑(x i) - p ↑(x i)| := by rw [abs_mul, hsgn i, one_mul]
+        _ ≤ ‖f - p‖ := h1
+    have h3 := hval i
+    have hgval : g ↑(x i) = p ↑(x i) - q ↑(x i) := rfl
+    rw [hgval]
+    nlinarith [h3, h2, hcon]
+  -- the intermediate value theorem produces `2 n + 1` roots
+  have hroot : ∀ i : Fin (2 * n + 1), ∃ z ∈ Set.Ioo (x i.castSucc) (x i.succ), g ↑z = 0 := by
+    intro i
+    refine exists_root_of_mul_neg hgcont (hmono (Fin.castSucc_lt_succ (i := i))) ?_
+    have h1 := hgpos i.castSucc
+    have h2 := hgpos i.succ
+    have hpar : ((-1 : ℝ)) ^ (i.succ : ℕ) = -((-1 : ℝ) ^ (i.castSucc : ℕ)) := by
+      have hv : (i.succ : ℕ) = (i.castSucc : ℕ) + 1 := by simp
+      rw [hv, pow_succ]
+      ring
+    rw [hpar] at h2
+    nlinarith [h1, h2, sq_nonneg (σ * (-1) ^ (i.castSucc : ℕ))]
+  choose z hz hz0 using hroot
+  have hzmono : StrictMono z := by
+    intro i j hij
+    calc z i < x i.succ := (hz i).2
+      _ ≤ x j.castSucc := hmono.monotone (by
+          simp only [Fin.le_def, Fin.val_succ, Fin.val_castSucc]
+          omega)
+      _ < z j := (hz j).1
+  have hzIco : ∀ i : Fin (2 * n + 1), z i ∈ Set.Ico a (a + T) := by
+    intro i
+    exact ⟨le_of_lt (lt_of_le_of_lt (hx i.castSucc).1 (hz i).1),
+      lt_trans (hz i).2 (hx i.succ).2⟩
+  have hinj : Function.Injective fun i : Fin (2 * n + 1) => ((z i : ℝ) : AddCircle T) :=
+    fun i j hij => hzmono.injective (injOn_coe_Ico (hzIco i) (hzIco j) hij)
+  have hcard : (Finset.univ.image fun i : Fin (2 * n + 1) => ((z i : ℝ) : AddCircle T)).card
+      = 2 * n + 1 := by
+    rw [Finset.card_image_of_injective _ hinj, Finset.card_univ, Fintype.card_fin]
+  have hgne : g ≠ 0 := by
+    intro h0
+    have := hgpos 0
+    rw [h0] at this
+    simp at this
+  have hlt := haarCondition_trigPolyLE hT.out.ne' n g (Submodule.sub_mem _ hp hq) hgne
+    (Finset.univ.image fun i : Fin (2 * n + 1) => ((z i : ℝ) : AddCircle T)) (by
+      intro t ht
+      obtain ⟨i, -, rfl⟩ := Finset.mem_image.mp ht
+      exact hz0 i)
+  omega
+
+/-- **The sufficiency half of the trigonometric equioscillation theorem**: a trigonometric
+polynomial of degree at most `n` whose error equioscillates at `2 n + 2` points of a period is a
+best uniform approximation.
+
+The converse — that the error of a best approximation must equioscillate that often — is not proved
+here; it needs the cyclic form of the exchange argument. -/
+theorem isBestApprox_of_equioscillatesCircle {T : ℝ} [hT : Fact (0 < T)] {n : ℕ}
+    {f p : C(AddCircle T, ℝ)} (hp : p ∈ trigPolyLE T n)
+    (h : EquioscillatesCircle (f - p) (2 * n + 2)) :
+    IsBestApprox (trigPolyLE T n : Set C(AddCircle T, ℝ)) f p := by
+  obtain ⟨σ, a, x, hσ, hmono, hx, hvals⟩ := h
+  have hle : ‖f - p‖ ≤ Metric.infDist f (trigPolyLE T n : Set C(AddCircle T, ℝ)) := by
+    refine le_infDist_of_alternates_trig hp hσ hmono hx fun i => ?_
+    have hv : f ↑(x i) - p ↑(x i) = σ * (-1) ^ (i : ℕ) * ‖f - p‖ := by
+      simpa using hvals i
+    rw [hv, ← mul_assoc]
+    have hsq : σ * (-1) ^ (i : ℕ) * (σ * (-1) ^ (i : ℕ)) = 1 := by
+      have h1 : ((-1 : ℝ) ^ (i : ℕ)) * ((-1 : ℝ) ^ (i : ℕ)) = 1 := by
+        rw [← pow_add, ← two_mul, pow_mul]
+        norm_num
+      rcases hσ with h | h <;> subst h <;> linear_combination h1
+    rw [hsq, one_mul]
+  rw [isBestApprox_iff_norm_sub_eq_infDist hp]
+  exact le_antisymm hle (by rw [← dist_eq_norm]; exact Metric.infDist_le_dist_of_mem hp)
 
 /-- **A longest alternation.** A nonzero `g` on a compact nonempty space alternates once, at a point
 of maximum modulus; so if it does not alternate `n + 2` times, there is a greatest length `m` at

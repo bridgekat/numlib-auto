@@ -44,6 +44,8 @@ values `Dₙ(xₖ - xⱼ) = (2 n + 1)/2` for `j = k` and `0` otherwise
   `‖𝓘ₙ‖ ≤ 2 + (2/π) log (2 n + 1)`. It carries the sharp coefficient `2/π` of
   [han2009theoretical], (3.7.20) but a larger additive constant; the theorem's own doc comment
   says why the constant printed there is not the one proved here.
+* `le_norm_trigInterpCLM_one` — `5/3 ≤ ‖𝓘₁‖`, which is what makes the constant printed in
+  [han2009theoretical], (3.7.20) too small.
 
 ## References
 
@@ -674,4 +676,26 @@ theorem norm_trigInterpCLM_le (n : ℕ) :
   rw [hfin, sum_range_sub_of_periodic (by omega) g hgper M]
   simp only [hgdef, Int.cast_natCast]
   exact lebesgueFun_shift_le n hn hδ0 hδ1
+
+/-- **The Lebesgue constant of trigonometric interpolation at three nodes is at least `5/3`.**
+The Lebesgue function `Λ₁(x) = (2/3) ∑ⱼ |D₁(x - xⱼ)|` takes the value `5/3` at `x = π/3`, the
+midpoint of two of the three nodes.
+
+This is what refutes the bound `1 + (2/π) log n` printed as [han2009theoretical], (3.7.20): at
+`n = 1` its right-hand side is `1`. -/
+theorem le_norm_trigInterpCLM_one : 5 / 3 ≤ ‖trigInterpCLM (2 * π) 1‖ := by
+  have hD : ∀ t : ℝ, dirichletKernel 1 t = 1 / 2 + Real.cos t := by
+    intro t
+    rw [dirichletKernel_apply]
+    norm_num
+  have h := (PeriodicCont.isGreatest_norm_trigInterpCLM 1).2 (Set.mem_range_self (π / 3))
+  refine le_trans (le_of_eq ?_) h
+  rw [Fin.sum_univ_three]
+  simp only [hD, Fin.isValue, Fin.val_zero, Fin.val_one, Fin.val_two, Nat.cast_zero,
+    Nat.cast_one, Nat.cast_ofNat, Nat.cast_one]
+  rw [show π / 3 - (0 : ℝ) * (2 * π) / (2 * 1 + 1) = π / 3 by norm_num,
+    show π / 3 - (1 : ℝ) * (2 * π) / (2 * 1 + 1) = -(π / 3) by ring,
+    show π / 3 - (2 : ℝ) * (2 * π) / (2 * 1 + 1) = -π by ring,
+    Real.cos_neg, Real.cos_neg, Real.cos_pi, Real.cos_pi_div_three]
+  norm_num
 

@@ -46,6 +46,7 @@ import Numlib.Approximation.Hermite
 import Numlib.Approximation.Hyperinterpolation
 import Numlib.Approximation.Interpolation
 import Numlib.Approximation.Jackson
+import Numlib.Approximation.LeastSquares
 import Numlib.Approximation.MvPolynomial
 import Numlib.Approximation.NodalInterpolation
 import Numlib.Approximation.OrthogonalDecomposition

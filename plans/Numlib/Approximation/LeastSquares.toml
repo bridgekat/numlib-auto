@@ -1,0 +1,46 @@
+namespace = "Approximation"
+
+[[node]]
+id = "reproducingKernel"
+source = "Atkinson-Han, Theoretical Numerical Analysis, (3.7.16)"
+
+[[node]]
+id = "reproducingKernel_apply"
+
+[[node]]
+id = "IsOrthonormal"
+
+[[node]]
+id = "expansionCLM"
+source = "Atkinson-Han, Theoretical Numerical Analysis, (3.7.15)"
+
+[[node]]
+id = "expansionCLM_apply"
+source = "Atkinson-Han, Theoretical Numerical Analysis, (3.7.13)"
+
+[[node]]
+id = "expansionCLM_eq_sum"
+source = "Atkinson-Han, Theoretical Numerical Analysis, (3.7.13)"
+
+[[node]]
+id = "expansionCLM_mem_span"
+
+[[node]]
+id = "norm_expansionCLM"
+source = "Atkinson-Han, Theoretical Numerical Analysis, (3.7.17); (2.2.8)"
+
+[[node]]
+id = "IsOrthonormal.expansionCLM_apply_eq_self"
+
+[[node]]
+id = "IsOrthonormal.expansionCLM_eq_self"
+
+[[node]]
+id = "IsOrthonormal.isIdempotentElem_expansionCLM"
+
+[[node]]
+id = "IsOrthonormal.range_expansionCLM"
+
+[[node]]
+id = "IsOrthonormal.norm_sub_expansionCLM_le"
+source = "Atkinson-Han, Theoretical Numerical Analysis, (3.7.14)"

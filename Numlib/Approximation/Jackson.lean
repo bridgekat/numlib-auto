@@ -1,8 +1,11 @@
+import Mathlib.Analysis.Calculus.Deriv.Polynomial
 import Mathlib.Analysis.MeanInequalities
 import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Bounds
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.Chebyshev.Basic
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Periodic
 import Numlib.Analysis.Fourier.TrigonometricBasis
+import Numlib.Approximation.Chebyshev
 
 /-!
 # Jackson's theorem through the Fejér–Korovkin kernel
@@ -57,12 +60,21 @@ its powers give a worse constant, which is why the extremal kernel is the one bu
   `Jackson.infDist_le_of_holder_deriv` is the same bound before the constant is coarsened, and
   `Jackson.moment_pow_le` is that coarsening.
 
+* `Jackson.exists_degree_le_eval_cos` is **the Chebyshev correspondence**: the even part of a
+  trigonometric polynomial of degree at most `n` is `P (cos θ)` for an algebraic `P` of degree at
+  most `n`. With it, `Jackson.infDist_polyLE_le_infDist_trigPolyLE` transfers the periodic theorem
+  to `[-1, 1]`, and `Jackson.infDist_polyLE_le_of_holder`,
+  `Jackson.infDist_le_of_holder_poly` are **Jackson's theorem for algebraic polynomials** in the
+  Hölder and the `C^{k,α}` cases. The recursion down the tower of derivatives is
+  `Jackson.infDist_restrictIcc_le_step`, and it loses nothing, the antiderivative of a polynomial
+  being a polynomial (`Jackson.exists_derivative_eq`).
+
 The derivatives are supplied as a tower `D 0 = g`, `D (j + 1) = (D j)'` rather than as
 `iteratedDeriv`, so that a caller which already has the derivatives — or which produces them from
 `ContDiff` — can use whichever form it holds.
 
-Reference: [han2009theoretical], Theorem 3.7.1, which states this with the constant
-`(1 + π²/2)^{k+1}` and refers to [meinardus1967approximation] for the proof.
+Reference: [han2009theoretical], Theorems 3.7.1 and 3.7.2, which state these with the constant
+`(1 + π²/2)^{k+1}` and refer to [meinardus1967approximation] for the proof.
 -/
 
 open Finset MeasureTheory Real
@@ -1301,5 +1313,443 @@ theorem infDist_le_of_holder_deriv' {G : C(AddCircle (2 * π), ℝ)} {k n : ℕ}
       ≤ (1 + π ^ 2 / 2) ^ (k + 1) * M / (n : ℝ) ^ ((k : ℝ) + α) :=
   (infDist_le_of_holder_deriv hD0 hDc hDd hM hα0 hα1 hhol).trans
     (moment_pow_le n k hn hM hα0 hα1)
+
+/-! ### Jackson's theorem for algebraic polynomials
+
+The uniform approximation of a function on `[-1, 1]` by algebraic polynomials reduces to the
+periodic problem through `x = cos θ`: a continuous `f` on `[-1, 1]` pulls back to the even periodic
+function `θ ↦ f (cos θ)`, and the *even part* of a trigonometric polynomial of degree at most `n`
+is `p (cos θ)` for an algebraic `p` of degree at most `n` — the Chebyshev correspondence
+`Jackson.exists_degree_le_eval_cos`. So the best algebraic approximation on `[-1, 1]` is at least as
+good as the best trigonometric approximation of the pullback, and the Hölder constant is not lost,
+because `cos` is `1`-Lipschitz.
+-/
+
+section Algebraic
+
+open scoped Polynomial
+
+/-- The point `cos θ` of `[-1, 1]`. -/
+noncomputable def cosIcc (θ : ℝ) : Set.Icc (-1 : ℝ) 1 :=
+  ⟨Real.cos θ, ⟨Real.neg_one_le_cos θ, Real.cos_le_one θ⟩⟩
+
+@[simp]
+theorem cosIcc_coe (θ : ℝ) : (cosIcc θ : ℝ) = Real.cos θ := rfl
+
+@[simp]
+theorem cosIcc_neg (θ : ℝ) : cosIcc (-θ) = cosIcc θ := Subtype.ext (Real.cos_neg θ)
+
+/-- **The Chebyshev correspondence.** The even part `θ ↦ (q θ + q (-θ))/2` of a trigonometric
+polynomial of degree at most `n` is `P (cos θ)` for an algebraic polynomial `P` of degree at most
+`n`: the members of the real trigonometric system of positive index are `√2 Tⱼ ∘ cos`, those of
+negative index are odd, and the constant is `T₀ ∘ cos`. -/
+theorem exists_degree_le_eval_cos {n : ℕ} {q : C(AddCircle (2 * π), ℝ)}
+    (hq : q ∈ trigPolyLE (2 * π) n) :
+    ∃ P : ℝ[X], P.degree ≤ (n : ℕ) ∧
+      ∀ θ : ℝ, P.eval (Real.cos θ) = (q ↑θ + q ↑(-θ)) / 2 := by
+  induction hq using Submodule.span_induction with
+  | mem v hv =>
+    obtain ⟨m, hm, rfl⟩ := hv
+    rw [mem_Icc_iff_natAbs_le] at hm
+    rcases lt_trichotomy m 0 with hneg | rfl | hpos
+    · refine ⟨0, by simp, fun θ => ?_⟩
+      rw [Polynomial.eval_zero, trigFun_coe_of_neg hneg, trigFun_coe_of_neg hneg,
+        show -(m : ℝ) * -θ = -(-(m : ℝ) * θ) by ring, Real.sin_neg]
+      ring
+    · refine ⟨1, by simp, fun θ => ?_⟩
+      rw [Polynomial.eval_one, trigFun_zero]
+      norm_num
+    · refine ⟨(√2 : ℝ) • Polynomial.Chebyshev.T ℝ m, ?_, fun θ => ?_⟩
+      · refine (Polynomial.degree_smul_le _ _).trans ?_
+        rw [Polynomial.Chebyshev.degree_T]
+        exact_mod_cast hm
+      · rw [Polynomial.eval_smul, Polynomial.Chebyshev.T_real_cos, smul_eq_mul,
+          trigFun_coe_of_pos hpos, trigFun_coe_of_pos hpos,
+          show (m : ℝ) * -θ = -((m : ℝ) * θ) by ring, Real.cos_neg]
+        ring
+  | zero => exact ⟨0, by simp, fun θ => by simp⟩
+  | add v w _ _ hv hw =>
+    obtain ⟨P, hPdeg, hPval⟩ := hv
+    obtain ⟨Q, hQdeg, hQval⟩ := hw
+    refine ⟨P + Q, (Polynomial.degree_add_le _ _).trans (max_le hPdeg hQdeg), fun θ => ?_⟩
+    rw [Polynomial.eval_add, hPval, hQval]
+    simp only [ContinuousMap.add_apply]
+    ring
+  | smul c v _ hv =>
+    obtain ⟨P, hPdeg, hPval⟩ := hv
+    refine ⟨c • P, (Polynomial.degree_smul_le _ _).trans hPdeg, fun θ => ?_⟩
+    rw [Polynomial.eval_smul, hPval, smul_eq_mul]
+    simp only [ContinuousMap.smul_apply, smul_eq_mul]
+    ring
+
+/-- **The best algebraic approximation on `[-1, 1]` is at least as good as the best trigonometric
+approximation of the pullback along `cos`.** If `G ↑θ = f (cos θ)` then the distance from `f` to the
+polynomials of degree at most `n` is at most the distance from `G` to the trigonometric polynomials
+of degree at most `n`. -/
+theorem infDist_polyLE_le_infDist_trigPolyLE {n : ℕ} {f : C(Set.Icc (-1 : ℝ) 1, ℝ)}
+    {G : C(AddCircle (2 * π), ℝ)} (hG : ∀ θ : ℝ, G ↑θ = f (cosIcc θ)) :
+    Metric.infDist f (polyLE (Set.Icc (-1 : ℝ) 1) n : Set C(Set.Icc (-1 : ℝ) 1, ℝ))
+      ≤ Metric.infDist G (trigPolyLE (2 * π) n : Set C(AddCircle (2 * π), ℝ)) := by
+  refine le_of_forall_pos_le_add fun ε hε => ?_
+  obtain ⟨q, hq, hdist⟩ :=
+    (Metric.infDist_lt_iff (s := (trigPolyLE (2 * π) n : Set C(AddCircle (2 * π), ℝ)))
+      ⟨0, (trigPolyLE (2 * π) n).zero_mem⟩).1 (lt_add_of_pos_right _ hε)
+  obtain ⟨P, hPdeg, hPval⟩ := exists_degree_le_eval_cos hq
+  set p : C(Set.Icc (-1 : ℝ) 1, ℝ) := P.toContinuousMapOn (Set.Icc (-1 : ℝ) 1) with hpdef
+  have hpmem : p ∈ polyLE (Set.Icc (-1 : ℝ) 1) n :=
+    mem_polyLE_iff.2 ⟨P, hPdeg, fun t => rfl⟩
+  have hbound : ∀ x : Set.Icc (-1 : ℝ) 1, |f x - p x| ≤ ‖G - q‖ := by
+    intro x
+    have hx : Real.cos (Real.arccos (x : ℝ)) = (x : ℝ) := Real.cos_arccos x.2.1 x.2.2
+    set θ := Real.arccos (x : ℝ) with hθ
+    have hxeq : x = cosIcc θ := Subtype.ext hx.symm
+    have hGθ : G ↑θ = f x := by rw [hG θ, hxeq]
+    have hGnθ : G ↑(-θ) = f x := by rw [hG (-θ), cosIcc_neg, hxeq]
+    have hpx : p x = (q ↑θ + q ↑(-θ)) / 2 := by
+      rw [hpdef]
+      change P.eval (x : ℝ) = _
+      rw [← hx, hPval θ]
+    have hq1 : |G ↑θ - q ↑θ| ≤ ‖G - q‖ := by
+      simpa [Real.norm_eq_abs] using (G - q).norm_coe_le_norm (↑θ : AddCircle (2 * π))
+    have hq2 : |G ↑(-θ) - q ↑(-θ)| ≤ ‖G - q‖ := by
+      simpa [Real.norm_eq_abs] using (G - q).norm_coe_le_norm (↑(-θ) : AddCircle (2 * π))
+    have hsplit : f x - p x
+        = ((G ↑θ - q ↑θ) + (G ↑(-θ) - q ↑(-θ))) / 2 := by
+      rw [hpx, hGθ, hGnθ]
+      ring
+    rw [hsplit]
+    calc |((G ↑θ - q ↑θ) + (G ↑(-θ) - q ↑(-θ))) / 2|
+        ≤ (|G ↑θ - q ↑θ| + |G ↑(-θ) - q ↑(-θ)|) / 2 := by
+          rw [abs_div, abs_two]
+          exact div_le_div_of_nonneg_right (abs_add_le _ _) (by norm_num)
+      _ ≤ ‖G - q‖ := by linarith
+  calc Metric.infDist f (polyLE (Set.Icc (-1 : ℝ) 1) n : Set C(Set.Icc (-1 : ℝ) 1, ℝ))
+      ≤ dist f p := Metric.infDist_le_dist_of_mem hpmem
+    _ = ‖f - p‖ := dist_eq_norm _ _
+    _ ≤ ‖G - q‖ := by
+        rw [ContinuousMap.norm_le _ (norm_nonneg _)]
+        intro x
+        simpa [Real.norm_eq_abs] using hbound x
+    _ = dist G q := (dist_eq_norm _ _).symm
+    _ ≤ _ := hdist.le
+
+/-- **Jackson's theorem for algebraic polynomials, the Hölder case.** A function on `[-1, 1]` whose
+increments satisfy `|f u - f v| ≤ M |u - v|^α` is approximated by polynomials of degree at most `n`
+to within `M (π sin (π/(2 n + 4)))^α`, the same bound as in the periodic case: the pullback
+`θ ↦ f (cos θ)` has the same Hölder constant, because `cos` is `1`-Lipschitz. -/
+theorem infDist_polyLE_le_of_holder {f : C(Set.Icc (-1 : ℝ) 1, ℝ)} {M α : ℝ} (hM : 0 ≤ M)
+    (hα0 : 0 ≤ α) (hα1 : α ≤ 1)
+    (hf : ∀ u v : Set.Icc (-1 : ℝ) 1, |f u - f v| ≤ M * |(u : ℝ) - (v : ℝ)| ^ α) (n : ℕ) :
+    Metric.infDist f (polyLE (Set.Icc (-1 : ℝ) 1) n : Set C(Set.Icc (-1 : ℝ) 1, ℝ))
+      ≤ M * (π * Real.sin (angle n / 2)) ^ α := by
+  have hcont : Continuous fun θ : ℝ => f (cosIcc θ) :=
+    f.continuous.comp (Real.continuous_cos.subtype_mk _)
+  have hper : Function.Periodic (fun θ : ℝ => f (cosIcc θ)) (2 * π) := fun θ => by
+    simp only []
+    congr 1
+    exact Subtype.ext (Real.cos_add_two_pi θ)
+  set G : C(AddCircle (2 * π), ℝ) := ⟨hper.lift, continuous_quot_lift _ hcont⟩ with hGdef
+  have hG : ∀ θ : ℝ, G ↑θ = f (cosIcc θ) := fun θ => hper.lift_coe θ
+  refine (infDist_polyLE_le_infDist_trigPolyLE hG).trans ?_
+  refine infDist_le_of_holder hM hα0 hα1 (fun u v => ?_) n
+  have hcos : |Real.cos u - Real.cos v| ≤ |u - v| := by
+    simpa [Real.dist_eq] using
+      (Real.lipschitzWith_cos.dist_le_mul u v)
+  calc |lift G u - lift G v| = |f (cosIcc u) - f (cosIcc v)| := by
+        simp only [lift, hG]
+    _ ≤ M * |(cosIcc u : ℝ) - (cosIcc v : ℝ)| ^ α := hf _ _
+    _ ≤ M * |u - v| ^ α := by
+        refine mul_le_mul_of_nonneg_left ?_ hM
+        exact Real.rpow_le_rpow (abs_nonneg _) hcos hα0
+
+/-! #### The step down in the degree
+
+For algebraic polynomials the antiderivative of a polynomial of degree at most `n - 1` is a
+polynomial of degree at most `n` — no mean has to be subtracted, as it does in the periodic case —
+so the recursion `ρₙ(u) ≤ c ρ_{n-1}(u')/n` loses nothing. -/
+
+/-- **A polynomial has a polynomial antiderivative** of degree one higher. -/
+theorem exists_derivative_eq {Q : ℝ[X]} {m : ℕ} (hQ : Q.degree ≤ (m : ℕ)) :
+    ∃ R : ℝ[X], R.degree ≤ ((m + 1 : ℕ) : ℕ) ∧ Polynomial.derivative R = Q := by
+  refine ⟨∑ i ∈ Finset.range (m + 1),
+    Polynomial.C (Q.coeff i / (i + 1)) * Polynomial.X ^ (i + 1), ?_, ?_⟩
+  · refine (Polynomial.degree_sum_le _ _).trans (Finset.sup_le fun i hi => ?_)
+    have hi' : i + 1 ≤ m + 1 := Nat.succ_le_succ (Nat.lt_succ_iff.1 (Finset.mem_range.1 hi))
+    calc (Polynomial.C (Q.coeff i / (i + 1)) * Polynomial.X ^ (i + 1)).degree
+        ≤ (Polynomial.C (Q.coeff i / (i + 1)) : ℝ[X]).degree
+            + (Polynomial.X ^ (i + 1) : ℝ[X]).degree := Polynomial.degree_mul_le _ _
+      _ ≤ 0 + ((i + 1 : ℕ) : WithBot ℕ) := by
+          gcongr
+          · exact Polynomial.degree_C_le
+          · rw [Polynomial.degree_X_pow]
+      _ = ((i + 1 : ℕ) : WithBot ℕ) := zero_add _
+      _ ≤ ((m + 1 : ℕ) : WithBot ℕ) := by exact_mod_cast hi'
+  · have hnat : Q.natDegree < m + 1 :=
+      Nat.lt_succ_of_le (Polynomial.natDegree_le_iff_degree_le.2 hQ)
+    have hQsum : ∑ i ∈ Finset.range (m + 1), Polynomial.C (Q.coeff i) * Polynomial.X ^ i = Q :=
+      (Polynomial.as_sum_range_C_mul_X_pow' Q hnat).symm
+    rw [map_sum]
+    conv_rhs => rw [← hQsum]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    have hne : ((i : ℝ) + 1) ≠ 0 := by positivity
+    rw [Polynomial.derivative_C_mul, Polynomial.derivative_X_pow, Nat.add_sub_cancel,
+      ← mul_assoc, ← Polynomial.C_mul]
+    congr 2
+    push_cast
+    field_simp
+
+/-- **Translating by a member of a subspace does not move the distance to it.** -/
+theorem infDist_sub_mem {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V]
+    {S : Submodule ℝ V} {w : V}
+    (hw : w ∈ S) (u : V) :
+    Metric.infDist (u - w) (S : Set V) = Metric.infDist u (S : Set V) := by
+  have key : ∀ a b : V, b ∈ S →
+      Metric.infDist (a - b) (S : Set V) ≤ Metric.infDist a (S : Set V) := by
+    intro a b hb
+    refine le_of_forall_pos_le_add fun ε hε => ?_
+    obtain ⟨s, hs, hlt⟩ := (Metric.infDist_lt_iff (s := (S : Set V)) ⟨0, S.zero_mem⟩).1
+      (lt_add_of_pos_right (Metric.infDist a (S : Set V)) hε)
+    calc Metric.infDist (a - b) (S : Set V) ≤ dist (a - b) (s - b) :=
+          Metric.infDist_le_dist_of_mem (S.sub_mem hs hb)
+      _ = dist a s := by rw [dist_eq_norm, dist_eq_norm, sub_sub_sub_cancel_right]
+      _ ≤ _ := hlt.le
+  refine le_antisymm (key u w hw) ?_
+  simpa using key (u - w) (-w) (S.neg_mem hw)
+
+/-- A function continuous on `[-1, 1]`, as a continuous function on the compact space `[-1, 1]`. -/
+noncomputable def restrictIcc {u : ℝ → ℝ} (hu : ContinuousOn u (Set.Icc (-1 : ℝ) 1)) :
+    C(Set.Icc (-1 : ℝ) 1, ℝ) :=
+  ⟨fun x => u x, hu.domRestrict⟩
+
+@[simp]
+theorem restrictIcc_apply {u : ℝ → ℝ} (hu : ContinuousOn u (Set.Icc (-1 : ℝ) 1))
+    (x : Set.Icc (-1 : ℝ) 1) : restrictIcc hu x = u x := rfl
+
+/-- **One step of the recursion in Jackson's theorem on `[-1, 1]`**: the best approximation of a
+function by polynomials of degree at most `n + 1` is at most `π sin (θ_{n+1}/2)` times the best
+approximation of its derivative by polynomials of degree at most `n`.
+
+The antiderivative `R` of the best approximation `q` of `u'` is a polynomial of degree at most
+`n + 1`, and `u - R` is Lipschitz with constant `‖u' - q‖` by the mean value theorem, so the Hölder
+case applies to it with exponent `1`. -/
+theorem infDist_restrictIcc_le_step {u u' : ℝ → ℝ}
+    (hu : ContinuousOn u (Set.Icc (-1 : ℝ) 1)) (hu' : ContinuousOn u' (Set.Icc (-1 : ℝ) 1))
+    (hd : ∀ x ∈ Set.Icc (-1 : ℝ) 1, HasDerivWithinAt u (u' x) (Set.Icc (-1 : ℝ) 1) x) (n : ℕ) :
+    Metric.infDist (restrictIcc hu)
+        (polyLE (Set.Icc (-1 : ℝ) 1) (n + 1) : Set C(Set.Icc (-1 : ℝ) 1, ℝ))
+      ≤ (π * Real.sin (angle (n + 1) / 2)) *
+          Metric.infDist (restrictIcc hu')
+            (polyLE (Set.Icc (-1 : ℝ) 1) n : Set C(Set.Icc (-1 : ℝ) 1, ℝ)) := by
+  set c : ℝ := π * Real.sin (angle (n + 1) / 2) with hcdef
+  have hc : 0 < c := mul_pos Real.pi_pos (sin_half_angle_pos _)
+  set E : ℝ := Metric.infDist (restrictIcc hu')
+    (polyLE (Set.Icc (-1 : ℝ) 1) n : Set C(Set.Icc (-1 : ℝ) 1, ℝ)) with hEdef
+  refine le_of_forall_pos_le_add fun ε hε => ?_
+  obtain ⟨q, hq, hlt⟩ :=
+    (Metric.infDist_lt_iff (s := (polyLE (Set.Icc (-1 : ℝ) 1) n : Set C(Set.Icc (-1 : ℝ) 1, ℝ)))
+      ⟨0, Submodule.zero_mem _⟩).1 (lt_add_of_pos_right E (by positivity : (0 : ℝ) < ε / c))
+  obtain ⟨Q, hQdeg, hQval⟩ := mem_polyLE_iff.1 hq
+  obtain ⟨R, hRdeg, hRd⟩ := exists_derivative_eq hQdeg
+  set K : ℝ := dist (restrictIcc hu') q with hKdef
+  have hK0 : 0 ≤ K := dist_nonneg
+  have hRcont : ContinuousOn (fun x : ℝ => R.eval x) (Set.Icc (-1 : ℝ) 1) :=
+    R.continuous_aeval.continuousOn
+  have hvc : ContinuousOn (fun x : ℝ => u x - R.eval x) (Set.Icc (-1 : ℝ) 1) := hu.sub hRcont
+  have hvd : ∀ x ∈ Set.Icc (-1 : ℝ) 1,
+      HasDerivWithinAt (fun t : ℝ => u t - R.eval t) (u' x - Q.eval x)
+        (Set.Icc (-1 : ℝ) 1) x := by
+    intro x hx
+    have hR : HasDerivWithinAt (fun t : ℝ => R.eval t) (Q.eval x) (Set.Icc (-1 : ℝ) 1) x := by
+      have h := R.hasDerivAt (𝕜 := ℝ) x
+      rw [hRd] at h
+      exact h.hasDerivWithinAt
+    exact (hd x hx).sub hR
+  have hbound : ∀ x ∈ Set.Icc (-1 : ℝ) 1, ‖u' x - Q.eval x‖ ≤ K := by
+    intro x hx
+    have h := (restrictIcc hu' - q).norm_coe_le_norm ⟨x, hx⟩
+    rw [hKdef, dist_eq_norm]
+    simpa [Real.norm_eq_abs, hQval ⟨x, hx⟩] using h
+  have hlip : ∀ a b : Set.Icc (-1 : ℝ) 1,
+      |restrictIcc hvc a - restrictIcc hvc b| ≤ K * |(a : ℝ) - (b : ℝ)| ^ (1 : ℝ) := by
+    intro a b
+    have h := Convex.norm_image_sub_le_of_norm_hasDerivWithin_le (f' := fun x => u' x - Q.eval x)
+      hvd hbound (convex_Icc (-1 : ℝ) 1) b.2 a.2
+    rw [Real.rpow_one]
+    simpa [Real.norm_eq_abs] using h
+  have hmain := infDist_polyLE_le_of_holder (f := restrictIcc hvc) hK0 zero_le_one le_rfl
+    hlip (n + 1)
+  rw [Real.rpow_one] at hmain
+  have hRmem : R.toContinuousMapOn (Set.Icc (-1 : ℝ) 1) ∈ polyLE (Set.Icc (-1 : ℝ) 1) (n + 1) :=
+    mem_polyLE_iff.2 ⟨R, by exact_mod_cast hRdeg, fun t => rfl⟩
+  have hsub : restrictIcc hvc = restrictIcc hu - R.toContinuousMapOn (Set.Icc (-1 : ℝ) 1) := by
+    ext x
+    simp only [restrictIcc_apply, ContinuousMap.sub_apply, Polynomial.toContinuousMapOn_apply,
+      Polynomial.toContinuousMap_apply]
+  rw [hsub, infDist_sub_mem hRmem] at hmain
+  calc Metric.infDist (restrictIcc hu)
+        (polyLE (Set.Icc (-1 : ℝ) 1) (n + 1) : Set C(Set.Icc (-1 : ℝ) 1, ℝ))
+      ≤ K * c := hmain
+    _ ≤ (E + ε / c) * c := by
+        exact mul_le_mul_of_nonneg_right hlt.le hc.le
+    _ = c * E + ε := by field_simp
+
+/-- **The recursion iterated.** With a tower `D 0, …, D k` of derivatives on `[-1, 1]`, the best
+approximation of `D 0` by polynomials of degree at most `n` is at most
+`∏_{i < k} π sin (θ_{n-i}/2)` times the best approximation of `D k` by polynomials of degree at most
+`n - k`. -/
+theorem infDist_restrictIcc_le_prod : ∀ (k n : ℕ) (_ : k ≤ n) (D : ℕ → ℝ → ℝ)
+    (hDc : ∀ j ≤ k, ContinuousOn (D j) (Set.Icc (-1 : ℝ) 1))
+    (_ : ∀ j < k, ∀ x ∈ Set.Icc (-1 : ℝ) 1,
+      HasDerivWithinAt (D j) (D (j + 1) x) (Set.Icc (-1 : ℝ) 1) x),
+    Metric.infDist (restrictIcc (hDc 0 (Nat.zero_le k)))
+        (polyLE (Set.Icc (-1 : ℝ) 1) n : Set C(Set.Icc (-1 : ℝ) 1, ℝ))
+      ≤ (∏ i ∈ Finset.range k, (π * Real.sin (angle (n - i) / 2))) *
+          Metric.infDist (restrictIcc (hDc k le_rfl))
+            (polyLE (Set.Icc (-1 : ℝ) 1) (n - k) : Set C(Set.Icc (-1 : ℝ) 1, ℝ)) := by
+  intro k
+  induction k with
+  | zero => intro n _ D hDc _; simp
+  | succ k ih =>
+    intro n hkn D hDc hDd
+    obtain ⟨m, rfl⟩ : ∃ m : ℕ, n = m + 1 := ⟨n - 1, by omega⟩
+    have hkm : k ≤ m := by omega
+    have hD'c : ∀ j ≤ k, ContinuousOn (D (j + 1)) (Set.Icc (-1 : ℝ) 1) := fun j hj =>
+      hDc (j + 1) (by omega)
+    have hD'd : ∀ j < k, ∀ x ∈ Set.Icc (-1 : ℝ) 1,
+        HasDerivWithinAt (D (j + 1)) (D (j + 1 + 1) x) (Set.Icc (-1 : ℝ) 1) x := fun j hj =>
+      hDd (j + 1) (by omega)
+    have hstep := infDist_restrictIcc_le_step (hDc 0 (Nat.zero_le _)) (hDc 1 (by omega))
+      (hDd 0 (by omega)) m
+    have hrec := ih m hkm (fun j => D (j + 1)) hD'c hD'd
+    have hprod : ∏ i ∈ Finset.range (k + 1), (π * Real.sin (angle (m + 1 - i) / 2))
+        = (π * Real.sin (angle (m + 1) / 2)) *
+            ∏ i ∈ Finset.range k, (π * Real.sin (angle (m - i) / 2)) := by
+      rw [Finset.prod_range_succ' (fun i => π * Real.sin (angle (m + 1 - i) / 2)) k]
+      simp only [Nat.sub_zero, Nat.succ_sub_succ]
+      ring
+    have hnn : (0 : ℝ) ≤ π * Real.sin (angle (m + 1) / 2) :=
+      (mul_pos Real.pi_pos (sin_half_angle_pos _)).le
+    rw [hprod, show m + 1 - (k + 1) = m - k from Nat.succ_sub_succ m k, mul_assoc]
+    exact hstep.trans (mul_le_mul_of_nonneg_left hrec hnn)
+
+/-- **Jackson's theorem for algebraic polynomials.** Let `D 0, …, D k` be a tower of derivatives on
+`[-1, 1]`, with `D k` satisfying the Hölder condition `|D k u - D k v| ≤ M |u - v|^α` there, and let
+`f` be `D 0` as a continuous function on `[-1, 1]`. Then for `n > k` the error of the best uniform
+approximation of `f` by polynomials of degree at most `n` satisfies
+
+`ρₙ(f) ≤ d c^{k+1} M / n^{k+α}`,  `c = 1 + π²/2`,
+
+for any `d` at least `n^{k+α} / (n (n-1) ⋯ (n-k+1) (n-k)^α)`.
+
+The proof is the recursion `Jackson.infDist_restrictIcc_le_prod` down the tower, which costs
+`π sin (θ_{n-i}/2) ≤ (π²/2)/(n-i)` per step, closed by the Hölder case at degree `n - k`; so the
+constant actually proved is `(π²/2)^{k+1}`, smaller than the classical `(1 + π²/2)^{k+1}`. -/
+theorem infDist_le_of_holder_poly {k n : ℕ} {M α d : ℝ} {D : ℕ → ℝ → ℝ}
+    {f : C(Set.Icc (-1 : ℝ) 1, ℝ)} (hf : ∀ x : Set.Icc (-1 : ℝ) 1, f x = D 0 x)
+    (hDc : ∀ j ≤ k, ContinuousOn (D j) (Set.Icc (-1 : ℝ) 1))
+    (hDd : ∀ j < k, ∀ x ∈ Set.Icc (-1 : ℝ) 1,
+      HasDerivWithinAt (D j) (D (j + 1) x) (Set.Icc (-1 : ℝ) 1) x)
+    (hM : 0 ≤ M) (hα0 : 0 ≤ α) (hα1 : α ≤ 1)
+    (hhol : ∀ u ∈ Set.Icc (-1 : ℝ) 1, ∀ v ∈ Set.Icc (-1 : ℝ) 1,
+      |D k u - D k v| ≤ M * |u - v| ^ α)
+    (hkn : k < n)
+    (hd : (n : ℝ) ^ ((k : ℝ) + α) /
+        ((∏ i ∈ Finset.range k, ((n : ℝ) - i)) * ((n : ℝ) - k) ^ α) ≤ d) :
+    Metric.infDist f (polyLE (Set.Icc (-1 : ℝ) 1) n : Set C(Set.Icc (-1 : ℝ) 1, ℝ))
+      ≤ d * (1 + π ^ 2 / 2) ^ (k + 1) * M / (n : ℝ) ^ ((k : ℝ) + α) := by
+  have hpi := Real.pi_pos
+  have hpi2 : (1 : ℝ) ≤ π ^ 2 / 2 := by nlinarith [Real.two_le_pi]
+  have hkR : (k : ℝ) < n := by exact_mod_cast hkn
+  have hnk : (0 : ℝ) < (n : ℝ) - k := by linarith
+  have hn0 : (0 : ℝ) < (n : ℝ) := lt_of_le_of_lt (Nat.cast_nonneg k) hkR
+  have hfac : ∀ i ∈ Finset.range k, (0 : ℝ) < (n : ℝ) - i := by
+    intro i hi
+    have : (i : ℝ) < n := by exact_mod_cast lt_trans (Finset.mem_range.1 hi) hkn
+    linarith
+  set P : ℝ := ∏ i ∈ Finset.range k, ((n : ℝ) - i) with hPdef
+  have hP : 0 < P := Finset.prod_pos hfac
+  set S : ℝ := ((n : ℝ) - k) ^ α with hSdef
+  have hS : 0 < S := Real.rpow_pos_of_pos hnk α
+  -- the size of one step of the recursion
+  have hc : ∀ m : ℕ, 0 < m → π * Real.sin (angle m / 2) ≤ π ^ 2 / 2 / (m : ℝ) := by
+    intro m hm
+    have hm' : (0 : ℝ) < m := by exact_mod_cast hm
+    refine (pi_mul_sin_half_angle_le m).trans ?_
+    rw [div_le_div_iff₀ (by positivity) hm']
+    nlinarith
+  have hcast : ∀ i : ℕ, i ≤ n → ((n - i : ℕ) : ℝ) = (n : ℝ) - i := fun i hi => by
+    push_cast [Nat.cast_sub hi]
+    ring
+  -- the recursion, closed by the Hölder case at the bottom
+  have hfeq : f = restrictIcc (hDc 0 (Nat.zero_le k)) := by
+    ext x
+    exact hf x
+  have hhol' : ∀ a b : Set.Icc (-1 : ℝ) 1,
+      |restrictIcc (hDc k le_rfl) a - restrictIcc (hDc k le_rfl) b|
+        ≤ M * |(a : ℝ) - (b : ℝ)| ^ α := fun a b => hhol a a.2 b b.2
+  have hPnn : (0 : ℝ) ≤ ∏ i ∈ Finset.range k, (π * Real.sin (angle (n - i) / 2)) :=
+    Finset.prod_nonneg fun i _ => (mul_pos hpi (sin_half_angle_pos _)).le
+  have hstep1 : Metric.infDist f
+        (polyLE (Set.Icc (-1 : ℝ) 1) n : Set C(Set.Icc (-1 : ℝ) 1, ℝ))
+      ≤ (∏ i ∈ Finset.range k, (π * Real.sin (angle (n - i) / 2))) *
+          (M * (π * Real.sin (angle (n - k) / 2)) ^ α) := by
+    rw [hfeq]
+    exact (infDist_restrictIcc_le_prod k n hkn.le D hDc hDd).trans
+      (mul_le_mul_of_nonneg_left
+        (infDist_polyLE_le_of_holder hM hα0 hα1 hhol' (n - k)) hPnn)
+  -- the product of the steps
+  have hprodbd : (∏ i ∈ Finset.range k, (π * Real.sin (angle (n - i) / 2)))
+      ≤ (π ^ 2 / 2) ^ k / P := by
+    have hterm : ∀ i ∈ Finset.range k,
+        π * Real.sin (angle (n - i) / 2) ≤ π ^ 2 / 2 / ((n : ℝ) - i) := by
+      intro i hi
+      have hik : i < k := Finset.mem_range.1 hi
+      have hin : i ≤ n := by omega
+      have h := hc (n - i) (by omega)
+      rwa [hcast i hin] at h
+    calc ∏ i ∈ Finset.range k, (π * Real.sin (angle (n - i) / 2))
+        ≤ ∏ i ∈ Finset.range k, (π ^ 2 / 2 / ((n : ℝ) - i)) :=
+          Finset.prod_le_prod (fun i _ => (mul_pos hpi (sin_half_angle_pos _)).le) hterm
+      _ = (π ^ 2 / 2) ^ k / P := by
+          rw [Finset.prod_div_distrib, Finset.prod_const, Finset.card_range, hPdef]
+  -- the last, Hölder, step
+  have hbasebd : (π * Real.sin (angle (n - k) / 2)) ^ α ≤ π ^ 2 / 2 / S := by
+    have h := hc (n - k) (by omega)
+    rw [hcast k hkn.le] at h
+    calc (π * Real.sin (angle (n - k) / 2)) ^ α
+        ≤ (π ^ 2 / 2 / ((n : ℝ) - k)) ^ α :=
+          Real.rpow_le_rpow (mul_pos hpi (sin_half_angle_pos _)).le h hα0
+      _ = (π ^ 2 / 2) ^ α / S := by rw [hSdef, Real.div_rpow (by positivity) hnk.le]
+      _ ≤ π ^ 2 / 2 / S := by
+          gcongr
+          calc (π ^ 2 / 2) ^ α ≤ (π ^ 2 / 2) ^ (1 : ℝ) :=
+                Real.rpow_le_rpow_of_exponent_le hpi2 hα1
+            _ = π ^ 2 / 2 := Real.rpow_one _
+  -- put the pieces together
+  have hnpos : (0 : ℝ) < (n : ℝ) ^ ((k : ℝ) + α) := Real.rpow_pos_of_pos hn0 _
+  have hdmul : (n : ℝ) ^ ((k : ℝ) + α) ≤ d * (P * S) := by
+    rw [div_le_iff₀ (by positivity)] at hd
+    exact hd
+  calc Metric.infDist f (polyLE (Set.Icc (-1 : ℝ) 1) n : Set C(Set.Icc (-1 : ℝ) 1, ℝ))
+      ≤ (∏ i ∈ Finset.range k, (π * Real.sin (angle (n - i) / 2))) *
+          (M * (π * Real.sin (angle (n - k) / 2)) ^ α) := hstep1
+    _ ≤ ((π ^ 2 / 2) ^ k / P) * (M * (π ^ 2 / 2 / S)) := by
+        refine mul_le_mul hprodbd (mul_le_mul_of_nonneg_left hbasebd hM) ?_ (by positivity)
+        exact mul_nonneg hM (Real.rpow_nonneg (mul_pos hpi (sin_half_angle_pos _)).le _)
+    _ = (π ^ 2 / 2) ^ (k + 1) * M / (P * S) := by
+        rw [pow_succ]
+        field_simp
+        ring
+    _ ≤ (1 + π ^ 2 / 2) ^ (k + 1) * M / (P * S) := by
+        have hb0 : (π ^ 2 / 2) ^ (k + 1) ≤ (1 + π ^ 2 / 2) ^ (k + 1) := by
+          gcongr
+          nlinarith [sq_nonneg π]
+        exact div_le_div_of_nonneg_right (mul_le_mul_of_nonneg_right hb0 hM) (by positivity)
+    _ ≤ d * (1 + π ^ 2 / 2) ^ (k + 1) * M / (n : ℝ) ^ ((k : ℝ) + α) := by
+        rw [div_le_div_iff₀ (by positivity) hnpos]
+        have hA : (0 : ℝ) ≤ (1 + π ^ 2 / 2) ^ (k + 1) * M := by positivity
+        nlinarith [mul_le_mul_of_nonneg_left hdmul hA]
+
+end Algebraic
 
 end Jackson

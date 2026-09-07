@@ -42,3 +42,7 @@ source = "Atkinson-Han, Theoretical Numerical Analysis, (3.7.21)"
 [[node]]
 id = "_root_.norm_trigInterpCLM_le"
 source = "Atkinson-Han, Theoretical Numerical Analysis, (3.7.20); Rivlin, An Introduction to the Approximation of Functions, p. 13"
+
+[[node]]
+id = "_root_.le_norm_trigInterpCLM_one"
+source = "Atkinson-Han, Theoretical Numerical Analysis, (3.7.20)"

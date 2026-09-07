@@ -11,11 +11,7 @@ id = "theorem_3_7_1"
 
 [[node]]
 id = "theorem_3_7_2"
-kind = "theorem"
-desc = '''Theorem 3.7.2 (Jackson, polynomial case): for `f ∈ C^{k,α}[-1, 1]`, `ρ_n(f) ≤ d_k c^{k+1} M_k /
-n^{k+α}` with `c = 1 + π²/2`. It waits on the backbone transfer of Theorem 3.7.1 through
-`x = cos θ`.'''
-deps = ["Jackson.infDist_le_of_holder_poly"]
+source = "Atkinson-Han, Theoretical Numerical Analysis, Theorem 3.7.2"
 
 [[node]]
 id = "theorem_3_7_3"
@@ -39,21 +35,48 @@ id = "equation_3_7_11"
 id = "equation_3_7_12"
 
 [[node]]
-id = "equation_3_7_20"
-kind = "theorem"
-desc = '''(3.7.20), Rivlin's bound `‖𝓘_n‖ ≤ 1 + (2/π) log n` on the operator norm of the trigonometric
-interpolatory projection at the equispaced nodes. The Lagrange formula (3.7.19) that the book pairs
-it with is proved, as `equation_3_7_19`; the norm bound waits on the backbone node
-`norm_trigInterpCLM_le`, whose plan entry records what is missing. (3.7.21)–(3.7.22), the resulting
-uniform error bounds, are composition once it lands.'''
-deps = ["trigInterpCLM", "norm_trigInterpCLM_le"]
+id = "not_equation_3_7_20"
+source = "Atkinson-Han, Theoretical Numerical Analysis, (3.7.20)"
+
+[[node]]
+id = "norm_trigInterpCLM_bound"
+source = "Atkinson-Han, Theoretical Numerical Analysis, (3.7.20); Rivlin, An Introduction to the Approximation of Functions, p. 13"
+
+[[node]]
+id = "equation_3_7_13"
+source = "Atkinson-Han, Theoretical Numerical Analysis, (3.7.13)"
+
+[[node]]
+id = "equation_3_7_14"
+source = "Atkinson-Han, Theoretical Numerical Analysis, (3.7.14)"
+
+[[node]]
+id = "equation_3_7_15"
+source = "Atkinson-Han, Theoretical Numerical Analysis, (3.7.15)-(3.7.16)"
+
+[[node]]
+id = "equation_3_7_17"
+source = "Atkinson-Han, Theoretical Numerical Analysis, (3.7.17); (2.2.8)"
+
+[[node]]
+id = "chebyshevMeasure"
+source = "Atkinson-Han, Theoretical Numerical Analysis, (3.5.8), Example 3.7.4"
+
+[[node]]
+id = "chebyshevOrthonormal"
+source = "Atkinson-Han, Theoretical Numerical Analysis, (3.5.9), Example 3.7.4"
+
+[[node]]
+id = "chebyshevKernel"
+source = "Atkinson-Han, Theoretical Numerical Analysis, Example 3.7.4; Rivlin, Chebyshev Polynomials, p. 133"
+
+[[node]]
+id = "chebyshevProj"
+source = "Atkinson-Han, Theoretical Numerical Analysis, (3.5.2), Example 3.7.4"
 
 [[node]]
 id = "example_3_7_4"
-kind = "theorem"
-desc = '''Example 3.7.4: for the Chebyshev weight the least-squares projection `P_N` on `C[-1, 1]` has
-`‖P_N‖ = (4/π²) log N + O(1)`, by the change of variables `x = cos θ` reducing it to `𝓕_N`.'''
-deps = ["PeriodicCont.norm_fourierProj", "equation_3_7_9"]
+source = "Atkinson-Han, Theoretical Numerical Analysis, Example 3.7.4"
 
 [[node]]
 id = "equation_3_7_5"

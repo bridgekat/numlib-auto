@@ -62,25 +62,24 @@ id = "Jackson.infDist_le_of_holder_deriv'"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.7.1"
 
 [[node]]
+id = "Jackson.exists_degree_le_eval_cos"
+
+[[node]]
+id = "Jackson.infDist_polyLE_le_infDist_trigPolyLE"
+
+[[node]]
+id = "Jackson.infDist_polyLE_le_of_holder"
+source = "Atkinson-Han, Theoretical Numerical Analysis, Theorem 3.7.2 (the case k = 0)"
+
+[[node]]
+id = "Jackson.exists_derivative_eq"
+
+[[node]]
+id = "Jackson.infDist_restrictIcc_le_step"
+
+[[node]]
+id = "Jackson.infDist_restrictIcc_le_prod"
+
+[[node]]
 id = "Jackson.infDist_le_of_holder_poly"
-kind = "theorem"
-desc = '''Atkinson–Han Thm 3.7.2, the polynomial half of Jackson's theorem: for `f` on `[-1, 1]` with `k`
-continuous derivatives and `alpha`-Hoelder `k`-th derivative of constant `M`, the best uniform
-polynomial approximation of degree `n` satisfies `rho_n(f) <= d_k c^{k+1} M / n^{k+alpha}`, with
-`c = 1 + pi^2/2` and `d_k` any number at least `n^{k+alpha} / (n (n-1) ... (n-k+1) (n-k)^alpha)`
-for `n > k`.
-
-**Not attempted.** `Jackson.infDist_le_of_holder_deriv'` supplies the trigonometric half; what is
-missing is the transfer through `x = cos theta`. That needs two things this library does not have:
-that `theta |-> f (cos theta)` is in `C_p^{k,alpha}(2 pi)` with a constant controlled by that of
-`f` (a chain-rule computation for `f` composed with `cos`, which is where the book's `d_k` comes
-from), and that an **even** trigonometric polynomial of degree `n` is `p(cos theta)` for an
-algebraic `p` of degree `n` — the Chebyshev correspondence. `Numlib/Approximation/Chebyshev` has
-`Polynomial.Chebyshev.T_real_cos` and the extremal facts but not that correspondence as a statement
-about `trigPolyLE` and `polyLE`. Estimate: 300 lines.
-
-The smoothness is best stated on a clamped extension of `f` to all of `ℝ`, as a tower
-`D 0 = f`, `D (j+1) = (D j)'`, so that the hypotheses match those of
-`Jackson.infDist_le_of_holder_deriv'`.'''
-deps = ["Jackson.infDist_le_of_holder_deriv'"]
-source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.7.2"
+source = "Atkinson-Han, Theoretical Numerical Analysis, Theorem 3.7.2"
