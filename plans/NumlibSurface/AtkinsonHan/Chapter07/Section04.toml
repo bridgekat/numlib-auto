@@ -1,0 +1,48 @@
+namespace = "AtkinsonHan.Chapter07"
+desc = '''
+Atkinson-Han §7.4, the Fourier characterization of `H^k(ℝ^d)`: Theorem 7.4.1 identifies
+`H^k(ℝ^d)` with `{v ∈ L^2 : (1+|ξ|^2)^{k/2} ℱv ∈ L^2}` up to an equivalence of norms, which lets
+the book define `H^s(ℝ^d)` for every real `s` -- for `s < 0` on tempered distributions -- and then
+read off two embedding estimates on a Lipschitz domain.
+
+`Ω = ℝ^d` is the one domain for which Mathlib does have a weak derivative, so Theorem 7.4.1 is
+statable today: `TemperedDistribution.MemSobolev s 2` with `memSobolev_two_iff_fourier` is the
+Fourier side and `MemSobolev.lineDerivOp` the derivative side. It is not written because nothing
+in this corpus consumes it -- the same phase gate as §7.1 and §7.2, not an infrastructure gap.
+
+Examples 7.4.2 and 7.4.3 are different: their Step 3 applies the extension operator of Theorem
+7.3.5 to move the whole-space estimate onto a Lipschitz domain, so they are the §7.3 embeddings
+again and are genuinely blocked. The same holds for Exercises 7.4.3 and 7.4.4.
+'''
+
+[[node]]
+id = "theorem_7_4_1"
+kind = "theorem"
+desc = '''Theorem 7.4.1: `v ∈ L^2(ℝ^d)` lies in `H^k(ℝ^d)` if and only if
+`(1+|ξ|^2)^{k/2} ℱv ∈ L^2(ℝ^d)`, and the two norms are equivalent (7.4.1), so `H^s(ℝ^d)` may be
+*defined* by the Fourier condition for any real `s` (7.4.2), with `H^0 = L^2` and, on tempered
+distributions, for `s < 0`. The proof is the multiplier identity `ℱ(∂^α v) = (i ξ)^α ℱv` plus the
+symbol inequality of Exercise 7.4.2. Not formalized: statable today over Mathlib's
+`TemperedDistribution.MemSobolev s 2` (`memSobolev_two_iff_fourier` on one side,
+`MemSobolev.lineDerivOp` on the other), but unwritten because nothing in the corpus consumes it --
+a phase gate, not an infrastructure gap.'''
+
+[[node]]
+id = "example_7_4_2"
+kind = "theorem"
+desc = '''Example 7.4.2: on a Lipschitz domain `Ω ⊆ ℝ^d` with `k > d/2`, `H^k(Ω) ↪ C(closure Ω)`,
+i.e. `‖v‖_{C(closure Ω)} ≤ c ‖v‖_{H^k(Ω)}` (7.4.3). The proof inverts the Fourier transform,
+applies Cauchy-Schwarz against `∫ (1+|ξ|^2)^{-k} dξ < ∞ ↔ k > d/2`, extends by density from
+`C_0^∞(ℝ^d)`, and then transfers to `Ω` by the extension operator. Not formalized: Step 3 is
+Theorem 7.3.5 and Step 2 is Theorem 7.3.4, so this is the §7.3 embedding on a domain again -- the
+chapter's obstruction, not the Fourier analysis.'''
+
+[[node]]
+id = "example_7_4_3"
+kind = "theorem"
+desc = '''Example 7.4.3: on a Lipschitz domain `Ω ⊆ ℝ^d`,
+`‖v‖_{C(closure Ω)} ≤ c ‖v‖_{H^d(Ω)}^{1/2} ‖v‖_{L^2(Ω)}^{1/2}` for `v ∈ H^d(Ω)` (7.4.4), by the
+argument of Example 7.4.2 with the scaled multiplier `(1+λ|ξ|^2)^{d/2}` and the optimal
+`λ = (‖v‖_{L^2}/‖v‖_{H^d})^{2/d}`. Not formalized: like Example 7.4.2 it reaches the domain only
+through the extension operator of Theorem 7.3.5 and the density of Theorem 7.3.4, which are the
+chapter's obstruction.'''

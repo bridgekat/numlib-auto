@@ -65,3 +65,53 @@ id = "exercise_7_5_3"
 
 [[node]]
 id = "exercise_7_5_4"
+
+[[node]]
+id = "example_7_5_3"
+kind = "theorem"
+desc = '''Example 7.5.3: the square wave `φ = 0` on `((2k-1)π, 2kπ)` and `1` on `(2kπ, (2k+1)π)`
+has Fourier series `1/2 - (i/π) ∑_{k≥0} (2k+1)^{-1} [e^{(2k+1)it} - e^{-(2k+1)it}]`, whose
+distributional derivative is the Dirac comb `∑_j (-1)^j δ(t - πj)`, `δ` acting on `H^s(2π)` for
+`s > 1/2` by `δ[φ] = φ(0)`. Not formalized: this needs distributions on the circle, and Mathlib's
+`TemperedDistribution` lives on `ℝ^d` only; the module doc of `Chapter07/Section05` records the
+same exclusion.'''
+
+[[node]]
+id = "theorem_7_5_7"
+kind = "theorem"
+desc = '''Theorem 7.5.7: for `s > 1/2`, `φ ∈ H^s(2π)` and `0 ≤ r ≤ s`, the trigonometric
+interpolant satisfies `‖φ - 𝓘_n φ‖_r ≤ c n^{r-s} ‖φ‖_s` (7.5.15), a marginal sharpening of
+Theorem 3.7.1 and the bound chapter 13 quotes for its convergence rates. Not formalized: the
+project has no trigonometric interpolation operator `𝓘_n` -- `Numlib/Analysis/Fourier/`
+`TrigonometricBasis` builds the Fourier projection and the target subspace `trigPolyLE (2π) n` but
+not the interpolant -- and the book gives no proof, referring to Kress [151].'''
+
+[[node]]
+id = "definition_7_5_8"
+kind = "definition"
+desc = '''Definition 7.5.8: a spherical polynomial of degree `≤ N` is the restriction to the unit
+sphere `U ⊆ ℝ^3` of a polynomial in `(x,y,z)` of degree `≤ N`; `𝕊_N` is the set of them, the
+analogue of the trigonometric polynomials. Not formalized: §7.5.5 is about spherical harmonics,
+of which Mathlib has none (zero occurrences), and nothing in this corpus uses the sphere; unlike
+the rest of §7.5 it is not a weighted `ℓ^2` and shares no machinery with it.'''
+
+[[node]]
+id = "definition_7_5_9"
+kind = "definition"
+desc = '''Definition 7.5.9: a spherical harmonic of degree `n` is the restriction to `U` of a
+homogeneous harmonic polynomial of degree `n` in `(x,y,z)`; there are `2n+1` independent ones, the
+span `𝕊̂_N` of those of degree `≤ N` equals `𝕊_N` (7.5.20) with `dim 𝕊_N = (N+1)^2` (7.5.21), and
+the standard `L^2(U)`-orthonormal basis (7.5.22) is built from Legendre polynomials and associated
+Legendre functions. Not formalized: Mathlib has no spherical harmonics, no associated Legendre
+functions and no surface measure on the sphere for the `L^2(U)` orthonormality; the book quotes
+(7.5.20) and (7.5.21) from MacRobert [161] without proof.'''
+
+[[node]]
+id = "theorem_7_5_10"
+kind = "theorem"
+desc = '''Theorem 7.5.10: for `g ∈ C^{k,γ}(U)` the best uniform approximation by spherical
+polynomials satisfies `ρ_N(g) ≤ c_k H_{k,γ}(g) N^{-(k+γ)}` for `N ≥ 1` (7.5.31), with `c_k`
+depending only on `k`; the rates (7.5.32)-(7.5.33) for the Laplace expansion follow. Not
+formalized: it rests on Definitions 7.5.8-7.5.9, which need spherical harmonics that Mathlib does
+not have, and the book states it without proof, citing Gronwall [100] for `k = 0` and Ragozin
+[190, Theorem 3.3] in general.'''

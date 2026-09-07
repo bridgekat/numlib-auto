@@ -1,0 +1,23 @@
+namespace = "AtkinsonHan.Chapter07"
+desc = '''
+Atkinson-Han §7.6, integration by parts on a Lipschitz domain: the classical Gauss/Green formula
+`∫_Ω u_{x_i} v = ∫_Γ u v ν_i - ∫_Ω u v_{x_i}` for `u, v ∈ C^1(closure Ω)`, extended by a density
+argument to `H^1(Ω)` (Proposition 7.6.1) and further to conjugate pairs `W^{1,p} × W^{1,p'}`
+(7.6.3), from which the book derives its Green's identities.
+
+Not reachable here: the boundary integral needs surface measure on a Lipschitz boundary, which
+Mathlib does not have -- its divergence theorem is stated for boxes -- and the density step needs
+Theorem 7.3.2 while the boundary term needs the trace of Theorem 7.3.10. So §7.6 is blocked by
+§7.3 twice over.
+'''
+
+[[node]]
+id = "proposition_7_6_1"
+kind = "theorem"
+desc = '''Proposition 7.6.1: on a Lipschitz domain `Ω ⊆ ℝ^d` with boundary `Γ` and outward unit
+normal `ν` (defined a.e.), `∫_Ω u_{x_i} v dx = ∫_Γ u v ν_i ds - ∫_Ω u v_{x_i} dx` for all
+`u, v ∈ H^1(Ω)` (7.6.1); the book proves it by approximating `u, v` from `C^1(closure Ω)` and
+passing to the limit, and notes the extension to `u ∈ W^{1,p}(Ω)`, `v ∈ W^{1,p'}(Ω)` (7.6.3). Not
+formalized: the boundary integral needs surface measure on a Lipschitz boundary -- Mathlib's
+divergence theorem is for boxes -- and the limit passage needs the density of Theorem 7.3.2 and
+the continuity of the trace of Theorem 7.3.10, none of which exist.'''
