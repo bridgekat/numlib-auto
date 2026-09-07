@@ -1,3 +1,4 @@
+import Numlib.Analysis.Wavelet.Daubechies
 import Numlib.Analysis.Wavelet.Multiresolution
 import NumlibSurface.AtkinsonHan.Chapter04.Section04
 
@@ -28,6 +29,9 @@ generates, and the Haar instance `Haar.isMultiresolutionAnalysis` built from §4
 * `exercise_4_5_5`, `exercise_4_5_6_subset` — the values of the Daubechies `D4` scaling function
   at the first dyadic points, and the support bound for its wavelet, both under the hypothesis that
   a function with the properties (4.5.5)–(4.5.7) exists.
+* `equation_4_5_6` — that such a function does exist: the Daubechies `D4` scaling function, with
+  support exactly `[0, 3]`.  `exists_daubechies_values` combines the two, making the values of
+  Exercise 4.5.5 unconditional.
 
 ## Conventions
 
@@ -54,15 +58,23 @@ in the book's own form, at every level.
 
 ## Not formalized here
 
-The existence theory that §4.5 defers to Daubechies: that a sequence `{p_k}` satisfying the
-condition of Exercise 4.5.2 is the dilation-coefficient sequence of an actual scaling function, and
-with it the existence of the Daubechies `D4` function of (4.5.5)–(4.5.7).  The quadrature mirror
-condition alone is *not* sufficient for that, and the standard constructions — the cascade
-iteration, or the infinite product `φ̂(ξ) = ∏_{j≥1} m₀(2^{-j}ξ)` — need the Fourier-side theory of
-the symbol `m₀`, which the backbone does not have.  What is proved here of the Daubechies material
-is what needs no existence theorem: the dyadic values and support bound of the pair, stated of a
-function *assumed* to have the properties (4.5.5)–(4.5.7).  The stable-basis weakening of axiom (1)
-is left out too — the book only remarks that one may renormalise to the orthonormal case.
+Half of the existence theory that §4.5 defers to Daubechies: that a sequence `{p_k}` satisfying the
+condition of Exercise 4.5.2 is the dilation-coefficient sequence of an actual scaling function.  The
+quadrature mirror condition alone is *not* sufficient for that — `p₀ = p₃ = 1/√2` satisfies it and
+its cascade limit `(1/3) 1_[0,3]` has non-orthonormal translates — so a correct statement needs a
+further hypothesis such as Cohen's condition, and its standard proofs run on the Fourier side: the
+periodisation `∑_k |φ̂(ξ + 2πk)|² = 1` characterising orthonormality of the integer translates, and
+the relation `φ̂(ξ) = m₀(ξ/2) φ̂(ξ/2)`.  Of that theory the backbone has only the periodisation
+identity, `Numlib/Analysis/Fourier/Periodisation`.  The *other* half,
+the existence of the `D4` function of (4.5.5)–(4.5.7), is `equation_4_5_6`, and it needs none of it:
+for one explicit mask the cascade iteration converges by an elementary matrix estimate.
+
+The orthonormality of the integer translates of that `D4` function is not proved either; it is the
+same Fourier-side statement.  So `equation_4_5_6` gives the function of (4.5.5)–(4.5.7), not a
+multiresolution analysis built from it.
+
+The stable-basis weakening of axiom (1) is left out too — the book only remarks that one may
+renormalise to the orthonormal case.
 -/
 
 open MeasureTheory Real
@@ -284,8 +296,9 @@ computes and asks for in Exercise 4.5.5:
 The vanishing at the endpoints is not assumed: it follows from the scaling equation, because the
 coefficients `(1+√3)/4` and `(1-√3)/4` of the two end terms are not `1`.
 
-That such a `φ` exists is Daubechies' construction, which the book states without proof and which
-is the open node `equation_4_5_6`; this statement is unconditional on it. -/
+That such a `φ` exists is Daubechies' construction, which the book states without proof; it is
+`equation_4_5_6`, and this statement is stated independently of it.  `exists_daubechies_values`
+puts the two together. -/
 theorem exercise_4_5_5 {φ : ℝ → ℝ} (hsupp : ∀ x : ℝ, x < 0 ∨ 3 < x → φ x = 0)
     (hscal : ∀ x : ℝ, φ x = (1 + √3) / 4 * φ (2 * x) + (3 + √3) / 4 * φ (2 * x - 1)
       + (3 - √3) / 4 * φ (2 * x - 2) + (1 - √3) / 4 * φ (2 * x - 3))
@@ -341,10 +354,10 @@ theorem exercise_4_5_5 {φ : ℝ → ℝ} (hsupp : ∀ x : ℝ, x < 0 ∨ 3 < x 
 /-- **Half of Exercise 4.5.6**: the Daubechies wavelet (4.5.8) vanishes outside `[-1, 2]`, so its
 support is contained in that interval.
 
-Only the inclusion is proved.  The book asks for the equality `supp ψ = [-1, 2]`, whose other half
-needs `φ` to be non-vanishing near the ends of `[0, 3]`; that does not follow from (4.5.5)–(4.5.7)
-without the existence theory the section defers to Daubechies, which is the open node
-`equation_4_5_6`. -/
+Only the inclusion is proved, and it holds for any `φ` vanishing off `[0, 3]`.  The book asks for
+the equality `supp ψ = [-1, 2]`, which is a statement about one particular `φ` and needs the
+counterpart for `ψ` of `Daubechies.scalingFun_support` — that `ψ` vanishes identically on no
+nondegenerate subinterval of `[-1, 2]`.  That is a separate argument, and is not made here. -/
 theorem exercise_4_5_6_subset {φ ψ : ℝ → ℝ} (hsupp : ∀ x : ℝ, x < 0 ∨ 3 < x → φ x = 0)
     (hpsi : ∀ x : ℝ, ψ x = -((1 + √3) / 4) * φ (2 * x - 1) + (3 + √3) / 4 * φ (2 * x)
       - (3 - √3) / 4 * φ (2 * x + 1) + (1 - √3) / 4 * φ (2 * x + 2))
@@ -356,5 +369,44 @@ theorem exercise_4_5_6_subset {φ ψ : ℝ → ℝ} (hsupp : ∀ x : ℝ, x < 0 
   · rw [hpsi, hsupp (2 * x - 1) (Or.inr (by linarith)), hsupp (2 * x) (Or.inr (by linarith)),
       hsupp (2 * x + 1) (Or.inr (by linarith)), hsupp (2 * x + 2) (Or.inr (by linarith))]
     ring
+
+/-- **(4.5.5)–(4.5.7): the Daubechies `D4` scaling function exists.**  There is a continuous
+`φ : ℝ → ℝ` with
+
+* `supp φ = [0, 3]`, that is `closure {x | φ x ≠ 0} = [0, 3]` — and in particular `φ` vanishes
+  outside `[0, 3]`;
+* the four-term scaling equation
+  `φ(x) = (1+√3)/4 φ(2x) + (3+√3)/4 φ(2x-1) + (3-√3)/4 φ(2x-2) + (1-√3)/4 φ(2x-3)`;
+* the normalisation `φ(1) = (1+√3)/2`, `φ(2) = (1-√3)/2`.
+
+The book introduces this function by these three properties and computes its values from them —
+that is `exercise_4_5_5`, which is stated of a function *assumed* to have them; that such a
+function exists is Daubechies' theorem, which the book states without proof.  The backbone
+`Numlib/Analysis/Wavelet/Daubechies` proves it by the cascade iteration, whose convergence rests
+on an explicit joint-spectral-radius bound for the two matrices attached to this mask; the sharp
+support statement then comes from the injectivity of their transposes. -/
+theorem equation_4_5_6 :
+    ∃ φ : ℝ → ℝ, Continuous φ ∧ (∀ x : ℝ, x < 0 ∨ 3 < x → φ x = 0) ∧
+      closure (Function.support φ) = Set.Icc 0 3 ∧
+      (∀ x : ℝ, φ x = (1 + √3) / 4 * φ (2 * x) + (3 + √3) / 4 * φ (2 * x - 1)
+        + (3 - √3) / 4 * φ (2 * x - 2) + (1 - √3) / 4 * φ (2 * x - 3)) ∧
+      φ 1 = (1 + √3) / 2 ∧ φ 2 = (1 - √3) / 2 :=
+  Daubechies.exists_scalingFun
+
+/-- **The Daubechies function of (4.5.5)–(4.5.7) has the values of Exercise 4.5.5.**  Combining
+`equation_4_5_6` with `exercise_4_5_5` makes the exercise unconditional: the function whose
+existence the section asserts really does have
+
+`φ(0) = φ(3) = 0`, `φ(1/2) = (2+√3)/4`, `φ(3/2) = 0`, `φ(1/4) = (5+3√3)/16`. -/
+theorem exists_daubechies_values :
+    ∃ φ : ℝ → ℝ, Continuous φ ∧ closure (Function.support φ) = Set.Icc 0 3 ∧
+      (∀ x : ℝ, φ x = (1 + √3) / 4 * φ (2 * x) + (3 + √3) / 4 * φ (2 * x - 1)
+        + (3 - √3) / 4 * φ (2 * x - 2) + (1 - √3) / 4 * φ (2 * x - 3)) ∧
+      φ 1 = (1 + √3) / 2 ∧ φ 2 = (1 - √3) / 2 ∧
+      φ 0 = 0 ∧ φ 3 = 0 ∧ φ (1 / 2) = (2 + √3) / 4 ∧ φ (3 / 2) = 0 ∧
+      φ (1 / 4) = (5 + 3 * √3) / 16 := by
+  obtain ⟨φ, hcont, hsupp, hclos, hscal, hone, htwo⟩ := equation_4_5_6
+  obtain ⟨h0, h3, hhalf, h32, h14⟩ := exercise_4_5_5 hsupp hscal hone htwo
+  exact ⟨φ, hcont, hclos, hscal, hone, htwo, h0, h3, hhalf, h32, h14⟩
 
 end AtkinsonHan.Chapter04

@@ -10,6 +10,7 @@ import Numlib.Analysis.Fourier.CosineBasis
 import Numlib.Analysis.Fourier.DFT
 import Numlib.Analysis.Fourier.Dirichlet
 import Numlib.Analysis.Fourier.LogSingleLayer
+import Numlib.Analysis.Fourier.Periodisation
 import Numlib.Analysis.Fourier.TrigonometricBasis
 import Numlib.Analysis.Fourier.TrigonometricProduct
 import Numlib.Analysis.Fourier.Truncation
@@ -39,6 +40,7 @@ import Numlib.Analysis.Normed.Ring.Inverse
 import Numlib.Analysis.ODE.PicardLindelof
 import Numlib.Analysis.Sobolev.Periodic
 import Numlib.Analysis.SpecialFunctions.Chebyshev
+import Numlib.Analysis.Wavelet.Daubechies
 import Numlib.Analysis.Wavelet.Haar
 import Numlib.Analysis.Wavelet.Multiresolution
 import Numlib.Analysis.Wavelet.QuadratureMirror

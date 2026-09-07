@@ -54,27 +54,29 @@ nonvanishing on `[-π/2, π/2]`.  Whatever the hypothesis, the standard proofs (
 theory of the symbol: the periodisation `∑_k |φ̂(ξ + 2πk)|² = 1` characterising orthonormality of
 the integer translates, and the identity `φ̂(ξ) = m₀(ξ/2) φ̂(ξ/2)`.  That theory is what remains of
 §4.5; it is a self-contained harmonic-analysis project and is not needed for anything else in the
-chapter — in particular Mallat's theorem (`theorem_wavelet_spaces`) is proved without it, from the
-two-channel algebra of `Numlib/Analysis/Wavelet/QuadratureMirror`.
+chapter.
+
+What of it exists: `Numlib/Analysis/Fourier/Periodisation` has the periodisation identity
+`∫_0^T ∑_k g(x + kT) = ∫_ℝ g` for integrable `g`, with a periodic weight, and the corollary that the
+Fourier coefficients of the periodisation are the samples of `ĝ` at the integers.  Three pieces are
+missing before the criterion itself can be stated.  (1) `L¹` uniqueness on the circle — that an
+integrable function whose Fourier coefficients are those of the constant `1` equals `1` a.e.
+Mathlib has the `L²` uniqueness (`AddCircle.fourierBasis`) but not this, and the usual proof needs
+the Fejér kernel or a density argument against `C(𝕋)`, which `AddCircle.span_fourier_closure_eq_top`
+supplies.  (2) A bridge from Mathlib's `L²` Fourier transform (`MeasureTheory.Lp.fourierTransformₗᵢ`,
+defined abstractly by extension from Schwartz space, with Plancherel as
+`MeasureTheory.Lp.inner_fourier_eq`) to `Real.fourierIntegral`, so that a pointwise formula and the
+translation rule `τ_n f ↦ ᵉ[-n·] f̂` are available; only the translation rule is really needed, and it
+could instead be proved abstractly by density.  (3) Cohen's condition and the infinite product.  Mallat's theorem (`theorem_wavelet_spaces`) is proved without it, from the two-channel
+algebra of `Numlib/Analysis/Wavelet/QuadratureMirror`, and so is the existence of the Daubechies
+`D4` function (`equation_4_5_6`), from the cascade estimate of `Numlib/Analysis/Wavelet/Daubechies`
+— that construction is for one explicit mask and gives no general theorem here.
 '''
 deps = ["exercise_4_5_2"]
 
 [[node]]
 id = "equation_4_5_6"
-kind = "theorem"
-desc = '''
-The existence of the Daubechies `D4` scaling function: a continuous `φ` with `supp φ = [0, 3]`
-satisfying the four-term scaling equation (4.5.6) and the normalisation (4.5.7).
+source = "Atkinson–Han, Theoretical Numerical Analysis, (4.5.5)–(4.5.7)"
 
-OPEN, and downstream of `scaling_exists`: the book introduces `φ` by its properties and shows how
-to compute its values, which is `exercise_4_5_5`; that such a `φ` exists is Daubechies'
-construction.  `exercise_4_5_5` and `exercise_4_5_6_subset` are stated under the hypothesis that
-`φ` has these properties, so they are faithful and unconditional on this node.
-
-For this particular mask there is also an elementary route that avoids the Fourier side: the vector
-`v(x) = (φ(x), φ(x+1), φ(x+2))` on `[0,1]` satisfies `v(x) = T₀ v(2x)` on `[0,1/2]` and
-`v(x) = T₁ v(2x-1)` on `[1/2,1]` for two explicit `3 × 3` matrices, so `φ` is given by infinite
-products of `T₀` and `T₁` along the binary expansion of `x`; the work is the contractivity of those
-products on the subspace where the differences live.  Either route is a project of its own.
-'''
-deps = ["scaling_exists"]
+[[node]]
+id = "exists_daubechies_values"
