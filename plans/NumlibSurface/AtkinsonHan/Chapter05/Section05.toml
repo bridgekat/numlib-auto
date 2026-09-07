@@ -2,6 +2,7 @@ namespace = "AtkinsonHan.Chapter05"
 
 [[node]]
 id = "IsCompletelyContinuousOn"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 5.5.3"
 
 [[node]]
 id = "proposition_5_5_5"
@@ -17,3 +18,24 @@ id = "shiftMap"
 
 [[node]]
 id = "example_5_5_2"
+
+[[node]]
+id = "theorem_5_5_1"
+kind = "theorem"
+desc = '''
+Theorem 5.5.1, Brouwer's fixed-point theorem: a continuous `T : K → K` on a bounded, closed and
+convex `K ⊆ ℝ^d` has at least one fixed point in `K`. Not formalized: Mathlib has no Brouwer
+fixed-point theorem and none of the simplicial or degree-theoretic machinery a proof of it needs,
+and the book states it without proof, referring the reader elsewhere for one.
+'''
+
+[[node]]
+id = "theorem_5_5_4"
+kind = "theorem"
+desc = '''
+Theorem 5.5.4, Schauder's fixed-point theorem: for `V` a Banach space and `K ⊆ V` bounded, closed
+and convex, a completely continuous `T : K → K` has at least one fixed point in `K`.
+Not formalized: a proof needs Brouwer's theorem — itself absent from Mathlib, see `theorem_5_5_1` —
+together with the finite-rank Schauder projection, and the book quotes it without proof; Example
+5.5.2, formalized here, is what shows its hypotheses cannot be weakened to a Lipschitz condition.
+'''

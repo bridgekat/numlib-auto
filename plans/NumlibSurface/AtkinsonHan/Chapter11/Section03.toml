@@ -38,3 +38,38 @@ id = "exercise_11_3_10"
 
 [[node]]
 id = "exercise_11_3_13"
+
+[[node]]
+id = "example_11_3_11"
+kind = "theorem"
+desc = '''
+Example 11.3.11: Theorem 11.3.9 applied to the variational inequality of Example 11.1.2 — the
+simplified friction problem — shows it has a unique solution. Not formalized: it is
+`theorem_11_3_9` instantiated on `H¹(Ω)` with `j v = g ∫_Γ |v| ds`, so it needs a Sobolev space and
+a trace on `Γ`; §11.3's module doc lists it beside Example 11.3.10 for that reason.
+'''
+
+[[node]]
+id = "example_11_3_10"
+kind = "theorem"
+desc = '''
+Example 11.3.10: the obstacle problem (11.1.7) is an elliptic variational inequality of the first
+kind, so Theorem 11.3.9 gives it a unique solution. Not formalized: it is `theorem_11_3_9`
+instantiated on `H¹₀(Ω)` with the constraint set `K = {v : v ≥ ψ a.e.}`, so it needs a Sobolev
+space; §11.3's module doc lists it beside Example 11.3.11 for that reason. Beware the near-match:
+`exercise_11_3_10` is Exercise 11.3.10, on a positively homogeneous `j`, a different result with
+the same number, and it is formalized.
+'''
+
+[[node]]
+id = "theorem_11_3_12"
+kind = "theorem"
+desc = '''
+Theorem 11.3.12: on a `C^{1,1}` domain `Ω ⊆ ℝ^d`, for `a_ij ∈ C(Ω̄)` uniformly elliptic, `p ∈ [2, ∞)`,
+`f ∈ L^p(Ω)` and `ψ ∈ W^{2,p}(Ω)` with `ψ ≤ 0` on `Γ`, the solution of the obstacle problem on
+`K = {v ∈ H¹₀(Ω) : v ≥ ψ a.e.}` lies in `W^{2,p}(Ω)` and satisfies
+`‖u‖_{2,p} ≤ C_p (‖f‖_{0,p} + ‖ψ‖_{2,p})` with `C_p` independent of `u`, `f` and `ψ`.
+Not formalized: it needs `W^{2,p}(Ω)` and `L^p(Ω)` on a `C^{1,1}` domain and the elliptic regularity
+theory behind them, and the book gives no proof, citing Brezis–Stampacchia and Gilbarg–Trudinger
+Theorem 9.14; the chapter's group description records the same.
+'''

@@ -11,10 +11,12 @@ earlier version of this plan said it was. The results that genuinely need a Sobo
   7.3.12 and is why the whole of Chapter 7 is skipped;
 * Theorem 10.3.4, the transformation `|v̂|_{m,K̂} ≤ c ‖T_K‖^m |det T_K|^{−1/2} |v|_{m,K}` of an `H^m`
   seminorm under an affine change of variables;
-* Theorem 10.3.5 and Corollary 10.3.7, which combine those two with Lemma 10.2.2;
+* Theorem 10.3.5 and Corollary 10.3.7, which combine those two with Lemma 10.2.2, and
+  Example 10.3.8, which is Corollary 10.3.7 at `k = 1` on a triangle;
 * Theorem 10.3.9, the global bound, which adds the additivity of the `H^m` norm over a
   triangulation;
-* Theorem 10.4.1 and (10.4.11), the convergence orders, which are Céa's inequality plus 10.3.9;
+* Theorem 10.4.1 and (10.4.11), the convergence orders, which are Céa's inequality plus 10.3.9,
+  and Example 10.4.2, which is Theorem 10.4.1 for `-Δu = f` with `u = 0` on the boundary;
   the *abstract* half of 10.4.1 is already `Chapter09.corollary_9_1_4`, and what is missing there is
   only the density of the finite element spaces in `H¹`;
 * Corollary 10.4.4 in the book's own form, whose hypothesis (10.4.9) is `H²` elliptic regularity;

@@ -1,0 +1,45 @@
+namespace = "AtkinsonHan.Chapter11"
+desc = '''
+Atkinson–Han §11.1: the two problems that motivate the chapter — the obstacle problem
+(Example 11.1.1) and the simplified friction problem (Example 11.1.2) — with their energy
+minimization forms (11.1.6), (11.1.12), the equivalent variational inequalities (11.1.7), (11.1.13),
+their pointwise complementarity forms (11.1.9), (11.1.11), (11.1.14)–(11.1.15), and Exercises
+11.1.1–11.1.3.
+
+No module is planned for this section, and the two nodes below record why rather than promise one.
+Both problems live on `H¹₀(Ω)` and `H¹(Ω)` over a planar Lipschitz domain, the second with a
+boundary integral over `Γ`, and everything §11.1 claims about them is an instance of the abstract
+theory that §11.2–§11.4 do state — `theorem_11_2_1`, `theorem_11_2_2`, `theorem_11_3_9` — once a
+Sobolev space and a trace are available. `Chapter11.toml` records the same split for §11.5.
+'''
+
+[[node]]
+id = "example_11_1_1"
+kind = "theorem"
+desc = '''
+Example 11.1.1, the obstacle problem: an elastic membrane fixed along `Γ = ∂Ω` and lying above an
+obstacle of height `ψ ∈ H¹(Ω)` with `ψ ≤ 0` on `Γ`, under a vertical force of density `τ f` with
+`f ∈ L²(Ω)`, takes the position that minimizes the scaled energy
+`E v = ∫_Ω (½ |∇v|² - f v) dx` over `K = {v ∈ H¹₀(Ω) : v ≥ ψ a.e. in Ω}` (11.1.6); the minimizer is
+characterized by the variational inequality (11.1.7),
+`∫_Ω ∇u · ∇(v - u) dx ≥ ∫_Ω f (v - u) dx` for all `v ∈ K`, and under the extra regularity (11.1.8)
+by the pointwise complementarity relations `u ≥ ψ`, `-Δu - f ≥ 0`, `(u - ψ)(-Δu - f) = 0` in `Ω`.
+Not formalized: it names a domain, so it needs `H¹₀(Ω)` on a Lipschitz domain, and the pointwise
+form needs in addition the fundamental lemma of the calculus of variations and integration by parts
+there; the abstract content is `theorem_11_2_1` and `theorem_11_2_2`.
+'''
+
+[[node]]
+id = "example_11_1_2"
+kind = "theorem"
+desc = '''
+Example 11.1.2, the simplified friction problem: on `V = H¹(Ω)`, with `g > 0` and `f ∈ L²(Ω)`,
+minimize `E v = ∫_Ω (½ (|∇v|² + v²) - f v) dx + g ∫_Γ |v| ds` over `V` (11.1.12); the minimizer is
+characterized by the variational inequality (11.1.13),
+`∫_Ω [∇u · ∇(v - u) + u (v - u)] dx + g ∫_Γ (|v| - |u|) ds ≥ ∫_Ω f (v - u) dx` for all `v ∈ V`, and
+pointwise by `-Δu + u = f` in `Ω` with `|∂u/∂ν| ≤ g` and `(∂u/∂ν) u + g |u| = 0` on `Γ`. This is the
+book's model of a variational inequality of the second kind, the one §11.3 and §11.4 return to.
+Not formalized: the boundary term needs the trace of an `H¹(Ω)` function and the surface measure on
+`Γ`, and the pointwise form needs the normal derivative there; the abstract content is
+`theorem_11_2_1` and, for solvability, `theorem_11_3_7`.
+'''

@@ -8,6 +8,7 @@ id = "meshSize"
 
 [[node]]
 id = "IsRegularFamily"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 10.3.6"
 
 [[node]]
 id = "example_10_3_2"
@@ -19,3 +20,76 @@ id = "nodalInterp_coord_affineMap"
 [[node]]
 id = "exercise_10_3_3"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 10.3.3"
+
+[[node]]
+id = "example_10_3_8"
+kind = "theorem"
+desc = '''
+Example 10.3.8: for a triangle `K` in a regular family of affine finite elements whose nodes are
+its three vertices and whose local space is `X_K = ℙ₁(K)`, Corollary 10.3.7 at `k = 1` gives
+(10.3.11), `‖v - Π_K v‖_{m,K} ≤ c h_K^{2-m} |v|_{2,K}` for every `v ∈ H²(K)`, and the book notes it
+holds for `m = 0` and `m = 1`. Not formalized: it is Corollary 10.3.7 instantiated and inherits
+that corollary's `H²(K)` norm and seminorm, which is one of the results the chapter's group
+description lists as needing Sobolev theory.
+'''
+
+[[node]]
+id = "theorem_10_3_3"
+kind = "theorem"
+desc = '''
+Theorem 10.3.3: for nonnegative integers `k > 0` and `m ≤ k + 1` with `ℙ_k(K̂) ⊆ X̂`, the nodal
+interpolation operator `Π̂` of (10.3.1) on the reference element satisfies (10.3.3),
+`|v̂ - Π̂ v̂|_{m,K̂} ≤ c |v̂|_{k+1,K̂}` for every `v̂ ∈ H^{k+1}(K̂)`. Not formalized: it needs
+`H^{k+1}(K̂)`, the embedding `H^{k+1}(K̂) ↪ C(K̂)` that makes `Π̂ v̂` meaningful, and the Deny–Lions
+quotient-norm estimate (Bramble–Hilbert, Theorem 7.3.12), and Mathlib has no weak derivative on an
+open set of `ℝ^d`; the chapter's group description lists it first among the Sobolev-bound results.
+Beware the near-match: `exercise_10_3_3` is Exercise 10.3.3, the angle criterion for regularity, a
+different result with the same number, and it *is* formalized.
+'''
+
+[[node]]
+id = "theorem_10_3_4"
+kind = "theorem"
+desc = '''
+Theorem 10.3.4: if `x = T_K x̂ + b_K` is a bijection of `K̂` onto `K`, then `v ∈ H^m(K)` if and only
+if `v̂ = v ∘ F_K ∈ H^m(K̂)`, and (10.3.5)–(10.3.6) hold,
+`|v̂|_{m,K̂} ≤ c ‖T_K‖^m |det T_K|^{-1/2} |v|_{m,K}` and
+`|v|_{m,K} ≤ c ‖T_K⁻¹‖^m |det T_K|^{1/2} |v̂|_{m,K̂}`. Not formalized: it is the behaviour of an
+`H^m` seminorm under an affine change of variables, so it needs the weak derivative on an open set
+of `ℝ^d`, which Mathlib does not have; the chapter's group description lists it.
+'''
+
+[[node]]
+id = "theorem_10_3_5"
+kind = "theorem"
+desc = '''
+Theorem 10.3.5: for `k > 0`, `m ≤ k + 1` and `ℙ_k(K̂) ⊆ X̂`, the element-wise interpolation operator
+`Π_K` of (10.3.2) satisfies (10.3.7), `|v - Π_K v|_{m,K} ≤ c h_K^{k+1} ρ_K^{-m} |v|_{k+1,K}` for
+every `v ∈ H^{k+1}(K)`, with `c` depending only on `K̂` and `Π̂`. Not formalized: it is Theorem
+10.3.1 combined with Theorems 10.3.3 and 10.3.4 and Lemma 10.2.2, and inherits their `H^m`
+seminorms; the chapter's group description lists it.
+'''
+
+[[node]]
+id = "corollary_10_3_7"
+kind = "theorem"
+desc = '''
+Corollary 10.3.7: under the assumptions of Theorem 10.3.5 and for a regular family `{𝒯_h}` of
+finite elements there is a `c` with (10.3.10),
+`‖v - Π_K v‖_{m,K} ≤ c h_K^{k+1-m} |v|_{k+1,K}` for every `v ∈ H^{k+1}(K)` and every `K ∈ 𝒯_h`:
+regularity turns the `h_K` and `ρ_K` of (10.3.7) into a bound in `h_K` alone. Not formalized: it is
+Theorem 10.3.5 read on a regular family, so it inherits the same `H^{k+1}(K)` obstruction;
+`IsRegularFamily`, the Definition 10.3.6 half of its hypotheses, is formalized here.
+'''
+
+[[node]]
+id = "theorem_10_3_9"
+kind = "theorem"
+desc = '''
+Theorem 10.3.9: under the conditions of Corollary 10.3.7 the global interpolant `Π_h v`, defined
+piecewise by `(Π_h v)|_K = Π_K v`, obeys (10.3.13),
+`‖v - Π_h v‖_{m,Ω} ≤ c h^{k+1-m} |v|_{k+1,Ω}` for every `v ∈ H^{k+1}(Ω)` and `m = 0, 1`, with `c`
+independent of `h`. Not formalized: on top of Corollary 10.3.7 it needs the additivity of the `H^m`
+norm over a triangulation of `Ω`, hence both a Sobolev space and a triangulation scaffold; the
+chapter's group description lists it.
+'''

@@ -2,12 +2,15 @@ namespace = "AtkinsonHan.Chapter05"
 
 [[node]]
 id = "ContractiveOn"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 5.1.2"
 
 [[node]]
 id = "LipschitzOn"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 5.1.2"
 
 [[node]]
 id = "NonExpansiveOn"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 5.1.2"
 
 [[node]]
 id = "StronglyMonotoneWith"

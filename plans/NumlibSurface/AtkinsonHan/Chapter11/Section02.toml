@@ -11,3 +11,25 @@ id = "exercise_11_2_1"
 
 [[node]]
 id = "theorem_11_2_2_iff"
+
+[[node]]
+id = "example_11_2_3"
+kind = "theorem"
+desc = '''
+Example 11.2.3: for the obstacle problem of §11.1 the set `K = {v ∈ H¹₀(Ω) : v ≥ ψ a.e. in Ω}` is
+nonempty — it contains `max (0, ψ)` — closed and convex, and the energy
+`E v = ∫_Ω (½ |∇v|² - f v) dx` is strictly convex, coercive and continuous on it, so Theorem 11.2.2
+gives the minimization problem (11.1.6), and with it the variational inequality (11.1.7), exactly
+one solution. Not formalized: it is `theorem_11_2_2` on a domain and needs `H¹₀(Ω)`; §11.2's module
+doc records the same.
+'''
+
+[[node]]
+id = "example_11_2_4"
+kind = "theorem"
+desc = '''
+Example 11.2.4: the same argument applied to the simplified friction problem of §11.1 gives the
+variational inequality (11.1.13) on `V = H¹(Ω)`, with the boundary functional `j v = g ∫_Γ |v| ds`,
+exactly one solution. Not formalized: it is `theorem_11_2_2` on a domain, and its `j` needs the
+trace of an `H¹(Ω)` function and the surface measure on `Γ`; §11.2's module doc records the same.
+'''

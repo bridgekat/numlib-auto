@@ -1,3 +1,8 @@
 desc = '''
-Atkinson–Han, Chapter 5: nonlinear equations and iterative methods (§5.1–5.4, §5.6).
+Atkinson–Han, Chapter 5: nonlinear equations and iterative methods (§5.1–5.6).
+
+§5.5 is a summary section: Brouwer's theorem (5.5.1), Schauder's theorem (5.5.4) and the rotation
+of a completely continuous vector field are quoted there without proof, and Mathlib has neither a
+Brouwer fixed-point theorem nor degree theory, so `Chapter05/Section05` holds only Definition 5.5.3,
+Proposition 5.5.5 and the counterexample of Example 5.5.2.
 '''

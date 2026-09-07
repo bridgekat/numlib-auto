@@ -80,3 +80,22 @@ id = "bilinearShape_isNodalBasis"
 [[node]]
 id = "exercise_10_2_3"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 10.2.3"
+
+[[node]]
+id = "example_10_2_3"
+kind = "theorem"
+desc = '''
+Example 10.2.3: the linear element space `X_h = {v_h : v_h|_K ∈ ℙ₁(K) for every K ∈ 𝒯_h}` on a
+triangulation, with each `v_h|_K` determined by its values at the three vertices, satisfies the
+representation formula (10.2.28) `v_h|_K = ∑_i v_h(aᵢ) λᵢ` in barycentric coordinates and is
+globally continuous — the difference of two restrictions is linear along a shared edge and vanishes
+at its endpoints — so `X_h` is an affine-equivalent finite element space of continuous piecewise
+linear functions; the book adds that the same holds for `ℙ_k` determined on the nodal set
+`N_k(K)` of (10.2.29). Not formalized: it names a triangulation of a domain and the conformity
+`X_h ⊆ C(Ω̄)` of a piecewise polynomial space over it, which is among the concrete finite element
+spaces the chapter's group description puts out of scope, together with the triangulation axioms
+(1)-(4) that the continuity argument needs; the argument itself is elementary and uses no Sobolev
+space, and the reference-element half — the nodal bases and their duality — is `quadraticShape`,
+`cubicShape` and `latticeShape` here. Beware the near-match: `exercise_10_2_3` is Exercise 10.2.3,
+the `ℚ_{1,1}` nodal basis on the reference square, a different result with the same number.
+'''

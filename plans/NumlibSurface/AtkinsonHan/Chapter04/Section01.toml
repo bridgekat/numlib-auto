@@ -45,3 +45,44 @@ id = "equation_4_1_14"
 
 [[node]]
 id = "equation_4_1_15"
+
+[[node]]
+id = "example_4_1_4"
+kind = "theorem"
+desc = '''
+Example 4.1.4: the Fourier series of `f x = |x| / π` on `[-π, π]`. Its `2 π`-periodic extension is
+continuous because `f (-π) = f π`, and `f` is even, so the series carries no sine term:
+`F x = 1/2 - (4 / π²) ∑_{j ≥ 1} cos ((2 j - 1) x) / (2 j - 1)²`, and `F = f` both pointwise and in
+`L²(-π, π)`. Figures 4.2 and 4.3 plot `f` against the partial sums `S₂` and `S₁₀`, and the
+discussion closing §4.1.1 notes that this `f` meets the endpoint conditions
+`f^(l) π = f^(l) (-π)`, `l ≤ k - 2`, with `k = 2`. Not formalized: this is a worked illustration —
+the coefficients are one integration and the point of the example is the picture, as the "Not
+formalized here" note of §4.1's module doc records for Examples 4.1.3–4.1.5 together.
+'''
+
+[[node]]
+id = "example_4_1_3"
+kind = "theorem"
+desc = '''
+Example 4.1.3: the Fourier series of the step function `f x = 1` on `[-π, 0)` and `0` on `[0, π)`
+has `a₀ = 1`, `a_j = 0` for `j ≥ 1` and `b_j = -(1 - (-1)^j) / (π j)`, so
+`F x = 1/2 - (2/π) ∑_{j ≥ 1} sin ((2 j - 1) x) / (2 j - 1)`; Figure 4.1 plots the partial sums
+`S_n` for `n = 5, 10, 50, 100` and exhibits the Gibbs phenomenon at the jump, whose overshoot span
+tends to `(2/π) Si(π) |f(x+) - f(x-)|` with `(2/π) Si(π) ≈ 1.17898`. Not formalized: it is a worked
+illustration, and the Gibbs constant is asserted without proof and referred out; §4.1's module doc
+records Examples 4.1.3–4.1.5 and the Gibbs phenomenon together as numerical illustrations.
+Beware the near-match: `equation_4_1_3_const`, `_cos` and `_sin` are the book's *displayed*
+equations (4.1.3), the real Fourier coefficients, and have nothing to do with this example.
+'''
+
+[[node]]
+id = "example_4_1_5"
+kind = "theorem"
+desc = '''
+Example 4.1.5: for the smoother `f x = (π² - x²)² / π⁴` on `[-π, π]` the endpoint conditions
+`f^(l) (-π) = f^(l) π` hold for `l = 0, 1, 2`, so the periodic extension is twice continuously
+differentiable, and `f x = 8/15 + (48/π⁴) ∑_{j ≥ 1} (-1)^{j+1} cos (j x) / j⁴` pointwise.
+Not formalized: like Examples 4.1.3 and 4.1.4 it is a worked illustration whose point is the
+picture, as the "Not formalized here" note of §4.1's module doc records. Beware the near-match:
+`equation_4_1_5` is the book's displayed equation (4.1.5), the complex Fourier coefficient.
+'''

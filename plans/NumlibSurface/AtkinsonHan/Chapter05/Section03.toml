@@ -2,6 +2,7 @@ namespace = "AtkinsonHan.Chapter05"
 
 [[node]]
 id = "HasGateauxDerivAt"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 5.3.2"
 
 [[node]]
 id = "example_5_3_10"
@@ -35,9 +36,11 @@ id = "proposition_5_3_13"
 
 [[node]]
 id = "proposition_5_3_15_fst"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 5.3.14"
 
 [[node]]
 id = "proposition_5_3_15_snd"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 5.3.14"
 
 [[node]]
 id = "equation_5_3_8"
@@ -65,3 +68,27 @@ id = "example_5_3_9"
 
 [[node]]
 id = "corollary_5_3_16"
+
+[[node]]
+id = "fderiv_unique"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 5.3.1"
+
+[[node]]
+id = "hasFDerivAt_iff_isLittleO"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 5.3.1, (5.3.5)"
+
+[[node]]
+id = "hasFDerivWithinAt_iff_of_mem_nhds"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 5.3.1"
+
+[[node]]
+id = "HasFDerivAt.hasGateauxDerivAt"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Proposition 5.3.4"
+
+[[node]]
+id = "hasFDerivAt_of_hasGateauxDerivAt_uniform"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Proposition 5.3.4"
+
+[[node]]
+id = "hasFDerivAt_of_hasGateauxDerivAt_continuousAt"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Proposition 5.3.4"
