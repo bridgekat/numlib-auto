@@ -22,7 +22,8 @@ jobs:
       - uses: leanprover/lean-action@v1
       - uses: leanprover-community/docgen-action@main
         with:
+          api-docs: true
           blueprint: false
+          build-page: false
           references: docs/references.bib
-          homepage: site # Disable Jekyll build by pointing to a non-existent directory
       - run: lake exe tracker check
