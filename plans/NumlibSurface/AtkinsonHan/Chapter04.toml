@@ -1,12 +1,12 @@
 desc = '''
 Atkinson–Han, Chapter 4: Fourier analysis and wavelets (§4.1–4.5).
 
-`backbone.md` §0.2 puts this chapter out of scope "until Mathlib has Sobolev spaces". That reason
-does not apply: nothing in Chapter 4 uses a Sobolev space. What the chapter needs is `L¹`, `L²`,
-the Fourier transform, the Schwartz space and tempered distributions, and Mathlib now has all of
-them — `SchwartzMap`, `𝓢'(E, F)` with its Fourier transform, `Lp.fourierTransformₗᵢ` (Plancherel),
-`Integrable.fourierInv_fourier_eq` (inversion) and `ZMod.dft` with its inversion theorem. The
-proposal file asks for §0.2 and §1.7 to be amended accordingly.
+`notes/backbone.md` §0.2 used to put this chapter out of scope "until Mathlib has Sobolev
+spaces", and records the amendment. That reason does not apply: nothing in Chapter 4 uses a Sobolev
+space. What the chapter needs is `L¹`, `L²`, the Fourier transform, the Schwartz space and tempered
+distributions, and Mathlib now has all of them — `SchwartzMap`, `𝓢'(E, F)` with its Fourier
+transform, `Lp.fourierTransformₗᵢ` (Plancherel), `Integrable.fourierInv_fourier_eq` (inversion) and
+`ZMod.dft` with its inversion theorem.
 
 Section by section: §4.2 (the Fourier transform) is almost entirely a matter of translating between
 the book's `(2π)^{-d/2} e^{-i x·ξ}` normalisation and Mathlib's `e^{-2πi x·ξ}`; §4.3 (the discrete

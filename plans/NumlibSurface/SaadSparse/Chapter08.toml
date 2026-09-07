@@ -18,9 +18,9 @@ normal equations:
   Corollary 8.1 is `Stationary.tendsto_of_spectralRadius_lt_one` once `S` is known to be
   symmetric positive definite.
 
-There is therefore no new backbone here beyond the Schur-complement coercivity lemma proposed in
-`plans/proposals/saad-ch7-9.md`. `A` is a square nonsingular real or complex matrix throughout
-these files: the book's rectangular least-squares reading of (8.1)-(8.4) is stated once, in
-§8.1, in the form the surface can carry (`Matrix (Fin n) (Fin m)`), and the algorithms are stated
-for square `A`, as the book's algorithm listings are.
+There is therefore no new backbone here beyond the Schur-complement coercivity lemma of
+`plans/Numlib/Analysis/InnerProductSpace/Coercive.toml`. `A` is a square nonsingular real or
+complex matrix throughout these files: the book's rectangular least-squares reading of (8.1)-(8.4)
+is stated once, in §8.1, in the form the surface can carry (`Matrix (Fin n) (Fin m)`), and the
+algorithms are stated for square `A`, as the book's algorithm listings are.
 '''

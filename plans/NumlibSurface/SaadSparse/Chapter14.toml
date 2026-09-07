@@ -9,7 +9,7 @@ Prop 14.11–14.12) and the spectral-bisection identity of §14.6.3 are surfaced
 eigenvalue, §14.4.2's probing reconstruction and Definition 14.13 of §14.6.1 are surfaced too: each
 was skipped as "bookkeeping" or "a heuristic" and each carries an exact statement.
 
-Skipped, with reasons in `plans/saadsparse-ch10-14.md` §5: §14.1 (notation and taxonomy); §14.2.3
+Skipped, with the reason on each node below: §14.1 (notation and taxonomy); §14.2.3
 and Theorem 14.2 (the vertex-based partitioning bookkeeping, and the equivalence of the Schwarz
 `y`-iterates with block Gauss–Seidel on the Schur complement, which needs that bookkeeping); the
 *matrix* form of §14.2.5, which needs the block `LU` factorization of a block tridiagonal matrix

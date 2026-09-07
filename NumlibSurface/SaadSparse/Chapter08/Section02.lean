@@ -50,7 +50,7 @@ This file says so declaration by declaration.
 Not formalized: P-8.2 (c), the convergence interval `0 < ω < 2/λ_max(D^{-1/2} AᵀA D^{-1/2})` of the
 unnormalized iteration, which needs the symmetric square root of `D` and the transport of
 `Chapter04.example_4_1_tendsto_iff` through that change of variables — `equation_8_22` is the
-normalized case. See `plans/saadsparse-ch7-9.md` §4.
+normalized case, as `plans/NumlibSurface/SaadSparse/Chapter08/Section02.toml` records.
 
 As in Chapter 5, everything is over `ℝ`, which is where §5.3–5.4 live.
 -/

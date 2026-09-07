@@ -63,8 +63,9 @@ agree.  So only the Gâteaux derivative needs a definition here.
 
 ## Not formalized here
 
-The exercises of §5.3; see `plans/atkinsonhan-ch5.md` §4.  Every numbered result of the section is
-stated.
+The exercises of §5.3, each with its reason on its node in
+`plans/NumlibSurface/AtkinsonHan/Chapter05/Section03.toml`.  Every numbered result of the section
+is stated.
 -/
 
 open Filter Set Topology

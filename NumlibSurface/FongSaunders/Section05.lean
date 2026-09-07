@@ -26,9 +26,9 @@ fails for it is exactly the hypothesis `A ≻ 0`.  Because that witness is nonsi
 iterate is unique at every step, so the three statements quantify over *every* sequence of MINRES
 iterates rather than over one algorithm's output.
 
-Left out (see `plans/fongsaunders.md`): Table 5.2 and the §5 discussion of the
-least-squares solvers LSQR and LSMR, which are results of other papers; and the MINRES-QLP
-factorization argument of §4.2, whose missing ingredient is named in that plan.
+Left out: Table 5.2 and the §5 discussion of the least-squares solvers LSQR and LSMR, which are
+results of other papers; and the MINRES-QLP factorization argument of §4.2, whose missing
+ingredient §4's module doc names.
 
 The extra import `Mathlib.Algebra.Order.Star.Real` provides the instance `StarOrderedRing ℝ`
 required by `Matrix.posDef_diagonal_iff` in the counterexamples.

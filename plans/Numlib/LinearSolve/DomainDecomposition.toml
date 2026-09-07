@@ -21,8 +21,9 @@ the block preconditioners (14.49)/(14.55) *is* the same Krylov method applied to
 (Saad Prop 14.11–14.12), and an ILU factorization of the full matrix induces one of the Schur
 complement (Prop 14.10).
 
-What is not here, and why, is in `plans/proposals/plan-saad10.md`: the vertex-based partitioning
-bookkeeping of §14.2.3–14.2.5 and Theorem 14.2, probing (§14.4.2), and the graph-partitioning
+What is not here, and why, is on the nodes of `plans/NumlibSurface/SaadSparse/Chapter14/`: the
+vertex-based partitioning bookkeeping of §14.2.3–14.2.5 and Theorem 14.2, probing (§14.4.2), and
+the graph-partitioning
 heuristics of §14.6, of which only the spectral-bisection identity has a theorem attached and that
 one is a Mathlib graph-Laplacian corollary stated in the Saad surface.
 '''

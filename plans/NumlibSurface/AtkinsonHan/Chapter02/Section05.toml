@@ -48,5 +48,5 @@ desc = '''Example 2.5.9: the Riesz representation theorem identifies `(L²(Ω))'
 less obviously, gives for `ℓ(v) = v(c)` on `H¹(a, b)` a representer `u` solving (2.5.8),
 `∫_a^b (u' v' + u v) = v(c)` for all `v ∈ H¹(a, b)` — the generalized solution of
 `-u'' + u = δ(x - c)`. Not formalized: the `L²` half is `theorem_2_5_8` read on `L²(Ω)`, and the
-`H¹(a, b)` half needs Sobolev spaces on an interval, which `plans/backbone.md` puts out of scope,
-as §2.5's module doc records.'''
+`H¹(a, b)` half needs Sobolev spaces on an interval, which `notes/backbone.md` §1.7 puts out of
+scope, as §2.5's module doc records.'''

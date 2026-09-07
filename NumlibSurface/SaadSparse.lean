@@ -77,8 +77,9 @@ written out as Lean functions — and proves them by specializing the general ba
 backbone against a published account of the subject, and to give a reader of the book a Lean name
 for every result in it. This module imports the section modules and adds nothing of its own.
 
-Plan and per-result book alignment: `plans/saadsparse-ch1-4-5.md`, `plans/saadsparse-ch6.md`,
-`plans/saadsparse-ch7-9.md` and `plans/saadsparse-ch10-14.md`.
+Plan and per-result book alignment: the groups under `plans/NumlibSurface/SaadSparse/`, one file
+per section, where every numbered result of the book is a node carrying its source and, when it is
+not formalized, the reason.
 
 ## Naming
 
@@ -220,10 +221,9 @@ the breakdown with no finiteness hypothesis. The book's companion instruction "s
 
 ## Not formalized
 
-Chapter 13 is complete; Chapters 1 to 9 and 12 are closed but for the items below. The plans
-that carry the reasoning are `plans/saadsparse-ch1-4-5.md`, `plans/saadsparse-ch6.md`,
-`plans/saadsparse-ch7-9.md` and `plans/saadsparse-ch10-14.md`; each of these has a group file under
-`plans/NumlibSurface/SaadSparse/` saying what its declarations are to be.
+Chapter 13 is complete; Chapters 1 to 9 and 12 are closed but for the items below. The group
+files under `plans/NumlibSurface/SaadSparse/` carry the reasoning result by result, and say what
+the declarations that are still to be written are to be.
 
 * **§7.4**, the transpose-free variants — the BCG residual and direction polynomials, CGS,
   BiCGSTAB and TFQMR with their residual identities (7.32)–(7.83). The largest gap left in the

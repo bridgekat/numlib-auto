@@ -25,9 +25,9 @@ desc = '''Theorem 2.9.3: for `f, g` analytic on a neighbourhood of `σ(L)` and a
 their common domain of analyticity, the Riesz–Dunford calculus (2.9.4) is multiplicative,
 `f_Γ(L) g_Γ(L) = (f g)_Γ(L)`; and if `f(λ) = ∑ aₙ λⁿ` converges on a disc about `σ(L)` then
 `f_Γ(L) = ∑ aₙ Lⁿ`. Not formalized: the book states it without proof, citing Dunford–Schwartz, and
-it needs contour integrals of `𝓛(V)`-valued functions, which `plans/backbone.md` lists as out of
-scope; Mathlib has the Cauchy integral formula for `ℂ`-valued functions only and no holomorphic
-functional calculus. The node `equation_2_9_3` in this group is the displayed formula (2.9.3), the
+it needs contour integrals of `𝓛(V)`-valued functions, which `notes/backbone.md` §1.7 lists as
+out of scope; Mathlib has the Cauchy integral formula for `ℂ`-valued functions only and no
+holomorphic functional calculus. The node `equation_2_9_3` in this group is the displayed formula (2.9.3), the
 Neumann expansion of the resolvent, and is a different result, as §2.9's module doc records.'''
 
 [[node]]
@@ -38,5 +38,5 @@ projection `E(λ₀, L) = (2πi)⁻¹ ∮_{|λ - λ₀| = ε} (λ - L)⁻¹ dλ`
 from `λ₀` to the rest of `σ(L)`, is a projection operator on `V`, and its range is the space
 `N((λ₀ - L)^{ν(λ₀)})` of ordinary and generalized eigenvectors at the Riesz index `ν(λ₀)` of
 `theorem_2_8_12_3`. Not formalized: the book states it without proof, citing Dunford–Schwartz, and
-it needs the same operator-valued contour integrals as Theorem 2.9.3, which `plans/backbone.md`
-lists as out of scope; §2.9's module doc records the exclusion.'''
+it needs the same operator-valued contour integrals as Theorem 2.9.3, which
+`notes/backbone.md` §1.7 lists as out of scope; §2.9's module doc records the exclusion.'''

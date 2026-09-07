@@ -73,8 +73,8 @@ book's `(Δ/δ)^{3/(2k)}` prefactor and has the same limit `0`.
 The step *from compactness of `K` to the eigen-decomposition*: (5.6.7)–(5.6.9) are stated with a
 `HilbertBasis ℕ ℝ V` of eigenvectors as data, not derived from `K` being compact and self-adjoint.
 Mathlib has the spectral theorem for compact self-adjoint operators, but no decreasing enumeration
-of the eigenvalues of one as an `ℕ`-sequence, which is what (5.6.8) asks for; see
-`plans/atkinsonhan-ch5.md` §3 item 3.
+of the eigenvalues of one as an `ℕ`-sequence, which is what (5.6.8) asks for; the same gap is
+recorded on `Numlib/Krylov/Convergence/Superlinear`.
 
 The two quantitative inputs of Theorem 5.6.3 are hypotheses rather than conclusions, for the same
 kind of reason: `∑_j λ_j² = ‖K‖²_HS` is Theorem 2.8.15 of the book and Mathlib has no

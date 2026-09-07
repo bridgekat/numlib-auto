@@ -13,7 +13,7 @@ what "preserving symmetry" means:
 
 * `M⁻¹A` is self-adjoint for the `M`-inner product, and also for the `A`-inner product; `A M⁻¹`
   is self-adjoint for the `M⁻¹`-inner product (§9.2.1, P-9.2). These are `WithEnergy` facts and
-  are proposed as backbone additions in `plans/proposals/saad-ch7-9.md`.
+  live in `plans/Numlib/Analysis/InnerProductSpace/Energy.toml`.
 * Algorithm 9.1 (PCG) and Algorithm 9.2 (split PCG for `M = L Lᴴ`) produce *identical* iterates,
   and so does right-preconditioned CG in the `M⁻¹` inner product (§9.2.1). Three algorithms, one
   sequence of iterates.

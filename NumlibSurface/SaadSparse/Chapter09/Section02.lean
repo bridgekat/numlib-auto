@@ -46,8 +46,8 @@ Eisenstat's implementation (§9.2.2) is present as mathematics only:
 **P-9.8 (c)**, the same identity conjugated by `D^{1/2}`: after that symmetric scaling the two
 triangular factors are transposes of each other with a unit diagonal, and the matrix "to be
 determined" is `D₂ = D^{-1/2} D₁ D^{-1/2}`, which for the SSOR choice `D = D₀` is `-I`
-(`problem_9_8c_ssor`). The operation counts, P-9.7, P-9.9 and P-9.8 (a), (b) are not formalized;
-see `plans/saadsparse-ch7-9.md` §4.
+(`problem_9_8c_ssor`). The operation counts, P-9.7, P-9.9 and P-9.8 (a), (b) are not formalized,
+as `plans/NumlibSurface/SaadSparse/Chapter09/Section02.toml` records.
 
 Indices are `0`-based, and division by a vanishing quantity is `0`, which reproduces the book's
 breakdown behaviour.

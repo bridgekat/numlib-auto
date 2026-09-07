@@ -23,7 +23,7 @@ The matrix reading of Theorem 5.7 is `theorem_5_7_matrix_eq` and `theorem_5_7_ma
 `‖Vᵀ b - (Vᵀ A V) Vᵀ x*‖₂ ≤ γ ‖(I - P_K) x*‖₂`, the projected system in the coordinates of `V`.
 
 Left open here: the additive/multiplicative procedures of §5.4 (phase 2 of the backbone,
-`plans/backbone.md` §2.4.4).
+`notes/backbone.md` §2.4.4).
 -/
 
 open Matrix Module Submodule Finset

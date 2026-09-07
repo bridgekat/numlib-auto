@@ -21,8 +21,8 @@ The augmented system (8.5) is `equation_8_5`, and
 form the normal equations.
 
 The eigenvalue claim of §8.1 — that the spectrum of `[[0, A], [Aᴴ, 0]]` is `±σ_i(A)` — and P-8.4
-need a singular value decomposition, which Mathlib does not have; see `plans/saadsparse-ch7-9.md`
-§4.
+need a singular value decomposition, which Mathlib does not have, as
+`plans/NumlibSurface/SaadSparse/Chapter08/Section01.toml` records.
 
 Vectors are `EuclideanSpace 𝕜 (Fin n)` and `A ⬝ x` is `Matrix.toEuclideanLin A x`, as everywhere
 in this library; (8.5) alone is stated on the plain function types with `*ᵥ`, since its

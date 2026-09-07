@@ -38,5 +38,5 @@ desc = '''Example 2.4.2: the differentiation operator `D : C¹[0, 1] → L²(0, 
 `‖v‖_{1,2} = (‖v‖₂² + ‖v'‖₂²)^{1/2}`, so Theorem 2.4.1 extends it to
 `D̂ ∈ 𝓛(H¹(0, 1), L²(0, 1))`, the derivative on the Sobolev space `H¹(0, 1)` that is the
 completion of `C¹[0, 1]` in that norm. Not formalized: it needs Sobolev spaces on an interval,
-which `plans/backbone.md` puts out of scope — Mathlib has no weak derivative on an open subset of
-`ℝ` — as §2.4's module doc records.'''
+which `notes/backbone.md` §1.7 puts out of scope — Mathlib has no weak derivative on an open
+subset of `ℝ` — as §2.4's module doc records.'''

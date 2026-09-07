@@ -52,7 +52,8 @@ expression of `ŵ_{j+1}`", `breakdown_iff_polyForm_eq_zero` is "there is a serio
 the Hankel structure of the moment matrix. What is *not* formalized is the `LU` factorization
 `M_k = L_k U_k` the Parlett–Taylor–Liu implementation pivots on — no general `LU`-existence theorem
 is available — nor the look-ahead algorithms themselves, which are implementation prose with no
-claim attached. See `plans/saadsparse-ch7-9.md` §4.
+claim attached; `plans/NumlibSurface/SaadSparse/Chapter07/Section01.toml` carries the reason on
+each node.
 
 Indices are `0`-based: `bilanczosV A v₁ w₁ j` is the book's `v_{j+1}` and
 `bilanczosDelta A v₁ w₁ j` its `δ_{j+1}`, so that `bilanczosDelta A v₁ w₁ 0 = 0` is the book's

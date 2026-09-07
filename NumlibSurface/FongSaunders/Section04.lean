@@ -18,9 +18,10 @@ the FOM/GMRES-type relation (4.1) between the CG and MINRES residual norms, the 
 product of residual ratios of §4.1.1, and the description of the MINRES iterate as the solution
 of a least-squares subproblem in Lanczos coordinates (§4.2).
 
-Left out (see `plans/fongsaunders.md`): the test set, the diagonal preconditioning, the
-figures and the percentages of monotone steps, the "cumulative minimum" heuristic, and the
-MINRES-QLP relationship.
+Left out, as empirical or as the results of other papers: the test set, the diagonal
+preconditioning, the figures and the percentages of monotone steps, the "cumulative minimum"
+heuristic, and the MINRES-QLP relationship, whose missing ingredient is the QLP factorization
+`R_k P_k = L_k` and belongs in `Numlib/Krylov/Singular` rather than in this surface.
 
 The two indefinite-case results of §4.2 (Steihaug's theorem for CG and its CR analogue) are
 `steihaug_cg` and `steihaug_cr`, specializations of the backbone's strict, symmetric-indefinite

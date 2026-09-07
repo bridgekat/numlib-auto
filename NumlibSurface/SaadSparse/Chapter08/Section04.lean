@@ -57,8 +57,8 @@ Not formalized: **P-8.6 (d)**, which needs a `QR` factorization of a rectangular
 on a symmetric positive *semi*definite consistent system, which the backbone does not have
 (`Numlib/Krylov/Singular.lean` carries the minimal-residual story only), although the question
 "in which subspace are the iterates generated?" is answered by `problem_8_6_cg_subspace`; and
-**P-8.9** (inexact Uzawa), which needs a perturbed-fixed-point theorem. See
-`plans/saadsparse-ch7-9.md` §4.
+**P-8.9** (inexact Uzawa), which needs a perturbed-fixed-point theorem; both are recorded in
+`plans/NumlibSurface/SaadSparse/Chapter08/Section04.toml`.
 -/
 
 open Matrix Filter Topology

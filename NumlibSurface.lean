@@ -177,11 +177,10 @@ book's declarations sit in the namespace of its chapter, `<Book>.ChapterNN`, spe
 path spells it.
 
 Each book's reasoning — its conventions, how each book-specific definition maps to the backbone,
-what was deferred and why — is in the Markdown at the root of the plan directory, one file per
-planning pass, named for the chapter range it covers: `saadsparse-ch1-4-5.md`, `saadsparse-ch6.md`,
-`saadsparse-ch7-9.md`, `saadsparse-ch10-14.md`, `fongsaunders.md`, `atkinsonhan-ch1-4.md`,
-`atkinsonhan-ch2-3.md`, `atkinsonhan-ch5.md`, `atkinsonhan-ch6-12.md` and
-`atkinsonhan-ch8-9.md`.
+what was deferred and why — is in the plan groups under `plans/NumlibSurface/`, one file per
+section: every numbered result of every book is a node there, carrying its source and, when it is
+not formalized, the obstruction that stopped it. What the books themselves get wrong or print
+ambiguously is collected separately, in `notes/book-errata.md`.
 
 ## References
 

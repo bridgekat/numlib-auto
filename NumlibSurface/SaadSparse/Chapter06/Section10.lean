@@ -42,8 +42,8 @@ disjunction `isCGs_of_natDegree_minpoly_le_or_isStarNormal` are the *sufficiency
 converse — that an `s`-term recurrence for every starting vector forces one of the two conditions —
 is the Faber–Manteuffel theorem proper, which [saad2003iterative] states without proof; the known
 proofs (Faber–Manteuffel 1984, Liesen–Strakoš 2008) are research papers, not textbook arguments,
-so it is deliberately left unwritten rather than weakened (`plans/saadsparse-ch6.md` §5, R59). No
-`sorry` stands in for it.
+so it is deliberately left unwritten rather than weakened, as
+`plans/NumlibSurface/SaadSparse/Chapter06/Section10.toml` records. No `sorry` stands in for it.
 
 The section's closing remark, the case `ν(A) ≤ 1` of the Conjugate Gradient method, is
 `nu_le_one_iff`: for a normal `A`, `ν(A) ≤ 1` exactly when `A` is a scalar matrix, or Hermitian, or

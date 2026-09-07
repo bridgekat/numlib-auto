@@ -1,9 +1,10 @@
 desc = '''
 Atkinson-Han, Chapter 13: boundary integral equations for the planar Laplace equation.
 
-**The chapter's exclusion, per section.** The chapter was excluded wholesale, in `backbone.md` §0.2
-and in `scripts/coverage.py`, on the ground that it "needs Sobolev spaces on a boundary". That is
-wrong for two of its three sections, and the obstruction is different in each:
+**The chapter's exclusion, per section.** The chapter was excluded wholesale, in
+`notes/backbone.md` §0.2 and in `scripts/coverage.py`, on the ground that it "needs Sobolev spaces
+on a boundary". That is wrong for two of its three sections, and the obstruction is different in
+each:
 
 * **§13.1, potential theory -- genuinely out of reach, but not for the recorded reason.** Nothing in
   §13.1 uses a Sobolev space. What it uses is the divergence theorem on a piecewise smooth multiply
@@ -43,7 +44,7 @@ wrong for two of its three sections, and the obstruction is different in each:
   solvability theory (13.3.2)-(13.3.7) uses `A : H^q -> H^{q+1}` an isomorphism and the compact
   embedding `H^{q+2} -> H^{q+1}`, and the rate (13.3.15) uses Atkinson-Han Theorem 7.5.7. That is a
   weighted `l^2` space over the Fourier basis of `AddCircle`, needs none of the domain machinery,
-  and is already singled out as reachable in `backbone.md` §14.8. Until it exists, §13.3.1's
+  and is already singled out as reachable in `notes/backbone.md` §14.8. Until it exists, §13.3.1's
   convergence statement is given conditionally by `equation_13_3_14` -- with the compactness of
   `A^{-1} B` and the invertibility of `I + A^{-1} B` as hypotheses, both of which the book assumes
   -- and its proof is `theorem_12_1_2` and `lemma_12_1_4` unchanged, over the Fourier truncation
