@@ -26,4 +26,9 @@ Every well-posedness claim of §8.4 is `theorem_8_3_4`, every one of §8.5 is `t
 already proved, and what is skipped is the verification that a particular boundary value problem
 satisfies its hypotheses. The obstruction is chapter 7 §7.3, whose exclusion
 `plans/NumlibSurface/AtkinsonHan/Chapter07.toml` records section by section.
+
+§8.4, §8.5 and §8.8 have a group each, holding no more than the section's numbered results as open
+nodes, so that every one of them is on the record with the reason it is skipped; §8.1 needs none,
+having no numbered result to hold. The concrete items of the formalized sections — Examples 8.2.3,
+8.2.6 and 8.3.5, and Theorem 8.6.3 — are open nodes in the groups of their own sections.
 '''

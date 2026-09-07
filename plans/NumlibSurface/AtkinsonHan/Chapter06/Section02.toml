@@ -2,12 +2,15 @@ namespace = "AtkinsonHan.Chapter06"
 
 [[node]]
 id = "IsSolution"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 6.2.1 and (6.2.2)"
 
 [[node]]
 id = "IsWellPosed"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 6.2.2 and (6.2.3)"
 
 [[node]]
 id = "solutionOperator"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 6.2.3"
 
 [[node]]
 id = "proposition_6_2_5"
@@ -17,15 +20,54 @@ id = "proposition_6_2_6"
 
 [[node]]
 id = "IsConsistent"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 6.2.7"
 
 [[node]]
 id = "IsConvergent"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 6.2.9"
 
 [[node]]
 id = "IsStable"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 6.2.10"
 
 [[node]]
 id = "theorem_6_2_11"
 
 [[node]]
 id = "corollary_6_2_12"
+
+[[node]]
+id = "example_6_2_4"
+kind = "theorem"
+desc = '''Example 6.2.4: the abstract framework of §6.2 applied to `u_t = ν u_xx` on
+`(0, π) × (0, T)` with homogeneous Dirichlet boundary values, taking `V = C₀[0, π]` with the
+maximum norm and `V₀` the finite sine polynomials (6.2.5). For `u₀ = Σ_{j ≤ n} b_j sin(jx)` the
+solution is `u(x, t) = Σ_{j ≤ n} b_j e^{-ν j² t} sin(jx)` (6.2.7), and the maximum principle gives
+`max_x |u(x, t)| ≤ max_x |u₀(x)|`, so the solution operators `S(t) : V₀ ⊆ V → V` are bounded and
+the problem is well posed. Not formalized: the bound is read off the maximum principle for the
+heat equation, which the book quotes from a partial differential equations text and for which
+Mathlib has no parabolic theory.'''
+
+[[node]]
+id = "example_6_2_8"
+kind = "theorem"
+desc = '''Example 6.2.8: the forward and backward schemes of Example 6.1.1 written as a family of
+operators on the space of Example 6.2.4. For the forward scheme,
+`C(Δt) v(x) = (1 - 2r) v(x) + r [v(x + Δx) + v(x - Δx)]`, where `Δx = √(ν Δt / r)` and `v` is
+extended oddly with period `2π`; then `‖C(Δt)‖ ≤ |1 - 2r| + 2r` (6.2.8), so the family is uniformly
+bounded, and Taylor expansion of the smooth solution (6.2.7) gives
+`‖[C(Δt) u(t) - u(t + Δt)]/Δt‖ ≤ c Δt`, i.e. consistency with `V_c = V₀`. For the backward scheme
+`‖C(Δt)‖ ≤ 1` whatever `r`. Not formalized: the consistency half Taylor-expands the solution of
+Example 6.2.4, so it carries the same heat-equation theory Mathlib lacks, and the book's
+presentation does not separate the norm bound (6.2.8) from it.'''
+
+[[node]]
+id = "example_6_2_13"
+kind = "theorem"
+desc = '''Example 6.2.13: the Lax equivalence theorem applied to the schemes of Example 6.2.8. For
+`r ≤ 1/2` the forward scheme has `‖C(Δt)^m‖ ≤ 1` for all `m`, hence is stable and, being
+consistent, convergent (6.2.11); since in fact `‖C(Δt)‖ = |1 - 2r| + 2r`, the condition `r ≤ 1/2`
+is necessary too (Exercise 6.2.3), so the scheme is conditionally stable and conditionally
+convergent, while the backward scheme is unconditionally stable and convergent. Not formalized:
+it is the heat-equation instance of `theorem_6_2_11` and rests wholly on Examples 6.2.4 and 6.2.8,
+which are not formalized either.'''

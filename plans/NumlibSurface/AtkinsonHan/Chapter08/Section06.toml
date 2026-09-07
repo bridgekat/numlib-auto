@@ -2,6 +2,7 @@ namespace = "AtkinsonHan.Chapter08"
 
 [[node]]
 id = "IsSaddlePoint"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 8.6.1"
 
 [[node]]
 id = "primalObjective"
@@ -14,3 +15,17 @@ id = "proposition_8_6_2"
 
 [[node]]
 id = "equation_8_6_14"
+
+[[node]]
+id = "theorem_8_6_3"
+kind = "theorem"
+desc = '''Theorem 8.6.3: existence of a saddle point. If `V` and `Q` are reflexive Banach spaces,
+`A ⊆ V` and `B ⊆ Q` are non-empty, closed and convex, `L(·, q)` is convex and lower
+semicontinuous on `A` for each `q`, `L(v, ·)` is concave and upper semicontinuous on `B` for each
+`v`, and the two coercivity conditions (f) and (g) hold — `A` bounded or `L(v, q₀) → ∞` as
+`‖v‖ → ∞`, `B` bounded or `L(v₀, q) → -∞` as `‖q‖ → ∞` — then `L` has a saddle point on
+`A × B`, whose first component is unique if the convexity is strict and whose second is unique if
+the concavity is strict; (f) and (g) may be replaced by the sup/inf forms (f)' and (g)'.
+Not formalized: the hypotheses cannot be stated — Mathlib has no reflexivity class for Banach
+spaces and no Eberlein-Smulian theorem, so the weak compactness the proof needs is unavailable;
+the book states the theorem without proof, citing Ekeland-Temam.'''

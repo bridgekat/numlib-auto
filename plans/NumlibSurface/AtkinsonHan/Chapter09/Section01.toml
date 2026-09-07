@@ -47,3 +47,28 @@ id = "Chapter09.exercise_9_1_4"
 
 [[node]]
 id = "Chapter09.existsUnique_solution_of_galerkin"
+
+[[node]]
+id = "Chapter09.example_9_1_1"
+kind = "theorem"
+desc = '''Example 9.1.1: the Galerkin method for `-u'' = f` on `(0, 1)` with `u(0) = u(1) = 0`
+(9.1.9), weakly posed on `V = H¹₀(0, 1)`, with `V_N = span{x^i(1 - x) : 1 ≤ i ≤ N}`. The stiffness
+matrix has entries `∫₀¹ [x^j(1-x)]' [x^i(1-x)]' dx = (i+1)(j+1)/(i+j+1) + (i+2)(j+2)/(i+j+3) -
+[(i+1)(j+2) + (i+2)(j+1)]/(i+j+2)`, and Table 9.1 shows its 2-norm condition number growing
+rapidly with `N`, so this natural-looking basis is a poor one. Not formalized: the problem is
+posed on `H¹₀(0, 1)`, which needs the §7.3 Sobolev theory Mathlib does not have, and the
+conditioning half is a numerical table; the entry formula alone is a polynomial computation that
+would stand on its own if anyone wanted it without the boundary value problem.'''
+
+[[node]]
+id = "Chapter09.example_9_1_2"
+kind = "theorem"
+desc = '''Example 9.1.2: the same problem (9.1.9) with `V_N = span{sin(iπx) : 1 ≤ i ≤ N}`. The
+basis is orthogonal for the energy inner product,
+`∫₀¹ (sin jπx)' (sin iπx)' dx = i j π² δ_{ij} / 2`, so the Galerkin system is diagonal, with
+`ξ_i = (2 / (π² i²)) ∫₀¹ f(x) sin(iπx) dx`, and the Galerkin solution is the kernel
+approximation `u_N(x) = ∫₀¹ f(t) K_N(x, t) dt` (9.1.10) with `K_N` the `N`-term truncation of the
+Green kernel. Not formalized: the problem is posed on
+`H¹₀(0, 1)`, which needs the §7.3 Sobolev theory Mathlib does not have; the orthogonality
+computation is elementary, and the full kernel expansion the example truncates is
+`Chapter09.exercise_9_1_3`, which is proved.'''

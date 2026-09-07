@@ -1,12 +1,19 @@
 desc = '''
 Atkinson–Han, Chapter 9: the Galerkin method and its variants. All four sections have a surface
-module and every numbered result is stated and proved — Prop 9.1.3, Cor 9.1.4, Thm 9.2.1, Rem
-9.2.2, Cor 9.2.3, Thm 9.3.1 — as are the definitional groups (9.1.4)–(9.1.8), (9.2.5)–(9.2.6),
-(9.2.13)–(9.2.14), (9.3.1)–(9.3.3) and (9.4.1)–(9.4.7), Algorithm 1 of §9.4 with its convergence
-rates, and Exercises 9.1.1, 9.1.3 and 9.1.4.
+module and every numbered theorem, proposition, corollary and remark is stated and proved — Prop
+9.1.3, Cor 9.1.4, Thm 9.2.1, Rem 9.2.2, Cor 9.2.3, Thm 9.3.1 — as are the definitional groups
+(9.1.4)–(9.1.8), (9.2.5)–(9.2.6), (9.2.13)–(9.2.14), (9.3.1)–(9.3.3) and (9.4.1)–(9.4.7),
+Algorithm 1 of §9.4 with its convergence rates, and Exercises 9.1.1, 9.1.3 and 9.1.4.
 
-One item is left planned and unwritten.
+Three items are left planned and unwritten.
 
+* **§9.1, Examples 9.1.1 and 9.1.2** — the Galerkin method for `−u'' = f` on `(0, 1)`, first with
+  the polynomial basis `{xⁱ(1 − x)}`, whose stiffness matrix is severely ill-conditioned, then
+  with the sine basis, which is energy-orthogonal and gives a diagonal system. Both are posed on
+  `H¹₀(0, 1)`, so they are out of scope for the same reason as §8.4: that space needs the §7.3
+  Sobolev theory that Mathlib does not have. Their algebraic fragments — the stiffness entry
+  formula and the orthogonality of the sine derivatives — are elementary and separable, should
+  anyone want them without the boundary value problem.
 * **§9.4, Algorithm 2 — nonlinear conjugate gradients with exact line search.** The book gives the
   algorithm for the minimization of `E(v) = ½ a(v, v) − ℓ(v)` and then *quotes* its convergence
   from Glowinski without proof, so there is no proof in the book to follow, and the module doc of
@@ -15,7 +22,4 @@ One item is left planned and unwritten.
   `⟨E'(u), v⟩ = a(u, v) − ℓ(v)` that motivates it is already there, as
   `inner_residual_eq_neg_fderiv` and `hasFDerivAt_energy`. Difficulty L; schedule it only when
   nothing cheaper is left.
-
-The concrete elliptic instances of the chapter are out of scope for the same reason as §8.4: they
-live in `H¹₀(Ω)`, which needs the §7.3 Sobolev theory that Mathlib does not have.
 '''

@@ -1,0 +1,20 @@
+namespace = "AtkinsonHan.Chapter08"
+desc = '''
+Atkinson-Han §8.5, the boundary value problem of linearized elasticity. No module is planned: the
+section is set on `[H¹(Ω)]^d` with the linearized strain `ε(v)`, the trace on `Γ_D`, and surface
+measure on a Lipschitz boundary, and its ellipticity rests on Korn's inequality, which no library
+has. The equations (8.5.1)-(8.5.17) and the exercises of the section need the same layer; the
+abstract content is `theorem_8_3_3` with `theorem_8_3_4`, both proved. The group exists so that the
+section's one numbered result is on the record.
+'''
+
+[[node]]
+id = "theorem_8_5_1"
+kind = "theorem"
+desc = '''Theorem 8.5.1: under the symmetry, boundedness and pointwise ellipticity conditions
+(8.5.6)-(8.5.8) on the elasticity tensor `C`, the regularity (8.5.14) of the data and
+`meas(Γ_D) > 0`, the weak problem (8.5.15) — `u ∈ V`, `∫_Ω [C ε(u)] : ε(v) = ∫_Ω f · v + ∫_{Γ_N}
+g · v` for all `v ∈ V` — has a unique solution, equivalent to minimizing the energy (8.5.17).
+Not formalized: the book leaves the proof to Exercise 8.5.3 (apply Lax-Milgram), and the
+`V`-ellipticity step needs Korn's inequality on a Lipschitz domain, alongside `[H¹(Ω)]^d`, the
+trace on `Γ_D` and surface measure on `Γ_N`; none of these exists in Mathlib.'''

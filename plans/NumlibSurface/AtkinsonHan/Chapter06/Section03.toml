@@ -2,15 +2,19 @@ namespace = "AtkinsonHan.Chapter06"
 
 [[node]]
 id = "IsConsistentScheme"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 6.3.1, consistency"
 
 [[node]]
 id = "IsSchemeOfOrder"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 6.3.1, order (6.3.7)"
 
 [[node]]
 id = "IsStableScheme"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 6.3.1, stability"
 
 [[node]]
 id = "IsConvergentScheme"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 6.3.1, convergence"
 
 [[node]]
 id = "theorem_6_3_2"
@@ -20,3 +24,28 @@ id = "theorem_6_3_2'"
 
 [[node]]
 id = "exercise_6_3_1"
+
+[[node]]
+id = "example_6_3_3"
+kind = "theorem"
+desc = '''Example 6.3.3: convergence of the forward scheme (6.1.8)-(6.1.10) for the heat equation.
+With `u_tt` and `u_xxxx` continuous on `[0, π] × [0, T]`, Taylor expansion bounds the truncation
+error of (6.3.6) by `|τ_j^m| ≤ c(h_x² + h_t)`; the scheme has the tridiagonal Toeplitz iteration
+matrix `Q` with `1 - 2r` on the diagonal and `r` off it, and for `r ≤ 1/2` both `‖Q‖_∞ = 1` and,
+by the eigenvalues `λ_j(Q) = 1 - 4r sin²(jπ/(2N_x))` of Exercise 6.3.1, `‖Q‖₂ < 1`. Theorem 6.3.2
+then gives `max_m ‖u^m - v^m‖ ≤ c(h_x² + h_t)` in the maximum norm and in the discrete norm
+`‖v‖_{2,h_x} = √h_x ‖v‖₂`, so the order is 2 in `h_x` and 1 in `h_t`. Not formalized: it is the
+concrete heat-equation instance of `theorem_6_3_2'`, needing a classical solution of the
+initial-boundary value problem to Taylor-expand — the book assumes one exists — and, for the
+`‖·‖_{2,h_x}` half, the Toeplitz spectrum of `exercise_6_3_1`, which is itself open.'''
+
+[[node]]
+id = "example_6_3_4"
+kind = "theorem"
+desc = '''Example 6.3.4: the same for the backward scheme (6.1.12)-(6.1.14), whose iteration
+matrix is `Q = Q₁⁻¹` with `Q₁` tridiagonal Toeplitz, `1 + 2r` on the diagonal and `-r` off it.
+Diagonal dominance gives `‖Q‖_∞ ≤ 1` directly, and `λ_j(Q₁) = 1 + 4r cos²(jπ/(2N_x))` gives
+`‖Q‖₂ < 1`, so the scheme is unconditionally stable; with `|τ̄_j^m| ≤ c(h_x² + h_t)` and
+`‖τ^m‖ ≤ ‖τ̄^m‖`, Theorem 6.3.2 gives `max_m ‖u^m - v^m‖ ≤ c(h_x² + h_t)` in both norms, again of
+order 2 in `h_x` and 1 in `h_t`. Not formalized: as for Example 6.3.3 — a classical solution of
+the heat equation to Taylor-expand, and the Toeplitz spectrum of `exercise_6_3_1`.'''

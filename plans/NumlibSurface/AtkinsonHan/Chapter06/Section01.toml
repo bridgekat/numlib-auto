@@ -11,3 +11,17 @@ id = "equation_6_1_3"
 
 [[node]]
 id = "equation_6_1_4"
+
+[[node]]
+id = "example_6_1_1"
+kind = "definition"
+desc = '''Example 6.1.1: for the heat equation `u_t = ν u_xx + f` on `(0, π) × (0, T)` with
+homogeneous Dirichlet boundary values and initial value `u₀`, the section builds three schemes on
+the grid `x_j = j h_x`, `t_m = m h_t`, writing `r = ν h_t / h_x²` — the explicit forward-time
+centred-space scheme (6.1.8)-(6.1.10), the implicit backward-time centred-space scheme
+(6.1.12)-(6.1.14), and the Crank-Nicolson scheme (6.1.16)-(6.1.18), the last two requiring a
+tridiagonal solve of order `N_x - 1` at each step — and reports the errors of the first two at
+`t = 1` in Figures 6.1 and 6.2, where the forward scheme is seen to converge only when `h_t` is
+much smaller than `h_x`. Not formalized: it is an illustration — three scheme listings and two
+plots of computed errors, with no mathematical claim of its own; the only claims of the section
+are the truncation orders (6.1.1)-(6.1.4), which are `equation_6_1_1` to `equation_6_1_4`.'''

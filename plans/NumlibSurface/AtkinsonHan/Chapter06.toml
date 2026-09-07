@@ -2,11 +2,12 @@ desc = '''
 Atkinson–Han, Chapter 6: the finite difference method. All three sections are formalized: the
 first in its four difference formulas, the other two in their abstract halves.
 
-* Section 6.1 introduces the forward, backward and Crank–Nicolson schemes for the heat equation
-  and numbers no result. Its only mathematical content is the four unnumbered truncation-order
-  claims (6.1.1)–(6.1.4), which are formalized with explicit constants in place of the book's
-  `O(h)`, `O(h²)`; the scheme listings, the explicit/implicit distinction and the figures state
-  nothing.
+* Section 6.1 introduces the forward, backward and Crank–Nicolson schemes for the heat equation.
+  Its only mathematical content is the four unnumbered truncation-order claims (6.1.1)–(6.1.4),
+  which are formalized with explicit constants in place of the book's `O(h)`, `O(h²)`. Its one
+  numbered item, Example 6.1.1, is the scheme listings themselves; together with the
+  explicit/implicit distinction and the two error figures it states nothing, and it is tracked as
+  an open node rather than written.
 * Section 6.2, the Lax equivalence theorem, is Banach-space functional analysis from beginning to
   end and is formalized in full: the initial value problem and its solutions, well-posedness, the
   solution operators and the generalized solution, consistency, stability, convergence, the
@@ -20,5 +21,6 @@ Everything tied to a particular partial differential equation is left out: Examp
 and 6.2.13, Examples 6.3.3 and 6.3.4, and the remaining exercises of the chapter. They are Taylor
 expansions of a solution assumed smooth by hypothesis together with the maximum principle for the
 heat equation, they exercise nothing in the theory, and formalizing them would be partial
-differential equations rather than numerical functional analysis.
+differential equations rather than numerical functional analysis. Each of the five is an open node
+in its section's group, carrying what the book claims and why it is skipped.
 '''
