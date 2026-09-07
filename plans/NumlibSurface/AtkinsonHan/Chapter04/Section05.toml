@@ -16,6 +16,9 @@ id = "equation_4_5_2"
 id = "haar_scalingCoeff"
 
 [[node]]
+id = "haar_mraWavelet"
+
+[[node]]
 id = "exercise_4_5_2"
 
 [[node]]
@@ -26,43 +29,33 @@ id = "exercise_4_5_6_subset"
 
 [[node]]
 id = "equation_4_5_4"
-kind = "definition"
-desc = '''
-(4.5.4), the wavelet `ψ(x) = ∑_k (-1)^k p_{1-k} √2 φ(2x - k)` attached to the scaling function of a
-general multiresolution analysis.  OPEN, and deliberately so: see `theorem_wavelet_spaces`.
-'''
-deps = ["definition_4_5_1", "scalingCoeff"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, (4.5.4)"
 
 [[node]]
 id = "theorem_wavelet_spaces"
-kind = "theorem"
-desc = '''
-Mallat's theorem, which the book states without proof and refers to Daubechies for: for the `ψ` of
-(4.5.4), the translates `ψ(· - k)` are orthonormal, `W_0 = V_1 ⊖ V_0` is their closed span, and the
-whole family `{2^{j/2} ψ(2^j x - k)}_{j,k}` is an orthonormal basis of `L²(ℝ)`.
-
-OPEN.  The obstruction is not Mathlib but size: the standard proof runs on the Fourier side, and
-needs the periodisation `∑_k |φ̂(ξ + 2πk)|² = 1` characterising orthonormality of the integer
-translates, the `2π`-periodic symbol `m₀` with `φ̂(ξ) = m₀(ξ/2) φ̂(ξ/2)`, and the quadrature
-identity `|m₀(ξ)|² + |m₀(ξ + π)|² = 1`.  None of that exists in the backbone, and building it is a
-self-contained harmonic-analysis project rather than a section of this chapter.  Everything it
-needs on the Fourier side does exist in Mathlib (`Real.fourierIntegral`, Plancherel through
-`MeasureTheory.Lp.fourierTransformₗᵢ`), so it is long, not blocked.
-'''
-deps = ["equation_4_5_4", "definition_4_5_1"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Section 4.5"
 
 [[node]]
 id = "scaling_exists"
 kind = "theorem"
 desc = '''
-The existence half of the construction: given coefficients `{p_k}` satisfying the orthonormality
-condition of Exercise 4.5.2, the scaling equation (4.5.1) has a solution `φ ∈ L²(ℝ)`, obtained as
-the fixed point of the cascade iteration.
+The existence half of the construction: a sequence `{p_k}` is the dilation-coefficient sequence of
+an actual scaling function — a `φ ∈ L²(ℝ)` with orthonormal integer translates satisfying the
+scaling equation (4.5.1).
 
-OPEN.  The book itself says only that "it is difficult to find the coefficients directly" and
-refers out.  The standard proof is the infinite product `φ̂(ξ) = ∏_{j ≥ 1} m₀(2^{-j} ξ)` and its
-convergence; like `theorem_wavelet_spaces` it needs a Fourier-side theory of the symbol that the
-backbone does not have.
+OPEN, and the description above is deliberately vaguer than the book's phrasing, because the
+obvious reading is not a theorem.  "The scaling equation has a solution in `L²`" is trivially true
+(take `φ = 0`), and the orthonormality condition of Exercise 4.5.2 alone does *not* give a scaling
+function: `m₀(ξ) = (1 + e^{3iξ})/2`, that is `p₀ = p₃ = 1/√2` and `p_k = 0` otherwise, satisfies
+`∑_k p_k p_{k-2l} = δ_{0l}`, and the cascade limit is `(1/3) 1_[0,3]`, whose integer translates are
+not orthonormal.  A correct statement needs a further hypothesis — Cohen's condition, or `m₀`
+nonvanishing on `[-π/2, π/2]`.  Whatever the hypothesis, the standard proofs (the infinite product
+`φ̂(ξ) = ∏_{j≥1} m₀(2^{-j}ξ)`, or `L²` convergence of the cascade iteration) need the Fourier-side
+theory of the symbol: the periodisation `∑_k |φ̂(ξ + 2πk)|² = 1` characterising orthonormality of
+the integer translates, and the identity `φ̂(ξ) = m₀(ξ/2) φ̂(ξ/2)`.  That theory is what remains of
+§4.5; it is a self-contained harmonic-analysis project and is not needed for anything else in the
+chapter — in particular Mallat's theorem (`theorem_wavelet_spaces`) is proved without it, from the
+two-channel algebra of `Numlib/Analysis/Wavelet/QuadratureMirror`.
 '''
 deps = ["exercise_4_5_2"]
 
@@ -77,5 +70,11 @@ OPEN, and downstream of `scaling_exists`: the book introduces `φ` by its proper
 to compute its values, which is `exercise_4_5_5`; that such a `φ` exists is Daubechies'
 construction.  `exercise_4_5_5` and `exercise_4_5_6_subset` are stated under the hypothesis that
 `φ` has these properties, so they are faithful and unconditional on this node.
+
+For this particular mask there is also an elementary route that avoids the Fourier side: the vector
+`v(x) = (φ(x), φ(x+1), φ(x+2))` on `[0,1]` satisfies `v(x) = T₀ v(2x)` on `[0,1/2]` and
+`v(x) = T₁ v(2x-1)` on `[1/2,1]` for two explicit `3 × 3` matrices, so `φ` is given by infinite
+products of `T₀` and `T₁` along the binary expansion of `x`; the work is the contractivity of those
+products on the subspace where the differences live.  Either route is a project of its own.
 '''
 deps = ["scaling_exists"]

@@ -183,8 +183,8 @@ seven that a reader of the book will miss: reflexivity and weak sequential compa
 and with it Thm 3.3.8–3.3.14, already recorded in `Numlib/Variational/Minimization`); the Riesz
 ascent–descent theory (Thm 2.8.12 (3), (5), Thm 2.8.14 (1)); the holomorphic functional calculus
 and the Riesz spectral projection (Thm 2.9.3, Thm 2.9.4); Müntz's theorem (Thm 3.1.5); the M. Riesz
-theorem behind (4.1.12) for `p ≠ 2`; the Fourier-side construction of general wavelets (§4.5 after
-Prop 4.5.2); and the weakly singular kernels of §2.8.1.
+theorem behind (4.1.12) for `p ≠ 2`; the existence of a scaling function with prescribed dilation
+coefficients, and with it Daubechies' families (§4.5); and the weakly singular kernels of §2.8.1.
 
 ## 6. The chapter 4 gap pass
 
@@ -198,18 +198,35 @@ and its conclusions change two lines of what is written above.
   space, where the isometry is `theorem_4_2_4`, with `LinearEquiv.extendOfIsometry`. That is
   `bookFourierSchwartzEquiv` and `bookFourierL2`, and it needs nothing new in the backbone.
 
-* **§4.5 beyond Proposition 4.5.2 stays out, and is now on the record as four open nodes.**
-  `equation_4_5_4` and `theorem_wavelet_spaces` are Mallat's theorem, `scaling_exists` the cascade
-  construction, and `equation_4_5_6` the existence of the Daubechies `D4` function; the book states
-  all four without proof. The obstruction is size, not Mathlib: the standard arguments need a
-  Fourier-side theory of the scaling function — the periodisation of `|φ̂|²`, the `2π`-periodic
-  symbol `m₀`, and the quadrature identity — which is a self-contained harmonic-analysis project
-  and should be scheduled as one, not as "finishing chapter 4". What comes free of it is proved:
-  `exercise_4_5_2` (the necessary condition on the coefficients), and `exercise_4_5_5` and
-  `exercise_4_5_6_subset`, which are stated of a function *assumed* to have the properties
-  (4.5.5)–(4.5.7) and so do not depend on the existence theorem.
+* **§4.5 beyond Proposition 4.5.2 was left out as four open nodes, and a later pass closed two of
+  them.** `equation_4_5_4` and `theorem_wavelet_spaces` — the wavelet and Mallat's theorem — are
+  proved, and the diagnosis they were left under was wrong: **Mallat's theorem needs no Fourier
+  analysis.** The whole of it is the two-channel algebra of the dilation coefficients. The
+  condition `∑_k p_k p_{k-2l} = δ_{0l}` alone makes the even translates of `p` and of
+  `q_k = (-1)^k p_{1-k}` an orthonormal *basis* of `ℓ²(ℤ)`: the cross-channel relation is the
+  involution `k ↦ 1 + 2l + 2m - k`, which sends the summand to its negative, and the completeness
+  relation `∑_l (p_{k-2l}² + q_{k-2l}²) = 1` is `∑_k p_k² = 1` split into the two residue classes
+  mod `2`. That is `Numlib/Analysis/Wavelet/QuadratureMirror`; transported along the level-`j`
+  scaling system it splits `V_{j+1}` into `V_j` and the wavelet space. Completeness over all levels
+  then comes from the axioms alone: for a vector orthogonal to every wavelet the orthogonal
+  projections onto the scaling spaces are all equal, hence lie in `⨅ j, V j = ⊥`, and density
+  finishes. The Fourier-side theory — the periodisation of `|φ̂|²`, the symbol `m₀`, the quadrature
+  identity — is needed only for the *existence* nodes.
 
-The backbone grew four items in the pass: `trigPartialSum` with the tail form of Parseval's
+* **`scaling_exists` and `equation_4_5_6` stay open, and `scaling_exists` needed its statement
+  repaired.** As the node described it — "coefficients satisfying Exercise 4.5.2 ⟹ the scaling
+  equation has an `L²` solution" — it is either trivial (`φ = 0`) or false: `p₀ = p₃ = 1/√2` and
+  `p_k = 0` otherwise satisfies the condition, and the cascade limit `(1/3) 1_[0,3]` has
+  non-orthonormal translates. A correct statement needs Cohen's condition, or `m₀` nonvanishing on
+  `[-π/2, π/2]`, and then the Fourier-side theory above. `equation_4_5_6`, the existence of the
+  Daubechies `D4` function, is downstream of it, though for that one mask there is also an
+  elementary matrix-product route recorded on the node.
+
+The backbone grew four items in the gap pass: `trigPartialSum` with the tail form of Parseval's
 identity, `Haar.starProjection_V_eq_sum` (the multi-level decomposition) with `Haar.hilbertBasis`
 (Exercise 4.4.4), and `MeasureTheory.Lp.translationₗᵢ_dilationₗᵢ` with the coefficient condition
-that rests on it.
+that rests on it.  The Mallat pass added two modules,
+`Numlib/Analysis/InnerProductSpace/OrthonormalSeries` (the arithmetic of a series against an
+orthonormal family, with the completeness criterion that a vector whose coefficients carry its
+whole norm lies in the closed span) and `Numlib/Analysis/Wavelet/QuadratureMirror`, and the wavelet
+half of `Numlib/Analysis/Wavelet/Multiresolution`.

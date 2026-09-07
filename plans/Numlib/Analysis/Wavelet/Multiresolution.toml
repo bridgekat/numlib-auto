@@ -22,3 +22,92 @@ id = "translationₗᵢ_scalingSystem_one"
 
 [[node]]
 id = "IsMultiresolutionAnalysis.hasSum_scalingCoeff_mul"
+
+[[node]]
+id = "MeasureTheory.Lp.inner_translationₗᵢ"
+
+[[node]]
+id = "dilationₗᵢ_scalingSystem"
+
+[[node]]
+id = "scalingCoeff"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (4.5.2)"
+
+[[node]]
+id = "mraWavelet"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (4.5.4)"
+
+[[node]]
+id = "waveletSystem"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Section 4.5"
+
+[[node]]
+id = "waveletSpace"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Section 4.5"
+
+[[node]]
+id = "IsMultiresolutionAnalysis.monotone"
+
+[[node]]
+id = "IsMultiresolutionAnalysis.map_dilation_V"
+
+[[node]]
+id = "IsMultiresolutionAnalysis.inner_scalingSystem_one_translates"
+
+[[node]]
+id = "IsMultiresolutionAnalysis.isQMFCoeff"
+
+[[node]]
+id = "IsMultiresolutionAnalysis.hasSum_translates_low"
+
+[[node]]
+id = "IsMultiresolutionAnalysis.hasSum_mraWavelet"
+
+[[node]]
+id = "IsMultiresolutionAnalysis.hasSum_translates_high"
+
+[[node]]
+id = "IsMultiresolutionAnalysis.hasSum_scalingSystem_low"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (4.5.3)"
+
+[[node]]
+id = "IsMultiresolutionAnalysis.hasSum_waveletSystem"
+
+[[node]]
+id = "IsMultiresolutionAnalysis.orthonormal_sumElim_scalingSystem"
+
+[[node]]
+id = "IsMultiresolutionAnalysis.topologicalClosure_span_sumElim_scalingSystem"
+
+[[node]]
+id = "IsMultiresolutionAnalysis.orthonormal_waveletSystem"
+
+[[node]]
+id = "IsMultiresolutionAnalysis.waveletSpace_eq"
+
+[[node]]
+id = "IsMultiresolutionAnalysis.mraWavelet_mem_V_one"
+
+[[node]]
+id = "IsMultiresolutionAnalysis.inner_waveletSpace_eq_zero_of_lt"
+
+[[node]]
+id = "IsMultiresolutionAnalysis.inner_waveletSystem_eq_zero_of_lt"
+
+[[node]]
+id = "IsMultiresolutionAnalysis.orthonormal_waveletSystem_prod"
+
+[[node]]
+id = "IsMultiresolutionAnalysis.starProjection_V_succ_eq"
+
+[[node]]
+id = "IsMultiresolutionAnalysis.eq_zero_of_inner_waveletSystem_eq_zero"
+
+[[node]]
+id = "IsMultiresolutionAnalysis.topologicalClosure_span_waveletSystem_prod"
+
+[[node]]
+id = "IsMultiresolutionAnalysis.hasSum_inner_smul_waveletSystem"
+
+[[node]]
+id = "IsMultiresolutionAnalysis.hilbertBasis"

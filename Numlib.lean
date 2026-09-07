@@ -13,6 +13,7 @@ import Numlib.Analysis.InnerProductSpace.Coercive
 import Numlib.Analysis.InnerProductSpace.CompactSpectral
 import Numlib.Analysis.InnerProductSpace.Energy
 import Numlib.Analysis.InnerProductSpace.GramSchmidt
+import Numlib.Analysis.InnerProductSpace.OrthonormalSeries
 import Numlib.Analysis.InnerProductSpace.Projection.Angle
 import Numlib.Analysis.InnerProductSpace.Projection.Compression
 import Numlib.Analysis.InnerProductSpace.Projection.ObliqueProjection
@@ -34,6 +35,7 @@ import Numlib.Analysis.Sobolev.Periodic
 import Numlib.Analysis.SpecialFunctions.Chebyshev
 import Numlib.Analysis.Wavelet.Haar
 import Numlib.Analysis.Wavelet.Multiresolution
+import Numlib.Analysis.Wavelet.QuadratureMirror
 import Numlib.Approximation.BestApprox
 import Numlib.Approximation.Chebyshev
 import Numlib.Approximation.CompositeQuadrature

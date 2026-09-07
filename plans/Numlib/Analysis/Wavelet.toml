@@ -1,15 +1,27 @@
 desc = '''
-Wavelets: the Haar system on `L²(ℝ)` and the multiresolution-analysis framework it is the model
-for, after Atkinson–Han, *Theoretical Numerical Analysis*, §4.4–4.5. Nothing here exists in
-Mathlib.
+Wavelets: the Haar system on `L²(ℝ)`, the multiresolution-analysis framework it is the model for,
+and the quadrature-mirror filter theory that turns a multiresolution analysis into a wavelet basis,
+after Atkinson–Han, *Theoretical Numerical Analysis*, §4.4–4.5. Nothing here exists in Mathlib.
 
-The scope is deliberately the *elementary* half of the subject: the Haar scaling and wavelet
-functions are explicit indicator functions, so every property of the Haar system in the book —
-orthonormality, scale and shift invariance, nesting, density, separation, the orthogonal
-complement, and the decomposition and reconstruction algorithms — is an elementary computation
-plus one genuine approximation argument (`Haar.topologicalClosure_iSup_V`). The general
-construction of a scaling function from its dilation coefficients, Daubechies' compactly supported
-wavelets and the Fourier-side smoothness theory are *not* planned: Atkinson–Han state those
-without proof and refer to Daubechies, and they would need a substantial piece of harmonic
-analysis that Mathlib does not have.
+The Haar half is elementary: the scaling and wavelet functions are explicit indicator functions, so
+every property of the Haar system in the book — orthonormality, scale and shift invariance,
+nesting, density, separation, the orthogonal complement, and the decomposition and reconstruction
+algorithms — is an elementary computation plus one genuine approximation argument
+(`Haar.topologicalClosure_iSup_V`).
+
+The general half is Mallat's theorem, which the book states without proof, and which is elementary
+too once it is read the right way. The dilation coefficients of a scaling function satisfy
+`∑_k p_k p_{k-2l} = δ_{0l}`; that single condition already makes the even translates of `p` and of
+the high-pass filter `q_k = (-1)^k p_{1-k}` an orthonormal *basis* of `ℓ²(ℤ)`, which is
+`Wavelet/QuadratureMirror`, and transporting it along the level-`j` scaling system splits `V_{j+1}`
+into `V_j` and the wavelet space. Completeness over all levels then follows from the axioms alone.
+No Fourier transform appears anywhere.
+
+What is *not* planned is the existence theory: the construction of a scaling function from a
+prescribed sequence of dilation coefficients, and with it Daubechies' compactly supported families
+and the Fourier-side smoothness theory. Atkinson–Han state those without proof and refer to
+Daubechies, and they do need the harmonic analysis of the symbol `m₀` — the periodisation of
+`|φ̂|²`, and the convergence of `∏_{j≥1} m₀(2^{-j}ξ)` — which is a project of its own. Note that the
+condition above is *not* sufficient for them: see the `scaling_exists` node of
+`NumlibSurface/AtkinsonHan/Chapter04/Section05`.
 '''

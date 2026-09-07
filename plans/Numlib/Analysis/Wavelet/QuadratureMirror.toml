@@ -1,0 +1,34 @@
+[[node]]
+id = "IsQMFCoeff"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 4.5.2"
+
+[[node]]
+id = "qmfHigh"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (4.5.4)"
+
+[[node]]
+id = "qmfHigh_sq"
+
+[[node]]
+id = "qmfHigh_sub_two_mul"
+
+[[node]]
+id = "IsQMFCoeff.hasSum_sq"
+
+[[node]]
+id = "IsQMFCoeff.hasSum_low_low"
+
+[[node]]
+id = "IsQMFCoeff.hasSum_high_high"
+
+[[node]]
+id = "IsQMFCoeff.hasSum_low_high"
+
+[[node]]
+id = "IsQMFCoeff.hasSum_sumElim_sq"
+
+[[node]]
+id = "IsQMFCoeff.orthonormal_sumElim"
+
+[[node]]
+id = "IsQMFCoeff.topologicalClosure_span_sumElim"

@@ -1,0 +1,29 @@
+[[node]]
+id = "mem_topologicalClosure_span_of_hasSum"
+
+[[node]]
+id = "Submodule.mem_orthogonal_span_range"
+
+[[node]]
+id = "Orthonormal.inner_eq_of_hasSum"
+
+[[node]]
+id = "Orthonormal.hasSum_mul_of_hasSum"
+
+[[node]]
+id = "Orthonormal.summable_smul_iff"
+
+[[node]]
+id = "Orthonormal.hilbertBasisTopologicalClosure"
+
+[[node]]
+id = "Orthonormal.hasSum_inner_smul_starProjection"
+
+[[node]]
+id = "Orthonormal.hasSum_inner_smul_of_mem"
+
+[[node]]
+id = "Orthonormal.mem_topologicalClosure_span_of_hasSum_inner_sq"
+
+[[node]]
+id = "Orthonormal.topologicalClosure_span_comp_inr"

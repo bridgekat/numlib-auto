@@ -4,6 +4,7 @@ import Mathlib.MeasureTheory.Function.ContinuousMapDense
 import Mathlib.MeasureTheory.Function.L2Space
 import Mathlib.MeasureTheory.Function.LpSpace.Indicator
 import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
+import Numlib.Analysis.InnerProductSpace.OrthonormalSeries
 
 /-!
 # The Haar system on `L²(ℝ)`
@@ -256,77 +257,6 @@ theorem indicatorConstLp_congr_set (hs : MeasurableSet s) (hμs : μ s ≠ ⊤) 
   rfl
 
 end MeasureTheory
-
-/-! ### A Hilbert basis of the closed span of an orthonormal family -/
-
-section HilbertBasis
-
-variable {E ι : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [CompleteSpace E]
-  {v : ι → E}
-
-omit [CompleteSpace E] in
-/-- A vector orthogonal to every member of a family is orthogonal to the span of the family. -/
-theorem Submodule.mem_orthogonal_span_range {x : E} (h : ∀ i, inner ℝ (v i) x = 0) :
-    x ∈ (Submodule.span ℝ (Set.range v))ᗮ := by
-  rw [Submodule.mem_orthogonal]
-  intro u hu
-  refine Submodule.span_induction ?_ ?_ ?_ ?_ hu
-  · rintro y ⟨i, rfl⟩
-    exact h i
-  · simp
-  · intro a b _ _ ha hb
-    rw [inner_add_left, ha, hb, add_zero]
-  · intro r a _ ha
-    rw [real_inner_smul_left, ha, mul_zero]
-
-/-- An orthonormal family is a Hilbert basis of the closure of its span. -/
-def Orthonormal.hilbertBasisTopologicalClosure (hv : Orthonormal ℝ v) :
-    HilbertBasis ι ℝ ((Submodule.span ℝ (Set.range v)).topologicalClosure) :=
-  haveI : CompleteSpace ((Submodule.span ℝ (Set.range v)).topologicalClosure) :=
-    (Submodule.isClosed_topologicalClosure _).completeSpace_coe
-  HilbertBasis.mkOfOrthogonalEqBot
-    (hv.codRestrict _ fun i =>
-      Submodule.le_topologicalClosure _ (Submodule.subset_span (Set.mem_range_self i)))
-    (by
-      rw [Submodule.eq_bot_iff]
-      intro x hx
-      have hgen : ∀ i, inner ℝ (v i) (x : E) = 0 := fun i =>
-        (Submodule.mem_orthogonal _ _).1 hx _ (Submodule.subset_span (Set.mem_range_self i))
-      have hmem : (x : E) ∈ (Submodule.span ℝ (Set.range v))ᗮ :=
-        Submodule.mem_orthogonal_span_range hgen
-      have hmem2 : (x : E) ∈ (Submodule.span ℝ (Set.range v))ᗮᗮ :=
-        Submodule.topologicalClosure_minimal _ (Submodule.le_orthogonal_orthogonal _)
-          (Submodule.isClosed_orthogonal _) x.2
-      have hzero : inner ℝ (x : E) (x : E) = 0 := (Submodule.mem_orthogonal _ _).1 hmem2 _ hmem
-      exact Submodule.coe_eq_zero.mp (inner_self_eq_zero.mp hzero))
-
-/-- **The expansion of an orthogonal projection in an orthonormal family.** The projection onto
-the closed span of an orthonormal family is the sum of the family against the coefficients of the
-projected vector; for a vector already in that closed span it is the expansion of the vector
-itself. -/
-theorem Orthonormal.hasSum_inner_smul_starProjection (hv : Orthonormal ℝ v) (x : E) :
-    HasSum (fun i : ι => (inner ℝ (v i) x) • v i)
-      ((Submodule.span ℝ (Set.range v)).topologicalClosure.starProjection x) := by
-  have : CompleteSpace ((Submodule.span ℝ (Set.range v)).topologicalClosure) :=
-    (Submodule.isClosed_topologicalClosure _).completeSpace_coe
-  have hmem : ∀ i : ι, v i ∈ (Submodule.span ℝ (Set.range v)).topologicalClosure := fun i =>
-    Submodule.le_topologicalClosure _ (Submodule.subset_span (Set.mem_range_self i))
-  have hbcoe : ∀ i : ι, ((hv.hilbertBasisTopologicalClosure i :
-      (Submodule.span ℝ (Set.range v)).topologicalClosure) : E) = v i := by
-    intro i
-    simp only [Orthonormal.hilbertBasisTopologicalClosure]
-    rw [HilbertBasis.coe_mkOfOrthogonalEqBot]
-    rfl
-  have hsum := (hv.hilbertBasisTopologicalClosure.hasSum_repr
-      ⟨_, (Submodule.span ℝ (Set.range v)).topologicalClosure.starProjection_apply_mem x⟩).mapL
-    (Submodule.span ℝ (Set.range v)).topologicalClosure.subtypeL
-  refine hsum.congr_fun fun i => ?_
-  rw [ContinuousLinearMap.map_smul, Submodule.subtypeL_apply, hbcoe i,
-    HilbertBasis.repr_apply_apply, Submodule.coe_inner, hbcoe i,
-    ← Submodule.inner_starProjection_left_eq_right,
-    Submodule.starProjection_eq_self_iff.mpr (hmem i)]
-
-end HilbertBasis
 
 /-! ### The Haar scaling functions -/
 
