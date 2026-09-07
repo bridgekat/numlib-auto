@@ -34,7 +34,10 @@ as everywhere in this surface.
 ## Not formalized here
 
 Theorem 3.1.5, Müntz's theorem: the Müntz–Szász theorem is not in Mathlib, its proof is a
-development of its own, and no other result in the corpus uses it.
+development of its own, and no other result in the corpus uses it. The Gram matrix of the system
+`t ↦ t ^ λⱼ` in `L²(0, 1)` is the Cauchy matrix `(λᵢ + λⱼ + 1)⁻¹`, whose determinant the classical
+proof computes; that determinant is `Matrix.det_cauchy` of `Numlib/LinearAlgebra/Matrix/Cauchy`,
+and `plans/NumlibSurface/AtkinsonHan/Chapter03/Section01.toml` records what else the route needs.
 -/
 
 open Complex MeasureTheory Set Submodule

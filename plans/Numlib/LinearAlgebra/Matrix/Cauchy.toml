@@ -1,0 +1,10 @@
+namespace = "Matrix"
+
+[[node]]
+id = "cauchy"
+
+[[node]]
+id = "det_cauchy"
+
+[[node]]
+id = "det_cauchy_ne_zero"

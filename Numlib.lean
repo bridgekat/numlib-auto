@@ -11,6 +11,7 @@ import Numlib.Analysis.Fourier.DFT
 import Numlib.Analysis.Fourier.Dirichlet
 import Numlib.Analysis.Fourier.LogSingleLayer
 import Numlib.Analysis.Fourier.TrigonometricBasis
+import Numlib.Analysis.Fourier.TrigonometricProduct
 import Numlib.Analysis.Fourier.Truncation
 import Numlib.Analysis.HarmonicPolynomial
 import Numlib.Analysis.InnerProductSpace.Coercive
@@ -109,6 +110,7 @@ import Numlib.Krylov.Relations
 import Numlib.Krylov.Singular
 import Numlib.Krylov.Subspace
 import Numlib.LinearAlgebra.Matrix.Assembly
+import Numlib.LinearAlgebra.Matrix.Cauchy
 import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.LinearAlgebra.Matrix.EpsilonNorm
 import Numlib.LinearAlgebra.Matrix.Hessenberg

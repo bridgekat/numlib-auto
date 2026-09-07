@@ -18,8 +18,22 @@ kind = "theorem"
 desc = '''Muntz's theorem: for `0 < l_1 < l_2 < ... -> infinity`, the span of `{x^{l_j}}` is dense in
 `L^2(0, 1)` if and only if `sum 1 / l_j = infinity`.
 
-Not attempted. The missing machinery is the Muntz-Szasz theorem itself, which is a development of
-its own -- the Gram determinant of the system `{x^{l_j}}` in `L^2(0, 1)`, whose explicit Cauchy-type
-product is what turns the divergence of `sum 1 / l_j` into density, or the Blaschke-product proof
-through Hardy space theory. Mathlib has neither. Nothing else in the corpus depends on it, and
-`Section01.lean` records it as not formalized.'''
+Not proved. Mathlib has neither Muntz-Szasz nor a Hardy space theory, so the whole route has to be
+built; nothing else in the corpus depends on it, and `Section01.lean` records it as not formalized.
+
+**The first link of the route is now in the backbone.** `Numlib/LinearAlgebra/Matrix/Cauchy` has
+`Matrix.det_cauchy`, the closed form of `det (x_i + y_j)^{-1}`, and `Matrix.det_cauchy_ne_zero`.
+The Gram matrix of `t |-> t^{l_i}` in `L^2(0, 1)` is the Cauchy matrix `(l_i + l_j + 1)^{-1}`, so
+that determinant is the one the classical proof computes. What is still missing, in order:
+
+1. `t |-> t^l` as an element of `L^2(0, 1)` for `l > -1/2`, with `<t^a, t^b> = 1/(a + b + 1)`.
+2. The distance from a vector to the span of a finite family as a ratio of Gram determinants,
+   `d(f, span S)^2 = det G(S u {f}) / det G(S)`, in a real inner product space. This is general
+   backbone in its own right and is not in Mathlib; the Schur complement of
+   `Numlib/LinearAlgebra/Matrix/SchurComplement` is the natural tool.
+3. Combining 1, 2 and `Matrix.det_cauchy`: `d_n(l)^2 = (2l+1)^{-1} prod_{j<=n} ((l-l_j)/(l+l_j+1))^2`.
+4. `prod_j |(l - l_j)/(l + l_j + 1)| -> 0` iff `sum 1/l_j = infinity`, since
+   `1 - (l_j - l)/(l_j + l + 1) = (2l+1)/(l_j + l + 1)`, which is comparable to `1/l_j`.
+5. The `if` direction then closes against the density of the polynomials in `L^2(0, 1)` (from
+   Theorem 3.1.1 and the density of `C[0,1]` in `L^2`); the `only if` direction is 3 and 4 read
+   backwards at any `l` outside the sequence.'''

@@ -1,0 +1,29 @@
+[[node]]
+id = "reFourier"
+
+[[node]]
+id = "reFourier_mem_trigPolyLE"
+
+[[node]]
+id = "trigFun_mul_trigFun"
+
+[[node]]
+id = "mul_mem_trigPolyLE"
+
+[[node]]
+id = "sinPair"
+
+[[node]]
+id = "sinPair_coe"
+
+[[node]]
+id = "sinProd"
+
+[[node]]
+id = "sinProd_mem_trigPolyLE"
+
+[[node]]
+id = "sinProd_coe"
+
+[[node]]
+id = "sin_pi_div_mul_pos"

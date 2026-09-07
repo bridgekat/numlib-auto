@@ -6,7 +6,7 @@ import Mathlib.Topology.Algebra.Polynomial
 import Mathlib.Topology.ContinuousMap.Compact
 import Mathlib.Topology.ContinuousMap.Polynomial
 import Mathlib.Topology.Order.IntermediateValue
-import Numlib.Analysis.Fourier.TrigonometricBasis
+import Numlib.Analysis.Fourier.TrigonometricProduct
 import Numlib.Approximation.BestApprox
 
 /-!
@@ -55,15 +55,20 @@ of degree at most `n`, and the alternation (equioscillation) that characterizes 
   `existsUnique_isBestApprox_polyLE` is the polynomial counterpart.
 * `EquioscillatesCircle` is the alternation on the circle, at `2 n + 2` points of a period, and
   `le_infDist_of_alternates_trig`, `isBestApprox_of_equioscillatesCircle` are the de la
-  Vallée-Poussin bound and the sufficiency half of the equioscillation theorem there. The necessity
-  half needs the cyclic form of the exchange argument and is not proved.
+  Vallée-Poussin bound and the sufficiency half of the equioscillation theorem there.
+* `isBestApprox_trig_iff_equioscillates` is the equioscillation theorem on the circle, of which
+  `IsBestApprox.equioscillatesCircle_of_trigPolyLE` is the direction with content. Its exchange
+  argument is *cyclic*: no endpoint anchors the sign pattern, so the circle is cut at a point where
+  `|f - p| < ‖f - p‖` and the linear separators of `exists_separators_of_not_equioscillates` are
+  read off there; adjoining the cut point when their number is odd makes it even, which is what
+  `sinProd` — the circle's analogue of a monic polynomial with prescribed zeros — needs.
 
 The interpolation and uniqueness arguments — everything but the alternation itself, which is stated
 for a subset of the line because it speaks of increasing points — hold on an arbitrary compact
 space, which is what lets the trigonometric case on a circle reuse them verbatim.
 -/
 
-open scoped Polynomial
+open scoped Polynomial Real
 
 /-- The subspace of `C(X, ℝ)` of the restrictions to `X` of the real polynomial functions of degree
 at most `n`. -/
@@ -560,8 +565,8 @@ It is the analytic half of Chebyshev's equioscillation theorem — the other hal
 construction of such an element out of a short alternation.
 
 Reference: [han2009theoretical], Theorem 3.3.19; [kress1998numerical], §8.2. -/
-theorem IsBestApprox.exists_mul_nonpos {X : Set ℝ} [CompactSpace X] [Nonempty X]
-    {V : Submodule ℝ C(X, ℝ)} {f p : C(X, ℝ)} (hp : IsBestApprox (V : Set C(X, ℝ)) f p)
+theorem IsBestApprox.exists_mul_nonpos {X : Type*} [TopologicalSpace X] [CompactSpace X]
+    [Nonempty X] {V : Submodule ℝ C(X, ℝ)} {f p : C(X, ℝ)} (hp : IsBestApprox (V : Set C(X, ℝ)) f p)
     (hE : 0 < ‖f - p‖) {q : C(X, ℝ)} (hq : q ∈ V) :
     ∃ t : X, |(f - p) t| = ‖f - p‖ ∧ (f - p) t * q t ≤ 0 := by
   by_contra hcon
@@ -917,8 +922,8 @@ theorem le_infDist_of_alternates_trig {T : ℝ} [hT : Fact (0 < T)] {n : ℕ}
 polynomial of degree at most `n` whose error equioscillates at `2 n + 2` points of a period is a
 best uniform approximation.
 
-The converse — that the error of a best approximation must equioscillate that often — is not proved
-here; it needs the cyclic form of the exchange argument. -/
+The converse is `IsBestApprox.equioscillatesCircle_of_trigPolyLE`, and the two together are
+`isBestApprox_trig_iff_equioscillates`. -/
 theorem isBestApprox_of_equioscillatesCircle {T : ℝ} [hT : Fact (0 < T)] {n : ℕ}
     {f p : C(AddCircle T, ℝ)} (hp : p ∈ trigPolyLE T n)
     (h : EquioscillatesCircle (f - p) (2 * n + 2)) :
@@ -962,19 +967,25 @@ private theorem exists_maximal_equioscillates {X : Set ℝ} [CompactSpace X] [No
   · exact hcon (hk'.mono (by omega))
   · exact Nat.findGreatest_is_greatest hk h hk'
 
-/-- **The exchange argument.** If the error of a best approximation does not alternate `n + 2`
-times, then a polynomial of degree at most `n` has the sign of the error at every extreme point,
-which `IsBestApprox.exists_mul_nonpos` forbids.
+/-- **The exchange argument, in the form of its separators.** If `g` does not alternate `n + 2`
+times, then at most `n` points `y 0, …, y (k - 1)` separate the extreme set of `g` into blocks of
+constant sign, in the strong sense that the sign of `∏ (y j - t)`, corrected by a constant `c`, is
+the sign of `g t` at every extreme point `t`. Each separator lies strictly between two points of
+`X`, so it lies in the interior of the convex hull of `X`.
 
-The polynomial is built from an alternation `z` of the greatest possible length `m ≤ n + 1`, chosen
-among those of length `m` to minimize `∑ z i`. Minimality says that no extreme point of the sign of
-`z j` lies strictly between `z (j-1)` and `z j`; maximality says that the alternation cannot be
-extended at either end. Between consecutive `z j` the last extreme point of the sign of `z j` is
-separated from `z (j+1)` by a point `y j`, and `∏ (y j - x)`, scaled by the sign of `z 0`, is the
-polynomial. -/
-private theorem exists_improving_of_not_equioscillates {X : Set ℝ} [CompactSpace X] [Nonempty X]
+The separators are built from an alternation `z` of the greatest possible length `m ≤ n + 1`, chosen
+among those of length `m` to minimize `∑ z i`, and `k = m - 1`. Minimality says that no extreme
+point of the sign of `z j` lies strictly between `z (j-1)` and `z j`; maximality says that the
+alternation cannot be extended at either end. Between consecutive `z j` the last extreme point of
+the sign of `z j` is separated from `z (j+1)` by the point `y j`.
+
+`exists_improving_of_not_equioscillates` turns the separators into a polynomial and
+`exists_improving_trig_of_not_equioscillates` into a trigonometric one, which is why the
+combinatorial core is stated separately from either. -/
+private theorem exists_separators_of_not_equioscillates {X : Set ℝ} [CompactSpace X] [Nonempty X]
     {n : ℕ} {g : C(X, ℝ)} (hE : 0 < ‖g‖) (hcon : ¬ Equioscillates g (n + 2)) :
-    ∃ q ∈ polyLE X n, ∀ t : X, |g t| = ‖g‖ → 0 < g t * q t := by
+    ∃ (k : ℕ) (y : ℕ → ℝ) (c : ℝ), k ≤ n ∧ (∀ j < k, ∃ u v : X, (u : ℝ) < y j ∧ y j < (v : ℝ)) ∧
+      ∀ t : X, |g t| = ‖g‖ → 0 < g t * (c * ∏ j ∈ Finset.range k, (y j - (t : ℝ))) := by
   classical
   -- the greatest length of an alternation
   obtain ⟨m, hm1, hmle, hmspec, hmmax⟩ := exists_maximal_equioscillates hcon
@@ -1331,14 +1342,24 @@ private theorem exists_improving_of_not_equioscillates {X : Set ℝ} [CompactSpa
         = (((-1 : ℝ) ^ J) * ((-1 : ℝ) ^ J)) * ((g (zz 0)) ^ 2 * (A * B)) := by ring
     rw [hexpand, hsq, one_mul]
     exact mul_pos hsqpos (mul_pos (hA ▸ hpos1) (hB ▸ hpos2))
-  -- the improving polynomial
-  obtain ⟨Q, hQ⟩ : ∃ Q : Polynomial ℝ, Q = Polynomial.C (g (zz 0)) *
-      ∏ j ∈ Finset.range (m - 1), (Polynomial.C (y j) - Polynomial.X) := ⟨_, rfl⟩
-  have hQnat : Q.natDegree ≤ m - 1 := by
+  exact ⟨m - 1, y, g (zz 0), by omega,
+    fun j hj => ⟨a j, zz (j + 1), hyl j (by omega), hyr j (by omega)⟩, hmain⟩
+
+/-- **The exchange argument.** If the error of a best approximation does not alternate `n + 2`
+times, then a polynomial of degree at most `n` has the sign of the error at every extreme point,
+which `IsBestApprox.exists_mul_nonpos` forbids. The polynomial is `∏ (y j - x)`, over the separators
+of `exists_separators_of_not_equioscillates`, scaled by the constant they come with. -/
+private theorem exists_improving_of_not_equioscillates {X : Set ℝ} [CompactSpace X] [Nonempty X]
+    {n : ℕ} {g : C(X, ℝ)} (hE : 0 < ‖g‖) (hcon : ¬ Equioscillates g (n + 2)) :
+    ∃ q ∈ polyLE X n, ∀ t : X, |g t| = ‖g‖ → 0 < g t * q t := by
+  obtain ⟨k, y, c, hk, -, hmain⟩ := exists_separators_of_not_equioscillates hE hcon
+  obtain ⟨Q, hQ⟩ : ∃ Q : Polynomial ℝ, Q = Polynomial.C c *
+      ∏ j ∈ Finset.range k, (Polynomial.C (y j) - Polynomial.X) := ⟨_, rfl⟩
+  have hQnat : Q.natDegree ≤ k := by
     rw [hQ]
     refine le_trans (Polynomial.natDegree_C_mul_le _ _) ?_
     refine le_trans (Polynomial.natDegree_prod_le _ _) ?_
-    have hbound : ∀ j ∈ Finset.range (m - 1),
+    have hbound : ∀ j ∈ Finset.range k,
         ((Polynomial.C (y j) - Polynomial.X : Polynomial ℝ)).natDegree ≤ 1 := by
       intro j _
       refine le_trans (Polynomial.natDegree_sub_le _ _) ?_
@@ -1347,9 +1368,8 @@ private theorem exists_improving_of_not_equioscillates {X : Set ℝ} [CompactSpa
     simp
   have hQdeg : Q.degree ≤ (n : ℕ) := by
     refine le_trans Q.degree_le_natDegree ?_
-    exact_mod_cast le_trans hQnat (by omega)
-  have hQeval : ∀ t : X, Q.eval (t : ℝ)
-      = g (zz 0) * ∏ j ∈ Finset.range (m - 1), (y j - (t : ℝ)) := by
+    exact_mod_cast hQnat.trans hk
+  have hQeval : ∀ t : X, Q.eval (t : ℝ) = c * ∏ j ∈ Finset.range k, (y j - (t : ℝ)) := by
     intro t
     rw [hQ, Polynomial.eval_mul, Polynomial.eval_C, Polynomial.eval_prod]
     simp
@@ -1391,3 +1411,234 @@ theorem isBestApprox_iff_equioscillates {X : Set ℝ} [CompactSpace X] [Infinite
     {f p : C(X, ℝ)} (hp : p ∈ polyLE X n) :
     IsBestApprox (polyLE X n : Set C(X, ℝ)) f p ↔ Equioscillates (f - p) (n + 2) :=
   ⟨fun h => h.equioscillates_of_polyLE, isBestApprox_of_equioscillates hp⟩
+
+/-! ### The cyclic exchange argument -/
+
+/-- **A constant error is improvable.** If the modulus of a nonzero continuous function on a
+connected space is constant, then so is its sign, by the intermediate value theorem; the constant
+of that sign then has the sign of the function everywhere. -/
+private theorem mul_pos_of_forall_abs_eq_norm {X : Type*} [TopologicalSpace X] [CompactSpace X]
+    [PreconnectedSpace X] {g : C(X, ℝ)} (hE : 0 < ‖g‖) (habs : ∀ w : X, |g w| = ‖g‖)
+    (w w' : X) : 0 < g w * g w' := by
+  have hne : ∀ v : X, g v ≠ 0 := by
+    intro v h0
+    have hv := habs v
+    rw [h0, abs_zero] at hv
+    exact hE.ne' hv.symm
+  rcases lt_trichotomy (g w * g w') 0 with hlt | h0 | hgt
+  · exfalso
+    have hzero : ∃ v : X, g v = 0 := by
+      rcases mul_neg_iff.mp hlt with ⟨hp, hn⟩ | ⟨hn, hp⟩
+      · exact intermediate_value_univ w' w g.continuous (Set.mem_Icc.2 ⟨hn.le, hp.le⟩)
+      · exact intermediate_value_univ w w' g.continuous (Set.mem_Icc.2 ⟨hn.le, hp.le⟩)
+    obtain ⟨v, hv⟩ := hzero
+    exact hne v hv
+  · exact absurd h0 (mul_ne_zero (hne w) (hne w'))
+  · exact hgt
+
+/-- **The cyclic exchange argument.** If a nonzero `g` on the circle does not alternate `2 n + 2`
+times on a period, then a trigonometric polynomial of degree at most `n` has the sign of `g` at
+every point where `|g|` attains its maximum. Fed to `IsBestApprox.exists_mul_nonpos` this is the
+necessity half of the trigonometric equioscillation theorem.
+
+The circle is cut at a point `a` where `|g| < ‖g‖` — one exists unless `|g|` is constant, and then
+the constants already improve `g`. On the compact interval `[a, a + T]` the *linear* argument
+`exists_separators_of_not_equioscillates` applies and produces at most `2 n` separators `y j`,
+strictly inside the interval, whose product `∏ (y j - x)` carries the sign of `g`. The number of
+separators is made even by adjoining the cut point `a` itself, which lies to the left of every
+extreme point and so only flips the sign; an even number of separators is exactly what
+`sinProd`, the circle's analogue of a monic polynomial with prescribed zeros, needs. Its factor
+`sin (π (x - y j) / T)` has the same sign as `x - y j` for `x` and `y j` in one period, so the
+sine product carries the same sign as `∏ (y j - x)` did. -/
+private theorem exists_improving_trig_of_not_equioscillates {T : ℝ} [hT : Fact (0 < T)] {n : ℕ}
+    {g : C(AddCircle T, ℝ)} (hE : 0 < ‖g‖) (hcon : ¬ EquioscillatesCircle g (2 * n + 2)) :
+    ∃ q ∈ trigPolyLE T n, ∀ w : AddCircle T, |g w| = ‖g‖ → 0 < g w * q w := by
+  classical
+  have hTpos : 0 < T := hT.out
+  by_cases hconst : ∀ w : AddCircle T, |g w| = ‖g‖
+  · -- the modulus of the error is constant, and a constant improves it
+    obtain ⟨w₁⟩ := (inferInstance : Nonempty (AddCircle T))
+    refine ⟨g w₁ • trigFun T 0, Submodule.smul_mem _ _ (trigFun_mem_trigPolyLE (by norm_num)),
+      fun w _ => ?_⟩
+    have hval : (g w₁ • trigFun T 0) w = g w₁ := by simp
+    rw [hval]
+    exact mul_pos_of_forall_abs_eq_norm hE hconst w w₁
+  -- a cut point of the circle, where the modulus of the error is not maximal
+  push Not at hconst
+  obtain ⟨w₀, hw₀⟩ := hconst
+  obtain ⟨a, rfl⟩ : ∃ a : ℝ, ((a : ℝ) : AddCircle T) = w₀ :=
+    ⟨(AddCircle.equivIco T 0 w₀ : ℝ), AddCircle.coe_equivIco⟩
+  have hcut : |g ((a : ℝ) : AddCircle T)| < ‖g‖ :=
+    lt_of_le_of_ne (by simpa using g.norm_coe_le_norm _) hw₀
+  -- the error, cut open at `a`
+  have hne : Nonempty ↥(Set.Icc a (a + T)) :=
+    Set.nonempty_coe_sort.2 (Set.nonempty_Icc.2 (by linarith))
+  obtain ⟨G, hGval⟩ : ∃ G : C(↥(Set.Icc a (a + T)), ℝ),
+      ∀ x : ↥(Set.Icc a (a + T)), G x = g ((x : ℝ) : AddCircle T) :=
+    ⟨⟨fun x => g ((x : ℝ) : AddCircle T),
+      g.continuous.comp ((AddCircle.continuous_mk' T).comp continuous_subtype_val)⟩, fun _ => rfl⟩
+  have hnorm : ‖G‖ = ‖g‖ := by
+    refine le_antisymm ((ContinuousMap.norm_le _ (norm_nonneg g)).2 fun x => ?_)
+      ((ContinuousMap.norm_le _ (norm_nonneg G)).2 fun w => ?_)
+    · rw [Real.norm_eq_abs, hGval x]
+      simpa using g.norm_coe_le_norm _
+    · have hmem : ((AddCircle.equivIco T a w : ℝ)) ∈ Set.Icc a (a + T) :=
+        Set.Ico_subset_Icc_self (AddCircle.equivIco T a w).2
+      have heq : g w = G ⟨_, hmem⟩ := by rw [hGval, AddCircle.coe_equivIco]
+      rw [Real.norm_eq_abs, heq]
+      simpa using G.norm_coe_le_norm _
+  -- the extreme points of the cut error avoid both ends of the period
+  have hextr : ∀ x : ↥(Set.Icc a (a + T)), |G x| = ‖G‖ → a < (x : ℝ) ∧ (x : ℝ) < a + T := by
+    intro x hx
+    rw [hnorm, hGval x] at hx
+    constructor
+    · refine lt_of_le_of_ne x.2.1 fun heq => absurd hx (ne_of_lt ?_)
+      rw [← heq]
+      exact hcut
+    · refine lt_of_le_of_ne x.2.2 fun heq => absurd hx (ne_of_lt ?_)
+      rw [heq, AddCircle.coe_add_period]
+      exact hcut
+  have hGcon : ¬ Equioscillates G (2 * n + 2) := by
+    rintro ⟨σ, x, hσ, hmono, hval⟩
+    refine hcon ⟨σ, a, fun i => ((x i : ℝ)), hσ, hmono, fun i => ?_, fun i => ?_⟩
+    · have habs : |G (x i)| = ‖G‖ := by
+        rw [hval i, abs_mul, abs_mul, abs_pow, abs_neg, abs_one, one_pow, mul_one,
+          abs_of_nonneg (norm_nonneg G)]
+        rcases hσ with h | h <;> simp [h]
+      exact ⟨(x i).2.1, (hextr (x i) habs).2⟩
+    · rw [← hnorm, ← hGval (x i)]
+      exact hval i
+  have hE' : 0 < ‖G‖ := by rw [hnorm]; exact hE
+  obtain ⟨k, y, c, hk, hymem, hmain⟩ :=
+    exists_separators_of_not_equioscillates (n := 2 * n) hE' hGcon
+  have hyIoo : ∀ j < k, a < y j ∧ y j < a + T := by
+    intro j hj
+    obtain ⟨u, v, hu, hv⟩ := hymem j hj
+    exact ⟨lt_of_le_of_lt u.2.1 hu, lt_of_lt_of_le hv v.2.2⟩
+  -- an even number of separators, obtained by adjoining the cut point when needed
+  obtain ⟨K, Y, c', s, hKs, hsn, hYmem, hKmain⟩ :
+      ∃ (K : ℕ) (Y : ℕ → ℝ) (c' : ℝ) (s : ℕ), K = 2 * s ∧ s ≤ n ∧
+        (∀ j < K, a ≤ Y j ∧ Y j < a + T) ∧
+        ∀ t : ↥(Set.Icc a (a + T)), |G t| = ‖G‖ →
+          0 < G t * (c' * ∏ j ∈ Finset.range K, (Y j - (t : ℝ))) := by
+    rcases Nat.even_or_odd k with ⟨r, hr⟩ | ⟨r, hr⟩
+    · exact ⟨k, y, c, r, by omega, by omega,
+        fun j hj => ⟨(hyIoo j hj).1.le, (hyIoo j hj).2⟩, hmain⟩
+    · refine ⟨k + 1, fun j => if j < k then y j else a, -c, r + 1, by omega, by omega,
+        fun j hj => ?_, fun t ht => ?_⟩
+      · change a ≤ (if j < k then y j else a) ∧ (if j < k then y j else a) < a + T
+        by_cases h : j < k
+        · rw [ite_eq_left h]
+          exact ⟨(hyIoo j h).1.le, (hyIoo j h).2⟩
+        · rw [ite_eq_right h]
+          exact ⟨le_rfl, by linarith⟩
+      · have hprod : ∏ j ∈ Finset.range (k + 1), ((if j < k then y j else a) - (t : ℝ))
+            = (∏ j ∈ Finset.range k, (y j - (t : ℝ))) * (a - (t : ℝ)) := by
+          rw [Finset.prod_range_succ, ite_eq_right (lt_irrefl k)]
+          congr 1
+          exact Finset.prod_congr rfl fun j hj => by
+            rw [ite_eq_left (Finset.mem_range.mp hj)]
+        rw [hprod]
+        have hrw : G t * (-c * ((∏ j ∈ Finset.range k, (y j - (t : ℝ))) * (a - (t : ℝ))))
+            = (G t * (c * ∏ j ∈ Finset.range k, (y j - (t : ℝ)))) * ((t : ℝ) - a) := by ring
+        rw [hrw]
+        exact mul_pos (hmain t ht) (by linarith [(hextr t ht).1])
+  -- the sine product over the separators is the improving trigonometric polynomial
+  refine ⟨c' • sinProd T Y s, Submodule.smul_mem _ _
+    (trigPolyLE_mono hsn (sinProd_mem_trigPolyLE T Y s)), fun w hw => ?_⟩
+  obtain ⟨t, htcoe⟩ : ∃ t : ↥(Set.Icc a (a + T)), ((t : ℝ) : AddCircle T) = w :=
+    ⟨⟨(AddCircle.equivIco T a w : ℝ), Set.Ico_subset_Icc_self (AddCircle.equivIco T a w).2⟩,
+      AddCircle.coe_equivIco⟩
+  have hGt : G t = g w := by rw [hGval t, htcoe]
+  have habs : |G t| = ‖G‖ := by rw [hGt, hnorm]; exact hw
+  obtain ⟨hta, htb⟩ := hextr t habs
+  have hlin := hKmain t habs
+  obtain ⟨Pl, hPl⟩ : ∃ P : ℝ, P = ∏ j ∈ Finset.range K, (Y j - (t : ℝ)) := ⟨_, rfl⟩
+  obtain ⟨Ps, hPs⟩ : ∃ P : ℝ, P = ∏ j ∈ Finset.range K, Real.sin (π * ((t : ℝ) - Y j) / T) :=
+    ⟨_, rfl⟩
+  rw [← hPl] at hlin
+  have hPlne : Pl ≠ 0 := fun h0 => by
+    rw [h0] at hlin
+    simp at hlin
+  have hfacne : ∀ j ∈ Finset.range K, Y j - (t : ℝ) ≠ 0 :=
+    Finset.prod_ne_zero_iff.mp (hPl ▸ hPlne)
+  -- the sine product and the linear product have the same sign
+  have hsame : 0 < Ps * Pl := by
+    have hflip : ∏ j ∈ Finset.range K, ((t : ℝ) - Y j) = Pl := by
+      rw [hPl]
+      calc ∏ j ∈ Finset.range K, ((t : ℝ) - Y j)
+          = ∏ j ∈ Finset.range K, ((-1 : ℝ) * (Y j - (t : ℝ))) :=
+            Finset.prod_congr rfl fun j _ => by ring
+        _ = (∏ _j ∈ Finset.range K, (-1 : ℝ)) * ∏ j ∈ Finset.range K, (Y j - (t : ℝ)) :=
+            Finset.prod_mul_distrib
+        _ = ∏ j ∈ Finset.range K, (Y j - (t : ℝ)) := by
+            rw [Finset.prod_const, Finset.card_range, hKs, pow_mul]
+            norm_num
+    have hpos : 0 < ∏ j ∈ Finset.range K,
+        (Real.sin (π * ((t : ℝ) - Y j) / T) * ((t : ℝ) - Y j)) := by
+      refine Finset.prod_pos fun j hj => ?_
+      obtain ⟨hlo, hhi⟩ := hYmem j (Finset.mem_range.mp hj)
+      exact sin_pi_div_mul_pos hTpos (by linarith) (by linarith)
+        (fun h0 => hfacne j hj (by linarith [sub_eq_zero.mp h0]))
+    rwa [Finset.prod_mul_distrib, hflip, ← hPs] at hpos
+  -- the value of the improving polynomial
+  have hqval : (c' • sinProd T Y s) w = c' * Ps := by
+    rw [← htcoe, ContinuousMap.smul_apply, smul_eq_mul, sinProd_coe, hPs, ← hKs]
+  rw [hqval, ← hGt]
+  have hkey : (G t * (c' * Ps)) * Pl ^ 2 = (G t * (c' * Pl)) * (Ps * Pl) := by ring
+  have hposk : 0 < (G t * (c' * Ps)) * Pl ^ 2 := hkey ▸ mul_pos hlin hsame
+  rcases mul_pos_iff.mp hposk with ⟨h, -⟩ | ⟨-, h⟩
+  · exact h
+  · exact absurd h (not_lt.mpr (sq_nonneg Pl))
+
+/-- **The trigonometric equioscillation theorem, the direction with content**: the error of a best
+uniform approximation by trigonometric polynomials of degree at most `n` attains `± ‖f - p‖` with
+alternating signs at `2 n + 2` points of a period.
+
+It is `exists_improving_trig_of_not_equioscillates`, the cyclic exchange argument, against
+`IsBestApprox.exists_mul_nonpos`, Kolmogorov's criterion. -/
+theorem IsBestApprox.equioscillatesCircle_of_trigPolyLE {T : ℝ} [hT : Fact (0 < T)] {n : ℕ}
+    {f p : C(AddCircle T, ℝ)}
+    (hp : IsBestApprox (trigPolyLE T n : Set C(AddCircle T, ℝ)) f p) :
+    EquioscillatesCircle (f - p) (2 * n + 2) := by
+  have hTpos : 0 < T := hT.out
+  rcases eq_or_lt_of_le (norm_nonneg (f - p)) with hE | hE
+  · -- a zero error alternates at any `2 n + 2` points of a period
+    have hstep : 0 < T / (2 * (n : ℝ) + 2) := div_pos hTpos (by positivity)
+    refine ⟨1, 0, fun i => ((i : ℕ) : ℝ) * (T / (2 * (n : ℝ) + 2)), Or.inl rfl,
+      fun i j hij => ?_, fun i => ?_, fun i => ?_⟩
+    · refine mul_lt_mul_of_pos_right ?_ hstep
+      exact_mod_cast Fin.lt_def.mp hij
+    · refine ⟨mul_nonneg (Nat.cast_nonneg _) hstep.le, ?_⟩
+      have hi : ((i : ℕ) : ℝ) < 2 * (n : ℝ) + 2 := by exact_mod_cast i.isLt
+      have hcancel : (2 * (n : ℝ) + 2) * (T / (2 * (n : ℝ) + 2)) = T := by
+        field_simp
+      rw [zero_add]
+      calc ((i : ℕ) : ℝ) * (T / (2 * (n : ℝ) + 2))
+          < (2 * (n : ℝ) + 2) * (T / (2 * (n : ℝ) + 2)) := mul_lt_mul_of_pos_right hi hstep
+        _ = T := hcancel
+    · have hg0 : f - p = 0 := norm_eq_zero.mp hE.symm
+      rw [hg0]
+      simp
+  · by_contra hcon
+    obtain ⟨q, hq, hsign⟩ := exists_improving_trig_of_not_equioscillates hE hcon
+    obtain ⟨w, hw, hle⟩ := hp.exists_mul_nonpos hE hq
+    exact absurd (hsign w hw) (not_lt.mpr hle)
+
+/-- **The trigonometric equioscillation theorem.** A trigonometric polynomial of degree at most `n`
+is a best uniform approximation of a continuous function on the circle of circumference `T` exactly
+when its error attains `± ‖f - p‖` with alternating signs at `2 n + 2` points of a period.
+
+Sufficiency is `isBestApprox_of_equioscillatesCircle`, from de la Vallée-Poussin's bound; necessity
+is `IsBestApprox.equioscillatesCircle_of_trigPolyLE`, the cyclic exchange argument. The alternation
+count `2 n + 2` is one more than the dimension `2 n + 1` of `trigPolyLE T n`, exactly as `n + 2` is
+one more than the dimension `n + 1` of `polyLE X n` in `isBestApprox_iff_equioscillates`.
+
+Reference: [han2009theoretical], Theorem 3.3.20, which states only the existence and uniqueness
+(`existsUnique_isBestApprox_trigPolyLE`); the characterization is the circle analogue of their
+Theorem 3.3.19. -/
+theorem isBestApprox_trig_iff_equioscillates {T : ℝ} [Fact (0 < T)] {n : ℕ}
+    {f p : C(AddCircle T, ℝ)} (hp : p ∈ trigPolyLE T n) :
+    IsBestApprox (trigPolyLE T n : Set C(AddCircle T, ℝ)) f p ↔
+      EquioscillatesCircle (f - p) (2 * n + 2) :=
+  ⟨fun h => h.equioscillatesCircle_of_trigPolyLE, isBestApprox_of_equioscillatesCircle hp⟩
