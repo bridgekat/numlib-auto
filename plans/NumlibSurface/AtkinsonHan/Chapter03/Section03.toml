@@ -126,3 +126,12 @@ holds for `vₙ ⇀ v ∈ K`; w.l.s.c. implies l.s.c. Not formalized: the first 
 space, and the second is the backbone's `WeakSeqLowerSemicontinuousOn`
 (`Numlib/Variational/WeakMinimization`), which `theorem_3_3_8`, `theorem_3_3_10` and
 `theorem_3_3_11_weakSeqLsc` take directly; §3.3's module doc records the correspondence.'''
+
+[[node]]
+id = "definition_3_3_9"
+kind = "definition"
+desc = '''Definition 3.3.9: a real-valued functional `f` is coercive over `K` when `f v → ∞` as
+`‖v‖ → ∞` along `v ∈ K`. Not formalized: this is the backbone's `IsCoerciveFunctionalOn`
+(`Numlib/Variational/WeakMinimization`), which `theorem_3_3_10` and `theorem_3_3_12` take
+directly; §3.3's module doc records the correspondence.'''
+

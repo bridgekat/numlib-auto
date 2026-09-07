@@ -2,6 +2,7 @@ namespace = "AtkinsonHan.Chapter03"
 
 [[node]]
 id = "IsDirectSum"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 3.6.1"
 
 [[node]]
 id = "IsOrthogonalProjectionOperator"
