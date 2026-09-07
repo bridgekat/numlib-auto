@@ -73,46 +73,16 @@ id = "equation_2_8_5"
 id = "equation_2_8_6_le"
 
 [[node]]
+id = "equation_2_8_6"
+
+[[node]]
 id = "isCompactOperator_of_isAdmissibleKernel"
 
 [[node]]
 id = "example_2_8_2"
-kind = "theorem"
-desc = '''
-Example 2.8.2: `k (x, y) = log |cos x − cos y|` on `[0, π]` is the kernel of a compact integral
-operator on `C[0, π]`, by the factorisation
-`k = |x − y|^{-1/2} · (|x − y|^{1/2} log |cos x − cos y|)` and the splitting rule (2.8.9).
-
-The (A₁)–(A₂) framework it waits on now exists (`Numlib/IntegralEquations/WeaklySingular`), and so
-does the splitting rule, as `IntegralOperator.IsAdmissibleKernel.mul_continuousMap`. What is left
-is the one genuinely analytic step, and it is not a formality: showing that
-`k (x, y) = |x − y|^{-1/2}` satisfies (A₁) on an interval, i.e. that
-`∫ ||x − y|^{-1/2} − |z − y|^{-1/2}| dy → 0` uniformly as `|x − z| → 0`. Dominated convergence
-gives the pointwise limit but not the uniformity; the textbook argument splits the integral into a
-neighbourhood of the two singularities, where the integrand is bounded by
-`|x − y|^{-1/2} + |z − y|^{-1/2}` and the interval is short, and the rest, where the integrand is
-uniformly small. Both halves need `intervalIntegral` estimates for `t ^ (-1/2)`. Nothing before
-Chapter 13 consumes this.
-'''
-deps = ["IntegralOperator.isCompactOperator_admissibleKernelCLM",
-  "IntegralOperator.IsAdmissibleKernel.mul_continuousMap"]
 
 [[node]]
 id = "example_2_8_9"
-kind = "theorem"
-desc = '''
-Example 2.8.9: `k (x, y) = |x − y|^{-γ}` with `0 < γ < 1` gives a compact operator on `C[a, b]`,
-because the truncations `kₙ` of (2.8.15) are continuous with
-`‖K − Kₙ‖ = 2γ / ((1 − γ) n^{1-γ}) → 0`.
-
-Same missing step as Example 2.8.2, and one more: the book's route through the truncations still
-needs the operator of the singular kernel to exist on `C[a, b]`, which is (A₁) again, and then the
-explicit computation of `‖K − Kₙ‖`, which is an exact integral. Note that
-`IntegralOperator.norm_admissibleKernelCLM_le` gives only `≤` for the norm of an admissible-kernel
-operator, so the book's `‖K − Kₙ‖ = 2γ / ((1 − γ) n^{1-γ})` would have to be weakened to a bound —
-which is all that `proposition_2_8_7` needs.
-'''
-deps = ["IntegralOperator.isCompactOperator_admissibleKernelCLM", "proposition_2_8_7"]
 
 [[node]]
 id = "theorem_2_8_12_3"

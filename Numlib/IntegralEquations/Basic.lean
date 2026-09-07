@@ -560,6 +560,41 @@ theorem integral_iccMeasure (hab : a ≤ b) (f : ℝ → ℝ) :
   rw [iccMeasure, integral_subtype_comap measurableSet_Icc, integral_Icc_eq_integral_Ioc,
     ← intervalIntegral.integral_of_le hab]
 
+/-- Interval integrability on `[a, b]` is integrability against `IntegralOperator.iccMeasure`, which
+is what carries an estimate for a singular integrand from the line to the subtype `Set.Icc a b`. -/
+theorem integrable_iccMeasure (hab : a ≤ b) {f : ℝ → ℝ}
+    (hf : IntervalIntegrable f volume a b) :
+    Integrable (fun y : Icc a b => f y) (iccMeasure a b) := by
+  have hmeas : MeasurableSet (Icc a b) := measurableSet_Icc
+  have hemb : MeasurableEmbedding ((↑) : Icc a b → ℝ) := MeasurableEmbedding.subtype_coe hmeas
+  refine (hemb.integrable_map_iff (g := f)).mp ?_
+  rw [iccMeasure, map_comap_subtype_coe hmeas volume]
+  exact (intervalIntegrable_iff_integrableOn_Icc_of_le hab).mp hf
+
+/-- Lebesgue measure on a compact interval has no atoms, which is what makes the diagonal
+negligible for a kernel that is singular only there. -/
+instance : NullSingletonClass (iccMeasure a b) where
+  measure_singleton x := by
+    have hemb : MeasurableEmbedding ((↑) : Icc a b → ℝ) :=
+      MeasurableEmbedding.subtype_coe measurableSet_Icc
+    rw [iccMeasure, hemb.comap_apply]
+    simp
+
+/-- Almost every point of `Set.Icc a b` differs from any given one. -/
+theorem ae_ne_iccMeasure (x : Icc a b) :
+    ∀ᵐ (y : Icc a b) ∂iccMeasure a b, (y : ℝ) ≠ (x : ℝ) := by
+  have h : ({x} : Set (Icc a b))ᶜ ∈ ae (iccMeasure a b) :=
+    compl_mem_ae_iff.2 (measure_singleton x)
+  filter_upwards [h] with y hy
+  simp only [mem_compl_iff, mem_singleton_iff] at hy
+  exact fun hc => hy (Subtype.ext hc)
+
+/-- Restricting `IntegralOperator.iccMeasure` away from one point changes nothing, which is how a
+function continuous off that point is seen to be measurable. -/
+theorem restrict_ne_iccMeasure (x : Icc a b) :
+    (iccMeasure a b).restrict {y : Icc a b | (y : ℝ) ≠ (x : ℝ)} = iccMeasure a b :=
+  Measure.restrict_eq_self_of_ae_mem (ae_ne_iccMeasure x)
+
 /-- **The Fredholm operator of a compact interval is the kernel operator of Lebesgue measure on that
 interval**, which is what lets the interval theory specialize the general one on a compact space. -/
 theorem fredholm_eq_kernelCLM (k : C(Icc a b × Icc a b, ℝ)) :

@@ -5,6 +5,7 @@ import Numlib.Analysis.Convex.Gateaux
 import Numlib.Analysis.Convex.SaddlePoint
 import Numlib.Analysis.Convex.StrictConvexSpace
 import Numlib.Analysis.Convex.Uniform
+import Numlib.Analysis.Fourier.CosineBasis
 import Numlib.Analysis.Fourier.DFT
 import Numlib.Analysis.Fourier.Dirichlet
 import Numlib.Analysis.Fourier.LogSingleLayer
@@ -23,6 +24,7 @@ import Numlib.Analysis.InnerProductSpace.WeakCompactness
 import Numlib.Analysis.Matrix.SpectralNorm
 import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.Analysis.Normed.Algebra.SpectralRadius
+import Numlib.Analysis.Normed.Lp.SmoothApprox
 import Numlib.Analysis.Normed.Module.NormEquivalence
 import Numlib.Analysis.Normed.Module.WeakDual
 import Numlib.Analysis.Normed.Operator.BanachSteinhaus

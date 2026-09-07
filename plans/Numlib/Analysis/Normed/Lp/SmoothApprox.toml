@@ -1,0 +1,11 @@
+[[node]]
+id = "MeasureTheory.Lp.dense_contDiff_tsupport_subset"
+
+[[node]]
+id = "MeasureTheory.MemLp.exists_contDiff_tsupport_subset"
+
+[[node]]
+id = "MeasureTheory.MemLp.exists_isCompact_eLpNorm_indicator_compl_le"
+
+[[node]]
+id = "exists_contDiff_one_on_of_isCompact_of_isOpen"

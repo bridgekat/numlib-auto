@@ -1,0 +1,44 @@
+[[node]]
+id = "halfRangeMeasure"
+
+[[node]]
+id = "integral_halfRangeMeasure"
+
+[[node]]
+id = "integral_cos_int_mul"
+
+[[node]]
+id = "integral_cos_nat_mul_cos_nat_mul"
+
+[[node]]
+id = "cosMap"
+
+[[node]]
+id = "cosNorm"
+
+[[node]]
+id = "cosFun"
+
+[[node]]
+id = "cosLp"
+
+[[node]]
+id = "orthonormal_cosLp"
+
+[[node]]
+id = "cosMap_mul"
+
+[[node]]
+id = "cosSubalgebra"
+
+[[node]]
+id = "dense_span_cosMap"
+
+[[node]]
+id = "orthogonal_span_cosLp_eq_bot"
+
+[[node]]
+id = "cosBasis"
+
+[[node]]
+id = "dense_span_cosLp"

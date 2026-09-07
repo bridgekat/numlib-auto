@@ -38,20 +38,14 @@ equicontinuous, and (A₂) is what bounds the operator.
 * `IntegralOperator.IsAdmissibleKernel.mul_continuousMap` — the splitting rule: an admissible
   kernel times a continuous factor is admissible, which is how a kernel written as a singular
   factor times a smooth one is handled.
+* `IntegralOperator.isAdmissibleKernel_of_abs_le_rpow` — **the concrete criterion on an interval**:
+  a kernel continuous off the diagonal and bounded by `C |x − y| ^ (-γ)` with `γ < 1` is
+  admissible. `IntegralOperator.isAdmissibleKernel_abs_sub_rpow` is the kernel `|x − y| ^ (-γ)`
+  itself, and `IntegralOperator.isAdmissibleKernel_log_cos_sub_cos` the logarithmic kernel
+  `log |cos x − cos y|` on `[0, π]`.
 
 The domain is a compact metric space rather than a closed bounded `D ⊆ ℝ^d`: the argument uses
 nothing of the ambient space, and the metric enters only through the uniform statement of (A₁).
-
-## Not developed here
-
-The operator norm is only bounded, not computed: `‖K‖ = max_x ∫ |k (x, y)| dμ` — equation (2.8.6)
-of [han2009theoretical] — needs a continuous `u` of norm one that nearly realises the sign of a row
-of the kernel, and for a merely integrable row that is the density of `C(X, ℝ)` in `L¹(μ)`, which
-this project does not have. The continuous-kernel case is `IntegralOperator.norm_kernelCLM`.
-
-Nor is any concrete weakly singular kernel shown to be admissible: verifying (A₁) for
-`|x − y|^{-γ}` on an interval is a real integral estimate, not a formality, and is what
-[han2009theoretical] Examples 2.8.2 and 2.8.9 rest on.
 
 ## References
 
@@ -60,6 +54,99 @@ conditions under the name of weakly singular kernels.
 -/
 
 open Filter MeasureTheory Metric Set Topology
+
+open scoped Real
+
+/-! ### The algebraic singularity `|t| ^ r` on the line
+
+Two facts about `t ↦ |t| ^ r` for `-1 < r`, the profile of every singular kernel treated below: it
+is interval integrable across its singularity, and its integral over an interval centred at that
+singularity is explicit. Mathlib has both for `t ↦ t ^ r`, which at a negative argument is
+`|t| ^ r` times `cos (r π)` and so is a different function. -/
+
+/-- The algebraic singularity `t ↦ |t| ^ r` is interval integrable exactly when it is integrable at
+the origin, that is, when `-1 < r`. -/
+theorem intervalIntegrable_abs_rpow {r : ℝ} (hr : -1 < r) (a b : ℝ) :
+    IntervalIntegrable (fun t => |t| ^ r) volume a b := by
+  have hpos : ∀ c : ℝ, 0 ≤ c → IntervalIntegrable (fun t => |t| ^ r) volume 0 c := by
+    intro c hc
+    have h := intervalIntegral.intervalIntegrable_rpow' (a := 0) (b := c) hr
+    rw [intervalIntegrable_iff, uIoc_of_le hc] at h ⊢
+    exact h.congr_fun (fun t ht => by rw [abs_of_pos ht.1]) measurableSet_Ioc
+  have key : ∀ c : ℝ, IntervalIntegrable (fun t => |t| ^ r) volume 0 c := by
+    intro c
+    rcases le_total 0 c with hc | hc
+    · exact hpos c hc
+    · rw [IntervalIntegrable.iff_comp_neg]
+      simpa using hpos (-c) (by linarith)
+  exact (key a).symm.trans (key b)
+
+/-- The integral of the algebraic singularity `|t| ^ r` over an interval centred at its singular
+point: over `[-s, s]` it is `2 s ^ (r + 1) / (r + 1)`. -/
+theorem integral_abs_rpow_neg_self {r : ℝ} (hr : -1 < r) {s : ℝ} (hs : 0 ≤ s) :
+    ∫ t in (-s)..s, |t| ^ r = 2 * s ^ (r + 1) / (r + 1) := by
+  have hr1 : r + 1 ≠ 0 := by linarith
+  have hhalf : ∫ t in (0 : ℝ)..s, |t| ^ r = s ^ (r + 1) / (r + 1) := by
+    have h1 : ∫ t in (0 : ℝ)..s, |t| ^ r = ∫ t in (0 : ℝ)..s, t ^ r :=
+      intervalIntegral.integral_congr fun t ht => by
+        rw [uIcc_of_le hs] at ht; rw [abs_of_nonneg ht.1]
+    rw [h1, integral_rpow (Or.inl hr), Real.zero_rpow hr1, sub_zero]
+  have hrefl : ∫ t in (-s)..(0 : ℝ), |t| ^ r = ∫ t in (0 : ℝ)..s, |t| ^ r := by
+    have h := intervalIntegral.integral_comp_neg (a := (0 : ℝ)) (b := s) fun t => |t| ^ r
+    simpa using h.symm
+  rw [← intervalIntegral.integral_add_adjacent_intervals (b := (0 : ℝ))
+      (intervalIntegrable_abs_rpow hr _ _) (intervalIntegrable_abs_rpow hr _ _), hrefl, hhalf]
+  ring
+
+/-- A logarithm is dominated by any algebraic singularity at the origin. This crude two-sided form
+is what a logarithmic kernel needs in order to fit under an algebraic bound. -/
+theorem abs_log_le_two_mul_rpow {u : ℝ} (hu : 0 < u) :
+    |Real.log u| ≤ 2 * (u ^ ((1 : ℝ) / 2) + u ^ (-((1 : ℝ) / 2))) := by
+  have h1 : (0 : ℝ) < u ^ ((1 : ℝ) / 2) := Real.rpow_pos_of_pos hu _
+  have h2 : (0 : ℝ) < u ^ (-((1 : ℝ) / 2)) := Real.rpow_pos_of_pos hu _
+  have b1 := Real.log_le_sub_one_of_pos h1
+  have b2 := Real.log_le_sub_one_of_pos h2
+  rw [Real.log_rpow hu] at b1 b2
+  rw [abs_le]
+  constructor <;> linarith
+
+/-- **The cosine separates the points of `[0, π]` at least quadratically**:
+`2 |x − y|² / π² ≤ |cos x − cos y|`. Both factors of
+`cos x − cos y = -2 sin ((x + y)/2) sin ((x − y)/2)` are bounded below by `|x − y| / π`, by Jordan's
+inequality applied at `(x + y)/2` or at `π − (x + y)/2`, whichever of the two lies in `[0, π/2]`. -/
+theorem two_mul_sq_div_pi_sq_le_abs_cos_sub_cos {x y : ℝ} (hx : x ∈ Icc 0 π) (hy : y ∈ Icc 0 π) :
+    2 * |x - y| ^ 2 / π ^ 2 ≤ |Real.cos x - Real.cos y| := by
+  have hpi : (0 : ℝ) < π := Real.pi_pos
+  have hs : (0 : ℝ) ≤ (x + y) / 2 := by linarith [hx.1, hy.1]
+  have hs2 : (x + y) / 2 ≤ π := by linarith [hx.2, hy.2]
+  have hupi : |x - y| ≤ π := abs_le.2 ⟨by linarith [hx.1, hy.2], by linarith [hy.1, hx.2]⟩
+  have hA : |x - y| ≤ π * Real.sin ((x + y) / 2) := by
+    rcases le_total ((x + y) / 2) (π / 2) with h | h
+    · have hm := Real.mul_le_sin hs h
+      have hxy : |x - y| ≤ x + y := abs_le.2 ⟨by linarith [hx.1], by linarith [hy.1]⟩
+      have key : π * (2 / π * ((x + y) / 2)) = x + y := by field_simp
+      linarith [mul_le_mul_of_nonneg_left hm hpi.le]
+    · rw [← Real.sin_pi_sub]
+      have hm := Real.mul_le_sin (by linarith : (0 : ℝ) ≤ π - (x + y) / 2) (by linarith)
+      have hxy : |x - y| ≤ 2 * π - x - y :=
+        abs_le.2 ⟨by linarith [hy.2], by linarith [hx.2]⟩
+      have key : π * (2 / π * (π - (x + y) / 2)) = 2 * π - x - y := by field_simp; ring
+      linarith [mul_le_mul_of_nonneg_left hm hpi.le]
+  have habs2 : |(x - y) / 2| = |x - y| / 2 := by rw [abs_div, abs_two]
+  have hB : |x - y| ≤ π * |Real.sin ((x - y) / 2)| := by
+    have hz : |(x - y) / 2| ≤ π / 2 := by rw [habs2]; linarith
+    have hm := Real.mul_abs_le_abs_sin hz
+    have key : π * (2 / π * |(x - y) / 2|) = |x - y| := by rw [habs2]; field_simp
+    linarith [mul_le_mul_of_nonneg_left hm hpi.le]
+  have hsnn : (0 : ℝ) ≤ Real.sin ((x + y) / 2) := Real.sin_nonneg_of_nonneg_of_le_pi hs hs2
+  rw [Real.cos_sub_cos]
+  have hrw : |(-2 : ℝ) * Real.sin ((x + y) / 2) * Real.sin ((x - y) / 2)|
+      = 2 * Real.sin ((x + y) / 2) * |Real.sin ((x - y) / 2)| := by
+    rw [abs_mul, abs_mul, abs_of_nonneg hsnn]
+    norm_num
+  rw [hrw, div_le_iff₀ (by positivity : (0 : ℝ) < π ^ 2)]
+  nlinarith [mul_le_mul hA hB (abs_nonneg (x - y)) (by positivity : (0 : ℝ) ≤ π *
+    Real.sin ((x + y) / 2)), abs_nonneg (Real.sin ((x - y) / 2)), hsnn, hpi]
 
 namespace IntegralOperator
 
@@ -602,5 +689,298 @@ theorem IsAdmissibleKernel.mul_continuousMap (hk : IsAdmissibleKernel μ k) (g :
             nlinarith [hε.le, hMnn]
           linarith
 end Splitting
+
+section AlgebraicSingularity
+
+/-! ### Kernels with an algebraic singularity on the diagonal
+
+The concrete weakly singular kernels of [han2009theoretical] §2.8.1 live on an interval and are
+continuous off the diagonal, with `|k (x, y)| ≤ C |x − y| ^ (-γ)` for some `0 < γ < 1`. That alone
+makes them admissible, and the two Examples the book gives are instances.
+
+The uniformity in (A₁) — the point the book leaves to the reader — comes out of translation
+invariance rather than out of a two-point estimate. Excising the diagonal with a continuous cut-off
+leaves a row error bounded by `C ψ (x − y)` for one fixed nonnegative profile `ψ` vanishing away
+from the origin, and the substitution `t = x − y` turns the row integral into an integral of `ψ`
+over an interval that, whatever `x ∈ [a, b]` is, sits inside one fixed symmetric interval. What is
+left to bound is then a single number, `2 C s ^ (1 - γ) / (1 - γ)`, with no `x` in it. -/
+
+variable {a b : ℝ}
+
+/-- Translating a nonnegative integrand by a point of `[a, b]` and integrating over `[a, b]` is
+dominated by integrating it over a symmetric interval long enough to contain every translate. This
+is what makes an estimate for a difference kernel on an interval uniform in the row index. -/
+theorem integral_comp_sub_le {x M : ℝ} (hab : a ≤ b) (hx : x ∈ Icc a b) (hM : b - a ≤ M)
+    {f : ℝ → ℝ} (hf0 : ∀ t, 0 ≤ f t) (hf : IntervalIntegrable f volume (-M) M) :
+    (∫ y in a..b, f (x - y)) ≤ ∫ t in (-M)..M, f t := by
+  rw [intervalIntegral.integral_comp_sub_left f x]
+  exact intervalIntegral.integral_mono_interval (by linarith [hx.1]) (by linarith)
+    (by linarith [hx.2]) (Eventually.of_forall hf0) hf
+
+/-- **A kernel with an algebraic singularity on the diagonal of an interval is admissible.** If `k`
+is continuous off the diagonal of `[a, b] × [a, b]` and `|k (x, y)| ≤ C |x − y| ^ (-γ)` with
+`0 < γ < 1`, then `k` satisfies (A₁) and (A₂), so
+`IntegralOperator.isCompactOperator_admissibleKernelCLM` makes its integral operator compact on
+`C[a, b]`.
+
+Note that the hypothesis at a diagonal point reads `|k (x, x)| ≤ C * 0`, since `0 ^ (-γ) = 0`; so it
+also fixes the value of `k` on the diagonal to be `0`. That is the value `|x − y| ^ (-γ)` and
+`log |cos x − cos y|` both take there, both being of the form `f (x − y)` for an `f` that Lean's
+conventions send to `0` at `0`.
+
+The proof is `IntegralOperator.isAdmissibleKernel_of_forall_exists_continuousMap` applied to the
+truncations `k (x, y) * χ |x − y|`, with `χ` a cut-off vanishing on a neighbourhood of the diagonal;
+that neighbourhood is where the truncation is continuous for free, and the `L¹` distance to `k`
+there is controlled by `IntegralOperator.integral_comp_sub_le` and `integral_abs_rpow_neg_self`. -/
+theorem isAdmissibleKernel_of_abs_le_rpow {γ C : ℝ} (hab : a ≤ b) (hγ0 : 0 < γ) (hγ1 : γ < 1)
+    (hC : 0 ≤ C) {k : Icc a b × Icc a b → ℝ}
+    (hcont : ContinuousOn k {p : Icc a b × Icc a b | (p.1 : ℝ) ≠ (p.2 : ℝ)})
+    (hle : ∀ p : Icc a b × Icc a b, |k p| ≤ C * |(p.1 : ℝ) - (p.2 : ℝ)| ^ (-γ)) :
+    IsAdmissibleKernel (iccMeasure a b) k := by
+  have hexp : (-1 : ℝ) < -γ := by linarith
+  have hone : (0 : ℝ) < 1 - γ := by linarith
+  have hdomii : ∀ x : Icc a b,
+      IntervalIntegrable (fun y => C * |(x : ℝ) - y| ^ (-γ)) volume a b := by
+    intro x
+    have h := (intervalIntegrable_abs_rpow hexp ((x : ℝ) - a) ((x : ℝ) - b)).comp_sub_left (x : ℝ)
+    simp only [sub_sub_cancel] at h
+    exact h.const_mul C
+  have hrow : ∀ x : Icc a b, Integrable (fun y : Icc a b => k (x, y)) (iccMeasure a b) := by
+    intro x
+    have hms : MeasurableSet {y : Icc a b | (y : ℝ) ≠ (x : ℝ)} :=
+      (isOpen_ne_fun (by fun_prop) continuous_const).measurableSet
+    have hcy : ContinuousOn (fun y : Icc a b => k (x, y)) {y : Icc a b | (y : ℝ) ≠ (x : ℝ)} :=
+      hcont.comp (Continuous.continuousOn (by fun_prop)) fun y hy hc => hy hc.symm
+    have hmeas : AEStronglyMeasurable (fun y : Icc a b => k (x, y)) (iccMeasure a b) := by
+      have h := hcy.aestronglyMeasurable (μ := iccMeasure a b) hms
+      rwa [restrict_ne_iccMeasure x] at h
+    refine Integrable.mono' (integrable_iccMeasure hab (hdomii x)) hmeas
+      (Eventually.of_forall fun y => ?_)
+    rw [Real.norm_eq_abs]
+    exact hle (x, y)
+  refine isAdmissibleKernel_of_forall_exists_continuousMap hrow ?_
+  intro ε hε
+  -- the width of the excised neighbourhood of the diagonal
+  set s : ℝ := (ε * (1 - γ) / (2 * C + 1)) ^ (1 / (1 - γ)) with hsdef
+  have hu : (0 : ℝ) < ε * (1 - γ) / (2 * C + 1) := by positivity
+  have hspos : (0 : ℝ) < s := Real.rpow_pos_of_pos hu _
+  have hspow : s ^ (1 - γ) = ε * (1 - γ) / (2 * C + 1) := by
+    rw [hsdef, ← Real.rpow_mul hu.le, one_div, inv_mul_cancel₀ hone.ne', Real.rpow_one]
+  set r : ℝ := s / 2 with hrdef
+  have hrpos : (0 : ℝ) < r := by positivity
+  -- the cut-off: `0` on `[0, r]`, `1` beyond `2 r = s`
+  set χ : ℝ → ℝ := fun t => min 1 (max 0 (t / r - 1)) with hχdef
+  have hχcont : Continuous χ := by fun_prop
+  have hχnn : ∀ t, 0 ≤ χ t := fun _ => le_min zero_le_one (le_max_left _ _)
+  have hχle : ∀ t, χ t ≤ 1 := fun _ => min_le_left _ _
+  have hχ0 : ∀ t, t ≤ r → χ t = 0 := by
+    intro t ht
+    have h : t / r - 1 ≤ 0 := by rw [sub_nonpos, div_le_one hrpos]; exact ht
+    simp only [hχdef, max_eq_left h]
+    exact min_eq_right zero_le_one
+  have hχ1 : ∀ t, 2 * r ≤ t → χ t = 1 := by
+    intro t ht
+    have h1 : (1 : ℝ) ≤ t / r - 1 := by rw [le_sub_iff_add_le, le_div_iff₀ hrpos]; linarith
+    simp only [hχdef]
+    exact min_eq_left (le_max_of_le_right h1)
+  -- the excised singular profile
+  set ψ : ℝ → ℝ := fun t => |t| ^ (-γ) * (1 - χ |t|) with hψdef
+  have hψnn : ∀ t, 0 ≤ ψ t := fun t =>
+    mul_nonneg (Real.rpow_nonneg (abs_nonneg _) _) (by linarith [hχle |t|])
+  have hψle : ∀ t, ψ t ≤ |t| ^ (-γ) := by
+    intro t
+    have h1 : (0 : ℝ) ≤ |t| ^ (-γ) := Real.rpow_nonneg (abs_nonneg _) _
+    simp only [hψdef]
+    nlinarith [hχnn |t|, hχle |t|]
+  have hψ0 : ∀ t, s ≤ |t| → ψ t = 0 := by
+    intro t ht
+    have h : χ |t| = 1 := hχ1 _ (by rw [hrdef]; linarith)
+    simp only [hψdef, h, sub_self, mul_zero]
+  have hψii : ∀ p q : ℝ, IntervalIntegrable ψ volume p q := fun p q =>
+    (intervalIntegrable_abs_rpow hexp p q).mul_continuousOn
+      (continuous_const.sub (hχcont.comp continuous_abs)).continuousOn
+  set M : ℝ := max (b - a) s with hMdef
+  have hMs : s ≤ M := le_max_right _ _
+  have hMba : b - a ≤ M := le_max_left _ _
+  have hkey : (∫ t in (-M)..M, ψ t) ≤ 2 * s ^ (1 - γ) / (1 - γ) := by
+    have h1 : ∫ t in (-M)..(-s), ψ t = 0 := by
+      have heq : Set.EqOn ψ (fun _ => (0 : ℝ)) (uIcc (-M) (-s)) := by
+        intro t ht
+        rw [uIcc_of_le (by linarith)] at ht
+        exact hψ0 t (by rw [abs_of_nonpos (by linarith [ht.2, hspos] : t ≤ 0)]; linarith [ht.2])
+      rw [intervalIntegral.integral_congr heq]
+      simp
+    have h2 : ∫ t in s..M, ψ t = 0 := by
+      have heq : Set.EqOn ψ (fun _ => (0 : ℝ)) (uIcc s M) := by
+        intro t ht
+        rw [uIcc_of_le hMs] at ht
+        exact hψ0 t (by rw [abs_of_nonneg (by linarith [ht.1, hspos] : (0 : ℝ) ≤ t)]; exact ht.1)
+      rw [intervalIntegral.integral_congr heq]
+      simp
+    have hsplit : ∫ t in (-M)..M, ψ t = ∫ t in (-s)..s, ψ t := by
+      rw [← intervalIntegral.integral_add_adjacent_intervals (a := -M) (b := -s) (c := M)
+          (hψii _ _) (hψii _ _), h1, zero_add,
+        ← intervalIntegral.integral_add_adjacent_intervals (a := -s) (b := s) (c := M)
+          (hψii _ _) (hψii _ _), h2, add_zero]
+    rw [hsplit]
+    calc ∫ t in (-s)..s, ψ t ≤ ∫ t in (-s)..s, |t| ^ (-γ) :=
+          intervalIntegral.integral_mono_on (by linarith) (hψii _ _)
+            (intervalIntegrable_abs_rpow hexp _ _) fun t _ => hψle t
+      _ = 2 * s ^ (-γ + 1) / (-γ + 1) := integral_abs_rpow_neg_self hexp hspos.le
+      _ = 2 * s ^ (1 - γ) / (1 - γ) := by rw [show -γ + 1 = 1 - γ by ring]
+  refine ⟨⟨fun p => k p * χ |(p.1 : ℝ) - (p.2 : ℝ)|, ?_⟩, ?_⟩
+  · rw [continuous_iff_continuousAt]
+    intro p
+    by_cases hp : (p.1 : ℝ) = (p.2 : ℝ)
+    · have hU : {q : Icc a b × Icc a b | |(q.1 : ℝ) - (q.2 : ℝ)| < r} ∈ 𝓝 p :=
+        (isOpen_lt (by fun_prop) continuous_const).mem_nhds (by simp [hp, hrpos])
+      refine ContinuousAt.congr (f := fun _ : Icc a b × Icc a b => (0 : ℝ)) continuousAt_const ?_
+      filter_upwards [hU] with q hq
+      rw [hχ0 _ hq.le, mul_zero]
+    · have hS : {q : Icc a b × Icc a b | (q.1 : ℝ) ≠ (q.2 : ℝ)} ∈ 𝓝 p :=
+        (isOpen_ne_fun (by fun_prop) (by fun_prop)).mem_nhds hp
+      have hc2 : Continuous fun q : Icc a b × Icc a b => χ |(q.1 : ℝ) - (q.2 : ℝ)| :=
+        (hχcont.comp continuous_abs).comp (by fun_prop)
+      exact (hcont.continuousAt hS).mul hc2.continuousAt
+  · intro x
+    simp only [ContinuousMap.coe_mk]
+    have hbdd : ∀ y : Icc a b,
+        |k (x, y) - k (x, y) * χ (abs ((x : ℝ) - (y : ℝ)))| ≤ C * ψ ((x : ℝ) - (y : ℝ)) := by
+      intro y
+      set w : ℝ := abs ((x : ℝ) - (y : ℝ)) with hwdef
+      have h3 : (0 : ℝ) ≤ 1 - χ w := by linarith [hχle w]
+      have h1 : k (x, y) - k (x, y) * χ w = k (x, y) * (1 - χ w) := by ring
+      rw [h1, abs_mul, abs_of_nonneg h3]
+      calc |k (x, y)| * (1 - χ w) ≤ C * w ^ (-γ) * (1 - χ w) :=
+            mul_le_mul_of_nonneg_right (hle (x, y)) h3
+        _ = C * ψ ((x : ℝ) - (y : ℝ)) := by simp only [hψdef, ← hwdef]; ring
+    have hψint : Integrable (fun y : Icc a b => C * ψ ((x : ℝ) - (y : ℝ))) (iccMeasure a b) := by
+      refine integrable_iccMeasure (f := fun t => C * ψ ((x : ℝ) - t)) hab ?_
+      have h := (hψii ((x : ℝ) - a) ((x : ℝ) - b)).comp_sub_left (x : ℝ)
+      simp only [sub_sub_cancel] at h
+      exact h.const_mul C
+    have hgint : Integrable (fun y : Icc a b => k (x, y) * χ (abs ((x : ℝ) - (y : ℝ))))
+        (iccMeasure a b) :=
+      (hrow x).mul_bdd ((hχcont.comp (by fun_prop)).aestronglyMeasurable)
+        (Eventually.of_forall fun y => by
+          rw [Real.norm_eq_abs, abs_of_nonneg (hχnn _)]; exact hχle _)
+    calc ∫ y : Icc a b, |k (x, y) - k (x, y) * χ (abs ((x : ℝ) - (y : ℝ)))| ∂iccMeasure a b
+        ≤ ∫ y : Icc a b, C * ψ ((x : ℝ) - (y : ℝ)) ∂iccMeasure a b :=
+          integral_mono ((hrow x).sub hgint).abs hψint hbdd
+      _ = ∫ y in a..b, C * ψ ((x : ℝ) - y) :=
+          integral_iccMeasure hab fun t => C * ψ ((x : ℝ) - t)
+      _ = C * ∫ y in a..b, ψ ((x : ℝ) - y) := intervalIntegral.integral_const_mul _ _
+      _ ≤ C * ∫ t in (-M)..M, ψ t :=
+          mul_le_mul_of_nonneg_left (integral_comp_sub_le hab x.2 hMba hψnn (hψii _ _)) hC
+      _ ≤ C * (2 * s ^ (1 - γ) / (1 - γ)) := mul_le_mul_of_nonneg_left hkey hC
+      _ ≤ ε := by
+          rw [hspow]
+          have h : C * (2 * (ε * (1 - γ) / (2 * C + 1)) / (1 - γ)) = 2 * C * ε / (2 * C + 1) := by
+            field_simp
+          rw [h, div_le_iff₀ (by positivity)]
+          nlinarith [hε.le, hC]
+
+/-- **The kernel `|x − y| ^ (-γ)` with `0 < γ < 1` is admissible on `C[a, b]`**, which is the
+kernel (2.8.14) of [han2009theoretical], Example 2.8.9. The book obtains the compactness of its
+operator from the truncations (2.8.15) and Proposition 2.8.7; the route here is the same
+truncation, taken inside the (A₁)–(A₂) framework so that the operator itself is the one of
+§2.8.1. -/
+theorem isAdmissibleKernel_abs_sub_rpow (hab : a ≤ b) {γ : ℝ} (hγ0 : 0 < γ) (hγ1 : γ < 1) :
+    IsAdmissibleKernel (iccMeasure a b)
+      (fun p : Icc a b × Icc a b => |(p.1 : ℝ) - (p.2 : ℝ)| ^ (-γ)) := by
+  refine isAdmissibleKernel_of_abs_le_rpow hab hγ0 hγ1 zero_le_one ?_ fun p => ?_
+  · refine ContinuousOn.rpow_const (by fun_prop) fun p hp => Or.inl ?_
+    simpa [sub_eq_zero] using hp
+  · rw [one_mul, abs_of_nonneg (Real.rpow_nonneg (abs_nonneg _) _)]
+
+/-- **The logarithmic kernel `log |cos x − cos y|` is admissible on `C[0, π]`**, which is
+[han2009theoretical], Example 2.8.2. The book factors it as `|x − y| ^ (-1/2)` times a continuous
+function and appeals to the splitting rule (2.8.9); the route here reads the same factorisation as
+the bound `|log |cos x − cos y|| ≤ C |x − y| ^ (-1/2)`, which
+`two_mul_sq_div_pi_sq_le_abs_cos_sub_cos` and `abs_log_le_two_mul_rpow` supply, and which needs no
+separate continuity argument at the two ends of the diagonal.
+
+Off the diagonal the kernel is continuous because `Real.injOn_cos` keeps `cos x − cos y` away from
+`0`; on the diagonal both sides of the bound are `0`, since `Real.log 0 = 0`. -/
+theorem isAdmissibleKernel_log_cos_sub_cos :
+    IsAdmissibleKernel (iccMeasure 0 π)
+      (fun p : Icc (0 : ℝ) π × Icc (0 : ℝ) π =>
+        Real.log |Real.cos (p.1 : ℝ) - Real.cos (p.2 : ℝ)|) := by
+  have hpi : (0 : ℝ) < π := Real.pi_pos
+  have hpi1 : (1 : ℝ) ≤ π := by linarith [Real.two_le_pi]
+  set C : ℝ := (|Real.log 2| + 2 * |Real.log π|) * π + 4 * π + 4 with hCdef
+  have hCnn : (0 : ℝ) ≤ C := by rw [hCdef]; positivity
+  refine isAdmissibleKernel_of_abs_le_rpow (γ := (1 : ℝ) / 2) hpi.le (by norm_num) (by norm_num)
+    hCnn ?_ ?_
+  · intro p hp
+    have hne : Real.cos (p.1 : ℝ) - Real.cos (p.2 : ℝ) ≠ 0 := by
+      rw [sub_ne_zero]
+      exact fun hc => hp (Real.injOn_cos p.1.2 p.2.2 hc)
+    have hf : ContinuousAt (fun q : Icc (0 : ℝ) π × Icc (0 : ℝ) π =>
+        |Real.cos (q.1 : ℝ) - Real.cos (q.2 : ℝ)|) p := (by fun_prop : Continuous _).continuousAt
+    exact (hf.log (abs_ne_zero.2 hne)).continuousWithinAt
+  · rintro ⟨⟨x, hx⟩, ⟨y, hy⟩⟩
+    change abs (Real.log |Real.cos x - Real.cos y|) ≤ C * |x - y| ^ (-((1 : ℝ) / 2))
+    rcases eq_or_lt_of_le (abs_nonneg (x - y)) with hu0 | hu0
+    · have hxy : x = y := sub_eq_zero.mp (abs_eq_zero.mp hu0.symm)
+      subst hxy
+      simp [Real.zero_rpow]
+    · set u : ℝ := |x - y| with hudef
+      have hupi : u ≤ π := abs_le.2 ⟨by linarith [hx.1, hy.2], by linarith [hy.1, hx.2]⟩
+      have hlow : 2 * u ^ 2 / π ^ 2 ≤ |Real.cos x - Real.cos y| :=
+        two_mul_sq_div_pi_sq_le_abs_cos_sub_cos hx hy
+      have hhigh : |Real.cos x - Real.cos y| ≤ 2 := by
+        rw [abs_le]
+        constructor <;>
+          linarith [Real.neg_one_le_cos x, Real.cos_le_one x, Real.neg_one_le_cos y,
+            Real.cos_le_one y]
+      have hlowpos : (0 : ℝ) < 2 * u ^ 2 / π ^ 2 := by positivity
+      have hcpos : (0 : ℝ) < |Real.cos x - Real.cos y| := lt_of_lt_of_le hlowpos hlow
+      have hexpand : Real.log (2 * u ^ 2 / π ^ 2)
+          = Real.log 2 + 2 * Real.log u - 2 * Real.log π := by
+        rw [Real.log_div (by positivity) (by positivity),
+          Real.log_mul (by norm_num) (by positivity), Real.log_pow, Real.log_pow]
+        push_cast
+        ring
+      have hlog1 : Real.log |Real.cos x - Real.cos y| ≤ Real.log 2 := Real.log_le_log hcpos hhigh
+      have hlog2 : Real.log 2 + 2 * Real.log u - 2 * Real.log π
+          ≤ Real.log |Real.cos x - Real.cos y| := by
+        rw [← hexpand]
+        exact Real.log_le_log hlowpos hlow
+      have hAbs : abs (Real.log |Real.cos x - Real.cos y|)
+          ≤ |Real.log 2| + 2 * |Real.log u| + 2 * |Real.log π| := by
+        rw [abs_le]
+        constructor <;>
+          linarith [le_abs_self (Real.log 2), neg_abs_le (Real.log 2), le_abs_self (Real.log u),
+            neg_abs_le (Real.log u), le_abs_self (Real.log π), neg_abs_le (Real.log π)]
+      have hnegpos : (0 : ℝ) < u ^ (-((1 : ℝ) / 2)) := Real.rpow_pos_of_pos hu0 _
+      have hprod : u * u ^ (-((1 : ℝ) / 2)) = u ^ ((1 : ℝ) / 2) := by
+        nth_rewrite 1 [← Real.rpow_one u]
+        rw [← Real.rpow_add hu0]
+        norm_num
+      have h1le : u ^ ((1 : ℝ) / 2) ≤ π * u ^ (-((1 : ℝ) / 2)) := by
+        rw [← hprod]
+        exact mul_le_mul_of_nonneg_right hupi hnegpos.le
+      have hone_le : (1 : ℝ) ≤ π * u ^ (-((1 : ℝ) / 2)) := by
+        have hhalf : u ^ ((1 : ℝ) / 2) * u ^ (-((1 : ℝ) / 2)) = 1 := by
+          rw [← Real.rpow_add hu0]; norm_num
+        have hspi : u ^ ((1 : ℝ) / 2) ≤ π :=
+          calc u ^ ((1 : ℝ) / 2) ≤ π ^ ((1 : ℝ) / 2) :=
+                Real.rpow_le_rpow hu0.le hupi (by norm_num)
+            _ ≤ π ^ (1 : ℝ) := Real.rpow_le_rpow_of_exponent_le hpi1 (by norm_num)
+            _ = π := Real.rpow_one π
+        calc (1 : ℝ) = u ^ ((1 : ℝ) / 2) * u ^ (-((1 : ℝ) / 2)) := hhalf.symm
+          _ ≤ π * u ^ (-((1 : ℝ) / 2)) := mul_le_mul_of_nonneg_right hspi hnegpos.le
+      have hE : (0 : ℝ) ≤ |Real.log 2| + 2 * |Real.log π| := by positivity
+      have hE1 : |Real.log 2| + 2 * |Real.log π|
+          ≤ (|Real.log 2| + 2 * |Real.log π|) * π * u ^ (-((1 : ℝ) / 2)) := by
+        nlinarith [hE, hone_le, hnegpos]
+      have hlu2 : |Real.log u|
+          ≤ 2 * (π * u ^ (-((1 : ℝ) / 2)) + u ^ (-((1 : ℝ) / 2))) := by
+        linarith [abs_log_le_two_mul_rpow hu0, h1le]
+      rw [hCdef]
+      nlinarith [hAbs, hE1, hlu2, hnegpos]
+
+end AlgebraicSingularity
 
 end IntegralOperator

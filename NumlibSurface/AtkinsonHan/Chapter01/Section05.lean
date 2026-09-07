@@ -3,6 +3,7 @@ import Mathlib.Analysis.Normed.Lp.SmoothApprox
 import Mathlib.MeasureTheory.Function.LpSeminorm.CompareExp
 import Mathlib.MeasureTheory.Function.LpSpace.Complete
 import Mathlib.MeasureTheory.Measure.Lebesgue.EqHaar
+import Numlib.Analysis.Normed.Lp.SmoothApprox
 
 /-!
 # Atkinson–Han §1.5: the `Lᵖ` spaces
@@ -23,7 +24,8 @@ obviously the book's.
 * `lemma_1_5_3` — Hölder's inequality.
 * `lemma_1_5_4` — Minkowski's inequality.
 * `theorem_1_5_5_a`, `theorem_1_5_5_b`, `theorem_1_5_5_c` — the three clauses of Theorem 1.5.5.
-* `theorem_1_5_6` — smooth compactly supported functions are dense in `Lᵖ`.
+* `theorem_1_5_6`, `theorem_1_5_6_open` — smooth compactly supported functions are dense in `Lᵖ`,
+  and, for an open `Ω ⊆ ℝ^d`, those supported inside `Ω` are dense in `Lᵖ(Ω)`.
 
 ## Conventions
 
@@ -36,9 +38,6 @@ exponent `p ∈ [1, ∞]` is Mathlib's `p : ℝ≥0∞` with `Fact (1 ≤ p)`, a
 
 * The Clarkson inequalities (1.5.5)–(1.5.6). The book states them without proof for Exercise
   2.7.4 (b), that `Lᵖ` is uniformly convex; they are not in Mathlib and nothing else uses them.
-* Theorem 1.5.6 for a *proper* open `Ω ⊆ ℝ^d`, with the approximants supported inside `Ω`. What is
-  proved below is the statement for `Ω = ℝ^d`, which is Mathlib's; the version for a proper open
-  set needs a compact exhaustion of `Ω` before the mollification, which Mathlib does not have.
 -/
 
 open Filter MeasureTheory Topology
@@ -135,12 +134,27 @@ end Lp
 
 /-! ### Theorem 1.5.6 -/
 
-/-- **Theorem 1.5.6.** `C₀^∞(ℝ^d)` is dense in `Lᵖ(ℝ^d)` for `1 ≤ p < ∞`: every `Lᵖ` class has a
-smooth compactly supported function arbitrarily close to it. -/
+/-- **Theorem 1.5.6** for `Ω = ℝ^d`. `C₀^∞(ℝ^d)` is dense in `Lᵖ(ℝ^d)` for `1 ≤ p < ∞`: every `Lᵖ`
+class has a smooth compactly supported function arbitrarily close to it. -/
 theorem theorem_1_5_6 {d : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤) :
     Dense {f : Lp ℝ p (volume : Measure (EuclideanSpace ℝ (Fin d))) |
       ∃ g : EuclideanSpace ℝ (Fin d) → ℝ,
         f =ᵐ[volume] g ∧ HasCompactSupport g ∧ ContDiff ℝ ∞ g} :=
   MeasureTheory.Lp.dense_hasCompactSupport_contDiff hp
+
+/-- **Theorem 1.5.6.** For an open `Ω ⊆ ℝ^d` and `1 ≤ p < ∞`, `C₀^∞(Ω)` is dense in `Lᵖ(Ω)`: every
+`Lᵖ(Ω)` class has, arbitrarily close to it, a smooth function whose support is a compact subset of
+`Ω`. `theorem_1_5_6` is the case `Ω = ℝ^d`, where the support condition is vacuous.
+
+The book's "there exists a sequence `{vₙ} ⊆ C₀^∞(Ω)` with `‖v − vₙ‖_{Lᵖ(Ω)} → 0`" is the sequential
+reading of `Dense`. `Numlib.Analysis.Normed.Lp.SmoothApprox` carries the proof: the function is
+first localized to a compact subset of `Ω`, and a smooth approximant of the localization is then
+multiplied by a smooth cut-off supported in `Ω`. -/
+theorem theorem_1_5_6_open {d : ℕ} {Ω : Set (EuclideanSpace ℝ (Fin d))} (hΩ : IsOpen Ω)
+    {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤) :
+    Dense {f : Lp ℝ p ((volume : Measure (EuclideanSpace ℝ (Fin d))).restrict Ω) |
+      ∃ g : EuclideanSpace ℝ (Fin d) → ℝ, f =ᵐ[volume.restrict Ω] g ∧
+        HasCompactSupport g ∧ ContDiff ℝ ∞ g ∧ tsupport g ⊆ Ω} :=
+  MeasureTheory.Lp.dense_contDiff_tsupport_subset hΩ hp
 
 end AtkinsonHan.Chapter01

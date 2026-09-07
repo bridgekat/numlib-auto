@@ -38,4 +38,3 @@ id = "IsAdmissibleKernel.mul_continuousMap"
 
 [[node]]
 id = "norm_admissibleKernelCLM"
-

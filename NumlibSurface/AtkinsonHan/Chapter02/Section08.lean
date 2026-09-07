@@ -33,10 +33,12 @@ range are `Numlib/Analysis/Normed/Operator/Compact`.
   gives a finite-rank operator, its range in the span of the `β i`, with `‖K‖ ≤ ∑ ‖β i‖ ∫ |γ i|`.
 * `example_2_8_8`, `example_2_8_8_interval` — an integral operator with a continuous kernel is
   compact on `C(D)` for a compact region `D ⊆ ℝ^d`, and on `C[a, b]`.
-* `equation_2_8_2`, `equation_2_8_5`, `equation_2_8_6_le`,
+* `equation_2_8_2`, `equation_2_8_5`, `equation_2_8_6_le`, `equation_2_8_6`,
   `isCompactOperator_of_isAdmissibleKernel` — §2.8.1: a kernel integrable in `y` and satisfying
   (A₁)–(A₂) gives a bounded, compact operator on `C(D)`, with the oscillation estimate (2.8.5) in
-  terms of the modulus of continuity in the mean (2.8.3).
+  terms of the modulus of continuity in the mean (2.8.3) and the norm (2.8.6).
+* `example_2_8_9`, `example_2_8_2` — the two weakly singular kernels of an interval,
+  `|x − y| ^ (-γ)` with `0 < γ < 1` and `log |cos x − cos y|` on `[0, π]`, give compact operators.
 * `theorem_2_8_10` — the Fredholm alternative, with `theorem_2_8_10_inverse` for the bounded
   inverse the book gets from its own Theorem 2.4.3.
 * `theorem_2_8_12_1`, `theorem_2_8_12_2`, `theorem_2_8_12_4` — the eigenvalues accumulate only at
@@ -61,12 +63,7 @@ The book writes `λ` for the scalar of the second-kind equation; `λ` is a keywo
 written `l` below. The book states §2.8 over a general scalar field and specializes to real or
 complex scalars; the statements here are over `RCLike 𝕜`, as elsewhere in this surface.
 
-Not stated here: the two Examples that instantiate §2.8.1's conditions, 2.8.2
-(`log |cos x − cos y|`) and 2.8.9 (`|x − y|^{-γ}`). The framework they need is now
-`Numlib/IntegralEquations/WeaklySingular` and appears below; what is missing is the verification of
-(A₁) for those two kernels, which is a genuine integral estimate. Nor is the *equality* in (2.8.6)
-stated, only `equation_2_8_6_le`. The continuous-kernel case, which is what Chapters 12 and 13 use,
-is `example_2_8_8`.
+The continuous-kernel case, which is what Chapters 12 and 13 use, is `example_2_8_8`.
 -/
 
 open Filter Topology Metric Module.End
@@ -227,24 +224,63 @@ theorem equation_2_8_5 (u : C(D, ℝ)) (x z : D) :
       ≤ kernelModulus (regionMeasure D) k (dist x z) * ‖u‖ :=
   hk.abs_admissibleKernelCLM_sub_le u x z
 
-/-- **(2.8.6)**, the inequality the book's equality contains: `‖K‖ ≤ sup_x ∫_D |k (x, y)| dy`. The
-reverse inequality needs a continuous `v` of norm one that nearly realises the sign of a row of the
-kernel; for a merely integrable row that is the density of `C(D)` in `L¹(D)`, which the backbone
-does not have. For a continuous kernel the equality is `IntegralOperator.norm_kernelCLM`. -/
+/-- **(2.8.6)**, the inequality half: `‖K‖ ≤ sup_x ∫_D |k (x, y)| dy`. `equation_2_8_6` is the
+equality the book states. -/
 theorem equation_2_8_6_le :
     ‖admissibleKernelCLM hk‖ ≤ ⨆ x, ∫ y, |k (x, y)| ∂(regionMeasure D) :=
   norm_admissibleKernelCLM_le hk
 
+/-- **(2.8.6)**: `‖K‖ = sup_x ∫_D |k (x, y)| dy`. The reverse inequality tests `K` against a
+continuous approximation to the sign of one row of the kernel, which exists because `C(D)` is dense
+in `L¹(D)`. The book writes a maximum; for a merely integrable kernel there is no reason for the
+supremum to be attained, so it is a `⨆`. -/
+theorem equation_2_8_6 :
+    ‖admissibleKernelCLM hk‖ = ⨆ x, ∫ y, |k (x, y)| ∂(regionMeasure D) :=
+  norm_admissibleKernelCLM hk
+
 /-- The conclusion of §2.8.1: **an integral operator whose kernel satisfies (A₁)–(A₂) is compact
 on `C(D)`**, by Arzelà–Ascoli (Theorem 1.6.3) applied to the image of the unit ball, which is
-uniformly bounded by (2.8.6) and equicontinuous by (2.8.5). Examples 2.8.2 and 2.8.9 are the two
-instances the book gives; neither is stated here, because neither kernel has been shown to satisfy
-(A₁). -/
+uniformly bounded by (2.8.6) and equicontinuous by (2.8.5). `example_2_8_2` and `example_2_8_9`
+below are the two instances the book gives. -/
 theorem isCompactOperator_of_isAdmissibleKernel :
     IsCompactOperator (admissibleKernelCLM hk) :=
   isCompactOperator_admissibleKernelCLM hk
 
 end WeaklySingular
+
+/-! ### Examples 2.8.2 and 2.8.9: the two weakly singular kernels of an interval -/
+
+section SingularExamples
+
+open MeasureTheory IntegralOperator
+
+open scoped Real
+
+/-- **Example 2.8.9.** The kernel `k (x, y) = |x − y| ^ (-γ)` of (2.8.14), with `0 < γ < 1`, gives a
+compact integral operator on `C[a, b]`.
+
+The book truncates `k` at height `n ^ γ` as in (2.8.15), computes
+`‖K − Kₙ‖ = 2γ / ((1 − γ) n^{1-γ})`
+and appeals to Proposition 2.8.7. The backbone runs the same truncation inside the (A₁)–(A₂)
+framework of §2.8.1, so that the operator produced is the one of (2.8.2); the exact value of
+`‖K − Kₙ‖` is not needed, only that it tends to `0`. -/
+theorem example_2_8_9 {a b γ : ℝ} (hab : a ≤ b) (hγ0 : 0 < γ) (hγ1 : γ < 1) :
+    IsCompactOperator
+      (admissibleKernelCLM (isAdmissibleKernel_abs_sub_rpow hab hγ0 hγ1)) :=
+  isCompactOperator_admissibleKernelCLM _
+
+/-- **Example 2.8.2.** The kernel `k (x, y) = log |cos x − cos y|` gives a compact integral operator
+on `C[0, π]`.
+
+The book writes `k = |x − y| ^ (-1/2) · (|x − y| ^ (1/2) log |cos x − cos y|)` as in (2.8.10), the
+second factor being continuous, and appeals to the splitting rule (2.8.9); the backbone reads that
+factorisation as the bound `|log |cos x − cos y|| ≤ C |x − y| ^ (-1/2)` instead, which is what
+`IntegralOperator.isAdmissibleKernel_log_cos_sub_cos` proves. -/
+theorem example_2_8_2 :
+    IsCompactOperator (admissibleKernelCLM isAdmissibleKernel_log_cos_sub_cos) :=
+  isCompactOperator_admissibleKernelCLM _
+
+end SingularExamples
 
 section Banach
 

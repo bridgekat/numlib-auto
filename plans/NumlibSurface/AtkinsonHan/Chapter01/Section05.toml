@@ -26,14 +26,3 @@ id = "theorem_1_5_6"
 
 [[node]]
 id = "theorem_1_5_6_open"
-kind = "theorem"
-desc = '''
-Theorem 1.5.6 for a *proper* open `Ω ⊆ ℝ^d`: `C₀^∞(Ω)` is dense in `Lᵖ(Ω)` for `1 ≤ p < ∞`, with
-the approximants supported inside `Ω`. `theorem_1_5_6` beside it is the case `Ω = ℝ^d`, which is
-Mathlib's `MeasureTheory.Lp.dense_hasCompactSupport_contDiff`; that file has no `Ω`-restricted
-version. Open: the general case needs a compact exhaustion `Kₙ ↗ Ω` before the mollification, so
-that the mollified approximant keeps its support inside `Ω`. The exhaustion lemmas and
-`ContDiffBump` are in Mathlib; the assembly is not. Example 1.2.19 states the same fact for bounded
-`Ω` and needs nothing further once this is proved.
-'''
-deps = ["theorem_1_5_6"]

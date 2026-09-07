@@ -1,6 +1,7 @@
 import Mathlib.Analysis.InnerProductSpace.GramSchmidtOrtho
 import Mathlib.Analysis.InnerProductSpace.OfNorm
 import Mathlib.Analysis.InnerProductSpace.l2Space
+import Numlib.Analysis.Fourier.CosineBasis
 import Numlib.Analysis.Fourier.TrigonometricBasis
 
 /-!
@@ -27,6 +28,7 @@ and are not restated.
 * `theorem_1_3_12` — orthonormal basis, the generalized Parseval identity, and Parseval's
   equality are equivalent.
 * `theorem_1_3_13` — the real trigonometric system is an orthonormal basis of `L²(-π, π)`.
+* `example_1_3_14` — the half-range cosine system is an orthonormal basis of `L²(0, π)`.
 * `theorem_1_3_16` — the Gram–Schmidt process, with the equality of initial spans (1.3.11).
 
 ## Conventions
@@ -39,12 +41,7 @@ renormalises a function of unit `L²(-π, π)` norm to unit norm for the probabi
 
 ## Not formalized here
 
-Example 1.3.14, the half-range cosine system `e₀ = 1/√π`, `eₖ = √(2/π) cos (k x)` as an orthonormal
-basis of `L²(0, π)`. It is a real theorem of the chapter and nothing in the corpus uses it. The
-route is the even extension `L²(0, π) → L²(-π, π)`, `v ↦ v(|x|)`, a linear isometry onto the even
-subspace carrying the cosine system to the even half of `trigBasis (2π)`; neither Mathlib nor the
-backbone has that isometry. Example 1.3.7 and Example 1.2.28 (b) need Sobolev spaces and are out of
-scope for the project.
+Example 1.3.7 and Example 1.2.28 (b) need Sobolev spaces and are out of scope for the project.
 -/
 
 open Filter InnerProductSpace MeasureTheory Submodule Topology
@@ -209,6 +206,24 @@ theorem theorem_1_3_13 :
     congr 2
     push_cast
     field_simp
+
+/-- **Example 1.3.14.** The half-range cosine system `e₀ = 1/√π`, `eₖ = √(2/π) cos (k x)` for
+`k ≥ 1` is an orthonormal basis of `L²(0, π)`: it is orthonormal, its span is dense, and its
+members are the stated functions.
+
+`L²(0, π)` is `Lp ℝ 2 halfRangeMeasure`, with `halfRangeMeasure` Lebesgue measure on `[0, π]` read
+on the subtype. The proof in `Numlib.Analysis.Fourier.CosineBasis` is Stone–Weierstrass rather than
+the even extension the book suggests: the span of the `cos (k x)` is a subalgebra of `C([0, π], ℝ)`
+by the product-to-sum formula, and it separates points because `cos` is injective on `[0, π]`. -/
+theorem example_1_3_14 :
+    Orthonormal ℝ cosLp ∧
+      (span ℝ (Set.range cosLp)).topologicalClosure = ⊤ ∧
+      (∀ k : ℕ, cosLp k = ContinuousMap.toLp 2 halfRangeMeasure ℝ (cosFun k)) ∧
+      (∀ x : Set.Icc (0 : ℝ) π, cosFun 0 x = 1 / √π) ∧
+      (∀ k : ℕ, k ≠ 0 → ∀ x : Set.Icc (0 : ℝ) π,
+        cosFun k x = √(2 / π) * Real.cos (k * (x : ℝ))) :=
+  ⟨orthonormal_cosLp, dense_span_cosLp, fun _ => rfl, cosFun_zero_apply,
+    fun _ hk => cosFun_apply_of_ne_zero hk⟩
 
 end Trigonometric
 
