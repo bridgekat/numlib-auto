@@ -23,7 +23,7 @@ Examples that may go into the backbone:
 
 ## The surface
 
-The surface is one Lake library, `NumlibSurface`, with one directory per textbook, and it should contain theorem statements faithful to the book: we seek similar structures and organizations as the books (with chapter-to-chapter correspondence), with accurate semantic alignment for each theorem statement. A book's directory is `NumlibSurface/<Book>/`, with one module per section of it: `NumlibSurface/SaadSparse/Chapter06/Section05.lean` is Saad §6.5, and its declarations are in the namespace `SaadSparse.Chapter06`. Chapters and sections are numbered with two digits and spelled in full, in the module path and in the namespace alike, so the two always read the same.
+One surface library is produced for each textbook, which should contain theorem statements faithful to the book: we seek similar structures and organizations as the books (with chapter-to-chapter correspondence), with accurate semantic alignment for each theorem statement.
 
 The proofs here should mostly be *direct uses and specializations* of results in the backbone. Definitions may be created here for semantic alignment, but it is desirable to accompany those with equivalence proofs to the backbone versions, so that results can derive from the equivalence. If the book is already written with generality in mind, the surface layer is expected to be thin.
 
@@ -40,15 +40,13 @@ The evolution of the backbone is driven by demands from the surface (the textboo
 
 ### Writing a plan
 
-To start a formalization project, write a plan specifying the overall shape of the backbone part.
+To start a formalization project, write a plan specifying its overall shape.
 
-Plans are structured TOML files in the `plans/` directory, with format specified by the [tracker tool](tools/tracker/README.md). They should contain:
+Plans are structured TOML files in the `plans/` directory, with format specified by the [tracker tool](tools/tracker/README.md). Each TOML file corresponds to one Lean module. They should contain:
 
-- Overall design notes. If too long, the reasoning can be placed in a separate Markdown file in prose.
-- A list of key items (Lean definitions and theorem statements) in logical progression order. Each item should be placed carefully within the module and namespace hierarchies.
-- Brief descriptions of difficult proofs, optionally with references to relevant literature.
-
-Each TOML file is a [group](tools/tracker/README.md#groups), corresponding exactly to one Lean module, and a group splits into sub-groups exactly as a module splits into sub-modules. A group's design notes are its `desc` until the corresponding module is written; from then on the module's own doc comment is the description, and the group's copy should be deleted.
+- Overall design notes, in module `desc` fields.
+- A list of key nodes (Lean definitions and theorem statements) in logical progression order. Each backbone node should be placed carefully within the module and namespace hierarchies. Each surface node should be placed in the module `NumlibSurface/<source>/[Chapter<number>]/[Section<number>]`.
+- Brief descriptions of difficult proofs, in node `desc` fields.
 
 Plans may be automatically extracted from textbooks. In such cases, the agent should:
 
@@ -78,14 +76,11 @@ Treat the review process as a search for better (structures of) proofs. Think ha
 The user can prompt an agent to formalize a plan. In such cases, the agent should:
 
 - Estimate the amount of work, focus on one part of the plan at a time. `lake exe tracker ready` lists the groups whose dependencies are all proved, which are the best next steps of formalization.
-- Write a Lean skeleton of definitions and theorem statements, with `sorry` placeholders. The skeleton can be split into modular files, and make use of notations and namespaces to organize the structure.
-- Run `lake exe tracker lint` and remove superseded entries in the plan: the Lean files now become the source of truth.
-- Proceed to fill in the proofs, optionally by spawning parallel sub-agents to work on different files in the skeleton. Start each with the output of `tracker show <group>`, tell them to mark `wrong` on problematic plan items and allow them to write their own items. If any of them proves difficult to complete, identify the cause, report back and stop for a restructure of the plan if necessary.
+- Write the actual Lean proofs according to the corresponding TOML plans, optionally by spawning parallel sub-agents to work on different files. Start each with the output of `tracker show <group>`, tell them to mark `wrong` on problematic plan items and allow them to write their own items. If any of them proves difficult to complete, identify the cause, report back and stop for a restructure of the plan if necessary.
+- Run `lake exe tracker lint` and remove superseded fields in the plan: the Lean files now become the source of truth.
 - Verify the formalization by compiling the Lean files and running `lake exe tracker check`.
 
 Keep in mind the backbone-surface split. Everything in the backbone (including doc comments) should be self-contained; to reference material from the books, cite the source explicitly instead of writing a mere number like "Theorem 3.7". Mere numbers may be used in surface only.
-
-Citations follow Mathlib: the bibliography is `docs/references.bib`, and a doc comment links to an entry by `[bibkey]`, which doc-gen renders as a short label such as `[Saa03]`. Write the key alone, never `[Author, *Title*][bibkey]` and never an author name beside it: the rendered label already names the author, and a surname does not identify a work — the bibliography holds two Saad books and two Kress books. Add the entry to `docs/references.bib` before citing it, using only alphanumerics, `-`, `_` and `:` in the key — doc-gen fails silently on anything else. An entry an agent wrote or edited must carry a `# GENERATED` comment above it, so that a human can check it. A `## References` section is for saying which parts of a source a module draws on — which chapter, which numbered results — with the sources linked; it is not for reprinting a citation the bibliography already holds.
 
 ### Reviewing a formalization
 
@@ -106,7 +101,7 @@ Finally, check for semantic alignment:
 
 ### General instructions for agents
 
-- Always run `lake build` before `lake exe tracker check`: the tracker reads the compiled `.olean` files, so an unbuilt change is invisible to it.
+- Always run `lake build` before `lake exe tracker ...`: the tracker reads the compiled `.olean` files, so an unbuilt change is invisible to it.
 - If Lean LSP or LeanSearch are available via MCP, use them; otherwise, use CLI as a fallback. LeanSearch is accessible via `curl` at `https://leansearch.net/?q=` (followed by query), which provides semantic search across Mathlib that complements local `grep`-like pattern matching; use both to reduce the possibility of duplication.
 - For context-clearing operations (including launching sub-agents and context compaction), make sure to link to README.md in the new context, so that the new session or sub-agent reads this file as well.
 - If a single task is too large (e.g. analyzing a whole book), break it down into smaller, self-contained tasks and spawn sub-agents to work on them. Give clear instructions on the expected input and output formats to sub-agents, and designate a different working directory for each (so they do not interfere with each other).
