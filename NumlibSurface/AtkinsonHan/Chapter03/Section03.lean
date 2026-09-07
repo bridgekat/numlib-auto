@@ -28,7 +28,7 @@ sequential and topological lower semicontinuity.
 
 ## Book-specific definitions
 
-* `WeakSeqTendsto` — weak sequential convergence (Definition 3.3.3), only the sequential form and
+* `WeakSeqTendsto` — weak sequential convergence (Definition 2.7.1), only the sequential form and
   over any `RCLike 𝕜`; `tendsto_toWeakSpace_iff_weakSeqTendsto` identifies it with convergence in
   Mathlib's `WeakSpace` topology, and `weakSeqTendsto_iff_root` with the backbone's real-scalar
   `_root_.WeakSeqTendsto`, in which the direct method of `Numlib.Variational.WeakMinimization` is
@@ -118,7 +118,7 @@ section Defs
 
 variable (𝕜 : Type*) {V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
 
-/-- **Weak sequential convergence** `vₙ ⇀ u` (Definition 3.3.3): `ℓ(vₙ) → ℓ(u)` for every bounded
+/-- **Weak sequential convergence** `vₙ ⇀ u` (Definition 2.7.1): `ℓ(vₙ) → ℓ(u)` for every bounded
 linear functional `ℓ`. Only the sequential notion is defined, which is all §3.3 uses; Mathlib's
 `WeakSpace` carries the topological version. -/
 def WeakSeqTendsto (v : ℕ → V) (u : V) : Prop :=
