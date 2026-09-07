@@ -1,0 +1,73 @@
+namespace = "Affine.Simplex"
+
+[[node]]
+id = "inv_inradius_eq_sum_inv_height"
+
+[[node]]
+id = "inradius_le_height"
+
+[[node]]
+id = "le_card_mul_inradius"
+
+[[node]]
+id = "height_eq_dist_mul_sin_angle"
+
+[[node]]
+id = "triangleAngle"
+
+[[node]]
+id = "triangleAngle_nonneg"
+
+[[node]]
+id = "triangleAngle_le_pi"
+
+[[node]]
+id = "sin_triangleAngle_nonneg"
+
+[[node]]
+id = "sin_triangleAngle_le_one"
+
+[[node]]
+id = "sum_triangleAngle"
+
+[[node]]
+id = "finAdd_one_one"
+
+[[node]]
+id = "finAdd_one_two"
+
+[[node]]
+id = "finAdd_two_one"
+
+[[node]]
+id = "finAdd_two_two"
+
+[[node]]
+id = "height_eq_dist_mul_sin_triangleAngle_succ"
+
+[[node]]
+id = "height_eq_dist_mul_sin_triangleAngle_succ_succ"
+
+[[node]]
+id = "height_mul_sin_triangleAngle_comm"
+
+[[node]]
+id = "height_mul_sin_triangleAngle_eq"
+
+[[node]]
+id = "dist_le_diam"
+
+[[node]]
+id = "diam_pos"
+
+[[node]]
+id = "exists_dist_eq_diam"
+
+[[node]]
+id = "inradius_le_diam_mul_sin_triangleAngle"
+
+[[node]]
+id = "_root_.Real.le_sin_of_le_of_le_pi_sub"
+
+[[node]]
+id = "diam_mul_sin_sq_le"

@@ -1,3 +1,4 @@
+import Numlib.Analysis.Calculus.CurvilinearLaplacian
 import Numlib.Variational.AubinNitsche
 import NumlibSurface.AtkinsonHan.Chapter09.Section01
 
@@ -21,6 +22,8 @@ boundedness comes from the Lax–Milgram bound `norm_le_of_dualProblem` on the d
   what makes the supremum in (10.4.5) finite.
 * `theorem_10_4_3` — the Aubin–Nitsche lemma (10.4.5).
 * `corollary_10_4_4_abstract` — Corollary 10.4.4 with its regularity hypothesis made abstract.
+* `exercise_10_4_5_polar` and `exercise_10_4_5_spherical` — Exercise 10.4.5, the Laplacian in
+  polar coordinates on `ℝ²` and in spherical coordinates on `ℝ³`.
 
 ## Not formalized here
 
@@ -33,15 +36,14 @@ solutions on a monotone family of subspaces with dense union converge — is alr
 `H¹`.  The abstract half of Corollary 10.4.4, in which the approximation power of the dual
 solutions is a hypothesis rather than a consequence of regularity, is `corollary_10_4_4_abstract`.
 
-Exercise 10.4.5, the Laplacian in polar coordinates, is *not* a Sobolev statement — it is the chain
-rule on a `C²` function — and is planned but not written; the library has no Laplacian, and the
-exercise's only use in the book is the corner singularity of Exercise 10.4.6, which does need a
-Sobolev space.  Exercises 10.4.1–4.4 and 10.4.6 and Example 10.4.2 all name a domain.
+Exercises 10.4.1–4.4 and 10.4.6 and Example 10.4.2 all name a domain.
 
 The rest of the chapter is *not* out of scope, and the sections that hold it say what they hold:
 `Chapter10.Section01` (the §10.1 algebra), `Chapter10.Section02` (Lemma 10.2.2) and
 `Chapter10.Section03` (Theorem 10.3.1, Example 10.3.2, Definition 10.3.6).
 -/
+
+open scoped Laplacian
 
 namespace AtkinsonHan
 
@@ -159,6 +161,69 @@ theorem corollary_10_4_4_abstract (hM : a.IsBoundedWith M) (hδ : 0 ≤ δ) (ι 
     ‖ι (u - uh)‖ ≤ M * δ * ‖u - uh‖ :=
   norm_map_le_of_dual_approx (BilinForm.isBoundedWith_toCLM hM) hδ ι
     (fun _ hv => Chapter09.galerkin_orthogonality hM hu huh hv) hdual
+
+
+/-! ### Exercise 10.4.5: the Laplacian in polar and in spherical coordinates
+
+The exercise is the chain rule on a `C²` function, not a Sobolev statement.  The plane and
+three-space are `EuclideanSpace ℝ (Fin 2)` and `EuclideanSpace ℝ (Fin 3)`, and `Δ` is Mathlib's
+`InnerProductSpace.laplacian`; the identities themselves are
+`Curvilinear.laplacian_eq_polar` and `Curvilinear.laplacian_eq_spherical` of the backbone,
+specialized to the standard orthonormal basis.
+
+The book writes the two identities as identities of operators.  Here they are stated pointwise, at
+one point of the domain, with the coordinate derivatives written as derivatives of the composition
+of `f` with the coordinate curve through that point — which is what "`∂/∂r`" means. -/
+
+/-- The point of `ℝ²` with polar coordinates `(r, θ)`: `x₁ = r cos θ` and `x₂ = r sin θ`. -/
+noncomputable def polarPt (r θ : ℝ) : EuclideanSpace ℝ (Fin 2) :=
+  !₂[r * Real.cos θ, r * Real.sin θ]
+
+/-- The book's polar point is the backbone's `Curvilinear.polarPoint` in the standard frame. -/
+theorem polarPt_eq (r θ : ℝ) :
+    polarPt r θ = Curvilinear.polarPoint (EuclideanSpace.basisFun (Fin 2) ℝ) r θ := by
+  ext i
+  fin_cases i <;> simp [polarPt, Curvilinear.polarPoint, EuclideanSpace.basisFun_apply]
+
+/-- **Exercise 10.4.5** in `ℝ²`: in polar coordinates `x₁ = r cos θ`, `x₂ = r sin θ` the Laplacian
+takes the form
+
+  `Δ = ∂²/∂r² + r⁻¹ ∂/∂r + r⁻² ∂²/∂θ²`. -/
+theorem exercise_10_4_5_polar {f : EuclideanSpace ℝ (Fin 2) → ℝ} (hf : ContDiff ℝ 2 f)
+    {r : ℝ} (hr : r ≠ 0) (θ : ℝ) :
+    Δ f (polarPt r θ)
+      = deriv (deriv fun s : ℝ => f (polarPt s θ)) r
+        + r⁻¹ * deriv (fun s : ℝ => f (polarPt s θ)) r
+        + (r ^ 2)⁻¹ * deriv (deriv fun ψ : ℝ => f (polarPt r ψ)) θ := by
+  simp only [polarPt_eq]
+  simpa using Curvilinear.laplacian_eq_polar _ hf hr θ
+
+/-- The point of `ℝ³` with spherical coordinates `(r, θ, φ)`: `x₁ = r cos θ sin φ`,
+`x₂ = r sin θ sin φ` and `x₃ = r cos φ`. -/
+noncomputable def sphericalPt (r θ φ : ℝ) : EuclideanSpace ℝ (Fin 3) :=
+  !₂[r * Real.cos θ * Real.sin φ, r * Real.sin θ * Real.sin φ, r * Real.cos φ]
+
+/-- The book's spherical point is the backbone's `Curvilinear.sphericalPoint` in the standard
+frame. -/
+theorem sphericalPt_eq (r θ φ : ℝ) :
+    sphericalPt r θ φ = Curvilinear.sphericalPoint (EuclideanSpace.basisFun (Fin 3) ℝ) r θ φ := by
+  ext i
+  fin_cases i <;> simp [sphericalPt, Curvilinear.sphericalPoint, EuclideanSpace.basisFun_apply]
+
+/-- **Exercise 10.4.5** in `ℝ³`: in spherical coordinates `x₁ = r cos θ sin φ`,
+`x₂ = r sin θ sin φ`, `x₃ = r cos φ` the Laplacian takes the form
+
+  `Δ = ∂²/∂r² + (2/r) ∂/∂r + r⁻² ((sin φ)⁻² ∂²/∂θ² + cot φ ∂/∂φ + ∂²/∂φ²)`. -/
+theorem exercise_10_4_5_spherical {f : EuclideanSpace ℝ (Fin 3) → ℝ} (hf : ContDiff ℝ 2 f)
+    {r φ : ℝ} (hr : r ≠ 0) (hφ : Real.sin φ ≠ 0) (θ : ℝ) :
+    Δ f (sphericalPt r θ φ)
+      = deriv (deriv fun s : ℝ => f (sphericalPt s θ φ)) r
+        + (2 / r) * deriv (fun s : ℝ => f (sphericalPt s θ φ)) r
+        + (r ^ 2)⁻¹ * ((Real.sin φ ^ 2)⁻¹ * deriv (deriv fun ψ : ℝ => f (sphericalPt r ψ φ)) θ
+            + (Real.cos φ / Real.sin φ) * deriv (fun χ : ℝ => f (sphericalPt r θ χ)) φ
+            + deriv (deriv fun χ : ℝ => f (sphericalPt r θ χ)) φ) := by
+  simp only [sphericalPt_eq]
+  simpa using Curvilinear.laplacian_eq_spherical _ hf hr hφ θ
 
 end Chapter10
 

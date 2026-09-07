@@ -1,6 +1,7 @@
 import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.LinearAlgebra.AffineSpace.Basis
 import Numlib.Approximation.NodalInterpolation
+import Numlib.Geometry.Euclidean.TriangleShape
 
 /-!
 # Atkinson–Han §10.3: local interpolation and regular families
@@ -57,13 +58,13 @@ estimates: they are inequalities between `H^m` seminorms and rest on the Deny–
 seminorm under an affine map, and — for the global bound — on the additivity of the `H^m` norm over
 a triangulation. Mathlib has no weak derivative on an open set of `ℝᵈ`, hence no `H^m(K)`. The same
 obstruction rules out Exercises 10.3.1, 10.3.2, 10.3.4 and 10.3.7. Exercise 10.3.3 (`h_K / ρ_K`
-bounded if and only if the minimal angles are bounded below) is Sobolev-free — it is plane geometry
-relating the diameter of a triangle, the diameter of its inscribed circle and its smallest angle —
-and is planned but not written: Mathlib has a circumradius for a simplex but no inradius, so the
-inscribed circle has to be built first.
+bounded if and only if the minimal angles are bounded below) is Sobolev-free, and is
+`exercise_10_3_3` below.
 -/
 
 open Filter Metric Topology
+
+open scoped Real
 
 namespace AtkinsonHan.Chapter10
 
@@ -147,5 +148,60 @@ def IsRegularFamily {ι : Type*} (l : Filter ι)
   (∃ σ : ℝ, ∀ i, ∀ K ∈ T i, ∃ (c : EuclideanSpace ℝ (Fin d)) (r : ℝ),
       0 < r ∧ Metric.closedBall c r ⊆ K ∧ Metric.diam K ≤ σ * (2 * r)) ∧
     Tendsto (fun i => meshSize (T i)) l (𝓝 0)
+
+/-! ### Exercise 10.3.3: regularity against the minimal angle
+
+The exercise is about triangles, and `ρ_K` is the diameter `2 ρ` of the inscribed circle, which for
+a triangle is `Affine.Simplex.inradius`. The statement below is therefore condition (a) of
+Definition 10.3.6 read on a family of triangles with the *actual* inradius, rather than through the
+weaker "some inscribed ball" form that `IsRegularFamily` uses for a family of arbitrary sets. The
+geometry is `Numlib.Geometry.Euclidean.TriangleShape`. -/
+
+/-- **Exercise 10.3.3.** For a family of triangles, condition (a) of Definition 10.3.6 — the ratios
+`h_K / ρ_K` are bounded — holds if and only if the angles of the triangles are bounded away from
+zero.
+
+Both directions are quantitative: a bound `h_K ≤ σ ρ_K` gives every angle at least
+`arcsin (1 / (2 σ))`, and a bound `α ≤ θ` on all the angles gives `h_K ≤ (3 / sin² α) ρ_K`. -/
+theorem exercise_10_3_3 {ι : Type*}
+    (T : ι → Affine.Simplex ℝ (EuclideanSpace ℝ (Fin 2)) 2) :
+    (∃ σ : ℝ, ∀ t, Metric.diam (Set.range (T t).points) ≤ σ * (2 * (T t).inradius))
+      ↔ ∃ α : ℝ, 0 < α ∧ ∀ t i, α ≤ (T t).triangleAngle i := by
+  constructor
+  · rintro ⟨σ, hσ⟩
+    have hσ' : ∀ t, Metric.diam (Set.range (T t).points) ≤ max σ 1 * (2 * (T t).inradius) := by
+      intro t
+      refine (hσ t).trans (mul_le_mul_of_nonneg_right (le_max_left _ _) ?_)
+      linarith [(T t).inradius_pos]
+    set τ := max σ 1 with hτ
+    have hτpos : (0 : ℝ) < τ := lt_of_lt_of_le zero_lt_one (le_max_right _ _)
+    have hle1 : 1 / (2 * τ) ≤ 1 := by
+      rw [div_le_one (by positivity)]
+      linarith [le_max_right σ 1]
+    refine ⟨Real.arcsin (1 / (2 * τ)), Real.arcsin_pos.2 (by positivity), fun t i => ?_⟩
+    have hD := (T t).diam_pos
+    have hr := (T t).inradius_pos
+    have hsin : 1 / (2 * τ) ≤ Real.sin ((T t).triangleAngle i) := by
+      have h1 := (T t).inradius_le_diam_mul_sin_triangleAngle i
+      have h2 := hσ' t
+      rw [div_le_iff₀ (by positivity)]
+      nlinarith [(T t).sin_triangleAngle_nonneg i]
+    calc Real.arcsin (1 / (2 * τ)) ≤ Real.arcsin (Real.sin ((T t).triangleAngle i)) :=
+          Real.arcsin_le_arcsin hsin
+      _ ≤ (T t).triangleAngle i := by
+          rcases le_total ((T t).triangleAngle i) (π / 2) with h | h
+          · rw [Real.arcsin_sin (by linarith [(T t).triangleAngle_nonneg i, Real.pi_pos]) h]
+          · exact (Real.arcsin_le_pi_div_two _).trans h
+  · rintro ⟨α, hαpos, hα⟩
+    set β := min α (π / 2) with hβ
+    have hβpos : 0 < β := lt_min hαpos (by linarith [Real.pi_pos])
+    have hβle : β ≤ π / 2 := min_le_right _ _
+    have hsinβ : 0 < Real.sin β :=
+      Real.sin_pos_of_pos_of_lt_pi hβpos (by linarith [Real.pi_pos])
+    refine ⟨3 / (2 * Real.sin β ^ 2), fun t => ?_⟩
+    have h := (T t).diam_mul_sin_sq_le hβpos hβle
+      (fun i => le_trans (min_le_left _ _) (hα t i))
+    rw [div_mul_eq_mul_div, le_div_iff₀ (by positivity)]
+    nlinarith [h, (T t).inradius_pos]
 
 end AtkinsonHan.Chapter10

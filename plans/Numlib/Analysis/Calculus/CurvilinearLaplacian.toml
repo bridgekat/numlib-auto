@@ -1,0 +1,55 @@
+namespace = "Curvilinear"
+
+[[node]]
+id = "_root_.hasDerivAt_comp_curve"
+
+[[node]]
+id = "_root_.deriv_comp_curve"
+
+[[node]]
+id = "_root_.deriv_deriv_comp_curve"
+
+[[node]]
+id = "polarPoint"
+
+[[node]]
+id = "polarAngularVel"
+
+[[node]]
+id = "hasDerivAt_polarPoint_fst"
+
+[[node]]
+id = "hasDerivAt_polarPoint_snd"
+
+[[node]]
+id = "hasDerivAt_polarAngularVel"
+
+[[node]]
+id = "laplacian_eq_polar"
+
+[[node]]
+id = "sphericalPoint"
+
+[[node]]
+id = "sphericalAzimuthVel"
+
+[[node]]
+id = "sphericalInclinationVel"
+
+[[node]]
+id = "hasDerivAt_sphericalPoint_fst"
+
+[[node]]
+id = "hasDerivAt_sphericalPoint_snd"
+
+[[node]]
+id = "hasDerivAt_sphericalAzimuthVel"
+
+[[node]]
+id = "hasDerivAt_sphericalPoint_thd"
+
+[[node]]
+id = "hasDerivAt_sphericalInclinationVel"
+
+[[node]]
+id = "laplacian_eq_spherical"

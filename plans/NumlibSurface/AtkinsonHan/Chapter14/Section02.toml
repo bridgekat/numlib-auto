@@ -60,11 +60,30 @@ kind = "theorem"
 description = '''Example 14.2.2, the ridge polynomials: `φ_{n,k}(x, y) = (1/√π) U_n(x cos(kh) + y sin(kh))` with
 `h = π/(n + 1)` and `k = 0, …, n` is an orthonormal basis of `V_n^2` for the standard inner product
 on `𝔹₂`; hence `{φ_{n,k} : 0 ≤ k ≤ n ≤ N}` is an orthonormal basis of `Π_N^2`. The book gives no
-proof, citing Logan and Shepp. Nothing is missing but the proof: `Polynomial.Chebyshev.U` and its
-trigonometric form are in Mathlib, and `integral_comp_polarCoord_symm` turns the disk integral into
-`r dr dθ`. The computation `∫_{𝔹₂} U_m(x·θ_j) U_n(x·θ_k) dx` reduces, by polar coordinates and the
-substitution `x·θ = r cos φ`, to one-dimensional Chebyshev orthogonality together with the discrete
-orthogonality of `{e^{i k h}}` over `k = 0, …, n`. Obstruction: the polar-coordinate bookkeeping and
-the double angular integral are a genuine piece of special-function analysis, and every other result
-of the section is stated without a basis, so nothing in the chapter waits on it.'''
+proof, citing Logan and Shepp.
+
+**The recorded obstruction, "nothing missing but the polar-coordinate proof", names the wrong
+proof.** Polar coordinates do not work: `U_n(r cos β)` has no closed form for `r < 1`, so the
+angular integral does not separate. The proof that does work is the chord (Radon) decomposition,
+which was checked against Mathlib in 2026-09 and needs four pieces, of which Mathlib has one:
+
+1. the disk as a region between graphs,
+   `int_{𝔹₂} F = int_{-1}^{1} int_{-sqrt(1-t^2)}^{sqrt(1-t^2)} F(t, s) ds dt` — a
+   Fubini-plus-indicator argument of the same shape as
+   `Quadrature.setIntegral_diskProd_eq_polar`, which is written;
+2. the invariance of that integral under a rotation, to put the ridge direction on the first axis;
+3. an antiderivative for `U_n`, namely `T_{n+1}/(n+1)`. Mathlib has `Polynomial.Chebyshev.U`, the
+   trigonometric form `U_real_cos : U_n(cos θ) sin θ = sin((n+1)θ)`, and the differential
+   identities of `Mathlib/RingTheory/Polynomial/Chebyshev.lean`, but not `derivative (T (n+1))`
+   in the form `(n+1) * U n`;
+4. the substitution `t = cos α` in an interval integral, and
+   `int_0^pi sin((n+1)α) sin((m+1)α) dα = (π/2) δ_{nm}`, which Mathlib does not have either
+   (`integral_sin_sq` is the diagonal case only).
+
+With those, the computation is short and closes both halves at once: for the chord at `t = cos α`,
+`int U_n(t cos γ + s sin γ) ds = 2 sin((n+1)α) sin((n+1)γ) / ((n+1) sin γ)`, whence
+`int_{𝔹₂} U_n(x.u_θ) U_n(x.u_φ) = π sin((n+1)γ)/((n+1) sin γ)` for `γ = θ - φ` — which is `π` on
+the diagonal and `0` at `γ = kh`, `0 < |k| ≤ n` — and the same decomposition against a general
+`g` in `Π_{n-1}^2` gives `int_{-1}^1 U_n(t) q(t) sqrt(1-t^2) dt = 0`, the orthogonality to
+`Π_{n-1}^2`. Estimated at 700 lines. Nothing else in the chapter waits on it.'''
 deps = ["orthPolySpace", "finrank_orthPolySpace_two"]

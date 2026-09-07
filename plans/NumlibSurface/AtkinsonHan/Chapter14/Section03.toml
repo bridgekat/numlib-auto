@@ -23,18 +23,4 @@ id = "equation_14_3_5_idem"
 
 [[node]]
 id = "equation_14_3_1"
-kind = "theorem"
-description = '''(14.3.1)–(14.3.2): the product rule `∫_{𝔹₂} f ≈ (2π/(2n+1)) Σ_{l=0}^n Σ_{m=0}^{2n} ω_l r_l f(r_l,
-2πm/(2n+1))` — Gauss–Legendre in the radius, trapezoidal in the angle — has positive weights and is
-exact on `Π_{2n+1}^2`; in the vocabulary of the backbone, it is an `Approximation.IsExactOn` rule
-of degree `2n + 1` for the volume of the disk. Both halves are available:
-`Quadrature.exists_gauss` gives the `(n+1)`-point Gauss–Legendre rule exact to degree `2n + 1` with
-positive weights, and `integral_comp_polarCoord_symm` converts the disk integral to `r dr dθ`. The
-argument is that in polar coordinates a monomial of total degree at most `2n + 1` is
-`r^k cos^a θ sin^b θ`, whose angular factor is a trigonometric polynomial of degree at most `2n + 1`
-and whose radial factor is a polynomial of degree at most `2n + 1`. Obstruction: the exactness of
-the trapezoidal rule on trigonometric polynomials of degree `< N` over `N` equispaced nodes does
-not exist in this library or in Mathlib, and the polar-coordinate bookkeeping that turns a
-multivariate monomial into that product form is the bulk of the work. Everything else in the module
-takes exactness as a hypothesis, so nothing waits on this node.'''
-deps = ["Approximation.IsExactOn", "Quadrature.exists_gauss"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, (14.3.1)"

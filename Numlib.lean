@@ -1,3 +1,4 @@
+import Numlib.Analysis.Calculus.CurvilinearLaplacian
 import Numlib.Analysis.Calculus.MeanValue
 import Numlib.Analysis.Complex.Harmonic
 import Numlib.Analysis.Convex.Continuity
@@ -43,6 +44,7 @@ import Numlib.Analysis.Wavelet.QuadratureMirror
 import Numlib.Approximation.BestApprox
 import Numlib.Approximation.Chebyshev
 import Numlib.Approximation.CompositeQuadrature
+import Numlib.Approximation.DiskQuadrature
 import Numlib.Approximation.DividedDifference
 import Numlib.Approximation.Hermite
 import Numlib.Approximation.Hyperinterpolation
@@ -54,6 +56,7 @@ import Numlib.Approximation.NodalInterpolation
 import Numlib.Approximation.OrthogonalDecomposition
 import Numlib.Approximation.OrthogonalPolynomial
 import Numlib.Approximation.Quadrature
+import Numlib.Approximation.TrapezoidExactness
 import Numlib.Approximation.Trigonometric
 import Numlib.Approximation.TrigonometricInterpolation
 import Numlib.Approximation.Unisolvent
@@ -77,6 +80,7 @@ import Numlib.FiniteDifference.TwoLevel
 import Numlib.FloatingPoint.InnerProduct
 import Numlib.FloatingPoint.Model
 import Numlib.FloatingPoint.Stationary
+import Numlib.Geometry.Euclidean.TriangleShape
 import Numlib.IntegralEquations.Basic
 import Numlib.IntegralEquations.L2Kernel
 import Numlib.IntegralEquations.Nystrom

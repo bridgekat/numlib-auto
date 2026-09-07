@@ -1,0 +1,46 @@
+namespace = "Quadrature"
+
+[[node]]
+id = "unitIntervalMeasure"
+
+[[node]]
+id = "isWeight_unitIntervalMeasure"
+
+[[node]]
+id = "ae_eq_zero_of_integral_eq_zero"
+
+[[node]]
+id = "node_mem_Ioo"
+
+[[node]]
+id = "diskProd"
+
+[[node]]
+id = "unitDisk"
+
+[[node]]
+id = "measurableSet_diskProd"
+
+[[node]]
+id = "isCompact_unitDisk"
+
+[[node]]
+id = "measurableSet_unitDisk"
+
+[[node]]
+id = "isMvWeight_unitDisk"
+
+[[node]]
+id = "setIntegral_diskProd_eq_polar"
+
+[[node]]
+id = "setIntegral_unitDisk_eq"
+
+[[node]]
+id = "periodic_cos_pow_mul_sin_pow"
+
+[[node]]
+id = "integral_Ioo_cos_pow_mul_sin_pow"
+
+[[node]]
+id = "exists_diskRule"

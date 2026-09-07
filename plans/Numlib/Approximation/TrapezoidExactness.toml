@@ -1,0 +1,25 @@
+namespace = "Quadrature"
+
+[[node]]
+id = "angleNode"
+
+[[node]]
+id = "sum_exp_angleNode"
+
+[[node]]
+id = "integral_exp_angle"
+
+[[node]]
+id = "trapezoid_eq_integral_of_expSum"
+
+[[node]]
+id = "_root_.Complex.cos_pow_eq_expSum"
+
+[[node]]
+id = "_root_.Complex.sin_pow_eq_expSum"
+
+[[node]]
+id = "_root_.Complex.cos_pow_mul_sin_pow_eq_expSum"
+
+[[node]]
+id = "trapezoid_eq_integral_cos_pow_mul_sin_pow"

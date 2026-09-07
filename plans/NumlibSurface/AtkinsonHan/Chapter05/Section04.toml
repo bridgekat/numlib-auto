@@ -70,5 +70,14 @@ than a definition.
    the endpoints are uncovered. The working route on a closed interval is
    `u_n t = u_n a + ∫ₐᵗ u_n'`, a limit under the integral, and the fundamental theorem of calculus,
    which gives `HasDerivWithinAt` at the endpoints as well.
+
+Re-checked against Mathlib in 2026-09: all three points still hold, and the item is a backbone
+project rather than a stale note. What *has* arrived since is
+`MeasureTheory.AbsolutelyContinuousOnInterval.integral_deriv_eq_sub`
+(`Mathlib/MeasureTheory/Integral/IntervalIntegral/AbsolutelyContinuousFun.lean`), the converse half
+of the fundamental theorem of calculus that `notes/lessons-ah10.md` recorded as missing. That
+unblocks `H¹(a, b)` for §10.1, not `Cᵏ[a, b]` for this node, whose route needs only the classical
+FTC on a `C¹` function; the cost here is the space itself — the tuple-of-derivatives
+representation, its norm, its completeness, and the closed subspace `C²₀[0, 1]`.
 '''
 deps = ["example_5_3_10"]

@@ -18,16 +18,4 @@ id = "nodalInterp_coord_affineMap"
 
 [[node]]
 id = "exercise_10_3_3"
-kind = "theorem"
-desc = '''Exercise 10.3.3: condition (a) of Definition 10.3.6 holds for a family of triangulations
-if and only if the minimal angles of all the elements are bounded away from `0`. Plane geometry
-relating the diameter of a triangle, the diameter of its inscribed circle and its smallest angle
-(`ρ_K = 2 · area / semiperimeter` and the law of sines); **no Sobolev space and no function space
-enters** — this is not one of the chapter's Sobolev skips.
-
-The obstruction is vocabulary: Mathlib has `Affine.Simplex.circumradius` but no inradius, so the
-inscribed circle of a triangle has to be built (as the centre equidistant from the three sides, or
-as `2 · area / perimeter`) before the equivalence can even be stated with the book's `ρ_K`. Stated
-against `IsRegularFamily`'s "some inscribed ball" reading, the forward direction is the easier half.
-The angle is `EuclideanGeometry.angle`.'''
-deps = ["IsRegularFamily"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, Exercise 10.3.3"

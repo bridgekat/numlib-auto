@@ -1,3 +1,4 @@
+import Numlib.Approximation.DiskQuadrature
 import Numlib.Approximation.Hyperinterpolation
 import NumlibSurface.AtkinsonHan.Chapter14.Section02
 
@@ -13,7 +14,7 @@ the trapezoidal rule in the angle — but (14.3.3), (14.3.4) and (14.3.5) use no
 its exactness on `Π_{2n}^d`, which is what `Approximation.IsExactOn` names. The section is therefore
 stated over an arbitrary exact rule, as Sloan's construction is; the general statements are in the
 backbone `Numlib.Approximation.Hyperinterpolation` and this module is their specialization to the
-book's spaces.
+book's spaces. `equation_14_3_1` then supplies the book's own rule, which meets that hypothesis.
 
 The family `{φ_{m,ℓ} : m ≤ n}` the book expands along appears here as a single `L²(μ)`-orthonormal
 family `φ` spanning `Π_n^d`, which by Lemma 14.2.1 is what an orthonormal basis of each `V_m^d` with
@@ -21,23 +22,27 @@ family `φ` spanning `Π_n^d`, which by Lemma 14.2.1 is what an orthonormal basi
 
 ## Main results
 
+* `equation_14_3_1` — (14.3.1), the disk rule: Gauss–Legendre in the radius and the trapezoidal
+  rule in the angle, with positive weights, nodes in the open unit disk, and exactness on
+  `Π_{2n}^2`.
 * `equation_14_3_3` — a rule exact on `Π_{2n}^d` has `(f, g)_n = (f, g)` for `f, g ∈ Π_n^d`.
 * `hyperinterpolation` — (14.3.4), the operator `L_n f = Σ_{m ≤ n} Σ_ℓ (f, φ_{m,ℓ})_n φ_{m,ℓ}`,
   with `hyperinterpolation_mem` and `hyperinterpolation_add`, `hyperinterpolation_smul`.
 * `equation_14_3_5` — Exercise 14.3.1: `L_n p = p` for every `p ∈ Π_n^d`, so with the previous
   item `L_n` is a linear projection onto `Π_n^d`; `equation_14_3_5_idem` is idempotence.
 
+## Deviations from the book
+
+The book asserts that the rule (14.3.1) is exact on `Π_{2n+1}^2`. **It is not**: it is exact on
+`Π_{2n}^2` and no further, and `equation_14_3_1` states that. The counterexample is `n = 1` and
+`f = x³`, whose integral over the disk vanishes by symmetry while the rule returns about `0.3055`;
+the reason is that `cos^a θ sin^b θ` with `a + b = 2n + 1` carries the frequencies `±(2n + 1)`,
+which `2n + 1` equispaced angles cannot annihilate. `Numlib.Approximation.DiskQuadrature` records
+the mechanism. Nothing in the chapter is weakened by this: (14.3.3), the only use of (14.3.1) in
+the book, applies the rule to products of two elements of `Π_n^2`, and so needs `Π_{2n}^2` alone.
+
 ## Not formalized here
 
-* **(14.3.1)–(14.3.2)**, the disk rule itself: `∫_{𝔹₂} f ≈ (2π/(2n+1)) Σ_l Σ_m ω_l r_l f(r_l,
-  2πm/(2n+1))`, Gauss–Legendre in the radius and the trapezoidal rule in the angle, with positive
-  weights and exact on `Π_{2n+1}^2`. Both halves exist — `Quadrature.exists_gauss` gives the
-  Gauss–Legendre rule and `integral_comp_polarCoord_symm` converts a disk integral to `r dr dθ` —
-  but the exactness of the trapezoidal rule on trigonometric polynomials over equispaced nodes does
-  not exist in this library or in Mathlib, and the polar-coordinate bookkeeping that turns a
-  multivariate monomial into a product `r^k cos^a θ sin^b θ` is the bulk of the work. Everything
-  below takes exactness as a hypothesis, so it applies to that rule the moment it is built, and to
-  any other.
 * **§14.3.1, (14.3.6)–(14.3.7)**, `‖L_n‖_{C→C} = O(n log n)`. This reduces to the same estimate on
   Jacobi polynomials as Theorem 14.2.4, with a discretization on top, and Mathlib has no Jacobi or
   Gegenbauer polynomials.
@@ -101,5 +106,25 @@ theorem equation_14_3_5_idem (hw : IsMvWeight μ) (hex : IsExactOn μ w x (2 * n
     hyperinterpolation w x φ (fun y => eval y (hyperinterpolation w x φ f)) =
       hyperinterpolation w x φ f :=
   equation_14_3_5 hw hex hspan horth (hyperinterpolation_mem hspan f)
+
+/-- **(14.3.1)**: the book's quadrature rule on the unit disk,
+
+  `∫ f ≈ (2π/(2n+1)) Σ_{l=0}^{n} Σ_{m=0}^{2n} ω_l r_l f(r_l cos θ_m, r_l sin θ_m)`,
+  `θ_m = 2πm/(2n+1)`,
+
+with `(r_l, ω_l)` the `(n+1)`-point Gauss–Legendre rule on `[0, 1]`: the radial nodes lie in
+`(0, 1)`, so all `(n+1)(2n+1)` weights `(2π/(2n+1)) ω_l r_l` are positive, and the rule is exact on
+`Π_{2n}^2` — not on `Π_{2n+1}^2`, as the book states; see the deviations above. Exactness on
+`Π_{2n}^2` is exactly the hypothesis of `equation_14_3_3` and hence of (14.3.4) and (14.3.5), so
+this rule instantiates the whole section. -/
+theorem equation_14_3_1 (n : ℕ) :
+    ∃ ρ ω : Fin (n + 1) → ℝ, (∀ l, ρ l ∈ Set.Ioo (0 : ℝ) 1) ∧ (∀ l, 0 < ω l) ∧
+      IsExactOn (MeasureTheory.volume.restrict Quadrature.unitDisk)
+        (fun k : Fin (n + 1) × Fin (2 * n + 1) => 2 * Real.pi / (2 * n + 1) * (ω k.1 * ρ k.1))
+        (fun k : Fin (n + 1) × Fin (2 * n + 1) =>
+          ![ρ k.1 * Real.cos (Quadrature.angleNode (2 * n + 1) k.2),
+            ρ k.1 * Real.sin (Quadrature.angleNode (2 * n + 1) k.2)])
+        (2 * n) :=
+  Quadrature.exists_diskRule n
 
 end AtkinsonHan.Chapter14
