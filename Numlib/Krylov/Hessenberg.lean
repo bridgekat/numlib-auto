@@ -970,6 +970,40 @@ theorem givensQAux_apply_of_lt (n m : ℕ) (i j : Fin (m + 1)) (hj : n < (j : �
         · intro hc; exact absurd (Finset.mem_univ _) hc
   exact key n hj i
 
+/-- **The last row of the rotated factor**, read at every column the first `m` rotations reach:
+`R^{(m)}_{m,l} = ∑_{i ≤ m} (Q_m)_{m,i} h_{i,l}` for `l ≤ m + 1`.
+
+`Krylov.givensQ_mul_hessenbergOf` is this at `l < m` only, because `H̄_m` stops at column `m - 1`;
+widening to `H̄_{m+2}` reaches column `m + 1`, and `Krylov.givensQAux_castSucc` identifies the
+leading block of `Q^{(m)}_{m+2}` with `Q_m`, its remaining entries in row `m` being those of the
+identity. The column `l = m + 1` is what carries the subdiagonal entry that survives one
+application of the operator. -/
+theorem rotated_row_eq_sum_givensQ (m l : ℕ) (hl : l ≤ m + 1) :
+    rotated h m m l = ∑ i : Fin (m + 1), givensQ h m (Fin.last m) i * h (i : ℕ) l := by
+  have hmul := givensQAux_mul_hessenbergOf h (show m ≤ m + 2 by omega)
+  have key := congrFun (congrFun hmul (((Fin.last m).castSucc.castSucc : Fin (m + 3))))
+    (⟨l, by omega⟩ : Fin (m + 2))
+  rw [Matrix.mul_apply] at key
+  rw [show rotated h m m l = hessenbergOf (rotated h m) (m + 2)
+      ((Fin.last m).castSucc.castSucc) (⟨l, by omega⟩ : Fin (m + 2)) from rfl, ← key,
+    Fin.sum_univ_castSucc, Fin.sum_univ_castSucc]
+  have hrow : (((Fin.last m).castSucc.castSucc : Fin (m + 3)) : ℕ) = m := rfl
+  have hz1 : givensQAux h m (m + 2) ((Fin.last m).castSucc.castSucc)
+      (Fin.last (m + 2)) = 0 := by
+    rw [givensQAux_apply_of_lt h m (m + 2) _ _ (by simp), ite_eq_right]
+    simp only [Fin.ext_iff, hrow, Fin.val_last]
+    omega
+  have hz2 : givensQAux h m (m + 2) ((Fin.last m).castSucc.castSucc)
+      (Fin.last (m + 1)).castSucc = 0 := by
+    rw [givensQAux_apply_of_lt h m (m + 2) _ _ (by simp), ite_eq_right]
+    simp only [Fin.ext_iff, hrow, Fin.val_castSucc, Fin.val_last]
+    omega
+  rw [hz1, hz2, zero_mul, zero_mul, add_zero, add_zero]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [givensQAux_castSucc h (m + 1) m (by omega) (Fin.last m).castSucc i.castSucc,
+    givensQAux_castSucc h m m le_rfl (Fin.last m) i, givensQ_eq_givensQAux]
+  rfl
+
 /-- **The last row of the accumulated rotation, one step on** (off the diagonal): applying `Ω_m`
 scales the last row of `Q_m` by `-s_m`.  With `Krylov.givensQ_last_row_last` this is the whole of
 the recurrence the residual identity of a minimal-residual method needs. -/

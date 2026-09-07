@@ -29,7 +29,9 @@ matrix satisfying the four Penrose conditions, and `A⁺ y` is the least-squares
 of smallest norm. The **spectral condition number** of a nonsingular matrix is the ratio of its
 extreme singular values. And the **Tikhonov regularization** `(α + Aᴴ A)⁻¹ Aᴴ` at level `α > 0` is
 the unique solution of the regularized normal equations and the unique minimizer of `x ↦ ‖A x - y‖²
-+ α ‖x‖²` ([kress1998numerical], Theorem 5.7).
++ α ‖x‖²` ([kress1998numerical], Theorem 5.7); the **discrepancy principle** chooses `α` so that the
+residual has exactly the size of the data error, and does so uniquely
+([kress1998numerical], Theorem 5.10).
 
 ## Main definitions
 
@@ -50,6 +52,10 @@ the unique solution of the regularized normal equations and the unique minimizer
   `Matrix.condNumber_l2_eq_div_singularValues`: the spectral condition number is `σmax/σmin`.
 * `Matrix.tikhonov_unique` and `Matrix.norm_sub_sq_add_mul_norm_sq_tikhonov_le`: the regularized
   normal equations and the variational characterization of the regularized solution.
+* `Matrix.exists_discrepancy_tikhonov` and
+  `Matrix.tendsto_tikhonov_of_norm_toEuclideanLin_sub_eq`: the discrepancy principle picks out a
+  unique regularization parameter, and the solutions it picks converge to `A⁺ y` as the data error
+  tends to `0` ([kress1998numerical], Theorem 5.10).
 
 ## Implementation notes
 
@@ -796,5 +802,366 @@ theorem norm_sub_sq_add_mul_norm_sq_tikhonov_le (hα : 0 < α) (y : EuclideanSpa
     ((A.tikhonov_unique α hα y _).2 rfl) x
 
 end Tikhonov
+
+/-! ### The discrepancy principle -/
+
+section Discrepancy
+
+/-- Pythagoras for a difference of orthogonal vectors, in squared form. -/
+private theorem norm_sub_sq_of_inner_eq_zero {E : Type*} [NormedAddCommGroup E]
+    [InnerProductSpace 𝕜 E] (x y : E) (h : (inner 𝕜 x y : 𝕜) = 0) :
+    ‖x - y‖ ^ 2 = ‖x‖ ^ 2 + ‖y‖ ^ 2 := by
+  have h' : (inner 𝕜 x (-y) : 𝕜) = 0 := by rw [inner_neg_right, h, neg_zero]
+  have key := norm_add_sq_eq_norm_sq_add_norm_sq_of_inner_eq_zero (𝕜 := 𝕜) x (-y) h'
+  rw [← sub_eq_add_neg, norm_neg] at key
+  rw [pow_two, pow_two, pow_two, key]
+
+/-- `A⁺ A` acts as the identity on the range of `Aᴴ`. -/
+theorem pinv_mul_self_mul_conjTranspose : A.pinv * A * Aᴴ = Aᴴ := by
+  have h : (A.pinv * A * Aᴴ)ᴴ = (Aᴴ)ᴴ := by
+    rw [conjTranspose_mul, conjTranspose_conjTranspose, A.isHermitian_pinv_mul.eq,
+      ← Matrix.mul_assoc, mul_pinv_mul_self]
+  exact conjTranspose_injective h
+
+/-- **The Tikhonov solution is a correction of the least-squares solution**: since `Aᴴ y` and
+`Aᴴ A A⁺ y` agree, `(α + Aᴴ A)⁻¹ Aᴴ = A⁺ - α (α + Aᴴ A)⁻¹ A⁺`. -/
+theorem tikhonov_eq_pinv_sub (α : ℝ) (hα : 0 < α) :
+    A.tikhonov α = A.pinv - (α : 𝕜) • (((α : 𝕜) • 1 + Aᴴ * A)⁻¹ * A.pinv) := by
+  have hdet := A.isUnit_det_smul_one_add_gram α hα
+  have h1 : ((α : 𝕜) • 1 + Aᴴ * A)⁻¹ * ((α : 𝕜) • 1 + Aᴴ * A) = 1 :=
+    Matrix.nonsing_inv_mul _ hdet
+  have hAH : Aᴴ * A * A.pinv = Aᴴ := by rw [Matrix.mul_assoc, conjTranspose_mul_mul_pinv]
+  have h2 : (((α : 𝕜) • 1 + Aᴴ * A) - (α : 𝕜) • 1) * A.pinv
+      = ((α : 𝕜) • 1 + Aᴴ * A) * A.pinv - (α : 𝕜) • A.pinv := by
+    rw [Matrix.sub_mul, Matrix.smul_mul, Matrix.one_mul]
+  calc A.tikhonov α
+      = ((α : 𝕜) • 1 + Aᴴ * A)⁻¹ * (Aᴴ * A * A.pinv) := by rw [hAH, tikhonov_def]
+    _ = ((α : 𝕜) • 1 + Aᴴ * A)⁻¹ * ((((α : 𝕜) • 1 + Aᴴ * A) - (α : 𝕜) • 1) * A.pinv) := by
+        congr 2
+        abel
+    _ = A.pinv - (α : 𝕜) • (((α : 𝕜) • 1 + Aᴴ * A)⁻¹ * A.pinv) := by
+        rw [h2, Matrix.mul_sub, ← Matrix.mul_assoc, h1, Matrix.one_mul, Matrix.mul_smul]
+
+/-- The Tikhonov solution lies in the range of `Aᴴ`, on which `A⁺ A` is the identity: the
+projector `A⁺ A` commutes with the regularized Gram matrix, both being diagonal in the right
+singular basis. -/
+theorem pinv_mul_self_mul_tikhonov (α : ℝ) (hα : 0 < α) :
+    A.pinv * A * A.tikhonov α = A.tikhonov α := by
+  have hdet := A.isUnit_det_smul_one_add_gram α hα
+  have h1 : A.pinv * A * (Aᴴ * A) = Aᴴ * A := by
+    rw [← Matrix.mul_assoc, pinv_mul_self_mul_conjTranspose]
+  have h2 : Aᴴ * A * (A.pinv * A) = Aᴴ * A := by
+    rw [Matrix.mul_assoc, ← Matrix.mul_assoc A A.pinv A, mul_pinv_mul_self]
+  have hcomm : A.pinv * A * ((α : 𝕜) • 1 + Aᴴ * A)
+      = ((α : 𝕜) • 1 + Aᴴ * A) * (A.pinv * A) := by
+    rw [Matrix.mul_add, Matrix.add_mul, h1, h2, Matrix.mul_smul, Matrix.smul_mul,
+      Matrix.mul_one, Matrix.one_mul]
+  have hinv : A.pinv * A * ((α : 𝕜) • 1 + Aᴴ * A)⁻¹
+      = ((α : 𝕜) • 1 + Aᴴ * A)⁻¹ * (A.pinv * A) := by
+    calc A.pinv * A * ((α : 𝕜) • 1 + Aᴴ * A)⁻¹
+        = (((α : 𝕜) • 1 + Aᴴ * A)⁻¹ * ((α : 𝕜) • 1 + Aᴴ * A)) *
+            (A.pinv * A * ((α : 𝕜) • 1 + Aᴴ * A)⁻¹) := by
+          rw [Matrix.nonsing_inv_mul _ hdet, Matrix.one_mul]
+      _ = ((α : 𝕜) • 1 + Aᴴ * A)⁻¹ * ((((α : 𝕜) • 1 + Aᴴ * A) * (A.pinv * A)) *
+            ((α : 𝕜) • 1 + Aᴴ * A)⁻¹) := by simp only [Matrix.mul_assoc]
+      _ = ((α : 𝕜) • 1 + Aᴴ * A)⁻¹ * ((A.pinv * A * ((α : 𝕜) • 1 + Aᴴ * A)) *
+            ((α : 𝕜) • 1 + Aᴴ * A)⁻¹) := by rw [hcomm]
+      _ = ((α : 𝕜) • 1 + Aᴴ * A)⁻¹ * (A.pinv * A) := by
+          rw [Matrix.mul_assoc, Matrix.mul_nonsing_inv _ hdet, Matrix.mul_one]
+  rw [tikhonov_def, ← Matrix.mul_assoc, hinv, Matrix.mul_assoc,
+    pinv_mul_self_mul_conjTranspose]
+
+/-- **The resolvent of the Gram matrix is diagonal in the right singular basis**: it divides the
+`i`-th coefficient by `α + σ_i²`. -/
+theorem inner_rightSingularBasis_inv_smul_one_add_gram (α : ℝ) (hα : 0 < α)
+    (v : EuclideanSpace 𝕜 n) (i : n) :
+    (inner 𝕜 (A.rightSingularBasis i)
+        (toEuclideanLin ((α : 𝕜) • 1 + Aᴴ * A)⁻¹ v) : 𝕜)
+      = ((α + A.singularValues i ^ 2 : ℝ) : 𝕜)⁻¹ * inner 𝕜 (A.rightSingularBasis i) v := by
+  have hdet := A.isUnit_det_smul_one_add_gram α hα
+  have hne : ((α + A.singularValues i ^ 2 : ℝ) : 𝕜) ≠ 0 := by
+    have hpos : (0 : ℝ) < α + A.singularValues i ^ 2 := by positivity
+    rw [Ne, RCLike.ofReal_eq_zero]
+    exact hpos.ne'
+  have hmp : (α : 𝕜) • toEuclideanLin ((α : 𝕜) • 1 + Aᴴ * A)⁻¹ v
+      + toEuclideanLin (Aᴴ * A) (toEuclideanLin ((α : 𝕜) • 1 + Aᴴ * A)⁻¹ v) = v := by
+    rw [← toEuclideanLin_smul_one_add_gram, ← toEuclideanLin_mul_apply,
+      Matrix.mul_nonsing_inv _ hdet, toLpLin_one, LinearMap.id_apply]
+  have hinner := congrArg (fun x => (inner 𝕜 (A.rightSingularBasis i) x : 𝕜)) hmp
+  simp only [inner_add_right, inner_smul_right] at hinner
+  rw [← inner_toEuclideanLin_of_isHermitian (isHermitian_conjTranspose_mul_self A),
+    toEuclideanLin_conjTranspose_mul_self_rightSingularBasis, inner_smul_left,
+    RCLike.conj_ofReal] at hinner
+  have h2 : ((α + A.singularValues i ^ 2 : ℝ) : 𝕜) *
+      (inner 𝕜 (A.rightSingularBasis i)
+        (toEuclideanLin ((α : 𝕜) • 1 + Aᴴ * A)⁻¹ v) : 𝕜)
+      = inner 𝕜 (A.rightSingularBasis i) v := by
+    push_cast at hinner ⊢
+    linear_combination hinner
+  rw [← h2, ← mul_assoc, inv_mul_cancel₀ hne, one_mul]
+
+/-- The squared norm of the image under `A` of the resolvent applied to `v`, in the right singular
+basis: the `i`-th coefficient is multiplied by `σ_i/(α + σ_i²)`. -/
+theorem norm_sq_toEuclideanLin_inv_smul_one_add_gram (α : ℝ) (hα : 0 < α)
+    (v : EuclideanSpace 𝕜 n) :
+    ‖toEuclideanLin A (toEuclideanLin ((α : 𝕜) • 1 + Aᴴ * A)⁻¹ v)‖ ^ 2
+      = ∑ i, (A.singularValues i / (α + A.singularValues i ^ 2)) ^ 2 *
+          ‖(inner 𝕜 (A.rightSingularBasis i) v : 𝕜)‖ ^ 2 := by
+  rw [norm_sq_toEuclideanLin_apply]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  have hpos : (0 : ℝ) < α + A.singularValues i ^ 2 := by positivity
+  have hne : α + A.singularValues i ^ 2 ≠ 0 := hpos.ne'
+  rw [A.inner_rightSingularBasis_inv_smul_one_add_gram α hα v i, norm_mul, norm_inv,
+    RCLike.norm_ofReal, abs_of_pos hpos]
+  field_simp
+
+variable [DecidableEq m]
+
+/-- **The squared norm of the Tikhonov residual.** Writing `w = A⁺ yδ`, the residual splits
+orthogonally into the least-squares residual `A w - yδ`, which is independent of `α`, and a
+correction inside the range of `A` whose `i`-th coefficient in the right singular basis is
+`α σ_i/(α + σ_i²)` times that of `w`. -/
+theorem norm_sq_toEuclideanLin_tikhonov_sub (α : ℝ) (hα : 0 < α) (yδ : EuclideanSpace 𝕜 m) :
+    ‖toEuclideanLin A (toEuclideanLin (A.tikhonov α) yδ) - yδ‖ ^ 2
+      = ‖toEuclideanLin A (toEuclideanLin A.pinv yδ) - yδ‖ ^ 2
+        + ∑ i, (α * A.singularValues i / (α + A.singularValues i ^ 2)) ^ 2 *
+            ‖(inner 𝕜 (A.rightSingularBasis i) (toEuclideanLin A.pinv yδ) : 𝕜)‖ ^ 2 := by
+  have hres : toEuclideanLin A (toEuclideanLin (A.tikhonov α) yδ) - yδ
+      = (toEuclideanLin A (toEuclideanLin A.pinv yδ) - yδ)
+        - (α : 𝕜) • toEuclideanLin A
+            (toEuclideanLin ((α : 𝕜) • 1 + Aᴴ * A)⁻¹ (toEuclideanLin A.pinv yδ)) := by
+    rw [tikhonov_eq_pinv_sub A α hα]
+    simp only [map_sub, LinearMap.sub_apply, map_smul, LinearMap.smul_apply,
+      toEuclideanLin_mul_apply]
+    abel
+  have hperp : (inner 𝕜 (toEuclideanLin A (toEuclideanLin A.pinv yδ) - yδ)
+      ((α : 𝕜) • toEuclideanLin A
+        (toEuclideanLin ((α : 𝕜) • 1 + Aᴴ * A)⁻¹ (toEuclideanLin A.pinv yδ))) : 𝕜) = 0 := by
+    rw [inner_smul_right, ← inner_conj_symm, A.inner_toEuclideanLin_sub_pinv yδ _, map_zero,
+      mul_zero]
+  rw [hres, norm_sub_sq_of_inner_eq_zero (𝕜 := 𝕜) _ _ hperp, norm_smul, mul_pow,
+    RCLike.norm_ofReal, abs_of_pos hα,
+    A.norm_sq_toEuclideanLin_inv_smul_one_add_gram α hα, Finset.mul_sum]
+  congr 1
+  refine Finset.sum_congr rfl fun i _ => ?_
+  ring
+
+/-- **The discrepancy principle for Tikhonov regularization** ([kress1998numerical], Theorem 5.10):
+if the best achievable residual `dist (yδ, range A)` is below the error level `δ`, which is in turn
+below `‖yδ‖`, then there is exactly one regularization parameter `α > 0` at which the Tikhonov
+residual has norm exactly `δ`.
+
+The two hypotheses are sharp: the residual norm increases strictly from `dist (yδ, range A)` at
+`α = 0` to `‖yδ‖` as `α → ∞`. Kress states the lower hypothesis as `‖yδ - y‖ ≤ δ` for some
+`y` in the range of `A`, which gives only `dist (yδ, range A) ≤ δ`; with equality there is no such
+`α`, as `A = diag (1, 0)`, `y = (1, 0)`, `yδ = (1, δ)` shows. -/
+theorem exists_discrepancy_tikhonov (yδ : EuclideanSpace 𝕜 m) {δ : ℝ}
+    (hlow : ⨅ x : EuclideanSpace 𝕜 n, ‖toEuclideanLin A x - yδ‖ < δ) (hhigh : δ < ‖yδ‖) :
+    ∃! α : ℝ, 0 < α ∧
+      ‖toEuclideanLin A (toEuclideanLin (A.tikhonov α) yδ) - yδ‖ = δ := by
+  classical
+  obtain ⟨F, hF⟩ : ∃ F : ℝ → ℝ, F = fun t =>
+      ‖toEuclideanLin A (toEuclideanLin A.pinv yδ) - yδ‖ ^ 2
+        + ∑ i, (t * A.singularValues i / (t + A.singularValues i ^ 2)) ^ 2 *
+            ‖(inner 𝕜 (A.rightSingularBasis i) (toEuclideanLin A.pinv yδ) : 𝕜)‖ ^ 2 := ⟨_, rfl⟩
+  have hd : ‖toEuclideanLin A (toEuclideanLin A.pinv yδ) - yδ‖ < δ := by
+    rw [A.norm_toEuclideanLin_pinv_sub_eq_iInf yδ]; exact hlow
+  have hδ0 : 0 < δ := lt_of_le_of_lt (norm_nonneg _) hd
+  have hsplit : ‖yδ‖ ^ 2 = ‖toEuclideanLin A (toEuclideanLin A.pinv yδ)‖ ^ 2
+      + ‖toEuclideanLin A (toEuclideanLin A.pinv yδ) - yδ‖ ^ 2 := by
+    have key := norm_sub_sq_of_inner_eq_zero (𝕜 := 𝕜)
+      (toEuclideanLin A (toEuclideanLin A.pinv yδ))
+      (toEuclideanLin A (toEuclideanLin A.pinv yδ) - yδ)
+      (A.inner_toEuclideanLin_sub_pinv yδ _)
+    rwa [sub_sub_cancel] at key
+  have hAw : 0 < ‖toEuclideanLin A (toEuclideanLin A.pinv yδ)‖ ^ 2 := by
+    nlinarith [norm_nonneg (toEuclideanLin A (toEuclideanLin A.pinv yδ) - yδ), hd, hδ0, hhigh,
+      hsplit]
+  have hParseval : ∑ i, A.singularValues i ^ 2 *
+      ‖(inner 𝕜 (A.rightSingularBasis i) (toEuclideanLin A.pinv yδ) : 𝕜)‖ ^ 2
+      = ‖toEuclideanLin A (toEuclideanLin A.pinv yδ)‖ ^ 2 :=
+    (A.norm_sq_toEuclideanLin_apply _).symm
+  obtain ⟨i₀, -, hi₀⟩ : ∃ i₀ ∈ (Finset.univ : Finset n), (0 : ℝ) < A.singularValues i₀ ^ 2 *
+      ‖(inner 𝕜 (A.rightSingularBasis i₀) (toEuclideanLin A.pinv yδ) : 𝕜)‖ ^ 2 := by
+    refine Finset.exists_lt_of_sum_lt (f := fun _ => (0 : ℝ)) ?_
+    rw [Finset.sum_const_zero, hParseval]
+    exact hAw
+  have hσ₀ : 0 < A.singularValues i₀ := by
+    rcases (A.singularValues_nonneg i₀).lt_or_eq with h | h
+    · exact h
+    · exfalso; rw [← h] at hi₀; simp at hi₀
+  have hc₀ : 0 < ‖(inner 𝕜 (A.rightSingularBasis i₀) (toEuclideanLin A.pinv yδ) : 𝕜)‖ ^ 2 := by
+    nlinarith [hi₀, sq_nonneg (A.singularValues i₀)]
+  have hFeq : ∀ t : ℝ, 0 < t →
+      ‖toEuclideanLin A (toEuclideanLin (A.tikhonov t) yδ) - yδ‖ ^ 2 = F t := by
+    intro t ht
+    rw [hF]
+    exact A.norm_sq_toEuclideanLin_tikhonov_sub t ht yδ
+  have hF0 : F 0 = ‖toEuclideanLin A (toEuclideanLin A.pinv yδ) - yδ‖ ^ 2 := by
+    rw [hF]; simp
+  have hmono : StrictMonoOn F (Set.Ici (0 : ℝ)) := by
+    intro s hs t ht hst
+    simp only [Set.mem_Ici] at hs ht
+    have h1 : ∀ i ∈ (Finset.univ : Finset n),
+        (s * A.singularValues i / (s + A.singularValues i ^ 2)) ^ 2 *
+            ‖(inner 𝕜 (A.rightSingularBasis i) (toEuclideanLin A.pinv yδ) : 𝕜)‖ ^ 2
+          ≤ (t * A.singularValues i / (t + A.singularValues i ^ 2)) ^ 2 *
+            ‖(inner 𝕜 (A.rightSingularBasis i) (toEuclideanLin A.pinv yδ) : 𝕜)‖ ^ 2 := by
+      intro i _
+      refine mul_le_mul_of_nonneg_right ?_ (sq_nonneg _)
+      rcases (A.singularValues_nonneg i).lt_or_eq with hσ | hσ
+      · have hs' : (0 : ℝ) < s + A.singularValues i ^ 2 := by positivity
+        have ht' : (0 : ℝ) < t + A.singularValues i ^ 2 := by positivity
+        refine pow_le_pow_left₀ (by positivity) ?_ 2
+        rw [div_le_div_iff₀ hs' ht']
+        have hcube : s * (A.singularValues i * A.singularValues i * A.singularValues i)
+            ≤ t * (A.singularValues i * A.singularValues i * A.singularValues i) :=
+          mul_le_mul_of_nonneg_right hst.le (by positivity)
+        nlinarith [hcube]
+      · rw [← hσ]; simp
+    have h2 : (s * A.singularValues i₀ / (s + A.singularValues i₀ ^ 2)) ^ 2 *
+          ‖(inner 𝕜 (A.rightSingularBasis i₀) (toEuclideanLin A.pinv yδ) : 𝕜)‖ ^ 2
+        < (t * A.singularValues i₀ / (t + A.singularValues i₀ ^ 2)) ^ 2 *
+          ‖(inner 𝕜 (A.rightSingularBasis i₀) (toEuclideanLin A.pinv yδ) : 𝕜)‖ ^ 2 := by
+      refine mul_lt_mul_of_pos_right ?_ hc₀
+      have hs' : (0 : ℝ) < s + A.singularValues i₀ ^ 2 := by positivity
+      have ht' : (0 : ℝ) < t + A.singularValues i₀ ^ 2 := by positivity
+      have hnn : (0 : ℝ) ≤ s * A.singularValues i₀ / (s + A.singularValues i₀ ^ 2) := by
+        positivity
+      refine pow_lt_pow_left₀ ?_ hnn two_ne_zero
+      rw [div_lt_div_iff₀ hs' ht']
+      have hcube : s * (A.singularValues i₀ * A.singularValues i₀ * A.singularValues i₀)
+          < t * (A.singularValues i₀ * A.singularValues i₀ * A.singularValues i₀) :=
+        mul_lt_mul_of_pos_right hst (by positivity)
+      nlinarith [hcube]
+    have key := Finset.sum_lt_sum h1 ⟨i₀, Finset.mem_univ _, h2⟩
+    simp only [hF]
+    linarith
+  have hcont : ContinuousOn F (Set.Ici (0 : ℝ)) := by
+    rw [hF]
+    refine continuousOn_const.add (continuousOn_finsetSum _ fun i _ => ?_)
+    rcases eq_or_ne (A.singularValues i) 0 with hσ | hσ
+    · have hzero : (fun t : ℝ => (t * A.singularValues i / (t + A.singularValues i ^ 2)) ^ 2 *
+          ‖(inner 𝕜 (A.rightSingularBasis i) (toEuclideanLin A.pinv yδ) : 𝕜)‖ ^ 2)
+          = fun _ : ℝ => 0 := by
+        funext t; simp [hσ]
+      rw [hzero]
+      exact continuousOn_const
+    · have hne : ∀ t ∈ Set.Ici (0 : ℝ), t + A.singularValues i ^ 2 ≠ 0 := by
+        intro t ht
+        simp only [Set.mem_Ici] at ht
+        have hp : (0 : ℝ) < A.singularValues i ^ 2 :=
+          pow_pos (lt_of_le_of_ne (A.singularValues_nonneg i) (Ne.symm hσ)) 2
+        positivity
+      exact (((continuousOn_id.mul continuousOn_const).div
+        (continuousOn_id.add continuousOn_const) hne).pow 2).mul continuousOn_const
+  have hlim : Filter.Tendsto F Filter.atTop (nhds (‖yδ‖ ^ 2)) := by
+    have hterm : ∀ i : n, Filter.Tendsto
+        (fun t : ℝ => t * A.singularValues i / (t + A.singularValues i ^ 2)) Filter.atTop
+        (nhds (A.singularValues i)) := by
+      intro i
+      have h0 : Filter.Tendsto (fun t : ℝ => A.singularValues i ^ 2 /
+          (t + A.singularValues i ^ 2)) Filter.atTop (nhds 0) :=
+        tendsto_const_nhds.div_atTop
+          (Filter.tendsto_atTop_add_const_right _ _ Filter.tendsto_id)
+      have h1 : Filter.Tendsto (fun t : ℝ => A.singularValues i *
+          (1 - A.singularValues i ^ 2 / (t + A.singularValues i ^ 2))) Filter.atTop
+          (nhds (A.singularValues i * (1 - 0))) :=
+        tendsto_const_nhds.mul (tendsto_const_nhds.sub h0)
+      rw [sub_zero, mul_one] at h1
+      refine h1.congr' ?_
+      filter_upwards [Filter.eventually_gt_atTop (0 : ℝ)] with t ht
+      have hne : t + A.singularValues i ^ 2 ≠ 0 := by positivity
+      field_simp
+      ring
+    have hsum : Filter.Tendsto (fun t : ℝ => ∑ i,
+        (t * A.singularValues i / (t + A.singularValues i ^ 2)) ^ 2 *
+          ‖(inner 𝕜 (A.rightSingularBasis i) (toEuclideanLin A.pinv yδ) : 𝕜)‖ ^ 2)
+        Filter.atTop (nhds (∑ i, A.singularValues i ^ 2 *
+          ‖(inner 𝕜 (A.rightSingularBasis i) (toEuclideanLin A.pinv yδ) : 𝕜)‖ ^ 2)) :=
+      tendsto_finsetSum _ fun i _ => ((hterm i).pow 2).mul_const _
+    rw [hF, hsplit]
+    have hadd := (tendsto_const_nhds (α := ℝ) (f := Filter.atTop (α := ℝ))
+      (x := ‖toEuclideanLin A (toEuclideanLin A.pinv yδ) - yδ‖ ^ 2)).add hsum
+    rw [hParseval] at hadd
+    simpa [add_comm] using hadd
+  obtain ⟨M, hM0, hMF⟩ : ∃ M : ℝ, 0 ≤ M ∧ δ ^ 2 ≤ F M := by
+    have hδ2 : δ ^ 2 < ‖yδ‖ ^ 2 := by nlinarith [hδ0, hhigh]
+    have hev := (hlim.eventually (eventually_gt_nhds hδ2)).and
+      (Filter.eventually_ge_atTop (0 : ℝ))
+    obtain ⟨M, hM1, hM2⟩ := hev.exists
+    exact ⟨M, hM2, hM1.le⟩
+  have hF0lt : F 0 < δ ^ 2 := by
+    rw [hF0]
+    nlinarith [hd, norm_nonneg (toEuclideanLin A (toEuclideanLin A.pinv yδ) - yδ), hδ0]
+  obtain ⟨a, ha, hFa⟩ : ∃ a ∈ Set.Icc (0 : ℝ) M, F a = δ ^ 2 :=
+    intermediate_value_Icc hM0 (hcont.mono Set.Icc_subset_Ici_self) ⟨hF0lt.le, hMF⟩
+  have ha0 : 0 < a := by
+    rcases ha.1.lt_or_eq with h | h
+    · exact h
+    · exfalso; rw [← h] at hFa; linarith
+  have hres : ‖toEuclideanLin A (toEuclideanLin (A.tikhonov a) yδ) - yδ‖ = δ := by
+    have h := hFeq a ha0
+    rw [hFa] at h
+    exact (pow_left_inj₀ (norm_nonneg _) hδ0.le two_ne_zero).1 h
+  refine ⟨a, ⟨ha0, hres⟩, fun b hb => ?_⟩
+  have hFb : F b = δ ^ 2 := by rw [← hFeq b hb.1, hb.2]
+  exact hmono.injOn (Set.mem_Ici.2 hb.1.le) (Set.mem_Ici.2 ha0.le) (hFb.trans hFa.symm)
+
+/-- **The discrepancy principle is regular**: if the data error tends to `0`, the regularized
+solutions chosen by the discrepancy principle converge to the least-squares solution `A⁺ y` of the
+exact problem ([kress1998numerical], Theorem 5.10). No estimate on `α` is needed: the discrepancy
+condition alone forces the residual to `0`, and `A⁺ A` is the identity on the range of `Aᴴ`, where
+all the Tikhonov solutions live. -/
+theorem tendsto_tikhonov_of_norm_toEuclideanLin_sub_eq {ι : Type*} {l : Filter ι}
+    {y : EuclideanSpace 𝕜 m} (hy : y ∈ LinearMap.range (toEuclideanLin A))
+    {yδ : ι → EuclideanSpace 𝕜 m} {δ α : ι → ℝ} (hα : ∀ i, 0 < α i)
+    (hyδ : ∀ i, ‖yδ i - y‖ ≤ δ i)
+    (hres : ∀ i, ‖toEuclideanLin A (toEuclideanLin (A.tikhonov (α i)) (yδ i)) - yδ i‖ = δ i)
+    (hδ : Filter.Tendsto δ l (nhds 0)) :
+    Filter.Tendsto (fun i => toEuclideanLin (A.tikhonov (α i)) (yδ i)) l
+      (nhds (toEuclideanLin A.pinv y)) := by
+  obtain ⟨x₀, rfl⟩ := hy
+  have hAp : toEuclideanLin A (toEuclideanLin A.pinv (toEuclideanLin A x₀))
+      = toEuclideanLin A x₀ := by
+    rw [← toEuclideanLin_mul_apply, ← toEuclideanLin_mul_apply, Matrix.mul_assoc,
+      ← Matrix.mul_assoc A, mul_pinv_mul_self]
+  have himg : Filter.Tendsto (fun i => toEuclideanLin A
+      (toEuclideanLin (A.tikhonov (α i)) (yδ i) - toEuclideanLin A.pinv (toEuclideanLin A x₀)))
+      l (nhds 0) := by
+    rw [tendsto_zero_iff_norm_tendsto_zero]
+    have hbound : ∀ i, ‖toEuclideanLin A (toEuclideanLin (A.tikhonov (α i)) (yδ i)
+        - toEuclideanLin A.pinv (toEuclideanLin A x₀))‖ ≤ 2 * δ i := by
+      intro i
+      rw [map_sub, hAp]
+      calc ‖toEuclideanLin A (toEuclideanLin (A.tikhonov (α i)) (yδ i)) - toEuclideanLin A x₀‖
+          ≤ ‖toEuclideanLin A (toEuclideanLin (A.tikhonov (α i)) (yδ i)) - yδ i‖
+            + ‖yδ i - toEuclideanLin A x₀‖ := norm_sub_le_norm_sub_add_norm_sub _ _ _
+        _ ≤ δ i + δ i := add_le_add (hres i).le (hyδ i)
+        _ = 2 * δ i := by ring
+    refine squeeze_zero (fun i => norm_nonneg _) hbound ?_
+    simpa using hδ.const_mul 2
+  have hfix : ∀ i, toEuclideanLin A.pinv (toEuclideanLin A
+      (toEuclideanLin (A.tikhonov (α i)) (yδ i)
+        - toEuclideanLin A.pinv (toEuclideanLin A x₀)))
+      = toEuclideanLin (A.tikhonov (α i)) (yδ i)
+        - toEuclideanLin A.pinv (toEuclideanLin A x₀) := by
+    intro i
+    rw [map_sub, map_sub, ← toEuclideanLin_mul_apply, ← toEuclideanLin_mul_apply,
+      ← toEuclideanLin_mul_apply, ← toEuclideanLin_mul_apply,
+      pinv_mul_self_mul_tikhonov A (α i) (hα i), pinv_mul_self_mul_pinv]
+  have hcontp : Continuous
+      (toEuclideanLin A.pinv : EuclideanSpace 𝕜 m →ₗ[𝕜] EuclideanSpace 𝕜 n) :=
+    LinearMap.continuous_of_finiteDimensional _
+  have hdiff : Filter.Tendsto (fun i => toEuclideanLin (A.tikhonov (α i)) (yδ i)
+      - toEuclideanLin A.pinv (toEuclideanLin A x₀)) l (nhds 0) := by
+    have hcomp := (hcontp.tendsto 0).comp himg
+    simp only [Function.comp_def, map_zero] at hcomp
+    exact hcomp.congr fun i => hfix i
+  have hfinal := hdiff.add (tendsto_const_nhds
+    (x := toEuclideanLin A.pinv (toEuclideanLin A x₀)) (f := l))
+  simpa using hfinal
+
+end Discrepancy
 
 end Matrix

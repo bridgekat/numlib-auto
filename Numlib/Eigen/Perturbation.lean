@@ -2,6 +2,7 @@ import Mathlib.Analysis.CStarAlgebra.Matrix
 import Mathlib.Analysis.Calculus.Deriv.Add
 import Mathlib.Analysis.Calculus.Deriv.Comp
 import Mathlib.Analysis.Calculus.Deriv.Mul
+import Mathlib.Analysis.Calculus.Deriv.Prod
 import Mathlib.Analysis.InnerProductSpace.Rayleigh
 import Mathlib.Analysis.InnerProductSpace.Spectrum
 import Mathlib.LinearAlgebra.Eigenspace.Matrix
@@ -41,8 +42,10 @@ least one, it is one for a normal operator, and it is what bounds the first-orde
 eigenvalue under a perturbation: `Module.End.deriv_eigenvalue_perturbation` computes the derivative
 of a differentiable branch of eigenvalues of `A + t B` as `⟪w, B u⟫ / ⟪w, u⟫`, and
 `Module.End.norm_deriv_eigenvalue_perturbation_le` bounds it by `‖B‖` times the condition number.
-The branch is a hypothesis, not a conclusion: producing it needs the implicit function theorem on
-`det (A + t B - μ)`, and the plan records that as still open.
+`Module.End.hasDerivAt_eigenvalue_perturbation` produces the branch, for a simple eigenvalue: the
+inverse function theorem applied to `(t, μ, z) ↦ (t, ⟪w, z⟫, A z + t B z - μ z)`, whose derivative
+is injective exactly because the eigenvalue is simple.  No determinant and no implicit function
+theorem are involved.
 
 `ContinuousLinearMap.pseudospectrum` is the `ε`-pseudospectrum ([saad2011numerical], Def 3.3).  It
 is defined by the approximate-eigenvector form `∃ w, ‖w‖ = 1 ∧ ‖A w - z w‖ < ε`, his (3.55), rather
@@ -523,9 +526,9 @@ Along a differentiable branch of eigenpairs of `A + t B` the eigenvalue moves at
 / ⟪w, u⟫`, whose modulus is at most `‖B‖` times the condition number of the eigenvalue.
 [saad2011numerical], §3.2.1 displays exactly this computation.
 
-The branch is assumed here, not constructed: producing it from the simplicity of the eigenvalue is
-the implicit function theorem applied to `(t, μ) ↦ det (A + t B - μ)`, whose `μ`-derivative at `(0,
-λ)` is nonzero precisely because the root is simple. -/
+The branch is assumed here and constructed in
+`Module.End.hasDerivAt_eigenvalue_perturbation`, whose hypotheses are the same eigen-relations
+together with the simplicity of `λ`. -/
 
 /-- **The derivative of a simple eigenvalue** ([saad2011numerical], §3.2.1): along a differentiable
 branch `t ↦ (μ t, u t)` of eigenpairs of `A + t B`, with `w` a left eigenvector of `A` for `λ = μ 0`
@@ -587,6 +590,184 @@ theorem norm_deriv_eigenvalue_perturbation_le {A B : E →L[𝕜] E} {u : 𝕜 �
   calc ‖(inner 𝕜 w (B (u 0)) : 𝕜)‖ / ‖(inner 𝕜 w (u 0) : 𝕜)‖
       ≤ (‖B‖ * (‖u 0‖ * ‖w‖)) / ‖(inner 𝕜 w (u 0) : 𝕜)‖ := by gcongr
     _ = ‖B‖ * (‖u 0‖ * ‖w‖ / ‖(inner 𝕜 w (u 0) : 𝕜)‖) := by ring
+
+/-- **A simple eigenvalue moves differentiably** ([saad2011numerical], §3.2.1): if `l` is an
+eigenvalue of `A` with eigenvector `u` whose eigenspace is `𝕜 ∙ u`, and `w` is a left eigenvector
+for `l` not orthogonal to `u`, then near `t = 0` there is a branch `t ↦ (mu t, v t)` of eigenpairs
+of `A + t B` through `(l, u)`, differentiable at `0`, whose eigenvalue derivative is Saad's
+`⟪w, B u⟫ / ⟪w, u⟫`.
+
+This is the branch that `Module.End.deriv_eigenvalue_perturbation` assumes. It is built by the
+inverse function theorem, not by the implicit function theorem and not through a determinant:
+the map
+
+`F (t, μ, z) = (t, ⟪w, z⟫, A z + t B z - μ z)`
+
+on `𝕜 × 𝕜 × E` is a polynomial, so its strict derivative at `(0, l, u)` is immediate, and that
+derivative is *injective* exactly because the eigenvalue is simple — testing `(A - l) δz = δμ u`
+against `w` kills the left-hand side and forces `δμ = 0`, after which simplicity puts `δz` in
+`𝕜 ∙ u` and `⟪w, δz⟫ = 0` kills it. In finite dimension injective is bijective, so `F` has a local
+inverse `g`, and the branch is `t ↦ g (t, ⟪w, u⟫, 0)`. The derivative of the eigenvalue is read off
+the same test: the second component `r` of `F' ⁻¹ (1, 0, 0)` satisfies `r ⟪w, u⟫ = ⟪w, B u⟫`.
+
+The normalization carried along the branch is `⟪w, v t⟫ = ⟪w, u⟫`, which is what makes the branch
+unique; it is the second component of the local inverse's defining equation. -/
+theorem hasDerivAt_eigenvalue_perturbation [FiniteDimensional 𝕜 E] {A B : E →L[𝕜] E} {l : 𝕜}
+    {u w : E} (hAu : A u = l • u) (hw : ∀ y, (inner 𝕜 w (A y) : 𝕜) = l * inner 𝕜 w y)
+    (hne : (inner 𝕜 w u : 𝕜) ≠ 0)
+    (hsimple : ∀ z : E, A z = l • z → ∃ c : 𝕜, z = c • u) :
+    ∃ (mu : 𝕜 → 𝕜) (v : 𝕜 → E) (v' : E), mu 0 = l ∧ v 0 = u ∧
+      (∀ᶠ t in nhds (0 : 𝕜), A (v t) + t • B (v t) = mu t • v t) ∧
+      HasDerivAt v v' 0 ∧
+      HasDerivAt mu (inner 𝕜 w (B u) / inner 𝕜 w u) 0 := by
+  classical
+  have : CompleteSpace E := FiniteDimensional.complete 𝕜 E
+  set π₁ : (𝕜 × 𝕜 × E) →L[𝕜] 𝕜 := ContinuousLinearMap.fst 𝕜 𝕜 (𝕜 × E) with hπ₁
+  set π₂ : (𝕜 × 𝕜 × E) →L[𝕜] 𝕜 :=
+    (ContinuousLinearMap.fst 𝕜 𝕜 E).comp (ContinuousLinearMap.snd 𝕜 𝕜 (𝕜 × E)) with hπ₂
+  set π₃ : (𝕜 × 𝕜 × E) →L[𝕜] E :=
+    (ContinuousLinearMap.snd 𝕜 𝕜 E).comp (ContinuousLinearMap.snd 𝕜 𝕜 (𝕜 × E)) with hπ₃
+  have hx1 : ∀ x : 𝕜 × 𝕜 × E, π₁ x = x.1 := fun _ => rfl
+  have hx2 : ∀ x : 𝕜 × 𝕜 × E, π₂ x = x.2.1 := fun _ => rfl
+  have hx3 : ∀ x : 𝕜 × 𝕜 × E, π₃ x = x.2.2 := fun _ => rfl
+  set p : 𝕜 × 𝕜 × E := (0, l, u) with hp
+  have hp1 : p.1 = (0 : 𝕜) := rfl
+  have hp2 : p.2.1 = l := rfl
+  have hp3 : p.2.2 = u := rfl
+  set F : (𝕜 × 𝕜 × E) → (𝕜 × 𝕜 × E) := fun x =>
+    (x.1, (inner 𝕜 w x.2.2 : 𝕜), A x.2.2 + x.1 • B x.2.2 - x.2.1 • x.2.2) with hF
+  set D : (𝕜 × 𝕜 × E) →L[𝕜] (𝕜 × 𝕜 × E) :=
+    π₁.prod (((innerSL 𝕜 w).comp π₃).prod
+      (A.comp π₃ - l • π₃ - π₂.smulRight u + π₁.smulRight (B u))) with hD
+  have hDapply : ∀ x : 𝕜 × 𝕜 × E, D x =
+      (x.1, (inner 𝕜 w x.2.2 : 𝕜), A x.2.2 - l • x.2.2 - x.2.1 • u + x.1 • B u) := by
+    intro x
+    simp [hD, hπ₁, hπ₂, hπ₃]
+  -- `D` is the strict derivative of `F` at `p`.
+  have hFD : HasStrictFDerivAt F D p := by
+    have h1 : HasStrictFDerivAt (fun x : 𝕜 × 𝕜 × E => x.1) π₁ p := π₁.hasStrictFDerivAt
+    have h2 : HasStrictFDerivAt (fun x : 𝕜 × 𝕜 × E => x.2.1) π₂ p := π₂.hasStrictFDerivAt
+    have h3 : HasStrictFDerivAt (fun x : 𝕜 × 𝕜 × E => x.2.2) π₃ p := π₃.hasStrictFDerivAt
+    have hAc : HasStrictFDerivAt (fun x : 𝕜 × 𝕜 × E => A x.2.2) (A.comp π₃) p :=
+      (A.comp π₃).hasStrictFDerivAt
+    have hin : HasStrictFDerivAt (fun x : 𝕜 × 𝕜 × E => (inner 𝕜 w x.2.2 : 𝕜))
+        ((innerSL 𝕜 w).comp π₃) p := ((innerSL 𝕜 w).comp π₃).hasStrictFDerivAt
+    have hBc : HasStrictFDerivAt (fun x : 𝕜 × 𝕜 × E => B x.2.2) (B.comp π₃) p :=
+      (B.comp π₃).hasStrictFDerivAt
+    have hsum := (hAc.add (h1.smul hBc)).sub (h2.smul h3)
+    refine (h1.prodMk (hin.prodMk hsum)).congr_fderiv (ContinuousLinearMap.ext fun x => ?_)
+    rw [hDapply]
+    simp only [ContinuousLinearMap.prod_apply, add_apply, sub_apply,
+      ContinuousLinearMap.coe_comp, Function.comp_apply, ContinuousLinearMap.smulRight_apply,
+      smul_apply, hx1, hx2, hx3, hp1, hp2, hp3, zero_smul, zero_add]
+    refine Prod.ext rfl (Prod.ext rfl ?_)
+    abel_nf
+  -- `D` is injective, hence an equivalence.
+  have hDker : ∀ x : 𝕜 × 𝕜 × E, D x = 0 → x = 0 := by
+    intro x hx
+    rw [hDapply] at hx
+    have e1 : x.1 = 0 := by simpa using congrArg (fun z : 𝕜 × 𝕜 × E => z.1) hx
+    have e2 : (inner 𝕜 w x.2.2 : 𝕜) = 0 := by
+      simpa using congrArg (fun z : 𝕜 × 𝕜 × E => z.2.1) hx
+    have e3 : A x.2.2 - l • x.2.2 - x.2.1 • u + x.1 • B u = 0 := by
+      simpa using congrArg (fun z : 𝕜 × 𝕜 × E => z.2.2) hx
+    rw [e1, zero_smul, add_zero, sub_eq_zero] at e3
+    have e5 : (inner 𝕜 w (A x.2.2 - l • x.2.2) : 𝕜) = inner 𝕜 w (x.2.1 • u) := by rw [e3]
+    rw [inner_sub_right, inner_smul_right, inner_smul_right, hw, e2] at e5
+    have e6 : x.2.1 = 0 := by
+      have hz : x.2.1 * (inner 𝕜 w u : 𝕜) = 0 := by rw [← e5]; ring
+      rcases mul_eq_zero.1 hz with h | h
+      · exact h
+      · exact absurd h hne
+    rw [e6, zero_smul, sub_eq_zero] at e3
+    obtain ⟨c, hc⟩ := hsimple x.2.2 e3
+    have e7 : c = 0 := by
+      rw [hc, inner_smul_right] at e2
+      rcases mul_eq_zero.1 e2 with h | h
+      · exact h
+      · exact absurd h hne
+    have e8 : x.2.2 = 0 := by rw [hc, e7, zero_smul]
+    exact Prod.ext e1 (Prod.ext e6 e8)
+  have hDinj : Function.Injective D := by
+    intro x y hxy
+    have hz : D (x - y) = 0 := by rw [map_sub, hxy, sub_self]
+    have hzz := hDker _ hz
+    rwa [sub_eq_zero] at hzz
+  have hDbij : Function.Bijective D :=
+    ⟨hDinj, LinearMap.injective_iff_surjective.1 hDinj⟩
+  set D' : (𝕜 × 𝕜 × E) ≃L[𝕜] (𝕜 × 𝕜 × E) :=
+    (LinearEquiv.ofBijective (D : (𝕜 × 𝕜 × E) →ₗ[𝕜] (𝕜 × 𝕜 × E)) hDbij).toContinuousLinearEquiv
+      with hD'
+  have hD'coe : (D' : (𝕜 × 𝕜 × E) →L[𝕜] (𝕜 × 𝕜 × E)) = D :=
+    ContinuousLinearMap.ext fun _ => rfl
+  rw [← hD'coe] at hFD
+  set g : (𝕜 × 𝕜 × E) → (𝕜 × 𝕜 × E) := hFD.localInverse F D' p with hg
+  have hFp : F p = (0, (inner 𝕜 w u : 𝕜), 0) := by
+    simp [hF, hp, hAu]
+  have hgp : g (0, (inner 𝕜 w u : 𝕜), 0) = p := by
+    rw [hg, ← hFp]; exact hFD.localInverse_apply_image
+  have hev : ∀ᶠ y in nhds (F p), F (g y) = y := hFD.eventually_right_inverse
+  have hkderiv : HasDerivAt (fun t : 𝕜 => (t, (inner 𝕜 w u : 𝕜), (0 : E)))
+      ((1 : 𝕜), (0 : 𝕜), (0 : E)) 0 :=
+    HasDerivAt.prodMk (hasDerivAt_id' (0 : 𝕜))
+      (HasDerivAt.prodMk (hasDerivAt_const _ _) (hasDerivAt_const _ _))
+  have hkcont : Filter.Tendsto (fun t : 𝕜 => (t, (inner 𝕜 w u : 𝕜), (0 : E)))
+      (nhds 0) (nhds (F p)) := by
+    rw [hFp]
+    exact hkderiv.continuousAt
+  have hevt : ∀ᶠ t in nhds (0 : 𝕜),
+      F (g (t, (inner 𝕜 w u : 𝕜), 0)) = (t, (inner 𝕜 w u : 𝕜), 0) := hkcont.eventually hev
+  have hgd : HasStrictFDerivAt g (D'.symm : (𝕜 × 𝕜 × E) →L[𝕜] (𝕜 × 𝕜 × E)) (F p) :=
+    hFD.to_localInverse
+  have hgd' : HasFDerivAt g (D'.symm : (𝕜 × 𝕜 × E) →L[𝕜] (𝕜 × 𝕜 × E))
+      ((0 : 𝕜), (inner 𝕜 w u : 𝕜), (0 : E)) := by
+    rw [hFp] at hgd; exact hgd.hasFDerivAt
+  have hcomp : HasDerivAt (fun t : 𝕜 => g (t, (inner 𝕜 w u : 𝕜), 0))
+      (D'.symm ((1 : 𝕜), (0 : 𝕜), (0 : E))) 0 := by
+    have := hgd'.comp_hasDerivAt (0 : 𝕜) hkderiv
+    simpa [Function.comp_def] using this
+  -- the second component of `D'.symm (1, 0, 0)` is Saad's derivative
+  have hsymm : D (D'.symm ((1 : 𝕜), (0 : 𝕜), (0 : E))) = ((1 : 𝕜), (0 : 𝕜), (0 : E)) := by
+    rw [← hD'coe, ContinuousLinearEquiv.coe_coe, D'.apply_symm_apply]
+  have hr : (D'.symm ((1 : 𝕜), (0 : 𝕜), (0 : E))).2.1 = inner 𝕜 w (B u) / inner 𝕜 w u := by
+    rw [hDapply] at hsymm
+    have f1 : (D'.symm ((1 : 𝕜), (0 : 𝕜), (0 : E))).1 = 1 := by
+      simpa using congrArg (fun z : 𝕜 × 𝕜 × E => z.1) hsymm
+    have f2 : (inner 𝕜 w (D'.symm ((1 : 𝕜), (0 : 𝕜), (0 : E))).2.2 : 𝕜) = 0 := by
+      simpa using congrArg (fun z : 𝕜 × 𝕜 × E => z.2.1) hsymm
+    have f3 : A (D'.symm ((1 : 𝕜), (0 : 𝕜), (0 : E))).2.2
+        - l • (D'.symm ((1 : 𝕜), (0 : 𝕜), (0 : E))).2.2
+        - (D'.symm ((1 : 𝕜), (0 : 𝕜), (0 : E))).2.1 • u
+        + (D'.symm ((1 : 𝕜), (0 : 𝕜), (0 : E))).1 • B u = 0 := by
+      simpa using congrArg (fun z : 𝕜 × 𝕜 × E => z.2.2) hsymm
+    rw [f1, one_smul] at f3
+    have f4 := congrArg (fun y : E => (inner 𝕜 w y : 𝕜)) f3
+    simp only [inner_add_right, inner_sub_right, inner_smul_right, hw, f2, inner_zero_right] at f4
+    have f5 : (D'.symm ((1 : 𝕜), (0 : 𝕜), (0 : E))).2.1 * (inner 𝕜 w u : 𝕜)
+        = inner 𝕜 w (B u) := by linear_combination -f4
+    rw [eq_div_iff hne]
+    exact f5
+  refine ⟨fun t => (g (t, (inner 𝕜 w u : 𝕜), 0)).2.1,
+    fun t => (g (t, (inner 𝕜 w u : 𝕜), 0)).2.2,
+    (D'.symm ((1 : 𝕜), (0 : 𝕜), (0 : E))).2.2, ?_, ?_, ?_, ?_, ?_⟩
+  · change (g ((0 : 𝕜), (inner 𝕜 w u : 𝕜), (0 : E))).2.1 = l
+    rw [hgp]
+  · change (g ((0 : 𝕜), (inner 𝕜 w u : 𝕜), (0 : E))).2.2 = u
+    rw [hgp]
+  · filter_upwards [hevt] with t ht
+    have c1 : (g (t, (inner 𝕜 w u : 𝕜), 0)).1 = t := by
+      simpa [hF] using congrArg (fun z : 𝕜 × 𝕜 × E => z.1) ht
+    have c3 : A (g (t, (inner 𝕜 w u : 𝕜), 0)).2.2
+        + (g (t, (inner 𝕜 w u : 𝕜), 0)).1 • B (g (t, (inner 𝕜 w u : 𝕜), 0)).2.2
+        - (g (t, (inner 𝕜 w u : 𝕜), 0)).2.1 • (g (t, (inner 𝕜 w u : 𝕜), 0)).2.2 = 0 := by
+      simpa [hF] using congrArg (fun z : 𝕜 × 𝕜 × E => z.2.2) ht
+    rw [c1, sub_eq_zero] at c3
+    exact c3
+  · have := (π₃.hasFDerivAt).comp_hasDerivAt (0 : 𝕜) hcomp
+    simpa [Function.comp_def, hx3] using this
+  · rw [← hr]
+    have := (π₂.hasFDerivAt).comp_hasDerivAt (0 : 𝕜) hcomp
+    simpa [Function.comp_def, hx2] using this
 
 end Module.End
 

@@ -37,6 +37,11 @@ b` has no solution at all, following [choi2006iterative] Ch. 2–3.
   It reads both residuals off the last row of the accumulated rotation
   (`Krylov.IsMinResIterate.residual_eq_gamma_smul_sum`) and steps that row with
   `Krylov.givensQ_last_row_castSucc`; nothing in it is symmetry-specific.
+* **The image of the residual.** `Lanczos.apply_residual_minRes_eq` is [choi2006iterative] Lemma
+  2.19: `A r_m` has only two components in the Lanczos basis, on `v_m` and `v_{m+1}`, with the
+  entries of the rotated coefficient array as coefficients; the vanishing of the rest is the
+  orthogonality of `A r_m` to the Krylov space, and this is where the Hermitian symmetry of
+  `Arnoldi.coeff` for symmetric `A` is used.
 
 Everything about the specification level (`Krylov.IsMinResIterate`, `Krylov.IsMinNormMinResIterate`
 of `Numlib/Krylov/Iterate`) needs only symmetry of `A` and finite grade; the eigenvalue counts and
@@ -635,6 +640,106 @@ theorem residual_minRes_succ_eq {m : ℕ} (hm : m + 1 ≤ grade A (b - A x₀))
     ring
   rw [hr', Fin.sum_univ_castSucc, Finset.sum_congr rfl fun j _ => h1 j, ← Finset.smul_sum, ← hr,
     h2, ← sub_eq_add_neg]
+
+/-- **[choi2006iterative], Lemma 2.19**: the image of the minimal-residual residual under `A` has
+only two nonzero components in the Lanczos basis,
+
+`A r_m = γ_m (conj R^{(m)}_{m,m} · v_m + conj R^{(m)}_{m,m+1} · v_{m+1})`,
+
+where `R^{(m)} = Q_m H̄` is the coefficient array after the first `m` rotations.
+[choi2006iterative] writes the two entries `γ^{(1)}_{k+1}` and `δ^{(1)}_{k+2}` and the prefactor
+`‖r_k‖`, with `|γ_m| = ‖r_m‖`; the index shift is that his rotation `Q_{k,k+1}` is rotation `k - 1`
+here.
+
+Applying `A` through the Arnoldi relation makes the coefficient of `v_l` equal to
+`γ_m ∑_i conj (Q_m)_{m,i} h_{l,i}`, which by the Hermitian symmetry of the Lanczos coefficient
+array is `γ_m conj (Q_m H̄)_{m,l}`. That vanishes for `l < m` because the rotated array is upper
+triangular — which is the orthogonality `A r_m ⟂ 𝒦_m` — and `Krylov.rotated_row_eq_sum_givensQ`
+names it at `l = m` and `l = m + 1`, the two columns a single application of `A` can reach. -/
+theorem apply_residual_minRes_eq (hA : A.IsSymmetric) {m : ℕ} (hm : m ≤ grade A (b - A x₀))
+    (hρ : ∀ k < m, givensRho (Arnoldi.coeff A (b - A x₀)) k ≠ 0) {x : E}
+    (hx : IsMinResIterate A b x₀ m x) :
+    A (b - A x) =
+      (gamma (Arnoldi.coeff A (b - A x₀)) (‖b - A x₀‖ : 𝕜) m *
+          (starRingEnd 𝕜) (rotated (Arnoldi.coeff A (b - A x₀)) m m m)) •
+          Arnoldi.vec A (b - A x₀) m +
+        (gamma (Arnoldi.coeff A (b - A x₀)) (‖b - A x₀‖ : 𝕜) m *
+            (starRingEnd 𝕜) (rotated (Arnoldi.coeff A (b - A x₀)) m m (m + 1))) •
+          Arnoldi.vec A (b - A x₀) (m + 1) := by
+  have hr := hx.residual_eq_gamma_smul_sum hm hρ
+  have step1 : ∀ i : Fin (m + 1),
+      A ((gamma (Arnoldi.coeff A (b - A x₀)) (‖b - A x₀‖ : 𝕜) m *
+            (starRingEnd 𝕜) (givensQ (Arnoldi.coeff A (b - A x₀)) m (Fin.last m) i)) •
+          Arnoldi.vec A (b - A x₀) (i : ℕ))
+        = ∑ l ∈ Finset.range (m + 2),
+            ((gamma (Arnoldi.coeff A (b - A x₀)) (‖b - A x₀‖ : 𝕜) m *
+                (starRingEnd 𝕜) (givensQ (Arnoldi.coeff A (b - A x₀)) m (Fin.last m) i)) *
+              Arnoldi.coeff A (b - A x₀) l (i : ℕ)) • Arnoldi.vec A (b - A x₀) l := by
+    intro i
+    rw [map_smul, Arnoldi.apply_vec_of_le A (b - A x₀) (show (i : ℕ) + 2 ≤ m + 2 by
+      have := i.isLt; omega), Finset.smul_sum]
+    exact Finset.sum_congr rfl fun l _ => (smul_smul _ _ _)
+  have step2 : ∀ l ∈ Finset.range (m + 2),
+      (∑ i : Fin (m + 1),
+          ((gamma (Arnoldi.coeff A (b - A x₀)) (‖b - A x₀‖ : 𝕜) m *
+              (starRingEnd 𝕜) (givensQ (Arnoldi.coeff A (b - A x₀)) m (Fin.last m) i)) *
+            Arnoldi.coeff A (b - A x₀) l (i : ℕ)) • Arnoldi.vec A (b - A x₀) l)
+        = (gamma (Arnoldi.coeff A (b - A x₀)) (‖b - A x₀‖ : 𝕜) m *
+            (starRingEnd 𝕜) (rotated (Arnoldi.coeff A (b - A x₀)) m m l)) •
+          Arnoldi.vec A (b - A x₀) l := by
+    intro l hl
+    rw [Finset.mem_range] at hl
+    rw [← Finset.sum_smul]
+    congr 1
+    rw [rotated_row_eq_sum_givensQ (Arnoldi.coeff A (b - A x₀)) m l (by omega), map_sum,
+      Finset.mul_sum]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    rw [map_mul, Arnoldi.coeff_conj_of_isSymmetric hA (b - A x₀) l (i : ℕ)]
+    ring
+  have step3 : ∀ l ∈ Finset.range m,
+      (gamma (Arnoldi.coeff A (b - A x₀)) (‖b - A x₀‖ : 𝕜) m *
+          (starRingEnd 𝕜) (rotated (Arnoldi.coeff A (b - A x₀)) m m l)) •
+        Arnoldi.vec A (b - A x₀) l = 0 := by
+    intro l hl
+    rw [Finset.mem_range] at hl
+    rw [rotated_eq_zero_of_lt (Arnoldi.coeff A (b - A x₀))
+      (fun i j hij => Arnoldi.coeff_eq_zero_of_lt A (b - A x₀) hij) m m l hl hl,
+      map_zero, mul_zero, zero_smul]
+  rw [hr, map_sum, Finset.sum_congr rfl fun i (_ : i ∈ Finset.univ) => step1 i, Finset.sum_comm,
+    Finset.sum_congr rfl step2, Finset.sum_range_succ, Finset.sum_range_succ,
+    Finset.sum_eq_zero step3, zero_add]
+
+/-- **[choi2006iterative], Lemma 2.19**, in norm: `‖A r_m‖ = ‖r_m‖ √(|R^{(m)}_{m,m}|² +
+|R^{(m)}_{m,m+1}|²)`, the two Lanczos vectors that carry `A r_m` being orthonormal and `|γ_m| =
+‖r_m‖`. -/
+theorem norm_apply_residual_minRes_eq (hA : A.IsSymmetric) {m : ℕ}
+    (hm : m + 1 < grade A (b - A x₀))
+    (hρ : ∀ k < m, givensRho (Arnoldi.coeff A (b - A x₀)) k ≠ 0) {x : E}
+    (hx : IsMinResIterate A b x₀ m x) :
+    ‖A (b - A x)‖ = ‖b - A x‖ *
+      Real.sqrt (‖rotated (Arnoldi.coeff A (b - A x₀)) m m m‖ ^ 2 +
+        ‖rotated (Arnoldi.coeff A (b - A x₀)) m m (m + 1)‖ ^ 2) := by
+  have hv1 : ‖Arnoldi.vec A (b - A x₀) m‖ = 1 :=
+    Arnoldi.norm_vec_eq_one_of_lt_grade A (b - A x₀) (by omega)
+  have hv2 : ‖Arnoldi.vec A (b - A x₀) (m + 1)‖ = 1 :=
+    Arnoldi.norm_vec_eq_one_of_lt_grade A (b - A x₀) hm
+  have hperp : ∀ a c : 𝕜, (inner 𝕜 (a • Arnoldi.vec A (b - A x₀) m)
+      (c • Arnoldi.vec A (b - A x₀) (m + 1)) : 𝕜) = 0 := by
+    intro a c
+    rw [inner_smul_left, inner_smul_right,
+      Arnoldi.inner_vec_eq_zero A (b - A x₀) (by omega : m ≠ m + 1), mul_zero, mul_zero]
+  have hgamma : ‖gamma (Arnoldi.coeff A (b - A x₀)) (‖b - A x₀‖ : 𝕜) m‖ = ‖b - A x‖ :=
+    (hx.norm_residual_eq_norm_gamma (by omega)).symm
+  have hsq : ‖A (b - A x)‖ ^ 2 = ‖b - A x‖ ^ 2 *
+      (‖rotated (Arnoldi.coeff A (b - A x₀)) m m m‖ ^ 2 +
+        ‖rotated (Arnoldi.coeff A (b - A x₀)) m m (m + 1)‖ ^ 2) := by
+    rw [apply_residual_minRes_eq hA (by omega) hρ hx, pow_two,
+      norm_add_sq_eq_norm_sq_add_norm_sq_of_inner_eq_zero _ _ (hperp _ _), ← pow_two, ← pow_two,
+      norm_smul, norm_smul, hv1, hv2, mul_one, mul_one, norm_mul, norm_mul, RCLike.norm_conj,
+      RCLike.norm_conj, hgamma]
+    ring
+  rw [← Real.sqrt_sq (norm_nonneg (A (b - A x))), hsq, Real.sqrt_mul (sq_nonneg _),
+    Real.sqrt_sq (norm_nonneg _)]
 
 end Residual
 

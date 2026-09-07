@@ -7,6 +7,7 @@ import Mathlib.Analysis.Matrix.Spectrum
 import Mathlib.Analysis.SpecialFunctions.Sqrt
 import Mathlib.Analysis.SpecificLimits.Basic
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Basic
+import Mathlib.LinearAlgebra.Matrix.IsDiag
 import Mathlib.LinearAlgebra.Matrix.Trace
 
 /-!
@@ -36,6 +37,8 @@ entry carries at least a fraction `1/(n² - n)` of the mass.
 * `Matrix.tendsto_offDiagNormSq_classicalJacobiIterate`: the off-diagonal mass tends to `0`.
 * `Matrix.charpoly_classicalJacobiIterate`: every iterate is orthogonally similar to `A`, so the
   eigenvalues never move.
+* `Matrix.tendsto_classicalJacobiIterate`: the iterates converge to a diagonal matrix with the
+  characteristic polynomial of `A`.
 
 ## Implementation notes
 
@@ -221,11 +224,21 @@ section Jacobi
 
 variable (A : Matrix n n ℝ) (j k : n)
 
-/-- The tangent of the Jacobi angle: the root `t = θ + √(θ² + 1)` of `t² - 2θt - 1 = 0`, where `θ =
-(a_kk - a_jj)/(2 a_jk)`. It is `0` when `a_jk` already vanishes, so that the rotation is then the
-identity. -/
+/-- The tangent of the Jacobi angle: the root of `t² - 2θt - 1 = 0` of **smaller modulus**, where
+`θ = (a_kk - a_jj)/(2 a_jk)`, namely `θ - √(θ²+1)` for `θ ≥ 0` and `θ + √(θ²+1)` for `θ < 0`. It
+is `0` when `a_jk` already vanishes, so that the rotation is then the identity.
+
+The two roots have product `-1`, so exactly one of them has `|t| ≤ 1`, and that is the one
+[kress1998numerical] Lemma 7.13 prescribes: its `cos 2φ = 1/√(1 + tan² 2φ)` is positive, which is
+`|φ| ≤ π/4`. **The choice is not a matter of numerical stability alone.** With the other root the
+rotation angle lies in `(0, π/2)` and a step at a pair with `a_kk > a_jj` and `|a_jk|` small is
+close to an interchange of the two coordinates, so `A_{ν+1} - A_ν` does not tend to `0` and the
+iterates need not converge at all — `Matrix.abs_jacobiTan_le_one` is exactly what
+`Matrix.dist_jacobiStep_le` needs. -/
 noncomputable def jacobiTan : ℝ :=
   if A j k = 0 then 0
+  else if 0 ≤ (A k k - A j j) / (2 * A j k) then
+    (A k k - A j j) / (2 * A j k) - Real.sqrt (((A k k - A j j) / (2 * A j k)) ^ 2 + 1)
   else (A k k - A j j) / (2 * A j k) + Real.sqrt (((A k k - A j j) / (2 * A j k)) ^ 2 + 1)
 
 /-- The cosine of the Jacobi angle. -/
@@ -262,7 +275,35 @@ theorem jacobiTan_sq (h : A j k ≠ 0) :
   have hnn : (0 : ℝ) ≤ ((A k k - A j j) / (2 * A j k)) ^ 2 + 1 := by positivity
   have hsq := Real.sq_sqrt hnn
   simp only [jacobiTan, h, ite_false]
-  nlinarith [hsq]
+  split_ifs <;> nlinarith [hsq]
+
+omit [Fintype n] [DecidableEq n] in
+/-- **The Jacobi angle is at most `π/4`**: the root of smaller modulus has `|t| ≤ 1`. This is what
+keeps a Jacobi step close to the identity when the annihilated entry is small, and hence what makes
+the classical method converge as a sequence of matrices and not merely in off-diagonal mass. -/
+theorem abs_jacobiTan_le_one : |jacobiTan A j k| ≤ 1 := by
+  rw [jacobiTan]
+  split_ifs with h hθ
+  · simp
+  · set θ := (A k k - A j j) / (2 * A j k) with hθdef
+    have hnn : (0 : ℝ) ≤ θ ^ 2 + 1 := by positivity
+    have hsq := Real.sq_sqrt hnn
+    have hle : θ ≤ Real.sqrt (θ ^ 2 + 1) := by
+      nlinarith [Real.sqrt_nonneg (θ ^ 2 + 1), hsq]
+    have hge : Real.sqrt (θ ^ 2 + 1) ≤ θ + 1 := by
+      nlinarith [Real.sqrt_nonneg (θ ^ 2 + 1), hsq, hθ]
+    rw [abs_le]
+    constructor <;> linarith
+  · set θ := (A k k - A j j) / (2 * A j k) with hθdef
+    have hθ' : θ < 0 := lt_of_not_ge hθ
+    have hnn : (0 : ℝ) ≤ θ ^ 2 + 1 := by positivity
+    have hsq := Real.sq_sqrt hnn
+    have hle : -θ ≤ Real.sqrt (θ ^ 2 + 1) := by
+      nlinarith [Real.sqrt_nonneg (θ ^ 2 + 1), hsq]
+    have hge : Real.sqrt (θ ^ 2 + 1) ≤ 1 - θ := by
+      nlinarith [Real.sqrt_nonneg (θ ^ 2 + 1), hsq, hθ']
+    rw [abs_le]
+    constructor <;> linarith
 
 omit [Fintype n] [DecidableEq n] in
 /-- The Jacobi tangent annihilates the off-diagonal entry. -/
@@ -289,6 +330,27 @@ theorem jacobi_annihilate :
 theorem transpose_jacobiRotation_mul_self (hjk : j ≠ k) :
     (jacobiRotation A j k)ᵀ * jacobiRotation A j k = 1 :=
   transpose_planeRotation_mul_self hjk (jacobiCos_sq_add_jacobiSin_sq A j k)
+
+omit [Fintype n] [DecidableEq n] in
+/-- The Jacobi cosine is positive. -/
+theorem jacobiCos_pos : 0 < jacobiCos A j k := by
+  have h : (0 : ℝ) < 1 + jacobiTan A j k ^ 2 := by positivity
+  rw [jacobiCos]
+  positivity
+
+omit [Fintype n] [DecidableEq n] in
+/-- The Jacobi cosine is at most one. -/
+theorem jacobiCos_le_one : jacobiCos A j k ≤ 1 := by
+  nlinarith [jacobiCos_sq_add_jacobiSin_sq A j k, jacobiCos_pos A j k,
+    sq_nonneg (jacobiSin A j k)]
+
+omit [Fintype n] [DecidableEq n] in
+/-- The Jacobi sine is at most one in modulus. -/
+theorem abs_jacobiSin_le_one : |jacobiSin A j k| ≤ 1 := by
+  have h := jacobiCos_sq_add_jacobiSin_sq A j k
+  rw [abs_le]
+  constructor <;> nlinarith [sq_nonneg (jacobiCos A j k), sq_nonneg (jacobiSin A j k + 1),
+    sq_nonneg (jacobiSin A j k - 1)]
 
 end Jacobi
 
@@ -403,17 +465,177 @@ theorem offDiagNormSq_jacobiStep (hA : A.IsSymm) (hjk : j ≠ k) :
   have hD := sum_diag_sq_jacobiStep A hA hjk
   linarith
 
-end Step
-
-/-! ### The classical Jacobi method -/
-
-section ClassicalJacobi
-
 /-- A Jacobi step preserves symmetry, being an orthogonal similarity. -/
 theorem isSymm_jacobiStep {A : Matrix n n ℝ} (hA : A.IsSymm) (j k : n) :
     (jacobiStep A j k).IsSymm := by
   rw [Matrix.IsSymm, jacobiStep, Matrix.transpose_mul, Matrix.transpose_mul,
     Matrix.transpose_transpose, hA, ← Matrix.mul_assoc]
+
+/-- **The `(j,j)` entry moves by `t a_jk`**: with the angle of `Matrix.jacobiTan` the diagonal entry
+changes by the tangent times the annihilated entry, so by at most `|a_jk|`. -/
+theorem jacobiStep_apply_jj_sub (hA : A.IsSymm) (hjk : j ≠ k) :
+    jacobiStep A j k j j - A j j = jacobiTan A j k * A j k := by
+  have hcs := jacobiCos_sq_add_jacobiSin_sq A j k
+  have hann := jacobiTan_annihilate A j k
+  rw [jacobiSin] at hcs
+  rw [jacobiStep_apply_jj A hA hjk, jacobiSin]
+  linear_combination (A j j + jacobiTan A j k * A j k) * hcs
+    + (jacobiTan A j k * jacobiCos A j k ^ 2) * hann
+
+/-- **The `(k,k)` entry moves by `-t a_jk`**, the mirror of `Matrix.jacobiStep_apply_jj_sub`. -/
+theorem jacobiStep_apply_kk_sub (hA : A.IsSymm) (hjk : j ≠ k) :
+    jacobiStep A j k k k - A k k = -(jacobiTan A j k * A j k) := by
+  have hcs := jacobiCos_sq_add_jacobiSin_sq A j k
+  have hann := jacobiTan_annihilate A j k
+  rw [jacobiSin] at hcs
+  rw [jacobiStep_apply_kk A hA hjk, jacobiSin]
+  linear_combination (A k k - jacobiTan A j k * A j k) * hcs
+    - (jacobiTan A j k * jacobiCos A j k ^ 2) * hann
+
+/-- The `(p,j)` entry after a plane rotation, for `p` outside the rotated plane. -/
+theorem conj_planeRotation_apply_col_j (hjk : j ≠ k) (M : Matrix n n ℝ) {p : n}
+    (hpj : p ≠ j) (hpk : p ≠ k) :
+    ((planeRotation j k c s)ᵀ * M * planeRotation j k c s) p j = c * M p j + s * M p k := by
+  simp [transpose_planeRotation_mul_apply hjk, mul_planeRotation_apply hjk, hpj, hpk]
+
+/-- The `(p,k)` entry after a plane rotation, for `p` outside the rotated plane. -/
+theorem conj_planeRotation_apply_col_k (hjk : j ≠ k) (M : Matrix n n ℝ) {p : n}
+    (hpj : p ≠ j) (hpk : p ≠ k) :
+    ((planeRotation j k c s)ᵀ * M * planeRotation j k c s) p k = -s * M p j + c * M p k := by
+  simp [transpose_planeRotation_mul_apply hjk, mul_planeRotation_apply hjk, hpj, hpk,
+    Ne.symm hjk]
+
+/-- The `(j,q)` entry after a plane rotation, for `q` outside the rotated plane. -/
+theorem conj_planeRotation_apply_row_j (hjk : j ≠ k) (M : Matrix n n ℝ) {q : n}
+    (hqj : q ≠ j) (hqk : q ≠ k) :
+    ((planeRotation j k c s)ᵀ * M * planeRotation j k c s) j q = c * M j q + s * M k q := by
+  simp [transpose_planeRotation_mul_apply hjk, mul_planeRotation_apply hjk, hqj, hqk]
+
+/-- The `(k,q)` entry after a plane rotation, for `q` outside the rotated plane. -/
+theorem conj_planeRotation_apply_row_k (hjk : j ≠ k) (M : Matrix n n ℝ) {q : n}
+    (hqj : q ≠ j) (hqk : q ≠ k) :
+    ((planeRotation j k c s)ᵀ * M * planeRotation j k c s) k q = -s * M j q + c * M k q := by
+  simp [transpose_planeRotation_mul_apply hjk, mul_planeRotation_apply hjk, hqj, hqk,
+    Ne.symm hjk]
+
+/-- Every off-diagonal entry is at most `√(N(A))` in modulus, being one term of the sum defining
+the off-diagonal mass. -/
+theorem abs_le_sqrt_offDiagNormSq (A : Matrix n n ℝ) {p q : n} (hpq : p ≠ q) :
+    |A p q| ≤ Real.sqrt (offDiagNormSq A) := by
+  have h : (A p q) ^ 2 ≤ offDiagNormSq A := by
+    rw [offDiagNormSq_real]
+    calc (A p q) ^ 2 ≤ ∑ q' ∈ Finset.univ.erase p, (A p q') ^ 2 :=
+          Finset.single_le_sum (f := fun q' => (A p q') ^ 2) (fun i _ => sq_nonneg _)
+            (Finset.mem_erase.2 ⟨hpq.symm, Finset.mem_univ q⟩)
+      _ ≤ ∑ i, ∑ q' ∈ Finset.univ.erase i, (A i q') ^ 2 :=
+          Finset.single_le_sum (f := fun i => ∑ q' ∈ Finset.univ.erase i, (A i q') ^ 2)
+            (fun i _ => Finset.sum_nonneg fun _ _ => sq_nonneg _) (Finset.mem_univ p)
+  calc |A p q| = Real.sqrt ((A p q) ^ 2) := (Real.sqrt_sq_eq_abs _).symm
+    _ ≤ Real.sqrt (offDiagNormSq A) := Real.sqrt_le_sqrt h
+
+/-- **A Jacobi step moves no entry by more than `2 √(N(A))`.** Every entry it changes is a
+combination of off-diagonal entries of `A` with coefficients at most one, or the annihilated entry
+times the tangent, and `Matrix.abs_jacobiTan_le_one` keeps the latter below `|a_jk|`. This is the
+estimate the convergence of the *matrix* sequence rests on, and it fails for the other root of the
+Jacobi quadratic. -/
+theorem abs_jacobiStep_sub_le (hA : A.IsSymm) (hjk : j ≠ k) (p q : n) :
+    |jacobiStep A j k p q - A p q| ≤ 2 * Real.sqrt (offDiagNormSq A) := by
+  have hnn : (0 : ℝ) ≤ Real.sqrt (offDiagNormSq A) := Real.sqrt_nonneg _
+  have hc1 : jacobiCos A j k ≤ 1 := jacobiCos_le_one A j k
+  have hc0 : 0 < jacobiCos A j k := jacobiCos_pos A j k
+  have hs1 : |jacobiSin A j k| ≤ 1 := abs_jacobiSin_le_one A j k
+  have ht1 : |jacobiTan A j k| ≤ 1 := abs_jacobiTan_le_one A j k
+  have hcc : |jacobiCos A j k - 1| ≤ 1 := by rw [abs_le]; constructor <;> linarith
+  have htwo : ∀ x y u v : ℝ, |x| ≤ 1 → |y| ≤ 1 → |u| ≤ Real.sqrt (offDiagNormSq A) →
+      |v| ≤ Real.sqrt (offDiagNormSq A) → |x * u + y * v| ≤ 2 * Real.sqrt (offDiagNormSq A) := by
+    intro x y u v hx hy hu hv
+    calc |x * u + y * v| ≤ |x * u| + |y * v| := abs_add_le _ _
+      _ = |x| * |u| + |y| * |v| := by rw [abs_mul, abs_mul]
+      _ ≤ 1 * Real.sqrt (offDiagNormSq A) + 1 * Real.sqrt (offDiagNormSq A) :=
+          add_le_add (mul_le_mul hx hu (abs_nonneg _) zero_le_one)
+            (mul_le_mul hy hv (abs_nonneg _) zero_le_one)
+      _ = 2 * Real.sqrt (offDiagNormSq A) := by ring
+  have hone : ∀ u : ℝ, |u| ≤ Real.sqrt (offDiagNormSq A) →
+      |u| ≤ 2 * Real.sqrt (offDiagNormSq A) := fun u hu => by linarith
+  -- the four entries of the rotated block
+  have cjj : |jacobiStep A j k j j - A j j| ≤ 2 * Real.sqrt (offDiagNormSq A) := by
+    rw [jacobiStep_apply_jj_sub A hA hjk, abs_mul]
+    have h := abs_le_sqrt_offDiagNormSq A hjk
+    nlinarith [abs_nonneg (jacobiTan A j k), abs_nonneg (A j k)]
+  have ckk : |jacobiStep A j k k k - A k k| ≤ 2 * Real.sqrt (offDiagNormSq A) := by
+    rw [jacobiStep_apply_kk_sub A hA hjk, abs_neg, abs_mul]
+    have h := abs_le_sqrt_offDiagNormSq A hjk
+    nlinarith [abs_nonneg (jacobiTan A j k), abs_nonneg (A j k)]
+  have cjk : |jacobiStep A j k j k - A j k| ≤ 2 * Real.sqrt (offDiagNormSq A) := by
+    rw [jacobiStep_apply_eq_zero A hA hjk, zero_sub, abs_neg]
+    exact hone _ (abs_le_sqrt_offDiagNormSq A hjk)
+  have ckj : |jacobiStep A j k k j - A k j| ≤ 2 * Real.sqrt (offDiagNormSq A) := by
+    rw [(isSymm_jacobiStep hA j k).apply j k, jacobiStep_apply_eq_zero A hA hjk, zero_sub,
+      abs_neg, hA.apply j k]
+    exact hone _ (abs_le_sqrt_offDiagNormSq A hjk)
+  have cjq : ∀ q' : n, q' ≠ j → q' ≠ k →
+      |jacobiStep A j k j q' - A j q'| ≤ 2 * Real.sqrt (offDiagNormSq A) := by
+    intro q' hqj hqk
+    rw [jacobiStep, jacobiRotation, conj_planeRotation_apply_row_j hjk A hqj hqk]
+    have hexp : jacobiCos A j k * A j q' + jacobiSin A j k * A k q' - A j q'
+        = (jacobiCos A j k - 1) * A j q' + jacobiSin A j k * A k q' := by ring
+    rw [hexp]
+    exact htwo _ _ _ _ hcc hs1 (abs_le_sqrt_offDiagNormSq A (Ne.symm hqj))
+      (abs_le_sqrt_offDiagNormSq A (Ne.symm hqk))
+  have ckq : ∀ q' : n, q' ≠ j → q' ≠ k →
+      |jacobiStep A j k k q' - A k q'| ≤ 2 * Real.sqrt (offDiagNormSq A) := by
+    intro q' hqj hqk
+    rw [jacobiStep, jacobiRotation, conj_planeRotation_apply_row_k hjk A hqj hqk]
+    have hexp : -jacobiSin A j k * A j q' + jacobiCos A j k * A k q' - A k q'
+        = -jacobiSin A j k * A j q' + (jacobiCos A j k - 1) * A k q' := by ring
+    rw [hexp]
+    refine htwo _ _ _ _ ?_ hcc (abs_le_sqrt_offDiagNormSq A (Ne.symm hqj))
+      (abs_le_sqrt_offDiagNormSq A (Ne.symm hqk))
+    rwa [abs_neg]
+  have cpj : ∀ p' : n, p' ≠ j → p' ≠ k →
+      |jacobiStep A j k p' j - A p' j| ≤ 2 * Real.sqrt (offDiagNormSq A) := by
+    intro p' hpj hpk
+    rw [jacobiStep, jacobiRotation, conj_planeRotation_apply_col_j hjk A hpj hpk]
+    have hexp : jacobiCos A j k * A p' j + jacobiSin A j k * A p' k - A p' j
+        = (jacobiCos A j k - 1) * A p' j + jacobiSin A j k * A p' k := by ring
+    rw [hexp]
+    exact htwo _ _ _ _ hcc hs1 (abs_le_sqrt_offDiagNormSq A hpj)
+      (abs_le_sqrt_offDiagNormSq A hpk)
+  have cpk : ∀ p' : n, p' ≠ j → p' ≠ k →
+      |jacobiStep A j k p' k - A p' k| ≤ 2 * Real.sqrt (offDiagNormSq A) := by
+    intro p' hpj hpk
+    rw [jacobiStep, jacobiRotation, conj_planeRotation_apply_col_k hjk A hpj hpk]
+    have hexp : -jacobiSin A j k * A p' j + jacobiCos A j k * A p' k - A p' k
+        = -jacobiSin A j k * A p' j + (jacobiCos A j k - 1) * A p' k := by ring
+    rw [hexp]
+    refine htwo _ _ _ _ ?_ hcc (abs_le_sqrt_offDiagNormSq A hpj)
+      (abs_le_sqrt_offDiagNormSq A hpk)
+    rwa [abs_neg]
+  by_cases hpj : p = j
+  · by_cases hqj : q = j
+    · rw [hpj, hqj]; exact cjj
+    · by_cases hqk : q = k
+      · rw [hpj, hqk]; exact cjk
+      · rw [hpj]; exact cjq q hqj hqk
+  · by_cases hpk : p = k
+    · by_cases hqj : q = j
+      · rw [hpk, hqj]; exact ckj
+      · by_cases hqk : q = k
+        · rw [hpk, hqk]; exact ckk
+        · rw [hpk]; exact ckq q hqj hqk
+    · by_cases hqj : q = j
+      · rw [hqj]; exact cpj p hpj hpk
+      · by_cases hqk : q = k
+        · rw [hqk]; exact cpk p hpj hpk
+        · rw [jacobiStep, jacobiRotation, conj_planeRotation_apply_of_ne hjk A hpj hpk hqj hqk,
+            sub_self, abs_zero]
+          positivity
+
+end Step
+
+/-! ### The classical Jacobi method -/
+
+section ClassicalJacobi
 
 /-- A matrix with at most one index has no off-diagonal entries, so no off-diagonal mass. This is
 the degenerate case that the geometric decay below has to dispose of separately, the factor `1/(n² -
@@ -604,6 +826,85 @@ theorem tendsto_offDiagNormSq_classicalJacobiIterate {A : Matrix n n ℝ} (hA : 
   refine squeeze_zero (fun ν => offDiagNormSq_nonneg _)
     (fun ν => offDiagNormSq_classicalJacobiIterate_le hA ν) ?_
   simpa using (tendsto_pow_atTop_nhds_zero_of_lt_one hρ0 hρ1).mul_const (offDiagNormSq A)
+
+/-- **[kress1998numerical], Theorem 7.14**: the classical Jacobi iterates converge, and the limit is
+a diagonal matrix carrying the characteristic polynomial of `A` — a diagonal matrix whose diagonal
+is the multiset of eigenvalues of `A`.
+
+[kress1998numerical] proves only that the off-diagonal mass tends to `0`
+(`Matrix.tendsto_offDiagNormSq_classicalJacobiIterate`); convergence of the matrix sequence is a
+separate theorem, usually attributed to Forsythe and Henrici, and is normally proved by showing
+that the limit points lie in the finite set of diagonal matrices with the right spectrum. None of
+that is needed here: `Matrix.abs_jacobiStep_sub_le` bounds a step by `2 √(N(A_ν))`, and
+`Matrix.offDiagNormSq_classicalJacobiIterate_le` makes `N(A_ν)` decay geometrically, so the steps
+are bounded by a geometric series and the sequence is Cauchy outright. -/
+theorem tendsto_classicalJacobiIterate {A : Matrix n n ℝ} (hA : A.IsSymm)
+    (hn : 2 ≤ Fintype.card n) :
+    ∃ Λ : Matrix n n ℝ, Matrix.IsDiag Λ ∧ Matrix.charpoly Λ = A.charpoly ∧
+      Filter.Tendsto (classicalJacobiIterate A) Filter.atTop (nhds Λ) := by
+  obtain ⟨ρ, hρ⟩ : ∃ ρ : ℝ, ρ = 1 - 2 / ((Fintype.card n : ℝ) ^ 2 - Fintype.card n) := ⟨_, rfl⟩
+  have hc : (2 : ℝ) ≤ (Fintype.card n : ℝ) := by exact_mod_cast hn
+  have hd : (0 : ℝ) < (Fintype.card n : ℝ) ^ 2 - Fintype.card n := by nlinarith
+  have hρ0 : 0 ≤ ρ := by
+    rw [hρ, sub_nonneg, div_le_one hd]
+    nlinarith
+  have hρ1 : ρ < 1 := by
+    rw [hρ]
+    exact sub_lt_self _ (by positivity)
+  have hr1 : Real.sqrt ρ < 1 := by
+    have h := Real.sqrt_lt_sqrt hρ0 hρ1
+    rwa [Real.sqrt_one] at h
+  have hsp : ∀ m : ℕ, Real.sqrt (ρ ^ m) = Real.sqrt ρ ^ m := by
+    intro m
+    induction m with
+    | zero => simp
+    | succ m ih => rw [pow_succ, Real.sqrt_mul (pow_nonneg hρ0 m), ih, pow_succ]
+  have hstep : ∀ (p q : n) (ν : ℕ),
+      dist (classicalJacobiIterate A ν p q) (classicalJacobiIterate A (ν + 1) p q)
+        ≤ (2 * Real.sqrt (offDiagNormSq A)) * Real.sqrt ρ ^ ν := by
+    intro p q ν
+    rw [Real.dist_eq, abs_sub_comm, classicalJacobiIterate_succ]
+    refine (abs_jacobiStep_sub_le _ (isSymm_classicalJacobiIterate hA ν)
+      (maxOffDiagPair_ne _ hn) p q).trans ?_
+    have hle : offDiagNormSq (classicalJacobiIterate A ν) ≤ ρ ^ ν * offDiagNormSq A := by
+      rw [hρ]
+      exact offDiagNormSq_classicalJacobiIterate_le hA ν
+    calc 2 * Real.sqrt (offDiagNormSq (classicalJacobiIterate A ν))
+        ≤ 2 * Real.sqrt (ρ ^ ν * offDiagNormSq A) := by
+          have h := Real.sqrt_le_sqrt hle
+          linarith
+      _ = 2 * (Real.sqrt ρ ^ ν * Real.sqrt (offDiagNormSq A)) := by
+          rw [Real.sqrt_mul (pow_nonneg hρ0 ν), hsp]
+      _ = (2 * Real.sqrt (offDiagNormSq A)) * Real.sqrt ρ ^ ν := by ring
+  have hcs : ∀ p q : n, ∃ l : ℝ,
+      Filter.Tendsto (fun ν => classicalJacobiIterate A ν p q) Filter.atTop (nhds l) :=
+    fun p q => cauchySeq_tendsto_of_complete
+      (cauchySeq_of_le_geometric _ _ hr1 (hstep p q))
+  choose Λ hΛ using hcs
+  have htend : Filter.Tendsto (classicalJacobiIterate A) Filter.atTop (nhds (Matrix.of Λ)) :=
+    tendsto_pi_nhds.2 fun p => tendsto_pi_nhds.2 fun q => hΛ p q
+  refine ⟨Matrix.of Λ, ?_, ?_, htend⟩
+  · have hoff : Filter.Tendsto (fun ν => offDiagNormSq (classicalJacobiIterate A ν))
+        Filter.atTop (nhds (offDiagNormSq (Matrix.of Λ))) := by
+      simp only [offDiagNormSq_real]
+      exact tendsto_finsetSum _ fun i _ => tendsto_finsetSum _ fun q _ => (hΛ i q).pow 2
+    have hzero : offDiagNormSq (Matrix.of Λ) = 0 :=
+      tendsto_nhds_unique hoff (tendsto_offDiagNormSq_classicalJacobiIterate hA hn)
+    exact fun i j hij => offDiagNormSq_eq_zero_iff.1 hzero i j hij
+  · refine Polynomial.funext fun x => ?_
+    rw [Matrix.eval_charpoly, Matrix.eval_charpoly]
+    have hcont : Continuous fun M : Matrix n n ℝ => (Matrix.scalar n x - M).det :=
+      (continuous_const.sub continuous_id).matrix_det
+    have hdet : Filter.Tendsto
+        (fun ν => (Matrix.scalar n x - classicalJacobiIterate A ν).det) Filter.atTop
+        (nhds ((Matrix.scalar n x - Matrix.of Λ).det)) := by
+      simpa [Function.comp_def] using (hcont.continuousAt (x := Matrix.of Λ)).tendsto.comp htend
+    have hconst : ∀ ν, (Matrix.scalar n x - classicalJacobiIterate A ν).det
+        = (Matrix.scalar n x - A).det := by
+      intro ν
+      rw [← Matrix.eval_charpoly, ← Matrix.eval_charpoly, charpoly_classicalJacobiIterate hn ν]
+    simp only [hconst] at hdet
+    exact tendsto_nhds_unique hdet tendsto_const_nhds
 
 end ClassicalJacobi
 

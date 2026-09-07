@@ -29,34 +29,32 @@ id = "tikhonov"
 source = "Kress, Numerical Analysis, Theorems 5.7 and 5.9"
 
 [[node]]
+id = "pinv_mul_self_mul_conjTranspose"
+
+[[node]]
+id = "tikhonov_eq_pinv_sub"
+source = "Kress, Numerical Analysis, Section 5.3"
+
+[[node]]
+id = "pinv_mul_self_mul_tikhonov"
+source = "Kress, Numerical Analysis, Section 5.3"
+
+[[node]]
+id = "inner_rightSingularBasis_inv_smul_one_add_gram"
+source = "Kress, Numerical Analysis, Section 5.3"
+
+[[node]]
+id = "norm_sq_toEuclideanLin_inv_smul_one_add_gram"
+source = "Kress, Numerical Analysis, Section 5.3"
+
+[[node]]
+id = "norm_sq_toEuclideanLin_tikhonov_sub"
+source = "Kress, Numerical Analysis, proof of Theorem 5.10"
+
+[[node]]
 id = "exists_discrepancy_tikhonov"
-kind = "theorem"
-desc = '''
-Kress Thm 5.10, the discrepancy principle for Tikhonov regularization: for `y ∈ range A` and
-`‖yδ - y‖ ≤ δ < ‖yδ‖`, there is a unique `α(δ) > 0` with `‖A (tikhonov A (α δ) yδ) - yδ‖ = δ`, and
-`tikhonov A (α δ) yδ → A⁺ y` as `δ → 0`; with Thm 5.6, the same principle for the spectral cut-off
-(`exists_discrepancy_cutoff`).
-
-**The recorded obstruction asked for a `Matrix.leftSingularVector` definition "beside
-`rightSingularBasis`". It is not needed, and neither is any new definition.** The push-through
-identity `A (α + Aᴴ A)⁻¹ = (α + A Aᴴ)⁻¹ A` — immediate from `(α + A Aᴴ) A = A (α + Aᴴ A)` — turns the
-residual into a single resolvent of the *other* Gram matrix:
-
-  `A (tikhonov A α yδ) - yδ = -α • (α + A Aᴴ)⁻¹ yδ`,
-
-so `‖residual‖² = α² ‖(α + A Aᴴ)⁻¹ yδ‖²`. `A Aᴴ` is Hermitian positive semidefinite, and its
-eigenvector basis — which *is* the left singular basis — is
-`(Matrix.isHermitian_mul_conjTranspose_self A).eigenvectorBasis`, straight from Mathlib. In it the
-residual norm is `∑_i α²/(α + g_i)² |⟪v_i, yδ⟫|²`, visibly continuous and increasing in `α`, with
-limit `‖P_{ker A Aᴴ} yδ‖² = dist (yδ, range A)²` at `0` and `‖yδ‖²` at `∞`.
-
-What remains is therefore analysis and not linear algebra: strict monotonicity (which needs some
-`⟪v_i, yδ⟫ ≠ 0` at a positive `g_i`, i.e. `dist (yδ, range A) < ‖yδ‖`, which the hypothesis
-`δ < ‖yδ‖` supplies), the two limits, an intermediate value argument for existence and monotonicity
-for uniqueness, and then a separate compactness argument for the `δ → 0` convergence — the last
-being the substantial half, and the one the source proves by a subsequence argument.
-
-The push-through identity was verified on paper only; nothing here was attempted in Lean.
-'''
 source = "Kress, Numerical Analysis, Theorem 5.10"
 
+[[node]]
+id = "tendsto_tikhonov_of_norm_toEuclideanLin_sub_eq"
+source = "Kress, Numerical Analysis, Theorem 5.10"

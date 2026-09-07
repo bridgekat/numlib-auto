@@ -73,6 +73,9 @@ source = "Saad, Iterative Methods for Sparse Linear Systems, (6.40)-(6.47)"
 id = "Krylov.givensQ_mul_hessenbergOf"
 
 [[node]]
+id = "Krylov.rotated_row_eq_sum_givensQ"
+
+[[node]]
 id = "Krylov.givensRho"
 
 [[node]]

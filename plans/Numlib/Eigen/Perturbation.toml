@@ -111,40 +111,4 @@ source = "Saad, Numerical Methods for Large Eigenvalue Problems, Theorem 3.12"
 
 [[node]]
 id = "Module.End.hasDerivAt_eigenvalue_perturbation"
-kind = "theorem"
-desc = '''
-The *existence* of a differentiable branch of eigenvalues of `A + t E` through a simple eigenvalue
-`l` of `A`. The derivative formula itself is done:
-`Module.End.deriv_eigenvalue_perturbation` computes `l'(0) = <w, E u>/<w, u>` for any branch that is
-differentiable at `0`, and `Module.End.norm_deriv_eigenvalue_perturbation_le` bounds it by
-`||E|| * eigenvalueCondNumber`, which is Saad-eig 3.2.1 in full apart from the branch.
-
-**Mathlib still has no differentiability of a determinant in its entries** — re-grepped: no
-`contDiff_det`, no `HasFDerivAt … det`, nothing. So any route through `f (t, μ) = det (A + t E - μ)`
-has to build that first, and then still has to extract `μ (t)` from `HasStrictFDerivAt.implicitFunction`,
-which parametrizes the solution set by `ker f'` rather than by `t`.
-
-**A route that needs neither the determinant nor an implicit/inverse function theorem, not
-attempted.** It is Saad's own derivation made into a contraction. Let `P` be the spectral projector
-of the simple eigenvalue `l`, `P z = φ (z) • u`, and `S = S(l) (1 - P)` the reduced resolvent of
-`Numlib/Eigen/ReducedResolvent`, which satisfies `S (A - l) y = y` on `ker P`. Looking for
-`u (t) = u + y (t)` with `P y = 0`, the eigenvalue equation splits under `P` and `1 - P` into
-
-  `μ = l + t φ (E (u + y))`,        `y = t · S [φ (E (u + y)) • y - (1 - P) (E (u + y))]`.
-
-The second is `y = t G (t, y)` with `G` bounded and Lipschitz in `y` near `(0, 0)`, so Banach's
-fixed point theorem gives a unique small `y (t)` for small `t`; and then `y (t) → 0` forces
-`y (t)/t → G (0, 0)`, which *is* `HasDerivAt y (G (0,0)) 0` because `y 0 = 0`. No linearization
-theorem is invoked: the differentiability falls out of the fixed-point equation itself. `μ` is then
-differentiable by composition, and `Module.End.deriv_eigenvalue_perturbation` names `μ' (0)`.
-
-Note that the existing `Module.End.deriv_eigenvalue_perturbation` takes its eigen-relation for *all*
-`t`; a branch built this way exists only near `0`, so this node should be stated with
-`∀ᶠ t in 𝓝 0` and the derivative formula reproved in that form (its proof is local anyway).
-
-Nothing above was attempted in Lean, and the claim that the contraction closes is a derivation on
-paper, not a measurement.
-'''
-deps = ["Module.End.eigenvalueCondNumber", "Module.End.deriv_eigenvalue_perturbation"]
 source = "Saad, Numerical Methods for Large Eigenvalue Problems, Section 3.2.1"
-
