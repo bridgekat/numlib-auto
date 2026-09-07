@@ -12,7 +12,7 @@ The boundary integral equation of the *first* kind for the interior Dirichlet pr
 `H^q → H^{q+1}` of the periodic Sobolev scale — and `B` a smoothing perturbation.  The
 Fourier–Galerkin method seeks `φ_n` in the trigonometric polynomials of degree at most `n` with
 `P_n (A + B) φ_n = P_n g`, where `P_n` is the `L²`-orthogonal projection onto them.  Since `A`
-commutes with `P_n`, applying `A⁻¹` turns this into the *second* kind equation (13.3.14)
+commutes with `P_n`, applying `A⁻¹` turns this into the *second* kind equation (13.3.13)
 
 `φ_n + P_n A⁻¹ B φ_n = P_n A⁻¹ g`,
 
@@ -43,7 +43,7 @@ book assumes about it — compactness of `C` on `L²` and invertibility of `I + 
 measure; the normalization scales the norm by a constant and changes nothing in a statement about
 projections and a compact operator.  The book's projection `P_n` is `trigProjCLM (2π) n` of
 `Numlib/Analysis/Fourier/Truncation`, and the equations are written as the general projection
-method `AtkinsonHan.Chapter12.IsProjectionSolution` at `λ = 1` and `K = -C`, which is (13.3.14).
+method `AtkinsonHan.Chapter12.IsProjectionSolution` at `λ = 1` and `K = -C`, which is (13.3.13).
 -/
 
 open AddCircle Filter MeasureTheory Topology
@@ -62,7 +62,7 @@ book takes from its Sobolev space theory — and let `P_n` be the `L²`-orthogon
 trigonometric polynomials of degree at most `n`.  Then there is a constant `c` such that, for all
 large `n`,
 
-* `I + P_n C` is invertible with `‖(I + P_n C)⁻¹‖ ≤ c`, so the Galerkin equations (13.3.14)
+* `I + P_n C` is invertible with `‖(I + P_n C)⁻¹‖ ≤ c`, so the Galerkin equations (13.3.13)
   `φ_n + P_n C φ_n = P_n f` have exactly one solution for every right-hand side; and
 * the solution of `(I + C) φ = f` satisfies `‖φ - φ_n‖ ≤ ‖(I + P_n C)⁻¹‖ ‖φ - P_n φ‖`,
 

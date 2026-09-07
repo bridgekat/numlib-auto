@@ -34,10 +34,10 @@ wrong for two of its three sections, and the obstruction is different in each:
   (13.2.14)-(13.2.21), whose derivation is the maximum principle plus the **jump relation**
   (13.2.17) and which therefore belongs with the skipped part of §13.1; and Exercise 13.2.5,
   `norm K = pi` for a convex region, whose row integral `int_0^L k (t, s) ds` is by
-  `doubleLayerKernel_eq_im_div` the total turning of the chord direction from `r(t)`, so that the
-  statement is a boundary-point **Umlaufsatz** and needs a continuous argument along a plane curve,
-  which Mathlib has not got. Only §13.2.2, the exterior Neumann problem, reaches for a Sobolev
-  space, and only for the one norm identity of Exercise 13.2.8.
+  `doubleLayerKernel_eq_neg_im_div` minus the total turning of the chord direction from `r(t)`, so
+  that the statement is a boundary-point **Umlaufsatz** and needs a continuous argument along a
+  plane curve, which Mathlib has not got. Only §13.2.2, the exterior Neumann problem, reaches for a
+  Sobolev space, and only for the one norm identity of Exercise 13.2.8.
 * **§13.3, the Fourier-Galerkin method -- §13.3.1 is formalized conditionally, and the rest waits
   on a space smaller than "Sobolev on a boundary".** What §13.3 needs is the *periodic* Sobolev scale `H^q(2 pi)`: the
   solvability theory (13.3.2)-(13.3.7) uses `A : H^q -> H^{q+1}` an isomorphism and the compact

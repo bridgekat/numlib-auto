@@ -17,8 +17,11 @@ is reformulated as the boundary integral equation of the second kind
 
 and after a regular `C²` parametrization of `S` by arclength this is an ordinary integral equation
 `(-π + K) ρ = f` on the space `C_p(L)` of continuous `L`-periodic functions, with a *continuous*
-kernel: the parametrized double-layer kernel extends continuously to the diagonal, where its value
-is half the curvature.  The book's own words are that "the natural function space setting for
+kernel: the parametrized double-layer kernel `Chapter13.doubleLayerKernelCP` extends continuously to
+the diagonal, where by (13.1.34) its value is minus half the signed curvature.  Its sign is the
+book's, so that the row integral `∫_0^L k(t, s) ds` is `-π`; substituting it for the abstract `k`
+below therefore reproduces (13.1.32) and (13.2.3) as the book writes them, `(-π + K) ρ = f`, and not
+their negatives.  The book's own words are that "the natural function space setting for
 studying (13.2.3) is `C_p(L)` with the uniform norm", and that "from this work, `(-π + K)⁻¹` exists
 as a bounded operator from `C_p(L)` to `C_p(L)`" — quoted from the literature, not proved.  The
 invertibility is therefore a hypothesis here, exactly as it is in the book.

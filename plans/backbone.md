@@ -80,7 +80,8 @@ Banach/Hilbert-space level of generality:
      theorem is for boxes, and there is no surface measure and no normal field on a curve. Out of
      scope, for that reason. Two items escape it, because they concern the parametrization and not
      the potential: the Kelvin transform, and the parametrized double layer kernel of
-     (13.1.32)–(13.1.37), whose continuity at the diagonal (value: half the curvature) is the only
+     (13.1.32)–(13.1.37), whose continuity at the diagonal (value: minus half the signed curvature,
+     the sign of the book's displays, not of its prose) is the only
      analysis needed to make the double layer operator a compact operator on `C(Γ)`. Both are now
      formalized and §13.1's group is `done`; the Kelvin transform in the plane is precomposition
      with the anticonformal `T z = conj (z⁻¹)`, for which `Numlib/Analysis/Complex/Harmonic` adds the
@@ -95,10 +96,10 @@ Banach/Hilbert-space level of generality:
      elementary. But two items of §13.2 are out of scope, and for the *same* reasons as §13.1 and
      not for a Sobolev one: (13.2.14)–(13.2.21) rests on the jump relation (13.2.17) and on the
      double layer potential as a function on the region; and Exercise 13.2.5, `‖K‖ = π` for a
-     convex region, is a boundary-point Umlaufsatz — by `doubleLayerKernel_eq_im_div` the row
-     integral `∫_0^L k(t, s) ds` is the total turning of the chord direction seen from `r(t)` — and
-     needs a continuous argument along a plane curve, which Mathlib has not got. §13.2.2, the
-     exterior Neumann problem, reaches for `H¹(2π)`, and only for one norm identity.
+     convex region, is a boundary-point Umlaufsatz — by `doubleLayerKernel_eq_neg_im_div` the row
+     integral `∫_0^L k(t, s) ds` is minus the total turning of the chord direction seen from `r(t)`,
+     hence `−π` — and needs a continuous argument along a plane curve, which Mathlib has not got.
+     §13.2.2, the exterior Neumann problem, reaches for `H¹(2π)`, and only for one norm identity.
    * **§13.3** does need the *periodic* Sobolev scale `H^q(2π)` — but that is the weighted `ℓ²`
      space over the Fourier basis of `AddCircle` that §14.8 below already calls reachable, not the
      domain machinery that blocks Ch. 7 and 10. Its convergence argument, §13.3.1, is

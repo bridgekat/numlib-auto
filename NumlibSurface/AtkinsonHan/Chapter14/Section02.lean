@@ -31,7 +31,7 @@ components in a basis of each, and are not written.
 * `finrank_orthPolySpace`, `finrank_orthPolySpace_two` — `dim V_n^d = C(n + d − 1, d − 1)`, and
   `dim V_n^2 = n + 1`.
 * `theorem_14_2_3`, `theorem_14_2_3_unique` — the triple recursion relation.
-* `exercise_14_2_1` — (14.2.9)–(14.2.10): `(x_j p, q) = (p, x_j q)`, which is
+* `exercise_14_2_1` — (14.2.10): `(x_j p, q) = (p, x_j q)`, which is
   `C_{n+1,j} = A_{n,j}^T` for an orthonormal basis.
 * `equation_14_2_12` — the orthogonal projection `P_n` as a sum over the components, and as the
   best `L²` approximation from `Π_n^d`.
@@ -166,10 +166,14 @@ theorem finrank_orthPolySpace_two {μ : Measure (Fin 2 → ℝ)} (hw : IsMvWeigh
     simp
   | succ n => simpa using finrank_orthPolySpace hw one_le_two n
 
-/-- (14.2.9)–(14.2.10), and **Exercise 14.2.1**, coordinate-free: multiplication by a coordinate is
+/-- (14.2.10), and part of **Exercise 14.2.1**, coordinate-free: multiplication by a coordinate is
 symmetric for the inner product, `(x_j p, q) = (p, x_j q)`. Taking `p ∈ V_n^d` and `q ∈ V_{n+1}^d`
-and expanding both sides in a basis of each is `A_{n,j} H_{n+1} = H_n C_{n+1,j}^T`, which for an
-orthonormal basis reads `C_{n+1,j} = A_{n,j}^T`. -/
+and expanding both sides in a basis of each is `A_{n,j} H_{n+1} = H_n C_{n+1,j}^T`, which is
+(14.2.10) and for an orthonormal basis reads `C_{n+1,j} = A_{n,j}^T`.
+
+Exercise 14.2.1 also asks for (14.2.8) and (14.2.9), which are the defining relations of the
+matrices `A_{n,j}` and `B_{n,j}` themselves. Those matrices are not written here — `theorem_14_2_3`
+states the recursion in membership form instead — so only (14.2.10) is formalized. -/
 theorem exercise_14_2_1 (j : Fin d) (p q : MvPolynomial (Fin d) ℝ) :
     inner ℝ (hw.toL2 (MvPolynomial.X j * p)) (hw.toL2 q) =
       inner ℝ (hw.toL2 p) (hw.toL2 (MvPolynomial.X j * q)) :=

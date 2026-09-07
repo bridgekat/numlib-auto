@@ -17,12 +17,28 @@ theory is the object §13.2 actually computes with: after a regular `C²` parame
 `r(t) = (ξ(t), η(t))` of the boundary, the double layer operator is an ordinary integral operator
 whose kernel (13.1.33) is
 
-`k(t, s) = [η'(s) (ξ(s) - ξ(t)) - ξ'(s) (η(s) - η(t))] / |r(s) - r(t)|²`,
+`k(t, s) = [η'(s) (ξ(t) - ξ(s)) - ξ'(s) (η(t) - η(s))] / |r(t) - r(s)|²`,
 
 a `0/0` quotient on the diagonal.  Numerator and denominator both vanish to second order there, and
-(13.1.34) says the quotient extends continuously with `k(t, t)` equal to **half the curvature**.
-That is the whole of the analysis needed to make the double layer operator a *compact* operator, and
-it is what this file provides.
+(13.1.34) says the quotient extends continuously, with `k(t, t)` equal to **minus half the signed
+curvature** of the counterclockwise parametrization that the book fixes.  That is the whole of the
+analysis needed to make the double layer operator a *compact* operator, and it is what this file
+provides.
+
+## A sign in the book
+
+The book's *prose* right after (13.1.34) — "the value of `k(t, t)` is one-half the curvature of `S`
+at `r(t)`" — contradicts the book's own display (13.1.34), and it is the display that is right.
+For the counterclockwise unit circle `r(t) = (cos t, sin t)`, whose signed curvature is `+1`,
+(13.1.34) evaluates to `-1/2`; and (13.1.33) evaluates to `-1/2` at every `s ≠ t`, as it must, the
+two displays being the same quotient with the common factor `(t - s)²` cancelled.  Both displays
+also agree with `∂/∂n_Q log |P - Q|` computed directly from the *inner* normal
+`n = (-η', ξ') / √(ξ'² + η'²)` that §13.1 fixes just before (13.1.32).  This file follows the two
+displays, so here `k(t, t) = -κ(t)/2`.
+
+The sign is not cosmetic: it is what makes the row integral `∫_0^L k(t, s) ds` equal `-π` rather
+than `+π`, and hence what makes the boundary integral equation (13.1.32) read `(-π + K) u = g`,
+which is the form `Chapter13/Section02` states and solves.
 
 The kernel is therefore *defined* by the quotient of divided differences that is already continuous,
 `Numlib/Approximation/DividedDifference`, rather than by the displayed formula with a case
@@ -33,9 +49,9 @@ definition.
 ## Main results
 
 * `doubleLayerKernel`, with `equation_13_1_33` and `equation_13_1_34`.
-* `doubleLayerKernel_eq_im_div`, that off the diagonal the kernel is `Im (r'(s) / (r(s) - r(t)))`,
-  the rate of turning of the chord from `r(t)` to `r(s)` — the identity that makes the row integral
-  of Exercise 13.2.5 a turning number.
+* `doubleLayerKernel_eq_neg_im_div`, that off the diagonal the kernel is
+  `-Im (r'(s) / (r(s) - r(t)))`, *minus* the rate of turning of the chord from `r(t)` to `r(s)` —
+  the identity that makes the row integral of Exercise 13.2.5 a turning number.
 * `doubleLayerKernelCM` — the kernel as a `C(Icc a b × Icc a b, ℝ)` on a parameter interval on
   which the curve is regular and simple, and `isCompactOperator_doubleLayer`, that the resulting
   integral operator is compact.
@@ -45,8 +61,8 @@ definition.
 
   The descent is *not* a lift of a biperiodic function: `doubleLayerKernel` is not separately
   `L`-periodic, because `k(t + L, t) = 0` by `equation_13_1_33` — the real parameters `t` and
-  `t + L` are distinct and the chord between them vanishes — whereas `k(t, t)` is half the
-  curvature.  What is invariant is the *diagonal* translation `(t, s) ↦ (t + L, s + L)`
+  `t + L` are distinct and the chord between them vanishes — whereas `k(t, t)` is minus half the
+  signed curvature.  What is invariant is the *diagonal* translation `(t, s) ↦ (t + L, s + L)`
   (`doubleLayerKernel_add_period`), so the kernel on the circle takes the representative of the
   *difference* `s - t` in `[-L/2, L/2)`.  Continuity then rests on the seam identity
   `doubleLayerKernel_sub_half_period`, `k(t, t - L/2) = k(t, t + L/2)`, and on the parameter
@@ -78,35 +94,40 @@ open DividedDifference
 /-- **(13.1.33)–(13.1.34), the parametrized double layer kernel** of a plane curve
 `r(t) = (ξ(t), η(t))`, defined so as to be continuous on the diagonal:
 
-`k(t, s) = (ξ'(s) η[s, s, t] - η'(s) ξ[s, s, t]) / (ξ[s, t]² + η[s, t]²)`,
+`k(t, s) = (η'(s) ξ[s, s, t] - ξ'(s) η[s, s, t]) / (ξ[s, t]² + η[s, t]²)`,
 
-with `ξ[s, t]` and `ξ[s, s, t]` the first and second divided differences in their Hermite–Genocchi
-form.  Off the diagonal this is the book's (13.1.33) (`equation_13_1_33`), because the factor
-`(s - t)²` by which numerator and denominator of that formula both vanish has been cancelled; on the
-diagonal it is half the curvature (`equation_13_1_34`).
+which is the second display of (13.1.33) verbatim, with `ξ[s, t]` and `ξ[s, s, t]` the first and
+second divided differences in their Hermite–Genocchi form.  Off the diagonal it is the first display
+of (13.1.33) (`equation_13_1_33`), because the factor `(t - s)²` by which numerator and denominator
+of that formula both vanish has been cancelled; on the diagonal it is minus half the signed
+curvature (`equation_13_1_34`).
 
 Only the first and second derivatives of the parametrization enter. -/
 noncomputable def doubleLayerKernel (ξ' η' ξ'' η'' : ℝ → ℝ) (t s : ℝ) : ℝ :=
-  (ξ' s * secondOrder η'' s t - η' s * secondOrder ξ'' s t) /
+  (η' s * secondOrder ξ'' s t - ξ' s * secondOrder η'' s t) /
     (firstOrder ξ' s t ^ 2 + firstOrder η' s t ^ 2)
 
 variable {ξ η ξ' η' ξ'' η'' : ℝ → ℝ}
 
 /-- **(13.1.33)**: off the diagonal the kernel is the double layer kernel of the book,
 
-`k(t, s) = [η'(s) (ξ(s) - ξ(t)) - ξ'(s) (η(s) - η(t))] / (|ξ(s) - ξ(t)|² + |η(s) - η(t)|²)`.
+`k(t, s) = [η'(s) (ξ(t) - ξ(s)) - ξ'(s) (η(t) - η(s))] / (|ξ(t) - ξ(s)|² + |η(t) - η(s)|²)`.
 
-Both sides are the same quotient with the common factor `(s - t)²` cancelled, so no regularity of
+Both sides are the same quotient with the common factor `(t - s)²` cancelled, so no regularity of
 the curve is needed here: only `s ≠ t`. -/
 theorem equation_13_1_33 (hξ : ∀ x, HasDerivAt ξ (ξ' x) x) (hξ' : ∀ x, HasDerivAt ξ' (ξ'' x) x)
     (hη : ∀ x, HasDerivAt η (η' x) x) (hη' : ∀ x, HasDerivAt η' (η'' x) x)
     (hcξ' : Continuous ξ') (hcξ'' : Continuous ξ'') (hcη' : Continuous η')
     (hcη'' : Continuous η'') {s t : ℝ} (hst : s ≠ t) :
     doubleLayerKernel ξ' η' ξ'' η'' t s =
-      (η' s * (ξ s - ξ t) - ξ' s * (η s - η t)) / ((ξ s - ξ t) ^ 2 + (η s - η t) ^ 2) := by
-  have hd : s - t ≠ 0 := sub_ne_zero.2 hst
-  have hA : ξ s - ξ t = (s - t) * firstOrder ξ' s t := sub_eq_mul_firstOrder hξ hcξ' s t
-  have hB : η s - η t = (s - t) * firstOrder η' s t := sub_eq_mul_firstOrder hη hcη' s t
+      (η' s * (ξ t - ξ s) - ξ' s * (η t - η s)) / ((ξ t - ξ s) ^ 2 + (η t - η s) ^ 2) := by
+  have hd : t - s ≠ 0 := sub_ne_zero.2 (Ne.symm hst)
+  have hA : ξ t - ξ s = (t - s) * firstOrder ξ' s t := by
+    have h := sub_eq_mul_firstOrder hξ hcξ' s t
+    linear_combination -h
+  have hB : η t - η s = (t - s) * firstOrder η' s t := by
+    have h := sub_eq_mul_firstOrder hη hcη' s t
+    linear_combination -h
   have hP : ξ' s = firstOrder ξ' s t + (s - t) * secondOrder ξ'' s t := by
     have := sub_firstOrder_eq hξ hξ' hcξ' hcξ'' s t
     linarith
@@ -114,56 +135,85 @@ theorem equation_13_1_33 (hξ : ∀ x, HasDerivAt ξ (ξ' x) x) (hξ' : ∀ x, H
     have := sub_firstOrder_eq hη hη' hcη' hcη'' s t
     linarith
   rw [hA, hB, doubleLayerKernel]
-  have hnum : η' s * ((s - t) * firstOrder ξ' s t) - ξ' s * ((s - t) * firstOrder η' s t)
-      = (s - t) ^ 2 * (ξ' s * secondOrder η'' s t - η' s * secondOrder ξ'' s t) := by
+  have hnum : η' s * ((t - s) * firstOrder ξ' s t) - ξ' s * ((t - s) * firstOrder η' s t)
+      = (t - s) ^ 2 * (η' s * secondOrder ξ'' s t - ξ' s * secondOrder η'' s t) := by
     rw [hP, hQ]
     ring
-  have hden : ((s - t) * firstOrder ξ' s t) ^ 2 + ((s - t) * firstOrder η' s t) ^ 2
-      = (s - t) ^ 2 * (firstOrder ξ' s t ^ 2 + firstOrder η' s t ^ 2) := by ring
+  have hden : ((t - s) * firstOrder ξ' s t) ^ 2 + ((t - s) * firstOrder η' s t) ^ 2
+      = (t - s) ^ 2 * (firstOrder ξ' s t ^ 2 + firstOrder η' s t ^ 2) := by ring
   rw [hnum, hden, mul_div_mul_left _ _ (pow_ne_zero 2 hd)]
 
-/-- **The double layer kernel is the rate of turning of the chord.**  Write the curve as the
+/-- **The double layer kernel is minus the rate of turning of the chord.**  Write the curve as the
 complex-valued `r(s) = ξ(s) + i η(s)`.  Off the diagonal,
 
-`k(t, s) = Im (r'(s) / (r(s) - r(t)))`,
+`k(t, s) = -Im (r'(s) / (r(s) - r(t)))`,
 
-and the right-hand side is `d/ds arg (r(s) - r(t))`: the kernel measures how fast the direction of
-the chord from the fixed boundary point `r(t)` to the moving point `r(s)` turns.  As in
-`equation_13_1_33`, no regularity of the curve is needed and the identity holds even where the
+and `Im (r'(s) / (r(s) - r(t)))` is `d/ds arg (r(s) - r(t))`: the kernel is minus the rate at which
+the direction of the chord from the fixed boundary point `r(t)` to the moving point `r(s)` turns.
+As in `equation_13_1_33`, no regularity of the curve is needed and the identity holds even where the
 chord vanishes, both sides being `0` there.
 
-This identity is what makes (13.2.20) and Exercise 13.2.5 *topology* rather than analysis:
-`∫_0^L k(t, s) ds` is the total turning of the chord direction, which is `-π` for a regular simple
-closed curve — a boundary-point form of Hopf's Umlaufsatz — and equals `∫_0^L |k(t, s)| ds` exactly
-when the region is convex, so that the chord direction turns monotonically.  Mathlib has neither a
-continuous argument along a plane curve nor a turning number, and that, rather than any missing
-analysis, is what Exercise 13.2.5 waits on. -/
-theorem doubleLayerKernel_eq_im_div (hξ : ∀ x, HasDerivAt ξ (ξ' x) x)
+This identity is what makes (13.2.20) and Exercise 13.2.5 *topology* rather than analysis: the
+chord direction turns by `+π` in total along a counterclockwise regular simple closed curve — a
+boundary-point form of Hopf's Umlaufsatz — so `∫_0^L k(t, s) ds = -π`, which is the constant of the
+integral equation (13.1.32), and `|∫_0^L k(t, s) ds| = ∫_0^L |k(t, s)| ds` exactly when the region
+is convex, so that the chord direction turns monotonically.  Mathlib has neither a continuous
+argument along a plane curve nor a turning number, and that, rather than any missing analysis, is
+what Exercise 13.2.5 waits on. -/
+theorem doubleLayerKernel_eq_neg_im_div (hξ : ∀ x, HasDerivAt ξ (ξ' x) x)
     (hξ' : ∀ x, HasDerivAt ξ' (ξ'' x) x) (hη : ∀ x, HasDerivAt η (η' x) x)
     (hη' : ∀ x, HasDerivAt η' (η'' x) x) (hcξ' : Continuous ξ') (hcξ'' : Continuous ξ'')
     (hcη' : Continuous η') (hcη'' : Continuous η'') {s t : ℝ} (hst : s ≠ t) :
     doubleLayerKernel ξ' η' ξ'' η'' t s
-      = (((ξ' s : ℂ) + (η' s : ℂ) * Complex.I) /
+      = -(((ξ' s : ℂ) + (η' s : ℂ) * Complex.I) /
           (((ξ s : ℂ) + (η s : ℂ) * Complex.I) - ((ξ t : ℂ) + (η t : ℂ) * Complex.I))).im := by
   rw [equation_13_1_33 hξ hξ' hη hη' hcξ' hcξ'' hcη' hcη'' hst, Complex.div_im]
   simp only [Complex.add_re, Complex.add_im, Complex.sub_re, Complex.sub_im, Complex.ofReal_re,
     Complex.ofReal_im, Complex.mul_I_re, Complex.mul_I_im, Complex.normSq_apply, zero_add, add_zero,
     neg_zero, div_sub_div_same]
-  congr 1
-  ring
+  rw [← neg_div]
+  congr 1 <;> ring
 
-/-- **(13.1.34)**: on the diagonal the parametrized double layer kernel is *half the curvature*,
+/-- **(13.1.34)**: on the diagonal the parametrized double layer kernel is *minus half the signed
+curvature*,
 
-`k(t, t) = (ξ'(t) η''(t) - η'(t) ξ''(t)) / (2 (ξ'(t)² + η'(t)²))`.
+`k(t, t) = (η'(t) ξ''(t) - ξ'(t) η''(t)) / (2 (ξ'(t)² + η'(t)²))`.
 
-For an arclength parametrization the denominator is `2`, and the value is `κ(t) / 2`.  This is what
-makes the kernel of a `C²` curve continuous, and hence the double layer operator compact. -/
+For an arclength parametrization the denominator is `2`, and the value is `-κ(t) / 2`, with `κ` the
+signed curvature of the counterclockwise parametrization: on the unit circle `κ = 1` and
+`k(t, t) = -1/2`.  (The book's prose after (13.1.34) says "one-half the curvature", dropping the
+sign; the display, which is what is stated here, is the one that is consistent with (13.1.33) and
+with the inner normal of §13.1.  See the module doc.)
+
+This continuity on the diagonal is what makes the kernel of a `C²` curve continuous, and hence the
+double layer operator compact. -/
 theorem equation_13_1_34 (ξ' η' ξ'' η'' : ℝ → ℝ) (t : ℝ) :
     doubleLayerKernel ξ' η' ξ'' η'' t t =
-      (ξ' t * η'' t - η' t * ξ'' t) / (2 * (ξ' t ^ 2 + η' t ^ 2)) := by
+      (η' t * ξ'' t - ξ' t * η'' t) / (2 * (ξ' t ^ 2 + η' t ^ 2)) := by
   rw [doubleLayerKernel, firstOrder_self, firstOrder_self, secondOrder_self, secondOrder_self,
-    show ξ' t * (η'' t / 2) - η' t * (ξ'' t / 2) = (ξ' t * η'' t - η' t * ξ'' t) / 2 from by ring,
+    show η' t * (ξ'' t / 2) - ξ' t * (η'' t / 2) = (η' t * ξ'' t - ξ' t * η'' t) / 2 from by ring,
     div_div]
+
+/-- **The kernel of the unit circle is `-1/2` on the diagonal**, `r(t) = (cos t, sin t)` being the
+counterclockwise parametrization of signed curvature `+1`.  Off the diagonal (13.1.33) gives the
+same constant `-1/2` wherever the chord does not vanish, so the row integral over a period is `-π`
+and (13.1.32) is `(-π + K) u = g`, as the book writes it.
+
+This is the numerical check that fixes the sign of `doubleLayerKernel`: the book's *prose* after
+(13.1.34), "one-half the curvature", would give `+1/2` here and a row integral of `+π`, which is not
+the constant of the book's own integral equation.  See the module doc. -/
+theorem doubleLayerKernel_circle_self (t : ℝ) :
+    doubleLayerKernel (fun x => -Real.sin x) Real.cos (fun x => -Real.cos x)
+      (fun x => -Real.sin x) t t = -(1 / 2) := by
+  rw [equation_13_1_34]
+  show (Real.cos t * -Real.cos t - -Real.sin t * -Real.sin t) /
+    (2 * ((-Real.sin t) ^ 2 + Real.cos t ^ 2)) = -(1 / 2)
+  rw [show Real.cos t * -Real.cos t - -Real.sin t * -Real.sin t
+        = -(Real.sin t ^ 2 + Real.cos t ^ 2) from by ring,
+    show (2 : ℝ) * ((-Real.sin t) ^ 2 + Real.cos t ^ 2)
+        = 2 * (Real.sin t ^ 2 + Real.cos t ^ 2) from by ring,
+    Real.sin_sq_add_cos_sq]
+  norm_num
 
 /-- **The parametrized double layer kernel is continuous**, the diagonal included, wherever the
 curve is regular and simple.
@@ -187,7 +237,7 @@ theorem continuous_doubleLayerKernel {X : Type*} [TopologicalSpace X] {p : X →
   have h4 : Continuous fun x => secondOrder η'' (p x).2 (p x).1 :=
     (continuous_secondOrder hcη'').comp hswap
   have hs : Continuous fun x => (p x).2 := continuous_snd.comp hp
-  exact Continuous.div (((hcξ'.comp hs).mul h4).sub ((hcη'.comp hs).mul h3))
+  exact Continuous.div (((hcη'.comp hs).mul h3).sub ((hcξ'.comp hs).mul h4))
     ((h1.pow 2).add (h2.pow 2)) hD
 
 /-- The parametrized double layer kernel as a continuous kernel on a parameter square, ready for
@@ -242,8 +292,9 @@ theorem secondOrder_add_period {f'' : ℝ → ℝ} (hp : Function.Periodic f'' L
 
 /-- **The parametrized double layer kernel is invariant under the diagonal translation**
 `(t, s) ↦ (t + L, s + L)`, and under that one only.  It is *not* separately `L`-periodic in either
-argument: `k(t + L, t) = 0` while `k(t, t)` is half the curvature, because the divided differences
-divide by `s - t` and `s - t` and `s - t - L` are different divisors of the same vanishing chord.
+argument: `k(t + L, t) = 0` while `k(t, t)` is minus half the signed curvature, because the divided
+differences divide by `s - t`, and `s - t` and `s - t - L` are different divisors of the same
+vanishing chord.
 This is why the kernel on the circle is built by choosing the representative of the *difference*
 `s - t`, and not by lifting a biperiodic function. -/
 theorem doubleLayerKernel_add_period (hpξ' : Function.Periodic ξ' L)

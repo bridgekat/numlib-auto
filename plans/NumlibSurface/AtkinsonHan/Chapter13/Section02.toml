@@ -21,11 +21,12 @@ Neumann series and the compactness argument of Chapter 12 is necessary rather th
 
 **Obstruction (sharpened; the earlier note here was wrong).** `IntegralOperator.norm_kernelCLM`
 reduces the statement to `sup_t int_0^L abs (k (t, s)) ds = pi`, and
-`AtkinsonHan.Chapter13.doubleLayerKernel_eq_im_div` identifies the integrand: writing the curve as
-`r(s) = xi(s) + i eta(s)`, off the diagonal `k(t, s) = Im (r^(1)(s) / (r(s) - r(t)))`, which is
-`d/ds arg (r(s) - r(t))`. So the row integral is the **total turning of the chord direction seen
-from the boundary point `r(t)`**, which is `-pi` for a regular simple closed curve -- a
-boundary-point form of Hopf''s Umlaufsatz -- and the absolute value may be dropped exactly when the
+`AtkinsonHan.Chapter13.doubleLayerKernel_eq_neg_im_div` identifies the integrand: writing the curve
+as `r(s) = xi(s) + i eta(s)`, off the diagonal `k(t, s) = -Im (r^(1)(s) / (r(s) - r(t)))`, which is
+minus `d/ds arg (r(s) - r(t))`. So the row integral is **minus the total turning of the chord
+direction seen from the boundary point `r(t)`**, hence `-pi` for a counterclockwise regular simple
+closed curve, whose chord direction turns by `+pi` -- a boundary-point form of Hopf''s Umlaufsatz --
+and the absolute value may be dropped exactly when the
 region is convex, so that the turning is monotone. What is missing is therefore a continuous
 argument (a lift along the covering `R -> S^1`) for a plane curve and a turning number; Mathlib has
 neither, and neither is numerical analysis.
@@ -36,7 +37,7 @@ for a non-convex smooth curve the chord direction reverses, so
 `int_0^L abs (k (t, s)) ds > abs (int_0^L k (t, s) ds) = pi` and `norm K > pi`. Convexity is used
 for the whole statement, not only for the lower bound.
 '''
-deps = ["doubleLayerKernel", "doubleLayerKernel_eq_im_div", "IntegralOperator.norm_kernelCLM"]
+deps = ["doubleLayerKernel", "doubleLayerKernel_eq_neg_im_div", "IntegralOperator.norm_kernelCLM"]
 
 [[node]]
 id = "equation_13_2_19"

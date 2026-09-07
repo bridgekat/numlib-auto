@@ -93,8 +93,10 @@ theorem isProjectionSolution_iff_smul_sub_comp {μ : 𝕜} (hμ : μ ≠ 0) {K P
     simp only [sub_apply, smul_apply, one_apply_eq_self, map_sub, map_smul, hPun]
     exact h1
 
-/-- **(12.1.17)**: a nonzero bounded projection has norm at least one, so the constants of the
-projection method can never be improved by choosing a better projection than an orthogonal one. -/
+/-- **(12.1.17)**: a nonzero bounded projection has norm at least one, because `‖P‖ = ‖P²‖ ≤ ‖P‖²`.
+The book records it because `‖P_n‖` is the factor that enters the error constants of the projection
+method, in (12.1.24) and in the hypothesis of Theorem 12.1.2; so no choice of `P_n` pushes those
+constants below the value they take at `‖P_n‖ = 1`. -/
 theorem equation_12_1_17 {P : X →L[𝕜] X} (hP : IsIdempotentElem P) (hP0 : P ≠ 0) : 1 ≤ ‖P‖ := by
   obtain ⟨x, hx⟩ := DFunLike.ne_iff.1 hP0
   rw [zero_apply] at hx

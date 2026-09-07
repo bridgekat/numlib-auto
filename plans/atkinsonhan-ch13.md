@@ -48,8 +48,11 @@ an equation on the boundary curve `S`. Two steps carry it into the library:
   measure `volume` of `AddCircle L`, which is finite. So the operator is
   `IntegralOperator.kernelCLM volume k` for the parametrized kernel `k`.
 * **Remove the singularity.** The parametrized kernel (13.1.33) is a `0/0` quotient on the diagonal,
-  and (13.1.34) says the quotient extends continuously with value one half the curvature. That is
-  what makes the operator a *continuous*-kernel operator, hence compact by
+  and (13.1.34) says the quotient extends continuously with value minus one half the signed
+  curvature. (The book's *prose* there says "one-half the curvature", contradicting its own display;
+  the display is the one that agrees with (13.1.33) and with the inner normal `(−η′, ξ′)/|r′|` that
+  §13.1 fixes, and it is what is formalized.) That is what makes the operator a
+  *continuous*-kernel operator, hence compact by
   `IntegralOperator.isCompactOperator_kernelCLM`, and it is the only genuinely new analysis in the
   reachable part of the chapter. It is `Chapter13/Section01`'s `doubleLayerKernel`, still open; the
   obstruction is recorded there — continuous divided differences of order two, which the library has
@@ -102,11 +105,12 @@ missing piece of numerical analysis:
 
 * **Exercise 13.2.5 and (13.2.20)**, `‖K‖ = π` for a convex region.
   `IntegralOperator.norm_kernelCLM` reduces it to `sup_t ∫_0^L |k(t, s)| ds = π`, and
-  `doubleLayerKernel_eq_im_div` identifies the integrand exactly: writing the curve as
-  `r(s) = ξ(s) + i η(s)`, off the diagonal `k(t, s) = Im (r′(s) / (r(s) − r(t)))`, which is
-  `d/ds arg(r(s) − r(t))`. The row integral is therefore the total turning of the chord direction
-  seen from the boundary point `r(t)`: `−π` for a regular simple closed curve, a boundary-point form
-  of Hopf's Umlaufsatz, with the absolute value removable exactly when the region is convex. Mathlib
+  `doubleLayerKernel_eq_neg_im_div` identifies the integrand exactly: writing the curve as
+  `r(s) = ξ(s) + i η(s)`, off the diagonal `k(t, s) = −Im (r′(s) / (r(s) − r(t)))`, which is minus
+  `d/ds arg(r(s) − r(t))`. The row integral is therefore minus the total turning of the chord
+  direction seen from the boundary point `r(t)`: `−π` for a regular simple closed curve, whose chord
+  direction turns by `+π`, a boundary-point form of Hopf's Umlaufsatz, with the absolute value
+  removable exactly when the region is convex. Mathlib
   has neither a continuous argument along a plane curve nor a turning number.
   An earlier note here and in the group file claimed that "the `≤ π` half for a general smooth curve
   follows from the same computation with `|k|`". That is **false**: for a non-convex curve the chord
