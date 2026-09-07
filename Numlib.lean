@@ -1,4 +1,5 @@
 import Numlib.Analysis.Calculus.MeanValue
+import Numlib.Analysis.Complex.Harmonic
 import Numlib.Analysis.Convex.Continuity
 import Numlib.Analysis.Convex.Gateaux
 import Numlib.Analysis.Convex.SaddlePoint
@@ -6,6 +7,7 @@ import Numlib.Analysis.Convex.StrictConvexSpace
 import Numlib.Analysis.Convex.Uniform
 import Numlib.Analysis.Fourier.DFT
 import Numlib.Analysis.Fourier.Dirichlet
+import Numlib.Analysis.Fourier.LogSingleLayer
 import Numlib.Analysis.Fourier.TrigonometricBasis
 import Numlib.Analysis.Fourier.Truncation
 import Numlib.Analysis.HarmonicPolynomial

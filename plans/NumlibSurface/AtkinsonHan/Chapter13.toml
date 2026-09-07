@@ -15,16 +15,29 @@ wrong for two of its three sections, and the obstruction is different in each:
   potential theory: Green's identities on a piecewise smooth region, and the jump relations of the
   layer potentials**, and everything in §13.1 that is a boundary integral over `S` stays skipped.
   Two items escape, because they are about the *parametrized* kernel and not about the potential:
-  the Kelvin transform, and the double layer kernel of (13.1.32)-(13.1.37). They are the nodes of
-  `Chapter13/Section01`, and the second is now formalized both on a parameter interval and, by
-  `doubleLayerKernelCP`, on `AddCircle L` for a regular simple closed curve.
-* **§13.2, the Nystrom method -- no obstruction at all, and it is formalized.** The book's own
-  setting is `C_p(L)` with the uniform norm, and it *quotes* the invertibility of `-pi + K` from the
-  literature rather than proving it. So the second-kind analysis is Theorem 12.4.4 read on
-  `C(AddCircle L, R)` with `lambda = -pi` and the invertibility as a hypothesis, which is exactly
-  what the book does in practice. `Chapter13/Section02` states it. Only §13.2.2, the exterior
-  Neumann problem, reaches for a Sobolev space, and only for the one norm identity of
-  Exercise 13.2.8.
+  the Kelvin transform, and the double layer kernel of (13.1.32)-(13.1.37). Both are now formalized,
+  as the nodes of `Chapter13/Section01`: the kernel on a parameter interval and, by
+  `doubleLayerKernelCP`, on `AddCircle L` for a regular simple closed curve; and `kelvin_harmonic`,
+  which in the plane is harmonicity under precomposition with the anticonformal `T z = conj (z^-1)`
+  (`Numlib/Analysis/Complex/Harmonic`). Section 13.1 is `done`.
+* **§13.2, the Nystrom method -- the second-kind analysis has no obstruction, and it is formalized;
+  what is left of the section is potential theory and plane topology.** The book's own setting is
+  `C_p(L)` with the uniform norm, and it *quotes* the invertibility of `-pi + K` from the literature
+  rather than proving it. So the second-kind analysis is Theorem 12.4.4 read on `C(AddCircle L, R)`
+  with `lambda = -pi` and the invertibility as a hypothesis, which is exactly what the book does in
+  practice; `Chapter13/Section02` states it, with the periodic trapezoidal rule discharged.
+  §13.2.3 needs nothing either: (13.2.31)-(13.2.32), the Fourier diagonalization
+  `A psi_m = psi_m / max {1, abs m}` of the logarithmic single layer operator, is
+  `equation_13_2_32`, proved from the Fourier coefficients of `log (sin (u / 2))` in
+  `Numlib/Analysis/Fourier/LogSingleLayer`, and Exercise 13.3.1 is its corollary.
+  Two items of §13.2 are *not* reachable, and neither for a Sobolev reason:
+  (13.2.14)-(13.2.21), whose derivation is the maximum principle plus the **jump relation**
+  (13.2.17) and which therefore belongs with the skipped part of §13.1; and Exercise 13.2.5,
+  `norm K = pi` for a convex region, whose row integral `int_0^L k (t, s) ds` is by
+  `doubleLayerKernel_eq_im_div` the total turning of the chord direction from `r(t)`, so that the
+  statement is a boundary-point **Umlaufsatz** and needs a continuous argument along a plane curve,
+  which Mathlib has not got. Only §13.2.2, the exterior Neumann problem, reaches for a Sobolev
+  space, and only for the one norm identity of Exercise 13.2.8.
 * **§13.3, the Fourier-Galerkin method -- §13.3.1 is formalized conditionally, and the rest waits
   on a space smaller than "Sobolev on a boundary".** What §13.3 needs is the *periodic* Sobolev scale `H^q(2 pi)`: the
   solvability theory (13.3.2)-(13.3.7) uses `A : H^q -> H^{q+1}` an isomorphism and the compact
@@ -43,10 +56,13 @@ region with an inner normal field); (13.1.5)-(13.1.6), Green's identities, and E
 them; (13.1.7)-(13.1.8), the jump relations, which are the heart of §13.1 and the reason the factor
 `-pi` appears in every boundary integral equation of the chapter; (13.1.23), the representation
 formula; (13.1.28)-(13.1.30), the boundary integral equations of direct type; (13.1.38)-(13.1.42),
-the layer potentials of indirect type, whose *definitions* need surface measure on `S`; §13.2.2 and
-Exercise 13.2.8, which identify `A` as a bijection `L^2(0, 2 pi) -> H^1(2 pi)` of norm one; and
-(13.3.2)-(13.3.7) and (13.3.15), which are the `H^q(2 pi)` solvability theory and rate. The first
-seven are potential theory, the last three are the periodic Sobolev scale.
+the layer potentials of indirect type, whose *definitions* need surface measure on `S`;
+(13.2.14)-(13.2.21), which rest on the jump relations and on the potential as a function on the
+region; Exercise 13.2.5 and (13.2.20), `norm K = pi` for a convex region, which is a boundary-point
+Umlaufsatz; §13.2.2 and Exercise 13.2.8, which identify `A` as a bijection
+`L^2(0, 2 pi) -> H^1(2 pi)` of norm one; and (13.3.2)-(13.3.7) and (13.3.15), which are the
+`H^q(2 pi)` solvability theory and rate. The first eight are potential theory, Exercise 13.2.5 is
+plane topology, and the last three are the periodic Sobolev scale.
 
 The chapter has exactly two numbered results, Theorem 13.1.1 and Theorem 13.1.2, and both are SKIP;
 everything else it says is carried by displayed equations, which is why the nodes below are named

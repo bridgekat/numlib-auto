@@ -19,8 +19,11 @@ something else or by nothing at all.
 | section | what it needs | verdict |
 |---|---|---|
 | §13.1 | the divergence theorem on a piecewise smooth multiply connected planar region, Green's identities, the jump relations of the layer potentials | **skip** — planar potential theory, not Sobolev spaces |
-| §13.1.2, (13.1.32)–(13.1.37) | harmonicity under inversion; continuity of a quotient of divided differences | **reachable**, `Chapter13/Section01` |
-| §13.2, §13.2.1 | Theorem 12.4.4 on `C_p(L)`, with `(−π + K)⁻¹` a hypothesis | **done**, `Chapter13/Section02` |
+| §13.1.2, (13.1.32)–(13.1.37) | harmonicity under inversion; continuity of a quotient of divided differences | **done**, `Chapter13/Section01` |
+| §13.2 | Theorem 12.4.4 on `C_p(L)`, with `(−π + K)⁻¹` a hypothesis | **done**, `Chapter13/Section02` |
+| §13.2.1, (13.2.14)–(13.2.21) | the jump relations, and the double layer potential on the *region* | **skip** — planar potential theory, as §13.1 |
+| Exer 13.2.5, (13.2.20) | a continuous argument along a plane curve, i.e. a turning number | **skip** — planar topology, not analysis |
+| §13.2.3, (13.2.27)–(13.2.32) | the Fourier coefficients of `log |2 sin(θ/2)|` | **done**, `Chapter13/Section02` |
 | §13.2.2, Exer 13.2.8 | `H¹(2π)`, for one norm identity | **skip** |
 | §13.3, (13.3.2)–(13.3.7), (13.3.15) | the periodic Sobolev scale `H^q(2π)` | **skip until that exists** |
 | §13.3.1, (13.3.9)–(13.3.14) | `theorem_12_1_2` and `lemma_12_1_4`, plus the Fourier truncation on `L²` | **conditionally reachable**, `Chapter13/Section03` |
@@ -81,11 +84,38 @@ the integral into panels, bound each by the modulus of continuity) and would dis
 hypothesis. The *rate* is a different matter: spectral accuracy of the trapezoidal rule for a smooth
 periodic integrand is AH Proposition 7.5.6 and needs `H^s(2π)`, so only the bound is stated.
 
-## 5. The highest-leverage open item
+## 5. What is left, and why it is topology
 
-(13.2.32), the Fourier diagonalization `A ψ_m = ψ_m / |m|` of the logarithmic single layer operator.
-Its analytic content is the classical expansion `−log |2 sin(θ/2)| = Σ_{m ≥ 1} cos(mθ)/m`, the real
-part of `−log(1 − e^{iθ})`, which Mathlib's `Complex.log` and the geometric series give. With it,
-`A` is a Fourier multiplier and the whole operator algebra of §13.3 becomes elementary, and
-Exercise 13.3.1 is a corollary. Its natural home is `Numlib/Analysis/Fourier/`, beside
-`TrigonometricBasis` and `Dirichlet`, rather than in the surface.
+(13.2.32), the Fourier diagonalization `A ψ_m = ψ_m / max{1, |m|}` of the logarithmic single layer
+operator, was the chapter's highest-leverage open item; it is now
+`Numlib/Analysis/Fourier/LogSingleLayer` and `AtkinsonHan.Chapter13.equation_13_2_32`, with
+Exercise 13.3.1 as the corollary it was billed to be. Its analytic content turned out *not* to be
+the term-by-term integration of `−log |2 sin(θ/2)| = ∑_{m ≥ 1} cos(mθ)/m`, which converges only
+conditionally: the identity `cos(u/2) sin(mu) = sin(u/2) (1 − cos(mu) + 2 ∑_{k < m} cos((k+1)u))`
+hands over an elementary antiderivative for `log(sin(u/2)) cos(mu)` on `(0, 2π)`, and
+`sin(mu) = 2 sin(u/2) ∑_{j < m} cos((2j+1)(u/2))` together with the continuity of `x log x` at `0`
+extends it continuously to the closed interval, so the fundamental theorem of calculus crosses the
+two logarithmic endpoints and no series is interchanged with an integral at all.
+
+The two items that remain open are both **planar topology or potential theory**, and neither is a
+missing piece of numerical analysis:
+
+* **Exercise 13.2.5 and (13.2.20)**, `‖K‖ = π` for a convex region.
+  `IntegralOperator.norm_kernelCLM` reduces it to `sup_t ∫_0^L |k(t, s)| ds = π`, and
+  `doubleLayerKernel_eq_im_div` identifies the integrand exactly: writing the curve as
+  `r(s) = ξ(s) + i η(s)`, off the diagonal `k(t, s) = Im (r′(s) / (r(s) − r(t)))`, which is
+  `d/ds arg(r(s) − r(t))`. The row integral is therefore the total turning of the chord direction
+  seen from the boundary point `r(t)`: `−π` for a regular simple closed curve, a boundary-point form
+  of Hopf's Umlaufsatz, with the absolute value removable exactly when the region is convex. Mathlib
+  has neither a continuous argument along a plane curve nor a turning number.
+  An earlier note here and in the group file claimed that "the `≤ π` half for a general smooth curve
+  follows from the same computation with `|k|`". That is **false**: for a non-convex curve the chord
+  direction reverses and `∫_0^L |k(t, s)| ds > |∫_0^L k(t, s) ds| = π`, so `‖K‖ > π`. Convexity is
+  used for the whole statement.
+* **(13.2.19)** and the rest of §13.2.1. The book derives it from (13.2.16), the maximum principle
+  for the harmonic `u − u_n` on `D_i`, and (13.2.17), the jump relation giving the boundary values
+  of a double layer potential. The jump relations are precisely what §13.1 is skipped for, and the
+  statement also needs the double layer potential as a function on the *region*, an integral over
+  the boundary against surface measure. The maximum principle alone is within reach of Mathlib's
+  `HarmonicContOnCl`; the jump relation is not. (§13.2.1 contains no singularity subtraction; an
+  earlier note describing one had confused it with a scheme in Atkinson's own monograph.)

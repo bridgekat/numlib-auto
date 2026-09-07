@@ -1,5 +1,6 @@
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Periodic
 import Mathlib.Topology.Instances.AddCircle.Real
+import Numlib.Analysis.Complex.Harmonic
 import Numlib.Approximation.DividedDifference
 import Numlib.IntegralEquations.Basic
 
@@ -32,6 +33,9 @@ definition.
 ## Main results
 
 * `doubleLayerKernel`, with `equation_13_1_33` and `equation_13_1_34`.
+* `doubleLayerKernel_eq_im_div`, that off the diagonal the kernel is `Im (r'(s) / (r(s) - r(t)))`,
+  the rate of turning of the chord from `r(t)` to `r(s)` — the identity that makes the row integral
+  of Exercise 13.2.5 a turning number.
 * `doubleLayerKernelCM` — the kernel as a `C(Icc a b × Icc a b, ℝ)` on a parameter interval on
   which the curve is regular and simple, and `isCompactOperator_doubleLayer`, that the resulting
   integral operator is compact.
@@ -49,13 +53,20 @@ definition.
   rectangle `[0, L] × [-L/2, L/2]` being a compact space mapping onto the torus, hence a quotient
   map.
 
+* `kelvin` and `kelvin_harmonic` — §13.1.2, that the Kelvin transform `û = u ∘ T` of a harmonic
+  function is harmonic, `T` being inversion in the unit circle.  This is the one item of the module
+  that is not on the path to §13.2; identifying the plane with `ℂ` it is
+  `InnerProductSpace.HarmonicAt.comp_conj` and `.comp_analyticAt` of
+  `Numlib/Analysis/Complex/Harmonic`, because `T z = conj (z⁻¹)`.
+
 ## Not formalized here
 
 * The identification of this operator with the boundary integral
   `∫_S ρ(Q) ∂/∂n_Q log |P - Q| dS_Q`, which needs a surface measure and a normal field on `S`.
-* §13.1.2, the Kelvin transform: reachable from Mathlib's `HarmonicOnNhd` and the identification of
-  harmonic functions with real parts of holomorphic ones in the plane, but isolated — nothing else
-  in the corpus consumes it.  See the plan.
+* Everything the Kelvin transform is used *for*: the exterior Dirichlet and Neumann problems
+  (13.1.14)–(13.1.23) rest on Theorem 13.1.1, quoted by the book from Chapter 8, and on the
+  removable singularity statement for a bounded harmonic function on a punctured neighbourhood of
+  the origin.
 -/
 
 open Set
@@ -110,6 +121,36 @@ theorem equation_13_1_33 (hξ : ∀ x, HasDerivAt ξ (ξ' x) x) (hξ' : ∀ x, H
   have hden : ((s - t) * firstOrder ξ' s t) ^ 2 + ((s - t) * firstOrder η' s t) ^ 2
       = (s - t) ^ 2 * (firstOrder ξ' s t ^ 2 + firstOrder η' s t ^ 2) := by ring
   rw [hnum, hden, mul_div_mul_left _ _ (pow_ne_zero 2 hd)]
+
+/-- **The double layer kernel is the rate of turning of the chord.**  Write the curve as the
+complex-valued `r(s) = ξ(s) + i η(s)`.  Off the diagonal,
+
+`k(t, s) = Im (r'(s) / (r(s) - r(t)))`,
+
+and the right-hand side is `d/ds arg (r(s) - r(t))`: the kernel measures how fast the direction of
+the chord from the fixed boundary point `r(t)` to the moving point `r(s)` turns.  As in
+`equation_13_1_33`, no regularity of the curve is needed and the identity holds even where the
+chord vanishes, both sides being `0` there.
+
+This identity is what makes (13.2.20) and Exercise 13.2.5 *topology* rather than analysis:
+`∫_0^L k(t, s) ds` is the total turning of the chord direction, which is `-π` for a regular simple
+closed curve — a boundary-point form of Hopf's Umlaufsatz — and equals `∫_0^L |k(t, s)| ds` exactly
+when the region is convex, so that the chord direction turns monotonically.  Mathlib has neither a
+continuous argument along a plane curve nor a turning number, and that, rather than any missing
+analysis, is what Exercise 13.2.5 waits on. -/
+theorem doubleLayerKernel_eq_im_div (hξ : ∀ x, HasDerivAt ξ (ξ' x) x)
+    (hξ' : ∀ x, HasDerivAt ξ' (ξ'' x) x) (hη : ∀ x, HasDerivAt η (η' x) x)
+    (hη' : ∀ x, HasDerivAt η' (η'' x) x) (hcξ' : Continuous ξ') (hcξ'' : Continuous ξ'')
+    (hcη' : Continuous η') (hcη'' : Continuous η'') {s t : ℝ} (hst : s ≠ t) :
+    doubleLayerKernel ξ' η' ξ'' η'' t s
+      = (((ξ' s : ℂ) + (η' s : ℂ) * Complex.I) /
+          (((ξ s : ℂ) + (η s : ℂ) * Complex.I) - ((ξ t : ℂ) + (η t : ℂ) * Complex.I))).im := by
+  rw [equation_13_1_33 hξ hξ' hη hη' hcξ' hcξ'' hcη' hcη'' hst, Complex.div_im]
+  simp only [Complex.add_re, Complex.add_im, Complex.sub_re, Complex.sub_im, Complex.ofReal_re,
+    Complex.ofReal_im, Complex.mul_I_re, Complex.mul_I_im, Complex.normSq_apply, zero_add, add_zero,
+    neg_zero, div_sub_div_same]
+  congr 1
+  ring
 
 /-- **(13.1.34)**: on the diagonal the parametrized double layer kernel is *half the curvature*,
 
@@ -371,5 +412,54 @@ theorem isCompactOperator_doubleLayerCP (L : ℝ) [Fact (0 < L)] {ξ η ξ' η' 
   IntegralOperator.isCompactOperator_kernelCLM _ _
 
 end Closed
+
+/-! ### §13.1.2, the Kelvin transform -/
+
+section Kelvin
+
+open InnerProductSpace
+
+/-- **(13.1.10), (13.1.12): the Kelvin transform** of a function on a planar region.  Inversion in
+the unit circle is `T (x, y) = (x, y) / r²` with `r = |(x, y)|`, an involution of
+`ℝ² \ {0}`, and the Kelvin transform of `u` is `û = u ∘ T`; the book writes `û (T P) = u (P)`,
+which is the same thing because `T ∘ T` is the identity.  Identifying the plane with `ℂ`,
+`T z = z / ‖z‖²`.
+
+In dimension two the transform carries no `‖x‖^(2 - d)` weight, so `kelvin` is a plain
+precomposition. -/
+noncomputable def kelvin (u : ℂ → ℝ) (x : ℂ) : ℝ := u (x / (‖x‖ ^ 2 : ℝ))
+
+/-- Inversion in the unit circle is `z ↦ 1 / conj z`.  The identity holds at `0` too, both sides
+being `0` there. -/
+theorem div_norm_sq_eq_inv_conj (z : ℂ) :
+    z / ((‖z‖ ^ 2 : ℝ) : ℂ) = ((starRingEnd ℂ) z)⁻¹ := by
+  rw [Complex.inv_def, Complex.conj_conj, Complex.normSq_conj, Complex.normSq_eq_norm_sq]
+  push_cast
+  ring
+
+/-- **(13.1.13): the Kelvin transform preserves harmonicity.**  If `u` is harmonic at the inverse
+point `T x = x / ‖x‖²` then `û = u ∘ T` is harmonic at `x`; this is the book's computation
+`Δ û (ξ, η) = r⁴ Δ u (x, y)`, which is what turns the exterior Dirichlet and Neumann problems on
+`D_e` into interior problems on `T (D_e)`.
+
+Identifying the plane with `ℂ`, `T z = conj (z⁻¹)` is anticonformal, and the statement is that
+harmonicity survives precomposition with an inversion and with a reflection:
+`InnerProductSpace.HarmonicAt.comp_analyticAt` and `InnerProductSpace.HarmonicAt.comp_conj` of
+`Numlib/Analysis/Complex/Harmonic`. -/
+theorem kelvin_harmonic {u : ℂ → ℝ} {x : ℂ} (hx : x ≠ 0)
+    (hu : HarmonicAt u (x / ((‖x‖ ^ 2 : ℝ) : ℂ))) : HarmonicAt (kelvin u) x := by
+  have hinv : AnalyticAt ℂ (fun z : ℂ => z⁻¹) x := (analyticAt_id (𝕜 := ℂ) (z := x)).inv hx
+  have hconj : HarmonicAt (fun w : ℂ => u ((starRingEnd ℂ) w)) x⁻¹ := by
+    refine InnerProductSpace.HarmonicAt.comp_conj ?_
+    rwa [map_inv₀, ← div_norm_sq_eq_inv_conj]
+  have hcomp := InnerProductSpace.HarmonicAt.comp_analyticAt
+    (u := fun w : ℂ => u ((starRingEnd ℂ) w)) (g := fun z : ℂ => z⁻¹) hconj hinv
+  have hfun : kelvin u = fun z : ℂ => u ((starRingEnd ℂ) z⁻¹) := by
+    funext z
+    rw [kelvin, div_norm_sq_eq_inv_conj, map_inv₀]
+  rw [hfun]
+  exact hcomp
+
+end Kelvin
 
 end AtkinsonHan.Chapter13

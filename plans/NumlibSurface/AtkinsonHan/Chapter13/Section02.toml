@@ -13,70 +13,59 @@ id = "equation_13_2_7"
 [[node]]
 id = "exercise_13_2_5"
 kind = "theorem"
+source = "Atkinson-Han, Theoretical Numerical Analysis, (13.2.20) and Exercise 13.2.5"
 desc = '''
 Exercise 13.2.5 and (13.2.20): for a bounded *convex* region with smooth boundary the double layer
 operator has `norm K = pi` exactly, so that `norm ((-pi + K)^{-1})` cannot be obtained from a
 Neumann series and the compactness argument of Chapter 12 is necessary rather than convenient.
 
-`IntegralOperator.norm_kernelCLM` gives `norm K = max_t int |k(t, s)| ds` immediately, so the work
-is entirely geometric: convexity makes `k` of one sign, and the row integral is then the total
-turning of the tangent, i.e. Hopf's Umlaufsatz for a convex curve. Mathlib has no turning number
-and no Umlaufsatz. The `<= pi` half for a general smooth curve follows from the same computation
-with `|k|` and is the part worth attempting first.
+**Obstruction (sharpened; the earlier note here was wrong).** `IntegralOperator.norm_kernelCLM`
+reduces the statement to `sup_t int_0^L abs (k (t, s)) ds = pi`, and
+`AtkinsonHan.Chapter13.doubleLayerKernel_eq_im_div` identifies the integrand: writing the curve as
+`r(s) = xi(s) + i eta(s)`, off the diagonal `k(t, s) = Im (r^(1)(s) / (r(s) - r(t)))`, which is
+`d/ds arg (r(s) - r(t))`. So the row integral is the **total turning of the chord direction seen
+from the boundary point `r(t)`**, which is `-pi` for a regular simple closed curve -- a
+boundary-point form of Hopf''s Umlaufsatz -- and the absolute value may be dropped exactly when the
+region is convex, so that the turning is monotone. What is missing is therefore a continuous
+argument (a lift along the covering `R -> S^1`) for a plane curve and a turning number; Mathlib has
+neither, and neither is numerical analysis.
 
-Self-contained and instructive -- it is the reason the whole apparatus of Chapter 12 is needed
-here -- but it waits on `doubleLayerKernel`.
+The previous note here claimed that "the `<= pi` half for a general smooth curve follows from the
+same computation with `abs k`" and that this was the part worth attempting first. That is **false**:
+for a non-convex smooth curve the chord direction reverses, so
+`int_0^L abs (k (t, s)) ds > abs (int_0^L k (t, s) ds) = pi` and `norm K > pi`. Convexity is used
+for the whole statement, not only for the lower bound.
 '''
-deps = ["doubleLayerKernel", "IntegralOperator.norm_kernelCLM"]
+deps = ["doubleLayerKernel", "doubleLayerKernel_eq_im_div", "IntegralOperator.norm_kernelCLM"]
 
 [[node]]
 id = "equation_13_2_19"
 kind = "theorem"
+source = "Atkinson-Han, Theoretical Numerical Analysis, (13.2.14)-(13.2.21)"
 desc = '''
-§13.2.1, (13.2.14)-(13.2.23): the evaluation of the double layer potential at a point `A` *near* the
-boundary, by subtracting the singularity,
-`u(A) = int_S [rho(Q) - rho(P_A)] d/dn_Q log norm (A - Q) dS_Q - pi rho(P_A)`, together with the
-error analysis of the resulting composite scheme `u_{n,m}`.
+Section 13.2.1, (13.2.19): with `u_n` the double layer potential of the Nystrom density `rho_n`,
+`max_{closure D_i} abs (u - u_n) <= (pi + norm K) * norm (rho - rho_n)_infinity`.
 
-Filed as missing rather than skipped only because the *parametrized* form of the statement is again
-an ordinary integral over `[0, L]` and so avoids surface measure -- but only barely, and the
-singularity-subtraction analysis is long. It has no consumer elsewhere in the corpus. Lowest
-priority in the chapter; moving it to the skip list beside the rest of the potential theory would
-be defensible.
+**Obstruction (sharpened; the earlier note here described the wrong argument).** The book''s
+derivation is (13.2.16) plus (13.2.17): `u - u_n` is harmonic on `D_i` and continuous on its
+closure, so by the maximum principle its sup is attained on `S`; and on `S` its value is given by
+the **jump relation** `u(P) - u_n(P) = -pi (rho - rho_n)(P) + int_S (rho - rho_n)(Q) d/dn_Q log
+norm (P - Q) dS_Q`. The jump relations (13.1.7)-(13.1.8) are exactly the potential theory the rest
+of Section 13.1 is skipped for, and the statement also needs the double layer potential as a
+function on the *region* -- an integral over the boundary with surface measure and normal field --
+which Chapter13/Section01 already records as out of reach. The maximum principle alone is within
+range of Mathlib''s `HarmonicContOnCl`; the jump relation is not.
+
+There is no singularity subtraction in Atkinson-Han Section 13.2.1; the earlier note here described
+a scheme from Atkinson''s own monograph instead. This node belongs on the skip list beside the rest
+of the potential theory.
 '''
 deps = ["equation_13_2_7"]
 
 [[node]]
 id = "equation_13_2_32"
-kind = "theorem"
-desc = '''
-(13.2.32), the **Fourier diagonalization of the logarithmic single layer operator**:
-
-`A phi (t) = -(1/pi) int_0^{2 pi} phi(s) log |2 e^{-1/2} sin ((t - s)/2)| ds`
-
-acts on the Fourier modes by `A psi_0 = psi_0` and `A psi_m = psi_m / |m|` for `m` nonzero.
-
-The analytic content is the classical expansion `-log |2 sin (th/2)| = sum_{m >= 1} cos (m th) / m`,
-which is the real part of `-log (1 - e^{i th})` and follows from Mathlib's `Complex.log` and the
-geometric series. Once it is in place `A` is a Fourier multiplier and the whole operator algebra of
-§13.3 becomes elementary, which makes this the single highest-leverage item of the chapter; its
-natural home is `Numlib/Analysis/Fourier/` rather than the surface, beside
-`TrigonometricBasis` and `Dirichlet`.
-
-The bound (13.2.33), `norm A_{C_p -> C_p} <= sqrt (1 + pi^2/3)`, is quoted by the book from
-Atkinson and is a separate, harder step; state the diagonalization without it.
-'''
+source = "Atkinson-Han, Theoretical Numerical Analysis, (13.2.31)-(13.2.32) and (13.2.37)"
 
 [[node]]
 id = "exercise_13_3_1"
-kind = "theorem"
-desc = '''
-Exercise 13.3.1: `-(1/pi) int_0^{2 pi} phi(s) log |2 e^{-1/2} sin ((t - s)/2)| ds = cos (k t)` is
-solved by `phi(t) = k cos (k t)` for `k >= 1` and by `phi(t) = 1` for `k = 0`. A one-line corollary
-of `equation_13_2_32`, and a good sanity check on it.
-
-Filed in §13.2's group rather than §13.3's because it is a statement about the operator `A` alone
-and needs none of §13.3's Sobolev machinery; `Chapter13/Section03` is where the Galerkin method
-that uses `A` goes.
-'''
-deps = ["equation_13_2_32"]
+source = "Atkinson-Han, Theoretical Numerical Analysis, Exercise 13.3.1"

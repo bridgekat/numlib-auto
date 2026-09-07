@@ -42,32 +42,10 @@ id = "isCompactOperator_doubleLayerCP"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Section 13.1.3"
 
 [[node]]
+id = "doubleLayerKernel_eq_im_div"
+
+[[node]]
 id = "kelvin"
-kind = "definition"
-desc = '''
-The **Kelvin transform** in the plane, `kelvin u x = u (x / norm x ^ 2)`, carrying a function on a
-region to a function on its image under inversion in the unit circle. In dimension two it carries no
-`norm x ^ (2 - d)` weight, so the definition is as clean as it gets.
-'''
 
 [[node]]
 id = "kelvin_harmonic"
-kind = "theorem"
-desc = '''
-Section 13.1.2: the Kelvin transform preserves harmonicity, so the exterior Dirichlet and Neumann
-problems on `D_e` become interior problems on the image of `D_e` under inversion; together with the
-removable singularity statement, that a bounded harmonic function on a punctured neighbourhood of
-the origin extends across it.
-
-Reachable: Mathlib has `HarmonicOnNhd` and `HarmonicAt`
-(`Analysis/InnerProductSpace/Harmonic/{Basic,Constructions}.lean`) and, in dimension two, the
-identification of harmonic with locally the real part of a holomorphic function
-(`Analysis/Complex/Harmonic/Analytic.lean`), which reduces the claim to "harmonic composed with
-antiholomorphic is harmonic" for `z -> 1 / conj z`. The removable singularity is
-`Complex.differentiableOn_update_limUnder_of_bddAbove` transported through the same identification.
-
-Genuinely isolated: nothing else in the corpus consumes it, and everything the book uses it *for*
-(existence for the exterior problems) rests on Theorem 13.1.1, which is skipped. It is the one item
-of this module that is not on the path to Section 13.2.
-'''
-deps = ["kelvin"]

@@ -1,4 +1,5 @@
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Periodic
+import Numlib.Analysis.Fourier.LogSingleLayer
 import Numlib.Approximation.CompositeQuadrature
 import Mathlib.Topology.Instances.AddCircle.Real
 import NumlibSurface.AtkinsonHan.Chapter12.Section04
@@ -36,6 +37,8 @@ Neumann problem, and for §13.3.
 * `equation_13_2_4` — the same with the concrete periodic trapezoidal rule
   `h ∑_{j < n} k (t, j h) ρ (j h)`, `h = L / n`, whose two quadrature hypotheses are discharged by
   `Quadrature.sum_abs_circleTrapezoid` and `Quadrature.tendsto_circleTrapezoid`.
+* `equation_13_2_32` — the Fourier diagonalization of the logarithmic single layer operator of
+  §13.2.3, `A ψ_m = ψ_m / max {1, |m|}`, and `exercise_13_3_1`, the first kind equation it solves.
 
 ## Not formalized here
 
@@ -47,9 +50,15 @@ Neumann problem, and for §13.3.
   stated.  Its *convergence* for every continuous periodic integrand is no longer a hypothesis:
   `Quadrature.tendsto_circleTrapezoid` of `Numlib/Approximation/CompositeQuadrature` proves it, and
   `equation_13_2_4` is the resulting concrete scheme.
-* Exercise 13.2.5, that `‖K‖ = π` for a convex region; (13.2.14)–(13.2.23), the evaluation of the
-  potential near the boundary; and (13.2.32), the Fourier diagonalization of the logarithmic
-  single-layer operator.  See `plans/NumlibSurface/AtkinsonHan/Chapter13/Section02.toml`.
+* Exercise 13.2.5, that `‖K‖ = π` for a convex region, and (13.2.14)–(13.2.23), the evaluation of
+  the potential near the boundary.  Both are planar potential theory rather than numerical
+  analysis: the row integral `∫_0^L k (t, s) ds` of the double layer kernel is the total turning of
+  the chord direction seen from a boundary point, so it is a degree-theoretic statement about plane
+  curves — an Umlaufsatz — and Mathlib has no turning number; and (13.2.16) is the maximum
+  principle for harmonic functions on the region together with the jump relation (13.2.17).  See
+  `plans/NumlibSurface/AtkinsonHan/Chapter13/Section02.toml`.
+* The bound (13.2.33), `‖A‖_{C_p → C_p} ≤ √(1 + π²/3)`, which the book quotes from Atkinson;
+  only the diagonalization (13.2.32) is proved.
 -/
 
 open Filter MeasureTheory Topology
@@ -162,4 +171,52 @@ theorem equation_13_2_4 (k : C(AddCircle L × AddCircle L, ℝ))
       simpa only [integralCLM_apply, Quadrature.circleTrapezoid] using
         Quadrature.tendsto_circleTrapezoid v) he
 
+/-! ### §13.2.3, the first kind equation and the logarithmic single layer operator -/
+
+/-- **(13.2.31)–(13.2.32), the Fourier diagonalization of the logarithmic single layer
+operator.**  The single layer operator of the unit circle, in the arclength parameter,
+
+`A φ (t) = -(1 / π) ∫_0^{2 π} φ (s) log |2 e^(-1/2) sin ((t - s) / 2)| ds`,
+
+acts on the Fourier modes `ψ_m (t) = e^(i m t)` by `A ψ_m = ψ_m / max {1, |m|}`, which is (13.2.37)
+and, read off the Fourier expansion of `φ`, is (13.2.32).  It is the reason `A` is a bijection of
+`H^0(2 π)` onto `H^1(2 π)`, and it is what makes the operator algebra of §13.3 elementary.
+
+The book quotes this from Yan and Sloan; the proof here is
+`Numlib/Analysis/Fourier/LogSingleLayer`, where the eigenvalue is the `m`-th Fourier coefficient of
+`u ↦ log |2 e^(-1/2) sin (u / 2)|`.  The companion bound (13.2.33),
+`‖A‖_{C_p → C_p} ≤ √(1 + π²/3)`, is a separate and harder statement, quoted by the book from
+Atkinson, and is not proved here. -/
+theorem equation_13_2_32 (m : ℤ) (t : ℝ) :
+    -(1 / π) * ∫ s in (0 : ℝ)..(2 * π), Complex.exp (m * s * Complex.I)
+        * (Real.log |2 * Real.exp (-(1 / 2)) * Real.sin ((t - s) / 2)| : ℂ)
+      = Complex.exp (m * t * Complex.I) / max 1 |m| := by
+  rw [← logSingleLayerC_fourier m t, logSingleLayerC, ← intervalIntegral.integral_const_mul]
+  refine intervalIntegral.integral_congr fun s _ => ?_
+  rw [logSingleLayerKernel]
+  push_cast
+  ring
+
+/-- **Exercise 13.3.1**: for a non-negative integer `k`, the first kind equation
+
+`-(1 / π) ∫_0^{2 π} φ (s) log |2 e^(-1/2) sin ((t - s) / 2)| ds = cos (k t)`
+
+is solved by `φ (t) = max {1, k} cos (k t)` — that is, by `k cos (k t)` when `k ≥ 1` and by the
+constant `1` when `k = 0`.  A direct reading of `equation_13_2_32` on the real modes. -/
+theorem exercise_13_3_1 (k : ℕ) (t : ℝ) :
+    -(1 / π) * ∫ s in (0 : ℝ)..(2 * π), ((max 1 k : ℕ) : ℝ) * Real.cos (k * s)
+        * Real.log |2 * Real.exp (-(1 / 2)) * Real.sin ((t - s) / 2)|
+      = Real.cos (k * t) := by
+  have hk : ((max 1 k : ℕ) : ℝ) ≠ 0 :=
+    Nat.cast_ne_zero.2 (Nat.one_le_iff_ne_zero.1 (le_max_left 1 k))
+  have h : logSingleLayer (fun s => ((max 1 k : ℕ) : ℝ) * Real.cos ((k : ℝ) * s)) t
+      = Real.cos ((k : ℝ) * t) := by
+    rw [logSingleLayer_const_mul, logSingleLayer_cos]
+    field_simp
+  rw [← h, logSingleLayer, ← intervalIntegral.integral_const_mul]
+  refine intervalIntegral.integral_congr fun s _ => ?_
+  rw [logSingleLayerKernel]
+  ring
+
 end AtkinsonHan.Chapter13
+

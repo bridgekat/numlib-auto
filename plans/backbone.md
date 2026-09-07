@@ -81,11 +81,24 @@ Banach/Hilbert-space level of generality:
      scope, for that reason. Two items escape it, because they concern the parametrization and not
      the potential: the Kelvin transform, and the parametrized double layer kernel of
      (13.1.32)–(13.1.37), whose continuity at the diagonal (value: half the curvature) is the only
-     analysis needed to make the double layer operator a compact operator on `C(Γ)`.
-   * **§13.2** needs nothing that is missing. Its second-kind analysis is Theorem 12.4.4 read on
+     analysis needed to make the double layer operator a compact operator on `C(Γ)`. Both are now
+     formalized and §13.1's group is `done`; the Kelvin transform in the plane is precomposition
+     with the anticonformal `T z = conj (z⁻¹)`, for which `Numlib/Analysis/Complex/Harmonic` adds the
+     two pre-composition results Mathlib lacks (holomorphic, and conjugation via Schwarz
+     reflection).
+   * **§13.2**'s second-kind analysis needs nothing that is missing: it is Theorem 12.4.4 read on
      `C_p(L) = C(AddCircle L, ℝ)` at `λ = −π`, with the invertibility of `−π + K` a hypothesis the
-     book itself only quotes; `NumlibSurface/AtkinsonHan/Chapter13/Section02` states it. Only
-     §13.2.2, the exterior Neumann problem, reaches for `H¹(2π)`, and only for one norm identity.
+     book itself only quotes; `NumlibSurface/AtkinsonHan/Chapter13/Section02` states it, with the
+     periodic trapezoidal rule discharged. Neither does §13.2.3: (13.2.31)–(13.2.32), the Fourier
+     diagonalization `A ψ_m = ψ_m / max{1, |m|}` of the logarithmic single layer operator, is proved
+     outright in `Numlib/Analysis/Fourier/LogSingleLayer`, which makes §13.3's operator algebra
+     elementary. But two items of §13.2 are out of scope, and for the *same* reasons as §13.1 and
+     not for a Sobolev one: (13.2.14)–(13.2.21) rests on the jump relation (13.2.17) and on the
+     double layer potential as a function on the region; and Exercise 13.2.5, `‖K‖ = π` for a
+     convex region, is a boundary-point Umlaufsatz — by `doubleLayerKernel_eq_im_div` the row
+     integral `∫_0^L k(t, s) ds` is the total turning of the chord direction seen from `r(t)` — and
+     needs a continuous argument along a plane curve, which Mathlib has not got. §13.2.2, the
+     exterior Neumann problem, reaches for `H¹(2π)`, and only for one norm identity.
    * **§13.3** does need the *periodic* Sobolev scale `H^q(2π)` — but that is the weighted `ℓ²`
      space over the Fourier basis of `AddCircle` that §14.8 below already calls reachable, not the
      domain machinery that blocks Ch. 7 and 10. Its convergence argument, §13.3.1, is
