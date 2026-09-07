@@ -53,6 +53,7 @@ import NumlibSurface.AtkinsonHan.Chapter12.Section01
 import NumlibSurface.AtkinsonHan.Chapter12.Section02
 import NumlibSurface.AtkinsonHan.Chapter12.Section03
 import NumlibSurface.AtkinsonHan.Chapter12.Section04
+import NumlibSurface.AtkinsonHan.Chapter12.Section05
 import NumlibSurface.AtkinsonHan.Chapter12.Section06
 import NumlibSurface.AtkinsonHan.Chapter12.Section07
 import NumlibSurface.AtkinsonHan.Chapter13.Section01
