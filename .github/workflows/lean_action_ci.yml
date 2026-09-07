@@ -21,3 +21,7 @@ jobs:
           submodules: recursive
       - uses: leanprover/lean-action@v1
       - uses: leanprover-community/docgen-action@v1
+        with:
+          blueprint: false
+          homepage: site # Disable Jekyll build by pointing to a non-existent directory
+      - run: lake exe tracker check
