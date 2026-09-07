@@ -1,3 +1,4 @@
+import Mathlib.Analysis.Calculus.Deriv.Polynomial
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.IntegrationByParts
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Periodic
 import Numlib.Approximation.Quadrature
@@ -44,6 +45,9 @@ continuity bound, and the mean value form of the composite trapezoidal error.
   rule, whose kernel is the *piecewise* cubic `(t - α)³(3t - α - 2β)/72` on the left half of the
   panel and its mirror image on the right, and `Quadrature.sub_composite_simpson_eq`, the
   composite mean value form `∫_a^b g - simpsonSum g a h N = -h⁴ (b - a) g⁗(ξ)/2880`.
+  `Quadrature.abs_sub_simpson_le` is the one-panel bound `M (β - α)⁵/2880` that follows from it,
+  and `Quadrature.integral_eq_simpson_of_natDegree_le` the exactness of Simpson's rule on
+  polynomials of degree at most three.
 
 ## References
 
@@ -1155,6 +1159,63 @@ theorem sub_composite_simpson_eq (hab : a < b) {N : ℕ} (hN : 0 < N) (hh : h = 
   have hSne : S ≠ 0 := ne_of_lt hSneg
   rw [hξval, mul_comm]
   exact (div_mul_cancel₀ E hSne).symm
+
+/-- **The Simpson panel error bound.**  If `g` has four derivatives on the panel `[α, β]` and
+`|g⁗| ≤ M` there, then Simpson's rule on that panel is in error by at most `M (β - α)⁵/2880`.
+
+This is `Quadrature.sub_simpson_mem_Icc` with the extreme values of `g⁗` replaced by `±M`; the
+sign definiteness of Simpson's Peano kernel is what makes the constant `1/2880` rather than the
+larger one an absolute value estimate of the kernel itself would give. -/
+theorem abs_sub_simpson_le {α β M : ℝ} (hαβ : α ≤ β)
+    (hg : ∀ x ∈ Set.Icc α β, HasDerivAt g (g' x) x)
+    (hg' : ∀ x ∈ Set.Icc α β, HasDerivAt g' (g'' x) x)
+    (hg'' : ∀ x ∈ Set.Icc α β, HasDerivAt g'' (g₃ x) x)
+    (hg₃ : ∀ x ∈ Set.Icc α β, HasDerivAt g₃ (g₄ x) x) (hc₄ : ContinuousOn g₄ (Set.Icc α β))
+    (hM : ∀ t ∈ Set.Icc α β, |g₄ t| ≤ M) :
+    |(∫ t in α..β, g t) - (β - α) / 6 * (g α + 4 * g ((α + β) / 2) + g β)|
+      ≤ M * (β - α) ^ 5 / 2880 := by
+  have hmem := sub_simpson_mem_Icc (c := -M) (M := M) hαβ hg hg' hg'' hg₃ hc₄
+    (fun t ht => neg_le_of_abs_le (hM t ht)) (fun t ht => le_of_abs_le (hM t ht))
+  rw [Set.mem_Icc] at hmem
+  rw [abs_le]
+  constructor <;> nlinarith [hmem.1, hmem.2]
+
+/-- **Simpson's rule is exact for polynomials of degree at most three.**  Such a polynomial has a
+vanishing fourth derivative, so `Quadrature.sub_simpson_mem_Icc` traps the panel error between two
+zeros.
+
+This is what makes the integral of a piecewise *quadratic* interpolant over one of its panels
+equal to Simpson's rule for the interpolated function on that panel — the observation behind the
+extra power of `h` in the iterated piecewise quadratic collocation method. -/
+theorem integral_eq_simpson_of_natDegree_le {α β : ℝ} (hαβ : α ≤ β) {p : Polynomial ℝ}
+    (hp : p.natDegree ≤ 3) :
+    (∫ t in α..β, p.eval t)
+      = (β - α) / 6 * (p.eval α + 4 * p.eval ((α + β) / 2) + p.eval β) := by
+  have hp₄ : Polynomial.derivative (Polynomial.derivative
+      (Polynomial.derivative (Polynomial.derivative p))) = 0 := by
+    have h4 : (Polynomial.derivative^[4] p) = 0 :=
+      Polynomial.iterate_derivative_eq_zero (by omega)
+    simpa [Function.iterate_succ_apply'] using h4
+  have hmem := sub_simpson_mem_Icc (g := fun t => p.eval t)
+    (g' := fun t => (Polynomial.derivative p).eval t)
+    (g'' := fun t => (Polynomial.derivative (Polynomial.derivative p)).eval t)
+    (g₃ := fun t => (Polynomial.derivative (Polynomial.derivative
+      (Polynomial.derivative p))).eval t)
+    (g₄ := fun _ => (0 : ℝ)) (c := 0) (M := 0) hαβ
+    (fun y _ => p.hasDerivAt y)
+    (fun y _ => (Polynomial.derivative p).hasDerivAt y)
+    (fun y _ => (Polynomial.derivative (Polynomial.derivative p)).hasDerivAt y)
+    (fun y _ => by
+      have hd := (Polynomial.derivative (Polynomial.derivative
+        (Polynomial.derivative p))).hasDerivAt y
+      rwa [hp₄, Polynomial.eval_zero] at hd)
+    continuousOn_const (fun _ _ => le_rfl) (fun _ _ => le_rfl)
+  rw [Set.mem_Icc] at hmem
+  have hzero : (∫ t in α..β, p.eval t)
+      - (β - α) / 6 * (p.eval α + 4 * p.eval ((α + β) / 2) + p.eval β) = 0 :=
+    le_antisymm (by simpa using hmem.2) (by simpa using hmem.1)
+  linarith [hzero]
+
 
 end SimpsonError
 

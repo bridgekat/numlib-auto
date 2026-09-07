@@ -48,3 +48,38 @@ id = "ContinuousMap.tendsto_modulusOfContinuity"
 [[node]]
 id = "tendsto_piecewiseLinearInterpCLM"
 source = "Atkinson–Han, Theoretical Numerical Analysis, (3.2.8)"
+
+[[node]]
+id = "IsPanelNodes"
+source = "Atkinson-Han, Theoretical Numerical Analysis, Section 12.3.2 and (12.5.31)-(12.5.32)"
+
+[[node]]
+id = "piecewisePolyInterpCLM"
+source = "Atkinson-Han, Theoretical Numerical Analysis, Section 12.3.2 and (12.5.32)"
+
+[[node]]
+id = "piecewisePolyInterpCLM_apply_of_mem"
+
+[[node]]
+id = "IsPanelLebesgueBound"
+
+[[node]]
+id = "isPanelLebesgueBound_of_sep"
+
+[[node]]
+id = "norm_piecewisePolyInterpCLM_le"
+
+[[node]]
+id = "exists_sub_piecewisePolyInterpCLM_apply_eq"
+
+[[node]]
+id = "norm_sub_piecewisePolyInterpCLM_le"
+
+[[node]]
+id = "abs_sub_piecewisePolyInterpCLM_apply_le_of_osc"
+
+[[node]]
+id = "tendsto_piecewisePolyInterpCLM"
+
+[[node]]
+id = "Lagrange.exists_sub_interpolate_eq_of_contDiffOn"

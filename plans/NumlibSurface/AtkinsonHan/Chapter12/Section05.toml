@@ -38,74 +38,56 @@ Theorem 12.5.4, the regularity of the solution of a weakly singular equation: fo
 `C^{(0,gamma)}[a, b]` vanishing at the endpoints, and `|u^{(i)}(x)| <= c_i (x - a)^{gamma - i}`
 near `a`.
 
-Obstruction (sharpened, `agent/ah12c`): this is the one item of the chapter whose *mathematics*,
-not whose supporting API, is missing. The book proves it over several pages by differentiating
-`u = (1/lambda)(f + K u)` under the singular integral sign and bootstrapping on `k`, and every
-step of that needs a differentiation theorem for `x -> int_a^b l(x, y) g_gamma(x - y) u(y) dy`
-whose hypotheses are exactly the ones being established. Nothing in
-`Numlib/IntegralEquations/WeaklySingular` touches differentiability: its (A1)-(A2) framework is
-about `L^1` moduli of continuity only, and it deliberately proves no concrete kernel admissible,
-so even `|x - y|^{gamma - 1}` is not yet available as an instance.
+Obstruction (sharpened, `agent/ah12d`). This is now the *only* open node of chapter 12, and the
+only one whose mathematics, rather than whose supporting API, is missing. Two claims of the
+previous note are stale and one has been overtaken:
 
-What is needed, in order: (1) the two examples, `int_a^b |log|x - y|| dy` and
-`int_a^b |x - y|^{gamma - 1} dy` bounded uniformly in `x`, with the matching `omega(h) -> 0` --
-elementary but genuinely several pages of interval-integral estimates; (2) differentiation under
-the integral sign for such a kernel, which is where the endpoint weights `(x - a)^i` come from;
-(3) the log-modified Holder class `C^{(0,1)}[a, b]` of the paragraph preceding the theorem, which
-`AtkinsonHan.Chapter03.HolderClass` does not cover.
+* "`Numlib/IntegralEquations/WeaklySingular` deliberately proves no concrete kernel admissible, so
+  even `|x - y|^{gamma - 1}` is not yet available" -- it is:
+  `IntegralOperator.isAdmissibleKernel_abs_sub_rpow` is exactly that kernel on an interval, and
+  `isAdmissibleKernel_of_abs_le_rpow` together with `abs_log_le_two_mul_rpow` covers
+  `log |x - y|` as well. The "elementary but genuinely several pages of interval-integral
+  estimates" of item (1) of the old note are done.
+* "the pragmatic route -- taking 12.5.4 as a hypothesis of `theorem_12_5_6`" is what
+  `theorem_12_5_6` now does, so this node unlocks nothing: proving it would turn a hypothesis of
+  12.5.6 into a consequence, not enable a new result.
 
-The pragmatic route -- taking 12.5.4 as a hypothesis of `theorem_12_5_6` -- is what the book's own
-use of it amounts to, and is what `theorem_12_5_6` should do.
+What remains is the mathematics, and the book does not carry it out either -- it cites Schneider
+[202, p. 63]. Two pieces:
+
+1. **Differentiation under the weakly singular integral sign.** Every step of the bootstrap needs
+   `d/dx int_a^b l(x, y) g_gamma(x - y) u(y) dy`, and the derivative is *not* the integral of the
+   differentiated integrand: differentiating the kernel in `x` produces `|x - y|^{gamma - 2}`,
+   which is not integrable, so Mathlib's
+   `intervalIntegral.hasDerivAt_integral_of_dominated_loc_of_deriv_le` does not apply -- its
+   dominating function cannot exist. The classical fix is to substitute `y = x + s`, splitting the
+   integral at `y = x`, and to differentiate in the shifted variable, where the `x`-dependence sits
+   in the *limits* as well as in `l`; the endpoint weights `(x - a)^i (b - x)^i` of the conclusion
+   are exactly the boundary terms this produces. That change of variables for an interval integral
+   with a moving singularity is what the library lacks, and it is the whole of the work.
+2. **The log-modified Holder class `C^{(0,1)}[a, b]`** of the paragraph preceding the theorem,
+   whose modulus is `|x - xi| log |B/(x - xi)|` for some `B > b - a`.
+   `AtkinsonHan.Chapter03.HolderClass` covers only `0 < beta < 1`, and the `gamma = 1` half of the
+   statement needs the modified class. This part is cheap once the class is defined.
+
+A worthwhile intermediate target, and the only consequence chapter 12 actually consumes: that
+`y |-> l(x, y) u(y)` is of Rice's type `(gamma, m + 1)` uniformly in `x` whenever `u` is. That is
+the hypothesis `theorem_12_5_6` carries, and deriving it from 12.5.4 needs only the Leibniz rule
+and the smoothness of `l`.
 '''
 deps = ["theorem_12_5_1"]
 
 [[node]]
+id = "isPanelNodes_graded"
+
+[[node]]
 id = "lemma_12_5_5"
-kind = "theorem"
-desc = '''
-Lemma 12.5.5, graded-mesh interpolation: for the mesh `x_j = a + (2j/n)^q (b - a)/2` and piecewise
-polynomial interpolation of degree `m`, a function of Rice's type `(gamma, m + 1)` -- that is,
-`u` in `C^{(0,gamma)}[0, 1] cap C^{m+1}(0, 1]` with `|u^{(m+1)}(x)| <= c x^{gamma - (m+1)}` --
-satisfies `norm (u - P_n u)_inf <= c n^{-(m+1)}` once `q >= (m + 1)/gamma`, and
-`norm (u - P_n u)_p <= c n^{-(m+1)}` once `q > p(m + 1)/(1 + p gamma)`.
 
-The book states it without proof, citing Atkinson and Rice, so formalizing means reconstructing the
-argument: split off the first panel `[x_0, x_1]`, where the Holder bound is used directly, and apply
-the Lagrange error formula panel by panel on the rest, where the grading makes
-`h_j^{m+1} sup |u^{(m+1)}|` uniform.
+[[node]]
+id = "isPanelNodes_gradedSym"
 
-Obstruction (sharpened, `agent/ah12c`): the single missing piece is a *piecewise polynomial
-interpolation operator of degree `m`* on `C(Icc a b, R)`. The mesh is not the obstacle --
-`piecewiseLinearInterpCLM` already takes an arbitrary node sequence -- and neither is the panel
-error formula, which is `Lagrange.exists_sub_interpolate_eq` applied on one subinterval, exactly as
-`norm_sub_piecewiseLinearInterpCLM_le` does it for `m = 1`. What has to be built is the operator
-itself: `piecewiseLinearInterpCLM` is written as a sum of clamped ramps, a device special to
-`m = 1`, and the degree-`m` version needs instead a genuine gluing (a `dite` over the panel
-containing the point, continuous at the breakpoints because the two interpolants agree at the
-shared node) together with its idempotence, its norm and its error bound. That is a self-contained
-addition to `Numlib/Approximation/Interpolation` of perhaps 300 lines, and it also unblocks
-`theorem_12_3_3` (piecewise quadratic) and the degree-`m` half of `example_12_5_2`, (12.5.19).
-'''
-deps = ["Lagrange.exists_sub_interpolate_eq"]
+[[node]]
+id = "norm_sub_gradedSym_le"
 
 [[node]]
 id = "theorem_12_5_6"
-kind = "theorem"
-desc = '''
-Theorem 12.5.6: for the weakly singular equation (12.5.26) solved by graded-mesh piecewise
-polynomial product integration, the approximating equations are uniquely solvable for large `n`
-with uniformly bounded inverses, and `norm (u - u_n)_inf <= c n^{-(m+1)}` once
-`q >= (m + 1)/gamma` (or `q > m + 1` when `gamma = 1`).
-
-The proof really is "12.5.1 gives `norm (u - u_n) <= c norm (K u - K_n u)`, then 12.5.4 puts `u` in
-Rice's class and 12.5.5 bounds the interpolation error".
-
-Obstruction (sharpened, `agent/ah12c`): `theorem_12_5_1` is now proved, and it is stated for an
-*arbitrary* sequence of uniformly bounded, pointwise convergent operators `P_n`, so it already
-covers graded meshes and any degree; the family assumptions A1-A3 are
-`isCollectivelyCompactFamily_productCLM`. What remains is therefore exactly `lemma_12_5_5`: the
-degree-`m` operator and its graded-mesh error bound. With 12.5.4 taken as a hypothesis (as the
-book's own use of it amounts to) this node is then a short composition, in the shape of
-`example_12_5_2`.
-'''
-deps = ["theorem_12_5_1", "theorem_12_5_4", "lemma_12_5_5"]

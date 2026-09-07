@@ -90,3 +90,9 @@ id = "sub_simpson_mem_Icc"
 [[node]]
 id = "sub_composite_simpson_eq"
 source = "Kress, Numerical Analysis, Section 9.4"
+
+[[node]]
+id = "abs_sub_simpson_le"
+
+[[node]]
+id = "integral_eq_simpson_of_natDegree_le"
