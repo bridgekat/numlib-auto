@@ -26,4 +26,5 @@ jobs:
           blueprint: false
           build-page: false
           references: references/references.bib
+          use-github-cache: false # Fix: sometimes this leads to incomplete API docs
       - run: lake exe tracker check
