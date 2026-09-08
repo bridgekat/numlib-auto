@@ -49,6 +49,9 @@ id = "HasWeakIteratedFDerivOn.integrable_smul_weakDeriv_apply"
 id = "HasWeakIteratedFDerivOn.integral_smul_eq'"
 
 [[node]]
+id = "HasWeakIteratedFDerivOn.congr_ae"
+
+[[node]]
 id = "HasWeakIteratedFDerivOn.mono"
 
 [[node]]

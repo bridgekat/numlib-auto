@@ -10,9 +10,15 @@ carrying the book's statement and the reason it is not formalized.
   nothing consumes it: every result that would is blocked further down by §7.3. A phase gate, not
   a schedule. The one result of §7.1 that is itself blocked is Example 7.1.9, the weak derivatives
   of a piecewise-polynomial function, which matches traces across sub-domain interfaces.
-* **§7.2, the spaces `W^{k,p}(Ω)`.** Definable on top of §7.1 — completeness (Theorem 7.2.3)
-  needs nothing more than completeness of `L^p` and closedness of the weak derivative — but
-  unusable without §7.3. Definition 7.2.13 (Sobolev spaces over a boundary, by local charts)
+* **§7.2, the spaces `W^{k,p}(Ω)`.** Definition 7.2.2 and Theorem 7.2.3, that `W^{k,p}(Ω)` is a
+  Banach space, are formalized, in `Chapter07/Section02` over `Numlib/Analysis/Sobolev/Space`:
+  the space is a closed subspace of an `ℓ^p` product of `L^p(Ω)` spaces, closed because pairing
+  against a fixed test function is continuous on `L^p(Ω)` by Hölder. The spaces remain unusable
+  without §7.3. Corollary 7.2.4, that `H^k(Ω)` is a Hilbert space, is *not* a consequence here:
+  the backbone measures all the derivatives of order `n` by the operator norm of one tensor, which
+  is not an inner-product norm, so the corollary needs the multi-index indexing. Definition 7.2.9
+  (`W_0^{k,p}(Ω)`) is formalized as the closure of the image of `C_0^∞(Ω)` in that space; only its
+  reading as a space of boundary conditions waits on the trace of §7.3. Definition 7.2.13 (Sobolev spaces over a boundary, by local charts)
   additionally needs surface measure on a Lipschitz boundary, and so do Examples 7.2.7–7.2.8,
   which integrate by parts over the sub-domains of a partition.
 * **§7.3, the structural theorems.** This is the obstruction itself, and Mathlib has none of it:

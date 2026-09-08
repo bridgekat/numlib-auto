@@ -18,25 +18,24 @@ id = "definition_7_2_2"
 id = "definition_7_2_2_iff"
 
 [[node]]
+id = "definition_7_2_2_iff_exists"
+
+[[node]]
 id = "theorem_7_2_3"
-kind = "theorem"
-desc = '''Theorem 7.2.3: `W^{k,p}(Ω)` is a Banach space. The book's proof takes a Cauchy sequence,
-uses completeness of `L^p` on each `∂^α v_n`, and passes to the limit in the defining identity to
-identify the limits as weak derivatives. Not formalized: Definition 7.2.2 and its norm exist now,
-but the theorem needs `W^{k,p}(Ω)` as a *type* -- naturally the subspace of a product of `L^p(Ω)`
-spaces cut out by the weak-derivative relation -- and hence the one analytic ingredient the backbone
-lacks: that pairing with a fixed test function is a continuous linear functional on `L^p(Ω)`, by
-Hölder against that test function, which is what makes the relation closed. None of §7.3 is
-involved.'''
 
 [[node]]
 id = "corollary_7_2_4"
 kind = "theorem"
 desc = '''Corollary 7.2.4: `H^k(Ω)` is a Hilbert space with the inner product
 `(u,v)_k = ∫_Ω ∑_{|α|≤k} ∂^α u ∂^α v`. The book adds, without proof, that `W^{k,p}(Ω)` is reflexive
-exactly for `p ∈ (1,∞)`. Not formalized: it needs Theorem 7.2.3, and on top of that a norm indexed
-by multi-indices, because the backbone measures all the derivatives of a given order by the
-operator norm of a single tensor and that norm is not induced by an inner product.'''
+exactly for `p ∈ (1,∞)`. Not formalized: Theorem 7.2.3 is proved, so completeness is no longer the
+obstruction -- the indexing of the norm is. `Sobolev ℝ k 2 Ω volume` measures all the derivatives of
+order `n` by the operator norm of a single tensor of `E [x n]->L[R] R`, and that norm is not
+induced by an inner product once `n >= 2` and `d >= 2` (for `n = 2` it is the spectral norm of a
+`2 x 2` matrix), so no inner product on the space induces its norm. The corollary needs the weak
+derivative of order `n` to be indexed by the multi-indices `α` with `|α| = n`, or equivalently
+`E [x n]->L[R] R` to carry its Hilbert-Schmidt norm: a change to `HasWeakIteratedFDerivOn` and
+`sobolevNorm`, not an addition on top of them.'''
 
 [[node]]
 id = "example_7_2_5"
@@ -76,12 +75,6 @@ needs surface measure on a Lipschitz boundary and the trace of Theorem 7.3.10.''
 
 [[node]]
 id = "definition_7_2_9"
-kind = "definition"
-desc = '''Definition 7.2.9: `W_0^{k,p}(Ω)` is the closure of `C_0^∞(Ω)` in `W^{k,p}(Ω)`, with
-`H_0^k(Ω) ≡ W_0^{k,2}(Ω)`; informally the functions whose derivatives of order `≤ k-1` vanish on
-`∂Ω`, a reading the trace theorems make precise. Not formalized: a closure needs a topology on
-`W^{k,p}(Ω)`, hence `W^{k,p}(Ω)` as a normed type, which is exactly what Theorem 7.2.3 is still
-missing; and the point of the space is the boundary-value reading, which needs the trace of §7.3.'''
 
 [[node]]
 id = "definition_7_2_10"
@@ -98,9 +91,10 @@ introduces these spaces solely to state the trace theorems and Definition 7.2.13
 id = "definition_7_2_11"
 kind = "definition"
 desc = '''Definition 7.2.11: for `s ≥ 0`, `W_0^{s,p}(Ω)` is the closure of `C_0^∞(Ω)` in
-`W^{s,p}(Ω)`, with `H_0^s(Ω) ≡ W_0^{s,2}(Ω)`. Not formalized: the real-order analogue of Definition
-7.2.9, blocked for the same two reasons -- there is no normed type `W^{s,p}(Ω)` to take a closure
-in, and the point of the space is to carry boundary conditions, which need the trace of §7.3.'''
+`W^{s,p}(Ω)`, with `H_0^s(Ω) ≡ W_0^{s,2}(Ω)`. Not formalized: the real-order analogue of
+Definition 7.2.9, which is formalized for integer `s`. For genuinely real `s` there is still no
+`W^{s,p}(Ω)` to take a closure in, since Definition 7.2.10 is unwritten; and the point of the space
+is to carry boundary conditions, which needs the trace of §7.3.'''
 
 [[node]]
 id = "definition_7_2_12"
@@ -108,9 +102,11 @@ kind = "definition"
 desc = '''Definition 7.2.12: for `s ≥ 0` and conjugate exponents `p, p'`, `W^{-s,p'}(Ω)` is the
 dual of `W_0^{s,p}(Ω)`, with `H^{-s}(Ω) ≡ W^{-s,2}(Ω)`; in particular `H^{-1}(Ω)` is the dual of
 `H_0^1(Ω)`, `L^2(Ω)` embeds in it by `⟨f,v⟩ = ∫_Ω f v`, and every `ℓ ∈ H^{-1}(Ω)` is
-`ℓ_0 - ∑_i ∂_i ℓ_i` for `L^2` functions `ℓ_0,…,ℓ_d` (stated without proof). Not formalized: the
-dual space is Mathlib's `NormedSpace.Dual` once Definition 7.2.11 exists, and that waits on the
-normed structure of Theorem 7.2.3.'''
+`ℓ_0 - ∑_i ∂_i ℓ_i` for `L^2` functions `ℓ_0,…,ℓ_d` (stated without proof). Not formalized: the dual
+space is Mathlib's `NormedSpace.Dual` once Definition 7.2.11 exists. For integer `s` everything it
+waits on is now available -- Theorem 7.2.3 and Definition 7.2.9 -- so only the real-order case,
+which needs Definition 7.2.10, is still blocked; it is unwritten because nothing in the corpus
+consumes the dual before §7.3.'''
 
 [[node]]
 id = "definition_7_2_13"

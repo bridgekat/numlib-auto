@@ -1,4 +1,4 @@
-import Numlib.Analysis.Sobolev.Domain
+import Numlib.Analysis.Sobolev.Space
 import NumlibSurface.AtkinsonHan.Chapter07.Section01
 
 /-!
@@ -13,16 +13,20 @@ the weak derivative `∂^α v` exists and lies in `L^p(Ω)`, and `definition_7_2
 against `AtkinsonHan.Chapter07.definition_7_1_3`. The norm and seminorm of the definition are
 `sobolevNorm` and `sobolevSeminorm`.
 
-The rest of the section is not formalized. Theorem 7.2.3, that `W^{k,p}(Ω)` is a Banach space,
-would need `W^{k,p}(Ω)` as a *type* with its norm, hence the closedness of the weak-derivative
-relation under `L^p` limits, which is the one analytic ingredient the backbone does not have;
-Corollary 7.2.4, that `H^k(Ω)` is a Hilbert space, needs on top of that the multi-index indexing of
-the norm, since the operator norm used on the derivative tensors is not an inner-product norm.
-Definition 7.2.1 (boundary regularity classes), Definitions 7.2.9, 7.2.11 and 7.2.12
-(`W_0^{s,p}(Ω)` and the negative-order duals, which need the Banach structure and, for their
-meaning, the trace of §7.3), Definition 7.2.10 (the Sobolev–Slobodeckij spaces) and Definition
-7.2.13 (`W^{s,p}(∂Ω)`, which needs surface measure on a Lipschitz boundary) are all open, as are
-Examples 7.2.5 to 7.2.8.
+Theorem 7.2.3, that `W^{k,p}(Ω)` is a Banach space, is here too: `Sobolev ℝ k p Ω volume` is the
+same space as a normed type, and `theorem_7_2_3` is its completeness. The two readings agree by
+`definition_7_2_2_iff_exists`, and the norm of the type is `sobolevNorm` by `Sobolev.norm_eq`.
+
+The rest of the section is not formalized. Corollary 7.2.4, that `H^k(Ω)` is a Hilbert space, needs
+the multi-index indexing of the norm: the operator norm used on the derivative tensors is not an
+inner-product norm, so completeness alone does not give it — see the implementation notes of
+`Numlib/Analysis/Sobolev/Space.lean`. Definition 7.2.9, `W_0^{k,p}(Ω)`, is here as well, as the
+closure of the image of `C_0^∞(Ω)` in that Banach space; what the trace theorems of §7.3 would add
+is its reading as a space of boundary conditions, not the definition. Definition 7.2.1 (boundary
+regularity classes), Definitions 7.2.11 and 7.2.12 (the real-order `W_0^{s,p}(Ω)` and the
+negative-order duals), Definition 7.2.10 (the Sobolev–Slobodeckij spaces) and Definition 7.2.13
+(`W^{s,p}(∂Ω)`, which needs surface measure on a Lipschitz boundary) are all open, as are Examples
+7.2.5 to 7.2.8.
 -/
 
 open MeasureTheory TopologicalSpace
@@ -55,5 +59,37 @@ theorem definition_7_2_2_iff (k : ℕ) (p : ℝ≥0∞) (Ω : Opens (EuclideanSp
       ∀ n ≤ k, ∃ w, definition_7_1_3 n v w Ω ∧
         MemLp w p (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin d)))) := by
   simp only [definition_7_2_2, MemSobolev, definition_7_1_3, Nat.cast_le]
+
+/-- Definition 7.2.2 read on the *type* `Sobolev ℝ k p Ω volume`, which is `W^{k,p}(Ω)` carrying
+the norm `‖·‖_{k,p,Ω}`: a function `v` belongs to `W^{k,p}(Ω)` exactly when it agrees, off a null
+subset of `Ω`, with the function underlying an element of that type. The element is then unique,
+by `Sobolev.ext_of_fn_ae_eq`. -/
+theorem definition_7_2_2_iff_exists (k : ℕ) (p : ℝ≥0∞) [Fact (1 ≤ p)]
+    (Ω : Opens (EuclideanSpace ℝ (Fin d))) (v : EuclideanSpace ℝ (Fin d) → ℝ) :
+    definition_7_2_2 k p Ω v ↔ ∃ u : Sobolev ℝ k p Ω volume,
+      Sobolev.fn u =ᵐ[volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin d)))] v :=
+  ⟨fun h ↦ h.exists_sobolev, fun ⟨_, hu⟩ ↦ (Sobolev.memSobolev _).congr_ae hu⟩
+
+/-- **Theorem 7.2.3**: the Sobolev space `W^{k,p}(Ω)` is a Banach space.
+
+`Sobolev ℝ k p Ω volume` is `W^{k,p}(Ω)` as a normed space; its elements are the functions of
+Definition 7.2.2 by `definition_7_2_2_iff_exists`, and its norm is the `‖·‖_{k,p,Ω}` of that
+definition by `Sobolev.norm_eq`. The hypothesis `p ∈ [1, ∞]` of the book is the instance
+`Fact (1 ≤ p)`, which is how Mathlib carries it for the `L^p` spaces. -/
+theorem theorem_7_2_3 (k : ℕ) (p : ℝ≥0∞) [Fact (1 ≤ p)]
+    (Ω : Opens (EuclideanSpace ℝ (Fin d))) : CompleteSpace (Sobolev ℝ k p Ω volume) :=
+  inferInstance
+
+/-- **Definition 7.2.9**: `W_0^{k,p}(Ω)` is the closure of `C_0^∞(Ω)` in `W^{k,p}(Ω)`; when
+`p = 2` one writes `H_0^k(Ω) ≡ W_0^{k,2}(Ω)`.
+
+`SobolevZero ℝ k p Ω volume` is the closure, inside the Banach space of Theorem 7.2.3, of the
+submodule of elements whose function agrees off a null set with a test function on `Ω`; every test
+function does give such an element, by `TestFunction.exists_mem_testFunctions`. The book's reading
+of the space — the functions whose derivatives of order at most `k - 1` vanish on `∂Ω` — is made
+precise only by the trace theorems of §7.3, which are not formalized. -/
+noncomputable def definition_7_2_9 (k : ℕ) (p : ℝ≥0∞) [Fact (1 ≤ p)]
+    (Ω : Opens (EuclideanSpace ℝ (Fin d))) : Submodule ℝ (Sobolev ℝ k p Ω volume) :=
+  SobolevZero ℝ k p Ω volume
 
 end AtkinsonHan.Chapter07

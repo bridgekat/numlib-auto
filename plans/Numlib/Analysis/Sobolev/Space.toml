@@ -1,0 +1,107 @@
+[[node]]
+id = "MeasureTheory.MemLp.integrable_smul_of_conjExponent"
+
+[[node]]
+id = "MeasureTheory.MemLp.integralSmulCLM"
+
+[[node]]
+id = "MeasureTheory.MemLp.integralSmulCLM_apply"
+
+[[node]]
+id = "TestFunction.memLp"
+
+[[node]]
+id = "SobolevTuple"
+
+[[node]]
+id = "SobolevTuple.fn"
+
+[[node]]
+id = "SobolevTuple.fn_apply"
+
+[[node]]
+id = "SobolevTuple.memLp_fn"
+
+[[node]]
+id = "SobolevTuple.fn_zero"
+
+[[node]]
+id = "SobolevTuple.fn_add"
+
+[[node]]
+id = "SobolevTuple.fn_smul"
+
+[[node]]
+id = "Sobolev"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.2'
+
+[[node]]
+id = "Sobolev.mem_def"
+
+[[node]]
+id = "Sobolev.mem_iff"
+
+[[node]]
+id = "Sobolev.fn"
+
+[[node]]
+id = "Sobolev.weakDeriv"
+
+[[node]]
+id = "Sobolev.hasWeakIteratedFDerivOn"
+
+[[node]]
+id = "Sobolev.fn_zero"
+
+[[node]]
+id = "Sobolev.fn_add"
+
+[[node]]
+id = "Sobolev.fn_smul"
+
+[[node]]
+id = "Sobolev.memLp"
+
+[[node]]
+id = "Sobolev.memSobolev"
+
+[[node]]
+id = "Sobolev.pairingCLM"
+
+[[node]]
+id = "Sobolev.pairingCLM_apply"
+
+[[node]]
+id = "Sobolev.isClosed"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.2.3'
+
+[[node]]
+id = "Sobolev.instCompleteSpace"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.2.3'
+
+[[node]]
+id = "MemSobolev.exists_sobolev"
+
+[[node]]
+id = "Sobolev.ext_of_fn_ae_eq"
+
+[[node]]
+id = "Sobolev.eLpNorm_weakIteratedFDeriv"
+
+[[node]]
+id = "Sobolev.norm_eq"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.2'
+
+[[node]]
+id = "TestFunction.memSobolev"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Lemma 7.1.5'
+
+[[node]]
+id = "Sobolev.testFunctions"
+
+[[node]]
+id = "TestFunction.exists_mem_testFunctions"
+
+[[node]]
+id = "SobolevZero"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.9'

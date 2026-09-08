@@ -14,6 +14,8 @@ import Numlib.Analysis.Sobolev.WeakDeriv
 *Theoretical Numerical Analysis: A Functional Analysis Framework*, 3rd edition, Definition 7.2.2:
 `f` lies in `L^p(Ω)` and, for every order `n ≤ k`, the weak derivative of order `n` exists on `Ω`
 and lies in `L^p(Ω)` too. `sobolevNorm f k p Ω μ` is the accompanying norm.
+`Numlib/Analysis/Sobolev/Space.lean` carries the same space as a *type*, `Sobolev F k p Ω μ`, whose
+norm is `sobolevNorm` and which is a Banach space.
 
 Mathlib's `Mathlib/Analysis/Distribution/Sobolev.lean` is a different subject: the Bessel potential
 spaces `H^{s,p}` of tempered distributions on the *whole* space, with no domain in sight.
@@ -29,6 +31,7 @@ spaces `H^{s,p}` of tempered distributions on the *whole* space, with no domain 
 
 ## Main statements
 
+* `MemSobolev.congr_ae`: membership only sees the function up to a null set of `Ω`;
 * `MemSobolev.mono_order`, `MemSobolev.mono_set` and `MemSobolev.mono_exponent`: `W^{k,p}(Ω)`
   decreases in `k`, is inherited by open subsets, and increases as `p` decreases on a set of finite
   measure;
@@ -51,7 +54,9 @@ norm of a symmetric `n`-tensor is comparable to any norm on its finitely many en
 are not equal, so `sobolevNorm` is not literally the displayed formula of Definition 7.2.2. A
 consequence is that `sobolevNorm f k 2 Ω μ` is not an inner-product norm, since the operator norm
 on multilinear maps is not; Atkinson–Han's Corollary 7.2.4, that `H^k(Ω)` is a Hilbert space, is
-therefore not available in this formulation and would need the multi-index indexing.
+therefore not available in this formulation and would need the multi-index indexing — see the
+implementation notes of `Numlib/Analysis/Sobolev/Space.lean`, where the completeness of Theorem
+7.2.3 is proved and this is the one thing that stands between it and the corollary.
 -/
 
 open Filter MeasureTheory Set TopologicalSpace
@@ -100,6 +105,13 @@ in `L^p(Ω)`. -/
 theorem exists_hasWeakIteratedFDerivOn (h : MemSobolev f k p Ω μ) (hn : (n : ℕ∞) ≤ k) :
     ∃ w : E → E [×n]→L[ℝ] F, HasWeakIteratedFDerivOn n f w Ω μ ∧ MemLp w p (μ.restrict Ω) :=
   h.2 n hn
+
+/-- Membership of `W^{k,p}(Ω)` only sees the function up to a null set of `Ω`. -/
+theorem congr_ae {f' : E → F} (h : MemSobolev f k p Ω μ)
+    (hf : f =ᵐ[μ.restrict (Ω : Set E)] f') : MemSobolev f' k p Ω μ := by
+  refine ⟨h.1.ae_eq hf, fun n hn ↦ ?_⟩
+  obtain ⟨w, hw, hwp⟩ := h.2 n hn
+  exact ⟨w, hw.congr_ae hf (Filter.EventuallyEq.refl _ _), hwp⟩
 
 /-- `W^{k,p}(Ω)` decreases as the order `k` increases. -/
 theorem mono_order {k' : ℕ∞} (h : MemSobolev f k p Ω μ) (hk : k' ≤ k) : MemSobolev f k' p Ω μ :=

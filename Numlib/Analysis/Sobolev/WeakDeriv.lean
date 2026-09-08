@@ -317,6 +317,23 @@ theorem integral_smul_eq' (h : HasWeakIteratedFDerivOn n f w Ω μ) (φ : 𝓓(�
   exact h.integral_smul_eq φ y
 
 omit [OpensMeasurableSpace E] in
+/-- The weak derivative relation only sees the functions up to a null set of `Ω`: changing either
+`f` or `w` on a `μ.restrict Ω`-null set preserves it. -/
+theorem congr_ae {f' : E → F} {w' : E → E [×n]→L[ℝ] F} (h : HasWeakIteratedFDerivOn n f w Ω μ)
+    (hf : f =ᵐ[μ.restrict (Ω : Set E)] f') (hw : w =ᵐ[μ.restrict (Ω : Set E)] w') :
+    HasWeakIteratedFDerivOn n f' w' Ω μ where
+  locallyIntegrableOn := h.locallyIntegrableOn.congr hf
+  locallyIntegrableOn_weakDeriv := h.locallyIntegrableOn_weakDeriv.congr hw
+  integral_smul_eq φ y := by
+    have e1 : ∫ x in (Ω : Set E), iteratedFDeriv ℝ n φ x y • f' x ∂μ
+        = ∫ x in (Ω : Set E), iteratedFDeriv ℝ n φ x y • f x ∂μ :=
+      integral_congr_ae (by filter_upwards [hf] with x hx; rw [hx])
+    have e2 : ∫ x in (Ω : Set E), φ x • w' x y ∂μ = ∫ x in (Ω : Set E), φ x • w x y ∂μ :=
+      integral_congr_ae (by filter_upwards [hw] with x hx; rw [hx])
+    rw [e1, e2]
+    exact h.integral_smul_eq φ y
+
+omit [OpensMeasurableSpace E] in
 /-- A weak derivative on `Ω` is a weak derivative on every smaller open set. -/
 theorem mono {Ω' : Opens E} (h : HasWeakIteratedFDerivOn n f w Ω μ) (hΩ : Ω' ≤ Ω) :
     HasWeakIteratedFDerivOn n f w Ω' μ where
