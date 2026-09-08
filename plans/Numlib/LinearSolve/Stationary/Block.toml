@@ -43,3 +43,9 @@ source = "Saad, Iterative Methods for Sparse Linear Systems, Section 5.4, remark
 [[node]]
 id = "blockGaussSeidelSplitting_step_eq_multiplicativeStep"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Section 5.4, Algorithm 5.6"
+
+[[node]]
+id = "blockDiagPart_sub_blockDiagonal'"
+
+[[node]]
+id = "blockStrictLower_sub_blockDiagonal'"

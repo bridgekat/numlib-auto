@@ -64,19 +64,108 @@ id = "lemma_14_8"
 id = "theorem_14_9"
 
 [[node]]
-id = "theorem_14_2"
-kind = "theorem"
-desc = '''Saad Theorem 14.2 (§14.3.1): for the vertex-based partitioning of §14.2.3, if the initial
-guess of the multiplicative Schwarz procedure (Algorithm 14.3) is consistent, that is
-`x_i^(0) = B_i⁻¹ (f_i - E_i y_i^(0))` (14.22), then the `y` iterates it produces are exactly those
-of a Gauss-Seidel sweep on the Schur complement system (14.12).
+id = "nodeLabel"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (14.8)"
 
-This is real work rather than an exclusion: it is a translation between two exactly defined
-iterations, and the book's two-paragraph proof is complete — the `y` components of the initial
-residuals agree, and each subdomain solve then reproduces one block Gauss-Seidel update. The cost
-is the vertex-based block structure (14.8)-(14.14) as objects: `s` subdomains with an
-interior/interface splitting `z_i = (x_i, y_i)`, local matrices `A_i = fromBlocks B_i E_i F_i C_i`,
-off-diagonal blocks with the single nonzero corner `E_ij` (14.10), and the assembled Schur
-complement system. Build it once as a structure so that §14.2.3, §14.2.4 and §14.4.3 can share it;
-§14.3's `restrictSubset`, `localMatrix` and `subdomainInverse` are the edge-based analogues and do
-not serve. The Gauss-Seidel side is `Stationary.gaussSeidelSplitting` in block form.'''
+[[node]]
+id = "VertexPartitioning"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Section 14.2.3, (14.8)-(14.10)"
+
+[[node]]
+id = "VertexPartitioning.globalMatrix"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (14.8)"
+
+[[node]]
+id = "VertexPartitioning.localC"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (14.9)"
+
+[[node]]
+id = "VertexPartitioning.localMatrix"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (14.9)"
+
+[[node]]
+id = "VertexPartitioning.offDiag"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (14.10)"
+
+[[node]]
+id = "VertexPartitioning.localSchur"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (14.13)"
+
+[[node]]
+id = "VertexPartitioning.schurMatrix"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (14.14)"
+
+[[node]]
+id = "VertexPartitioning.schurMatrix_eq"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (14.5), (14.14)"
+
+[[node]]
+id = "VertexPartitioning.submatrix_globalMatrix"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (14.9)"
+
+[[node]]
+id = "VertexPartitioning.equation_14_10"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (14.10)"
+
+[[node]]
+id = "VertexPartitioning.equation_14_11"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (14.11)"
+
+[[node]]
+id = "VertexPartitioning.equation_14_12"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (14.12)"
+
+[[node]]
+id = "VertexPartitioning.globalLower"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Algorithm 14.3"
+
+[[node]]
+id = "VertexPartitioning.schurLower"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (14.14)"
+
+[[node]]
+id = "VertexPartitioning.schurComplement_globalLower"
+
+[[node]]
+id = "VertexPartitioning.reducedRhs"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (14.12)"
+
+[[node]]
+id = "VertexPartitioning.IsConsistent"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (14.22)"
+
+[[node]]
+id = "VertexPartitioning.isConsistent_iff"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (14.22)"
+
+[[node]]
+id = "VertexPartitioning.schwarzSweep"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Algorithm 14.3"
+
+[[node]]
+id = "VertexPartitioning.schurGaussSeidelSweep"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (14.12)"
+
+[[node]]
+id = "VertexPartitioning.globalLower_eq_blockGaussSeidelSplitting"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Algorithm 14.3"
+
+[[node]]
+id = "VertexPartitioning.schurLower_eq_blockGaussSeidelSplitting"
+source = "Saad, Iterative Methods for Sparse Linear Systems, (14.12)"
+
+[[node]]
+id = "VertexPartitioning.residual_comp_inr"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 14.2"
+
+[[node]]
+id = "VertexPartitioning.comp_inr_schwarzSweep"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 14.2"
+
+[[node]]
+id = "VertexPartitioning.isConsistent_schwarzSweep"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 14.2"
+
+[[node]]
+id = "theorem_14_2"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 14.2"

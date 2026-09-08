@@ -32,7 +32,9 @@ about its inverse. This file adds the name and the facts a domain-decomposition 
   subdomains*, `S = ∑ S_i`, when the interior block is block diagonal and the interface block is a
   sum of local contributions. This is what every preconditioner assembled from local Schur
   complements rests on, and `Matrix.inv_blockDiagonal'` and `Matrix.mul_blockDiagonal'_mul` are the
-  two block-diagonal identities it is built from.
+  two block-diagonal identities it is built from; `Matrix.isUnit_blockDiagonal'` is the
+  nonsingularity criterion that goes with them, a block diagonal matrix being nonsingular exactly
+  when each of its blocks is.
 
 `Matrix.schurComplementSingle` is the `1 × 1`-pivot case, one step of Gaussian elimination, which is
 the form incomplete factorizations use ([saad2003iterative] Theorem 10.1).
@@ -178,6 +180,16 @@ section Additive
 
 variable {o : Type*} [Fintype o] [DecidableEq o] {m' : o → Type*}
 variable [∀ i, Fintype (m' i)] [∀ i, DecidableEq (m' i)] [CommRing R]
+
+/-- A block diagonal matrix is nonsingular as soon as every one of its blocks is. -/
+theorem isUnit_blockDiagonal' (M : ∀ i, Matrix (m' i) (m' i) R) (hM : ∀ i, IsUnit (M i)) :
+    IsUnit (blockDiagonal' M) := by
+  refine IsUnit.of_mul_eq_one (blockDiagonal' fun i => (M i)⁻¹) ?_
+  rw [← blockDiagonal'_mul]
+  have h : (fun i => M i * (M i)⁻¹) = (1 : ∀ i, Matrix (m' i) (m' i) R) := funext fun i => by
+    rw [Pi.one_apply]
+    exact mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).1 (hM i))
+  rw [h, blockDiagonal'_one]
 
 /-- The inverse of a block diagonal matrix is the block diagonal matrix of the inverses. -/
 theorem inv_blockDiagonal' (M : ∀ i, Matrix (m' i) (m' i) R) (hM : ∀ i, IsUnit (M i)) :

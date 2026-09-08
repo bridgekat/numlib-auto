@@ -1,4 +1,6 @@
+import Numlib.LinearAlgebra.Matrix.SchurComplement
 import Numlib.LinearSolve.DomainDecomposition.Schwarz
+import Numlib.LinearSolve.Stationary.Block
 import NumlibSurface.SaadSparse.Common
 
 /-!
@@ -33,8 +35,23 @@ family is the cutoff `s`.  `(A u, u)` is written `energyInner A u u`, and `‖u�
 `energyNorm A u`; over `ℝ` these are Saad's own quantities, and over `ℂ` they are the
 Hermitian ones.
 
-Theorem 14.2 is not formalized: it is a translation statement about the vertex-based partitioning
-of §14.2.3, whose block structure (14.8)–(14.14) nothing else in the book or the library uses.
+## §14.2.3 and Theorem 14.2
+
+Theorem 14.2 is about the *other* partitioning of the chapter, the vertex-based one of §14.2.3,
+and its block structure (14.8)–(14.14) is built here as `VertexPartitioning`: `s` subdomains, each
+owning interior nodes and interface nodes, local matrices `A_i = [[B_i, E_i], [F_i, C_i]]` of
+(14.9), off-diagonal blocks `A_ij` whose only nonzero corner is `E_ij` (14.10), and the assembled
+Schur complement system `S` of (14.14).  `schurMatrix_eq` identifies `S` with the Schur complement
+of the global matrix, and `equation_14_11`, `equation_14_12` and `isConsistent_iff` read the
+blocks, the reduced system and the consistency condition (14.22) off it subdomain by subdomain.
+
+Both iterations are then block Gauss–Seidel sweeps for the labelling of the nodes by their
+subdomain: `schwarzSweep` is Algorithm 14.3 on the global matrix and `schurGaussSeidelSweep` is a
+sweep on (14.12), and `globalLower_eq_blockGaussSeidelSplitting` and
+`schurLower_eq_blockGaussSeidelSplitting` are the identifications with
+`Matrix.blockGaussSeidelSplitting`.  `theorem_14_2` is Theorem 14.2, and it rests on
+`schurComplement_globalLower`: eliminating the interior variables and taking the block-lower
+triangle commute.
 -/
 
 open Matrix Finset
@@ -42,6 +59,550 @@ open Matrix Finset
 open scoped ComplexOrder SaadSparse
 
 namespace SaadSparse.Chapter14
+
+/-! ### §14.2.3 and §14.3.1: the vertex-based partitioning and Theorem 14.2
+
+The rest of the file is the *edge-based* picture of §14.3, in which the subdomains are index sets
+`S_i ⊆ {1, …, n}`.  This section is the *vertex-based* picture of §14.2.3, which Theorem 14.2 needs
+and nothing else in §14.3 uses: the nodes carry a subdomain label, and inside each subdomain they
+split into interior nodes and interface nodes.
+-/
+
+section VertexBased
+
+/-- §14.2.3: the subdomain a node belongs to.  A node is an interior node `⟨i, a⟩` or an interface
+node `⟨i, a⟩` of subdomain `i`, and its label is `i`; this labelling is the `s`-block structure
+(14.8) of the global matrix. -/
+def nodeLabel {ι : Type*} (P Q : ι → Type*) : ((i : ι) × P i) ⊕ ((i : ι) × Q i) → ι :=
+  Sum.elim Sigma.fst Sigma.fst
+
+@[simp]
+theorem nodeLabel_inl {ι : Type*} (P Q : ι → Type*) (p : (i : ι) × P i) :
+    nodeLabel P Q (Sum.inl p) = p.1 := rfl
+
+@[simp]
+theorem nodeLabel_inr {ι : Type*} (P Q : ι → Type*) (p : (i : ι) × Q i) :
+    nodeLabel P Q (Sum.inr p) = p.1 := rfl
+
+/-- **§14.2.3, (14.8)–(14.10)**: a vertex-based partitioning into the subdomains `ι`, subdomain `i`
+owning the interior nodes `P i` and the interface nodes `Q i`.
+
+The data are the four blocks of (14.9): `B i`, `E i`, `F i` are the interior–interior,
+interior–interface and interface–interior couplings of subdomain `i`, and the single matrix `C`
+carries all interface–interface couplings at once, its diagonal block being Saad's `C_i` and its
+`(i, j)` block his `E_ij` of (14.10).
+
+Nothing further is assumed, because (14.10) is what the shape of this data says: with the nodes
+listed interiors first and interfaces last, as in (14.2), the interior rows and columns of the
+global matrix are block diagonal over the subdomains, which is exactly the statement that for
+`i ≠ j` the block `A_ij` of (14.8) is zero outside its interface–interface corner. -/
+structure VertexPartitioning (𝕜 : Type*) {ι : Type*} (P Q : ι → Type*) where
+  /-- `B_i` of (14.9): the coupling between the interior nodes of subdomain `i`. -/
+  B : ∀ i, Matrix (P i) (P i) 𝕜
+  /-- `E_i` of (14.9): the coupling from the interface nodes of subdomain `i` to its interior
+  nodes. -/
+  E : ∀ i, Matrix (P i) (Q i) 𝕜
+  /-- `F_i` of (14.9): the coupling from the interior nodes of subdomain `i` to its interface
+  nodes. -/
+  F : ∀ i, Matrix (Q i) (P i) 𝕜
+  /-- The interface matrix: its `(i, i)` block is `C_i` of (14.9) and its `(i, j)` block is `E_ij`
+  of (14.10). -/
+  C : Matrix ((i : ι) × Q i) ((i : ι) × Q i) 𝕜
+
+variable {𝕜 : Type*} [RCLike 𝕜] {ι : Type*} [Fintype ι] [LinearOrder ι]
+variable {P Q : ι → Type*} [∀ i, Fintype (P i)] [∀ i, DecidableEq (P i)]
+variable [∀ i, Fintype (Q i)] [∀ i, DecidableEq (Q i)]
+variable (V : VertexPartitioning 𝕜 P Q)
+
+namespace VertexPartitioning
+
+section Plumbing
+
+omit [Fintype ι] in
+/-- The block diagonal filter does nothing to a block diagonal matrix. -/
+private theorem ite_blockDiagonal' {m' n' : ι → Type*} (M : ∀ i, Matrix (m' i) (n' i) 𝕜)
+    {i j : ι} (a : m' i) (b : n' j) :
+    (if i = j then blockDiagonal' M ⟨i, a⟩ ⟨j, b⟩ else 0) = blockDiagonal' M ⟨i, a⟩ ⟨j, b⟩ := by
+  by_cases h : i = j
+  · simp [h]
+  · rw [blockDiagonal'_apply_ne _ a b h]; simp
+
+omit [Fintype ι] in
+/-- The strict block-lower filter adds nothing to the block diagonal filter on a block diagonal
+matrix. -/
+private theorem ite_add_ite_blockDiagonal' {m' n' : ι → Type*} (M : ∀ i, Matrix (m' i) (n' i) 𝕜)
+    {i j : ι} (a : m' i) (b : n' j) :
+    (if i = j then blockDiagonal' M ⟨i, a⟩ ⟨j, b⟩ else 0)
+        + (if j < i then blockDiagonal' M ⟨i, a⟩ ⟨j, b⟩ else 0)
+      = blockDiagonal' M ⟨i, a⟩ ⟨j, b⟩ := by
+  rcases lt_trichotomy i j with h | h | h
+  · rw [blockDiagonal'_apply_ne _ a b h.ne]; simp [h.ne, asymm h]
+  · subst h; simp
+  · rw [blockDiagonal'_apply_ne _ a b h.ne']; simp [h.ne', h]
+
+variable {m' n' : ι → Type*}
+
+omit [Fintype ι] [LinearOrder ι] in
+/-- The interior rows of a block matrix acting on a vector. -/
+private theorem comp_inl_fromBlocks_mulVec {m n : Type*} [Fintype m] [Fintype n]
+    (M₁₁ : Matrix m m 𝕜) (M₁₂ : Matrix m n 𝕜) (M₂₁ : Matrix n m 𝕜) (M₂₂ : Matrix n n 𝕜)
+    (w : m ⊕ n → 𝕜) :
+    (fromBlocks M₁₁ M₁₂ M₂₁ M₂₂ *ᵥ w) ∘ Sum.inl
+      = M₁₁ *ᵥ (w ∘ Sum.inl) + M₁₂ *ᵥ (w ∘ Sum.inr) := by
+  rw [fromBlocks_mulVec]; rfl
+
+omit [Fintype ι] [LinearOrder ι] in
+/-- The interface rows of a block matrix acting on a vector. -/
+private theorem comp_inr_fromBlocks_mulVec {m n : Type*} [Fintype m] [Fintype n]
+    (M₁₁ : Matrix m m 𝕜) (M₁₂ : Matrix m n 𝕜) (M₂₁ : Matrix n m 𝕜) (M₂₂ : Matrix n n 𝕜)
+    (w : m ⊕ n → 𝕜) :
+    (fromBlocks M₁₁ M₁₂ M₂₁ M₂₂ *ᵥ w) ∘ Sum.inr
+      = M₂₁ *ᵥ (w ∘ Sum.inl) + M₂₂ *ᵥ (w ∘ Sum.inr) := by
+  rw [fromBlocks_mulVec]; rfl
+
+omit [Fintype ι] [LinearOrder ι] in
+/-- On a vector with vanishing interior part only the `(2,2)` block of the matrix is seen. -/
+private theorem comp_inr_mulVec_elim_zero {m n : Type*} [Fintype m] [Fintype n]
+    (M : Matrix (m ⊕ n) (m ⊕ n) 𝕜) (v : n → 𝕜) :
+    (M *ᵥ Sum.elim (0 : m → 𝕜) v) ∘ Sum.inr = M.toBlocks₂₂ *ᵥ v := by
+  conv_lhs => rw [← fromBlocks_toBlocks M]
+  rw [comp_inr_fromBlocks_mulVec, Sum.elim_comp_inl, Sum.elim_comp_inr, mulVec_zero, zero_add]
+
+omit [LinearOrder ι] in
+/-- A block diagonal matrix acts on each block separately. -/
+private theorem blockDiagonal'_comp_mulVec [DecidableEq ι] [∀ i, Fintype (n' i)]
+    (M : ∀ i, Matrix (m' i) (n' i) 𝕜) (v : ((i : ι) × n' i) → 𝕜) (i : ι) :
+    (blockDiagonal' M *ᵥ v) ∘ Sigma.mk i = M i *ᵥ (v ∘ Sigma.mk i) := by
+  funext a
+  simp only [Function.comp_apply, mulVec, dotProduct]
+  rw [← Finset.univ_sigma_univ, Finset.sum_sigma]
+  refine (Fintype.sum_eq_single i fun j hj => Finset.sum_eq_zero fun b _ => ?_).trans ?_
+  · rw [blockDiagonal'_apply_ne _ a b hj.symm, zero_mul]
+  · exact Finset.sum_congr rfl fun b _ => by rw [blockDiagonal'_apply_eq]
+
+omit [LinearOrder ι] in
+/-- One block row of a matrix–vector product over a `Sigma` index type. -/
+private theorem comp_mulVec_sigma [∀ i, Fintype (n' i)]
+    (M : Matrix ((i : ι) × m' i) ((i : ι) × n' i) 𝕜) (v : ((i : ι) × n' i) → 𝕜) (i : ι) :
+    (M *ᵥ v) ∘ Sigma.mk i = ∑ j, M.submatrix (Sigma.mk i) (Sigma.mk j) *ᵥ (v ∘ Sigma.mk j) := by
+  funext a
+  simp only [Function.comp_apply, mulVec, dotProduct, Finset.sum_apply]
+  rw [← Finset.univ_sigma_univ, Finset.sum_sigma]
+  rfl
+
+omit [Fintype ι] [LinearOrder ι] in
+/-- Solving `M x + c = d` for `x`. -/
+private theorem mulVec_add_eq_iff {m : Type*} [Fintype m] [DecidableEq m] {M : Matrix m m 𝕜}
+    (hM : IsUnit M) (x c d : m → 𝕜) : M *ᵥ x + c = d ↔ x = M⁻¹ *ᵥ (d - c) := by
+  constructor
+  · rintro rfl
+    rw [add_sub_cancel_right, mulVec_mulVec, nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).1 hM),
+      one_mulVec]
+  · rintro rfl
+    rw [mulVec_mulVec, mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).1 hM), one_mulVec]
+    abel
+
+end Plumbing
+
+/-! #### The blocks (14.8)–(14.14) -/
+
+/-- **(14.8)**: the global matrix of the partitioning, with the nodes listed interiors first and
+interfaces last as in (14.2).  The `s`-block structure of (14.8) is carried by `nodeLabel`, not by
+the order of the indices; the two differ by a permutation only. -/
+def globalMatrix : Matrix (((i : ι) × P i) ⊕ ((i : ι) × Q i))
+    (((i : ι) × P i) ⊕ ((i : ι) × Q i)) 𝕜 :=
+  fromBlocks (blockDiagonal' V.B) (blockDiagonal' V.E) (blockDiagonal' V.F) V.C
+
+/-- **(14.9)**: `C_i`, the local part of the interface matrix, the coupling between the interface
+nodes of subdomain `i`. -/
+def localC (i : ι) : Matrix (Q i) (Q i) 𝕜 := V.C.submatrix (Sigma.mk i) (Sigma.mk i)
+
+/-- **(14.9)**: the local matrix `A_i = [[B_i, E_i], [F_i, C_i]]` of subdomain `i`. -/
+def localMatrix (i : ι) : Matrix (P i ⊕ Q i) (P i ⊕ Q i) 𝕜 :=
+  fromBlocks (V.B i) (V.E i) (V.F i) (V.localC i)
+
+/-- **(14.10)**: `E_ij`, the only nonzero block of `A_ij` for `i ≠ j`, the coupling from the
+interface nodes of subdomain `j` to those of subdomain `i`.  At `i = j` it is `localC`, Saad's
+`C_i`. -/
+def offDiag (i j : ι) : Matrix (Q i) (Q j) 𝕜 := V.C.submatrix (Sigma.mk i) (Sigma.mk j)
+
+/-- **(14.13)**: the local Schur complement `S_i = C_i - F_i B_i⁻¹ E_i` of subdomain `i`. -/
+noncomputable def localSchur (i : ι) : Matrix (Q i) (Q i) 𝕜 := (V.localMatrix i).schurComplement
+
+omit [Fintype ι] [LinearOrder ι] [∀ i, Fintype (Q i)] [∀ i, DecidableEq (Q i)] in
+/-- **(14.13)** unfolded. -/
+theorem localSchur_eq (i : ι) :
+    V.localSchur i = V.localC i - V.F i * (V.B i)⁻¹ * V.E i := rfl
+
+/-- **(14.14)**: the Schur complement system, assembled from the local Schur complements on the
+diagonal and the interface-to-interface couplings `E_ij` off it. -/
+noncomputable def schurMatrix : Matrix ((i : ι) × Q i) ((i : ι) × Q i) 𝕜 :=
+  V.C - blockDiagonal' fun i => V.F i * (V.B i)⁻¹ * V.E i
+
+omit [∀ i, Fintype (Q i)] [∀ i, DecidableEq (Q i)] in
+/-- The Schur complement of a block matrix whose interior rows and columns are the block diagonals
+of the local blocks: the interior variables decouple, so `F B⁻¹ E` is assembled subdomain by
+subdomain. -/
+theorem schurComplement_fromBlocks_local (hB : ∀ i, IsUnit (V.B i))
+    (X : Matrix ((i : ι) × Q i) ((i : ι) × Q i) 𝕜) :
+    (fromBlocks (blockDiagonal' V.B) (blockDiagonal' V.E) (blockDiagonal' V.F) X).schurComplement
+      = X - blockDiagonal' fun i => V.F i * (V.B i)⁻¹ * V.E i := by
+  rw [schurComplement_fromBlocks, inv_blockDiagonal' V.B hB, blockDiagonal'_mul,
+    blockDiagonal'_mul]
+
+omit [∀ i, Fintype (Q i)] [∀ i, DecidableEq (Q i)] in
+/-- **(14.14) is (14.5)**: the assembled matrix `S` is the Schur complement of the global matrix
+with respect to the interior variables. -/
+theorem schurMatrix_eq (hB : ∀ i, IsUnit (V.B i)) :
+    V.schurMatrix = V.globalMatrix.schurComplement :=
+  (V.schurComplement_fromBlocks_local hB V.C).symm
+
+omit [Fintype ι] [∀ i, Fintype (Q i)] [∀ i, DecidableEq (Q i)] in
+/-- **(14.14)**: the diagonal blocks of `S` are the local Schur complements `S_i`. -/
+theorem blockDiagPart_schurMatrix :
+    blockDiagPart Sigma.fst V.schurMatrix = blockDiagonal' V.localSchur := by
+  ext ⟨i, a⟩ ⟨j, b⟩
+  rw [blockDiagPart_apply]
+  split_ifs with h
+  · subst h
+    rw [blockDiagonal'_apply_eq, schurMatrix, Matrix.sub_apply, blockDiagonal'_apply_eq]
+    rfl
+  · rw [blockDiagonal'_apply_ne _ _ _ h]
+
+/-! #### Faithfulness of the block structure -/
+
+omit [Fintype ι] [∀ i, Fintype (P i)] [∀ i, DecidableEq (P i)] [∀ i, Fintype (Q i)]
+  [∀ i, DecidableEq (Q i)] in
+/-- **(14.9)**: the local matrix `A_i` is the diagonal block of the global matrix on the nodes of
+subdomain `i`. -/
+theorem submatrix_globalMatrix (i : ι) :
+    V.globalMatrix.submatrix (Sum.map (Sigma.mk i) (Sigma.mk i))
+        (Sum.map (Sigma.mk i) (Sigma.mk i)) = V.localMatrix i := by
+  ext p q
+  rcases p with a | a <;> rcases q with b | b <;>
+    simp only [Matrix.submatrix_apply, Sum.map_inl, Sum.map_inr, globalMatrix, localMatrix,
+      fromBlocks_apply₁₁, fromBlocks_apply₁₂, fromBlocks_apply₂₁, fromBlocks_apply₂₂] <;>
+    first
+      | rw [blockDiagonal'_apply_eq]
+      | rfl
+
+omit [Fintype ι] [∀ i, Fintype (P i)] [∀ i, DecidableEq (P i)] [∀ i, Fintype (Q i)]
+  [∀ i, DecidableEq (Q i)] in
+/-- **(14.10)**: for `i ≠ j` the block `A_ij` of (14.8) has a single nonzero corner, the
+interface–interface one, whose entries are those of `E_ij`. -/
+theorem equation_14_10 {i j : ι} (h : i ≠ j) (a : P i) (b : P j) (c : Q i) (d : Q j) :
+    V.globalMatrix (Sum.inl ⟨i, a⟩) (Sum.inl ⟨j, b⟩) = 0
+      ∧ V.globalMatrix (Sum.inl ⟨i, a⟩) (Sum.inr ⟨j, d⟩) = 0
+      ∧ V.globalMatrix (Sum.inr ⟨i, c⟩) (Sum.inl ⟨j, b⟩) = 0
+      ∧ V.globalMatrix (Sum.inr ⟨i, c⟩) (Sum.inr ⟨j, d⟩) = V.offDiag i j c d :=
+  ⟨blockDiagonal'_apply_ne _ a b h, blockDiagonal'_apply_ne _ a d h,
+    blockDiagonal'_apply_ne _ c b h, rfl⟩
+
+omit [∀ i, DecidableEq (P i)] [∀ i, DecidableEq (Q i)] in
+/-- **(14.11)**: the two rows of the global system that are local to subdomain `i`, the interior
+one `B_i x_i + E_i y_i` and the interface one `F_i x_i + C_i y_i + ∑_{j ≠ i} E_ij y_j`. -/
+theorem equation_14_11 (z : (((i : ι) × P i) ⊕ ((i : ι) × Q i)) → 𝕜) (i : ι) :
+    ((V.globalMatrix *ᵥ z) ∘ Sum.inl) ∘ Sigma.mk i
+        = V.B i *ᵥ ((z ∘ Sum.inl) ∘ Sigma.mk i) + V.E i *ᵥ ((z ∘ Sum.inr) ∘ Sigma.mk i)
+      ∧ ((V.globalMatrix *ᵥ z) ∘ Sum.inr) ∘ Sigma.mk i
+        = V.F i *ᵥ ((z ∘ Sum.inl) ∘ Sigma.mk i) + V.localC i *ᵥ ((z ∘ Sum.inr) ∘ Sigma.mk i)
+          + ∑ j ∈ Finset.univ.erase i, V.offDiag i j *ᵥ ((z ∘ Sum.inr) ∘ Sigma.mk j) := by
+  constructor
+  · rw [globalMatrix, comp_inl_fromBlocks_mulVec]
+    change (blockDiagonal' V.B *ᵥ (z ∘ Sum.inl)) ∘ Sigma.mk i
+        + (blockDiagonal' V.E *ᵥ (z ∘ Sum.inr)) ∘ Sigma.mk i = _
+    rw [blockDiagonal'_comp_mulVec, blockDiagonal'_comp_mulVec]
+  · rw [globalMatrix, comp_inr_fromBlocks_mulVec]
+    change (blockDiagonal' V.F *ᵥ (z ∘ Sum.inl)) ∘ Sigma.mk i
+        + (V.C *ᵥ (z ∘ Sum.inr)) ∘ Sigma.mk i = _
+    rw [blockDiagonal'_comp_mulVec, comp_mulVec_sigma,
+      ← Finset.add_sum_erase _ _ (Finset.mem_univ i), add_assoc]
+    rfl
+
+omit [∀ i, DecidableEq (Q i)] in
+/-- **(14.12)**: the block row of the Schur complement system at subdomain `i`,
+`S_i y_i + ∑_{j ≠ i} E_ij y_j`. -/
+theorem equation_14_12 (y : ((i : ι) × Q i) → 𝕜) (i : ι) :
+    (V.schurMatrix *ᵥ y) ∘ Sigma.mk i
+      = V.localSchur i *ᵥ (y ∘ Sigma.mk i)
+        + ∑ j ∈ Finset.univ.erase i, V.offDiag i j *ᵥ (y ∘ Sigma.mk j) := by
+  rw [comp_mulVec_sigma, ← Finset.add_sum_erase _ _ (Finset.mem_univ i)]
+  refine congrArg₂ _ ?_ (Finset.sum_congr rfl fun j hj => ?_) <;> refine congrArg₂ _ ?_ rfl <;>
+    ext a b
+  · rw [Matrix.submatrix_apply, schurMatrix, Matrix.sub_apply, blockDiagonal'_apply_eq]
+    rfl
+  · rw [Matrix.submatrix_apply, schurMatrix, Matrix.sub_apply,
+      blockDiagonal'_apply_ne _ a b (Ne.symm (Finset.ne_of_mem_erase hj)), sub_zero]
+    rfl
+
+/-! #### The two block Gauss–Seidel sweeps -/
+
+omit [Fintype ι] [∀ i, Fintype (P i)] [∀ i, DecidableEq (P i)] [∀ i, Fintype (Q i)]
+  [∀ i, DecidableEq (Q i)] in
+/-- `D`, the block diagonal part of the global matrix for the subdomain blocks: the block diagonal
+of the local matrices `A_i`. -/
+theorem blockDiagPart_globalMatrix :
+    blockDiagPart (nodeLabel P Q) V.globalMatrix
+      = fromBlocks (blockDiagonal' V.B) (blockDiagonal' V.E) (blockDiagonal' V.F)
+          (blockDiagPart Sigma.fst V.C) := by
+  ext p q
+  rcases p with ⟨i, a⟩ | ⟨i, a⟩ <;> rcases q with ⟨j, b⟩ | ⟨j, b⟩ <;>
+    simp only [globalMatrix, blockDiagPart_apply, nodeLabel_inl, nodeLabel_inr,
+      fromBlocks_apply₁₁, fromBlocks_apply₁₂, fromBlocks_apply₂₁, fromBlocks_apply₂₂]
+  · exact ite_blockDiagonal' V.B a b
+  · exact ite_blockDiagonal' V.E a b
+  · exact ite_blockDiagonal' V.F a b
+  · rfl
+
+/-- `D - E`, the block-lower factor of the global matrix for the subdomain blocks; one block
+Gauss–Seidel sweep over the subdomains solves with it. -/
+def globalLower : Matrix (((i : ι) × P i) ⊕ ((i : ι) × Q i))
+    (((i : ι) × P i) ⊕ ((i : ι) × Q i)) 𝕜 :=
+  blockDiagPart (nodeLabel P Q) V.globalMatrix + blockStrictLower (nodeLabel P Q) V.globalMatrix
+
+/-- `D - E`, the block-lower factor of the Schur complement system (14.14) for the subdomain
+blocks. -/
+noncomputable def schurLower : Matrix ((i : ι) × Q i) ((i : ι) × Q i) 𝕜 :=
+  blockDiagPart Sigma.fst V.schurMatrix + blockStrictLower Sigma.fst V.schurMatrix
+
+omit [Fintype ι] [∀ i, Fintype (P i)] [∀ i, DecidableEq (P i)] [∀ i, Fintype (Q i)]
+  [∀ i, DecidableEq (Q i)] in
+/-- The block-lower factor of the global matrix differs from the global matrix in the
+interface–interface corner alone: the interior rows and columns of (14.8) already are block
+diagonal, so the sweep does not touch them. -/
+theorem globalLower_eq :
+    V.globalLower = fromBlocks (blockDiagonal' V.B) (blockDiagonal' V.E) (blockDiagonal' V.F)
+      (blockDiagPart Sigma.fst V.C + blockStrictLower Sigma.fst V.C) := by
+  ext p q
+  rcases p with ⟨i, a⟩ | ⟨i, a⟩ <;> rcases q with ⟨j, b⟩ | ⟨j, b⟩ <;>
+    simp only [globalLower, globalMatrix, Matrix.add_apply, blockDiagPart_apply,
+      blockStrictLower_apply, nodeLabel_inl, nodeLabel_inr, fromBlocks_apply₁₁,
+      fromBlocks_apply₁₂, fromBlocks_apply₂₁, fromBlocks_apply₂₂]
+  · exact ite_add_ite_blockDiagonal' V.B a b
+  · exact ite_add_ite_blockDiagonal' V.E a b
+  · exact ite_add_ite_blockDiagonal' V.F a b
+  · rfl
+
+omit [∀ i, Fintype (Q i)] [∀ i, DecidableEq (Q i)] in
+/-- **The key identity**: the Schur complement of the block-lower factor of the global matrix is
+the block-lower factor of the Schur complement system.  Eliminating the interior variables and
+taking the block-lower triangle commute, which is why a Schwarz sweep on (14.8) and a Gauss–Seidel
+sweep on (14.14) are the same iteration. -/
+theorem schurComplement_globalLower (hB : ∀ i, IsUnit (V.B i)) :
+    V.globalLower.schurComplement = V.schurLower := by
+  rw [globalLower_eq, V.schurComplement_fromBlocks_local hB, schurLower, schurMatrix,
+    blockDiagPart_sub_blockDiagonal', blockStrictLower_sub_blockDiagonal']
+  abel
+
+omit [∀ i, Fintype (Q i)] [∀ i, DecidableEq (Q i)] in
+/-- The same identity for the block diagonal alone. -/
+theorem schurComplement_blockDiagPart_globalMatrix (hB : ∀ i, IsUnit (V.B i)) :
+    (blockDiagPart (nodeLabel P Q) V.globalMatrix).schurComplement
+      = blockDiagPart Sigma.fst V.schurMatrix := by
+  rw [blockDiagPart_globalMatrix, V.schurComplement_fromBlocks_local hB, schurMatrix,
+    blockDiagPart_sub_blockDiagonal']
+
+/-- **(14.12)**, right-hand side: `g_i - F_i B_i⁻¹ f_i`, assembled over the subdomains. -/
+noncomputable def reducedRhs (b : (((i : ι) × P i) ⊕ ((i : ι) × Q i)) → 𝕜) :
+    ((i : ι) × Q i) → 𝕜 :=
+  b ∘ Sum.inr - (blockDiagonal' V.F * (blockDiagonal' V.B)⁻¹) *ᵥ (b ∘ Sum.inl)
+
+/-- **(14.22)**: an initial guess is *consistent* when its interior part solves the interior
+equations of (14.11) exactly, `B_i x_i + E_i y_i = f_i`; equivalently the interior components of
+the global residual vanish. -/
+def IsConsistent (b z : (((i : ι) × P i) ⊕ ((i : ι) × Q i)) → 𝕜) : Prop :=
+  (V.globalMatrix *ᵥ z) ∘ Sum.inl = b ∘ Sum.inl
+
+/-- **Algorithm 14.3**, the multiplicative Schwarz sweep of §14.3.1 in matrix form: one block
+Gauss–Seidel sweep on the global matrix, the blocks being the subdomains.  Solving `A_i δ_i = r_i`
+in turn, each from the residual the previous solve left behind, accumulates a correction that
+solves the block-lower system `(D - E) δ = b - A z`; this is
+`Matrix.blockGaussSeidelSplitting_step_eq_multiplicativeStep`. -/
+noncomputable def schwarzSweep (b z : (((i : ι) × P i) ⊕ ((i : ι) × Q i)) → 𝕜) :
+    (((i : ι) × P i) ⊕ ((i : ι) × Q i)) → 𝕜 :=
+  z + V.globalLower⁻¹ *ᵥ (b - V.globalMatrix *ᵥ z)
+
+/-- One block Gauss–Seidel sweep on the Schur complement system (14.12), the blocks being the
+interface unknowns `y_i` of the subdomains. -/
+noncomputable def schurGaussSeidelSweep (g y : ((i : ι) × Q i) → 𝕜) : ((i : ι) × Q i) → 𝕜 :=
+  y + V.schurLower⁻¹ *ᵥ (g - V.schurMatrix *ᵥ y)
+
+/-- The sweep of Algorithm 14.3 is the step of the block Gauss–Seidel splitting of the global
+matrix for the subdomain labelling. -/
+theorem globalLower_eq_blockGaussSeidelSplitting
+    (h : IsUnit (blockDiagPart (nodeLabel P Q) V.globalMatrix)) :
+    V.globalLower = (blockGaussSeidelSplitting (nodeLabel P Q) V.globalMatrix h).m := rfl
+
+/-- The sweep on (14.12) is the step of the block Gauss–Seidel splitting of the Schur complement
+system for the subdomain labelling. -/
+theorem schurLower_eq_blockGaussSeidelSplitting
+    (h : IsUnit (blockDiagPart Sigma.fst V.schurMatrix)) :
+    V.schurLower = (blockGaussSeidelSplitting Sigma.fst V.schurMatrix h).m := rfl
+
+omit [∀ i, Fintype (Q i)] [∀ i, DecidableEq (Q i)] in
+/-- **(14.12)**, right-hand side, read on subdomain `i`. -/
+theorem reducedRhs_comp (hB : ∀ i, IsUnit (V.B i))
+    (b : (((i : ι) × P i) ⊕ ((i : ι) × Q i)) → 𝕜) (i : ι) :
+    V.reducedRhs b ∘ Sigma.mk i
+      = (b ∘ Sum.inr) ∘ Sigma.mk i - (V.F i * (V.B i)⁻¹) *ᵥ ((b ∘ Sum.inl) ∘ Sigma.mk i) := by
+  have h : blockDiagonal' V.F * (blockDiagonal' V.B)⁻¹
+      = blockDiagonal' fun i => V.F i * (V.B i)⁻¹ := by
+    rw [inv_blockDiagonal' V.B hB, blockDiagonal'_mul]
+  rw [reducedRhs, h]
+  change (b ∘ Sum.inr) ∘ Sigma.mk i
+      - (blockDiagonal' (fun i => V.F i * (V.B i)⁻¹) *ᵥ (b ∘ Sum.inl)) ∘ Sigma.mk i = _
+  rw [blockDiagonal'_comp_mulVec]
+
+omit [∀ i, DecidableEq (P i)] [∀ i, DecidableEq (Q i)] in
+/-- Consistency is the first line of (14.11) holding on every subdomain. -/
+theorem isConsistent_iff_local (b z : (((i : ι) × P i) ⊕ ((i : ι) × Q i)) → 𝕜) :
+    V.IsConsistent b z ↔ ∀ i, V.B i *ᵥ ((z ∘ Sum.inl) ∘ Sigma.mk i)
+        + V.E i *ᵥ ((z ∘ Sum.inr) ∘ Sigma.mk i) = (b ∘ Sum.inl) ∘ Sigma.mk i := by
+  constructor
+  · intro h i
+    rw [← (V.equation_14_11 z i).1, h]
+  · intro h
+    funext p
+    obtain ⟨i, a⟩ := p
+    exact congrFun (((V.equation_14_11 z i).1).trans (h i)) a
+
+omit [∀ i, DecidableEq (Q i)] in
+/-- **(14.22)**: consistency says exactly that `x_i^(0) = B_i⁻¹ (f_i - E_i y_i^(0))` on every
+subdomain, which is the hypothesis of Theorem 14.2. -/
+theorem isConsistent_iff (hB : ∀ i, IsUnit (V.B i))
+    (b z : (((i : ι) × P i) ⊕ ((i : ι) × Q i)) → 𝕜) :
+    V.IsConsistent b z ↔ ∀ i, (z ∘ Sum.inl) ∘ Sigma.mk i
+      = (V.B i)⁻¹ *ᵥ ((b ∘ Sum.inl) ∘ Sigma.mk i - V.E i *ᵥ ((z ∘ Sum.inr) ∘ Sigma.mk i)) := by
+  rw [isConsistent_iff_local V b z]
+  exact forall_congr' fun i => mulVec_add_eq_iff (hB i) _ _ _
+
+/-! #### Theorem 14.2 -/
+
+/-- The Schur complement system is nonsingular in the block-lower triangle as soon as every local
+Schur complement `S_i` is. -/
+theorem isUnit_schurLower (hS : ∀ i, IsUnit (V.localSchur i)) : IsUnit V.schurLower :=
+  isUnit_blockDiagPart_add_blockStrictLower
+    (by rw [blockDiagPart_schurMatrix]; exact isUnit_blockDiagonal' _ hS)
+
+/-- The block-lower factor of the global matrix is nonsingular as soon as every `B_i` and every
+local Schur complement `S_i` is: this is Proposition 14.1 (1) applied to it. -/
+theorem isUnit_globalLower (hB : ∀ i, IsUnit (V.B i)) (hS : ∀ i, IsUnit (V.localSchur i)) :
+    IsUnit V.globalLower := by
+  refine isUnit_of_isUnit_schurComplement ?_ ?_
+  · rw [globalLower_eq, toBlocks_fromBlocks₁₁]
+    exact isUnit_blockDiagonal' _ hB
+  · rw [schurComplement_globalLower V hB]
+    exact isUnit_schurLower V hS
+
+/-- Every local matrix `A_i` is nonsingular as soon as every `B_i` and every `S_i` is, which is
+what makes the subdomain solves of Algorithm 14.3 well posed. -/
+theorem isUnit_blockDiagPart_globalMatrix (hB : ∀ i, IsUnit (V.B i))
+    (hS : ∀ i, IsUnit (V.localSchur i)) :
+    IsUnit (blockDiagPart (nodeLabel P Q) V.globalMatrix) := by
+  refine isUnit_of_isUnit_schurComplement ?_ ?_
+  · rw [blockDiagPart_globalMatrix, toBlocks_fromBlocks₁₁]
+    exact isUnit_blockDiagonal' _ hB
+  · rw [schurComplement_blockDiagPart_globalMatrix V hB, blockDiagPart_schurMatrix]
+    exact isUnit_blockDiagonal' _ hS
+
+omit [∀ i, DecidableEq (Q i)] in
+/-- **The first half of the proof of Theorem 14.2**: for a consistent iterate the interface
+components of the global residual are the residual of the Schur complement system (14.12) at the
+same `y`.  Substituting `x_i = B_i⁻¹ (f_i - E_i y_i)` into `g_i - F_i x_i - C_i y_i - ∑ E_ij y_j`
+turns `C_i` into `S_i` and `g_i` into `g_i - F_i B_i⁻¹ f_i`. -/
+theorem residual_comp_inr (hB : ∀ i, IsUnit (V.B i))
+    {b z : (((i : ι) × P i) ⊕ ((i : ι) × Q i)) → 𝕜} (hc : V.IsConsistent b z) :
+    (b - V.globalMatrix *ᵥ z) ∘ Sum.inr
+      = V.reducedRhs b - V.schurMatrix *ᵥ (z ∘ Sum.inr) := by
+  have hBu : IsUnit (blockDiagonal' V.B) := isUnit_blockDiagonal' _ hB
+  have hcons : blockDiagonal' V.B *ᵥ (z ∘ Sum.inl) + blockDiagonal' V.E *ᵥ (z ∘ Sum.inr)
+      = b ∘ Sum.inl := by
+    rw [← comp_inl_fromBlocks_mulVec]; exact hc
+  have hFB : blockDiagonal' V.F * (blockDiagonal' V.B)⁻¹ * blockDiagonal' V.B
+      = blockDiagonal' V.F := by
+    rw [Matrix.mul_assoc, nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).1 hBu), Matrix.mul_one]
+  have hFx : (blockDiagonal' V.F * (blockDiagonal' V.B)⁻¹) *ᵥ (b ∘ Sum.inl)
+      = blockDiagonal' V.F *ᵥ (z ∘ Sum.inl)
+        + (blockDiagonal' V.F * (blockDiagonal' V.B)⁻¹ * blockDiagonal' V.E) *ᵥ (z ∘ Sum.inr) := by
+    rw [← hcons, mulVec_add, mulVec_mulVec, mulVec_mulVec, hFB]
+  have hbd : blockDiagonal' (fun i => V.F i * (V.B i)⁻¹ * V.E i)
+      = blockDiagonal' V.F * (blockDiagonal' V.B)⁻¹ * blockDiagonal' V.E := by
+    rw [inv_blockDiagonal' V.B hB, blockDiagonal'_mul, blockDiagonal'_mul]
+  have hsub : (b - V.globalMatrix *ᵥ z) ∘ Sum.inr
+      = b ∘ Sum.inr - (V.globalMatrix *ᵥ z) ∘ Sum.inr := rfl
+  rw [hsub, globalMatrix, comp_inr_fromBlocks_mulVec, reducedRhs, hFx, schurMatrix, hbd,
+    Matrix.sub_mulVec]
+  abel
+
+/-- **The second half of the proof of Theorem 14.2**: one sweep of Algorithm 14.3 started from a
+consistent iterate moves the interface unknowns exactly as one block Gauss–Seidel sweep on the
+Schur complement system does.  With `r_{x,i} = 0` the subdomain solve `A_i δ_i = (0, r_{y,i})`
+returns `δ_{y,i} = S_i⁻¹ r_{y,i}` by (14.7); assembled over the subdomains that is the statement
+that the `(2,2)` block of `(D - E)⁻¹` is the inverse of the Schur complement of `D - E`. -/
+theorem comp_inr_schwarzSweep (hB : ∀ i, IsUnit (V.B i)) (hS : ∀ i, IsUnit (V.localSchur i))
+    {b z : (((i : ι) × P i) ⊕ ((i : ι) × Q i)) → 𝕜} (hc : V.IsConsistent b z) :
+    (V.schwarzSweep b z) ∘ Sum.inr
+      = V.schurGaussSeidelSweep (V.reducedRhs b) (z ∘ Sum.inr) := by
+  have hr : b - V.globalMatrix *ᵥ z
+      = Sum.elim (0 : ((i : ι) × P i) → 𝕜) ((b - V.globalMatrix *ᵥ z) ∘ Sum.inr) := by
+    funext p
+    rcases p with p | p
+    · exact sub_eq_zero.2 (congrFun hc p).symm
+    · rfl
+  have h11 : (V.globalLower).toBlocks₁₁ = blockDiagonal' V.B := by
+    rw [globalLower_eq, toBlocks_fromBlocks₁₁]
+  have hstep : (V.globalLower⁻¹ *ᵥ (b - V.globalMatrix *ᵥ z)) ∘ Sum.inr
+      = V.schurLower⁻¹ *ᵥ ((b - V.globalMatrix *ᵥ z) ∘ Sum.inr) := by
+    conv_lhs => rw [hr]
+    rw [comp_inr_mulVec_elim_zero, toBlocks₂₂_inv_eq_inv_schurComplement
+      (by rw [h11]; exact isUnit_blockDiagonal' _ hB) (isUnit_globalLower V hB hS),
+      schurComplement_globalLower V hB]
+  change z ∘ Sum.inr + (V.globalLower⁻¹ *ᵥ (b - V.globalMatrix *ᵥ z)) ∘ Sum.inr = _
+  rw [hstep, residual_comp_inr V hB hc, schurGaussSeidelSweep]
+
+/-- **Consistency is an invariant of Algorithm 14.3**: the sweep changes the residual only in its
+interface components, since the interior rows of the global matrix and of its block-lower factor
+agree.  This is Saad's "because only the `y` components of the residual vector are modified, this
+property remains valid throughout the iterative process". -/
+theorem isConsistent_schwarzSweep (hB : ∀ i, IsUnit (V.B i)) (hS : ∀ i, IsUnit (V.localSchur i))
+    {b z : (((i : ι) × P i) ⊕ ((i : ι) × Q i)) → 𝕜} (hc : V.IsConsistent b z) :
+    V.IsConsistent b (V.schwarzSweep b z) := by
+  set d := V.globalLower⁻¹ *ᵥ (b - V.globalMatrix *ᵥ z) with hd
+  have hLd : V.globalLower *ᵥ d = b - V.globalMatrix *ᵥ z := by
+    rw [hd, mulVec_mulVec, mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).1
+      (isUnit_globalLower V hB hS)), one_mulVec]
+  have hAd : (V.globalMatrix *ᵥ d) ∘ Sum.inl = (V.globalLower *ᵥ d) ∘ Sum.inl := by
+    rw [globalMatrix, comp_inl_fromBlocks_mulVec, globalLower_eq, comp_inl_fromBlocks_mulVec]
+  have hr0 : (b - V.globalMatrix *ᵥ z) ∘ Sum.inl = 0 := by
+    funext p
+    exact sub_eq_zero.2 (congrFun hc p).symm
+  change (V.globalMatrix *ᵥ (z + d)) ∘ Sum.inl = b ∘ Sum.inl
+  rw [mulVec_add]
+  change (V.globalMatrix *ᵥ z) ∘ Sum.inl + (V.globalMatrix *ᵥ d) ∘ Sum.inl = b ∘ Sum.inl
+  rw [hAd, hLd, hr0, hc, add_zero]
+
+end VertexPartitioning
+
+/-- **Theorem 14.2** (Chan and Goovaerts): if the initial guess of the multiplicative Schwarz
+procedure is consistent, that is `x_i^(0) = B_i⁻¹ (f_i - E_i y_i^(0))` of (14.22), then the `y`
+iterates produced by Algorithm 14.3 are identical to those of a Gauss–Seidel sweep applied to the
+Schur complement system (14.12).
+
+Both hypotheses are the nonsingularity that makes the two iterations defined: every `B_i` so that
+the interior variables can be eliminated, and every local Schur complement `S_i` so that the
+diagonal blocks of (14.14) can be solved with. -/
+theorem theorem_14_2 (hB : ∀ i, IsUnit (V.B i)) (hS : ∀ i, IsUnit (V.localSchur i))
+    {b z : (((i : ι) × P i) ⊕ ((i : ι) × Q i)) → 𝕜} (hc : V.IsConsistent b z) (k : ℕ) :
+    ((V.schwarzSweep b)^[k] z) ∘ Sum.inr
+      = (V.schurGaussSeidelSweep (V.reducedRhs b))^[k] (z ∘ Sum.inr) := by
+  induction k generalizing z with
+  | zero => rfl
+  | succ k ih =>
+    rw [Function.iterate_succ_apply, Function.iterate_succ_apply,
+      ← V.comp_inr_schwarzSweep hB hS hc]
+    exact ih (V.isConsistent_schwarzSweep hB hS hc)
+
+end VertexBased
 
 variable {n : ℕ}
 

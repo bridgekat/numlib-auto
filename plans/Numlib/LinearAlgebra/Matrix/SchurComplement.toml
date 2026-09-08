@@ -45,6 +45,9 @@ id = "schurComplementSingle"
 source = "Saad, Iterative Methods for Sparse Linear Systems, (10.10)"
 
 [[node]]
+id = "isUnit_blockDiagonal'"
+
+[[node]]
 id = "inv_blockDiagonal'"
 
 [[node]]

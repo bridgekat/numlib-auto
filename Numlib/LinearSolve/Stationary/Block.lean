@@ -12,7 +12,9 @@ strict block-upper parts of `A` are the entries with `π i = π j`, `π j < π i
 respectively (`Matrix.blockDiagPart`, `Matrix.blockStrictLower`, `Matrix.blockStrictUpper`). They
 add up to `A` (`Matrix.blockDiagPart_add_blockStrictLower_add_blockStrictUpper`), which is
 [saad2003iterative] `A = D - E - F` of (4.15) with `E = -blockStrictLower π A` and `F =
--blockStrictUpper π A`.
+-blockStrictUpper π A`. When the index set is a sigma type labelled by its first component,
+a genuinely block diagonal summand lands entirely in the block diagonal part
+(`Matrix.blockDiagPart_sub_blockDiagonal'`, `Matrix.blockStrictLower_sub_blockDiagonal'`).
 
 The point splittings of `Numlib/LinearSolve/Stationary/Splitting.lean` are the case `π = id`
 (`Matrix.blockDiagPart_id`, `Matrix.blockStrictLower_id`, `Matrix.blockStrictUpper_id`), and the
@@ -119,6 +121,36 @@ theorem blockStrictUpper_id [LinearOrder n] (A : Matrix n n R) :
     blockStrictUpper id A = strictUpper A := rfl
 
 end Decomposition
+
+/-! ### Block diagonal matrices -/
+
+section BlockDiagonal
+
+variable {m' : ι → Type*} [AddGroup R]
+
+/-- Subtracting a block diagonal matrix changes the block diagonal part by exactly that matrix: the
+labelling by the block index sees a block diagonal matrix as diagonal. -/
+theorem blockDiagPart_sub_blockDiagonal' [DecidableEq ι]
+    (A : Matrix ((i : ι) × m' i) ((i : ι) × m' i) R) (D : ∀ i, Matrix (m' i) (m' i) R) :
+    blockDiagPart Sigma.fst (A - blockDiagonal' D)
+      = blockDiagPart Sigma.fst A - blockDiagonal' D := by
+  ext ⟨i, a⟩ ⟨j, b⟩
+  simp only [blockDiagPart_apply, Matrix.sub_apply]
+  by_cases h : i = j
+  · subst h; simp
+  · rw [blockDiagonal'_apply_ne _ a b h]; simp [h]
+
+/-- Subtracting a block diagonal matrix leaves the strict block-lower part unchanged. -/
+theorem blockStrictLower_sub_blockDiagonal' [LinearOrder ι]
+    (A : Matrix ((i : ι) × m' i) ((i : ι) × m' i) R) (D : ∀ i, Matrix (m' i) (m' i) R) :
+    blockStrictLower Sigma.fst (A - blockDiagonal' D) = blockStrictLower Sigma.fst A := by
+  ext ⟨i, a⟩ ⟨j, b⟩
+  simp only [blockStrictLower_apply, Matrix.sub_apply]
+  by_cases h : j < i
+  · rw [blockDiagonal'_apply_ne _ a b (ne_of_gt h)]; simp [h]
+  · simp [h]
+
+end BlockDiagonal
 
 /-! ### The block splittings -/
 

@@ -45,8 +45,8 @@ matrix, which the library does not have; the limit `S_1 → Ŝ = (B + √(B² - 
 matrix square root on top of that.  None of it is out of reach —
 `Numlib/LinearAlgebra/Matrix/TridiagonalToeplitz` supplies the eigenpairs — but none of it is here.
 
-§14.2.3, the vertex-based block structure (14.8)–(14.14), is a set of definitions with no claim,
-and its one theorem, Theorem 14.2, is recorded as unformalized in `Section03.lean`.
+§14.2.3, the vertex-based block structure (14.8)–(14.14), is built in `Section03.lean` as
+`SaadSparse.Chapter14.VertexPartitioning`, next to its one theorem, Theorem 14.2.
 -/
 
 open Matrix
