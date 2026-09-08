@@ -25,5 +25,5 @@ jobs:
           api-docs: true
           blueprint: false
           build-page: false
-          references: docs/references.bib
+          references: references/references.bib
       - run: lake exe tracker check

@@ -77,9 +77,10 @@ desc = '''
 Gershgorin disc counting (Saad-eig Thm 3.12): if the union `S` of `m` of the discs is disjoint
 from the other discs, `S` contains exactly `m` eigenvalues with multiplicity.
 
-Still open, and of the five open backbone nodes this is the one whose obstruction has survived every
+Still open, and it is now the only open node of the backbone; its obstruction has survived every
 check. The statement was re-read in the book text (Thm 3.12 of
-`books/numerical-methods-for-large-eigenvalue-problems-saad.txt`) and is as quoted; his proof is the
+`references/numerical-methods-for-large-eigenvalue-problems-saad/numerical-methods-for-large-eigenvalue-problems-saad.md`)
+and is as quoted; his proof is the
 homotopy `A(t) = D + tH` together with "by a continuity argument, as `t` increases to 1, the branches
 of eigenvalues will stay in their respective discs". That continuity of the branches is the whole of
 what is missing.
