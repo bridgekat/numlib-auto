@@ -1,6 +1,7 @@
 import Numlib.Analysis.InnerProductSpace.Projection.Compression
 import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.Krylov.Subspace
+import Numlib.Krylov.ToEuclideanLin
 
 /-!
 # Saad §6.1–6.2: Krylov subspaces and the grade of a vector

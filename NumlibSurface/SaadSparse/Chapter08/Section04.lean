@@ -1,4 +1,5 @@
 import Mathlib.Analysis.Matrix.PosDef
+import Numlib.Krylov.Subspace
 import Numlib.LinearSolve.Projection.OneDimensional
 import Numlib.LinearSolve.Projection.Optimality
 import NumlibSurface.SaadSparse.Chapter04.Section02

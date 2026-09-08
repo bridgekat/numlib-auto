@@ -8,16 +8,17 @@ import Mathlib.Analysis.CStarAlgebra.Matrix
 import Mathlib.Analysis.InnerProductSpace.Spectrum
 import Mathlib.Analysis.Matrix.Spectrum
 import Numlib.Analysis.InnerProductSpace.Coercive
-import Numlib.Krylov.Subspace
 
 /-!
 # Matrices as operators on `EuclideanSpace`
 
 Glue between `Matrix n n 𝕜` and `Matrix.toEuclideanLin A : EuclideanSpace 𝕜 n →ₗ EuclideanSpace 𝕜 n`
 used by every matrix-level surface statement: multiplicativity, powers, adjoint = conjugate
-transpose, eigenvalues, Krylov subspaces as spans of columns, and the `‖A‖₂ = ‖toEuclideanLin A‖`
-identification. (Symmetric ↔ Hermitian is Mathlib's `Matrix.isSymmetric_toEuclideanLin_iff`,
-`Matrix.PosDef` ↔ symmetric coercive is `Matrix.posDef_iff_isSymmetricCoercive`.)
+transpose, eigenvalues, and the `‖A‖₂ = ‖toEuclideanLin A‖` identification. (Symmetric ↔ Hermitian
+is Mathlib's `Matrix.isSymmetric_toEuclideanLin_iff`, `Matrix.PosDef` ↔ symmetric coercive is
+`Matrix.posDef_iff_isSymmetricCoercive`; reading a Krylov subspace of `toEuclideanLin A` as a span
+of columns is `Matrix.krylov_subspace_toEuclideanLin` in `Numlib.Krylov.ToEuclideanLin`, which this
+module cannot depend on.)
 
 It also contains the fact that a unitary matrix acts as an isometry of `EuclideanSpace`,
 `‖U *ᵥ v‖₂ = ‖v‖₂`: transport `U` along the star algebra equivalence `Matrix.toEuclideanCLM`
@@ -71,12 +72,6 @@ theorem IsHermitian.isSymmetricBoundedBy_toEuclideanLin {A : Matrix n n 𝕜} (h
     (isSymmetric_toEuclideanLin_iff.mpr hA) lmin lmax).mpr fun μ hμ => ?_
   obtain ⟨i, rfl⟩ := (hA.hasEigenvalue_toEuclideanLin_iff μ).mp hμ
   simpa using h i
-
-/-- Krylov subspaces of a matrix are spanned by the columns `A^i v`. -/
-theorem krylov_subspace_toEuclideanLin (A : Matrix n n 𝕜) (v : EuclideanSpace 𝕜 n) (m : ℕ) :
-    Krylov.subspace (toEuclideanLin A) v m =
-      Submodule.span 𝕜 (Set.range fun i : Fin m => toEuclideanLin (A ^ (i : ℕ)) v) := by
-  simp only [Krylov.subspace, toEuclideanLin_pow]
 
 omit [Fintype n] [DecidableEq n] in
 /-- `V y = ∑ y_j • (column j of V)`: moving between the book's `V_m y` and the backbone's

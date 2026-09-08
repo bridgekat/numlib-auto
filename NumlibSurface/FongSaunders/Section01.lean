@@ -3,6 +3,7 @@ import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.Krylov.Arnoldi
 import Numlib.Krylov.Lanczos
 import Numlib.Krylov.Subspace
+import Numlib.Krylov.ToEuclideanLin
 
 /-!
 # Fong–Saunders §1: the setting, Krylov subspaces and the Lanczos process

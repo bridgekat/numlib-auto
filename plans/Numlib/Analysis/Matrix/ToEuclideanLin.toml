@@ -10,9 +10,6 @@ id = "IsHermitian.isSymmetricBoundedBy_toEuclideanLin"
 id = "hasEigenvalue_toEuclideanLin_iff"
 
 [[node]]
-id = "krylov_subspace_toEuclideanLin"
-
-[[node]]
 id = "l2_opNorm_eq_norm_toEuclideanLin"
 
 [[node]]

@@ -118,6 +118,7 @@ import Numlib.Krylov.QuasiMinRes
 import Numlib.Krylov.Relations
 import Numlib.Krylov.Singular
 import Numlib.Krylov.Subspace
+import Numlib.Krylov.ToEuclideanLin
 import Numlib.LinearAlgebra.Matrix.Assembly
 import Numlib.LinearAlgebra.Matrix.Cauchy
 import Numlib.LinearAlgebra.Matrix.Complexify
