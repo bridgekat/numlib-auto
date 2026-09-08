@@ -40,7 +40,8 @@ needed.
 
 ## Main statements
 
-* `integral_cos_nat_mul_cos_nat_mul`, the orthogonality relations on `[0, π]`;
+* `integral_cos_nat_mul_cos_nat_mul`, the orthogonality relations on `[0, π]`, and
+  `integral_sin_nat_mul_sin_nat_mul`, the sine relations that come with them;
 * `orthonormal_cosLp`, the system is orthonormal;
 * `dense_span_cosMap`, Stone–Weierstrass for the cosine polynomials on `[0, π]`;
 * `orthogonal_span_cosLp_eq_bot`, the completeness, and `cosBasis` assembling the two.
@@ -102,6 +103,46 @@ theorem integral_cos_nat_mul_cos_nat_mul (j k : ℕ) :
   have hi2 : IntervalIntegrable (fun x => Real.cos (((j : ℤ) - k : ℤ) * x)) volume 0 π :=
     (Real.continuous_cos.comp (by fun_prop)).intervalIntegrable _ _
   rw [intervalIntegral.integral_div, intervalIntegral.integral_add hi1 hi2,
+    integral_cos_int_mul, integral_cos_int_mul]
+  by_cases hjk : j = k
+  · subst hjk
+    by_cases hj : j = 0
+    · subst hj; norm_num
+    · have h1 : ((j : ℤ) + j) ≠ 0 := by
+        have hj' : (j : ℤ) ≠ 0 := Int.natCast_ne_zero.2 hj
+        omega
+      simp [h1, hj]
+  · have h1 : ((j : ℤ) + k : ℤ) ≠ 0 := by
+      have hj' : (0 : ℤ) ≤ j := Int.natCast_nonneg j
+      have hk' : (0 : ℤ) ≤ k := Int.natCast_nonneg k
+      have : (j : ℤ) ≠ k := by exact_mod_cast fun h => hjk (Nat.cast_injective h)
+      omega
+    have h2 : ((j : ℤ) - k : ℤ) ≠ 0 := by
+      simpa [sub_eq_zero, Nat.cast_inj] using hjk
+    simp [h1, h2, hjk]
+
+/-- **The half-range sine system is orthogonal on `[0, π]`**, with `π/2` for the squared norm of
+every sine of nonzero frequency; the frequency `0` contributes the zero function. It rests on the
+same `integral_cos_int_mul` as the cosine relations, through
+`sin A sin B = (cos (A - B) - cos (A + B)) / 2`. -/
+theorem integral_sin_nat_mul_sin_nat_mul (j k : ℕ) :
+    ∫ x in (0 : ℝ)..π, Real.sin (j * x) * Real.sin (k * x)
+      = if j = k then (if j = 0 then 0 else π / 2) else 0 := by
+  have hprod : ∀ x ∈ uIcc (0 : ℝ) π, Real.sin (j * x) * Real.sin (k * x)
+      = (Real.cos (((j : ℤ) - k : ℤ) * x) - Real.cos (((j : ℤ) + k : ℤ) * x)) / 2 := by
+    intro x _
+    have h1 := Real.cos_sub (j * x) (k * x)
+    have h2 := Real.cos_add (j * x) (k * x)
+    have e1 : (((j : ℤ) - k : ℤ) : ℝ) * x = j * x - k * x := by push_cast; ring
+    have e2 : (((j : ℤ) + k : ℤ) : ℝ) * x = j * x + k * x := by push_cast; ring
+    rw [e1, e2, h1, h2]
+    ring
+  rw [intervalIntegral.integral_congr hprod]
+  have hi1 : IntervalIntegrable (fun x => Real.cos (((j : ℤ) - k : ℤ) * x)) volume 0 π :=
+    (Real.continuous_cos.comp (by fun_prop)).intervalIntegrable _ _
+  have hi2 : IntervalIntegrable (fun x => Real.cos (((j : ℤ) + k : ℤ) * x)) volume 0 π :=
+    (Real.continuous_cos.comp (by fun_prop)).intervalIntegrable _ _
+  rw [intervalIntegral.integral_div, intervalIntegral.integral_sub hi1 hi2,
     integral_cos_int_mul, integral_cos_int_mul]
   by_cases hjk : j = k
   · subst hjk

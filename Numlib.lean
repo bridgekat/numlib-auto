@@ -40,6 +40,7 @@ import Numlib.Analysis.Normed.Ring.Inverse
 import Numlib.Analysis.ODE.PicardLindelof
 import Numlib.Analysis.Sobolev.Periodic
 import Numlib.Analysis.SpecialFunctions.Chebyshev
+import Numlib.Analysis.SpecialFunctions.ChebyshevIntegral
 import Numlib.Analysis.Wavelet.Daubechies
 import Numlib.Analysis.Wavelet.Haar
 import Numlib.Analysis.Wavelet.Multiresolution
@@ -59,6 +60,7 @@ import Numlib.Approximation.NodalInterpolation
 import Numlib.Approximation.OrthogonalDecomposition
 import Numlib.Approximation.OrthogonalPolynomial
 import Numlib.Approximation.Quadrature
+import Numlib.Approximation.RidgePolynomial
 import Numlib.Approximation.TrapezoidExactness
 import Numlib.Approximation.Trigonometric
 import Numlib.Approximation.TrigonometricInterpolation

@@ -1,6 +1,7 @@
 import Mathlib.MeasureTheory.Constructions.Pi
 import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
 import Numlib.Approximation.BestApprox
+import Numlib.Approximation.RidgePolynomial
 import NumlibSurface.AtkinsonHan.Chapter14.Section01
 
 /-!
@@ -36,13 +37,23 @@ components in a basis of each, and are not written.
 * `equation_14_2_12` — the orthogonal projection `P_n` as a sum over the components, and as the
   best `L²` approximation from `Π_n^d`.
 * `equation_14_2_13` — the Lebesgue lemma for a bounded projection of `C(𝔹_d)` onto `Π_n^d`.
+* `example_14_2_2` — the Logan–Shepp ridge polynomials as an orthonormal basis of `V_n^2`, and
+  `example_14_2_2_polyLE` for `Π_N^2`.
+
+## Example 14.2.2
+
+The book gives no proof of Example 14.2.2, citing Logan and Shepp. Polar coordinates do **not**
+prove it: `U_n(r cos β)` has no closed form for `r < 1`, so the angular integral does not separate.
+What does prove it is the chord (Radon) decomposition of the disk integral, which is the backbone's
+`Numlib.Approximation.RidgePolynomial`; it gives
+`∫_{𝔹₂} U_n(x · u_θ) U_m(x · u_ψ) = δ_{nm} π U_n(cos (θ − ψ)) / (n + 1)`, whence `φ_{n,j} ⟂ φ_{m,k}`
+across degrees and, at the equispaced directions `k π / (n + 1)`, within a degree. What is done here
+is the `L²` bookkeeping: the family of degree `n` is orthonormal, lies in `V_n^2` because it is
+orthogonal to the ridge polynomials of every lower degree — which span `Π_{n−1}^2` by induction —
+and exhausts `V_n^2` because `dim V_n^2 = n + 1`.
 
 ## Not formalized here
 
-* **Example 14.2.2**, the ridge polynomials `φ_{n,k}(x, y) = (1/√π) U_n(x cos kh + y sin kh)` as an
-  orthonormal basis of `V_n^2`. The book gives no proof, citing Logan and Shepp. Nothing is missing
-  but the proof — `Polynomial.Chebyshev.U` and polar-coordinate integration are both in Mathlib —
-  and every result below is stated without a basis, so nothing waits on it.
 * **(14.2.14)–(14.2.15)**, the closed form of the reproducing kernel `G_n` as an integral of a
   Jacobi polynomial `P_n^{(3/2,1/2)}`. Mathlib has neither Jacobi nor Gegenbauer polynomials.
 * **Theorem 14.2.4**, `‖P_n‖_{C(𝔹₂)→C(𝔹₂)} = O(n)`, and **Theorem 14.2.5**, which is (14.2.13)
@@ -255,5 +266,117 @@ theorem equation_14_2_13 {D : Set (Fin d → ℝ)} [CompactSpace D] (n : ℕ) (P
     ‖f - P f‖ ≤ (1 + ‖P‖) * minimaxError n f := by
   rw [minimaxError, ← hr]
   exact norm_sub_apply_le_of_isIdempotentElem P hP f
+
+/-! ### Example 14.2.2: the Logan–Shepp ridge polynomials -/
+
+section Ridge
+
+open scoped Real
+
+/-- The closed unit ball of the plane is the closed unit disk of
+`Numlib.Approximation.DiskQuadrature`, which is where the chord decomposition lives. -/
+theorem unitBall_two_eq_unitDisk : unitBall 2 = Quadrature.unitDisk := by
+  ext x
+  simp [unitBall, Quadrature.unitDisk, Fin.sum_univ_two]
+
+/-- **The ridge polynomials of Example 14.2.2** as elements of `L²(𝔹₂)`:
+`φ_{n,k}(x, y) = (1/√π) U_n(x cos (k h) + y sin (k h))` with `h = π/(n + 1)`. -/
+noncomputable def ridgeL2 (n k : ℕ) : Lp ℝ 2 (volume.restrict (unitBall 2)) :=
+  (isMvWeight_ballVolume 2).toL2 (ridgePoly n (k * (π / (n + 1))))
+
+/-- **Example 14.2.2**, the inner products: `(φ_{n,j}, φ_{m,k}) = δ_{nm} δ_{jk}` for `j ≤ n` and
+`k ≤ m`. Both halves come from the backbone's chord decomposition of the disk integral: across
+degrees the integral vanishes outright, and within a degree the equispaced directions
+`k π / (n + 1)` are exactly the zeros of `U_n(cos ·)` other than the diagonal. -/
+theorem inner_ridgeL2 {n m j k : ℕ} (hj : j ≤ n) (hk : k ≤ m) :
+    inner ℝ (ridgeL2 n j) (ridgeL2 m k) = if n = m then (if j = k then 1 else 0) else 0 := by
+  rw [ridgeL2, ridgeL2, IsMvWeight.inner_toL2, unitBall_two_eq_unitDisk]
+  rcases eq_or_ne n m with rfl | h
+  · rw [ite_eq_left rfl]
+    exact integral_unitDisk_ridgePoly_mul_angle hj hk
+  · rw [integral_unitDisk_ridgePoly_mul, ite_eq_right h, ite_eq_right h]
+
+/-- A ridge polynomial of degree `n` lies in `Π_n^2`. -/
+theorem ridgeL2_mem_polyLE (n k : ℕ) : ridgeL2 n k ∈ (isMvWeight_ballVolume 2).polyLE n :=
+  IsMvWeight.toL2_mem_polyLE _ (totalDegree_ridgePoly_le _ _)
+
+/-- **Example 14.2.2**, the orthonormality: the `n + 1` ridge polynomials of degree `n` are an
+orthonormal family in `L²(𝔹₂)`. -/
+theorem orthonormal_ridgeL2 (n : ℕ) : Orthonormal ℝ fun k : Fin (n + 1) => ridgeL2 n k := by
+  rw [orthonormal_iff_ite]
+  intro j k
+  rw [inner_ridgeL2 (Nat.lt_succ_iff.1 j.isLt) (Nat.lt_succ_iff.1 k.isLt), ite_eq_left rfl]
+  simp [Fin.ext_iff]
+
+/-- **Example 14.2.2**, the spanning half: the ridge polynomials `φ_{n,0}, …, φ_{n,n}` span `V_n^2`.
+
+The induction is on `n`. A ridge polynomial of degree `n` has total degree `n`, so it lies in
+`Π_n^2`; it is orthogonal to every ridge polynomial of lower degree, and those span `Π_{n−1}^2` by
+the induction hypothesis together with Lemma 14.2.1, so it lies in `V_n^2`. The `n + 1` of them are
+orthonormal, hence independent, and `dim V_n^2 = n + 1`, so they exhaust `V_n^2`. -/
+theorem span_ridgeL2 (n : ℕ) :
+    Submodule.span ℝ (Set.range fun k : Fin (n + 1) => ridgeL2 n k)
+      = orthPolySpace (isMvWeight_ballVolume 2) n := by
+  induction n using Nat.strong_induction_on with
+  | _ n IH =>
+    have hmem : ∀ k : Fin (n + 1), ridgeL2 n k ∈ orthPolySpace (isMvWeight_ballVolume 2) n := by
+      intro k
+      match n with
+      | 0 => rw [orthPolySpace_zero]; exact ridgeL2_mem_polyLE 0 k
+      | m + 1 =>
+        rw [mem_orthPolySpace_succ_iff]
+        refine ⟨ridgeL2_mem_polyLE _ _, fun g hg => ?_⟩
+        have hsub : (isMvWeight_ballVolume 2).polyLE m
+            ≤ (Submodule.span ℝ {ridgeL2 (m + 1) (k : ℕ)})ᗮ := by
+          rw [← lemma_14_2_1 (isMvWeight_ballVolume 2) m]
+          refine Finset.sup_le fun i hi => ?_
+          rw [Finset.mem_range] at hi
+          rw [← IH i (by omega), Submodule.span_le]
+          rintro _ ⟨l, rfl⟩
+          rw [SetLike.mem_coe, Submodule.mem_orthogonal_singleton_iff_inner_right,
+            inner_ridgeL2 (Nat.lt_succ_iff.1 k.isLt) (Nat.lt_succ_iff.1 l.isLt),
+            ite_eq_right (by omega)]
+        rw [real_inner_comm]
+        exact Submodule.mem_orthogonal_singleton_iff_inner_right.1 (hsub hg)
+    have hle : Submodule.span ℝ (Set.range fun k : Fin (n + 1) => ridgeL2 n k)
+        ≤ orthPolySpace (isMvWeight_ballVolume 2) n := by
+      rw [Submodule.span_le]
+      rintro _ ⟨k, rfl⟩
+      exact hmem k
+    have hfd : FiniteDimensional ℝ (orthPolySpace (isMvWeight_ballVolume 2) n) :=
+      Submodule.finiteDimensional_of_le (orthPolySpace_le (isMvWeight_ballVolume 2) n)
+    refine Submodule.eq_of_le_of_finrank_le hle ?_
+    rw [finrank_orthPolySpace_two (isMvWeight_ballVolume 2) n,
+      finrank_span_eq_card (orthonormal_ridgeL2 n).linearIndependent]
+    simp
+
+/-- **Example 14.2.2**: with `h = π/(n + 1)`, the ridge polynomials
+`φ_{n,k}(x, y) = (1/√π) U_n(x cos (k h) + y sin (k h))`, `k = 0, …, n`, are an orthonormal basis of
+`V_n^2` for the inner product `(f, g) = ∫_{𝔹₂} f g` of §14.2. -/
+theorem example_14_2_2 (n : ℕ) :
+    (Orthonormal ℝ fun k : Fin (n + 1) => ridgeL2 n k) ∧
+      Submodule.span ℝ (Set.range fun k : Fin (n + 1) => ridgeL2 n k)
+        = orthPolySpace (isMvWeight_ballVolume 2) n :=
+  ⟨orthonormal_ridgeL2 n, span_ridgeL2 n⟩
+
+/-- **Example 14.2.2**, the consequence for `Π_N^2`: the ridge polynomials
+`{φ_{m,k} : 0 ≤ k ≤ m ≤ N}` span `Π_N^2`, and by `inner_ridgeL2` they are orthonormal, so they are
+an orthonormal basis of `Π_N^2`. -/
+theorem example_14_2_2_polyLE (N : ℕ) :
+    Submodule.span ℝ {f | ∃ m ≤ N, ∃ k ≤ m, f = ridgeL2 m k}
+      = (isMvWeight_ballVolume 2).polyLE N := by
+  refine le_antisymm ?_ ?_
+  · rw [Submodule.span_le]
+    rintro f ⟨m, hm, k, -, rfl⟩
+    exact (isMvWeight_ballVolume 2).monotone_polyLE hm (ridgeL2_mem_polyLE m k)
+  · rw [← lemma_14_2_1 (isMvWeight_ballVolume 2) N]
+    refine Finset.sup_le fun m hm => ?_
+    rw [Finset.mem_range] at hm
+    rw [← span_ridgeL2 m]
+    refine Submodule.span_mono ?_
+    rintro _ ⟨k, rfl⟩
+    exact ⟨m, by omega, (k : ℕ), Nat.lt_succ_iff.1 k.isLt, rfl⟩
+
+end Ridge
 
 end AtkinsonHan.Chapter14

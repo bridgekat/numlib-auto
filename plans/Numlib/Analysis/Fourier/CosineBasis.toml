@@ -42,3 +42,6 @@ id = "cosBasis"
 
 [[node]]
 id = "dense_span_cosLp"
+
+[[node]]
+id = "integral_sin_nat_mul_sin_nat_mul"

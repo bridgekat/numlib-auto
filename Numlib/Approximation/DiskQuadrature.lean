@@ -32,6 +32,11 @@ handled by the two one-dimensional rules: Gauss–Legendre reproduces `∫_0^1 r
 ## Main results
 
 * `Quadrature.setIntegral_diskProd_eq_polar` — the polar change of variables on the disk.
+* `Quadrature.setIntegral_diskProd_eq_chords` — the Radon, or chord, decomposition of the disk
+  integral into the vertical chords `|s| ≤ √(1 − t²)`, and
+  `Quadrature.setIntegral_diskProd_rotate`, the invariance of the disk integral under a rotation
+  of the plane. Neither is used by the quadrature rule below; they are the disk geometry that a
+  ridge-polynomial computation needs, and they sit here beside the polar change of variables.
 * `Quadrature.isMvWeight_unitDisk` — Lebesgue measure on the disk is a polynomial weight.
 * `Quadrature.node_mem_Ioo` — the nodes of a positive-weight rule exact to degree `2 m − 1` on
   `(0, 1)` lie in `(0, 1)`. This is what makes the product weights positive.
@@ -266,6 +271,118 @@ theorem setIntegral_unitDisk_eq (G : ℝ × ℝ → ℝ) :
     MeasurableEquiv.finTwoArrow.measurableEmbedding G diskProd
   rw [← h]
   rfl
+
+/-! ### The chord decomposition, and rotation invariance -/
+
+/-- The chord of the closed unit disk at abscissa `t`, for `|t| ≤ 1`: the segment
+`|s| ≤ √(1 - t²)`. -/
+theorem preimage_mk_diskProd_of_abs_le {t : ℝ} (ht : |t| ≤ 1) :
+    Prod.mk t ⁻¹' diskProd = Icc (-√(1 - t ^ 2)) (√(1 - t ^ 2)) := by
+  have ht2 : t ^ 2 ≤ 1 := by nlinarith [abs_nonneg t, sq_abs t]
+  have hnn : (0 : ℝ) ≤ √(1 - t ^ 2) := Real.sqrt_nonneg _
+  have hsq : √(1 - t ^ 2) ^ 2 = 1 - t ^ 2 := Real.sq_sqrt (by linarith)
+  ext s
+  simp only [Set.mem_preimage, diskProd, Set.mem_ofPred_eq, Set.mem_Icc]
+  constructor
+  · intro h
+    have hs2 : s ^ 2 ≤ √(1 - t ^ 2) ^ 2 := by rw [hsq]; linarith
+    have habs : |s| ≤ √(1 - t ^ 2) := by
+      have hle := Real.sqrt_le_sqrt hs2
+      rwa [Real.sqrt_sq_eq_abs, Real.sqrt_sq hnn] at hle
+    exact abs_le.1 habs
+  · rintro ⟨h1, h2⟩
+    nlinarith
+
+/-- Beyond `|t| = 1` the disk has no chord. -/
+theorem preimage_mk_diskProd_of_one_lt {t : ℝ} (ht : 1 < |t|) :
+    Prod.mk t ⁻¹' diskProd = ∅ := by
+  have ht2 : 1 < t ^ 2 := by nlinarith [abs_nonneg t, sq_abs t]
+  ext s
+  simp only [Set.mem_preimage, diskProd, Set.mem_ofPred_eq, Set.mem_empty_iff_false, iff_false,
+    not_le]
+  nlinarith [sq_nonneg s]
+
+/-- The closed unit disk of `ℝ × ℝ` is compact. -/
+theorem isCompact_diskProd : IsCompact diskProd := by
+  refine Metric.isCompact_of_isClosed_isBounded (isClosed_le (by fun_prop) continuous_const) ?_
+  refine (Metric.isBounded_closedBall (x := (0 : ℝ × ℝ)) (r := 1)).subset fun q hq => ?_
+  have h0 : q.1 ^ 2 ≤ 1 := le_trans (by nlinarith [sq_nonneg q.2]) hq
+  have h1 : q.2 ^ 2 ≤ 1 := le_trans (by nlinarith [sq_nonneg q.1]) hq
+  rw [Metric.mem_closedBall, dist_zero_right, Prod.norm_def, max_le_iff, Real.norm_eq_abs,
+    Real.norm_eq_abs]
+  exact ⟨abs_le_one_iff_mul_self_le_one.2 (by nlinarith),
+    abs_le_one_iff_mul_self_le_one.2 (by nlinarith)⟩
+
+/-- **The integral over the unit disk as an iterated integral over vertical chords** — the Radon,
+or chord, decomposition: for a continuous integrand,
+`∫_{𝔹₂} F = ∫_{-1}^{1} ∫_{-√(1 - t²)}^{√(1 - t²)} F (t, s) ds dt`.
+It is Fubini's theorem applied to the indicator of the disk, whose section at `t` is the chord. -/
+theorem setIntegral_diskProd_eq_chords {F : ℝ × ℝ → ℝ} (hF : Continuous F) :
+    ∫ q in diskProd, F q
+      = ∫ t in (-1 : ℝ)..1, ∫ s in (-√(1 - t ^ 2))..√(1 - t ^ 2), F (t, s) := by
+  have hInd : Integrable (Set.indicator diskProd F) volume :=
+    (hF.locallyIntegrable.integrableOn_isCompact isCompact_diskProd).integrable_indicator
+      measurableSet_diskProd
+  have hsection : ∀ t : ℝ, ∫ s, Set.indicator diskProd F (t, s)
+      = Set.indicator (Icc (-1 : ℝ) 1)
+          (fun t => ∫ s in (-√(1 - t ^ 2))..√(1 - t ^ 2), F (t, s)) t := by
+    intro t
+    have hfun : (fun s => Set.indicator diskProd F (t, s))
+        = Set.indicator (Prod.mk t ⁻¹' diskProd) (fun s => F (t, s)) := by
+      funext s
+      by_cases hs : (t, s) ∈ diskProd
+      · rw [Set.indicator_of_mem hs, Set.indicator_of_mem (show s ∈ _ from hs)]
+      · rw [Set.indicator_of_notMem hs, Set.indicator_of_notMem (show s ∉ _ from hs)]
+    rw [hfun]
+    rcases le_or_gt |t| 1 with ht | ht
+    · have hmem : t ∈ Icc (-1 : ℝ) 1 := Set.mem_Icc.2 (abs_le.1 ht)
+      rw [preimage_mk_diskProd_of_abs_le ht, integral_indicator measurableSet_Icc,
+        MeasureTheory.integral_Icc_eq_integral_Ioc]
+      simp only [Set.indicator_of_mem hmem]
+      rw [intervalIntegral.integral_of_le (by linarith [Real.sqrt_nonneg (1 - t ^ 2)])]
+    · have hmem : t ∉ Icc (-1 : ℝ) 1 := fun h => absurd (abs_le.2 (Set.mem_Icc.1 h)) (not_le.2 ht)
+      rw [preimage_mk_diskProd_of_one_lt ht, Set.indicator_of_notMem hmem, Set.indicator_empty,
+        MeasureTheory.integral_zero]
+  rw [← integral_indicator measurableSet_diskProd, Measure.volume_eq_prod,
+    MeasureTheory.integral_prod _ (by rwa [← Measure.volume_eq_prod])]
+  simp_rw [hsection]
+  rw [integral_indicator measurableSet_Icc,
+    intervalIntegral.integral_of_le (by norm_num : (-1 : ℝ) ≤ 1),
+    MeasureTheory.integral_Icc_eq_integral_Ioc]
+
+/-- **The integral over the unit disk is invariant under a rotation of the plane.** In polar
+coordinates a rotation is a translation of the angle, and the angular integrand is `2π`-periodic,
+so the angular integral over one period does not move. -/
+theorem setIntegral_diskProd_rotate {F : ℝ × ℝ → ℝ} (hF : Continuous F) (φ : ℝ) :
+    ∫ q in diskProd, F (q.1 * Real.cos φ - q.2 * Real.sin φ, q.1 * Real.sin φ + q.2 * Real.cos φ)
+      = ∫ q in diskProd, F q := by
+  have hG : Continuous fun q : ℝ × ℝ =>
+      F (q.1 * Real.cos φ - q.2 * Real.sin φ, q.1 * Real.sin φ + q.2 * Real.cos φ) := by fun_prop
+  rw [setIntegral_diskProd_eq_polar hG, setIntegral_diskProd_eq_polar hF]
+  refine setIntegral_congr_fun measurableSet_Ioc fun r _ => ?_
+  have hpi : (-π : ℝ) ≤ π := by linarith [Real.pi_pos]
+  have hIoo : ∀ g : ℝ → ℝ, ∫ θ in Ioo (-π) π, g θ = ∫ θ in (-π)..π, g θ := fun g => by
+    rw [← MeasureTheory.integral_Ioc_eq_integral_Ioo, ← intervalIntegral.integral_of_le hpi]
+  have hper : Function.Periodic (fun θ : ℝ => r * F (r * Real.cos θ, r * Real.sin θ)) (2 * π) := by
+    intro θ; simp [Real.cos_add_two_pi, Real.sin_add_two_pi]
+  have hshift : ∀ θ : ℝ,
+      r * F (r * Real.cos θ * Real.cos φ - r * Real.sin θ * Real.sin φ,
+          r * Real.cos θ * Real.sin φ + r * Real.sin θ * Real.cos φ)
+        = (fun θ : ℝ => r * F (r * Real.cos θ, r * Real.sin θ)) (θ + φ) := by
+    intro θ
+    have h1 : r * Real.cos (θ + φ)
+        = r * Real.cos θ * Real.cos φ - r * Real.sin θ * Real.sin φ := by
+      rw [Real.cos_add]; ring
+    have h2 : r * Real.sin (θ + φ)
+        = r * Real.cos θ * Real.sin φ + r * Real.sin θ * Real.cos φ := by
+      rw [Real.sin_add]; ring
+    simp only [h1, h2]
+  rw [setIntegral_congr_fun measurableSet_Ioo fun θ _ => hshift θ, hIoo, hIoo,
+    intervalIntegral.integral_comp_add_right
+      (fun θ : ℝ => r * F (r * Real.cos θ, r * Real.sin θ)) φ]
+  have h := hper.intervalIntegral_add_eq (-π + φ) (-π)
+  rw [show -π + φ + 2 * π = π + φ by ring, show -π + 2 * π = π by ring] at h
+  exact h
 
 /-! ### The product rule -/
 

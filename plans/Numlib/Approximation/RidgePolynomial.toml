@@ -1,0 +1,28 @@
+namespace = "Approximation"
+
+[[node]]
+id = "setIntegral_diskProd_eval_U_ridge_mul"
+
+[[node]]
+id = "ridgeForm"
+
+[[node]]
+id = "eval_ridgeForm"
+
+[[node]]
+id = "totalDegree_ridgeForm_le"
+
+[[node]]
+id = "ridgePoly"
+
+[[node]]
+id = "eval_ridgePoly"
+
+[[node]]
+id = "totalDegree_ridgePoly_le"
+
+[[node]]
+id = "integral_unitDisk_ridgePoly_mul"
+
+[[node]]
+id = "integral_unitDisk_ridgePoly_mul_angle"

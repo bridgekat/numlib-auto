@@ -44,3 +44,18 @@ id = "integral_Ioo_cos_pow_mul_sin_pow"
 
 [[node]]
 id = "exists_diskRule"
+
+[[node]]
+id = "preimage_mk_diskProd_of_abs_le"
+
+[[node]]
+id = "preimage_mk_diskProd_of_one_lt"
+
+[[node]]
+id = "isCompact_diskProd"
+
+[[node]]
+id = "setIntegral_diskProd_eq_chords"
+
+[[node]]
+id = "setIntegral_diskProd_rotate"

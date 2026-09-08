@@ -1,0 +1,14 @@
+[[node]]
+id = "integral_neg_one_one_eq_integral_cos"
+
+[[node]]
+id = "Polynomial.Chebyshev.hasDerivAt_eval_T_add_one"
+
+[[node]]
+id = "Polynomial.Chebyshev.integral_eval_U"
+
+[[node]]
+id = "Polynomial.Chebyshev.integral_eval_U_mul_eval_U_sqrt"
+
+[[node]]
+id = "Polynomial.Chebyshev.integral_eval_U_ridge_chord"

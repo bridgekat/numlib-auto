@@ -5,6 +5,7 @@ Natural home: `Mathlib.Algebra.MvPolynomial.Degrees`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
 import Mathlib.Algebra.MvPolynomial.Monad
+import Mathlib.Algebra.Polynomial.AlgebraMap
 import Mathlib.RingTheory.MvPolynomial.Basic
 
 /-!
@@ -24,6 +25,7 @@ most `n` onto the polynomials of degree at most `n`.
 ## Main results
 
 * `MvPolynomial.totalDegree_bind₁_le`: `deg (bind₁ f p) ≤ k · deg p`.
+* `MvPolynomial.totalDegree_aeval_le`: `deg (aeval q p) ≤ k · deg p` for a one-variable `p`.
 * `MvPolynomial.totalDegree_bind₁_eq_of_leftInverse`: exact preservation for an invertible
   substitution by polynomials of degree at most one.
 * `MvPolynomial.restrictTotalDegree_map_bind₁`: `Π_n` maps onto `Π_n`.
@@ -52,6 +54,20 @@ theorem totalDegree_bind₁_le {k : ℕ} {f : σ → MvPolynomial τ R} (hf : �
   refine (Finset.sum_le_sum hterm).trans ?_
   rw [← Finset.mul_sum]
   exact Nat.mul_le_mul_left _ (le_totalDegree hm)
+
+/-- **The total degree of a one-variable polynomial evaluated at a multivariable one.**
+Substituting a polynomial of total degree at most `k` for the variable of a one-variable polynomial
+of degree `d` gives total degree at most `k · d`. It is the one-variable counterpart of
+`MvPolynomial.totalDegree_bind₁_le`, and the case `k = 1` says that a *ridge* polynomial — a
+one-variable polynomial of a linear form — has the degree of the one-variable polynomial. -/
+theorem totalDegree_aeval_le {k : ℕ} {q : MvPolynomial τ R} (hq : q.totalDegree ≤ k)
+    (p : Polynomial R) : (Polynomial.aeval q p).totalDegree ≤ k * p.natDegree := by
+  rw [Polynomial.aeval_eq_sum_range]
+  refine totalDegree_finsetSum_le fun i hi => ?_
+  refine (totalDegree_smul_le _ _).trans ((totalDegree_pow _ _).trans ?_)
+  rw [Finset.mem_range] at hi
+  calc i * q.totalDegree ≤ p.natDegree * k := Nat.mul_le_mul (by omega) hq
+    _ = k * p.natDegree := Nat.mul_comm _ _
 
 /-- A substitution by polynomials of total degree at most one does not raise the total degree. -/
 theorem totalDegree_bind₁_le_of_totalDegree_le_one {f : σ → MvPolynomial τ R}

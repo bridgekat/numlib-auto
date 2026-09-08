@@ -11,3 +11,6 @@ id = "totalDegree_bind₁_eq_of_leftInverse"
 
 [[node]]
 id = "restrictTotalDegree_map_bind₁"
+
+[[node]]
+id = "totalDegree_aeval_le"
