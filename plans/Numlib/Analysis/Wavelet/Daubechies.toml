@@ -1,0 +1,83 @@
+namespace = "Daubechies"
+
+[[node]]
+id = "cascade"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (4.5.5)"
+
+[[node]]
+id = "cascade_sub"
+
+[[node]]
+id = "cascade_continuous"
+
+[[node]]
+id = "cascade_left"
+
+[[node]]
+id = "cascade_right"
+
+[[node]]
+id = "IsApprox"
+
+[[node]]
+id = "IsApprox.cascade"
+
+[[node]]
+id = "cascade_bound"
+
+[[node]]
+id = "hat"
+
+[[node]]
+id = "approx0"
+
+[[node]]
+id = "approx0_isApprox"
+
+[[node]]
+id = "approxSeq"
+
+[[node]]
+id = "delta"
+
+[[node]]
+id = "delta_succ"
+
+[[node]]
+id = "delta_sum"
+
+[[node]]
+id = "scalingFun"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (4.5.5)–(4.5.7)"
+
+[[node]]
+id = "approxSeq_tendsto"
+
+[[node]]
+id = "scalingFun_continuous"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (4.5.7)"
+
+[[node]]
+id = "scalingFun_isApprox"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (4.5.6)–(4.5.7)"
+
+[[node]]
+id = "scalingFun_refine"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (4.5.5)"
+
+[[node]]
+id = "scalingFun_one_half"
+
+[[node]]
+id = "scalingFun_three_halves"
+
+[[node]]
+id = "scalingFun_five_halves"
+
+[[node]]
+id = "scalingFun_support"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (4.5.7)"
+
+[[node]]
+id = "exists_scalingFun"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (4.5.5)–(4.5.7)"

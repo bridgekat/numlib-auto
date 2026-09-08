@@ -1,0 +1,14 @@
+desc = '''
+Complex analysis that this project needed and Mathlib lacks (natural home:
+`Mathlib.Analysis.Complex`). Mathlib has a great deal of plane potential theory already — harmonic
+functions on an inner product space, that the real part of a holomorphic function is harmonic, and
+that a harmonic function on a ball is the real part of a holomorphic one — but only *post*-
+composition with a linear map is known to preserve harmonicity.
+
+What is missing, and what this branch adds, is the pre-composition half: harmonicity in the plane
+survives any conformal or anticonformal change of variable. That is the fact that makes conformal
+mapping a tool for Laplace's equation, and it is what the Kelvin transform of a planar exterior
+problem needs.
+
+Serves Atkinson–Han, *Theoretical Numerical Analysis*, §13.1.2.
+'''

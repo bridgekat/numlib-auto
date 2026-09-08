@@ -1,0 +1,14 @@
+[[node]]
+id = "zmultiplesEquivInt"
+
+[[node]]
+id = "periodise"
+
+[[node]]
+id = "integral_periodise"
+
+[[node]]
+id = "integral_mul_periodise"
+
+[[node]]
+id = "integral_fourierChar_mul_periodise"

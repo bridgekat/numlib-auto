@@ -1,0 +1,50 @@
+[[node]]
+id = "sin_nat_mul_eq"
+
+[[node]]
+id = "cos_half_mul_sin_nat_mul"
+
+[[node]]
+id = "integral_log_sin_half_mul_cos"
+
+[[node]]
+id = "integral_log_sin_half_mul_sin"
+
+[[node]]
+id = "integral_log_sin_half"
+
+[[node]]
+id = "logChord"
+
+[[node]]
+id = "integral_logChord_mul_cos"
+
+[[node]]
+id = "integral_logChord_mul_sin"
+
+[[node]]
+id = "logSingleLayerKernel"
+
+[[node]]
+id = "logSingleLayer"
+
+[[node]]
+id = "logSingleLayerC"
+
+[[node]]
+id = "logSingleLayer_cos"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (13.2.37)"
+
+[[node]]
+id = "logSingleLayer_sin"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (13.2.37)"
+
+[[node]]
+id = "logSingleLayer_cos_int"
+
+[[node]]
+id = "logSingleLayer_sin_int"
+
+[[node]]
+id = "logSingleLayerC_fourier"
+source = "Atkinson–Han, Theoretical Numerical Analysis, (13.2.32) and (13.2.37)"

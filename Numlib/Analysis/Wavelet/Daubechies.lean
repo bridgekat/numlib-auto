@@ -97,12 +97,15 @@ theorem cascade_apply (f : ℝ → ℝ) (x : ℝ) :
     cascade f x = (1 + √3) / 4 * f (2 * x) + (3 + √3) / 4 * f (2 * x - 1)
       + (3 - √3) / 4 * f (2 * x - 2) + (1 - √3) / 4 * f (2 * x - 3) := rfl
 
+/-- The cascade operator is linear, and in particular commutes with subtraction. This is what makes
+the *increments* of the iteration satisfy the same recurrence as the iterates themselves. -/
 theorem cascade_sub (f g : ℝ → ℝ) :
     cascade (fun x => f x - g x) = fun x => cascade f x - cascade g x := by
   funext x
   simp only [cascade_apply]
   ring
 
+/-- The cascade operator preserves continuity, being a finite linear combination of dilates. -/
 theorem cascade_continuous {f : ℝ → ℝ} (hf : Continuous f) : Continuous (cascade f) := by
   change Continuous fun x => cascade f x
   simp only [cascade_apply]
@@ -321,6 +324,8 @@ def approx0 (x : ℝ) : ℝ := (1 + √3) / 2 * hat (x - 1) + (1 - √3) / 2 * h
 theorem approx0_apply (x : ℝ) :
     approx0 x = (1 + √3) / 2 * hat (x - 1) + (1 - √3) / 2 * hat (x - 2) := rfl
 
+/-- The starting function of the iteration already satisfies every invariant, which is the point of
+placing its two hat functions at `1` and `2` with the prescribed heights. -/
 theorem approx0_isApprox : IsApprox approx0 := by
   refine ⟨?_, ?_, ?_, ?_, ?_, ?_⟩
   · change Continuous fun x => (1 + √3) / 2 * hat (x - 1) + (1 - √3) / 2 * hat (x - 2)
@@ -391,6 +396,8 @@ def delta (n : ℕ) (x : ℝ) : ℝ := approxSeq (n + 1) x - approxSeq n x
 
 theorem delta_apply (n : ℕ) (x : ℝ) : delta n x = approxSeq (n + 1) x - approxSeq n x := rfl
 
+/-- The increments obey the cascade recurrence themselves, by linearity of `cascade`. This is what
+turns the contraction estimate `cascade_bound` into geometric decay. -/
 theorem delta_succ (n : ℕ) : delta (n + 1) = cascade (delta n) := by
   have h : delta n = fun x => approxSeq (n + 1) x - approxSeq n x := rfl
   rw [h, cascade_sub]
@@ -407,6 +414,8 @@ theorem delta_zero_of_ge (n : ℕ) (x : ℝ) (hx : 3 ≤ x) : delta n x = 0 := b
   rw [delta_apply, (approxSeq_isApprox (n + 1)).zero_of_ge x hx,
     (approxSeq_isApprox n).zero_of_ge x hx, sub_zero]
 
+/-- The increments lie in the plane `v₀ + v₁ + v₂ = 0`, both iterates having the same partition of
+unity. This is the subspace on which the two cascade matrices contract. -/
 theorem delta_sum (n : ℕ) {x : ℝ} (hx : x ∈ Icc (0 : ℝ) 1) :
     delta n x + delta n (x + 1) + delta n (x + 2) = 0 := by
   have h1 := (approxSeq_isApprox (n + 1)).sum_eq_one x hx
@@ -514,6 +523,8 @@ private theorem summable_delta (x : ℝ) : Summable (fun n : ℕ => delta n x) :
   exact Summable.of_norm_bounded summable_delta_bound (fun n => by
     rw [Real.norm_eq_abs]; exact hB n x)
 
+/-- The cascade iterates converge pointwise to the scaling function, the telescoping sum of the
+increments being exactly `approxSeq N - approx0`. -/
 theorem approxSeq_tendsto (x : ℝ) :
     Filter.Tendsto (fun N : ℕ => approxSeq N x) Filter.atTop (nhds (scalingFun x)) := by
   have hsum := (summable_delta x).hasSum.tendsto_sum_nat
@@ -532,6 +543,8 @@ theorem approxSeq_tendsto (x : ℝ) :
   rw [scalingFun_apply]
   simpa only [he] using h2
 
+/-- The scaling function is continuous: the increments are bounded by a geometric series, so the
+cascade iterates converge *uniformly*. -/
 theorem scalingFun_continuous : Continuous scalingFun := by
   obtain ⟨B, -, hB⟩ := exists_delta_bound
   refine (approx0_isApprox.continuous).add (continuous_tsum delta_continuous
@@ -539,6 +552,8 @@ theorem scalingFun_continuous : Continuous scalingFun := by
   rw [Real.norm_eq_abs]
   exact hB n x
 
+/-- The limit inherits every invariant of the iteration: it is continuous, vanishes off `[0,3]`,
+takes the values `(1±√3)/2` at `1` and `2`, and satisfies the partition of unity. -/
 theorem scalingFun_isApprox : IsApprox scalingFun := by
   refine ⟨scalingFun_continuous, ?_, ?_, ?_, ?_, ?_⟩
   · intro x hx
@@ -583,6 +598,8 @@ theorem scalingFun_refine (x : ℝ) :
 theorem cascade_scalingFun (x : ℝ) : cascade scalingFun x = scalingFun x :=
   (scalingFun_refine x).symm
 
+/-- `φ(1/2) = (2 + √3)/4`, read off the refinement equation at `1/2`, where only the term
+`f(2x - 1) = f 0` and the term `f(2x) = f 1` survive. -/
 theorem scalingFun_one_half : scalingFun (1 / 2) = (2 + √3) / 4 := by
   have h := scalingFun_refine (1 / 2)
   rw [show (2 : ℝ) * (1 / 2) = 1 by norm_num, show (1 : ℝ) - 1 = 0 by norm_num,
@@ -593,6 +610,7 @@ theorem scalingFun_one_half : scalingFun (1 / 2) = (2 + √3) / 4 := by
   rw [h]
   linear_combination sqrt3_mul_self / 8
 
+/-- `φ(3/2) = 0`, read off the refinement equation at `3/2`. -/
 theorem scalingFun_three_halves : scalingFun (3 / 2) = 0 := by
   have h := scalingFun_refine (3 / 2)
   rw [show (2 : ℝ) * (3 / 2) = 3 by norm_num, show (3 : ℝ) - 1 = 2 by norm_num,
@@ -602,6 +620,9 @@ theorem scalingFun_three_halves : scalingFun (3 / 2) = 0 := by
   rw [h]
   linear_combination (-1 / 4 : ℝ) * sqrt3_mul_self
 
+/-- `φ(5/2) = (2 - √3)/4`, read off the refinement equation at `5/2`. Together with
+`scalingFun_one_half` and `scalingFun_three_halves` this gives the three half-integer values that
+the span argument behind `scalingFun_support` needs. -/
 theorem scalingFun_five_halves : scalingFun (5 / 2) = (2 - √3) / 4 := by
   have h := scalingFun_refine (5 / 2)
   rw [show (2 : ℝ) * (5 / 2) = 5 by norm_num, show (5 : ℝ) - 1 = 4 by norm_num,

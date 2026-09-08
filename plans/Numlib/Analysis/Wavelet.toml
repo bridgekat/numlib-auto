@@ -17,11 +17,20 @@ the high-pass filter `q_k = (-1)^k p_{1-k}` an orthonormal *basis* of `ℓ²(ℤ
 into `V_j` and the wavelet space. Completeness over all levels then follows from the axioms alone.
 No Fourier transform appears anywhere.
 
-What is *not* planned is the existence theory: the construction of a scaling function from a
+The existence theory splits in two, and only one half is here. `Wavelet/Daubechies` constructs the
+`D4` scaling function of Atkinson–Han (4.5.5)–(4.5.7) — the fixed point of the cascade operator of
+one explicit four-tap mask — and determines its support exactly. That needs no Fourier analysis at
+all: the cascade operator is not a supremum-norm contraction, but on the plane where the increments
+of the iteration live the two matrices driving it have norm at most `√3/2` in an explicit weighted
+norm, and that elementary estimate is the whole of it.
+
+What is *not* planned is the general half: the construction of a scaling function from an arbitrary
 prescribed sequence of dilation coefficients, and with it Daubechies' compactly supported families
 and the Fourier-side smoothness theory. Atkinson–Han state those without proof and refer to
 Daubechies, and they do need the harmonic analysis of the symbol `m₀` — the periodisation of
-`|φ̂|²`, and the convergence of `∏_{j≥1} m₀(2^{-j}ξ)` — which is a project of its own. Note that the
-condition above is *not* sufficient for them: see the `scaling_exists` node of
+`|φ̂|²`, and the convergence of `∏_{j≥1} m₀(2^{-j}ξ)` — which is a project of its own. Of that
+theory the backbone has only the periodisation identity,
+`Numlib/Analysis/Fourier/Periodisation`. Note that the condition above is *not* sufficient for the
+general statement: see the `scaling_exists` node of
 `NumlibSurface/AtkinsonHan/Chapter04/Section05`.
 '''
