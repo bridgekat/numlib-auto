@@ -1,3 +1,4 @@
+import Mathlib.Data.Matrix.ColumnRowPartitioned
 import Numlib.Analysis.InnerProductSpace.Coercive
 import Numlib.Analysis.InnerProductSpace.Energy
 import Numlib.Analysis.Matrix.ToEuclideanLin
@@ -10,9 +11,9 @@ import NumlibSurface.SaadSparse.Chapter01.Section12
 # Saad §5.1–5.2: projection methods
 
 Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §5.1–5.2: the general projection step (5.1)–(5.7), the nonsingularity of `WᵀAV` (Proposition
-5.1), the optimality characterizations (Propositions 5.2–5.5), the operators `P_K`, `Q_K^L`, `A_m`
-of §5.2.3, Proposition 5.6 and the error identity behind Theorem 5.7.
+2003, §5.1–5.2: the general projection step (5.1)–(5.7), the nonsingularity of `WᵀAV` (Example 5.2
+and Proposition 5.1), the optimality characterizations (Propositions 5.2–5.5), the operators `P_K`,
+`Q_K^L`, `A_m` of §5.2.3, Proposition 5.6 and the error identity behind Theorem 5.7.
 
 The book's condition (5.5)–(5.6) is `SaadSparse.Chapter05.IsProjectionApprox`; it is the backbone's
 `IsPetrovGalerkin` for `Matrix.toEuclideanLin A` (`isProjectionApprox_iff`), so that every
@@ -129,6 +130,34 @@ theorem isUnit_transpose_mul_mul_iff (hV : V.IsBasisOf K) (hW : W.IsBasisOf L) :
     rwa [Pi.sub_apply, sub_eq_zero] at hi
 
 end Bases
+
+/-! ### Example 5.2 -/
+
+/-- Saad, Example 5.2 (§5.1.2): the nonsingularity of `WᵀAV` presupposed by (5.7) does not follow
+from that of `A`.  Take `A = [[O, I], [I, I]]` of order `2m` and `V = W = [e₁, …, e_m]`.  The
+columns of `V` are orthonormal, so `V` is a basis of `K = L = span {e₁, …, e_m}`, and `A` is
+nonsingular; yet `VᵀAV` is precisely the `O` block in the upper-left corner of `A`, hence singular.
+In the terms of `isUnit_transpose_mul_mul_iff`, `AV = [e_{m+1}, …, e_{2m}]` is orthogonal to `L`. -/
+theorem example_5_2 (hm : 0 < m)
+    {A : Matrix (Fin m ⊕ Fin m) (Fin m ⊕ Fin m) ℝ} (hA : A = fromBlocks 0 1 1 1)
+    {V : Matrix (Fin m ⊕ Fin m) (Fin m) ℝ} (hV : V = fromRows 1 0) :
+    IsUnit A ∧ Vᵀ * V = 1 ∧ Vᵀ * A * V = 0 ∧ ¬IsUnit (Vᵀ * A * V) := by
+  have hVt : Vᵀ = fromCols 1 0 := by
+    rw [hV, transpose_fromRows, transpose_one, transpose_zero]
+  have hAV : A * V = fromRows 0 1 := by
+    rw [hA, hV, fromBlocks_mul_fromRows]; simp
+  have hzero : Vᵀ * A * V = 0 := by
+    rw [Matrix.mul_assoc, hAV, hVt, fromCols_mul_fromRows]; simp
+  refine ⟨?_, ?_, hzero, ?_⟩
+  · have hinv : A * fromBlocks (-1) 1 1 0 = 1 := by
+      rw [hA, fromBlocks_multiply]; simp
+    have hinv' : (fromBlocks (-1) 1 1 0 : Matrix (Fin m ⊕ Fin m) (Fin m ⊕ Fin m) ℝ) * A = 1 := by
+      rw [hA, fromBlocks_multiply]; simp
+    exact ⟨⟨A, fromBlocks (-1) 1 1 0, hinv, hinv'⟩, rfl⟩
+  · rw [hVt, hV, fromCols_mul_fromRows]; simp
+  · have : Nonempty (Fin m) := Fin.pos_iff_nonempty.mp hm
+    rw [hzero, Matrix.isUnit_iff_isUnit_det, det_zero]
+    exact not_isUnit_zero
 
 /-! ### Proposition 5.1 -/
 
