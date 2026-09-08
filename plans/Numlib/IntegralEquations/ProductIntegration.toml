@@ -43,6 +43,12 @@ id = "norm_productCLM_le"
 id = "productCLM_one"
 
 [[node]]
+id = "admissibleKernelCLM_sub_productCLM_apply"
+
+[[node]]
+id = "norm_admissibleKernelCLM_sub_productCLM_le"
+
+[[node]]
 id = "tendsto_productCLM"
 
 [[node]]

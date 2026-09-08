@@ -36,6 +36,11 @@ convergent** to the operator of the kernel `l g`, so that the perturbation theor
   bound `IntegralOperator.rowBound` of the singular factor.
 * `IntegralOperator.productCLM_one` — with no approximation the rule is the operator of the kernel
   `l g` itself, which is admissible by `IntegralOperator.IsAdmissibleKernel.mul_continuousMap`.
+* `IntegralOperator.admissibleKernelCLM_sub_productCLM_apply` and
+  `IntegralOperator.norm_admissibleKernelCLM_sub_productCLM_le` — the **consistency error**
+  `K - Kₙ`: pointwise it integrates the approximation error `w_x - P w_x` of the row function
+  against the singular factor, so `‖K u - Kₙ u‖_∞ ≤ c_g sup_x ‖w_x - P w_x‖`.  This is what a
+  concrete rule has to supply: an interpolation error for the row functions, uniform in the row.
 * `IntegralOperator.tendsto_productCLM` — the family converges pointwise to that operator.  The
   estimate `|Kₙ u (x) - K u (x)| ≤ c_g ‖P (l (x, ·) u (·)) - l (x, ·) u (·)‖` is uniform in `x`
   because the row functions form a *compact* subset of `C(X, ℝ)`, on which a pointwise convergent
@@ -326,6 +331,49 @@ theorem productCLM_one (hg : IsAdmissibleKernel ν g) (l : C(X × X, ℝ)) :
   refine integral_congr_ae (Eventually.of_forall fun y => ?_)
   simp only [one_apply_eq_self, prodFactor_apply]
   ring
+
+/-- **The consistency error of a product rule, pointwise**: at every base point the difference
+between the exact operator of the kernel `l g` and the product rule built from `P` is the
+approximation error of the row function integrated against the singular factor,
+
+`(K u - K_n u) (x) = ∫ g (x, y) (w_x - P w_x) (y) dy`,   `w_x = l (x, ·) u (·)`.
+
+Nothing but linearity of the integral is used; the whole consistency estimate
+`IntegralOperator.norm_admissibleKernelCLM_sub_productCLM_le` follows from it.  This is the step
+that turns an interpolation error into an operator error in Kendall Atkinson and Weimin Han,
+*Theoretical Numerical Analysis: A Functional Analysis Framework*, 3rd edition, Springer, 2009
+([han2009theoretical]), §12.5. -/
+theorem admissibleKernelCLM_sub_productCLM_apply (hg : IsAdmissibleKernel ν g) (l : C(X × X, ℝ))
+    (P : C(X, ℝ) →L[ℝ] C(X, ℝ)) (u : C(X, ℝ)) (x : X) :
+    (admissibleKernelCLM (hg.mul_continuousMap l) u - productCLM hg l P u) x
+      = ∫ y, g (x, y) * (prodFactor l x u - P (prodFactor l x u)) y ∂ν := by
+  rw [ContinuousMap.sub_apply, ← productCLM_one hg l, productCLM_apply, productCLM_apply,
+    ← integral_sub (hg.integrable_mul _ x) (hg.integrable_mul _ x)]
+  refine integral_congr_ae (Eventually.of_forall fun y => ?_)
+  simp only [ContinuousMap.sub_apply, one_apply_eq_self]
+  ring
+
+/-- **The consistency error of a product rule is the approximation error of its row functions**:
+if `P` reproduces every row function `w_x = l (x, ·) u (·)` to within `C`, then
+
+`‖K u - K_n u‖_∞ ≤ c_g C`,
+
+`c_g` being the row bound `IntegralOperator.rowBound` of the singular factor.  Combined with a
+uniform bound on `‖(μ - K_n)⁻¹‖` — the stability half — this is what turns the interpolation error
+of a concrete rule into the convergence rate of `u_n` to `u` in Kendall Atkinson and Weimin Han,
+*Theoretical Numerical Analysis: A Functional Analysis Framework*, 3rd edition, Springer, 2009
+([han2009theoretical]), §12.5, both for the product trapezoidal rule and for graded-mesh product
+integration. -/
+theorem norm_admissibleKernelCLM_sub_productCLM_le (hg : IsAdmissibleKernel ν g)
+    (l : C(X × X, ℝ)) (P : C(X, ℝ) →L[ℝ] C(X, ℝ)) (u : C(X, ℝ)) {C : ℝ} (hC : 0 ≤ C)
+    (hP : ∀ x : X, ‖prodFactor l x u - P (prodFactor l x u)‖ ≤ C) :
+    ‖admissibleKernelCLM (hg.mul_continuousMap l) u - productCLM hg l P u‖
+      ≤ rowBound ν g * C := by
+  rw [ContinuousMap.norm_le _ (mul_nonneg hg.rowBound_nonneg hC)]
+  intro x
+  rw [admissibleKernelCLM_sub_productCLM_apply, Real.norm_eq_abs]
+  exact (hg.abs_integral_mul_le _ x).trans
+    (mul_le_mul (hg.le_rowBound x) (hP x) (norm_nonneg _) hg.rowBound_nonneg)
 
 /-- **The product operators converge pointwise to the exact operator** whenever the approximations
 `P n` do.  The estimate `|K_n u (x) - K u (x)| ≤ c_g ‖P_n w_x - w_x‖` is uniform in `x` because

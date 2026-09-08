@@ -153,7 +153,8 @@ uniformly in `x`,
 
 `‖u - u_n‖_∞ ≤ c (h_n²/8) M₂`.
 
-The interpolation error `‖z - P_n z‖ ≤ h² ‖z''‖/8` is `norm_sub_piecewiseLinearInterpCLM_le`, and
+The interpolation error `‖z - P_n z‖ ≤ h² ‖z''‖/8` is `norm_sub_piecewiseLinearInterpCLM_le`, which
+`norm_admissibleKernelCLM_sub_productCLM_le` turns into the consistency error `‖K u - K_n u‖`, and
 the constant `c` absorbs the uniform bound on `‖(λ - K_n)⁻¹‖` and the row bound `c_g` of the
 singular factor. -/
 theorem example_12_5_2 {g : Set.Icc a b × Set.Icc a b → ℝ}
@@ -180,7 +181,6 @@ theorem example_12_5_2 {g : Set.Icc a b × Set.Icc a b → ℝ}
           C(Set.Icc a b, ℝ) →L[ℝ] C(Set.Icc a b, ℝ)) un = f →
         ‖u - un‖ ≤ c * (h n ^ 2 / 8 * M₂) := by
   classical
-  have hc0 : (0 : ℝ) ≤ rowBound (iccMeasure a b) g := hg.rowBound_nonneg
   set P : ℕ → C(Set.Icc a b, ℝ) →L[ℝ] C(Set.Icc a b, ℝ) :=
     fun n => piecewiseLinearInterpCLM (N n) (y n) with hPdef
   have hnormP : ∀ n, ‖P n‖ = 1 := fun n =>
@@ -194,39 +194,19 @@ theorem example_12_5_2 {g : Set.Icc a b × Set.Icc a b → ℝ}
   obtain ⟨en, hencoe, hennorm, herr⟩ := hn
   have hsolve : ∀ f : C(Set.Icc a b, ℝ), ∃! un : C(Set.Icc a b, ℝ),
       (μ • 1 - productCLM hg l (P n) :
-        C(Set.Icc a b, ℝ) →L[ℝ] C(Set.Icc a b, ℝ)) un = f := by
-    intro f
-    have hiff : ∀ z : C(Set.Icc a b, ℝ), (en z = f)
-        ↔ ((μ • 1 - productCLM hg l (P n) :
-            C(Set.Icc a b, ℝ) →L[ℝ] C(Set.Icc a b, ℝ)) z = f) := by
-      intro z
-      rw [← hencoe, ContinuousLinearEquiv.coe_coe]
-    have huniq : ∃! z : C(Set.Icc a b, ℝ), en z = f :=
-      ⟨en.symm f, en.apply_symm_apply f, fun z hz => by rw [← hz, en.symm_apply_apply]⟩
-    simpa only [hiff] using huniq
+        C(Set.Icc a b, ℝ) →L[ℝ] C(Set.Icc a b, ℝ)) un = f := fun f => by
+    simpa only [← hencoe, ContinuousLinearEquiv.coe_coe] using en.bijective.existsUnique f
   refine ⟨hsolve, fun G M₂ f u un hG hGval hM₂ hu hun => ?_⟩
   -- the consistency error is the interpolation error of `l (x, ·) u (·)`, uniformly in `x`
+  have hM0 : (0 : ℝ) ≤ h n ^ 2 / 8 * M₂ := by
+    have h1 : (0 : ℝ) ≤ M₂ :=
+      le_trans (abs_nonneg _) (hM₂ (y n 0) ((y n 0 : ℝ)) (y n 0).2)
+    positivity
   have hcons : ‖admissibleKernelCLM (hg.mul_continuousMap l) u - productCLM hg l (P n) u‖
-      ≤ rowBound (iccMeasure a b) g * (h n ^ 2 / 8 * M₂) := by
-    have hM0 : (0 : ℝ) ≤ h n ^ 2 / 8 * M₂ := by
-      have h1 : (0 : ℝ) ≤ M₂ :=
-        le_trans (abs_nonneg _) (hM₂ (y n 0) ((y n 0 : ℝ)) (y n 0).2)
-      positivity
-    rw [ContinuousMap.norm_le _ (by positivity)]
-    intro x
-    have hdiff : (admissibleKernelCLM (hg.mul_continuousMap l) u - productCLM hg l (P n) u) x
-        = ∫ z, g (x, z) * (prodFactor l x u - P n (prodFactor l x u)) z ∂iccMeasure a b := by
-      rw [ContinuousMap.sub_apply, ← productCLM_one hg l, productCLM_apply, productCLM_apply,
-        ← integral_sub (hg.integrable_mul _ x) (hg.integrable_mul _ x)]
-      refine integral_congr_ae (Filter.Eventually.of_forall fun z => ?_)
-      simp only [ContinuousMap.sub_apply, one_apply_eq_self]
-      ring
-    rw [hdiff, Real.norm_eq_abs]
-    refine (hg.abs_integral_mul_le _ x).trans ?_
-    have hinterp : ‖prodFactor l x u - P n (prodFactor l x u)‖ ≤ h n ^ 2 / 8 * M₂ :=
+      ≤ rowBound (iccMeasure a b) g * (h n ^ 2 / 8 * M₂) :=
+    norm_admissibleKernelCLM_sub_productCLM_le hg l (P n) u hM0 fun x =>
       norm_sub_piecewiseLinearInterpCLM_le (hstep n) (hfirst n) (hlast n) (hG x)
         (f := prodFactor l x u) (fun t => hGval x t) (hmesh n) (hM₂ x)
-    exact mul_le_mul (hg.le_rowBound x) hinterp (norm_nonneg _) hc0
   calc ‖u - un‖
       ≤ c * ‖admissibleKernelCLM (hg.mul_continuousMap l) u - productCLM hg l (P n) u‖ :=
         herr f u un hu hun
@@ -291,7 +271,8 @@ solvable and
 `‖u - u_n‖_∞ ≤ c n^{-(m+1)}`   (12.5.41).
 
 The proof is the book's: `theorem_12_5_1` gives `‖u - u_n‖ ≤ c ‖K u - K_n u‖`, the consistency
-error is the interpolation error of the row functions integrated against `g`, and
+error is the interpolation error of the row functions integrated against `g`, which is
+`norm_admissibleKernelCLM_sub_productCLM_le`, and
 `norm_sub_piecewisePolyInterpCLM_le_gradedSym` — Lemma 12.5.5 on the two-sided mesh — bounds
 that by `c n^{-(m+1)}` uniformly in the row.  The mesh is `isPanelNodes_gradedSym`, the width of
 its panels `sub_le_gradedSym`, and the Lebesgue bound of its nodes
@@ -341,7 +322,6 @@ theorem theorem_12_5_6 {a b : ℝ} (hab : a < b) {m : ℕ} {γ q : ℝ}
     linarith
   have hS0 : (0 : ℝ) < (b - a) / 2 := by linarith
   have hfact0 : (0 : ℝ) < ((m + 1).factorial : ℝ) := by exact_mod_cast Nat.factorial_pos (m + 1)
-  have hc0 : (0 : ℝ) ≤ rowBound (iccMeasure a b) g := hg.rowBound_nonneg
   -- the nodes sit at fixed fractions of every panel — at the reference partition `ν` on the
   -- panels of the left half and at its reflection on those of the right — so a single Lebesgue
   -- bound, depending on `ν` alone, serves every `p`
@@ -414,42 +394,20 @@ theorem theorem_12_5_6 {a b : ℝ} (hab : a < b) {m : ℕ} {γ q : ℝ}
   obtain ⟨en, hencoe, hennorm, herr⟩ := hp
   have hsolve : ∀ h : C(Set.Icc a b, ℝ), ∃! un : C(Set.Icc a b, ℝ),
       (lam • 1 - productCLM hg l (piecewisePolyInterpCLM (2 * p + 1) m (x p) (node p)) :
-        C(Set.Icc a b, ℝ) →L[ℝ] C(Set.Icc a b, ℝ)) un = h := by
-    intro h
-    have hiff : ∀ z : C(Set.Icc a b, ℝ), (en z = h)
-        ↔ ((lam • 1 - productCLM hg l (piecewisePolyInterpCLM (2 * p + 1) m (x p) (node p)) :
-            C(Set.Icc a b, ℝ) →L[ℝ] C(Set.Icc a b, ℝ)) z = h) := by
-      intro z
-      rw [← hencoe, ContinuousLinearEquiv.coe_coe]
-    have huniq : ∃! z : C(Set.Icc a b, ℝ), en z = h :=
-      ⟨en.symm h, en.apply_symm_apply h, fun z hz => by rw [← hz, en.symm_apply_apply]⟩
-    simpa only [hiff] using huniq
+        C(Set.Icc a b, ℝ) →L[ℝ] C(Set.Icc a b, ℝ)) un = h := fun h => by
+    simpa only [← hencoe, ContinuousLinearEquiv.coe_coe] using en.bijective.existsUnique h
   refine ⟨hsolve, fun un hun => ?_⟩
   -- the consistency error is the interpolation error of the rows, uniformly in the row
   have hcast : ((p + 1 : ℕ) : ℝ) = (p : ℝ) + 1 := by push_cast; ring
   have hcons : ‖admissibleKernelCLM (hg.mul_continuousMap l) u
         - productCLM hg l (piecewisePolyInterpCLM (2 * p + 1) m (x p) (node p)) u‖
-      ≤ rowBound (iccMeasure a b) g * (Cst / ((p : ℝ) + 1) ^ (m + 1)) := by
-    have hpos : (0 : ℝ) < ((p : ℝ) + 1) ^ (m + 1) := by positivity
-    rw [ContinuousMap.norm_le _ (by positivity)]
-    intro z
-    have hdiff : (admissibleKernelCLM (hg.mul_continuousMap l) u
-        - productCLM hg l (piecewisePolyInterpCLM (2 * p + 1) m (x p) (node p)) u) z
-        = ∫ y, g (z, y) * (prodFactor l z u
-            - piecewisePolyInterpCLM (2 * p + 1) m (x p) (node p) (prodFactor l z u)) y
-          ∂iccMeasure a b := by
-      rw [ContinuousMap.sub_apply, ← productCLM_one hg l, productCLM_apply, productCLM_apply,
-        ← integral_sub (hg.integrable_mul _ z) (hg.integrable_mul _ z)]
-      refine integral_congr_ae (Filter.Eventually.of_forall fun y => ?_)
-      simp only [ContinuousMap.sub_apply, one_apply_eq_self]
-      ring
-    rw [hdiff, Real.norm_eq_abs]
-    refine (hg.abs_integral_mul_le _ z).trans ?_
-    have hint := norm_sub_piecewisePolyInterpCLM_le_gradedSym (r := p + 1) hab
-      (Nat.succ_pos p) (by omega) hγ0 hγ1 hq hν0 hν1 hνmono (hxL p) (hxR p) (hnodeL p) (hnodeR p)
-      (hΛb p) (hW z) (hWH z) (hWC z) (hWL z) (hWR z)
-    rw [hcast] at hint
-    exact mul_le_mul (hg.le_rowBound z) hint (norm_nonneg _) hc0
+      ≤ rowBound (iccMeasure a b) g * (Cst / ((p : ℝ) + 1) ^ (m + 1)) :=
+    norm_admissibleKernelCLM_sub_productCLM_le hg l _ u
+      (div_nonneg hCst0 (by positivity)) fun z => by
+      have hint := norm_sub_piecewisePolyInterpCLM_le_gradedSym (r := p + 1) hab
+        (Nat.succ_pos p) (by omega) hγ0 hγ1 hq hν0 hν1 hνmono (hxL p) (hxR p) (hnodeL p) (hnodeR p)
+        (hΛb p) (hW z) (hWH z) (hWC z) (hWL z) (hWR z)
+      rwa [hcast] at hint
   -- assemble
   have hfinal := herr f u un hu hun
   have hpos : (0 : ℝ) < ((p : ℝ) + 1) ^ (m + 1) := by positivity
