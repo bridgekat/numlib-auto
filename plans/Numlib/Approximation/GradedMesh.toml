@@ -1,0 +1,17 @@
+[[node]]
+id = "Real.rpow_sub_rpow_le"
+
+[[node]]
+id = "Real.rpow_sub_rpow_le_mul_sub"
+
+[[node]]
+id = "isPanelNodes_graded"
+
+[[node]]
+id = "norm_sub_piecewisePolyInterpCLM_le_graded"
+
+[[node]]
+id = "isPanelNodes_gradedSym"
+
+[[node]]
+id = "norm_sub_piecewisePolyInterpCLM_le_gradedSym"

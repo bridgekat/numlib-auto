@@ -50,6 +50,7 @@ import Numlib.Approximation.Chebyshev
 import Numlib.Approximation.CompositeQuadrature
 import Numlib.Approximation.DiskQuadrature
 import Numlib.Approximation.DividedDifference
+import Numlib.Approximation.GradedMesh
 import Numlib.Approximation.Hermite
 import Numlib.Approximation.Hyperinterpolation
 import Numlib.Approximation.Interpolation
@@ -59,6 +60,7 @@ import Numlib.Approximation.MvPolynomial
 import Numlib.Approximation.NodalInterpolation
 import Numlib.Approximation.OrthogonalDecomposition
 import Numlib.Approximation.OrthogonalPolynomial
+import Numlib.Approximation.PiecewiseLinearL2
 import Numlib.Approximation.Quadrature
 import Numlib.Approximation.RidgePolynomial
 import Numlib.Approximation.TrapezoidExactness
@@ -89,6 +91,7 @@ import Numlib.Geometry.Euclidean.TriangleShape
 import Numlib.IntegralEquations.Basic
 import Numlib.IntegralEquations.L2Kernel
 import Numlib.IntegralEquations.Nystrom
+import Numlib.IntegralEquations.ProductIntegration
 import Numlib.IntegralEquations.SecondKind
 import Numlib.IntegralEquations.WeaklySingular
 import Numlib.Krylov.Arnoldi

@@ -80,3 +80,12 @@ id = "norm_kernelCLM_degenerateKernel_le"
 
 [[node]]
 id = "regionMeasure"
+
+[[node]]
+id = "measureReal_iccMeasure_univ"
+
+[[node]]
+id = "iccToLp"
+
+[[node]]
+id = "norm_iccToLp_le"

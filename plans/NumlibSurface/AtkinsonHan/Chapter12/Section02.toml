@@ -7,27 +7,6 @@ id = "equation_12_2_5"
 id = "equation_12_2_17"
 
 [[node]]
-id = "iccToLp"
-
-[[node]]
-id = "measureReal_iccMeasure_univ"
-
-[[node]]
-id = "norm_iccToLp_le"
-
-[[node]]
-id = "piecewiseLinearLp"
-
-[[node]]
-id = "piecewiseLinearProjCLM"
-
-[[node]]
-id = "norm_sub_piecewiseLinearProjCLM_le"
-
-[[node]]
-id = "tendsto_piecewiseLinearProjCLM"
-
-[[node]]
 id = "equation_12_2_19"
 
 [[node]]

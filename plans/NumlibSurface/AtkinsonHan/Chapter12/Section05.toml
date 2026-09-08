@@ -1,24 +1,6 @@
 namespace = "AtkinsonHan.Chapter12"
 
 [[node]]
-id = "prodFactor"
-
-[[node]]
-id = "productCLM"
-
-[[node]]
-id = "productCLM_apply"
-
-[[node]]
-id = "norm_productCLM_le"
-
-[[node]]
-id = "productCLM_one"
-
-[[node]]
-id = "tendsto_productCLM"
-
-[[node]]
 id = "isCollectivelyCompactFamily_productCLM"
 
 [[node]]
@@ -78,16 +60,7 @@ and the smoothness of `l`.
 deps = ["theorem_12_5_1"]
 
 [[node]]
-id = "isPanelNodes_graded"
-
-[[node]]
 id = "lemma_12_5_5"
-
-[[node]]
-id = "isPanelNodes_gradedSym"
-
-[[node]]
-id = "norm_sub_gradedSym_le"
 
 [[node]]
 id = "theorem_12_5_6"

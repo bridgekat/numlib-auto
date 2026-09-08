@@ -1,0 +1,49 @@
+namespace = "IntegralOperator"
+
+[[node]]
+id = "prodFactor"
+
+[[node]]
+id = "prodFactor_apply"
+
+[[node]]
+id = "prodFactor_add"
+
+[[node]]
+id = "prodFactor_smul"
+
+[[node]]
+id = "norm_prodFactor_le"
+
+[[node]]
+id = "norm_prodFactor_sub_le"
+
+[[node]]
+id = "continuous_prodFactor"
+
+[[node]]
+id = "abs_product_sub_le"
+
+[[node]]
+id = "exists_delta_product"
+
+[[node]]
+id = "continuous_product"
+
+[[node]]
+id = "productCLM"
+
+[[node]]
+id = "productCLM_apply"
+
+[[node]]
+id = "norm_productCLM_le"
+
+[[node]]
+id = "productCLM_one"
+
+[[node]]
+id = "tendsto_productCLM"
+
+[[node]]
+id = "isCollectivelyCompact_productCLM"

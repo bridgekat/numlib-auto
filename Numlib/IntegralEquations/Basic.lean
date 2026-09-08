@@ -1,6 +1,7 @@
 import Mathlib.Analysis.Calculus.MeanValue
 import Mathlib.Analysis.Normed.Operator.Compact.Basic
 import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
+import Mathlib.MeasureTheory.Function.LpSpace.ContinuousFunctions
 import Mathlib.MeasureTheory.Integral.DominatedConvergence
 import Mathlib.Topology.Algebra.Order.Floor
 import Mathlib.Topology.ContinuousMap.Compact
@@ -37,6 +38,12 @@ below cites; [kress1989linear], is the standard monograph on the same material.
   (`IntegralOperator.kernelCLM_degenerateKernel`).
 * `IntegralOperator.regionMeasure` is the ambient volume measure read on a subset `D ⊆ ℝ^d`, so
   that the operators above act on `C(D)` for a compact region `D` and not only on an interval.
+* `IntegralOperator.iccMeasure` is Lebesgue measure on `Set.Icc a b` read on the subtype, the
+  measure the Fredholm operator integrates against
+  (`IntegralOperator.fredholm_eq_kernelCLM`); `IntegralOperator.iccToLp` is the inclusion of
+  `C(Set.Icc a b, ℝ)` into `L²(a, b)` against it, of norm at most `√(b - a)`
+  (`IntegralOperator.norm_iccToLp_le`), along which a uniform-norm approximation theorem becomes
+  an `L²` one.
 * `IntegralOperator.urysohn` is its nonlinear companion `u ↦ (x ↦ ∫ y in a..b, k (x, y, u y))`,
   Lipschitz with constant `L * (b - a)` when the kernel is `L`-Lipschitz in its last argument
   (`IntegralOperator.lipschitzWith_urysohn`), and Fréchet differentiable with derivative the
@@ -594,6 +601,38 @@ function continuous off that point is seen to be measurable. -/
 theorem restrict_ne_iccMeasure (x : Icc a b) :
     (iccMeasure a b).restrict {y : Icc a b | (y : ℝ) ≠ (x : ℝ)} = iccMeasure a b :=
   Measure.restrict_eq_self_of_ae_mem (ae_ne_iccMeasure x)
+
+include hab in
+/-- The total mass of `IntegralOperator.iccMeasure`, Lebesgue measure on `[a, b]`, is `b - a`. -/
+theorem measureReal_iccMeasure_univ : (iccMeasure a b).real univ = b - a := by
+  have h := integral_iccMeasure hab fun _ => (1 : ℝ)
+  rw [integral_const, smul_eq_mul, mul_one] at h
+  rw [h]
+  simp
+
+variable (a b) in
+/-- **The inclusion of `C([a, b], ℝ)` into `L²(a, b)`**, against Lebesgue measure on the interval.
+It is the map along which a uniform-norm approximation theorem becomes an `L²` one, by
+`IntegralOperator.norm_iccToLp_le`. -/
+noncomputable abbrev iccToLp : C(Icc a b, ℝ) →L[ℝ] Lp ℝ 2 (iccMeasure a b) :=
+  ContinuousMap.toLp (E := ℝ) 2 (iccMeasure a b) ℝ
+
+include hab in
+/-- **A uniform bound is an `L²` bound**: `‖f‖_{L²(a, b)} ≤ √(b - a) ‖f‖_∞`, the inclusion
+`IntegralOperator.iccToLp` having norm at most the square root of the total mass. -/
+theorem norm_iccToLp_le (f : C(Icc a b, ℝ)) : ‖iccToLp a b f‖ ≤ √(b - a) * ‖f‖ := by
+  have hb : ∀ᵐ y ∂(iccMeasure a b), ‖(iccToLp a b f) y‖ ≤ ‖f‖ := by
+    filter_upwards [ContinuousMap.coeFn_toLp (E := ℝ) (p := 2)
+      (μ := iccMeasure a b) (𝕜 := ℝ) f] with y hy
+    rw [hy]
+    exact f.norm_coe_le_norm y
+  refine (Lp.norm_le_of_ae_bound (norm_nonneg f) hb).trans (le_of_eq ?_)
+  have hmu : ((measureUnivNNReal (iccMeasure a b) : NNReal) : ℝ) = b - a := by
+    rw [show ((measureUnivNNReal (iccMeasure a b) : NNReal) : ℝ)
+      = (iccMeasure a b).real univ from rfl]
+    exact measureReal_iccMeasure_univ hab
+  rw [hmu, Real.sqrt_eq_rpow]
+  norm_num
 
 /-- **The Fredholm operator of a compact interval is the kernel operator of Lebesgue measure on that
 interval**, which is what lets the interval theory specialize the general one on a compact space. -/
