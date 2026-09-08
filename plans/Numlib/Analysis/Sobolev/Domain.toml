@@ -1,0 +1,59 @@
+[[node]]
+id = "MeasureTheory.MemLp.locallyIntegrableOn"
+
+[[node]]
+id = "hasWeakIteratedFDerivOn_zero"
+
+[[node]]
+id = "MemSobolev"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.2'
+
+[[node]]
+id = "MemSobolev.memLp"
+
+[[node]]
+id = "MemSobolev.exists_hasWeakIteratedFDerivOn"
+
+[[node]]
+id = "MemSobolev.mono_order"
+
+[[node]]
+id = "MemSobolev.mono_set"
+
+[[node]]
+id = "MemSobolev.mono_exponent"
+
+[[node]]
+id = "memSobolev_zero_order"
+
+[[node]]
+id = "memSobolev_zero"
+
+[[node]]
+id = "MemSobolev.add"
+
+[[node]]
+id = "MemSobolev.const_smul"
+
+[[node]]
+id = "MemSobolev.neg"
+
+[[node]]
+id = "MemSobolev.sub"
+
+[[node]]
+id = "weakIteratedFDeriv"
+
+[[node]]
+id = "HasWeakIteratedFDerivOn.hasWeakIteratedFDerivOn_weakIteratedFDeriv"
+
+[[node]]
+id = "HasWeakIteratedFDerivOn.weakIteratedFDeriv_ae_eq"
+
+[[node]]
+id = "sobolevNorm"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.2'
+
+[[node]]
+id = "sobolevSeminorm"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.2'

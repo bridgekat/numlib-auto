@@ -38,7 +38,9 @@ import Numlib.Analysis.Normed.Operator.Scaling
 import Numlib.Analysis.Normed.Ring.CondNumber
 import Numlib.Analysis.Normed.Ring.Inverse
 import Numlib.Analysis.ODE.PicardLindelof
+import Numlib.Analysis.Sobolev.Domain
 import Numlib.Analysis.Sobolev.Periodic
+import Numlib.Analysis.Sobolev.WeakDeriv
 import Numlib.Analysis.SpecialFunctions.Chebyshev
 import Numlib.Analysis.SpecialFunctions.ChebyshevIntegral
 import Numlib.Analysis.Wavelet.Daubechies

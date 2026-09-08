@@ -1,71 +1,28 @@
 namespace = "AtkinsonHan.Chapter07"
-desc = '''
-Atkinson-Han §7.1, weak derivatives on an open `Ω ⊆ ℝ^d`: the locally `p`-integrable functions,
-the generalized variational lemma, the weak `α`-th derivative and its uniqueness, worked examples
-of functions that are and are not weakly differentiable, and the linearity, product and chain
-rules.
-
-Nothing here is formalized, and the reason is *not* that Mathlib is missing something. Definition
-7.1.3 is a dozen lines over `MeasureTheory.LocallyIntegrableOn`, and Lemma 7.1.2 -- on which the
-uniqueness Lemma 7.1.4 turns -- is already a Mathlib theorem,
-`IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero`. The section is unwritten because nothing
-consumes it: its only customers are §7.2 and §7.3, and §7.3's structural theorems (density,
-extension, embedding, trace) are the chapter's real gap. That is a phase gate, not an
-infrastructure gap, and the node descriptions below say so one by one.
-
-The one exception is Example 7.1.9, whose proof matches traces across sub-domain interfaces and so
-does depend on §7.3.
-'''
 
 [[node]]
 id = "definition_7_1_1"
-kind = "definition"
-desc = '''Definition 7.1.1: for `1 ≤ p < ∞`, a function `v : Ω ⊆ ℝ^d → ℝ` is locally `p`-integrable,
-`v ∈ L^p_loc(Ω)`, if every `x ∈ Ω` has an open neighbourhood `Ω'` with `closure Ω' ⊆ Ω` and
-`v ∈ L^p(Ω')`. Not formalized: the case `p = 1` is Mathlib's `MeasureTheory.LocallyIntegrableOn`
-and the general `p` is a short variant of it, but §7.1 has no consumer while §7.3 is missing.'''
 
 [[node]]
 id = "lemma_7_1_2"
-kind = "theorem"
-desc = '''Lemma 7.1.2 (generalized variational lemma): if `Ω ⊆ ℝ^d` is nonempty open,
-`v ∈ L^1_loc(Ω)` and `∫_Ω v φ = 0` for every `φ ∈ C_0^∞(Ω)`, then `v = 0` a.e. on `Ω`. The book
-quotes it from [245, p. 18] without proof. Not formalized: this is Mathlib's
-`IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero` verbatim, and the surface would only be
-restating it; nothing in §7.1 is written while §7.3 blocks its consumers.'''
 
 [[node]]
 id = "definition_7_1_3"
-kind = "definition"
-desc = '''Definition 7.1.3: for `Ω ⊆ ℝ^d` nonempty open and `v, w ∈ L^1_loc(Ω)`, `w` is a weak
-`α`-th derivative of `v` when `∫_Ω v ∂^α φ = (-1)^{|α|} ∫_Ω w φ` for every `φ ∈ C_0^∞(Ω)` (7.1.2).
-Not formalized: a dozen lines over `MeasureTheory.LocallyIntegrableOn` -- Mathlib has no weak
-derivative on an open set, but the definition is not the obstacle. It is unwritten because
-everything that would use it is blocked by §7.3: a phase gate, not an infrastructure gap.'''
 
 [[node]]
 id = "lemma_7_1_4"
-kind = "theorem"
-desc = '''Lemma 7.1.4: a weak derivative, if it exists, is unique up to a set of measure zero. Not
-formalized: immediate from Lemma 7.1.2 applied to `w₁ - w₂`, hence from Mathlib's
-`IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero`; unwritten for want of a consumer, §7.3
-being the chapter's gap.'''
 
 [[node]]
 id = "lemma_7_1_5"
-kind = "theorem"
-desc = '''Lemma 7.1.5: if `v ∈ C^m(Ω)` then for each `|α| ≤ m` the classical `∂^α v` is also the
-weak `α`-th derivative of `v`, so the weak derivative extends the classical one and may share its
-notation. Not formalized: the classical integration-by-parts formula (7.1.1) plus Lemma 7.1.4;
-§7.1 is unwritten because nothing consumes it while §7.3 is missing.'''
 
 [[node]]
 id = "example_7_1_6"
 kind = "theorem"
 desc = '''Example 7.1.6: `v(x) = |x|`, not differentiable at `0` in the classical sense, has the
 first-order weak derivative `w = 1` on `x > 0`, `w = -1` on `x < 0` (the value at `0` being
-arbitrary) on any interval containing `0`. Not formalized: a direct check against Definition
-7.1.3, which is itself unwritten because §7.1 has no consumer while §7.3 is missing.'''
+arbitrary) on any interval containing `0`. Not formalized: Definition 7.1.3 exists now, so all that
+is left is the one-dimensional check, split at `0` and integrated by parts on each half; it is
+unwritten because nothing in the corpus consumes these examples while §7.3 is missing.'''
 
 [[node]]
 id = "example_7_1_7"
@@ -73,8 +30,8 @@ kind = "theorem"
 desc = '''Example 7.1.7: the step function `v = -1` on `(-1,0)`, `v = 1` on `(0,1)` has no weak
 derivative on `(-1,1)`: `∫ v φ' = -2 φ(0)` forces `∫ w φ = 2 φ(0)`, and Lemma 7.1.2 makes `w = 0`
 a.e., a contradiction. So a jump discontinuity destroys weak differentiability. Not formalized:
-Definition 7.1.3 and Lemma 7.1.2 are all it needs; unwritten for want of a consumer, §7.3 being
-the chapter's gap.'''
+Definition 7.1.3 and Lemma 7.1.2 are both available now and are all it needs; unwritten for want of
+a consumer, §7.3 being the chapter's gap.'''
 
 [[node]]
 id = "example_7_1_8"
@@ -83,7 +40,7 @@ desc = '''Example 7.1.8: for `v ∈ C[a,b]` piecewise `C^1` over a partition `a 
 the first-order weak derivative is `v'` on each open subinterval (arbitrary at the nodes); and if
 `v` is piecewise `C^2` a second-order weak derivative exists only when `v'(x_i-) = v'(x_i+)` at
 every interior node. Not formalized: a one-dimensional computation from Definition 7.1.3 and
-Example 7.1.7; §7.1 is unwritten because nothing consumes it while §7.3 is missing.'''
+Example 7.1.7, both reachable now; unwritten because nothing consumes it while §7.3 is missing.'''
 
 [[node]]
 id = "example_7_1_9"
@@ -97,10 +54,6 @@ surface measure on a Lipschitz boundary and the trace of Theorem 7.3.10.'''
 
 [[node]]
 id = "proposition_7_1_10"
-kind = "theorem"
-desc = '''Proposition 7.1.10: weak differentiation is linear -- if `∂^α u` and `∂^α v` exist then
-so does `∂^α (c₁ u + c₂ v) = c₁ ∂^α u + c₂ ∂^α v`. Not formalized: linearity of the defining
-integral identity; §7.1 is unwritten because nothing consumes it while §7.3 is missing.'''
 
 [[node]]
 id = "proposition_7_1_11"
@@ -108,14 +61,14 @@ kind = "theorem"
 desc = '''Proposition 7.1.11 (product rule): for conjugate `p, q ∈ (1,∞)`, if `u, u_{x_i} ∈
 L^p_loc(Ω)` and `v, v_{x_i} ∈ L^q_loc(Ω)` then `(u v)_{x_i}` exists and equals
 `u_{x_i} v + u v_{x_i}`. Not formalized: stated without proof in the book; a proof mollifies both
-factors and passes to the limit under Hölder. Unwritten for want of a consumer, §7.3 being the
-chapter's gap.'''
+factors and passes to the limit under Hölder, which needs an approximate identity on a domain that
+the backbone does not have. Unwritten for want of a consumer, §7.3 being the chapter's gap.'''
 
 [[node]]
 id = "proposition_7_1_12"
 kind = "theorem"
 desc = '''Proposition 7.1.12 (chain rule): for `f ∈ C^1(ℝ,ℝ)` with `f'` bounded, `Ω` open bounded
 and `v ∈ W^{1,p}(Ω)` with `p ∈ (1,∞)`, `(f(v))_{x_i} = f'(v) v_{x_i} ∈ L^p(Ω)`. Exercise 7.1.5
-(`|v|, v^+, v^-  ∈ W^{1,p}`) is its standard corollary. Not formalized: stated without proof in
-the book; a proof needs mollification and a dominated-convergence passage. Unwritten because §7.1
-has no consumer while §7.3 is missing.'''
+(`|v|, v^+, v^-  ∈ W^{1,p}`) is its standard corollary. Not formalized: `W^{1,p}(Ω)` exists now
+(Definition 7.2.2), but the book states this without proof and a proof needs mollification and a
+dominated-convergence passage; unwritten because §7.1 has no consumer while §7.3 is missing.'''

@@ -4,13 +4,25 @@ Sobolev spaces that this project needed and Mathlib lacks (natural home:
 the rest).
 
 Mathlib has Bessel potential spaces `H^{s,p}` of tempered distributions on all of `ℝ^d`
-(`Mathlib/Analysis/Distribution/Sobolev.lean`) and nothing about a *domain*: no weak derivative on
-an open set, no `W^{k,p}(Ω)`, no `W^{k,p}_0`, no trace, no extension operator, no
-Rellich–Kondrachov and no Poincaré inequality. That gap is what excludes Atkinson–Han §7.1–§7.4
-and §7.6 from this project, and every downstream section that needs them (§8.1, §8.4, §8.5, §8.8,
-chapter 10 beyond the Aubin–Nitsche lemma, chapter 13).
+(`Mathlib/Analysis/Distribution/Sobolev.lean`) and nothing about a *domain*. Two pieces of that gap
+are filled here, deliberately minimally, by `WeakDeriv` and `Domain`: the weak derivative on an open
+set with its uniqueness, its agreement with the classical derivative and its linearity, and
+membership of `W^{k,p}(Ω)` of integer order with the Sobolev norm and seminorm. Together they serve
+Atkinson-Han, *Theoretical Numerical Analysis*, §7.1 and the integer-order half of §7.2.
 
-The *periodic* spaces are the exception, and are the only thing here so far: they are defined by
-the decay of Fourier coefficients, so no domain, boundary or weak derivative enters them, and they
-are reachable today. Serves Atkinson–Han, *Theoretical Numerical Analysis*, §7.5.
+Both are stopgaps for work that is on its way into Mathlib -- Mathlib PR 32305 and its continuation
+`grunweg/SobolevSlobodeckij` -- and follow its names and argument order so that the migration is a
+rename; they should be deleted, not extended, once that development lands.
+
+What is still missing is everything that makes the spaces worth having: `W^{k,p}(Ω)` as a *Banach
+space* (the norm is defined, the completeness of Theorem 7.2.3 is not, and neither is `H^k(Ω)` as a
+Hilbert space), `W_0^{k,p}(Ω)`, the fractional Sobolev-Slobodeckij spaces of Definition 7.2.10 and
+their negative-order duals, and the whole of §7.3 -- density of smooth functions, the extension
+operator, the trace, the Sobolev embeddings, Rellich-Kondrachov, Poincaré and Deny-Lions -- together
+with §7.4, §7.6 and the downstream sections that need them (§8.1, §8.4, §8.5, §8.8, chapter 10
+beyond the Aubin-Nitsche lemma, chapter 13).
+
+The *periodic* spaces are a separate story: they are defined by the decay of Fourier coefficients,
+so no domain, boundary or weak derivative enters them. Serves Atkinson-Han, *Theoretical Numerical
+Analysis*, §7.5.
 '''

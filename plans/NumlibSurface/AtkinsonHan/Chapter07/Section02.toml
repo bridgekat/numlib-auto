@@ -1,20 +1,4 @@
 namespace = "AtkinsonHan.Chapter07"
-desc = '''
-Atkinson-Han §7.2, the Sobolev spaces themselves: the boundary regularity classes (Lipschitz,
-`C^k`, `C^{k,α}` domains), `W^{k,p}(Ω)` and `H^k(Ω)` of integer order with their norm, seminorm
-and completeness, the spaces `W^{s,p}(Ω)` of real order by the Sobolev-Slobodeckij seminorm,
-`W_0^{s,p}(Ω)` and the negative-order duals `W^{-s,p'}(Ω)`, and `W^{s,p}(∂Ω)` over a boundary.
-
-None of it is formalized. Most of the section is *definable* today on top of §7.1 -- completeness
-(Theorem 7.2.3) needs nothing beyond completeness of `L^p` and closedness of the weak derivative --
-but it would be unusable: every theorem that makes these spaces worth having is in §7.3, and §7.3
-is what Mathlib has none of. So the honest reason for most nodes here is a missing consumer, not
-missing infrastructure.
-
-Three nodes are exceptions and really are blocked: Examples 7.2.7 and 7.2.8, whose proofs
-integrate by parts over sub-domains and use the trace, and Definition 7.2.13, which needs surface
-measure on a Lipschitz boundary and a Hölder patch system before `L^2(∂Ω)` even makes sense.
-'''
 
 [[node]]
 id = "definition_7_2_1"
@@ -29,31 +13,30 @@ which are the chapter's gap, so nothing would consume it.'''
 
 [[node]]
 id = "definition_7_2_2"
-kind = "definition"
-desc = '''Definition 7.2.2: for `k ≥ 0` an integer and `p ∈ [1,∞]`, `W^{k,p}(Ω)` is the set of
-`v ∈ L^p(Ω)` whose weak derivatives `∂^α v` exist and lie in `L^p(Ω)` for all `|α| ≤ k`, normed by
-`(∑_{|α|≤k} ‖∂^α v‖_{L^p}^p)^{1/p}` (max over `|α| ≤ k` when `p = ∞`), with the seminorm
-`|v|_{k,p,Ω}` the same sum over `|α| = k`; `H^k(Ω) ≡ W^{k,2}(Ω)`. Not formalized: definable on top
-of Definition 7.1.3, but unusable without §7.3, which Mathlib has none of -- a phase gate, not an
-infrastructure gap.'''
+
+[[node]]
+id = "definition_7_2_2_iff"
 
 [[node]]
 id = "theorem_7_2_3"
 kind = "theorem"
 desc = '''Theorem 7.2.3: `W^{k,p}(Ω)` is a Banach space. The book's proof takes a Cauchy sequence,
 uses completeness of `L^p` on each `∂^α v_n`, and passes to the limit in the defining identity to
-identify the limits as weak derivatives. Not formalized: it needs nothing but completeness of
-`L^p` (Mathlib's `MeasureTheory.Lp.instCompleteSpace`) and closedness of the weak derivative, and
-in particular none of §7.3; it is unwritten only because nothing in the corpus consumes
-`W^{k,p}(Ω)` while §7.3 is missing.'''
+identify the limits as weak derivatives. Not formalized: Definition 7.2.2 and its norm exist now,
+but the theorem needs `W^{k,p}(Ω)` as a *type* -- naturally the subspace of a product of `L^p(Ω)`
+spaces cut out by the weak-derivative relation -- and hence the one analytic ingredient the backbone
+lacks: that pairing with a fixed test function is a continuous linear functional on `L^p(Ω)`, by
+Hölder against that test function, which is what makes the relation closed. None of §7.3 is
+involved.'''
 
 [[node]]
 id = "corollary_7_2_4"
 kind = "theorem"
-desc = '''Corollary 7.2.4: `H^k(Ω)` is a Hilbert space under `(u,v)_k = ∫_Ω ∑_{|α|≤k} ∂^α u ∂^α v`.
-The book adds, without proof, that `W^{k,p}(Ω)` is reflexive exactly for `p ∈ (1,∞)`. Not
-formalized: immediate from Theorem 7.2.3 once the inner product is written; unwritten because
-nothing consumes these spaces while §7.3 is missing.'''
+desc = '''Corollary 7.2.4: `H^k(Ω)` is a Hilbert space with the inner product
+`(u,v)_k = ∫_Ω ∑_{|α|≤k} ∂^α u ∂^α v`. The book adds, without proof, that `W^{k,p}(Ω)` is reflexive
+exactly for `p ∈ (1,∞)`. Not formalized: it needs Theorem 7.2.3, and on top of that a norm indexed
+by multi-indices, because the backbone measures all the derivatives of a given order by the
+operator norm of a single tensor and that norm is not induced by an inner product.'''
 
 [[node]]
 id = "example_7_2_5"
@@ -61,16 +44,16 @@ kind = "theorem"
 desc = '''Example 7.2.5: on the unit ball of `ℝ^d`, `v(x) = |x|^λ` satisfies `v ∈ L^p(Ω) ↔
 λ > -d/p` and, more generally, `v ∈ W^{k,p}(Ω) ↔ λ > k - d/p` (7.2.1) -- so for `d = 2` and
 `p ∈ [1,2)` there are `W^{1,p}` functions that are not continuous. The book leaves (7.2.1) to
-Exercise 7.2.7. Not formalized: a radial integrability computation over Definition 7.2.2, which is
-itself unwritten because §7.2 has no consumer while §7.3 is missing.'''
+Exercise 7.2.7. Not formalized: a radial integrability computation over Definition 7.2.2, which
+exists now; unwritten because nothing in the corpus consumes it while §7.3 is missing.'''
 
 [[node]]
 id = "example_7_2_6"
 kind = "theorem"
 desc = '''Example 7.2.6: on `Ω = B(0,β) ⊆ ℝ^2` with `β < 1`, `v(x) = log(log(1/r))` has
 `∫_Ω |∇v|^2 = -2π/log β < ∞` and `‖v‖_{L^2(Ω)} < ∞`, so `v ∈ H^1(Ω)` while `v` is unbounded at the
-origin: an `H^1` function in the plane need not be continuous. Not formalized: an explicit
-integral over Definition 7.2.2; unwritten because §7.2 has no consumer while §7.3 is missing.'''
+origin: an `H^1` function in the plane need not be continuous. Not formalized: an explicit integral
+over Definition 7.2.2, which exists now; unwritten for want of a consumer while §7.3 is missing.'''
 
 [[node]]
 id = "example_7_2_7"
@@ -96,9 +79,9 @@ id = "definition_7_2_9"
 kind = "definition"
 desc = '''Definition 7.2.9: `W_0^{k,p}(Ω)` is the closure of `C_0^∞(Ω)` in `W^{k,p}(Ω)`, with
 `H_0^k(Ω) ≡ W_0^{k,2}(Ω)`; informally the functions whose derivatives of order `≤ k-1` vanish on
-`∂Ω`, a reading the trace theorems make precise. Not formalized: a closure of a subspace, definable
-as soon as Definition 7.2.2 is; unwritten because its point is the boundary-value reading, which
-needs the trace of §7.3.'''
+`∂Ω`, a reading the trace theorems make precise. Not formalized: a closure needs a topology on
+`W^{k,p}(Ω)`, hence `W^{k,p}(Ω)` as a normed type, which is exactly what Theorem 7.2.3 is still
+missing; and the point of the space is the boundary-value reading, which needs the trace of §7.3.'''
 
 [[node]]
 id = "definition_7_2_10"
@@ -107,16 +90,17 @@ desc = '''Definition 7.2.10: for `s = k + σ` with `k ≥ 0` an integer and `σ 
 is the set of `v ∈ W^{k,p}(Ω)` whose `k`-th derivatives have finite Sobolev-Slobodeckij seminorm,
 `∫_{Ω×Ω} |∂^α v(x) - ∂^α v(y)|^p / ‖x-y‖^{σp+d} dx dy < ∞` for `|α| = k`, normed accordingly; the
 book states without proof that it is Banach, reflexive exactly for `p ∈ (1,∞)`, and Hilbert for
-`p = 2`. Not formalized: a double integral over Definition 7.2.2. The book introduces these spaces
-solely to state the trace theorems and Definition 7.2.13, both of which are §7.3 material.'''
+`p = 2`. Not formalized: a double integral over Definition 7.2.2, which exists now, but the book
+introduces these spaces solely to state the trace theorems and Definition 7.2.13, both of which are
+§7.3 material.'''
 
 [[node]]
 id = "definition_7_2_11"
 kind = "definition"
 desc = '''Definition 7.2.11: for `s ≥ 0`, `W_0^{s,p}(Ω)` is the closure of `C_0^∞(Ω)` in
 `W^{s,p}(Ω)`, with `H_0^s(Ω) ≡ W_0^{s,2}(Ω)`. Not formalized: the real-order analogue of Definition
-7.2.9, unwritten for the same reason -- it exists to carry boundary conditions, which need the
-trace of §7.3.'''
+7.2.9, blocked for the same two reasons -- there is no normed type `W^{s,p}(Ω)` to take a closure
+in, and the point of the space is to carry boundary conditions, which need the trace of §7.3.'''
 
 [[node]]
 id = "definition_7_2_12"
@@ -125,8 +109,8 @@ desc = '''Definition 7.2.12: for `s ≥ 0` and conjugate exponents `p, p'`, `W^{
 dual of `W_0^{s,p}(Ω)`, with `H^{-s}(Ω) ≡ W^{-s,2}(Ω)`; in particular `H^{-1}(Ω)` is the dual of
 `H_0^1(Ω)`, `L^2(Ω)` embeds in it by `⟨f,v⟩ = ∫_Ω f v`, and every `ℓ ∈ H^{-1}(Ω)` is
 `ℓ_0 - ∑_i ∂_i ℓ_i` for `L^2` functions `ℓ_0,…,ℓ_d` (stated without proof). Not formalized: the
-dual space is Mathlib's `NormedSpace.Dual` once Definition 7.2.11 exists; unwritten because §7.2
-has no consumer while §7.3 is missing.'''
+dual space is Mathlib's `NormedSpace.Dual` once Definition 7.2.11 exists, and that waits on the
+normed structure of Theorem 7.2.3.'''
 
 [[node]]
 id = "definition_7_2_13"

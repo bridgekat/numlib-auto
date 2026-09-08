@@ -1,0 +1,101 @@
+[[node]]
+id = "MeasureTheory.LocallyMemLpOn"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.1.1'
+
+[[node]]
+id = "MeasureTheory.locallyMemLpOn_one_iff"
+
+[[node]]
+id = "MeasureTheory.LocallyIntegrableOn.integrable_smul_left_of_tsupport_subset"
+
+[[node]]
+id = "MeasureTheory.LocallyIntegrableOn.comp_continuousLinearMap"
+
+[[node]]
+id = "iteratedFDeriv_succ_apply_left_of_differentiableAt"
+
+[[node]]
+id = "ContDiff.fderiv_iteratedFDeriv_apply"
+
+[[node]]
+id = "ContDiff.iteratedFDeriv_succ_apply_left'"
+
+[[node]]
+id = "TestFunction.eq_zero_of_notMem"
+
+[[node]]
+id = "TestFunction.iteratedFDerivApply"
+
+[[node]]
+id = "TestFunction.fderivApply"
+
+[[node]]
+id = "HasWeakIteratedFDerivOn"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.1.3'
+
+[[node]]
+id = "HasWeakFDerivOn"
+
+[[node]]
+id = "HasWeakIteratedFDerivOn.integrable_smul"
+
+[[node]]
+id = "HasWeakIteratedFDerivOn.integrable_smul_weakDeriv"
+
+[[node]]
+id = "HasWeakIteratedFDerivOn.integrable_smul_weakDeriv_apply"
+
+[[node]]
+id = "HasWeakIteratedFDerivOn.integral_smul_eq'"
+
+[[node]]
+id = "HasWeakIteratedFDerivOn.mono"
+
+[[node]]
+id = "HasWeakIteratedFDerivOn.ae_eq"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Lemma 7.1.4'
+
+[[node]]
+id = "HasWeakIteratedFDerivOn.zero"
+
+[[node]]
+id = "HasWeakIteratedFDerivOn.add"
+
+[[node]]
+id = "HasWeakIteratedFDerivOn.const_smul"
+
+[[node]]
+id = "HasWeakIteratedFDerivOn.neg"
+
+[[node]]
+id = "HasWeakIteratedFDerivOn.sub"
+
+[[node]]
+id = "HasWeakIteratedFDerivOn.const_smul_add_const_smul"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Proposition 7.1.10'
+
+[[node]]
+id = "ContDiffOn.continuousOn_iteratedFDeriv"
+
+[[node]]
+id = "ContDiffOn.locallyIntegrableOn_iteratedFDeriv_apply"
+
+[[node]]
+id = "ContDiffOn.integral_iteratedFDeriv_smul"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, (7.1.1)'
+
+[[node]]
+id = "ContDiffOn.hasWeakIteratedFDerivOn"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Lemma 7.1.5'
+
+[[node]]
+id = "hasWeakFDerivOn_iff"
+
+[[node]]
+id = "HasWeakFDerivOn.integral_smul_eq"
+
+[[node]]
+id = "HasWeakFDerivOn.locallyIntegrableOn"
+
+[[node]]
+id = "HasWeakFDerivOn.locallyIntegrableOn_weakDeriv"
