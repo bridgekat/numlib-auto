@@ -292,8 +292,10 @@ solvable and
 
 The proof is the book's: `theorem_12_5_1` gives `‖u - u_n‖ ≤ c ‖K u - K_n u‖`, the consistency
 error is the interpolation error of the row functions integrated against `g`, and
-`norm_sub_gradedSym_le` — Lemma 12.5.5 on the two-sided mesh — bounds that by `c n^{-(m+1)}`
-uniformly in the row. -/
+`norm_sub_piecewisePolyInterpCLM_le_gradedSym` — Lemma 12.5.5 on the two-sided mesh — bounds
+that by `c n^{-(m+1)}` uniformly in the row.  The mesh is `isPanelNodes_gradedSym`, the width of
+its panels `sub_le_gradedSym`, and the Lebesgue bound of its nodes
+`exists_isPanelLebesgueBound_of_affine`. -/
 theorem theorem_12_5_6 {a b : ℝ} (hab : a < b) {m : ℕ} {γ q : ℝ}
     (hγ0 : 0 < γ) (hγ1 : γ < 1) (hq : ((m : ℝ) + 1) / γ ≤ q)
     {ν : Fin (m + 1) → ℝ} (hν0 : ν 0 = 0) (hν1 : ν (Fin.last m) = 1) (hνmono : StrictMono ν)
@@ -337,103 +339,38 @@ theorem theorem_12_5_6 {a b : ℝ} (hab : a < b) {m : ℕ} {γ q : ℝ}
       rw [lt_div_iff₀ hγ0]
       linarith
     linarith
-  have hq0 : (0 : ℝ) < q := lt_of_lt_of_le zero_lt_one hq1
   have hS0 : (0 : ℝ) < (b - a) / 2 := by linarith
   have hfact0 : (0 : ℝ) < ((m + 1).factorial : ℝ) := by exact_mod_cast Nat.factorial_pos (m + 1)
   have hc0 : (0 : ℝ) ≤ rowBound (iccMeasure a b) g := hg.rowBound_nonneg
-  -- the separation of the reference nodes and the uniform Lebesgue bound
-  obtain ⟨dν, hdν0, hdν⟩ :
-      ∃ d : ℝ, 0 < d ∧ ∀ i i' : Fin (m + 1), i ≠ i' → d ≤ |ν i - ν i'| := by
-    by_cases hS : (Finset.univ.filter fun p : Fin (m + 1) × Fin (m + 1) => p.1 ≠ p.2).Nonempty
-    · refine ⟨(Finset.univ.filter fun p : Fin (m + 1) × Fin (m + 1) => p.1 ≠ p.2).inf' hS
-        (fun p => |ν p.1 - ν p.2|), ?_, fun i i' hii => ?_⟩
-      · rw [Finset.lt_inf'_iff]
-        intro p hp
-        exact abs_pos.mpr (sub_ne_zero.mpr fun hcon =>
-          (Finset.mem_filter.mp hp).2 (hνmono.injective hcon))
-      · exact Finset.inf'_le (fun p : Fin (m + 1) × Fin (m + 1) => |ν p.1 - ν p.2|)
-          (Finset.mem_filter.mpr ⟨Finset.mem_univ (i, i'), hii⟩)
-    · exact ⟨1, one_pos, fun i i' hii =>
-        absurd ⟨(i, i'), Finset.mem_filter.mpr ⟨Finset.mem_univ (i, i'), hii⟩⟩ hS⟩
-  set Λ : ℝ := ((m : ℝ) + 1) * (1 / dν) ^ m with hΛdef
+  -- the nodes sit at fixed fractions of every panel — at the reference partition `ν` on the
+  -- panels of the left half and at its reflection on those of the right — so a single Lebesgue
+  -- bound, depending on `ν` alone, serves every `p`
   have hnodes : ∀ p : ℕ, IsPanelNodes (2 * p + 1) m (x p) (node p) := fun p =>
     isPanelNodes_gradedSym hab (Nat.succ_pos p) (by omega) hq1 hν0 hν1 hνmono (hxL p) (hxR p)
       (hnodeL p) (hnodeR p)
+  have hinj : ∀ k : Fin 2, Function.Injective (![ν, fun i => 1 - ν i.rev] k) := by
+    intro k
+    fin_cases k
+    · exact hνmono.injective
+    · refine fun i i' hii => Fin.rev_injective (hνmono.injective ?_)
+      have hii' : (1 : ℝ) - ν i.rev = 1 - ν i'.rev := hii
+      linarith
+  obtain ⟨Λ, hΛfam⟩ := exists_isPanelLebesgueBound_of_affine hinj
   have hΛb : ∀ p : ℕ, IsPanelLebesgueBound (2 * p + 1) m (x p) (node p) Λ := by
     intro p
-    refine isPanelLebesgueBound_of_sep (hnodes p)
-      (d := fun j => dν * ((x p (j + 1) : ℝ) - (x p j : ℝ))) (ρ := 1 / dν)
-      (fun j hj => mul_pos hdν0 (sub_pos.mpr ((hnodes p).step j hj))) (fun j hj => ?_)
-      (fun j hj i i' hii => ?_)
-    · rw [← mul_assoc, one_div, inv_mul_cancel₀ (ne_of_gt hdν0), one_mul]
-    · have hd : (0 : ℝ) < (x p (j + 1) : ℝ) - (x p j : ℝ) := sub_pos.mpr ((hnodes p).step j hj)
-      rcases Nat.lt_or_ge j (p + 1) with hjr | hjr
-      · rw [hnodeL p j hjr i, hnodeL p j hjr i']
-        have hrw : ((x p j : ℝ) + ν i * ((x p (j + 1) : ℝ) - (x p j : ℝ)))
-            - ((x p j : ℝ) + ν i' * ((x p (j + 1) : ℝ) - (x p j : ℝ)))
-            = (ν i - ν i') * ((x p (j + 1) : ℝ) - (x p j : ℝ)) := by ring
-        rw [hrw, abs_mul, abs_of_pos hd]
-        exact mul_le_mul_of_nonneg_right (hdν i i' hii) hd.le
-      · rw [hnodeR p j hjr hj i, hnodeR p j hjr hj i']
-        have hrw : ((x p j : ℝ) + (1 - ν i.rev) * ((x p (j + 1) : ℝ) - (x p j : ℝ)))
-            - ((x p j : ℝ) + (1 - ν i'.rev) * ((x p (j + 1) : ℝ) - (x p j : ℝ)))
-            = (ν i'.rev - ν i.rev) * ((x p (j + 1) : ℝ) - (x p j : ℝ)) := by ring
-        rw [hrw, abs_mul, abs_of_pos hd]
-        refine mul_le_mul_of_nonneg_right (hdν i'.rev i.rev ?_) hd.le
-        exact fun hcon => hii (Fin.rev_injective hcon).symm
+    refine hΛfam (c := fun j => if j < p + 1 then 0 else 1) (hnodes p) fun j hj i => ?_
+    by_cases hjr : j < p + 1
+    · simp only [hjr, ↓reduceIte]
+      exact hnodeL p j hjr i
+    · simp only [hjr, ↓reduceIte]
+      exact hnodeR p j (by omega) hj i
   -- the mesh tends to zero, so the projections converge pointwise
   have hmesh : ∀ p : ℕ, ∀ j ≤ 2 * p + 1,
       (x p (j + 1) : ℝ) - (x p j : ℝ) ≤ (b - a) / 2 * q / ((p : ℝ) + 1) := by
-    have hleft : ∀ p : ℕ, ∀ i < p + 1,
-        (x p (i + 1) : ℝ) - (x p i : ℝ) ≤ (b - a) / 2 * q / ((p : ℝ) + 1) := by
-      intro p i hi
-      have hr0 : (0 : ℝ) < ((p + 1 : ℕ) : ℝ) := by positivity
-      have hcast : ((p + 1 : ℕ) : ℝ) = (p : ℝ) + 1 := by push_cast; ring
-      have hB0 : (0 : ℝ) ≤ (i : ℝ) / ((p + 1 : ℕ) : ℝ) := by positivity
-      have hABeq : ((i : ℝ) + 1) / ((p + 1 : ℕ) : ℝ) - (i : ℝ) / ((p + 1 : ℕ) : ℝ)
-          = 1 / ((p + 1 : ℕ) : ℝ) := by
-        rw [div_sub_div_same]
-        norm_num
-      have hBA : (i : ℝ) / ((p + 1 : ℕ) : ℝ) < ((i : ℝ) + 1) / ((p + 1 : ℕ) : ℝ) := by
-        have hpos : (0 : ℝ) < 1 / ((p + 1 : ℕ) : ℝ) := by positivity
-        linarith
-      have hA1 : ((i : ℝ) + 1) / ((p + 1 : ℕ) : ℝ) ≤ 1 := by
-        rw [div_le_one hr0, hcast]
-        have : (i : ℝ) ≤ (p : ℝ) := by exact_mod_cast (by omega : i ≤ p)
-        linarith
-      have hstep := Real.rpow_sub_rpow_le_mul_sub hq1 hB0 hBA hA1
-      rw [hABeq] at hstep
-      have he1 : (x p i : ℝ) = a + ((i : ℝ) / ((p + 1 : ℕ) : ℝ)) ^ q * ((b - a) / 2) :=
-        hxL p i (by omega)
-      have he2 : (x p (i + 1) : ℝ)
-          = a + (((i : ℝ) + 1) / ((p + 1 : ℕ) : ℝ)) ^ q * ((b - a) / 2) := by
-        rw [hxL p (i + 1) (by omega)]
-        push_cast
-        ring
-      rw [he1, he2, ← hcast]
-      have hkey : (((i : ℝ) + 1) / ((p + 1 : ℕ) : ℝ)) ^ q * ((b - a) / 2)
-          - ((i : ℝ) / ((p + 1 : ℕ) : ℝ)) ^ q * ((b - a) / 2)
-          ≤ q * (1 / ((p + 1 : ℕ) : ℝ)) * ((b - a) / 2) := by
-        nlinarith [hstep, hS0]
-      calc a + (((i : ℝ) + 1) / ((p + 1 : ℕ) : ℝ)) ^ q * ((b - a) / 2)
-            - (a + ((i : ℝ) / ((p + 1 : ℕ) : ℝ)) ^ q * ((b - a) / 2))
-          = (((i : ℝ) + 1) / ((p + 1 : ℕ) : ℝ)) ^ q * ((b - a) / 2)
-            - ((i : ℝ) / ((p + 1 : ℕ) : ℝ)) ^ q * ((b - a) / 2) := by ring
-        _ ≤ q * (1 / ((p + 1 : ℕ) : ℝ)) * ((b - a) / 2) := hkey
-        _ = (b - a) / 2 * q / ((p + 1 : ℕ) : ℝ) := by ring
-    intro p j hj
-    rcases Nat.lt_or_ge j (p + 1) with hjr | hjr
-    · exact hleft p j hjr
-    · have hi : 2 * (p + 1) - 1 - j < p + 1 := by omega
-      have hxj : (x p j : ℝ) = a + b - (x p (2 * (p + 1) - 1 - j + 1) : ℝ) := by
-        have h := hxR p (2 * (p + 1) - 1 - j + 1) (by omega)
-        rwa [show 2 * (p + 1) - (2 * (p + 1) - 1 - j + 1) = j by omega] at h
-      have hxj1 : (x p (j + 1) : ℝ) = a + b - (x p (2 * (p + 1) - 1 - j) : ℝ) := by
-        have h := hxR p (2 * (p + 1) - 1 - j) (by omega)
-        rwa [show 2 * (p + 1) - (2 * (p + 1) - 1 - j) = j + 1 by omega] at h
-      have := hleft p (2 * (p + 1) - 1 - j) hi
-      rw [hxj, hxj1]
-      linarith
+    intro p
+    have h := sub_le_gradedSym (r := p + 1) (N := 2 * p + 1) hab (Nat.succ_pos p) (by omega) hq1
+      (hxL p) (hxR p)
+    rwa [show ((p + 1 : ℕ) : ℝ) = (p : ℝ) + 1 by push_cast; ring] at h
   have htend : Tendsto (fun p : ℕ => (b - a) / 2 * q / ((p : ℝ) + 1)) atTop (𝓝 0) :=
     Filter.Tendsto.div_atTop tendsto_const_nhds
       (Filter.tendsto_atTop_add_const_right _ 1 tendsto_natCast_atTop_atTop)
@@ -446,9 +383,7 @@ theorem theorem_12_5_6 {a b : ℝ} (hab : a < b) {m : ℕ} {γ q : ℝ}
   obtain ⟨c₀, hc₀⟩ := theorem_12_5_1 hg l hnormP hPconv hlam he
   set Cst : ℝ := (1 + Λ) * H * ((b - a) / 2) ^ γ
     + cR * ((b - a) / 2) ^ γ * (q * 2 ^ (q - 1)) ^ (m + 1) / (m + 1).factorial with hCstdef
-  have hΛ0 : (0 : ℝ) ≤ Λ := by
-    rw [hΛdef]
-    exact mul_nonneg (by positivity) (pow_nonneg (div_nonneg zero_le_one hdν0.le) m)
+  have hΛ0 : (0 : ℝ) ≤ Λ := (hΛb 0).nonneg (hnodes 0)
   have hSγ0 : (0 : ℝ) ≤ ((b - a) / 2) ^ γ := Real.rpow_nonneg hS0.le γ
   have hH0 : 0 ≤ H := by
     have h := hWH (x 0 0) a ⟨le_rfl, hab.le⟩ b ⟨hab.le, le_rfl⟩

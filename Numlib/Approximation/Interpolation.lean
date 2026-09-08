@@ -49,7 +49,10 @@ interpolation at the equispaced nodes of a period. The material is [han2009theor
   `exists_sub_piecewisePolyInterpCLM_apply_eq` and its consequence
   `norm_sub_piecewisePolyInterpCLM_le`, the bound `(1 + Λ) ω(f, h)` of
   `norm_sub_piecewisePolyInterpCLM_le_modulus`, and the uniform convergence
-  `tendsto_piecewisePolyInterpCLM`.
+  `tendsto_piecewisePolyInterpCLM`.  `isPanelLebesgueBound_of_sep` bounds the local Lebesgue
+  constants by the separation of the nodes within their panels, and
+  `exists_isPanelLebesgueBound_of_affine` reads off from it the bound for nodes placed at fixed
+  fractions of every panel, where one constant serves every mesh however unequal its panels.
 * `Lagrange.isUnisolvent_polyLE` reads Lagrange interpolation as the abstract interpolation problem
   of `Numlib/Approximation/Unisolvent` for the subspace `polyLE X n` and the point evaluations at
   the nodes, and `Lagrange.interpCLM_isUnisolvent_polyLE` identifies `Lagrange.interpolateCLM` with
@@ -1297,6 +1300,58 @@ theorem isPanelLebesgueBound_of_sep (h : IsPanelNodes n m x node) {ρ : ℝ} {d 
     _ = (m + 1) * ρ ^ m := by
         rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
         norm_num
+
+/-- **A Lebesgue bound for nodes placed at fixed fractions of the panels.**  Fix finitely many
+*patterns* `μ k : Fin (m + 1) → ℝ`, each with distinct entries, and take any panel node system
+whose panel `j` carries the nodes `x_j + μ (c j)_i (x_{j+1} - x_j)`, the images of the pattern
+`c j` under the affine map of the unit interval onto that panel.  Then a single constant `Λ`,
+determined by the patterns alone, is a Lebesgue bound for every such system: the interval, the
+number of panels and the panels' lengths are all arbitrary.
+
+This is what a graded mesh needs, whose panels shrink towards an endpoint while the nodes keep
+their positions relative to the panel containing them.  Several patterns are allowed because a mesh
+graded towards *both* endpoints uses one pattern on the panels of the left half and its reflection
+`i ↦ 1 - μ_{m-i}` on those of the right.  The proof is `isPanelLebesgueBound_of_sep` with a
+separation proportional to the length of the panel, the ratio being the reciprocal of the smallest
+gap between two entries of a pattern. -/
+theorem exists_isPanelLebesgueBound_of_affine {ι : Type*} [Finite ι] {μ : ι → Fin (m + 1) → ℝ}
+    (hμ : ∀ k, Function.Injective (μ k)) :
+    ∃ Λ : ℝ, ∀ {a b : ℝ} {n : ℕ} {x : ℕ → Set.Icc a b}
+      {node : ℕ → Fin (m + 1) → Set.Icc a b} {c : ℕ → ι}, IsPanelNodes n m x node →
+      (∀ j ≤ n, ∀ i, (node j i : ℝ)
+        = (x j : ℝ) + μ (c j) i * ((x (j + 1) : ℝ) - (x j : ℝ))) →
+      IsPanelLebesgueBound n m x node Λ := by
+  classical
+  cases nonempty_fintype ι
+  -- a uniform separation of the entries of the patterns
+  obtain ⟨d, hd0, hd⟩ : ∃ d : ℝ, 0 < d ∧
+      ∀ (k : ι) (i i' : Fin (m + 1)), i ≠ i' → d ≤ |μ k i - μ k i'| := by
+    by_cases hS : (Finset.univ.filter
+        fun p : ι × Fin (m + 1) × Fin (m + 1) => p.2.1 ≠ p.2.2).Nonempty
+    · refine ⟨(Finset.univ.filter fun p : ι × Fin (m + 1) × Fin (m + 1) => p.2.1 ≠ p.2.2).inf' hS
+        (fun p => |μ p.1 p.2.1 - μ p.1 p.2.2|), ?_, fun k i i' hii => ?_⟩
+      · rw [Finset.lt_inf'_iff]
+        intro p hp
+        exact abs_pos.mpr (sub_ne_zero.mpr fun hcon =>
+          (Finset.mem_filter.mp hp).2 (hμ p.1 hcon))
+      · exact Finset.inf'_le (fun p : ι × Fin (m + 1) × Fin (m + 1) => |μ p.1 p.2.1 - μ p.1 p.2.2|)
+          (Finset.mem_filter.mpr ⟨Finset.mem_univ (k, i, i'), hii⟩)
+    · exact ⟨1, one_pos, fun k i i' hii =>
+        absurd ⟨(k, i, i'), Finset.mem_filter.mpr ⟨Finset.mem_univ (k, i, i'), hii⟩⟩ hS⟩
+  refine ⟨(m + 1) * (1 / d) ^ m, ?_⟩
+  intro a b n x node c h hnode
+  refine isPanelLebesgueBound_of_sep h
+    (d := fun j => d * ((x (j + 1) : ℝ) - (x j : ℝ))) (ρ := 1 / d)
+    (fun j hj => mul_pos hd0 (sub_pos.mpr (h.step j hj))) (fun j hj => ?_)
+    (fun j hj i i' hii => ?_)
+  · rw [← mul_assoc, one_div, inv_mul_cancel₀ (ne_of_gt hd0), one_mul]
+  · have hlen : (0 : ℝ) < (x (j + 1) : ℝ) - (x j : ℝ) := sub_pos.mpr (h.step j hj)
+    rw [hnode j hj i, hnode j hj i']
+    have hrw : ((x j : ℝ) + μ (c j) i * ((x (j + 1) : ℝ) - (x j : ℝ)))
+        - ((x j : ℝ) + μ (c j) i' * ((x (j + 1) : ℝ) - (x j : ℝ)))
+        = (μ (c j) i - μ (c j) i') * ((x (j + 1) : ℝ) - (x j : ℝ)) := by ring
+    rw [hrw, abs_mul, abs_of_pos hlen]
+    exact mul_le_mul_of_nonneg_right (hd (c j) i i' hii) hlen.le
 
 /-- **The piecewise polynomial interpolant is bounded by the local Lebesgue constant**: on the
 panel containing the evaluation point it is the combination `∑ f (node k i) ℓ_i` of the panel's

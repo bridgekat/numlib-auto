@@ -67,6 +67,9 @@ id = "IsPanelLebesgueBound"
 id = "isPanelLebesgueBound_of_sep"
 
 [[node]]
+id = "exists_isPanelLebesgueBound_of_affine"
+
+[[node]]
 id = "norm_piecewisePolyInterpCLM_le"
 
 [[node]]

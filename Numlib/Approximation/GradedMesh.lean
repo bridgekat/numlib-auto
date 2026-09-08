@@ -27,18 +27,17 @@ applies uniformly to a family of functions sharing the same Hölder and derivati
 
 ## Main statements
 
-* `Real.rpow_sub_rpow_le` and `Real.rpow_sub_rpow_le_mul_sub` — two elementary bounds on
-  `A^q - B^q` for `q ≥ 1`, the second valid down to `B = 0`, where the mean value theorem gives
-  nothing.
 * `isPanelNodes_graded` — the graded mesh on `[0, 1]` together with nodes placed at fixed fractions
   `0 = μ_0 < ⋯ < μ_m = 1` of every panel is a panel node system in the sense of
   `IsPanelNodes`.
 * `norm_sub_piecewisePolyInterpCLM_le_graded` — **the graded-mesh interpolation error**
   `‖u - P_n u‖_∞ ≤ C n^{-(m+1)}` for a function of Rice's class `(γ, m + 1)` at the origin, with
   `C` independent of `n`.
-* `isPanelNodes_gradedSym` and `norm_sub_piecewisePolyInterpCLM_le_gradedSym` — the same two
-  statements for the mesh graded towards both endpoints of `[a, b]`, the latter with an explicit
-  constant.
+* `isPanelNodes_gradedSym`, `sub_le_gradedSym` and
+  `norm_sub_piecewisePolyInterpCLM_le_gradedSym` — the same two statements for the mesh graded
+  towards both endpoints of `[a, b]`, the last with an explicit constant, together with the bound
+  `(b - a) q / (2 r)` on the width of a panel of that mesh, which is what makes the interpolants
+  converge for a merely continuous function.
 
 ## References
 
@@ -53,7 +52,9 @@ paragraph preceding their Theorem 12.5.6; both without proof.
 
 The helper estimates on one panel are private: they are stated in the normalized variable `j/n`
 rather than in the mesh points themselves, which is convenient for the proofs and useless outside
-them.
+them.  So are the two elementary bounds on `A^q - B^q` for `q ≥ 1` that drive them — the mean value
+bound, and its weakening which trades the sharp factor for one that survives at `B = 0`, where the
+mean value theorem gives nothing.
 -/
 
 /-! ### Two bounds on a real power
@@ -70,7 +71,7 @@ namespace Real
 
 The hypothesis `0 < B` is what makes `y ↦ y ^ q` differentiable on `[B, A]`; see
 `Real.rpow_sub_rpow_le_mul_sub` for a cruder bound that survives at `B = 0`. -/
-theorem rpow_sub_rpow_le {A B q : ℝ} (hq : 1 ≤ q) (hB : 0 < B) (hBA : B < A) :
+private theorem rpow_sub_rpow_le {A B q : ℝ} (hq : 1 ≤ q) (hB : 0 < B) (hBA : B < A) :
     A ^ q - B ^ q ≤ q * A ^ (q - 1) * (A - B) := by
   have hderiv : ∀ s ∈ Set.Icc B A, HasDerivAt (fun y : ℝ => y ^ q) (q * s ^ (q - 1)) s :=
     fun s _ => hasDerivAt_rpow_const (Or.inr hq)
@@ -93,7 +94,7 @@ theorem rpow_sub_rpow_le {A B q : ℝ} (hq : 1 ≤ q) (hB : 0 < B) (hBA : B < A)
 It is `Real.rpow_sub_rpow_le` with the sharp factor `A ^ (q - 1)` weakened to `1`, which costs
 nothing when `A ≤ 1` and buys the degenerate case `B = 0`, where `y ↦ y ^ q` is not
 differentiable. -/
-theorem rpow_sub_rpow_le_mul_sub {A B q : ℝ} (hq : 1 ≤ q) (hB : 0 ≤ B) (hBA : B < A)
+private theorem rpow_sub_rpow_le_mul_sub {A B q : ℝ} (hq : 1 ≤ q) (hB : 0 ≤ B) (hBA : B < A)
     (hA1 : A ≤ 1) : A ^ q - B ^ q ≤ q * (A - B) := by
   have hA0 : 0 < A := lt_of_le_of_lt hB hBA
   rcases eq_or_lt_of_le hB with hB0 | hB0
@@ -272,22 +273,14 @@ theorem norm_sub_piecewisePolyInterpCLM_le_graded {m : ℕ} {γ q H c : ℝ} (h�
     rw [Real.one_rpow, mul_one] at h
     exact le_trans (abs_nonneg _) h
   have hfact0 : (0 : ℝ) < ((m + 1).factorial : ℝ) := by exact_mod_cast Nat.factorial_pos (m + 1)
-  -- a uniform separation of the reference nodes
-  obtain ⟨dμ, hdμ0, hdμ⟩ :
-      ∃ d : ℝ, 0 < d ∧ ∀ i i' : Fin (m + 1), i ≠ i' → d ≤ |μ i - μ i'| := by
-    by_cases hS : (Finset.univ.filter fun p : Fin (m + 1) × Fin (m + 1) => p.1 ≠ p.2).Nonempty
-    · refine ⟨(Finset.univ.filter fun p : Fin (m + 1) × Fin (m + 1) => p.1 ≠ p.2).inf' hS
-        (fun p => |μ p.1 - μ p.2|), ?_, fun i i' hii => ?_⟩
-      · rw [Finset.lt_inf'_iff]
-        intro p hp
-        exact abs_pos.mpr (sub_ne_zero.mpr fun hcon =>
-          (Finset.mem_filter.mp hp).2 (hμmono.injective hcon))
-      · exact Finset.inf'_le (fun p : Fin (m + 1) × Fin (m + 1) => |μ p.1 - μ p.2|)
-          (Finset.mem_filter.mpr ⟨Finset.mem_univ (i, i'), hii⟩)
-    · exact ⟨1, one_pos, fun i i' hii =>
-        absurd ⟨(i, i'), Finset.mem_filter.mpr ⟨Finset.mem_univ (i, i'), hii⟩⟩ hS⟩
-  set Λ : ℝ := ((m : ℝ) + 1) * (1 / dμ) ^ m with hΛdef
-  have hΛ0 : 0 ≤ Λ := by positivity
+  -- the nodes sit at fixed fractions of every panel, so one Lebesgue bound serves every mesh
+  have hnodes : ∀ N : ℕ, IsPanelNodes N m (x N) (node N) := fun N =>
+    isPanelNodes_graded hq1 hμ0 hμ1 hμmono (hx N) (hnode N)
+  obtain ⟨Λ, hΛfam⟩ := exists_isPanelLebesgueBound_of_affine (ι := Unit) (μ := fun _ => μ)
+    fun _ => hμmono.injective
+  have hΛb : ∀ N : ℕ, IsPanelLebesgueBound N m (x N) (node N) Λ := fun N =>
+    hΛfam (c := fun _ => ()) (hnodes N) fun j hj i => hnode N j hj i
+  have hΛ0 : 0 ≤ Λ := (hΛb 0).nonneg (hnodes 0)
   set Cst : ℝ := (1 + Λ) * H + c * (q * 2 ^ (q - 1)) ^ (m + 1) / (m + 1).factorial with hCstdef
   have hCst2 : (0 : ℝ) ≤ c * (q * 2 ^ (q - 1)) ^ (m + 1) / (m + 1).factorial :=
     div_nonneg (mul_nonneg hc0 (pow_nonneg (by positivity) _)) hfact0.le
@@ -300,20 +293,8 @@ theorem norm_sub_piecewisePolyInterpCLM_le_graded {m : ℕ} {γ q H c : ℝ} (h�
   have hnN : (1 : ℝ) ≤ (N : ℝ) + 1 := by
     have : (0 : ℝ) ≤ (N : ℝ) := Nat.cast_nonneg N
     linarith
-  have hnodes := isPanelNodes_graded hq1 hμ0 hμ1 hμmono (hx N) (hnode N)
-  have hΛb : IsPanelLebesgueBound N m (x N) (node N) Λ := by
-    refine isPanelLebesgueBound_of_sep hnodes
-      (d := fun j => dμ * ((x N (j + 1) : ℝ) - (x N j : ℝ))) (ρ := 1 / dμ)
-      (fun j hj => mul_pos hdμ0 (sub_pos.mpr (hnodes.step j hj))) (fun j hj => ?_)
-      (fun j hj i i' hii => ?_)
-    · rw [← mul_assoc, one_div, inv_mul_cancel₀ (ne_of_gt hdμ0), one_mul]
-    · have hd : (0 : ℝ) < (x N (j + 1) : ℝ) - (x N j : ℝ) := sub_pos.mpr (hnodes.step j hj)
-      rw [hnode N j hj i, hnode N j hj i']
-      have hrw : ((x N j : ℝ) + μ i * ((x N (j + 1) : ℝ) - (x N j : ℝ)))
-          - ((x N j : ℝ) + μ i' * ((x N (j + 1) : ℝ) - (x N j : ℝ)))
-          = (μ i - μ i') * ((x N (j + 1) : ℝ) - (x N j : ℝ)) := by ring
-      rw [hrw, abs_mul, abs_of_pos hd]
-      exact mul_le_mul_of_nonneg_right (hdμ i i' hii) hd.le
+  have hnodes := hnodes N
+  have hΛb := hΛb N
   rw [ContinuousMap.norm_le _ (div_nonneg hCst0 (by positivity))]
   intro t
   obtain ⟨k, hk, h1, h2⟩ := exists_mem_subinterval hnodes.first hnodes.last t
@@ -556,6 +537,63 @@ theorem isPanelNodes_gradedSym (hab : a < b) (hr : 0 < r) (hN : N + 1 = 2 * r) (
       ring
     · rw [hnodeR j hjr hj (Fin.last m), Fin.rev_last, hμ0]
       ring
+
+/-- **The panels of the symmetric graded mesh are short.**  On the mesh graded towards both
+endpoints of `[a, b]` — `x_j = a + (j/r)^q (b-a)/2` on the left half and `x_{2r-j} = a + b - x_j`
+on the right — every one of the `2 r` panels has width at most `(b - a) q / (2 r)`.
+
+The mean value theorem gives it on the left half, in the crude form `A^q - B^q ≤ q (A - B)` for
+`0 ≤ B < A ≤ 1`: unlike the sharp `q A^{q-1} (A - B)` it survives at `B = 0`, which is the panel
+touching the endpoint, where the grading is steepest.  The reflection carries it to the right
+half.  The bound is `𝒪(1/r)`, so it is the hypothesis that makes piecewise polynomial
+interpolation on the family of these meshes converge for every continuous function, by
+`tendsto_piecewisePolyInterpCLM`. -/
+theorem sub_le_gradedSym (hab : a < b) (hr : 0 < r) (hN : N + 1 = 2 * r) (hq1 : 1 ≤ q)
+    {x : ℕ → Set.Icc a b}
+    (hxL : ∀ j ≤ r, (x j : ℝ) = a + ((j : ℝ) / r) ^ q * ((b - a) / 2))
+    (hxR : ∀ j ≤ r, (x (2 * r - j) : ℝ) = a + b - (x j : ℝ)) :
+    ∀ j ≤ N, (x (j + 1) : ℝ) - (x j : ℝ) ≤ (b - a) / 2 * q / r := by
+  have hr0 : (0 : ℝ) < (r : ℝ) := by exact_mod_cast hr
+  have hS0 : (0 : ℝ) < (b - a) / 2 := by linarith
+  -- a panel of the left half, by the mean value bound in the normalized variable
+  have hleft : ∀ i < r, (x (i + 1) : ℝ) - (x i : ℝ) ≤ (b - a) / 2 * q / r := by
+    intro i hi
+    have hB0 : (0 : ℝ) ≤ (i : ℝ) / (r : ℝ) := by positivity
+    have hABeq : ((i : ℝ) + 1) / (r : ℝ) - (i : ℝ) / (r : ℝ) = 1 / (r : ℝ) := by
+      rw [div_sub_div_same]
+      norm_num
+    have hBA : (i : ℝ) / (r : ℝ) < ((i : ℝ) + 1) / (r : ℝ) := by
+      have hpos : (0 : ℝ) < 1 / (r : ℝ) := by positivity
+      linarith
+    have hA1 : ((i : ℝ) + 1) / (r : ℝ) ≤ 1 := by
+      rw [div_le_one hr0]
+      exact_mod_cast (by omega : i + 1 ≤ r)
+    have hstep := Real.rpow_sub_rpow_le_mul_sub hq1 hB0 hBA hA1
+    rw [hABeq] at hstep
+    have he1 : (x i : ℝ) = a + ((i : ℝ) / (r : ℝ)) ^ q * ((b - a) / 2) := hxL i (by omega)
+    have he2 : (x (i + 1) : ℝ) = a + (((i : ℝ) + 1) / (r : ℝ)) ^ q * ((b - a) / 2) := by
+      rw [hxL (i + 1) (by omega)]
+      push_cast
+      ring
+    rw [he1, he2]
+    calc a + (((i : ℝ) + 1) / (r : ℝ)) ^ q * ((b - a) / 2)
+          - (a + ((i : ℝ) / (r : ℝ)) ^ q * ((b - a) / 2))
+        = ((((i : ℝ) + 1) / (r : ℝ)) ^ q - ((i : ℝ) / (r : ℝ)) ^ q) * ((b - a) / 2) := by ring
+      _ ≤ q * (1 / (r : ℝ)) * ((b - a) / 2) := mul_le_mul_of_nonneg_right hstep hS0.le
+      _ = (b - a) / 2 * q / (r : ℝ) := by ring
+  intro j hj
+  rcases Nat.lt_or_ge j r with hjr | hjr
+  · exact hleft j hjr
+  · -- a panel of the right half is the mirror image of one of the left half
+    have hxj : (x j : ℝ) = a + b - (x (2 * r - 1 - j + 1) : ℝ) := by
+      have h := hxR (2 * r - 1 - j + 1) (by omega)
+      rwa [show 2 * r - (2 * r - 1 - j + 1) = j by omega] at h
+    have hxj1 : (x (j + 1) : ℝ) = a + b - (x (2 * r - 1 - j) : ℝ) := by
+      have h := hxR (2 * r - 1 - j) (by omega)
+      rwa [show 2 * r - (2 * r - 1 - j) = j + 1 by omega] at h
+    have hmirror := hleft (2 * r - 1 - j) (by omega)
+    rw [hxj, hxj1]
+    linarith
 
 /-- **The interpolation error on one panel from a bound on the `(m+1)`-st derivative there.**  Only
 the smoothness of `G` on an open set containing the panel is used. -/
