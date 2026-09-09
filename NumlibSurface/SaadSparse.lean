@@ -12,6 +12,7 @@ import NumlibSurface.SaadSparse.Chapter02.Section04
 import NumlibSurface.SaadSparse.Chapter02.Section05
 import NumlibSurface.SaadSparse.Chapter03.Section02
 import NumlibSurface.SaadSparse.Chapter03.Section03
+import NumlibSurface.SaadSparse.Chapter03.Section04
 import NumlibSurface.SaadSparse.Chapter04.Section01
 import NumlibSurface.SaadSparse.Chapter04.Section02
 import NumlibSurface.SaadSparse.Chapter04.Section03
@@ -49,6 +50,7 @@ import NumlibSurface.SaadSparse.Chapter10.Section03
 import NumlibSurface.SaadSparse.Chapter10.Section04
 import NumlibSurface.SaadSparse.Chapter10.Section05
 import NumlibSurface.SaadSparse.Chapter10.Section08
+import NumlibSurface.SaadSparse.Chapter11
 import NumlibSurface.SaadSparse.Chapter12.Section02
 import NumlibSurface.SaadSparse.Chapter12.Section03
 import NumlibSurface.SaadSparse.Chapter12.Section04
@@ -69,7 +71,7 @@ import NumlibSurface.SaadSparse.Common
 # Saad, *Iterative Methods for Sparse Linear Systems*
 
 The surface library for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition
-(SIAM, 2003): fifty-four modules, one per section of the book the project covers, reaching every
+(SIAM, 2003): sixty-eight modules, one per section of the book the project covers, reaching every
 chapter that states a numbered result. Each module states the book's results in the book's own
 terms — Saad's non-symmetric "positive definite", the splitting `A = D - E - F`, the algorithms
 written out as Lean functions — and proves them by specializing the general backbone under
@@ -120,6 +122,7 @@ holds the conventions shared by the whole library, and `SaadSparse.Chapter06.Com
 | **3** | | *Sparse Matrices* |
 | 3.2 | `Chapter03.Section02` | The adjacency graph and the patterns of products |
 | 3.3 | `Chapter03.Section03` | Permutations, reorderings and irreducibility |
+| 3.4 | `Chapter03.Section04` | Storage schemes: coordinate, CSR, MSR, diagonal, Ellpack |
 | **4** | | *Basic Iterative Methods* |
 | 4.1 | `Chapter04.Section01` | Jacobi, Gauss–Seidel, SOR, SSOR as splittings; the preconditioners |
 | 4.2 | `Chapter04.Section02` | Convergence: Theorem 4.1, diagonal dominance, the SOR theory |
@@ -161,6 +164,8 @@ holds the conventions shared by the whole library, and `SaadSparse.Chapter06.Com
 | 10.2 | `Chapter10.Section02` | Jacobi, SOR and SSOR preconditioners |
 | 10.5 | `Chapter10.Section05` | Approximate inverse preconditioners |
 | 10.8 | `Chapter10.Section08` | Incomplete Gram–Schmidt (Algorithm 10.17); Proposition 10.17 |
+| **11** | | *Parallel Implementations* |
+| 11.5 | `Chapter11` | The jagged diagonal format; Example 11.1 |
 | **12** | | *Parallel Preconditioners* |
 | 12.3 | `Chapter12.Section03` | Polynomial preconditioners |
 | **13** | | *Multigrid Methods* |
@@ -180,7 +185,8 @@ There is no `Chapter06.Section01`: §6.1 is the chapter's introduction, and its 
 paragraph is stated with §6.2. `Chapter05.Section01` likewise covers §5.1 together with §5.2, which
 share the book's own numbering (5.1)–(5.11), and `Chapter01.Basics` covers §1.1–1.6 in one module
 because almost all of it is Mathlib restated in Saad's notation. Chapter 11, on parallel
-implementations, has no module: read section by section it states no theorem.
+implementations, states no theorem anywhere; its module carries its one example with mathematical
+content, the jagged diagonal format of §11.5.4.
 
 ## The ambient setting
 
@@ -235,11 +241,17 @@ the declarations that are still to be written are to be.
 * Block relaxation (§4.1.1, Algorithms 4.1–4.2), which waits on the backbone's block-projection
   layer, and one identity of §9.6.
 
-Left out deliberately: figures, numerical examples and tables, operation counts, implementation
-advice, and the exercises the text does not cite. Chapter 11, on parallel implementations, has no
-module at all: read section by section, it states no theorem. §1.13's differentiability statement
-(1.74)–(1.75) is Mathlib calculus rather than a specialization of the backbone, and the plan lists
-it as a backbone candidate.
+Every numbered item of the book has a node, examples and definitions included. A worked example
+over a small matrix or graph is a theorem here — the storage layouts of §3.4 and §11.5, the
+assembly of Example 2.1, the interpolation weights of Example 13.9 — and a definition the book
+names is restated even where Mathlib carries the content, `definition_1_1` for the spectrum and
+`definition_1_23` for the entrywise order being the two of Chapter 1. What is left open is what
+cannot be stated faithfully: measured tables and figures (Examples 8.1, 10.1, 11.2, 12.2, 13.4 and
+13.5), and the examples whose data live only in a figure the source text does not reproduce
+(Examples 3.3–3.6, on the mesh of Figure 2.10). The group files say so item by item.
+Implementation advice and the exercises the text does not cite are out of scope. §1.13's
+differentiability statement (1.74)–(1.75) is Mathlib calculus rather than a specialization of the
+backbone, and the plan lists it as a backbone candidate.
 
 ## Where the book needs reading with care
 

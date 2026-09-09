@@ -36,7 +36,9 @@ argued that the bracketed term must be of the order 2ε, but one can say that on
 be true" — and the interpolation weights (13.72)–(13.74), the C/F splitting of §13.6.2, the
 coarsening heuristics of §13.6.3 and the multilevel ILU of §13.6.4 are constructions, not theorems:
 once an AMG prolongation is chosen, everything provable about it is Theorem 13.3 with the coarse
-space `Ran(I_H^h)`.
+space `Ran(I_H^h)`.  The one thing §13.6.2 does assert is Example 13.9, that the weights it
+produces on one nine-point stencil are nonnegative and sum to one; that is `example_13_9`, stated
+at the formula the text prints, since the stencil entries live only in Figure 13.10.
 -/
 
 open Finset Matrix
@@ -124,5 +126,26 @@ theorem equation_13_68_le {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef)
   have h := (isDualSeminormPair_normD hA).norm_inner_le (A ⬝ s) s
   calc inner ℝ (A ⬝ s) s ≤ ‖inner ℝ (A ⬝ s) s‖ := Real.le_norm_self _
     _ ≤ normDinv A (A ⬝ s) * normD A s := h
+
+/-- **Saad Example 13.9**: the interpolation formula (13.73) evaluated on the nine-point stencil of
+Figure 13.10, where a red-black colouring of the five-point graph makes the centre a fine node with
+four coarse neighbours `S`, `N`, `W`, `E` and two strongly coupled fine neighbours.  The example
+prints the result twice, first with the two fine neighbours still eliminated separately and then
+collected, and closes with the sentence that is its point: *the weights are all nonnegative and
+they add up to one*, as an interpolation formula's must be.
+
+Both displays are stated, together with the nonnegativity and the sum.  The stencil entries `a_ij`
+themselves live only in Figure 13.10, which the source text does not reproduce, so the example is
+stated at the formula the text prints rather than derived from (13.73); (13.73) belongs to the
+construction of §13.6.2, which this module does not formalize. -/
+theorem example_13_9 (sS sN sW sE : ℝ) :
+    (4 * sS + 4 * sN + 3 * sW + 3 * sE + 2 * ((3 * sN + 4 * sW) / 7)
+          + 2 * ((3 * sN + 4 * sE) / 7)) / 18
+        = (4 / 18) * sS + ((4 + 12 / 7) / 18) * sN + ((3 + 8 / 7) / 18) * sW
+          + ((3 + 8 / 7) / 18) * sE ∧
+      0 ≤ (4 : ℝ) / 18 ∧ 0 ≤ ((4 : ℝ) + 12 / 7) / 18 ∧ 0 ≤ ((3 : ℝ) + 8 / 7) / 18 ∧
+      (4 : ℝ) / 18 + ((4 : ℝ) + 12 / 7) / 18 + ((3 : ℝ) + 8 / 7) / 18
+          + ((3 : ℝ) + 8 / 7) / 18 = 1 :=
+  ⟨by ring, by norm_num, by norm_num, by norm_num, by norm_num⟩
 
 end SaadSparse.Chapter13

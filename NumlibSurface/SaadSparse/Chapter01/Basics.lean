@@ -1,5 +1,5 @@
 import Mathlib.Analysis.CStarAlgebra.Spectrum
-import NumlibSurface.SaadSparse.Chapter01.Section13
+import NumlibSurface.SaadSparse.Common
 
 /-!
 # Saad §1.1–1.6: matrices, eigenvalues, types of matrices, norms, subspaces
@@ -9,13 +9,13 @@ Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd
 inner products and vector norms, matrix norms, and subspaces with the range and the kernel.
 
 Almost all of this chapter is Mathlib restated in the book's notation, and the file is
-correspondingly thin.  The following carry no declaration of their own, because Mathlib's is the
-statement: the definitions of §1.1 and §1.3 (`Matrix.transpose`, `Matrix.conjTranspose`,
-`Matrix.IsSymm`, `Matrix.IsHermitian`, `IsStarNormal`, `Matrix.IsDiag`,
-`Matrix.BlockTriangular`, `Matrix.unitaryGroup`, and `Matrix.IsTridiagonal`,
-`Matrix.IsUpperHessenberg` of `Numlib/LinearAlgebra/Matrix/Hessenberg`); Definition 1.1
-(`Module.End.HasEigenvalue`, `spectrum`, reached from a matrix by
-`Matrix.hasEigenvalue_toEuclideanLin_iff`); the determinant properties of §1.2; the inner-product
+correspondingly thin.  Definition 1.1 is `definition_1_1`, which is the book's name for Mathlib's
+`spectrum ℂ A`: it says that `λ ∈ σ(A)` exactly when `A u = λ u` for a nonzero `u`.  The following
+carry no declaration of their own, because Mathlib's is the statement: the definitions of §1.1 and
+§1.3 (`Matrix.transpose`, `Matrix.conjTranspose`, `Matrix.IsSymm`, `Matrix.IsHermitian`,
+`IsStarNormal`, `Matrix.IsDiag`, `Matrix.BlockTriangular`, `Matrix.unitaryGroup`, and
+`Matrix.IsTridiagonal`, `Matrix.IsUpperHessenberg` of
+`Numlib/LinearAlgebra/Matrix/Hessenberg`); the determinant properties of §1.2; the inner-product
 and norm axioms of §1.4 (`InnerProductSpace`, `Norm`); the `p`-norms (1.6) (`PiLp`); and §1.6 in
 full (`Submodule.span`, `LinearMap.range`, `LinearMap.ker`, `IsCompl` and
 `Module.End.eigenspace`, an eigenspace being invariant by `Module.End.mem_eigenspace_iff`).
@@ -28,13 +28,74 @@ standard notion and is what Proposition 1.4 is about.  And the book prints (1.18
 
 The matrix norms of §1.5 use Mathlib's scoped instances, one per norm, opened declaration by
 declaration: `Matrix.Norms.Operator` for `‖·‖_∞`, `Matrix.Norms.L2Operator` for `‖·‖₂` and
-`Matrix.Norms.Frobenius` for `‖·‖_F`.  The remaining induced norms `‖·‖_p` are the surface's own
-`Matrix.lpOpNorm` of §1.13, which is why this file imports that one.
+`Matrix.Norms.Frobenius` for `‖·‖_F`.  The remaining induced norms `‖·‖_p` of (1.7) are the
+surface's own `Matrix.lpCLM` and `Matrix.lpOpNorm`, defined here because §1.5 is where the book
+introduces them; §1.13.2 builds the condition number `κ_p(A) = ‖A‖_p ‖A⁻¹‖_p` on top of them.
 -/
 
 open Matrix Finset Polynomial
 
 open scoped SaadSparse ENNReal NNReal
+
+/-! ### §1.5 The induced matrix `p`-norms (1.7)
+
+Saad's `‖A‖_p = max_{x ≠ 0} ‖A x‖_p / ‖x‖_p` is the operator norm of `x ↦ A x` read on `PiLp p`.
+Mathlib carries the induced norm for `p = ∞` (`Matrix.Norms.Operator`) and `p = 2`
+(`Matrix.Norms.L2Operator`) only, so the general one is defined here, in the section that
+introduces it, and §1.13.2 uses it for the condition number. -/
+
+namespace Matrix
+
+section Lp
+
+variable {𝕜 : Type*} [RCLike 𝕜] {n : ℕ} (p : ℝ≥0∞) [Fact (1 ≤ p)]
+
+/-- The operator `x ↦ A x` on `PiLp p (fun _ : Fin n => 𝕜)`, whose norm is the matrix `p`-norm
+`‖A‖_p` induced by the vector `p`-norm. -/
+noncomputable def lpCLM (A : Matrix (Fin n) (Fin n) 𝕜) :
+    PiLp p (fun _ : Fin n => 𝕜) →L[𝕜] PiLp p (fun _ : Fin n => 𝕜) :=
+  LinearMap.toContinuousLinearMap (toLpLin p p A)
+
+@[simp]
+theorem lpCLM_apply (A : Matrix (Fin n) (Fin n) 𝕜) (x : PiLp p (fun _ : Fin n => 𝕜)) :
+    lpCLM p A x = WithLp.toLp p (A *ᵥ WithLp.ofLp x) := rfl
+
+theorem lpCLM_one : lpCLM p (1 : Matrix (Fin n) (Fin n) 𝕜) = 1 := by
+  ext x i; simp
+
+theorem lpCLM_mul (A B : Matrix (Fin n) (Fin n) 𝕜) :
+    lpCLM p (A * B) = lpCLM p A * lpCLM p B := by
+  ext x i; simp [← mulVec_mulVec]
+
+theorem lpCLM_add (A B : Matrix (Fin n) (Fin n) 𝕜) :
+    lpCLM p (A + B) = lpCLM p A + lpCLM p B := by
+  ext x i; simp [add_mulVec]
+
+theorem lpCLM_smul (c : 𝕜) (A : Matrix (Fin n) (Fin n) 𝕜) :
+    lpCLM p (c • A) = c • lpCLM p A := by
+  ext x i; simp [smul_mulVec]
+
+@[simp]
+theorem lpCLM_zero : lpCLM p (0 : Matrix (Fin n) (Fin n) 𝕜) = 0 := by
+  ext x i; simp
+
+/-- **Saad (1.7)** at `q = p`: `‖A‖_p`, the matrix norm induced by the vector `p`-norm,
+`‖A‖_p = max_{x ≠ 0} ‖A x‖_p / ‖x‖_p`.  It is the operator norm of `Matrix.lpCLM p A`, and the
+condition number `κ_p(A)` of §1.13.2 is built from it. -/
+noncomputable def lpOpNorm (A : Matrix (Fin n) (Fin n) 𝕜) : ℝ := ‖lpCLM p A‖
+
+@[simp]
+theorem lpOpNorm_zero : lpOpNorm p (0 : Matrix (Fin n) (Fin n) 𝕜) = 0 := by
+  rw [lpOpNorm, lpCLM_zero, norm_zero]
+
+open scoped Matrix.Norms.L2Operator in
+/-- For `p = 2` the induced norm is Mathlib's scoped `L2Operator` matrix norm. -/
+theorem lpOpNorm_two (A : Matrix (Fin n) (Fin n) 𝕜) : lpOpNorm 2 A = ‖A‖ :=
+  (l2_opNorm_def A).symm
+
+end Lp
+
+end Matrix
 
 namespace SaadSparse.Chapter01
 
@@ -56,6 +117,25 @@ nowhere explicitly but uses it from §1.2 on. -/
 theorem trace_eq_sum_eigenvalues (A : Matrix (Fin n) (Fin n) ℂ) :
     A.trace = A.charpoly.roots.sum ∧ A.det = A.charpoly.roots.prod :=
   ⟨A.trace_eq_sum_roots_charpoly, A.det_eq_prod_roots_charpoly⟩
+
+/-- **Saad Definition 1.1**: a complex scalar `λ` is an *eigenvalue* of the square matrix `A`
+when `A u = λ u` for some nonzero `u ∈ ℂⁿ`, and such a `u` is an *eigenvector* of `A` associated
+with `λ`; the set of eigenvalues is the *spectrum* `σ(A)`.
+
+Saad's `σ(A)` is Mathlib's `spectrum ℂ A`, and "`u` is an eigenvector of `A` for `λ`" is
+`u ≠ 0` together with `u ∈ Module.End.eigenspace (Matrix.toEuclideanLin A) λ`, which
+`Module.End.mem_eigenspace_iff` unfolds to `A u = λ u`.  This is the equality of the two, and it
+is what the rest of the library means by an eigenvalue. -/
+theorem definition_1_1 (A : Matrix (Fin n) (Fin n) ℂ) (l : ℂ) :
+    (∃ u : EuclideanSpace ℂ (Fin n), u ≠ 0 ∧ (A ⬝ u) = l • u) ↔ l ∈ spectrum ℂ A := by
+  rw [← Matrix.hasEigenvalue_toEuclideanLin_iff]
+  constructor
+  · rintro ⟨u, hu, h⟩
+    exact Module.End.hasEigenvalue_of_hasEigenvector
+      (x := u) ⟨Module.End.mem_eigenspace_iff.2 h, hu⟩
+  · intro h
+    obtain ⟨u, hmem, hu⟩ := h.exists_hasEigenvector
+    exact ⟨u, hu, Module.End.mem_eigenspace_iff.1 hmem⟩
 
 /-- **Saad Proposition 1.3**: if `μ` is an eigenvalue of `A` then `conj μ` is an eigenvalue of
 `Aᴴ`, and an eigenvector `v` of `Aᴴ` for `conj μ` is a *left eigenvector* of `A`,

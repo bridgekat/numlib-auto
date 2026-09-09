@@ -14,9 +14,4 @@ id = "equation_13_68_le"
 
 [[node]]
 id = "example_13_9"
-kind = "theorem"
-desc = '''Example 13.9 (§13.6.2): the AMG interpolation formula (13.73) evaluated on the 9-point
-stencil of Figure 13.10, with the coarse and fine nodes given by a red-black colouring of the
-5-point graph, yielding `s_i = (1/18)[4 s_S + (4 + 12/7) s_N + (3 + 8/7) s_W + (3 + 8/7) s_E]`, whose
-weights are nonnegative and sum to one. Not formalized: it is an illustration — an arithmetic
-evaluation of (13.73) on the one stencil of a figure, and the figure carries the entries it uses.'''
+source = "Saad, Iterative Methods for Sparse Linear Systems, Example 13.9"

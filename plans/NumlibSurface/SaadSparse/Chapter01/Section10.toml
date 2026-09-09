@@ -46,19 +46,7 @@ source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.25"
 
 [[node]]
 id = "definition_1_23"
-kind = "definition"
-desc = '''Definition 1.23: for two n × m matrices, `A ≤ B` means `a_ij ≤ b_ij` for every entry; `A`
-is nonnegative when `A ≥ O` and positive when `A > O`, with the mirror definitions for negative.
-Not formalized: the order is the backbone's `Matrix.EntrywiseLE` (notation `≤ₑ`) and
-`Matrix.EntrywiseNonneg` of `Numlib/LinearAlgebra/Matrix/Order.lean` — deliberately not Mathlib's
-`≤` on matrices, which is the Loewner order — entrywise positivity is written out where it is used,
-and §1.10's module doc records the correspondence rather than restating it.'''
 
 [[node]]
 id = "definition_1_30"
-kind = "definition"
-desc = '''Definition 1.30: `A` is an M-matrix when (1) `a_ii > 0`, (2) `a_ij ≤ 0` for `i ≠ j`, (3)
-`A` is nonsingular and (4) `A⁻¹ ≥ 0`. Not formalized: this is the backbone's `Matrix.IsMMatrix` of
-`Numlib/LinearAlgebra/Matrix/MMatrix.lean`, which carries clauses (2)–(4) only, clause (1) being
-`Matrix.IsMMatrix.diag_pos` after the book's own Theorem 1.32; §1.10's module doc records the
-correspondence rather than restating it.'''
+source = "Saad, Iterative Methods for Sparse Linear Systems, Definition 1.30"

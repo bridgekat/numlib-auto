@@ -73,18 +73,10 @@ end Polygon
 
 /-! ### Positive and negative parts in Saad's sign convention
 
-Saad's `(z)⁺ = (z + |z|)/2` and `(z)⁻ = (z - |z|)/2` are `max z 0` and `min z 0`.  Note that
-Saad's negative part is *nonpositive*, unlike Mathlib's `negPart`, which is `max (-z) 0`. -/
-
-/-- Saad's positive part `(z)⁺ = (z + |z|)/2` is `max z 0`. -/
-theorem max_zero_eq_half (z : ℝ) : max z 0 = (z + |z|) / 2 := by
-  rcases abs_cases z with ⟨h, _⟩ | ⟨h, _⟩ <;> rw [h] <;> [rw [max_eq_left]; rw [max_eq_right]] <;>
-    linarith
-
-/-- Saad's negative part `(z)⁻ = (z - |z|)/2` is `min z 0`. -/
-theorem min_zero_eq_half (z : ℝ) : min z 0 = (z - |z|) / 2 := by
-  rcases abs_cases z with ⟨h, _⟩ | ⟨h, _⟩ <;> rw [h] <;> [rw [min_eq_right]; rw [min_eq_left]] <;>
-    linarith
+Saad's `(z)⁺ = (z + |z|)/2` and `(z)⁻ = (z - |z|)/2` are `max z 0` and `min z 0`, which is
+`SaadSparse.max_zero_eq_half` and `SaadSparse.min_zero_eq_half` of `NumlibSurface/SaadSparse/Common`
+— §2.2.3 needs them too, and needs them first.  Note that Saad's negative part is *nonpositive*,
+unlike Mathlib's `negPart`, which is `max (-z) 0`. -/
 
 /-- Saad (2.53): `z⁺ + z⁻ = z`, the decomposition of a scalar into its positive and negative
 parts. -/

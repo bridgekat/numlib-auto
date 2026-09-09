@@ -1,14 +1,18 @@
 import Numlib.Analysis.Normed.Ring.CondNumber
 import Numlib.LinearSolve.Perturbation
-import NumlibSurface.SaadSparse.Common
+import NumlibSurface.SaadSparse.Chapter01.Basics
 
 /-!
 # Saad §1.13: basic concepts in linear systems
 
 Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
-2003, §1.13: the three existence cases of §1.13.1, the matrix `p`-norms and the condition number
+2003, §1.13: the three existence cases of §1.13.1, the condition number
 `κ_p(A) = ‖A‖_p ‖A⁻¹‖_p` of §1.13.2, the first-order perturbation theory (1.74)–(1.75), the relative
 perturbation bound (1.76), the residual–error relation, and Example 1.5.
+
+The matrix `p`-norm `‖A‖_p` itself is not defined here: it is (1.7) of §1.5, so `Matrix.lpCLM` and
+`Matrix.lpOpNorm` live in `Chapter01/Basics.lean` with the rest of §1.5, and this file builds the
+condition number on them.
 
 The condition number is the backbone's `NormedRing.condNumber` of the operator
 `x ↦ A x` on `PiLp p (fun _ : Fin n => 𝕜)`, and the perturbation bounds are
@@ -74,56 +78,15 @@ theorem infinite_setOf_mulVec_eq (A : Matrix (Fin n) (Fin n) 𝕜) (hA : ¬ IsUn
 theorem not_exists_mulVec_eq (A : Matrix (Fin n) (Fin n) 𝕜) {b : Fin n → 𝕜}
     (hb : b ∉ Set.range (A *ᵥ ·)) : ¬ ∃ x, A *ᵥ x = b := fun ⟨x, hx⟩ => hb ⟨x, hx⟩
 
-/-! ### Matrix `p`-norms and the condition number (§1.13.2) -/
+/-! ### The condition number (§1.13.2) -/
 
 section Lp
 
 variable (p : ℝ≥0∞) [Fact (1 ≤ p)]
 
-/-- The operator `x ↦ A x` on `PiLp p (fun _ : Fin n => 𝕜)`, whose norm is the matrix `p`-norm
-`‖A‖_p` induced by the vector `p`-norm. -/
-noncomputable def lpCLM (A : Matrix (Fin n) (Fin n) 𝕜) :
-    PiLp p (fun _ : Fin n => 𝕜) →L[𝕜] PiLp p (fun _ : Fin n => 𝕜) :=
-  LinearMap.toContinuousLinearMap (toLpLin p p A)
-
-@[simp]
-theorem lpCLM_apply (A : Matrix (Fin n) (Fin n) 𝕜) (x : PiLp p (fun _ : Fin n => 𝕜)) :
-    lpCLM p A x = WithLp.toLp p (A *ᵥ WithLp.ofLp x) := rfl
-
-theorem lpCLM_one : lpCLM p (1 : Matrix (Fin n) (Fin n) 𝕜) = 1 := by
-  ext x i; simp
-
-theorem lpCLM_mul (A B : Matrix (Fin n) (Fin n) 𝕜) :
-    lpCLM p (A * B) = lpCLM p A * lpCLM p B := by
-  ext x i; simp [← mulVec_mulVec]
-
-theorem lpCLM_add (A B : Matrix (Fin n) (Fin n) 𝕜) :
-    lpCLM p (A + B) = lpCLM p A + lpCLM p B := by
-  ext x i; simp [add_mulVec]
-
-theorem lpCLM_smul (c : 𝕜) (A : Matrix (Fin n) (Fin n) 𝕜) :
-    lpCLM p (c • A) = c • lpCLM p A := by
-  ext x i; simp [smul_mulVec]
-
-@[simp]
-theorem lpCLM_zero : lpCLM p (0 : Matrix (Fin n) (Fin n) 𝕜) = 0 := by
-  ext x i; simp
-
-/-- Saad §1.13.2: `‖A‖_p`, the matrix norm induced by the vector `p`-norm. -/
-noncomputable def lpOpNorm (A : Matrix (Fin n) (Fin n) 𝕜) : ℝ := ‖lpCLM p A‖
-
-@[simp]
-theorem lpOpNorm_zero : lpOpNorm p (0 : Matrix (Fin n) (Fin n) 𝕜) = 0 := by
-  rw [lpOpNorm, lpCLM_zero, norm_zero]
-
 /-- Saad §1.13.2: the condition number `κ_p(A) = ‖A‖_p ‖A⁻¹‖_p`. -/
 noncomputable def condNumberLp (A : Matrix (Fin n) (Fin n) 𝕜) : ℝ :=
   lpOpNorm p A * lpOpNorm p A⁻¹
-
-open scoped Matrix.Norms.L2Operator in
-/-- For `p = 2` the induced norm is Mathlib's scoped `L2Operator` matrix norm. -/
-theorem lpOpNorm_two (A : Matrix (Fin n) (Fin n) 𝕜) : lpOpNorm 2 A = ‖A‖ :=
-  (l2_opNorm_def A).symm
 
 /-- `A` invertible as a matrix, as a continuous linear equivalence of `PiLp p`. -/
 noncomputable def lpEquiv {A : Matrix (Fin n) (Fin n) 𝕜} (hA : IsUnit A) :

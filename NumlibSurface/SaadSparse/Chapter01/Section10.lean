@@ -14,11 +14,12 @@ radius (Theorem 1.28), the nonnegative Neumann criterion (Theorem 1.29), and M-m
 
 Saad's `A ≥ O` and `B ≥ A` are the **entrywise** order, `Matrix.EntrywiseNonneg` and
 `Matrix.EntrywiseLE` (notation `≤ₑ`) of `Numlib/LinearAlgebra/Matrix/Order.lean` — not Mathlib's
-`≤` on matrices, which is the Loewner order.  Definition 1.23 is that pair of predicates and
-Definition 1.30 is `Matrix.IsMMatrix` of `Numlib/LinearAlgebra/Matrix/MMatrix.lean`, so neither
-gets a declaration of its own here.  Saad's `ρ(A)` for a real matrix is
-`Matrix.complexSpectralRadius A`, the spectral radius of the complexification: `spectrum ℝ` of a
-real matrix is not the spectral radius.
+`≤` on matrices, which is the Loewner order.  That identification is `definition_1_23`.
+Definition 1.30 is `Matrix.IsMMatrix` of `Numlib/LinearAlgebra/Matrix/MMatrix.lean`, which carries
+the book's clauses (2)–(4); `definition_1_30` puts the book's four clauses back together, clause
+(1) being the derived `Matrix.IsMMatrix.diag_pos`, which is Theorem 1.32.  Saad's `ρ(A)` for a
+real matrix is `Matrix.complexSpectralRadius A`, the spectral radius of the complexification:
+`spectrum ℝ` of a real matrix is not the spectral radius.
 
 Theorem 1.25 calls the Perron eigenvalue *simple*, and both readings of the word are proved:
 `theorem_1_25_simple` is the one-dimensionality of the eigenspace and `theorem_1_25_algSimple` is
@@ -46,6 +47,31 @@ namespace SaadSparse.Chapter01
 variable {n : ℕ}
 
 /-! ### The entrywise order (Definition 1.23, Propositions 1.24 and 1.26, Corollary 1.27) -/
+
+/-- **Saad Definition 1.23**: for two `n × m` real matrices, `A ≤ B` means `a_ij ≤ b_ij` for
+every entry, `A` is *nonnegative* when `A ≥ O` and *negative* when `A ≤ O`, and the relation is a
+partial order rather than a total one.
+
+The order is the **entrywise** one, `Matrix.EntrywiseLE` (notation `≤ₑ`) of
+`Numlib/LinearAlgebra/Matrix/Order.lean`, and `A ≥ O` is `Matrix.EntrywiseNonneg` — not Mathlib's
+`≤` on matrices, which is the Loewner order.  The clauses below are, in order: the order unfolded;
+nonnegativity as `O ≤ A`; nonnegativity unfolded; the mirror definition for "negative"; and the
+mirror symmetry of the order itself.
+
+Saad's remaining word, *positive* for `A > O`, is left to be read off the partial order and is
+never used in that form: what §1.10 and Theorem 1.25 need is entrywise strict positivity,
+`∀ i j, 0 < A i j`, which is written out where it occurs. -/
+theorem definition_1_23 {m k : ℕ} (A B : Matrix (Fin m) (Fin k) ℝ) :
+    (A ≤ₑ B ↔ ∀ i j, A i j ≤ B i j) ∧
+      (A.EntrywiseNonneg ↔ (0 : Matrix (Fin m) (Fin k) ℝ) ≤ₑ A) ∧
+      (A.EntrywiseNonneg ↔ ∀ i j, 0 ≤ A i j) ∧
+      ((-A).EntrywiseNonneg ↔ A ≤ₑ (0 : Matrix (Fin m) (Fin k) ℝ)) ∧
+      (A ≤ₑ B ↔ (-B) ≤ₑ (-A)) := by
+  refine ⟨Iff.rfl, Iff.rfl, Iff.rfl, ?_, ?_⟩
+  · exact forall_congr' fun i => forall_congr' fun j => by
+      rw [Matrix.zero_apply, Matrix.neg_apply, neg_nonneg]
+  · exact forall_congr' fun i => forall_congr' fun j => by
+      rw [Matrix.neg_apply, Matrix.neg_apply, neg_le_neg_iff]
 
 open scoped Matrix.Norms.Operator in
 /-- **Saad Proposition 1.24**, the calculus of the entrywise order of Definition 1.23, in the
@@ -172,6 +198,18 @@ theorem theorem_1_29 {B : Matrix (Fin n) (Fin n) ℝ} (hB : B.EntrywiseNonneg) :
 section MMatrix
 
 variable {A : Matrix (Fin n) (Fin n) ℝ}
+
+/-- **Saad Definition 1.30**: `A` is an *M-matrix* when (1) `a_ii > 0`, (2) `a_ij ≤ 0` for
+`i ≠ j`, (3) `A` is nonsingular and (4) `A⁻¹ ≥ 0`.
+
+This is `Matrix.IsMMatrix` of `Numlib/LinearAlgebra/Matrix/MMatrix.lean`, which carries clauses
+(2)–(4) only: clause (1) follows from them, and that is the book's own Theorem 1.32, here
+`Matrix.IsMMatrix.diag_pos`.  So the four clauses of the definition and the three of `IsMMatrix`
+define the same class, which is what this states. -/
+theorem definition_1_30 : A.IsMMatrix ↔
+    (∀ i, 0 < A i i) ∧ (∀ i j, i ≠ j → A i j ≤ 0) ∧ IsUnit A ∧ A⁻¹.EntrywiseNonneg :=
+  ⟨fun hA => ⟨hA.diag_pos, hA.offDiag_nonpos, hA.isUnit, hA.inv_entrywiseNonneg⟩,
+    fun ⟨_, h2, h3, h4⟩ => ⟨h2, h3, h4⟩⟩
 
 /-- A diagonal matrix with nonnegative diagonal is entrywise nonnegative. -/
 private theorem entrywiseNonneg_diagonal {d : Fin n → ℝ} (hd : ∀ i, 0 ≤ d i) :

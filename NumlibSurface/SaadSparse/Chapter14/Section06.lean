@@ -45,6 +45,8 @@ open Finset Matrix
 
 namespace SaadSparse.Chapter14
 
+open Chapter12
+
 /-! ### The minimum of the Rayleigh quotient on a hyperplane -/
 
 section MinMax

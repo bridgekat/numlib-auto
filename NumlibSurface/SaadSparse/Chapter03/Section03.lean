@@ -37,8 +37,15 @@ index unreachable from the root has distance zero, on both sides of the comparis
 normal form `frobenius_normal_form`, whose block index is the topological ordering of the strongly
 connected components of `Numlib/Combinatorics/Relation/StronglyConnected`.
 
-Two things get no declaration.  Reverse Cuthill–McKee is given by the book as an observation of
-George's, with a picture and no statement, and this edition proves no bandwidth or profile bound
+Examples 3.4, 3.5 and 3.6 get no declaration, all three for the same reason: each is a run on the
+finite element mesh of Figure 2.10, which the source text does not reproduce, so there is no graph
+to state them over.  Example 3.4 compares two orderings by bandwidth and profile, which this
+edition never defines either; Example 3.5's optimality claim the book itself hedges as a "may well
+be"; and the four-colour count of Example 3.6 is an instance of `greedy_coloring_bounds` and
+`exists_multicoloring`, which are proved here in general.
+
+Two more things get no declaration.  Reverse Cuthill–McKee is given by the book as an observation
+of George's, with a picture and no statement, and this edition proves no bandwidth or profile bound
 to compare against.  And the book's warning that a *nonsymmetric* permutation does not preserve
 the adjacency graph is recorded here rather than proved, the book giving no statement either: for
 `A = !![0, 1; 1, 0]` the graph of `A` is the edge `0 — 1`, while `A.submatrix id (Equiv.swap 0 1)`

@@ -46,8 +46,10 @@ Eisenstat's implementation (§9.2.2) is present as mathematics only:
 **P-9.8 (c)**, the same identity conjugated by `D^{1/2}`: after that symmetric scaling the two
 triangular factors are transposes of each other with a unit diagonal, and the matrix "to be
 determined" is `D₂ = D^{-1/2} D₁ D^{-1/2}`, which for the SSOR choice `D = D₀` is `-I`
-(`problem_9_8c_ssor`). The operation counts, P-9.7, P-9.9 and P-9.8 (a), (b) are not formalized,
-as `plans/NumlibSurface/SaadSparse/Chapter09/Section02.toml` records.
+(`problem_9_8c_ssor`). `example_9_1` is Example 9.1, the two operation counts of §9.2.2 read at
+`N_z(A) = 5n`; it is arithmetic on those counts, which are themselves hypotheses of the statement,
+since nothing in this library counts operations. P-9.7, P-9.9 and P-9.8 (a), (b) are not
+formalized, as `plans/NumlibSurface/SaadSparse/Chapter09/Section02.toml` records.
 
 Indices are `0`-based, and division by a vanishing quantity is `0`, which reproduces the book's
 breakdown behaviour.
@@ -985,6 +987,31 @@ theorem problem_9_8c_ssor {S : Matrix (Fin n) (Fin n) ℝ} (hSu : IsUnit S)
     S⁻¹ * (Chapter04.D A - (2 : ℝ) • Chapter04.D A) * S⁻¹ = -1 := by
   have h : Chapter04.D A - (2 : ℝ) • Chapter04.D A = -Chapter04.D A := by module
   rw [h, Matrix.mul_neg, Matrix.neg_mul, inv_mul_self_mul_inv hSu hSD]
+
+/-- **Saad Example 9.1**: the two operation counts of §9.2.2 evaluated on a five-point finite
+difference matrix, where `N_z(A) ≈ 5n`.
+
+§9.2.2 counts `4 N_z(A) - n` additions and multiplications for the straightforward preconditioned
+step and `3n + 2 N_z(A)` for Algorithm 9.3, and the example reads both at `N_z(A) = 5n`: `19n`
+against `13n`, a saving of `6n`, which is the `6/19` the book calls "about `1/3`"; and `29n`
+against `23n` once the remaining `10n` operations of a conjugate gradient step are added.
+
+This is arithmetic on the book's two counts, not a claim about the algorithms: nothing in this
+library counts operations, so the counts themselves are hypotheses of the statement rather than
+theorems.  Neither `eisenstat` nor `pcg` appears in it. -/
+theorem example_9_1 {n Nz : ℝ} (hn : 0 < n) (hNz : Nz = 5 * n) :
+    4 * Nz - n = 19 * n ∧
+      3 * n + 2 * Nz = 13 * n ∧
+      (4 * Nz - n) - (3 * n + 2 * Nz) = 6 * n ∧
+      ((4 * Nz - n) - (3 * n + 2 * Nz)) / (4 * Nz - n) = 6 / 19 ∧
+      (4 * Nz - n) + 10 * n = 29 * n ∧
+      (3 * n + 2 * Nz) + 10 * n = 23 * n := by
+  subst hNz
+  refine ⟨by ring, by ring, by ring, ?_, by ring, by ring⟩
+  rw [show 4 * (5 * n) - n - (3 * n + 2 * (5 * n)) = 6 * n by ring,
+    show 4 * (5 * n) - n = 19 * n by ring]
+  rw [div_eq_div_iff (by positivity) (by norm_num)]
+  ring
 
 end Eisenstat
 

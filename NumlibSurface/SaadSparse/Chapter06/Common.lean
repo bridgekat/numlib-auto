@@ -1,7 +1,6 @@
-import Numlib.Krylov.Arnoldi
 import Numlib.Krylov.Hessenberg
 import Numlib.Krylov.Subspace
-import NumlibSurface.SaadSparse.Chapter06.Section03
+import NumlibSurface.SaadSparse.Chapter06.Section02
 
 /-!
 # Saad Chapter 6: the data of a linear system
@@ -11,16 +10,18 @@ Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd
 
 Every Krylov method of the chapter starts from the same three quantities: the initial residual
 `r₀ = b - A x₀`, its norm `β = ‖r₀‖₂` and the unit vector `v₁ = r₀/β` on which Algorithm 6.1 is
-run. The backbone indexes the Arnoldi process by the residual `r₀` itself, so each algorithm
-needs the same translation between the book's `v₁`-indexed data and the backbone's `r₀`-indexed
-data; that translation is the `*_v₁` family below, shared by
-`Chapter06/Section04.lean`, `Chapter06/Section05.lean` and everything downstream of them.
-
-The bridge lemmas need no hypothesis on `r₀`: when `r₀ = 0` both sides vanish, because Lean's
-`(0 : ℝ)⁻¹ = 0` makes `v₁ = 0` and the backbone Arnoldi data of `0` is `0` as well.
+run. They are named here, once, together with what §6.2 already says about them: `v₁` is a unit
+vector, and it has the grade and the Krylov subspaces of `r₀`.
 
 `e₁` is the first coordinate vector, and `mEff` implements the book's "if `h_{j+1,j} = 0` then
 set `m := j`" as `min m (grade A v₁)`.
+
+The backbone indexes the Arnoldi process by the residual `r₀` itself, so each algorithm needs a
+translation between the book's `v₁`-indexed data and the backbone's `r₀`-indexed data. That
+translation is the `*_v₁` family, and it names the Arnoldi process, so it lives in
+`Chapter06/Section03.lean` — §6.3 is where Algorithm 6.1 is — rather than here.  This file
+therefore comes between §6.2, whose `grade` and `krylov` it uses, and §6.3, which needs `v₁` to
+state that family.
 -/
 
 open scoped Matrix
@@ -72,58 +73,16 @@ theorem v₁_def : v₁ A b x₀ = (‖b - op A x₀‖ : 𝕜)⁻¹ • (b - op
 /-- The number of Arnoldi steps actually performed never exceeds the grade of `v_1`. -/
 theorem mEff_le (m : ℕ) : mEff A b x₀ m ≤ grade A (v₁ A b x₀) := min_le_right _ _
 
+/-- Normalizing a nonzero vector gives a unit vector: this is the `v_1 = r_0/β` of the
+algorithms started from a residual. -/
+theorem norm_norm_inv_smul {r : EuclideanSpace 𝕜 (Fin n)} (hr : r ≠ 0) :
+    ‖(‖r‖⁻¹ : 𝕜) • r‖ = 1 := by
+  rw [norm_smul, norm_inv, RCLike.norm_ofReal, abs_of_nonneg (norm_nonneg _),
+    inv_mul_cancel₀ (norm_ne_zero_iff.2 hr)]
+
 /-- `‖v_1‖ = 1` unless `x_0` already solves the system. -/
 theorem norm_v₁ (hr : r₀ A b x₀ ≠ 0) : ‖v₁ A b x₀‖ = 1 :=
   norm_norm_inv_smul hr
-
-/-! ### The bridge to the backbone Arnoldi data of `r₀`
-
-The book runs Algorithm 6.1 on the unit vector `v_1`, the backbone indexes the Arnoldi process
-by the residual `r_0` itself; these lemmas translate. They hold with no hypothesis: when
-`r_0 = 0` both sides vanish. -/
-
-private theorem vec_zero_eq_v₁ : Arnoldi.vec (op A) (r₀ A b x₀) 0 = v₁ A b x₀ := by
-  rcases eq_or_ne (r₀ A b x₀) 0 with h | h
-  · rw [v₁, h, smul_zero]
-    exact (Arnoldi.vec_eq_zero_iff_pow_apply_mem (op A) 0 0).2 (by simp)
-  · exact Arnoldi.vec_zero (op A) _ h
-
-/-- Algorithm 6.1 run on `v_1 = r_0/β` computes the backbone Arnoldi vectors of `r_0`. -/
-theorem arnoldiCGS_v₁_apply (j : ℕ) :
-    arnoldiCGS A (v₁ A b x₀) j = Arnoldi.vec (op A) (r₀ A b x₀) j :=
-  arnoldiCGS_eq_vec_of_vec_zero A _ (vec_zero_eq_v₁ A b x₀) j
-
-/-- `arnoldiCGS_v₁_apply` as an equality of families. -/
-theorem arnoldiCGS_v₁ : arnoldiCGS A (v₁ A b x₀) = Arnoldi.vec (op A) (r₀ A b x₀) :=
-  funext (arnoldiCGS_v₁_apply A b x₀)
-
-/-- The book's `h_{ij}` computed from `v_1` are the backbone Arnoldi coefficients of `r_0`. -/
-theorem arnoldiCoeff_v₁_apply (i j : ℕ) :
-    arnoldiCoeff A (v₁ A b x₀) i j = Arnoldi.coeff (op A) (r₀ A b x₀) i j := by
-  rw [arnoldiCoeff, arnoldiCGS_v₁_apply, arnoldiCGS_v₁_apply]
-  rfl
-
-/-- `arnoldiCoeff_v₁_apply` as an equality of coefficient functions. -/
-theorem arnoldiCoeff_v₁ : arnoldiCoeff A (v₁ A b x₀) = Arnoldi.coeff (op A) (r₀ A b x₀) :=
-  funext fun i => funext fun j => arnoldiCoeff_v₁_apply A b x₀ i j
-
-/-- The book's `H̄_m` built from `v_1` is the backbone Arnoldi Hessenberg matrix of `r_0`. -/
-theorem Hbar_v₁ (m : ℕ) : Hbar A (v₁ A b x₀) m = Arnoldi.hessenberg (op A) (r₀ A b x₀) m := by
-  ext i j
-  rw [Hbar_apply, arnoldiCoeff_v₁]
-  rfl
-
-/-- The book's `H_m` built from `v_1` is the backbone square Arnoldi matrix of `r_0`. -/
-theorem H_v₁ (m : ℕ) : H A (v₁ A b x₀) m = Arnoldi.hessenbergSq (op A) (r₀ A b x₀) m := by
-  ext i j
-  rw [H_apply, arnoldiCoeff_v₁]
-  rfl
-
-/-- The Hessenberg structure of the coefficients, with no hypothesis on `v_1`. -/
-theorem arnoldiCoeff_v₁_eq_zero_of_lt {i j : ℕ} (hij : j + 1 < i) :
-    arnoldiCoeff A (v₁ A b x₀) i j = 0 := by
-  rw [arnoldiCoeff_v₁]
-  exact Arnoldi.coeff_eq_zero_of_lt (op A) _ hij
 
 /-- The book's grade `μ` of `v_1` is the backbone grade of `r_0`: the two starting vectors are
 proportional. -/

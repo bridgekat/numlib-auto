@@ -1,27 +1,6 @@
 namespace = "SaadSparse.Chapter14"
 
 [[node]]
-id = "restrictSubset"
-
-[[node]]
-id = "subdomainSpace"
-
-[[node]]
-id = "range_restrictSubset_transpose"
-
-[[node]]
-id = "localMatrix"
-
-[[node]]
-id = "subdomainInverse"
-
-[[node]]
-id = "subdomainProjector"
-
-[[node]]
-id = "subdomainProjector_eq_energyProjection"
-
-[[node]]
 id = "multiplicativeSweep"
 
 [[node]]

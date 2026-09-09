@@ -193,4 +193,24 @@ theorem norm_complexify_mulVec (A : Matrix (Fin n) (Fin n) ℝ) (x : Fin n → �
 
 end Complexify
 
+section PositiveNegativePart
+
+/-! ### Saad's positive and negative parts
+
+Saad writes `(z)⁺ = (z + |z|)/2` and `(z)⁻ = (z - |z|)/2` for the positive and negative parts of a
+real number, in the upwind schemes of §2.2.3 and again in the finite volume fluxes of §2.5.  Note
+that Saad's negative part is *nonpositive*, unlike Mathlib's `negPart`, which is `max (-z) 0`. -/
+
+/-- Saad's positive part `(z)⁺ = (z + |z|)/2` is `max z 0`. -/
+theorem max_zero_eq_half (z : ℝ) : max z 0 = (z + |z|) / 2 := by
+  rcases abs_cases z with ⟨h, _⟩ | ⟨h, _⟩ <;> rw [h] <;> [rw [max_eq_left]; rw [max_eq_right]] <;>
+    linarith
+
+/-- Saad's negative part `(z)⁻ = (z - |z|)/2` is `min z 0`. -/
+theorem min_zero_eq_half (z : ℝ) : min z 0 = (z - |z|) / 2 := by
+  rcases abs_cases z with ⟨h, _⟩ | ⟨h, _⟩ <;> rw [h] <;> [rw [min_eq_right]; rw [min_eq_left]] <;>
+    linarith
+
+end PositiveNegativePart
+
 end SaadSparse

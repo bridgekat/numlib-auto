@@ -8,12 +8,14 @@ adjacency graph, what a symmetric permutation does to it, and the three reorderi
 independent sets, multicolouring - with the bound each one comes with. That is what `Section02` and
 `Section03` cover, on top of `Numlib/LinearAlgebra/Sparse` and `Numlib/Combinatorics/SimpleGraph`.
 
+§3.4, the storage schemes, states no theorem of any kind - it is data-structure description - but
+its three worked examples write concrete matrices out in concrete layouts, and each of them is
+stated in `Section04` as the round trip its layout promises: the arrays decode to the matrix they
+came from. That specification is not in the book, but the instance of it the book displays is, and
+that is what is proved.
+
 **Not planned, with reasons.**
 
-* §3.4, storage schemes (coordinate, compressed sparse row and column, modified sparse row,
-  diagonal, Ellpack-Itpack). The section states no theorem of any kind - it is data-structure
-  description with three worked examples. The only formalizable content would be a round-trip
-  correctness specification, which the book never writes and nothing in the corpus needs.
 * §3.5, basic sparse matrix operations. Four code fragments and commentary on parallelism; no
   statement. Correctness of a sparse matrix-vector product against `Matrix.mulVec` is a
   specification the book does not state.

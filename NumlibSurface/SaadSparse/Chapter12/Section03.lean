@@ -22,9 +22,17 @@ polynomial `T_k(t) = C_k((θ - t)/δ)/C_k(θ/δ)` with `Polynomial.Chebyshev.shi
 (`T_k_eq_shifted`), which is the point at which this chapter meets the Chebyshev min–max theorem
 of §6.11.
 
+The Jacobi weight (12.15) enters through `equation_12_16`, the closed form Saad gives for its
+residual polynomial. That closed form is carried as a *definition* rather than identified with
+`IsLeastSquaresResidual`, because the identification is the one step of §12.3.3 that needs Jacobi
+polynomials with their orthogonality, and Mathlib has none. `example_12_1` is what the book
+computes from it: the table of the eight least-squares polynomials `s_1, …, s_8` for
+`μ = 1/2`, `ν = -1/2`, each identity cleared of the division by `λ`.
+
 §12.3.4 — the nonsymmetric case, with Chebyshev polynomials on an ellipse and the Remez algorithm
 on a polygon — is not stated here: its results are Saad Lemma 6.26 and Theorem 6.27, and the
-polygonal case is a numerical procedure with no theorem attached.
+polygonal case is a numerical procedure with no theorem attached. Example 12.2, a table of measured
+iteration counts and timings, is not stated either.
 -/
 
 open Matrix Polynomial
@@ -380,5 +388,65 @@ theorem norm_leastSquaresResidual_le {B : LinearMap.BilinForm ℝ (Polynomial �
     B (kernelPolynomial q 0 k) (kernelPolynomial q 0 k) ≤
       ((β - α) / (β + α)) ^ (2 * k) * B 1 1 :=
   bilinForm_kernelPolynomial_le_pow horth hdeg hα hαβ hB hS
+
+/-! ### §12.3.3 The Jacobi weight (12.15)–(12.16) and Example 12.1 -/
+
+/-- The coefficient `κ_j^{(k)}` of Saad (12.16), for the Jacobi weight (12.15) with exponents
+`μ > 0` and `ν ≥ -1/2`: `κ_j^{(k)} = C(k, j) ∏_{i < j} (k - i + ν)/(i + 1 + μ)`. -/
+noncomputable def kappa_12_16 (mu nu : ℝ) (k j : ℕ) : ℝ :=
+  (k.choose j : ℝ) * ∏ i ∈ Finset.range j, ((k : ℝ) - i + nu) / ((i : ℝ) + 1 + mu)
+
+/-- **Saad (12.16)**, the closed form of the least-squares residual polynomial for the Jacobi
+weight (12.15) on `[0, 1]`:
+`R_k(λ) = ∑_{j ≤ k} κ_j^{(k)} (1 - λ)^{k - j} (-λ)^j`.
+
+This is a *definition*, not an identification: that this polynomial is the least-squares residual
+polynomial of `IsLeastSquaresResidual` for the Jacobi weight is what Saad says can "be derived
+easily from the explicit expression of the Jacobi polynomials and the fact that `{R_k}` is
+orthogonal with respect to the weight `λ w(λ)`", and it needs Jacobi polynomials with their
+orthogonality, which Mathlib does not have — the same gap
+`plans/NumlibSurface/SaadSparse/Chapter12.toml` records for (12.15)–(12.16). What is stated here is
+what the book computes from the formula, which is Example 12.1. -/
+noncomputable def equation_12_16 (mu nu : ℝ) (k : ℕ) (l : ℝ) : ℝ :=
+  ∑ j ∈ Finset.range (k + 1), kappa_12_16 mu nu k j * (1 - l) ^ (k - j) * (-l) ^ j
+
+/-- **Saad Example 12.1**: the least-squares polynomials `s_k` for `k = 1, …, 8` and the Jacobi
+weight with `μ = 1/2`, `ν = -1/2`, as the book tabulates them.
+
+The table lists the polynomials on `[0, 4]`, "as this leads to integer coefficients", each rescaled
+by `(3 + 2k)/4`; on a general interval `[0, β]` the degree `k` polynomial is `s_k(4λ/β)`, so at
+`β = 1` — the interval the weight (12.15) lives on — the tabulated `s_k` read at `4λ` is
+`(3 + 2k)/4` times `(1 - R_{k+1}(λ))/λ`, with `R_{k+1}` the residual polynomial (12.16). That is the
+eight identities below, cleared of the division by `λ`, so they hold at `λ = 0` too. The
+coefficients are the eight rows of the table, `s_1 = 5 - λ` through
+`s_8 = 285 - 1254 λ + ⋯ + λ⁸`.
+
+The scaling factor is, as Saad says, unimportant for preconditioning; it is carried here because it
+is what makes the printed coefficients integers. -/
+theorem example_12_1 (l : ℝ) :
+      (5 / 4) * (1 - equation_12_16 (1 / 2) (-1 / 2) 2 l) =
+        l * (5 - (4 * l)) ∧
+      (7 / 4) * (1 - equation_12_16 (1 / 2) (-1 / 2) 3 l) =
+        l * (14 - 7 * (4 * l) + (4 * l) ^ 2) ∧
+      (9 / 4) * (1 - equation_12_16 (1 / 2) (-1 / 2) 4 l) =
+        l * (30 - 27 * (4 * l) + 9 * (4 * l) ^ 2 - (4 * l) ^ 3) ∧
+      (11 / 4) * (1 - equation_12_16 (1 / 2) (-1 / 2) 5 l) =
+        l * (55 - 77 * (4 * l) + 44 * (4 * l) ^ 2 - 11 * (4 * l) ^ 3 + (4 * l) ^ 4) ∧
+      (13 / 4) * (1 - equation_12_16 (1 / 2) (-1 / 2) 6 l) =
+        l * (91 - 182 * (4 * l) + 156 * (4 * l) ^ 2 - 65 * (4 * l) ^ 3 + 13 * (4 * l) ^ 4
+          - (4 * l) ^ 5) ∧
+      (15 / 4) * (1 - equation_12_16 (1 / 2) (-1 / 2) 7 l) =
+        l * (140 - 378 * (4 * l) + 450 * (4 * l) ^ 2 - 275 * (4 * l) ^ 3 + 90 * (4 * l) ^ 4
+          - 15 * (4 * l) ^ 5 + (4 * l) ^ 6) ∧
+      (17 / 4) * (1 - equation_12_16 (1 / 2) (-1 / 2) 8 l) =
+        l * (204 - 714 * (4 * l) + 1122 * (4 * l) ^ 2 - 935 * (4 * l) ^ 3 + 442 * (4 * l) ^ 4
+          - 119 * (4 * l) ^ 5 + 17 * (4 * l) ^ 6 - (4 * l) ^ 7) ∧
+      (19 / 4) * (1 - equation_12_16 (1 / 2) (-1 / 2) 9 l) =
+        l * (285 - 1254 * (4 * l) + 2508 * (4 * l) ^ 2 - 2717 * (4 * l) ^ 3 + 1729 * (4 * l) ^ 4
+          - 665 * (4 * l) ^ 5 + 152 * (4 * l) ^ 6 - 19 * (4 * l) ^ 7 + (4 * l) ^ 8) := by
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
+    simp only [equation_12_16, kappa_12_16, Finset.sum_range_succ, Finset.sum_range_zero,
+      Finset.prod_range_succ, Finset.prod_range_zero, Nat.choose] <;>
+    norm_num <;> ring
 
 end SaadSparse.Chapter12

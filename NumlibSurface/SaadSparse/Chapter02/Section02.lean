@@ -6,7 +6,7 @@ import Numlib.Analysis.SpecialFunctions.Chebyshev
 import Numlib.LinearAlgebra.Matrix.KroneckerSum
 import Numlib.LinearAlgebra.Matrix.MMatrix
 import Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz
-import NumlibSurface.SaadSparse.Chapter02.Section05
+import NumlibSurface.SaadSparse.Common
 
 /-!
 # Saad §2.2: finite difference methods
@@ -50,9 +50,10 @@ equality of mixed partial derivatives in a form Mathlib does not have for a curr
 `ninePointC_error` and `ninePointD_error`); and the stability of plain block cyclic reduction
 against Buneman's variant, which the book asserts with no analysis anywhere.
 
-The module imports §2.5 for the positive/negative-part identity
-`SaadSparse.Chapter02.equation_2_53`, which is the same algebraic fact as the upwind combination
-(2.22) and is proved there once.
+Saad's positive and negative parts `(z)⁺ = max z 0` and `(z)⁻ = min z 0` are
+`SaadSparse.max_zero_eq_half` and `SaadSparse.min_zero_eq_half` of
+`NumlibSurface/SaadSparse/Common`, shared with the finite volume fluxes of §2.5, whose (2.53) is
+the same algebraic fact as the upwind combination (2.22).
 -/
 
 open Finset Matrix Polynomial

@@ -4,6 +4,7 @@ import Numlib.Krylov.Iterate
 import Numlib.Krylov.Subspace
 import Numlib.LinearSolve.Projection.Basic
 import NumlibSurface.SaadSparse.Chapter06.Common
+import NumlibSurface.SaadSparse.Chapter06.Section03
 
 /-!
 # Saad §6.4: the Full Orthogonalization Method

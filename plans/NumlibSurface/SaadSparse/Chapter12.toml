@@ -6,7 +6,11 @@ carries. Four sections are surfaced.
 
 * §12.2, `Chapter12/Section02.lean`: the overlapping block-Jacobi residual identity, which is the
   additive projection process of §5.4 on the coordinate subspaces of the index sets `S_i`, and
-  therefore the same operator as the additive Schwarz procedure of §14.3.3.
+  therefore the same operator as the additive Schwarz procedure of §14.3.3. This is where the
+  book first writes `V_i = [e_j : j ∈ S_i]` and `A_i = V_iᵀ A V_i`, so the subdomain vocabulary is
+  named here — `restrictSubset`, `subdomainSpace`, `localMatrix`, `subdomainInverse`,
+  `subdomainProjector` — and §14.3, which repeats it as `R_i = V_iᵀ`, `T_i` and `P_i`, opens this
+  namespace instead of naming it a second time.
 * §12.3, `Chapter12/Section03.lean`: polynomial preconditioners.
 * §12.4, `Chapter12/Section04.lean`: the red–black block structure a 2-colouring produces, and the
   reduced system on the black unknowns, which is the Schur complement.
@@ -25,8 +29,9 @@ Not surfaced, checked against the text rather than assumed:
   and message passing, with Algorithms 12.6–12.7. It contains no displayed equation at all.
 * §12.7.1 is a paragraph pointing back to §10.5, and §12.7.3 is Algorithm 12.8, a block form of
   Gauss–Seidel-NE already covered in general by the material of Chapter 8.
-* (12.15)–(12.16) of §12.3.3, the closed form of the least-squares residual polynomial for the
-  Jacobi weight and its `Γ`-function norm, need `Polynomial.jacobi` with its orthogonality and norm
-  formulas, which Mathlib does not have; the qualitative conclusion Saad draws from them is covered
-  by `Numlib/RingTheory/Polynomial/KernelPolynomial`.
+* (12.16) of §12.3.3 is written down, as `equation_12_16`, and Example 12.1 is computed from it;
+  what is *not* proved is that it is the least-squares residual polynomial of the Jacobi weight
+  (12.15), nor its `Γ`-function norm, both of which need `Polynomial.jacobi` with its orthogonality
+  and norm formulas, which Mathlib does not have. The qualitative conclusion Saad draws from them
+  is covered by `Numlib/RingTheory/Polynomial/KernelPolynomial`.
 '''

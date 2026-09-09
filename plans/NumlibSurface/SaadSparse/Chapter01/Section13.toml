@@ -4,9 +4,6 @@ namespace = "Matrix"
 id = "condNumberLp"
 
 [[node]]
-id = "lpOpNorm"
-
-[[node]]
 id = "isUnit_lpCLM_iff"
 
 [[node]]

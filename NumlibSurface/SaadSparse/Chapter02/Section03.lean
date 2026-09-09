@@ -45,6 +45,10 @@ takes as a hypothesis what the missing geometry would supply, and says so:
 * `equation_2_45` and `equation_2_46`: the assembly `A = ∑_e P_e A_{K_e} P_eᵀ` and the unassembled
   matrix–vector product. These need no geometry at all, and the general form is the backbone's
   `Numlib.LinearAlgebra.Matrix.Assembly`.
+* `example_2_1`: (2.45) on the four-element, six-node mesh of Figure 2.8, whose element node lists
+  are `mesh_2_8`. The element matrices are left arbitrary — Figure 2.9's numbers belong to one
+  triangulation and nothing in the example uses them — and what the example asserts beyond (2.45)
+  is the nonzero pattern drawn beside the mesh in Figure 2.8.
 
 The abstract form `a` of the Galerkin part is the backbone's `SesqForm ℝ V`, and the stiffness
 matrix is `SesqForm.gramMatrix`. It is *not* connected to `energyForm` above: the bridge would be
@@ -253,6 +257,66 @@ theorem equation_2_46 {a : SesqForm ℝ V} {ae : Fin nel → SesqForm ℝ V} {φ
       = ∑ e, (Matrix.connectivity (ι e) : Matrix (Fin n) (Fin 3) ℝ) *ᵥ
           (elementMatrix (ae e) φ (ι e) *ᵥ fun p => x (ι e p)) :=
   Matrix.mulVec_eq_sum_connectivity hinj hsupp (gramMatrix_eq_sum hsplit) x
+
+/-! ### Example 2.1: the assembly on the mesh of Figure 2.8 -/
+
+/-- The mesh of Figure 2.8: six nodes and four triangles, numbered from the bottom up, each
+carrying the three global node numbers Saad lists in Example 2.1 — the first element contributes
+to nodes 1, 2, 3, the second to 2, 3, 5, the third to 2, 4, 5 and the fourth to 4, 5, 6.  Node
+numbers are `0`-based here, so the book's `k` is `k - 1`. -/
+def mesh_2_8 : Fin 4 → Fin 3 → Fin 6 :=
+  ![![0, 1, 2], ![1, 2, 4], ![1, 3, 4], ![3, 4, 5]]
+
+/-- **Saad Example 2.1**: the assembly process (2.45) run on the four-element, six-node mesh of
+Figure 2.8, whose element node lists are `mesh_2_8`.
+
+The three clauses are what the example asserts.  The node lists are injective, so each element
+really has three distinct vertices and (2.45) applies; the assembled matrix is the sum of the four
+scattered element matrices `A^{[e]} = P_e A_{K_e} P_eᵀ` of Figure 2.9, whatever the four element
+forms are; and its nonzero pattern is the one drawn beside the mesh in Figure 2.8 — entry `(i, j)`
+can be nonzero only when some one element has both `i` and `j` among its vertices.
+
+The element forms are left arbitrary: Figure 2.9 prints numbers for one particular triangulation,
+and nothing in the example depends on them beyond the support condition `hsupp`, which is Saad's
+"`a_K(φ_i, φ_j)` is zero unless the nodes `i` and `j` are both vertices of `K`". -/
+theorem example_2_1 {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] {a : SesqForm ℝ V}
+    {ae : Fin 4 → SesqForm ℝ V} {φ : Fin 6 → V} (hsplit : ∀ u v, a u v = ∑ e, ae e u v)
+    (hsupp : ∀ e i j, (i ∉ Set.range (mesh_2_8 e) ∨ j ∉ Set.range (mesh_2_8 e)) →
+      ae e (φ j) (φ i) = 0) :
+    (∀ e, Function.Injective (mesh_2_8 e)) ∧
+      stiffnessMatrix a φ = ∑ e, Matrix.connectivity (mesh_2_8 e) *
+          elementMatrix (ae e) φ (mesh_2_8 e) *
+          (Matrix.connectivity (mesh_2_8 e) : Matrix (Fin 6) (Fin 3) ℝ)ᵀ ∧
+      ∀ i j, stiffnessMatrix a φ i j ≠ 0 →
+        (!![1, 1, 1, 0, 0, 0;
+            1, 1, 1, 1, 1, 0;
+            1, 1, 1, 0, 1, 0;
+            0, 1, 0, 1, 1, 1;
+            0, 1, 1, 1, 1, 1;
+            0, 0, 0, 1, 1, 1] : Matrix (Fin 6) (Fin 6) ℕ) i j = 1 := by
+  have hinj : ∀ e, Function.Injective (mesh_2_8 e) := by decide
+  refine ⟨hinj, equation_2_45 hinj hsplit hsupp, fun i j hij => ?_⟩
+  have hne : ∃ e, ae e (φ j) (φ i) ≠ 0 := by
+    by_contra hc
+    have hc : ∀ e, ae e (φ j) (φ i) = 0 := fun e => not_not.1 (fun h => hc ⟨e, h⟩)
+    exact hij (by
+      rw [show stiffnessMatrix a φ i j = a (φ j) (φ i) from rfl, hsplit]
+      exact Finset.sum_eq_zero fun e _ => hc e)
+  obtain ⟨e, he⟩ := hne
+  have hmem : i ∈ Set.range (mesh_2_8 e) ∧ j ∈ Set.range (mesh_2_8 e) := by
+    by_contra hc
+    exact he (hsupp e i j (by tauto))
+  obtain ⟨⟨p, hp⟩, ⟨q, hq⟩⟩ := hmem
+  have key : ∀ (e : Fin 4) (p q : Fin 3),
+      (!![1, 1, 1, 0, 0, 0;
+          1, 1, 1, 1, 1, 0;
+          1, 1, 1, 0, 1, 0;
+          0, 1, 0, 1, 1, 1;
+          0, 1, 1, 1, 1, 1;
+          0, 0, 0, 1, 1, 1] : Matrix (Fin 6) (Fin 6) ℕ)
+        (mesh_2_8 e p) (mesh_2_8 e q) = 1 := by decide
+  rw [← hp, ← hq]
+  exact key e p q
 
 end Assembly
 

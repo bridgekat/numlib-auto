@@ -1,7 +1,7 @@
 import Numlib.LinearAlgebra.Matrix.SchurComplement
 import Numlib.LinearSolve.DomainDecomposition.Schwarz
 import Numlib.LinearSolve.Stationary.Block
-import NumlibSurface.SaadSparse.Common
+import NumlibSurface.SaadSparse.Chapter12.Section02
 
 /-!
 # Saad §14.3: the Schwarz alternating procedures
@@ -10,15 +10,17 @@ Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd
 2003, §14.3.
 
 The data of the section are index sets `S_i ⊆ {1, …, n}`, not necessarily disjoint, the boolean
-restriction matrices `R_i` of §14.3.1 (`restrictSubset`), the local matrices `A_i = R_i A R_iᵀ`
-(`localMatrix`), and the operators `T_i = R_iᵀ A_i⁻¹ R_i` of (14.31) (`subdomainInverse`) and
-`P_i = T_i A` of (14.24) (`subdomainProjector`).
+restriction matrices `R_i` of §14.3.1, the local matrices `A_i = R_i A R_iᵀ`, and the operators
+`T_i = R_iᵀ A_i⁻¹ R_i` of (14.31) and `P_i = T_i A` of (14.24).  All five are §12.2's, where the
+book first writes them as `V_i = R_iᵀ` and `A_i = V_iᵀ A V_i`, so they are
+`SaadSparse.Chapter12.restrictSubset`, `localMatrix`, `subdomainInverse`, `subdomainProjector` and
+`subdomainSpace` of `Chapter12/Section02.lean`, and this file opens that namespace.
 
-Everything rests on one identification, `subdomainProjector_eq_energyProjection`: for a symmetric
-positive definite `A`, `P_i` **is** the `A`-orthogonal projector onto `Ran(R_iᵀ) = span {e_j :
-j ∈ S_i}` (`subdomainSpace`).  The whole convergence theory is then read off
-`Numlib/LinearSolve/DomainDecomposition/Schwarz.lean`, whose statements are about the orthogonal
-projectors of an inner product space, applied in the energy space of `A`.
+Everything rests on one identification, `Chapter12.subdomainProjector_eq_energyProjection`: for a
+symmetric positive definite `A`, `P_i` **is** the `A`-orthogonal projector onto
+`Ran(R_iᵀ) = span {e_j : j ∈ S_i}` (`Chapter12.subdomainSpace`).  The whole convergence theory is
+then read off `Numlib/LinearSolve/DomainDecomposition/Schwarz.lean`, whose statements are about the
+orthogonal projectors of an inner product space, applied in the energy space of `A`.
 
 * §14.3.1–14.3.3: `multiplicativeSweep` is (14.25), `Q_s` its error operator (14.26), and
   `additiveSweep` the additive procedure.  `error_multiplicativeSweep` is the meaning of `Q_s`,
@@ -606,194 +608,18 @@ end VertexBased
 
 variable {n : ℕ}
 
-/-! ### §14.3.1: the restriction matrices and the subdomain spaces -/
+/-! ### §14.3.1: the restriction matrices and the subdomain spaces
 
-/-- §14.3.1: the boolean restriction matrix `R_S` of an index set `S ⊆ {1, …, n}`, whose rows are
-the `e_jᵀ` for `j ∈ S`.  `R_S x` is the sub-vector of `x` indexed by `S`, and `R_Sᵀ y` extends a
-vector on `S` by zero. -/
-def restrictSubset (𝕜 : Type*) [RCLike 𝕜] (S : Finset (Fin n)) : Matrix ↥S (Fin n) 𝕜 :=
-  Matrix.of fun i j => if (i : Fin n) = j then 1 else 0
+Saad introduces `V_i = [e_j : j ∈ S_i]` and `A_i = V_iᵀ A V_i` in §12.2, three chapters earlier,
+and §14.3.1 is the same objects under the names `R_i = V_iᵀ` and `A_i`.  They are therefore
+`SaadSparse.Chapter12.restrictSubset`, `subdomainSpace`, `localMatrix`, `subdomainInverse` and
+`subdomainProjector` of `Chapter12/Section02.lean`, opened here rather than named again; the
+subdomain solve `T_i` of (14.31) is `Chapter12.subdomainInverse` and the projector `P_i` of
+(14.24) is `Chapter12.subdomainProjector`. -/
 
-/-- §14.3.1: the subspace `Ran(R_Sᵀ) = span {e_j : j ∈ S}` of the vectors supported on `S`, on
-which the subdomain problem of the Schwarz procedure is solved. -/
-def subdomainSpace (𝕜 : Type*) [RCLike 𝕜] (S : Finset (Fin n)) :
-    Submodule 𝕜 (EuclideanSpace 𝕜 (Fin n)) :=
-  Submodule.span 𝕜 (Set.range fun j : ↥S => EuclideanSpace.single (j : Fin n) (1 : 𝕜))
+open Chapter12
 
-variable {𝕜 : Type*} [RCLike 𝕜]
-
-/-- The entries of `R_S`, read off its definition. -/
-theorem restrictSubset_apply (S : Finset (Fin n)) (i : ↥S) (j : Fin n) :
-    restrictSubset 𝕜 S i j = if (i : Fin n) = j then 1 else 0 := rfl
-
-/-- The rows of `R_S` are orthonormal: `R_S R_Sᵀ = I`.  In particular `R_Sᵀ` has full column
-rank, which is what makes the local matrix `A_S` nonsingular. -/
-theorem restrictSubset_mul_transpose (S : Finset (Fin n)) :
-    restrictSubset 𝕜 S * (restrictSubset 𝕜 S)ᵀ = 1 := by
-  ext i k
-  rw [Matrix.mul_apply]
-  simp only [restrictSubset_apply, Matrix.transpose_apply, Matrix.one_apply]
-  rw [Finset.sum_eq_single (i : Fin n)]
-  · have h : ((k : Fin n) = (i : Fin n)) ↔ i = k := by
-      rw [Subtype.ext_iff]; exact eq_comm
-    simp [h]
-  · exact fun j _ hj => by rw [ite_eq_right (Ne.symm hj), zero_mul]
-  · exact fun h => absurd (Finset.mem_univ (i : Fin n)) h
-
-/-- The entries of `R_S` are `0` and `1`, so its conjugate transpose is its transpose: the
-adjoint of the extension `R_Sᵀ` is the restriction `R_S`. -/
-theorem conjTranspose_transpose_restrictSubset (S : Finset (Fin n)) :
-    ((restrictSubset 𝕜 S)ᵀ)ᴴ = restrictSubset 𝕜 S := by
-  ext i j
-  rw [Matrix.conjTranspose_apply, Matrix.transpose_apply]
-  simp only [restrictSubset_apply]
-  split_ifs <;> simp
-
-/-- **Saad §14.3.1**: the range of the extension `R_Sᵀ` is the span of the coordinate vectors of
-`S`.  This is the subspace on which the local problem is posed. -/
-theorem range_restrictSubset_transpose (S : Finset (Fin n)) :
-    LinearMap.range (Matrix.toEuclideanLin (restrictSubset 𝕜 S)ᵀ) = subdomainSpace 𝕜 S := by
-  have hbasis : (⊤ : Submodule 𝕜 (EuclideanSpace 𝕜 ↥S))
-      = Submodule.span 𝕜 (Set.range fun j : ↥S => EuclideanSpace.single j (1 : 𝕜)) := by
-    have h := (EuclideanSpace.basisFun (ι := ↥S) (𝕜 := 𝕜)).toBasis.span_eq
-    rw [← h]
-    congr 1
-    exact congrArg Set.range (funext fun j => by
-      rw [OrthonormalBasis.coe_toBasis, EuclideanSpace.basisFun_apply])
-  have happ : ∀ j : ↥S, Matrix.toEuclideanLin (restrictSubset 𝕜 S)ᵀ
-      (EuclideanSpace.single j (1 : 𝕜)) = EuclideanSpace.single (j : Fin n) (1 : 𝕜) := by
-    intro j
-    have hcol : (restrictSubset 𝕜 S)ᵀ *ᵥ Pi.single j (1 : 𝕜)
-        = Pi.single (j : Fin n) (1 : 𝕜) := by
-      rw [Matrix.mulVec_single_one]
-      funext k
-      rw [Matrix.col_apply, Matrix.transpose_apply, restrictSubset_apply, Pi.single_apply]
-      by_cases h : (j : Fin n) = k
-      · simp [h]
-      · simp [h, Ne.symm h]
-    rw [Matrix.toLpLin_apply, PiLp.ofLp_single, hcol, PiLp.toLp_single]
-  rw [LinearMap.range_eq_map, hbasis, Submodule.map_span, ← Set.range_comp, subdomainSpace]
-  exact congrArg _ (congrArg Set.range (funext happ))
-
-/-! ### §14.3.1: the local matrices and the subdomain projectors -/
-
-variable {A : Matrix (Fin n) (Fin n) 𝕜}
-
-/-- §14.3.1: the local matrix `A_S = R_S A R_Sᵀ` of the subdomain `S`, the submatrix of `A` on
-the rows and columns of `S`. -/
-def localMatrix (A : Matrix (Fin n) (Fin n) 𝕜) (S : Finset (Fin n)) : Matrix ↥S ↥S 𝕜 :=
-  restrictSubset 𝕜 S * A * (restrictSubset 𝕜 S)ᵀ
-
-/-- (14.31): the subdomain solve `T_S = R_Sᵀ A_S⁻¹ R_S`, which restricts a residual to `S`,
-solves the local system there, and extends the correction by zero. -/
-noncomputable def subdomainInverse (A : Matrix (Fin n) (Fin n) 𝕜) (S : Finset (Fin n)) :
-    Matrix (Fin n) (Fin n) 𝕜 :=
-  (restrictSubset 𝕜 S)ᵀ * (localMatrix A S)⁻¹ * restrictSubset 𝕜 S
-
-/-- (14.24): the subdomain projector `P_S = R_Sᵀ A_S⁻¹ R_S A = T_S A`. -/
-noncomputable def subdomainProjector (A : Matrix (Fin n) (Fin n) 𝕜) (S : Finset (Fin n)) :
-    Matrix (Fin n) (Fin n) 𝕜 :=
-  subdomainInverse A S * A
-
-/-- (14.24) and (14.31): `P_S = T_S A`. -/
-theorem subdomainProjector_eq_mul (A : Matrix (Fin n) (Fin n) 𝕜) (S : Finset (Fin n)) :
-    subdomainProjector A S = subdomainInverse A S * A := rfl
-
-/-- `(I - M) z = z - M z`: unfolding a projector complement one application at a time, which is
-what every error recurrence of the section needs. -/
-theorem toEuclideanLin_one_sub_apply (M : Matrix (Fin n) (Fin n) 𝕜)
-    (z : EuclideanSpace 𝕜 (Fin n)) : ((1 - M) ⬝ z) = z - (M ⬝ z) := by
-  have hmat : Matrix.toEuclideanLin (1 - M)
-      = (LinearMap.id : EuclideanSpace 𝕜 (Fin n) →ₗ[𝕜] EuclideanSpace 𝕜 (Fin n))
-        - Matrix.toEuclideanLin M := by
-    rw [map_sub, Matrix.toLpLin_one]
-  rw [hmat, LinearMap.sub_apply, LinearMap.id_apply]
-
-/-- A symmetric positive definite matrix is a symmetric coercive operator; this is the hypothesis
-under which the energy inner product `(x, y)_A` of §14.3.4 exists. -/
-theorem isSymmetricCoercive_toEuclideanLin (hA : A.PosDef) :
-    (Matrix.toEuclideanLin A).IsSymmetricCoercive :=
-  (Matrix.posDef_iff_isSymmetricCoercive A).1 hA
-
-/-- The adjoint of the extension `R_Sᵀ` is the restriction `R_S`. -/
-theorem adjoint_toEuclideanLin_transpose (S : Finset (Fin n)) :
-    LinearMap.adjoint (Matrix.toEuclideanLin (restrictSubset 𝕜 S)ᵀ)
-      = Matrix.toEuclideanLin (restrictSubset 𝕜 S) := by
-  rw [← Matrix.toEuclideanLin_conjTranspose_eq_adjoint, conjTranspose_transpose_restrictSubset]
-
-/-- The extension `R_Sᵀ` is injective, since `R_S R_Sᵀ = I`. -/
-theorem injective_toEuclideanLin_transpose (S : Finset (Fin n)) :
-    Function.Injective (Matrix.toEuclideanLin (restrictSubset 𝕜 S)ᵀ) := by
-  have h : Matrix.toEuclideanLin (restrictSubset 𝕜 S) ∘ₗ
-      Matrix.toEuclideanLin (restrictSubset 𝕜 S)ᵀ = LinearMap.id := by
-    rw [← Matrix.toLpLin_mul_same, restrictSubset_mul_transpose, Matrix.toLpLin_one]
-  exact Function.LeftInverse.injective (g := Matrix.toEuclideanLin (restrictSubset 𝕜 S))
-    fun x => DFunLike.congr_fun h x
-
-/-- The local matrix `A_S = R_S A R_Sᵀ` is the Galerkin coarse operator of the extension `R_Sᵀ`:
-this is the sentence that makes the whole section a specialization of the abstract theory. -/
-theorem galerkinCoarse_eq (A : Matrix (Fin n) (Fin n) 𝕜) (S : Finset (Fin n)) :
-    Multigrid.galerkinCoarse (Matrix.toEuclideanLin A)
-        (Matrix.toEuclideanLin (restrictSubset 𝕜 S)ᵀ)
-      = Matrix.toEuclideanLin (localMatrix A S) := by
-  have hdef : Multigrid.galerkinCoarse (Matrix.toEuclideanLin A)
-      (Matrix.toEuclideanLin (restrictSubset 𝕜 S)ᵀ)
-        = LinearMap.adjoint (Matrix.toEuclideanLin (restrictSubset 𝕜 S)ᵀ) ∘ₗ
-            Matrix.toEuclideanLin A ∘ₗ Matrix.toEuclideanLin (restrictSubset 𝕜 S)ᵀ := rfl
-  rw [hdef, adjoint_toEuclideanLin_transpose, localMatrix, Matrix.toLpLin_mul_same,
-    Matrix.toLpLin_mul_same, LinearMap.comp_assoc]
-
-/-- **The local problem is well posed**: for symmetric positive definite `A` the local matrix
-`A_S` is symmetric positive definite, so `A_S⁻¹` in (14.24) makes sense. -/
-theorem posDef_localMatrix (hA : A.PosDef) (S : Finset (Fin n)) : (localMatrix A S).PosDef := by
-  rw [Matrix.posDef_iff_isSymmetricCoercive, ← galerkinCoarse_eq]
-  exact Multigrid.galerkinCoarse_isSymmetricCoercive (isSymmetricCoercive_toEuclideanLin hA)
-    (injective_toEuclideanLin_transpose S)
-
-/-- The subspace argument of `Schwarz.energyProjection` may be rewritten. -/
-private theorem energyProjection_congr {E : Type*} [NormedAddCommGroup E]
-    [InnerProductSpace 𝕜 E] {T : E →ₗ[𝕜] E} (hT : T.IsSymmetricCoercive)
-    {K L : Submodule 𝕜 E} [FiniteDimensional 𝕜 K] [FiniteDimensional 𝕜 L] (h : K = L) :
-    Schwarz.energyProjection T hT K = Schwarz.energyProjection T hT L := by
-  subst h; rfl
-
-/-- **Saad (14.24)**: the subdomain projector `P_S = R_Sᵀ A_S⁻¹ R_S A` is the `A`-orthogonal
-projector onto the subdomain space `span {e_j : j ∈ S}`.  Every statement of §14.3 follows from
-this identification and the abstract Schwarz theory. -/
-theorem subdomainProjector_eq_energyProjection (hA : A.PosDef) (S : Finset (Fin n)) :
-    Matrix.toEuclideanLin (subdomainProjector A S)
-      = Schwarz.energyProjection (Matrix.toEuclideanLin A)
-          (isSymmetricCoercive_toEuclideanLin hA) (subdomainSpace 𝕜 S) := by
-  have hinv : localMatrix A S * (localMatrix A S)⁻¹ = 1 :=
-    Matrix.mul_nonsing_inv _ ((Matrix.isUnit_iff_isUnit_det _).1 (posDef_localMatrix hA S).isUnit)
-  refine LinearMap.ext fun x => ?_
-  have hy : Multigrid.galerkinCoarse (Matrix.toEuclideanLin A)
-      (Matrix.toEuclideanLin (restrictSubset 𝕜 S)ᵀ)
-      (Matrix.toEuclideanLin ((localMatrix A S)⁻¹ * restrictSubset 𝕜 S * A) x)
-        = LinearMap.adjoint (Matrix.toEuclideanLin (restrictSubset 𝕜 S)ᵀ)
-            (Matrix.toEuclideanLin A x) := by
-    rw [galerkinCoarse_eq, adjoint_toEuclideanLin_transpose, ← LinearMap.comp_apply,
-      ← Matrix.toLpLin_mul_same, ← Matrix.mul_assoc, ← Matrix.mul_assoc, hinv, Matrix.one_mul,
-      Matrix.toLpLin_mul_same]
-    rfl
-  have hproj := Schwarz.energyProjection_eq_of_galerkinCoarse (Matrix.toEuclideanLin A)
-    (isSymmetricCoercive_toEuclideanLin hA) (Matrix.toEuclideanLin (restrictSubset 𝕜 S)ᵀ) hy
-  rw [energyProjection_congr (isSymmetricCoercive_toEuclideanLin hA)
-    (range_restrictSubset_transpose (𝕜 := 𝕜) S).symm, hproj, ← LinearMap.comp_apply,
-    ← Matrix.toLpLin_mul_same]
-  rw [subdomainProjector, subdomainInverse, Matrix.mul_assoc, Matrix.mul_assoc, Matrix.mul_assoc]
-
-/-- Saad's computation that `P_S² = P_S`: the subdomain projector is idempotent. -/
-theorem subdomainProjector_mul_self (hA : A.PosDef) (S : Finset (Fin n)) :
-    subdomainProjector A S * subdomainProjector A S = subdomainProjector A S := by
-  refine (Matrix.toEuclideanLin (𝕜 := 𝕜)).injective ?_
-  rw [Matrix.toLpLin_mul_same, subdomainProjector_eq_energyProjection hA S]
-  refine LinearMap.ext fun x => ?_
-  rw [LinearMap.comp_apply]
-  exact Schwarz.energyProjection_apply_of_mem (Matrix.toEuclideanLin A)
-    (isSymmetricCoercive_toEuclideanLin hA) (subdomainSpace 𝕜 S)
-    (Schwarz.energyProjection_apply_mem (Matrix.toEuclideanLin A)
-      (isSymmetricCoercive_toEuclideanLin hA) (subdomainSpace 𝕜 S) x)
+variable {𝕜 : Type*} [RCLike 𝕜] {A : Matrix (Fin n) (Fin n) 𝕜}
 
 /-! ### §14.3.2–14.3.3: the multiplicative and additive procedures -/
 

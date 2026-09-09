@@ -27,6 +27,10 @@ id = "cgnr_norm_residual_le"
 [[node]]
 id = "example_8_1"
 kind = "theorem"
-desc = '''Example 8.1 (§8.3.1): Table 8.1, the result of running CGNR without preconditioning on
-three of the test problems of §3.7. Not formalized: it is an illustration — measured iteration
-counts and errors, with no claim to state.'''
+source = "Saad, Iterative Methods for Sparse Linear Systems, Example 8.1"
+desc = '''Example 8.1: Table 8.1, the result of running unpreconditioned CGNR on three of the test
+problems of §3.7, reported as iteration counts, Kflops, residual norms and error norms. Not
+formalized: the table records the output of a floating point computation, and the only way to state
+it would be to assert those measured numbers, which is not a mathematical claim about CGNR. The
+test problems themselves are described in §3.7 in prose, not written down.'''
+

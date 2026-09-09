@@ -60,10 +60,8 @@ id = "equation_2_46"
 source = "Saad, Iterative Methods for Sparse Linear Systems, (2.46)"
 
 [[node]]
+id = "mesh_2_8"
+
+[[node]]
 id = "example_2_1"
-kind = "theorem"
-desc = '''Example 2.1: the assembly process (2.45) run on the four-element, six-node finite element
-mesh of Figure 2.8, listing which nodes each element contributes to — 1,2,3 then 2,3,5 then 2,4,5
-then 4,5,6 — and the four element matrices of Figure 2.9. Not formalized: it is an illustration,
-a worked instance of `equation_2_45` on one mesh with no claim of its own, and its data live in two
-figures the OCR does not reproduce.'''
+source = "Saad, Iterative Methods for Sparse Linear Systems, Example 2.1"

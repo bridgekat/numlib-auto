@@ -150,6 +150,12 @@ theorem grade_smul {c : 𝕜} (hc : c ≠ 0) : grade A (c • v) = grade A v := 
   ext m
   rw [Set.mem_ofPred_eq, Set.mem_ofPred_eq, hs m, map_smul, Submodule.smul_mem_iff _ hc]
 
+/-- Normalizing a nonzero vector does not change its grade: the bridge between the book's grade
+of `r_0` and of `v_1 = r_0 / ‖r_0‖`, needed wherever an algorithm starts from a residual. -/
+theorem grade_normalize {r : EuclideanSpace 𝕜 (Fin n)} (hr : r ≠ 0) :
+    grade A ((‖r‖⁻¹ : 𝕜) • r) = grade A r :=
+  grade_smul A r (inv_ne_zero (by simpa using norm_ne_zero_iff.2 hr))
+
 /-! ### §6.2, first property: `𝒦_m` is the set of `p(A) v` with `deg p ≤ m - 1` -/
 
 /-- `𝒦_m(A, v) = {p(A) v : deg p < m}` (§6.2, the first property listed after (6.2)). -/

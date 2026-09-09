@@ -1,6 +1,7 @@
 import Numlib.Analysis.InnerProductSpace.Projection.ObliqueProjection
 import Numlib.Krylov.BiLanczos
 import NumlibSurface.SaadSparse.Chapter06.Common
+import NumlibSurface.SaadSparse.Chapter06.Section03
 
 /-!
 # Saad §7.1: the Lanczos biorthogonalization procedure
