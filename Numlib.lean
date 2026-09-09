@@ -1,3 +1,4 @@
+import Numlib.Analysis.Calculus.ContDiffMapIcc
 import Numlib.Analysis.Calculus.CurvilinearLaplacian
 import Numlib.Analysis.Calculus.MeanValue
 import Numlib.Analysis.Complex.Harmonic
@@ -168,6 +169,7 @@ import Numlib.LinearSolve.Stationary.SPD
 import Numlib.LinearSolve.Stationary.Splitting
 import Numlib.Nonlinear.CompletelyContinuous
 import Numlib.Nonlinear.FixedPoint
+import Numlib.Nonlinear.Nemytskii
 import Numlib.Nonlinear.Newton
 import Numlib.RingTheory.MvPolynomial.TotalDegree
 import Numlib.RingTheory.Polynomial.ChebyshevEllipse

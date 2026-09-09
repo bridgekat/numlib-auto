@@ -1,4 +1,6 @@
+import Numlib.Analysis.Calculus.ContDiffMapIcc
 import Numlib.Analysis.Normed.Ring.Inverse
+import Numlib.Nonlinear.Nemytskii
 import Numlib.Nonlinear.Newton
 import NumlibSurface.AtkinsonHan.Chapter05.Section03
 
@@ -34,42 +36,21 @@ The book's iteration (5.4.2), `u_{n+1} = u_n - [F'(u_n)]⁻¹ F(u_n)`, is the ba
   integral equation `u(t) = ∫ₐᵇ k(t, s, u(s)) ds`: the derivative of `F = I − K` is `I` minus a
   Fredholm operator, so one Newton step is the solution of one *linear* integral equation of the
   second kind, and the modified method solves it with a kernel frozen at `u₀`.
+* `example_5_4_bvp` — §5.4.2 applied to the two-point boundary value problem
+  `u'' = f(t, u)`, `u(0) = u(1) = 0`: on `U = C²₀[0, 1]` the derivative of
+  `F(u)(t) = u''(t) - f(t, u(t))` is `F'(u)(y)(t) = y''(t) - ∂f/∂u(t, u(t)) y(t)`, so each Newton
+  step solves a linearized two-point boundary value problem.
 
 ## Conventions
 
 The uniqueness domain of Theorem 5.4.2 is the **open** ball of radius `t**`, not the closed one as
 the book prints it; `theorem_5_4_2_unique` explains why the closed form is false for `h < ½`.
 
-## Not formalized here
-
-The two-point boundary value problem `u'' = f(t, u)`, `u(0) = u(1) = 0` of §5.4.2, whose Newton
-linearization is a linear boundary value problem.  The obstruction is the space: the book works in
-`U = C²₀[0, 1]`, and neither this project nor Mathlib has `Cᵏ[a, b]` as a Banach space under
-`∑_{j ≤ k} ‖u^{(j)}‖_∞`.  That space is backbone material and reusable (Atkinson–Han §1.4 defines
-it), and once it exists the derivative computation is easy: `u ↦ u''` is a bounded linear map
-`C²₀ → C⁰` and `u ↦ f(·, u(·))` is a Nemytskii operator, differentiable by the argument of
-`example_5_3_10`.
-
-Three things about that space were checked rather than assumed, and are what make it a project of
-its own rather than a definition.
-
-* `ContDiffMapSupportedIn` (`Mathlib/Analysis/Distribution/ContDiffMapSupportedIn.lean`) is not it,
-  and not merely because its topology is given by a family of seminorms: its two fields demand
-  `ContDiff ℝ n f` on the *whole* space and `EqOn f 0 Kᶜ`, so a `u ∈ C²₀[0, 1]` belongs to it only
-  when `u'(0) = u'(1) = 0` as well, which is not the boundary condition of the problem.
-* The carrier needs a decision that a definition alone does not make: `∑_{j ≤ k} ‖u^{(j)}‖_∞` is
-  only a *seminorm* on `{u : ℝ → ℝ // ContDiffOn ℝ k u (Icc a b)}`, since it does not see the
-  values off `[a, b]`.  The representation that avoids the quotient and calculus on a subtype is
-  the tuple of derivatives, `{p : Fin (k+1) → C(Icc a b, ℝ) // p (j+1) is the derivative of p j}`,
-  whose norm
-  `∑_j ‖p j‖_∞` is a genuine norm and whose completeness reduces to that of `C(Icc a b, ℝ)`.
-* Completeness cannot be had from Mathlib's uniform-limit-of-derivatives lemmas as they stand:
-  `hasDerivAt_of_tendstoUniformlyOn` and `hasFDerivAt_of_tendstoUniformlyOn`
-  (`Mathlib/Analysis/Calculus/UniformLimitsDeriv.lean`) both require the set to be **open**, and
-  `Icc a b` is not, so the endpoints are not covered.  The route that does work on a closed interval
-  is the integral one: `u_n t = u_n a + ∫ₐᵗ u_n'`, pass to the limit under the integral by uniform
-  convergence on a compact, and read the derivative back off the fundamental theorem of calculus,
-  which gives `HasDerivWithinAt` at the endpoints too.
+`C²₀[0, 1]` of §5.4.2 is the backbone's
+`ContDiffMapIcc.zeroBoundary (zero_le_one : (0 : ℝ) ≤ 1) 2`
+(`Numlib.Analysis.Calculus.ContDiffMapIcc`), the closed subspace of `C²[0, 1]` of the functions
+vanishing at both endpoints; the norm on `Cᵏ[a, b]` there is `∑_{j ≤ k} ‖u⁽ʲ⁾‖_∞`, which is the
+book's (2.1.2) at `k = 1`.
 -/
 
 open Filter Metric Topology
@@ -490,5 +471,51 @@ theorem equation_5_4_12 (hab : a ≤ b) {k kz : C(Icc a b × Icc a b × ℝ, ℝ
   exact h2
 
 end IntegralEquation
+
+section BVP
+
+open ContDiffMapIcc
+
+local notation "C²" => ContDiffMapIcc (zero_le_one : (0 : ℝ) ≤ 1) 2
+
+local notation "C²₀" => ContDiffMapIcc.zeroBoundary (zero_le_one : (0 : ℝ) ≤ 1) 2
+
+/-- **§5.4.2**, Newton's method for the two-point boundary value problem `u'' = f(t, u)` on
+`(0, 1)` with `u(0) = u(1) = 0`.  Taking `U = C²₀[0, 1]` and `F(u)(t) = u''(t) - f(t, u(t))`, an
+operator from `U` into `C[0, 1]`, the Fréchet derivative of `F` at `u` is
+
+`F'(u)(y)(t) = y''(t) - ∂f/∂u(t, u(t)) y(t)`,
+
+so each Newton step (5.4.9) solves a *linear* two-point boundary value problem, with the
+coefficient `∂f/∂u(·, u(·))` frozen at the current iterate.
+
+`C²₀[0, 1]` is the backbone's `ContDiffMapIcc.zeroBoundary (zero_le_one : (0 : ℝ) ≤ 1) 2`
+(`Numlib.Analysis.Calculus.ContDiffMapIcc`), a closed subspace of the Banach space `C²[0, 1]`.  The
+two pieces of the derivative are the bounded linear map `u ↦ u''` and the Nemytskii operator
+`u ↦ f(·, u(·))` (`Numlib.Nonlinear.Nemytskii`), whose derivative is multiplication by
+`∂f/∂u(·, u(·))` — the same argument as in Example 5.3.10. -/
+theorem example_5_4_bvp {f fu : C(Set.Icc (0 : ℝ) 1 × ℝ, ℝ)}
+    (hf : ∀ (t : Set.Icc (0 : ℝ) 1) (z : ℝ), HasDerivAt (fun s => f (t, s)) (fu (t, z)) z)
+    (F : C²₀ → C(Set.Icc (0 : ℝ) 1, ℝ))
+    (hF : ∀ (v : C²₀) (t : Set.Icc (0 : ℝ) 1),
+      F v t = (v : C²).deriv 2 t - f (t, (v : C²) t))
+    (u : C²₀) :
+    ∃ F' : C²₀ →L[ℝ] C(Set.Icc (0 : ℝ) 1, ℝ),
+      (∀ (y : C²₀) (t : Set.Icc (0 : ℝ) 1),
+          F' y t = (y : C²).deriv 2 t - fu (t, (u : C²) t) * (y : C²) t) ∧
+        HasFDerivAt F F' u := by
+  set D : C²₀ →L[ℝ] C(Set.Icc (0 : ℝ) 1, ℝ) :=
+    (derivCLM (zero_le_one : (0 : ℝ) ≤ 1) 2 2).comp (zeroBoundary _ 2).subtypeL with hD
+  set E : C²₀ →L[ℝ] C(Set.Icc (0 : ℝ) 1, ℝ) :=
+    (derivCLM (zero_le_one : (0 : ℝ) ≤ 1) 2 0).comp (zeroBoundary _ 2).subtypeL with hE
+  refine ⟨D - (ContinuousLinearMap.mul ℝ C(Set.Icc (0 : ℝ) 1, ℝ) (Nemytskii.op fu (E u))).comp E,
+    fun y t => ?_, ?_⟩
+  · simp [hD, hE]
+  · have hFG : F = fun v => D v - Nemytskii.op f (E v) :=
+      funext fun v => ContinuousMap.ext fun t => by rw [hF v t]; rfl
+    rw [hFG]
+    exact D.hasFDerivAt.sub ((Nemytskii.hasFDerivAt_op hf (E u)).comp u E.hasFDerivAt)
+
+end BVP
 
 end AtkinsonHan.Chapter05

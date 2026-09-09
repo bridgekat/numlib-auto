@@ -143,14 +143,38 @@ id = "theorem_1_2_26"
 id = "theorem_1_2_27"
 
 [[node]]
-id = "example_1_2_28"
+id = "example_1_2_28_a"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 1.2.28 (a)"
+
+[[node]]
+id = "example_1_2_28_a_periodic"
 kind = "theorem"
 desc = '''
-Example 1.2.28: (a) `Cᵐ[a, b]` and `C_p^k(2π)` with the norms of Example 1.2.5 (b) are Banach
-spaces; (b) under `‖f‖ = [∑_{j≤m} ‖f^{(j)}‖_p^p]^{1/p}`, `Cᵐ[a, b]` is not complete, and its
-completion is the Sobolev space `W^{m,p}(a, b)`.  Not formalized: §1.2's module doc puts both
-clauses out of scope.  Clause (a) needs `Cᵐ[a, b]` as a normed space, which Mathlib does not have —
-it has `C(X, ℝ)` for compact `X`, hence only `m = 0`; clause (b) needs Sobolev spaces on an
-interval, and Mathlib has no weak derivative there.
+Example 1.2.28 (a), the clause about `C_p^k(2π)`: the `k` times continuously differentiable
+`2π`-periodic functions, with the norm `max_{j ≤ k} ‖f^(j)‖_∞` of Example 1.2.5 (b), form a Banach
+space.  The other clause of (a), about `Cᵐ[a, b]`, is `example_1_2_28_a`.
+
+Open, and blocked on the space: `Numlib.Analysis.Calculus.ContDiffMapIcc` builds `Cᵏ[a, b]` but not
+the periodic space, and Mathlib has neither (it has `C(AddCircle T, ℝ)`, hence only `k = 0`).  The
+cheaper carrier is periodic functions on `ℝ` rather than functions on `AddCircle T`, where Mathlib
+has no differential calculus: a tuple in `PiLp 1 (Fin (k+1) → (ℝ →ᵇ ℝ))` of periodic bounded
+continuous functions, each the derivative of the one before it.  Unlike the interval case the set on
+which the derivatives are taken is *open* — it is all of `ℝ` — so `hasDerivAt_of_tendstoUniformlyOn`
+applies directly and the fundamental-theorem-of-calculus detour that `ContDiffMapIcc` needs at the
+endpoints of `[a, b]` is unnecessary.
 '''
-deps = ["example_1_2_5", "definition_1_2_8"]
+deps = ["example_1_2_5", "example_1_2_28_a"]
+
+[[node]]
+id = "example_1_2_28_b"
+kind = "theorem"
+desc = '''
+Example 1.2.28 (b): under the norm `‖f‖ = [∑_{j ≤ m} ‖f^(j)‖_p^p]^{1/p}`, `Cᵐ[a, b]` is *not*
+complete, and its completion is the Sobolev space `W^{m,p}(a, b)`.
+
+Open, and blocked on Sobolev spaces on an interval, which do not exist here and for which Mathlib
+has no weak derivative on an open subset of `ℝ`; the same obstruction as
+`AtkinsonHan.Chapter02.example_2_4_2`.  `ContDiffMapIcc` does not help: it carries the supremum
+norm, not the `‖·‖_p` one, and even the norm in the statement would have to be built first.
+'''
+deps = ["example_1_2_28_a", "theorem_1_2_25"]

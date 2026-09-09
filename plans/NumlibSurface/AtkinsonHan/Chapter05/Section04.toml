@@ -41,43 +41,4 @@ id = "equation_5_4_12"
 
 [[node]]
 id = "example_5_4_bvp"
-kind = "theorem"
-desc = '''
-Section 5.4.2, the two-point boundary value problem `u'' = f(t, u)` on `(0, 1)` with
-`u(0) = u(1) = 0`: taking `U = C²₀[0, 1]` and `F(u)(t) = u''(t) - f(t, u(t))`, the Frechet
-derivative is `F'(u)(y)(t) = y''(t) - ∂f/∂u(t, u(t)) y(t)`, so each Newton step solves a
-linearized two-point boundary value problem.
-
-Open, and blocked on the backbone. The obstruction is the space: `C^k[a, b]` as a Banach space
-under `∑_{j ≤ k} ‖u^(j)‖_∞`, and its subspace `C²₀[0, 1] = {v : v 0 = v 1 = 0}`, exist neither
-here nor in Mathlib. That space is reusable — Atkinson-Han section 1.4 defines it — so it
-belongs in the backbone; once it is there the derivative is easy, since `u ↦ u''` is a bounded
-linear map `C²₀ → C⁰` and `u ↦ f(·, u(·))` is a Nemytskii operator differentiable by the argument
-of `example_5_3_10`.
-
-Three points, each checked in Mathlib rather than inferred, are why the space is a project rather
-than a definition.
-
-1. `ContDiffMapSupportedIn` is not a candidate. Beyond carrying a seminorm family rather than a
-   norm, its fields are `ContDiff ℝ n f` on the whole space and `EqOn f 0 Kᶜ`, so membership for
-   `u ∈ C²₀[0, 1]` would force `u'(0) = u'(1) = 0` as well.
-2. `∑_{j ≤ k} ‖u^(j)‖_∞` on `{u : ℝ → ℝ // ContDiffOn ℝ k u (Icc a b)}` is only a seminorm, being
-   blind to the values off `[a, b]`. The representation that avoids both a quotient and calculus on
-   a subtype is the tuple of derivatives, `{p : Fin (k+1) → C(Icc a b, ℝ) // p (j+1) is the
-   derivative of p j}`, normed by `∑_j ‖p j‖_∞`.
-3. Completeness does not follow from `hasDerivAt_of_tendstoUniformlyOn` or
-   `hasFDerivAt_of_tendstoUniformlyOn`: both require an **open** set, and `Icc a b` is not open, so
-   the endpoints are uncovered. The working route on a closed interval is
-   `u_n t = u_n a + ∫ₐᵗ u_n'`, a limit under the integral, and the fundamental theorem of calculus,
-   which gives `HasDerivWithinAt` at the endpoints as well.
-
-Re-checked against Mathlib in 2026-09: all three points still hold, and the item is a backbone
-project rather than a stale note. What *has* arrived since is
-`MeasureTheory.AbsolutelyContinuousOnInterval.integral_deriv_eq_sub`
-(`Mathlib/MeasureTheory/Integral/IntervalIntegral/AbsolutelyContinuousFun.lean`), the converse half
-of the fundamental theorem of calculus that the chapter 10 work recorded as missing. That
-unblocks `H¹(a, b)` for §10.1, not `Cᵏ[a, b]` for this node, whose route needs only the classical
-FTC on a `C¹` function; the cost here is the space itself — the tuple-of-derivatives
-representation, its norm, its completeness, and the closed subspace `C²₀[0, 1]`.
-'''
-deps = ["example_5_3_10"]
+source = "Atkinson–Han, Theoretical Numerical Analysis, section 5.4.2"

@@ -1,6 +1,7 @@
 import Mathlib.Analysis.Normed.Group.Bounded
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Deriv
 import Mathlib.LinearAlgebra.Matrix.Rank
+import Numlib.Analysis.Calculus.ContDiffMapIcc
 
 /-!
 # Atkinson–Han §2.1: operators
@@ -33,6 +34,9 @@ and none of those is restated.
 * `example_2_1_2` — the identity operator is a bijection whose inverse is again the identity.
 * `example_2_1_3` — a matrix operator is injective exactly when `rank A = n`, and surjective
   exactly when `rank A = m`.
+* `example_2_1_4`, `example_2_1_5` — the differentiation operator read on `C¹[0, 1]`: `d/dx` is
+  surjective onto `C[0, 1]` and not injective, its null set the constants, and `D : v ↦ (v', v(0))`
+  repairs the injectivity, being a bijection onto `C[0, 1] × ℝ`.
 * `example_2_1_7` — the half of Example 2.1.7 that needs no `C¹[0, 1]`: differentiation is
   *unbounded* for the sup norm on `C[0, 1]`.
 
@@ -49,12 +53,16 @@ Definition 2.1.1 asks nothing of `V` and `W` beyond their being sets, which is h
 its three clauses are stated for bare types. Example 2.1.3 is stated over an arbitrary field, which
 covers both the real matrices the book writes and the complex ones of the remark after it.
 
+`C¹[0, 1]` is the backbone's `ContDiffMapIcc (zero_le_one : (0 : ℝ) ≤ 1) 1`
+(`Numlib.Analysis.Calculus.ContDiffMapIcc`), whose norm is exactly the book's (2.1.2)
+`‖v‖_∞ + ‖v'‖_∞`, and `C[0, 1]` is `C(Set.Icc 0 1, ℝ)` as in §1.2. Its `v'` is
+`ContDiffMapIcc.deriv v 1`.
+
 ## Not formalized here
 
-Examples 2.1.4 and 2.1.5, and the *bounded* half of Example 2.1.7, concern the differentiation
-operator read on `C¹[0, 1]` with the norm `‖v‖_∞ + ‖v'‖_∞`; Mathlib does not have `C¹[0, 1]` as a
-normed space, so they are not stated. The *unbounded* half of Example 2.1.7 needs no such space and
-is `example_2_1_7`.
+The *bounded* half of Example 2.1.7, that `d/dx : C¹[0, 1] → C[0, 1]` is bounded for the norm
+(2.1.2), is the backbone's `ContDiffMapIcc.derivCLM`, whose operator norm is at most `1`; it is not
+restated here. The *unbounded* half needs no `C¹[0, 1]` and is `example_2_1_7`.
 -/
 
 open Bornology Metric
@@ -207,5 +215,57 @@ theorem example_2_1_7 (γ : ℝ) :
   · have hn0 : (0 : ℝ) < n := by positivity
     simp only [mul_zero, Real.cos_zero, mul_one]
     rwa [abs_of_pos hn0]
+
+/-! ### Examples 2.1.4 and 2.1.5: the differentiation operator on `C¹[0, 1]` -/
+
+section Differentiation
+
+open Set ContDiffMapIcc
+
+/-- **Example 2.1.4.** The differentiation operator `d/dx : v ↦ v'`, with domain the proper
+subspace `C¹[0, 1]` of `C[0, 1]` and values in `C[0, 1]`, is a surjection; it is not injective, and
+its null set is the set of constant functions.
+
+`C¹[0, 1]` is the backbone's `ContDiffMapIcc (zero_le_one : (0 : ℝ) ≤ 1) 1`, whose norm is the
+book's (2.1.2); `v'` is its first derivative `ContDiffMapIcc.deriv v 1`. -/
+theorem example_2_1_4 :
+    Function.Surjective (fun v : ContDiffMapIcc (zero_le_one : (0 : ℝ) ≤ 1) 1 => v.deriv 1) ∧
+      ¬Function.Injective (fun v : ContDiffMapIcc (zero_le_one : (0 : ℝ) ≤ 1) 1 => v.deriv 1) ∧
+      ∀ v : ContDiffMapIcc (zero_le_one : (0 : ℝ) ≤ 1) 1,
+        v.deriv 1 = 0 ↔ ∃ c : ℝ, ∀ t : Icc (0 : ℝ) 1, v t = c := by
+  refine ⟨fun w => ⟨cons (ofContinuousMap _ w) 0, rfl⟩, fun hinj => ?_, fun v => ⟨?_, ?_⟩⟩
+  · have h : cons (ofContinuousMap _ (0 : C(Icc (0 : ℝ) 1, ℝ))) 1 = 0 := hinj rfl
+    have h0 := congrArg (fun v : ContDiffMapIcc (zero_le_one : (0 : ℝ) ≤ 1) 1 =>
+      v ⟨0, left_mem_Icc.2 zero_le_one⟩) h
+    simp at h0
+  · intro h
+    refine ⟨v ⟨0, left_mem_Icc.2 zero_le_one⟩, fun t => ?_⟩
+    have hv : v.deriv 0 t = v.deriv 0 ⟨0, left_mem_Icc.2 zero_le_one⟩
+        + ContinuousMap.integralIccCLM zero_le_one t (v.deriv 1) :=
+      (ContinuousMap.hasDerivIcc_iff zero_le_one).1 (v.hasDerivIcc 0) t
+    rw [h, map_zero, add_zero] at hv
+    exact hv
+  · rintro ⟨c, hc⟩
+    have hconst : v.deriv 0 = ContinuousMap.const (Icc (0 : ℝ) 1) c := ContinuousMap.ext hc
+    have hd : ContinuousMap.HasDerivIcc zero_le_one (v.deriv 0) (v.deriv 1) := v.hasDerivIcc 0
+    refine hd.unique zero_lt_one ?_
+    rw [hconst]
+    exact ContinuousMap.hasDerivIcc_const zero_le_one c
+
+/-- **Example 2.1.5.** The operator `D : v ↦ (v', v(0))` is a bijection from `C¹[0, 1]` onto
+`C[0, 1] × ℝ`, repairing the non-injectivity of `d/dx` of Example 2.1.4: the inverse sends `(w, c)`
+to the antiderivative of `w` taking the value `c` at `0`. -/
+theorem example_2_1_5 :
+    Function.Bijective (fun v : ContDiffMapIcc (zero_le_one : (0 : ℝ) ≤ 1) 1 =>
+      (v.deriv 1, v ⟨0, left_mem_Icc.2 zero_le_one⟩)) := by
+  refine Function.bijective_iff_has_inverse.2
+    ⟨fun p => cons (ofContinuousMap _ p.1) p.2, fun v => ?_, fun p => ?_⟩
+  · change cons (ofContinuousMap _ (v.deriv 1)) (v ⟨0, left_mem_Icc.2 zero_le_one⟩) = v
+    rw [show ofContinuousMap (zero_le_one : (0 : ℝ) ≤ 1) (v.deriv 1) = shift v from
+      ofContinuousMap_deriv (shift v)]
+    exact cons_shift v
+  · exact Prod.ext rfl (cons_left _ _)
+
+end Differentiation
 
 end AtkinsonHan.Chapter02

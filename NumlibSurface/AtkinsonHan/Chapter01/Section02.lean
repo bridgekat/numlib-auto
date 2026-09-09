@@ -8,6 +8,7 @@ import Mathlib.MeasureTheory.Integral.DominatedConvergence
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 import Mathlib.MeasureTheory.Integral.Prod
 import Mathlib.Topology.ContinuousMap.Compact
+import Numlib.Analysis.Calculus.ContDiffMapIcc
 import Mathlib.Topology.Instances.AddCircle.Real
 
 /-!
@@ -54,6 +55,7 @@ Mathlib's `Norm`, `Seminorm`, `Metric.ball`, `IsOpen`, `IsClosed`, `Filter.Tends
 * `example_1_2_3`, `example_1_2_4`, `example_1_2_5`, `example_1_2_11`, `example_1_2_13`,
   `example_1_2_15`, `example_1_2_16`, `example_1_2_22`, `example_1_2_22_incomplete` — the
   illustrations of the section.
+* `example_1_2_28_a` — the half of Example 1.2.28 (a) about `Cᵐ[a, b]`: it is a Banach space.
 
 ## Conventions
 
@@ -75,11 +77,14 @@ of `ℝ^d`, which is how Mathlib has them and how the book uses them.
 
 ## Not formalized here
 
-Example 1.2.5 (b), the norm `‖f‖_{k,∞} = max_{j ≤ k} ‖f⁽ʲ⁾‖_∞` of `Cᵏ[a, b]`, and with it
-Example 1.2.28 (a), need `Cᵏ[a, b]` as a normed space, which Mathlib does not have — it has
-`C(X, ℝ)` for compact `X`, hence only the case `k = 0`. Example 1.2.28 (b) is the Sobolev
-completion `W^{m,p}(a, b)` and is out of scope for the project. Example 1.2.19 is Theorem 1.5.6
-restated for a bounded `Ω`, and is recorded with it in §1.5.
+Example 1.2.5 (b), the norm `‖f‖_{k,∞} = max_{j ≤ k} ‖f⁽ʲ⁾‖_∞` of `Cᵏ[a, b]`, is not restated:
+the space is the backbone's `ContDiffMapIcc` (`Numlib.Analysis.Calculus.ContDiffMapIcc`), which
+carries the equivalent sum `∑_{j ≤ k} ‖f⁽ʲ⁾‖_∞`, and the two-sided bound between the two norms is
+part of the statement of `example_1_2_28_a`. The `C_p^k(2π)` half of Example 1.2.28 (a) is still
+open, since the periodic `Cᵏ` space does not exist here; Example 1.2.28 (b) is the Sobolev
+completion `W^{m,p}(a, b)` and is out of scope for the project, Mathlib having no weak derivative
+on an interval. Example 1.2.19 is Theorem 1.5.6 restated for a bounded `Ω`, and is recorded with it
+in §1.5.
 
 The `p`-norm on `C[0, 1]` has no Mathlib normed-space structure to name, so where the section uses
 it — Examples 1.2.15, 1.2.16 and the second half of Example 1.2.22 — it is written out as the
@@ -810,6 +815,24 @@ theorem theorem_1_2_25_uniqueness {W : Type*} [NormedAddCommGroup W] [NormedSpac
     Set.range_eq_univ.mp <| by
       rw [← g.isometry.isClosedEmbedding.isClosed_range.closure_eq, (hI.mono hsub).closure_eq]
   exact ⟨LinearIsometryEquiv.ofSurjective g hsurj, hcoe⟩
+
+/-- **Example 1.2.28** (a), the clause about `Cᵐ[a, b]`: with the norm of Example 1.2.5 (b) it is a
+Banach space.
+
+The space is the backbone's `ContDiffMapIcc hab m` (`Numlib.Analysis.Calculus.ContDiffMapIcc`),
+which carries the norm `∑_{j ≤ m} ‖v⁽ʲ⁾‖_∞` — the norm the book itself writes as (2.1.2) in §2.1 —
+rather than the maximum `max_{j ≤ m} ‖v⁽ʲ⁾‖_∞` of Example 1.2.5 (b). The first two conjuncts are the
+two-sided bound between the two norms, so the completeness of the third is the book's statement for
+either of them.
+
+The other half of clause (a), that `C_p^k(2π)` is a Banach space, is still open: the periodic `Cᵏ`
+space does not exist here. Clause (b), the incompleteness for the `‖·‖_p` norms and the Sobolev
+completion, is out of scope. -/
+theorem example_1_2_28_a {a b : ℝ} (hab : a ≤ b) (m : ℕ) :
+    (∀ v : ContDiffMapIcc hab m, ⨆ j, ‖v.deriv j‖ ≤ ‖v‖) ∧
+      (∀ v : ContDiffMapIcc hab m, ‖v‖ ≤ (m + 1) * ⨆ j, ‖v.deriv j‖) ∧
+      CompleteSpace (ContDiffMapIcc hab m) :=
+  ⟨ContDiffMapIcc.iSup_norm_deriv_le_norm, ContDiffMapIcc.norm_le_iSup_norm_deriv, inferInstance⟩
 
 end Normed
 

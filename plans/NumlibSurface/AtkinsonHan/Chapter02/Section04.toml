@@ -37,7 +37,14 @@ desc = '''Example 2.4.2: the differentiation operator `D : C¹[0, 1] → L²(0, 
 `‖D v‖₂ ≤ ‖v‖_{1,2}` and hence `‖D‖ ≤ 1` for the inner product norm
 `‖v‖_{1,2} = (‖v‖₂² + ‖v'‖₂²)^{1/2}`, so Theorem 2.4.1 extends it to
 `D̂ ∈ 𝓛(H¹(0, 1), L²(0, 1))`, the derivative on the Sobolev space `H¹(0, 1)` that is the
-completion of `C¹[0, 1]` in that norm. Not formalized: it needs Sobolev spaces on an interval,
-which `notes/backbone.md` §1.7 puts out of scope — Mathlib has no weak derivative on an open
-subset of `ℝ` — as §2.4's module doc records.'''
+completion of `C¹[0, 1]` in that norm.
+
+Still open, and *not* unblocked by `C¹[0, 1]` now existing.  The underlying space is the backbone's
+`ContDiffMapIcc (zero_le_one : (0 : ℝ) ≤ 1) 1`
+(`Numlib.Analysis.Calculus.ContDiffMapIcc`), but two things are missing.  The norm here is the
+`H¹` *inner product* norm `(‖v‖₂² + ‖v'‖₂²)^{1/2}`, not the supremum norm `‖v‖_∞ + ‖v'‖_∞` that
+`ContDiffMapIcc` carries, so it would have to be put on the same carrier as a second normed
+structure; and the target of the extension, `H¹(0, 1)`, needs Sobolev spaces on an interval, for
+which Mathlib has no weak derivative on an open subset of `ℝ`.  So the remaining obstruction is
+`H¹(0, 1)` alone, as §2.4's module doc records.'''
 deps = ["theorem_2_4_1"]
