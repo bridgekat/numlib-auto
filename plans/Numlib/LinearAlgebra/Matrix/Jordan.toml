@@ -62,3 +62,51 @@ source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.8"
 [[node]]
 id = "exists_conj_blockDiagonal'_jordanForm"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.8"
+
+[[node]]
+id = "jordanBlock_sub_smul_one"
+
+[[node]]
+id = "jordanBlock_zero_pow_apply"
+
+[[node]]
+id = "jordanBlock_zero_pow_mulVec_apply"
+
+[[node]]
+id = "jordanBlock_zero_pow_mulVec_of_le"
+
+[[node]]
+id = "mem_ker_mulVecLin_jordanBlock_zero_pow"
+
+[[node]]
+id = "finrank_ker_mulVecLin_jordanBlock_zero_pow"
+
+[[node]]
+id = "ker_mulVecLin_jordanBlock_pow_eq_bot"
+
+[[node]]
+id = "finrank_ker_mulVecLin_jordanBlock_pow"
+
+[[node]]
+id = "jordanForm_sub_smul_one"
+
+[[node]]
+id = "exists_equiv_submatrix_jordanForm_pos"
+
+[[node]]
+id = "charpoly_jordanForm"
+
+[[node]]
+id = "rootMultiplicity_charpoly_jordanForm"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.8"
+
+[[node]]
+id = "finrank_ker_mulVecLin_jordanForm_sub_smul_one_pow"
+
+[[node]]
+id = "finrank_ker_mulVecLin_jordanForm_sub_smul_one_pow_succ_eq_iff"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.8"
+
+[[node]]
+id = "finrank_ker_mulVecLin_jordanForm_sub_smul_one"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.8"

@@ -1,0 +1,19 @@
+namespace = "Matrix"
+
+[[node]]
+id = "reindex_toSquareBlock_blockDiagonal'"
+
+[[node]]
+id = "det_blockDiagonal'"
+
+[[node]]
+id = "charmatrix_blockDiagonal'"
+
+[[node]]
+id = "charpoly_blockDiagonal'"
+
+[[node]]
+id = "blockDiagonal'_sub_smul_one"
+
+[[node]]
+id = "blockDiagonal'_mulVec"

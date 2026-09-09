@@ -22,11 +22,19 @@ quasi-Schur (real Schur) form, which the book states without proof.
 §1.8.2 gets the Jordan canonical form, `theorem_1_8`, from the backbone's
 `Numlib/LinearAlgebra/Matrix/Jordan`, which builds it from scratch: Mathlib has none. The two
 results the book derives from it, Theorems 1.10 and 1.11, are nonetheless proved in
-`Numlib/LinearAlgebra/Matrix/Complexify` from Gelfand's formula instead, which needs less. The
-multiplicity vocabulary the section introduces around it —
-algebraic and geometric multiplicity, simple, semisimple, defective, derogatory — is Mathlib's
-`Module.End.eigenspace`, `Module.End.maxGenEigenspace` and `Polynomial.rootMultiplicity` of the
-characteristic polynomial, and gets no declaration here.
+`Numlib/LinearAlgebra/Matrix/Complexify` from Gelfand's formula instead, which needs less.
+
+Theorem 1.8 states a block structure and then identifies the three numbers in it. `theorem_1_8` is
+the block structure; the identifications are `theorem_1_8_geometricMultiplicity`,
+`theorem_1_8_algebraicMultiplicity` and `theorem_1_8_index`, three separate statements about a
+decomposition of that shape rather than three more clauses of one existential, so that a consumer
+can use the structure without unpacking the arithmetic and the other way round.
+
+The multiplicity vocabulary the section introduces around them — algebraic and geometric
+multiplicity, simple, semisimple, defective, derogatory — is Mathlib's `Module.End.eigenspace`,
+`Module.End.maxGenEigenspace` and `Polynomial.rootMultiplicity` of the characteristic polynomial,
+and gets no definition here; the index of an eigenvalue is spelled out where it is used, as the
+least `k` at which `Null (A - λ I)^k` stops growing.
 
 Similarity is a surface definition, `SaadSparse.Chapter01.IsSimilar`, because the book's `A = X B
 X⁻¹` with `X` nonsingular is what every statement of the section uses; it is an equivalence
@@ -267,32 +275,177 @@ theorem proposition_1_7 (A : Matrix (Fin n) (Fin n) ℂ) :
 
 /-! ### §1.8.2 Theorem 1.8: the Jordan canonical form -/
 
+/-- Similarity survives subtracting a scalar from both matrices: `X (B - λ I) X⁻¹ = A - λ I`. -/
+theorem IsSimilar.sub_smul_one {A B : Matrix (Fin n) (Fin n) 𝕜} (h : IsSimilar A B) (c : 𝕜) :
+    IsSimilar (A - c • 1) (B - c • 1) := by
+  obtain ⟨X, hX, rfl⟩ := h
+  have hd : IsUnit X.det := (Matrix.isUnit_iff_isUnit_det X).1 hX
+  refine ⟨X, hX, ?_⟩
+  rw [Matrix.mul_sub, Matrix.mul_smul, Matrix.mul_one, Matrix.sub_mul, Matrix.smul_mul,
+    Matrix.mul_nonsing_inv X hd]
+
+/-- Similar matrices have similar powers. -/
+theorem IsSimilar.pow {A B : Matrix (Fin n) (Fin n) 𝕜} (h : IsSimilar A B) (k : ℕ) :
+    IsSimilar (A ^ k) (B ^ k) := by
+  obtain ⟨X, hX, rfl⟩ := h
+  have hd : IsUnit X.det := (Matrix.isUnit_iff_isUnit_det X).1 hX
+  refine ⟨X, hX, ?_⟩
+  induction k with
+  | zero => simp [Matrix.mul_nonsing_inv X hd]
+  | succ k ih =>
+      rw [pow_succ, pow_succ, ih]
+      simp only [Matrix.mul_assoc]
+      rw [← Matrix.mul_assoc X⁻¹ X, Matrix.nonsing_inv_mul X hd, Matrix.one_mul]
+
+/-- Similar matrices have null spaces of the same dimension, because they have the same rank. With
+`IsSimilar.sub_smul_one` and `IsSimilar.pow` this says that similar matrices give every eigenvalue
+the same geometric multiplicity and the same index, as Problem P-1.9 says they give it the same
+algebraic multiplicity. -/
+theorem finrank_ker_mulVecLin_eq_of_isSimilar {A B : Matrix (Fin n) (Fin n) 𝕜}
+    (h : IsSimilar A B) :
+    Module.finrank 𝕜 (LinearMap.ker A.mulVecLin)
+      = Module.finrank 𝕜 (LinearMap.ker B.mulVecLin) := by
+  obtain ⟨X, hX, rfl⟩ := h
+  exact Matrix.finrank_ker_mulVecLin_conj hX
+
+/-- The eigenspace of `A` at `c` is `Null (A - c I)`, the null space of the matrix `A - c I`. -/
+private theorem eigenspace_mulVecLin_eq_ker (A : Matrix (Fin n) (Fin n) 𝕜) (c : 𝕜) :
+    Module.End.eigenspace A.mulVecLin c = LinearMap.ker ((A - c • 1).mulVecLin) := by
+  ext v
+  simp [LinearMap.mem_ker, sub_eq_zero]
+
 /-- **Saad Theorem 1.8**, the Jordan canonical form: every complex square matrix is similar to a
 block diagonal matrix consisting of `p` diagonal blocks, one associated with each distinct
 eigenvalue `lam i`, and each of those blocks has itself a block diagonal structure consisting of
 `γ i` sub-blocks, the Jordan blocks `Matrix.jordanBlock (l i k) (lam i)` — upper bidiagonal, with
-the constant `lam i` on the diagonal and the constant one on the superdiagonal. The equivalence `σ`
-names the indices of the block diagonal matrix by `Fin n`; composing with it is a permutation
-similarity, so this is the book's `X⁻¹ A X = J`.
+the constant `lam i` on the diagonal and the constant one on the superdiagonal, of positive size.
+The equivalence `σ` names the indices of the block diagonal matrix by `Fin n`; composing with it is
+a permutation similarity, so this is the book's `X⁻¹ A X = J`.
 
-The book's further identifications — `γ i` is the geometric multiplicity of `lam i`, the size of
-each sub-block is at most the index `l i` of `lam i`, and the `i`-th diagonal block has size the
-algebraic multiplicity `m i` — are not formalized; what is proved here is the block structure and
-that the `lam i` are exactly the distinct eigenvalues of `A`. -/
+What is proved here is the block structure and that the `lam i` are exactly the distinct
+eigenvalues of `A`. The book's three further identifications of the numbers involved are the three
+statements that follow, each about a decomposition of this shape: `γ i` is the geometric
+multiplicity of `lam i` (`SaadSparse.Chapter01.theorem_1_8_geometricMultiplicity`), the `i`-th
+diagonal block has size the algebraic multiplicity `m i` of `lam i`
+(`SaadSparse.Chapter01.theorem_1_8_algebraicMultiplicity`), and the sub-blocks have size at most
+the index `l i` of `lam i`, which is itself at most `m i`
+(`SaadSparse.Chapter01.theorem_1_8_index`). -/
 theorem theorem_1_8 (A : Matrix (Fin n) (Fin n) ℂ) :
     ∃ (p : ℕ) (lam : Fin p → ℂ) (γ : Fin p → ℕ) (l : ∀ i : Fin p, Fin (γ i) → ℕ)
       (σ : ((i : Fin p) × (k : Fin (γ i)) × Fin (l i k)) ≃ Fin n),
       Function.Injective lam ∧ (∀ μ : ℂ, (∃ v ≠ 0, A *ᵥ v = μ • v) ↔ μ ∈ Set.range lam) ∧
+        (∀ i k, 0 < l i k) ∧
         IsSimilar A (Matrix.reindex σ σ
           (Matrix.blockDiagonal' fun i => Matrix.jordanForm (l i) (fun _ => lam i))) := by
-  obtain ⟨p, lam, γ, l, σ, P, hinj, heig, hP, hPA⟩ :=
+  obtain ⟨p, lam, γ, l, σ, P, hinj, heig, hlpos, hP, hPA⟩ :=
     Matrix.exists_conj_blockDiagonal'_jordanForm A
   have hd : IsUnit P.det := (Matrix.isUnit_iff_isUnit_det P).1 hP
-  refine ⟨p, lam, γ, l, σ, hinj, heig, P, hP, ?_⟩
+  refine ⟨p, lam, γ, l, σ, hinj, heig, hlpos, P, hP, ?_⟩
   rw [← hPA]
   calc A = P * P⁻¹ * A * (P * P⁻¹) := by
         rw [Matrix.mul_nonsing_inv P hd, Matrix.one_mul, Matrix.mul_one]
     _ = P * (P⁻¹ * A * P) * P⁻¹ := by simp only [Matrix.mul_assoc]
+
+/-- For a matrix in the Jordan form of Theorem 1.8, `Null (A - lam i I)^k` has the dimension the
+`i`-th diagonal block gives it: the other diagonal blocks carry other eigenvalues and contribute
+nothing. -/
+private theorem finrank_ker_pow_sub_smul_one_of_jordan {A : Matrix (Fin n) (Fin n) ℂ} {p : ℕ}
+    {lam : Fin p → ℂ} {γ : Fin p → ℕ} {l : ∀ i : Fin p, Fin (γ i) → ℕ}
+    {σ : ((i : Fin p) × (k : Fin (γ i)) × Fin (l i k)) ≃ Fin n} (hinj : Function.Injective lam)
+    (hA : IsSimilar A (Matrix.reindex σ σ
+      (Matrix.blockDiagonal' fun i => Matrix.jordanForm (l i) (fun _ => lam i))))
+    (i : Fin p) (k : ℕ) :
+    Module.finrank ℂ (LinearMap.ker (((A - lam i • 1) ^ k).mulVecLin))
+      = Module.finrank ℂ (LinearMap.ker
+          (((Matrix.jordanForm (l i) (fun _ => lam i) - lam i • 1) ^ k).mulVecLin)) := by
+  classical
+  set J : Matrix ((i : Fin p) × (k : Fin (γ i)) × Fin (l i k))
+      ((i : Fin p) × (k : Fin (γ i)) × Fin (l i k)) ℂ :=
+    Matrix.blockDiagonal' fun i => Matrix.jordanForm (l i) (fun _ => lam i) with hJ
+  have hre : (Matrix.reindex σ σ J - lam i • 1) ^ k
+      = Matrix.reindex σ σ ((J - lam i • 1) ^ k) := by
+    simp only [← Matrix.coe_reindexAlgEquiv ℂ ℂ σ]
+    rw [← map_one (Matrix.reindexAlgEquiv ℂ ℂ σ), ← map_smul, ← map_sub, ← map_pow]
+  rw [finrank_ker_mulVecLin_eq_of_isSimilar ((hA.sub_smul_one (lam i)).pow k), hre,
+    Matrix.finrank_ker_mulVecLin_reindex, hJ, Matrix.blockDiagonal'_sub_smul_one,
+    ← Matrix.blockDiagonal'_pow, Matrix.finrank_ker_mulVecLin_blockDiagonal']
+  refine Finset.sum_eq_single i (fun j _ hj => ?_) (fun h => absurd (Finset.mem_univ i) h)
+  rw [show ((fun j => Matrix.jordanForm (l j) (fun _ => lam j) - lam i • 1) ^ k) j
+      = (Matrix.jordanForm (l j) (fun _ => lam j) - lam i • 1) ^ k from rfl,
+    Matrix.finrank_ker_mulVecLin_jordanForm_sub_smul_one_pow,
+    Finset.filter_false_of_mem fun _ _ (h : lam j = lam i) => hj (hinj h), Finset.sum_empty]
+
+/-- **Saad Theorem 1.8, the geometric multiplicity**: in the Jordan form of Theorem 1.8 the number
+`γ i` of sub-blocks of the `i`-th diagonal block is the geometric multiplicity of `lam i`, the
+dimension of its eigenspace. Each Jordan block "corresponds to a different eigenvector associated
+with the eigenvalue", contributing exactly one dimension. -/
+theorem theorem_1_8_geometricMultiplicity {A : Matrix (Fin n) (Fin n) ℂ} {p : ℕ}
+    {lam : Fin p → ℂ} {γ : Fin p → ℕ} {l : ∀ i : Fin p, Fin (γ i) → ℕ}
+    {σ : ((i : Fin p) × (k : Fin (γ i)) × Fin (l i k)) ≃ Fin n} (hinj : Function.Injective lam)
+    (hlpos : ∀ i k, 0 < l i k)
+    (hA : IsSimilar A (Matrix.reindex σ σ
+      (Matrix.blockDiagonal' fun i => Matrix.jordanForm (l i) (fun _ => lam i))))
+    (i : Fin p) :
+    Module.finrank ℂ (Module.End.eigenspace A.mulVecLin (lam i)) = γ i := by
+  classical
+  have h := finrank_ker_pow_sub_smul_one_of_jordan hinj hA i 1
+  rw [pow_one, pow_one] at h
+  rw [eigenspace_mulVecLin_eq_ker, h,
+    Matrix.finrank_ker_mulVecLin_jordanForm_sub_smul_one (hlpos i) (fun _ => lam i) (lam i),
+    Finset.filter_true_of_mem fun _ _ => rfl, Finset.card_univ, Fintype.card_fin]
+
+/-- **Saad Theorem 1.8, the algebraic multiplicity**: in the Jordan form of Theorem 1.8 the `i`-th
+diagonal block has size `m i`, the algebraic multiplicity of `lam i` — the multiplicity of `lam i`
+as a root of the characteristic polynomial of `A`. Its size is `∑ k, l i k`, the total size of its
+sub-blocks, which is the number of columns of the Jordan submatrix `J i`. -/
+theorem theorem_1_8_algebraicMultiplicity {A : Matrix (Fin n) (Fin n) ℂ} {p : ℕ}
+    {lam : Fin p → ℂ} {γ : Fin p → ℕ} {l : ∀ i : Fin p, Fin (γ i) → ℕ}
+    {σ : ((i : Fin p) × (k : Fin (γ i)) × Fin (l i k)) ≃ Fin n} (hinj : Function.Injective lam)
+    (hA : IsSimilar A (Matrix.reindex σ σ
+      (Matrix.blockDiagonal' fun i => Matrix.jordanForm (l i) (fun _ => lam i))))
+    (i : Fin p) :
+    A.charpoly.rootMultiplicity (lam i) = ∑ k, l i k := by
+  classical
+  have hcp : A.charpoly = (Matrix.jordanForm (fun j => ∑ k, l j k) lam).charpoly := by
+    rw [Matrix.charpoly_jordanForm, charpoly_eq_of_isSimilar hA, Matrix.charpoly_reindex,
+      Matrix.charpoly_blockDiagonal']
+    exact Finset.prod_congr rfl fun j _ => by
+      rw [Matrix.charpoly_jordanForm, Finset.prod_pow_eq_pow_sum]
+  have hfilter : (Finset.univ.filter fun j => lam j = lam i) = {i} := by
+    ext j
+    simp [hinj.eq_iff]
+  rw [hcp, Matrix.rootMultiplicity_charpoly_jordanForm, hfilter, Finset.sum_singleton]
+
+/-- **Saad Theorem 1.8, the index**: in the Jordan form of Theorem 1.8 the sub-blocks of the `i`-th
+diagonal block have size at most `L`, the index of `lam i` — the smallest integer with
+`Null (A - lam i I)^(L+1) = Null (A - lam i I)^L` — and `L` is at most the algebraic multiplicity
+`m i = ∑ k, l i k`. This is the book's "of size not exceeding `l i ≤ m i`"; `L` is the size of the
+largest sub-block, and so is attained. -/
+theorem theorem_1_8_index {A : Matrix (Fin n) (Fin n) ℂ} {p : ℕ} {lam : Fin p → ℂ} {γ : Fin p → ℕ}
+    {l : ∀ i : Fin p, Fin (γ i) → ℕ}
+    {σ : ((i : Fin p) × (k : Fin (γ i)) × Fin (l i k)) ≃ Fin n} (hinj : Function.Injective lam)
+    (hA : IsSimilar A (Matrix.reindex σ σ
+      (Matrix.blockDiagonal' fun i => Matrix.jordanForm (l i) (fun _ => lam i))))
+    (i : Fin p) :
+    ∃ L : ℕ, IsLeast {k : ℕ | LinearMap.ker (((A - lam i • 1) ^ (k + 1)).mulVecLin)
+          = LinearMap.ker (((A - lam i • 1) ^ k).mulVecLin)} L ∧
+        (∀ k, l i k ≤ L) ∧ L ≤ ∑ k, l i k := by
+  classical
+  have hiff : ∀ k : ℕ,
+      LinearMap.ker (((A - lam i • 1) ^ (k + 1)).mulVecLin)
+          = LinearMap.ker (((A - lam i • 1) ^ k).mulVecLin) ↔ ∀ κ, l i κ ≤ k := by
+    intro k
+    have hbb := Matrix.finrank_ker_mulVecLin_jordanForm_sub_smul_one_pow_succ_eq_iff (l i)
+      (fun _ => lam i) (lam i) k
+    rw [← finrank_ker_pow_sub_smul_one_of_jordan hinj hA i,
+      ← finrank_ker_pow_sub_smul_one_of_jordan hinj hA i] at hbb
+    refine Iff.trans ?_ (hbb.trans ⟨fun h κ => h κ rfl, fun h κ _ => h κ⟩)
+    exact ⟨fun h => by rw [h], fun h => (Submodule.eq_of_le_of_finrank_eq
+      (Matrix.ker_mulVecLin_pow_le_succ (A - lam i • 1) k) h.symm).symm⟩
+  refine ⟨Finset.univ.sup fun k => l i k, ⟨(hiff _).2 fun κ => Finset.le_sup (Finset.mem_univ κ),
+    fun k hk => Finset.sup_le fun κ _ => (hiff k).1 hk κ⟩,
+    fun k => Finset.le_sup (Finset.mem_univ k), Finset.sup_le fun κ _ => ?_⟩
+  exact Finset.single_le_sum (f := fun κ => l i κ) (fun _ _ => Nat.zero_le _) (Finset.mem_univ κ)
 
 /-! ### §1.8.3 Theorem 1.9: the Schur canonical form -/
 

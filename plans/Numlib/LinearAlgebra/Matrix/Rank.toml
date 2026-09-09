@@ -1,0 +1,22 @@
+namespace = "Matrix"
+
+[[node]]
+id = "rank_add_finrank_ker_mulVecLin"
+
+[[node]]
+id = "finrank_ker_mulVecLin_reindex"
+
+[[node]]
+id = "rank_conj"
+
+[[node]]
+id = "finrank_ker_mulVecLin_conj"
+
+[[node]]
+id = "ker_mulVecLin_pow_le_succ"
+
+[[node]]
+id = "kerMulVecLinBlockDiagonal'Equiv"
+
+[[node]]
+id = "finrank_ker_mulVecLin_blockDiagonal'"

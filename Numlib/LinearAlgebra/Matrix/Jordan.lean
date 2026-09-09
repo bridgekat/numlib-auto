@@ -13,6 +13,7 @@ import Mathlib.LinearAlgebra.Matrix.Block
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Basic
 import Mathlib.LinearAlgebra.StdBasis
 import Mathlib.RingTheory.AdjoinRoot
+import Numlib.LinearAlgebra.Matrix.Rank
 
 /-!
 # The Jordan canonical form
@@ -24,6 +25,14 @@ blocks, of sizes `e i` and eigenvalues `μ i`. Over an algebraically closed fiel
 of a finite-dimensional vector space is a Jordan form in a suitable basis, and hence every square
 matrix is similar to one. This is the Jordan canonical form of Yousef Saad, *Iterative Methods for
 Sparse Linear Systems*, 2nd edition, SIAM, 2003 [saad2003iterative], §1.8.2, Theorem 1.8.
+
+The **multiplicity arithmetic** of a Jordan form is here too: its characteristic polynomial, and
+the dimensions of the null spaces of the powers of `jordanForm e μ - c`. Between them they identify
+the three numbers a textbook attaches to an eigenvalue `c`. The *algebraic* multiplicity, the
+multiplicity of `c` as a root of the characteristic polynomial, is the total size of the blocks
+carrying `c`; the *geometric* multiplicity, the dimension of the eigenspace, is the number of those
+blocks, each contributing one eigenvector; and the *index*, the least `k` at which the null spaces
+of the powers of `jordanForm e μ - c` stop growing, is the largest of their sizes.
 
 ## Main definitions
 
@@ -46,6 +55,19 @@ Sparse Linear Systems*, 2nd edition, SIAM, 2003 [saad2003iterative], §1.8.2, Th
   laid out consecutively along the diagonal.
 * `Matrix.exists_conj_blockDiagonal'_jordanForm`: the matrix form grouped by eigenvalue, which is
   the shape in which the textbook states it.
+* `Matrix.charpoly_jordanForm`: the characteristic polynomial `∏ i, (X - μ i) ^ e i` of a Jordan
+  form, and `Matrix.rootMultiplicity_charpoly_jordanForm` for the **algebraic multiplicity** it
+  gives each eigenvalue.
+* `Matrix.finrank_ker_mulVecLin_jordanForm_sub_smul_one_pow`: the dimension of the null space of
+  `(jordanForm e μ - c) ^ k`, namely `∑ i, min (e i) k` over the blocks carrying `c`. Its two
+  specialisations are `Matrix.finrank_ker_mulVecLin_jordanForm_sub_smul_one`, the **geometric
+  multiplicity** at `k = 1`, and
+  `Matrix.finrank_ker_mulVecLin_jordanForm_sub_smul_one_pow_succ_eq_iff`, which says that the
+  dimensions stop growing at `k` exactly when every block carrying `c` has size at most `k`, so
+  that the least such `k` — the **index** of `c` — is the largest of those sizes.
+* `Matrix.exists_equiv_submatrix_jordanForm_pos`: the size-zero blocks that `Matrix.jordanForm`
+  admits, and that would spoil those counts, can always be dropped. The existence theorems above
+  produce block sizes that are already positive.
 
 ## Implementation notes
 
@@ -70,6 +92,14 @@ Two structure theorems of Mathlib are combined, and neither half is reproved.
   `AdjoinRoot.powerBasis'` for the count and from `basisOfTopLeSpanOfCardEqFinrank` — multiplication
   by `X` is the nilpotent Jordan block, which is
   `Polynomial.exists_basis_quotient_span_X_pow`.
+
+The multiplicity statements are read off the block structure with the general block diagonal
+results of `Numlib/LinearAlgebra/Matrix/BlockDiagonal.lean` and
+`Numlib/LinearAlgebra/Matrix/Rank.lean`: the characteristic polynomial and the nullity of a block
+diagonal matrix are the product and the sum over its blocks, so only one Jordan block has to be
+understood. A Jordan block with a nonzero eigenvalue is invertible, and the `k`-th power of the
+nilpotent one is the `k`-th superdiagonal, whose null space is cut out by the vanishing of the
+coordinates from the `k`-th on and hence has dimension `min n k`.
 
 Doing the eigenvalue split first is what produces the grouped statement, which is the one the
 textbook states; the flat statement is then a reindexing of it. The opposite order, applying
@@ -148,7 +178,135 @@ theorem jordanBlock_eq_add_smul_one : jordanBlock n μ = jordanBlock n 0 + μ �
   · simp
   · simp [jordanBlock_apply, h, Matrix.one_apply_ne h]
 
+/-- Shifting a Jordan block by a scalar shifts its eigenvalue. -/
+theorem jordanBlock_sub_smul_one (c : R) :
+    jordanBlock n μ - c • (1 : Matrix (Fin n) (Fin n) R) = jordanBlock n (μ - c) := by
+  rw [jordanBlock_eq_add_smul_one (μ := μ), jordanBlock_eq_add_smul_one (μ := μ - c), sub_smul]
+  abel
+
+/-- The entries of a power of a nilpotent Jordan block: the `k`-th power carries `1` on the `k`-th
+superdiagonal and `0` elsewhere. -/
+theorem jordanBlock_zero_pow_apply (k : ℕ) (i j : Fin n) :
+    ((jordanBlock n (0 : R)) ^ k) i j = if (i : ℕ) + k = (j : ℕ) then 1 else 0 := by
+  induction k generalizing j with
+  | zero => simp [Matrix.one_apply, Fin.ext_iff]
+  | succ k ih =>
+      rw [pow_succ, Matrix.mul_apply]
+      by_cases h : (i : ℕ) + k < n
+      · rw [Finset.sum_eq_single (⟨(i : ℕ) + k, h⟩ : Fin n) ?_ (by simp)]
+        · rw [ih, jordanBlock_zero_apply]
+          simp [Nat.add_assoc]
+        · intro l _ hl
+          have hne : (i : ℕ) + k ≠ (l : ℕ) := fun hc => hl (Fin.ext hc.symm)
+          simp [ih, hne]
+      · have hj := j.isLt
+        have hne : (i : ℕ) + (k + 1) ≠ (j : ℕ) := by omega
+        refine (Finset.sum_eq_zero fun l _ => ?_).trans (by simp [hne])
+        have hl := l.isLt
+        have hil : (i : ℕ) + k ≠ (l : ℕ) := by omega
+        simp [ih, hil]
+
+/-- A power of a nilpotent Jordan block shifts a vector down by the exponent. -/
+theorem jordanBlock_zero_pow_mulVec_apply (k : ℕ) (v : Fin n → R) (i j : Fin n)
+    (hij : (i : ℕ) + k = (j : ℕ)) : ((jordanBlock n (0 : R) ^ k) *ᵥ v) i = v j := by
+  simp only [mulVec, dotProduct, jordanBlock_zero_pow_apply]
+  rw [Finset.sum_eq_single j]
+  · simp [hij]
+  · intro b _ hb
+    have hne : (i : ℕ) + k ≠ (b : ℕ) := fun hc => hb (Fin.ext (by omega))
+    simp [hne]
+  · simp
+
+/-- Past the last row that the shift reaches, a power of a nilpotent Jordan block annihilates every
+vector. -/
+theorem jordanBlock_zero_pow_mulVec_of_le (k : ℕ) (v : Fin n → R) (i : Fin n)
+    (hi : n ≤ (i : ℕ) + k) : ((jordanBlock n (0 : R) ^ k) *ᵥ v) i = 0 := by
+  simp only [mulVec, dotProduct, jordanBlock_zero_pow_apply]
+  refine Finset.sum_eq_zero fun b _ => ?_
+  have := b.isLt
+  simp [show (i : ℕ) + k ≠ (b : ℕ) by omega]
+
 end CommRing
+
+section JordanBlockKer
+
+variable {K : Type*} [Field K] {ν : K}
+
+/-- The null space of the `k`-th power of a nilpotent Jordan block consists of the vectors whose
+last coordinates, from the `k`-th on, vanish. -/
+theorem mem_ker_mulVecLin_jordanBlock_zero_pow {k : ℕ} {v : Fin n → K} :
+    v ∈ LinearMap.ker ((jordanBlock n (0 : K) ^ k).mulVecLin)
+      ↔ ∀ j : Fin n, k ≤ (j : ℕ) → v j = 0 := by
+  simp only [LinearMap.mem_ker, mulVecLin_apply, funext_iff, Pi.zero_apply]
+  constructor
+  · intro h j hj
+    have hlt : (j : ℕ) - k < n := by have := j.isLt; omega
+    rw [← jordanBlock_zero_pow_mulVec_apply k v ⟨(j : ℕ) - k, hlt⟩ j (Nat.sub_add_cancel hj)]
+    exact h _
+  · intro h i
+    rcases lt_or_ge ((i : ℕ) + k) n with hi | hi
+    · rw [jordanBlock_zero_pow_mulVec_apply k v i ⟨(i : ℕ) + k, hi⟩ rfl]
+      exact h _ (Nat.le_add_left k i)
+    · exact jordanBlock_zero_pow_mulVec_of_le k v i hi
+
+/-- **The nullity of a power of a nilpotent Jordan block**: the `k`-th power of the nilpotent
+Jordan block of size `n` has null space of dimension `min n k`. In particular the block itself,
+at `k = 1`, contributes exactly one eigenvector. -/
+theorem finrank_ker_mulVecLin_jordanBlock_zero_pow (k : ℕ) :
+    Module.finrank K (LinearMap.ker ((jordanBlock n (0 : K) ^ k).mulVecLin)) = min n k := by
+  classical
+  have hcard : Fintype.card {j : Fin n // (j : ℕ) < k} = min n k := by
+    rcases le_total k n with hk | hk
+    · rw [Fintype.card_fin_lt_of_le hk, min_eq_right hk]
+    · rw [Fintype.card_congr (Equiv.subtypeUnivEquiv fun j : Fin n => lt_of_lt_of_le j.isLt hk),
+        Fintype.card_fin, min_eq_left hk]
+  have hcompl : Fintype.card {j : Fin n // k ≤ (j : ℕ)} = n - min n k := by
+    have h := Fintype.card_subtype_compl (p := fun j : Fin n => (j : ℕ) < k)
+    rw [hcard, Fintype.card_fin] at h
+    rw [← h]
+    exact Fintype.card_congr (Equiv.subtypeEquivRight fun j => (not_lt).symm)
+  have hker : LinearMap.ker ((jordanBlock n (0 : K) ^ k).mulVecLin)
+      = LinearMap.ker
+          (LinearMap.funLeft K K (Subtype.val : {j : Fin n // k ≤ (j : ℕ)} → Fin n)) := by
+    ext v
+    rw [mem_ker_mulVecLin_jordanBlock_zero_pow, LinearMap.mem_ker, funext_iff]
+    exact ⟨fun h j => h j.1 j.2, fun h j hj => h ⟨j, hj⟩⟩
+  have hrn := LinearMap.finrank_range_add_finrank_ker
+    (LinearMap.funLeft K K (Subtype.val : {j : Fin n // k ≤ (j : ℕ)} → Fin n))
+  rw [LinearMap.range_eq_top.2
+      (LinearMap.funLeft_surjective_of_injective K K _ Subtype.val_injective),
+    finrank_top, Module.finrank_pi, Module.finrank_pi, hcompl, Fintype.card_fin] at hrn
+  rw [hker]
+  omega
+
+/-- A Jordan block with a nonzero eigenvalue is invertible, so every power of it has trivial null
+space. -/
+theorem ker_mulVecLin_jordanBlock_pow_eq_bot (hν : ν ≠ 0) (k : ℕ) :
+    LinearMap.ker ((jordanBlock n ν ^ k).mulVecLin) = ⊥ := by
+  refine Matrix.ker_mulVecLin_eq_bot_iff.2 ?_
+  have hdet : (jordanBlock n ν).det = ν ^ n := by
+    rw [det_of_isUpperTriangular isUpperTriangular_jordanBlock]
+    simp
+  have hunit : IsUnit (jordanBlock n ν ^ k) := by
+    refine (Matrix.isUnit_iff_isUnit_det _).2 ?_
+    rw [det_pow, hdet]
+    exact (isUnit_iff_ne_zero.2 (pow_ne_zero _ hν)).pow _
+  intro v hv
+  obtain ⟨B, hB⟩ := hunit.exists_left_inv
+  have h : (B * jordanBlock n ν ^ k) *ᵥ v = 0 := by
+    rw [← Matrix.mulVec_mulVec, hv, Matrix.mulVec_zero]
+  rwa [hB, Matrix.one_mulVec] at h
+
+/-- **The nullity of a power of a Jordan block**: only a nilpotent block contributes, and then
+`min n k`. -/
+theorem finrank_ker_mulVecLin_jordanBlock_pow [DecidableEq K] (ν : K) (k : ℕ) :
+    Module.finrank K (LinearMap.ker ((jordanBlock n ν ^ k).mulVecLin))
+      = if ν = 0 then min n k else 0 := by
+  rcases eq_or_ne ν 0 with rfl | hν
+  · simp [finrank_ker_mulVecLin_jordanBlock_zero_pow]
+  · simp [hν, ker_mulVecLin_jordanBlock_pow_eq_bot hν]
+
+end JordanBlockKer
 
 section BlockDiagonal
 
@@ -203,19 +361,139 @@ def jordanForm [Zero R] [One R] (e : ι → ℕ) (μ : ι → R) :
 theorem jordanForm_def [Zero R] [One R] (e : ι → ℕ) (μ : ι → R) :
     jordanForm e μ = blockDiagonal' fun i => jordanBlock (e i) (μ i) := rfl
 
+/-- Shifting a Jordan form by a scalar shifts every eigenvalue. -/
+theorem jordanForm_sub_smul_one [CommRing R] (e : ι → ℕ) (μ : ι → R) (c : R) :
+    jordanForm e μ - c • 1 = jordanForm e fun i => μ i - c := by
+  rw [jordanForm_def, blockDiagonal'_sub_smul_one, jordanForm_def]
+  exact congrArg blockDiagonal' (funext fun i => jordanBlock_sub_smul_one c)
+
 /-- A Jordan form with a single repeated eigenvalue is its nilpotent part plus `μ` times the
 identity. -/
 theorem jordanForm_const_eq_add_smul_one [CommRing R] (e : ι → ℕ) (μ : R) :
     jordanForm e (fun _ => μ) = jordanForm e (fun _ => (0 : R)) + μ • 1 := by
-  have h : (fun i : ι => jordanBlock (e i) μ)
-      = (fun i => jordanBlock (e i) (0 : R))
-        + μ • fun i => (1 : Matrix (Fin (e i)) (Fin (e i)) R) := by
-    funext i
-    simp only [Pi.add_apply, Pi.smul_apply]
-    exact jordanBlock_eq_add_smul_one
-  rw [jordanForm_def, h, blockDiagonal'_add, blockDiagonal'_smul, jordanForm_def,
-    show (blockDiagonal' fun i : ι => (1 : Matrix (Fin (e i)) (Fin (e i)) R)) = 1 from
-      blockDiagonal'_one]
+  have h : jordanForm e (fun _ : ι => μ) - μ • 1 = jordanForm e fun _ : ι => (0 : R) := by
+    rw [jordanForm_sub_smul_one]
+    exact congrArg (jordanForm e) (funext fun _ => sub_self μ)
+  rw [← h]
+  abel
+
+/-- **The size-zero blocks of a Jordan form can be dropped**: after a permutation of the index, a
+Jordan form is a Jordan form whose blocks all have positive size, carrying a subfamily of the same
+sizes and eigenvalues.
+
+A `Matrix.jordanForm` is allowed to list blocks of size zero, which contribute nothing to the
+matrix; the counts of blocks that the multiplicity statements below produce are the intended ones
+only once those have been removed. -/
+theorem exists_equiv_submatrix_jordanForm_pos [Finite ι] [Zero R] [One R] (e : ι → ℕ)
+    (μ : ι → R) :
+    ∃ (p : ℕ) (φ : Fin p → ι) (ρ : ((j : Fin p) × Fin (e (φ j))) ≃ ((i : ι) × Fin (e i))),
+      (∀ j, 0 < e (φ j)) ∧
+        (jordanForm e μ).submatrix ρ ρ = jordanForm (fun j => e (φ j)) fun j => μ (φ j) := by
+  classical
+  set S : Type _ := {i : ι // e i ≠ 0}
+  have _ : Fintype S := Fintype.ofFinite S
+  set τ : Fin (Fintype.card S) ≃ S := (Fintype.equivFin S).symm
+  set ρ₂ : ((s : S) × Fin (e s.1)) ≃ ((i : ι) × Fin (e i)) :=
+    { toFun := fun x => ⟨x.1.1, x.2⟩
+      invFun := fun x => ⟨⟨x.1, by have := x.2.isLt; omega⟩, x.2⟩
+      left_inv := fun _ => rfl
+      right_inv := fun _ => rfl }
+  have hsub : (jordanForm e μ).submatrix ρ₂ ρ₂
+      = blockDiagonal' fun s : S => jordanBlock (e s.1) (μ s.1) := by
+    ext ⟨a, x⟩ ⟨b, y⟩
+    change blockDiagonal' (fun i => jordanBlock (e i) (μ i)) ⟨a.1, x⟩ ⟨b.1, y⟩
+      = blockDiagonal' (fun s : S => jordanBlock (e s.1) (μ s.1)) ⟨a, x⟩ ⟨b, y⟩
+    rcases eq_or_ne a b with rfl | hab
+    · rw [blockDiagonal'_apply_eq, blockDiagonal'_apply_eq]
+    · rw [blockDiagonal'_apply_ne _ _ _ (fun h => hab (Subtype.ext h)),
+        blockDiagonal'_apply_ne _ _ _ hab]
+  refine ⟨Fintype.card S, fun j => (τ j).1, (Equiv.sigmaCongrLeft τ).trans ρ₂,
+    fun j => Nat.pos_of_ne_zero (τ j).2, ?_⟩
+  rw [Equiv.coe_trans, ← submatrix_submatrix, hsub]
+  exact blockDiagonal'_submatrix_sigmaCongrLeft (fun s : S => jordanBlock (e s.1) (μ s.1)) τ
+
+variable [Fintype ι]
+
+/-- **The characteristic polynomial of a Jordan form**: each block of size `e i` with eigenvalue
+`μ i` contributes the factor `(X - μ i) ^ e i`. -/
+theorem charpoly_jordanForm [CommRing R] (e : ι → ℕ) (μ : ι → R) :
+    (jordanForm e μ).charpoly = ∏ i, (X - C (μ i)) ^ e i := by
+  rw [jordanForm_def, charpoly_blockDiagonal']
+  exact Finset.prod_congr rfl fun i _ => charpoly_jordanBlock
+
+section Field
+
+variable {K : Type*} [Field K] [DecidableEq K]
+
+/-- **The algebraic multiplicity of an eigenvalue of a Jordan form**: the multiplicity of `c` as a
+root of the characteristic polynomial is the total size of the blocks carrying `c`. -/
+theorem rootMultiplicity_charpoly_jordanForm (e : ι → ℕ) (μ : ι → K) (c : K) :
+    (jordanForm e μ).charpoly.rootMultiplicity c
+      = ∑ i ∈ Finset.univ.filter fun i => μ i = c, e i := by
+  have hne : ∀ i : ι, ((X - C (μ i)) ^ e i : K[X]) ≠ 0 := fun i =>
+    pow_ne_zero _ (X_sub_C_ne_zero _)
+  rw [charpoly_jordanForm, ← count_roots,
+    roots_prod _ _ (Finset.prod_ne_zero_iff.2 fun i _ => hne i),
+    show (Finset.univ.val.bind fun i => ((X - C (μ i)) ^ e i : K[X]).roots)
+      = ∑ i, ((X - C (μ i)) ^ e i : K[X]).roots from rfl,
+    Multiset.count_sum', Finset.sum_filter]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [roots_pow, roots_X_sub_C, Multiset.count_nsmul, Multiset.count_singleton]
+  rcases eq_or_ne (μ i) c with h | h
+  · simp [h]
+  · simp [h, Ne.symm h]
+
+/-- **The nullity of a power of a shifted Jordan form**: the blocks with eigenvalue `c` each
+contribute `min (e i) k`, and the others nothing.
+
+At `k = 1` this is the geometric multiplicity of `c`, each block with eigenvalue `c` contributing
+exactly one eigenvector; the growth in `k` is what pins down the index of `c`. -/
+theorem finrank_ker_mulVecLin_jordanForm_sub_smul_one_pow (e : ι → ℕ) (μ : ι → K) (c : K) (k : ℕ) :
+    Module.finrank K (LinearMap.ker (((jordanForm e μ - c • 1) ^ k).mulVecLin))
+      = ∑ i ∈ Finset.univ.filter fun i => μ i = c, min (e i) k := by
+  rw [jordanForm_sub_smul_one, jordanForm_def, ← blockDiagonal'_pow,
+    finrank_ker_mulVecLin_blockDiagonal', Finset.sum_filter]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [show ((fun i => jordanBlock (e i) (μ i - c)) ^ k) i = jordanBlock (e i) (μ i - c) ^ k from
+    rfl, finrank_ker_mulVecLin_jordanBlock_pow]
+  rcases eq_or_ne (μ i) c with h | h
+  · simp [h]
+  · simp [h, sub_eq_zero]
+
+omit [DecidableEq K] in
+/-- The null spaces of the powers of a shifted Jordan form stop growing at `k` exactly when every
+block carrying `c` has size at most `k`; the least such `k` is the index of `c`. -/
+theorem finrank_ker_mulVecLin_jordanForm_sub_smul_one_pow_succ_eq_iff (e : ι → ℕ) (μ : ι → K)
+    (c : K) (k : ℕ) :
+    Module.finrank K (LinearMap.ker (((jordanForm e μ - c • 1) ^ (k + 1)).mulVecLin))
+        = Module.finrank K (LinearMap.ker (((jordanForm e μ - c • 1) ^ k).mulVecLin))
+      ↔ ∀ i, μ i = c → e i ≤ k := by
+  classical
+  rw [finrank_ker_mulVecLin_jordanForm_sub_smul_one_pow,
+    finrank_ker_mulVecLin_jordanForm_sub_smul_one_pow]
+  have hle : ∀ i ∈ Finset.univ.filter fun i => μ i = c, min (e i) k ≤ min (e i) (k + 1) :=
+    fun i _ => min_le_min_left _ (Nat.le_succ k)
+  constructor
+  · intro h i hi
+    have h2 := (Finset.sum_eq_sum_iff_of_le hle).1 h.symm i (by simpa using hi)
+    omega
+  · exact fun h => Finset.sum_congr rfl fun i hi => by
+      have := h i (by simpa using hi)
+      omega
+
+/-- **The geometric multiplicity of an eigenvalue of a Jordan form**: the dimension of the null
+space of `jordanForm e μ - c` is the number of blocks carrying `c`, each contributing exactly one
+eigenvector. -/
+theorem finrank_ker_mulVecLin_jordanForm_sub_smul_one {e : ι → ℕ} (he : ∀ i, 0 < e i) (μ : ι → K)
+    (c : K) :
+    Module.finrank K (LinearMap.ker ((jordanForm e μ - c • 1).mulVecLin))
+      = (Finset.univ.filter fun i => μ i = c).card := by
+  have h := finrank_ker_mulVecLin_jordanForm_sub_smul_one_pow e μ c 1
+  rw [pow_one] at h
+  rw [h, Finset.card_eq_sum_ones]
+  exact Finset.sum_congr rfl fun i _ => by have := he i; omega
+
+end Field
 
 end JordanForm
 
@@ -358,7 +636,7 @@ because `g` is nilpotent, hence a direct sum of cyclic modules `K[X] ⧸ (X ^ k)
 nilpotent Jordan block in the basis of the images of `X ^ (k - 1), …, X, 1`. -/
 theorem exists_basis_toMatrix_eq_jordanForm_of_isNilpotent {g : End K V} (hg : IsNilpotent g) :
     ∃ (d : ℕ) (e : Fin d → ℕ) (b : Basis ((i : Fin d) × Fin (e i)) K V),
-      LinearMap.toMatrix b b g = Matrix.jordanForm e (fun _ => (0 : K)) := by
+      (∀ i, 0 < e i) ∧ LinearMap.toMatrix b b g = Matrix.jordanForm e (fun _ => (0 : K)) := by
   classical
   have htor : Module.IsTorsion' (AEval' g) (Submonoid.powers (X : K[X])) := by
     rw [Submodule.isTorsion'_powers_iff]
@@ -383,7 +661,11 @@ theorem exists_basis_toMatrix_eq_jordanForm_of_isNilpotent {g : End K V} (hg : I
       ← AEval'.X_smul_of g v, map_smul]
   obtain ⟨b, hb⟩ := exists_basis_toMatrix_eq_blockDiagonal' g c
     (fun i => Matrix.jordanBlock (k i) (0 : K)) E hE hcJ
-  exact ⟨d, k, b, hb⟩
+  obtain ⟨p, φ, ρ, hpos, hρ⟩ :=
+    Matrix.exists_equiv_submatrix_jordanForm_pos k (fun _ => (0 : K))
+  refine ⟨p, fun j => k (φ j), b.reindex ρ.symm, hpos, ?_⟩
+  rw [LinearMap.toMatrix_reindex, Equiv.symm_symm, hb]
+  exact hρ
 
 /-- **The Jordan form of an endomorphism with a single eigenvalue**: if `f - μ` is nilpotent then
 `f` has a basis in which its matrix is block diagonal, each block a Jordan block with eigenvalue
@@ -391,9 +673,9 @@ theorem exists_basis_toMatrix_eq_jordanForm_of_isNilpotent {g : End K V} (hg : I
 theorem exists_basis_toMatrix_eq_jordanForm_of_isNilpotent_sub {f : End K V} {μ : K}
     (hf : IsNilpotent (f - algebraMap K (End K V) μ)) :
     ∃ (d : ℕ) (e : Fin d → ℕ) (b : Basis ((i : Fin d) × Fin (e i)) K V),
-      LinearMap.toMatrix b b f = Matrix.jordanForm e (fun _ => μ) := by
-  obtain ⟨d, e, b, hb⟩ := exists_basis_toMatrix_eq_jordanForm_of_isNilpotent hf
-  refine ⟨d, e, b, ?_⟩
+      (∀ i, 0 < e i) ∧ LinearMap.toMatrix b b f = Matrix.jordanForm e (fun _ => μ) := by
+  obtain ⟨d, e, b, hpos, hb⟩ := exists_basis_toMatrix_eq_jordanForm_of_isNilpotent hf
+  refine ⟨d, e, b, hpos, ?_⟩
   have hid : LinearMap.toMatrix b b (algebraMap K (End K V) μ) = μ • 1 := by
     rw [Algebra.algebraMap_eq_smul_one, map_smul, LinearMap.toMatrix_one]
   rw [Matrix.jordanForm_const_eq_add_smul_one, ← hb, ← hid, ← map_add, sub_add_cancel]
@@ -412,6 +694,7 @@ theorem exists_basis_toMatrix_eq_blockDiagonal'_jordanForm (f : End K V) :
     ∃ (q : ℕ) (ν : Fin q → K) (d : Fin q → ℕ) (e : ∀ i : Fin q, Fin (d i) → ℕ)
       (b : Basis ((i : Fin q) × (j : Fin (d i)) × Fin (e i j)) K V),
       Function.Injective ν ∧ (∀ μ : K, f.HasEigenvalue μ ↔ μ ∈ Set.range ν) ∧
+        (∀ i j, 0 < e i j) ∧
         LinearMap.toMatrix b b f
           = Matrix.blockDiagonal' fun i => Matrix.jordanForm (e i) (fun _ => ν i) := by
   classical
@@ -450,9 +733,9 @@ theorem exists_basis_toMatrix_eq_blockDiagonal'_jordanForm (f : End K V) :
         = f.restrict (hmaps i) - algebraMap K (End K (A i)) (ν i) := by
       rfl
     rwa [heq] at h1
-  choose d e bb hbb using fun i =>
+  choose d e bb hepos hbb using fun i =>
     exists_basis_toMatrix_eq_jordanForm_of_isNilpotent_sub (hnil i)
-  refine ⟨s.card, ν, d, e, hds.collectedBasis bb, hνinj, fun μ => ?_, ?_⟩
+  refine ⟨s.card, ν, d, e, hds.collectedBasis bb, hνinj, fun μ => ?_, hepos, ?_⟩
   · rw [show f.HasEigenvalue μ ↔ f.maxGenEigenspace μ ≠ ⊥ from
       (hasUnifEigenvalue_iff_hasUnifEigenvalue_one (f := f) (μ := μ) (k := ⊤) (by simp)).symm,
       hνmem]
@@ -467,15 +750,15 @@ This is `exists_basis_toMatrix_eq_blockDiagonal'_jordanForm` with the two levels
 structure flattened into one; the grouping of the blocks by eigenvalue is lost. -/
 theorem exists_basis_toMatrix_eq_jordanForm (f : End K V) :
     ∃ (p : ℕ) (e : Fin p → ℕ) (μ : Fin p → K) (b : Basis ((i : Fin p) × Fin (e i)) K V),
-      LinearMap.toMatrix b b f = Matrix.jordanForm e μ := by
+      (∀ i, 0 < e i) ∧ LinearMap.toMatrix b b f = Matrix.jordanForm e μ := by
   classical
-  obtain ⟨q, ν, d, e, b, -, -, hb⟩ := exists_basis_toMatrix_eq_blockDiagonal'_jordanForm f
+  obtain ⟨q, ν, d, e, b, -, -, hepos, hb⟩ := exists_basis_toMatrix_eq_blockDiagonal'_jordanForm f
   set σ : ((i : Fin q) × Fin (d i)) ≃ Fin (∑ i, d i) := finSigmaFinEquiv
   set τ₁ := (Equiv.sigmaAssoc fun (i : Fin q) (j : Fin (d i)) => Fin (e i j)).symm with hτ₁
   set τ₂ := Equiv.sigmaCongrLeft (β := fun t : (i : Fin q) × Fin (d i) => Fin (e t.1 t.2)) σ.symm
     with hτ₂
   refine ⟨∑ i, d i, fun j => e (σ.symm j).1 (σ.symm j).2, fun j => ν (σ.symm j).1,
-    b.reindex (τ₁.trans τ₂.symm), ?_⟩
+    b.reindex (τ₁.trans τ₂.symm), fun j => hepos _ _, ?_⟩
   rw [LinearMap.toMatrix_reindex, hb, Matrix.jordanForm_def]
   simp_rw [Matrix.jordanForm_def]
   rw [Matrix.blockDiagonal'_blockDiagonal' fun (i : Fin q) (j : Fin (d i)) =>
@@ -533,45 +816,51 @@ private theorem card_eq_of_basis {ι : Type*} [Fintype ι] (b : Basis ι K (Fin 
 /-- **The Jordan canonical form of a matrix**: over an algebraically closed field every square
 matrix is similar to a block diagonal matrix whose diagonal blocks are Jordan blocks, that is, to a
 `Matrix.jordanForm` with its blocks laid out consecutively along the diagonal by
-`finSigmaFinEquiv`. -/
+`finSigmaFinEquiv`. Every block has positive size. -/
 theorem exists_conj_jordanForm (A : Matrix (Fin n) (Fin n) K) :
     ∃ (p : ℕ) (e : Fin p → ℕ) (μ : Fin p → K) (he : ∑ i, e i = n)
-      (P : Matrix (Fin n) (Fin n) K), IsUnit P ∧
+      (P : Matrix (Fin n) (Fin n) K), (∀ i, 0 < e i) ∧ IsUnit P ∧
         P⁻¹ * A * P = reindex (finSigmaFinEquiv.trans (finCongr he))
           (finSigmaFinEquiv.trans (finCongr he)) (jordanForm e μ) := by
   classical
-  obtain ⟨p, e, μ, b, hb⟩ := Module.End.exists_basis_toMatrix_eq_jordanForm (endOf A)
+  obtain ⟨p, e, μ, b, hepos, hb⟩ := Module.End.exists_basis_toMatrix_eq_jordanForm (endOf A)
   have he : ∑ i, e i = n := by
     simpa [Fintype.card_sigma] using card_eq_of_basis b
   obtain ⟨P, hP, hPA⟩ :=
     exists_isUnit_conj_toMatrix A b (finSigmaFinEquiv.trans (finCongr he))
-  exact ⟨p, e, μ, he, P, hP, by rw [hPA, hb]⟩
+  exact ⟨p, e, μ, he, P, hepos, hP, by rw [hPA, hb]⟩
 
 /-- **The Jordan canonical form of a matrix, grouped by eigenvalue**: over an algebraically closed
 field every square matrix is similar to a block diagonal matrix with one block for each of the `q`
 distinct eigenvalues `ν i`, each of those itself block diagonal with Jordan blocks all carrying
 `ν i`. The equivalence `σ` names the indices of the resulting matrix by `Fin n`.
 
+Every Jordan block has positive size, so that the counts of blocks are the intended ones.
+
 This is the form of the Jordan canonical form stated by Yousef Saad, *Iterative Methods for Sparse
-Linear Systems*, 2nd edition, SIAM, 2003 [saad2003iterative], §1.8.2, Theorem 1.8. The book also
-identifies the number `q` of outer blocks and the number of Jordan blocks inside the `i`-th of them
-with the number of distinct eigenvalues and with the geometric multiplicity of `ν i`; the first is
-the injectivity of `ν` together with the description of its range below, the second is not
-proved here. -/
+Linear Systems*, 2nd edition, SIAM, 2003 [saad2003iterative], §1.8.2, Theorem 1.8. The book's
+further identifications of the data are not part of this statement: that `q` is the number of
+distinct eigenvalues is the injectivity of `ν` together with the description of its range here,
+and the remaining three — `d i` is the geometric multiplicity of `ν i`, the sizes `e i j` are
+bounded by the index of `ν i`, and the `i`-th outer block has size the algebraic multiplicity of
+`ν i` — follow by transporting `Matrix.finrank_ker_mulVecLin_jordanForm_sub_smul_one`,
+`Matrix.finrank_ker_mulVecLin_jordanForm_sub_smul_one_pow_succ_eq_iff` and
+`Matrix.rootMultiplicity_charpoly_jordanForm` for the `i`-th outer block along the conjugation,
+the other outer blocks contributing nothing because their eigenvalues differ. -/
 theorem exists_conj_blockDiagonal'_jordanForm (A : Matrix (Fin n) (Fin n) K) :
     ∃ (q : ℕ) (ν : Fin q → K) (d : Fin q → ℕ) (e : ∀ i : Fin q, Fin (d i) → ℕ)
       (σ : ((i : Fin q) × (j : Fin (d i)) × Fin (e i j)) ≃ Fin n)
       (P : Matrix (Fin n) (Fin n) K),
       Function.Injective ν ∧ (∀ μ : K, (∃ v ≠ 0, A *ᵥ v = μ • v) ↔ μ ∈ Set.range ν) ∧
-        IsUnit P ∧ P⁻¹ * A * P
+        (∀ i j, 0 < e i j) ∧ IsUnit P ∧ P⁻¹ * A * P
           = reindex σ σ (blockDiagonal' fun i => jordanForm (e i) (fun _ => ν i)) := by
   classical
-  obtain ⟨q, ν, d, e, b, hinj, heig, hb⟩ :=
+  obtain ⟨q, ν, d, e, b, hinj, heig, hepos, hb⟩ :=
     Module.End.exists_basis_toMatrix_eq_blockDiagonal'_jordanForm (endOf A)
   obtain ⟨σ, -⟩ : ∃ σ : ((i : Fin q) × (j : Fin (d i)) × Fin (e i j)) ≃ Fin n, True :=
     ⟨(Fintype.equivFinOfCardEq (card_eq_of_basis b)), trivial⟩
   obtain ⟨P, hP, hPA⟩ := exists_isUnit_conj_toMatrix A b σ
   exact ⟨q, ν, d, e, σ, P, hinj,
-    fun μ => (hasEigenvalue_endOf_iff A μ).symm.trans (heig μ), hP, by rw [hPA, hb]⟩
+    fun μ => (hasEigenvalue_endOf_iff A μ).symm.trans (heig μ), hepos, hP, by rw [hPA, hb]⟩
 
 end Matrix

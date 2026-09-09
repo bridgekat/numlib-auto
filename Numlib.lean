@@ -121,6 +121,7 @@ import Numlib.Krylov.Singular
 import Numlib.Krylov.Subspace
 import Numlib.Krylov.ToEuclideanLin
 import Numlib.LinearAlgebra.Matrix.Assembly
+import Numlib.LinearAlgebra.Matrix.BlockDiagonal
 import Numlib.LinearAlgebra.Matrix.Cauchy
 import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.LinearAlgebra.Matrix.EpsilonNorm
@@ -131,6 +132,7 @@ import Numlib.LinearAlgebra.Matrix.MMatrix
 import Numlib.LinearAlgebra.Matrix.Order
 import Numlib.LinearAlgebra.Matrix.PerronFrobenius
 import Numlib.LinearAlgebra.Matrix.QR
+import Numlib.LinearAlgebra.Matrix.Rank
 import Numlib.LinearAlgebra.Matrix.RealSchur
 import Numlib.LinearAlgebra.Matrix.SVD
 import Numlib.LinearAlgebra.Matrix.Schur

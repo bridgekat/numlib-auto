@@ -59,3 +59,24 @@ id = "realSchur"
 [[node]]
 id = "theorem_1_8"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.8"
+
+[[node]]
+id = "IsSimilar.sub_smul_one"
+
+[[node]]
+id = "IsSimilar.pow"
+
+[[node]]
+id = "finrank_ker_mulVecLin_eq_of_isSimilar"
+
+[[node]]
+id = "theorem_1_8_geometricMultiplicity"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.8"
+
+[[node]]
+id = "theorem_1_8_algebraicMultiplicity"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.8"
+
+[[node]]
+id = "theorem_1_8_index"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.8"
