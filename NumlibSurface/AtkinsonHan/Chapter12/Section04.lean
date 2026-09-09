@@ -3,6 +3,7 @@ import Numlib.Approximation.CompositeQuadrature
 import Numlib.IntegralEquations.Nystrom
 import Numlib.IntegralEquations.SecondKind
 import NumlibSurface.AtkinsonHan.Chapter02.Section03
+import NumlibSurface.AtkinsonHan.Chapter12.Section03
 
 /-!
 # Atkinson–Han §12.4: the Nyström method and collectively compact approximation
@@ -48,7 +49,7 @@ makes the Nyström method analysable, and which §12.5 reuses for product integr
 * `example_12_4_6` — the asymptotic error expansion `u - u_n = h² γ + O(h⁴)` of the Nyström
   solution, with `γ` the solution of the book's auxiliary integral equation, in the two forms
   described in its doc comment.
-* `expKernel`, `norm_fredholm_expKernel` and `example_12_4_1` — the equation (12.4.7) the section
+* `norm_fredholm_expKernel` and `example_12_4_1` — the equation (12.4.7) the section
   computes with, `2 u(x) - ∫₀¹ e^{x y} u(y) dy = f(x)`: its operator has norm exactly `e - 1`, and
   since `e - 1 < 2` the equation is uniquely solvable for every `f ∈ C[0, 1]`, which is the one
   claim of Example 12.4.1 that is not a measured number.
@@ -384,12 +385,6 @@ end Nystrom
 section Example
 
 open IntegralOperator MeasureTheory Set
-
-/-- **The kernel `e^{x y}` on `[0, 1]²`**, the kernel of (12.4.7) — and, on `[0, b]`, of the
-equations (12.2.8) and (12.3.18) that Examples 12.2.1 and 12.3.2 compute with as well.  It is the
-book's standard test kernel for the whole chapter: smooth, positive, and of moderate size. -/
-noncomputable def expKernel : C(Icc (0 : ℝ) 1 × Icc (0 : ℝ) 1, ℝ) :=
-  ⟨fun p => Real.exp ((p.1 : ℝ) * (p.2 : ℝ)), by fun_prop⟩
 
 /-- The row integrals of `expKernel` are `∫₀¹ e^{x y} dy`: the kernel is positive, so the absolute
 value does nothing, and on `[0, 1]` the projection `projIcc` is the identity. -/

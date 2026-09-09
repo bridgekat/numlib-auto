@@ -37,6 +37,9 @@ id = "norm_kernelCLM_sub_quadInterpCLM_le"
 id = "theorem_12_3_3"
 
 [[node]]
+id = "expKernel"
+
+[[node]]
 id = "expKernelCLM"
 
 [[node]]

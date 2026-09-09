@@ -53,9 +53,6 @@ id = "example_12_4_6"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Example 12.4.6"
 
 [[node]]
-id = "expKernel"
-
-[[node]]
 id = "row_expKernel"
 
 [[node]]

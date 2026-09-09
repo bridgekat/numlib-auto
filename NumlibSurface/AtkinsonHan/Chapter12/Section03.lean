@@ -926,21 +926,20 @@ open MeasureTheory IntegralOperator
 
 local notation "L²" => Lp ℝ 2 (IntegralOperator.iccMeasure 0 1)
 
-/-- The kernel `k(x, y) = e^{x y}` of **(12.3.18)**.
+/-- **The kernel `k(x, y) = e^{x y}` on `[0, 1]²`**, the kernel of **(12.3.18)** — and, on `[0, b]`,
+of the equations (12.2.8) and (12.4.7) that Examples 12.2.1 and 12.4.1 compute with as well.  It is
+the book's standard test kernel for the whole chapter: smooth, positive, and of moderate size.
 
-This is the same function as `AtkinsonHan.Chapter12.expKernel` of §12.4, the book's standard test
-kernel for the whole chapter; it is repeated here, privately, only because §12.4 comes later in the
-chapter and a surface file may not import a later section.  The two should become one definition,
-owned by this section, when §12.4 is next revised. -/
-private noncomputable def expKernel : C(Set.Icc (0 : ℝ) 1 × Set.Icc (0 : ℝ) 1, ℝ) :=
+It is defined here, in the earliest section that uses it, and §12.4 imports it. -/
+noncomputable def expKernel : C(Set.Icc (0 : ℝ) 1 × Set.Icc (0 : ℝ) 1, ℝ) :=
   ⟨fun p => Real.exp ((p.1 : ℝ) * (p.2 : ℝ)), by fun_prop⟩
 
 /-- The value of the kernel of (12.3.18). -/
-private theorem expKernel_apply (p : Set.Icc (0 : ℝ) 1 × Set.Icc (0 : ℝ) 1) :
+theorem expKernel_apply (p : Set.Icc (0 : ℝ) 1 × Set.Icc (0 : ℝ) 1) :
     expKernel p = Real.exp ((p.1 : ℝ) * (p.2 : ℝ)) := rfl
 
 /-- `e^{xy} ≤ e` on the unit square. -/
-private theorem norm_expKernel_le : ‖expKernel‖ ≤ Real.exp 1 := by
+theorem norm_expKernel_le : ‖expKernel‖ ≤ Real.exp 1 := by
   refine (ContinuousMap.norm_le _ (Real.exp_nonneg 1)).2 fun p => ?_
   rw [expKernel_apply, Real.norm_eq_abs, abs_of_pos (Real.exp_pos _)]
   refine Real.exp_le_exp.2 ?_
