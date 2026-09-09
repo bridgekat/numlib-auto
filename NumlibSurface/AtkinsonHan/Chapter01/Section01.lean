@@ -6,14 +6,12 @@ import Mathlib.LinearAlgebra.Dimension.StrongRankCondition
 Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
 Analysis Framework*, 3rd edition, Springer, 2009, §1.1.
 
-Chapter 1 is the book's review of functional analysis, and Mathlib has essentially all of it. This
-surface therefore states the chapter's numbered *results* and proves each from Mathlib; it does not
-restate the chapter's definitions. Definitions 1.1.1, 1.1.3, 1.1.5, 1.1.8, 1.1.9, 1.1.13, 1.1.14
-and 1.1.16 — linear space, subspace, linear independence, span, basis and dimension, linear map,
-isomorphism, Cartesian product — are Mathlib's `Module`, `Submodule`, `LinearIndependent`,
-`Submodule.span`, `Module.Basis` with `FiniteDimensional`, `LinearMap`, `LinearEquiv` and `Prod`.
-A surface `def IsLinearSpace` would carry no information and would invite a later reader to use it
-in place of `Module`, so none is written.
+Chapter 1 is the book's review of functional analysis, and Mathlib has essentially all of it.
+Definitions 1.1.1, 1.1.3, 1.1.5, 1.1.8, 1.1.9, 1.1.13, 1.1.14 and 1.1.16 — linear space, subspace,
+linear independence, span, basis and dimension, linear map, isomorphism, Cartesian product — are
+Mathlib's `Module`, `Submodule`, `LinearIndependent`, `Submodule.span`, `Module.Basis` with
+`FiniteDimensional`, `LinearMap`, `LinearEquiv` and `Prod`, and each is restated here under the
+book's number.
 
 ## Main results
 

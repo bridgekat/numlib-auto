@@ -55,7 +55,7 @@ The review of a formalization may be done at any time after the formalization ha
 In such cases, the agent should make sure that the formalization is idiomatic Lean code and pleasant to read, on top of being semantically correct. Some code style guidance:
 
 - Match Mathlib style in general: use notations, tactics, and doc comments in similar ways. By default, follow the same conventions.
-- Minimize duplication: something may have been formalized elsewhere in Mathlib or within this project, or the same logic is repeated in multiple proofs.
+- Minimize duplication: something may have been formalized elsewhere in Mathlib or within this project, or the same logic is repeated in multiple proofs. A restatement in the surface layer that delegates directly is not duplication, but do not repeat proofs.
 - Prefer multiple short lemmas rather than rushing to theorems in long proofs.
 - Prefer defining and using bundled, named interfaces for a named concept rather than repeating individual assumptions.
 - Identify Mathlib interfaces (e.g. topological spaces, modules, rings) that emerge implicitly from the definitions, and instantiate them eagerly to benefit from Mathlib machinery (e.g. the `ring` tactic and helpful lemmas) and simplify proofs.

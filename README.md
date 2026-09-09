@@ -23,9 +23,9 @@ Examples that may go into the backbone:
 
 ## The surface
 
-One surface library is produced for each textbook, which should contain theorem statements faithful to the book: we seek similar structures and organizations as the books (with chapter-to-chapter correspondence), with accurate semantic alignment for each theorem statement.
+One surface library is produced for each textbook, which should contain theorem statements faithful to the book: we seek similar structures and organizations as the books (with chapter-to-chapter correspondence), with accurate semantic alignment for each theorem statement. Every numbered item in a book maps to a node in the plans.
 
-The proofs here should mostly be *direct uses and specializations* of results in the backbone. Definitions may be created here for semantic alignment, but it is desirable to accompany those with equivalence proofs to the backbone versions, so that results can derive from the equivalence. If the book is already written with generality in mind, the surface layer is expected to be thin.
+The proofs here should mostly be *direct uses and specializations* of results in the backbone. Definitions may be created here for semantic alignment, but it is desirable to accompany those with equivalence proofs to the backbone versions, so that results can derive from the equivalence. Within a surface library the dependencies run forwards in the direction of the chapter numbering, and where an earlier chapter has already restated something, later chapters use that restatement rather than reaching past it to the Mathlib or backbone original.
 
 The level of generality at the surface should simply match the books. Consider the surface as integration tests, specified by product requirements written in the books, that the backbone implementation must pass.
 
