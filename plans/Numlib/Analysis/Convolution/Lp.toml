@@ -1,0 +1,66 @@
+[[node]]
+id = "AEMeasurable.prod_right_ae"
+
+[[node]]
+id = "ENNReal.rpow_lintegral_mul_le"
+
+[[node]]
+id = "ENNReal.lintegral_rpow_lintegral_mul_le"
+
+[[node]]
+id = "MeasureTheory.enorm_convolution_le"
+
+[[node]]
+id = "MeasureTheory.eLpNorm_convolution_le"
+source = 'Young convolution inequality, case L^1 * L^p -> L^p; see e.g. Lieb and Loss, Analysis, 2nd edition, chapter 4'
+
+[[node]]
+id = "MeasureTheory.MemLp.convolution"
+
+[[node]]
+id = "MeasureTheory.eLpNorm_convolution_lsmul_le"
+
+[[node]]
+id = "MeasureTheory.MemLp.tendsto_eLpNorm_sub_translate"
+
+[[node]]
+id = "MeasureTheory.eLpNorm_convolution_sub_rpow_le"
+
+[[node]]
+id = "ContDiffBump.tendsto_eLpNorm_convolution_sub"
+source = 'L^p convergence of mollification; see e.g. Brezis, Functional Analysis, Sobolev Spaces and Partial Differential Equations, chapter 4'
+
+[[node]]
+id = "ENNReal.lintegral_rpow_lintegral_le"
+kind = "theorem"
+desc = '''
+Minkowski's integral inequality in its unweighted form, `1 <= p`:
+`(∫⁻ x, (∫⁻ t, H x t ∂ν) ^ p ∂μ) ^ (1/p) ≤ ∫⁻ t, (∫⁻ x, H x t ^ p ∂μ) ^ (1/p) ∂ν`.
+
+Not attempted. It is *not* a corollary of the weighted form
+`ENNReal.lintegral_rpow_lintegral_mul_le` that this module proves: taking the weight to be `1`
+there gives only `ν univ ^ (p - 1)` times the right-hand side, which is vacuous for an infinite
+measure. The unweighted inequality needs the duality proof -- write `F ^ p = F ^ (p-1) * F`, apply
+Tonelli and Hoelder, and divide by `(∫⁻ F ^ p) ^ (1 - 1/p)` -- and the division needs a truncation
+argument to know that quantity is finite and nonzero, which is where the real work is. Mathlib does
+not have it either; its "Minkowski" (`ENNReal.lintegral_Lp_add_le`) is the triangle inequality for
+the `L^p` seminorm, a different statement.
+'''
+deps = ["ENNReal.rpow_lintegral_mul_le"]
+
+[[node]]
+id = "MeasureTheory.eLpNorm_convolution_le_of_inv_add_inv"
+kind = "theorem"
+desc = '''
+Young's convolution inequality in its general form: for `1 ≤ p, q, r ≤ ∞` with
+`1/p + 1/q = 1 + 1/r`, `eLpNorm (f ⋆[L, μ] g) r μ ≤ ‖L‖ₑ * eLpNorm f p μ * eLpNorm g q μ`.
+
+Not attempted. The case `r = p`, `q = 1` is `MeasureTheory.eLpNorm_convolution_le` and is the only
+one this project needs; it comes out of a single application of Hoelder's inequality, whereas the
+general case needs the three-exponent Hoelder inequality applied to the splitting
+`|f(t)| |g(x-t)| = (|f|^p |g|^q)^{1/r} * |f|^{p(1/p - 1/r)} * |g|^{q(1/q - 1/r)}`, plus the
+separate handling of the endpoints `p = ∞`, `q = ∞` and `r = ∞`.
+`ENNReal.lintegral_prod_norm_pow_le` is the multi-exponent Hoelder inequality to build it on.
+Mathlib's own "to do" list in `Mathlib/Analysis/Convolution.lean` records this as missing.
+'''
+deps = ["MeasureTheory.eLpNorm_convolution_le"]

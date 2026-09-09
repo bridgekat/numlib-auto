@@ -1,0 +1,25 @@
+desc = '''
+`L^p` estimates for the convolution (natural home: `Mathlib.Analysis.Convolution.Lp`, a directory
+beside Mathlib's own `Mathlib/Analysis/Convolution.lean`).
+
+Mathlib has the complete *pointwise* theory of the convolution and of mollification -- existence,
+support, continuity, smoothness, `ContDiffBump.convolution_tendsto_right` and its almost-everywhere
+and locally-uniform variants -- and no `eLpNorm` statement about a convolution at all. Its own "to
+do" list in `Mathlib/Analysis/Convolution.lean` still records the `L^p * L^q` question as open, and
+"Young" in Mathlib means only `Real.young_inequality`, the scalar `ab <= a^p/p + b^q/q`. That gap
+sits under every density theorem for Sobolev spaces, and under the product and chain rules for weak
+derivatives in their general form.
+
+`Lp` fills the part of it that mollification needs: Young's convolution inequality in the case
+`L^1 * L^p -> L^p` for a right-invariant measure on a measurable additive group, the accompanying
+`MemLp` closure statement, the continuity of translation on `L^p` in `eLpNorm` form, and the `L^p`
+convergence of mollification by a `ContDiffBump` on a finite-dimensional real normed space with a
+Haar measure. The analytic core is a *weighted* form of Minkowski's integral inequality, which
+follows from Hoelder's inequality alone and so is far cheaper than the unweighted one; both
+consumers normalize the weight to a probability density, where the two agree.
+
+Two things are deliberately absent, and are the open nodes below: the general Young inequality
+`1/p + 1/q = 1 + 1/r`, and Minkowski's integral inequality in its unweighted form. Neither is
+needed by anything in this project today; both are worth having in their own right, and both are
+genuinely more expensive than what is here.
+'''
