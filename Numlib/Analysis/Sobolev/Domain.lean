@@ -264,6 +264,7 @@ a domain is written as a graph in `IsBoundaryGraphAt`. -/
 def EuclideanSpace.init (x : EuclideanSpace ℝ (Fin (d + 1))) : EuclideanSpace ℝ (Fin d) :=
   WithLp.toLp 2 fun i ↦ x i.castSucc
 
+/-- The coordinates of `EuclideanSpace.init x` are the first `d` coordinates of `x`. -/
 @[simp]
 theorem EuclideanSpace.init_apply (x : EuclideanSpace ℝ (Fin (d + 1))) (i : Fin d) :
     EuclideanSpace.init x i = x i.castSucc :=

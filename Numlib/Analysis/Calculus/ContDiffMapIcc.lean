@@ -564,6 +564,8 @@ theorem shift_cons (u : ContDiffMapIcc hab k) (c : ℝ) : shift (cons u c) = u :
 theorem cons_left (u : ContDiffMapIcc hab k) (c : ℝ) :
     cons u c ⟨a, left_mem_Icc.2 hab⟩ = c := antideriv_left hab _ c
 
+/-- `cons` undoes `shift`: rebuilding a `C^{k+1}` map from its derivative and its value at the left
+endpoint returns the map itself. With `shift_cons` this exhibits `C^{k+1}[a, b] ≃ C^k[a, b] × ℝ`. -/
 theorem cons_shift (v : ContDiffMapIcc hab (k + 1)) :
     cons (shift v) (v ⟨a, left_mem_Icc.2 hab⟩) = v := by
   refine ext fun j => ?_
