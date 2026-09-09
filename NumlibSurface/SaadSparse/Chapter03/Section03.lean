@@ -37,9 +37,10 @@ index unreachable from the root has distance zero, on both sides of the comparis
 normal form `frobenius_normal_form`, whose block index is the topological ordering of the strongly
 connected components of `Numlib/Combinatorics/Relation/StronglyConnected`.
 
-Examples 3.4, 3.5 and 3.6 get no declaration, all three for the same reason: each is a run on the
+Examples 3.4, 3.5 and 3.6 are not tracked, all three for the same reason: each is a run on the
 finite element mesh of Figure 2.10, which the source text does not reproduce, so there is no graph
-to state them over.  Example 3.4 compares two orderings by bandwidth and profile, which this
+to state them over and no statement to plan.  Example 3.4 compares two orderings by bandwidth and
+profile, which this
 edition never defines either; Example 3.5's optimality claim the book itself hedges as a "may well
 be"; and the four-colour count of Example 3.6 is an instance of `greedy_coloring_bounds` and
 `exists_multicoloring`, which are proved here in general.

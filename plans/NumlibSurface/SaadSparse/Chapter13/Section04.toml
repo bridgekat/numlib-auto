@@ -123,28 +123,3 @@ id = "example_13_6"
 [[node]]
 id = "example_13_6_le"
 
-[[node]]
-id = "example_13_4"
-kind = "theorem"
-source = "Saad, Iterative Methods for Sparse Linear Systems, Example 13.4"
-desc = '''Example 13.4 (§13.4.3): measured V-cycle convergence factors for the 2-D model Poisson
-problem (13.47) on a 33 x 33 grid, `N = 961`, with weighted Jacobi, Gauss-Seidel and red-black
-Gauss-Seidel smoothers and nine choices of the pre- and post-smoothing counts, reported as Table
-13.1. Not formalized: every number in the table is `exp((1/k) log(‖r_k‖/‖r_0‖))` measured on one
-floating point run, and the comparisons the text draws — that red-black Gauss-Seidel wins, that a
-balanced `(ν₁, ν₂)` beats an unbalanced one at equal total — are read off those measurements and
-proved nowhere. Nothing is missing upstream: the V-cycle itself is `Hierarchy.cycle` and its
-two-grid analysis is §13.5. What would be needed is a numerical experiment, not a theorem.'''
-
-[[node]]
-id = "example_13_5"
-kind = "theorem"
-source = "Saad, Iterative Methods for Sparse Linear Systems, Example 13.5"
-desc = '''Example 13.5 (§13.4.4): the full multigrid cycle on the model Poisson problem of Example
-13.4, run at `n_x = n_y = 9, 17, 33, 65, 129`, with the 2-norm of the achieved error plotted
-against the discretization error for three FMG schemes in Figure 13.8. Not formalized: the example
-is that figure, a log-log plot of measured error norms, and its observations — that the weighted
-Jacobi scheme falls behind as the number of levels grows, that red-black Gauss-Seidel ends up
-slightly below the discretization error — are read off the plot. The bound the figure illustrates
-is the discretization-error assumption of the FMG analysis, which `example_13_6_le` states.'''
-

@@ -60,9 +60,11 @@ and `0.8971…`.  `example_13_6` itself is stated with the exact `λ_min` and is
 Not formalized: Algorithm 13.1 (nested iteration), which the book presents only to introduce the
 notation and which full multigrid supersedes; the displayed identity
 `M_h = M_H^h + S^{ν₂} I_H^h M_H A_H⁻¹ I_h^H A_h` at the end of §13.4.3, which would need the error
-operator of the whole recursive cycle as an object of its own and is used nowhere; and Examples 13.4
-and 13.5, a table of measured V-cycle convergence factors and a log-log plot of measured full
-multigrid errors. Both record floating point runs: the comparisons the text draws from them — that
+operator of the whole recursive cycle as an object of its own and is used nowhere.
+
+Examples 13.4 and 13.5 are not tracked at all: a table of measured V-cycle convergence factors and
+a log-log plot of measured full multigrid errors. Both record floating point runs, so neither
+carries a mathematical claim; the comparisons the text draws from them — that
 red-black Gauss–Seidel is the best smoother, that a balanced `(ν₁, ν₂)` beats an unbalanced one,
 that the full multigrid error tracks the discretization error — are read off the numbers and proved
 nowhere, and nothing is missing upstream, the cycles themselves being `Hierarchy.cycle` and

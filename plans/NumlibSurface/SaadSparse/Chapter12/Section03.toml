@@ -64,18 +64,6 @@ id = "leastSquaresResidual_orthogonal"
 id = "norm_leastSquaresResidual_le"
 
 [[node]]
-id = "example_12_2"
-kind = "theorem"
-source = "Saad, Iterative Methods for Sparse Linear Systems, Example 12.2"
-desc = '''Example 12.2 (§12.3.4): a test run of ILU(0)-GMRES(20) accelerated by an adaptive
-least-squares polynomial preconditioner of degree at most 10 on four of the test problems of §3.7,
-reported as Table 12.1 (iterations, Kflops, residual and error) together with the vertices of the
-convex hulls found. Not formalized: the table records the output of a floating point computation,
-and the only way to state it would be to assert those measured numbers, which is not a mathematical
-claim about the preconditioner. Example 12.1, which prints polynomials rather than measurements, is
-stated.'''
-
-[[node]]
 id = "kappa_12_16"
 
 [[node]]

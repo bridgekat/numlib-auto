@@ -71,7 +71,7 @@ Neumann problem, and for §13.3.
   only the diagonalization (13.2.32) is proved.
 * The numerical halves of Examples 13.2.1, 13.2.2 and 13.2.3, which are Tables 13.1–13.3 and
   Figures 13.1–13.5: measured errors of the Nyström method on one curve at a time, and not
-  statements.  Example 13.2.2 is *only* that, and stays open; of Examples 13.2.1 and 13.2.3 the
+  statements.  Example 13.2.2 is *only* that, and is not tracked; of Examples 13.2.1 and 13.2.3 the
   claims that are not measured numbers — the kernel identity (13.2.9) with its peaking factor, and
   the harmonicity and decay of the test solution — are stated.  The method Example 13.2.3
   illustrates, §13.2.2, rests on the boundary integral equation (13.2.24), which is (13.1.30) of

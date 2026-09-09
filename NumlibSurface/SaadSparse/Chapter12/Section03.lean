@@ -31,8 +31,8 @@ computes from it: the table of the eight least-squares polynomials `s_1, …, s_
 
 §12.3.4 — the nonsymmetric case, with Chebyshev polynomials on an ellipse and the Remez algorithm
 on a polygon — is not stated here: its results are Saad Lemma 6.26 and Theorem 6.27, and the
-polygonal case is a numerical procedure with no theorem attached. Example 12.2, a table of measured
-iteration counts and timings, is not stated either.
+polygonal case is a numerical procedure with no theorem attached. Example 12.2 is a table of
+measured iteration counts and timings, carries no mathematical claim, and is not tracked.
 -/
 
 open Matrix Polynomial

@@ -25,9 +25,9 @@ and CGNE the error `‖x_* - x‖₂`. `cgnr_norm_residual_le` is the price the 
 The section is stated for a square `A`, the coefficient matrix of the system `A x = b` the
 chapter is about; the rectangular least-squares picture is §8.1.
 
-Not formalized: Example 8.1, which is Table 8.1, the output of a floating point run of CGNR on
-three of the test problems of §3.7. Stating it would mean asserting the measured iteration counts
-and flop counts, which is not a claim about CGNR.
+Example 8.1 is Table 8.1, the output of a floating point run of CGNR on three of the test problems
+of §3.7. It carries no mathematical claim — stating it would mean asserting measured iteration and
+flop counts — so it is not tracked.
 -/
 
 open Matrix

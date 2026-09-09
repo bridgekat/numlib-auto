@@ -25,14 +25,3 @@ id = "rowNnz_11_1"
 id = "example_11_1"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Example 11.1"
 
-[[node]]
-id = "example_11_2"
-kind = "theorem"
-source = "Saad, Iterative Methods for Sparse Linear Systems, Example 11.2"
-desc = '''Example 11.2: level scheduling applied to the lower triangle of a finite element matrix of
-size `n = 145`, obtained by one further level of refinement of the mesh of Figure 3.1, which yields
-eight levels, the last of them a single node. Not formalized: the mesh it runs on exists only as
-Figure 3.1 refined once, and the permuted matrix only as Figure 11.12, neither of which the source
-text reproduces; the level count `8` is read off that figure and is a property of that one mesh, so
-there is no statement to write that does not first invent the mesh. Unlike Example 11.1, whose
-matrix and arrays the text prints in full, nothing here is recoverable from the text.'''

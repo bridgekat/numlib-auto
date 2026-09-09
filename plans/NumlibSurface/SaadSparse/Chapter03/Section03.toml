@@ -32,40 +32,6 @@ id = "isPatternIrreducible_iff"
 id = "frobenius_normal_form"
 
 [[node]]
-id = "example_3_5"
-kind = "theorem"
-source = "Saad, Iterative Methods for Sparse Linear Systems, Example 3.5"
-desc = '''Example 3.5: the independent set algorithms of §3.3.3 run on the finite element mesh of
-Figure 2.10, where every strategy returns the nodes of the earlier levels of refinement, which the
-book conjectures may be a maximum independent set. Not formalized: the mesh exists only as Figure
-2.10, which the source text does not reproduce, so there is no graph to state the example over;
-and its one quantitative claim, maximality, the book itself leaves as a "may well be". Contrast
-Example 11.1, whose data the text prints in full and which is therefore stated.'''
-
-[[node]]
-id = "example_3_6"
-kind = "theorem"
-source = "Saad, Iterative Methods for Sparse Linear Systems, Example 3.6"
-desc = '''Example 3.6: the greedy multicoloring algorithm (Algorithm 3.6) run on the finite element
-mesh of Figure 2.10, which it colours with four colours, shown in Figure 3.10. Not formalized: like
-Example 3.5 it is a run on the mesh of Figure 2.10, which the source text does not reproduce, so
-the claim "four colours are found" has no graph to be about. The general bounds it illustrates are
-`greedy_coloring_bounds` and `exists_multicoloring`, which are stated.'''
-
-[[node]]
-id = "example_3_4"
-kind = "theorem"
-source = "Saad, Iterative Methods for Sparse Linear Systems, Example 3.4"
-desc = '''Example 3.4 (§3.3.3): the starting node matters for the Cuthill-McKee and reverse
-Cuthill-McKee orderings — on the mesh of Figure 2.10 the earlier illustration started at node 3,
-and starting at node 1 instead gives the matrix of Figure 3.8, better suited to banded or skyline
-solvers. Not formalized, for two independent reasons. The mesh is Figure 2.10 and the two matrices
-compared are Figures 3.7 and 3.8, none of which the source text reproduces, so the data of the
-example are not available; and the quantities it compares them by, bandwidth and profile, this
-edition never defines and proves no bound about, as the chapter group\'s desc records. Recovering
-either would mean inventing a mesh or a definition, not restating the book.'''
-
-[[node]]
 id = "example_3_3"
 kind = "theorem"
 desc = '''

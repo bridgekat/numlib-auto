@@ -19,9 +19,9 @@ ILU(0).
 
 The letters `D`, `E`, `F` are the ones fixed by §4.1, in `SaadSparse.Chapter04`.
 
-Not formalized: Example 10.1, which is Table 10.1, the output of a floating point run of
-SGS-preconditioned GMRES on the five test problems of §3.7. Stating it would mean asserting the
-measured iteration counts and flop counts, which is not a claim about the preconditioner.
+Example 10.1 is Table 10.1, the output of a floating point run of SGS-preconditioned GMRES on the
+five test problems of §3.7. It carries no mathematical claim — stating it would mean asserting
+measured iteration and flop counts — so it is not tracked.
 -/
 
 open Matrix Stationary

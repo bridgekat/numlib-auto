@@ -32,7 +32,9 @@ permuted matrix is block strictly lower triangular.  There is nothing to state f
 book, so nothing is missing here; a source that does state such a property would be planned with
 that source.
 
-Example 11.2 gets no declaration, and `plans/NumlibSurface/SaadSparse/Chapter11.toml` records why.
+Example 11.2 is not tracked: it is level scheduling on a mesh obtained by refining Figure 3.1,
+and neither the mesh nor the permuted matrix of Figure 11.12 is reproduced in the source text, so
+there is nothing to state it over.
 -/
 
 open Finset Matrix
