@@ -336,10 +336,10 @@ and they are mainly spaces: `C¹[a, b]` as a normed space, which Examples 2.1.4,
 all want, and the duals of `Lᵖ(Ω)` and of `L^∞(0, 1)` in Examples 2.5.1, 2.5.3 and 2.5.9.
 Reflexivity is a different obstruction: Mathlib's `Module.IsReflexive` is the algebraic double
 dual, so Definition 2.7.4 and with it Theorem 2.7.5 have nothing to stand on. Of Chapter 3 only
-Müntz's theorem (Theorem 3.1.5) and Definition 3.3.9 remain, and of Chapters 4 and 6 the concrete
-Fourier series of Examples 4.1.3–4.1.5 and the heat-equation instances of §6.2–§6.3. §5.5, on
-completely continuous vector fields, is quoted by the book without proof — Brouwer's and
-Schauder's theorems and the rotation properties P1–P5 — and is summarized in
+Müntz's theorem (Theorem 3.1.5) remains, and of Chapters 4 and 6 the Gibbs constant `(2/π) Si(π)`
+that the book asserts without proof beside Example 4.1.3, and the heat-equation instances of
+§6.2–§6.3. §5.5, on completely continuous vector fields, is quoted by the book without proof —
+Brouwer's and Schauder's theorems and the rotation properties P1–P5 — and is summarized in
 `Chapter05.Section03` rather than formalized.
 
 §3.2, §3.4, §3.6 and §3.7 are complete: the trigonometric-approximation layer that Jackson's

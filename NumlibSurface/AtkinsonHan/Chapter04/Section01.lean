@@ -1,5 +1,6 @@
 import Numlib.Analysis.Fourier.Dirichlet
 import Numlib.Analysis.Fourier.TrigonometricBasis
+import NumlibSurface.AtkinsonHan.Chapter01.Section02
 import NumlibSurface.AtkinsonHan.Chapter02.Section04
 import NumlibSurface.AtkinsonHan.Chapter03.Section01
 
@@ -39,13 +40,33 @@ the dictionary between those and the two coefficient families the backbone and M
 * `equation_4_1_13` — Parseval's equality in the book's normalisation.
 * `equation_4_1_14`, `equation_4_1_15` — the `L²` and the uniform truncation error of the partial
   sums, both as tails of the coefficient series.
+* `example_4_1_3`, `example_4_1_4`, `example_4_1_5` — the three worked Fourier series of the
+  section: the step function, `|x|/π` and `(π² - x²)²/π⁴`, each with its coefficients, the closed
+  form of its partial sums, and the limit of those sums at every point.
+
+## The three examples
+
+Each of Examples 4.1.3–4.1.5 is about the `2 π`-periodic extension of a function given on one
+period, so its `f` is described by hypotheses — `Function.Periodic f (2 π)` together with the
+book's formula on `[-π, 0)` and `[0, π)`, or on `[-π, π]` — rather than written out as a closed
+term.  Those hypotheses determine `f` everywhere, and the coefficients depend only on the values
+over one period.
+
+The book's series `F x` is stated as the convergence of its terms in the sense of Definition
+1.2.17, the ordered form `∑_{i < n} v i → s`.  Mathlib's `HasSum` would be the wrong statement:
+the series of Example 4.1.3 is only conditionally convergent, so it has no unordered sum.  The
+convergence itself is Theorem 4.1.1 in each case, never reproved: the extensions are locally
+constant off the jumps (4.1.3), or differentiable off the corners with matching one-sided
+difference quotients at them (4.1.4, 4.1.5).
 
 ## Not formalized here
 
-Examples 4.1.3–4.1.5 (the Fourier series of a step function, of `|x|/π` and of `(π² - x²)²/π⁴`) and
-the Gibbs phenomenon, which are numerical illustrations and whose constant `(2/π) Si(π)` the book
-asserts without proof; and the `L^p` boundedness (4.1.12) for `1 < p < ∞`, which is the M. Riesz
-theorem and is not in Mathlib.  The partial-sum operators of Theorem 4.1.2 are therefore *given* as
+The Gibbs phenomenon that the book discusses beside Example 4.1.3.  Its overshoot span
+`(2/π) Si(π) |f (x+) - f (x-)|`, with `(2/π) Si(π) ≈ 1.17898`, is asserted without proof and
+referred out, and it is the one part of that example `example_4_1_3` does not state.
+
+The `L^p` boundedness (4.1.12) for `1 < p < ∞`, which is the M. Riesz theorem and is not in
+Mathlib.  The partial-sum operators of Theorem 4.1.2 are therefore *given* as
 a sequence of bounded operators fixing the trigonometric polynomials in the limit, rather than
 constructed on `L^p`; at `p = 2` they are the truncations of `hasSum_trigSeries`, whose uniform
 bound is Bessel's inequality, and the conclusion there is `equation_4_1_13`.
@@ -510,6 +531,752 @@ theorem equation_4_1_13 (F : Lp ℝ 2 (AddCircle.haarAddCircle : Measure (AddCir
     rw [hnorm]
     field_simp
   rwa [hval] at hB
+
+/-! ### Examples 4.1.3–4.1.5: three concrete Fourier series -/
+
+/-- The `n`-th partial sum of a Fourier series is `2 π`-periodic: its terms are `cos (j x)` and
+`sin (j x)` with integer frequencies. Together with the periodicity of `f` this is what carries the
+three examples below from one period to all of `ℝ`. -/
+private theorem fourierPartialSum_periodic (f : ℝ → ℝ) (n : ℕ) :
+    Function.Periodic (fourierPartialSum f n) (2 * π) := by
+  intro x
+  simp only [fourierPartialSum]
+  congr 1
+  refine Finset.sum_congr rfl fun j _ => ?_
+  rw [show (j : ℝ) * (x + 2 * π) = (j : ℝ) * x + (j : ℕ) * (2 * π) by ring,
+    Real.cos_add_nat_mul_two_pi, Real.sin_add_nat_mul_two_pi]
+
+/-- Every real number lands in `[-π, π)` after subtracting an integer multiple of `2 π`. -/
+private theorem exists_int_sub_mem_Ico (x : ℝ) :
+    ∃ k : ℤ, x - k * (2 * π) ∈ Set.Ico (-π) π := by
+  refine ⟨toIcoDiv Real.two_pi_pos (-π) x, ?_⟩
+  have hmem := toIcoMod_mem_Ico Real.two_pi_pos (-π) x
+  have heq := toIcoMod_sub_self Real.two_pi_pos (-π) x
+  rw [zsmul_eq_mul] at heq
+  rw [show -π + 2 * π = π by ring] at hmem
+  have hrw : toIcoMod Real.two_pi_pos (-π) x
+      = x - (toIcoDiv Real.two_pi_pos (-π) x : ℤ) * (2 * π) := by
+    push_cast at heq
+    linarith
+  rwa [hrw] at hmem
+
+/-- `∫_{-π}^{0} cos (j t) dt = 0` for `j ≥ 1`. -/
+private theorem integral_cos_neg_pi_zero {j : ℕ} (hj : 0 < j) :
+    (∫ t in -π..(0 : ℝ), Real.cos ((j : ℝ) * t)) = 0 := by
+  have hj0 : (j : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hj.ne'
+  have hd : ∀ t ∈ Set.uIcc (-π) (0 : ℝ),
+      HasDerivAt (fun s : ℝ => Real.sin ((j : ℝ) * s) / j) (Real.cos ((j : ℝ) * t)) t := by
+    intro t _
+    have h1 : HasDerivAt (fun s : ℝ => (j : ℝ) * s) (j : ℝ) t := by
+      simpa using (hasDerivAt_id t).const_mul (j : ℝ)
+    have h2 := (Real.hasDerivAt_sin ((j : ℝ) * t)).comp t h1
+    simpa [Function.comp_def, mul_div_assoc, div_self hj0] using h2.div_const (j : ℝ)
+  rw [intervalIntegral.integral_eq_sub_of_hasDerivAt hd
+    ((by fun_prop : Continuous fun t : ℝ => Real.cos ((j : ℝ) * t)).intervalIntegrable _ _)]
+  simp [mul_neg, Real.sin_nat_mul_pi]
+
+/-- `∫_{-π}^{0} sin (j t) dt = ((-1)^j - 1) / j` for `j ≥ 1`. -/
+private theorem integral_sin_neg_pi_zero {j : ℕ} (hj : 0 < j) :
+    (∫ t in -π..(0 : ℝ), Real.sin ((j : ℝ) * t)) = ((-1 : ℝ) ^ j - 1) / j := by
+  have hj0 : (j : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hj.ne'
+  have hd : ∀ t ∈ Set.uIcc (-π) (0 : ℝ),
+      HasDerivAt (fun s : ℝ => -(Real.cos ((j : ℝ) * s) / j)) (Real.sin ((j : ℝ) * t)) t := by
+    intro t _
+    have h1 : HasDerivAt (fun s : ℝ => (j : ℝ) * s) (j : ℝ) t := by
+      simpa using (hasDerivAt_id t).const_mul (j : ℝ)
+    have h2 : HasDerivAt (fun s : ℝ => Real.cos ((j : ℝ) * s))
+        (-Real.sin ((j : ℝ) * t) * (j : ℝ)) t :=
+      (Real.hasDerivAt_cos ((j : ℝ) * t)).comp t h1
+    have h3 := (h2.div_const (j : ℝ)).neg
+    have hv : -(-Real.sin ((j : ℝ) * t) * (j : ℝ) / (j : ℝ)) = Real.sin ((j : ℝ) * t) := by
+      field_simp
+    rwa [hv] at h3
+  rw [intervalIntegral.integral_eq_sub_of_hasDerivAt hd
+    ((by fun_prop : Continuous fun t : ℝ => Real.sin ((j : ℝ) * t)).intervalIntegrable _ _)]
+  rw [mul_zero, Real.cos_zero, show (j : ℝ) * -π = -((j : ℝ) * π) by ring, Real.cos_neg,
+    Real.cos_nat_mul_pi]
+  field_simp
+  ring
+
+/-- Convergence of the Fourier partial sums at every point of one period carries to all of `ℝ`:
+both `f` and the partial sums are `2 π`-periodic. -/
+private theorem tendsto_fourierPartialSum_of_Ico {f : ℝ → ℝ}
+    (hper : Function.Periodic f (2 * π))
+    (h : ∀ y ∈ Set.Ico (-π) π, Tendsto (fun n : ℕ => fourierPartialSum f n y) atTop (𝓝 (f y)))
+    (x : ℝ) : Tendsto (fun n : ℕ => fourierPartialSum f n x) atTop (𝓝 (f x)) := by
+  obtain ⟨k, hk⟩ := exists_int_sub_mem_Ico x
+  rw [← hper.sub_int_mul_eq (x := x) k]
+  exact (h _ hk).congr fun n => (fourierPartialSum_periodic f n).sub_int_mul_eq k
+
+/-- A quotient with an explicit form just to the right of `0` has the corresponding limit there:
+the shape in which the one-sided derivative hypotheses of Theorem 4.1.1 are met. -/
+private theorem tendsto_quotient_of_eventually_eq {g q : ℝ → ℝ} {c d : ℝ}
+    (h : ∀ t ∈ Set.Ioo (0 : ℝ) π, (g t - c) / t = q t) (hq : Tendsto q (𝓝[>] 0) (𝓝 d)) :
+    Tendsto (fun t : ℝ => (g t - c) / t) (𝓝[>] 0) (𝓝 d) := by
+  refine hq.congr' ?_
+  filter_upwards [Ioo_mem_nhdsGT Real.pi_pos] with t ht
+  exact (h t ht).symm
+
+/-- The special case of `tendsto_quotient_of_eventually_eq` with a constant quotient. -/
+private theorem tendsto_quotient_of_eventually_const {g : ℝ → ℝ} {c d : ℝ}
+    (h : ∀ t ∈ Set.Ioo (0 : ℝ) π, (g t - c) / t = d) :
+    Tendsto (fun t : ℝ => (g t - c) / t) (𝓝[>] 0) (𝓝 d) :=
+  tendsto_quotient_of_eventually_eq h tendsto_const_nhds
+
+/-- A function agreeing on `[-π, π]` with a continuous one is interval-integrable there. -/
+private theorem intervalIntegrable_of_eqOn {f F : ℝ → ℝ} (hF : Continuous F)
+    (hval : ∀ x ∈ Set.Icc (-π) π, f x = F x) : IntervalIntegrable f volume (-π) π := by
+  refine (hF.intervalIntegrable _ _).congr fun t ht => ?_
+  rw [Set.uIoc_of_le (by linarith [Real.pi_pos]), Set.mem_Ioc] at ht
+  exact (hval t ⟨ht.1.le, ht.2⟩).symm
+
+/-- A function agreeing on `[-π, π]` with another has the same integrals against any weight. -/
+private theorem integral_congr_of_eqOn {f F : ℝ → ℝ}
+    (hval : ∀ x ∈ Set.Icc (-π) π, f x = F x) (g : ℝ → ℝ) :
+    (∫ t in -π..π, f t * g t) = ∫ t in -π..π, F t * g t := by
+  refine intervalIntegral.integral_congr fun t ht => ?_
+  rw [Set.uIcc_of_le (by linarith [Real.pi_pos])] at ht
+  rw [hval t ht]
+
+/-! #### Example 4.1.3: a step function -/
+
+/-- Against a continuous weight only the left half of the period contributes to the integral of the
+step function of Example 4.1.3, on which the function is `1`. -/
+private theorem step_integral {f : ℝ → ℝ} (hneg : ∀ x ∈ Set.Ico (-π) 0, f x = 1)
+    (hpos : ∀ x ∈ Set.Ico (0 : ℝ) π, f x = 0) {g : ℝ → ℝ} (hg : Continuous g) :
+    IntervalIntegrable (fun t => f t * g t) volume (-π) π ∧
+      (∫ t in -π..π, f t * g t) = ∫ t in -π..(0 : ℝ), g t := by
+  have hπ := Real.pi_pos
+  have h1 : Set.EqOn g (fun t => f t * g t) (Set.uIoo (-π) 0) := by
+    intro t ht
+    rw [Set.uIoo_of_le (by linarith), Set.mem_Ioo] at ht
+    simp [hneg t ⟨ht.1.le, ht.2⟩]
+  have h2 : Set.EqOn (fun _ : ℝ => (0 : ℝ)) (fun t => f t * g t) (Set.uIoo 0 π) := by
+    intro t ht
+    rw [Set.uIoo_of_le hπ.le, Set.mem_Ioo] at ht
+    simp [hpos t ⟨ht.1.le, ht.2⟩]
+  have hi1 : IntervalIntegrable (fun t => f t * g t) volume (-π) 0 :=
+    (hg.intervalIntegrable _ _).congr_uIoo h1
+  have hi2 : IntervalIntegrable (fun t => f t * g t) volume 0 π :=
+    (intervalIntegrable_const (c := (0 : ℝ))).congr_uIoo h2
+  refine ⟨hi1.trans hi2, ?_⟩
+  rw [← intervalIntegral.integral_add_adjacent_intervals hi1 hi2,
+    ← intervalIntegral.integral_congr_uIoo h1, ← intervalIntegral.integral_congr_uIoo h2]
+  simp
+
+/-- The step function of Example 4.1.3 is interval-integrable over a period. -/
+private theorem step_intervalIntegrable {f : ℝ → ℝ} (hneg : ∀ x ∈ Set.Ico (-π) 0, f x = 1)
+    (hpos : ∀ x ∈ Set.Ico (0 : ℝ) π, f x = 0) : IntervalIntegrable f volume (-π) π := by
+  simpa using (step_integral hneg hpos (g := fun _ => (1 : ℝ)) continuous_const).1
+
+/-- The cosine coefficients of the step function: `a_0 = 1` and `a_j = 0` for `j ≥ 1`. -/
+private theorem step_fourierCoeffCos {f : ℝ → ℝ} (hneg : ∀ x ∈ Set.Ico (-π) 0, f x = 1)
+    (hpos : ∀ x ∈ Set.Ico (0 : ℝ) π, f x = 0) :
+    fourierCoeffCos f 0 = 1 ∧ ∀ j : ℕ, 0 < j → fourierCoeffCos f j = 0 := by
+  have hπ : π ≠ 0 := Real.pi_ne_zero
+  constructor
+  · have hval : (∫ t in -π..(0 : ℝ), Real.cos (((0 : ℕ) : ℝ) * t)) = π := by simp
+    rw [fourierCoeffCos, (step_integral hneg hpos (g := fun t => Real.cos (((0 : ℕ) : ℝ) * t))
+      (by fun_prop)).2, hval]
+    field_simp
+  · intro j hj
+    rw [fourierCoeffCos, (step_integral hneg hpos (g := fun t => Real.cos ((j : ℝ) * t))
+      (by fun_prop)).2, integral_cos_neg_pi_zero hj, mul_zero]
+
+/-- The sine coefficients of the step function: `b_j = -(1 - (-1)^j) / (π j)` for `j ≥ 1`. -/
+private theorem step_fourierCoeffSin {f : ℝ → ℝ} (hneg : ∀ x ∈ Set.Ico (-π) 0, f x = 1)
+    (hpos : ∀ x ∈ Set.Ico (0 : ℝ) π, f x = 0) (j : ℕ) (hj : 0 < j) :
+    fourierCoeffSin f j = -(1 - (-1 : ℝ) ^ j) / (π * j) := by
+  have hπ : π ≠ 0 := Real.pi_ne_zero
+  have hj0 : (j : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hj.ne'
+  rw [fourierCoeffSin, (step_integral hneg hpos (g := fun t => Real.sin ((j : ℝ) * t))
+    (by fun_prop)).2, integral_sin_neg_pi_zero hj]
+  field_simp
+  ring
+
+/-- The partial sums of the step function's Fourier series in the book's closed form,
+`S_n x = 1/2 - (2/π) ∑_{i < n} sin ((2 i + 1) x) / (2 i + 1)`, the even-indexed coefficients
+being zero. -/
+private theorem step_fourierPartialSum {f : ℝ → ℝ} (hcos0 : fourierCoeffCos f 0 = 1)
+    (hcos : ∀ j : ℕ, 0 < j → fourierCoeffCos f j = 0)
+    (hsin : ∀ j : ℕ, 0 < j → fourierCoeffSin f j = -(1 - (-1 : ℝ) ^ j) / (π * j)) (n : ℕ)
+    (x : ℝ) :
+    fourierPartialSum f (2 * n) x
+      = 1 / 2 - 2 / π * ∑ i ∈ Finset.range n, Real.sin ((2 * i + 1) * x) / (2 * i + 1) := by
+  have hπ : π ≠ 0 := Real.pi_ne_zero
+  induction n with
+  | zero => simp [fourierPartialSum, hcos0]
+  | succ n ih =>
+      have hstep : 2 * (n + 1) = 2 * n + 1 + 1 := by ring
+      have hodd : ((-1 : ℝ)) ^ (2 * n + 1) = -1 := by
+        rw [pow_succ, pow_mul]; norm_num
+      have heven : ((-1 : ℝ)) ^ (2 * n + 1 + 1) = 1 := by
+        rw [pow_succ, hodd]; norm_num
+      have hne : (2 * (n : ℝ) + 1) ≠ 0 := by positivity
+      rw [hstep, fourierPartialSum_succ, fourierPartialSum_succ, ih, Finset.sum_range_succ,
+        hcos (2 * n + 1) (by omega), hcos (2 * n + 1 + 1) (by omega),
+        hsin (2 * n + 1) (by omega), hsin (2 * n + 1 + 1) (by omega), hodd, heven]
+      set S := ∑ i ∈ Finset.range n, Real.sin ((2 * (i : ℝ) + 1) * x) / (2 * (i : ℝ) + 1) with hS
+      simp only [sub_self, neg_zero, zero_div, zero_mul, add_zero, zero_add]
+      push_cast
+      field_simp
+      ring
+
+/-- The step function is constant on a neighbourhood of any point that is not a multiple of `π`,
+hence differentiable there with derivative `0`. -/
+private theorem step_hasDerivAt {f : ℝ → ℝ} (hper : Function.Periodic f (2 * π))
+    (hneg : ∀ x ∈ Set.Ico (-π) 0, f x = 1) (hpos : ∀ x ∈ Set.Ico (0 : ℝ) π, f x = 0) {x : ℝ}
+    (hx : ∀ k : ℤ, x ≠ k * π) : HasDerivAt f 0 x := by
+  have hπ := Real.pi_pos
+  obtain ⟨k, hk⟩ := exists_int_sub_mem_Ico x
+  have hval : ∀ t : ℝ, f t = f (t - k * (2 * π)) := fun t =>
+    (hper.sub_int_mul_eq (x := t) k).symm
+  have hy0 : x - k * (2 * π) ≠ 0 := fun h => hx (2 * k) (by push_cast; linarith)
+  have hyπ : -π < x - k * (2 * π) :=
+    lt_of_le_of_ne hk.1 fun h => hx (2 * k - 1) (by push_cast; linarith)
+  rcases lt_or_gt_of_ne hy0 with hlt | hgt
+  · have hnb : ∀ᶠ t in 𝓝 x, f t = 1 := by
+      have hopen : Set.Ioo (-π + k * (2 * π)) (0 + k * (2 * π)) ∈ 𝓝 x :=
+        isOpen_Ioo.mem_nhds ⟨by linarith, by linarith⟩
+      filter_upwards [hopen] with t ht
+      exact (hval t).trans (hneg _ ⟨by linarith [ht.1], by linarith [ht.2]⟩)
+    exact (hasDerivAt_const x (1 : ℝ)).congr_of_eventuallyEq hnb
+  · have hnb : ∀ᶠ t in 𝓝 x, f t = 0 := by
+      have hopen : Set.Ioo (0 + k * (2 * π)) (π + k * (2 * π)) ∈ 𝓝 x :=
+        isOpen_Ioo.mem_nhds ⟨by linarith, by linarith [hk.2]⟩
+      filter_upwards [hopen] with t ht
+      exact (hval t).trans (hpos _ ⟨by linarith [ht.1], by linarith [ht.2]⟩)
+    exact (hasDerivAt_const x (0 : ℝ)).congr_of_eventuallyEq hnb
+
+/-- At a multiple of `π` the step function of Example 4.1.3 jumps between `0` and `1`, so its
+Fourier partial sums converge to the mean `1/2` of the one-sided limits. -/
+private theorem step_tendsto_at_pi {f : ℝ → ℝ} (hper : Function.Periodic f (2 * π))
+    (hneg : ∀ x ∈ Set.Ico (-π) 0, f x = 1) (hpos : ∀ x ∈ Set.Ico (0 : ℝ) π, f x = 0) (k : ℤ) :
+    Tendsto (fun n : ℕ => fourierPartialSum f n ((k : ℝ) * π)) atTop (𝓝 (1 / 2)) := by
+  have hπ := Real.pi_pos
+  have hval : ∀ (t : ℝ) (m : ℤ), f t = f (t - m * (2 * π)) := fun t m =>
+    (hper.sub_int_mul_eq (x := t) m).symm
+  obtain ⟨fL, fR, hLval, hRval, hmean⟩ :
+      ∃ fL fR : ℝ, (∀ t ∈ Set.Ioo (0 : ℝ) π, f ((k : ℝ) * π - t) = fL) ∧
+        (∀ t ∈ Set.Ioo (0 : ℝ) π, f ((k : ℝ) * π + t) = fR) ∧ (fL + fR) / 2 = 1 / 2 := by
+    rcases Int.even_or_odd k with ⟨m, hm⟩ | ⟨m, hm⟩
+    · subst hm
+      refine ⟨1, 0, fun t ht => ?_, fun t ht => ?_, by norm_num⟩
+      · rw [hval _ m]
+        refine hneg _ ⟨?_, ?_⟩ <;> push_cast <;> linarith [ht.1, ht.2]
+      · rw [hval _ m]
+        refine hpos _ ⟨?_, ?_⟩ <;> push_cast <;> linarith [ht.1, ht.2]
+    · subst hm
+      refine ⟨0, 1, fun t ht => ?_, fun t ht => ?_, by norm_num⟩
+      · rw [hval _ m]
+        refine hpos _ ⟨?_, ?_⟩ <;> push_cast <;> linarith [ht.1, ht.2]
+      · rw [hval _ (m + 1)]
+        refine hneg _ ⟨?_, ?_⟩ <;> push_cast <;> linarith [ht.1, ht.2]
+  rw [← hmean]
+  exact theorem_4_1_1 hper (step_intervalIntegrable hneg hpos)
+    (tendsto_quotient_of_eventually_const (d := 0)
+      fun t ht => by rw [hRval t ht, sub_self, zero_div])
+    (tendsto_quotient_of_eventually_const (d := 0)
+      fun t ht => by rw [hLval t ht, sub_self, zero_div])
+
+/-- **Example 4.1.3.** The Fourier series of the step function `f x = 1` on `[-π, 0)` and
+`f x = 0` on `[0, π)`, extended `2 π`-periodically. Its coefficients are `a_0 = 1`, `a_j = 0` for
+`j ≥ 1` and `b_j = -(1 - (-1)^j) / (π j)`, so the even harmonics drop out and the partial sums are
+the book's
+
+`S_n x = 1/2 - (2/π) ∑_{i < n} sin ((2 i + 1) x) / (2 i + 1)`
+
+(the book indexes the sum from `j = 1` to `n` with terms `sin ((2 j - 1) x) / (2 j - 1)`, which is
+the same series reindexed). By Theorem 4.1.1 the Fourier series converges to `f x` at every `x`
+that is not a multiple of `π`, and to `1/2` at every multiple of `π`, the mean of the two one-sided
+limits at the jump; the last clause is the book's `F x = f x`, written as convergence of the series
+`∑_{i ≥ 0} -(2/π) sin ((2 i + 1) x) / (2 i + 1)` to `f x - 1/2` in the sense of Definition 1.2.17.
+
+Not stated: the Gibbs phenomenon that the book discusses beside this example, whose overshoot span
+`(2/π) Si(π) |f (x+) - f (x-)|` with `(2/π) Si(π) ≈ 1.17898` it asserts without proof and refers
+out. Beware the near-match: `equation_4_1_3_const`, `equation_4_1_3_cos` and `equation_4_1_3_sin`
+are the book's *displayed* equations (4.1.3), the real Fourier coefficients, and have nothing to do
+with this example. -/
+theorem example_4_1_3 {f : ℝ → ℝ} (hper : Function.Periodic f (2 * π))
+    (hneg : ∀ x ∈ Set.Ico (-π) 0, f x = 1) (hpos : ∀ x ∈ Set.Ico (0 : ℝ) π, f x = 0) :
+    fourierCoeffCos f 0 = 1 ∧
+      (∀ j : ℕ, 0 < j → fourierCoeffCos f j = 0) ∧
+      (∀ j : ℕ, 0 < j → fourierCoeffSin f j = -(1 - (-1 : ℝ) ^ j) / (π * j)) ∧
+      (∀ (n : ℕ) (x : ℝ), fourierPartialSum f (2 * n) x
+        = 1 / 2 - 2 / π * ∑ i ∈ Finset.range n, Real.sin ((2 * i + 1) * x) / (2 * i + 1)) ∧
+      (∀ x : ℝ, (∀ k : ℤ, x ≠ (k : ℝ) * π) →
+        Tendsto (fun n : ℕ => fourierPartialSum f n x) atTop (𝓝 (f x))) ∧
+      (∀ k : ℤ, Tendsto (fun n : ℕ => fourierPartialSum f n ((k : ℝ) * π)) atTop (𝓝 (1 / 2))) ∧
+      ∀ x : ℝ, (∀ k : ℤ, x ≠ (k : ℝ) * π) →
+        Chapter01.definition_1_2_17
+          (fun i : ℕ => -(2 / π) * (Real.sin ((2 * i + 1) * x) / (2 * i + 1))) (f x - 1 / 2) := by
+  have hπ : π ≠ 0 := Real.pi_ne_zero
+  obtain ⟨hcos0, hcos⟩ := step_fourierCoeffCos hneg hpos
+  have hsin := step_fourierCoeffSin hneg hpos
+  have hpartial := step_fourierPartialSum hcos0 hcos hsin
+  have hconv : ∀ x : ℝ, (∀ k : ℤ, x ≠ (k : ℝ) * π) →
+      Tendsto (fun n : ℕ => fourierPartialSum f n x) atTop (𝓝 (f x)) := fun x hx =>
+    theorem_4_1_1_continuous hper (step_intervalIntegrable hneg hpos)
+      (step_hasDerivAt hper hneg hpos hx)
+  refine ⟨hcos0, hcos, hsin, hpartial, hconv, step_tendsto_at_pi hper hneg hpos, fun x hx => ?_⟩
+  have hdouble : Tendsto (fun n : ℕ => fourierPartialSum f (2 * n) x) atTop (𝓝 (f x)) :=
+    (hconv x hx).comp (Filter.tendsto_atTop_atTop.2 fun b => ⟨b, fun a ha => by omega⟩)
+  have hclosed : Tendsto (fun n : ℕ =>
+      1 / 2 - 2 / π * ∑ i ∈ Finset.range n, Real.sin ((2 * i + 1) * x) / (2 * i + 1)) atTop
+      (𝓝 (f x)) := hdouble.congr fun n => hpartial n x
+  refine (Chapter01.definition_1_2_17_iff _ _).mpr ((hclosed.sub_const (1 / 2)).congr fun n => ?_)
+  rw [← Finset.mul_sum]
+  ring
+
+/-! #### Example 4.1.4: `|x| / π` -/
+
+/-- `∫_0^π t cos (j t) dt = ((-1)^j - 1) / j²` for `j ≥ 1`, by parts. -/
+private theorem integral_mul_cos_zero_pi {j : ℕ} (hj : 0 < j) :
+    (∫ t in (0 : ℝ)..π, t * Real.cos ((j : ℝ) * t)) = ((-1 : ℝ) ^ j - 1) / j ^ 2 := by
+  have hj0 : (j : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hj.ne'
+  have hd : ∀ t ∈ Set.uIcc (0 : ℝ) π,
+      HasDerivAt (fun s : ℝ => s * Real.sin ((j : ℝ) * s) / j + Real.cos ((j : ℝ) * s) / j ^ 2)
+        (t * Real.cos ((j : ℝ) * t)) t := by
+    intro t _
+    have h1 : HasDerivAt (fun s : ℝ => (j : ℝ) * s) (j : ℝ) t := by
+      simpa using (hasDerivAt_id t).const_mul (j : ℝ)
+    have hs : HasDerivAt (fun s : ℝ => Real.sin ((j : ℝ) * s))
+        (Real.cos ((j : ℝ) * t) * (j : ℝ)) t := (Real.hasDerivAt_sin _).comp t h1
+    have hc : HasDerivAt (fun s : ℝ => Real.cos ((j : ℝ) * s))
+        (-Real.sin ((j : ℝ) * t) * (j : ℝ)) t := (Real.hasDerivAt_cos _).comp t h1
+    have h2 : HasDerivAt (fun s : ℝ => s * Real.sin ((j : ℝ) * s) / j
+          + Real.cos ((j : ℝ) * s) / j ^ 2)
+        ((1 * Real.sin ((j : ℝ) * t) + t * (Real.cos ((j : ℝ) * t) * (j : ℝ))) / (j : ℝ)
+          + -Real.sin ((j : ℝ) * t) * (j : ℝ) / (j : ℝ) ^ 2) t :=
+      (((hasDerivAt_id t).mul hs).div_const (j : ℝ)).add (hc.div_const ((j : ℝ) ^ 2))
+    have hv : (1 * Real.sin ((j : ℝ) * t) + t * (Real.cos ((j : ℝ) * t) * (j : ℝ))) / (j : ℝ)
+          + -Real.sin ((j : ℝ) * t) * (j : ℝ) / (j : ℝ) ^ 2 = t * Real.cos ((j : ℝ) * t) := by
+      field_simp
+      ring
+    rwa [hv] at h2
+  rw [intervalIntegral.integral_eq_sub_of_hasDerivAt hd
+    ((by fun_prop : Continuous fun t : ℝ => t * Real.cos ((j : ℝ) * t)).intervalIntegrable _ _),
+    Real.sin_nat_mul_pi, Real.cos_nat_mul_pi]
+  simp only [mul_zero, Real.sin_zero, Real.cos_zero, zero_div, zero_add]
+  rw [div_sub_div_same]
+
+/-- The Fourier coefficients of `|x| / π`: the sines vanish because the function is even, and
+`a_0 = 1`, `a_j = 2 ((-1)^j - 1) / (π² j²)`. -/
+private theorem abs_fourierCoeff {f : ℝ → ℝ} (hval : ∀ x ∈ Set.Icc (-π) π, f x = |x| / π) :
+    (∀ j : ℕ, fourierCoeffSin f j = 0) ∧ fourierCoeffCos f 0 = 1 ∧
+      ∀ j : ℕ, 0 < j → fourierCoeffCos f j = 2 * ((-1 : ℝ) ^ j - 1) / (π ^ 2 * j ^ 2) := by
+  have hπ : π ≠ 0 := Real.pi_ne_zero
+  have hπ0 := Real.pi_pos
+  refine ⟨fun j => ?_, ?_, fun j hj => ?_⟩
+  · rw [fourierCoeffSin, integral_congr_of_eqOn hval _,
+      intervalIntegral_of_odd (g := fun t => |t| / π * Real.sin ((j : ℝ) * t))
+        (fun t => by rw [abs_neg, mul_neg, Real.sin_neg]; ring)
+        ((by fun_prop : Continuous fun t : ℝ =>
+          |t| / π * Real.sin ((j : ℝ) * t)).intervalIntegrable _ _), mul_zero]
+  · have hEq : ∀ t ∈ Set.uIcc (0 : ℝ) π, |t| / π = t / π := by
+      intro t ht
+      rw [Set.uIcc_of_le hπ0.le, Set.mem_Icc] at ht
+      rw [abs_of_nonneg ht.1]
+    have heven : (∫ t in -π..π, |t| / π * Real.cos (((0 : ℕ) : ℝ) * t))
+        = 2 * ∫ t in (0 : ℝ)..π, |t| / π * Real.cos (((0 : ℕ) : ℝ) * t) :=
+      intervalIntegral_of_even (fun t => by rw [abs_neg, mul_neg, Real.cos_neg])
+        ((by fun_prop : Continuous fun t : ℝ =>
+          |t| / π * Real.cos (((0 : ℕ) : ℝ) * t)).intervalIntegrable _ _)
+    rw [fourierCoeffCos, integral_congr_of_eqOn hval _, heven]
+    simp only [Nat.cast_zero, zero_mul, Real.cos_zero, mul_one]
+    rw [intervalIntegral.integral_congr hEq, intervalIntegral.integral_div, integral_id]
+    field_simp
+    ring
+  · have hj0 : (j : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hj.ne'
+    have hEq : ∀ t ∈ Set.uIcc (0 : ℝ) π,
+        |t| / π * Real.cos ((j : ℝ) * t) = t * Real.cos ((j : ℝ) * t) / π := by
+      intro t ht
+      rw [Set.uIcc_of_le hπ0.le, Set.mem_Icc] at ht
+      rw [abs_of_nonneg ht.1]
+      ring
+    have heven : (∫ t in -π..π, |t| / π * Real.cos ((j : ℝ) * t))
+        = 2 * ∫ t in (0 : ℝ)..π, |t| / π * Real.cos ((j : ℝ) * t) :=
+      intervalIntegral_of_even (fun t => by rw [abs_neg, mul_neg, Real.cos_neg])
+        ((by fun_prop : Continuous fun t : ℝ =>
+          |t| / π * Real.cos ((j : ℝ) * t)).intervalIntegrable _ _)
+    rw [fourierCoeffCos, integral_congr_of_eqOn hval _, heven,
+      intervalIntegral.integral_congr hEq, intervalIntegral.integral_div,
+      integral_mul_cos_zero_pi hj]
+    field_simp
+
+/-- The partial sums of the Fourier series of `|x| / π` in the book's closed form,
+`S_n x = 1/2 - (4/π²) ∑_{i < n} cos ((2 i + 1) x) / (2 i + 1)²`. -/
+private theorem abs_fourierPartialSum {f : ℝ → ℝ} (hsin : ∀ j : ℕ, fourierCoeffSin f j = 0)
+    (hcos0 : fourierCoeffCos f 0 = 1)
+    (hcos : ∀ j : ℕ, 0 < j → fourierCoeffCos f j = 2 * ((-1 : ℝ) ^ j - 1) / (π ^ 2 * j ^ 2))
+    (n : ℕ) (x : ℝ) :
+    fourierPartialSum f (2 * n) x
+      = 1 / 2 - 4 / π ^ 2 * ∑ i ∈ Finset.range n,
+          Real.cos ((2 * i + 1) * x) / (2 * i + 1) ^ 2 := by
+  have hπ : π ≠ 0 := Real.pi_ne_zero
+  induction n with
+  | zero => simp [fourierPartialSum, hcos0]
+  | succ n ih =>
+      have hstep : 2 * (n + 1) = 2 * n + 1 + 1 := by ring
+      have hodd : ((-1 : ℝ)) ^ (2 * n + 1) = -1 := by
+        rw [pow_succ, pow_mul]; norm_num
+      have heven : ((-1 : ℝ)) ^ (2 * n + 1 + 1) = 1 := by
+        rw [pow_succ, hodd]; norm_num
+      have hne : (2 * (n : ℝ) + 1) ≠ 0 := by positivity
+      rw [hstep, fourierPartialSum_succ, fourierPartialSum_succ, ih, Finset.sum_range_succ,
+        hcos (2 * n + 1) (by omega), hcos (2 * n + 1 + 1) (by omega), hsin (2 * n + 1),
+        hsin (2 * n + 1 + 1), hodd, heven]
+      set S := ∑ i ∈ Finset.range n, Real.cos ((2 * (i : ℝ) + 1) * x) / (2 * (i : ℝ) + 1) ^ 2
+        with hS
+      simp only [sub_self, mul_zero, zero_div, zero_mul, add_zero]
+      push_cast
+      field_simp
+      ring
+
+/-- The Fourier series of `|x| / π` converges to the function at every real point: the periodic
+extension is continuous, differentiable off the multiples of `π`, and has equal one-sided
+difference quotients at the corners `x = 0` and `x = ±π`, so Theorem 4.1.1 applies everywhere. -/
+private theorem abs_tendsto {f : ℝ → ℝ} (hper : Function.Periodic f (2 * π))
+    (hval : ∀ x ∈ Set.Icc (-π) π, f x = |x| / π) (x : ℝ) :
+    Tendsto (fun n : ℕ => fourierPartialSum f n x) atTop (𝓝 (f x)) := by
+  have hπ := Real.pi_pos
+  have hπ' : π ≠ 0 := Real.pi_ne_zero
+  have hfi := intervalIntegrable_of_eqOn (F := fun x : ℝ => |x| / π) (by fun_prop) hval
+  refine tendsto_fourierPartialSum_of_Ico hper (fun y hy => ?_) x
+  rcases eq_or_lt_of_le hy.1 with hyl | hyl
+  · -- `y = -π`: the peak of the periodic extension
+    subst hyl
+    have hfy : f (-π) = 1 := by
+      rw [hval _ ⟨le_rfl, by linarith⟩, abs_neg, abs_of_pos hπ]
+      field_simp
+    have hR : ∀ t ∈ Set.Ioo (0 : ℝ) π, (f (-π + t) - 1) / t = -(1 / π) := by
+      intro t ht
+      have ht0 : t ≠ 0 := ne_of_gt ht.1
+      rw [hval _ ⟨by linarith [ht.1], by linarith [ht.2]⟩,
+        abs_of_nonpos (by linarith [ht.2] : -π + t ≤ 0)]
+      field_simp
+      ring
+    have hL : ∀ t ∈ Set.Ioo (0 : ℝ) π, (f (-π - t) - 1) / t = -(1 / π) := by
+      intro t ht
+      have ht0 : t ≠ 0 := ne_of_gt ht.1
+      rw [← hper.sub_int_mul_eq (x := -π - t) (-1),
+        hval _ ⟨by push_cast; linarith [ht.2], by push_cast; linarith [ht.1]⟩,
+        abs_of_nonneg (by push_cast; linarith [ht.2] :
+          (0 : ℝ) ≤ -π - t - ((-1 : ℤ) : ℝ) * (2 * π))]
+      push_cast
+      field_simp
+      ring
+    have hconv := theorem_4_1_1 hper hfi (tendsto_quotient_of_eventually_const hR)
+      (tendsto_quotient_of_eventually_const hL)
+    rw [hfy]
+    rwa [show ((1 : ℝ) + 1) / 2 = 1 by norm_num] at hconv
+  rcases lt_trichotomy y 0 with hlt | heq | hgt
+  · -- `y ∈ (-π, 0)`: the extension is `-y/π` near `y`
+    have hnb : ∀ᶠ t in 𝓝 y, f t = -t / π := by
+      filter_upwards [isOpen_Ioo.mem_nhds (⟨hyl, hlt⟩ : y ∈ Set.Ioo (-π) 0)] with t ht
+      rw [hval t ⟨ht.1.le, by linarith [ht.2]⟩, abs_of_neg ht.2]
+    have hderiv : HasDerivAt (fun t : ℝ => -t / π) (-1 / π) y :=
+      ((hasDerivAt_id y).neg).div_const π
+    exact theorem_4_1_1_continuous hper hfi (hderiv.congr_of_eventuallyEq hnb)
+  · -- `y = 0`: the corner at the bottom
+    subst heq
+    have hfy : f 0 = 0 := by rw [hval _ ⟨by linarith, by linarith⟩]; simp
+    have hR : ∀ t ∈ Set.Ioo (0 : ℝ) π, (f (0 + t) - 0) / t = 1 / π := by
+      intro t ht
+      have ht0 : t ≠ 0 := ne_of_gt ht.1
+      rw [zero_add, hval _ ⟨by linarith [ht.1], ht.2.le⟩, abs_of_pos ht.1]
+      field_simp
+      ring
+    have hL : ∀ t ∈ Set.Ioo (0 : ℝ) π, (f (0 - t) - 0) / t = 1 / π := by
+      intro t ht
+      have ht0 : t ≠ 0 := ne_of_gt ht.1
+      rw [zero_sub, hval _ ⟨by linarith [ht.2], by linarith [ht.1]⟩, abs_neg, abs_of_pos ht.1]
+      field_simp
+      ring
+    have hconv := theorem_4_1_1 hper hfi (tendsto_quotient_of_eventually_const hR)
+      (tendsto_quotient_of_eventually_const hL)
+    rw [hfy]
+    rwa [show ((0 : ℝ) + 0) / 2 = 0 by norm_num] at hconv
+  · -- `y ∈ (0, π)`: the extension is `y/π` near `y`
+    have hnb : ∀ᶠ t in 𝓝 y, f t = t / π := by
+      filter_upwards [isOpen_Ioo.mem_nhds (⟨hgt, hy.2⟩ : y ∈ Set.Ioo 0 π)] with t ht
+      rw [hval t ⟨by linarith [ht.1], ht.2.le⟩, abs_of_pos ht.1]
+    have hderiv : HasDerivAt (fun t : ℝ => t / π) (1 / π) y := (hasDerivAt_id y).div_const π
+    exact theorem_4_1_1_continuous hper hfi (hderiv.congr_of_eventuallyEq hnb)
+
+/-- **Example 4.1.4.** The Fourier series of `f x = |x| / π` on `[-π, π]`, extended
+`2 π`-periodically — the extension is continuous because `f (-π) = f π`. The function is even, so
+its series carries no sine term; the cosine coefficients are `a_0 = 1` and
+`a_j = 2 ((-1)^j - 1) / (π² j²)`, which vanish for even `j`, so the partial sums are the book's
+
+`S_n x = 1/2 - (4/π²) ∑_{i < n} cos ((2 i + 1) x) / (2 i + 1)²`
+
+(the book indexes the sum from `j = 1` to `n` with terms `cos ((2 j - 1) x) / (2 j - 1)²`, the same
+series reindexed). The extension is differentiable off the multiples of `π` and has equal one-sided
+difference quotients at the corners, so by Theorem 4.1.1 the series converges to `f x` at every
+`x`; the last clause is the book's `F x = f x`, written as convergence of the series
+`∑_{i ≥ 0} -(4/π²) cos ((2 i + 1) x) / (2 i + 1)²` to `f x - 1/2` in the sense of Definition
+1.2.17. The book's other assertion here, convergence in `L²(-π, π)`, is `equation_4_1_14` for this
+`f`. -/
+theorem example_4_1_4 {f : ℝ → ℝ} (hper : Function.Periodic f (2 * π))
+    (hval : ∀ x ∈ Set.Icc (-π) π, f x = |x| / π) :
+    (∀ j : ℕ, fourierCoeffSin f j = 0) ∧
+      fourierCoeffCos f 0 = 1 ∧
+      (∀ j : ℕ, 0 < j → fourierCoeffCos f j = 2 * ((-1 : ℝ) ^ j - 1) / (π ^ 2 * j ^ 2)) ∧
+      (∀ (n : ℕ) (x : ℝ), fourierPartialSum f (2 * n) x
+        = 1 / 2 - 4 / π ^ 2 * ∑ i ∈ Finset.range n,
+            Real.cos ((2 * i + 1) * x) / (2 * i + 1) ^ 2) ∧
+      (∀ x : ℝ, Tendsto (fun n : ℕ => fourierPartialSum f n x) atTop (𝓝 (f x))) ∧
+      ∀ x : ℝ, Chapter01.definition_1_2_17
+        (fun i : ℕ => -(4 / π ^ 2) * (Real.cos ((2 * i + 1) * x) / (2 * i + 1) ^ 2))
+        (f x - 1 / 2) := by
+  have hπ : π ≠ 0 := Real.pi_ne_zero
+  obtain ⟨hsin, hcos0, hcos⟩ := abs_fourierCoeff hval
+  have hpartial := abs_fourierPartialSum hsin hcos0 hcos
+  have hconv := abs_tendsto hper hval
+  refine ⟨hsin, hcos0, hcos, hpartial, hconv, fun x => ?_⟩
+  have hdouble : Tendsto (fun n : ℕ => fourierPartialSum f (2 * n) x) atTop (𝓝 (f x)) :=
+    (hconv x).comp (Filter.tendsto_atTop_atTop.2 fun b => ⟨b, fun a ha => by omega⟩)
+  have hclosed : Tendsto (fun n : ℕ => 1 / 2 - 4 / π ^ 2 * ∑ i ∈ Finset.range n,
+      Real.cos ((2 * i + 1) * x) / (2 * i + 1) ^ 2) atTop (𝓝 (f x)) :=
+    hdouble.congr fun n => hpartial n x
+  refine (Chapter01.definition_1_2_17_iff _ _).mpr ((hclosed.sub_const (1 / 2)).congr fun n => ?_)
+  rw [← Finset.mul_sum]
+  ring
+
+/-! #### Example 4.1.5: `(π² - x²)² / π⁴` -/
+
+/-- The derivative of `P s * sin (w s)`, the shape the antiderivative below is built from. -/
+private theorem hasDerivAt_mul_sin {P : ℝ → ℝ} {c w t : ℝ} (hP : HasDerivAt P c t) :
+    HasDerivAt (fun s => P s * Real.sin (w * s))
+      (c * Real.sin (w * t) + P t * (Real.cos (w * t) * w)) t :=
+  hP.mul ((Real.hasDerivAt_sin (w * t)).comp t (by simpa using (hasDerivAt_id t).const_mul w))
+
+/-- The derivative of `P s * cos (w s)`. -/
+private theorem hasDerivAt_mul_cos {P : ℝ → ℝ} {c w t : ℝ} (hP : HasDerivAt P c t) :
+    HasDerivAt (fun s => P s * Real.cos (w * s))
+      (c * Real.cos (w * t) + P t * (-Real.sin (w * t) * w)) t :=
+  hP.mul ((Real.hasDerivAt_cos (w * t)).comp t (by simpa using (hasDerivAt_id t).const_mul w))
+
+/-- The derivative of a general quintic. -/
+private theorem hasDerivAt_quintic (a b c d e g t : ℝ) :
+    HasDerivAt (fun s : ℝ => a * s ^ 5 + b * s ^ 4 + c * s ^ 3 + d * s ^ 2 + e * s + g)
+      (5 * a * t ^ 4 + 4 * b * t ^ 3 + 3 * c * t ^ 2 + 2 * d * t + e) t := by
+  refine HasDerivAt.congr_deriv
+    (((((((hasDerivAt_pow 5 t).const_mul a).add ((hasDerivAt_pow 4 t).const_mul b)).add
+      ((hasDerivAt_pow 3 t).const_mul c)).add ((hasDerivAt_pow 2 t).const_mul d)).add
+      ((hasDerivAt_id t).const_mul e)).add_const g) ?_
+  push_cast
+  ring
+
+/-- The derivative of `(π² - x²)² / π⁴`. -/
+private theorem hasDerivAt_quarticNorm (y : ℝ) :
+    HasDerivAt (fun t : ℝ => (π ^ 2 - t ^ 2) ^ 2 / π ^ 4)
+      ((4 * y ^ 3 - 4 * π ^ 2 * y) / π ^ 4) y := by
+  refine HasDerivAt.congr_deriv
+    ((((hasDerivAt_pow 2 y).const_sub (π ^ 2)).pow 2).div_const (π ^ 4)) ?_
+  push_cast
+  ring
+
+/-- The second derivative of `(π² - x²)² / π⁴`. -/
+private theorem hasDerivAt_quarticNorm' (y : ℝ) :
+    HasDerivAt (fun t : ℝ => (4 * t ^ 3 - 4 * π ^ 2 * t) / π ^ 4)
+      ((12 * y ^ 2 - 4 * π ^ 2) / π ^ 4) y := by
+  refine HasDerivAt.congr_deriv
+    ((((hasDerivAt_pow 3 y).const_mul (4 : ℝ)).sub
+      ((hasDerivAt_id y).const_mul (4 * π ^ 2))).div_const (π ^ 4)) ?_
+  push_cast
+  ring
+
+/-- `∫_{-π}^{π} (π² - t²)² dt = 16 π⁵ / 15`. -/
+private theorem integral_quartic : (∫ t in -π..π, (π ^ 2 - t ^ 2) ^ 2) = 16 * π ^ 5 / 15 := by
+  have hd : ∀ t ∈ Set.uIcc (-π) π,
+      HasDerivAt (fun s : ℝ => (1 / 5) * s ^ 5 + 0 * s ^ 4 + (-(2 * π ^ 2) / 3) * s ^ 3
+          + 0 * s ^ 2 + π ^ 4 * s + 0)
+        ((π ^ 2 - t ^ 2) ^ 2) t := fun t _ =>
+    (hasDerivAt_quintic (1 / 5) 0 (-(2 * π ^ 2) / 3) 0 (π ^ 4) 0 t).congr_deriv (by ring)
+  rw [intervalIntegral.integral_eq_sub_of_hasDerivAt hd
+    ((by fun_prop : Continuous fun t : ℝ => (π ^ 2 - t ^ 2) ^ 2).intervalIntegrable _ _)]
+  ring
+
+/-- `∫_{-π}^{π} (π² - t²)² cos (j t) dt = -48 π (-1)^j / j⁴` for `j ≥ 1`: four integrations by
+parts, packaged as the antiderivative `(R s sin (j s) + T s cos (j s)) / j⁵` with `R` and `T` the
+polynomials `j⁴ p - j² p'' + p''''` and `j³ p' - j p'''` of `p s = (π² - s²)²`. -/
+private theorem integral_quartic_mul_cos {j : ℕ} (hj : 0 < j) :
+    (∫ t in -π..π, (π ^ 2 - t ^ 2) ^ 2 * Real.cos ((j : ℝ) * t))
+      = -48 * π * (-1 : ℝ) ^ j / j ^ 4 := by
+  have hπ : π ≠ 0 := Real.pi_ne_zero
+  have hj0 : (j : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hj.ne'
+  have hd : ∀ t ∈ Set.uIcc (-π) π,
+      HasDerivAt (fun s : ℝ =>
+          ((0 * s ^ 5 + (j : ℝ) ^ 4 * s ^ 4 + 0 * s ^ 3
+                + (-(2 * π ^ 2 * (j : ℝ) ^ 4) - 12 * (j : ℝ) ^ 2) * s ^ 2 + 0 * s
+                + (π ^ 4 * (j : ℝ) ^ 4 + 4 * π ^ 2 * (j : ℝ) ^ 2 + 24)) * Real.sin ((j : ℝ) * s)
+            + (0 * s ^ 5 + 0 * s ^ 4 + 4 * (j : ℝ) ^ 3 * s ^ 3 + 0 * s ^ 2
+                + (-(4 * π ^ 2 * (j : ℝ) ^ 3) - 24 * (j : ℝ)) * s + 0) * Real.cos ((j : ℝ) * s))
+          / (j : ℝ) ^ 5)
+        ((π ^ 2 - t ^ 2) ^ 2 * Real.cos ((j : ℝ) * t)) t := by
+    intro t _
+    refine HasDerivAt.congr_deriv
+      (((hasDerivAt_mul_sin (hasDerivAt_quintic 0 ((j : ℝ) ^ 4) 0
+            (-(2 * π ^ 2 * (j : ℝ) ^ 4) - 12 * (j : ℝ) ^ 2) 0
+            (π ^ 4 * (j : ℝ) ^ 4 + 4 * π ^ 2 * (j : ℝ) ^ 2 + 24) t)).add
+        (hasDerivAt_mul_cos (hasDerivAt_quintic 0 0 (4 * (j : ℝ) ^ 3) 0
+            (-(4 * π ^ 2 * (j : ℝ) ^ 3) - 24 * (j : ℝ)) 0 t))).div_const ((j : ℝ) ^ 5)) ?_
+    field_simp
+    ring
+  rw [intervalIntegral.integral_eq_sub_of_hasDerivAt hd
+    ((by fun_prop : Continuous fun t : ℝ =>
+      (π ^ 2 - t ^ 2) ^ 2 * Real.cos ((j : ℝ) * t)).intervalIntegrable _ _),
+    show ((j : ℝ)) * -π = -((j : ℝ) * π) by ring, Real.sin_neg, Real.cos_neg,
+    Real.sin_nat_mul_pi, Real.cos_nat_mul_pi]
+  field_simp
+  ring
+
+/-- The Fourier coefficients of `(π² - x²)² / π⁴`: the sines vanish because the function is even,
+and `a_0 = 16/15`, `a_j = 48 (-1)^{j+1} / (π⁴ j⁴)`. -/
+private theorem quartic_fourierCoeff {f : ℝ → ℝ}
+    (hval : ∀ x ∈ Set.Icc (-π) π, f x = (π ^ 2 - x ^ 2) ^ 2 / π ^ 4) :
+    (∀ j : ℕ, fourierCoeffSin f j = 0) ∧ fourierCoeffCos f 0 = 16 / 15 ∧
+      ∀ j : ℕ, 0 < j → fourierCoeffCos f j = 48 * (-1 : ℝ) ^ (j + 1) / (π ^ 4 * j ^ 4) := by
+  have hπ : π ≠ 0 := Real.pi_ne_zero
+  refine ⟨fun j => ?_, ?_, fun j hj => ?_⟩
+  · rw [fourierCoeffSin, integral_congr_of_eqOn hval _,
+      intervalIntegral_of_odd (g := fun t => (π ^ 2 - t ^ 2) ^ 2 / π ^ 4 * Real.sin ((j : ℝ) * t))
+        (fun t => by rw [mul_neg, Real.sin_neg]; ring)
+        ((by fun_prop : Continuous fun t : ℝ =>
+          (π ^ 2 - t ^ 2) ^ 2 / π ^ 4 * Real.sin ((j : ℝ) * t)).intervalIntegrable _ _), mul_zero]
+  · rw [fourierCoeffCos, integral_congr_of_eqOn hval _]
+    simp only [Nat.cast_zero, zero_mul, Real.cos_zero, mul_one]
+    rw [intervalIntegral.integral_div, integral_quartic]
+    field_simp
+  · have hj0 : (j : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hj.ne'
+    rw [fourierCoeffCos, integral_congr_of_eqOn hval _]
+    simp only [div_mul_eq_mul_div]
+    rw [intervalIntegral.integral_div, integral_quartic_mul_cos hj]
+    field_simp
+    ring
+
+/-- The partial sums of the Fourier series of `(π² - x²)² / π⁴` in the book's closed form,
+`S_n x = 8/15 + (48/π⁴) ∑_{i < n} (-1)^i cos ((i + 1) x) / (i + 1)⁴`. -/
+private theorem quartic_fourierPartialSum {f : ℝ → ℝ} (hsin : ∀ j : ℕ, fourierCoeffSin f j = 0)
+    (hcos0 : fourierCoeffCos f 0 = 16 / 15)
+    (hcos : ∀ j : ℕ, 0 < j → fourierCoeffCos f j = 48 * (-1 : ℝ) ^ (j + 1) / (π ^ 4 * j ^ 4))
+    (n : ℕ) (x : ℝ) :
+    fourierPartialSum f n x
+      = 8 / 15 + 48 / π ^ 4 * ∑ i ∈ Finset.range n,
+          (-1 : ℝ) ^ i * (Real.cos ((i + 1) * x) / (i + 1) ^ 4) := by
+  have hπ : π ≠ 0 := Real.pi_ne_zero
+  induction n with
+  | zero => simp [fourierPartialSum, hcos0]; norm_num
+  | succ n ih =>
+      have hne : ((n : ℝ) + 1) ≠ 0 := by positivity
+      rw [fourierPartialSum_succ, ih, Finset.sum_range_succ, hcos (n + 1) (by omega),
+        hsin (n + 1)]
+      set S := ∑ i ∈ Finset.range n,
+        (-1 : ℝ) ^ i * (Real.cos (((i : ℝ) + 1) * x) / ((i : ℝ) + 1) ^ 4) with hS
+      simp only [zero_mul, add_zero]
+      push_cast
+      field_simp
+      ring
+
+/-- The Fourier series of `(π² - x²)² / π⁴` converges to the function at every real point: the
+periodic extension is continuously differentiable, being smooth on `(-π, π)` and having matching
+one-sided difference quotients at `±π`, so Theorem 4.1.1 applies everywhere. -/
+private theorem quartic_tendsto {f : ℝ → ℝ} (hper : Function.Periodic f (2 * π))
+    (hval : ∀ x ∈ Set.Icc (-π) π, f x = (π ^ 2 - x ^ 2) ^ 2 / π ^ 4) (x : ℝ) :
+    Tendsto (fun n : ℕ => fourierPartialSum f n x) atTop (𝓝 (f x)) := by
+  have hπ := Real.pi_pos
+  have hπ' : π ≠ 0 := Real.pi_ne_zero
+  have hfi := intervalIntegrable_of_eqOn (F := fun x : ℝ => (π ^ 2 - x ^ 2) ^ 2 / π ^ 4)
+    (by fun_prop) hval
+  have hq : Tendsto (fun t : ℝ => t * (2 * π - t) ^ 2 / π ^ 4) (𝓝[>] (0 : ℝ)) (𝓝 0) := by
+    have hc : Continuous fun t : ℝ => t * (2 * π - t) ^ 2 / π ^ 4 := by fun_prop
+    simpa using (hc.tendsto 0).mono_left nhdsWithin_le_nhds
+  refine tendsto_fourierPartialSum_of_Ico hper (fun y hy => ?_) x
+  rcases eq_or_lt_of_le hy.1 with hyl | hyl
+  · -- `y = -π`: the junction of the periodic extension
+    subst hyl
+    have hfy : f (-π) = 0 := by rw [hval _ ⟨le_rfl, by linarith⟩]; ring
+    have hR : ∀ t ∈ Set.Ioo (0 : ℝ) π,
+        (f (-π + t) - 0) / t = t * (2 * π - t) ^ 2 / π ^ 4 := by
+      intro t ht
+      have ht0 : t ≠ 0 := ne_of_gt ht.1
+      rw [hval _ ⟨by linarith [ht.1], by linarith [ht.2]⟩]
+      field_simp
+      ring
+    have hL : ∀ t ∈ Set.Ioo (0 : ℝ) π,
+        (f (-π - t) - 0) / t = t * (2 * π - t) ^ 2 / π ^ 4 := by
+      intro t ht
+      have ht0 : t ≠ 0 := ne_of_gt ht.1
+      rw [← hper.sub_int_mul_eq (x := -π - t) (-1),
+        hval _ ⟨by push_cast; linarith [ht.2], by push_cast; linarith [ht.1]⟩]
+      push_cast
+      field_simp
+      ring
+    have hconv := theorem_4_1_1 hper hfi (tendsto_quotient_of_eventually_eq hR hq)
+      (tendsto_quotient_of_eventually_eq hL hq)
+    rw [hfy]
+    rwa [show ((0 : ℝ) + 0) / 2 = 0 by norm_num] at hconv
+  · -- `y ∈ (-π, π)`: the extension agrees with the polynomial near `y`
+    have hnb : ∀ᶠ t in 𝓝 y, f t = (π ^ 2 - t ^ 2) ^ 2 / π ^ 4 := by
+      filter_upwards [isOpen_Ioo.mem_nhds (⟨hyl, hy.2⟩ : y ∈ Set.Ioo (-π) π)] with t ht
+      exact hval t ⟨ht.1.le, ht.2.le⟩
+    exact theorem_4_1_1_continuous hper hfi
+      ((hasDerivAt_quarticNorm y).congr_of_eventuallyEq hnb)
+
+/-- **Example 4.1.5.** The Fourier series of `f x = (π² - x²)² / π⁴` on `[-π, π]`, extended
+`2 π`-periodically. The endpoint conditions `f⁽ˡ⁾(-π) = f⁽ˡ⁾(π)` hold for `l = 0, 1, 2`, so the
+extension is twice continuously differentiable; the function is even, so its series carries no sine
+term, and `a_0 = 16/15`, `a_j = 48 (-1)^{j+1} / (π⁴ j⁴)`, giving the book's partial sums
+
+`S_n x = 8/15 + (48/π⁴) ∑_{j = 1}^{n} (-1)^{j+1} cos (j x) / j⁴`
+
+(written below over `i < n` with `j = i + 1`, so that `(-1)^{j+1}` is `(-1)^i`). The series
+converges to `f x` at every `x` by Theorem 4.1.1, which is the book's "this function is equal to
+its Fourier series pointwise"; the last clause says it in the sense of Definition 1.2.17.
+
+The endpoint conditions are stated for the polynomial `(π² - x²)² / π⁴` itself rather than for the
+extension `f`, which is how the book verifies them; `l = 3` already fails, matching the book's
+`k = 4` for this example. Beware the near-match: `equation_4_1_5` is the book's *displayed*
+equation (4.1.5), the complex Fourier coefficient, and has nothing to do with this example. -/
+theorem example_4_1_5 {f : ℝ → ℝ} (hper : Function.Periodic f (2 * π))
+    (hval : ∀ x ∈ Set.Icc (-π) π, f x = (π ^ 2 - x ^ 2) ^ 2 / π ^ 4) :
+    (∀ l ≤ 2, iteratedDeriv l (fun x : ℝ => (π ^ 2 - x ^ 2) ^ 2 / π ^ 4) (-π)
+        = iteratedDeriv l (fun x : ℝ => (π ^ 2 - x ^ 2) ^ 2 / π ^ 4) π) ∧
+      (∀ j : ℕ, fourierCoeffSin f j = 0) ∧
+      fourierCoeffCos f 0 = 16 / 15 ∧
+      (∀ j : ℕ, 0 < j → fourierCoeffCos f j = 48 * (-1 : ℝ) ^ (j + 1) / (π ^ 4 * j ^ 4)) ∧
+      (∀ (n : ℕ) (x : ℝ), fourierPartialSum f n x
+        = 8 / 15 + 48 / π ^ 4 * ∑ i ∈ Finset.range n,
+            (-1 : ℝ) ^ i * (Real.cos ((i + 1) * x) / (i + 1) ^ 4)) ∧
+      (∀ x : ℝ, Tendsto (fun n : ℕ => fourierPartialSum f n x) atTop (𝓝 (f x))) ∧
+      ∀ x : ℝ, Chapter01.definition_1_2_17
+        (fun i : ℕ => 48 / π ^ 4 * ((-1 : ℝ) ^ i * (Real.cos ((i + 1) * x) / (i + 1) ^ 4)))
+        (f x - 8 / 15) := by
+  have hπ : π ≠ 0 := Real.pi_ne_zero
+  obtain ⟨hsin, hcos0, hcos⟩ := quartic_fourierCoeff hval
+  have hpartial := quartic_fourierPartialSum hsin hcos0 hcos
+  have hconv := quartic_tendsto hper hval
+  have hderiv1 : deriv (fun x : ℝ => (π ^ 2 - x ^ 2) ^ 2 / π ^ 4)
+      = fun t : ℝ => (4 * t ^ 3 - 4 * π ^ 2 * t) / π ^ 4 :=
+    funext fun y => (hasDerivAt_quarticNorm y).deriv
+  refine ⟨fun l hl => ?_, hsin, hcos0, hcos, hpartial, hconv, fun x => ?_⟩
+  · interval_cases l
+    · simp only [iteratedDeriv_zero]
+      ring
+    · rw [iteratedDeriv_one, hderiv1]
+      ring
+    · rw [show (2 : ℕ) = 1 + 1 from rfl, iteratedDeriv_succ, iteratedDeriv_one, hderiv1,
+        (hasDerivAt_quarticNorm' (-π)).deriv, (hasDerivAt_quarticNorm' π).deriv]
+      ring
+  · have hclosed : Tendsto (fun n : ℕ => 8 / 15 + 48 / π ^ 4 * ∑ i ∈ Finset.range n,
+        (-1 : ℝ) ^ i * (Real.cos ((i + 1) * x) / (i + 1) ^ 4)) atTop (𝓝 (f x)) :=
+      (hconv x).congr fun n => hpartial n x
+    refine (Chapter01.definition_1_2_17_iff _ _).mpr
+      ((hclosed.sub_const (8 / 15)).congr fun n => ?_)
+    rw [← Finset.mul_sum]
+    ring
 
 /-! ### The truncation error (4.1.14)–(4.1.15) -/
 

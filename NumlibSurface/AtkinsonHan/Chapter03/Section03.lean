@@ -38,6 +38,7 @@ Definition 2.7.1, which this module uses throughout rather than defining a secon
 * `definition_3_3_3`, `definition_3_3_3_weak` — a closed and a weakly closed set.
 * `definition_3_3_4`, `definition_3_3_4_weak` — a lower semicontinuous and a weakly sequentially
   lower semicontinuous functional.
+* `definition_3_3_9` — a functional coercive over `K`.
 
 ## Book-specific definitions
 
@@ -46,17 +47,18 @@ Definition 2.7.1, which this module uses throughout rather than defining a secon
 * `polyLE`, `rho` — the space `𝒫ₙ` of polynomials of degree `≤ n` on `[a, b]` and the best
   uniform approximation error `ρₙ(f)`.
 
-Definition 3.3.9 (a coercive functional) is the backbone's `IsCoerciveFunctionalOn`, which is
-*not* the backbone's `IsCoercive`: the latter is the operator condition `re ⟪A x, x⟫ ≥ c ‖x‖²`
-(the book's "strongly monotone").
+Definition 3.3.9 (a coercive functional) is restated as `definition_3_3_9` and identified by
+`definition_3_3_9_iff` with the backbone's `IsCoerciveFunctionalOn`, which is *not* the backbone's
+`IsCoercive`: the latter is the operator condition `re ⟪A x, x⟫ ≥ c ‖x‖²` (the book's "strongly
+monotone").
 
 ## Main results
 
 * `definition_3_3_1_iff`, `definition_3_3_2_iff`, `definition_3_3_2_strict_iff`,
   `definition_3_3_3_iff`, `definition_3_3_3_weak_iff`, `definition_3_3_4_iff`,
-  `definition_3_3_4_weak_iff` — each restated definition read back as the Mathlib or backbone
-  notion the theorems below are stated in; `definition_3_3_3_of_weak` is the book's remark that a
-  weakly closed set is closed.
+  `definition_3_3_4_weak_iff`, `definition_3_3_9_iff` — each restated definition read back as the
+  Mathlib or backbone notion the theorems below are stated in; `definition_3_3_3_of_weak` is the
+  book's remark that a weakly closed set is closed.
 * `example_3_3_5` — the norm is weakly sequentially lower semicontinuous.
 * `theorem_3_3_7`, `theorem_3_3_7'` — strict separation of a compact convex set from a disjoint
   closed convex set, in either order.
@@ -450,6 +452,32 @@ theorem theorem_3_3_8 [CompleteSpace V] [WeaklySeqCompactSpace V] {K : Set V} {f
     (hne : K.Nonempty) (hbd : IsBounded K) (hKc : IsWeakSeqClosed K)
     (hf : WeakSeqLowerSemicontinuousOn f K) : ∃ u ∈ K, IsMinOn f K u :=
   exists_isMinOn_of_isWeakSeqClosed hne hbd hKc hf
+
+/-- **Definition 3.3.9.** A real-valued functional `f` on a normed space is *coercive over* a
+subset `K` when `f v → ∞` as `‖v‖ → ∞`, `v ∈ K`.
+
+The book's limit is read as convergence to `atTop` along the filter `comap ‖·‖ atTop ⊓ 𝓟 K`, which
+is "`‖v‖ → ∞` inside `K`" verbatim. This is the backbone's `IsCoerciveFunctionalOn`, which
+`theorem_3_3_10` and `theorem_3_3_12` take directly; `definition_3_3_9_iff` is the correspondence.
+
+It is *not* the backbone's `IsCoercive`: that is the condition `re ⟪A v, v⟫ ≥ c ‖v‖²` on an
+*operator* or a sesquilinear form — the book's "strongly monotone" — a lower bound of quadratic
+order rather than a growth condition. -/
+def definition_3_3_9 {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] (K : Set V)
+    (f : V → ℝ) : Prop :=
+  Tendsto f (comap norm atTop ⊓ 𝓟 K) atTop
+
+/-- Definition 3.3.9 is the backbone's `IsCoerciveFunctionalOn`: for every level `M` there is a
+radius `R` beyond which `f ≥ M` on `K`. -/
+theorem definition_3_3_9_iff (K : Set V) (f : V → ℝ) :
+    definition_3_3_9 K f ↔ IsCoerciveFunctionalOn f K := by
+  simp only [definition_3_3_9, IsCoerciveFunctionalOn, tendsto_atTop, eventually_inf_principal,
+    eventually_comap, eventually_atTop]
+  refine ⟨fun h M => ?_, fun h M => ?_⟩
+  · obtain ⟨R, hR⟩ := h M
+    exact ⟨R, fun x hx hxR => hR ‖x‖ hxR x rfl hx⟩
+  · obtain ⟨R, hR⟩ := h M
+    exact ⟨R, fun r hr x hx hxK => hR x hxK (hx ▸ hr)⟩
 
 set_option linter.unusedVariables false in
 /-- **Theorem 3.3.10.** The boundedness of `K` in Theorem 3.3.8 may be traded for coercivity of the

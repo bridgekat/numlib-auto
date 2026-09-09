@@ -146,9 +146,7 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 3.3.4"
 
 [[node]]
 id = "definition_3_3_9"
-kind = "definition"
-desc = '''Definition 3.3.9: a real-valued functional `f` is coercive over `K` when `f v → ∞` as
-`‖v‖ → ∞` along `v ∈ K`. Not formalized: this is the backbone's `IsCoerciveFunctionalOn`
-(`Numlib/Variational/WeakMinimization`), which `theorem_3_3_10` and `theorem_3_3_12` take
-directly; §3.3's module doc records the correspondence.'''
+
+[[node]]
+id = "definition_3_3_9_iff"
 

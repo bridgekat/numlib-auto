@@ -20,8 +20,18 @@ Analysis Framework*, 3rd edition, Springer, 2009, §2.7.
   `Numlib.Variational.WeakMinimization` is stated. §3.3 uses this relation throughout, and
   Definition 3.3.3 is stated over it.
 
+## Main definitions
+
+* `definition_2_7_6`, `definition_2_7_6_weakStar` — the two clauses of Definition 2.7.6: a
+  sequence of bounded operators converges *strongly* when `‖L - Lₙ‖ → 0`, and *weak-∗*, that is
+  pointwise, when `Lₙ v → L v` for every `v`.
+
 ## Main results
 
+* `definition_2_7_6_iff`, `definition_2_7_6_weakStar_iff` — the two clauses of Definition 2.7.6
+  read back as convergence in the operator norm of `V →L[𝕜] W` and as convergence in the topology
+  of pointwise convergence; `definition_2_7_6_weakStar_of_strong` is the book's remark that the
+  first implies the second.
 * `proposition_2_7_2` — a weakly convergent sequence is bounded.
 * `exercise_2_7_2` — the norm is weakly sequentially lower semicontinuous, `‖u‖ ≤ liminf ‖uₙ‖`.
 * `example_2_7_3` — `sin (n x) ⇀ 0` in `L²(0, 2π)` but not in norm; this is also the example that
@@ -178,5 +188,66 @@ theorem exercise_2_7_4 {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [U
     {v : ℕ → E} {u : E} (hweak : WeakSeqTendsto ℝ v u)
     (hnorm : Tendsto (fun n => ‖v n‖) atTop (𝓝 ‖u‖)) : Tendsto v atTop (𝓝 u) :=
   tendsto_of_forall_dual_tendsto_of_tendsto_norm hweak hnorm
+
+/-! ### Definition 2.7.6: convergence of a sequence of operators -/
+
+section Operators
+
+variable {𝕜 V W : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
+  [NormedAddCommGroup W] [NormedSpace 𝕜 W]
+
+/-- **Definition 2.7.6**, first clause. A sequence `{Lₙ}` of bounded linear operators from `V` to
+`W` converges *strongly* to `L` when `‖L - Lₙ‖ → 0`.
+
+This is `Filter.Tendsto` for the norm of `V →L[𝕜] W`, which is the operator norm;
+`definition_2_7_6_iff` is the correspondence, and §2.4's Banach–Steinhaus material uses it in that
+form. -/
+def definition_2_7_6 {𝕜 V W : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
+    [NormedAddCommGroup W] [NormedSpace 𝕜 W] (L : ℕ → V →L[𝕜] W) (T : V →L[𝕜] W) : Prop :=
+  Tendsto (fun n => ‖T - L n‖) atTop (𝓝 0)
+
+/-- **Definition 2.7.6**, second clause. The sequence converges *weak-∗* to `L`, equivalently
+*pointwise on `V`*, when `Lₙ v → L v` for every `v ∈ V`.
+
+This is convergence in the topology of pointwise convergence on `V → W`;
+`definition_2_7_6_weakStar_iff` is the correspondence. The name follows the book: for `W = 𝕜` this
+is weak-∗ convergence in the dual `V'`, and the book records that it agrees with weak convergence
+in `V'` when `V` is reflexive — a remark this surface does not state, reflexivity being absent from
+Mathlib (see "Not formalized here"). -/
+def definition_2_7_6_weakStar {𝕜 V W : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
+    [NormedAddCommGroup W] [NormedSpace 𝕜 W] (L : ℕ → V →L[𝕜] W) (T : V →L[𝕜] W) : Prop :=
+  ∀ v : V, Tendsto (fun n => L n v) atTop (𝓝 (T v))
+
+/-- The first clause of Definition 2.7.6 is convergence in the operator norm. -/
+theorem definition_2_7_6_iff (L : ℕ → V →L[𝕜] W) (T : V →L[𝕜] W) :
+    definition_2_7_6 L T ↔ Tendsto L atTop (𝓝 T) := by
+  constructor
+  · intro h
+    rw [tendsto_iff_norm_sub_tendsto_zero]
+    exact h.congr fun n => norm_sub_rev T (L n)
+  · intro h
+    rw [tendsto_iff_norm_sub_tendsto_zero] at h
+    exact h.congr fun n => norm_sub_rev (L n) T
+
+/-- The second clause of Definition 2.7.6 is convergence in the topology of pointwise
+convergence. -/
+theorem definition_2_7_6_weakStar_iff (L : ℕ → V →L[𝕜] W) (T : V →L[𝕜] W) :
+    definition_2_7_6_weakStar L T ↔ Tendsto (fun n => ⇑(L n)) atTop (𝓝 (⇑T)) :=
+  tendsto_pi_nhds.symm
+
+/-- Strong convergence implies weak-∗ convergence, as the book observes: `‖Lₙ v - L v‖` is at most
+`‖L - Lₙ‖ ‖v‖`. The converse fails, which is why the two are named apart. -/
+theorem definition_2_7_6_weakStar_of_strong {L : ℕ → V →L[𝕜] W} {T : V →L[𝕜] W}
+    (h : definition_2_7_6 L T) : definition_2_7_6_weakStar L T := by
+  intro v
+  rw [← tendsto_sub_nhds_zero_iff]
+  have hb : Tendsto (fun n => ‖L n - T‖ * ‖v‖) atTop (𝓝 0) := by
+    have h' := h.mul_const ‖v‖
+    rw [zero_mul] at h'
+    exact h'.congr fun n => by rw [norm_sub_rev T (L n)]
+  refine squeeze_zero_norm (fun n => ?_) hb
+  simpa using (L n - T).le_opNorm v
+
+end Operators
 
 end AtkinsonHan.Chapter02

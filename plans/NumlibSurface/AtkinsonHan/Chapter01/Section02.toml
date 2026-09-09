@@ -121,17 +121,7 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Example 1.2.22, first 
 
 [[node]]
 id = "example_1_2_22_incomplete"
-kind = "theorem"
-desc = '''
-Example 1.2.22, second half: `C(Ω̄)` with the `p`-norm (1.2.9), `1 ≤ p < ∞`, is not a Banach space —
-the ramps rising from `0` to `1` across `x = 1/2` are `‖·‖_p`-Cauchy in `C[0, 1]` and have no
-continuous `‖·‖_p`-limit.  Not formalized: an explicit counterexample with no consumer in the book
-and no Mathlib form.  It needs the `p`-norm written out as an interval integral (Mathlib has no
-normed-space structure on `C[0, 1]` for `‖·‖_p`), the `L^p` distance from the ramps to the step
-function computed, and then the step that `w` continuous with `∫₀¹ |step - w| = 0` forces
-`w (1/2) = 0` and `w (1/2) = 1`.  The first half, that `C(Ω̄)` with `‖·‖_∞` is a Banach space, is
-`example_1_2_22`.
-'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 1.2.22, second half"
 
 [[node]]
 id = "proposition_1_2_23"

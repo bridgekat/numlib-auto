@@ -47,9 +47,15 @@ module doc records this.'''
 
 [[node]]
 id = "definition_2_7_6"
-kind = "definition"
-desc = '''Definition 2.7.6: a sequence of operators `Lₙ : V → W` converges *strongly* to `L` when
-`‖L - Lₙ‖ → 0`, and *weak-∗* (or pointwise) to `L` when `Lₙ v → L v` for every `v ∈ V`. Not
-formalized: these are `Filter.Tendsto` for the operator norm on `V →L[𝕜] W` and pointwise
-`Filter.Tendsto` respectively, both Mathlib notions under different names; §2.4's Banach–Steinhaus
-material and Chapters 12–13 use them in that form.'''
+
+[[node]]
+id = "definition_2_7_6_weakStar"
+
+[[node]]
+id = "definition_2_7_6_iff"
+
+[[node]]
+id = "definition_2_7_6_weakStar_iff"
+
+[[node]]
+id = "definition_2_7_6_weakStar_of_strong"

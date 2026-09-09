@@ -52,7 +52,8 @@ Mathlib's `Norm`, `Seminorm`, `Metric.ball`, `IsOpen`, `IsClosed`, `Filter.Tends
 * `theorem_1_2_26` — the Lebesgue dominated convergence theorem.
 * `theorem_1_2_27` — Fubini's theorem.
 * `example_1_2_3`, `example_1_2_4`, `example_1_2_5`, `example_1_2_11`, `example_1_2_13`,
-  `example_1_2_15`, `example_1_2_16`, `example_1_2_22` — the illustrations of the section.
+  `example_1_2_15`, `example_1_2_16`, `example_1_2_22`, `example_1_2_22_incomplete` — the
+  illustrations of the section.
 
 ## Conventions
 
@@ -77,10 +78,14 @@ of `ℝ^d`, which is how Mathlib has them and how the book uses them.
 Example 1.2.5 (b), the norm `‖f‖_{k,∞} = max_{j ≤ k} ‖f⁽ʲ⁾‖_∞` of `Cᵏ[a, b]`, and with it
 Example 1.2.28 (a), need `Cᵏ[a, b]` as a normed space, which Mathlib does not have — it has
 `C(X, ℝ)` for compact `X`, hence only the case `k = 0`. Example 1.2.28 (b) is the Sobolev
-completion `W^{m,p}(a, b)` and is out of scope for the project. The second half of Example 1.2.22,
-that `C(Ω̄)` with `‖·‖_p` is *not* complete, is an explicit counterexample with no consumer in the
-book and no Mathlib form; only its first half is stated. Example 1.2.19 is Theorem 1.5.6 restated
-for a bounded `Ω`, and is recorded with it in §1.5.
+completion `W^{m,p}(a, b)` and is out of scope for the project. Example 1.2.19 is Theorem 1.5.6
+restated for a bounded `Ω`, and is recorded with it in §1.5.
+
+The `p`-norm on `C[0, 1]` has no Mathlib normed-space structure to name, so where the section uses
+it — Examples 1.2.15, 1.2.16 and the second half of Example 1.2.22 — it is written out as the
+interval integral `(∫₀¹ |v x|^p)^{1/p}` over functions `v : ℝ → ℝ` continuous on `[0, 1]`, and
+`example_1_2_22_incomplete` negates completeness in the book's own form: a Cauchy sequence with no
+continuous limit.
 -/
 
 open ENNReal Filter MeasureTheory Topology
@@ -431,12 +436,313 @@ theorem definition_1_2_21_iff (u : ℕ → V) : definition_1_2_21 u ↔ CauchySe
 
 /-- **Example 1.2.22**, first half. `C(Ω̄)` with the maximum norm is a Banach space, because a
 uniform limit of continuous functions is continuous. The second half of the example, that `C(Ω̄)`
-with `‖·‖_p` for `1 ≤ p < ∞` is *not* complete, is an explicit counterexample and is not
-stated. -/
+with `‖·‖_p` for `1 ≤ p < ∞` is *not* complete, is `example_1_2_22_incomplete`. -/
 theorem example_1_2_22 {d : ℕ} {D : Set (EuclideanSpace ℝ (Fin d))} (hD : IsCompact D) :
     CompleteSpace C(D, ℝ) :=
   have : CompactSpace D := isCompact_iff_compactSpace.mp hD
   inferInstance
+
+/-! ### Example 1.2.22, second half: `C[0, 1]` with `‖·‖_p` is not complete -/
+
+section Incomplete
+
+/-- The ramp of Example 1.2.22: `0` on `[0, 1/2]`, rising linearly to `1` at `1/2 + 1/(n + 1)`,
+and `1` from there on. -/
+private noncomputable def ramp (n : ℕ) (x : ℝ) : ℝ :=
+  min 1 (max 0 (((n : ℝ) + 1) * (x - 1 / 2)))
+
+private theorem continuous_ramp (n : ℕ) : Continuous (ramp n) := by
+  unfold ramp
+  fun_prop
+
+private theorem ramp_nonneg (n : ℕ) (x : ℝ) : 0 ≤ ramp n x :=
+  le_min zero_le_one (le_max_left _ _)
+
+private theorem ramp_le_one (n : ℕ) (x : ℝ) : ramp n x ≤ 1 := min_le_left _ _
+
+private theorem ramp_eq_zero {n : ℕ} {x : ℝ} (hx : x ≤ 1 / 2) : ramp n x = 0 := by
+  have hn : (0 : ℝ) ≤ (n : ℝ) + 1 := by positivity
+  have h : ((n : ℝ) + 1) * (x - 1 / 2) ≤ 0 := by nlinarith
+  rw [ramp, max_eq_left h, min_eq_right zero_le_one]
+
+private theorem ramp_eq_one {n : ℕ} {x : ℝ} (hx : 1 / 2 + 1 / ((n : ℝ) + 1) ≤ x) :
+    ramp n x = 1 := by
+  have hn : (0 : ℝ) < (n : ℝ) + 1 := by positivity
+  have h1 : 1 / ((n : ℝ) + 1) ≤ x - 1 / 2 := by linarith
+  have h : (1 : ℝ) ≤ ((n : ℝ) + 1) * (x - 1 / 2) := by
+    calc (1 : ℝ) = ((n : ℝ) + 1) * (1 / ((n : ℝ) + 1)) := by field_simp
+      _ ≤ ((n : ℝ) + 1) * (x - 1 / 2) := by exact mul_le_mul_of_nonneg_left h1 hn.le
+  rw [ramp, max_eq_right (by linarith), min_eq_left h]
+
+/-- A continuous function whose `p`-th power has zero integral over an interval vanishes on the
+interior of that interval: the set where it does not is open and null. -/
+private theorem eqOn_zero_of_integral_rpow_eq_zero {p a b : ℝ} (hp : 0 < p) (hab : a < b)
+    {w : ℝ → ℝ} (hw : ContinuousOn w (Set.Icc a b)) (h : (∫ x in a..b, |w x| ^ p) = 0)
+    (x : ℝ) (hx : x ∈ Set.Ioo a b) : w x = 0 := by
+  by_contra hne
+  set F : ℝ → ℝ := fun y => |w y| ^ p with hF
+  have hFcont : ContinuousOn F (Set.Ioo a b) :=
+    ((hw.mono Set.Ioo_subset_Icc_self).abs).rpow_const fun _ _ => Or.inr hp.le
+  have hFint : IntervalIntegrable F volume a b := by
+    refine ContinuousOn.intervalIntegrable ?_
+    rw [Set.uIcc_of_le hab.le]
+    exact hw.abs.rpow_const fun _ _ => Or.inr hp.le
+  set U : Set ℝ := Set.Ioo a b ∩ F ⁻¹' {y : ℝ | y ≠ 0} with hU
+  have hUopen : IsOpen U := hFcont.isOpen_inter_preimage isOpen_Ioo isOpen_ne
+  have hUne : U.Nonempty := by
+    refine ⟨x, hx, ?_⟩
+    simp only [hF]
+    exact fun hc => hne (abs_eq_zero.mp ((Real.rpow_eq_zero_iff_of_nonneg (abs_nonneg _)).mp hc).1)
+  rw [intervalIntegral.integral_of_le hab.le] at h
+  have hae : F =ᵐ[volume.restrict (Set.Ioc a b)] 0 :=
+    (MeasureTheory.integral_eq_zero_iff_of_nonneg
+      (fun y => Real.rpow_nonneg (abs_nonneg _) p)
+      ((intervalIntegrable_iff_integrableOn_Ioc_of_le hab.le).mp hFint)).mp h
+  have hnull : volume.restrict (Set.Ioc a b) {y | F y ≠ 0} = 0 := by
+    have := MeasureTheory.ae_iff.mp hae
+    simpa using this
+  have hsub : U ⊆ {y | F y ≠ 0} := fun y hy => hy.2
+  have hUnull : volume U = 0 := by
+    have h1 : volume.restrict (Set.Ioc a b) U = 0 :=
+      MeasureTheory.measure_mono_null hsub hnull
+    rwa [MeasureTheory.Measure.restrict_apply hUopen.measurableSet,
+      Set.inter_eq_self_of_subset_left
+        (fun y hy => Set.Ioo_subset_Ioc_self hy.1)] at h1
+  exact absurd hUnull (ne_of_gt (hUopen.measure_pos volume hUne))
+
+/-- Continuity on `[0, 1]` transported along a sequence inside `[0, 1]`. -/
+private theorem tendsto_val_of_continuousOn {v : ℝ → ℝ} (hv : ContinuousOn v (Set.Icc 0 1))
+    {z : ℝ} (hz : z ∈ Set.Icc (0 : ℝ) 1) {s : ℕ → ℝ} (hs : ∀ k, s k ∈ Set.Icc (0 : ℝ) 1)
+    (hlim : Tendsto s atTop (𝓝 z)) : Tendsto (fun k => v (s k)) atTop (𝓝 (v z)) :=
+  Filter.Tendsto.comp (hv z hz) (tendsto_nhdsWithin_iff.2 ⟨hlim, Eventually.of_forall hs⟩)
+
+/-- `1 / (k + 3) → 0`, the modulus with which the two sequences below approach `1/2`. -/
+private theorem tendsto_one_div_add_three :
+    Tendsto (fun k : ℕ => 1 / ((k : ℝ) + 3)) atTop (𝓝 0) := by
+  have h : Tendsto (fun k : ℕ => (k : ℝ) + 3) atTop atTop :=
+    tendsto_atTop_add_const_right _ 3 tendsto_natCast_atTop_atTop
+  refine h.inv_tendsto_atTop.congr fun k => ?_
+  simp [one_div]
+
+/-- Two ramps of index at least `N` differ only on `(1/2, 1/2 + 1/(N + 1))`, where their
+difference is at most `1`, so the `p`-th power of that difference integrates to at most
+`1 / (N + 1)`. -/
+private theorem integral_ramp_sub_le {p : ℝ} (hp : 0 < p) {N m n : ℕ} (hN : 1 ≤ N) (hm : N ≤ m)
+    (hn : N ≤ n) : (∫ x in (0 : ℝ)..1, |ramp m x - ramp n x| ^ p) ≤ 1 / ((N : ℝ) + 1) := by
+  have hdc : Continuous fun x => |ramp m x - ramp n x| ^ p :=
+    (((continuous_ramp m).sub (continuous_ramp n)).abs).rpow_const fun _ => Or.inr hp.le
+  have hNpos : (0 : ℝ) < (N : ℝ) + 1 := by positivity
+  have hN1 : (1 : ℝ) ≤ (N : ℝ) := by exact_mod_cast hN
+  have hNle : 1 / ((N : ℝ) + 1) ≤ 1 / 2 :=
+    one_div_le_one_div_of_le (by norm_num) (by linarith)
+  set c : ℝ := 1 / 2 + 1 / ((N : ℝ) + 1) with hc
+  have hpos : (0 : ℝ) < 1 / ((N : ℝ) + 1) := by positivity
+  have hc2 : (1 : ℝ) / 2 < c := by rw [hc]; linarith
+  have hc1 : c ≤ 1 := by rw [hc]; linarith
+  have hmono : ∀ k : ℕ, N ≤ k → 1 / ((k : ℝ) + 1) ≤ 1 / ((N : ℝ) + 1) := by
+    intro k hk
+    have hk' : (N : ℝ) ≤ (k : ℝ) := by exact_mod_cast hk
+    exact one_div_le_one_div_of_le hNpos (by linarith)
+  have hzeroL : Set.EqOn (fun x => |ramp m x - ramp n x| ^ p) (fun _ => (0 : ℝ))
+      (Set.uIcc (0 : ℝ) (1 / 2)) := by
+    intro x hx
+    rw [Set.uIcc_of_le (by norm_num : (0:ℝ) ≤ 1 / 2)] at hx
+    have hrm : ramp m x = 0 := ramp_eq_zero hx.2
+    have hrn : ramp n x = 0 := ramp_eq_zero hx.2
+    simp [hrm, hrn, Real.zero_rpow hp.ne']
+  have hzeroR : Set.EqOn (fun x => |ramp m x - ramp n x| ^ p) (fun _ => (0 : ℝ))
+      (Set.uIcc c 1) := by
+    intro x hx
+    rw [Set.uIcc_of_le hc1] at hx
+    have hcx : 1 / 2 + 1 / ((N : ℝ) + 1) ≤ x := by
+      have h := hx.1
+      rw [hc] at h
+      exact h
+    have hrm : ramp m x = 1 := ramp_eq_one (by linarith [hmono m hm])
+    have hrn : ramp n x = 1 := ramp_eq_one (by linarith [hmono n hn])
+    simp [hrm, hrn, Real.zero_rpow hp.ne']
+  have hmid : (∫ x in (1 / 2 : ℝ)..c, |ramp m x - ramp n x| ^ p) ≤ 1 / ((N : ℝ) + 1) := by
+    have hle : ∀ x ∈ Set.Icc (1 / 2 : ℝ) c, |ramp m x - ramp n x| ^ p ≤ 1 := by
+      intro x _
+      refine Real.rpow_le_one (abs_nonneg _) ?_ hp.le
+      rw [abs_le]
+      exact ⟨by linarith [ramp_nonneg m x, ramp_le_one n x],
+        by linarith [ramp_nonneg n x, ramp_le_one m x]⟩
+    calc (∫ x in (1 / 2 : ℝ)..c, |ramp m x - ramp n x| ^ p)
+        ≤ ∫ _ in (1 / 2 : ℝ)..c, (1 : ℝ) :=
+          intervalIntegral.integral_mono_on hc2.le (hdc.intervalIntegrable _ _)
+            intervalIntegrable_const hle
+      _ = 1 / ((N : ℝ) + 1) := by
+          rw [intervalIntegral.integral_const, smul_eq_mul, mul_one, hc]; ring
+  have hsplit : (∫ x in (0 : ℝ)..1, |ramp m x - ramp n x| ^ p)
+      = (∫ x in (0 : ℝ)..(1 / 2), |ramp m x - ramp n x| ^ p)
+        + (∫ x in (1 / 2 : ℝ)..c, |ramp m x - ramp n x| ^ p)
+        + ∫ x in c..(1 : ℝ), |ramp m x - ramp n x| ^ p := by
+    rw [intervalIntegral.integral_add_adjacent_intervals (hdc.intervalIntegrable _ _)
+        (hdc.intervalIntegrable _ _),
+      intervalIntegral.integral_add_adjacent_intervals (hdc.intervalIntegrable _ _)
+        (hdc.intervalIntegrable _ _)]
+  rw [hsplit, intervalIntegral.integral_congr hzeroL, intervalIntegral.integral_congr hzeroR,
+    intervalIntegral.integral_zero, intervalIntegral.integral_zero, zero_add, add_zero]
+  exact hmid
+
+/-- **Example 1.2.22**, second half. `C(Ω̄)` with the `p`-norm (1.2.9) of Example 1.2.5 is *not*
+complete, for any `1 ≤ p < ∞`. On `Ω = (0, 1)` the witness is the book's sequence of ramps, rising
+linearly from `0` to `1` across `x = 1/2` on an interval of width `1/(n + 1)`: they are `‖·‖_p`
+Cauchy, because two of them differ only on an interval of width `1/(N + 1)` on which the difference
+is at most `1`, and no continuous function is their `‖·‖_p` limit, because such a limit would have
+to vanish on `(0, 1/2)` and be `1` on `(1/2, 1)`.
+
+Mathlib has no normed-space structure carrying `‖·‖_p` on `C[0, 1]`, so the norm is written out as
+the interval integral `(∫₀¹ |v x|^p)^{1/p}` — the same reading as in `example_1_2_15` and
+`example_1_2_16` — and completeness is negated in the form the book uses: a Cauchy sequence of
+continuous functions with no continuous limit. An element of `C[0, 1]` is a `v : ℝ → ℝ` continuous
+on `[0, 1]`, which is all the integral sees of it.
+
+The first half, that `C(Ω̄)` with `‖·‖_∞` *is* a Banach space, is `example_1_2_22`. -/
+theorem example_1_2_22_incomplete {p : ℝ} (hp : 1 ≤ p) :
+    ∃ u : ℕ → ℝ → ℝ, (∀ n, Continuous (u n)) ∧
+      (∀ ε > 0, ∃ N : ℕ, ∀ m ≥ N, ∀ n ≥ N,
+        (∫ x in (0 : ℝ)..1, |u m x - u n x| ^ p) ^ (1 / p) < ε) ∧
+      ∀ v : ℝ → ℝ, ContinuousOn v (Set.Icc 0 1) →
+        ¬ Tendsto (fun n => (∫ x in (0 : ℝ)..1, |u n x - v x| ^ p) ^ (1 / p)) atTop (𝓝 0) := by
+  have hp0 : (0 : ℝ) < p := lt_of_lt_of_le zero_lt_one hp
+  refine ⟨ramp, continuous_ramp, fun ε hε => ?_, ?_⟩
+  · -- the ramps are `‖·‖_p` Cauchy
+    obtain ⟨K, hK⟩ := exists_nat_gt (1 / ε ^ p)
+    refine ⟨max 1 K, fun m hm n hn => ?_⟩
+    set N := max 1 K with hNdef
+    have hN1 : 1 ≤ N := le_max_left _ _
+    have hNK : (K : ℝ) ≤ (N : ℝ) := by exact_mod_cast le_max_right 1 K
+    have hNpos : (0 : ℝ) < (N : ℝ) + 1 := by positivity
+    have hεp : (0 : ℝ) < ε ^ p := Real.rpow_pos_of_pos hε p
+    have hlt : 1 / ((N : ℝ) + 1) < ε ^ p := by
+      have h1 : 1 / ε ^ p < (N : ℝ) + 1 := by linarith
+      rw [div_lt_iff₀ hεp] at h1
+      rw [div_lt_iff₀ hNpos]
+      linarith [mul_comm ((N : ℝ) + 1) (ε ^ p)]
+    have hnn : (0 : ℝ) ≤ ∫ x in (0 : ℝ)..1, |ramp m x - ramp n x| ^ p :=
+      intervalIntegral.integral_nonneg (by norm_num) fun x _ => Real.rpow_nonneg (abs_nonneg _) p
+    calc (∫ x in (0 : ℝ)..1, |ramp m x - ramp n x| ^ p) ^ (1 / p)
+        ≤ (1 / ((N : ℝ) + 1)) ^ (1 / p) :=
+          Real.rpow_le_rpow hnn (integral_ramp_sub_le hp0 hN1 hm hn) (by positivity)
+      _ < (ε ^ p) ^ (1 / p) := Real.rpow_lt_rpow (by positivity) hlt (by positivity)
+      _ = ε := by rw [← Real.rpow_mul hε.le, mul_one_div_cancel hp0.ne', Real.rpow_one]
+  · -- and they have no continuous limit
+    intro v hv hlim
+    set A : ℕ → ℝ := fun n => ∫ x in (0 : ℝ)..1, |ramp n x - v x| ^ p with hAdef
+    have hcontn : ∀ n : ℕ, ContinuousOn (fun x => |ramp n x - v x| ^ p) (Set.Icc 0 1) :=
+      fun n => (((continuous_ramp n).continuousOn.sub hv).abs).rpow_const
+        fun _ _ => Or.inr hp0.le
+    have hint : ∀ (n : ℕ) (a b : ℝ), Set.uIcc a b ⊆ Set.Icc (0 : ℝ) 1 →
+        IntervalIntegrable (fun x => |ramp n x - v x| ^ p) volume a b :=
+      fun n _ _ hsub => ContinuousOn.intervalIntegrable ((hcontn n).mono hsub)
+    have hnonneg : ∀ a b : ℝ, a ≤ b → ∀ n : ℕ,
+        0 ≤ ∫ x in a..b, |ramp n x - v x| ^ p :=
+      fun a b hab n => intervalIntegral.integral_nonneg hab fun x _ =>
+        Real.rpow_nonneg (abs_nonneg _) p
+    have hA0 : ∀ n, 0 ≤ A n := fun n => hnonneg 0 1 (by norm_num) n
+    have hAlim : Tendsto A atTop (𝓝 0) := by
+      have hc : ContinuousAt (fun t : ℝ => t ^ p) 0 :=
+        Real.continuousAt_rpow_const 0 p (Or.inr hp0.le)
+      have h := hc.tendsto.comp hlim
+      rw [Real.zero_rpow hp0.ne'] at h
+      refine h.congr fun n => ?_
+      simp only [Function.comp_apply]
+      rw [← Real.rpow_mul (hA0 n), one_div, inv_mul_cancel₀ hp0.ne', Real.rpow_one]
+    -- the limit vanishes on `(0, 1/2)`
+    have hsub1 : Set.uIcc (0 : ℝ) (1 / 2) ⊆ Set.Icc (0 : ℝ) 1 := by
+      rw [Set.uIcc_of_le (by norm_num : (0:ℝ) ≤ 1 / 2)]
+      exact Set.Icc_subset_Icc le_rfl (by norm_num)
+    have hsub2 : Set.uIcc (1 / 2 : ℝ) 1 ⊆ Set.Icc (0 : ℝ) 1 := by
+      rw [Set.uIcc_of_le (by norm_num : (1/2:ℝ) ≤ 1)]
+      exact Set.Icc_subset_Icc (by norm_num) le_rfl
+    have hleft : (∫ x in (0 : ℝ)..(1 / 2), |v x| ^ p) = 0 := by
+      refine le_antisymm ?_ (intervalIntegral.integral_nonneg (by norm_num) fun x _ =>
+        Real.rpow_nonneg (abs_nonneg _) p)
+      refine ge_of_tendsto hAlim (Eventually.of_forall fun n => ?_)
+      have hEq : Set.EqOn (fun x => |v x| ^ p) (fun x => |ramp n x - v x| ^ p)
+          (Set.uIcc (0 : ℝ) (1 / 2)) := by
+        intro x hx
+        rw [Set.uIcc_of_le (by norm_num : (0:ℝ) ≤ 1 / 2)] at hx
+        have hr : ramp n x = 0 := ramp_eq_zero hx.2
+        simp [hr]
+      rw [intervalIntegral.integral_congr hEq, hAdef]
+      have hsplit := intervalIntegral.integral_add_adjacent_intervals
+        (hint n 0 (1 / 2) hsub1) (hint n (1 / 2) 1 hsub2)
+      linarith [hnonneg (1 / 2) 1 (by norm_num) n]
+    have hv0 : ∀ x ∈ Set.Ioo (0 : ℝ) (1 / 2), v x = 0 :=
+      eqOn_zero_of_integral_rpow_eq_zero hp0 (by norm_num)
+        (hv.mono (Set.Icc_subset_Icc le_rfl (by norm_num))) hleft
+    -- and equals `1` on `(1/2, 1)`
+    have hright : ∀ a : ℝ, 1 / 2 < a → a < 1 → (∫ x in a..(1 : ℝ), |1 - v x| ^ p) = 0 := by
+      intro a ha1 ha2
+      have hsubA : Set.uIcc (0 : ℝ) a ⊆ Set.Icc (0 : ℝ) 1 := by
+        rw [Set.uIcc_of_le (by linarith : (0:ℝ) ≤ a)]
+        exact Set.Icc_subset_Icc le_rfl ha2.le
+      have hsubB : Set.uIcc a (1 : ℝ) ⊆ Set.Icc (0 : ℝ) 1 := by
+        rw [Set.uIcc_of_le ha2.le]
+        exact Set.Icc_subset_Icc (by linarith) le_rfl
+      refine le_antisymm ?_ (intervalIntegral.integral_nonneg ha2.le fun x _ =>
+        Real.rpow_nonneg (abs_nonneg _) p)
+      obtain ⟨K, hK⟩ := exists_nat_gt (1 / (a - 1 / 2))
+      refine ge_of_tendsto hAlim (Filter.eventually_atTop.2 ⟨K, fun n hn => ?_⟩)
+      have hapos : (0 : ℝ) < a - 1 / 2 := by linarith
+      have hnpos : (0 : ℝ) < (n : ℝ) + 1 := by positivity
+      have hKn : (K : ℝ) ≤ (n : ℝ) := by exact_mod_cast hn
+      have hna : 1 / ((n : ℝ) + 1) ≤ a - 1 / 2 := by
+        have h1 : 1 / (a - 1 / 2) < (n : ℝ) + 1 := by linarith
+        rw [div_lt_iff₀ hapos] at h1
+        rw [div_le_iff₀ hnpos]
+        nlinarith
+      have hEq : Set.EqOn (fun x => |1 - v x| ^ p) (fun x => |ramp n x - v x| ^ p)
+          (Set.uIcc a 1) := by
+        intro x hx
+        rw [Set.uIcc_of_le ha2.le] at hx
+        have hr : ramp n x = 1 := ramp_eq_one (by linarith [hx.1])
+        simp [hr]
+      rw [intervalIntegral.integral_congr hEq, hAdef]
+      have hsplit := intervalIntegral.integral_add_adjacent_intervals
+        (hint n 0 a hsubA) (hint n a 1 hsubB)
+      linarith [hnonneg 0 a (by linarith) n]
+    have hv1 : ∀ a : ℝ, 1 / 2 < a → a < 1 → ∀ x ∈ Set.Ioo a 1, v x = 1 := by
+      intro a ha1 ha2 x hx
+      have h := eqOn_zero_of_integral_rpow_eq_zero hp0 ha2
+        (continuousOn_const.sub (hv.mono (Set.Icc_subset_Icc (by linarith) le_rfl)))
+        (hright a ha1 ha2) x hx
+      simp only [Pi.sub_apply] at h
+      linarith
+    -- the two descriptions clash at `1/2`
+    have hhalf : (1 / 2 : ℝ) ∈ Set.Icc (0 : ℝ) 1 := by norm_num
+    have hk3 : ∀ k : ℕ, (0 : ℝ) < (k : ℝ) + 3 := fun k => by positivity
+    have hk3' : ∀ k : ℕ, 1 / ((k : ℝ) + 3) ≤ 1 / 3 := fun k =>
+      one_div_le_one_div_of_le (by norm_num) (by have := Nat.cast_nonneg (α := ℝ) k; linarith)
+    have hvzero : v (1 / 2) = 0 := by
+      have hs : ∀ k : ℕ, (1 : ℝ) / 2 - 1 / ((k : ℝ) + 3) ∈ Set.Icc (0 : ℝ) 1 := fun k =>
+        ⟨by linarith [hk3' k, one_div_pos.2 (hk3 k)], by linarith [one_div_pos.2 (hk3 k)]⟩
+      have hstend : Tendsto (fun k : ℕ => (1 : ℝ) / 2 - 1 / ((k : ℝ) + 3)) atTop (𝓝 (1 / 2)) := by
+        simpa using tendsto_const_nhds.sub tendsto_one_div_add_three
+      have h1 := tendsto_val_of_continuousOn hv hhalf hs hstend
+      have h2 : ∀ k : ℕ, v ((1 : ℝ) / 2 - 1 / ((k : ℝ) + 3)) = 0 := fun k =>
+        hv0 _ ⟨by linarith [hk3' k], by linarith [one_div_pos.2 (hk3 k)]⟩
+      exact tendsto_nhds_unique (h1.congr h2) tendsto_const_nhds
+    have hvone : v (1 / 2) = 1 := by
+      have ht : ∀ k : ℕ, (1 : ℝ) / 2 + 1 / ((k : ℝ) + 3) ∈ Set.Icc (0 : ℝ) 1 := fun k =>
+        ⟨by linarith [one_div_pos.2 (hk3 k)], by linarith [hk3' k]⟩
+      have httend : Tendsto (fun k : ℕ => (1 : ℝ) / 2 + 1 / ((k : ℝ) + 3)) atTop (𝓝 (1 / 2)) := by
+        simpa using tendsto_const_nhds.add tendsto_one_div_add_three
+      have h2 : ∀ k : ℕ, v ((1 : ℝ) / 2 + 1 / ((k : ℝ) + 3)) = 1 := by
+        intro k
+        have hhalfk : 1 / (2 * ((k : ℝ) + 3)) < 1 / ((k : ℝ) + 3) :=
+          one_div_lt_one_div_of_lt (hk3 k) (by linarith [hk3 k])
+        have hposk : (0 : ℝ) < 1 / (2 * ((k : ℝ) + 3)) := by positivity
+        exact hv1 (1 / 2 + 1 / (2 * ((k : ℝ) + 3))) (by linarith)
+          (by linarith [hk3' k, hhalfk]) _ ⟨by linarith, by linarith [hk3' k]⟩
+      have h1 := tendsto_val_of_continuousOn hv hhalf ht httend
+      exact tendsto_nhds_unique (h1.congr h2) tendsto_const_nhds
+    exact absurd (hvzero.symm.trans hvone) (by norm_num)
+
+end Incomplete
 
 /-- **Proposition 1.2.23.** A Cauchy sequence with a convergent subsequence converges, to the same
 limit. -/
