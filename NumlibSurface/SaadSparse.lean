@@ -163,7 +163,7 @@ holds the conventions shared by the whole library, and `SaadSparse.Chapter06.Com
 | **10** | | *Preconditioning Techniques* |
 | 10.2 | `Chapter10.Section02` | Jacobi, SOR and SSOR preconditioners |
 | 10.5 | `Chapter10.Section05` | Approximate inverse preconditioners |
-| 10.8 | `Chapter10.Section08` | Incomplete Gram–Schmidt (Algorithm 10.17); Proposition 10.17 |
+| 10.8 | `Chapter10.Section08` | Incomplete Gram–Schmidt (Algorithm 10.17); Prop. 10.17, Thm 10.18 |
 | **11** | | *Parallel Implementations* |
 | 11.5 | `Chapter11` | The jagged diagonal format; Example 11.1 |
 | **12** | | *Parallel Preconditioners* |
@@ -227,9 +227,31 @@ the breakdown with no finiteness hypothesis. The book's companion instruction "s
 
 ## Not formalized
 
-Chapter 13 is complete; Chapters 1 to 9 and 12 are closed but for the items below. The group
-files under `plans/NumlibSurface/SaadSparse/` carry the reasoning result by result, and say what
-the declarations that are still to be written are to be.
+Two numbered results of the book are out of scope rather than merely unwritten, and neither has a
+node in the plan; this is the record of them, and the group files say the same at chapter level.
+Both are quoted by Saad from elsewhere without proof, and each needs a body of mathematics that is
+not numerical analysis and that Mathlib does not have.
+
+* **Theorem 10.16** (§10.7.1), that the diagonal blocks of the block ILU preconditioner (10.77) of a
+  block tridiagonal M-matrix are symmetric M-matrices and that the preconditioner is positive
+  definite. Saad writes "the following theorem can be shown". Stating it needs the block tridiagonal
+  splitting as an object, the recurrence (10.79)–(10.80) for the blocks, and the closed form (10.81)
+  for the tridiagonal part of the inverse of a tridiagonal matrix, none of which the library has.
+  The trap for anyone who takes it up: `Ω^{(3)}` in (10.81) is a *truncation* of the inverse, so the
+  `Δ_{i+1}` of the recurrence is not a Schur complement and the Schur-complement lemmas do not
+  apply to it. There is no module for §10.7 and no group for it either, the theorem having been the
+  only thing in the section.
+* **Theorem 14.16** (§14.6.2), the geometric separator theorem of Miller, Teng, Thurston and
+  Vavasis, bounding the separator of an `(α, k)`-overlap graph. Its proof runs through
+  stereographic projection into `S^d`, the existence of a centerpoint of a finite set, and a
+  random great circle. Definitions 14.14 and 14.15, the `k`-ply neighborhood system and the
+  overlap graph the theorem is stated over, are plain geometry and *are* formalized, in
+  `Chapter14.Section06`; the theorem itself is the piece out of reach, and that module's doc says
+  so beside them.
+
+Beyond those two, Chapter 13 is complete and Chapters 1 to 9 and 12 are closed but for the items
+below. The group files under `plans/NumlibSurface/SaadSparse/` carry the reasoning result by
+result, and say what the declarations that are still to be written are to be.
 
 * **§7.4**, the transpose-free variants — the BCG residual and direction polynomials, CGS,
   BiCGSTAB and TFQMR with their residual identities (7.32)–(7.83). The largest gap left in the
@@ -282,9 +304,16 @@ the printed statement is not what the proof needs, and the module says so on the
   `A` is stronger than the disjointness the statement asks for; `theorem_14_6` carries the
   hypothesis its proof uses.
 
-Chapter 13 is the one place where the printed text is wrong rather than merely imprecise, in four
-statements, each corrected on the declaration that states it:
+In five statements the printed text is wrong rather than merely imprecise, four of them in Chapter
+13 and one in Chapter 10, each corrected on the declaration that states it:
 
+* **Theorem 10.18** is false as printed. Its zero-pattern condition constrains the pairs `(i, j)`
+  with `i < j`, while Algorithms 10.17 and 10.18 drop the entries `l_{ij}` with `j < i`, so on a
+  lower-triangular reading the hypothesis constrains nothing that is dropped: with `n = 3` and
+  `P_L = {(3, 2)}` it holds vacuously and yet `L Lᵀ` misses `b_{32}`.
+  `SaadSparse.Chapter10.IsICPattern` adds the symmetry that the zero pattern of a Cholesky
+  factorization has — `L` and `Lᵀ` share one pattern, and `Matrix.IsIC` asks for it too — under
+  which the printed condition is exactly what the proof consumes.
 * **Example 13.2**'s restriction operator is off by a factor of four: the book's own stencil with
   full weighting gives a quarter of what it writes, the factor being the ratio of the two mesh
   squares.
@@ -292,6 +321,11 @@ statements, each corrected on the declaration that states it:
 * **Lemma 13.1**'s third clause names the restriction where its own proof gives the prolongation.
 * **The two-dimensional V-cycle constant** `7/3` does not follow from the book's own recurrence:
   the geometric sum is `4/3`.
+
+Theorem 10.18 carries one further reading, not an error: the book attaches it to Algorithm 10.18,
+the *modified* Gram–Schmidt process, while `imgsL` is Algorithm 10.17. The two differ in general
+but not under the theorem's own hypothesis, where every correction the modified process makes is an
+inner product that the pattern condition forces to vanish.
 
 ## References
 

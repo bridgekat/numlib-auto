@@ -32,18 +32,3 @@ source = "Saad, Iterative Methods for Sparse Linear Systems, Definition 14.15"
 [[node]]
 id = "definition_14_15_adj"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Definition 14.15"
-
-[[node]]
-id = "theorem_14_16"
-kind = "theorem"
-deps = ["definition_14_15"]
-desc = '''
-Saad Theorem 14.16 (§14.6.2), the geometric separator theorem of Miller, Teng, Thurston and
-Vavasis: the vertices of an `n`-vertex `(α, k)`-overlap graph in `d` dimensions split into `A`,
-`B`, `C` with no edge between `A` and `B`, with `|A|, |B| ≤ n (d + 1) / (d + 2)`, and with
-`|C| = O(α k^{1/d} n^{(d-1)/d})`. (The node `equation_14_16` of this chapter is Saad's display
-(14.16), a different object with a colliding number.) Not formalized: Saad quotes it without
-proof, and its proof needs stereographic projection into `S^d`, the existence of a centerpoint of
-a finite set and a random-great-circle argument, none of which Mathlib has; the definitions it is
-stated over, `definition_14_14` and `definition_14_15`, are plain geometry and are formalized.
-'''

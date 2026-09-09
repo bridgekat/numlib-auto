@@ -19,4 +19,7 @@ and Theorem 14.16 (the geometric separator theorem of Miller–Teng–Thurston�
 proof and needing stereographic projection into `S^d`, centerpoints and a random-great-circle
 argument). Definitions 14.14 and 14.15, the `k`-ply neighborhood system and the `(α, k)`-overlap
 graph Theorem 14.16 is stated over, are plain geometry and are surfaced in `Section06`.
+
+Theorem 14.16 is out of scope and **has no node**: the exclusion is recorded in the module doc of
+`Section06.lean`, which states it in prose, and in that of `NumlibSurface/SaadSparse.lean`.
 '''
