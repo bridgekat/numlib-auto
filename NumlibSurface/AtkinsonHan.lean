@@ -331,20 +331,20 @@ it. The one thing the section asserts that the library cannot say is that `Cᵐ[
 normed space; Mathlib has `C(X, ℝ)` for compact `X`, hence the case `m = 0` only.
 
 Smaller omissions all have the same shape — an object the backbone or Mathlib has not built yet —
-and each is listed in the module it belongs to: trigonometric and interpolatory approximation
-(§3.7 almost in its entirety, including Jackson's theorems and the Fourier projections, and
-Examples 3.6.5, 3.6.6 and 3.6.8), weighted `L²` spaces and orthogonal polynomials (Examples 3.4.8
-and 3.4.9), numerical quadrature (§2.4.4) and Chebyshev equioscillation (Theorems 3.3.19–3.3.20).
-§5.5, on completely continuous vector fields, is quoted by the book without proof — Brouwer's and
-Schauder's theorems and the rotation properties P1–P5 — and is summarized in `Chapter05.Section03`
-rather than formalized.
+and each is listed, with its reason, in the module it belongs to. Chapter 2 carries most of them,
+and they are mainly spaces: `C¹[a, b]` as a normed space, which Examples 2.1.4, 2.1.5 and 2.4.2
+all want, and the duals of `Lᵖ(Ω)` and of `L^∞(0, 1)` in Examples 2.5.1, 2.5.3 and 2.5.9.
+Reflexivity is a different obstruction: Mathlib's `Module.IsReflexive` is the algebraic double
+dual, so Definition 2.7.4 and with it Theorem 2.7.5 have nothing to stand on. Of Chapter 3 only
+Müntz's theorem (Theorem 3.1.5) and Definition 3.3.9 remain, and of Chapters 4 and 6 the concrete
+Fourier series of Examples 4.1.3–4.1.5 and the heat-equation instances of §6.2–§6.3. §5.5, on
+completely continuous vector fields, is quoted by the book without proof — Brouwer's and
+Schauder's theorems and the rotation properties P1–P5 — and is summarized in
+`Chapter05.Section03` rather than formalized.
 
-Two results of §3.3 are open — Theorems 3.3.19 and 3.3.20, Chebyshev equioscillation — and most
-of §3.7 is open for a different reason: the trigonometric-approximation layer that Jackson's
-theorems and the Fourier projections speak about is not yet in Mathlib or in `Numlib`, and §3.7's
-module lists exactly what is waiting on it. Of §3.2 everything is formalized except the `H²(a, b)`
-estimates (3.2.10)–(3.2.12) for piecewise linear interpolation, which need Sobolev spaces and are
-out of scope with the rest of that material.
+§3.2, §3.4, §3.6 and §3.7 are complete: the trigonometric-approximation layer that Jackson's
+theorems and the Fourier projections rest on was built in `Numlib/Approximation` and is no longer
+the gap it once was.
 
 ## References
 
