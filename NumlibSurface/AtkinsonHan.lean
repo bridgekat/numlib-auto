@@ -68,15 +68,13 @@ import NumlibSurface.AtkinsonHan.Chapter14.Section04
 # Atkinson–Han, *Theoretical Numerical Analysis*
 
 The surface library for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A
-Functional Analysis Framework* (3rd ed., Springer, 2009): fifty-four modules, one per section of
-Functional Analysis Framework* (3rd ed., Springer, 2009): fifty-two modules, one per section of
+Functional Analysis Framework* (3rd ed., Springer, 2009): sixty-five modules, one per section of
 the book that the project covers, grouped by chapter. Each states the book's results in the book's
 own terms and proves them by specializing the backbone under `Numlib/`. Almost nothing is proved
 here that is not proved there — the surface exists to test the backbone against a published account
 of the subject, and to give a reader of the book a Lean name for every result formalized.
 
-This module imports the fifty-four section modules and adds nothing of its own.
-This module imports the fifty-two section modules and adds nothing of its own.
+This module imports the sixty-five section modules and adds nothing of its own.
 
 ## Naming
 
