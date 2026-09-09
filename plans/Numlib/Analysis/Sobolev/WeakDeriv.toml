@@ -78,6 +78,50 @@ id = "HasWeakIteratedFDerivOn.const_smul_add_const_smul"
 source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Proposition 7.1.10'
 
 [[node]]
+id = "HasWeakIteratedLineDerivOn"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.1.3'
+
+[[node]]
+id = "HasWeakIteratedFDerivOn.lineDeriv"
+
+[[node]]
+id = "HasWeakIteratedLineDerivOn.of_length_eq_zero"
+
+[[node]]
+id = "HasWeakIteratedLineDerivOn.integral_smul_eq'"
+
+[[node]]
+id = "HasWeakIteratedLineDerivOn.congr_ae"
+
+[[node]]
+id = "HasWeakIteratedLineDerivOn.zero"
+
+[[node]]
+id = "HasWeakIteratedLineDerivOn.integrable_smul"
+
+[[node]]
+id = "HasWeakIteratedLineDerivOn.integrable_smul_weakDeriv"
+
+[[node]]
+id = "HasWeakIteratedLineDerivOn.add"
+
+[[node]]
+id = "HasWeakIteratedLineDerivOn.const_smul"
+
+[[node]]
+id = "HasWeakIteratedLineDerivOn.neg"
+
+[[node]]
+id = "HasWeakIteratedLineDerivOn.sub"
+
+[[node]]
+id = "HasWeakIteratedLineDerivOn.ae_eq"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Lemma 7.1.4'
+
+[[node]]
+id = "HasWeakIteratedLineDerivOn.ae_eq_of_length_eq_zero"
+
+[[node]]
 id = "ContDiffOn.continuousOn_iteratedFDeriv"
 
 [[node]]

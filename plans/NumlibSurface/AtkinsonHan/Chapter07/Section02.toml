@@ -21,21 +21,27 @@ id = "definition_7_2_2_iff"
 id = "definition_7_2_2_iff_exists"
 
 [[node]]
+id = "definition_7_2_2_multiIndex"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.2'
+
+[[node]]
+id = "definition_7_2_2_multiIndex_iff"
+
+[[node]]
+id = "definition_7_2_2_multiIndex_of_definition_7_2_2"
+
+[[node]]
+id = "definition_7_2_2_multiIndex_iff_exists"
+
+[[node]]
+id = "definition_7_2_2_multiIndex_norm"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.2'
+
+[[node]]
 id = "theorem_7_2_3"
 
 [[node]]
 id = "corollary_7_2_4"
-kind = "theorem"
-desc = '''Corollary 7.2.4: `H^k(Ω)` is a Hilbert space with the inner product
-`(u,v)_k = ∫_Ω ∑_{|α|≤k} ∂^α u ∂^α v`. The book adds, without proof, that `W^{k,p}(Ω)` is reflexive
-exactly for `p ∈ (1,∞)`. Not formalized: Theorem 7.2.3 is proved, so completeness is no longer the
-obstruction -- the indexing of the norm is. `Sobolev ℝ k 2 Ω volume` measures all the derivatives of
-order `n` by the operator norm of a single tensor of `E [x n]->L[R] R`, and that norm is not
-induced by an inner product once `n >= 2` and `d >= 2` (for `n = 2` it is the spectral norm of a
-`2 x 2` matrix), so no inner product on the space induces its norm. The corollary needs the weak
-derivative of order `n` to be indexed by the multi-indices `α` with `|α| = n`, or equivalently
-`E [x n]->L[R] R` to carry its Hilbert-Schmidt norm: a change to `HasWeakIteratedFDerivOn` and
-`sobolevNorm`, not an addition on top of them.'''
 
 [[node]]
 id = "example_7_2_5"

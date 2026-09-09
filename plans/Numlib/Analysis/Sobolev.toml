@@ -4,28 +4,42 @@ Sobolev spaces that this project needed and Mathlib lacks (natural home:
 the rest).
 
 Mathlib has Bessel potential spaces `H^{s,p}` of tempered distributions on all of `ℝ^d`
-(`Mathlib/Analysis/Distribution/Sobolev.lean`) and nothing about a *domain*. Three pieces of that
-gap are filled here, deliberately minimally, by `WeakDeriv`, `Domain` and `Space`: the weak
-derivative on an open set with its uniqueness, its agreement with the classical derivative and its
-linearity; membership of `W^{k,p}(Ω)` of integer order with the Sobolev norm and seminorm; and
+(`Mathlib/Analysis/Distribution/Sobolev.lean`) and nothing about a *domain*. Four pieces of that
+gap are filled here, deliberately minimally, by `WeakDeriv`, `Domain`, `Space` and `MultiIndex`:
+the weak derivative on an open set with its uniqueness, its agreement with the classical derivative
+and its linearity; membership of `W^{k,p}(Ω)` of integer order with the Sobolev norm and seminorm;
 `W^{k,p}(Ω)` as a *type*, a closed subspace of an `ℓ^p` product of `L^p(Ω)` spaces and hence a
-Banach space (Theorem 7.2.3). Together they serve Atkinson-Han, *Theoretical Numerical Analysis*,
-§7.1 and the integer-order half of §7.2.
+Banach space (Theorem 7.2.3); and the same space with the derivatives indexed by the multi-indices
+of a basis, which is what carries the book's own norm and, at `p = 2`, its inner product, so that
+`H^k(Ω)` is a Hilbert space (Corollary 7.2.4). Together they serve Atkinson-Han, *Theoretical
+Numerical Analysis*, §7.1 and the integer-order half of §7.2.
 
-All three are stopgaps for work that is on its way into Mathlib -- Mathlib PR 32305 and its
-continuation `grunweg/SobolevSlobodeckij` -- and follow its names and argument order so that the
-migration is a rename; they should be deleted, not extended, once that development lands.
+All four are stopgaps for work that is on its way into Mathlib -- Mathlib PR 32305 and its
+continuation `grunweg/SobolevSlobodeckij` -- and the first three follow its names and argument
+order so that the migration is a rename; they should be deleted, not extended, once that
+development lands. `MultiIndex` deliberately does not follow it: that development is tensor-valued
+and basis-free throughout, and the multi-index indexing is a step away from it, taken because the
+inner product of Corollary 7.2.4 is not a tensor norm.
 
-What is still missing is everything that makes the spaces worth having. `H^k(Ω)` as a *Hilbert*
-space (Corollary 7.2.4) is out of reach here for one specific reason: `Space` measures all the
-derivatives of order `n` by the operator norm of a single tensor of `E [×n]→L[ℝ] F`, which is not
-an inner-product norm once `n ≥ 2`, so the corollary needs the derivative to be re-indexed by
-multi-indices, which is a change to `HasWeakIteratedFDerivOn` and `sobolevNorm` rather than an
-addition on top of them. Beyond that: `W_0^{k,p}(Ω)`, the fractional Sobolev-Slobodeckij spaces of
-Definition 7.2.10 and their negative-order duals, and the whole of §7.3 -- density of smooth
-functions, the extension operator, the trace, the Sobolev embeddings, Rellich-Kondrachov, Poincaré
-and Deny-Lions -- together with §7.4, §7.6 and the downstream sections that need them (§8.1, §8.4,
-§8.5, §8.8, chapter 10 beyond the Aubin-Nitsche lemma, chapter 13).
+Two indexings of the derivative sit side by side, and the reason is the norm. `Space` measures all
+the derivatives of order `n` by the operator norm of a single tensor of `E [×n]→L[ℝ] F`, which is
+not an inner-product norm once `n ≥ 2` and `dim E ≥ 2`; `MultiIndex` measures the `∂^α`
+separately, which is the book's norm and is an `ℓ^p` norm on a product of `L^p(Ω)` spaces on the
+nose. The two are equivalent mathematically, so the space and its topology do not depend on the
+choice, but that equivalence is not formalized: the two are separate types with separate proofs.
+`Space` is the one that stays basis-free and closest to the Mathlib API being waited on;
+`MultiIndex` is what Corollary 7.2.4 needs, and only for `k ≥ 2` and `dim E ≥ 2` is the difference
+more than cosmetic. `MemSobolev.memSobolevMultiIndex` is the comparison; its converse, which
+recovers the derivative tensor from its multi-index components, waits on the symmetry of
+`iteratedFDeriv` under permutations of its arguments for a `C^∞` function, which Mathlib has only
+for order two and for analytic functions.
+
+What is still missing is everything that makes the spaces worth having: `W_0^{k,p}(Ω)` as a space
+of boundary conditions, the fractional Sobolev-Slobodeckij spaces of Definition 7.2.10 and their
+negative-order duals, and the whole of §7.3 -- density of smooth functions, the extension operator,
+the trace, the Sobolev embeddings, Rellich-Kondrachov, Poincaré and Deny-Lions -- together with
+§7.4, §7.6 and the downstream sections that need them (§8.1, §8.4, §8.5, §8.8, chapter 10 beyond
+the Aubin-Nitsche lemma, chapter 13).
 
 The *periodic* spaces are a separate story: they are defined by the decay of Fourier coefficients,
 so no domain, boundary or weak derivative enters them. Serves Atkinson-Han, *Theoretical Numerical

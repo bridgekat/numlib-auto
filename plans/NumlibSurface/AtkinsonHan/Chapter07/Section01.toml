@@ -10,6 +10,16 @@ id = "lemma_7_1_2"
 id = "definition_7_1_3"
 
 [[node]]
+id = "stdBasis"
+
+[[node]]
+id = "definition_7_1_3_multiIndex"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.1.3'
+
+[[node]]
+id = "definition_7_1_3_multiIndex_of_definition_7_1_3"
+
+[[node]]
 id = "lemma_7_1_4"
 
 [[node]]

@@ -1,0 +1,123 @@
+[[node]]
+id = "MultiIndexLE"
+
+[[node]]
+id = "MultiIndexLE.instFintype"
+
+[[node]]
+id = "MultiIndexLE.instZero"
+
+[[node]]
+id = "MultiIndexLE.coe_zero"
+
+[[node]]
+id = "MultiIndexLE.sum_zero"
+
+[[node]]
+id = "multiIndexDirections"
+
+[[node]]
+id = "length_multiIndexDirections"
+
+[[node]]
+id = "multiIndexTuple"
+
+[[node]]
+id = "SobolevMultiIndexTuple"
+
+[[node]]
+id = "SobolevMultiIndexTuple.fn"
+
+[[node]]
+id = "SobolevMultiIndexTuple.fn_zero"
+
+[[node]]
+id = "SobolevMultiIndexTuple.fn_add"
+
+[[node]]
+id = "SobolevMultiIndexTuple.fn_smul"
+
+[[node]]
+id = "SobolevMultiIndex"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.2'
+
+[[node]]
+id = "SobolevMultiIndex.mem_def"
+
+[[node]]
+id = "SobolevMultiIndex.fn"
+
+[[node]]
+id = "SobolevMultiIndex.weakDeriv"
+
+[[node]]
+id = "SobolevMultiIndex.hasWeakIteratedLineDerivOn"
+
+[[node]]
+id = "SobolevMultiIndex.weakDeriv_zero"
+
+[[node]]
+id = "SobolevMultiIndex.fn_zero"
+
+[[node]]
+id = "SobolevMultiIndex.fn_add"
+
+[[node]]
+id = "SobolevMultiIndex.fn_smul"
+
+[[node]]
+id = "SobolevMultiIndex.memLp"
+
+[[node]]
+id = "SobolevMultiIndex.mem_iff"
+
+[[node]]
+id = "SobolevMultiIndex.pairingCLM"
+
+[[node]]
+id = "SobolevMultiIndex.pairingCLM_apply"
+
+[[node]]
+id = "SobolevMultiIndex.isClosed"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.2.3'
+
+[[node]]
+id = "SobolevMultiIndex.instCompleteSpace"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.2.3'
+
+[[node]]
+id = "SobolevMultiIndex.norm_eq_sum"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.2'
+
+[[node]]
+id = "SobolevMultiIndex.norm_eq_ciSup"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.2'
+
+[[node]]
+id = "MemSobolevMultiIndex"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.2'
+
+[[node]]
+id = "MemSobolevMultiIndex.memLp"
+
+[[node]]
+id = "MemSobolevMultiIndex.exists_hasWeakIteratedLineDerivOn"
+
+[[node]]
+id = "MemSobolevMultiIndex.congr_ae"
+
+[[node]]
+id = "SobolevMultiIndex.memSobolevMultiIndex"
+
+[[node]]
+id = "MemSobolevMultiIndex.exists_sobolevMultiIndex"
+
+[[node]]
+id = "SobolevMultiIndex.ext_of_fn_ae_eq"
+
+[[node]]
+id = "MemSobolev.memSobolevMultiIndex"
+
+[[node]]
+id = "SobolevMultiIndex.inner_eq"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Corollary 7.2.4'

@@ -70,19 +70,29 @@ and `Sobolev.ext_of_fn_ae_eq` is what says the rest of the tuple is determined b
 `Submodule`, moreover, the type is a subtype, so the projections are written `Sobolev.fn u` rather
 than `u.fn`.
 
-### `H^k(Ω)` is not obtained as a Hilbert space here
+### `H^k(Ω)` is not a Hilbert space for *this* norm
 
 Atkinson–Han's Corollary 7.2.4, that `H^k(Ω) = W^{k,2}(Ω)` is a Hilbert space for the inner product
 `(u,v)_k = ∫_Ω ∑_{|α| ≤ k} ∂^α u ∂^α v`, is *not* available in this formulation, and the reason is
 the indexing rather than the completeness. Here all the derivatives of order `n` are one tensor of
 `E [×n]→L[ℝ] F`, measured in its operator norm, where the book measures the derivatives `∂^α v`
-with `|α| = n` separately; the two norms are equivalent but not equal. At `p = 2` that matters: the
-operator norm on `E [×n]→L[ℝ] F` is not induced by an inner product once `n ≥ 2` and `E` has
-dimension at least `2` — for `E = ℝ²` and `F = ℝ` it is the spectral norm of a `2 × 2` matrix —
-so there is no inner product on `W^{k,2}(Ω)` inducing its norm here. Obtaining the corollary needs
-the derivative of order `n` to be indexed by multi-indices, or equivalently `E [×n]→L[ℝ] F` to
-carry its Hilbert–Schmidt norm; either is a change to `HasWeakIteratedFDerivOn` and to
-`sobolevNorm`, not an addition on top of them.
+with `|α| = n` separately; the two norms are equivalent — mathematically, the derivative tensors of
+a Sobolev function being symmetric; the equivalence is not formalized here — but they are not
+equal. At `p = 2` that matters: the operator norm on `E [×n]→L[ℝ] F` is not induced by an inner
+product once `n ≥ 2` and `E` has dimension at least `2` — for `E = ℝ²` and `F = ℝ` it is the
+spectral norm of a `2 × 2` matrix — so for `k ≥ 2` and `dim E ≥ 2` there is no inner product on
+`W^{k,2}(Ω)` inducing its norm here. For `k ≤ 1`, or for `dim E ≤ 1`, there is one: every tensor in
+sight is then a vector or a linear functional, whose operator norm is Euclidean.
+
+`Numlib/Analysis/Sobolev/MultiIndex.lean` is the formulation that does carry the corollary: it
+indexes the derivatives by the multi-indices of a basis, one `L^p(Ω)` function `∂^α v` for each `α`
+with `|α| ≤ k`, so that the space is an `ℓ^p` product of `L^p(Ω)` spaces on the nose and, at
+`p = 2`, an inner product space with the book's inner product. It repeats the argument of
+`Sobolev.isClosed` rather than building on it, because the two ambient products are different
+spaces; what it does reuse is `MeasureTheory.MemLp.integralSmulCLM` and the weak derivative theory.
+A Hilbert–Schmidt norm on `E [×n]→L[ℝ] F` would be an inner-product norm too, but it is the `ℓ²`
+sum over the *tuples* of directions, which weights the multi-index `α` by the multinomial
+coefficient `n!/α!`, so it does not give the book's inner product either.
 -/
 
 open Filter MeasureTheory Set TopologicalSpace

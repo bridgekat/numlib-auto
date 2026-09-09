@@ -1,4 +1,4 @@
-import Numlib.Analysis.Sobolev.WeakDeriv
+import Numlib.Analysis.Sobolev.MultiIndex
 
 /-!
 # Atkinson–Han §7.1: weak derivatives
@@ -17,13 +17,20 @@ A multi-index `α` with `|α| = n` is represented by a tuple `y : Fin n → ℝ^
 length into a single `ContinuousMultilinearMap`-valued derivative, and quantifying over all tuples
 is quantifying over all `α` of that length. Test functions are Mathlib's bundled `𝓓(Ω, ℝ)`.
 
+Definition 7.1.3 is therefore here twice. `definition_7_1_3` is the bundled reading, one object for
+all the `α` of a given length; `definition_7_1_3_multiIndex` is the book's, one multi-index at a
+time, `α` being read as the tuple `stdBasis` names — the coordinate direction `e_i` repeated `α i`
+times. The bundled reading implies the other, `definition_7_1_3_multiIndex_of_definition_7_1_3`.
+The multi-index reading is what §7.2 needs, because the norm of Definition 7.2.2 sums over the `α`
+separately.
+
 Definitions 7.1.1 and 7.1.3, Lemmas 7.1.2, 7.1.4 and 7.1.5 and Proposition 7.1.10 are here.
 Examples 7.1.6, 7.1.7 and 7.1.8 (one-dimensional computations), Example 7.1.9 (which needs the
 trace of §7.3), and Propositions 7.1.11 and 7.1.12 (the product and chain rules, which the book
 states without proof and whose proofs mollify and pass to the limit) are not.
 -/
 
-open MeasureTheory TopologicalSpace
+open MeasureTheory Module TopologicalSpace
 
 open scoped ContDiff Distributions ENNReal
 
@@ -64,6 +71,30 @@ def definition_7_1_3 (n : ℕ) (v : EuclideanSpace ℝ (Fin d) → ℝ)
     (w : EuclideanSpace ℝ (Fin d) → EuclideanSpace ℝ (Fin d) [×n]→L[ℝ] ℝ)
     (Ω : Opens (EuclideanSpace ℝ (Fin d))) : Prop :=
   HasWeakIteratedFDerivOn n v w Ω volume
+
+/-- The standard basis `e_1, …, e_d` of `ℝ^d`, in which the multi-index derivatives
+`∂^α = ∂_1^{α_1} ⋯ ∂_d^{α_d}` of this chapter are taken. -/
+noncomputable abbrev stdBasis (d : ℕ) : Basis (Fin d) ℝ (EuclideanSpace ℝ (Fin d)) :=
+  (EuclideanSpace.basisFun (Fin d) ℝ).toBasis
+
+/-- **Definition 7.1.3**, one multi-index at a time: for `Ω ⊆ ℝ^d` nonempty open and
+`v, w ∈ L^1_loc(Ω)`, `w` is the weak `α`-th derivative of `v` when
+`∫_Ω v ∂^α φ = (-1)^{|α|} ∫_Ω w φ` for every `φ ∈ C_0^∞(Ω)`. The multi-index `α` is read as the
+tuple of `|α| = α_1 + ⋯ + α_d` directions it names, `e_i` repeated `α i` times with the indices in
+increasing order, so that `∂^α φ` is `∂_1^{α_1} ⋯ ∂_d^{α_d} φ`. `definition_7_1_3` is the same
+definition for all the multi-indices of a given length at once. -/
+def definition_7_1_3_multiIndex (α : Fin d → ℕ) (v w : EuclideanSpace ℝ (Fin d) → ℝ)
+    (Ω : Opens (EuclideanSpace ℝ (Fin d))) : Prop :=
+  HasWeakIteratedLineDerivOn (multiIndexTuple (stdBasis d) α) v w Ω volume
+
+/-- The bundled reading of Definition 7.1.3 gives the multi-index reading: the weak derivative of
+order `|α|`, evaluated at the tuple of directions naming `α`, is the weak `∂^α`. -/
+theorem definition_7_1_3_multiIndex_of_definition_7_1_3 (α : Fin d → ℕ)
+    {w : EuclideanSpace ℝ (Fin d) →
+      EuclideanSpace ℝ (Fin d) [×(∑ i, α i)]→L[ℝ] ℝ}
+    (h : definition_7_1_3 (∑ i, α i) v w Ω) :
+    definition_7_1_3_multiIndex α v (fun x ↦ w x (multiIndexTuple (stdBasis d) α)) Ω :=
+  h.lineDeriv _
 
 /-- **Lemma 7.1.4**: a weak derivative, if it exists, is uniquely defined up to a set of measure
 zero. -/

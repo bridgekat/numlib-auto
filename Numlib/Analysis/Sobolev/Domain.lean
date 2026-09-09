@@ -52,11 +52,14 @@ rather than indexed by multi-indices, so `sobolevNorm` sums the `L^p` norms of t
 over the multi-indices `α` with `|α| ≤ k`. The two norms are equivalent — on `ℝ^d` the operator
 norm of a symmetric `n`-tensor is comparable to any norm on its finitely many entries — but they
 are not equal, so `sobolevNorm` is not literally the displayed formula of Definition 7.2.2. A
-consequence is that `sobolevNorm f k 2 Ω μ` is not an inner-product norm, since the operator norm
-on multilinear maps is not; Atkinson–Han's Corollary 7.2.4, that `H^k(Ω)` is a Hilbert space, is
-therefore not available in this formulation and would need the multi-index indexing — see the
-implementation notes of `Numlib/Analysis/Sobolev/Space.lean`, where the completeness of Theorem
-7.2.3 is proved and this is the one thing that stands between it and the corollary.
+consequence is that for `k ≥ 2` and `dim E ≥ 2` the norm `sobolevNorm f k 2 Ω μ` is not an
+inner-product norm, the operator norm on multilinear maps of order `n ≥ 2` on a space of
+dimension at least `2` not being one; for `k ≤ 1` or `dim E ≤ 1` it is.
+`Numlib/Analysis/Sobolev/MultiIndex.lean` carries the multi-index indexing, and hence the book's
+own norm and, at `p = 2`, its inner product; `MemSobolev.memSobolevMultiIndex` is the comparison.
+Nothing there is needed for the space, the norm or the completeness proved from this file; it is
+needed for `H^k(Ω)` to be a *Hilbert* space,
+Atkinson–Han's Corollary 7.2.4.
 -/
 
 open Filter MeasureTheory Set TopologicalSpace

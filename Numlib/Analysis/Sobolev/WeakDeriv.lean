@@ -32,10 +32,15 @@ quantifying over all multi-indices of that length.
 * `HasWeakIteratedFDerivOn n f w Ω μ`, the weak derivative of order `n` (Atkinson–Han,
   Definition 7.1.3), and `HasWeakFDerivOn f w Ω μ`, its first-order form with `w` valued in
   `E →L[ℝ] F`.
+* `HasWeakIteratedLineDerivOn y f w Ω μ`, the same definition read for the *single* tuple `y` of
+  directions, so with `w` valued in `F`: this is Atkinson–Han, Definition 7.1.3, for one
+  multi-index `α`, where `HasWeakIteratedFDerivOn` is it for all `α` of a given length at once
+  (`HasWeakIteratedFDerivOn.lineDeriv`).
 
 ## Main statements
 
-* `HasWeakIteratedFDerivOn.ae_eq`: a weak derivative is unique almost everywhere on `Ω`
+* `HasWeakIteratedFDerivOn.ae_eq` and `HasWeakIteratedLineDerivOn.ae_eq`: a weak derivative is
+  unique almost everywhere on `Ω`
   (Atkinson–Han, Lemma 7.1.4). The proof is Mathlib's generalized variational lemma
   `IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero` (Atkinson–Han, Lemma 7.1.2) applied to the
   difference of two weak derivatives.
@@ -65,6 +70,13 @@ be a rename rather than a rewrite. Two deliberate differences:
 * the order is carried by an explicit `n` and the derivative is `ContinuousMultilinearMap`-valued,
   so that all derivatives of order `n` are described by a single object without iterating the
   construction.
+
+`HasWeakIteratedLineDerivOn` moves back the other way, towards the classical indexing by
+multi-indices: it fixes the tuple of directions and so is `F`-valued. It is what
+`Numlib/Analysis/Sobolev/MultiIndex.lean` needs, because the norm of Atkinson–Han's
+Definition 7.2.2 sums over the multi-indices `α` separately and not over the orders `|α|`, and
+that norm is the one an inner product induces when `p = 2`. Nothing is lost by keeping both: the
+tuple-by-tuple form is one field of the tensor form, `HasWeakIteratedFDerivOn.lineDeriv`.
 
 The `n`-th derivative of the *test* function is what is differentiated in the definition, and
 `ContDiff.fderiv_iteratedFDeriv_apply` — the statement that for a smooth function an extra
@@ -446,6 +458,183 @@ theorem const_smul_add_const_smul {f₁ f₂ : E → F} {w₁ w₂ : E → E [×
   (h₁.const_smul c₁).add (h₂.const_smul c₂)
 
 end HasWeakIteratedFDerivOn
+
+/-! ### Weak derivatives along a fixed tuple of directions -/
+
+section Line
+
+variable {y : Fin n → E} {w : E → F}
+
+/-- `HasWeakIteratedLineDerivOn y f w Ω μ` says that `w : E → F` is a *weak derivative of `f` along
+the tuple `y` of directions* on the open set `Ω`: both are locally integrable there, and the
+integration by parts formula
+
+`∫_Ω (∂^n φ x) y • f x dx = (-1)^n ∫_Ω φ x • w x dx`
+
+holds for every test function `φ ∈ C_0^∞(Ω)`, where `n` is the length of `y`. Where
+`HasWeakIteratedFDerivOn` takes all the tuples of a given length at once, and so is valued in the
+continuous `n`-linear maps, this takes one tuple at a time: it is the definition of Atkinson and
+Han, *Theoretical Numerical Analysis: A Functional Analysis Framework*, 3rd edition,
+Definition 7.1.3, for the single multi-index that the tuple names. -/
+structure HasWeakIteratedLineDerivOn {n : ℕ} (y : Fin n → E) (f : E → F) (w : E → F)
+    (Ω : Opens E) (μ : Measure E) : Prop where
+  /-- A function with a weak derivative along a tuple of directions is locally integrable. -/
+  locallyIntegrableOn : LocallyIntegrableOn f Ω μ
+  /-- A weak derivative along a tuple of directions is locally integrable. -/
+  locallyIntegrableOn_weakDeriv : LocallyIntegrableOn w Ω μ
+  /-- The integration by parts formula defining the weak derivative along a tuple of directions. -/
+  integral_smul_eq (φ : 𝓓(Ω, ℝ)) :
+    ∫ x in (Ω : Set E), iteratedFDeriv ℝ n φ x y • f x ∂μ
+      = (-1 : ℝ) ^ n • ∫ x in (Ω : Set E), φ x • w x ∂μ
+
+/-- Evaluating a weak derivative of order `n` at a fixed tuple `y` of directions gives a weak
+derivative along `y`; so `HasWeakIteratedFDerivOn` asserts the tuple-by-tuple notion for every
+tuple of that length at once. -/
+theorem HasWeakIteratedFDerivOn.lineDeriv {w : E → E [×n]→L[ℝ] F}
+    (h : HasWeakIteratedFDerivOn n f w Ω μ) (y : Fin n → E) :
+    HasWeakIteratedLineDerivOn y f (fun x ↦ w x y) Ω μ where
+  locallyIntegrableOn := h.locallyIntegrableOn
+  locallyIntegrableOn_weakDeriv := h.locallyIntegrableOn_weakDeriv.comp_continuousLinearMap
+    (ContinuousMultilinearMap.apply ℝ (fun _ : Fin n ↦ E) F y)
+  integral_smul_eq φ := h.integral_smul_eq φ y
+
+namespace HasWeakIteratedLineDerivOn
+
+variable [OpensMeasurableSpace E]
+
+omit [OpensMeasurableSpace E] in
+/-- Along a tuple of length `0` the function is its own weak derivative. The hypothesis is written
+`n = 0` rather than fixing the tuple to be empty, so that it applies to a tuple whose length is
+only propositionally zero. -/
+theorem of_length_eq_zero (hn : n = 0) (y : Fin n → E) (hf : LocallyIntegrableOn f Ω μ) :
+    HasWeakIteratedLineDerivOn y f f Ω μ := by
+  subst hn
+  exact ⟨hf, hf, fun φ ↦ by simp⟩
+
+omit [OpensMeasurableSpace E] in
+/-- The integration by parts formula defining the weak derivative along a tuple of directions, with
+the integrals taken over the whole space: the test function vanishes outside `Ω`, so nothing
+changes. -/
+theorem integral_smul_eq' (h : HasWeakIteratedLineDerivOn y f w Ω μ) (φ : 𝓓(Ω, ℝ)) :
+    ∫ x, iteratedFDeriv ℝ n φ x y • f x ∂μ = (-1 : ℝ) ^ n • ∫ x, φ x • w x ∂μ := by
+  have e1 : ∫ x in (Ω : Set E), iteratedFDeriv ℝ n φ x y • f x ∂μ
+      = ∫ x, iteratedFDeriv ℝ n φ x y • f x ∂μ :=
+    setIntegral_eq_integral_of_forall_compl_eq_zero fun x hx ↦ by
+      rw [show iteratedFDeriv ℝ n (φ : E → ℝ) x y = 0 from
+        (φ.iteratedFDerivApply n y).eq_zero_of_notMem hx, zero_smul]
+  have e2 : ∫ x in (Ω : Set E), φ x • w x ∂μ = ∫ x, φ x • w x ∂μ :=
+    setIntegral_eq_integral_of_forall_compl_eq_zero fun x hx ↦ by
+      rw [φ.eq_zero_of_notMem hx, zero_smul]
+  rw [← e1, ← e2]
+  exact h.integral_smul_eq φ
+
+omit [OpensMeasurableSpace E] in
+/-- The weak derivative along a tuple only sees the functions up to a null set of `Ω`. -/
+theorem congr_ae {f' w' : E → F} (h : HasWeakIteratedLineDerivOn y f w Ω μ)
+    (hf : f =ᵐ[μ.restrict (Ω : Set E)] f') (hw : w =ᵐ[μ.restrict (Ω : Set E)] w') :
+    HasWeakIteratedLineDerivOn y f' w' Ω μ where
+  locallyIntegrableOn := h.locallyIntegrableOn.congr hf
+  locallyIntegrableOn_weakDeriv := h.locallyIntegrableOn_weakDeriv.congr hw
+  integral_smul_eq φ := by
+    have e1 : ∫ x in (Ω : Set E), iteratedFDeriv ℝ n φ x y • f' x ∂μ
+        = ∫ x in (Ω : Set E), iteratedFDeriv ℝ n φ x y • f x ∂μ :=
+      integral_congr_ae (by filter_upwards [hf] with x hx; rw [hx])
+    have e2 : ∫ x in (Ω : Set E), φ x • w' x ∂μ = ∫ x in (Ω : Set E), φ x • w x ∂μ :=
+      integral_congr_ae (by filter_upwards [hw] with x hx; rw [hx])
+    rw [e1, e2]
+    exact h.integral_smul_eq φ
+
+omit [OpensMeasurableSpace E] in
+/-- The zero function has zero weak derivative along every tuple of directions. -/
+protected theorem zero : HasWeakIteratedLineDerivOn y (0 : E → F) 0 Ω μ where
+  locallyIntegrableOn := locallyIntegrable_zero.locallyIntegrableOn _
+  locallyIntegrableOn_weakDeriv := locallyIntegrable_zero.locallyIntegrableOn _
+  integral_smul_eq φ := by simp
+
+/-- The product of a test function on `Ω` with a function having a weak derivative along a tuple is
+integrable. -/
+theorem integrable_smul (h : HasWeakIteratedLineDerivOn y f w Ω μ) (φ : 𝓓(Ω, ℝ)) :
+    Integrable (fun x ↦ φ x • f x) μ :=
+  LocallyIntegrableOn.integrable_smul_left_of_tsupport_subset h.locallyIntegrableOn
+    φ.contDiff.continuous φ.hasCompactSupport φ.tsupport_subset
+
+/-- The product of a test function on `Ω` with a weak derivative along a tuple is integrable. -/
+theorem integrable_smul_weakDeriv (h : HasWeakIteratedLineDerivOn y f w Ω μ) (φ : 𝓓(Ω, ℝ)) :
+    Integrable (fun x ↦ φ x • w x) μ :=
+  LocallyIntegrableOn.integrable_smul_left_of_tsupport_subset h.locallyIntegrableOn_weakDeriv
+    φ.contDiff.continuous φ.hasCompactSupport φ.tsupport_subset
+
+/-- Weak differentiation along a tuple of directions is additive. -/
+protected theorem add {f₁ f₂ w₁ w₂ : E → F} (h₁ : HasWeakIteratedLineDerivOn y f₁ w₁ Ω μ)
+    (h₂ : HasWeakIteratedLineDerivOn y f₂ w₂ Ω μ) :
+    HasWeakIteratedLineDerivOn y (f₁ + f₂) (w₁ + w₂) Ω μ where
+  locallyIntegrableOn := LocallyIntegrableOn.add h₁.locallyIntegrableOn h₂.locallyIntegrableOn
+  locallyIntegrableOn_weakDeriv :=
+    LocallyIntegrableOn.add h₁.locallyIntegrableOn_weakDeriv h₂.locallyIntegrableOn_weakDeriv
+  integral_smul_eq φ := by
+    have i₁ := (h₁.integrable_smul (φ.iteratedFDerivApply n y)).integrableOn (s := (Ω : Set E))
+    have i₂ := (h₂.integrable_smul (φ.iteratedFDerivApply n y)).integrableOn (s := (Ω : Set E))
+    simp only [TestFunction.iteratedFDerivApply_apply] at i₁ i₂
+    have j₁ := (h₁.integrable_smul_weakDeriv φ).integrableOn (s := (Ω : Set E))
+    have j₂ := (h₂.integrable_smul_weakDeriv φ).integrableOn (s := (Ω : Set E))
+    simp only [Pi.add_apply, smul_add]
+    rw [integral_add i₁ i₂, integral_add j₁ j₂, h₁.integral_smul_eq, h₂.integral_smul_eq, smul_add]
+
+omit [OpensMeasurableSpace E] in
+/-- Weak differentiation along a tuple of directions commutes with scalar multiplication. -/
+protected theorem const_smul (h : HasWeakIteratedLineDerivOn y f w Ω μ) (c : ℝ) :
+    HasWeakIteratedLineDerivOn y (c • f) (c • w) Ω μ where
+  locallyIntegrableOn := h.locallyIntegrableOn.smul c
+  locallyIntegrableOn_weakDeriv := h.locallyIntegrableOn_weakDeriv.smul c
+  integral_smul_eq φ := by
+    simp only [Pi.smul_apply, smul_comm _ c, integral_smul, h.integral_smul_eq]
+
+omit [OpensMeasurableSpace E] in
+/-- Weak differentiation along a tuple of directions commutes with negation. -/
+protected theorem neg (h : HasWeakIteratedLineDerivOn y f w Ω μ) :
+    HasWeakIteratedLineDerivOn y (-f) (-w) Ω μ where
+  locallyIntegrableOn := h.locallyIntegrableOn.neg
+  locallyIntegrableOn_weakDeriv := h.locallyIntegrableOn_weakDeriv.neg
+  integral_smul_eq φ := by
+    simp only [Pi.neg_apply, smul_neg, integral_neg, h.integral_smul_eq, smul_neg]
+
+/-- Weak differentiation along a tuple of directions commutes with subtraction. -/
+protected theorem sub {f₁ f₂ w₁ w₂ : E → F} (h₁ : HasWeakIteratedLineDerivOn y f₁ w₁ Ω μ)
+    (h₂ : HasWeakIteratedLineDerivOn y f₂ w₂ Ω μ) :
+    HasWeakIteratedLineDerivOn y (f₁ - f₂) (w₁ - w₂) Ω μ := by
+  simpa only [sub_eq_add_neg] using h₁.add h₂.neg
+
+variable [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F]
+
+/-- **A weak derivative along a tuple of directions is unique up to a null set**: the
+tuple-by-tuple form of Atkinson and Han, *Theoretical Numerical Analysis: A Functional Analysis
+Framework*, 3rd edition, Lemma 7.1.4. -/
+theorem ae_eq {w₁ w₂ : E → F} (h₁ : HasWeakIteratedLineDerivOn y f w₁ Ω μ)
+    (h₂ : HasWeakIteratedLineDerivOn y f w₂ Ω μ) : ∀ᵐ x ∂μ, x ∈ (Ω : Set E) → w₁ x = w₂ x := by
+  have key : ∀ᵐ x ∂μ, x ∈ (Ω : Set E) → w₁ x - w₂ x = 0 := by
+    refine Ω.isOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero
+      (LocallyIntegrableOn.sub h₁.locallyIntegrableOn_weakDeriv
+        h₂.locallyIntegrableOn_weakDeriv) fun g hg h'g hgs ↦ ?_
+    set φ : 𝓓(Ω, ℝ) := ⟨g, hg, h'g, hgs⟩ with hφ
+    have e1 : Integrable (fun x ↦ g x • w₁ x) μ := h₁.integrable_smul_weakDeriv φ
+    have e2 : Integrable (fun x ↦ g x • w₂ x) μ := h₂.integrable_smul_weakDeriv φ
+    have key : ∫ x, g x • w₁ x ∂μ = ∫ x, g x • w₂ x ∂μ :=
+      smul_right_injective F (pow_ne_zero n (by norm_num : (-1 : ℝ) ≠ 0))
+        ((h₁.integral_smul_eq' φ).symm.trans (h₂.integral_smul_eq' φ))
+    have hsub : (fun x ↦ g x • (w₁ x - w₂ x)) = fun x ↦ g x • w₁ x - g x • w₂ x :=
+      funext fun x ↦ smul_sub _ _ _
+    rw [hsub, integral_sub e1 e2, key, sub_self]
+  filter_upwards [key] with x hx hxΩ using sub_eq_zero.mp (hx hxΩ)
+
+/-- Along a tuple of length `0` the weak derivative agrees almost everywhere on `Ω` with the
+function itself. -/
+theorem ae_eq_of_length_eq_zero (hn : n = 0) (h : HasWeakIteratedLineDerivOn y f w Ω μ) :
+    ∀ᵐ x ∂μ, x ∈ (Ω : Set E) → w x = f x :=
+  h.ae_eq (of_length_eq_zero hn y h.locallyIntegrableOn)
+
+end HasWeakIteratedLineDerivOn
+
+end Line
 
 /-! ### Classical derivatives are weak derivatives -/
 
