@@ -2,14 +2,18 @@ namespace = "AtkinsonHan.Chapter07"
 
 [[node]]
 id = "definition_7_2_1"
-kind = "definition"
-desc = '''Definition 7.2.1: for `Ω ⊆ ℝ^d` open bounded and `V` a function space on `ℝ^{d-1}`, the
-boundary `∂Ω` is of class `V` when each `x_0 ∈ ∂Ω` has an `r > 0` and a `g ∈ V` with
-`Ω ∩ B(x_0,r) = {x ∈ B(x_0,r) : x_d > g(x_1,…,x_{d-1})}` after a change of coordinates; `V`
-Lipschitz gives a Lipschitz domain, `V = C^k` a `C^k` domain, `V = C^{k,α}` a Hölder boundary.
-Compactness of `∂Ω` then yields a finite cover by such balls. Not formalized: statable today as a
-local graph condition, but its only role in the book is as the hypothesis of §7.3's theorems,
-which are the chapter's gap, so nothing would consume it.'''
+
+[[node]]
+id = "definition_7_2_1_iff"
+
+[[node]]
+id = "definition_7_2_1_lipschitzDomain"
+
+[[node]]
+id = "definition_7_2_1_contDiffDomain"
+
+[[node]]
+id = "definition_7_2_1_finite_cover"
 
 [[node]]
 id = "definition_7_2_2"
@@ -44,22 +48,34 @@ id = "theorem_7_2_3"
 id = "corollary_7_2_4"
 
 [[node]]
+id = "example_7_2_5_memLp"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example 7.2.5'
+
+[[node]]
 id = "example_7_2_5"
 kind = "theorem"
-desc = '''Example 7.2.5: on the unit ball of `ℝ^d`, `v(x) = |x|^λ` satisfies `v ∈ L^p(Ω) ↔
-λ > -d/p` and, more generally, `v ∈ W^{k,p}(Ω) ↔ λ > k - d/p` (7.2.1) -- so for `d = 2` and
-`p ∈ [1,2)` there are `W^{1,p}` functions that are not continuous. The book leaves (7.2.1) to
-Exercise 7.2.7. Not formalized: a radial integrability computation over Definition 7.2.2, which
-exists now; unwritten because nothing in the corpus consumes it while §7.3 is missing.'''
-deps = ["definition_7_2_2_multiIndex"]
+desc = '''Example 7.2.5, the `W^{k,p}` half: on the unit ball of `ℝ^d`, `|x|^λ ∈ W^{k,p}(Ω) ↔
+λ > k - d/p` (7.2.1), which the book leaves to Exercise 7.2.7. The `L^p` half, `λ > -d/p`, is
+`example_7_2_5_memLp`, and it is also all that is left once the weak derivatives are known, since
+each order of differentiation lowers the exponent by one. What blocks the rest is the step the book
+passes over with "it can be verified": that the classical `v_{x_i}(x) = λ |x|^{λ-2} x_i` on
+`Ω` minus the origin is the *weak* derivative on all of `Ω`, origin included. That is an
+integration by parts against a cutoff vanishing near the origin, plus a passage to the limit, and
+no mollification or cutoff machinery on a domain exists in the project yet. The same missing step
+blocks `example_7_2_6`.'''
+deps = ["definition_7_2_2_multiIndex", "example_7_2_5_memLp"]
 
 [[node]]
 id = "example_7_2_6"
 kind = "theorem"
 desc = '''Example 7.2.6: on `Ω = B(0,β) ⊆ ℝ^2` with `β < 1`, `v(x) = log(log(1/r))` has
 `∫_Ω |∇v|^2 = -2π/log β < ∞` and `‖v‖_{L^2(Ω)} < ∞`, so `v ∈ H^1(Ω)` while `v` is unbounded at the
-origin: an `H^1` function in the plane need not be continuous. Not formalized: an explicit integral
-over Definition 7.2.2, which exists now; unwritten for want of a consumer while §7.3 is missing.'''
+origin: an `H^1` function in the plane need not be continuous. Not formalized. The two displayed
+quantities are reachable -- the gradient integral is `∫_0^β dr/(r log^2 r) = -1/log β` after
+`MeasureTheory.integral_fun_norm_addHaar`, an improper integral at `0` whose antiderivative is
+`-1/log r` -- but the conclusion `v ∈ H^1(Ω)` needs the classical gradient on `Ω` minus the origin
+to be shown to be the weak gradient on `Ω`, the same removable-singularity step that blocks
+`example_7_2_5`.'''
 deps = ["definition_7_2_2_multiIndex"]
 
 [[node]]
@@ -70,7 +86,8 @@ desc = '''Example 7.2.7: if a bounded Lipschitz `Ω` is partitioned into Lipschi
 -- the global regularity of a conforming finite element function from its element-wise regularity.
 Not formalized: the proof integrates by parts on each `Ω_n` and cancels the interface integrals
 `∫_{∂Ω_n} v φ ν_i`, so it needs surface measure on a Lipschitz boundary and the integration by
-parts formula of §7.6, which rests on the trace of Theorem 7.3.10.'''
+parts formula of §7.6, which rests on the trace of Theorem 7.3.10. The Lipschitz hypothesis itself
+is now available, as `definition_7_2_1_lipschitzDomain`.'''
 deps = ["definition_7_2_1", "definition_7_2_2_multiIndex", "proposition_7_6_1"]
 
 [[node]]
@@ -88,38 +105,30 @@ id = "definition_7_2_9"
 
 [[node]]
 id = "definition_7_2_10"
-kind = "definition"
-desc = '''Definition 7.2.10: for `s = k + σ` with `k ≥ 0` an integer and `σ ∈ (0,1)`, `W^{s,p}(Ω)`
-is the set of `v ∈ W^{k,p}(Ω)` whose `k`-th derivatives have finite Sobolev-Slobodeckij seminorm,
-`∫_{Ω×Ω} |∂^α v(x) - ∂^α v(y)|^p / ‖x-y‖^{σp+d} dx dy < ∞` for `|α| = k`, normed accordingly; the
-book states without proof that it is Banach, reflexive exactly for `p ∈ (1,∞)`, and Hilbert for
-`p = 2`. Not formalized: a double integral over Definition 7.2.2, which exists now, but the book
-introduces these spaces solely to state the trace theorems and Definition 7.2.13, both of which are
-§7.3 material.'''
-deps = ["definition_7_2_2_multiIndex"]
+
+[[node]]
+id = "definition_7_2_10_quotient"
+
+[[node]]
+id = "definition_7_2_10_of_exists"
+
+[[node]]
+id = "definition_7_2_10_iff_exists"
+
+[[node]]
+id = "definition_7_2_10_norm"
 
 [[node]]
 id = "definition_7_2_11"
-kind = "definition"
-desc = '''Definition 7.2.11: for `s ≥ 0`, `W_0^{s,p}(Ω)` is the closure of `C_0^∞(Ω)` in
-`W^{s,p}(Ω)`, with `H_0^s(Ω) ≡ W_0^{s,2}(Ω)`. Not formalized: the real-order analogue of
-Definition 7.2.9, which is formalized for integer `s`. For genuinely real `s` there is still no
-`W^{s,p}(Ω)` to take a closure in, since Definition 7.2.10 is unwritten; and the point of the space
-is to carry boundary conditions, which needs the trace of §7.3.'''
-deps = ["definition_7_2_10", "definition_7_2_9"]
 
 [[node]]
 id = "definition_7_2_12"
-kind = "definition"
-desc = '''Definition 7.2.12: for `s ≥ 0` and conjugate exponents `p, p'`, `W^{-s,p'}(Ω)` is the
-dual of `W_0^{s,p}(Ω)`, with `H^{-s}(Ω) ≡ W^{-s,2}(Ω)`; in particular `H^{-1}(Ω)` is the dual of
-`H_0^1(Ω)`, `L^2(Ω)` embeds in it by `⟨f,v⟩ = ∫_Ω f v`, and every `ℓ ∈ H^{-1}(Ω)` is
-`ℓ_0 - ∑_i ∂_i ℓ_i` for `L^2` functions `ℓ_0,…,ℓ_d` (stated without proof). Not formalized: the dual
-space is Mathlib's `NormedSpace.Dual` once Definition 7.2.11 exists. For integer `s` everything it
-waits on is now available -- Theorem 7.2.3 and Definition 7.2.9 -- so only the real-order case,
-which needs Definition 7.2.10, is still blocked; it is unwritten because nothing in the corpus
-consumes the dual before §7.3.'''
-deps = ["definition_7_2_11"]
+
+[[node]]
+id = "definition_7_2_12_integerOrder"
+
+[[node]]
+id = "definition_7_2_12_hMinusOne"
 
 [[node]]
 id = "definition_7_2_13"
@@ -128,6 +137,8 @@ desc = '''Definition 7.2.13: given a patch system `∂Ω ∩ B(x_i,r_i) = {x_d =
 with `g_i ∈ C^{k,α}(D_i)` covering `∂Ω`, and `s ≤ k + α`, `W^{s,p}(∂Ω) = {v ∈ L^2(∂Ω) : v ∘ g_i ∈
 W^{s,p}(D_i)}` with `‖v‖ = max_i ‖v ∘ g_i‖_{W^{s,p}(D_i)}`; `H^s(∂Ω) ≡ W^{s,2}(∂Ω)`, and
 `H^{1/2}(∂Ω)` is the one used later. Not formalized: this needs surface measure on a Lipschitz
-boundary before `L^2(∂Ω)` is even definable, plus the patch system and the independence of the
-norm from it; Mathlib has none of that.'''
-deps = ["definition_7_2_1", "definition_7_2_10"]
+boundary before `L^2(∂Ω)` is even definable. The patch system itself is now available --
+`definition_7_2_1_finite_cover` produces exactly the `(x_i, r_i)` and the `g_i` -- and so are the
+`W^{s,p}(D_i)` of the patches, `SobolevSlobodeckij`; what is missing is the measure on `∂Ω`, and
+with it the independence of the norm from the choice of patches.'''
+deps = ["definition_7_2_1_finite_cover", "definition_7_2_10"]

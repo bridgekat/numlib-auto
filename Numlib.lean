@@ -43,6 +43,7 @@ import Numlib.Analysis.ODE.PicardLindelof
 import Numlib.Analysis.Sobolev.Domain
 import Numlib.Analysis.Sobolev.MultiIndex
 import Numlib.Analysis.Sobolev.Periodic
+import Numlib.Analysis.Sobolev.Slobodeckij
 import Numlib.Analysis.Sobolev.Space
 import Numlib.Analysis.Sobolev.WeakDeriv
 import Numlib.Analysis.SpecialFunctions.Chebyshev

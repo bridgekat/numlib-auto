@@ -28,7 +28,8 @@ difference matters at `p = 2`, where only the norm here is induced by an inner p
 
 ## Main definitions
 
-* `MultiIndexLE ι k`, the multi-indices `α : ι → ℕ` with `|α| = ∑ i, α i ≤ k`;
+* `MultiIndexLE ι k`, the multi-indices `α : ι → ℕ` with `|α| = ∑ i, α i ≤ k`, and
+  `MultiIndexEq ι k`, those of order exactly `k`;
 * `multiIndexDirections b α` and `multiIndexTuple b α`, the `|α|` directions naming `∂^α` — the
   basis vector `b i` repeated `α i` times, the indices in increasing order — as a list and as a
   tuple, so that `∂^α v` is the weak derivative of `v` along `multiIndexTuple b α` in the sense of
@@ -151,6 +152,16 @@ theorem coe_zero : ((0 : MultiIndexLE ι k) : ι → ℕ) = 0 := rfl
 theorem sum_zero : ∑ _i : ι, (0 : ι → ℕ) _i = 0 := by simp
 
 end MultiIndexLE
+
+/-- The multi-indices of order exactly `k` over the finite index type `ι`, as a subtype of the
+multi-indices of order at most `k`: the `α` with `|α| = ∑ i, α i = k`. These are the multi-indices
+of *top* order, over which the seminorms built from the highest derivatives are summed. -/
+abbrev MultiIndexEq (ι : Type*) [Fintype ι] (k : ℕ) : Type _ :=
+  {α : MultiIndexLE ι k // ∑ i, α.1 i = k}
+
+/-- There are finitely many multi-indices of order exactly `k`, there being finitely many of order
+at most `k`. -/
+noncomputable instance MultiIndexEq.instFintype : Fintype (MultiIndexEq ι k) := Fintype.ofFinite _
 
 end MultiIndex
 

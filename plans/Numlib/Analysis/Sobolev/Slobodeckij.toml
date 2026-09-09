@@ -1,0 +1,61 @@
+[[node]]
+id = "prodRestrict"
+
+[[node]]
+id = "slobodeckijQuotient"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.10'
+
+[[node]]
+id = "norm_slobodeckijQuotient"
+
+[[node]]
+id = "slobodeckijQuotient_add"
+
+[[node]]
+id = "slobodeckijQuotient_smul"
+
+[[node]]
+id = "slobodeckijQuotient_congr_ae"
+
+[[node]]
+id = "SobolevSlobodeckijTuple"
+
+[[node]]
+id = "SobolevSlobodeckij"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.10'
+
+[[node]]
+id = "SobolevSlobodeckij.toSobolevMultiIndex"
+
+[[node]]
+id = "SobolevSlobodeckij.fn"
+
+[[node]]
+id = "SobolevSlobodeckij.fn_toSobolevMultiIndex"
+
+[[node]]
+id = "SobolevSlobodeckij.snd_ae"
+
+[[node]]
+id = "SobolevSlobodeckij.fn_zero"
+
+[[node]]
+id = "SobolevSlobodeckij.fn_add"
+
+[[node]]
+id = "SobolevSlobodeckij.fn_smul"
+
+[[node]]
+id = "SobolevSlobodeckij.norm_eq_add"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.10'
+
+[[node]]
+id = "SobolevSlobodeckij.norm_snd_rpow"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.10'
+
+[[node]]
+id = "SobolevSlobodeckij.testFunctions"
+
+[[node]]
+id = "SobolevSlobodeckijZero"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.11'

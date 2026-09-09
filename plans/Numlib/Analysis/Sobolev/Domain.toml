@@ -60,3 +60,49 @@ source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definit
 [[node]]
 id = "sobolevSeminorm"
 source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.2'
+
+[[node]]
+id = "EuclideanSpace.init"
+
+[[node]]
+id = "EuclideanSpace.init_apply"
+
+[[node]]
+id = "IsBoundaryGraphAt"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.1'
+
+[[node]]
+id = "IsBoundaryOfClass"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.1'
+
+[[node]]
+id = "IsLipschitzDomain"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.1'
+
+[[node]]
+id = "IsContDiffDomain"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.1'
+
+[[node]]
+id = "IsLipschitzDomain.isOpen"
+
+[[node]]
+id = "IsLipschitzDomain.isBoundaryOfClass"
+
+[[node]]
+id = "IsContDiffDomain.isOpen"
+
+[[node]]
+id = "IsContDiffDomain.isBoundaryOfClass"
+
+[[node]]
+id = "IsBoundaryGraphAt.mono"
+
+[[node]]
+id = "IsBoundaryOfClass.mono"
+
+[[node]]
+id = "IsBoundaryOfClass.exists_finite_cover"
+
+[[node]]
+id = "isBoundaryOfClass_upperHalfSpace"
