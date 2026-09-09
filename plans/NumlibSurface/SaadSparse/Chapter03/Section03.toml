@@ -33,14 +33,4 @@ id = "frobenius_normal_form"
 
 [[node]]
 id = "example_3_3"
-kind = "theorem"
-desc = '''
-Example 3.3 (§3.3.2): the "arrow" (or star) matrix of Figure 3.4 and its adjacency graph,
-reordered by the reversing permutation `9, 8, …, 1` into the matrix of Figure 3.5; Gaussian
-elimination on the reordered matrix creates no fill-in, whereas on the original it fills `L` and
-`U` densely after the first step. (The node `equation_3_3` of this group is Saad's display (3.3),
-a different object with a colliding number.) Not formalized: the claim is about *structural*
-fill-in, a notion this chapter never defines, and the gap is upstream of it — there is no LU
-factorization anywhere in `Numlib`, so there is nothing to state the pattern of. The chapter
-group's desc records the same, together with what a symbolic-pattern model would cost.
-'''
+source = "Saad, Iterative Methods for Sparse Linear Systems, Example 3.3"

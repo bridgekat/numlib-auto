@@ -36,17 +36,20 @@ that is what is proved.
   type. Reading the pair in base `card + 1` is the rank, and no quotient or linear-extension
   theorem appears. Mathlib does have the components themselves, as
   `Quiver.stronglyConnectedSetoid`; what it lacks is the ordering, and that is a page.
-* Example 3.3's fill-in claim about the arrow matrix, and Problem P-3.12 (the structural inverse of
-  an irreducible matrix is dense). Both need a formal notion of *structural* fill-in or of the
-  structural inverse, which the chapter never defines, and the gap is upstream of the statement:
-  there is no LU factorization anywhere in `Numlib`. Neither piece is exotic - an LU factorization
-  under nonvanishing leading principal minors, and a symbolic model in which the pattern of the
-  factors is quantified over all values compatible with the pattern, so that accidental
-  cancellation cannot make the claim false - so this too is *unwritten rather than unreachable*;
-  it is simply out of the corpus's way, the present corpus being entirely iterative. Do the
-  symbolic-pattern model once and both claims follow. The mathematical kernel of P-3.12 -
-  `(1 + A) ^ (n - 1)` is entrywise positive for an irreducible nonnegative `A` - is planned, as
+* Problem P-3.12 (the structural inverse of an irreducible matrix is dense). It needs a formal
+  notion of the structural inverse, which the chapter never defines, and the gap is upstream of the
+  statement: there is no LU factorization anywhere in `Numlib`. The piece is not exotic - a
+  symbolic model in which the pattern of the inverse is quantified over all values compatible with
+  the pattern, so that accidental cancellation cannot make the claim false - so this too is
+  *unwritten rather than unreachable*; it is simply out of the corpus's way, the present corpus
+  being entirely iterative. The mathematical kernel of P-3.12 - `(1 + A) ^ (n - 1)` is entrywise
+  positive for an irreducible nonnegative `A` - is planned, as
   `Matrix.IsIrreducible.entrywisePos_one_add_pow`.
+* Example 3.3 is now proved, as `example_3_3`, over the pattern the text describes rather than over
+  Figure 3.4's picture: the star graph, the effect of the reversing permutation on it, the fill one
+  elimination step makes on the original matrix, and an exhibited fill-free `L U` factorization of
+  the reordered one. The general characterization of the fill of complete Gaussian elimination is
+  `SaadSparse.Chapter10.theorem_10_6`, of which this example is the smallest instance.
 * Bandwidth, profile, envelope and skyline. This edition defines none of them and proves no bound
   about any of them; they appear only as informal remarks in Example 3.4.
 '''

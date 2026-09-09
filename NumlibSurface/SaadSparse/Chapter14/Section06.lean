@@ -8,7 +8,7 @@ import NumlibSurface.SaadSparse.Chapter14.Section03
 
 Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
 2003, §14.6. Only §14.6.3, spectral bisection, carries a theorem, and it is a short one over
-Mathlib's graph Laplacian.
+Mathlib's graph Laplacian; §14.6.1 and §14.6.2 contribute the three definitions the chapter numbers.
 
 * `lapMatrix_quadratic_partition` is the identity that makes graph bisection a quadratic
   minimization: for a partition vector `p` with entries `±1`, the Laplacian quadratic form
@@ -19,6 +19,11 @@ Mathlib's graph Laplacian.
   what the definition buys here: the subdomain spaces of a map span the whole space, so a family
   that is not a map leaves an unknown untouched by every subdomain solve and Assumption 1 of
   §14.3.4 fails outright.
+* `definition_14_14` and `definition_14_15` are the `k`-ply neighborhood system and the
+  `(α, k)`-overlap graph of §14.6.2, the vocabulary of the geometric separator theorem: `n` closed
+  disks of which no point of `ℝ^d` is strictly interior to more than `k`, and the graph joining
+  two disks that each meet the `α`-dilation of the other.  `definition_14_14_iff` reads "strictly
+  interior" as Mathlib's `interior`, and `definition_14_15_adj` writes the edge set out.
 * `fiedlerVector` is its continuous relaxation, which is the reason for Algorithm 14.7: the
   minimum of the Rayleigh quotient of `L` over the nonzero vectors orthogonal to the constant
   vector `e` is the second smallest eigenvalue of `L`, attained at the Fiedler vector.  Minimizing
@@ -28,17 +33,15 @@ Mathlib's graph Laplacian.
 
 ## Not formalized here
 
-Definitions 14.14 (`k`-ply neighborhood systems in `ℝ^d`) and 14.15 (`(α, k)`-overlap graphs)
-exist only to state Theorem 14.16, the geometric separator theorem of Miller, Teng, Thurston and
-Vavasis, which Saad quotes without proof and which needs stereographic projection into `S^d`, the
-existence of a centerpoint of a finite set and a random-great-circle argument — none of which
-Mathlib has.  Two definitions with nothing behind them are worth less than the note that says so,
-so they go with the theorem.  Definition 14.13 is a different case and is stated above: it is the
-vocabulary of §14.3 as well as of §14.6, and it comes with a bridge to how the library states the
-Schwarz hypotheses.  §14.6.2 (coordinate and
-inertial bisection), §14.6.4 (level-set expansion, the pseudo-peripheral node heuristic, recursive
-graph bisection, multinode expansion) and Algorithms 14.7–14.10 are heuristics with no claim
-attached.
+Theorem 14.16, the geometric separator theorem of Miller, Teng, Thurston and Vavasis, over the
+`(α, k)`-overlap graphs `definition_14_15` builds.  Saad quotes it without proof, and its proof
+needs stereographic projection into `S^d`, the existence of a centerpoint of a finite set and a
+random-great-circle argument — none of which Mathlib has.  The two definitions it is stated over
+are geometry and are given above; the theorem itself is the piece that is out of reach.
+
+The rest of §14.6.2 (coordinate and inertial bisection), §14.6.4 (level-set expansion, the
+pseudo-peripheral node heuristic, recursive graph bisection, multinode expansion) and Algorithms
+14.7–14.10 are heuristics with no claim attached.
 -/
 
 open Finset Matrix
@@ -277,5 +280,58 @@ theorem iSup_subdomainSpace_eq_top {S : ι → Finset (Fin n)} (h : IsMap S) :
   exact Submodule.subset_span ⟨⟨j, hi⟩, rfl⟩
 
 end Map
+
+/-! ### §14.6.2: Definitions 14.14 and 14.15, neighborhood systems and overlap graphs -/
+
+section Overlap
+
+variable {d n : ℕ}
+
+/-- **Definition 14.14**: a *`k`-ply neighborhood system* in `ℝ^d` is a set of `n` closed disks
+`D_1, …, D_n` such that no point of `ℝ^d` is strictly interior to more than `k` of them.
+
+A closed disk is given by its centre `c i` and its radius `r i`, and "strictly interior to `D_i`"
+is membership in the open ball, which is the interior of the closed one — `definition_14_14_iff`.
+-/
+def definition_14_14 (k : ℕ) (c : Fin n → EuclideanSpace ℝ (Fin d)) (r : Fin n → ℝ) : Prop :=
+  ∀ x : EuclideanSpace ℝ (Fin d), {i | x ∈ Metric.ball (c i) (r i)}.ncard ≤ k
+
+/-- Definition 14.14 with "strictly interior" read as Mathlib's `interior`: for disks of nonzero
+radius the open ball is the interior of the closed ball, so the two readings of the condition
+agree. -/
+theorem definition_14_14_iff (k : ℕ) (c : Fin n → EuclideanSpace ℝ (Fin d)) {r : Fin n → ℝ}
+    (hr : ∀ i, r i ≠ 0) :
+    definition_14_14 k c r ↔
+      ∀ x : EuclideanSpace ℝ (Fin d),
+        {i | x ∈ interior (Metric.closedBall (c i) (r i))}.ncard ≤ k := by
+  simp only [definition_14_14, interior_closedBall _ (hr _)]
+
+/-- **Definition 14.15**: for `α ≥ 1` and a `k`-ply neighborhood system `D_1, …, D_n`, the
+*`(α, k)`-overlap graph* has vertex set `{1, …, n}` and an edge `(i, j)` exactly when
+`D_i ∩ α·D_j ≠ ∅` and `D_j ∩ α·D_i ≠ ∅`, the dilation `α·D` being the disk with the same centre
+and `α` times the radius.
+
+Neither `1 ≤ α` nor the `k`-ply condition enters the construction: they are the standing hypotheses
+under which Theorem 14.16 bounds the separator, and `definition_14_14` states the second of them.
+-/
+def definition_14_15 (α : ℝ) (c : Fin n → EuclideanSpace ℝ (Fin d)) (r : Fin n → ℝ) :
+    SimpleGraph (Fin n) :=
+  SimpleGraph.fromRel fun i j =>
+    (Metric.closedBall (c i) (r i) ∩ Metric.closedBall (c j) (α * r j)).Nonempty ∧
+      (Metric.closedBall (c j) (r j) ∩ Metric.closedBall (c i) (α * r i)).Nonempty
+
+/-- The edges of the `(α, k)`-overlap graph, as the book writes them.  The book's edge set is a
+subset of `V × V`, and the condition cutting it out is already symmetric in `i` and `j`; so
+`SimpleGraph.fromRel`, which symmetrizes and drops the loops the condition carries at every `i`
+whose disk is nonempty, adds nothing but the loopless convention of §3.3.2's adjacency graph. -/
+theorem definition_14_15_adj (α : ℝ) (c : Fin n → EuclideanSpace ℝ (Fin d)) (r : Fin n → ℝ)
+    (i j : Fin n) :
+    (definition_14_15 α c r).Adj i j ↔ i ≠ j ∧
+      (Metric.closedBall (c i) (r i) ∩ Metric.closedBall (c j) (α * r j)).Nonempty ∧
+        (Metric.closedBall (c j) (r j) ∩ Metric.closedBall (c i) (α * r i)).Nonempty := by
+  rw [definition_14_15, SimpleGraph.fromRel_adj]
+  exact and_congr_right fun _ => or_iff_left_iff_imp.2 fun h => ⟨h.2, h.1⟩
+
+end Overlap
 
 end SaadSparse.Chapter14

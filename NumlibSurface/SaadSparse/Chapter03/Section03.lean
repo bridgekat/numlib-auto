@@ -33,6 +33,15 @@ be bounded by a count of nonzeros in one row, that is in `exists_multicoloring` 
 `greedy_coloring_bounds`.  For the same reason the level-set statement needs no connectedness: an
 index unreachable from the root has distance zero, on both sides of the comparison.
 
+§3.3.2 gets Example 3.3, the `9 × 9` arrow matrix, as `example_3_3`.  Figure 3.4 prints a pattern
+and no values — nonzeros on the diagonal and in the first row and column — so the pattern is the
+hypothesis and every clause holds of every matrix carrying it: the adjacency graph is the star, the
+reversing permutation `9, 8, …, 1` turns the pattern upside down and only relabels the graph, one
+elimination step on the original fills the whole trailing block, and the reordered matrix has an
+exhibited `L U` factorization whose factors vanish wherever it does.  The last two are the fill
+claims of the example, stated as far as §3.3 reaches; the characterization of the fill of *complete*
+Gaussian elimination is `SaadSparse.Chapter10.theorem_10_6`, which this example instantiates.
+
 §3.3.4 gets two: the reducibility characterization `isPatternIrreducible_iff`, and the Frobenius
 normal form `frobenius_normal_form`, whose block index is the topological ordering of the strongly
 connected components of `Numlib/Combinatorics/Relation/StronglyConnected`.
@@ -102,6 +111,157 @@ theorem adjGraph_submatrix (A : Matrix (Fin n) (Fin n) ℝ) (σ : Equiv.Perm (Fi
   have h' := h.submatrix σ⁻¹
   rw [submatrix_submatrix, ← Equiv.Perm.coe_mul, mul_inv_cancel] at h'
   simpa using h'
+
+/-! ### §3.3.2 Example 3.3, the arrow matrix -/
+
+/-- The `L` factor of the reversed arrow matrix of Figure 3.5: the identity together with the last
+row `l_j / d_j`.  Nothing but the last row is filled, which is Example 3.3's claim. -/
+private noncomputable def arrowL (B : Matrix (Fin 9) (Fin 9) ℝ) : Matrix (Fin 9) (Fin 9) ℝ :=
+  Matrix.of fun i j => if i = j then 1 else if i = 8 then B 8 j / B j j else 0
+
+/-- The `U` factor of the reversed arrow matrix of Figure 3.5: the diagonal of `B` together with its
+last column, whose bottom entry is the Schur complement `s - ∑ l_k u_k / d_k`. -/
+private noncomputable def arrowU (B : Matrix (Fin 9) (Fin 9) ℝ) : Matrix (Fin 9) (Fin 9) ℝ :=
+  Matrix.of fun i j =>
+    if j = 8 then (if i = 8 then B 8 8 - ∑ k ∈ univ.erase 8, B 8 k * B k 8 / B k k else B i 8)
+    else if i = j then B i i else 0
+
+/-- **Saad Example 3.3**, the `9 × 9` "arrow" matrix of Figure 3.4 and the reversing permutation
+`9, 8, …, 1`.  The book prints a *pattern* and no values: nonzeros on the diagonal and in the first
+row and the first column.  That pattern is the hypothesis, and every clause below holds of every
+matrix carrying it.
+
+* The adjacency graph is the star of Figure 3.4: index `1` is adjacent to all the others and no two
+  others are adjacent, which is why Saad prefers "star matrix" to "arrow matrix".
+* The reversing permutation `σ : i ↦ 9 - i`, applied symmetrically, turns the pattern upside down —
+  nonzeros on the diagonal and in the *last* row and column, Figure 3.5 — and only relabels the
+  graph, by `adjGraph_submatrix`: the star is now centred at `9`.
+* On the original matrix one step of Gaussian elimination fills the whole trailing block: every
+  off-diagonal entry of `a_ij - a_i1 a_1j / a_11` with `i, j ≠ 1` is nonzero, and none of them was.
+  These are Saad's "disastrous fill-ins", and no assumption on the values is needed: the entry
+  produced is `-a_i1 a_1j / a_11`, a quotient of products of nonzeros.
+* On the reordered matrix there is no fill-in at all: it has an exact factorization `L U` with `L`
+  unit lower triangular, `U` upper triangular and *both factors vanishing wherever the matrix
+  does*, which is Saad's "the `L` and `U` parts of the `LU` factorization will have the same
+  structure as the lower and upper parts of `A`".  The factors are exhibited, so no existence
+  theorem for `LU` is needed.
+
+The fill claims are about one elimination step and about an exhibited factorization, which is as
+far as §3.3 can state them: the characterization of the fill of *complete* Gaussian elimination is
+Theorem 10.6, and this example is its smallest instance. -/
+theorem example_3_3 (A : Matrix (Fin 9) (Fin 9) ℝ)
+    (hA : ∀ i j, A i j ≠ 0 ↔ i = j ∨ i = 0 ∨ j = 0) :
+    (∀ i j, A.adjGraph.Adj i j ↔ i ≠ j ∧ (i = 0 ∨ j = 0)) ∧
+      (∀ i j, A.submatrix Fin.revPerm Fin.revPerm i j ≠ 0 ↔ i = j ∨ i = 8 ∨ j = 8) ∧
+      (∀ i j, (A.submatrix Fin.revPerm Fin.revPerm).adjGraph.Adj i j ↔ i ≠ j ∧ (i = 8 ∨ j = 8)) ∧
+      (∀ i j, i ≠ 0 → j ≠ 0 → i ≠ j → A i j - A i 0 * A 0 j / A 0 0 ≠ 0) ∧
+      ∃ L U : Matrix (Fin 9) (Fin 9) ℝ,
+        (∀ i, L i i = 1) ∧ (∀ i j, i < j → L i j = 0) ∧ (∀ i j, j < i → U i j = 0) ∧
+          L * U = A.submatrix Fin.revPerm Fin.revPerm ∧
+          ∀ i j, A.submatrix Fin.revPerm Fin.revPerm i j = 0 → L i j = 0 ∧ U i j = 0 := by
+  have hle : ∀ i : Fin 9, i ≤ 8 := by decide
+  have hrev : ∀ i : Fin 9, i.rev = 0 ↔ i = 8 := by decide
+  -- the star graph of Figure 3.4
+  have hgraph : ∀ i j, A.adjGraph.Adj i j ↔ i ≠ j ∧ (i = 0 ∨ j = 0) := by
+    intro i j
+    rw [Matrix.adjGraph_adj, hA, hA]
+    refine and_congr_right fun hij => ⟨fun h => ?_, fun h => Or.inl (Or.inr h)⟩
+    rcases h with h | h <;> rcases h with h | h <;>
+      first
+        | exact absurd h hij
+        | exact absurd h.symm hij
+        | tauto
+  -- the pattern of the reordered matrix, Figure 3.5
+  have hB : ∀ i j, A.submatrix Fin.revPerm Fin.revPerm i j ≠ 0 ↔ i = j ∨ i = 8 ∨ j = 8 := by
+    intro i j
+    rw [Matrix.submatrix_apply, Fin.revPerm_apply, Fin.revPerm_apply, hA, Fin.rev_inj, hrev, hrev]
+  -- the reordering only relabels the graph
+  have hgraph' : ∀ i j, (A.submatrix Fin.revPerm Fin.revPerm).adjGraph.Adj i j ↔
+      i ≠ j ∧ (i = 8 ∨ j = 8) := by
+    intro i j
+    rw [(adjGraph_submatrix A Fin.revPerm).2.1 i j, hgraph, Fin.revPerm_apply, Fin.revPerm_apply,
+      ne_eq, Fin.rev_inj, hrev, hrev]
+  -- one step of Gaussian elimination fills the trailing block
+  have hfill : ∀ i j : Fin 9, i ≠ 0 → j ≠ 0 → i ≠ j → A i j - A i 0 * A 0 j / A 0 0 ≠ 0 := by
+    intro i j hi hj hij
+    have h0 : A i j = 0 := by
+      by_contra h
+      rcases (hA i j).1 h with h | h | h
+      exacts [hij h, hi h, hj h]
+    rw [h0, zero_sub, neg_ne_zero]
+    exact div_ne_zero (mul_ne_zero ((hA i 0).2 (Or.inr (Or.inr rfl)))
+      ((hA 0 j).2 (Or.inr (Or.inl rfl)))) ((hA 0 0).2 (Or.inl rfl))
+  set B := A.submatrix Fin.revPerm Fin.revPerm with hBdef
+  have hdiag : ∀ i, B i i ≠ 0 := fun i => (hB i i).2 (Or.inl rfl)
+  refine ⟨hgraph, hB, hgraph', hfill, arrowL B, arrowU B, fun i => by simp [arrowL],
+    fun i j hij => ?_, fun i j hij => ?_, ?_, fun i j h => ?_⟩
+  -- `L` is unit lower triangular
+  · have hi8 : i ≠ 8 := fun h => absurd (hle j) (not_le.2 (h ▸ hij))
+    simp [arrowL, hij.ne, hi8]
+  -- `U` is upper triangular
+  · have hj8 : j ≠ 8 := fun h => absurd (hle i) (not_le.2 (h ▸ hij))
+    simp [arrowU, hj8, hij.ne']
+  -- the factorization is exact
+  · ext i j
+    rw [Matrix.mul_apply]
+    by_cases hie : i = 8
+    · subst hie
+      rw [← Finset.sum_erase_add _ _ (mem_univ (8 : Fin 9))]
+      by_cases hj8 : j = 8
+      · subst hj8
+        have hterm : ∀ k ∈ univ.erase (8 : Fin 9),
+            arrowL B 8 k * arrowU B k 8 = B 8 k * B k 8 / B k k := by
+          intro k hk
+          have hk8 : k ≠ 8 := Finset.ne_of_mem_erase hk
+          have hLk : arrowL B 8 k = B 8 k / B k k := by simp [arrowL, Ne.symm hk8]
+          have hUk : arrowU B k 8 = B k 8 := by simp [arrowU, hk8]
+          rw [hLk, hUk]
+          ring
+        rw [Finset.sum_congr rfl hterm]
+        have hL88 : arrowL B 8 8 = 1 := by simp [arrowL]
+        have hU88 : arrowU B 8 8 = B 8 8 - ∑ k ∈ univ.erase 8, B 8 k * B k 8 / B k k := by
+          simp [arrowU]
+        rw [hL88, hU88]
+        ring
+      · have hterm : ∀ k ∈ univ.erase (8 : Fin 9),
+            arrowL B 8 k * arrowU B k j = if k = j then B 8 j else 0 := by
+          intro k hk
+          have hk8 : k ≠ 8 := Finset.ne_of_mem_erase hk
+          have hLk : arrowL B 8 k = B 8 k / B k k := by simp [arrowL, Ne.symm hk8]
+          have hUk : arrowU B k j = if k = j then B k k else 0 := by simp [arrowU, hj8]
+          rw [hLk, hUk]
+          split_ifs with h
+          · subst h
+            field_simp [hdiag k]
+          · ring
+        rw [Finset.sum_congr rfl hterm,
+          Finset.sum_ite_eq' (univ.erase (8 : Fin 9)) j fun _ => B 8 j]
+        have hjmem : j ∈ univ.erase (8 : Fin 9) := Finset.mem_erase.2 ⟨hj8, mem_univ j⟩
+        have hU8j : arrowU B 8 j = 0 := by simp [arrowU, hj8, Ne.symm hj8]
+        simp [hjmem, hU8j]
+    · have hL : ∀ k, arrowL B i k = if i = k then 1 else 0 := by
+        intro k
+        simp [arrowL, hie]
+      simp_rw [hL, ite_mul, one_mul, zero_mul]
+      rw [Finset.sum_ite_eq univ i fun k => arrowU B k j]
+      simp only [mem_univ, ite_true]
+      by_cases hj8 : j = 8
+      · subst hj8
+        simp [arrowU, hie]
+      · by_cases hij : i = j
+        · subst hij
+          simp [arrowU, hj8]
+        · have hBij : B i j = 0 := by
+            by_contra hc
+            rcases (hB i j).1 hc with h | h | h
+            exacts [hij h, hie h, hj8 h]
+          simp [arrowU, hj8, hij, hBij]
+  -- no fill-in
+  · have h' : ¬ (i = j ∨ i = 8 ∨ j = 8) := fun hc => (hB i j).2 hc h
+    have hij : i ≠ j := fun hc => h' (Or.inl hc)
+    have hi8 : i ≠ 8 := fun hc => h' (Or.inr (Or.inl hc))
+    have hj8 : j ≠ 8 := fun hc => h' (Or.inr (Or.inr hc))
+    exact ⟨by simp [arrowL, hij, hi8], by simp [arrowU, hj8, hij]⟩
 
 /-! ### §3.3.3 Common reorderings: level sets -/
 

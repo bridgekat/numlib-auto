@@ -5,6 +5,7 @@ import Numlib.Eigen.Perturbation
 import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.LinearAlgebra.Matrix.Hessenberg
 import Numlib.LinearAlgebra.Matrix.MMatrix
+import Numlib.LinearAlgebra.Sparse.Pattern
 import Numlib.LinearSolve.Stationary.ConsistentlyOrdered
 import Numlib.LinearSolve.Stationary.DiagDominant
 import Numlib.LinearSolve.Stationary.RegularSplitting
@@ -26,12 +27,15 @@ theory (`Numlib/LinearAlgebra/Matrix/Complexify.lean`,
 `Numlib/Analysis/Normed/Algebra/SpectralRadius.lean`, `Numlib/LinearSolve/Stationary/Basic.lean`) to
 real matrices acting on `Fin n → ℝ`.
 
-**§4.2.3, diagonally dominant matrices**: Gershgorin's theorem (Theorem 4.6) in its row and column
-forms, the nonsingularity of strictly diagonally dominant matrices (Corollary 4.8), and the
-convergence of the Jacobi and Gauss–Seidel iterations for such matrices (Theorem 4.9). Saad's
-Definition 4.5 as printed uses column sums for all three dominance conditions, while the proofs of
-Theorems 4.6 and 4.9 use row sums; both forms are stated here, following the backbone's
-`Matrix.IsStrictDiagDominant` (rows) and `Matrix.IsStrictColDiagDominant` (columns).
+**§4.2.3, diagonally dominant matrices**: Definition 4.5, Gershgorin's theorem (Theorem 4.6) in its
+row and column forms, the nonsingularity of strictly diagonally dominant matrices (Corollary 4.8),
+and the convergence of the Jacobi and Gauss–Seidel iterations for such matrices (Theorem 4.9).
+Saad's Definition 4.5 as printed uses column sums for all three dominance conditions, while the
+proofs of Theorems 4.6 and 4.9 use row sums; both forms are stated here, following the backbone's
+`Matrix.IsStrictDiagDominant` (rows) and `Matrix.IsStrictColDiagDominant` (columns). The three
+conditions the definition names are `definition_4_5`, `definition_4_5_strict` and
+`definition_4_5_irreducible`, written in the book's column form, and `definition_4_5_iff` reads them
+back as the backbone's predicates at `Aᵀ`.
 
 The third condition of Definition 4.5, *irreducible* diagonal dominance, carries a clause that is
 easy to drop and that both Corollary 4.8 and Theorem 4.9 need: weak dominance at every index **and
@@ -362,6 +366,46 @@ open Filter Topology Finset Stationary
 open scoped SaadSparse
 
 variable {n : ℕ}
+
+/-! ### Definition 4.5 -/
+
+/-- **Definition 4.5**, first clause: `A` is *(weakly) diagonally dominant* when
+`|a_jj| ≥ ∑_{i ≠ j} |a_ij|` for `j = 1, …, n`.
+
+The sum runs down the *column* `j`, which is how the book prints all three clauses of the
+definition, while the proofs of Theorems 4.6 and 4.9 use the row form; both are carried in this
+file.  Weak dominance is the clause with no name of its own in the backbone: it is the `dominant`
+field of `Matrix.IsIrreduciblyDiagDominant`, and is written out wherever else it is needed. -/
+def definition_4_5 {𝕜 : Type*} [RCLike 𝕜] (A : Matrix (Fin n) (Fin n) 𝕜) : Prop :=
+  ∀ j, ∑ i ∈ univ.erase j, ‖A i j‖ ≤ ‖A j j‖
+
+/-- **Definition 4.5**, second clause: `A` is *strictly diagonally dominant* when
+`|a_jj| > ∑_{i ≠ j} |a_ij|` for `j = 1, …, n`. -/
+def definition_4_5_strict {𝕜 : Type*} [RCLike 𝕜] (A : Matrix (Fin n) (Fin n) 𝕜) : Prop :=
+  ∀ j, ∑ i ∈ univ.erase j, ‖A i j‖ < ‖A j j‖
+
+/-- **Definition 4.5**, third clause: `A` is *irreducibly diagonally dominant* when `A` is
+irreducible — §3.3.4's `Matrix.IsPatternIrreducible` — and weakly diagonally dominant, with strict
+inequality for at least one `j`.
+
+The last conjunct is easy to lose sight of and neither Corollary 4.8 nor Theorem 4.9 holds without
+it: `!![1, -1; -1, 1]` is irreducible and weakly diagonally dominant yet singular. -/
+def definition_4_5_irreducible {𝕜 : Type*} [RCLike 𝕜] (A : Matrix (Fin n) (Fin n) 𝕜) : Prop :=
+  A.IsPatternIrreducible ∧ definition_4_5 A ∧ ∃ j, ∑ i ∈ univ.erase j, ‖A i j‖ < ‖A j j‖
+
+/-- Definition 4.5 read back as the backbone's predicates.  The book's three conditions are column
+conditions on `A`, hence row conditions on `Aᵀ`: weak dominance is the `dominant` field of
+`Matrix.IsIrreduciblyDiagDominant` at `Aᵀ`, and the strict and irreducible clauses are
+`Matrix.IsStrictColDiagDominant` and `Matrix.IsIrreduciblyColDiagDominant`, which are the row
+predicates of the backbone read at `Aᵀ` by definition.  Corollary 4.8 and Theorem 4.9 below are
+stated in those predicates, in both the row and the column form. -/
+theorem definition_4_5_iff {𝕜 : Type*} [RCLike 𝕜] (A : Matrix (Fin n) (Fin n) 𝕜) :
+    (definition_4_5 A ↔ ∀ i, ∑ j ∈ univ.erase i, ‖Aᵀ i j‖ ≤ ‖Aᵀ i i‖) ∧
+      (definition_4_5_strict A ↔ A.IsStrictColDiagDominant) ∧
+      (definition_4_5_irreducible A ↔ A.IsIrreduciblyColDiagDominant) :=
+  ⟨Iff.rfl, Iff.rfl,
+    ⟨fun h => ⟨isIrreducibleAbs_transpose_iff.2 h.1, h.2.1, h.2.2⟩,
+      fun h => ⟨isIrreducibleAbs_transpose_iff.1 h.irreducible, h.dominant, h.exists_strict⟩⟩⟩
 
 /-! ### Theorem 4.6 (Gershgorin) -/
 

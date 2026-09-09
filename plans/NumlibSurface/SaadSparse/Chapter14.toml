@@ -6,15 +6,17 @@ Prop 14.11–14.12) and the spectral-bisection identity of §14.6.3 are surfaced
 
 §14.2.4's `S = ∑ S_i` (`equation_14_16`, on the backbone's
 `Matrix.schurComplement_fromBlocks_blockDiagonal'`), the recurrence (14.20) of §14.2.5 read at one
-eigenvalue, §14.4.2's probing reconstruction and Definition 14.13 of §14.6.1 are surfaced too: each
-was skipped as "bookkeeping" or "a heuristic" and each carries an exact statement.
+eigenvalue, §14.4.2's probing reconstruction and Definitions 14.13–14.15 of §14.6.1–14.6.2 are
+surfaced too: each was skipped as "bookkeeping" or "a heuristic" and each carries an exact
+statement.
 
 Skipped, with the reason on each node below: §14.1 (notation and taxonomy); §14.2.3
 and Theorem 14.2 (the vertex-based partitioning bookkeeping, and the equivalence of the Schwarz
 `y`-iterates with block Gauss–Seidel on the Schur complement, which needs that bookkeeping); the
 *matrix* form of §14.2.5, which needs the block `LU` factorization of a block tridiagonal matrix
-and a matrix square root; §14.4.3 (a paragraph of advice); and §14.6.2, §14.6.4 with Definitions
-14.14–14.15 and Theorem 14.16 (the geometric separator theorem of Miller–Teng–Thurston–Vavasis,
-quoted without proof and needing stereographic projection into `S^d`, centerpoints and a
-random-great-circle argument; the two definitions exist only to state it).
+and a matrix square root; §14.4.3 (a paragraph of advice); the heuristics of §14.6.2 and §14.6.4;
+and Theorem 14.16 (the geometric separator theorem of Miller–Teng–Thurston–Vavasis, quoted without
+proof and needing stereographic projection into `S^d`, centerpoints and a random-great-circle
+argument). Definitions 14.14 and 14.15, the `k`-ply neighborhood system and the `(α, k)`-overlap
+graph Theorem 14.16 is stated over, are plain geometry and are surfaced in `Section06`.
 '''

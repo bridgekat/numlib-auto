@@ -71,33 +71,13 @@ id = "kijSweep_row"
 id = "proposition_10_3"
 
 [[node]]
-id = "theorem_10_7"
-kind = "theorem"
-deps = ["levelOfFill"]
-desc = '''
-Saad Theorem 10.7: at the completion of the ILU process, a fill-in entry in position `(i, j)` has
-level-of-fill value `p` if and only if there is a fill-path between `i` and `j` of length `p + 1`
-— a fill-path being a path all of whose interior vertices are numbered below both endpoints. The
-level of fill is `levelOfFill`, the recurrence (10.17); the theorem is stated for that recurrence
-and not for the alternative (10.18), whose characterization differs. Not formalized: it needs a
-symbolic model of Gaussian elimination on a graph — the sequence of elimination graphs, or the
-reachable sets `Reach(u, V_k)` through the eliminated vertices — which Mathlib does not have and
-which nothing else in the library would use; `SimpleGraph.Walk` supplies the word "path" and
-nothing more. The chapter group's `desc` records the same obstruction for this result and for the
-fill-in characterization that precedes it.
-'''
+id = "IsFillPath"
+source = "Saad, Iterative Methods for Sparse Linear Systems, §10.3.3"
 
 [[node]]
 id = "theorem_10_6"
-kind = "theorem"
-desc = '''
-Saad Theorem 10.6 (§10.3.3): there is a fill-in in entry `(i, j)` at the completion of Gaussian
-elimination if and only if there is a fill-path between `i` and `j` in the adjacency graph of `A`
-— a path whose interior vertices are all numbered below both endpoints. (The node `equation_10_6`
-of this chapter is Saad's display (10.6), a different object with a colliding number.)
-Not formalized: like `theorem_10_7`, which refines it to carry the path length, it needs a
-symbolic model of Gaussian elimination on a graph — the sequence of elimination graphs, or the
-reachable sets through the eliminated vertices — which Mathlib does not have and which nothing
-else in the library would use. Saad quotes it from Rose-Tarjan without proof. The chapter group's
-desc records the same obstruction for both.
-'''
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 10.6"
+
+[[node]]
+id = "theorem_10_7"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 10.7"

@@ -194,14 +194,16 @@ id = "corollary_4_2_lp"
 
 [[node]]
 id = "definition_4_5"
-kind = "definition"
-desc = '''Definition 4.5: `A` is (weakly) diagonally dominant when `|a_jj| ≥ ∑_{i ≠ j} |a_ij|` for
-every `j`, strictly diagonally dominant when the inequality is strict, and irreducibly diagonally
-dominant when `A` is irreducible and weakly dominant — a clause the book states loosely, since both
-Corollary 4.8 and Theorem 4.9 also need strict dominance in at least one row. Not formalized: these
-are the backbone's `Matrix.IsStrictDiagDominant` and `Matrix.IsStrictColDiagDominant`, and
-`Matrix.IsIrreduciblyDiagDominant` with `Matrix.IsIrreduciblyColDiagDominant`, of
-`Numlib/LinearSolve/Stationary/DiagDominant.lean`, whose `exists_strict` field carries the missing
-clause; weak dominance alone has no named predicate and is written out where it is used. §4.2's
-module doc records the correspondence, and the row/column discrepancy in the printed definition,
-rather than restating them.'''
+source = "Saad, Iterative Methods for Sparse Linear Systems, Definition 4.5"
+
+[[node]]
+id = "definition_4_5_strict"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Definition 4.5"
+
+[[node]]
+id = "definition_4_5_irreducible"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Definition 4.5"
+
+[[node]]
+id = "definition_4_5_iff"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Definition 4.5"
