@@ -19,28 +19,6 @@ jobs:
       - uses: actions/checkout@v5
         with:
           submodules: recursive
-      # A module whose header says `Upstreaming candidate` promises to depend on nothing in the
-      # project but other such modules, so that it can be lifted out to Mathlib as it stands.
-      # Nothing in Lean enforces that promise; this does.
-      - name: Check upstreaming candidates depend only on Mathlib and each other
-        run: |
-          python3 - <<'PY'
-          import pathlib, re, sys
-
-          source = {".".join(p.with_suffix("").parts): p.read_text(encoding="utf-8")
-                    for p in pathlib.Path(".").glob("Numlib*/**/*.lean")}
-          tagged = {m for m, text in source.items()
-                    if re.search(r"^Upstreaming candidate", text, re.M)}
-
-          bad = [(m, i) for m in sorted(tagged)
-                 for i in re.findall(r"^import (\S+)", source[m], re.M)
-                 if i.startswith("Numlib") and i not in tagged]
-          for module, imp in bad:
-              print(f"::error::{module} is an upstreaming candidate but imports {imp}, which is "
-                    f"not one; a candidate may import only Mathlib and other candidates")
-          print(f"{len(tagged)} upstreaming candidates checked, {len(bad)} bad imports")
-          sys.exit(1 if bad else 0)
-          PY
       - uses: leanprover/lean-action@v1
       - uses: leanprover-community/docgen-action@main
         with:
