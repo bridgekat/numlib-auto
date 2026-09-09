@@ -37,33 +37,43 @@ id = "norm_kernelCLM_sub_quadInterpCLM_le"
 id = "theorem_12_3_3"
 
 [[node]]
+id = "expKernelCLM"
+
+[[node]]
+id = "norm_expKernelCLM_le"
+
+[[node]]
+id = "isSelfAdjoint_expKernelCLM"
+
+[[node]]
+id = "unitMesh"
+
+[[node]]
+id = "discGalerkinProj"
+
+[[node]]
+id = "isIdempotentElem_discGalerkinProj"
+
+[[node]]
+id = "isSelfAdjoint_discGalerkinProj"
+
+[[node]]
+id = "norm_expKernelCLM_comp_sub_discGalerkinProj_le"
+
+[[node]]
+id = "norm_sub_comp_expKernelCLM_le"
+
+[[node]]
+id = "expSolutionFun"
+
+[[node]]
+id = "expSolution"
+
+[[node]]
+id = "expRhs"
+
+[[node]]
+id = "norm_sub_discGalerkinProj_expSolution_le"
+
+[[node]]
 id = "example_12_3_2"
-kind = "theorem"
-desc = '''
-Example 12.3.2 (§12.3.1): the iterated Galerkin method for
-`λ u(x) - ∫_0^1 e^{xy} u(y) dy = f(x)` with `λ = 50` and `u = e^x`, over the *discontinuous*
-piecewise linear functions on a uniform mesh of width `h = 1/n`, where
-`‖(I - P_n) K*‖ = O(h²)` and `‖u - P_n u‖ = O(h²)` give `‖u - u_n‖ = O(h²)` (12.3.19) and the
-superconvergent `‖u - û_n‖ = O(h⁴)` (12.3.20), confirmed by Table 12.2.
-
-Not formalized: part numerical table, part missing mathematics.
-
-The table (Table 12.2) is measured error data. What is *not* measured is the pair of rates the
-example claims, (12.3.19) and (12.3.20); those follow from `equation_12_1_24` and
-`equation_12_3_11` of this surface once their two inputs are known, and the inputs are the
-obstruction. Both are asserted by the book without proof -- "it is straightforward to show
-`‖(I - P_n) K*‖ = O(h²)`" -- and formalizing them needs
-
-* the `L²` projection onto the *discontinuous* piecewise linear functions of a uniform mesh, of
-  dimension `2n`; `Numlib/Approximation/PiecewiseLinearL2` has only the **continuous** one,
-  `piecewiseLinearProjCLM`, whose trial space has dimension `n + 2`;
-* its `O(h²)` approximation order on `C²[0, 1]`, which for the continuous projection is
-  `norm_sub_piecewiseLinearProjCLM_le` together with the piecewise linear interpolation error, and
-  for the discontinuous one is the same argument on each panel separately; and
-* the operator-norm estimate `‖(I - P_n) K*‖ = O(h²)` for the adjoint of the kernel operator,
-  which is that approximation order applied uniformly to the rows `y ↦ k(y, x)` of the kernel.
-
-None of the three is deep, and none is in the library. Its general content -- the iterated
-projection solution and its error identity -- is `lemma_12_3_1` and the rest of §12.3.
-'''
-deps = ["lemma_12_3_1", "equation_12_3_11", "AtkinsonHan.Chapter12.equation_12_1_24", "piecewiseLinearProjCLM", "norm_sub_piecewiseLinearProjCLM_le", "IntegralOperator.norm_kernelCLM"]

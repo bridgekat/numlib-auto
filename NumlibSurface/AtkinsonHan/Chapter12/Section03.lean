@@ -1,5 +1,7 @@
+import Mathlib.Analysis.Complex.ExponentialBounds
 import Numlib.Approximation.CompositeQuadrature
 import Numlib.Approximation.Interpolation
+import Numlib.Approximation.PiecewiseLinearL2
 import Numlib.IntegralEquations.Basic
 import NumlibSurface.AtkinsonHan.Chapter12.Section01
 
@@ -35,19 +37,21 @@ is a single bounded idempotent `P`.
 * `norm_kernelCLM_sub_quadInterpCLM_le` — **(12.3.31)**, `K (I - P_n) u = 𝒪(h⁴)`.
 * `theorem_12_3_3` — the superconvergence of iterated piecewise quadratic collocation:
   (12.3.32), (12.3.33) and the superconvergence (12.3.34) at the mesh points.
+* `example_12_3_2` — the iterated Galerkin method for `50 u - K u = f` with `k(x, y) = e^{xy}` over
+  the *discontinuous* piecewise linear functions of the uniform mesh of width `h = 1/n`: the rates
+  `‖u - u_n‖ = 𝒪(h²)` (12.3.19) and `‖u - û_n‖ = 𝒪(h⁴)` (12.3.20).  Its two inputs are
+  `norm_sub_comp_expKernelCLM_le`, the `‖(I - P_n) K*‖ = 𝒪(h²)` that the book calls straightforward
+  and does not prove, and `norm_sub_discGalerkinProj_expSolution_le`, which is `‖u - P_n u‖ =
+  𝒪(h²)`; both rest on the backbone `discPiecewiseLinearProjCLM` and its approximation order.
 
 ## Not formalized here
 
 The concrete parts of §12.3.2 and the linear system for the iterated collocation solution.
 
-Example 12.3.2, the iterated Galerkin method for `50 u - K u = f` with `k(x, y) = e^{xy}` over the
-*discontinuous* piecewise linear functions.  Table 12.2 is measured data; the rates (12.3.19) and
-(12.3.20) that it confirms would follow from `AtkinsonHan.Chapter12.equation_12_1_24` and
-`equation_12_3_11` at that projection, but their two inputs — `‖u - P_n u‖ = 𝒪(h²)` and
-`‖(I - P_n) K*‖ = 𝒪(h²)` — are asserted by the book without proof and need the `L²` projection onto
-the *discontinuous* piecewise linear functions, which `Numlib/Approximation/PiecewiseLinearL2` does
-not have: it carries only the continuous one.  See
-`plans/NumlibSurface/AtkinsonHan/Chapter12/Section03.toml`.
+**Table 12.2** of Example 12.3.2, which is measured error data for `n = 2, 4, 8` obtained by running
+the method, not mathematics.  What the table confirms — the pair of rates (12.3.19) and (12.3.20) —
+is `example_12_3_2`, and the constants there are existentially quantified, as the book leaves them
+unspecified too.
 
 ## Conventions
 
@@ -913,5 +917,316 @@ theorem theorem_12_3_3 (hab : a < b) {k : C(Set.Icc a b × Set.Icc a b, ℝ)} {L
 
 end Theorem3
 
+
+/-! ### Example 12.3.2: the iterated Galerkin method with discontinuous piecewise linears -/
+
+section IteratedGalerkin
+
+open MeasureTheory IntegralOperator
+
+local notation "L²" => Lp ℝ 2 (IntegralOperator.iccMeasure 0 1)
+
+/-- The kernel `k(x, y) = e^{x y}` of **(12.3.18)**.
+
+This is the same function as `AtkinsonHan.Chapter12.expKernel` of §12.4, the book's standard test
+kernel for the whole chapter; it is repeated here, privately, only because §12.4 comes later in the
+chapter and a surface file may not import a later section.  The two should become one definition,
+owned by this section, when §12.4 is next revised. -/
+private noncomputable def expKernel : C(Set.Icc (0 : ℝ) 1 × Set.Icc (0 : ℝ) 1, ℝ) :=
+  ⟨fun p => Real.exp ((p.1 : ℝ) * (p.2 : ℝ)), by fun_prop⟩
+
+/-- The value of the kernel of (12.3.18). -/
+private theorem expKernel_apply (p : Set.Icc (0 : ℝ) 1 × Set.Icc (0 : ℝ) 1) :
+    expKernel p = Real.exp ((p.1 : ℝ) * (p.2 : ℝ)) := rfl
+
+/-- `e^{xy} ≤ e` on the unit square. -/
+private theorem norm_expKernel_le : ‖expKernel‖ ≤ Real.exp 1 := by
+  refine (ContinuousMap.norm_le _ (Real.exp_nonneg 1)).2 fun p => ?_
+  rw [expKernel_apply, Real.norm_eq_abs, abs_of_pos (Real.exp_pos _)]
+  refine Real.exp_le_exp.2 ?_
+  nlinarith [p.1.2.1, p.1.2.2, p.2.2.1, p.2.2.2]
+
+/-- The integral operator `K u (x) = ∫_0^1 e^{xy} u(y) dy` of **(12.3.18)**, on `L²(0, 1)`. -/
+noncomputable def expKernelCLM : L² →L[ℝ] L² :=
+  l2KernelCLM (memLp_prod_iccMeasure expKernel)
+
+/-- `‖K‖ ≤ e`, from the uniform bound on the kernel; in particular `‖K‖ < 50 = λ`, so the
+integral equation (12.3.18) is uniquely solvable by the Neumann series and no compactness argument
+is needed here. -/
+theorem norm_expKernelCLM_le : ‖expKernelCLM‖ ≤ Real.exp 1 := by
+  have h := norm_l2KernelCLM_comp_le (a := 0) (b := 1) zero_le_one
+    (memLp_prod_iccMeasure expKernel) (Q := (1 : L² →L[ℝ] L²)) (IsSelfAdjoint.one _)
+    (ε := Real.exp 1) (Real.exp_nonneg 1) ?_
+  · rw [show (l2KernelCLM (memLp_prod_iccMeasure expKernel) ∘L (1 : L² →L[ℝ] L²))
+      = expKernelCLM from mul_one _] at h
+    simpa using h
+  · intro z
+    rw [one_apply_eq_self]
+    refine (norm_iccToLp_le zero_le_one _).trans ?_
+    have hrow : ‖expKernel.curry z‖ ≤ ‖expKernel‖ :=
+      (ContinuousMap.norm_le _ (norm_nonneg _)).2 fun t => expKernel.norm_coe_le_norm (z, t)
+    simpa using hrow.trans norm_expKernel_le
+
+/-- `‖K‖ < |λ|` at the book's `λ = 50`. -/
+theorem norm_expKernelCLM_lt : ‖expKernelCLM‖ < |(50 : ℝ)| := by
+  have h := norm_expKernelCLM_le
+  have he := Real.exp_one_lt_d9
+  rw [abs_of_pos (by norm_num : (0 : ℝ) < 50)]
+  linarith
+
+/-- The kernel `e^{xy}` is symmetric, so `K* = K`. -/
+theorem isSelfAdjoint_expKernelCLM : IsSelfAdjoint expKernelCLM :=
+  isSelfAdjoint_l2KernelCLM _
+    (Filter.Eventually.of_forall fun p => by simp [expKernel_apply, mul_comm])
+
+/-- The uniform mesh `x_j = j h`, `h = 1/n`, of `[0, 1]` into `n` subintervals, as used in
+Example 12.3.2.  The partition has `n` panels, so the index that
+`Numlib/Approximation/PiecewiseLinearL2` calls `n` is `n - 1` here. -/
+noncomputable def unitMesh (n j : ℕ) : Set.Icc (0 : ℝ) 1 := meshPoint zero_le_one n j
+
+/-- The value `j/n` of a mesh point of Example 12.3.2. -/
+theorem coe_unitMesh {n j : ℕ} (hn : 0 < n) (hj : j ≤ n) :
+    (unitMesh n j : ℝ) = (j : ℝ) / n := by
+  rw [unitMesh, coe_meshPoint zero_le_one hn hj]
+  ring
+
+/-- The mesh is increasing. -/
+theorem unitMesh_step {n : ℕ} (hn : 0 < n) :
+    ∀ i ≤ n - 1, (unitMesh n i : ℝ) < (unitMesh n (i + 1) : ℝ) := by
+  intro i hi
+  have hn' : (0 : ℝ) < n := by exact_mod_cast hn
+  rw [coe_unitMesh hn (by omega), coe_unitMesh hn (by omega)]
+  gcongr
+  linarith
+
+/-- The mesh starts at `0`. -/
+theorem unitMesh_first (n : ℕ) : (unitMesh n 0 : ℝ) = 0 := by
+  rw [unitMesh, meshPoint]
+  simp
+
+/-- The mesh ends at `1`. -/
+theorem unitMesh_last {n : ℕ} (hn : 0 < n) : (unitMesh n (n - 1 + 1) : ℝ) = 1 := by
+  rw [show n - 1 + 1 = n by omega, coe_unitMesh hn le_rfl]
+  field_simp
+
+/-- Every subinterval of the mesh has length `h = 1/n`. -/
+theorem unitMesh_mesh {n : ℕ} (hn : 0 < n) :
+    ∀ i ≤ n - 1, (unitMesh n (i + 1) : ℝ) - (unitMesh n i : ℝ) ≤ 1 / n := by
+  intro i hi
+  rw [coe_unitMesh hn (by omega), coe_unitMesh hn (by omega)]
+  push_cast
+  have hn' : (0 : ℝ) < n := by exact_mod_cast hn
+  field_simp
+  linarith
+
+/-- **The projection `P_n` of Example 12.3.2**: the `L²(0, 1)`-orthogonal projection onto the
+functions that are linear on each subinterval of the uniform mesh of width `h = 1/n`, *without*
+the continuity restriction of §12.2.3.  It is the backbone `discPiecewiseLinearProjCLM`.  The
+book's count `d_n = 2 n` for the dimension of the trial space, twice that of the continuous
+piecewise linear space, is not formalized: it is a remark on the size of the linear system, and
+nothing in (12.3.19) or (12.3.20) uses it. -/
+noncomputable def discGalerkinProj (n : ℕ) : L² →L[ℝ] L² :=
+  discPiecewiseLinearProjCLM 0 1 (n - 1) (unitMesh n)
+
+/-- `P_n` is a projection. -/
+theorem isIdempotentElem_discGalerkinProj (n : ℕ) : IsIdempotentElem (discGalerkinProj n) :=
+  isIdempotentElem_discPiecewiseLinearProjCLM 0 1 (n - 1) (unitMesh n)
+
+/-- `P_n` is self-adjoint, being orthogonal; this is what (12.3.13) uses. -/
+theorem isSelfAdjoint_discGalerkinProj (n : ℕ) : IsSelfAdjoint (discGalerkinProj n) :=
+  isSelfAdjoint_discPiecewiseLinearProjCLM 0 1 (n - 1) (unitMesh n)
+
+/-- **`‖K (I - P_n)‖ ≤ e h²/8`, the estimate Example 12.3.2 states without proof.**  The rows
+`y ↦ e^{xy}` of the kernel are `C²` with `|∂²_y e^{xy}| = x² e^{xy} ≤ e` on the unit square, so the
+`𝒪(h²)` approximation order of `P_n` applies to them uniformly. -/
+theorem norm_expKernelCLM_comp_sub_discGalerkinProj_le {n : ℕ} (hn : 0 < n) :
+    ‖expKernelCLM ∘L (1 - discGalerkinProj n)‖ ≤ (1 / (n : ℝ)) ^ 2 / 8 * Real.exp 1 := by
+  have key := norm_l2KernelCLM_comp_sub_discPiecewiseLinearProjCLM_le (a := 0) (b := 1)
+    zero_le_one (unitMesh_step hn) (unitMesh_first n) (unitMesh_last hn)
+    (memLp_prod_iccMeasure expKernel) (G := fun z t => Real.exp ((z : ℝ) * t))
+    (fun _ => Real.contDiff_exp.comp (contDiff_const.mul contDiff_id))
+    (fun _ _ => rfl) (unitMesh_mesh hn) (M := Real.exp 1) ?_
+  · simpa [expKernelCLM, discGalerkinProj] using key
+  · intro z t ht
+    rw [iteratedDeriv_exp_const_mul, abs_of_nonneg (by positivity)]
+    have h1 : (z : ℝ) ^ 2 ≤ 1 := by nlinarith [z.2.1, z.2.2]
+    have h2 : Real.exp ((z : ℝ) * t) ≤ Real.exp 1 :=
+      Real.exp_le_exp.2 (by nlinarith [z.2.1, z.2.2, ht.1, ht.2])
+    nlinarith [Real.exp_pos ((z : ℝ) * t), Real.exp_pos (1 : ℝ), sq_nonneg (z : ℝ)]
+
+/-- **(12.3.13) in this example**: `‖K - P_n K‖ = ‖(I - P_n) K*‖ = ‖K (I - P_n)‖ ≤ e h²/8`.  The
+first equality is the definition, the second is that an operator and its adjoint have the same
+norm together with `isSelfAdjoint_discGalerkinProj`, and the kernel `e^{xy}` being symmetric makes
+`K* = K`, so all three quantities coincide here.  This is the input `theorem_12_1_2` needs, and it
+replaces the compactness argument of (12.3.15). -/
+theorem norm_sub_comp_expKernelCLM_le {n : ℕ} (hn : 0 < n) :
+    ‖expKernelCLM - discGalerkinProj n ∘L expKernelCLM‖
+      ≤ (1 / (n : ℝ)) ^ 2 / 8 * Real.exp 1 := by
+  have hsub : expKernelCLM - discGalerkinProj n ∘L expKernelCLM
+      = (1 - discGalerkinProj n) ∘L expKernelCLM := by
+    rw [ContinuousLinearMap.sub_comp, show (1 : L² →L[ℝ] L²) ∘L expKernelCLM
+      = expKernelCLM from one_mul _]
+  have hadj : ContinuousLinearMap.adjoint ((1 - discGalerkinProj n) ∘L expKernelCLM)
+      = expKernelCLM ∘L (1 - discGalerkinProj n) := by
+    rw [ContinuousLinearMap.adjoint_comp, isSelfAdjoint_expKernelCLM.adjoint_eq,
+      (IsSelfAdjoint.sub (IsSelfAdjoint.one _) (isSelfAdjoint_discGalerkinProj n)).adjoint_eq]
+  rw [hsub, ← ContinuousLinearMap.adjoint.norm_map, hadj]
+  exact norm_expKernelCLM_comp_sub_discGalerkinProj_le hn
+
+/-- If `‖K‖ < |λ|` then `λ - K` is invertible, by the Neumann series; the quantitative form is
+`ContinuousLinearEquiv.exists_symm_norm_le_of_add`. -/
+private theorem exists_equiv_smul_sub_of_norm_lt {Y : Type*} [NormedAddCommGroup Y]
+    [NormedSpace ℝ Y] [CompleteSpace Y] {μ : ℝ} (hμ : μ ≠ 0) {K : Y →L[ℝ] Y} (h : ‖K‖ < |μ|) :
+    ∃ e : Y ≃L[ℝ] Y, (e : Y →L[ℝ] Y) = μ • 1 - K := by
+  have habs : (0 : ℝ) < |μ| := abs_pos.2 hμ
+  let v : (Y →L[ℝ] Y)ˣ :=
+    { val := μ • 1
+      inv := μ⁻¹ • 1
+      val_inv := by ext x; simp [smul_smul, inv_mul_cancel₀ hμ]
+      inv_val := by ext x; simp [smul_smul, mul_inv_cancel₀ hμ] }
+  set e₀ : Y ≃L[ℝ] Y := ContinuousLinearEquiv.ofUnit v with he₀def
+  have he₀ : (e₀ : Y →L[ℝ] Y) = μ • 1 := by ext x; rfl
+  have hsymm : (e₀.symm : Y →L[ℝ] Y) = μ⁻¹ • 1 := by ext y; rfl
+  have hns : ‖(e₀.symm : Y →L[ℝ] Y)‖ ≤ |μ|⁻¹ := by
+    rw [hsymm, norm_smul, norm_inv, Real.norm_eq_abs]
+    calc |μ|⁻¹ * ‖(1 : Y →L[ℝ] Y)‖ ≤ |μ|⁻¹ * 1 :=
+          mul_le_mul_of_nonneg_left ContinuousLinearMap.norm_id_le (by positivity)
+      _ = |μ|⁻¹ := mul_one _
+  have hlt : ‖(e₀.symm : Y →L[ℝ] Y)‖ * ‖(-K : Y →L[ℝ] Y)‖ < 1 := by
+    rw [norm_neg]
+    calc ‖(e₀.symm : Y →L[ℝ] Y)‖ * ‖K‖ ≤ |μ|⁻¹ * ‖K‖ :=
+          mul_le_mul_of_nonneg_right hns (norm_nonneg _)
+      _ < 1 := by rw [inv_mul_lt_one₀ habs]; exact h
+  obtain ⟨e, he, -, -⟩ := ContinuousLinearEquiv.exists_symm_norm_le_of_add e₀ (-K) hlt
+  exact ⟨e, by rw [he, he₀, ← sub_eq_add_neg]⟩
+
+/-- The exact solution `u(x) = e^x` of Example 12.3.2, as a continuous function. -/
+noncomputable def expSolutionFun : C(Set.Icc (0 : ℝ) 1, ℝ) := ⟨fun t => Real.exp t, by fun_prop⟩
+
+/-- The exact solution `u(x) = e^x` of Example 12.3.2, as an element of `L²(0, 1)`. -/
+noncomputable def expSolution : L² := iccToLp 0 1 expSolutionFun
+
+/-- The right-hand side `f = 50 u - K u` of (12.3.18) at `λ = 50` and `u(x) = e^x`. -/
+noncomputable def expRhs : L² := ((50 : ℝ) • 1 - expKernelCLM : L² →L[ℝ] L²) expSolution
+
+/-- **`‖u - P_n u‖ ≤ e h²/8`**, the second input of Example 12.3.2: the solution `u(x) = e^x` is
+`C²` with `|u''| ≤ e` on `[0, 1]`, so the `𝒪(h²)` approximation order of the discontinuous
+piecewise linear projection applies to it. -/
+theorem norm_sub_discGalerkinProj_expSolution_le {n : ℕ} (hn : 0 < n) :
+    ‖expSolution - discGalerkinProj n expSolution‖ ≤ (1 / (n : ℝ)) ^ 2 / 8 * Real.exp 1 := by
+  have hiter : iteratedDeriv 2 Real.exp = Real.exp := by
+    simpa using iteratedDeriv_exp_const_mul 2 1
+  have hinterp := norm_sub_piecewiseLinearInterpCLM_le (unitMesh_step hn) (unitMesh_first n)
+    (unitMesh_last hn) (g := Real.exp) Real.contDiff_exp (f := expSolutionFun) (fun _ => rfl)
+    (unitMesh_mesh hn) (M := Real.exp 1) (fun t ht => by
+      rw [hiter, abs_of_pos (Real.exp_pos t)]
+      exact Real.exp_le_exp.2 ht.2)
+  refine (norm_sub_discPiecewiseLinearProjCLM_le (a := 0) (b := 1) zero_le_one (unitMesh_step hn)
+    (unitMesh_first n) (unitMesh_last hn) expSolutionFun).trans ?_
+  rw [show (1 : ℝ) - 0 = 1 by ring, Real.sqrt_one, one_mul]
+  exact hinterp
+
+/-- **Example 12.3.2**, the iterated Galerkin method for
+
+`50 u(x) - ∫_0^1 e^{xy} u(y) dy = f(x)`,   `0 ≤ x ≤ 1`,   **(12.3.18)**
+
+with the exact solution `u(x) = e^x`, over the *discontinuous* piecewise linear functions on the
+uniform mesh of width `h = 1/n`.  For all large `n` the Galerkin equations
+`(50 - P_n K) u_n = P_n f` are uniquely solvable, and
+
+* `‖u - u_n‖_{L²} ≤ c₁ h²`   **(12.3.19)**,
+* `‖u - û_n‖_{L²} ≤ c₂ h⁴`   **(12.3.20)**,
+
+the second being the Sloan superconvergence of the iterated solution `û_n = (f + K u_n)/50`.
+
+The two inputs the book asserts without proof are `norm_sub_comp_expKernelCLM_le`, which is
+`‖(I - P_n) K*‖ = 𝒪(h²)` in the form `‖K - P_n K‖ = 𝒪(h²)` — the same quantity, since `P_n` is
+self-adjoint and the kernel is symmetric — and `norm_sub_discGalerkinProj_expSolution_le`, which
+is `‖u - P_n u‖ = 𝒪(h²)`.  Given those, (12.3.19) is `equation_12_1_24` and (12.3.20) is
+`equation_12_3_11`, whose right-hand side carries the *product* of the two.  Unique solvability
+comes from `theorem_12_1_2`; its hypothesis `‖K - P_n K‖ → 0` is here an explicit `𝒪(h²)` bound
+rather than the compactness argument of (12.3.15), and the invertibility of `50 - K` is the
+Neumann series, since `‖K‖ ≤ e < 50`.
+
+**Table 12.2 is not formalized**: it is measured error data for `n = 2, 4, 8` produced by running
+the method, not mathematics.  What the table confirms is the pair of rates above, and those are
+what is proved here.  The constants `c₁` and `c₂` are existentially quantified, as in
+`equation_12_2_19`; the proof produces `c₁ = 25 e ‖(50 - K)⁻¹‖` and a `c₂` of the same shape,
+which the book does not state either. -/
+theorem example_12_3_2 :
+    ∃ c₁ c₂ : ℝ, ∀ᶠ n : ℕ in atTop,
+      (∀ f : L², ∃! un : L²,
+        IsProjectionSolution (50 : ℝ) expKernelCLM (discGalerkinProj n) f un) ∧
+      ∀ un : L²,
+        IsProjectionSolution (50 : ℝ) expKernelCLM (discGalerkinProj n) expRhs un →
+          ‖expSolution - un‖ ≤ c₁ * (1 / (n : ℝ)) ^ 2 ∧
+          ‖expSolution - iteratedSolution (50 : ℝ) expKernelCLM expRhs un‖
+            ≤ c₂ * (1 / (n : ℝ)) ^ 4 := by
+  obtain ⟨e, he⟩ := exists_equiv_smul_sub_of_norm_lt (μ := (50 : ℝ)) (by norm_num)
+    norm_expKernelCLM_lt
+  set A : ℝ := ‖(e.symm : L² →L[ℝ] L²)‖ with hAdef
+  have hA0 : (0 : ℝ) ≤ A := norm_nonneg _
+  set B : ℝ := 1 / 50 * (1 + Real.exp 1 * (2 * A)) with hBdef
+  refine ⟨50 * (2 * A) * (Real.exp 1 / 8), B * (Real.exp 1 / 8) * (Real.exp 1 / 8), ?_⟩
+  have hu : ((50 : ℝ) • 1 - expKernelCLM : L² →L[ℝ] L²) expSolution = expRhs := rfl
+  have htend : Tendsto (fun n : ℕ => A * ((1 / (n : ℝ)) ^ 2 / 8 * Real.exp 1)) atTop (𝓝 0) := by
+    have h1 : Tendsto (fun n : ℕ => (1 / (n : ℝ))) atTop (𝓝 0) :=
+      tendsto_one_div_atTop_nhds_zero_nat
+    have h2 := ((h1.pow 2).div_const 8).const_mul (Real.exp 1)
+    simpa [mul_comm, mul_left_comm, mul_assoc] using h2.const_mul A
+  filter_upwards [eventually_gt_atTop 0,
+    htend.eventually (eventually_lt_nhds (show (0 : ℝ) < 1 / 2 by norm_num))] with n hn hsmall
+  have hKP := norm_sub_comp_expKernelCLM_le hn
+  have hprod : A * ‖expKernelCLM - discGalerkinProj n ∘L expKernelCLM‖ < 1 / 2 :=
+    lt_of_le_of_lt (by gcongr) hsmall
+  obtain ⟨e', he'coe, he'norm, huniq⟩ := theorem_12_1_2 (μ := (50 : ℝ)) (by norm_num)
+    (isIdempotentElem_discGalerkinProj n) e he (by rw [← hAdef]; linarith)
+  have hb1 : ‖(e'.symm : L² →L[ℝ] L²)‖ ≤ 2 * A := by
+    refine he'norm.trans ?_
+    rw [← hAdef, div_le_iff₀ (by linarith)]
+    nlinarith [norm_nonneg (expKernelCLM - discGalerkinProj n ∘L expKernelCLM)]
+  refine ⟨huniq, fun un hun => ⟨?_, ?_⟩⟩
+  · -- (12.3.19), from (12.1.24)
+    have hkey := (equation_12_1_24 (isIdempotentElem_discGalerkinProj n) he'coe hu hun).2
+    have hproj := norm_sub_discGalerkinProj_expSolution_le hn
+    calc ‖expSolution - un‖
+        ≤ ‖(50 : ℝ)‖ * ‖(e'.symm : L² →L[ℝ] L²)‖
+            * ‖expSolution - discGalerkinProj n expSolution‖ := hkey
+      _ ≤ 50 * (2 * A) * ((1 / (n : ℝ)) ^ 2 / 8 * Real.exp 1) := by
+          rw [Real.norm_eq_abs, abs_of_pos (by norm_num : (0 : ℝ) < 50)]
+          gcongr
+      _ = 50 * (2 * A) * (Real.exp 1 / 8) * (1 / (n : ℝ)) ^ 2 := by ring
+  · -- (12.3.20), from (12.3.11)
+    obtain ⟨e'', he''coe, -, he''norm⟩ := lemma_12_3_1_projection (μ := (50 : ℝ)) (by norm_num)
+      expKernelCLM (discGalerkinProj n) he'coe
+    have hP : ‖discGalerkinProj n‖ ≤ 1 :=
+      norm_discPiecewiseLinearProjCLM_le_one 0 1 (n - 1) (unitMesh n)
+    have hb2 : ‖(e''.symm : L² →L[ℝ] L²)‖ ≤ B := by
+      refine he''norm.trans ?_
+      rw [hBdef, Real.norm_eq_abs, abs_of_pos (by norm_num : (0 : ℝ) < 50)]
+      have hep : ‖(e'.symm : L² →L[ℝ] L²)‖ * ‖discGalerkinProj n‖ ≤ 2 * A := by
+        calc ‖(e'.symm : L² →L[ℝ] L²)‖ * ‖discGalerkinProj n‖
+            ≤ (2 * A) * 1 := mul_le_mul hb1 hP (norm_nonneg _) (by linarith)
+          _ = 2 * A := mul_one _
+      have hmul : ‖expKernelCLM‖ * (‖(e'.symm : L² →L[ℝ] L²)‖ * ‖discGalerkinProj n‖)
+          ≤ Real.exp 1 * (2 * A) :=
+        mul_le_mul norm_expKernelCLM_le hep (by positivity) (Real.exp_nonneg 1)
+      rw [inv_eq_one_div]
+      exact mul_le_mul_of_nonneg_left (by linarith) (by norm_num)
+    have hkey := (equation_12_3_11 (μ := (50 : ℝ)) (by norm_num)
+      (isIdempotentElem_discGalerkinProj n) he''coe hu hun).2
+    have hproj := norm_sub_discGalerkinProj_expSolution_le hn
+    have hcomp := norm_expKernelCLM_comp_sub_discGalerkinProj_le hn
+    calc ‖expSolution - iteratedSolution (50 : ℝ) expKernelCLM expRhs un‖
+        ≤ ‖(e''.symm : L² →L[ℝ] L²)‖ * ‖expKernelCLM ∘L (1 - discGalerkinProj n)‖
+            * ‖expSolution - discGalerkinProj n expSolution‖ := hkey
+      _ ≤ B * ((1 / (n : ℝ)) ^ 2 / 8 * Real.exp 1) * ((1 / (n : ℝ)) ^ 2 / 8 * Real.exp 1) := by
+          have hB0 : (0 : ℝ) ≤ B := le_trans (norm_nonneg _) hb2
+          have hX0 : (0 : ℝ) ≤ (1 / (n : ℝ)) ^ 2 / 8 * Real.exp 1 := by positivity
+          exact mul_le_mul (mul_le_mul hb2 hcomp (norm_nonneg _) hB0) hproj (norm_nonneg _)
+            (mul_nonneg hB0 hX0)
+      _ = B * (Real.exp 1 / 8) * (Real.exp 1 / 8) * (1 / (n : ℝ)) ^ 4 := by ring
+
+end IteratedGalerkin
 
 end AtkinsonHan.Chapter12

@@ -18,3 +18,84 @@ id = "norm_sub_piecewiseLinearProjCLM_le"
 
 [[node]]
 id = "tendsto_piecewiseLinearProjCLM"
+
+[[node]]
+id = "IntegralOperator.coeFn_iccToLp"
+
+[[node]]
+id = "IntegralOperator.memLp_iccToLp"
+
+[[node]]
+id = "IntegralOperator.memLp_prod_iccMeasure"
+
+[[node]]
+id = "IntegralOperator.iccIndicatorLp"
+
+[[node]]
+id = "IntegralOperator.coeFn_iccIndicatorLp"
+
+[[node]]
+id = "IntegralOperator.iccIndicatorLp_congr"
+
+[[node]]
+id = "IntegralOperator.iccIndicatorLp_add"
+
+[[node]]
+id = "IntegralOperator.iccIndicatorLp_smul"
+
+[[node]]
+id = "norm_sub_starProjection_le_of_iccToLp_mem"
+
+[[node]]
+id = "meshPanel"
+
+[[node]]
+id = "measurableSet_meshPanel"
+
+[[node]]
+id = "exists_mem_meshPanel"
+
+[[node]]
+id = "notMem_meshPanel_of_mem"
+
+[[node]]
+id = "sum_iccIndicatorLp_meshPanel"
+
+[[node]]
+id = "iccCoord"
+
+[[node]]
+id = "discPiecewiseLinearLp"
+
+[[node]]
+id = "iccIndicatorLp_mem_discPiecewiseLinearLp"
+
+[[node]]
+id = "iccToLp_piecewiseLinearInterpCLM_mem_disc"
+
+[[node]]
+id = "discPiecewiseLinearProjCLM"
+
+[[node]]
+id = "isIdempotentElem_discPiecewiseLinearProjCLM"
+
+[[node]]
+id = "isSelfAdjoint_discPiecewiseLinearProjCLM"
+
+[[node]]
+id = "norm_discPiecewiseLinearProjCLM_le_one"
+
+[[node]]
+id = "norm_sub_discPiecewiseLinearProjCLM_le"
+
+[[node]]
+id = "tendsto_starProjection_of_piecewiseLinearInterpCLM_mem"
+
+[[node]]
+id = "tendsto_discPiecewiseLinearProjCLM"
+
+[[node]]
+id = "norm_l2KernelCLM_comp_le"
+
+[[node]]
+id = "norm_l2KernelCLM_comp_sub_discPiecewiseLinearProjCLM_le"
