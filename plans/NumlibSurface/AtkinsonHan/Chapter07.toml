@@ -1,47 +1,86 @@
 desc = '''
-Atkinson–Han, Chapter 7: Sobolev spaces. §7.1, the integer-order half of §7.2 and §7.5.1–§7.5.3
-are formalized; the rest of the chapter is not, and the obstruction differs by section, §7.3 being
-the one that blocks nearly everything downstream. Every numbered result has a node in the section
-group beside this file, carrying the book's statement and, where it is open, the reason.
+Atkinson–Han, Chapter 7: Sobolev spaces. §7.1, §7.2 apart from its boundary material, §7.4's
+Fourier condition and §7.5.1–§7.5.3 are formalized; §7.3 is not, and it is the obstruction that
+blocks nearly everything downstream — not only in this chapter but in §8.1, §8.4, §8.5, §8.8,
+chapter 10 and chapter 11. Every numbered result has a node in the section group beside this file,
+carrying the book's statement and, where it is open, the reason.
 
 * **§7.1, weak derivatives on an open `Ω`.** Definitions 7.1.1 and 7.1.3, Lemmas 7.1.2, 7.1.4 and
-  7.1.5 and Proposition 7.1.10 are formalized, in `Chapter07/Section01` over
-  `Numlib/Analysis/Sobolev/WeakDeriv`; the uniqueness of the weak derivative is Mathlib's
-  `IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero`. Definition 7.1.3 is there twice, bundled
-  over the multi-indices of a given length and one multi-index at a time, because §7.2 needs the
-  second to state the norm the book displays. The examples are unwritten because nothing consumes
-  them: every result that would is blocked further down by §7.3. The one result of §7.1 that is
-  itself blocked is Example 7.1.9, the weak derivatives of a piecewise-polynomial function, which
-  matches traces across sub-domain interfaces.
-* **§7.2, the spaces `W^{k,p}(Ω)`.** Definition 7.2.2, Theorem 7.2.3 and Corollary 7.2.4 are
-  formalized, in `Chapter07/Section02`. Definition 7.2.2 is there in two readings, over the two
-  indexings of the derivative in the backbone: `Numlib/Analysis/Sobolev/Space` bundles all the
-  derivatives of order `n` into one tensor, and `Numlib/Analysis/Sobolev/MultiIndex` keeps the
-  `∂^α` separate. Both are closed subspaces of an `ℓ^p` product of `L^p(Ω)` spaces, closed because
-  pairing against a fixed test function is continuous on `L^p(Ω)` by Hölder, so Theorem 7.2.3
-  holds for both. They differ in the *norm*: only the multi-index one is the norm the definition
-  displays, and for `k ≥ 2` and `d ≥ 2` only it is an inner-product norm at `p = 2`, the operator
-  norm on the tensors being a spectral norm; that is what Corollary 7.2.4 is stated over, its
-  inner product being the one an `ℓ²` product of `L²(Ω)` spaces already carries. The two readings
-  of the *space* agree mathematically, and the bundled one implies the multi-index one; the
-  converse waits on the symmetry of the derivatives of a `C^∞` test function in its arguments,
-  which Mathlib has only up to order two, so the equivalence of the two norms is not formalized
-  either. The spaces remain unusable without §7.3. Definition 7.2.9 (`W_0^{k,p}(Ω)`) is
-  formalized as the closure of the image of `C_0^∞(Ω)` in that space; only its reading as a space
-  of boundary conditions waits on the trace of §7.3. Definition 7.2.13 (Sobolev spaces over a
-  boundary, by local charts) additionally needs surface measure on a Lipschitz boundary, and so do
-  Examples 7.2.7–7.2.8, which integrate by parts over the sub-domains of a partition.
+  7.1.5, Proposition 7.1.10 and Examples 7.1.6, 7.1.7 and 7.1.8 are formalized, in
+  `Chapter07/Section01` over `Numlib/Analysis/Sobolev/WeakDeriv`; the uniqueness of the weak
+  derivative is Mathlib's `IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero`. Definition 7.1.3
+  is there twice, bundled over the multi-indices of a given length and one multi-index at a time,
+  because §7.2 needs the second to state the norm the book displays. Example 7.1.8 is split: the
+  first-order half is `example_7_1_8` and the book's "a second-order weak derivative exists only
+  when `v'(x_i-) = v'(x_i+)`" is `example_7_1_8_second_order`. The one-dimensional examples are
+  stated over `EuclideanSpace ℝ (Fin 1)`, as the book has them, through a measure-preserving
+  `LinearIsometryEquiv` from `ℝ`; that plumbing is `E1`, `toE1`, `transport` and `transport_symm`.
+
+  Three results of §7.1 remain open. Example 7.1.9, the weak derivatives of a piecewise-polynomial
+  function, matches traces across sub-domain interfaces and needs Theorem 7.3.10. Propositions
+  7.1.11 and 7.1.12, the product and chain rules, need mollification *on a domain*: the `L^p`
+  estimates they were once thought to want are now available, as
+  `Numlib/Analysis/Convolution/Lp`, but the commutation `∂_i(φ_ε ⋆ u) = φ_ε ⋆ (∂_i u)` on a
+  compactly contained subdomain is not. The smooth-factor case of the product rule needs none of
+  that — `ψφ` is again a test function, so it is a direct integration by parts — and is proved, as
+  `proposition_7_1_11_contDiff` here and `HasWeakIteratedLineDerivOn.mul_contDiff` in the backbone.
+
+* **§7.2, the spaces `W^{k,p}(Ω)`.** Definitions 7.2.1, 7.2.2, 7.2.9, 7.2.10, 7.2.11 and 7.2.12,
+  Theorem 7.2.3 and Corollary 7.2.4 are formalized, in `Chapter07/Section02`. Definition 7.2.2 is
+  there in two readings, over the two indexings of the derivative in the backbone:
+  `Numlib/Analysis/Sobolev/Space` bundles all the derivatives of order `n` into one tensor, and
+  `Numlib/Analysis/Sobolev/MultiIndex` keeps the `∂^α` separate. Both are closed subspaces of an
+  `ℓ^p` product of `L^p(Ω)` spaces, closed because pairing against a fixed test function is
+  continuous on `L^p(Ω)` by Hölder, so Theorem 7.2.3 holds for both. They differ in the *norm*:
+  only the multi-index one is the norm the definition displays, and for `k ≥ 2` and `d ≥ 2` only it
+  is an inner-product norm at `p = 2`, the operator norm on the tensors being a spectral norm; that
+  is what Corollary 7.2.4 is stated over. The two readings of the *space* agree mathematically, and
+  the bundled one implies the multi-index one; the converse waits on the symmetry of the
+  derivatives of a `C^∞` test function in its arguments, which Mathlib has only up to order two, so
+  the equivalence of the two norms is not formalized either.
+
+  Definition 7.2.1, the boundary of class `V`, is a backbone predicate,
+  `IsBoundaryOfClass` in `Numlib/Analysis/Sobolev/Domain`, with `IsLipschitzDomain` and
+  `IsContDiffDomain` for the book's two named cases; boundedness is deliberately not bundled, since
+  the book itself writes "bounded Lipschitz domain". The fractional spaces of Definition 7.2.10 are
+  `Numlib/Analysis/Sobolev/Slobodeckij`, whose norm is *literally* the book's displayed one rather
+  than merely equivalent to it, by pairing the `W^{k,p}` family with its top-order difference
+  quotients inside a `WithLp` product; 7.2.11 and 7.2.12 follow as a closure and a `StrongDual`.
+
+  Still open in §7.2: Example 7.2.5 in its `W^{k,p}` form and Example 7.2.6 (the `L^p` half of
+  7.2.5 is `example_7_2_5_memLp`, proved) — both need one fact the book also passes over, that the
+  classical derivative of a radial function on `Ω ∖ {0}` is its weak derivative on `Ω`, which is a
+  cutoff-and-limit argument on a domain. Examples 7.2.7 and 7.2.8 and Definition 7.2.13 need
+  surface measure on a Lipschitz boundary.
+
 * **§7.3, the structural theorems.** This is the obstruction itself, and Mathlib has none of it:
   density of `C^∞(Ω)` (Meyers–Serrin, Theorem 7.3.1) and of `C^∞(Ω̄)` on a Lipschitz domain
   (Calderón–Stein, Theorem 7.3.2), the extension operator, the continuous and compact Sobolev
   embeddings, Rellich–Kondrachov, the trace `γ : W^{1,p}(Ω) → L^p(Γ)`, and the Deny–Lions norm
   equivalences with Poincaré–Friedrichs and Bramble–Hilbert on top of them. Each is a substantial
-  analysis project, and each is needed by §8.1, §8.4, §8.5, §8.8, chapter 10 and chapter 13.
-* **§7.4, the Fourier characterization of `H^k(ℝ^d)`.** The one domain for which Mathlib does have
-  a weak derivative is `Ω = ℝ^d`: `TemperedDistribution.MemSobolev s 2` with
-  `memSobolev_two_iff_fourier` is one side of Theorem 7.4.1 and `MemSobolev.lineDerivOp` the
-  other, so the theorem is statable. Not written; it has no consumer in this corpus either, and
-  Examples 7.4.2–7.4.3 and Exercises 7.4.3–7.4.4 are the §7.3 embeddings on a domain again.
+  analysis project; `notes/sobolev-density.md` scopes the cheapest of them, Theorem 7.3.1, at about
+  fourteen lemmas of which three are hard, and reports that one of those three —
+  `L^p` convergence of mollification — is now done, in `Numlib/Analysis/Convolution/Lp`.
+
+  Two results of §7.3 are formalized, and both are vocabulary rather than analysis. Definition
+  7.3.6, the continuous and compact embeddings, is the backbone
+  `Numlib/Analysis/Normed/Operator/Embedding`, an injective linear map with a bound or with the
+  sequential compactness the book states; the equivalence with Mathlib's `IsCompactOperator` is a
+  theorem there rather than the definition, so nothing is assumed. Theorem 7.3.3 is Definition
+  7.2.9 read sequentially, a normed space being metrizable.
+
+* **§7.4, the Fourier characterization of `H^k(ℝ^d)`.** Display (7.4.2) — that `H^s(ℝ^d)` may be
+  *defined* by the Fourier condition — is formalized as `equation_7_4_2` with its norm identity, in
+  `Chapter07/Section04`, against Mathlib's Bessel-potential space
+  `TemperedDistribution.MemSobolev s 2`. **Theorem 7.4.1 itself is open**, and the two must not be
+  confused: the book's `H^k(ℝ^d)` is the `W^{k,2}(ℝ^d)` of Definition 7.2.2, cut out by weak
+  derivatives, and identifying the two readings needs a bridge from the distributional derivative,
+  which tests against the Schwartz class, to `HasWeakIteratedLineDerivOn`, which tests against
+  `C_0^∞(ℝ^d)`. That bridge is a truncation argument needing no convolution theory, so it is not
+  blocked the way §7.3 is, and it is what any later transfer between this project's `W^{k,p}` and
+  Mathlib's tempered distributions will want. Examples 7.4.2–7.4.3 and Exercises 7.4.3–7.4.4 are
+  the §7.3 embeddings on a domain again.
+
 * **§7.5.1–§7.5.3, periodic Sobolev spaces — formalized**, in `Chapter07/Section05`. These are
   defined by the decay of Fourier coefficients, so no domain, boundary or weak derivative enters
   them, and they need no §7.3. Three numbered results of §7.5 are outside that: Example 7.5.3, the
@@ -49,6 +88,7 @@ group beside this file, carrying the book's statement and, where it is open, the
   trigonometric interpolation operator the project does not have; and §7.5.5 — Definitions
   7.5.8–7.5.9 and Theorem 7.5.10, spherical polynomials, spherical harmonics and the Ragozin
   approximation rate on the unit sphere — is a separate gap, Mathlib having no spherical harmonics.
+
 * **§7.6, integration by parts on a Lipschitz domain.** Green's and divergence formulas
   `∫_Ω u_{x_i} v = ∫_Γ u v ν_i − ∫_Ω u v_{x_i}` need surface measure on a Lipschitz boundary and
   the trace; Mathlib's divergence theorem is for boxes.
