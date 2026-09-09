@@ -1,10 +1,13 @@
+import Mathlib.Algebra.Polynomial.Basis
 import Mathlib.Analysis.InnerProductSpace.GramSchmidtOrtho
 import Mathlib.Analysis.InnerProductSpace.OfNorm
 import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.Analysis.InnerProductSpace.l2Space
+import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.MeasureTheory.Function.L2Space
 import Numlib.Analysis.Fourier.CosineBasis
 import Numlib.Analysis.Fourier.TrigonometricBasis
+import Numlib.Approximation.OrthogonalPolynomial
 import NumlibSurface.AtkinsonHan.Chapter01.Section01
 import NumlibSurface.AtkinsonHan.Chapter01.Section02
 
@@ -28,6 +31,8 @@ Mathlib's `InnerProductSpace`, `CompleteSpace`, `inner 𝕜 x y = 0`, `Submodule
 * `definition_1_3_9` — the orthogonal complement of a subset.
 * `definition_1_3_10`, `definition_1_3_10_basis` — an orthonormal system, and an orthonormal
   basis: an orthonormal system that is a basis in the sense of Definition 1.2.20.
+* `monomialLp` — the monomials `1, x, x², …` as elements of `L²(-1, 1)`, the input of
+  Example 1.3.17.
 
 ## Main results
 
@@ -50,6 +55,8 @@ Mathlib's `InnerProductSpace`, `CompleteSpace`, `inner 𝕜 x y = 0`, `Submodule
 * `theorem_1_3_13` — the real trigonometric system is an orthonormal basis of `L²(-π, π)`.
 * `example_1_3_14` — the half-range cosine system is an orthonormal basis of `L²(0, π)`.
 * `theorem_1_3_16` — the Gram–Schmidt process, with the equality of initial spans (1.3.11).
+* `example_1_3_17` — Gram–Schmidt applied to `1, x, x², x³` in `L²(-1, 1)`, with the four
+  orthonormal polynomials the book displays and their identification with the Legendre family.
 
 ## Conventions
 
@@ -59,14 +66,16 @@ Theorem 1.3.13 is stated on `L²(AddCircle (2π))` with its *probability* Haar m
 system `1`, `√2 cos (j x)`, `√2 sin (j x)` of the backbone's `trigFun`: dividing by `√(2π)`
 renormalises a function of unit `L²(-π, π)` norm to unit norm for the probability measure.
 
+Example 1.3.17 is computed rather than quoted: `L²(-1, 1)` is `Lp ℝ 2` of Lebesgue measure on
+`(-1, 1)`, the `gramSchmidtNormed` recursion is unfolded four steps on the monomials, and each
+inner product and norm is a polynomial integral over `(-1, 1)`. The answer is then matched against
+`Polynomial.legendre`, the backbone's Legendre family, which §3.5 of this surface also uses: the
+book's `vₙ` are `√((2n + 1)/2)` times those. Elements of `L²(-1, 1)` are equivalence classes, so
+the displayed formulas are almost-everywhere equalities of functions.
+
 ## Not formalized here
 
 Example 1.3.7 and Example 1.2.28 (b) need Sobolev spaces and are out of scope for the project.
-Example 1.3.17, the Gram–Schmidt process applied to `1, x, x²` in `L²(-1, 1)`, is a worked
-arithmetic illustration of `theorem_1_3_16`: it would need the three monomials read as elements of
-`L²(-1, 1)` and the `gramSchmidtNormed` recursion unfolded and integrated by hand, and no result
-depends on the answer. The family itself is the backbone's `Polynomial.legendre`, which §3.5 of
-this surface uses.
 -/
 
 open Filter InnerProductSpace MeasureTheory Submodule Topology
@@ -396,5 +405,338 @@ theorem theorem_1_3_16 {f : ℕ → E} (hf : LinearIndependent 𝕜 f) :
     rw [span_gramSchmidtNormed f (Set.Iic n), span_gramSchmidt_Iic 𝕜 f n]⟩
 
 end GramSchmidt
+
+section Legendre
+
+open Polynomial OrthogonalPolynomial
+
+/-- `L²(-1, 1)` is `Lp ℝ 2 (volume.restrict (Set.Ioo (-1) 1))`, and Lebesgue measure on `(-1, 1)`
+is a weight in the sense of the backbone: all its moments are finite, and it is not carried by a
+finite set. This is what makes every polynomial an element of `L²(-1, 1)`. -/
+private theorem isWeightIoo : IsWeight (volume.restrict (Set.Ioo (-1 : ℝ) 1)) :=
+  isWeight_legendreMeasure
+
+/-- A real polynomial read as an element of `L²(-1, 1)`, linearly in the polynomial. -/
+private noncomputable def polyL2 : ℝ[X] →ₗ[ℝ] Lp ℝ 2 (volume.restrict (Set.Ioo (-1 : ℝ) 1)) :=
+  isWeightIoo.toLpₗ
+
+/-- `polyL2 p` is the function `x ↦ p(x)`. -/
+private theorem coeFn_polyL2 (p : ℝ[X]) :
+    ⇑(polyL2 p) =ᵐ[volume.restrict (Set.Ioo (-1 : ℝ) 1)] fun x => eval x p :=
+  isWeightIoo.coeFn_toLpₗ p
+
+/-- Scaling a polynomial by a constant scales its image in `L²(-1, 1)`. -/
+private theorem polyL2_C_mul (c : ℝ) (p : ℝ[X]) : polyL2 (C c * p) = c • polyL2 p := by
+  rw [← Polynomial.smul_eq_C_mul, map_smul]
+
+/-- Distinct polynomials are distinct in `L²(-1, 1)`: a nonzero polynomial has positive
+`L²(-1, 1)` norm. -/
+private theorem injective_polyL2 : Function.Injective polyL2 := by
+  rw [← LinearMap.ker_eq_bot, LinearMap.ker_eq_bot']
+  intro p hp
+  by_contra hne
+  have hpos := isWeightIoo.integral_eval_sq_pos hne
+  have hzero : inner ℝ (polyL2 p) (polyL2 p) = (0 : ℝ) := by rw [hp]; simp
+  rw [polyL2, isWeightIoo.inner_toLpₗ] at hzero
+  simp only [← pow_two] at hzero
+  rw [hzero] at hpos
+  exact lt_irrefl _ hpos
+
+/-- An integral against Lebesgue measure on `(-1, 1)` is an integral over the interval. -/
+private theorem integral_Ioo (f : ℝ → ℝ) :
+    ∫ x, f x ∂(volume.restrict (Set.Ioo (-1 : ℝ) 1)) = ∫ x in (-1 : ℝ)..1, f x :=
+  integral_legendreMeasure f
+
+/-- The integral over `(-1, 1)` of a polynomial of degree at most six, from its coefficients: the
+odd powers integrate to zero and `∫ x^{2k} = 2/(2k + 1)`. -/
+private theorem integral_poly (a : Fin 7 → ℝ) :
+    (∫ x in (-1 : ℝ)..1, ∑ i : Fin 7, a i * x ^ (i : ℕ))
+      = 2 * a 0 + 2 / 3 * a 2 + 2 / 5 * a 4 + 2 / 7 * a 6 := by
+  rw [intervalIntegral.integral_finsetSum fun (i : Fin 7) _ =>
+    (intervalIntegral.intervalIntegrable_pow (n := (i : ℕ))).const_mul (a i)]
+  simp [Fin.sum_univ_seven, intervalIntegral.integral_const_mul, integral_pow]
+  ring
+
+/-- The `L²(-1, 1)` inner product of two polynomials whose product has degree at most six, read off
+from the coefficients of that product. -/
+private theorem inner_polyL2 (p q : ℝ[X]) (a₀ a₁ a₂ a₃ a₄ a₅ a₆ : ℝ)
+    (h : ∀ x : ℝ, eval x p * eval x q
+      = a₀ + a₁ * x + a₂ * x ^ 2 + a₃ * x ^ 3 + a₄ * x ^ 4 + a₅ * x ^ 5 + a₆ * x ^ 6) :
+    inner ℝ (polyL2 p) (polyL2 q) = 2 * a₀ + 2 / 3 * a₂ + 2 / 5 * a₄ + 2 / 7 * a₆ := by
+  rw [polyL2, isWeightIoo.inner_toLpₗ p q, integral_Ioo]
+  simp only [h]
+  have := integral_poly ![a₀, a₁, a₂, a₃, a₄, a₅, a₆]
+  simpa [Fin.sum_univ_seven] using this
+
+/-- `inner_polyL2` in the diagonal case: the squared `L²(-1, 1)` norm of a polynomial. -/
+private theorem normSq_polyL2 (p : ℝ[X]) (a₀ a₁ a₂ a₃ a₄ a₅ a₆ : ℝ)
+    (h : ∀ x : ℝ, eval x p * eval x p
+      = a₀ + a₁ * x + a₂ * x ^ 2 + a₃ * x ^ 3 + a₄ * x ^ 4 + a₅ * x ^ 5 + a₆ * x ^ 6) :
+    ‖polyL2 p‖ ^ 2 = 2 * a₀ + 2 / 3 * a₂ + 2 / 5 * a₄ + 2 / 7 * a₆ := by
+  rw [← real_inner_self_eq_norm_sq]
+  exact inner_polyL2 p p a₀ a₁ a₂ a₃ a₄ a₅ a₆ h
+
+/-- The monomial `x ↦ xⁿ` is square integrable on `(-1, 1)`. -/
+private theorem memLp_pow (n : ℕ) :
+    MemLp (fun x : ℝ => x ^ n) 2 (volume.restrict (Set.Ioo (-1 : ℝ) 1)) :=
+  MemLp.ae_eq (by simp) (isWeightIoo.memLp (X ^ n))
+
+/-- The monomials `1, x, x², …` as elements of `L²(-1, 1)`: the sequence that Example 1.3.17 feeds
+to the Gram–Schmidt process of Theorem 1.3.16. -/
+noncomputable def monomialLp (n : ℕ) : Lp ℝ 2 (volume.restrict (Set.Ioo (-1 : ℝ) 1)) :=
+  MemLp.toLp _ (memLp_pow n)
+
+/-- `monomialLp n` is the function `x ↦ xⁿ`. -/
+theorem coeFn_monomialLp (n : ℕ) :
+    ⇑(monomialLp n) =ᵐ[volume.restrict (Set.Ioo (-1 : ℝ) 1)] fun x : ℝ => x ^ n :=
+  MemLp.coeFn_toLp _
+
+/-- `monomialLp n` is the monomial `Xⁿ` read in `L²(-1, 1)`. -/
+private theorem monomialLp_eq (n : ℕ) : monomialLp n = polyL2 (X ^ n) := by
+  refine Lp.ext_iff.2 ?_
+  filter_upwards [coeFn_monomialLp n, coeFn_polyL2 (X ^ n)] with x h1 h2
+  rw [h1, h2, eval_pow, eval_X]
+
+/-- The Gram–Schmidt recursion in the form Example 1.3.17 unfolds it: the `n`-th vector minus its
+projections onto the previous ones, the sum taken over `Finset.range n`. -/
+private theorem gramSchmidt_recurrence {E : Type*} [NormedAddCommGroup E]
+    [InnerProductSpace ℝ E] (f : ℕ → E) (n : ℕ) :
+    gramSchmidt ℝ f n = f n - ∑ i ∈ Finset.range n,
+      (inner ℝ (gramSchmidt ℝ f i) (f n) / ‖gramSchmidt ℝ f i‖ ^ 2) • gramSchmidt ℝ f i := by
+  rw [eq_sub_iff_add_eq]
+  simpa [Nat.Iio_eq_range] using (gramSchmidt_def'' ℝ f n).symm
+
+/-- The first Gram–Schmidt vector is the constant `1`. -/
+private theorem gramSchmidt_monomialLp_zero : gramSchmidt ℝ monomialLp 0 = polyL2 1 := by
+  rw [gramSchmidt_recurrence]
+  simp [monomialLp_eq]
+
+/-- `∫_{-1}^{1} 1 = 2`. -/
+private theorem normSq_polyL2_one : ‖polyL2 1‖ ^ 2 = 2 := by
+  rw [normSq_polyL2 _ 1 0 0 0 0 0 0 fun x => by simp]; norm_num
+
+/-- `∫_{-1}^{1} x² = 2/3`. -/
+private theorem normSq_polyL2_X : ‖polyL2 X‖ ^ 2 = 2 / 3 := by
+  rw [normSq_polyL2 _ 0 0 1 0 0 0 0 fun x => by simp; ring]; norm_num
+
+/-- The second Gram–Schmidt vector is `x`: `1` and `x` are already orthogonal. -/
+private theorem gramSchmidt_monomialLp_one : gramSchmidt ℝ monomialLp 1 = polyL2 X := by
+  rw [gramSchmidt_recurrence, Finset.sum_range_one, gramSchmidt_monomialLp_zero]
+  simp only [monomialLp_eq]
+  rw [inner_polyL2 1 (X ^ 1) 0 1 0 0 0 0 0 fun x => by simp]
+  simp
+
+/-- The third Gram–Schmidt vector is `x² - 1/3`: subtracting `(1, x²)/‖1‖² = 1/3` from `x²`. -/
+private theorem gramSchmidt_monomialLp_two :
+    gramSchmidt ℝ monomialLp 2 = polyL2 (X ^ 2 - C (1 / 3)) := by
+  rw [gramSchmidt_recurrence, Finset.sum_range_succ, Finset.sum_range_one,
+    gramSchmidt_monomialLp_zero, gramSchmidt_monomialLp_one]
+  simp only [monomialLp_eq]
+  rw [inner_polyL2 1 (X ^ 2) 0 0 1 0 0 0 0 (fun x => by simp),
+    inner_polyL2 X (X ^ 2) 0 0 0 1 0 0 0 (fun x => by simp; ring),
+    normSq_polyL2_one, normSq_polyL2_X, map_sub, ← polyL2_C_mul, mul_one]
+  norm_num
+
+/-- `∫_{-1}^{1} (x² - 1/3)² = 8/45`. -/
+private theorem normSq_polyL2_two : ‖polyL2 (X ^ 2 - C (1 / 3))‖ ^ 2 = 8 / 45 := by
+  rw [normSq_polyL2 _ (1 / 9) 0 (-2 / 3) 0 1 0 0 fun x => by simp; ring]; norm_num
+
+/-- The fourth Gram–Schmidt vector is `x³ - (3/5) x`: only the projection onto `x` survives. -/
+private theorem gramSchmidt_monomialLp_three :
+    gramSchmidt ℝ monomialLp 3 = polyL2 (X ^ 3 - C (3 / 5) * X) := by
+  rw [gramSchmidt_recurrence, Finset.sum_range_succ, Finset.sum_range_succ, Finset.sum_range_one,
+    gramSchmidt_monomialLp_zero, gramSchmidt_monomialLp_one, gramSchmidt_monomialLp_two]
+  simp only [monomialLp_eq]
+  rw [inner_polyL2 1 (X ^ 3) 0 0 0 1 0 0 0 (fun x => by simp),
+    inner_polyL2 X (X ^ 3) 0 0 0 0 1 0 0 (fun x => by simp; ring),
+    inner_polyL2 (X ^ 2 - C (1 / 3)) (X ^ 3) 0 0 0 (-1 / 3) 0 1 0 (fun x => by simp; ring),
+    normSq_polyL2_one, normSq_polyL2_X, normSq_polyL2_two]
+  have hrhs : polyL2 (X ^ 3 - C (3 / 5) * X) = polyL2 (X ^ 3) - (3 / 5 : ℝ) • polyL2 X := by
+    rw [map_sub, polyL2_C_mul]
+  rw [hrhs]
+  norm_num
+
+/-- `∫_{-1}^{1} (x³ - (3/5) x)² = 8/175`. -/
+private theorem normSq_polyL2_three : ‖polyL2 (X ^ 3 - C (3 / 5) * X)‖ ^ 2 = 8 / 175 := by
+  rw [normSq_polyL2 _ 0 0 (9 / 25) 0 (-6 / 5) 0 1 fun x => by simp; ring]; norm_num
+
+/-- The `L²(-1, 1)` norm of a polynomial, from its square. -/
+private theorem norm_polyL2_of_sq (p : ℝ[X]) (c : ℝ) (h : ‖polyL2 p‖ ^ 2 = c) :
+    ‖polyL2 p‖ = √c := by
+  rw [← h, Real.sqrt_sq (norm_nonneg _)]
+
+/-- The first normalized Gram–Schmidt vector, before the constant is simplified. -/
+private theorem gramSchmidtNormed_monomialLp_zero :
+    gramSchmidtNormed ℝ monomialLp 0 = (√2)⁻¹ • polyL2 1 := by
+  rw [gramSchmidtNormed, gramSchmidt_monomialLp_zero,
+    norm_polyL2_of_sq _ 2 normSq_polyL2_one, RCLike.ofReal_real_eq_id, id_eq]
+
+/-- The second normalized Gram–Schmidt vector, before the constant is simplified. -/
+private theorem gramSchmidtNormed_monomialLp_one :
+    gramSchmidtNormed ℝ monomialLp 1 = (√(2 / 3))⁻¹ • polyL2 X := by
+  rw [gramSchmidtNormed, gramSchmidt_monomialLp_one,
+    norm_polyL2_of_sq _ _ normSq_polyL2_X, RCLike.ofReal_real_eq_id, id_eq]
+
+/-- The third normalized Gram–Schmidt vector, before the constant is simplified. -/
+private theorem gramSchmidtNormed_monomialLp_two :
+    gramSchmidtNormed ℝ monomialLp 2 = (√(8 / 45))⁻¹ • polyL2 (X ^ 2 - C (1 / 3)) := by
+  rw [gramSchmidtNormed, gramSchmidt_monomialLp_two,
+    norm_polyL2_of_sq _ _ normSq_polyL2_two, RCLike.ofReal_real_eq_id, id_eq]
+
+/-- The fourth normalized Gram–Schmidt vector, before the constant is simplified. -/
+private theorem gramSchmidtNormed_monomialLp_three :
+    gramSchmidtNormed ℝ monomialLp 3 = (√(8 / 175))⁻¹ • polyL2 (X ^ 3 - C (3 / 5) * X) := by
+  rw [gramSchmidtNormed, gramSchmidt_monomialLp_three,
+    norm_polyL2_of_sq _ _ normSq_polyL2_three, RCLike.ofReal_real_eq_id, id_eq]
+
+/-- A scalar multiple of a polynomial in `L²(-1, 1)` is the function `x ↦ c p(x)`. -/
+private theorem coeFn_smul_polyL2 (c : ℝ) (p : ℝ[X]) :
+    ⇑(c • polyL2 p) =ᵐ[volume.restrict (Set.Ioo (-1 : ℝ) 1)] fun x => c * eval x p := by
+  filter_upwards [Lp.coeFn_smul c (polyL2 p), coeFn_polyL2 p] with x h1 h2
+  rw [h1, Pi.smul_apply, h2, smul_eq_mul]
+
+/-- `(√2)⁻¹ = 1/√2`. -/
+private theorem inv_sqrt_two : (√(2 : ℝ))⁻¹ = 1 / √2 := (one_div _).symm
+
+/-- `(√(2/3))⁻¹ = √(3/2)`. -/
+private theorem inv_sqrt_two_div_three : (√(2 / 3 : ℝ))⁻¹ = √(3 / 2) := by
+  rw [← Real.sqrt_inv]; norm_num
+
+/-- `(√(8/45))⁻¹ = (3/2) √(5/2)`. -/
+private theorem inv_sqrt_eight_div_fortyFive : (√(8 / 45 : ℝ))⁻¹ = 3 / 2 * √(5 / 2) := by
+  rw [← Real.sqrt_inv, show ((8 : ℝ) / 45)⁻¹ = (3 / 2) ^ 2 * (5 / 2) by norm_num,
+    Real.sqrt_mul (by positivity), Real.sqrt_sq (by norm_num)]
+
+/-- `(√(8/175))⁻¹ = (5/2) √(7/2)`. -/
+private theorem inv_sqrt_eight_div_oneSeventyFive : (√(8 / 175 : ℝ))⁻¹ = 5 / 2 * √(7 / 2) := by
+  rw [← Real.sqrt_inv, show ((8 : ℝ) / 175)⁻¹ = (5 / 2) ^ 2 * (7 / 2) by norm_num,
+    Real.sqrt_mul (by positivity), Real.sqrt_sq (by norm_num)]
+
+/-- `√(1/2) = 1/√2`. -/
+private theorem sqrt_half : √(1 / 2 : ℝ) = 1 / √2 := by
+  rw [one_div, Real.sqrt_inv, one_div]
+
+/-- `2 P₂ = 3 X² - 1`, from the Legendre recursion. -/
+private theorem two_mul_legendre_two : 2 * legendre 2 = 3 * X ^ 2 - 1 := by
+  have h := legendre_recurrence 0
+  rw [legendre_zero, legendre_one] at h
+  push_cast at h
+  linear_combination h
+
+/-- `6 P₃ = 15 X³ - 9 X`, from the Legendre recursion. -/
+private theorem six_mul_legendre_three : 6 * legendre 3 = 15 * X ^ 3 - 9 * X := by
+  have h := legendre_recurrence 1
+  rw [legendre_one] at h
+  push_cast at h
+  linear_combination 2 * h + 5 * X * two_mul_legendre_two
+
+/-- `P₂(x) = (3x² - 1)/2`. -/
+private theorem eval_legendre_two (x : ℝ) : eval x (legendre 2) = (3 * x ^ 2 - 1) / 2 := by
+  have h := congrArg (eval x) two_mul_legendre_two
+  simp only [eval_mul, eval_ofNat, eval_sub, eval_pow, eval_X, eval_one] at h
+  linarith
+
+/-- `P₃(x) = (5x³ - 3x)/2`. -/
+private theorem eval_legendre_three (x : ℝ) : eval x (legendre 3) = (5 * x ^ 3 - 3 * x) / 2 := by
+  have h := congrArg (eval x) six_mul_legendre_three
+  simp only [eval_mul, eval_ofNat, eval_sub, eval_pow, eval_X] at h
+  linarith
+
+/-- The monomials are linearly independent in `L²(-1, 1)`, so Theorem 1.3.16 applies to them. -/
+private theorem linearIndependent_monomialLp : LinearIndependent ℝ monomialLp := by
+  have h : LinearIndependent ℝ fun n : ℕ => (X : ℝ[X]) ^ n := by
+    have hb := (Polynomial.basisMonomials ℝ).linearIndependent
+    rw [Polynomial.coe_basisMonomials] at hb
+    simpa [Polynomial.X_pow_eq_monomial] using hb
+  rw [show monomialLp = fun n : ℕ => polyL2 (X ^ n) from funext monomialLp_eq]
+  exact h.map' polyL2 (LinearMap.ker_eq_bot.2 injective_polyL2)
+
+/-- The first orthonormal member, `1/√2`. -/
+private theorem coeFn_gramSchmidtNormed_zero :
+    ⇑(gramSchmidtNormed ℝ monomialLp 0)
+      =ᵐ[volume.restrict (Set.Ioo (-1 : ℝ) 1)] fun _ : ℝ => 1 / √2 := by
+  rw [gramSchmidtNormed_monomialLp_zero, inv_sqrt_two]
+  filter_upwards [coeFn_smul_polyL2 (1 / √2) 1] with x hx
+  rw [hx, eval_one, mul_one]
+
+/-- The second orthonormal member, `√(3/2) x`. -/
+private theorem coeFn_gramSchmidtNormed_one :
+    ⇑(gramSchmidtNormed ℝ monomialLp 1)
+      =ᵐ[volume.restrict (Set.Ioo (-1 : ℝ) 1)] fun x : ℝ => √(3 / 2) * x := by
+  rw [gramSchmidtNormed_monomialLp_one, inv_sqrt_two_div_three]
+  filter_upwards [coeFn_smul_polyL2 (√(3 / 2)) X] with x hx
+  rw [hx, eval_X]
+
+/-- The third orthonormal member, `(3/2) √(5/2) (x² - 1/3)`. -/
+private theorem coeFn_gramSchmidtNormed_two :
+    ⇑(gramSchmidtNormed ℝ monomialLp 2)
+      =ᵐ[volume.restrict (Set.Ioo (-1 : ℝ) 1)]
+        fun x : ℝ => 3 / 2 * √(5 / 2) * (x ^ 2 - 1 / 3) := by
+  rw [gramSchmidtNormed_monomialLp_two, inv_sqrt_eight_div_fortyFive]
+  filter_upwards [coeFn_smul_polyL2 (3 / 2 * √(5 / 2)) (X ^ 2 - C (1 / 3))] with x hx
+  rw [hx]
+  simp
+
+/-- The fourth orthonormal member, `(1/2) √(7/2) (5x³ - 3x)`. -/
+private theorem coeFn_gramSchmidtNormed_three :
+    ⇑(gramSchmidtNormed ℝ monomialLp 3)
+      =ᵐ[volume.restrict (Set.Ioo (-1 : ℝ) 1)]
+        fun x : ℝ => 1 / 2 * √(7 / 2) * (5 * x ^ 3 - 3 * x) := by
+  rw [gramSchmidtNormed_monomialLp_three, inv_sqrt_eight_div_oneSeventyFive]
+  filter_upwards [coeFn_smul_polyL2 (5 / 2 * √(7 / 2)) (X ^ 3 - C (3 / 5) * X)] with x hx
+  rw [hx]
+  simp only [eval_sub, eval_mul, eval_pow, eval_X, eval_C]
+  ring
+
+/-- The first four orthonormal members are `√((2n + 1)/2) Pₙ`, the normalized Legendre
+polynomials. -/
+private theorem coeFn_gramSchmidtNormed_legendre (n : ℕ) (hn : n ≤ 3) :
+    ⇑(gramSchmidtNormed ℝ monomialLp n)
+      =ᵐ[volume.restrict (Set.Ioo (-1 : ℝ) 1)]
+        fun x : ℝ => √((2 * n + 1) / 2) * eval x (legendre n) := by
+  interval_cases n
+  · filter_upwards [coeFn_gramSchmidtNormed_zero] with x hx
+    rw [hx, legendre_zero, eval_one, mul_one]
+    norm_num [sqrt_half]
+  · filter_upwards [coeFn_gramSchmidtNormed_one] with x hx
+    rw [hx, legendre_one, eval_X]
+    norm_num
+  · filter_upwards [coeFn_gramSchmidtNormed_two] with x hx
+    rw [hx, eval_legendre_two]
+    norm_num
+    ring
+  · filter_upwards [coeFn_gramSchmidtNormed_three] with x hx
+    rw [hx, eval_legendre_three]
+    norm_num
+    ring
+
+/-- **Example 1.3.17.** The Gram–Schmidt process of Theorem 1.3.16, applied to the linearly
+independent monomials `1, x, x², x³` of `L²(-1, 1)`, produces `1/√2`, `√(3/2) x`,
+`(3/2) √(5/2) (x² - 1/3)` and `(1/2) √(7/2) (5x³ - 3x)`.
+
+These are the first four orthonormal Legendre polynomials: the last clause records that the `n`-th
+one is `√((2n + 1)/2) Pₙ` for `n ≤ 3`, with `Pₙ` the Legendre polynomial `Polynomial.legendre n`,
+whose orthogonality relation `∫_{-1}^{1} Pₘ Pₙ = 2 δₘₙ/(2n + 1)` is exactly the normalization used
+here. The equalities hold almost everywhere because an element of `L²(-1, 1)` is an equivalence
+class of functions. -/
+theorem example_1_3_17 :
+    LinearIndependent ℝ monomialLp ∧
+      (⇑(gramSchmidtNormed ℝ monomialLp 0)
+        =ᵐ[volume.restrict (Set.Ioo (-1 : ℝ) 1)] fun _ : ℝ => 1 / √2) ∧
+      (⇑(gramSchmidtNormed ℝ monomialLp 1)
+        =ᵐ[volume.restrict (Set.Ioo (-1 : ℝ) 1)] fun x : ℝ => √(3 / 2) * x) ∧
+      (⇑(gramSchmidtNormed ℝ monomialLp 2)
+        =ᵐ[volume.restrict (Set.Ioo (-1 : ℝ) 1)]
+          fun x : ℝ => 3 / 2 * √(5 / 2) * (x ^ 2 - 1 / 3)) ∧
+      (⇑(gramSchmidtNormed ℝ monomialLp 3)
+        =ᵐ[volume.restrict (Set.Ioo (-1 : ℝ) 1)]
+          fun x : ℝ => 1 / 2 * √(7 / 2) * (5 * x ^ 3 - 3 * x)) ∧
+      (∀ n ≤ 3, ⇑(gramSchmidtNormed ℝ monomialLp n)
+        =ᵐ[volume.restrict (Set.Ioo (-1 : ℝ) 1)]
+          fun x : ℝ => √((2 * n + 1) / 2) * eval x (legendre n)) :=
+  ⟨linearIndependent_monomialLp, coeFn_gramSchmidtNormed_zero, coeFn_gramSchmidtNormed_one,
+    coeFn_gramSchmidtNormed_two, coeFn_gramSchmidtNormed_three, coeFn_gramSchmidtNormed_legendre⟩
+
+end Legendre
 
 end AtkinsonHan.Chapter01
