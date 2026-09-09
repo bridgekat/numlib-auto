@@ -1,8 +1,9 @@
 import Mathlib.Analysis.InnerProductSpace.Dual
+import Mathlib.Analysis.Normed.Module.DoubleDual
 import Numlib.Analysis.Convex.Uniform
 import Numlib.Analysis.Fourier.TrigonometricBasis
 import Numlib.Analysis.Normed.Module.WeakDual
-import NumlibSurface.AtkinsonHan.Chapter03.Section03
+import Numlib.Variational.WeakMinimization
 
 /-!
 # Atkinson–Han §2.7: weak convergence
@@ -10,9 +11,14 @@ import NumlibSurface.AtkinsonHan.Chapter03.Section03
 Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
 Analysis Framework*, 3rd edition, Springer, 2009, §2.7.
 
-Definition 2.7.1, weak convergence of a sequence, is already in this surface as
-`AtkinsonHan.Chapter03.WeakSeqTendsto`, introduced in §3.3 for Example 3.3.5 before this section was
-planned; it is reused here rather than defined a second time.
+## Book-specific definitions
+
+* `WeakSeqTendsto` — weak sequential convergence `vₙ ⇀ u` (Definition 2.7.1), only the sequential
+  form and over any `RCLike 𝕜`; `tendsto_toWeakSpace_iff_weakSeqTendsto` identifies it with
+  convergence in Mathlib's `WeakSpace` topology, and `weakSeqTendsto_iff_root` with the backbone's
+  real-scalar `_root_.WeakSeqTendsto`, in which the direct method of
+  `Numlib.Variational.WeakMinimization` is stated. §3.3 uses this relation throughout, and
+  Definition 3.3.3 is stated over it.
 
 ## Main results
 
@@ -36,14 +42,16 @@ is what makes it weakly null and of constant norm.
 ## Not formalized here
 
 Theorem 2.7.5 — a Banach space is reflexive if and only if every bounded sequence has a weakly
-convergent subsequence — is not planned, and neither is **Definition 2.7.4**, reflexivity itself:
+convergent subsequence — is not stated, and neither is **Definition 2.7.4**, reflexivity itself:
 `exercise_2_7_4` below is Exercise 2.7.4, the Radon–Riesz property in a uniformly convex space, and
 is a different result from the Definition that precedes Theorem 2.7.5. The obstruction to the
 Theorem is that it is the Eberlein–Šmulian theorem together with
 Kakutani's characterisation of reflexivity, and Mathlib has neither reflexivity as a class nor
-Banach–Alaoglu in a form that would give it. Everything in the book that consumes it (Theorems
-3.3.8, 3.3.10–3.3.12, 3.3.14 and Mazur's lemma) is already recorded as unplanned in
-`Numlib/Variational/Minimization`. Example 2.7.3's uniform-integrability criterion
+Banach–Alaoglu in a form that would give it. Wherever the book applies Theorem 2.7.5 (its
+Theorems 3.3.8, 3.3.10, 3.3.12 and 3.3.14) the surface assumes the right-hand property directly, as
+the backbone's class `WeaklySeqCompactSpace` of `Numlib/Variational/WeakMinimization`; what the
+book leaves unproved beyond that is recorded in `Numlib/Variational/Minimization`.
+Example 2.7.3's uniform-integrability criterion
 (Dunford–Pettis) is not planned for the same reason, and neither is part (b) of Exercise 2.7.4,
 the uniform convexity of `Lᵖ` by the Clarkson inequalities.
 -/
@@ -58,16 +66,36 @@ section General
 
 variable {𝕜 V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
 
+/-- **Weak sequential convergence** `vₙ ⇀ u` (Definition 2.7.1): `ℓ(vₙ) → ℓ(u)` for every bounded
+linear functional `ℓ`. Only the sequential notion is defined, which is all this surface uses;
+Mathlib's `WeakSpace` carries the topological version. -/
+def WeakSeqTendsto (𝕜 : Type*) {V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
+    (v : ℕ → V) (u : V) : Prop :=
+  ∀ ℓ : StrongDual 𝕜 V, Tendsto (fun n => ℓ (v n)) atTop (𝓝 (ℓ u))
+
+/-- Weak sequential convergence in the sense of Definition 2.7.1 is convergence in Mathlib's
+`WeakSpace` topology, which is how the backbone states its two weak-convergence lemmas. -/
+theorem tendsto_toWeakSpace_iff_weakSeqTendsto {v : ℕ → V} {u : V} :
+    Tendsto (fun n => toWeakSpace 𝕜 V (v n)) atTop (𝓝 (toWeakSpace 𝕜 V u)) ↔
+      WeakSeqTendsto 𝕜 v u :=
+  tendsto_toWeakSpace_iff
+
+/-- Over the reals, Definition 2.7.1 is the backbone's `WeakSeqTendsto`, in which
+`Numlib.Variational.WeakMinimization` states the direct method. -/
+theorem weakSeqTendsto_iff_root {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] {v : ℕ → V}
+    {u : V} : WeakSeqTendsto ℝ v u ↔ _root_.WeakSeqTendsto v u :=
+  Iff.rfl
+
 /-- **Proposition 2.7.2.** A weakly convergent sequence in a normed space is bounded. This is the
 principle of uniform boundedness applied to the images of the `uₙ` in the double dual. -/
-theorem proposition_2_7_2 {v : ℕ → V} {u : V} (h : Chapter03.WeakSeqTendsto 𝕜 v u) :
+theorem proposition_2_7_2 {v : ℕ → V} {u : V} (h : WeakSeqTendsto 𝕜 v u) :
     ∃ C : ℝ, ∀ n, ‖v n‖ ≤ C :=
   exists_norm_le_of_tendsto_toWeakSpace (tendsto_toWeakSpace_iff.2 h)
 
 /-- **Exercise 2.7.2.** `uₙ ⇀ u` implies `‖u‖ ≤ liminf ‖uₙ‖`: the norm is weakly sequentially
 lower semicontinuous. The book proves the same statement twice; it is `Chapter03.example_3_3_5`.
 `example_2_7_3` is an instance in which the inequality is strict. -/
-theorem exercise_2_7_2 {v : ℕ → V} {u : V} (h : Chapter03.WeakSeqTendsto 𝕜 v u) :
+theorem exercise_2_7_2 {v : ℕ → V} {u : V} (h : WeakSeqTendsto 𝕜 v u) :
     ‖u‖ ≤ liminf (fun n => ‖v n‖) atTop :=
   norm_le_liminf_norm_of_weak_tendsto (tendsto_toWeakSpace_iff.2 h)
 
@@ -81,7 +109,7 @@ section Example
 by the Riesz representation of the dual. -/
 theorem weakSeqTendsto_iff_inner {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℝ H]
     [CompleteSpace H] {v : ℕ → H} {u : H} :
-    Chapter03.WeakSeqTendsto ℝ v u ↔
+    WeakSeqTendsto ℝ v u ↔
       ∀ w : H, Tendsto (fun n => inner ℝ (v n) w) atTop (𝓝 (inner ℝ u w)) := by
   constructor
   · intro h w
@@ -97,7 +125,7 @@ theorem weakSeqTendsto_iff_inner {H : Type*} [NormedAddCommGroup H] [InnerProduc
 a fixed vector are square-summable by Bessel's inequality, hence tend to zero. -/
 theorem weakSeqTendsto_zero_of_orthonormal {ι H : Type*} [NormedAddCommGroup H]
     [InnerProductSpace ℝ H] [CompleteSpace H] {φ : ι → H} (hφ : Orthonormal ℝ φ) {g : ℕ → ι}
-    (hg : Function.Injective g) : Chapter03.WeakSeqTendsto ℝ (fun n => φ (g n)) 0 := by
+    (hg : Function.Injective g) : WeakSeqTendsto ℝ (fun n => φ (g n)) 0 := by
   refine weakSeqTendsto_iff_inner.2 fun w => ?_
   have hgt : Tendsto g atTop cofinite := Nat.cofinite_eq_atTop ▸ hg.tendsto_cofinite
   have h1 : Tendsto (fun n => ‖inner ℝ (φ (g n)) w‖ ^ 2) atTop (𝓝 0) :=
@@ -117,7 +145,7 @@ probability Haar measure is `trigFun (2π) (-n)` of Theorem 1.3.13.
 Since the weak limit is `0` and every term has norm `1`, this is also an example in which the
 inequality of `exercise_2_7_2` is strict. -/
 theorem example_2_7_3 :
-    Chapter03.WeakSeqTendsto ℝ (fun n : ℕ => trigLp (2 * π) (-(n + 1) : ℤ)) 0 ∧
+    WeakSeqTendsto ℝ (fun n : ℕ => trigLp (2 * π) (-(n + 1) : ℤ)) 0 ∧
       (∀ n : ℕ, ‖trigLp (2 * π) (-(n + 1) : ℤ)‖ = 1) ∧
       ¬ Tendsto (fun n : ℕ => trigLp (2 * π) (-(n + 1) : ℤ)) atTop (𝓝 0) := by
   have hinj : Function.Injective fun n : ℕ => (-(n + 1) : ℤ) := by
@@ -140,14 +168,14 @@ weak convergence together with convergence of the norms is convergence. -/
 theorem exercise_2_7_3 {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℝ H]
     [CompleteSpace H] {v : ℕ → H} {u : H} :
     Tendsto v atTop (𝓝 u) ↔
-      Chapter03.WeakSeqTendsto ℝ v u ∧ Tendsto (fun n => ‖v n‖) atTop (𝓝 ‖u‖) := by
+      WeakSeqTendsto ℝ v u ∧ Tendsto (fun n => ‖v n‖) atTop (𝓝 ‖u‖) := by
   rw [tendsto_of_forall_inner_tendsto_of_tendsto_norm (𝕜 := ℝ), weakSeqTendsto_iff_inner]
 
 /-- **Exercise 2.7.4 (a), (c)**, the Radon–Riesz property. In a uniformly convex Banach space —
 a Hilbert space in particular, by Mathlib's `InnerProductSpace.toUniformConvexSpace` — weak
 convergence together with convergence of the norms implies convergence in norm. -/
 theorem exercise_2_7_4 {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [UniformConvexSpace E]
-    {v : ℕ → E} {u : E} (hweak : Chapter03.WeakSeqTendsto ℝ v u)
+    {v : ℕ → E} {u : E} (hweak : WeakSeqTendsto ℝ v u)
     (hnorm : Tendsto (fun n => ‖v n‖) atTop (𝓝 ‖u‖)) : Tendsto v atTop (𝓝 u) :=
   tendsto_of_forall_dual_tendsto_of_tendsto_norm hweak hnorm
 

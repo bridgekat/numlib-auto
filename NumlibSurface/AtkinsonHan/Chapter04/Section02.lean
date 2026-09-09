@@ -62,6 +62,9 @@ as identifications rather than as new definitions.
   of `L²(ℝ^d)` onto itself.
 * `definition_4_2_1`, `definition_4_2_3` — the two bundled transforms agree with `bookFourier`
   and with the duality formula (4.2.13).
+* `definition_4_2_2`, `definition_4_2_2_seq` — the tempered distributions are exactly the
+  continuous linear functionals on `𝓢(ℝ^d)`, and equivalently the sequentially continuous ones,
+  which is the reading the book gives beside the definition.
 
 ## Implementation notes
 
@@ -382,9 +385,37 @@ theorem definition_4_2_1 (f : 𝓢(V, ℂ)) (ξ : V) : bookFourierCLM f ξ = boo
     SchwartzMap.fourier_coe, smul_eq_mul]
   rfl
 
-/-- Definitions 4.2.2 and 4.2.3: the tempered distributions `𝓢'(ℝ^d)` are Mathlib's
-`TemperedDistribution`, the continuous linear functionals on `𝓢(ℝ^d)`, and the book's Fourier
-transform extends to them by duality. -/
+omit [FiniteDimensional ℝ V] [MeasurableSpace V] [BorelSpace V] in
+/-- **Definition 4.2.2.** The space of tempered distributions `𝒮'(ℝ^d)` is the space of all
+continuous linear functionals on the Schwartz space `𝒮(ℝ^d)`.
+
+This is Mathlib's `TemperedDistribution`, with notation `𝓢'(E, F)`. Because the space *is* the
+dual, the definition is recorded in the shape Chapter 1 gives to a structure carried by a type: the
+linear functionals on `𝓢(ℝ^d)` that come from a tempered distribution are exactly the continuous
+ones. `definition_4_2_2_seq` is the sequential reading the book adds beside the definition. -/
+theorem definition_4_2_2 (T : 𝓢(V, ℂ) →ₗ[ℂ] ℂ) :
+    (∃ u : 𝓢'(V, ℂ), ∀ φ, u φ = T φ) ↔ Continuous T := by
+  constructor
+  · rintro ⟨u, hu⟩
+    have hcont : Continuous fun φ : 𝓢(V, ℂ) => u φ :=
+      (u : 𝓢(V, ℂ) →L[ℂ] ℂ).continuous
+    simpa only [funext hu] using hcont
+  · intro h
+    exact ⟨(⟨T, h⟩ : 𝓢(V, ℂ) →L[ℂ] ℂ), fun _ => rfl⟩
+
+omit [FiniteDimensional ℝ V] [MeasurableSpace V] [BorelSpace V] in
+/-- **Definition 4.2.2**, the book's remark: a linear functional `T` on `𝒮(ℝ^d)` is a tempered
+distribution if and only if `φₙ → φ` in `𝒮(ℝ^d)` implies `T φₙ → T φ`. The Schwartz space is
+metrizable, so sequential continuity is continuity. -/
+theorem definition_4_2_2_seq (T : 𝓢(V, ℂ) →ₗ[ℂ] ℂ) :
+    (∃ u : 𝓢'(V, ℂ), ∀ φ, u φ = T φ) ↔
+      ∀ (φ : ℕ → 𝓢(V, ℂ)) (ψ : 𝓢(V, ℂ)), Filter.Tendsto φ Filter.atTop (nhds ψ) →
+        Filter.Tendsto (fun n => T (φ n)) Filter.atTop (nhds (T ψ)) := by
+  rw [definition_4_2_2, continuous_iff_seqContinuous]
+  exact ⟨fun h φ ψ hφ => h hφ, fun h _ _ hφ => h _ _ hφ⟩
+
+/-- Definition 4.2.3: the book's Fourier transform extends to the tempered distributions by
+duality. -/
 noncomputable def bookFourierTD : 𝓢'(V, ℂ) →L[ℂ] 𝓢'(V, ℂ) :=
   PointwiseConvergenceCLM.precomp ℂ bookFourierCLM
 

@@ -35,12 +35,8 @@ id = "example_2_3_2_bound"
 
 [[node]]
 id = "example_2_3_6"
-kind = "theorem"
-desc = '''Example 2.3.6: the integral equation (2.3.17) `λ u(x) - ∫₀¹ sin(x y) u(y) dy = f(x)` is
-uniquely solvable in `C[0, 1]` for every `f` when `|λ| > ‖K‖ = 1 - cos 1 ≈ 0.4597` by
-Example 2.3.2, and the range of admissible `λ` is widened by comparing it, through the
-perturbation theorem, with the degenerate-kernel equation (2.3.19) whose inverse is written out in
-(2.3.20): the condition becomes (2.3.21),
-`(1/|λ|)(1 + 1/(2 |λ - 1/3|)) < 1/(cos 1 - 1/2)`. Not formalized: it is a worked numerical
-illustration of `example_2_3_2_integral` and `theorem_2_3_5` with explicit constants and no new
-claim, as §2.3's module doc records.'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 2.3.6, (2.3.18)"
+
+[[node]]
+id = "example_2_3_6_norm_sub"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 2.3.6, the norm ‖L - M‖"

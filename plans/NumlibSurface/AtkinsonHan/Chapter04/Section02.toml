@@ -62,10 +62,8 @@ id = "theorem_4_2_4_l2"
 
 [[node]]
 id = "definition_4_2_2"
-kind = "definition"
-desc = '''
-Definition 4.2.2: the space of tempered distributions `𝒮'(ℝ^d)` is the space of all continuous
-linear functionals on the Schwartz space `𝒮(ℝ^d)`. Not formalized: it is Mathlib's
-`TemperedDistribution`, with notation `𝓢'(E, F)`, on which this section's `bookFourierTD` and
-`definition_4_2_3` are built; §4.2's module doc records the identification instead of restating it.
-'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 4.2.2"
+
+[[node]]
+id = "definition_4_2_2_seq"
+source = "Atkinson–Han, Theoretical Numerical Analysis, the remark after Definition 4.2.2"

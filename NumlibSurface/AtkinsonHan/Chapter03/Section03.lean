@@ -10,6 +10,8 @@ import Numlib.Approximation.BestApprox
 import Numlib.Approximation.Chebyshev
 import Numlib.Variational.Minimization
 import Numlib.Variational.WeakMinimization
+import NumlibSurface.AtkinsonHan.Chapter01.Section02
+import NumlibSurface.AtkinsonHan.Chapter02.Section07
 
 /-!
 # Atkinson–Han §3.3: best approximation
@@ -19,20 +21,26 @@ Analysis Framework*, 3rd edition, Springer, 2009, §3.3: the book's best approxi
 backbone's `IsBestApprox` (`Numlib.Approximation.BestApprox`); `isBestApprox_iff_norm_eq_iInf` is
 the bridge to the book's `‖u - û‖ = inf_{v ∈ K} ‖u - v‖` phrasing.
 
-Definitions 3.3.1–3.3.2 (convex set, convex and strictly convex functional) are Mathlib's
-`Convex ℝ K`, `ConvexOn ℝ K f` and `StrictConvexOn ℝ K f`; the book quantifies `λ ∈ (0,1)` where
-Mathlib uses `[0,1]`, which is the same condition (`convex_iff_openSegment_subset`). The
-convex-combination statement (3.3.1) is Mathlib's `Convex.sum_mem`, and closed versus sequentially
-closed sets (Definition 3.3.3) agree in metric spaces (`isSeqClosed_iff_isClosed`), as do
-sequential and topological lower semicontinuity.
+Definitions 3.3.1–3.3.4 are restated here under their numbers: a convex set and a convex or
+strictly convex functional are Mathlib's `Convex ℝ K`, `ConvexOn ℝ K f` and `StrictConvexOn ℝ K f`,
+the book's `λ ∈ (0,1)` and Mathlib's `[0,1]` being the same condition; a closed set is `IsClosed`,
+sequential and topological closedness agreeing in a metric space, and a lower semicontinuous
+functional is `LowerSemicontinuousOn`; and the two weak clauses are the backbone's
+`IsWeakSeqClosed` and `WeakSeqLowerSemicontinuousOn`. The two convergences the last four are
+written over are the earlier restatements rather than their Mathlib originals: `vₙ → v` is
+`Chapter01.definition_1_2_8` and `vₙ ⇀ v` is §2.7's `Chapter02.WeakSeqTendsto`, the book's
+Definition 2.7.1, which this module uses throughout rather than defining a second time.
+
+## Main definitions
+
+* `definition_3_3_1`, `definition_3_3_2`, `definition_3_3_2_strict` — a convex set, a convex
+  functional and a strictly convex functional, with (3.3.1) as `definition_3_3_1_sum`.
+* `definition_3_3_3`, `definition_3_3_3_weak` — a closed and a weakly closed set.
+* `definition_3_3_4`, `definition_3_3_4_weak` — a lower semicontinuous and a weakly sequentially
+  lower semicontinuous functional.
 
 ## Book-specific definitions
 
-* `WeakSeqTendsto` — weak sequential convergence (Definition 2.7.1), only the sequential form and
-  over any `RCLike 𝕜`; `tendsto_toWeakSpace_iff_weakSeqTendsto` identifies it with convergence in
-  Mathlib's `WeakSpace` topology, and `weakSeqTendsto_iff_root` with the backbone's real-scalar
-  `_root_.WeakSeqTendsto`, in which the direct method of `Numlib.Variational.WeakMinimization` is
-  stated.
 * `AreSeparated`, `AreStrictlySeparated` — Definition 3.3.6.
 * `IsStrictlyNormed` — §3.3.4, equivalent to Mathlib's `StrictConvexSpace ℝ V`.
 * `polyLE`, `rho` — the space `𝒫ₙ` of polynomials of degree `≤ n` on `[a, b]` and the best
@@ -44,6 +52,11 @@ Definition 3.3.9 (a coercive functional) is the backbone's `IsCoerciveFunctional
 
 ## Main results
 
+* `definition_3_3_1_iff`, `definition_3_3_2_iff`, `definition_3_3_2_strict_iff`,
+  `definition_3_3_3_iff`, `definition_3_3_3_weak_iff`, `definition_3_3_4_iff`,
+  `definition_3_3_4_weak_iff` — each restated definition read back as the Mathlib or backbone
+  notion the theorems below are stated in; `definition_3_3_3_of_weak` is the book's remark that a
+  weakly closed set is closed.
 * `example_3_3_5` — the norm is weakly sequentially lower semicontinuous.
 * `theorem_3_3_7`, `theorem_3_3_7'` — strict separation of a compact convex set from a disjoint
   closed convex set, in either order.
@@ -79,7 +92,11 @@ The book's "weakly sequentially lower semicontinuous" is `WeakSeqLowerSemicontin
 phrased as `∀ y < f u, ∀ᶠ n, y < f (vₙ)` rather than as the book's `f u ≤ liminf f (vₙ)`. The two
 agree whenever `f (vₙ)` is bounded below, but a real `liminf` is junk (namely `0`) for a sequence
 that is not, and with the literal transcription Theorem 3.3.8 is false: on `K = [0, 1]` the
-function `f 0 = 0`, `f x = -1/x` satisfies it and has no minimum.
+function `f 0 = 0`, `f x = -1/x` satisfies it and has no minimum. This is why `definition_3_3_4`
+and `definition_3_3_4_weak` take their `liminf` in `EReal`, where it is the limit inferior of the
+book rather than a junk value; over `EReal` the equivalence with the two semicontinuity predicates
+is unconditional, and `le_liminf_ereal_iff` is the one step that converts between the two
+phrasings.
 
 Theorems 3.3.19 and 3.3.20 are stated here and proved from the backbone
 `Numlib/Approximation/Chebyshev.lean`; the book's `𝕋ₙ` is the backbone's `trigPolyLE (2π) n` and
@@ -112,19 +129,84 @@ theorem isBestApprox_iff_norm_eq_iInf (K : Set V) (u v : V) :
 
 end Iinf
 
+/-! ### Definitions 3.3.1 and 3.3.2: convex sets and convex functionals -/
+
+section Convexity
+
+variable {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V]
+
+/-- **Definition 3.3.1.** A subset `K` of a linear space is *convex* when
+`λ u + (1 - λ) v ∈ K` for all `u, v ∈ K` and all `λ ∈ (0, 1)`.
+
+This is Mathlib's `Convex ℝ K`, whose interval is the closed `[0, 1]`; the two agree, which is
+`definition_3_3_1_iff`. The convex-combination statement (3.3.1) is
+`definition_3_3_1_sum`. -/
+def definition_3_3_1 {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] (K : Set V) : Prop :=
+  ∀ u ∈ K, ∀ v ∈ K, ∀ lam : ℝ, 0 < lam → lam < 1 → lam • u + (1 - lam) • v ∈ K
+
+/-- Definition 3.3.1 is Mathlib's `Convex ℝ K`: the book's open interval `(0, 1)` and Mathlib's
+closed `[0, 1]` describe the same sets. -/
+theorem definition_3_3_1_iff (K : Set V) : definition_3_3_1 K ↔ Convex ℝ K := by
+  rw [convex_iff_openSegment_subset]
+  constructor
+  · rintro h u hu v hv z ⟨a, b, ha, hb, hab, rfl⟩
+    have hb' : b = 1 - a := by linarith
+    subst hb'
+    exact h u hu v hv a ha (by linarith)
+  · intro h u hu v hv lam h0 h1
+    exact h hu hv ⟨lam, 1 - lam, h0, by linarith, by ring, rfl⟩
+
+/-- **(3.3.1).** Every convex combination of elements of a convex set lies in the set. -/
+theorem definition_3_3_1_sum {K : Set V} (hK : definition_3_3_1 K) {n : ℕ} {lam : Fin n → ℝ}
+    {v : Fin n → V} (hlam : ∀ i, 0 ≤ lam i) (hsum : ∑ i, lam i = 1) (hv : ∀ i, v i ∈ K) :
+    ∑ i, lam i • v i ∈ K :=
+  ((definition_3_3_1_iff K).mp hK).sum_mem (fun i _ => hlam i) hsum fun i _ => hv i
+
+/-- **Definition 3.3.2.** A functional `f : K → ℝ` on a convex set `K` is *convex* when
+`f (λ u + (1 - λ) v) ≤ λ f u + (1 - λ) f v` for all `u, v ∈ K` and `λ ∈ [0, 1]`.
+
+This is Mathlib's `ConvexOn ℝ K f`, which bundles the convexity of `K` into the predicate;
+`definition_3_3_2_iff` is the correspondence for a `K` convex in the sense of Definition 3.3.1. -/
+def definition_3_3_2 {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] (K : Set V)
+    (f : V → ℝ) : Prop :=
+  ∀ u ∈ K, ∀ v ∈ K, ∀ lam : ℝ, 0 ≤ lam → lam ≤ 1 →
+    f (lam • u + (1 - lam) • v) ≤ lam * f u + (1 - lam) * f v
+
+/-- **Definition 3.3.2**, second clause. `f` is *strictly convex* on `K` when the inequality of
+Definition 3.3.2 is strict for `u ≠ v` and `λ ∈ (0, 1)`.
+
+This is Mathlib's `StrictConvexOn ℝ K f`; `definition_3_3_2_strict_iff` is the correspondence. -/
+def definition_3_3_2_strict {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] (K : Set V)
+    (f : V → ℝ) : Prop :=
+  ∀ u ∈ K, ∀ v ∈ K, u ≠ v → ∀ lam : ℝ, 0 < lam → lam < 1 →
+    f (lam • u + (1 - lam) • v) < lam * f u + (1 - lam) * f v
+
+/-- Definition 3.3.2 is Mathlib's `ConvexOn`, in which `theorem_3_3_12` and
+`theorem_3_3_11_weakSeqLsc` are stated. -/
+theorem definition_3_3_2_iff {K : Set V} (hK : definition_3_3_1 K) (f : V → ℝ) :
+    definition_3_3_2 K f ↔ ConvexOn ℝ K f := by
+  refine ⟨fun h => ⟨(definition_3_3_1_iff K).mp hK, ?_⟩, fun h u hu v hv lam h0 h1 => ?_⟩
+  · rintro u hu v hv a b ha hb hab
+    have hb' : b = 1 - a := by linarith
+    subst hb'
+    exact h u hu v hv a ha (by linarith)
+  · simpa using h.2 hu hv h0 (by linarith : (0 : ℝ) ≤ 1 - lam) (by ring)
+
+/-- The second clause of Definition 3.3.2 is Mathlib's `StrictConvexOn`, in which
+`theorem_3_3_13_unique` is stated. -/
+theorem definition_3_3_2_strict_iff {K : Set V} (hK : definition_3_3_1 K) (f : V → ℝ) :
+    definition_3_3_2_strict K f ↔ StrictConvexOn ℝ K f := by
+  refine ⟨fun h => ⟨(definition_3_3_1_iff K).mp hK, ?_⟩,
+    fun h u hu v hv hne lam h0 h1 => ?_⟩
+  · rintro u hu v hv hne a b ha hb hab
+    have hb' : b = 1 - a := by linarith
+    subst hb'
+    exact h u hu v hv hne a ha (by linarith)
+  · simpa using h.2 hu hv hne h0 (by linarith : (0 : ℝ) < 1 - lam) (by ring)
+
+end Convexity
+
 /-! ### Definitions 3.3.3, 3.3.6 and 3.3.9 -/
-
-section Defs
-
-variable (𝕜 : Type*) {V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
-
-/-- **Weak sequential convergence** `vₙ ⇀ u` (Definition 2.7.1): `ℓ(vₙ) → ℓ(u)` for every bounded
-linear functional `ℓ`. Only the sequential notion is defined, which is all §3.3 uses; Mathlib's
-`WeakSpace` carries the topological version. -/
-def WeakSeqTendsto (v : ℕ → V) (u : V) : Prop :=
-  ∀ ℓ : StrongDual 𝕜 V, Tendsto (fun n => ℓ (v n)) atTop (𝓝 (ℓ u))
-
-end Defs
 
 section RealDefs
 
@@ -188,31 +270,140 @@ theorem isStrictlyNormed_iff_strictConvexSpace :
 
 end RealDefs
 
+/-! ### Definitions 3.3.3 and 3.3.4: closed sets and lower semicontinuous functionals -/
+
+section Closedness
+
+variable {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V]
+
+/-- **Definition 3.3.3.** A subset `K` of a normed space is *closed* when `vₙ ∈ K` and `vₙ → v`
+imply `v ∈ K`. The convergence `vₙ → v` is Definition 1.2.8.
+
+This is Mathlib's `IsClosed`, the sequential and topological readings agreeing in a metric space;
+`definition_3_3_3_iff` is the correspondence. -/
+def definition_3_3_3 {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] (K : Set V) : Prop :=
+  ∀ (v : ℕ → V) (u : V), (∀ n, v n ∈ K) → Chapter01.definition_1_2_8 v u → u ∈ K
+
+/-- **Definition 3.3.3**, second clause. `K` is *weakly closed* when `vₙ ∈ K` and `vₙ ⇀ v` imply
+`v ∈ K`, the relation `⇀` being Definition 2.7.1.
+
+This is the backbone's `IsWeakSeqClosed`, which `theorem_3_3_8`, `theorem_3_3_10` and
+`theorem_3_3_11_isWeakSeqClosed` take directly. -/
+def definition_3_3_3_weak {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] (K : Set V) :
+    Prop :=
+  ∀ (v : ℕ → V) (u : V), (∀ n, v n ∈ K) → Chapter02.WeakSeqTendsto ℝ v u → u ∈ K
+
+/-- Definition 3.3.3 is Mathlib's `IsClosed`. -/
+theorem definition_3_3_3_iff (K : Set V) : definition_3_3_3 K ↔ IsClosed K := by
+  rw [← isSeqClosed_iff_isClosed]
+  simp only [definition_3_3_3, Chapter01.definition_1_2_8_iff]
+  exact ⟨fun h _ _ hv hu => h _ _ hv hu, fun h v u hv hu => h hv hu⟩
+
+/-- The second clause of Definition 3.3.3 is the backbone's `IsWeakSeqClosed`. -/
+theorem definition_3_3_3_weak_iff (K : Set V) :
+    definition_3_3_3_weak K ↔ IsWeakSeqClosed K :=
+  Iff.rfl
+
+/-- A weakly closed set is closed, as the book records beside Definition 3.3.3: a norm-convergent
+sequence converges weakly to the same limit. The converse fails in infinite dimensions. -/
+theorem definition_3_3_3_of_weak {K : Set V} (h : definition_3_3_3_weak K) :
+    definition_3_3_3 K :=
+  fun v u hv hu =>
+    h v u hv (WeakSeqTendsto.of_tendsto ((Chapter01.definition_1_2_8_iff v u).mp hu))
+
+/-- **Definition 3.3.4.** A functional `f` is *(sequentially) lower semicontinuous* on `K` when
+`vₙ ∈ K` and `vₙ → v ∈ K` imply `f v ≤ liminf f (vₙ)`, the convergence being Definition 1.2.8.
+
+The `liminf` of a real sequence is read in `EReal`, which is what the book's `liminf` means: Lean's
+real `liminf` is junk for a sequence that is unbounded, and the literal real transcription would
+make Theorem 3.3.8 false. This is Mathlib's `LowerSemicontinuousOn` by `definition_3_3_4_iff`. -/
+def definition_3_3_4 {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] (K : Set V)
+    (f : V → ℝ) : Prop :=
+  ∀ (v : ℕ → V) (u : V), (∀ n, v n ∈ K) → u ∈ K → Chapter01.definition_1_2_8 v u →
+    (f u : EReal) ≤ liminf (fun n => (f (v n) : EReal)) atTop
+
+/-- **Definition 3.3.4**, second clause. `f` is *weakly sequentially lower semicontinuous* on `K`
+when the same holds for `vₙ ⇀ v ∈ K`.
+
+This is the backbone's `WeakSeqLowerSemicontinuousOn`, which `theorem_3_3_8`, `theorem_3_3_10` and
+`theorem_3_3_11_weakSeqLsc` take directly; `definition_3_3_4_weak_iff` is the correspondence. -/
+def definition_3_3_4_weak {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] (K : Set V)
+    (f : V → ℝ) : Prop :=
+  ∀ (v : ℕ → V) (u : V), (∀ n, v n ∈ K) → u ∈ K → Chapter02.WeakSeqTendsto ℝ v u →
+    (f u : EReal) ≤ liminf (fun n => (f (v n) : EReal)) atTop
+
+/-- A real number below the `EReal` limit inferior of a sequence is eventually below its terms;
+and conversely, a bound that holds eventually bounds the limit inferior. This is the arithmetic
+that turns the `liminf` phrasing of Definition 3.3.4 into the `∀ y < f u, ∀ᶠ n, y < f (vₙ)` form of
+Mathlib's and the backbone's semicontinuity predicates. -/
+private theorem le_liminf_ereal_iff {g : ℕ → ℝ} {c : ℝ} :
+    ((c : EReal) ≤ liminf (fun n => (g n : EReal)) atTop) ↔ ∀ y < c, ∀ᶠ n in atTop, y < g n := by
+  constructor
+  · intro h y hy
+    have hy' : (y : EReal) < liminf (fun n => (g n : EReal)) atTop :=
+      lt_of_lt_of_le (by exact_mod_cast hy) h
+    filter_upwards [eventually_lt_of_lt_liminf hy'] with n hn
+    exact_mod_cast hn
+  · intro h
+    by_contra hc
+    rw [not_le] at hc
+    obtain ⟨y, hy1, hy2⟩ := EReal.exists_between_coe_real hc
+    have hylt : y < c := by exact_mod_cast hy2
+    have := h y hylt
+    have hle : (y : EReal) ≤ liminf (fun n => (g n : EReal)) atTop := by
+      refine le_liminf_of_le ?_ ?_
+      · exact isCoboundedUnder_ge_of_le _ (fun _ => le_top)
+      · filter_upwards [this] with n hn
+        exact_mod_cast hn.le
+    exact absurd hle (not_le.mpr hy1)
+
+/-- Definition 3.3.4 is Mathlib's `LowerSemicontinuousOn`: sequential and topological lower
+semicontinuity agree on a metric space. -/
+theorem definition_3_3_4_iff (K : Set V) (f : V → ℝ) :
+    definition_3_3_4 K f ↔ LowerSemicontinuousOn f K := by
+  constructor
+  · intro h u hu y hy
+    by_contra hcon
+    have hne : (𝓝[K] u).NeBot := mem_closure_iff_nhdsWithin_neBot.mp (subset_closure hu)
+    have h1 : ∃ᶠ z in 𝓝[K] u, ¬ y < f z := by rwa [Filter.not_eventually] at hcon
+    have hfreq : ∃ᶠ z in 𝓝[K] u, z ∈ K ∧ f z ≤ y :=
+      (h1.and_eventually self_mem_nhdsWithin).mono fun z hz => ⟨hz.2, not_lt.mp hz.1⟩
+    obtain ⟨v, hvt, hv⟩ := exists_seq_forall_of_frequently hfreq
+    have hK : ∀ n, v n ∈ K := fun n => (hv n).1
+    have hlim : Chapter01.definition_1_2_8 v u :=
+      (Chapter01.definition_1_2_8_iff v u).mpr (hvt.mono_right nhdsWithin_le_nhds)
+    obtain ⟨n, hn⟩ := ((le_liminf_ereal_iff.mp (h v u hK hu hlim)) y hy).exists
+    exact absurd hn (not_lt.mpr (hv n).2)
+  · intro h v u hv hu hlim
+    refine le_liminf_ereal_iff.mpr fun y hy => ?_
+    have hwithin : Tendsto v atTop (𝓝[K] u) :=
+      tendsto_nhdsWithin_iff.mpr ⟨(Chapter01.definition_1_2_8_iff v u).mp hlim,
+        Eventually.of_forall hv⟩
+    exact hwithin.eventually (h u hu y hy)
+
+/-- The second clause of Definition 3.3.4 is the backbone's `WeakSeqLowerSemicontinuousOn`. -/
+theorem definition_3_3_4_weak_iff (K : Set V) (f : V → ℝ) :
+    definition_3_3_4_weak K f ↔ WeakSeqLowerSemicontinuousOn f K := by
+  constructor
+  · intro h v u hv hu hweak
+    exact le_liminf_ereal_iff.mp (h v u hv hu hweak)
+  · intro h v u hv hu hweak
+    exact le_liminf_ereal_iff.mpr fun y hy => h v u hv hu hweak y hy
+
+end Closedness
+
 /-! ### Example 3.3.5: weak lower semicontinuity of the norm -/
 
 section WeakLsc
 
 variable {𝕜 V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
 
-/-- Weak sequential convergence in the sense of Definition 3.3.3 is convergence in Mathlib's
-`WeakSpace` topology, which is how the backbone states its two weak-convergence lemmas. -/
-theorem tendsto_toWeakSpace_iff_weakSeqTendsto {v : ℕ → V} {u : V} :
-    Tendsto (fun n => toWeakSpace 𝕜 V (v n)) atTop (𝓝 (toWeakSpace 𝕜 V u)) ↔
-      WeakSeqTendsto 𝕜 v u :=
-  tendsto_toWeakSpace_iff
-
-/-- Over the reals, Definition 3.3.3 is the backbone's `WeakSeqTendsto`, in which
-`Numlib.Variational.WeakMinimization` states the direct method. -/
-theorem weakSeqTendsto_iff_root {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] {v : ℕ → V}
-    {u : V} : WeakSeqTendsto ℝ v u ↔ _root_.WeakSeqTendsto v u :=
-  Iff.rfl
-
 /-- **Example 3.3.5.** The norm is weakly sequentially lower semicontinuous:
 `vₙ ⇀ u` implies `‖u‖ ≤ liminf ‖vₙ‖`. The book proves the same statement again as
 Exercise 2.7.2; both specialize the backbone's `norm_le_liminf_norm_of_weak_tendsto`. -/
-theorem example_3_3_5 (v : ℕ → V) (u : V) (hweak : WeakSeqTendsto 𝕜 v u) :
+theorem example_3_3_5 (v : ℕ → V) (u : V) (hweak : Chapter02.WeakSeqTendsto 𝕜 v u) :
     ‖u‖ ≤ liminf (fun n => ‖v n‖) atTop :=
-  norm_le_liminf_norm_of_weak_tendsto (tendsto_toWeakSpace_iff_weakSeqTendsto.2 hweak)
+  norm_le_liminf_norm_of_weak_tendsto (Chapter02.tendsto_toWeakSpace_iff_weakSeqTendsto.2 hweak)
 
 end WeakLsc
 
@@ -272,7 +463,7 @@ theorem theorem_3_3_10 [CompleteSpace V] [WeaklySeqCompactSpace V] {K : Set V} {
 /-- **Theorem 3.3.11** (Mazur's lemma). If `vₙ ⇀ u` in a normed space, then there are convex
 combinations `uₙ = ∑_{i=n}^{N(n)} λᵢ⁽ⁿ⁾ vᵢ` of the tails of the sequence with `‖uₙ - u‖ → 0`. No
 reflexivity is needed. -/
-theorem theorem_3_3_11 {v : ℕ → V} {u : V} (h : WeakSeqTendsto ℝ v u) :
+theorem theorem_3_3_11 {v : ℕ → V} {u : V} (h : Chapter02.WeakSeqTendsto ℝ v u) :
     ∃ (N : ℕ → ℕ) (lam : ℕ → ℕ → ℝ), (∀ n, n ≤ N n) ∧ (∀ n i, 0 ≤ lam n i) ∧
       (∀ n, ∑ i ∈ Finset.Icc n (N n), lam n i = 1) ∧
       Tendsto (fun n => ∑ i ∈ Finset.Icc n (N n), lam n i • v i) atTop (𝓝 u) :=

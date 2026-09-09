@@ -31,6 +31,9 @@ and trigonometric interpolation.
 * `equation_3_2_13`, `equation_3_2_16`, `equation_3_2_17` — trigonometric interpolation: `𝕋ₙ` in the
   book's cosine–sine form, the equispaced nodes `xⱼ = j h` with `h = 2π / (2n + 1)`, and unique
   solvability at any `2n + 1` distinct nodes of a period.
+* `example_3_2_5` — the function `e^{sin x} sin x` of (3.2.18) and its trigonometric interpolants
+  at the nodes (3.2.16). Table 3.1's computed errors are not part of the statement; the doc comment
+  of `example_3_2_5` says why.
 
 ## The backbone behind them
 
@@ -60,7 +63,11 @@ carried out once and for all in `Numlib/Approximation/Chebyshev`.
   spaces; they are out of scope with the rest of that material.
 * The Newton form of the interpolant, which the book only cites; (3.2.5), the divided-difference
   form of the error, is `equation_3_2_5` above and rests on `DividedDifference.newton`.
-* Example 3.2.5 and Table 3.1, which are numerical illustrations.
+* Table 3.1, the computed maximum errors of Example 3.2.5 for `n = 1, …, 14`: each entry is a
+  supremum over the circle of a transcendental function, so a rigorous value needs verified
+  numerics the project does not have, and the book draws nothing from the table beyond the
+  convergence §3.7 proves. What the example sets up — the function (3.2.18) as an element of
+  `C_p(2π)` and its interpolants at the nodes (3.2.16) — is `example_3_2_5`.
 -/
 
 open scoped Polynomial Real
@@ -505,6 +512,29 @@ theorem equation_3_2_17_equispaced (n : ℕ) (f : C(AddCircle (2 * π), ℝ)) :
       ∀ j, trigInterpCLM (2 * π) n f (trigInterpNode (2 * π) n j)
         = f (trigInterpNode (2 * π) n j) :=
   ⟨trigInterpCLM_mem f, fun j => trigInterpCLM_apply_node f j⟩
+
+/-- **Example 3.2.5.** The function of (3.2.18), `f (x) = e^{sin x} sin x`, is continuous and
+`2π`-periodic, so it is an element of `C_p(2π)` and (3.2.17) applies to it at the evenly spaced
+nodes (3.2.16): for every `n` there is exactly one `pₙ ∈ 𝕋ₙ` taking the values of `f` at those
+nodes, and `trigInterpCLM (2π) n f` is it.
+
+Table 3.1's maximum errors `‖f − pₙ‖_∞` for `n = 1, …, 14` are computed numbers and are not part of
+the statement: each is a supremum over the circle of a transcendental function, so a rigorous value
+would need verified numerics the project does not have, and the book draws nothing from the table
+beyond the convergence that §3.7 proves. -/
+theorem example_3_2_5 (n : ℕ) :
+    ∃ f : C(AddCircle (2 * π), ℝ),
+      (∀ x : ℝ, f ((x : ℝ) : AddCircle (2 * π)) = Real.exp (Real.sin x) * Real.sin x) ∧
+        (∃! p : trigPolyLE (2 * π) n, ∀ j,
+            (p : C(AddCircle (2 * π), ℝ)) (trigInterpNode (2 * π) n j)
+              = f (trigInterpNode (2 * π) n j)) ∧
+        ∀ j, trigInterpCLM (2 * π) n f (trigInterpNode (2 * π) n j)
+          = f (trigInterpNode (2 * π) n j) := by
+  have hper : Function.Periodic (fun x : ℝ => Real.exp (Real.sin x) * Real.sin x) (2 * π) :=
+    fun x => by simp [Real.sin_periodic x]
+  refine ⟨⟨hper.lift, continuous_quot_lift _ (by fun_prop)⟩, fun x => hper.lift_coe x, ?_,
+    fun j => trigInterpCLM_apply_node _ j⟩
+  exact isUnisolvent_trigPolyLE (2 * π) (injective_trigInterpNode (2 * π) n) _
 
 end Trigonometric
 

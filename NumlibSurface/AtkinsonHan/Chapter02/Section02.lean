@@ -4,6 +4,7 @@ import Mathlib.Analysis.Matrix.Normed
 import Mathlib.Analysis.Normed.Operator.NNNorm
 import Mathlib.Analysis.Normed.Operator.NormedSpace
 import Numlib.IntegralEquations.Basic
+import NumlibSurface.AtkinsonHan.Chapter01.Section01
 import NumlibSurface.AtkinsonHan.Chapter02.Section01
 
 /-!
@@ -19,8 +20,16 @@ results and because the surface's job is to give a reader of the book a Lean nam
 substance of the section for the rest of the book is Theorem 2.2.4 and the submultiplicativity
 (2.2.6), on which every operator-norm estimate in Chapters 2, 5, 8 and 9 rests.
 
+## Main definitions
+
+* `definition_2_2_1` — a linear operator, in the combined form
+  `L (α₁ v₁ + α₂ v₂) = α₁ L v₁ + α₂ L v₂` that the book states first.
+
 ## Main results
 
+* `definition_2_2_1_iff` — the book's "or equivalently": Definition 2.2.1 is the additivity and
+  homogeneity of Definition 1.1.13; `definition_2_2_1_iff_linearMap` reads it back as Mathlib's
+  `LinearMap` through that identification.
 * `proposition_2_2_2` — continuity at the origin gives continuity everywhere, in the book's
   sequential form.
 * `proposition_2_2_3` — Definition 2.1.6's boundedness of a *linear* operator is the estimate
@@ -31,6 +40,7 @@ substance of the section for the rest of the book is Theorem 2.2.4 and the submu
 * `theorem_2_2_6` — (2.2.5), (2.2.6) and `‖Lⁿ‖ ≤ ‖L‖ⁿ`.
 * `example_2_2_8_linfty`, `example_2_2_8_l1`, `example_2_2_8_l2` — the matrix operator norms for
   the vector `∞`-, `1`- and `2`-norms.
+* `example_2_2_7` — the identity operator belongs to `𝓛(V)` and has operator norm `1`.
 * `theorem_2_2_10` — `𝓛(V, W)` is a Banach space when `W` is.
 * `equation_2_2_8` — Example 2.2.9, the norm of an integral operator with continuous kernel on
   `C[a, b]`.
@@ -45,10 +55,17 @@ instances, and because it has no `ℓ¹` operator norm on matrices at all: `exam
 therefore states the *characterization* of the induced norm, which is what Exercise 2.2.4 says an
 operator norm is, rather than an equation between two norms.
 
+## Conventions
+
+The convention of Chapter 1 continues: Definition 2.2.1 is a `def … : Prop` in the book's words
+with a companion `…_iff`. It asks only that `V` and `W` be linear spaces, so it is stated over a
+`DivisionRing` of scalars, as Definition 1.1.13 is, and not over the normed spaces of the rest of
+the section. Example 2.2.7 carries `[Nontrivial V]`, which the book assumes silently: on the zero
+space every operator norm is `0`.
+
 ## Not formalized here
 
-Example 2.2.7, that the identity operator has norm `1`, is Mathlib's
-`ContinuousLinearMap.norm_id`. The exercises of the section are either restatements of the
+The exercises of the section are either restatements of the
 theorems above (2.2.3 is Theorem 2.2.5, 2.2.4 is its fourth clause, 2.2.5 is `equation_2_2_8`) or
 one-line consequences of linearity and of `LinearMap.ker_eq_bot` (2.2.1, 2.2.2, 2.2.7, 2.2.8);
 Exercise 2.2.6, that multiplication by `m ∈ C(Ω̄)` has norm `‖m‖_∞` on `Lᵖ(Ω)`, is not used later.
@@ -57,6 +74,43 @@ Exercise 2.2.6, that multiplication by `m ∈ C(Ω̄)` has norm `‖m‖_∞` on
 open Bornology Filter Metric Topology
 
 namespace AtkinsonHan.Chapter02
+
+/-! ### Definition 2.2.1: linear operators -/
+
+section Linear
+
+variable {𝕜 V W : Type*} [DivisionRing 𝕜] [AddCommGroup V] [Module 𝕜 V] [AddCommGroup W]
+  [Module 𝕜 W]
+
+/-- **Definition 2.2.1.** An operator `L : V → W` between linear spaces is *linear* when
+`L (α₁ v₁ + α₂ v₂) = α₁ L v₁ + α₂ L v₂` for all `v₁, v₂ ∈ V` and all scalars `α₁, α₂`.
+
+The book adds "or equivalently" the two conditions of Definition 1.1.13, additivity and
+homogeneity; that equivalence is `definition_2_2_1_iff`, and `definition_2_2_1_iff_linearMap` reads
+the definition back as Mathlib's `LinearMap`. The book's `𝓛(V, W)` of *bounded* linear operators is
+Mathlib's `V →L[𝕜] W`, which is what the rest of the section uses. -/
+def definition_2_2_1 (𝕜 : Type*) {V W : Type*} [DivisionRing 𝕜] [AddCommGroup V] [Module 𝕜 V]
+    [AddCommGroup W] [Module 𝕜 W] (L : V → W) : Prop :=
+  ∀ (v₁ v₂ : V) (α₁ α₂ : 𝕜), L (α₁ • v₁ + α₂ • v₂) = α₁ • L v₁ + α₂ • L v₂
+
+/-- The book's "or equivalently": Definition 2.2.1 is Definition 1.1.13, additivity together with
+homogeneity. -/
+theorem definition_2_2_1_iff (L : V → W) :
+    definition_2_2_1 𝕜 L ↔ Chapter01.definition_1_1_13 𝕜 L := by
+  constructor
+  · intro h
+    refine ⟨fun u v => ?_, fun α v => ?_⟩
+    · simpa using h u v 1 1
+    · simpa using h v v α 0
+  · rintro ⟨hadd, hsmul⟩ v₁ v₂ α₁ α₂
+    rw [hadd, hsmul, hsmul]
+
+/-- Definition 2.2.1 is Mathlib's `LinearMap`, through Definition 1.1.13. -/
+theorem definition_2_2_1_iff_linearMap (L : V → W) :
+    definition_2_2_1 𝕜 L ↔ ∃ T : V →ₗ[𝕜] W, ⇑T = L :=
+  (definition_2_2_1_iff L).trans (Chapter01.definition_1_1_13_iff L)
+
+end Linear
 
 section Continuity
 
@@ -186,6 +240,15 @@ theorem theorem_2_2_6 {X : Type*} [NormedAddCommGroup X] [NormedSpace 𝕜 X] (L
 instance `ContinuousLinearMap.completeSpace`; the statement is recorded so that the book's number
 has a name. -/
 theorem theorem_2_2_10 [CompleteSpace W] : CompleteSpace (V →L[𝕜] W) := inferInstance
+
+/-- **Example 2.2.7.** The identity operator `I : V → V` belongs to `𝓛(V)` — it is the bounded
+linear operator `ContinuousLinearMap.id`, whose underlying function is the identity — and
+`‖I‖ = 1`. The hypothesis `[Nontrivial V]` is what the book assumes silently: on the zero space
+every operator norm is `0`. -/
+theorem example_2_2_7 (𝕜 V : Type*) [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
+    [Nontrivial V] :
+    ⇑(ContinuousLinearMap.id 𝕜 V) = (id : V → V) ∧ ‖ContinuousLinearMap.id 𝕜 V‖ = 1 :=
+  ⟨rfl, ContinuousLinearMap.norm_id⟩
 
 end OperatorNorm
 

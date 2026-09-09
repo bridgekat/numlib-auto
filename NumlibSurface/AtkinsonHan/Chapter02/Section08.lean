@@ -5,6 +5,7 @@ import Numlib.Analysis.Normed.Operator.Compact
 import Numlib.Analysis.Normed.Operator.Riesz
 import Numlib.IntegralEquations.Basic
 import Numlib.IntegralEquations.WeaklySingular
+import NumlibSurface.AtkinsonHan.Chapter01.Section01
 import NumlibSurface.AtkinsonHan.Chapter02.Section04
 
 /-!
@@ -24,9 +25,21 @@ form, and `isCompactOperator_iff_isCompact_closure_image_closedBall` is the book
 elementary closure properties, Schauder's theorem, the discreteness of the spectrum and the closed
 range are `Numlib/Analysis/Normed/Operator/Compact`.
 
+## Main definitions
+
+* `definition_2_8_3` — an operator of finite rank: one whose range is finite dimensional in the
+  sense of Definition 1.1.9.
+* `definition_2_8_11`, `definition_2_8_11_eigenvector` — an eigenvalue of an operator, and an
+  associated eigenvector.
+
 ## Main results
 
 * `definition_2_8_1` — compactness in the sequential form.
+* `definition_2_8_3_iff` — Definition 2.8.3 is `FiniteDimensional 𝕜 (LinearMap.range K)`, the
+  hypothesis `proposition_2_8_4` takes.
+* `definition_2_8_11_iff`, `definition_2_8_11_eigenvector_iff` — Definition 2.8.11 is Mathlib's
+  `Module.End.HasEigenvalue` and `Module.End.HasEigenvector`, in which `theorem_2_8_10`,
+  `theorem_2_8_12_1`, `theorem_2_8_12_2` and the spectral theorem below are stated.
 * `proposition_2_8_4`, `proposition_2_8_6`, `proposition_2_8_7` — finite rank, composition and
   operator-norm limits.
 * `example_2_8_5`, `example_2_8_5_isCompactOperator`, `example_2_8_5_norm` — a degenerate kernel
@@ -62,6 +75,8 @@ range are `Numlib/Analysis/Normed/Operator/Compact`.
 The book writes `λ` for the scalar of the second-kind equation; `λ` is a keyword in Lean, so it is
 written `l` below. The book states §2.8 over a general scalar field and specializes to real or
 complex scalars; the statements here are over `RCLike 𝕜`, as elsewhere in this surface.
+Definitions 2.8.3 and 2.8.11 ask nothing of the spaces but that they be linear, so each is stated
+over a bare `Module`, as Chapter 1 states the definitions they lean on.
 
 The continuous-kernel case, which is what Chapters 12 and 13 use, is `example_2_8_8`.
 -/
@@ -118,6 +133,38 @@ theorem definition_2_8_1 (K : V →L[𝕜] W) :
     refine squeeze_zero (fun n => dist_nonneg)
       (fun n => dist_triangle (x (φ n)) (K (v (φ n))) w) ?_
     simpa using h1.add h2
+
+end Banach
+
+/-! ### Definition 2.8.3: operators of finite rank -/
+
+section FiniteRank
+
+variable {𝕜 V W : Type*} [DivisionRing 𝕜] [AddCommGroup V] [Module 𝕜 V] [AddCommGroup W]
+  [Module 𝕜 W]
+
+/-- **Definition 2.8.3.** A linear operator `K : V → W` between linear spaces is *of finite rank*
+when its range `R(K)` is finite dimensional — that is, when it has a finite maximal linearly
+independent family, which is Definition 1.1.9.
+
+This is `FiniteDimensional 𝕜 (LinearMap.range K)` by `definition_2_8_3_iff`, and that is the
+hypothesis `proposition_2_8_4` takes. -/
+def definition_2_8_3 (𝕜 : Type*) {V W : Type*} [DivisionRing 𝕜] [AddCommGroup V] [Module 𝕜 V]
+    [AddCommGroup W] [Module 𝕜 W] (K : V →ₗ[𝕜] W) : Prop :=
+  ∃ (n : ℕ) (v : Fin n → LinearMap.range K), Chapter01.definition_1_1_9 𝕜 v
+
+/-- Definition 2.8.3 is `FiniteDimensional 𝕜 (LinearMap.range K)`, by the reading of
+Definition 1.1.9 as finite dimensionality. -/
+theorem definition_2_8_3_iff (K : V →ₗ[𝕜] W) :
+    definition_2_8_3 𝕜 K ↔ FiniteDimensional 𝕜 (LinearMap.range K) :=
+  Chapter01.definition_1_1_9_finiteDimensional_iff 𝕜 _
+
+end FiniteRank
+
+section Banach
+
+variable {𝕜 V W : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
+  [NormedAddCommGroup W] [NormedSpace 𝕜 W]
 
 /-! ### Propositions 2.8.4, 2.8.6 and 2.8.7: closure properties -/
 
@@ -331,6 +378,54 @@ theorem theorem_2_8_10_inverse (hK : IsCompactOperator K) (hl : l ≠ 0)
   theorem_2_4_3 _ (ContinuousLinearMap.isUnit_iff_bijective.1 (isUnit_smul_one_sub hK hl hinj))
 
 end Fredholm
+
+end Banach
+
+/-! ### Definition 2.8.11: eigenvalues and eigenvectors -/
+
+section Eigen
+
+variable {𝕜 V : Type*} [Field 𝕜] [AddCommGroup V] [Module 𝕜 V]
+
+/-- **Definition 2.8.11.** For an operator `K : V → V`, a scalar `λ` is an *eigenvalue* of `K` when
+`K u = λ u` for some vector `u ≠ 0`.
+
+This is Mathlib's `Module.End.HasEigenvalue`, in which `theorem_2_8_10`, `theorem_2_8_12_1`,
+`theorem_2_8_12_2` and the spectral theorem of this section are stated;
+`definition_2_8_11_iff` is the correspondence. -/
+def definition_2_8_11 (𝕜 : Type*) {V : Type*} [Field 𝕜] [AddCommGroup V] [Module 𝕜 V]
+    (K : V → V) (l : 𝕜) : Prop :=
+  ∃ u : V, u ≠ 0 ∧ K u = l • u
+
+/-- **Definition 2.8.11**, the eigenvector clause: `u ≠ 0` with `K u = λ u` is an *eigenvector* of
+`K` associated with the eigenvalue `λ`. This is Mathlib's `Module.End.HasEigenvector`. -/
+def definition_2_8_11_eigenvector (𝕜 : Type*) {V : Type*} [Field 𝕜] [AddCommGroup V] [Module 𝕜 V]
+    (K : V → V) (l : 𝕜) (u : V) : Prop :=
+  u ≠ 0 ∧ K u = l • u
+
+/-- The eigenvector clause of Definition 2.8.11 is Mathlib's `Module.End.HasEigenvector`. -/
+theorem definition_2_8_11_eigenvector_iff (K : Module.End 𝕜 V) (l : 𝕜) (u : V) :
+    definition_2_8_11_eigenvector 𝕜 K l u ↔ HasEigenvector K l u := by
+  rw [definition_2_8_11_eigenvector, hasEigenvector_iff, mem_eigenspace_iff, and_comm]
+
+/-- Definition 2.8.11 is Mathlib's `Module.End.HasEigenvalue`. -/
+theorem definition_2_8_11_iff (K : Module.End 𝕜 V) (l : 𝕜) :
+    definition_2_8_11 𝕜 K l ↔ HasEigenvalue K l := by
+  constructor
+  · rintro ⟨u, hu0, hu⟩
+    exact hasEigenvalue_of_hasEigenvector
+      ((definition_2_8_11_eigenvector_iff K l u).mp ⟨hu0, hu⟩)
+  · intro h
+    obtain ⟨u, hu⟩ := h.exists_hasEigenvector
+    exact ⟨u, ((definition_2_8_11_eigenvector_iff K l u).mpr hu).1,
+      ((definition_2_8_11_eigenvector_iff K l u).mpr hu).2⟩
+
+end Eigen
+
+section Banach
+
+variable {𝕜 V W : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
+  [NormedAddCommGroup W] [NormedSpace 𝕜 W]
 
 /-! ### Theorem 2.8.12: the spectrum of a compact operator -/
 

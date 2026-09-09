@@ -104,19 +104,27 @@ id = "theorem_2_8_14_hasEigenvalue_adjoint"
 
 [[node]]
 id = "definition_2_8_3"
-kind = "definition"
-desc = '''Definition 2.8.3: a linear operator `K : V → W` is of finite rank when its range `R(K)`
-is finite dimensional. Not formalized: this is Mathlib's `FiniteDimensional 𝕜 (LinearMap.range K)`,
-which is exactly the hypothesis `proposition_2_8_4` takes; the surface uses it directly rather than
-naming it again.'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 2.8.3"
+
+[[node]]
+id = "definition_2_8_3_iff"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 2.8.3"
 
 [[node]]
 id = "definition_2_8_11"
-kind = "definition"
-desc = '''Definition 2.8.11: `λ` is an eigenvalue of `K : V → V` with eigenvector `u ≠ 0` when
-`K u = λ u`. Not formalized: this is Mathlib's `Module.End.HasEigenvalue` and
-`Module.End.HasEigenvector`, in which `theorem_2_8_10`, `theorem_2_8_12_1`, `theorem_2_8_12_2` and
-the spectral theorem of this section are already stated.'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 2.8.11"
+
+[[node]]
+id = "definition_2_8_11_iff"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 2.8.11"
+
+[[node]]
+id = "definition_2_8_11_eigenvector"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 2.8.11"
+
+[[node]]
+id = "definition_2_8_11_eigenvector_iff"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 2.8.11"
 
 [[node]]
 id = "example_2_8_16"

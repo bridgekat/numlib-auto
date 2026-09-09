@@ -13,6 +13,7 @@ import Numlib.Approximation.OrthogonalPolynomial
 import Numlib.Approximation.Trigonometric
 import Numlib.Approximation.TrigonometricInterpolation
 import Numlib.Krylov.OrthogonalPolynomials
+import NumlibSurface.AtkinsonHan.Chapter03.Section06
 
 /-!
 # Atkinson–Han §3.7: uniform error bounds
@@ -32,9 +33,9 @@ The section's two abstract ingredients are formalized here:
 
 * `lebesgue_lemma`, `lebesgue_lemma_iInf`, `lebesgue_lemma_one_sub`.
 * `exists_not_tendsto_of_not_bddAbove`.
-* `IsPeriodicCont`, `PeriodicCont`, `HolderClass`, `HolderClassIcc` — the function spaces
-  `C_p(2π)`, `C_p^{k,α}(2π)` and `C^{k,α}[−1, 1]` that Theorems 3.7.1–3.7.2 speak about,
-  as definitions only.
+* `HolderClass`, `HolderClassIcc` — the function spaces `C_p^{k,α}(2π)` and `C^{k,α}[−1, 1]` that
+  Theorems 3.7.1–3.7.2 speak about, as definitions only. The underlying space `C_p(2π)` is §3.6's
+  `IsPeriodicCont` and `PeriodicCont`, first needed there by Example 3.6.8.
 * `equation_3_7_5` — `‖f - 𝓕ₙ f‖_{L²} ≤ √(2π) ‖f - 𝓕ₙ f‖_∞`, the `L²` norm being taken
   against the standard measure of the circle, of total mass `2π`.
 * `equation_3_7_6`, `equation_3_7_8`, `equation_3_7_9` — the Dirichlet-kernel representation of
@@ -125,31 +126,15 @@ theorem exists_not_tendsto_of_not_bddAbove [CompleteSpace V] (P : ℕ → V →L
     ∃ f : V, ¬ Tendsto (fun n => P n f) atTop (𝓝 f) :=
   ContinuousLinearMap.exists_not_tendsto_of_not_bddAbove h (ContinuousLinearMap.id 𝕜 V)
 
-/-! ### The function spaces of Theorems 3.7.1 and 3.7.2
+/-! ### The Hölder classes of Theorems 3.7.1 and 3.7.2
 
-Definitions only. The theorems themselves wait on trigonometric approximation. -/
+Definitions only. The theorems themselves wait on trigonometric approximation. The space
+`C_p(2π)` on which they live — `IsPeriodicCont`, `PeriodicCont` and the passage between them — is
+§3.6's, where Example 3.6.8 first needs it. -/
 
 section Spaces
 
 open Real NNReal
-
-/-- `C_p(2π)` as the book describes it: continuous real functions on `ℝ` of period `2π`. -/
-def IsPeriodicCont (g : ℝ → ℝ) : Prop := Continuous g ∧ Function.Periodic g (2 * π)
-
-/-- `C_p(2π)` as a space: continuous real functions on the circle `ℝ / 2πℤ`. Given
-`Fact (0 < 2 * π)` the circle is compact, so this carries the sup norm `‖·‖_∞` of the book. -/
-abbrev PeriodicCont : Type := C(AddCircle (2 * π), ℝ)
-
-/-- A continuous `2π`-periodic function on `ℝ` is a continuous function on the circle. -/
-noncomputable def PeriodicCont.ofIsPeriodicCont {g : ℝ → ℝ} (h : IsPeriodicCont g) :
-    PeriodicCont :=
-  ⟨h.2.lift, continuous_quot_lift _ h.1⟩
-
-/-- `PeriodicCont.ofIsPeriodicCont` undoes the passage to the circle: its value at the class of
-`x` is `g x`. -/
-@[simp] theorem PeriodicCont.ofIsPeriodicCont_coe {g : ℝ → ℝ} (h : IsPeriodicCont g) (x : ℝ) :
-    PeriodicCont.ofIsPeriodicCont h (x : AddCircle (2 * π)) = g x :=
-  h.2.lift_coe x
 
 /-- `C_p^{k,α}(2π)` with constant `M`: `k` times continuously differentiable with `M`-Hölder
 `k`-th derivative of exponent `α`. -/
@@ -349,7 +334,7 @@ theorem theorem_3_7_2 {k n : ℕ} {α M d : ℝ≥0} (hα0 : 0 < α) (hα1 : α 
     (hd : (n : ℝ) ^ ((k : ℝ) + (α : ℝ)) /
         ((∏ i ∈ Finset.range k, ((n : ℝ) - i)) * ((n : ℝ) - k) ^ (α : ℝ)) ≤ (d : ℝ)) :
     Metric.infDist (_root_.Jackson.restrictIcc hf.1.continuousOn)
-        (polyLE (Set.Icc (-1 : ℝ) 1) n : Set C(Set.Icc (-1 : ℝ) 1, ℝ))
+        (_root_.polyLE (Set.Icc (-1 : ℝ) 1) n : Set C(Set.Icc (-1 : ℝ) 1, ℝ))
       ≤ (d : ℝ) * (1 + π ^ 2 / 2) ^ (k + 1) * (M : ℝ) / (n : ℝ) ^ ((k : ℝ) + (α : ℝ)) := by
   have hs : UniqueDiffOn ℝ (Set.Icc (-1 : ℝ) 1) := uniqueDiffOn_Icc (by norm_num)
   refine _root_.Jackson.infDist_le_of_holder_poly

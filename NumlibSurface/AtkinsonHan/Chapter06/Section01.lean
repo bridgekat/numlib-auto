@@ -2,6 +2,8 @@ import Mathlib.Analysis.Calculus.Deriv.Mul
 import Mathlib.Analysis.Calculus.Deriv.Pow
 import Mathlib.Analysis.Calculus.Deriv.Shift
 import Mathlib.Analysis.Calculus.MeanValue
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.Deriv
 
 /-!
 # Atkinson–Han §6.1: difference approximations of derivatives
@@ -32,14 +34,20 @@ weakened to the next lower derivative.
   with `M` a bound for `|f'''|`.
 * `equation_6_1_4` — the centred second difference approximates `f''(x)` to within `(h²/12) M`,
   with `M` a bound for `|f''''|`.
+* `example_6_1_1` — the three schemes of Example 6.1.1 for the heat equation, each in the two forms
+  the book writes it in: the difference equation (6.1.8), (6.1.12), (6.1.16) and the explicit or
+  tridiagonal row (6.1.11), (6.1.15), (6.1.19) it "can be written as", with `r = ν h_t / h_x²`.
+* `example_6_1_1_exact` — the sample problem of Figures 6.1 and 6.2: `u (x, t) = e^{-t} sin x`
+  solves (6.1.5)–(6.1.7) for `ν = 1`, `f = 0` and `u₀ (x) = sin x`.
 
 ## Not formalized here
 
-Everything else in §6.1: the three schemes (6.1.5)–(6.1.19), the explicit/implicit distinction,
-Example 6.1.1 and Figures 6.1–6.2.  The obstruction is not a missing theory — it is that none of
-them states anything.  They are listings of algorithms and a numerical illustration of the error
-behaviour, and the section numbers no result at all.  Nothing downstream needs the four estimates
-either: §6.2 and §6.3 take consistency as a hypothesis rather than deriving it from these formulas.
+The rest of Example 6.1.1: the grid `x_j = j h_x`, `t_m = m h_t` and the boundary and initial
+conditions (6.1.9)–(6.1.10), (6.1.13)–(6.1.14), (6.1.17)–(6.1.18) are data rather than claims, and
+Figures 6.1–6.2 are plots of computed errors, whose numbers a rigorous statement would have to
+recompute. The section numbers no theorem at all, and nothing downstream needs the four difference
+estimates either: §6.2 and §6.3 take consistency as a hypothesis rather than deriving it from these
+formulas.
 -/
 
 open Set
@@ -284,5 +292,60 @@ theorem equation_6_1_4 (hh : 0 < h) (hf : ∀ y ∈ Icc (x - h) (x + h), HasDeri
 end Centred
 
 end Differences
+
+/-! ### Example 6.1.1: the three schemes for the heat equation -/
+
+section HeatSchemes
+
+open Real
+
+open scoped Real
+
+/-- **Example 6.1.1**, the three difference equations and the forms the book solves them in. With
+`r = ν h_t / h_x²`, the forward-time centred-space equation (6.1.8) is the explicit update (6.1.11),
+the backward-time centred-space equation (6.1.12) is the tridiagonal row (6.1.15), and the
+Crank–Nicolson equation (6.1.16) is the tridiagonal row (6.1.19). Each clause is an equivalence,
+which is what "can be written as" means in the book, and each is the whole mathematical content of
+the corresponding scheme: the boundary and initial conditions (6.1.9)–(6.1.10), (6.1.13)–(6.1.14)
+and (6.1.17)–(6.1.18) are data rather than claims.
+
+`w` is `v_j^{m+1}` in the first clause, `v` and `vprev` are `v_j^m` and `v_j^{m-1}`; `vp`, `vm` are
+the space neighbours `v_{j±1}` at the same time level and `vpprev`, `vmprev` those at the previous
+one. (6.1.19) is printed in the book with `u_{j±1}^{m-1}` where it means `v_{j±1}^{m-1}`. -/
+theorem example_6_1_1 {ν hx ht r : ℝ} (hx0 : hx ≠ 0) (ht0 : ht ≠ 0) (hr : r = ν * ht / hx ^ 2)
+    (w v vp vm vprev vpprev vmprev f : ℝ) :
+    ((w - v) / ht = ν * ((vp - 2 * v + vm) / hx ^ 2) + f ↔
+        w = (1 - 2 * r) * v + r * (vp + vm) + ht * f) ∧
+      ((v - vprev) / ht = ν * ((vp - 2 * v + vm) / hx ^ 2) + f ↔
+        (1 + 2 * r) * v - r * (vp + vm) = vprev + ht * f) ∧
+      ((v - vprev) / ht
+            = ν * (((vp - 2 * v + vm) + (vpprev - 2 * vprev + vmprev)) / (2 * hx ^ 2)) + f ↔
+        (1 + r) * v - r / 2 * (vp + vm)
+          = (1 - r) * vprev + r / 2 * (vpprev + vmprev) + ht * f) := by
+  have hx2 : hx ^ 2 ≠ 0 := pow_ne_zero 2 hx0
+  subst hr
+  refine ⟨?_, ?_, ?_⟩ <;>
+    · constructor <;> intro h <;> field_simp at h ⊢ <;> linarith
+
+/-- **Example 6.1.1**, the sample problem of Figures 6.1 and 6.2: for `ν = 1`, `f = 0` and
+`u₀ (x) = sin x`, the solution of (6.1.5)–(6.1.7) is `u (x, t) = e^{-t} sin x`, as the book says can
+be verified. Its time derivative and its second space derivative are both `-e^{-t} sin x`, so it
+solves the heat equation; it vanishes at `x = 0` and `x = π`, and reduces to `sin x` at `t = 0`.
+
+Figures 6.1 and 6.2 plot the errors of the forward and backward schemes against this solution; the
+plotted numbers are not stated. -/
+theorem example_6_1_1_exact :
+    (∀ x t : ℝ, HasDerivAt (fun s : ℝ => exp (-s) * sin x) (-(exp (-t) * sin x)) t) ∧
+      (∀ x t : ℝ, HasDerivAt (fun y : ℝ => exp (-t) * sin y) (exp (-t) * cos x) x) ∧
+      (∀ x t : ℝ, HasDerivAt (fun y : ℝ => exp (-t) * cos y) (-(exp (-t) * sin x)) x) ∧
+      (∀ t : ℝ, exp (-t) * sin 0 = 0) ∧
+      (∀ t : ℝ, exp (-t) * sin π = 0) ∧
+      ∀ x : ℝ, exp (-(0 : ℝ)) * sin x = sin x := by
+  refine ⟨fun x t => ?_, fun x t => ?_, fun x t => ?_, by simp, by simp, by simp⟩
+  · simpa using ((Real.hasDerivAt_exp (-t)).comp t (hasDerivAt_neg t)).mul_const (sin x)
+  · simpa using (Real.hasDerivAt_sin x).const_mul (exp (-t))
+  · simpa using (Real.hasDerivAt_cos x).const_mul (exp (-t))
+
+end HeatSchemes
 
 end AtkinsonHan.Chapter06

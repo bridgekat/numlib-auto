@@ -4,7 +4,6 @@ import Numlib.Approximation.BestApprox
 import Numlib.Approximation.Interpolation
 import Numlib.Approximation.Trigonometric
 import NumlibSurface.AtkinsonHan.Chapter03.Section03
-import NumlibSurface.AtkinsonHan.Chapter03.Section07
 
 /-!
 # Atkinson–Han §3.6: projection operators
@@ -22,10 +21,15 @@ Analysis Framework*, 3rd edition, Springer, 2009, §3.6.
   `isOrthogonalProjectionOperator_iff` identifying it with Mathlib's
   `LinearMap.IsSymmetricProjection`.
 * `IsOrthogonalDirectSum` — the orthogonal direct sum of Definition 3.6.1.
+* `IsPeriodicCont`, `PeriodicCont`, `PeriodicCont.ofIsPeriodicCont` — `C_p(2π)`, the continuous
+  `2π`-periodic functions, as the book describes them and as the space `C(ℝ / 2πℤ, ℝ)` on which
+  Example 3.6.8 projects. §3.7 states Jackson's theorem and the Lebesgue-constant bounds over the
+  same space.
 
 ## Main results
 
 * `proposition_3_6_2` — direct sums correspond to idempotent linear maps.
+* `example_3_6_4` — `(v₁, v₂) ↦ (v₁, 0)` is an orthogonal projection of `ℝ²` onto the `x₁`-axis.
 * `example_3_6_7` — `∑ᵢ (·, φᵢ) φᵢ` is an orthogonal projection for an orthonormal family.
 * `proposition_3_6_9_a` … `proposition_3_6_9_e` — the properties of orthogonal projections;
   `proposition_3_6_9_c'` restates (c) as an orthogonal direct sum.
@@ -37,7 +41,8 @@ Analysis Framework*, 3rd edition, Springer, 2009, §3.6.
 
 ## Not formalized here
 
-Example 3.6.4 is a picture in `ℝ²`.
+Everything numbered in §3.6 is stated. Example 3.6.4's general `V₁` is a line of `ℝ²` drawn in
+Figure 3.4; `example_3_6_4` states the formula the example displays, for `V₁` the `x₁`-axis.
 -/
 
 namespace AtkinsonHan.Chapter03
@@ -284,11 +289,68 @@ theorem proposition_3_6_9_e [CompleteSpace H] (P : H →L[𝕜] H)
 
 end Hilbert
 
-/-! ### Examples 3.6.5, 3.6.6 and 3.6.8: the three concrete projections -/
+/-! ### `C_p(2π)`, the space Example 3.6.8 projects
+
+`C_p(2π)` is where the Fourier projection of Example 3.6.8 lives, and where §3.7 states Jackson's
+theorem and the Lebesgue-constant bounds; this is the first module of the surface to need a name
+for it. -/
+
+section Spaces
+
+open Real
+
+/-- `C_p(2π)` as the book describes it: continuous real functions on `ℝ` of period `2π`. -/
+def IsPeriodicCont (g : ℝ → ℝ) : Prop := Continuous g ∧ Function.Periodic g (2 * π)
+
+/-- `C_p(2π)` as a space: continuous real functions on the circle `ℝ / 2πℤ`. Given
+`Fact (0 < 2 * π)` the circle is compact, so this carries the sup norm `‖·‖_∞` of the book. -/
+abbrev PeriodicCont : Type := C(AddCircle (2 * π), ℝ)
+
+/-- A continuous `2π`-periodic function on `ℝ` is a continuous function on the circle. -/
+noncomputable def PeriodicCont.ofIsPeriodicCont {g : ℝ → ℝ} (h : IsPeriodicCont g) :
+    PeriodicCont :=
+  ⟨h.2.lift, continuous_quot_lift _ h.1⟩
+
+/-- `PeriodicCont.ofIsPeriodicCont` undoes the passage to the circle: its value at the class of
+`x` is `g x`. -/
+@[simp] theorem PeriodicCont.ofIsPeriodicCont_coe {g : ℝ → ℝ} (h : IsPeriodicCont g) (x : ℝ) :
+    PeriodicCont.ofIsPeriodicCont h (x : AddCircle (2 * π)) = g x :=
+  h.2.lift_coe x
+
+end Spaces
+
+/-! ### Examples 3.6.4, 3.6.5, 3.6.6 and 3.6.8: the concrete projections -/
 
 section Examples
 
 open MeasureTheory Real
+
+/-- **Example 3.6.4.**  Figure 3.4's orthogonal decomposition of a vector of `ℝ²`: the operator
+carrying `v = (v₁, v₂)` to `(v₁, 0)` is an orthogonal projection of `ℝ²` onto the `x₁`-axis, in the
+sense of Definition 3.6.3 and (3.6.2).
+
+The book's `V₁` is a general line through the origin and its figure is a picture; what the example
+states is the displayed formula, for `V₁` the `x₁`-axis. -/
+theorem example_3_6_4 :
+    ∃ P : EuclideanSpace ℝ (Fin 2) →L[ℝ] EuclideanSpace ℝ (Fin 2),
+      (∀ v : EuclideanSpace ℝ (Fin 2), P v = EuclideanSpace.single 0 (v 0)) ∧
+        IsOrthogonalProjectionOperator P := by
+  set P : EuclideanSpace ℝ (Fin 2) →L[ℝ] EuclideanSpace ℝ (Fin 2) :=
+    (EuclideanSpace.proj (0 : Fin 2)).smulRight (EuclideanSpace.single (0 : Fin 2) (1 : ℝ))
+    with hPdef
+  have hP : ∀ v : EuclideanSpace ℝ (Fin 2), P v = EuclideanSpace.single 0 (v 0) := by
+    intro v
+    ext i
+    fin_cases i <;> simp [hPdef]
+  refine ⟨P, hP, ?_, fun v w => ?_⟩
+  · refine ContinuousLinearMap.ext fun v => ?_
+    change P (P v) = P v
+    rw [hP v, hP (EuclideanSpace.single 0 (v 0))]
+    congr 1
+  · change inner ℝ (P v) (w - P w) = 0
+    rw [hP v, hP w, PiLp.inner_apply]
+    refine Finset.sum_eq_zero fun i _ => ?_
+    fin_cases i <;> simp
 
 /-- **Example 3.6.5.**  Lagrange interpolation at `n + 1` distinct nodes of `[a, b]` is a
 projection operator on `C[a, b]` whose range is `𝒫ₙ`, and whose operator norm is the Lebesgue

@@ -300,10 +300,11 @@ each section module names the results it leaves out.
   3.3.14, on minimizers of weakly sequentially lower semicontinuous functionals over a reflexive
   Banach space, and Theorem 8.6.3 (Ekeland–Temam, the existence of a saddle point for a
   convex–concave functional) all rest on weak sequential compactness of the closed unit ball (the
-  book's Theorem 2.7.5), which Mathlib does not have. `WeakSeqTendsto` and `example_3_3_5` record
-  as much of the setting as can be stated without it; the finite-dimensional and Hilbert cases of
-  the same material are proved in full. §2.7 itself is planned and not yet written for the same
-  reason.
+  book's Theorem 2.7.5), which Mathlib does not have. §2.7's `WeakSeqTendsto` — the book's
+  Definition 2.7.1, which §3.3 uses throughout — and `example_3_3_5` record as much of the setting
+  as can be stated without it; the finite-dimensional and Hilbert cases of the same material are
+  proved in full. Theorem 2.7.5 itself, and Definition 2.7.4 (reflexivity) with it, is the one
+  numbered result of §2.7 left unstated.
 * **The `C[a, b]` integral-operator toolkit.** `Numlib/IntegralEquations/Basic` has the Fredholm,
   Urysohn and Volterra operators with their norms and Lipschitz constants, which is what §5.2's
   applications and the norm formula (2.2.8) need, and now their *compactness*

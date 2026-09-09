@@ -1,5 +1,6 @@
 import Mathlib.Analysis.Normed.Algebra.Spectrum
 import Numlib.Analysis.Normed.Ring.Inverse
+import NumlibSurface.AtkinsonHan.Chapter02.Section03
 
 /-!
 # Atkinson–Han §2.9: the resolvent operator
@@ -9,17 +10,27 @@ Analysis Framework*, 3rd edition, Springer, 2009, §2.9: the resolvent set, the 
 perturbation bound (2.9.2) and the Neumann expansion (2.9.3) of the resolvent about a point of the
 resolvent set.
 
-Definition 2.9.1 is Mathlib's `resolventSet`, `spectrum` and `resolvent`, and is not restated: the
-book's `R(λ) = (λ I - L)⁻¹` is `resolvent L λ`, defined as `Ring.inverse (algebraMap 𝕜 _ λ - L)` in
-the Banach algebra `𝓛(V) = V →L[𝕜] V`. What the surface adds to the qualitative
+Definition 2.9.1 is Mathlib's `resolventSet`, `spectrum` and `resolvent`, and is restated here
+under the book's number: the book's `R(λ) = (λ I - L)⁻¹` is `resolvent L λ`, defined as
+`Ring.inverse (algebraMap 𝕜 _ λ - L)` in the Banach algebra `𝓛(V) = V →L[𝕜] V`. What the surface
+adds to the qualitative
 `spectrum.isOpen_resolventSet` is the *quantitative* content the book uses: the radius
 `1 / ‖R(λ₀)‖` of the disc that stays inside the resolvent set, the bound (2.9.2) on
 `‖R(λ) - R(λ₀)‖`, and the power series (2.9.3). All three come from the backbone perturbation
 theorems of `Numlib/Analysis/Normed/Ring/Inverse`, which is how the book derives them from its
 Theorem 2.3.5.
 
+## Main definitions
+
+* `definition_2_9_1` — `λ` belongs to the resolvent set of `L`: `(λ - L)⁻¹` exists as a bounded
+  linear operator.
+* `definition_2_9_1_spectrum` — the spectrum `σ(L) = ℂ ∖ ρ(L)` of clause (b).
+
 ## Main results
 
+* `definition_2_9_1_iff`, `definition_2_9_1_spectrum_eq` — the two clauses read back as Mathlib's
+  `resolventSet` and `spectrum`, in which everything below is stated;
+  `definition_2_9_1_resolvent` says that `resolvent L λ` is the inverse the definition asks for.
 * `lemma_2_9_2` — the resolvent set is open, the spectrum is closed, and (2.9.1)–(2.9.2).
 * `equation_2_9_3` — the Neumann series `R(λ) = ∑ₖ (-1)^k (λ - λ₀)^k R(λ₀)^{k+1}`.
 * `spectrum_subset_closedBall` — the spectrum lies in the closed ball of radius `‖L‖`.
@@ -32,7 +43,13 @@ Taylor expansion at `λ₀`.
 
 `lemma_2_9_2` and `spectrum_subset_closedBall` carry `[Nontrivial V]`, which the book assumes
 silently: on the zero space `𝓛(V)` is the zero ring, `‖1‖ = 0`, and the radius `1 / ‖R(λ₀)‖` is
-meaningless. `equation_2_9_3` needs no such hypothesis.
+meaningless. `equation_2_9_3` needs no such hypothesis, and neither does Definition 2.9.1.
+
+The convention of Chapter 1 continues: Definition 2.9.1 is a `def … : Prop` in the book's words,
+with a companion `…_iff`, and its second clause takes a descriptive suffix rather than a letter.
+"`(λ - L)⁻¹` exists as a bounded linear operator" is spelled as in §2.3, as a continuous linear
+equivalence whose underlying map is `λ - L`, and §2.3's `isUnit_iff_exists_continuousLinearEquiv`
+is the bridge to `IsUnit`.
 
 ## Not formalized here
 
@@ -47,6 +64,57 @@ meaningless. `equation_2_9_3` needs no such hypothesis.
 -/
 
 namespace AtkinsonHan.Chapter02
+
+/-! ### Definition 2.9.1: the resolvent set, the resolvent operator and the spectrum -/
+
+section Resolvent
+
+variable {𝕜 V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
+
+/-- **Definition 2.9.1** (a). For a bounded linear operator `L` on a complex Banach space, `λ`
+belongs to the *resolvent set* `ρ(L)` of `L` when `(λ - L)⁻¹` exists as a bounded linear operator
+from `V` to `V`; that operator is then the *resolvent operator*.
+
+"Exists as a bounded linear operator" is spelled as in §2.3, as a continuous linear equivalence
+whose underlying map is `λ - L`. This is Mathlib's `resolventSet` by `definition_2_9_1_iff`, and
+the resolvent operator is Mathlib's `resolvent` by `definition_2_9_1_resolvent`. -/
+def definition_2_9_1 (𝕜 : Type*) {V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
+    (L : V →L[𝕜] V) (lam : 𝕜) : Prop :=
+  ∃ e : V ≃L[𝕜] V, (e : V →L[𝕜] V) = lam • (1 : V →L[𝕜] V) - L
+
+/-- Definition 2.9.1 (a) is Mathlib's `resolventSet`. -/
+theorem definition_2_9_1_iff (L : V →L[𝕜] V) (lam : 𝕜) :
+    definition_2_9_1 𝕜 L lam ↔ lam ∈ resolventSet 𝕜 L := by
+  rw [definition_2_9_1, ← isUnit_iff_exists_continuousLinearEquiv,
+    spectrum.mem_resolventSet_iff, Algebra.algebraMap_eq_smul_one]
+
+/-- The *resolvent operator* of Definition 2.9.1 (a) is Mathlib's `resolvent`: for `λ ∈ ρ(L)` it is
+a two-sided inverse of `λ - L`. -/
+theorem definition_2_9_1_resolvent (L : V →L[𝕜] V) {lam : 𝕜} (h : definition_2_9_1 𝕜 L lam) :
+    (lam • (1 : V →L[𝕜] V) - L) * resolvent L lam = 1 ∧
+      resolvent L lam * (lam • (1 : V →L[𝕜] V) - L) = 1 := by
+  have hu : IsUnit (algebraMap 𝕜 (V →L[𝕜] V) lam - L) :=
+    spectrum.mem_resolventSet_iff.mp ((definition_2_9_1_iff L lam).mp h)
+  have hres : resolvent L lam = Ring.inverse (algebraMap 𝕜 (V →L[𝕜] V) lam - L) := rfl
+  have halg : algebraMap 𝕜 (V →L[𝕜] V) lam = lam • (1 : V →L[𝕜] V) :=
+    Algebra.algebraMap_eq_smul_one lam
+  rw [hres, ← halg]
+  exact ⟨Ring.mul_inverse_cancel _ hu, Ring.inverse_mul_cancel _ hu⟩
+
+/-- **Definition 2.9.1** (b). The *spectrum* of `L` is the complement `σ(L) = ℂ ∖ ρ(L)` of the
+resolvent set. This is Mathlib's `spectrum` by `definition_2_9_1_spectrum_eq`. -/
+def definition_2_9_1_spectrum (𝕜 : Type*) {V : Type*} [RCLike 𝕜] [NormedAddCommGroup V]
+    [NormedSpace 𝕜 V] (L : V →L[𝕜] V) : Set 𝕜 :=
+  {lam | ¬ definition_2_9_1 𝕜 L lam}
+
+/-- Definition 2.9.1 (b) is Mathlib's `spectrum`. -/
+theorem definition_2_9_1_spectrum_eq (L : V →L[𝕜] V) :
+    definition_2_9_1_spectrum 𝕜 L = spectrum 𝕜 L := by
+  ext lam
+  simp only [definition_2_9_1_spectrum, Set.mem_ofPred_eq, definition_2_9_1_iff, spectrum,
+    Set.mem_compl_iff]
+
+end Resolvent
 
 variable {𝕜 V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V] [CompleteSpace V]
   [Nontrivial V]

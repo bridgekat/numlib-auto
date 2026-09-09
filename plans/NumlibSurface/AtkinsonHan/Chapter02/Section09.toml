@@ -11,12 +11,23 @@ id = "spectrum_subset_closedBall"
 
 [[node]]
 id = "definition_2_9_1"
-kind = "definition"
-desc = '''Definition 2.9.1: for a bounded `L` on a complex Banach space, `λ` is in the resolvent
-set `ρ(L)` when `(λ - L)⁻¹` exists as a bounded operator, `(λ - L)⁻¹` is the resolvent operator,
-and the spectrum is `σ(L) = ℂ ∖ ρ(L)`. Not formalized: these are Mathlib's `resolventSet`,
-`resolvent` and `spectrum`, in which `lemma_2_9_2`, `equation_2_9_3` and
-`spectrum_subset_closedBall` are stated; §2.9's module doc records the correspondence.'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 2.9.1 (a)"
+
+[[node]]
+id = "definition_2_9_1_iff"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 2.9.1 (a)"
+
+[[node]]
+id = "definition_2_9_1_resolvent"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 2.9.1 (a)"
+
+[[node]]
+id = "definition_2_9_1_spectrum"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 2.9.1 (b)"
+
+[[node]]
+id = "definition_2_9_1_spectrum_eq"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 2.9.1 (b)"
 
 [[node]]
 id = "theorem_2_9_3"

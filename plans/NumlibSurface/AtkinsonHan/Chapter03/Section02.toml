@@ -68,8 +68,5 @@ id = "equation_3_2_5"
 
 [[node]]
 id = "example_3_2_5"
-kind = "theorem"
-desc = '''Example 3.2.5: the maximum errors of the trigonometric interpolant of `f x = exp (sin x) * sin x`
-at the equispaced nodes (3.2.16), tabulated in Table 3.1 for several `n`. Not formalized: a
-numerical illustration of the convergence (3.2.17) already states, with no claim of its own.'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 3.2.5"
 

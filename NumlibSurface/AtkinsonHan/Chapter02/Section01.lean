@@ -1,5 +1,6 @@
 import Mathlib.Analysis.Normed.Group.Bounded
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Deriv
+import Mathlib.LinearAlgebra.Matrix.Rank
 
 /-!
 # Atkinson–Han §2.1: operators
@@ -8,12 +9,15 @@ Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysi
 Analysis Framework*, 3rd edition, Springer, 2009, §2.1: operators, their domain, range and null set,
 injectivity and surjectivity, continuity and boundedness.
 
-Definition 2.1.1 is `Function.Injective`, `Function.Surjective` and `Function.Bijective`; the
-domain, range and null set of an operator are `Set.univ`, `Set.range` and `T ⁻¹' {0}`, or for a
-linear map `LinearMap.range` and `LinearMap.ker`. None of these is restated.
+Definition 2.1.1 is Mathlib's `Function.Injective`, `Function.Surjective` and `Function.Bijective`,
+and is restated here under the book's number; the domain, range and null set of an operator are
+`Set.univ`, `Set.range` and `T ⁻¹' {0}`, or for a linear map `LinearMap.range` and `LinearMap.ker`,
+and none of those is restated.
 
 ## Main definitions
 
+* `definition_2_1_1`, `definition_2_1_1_surjective`, `definition_2_1_1_bijection` — the three
+  clauses of Definition 2.1.1: an injective operator, an operator of `V` onto `W`, and a bijection.
 * `IsBoundedOperator` — Definition 2.1.6, the book's boundedness of a not necessarily linear
   operator: *bounded sets have bounded images*, not "the operator norm is finite". The distinction
   matters, because the two differ for a nonlinear operator and the point of Theorem 2.2.4 is that
@@ -21,25 +25,141 @@ linear map `LinearMap.range` and `LinearMap.ker`. None of these is restated.
 
 ## Main results
 
+* `definition_2_1_1_iff`, `definition_2_1_1_surjective_iff`, `definition_2_1_1_bijection_iff` —
+  each clause read back as the Mathlib notion; later sections rewrite along these.
+* `definition_2_1_1_inverse` — the book's rule `v = T⁻¹ w ⟺ w = T v` determines exactly one inverse
+  of a bijection.
 * `isBoundedOperator_iff_image_bounded` — the two readings the book gives of Definition 2.1.6.
+* `example_2_1_2` — the identity operator is a bijection whose inverse is again the identity.
+* `example_2_1_3` — a matrix operator is injective exactly when `rank A = n`, and surjective
+  exactly when `rank A = m`.
 * `example_2_1_7` — the half of Example 2.1.7 that needs no `C¹[0, 1]`: differentiation is
   *unbounded* for the sup norm on `C[0, 1]`.
 
 The bridge to the estimate `‖T v‖ ≤ γ ‖v‖` for a *linear* operator is Proposition 2.2.3, and lives
 in §2.2 with the rest of that discussion.
 
+## Conventions
+
+The convention of Chapter 1 continues: a numbered definition naming a property of data is a
+`def … : Prop` in the book's own words with a companion `…_iff` reading it back as the Mathlib
+notion, and a further clause of a definition takes a descriptive suffix rather than a letter.
+
+Definition 2.1.1 asks nothing of `V` and `W` beyond their being sets, which is how §2.1 opens, so
+its three clauses are stated for bare types. Example 2.1.3 is stated over an arbitrary field, which
+covers both the real matrices the book writes and the complex ones of the remark after it.
+
 ## Not formalized here
 
-Examples 2.1.2 and 2.1.3, the identity operator and a matrix acting on `ℝⁿ`, illustrate
-Definition 2.1.1 and carry no statement the rest of the book uses. Examples 2.1.4 and 2.1.5, and
-the *bounded* half of Example 2.1.7, concern the differentiation operator read on `C¹[0, 1]` with
-the norm `‖v‖_∞ + ‖v'‖_∞`; Mathlib does not have `C¹[0, 1]` as a normed space, so they are not
-stated. The *unbounded* half of Example 2.1.7 needs no such space and is `example_2_1_7`.
+Examples 2.1.4 and 2.1.5, and the *bounded* half of Example 2.1.7, concern the differentiation
+operator read on `C¹[0, 1]` with the norm `‖v‖_∞ + ‖v'‖_∞`; Mathlib does not have `C¹[0, 1]` as a
+normed space, so they are not stated. The *unbounded* half of Example 2.1.7 needs no such space and
+is `example_2_1_7`.
 -/
 
 open Bornology Metric
 
 namespace AtkinsonHan.Chapter02
+
+/-! ### Definition 2.1.1: injections, surjections and bijections -/
+
+section Bijection
+
+variable {V W : Type*}
+
+/-- **Definition 2.1.1.** An operator `T : V → W` is *one-to-one*, or *injective*, when
+`v₁ ≠ v₂ ⇒ T v₁ ≠ T v₂` (2.1.1).
+
+This is Mathlib's `Function.Injective`; `definition_2_1_1_iff` is the correspondence. -/
+def definition_2_1_1 (T : V → W) : Prop :=
+  ∀ v₁ v₂ : V, v₁ ≠ v₂ → T v₁ ≠ T v₂
+
+/-- Definition 2.1.1 is Mathlib's `Function.Injective`. -/
+theorem definition_2_1_1_iff (T : V → W) : definition_2_1_1 T ↔ Function.Injective T :=
+  ⟨fun h v₁ v₂ hv => by_contra fun hne => h v₁ v₂ hne hv, fun h _ _ hne hv => hne (h hv)⟩
+
+/-- **Definition 2.1.1**, second clause. `T` *maps `V` onto `W`*, or is *surjective*, when its
+range is all of `W`: `R(T) = W`.
+
+This is Mathlib's `Function.Surjective`; `definition_2_1_1_surjective_iff` is the
+correspondence. -/
+def definition_2_1_1_surjective (T : V → W) : Prop :=
+  Set.range T = Set.univ
+
+/-- The second clause of Definition 2.1.1 is Mathlib's `Function.Surjective`. -/
+theorem definition_2_1_1_surjective_iff (T : V → W) :
+    definition_2_1_1_surjective T ↔ Function.Surjective T :=
+  Set.range_eq_univ
+
+/-- **Definition 2.1.1**, third clause. An operator that is both injective and surjective is a
+*bijection* from `V` to `W`.
+
+This is Mathlib's `Function.Bijective`; `definition_2_1_1_bijection_iff` is the correspondence. -/
+def definition_2_1_1_bijection (T : V → W) : Prop :=
+  definition_2_1_1 T ∧ definition_2_1_1_surjective T
+
+/-- The third clause of Definition 2.1.1 is Mathlib's `Function.Bijective`. -/
+theorem definition_2_1_1_bijection_iff (T : V → W) :
+    definition_2_1_1_bijection T ↔ Function.Bijective T := by
+  rw [definition_2_1_1_bijection, definition_2_1_1_iff, definition_2_1_1_surjective_iff,
+    Function.Bijective]
+
+/-- The inverse of a bijection, as the book defines it right after Definition 2.1.1: exactly one
+`T⁻¹ : W → V` obeys the rule `v = T⁻¹ w ⟺ w = T v`. -/
+theorem definition_2_1_1_inverse {T : V → W} (h : definition_2_1_1_bijection T) :
+    ∃! S : W → V, ∀ (v : V) (w : W), v = S w ↔ w = T v := by
+  obtain ⟨hinj, hsurj⟩ := (definition_2_1_1_bijection_iff T).mp h
+  refine ⟨Function.surjInv hsurj, fun v w => ⟨?_, ?_⟩, fun S hS => funext fun w => ?_⟩
+  · rintro rfl
+    exact (Function.surjInv_eq hsurj w).symm
+  · rintro rfl
+    exact (hinj (Function.surjInv_eq hsurj (T v))).symm
+  · exact ((hS (Function.surjInv hsurj w) w).mpr (Function.surjInv_eq hsurj w).symm).symm
+
+/-- **Example 2.1.2.** The identity operator `I v = v` on a linear space `V` is a bijection from
+`V` to `V`, and its inverse is again the identity operator. -/
+theorem example_2_1_2 (V : Type*) :
+    definition_2_1_1_bijection (id : V → V) ∧
+      ∀ S : V → V, (∀ (v w : V), v = S w ↔ w = id v) → S = id :=
+  ⟨(definition_2_1_1_bijection_iff _).mpr Function.bijective_id,
+    fun _ hS => funext fun w => ((hS w w).mpr rfl).symm⟩
+
+/-- **Example 2.1.3.** For `L v = A v` with `A` an `m × n` matrix, `L` is injective if and only if
+`rank A = n`, and surjective if and only if `rank A = m`.
+
+The book states this over `ℝ` and remarks that the same holds over `ℂ`; both are the statement
+below over an arbitrary field, the book's `ℝⁿ` being `Fin n → ℝ`. The rank is Mathlib's
+`Matrix.rank`, the dimension of the range of `v ↦ A v`, which is the book's maximal number of
+independent columns. -/
+theorem example_2_1_3 {𝕜 : Type*} [Field 𝕜] {m n : Type*} [Fintype m] [Fintype n]
+    (A : Matrix m n 𝕜) :
+    (definition_2_1_1 A.mulVec ↔ A.rank = Fintype.card n) ∧
+      (definition_2_1_1_surjective A.mulVec ↔ A.rank = Fintype.card m) := by
+  have hcoe : ⇑A.mulVecLin = A.mulVec := rfl
+  have hrank : A.rank = Module.finrank 𝕜 (LinearMap.range A.mulVecLin) := rfl
+  have hcount := A.mulVecLin.finrank_range_add_finrank_ker
+  rw [Module.finrank_pi] at hcount
+  constructor
+  · rw [definition_2_1_1_iff, ← hcoe]
+    constructor
+    · intro hinj
+      have hker : LinearMap.ker A.mulVecLin = ⊥ := LinearMap.ker_eq_bot_of_injective hinj
+      rw [hrank, ← hcount, hker, finrank_bot, add_zero]
+    · intro hcard
+      rw [hrank] at hcard
+      have hker : Module.finrank 𝕜 (LinearMap.ker A.mulVecLin) = 0 := by omega
+      exact LinearMap.ker_eq_bot.mp (Submodule.finrank_eq_zero.mp hker)
+  · rw [definition_2_1_1_surjective_iff, ← hcoe, ← LinearMap.range_eq_top]
+    constructor
+    · intro htop
+      rw [hrank, htop, finrank_top, Module.finrank_pi]
+    · intro hcard
+      refine Submodule.eq_top_of_finrank_eq ?_
+      rw [← hrank, hcard, Module.finrank_pi]
+
+end Bijection
+
+/-! ### Definition 2.1.6: bounded operators -/
 
 variable {V W : Type*} [SeminormedAddCommGroup V] [SeminormedAddCommGroup W]
 

@@ -1,6 +1,14 @@
 namespace = "AtkinsonHan.Chapter02"
 
 [[node]]
+id = "WeakSeqTendsto"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 2.7.1"
+
+[[node]]
+id = "weakSeqTendsto_iff_root"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 2.7.1"
+
+[[node]]
 id = "proposition_2_7_2"
 
 [[node]]
@@ -31,9 +39,11 @@ kind = "theorem"
 desc = '''Theorem 2.7.5: a Banach space is reflexive if and only if every bounded sequence in it
 has a subsequence converging weakly to an element of the space. Not formalized: this is the
 Eberlein–Šmulian theorem together with Kakutani's characterization of reflexivity, and Mathlib has
-neither; where the book applies it (Theorems 3.3.8, 3.3.10, 3.3.12, 3.3.14) the surface assumes the
-right-hand property directly, as Mathlib's `WeaklySeqCompactSpace`. §2.7's module doc records
-this.'''
+neither — no reflexivity class for normed spaces (only `Module.IsReflexive` for the algebraic
+double dual) and no Banach–Alaoglu in a form that would give it; where the book applies it
+(Theorems 3.3.8, 3.3.10, 3.3.12, 3.3.14) the surface assumes the right-hand property directly, as
+the backbone's class `WeaklySeqCompactSpace` of `Numlib/Variational/WeakMinimization`. §2.7's
+module doc records this.'''
 
 [[node]]
 id = "definition_2_7_6"

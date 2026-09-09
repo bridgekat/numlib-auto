@@ -30,10 +30,19 @@ ring-theoretic `IsUnit` used by the backbone is `isUnit_iff_exists_continuousLin
 * `example_2_3_2_integral`, `example_2_3_4_volterra` — the concrete halves of the two examples,
   on `C[a, b]`, using the integral operators of `Numlib/IntegralEquations/Basic.lean` and the
   norm formula (2.2.8).
+* `example_2_3_6`, `example_2_3_6_norm_sub` — the equation (2.3.17) with kernel `sin (x y)`: its
+  operator norm is `1 - cos 1`, which is (2.3.18) and settles `|λ| > 1 - cos 1` by Example 2.3.2;
+  and the norm `cos 1 - 1/2` of the difference between (2.3.17) and the degenerate-kernel
+  equation (2.3.19), which is the quantity the book's perturbation comparison rests on.
 
 ## Not formalized here
 
-Example 2.3.6, a numerical solvability analysis with explicit constants.
+Of Example 2.3.6, the second half of the analysis: the explicit inverse (2.3.20) of the
+degenerate-kernel equation (2.3.19), the bound `‖L⁻¹‖ ≤ (1/|λ|)(1 + 1/(2|λ - 1/3|))` it gives, and
+the resulting condition (2.3.21) with its numerical root `λ₀ ≈ -0.0881`. The book leaves that
+analysis to the reader as its own Exercise 2.3.5, states the constants only to two decimals, and
+uses none of it later; the two operator norms it turns on, `‖K‖` and `‖L - M‖`, are the theorems
+above.
 -/
 
 open Filter Topology
@@ -400,6 +409,119 @@ theorem example_2_3_4_volterra (hab : a ≤ b) (k : C(Icc a b × Icc a b, ℝ)) 
   obtain ⟨e₀, he₀⟩ := example_2_3_4 (lam⁻¹ • volterraCLM hab k) htend
   obtain ⟨e, he, -⟩ := exists_smul_equiv hlam e₀
   exact ⟨e, by rw [he, he₀, smul_sub, smul_inv_smul₀ hlam]⟩
+
+/-! ### Example 2.3.6: the integral equation (2.3.17) -/
+
+section Example236
+
+open Real
+
+/-- The two kernels of Example 2.3.6 are of the form `g (x y)` for a `g` continuous, nonnegative
+and increasing on `[0, 1]`. For such a `g` the largest row integral over `[0, 1]` is attained at
+`x = 1`, because `x y ≤ y` keeps `g (x y) ≤ g y` throughout the square. This computes (2.2.8)'s
+supremum for both. -/
+private theorem iSup_integral_abs_mul {g : ℝ → ℝ} (hcont : Continuous g)
+    (hnonneg : ∀ t ∈ Icc (0 : ℝ) 1, 0 ≤ g t) (hmono : MonotoneOn g (Icc (0 : ℝ) 1)) :
+    ⨆ x : Icc (0 : ℝ) 1, (∫ y in (0 : ℝ)..1, |g ((x : ℝ) * y)|) = ∫ y in (0 : ℝ)..1, g y := by
+  have hmem : ∀ x : Icc (0 : ℝ) 1, ∀ y ∈ Icc (0 : ℝ) 1, (x : ℝ) * y ∈ Icc (0 : ℝ) 1 := by
+    rintro ⟨x, hx0, hx1⟩ y ⟨hy0, hy1⟩
+    exact ⟨by positivity, by nlinarith⟩
+  have hle : ∀ x : Icc (0 : ℝ) 1,
+      (∫ y in (0 : ℝ)..1, |g ((x : ℝ) * y)|) ≤ ∫ y in (0 : ℝ)..1, g y := by
+    intro x
+    refine intervalIntegral.integral_mono_on zero_le_one
+      ((hcont.abs.comp (continuous_const.mul continuous_id)).intervalIntegrable _ _)
+      (hcont.intervalIntegrable _ _) fun y hy => ?_
+    rw [abs_of_nonneg (hnonneg _ (hmem x y hy))]
+    exact hmono (hmem x y hy) hy (by nlinarith [x.2.1, x.2.2, hy.1])
+  have hone : (∫ y in (0 : ℝ)..1, |g (((⟨1, by norm_num⟩ : Icc (0 : ℝ) 1) : ℝ) * y)|)
+      = ∫ y in (0 : ℝ)..1, g y := by
+    refine intervalIntegral.integral_congr fun y hy => ?_
+    rw [uIcc_of_le zero_le_one] at hy
+    simp [abs_of_nonneg (hnonneg y hy)]
+  have hbdd : BddAbove (Set.range fun x : Icc (0 : ℝ) 1 =>
+      ∫ y in (0 : ℝ)..1, |g ((x : ℝ) * y)|) := by
+    refine ⟨∫ y in (0 : ℝ)..1, g y, ?_⟩
+    rintro _ ⟨x, rfl⟩
+    exact hle x
+  refine le_antisymm (ciSup_le hle) ?_
+  rw [← hone]
+  exact le_ciSup hbdd (⟨1, by norm_num⟩ : Icc (0 : ℝ) 1)
+
+/-- `sin` is increasing on `[0, 1]`, which lies inside `[-π/2, π/2]`. -/
+private theorem monotoneOn_sin_unitInterval : MonotoneOn sin (Icc (0 : ℝ) 1) := by
+  refine strictMonoOn_sin.monotoneOn.mono fun t ht => ?_
+  have hpi : (1 : ℝ) ≤ π / 2 := by linarith [two_le_pi]
+  exact ⟨by linarith [ht.1, pi_pos], ht.2.trans hpi⟩
+
+/-- `t ↦ t - sin t` is increasing, because `sin` is `1`-Lipschitz. -/
+private theorem monotoneOn_sub_sin : MonotoneOn (fun t : ℝ => t - sin t) (Icc (0 : ℝ) 1) := by
+  intro s _ t _ hst
+  have h1 : sin t - sin s ≤ |t - s| := (le_abs_self _).trans (abs_sin_sub_sin_le t s)
+  rw [abs_of_nonneg (by linarith : (0 : ℝ) ≤ t - s)] at h1
+  simp only
+  linarith
+
+/-- **Example 2.3.6**, the part the book settles with Example 2.3.2, namely **(2.3.18)**. The
+operator `K u (x) = ∫₀¹ sin (x y) u (y) dy` of (2.3.17) has norm `∫₀¹ sin y dy = 1 - cos 1`, the row
+integral of (2.2.8) being largest at `x = 1` because `sin (x y) ≤ sin y` on the square; so for every
+`λ` with `|λ| > 1 - cos 1 ≈ 0.4597` the equation `λ u (x) - ∫₀¹ sin (x y) u (y) dy = f (x)` has
+exactly one solution `u ∈ C[0, 1]` for every `f ∈ C[0, 1]`, and `‖u‖ ≤ ‖f‖ / (|λ| - (1 - cos 1))`.
+
+The kernel is described by the hypothesis `hk` rather than constructed, as `example_1_1_12`
+describes its subspace. -/
+theorem example_2_3_6 (k : C(Icc (0 : ℝ) 1 × Icc (0 : ℝ) 1, ℝ))
+    (hk : ∀ p : Icc (0 : ℝ) 1 × Icc (0 : ℝ) 1, k p = sin ((p.1 : ℝ) * (p.2 : ℝ))) {lam : ℝ}
+    (hlam : 1 - cos 1 < |lam|) :
+    ‖fredholm zero_le_one k‖ = 1 - cos 1 ∧
+      ∃ e : C(Icc (0 : ℝ) 1, ℝ) ≃L[ℝ] C(Icc (0 : ℝ) 1, ℝ),
+        (e : C(Icc (0 : ℝ) 1, ℝ) →L[ℝ] C(Icc (0 : ℝ) 1, ℝ))
+            = lam • (1 : C(Icc (0 : ℝ) 1, ℝ) →L[ℝ] C(Icc (0 : ℝ) 1, ℝ)) - fredholm zero_le_one k ∧
+          ‖(e.symm : C(Icc (0 : ℝ) 1, ℝ) →L[ℝ] C(Icc (0 : ℝ) 1, ℝ))‖
+            ≤ 1 / (|lam| - (1 - cos 1)) ∧
+          ∀ u f : C(Icc (0 : ℝ) 1, ℝ), lam • u - fredholm zero_le_one k u = f →
+            ‖u‖ ≤ ‖f‖ / (|lam| - (1 - cos 1)) := by
+  have hsup : (⨆ x, ∫ y in (0 : ℝ)..1, |k (x, projIcc (0 : ℝ) 1 zero_le_one y)|) = 1 - cos 1 := by
+    have hcongr : ∀ x : Icc (0 : ℝ) 1,
+        (∫ y in (0 : ℝ)..1, |k (x, projIcc (0 : ℝ) 1 zero_le_one y)|)
+          = ∫ y in (0 : ℝ)..1, |sin ((x : ℝ) * y)| := by
+      intro x
+      refine intervalIntegral.integral_congr fun y hy => ?_
+      rw [uIcc_of_le zero_le_one] at hy
+      rw [hk, projIcc_of_mem zero_le_one hy]
+    rw [iSup_congr hcongr,
+      iSup_integral_abs_mul continuous_sin
+        (fun t ht => sin_nonneg_of_nonneg_of_le_pi ht.1 (ht.2.trans (by linarith [two_le_pi])))
+        monotoneOn_sin_unitInterval,
+      integral_sin, cos_zero]
+  refine ⟨by rw [norm_fredholm zero_le_one k, hsup], ?_⟩
+  obtain ⟨e, he, hb, hu⟩ := example_2_3_2_integral zero_le_one k (lam := lam) (by rwa [hsup])
+  rw [hsup] at hb hu
+  exact ⟨e, he, hb, hu⟩
+
+/-- **Example 2.3.6**, the quantity the book's perturbation comparison rests on: the operator
+`L - M` separating (2.3.17) from the degenerate-kernel equation (2.3.19) is the Fredholm operator
+with kernel `x y - sin (x y)`, and its norm is `∫₀¹ (y - sin y) dy = cos 1 - 1/2 ≈ 0.0403`. Again
+the row integral is largest at `x = 1`, since `t - sin t` is increasing. -/
+theorem example_2_3_6_norm_sub (k : C(Icc (0 : ℝ) 1 × Icc (0 : ℝ) 1, ℝ))
+    (hk : ∀ p : Icc (0 : ℝ) 1 × Icc (0 : ℝ) 1,
+      k p = (p.1 : ℝ) * (p.2 : ℝ) - sin ((p.1 : ℝ) * (p.2 : ℝ))) :
+    ‖fredholm zero_le_one k‖ = cos 1 - 1 / 2 := by
+  have hcongr : ∀ x : Icc (0 : ℝ) 1,
+      (∫ y in (0 : ℝ)..1, |k (x, projIcc (0 : ℝ) 1 zero_le_one y)|)
+        = ∫ y in (0 : ℝ)..1, |(fun t : ℝ => t - sin t) ((x : ℝ) * y)| := by
+    intro x
+    refine intervalIntegral.integral_congr fun y hy => ?_
+    rw [uIcc_of_le zero_le_one] at hy
+    rw [hk, projIcc_of_mem zero_le_one hy]
+  rw [norm_fredholm zero_le_one k, iSup_congr hcongr,
+    iSup_integral_abs_mul (by fun_prop)
+      (fun t ht => sub_nonneg.2 (sin_le ht.1)) monotoneOn_sub_sin]
+  rw [intervalIntegral.integral_sub (continuous_id'.intervalIntegrable _ _)
+    (continuous_sin.intervalIntegrable _ _), integral_id, integral_sin, cos_zero]
+  ring
+
+end Example236
 
 end IntegralEquations
 
