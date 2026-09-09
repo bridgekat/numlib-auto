@@ -1,0 +1,32 @@
+[[node]]
+id = "Submodule.hasOrthogonalProjection_span_range"
+
+[[node]]
+id = "Matrix.gram_sum_smul"
+
+[[node]]
+id = "Matrix.gram_sumElim_of_inner_eq_zero"
+
+[[node]]
+id = "Matrix.det_gram_sumElim_of_inner_eq_zero"
+
+[[node]]
+id = "Matrix.det_gram_sumElim"
+
+[[node]]
+id = "Matrix.det_gram_sumElim_eq_det_gram_cons"
+
+[[node]]
+id = "Matrix.det_gram_cons"
+
+[[node]]
+id = "Submodule.norm_sub_starProjection_sq_eq_det_gram_div"
+
+[[node]]
+id = "Submodule.norm_sub_starProjection_sq_eq_det_gram_div_real"
+
+[[node]]
+id = "Submodule.iInf_norm_sub_sq_eq_det_gram_div"
+
+[[node]]
+id = "Submodule.iInf_norm_sub_sq_eq_det_gram_div_real"

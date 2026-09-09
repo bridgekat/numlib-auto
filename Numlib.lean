@@ -20,6 +20,7 @@ import Numlib.Analysis.HarmonicPolynomial
 import Numlib.Analysis.InnerProductSpace.Coercive
 import Numlib.Analysis.InnerProductSpace.CompactSpectral
 import Numlib.Analysis.InnerProductSpace.Energy
+import Numlib.Analysis.InnerProductSpace.GramDeterminant
 import Numlib.Analysis.InnerProductSpace.GramSchmidt
 import Numlib.Analysis.InnerProductSpace.OrthonormalSeries
 import Numlib.Analysis.InnerProductSpace.Projection.Angle
