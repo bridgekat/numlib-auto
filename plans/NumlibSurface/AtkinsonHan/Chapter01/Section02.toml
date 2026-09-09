@@ -1,14 +1,144 @@
 namespace = "AtkinsonHan.Chapter01"
 
 [[node]]
+id = "definition_1_2_1"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 1.2.1"
+
+[[node]]
+id = "definition_1_2_2"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 1.2.2"
+
+[[node]]
+id = "definition_1_2_2_iff"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 1.2.2"
+
+[[node]]
+id = "example_1_2_3"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 1.2.3"
+
+[[node]]
+id = "example_1_2_4"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 1.2.4"
+
+[[node]]
+id = "example_1_2_5"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 1.2.5 (a)"
+
+[[node]]
+id = "definition_1_2_6"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 1.2.6"
+
+[[node]]
+id = "definition_1_2_7"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 1.2.7"
+
+[[node]]
+id = "definition_1_2_8"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 1.2.8"
+
+[[node]]
+id = "definition_1_2_8_iff"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 1.2.8"
+
+[[node]]
+id = "definition_1_2_8_unique"
+source = "Atkinson–Han, Theoretical Numerical Analysis, the remark after Definition 1.2.8"
+
+[[node]]
+id = "definition_1_2_9"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 1.2.9"
+
+[[node]]
+id = "definition_1_2_9_iff"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 1.2.9"
+
+[[node]]
 id = "proposition_1_2_10"
+
+[[node]]
+id = "example_1_2_11"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 1.2.11"
+
+[[node]]
+id = "example_1_2_13"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 1.2.13"
+
+[[node]]
+id = "theorem_1_2_14"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 1.2.14; its conclusion is Definition 1.2.12, the equivalence of two norms, which the book states nowhere else"
+
+[[node]]
+id = "example_1_2_15"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 1.2.15"
+
+[[node]]
+id = "example_1_2_16"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 1.2.16"
+
+[[node]]
+id = "definition_1_2_17"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 1.2.17"
+
+[[node]]
+id = "definition_1_2_17_iff"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 1.2.17"
+
+[[node]]
+id = "definition_1_2_18"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 1.2.18"
+
+[[node]]
+id = "definition_1_2_18_iff"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 1.2.18"
+
+[[node]]
+id = "definition_1_2_18_iff_dense"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 1.2.18"
+
+[[node]]
+id = "definition_1_2_20"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 1.2.20 (a)"
+
+[[node]]
+id = "definition_1_2_20_schauder"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 1.2.20 (b)"
+
+[[node]]
+id = "definition_1_2_20_of_schauder"
+source = "Atkinson–Han, Theoretical Numerical Analysis, the remark after Definition 1.2.20"
+
+[[node]]
+id = "definition_1_2_21"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 1.2.21"
+
+[[node]]
+id = "definition_1_2_21_iff"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 1.2.21"
+
+[[node]]
+id = "example_1_2_22"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 1.2.22, first half"
+
+[[node]]
+id = "example_1_2_22_incomplete"
+kind = "theorem"
+desc = '''
+Example 1.2.22, second half: `C(Ω̄)` with the `p`-norm (1.2.9), `1 ≤ p < ∞`, is not a Banach space —
+the ramps rising from `0` to `1` across `x = 1/2` are `‖·‖_p`-Cauchy in `C[0, 1]` and have no
+continuous `‖·‖_p`-limit.  Not formalized: an explicit counterexample with no consumer in the book
+and no Mathlib form.  It needs the `p`-norm written out as an interval integral (Mathlib has no
+normed-space structure on `C[0, 1]` for `‖·‖_p`), the `L^p` distance from the ramps to the step
+function computed, and then the step that `w` continuous with `∫₀¹ |step - w| = 0` forces
+`w (1/2) = 0` and `w (1/2) = 1`.  The first half, that `C(Ω̄)` with `‖·‖_∞` is a Banach space, is
+`example_1_2_22`.
+'''
 
 [[node]]
 id = "proposition_1_2_23"
 
 [[node]]
-id = "theorem_1_2_14"
-source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 1.2.14; its conclusion is Definition 1.2.12, the equivalence of two norms, which the book states nowhere else"
+id = "definition_1_2_24"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 1.2.24"
 
 [[node]]
 id = "theorem_1_2_25"
@@ -21,197 +151,6 @@ id = "theorem_1_2_26"
 
 [[node]]
 id = "theorem_1_2_27"
-
-[[node]]
-id = "definition_1_2_1"
-kind = "definition"
-desc = '''
-Definition 1.2.1: a norm on a linear space is non-negative and vanishes only at `0`, is positively
-homogeneous, and obeys the triangle inequality; the pair `(V, ‖·‖)` is a normed space.
-Not formalized: this is Mathlib's `Norm`, bundled as `NormedAddCommGroup` with `NormedSpace`, and
-§1.2's module doc lists it among the definitions it does not restate.
-'''
-
-[[node]]
-id = "definition_1_2_2"
-kind = "definition"
-desc = '''
-Definition 1.2.2: a semi-norm has the properties of a norm except that `|v| = 0` need not force
-`v = 0`.  Not formalized: this is Mathlib's `Seminorm`, named in §1.2's module doc; the book uses
-semi-norms for the error of polynomial interpolation, which this surface reaches in Chapter 3.
-'''
-
-[[node]]
-id = "example_1_2_3"
-kind = "theorem"
-desc = '''
-Example 1.2.3: the `p`-norms (1.2.2)–(1.2.3) on `ℝ^d`, `‖x‖_p = (∑ |xᵢ|^p)^{1/p}` for `p < ∞` and
-`‖x‖_∞ = maxᵢ |xᵢ|`, with `‖x‖_∞ = lim_{p → ∞} ‖x‖_p`.  Not formalized: an illustration of
-Definition 1.2.1, and these are Mathlib's `PiLp p` — `EuclideanSpace 𝕜 ι` is the case `p = 2`, and
-the plain `Pi` norm the case `p = ∞`.
-'''
-
-[[node]]
-id = "example_1_2_4"
-kind = "definition"
-desc = '''
-Example 1.2.4: the sequence spaces `ℓᵖ = {v | ‖v‖_{ℓᵖ} < ∞}` for `p ∈ [1, ∞]`, with
-`‖v‖_{ℓᵖ} = (∑_{n≥1} |vₙ|^p)^{1/p}` and `‖v‖_{ℓ^∞} = sup |vₙ|`.  Not formalized: this is Mathlib's
-`lp E p`, whose norm instance carries the triangle inequality the book defers to Exercise 1.5.11.
-'''
-
-[[node]]
-id = "example_1_2_5"
-kind = "definition"
-desc = '''
-Example 1.2.5: the maximum norm `‖f‖_∞ = max_{[a,b]} |f|` on `C[a, b]` and on `C_p(2π)`, and
-`‖f‖_{k,∞} = max_{j ≤ k} ‖f^{(j)}‖_∞` on `Cᵏ[a, b]` and `C_p^k(2π)`.  Not formalized: an
-illustration of Definition 1.2.1.  The first is Mathlib's norm on `C(X, ℝ)` for compact `X`
-(`ContinuousMap.norm_eq_iSup_norm`, and `BoundedContinuousFunction` in general); the second has no
-Mathlib form, which is the obstruction §1.2's module doc records against Example 1.2.28 (a).
-'''
-
-[[node]]
-id = "definition_1_2_6"
-kind = "definition"
-desc = '''
-Definition 1.2.6: the open and closed balls `B(v₀, r)` and `B̄(v₀, r)` of a normed space, and the
-unit balls at `v₀ = 0`, `r = 1`.  Not formalized: these are Mathlib's `Metric.ball` and
-`Metric.closedBall`, named in §1.2's module doc.
-'''
-
-[[node]]
-id = "definition_1_2_7"
-kind = "definition"
-desc = '''
-Definition 1.2.7: a set is open when it contains a ball around each of its points, and closed when
-its complement is open.  Not formalized: these are Mathlib's `IsOpen` and `IsClosed` for the metric
-topology the norm induces, named in §1.2's module doc.
-'''
-
-[[node]]
-id = "definition_1_2_8"
-kind = "definition"
-desc = '''
-Definition 1.2.8: `uₙ → u` in a normed space means `‖uₙ - u‖ → 0`, and a sequence has at most one
-limit.  Not formalized: this is Mathlib's `Filter.Tendsto u atTop (𝓝 u₀)`, named in §1.2's module
-doc; the book's spelling is `tendsto_iff_norm_sub_tendsto_zero` and uniqueness is
-`tendsto_nhds_unique`.
-'''
-
-[[node]]
-id = "definition_1_2_9"
-kind = "definition"
-desc = '''
-Definition 1.2.9: `f : V → ℝ` is continuous at `u` when `uₙ → u` implies `f uₙ → f u`, and
-continuous on `V` when it is continuous at every point.  Not formalized: the book's sequential form
-is Mathlib's `SeqContinuous`, which agrees with `Continuous` on a metric space by
-`continuous_iff_seqContinuous`; `proposition_1_2_10` is stated in the book's sequential form.
-'''
-
-[[node]]
-id = "example_1_2_11"
-kind = "theorem"
-desc = '''
-Example 1.2.11: point evaluation `ℓ_{x₀} v = v x₀` is continuous on `C[0, 1]`, since
-`|ℓ_{x₀} vₙ - ℓ_{x₀} v| ≤ ‖vₙ - v‖_∞`.  Not formalized: an illustration of Definition 1.2.9, and
-Mathlib has the map as `BoundedContinuousFunction.evalCLM`, continuous linear by construction.
-The book returns to it as a linear functional in Chapter 2, where this surface states it.
-'''
-
-[[node]]
-id = "example_1_2_13"
-kind = "theorem"
-desc = '''
-Example 1.2.13, inequality (1.2.6): `‖x‖_∞ ≤ ‖x‖_p ≤ d^{1/p} ‖x‖_∞` on `ℝ^d`, so all the `p`-norms
-there are equivalent.  Not formalized: an illustration of Definition 1.2.12 and a special case of
-`theorem_1_2_14`; Mathlib has the two inequalities with exactly these constants as
-`PiLp.lipschitzWith_ofLp` and `PiLp.lipschitzWith_toLp`.
-'''
-
-[[node]]
-id = "example_1_2_15"
-kind = "theorem"
-desc = '''
-Example 1.2.15: on `C[0, 1]` the norms `‖·‖_p` and `‖·‖_∞` are not equivalent — for
-`uₙ x = max (1 - n x) 0` one has `‖uₙ‖_p = [n (p + 1)]^{-1/p} → 0` while `‖uₙ‖_∞ = 1`.
-Not formalized: a counterexample illustrating that `theorem_1_2_14` fails in infinite dimension.
-It is an explicit computation with no consumer in the book, and Mathlib does not state it.
-'''
-
-[[node]]
-id = "example_1_2_16"
-kind = "theorem"
-desc = '''
-Example 1.2.16: on `C[0, 1]`, `‖v‖_p ≤ ‖v‖_∞` for every `p ∈ [1, ∞)`, so uniform convergence
-implies `Lᵖ` convergence but not conversely (Example 1.2.15).  Not formalized: this is
-`theorem_1_5_5_c`, the inclusion `L^q ⊆ Lᵖ` with constant `meas(Ω)^{1/p - 1/q}`, at `q = ∞` and
-`meas (0, 1) = 1`; the surface states the general form in §1.5 rather than this instance.
-'''
-
-[[node]]
-id = "definition_1_2_17"
-kind = "definition"
-desc = '''
-Definition 1.2.17: the series `∑_{i≥1} vᵢ` converges to `s` in a normed space when its partial sums
-`sₙ = ∑_{i≤n} vᵢ` converge to `s`.  Not formalized: this is
-`Filter.Tendsto (fun n => ∑ i ∈ Finset.range n, v i) atTop (𝓝 s)` in Mathlib, the ordered form;
-Mathlib's `HasSum` is the unordered variant, and the two agree for the unconditionally convergent
-series the book meets.
-'''
-
-[[node]]
-id = "definition_1_2_18"
-kind = "definition"
-desc = '''
-Definition 1.2.18: `V₁ ⊆ V₂` is dense in `V₂` when every `u ∈ V₂` has elements of `V₁` arbitrarily
-close to it.  Not formalized: this is Mathlib's `Dense`, with `DenseRange` for the image form,
-named in §1.2's module doc; `theorem_1_2_25` and `theorem_1_5_6` are the numbered results that use
-it.
-'''
-
-[[node]]
-id = "definition_1_2_20"
-kind = "definition"
-desc = '''
-Definition 1.2.20: (a) `V` has a countably-infinite basis, and is then called separable, when some
-sequence `(vᵢ)` admits combinations `∑_{i≤n} α_{n,i} vᵢ → v` for every `v`; (b) `V` has a Schauder
-basis `(vₙ)` when every `v` is a convergent series `∑ αₙ vₙ` with uniquely determined coefficients.
-Not formalized: these are Mathlib's `TopologicalSpace.SeparableSpace` and `SchauderBasis` — the
-latter an abbreviation for `GeneralSchauderBasis ℕ 𝕜 X (SummationFilter.conditional ℕ)` — both
-named in §1.2's module doc.
-'''
-
-[[node]]
-id = "definition_1_2_21"
-kind = "definition"
-desc = '''
-Definition 1.2.21: `(uₙ)` is a Cauchy sequence when `‖u_m - uₙ‖ → 0` as `m, n → ∞`.
-Not formalized: this is Mathlib's `CauchySeq`, named in §1.2's module doc; `proposition_1_2_23` is
-the numbered result about it.
-'''
-
-[[node]]
-id = "example_1_2_22"
-kind = "theorem"
-desc = '''
-Example 1.2.22: `C(Ω̄)` with `‖·‖_∞` is a Banach space, because a uniform limit of continuous
-functions is continuous; with `‖·‖_p`, `1 ≤ p < ∞`, it is not — the ramps rising from `0` to `1`
-across `x = 1/2` are `‖·‖_p`-Cauchy with a discontinuous limit.  Not formalized: an illustration of
-Definition 1.2.21 motivating `theorem_1_2_25`.  The positive half is Mathlib's
-`BoundedContinuousFunction.instCompleteSpace`; the negative half is an explicit counterexample with
-no consumer in the book.
-'''
-
-[[node]]
-id = "definition_1_2_24"
-kind = "definition"
-desc = '''
-Definition 1.2.24: a normed space is complete when every Cauchy sequence in it converges, and a
-complete normed space is a Banach space.  Not formalized: this is Mathlib's `CompleteSpace` beside
-`NormedAddCommGroup` and `NormedSpace`, named in §1.2's module doc.  Mathlib bundles no
-`BanachSpace`, and that hypothesis triple is what this surface carries throughout.
-'''
 
 [[node]]
 id = "example_1_2_28"
