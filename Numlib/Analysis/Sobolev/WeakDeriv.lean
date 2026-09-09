@@ -49,6 +49,13 @@ quantifying over all multi-indices of that length.
   extends the classical one.
 * `HasWeakIteratedFDerivOn.add`, `.const_smul`, `.neg`, `.sub`, `.zero`: weak differentiation is
   linear (Atkinson–Han, Proposition 7.1.10).
+* `HasWeakIteratedLineDerivOn.mul_contDiff`: the Leibniz rule for a *smooth* factor, at first
+  order (the smooth-factor case of Atkinson–Han, Proposition 7.1.11). Nothing is mollified: the
+  product of a test function with a smooth function is again a test function
+  (`TestFunction.mulContDiff`), so the identity is a direct integration by parts. The general
+  Leibniz rule, with both factors merely locally integrable, is not here.
+* `HasWeakIteratedFDerivOn.mono` and `HasWeakIteratedLineDerivOn.mono`: a weak derivative on `Ω`
+  is a weak derivative on every smaller open set.
 
 ## Implementation notes
 
@@ -126,6 +133,22 @@ theorem LocallyIntegrableOn.integrable_smul_left_of_tsupport_subset [OpensMeasur
   exact Integrable.smul_of_top_right
     ((integrable_indicator_iff hK.measurableSet).2 (hf.integrableOn_compact_subset hgs hK))
     (hg.memLp_top_of_hasCompactSupport h'g μ)
+
+/-- The product of a locally integrable real function with a continuous one is locally
+integrable: near each point the continuous factor is bounded. -/
+theorem LocallyIntegrableOn.mul_continuous [OpensMeasurableSpace X] {f g : X → ℝ}
+    (hf : LocallyIntegrableOn f s μ)
+    (hg : Continuous g) : LocallyIntegrableOn (fun x ↦ f x * g x) s μ := by
+  intro x hx
+  obtain ⟨u, hu, hfu⟩ := hf x hx
+  have hSopen : IsOpen {y | ‖g y‖ < ‖g x‖ + 1} := isOpen_lt hg.norm continuous_const
+  have hxS : x ∈ {y | ‖g y‖ < ‖g x‖ + 1} := by simp
+  refine ⟨u ∩ {y | ‖g y‖ < ‖g x‖ + 1},
+    Filter.inter_mem hu (mem_nhdsWithin_of_mem_nhds (hSopen.mem_nhds hxS)), ?_⟩
+  refine Integrable.mul_bdd (c := ‖g x‖ + 1) (hfu.mono_set inter_subset_left)
+    hg.aestronglyMeasurable.restrict ?_
+  exact ((ae_restrict_mem hSopen.measurableSet).mono fun y hy ↦ hy.le).filter_mono
+    (ae_mono (Measure.restrict_mono inter_subset_right le_rfl))
 
 /-- Composing a locally integrable function with a continuous linear map keeps it locally
 integrable. -/
@@ -249,6 +272,20 @@ theorem fderivApply_coe (φ : 𝓓(Ω, F)) (v : E) :
 
 /-- The value of `TestFunction.fderivApply` at a point. -/
 theorem fderivApply_apply (φ : 𝓓(Ω, F)) (v x : E) : φ.fderivApply v x = fderiv ℝ φ x v :=
+  rfl
+
+/-- The product of a test function with a smooth function is again a test function: it is smooth,
+and its support is contained in that of the test function. -/
+noncomputable def mulContDiff (φ : 𝓓(Ω, ℝ)) {g : E → ℝ} (hg : ContDiff ℝ ∞ g) : 𝓓(Ω, ℝ) where
+  toFun x := φ x * g x
+  contDiff' := φ.contDiff.mul hg
+  hasCompactSupport' := φ.hasCompactSupport.mul_right
+  tsupport_subset' := tsupport_mul_subset_left.trans φ.tsupport_subset
+
+/-- `TestFunction.mulContDiff` as a function. -/
+@[simp]
+theorem mulContDiff_coe (φ : 𝓓(Ω, ℝ)) {g : E → ℝ} (hg : ContDiff ℝ ∞ g) :
+    (φ.mulContDiff hg : E → ℝ) = fun x ↦ φ x * g x :=
   rfl
 
 end TestFunction
@@ -545,6 +582,26 @@ theorem congr_ae {f' w' : E → F} (h : HasWeakIteratedLineDerivOn y f w Ω μ)
     exact h.integral_smul_eq φ
 
 omit [OpensMeasurableSpace E] in
+/-- A weak derivative along a tuple of directions on `Ω` is a weak derivative along the same tuple
+on every smaller open set. -/
+theorem mono {Ω' : Opens E} (h : HasWeakIteratedLineDerivOn y f w Ω μ) (hΩ : Ω' ≤ Ω) :
+    HasWeakIteratedLineDerivOn y f w Ω' μ where
+  locallyIntegrableOn := h.locallyIntegrableOn.mono_set hΩ
+  locallyIntegrableOn_weakDeriv := h.locallyIntegrableOn_weakDeriv.mono_set hΩ
+  integral_smul_eq φ := by
+    have e1 : ∫ x in (Ω' : Set E), iteratedFDeriv ℝ n φ x y • f x ∂μ
+        = ∫ x, iteratedFDeriv ℝ n φ x y • f x ∂μ :=
+      setIntegral_eq_integral_of_forall_compl_eq_zero fun x hx ↦ by
+        rw [show iteratedFDeriv ℝ n (φ : E → ℝ) x y = 0 from
+          (φ.iteratedFDerivApply n y).eq_zero_of_notMem hx, zero_smul]
+    have e2 : ∫ x in (Ω' : Set E), φ x • w x ∂μ = ∫ x, φ x • w x ∂μ :=
+      setIntegral_eq_integral_of_forall_compl_eq_zero fun x hx ↦ by
+        rw [φ.eq_zero_of_notMem hx, zero_smul]
+    rw [e1, e2]
+    exact h.integral_smul_eq' ⟨φ, φ.contDiff, φ.hasCompactSupport,
+      φ.tsupport_subset.trans hΩ⟩
+
+omit [OpensMeasurableSpace E] in
 /-- The zero function has zero weak derivative along every tuple of directions. -/
 protected theorem zero : HasWeakIteratedLineDerivOn y (0 : E → F) 0 Ω μ where
   locallyIntegrableOn := locallyIntegrable_zero.locallyIntegrableOn _
@@ -603,6 +660,60 @@ protected theorem sub {f₁ f₂ w₁ w₂ : E → F} (h₁ : HasWeakIteratedLin
     (h₂ : HasWeakIteratedLineDerivOn y f₂ w₂ Ω μ) :
     HasWeakIteratedLineDerivOn y (f₁ - f₂) (w₁ - w₂) Ω μ := by
   simpa only [sub_eq_add_neg] using h₁.add h₂.neg
+
+/-- **The Leibniz rule for a smooth factor**: if `w` is a weak derivative of `f` along a tuple of
+one direction on `Ω` and `g` is smooth, then `f g` has the weak derivative `w g + f ∂g` along the
+same direction, `∂g` being the classical derivative of `g` in that direction. Only one factor is
+smooth here; Atkinson and Han, *Theoretical Numerical Analysis: A Functional Analysis Framework*,
+3rd edition, Proposition 7.1.11 allows both factors to be merely locally integrable with locally
+integrable weak derivatives, which needs mollification in `L^p` and is not proved here. -/
+theorem mul_contDiff {m : ℕ} {f' w' : E → ℝ} {y' : Fin m → E} {Ω : Opens E} {μ : Measure E}
+    (h : HasWeakIteratedLineDerivOn y' f' w' Ω μ) (hm : m = 1) {g : E → ℝ}
+    (hg : ContDiff ℝ ∞ g) :
+    HasWeakIteratedLineDerivOn y' (fun x ↦ f' x * g x)
+      (fun x ↦ w' x * g x + f' x * iteratedFDeriv ℝ m g x y') Ω μ := by
+  subst hm
+  simp only [iteratedFDeriv_one_apply]
+  have hgd : ContDiff ℝ ∞ fun x ↦ fderiv ℝ g x (y' 0) :=
+    (hg.fderiv_right (m := ∞) le_rfl).clm_apply contDiff_const
+  refine ⟨h.locallyIntegrableOn.mul_continuous hg.continuous,
+    (h.locallyIntegrableOn_weakDeriv.mul_continuous hg.continuous).add
+      (h.locallyIntegrableOn.mul_continuous hgd.continuous), fun φ ↦ ?_⟩
+  set ψ : 𝓓(Ω, ℝ) := φ.mulContDiff hg with hψ
+  set χ : 𝓓(Ω, ℝ) := φ.mulContDiff hgd with hχ
+  set θ : 𝓓(Ω, ℝ) := (φ.fderivApply (y' 0)).mulContDiff hg with hθ
+  have hexp : ∀ x, iteratedFDeriv ℝ 1 (ψ : E → ℝ) x y' = χ x + θ x := by
+    intro x
+    rw [iteratedFDeriv_one_apply]
+    change fderiv ℝ (fun z ↦ φ z * g z) x (y' 0) = φ x * fderiv ℝ g x (y' 0)
+      + fderiv ℝ (φ : E → ℝ) x (y' 0) * g x
+    rw [fderiv_fun_mul (φ.contDiff.differentiable (by simp) x) (hg.differentiable (by simp) x)]
+    simp only [add_apply, smul_apply, smul_eq_mul]
+    ring
+  have Iχ := (h.integrable_smul χ).integrableOn (s := (Ω : Set E))
+  have Iθ := (h.integrable_smul θ).integrableOn (s := (Ω : Set E))
+  have Iψ := (h.integrable_smul_weakDeriv ψ).integrableOn (s := (Ω : Set E))
+  have e1 : ∫ x in (Ω : Set E), iteratedFDeriv ℝ 1 (ψ : E → ℝ) x y' • f' x ∂μ
+      = (∫ x in (Ω : Set E), χ x • f' x ∂μ) + ∫ x in (Ω : Set E), θ x • f' x ∂μ := by
+    rw [← integral_add Iχ Iθ]
+    exact integral_congr_ae (Filter.Eventually.of_forall fun x ↦ by
+      simp only [hexp x, add_smul])
+  have e2 : ∫ x in (Ω : Set E), φ x • (w' x * g x + f' x * fderiv ℝ g x (y' 0)) ∂μ
+      = (∫ x in (Ω : Set E), ψ x • w' x ∂μ) + ∫ x in (Ω : Set E), χ x • f' x ∂μ := by
+    rw [← integral_add Iψ Iχ]
+    exact integral_congr_ae (Filter.Eventually.of_forall fun x ↦ by
+      simp only [hψ, hχ, TestFunction.mulContDiff_coe, smul_eq_mul]; ring)
+  have e3 : ∫ x in (Ω : Set E), iteratedFDeriv ℝ 1 (φ : E → ℝ) x y' • (f' x * g x) ∂μ
+      = ∫ x in (Ω : Set E), θ x • f' x ∂μ :=
+    integral_congr_ae (Filter.Eventually.of_forall fun x ↦ by
+      simp only [hθ, TestFunction.mulContDiff_coe, TestFunction.fderivApply_coe,
+        iteratedFDeriv_one_apply, smul_eq_mul]
+      ring)
+  have key := h.integral_smul_eq ψ
+  rw [e1] at key
+  rw [e3, e2]
+  simp only [pow_one, neg_one_smul] at key ⊢
+  linarith [key]
 
 variable [FiniteDimensional ℝ E] [BorelSpace E] [CompleteSpace F]
 
