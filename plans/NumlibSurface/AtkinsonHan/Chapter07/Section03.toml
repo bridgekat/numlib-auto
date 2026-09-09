@@ -1,27 +1,4 @@
 namespace = "AtkinsonHan.Chapter07"
-desc = '''
-Atkinson-Han §7.3, the structural theorems of Sobolev spaces on a domain: density of smooth
-functions (§7.3.1), the extension operator (§7.3.2), the continuous and compact embeddings
-(§7.3.3), the trace and the generalized normal derivative (§7.3.4), the Deny-Lions norm
-equivalences with Poincare-Friedrichs (§7.3.5), and the quotient space `W^{k+1,p}(Ω)/ℙ_k(Ω)` with
-the Bramble-Hilbert estimate (§7.3.6).
-
-**This section is the obstruction that excludes the chapter.** Unlike §7.1, §7.2 and §7.4, which
-are writable today and merely unconsumed, nothing here is within reach: Mathlib has no Sobolev
-space on an open set and therefore none of its density theory, no extension operator, no
-Gagliardo-Nirenberg-Sobolev on a domain (`SobolevInequality.lean` covers only compactly supported
-`C^1` functions on the whole space), no Rellich-Kondrachov, no surface measure on a Lipschitz
-boundary and hence no trace, and no Poincare or Friedrichs inequality. Each of the four -- density,
-extension, embedding, trace -- is a substantial analysis project on its own, and the norm
-equivalences of §7.3.5 and §7.3.6 rest on the compact embedding 7.3.9 on top of them.
-
-The book itself states almost all of §7.3.1-§7.3.4 without proof, citing [78] for the density and
-embedding theorems, Stein [211] for the extension operator, and [98] for the normal-derivative
-traces; §7.3.5 and §7.3.6 it does prove, by contradiction from compactness.
-
-These results are what §8.1, §8.4, §8.5, §8.8, chapter 10 and chapter 13 would need, and their
-absence is why those chapters state their Sobolev hypotheses abstractly.
-'''
 
 [[node]]
 id = "theorem_7_3_1"
@@ -45,12 +22,6 @@ deps = ["definition_7_2_1", "theorem_7_3_1"]
 
 [[node]]
 id = "theorem_7_3_3"
-kind = "theorem"
-desc = '''Theorem 7.3.3: every `v ∈ W_0^{k,p}(Ω)` is the `W^{k,p}` limit of a sequence in
-`C_0^∞(Ω)`. Not formalized: it restates Definition 7.2.9, which is unwritten; and the definition
-itself is unwritten because `W^{k,p}(Ω)` has no theory in Mathlib -- §7.3 is the chapter's
-obstruction.'''
-deps = ["definition_7_2_9"]
 
 [[node]]
 id = "theorem_7_3_4"
@@ -75,14 +46,12 @@ deps = ["definition_7_2_1", "theorem_7_3_2"]
 
 [[node]]
 id = "definition_7_3_6"
-kind = "definition"
-desc = '''Definition 7.3.6: for Banach spaces `V ⊆ W`, `V ↪ W` (continuously embedded) means
-`‖v‖_W ≤ c ‖v‖_V` for all `v ∈ V` (7.3.1), and `V ↪↪ W` (compactly embedded) means additionally
-that every bounded sequence in `V` has a subsequence converging in `W`. Not formalized: unlike the
-rest of §7.3 this is pure functional analysis -- the continuous half is a bounded inclusion map and
-the compact half is Mathlib's `IsCompactOperator` applied to it -- but it is introduced only to
-state Theorems 7.3.7-7.3.9, which are the missing Sobolev embeddings, so it has nothing to say
-here on its own.'''
+
+[[node]]
+id = "definition_7_3_6_compact"
+
+[[node]]
+id = "definition_7_3_6_of_compact"
 
 [[node]]
 id = "theorem_7_3_7"
@@ -107,7 +76,7 @@ desc = '''Theorem 7.3.8 (compact Sobolev embedding, Rellich-Kondrachov) on a Lip
 `k > d/p`. Not formalized: Rellich-Kondrachov has no Mathlib counterpart (`Rellich`, `Kondrachov`
 have zero occurrences), and it rests on Theorem 7.3.7 and the extension operator 7.3.5, neither of
 which exists here. The book states it without proof.'''
-deps = ["definition_7_3_6", "theorem_7_3_7", "theorem_7_3_5"]
+deps = ["definition_7_3_6_compact", "theorem_7_3_7", "theorem_7_3_5"]
 
 [[node]]
 id = "theorem_7_3_9"
@@ -116,7 +85,7 @@ desc = '''Theorem 7.3.9: for integers `k > l ≥ 0`, `p ∈ [1,∞]` and `Ω ⊆
 bounded Lipschitz domain, `W^{k,p}(Ω) ↪↪ W^{l,p}(Ω)`. This is the compactness that every norm
 equivalence in §7.3.5 and §7.3.6 uses. Not formalized: a direct consequence of Theorem 7.3.8,
 which is itself out of reach -- it is the Rellich-Kondrachov compactness, absent from Mathlib.'''
-deps = ["definition_7_3_6", "theorem_7_3_8"]
+deps = ["definition_7_3_6_compact", "theorem_7_3_8"]
 
 [[node]]
 id = "theorem_7_3_10"

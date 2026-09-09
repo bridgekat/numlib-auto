@@ -33,6 +33,7 @@ import Numlib.Analysis.Normed.Module.WeakDual
 import Numlib.Analysis.Normed.Operator.BanachSteinhaus
 import Numlib.Analysis.Normed.Operator.CollectivelyCompact
 import Numlib.Analysis.Normed.Operator.Compact
+import Numlib.Analysis.Normed.Operator.Embedding
 import Numlib.Analysis.Normed.Operator.Riesz
 import Numlib.Analysis.Normed.Operator.Scaling
 import Numlib.Analysis.Normed.Ring.CondNumber

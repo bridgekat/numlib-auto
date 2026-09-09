@@ -1,0 +1,17 @@
+[[node]]
+id = "IsContinuousEmbedding"
+
+[[node]]
+id = "IsContinuousEmbedding.toContinuousLinearMap"
+
+[[node]]
+id = "IsCompactEmbedding"
+
+[[node]]
+id = "isContinuousEmbedding_iff_continuous"
+
+[[node]]
+id = "isCompactEmbedding_iff_isCompactOperator"
+
+[[node]]
+id = "IsCompactEmbedding.isCompactOperator"
