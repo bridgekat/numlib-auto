@@ -41,6 +41,7 @@ Not formalized: it is Theorem 10.4.1 on a concrete domain, so it needs `H¹₀(�
 element subspaces of it — both among the results the chapter's group description lists as
 needing Sobolev theory.
 '''
+deps = ["theorem_10_4_1", "AtkinsonHan.Chapter08.example_8_3_5"]
 
 [[node]]
 id = "theorem_10_4_1"
@@ -55,3 +56,4 @@ element spaces in `H¹`; the abstract convergence statement is already
 `Chapter09.corollary_9_1_4`, so what is missing is Sobolev, as the chapter's group description
 records.
 '''
+deps = ["theorem_10_3_9", "AtkinsonHan.Chapter09.corollary_9_1_4"]

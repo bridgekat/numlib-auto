@@ -29,3 +29,4 @@ the concavity is strict; (f) and (g) may be replaced by the sup/inf forms (f)' a
 Not formalized: the hypotheses cannot be stated — Mathlib has no reflexivity class for Banach
 spaces and no Eberlein-Smulian theorem, so the weak compactness the proof needs is unavailable;
 the book states the theorem without proof, citing Ekeland-Temam.'''
+deps = ["IsSaddlePoint", "AtkinsonHan.Chapter02.definition_2_7_4", "AtkinsonHan.Chapter02.theorem_2_7_5"]

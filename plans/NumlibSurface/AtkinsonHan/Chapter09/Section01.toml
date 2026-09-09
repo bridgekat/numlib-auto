@@ -59,6 +59,7 @@ rapidly with `N`, so this natural-looking basis is a poor one. Not formalized: t
 posed on `H¹₀(0, 1)`, which needs the §7.3 Sobolev theory Mathlib does not have, and the
 conditioning half is a numerical table; the entry formula alone is a polynomial computation that
 would stand on its own if anyone wanted it without the boundary value problem.'''
+deps = ["GalerkinProblem", "stiffnessMatrix", "AtkinsonHan.Chapter07.definition_7_2_9", "AtkinsonHan.Chapter07.example_7_3_15"]
 
 [[node]]
 id = "Chapter09.example_9_1_2"
@@ -72,3 +73,4 @@ Green kernel. Not formalized: the problem is posed on
 `H¹₀(0, 1)`, which needs the §7.3 Sobolev theory Mathlib does not have; the orthogonality
 computation is elementary, and the full kernel expansion the example truncates is
 `Chapter09.exercise_9_1_3`, which is proved.'''
+deps = ["GalerkinProblem", "Chapter09.exercise_9_1_3", "AtkinsonHan.Chapter07.definition_7_2_9", "AtkinsonHan.Chapter07.example_7_3_15"]

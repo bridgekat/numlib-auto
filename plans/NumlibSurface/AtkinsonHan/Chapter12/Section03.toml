@@ -66,3 +66,4 @@ obstruction. Both are asserted by the book without proof -- "it is straightforwa
 None of the three is deep, and none is in the library. Its general content -- the iterated
 projection solution and its error identity -- is `lemma_12_3_1` and the rest of §12.3.
 '''
+deps = ["lemma_12_3_1", "equation_12_3_11", "AtkinsonHan.Chapter12.equation_12_1_24", "piecewiseLinearProjCLM", "norm_sub_piecewiseLinearProjCLM_le", "IntegralOperator.norm_kernelCLM"]

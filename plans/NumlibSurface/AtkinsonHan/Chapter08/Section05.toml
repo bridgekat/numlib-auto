@@ -18,3 +18,4 @@ g · v` for all `v ∈ V` — has a unique solution, equivalent to minimizing th
 Not formalized: the book leaves the proof to Exercise 8.5.3 (apply Lax-Milgram), and the
 `V`-ellipticity step needs Korn's inequality on a Lipschitz domain, alongside `[H¹(Ω)]^d`, the
 trace on `Γ_D` and surface measure on `Γ_N`; none of these exists in Mathlib.'''
+deps = ["AtkinsonHan.Chapter08.theorem_8_3_4", "AtkinsonHan.Chapter07.theorem_7_3_10", "AtkinsonHan.Chapter07.definition_7_2_2_multiIndex"]

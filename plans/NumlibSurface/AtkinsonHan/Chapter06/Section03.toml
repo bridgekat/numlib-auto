@@ -38,6 +38,7 @@ then gives `max_m ‖u^m - v^m‖ ≤ c(h_x² + h_t)` in the maximum norm and in
 concrete heat-equation instance of `theorem_6_3_2'`, needing a classical solution of the
 initial-boundary value problem to Taylor-expand — the book assumes one exists — and, for the
 `‖·‖_{2,h_x}` half, the Toeplitz spectrum of `exercise_6_3_1`, which is itself open.'''
+deps = ["theorem_6_3_2'", "exercise_6_3_1", "AtkinsonHan.Chapter06.example_6_2_4"]
 
 [[node]]
 id = "example_6_3_4"
@@ -49,3 +50,4 @@ Diagonal dominance gives `‖Q‖_∞ ≤ 1` directly, and `λ_j(Q₁) = 1 + 4r 
 `‖τ^m‖ ≤ ‖τ̄^m‖`, Theorem 6.3.2 gives `max_m ‖u^m - v^m‖ ≤ c(h_x² + h_t)` in both norms, again of
 order 2 in `h_x` and 1 in `h_t`. Not formalized: as for Example 6.3.3 — a classical solution of
 the heat equation to Taylor-expand, and the Toeplitz spectrum of `exercise_6_3_1`.'''
+deps = ["theorem_6_3_2'", "exercise_6_3_1", "example_6_3_3"]

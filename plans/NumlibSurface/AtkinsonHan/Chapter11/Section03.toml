@@ -48,6 +48,7 @@ simplified friction problem — shows it has a unique solution. Not formalized: 
 `theorem_11_3_9` instantiated on `H¹(Ω)` with `j v = g ∫_Γ |v| ds`, so it needs a Sobolev space and
 a trace on `Γ`; §11.3's module doc lists it beside Example 11.3.10 for that reason.
 '''
+deps = ["theorem_11_3_9", "example_11_2_4"]
 
 [[node]]
 id = "example_11_3_10"
@@ -60,6 +61,7 @@ space; §11.3's module doc lists it beside Example 11.3.11 for that reason. Bewa
 `exercise_11_3_10` is Exercise 11.3.10, on a positively homogeneous `j`, a different result with
 the same number, and it is formalized.
 '''
+deps = ["theorem_11_3_9", "example_11_2_3"]
 
 [[node]]
 id = "theorem_11_3_12"
@@ -73,3 +75,4 @@ Not formalized: it needs `W^{2,p}(Ω)` and `L^p(Ω)` on a `C^{1,1}` domain and t
 theory behind them, and the book gives no proof, citing Brezis–Stampacchia and Gilbarg–Trudinger
 Theorem 9.14; the chapter's group description records the same.
 '''
+deps = ["example_11_3_10", "AtkinsonHan.Chapter07.definition_7_2_2_multiIndex"]

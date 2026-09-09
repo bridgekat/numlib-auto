@@ -18,3 +18,4 @@ this is what makes `ā([u], [v]) = ∫_Ω ∇u · ∇v` elliptic on `V` and so g
 problem a unique solution. Not formalized: it needs `H¹(Ω)` on an open set and the Deny-Lions
 norm-equivalence theorem (AH Theorem 7.3.12), whose proof rests on Rellich-Kondrachov compactness;
 Mathlib has neither.'''
+deps = ["AtkinsonHan.Chapter07.theorem_7_3_12", "AtkinsonHan.Chapter07.definition_7_2_2_multiIndex"]

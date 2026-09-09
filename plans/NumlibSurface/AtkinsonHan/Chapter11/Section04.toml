@@ -37,6 +37,7 @@ a regular partition. An integration by parts turns the residual into
 `theorem_11_4_2` on a domain, needing the trace and the normal derivative on `Γ` and the finite
 element interpolation estimates of §10.3; §11.4's module doc records the same.
 '''
+deps = ["theorem_11_4_2", "example_11_3_11", "AtkinsonHan.Chapter10.theorem_10_3_9"]
 
 [[node]]
 id = "example_11_4_3"
@@ -52,6 +53,7 @@ interpolation estimates of §10.3; §11.4's module doc records the same. Beware 
 `exercise_11_4_3` is Exercise 11.4.3, the regularization bound (11.4.20), a different result with
 the same number, and it is formalized.
 '''
+deps = ["theorem_11_4_2", "example_11_3_10", "AtkinsonHan.Chapter10.theorem_10_3_9"]
 
 [[node]]
 id = "theorem_11_4_5"
@@ -65,3 +67,4 @@ on `Γ`; the Lagrange multiplier `λ` is unique. Not formalized: the proof runs 
 `(L¹(Γ))' = L^∞(Γ)`, and Mathlib has neither the trace space nor the surface measure on `Γ`; the
 chapter's group description records the same, and Exercise 11.4.4 is a second proof of it.
 '''
+deps = ["example_11_3_11", "AtkinsonHan.Chapter07.theorem_7_3_10"]

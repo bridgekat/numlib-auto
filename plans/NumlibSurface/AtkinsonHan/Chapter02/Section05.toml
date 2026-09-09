@@ -40,6 +40,7 @@ keeps the bounds `m ≤ ℓ̂_c([v]) ≤ M` from a neighbourhood of `c` and agre
 of continuity. Not formalized: its point is that `ℓ̂_c` lies in `(L^∞)'` outside `L¹`, which needs
 the `Lᵖ` duality of Example 2.5.1 to have content, as §2.5's module doc records; the extension
 step itself is `theorem_2_5_2`.'''
+deps = ["theorem_2_5_2", "example_2_5_1"]
 
 [[node]]
 id = "example_2_5_9"
@@ -50,3 +51,4 @@ less obviously, gives for `ℓ(v) = v(c)` on `H¹(a, b)` a representer `u` solvi
 `-u'' + u = δ(x - c)`. Not formalized: the `L²` half is `theorem_2_5_8` read on `L²(Ω)`, and the
 `H¹(a, b)` half needs Sobolev spaces on an interval, which `notes/backbone.md` §1.7 puts out of
 scope, as §2.5's module doc records.'''
+deps = ["theorem_2_5_8", "example_2_4_2"]

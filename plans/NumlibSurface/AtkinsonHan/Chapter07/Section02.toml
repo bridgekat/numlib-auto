@@ -51,6 +51,7 @@ desc = '''Example 7.2.5: on the unit ball of `ℝ^d`, `v(x) = |x|^λ` satisfies 
 `p ∈ [1,2)` there are `W^{1,p}` functions that are not continuous. The book leaves (7.2.1) to
 Exercise 7.2.7. Not formalized: a radial integrability computation over Definition 7.2.2, which
 exists now; unwritten because nothing in the corpus consumes it while §7.3 is missing.'''
+deps = ["definition_7_2_2_multiIndex"]
 
 [[node]]
 id = "example_7_2_6"
@@ -59,6 +60,7 @@ desc = '''Example 7.2.6: on `Ω = B(0,β) ⊆ ℝ^2` with `β < 1`, `v(x) = log(
 `∫_Ω |∇v|^2 = -2π/log β < ∞` and `‖v‖_{L^2(Ω)} < ∞`, so `v ∈ H^1(Ω)` while `v` is unbounded at the
 origin: an `H^1` function in the plane need not be continuous. Not formalized: an explicit integral
 over Definition 7.2.2, which exists now; unwritten for want of a consumer while §7.3 is missing.'''
+deps = ["definition_7_2_2_multiIndex"]
 
 [[node]]
 id = "example_7_2_7"
@@ -69,6 +71,7 @@ desc = '''Example 7.2.7: if a bounded Lipschitz `Ω` is partitioned into Lipschi
 Not formalized: the proof integrates by parts on each `Ω_n` and cancels the interface integrals
 `∫_{∂Ω_n} v φ ν_i`, so it needs surface measure on a Lipschitz boundary and the integration by
 parts formula of §7.6, which rests on the trace of Theorem 7.3.10.'''
+deps = ["definition_7_2_1", "definition_7_2_2_multiIndex", "proposition_7_6_1"]
 
 [[node]]
 id = "example_7_2_8"
@@ -78,6 +81,7 @@ desc = '''Example 7.2.8: the converse of Example 7.2.7 -- if `v ∈ W^{k+1,p}(Ω
 `v ∈ C^k(closure Ω) ↔ v ∈ W^{k+1,p}(Ω)` under element-wise regularity. Not formalized: the
 argument produces a nonzero interface integral `∫_γ (v|_{Ω_{n₁}} - v|_{Ω_{n₂}}) φ ν_i`, so it
 needs surface measure on a Lipschitz boundary and the trace of Theorem 7.3.10.'''
+deps = ["example_7_2_7", "proposition_7_6_1"]
 
 [[node]]
 id = "definition_7_2_9"
@@ -92,6 +96,7 @@ book states without proof that it is Banach, reflexive exactly for `p ∈ (1,∞
 `p = 2`. Not formalized: a double integral over Definition 7.2.2, which exists now, but the book
 introduces these spaces solely to state the trace theorems and Definition 7.2.13, both of which are
 §7.3 material.'''
+deps = ["definition_7_2_2_multiIndex"]
 
 [[node]]
 id = "definition_7_2_11"
@@ -101,6 +106,7 @@ desc = '''Definition 7.2.11: for `s ≥ 0`, `W_0^{s,p}(Ω)` is the closure of `C
 Definition 7.2.9, which is formalized for integer `s`. For genuinely real `s` there is still no
 `W^{s,p}(Ω)` to take a closure in, since Definition 7.2.10 is unwritten; and the point of the space
 is to carry boundary conditions, which needs the trace of §7.3.'''
+deps = ["definition_7_2_10", "definition_7_2_9"]
 
 [[node]]
 id = "definition_7_2_12"
@@ -113,6 +119,7 @@ space is Mathlib's `NormedSpace.Dual` once Definition 7.2.11 exists. For integer
 waits on is now available -- Theorem 7.2.3 and Definition 7.2.9 -- so only the real-order case,
 which needs Definition 7.2.10, is still blocked; it is unwritten because nothing in the corpus
 consumes the dual before §7.3.'''
+deps = ["definition_7_2_11"]
 
 [[node]]
 id = "definition_7_2_13"
@@ -123,3 +130,4 @@ W^{s,p}(D_i)}` with `‖v‖ = max_i ‖v ∘ g_i‖_{W^{s,p}(D_i)}`; `H^s(∂Ω
 `H^{1/2}(∂Ω)` is the one used later. Not formalized: this needs surface measure on a Lipschitz
 boundary before `L^2(∂Ω)` is even definable, plus the patch system and the independence of the
 norm from it; Mathlib has none of that.'''
+deps = ["definition_7_2_1", "definition_7_2_10"]

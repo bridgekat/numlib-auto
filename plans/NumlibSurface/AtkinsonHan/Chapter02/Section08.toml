@@ -136,3 +136,4 @@ spherical harmonics, with `K φ_k = 4π/(2k + 1) φ_k` (2.8.34) and `dim N(μ_k 
 formalized: the book states it without proof, citing Mikhlin for the compactness, and it needs both
 the surface measure of the sphere as an integration theory — Mathlib has `Measure.toSphere` but no
 integration formula in this shape — and spherical harmonics, of which Mathlib has none.'''
+deps = ["theorem_2_8_15", "isCompactOperator_of_isAdmissibleKernel"]

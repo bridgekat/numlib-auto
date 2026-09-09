@@ -47,6 +47,7 @@ solution is `u(x, t) = Σ_{j ≤ n} b_j e^{-ν j² t} sin(jx)` (6.2.7), and the 
 the problem is well posed. Not formalized: the bound is read off the maximum principle for the
 heat equation, which the book quotes from a partial differential equations text and for which
 Mathlib has no parabolic theory.'''
+deps = ["IsWellPosed", "solutionOperator"]
 
 [[node]]
 id = "example_6_2_8"
@@ -60,6 +61,7 @@ bounded, and Taylor expansion of the smooth solution (6.2.7) gives
 `‖C(Δt)‖ ≤ 1` whatever `r`. Not formalized: the consistency half Taylor-expands the solution of
 Example 6.2.4, so it carries the same heat-equation theory Mathlib lacks, and the book's
 presentation does not separate the norm bound (6.2.8) from it.'''
+deps = ["example_6_2_4", "IsConsistent", "IsStable"]
 
 [[node]]
 id = "example_6_2_13"
@@ -71,3 +73,4 @@ is necessary too (Exercise 6.2.3), so the scheme is conditionally stable and con
 convergent, while the backward scheme is unconditionally stable and convergent. Not formalized:
 it is the heat-equation instance of `theorem_6_2_11` and rests wholly on Examples 6.2.4 and 6.2.8,
 which are not formalized either.'''
+deps = ["example_6_2_8", "theorem_6_2_11", "corollary_6_2_12"]

@@ -32,6 +32,7 @@ holds for `m = 0` and `m = 1`. Not formalized: it is Corollary 10.3.7 instantiat
 that corollary's `H²(K)` norm and seminorm, which is one of the results the chapter's group
 description lists as needing Sobolev theory.
 '''
+deps = ["corollary_10_3_7"]
 
 [[node]]
 id = "theorem_10_3_3"
@@ -46,6 +47,7 @@ open set of `ℝ^d`; the chapter's group description lists it first among the So
 Beware the near-match: `exercise_10_3_3` is Exercise 10.3.3, the angle criterion for regularity, a
 different result with the same number, and it *is* formalized.
 '''
+deps = ["AtkinsonHan.Chapter07.theorem_7_3_17", "AtkinsonHan.Chapter07.theorem_7_3_7", "AtkinsonHan.Chapter07.definition_7_2_2_multiIndex"]
 
 [[node]]
 id = "theorem_10_3_4"
@@ -58,6 +60,7 @@ if `v̂ = v ∘ F_K ∈ H^m(K̂)`, and (10.3.5)–(10.3.6) hold,
 `H^m` seminorm under an affine change of variables, so it needs the weak derivative on an open set
 of `ℝ^d`, which Mathlib does not have; the chapter's group description lists it.
 '''
+deps = ["AtkinsonHan.Chapter07.definition_7_2_2_multiIndex"]
 
 [[node]]
 id = "theorem_10_3_5"
@@ -69,6 +72,7 @@ every `v ∈ H^{k+1}(K)`, with `c` depending only on `K̂` and `Π̂`. Not forma
 10.3.1 combined with Theorems 10.3.3 and 10.3.4 and Lemma 10.2.2, and inherits their `H^m`
 seminorms; the chapter's group description lists it.
 '''
+deps = ["theorem_10_3_1", "theorem_10_3_3", "theorem_10_3_4", "lemma_10_2_2"]
 
 [[node]]
 id = "corollary_10_3_7"
@@ -81,6 +85,7 @@ regularity turns the `h_K` and `ρ_K` of (10.3.7) into a bound in `h_K` alone. N
 Theorem 10.3.5 read on a regular family, so it inherits the same `H^{k+1}(K)` obstruction;
 `IsRegularFamily`, the Definition 10.3.6 half of its hypotheses, is formalized here.
 '''
+deps = ["theorem_10_3_5", "IsRegularFamily"]
 
 [[node]]
 id = "theorem_10_3_9"
@@ -93,3 +98,4 @@ independent of `h`. Not formalized: on top of Corollary 10.3.7 it needs the addi
 norm over a triangulation of `Ω`, hence both a Sobolev space and a triangulation scaffold; the
 chapter's group description lists it.
 '''
+deps = ["corollary_10_3_7"]

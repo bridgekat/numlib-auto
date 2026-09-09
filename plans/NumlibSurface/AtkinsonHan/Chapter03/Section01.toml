@@ -37,3 +37,4 @@ that determinant is the one the classical proof computes. What is still missing,
 5. The `if` direction then closes against the density of the polynomials in `L^2(0, 1)` (from
    Theorem 3.1.1 and the density of `C[0,1]` in `L^2`); the `only if` direction is 3 and 4 read
    backwards at any `l` outside the sequence.'''
+deps = ["theorem_3_1_1", "Matrix.det_cauchy", "Matrix.det_cauchy_ne_zero"]

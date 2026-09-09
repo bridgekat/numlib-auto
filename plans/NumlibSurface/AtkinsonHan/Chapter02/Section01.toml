@@ -50,6 +50,7 @@ desc = '''Example 2.1.4: the differentiation operator `d/dx : C¹[0, 1] ⊆ C[0,
 surjective and not injective, its null set being the constant functions. Not formalized: the
 operator is read on the domain `C¹[0, 1]`, which Mathlib does not have as a space, and §2.1's
 module doc records the exclusion; the book itself only says the surjectivity "can be verified".'''
+deps = ["definition_2_1_1", "definition_2_1_1_surjective"]
 
 [[node]]
 id = "example_2_1_5"
@@ -58,3 +59,4 @@ desc = '''Example 2.1.5: `D : v ↦ (v', v(0))` is a bijection from `C¹[0, 1]` 
 `C[0, 1] × ℝ`, repairing the non-injectivity of `d/dx` of Example 2.1.4. Not formalized: like
 Example 2.1.4 it is read on `C¹[0, 1]`, which Mathlib does not have as a space, and §2.1's module
 doc records the exclusion.'''
+deps = ["definition_2_1_1_bijection", "example_2_1_4"]

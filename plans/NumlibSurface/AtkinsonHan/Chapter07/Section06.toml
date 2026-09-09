@@ -21,3 +21,4 @@ passing to the limit, and notes the extension to `u ∈ W^{1,p}(Ω)`, `v ∈ W^{
 formalized: the boundary integral needs surface measure on a Lipschitz boundary -- Mathlib's
 divergence theorem is for boxes -- and the limit passage needs the density of Theorem 7.3.2 and
 the continuity of the trace of Theorem 7.3.10, none of which exist.'''
+deps = ["theorem_7_3_2", "theorem_7_3_10"]

@@ -153,3 +153,4 @@ clauses out of scope.  Clause (a) needs `Cᵐ[a, b]` as a normed space, which Ma
 it has `C(X, ℝ)` for compact `X`, hence only `m = 0`; clause (b) needs Sobolev spaces on an
 interval, and Mathlib has no weak derivative there.
 '''
+deps = ["example_1_2_5", "definition_1_2_8"]

@@ -29,3 +29,4 @@ same pattern. Not formalized: the incomplete Gram-Schmidt side is built — `img
 `proposition_10_17` — but there is no incomplete Cholesky factorization in the library, no `IsIC`
 companion to `Matrix.IsILU` for the other side of the identity, and Saad states the theorem without
 proof, citing the literature. §10.8's module doc records the same.'''
+deps = ["proposition_10_17", "imgsLMat", "Matrix.IsILU"]

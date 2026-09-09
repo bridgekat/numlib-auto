@@ -23,6 +23,7 @@ gives the minimization problem (11.1.6), and with it the variational inequality 
 one solution. Not formalized: it is `theorem_11_2_2` on a domain and needs `H¹₀(Ω)`; §11.2's module
 doc records the same.
 '''
+deps = ["theorem_11_2_2", "example_11_1_1"]
 
 [[node]]
 id = "example_11_2_4"
@@ -33,3 +34,4 @@ variational inequality (11.1.13) on `V = H¹(Ω)`, with the boundary functional 
 exactly one solution. Not formalized: it is `theorem_11_2_2` on a domain, and its `j` needs the
 trace of an `H¹(Ω)` function and the surface measure on `Γ`; §11.2's module doc records the same.
 '''
+deps = ["theorem_11_2_2", "example_11_1_2"]

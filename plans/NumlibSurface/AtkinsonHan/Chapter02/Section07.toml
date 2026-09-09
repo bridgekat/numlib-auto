@@ -44,6 +44,7 @@ double dual) and no Banach–Alaoglu in a form that would give it; where the boo
 (Theorems 3.3.8, 3.3.10, 3.3.12, 3.3.14) the surface assumes the right-hand property directly, as
 the backbone's class `WeaklySeqCompactSpace` of `Numlib/Variational/WeakMinimization`. §2.7's
 module doc records this.'''
+deps = ["definition_2_7_4", "definition_2_7_6"]
 
 [[node]]
 id = "definition_2_7_6"

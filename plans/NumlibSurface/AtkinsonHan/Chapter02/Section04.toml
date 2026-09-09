@@ -40,3 +40,4 @@ desc = '''Example 2.4.2: the differentiation operator `D : C¹[0, 1] → L²(0, 
 completion of `C¹[0, 1]` in that norm. Not formalized: it needs Sobolev spaces on an interval,
 which `notes/backbone.md` §1.7 puts out of scope — Mathlib has no weak derivative on an open
 subset of `ℝ` — as §2.4's module doc records.'''
+deps = ["theorem_2_4_1"]

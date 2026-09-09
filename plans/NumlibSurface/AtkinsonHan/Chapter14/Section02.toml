@@ -91,6 +91,7 @@ book's own (2.2.8) -- but the `O(n)` bound on that integral is an estimate on Ja
 through the closed form (14.2.14)-(14.2.15) of the reproducing kernel, and Mathlib has neither
 Jacobi nor Gegenbauer polynomials. The chapter group's desc records the same.
 '''
+deps = ["equation_14_2_12", "IntegralOperator.norm_kernelCLM"]
 
 [[node]]
 id = "theorem_14_2_5"
@@ -107,3 +108,4 @@ Not formalized: it is literally `equation_14_2_13` -- the quasi-optimality
 which are out of reach; the combination is one line and becomes available the moment they do. The
 chapter group's desc records the same.
 '''
+deps = ["theorem_14_2_4", "equation_14_2_13", "AtkinsonHan.Chapter14.theorem_14_1_1"]

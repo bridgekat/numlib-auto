@@ -70,6 +70,7 @@ one is the layer-potential machinery the rest of §13.1 is skipped for -- Green'
 piecewise smooth region and the jump relations, neither of which Mathlib supports, since it has no
 surface measure and no normal field on a curve. The chapter group's desc records the same.
 '''
+deps = ["theorem_13_1_2"]
 
 [[node]]
 id = "theorem_13_1_2"

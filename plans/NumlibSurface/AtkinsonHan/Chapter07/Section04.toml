@@ -26,6 +26,7 @@ symbol inequality of Exercise 7.4.2. Not formalized: statable today over Mathlib
 `TemperedDistribution.MemSobolev s 2` (`memSobolev_two_iff_fourier` on one side,
 `MemSobolev.lineDerivOp` on the other), but unwritten because nothing in the corpus consumes it --
 a phase gate, not an infrastructure gap.'''
+deps = ["definition_7_2_2_multiIndex"]
 
 [[node]]
 id = "example_7_4_2"
@@ -36,6 +37,7 @@ applies Cauchy-Schwarz against `∫ (1+|ξ|^2)^{-k} dξ < ∞ ↔ k > d/2`, exte
 `C_0^∞(ℝ^d)`, and then transfers to `Ω` by the extension operator. Not formalized: Step 3 is
 Theorem 7.3.5 and Step 2 is Theorem 7.3.4, so this is the §7.3 embedding on a domain again -- the
 chapter's obstruction, not the Fourier analysis.'''
+deps = ["theorem_7_4_1", "theorem_7_3_4", "theorem_7_3_5", "definition_7_3_6"]
 
 [[node]]
 id = "example_7_4_3"
@@ -46,3 +48,4 @@ argument of Example 7.4.2 with the scaled multiplier `(1+λ|ξ|^2)^{d/2}` and th
 `λ = (‖v‖_{L^2}/‖v‖_{H^d})^{2/d}`. Not formalized: like Example 7.4.2 it reaches the domain only
 through the extension operator of Theorem 7.3.5 and the density of Theorem 7.3.4, which are the
 chapter's obstruction.'''
+deps = ["example_7_4_2", "theorem_7_3_5"]

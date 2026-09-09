@@ -43,6 +43,7 @@ to the limit in `∫_Ω (-Δv_n) φ = -∫_Ω v_n Δφ` for every `φ ∈ C₀^�
 `w` as `-Δv` in the distributional sense. Not formalized: it needs the distributional Laplacian on
 an open `Ω ⊆ ℝ^d`, and Mathlib's distribution theory (`TemperedDistribution`) lives on all of
 `ℝ^d`, with no weak derivative on a domain.'''
+deps = ["AtkinsonHan.Chapter07.definition_7_1_3_multiIndex", "theorem_8_2_4"]
 
 [[node]]
 id = "example_8_2_6"
@@ -54,3 +55,4 @@ Example 8.2.5. On `V = H¹₀(Ω)` with the seminorm as norm and `V' = H^{-1}(Ω
 needs `H¹₀(Ω)` — hence weak derivatives on an open set — the duality `H^{-1}(Ω) = (H¹₀(Ω))'`, and
 the Poincaré inequality that makes the seminorm a norm; the abstract content is `example_8_2_5`,
 which is proved.'''
+deps = ["example_8_2_5", "AtkinsonHan.Chapter07.definition_7_2_9", "AtkinsonHan.Chapter07.definition_7_2_12", "AtkinsonHan.Chapter07.example_7_3_15"]

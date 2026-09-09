@@ -18,6 +18,7 @@ desc = '''Lemma 8.8.1: the energy functional `E(v) = (1/p) ∫_Ω (1 + |∇v|²)
 (8.8.10) is coercive on `V = W^{1,p}₀(Ω)`, since `E(v) ≥ (1/p) ‖v‖_V^p - ‖f‖_{V'} ‖v‖_V` and
 `p > 1`. Not formalized: the space `W^{1,p}₀(Ω)` does not exist in Mathlib, which has no weak
 derivative on an open set.'''
+deps = ["AtkinsonHan.Chapter07.definition_7_2_9"]
 
 [[node]]
 id = "lemma_8_8_2"
@@ -26,6 +27,7 @@ desc = '''Lemma 8.8.2: the energy functional (8.8.10) is continuous on `V = W^{1
 integral mean-value form of `E(u) - E(v)` bounded through Hölder's inequality.
 Not formalized: the space `W^{1,p}₀(Ω)` does not exist in Mathlib, which has no weak derivative
 on an open set.'''
+deps = ["AtkinsonHan.Chapter07.definition_7_2_9"]
 
 [[node]]
 id = "lemma_8_8_3"
@@ -34,6 +36,7 @@ desc = '''Lemma 8.8.3: the energy functional (8.8.10) is strictly convex, which 
 to strict convexity of `ξ ↦ (1/p)(1 + |ξ|²)^{p/2}` on `ℝ^d` (Exercise 5.3.13). Not formalized: the
 space `W^{1,p}₀(Ω)` does not exist in Mathlib, which has no weak derivative on an open set; the
 finite-dimensional ingredient is separable from it and is elementary.'''
+deps = ["AtkinsonHan.Chapter07.definition_7_2_9", "AtkinsonHan.Chapter05.proposition_5_3_13"]
 
 [[node]]
 id = "lemma_8_8_4"
@@ -43,6 +46,7 @@ desc = '''Lemma 8.8.4: the energy functional (8.8.10) is Gateaux differentiable,
 difference quotient by `[1 + (|∇u| + |∇v|)²]^{(p-1)/2} |∇v| ∈ L¹(Ω)` and passes to the limit by
 dominated convergence. Not formalized: the space `W^{1,p}₀(Ω)` does not exist in Mathlib, which
 has no weak derivative on an open set.'''
+deps = ["AtkinsonHan.Chapter07.definition_7_2_9", "AtkinsonHan.Chapter05.HasGateauxDerivAt"]
 
 [[node]]
 id = "theorem_8_8_5"
@@ -53,3 +57,4 @@ applied to the coercive, continuous, strictly convex `E` on the reflexive `V`, a
 5.3.19 for the equivalence. Not formalized: it needs `W^{1,p}₀(Ω)` and its reflexivity, which
 Mathlib cannot express — there is no reflexivity class for Banach spaces — while the abstract half
 is `AtkinsonHan.Chapter05.theorem_5_3_19` together with AH Theorem 3.3.12.'''
+deps = ["lemma_8_8_1", "lemma_8_8_2", "lemma_8_8_3", "lemma_8_8_4", "AtkinsonHan.Chapter05.theorem_5_3_19", "AtkinsonHan.Chapter02.definition_2_7_4"]

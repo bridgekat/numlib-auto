@@ -97,3 +97,4 @@ desc = '''Example 8.3.5: the Lax-Milgram lemma applied to the model boundary val
 (8.2.3), giving a unique weak solution `u ∈ H¹₀(Ω)`. Not formalized: it needs `H¹₀(Ω)` and the
 Poincaré inequality that makes `a(u, v) = ∫_Ω ∇u · ∇v` elliptic there; the abstract content is
 `Chapter08.theorem_8_3_4`, which is proved.'''
+deps = ["AtkinsonHan.Chapter08.theorem_8_3_4", "AtkinsonHan.Chapter07.definition_7_2_9", "AtkinsonHan.Chapter07.example_7_3_15"]

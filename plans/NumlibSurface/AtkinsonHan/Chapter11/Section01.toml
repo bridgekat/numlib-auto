@@ -28,6 +28,7 @@ Not formalized: it names a domain, so it needs `H¹₀(Ω)` on a Lipschitz domai
 form needs in addition the fundamental lemma of the calculus of variations and integration by parts
 there; the abstract content is `theorem_11_2_1` and `theorem_11_2_2`.
 '''
+deps = ["AtkinsonHan.Chapter07.definition_7_2_9", "AtkinsonHan.Chapter07.example_7_3_15"]
 
 [[node]]
 id = "example_11_1_2"
@@ -43,3 +44,4 @@ Not formalized: the boundary term needs the trace of an `H¹(Ω)` function and t
 `Γ`, and the pointwise form needs the normal derivative there; the abstract content is
 `theorem_11_2_1` and, for solvability, `theorem_11_3_7`.
 '''
+deps = ["AtkinsonHan.Chapter07.theorem_7_3_10", "AtkinsonHan.Chapter07.definition_7_2_2_multiIndex"]

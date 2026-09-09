@@ -99,3 +99,4 @@ space, and the reference-element half — the nodal bases and their duality — 
 `cubicShape` and `latticeShape` here. Beware the near-match: `exercise_10_2_3` is Exercise 10.2.3,
 the `ℚ_{1,1}` nodal basis on the reference square, a different result with the same number.
 '''
+deps = ["lemma_10_2_2", "refBary", "latticeShape"]

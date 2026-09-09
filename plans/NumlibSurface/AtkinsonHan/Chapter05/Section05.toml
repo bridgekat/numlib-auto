@@ -39,3 +39,4 @@ Not formalized: a proof needs Brouwer's theorem — itself absent from Mathlib, 
 together with the finite-rank Schauder projection, and the book quotes it without proof; Example
 5.5.2, formalized here, is what shows its hypotheses cannot be weakened to a Lipschitz condition.
 '''
+deps = ["theorem_5_5_1", "IsCompletelyContinuousOn"]
