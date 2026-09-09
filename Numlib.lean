@@ -125,6 +125,7 @@ import Numlib.LinearAlgebra.Matrix.Cauchy
 import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.LinearAlgebra.Matrix.EpsilonNorm
 import Numlib.LinearAlgebra.Matrix.Hessenberg
+import Numlib.LinearAlgebra.Matrix.Jordan
 import Numlib.LinearAlgebra.Matrix.KroneckerSum
 import Numlib.LinearAlgebra.Matrix.MMatrix
 import Numlib.LinearAlgebra.Matrix.Order

@@ -5,6 +5,7 @@ import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Basic
 import Numlib.Analysis.Normed.Module.NormEquivalence
 import Numlib.LinearAlgebra.Matrix.Complexify
+import Numlib.LinearAlgebra.Matrix.Jordan
 import Numlib.LinearAlgebra.Matrix.RealSchur
 import Numlib.LinearAlgebra.Matrix.Schur
 
@@ -18,10 +19,11 @@ Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd
 §1.8.3 gets both Schur forms: `theorem_1_9` is the complex triangulation and `realSchur` the
 quasi-Schur (real Schur) form, which the book states without proof.
 
-**Theorem 1.8, the Jordan canonical form, is not stated.** Mathlib has no Jordan form, the book
-states it without proof, and nothing in this library needs it: the two results the book derives
-from it, Theorems 1.10 and 1.11, are proved in `Numlib/LinearAlgebra/Matrix/Complexify` from
-Gelfand's formula instead. The multiplicity vocabulary the section introduces around it —
+§1.8.2 gets the Jordan canonical form, `theorem_1_8`, from the backbone's
+`Numlib/LinearAlgebra/Matrix/Jordan`, which builds it from scratch: Mathlib has none. The two
+results the book derives from it, Theorems 1.10 and 1.11, are nonetheless proved in
+`Numlib/LinearAlgebra/Matrix/Complexify` from Gelfand's formula instead, which needs less. The
+multiplicity vocabulary the section introduces around it —
 algebraic and geometric multiplicity, simple, semisimple, defective, derogatory — is Mathlib's
 `Module.End.eigenspace`, `Module.End.maxGenEigenspace` and `Polynomial.rootMultiplicity` of the
 characteristic polynomial, and gets no declaration here.
@@ -146,7 +148,7 @@ theorem diagonalizable_of_injective_eigenvalues {A : Matrix (Fin n) (Fin n) 𝕜
   (theorem_1_6 A).2 ⟨d, v, Module.End.eigenvectors_linearIndependent' A.mulVecLin d hd v
     fun j => ⟨Module.End.mem_eigenspace_iff.2 (hAv j), hv j⟩, hAv⟩
 
-/-! ### §1.8.2 Proposition 1.7: semisimple eigenvalues -/
+/-! ### §1.8.1 Proposition 1.7: semisimple eigenvalues -/
 
 /-- If the eigenvectors of `f` span the whole space then no eigenvalue is defective: the maximal
 generalized eigenspace of `μ` is already the eigenspace of `μ`. The reason is that `f - μ` maps
@@ -263,12 +265,41 @@ theorem proposition_1_7 (A : Matrix (Fin n) (Fin n) ℂ) :
         = ⨆ μ : ℂ, Module.End.maxGenEigenspace A.mulVecLin μ := iSup_congr hss
       _ = ⊤ := Module.End.iSup_maxGenEigenspace_eq_top _
 
+/-! ### §1.8.2 Theorem 1.8: the Jordan canonical form -/
+
+/-- **Saad Theorem 1.8**, the Jordan canonical form: every complex square matrix is similar to a
+block diagonal matrix consisting of `p` diagonal blocks, one associated with each distinct
+eigenvalue `lam i`, and each of those blocks has itself a block diagonal structure consisting of
+`γ i` sub-blocks, the Jordan blocks `Matrix.jordanBlock (l i k) (lam i)` — upper bidiagonal, with
+the constant `lam i` on the diagonal and the constant one on the superdiagonal. The equivalence `σ`
+names the indices of the block diagonal matrix by `Fin n`; composing with it is a permutation
+similarity, so this is the book's `X⁻¹ A X = J`.
+
+The book's further identifications — `γ i` is the geometric multiplicity of `lam i`, the size of
+each sub-block is at most the index `l i` of `lam i`, and the `i`-th diagonal block has size the
+algebraic multiplicity `m i` — are not formalized; what is proved here is the block structure and
+that the `lam i` are exactly the distinct eigenvalues of `A`. -/
+theorem theorem_1_8 (A : Matrix (Fin n) (Fin n) ℂ) :
+    ∃ (p : ℕ) (lam : Fin p → ℂ) (γ : Fin p → ℕ) (l : ∀ i : Fin p, Fin (γ i) → ℕ)
+      (σ : ((i : Fin p) × (k : Fin (γ i)) × Fin (l i k)) ≃ Fin n),
+      Function.Injective lam ∧ (∀ μ : ℂ, (∃ v ≠ 0, A *ᵥ v = μ • v) ↔ μ ∈ Set.range lam) ∧
+        IsSimilar A (Matrix.reindex σ σ
+          (Matrix.blockDiagonal' fun i => Matrix.jordanForm (l i) (fun _ => lam i))) := by
+  obtain ⟨p, lam, γ, l, σ, P, hinj, heig, hP, hPA⟩ :=
+    Matrix.exists_conj_blockDiagonal'_jordanForm A
+  have hd : IsUnit P.det := (Matrix.isUnit_iff_isUnit_det P).1 hP
+  refine ⟨p, lam, γ, l, σ, hinj, heig, P, hP, ?_⟩
+  rw [← hPA]
+  calc A = P * P⁻¹ * A * (P * P⁻¹) := by
+        rw [Matrix.mul_nonsing_inv P hd, Matrix.one_mul, Matrix.mul_one]
+    _ = P * (P⁻¹ * A * P) * P⁻¹ := by simp only [Matrix.mul_assoc]
+
 /-! ### §1.8.3 Theorem 1.9: the Schur canonical form -/
 
 /-- **Saad Theorem 1.9**, the Schur canonical form: every complex square matrix is unitarily
 similar to an upper triangular matrix, whose diagonal carries the eigenvalues of `A` with their
-algebraic multiplicities. The alternative proof from the Jordan form and a QR factorization
-(Problem P-1.7) is not available here, the Jordan form not being. -/
+algebraic multiplicities. The proof here is the book's induction on the dimension; the alternative
+proof from the Jordan form and a QR factorization (Problem P-1.7) is not carried out. -/
 theorem theorem_1_9 (A : Matrix (Fin n) (Fin n) ℂ) :
     ∃ Q ∈ Matrix.unitaryGroup (Fin n) ℂ,
       (star Q * A * Q).IsUpperTriangular ∧

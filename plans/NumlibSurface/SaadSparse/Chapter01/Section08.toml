@@ -58,13 +58,4 @@ id = "realSchur"
 
 [[node]]
 id = "theorem_1_8"
-kind = "theorem"
-desc = '''Theorem 1.8 (§1.8.2), the Jordan canonical form: every matrix is similar to a block
-diagonal matrix with one block per distinct eigenvalue `λ_i`, each of those a block diagonal of
-`γ_i` Jordan blocks — upper bidiagonal, `λ_i` on the diagonal and `1` on the superdiagonal, of size
-at most `l_i ≤ m_i`. Not formalized: Mathlib has no Jordan form. Its outer half, the direct sum
-over the distinct eigenvalues, is `Module.End.iSup_maxGenEigenspace_eq_top`; what is missing is the
-inner structure, a cyclic basis for a nilpotent endomorphism, which is the theory of finitely
-generated modules over `k[X]` and would have to be built from scratch. Saad states the theorem
-without proof, and the two results he draws from it, Theorems 1.10 and 1.11, are proved here from
-Gelfand's formula instead; §1.8's module doc and the chapter group's desc record the same.'''
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.8"

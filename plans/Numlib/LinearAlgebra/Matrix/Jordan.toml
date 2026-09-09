@@ -1,0 +1,64 @@
+namespace = "Matrix"
+
+[[node]]
+id = "jordanBlock"
+
+[[node]]
+id = "jordanBlock_apply"
+
+[[node]]
+id = "jordanBlock_apply_succ"
+
+[[node]]
+id = "jordanBlock_apply_of_ne"
+
+[[node]]
+id = "jordanBlock_zero_apply"
+
+[[node]]
+id = "isUpperTriangular_jordanBlock"
+
+[[node]]
+id = "charpoly_jordanBlock"
+
+[[node]]
+id = "jordanBlock_eq_add_smul_one"
+
+[[node]]
+id = "blockDiagonal'_submatrix_sigmaCongrLeft"
+
+[[node]]
+id = "blockDiagonal'_blockDiagonal'"
+
+[[node]]
+id = "jordanForm"
+
+[[node]]
+id = "jordanForm_const_eq_add_smul_one"
+
+[[node]]
+id = "_root_.LinearMap.toMatrix_reindex"
+
+[[node]]
+id = "_root_.Polynomial.exists_basis_quotient_span_X_pow"
+
+[[node]]
+id = "_root_.Module.End.exists_basis_toMatrix_eq_jordanForm_of_isNilpotent"
+
+[[node]]
+id = "_root_.Module.End.exists_basis_toMatrix_eq_jordanForm_of_isNilpotent_sub"
+
+[[node]]
+id = "_root_.Module.End.exists_basis_toMatrix_eq_blockDiagonal'_jordanForm"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.8"
+
+[[node]]
+id = "_root_.Module.End.exists_basis_toMatrix_eq_jordanForm"
+
+[[node]]
+id = "exists_conj_jordanForm"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.8"
+
+[[node]]
+id = "exists_conj_blockDiagonal'_jordanForm"
+source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.8"

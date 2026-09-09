@@ -2,8 +2,7 @@ desc = '''
 Saad, Chapter 1: the linear-algebra background - matrices and eigenvalues, norms, canonical forms,
 normal and Hermitian matrices, nonnegative matrices and M-matrices, positive definiteness,
 projectors and conditioning. It is the best-covered chapter of the book: `Basics` holds §1.1-1.6
-and `Section07`-`Section13` one module per section, and of the 39 numbered results 37 have a
-declaration, the remaining two being the ones the book itself states without proof.
+and `Section07`-`Section13` one module per section, and every numbered result has a declaration.
 
 **Nothing here is skipped for want of infrastructure outside numerical analysis.** The gaps
 below are all linear algebra, and each is unwritten rather than unreachable except where noted.
@@ -13,16 +12,25 @@ Proposition 1.18 is now complete: its convexity clause, the Toeplitz-Hausdorff t
 makes the quadratic form real along a segment and the intermediate value theorem finishes, with
 no finite dimensionality used.
 
-* **Theorem 1.8, the Jordan canonical form.** The one gap that is a genuine missing-theory skip.
-  The *outer* decomposition - a direct sum over the distinct eigenvalues, each summand `λ_i` plus a
-  nilpotent - is Mathlib's `Module.End.iSup_maxGenEigenspace_eq_top` and the independence of the
-  maximal generalized eigenspaces. What is absent is the *inner* structure: a cyclic basis for a
-  nilpotent endomorphism, that is the bidiagonal blocks and the count of them. That is the theory
-  of finitely generated modules over `k[X]` (or the equivalent combinatorics of a nilpotent
-  Jordan type), which Mathlib does not have and this project would have to build from scratch, and
-  nothing in the corpus consumes it: the book derives Theorems 1.10 and 1.11 from it, and both are
-  proved here from Gelfand formula instead. Trap for a future planner: do not accept a statement
-  that only asserts block-diagonality by eigenvalue - that is the easy half.
+* **Theorem 1.8, the Jordan canonical form** is now proved, as `theorem_1_8` over the backbone
+  `Matrix.exists_conj_blockDiagonal'_jordanForm` in `Numlib/LinearAlgebra/Matrix/Jordan`. Mathlib
+  has no Jordan form, but both halves of one are there and neither had to be reproved. The *outer*
+  decomposition - a direct sum over the distinct eigenvalues, each summand `lam_i` plus a nilpotent
+  - is `Module.End.iSup_maxGenEigenspace_eq_top` with `Module.End.independent_maxGenEigenspace`.
+  The *inner* structure, the cyclic basis of a nilpotent endomorphism, is
+  `Module.torsion_by_prime_power_decomposition` over the principal ideal domain `k[X]` applied to
+  `Module.AEval' g`, which is the space with `X` acting as `g`: it is `X`-power torsion because `g`
+  is nilpotent, so it splits as a sum of cyclic modules `k[X] / (X^k)`, and in the `k`-basis of
+  `k[X] / (X^k)` given by the images of `X^(k-1), ..., X, 1` multiplication by `X` is exactly the
+  nilpotent bidiagonal block. Trap avoided as the plan warned: the statement carries the inner
+  block structure, not only block-diagonality by eigenvalue. Note for a future planner: doing the
+  eigenvalue split *first* is what yields the book's grouped statement directly; going through
+  `Module.equiv_directSum_of_isTorsion` on `Module.AEval' f` instead gives a flat family of blocks
+  in one step but then the grouping has to be recovered by sorting, which is harder. What is still
+  not formalized is the book's arithmetic around the form - that the number of sub-blocks for
+  `lam_i` is its geometric multiplicity, and that their sizes are bounded by the index of `lam_i`,
+  itself bounded by the algebraic multiplicity. Those need the kernel and the characteristic
+  polynomial of a Jordan form, which the backbone does not yet compute.
 * **(1.36), Berger power inequality `nu(A^k) <= nu(A)^k`** is now proved, as `equation_1_36` over
   the backbone `LinearMap.norm_inner_pow_le`. Pearcy route is the right one and it is shorter than
   the plan feared. The only construction is: for `|z| < 1` and a primitive `k`-th root of unity
