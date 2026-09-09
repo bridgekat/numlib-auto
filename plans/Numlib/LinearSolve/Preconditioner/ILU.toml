@@ -62,3 +62,18 @@ source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 10.8"
 [[node]]
 id = "IsILU.complexSpectralRadius_lt_one"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 10.2"
+
+[[node]]
+id = "IsIC"
+
+[[node]]
+id = "IsIC0"
+
+[[node]]
+id = "IsIC.sub_eq_zero_of_notMem"
+
+[[node]]
+id = "IsIC.isILU"
+
+[[node]]
+id = "IsIC.eq_of_diag_pos"

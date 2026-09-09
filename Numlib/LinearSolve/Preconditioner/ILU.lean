@@ -24,6 +24,14 @@ constraints are the definition here. `Matrix.IsILU0`, taking `P` to be the off-d
 diagonal is chosen so that the row sums of `L U` and of `A` agree, which is what makes the
 preconditioner exact on constant vectors.
 
+`Matrix.IsIC` is the symmetric sibling: one lower triangular factor `L`, vanishing on `P`, with
+`L Lᵀ` agreeing off `P` with a symmetric matrix `B` — the incomplete Cholesky factorization used
+in §10.8.2 to precondition the normal equations. It is normalized by a *positive* diagonal rather
+than by a unit one, so it is not literally an incomplete `LU` factorization;
+`Matrix.IsIC.isILU` rescales it into one, `B = (L D⁻¹) (D Lᵀ)`. Unlike incomplete `LU` factors, an
+incomplete Cholesky factor is unique (`Matrix.IsIC.eq_of_diag_pos`), which is what lets a theorem
+speak of *the* `L` factor of `B`.
+
 ## Existence for M-matrices
 
 The theorem of the chapter is that an M-matrix (`Matrix.IsMMatrix`) admits an incomplete
@@ -132,6 +140,33 @@ zero pattern is the off-diagonal zero pattern of `A` itself, so that `L` and `U`
 of the lower and upper parts of `A` and `L U` matches `A` wherever `A` is nonzero. -/
 abbrev IsILU0 (A L U : Matrix n n α) : Prop := IsILU A.zeroPattern A L U
 
+/-- **An incomplete Cholesky factorization** of a symmetric matrix `B` for the zero pattern `P`
+(Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM, 2003, §10.8.2 and
+§10.4.5): `L` is lower triangular, vanishes on `P`, and `L Lᵀ` agrees with `B` off `P`. It is the
+symmetric case of `Matrix.IsILU`, which the book does not give a section of its own.
+
+Like `Matrix.IsILU`, this is a constraint and not an algorithm. The one difference in shape is the
+normalization: `Matrix.IsILU` fixes a unit diagonal on its lower factor, whereas a Cholesky factor
+carries the scaling itself and is normalized by a *positive* diagonal. Positivity is not
+expressible over a semiring, so it is a hypothesis of the statements that need it
+(`Matrix.IsIC.eq_of_diag_pos`) rather than a field here; `Matrix.IsIC.isILU` rescales an incomplete
+Cholesky factorization with an invertible diagonal into an incomplete `LU` factorization.
+
+The factorization is written with the plain transpose, `B = L Lᵀ`, which is the real symmetric
+case; a Hermitian variant would put `Lᴴ` in its place and is not defined here. -/
+structure IsIC (P : Set (n × n)) (B L : Matrix n n α) : Prop where
+  /-- `L` is lower triangular. -/
+  l_eq_zero_of_lt : ∀ i j, i < j → L i j = 0
+  /-- `L` vanishes on the zero pattern. -/
+  l_eq_zero_of_mem : ∀ i j, (i, j) ∈ P → L i j = 0
+  /-- Off the zero pattern, `L Lᵀ` reproduces `B`. -/
+  agree : ∀ i j, (i, j) ∉ P → (L * Lᵀ) i j = B i j
+
+/-- **`IC(0)`** (Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd edition, SIAM,
+2003, §10.8.2): the incomplete Cholesky factorization whose zero pattern is the off-diagonal zero
+pattern of `B` itself, so that `L` has the sparsity of the lower part of `B`. -/
+abbrev IsIC0 (B L : Matrix n n α) : Prop := IsIC B.zeroPattern B L
+
 end Defs
 
 section Residual
@@ -164,7 +199,121 @@ in which `MILU` is exact on constant vectors. -/
 theorem IsMILU.residual_mulVec_one (h : IsMILU P A L U) : (L * U - A) *ᵥ (1 : n → α) = 0 :=
   (IsILU.dropStrategy_rowSum A L U).2 h.mulVec_one
 
+/-- An incomplete Cholesky factorization writes `B = L Lᵀ - R` with the residual `R = L Lᵀ - B`
+supported in the zero pattern, exactly as `Matrix.IsILU.sub_eq_zero_of_notMem` does for an
+incomplete `LU` factorization. -/
+theorem IsIC.sub_eq_zero_of_notMem {B : Matrix n n α} (h : IsIC P B L) {i j : n}
+    (hij : (i, j) ∉ P) : (L * Lᵀ - B) i j = 0 := by
+  rw [sub_apply, h.agree i j hij, sub_self]
+
 end Residual
+
+/-! ### Rescaling and uniqueness of incomplete Cholesky factors -/
+
+section ICRescale
+
+variable [Fintype n] [Preorder n] [DecidableEq n] [Field α] {P : Set (n × n)}
+variable {B L : Matrix n n α}
+
+omit [Preorder n] in
+/-- Scaling the columns of `L` by the inverse of its diagonal, and the rows of `Lᵀ` by its
+diagonal, leaves the product `L Lᵀ` unchanged. -/
+private theorem mul_diagInv_mul_diag_mul_transpose (hd : ∀ i, L i i ≠ 0) :
+    (L * diagonal fun i => (L i i)⁻¹) * (diagonal (fun i => L i i) * Lᵀ) = L * Lᵀ := by
+  ext i j
+  rw [Matrix.mul_apply, Matrix.mul_apply]
+  refine Finset.sum_congr rfl fun k _ => ?_
+  rw [mul_diagonal, diagonal_mul, transpose_apply, mul_assoc, ← mul_assoc ((L k k)⁻¹),
+    inv_mul_cancel₀ (hd k), one_mul]
+
+/-- **An incomplete Cholesky factorization is an incomplete `LU` factorization after rescaling.**
+If the diagonal `D` of `L` is invertible and the zero pattern is symmetric, then `L D⁻¹` is unit
+lower triangular, `D Lᵀ` is upper triangular, both vanish on the pattern, and their product is
+`L Lᵀ`; so `Matrix.IsILU P B (L * D⁻¹) (D * Lᵀ)` holds.
+
+Symmetry of the pattern is needed because `Matrix.IsILU` imposes one pattern on both factors, and
+the upper factor of a Cholesky factorization is the transpose of the lower one. -/
+theorem IsIC.isILU (h : IsIC P B L) (hP : ∀ i j, (i, j) ∈ P → (j, i) ∈ P) (hd : ∀ i, L i i ≠ 0) :
+    IsILU P B (L * diagonal fun i => (L i i)⁻¹) (diagonal (fun i => L i i) * Lᵀ) where
+  l_diag i := by rw [mul_diagonal, mul_inv_cancel₀ (hd i)]
+  l_eq_zero_of_lt i j hij := by rw [mul_diagonal, h.l_eq_zero_of_lt i j hij, zero_mul]
+  u_eq_zero_of_gt i j hij := by
+    rw [diagonal_mul, transpose_apply, h.l_eq_zero_of_lt j i hij, mul_zero]
+  l_eq_zero_of_mem i j hij := by rw [mul_diagonal, h.l_eq_zero_of_mem i j hij, zero_mul]
+  u_eq_zero_of_mem i j hij := by
+    rw [diagonal_mul, transpose_apply, h.l_eq_zero_of_mem j i (hP i j hij), mul_zero]
+  agree i j hij := by
+    rw [mul_diagInv_mul_diag_mul_transpose hd]
+    exact h.agree i j hij
+
+end ICRescale
+
+section ICUnique
+
+variable [Fintype n] [LinearOrder n] {P : Set (n × n)} {B L₁ L₂ : Matrix n n ℝ}
+
+/-- **An incomplete Cholesky factor with a positive diagonal is unique.** Two such factors of the
+same matrix for the same zero pattern — which must avoid the diagonal, since the diagonal entries
+are what the positivity normalizes — are equal.
+
+This is the point at which incomplete Cholesky differs from incomplete `LU`, whose factors are not
+unique, and it is what lets a statement speak of *the* `L` factor of an incomplete Cholesky
+factorization. The proof is the row-by-row elimination: with the rows before `i` and the entries of
+row `i` before column `j` already known to agree, the constraint at `(i, j)` reads
+`(L₁ i j - L₂ i j) * L₁ j j = 0` off the diagonal and `L₁ i i ^ 2 = L₂ i i ^ 2` on it. -/
+theorem IsIC.eq_of_diag_pos (h₁ : IsIC P B L₁) (h₂ : IsIC P B L₂) (hP : ∀ i, (i, i) ∉ P)
+    (hp₁ : ∀ i, 0 < L₁ i i) (hp₂ : ∀ i, 0 < L₂ i i) : L₁ = L₂ := by
+  classical
+  have key : ∀ i j, L₁ i j = L₂ i j := by
+    intro i
+    induction i using WellFoundedLT.induction with
+    | ind i ihrow =>
+      intro j
+      induction j using WellFoundedLT.induction with
+      | ind j ihcol =>
+        by_cases hmem : (i, j) ∈ P
+        · rw [h₁.l_eq_zero_of_mem i j hmem, h₂.l_eq_zero_of_mem i j hmem]
+        rcases lt_trichotomy i j with hij | hij | hij
+        · rw [h₁.l_eq_zero_of_lt i j hij, h₂.l_eq_zero_of_lt i j hij]
+        · -- the diagonal entry: `L i i ^ 2` is determined, and positivity fixes the sign
+          subst hij
+          have e₁ := h₁.agree i i (hP i)
+          have e₂ := h₂.agree i i (hP i)
+          rw [Matrix.mul_apply] at e₁ e₂
+          simp only [transpose_apply] at e₁ e₂
+          have hsum : ∑ k, L₁ i k * L₁ i k = ∑ k, L₂ i k * L₂ i k := by rw [e₁, e₂]
+          rw [← Finset.sum_erase_add _ _ (Finset.mem_univ i),
+            ← Finset.sum_erase_add _ _ (Finset.mem_univ i)] at hsum
+          have hcongr : ∑ k ∈ Finset.univ.erase i, L₁ i k * L₁ i k
+              = ∑ k ∈ Finset.univ.erase i, L₂ i k * L₂ i k :=
+            Finset.sum_congr rfl fun k hk => by
+              rcases lt_or_gt_of_ne (Finset.ne_of_mem_erase hk) with hk' | hk'
+              · rw [ihcol k hk']
+              · rw [h₁.l_eq_zero_of_lt i k hk', h₂.l_eq_zero_of_lt i k hk']
+          rw [hcongr] at hsum
+          exact (mul_self_inj (hp₁ i).le (hp₂ i).le).1 (add_left_cancel hsum)
+        · -- below the diagonal: row `j` is already known, so the entry is forced
+          have e₁ := h₁.agree i j hmem
+          have e₂ := h₂.agree i j hmem
+          rw [Matrix.mul_apply] at e₁ e₂
+          simp only [transpose_apply] at e₁ e₂
+          have e₂' : ∑ k, L₂ i k * L₁ j k = B i j := by
+            rw [← e₂]
+            exact Finset.sum_congr rfl fun k _ => by rw [ihrow j hij k]
+          have hzero : ∑ k, (L₁ i k - L₂ i k) * L₁ j k = 0 := by
+            simp only [sub_mul, Finset.sum_sub_distrib]
+            rw [e₁, e₂', sub_self]
+          rw [Finset.sum_eq_single j (fun k _ hk => ?_) fun hk => absurd (Finset.mem_univ j) hk]
+            at hzero
+          · rcases mul_eq_zero.1 hzero with h | h
+            · exact sub_eq_zero.1 h
+            · exact absurd h (hp₁ j).ne'
+          · rcases lt_or_gt_of_ne hk with hk' | hk'
+            · rw [ihcol k hk', sub_self, zero_mul]
+            · rw [h₁.l_eq_zero_of_lt j k hk', mul_zero]
+  exact Matrix.ext fun i j => key i j
+
+end ICUnique
 
 /-! ### One step of Gaussian elimination on the smaller index type -/
 
