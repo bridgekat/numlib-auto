@@ -6,6 +6,8 @@ An LLM-generated numerical analysis library, with two layers: a general **backbo
 
 [Read the full documentation here.](https://bridgekat.github.io/numlib-auto/docs/Numlib.html)
 
+[View the plan graph here.](https://bridgekat.github.io/numlib-auto/)
+
 ## The backbone
 
 The backbone aims to be a foundational library similar to Mathlib, despite being LLM-generated: we seek generality of theorem statements, modularity of the structure, and completeness of API coverage.

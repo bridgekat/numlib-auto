@@ -20,11 +20,47 @@ jobs:
         with:
           submodules: recursive
       - uses: leanprover/lean-action@v1
+
+      # The site is `docs/`: the graph explorer is its front page and the API docs sit
+      # under it, at `docs/docs/`, where docgen-action puts them. Everything below has
+      # to happen before that action runs, because the action is what uploads `docs/`.
+      #
+      # The graph is this commit's, exported here and baked into the page, so the page
+      # is pinned to it rather than waiting for a file to be dropped on it. The tracker
+      # reads the oleans lean-action has just built, and refreshes its cache itself.
+      - name: Export the plan graph
+        run: lake exe tracker graph > graph.json
+      - name: Check out the graph explorer
+        uses: actions/checkout@v5
+        with:
+          repository: bridgekat/tracker-graph-explorer # its default branch; pin with `ref:`
+          path: .explorer
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22 # vite 8 wants ^20.19 || >=22.12
+          cache: npm
+          cache-dependency-path: .explorer/package-lock.json
+      - name: Build the graph explorer around it
+        working-directory: .explorer
+        env:
+          # An absolute path, since the build runs from the explorer's own checkout, and
+          # a docs root relative to where the page is published, so that the links hold
+          # wherever the site is served from.
+          TRACKER_GRAPH: ${{ github.workspace }}/graph.json
+          TRACKER_DOCS: docs
+        run: |
+          npm ci
+          npm run build
+      - name: Put it at the root of the site
+        run: |
+          mkdir -p docs
+          cp .explorer/dist/index.html docs/index.html
+
       - uses: leanprover-community/docgen-action@main
         with:
           api-docs: true
           blueprint: false
-          build-page: false
+          build-page: false # `docs/` is ours, not a Jekyll site
           references: references/references.bib
           use-github-cache: false # Fix: sometimes this leads to incomplete API docs
       - run: lake exe tracker check
