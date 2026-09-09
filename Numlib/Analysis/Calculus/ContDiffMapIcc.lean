@@ -2,7 +2,9 @@ import Mathlib.Analysis.Calculus.IteratedDeriv.Lemmas
 import Mathlib.Analysis.Normed.Group.Submodule
 import Mathlib.Analysis.Normed.Lp.PiLp
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
+import Mathlib.MeasureTheory.Integral.IntervalIntegral.Periodic
 import Mathlib.Topology.ContinuousMap.Ordered
+import Mathlib.Topology.Instances.AddCircle.Defs
 
 /-!
 # `Cᵏ[a, b]`, the continuously differentiable functions on a compact interval
@@ -31,7 +33,11 @@ at the endpoints, and it carries a family of seminorms rather than a norm.
   and its section prepending an antiderivative with a prescribed value at `a`.
 * `ContDiffMapIcc.derivCLM`, `ContDiffMapIcc.shiftCLM`: those two as bounded linear maps of norm at
   most one.
+* `ContDiffMapIcc.ofContDiff`, `ContDiffMapIcc.ofContDiffOn`: the two constructors from a function,
+  one for a globally `Cᵏ` function on `ℝ` and one for a function `ContDiffOn` on `[a, b]`.
 * `ContDiffMapIcc.zeroBoundary hab k`: the closed subspace `Cᵏ₀[a, b] = {v : v a = v b = 0}`.
+* `ContDiffMapIcc.periodicBoundary hab k`: the closed subspace on which every derivative up to
+  order `k` matches at the two endpoints — the periodic `Cᵏ` functions read on one period.
 
 ## Main results
 
@@ -43,6 +49,9 @@ at the endpoints, and it carries a family of seminorms rather than a norm.
 * `ContDiffMapIcc.contDiffOn` and `ContDiffMapIcc.ofContDiffOn`: the space is exactly the book's —
   every element is `k` times continuously differentiable on `[a, b]` in the sense of `ContDiffOn`,
   and conversely every such function is an element.
+* `ContDiffMapIcc.exists_periodic_contDiff` and
+  `ContDiffMapIcc.ofContDiff_mem_periodicBoundary`: the elements of `periodicBoundary` are exactly
+  the restrictions to `[a, b]` of the `(b - a)`-periodic `Cᵏ` functions on `ℝ`.
 * `ContinuousMap.hasDerivIcc_iff`: the fundamental theorem of calculus on `[a, b]`, which is what
   makes the defining condition a closed one.
 
@@ -564,10 +573,18 @@ theorem cons_shift (v : ContDiffMapIcc hab (k + 1)) :
     show (0 : Fin (k + 1)).succ = 1 from rfl] at h
   exact h.symm
 
+/-- Evaluating the `j`-th derivative at a point of `[a, b]` is continuous on `Cᵏ[a, b]`.  This is
+the one ingredient the closedness of `ContDiffMapIcc.zeroBoundary` and of
+`ContDiffMapIcc.periodicBoundary` share: both subspaces are cut out by equations between such
+evaluations. -/
+theorem continuous_deriv_eval (hab : a ≤ b) (k : ℕ) (j : Fin (k + 1)) (t : Icc a b) :
+    Continuous fun u : ContDiffMapIcc hab k => u.deriv j t :=
+  (continuous_eval_const t).comp (derivCLM hab k j).continuous
+
 /-- Evaluation at a point of `[a, b]` is continuous on `Cᵏ[a, b]`. -/
 theorem continuous_eval (hab : a ≤ b) (k : ℕ) (t : Icc a b) :
     Continuous fun u : ContDiffMapIcc hab k => u t :=
-  (continuous_eval_const t).comp (derivCLM hab k 0).continuous
+  continuous_deriv_eval hab k 0 t
 
 /-- The subspace `Cᵏ₀[a, b] = {v ∈ Cᵏ[a, b] : v a = v b = 0}` of the elements vanishing at both
 endpoints.  For `k = 2` on `[0, 1]` this is the space `C²₀[0, 1]` in which the two-point boundary
@@ -598,5 +615,204 @@ theorem isClosed_zeroBoundary (hab : a ≤ b) (k : ℕ) :
 instance : CompleteSpace (zeroBoundary hab k) := by
   have : IsClosed (zeroBoundary hab k : Set (ContDiffMapIcc hab k)) := isClosed_zeroBoundary hab k
   infer_instance
+
+/-! ### Periodic boundary conditions -/
+
+/-- The subspace of `Cᵏ[a, b]` cut out by matching the values of *every* derivative up to order `k`
+at the two endpoints, `u⁽ʲ⁾(a) = u⁽ʲ⁾(b)` for `j ≤ k`.
+
+Its elements are exactly the restrictions to one period of the `(b - a)`-periodic functions on `ℝ`
+of class `Cᵏ` — the space that Atkinson and Han, *Theoretical Numerical Analysis*, 3rd edition,
+§1.2 write `C_p^k(T)` — which is `ContDiffMapIcc.exists_periodic_contDiff` in one direction and
+`ContDiffMapIcc.ofContDiff_mem_periodicBoundary` in the other.  Matching *all* orders up to `k`,
+and not merely the values, is what makes the periodic extension `Cᵏ` rather than only continuous.
+
+At `k = 0` this agrees with reading `C_p(T)` as `C(AddCircle T, ℝ)`: a continuous function on the
+circle is the same thing as a continuous function on `[a, b]` taking equal values at the two ends.
+The two readings do not conflict, and the circle one has no higher-order analogue here because
+Mathlib carries no differential calculus on `AddCircle`. -/
+def periodicBoundary (hab : a ≤ b) (k : ℕ) : Submodule ℝ (ContDiffMapIcc hab k) where
+  carrier := {u | ∀ j, u.deriv j ⟨a, left_mem_Icc.2 hab⟩ = u.deriv j ⟨b, right_mem_Icc.2 hab⟩}
+  add_mem' hu hv j := by simp [hu j, hv j]
+  zero_mem' _ := rfl
+  smul_mem' c _ hu j := by simp [hu j]
+
+@[simp]
+theorem mem_periodicBoundary {u : ContDiffMapIcc hab k} :
+    u ∈ periodicBoundary hab k ↔
+      ∀ j, u.deriv j ⟨a, left_mem_Icc.2 hab⟩ = u.deriv j ⟨b, right_mem_Icc.2 hab⟩ := Iff.rfl
+
+/-- The periodic boundary conditions are closed in `Cᵏ[a, b]`: like `zeroBoundary`, the subspace is
+cut out by equations between derivative evaluations, and each of those is continuous by
+`ContDiffMapIcc.continuous_deriv_eval`. -/
+theorem isClosed_periodicBoundary (hab : a ≤ b) (k : ℕ) :
+    IsClosed (periodicBoundary hab k : Set (ContDiffMapIcc hab k)) := by
+  have hset : (periodicBoundary hab k : Set (ContDiffMapIcc hab k)) =
+      ⋂ j : Fin (k + 1), {u : ContDiffMapIcc hab k |
+        u.deriv j ⟨a, left_mem_Icc.2 hab⟩ = u.deriv j ⟨b, right_mem_Icc.2 hab⟩} := by
+    ext u; simp [Set.mem_iInter]
+  rw [hset]
+  exact isClosed_iInter fun j =>
+    isClosed_eq (continuous_deriv_eval hab k j _) (continuous_deriv_eval hab k j _)
+
+/-- The periodic `Cᵏ` functions on `[a, b]` form a Banach space, being a closed subspace of the
+Banach space `Cᵏ[a, b]`. -/
+instance : CompleteSpace (periodicBoundary hab k) := by
+  have : IsClosed (periodicBoundary hab k : Set (ContDiffMapIcc hab k)) :=
+    isClosed_periodicBoundary hab k
+  infer_instance
+
+/-- The restriction to `[a, b]` of a function that is `k` times continuously differentiable on all
+of `ℝ`, as an element of `Cᵏ[a, b]`: the tuple of its iterated derivatives.
+
+Unlike `ContDiffMapIcc.ofContDiffOn` this needs no nondegeneracy hypothesis, the derivatives being
+the global `iteratedDeriv` rather than `iteratedDerivWithin`. -/
+noncomputable def ofContDiff (hab : a ≤ b) {k : ℕ} {f : ℝ → ℝ} (hf : ContDiff ℝ k f) :
+    ContDiffMapIcc hab k :=
+  mk hab
+    (fun j => ⟨(Icc a b).domRestrict (iteratedDeriv j f),
+      (hf.continuous_iteratedDeriv j (mod_cast Nat.lt_succ_iff.1 j.2)).comp continuous_subtype_val⟩)
+    fun j t => by
+      have hd : Differentiable ℝ (iteratedDeriv (j : ℕ) f) :=
+        hf.differentiable_iteratedDeriv j (mod_cast j.2)
+      have h : HasDerivAt (iteratedDeriv (j : ℕ) f)
+          (iteratedDeriv ((j : ℕ) + 1) f (t : ℝ)) (t : ℝ) := by
+        rw [iteratedDeriv_succ]
+        exact (hd (t : ℝ)).hasDerivAt
+      refine h.hasDerivWithinAt.congr (fun y hy => ?_) ?_
+      · rw [ContinuousMap.coe_IccExtend, Set.IccExtend_of_mem hab _ hy]; rfl
+      · rw [ContinuousMap.coe_IccExtend, Set.IccExtend_val]; rfl
+
+@[simp]
+theorem deriv_ofContDiff (hab : a ≤ b) {k : ℕ} {f : ℝ → ℝ} (hf : ContDiff ℝ k f)
+    (j : Fin (k + 1)) (t : Icc a b) :
+    (ofContDiff hab hf).deriv j t = iteratedDeriv j f t := rfl
+
+@[simp]
+theorem coe_ofContDiff (hab : a ≤ b) {k : ℕ} {f : ℝ → ℝ} (hf : ContDiff ℝ k f) (t : Icc a b) :
+    ofContDiff hab hf t = f t := rfl
+
+/-- The derivative of a periodic real function is periodic.  A general fact, and an upstreaming
+candidate: Mathlib has no periodicity lemma for `deriv`. -/
+theorem _root_.Function.Periodic.deriv {f : ℝ → ℝ} {T : ℝ} (h : Function.Periodic f T) :
+    Function.Periodic (_root_.deriv f) T := by
+  intro x
+  have hfun : (fun y => f (y + T)) = f := funext h
+  have := deriv_comp_add_const f T x
+  rw [hfun] at this
+  exact this.symm
+
+/-- Every iterated derivative of a periodic function is periodic. -/
+theorem _root_.Function.Periodic.iteratedDeriv {f : ℝ → ℝ} {T : ℝ}
+    (h : Function.Periodic f T) (n : ℕ) : Function.Periodic (iteratedDeriv n f) T := by
+  induction n with
+  | zero => simpa using h
+  | succ n ih => rw [iteratedDeriv_succ]; exact ih.deriv
+
+/-- **The restriction of a `(b - a)`-periodic `Cᵏ` function on `ℝ` satisfies the periodic boundary
+conditions.**  Together with `ContDiffMapIcc.exists_periodic_contDiff` this identifies
+`ContDiffMapIcc.periodicBoundary` with the periodic `Cᵏ` functions. -/
+theorem ofContDiff_mem_periodicBoundary (hab : a ≤ b) {k : ℕ} {f : ℝ → ℝ} (hf : ContDiff ℝ k f)
+    (hper : Function.Periodic f (b - a)) : ofContDiff hab hf ∈ periodicBoundary hab k := by
+  intro j
+  have h := hper.iteratedDeriv j a
+  simp only [deriv_ofContDiff]
+  rw [show a + (b - a) = b by ring] at h
+  exact h.symm
+
+/-- **Every element of `ContDiffMapIcc.periodicBoundary` is the restriction of a `(b - a)`-periodic
+function on `ℝ` of class `Cᵏ`**, the converse of
+`ContDiffMapIcc.ofContDiff_mem_periodicBoundary`.  The two together say that the periodic boundary
+conditions describe exactly the periodic `Cᵏ` functions read on one period.
+
+The extension is built by integrating downwards rather than by gluing translates, which is what
+avoids a theorem about `Cᵏ` functions glued along a point.  The top derivative is extended
+periodically as a *continuous* function, which needs only its two endpoint values to agree; each
+lower one is then recovered as `x ↦ u⁽ʲ⁾(a) + ∫ₐˣ (the extension of u⁽ʲ⁺¹⁾)`, which is
+automatically one degree smoother, and is periodic exactly because the integral of the extension of
+`u⁽ʲ⁺¹⁾` over one period is `u⁽ʲ⁾(b) - u⁽ʲ⁾(a) = 0`.  So the matching at order `j + 1` is what
+makes the extension of `u⁽ʲ⁾` periodic, and the matching at all orders up to `k` is used exactly
+once each. -/
+theorem exists_periodic_contDiff (hlt : a < b) :
+    ∀ {k : ℕ} (u : ContDiffMapIcc hab k), u ∈ periodicBoundary hab k →
+      ∃ f : ℝ → ℝ, Function.Periodic f (b - a) ∧ ContDiff ℝ k f ∧ ∀ t : Icc a b, f t = u t := by
+  have hT : (0 : ℝ) < b - a := sub_pos.2 hlt
+  have hab' : a + (b - a) = b := by ring
+  intro k
+  induction k with
+  | zero =>
+    intro u hu
+    have hFact : Fact (0 < b - a) := ⟨hT⟩
+    have hcircle : ((b : ℝ) : AddCircle (b - a)) = ((a : ℝ) : AddCircle (b - a)) := by
+      have h := AddCircle.coe_add_period (b - a) a
+      rwa [hab'] at h
+    have hend : u.extend a = u.extend (a + (b - a)) := by
+      rw [hab', extend_of_mem u (left_mem_Icc.2 hab), extend_of_mem u (right_mem_Icc.2 hab)]
+      exact hu 0
+    have hcont : Continuous fun x : ℝ =>
+        AddCircle.liftIco (b - a) a u.extend ((x : ℝ) : AddCircle (b - a)) :=
+      (AddCircle.liftIco_continuous hend u.extend.continuous.continuousOn).comp
+        (AddCircle.continuous_mk' _)
+    have hper : Function.Periodic
+        (fun x : ℝ => AddCircle.liftIco (b - a) a u.extend ((x : ℝ) : AddCircle (b - a)))
+        (b - a) := by
+      intro x; simp only; rw [AddCircle.coe_add_period]
+    have hval : ∀ t : Icc a b,
+        AddCircle.liftIco (b - a) a u.extend ((t : ℝ) : AddCircle (b - a)) = u t := by
+      intro t
+      rcases eq_or_lt_of_le t.2.2 with hb | hb
+      · rw [show ((t : ℝ) : AddCircle (b - a)) = ((a : ℝ) : AddCircle (b - a)) by
+          rw [hb]; exact hcircle,
+          AddCircle.liftIco_coe_apply (by rw [hab']; exact ⟨le_rfl, hlt⟩),
+          extend_of_mem u (left_mem_Icc.2 hab),
+          show t = (⟨b, right_mem_Icc.2 hab⟩ : Icc a b) from Subtype.ext hb]
+        exact hu 0
+      · rw [AddCircle.liftIco_coe_apply ⟨t.2.1, by rw [hab']; exact hb⟩]
+        exact extend_val u t
+    exact ⟨_, hper, contDiff_zero.2 hcont, hval⟩
+  | succ k ih =>
+    intro u hu
+    obtain ⟨g, hgper, hgC, hgeq⟩ := ih (shift u) fun j => hu j.succ
+    have hgper' : Function.Periodic g (b - a) := hgper
+    have hgcont : Continuous g := hgC.continuous
+    have hgEq : Set.EqOn g (ContinuousMap.IccExtend hab (u.deriv 1)) (Icc a b) := by
+      intro y hy
+      rw [ContinuousMap.coe_IccExtend, Set.IccExtend_of_mem hab _ hy]
+      exact hgeq ⟨y, hy⟩
+    have hchain : ContinuousMap.HasDerivIcc hab (u.deriv 0) (u.deriv 1) := u.hasDerivIcc 0
+    have hderiv : ∀ x : ℝ, HasDerivAt
+        (fun y : ℝ => u.deriv 0 ⟨a, left_mem_Icc.2 hab⟩ + ∫ s in a..y, g s) (g x) x :=
+      fun x => ((hgcont.integral_hasStrictDerivAt a x).hasDerivAt).const_add _
+    have hval : ∀ t : Icc a b,
+        (u.deriv 0 ⟨a, left_mem_Icc.2 hab⟩ + ∫ s in a..(t : ℝ), g s) = u t := by
+      intro t
+      have hsub : Set.uIcc a (t : ℝ) ⊆ Icc a b := by
+        rw [Set.uIcc_of_le t.2.1]
+        exact Icc_subset_Icc le_rfl t.2.2
+      rw [intervalIntegral.integral_congr fun y hy => hgEq (hsub hy), hchain.integral_eq t]
+      ring
+    have hzero : ∫ s in a..b, g s = 0 := by
+      have h1 := hval ⟨b, right_mem_Icc.2 hab⟩
+      have h0 := hu 0
+      simp only at h1 h0
+      linarith
+    have hper : Function.Periodic
+        (fun y : ℝ => u.deriv 0 ⟨a, left_mem_Icc.2 hab⟩ + ∫ s in a..y, g s) (b - a) := by
+      intro x
+      simp only
+      have hsplit : (∫ s in a..x, g s) + (∫ s in x..(x + (b - a)), g s)
+          = ∫ s in a..(x + (b - a)), g s :=
+        intervalIntegral.integral_add_adjacent_intervals
+          (hgcont.intervalIntegrable _ _) (hgcont.intervalIntegrable _ _)
+      rw [← hsplit, Function.Periodic.intervalIntegral_add_eq hgper' x a, hab', hzero]
+      ring
+    have hsmooth : ContDiff ℝ (k + 1 : ℕ)
+        (fun y : ℝ => u.deriv 0 ⟨a, left_mem_Icc.2 hab⟩ + ∫ s in a..y, g s) := by
+      rw [show ((k + 1 : ℕ) : WithTop ℕ∞) = (k : WithTop ℕ∞) + 1 by push_cast; ring,
+        contDiff_succ_iff_deriv]
+      refine ⟨fun x => (hderiv x).differentiableAt, fun h => absurd h (by simp), ?_⟩
+      rw [funext fun x => (hderiv x).deriv]
+      exact hgC
+    exact ⟨_, hper, hsmooth, hval⟩
 
 end ContDiffMapIcc

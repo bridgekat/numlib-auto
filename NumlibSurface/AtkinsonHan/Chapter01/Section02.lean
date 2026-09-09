@@ -55,7 +55,8 @@ Mathlib's `Norm`, `Seminorm`, `Metric.ball`, `IsOpen`, `IsClosed`, `Filter.Tends
 * `example_1_2_3`, `example_1_2_4`, `example_1_2_5`, `example_1_2_11`, `example_1_2_13`,
   `example_1_2_15`, `example_1_2_16`, `example_1_2_22`, `example_1_2_22_incomplete` — the
   illustrations of the section.
-* `example_1_2_28_a` — the half of Example 1.2.28 (a) about `Cᵐ[a, b]`: it is a Banach space.
+* `example_1_2_28_a`, `example_1_2_28_a_periodic` — Example 1.2.28 (a): `Cᵐ[a, b]` and
+  `C_p^k(2π)` are Banach spaces.
 
 ## Conventions
 
@@ -80,11 +81,13 @@ of `ℝ^d`, which is how Mathlib has them and how the book uses them.
 Example 1.2.5 (b), the norm `‖f‖_{k,∞} = max_{j ≤ k} ‖f⁽ʲ⁾‖_∞` of `Cᵏ[a, b]`, is not restated:
 the space is the backbone's `ContDiffMapIcc` (`Numlib.Analysis.Calculus.ContDiffMapIcc`), which
 carries the equivalent sum `∑_{j ≤ k} ‖f⁽ʲ⁾‖_∞`, and the two-sided bound between the two norms is
-part of the statement of `example_1_2_28_a`. The `C_p^k(2π)` half of Example 1.2.28 (a) is still
-open, since the periodic `Cᵏ` space does not exist here; Example 1.2.28 (b) is the Sobolev
-completion `W^{m,p}(a, b)` and is out of scope for the project, Mathlib having no weak derivative
-on an interval. Example 1.2.19 is Theorem 1.5.6 restated for a bounded `Ω`, and is recorded with it
-in §1.5.
+part of the statement of `example_1_2_28_a`. `C_p^k(2π)` is read on one period, as the subspace of
+`Cᵏ[0, 2π]` on which every derivative up to order `k` matches at the two ends; that is
+`example_1_2_28_a_periodic`, whose last two conjuncts identify it with the genuinely `2π`-periodic
+`Cᵏ` functions on `ℝ`, and which agrees at `k = 0` with the `C(AddCircle (2π), ℝ)` of
+Example 1.2.5. Example 1.2.28 (b) is the Sobolev completion `W^{m,p}(a, b)` and is out of scope for
+the project, Mathlib having no weak derivative on an interval. Example 1.2.19 is Theorem 1.5.6
+restated for a bounded `Ω`, and is recorded with it in §1.5.
 
 The `p`-norm on `C[0, 1]` has no Mathlib normed-space structure to name, so where the section uses
 it — Examples 1.2.15, 1.2.16 and the second half of Example 1.2.22 — it is written out as the
@@ -833,6 +836,51 @@ theorem example_1_2_28_a {a b : ℝ} (hab : a ≤ b) (m : ℕ) :
       (∀ v : ContDiffMapIcc hab m, ‖v‖ ≤ (m + 1) * ⨆ j, ‖v.deriv j‖) ∧
       CompleteSpace (ContDiffMapIcc hab m) :=
   ⟨ContDiffMapIcc.iSup_norm_deriv_le_norm, ContDiffMapIcc.norm_le_iSup_norm_deriv, inferInstance⟩
+
+/-- **Example 1.2.28** (a), the clause about `C_p^k(2π)`: with the norm of Example 1.2.5 (b) it is a
+Banach space.
+
+`C_p^k(2π)` is read on one period, as the backbone's
+`ContDiffMapIcc.periodicBoundary (Real.two_pi_pos.le : (0 : ℝ) ≤ 2 * π) k`
+(`Numlib.Analysis.Calculus.ContDiffMapIcc`): the subspace of `Cᵏ[0, 2π]` on which every derivative
+up to order `k` takes the same value at the two endpoints. The last two conjuncts are the
+identification with the book's reading, in both directions — every element is the restriction of a
+genuinely `2π`-periodic `Cᵏ` function on `ℝ`, and every such function restricts to an element — so
+nothing is being weakened by working on one period. At `k = 0` this reading and the
+`C(AddCircle (2π), ℝ)` of `example_1_2_5` agree, a continuous function on the circle being the same
+thing as a continuous function on `[0, 2π]` with equal endpoint values; the two are not in
+conflict, and the circle has no higher-order analogue here because Mathlib carries no differential
+calculus on it.
+
+The first two conjuncts are the two-sided bound between the norm carried here,
+`∑_{j ≤ k} ‖v⁽ʲ⁾‖_∞`, and the maximum `max_{j ≤ k} ‖v⁽ʲ⁾‖_∞` of Example 1.2.5 (b), exactly as in
+`example_1_2_28_a`. -/
+theorem example_1_2_28_a_periodic (k : ℕ) :
+    (∀ v : ContDiffMapIcc.periodicBoundary (Real.two_pi_pos.le : (0 : ℝ) ≤ 2 * π) k,
+        ⨆ j, ‖(v : ContDiffMapIcc (Real.two_pi_pos.le : (0 : ℝ) ≤ 2 * π) k).deriv j‖ ≤ ‖v‖) ∧
+      (∀ v : ContDiffMapIcc.periodicBoundary (Real.two_pi_pos.le : (0 : ℝ) ≤ 2 * π) k,
+        ‖v‖ ≤ (k + 1) * ⨆ j,
+          ‖(v : ContDiffMapIcc (Real.two_pi_pos.le : (0 : ℝ) ≤ 2 * π) k).deriv j‖) ∧
+      CompleteSpace (ContDiffMapIcc.periodicBoundary (Real.two_pi_pos.le : (0 : ℝ) ≤ 2 * π) k) ∧
+      (∀ v : ContDiffMapIcc.periodicBoundary (Real.two_pi_pos.le : (0 : ℝ) ≤ 2 * π) k,
+        ∃ f : ℝ → ℝ, Function.Periodic f (2 * π) ∧ ContDiff ℝ k f ∧
+          ∀ t : Set.Icc (0 : ℝ) (2 * π),
+            f t = (v : ContDiffMapIcc (Real.two_pi_pos.le : (0 : ℝ) ≤ 2 * π) k) t) ∧
+      (∀ f : ℝ → ℝ, ContDiff ℝ k f → Function.Periodic f (2 * π) →
+        ∃ v : ContDiffMapIcc.periodicBoundary (Real.two_pi_pos.le : (0 : ℝ) ≤ 2 * π) k,
+          ∀ t : Set.Icc (0 : ℝ) (2 * π),
+            (v : ContDiffMapIcc (Real.two_pi_pos.le : (0 : ℝ) ≤ 2 * π) k) t = f t) := by
+  have hab : (0 : ℝ) ≤ 2 * π := Real.two_pi_pos.le
+  have hT : 2 * π - 0 = 2 * π := sub_zero _
+  refine ⟨fun v => ContDiffMapIcc.iSup_norm_deriv_le_norm _,
+    fun v => ContDiffMapIcc.norm_le_iSup_norm_deriv _, inferInstance, fun v => ?_,
+    fun f hf hper => ?_⟩
+  · obtain ⟨g, hgper, hgC, hgeq⟩ :=
+      ContDiffMapIcc.exists_periodic_contDiff Real.two_pi_pos v.1 v.2
+    exact ⟨g, hT ▸ hgper, hgC, hgeq⟩
+  · exact ⟨⟨ContDiffMapIcc.ofContDiff hab hf,
+      ContDiffMapIcc.ofContDiff_mem_periodicBoundary hab hf (by rw [hT]; exact hper)⟩,
+      fun t => rfl⟩
 
 end Normed
 

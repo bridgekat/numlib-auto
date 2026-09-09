@@ -56,7 +56,31 @@ id = "ContDiffMapIcc.cons"
 id = "ContDiffMapIcc.cons_shift"
 
 [[node]]
+id = "ContDiffMapIcc.ofContDiff"
+
+[[node]]
+id = "ContDiffMapIcc.continuous_deriv_eval"
+
+[[node]]
 id = "ContDiffMapIcc.zeroBoundary"
 
 [[node]]
 id = "ContDiffMapIcc.isClosed_zeroBoundary"
+
+[[node]]
+id = "ContDiffMapIcc.periodicBoundary"
+
+[[node]]
+id = "ContDiffMapIcc.isClosed_periodicBoundary"
+
+[[node]]
+id = "ContDiffMapIcc.ofContDiff_mem_periodicBoundary"
+
+[[node]]
+id = "ContDiffMapIcc.exists_periodic_contDiff"
+
+[[node]]
+id = "_root_.Function.Periodic.deriv"
+
+[[node]]
+id = "_root_.Function.Periodic.iteratedDeriv"
