@@ -3,6 +3,7 @@ import Mathlib.Analysis.Calculus.Deriv.Add
 import Mathlib.Analysis.Calculus.Deriv.Comp
 import Mathlib.Analysis.Calculus.Deriv.Mul
 import Mathlib.Analysis.Calculus.Deriv.Prod
+import Mathlib.Analysis.Complex.Polynomial.Basic
 import Mathlib.Analysis.InnerProductSpace.Rayleigh
 import Mathlib.Analysis.InnerProductSpace.Spectrum
 import Mathlib.LinearAlgebra.Eigenspace.Matrix
@@ -12,6 +13,7 @@ import Numlib.Analysis.InnerProductSpace.Projection.Angle
 import Numlib.Analysis.Normed.Ring.CondNumber
 import Numlib.Eigen.MinMax
 import Numlib.Eigen.Normal
+import Numlib.Topology.Algebra.Polynomial
 
 /-!
 # Eigenvalue perturbation and a posteriori bounds
@@ -20,7 +22,8 @@ Residual bounds for approximate eigenpairs of symmetric operators ([saad2011nume
 Lemma 3.2, Thm 3.8–3.9 for Kato–Temple; [meurant2006lanczos] §2.1; [choi2006iterative] §2.4),
 Bauer–Fike for diagonalizable matrices ([saad2011numerical], Thm 3.6; [kress1998numerical] Problem
 7.6), the backward error of an approximate eigenpair ([saad2011numerical], Prop 3.4), Bendixson
-([saad2003iterative], Thm 1.35) and Rayleigh-quotient bounds.
+([saad2003iterative], Thm 1.35), the Gershgorin discs with their counting theorem
+([saad2011numerical], Thm 3.11–3.12) and Rayleigh-quotient bounds.
 
 Throughout, an approximate eigenpair of `A` is a unit vector `x` together with a scalar `θ` (usually
 the Rayleigh quotient `θ = re⟪A x, x⟫`), and `r = A x - θ x` is its residual; the bounds below turn
@@ -52,6 +55,23 @@ is defined by the approximate-eigenvector form `∃ w, ‖w‖ = 1 ∧ ‖A w - 
 than by the resolvent norm, so that no convention about the resolvent on the spectrum is needed;
 `ContinuousLinearMap.mem_pseudospectrum_iff` is the backward-error characterization of his Prop 3.7,
 with the strict inequality `‖B‖ < ε` that the equivalence actually needs.
+
+## The Gershgorin discs and how many eigenvalues each group of them holds
+
+`Matrix.spectrum_subset_iUnion_closedBall` and its column-sum twin place the spectrum in the union
+of the discs ([saad2011numerical], Thm 3.11), and `Matrix.card_spectrum_of_disjoint_gershgorin`
+counts ([saad2011numerical], Thm 3.12): a union `S` of `m` discs that is disjoint from the other
+discs contains exactly `m` eigenvalues with multiplicity, and
+`Matrix.card_spectrum_of_isolated_gershgorin` is the case `m = 1` that is used in practice.  The
+count is `Polynomial.countRootsIn S A.charpoly`, the number of roots of the characteristic
+polynomial in `S` with multiplicity.
+
+The proof is the homotopy `A t = D + t H` of the book, whose "continuity argument" is
+`Polynomial.countRootsIn_eq_of_preconnected` in `Numlib/Topology/Algebra/Polynomial.lean`: the
+number of roots of a monic polynomial in a compact set is constant along a connected family, as
+long as the roots stay in the union of two disjoint compact sets.  That is a compactness argument
+in the coefficients rather than Rouché's theorem, which is what lets `S` be a union of overlapping
+discs instead of something with a contour around it.
 
 Two books by [saad2011numerical] are cited in this file and are kept apart by their short titles:
 *Large Eigenvalue Problems* and *Iterative Methods*.  Bauer–Fike, Gershgorin, Kato–Temple and
@@ -1027,5 +1047,117 @@ theorem spectrum_subset_iUnion_closedBall_col (A : Matrix n n ℂ) :
   intro μ hμ
   have hT : μ ∈ spectrum ℂ Aᵀ := by rwa [Matrix.spectrum_transpose]
   simpa using spectrum_subset_iUnion_closedBall Aᵀ hT
+
+/-- **Gershgorin disc counting** (Saad, *Numerical Methods for Large Eigenvalue Problems*, 2nd
+edition, Theorem 3.12): if the union `S` of the Gershgorin discs indexed by `τ` is disjoint from
+the union `S'` of the remaining discs, then `S` contains exactly `τ.card` eigenvalues, counted with
+multiplicity.
+
+The count is `Polynomial.countRootsIn`, the number of roots of the characteristic polynomial in
+`S` with multiplicity, which by `Matrix.mem_spectrum_iff_isRoot_charpoly` is the total algebraic
+multiplicity of the eigenvalues lying in `S`.
+
+The proof is Saad's homotopy `A t = D + t H`, with `D` the diagonal of `A` and `H` the rest.  The
+Gershgorin discs of `A t` are those of `A` shrunk by the factor `t`, so for `0 ≤ t ≤ 1` the
+eigenvalues of `A t` stay in `S ∪ S'` throughout; at `t = 0` the eigenvalues are the diagonal
+entries, of which exactly those indexed by `τ` lie in `S`.  Saad's "continuity argument" — that the
+branches of eigenvalues cannot cross from `S` to `S'` — is
+`Polynomial.countRootsIn_eq_of_preconnected`, a compactness argument in the coefficients that needs
+no complex analysis and no separation of the branches from each other. -/
+theorem card_spectrum_of_disjoint_gershgorin (A : Matrix n n ℂ) (τ : Finset n) {S S' : Set ℂ}
+    (hS : S = ⋃ i ∈ τ, Metric.closedBall (A i i) (∑ j ∈ Finset.univ.erase i, ‖A i j‖))
+    (hS' : S' = ⋃ i ∈ τᶜ, Metric.closedBall (A i i) (∑ j ∈ Finset.univ.erase i, ‖A i j‖))
+    (hdisj : Disjoint S S') :
+    A.charpoly.countRootsIn S = τ.card := by
+  classical
+  set r : n → ℝ := fun i => ∑ j ∈ Finset.univ.erase i, ‖A i j‖ with hr
+  have hr0 : ∀ i, 0 ≤ r i := fun i => Finset.sum_nonneg fun j _ => norm_nonneg _
+  set D : Matrix n n ℂ := Matrix.diagonal fun i => A i i with hD
+  set H : Matrix n n ℂ := A - D with hH
+  set M : ℝ → Matrix n n ℂ := fun t => D + (t : ℂ) • H with hM
+  have hMdiag : ∀ t i, M t i i = A i i := by
+    intro t i; simp [hM, hD, hH, Matrix.diagonal_apply_eq]
+  have hMoff : ∀ t i j, i ≠ j → M t i j = (t : ℂ) * A i j := by
+    intro t i j hij; simp [hM, hD, hH, Matrix.diagonal_apply_ne _ hij]
+  have hM0 : M 0 = D := by simp [hM]
+  have hM1 : M 1 = A := by simp [hM, hH]
+  have hMcont : Continuous M :=
+    continuous_const.add (Complex.continuous_ofReal.smul continuous_const)
+  -- the two unions of discs are compact, and together they are all the discs
+  have hScpt : IsCompact S := by
+    rw [hS]; exact τ.finite_toSet.isCompact_biUnion fun i _ => isCompact_closedBall _ _
+  have hS'cpt : IsCompact S' := by
+    rw [hS']; exact τᶜ.finite_toSet.isCompact_biUnion fun i _ => isCompact_closedBall _ _
+  have hunion : S ∪ S' = ⋃ i, Metric.closedBall (A i i) (r i) := by
+    ext z
+    simp only [hS, hS', Set.mem_union, Set.mem_iUnion, Finset.mem_compl, exists_prop, hr]
+    constructor
+    · rintro (⟨i, _, hi⟩ | ⟨i, _, hi⟩) <;> exact ⟨i, hi⟩
+    · rintro ⟨i, hi⟩
+      by_cases h : i ∈ τ
+      · exact Or.inl ⟨i, h, hi⟩
+      · exact Or.inr ⟨i, h, hi⟩
+  -- Gershgorin for `M t`: its discs are those of `A` with the radii scaled by `t ≤ 1`
+  have hroots : ∀ t : ℝ, t ∈ Set.Icc (0 : ℝ) 1 → ∀ z ∈ (M t).charpoly.roots, z ∈ S ∪ S' := by
+    intro t ht z hz
+    rw [hunion]
+    have hz' : z ∈ spectrum ℂ (M t) := by
+      rw [Matrix.mem_spectrum_iff_isRoot_charpoly]
+      exact (Polynomial.mem_roots (Matrix.charpoly_monic _).ne_zero).mp hz
+    obtain ⟨i, hi⟩ := Set.mem_iUnion.mp (Matrix.spectrum_subset_iUnion_closedBall (M t) hz')
+    refine Set.mem_iUnion.mpr ⟨i, ?_⟩
+    rw [hMdiag t i] at hi
+    refine Metric.closedBall_subset_closedBall ?_ hi
+    calc ∑ j ∈ Finset.univ.erase i, ‖M t i j‖
+        = ∑ j ∈ Finset.univ.erase i, |t| * ‖A i j‖ := by
+          refine Finset.sum_congr rfl fun j hj => ?_
+          rw [hMoff t i j (Finset.ne_of_mem_erase hj).symm]
+          simp
+      _ = |t| * r i := by rw [hr, Finset.mul_sum]
+      _ ≤ r i := by
+          rw [abs_of_nonneg ht.1]
+          exact mul_le_of_le_one_left (hr0 i) ht.2
+  have hcard : ∀ t : ℝ, Multiset.card (M t).charpoly.roots = Fintype.card n := fun t =>
+    (Polynomial.splits_iff_card_roots.mp (IsAlgClosed.splits (M t).charpoly)).trans
+      (Matrix.charpoly_natDegree_eq_dim _)
+  have : PreconnectedSpace (Set.Icc (0 : ℝ) 1) :=
+    isPreconnected_iff_preconnectedSpace.mp isPreconnected_Icc
+  have key := Polynomial.countRootsIn_eq_of_preconnected (T := Set.Icc (0 : ℝ) 1)
+    (p := fun t => (M t.1).charpoly) (n := Fintype.card n) hScpt hS'cpt hdisj
+    (fun _ => Matrix.charpoly_monic _)
+    (fun _ => Matrix.charpoly_natDegree_eq_dim _)
+    (fun t => hcard t.1)
+    (fun t z hz => hroots t.1 t.2 z hz)
+    (fun j => (Matrix.continuous_coeff_charpoly hMcont j).comp continuous_subtype_val)
+    ⟨0, by norm_num⟩ ⟨1, by norm_num⟩
+  simp only at key
+  -- at `t = 0` the roots are the diagonal entries, and `a_ii ∈ S` exactly for `i ∈ τ`
+  rw [← hM1, ← key, hM0, Matrix.charpoly_diagonal, Polynomial.countRootsIn_prod_univ_X_sub_C]
+  congr 1
+  ext i
+  simp only [Finset.mem_filter, Finset.mem_univ, true_and]
+  constructor
+  · intro hi
+    by_contra hiτ
+    exact Set.disjoint_left.mp hdisj hi (by
+      rw [hS']
+      exact Set.mem_iUnion₂.mpr ⟨i, Finset.mem_compl.mpr hiτ, Metric.mem_closedBall_self (hr0 i)⟩)
+  · intro hiτ
+    rw [hS]
+    exact Set.mem_iUnion₂.mpr ⟨i, hiτ, Metric.mem_closedBall_self (hr0 i)⟩
+
+/-- **An isolated Gershgorin disc contains exactly one eigenvalue** (Saad, *Numerical Methods for
+Large Eigenvalue Problems*, 2nd edition, the particular case of Theorem 3.12 noted after its
+proof): the case `τ = {i}` of `Matrix.card_spectrum_of_disjoint_gershgorin`.
+
+In particular the eigenvalue in an isolated disc is simple. -/
+theorem card_spectrum_of_isolated_gershgorin (A : Matrix n n ℂ) (i : n) {S S' : Set ℂ}
+    (hS : S = Metric.closedBall (A i i) (∑ j ∈ Finset.univ.erase i, ‖A i j‖))
+    (hS' : S' = ⋃ k ∈ ({i} : Finset n)ᶜ,
+      Metric.closedBall (A k k) (∑ j ∈ Finset.univ.erase k, ‖A k j‖))
+    (hdisj : Disjoint S S') :
+    A.charpoly.countRootsIn S = 1 := by
+  have := card_spectrum_of_disjoint_gershgorin A {i} (by simpa using hS) hS' hdisj
+  simpa using this
 
 end Matrix

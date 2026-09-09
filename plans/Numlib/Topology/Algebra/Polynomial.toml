@@ -1,0 +1,32 @@
+[[node]]
+id = "Polynomial.countRootsIn"
+
+[[node]]
+id = "Polynomial.countRootsIn_le_card_roots"
+
+[[node]]
+id = "Polynomial.roots_prod_univ_X_sub_C"
+
+[[node]]
+id = "Polynomial.countRootsIn_prod_univ_X_sub_C"
+
+[[node]]
+id = "Polynomial.exists_eq_prod_X_sub_C"
+
+[[node]]
+id = "Polynomial.continuous_coeff_mul"
+
+[[node]]
+id = "Polynomial.continuous_coeff_prod"
+
+[[node]]
+id = "Polynomial.continuous_coeff_X_sub_C"
+
+[[node]]
+id = "Polynomial.continuous_coeff_prod_X_sub_C"
+
+[[node]]
+id = "Matrix.continuous_coeff_charpoly"
+
+[[node]]
+id = "Polynomial.countRootsIn_eq_of_preconnected"

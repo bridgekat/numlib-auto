@@ -1,0 +1,4 @@
+desc = '''
+Topological algebra: the structures Mathlib's `Mathlib/Topology/Algebra/` covers, in the places
+this project needed more than Mathlib states.
+'''

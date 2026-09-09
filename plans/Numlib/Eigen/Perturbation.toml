@@ -72,42 +72,10 @@ id = "ContinuousLinearMap.mem_pseudospectrum_of_hasEigenvalue"
 
 [[node]]
 id = "Matrix.card_spectrum_of_disjoint_gershgorin"
-kind = "theorem"
-desc = '''
-Gershgorin disc counting (Saad-eig Thm 3.12): if the union `S` of `m` of the discs is disjoint
-from the other discs, `S` contains exactly `m` eigenvalues with multiplicity.
+source = "Saad, Numerical Methods for Large Eigenvalue Problems, Theorem 3.12"
 
-Still open, and it is now the only open node of the backbone; its obstruction has survived every
-check. The statement was re-read in the book text (Thm 3.12 of
-`references/numerical-methods-for-large-eigenvalue-problems-saad/numerical-methods-for-large-eigenvalue-problems-saad.md`)
-and is as quoted; his proof is the
-homotopy `A(t) = D + tH` together with "by a continuity argument, as `t` increases to 1, the branches
-of eigenvalues will stay in their respective discs". That continuity of the branches is the whole of
-what is missing.
-
-**What the pinned Mathlib does and does not have, re-grepped.** `Rouche` does not occur; no residue
-theorem occurs (`Mathlib/Analysis/Calculus/LogDeriv` mentions a logarithmic residue at a simple zero
-and nothing more); there is no continuity statement about `Polynomial.roots` anywhere under
-`Mathlib/Analysis` or `Mathlib/Topology`. The Cauchy integral formula *is* Banach-valued
-(`Mathlib/Analysis/Complex/CauchyIntegral.lean` carries `{E} [NormedAddCommGroup E] [NormedSpace ℂ E]`
-throughout) and the resolvent is already differentiable off the spectrum
-(`spectrum.hasDerivAt_resolvent_const_left`), so an earlier note claiming otherwise was wrong; but
-the Cauchy formula wants the integrand differentiable *inside* the contour, and the resolvent has
-poles there, so the Riesz projector `P = (2πi)⁻¹ ∮ (z - A)⁻¹ dz` cannot be shown idempotent by it.
-
-**A third route, elementary and not attempted, which needs no complex analysis at all.** All the
-homotopy needs is that the number of roots of a monic polynomial in a compact set `S` is locally
-constant when the roots stay in `S ∪ S'` with `S, S'` disjoint compact. Split `p = q r` with `q`
-monic carrying the roots in `S`; multiplication of monic polynomials, read in coefficients, is a
-polynomial map `𝕜^k × 𝕜^{n-k} → 𝕜^n` whose derivative at `(q, r)` is `(q̇, ṙ) ↦ q̇ r + q ṙ`,
-surjective exactly because `gcd (q, r) = 1`, so the inverse function theorem gives a *continuous
-factorization* of every nearby monic polynomial. That the factors keep their roots where they were
-is then the one-sided estimate `min_i |β - α_i|^n ≤ |p (β)| = |p (β) - p̃ (β)|`, which is three
-lines. This replaces Rouché by `HasStrictFDerivAt.localInverse` plus Bézout, both of which Mathlib
-has; the cost is the coefficient-level calculus of the multiplication map. Whether that is cheaper
-than proving Rouché outright is a judgement, not a measurement.
-'''
-deps = ["Matrix.spectrum_subset_iUnion_closedBall"]
+[[node]]
+id = "Matrix.card_spectrum_of_isolated_gershgorin"
 source = "Saad, Numerical Methods for Large Eigenvalue Problems, Theorem 3.12"
 
 [[node]]

@@ -173,6 +173,7 @@ import Numlib.RingTheory.MvPolynomial.TotalDegree
 import Numlib.RingTheory.Polynomial.ChebyshevEllipse
 import Numlib.RingTheory.Polynomial.ChebyshevMinimax
 import Numlib.RingTheory.Polynomial.KernelPolynomial
+import Numlib.Topology.Algebra.Polynomial
 import Numlib.Topology.ContinuousMap.ArzelaAscoli
 import Numlib.Variational.AubinNitsche
 import Numlib.Variational.Forms
