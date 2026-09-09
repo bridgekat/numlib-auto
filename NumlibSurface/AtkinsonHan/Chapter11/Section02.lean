@@ -1,7 +1,6 @@
 import Numlib.Variational.Inequality.Basic
 import NumlibSurface.AtkinsonHan.Chapter05.Section03
 import NumlibSurface.AtkinsonHan.Chapter08.Section03
-import NumlibSurface.AtkinsonHan.Chapter11.Section03
 
 /-!
 # Atkinson–Han §11.2: existence and uniqueness based on convex minimization
@@ -20,10 +19,11 @@ specializations of `isMinOn_add_iff_forall_le` of `Numlib/Analysis/Convex/Gateau
 (11.2.3) — over a subspace and with `j = 0` the variational inequality is the variational equation
 `⟨f'(u), v⟩ = 0` — is `AtkinsonHan.Chapter05.theorem_5_3_19_submodule` and is not restated here.
 
-The variational inequality of Theorem 11.2.2 is the predicate
-`AtkinsonHan.Chapter11.IsVariationalInequalitySolution` of §11.3, at `A = a.toOperator` and
-`f = rieszRep ℓ`; that is the book's (11.3.12), so §11.2 and §11.3 really do state the same
-problem, and the identification is `isVariationalInequalitySolution_toOperator_iff`.
+The variational inequality of Theorem 11.2.2 is written out here in the book's own words, as the
+inequality `a(u, v - u) + j(v) - j(u) ≥ ℓ(v - u)`.  It is the book's (11.3.12), so §11.2 and §11.3
+really do state the same problem; §11.3, which comes later, names it
+`AtkinsonHan.Chapter11.IsVariationalInequalitySolution` at `A = a.toOperator` and `f = rieszRep ℓ`,
+and `AtkinsonHan.Chapter11.isVariationalInequalitySolution_toOperator_iff` is the identification.
 
 ## Deviations from the book
 
@@ -120,8 +120,9 @@ theorem theorem_11_2_2_iff (hM : a.IsBoundedWith M) (hα : 0 < α) (ha : a.IsEll
   have hcoer : SesqForm.IsCoerciveWith (𝕜 := ℝ) (a.toCLM hM) α :=
     (BilinForm.isEllipticWith_iff_isCoerciveWith hM).mp ha
   refine (isMinOn_energy_add_iff hh hα.le hcoer ℓ hKcv hj hu).trans ?_
-  exact (isVariationalInequalitySolution_toOperator_iff hM j ℓ K u).trans
-    ⟨fun h => h.2, fun h => ⟨hu, h⟩⟩
+  simp only [_root_.IsVariationalInequalitySolution, BilinForm.inner_toOperator,
+    BilinForm.inner_rieszRep, ge_iff_le]
+  exact ⟨fun h => h.2, fun h => ⟨hu, h⟩⟩
 
 end Real
 

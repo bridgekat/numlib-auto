@@ -1,4 +1,5 @@
 import Numlib.IntegralEquations.SecondKind
+import NumlibSurface.AtkinsonHan.Chapter03.Section06
 
 /-!
 # Atkinson–Han §12.1: projection methods for equations of the second kind
@@ -26,12 +27,16 @@ only where a limit is taken; the finite dimensionality of `V_n` is never used an
   together say that `‖u - u_n‖` and `‖u - P_n u‖ ` tend to zero at exactly the same rate.
 * `exercise_12_1_3`, `exercise_12_1_4` — the asymptotic constant of the error bound is that of the
   exact inverse, and the leading term of the error is `λ (λ - K)⁻¹ (u - P_n u)`.
+* `example_12_1_1` — collocation by Lagrange interpolation: (12.1.11), that `P_n g = 0` exactly
+  when `g` vanishes at the nodes, and (12.1.12), that the collocation conditions (12.1.5) are the
+  projection equations at that `P_n`.  `interpolate_eq_zero_iff` is (12.1.11) on its own.
 
 ## Not formalized here
 
-Sections 12.1.1 and 12.1.2, the collocation and Galerkin methods and their linear systems
-(12.1.5) and (12.1.14).  They are this framework specialized to `C(D)` and `L²(D)` with a concrete
-basis of the trial space, and nothing in the rest of the chapter uses them.
+The linear systems (12.1.5) and (12.1.14) themselves, written out in a basis `φ₁, …, φ_κ` of the
+trial space, and §12.1.2, the Galerkin method with `V = L²(D)`.  Both are this framework read at a
+concrete projection, and nothing in the rest of the chapter uses the coordinate form; the passage
+from (12.1.5) to `IsProjectionSolution`, which is what §12.1.1 is for, is `example_12_1_1`.
 -/
 
 open Filter Topology
@@ -106,6 +111,55 @@ theorem equation_12_1_17 {P : X →L[𝕜] X} (hP : IsIdempotentElem P) (hP0 : P
     calc ‖P x‖ = ‖P (P x)‖ := by rw [hPP]
       _ ≤ ‖P‖ * ‖P x‖ := ContinuousLinearMap.le_opNorm _ _
   nlinarith
+
+/-! ### Example 12.1.1: collocation with Lagrange interpolation -/
+
+section Collocation
+
+variable {a b : ℝ} {n : ℕ} {x : Fin (n + 1) → Set.Icc a b}
+
+/-- **(12.1.11)**: for the interpolatory projection at the nodes `x₀, …, x_n`, `P g = 0` holds
+exactly when `g` vanishes at every node.  It is (12.1.8) read at a node, `P g (x_j) = g (x_j)`,
+in one direction, and the Lagrange form `P g = ∑ g(x_i) ℓ_i` in the other. -/
+theorem interpolate_eq_zero_iff (hx : Function.Injective x) (g : C(Set.Icc a b, ℝ)) :
+    Lagrange.interpolateCLM x g = 0 ↔ ∀ j, g (x j) = 0 := by
+  constructor
+  · intro h j
+    rw [← Lagrange.interpolateCLM_apply_node hx g j, h, ContinuousMap.zero_apply]
+  · intro h
+    ext t
+    rw [ContinuousMap.zero_apply, Lagrange.interpolateCLM_apply]
+    exact Finset.sum_eq_zero fun i _ => by rw [h i, zero_mul]
+
+/-- **Example 12.1.1** (§12.1.1).  Take `V = C[a, b]`, `V_n = span {1, x, …, xⁿ}`, and for `P_n`
+the Lagrange interpolatory projection (12.1.10) at `n + 1` distinct nodes `x₀, …, x_n`.  Then:
+
+* `P_n` is a projection of `C[a, b]` onto `V_n`, which is Example 3.6.5;
+* **(12.1.11)** `P_n g = 0` if and only if `g (x_j) = 0` for every `j`;
+* **(12.1.12)** the collocation conditions (12.1.5) — `u_n ∈ V_n` and the residual
+  `r_n = (λ - K) u_n - f` vanishes at every node — say exactly that `u_n` is a solution of the
+  projection equations `P_n (λ - K) u_n = P_n f`.
+
+The third clause is what the example is for: it is the passage from the concrete linear system
+(12.1.5) to `IsProjectionSolution`, at which the whole of §12.1.3 applies.  No hypothesis on `λ`
+is needed, because the membership `u_n ∈ V_n` is carried along on both sides. -/
+theorem example_12_1_1 (hx : Function.Injective x) (μ : ℝ)
+    (K : C(Set.Icc a b, ℝ) →L[ℝ] C(Set.Icc a b, ℝ)) (f un : C(Set.Icc a b, ℝ)) :
+    Chapter03.IsProjectionOperator (Lagrange.interpolateCLM x) ∧
+      LinearMap.range ((Lagrange.interpolateCLM x :
+          C(Set.Icc a b, ℝ) →L[ℝ] C(Set.Icc a b, ℝ)) :
+          C(Set.Icc a b, ℝ) →ₗ[ℝ] C(Set.Icc a b, ℝ)) = Chapter03.polyLE a b n ∧
+      (∀ g : C(Set.Icc a b, ℝ), Lagrange.interpolateCLM x g = 0 ↔ ∀ j, g (x j) = 0) ∧
+      ((un ∈ LinearMap.range ((Lagrange.interpolateCLM x :
+            C(Set.Icc a b, ℝ) →L[ℝ] C(Set.Icc a b, ℝ)) :
+            C(Set.Icc a b, ℝ) →ₗ[ℝ] C(Set.Icc a b, ℝ)) ∧
+          ∀ j, ((μ • 1 - K : C(Set.Icc a b, ℝ) →L[ℝ] C(Set.Icc a b, ℝ)) un - f) (x j) = 0) ↔
+        IsProjectionSolution μ K (Lagrange.interpolateCLM x) f un) := by
+  obtain ⟨hproj, hrange, -⟩ := Chapter03.example_3_6_5 hx
+  refine ⟨hproj, hrange, interpolate_eq_zero_iff hx, and_congr_right fun _ => ?_⟩
+  rw [← interpolate_eq_zero_iff hx, map_sub, sub_eq_zero]
+
+end Collocation
 
 /-! ### The two convergence lemmas -/
 

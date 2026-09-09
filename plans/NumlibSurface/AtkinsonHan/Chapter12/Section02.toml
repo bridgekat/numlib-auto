@@ -25,5 +25,11 @@ desc = '''Example 12.2.1 (§12.2.1): piecewise linear collocation applied to
 `λ u(x) - ∫_0^b e^{xy} u(y) dy = f(x)` with `b = 1`, `λ = 5`, for the two solutions
 `u = e^{-x} cos x` and `u = √x`, whose measured errors in Table 12.1 fall at the rates `O(h²)` and
 `O(h^{1.5})` respectively — the second reflecting the singular derivative of `√x` at the origin.
-Not formalized: it is an illustration — measured errors and their ratios, with the rates it
-displays proved in general by the section's own bound (12.2.5).'''
+
+Not formalized: a numerical table, not a theorem. Every number in the example is measured: the
+nodal errors `E_n^{(k)}` of Table 12.1 and their ratios. The two remarks made about them are
+about measured quantities too — that the observed `O(h^{1.5})` for `u = √x` beats the `O(h^{1/2})`
+of `‖u - P_n u‖_∞`, and that the ratio `E_n / ‖u - u_n‖_∞` tends to zero. The book asserts the
+first of those bounds ("it can be shown") without proof, and the superconvergence at the nodes
+that explains the second is the subject of §12.3. The general rate the table illustrates is the
+section's own bound (12.2.5), which is `equation_12_2_5`.'''

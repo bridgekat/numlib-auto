@@ -53,10 +53,17 @@ id = "example_12_4_6"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Example 12.4.6"
 
 [[node]]
+id = "expKernel"
+
+[[node]]
+id = "row_expKernel"
+
+[[node]]
+id = "isGreatest_row_expKernel"
+
+[[node]]
+id = "norm_fredholm_expKernel"
+
+[[node]]
 id = "example_12_4_1"
-kind = "theorem"
-desc = '''Example 12.4.1 (§12.4.1): the Nyström method applied to
-`λ u(x) - ∫_0^1 e^{yx} u(y) dy = f(x)` with `λ = 2` and `u = e^x`, comparing the three-point
-Simpson rule with three-point Gauss-Legendre quadrature, whose nodal errors are reported
-numerically. Not formalized: it is an illustration — computed nodal errors for two quadrature
-rules, with no claim beyond them.'''
+source = "Atkinson–Han, Theoretical Numerical Analysis, Example 12.4.1"

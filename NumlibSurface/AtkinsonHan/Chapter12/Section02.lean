@@ -71,6 +71,12 @@ the Hilbert–Schmidt theorem, and `IntegralOperator.l2KernelCLM` of
 `Numlib/IntegralEquations/L2Kernel` bounds the operator and computes its adjoint without showing it
 compact.  The book takes the same fact from its Chapter 2.  The same holds of `equation_12_2_19`.
 
+Example 12.2.1 is a numerical table and is not stated.  Every number in it is measured — the nodal
+errors of Table 12.1 and their ratios — and so are the two remarks made about them: that the
+observed rate for `u = √x` beats the approximation error of the trial space, and that the ratio of
+the nodal error to the uniform error tends to zero.  The bound the table illustrates is
+`equation_12_2_5`, and the superconvergence at the nodes that the second remark points at is §12.3.
+
 ## Conventions
 
 As in §12.1 the book's scalar `λ` is written `μ`, `λ` being Lean's lambda binder.  The book's

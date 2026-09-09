@@ -1,6 +1,8 @@
+import Mathlib.Analysis.Complex.ExponentialBounds
 import Numlib.Approximation.CompositeQuadrature
 import Numlib.IntegralEquations.Nystrom
 import Numlib.IntegralEquations.SecondKind
+import NumlibSurface.AtkinsonHan.Chapter02.Section03
 
 /-!
 # Atkinson–Han §12.4: the Nyström method and collectively compact approximation
@@ -46,13 +48,23 @@ makes the Nyström method analysable, and which §12.5 reuses for product integr
 * `example_12_4_6` — the asymptotic error expansion `u - u_n = h² γ + O(h⁴)` of the Nyström
   solution, with `γ` the solution of the book's auxiliary integral equation, in the two forms
   described in its doc comment.
+* `expKernel`, `norm_fredholm_expKernel` and `example_12_4_1` — the equation (12.4.7) the section
+  computes with, `2 u(x) - ∫₀¹ e^{x y} u(y) dy = f(x)`: its operator has norm exactly `e - 1`, and
+  since `e - 1 < 2` the equation is uniquely solvable for every `f ∈ C[0, 1]`, which is the one
+  claim of Example 12.4.1 that is not a measured number.
 
 ## Not formalized here
 
-Nothing of §12.4 except the *unconditional* form of the last clause of Example 12.4.6.  The book's
-"by a similar argument, `r_n = O(h⁴)`" needs `‖(K - K_n) γ‖ = O(h²)`, hence the smoothness of the
-solution `γ` of the auxiliary equation, hence differentiation under the integral sign; here that
-bound is a hypothesis of the clause that needs it, and everything else is proved.
+The numerical half of Example 12.4.1: the nodal errors (12.4.8) and (12.4.9) of the three-point
+Simpson and three-point Gauss–Legendre rules, the comparison of Nyström interpolation with
+quadratic interpolation off the nodes, and Figure 12.1.  They are computed floating-point numbers,
+not statements; only the unique solvability the example opens with is stated, as
+`example_12_4_1`.
+
+Nothing else of §12.4 except the *unconditional* form of the last clause of Example 12.4.6.  The
+book's "by a similar argument, `r_n = O(h⁴)`" needs `‖(K - K_n) γ‖ = O(h²)`, hence the smoothness
+of the solution `γ` of the auxiliary equation, hence differentiation under the integral sign; here
+that bound is a hypothesis of the clause that needs it, and everything else is proved.
 
 ## Conventions
 
@@ -366,6 +378,99 @@ theorem theorem_12_4_4 {μ : ℝ} (hμ : μ ≠ 0) (k : C(D × D, ℝ)) {m : ℕ
     (isCollectivelyCompactFamily_nystromCLM ν k hW hQ) he
 
 end Nystrom
+
+/-! ### Example 12.4.1: the equation the section computes with -/
+
+section Example
+
+open IntegralOperator MeasureTheory Set
+
+/-- **The kernel `e^{x y}` on `[0, 1]²`**, the kernel of (12.4.7) — and, on `[0, b]`, of the
+equations (12.2.8) and (12.3.18) that Examples 12.2.1 and 12.3.2 compute with as well.  It is the
+book's standard test kernel for the whole chapter: smooth, positive, and of moderate size. -/
+noncomputable def expKernel : C(Icc (0 : ℝ) 1 × Icc (0 : ℝ) 1, ℝ) :=
+  ⟨fun p => Real.exp ((p.1 : ℝ) * (p.2 : ℝ)), by fun_prop⟩
+
+/-- The row integrals of `expKernel` are `∫₀¹ e^{x y} dy`: the kernel is positive, so the absolute
+value does nothing, and on `[0, 1]` the projection `projIcc` is the identity. -/
+theorem row_expKernel (x : Icc (0 : ℝ) 1) :
+    ∫ y in (0 : ℝ)..1, |expKernel (x, projIcc 0 1 zero_le_one y)|
+      = ∫ y in (0 : ℝ)..1, Real.exp ((x : ℝ) * y) := by
+  refine intervalIntegral.integral_congr fun y hy => ?_
+  rw [uIcc_of_le zero_le_one] at hy
+  rw [expKernel]
+  simp [projIcc_of_mem zero_le_one hy]
+
+/-- The largest row integral of `e^{x y}` over `x ∈ [0, 1]` is `e - 1`, attained at `x = 1`: for
+`0 ≤ x ≤ 1` and `0 ≤ y ≤ 1` one has `x y ≤ y`, so every row integral is at most `∫₀¹ e^y = e - 1`,
+with equality in the last row. -/
+theorem isGreatest_row_expKernel :
+    IsGreatest (Set.range fun x : Icc (0 : ℝ) 1 => ∫ y in (0 : ℝ)..1, Real.exp ((x : ℝ) * y))
+      (Real.exp 1 - 1) := by
+  constructor
+  · refine ⟨⟨1, by norm_num⟩, ?_⟩
+    norm_num [integral_exp]
+  · rintro _ ⟨x, rfl⟩
+    have hx := x.2
+    calc ∫ y in (0 : ℝ)..1, Real.exp ((x : ℝ) * y)
+        ≤ ∫ y in (0 : ℝ)..1, Real.exp y := by
+          refine intervalIntegral.integral_mono_on zero_le_one
+            ((by fun_prop : Continuous fun y : ℝ => Real.exp ((x : ℝ) * y)).intervalIntegrable 0 1)
+            (Real.continuous_exp.intervalIntegrable 0 1) fun y hy => ?_
+          exact Real.exp_le_exp.2 (by nlinarith [hx.1, hx.2, hy.1, hy.2])
+      _ = Real.exp 1 - 1 := by simp [integral_exp]
+
+/-- **`‖K‖ = e − 1`** for the integral operator of (12.4.7), which is the number the book quotes as
+`≐ 1.72`.  This is (2.2.8), the operator-norm formula for a kernel operator on `C[a, b]`, at
+`isGreatest_row_expKernel`. -/
+theorem norm_fredholm_expKernel :
+    ‖fredholm zero_le_one expKernel‖ = Real.exp 1 - 1 := by
+  have hne : Nonempty (Icc (0 : ℝ) 1) := ⟨⟨0, by norm_num⟩⟩
+  rw [norm_fredholm zero_le_one expKernel]
+  simp only [row_expKernel]
+  exact isGreatest_row_expKernel.isLUB.ciSup_eq
+
+/-- **Example 12.4.1**, the opening claim.  For the equation (12.4.7),
+
+`2 u(x) - ∫₀¹ e^{y x} u(y) dy = f(x)`,  `0 ≤ x ≤ 1`,
+
+the operator norm is `‖K‖ = e - 1 ≐ 1.72`, so `‖K‖ < |λ| = 2` and the geometric series theorem
+makes the equation uniquely solvable for every `f ∈ C[0, 1]`, with
+`‖(2 - K)⁻¹‖ ≤ 1 / (2 - (e - 1))` and `‖u‖ ≤ ‖f‖ / (2 - (e - 1))`.  That is the book's own reason
+for choosing `λ = 2`, and it is Example 2.3.2 of §2.3 read at this kernel,
+`AtkinsonHan.Chapter02.example_2_3_2_integral`.
+
+The rest of Example 12.4.1 is arithmetic: the nodal errors (12.4.8) and (12.4.9) of the
+three-point Simpson and three-point Gauss–Legendre rules, and the comparison of the Nyström
+interpolation formula (12.4.6) with quadratic interpolation away from the nodes.  Those are
+measured floating-point numbers and are not stated; the general statement they illustrate is
+`theorem_12_4_4`. -/
+theorem example_12_4_1 :
+    ‖fredholm zero_le_one expKernel‖ = Real.exp 1 - 1 ∧
+      ∃ e : C(Icc (0 : ℝ) 1, ℝ) ≃L[ℝ] C(Icc (0 : ℝ) 1, ℝ),
+        (e : C(Icc (0 : ℝ) 1, ℝ) →L[ℝ] C(Icc (0 : ℝ) 1, ℝ))
+            = (2 : ℝ) • (1 : C(Icc (0 : ℝ) 1, ℝ) →L[ℝ] C(Icc (0 : ℝ) 1, ℝ))
+              - fredholm zero_le_one expKernel ∧
+          ‖(e.symm : C(Icc (0 : ℝ) 1, ℝ) →L[ℝ] C(Icc (0 : ℝ) 1, ℝ))‖
+            ≤ 1 / (2 - (Real.exp 1 - 1)) ∧
+          ∀ u f : C(Icc (0 : ℝ) 1, ℝ),
+            (2 : ℝ) • u - fredholm zero_le_one expKernel u = f →
+              ‖u‖ ≤ ‖f‖ / (2 - (Real.exp 1 - 1)) := by
+  have hsup : (⨆ x, ∫ y in (0 : ℝ)..1, |expKernel (x, projIcc 0 1 zero_le_one y)|)
+      = Real.exp 1 - 1 := by
+    have hne : Nonempty (Icc (0 : ℝ) 1) := ⟨⟨0, by norm_num⟩⟩
+    simp only [row_expKernel]
+    exact isGreatest_row_expKernel.isLUB.ciSup_eq
+  have hlt : (⨆ x, ∫ y in (0 : ℝ)..1, |expKernel (x, projIcc 0 1 zero_le_one y)|)
+      < |(2 : ℝ)| := by
+    rw [hsup, abs_of_pos (by norm_num : (0 : ℝ) < 2)]
+    have := Real.exp_one_lt_d9
+    linarith
+  obtain ⟨e, he, hb, hu⟩ := Chapter02.example_2_3_2_integral zero_le_one expKernel hlt
+  rw [hsup, abs_of_pos (by norm_num : (0 : ℝ) < 2)] at hb hu
+  exact ⟨norm_fredholm_expKernel, e, he, hb, hu⟩
+
+end Example
 
 /-! ### The composite trapezoidal rule -/
 

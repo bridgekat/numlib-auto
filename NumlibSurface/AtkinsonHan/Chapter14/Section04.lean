@@ -1,5 +1,5 @@
 import Numlib.Analysis.HarmonicPolynomial
-import NumlibSurface.AtkinsonHan.Chapter14.Section01
+import NumlibSurface.AtkinsonHan.Chapter14.Section02
 
 /-!
 # Atkinson–Han §14.4: a Galerkin method for an elliptic equation on the disk
@@ -24,6 +24,9 @@ polynomial `1 − |x|²` is injective. So bijectivity follows from injectivity, 
 * `finrank_trialSpace` — `dim X_n = dim Π_n^d = C(n + d, d)`, which for `d = 2` is
   `(n + 1)(n + 2)/2`.
 * `laplacianOn` and `lemma_14_4_1` — Lemma 14.4.1: `Δ : X_n → Π_n^d` is a linear bijection.
+* `span_ridgePoly_polySpace` and `example_14_4_2` — (14.4.14): the ridge polynomials `φ_{m,k}` of
+  Example 14.2.2 span `Π_n^2`, and multiplying them by `1 − x² − y²` spans the trial space `X_n`,
+  which is the basis Example 14.4.2 computes in.
 
 ## Not formalized here
 
@@ -35,7 +38,12 @@ polynomial `1 − |x|²` is injective. So bijectivity follows from injectivity, 
   derivative on an open set, so the space itself does not exist. The abstract halves of the
   argument are formalized elsewhere in this surface: Lax–Milgram is
   `AtkinsonHan.Chapter08.Section03` and Céa's inequality is `AtkinsonHan.Chapter09.Section01`.
-* **Example 14.4.2** is a numerical illustration, with error figures for a mapped region.
+* **Example 14.4.2**'s numerical half: the transplantation of `−Δu + e^{s−t} u = g` from the region
+  `D` to the disk by `s = x − y + a x²`, `t = x + y`, with the coefficients `A`, `γ`, `f` it
+  produces, the test solution (14.4.18), and the error read off Figure 14.3.  The transplantation
+  is a change of variables in the *weak* formulation, so it quantifies over `H¹₀` like the rest of
+  §14.4; the errors are read off a figure.  What is stated is the example's choice of basis,
+  (14.4.14), which needs no Sobolev space: `example_14_4_2`.
 -/
 
 open Module MvPolynomial
@@ -123,5 +131,61 @@ theorem lemma_14_4_1 (hd : 0 < d) (n : ℕ) : Function.Bijective (laplacianOn d 
   refine (LinearMap.injective_iff_surjective_of_finrank_eq_finrank ?_).1
     (lemma_14_4_1_injective hd n)
   rw [finrank_trialSpace n, finrank_polySpace]
+
+
+/-! ### Example 14.4.2: the basis (14.4.14) of the trial space -/
+
+section Basis
+
+open Approximation
+
+open scoped Real
+
+/-- The ridge polynomials of Example 14.2.2 span `Π_n^2` as *polynomials*, and not only as classes
+in `L²(𝔹₂)`.  This is `AtkinsonHan.Chapter14.example_14_2_2_polyLE` carried back along
+`IsMvWeight.toL2`, which is injective on polynomials because no nonzero polynomial vanishes almost
+everywhere on the disk. -/
+theorem span_ridgePoly_polySpace (n : ℕ) :
+    Submodule.span ℝ {p : MvPolynomial (Fin 2) ℝ |
+        ∃ m ≤ n, ∃ k ≤ m, p = ridgePoly m (k * (π / (m + 1)))} = polySpace 2 n := by
+  refine Submodule.map_injective_of_injective
+    (f := (isMvWeight_ballVolume 2).toL2) (IsMvWeight.toL2_injective _) ?_
+  rw [Submodule.map_span]
+  have himg : (isMvWeight_ballVolume 2).toL2 ''
+      {p : MvPolynomial (Fin 2) ℝ | ∃ m ≤ n, ∃ k ≤ m, p = ridgePoly m (k * (π / (m + 1)))}
+      = {f | ∃ m ≤ n, ∃ k ≤ m, f = ridgeL2 m k} := by
+    ext f
+    constructor
+    · rintro ⟨p, ⟨m, hm, k, hk, rfl⟩, rfl⟩
+      exact ⟨m, hm, k, hk, rfl⟩
+    · rintro ⟨m, hm, k, hk, rfl⟩
+      exact ⟨ridgePoly m (k * (π / (m + 1))), ⟨m, hm, k, hk, rfl⟩, rfl⟩
+  rw [himg, example_14_2_2_polyLE n]
+  rfl
+
+/-- **(14.4.14), the basis of the trial space used in Example 14.4.2.**  With the orthonormal ridge
+polynomials `φ_{m,k}` of (14.2.5) as a basis of `Π_n^2`, the functions
+
+`ψ_{m,k}(x, y) = (1 − x² − y²) φ_{m,k}(x, y)`,  `0 ≤ k ≤ m ≤ n`,
+
+span the trial space `X_n` of (14.4.8).  There are `dim Π_n^2 = (n + 1)(n + 2)/2` of them and
+`dim X_n` is the same (`finrank_trialSpace`), so they are a basis of `X_n` — which is what makes
+the Galerkin equations of §14.4 a square system, uniquely solvable by Lemma 14.4.1.
+
+Everything else in Example 14.4.2 is the numerical run; see the module doc. -/
+theorem example_14_4_2 (n : ℕ) :
+    Submodule.span ℝ {q : MvPolynomial (Fin 2) ℝ |
+        ∃ m ≤ n, ∃ k ≤ m, q = oneSubSumSq 2 * ridgePoly m (k * (π / (m + 1)))}
+      = trialSpace 2 n := by
+  rw [trialSpace, ← span_ridgePoly_polySpace n, Submodule.map_span]
+  congr 1
+  ext q
+  constructor
+  · rintro ⟨m, hm, k, hk, rfl⟩
+    exact ⟨_, ⟨m, hm, k, hk, rfl⟩, rfl⟩
+  · rintro ⟨p, ⟨m, hm, k, hk, rfl⟩, rfl⟩
+    exact ⟨m, hm, k, hk, rfl⟩
+
+end Basis
 
 end AtkinsonHan.Chapter14

@@ -40,6 +40,15 @@ is a single bounded idempotent `P`.
 
 The concrete parts of §12.3.2 and the linear system for the iterated collocation solution.
 
+Example 12.3.2, the iterated Galerkin method for `50 u - K u = f` with `k(x, y) = e^{xy}` over the
+*discontinuous* piecewise linear functions.  Table 12.2 is measured data; the rates (12.3.19) and
+(12.3.20) that it confirms would follow from `AtkinsonHan.Chapter12.equation_12_1_24` and
+`equation_12_3_11` at that projection, but their two inputs — `‖u - P_n u‖ = 𝒪(h²)` and
+`‖(I - P_n) K*‖ = 𝒪(h²)` — are asserted by the book without proof and need the `L²` projection onto
+the *discontinuous* piecewise linear functions, which `Numlib/Approximation/PiecewiseLinearL2` does
+not have: it carries only the continuous one.  See
+`plans/NumlibSurface/AtkinsonHan/Chapter12/Section03.toml`.
+
 ## Conventions
 
 The book derives the bound of `equation_12_3_11` for an *orthogonal* projection in a Hilbert
