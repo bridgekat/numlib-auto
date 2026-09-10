@@ -2,6 +2,7 @@ import Mathlib.Analysis.Convex.Combination
 import Mathlib.Analysis.Convex.Function
 import Mathlib.Topology.Semicontinuity.Basic
 import Numlib.Analysis.InnerProductSpace.WeakCompactness
+import Numlib.Analysis.Normed.Module.Reflexive
 import Numlib.Analysis.Normed.Module.WeakDual
 import Numlib.Approximation.BestApprox
 import Numlib.Variational.Minimization
@@ -17,17 +18,21 @@ compactness is the extraction of a weakly convergent subsequence from a bounded 
 
 ## The standing hypothesis on the space
 
-The classical hypothesis is that the space is a **reflexive** Banach space, and Mathlib has no
-reflexivity class. What the argument uses is not reflexivity itself but its sequential consequence,
-that every norm-bounded sequence has a weakly convergent subsequence — the Eberlein–Šmulian and
-Kakutani theorems make the two equivalent for a Banach space, and it is in this equivalent form that
-[han2009theoretical] state reflexivity (their Thm 2.7.5) before using it. So the hypothesis is
-carried here by the class `WeaklySeqCompactSpace`, which says exactly that, and the theorems below
-are the classical ones with reflexivity replaced by its characterization.
+The classical hypothesis is that the space is a **reflexive** Banach space. What the argument uses
+is not reflexivity itself but its sequential consequence, that every norm-bounded sequence has a
+weakly convergent subsequence — the Eberlein–Šmulian and Kakutani theorems make the two equivalent
+for a Banach space, and it is in this equivalent form that [han2009theoretical] state reflexivity
+(their Thm 2.7.5) before using it. So the hypothesis is carried here by the class
+`WeaklySeqCompactSpace`, which says exactly that, and the theorems below are the classical ones
+with reflexivity replaced by its characterization.
 
-Every Hilbert space is an instance (`exists_subseq_weak_tendsto`), which is where the applications
-in this library live; `Lᵖ` for `1 < p < ∞` and every uniformly convex Banach space are instances
-too, by theorems this library does not have.
+Reflexivity itself is `NormedSpace.IsReflexive` of `Numlib.Analysis.Normed.Module.Reflexive`, and
+`WeaklySeqCompactSpace.of_isReflexive` below derives this class from it, so the direct method
+applies to **every reflexive real Banach space**: that instance is the easy half of the equivalence,
+`NormedSpace.exists_subseq_forall_dual_tendsto`, read through `WeakSeqTendsto`. In particular every
+Hilbert space is covered, by `NormedSpace.instIsReflexiveOfInnerProductSpace`, and that is where the
+applications in this library live; `Lᵖ` for `1 < p < ∞` and every uniformly convex Banach space are
+reflexive too, by theorems this library does not have. Mathlib has no reflexivity class of its own.
 
 ## Main definitions
 
@@ -44,6 +49,8 @@ too, by theorems this library does not have.
 
 ## Main statements
 
+* `WeaklySeqCompactSpace.of_isReflexive` — every reflexive real normed space satisfies the standing
+  hypothesis, so every theorem below applies to it.
 * `exists_seq_convexCombination_tendsto` — **Mazur's lemma**: from a weakly convergent sequence one
   can form convex combinations of its tails that converge in norm.
 * `Convex.isWeakSeqClosed`, `ConvexOn.weakSeqLowerSemicontinuousOn` — the two corollaries of Mazur's
@@ -63,7 +70,6 @@ too, by theorems this library does not have.
 -/
 
 open Bornology Filter Topology
-open scoped InnerProductSpace
 
 section Defs
 
@@ -99,8 +105,9 @@ method of the calculus of variations needs of the underlying space, and, for a B
 equivalent to reflexivity by the theorems of Eberlein–Šmulian and Kakutani; it is the form in which
 [han2009theoretical] Thm 2.7.5 states reflexivity.
 
-Mathlib has no reflexivity class, so this class carries the hypothesis instead. Every Hilbert space
-is an instance. -/
+The class is the hypothesis of the theorems below rather than reflexivity itself because it is what
+their proofs use, and because only the easy half of the equivalence is available here; every
+reflexive space is an instance, by `WeaklySeqCompactSpace.of_isReflexive`. -/
 class WeaklySeqCompactSpace (V : Type*) [NormedAddCommGroup V] [NormedSpace ℝ V] : Prop where
   /-- Every norm-bounded sequence has a weakly convergent subsequence. -/
   exists_subseq_weakSeqTendsto : ∀ (u : ℕ → V) (C : ℝ), (∀ n, ‖u n‖ ≤ C) →
@@ -130,25 +137,22 @@ theorem WeakSeqLowerSemicontinuousOn.mono {f : V → ℝ} {K K' : Set V}
 
 end Defs
 
-/-! ### Hilbert spaces are weakly sequentially compact -/
+/-! ### Reflexive spaces are weakly sequentially compact -/
 
-section Hilbert
+/-- **Every reflexive real normed space is weakly sequentially compact on bounded sets.** This is
+the easy half of the classical equivalence, `NormedSpace.exists_subseq_forall_dual_tendsto`, whose
+conclusion is `WeakSeqTendsto` with the quantifier over the dual moved outside; the converse, that
+weak sequential compactness forces reflexivity, is Kakutani's theorem and is not available here.
 
-variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] [CompleteSpace V]
-
-/-- **Every Hilbert space is weakly sequentially compact on bounded sets**, by
-`exists_subseq_weak_tendsto`: the Riesz representation turns the convergence of the inner products
-against a fixed vector into the convergence of a bounded linear functional. -/
-instance : WeaklySeqCompactSpace V where
+Through `NormedSpace.instIsReflexiveOfInnerProductSpace` this covers every Hilbert space, so it
+subsumes the direct route through the Riesz representation and `exists_subseq_weak_tendsto`. It is
+the only instance of the class, so its priority is the default one; it is stated for `ℝ` because
+`WeakSeqTendsto` is, the direct method being an argument about real-valued functionals. -/
+instance WeaklySeqCompactSpace.of_isReflexive {V : Type*} [NormedAddCommGroup V]
+    [NormedSpace ℝ V] [NormedSpace.IsReflexive ℝ V] : WeaklySeqCompactSpace V where
   exists_subseq_weakSeqTendsto u C hC := by
-    obtain ⟨σ, w, hσ, hlim⟩ := exists_subseq_weak_tendsto (𝕜 := ℝ) hC
-    refine ⟨σ, w, hσ, fun ℓ => ?_⟩
-    have hℓ : ∀ x : V, ℓ x = ⟪(InnerProductSpace.toDual ℝ V).symm ℓ, x⟫_ℝ :=
-      fun x => (InnerProductSpace.toDual_symm_apply).symm
-    simp only [hℓ, Function.comp_apply]
-    simpa only [real_inner_comm] using hlim ((InnerProductSpace.toDual ℝ V).symm ℓ)
-
-end Hilbert
+    obtain ⟨w, σ, hσ, h⟩ := NormedSpace.exists_subseq_forall_dual_tendsto (𝕜 := ℝ) hC
+    exact ⟨σ, w, hσ, h⟩
 
 /-! ### Mazur's lemma -/
 

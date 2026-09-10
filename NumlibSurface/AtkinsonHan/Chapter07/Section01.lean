@@ -1,4 +1,5 @@
 import Mathlib.Analysis.Calculus.Deriv.Abs
+import Numlib.Analysis.Sobolev.Mollification
 import Numlib.Analysis.Sobolev.MultiIndex
 
 /-!
@@ -37,11 +38,15 @@ Example 7.1.8 goes through `secondOrder_bridge`, which reads a second-order weak
 first-order weak derivative of the first-order one, and then through the jump obstruction of
 Example 7.1.7 in its general form.
 
-Proposition 7.1.11, the product rule, is here for a *smooth* factor, as
-`proposition_7_1_11_contDiff`: there `g φ` is again a test function and the identity is a direct
-integration by parts. The book states it for two merely locally integrable factors, which needs
-mollification in `L^p` on a domain, and that generality is not here; neither is Proposition 7.1.12,
-the chain rule, which needs the same. Example 7.1.9 needs the trace of §7.3 and is not here either.
+Proposition 7.1.11, the product rule, is here twice: for a *smooth* factor, as
+`proposition_7_1_11_contDiff`, where `g φ` is again a test function and the identity is a direct
+integration by parts; and in the book's own generality, two merely locally integrable factors with
+conjugate exponents, as `proposition_7_1_11`. The second rests on
+`Numlib/Analysis/Sobolev/Mollification.lean`, which supplies the commutation of the weak derivative
+with mollification and the resulting local approximation in `W^{1,p}`. Proposition 7.1.12, the
+chain rule, rests on the same module, with a dominated-convergence passage along an
+almost-everywhere convergent subsequence on top. Example 7.1.9 needs the trace of §7.3 and is the
+one item of §7.1 not here.
 -/
 
 open MeasureTheory Module TopologicalSpace Set intervalIntegral
@@ -148,6 +153,66 @@ theorem proposition_7_1_11_contDiff {α : Fin d → ℕ} (hα : ∑ i, α i = 1)
       (fun x ↦ w x * g x
         + u x * iteratedFDeriv ℝ (∑ i, α i) g x (multiIndexTuple (stdBasis d) α)) Ω :=
   HasWeakIteratedLineDerivOn.mul_contDiff h hα hg
+
+/-- **Proposition 7.1.11** (the product rule): let `p, q ∈ (1, ∞)` be conjugate,
+`1/p + 1/q = 1`, let `α` be a multi-index of order one, so that `∂^α` is a single first-order
+partial derivative `∂_i`, and suppose `u, ∂^α u ∈ L^p_loc(Ω)` and `v, ∂^α v ∈ L^q_loc(Ω)`. Then
+`∂^α (u v)` exists weakly and equals `(∂^α u) v + u ∂^α v`.
+
+The book states this without proof. The proof mollifies `u`, applies the smooth-factor case
+`proposition_7_1_11_contDiff` on a relatively compact open neighbourhood of the support of the test
+function, and passes to the limit under Hölder's inequality; the backbone carries it as
+`HasWeakIteratedLineDerivOn.mul`, on top of the commutation of the weak derivative with
+mollification. The hypothesis `1 < q` is the book's and is kept for alignment, but is redundant:
+it follows from `1 < p` and the conjugacy relation. -/
+theorem proposition_7_1_11 {α : Fin d → ℕ} (hα : ∑ i, α i = 1) {p q : ℝ≥0∞}
+    (hp : 1 < p) (hp' : p < ⊤) (_hq : 1 < q) (hq' : q < ⊤) (hpq : 1 / p + 1 / q = 1)
+    {wu wv : EuclideanSpace ℝ (Fin d) → ℝ}
+    (hu : definition_7_1_1 p Ω u) (hwu : definition_7_1_1 p Ω wu)
+    (hv : definition_7_1_1 q Ω v) (hwv : definition_7_1_1 q Ω wv)
+    (hdu : definition_7_1_3_multiIndex α u wu Ω) (hdv : definition_7_1_3_multiIndex α v wv Ω) :
+    definition_7_1_3_multiIndex α (fun x ↦ u x * v x) (fun x ↦ wu x * v x + u x * wv x) Ω :=
+  have : ENNReal.HolderConjugate p q :=
+    ENNReal.holderConjugate_iff.2 (by simpa only [one_div] using hpq)
+  hdu.mul hα hdv hp.le hp'.ne hq'.ne hu hwu hv hwv
+
+/-- **Proposition 7.1.12** (the chain rule): let `f ∈ C^1(ℝ, ℝ)` have bounded derivative, let
+`Ω ⊆ ℝ^d` be open and bounded, let `p ∈ (1, ∞)`, and let `α` be a multi-index of order one, so
+that `∂^α` is a single first-order partial derivative `∂_i`. If `v ∈ L^p(Ω)` and `∂^α v ∈ L^p(Ω)`,
+that is `v ∈ W^{1,p}(Ω)` in the notation of §7.2, then `∂^α (f ∘ v) ∈ L^p(Ω)` and
+`∂^α (f ∘ v) = (f' ∘ v) ∂^α v`.
+
+The book states this without proof. The proof mollifies `v` on a relatively compact open
+neighbourhood of the support of the test function, applies the classical chain rule there, and
+passes to the limit; the backbone carries it as
+`HasWeakIteratedLineDerivOn.contDiff_comp`. Two of the book's hypotheses are weakened. Boundedness
+of `Ω` is kept in the statement for alignment but is not used: the backbone asks only that `v` and
+`∂^α v` be locally `p`-integrable on `Ω`. And the book asks for `v ∈ W^{1,p}(Ω)`, that is for
+*every* first-order derivative to be in `L^p(Ω)`, and concludes for every `i`; here one `α` at a
+time is enough, and quantifying over `α` recovers the book's reading. -/
+theorem proposition_7_1_12 {f : ℝ → ℝ} (hf : ContDiff ℝ 1 f) {M : ℝ}
+    (hM : ∀ t, |deriv f t| ≤ M)
+    (_hΩ : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin d))))
+    {p : ℝ≥0∞} (hp : 1 < p) (hp' : p < ⊤) {α : Fin d → ℕ} (hα : ∑ i, α i = 1)
+    {w : EuclideanSpace ℝ (Fin d) → ℝ}
+    (hv : MemLp v p (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin d)))))
+    (hw : MemLp w p (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin d)))))
+    (hd : definition_7_1_3_multiIndex α v w Ω) :
+    MemLp (fun x ↦ deriv f (v x) * w x) p
+        (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin d)))) ∧
+      definition_7_1_3_multiIndex α (fun x ↦ f (v x)) (fun x ↦ deriv f (v x) * w x) Ω := by
+  have hM0 : 0 ≤ M := le_trans (abs_nonneg _) (hM 0)
+  have hdom : MemLp (fun x ↦ M * |w x|) p
+      (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin d)))) := hw.abs.const_mul M
+  refine ⟨MemLp.of_le hdom
+    ((hf.continuous_deriv le_rfl).comp_aestronglyMeasurable hv.1 |>.mul hw.1)
+    (Filter.Eventually.of_forall fun z ↦ ?_), ?_⟩
+  · rw [Real.norm_eq_abs, Real.norm_eq_abs, abs_mul,
+      abs_of_nonneg (mul_nonneg hM0 (abs_nonneg (w z)))]
+    exact mul_le_mul_of_nonneg_right (hM _) (abs_nonneg _)
+  · exact hd.contDiff_comp hα hf hM hp.le hp'.ne
+      (fun x _ ↦ ⟨(Ω : Set (EuclideanSpace ℝ (Fin d))), self_mem_nhdsWithin, hv⟩)
+      (fun x _ ↦ ⟨(Ω : Set (EuclideanSpace ℝ (Fin d))), self_mem_nhdsWithin, hw⟩)
 
 /-! ### The line `ℝ^1`
 

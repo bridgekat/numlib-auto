@@ -1,0 +1,109 @@
+[[node]]
+id = "HasWeakIteratedFDerivOn.eLpNorm_weakIteratedFDeriv"
+
+[[node]]
+id = "MemSobolev.hasWeakIteratedFDerivOn"
+
+[[node]]
+id = "MemSobolev.memLp_weakIteratedFDeriv"
+
+[[node]]
+id = "sobolevNorm_le_of_forall_eLpNorm_le"
+
+[[node]]
+id = "MeasureTheory.Measure.restrict_coe_top"
+
+[[node]]
+id = "MemSobolev.memLp_top"
+
+[[node]]
+id = "MeasureTheory.LocallyIntegrable.contDiff_convolution_normed"
+
+[[node]]
+id = "MemSobolev.iteratedFDeriv_convolution_normed"
+
+[[node]]
+id = "MemSobolev.convolution_normed"
+
+[[node]]
+id = "MemSobolev.tendsto_sobolevNorm_convolution_sub"
+
+[[node]]
+id = "MeasureTheory.MemLp.tendsto_eLpNorm_indicator_compl_ball"
+
+[[node]]
+id = "exists_contDiff_eqOn_one_closedBall_one"
+
+[[node]]
+id = "exists_seq_contDiff_hasCompactSupport_tendsto_sobolevNorm_sub"
+
+[[node]]
+id = "eLpNorm_weakIteratedFDeriv_le_sobolevNorm"
+
+[[node]]
+id = "HasWeakIteratedFDerivOn.eLpNorm_le_sobolevNorm_top"
+
+[[node]]
+id = "MemSobolev.memLp_iteratedFDeriv"
+
+[[node]]
+id = "exists_seq_contDiffBump_tendsto_rOut_zero"
+
+[[node]]
+id = "MemSobolev.exists_contDiff_hasCompactSupport_sobolevNorm_sub_le"
+
+[[node]]
+id = "MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.4'
+
+[[node]]
+id = "MeasureTheory.eLpNorm_one_comp_continuousLinearMap_le"
+
+[[node]]
+id = "hasWeakIteratedFDerivOn_of_tendsto_eLpNorm_one"
+
+[[node]]
+id = "MemSobolev.exists_seq_contDiff_tendsto_eLpNorm"
+
+[[node]]
+id = "tsupport_sub_subset"
+
+[[node]]
+id = "TopologicalSpace.Opens.exists_partitionOfUnity"
+
+[[node]]
+id = "ENNReal.sum_range_div_two_pow_succ_add"
+
+[[node]]
+id = "ENNReal.sum_range_div_two_pow_succ_le"
+
+[[node]]
+id = "exists_bound_norm_iteratedFDeriv"
+
+[[node]]
+id = "norm_iteratedFDeriv_smul_le_const_mul_sum"
+
+[[node]]
+id = "MeasureTheory.eLpNorm_add_le_of_norm"
+
+[[node]]
+id = "MeasureTheory.eLpNorm_sum_le_of_norm"
+
+[[node]]
+id = "MeasureTheory.MemLp.add_of_norm"
+
+[[node]]
+id = "eLpNorm_iteratedFDeriv_smul_sub_le"
+
+[[node]]
+id = "eLpNorm_iteratedFDeriv_sub_patch_le"
+
+[[node]]
+id = "MeasureTheory.eLpNorm_restrict_iUnion_le"
+
+[[node]]
+id = "MemSobolev.exists_contDiffOn_sobolevNorm_sub_le"
+
+[[node]]
+id = "MemSobolev.exists_seq_contDiffOn_tendsto_sobolevNorm"
+source = 'Meyers and Serrin, H = W, Proc. Nat. Acad. Sci. 51 (1964), 1055-1056; Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.3.1'

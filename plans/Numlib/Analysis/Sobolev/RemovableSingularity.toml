@@ -1,0 +1,55 @@
+[[node]]
+id = "unitPunctureBump"
+
+[[node]]
+id = "punctureBump"
+
+[[node]]
+id = "contDiff_punctureBump"
+
+[[node]]
+id = "punctureBump_nonneg"
+
+[[node]]
+id = "punctureBump_le_one"
+
+[[node]]
+id = "punctureBump_eq_one"
+
+[[node]]
+id = "punctureBump_eq_zero"
+
+[[node]]
+id = "support_punctureBump_subset"
+
+[[node]]
+id = "fderiv_punctureBump_eq_zero"
+
+[[node]]
+id = "exists_norm_fderiv_punctureBump_le"
+
+[[node]]
+id = "integral_fderiv_smul_eq_neg_integral_smul_apply"
+
+[[node]]
+id = "hasWeakFDerivOn_of_hasFDerivAt"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Lemma 7.1.5'
+
+[[node]]
+id = "hasWeakIteratedLineDerivOn_of_hasFDerivAt"
+
+[[node]]
+id = "hasWeakFDerivOn_of_hasFDerivAt_compl_singleton"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Examples 7.2.5 and 7.2.6 ("it can be verified")'
+
+[[node]]
+id = "hasWeakIteratedLineDerivOn_of_hasFDerivAt_compl_singleton"
+
+[[node]]
+id = "setIntegral_norm_rpow_ball_zero"
+
+[[node]]
+id = "integrableOn_norm_rpow_ball_zero"
+
+[[node]]
+id = "tendsto_inv_mul_setIntegral_norm_ball_zero"

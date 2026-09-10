@@ -25,26 +25,48 @@ id = "exercise_2_7_4"
 
 [[node]]
 id = "definition_2_7_4"
-kind = "definition"
-desc = '''Definition 2.7.4: a normed space `V` is reflexive when the canonical embedding into its
-double dual is onto, `(V')' = V`. Not formalized: Mathlib has no reflexivity class for normed
-spaces, and nothing in the book consumes the definition except Theorem 2.7.5, whose right-hand
-side the surface takes as a hypothesis instead; §2.7's module doc records this. The node
-`exercise_2_7_4` in this group is Exercise 2.7.4, the Radon–Riesz property in a uniformly convex
-space, and is a different result.'''
+
+[[node]]
+id = "definition_2_7_4_iff_isReflexive"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 2.7.4"
+
+[[node]]
+id = "theorem_2_7_5_mp"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 2.7.5"
+
+[[node]]
+id = "theorem_2_7_5_mpr"
+kind = "theorem"
+desc = '''Theorem 2.7.5, the converse half: a Banach space in which every bounded sequence has a
+weakly convergent subsequence is reflexive. Not formalized; the forward half is `theorem_2_7_5_mp`.
+Two pieces are missing, and only the second is a real obstruction.
+
+(1) **Goldstine's theorem**, that the image of the closed unit ball of `V` is weak-∗ dense in the
+closed unit ball of `(V')'`. Mathlib has no bipolar theorem for the weak-∗ topology
+(`LinearMap.subset_bipolar` is one inclusion only), but it does have the two ingredients: the weak
+representation theorem `LinearMap.dualEmbedding_surjective` and `LinearMap.rightDualEquiv`, which
+identify the dual of `WeakBilin B` with the other side of the pairing, and
+`geometric_hahn_banach_closed_point` for separating a point from a closed convex set in a locally
+convex space. Estimate: around a hundred lines.
+
+(2) The reduction from the *sequential* hypothesis to the *topological* weak compactness that
+Kakutani's argument consumes. That is the hard half of Eberlein–Šmulian, whose proof builds
+alternating sequences of vectors and functionals to produce a separable subspace, and Mathlib has
+nothing in that direction. Estimate: several hundred lines, a task of its own.'''
+deps = ["definition_2_7_4"]
 
 [[node]]
 id = "theorem_2_7_5"
 kind = "theorem"
 desc = '''Theorem 2.7.5: a Banach space is reflexive if and only if every bounded sequence in it
-has a subsequence converging weakly to an element of the space. Not formalized: this is the
-Eberlein–Šmulian theorem together with Kakutani's characterization of reflexivity, and Mathlib has
-neither — no reflexivity class for normed spaces (only `Module.IsReflexive` for the algebraic
-double dual) and no Banach–Alaoglu in a form that would give it; where the book applies it
-(Theorems 3.3.8, 3.3.10, 3.3.12, 3.3.14) the surface assumes the right-hand property directly, as
-the backbone's class `WeaklySeqCompactSpace` of `Numlib/Variational/WeakMinimization`. §2.7's
-module doc records this.'''
-deps = ["definition_2_7_4", "definition_2_7_6"]
+has a subsequence converging weakly to an element of the space. Split into its two implications,
+`theorem_2_7_5_mp` (proved, from the backbone's
+`NormedSpace.exists_subseq_forall_dual_tendsto`) and `theorem_2_7_5_mpr` (open); the `iff` itself
+is one line once the converse exists. Where the book applies the theorem (its Theorems 3.3.8,
+3.3.10, 3.3.12, 3.3.14) the surface assumes the right-hand property directly, as the backbone's
+class `WeaklySeqCompactSpace` of `Numlib/Variational/WeakMinimization`, which `theorem_2_7_5_mp`
+now discharges from reflexivity.'''
+deps = ["theorem_2_7_5_mp", "theorem_2_7_5_mpr"]
 
 [[node]]
 id = "definition_2_7_6"
@@ -60,3 +82,7 @@ id = "definition_2_7_6_weakStar_iff"
 
 [[node]]
 id = "definition_2_7_6_weakStar_of_strong"
+
+[[node]]
+id = "definition_2_7_6_weakStar_iff_weak"
+source = "Atkinson–Han, Theoretical Numerical Analysis, the remark closing §2.7"

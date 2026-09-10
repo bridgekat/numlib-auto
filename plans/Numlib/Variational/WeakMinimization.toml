@@ -16,6 +16,10 @@ id = "WeaklySeqCompactSpace"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 2.7.5"
 
 [[node]]
+id = "WeaklySeqCompactSpace.of_isReflexive"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 2.7.5"
+
+[[node]]
 id = "IsWeakSeqClosed"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.8"
 

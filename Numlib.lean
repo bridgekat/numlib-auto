@@ -22,6 +22,7 @@ import Numlib.Analysis.InnerProductSpace.CompactSpectral
 import Numlib.Analysis.InnerProductSpace.Energy
 import Numlib.Analysis.InnerProductSpace.GramDeterminant
 import Numlib.Analysis.InnerProductSpace.GramSchmidt
+import Numlib.Analysis.InnerProductSpace.NormPow
 import Numlib.Analysis.InnerProductSpace.OrthonormalSeries
 import Numlib.Analysis.InnerProductSpace.Projection.Angle
 import Numlib.Analysis.InnerProductSpace.Projection.Compression
@@ -31,7 +32,9 @@ import Numlib.Analysis.Matrix.SpectralNorm
 import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.Analysis.Normed.Algebra.SpectralRadius
 import Numlib.Analysis.Normed.Lp.SmoothApprox
+import Numlib.Analysis.Normed.Module.DualSeparable
 import Numlib.Analysis.Normed.Module.NormEquivalence
+import Numlib.Analysis.Normed.Module.Reflexive
 import Numlib.Analysis.Normed.Module.WeakDual
 import Numlib.Analysis.Normed.Operator.BanachSteinhaus
 import Numlib.Analysis.Normed.Operator.CollectivelyCompact
@@ -42,11 +45,15 @@ import Numlib.Analysis.Normed.Operator.Scaling
 import Numlib.Analysis.Normed.Ring.CondNumber
 import Numlib.Analysis.Normed.Ring.Inverse
 import Numlib.Analysis.ODE.PicardLindelof
+import Numlib.Analysis.Sobolev.Density
 import Numlib.Analysis.Sobolev.Domain
+import Numlib.Analysis.Sobolev.Mollification
 import Numlib.Analysis.Sobolev.MultiIndex
 import Numlib.Analysis.Sobolev.Periodic
+import Numlib.Analysis.Sobolev.RemovableSingularity
 import Numlib.Analysis.Sobolev.Slobodeckij
 import Numlib.Analysis.Sobolev.Space
+import Numlib.Analysis.Sobolev.Tempered
 import Numlib.Analysis.Sobolev.WeakDeriv
 import Numlib.Analysis.SpecialFunctions.Chebyshev
 import Numlib.Analysis.SpecialFunctions.ChebyshevIntegral

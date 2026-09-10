@@ -2,6 +2,7 @@ import Mathlib.Analysis.InnerProductSpace.Dual
 import Mathlib.Analysis.Normed.Module.DoubleDual
 import Numlib.Analysis.Convex.Uniform
 import Numlib.Analysis.Fourier.TrigonometricBasis
+import Numlib.Analysis.Normed.Module.Reflexive
 import Numlib.Analysis.Normed.Module.WeakDual
 import Numlib.Variational.WeakMinimization
 
@@ -22,6 +23,9 @@ Analysis Framework*, 3rd edition, Springer, 2009, §2.7.
 
 ## Main definitions
 
+* `definition_2_7_4` — **reflexivity**: the canonical embedding `J : V → (V')'` is onto. This is
+  the backbone's `NormedSpace.IsReflexive` (`Numlib/Analysis/Normed/Module/Reflexive`), by
+  `definition_2_7_4_iff_isReflexive`.
 * `definition_2_7_6`, `definition_2_7_6_weakStar` — the two clauses of Definition 2.7.6: a
   sequence of bounded operators converges *strongly* when `‖L - Lₙ‖ → 0`, and *weak-∗*, that is
   pointwise, when `Lₙ v → L v` for every `v`.
@@ -38,6 +42,10 @@ Analysis Framework*, 3rd edition, Springer, 2009, §2.7.
   makes the inequality of `exercise_2_7_2` strict.
 * `exercise_2_7_3`, `exercise_2_7_4` — the Radon–Riesz property, in an inner product space and in
   a uniformly convex Banach space.
+* `theorem_2_7_5_mp` — the half of Theorem 2.7.5 the book uses: in a reflexive space every bounded
+  sequence has a weakly convergent subsequence.
+* `definition_2_7_6_weakStar_iff_weak` — the remark closing the section: in the dual of a reflexive
+  space, weak-∗ convergence and weak convergence agree.
 
 The two general facts are the backbone's: `exists_norm_le_of_tendsto_toWeakSpace` and
 `norm_le_liminf_norm_of_weak_tendsto` (`Numlib/Analysis/Normed/Module/WeakDual`), stated there for
@@ -49,21 +57,29 @@ Example 2.7.3 is read on the circle: `L²(0, 2π)` is `L²(AddCircle (2π))`, an
 is `trigFun (2π) (-n)` up to the normalisation of Theorem 1.3.13 — an orthonormal sequence, which
 is what makes it weakly null and of constant norm.
 
+Beware the colliding numbers: `exercise_2_7_4` is Exercise 2.7.4, the Radon–Riesz property in a
+uniformly convex space, and is a different result from Definition 2.7.4, reflexivity, which
+precedes Theorem 2.7.5.
+
 ## Not formalized here
 
-Theorem 2.7.5 — a Banach space is reflexive if and only if every bounded sequence has a weakly
-convergent subsequence — is not stated, and neither is **Definition 2.7.4**, reflexivity itself:
-`exercise_2_7_4` below is Exercise 2.7.4, the Radon–Riesz property in a uniformly convex space, and
-is a different result from the Definition that precedes Theorem 2.7.5. The obstruction to the
-Theorem is that it is the Eberlein–Šmulian theorem together with
-Kakutani's characterisation of reflexivity, and Mathlib has neither reflexivity as a class nor
-Banach–Alaoglu in a form that would give it. Wherever the book applies Theorem 2.7.5 (its
-Theorems 3.3.8, 3.3.10, 3.3.12 and 3.3.14) the surface assumes the right-hand property directly, as
-the backbone's class `WeaklySeqCompactSpace` of `Numlib/Variational/WeakMinimization`; what the
-book leaves unproved beyond that is recorded in `Numlib/Variational/Minimization`.
-Example 2.7.3's uniform-integrability criterion
-(Dunford–Pettis) is not planned for the same reason, and neither is part (b) of Exercise 2.7.4,
-the uniform convexity of `Lᵖ` by the Clarkson inequalities.
+Of Theorem 2.7.5 only the converse half is missing: that weak sequential compactness of the bounded
+sets forces reflexivity. The forward half is `theorem_2_7_5_mp`, proved from the backbone's
+`NormedSpace.exists_subseq_forall_dual_tendsto`. The converse is Kakutani's characterisation
+together with the hard half of Eberlein–Šmulian. It needs Goldstine's theorem — the weak-∗ density
+of `J (B_V)` in the closed unit ball of `(V')'` — which Mathlib does not state, although
+`LinearMap.dualEmbedding_surjective` and `geometric_hahn_banach_closed_point` would give it; and it
+needs the separable-subspace construction of Eberlein–Šmulian to turn the sequential hypothesis
+into the topological weak compactness Kakutani's argument consumes, of which Mathlib has nothing.
+
+Wherever the book applies Theorem 2.7.5 (its Theorems 3.3.8, 3.3.10, 3.3.12 and 3.3.14) the surface
+assumes the right-hand property directly, as the backbone's class `WeaklySeqCompactSpace` of
+`Numlib/Variational/WeakMinimization`; `theorem_2_7_5_mp` now makes that hypothesis derivable from
+reflexivity, though no instance `NormedSpace.IsReflexive ℝ V → WeaklySeqCompactSpace V` is
+registered, that belonging with the class. What the book leaves unproved beyond that is recorded in
+`Numlib/Variational/Minimization`. Example 2.7.3's uniform-integrability criterion (Dunford–Pettis)
+is not planned, and neither is part (b) of Exercise 2.7.4, the uniform convexity of `Lᵖ` by the
+Clarkson inequalities.
 -/
 
 open Filter MeasureTheory Topology
@@ -189,6 +205,51 @@ theorem exercise_2_7_4 {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [U
     (hnorm : Tendsto (fun n => ‖v n‖) atTop (𝓝 ‖u‖)) : Tendsto v atTop (𝓝 u) :=
   tendsto_of_forall_dual_tendsto_of_tendsto_norm hweak hnorm
 
+/-! ### Definition 2.7.4 and Theorem 2.7.5: reflexivity -/
+
+section Reflexive
+
+variable {𝕜 V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
+
+/-- **Definition 2.7.4.** A normed space `V` is *reflexive* when `(V')' = V`.
+
+The equality is the identification the book sets up in the paragraph just before the definition:
+`J : V → (V')'` is defined by `⟨J v, ℓ⟩ = ⟨ℓ, v⟩`, shown to be an isometry of `V` onto `J (V)`, and
+`J (V)` is then identified with `V`. So the definition says that this canonical `J` — Mathlib's
+`NormedSpace.inclusionInDoubleDual` — is onto, and not merely that `V` and `(V')'` are isometrically
+isomorphic somehow, which is a strictly weaker condition.
+
+The book's two remarks on the definition are the backbone's
+`NormedSpace.completeSpace_of_isReflexive` (a reflexive space is a Banach space) and
+`NormedSpace.instIsReflexiveOfInnerProductSpace` (a Hilbert space is reflexive). -/
+def definition_2_7_4 (𝕜 : Type*) (V : Type*) [RCLike 𝕜] [NormedAddCommGroup V]
+    [NormedSpace 𝕜 V] : Prop :=
+  Function.Surjective (NormedSpace.inclusionInDoubleDual 𝕜 V)
+
+/-- Definition 2.7.4 is the backbone's `NormedSpace.IsReflexive`, in which
+`Numlib.Analysis.Normed.Module.Reflexive` states the properties of reflexive spaces. -/
+theorem definition_2_7_4_iff_isReflexive :
+    definition_2_7_4 𝕜 V ↔ NormedSpace.IsReflexive 𝕜 V :=
+  ⟨fun h => ⟨h⟩, fun _ => NormedSpace.surjective_inclusionInDoubleDual⟩
+
+/-- **Theorem 2.7.5**, the implication the book goes on to use: in a reflexive space every bounded
+sequence has a subsequence converging weakly to an element of the space.
+
+The book states the theorem for a Banach space, but completeness need not be assumed: a reflexive
+normed space is complete (`NormedSpace.completeSpace_of_isReflexive`). The proof is the backbone's
+`NormedSpace.exists_subseq_forall_dual_tendsto`, which passes to the closed span of the sequence —
+separable, and reflexive because it is a closed subspace — and applies the sequential
+Banach–Alaoglu theorem there.
+
+The converse is not formalized; see the module doc. -/
+theorem theorem_2_7_5_mp (hV : definition_2_7_4 𝕜 V) {v : ℕ → V} {C : ℝ}
+    (hv : ∀ n, ‖v n‖ ≤ C) :
+    ∃ (u : V) (φ : ℕ → ℕ), StrictMono φ ∧ WeakSeqTendsto 𝕜 (fun k => v (φ k)) u := by
+  have : NormedSpace.IsReflexive 𝕜 V := definition_2_7_4_iff_isReflexive.1 hV
+  exact NormedSpace.exists_subseq_forall_dual_tendsto hv
+
+end Reflexive
+
 /-! ### Definition 2.7.6: convergence of a sequence of operators -/
 
 section Operators
@@ -212,8 +273,7 @@ def definition_2_7_6 {𝕜 V W : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [No
 This is convergence in the topology of pointwise convergence on `V → W`;
 `definition_2_7_6_weakStar_iff` is the correspondence. The name follows the book: for `W = 𝕜` this
 is weak-∗ convergence in the dual `V'`, and the book records that it agrees with weak convergence
-in `V'` when `V` is reflexive — a remark this surface does not state, reflexivity being absent from
-Mathlib (see "Not formalized here"). -/
+in `V'` when `V` is reflexive, which is `definition_2_7_6_weakStar_iff_weak`. -/
 def definition_2_7_6_weakStar {𝕜 V W : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜 V]
     [NormedAddCommGroup W] [NormedSpace 𝕜 W] (L : ℕ → V →L[𝕜] W) (T : V →L[𝕜] W) : Prop :=
   ∀ v : V, Tendsto (fun n => L n v) atTop (𝓝 (T v))
@@ -247,6 +307,20 @@ theorem definition_2_7_6_weakStar_of_strong {L : ℕ → V →L[𝕜] W} {T : V 
     exact h'.congr fun n => by rw [norm_sub_rev T (L n)]
   refine squeeze_zero_norm (fun n => ?_) hb
   simpa using (L n - T).le_opNorm v
+
+/-- The remark closing §2.7: **in the dual of a reflexive space, weak-∗ convergence is weak
+convergence**. A sequence of functionals converges weak-∗ when it converges at every `v ∈ V`, and
+weakly when it converges at every element of `(V')'`; reflexivity says that the second family of
+tests is the first. Only the forward implication uses reflexivity. -/
+theorem definition_2_7_6_weakStar_iff_weak (hV : definition_2_7_4 𝕜 V)
+    (L : ℕ → V →L[𝕜] 𝕜) (T : V →L[𝕜] 𝕜) :
+    definition_2_7_6_weakStar L T ↔ WeakSeqTendsto 𝕜 L T := by
+  constructor
+  · intro h ψ
+    obtain ⟨v, rfl⟩ := hV ψ
+    exact h v
+  · intro h v
+    exact h (NormedSpace.inclusionInDoubleDual 𝕜 V v)
 
 end Operators
 

@@ -19,45 +19,46 @@ id = "equation_7_4_2"
 id = "equation_7_4_2_norm"
 
 [[node]]
+id = "theorem_7_4_1_complex"
+
+[[node]]
 id = "theorem_7_4_1"
+
+[[node]]
+id = "equation_7_4_1"
 kind = "theorem"
-desc = '''Theorem 7.4.1: `v` in `L^2(R^d)` lies in `H^k(R^d)` if and only if
-`(1 + |xi|^2)^{k/2} Fv` lies in `L^2(R^d)`, and the two norms are equivalent (7.4.1), so `H^s(R^d)`
-may be *defined* by the Fourier condition for any real `s` (7.4.2), with `H^0 = L^2` and, on
-tempered distributions, for `s < 0`.
+desc = '''(7.4.1), the norm equivalence that the book states after the membership criterion of
+Theorem 7.4.1: there are `c_1, c_2 > 0` with
+`c_1 ||v||_{H^k(R^d)} <= || (1 + |xi|^2)^{k/2} Fv ||_{L^2(R^d)} <= c_2 ||v||_{H^k(R^d)}`
+for every `v` in `H^k(R^d)`, the left-hand norm being the one Definition 7.2.2 displays,
+`[sum_{|a| <= k} ||d^a v||_{L^2}^2]^{1/2}`, which is the norm of
+`SobolevMultiIndex R (stdBasis d) k 2 (top) volume` by `definition_7_2_2_multiIndex_norm`.
 
-Half of this is formalized and half is not, and the halves must not be confused. The book's
-`H^k(R^d)` is the `W^{k,2}(R^d)` of Definition 7.2.2, cut out by the weak derivatives `d^a v` of
-order `|a| <= k`; `equation_7_4_2` and `equation_7_4_2_norm` prove the displayed Fourier condition
-and its norm identity against a *different* reading of `H^s(R^d)`, Mathlib's Bessel potential space
-`TemperedDistribution.MemSobolev s 2`. What this node still asks for is that the two readings
-coincide for integer `s = k`, which is the content of Theorem 7.4.1 and of the norm equivalence
-(7.4.1). Two pieces are missing and neither is in Mathlib.
+The *membership* half of Theorem 7.4.1 is proved, as `theorem_7_4_1`, and does not give this: it
+goes through Mathlib's `TemperedDistribution.MemSobolev.fourierMultiplierCLM_of_bounded`, which
+is a soft statement about bounded symbols and carries no constants. What (7.4.1) needs on top is
 
-(1) **The bridge**: the distributional derivative `d_{m}` of
-`Mathlib/Analysis/Distribution/TemperedDistribution.lean`, which tests against the Schwartz class,
-agrees on the whole space with `HasWeakIteratedLineDerivOn` of
-`Numlib/Analysis/Sobolev/WeakDeriv.lean`, which tests against `C_0^inf(R^d)`. One direction is free
-(a test function is Schwartz); the other is a truncation argument -- multiply a Schwartz function
-`f` by `chi(x/n)` for a `ContDiffBump` `chi`, so that `chi(./n) f` is a test function, and pass to
-the limit in the integral by dominated convergence, the cross term carrying a factor `1/n` from
-`d_m chi(./n)`. About 150-250 lines, and it is the piece worth doing first: it is what any later
-transfer between this project's `W^{k,p}` and Mathlib's tempered-distribution theory will need. It
-needs no convolution theory, so it is not blocked the way section 7.3 is.
+(1) **Exercise 7.4.2**, the two-sided symbol inequality
+`c_1 (sum_{|a| <= k} |xi^a|^2)^{1/2} <= (1 + |xi|^2)^{k/2} <= c_2 (sum_{|a| <= k} |xi^a|^2)^{1/2}`.
+The upper bound is easy: `|xi^a|^2 <= (1 + |xi|^2)^{|a|} <= (1 + |xi|^2)^k` for `|a| <= k`, and the
+sum has `#{a : |a| <= k}` terms. For the lower bound the multinomial expansion is *not* needed --
+the cheap route is the largest coordinate. With `t = max_i |xi_i|` one has `|xi|^2 <= d t^2`, so
+`(1 + |xi|^2)^k <= (1 + d)^k max(1, t^2)^k = (1 + d)^k max(1, t^{2k})`, and `t^{2k} = (xi^a)^2` for
+the multi-index `a = k e_i` at a maximizing `i`, which has `|a| = k`; since the sum also contains
+the term `a = 0`, whose value is `1`, the whole of `max(1, t^{2k})` is bounded by
+`sum_{|a| <= k} (xi^a)^2`. So `c_1 = (1 + d)^{-k/2}` works, with no combinatorics at all.
 
-(2) **The symbol inequality of Exercise 7.4.2**, `(1 + |xi|^2)^{k/2} <= c sum_{|a| <= k} |xi^a|`,
-which is the multinomial theorem, needed for the direction that reconstructs membership of `H^k`
-from the derivatives; the opposite direction is `memLp_iteratedLineDerivOp`, which is proved. A
-cleaner route than the multinomial estimate is an induction on `k` over the multiplier identity
-`(1 + |xi|^2)^{1/2} = (1 + |xi|^2)^{-1/2} + sum_i xi_i * [xi_i (1 + |xi|^2)^{-1/2}]`, whose
-summands are all bounded symbols, so that
-`TemperedDistribution.MemSobolev.fourierMultiplierCLM_of_bounded` and `MemSobolev.add` carry the
-step.
+(2) **The Fourier transform of a weak derivative on the whole space**,
+`F(d^a v) = (2 pi i xi)^a Fv` in `L^2`, which follows from Mathlib's
+`TemperedDistribution.fourier_lineDerivOp_eq` iterated, once the weak derivative is identified with
+the distributional one by `MeasureTheory.Lp.iteratedLineDerivOp_eq_iff_hasWeakIteratedLineDerivOn`
+of `Numlib/Analysis/Sobolev/Tempered.lean`, and once the `L^2` representative is read off as in
+`fourier_aeEq_symbol_mul_fourier_of_besselPotential_eq`.
 
-A third, smaller wrinkle: the book's `H^k(R^d)` is real-valued and Mathlib's tempered distributions
-are complex-valued, so the statement also needs the complexification of an `L^2(R^d; R)` function
-and the fact that it preserves weak derivatives.'''
-deps = ["equation_7_4_2", "definition_7_2_2_multiIndex", "definition_7_1_3_multiIndex"]
+With those two, Plancherel (`MeasureTheory.Lp.norm_fourier_eq`, as used in `equation_7_4_2_norm`)
+turns `sum_{|a| <= k} ||d^a v||_{L^2}^2` into `int sum_{|a| <= k} (2 pi)^{2|a|} |xi^a|^2 |Fv|^2`
+and the symbol inequality compares it with `int (1 + |xi|^2)^k |Fv|^2`.'''
+deps = ["theorem_7_4_1", "definition_7_2_2_multiIndex_norm", "equation_7_4_2_norm"]
 
 [[node]]
 id = "example_7_4_2"

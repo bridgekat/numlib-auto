@@ -1,0 +1,116 @@
+[[node]]
+id = "MeasureTheory.Integrable.memLp_of_bound"
+
+[[node]]
+id = "LineDeriv.listLineDerivOp"
+
+[[node]]
+id = "LineDeriv.iteratedLineDerivOp_eq_listLineDerivOp"
+
+[[node]]
+id = "LineDeriv.listLineDerivOp_congr_perm"
+
+[[node]]
+id = "LineDeriv.iteratedLineDerivOp_congr_perm"
+
+[[node]]
+id = "LineDeriv.lineDerivOp_iteratedLineDerivOp"
+
+[[node]]
+id = "SchwartzMap.lineDerivOp_comm"
+
+[[node]]
+id = "SchwartzMap.iteratedLineDerivOp_congr_perm"
+
+[[node]]
+id = "TemperedDistribution.lineDerivOp_comm"
+
+[[node]]
+id = "TemperedDistribution.iteratedLineDerivOp_congr_perm"
+
+[[node]]
+id = "TemperedDistribution.iteratedLineDerivOp_apply"
+
+[[node]]
+id = "SchwartzMap.integrable_norm_iteratedFDeriv_mul_norm"
+
+[[node]]
+id = "HasWeakIteratedLineDerivOn.integral_smul_eq_complex"
+
+[[node]]
+id = "HasWeakIteratedLineDerivOn.integral_smul_eq_schwartz"
+
+[[node]]
+id = "MeasureTheory.Lp.hasWeakIteratedLineDerivOn_of_iteratedLineDerivOp_eq"
+
+[[node]]
+id = "MeasureTheory.Lp.iteratedLineDerivOp_eq_of_hasWeakIteratedLineDerivOn"
+
+[[node]]
+id = "MeasureTheory.Lp.iteratedLineDerivOp_eq_iff_hasWeakIteratedLineDerivOn"
+
+[[node]]
+id = "TemperedDistribution.one_add_rpow_half_eq_add"
+
+[[node]]
+id = "TemperedDistribution.fourierMultiplierCLM_add"
+
+[[node]]
+id = "TemperedDistribution.besselPotential_neg_one_laplacian_eq"
+
+[[node]]
+id = "TemperedDistribution.besselPotential_one_eq"
+
+[[node]]
+id = "TemperedDistribution.MemSobolev.sum"
+
+[[node]]
+id = "TemperedDistribution.MemSobolev.laplacian_of_lineDerivOp"
+
+[[node]]
+id = "TemperedDistribution.MemSobolev.of_lineDerivOp"
+
+[[node]]
+id = "TemperedDistribution.MemSobolev.iteratedLineDerivOp"
+
+[[node]]
+id = "TemperedDistribution.MemSobolev.of_iteratedLineDerivOp"
+
+[[node]]
+id = "List.perm_flatMap_replicate_update"
+
+[[node]]
+id = "multiIndexDirections_add_single_perm"
+
+[[node]]
+id = "HasWeakIteratedLineDerivOn.comp_continuousLinearMap"
+
+[[node]]
+id = "HasWeakIteratedLineDerivOn.ofReal_iff"
+
+[[node]]
+id = "MeasureTheory.memLp_ofReal_iff"
+
+[[node]]
+id = "ofFn_multiIndexTuple"
+
+[[node]]
+id = "exists_multiIndex_perm"
+
+[[node]]
+id = "TemperedDistribution.MemSobolev.of_iteratedLineDerivOp_basis"
+
+[[node]]
+id = "MemSobolevMultiIndex.memSobolev"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.4.1'
+
+[[node]]
+id = "TemperedDistribution.MemSobolev.memSobolevMultiIndex"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.4.1'
+
+[[node]]
+id = "memSobolevMultiIndex_iff_memSobolev"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.4.1'
+
+[[node]]
+id = "memSobolevMultiIndex_ofReal_iff"

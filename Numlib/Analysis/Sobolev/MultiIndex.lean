@@ -33,7 +33,12 @@ difference matters at `p = 2`, where only the norm here is induced by an inner p
 * `multiIndexDirections b α` and `multiIndexTuple b α`, the `|α|` directions naming `∂^α` — the
   basis vector `b i` repeated `α i` times, the indices in increasing order — as a list and as a
   tuple, so that `∂^α v` is the weak derivative of `v` along `multiIndexTuple b α` in the sense of
-  `HasWeakIteratedLineDerivOn`;
+  `HasWeakIteratedLineDerivOn`, and `multiIndexCount m`, the multi-index of a tuple `m` of basis
+  indices, which counts how often each index occurs in it;
+* `listFDeriv l f`, differentiation of `f` along the entries of a list of directions, the vehicle of
+  the symmetry statement `ContDiff.iteratedFDeriv_congr_perm`;
+* `basisCoordProd b m`, the continuous multilinear form `y ↦ ∏ j, (b.repr (y j)) (m j)`, with which
+  a continuous multilinear map is assembled from its values on tuples of basis vectors;
 * `SobolevMultiIndexTuple F ι k p Ω μ`, the ambient space: the `ℓ^p` product over the multi-indices
   `α` with `|α| ≤ k` of the spaces `L^p(Ω)`, with `SobolevMultiIndexTuple.fn` the function a tuple
   carries, namely its component at `α = 0`;
@@ -58,9 +63,13 @@ difference matters at `p = 2`, where only the norm here is induced by an inner p
 * `SobolevMultiIndex.memSobolevMultiIndex`, `MemSobolevMultiIndex.exists_sobolevMultiIndex` and
   `SobolevMultiIndex.ext_of_fn_ae_eq`: the type and the predicate describe the same functions, each
   function coming from exactly one element;
-* `MemSobolev.memSobolevMultiIndex`: a function of `W^{k,p}(Ω)` in the tensor formulation of
-  `Numlib/Analysis/Sobolev/Domain.lean` is one here, its `∂^α` being the tensor derivative
-  evaluated at the tuple naming `α`.
+* `ContDiff.iteratedFDeriv_congr_perm`: **the iterated derivative of a `C^∞` function is symmetric
+  in its arguments**, which Mathlib has only for order two or for analytic functions;
+* `MemSobolev.memSobolevMultiIndex` and `memSobolev_of_memSobolevMultiIndex`: **the tensor
+  formulation of `W^{k,p}(Ω)` in `Numlib/Analysis/Sobolev/Domain.lean` and the multi-index
+  formulation here describe the same functions** — one way the `∂^α` are the tensor derivative
+  evaluated at the tuple naming `α`, the other way the tensor is assembled from the `∂^α`, and the
+  symmetry above is what lets it be evaluated at an unsorted tuple of basis vectors.
 
 ## Implementation notes
 
@@ -71,8 +80,10 @@ The norm of Atkinson–Han's Definition 7.2.2 sums over the multi-indices `α`, 
 derivatives of order `n` by the operator norm of one tensor of `E [×n]→L[ℝ] F`. On a
 finite-dimensional `E` the two are equivalent, the derivative tensors of a Sobolev function being
 symmetric, so mathematically they give the same space and the same topology and either will do for
-a Banach space statement; that equivalence is not formalized here, and the two formulations are
-separate types with separate proofs.
+a Banach space statement. That they contain the same functions is
+`MemSobolev.memSobolevMultiIndex` and `memSobolev_of_memSobolevMultiIndex` below; that the two norms
+are equivalent is not formalized here, and the two formulations remain separate types with separate
+proofs.
 
 They are not equal, and at `p = 2` that is the whole difference between a Banach space and a
 Hilbert space, once `k ≥ 2` and `dim E ≥ 2`: the operator norm on `E [×n]→L[ℝ] F` fails the
@@ -93,15 +104,18 @@ basis fixed; here the basis is an explicit argument.
 ### The relation to the tensor formulation
 
 `MemSobolev.memSobolevMultiIndex` sends the tensor formulation into this one: the tensor derivative
-of order `|α|` evaluated at `multiIndexTuple b α` is `∂^α`. The converse — that a function with all
-the `∂^α` in `L^p(Ω)` has the tensor derivatives too — is true, and its proof recovers the tensor of
-order `n` from its values on the basis tuples; but the values on a basis tuple that is not sorted
+of order `|α|` evaluated at `multiIndexTuple b α` is `∂^α`, and
+`memSobolev_of_memSobolevMultiIndex` is the converse — a function with all the `∂^α` in `L^p(Ω)`
+has the tensor derivatives too. The proof of the converse recovers the tensor of order `n` from its
+values on the tuples of basis vectors, `basisCoordProd` carrying the extension by multilinearity.
+The values on a tuple of basis vectors that is not sorted
 are `∂^α` of the *reordered* tuple, so the argument needs the symmetry of `iteratedFDeriv ℝ n φ x`
 under permutations of its arguments for a `C^∞` function `φ`. Mathlib has that symmetry for `n = 2`
 (`ContDiffAt.isSymmSndFDerivAt`) and for analytic functions of any order
-(`ContDiffAt.domDomCongr_iteratedFDeriv`, which needs `ω`-smoothness), but not for `C^∞` functions
-of order `n ≥ 3`, and a test function is not analytic. That gap is the only thing between the two
-formulations, and nothing below needs the missing direction.
+(`ContDiffAt.domDomCongr_iteratedFDeriv`, which needs `ω`-smoothness) but not for `C^∞` functions of
+order `n ≥ 3`, and a test function is not analytic; `ContDiff.iteratedFDeriv_congr_perm` supplies it
+here, by transporting the commutation of two directional derivatives along a `List.Perm`. Only the
+functions are matched, not the norms.
 
 ### Upstream
 
@@ -117,7 +131,7 @@ submodule of it.
 
 open Filter MeasureTheory Module Set TopologicalSpace
 
-open scoped Distributions ENNReal Topology
+open scoped ContDiff Distributions ENNReal Topology
 
 /-! ### Multi-indices -/
 
@@ -192,7 +206,197 @@ weak derivative of `v` along this tuple, in the sense of `HasWeakIteratedLineDer
 def multiIndexTuple (b : ι → E) (α : ι → ℕ) : Fin (∑ i, α i) → E :=
   fun j ↦ (multiIndexDirections b α).get (j.cast (length_multiIndexDirections b α).symm)
 
+omit [NormedAddCommGroup E] [NormedSpace ℝ E] in
+/-- The directions naming a multi-index, as a list, are the entries of the tuple naming it. -/
+theorem multiIndexDirections_eq_ofFn (b : ι → E) (α : ι → ℕ) :
+    multiIndexDirections b α = List.ofFn (multiIndexTuple b α) := by
+  refine (List.ext_getElem (by simp [length_multiIndexDirections]) fun i h1 h2 ↦ ?_).symm
+  simp [multiIndexTuple]
+
 end Directions
+
+/-! ### Symmetry of the iterated derivative of a smooth function -/
+
+section Symmetry
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+  [NormedAddCommGroup F] [NormedSpace ℝ F] {f : E → F}
+
+/-- Differentiating `f` successively along the entries of a list of directions, the head of the
+list *innermost*: `listFDeriv [v₁, …, vₙ] f = ∂_{vₙ} ⋯ ∂_{v₁} f`.
+
+Indexing by a list rather than by a tuple is what makes `listFDeriv_congr_perm` an induction on
+`List.Perm`, whose `swap` constructor is exactly the transposition of the two innermost
+derivatives; `ContDiff.listFDeriv_ofFn` identifies this with `iteratedFDeriv`. -/
+noncomputable def listFDeriv (l : List E) (f : E → F) : E → F :=
+  l.foldl (fun g v ↦ fun z ↦ fderiv ℝ g z v) f
+
+/-- Differentiating along no directions at all leaves the function alone. -/
+@[simp]
+theorem listFDeriv_nil (f : E → F) : listFDeriv [] f = f := rfl
+
+/-- Peeling the head of the list off `listFDeriv` takes the derivative along it first. -/
+theorem listFDeriv_cons (v : E) (l : List E) (f : E → F) :
+    listFDeriv (v :: l) f = listFDeriv l (fun z ↦ fderiv ℝ f z v) := rfl
+
+/-- The derivative of a smooth function in a fixed direction is smooth. -/
+theorem ContDiff.fderiv_apply_right (hf : ContDiff ℝ ∞ f) (v : E) :
+    ContDiff ℝ ∞ fun z ↦ fderiv ℝ f z v :=
+  (hf.fderiv_right (m := ∞) le_rfl).clm_apply contDiff_const
+
+/-- Differentiating a smooth function along the entries of `List.ofFn y` is its `n`-th derivative
+evaluated at the tuple `y`. Each step is `ContDiff.iteratedFDeriv_succ_apply_left'`, which moves one
+derivative from the outside of the iterated derivative to the inside. -/
+theorem ContDiff.listFDeriv_ofFn (hf : ContDiff ℝ ∞ f) {n : ℕ} (y : Fin n → E) (x : E) :
+    listFDeriv (List.ofFn y) f x = iteratedFDeriv ℝ n f x y := by
+  induction n generalizing f with
+  | zero => simp [iteratedFDeriv_zero_apply]
+  | succ n ih =>
+    rw [List.ofFn_succ, listFDeriv_cons, ih (hf.fderiv_apply_right (y 0)),
+      hf.iteratedFDeriv_succ_apply_left' n y x]
+    rfl
+
+/-- **Two directional derivatives of a smooth function commute.** This is the symmetry of the
+second derivative, in the form in which `listFDeriv_congr_perm` consumes it: an equality of
+functions rather than of values, so that it may be applied under a further derivative. -/
+theorem ContDiff.fderiv_fderiv_comm (hf : ContDiff ℝ ∞ f) (v w : E) :
+    (fun z ↦ fderiv ℝ (fun y ↦ fderiv ℝ f y v) z w)
+      = fun z ↦ fderiv ℝ (fun y ↦ fderiv ℝ f y w) z v := by
+  funext x
+  have h1 : (fun z ↦ iteratedFDeriv ℝ 1 f z ![v]) = fun z ↦ fderiv ℝ f z v := by
+    funext z; rw [iteratedFDeriv_one_apply]; simp
+  have h2 := hf.fderiv_iteratedFDeriv_apply 1 ![v] w x
+  rw [h1, iteratedFDeriv_one_apply] at h2
+  simpa using h2
+
+/-- **Differentiating a smooth function along a list of directions does not depend on the order of
+the list.** The induction is on `List.Perm`: its `swap` constructor is the transposition of the two
+innermost derivatives, which is `ContDiff.fderiv_fderiv_comm`, and its `cons` constructor peels one
+derivative off and applies the induction hypothesis to the differentiated function, which is smooth
+again. -/
+theorem listFDeriv_congr_perm {l₁ l₂ : List E} (h : l₁.Perm l₂) {f : E → F}
+    (hf : ContDiff ℝ ∞ f) : listFDeriv l₁ f = listFDeriv l₂ f := by
+  induction h generalizing f with
+  | nil => rfl
+  | cons a _ ih => rw [listFDeriv_cons, listFDeriv_cons, ih (hf.fderiv_apply_right a)]
+  | swap a b l =>
+    rw [listFDeriv_cons, listFDeriv_cons, listFDeriv_cons, listFDeriv_cons,
+      hf.fderiv_fderiv_comm b a]
+  | trans _ _ ih₁ ih₂ => rw [ih₁ hf, ih₂ hf]
+
+/-- **The iterated derivative of a `C^∞` function is symmetric in its arguments**: it takes the same
+value at two tuples of directions that are permutations of each other.
+
+Mathlib has this for order two (`ContDiffAt.isSymmSndFDerivAt`) and, for any order, for analytic
+functions (`ContDiffAt.domDomCongr_iteratedFDeriv`, which asks for `ω`-smoothness); this is the
+`C^∞` statement of any order, obtained by transporting the commutation of two directional
+derivatives along a `List.Perm`. The two tuples are allowed to have different lengths — the
+hypothesis forces them to be equal — so that it applies to a pair of tuples whose lengths agree only
+propositionally, such as `Fin n` and `Fin (∑ i, α i)`. -/
+theorem ContDiff.iteratedFDeriv_congr_perm (hf : ContDiff ℝ ∞ f) {n₁ n₂ : ℕ}
+    {y₁ : Fin n₁ → E} {y₂ : Fin n₂ → E} (h : (List.ofFn y₁).Perm (List.ofFn y₂)) (x : E) :
+    iteratedFDeriv ℝ n₁ f x y₁ = iteratedFDeriv ℝ n₂ f x y₂ := by
+  rw [← hf.listFDeriv_ofFn y₁ x, ← hf.listFDeriv_ofFn y₂ x, listFDeriv_congr_perm h hf]
+
+end Symmetry
+
+/-! ### The multi-index of a tuple of basis indices -/
+
+section Count
+
+variable {ι E : Type*} [Fintype ι] [LinearOrder ι] {n : ℕ}
+
+/-- The multi-index counting how often each index occurs in a tuple `m` of indices: the derivative
+`∂_{b (m 0)} ⋯ ∂_{b (m (n-1))}` is `∂^α` for `α = multiIndexCount m`, once the directions are put
+in increasing order. -/
+def multiIndexCount (m : Fin n → ι) : ι → ℕ :=
+  fun i ↦ {j ∈ (Finset.univ : Finset (Fin n)) | m j = i}.card
+
+/-- The order of the multi-index of a tuple is the length of the tuple. -/
+theorem sum_multiIndexCount (m : Fin n → ι) : ∑ i, multiIndexCount m i = n := by
+  have h := Finset.card_eq_sum_card_fiberwise
+    (f := m) (s := (Finset.univ : Finset (Fin n))) (t := (Finset.univ : Finset ι))
+    (fun j _ ↦ Finset.mem_univ (m j))
+  simpa [multiIndexCount] using h.symm
+
+/-- The directions naming a multi-index, as a multiset: `α i` copies of `b i` for each index `i`,
+the sorting that `multiIndexDirections` performs having been forgotten. -/
+theorem coe_multiIndexDirections (b : ι → E) (α : ι → ℕ) :
+    ((multiIndexDirections b α : List E) : Multiset E)
+      = ∑ i, Multiset.replicate (α i) (b i) := by
+  rw [multiIndexDirections, ← Multiset.coe_bind]
+  simp only [Finset.sort_eq, Multiset.coe_replicate]
+  rfl
+
+/-- The entries of a tuple, as a multiset. -/
+theorem Multiset.coe_ofFn (g : Fin n → E) :
+    ((List.ofFn g : List E) : Multiset E) = ∑ j, ({g j} : Multiset E) := by
+  induction n with
+  | zero => simp
+  | succ n ih =>
+    rw [List.ofFn_succ, Fin.sum_univ_succ, ← ih (fun j ↦ g j.succ)]
+    simp [Multiset.cons_coe]
+
+/-- **A tuple of basis vectors is a permutation of the directions naming a multi-index**, namely of
+the multi-index counting the occurrences of each index in the tuple. Both sides have the same
+multiset of entries, `b i` occurring `multiIndexCount m i` times. -/
+theorem multiIndexDirections_multiIndexCount_perm (b : ι → E) (m : Fin n → ι) :
+    (List.ofFn fun j ↦ b (m j)).Perm (multiIndexDirections b (multiIndexCount m)) := by
+  rw [← Multiset.coe_eq_coe, Multiset.coe_ofFn, coe_multiIndexDirections,
+    ← Finset.sum_fiberwise_of_maps_to (t := (Finset.univ : Finset ι))
+      (fun j _ ↦ Finset.mem_univ (m j)) (fun j ↦ ({b (m j)} : Multiset E))]
+  refine Finset.sum_congr rfl fun i _ ↦ ?_
+  rw [Finset.sum_congr rfl (fun j hj ↦ by rw [(Finset.mem_filter.1 hj).2]),
+    Finset.sum_const, Multiset.nsmul_singleton]
+  rfl
+
+end Count
+
+/-! ### Multilinear maps read in a basis -/
+
+section MultilinearBasis
+
+variable {ι E : Type*} [Fintype ι] [NormedAddCommGroup E] [NormedSpace ℝ E]
+
+/-- The continuous `n`-linear form on `E` that reads off the product of the coordinates named by a
+tuple `m` of basis indices: `basisCoordProd b m y = ∏ j, (b.repr (y j)) (m j)`.
+
+Together with `ContinuousMultilinearMap.apply_eq_sum_basis` these forms expand a continuous
+multilinear map into its values on tuples of basis vectors, and so assemble one from prescribed such
+values; the space is finite-dimensional, the basis being indexed by a `Fintype`, so the coordinate
+functionals are automatically continuous. -/
+noncomputable def basisCoordProd (b : Basis ι ℝ E) {n : ℕ} (m : Fin n → ι) : E [×n]→L[ℝ] ℝ :=
+  letI := b.finiteDimensional_of_finite
+  (ContinuousMultilinearMap.mkPiAlgebra ℝ (Fin n) ℝ).compContinuousLinearMap
+    fun j ↦ (b.coord (m j)).toContinuousLinearMap
+
+/-- `basisCoordProd b m` is the product, over the slots `j`, of the `m j`-th coordinate of the
+`j`-th argument. -/
+@[simp]
+theorem basisCoordProd_apply (b : Basis ι ℝ E) {n : ℕ} (m : Fin n → ι) (y : Fin n → E) :
+    basisCoordProd b m y = ∏ j, b.repr (y j) (m j) := by
+  have := b.finiteDimensional_of_finite
+  rw [basisCoordProd, ContinuousMultilinearMap.compContinuousLinearMap_apply,
+    ContinuousMultilinearMap.mkPiAlgebra_apply]
+  simp
+
+/-- **A continuous multilinear map is determined by its values on tuples of basis vectors**, as the
+sum of those values weighted by the products of coordinates: writing each argument in the basis and
+expanding by multilinearity. -/
+theorem ContinuousMultilinearMap.apply_eq_sum_basis {G : Type*} [NormedAddCommGroup G]
+    [NormedSpace ℝ G] (b : Basis ι ℝ E) {n : ℕ} (T : E [×n]→L[ℝ] G) (y : Fin n → E) :
+    T y = ∑ m : Fin n → ι, (∏ j, b.repr (y j) (m j)) • T fun j ↦ b (m j) := by
+  classical
+  have h1 : T y = T fun j ↦ ∑ i, b.repr (y j) i • b i := by
+    congr 1
+    funext j
+    exact (b.sum_repr (y j)).symm
+  rw [h1, show (T fun j ↦ ∑ i, b.repr (y j) i • b i)
+      = ∑ m : Fin n → ι, T fun j ↦ b.repr (y j) (m j) • b (m j) from
+    T.toMultilinearMap.map_sum fun (j : Fin n) (i : ι) ↦ b.repr (y j) i • b i]
+  exact Finset.sum_congr rfl fun m _ ↦ T.toMultilinearMap.map_smul_univ _ _
+
+end MultilinearBasis
 
 /-! ### The ambient space -/
 
@@ -478,6 +682,122 @@ theorem MemSobolev.memSobolevMultiIndex (h : MemSobolev f k p Ω μ) :
   obtain ⟨w, hw, hwp⟩ := h.exists_hasWeakIteratedFDerivOn (n := ∑ i, α i) (by exact_mod_cast hα)
   exact ⟨_, hw.lineDeriv _, (ContinuousMultilinearMap.apply ℝ (fun _ : Fin (∑ i, α i) ↦ E) F
     (multiIndexTuple (b : ι → E) α)).comp_memLp' hwp⟩
+
+/-- **A function of `W^{k,p}(Ω)` in the multi-index formulation is one in the tensor formulation**,
+the converse of `MemSobolev.memSobolevMultiIndex`, so that the two formulations describe the same
+functions.
+
+The weak derivative of order `n` is assembled from the `∂^α` with `|α| = n`: it is the continuous
+`n`-linear map whose value on a tuple `(b i₁, …, b iₙ)` of basis vectors is `∂^α f` for the
+multi-index `α = multiIndexCount` counting the occurrences of each index, extended by multilinearity
+through `basisCoordProd`. What has to be checked is the integration by parts formula for an
+arbitrary tuple of directions; multilinearity reduces it to the tuples of basis vectors, and there
+the definition of `∂^α` supplies it for the *sorted* tuple only. The two agree because
+`iteratedFDeriv ℝ n φ x` is symmetric in its arguments for a test function `φ`
+(`ContDiff.iteratedFDeriv_congr_perm`), which is what makes this direction harder than the other
+one.
+
+The name is `memSobolev_of_memSobolevMultiIndex` and not `MemSobolevMultiIndex.memSobolev` because
+`Numlib/Analysis/Sobolev/Tempered.lean` has already taken the latter for the corresponding
+statement about Mathlib's Bessel potential spaces. -/
+theorem memSobolev_of_memSobolevMultiIndex (h : MemSobolevMultiIndex b f k p Ω μ) :
+    MemSobolev f k p Ω μ := by
+  classical
+  obtain ⟨u₀, hu₀, -⟩ := h.2 0 (by simp)
+  have hfloc : LocallyIntegrableOn f (Ω : Set E) μ := hu₀.locallyIntegrableOn
+  refine ⟨h.memLp, fun n hn ↦ ?_⟩
+  have hnk : n ≤ k := by exact_mod_cast hn
+  -- one weak derivative `∂^α` for each tuple `m` of basis indices, `α` counting the indices in `m`
+  have hchoice : ∀ m : Fin n → ι, ∃ v : E → F,
+      HasWeakIteratedLineDerivOn (multiIndexTuple (b : ι → E) (multiIndexCount m)) f v Ω μ ∧
+        MemLp v p (μ.restrict (Ω : Set E)) := fun m ↦
+    h.2 (multiIndexCount m) (by rw [sum_multiIndexCount]; exact hnk)
+  choose v hv hvp using hchoice
+  -- the tensor of order `n` they assemble
+  set L : (Fin n → ι) → (F →L[ℝ] (E [×n]→L[ℝ] F)) := fun m ↦
+    ContinuousMultilinearMap.smulRightL ℝ (fun _ : Fin n ↦ E) F (basisCoordProd b m) with hLdef
+  set W : E → E [×n]→L[ℝ] F := fun x ↦ ∑ m : Fin n → ι, L m (v m x) with hWdef
+  have hWsum : W = ∑ m : Fin n → ι, (⇑(L m) ∘ v m) := by
+    funext x
+    simp [hWdef, Finset.sum_apply, Function.comp_def]
+  have hWapply : ∀ (x : E) (y : Fin n → E),
+      W x y = ∑ m : Fin n → ι, (∏ j, b.repr (y j) (m j)) • v m x := by
+    intro x y
+    rw [hWdef]
+    simp only [sum_apply, hLdef, ContinuousMultilinearMap.smulRightL_apply,
+      ContinuousMultilinearMap.smulRight_apply, basisCoordProd_apply]
+  have hWp : MemLp W p (μ.restrict (Ω : Set E)) := by
+    rw [hWsum]
+    exact memLp_finsetSum' _ fun m _ ↦ (L m).comp_memLp' (hvp m)
+  have hWloc : LocallyIntegrableOn W (Ω : Set E) μ := by
+    rw [hWsum]
+    refine Finset.sum_induction _ (fun g ↦ LocallyIntegrableOn g (Ω : Set E) μ)
+      (fun a c ha hc ↦ ha.add hc) (locallyIntegrable_zero.locallyIntegrableOn _) fun m _ ↦ ?_
+    exact (hv m).locallyIntegrableOn_weakDeriv.comp_continuousLinearMap (L m)
+  refine ⟨W, ⟨hfloc, hWloc, fun φ y ↦ ?_⟩, hWp⟩
+  -- expand the derivative of the test function over the tuples of basis vectors
+  have hexp : ∀ x : E, iteratedFDeriv ℝ n (φ : E → ℝ) x y
+      = ∑ m : Fin n → ι,
+          (∏ j, b.repr (y j) (m j)) * iteratedFDeriv ℝ n (φ : E → ℝ) x fun j ↦ b (m j) :=
+    fun x ↦ by
+      simpa [smul_eq_mul] using
+        ContinuousMultilinearMap.apply_eq_sum_basis b (iteratedFDeriv ℝ n (φ : E → ℝ) x) y
+  have hint : ∀ m : Fin n → ι, IntegrableOn
+      (fun x ↦ iteratedFDeriv ℝ n (φ : E → ℝ) x (fun j ↦ b (m j)) • f x) (Ω : Set E) μ := by
+    intro m
+    have h' := ((hv m).integrable_smul (φ.iteratedFDerivApply n fun j ↦ b (m j))).integrableOn
+      (s := (Ω : Set E))
+    simpa only [TestFunction.iteratedFDerivApply_apply] using h'
+  have hint' : ∀ m : Fin n → ι,
+      IntegrableOn (fun x ↦ (φ : E → ℝ) x • v m x) (Ω : Set E) μ :=
+    fun m ↦ ((hv m).integrable_smul_weakDeriv φ).integrableOn
+  have hintc : ∀ m : Fin n → ι, IntegrableOn
+      (fun x ↦ (∏ j, b.repr (y j) (m j)) •
+        (iteratedFDeriv ℝ n (φ : E → ℝ) x (fun j ↦ b (m j)) • f x)) (Ω : Set E) μ :=
+    fun m ↦ (hint m).smul _
+  have hint'c : ∀ m : Fin n → ι, IntegrableOn
+      (fun x ↦ (∏ j, b.repr (y j) (m j)) • ((φ : E → ℝ) x • v m x)) (Ω : Set E) μ :=
+    fun m ↦ (hint' m).smul _
+  -- integration by parts along one tuple of basis vectors, after sorting it
+  have hstep : ∀ m : Fin n → ι,
+      ∫ x in (Ω : Set E), iteratedFDeriv ℝ n (φ : E → ℝ) x (fun j ↦ b (m j)) • f x ∂μ
+        = (-1 : ℝ) ^ n • ∫ x in (Ω : Set E), (φ : E → ℝ) x • v m x ∂μ := by
+    intro m
+    have hperm : (List.ofFn fun j ↦ b (m j)).Perm
+        (List.ofFn (multiIndexTuple (b : ι → E) (multiIndexCount m))) := by
+      rw [← multiIndexDirections_eq_ofFn]
+      exact multiIndexDirections_multiIndexCount_perm (b : ι → E) m
+    calc ∫ x in (Ω : Set E), iteratedFDeriv ℝ n (φ : E → ℝ) x (fun j ↦ b (m j)) • f x ∂μ
+        = ∫ x in (Ω : Set E), iteratedFDeriv ℝ (∑ i, multiIndexCount m i) (φ : E → ℝ) x
+            (multiIndexTuple (b : ι → E) (multiIndexCount m)) • f x ∂μ :=
+          setIntegral_congr_fun Ω.isOpen.measurableSet fun x _ ↦ by
+            rw [φ.contDiff.iteratedFDeriv_congr_perm hperm x]
+      _ = (-1 : ℝ) ^ (∑ i, multiIndexCount m i) •
+            ∫ x in (Ω : Set E), (φ : E → ℝ) x • v m x ∂μ := (hv m).integral_smul_eq φ
+      _ = (-1 : ℝ) ^ n • ∫ x in (Ω : Set E), (φ : E → ℝ) x • v m x ∂μ := by
+          rw [sum_multiIndexCount]
+  calc ∫ x in (Ω : Set E), iteratedFDeriv ℝ n (φ : E → ℝ) x y • f x ∂μ
+      = ∫ x in (Ω : Set E), ∑ m : Fin n → ι, (∏ j, b.repr (y j) (m j)) •
+          (iteratedFDeriv ℝ n (φ : E → ℝ) x (fun j ↦ b (m j)) • f x) ∂μ := by
+        refine setIntegral_congr_fun Ω.isOpen.measurableSet fun x _ ↦ ?_
+        rw [hexp x, Finset.sum_smul]
+        exact Finset.sum_congr rfl fun m _ ↦ by rw [smul_smul]
+    _ = ∑ m : Fin n → ι, (∏ j, b.repr (y j) (m j)) •
+          ∫ x in (Ω : Set E), iteratedFDeriv ℝ n (φ : E → ℝ) x (fun j ↦ b (m j)) • f x ∂μ := by
+        rw [integral_finsetSum _ fun m _ ↦ hintc m]
+        exact Finset.sum_congr rfl fun m _ ↦ integral_smul _ _
+    _ = ∑ m : Fin n → ι, (∏ j, b.repr (y j) (m j)) •
+          ((-1 : ℝ) ^ n • ∫ x in (Ω : Set E), (φ : E → ℝ) x • v m x ∂μ) :=
+        Finset.sum_congr rfl fun m _ ↦ by rw [hstep m]
+    _ = (-1 : ℝ) ^ n • ∑ m : Fin n → ι,
+          ∫ x in (Ω : Set E), (∏ j, b.repr (y j) (m j)) • ((φ : E → ℝ) x • v m x) ∂μ := by
+        rw [Finset.smul_sum]
+        exact Finset.sum_congr rfl fun m _ ↦ by rw [smul_comm, integral_smul]
+    _ = (-1 : ℝ) ^ n • ∫ x in (Ω : Set E), (φ : E → ℝ) x • W x y ∂μ := by
+        rw [← integral_finsetSum _ fun m _ ↦ hint'c m]
+        refine congrArg _ (setIntegral_congr_fun Ω.isOpen.measurableSet fun x _ ↦ ?_)
+        rw [hWapply x y, Finset.smul_sum]
+        exact Finset.sum_congr rfl fun m _ ↦ smul_comm _ _ _
 
 end Space
 

@@ -1,0 +1,8 @@
+[[node]]
+id = "hasFDerivAt_norm_rpow_of_ne_zero"
+
+[[node]]
+id = "norm_fderiv_norm_rpow_of_ne_zero"
+
+[[node]]
+id = "hasFDerivAt_norm_of_ne_zero"

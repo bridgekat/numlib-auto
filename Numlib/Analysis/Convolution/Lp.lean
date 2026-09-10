@@ -15,14 +15,15 @@ import Mathlib.MeasureTheory.Integral.MeanInequalities
 `Mathlib/Analysis/Convolution.lean` builds the convolution `f ⋆[L, μ] g` and its pointwise theory
 -- existence, support, continuity, smoothness, and pointwise or almost-everywhere convergence of
 `φ_ε ⋆ f` to `f` -- but it contains no estimate on the *size* of a convolution in `L^p`. This file
-supplies that estimate in the case that mollification needs, and the `L^p` convergence of
-mollification that follows from it.
+supplies those estimates, and the `L^p` convergence of mollification that follows from them.
 
-The main estimate is the `L^1 ∗ L^p → L^p` case of Young's convolution inequality,
-`eLpNorm (f ⋆[L, μ] g) p μ ≤ ‖L‖ₑ * eLpNorm f 1 μ * eLpNorm g p μ`, for `1 ≤ p ≤ ∞` and a
-right-invariant measure on a measurable additive group. The general form `1/p + 1/q = 1 + 1/r` is
-*not* proved here. For the classical statements see for instance E. H. Lieb and M. Loss,
-*Analysis*, 2nd edition, American Mathematical Society, 2001, chapter 4, or H. Brezis, *Functional
+The main estimate is Young's convolution inequality. Its `L^1 ∗ L^p → L^p` case,
+`eLpNorm (f ⋆[L, μ] g) p μ ≤ ‖L‖ₑ * eLpNorm f 1 μ * eLpNorm g p μ` for `1 ≤ p ≤ ∞`, holds over any
+right-invariant measure on a measurable additive group; the general form `1/p + 1/q = 1 + 1/r`
+asks for a measure invariant under negation as well, because its proof integrates a reflected
+translate of `g`. Minkowski's integral inequality is proved here in both a weighted and an
+unweighted form. For the classical statements see for instance E. H. Lieb and M. Loss, *Analysis*,
+2nd edition, American Mathematical Society, 2001, chapters 2 and 4, or H. Brezis, *Functional
 Analysis, Sobolev Spaces and Partial Differential Equations*, Springer, 2011, chapter 4.
 
 ## Main results
@@ -30,9 +31,13 @@ Analysis, Sobolev Spaces and Partial Differential Equations*, Springer, 2011, ch
 * `ENNReal.rpow_lintegral_mul_le`: Jensen's inequality for the convex function `t ↦ t ^ p` against
   a weight, `(∫⁻ a, w a * h a ∂μ) ^ p ≤ (∫⁻ a, w a ∂μ) ^ (p - 1) * ∫⁻ a, w a * h a ^ p ∂μ`.
 * `ENNReal.lintegral_rpow_lintegral_mul_le`: the weighted form of Minkowski's integral inequality
-  obtained from it by Tonelli's theorem. This is the analytic core of everything below.
+  obtained from it by Tonelli's theorem. This is the analytic core of the `L^1 ∗ L^p` estimate.
+* `ENNReal.lintegral_rpow_lintegral_le`: Minkowski's integral inequality proper, in the unweighted
+  form `‖∫ H (·, t) dt‖_p ≤ ∫ ‖H (·, t)‖_p dt`, for a σ-finite `μ`.
 * `MeasureTheory.eLpNorm_convolution_le` and `MeasureTheory.MemLp.convolution`: Young's convolution
   inequality in the case `L^1 ∗ L^p → L^p`, and the resulting membership statement.
+* `MeasureTheory.eLpNorm_convolution_le_of_inv_add_inv`: Young's convolution inequality in its
+  general form `1/p + 1/q = 1 + 1/r`, over a measure that is also invariant under negation.
 * `MeasureTheory.eLpNorm_convolution_lsmul_le`: the same inequality with constant `1`, for the
   convolution of a scalar function against a vector-valued one.
 * `MeasureTheory.MemLp.tendsto_eLpNorm_sub_translate`: translation is continuous on `L^p`, in the
@@ -43,8 +48,9 @@ Analysis, Sobolev Spaces and Partial Differential Equations*, Springer, 2011, ch
 
 ## Implementation notes
 
-Young's inequality is proved from Jensen's inequality rather than from Minkowski's integral
-inequality or from reading `f ⋆ g` as a Bochner integral valued in `L^p`. Writing `w = ‖f ·‖ₑ` and
+The `L^1 ∗ L^p → L^p` case of Young's inequality is proved from Jensen's inequality rather than
+from Minkowski's integral inequality or from reading `f ⋆ g` as a Bochner integral valued in
+`L^p`. Writing `w = ‖f ·‖ₑ` and
 using the convexity of `t ↦ t ^ p`, Jensen's inequality for the measure `w dμ` bounds
 `(∫⁻ w h) ^ p` by `(∫⁻ w) ^ (p - 1) * ∫⁻ w h ^ p`; Tonelli's theorem and the translation
 invariance of `μ` then finish the estimate in one step each. The advantage over the other two
@@ -54,10 +60,27 @@ holds unconditionally, because a Bochner integral that does not converge is `0`,
 `ENNReal.lintegral_mul_norm_pow_le`, the two-exponent form of Hölder's inequality, applied to
 `w * h = w ^ (1 - 1/p) * (w * h ^ p) ^ (1/p)`.
 
-Minkowski's integral inequality `‖∫ F (·, t) dt‖_p ≤ ∫ ‖F (·, t)‖_p dt` is *not* proved here, and
-is not what `ENNReal.lintegral_rpow_lintegral_mul_le` says: the latter carries a weight and pays
-for it with a factor `(∫⁻ w) ^ (p - 1)`, which is what makes it provable from Hölder's inequality
-alone. Both consumers below normalize the weight to `∫⁻ w = 1`, where the two agree.
+The two forms of Minkowski's integral inequality proved here are independent.
+`ENNReal.lintegral_rpow_lintegral_mul_le` carries a weight and pays for it with a factor
+`(∫⁻ w) ^ (p - 1)`, which is what makes it provable from Hölder's inequality alone, and it is all
+the mollification estimates below need, since they normalize the weight to `∫⁻ w = 1`. The
+unweighted `ENNReal.lintegral_rpow_lintegral_le` is *not* a corollary of it -- taking the weight to
+be `1` there costs a factor `ν univ ^ (p - 1)`, vacuous for an infinite `ν` -- and is proved by
+duality instead: write `F ^ p = F ^ (p - 1) * F`, apply Tonelli's theorem and Hölder's inequality
+with the exponents `p / (p - 1)` and `p`, and divide by `(∫⁻ F ^ p) ^ (1 - 1/p)`. That division
+needs the quantity to be finite, which is what `ENNReal.lintegral_rpow_le_of_truncation_le`
+arranges, and it is the only reason `μ` is asked to be σ-finite there.
+
+The general form of Young's inequality comes out of the three-exponent Hölder inequality
+`ENNReal.lintegral_mul_mul_norm_pow_le` applied to the splitting
+`‖f t‖ * ‖g (x - t)‖ = (‖f t‖ ^ p * ‖g (x - t)‖ ^ q) ^ (1/r) * (‖f t‖ ^ p) ^ (1/p - 1/r) *
+(‖g (x - t)‖ ^ q) ^ (1/q - 1/r)`, followed by Tonelli's theorem;
+`MeasureTheory.lintegral_enorm_convolution_rpow_le` is that argument with the exponents as real
+numbers. Only the endpoint `r = ∞` needs a separate treatment, because `p = ∞` and `q = ∞` both
+force `r = ∞`. Both the splitting and the endpoint case integrate `t ↦ ‖g (x - t)‖`, so both need
+the reflection `t ↦ x - t` to preserve `μ`; that is where `MeasureTheory.Measure.IsNegInvariant`
+enters, and it is why the `L^1 ∗ L^p → L^p` case is kept as a separate theorem rather than
+specialized from the general one.
 
 `ContDiffBump.tendsto_eLpNorm_convolution_sub` is proved from the weighted Minkowski inequality
 and the continuity of translation on `L^p` directly, without the usual detour through the density
@@ -84,6 +107,20 @@ theorem AEMeasurable.prod_right_ae {γ : Type*} [MeasurableSpace γ] [SFinite ν
   exact (ae_ae_of_ae_prod hfg).mono fun x hx => ⟨fun y => g (x, y), by fun_prop, hx⟩
 
 namespace ENNReal
+
+/-- **Hölder's inequality** for three functions and three nonnegative exponents summing to `1`.
+This is the three-function form of `ENNReal.lintegral_mul_norm_pow_le`. -/
+theorem lintegral_mul_mul_norm_pow_le {f g h : α → ℝ≥0∞}
+    (hf : AEMeasurable f μ) (hg : AEMeasurable g μ) (hh : AEMeasurable h μ)
+    {a b c : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) (hc : 0 ≤ c) (habc : a + b + c = 1) :
+    ∫⁻ x, f x ^ a * g x ^ b * h x ^ c ∂μ
+      ≤ (∫⁻ x, f x ∂μ) ^ a * (∫⁻ x, g x ∂μ) ^ b * (∫⁻ x, h x ∂μ) ^ c := by
+  have key := ENNReal.lintegral_prod_norm_pow_le (μ := μ) (Finset.univ : Finset (Fin 3))
+    (f := ![f, g, h]) (p := ![a, b, c])
+    (fun i _ => by fin_cases i <;> assumption)
+    (by simpa [Fin.sum_univ_three] using habc)
+    (fun i _ => by fin_cases i <;> assumption)
+  simpa [Fin.prod_univ_three] using key
 
 /-- **Jensen's inequality** for the convex function `t ↦ t ^ p` on `ℝ≥0∞`, `1 ≤ p`, against a
 weight `w`: the `p`-th power of the `w`-average of `h` is at most the `w`-average of `h ^ p`, in
@@ -142,6 +179,185 @@ theorem lintegral_rpow_lintegral_mul_le [SFinite μ] [SFinite ν] {p : ℝ} (hp 
         congr 1
         exact lintegral_congr_ae (hslice'.mono fun t ht =>
           lintegral_const_mul'' _ (ht.pow_const p))
+
+
+/-! ### Minkowski's integral inequality -/
+
+/-- **Truncation for a σ-finite measure.** A bound on `∫⁻ x, G x ^ p ∂μ` that holds for every
+measurable `G ≤ F` whose `p`-th moment is finite holds for `F` itself.
+
+Capping the values of `F` at `n` and its support at the `n`-th of the sets exhausting `μ` gives an
+increasing sequence of such `G`, converging pointwise to `F`; monotone convergence then finishes.
+This is what lets an argument that has to divide by `∫⁻ x, F x ^ p ∂μ`, and therefore needs it
+finite, conclude in general. -/
+theorem lintegral_rpow_le_of_truncation_le [SigmaFinite μ] {p : ℝ} (hp : 0 < p)
+    {F : α → ℝ≥0∞} (hF : Measurable F) {c : ℝ≥0∞}
+    (h : ∀ G : α → ℝ≥0∞, Measurable G → (∀ x, G x ≤ F x) → ∫⁻ x, G x ^ p ∂μ ≠ ∞ →
+      ∫⁻ x, G x ^ p ∂μ ≤ c) :
+    ∫⁻ x, F x ^ p ∂μ ≤ c := by
+  set G : ℕ → α → ℝ≥0∞ :=
+    fun n => (spanningSets μ n).indicator (fun x => min (F x) n) with hGdef
+  have hGmeas : ∀ n, Measurable (G n) := fun n =>
+    (hF.min measurable_const).indicator (measurableSet_spanningSets μ n)
+  have hGle : ∀ n x, G n x ≤ F x := by
+    intro n x
+    by_cases hx : x ∈ spanningSets μ n
+    · simpa only [hGdef, Set.indicator_of_mem hx] using min_le_left _ _
+    · simp [hGdef, Set.indicator_of_notMem hx]
+  have hGmono : Monotone G := by
+    intro m n hmn x
+    by_cases hx : x ∈ spanningSets μ m
+    · rw [hGdef]
+      simp only [Set.indicator_of_mem hx,
+        Set.indicator_of_mem (monotone_spanningSets μ hmn hx)]
+      exact min_le_min_left _ (by exact_mod_cast hmn)
+    · simp [hGdef, Set.indicator_of_notMem hx]
+  have hGsup : ∀ x, ⨆ n, G n x = F x := by
+    intro x
+    refine le_antisymm (iSup_le fun n => hGle n x) (le_of_forall_lt fun b hb => ?_)
+    obtain ⟨n₁, hn₁⟩ := ENNReal.exists_nat_gt hb.ne_top
+    obtain ⟨n₀, hn₀⟩ : ∃ n, x ∈ spanningSets μ n :=
+      Set.mem_iUnion.1 (by simp [iUnion_spanningSets])
+    refine lt_of_lt_of_le ?_ (le_iSup (fun n => G n x) (max n₀ n₁))
+    have hx : x ∈ spanningSets μ (max n₀ n₁) := monotone_spanningSets μ (le_max_left _ _) hn₀
+    simp only [hGdef, Set.indicator_of_mem hx]
+    exact lt_min hb (lt_of_lt_of_le hn₁ (by exact_mod_cast le_max_right n₀ n₁))
+  have hfin : ∀ n, ∫⁻ x, G n x ^ p ∂μ ≠ ∞ := by
+    intro n
+    have hbound : ∀ x, G n x ^ p
+        ≤ (spanningSets μ n).indicator (fun _ => (n : ℝ≥0∞) ^ p) x := by
+      intro x
+      by_cases hx : x ∈ spanningSets μ n
+      · simp only [hGdef, Set.indicator_of_mem hx]
+        exact ENNReal.rpow_le_rpow (min_le_right _ _) hp.le
+      · simp [hGdef, Set.indicator_of_notMem hx, ENNReal.zero_rpow_of_pos hp]
+    refine ne_top_of_le_ne_top ?_ (lintegral_mono hbound)
+    rw [lintegral_indicator_const (measurableSet_spanningSets μ n)]
+    exact ENNReal.mul_ne_top (ENNReal.rpow_ne_top_of_nonneg hp.le (by simp))
+      (measure_spanningSets_lt_top μ n).ne
+  calc ∫⁻ x, F x ^ p ∂μ = ∫⁻ x, ⨆ n, G n x ^ p ∂μ := by
+        refine lintegral_congr fun x => ?_
+        rw [← hGsup x]
+        exact (ENNReal.orderIsoRpow p hp).map_iSup _
+    _ = ⨆ n, ∫⁻ x, G n x ^ p ∂μ :=
+        lintegral_iSup (fun n => (hGmeas n).pow_const p)
+          (fun m n hmn x => ENNReal.rpow_le_rpow (hGmono hmn x) hp.le)
+    _ ≤ c := iSup_le fun n => h (G n) (hGmeas n) (hGle n) (hfin n)
+
+/-- The duality step in Minkowski's integral inequality: a minorant `G` of `x ↦ ∫⁻ t, H x t ∂ν`
+whose `p`-th moment is finite already has that moment bounded by the right-hand side of the
+inequality.
+
+Writing `G ^ p = G ^ (p - 1) * G`, bounding the last factor by the integral it lies below,
+exchanging the order of integration and applying Hölder's inequality with the exponents
+`p / (p - 1)` and `p` bounds `∫⁻ G ^ p` by `(∫⁻ G ^ p) ^ (1 - 1/p)` times the right-hand side; the
+finiteness of `∫⁻ G ^ p` is what lets that factor be cancelled. -/
+theorem lintegral_rpow_le_of_le_lintegral [SFinite μ] [SFinite ν] {p : ℝ} (hp : 1 < p)
+    {H : α → β → ℝ≥0∞} (hH : Measurable (uncurry H)) {G : α → ℝ≥0∞} (hG : Measurable G)
+    (hGF : ∀ x, G x ≤ ∫⁻ t, H x t ∂ν) (hfin : ∫⁻ x, G x ^ p ∂μ ≠ ∞) :
+    ∫⁻ x, G x ^ p ∂μ ≤ (∫⁻ t, (∫⁻ x, H x t ^ p ∂μ) ^ (1 / p) ∂ν) ^ p := by
+  have hp0 : (0:ℝ) < p := lt_trans one_pos hp
+  have hp1 : (0:ℝ) < p - 1 := by linarith
+  set q := p / (p - 1) with hqdef
+  have hqpos : (0:ℝ) < q := by rw [hqdef]; positivity
+  have hqp : Real.HolderConjugate q p :=
+    ⟨by rw [hqdef]; field_simp; ring, hqpos, hp0⟩
+  have hconj : 1 / q + 1 / p = 1 := by simpa using hqp.one_div_add_one_div
+  have hmulq : (p - 1) * q = p := by rw [hqdef]; field_simp
+  have hsplit : ∀ x : ℝ≥0∞, x ^ (p - 1) * x = x ^ p := by
+    intro x
+    have h1 : x ^ (p - 1) * x ^ (1:ℝ) = x ^ (p - 1 + 1) :=
+      (ENNReal.rpow_add_of_nonneg _ _ hp1.le zero_le_one).symm
+    simpa using h1
+  have hmeasR : Measurable fun t => (∫⁻ x, H x t ^ p ∂μ) ^ (1 / p) :=
+    ((hH.pow_const p).lintegral_prod_left').pow_const _
+  set B := ∫⁻ x, G x ^ p ∂μ with hB
+  set R := ∫⁻ t, (∫⁻ x, H x t ^ p ∂μ) ^ (1 / p) ∂ν with hR
+  have hstep : B ≤ B ^ (1 / q) * R := by
+    calc B = ∫⁻ x, G x ^ (p - 1) * G x ∂μ :=
+          lintegral_congr fun x => (hsplit (G x)).symm
+      _ ≤ ∫⁻ x, G x ^ (p - 1) * ∫⁻ t, H x t ∂ν ∂μ :=
+          lintegral_mono fun x => by gcongr; exact hGF x
+      _ = ∫⁻ x, ∫⁻ t, G x ^ (p - 1) * H x t ∂ν ∂μ :=
+          lintegral_congr fun x =>
+            (lintegral_const_mul _ (hH.comp measurable_prodMk_left)).symm
+      _ = ∫⁻ t, ∫⁻ x, G x ^ (p - 1) * H x t ∂μ ∂ν :=
+          lintegral_lintegral_swap
+            (((hG.pow_const _).comp measurable_fst).mul hH).aemeasurable
+      _ ≤ ∫⁻ t, B ^ (1 / q) * (∫⁻ x, H x t ^ p ∂μ) ^ (1 / p) ∂ν := by
+          refine lintegral_mono fun t => ?_
+          have hhold := ENNReal.lintegral_mul_le_Lp_mul_Lq μ hqp
+            (hG.pow_const (p - 1)).aemeasurable
+            (hH.comp (measurable_prodMk_right (y := t))).aemeasurable
+          simp only [Pi.mul_apply] at hhold
+          refine hhold.trans_eq ?_
+          congr 2
+          exact lintegral_congr fun x => by rw [← ENNReal.rpow_mul, hmulq]
+      _ = B ^ (1 / q) * R := lintegral_const_mul _ hmeasR
+  rcases eq_or_ne B 0 with hB0 | hB0
+  · simp [hB0]
+  have hpos : (0:ℝ≥0∞) < B ^ (1 / q) := ENNReal.rpow_pos (pos_iff_ne_zero.2 hB0) hfin
+  have hnetop : B ^ (1 / q) ≠ ∞ := ENNReal.rpow_ne_top_of_nonneg (by positivity) hfin
+  have hkey : B ^ (1 / p) ≤ R := by
+    refine (ENNReal.mul_le_mul_iff_right hpos.ne' hnetop).1 (le_trans (le_of_eq ?_) hstep)
+    rw [← ENNReal.rpow_add_of_nonneg _ _ (by positivity) (by positivity), hconj,
+      ENNReal.rpow_one]
+  calc B = (B ^ (1 / p)) ^ p := by
+        rw [← ENNReal.rpow_mul, one_div_mul_cancel hp0.ne', ENNReal.rpow_one]
+    _ ≤ R ^ p := ENNReal.rpow_le_rpow hkey hp0.le
+
+/-- **Minkowski's integral inequality** for a measurable integrand. See
+`ENNReal.lintegral_rpow_lintegral_le` for the version that asks for measurability only almost
+everywhere. -/
+theorem lintegral_rpow_lintegral_le_of_measurable [SigmaFinite μ] [SFinite ν] {p : ℝ} (hp : 1 ≤ p)
+    {H : α → β → ℝ≥0∞} (hH : Measurable (uncurry H)) :
+    (∫⁻ x, (∫⁻ t, H x t ∂ν) ^ p ∂μ) ^ (1 / p)
+      ≤ ∫⁻ t, (∫⁻ x, H x t ^ p ∂μ) ^ (1 / p) ∂ν := by
+  rcases eq_or_lt_of_le hp with rfl | hp1
+  · simp only [ENNReal.rpow_one, div_self (one_ne_zero' ℝ)]
+    exact le_of_eq (lintegral_lintegral_swap hH.aemeasurable)
+  · have hp0 : (0:ℝ) < p := lt_trans one_pos hp1
+    have hF : Measurable fun x => ∫⁻ t, H x t ∂ν := hH.lintegral_prod_right'
+    have hmain : ∫⁻ x, (∫⁻ t, H x t ∂ν) ^ p ∂μ
+        ≤ (∫⁻ t, (∫⁻ x, H x t ^ p ∂μ) ^ (1 / p) ∂ν) ^ p :=
+      lintegral_rpow_le_of_truncation_le hp0 hF fun G hG hGF hGfin =>
+        lintegral_rpow_le_of_le_lintegral hp1 hH hG hGF hGfin
+    calc (∫⁻ x, (∫⁻ t, H x t ∂ν) ^ p ∂μ) ^ (1 / p)
+        ≤ ((∫⁻ t, (∫⁻ x, H x t ^ p ∂μ) ^ (1 / p) ∂ν) ^ p) ^ (1 / p) :=
+          ENNReal.rpow_le_rpow hmain (by positivity)
+      _ = ∫⁻ t, (∫⁻ x, H x t ^ p ∂μ) ^ (1 / p) ∂ν := by
+          rw [← ENNReal.rpow_mul, mul_one_div_cancel hp0.ne', ENNReal.rpow_one]
+
+/-- **Minkowski's integral inequality**, `1 ≤ p`: the `L^p` norm of an integral is at most the
+integral of the `L^p` norms.
+
+Unlike `ENNReal.lintegral_rpow_lintegral_mul_le` this carries no weight and no compensating factor,
+and it is not a corollary of that inequality: putting the weight `1` there costs a factor
+`ν univ ^ (p - 1)`, which is vacuous when `ν` is infinite. It is proved by duality instead, and `μ`
+is asked to be σ-finite for the truncation the duality argument needs. See for instance
+E. H. Lieb and M. Loss, *Analysis*, 2nd edition, American Mathematical Society, 2001, section 2.4.
+-/
+theorem lintegral_rpow_lintegral_le [SigmaFinite μ] [SFinite ν] {p : ℝ} (hp : 1 ≤ p)
+    {H : α → β → ℝ≥0∞} (hH : AEMeasurable (uncurry H) (μ.prod ν)) :
+    (∫⁻ x, (∫⁻ t, H x t ∂ν) ^ p ∂μ) ^ (1 / p)
+      ≤ ∫⁻ t, (∫⁻ x, H x t ^ p ∂μ) ^ (1 / p) ∂ν := by
+  obtain ⟨K, hKmeas, hKae⟩ := hH
+  have h1 : ∀ᵐ x ∂μ, ∀ᵐ t ∂ν, H x t = K (x, t) := ae_ae_of_ae_prod hKae
+  have h2 : ∀ᵐ t ∂ν, ∀ᵐ x ∂μ, H x t = K (x, t) :=
+    ae_ae_of_ae_prod ((Measure.measurePreserving_swap (μ := ν)
+      (ν := μ)).quasiMeasurePreserving.ae hKae)
+  have hL : ∫⁻ x, (∫⁻ t, H x t ∂ν) ^ p ∂μ = ∫⁻ x, (∫⁻ t, K (x, t) ∂ν) ^ p ∂μ := by
+    refine lintegral_congr_ae (h1.mono fun x hx => ?_)
+    dsimp only
+    rw [lintegral_congr_ae hx]
+  have hR : ∫⁻ t, (∫⁻ x, H x t ^ p ∂μ) ^ (1 / p) ∂ν
+      = ∫⁻ t, (∫⁻ x, K (x, t) ^ p ∂μ) ^ (1 / p) ∂ν := by
+    refine lintegral_congr_ae (h2.mono fun t ht => ?_)
+    dsimp only
+    rw [lintegral_congr_ae (ht.mono fun x hx => by rw [hx])]
+  rw [hL, hR]
+  exact lintegral_rpow_lintegral_le_of_measurable (H := fun x t => K (x, t)) hp hKmeas
+
 
 end ENNReal
 
@@ -281,6 +497,239 @@ theorem eLpNorm_convolution_lsmul_le {φ : G → ℝ} {h : G → F} (hp : 1 ≤ 
     _ = eLpNorm φ 1 μ * eLpNorm h p μ := by rw [one_mul]
 
 end Young
+
+/-! ### Young's convolution inequality in its general form -/
+
+section YoungGeneral
+
+variable {𝕜 G E E' : Type*} [NontriviallyNormedField 𝕜]
+  [NormedAddCommGroup E] [NormedAddCommGroup E'] [NormedSpace 𝕜 E] [NormedSpace 𝕜 E']
+  [NormedSpace 𝕜 F] [NormedSpace ℝ F]
+  [MeasurableSpace G] [AddGroup G] {μ : Measure G}
+  {f : G → E} {g : G → E'} {L : E →L[𝕜] E' →L[𝕜] F}
+  [MeasurableAdd₂ G] [MeasurableNeg G] [μ.IsAddRightInvariant] [μ.IsNegInvariant]
+
+/-- On an additive group carrying a measure that is invariant under right translation and under
+negation, the reflection `t ↦ x - t` is measure preserving. This is the counterpart of
+`MeasureTheory.measurePreserving_sub_left`, which assumes left instead of right invariance. -/
+theorem measurePreserving_sub_left_of_isAddRightInvariant (μ : Measure G) [μ.IsAddRightInvariant]
+    [μ.IsNegInvariant] (x : G) : MeasurePreserving (fun t => x - t) μ μ := by
+  have h := (measurePreserving_neg μ).comp (measurePreserving_sub_right μ x)
+  simpa [Function.comp_def, neg_sub] using h
+
+/-- Reflection invariance of the `Lᵖ` seminorm: `‖g (x - ·)‖_p = ‖g‖_p`. -/
+theorem eLpNorm_comp_sub_left (hg : AEStronglyMeasurable g μ) (x : G) :
+    eLpNorm (fun t => g (x - t)) p μ = eLpNorm g p μ :=
+  eLpNorm_comp_measurePreserving hg (measurePreserving_sub_left_of_isAddRightInvariant μ x)
+
+/-- Reflection invariance of the Lebesgue integral, with no measurability hypothesis. This is the
+counterpart of `MeasureTheory.lintegral_sub_left_eq_self`, which assumes left instead of right
+invariance. -/
+theorem lintegral_sub_left_eq_self_of_isAddRightInvariant (h : G → ℝ≥0∞) (x : G) :
+    ∫⁻ t, h (x - t) ∂μ = ∫⁻ t, h t ∂μ :=
+  calc ∫⁻ t, h (x - t) ∂μ = ∫⁻ t, (fun s => h (-s)) (t - x) ∂μ := by simp_rw [neg_sub]
+    _ = ∫⁻ t, h (-t) ∂μ := lintegral_sub_right_eq_self (fun s => h (-s)) x
+    _ = ∫⁻ t, h t ∂μ := lintegral_neg_eq_self h
+
+variable [SFinite μ]
+
+/-- The analytic core of Young's convolution inequality in its general form, with the exponents
+as real numbers: for `1 ≤ P, Q` and `0 < R` with `1/P + 1/Q = 1 + 1/R`,
+`∫⁻ ‖f ⋆ g‖ ^ R ≤ ‖L‖ ^ R * (∫⁻ ‖f‖ ^ P) ^ (R/P) * (∫⁻ ‖g‖ ^ Q) ^ (R/Q)`.
+
+The proof is the three-exponent Hölder inequality `ENNReal.lintegral_mul_mul_norm_pow_le` applied
+to the splitting `‖f t‖ * ‖g (x - t)‖ = (‖f t‖ ^ P * ‖g (x - t)‖ ^ Q) ^ (1/R) *
+(‖f t‖ ^ P) ^ (1/P - 1/R) * (‖g (x - t)‖ ^ Q) ^ (1/Q - 1/R)`, followed by Tonelli's theorem. Both
+the `Q`-th moment of the reflected translate `g (x - ·)` and the exchange of the two integrations
+use the invariance of `μ`. -/
+theorem lintegral_enorm_convolution_rpow_le {P Q R : ℝ} (hP : 1 ≤ P) (hQ : 1 ≤ Q) (hR : 0 < R)
+    (hPQR : 1 / P + 1 / Q = 1 + 1 / R)
+    (hf : AEStronglyMeasurable f μ) (hg : AEStronglyMeasurable g μ) :
+    ∫⁻ x, ‖(f ⋆[L, μ] g) x‖ₑ ^ R ∂μ
+      ≤ ‖L‖ₑ ^ R * (∫⁻ t, ‖f t‖ₑ ^ P ∂μ) ^ (R / P) * (∫⁻ t, ‖g t‖ₑ ^ Q ∂μ) ^ (R / Q) := by
+  have hP0 : (0:ℝ) < P := lt_of_lt_of_le one_pos hP
+  have hQ0 : (0:ℝ) < Q := lt_of_lt_of_le one_pos hQ
+  have hQ1 : 1 / Q ≤ 1 := by rw [div_le_one hQ0]; exact hQ
+  have hP1 : 1 / P ≤ 1 := by rw [div_le_one hP0]; exact hP
+  have ha₁ : (0:ℝ) ≤ 1 / R := by positivity
+  have ha₂ : (0:ℝ) ≤ 1 / P - 1 / R := by linarith
+  have ha₃ : (0:ℝ) ≤ 1 / Q - 1 / R := by linarith
+  have hsum : 1 / R + (1 / P - 1 / R) + (1 / Q - 1 / R) = 1 := by linarith
+  have hgx : ∀ x : G, AEStronglyMeasurable (fun t => g (x - t)) μ := fun x =>
+    hg.comp_quasiMeasurePreserving (quasiMeasurePreserving_sub_left_of_right_invariant μ x)
+  have hBx : ∀ x : G, ∫⁻ t, ‖g (x - t)‖ₑ ^ Q ∂μ = ∫⁻ t, ‖g t‖ₑ ^ Q ∂μ := fun x =>
+    lintegral_sub_left_eq_self_of_isAddRightInvariant (fun s => ‖g s‖ₑ ^ Q) x
+  have hprod : AEMeasurable (uncurry fun x t : G => ‖f t‖ₑ ^ P * ‖g (x - t)‖ₑ ^ Q) (μ.prod μ) :=
+    (hf.enorm.comp_snd.pow_const P).mul
+      ((AEStronglyMeasurable.comp_fst_sub_snd hg).enorm.pow_const Q)
+  have hCmeas : AEMeasurable (fun x => ∫⁻ t, ‖f t‖ₑ ^ P * ‖g (x - t)‖ₑ ^ Q ∂μ) μ :=
+    hprod.lintegral_prod_right'
+  have hCint : ∫⁻ x, (∫⁻ t, ‖f t‖ₑ ^ P * ‖g (x - t)‖ₑ ^ Q ∂μ) ∂μ
+      = (∫⁻ t, ‖f t‖ₑ ^ P ∂μ) * ∫⁻ t, ‖g t‖ₑ ^ Q ∂μ := by
+    calc ∫⁻ x, (∫⁻ t, ‖f t‖ₑ ^ P * ‖g (x - t)‖ₑ ^ Q ∂μ) ∂μ
+        = ∫⁻ t, ∫⁻ x, ‖f t‖ₑ ^ P * ‖g (x - t)‖ₑ ^ Q ∂μ ∂μ := lintegral_lintegral_swap hprod
+      _ = ∫⁻ t, ‖f t‖ₑ ^ P * ∫⁻ x, ‖g (x - t)‖ₑ ^ Q ∂μ ∂μ :=
+          lintegral_congr fun t => lintegral_const_mul'' _
+            ((hg.comp_quasiMeasurePreserving
+              (measurePreserving_sub_right μ t).quasiMeasurePreserving).enorm.pow_const Q)
+      _ = ∫⁻ t, ‖f t‖ₑ ^ P * ∫⁻ x, ‖g x‖ₑ ^ Q ∂μ ∂μ :=
+          lintegral_congr fun t => by
+            rw [lintegral_sub_right_eq_self (fun x => ‖g x‖ₑ ^ Q) t]
+      _ = (∫⁻ t, ‖f t‖ₑ ^ P ∂μ) * ∫⁻ t, ‖g t‖ₑ ^ Q ∂μ :=
+          lintegral_mul_const'' _ (hf.enorm.pow_const P)
+  have hrw : ∀ u v : ℝ≥0∞,
+      (u ^ P * v ^ Q) ^ (1 / R) * (u ^ P) ^ (1 / P - 1 / R)
+        * (v ^ Q) ^ (1 / Q - 1 / R) = u * v := by
+    intro u v
+    rw [ENNReal.mul_rpow_of_nonneg _ _ ha₁]
+    calc (u ^ P) ^ (1/R) * (v ^ Q) ^ (1/R) * (u ^ P) ^ (1/P - 1/R) * (v ^ Q) ^ (1/Q - 1/R)
+        = ((u ^ P) ^ (1/R) * (u ^ P) ^ (1/P - 1/R))
+            * ((v ^ Q) ^ (1/R) * (v ^ Q) ^ (1/Q - 1/R)) := by ring
+      _ = (u ^ P) ^ (1/P) * (v ^ Q) ^ (1/Q) := by
+          rw [← ENNReal.rpow_add_of_nonneg _ _ ha₁ ha₂, ← ENNReal.rpow_add_of_nonneg _ _ ha₁ ha₃,
+            show 1/R + (1/P - 1/R) = 1/P by ring, show 1/R + (1/Q - 1/R) = 1/Q by ring]
+      _ = u * v := by
+          rw [← ENNReal.rpow_mul, ← ENNReal.rpow_mul, mul_one_div_cancel hP0.ne',
+            mul_one_div_cancel hQ0.ne', ENNReal.rpow_one, ENNReal.rpow_one]
+  have hpoint : ∀ x : G, ‖(f ⋆[L, μ] g) x‖ₑ ≤ ‖L‖ₑ *
+      ((∫⁻ t, ‖f t‖ₑ ^ P * ‖g (x - t)‖ₑ ^ Q ∂μ) ^ (1 / R)
+        * (∫⁻ t, ‖f t‖ₑ ^ P ∂μ) ^ (1 / P - 1 / R)
+        * (∫⁻ t, ‖g t‖ₑ ^ Q ∂μ) ^ (1 / Q - 1 / R)) := by
+    intro x
+    refine (enorm_convolution_le x).trans ?_
+    have h0 : ∫⁻ t, ‖L‖ₑ * ‖f t‖ₑ * ‖g (x - t)‖ₑ ∂μ
+        = ‖L‖ₑ * ∫⁻ t, ‖f t‖ₑ * ‖g (x - t)‖ₑ ∂μ := by
+      simp_rw [mul_assoc]
+      exact lintegral_const_mul'' _ (hf.enorm.mul (hgx x).enorm)
+    rw [h0, ← hBx x]
+    gcongr
+    calc ∫⁻ t, ‖f t‖ₑ * ‖g (x - t)‖ₑ ∂μ
+        = ∫⁻ t, (‖f t‖ₑ ^ P * ‖g (x - t)‖ₑ ^ Q) ^ (1/R) * (‖f t‖ₑ ^ P) ^ (1/P - 1/R)
+              * (‖g (x - t)‖ₑ ^ Q) ^ (1/Q - 1/R) ∂μ :=
+          lintegral_congr fun t => (hrw _ _).symm
+      _ ≤ _ := ENNReal.lintegral_mul_mul_norm_pow_le
+            ((hf.enorm.pow_const P).mul ((hgx x).enorm.pow_const Q))
+            (hf.enorm.pow_const P) ((hgx x).enorm.pow_const Q) ha₁ ha₂ ha₃ hsum
+  have halg : ∀ a A B : ℝ≥0∞,
+      a ^ R * A ^ ((1/P - 1/R) * R) * B ^ ((1/Q - 1/R) * R) * (A * B)
+        = a ^ R * A ^ (R/P) * B ^ (R/Q) := by
+    intro a A B
+    have e1 : ((1:ℝ)/P - 1/R) * R + 1 = R / P := by field_simp; ring
+    have e2 : ((1:ℝ)/Q - 1/R) * R + 1 = R / Q := by field_simp; ring
+    calc a ^ R * A ^ ((1/P - 1/R) * R) * B ^ ((1/Q - 1/R) * R) * (A * B)
+        = a ^ R * (A ^ ((1/P - 1/R) * R) * A ^ (1:ℝ)) * (B ^ ((1/Q - 1/R) * R) * B ^ (1:ℝ)) := by
+          simp only [ENNReal.rpow_one]; ring
+      _ = a ^ R * A ^ (R/P) * B ^ (R/Q) := by
+          rw [← ENNReal.rpow_add_of_nonneg _ _ (mul_nonneg ha₂ hR.le) zero_le_one,
+            ← ENNReal.rpow_add_of_nonneg _ _ (mul_nonneg ha₃ hR.le) zero_le_one, e1, e2]
+  have hbound : ∀ x : G, ‖(f ⋆[L, μ] g) x‖ₑ ^ R
+      ≤ ‖L‖ₑ ^ R * (∫⁻ t, ‖f t‖ₑ ^ P ∂μ) ^ ((1/P - 1/R) * R)
+          * (∫⁻ t, ‖g t‖ₑ ^ Q ∂μ) ^ ((1/Q - 1/R) * R)
+        * ∫⁻ t, ‖f t‖ₑ ^ P * ‖g (x - t)‖ₑ ^ Q ∂μ := by
+    intro x
+    refine (ENNReal.rpow_le_rpow (hpoint x) hR.le).trans_eq ?_
+    rw [ENNReal.mul_rpow_of_nonneg _ _ hR.le, ENNReal.mul_rpow_of_nonneg _ _ hR.le,
+      ENNReal.mul_rpow_of_nonneg _ _ hR.le, ← ENNReal.rpow_mul, ← ENNReal.rpow_mul,
+      ← ENNReal.rpow_mul, one_div_mul_cancel hR.ne', ENNReal.rpow_one]
+    ring
+  calc ∫⁻ x, ‖(f ⋆[L, μ] g) x‖ₑ ^ R ∂μ
+      ≤ ∫⁻ x, ‖L‖ₑ ^ R * (∫⁻ t, ‖f t‖ₑ ^ P ∂μ) ^ ((1/P - 1/R) * R)
+            * (∫⁻ t, ‖g t‖ₑ ^ Q ∂μ) ^ ((1/Q - 1/R) * R)
+          * ∫⁻ t, ‖f t‖ₑ ^ P * ‖g (x - t)‖ₑ ^ Q ∂μ ∂μ := lintegral_mono hbound
+    _ = ‖L‖ₑ ^ R * (∫⁻ t, ‖f t‖ₑ ^ P ∂μ) ^ ((1/P - 1/R) * R)
+            * (∫⁻ t, ‖g t‖ₑ ^ Q ∂μ) ^ ((1/Q - 1/R) * R)
+          * ((∫⁻ t, ‖f t‖ₑ ^ P ∂μ) * ∫⁻ t, ‖g t‖ₑ ^ Q ∂μ) := by
+        rw [lintegral_const_mul'' _ hCmeas, hCint]
+    _ = ‖L‖ₑ ^ R * (∫⁻ t, ‖f t‖ₑ ^ P ∂μ) ^ (R/P) * (∫⁻ t, ‖g t‖ₑ ^ Q ∂μ) ^ (R/Q) :=
+        halg _ _ _
+
+/-- **Young's convolution inequality** in the case `r = ∞`, that is, for Hölder conjugate `p` and
+`q`: the convolution of an `Lᵖ` function with an `L^q` function is bounded. -/
+theorem eLpNormEssSup_convolution_le_of_inv_add_inv {p q : ℝ≥0∞}
+    (hpq : 1 / p + 1 / q = 1) (hf : AEStronglyMeasurable f μ) (hg : AEStronglyMeasurable g μ) :
+    eLpNormEssSup (f ⋆[L, μ] g) μ ≤ ‖L‖ₑ * eLpNorm f p μ * eLpNorm g q μ := by
+  have : ENNReal.HolderTriple p q 1 := ⟨by simpa [one_div] using hpq⟩
+  refine essSup_le_of_ae_le _ (Eventually.of_forall fun x => ?_)
+  have hgx : AEStronglyMeasurable (fun t => g (x - t)) μ :=
+    hg.comp_quasiMeasurePreserving (quasiMeasurePreserving_sub_left_of_right_invariant μ x)
+  have h1 : ‖(f ⋆[L, μ] g) x‖ₑ ≤ eLpNorm (fun t => L (f t) (g (x - t))) 1 μ := by
+    rw [eLpNorm_one_eq_lintegral_enorm]
+    exact enorm_integral_le_lintegral_enorm _
+  refine h1.trans ?_
+  have h2 := eLpNorm_le_eLpNorm_mul_eLpNorm_of_nnnorm (p := p) (q := q) (r := 1)
+    hf hgx (fun u v => L u v) ‖L‖₊ (Eventually.of_forall fun t => L.le_opNorm₂ _ _)
+  rw [eLpNorm_comp_sub_left hg x] at h2
+  simpa [enorm_eq_nnnorm] using h2
+
+/-- **Young's convolution inequality** in its general form, for a finite `r`. -/
+theorem eLpNorm_convolution_le_of_inv_add_inv_of_ne_top {p q r : ℝ≥0∞} (hp : 1 ≤ p) (hq : 1 ≤ q)
+    (hr : r ≠ ∞) (hpqr : 1 / p + 1 / q = 1 + 1 / r)
+    (hf : AEStronglyMeasurable f μ) (hg : AEStronglyMeasurable g μ) :
+    eLpNorm (f ⋆[L, μ] g) r μ ≤ ‖L‖ₑ * eLpNorm f p μ * eLpNorm g q μ := by
+  have hp0 : p ≠ 0 := (lt_of_lt_of_le zero_lt_one hp).ne'
+  have hq0 : q ≠ 0 := (lt_of_lt_of_le zero_lt_one hq).ne'
+  have hinv : p⁻¹ + q⁻¹ = 1 + r⁻¹ := by simpa [one_div] using hpqr
+  have hr0 : r ≠ 0 := by
+    rintro rfl
+    have hle : p⁻¹ + q⁻¹ ≤ 2 := by
+      simpa [one_add_one_eq_two] using
+        add_le_add (ENNReal.inv_le_one.2 hp) (ENNReal.inv_le_one.2 hq)
+    rw [hinv] at hle
+    simp at hle
+  have hlt : (1:ℝ≥0∞) < 1 + r⁻¹ :=
+    ENNReal.lt_add_right ENNReal.one_ne_top (ENNReal.inv_ne_zero.2 hr)
+  have hpt : p ≠ ∞ := by
+    rintro rfl
+    rw [ENNReal.inv_top, zero_add] at hinv
+    have h : q⁻¹ ≤ 1 := ENNReal.inv_le_one.2 hq
+    rw [hinv] at h
+    exact absurd h (not_le.2 hlt)
+  have hqt : q ≠ ∞ := by
+    rintro rfl
+    rw [ENNReal.inv_top, add_zero] at hinv
+    have h : p⁻¹ ≤ 1 := ENNReal.inv_le_one.2 hp
+    rw [hinv] at h
+    exact absurd h (not_le.2 hlt)
+  have hP1 : (1:ℝ) ≤ p.toReal := by rw [← ENNReal.toReal_one]; exact ENNReal.toReal_mono hpt hp
+  have hQ1 : (1:ℝ) ≤ q.toReal := by rw [← ENNReal.toReal_one]; exact ENNReal.toReal_mono hqt hq
+  have hR0 : (0:ℝ) < r.toReal := ENNReal.toReal_pos hr0 hr
+  have hreal : 1 / p.toReal + 1 / q.toReal = 1 + 1 / r.toReal := by
+    have h := congrArg ENNReal.toReal hinv
+    rw [ENNReal.toReal_add (ENNReal.inv_ne_top.2 hp0) (ENNReal.inv_ne_top.2 hq0),
+      ENNReal.toReal_add ENNReal.one_ne_top (ENNReal.inv_ne_top.2 hr0)] at h
+    simpa [ENNReal.toReal_inv, one_div] using h
+  have hcore := lintegral_enorm_convolution_rpow_le (L := L) hP1 hQ1 hR0 hreal hf hg
+  rw [lintegral_rpow_enorm_eq_rpow_eLpNorm hp0 hpt,
+    lintegral_rpow_enorm_eq_rpow_eLpNorm hq0 hqt, ← ENNReal.rpow_mul, ← ENNReal.rpow_mul,
+    mul_div_cancel₀ _ (ne_of_gt (lt_of_lt_of_le one_pos hP1)),
+    mul_div_cancel₀ _ (ne_of_gt (lt_of_lt_of_le one_pos hQ1))] at hcore
+  rw [eLpNorm_eq_lintegral_rpow_enorm_toReal hr0 hr]
+  calc (∫⁻ x, ‖(f ⋆[L, μ] g) x‖ₑ ^ r.toReal ∂μ) ^ (1 / r.toReal)
+      ≤ (‖L‖ₑ ^ r.toReal * eLpNorm f p μ ^ r.toReal * eLpNorm g q μ ^ r.toReal)
+          ^ (1 / r.toReal) := ENNReal.rpow_le_rpow hcore (by positivity)
+    _ = ‖L‖ₑ * eLpNorm f p μ * eLpNorm g q μ := by
+        rw [← ENNReal.mul_rpow_of_nonneg _ _ hR0.le, ← ENNReal.mul_rpow_of_nonneg _ _ hR0.le,
+          ← ENNReal.rpow_mul, mul_one_div_cancel hR0.ne', ENNReal.rpow_one]
+
+/-- **Young's convolution inequality** in its general form: for `1 ≤ p, q ≤ ∞` and an exponent `r`
+with `1/p + 1/q = 1 + 1/r`, `‖f ⋆ g‖_r ≤ ‖L‖ * ‖f‖_p * ‖g‖_q`.
+
+The measure is asked to be invariant under negation on top of being invariant under right
+translation: the proof integrates `t ↦ ‖g (x - t)‖`, so it needs the reflection `t ↦ x - t` to
+preserve `μ`. The case `q = 1`, `r = p` is `MeasureTheory.eLpNorm_convolution_le`, which is proved
+separately because it needs no such hypothesis. See for instance E. H. Lieb and M. Loss,
+*Analysis*, 2nd edition, American Mathematical Society, 2001, section 4.2. -/
+theorem eLpNorm_convolution_le_of_inv_add_inv {p q r : ℝ≥0∞} (hp : 1 ≤ p) (hq : 1 ≤ q)
+    (hpqr : 1 / p + 1 / q = 1 + 1 / r)
+    (hf : AEStronglyMeasurable f μ) (hg : AEStronglyMeasurable g μ) :
+    eLpNorm (f ⋆[L, μ] g) r μ ≤ ‖L‖ₑ * eLpNorm f p μ * eLpNorm g q μ := by
+  rcases eq_or_ne r ∞ with rfl | hr
+  · rw [eLpNorm_exponent_top]
+    exact eLpNormEssSup_convolution_le_of_inv_add_inv (by simpa using hpqr) hf hg
+  · exact eLpNorm_convolution_le_of_inv_add_inv_of_ne_top hp hq hr hpqr hf hg
+
+end YoungGeneral
+
 
 /-! ### Continuity of translation on `Lᵖ` -/
 

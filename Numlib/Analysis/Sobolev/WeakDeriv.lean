@@ -222,6 +222,17 @@ theorem ContDiff.iteratedFDeriv_succ_apply_left' (hf : ContDiff ℝ ∞ f) (n : 
     iteratedFDeriv_succ_apply_left_of_differentiableAt
       ((hf.iteratedFDeriv_right (m := 1) (i := n) (by simp)).differentiable one_ne_zero x) y]
 
+/-- `ContDiff.iteratedFDeriv_succ_apply_left'` with the tuple written as a `Fin.cons`: for a smooth
+function, differentiating `n + 1` times along `z :: y` is differentiating `n` times along `y` the
+directional derivative in the direction `z`. This is the identity that splits a weak derivative
+along a tuple of length `n + 1` into one of length `n` and one of length `1`; see
+`HasWeakIteratedLineDerivOn.cons`. -/
+theorem ContDiff.iteratedFDeriv_cons (hf : ContDiff ℝ ∞ f) (z : E) (y : Fin n → E) (x : E) :
+    iteratedFDeriv ℝ (n + 1) f x (Fin.cons z y)
+      = iteratedFDeriv ℝ n (fun t ↦ fderiv ℝ f t z) x y := by
+  rw [hf.iteratedFDeriv_succ_apply_left' n (Fin.cons z y) x]
+  simp
+
 end Calculus
 
 /-! ### Test functions -/
@@ -660,6 +671,71 @@ protected theorem sub {f₁ f₂ w₁ w₂ : E → F} (h₁ : HasWeakIteratedLin
     (h₂ : HasWeakIteratedLineDerivOn y f₂ w₂ Ω μ) :
     HasWeakIteratedLineDerivOn y (f₁ - f₂) (w₁ - w₂) Ω μ := by
   simpa only [sub_eq_add_neg] using h₁.add h₂.neg
+
+omit [MeasurableSpace E] [OpensMeasurableSpace E] in
+/-- The defining identity of the weak derivative along a tuple `z :: y`, read through
+`ContDiff.iteratedFDeriv_cons`: testing against `∂^{n+1} φ` along `z :: y` is testing against
+`∂^n (∂_z φ)` along `y`, and `∂_z φ` is again a test function. -/
+theorem _root_.TestFunction.iteratedFDeriv_cons (φ : 𝓓(Ω, ℝ)) (z : E) (y : Fin n → E) (x : E) :
+    iteratedFDeriv ℝ (n + 1) (φ : E → ℝ) x (Fin.cons z y)
+      = iteratedFDeriv ℝ n (φ.fderivApply z : E → ℝ) x y :=
+  φ.contDiff.iteratedFDeriv_cons z y x
+
+omit [OpensMeasurableSpace E] in
+/-- **The composition rule for weak derivatives along tuples of directions**: if `w` is a weak
+derivative of `f` along the tuple `y` of length `n`, and `u` is a weak derivative of `w` along the
+single direction `z`, then `u` is a weak derivative of `f` along the tuple `z :: y` of length
+`n + 1`.
+
+Together with its converse `HasWeakIteratedLineDerivOn.of_cons` this is the bridge between a weak
+derivative of order `n` and `n` iterated weak derivatives of order one, which is what lets an
+induction on the order build weak derivatives one direction at a time — as in the Leibniz rule for
+a product with a smooth factor. The proof is the defining identity applied twice, to the test
+function `∂_z φ` and to `φ`; the signs `(-1)^n` and `(-1)^1` multiply to the `(-1)^{n+1}` that the
+definition asks for at length `n + 1`. -/
+theorem cons {z : E} {u : E → F} (h : HasWeakIteratedLineDerivOn y f w Ω μ)
+    (h' : HasWeakIteratedLineDerivOn ![z] w u Ω μ) :
+    HasWeakIteratedLineDerivOn (Fin.cons z y) f u Ω μ where
+  locallyIntegrableOn := h.locallyIntegrableOn
+  locallyIntegrableOn_weakDeriv := h'.locallyIntegrableOn_weakDeriv
+  integral_smul_eq φ := by
+    have e1 : ∫ x in (Ω : Set E), iteratedFDeriv ℝ (n + 1) (φ : E → ℝ) x (Fin.cons z y) • f x ∂μ
+        = ∫ x in (Ω : Set E), iteratedFDeriv ℝ n (φ.fderivApply z : E → ℝ) x y • f x ∂μ := by
+      simp_rw [TestFunction.iteratedFDeriv_cons φ z y]
+    have e2 : ∫ x in (Ω : Set E), (φ.fderivApply z) x • w x ∂μ
+        = ∫ x in (Ω : Set E), iteratedFDeriv ℝ 1 (φ : E → ℝ) x ![z] • w x ∂μ := by
+      simp [iteratedFDeriv_one_apply]
+    rw [e1, h.integral_smul_eq, e2, h'.integral_smul_eq, smul_smul]
+    congr 1
+    ring
+
+omit [OpensMeasurableSpace E] in
+/-- **The converse of the composition rule**: if `w` is a weak derivative of `f` along the tuple
+`y` and `u` is a weak derivative of `f` along the longer tuple `z :: y`, then `u` is a weak
+derivative of `w` along the single direction `z`.
+
+This is what makes the weak derivatives of a Sobolev function a *chain*: the derivative of order
+`n + 1` along `z :: y` is the first-order derivative, in the direction `z`, of the derivative of
+order `n` along `y`. -/
+theorem of_cons {z : E} {u : E → F} (h : HasWeakIteratedLineDerivOn y f w Ω μ)
+    (h' : HasWeakIteratedLineDerivOn (Fin.cons z y) f u Ω μ) :
+    HasWeakIteratedLineDerivOn ![z] w u Ω μ where
+  locallyIntegrableOn := h.locallyIntegrableOn_weakDeriv
+  locallyIntegrableOn_weakDeriv := h'.locallyIntegrableOn_weakDeriv
+  integral_smul_eq φ := by
+    have k1 := h.integral_smul_eq (φ.fderivApply z)
+    have k2 := h'.integral_smul_eq φ
+    simp_rw [TestFunction.iteratedFDeriv_cons φ z y] at k2
+    have e2 : ∫ x in (Ω : Set E), (φ.fderivApply z) x • w x ∂μ
+        = ∫ x in (Ω : Set E), iteratedFDeriv ℝ 1 (φ : E → ℝ) x ![z] • w x ∂μ := by
+      simp [iteratedFDeriv_one_apply]
+    have key : ((-1 : ℝ) ^ n) •
+          ∫ x in (Ω : Set E), iteratedFDeriv ℝ 1 (φ : E → ℝ) x ![z] • w x ∂μ
+        = ((-1 : ℝ) ^ n) • ((-1 : ℝ) ^ 1 • ∫ x in (Ω : Set E), φ x • u x ∂μ) := by
+      rw [← e2, ← k1, k2, smul_smul]
+      congr 1
+      ring
+    exact smul_right_injective F (pow_ne_zero n (by norm_num : (-1 : ℝ) ≠ 0)) key
 
 /-- **The Leibniz rule for a smooth factor**: if `w` is a weak derivative of `f` along a tuple of
 one direction on `Ω` and `g` is smooth, then `f g` has the weak derivative `w g + f ∂g` along the

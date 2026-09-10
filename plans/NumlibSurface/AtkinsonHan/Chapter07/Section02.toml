@@ -52,31 +52,59 @@ id = "example_7_2_5_memLp"
 source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example 7.2.5'
 
 [[node]]
+id = "hasWeakIteratedLineDerivOn_normRpow"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example 7.2.5 ("it can be verified")'
+
+[[node]]
+id = "example_7_2_5_memW1p"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example 7.2.5'
+
+[[node]]
+id = "example_7_2_5_const"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example 7.2.5 (7.2.1), disproved'
+
+[[node]]
 id = "example_7_2_5"
 kind = "theorem"
 desc = '''Example 7.2.5, the `W^{k,p}` half: on the unit ball of `ℝ^d`, `|x|^λ ∈ W^{k,p}(Ω) ↔
-λ > k - d/p` (7.2.1), which the book leaves to Exercise 7.2.7. The `L^p` half, `λ > -d/p`, is
-`example_7_2_5_memLp`, and it is also all that is left once the weak derivatives are known, since
-each order of differentiation lowers the exponent by one. What blocks the rest is the step the book
-passes over with "it can be verified": that the classical `v_{x_i}(x) = λ |x|^{λ-2} x_i` on
-`Ω` minus the origin is the *weak* derivative on all of `Ω`, origin included. That is an
-integration by parts against a cutoff vanishing near the origin, plus a passage to the limit, and
-no mollification or cutoff machinery on a domain exists in the project yet. The same missing step
-blocks `example_7_2_6`.'''
+λ > k - d/p` (7.2.1), which the book leaves to Exercise 7.2.7.'''
 deps = ["definition_7_2_2_multiIndex", "example_7_2_5_memLp"]
+wrong = '''False as stated. For `λ` a nonnegative even integer `|x|^λ = (x·x)^{λ/2}` is a
+polynomial, hence lies in `W^{k,p}(Ω)` for every `k` and `p` on the bounded `Ω`, while
+`λ > k - d/p` fails as soon as `k ≥ λ + d/p`; the smallest counterexample is `λ = 0`, `k = 1`,
+`d = p = 2`, where `v ≡ 1 ∈ W^{1,2}(Ω)` but `0 > 1 - 1` is false; the membership at `λ = 0` is
+proved, for every `k` and `p` and every ball, as `example_7_2_5_const`. The book's own displayed
+first-order equivalence `v ∈ W^{1,p}(Ω) ↔ λ > 1 - d/p` fails at the same point: it reads
+`|∇v| = |λ| |x|^{λ-1}` off as lying in `L^p(Ω)` exactly when `(λ-1)p + d > 0`, which needs the
+factor `|λ|` to be nonzero. The corrected first-order statement is `example_7_2_5_memW1p`, with
+the hypothesis `λ ≠ 0`; the removable-singularity step the book passes over is
+`hasWeakIteratedLineDerivOn_normRpow`.
+
+The corrected statement for `k ≥ 2` — the same equivalence for `λ` not a nonnegative even integer
+— is not proved here, and would need two things. The sufficiency direction needs the upper bound
+`‖D^n |x|^λ‖ ≤ C_n |x|^{λ-n}` away from the origin, which homogeneity of `|x|^λ` and compactness
+of the unit sphere supply, together with a composition rule for weak derivatives —
+`HasWeakIteratedLineDerivOn y f w Ω μ` and `HasWeakIteratedLineDerivOn ![z] w u Ω μ` giving
+`HasWeakIteratedLineDerivOn (Fin.cons z y) f u Ω μ`, whose proof is
+`ContDiff.iteratedFDeriv_succ_apply_left'` applied to the test function and which belongs in
+`Numlib/Analysis/Sobolev/WeakDeriv.lean` — so that the order-`n` weak derivative comes from
+iterating `hasWeakIteratedLineDerivOn_of_hasFDerivAt_compl_singleton`. The necessity direction
+needs a matching lower bound, which degenerates exactly where `D^n |x|^λ` vanishes identically off
+the origin: for `λ` a nonnegative even integer, where the equivalence is itself false, and, when
+`d = 1`, also for `λ` a nonnegative odd integer and `n > λ`, where the equivalence is still true
+but has to be proved from the jump of `D^λ |x|^λ` at the origin instead.'''
+
+[[node]]
+id = "hasWeakIteratedLineDerivOn_logLogNorm"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example 7.2.6'
+
+[[node]]
+id = "integral_sq_norm_logLogNormGrad"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example 7.2.6'
 
 [[node]]
 id = "example_7_2_6"
-kind = "theorem"
-desc = '''Example 7.2.6: on `Ω = B(0,β) ⊆ ℝ^2` with `β < 1`, `v(x) = log(log(1/r))` has
-`∫_Ω |∇v|^2 = -2π/log β < ∞` and `‖v‖_{L^2(Ω)} < ∞`, so `v ∈ H^1(Ω)` while `v` is unbounded at the
-origin: an `H^1` function in the plane need not be continuous. Not formalized. The two displayed
-quantities are reachable -- the gradient integral is `∫_0^β dr/(r log^2 r) = -1/log β` after
-`MeasureTheory.integral_fun_norm_addHaar`, an improper integral at `0` whose antiderivative is
-`-1/log r` -- but the conclusion `v ∈ H^1(Ω)` needs the classical gradient on `Ω` minus the origin
-to be shown to be the weak gradient on `Ω`, the same removable-singularity step that blocks
-`example_7_2_5`.'''
-deps = ["definition_7_2_2_multiIndex"]
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Example 7.2.6'
 
 [[node]]
 id = "example_7_2_7"

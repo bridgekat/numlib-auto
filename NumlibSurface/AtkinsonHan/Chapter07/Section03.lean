@@ -1,13 +1,23 @@
 import Numlib.Analysis.Normed.Operator.Embedding
+import Numlib.Analysis.Sobolev.Density
 import NumlibSurface.AtkinsonHan.Chapter07.Section02
 
 /-!
-# Atkinson–Han §7.3: continuous and compact embeddings, and the density of `C_0^∞(Ω)`
+# Atkinson–Han §7.3: density of smooth functions, and continuous and compact embeddings
 
 Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
 Analysis Framework*, 3rd edition, Springer, 2009, §7.3.
 
-Two of the section's results are here. Definition 7.3.6 is the vocabulary of §7.3.3, and lives in
+Four of the section's results are here. **Theorem 7.3.1**, the Meyers–Serrin theorem `H = W`,
+and **Theorem 7.3.4**, the density of `C_0^∞(ℝ^d)` in `W^{k,p}(ℝ^d)`, are both proved, for
+`1 ≤ p < ∞`. The work is in `Numlib/Analysis/Sobolev/Density.lean`, on top of the mollification
+theory of `Numlib/Analysis/Sobolev/Mollification.lean`: on the whole space a single mollification
+serves every point at once and the passage to compact support is a truncation; on a general open
+set the mollifier radius has to shrink towards the boundary, which is what the exhaustion and the
+partition of unity of Theorem 7.3.1 arrange. In both the norm is `sobolevNorm`, the reading of
+`‖·‖_{k,p}` attached to `definition_7_2_2`, as in Theorem 7.3.3.
+
+Definition 7.3.6 is the vocabulary of §7.3.3, and lives in
 `Numlib/Analysis/Normed/Operator/Embedding.lean`: `IsContinuousEmbedding ι` is `V ↪ W`, the
 injective linear `ι : V → W` with `‖ι v‖_W ≤ c ‖v‖_V` (7.3.1), and `IsCompactEmbedding ι` is
 `V ↪↪ W`, that together with the book's compactness — every bounded sequence of `V` has a
@@ -19,9 +29,9 @@ sequence in `C_0^∞(Ω)`, is here too: Definition 7.2.9 is formalized as the cl
 `C_0^∞(Ω)` in `W^{k,p}(Ω)`, so the theorem is that closure read sequentially.
 
 Everything else in §7.3 is out of reach, and this is the section that blocks the rest of the book.
-Theorems 7.3.1 (Meyers–Serrin) and 7.3.2 (Calderón–Stein) are the density of `C^∞(Ω)` and of
-`C^∞(closure Ω)`; Theorem 7.3.4 is the whole-space case of the first; Theorem 7.3.5 is Stein's
-extension operator; Theorems 7.3.7–7.3.9 are the Sobolev embeddings and Rellich–Kondrachov;
+Theorem 7.3.2 (Calderón–Stein) is the density of `C^∞(closure Ω)` on a Lipschitz domain, which is
+smoothness up to the boundary and needs boundary charts; Theorem 7.3.5 is Stein's extension
+operator; Theorems 7.3.7–7.3.9 are the Sobolev embeddings and Rellich–Kondrachov;
 Theorems 7.3.10 and 7.3.11 are the trace and the generalized normal derivative; and
 Theorems 7.3.12–7.3.14, Examples 7.3.15–7.3.16, Theorem 7.3.17 and Corollary 7.3.18 are the
 Deny–Lions norm equivalences, Poincaré–Friedrichs and Bramble–Hilbert, each proved in the book by a
@@ -35,7 +45,7 @@ states almost all of §7.3.1–§7.3.4 without proof.
 
 open Filter MeasureTheory Set TopologicalSpace
 
-open scoped Distributions ENNReal Topology
+open scoped ContDiff Distributions ENNReal Topology
 
 namespace AtkinsonHan.Chapter07
 
@@ -70,6 +80,65 @@ theorem definition_7_3_6_of_compact {ι : V →ₗ[𝕜] W} (h : definition_7_3_
   h.toIsContinuousEmbedding
 
 end Embedding
+
+/-! ### Theorem 7.3.1: `C^∞(Ω) ∩ W^{k,p}(Ω)` is dense in `W^{k,p}(Ω)` -/
+
+section Interior
+
+variable {d : ℕ}
+
+/-- **Theorem 7.3.1** (Meyers–Serrin, `H = W`): for `v ∈ W^{k,p}(Ω)` with `1 ≤ p < ∞` there is a
+sequence `{v_n} ⊆ C^∞(Ω) ∩ W^{k,p}(Ω)` with `‖v_n - v‖_{k,p,Ω} → 0`.
+
+The approximating functions are smooth in the *interior* of `Ω` only, which is what the book
+emphasizes after the statement; no regularity of `∂Ω` is assumed anywhere, and Theorem 7.3.2 is
+the sharpening that needs it. The norm is `sobolevNorm`, which is `‖·‖_{k,p,Ω}` in the bundled
+reading of Definition 7.2.2; see the note there on the two readings.
+
+The proof is in `Numlib/Analysis/Sobolev/Density.lean`: an exhaustion of `Ω` by relatively
+compact open sets, a telescoping smooth partition of unity subordinate to it, and one mollifier
+radius per piece. -/
+theorem theorem_7_3_1 {k : ℕ} {p : ℝ≥0∞} (hp : 1 ≤ p) (hp' : p ≠ ⊤)
+    {Ω : Opens (EuclideanSpace ℝ (Fin d))} {v : EuclideanSpace ℝ (Fin d) → ℝ}
+    (hv : definition_7_2_2 k p Ω v) :
+    ∃ w : ℕ → EuclideanSpace ℝ (Fin d) → ℝ,
+      (∀ n, ContDiffOn ℝ ∞ (w n) (Ω : Set (EuclideanSpace ℝ (Fin d)))) ∧
+        (∀ n, definition_7_2_2 k p Ω (w n)) ∧
+        Tendsto (fun n ↦ sobolevNorm (w n - v) k p Ω volume) atTop (𝓝 0) :=
+  hv.exists_seq_contDiffOn_tendsto_sobolevNorm hp hp'
+
+end Interior
+
+/-! ### Theorem 7.3.4: `C_0^∞(ℝ^d)` is dense in `W^{k,p}(ℝ^d)` -/
+
+section WholeSpace
+
+variable {d : ℕ}
+
+/-- **Theorem 7.3.4**: for `k ≥ 0` and `p ∈ [1, ∞)` the space `C_0^∞(ℝ^d)` is dense in
+`W^{k,p}(ℝ^d)`; that is, every `v ∈ W^{k,p}(ℝ^d)` is the limit of a sequence of test functions on
+`ℝ^d` in the norm `‖·‖_{k,p}`.
+
+The whole space is `⊤ : Opens (EuclideanSpace ℝ (Fin d))`, and `C_0^∞(ℝ^d)` is `𝓓(⊤, ℝ)`, the
+smooth compactly supported functions — the support condition of a test function on `⊤` is vacuous.
+Each `φ n` lies in `W^{k,p}(ℝ^d)` by `TestFunction.memSobolev`, so the sequence really is a
+sequence of the space. The norm is `sobolevNorm`, which is `‖·‖_{k,p}` in the bundled reading of
+Definition 7.2.2; see the note there on the two readings.
+
+Unlike Theorems 7.3.1 and 7.3.2 this one needs neither an exhaustion nor a partition of unity: on
+the whole space no point is near a boundary, so a single mollification approximates `v` and all
+its weak derivatives at once, and multiplying by a cut-off `η(x/R)` makes the support compact at a
+cost controlled by the Leibniz bound. -/
+theorem theorem_7_3_4 {k : ℕ} {p : ℝ≥0∞} (hp : 1 ≤ p) (hp' : p ≠ ⊤)
+    {v : EuclideanSpace ℝ (Fin d) → ℝ} (hv : definition_7_2_2 k p ⊤ v) :
+    ∃ φ : ℕ → 𝓓((⊤ : Opens (EuclideanSpace ℝ (Fin d))), ℝ),
+      Tendsto (fun n ↦ sobolevNorm ((φ n : EuclideanSpace ℝ (Fin d) → ℝ) - v) k p ⊤ volume)
+        atTop (𝓝 0) := by
+  obtain ⟨w, hw1, hw2, hw3⟩ :=
+    MemSobolev.exists_seq_hasCompactSupport_tendsto_sobolevNorm hp hp' hv
+  exact ⟨fun n ↦ ⟨w n, hw1 n, hw2 n, by simp⟩, hw3⟩
+
+end WholeSpace
 
 /-! ### Theorem 7.3.3: `W_0^{k,p}(Ω)` is the closure of `C_0^∞(Ω)` -/
 

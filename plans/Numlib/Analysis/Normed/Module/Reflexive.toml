@@ -1,0 +1,24 @@
+namespace = "NormedSpace"
+
+[[node]]
+id = "IsReflexive"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Definition 2.7.4"
+
+[[node]]
+id = "doubleDualIsometryEquiv"
+
+[[node]]
+id = "completeSpace_of_isReflexive"
+
+[[node]]
+id = "instIsReflexiveOfInnerProductSpace"
+
+[[node]]
+id = "isReflexive_of_isClosed"
+
+[[node]]
+id = "separableSpace_strongDual_of_isReflexive"
+
+[[node]]
+id = "exists_subseq_forall_dual_tendsto"
+source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 2.7.5"

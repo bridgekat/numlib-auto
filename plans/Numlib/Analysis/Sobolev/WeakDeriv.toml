@@ -21,6 +21,9 @@ id = "ContDiff.fderiv_iteratedFDeriv_apply"
 id = "ContDiff.iteratedFDeriv_succ_apply_left'"
 
 [[node]]
+id = "ContDiff.iteratedFDeriv_cons"
+
+[[node]]
 id = "TestFunction.eq_zero_of_notMem"
 
 [[node]]
@@ -113,6 +116,15 @@ id = "HasWeakIteratedLineDerivOn.neg"
 
 [[node]]
 id = "HasWeakIteratedLineDerivOn.sub"
+
+[[node]]
+id = "TestFunction.iteratedFDeriv_cons"
+
+[[node]]
+id = "HasWeakIteratedLineDerivOn.cons"
+
+[[node]]
+id = "HasWeakIteratedLineDerivOn.of_cons"
 
 [[node]]
 id = "HasWeakIteratedLineDerivOn.ae_eq"

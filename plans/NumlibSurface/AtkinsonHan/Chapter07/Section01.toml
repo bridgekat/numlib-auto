@@ -76,37 +76,8 @@ source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Proposi
 
 [[node]]
 id = "proposition_7_1_11"
-kind = "theorem"
-desc = '''Proposition 7.1.11 (product rule): for conjugate `p, q ∈ (1,∞)`, if `u, u_{x_i} ∈
-L^p_loc(Ω)` and `v, v_{x_i} ∈ L^q_loc(Ω)` then `(u v)_{x_i}` exists and equals
-`u_{x_i} v + u v_{x_i}`. Stated without proof in the book.
-
-**The smooth-factor case is proved**, as `proposition_7_1_11_contDiff`: when one factor is
-`C^∞` there is no mollification at all, because `g φ` is again a test function and the identity
-is a direct integration by parts. The backbone carries it as
-`HasWeakIteratedLineDerivOn.mul_contDiff`, with `TestFunction.mulContDiff` and
-`MeasureTheory.LocallyIntegrableOn.mul_continuous` beside it.
-
-What is left open is the book's own generality, two merely locally integrable factors. A proof
-mollifies both and passes to the limit under Hölder: `u_ε = φ_ε ⋆ u` with `φ_ε` a `ContDiffBump`,
-apply the smooth-factor case, and let `ε → 0`. The `L^p` half of that is now available --
-`Numlib/Analysis/Convolution/Lp.lean` has Young's inequality and
-`ContDiffBump.tendsto_eLpNorm_convolution_sub` -- and what is still missing is the *domain*
-bookkeeping: `∂_i (φ_ε ⋆ u) = φ_ε ⋆ (∂_i u)` on a subdomain `Ω'` compactly contained in `Ω`, for
-`ε` smaller than the distance to the boundary, with `u` extended by zero. That is a backbone
-module of its own (mollification on an open set) and is the same one the Meyers-Serrin theorem of
-§7.3 needs.'''
-deps = ["definition_7_1_1", "definition_7_1_3_multiIndex", "proposition_7_1_11_contDiff"]
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Proposition 7.1.11'
 
 [[node]]
 id = "proposition_7_1_12"
-kind = "theorem"
-desc = '''Proposition 7.1.12 (chain rule): for `f ∈ C^1(ℝ,ℝ)` with `f'` bounded, `Ω` open bounded
-and `v ∈ W^{1,p}(Ω)` with `p ∈ (1,∞)`, `(f(v))_{x_i} = f'(v) v_{x_i} ∈ L^p(Ω)`. Exercise 7.1.5
-(`|v|, v^+, v^-  ∈ W^{1,p}`) is its standard corollary. Not formalized: `W^{1,p}(Ω)` exists now
-(Definition 7.2.2), but the book states this without proof and a proof needs mollification and a
-dominated-convergence passage. Unlike `proposition_7_1_11` there is no cheap special case to
-carve off: `f ∘ v` cannot be integrated by parts against a test function without first
-approximating `v` by smooth functions, so this waits on the same mollification-on-a-domain module
-as the general product rule.'''
-deps = ["definition_7_1_3_multiIndex", "proposition_7_1_11"]
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Proposition 7.1.12'

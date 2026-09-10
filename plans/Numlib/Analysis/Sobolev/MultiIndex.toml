@@ -29,6 +29,57 @@ id = "length_multiIndexDirections"
 id = "multiIndexTuple"
 
 [[node]]
+id = "multiIndexDirections_eq_ofFn"
+
+[[node]]
+id = "listFDeriv"
+
+[[node]]
+id = "listFDeriv_nil"
+
+[[node]]
+id = "listFDeriv_cons"
+
+[[node]]
+id = "ContDiff.fderiv_apply_right"
+
+[[node]]
+id = "ContDiff.listFDeriv_ofFn"
+
+[[node]]
+id = "ContDiff.fderiv_fderiv_comm"
+
+[[node]]
+id = "listFDeriv_congr_perm"
+
+[[node]]
+id = "ContDiff.iteratedFDeriv_congr_perm"
+
+[[node]]
+id = "multiIndexCount"
+
+[[node]]
+id = "sum_multiIndexCount"
+
+[[node]]
+id = "coe_multiIndexDirections"
+
+[[node]]
+id = "Multiset.coe_ofFn"
+
+[[node]]
+id = "multiIndexDirections_multiIndexCount_perm"
+
+[[node]]
+id = "basisCoordProd"
+
+[[node]]
+id = "basisCoordProd_apply"
+
+[[node]]
+id = "ContinuousMultilinearMap.apply_eq_sum_basis"
+
+[[node]]
 id = "SobolevMultiIndexTuple"
 
 [[node]]
@@ -123,6 +174,10 @@ id = "SobolevMultiIndex.ext_of_fn_ae_eq"
 
 [[node]]
 id = "MemSobolev.memSobolevMultiIndex"
+
+[[node]]
+id = "memSobolev_of_memSobolevMultiIndex"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.2'
 
 [[node]]
 id = "SobolevMultiIndex.inner_eq"

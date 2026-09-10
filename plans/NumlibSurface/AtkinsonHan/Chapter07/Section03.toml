@@ -2,13 +2,6 @@ namespace = "AtkinsonHan.Chapter07"
 
 [[node]]
 id = "theorem_7_3_1"
-kind = "theorem"
-desc = '''Theorem 7.3.1: for `v ∈ W^{k,p}(Ω)` with `1 ≤ p < ∞` there is a sequence
-`{v_n} ⊆ C^∞(Ω) ∩ W^{k,p}(Ω)` with `‖v_n - v‖_{k,p} → 0` -- smooth functions are dense in the
-interior. Not formalized: this is the Meyers-Serrin "H = W" theorem, proved by a partition of
-unity and mollification on an exhaustion of `Ω`; Mathlib has no Sobolev space on an open set, let
-alone its density theory, and the book states the result without proof (citing [78]).'''
-deps = ["definition_7_2_2_multiIndex"]
 
 [[node]]
 id = "theorem_7_3_2"
@@ -25,13 +18,6 @@ id = "theorem_7_3_3"
 
 [[node]]
 id = "theorem_7_3_4"
-kind = "theorem"
-desc = '''Theorem 7.3.4: for `k ≥ 0` and `p ∈ [1,∞)`, `C_0^∞(ℝ^d)` is dense in `W^{k,p}(ℝ^d)`, so
-on the whole space the compactly supported smooth functions already suffice. Not formalized: the
-whole-space case of the density theory of §7.3.1-§7.3.2, which Mathlib does not have for
-`W^{k,p}`; the book states it without proof. (Mathlib's Schwartz-function density is for the
-Bessel-potential spaces of tempered distributions, not for the book's `W^{k,p}`.)'''
-deps = ["definition_7_2_2_multiIndex"]
 
 [[node]]
 id = "theorem_7_3_5"
