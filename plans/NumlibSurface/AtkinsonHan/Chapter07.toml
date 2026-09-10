@@ -53,14 +53,18 @@ carrying the book's statement and, where it is open, the reason.
   cutoff-and-limit argument on a domain. Examples 7.2.7 and 7.2.8 and Definition 7.2.13 need
   surface measure on a Lipschitz boundary.
 
-* **§7.3, the structural theorems.** This is the obstruction itself, and Mathlib has none of it:
-  density of `C^∞(Ω)` (Meyers–Serrin, Theorem 7.3.1) and of `C^∞(Ω̄)` on a Lipschitz domain
-  (Calderón–Stein, Theorem 7.3.2), the extension operator, the continuous and compact Sobolev
-  embeddings, Rellich–Kondrachov, the trace `γ : W^{1,p}(Ω) → L^p(Γ)`, and the Deny–Lions norm
-  equivalences with Poincaré–Friedrichs and Bramble–Hilbert on top of them. Each is a substantial
-  analysis project; `notes/sobolev-density.md` scopes the cheapest of them, Theorem 7.3.1, at about
-  fourteen lemmas of which three are hard, and reports that one of those three —
-  `L^p` convergence of mollification — is now done, in `Numlib/Analysis/Convolution/Lp`.
+* **§7.3, the structural theorems.** Most of the obstruction, and Mathlib has none of it: density
+  of `C^∞(Ω̄)` on a Lipschitz domain (Calderón–Stein, Theorem 7.3.2), the extension operator, the
+  continuous and compact Sobolev embeddings, Rellich–Kondrachov, the trace
+  `γ : W^{1,p}(Ω) → L^p(Γ)`, and the Deny–Lions norm equivalences with Poincaré–Friedrichs and
+  Bramble–Hilbert on top of them. Each is a substantial analysis project.
+
+  The interior density theorem, Meyers–Serrin (Theorem 7.3.1), used to head that list and is now
+  **proved**, in the backbone `Numlib/Analysis/Sobolev/Density`, together with Theorem 7.3.4 on the
+  whole space; the mollification theory under them is `Numlib/Analysis/Sobolev/Mollification` and
+  `Numlib/Analysis/Convolution/Lp`. Note that it unblocks less than its prominence suggests: within
+  this chapter Theorem 7.3.1 is a dependency of Theorem 7.3.2 alone, and what gates chapters 8 to 11
+  is the extension operator, the trace and the Deny–Lions equivalences.
 
   Two results of §7.3 are formalized, and both are vocabulary rather than analysis. Definition
   7.3.6, the continuous and compact embeddings, is the backbone
