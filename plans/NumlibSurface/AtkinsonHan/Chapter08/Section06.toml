@@ -26,7 +26,10 @@ semicontinuous on `A` for each `q`, `L(v, ·)` is concave and upper semicontinuo
 `‖v‖ → ∞`, `B` bounded or `L(v₀, q) → -∞` as `‖q‖ → ∞` — then `L` has a saddle point on
 `A × B`, whose first component is unique if the convexity is strict and whose second is unique if
 the concavity is strict; (f) and (g) may be replaced by the sup/inf forms (f)' and (g)'.
-Not formalized: the hypotheses cannot be stated — Mathlib has no reflexivity class for Banach
-spaces and no Eberlein-Smulian theorem, so the weak compactness the proof needs is unavailable;
-the book states the theorem without proof, citing Ekeland-Temam.'''
+Not formalized: the hypotheses can now be stated — reflexivity is `NormedSpace.IsReflexive` of
+`Numlib/Analysis/Normed/Module/Reflexive`, which is `AtkinsonHan.Chapter02.definition_2_7_4` — but
+the proof cannot be given here. It consumes the *topological* weak compactness of a closed bounded
+convex set in a reflexive space, that is Kakutani's theorem together with Eberlein-Smulian, of
+which only the sequential half is available (`AtkinsonHan.Chapter02.theorem_2_7_5_mp`); the book
+states the theorem without proof, citing Ekeland-Temam.'''
 deps = ["IsSaddlePoint", "AtkinsonHan.Chapter02.definition_2_7_4", "AtkinsonHan.Chapter02.theorem_2_7_5"]

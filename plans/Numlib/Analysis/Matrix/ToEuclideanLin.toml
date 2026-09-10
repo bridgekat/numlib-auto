@@ -10,7 +10,25 @@ id = "IsHermitian.isSymmetricBoundedBy_toEuclideanLin"
 id = "hasEigenvalue_toEuclideanLin_iff"
 
 [[node]]
+id = "isUnit_toEuclideanCLM_add_smul_one"
+
+[[node]]
 id = "l2_opNorm_eq_norm_toEuclideanLin"
+
+[[node]]
+id = "toEuclideanCLM_add_smul_one"
+
+[[node]]
+id = "toEuclideanCLM_injective"
+
+[[node]]
+id = "toEuclideanCLM_nonsing_inv"
+
+[[node]]
+id = "toEuclideanCLM_ringInverse"
+
+[[node]]
+id = "toEuclideanCLM_sub_smul_one"
 
 [[node]]
 id = "toEuclideanLin_apply_eq_sum"
@@ -22,7 +40,28 @@ id = "toEuclideanLin_conjTranspose"
 id = "toEuclideanLin_mul"
 
 [[node]]
+id = "toEuclideanLin_mul_nonsing_inv_apply"
+
+[[node]]
+id = "toEuclideanLin_neg_apply"
+
+[[node]]
+id = "toEuclideanLin_nonsing_inv_mul_apply"
+
+[[node]]
 id = "toEuclideanLin_one"
 
 [[node]]
+id = "toEuclideanLin_one_apply"
+
+[[node]]
 id = "toEuclideanLin_pow"
+
+[[node]]
+id = "toEuclideanLin_smul_apply"
+
+[[node]]
+id = "toEuclideanLin_sub_apply"
+
+[[node]]
+id = "toEuclideanLin_zero_apply"

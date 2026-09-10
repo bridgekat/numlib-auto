@@ -15,8 +15,10 @@ Analysis Framework*, 3rd edition, Springer, 2009, §10.2.
 The section builds the finite element machinery on a polygon: triangulations, the local spaces
 `ℙ_k` on a triangle, barycentric coordinates, and the affine map (10.2.25)
 `F_K(x̂) = T_K x̂ + b_K` carrying the reference element `K̂` onto an element `K`. The model boundary
-value problem in `H¹(Ω)` is out of reach, and with it the finite element space and the triangulation
-axioms; **the rest of the section is not**, and it is what this file holds.
+value problem in `H¹(Ω)` is out of scope — not for want of the space, which is
+`Chapter07.definition_7_2_2_multiIndex`, but for the trace and the Poincaré inequality of §7.3 —
+and with it the finite element space and the triangulation axioms; **the rest of the section is
+not**, and it is what this file holds.
 
 Lemma 10.2.2's proof uses only two facts about the sets involved: a ball of diameter `ρ̂` sits
 inside `K̂`, and `K` has diameter `h_K`. No triangle, no polynomial space and no Sobolev norm. The

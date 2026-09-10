@@ -43,7 +43,11 @@ Mathlib's `Matrix.IsIrreducible` is stated for entrywise nonnegative matrices on
 [saad2003iterative] notion applies to an arbitrary matrix; the entrywise norm is nonnegative and
 vanishes exactly where the matrix does, so it carries an arbitrary pattern into Mathlib's setting.
 For an entrywise nonnegative real matrix the two agree
-(`Matrix.isPatternIrreducible_iff_isIrreducible`).
+(`Matrix.isPatternIrreducible_iff_isIrreducible`), and
+`Matrix.isPatternIrreducible_iff_exists_pow_pos` is the algebraic characterization, positivity of an
+entry of some power of the entrywise norm. `Matrix.IsPatternIrreducible.forall_of_closed` is the
+induction principle that every use of irreducibility goes through: a property that holds at one
+index and propagates along the nonzero entries holds at every index.
 
 The theorem of the section is the reducibility characterization
 `Matrix.isPatternIrreducible_iff_forall_submatrix_not_blockTriangular`: a matrix fails to be
@@ -308,6 +312,17 @@ theorem isPatternIrreducible_iff :
 theorem IsPatternIrreducible.exists_pos_length_path (h : A.IsPatternIrreducible) (i j : n) :
     letI := A.adjQuiver; ∃ p : Path i j, 0 < p.length := isPatternIrreducible_iff.1 h i j
 
+/-- The induction principle that every use of irreducibility goes through: a property of the indices
+which holds at one index and propagates along the nonzero entries of `A` holds at every index,
+because the adjacency quiver of an irreducible matrix has a path from any index to any other. -/
+theorem IsPatternIrreducible.forall_of_closed (hA : A.IsPatternIrreducible)
+    {P : n → Prop} (hstep : ∀ i j, P i → A i j ≠ 0 → P j) {i : n} (hi : P i) (j : n) : P j := by
+  let _ : Quiver n := A.adjQuiver
+  obtain ⟨p, -⟩ := hA.exists_pos_length_path i j
+  induction p with
+  | nil => exact hi
+  | cons _ e ih => exact hstep _ _ ih (apply_ne_zero_of_adjHom e)
+
 /-- On at least two indices, pattern irreducibility is plain strong connectivity of the adjacency
 quiver: a path joining an index to itself may then be routed through a second index. -/
 theorem isPatternIrreducible_iff_nonempty_path [Nontrivial n] :
@@ -332,6 +347,20 @@ theorem isPatternIrreducible_iff_isIrreducible {A : Matrix n n ℝ} (hA : ∀ i 
     ext i j
     simp [Real.norm_eq_abs, abs_of_nonneg (hA i j)]
   rw [IsPatternIrreducible, h]
+
+/-- Irreducibility of the pattern is the algebraic irreducibility of the entrywise norm: between any
+two indices some power of it has a positive entry. -/
+theorem isPatternIrreducible_iff_exists_pow_pos [Fintype n] [DecidableEq n] :
+    A.IsPatternIrreducible ↔ ∀ i j, ∃ k > 0, 0 < ((A.map (‖·‖)) ^ k) i j :=
+  isIrreducible_iff_exists_pow_pos fun i j => by
+    rw [map_apply]
+    exact norm_nonneg _
+
+/-- Pattern irreducibility is invariant under transposition: transposing reverses every arrow of the
+adjacency quiver. -/
+@[simp] theorem isPatternIrreducible_transpose_iff :
+    Aᵀ.IsPatternIrreducible ↔ A.IsPatternIrreducible := by
+  rw [IsPatternIrreducible, IsPatternIrreducible, transpose_map, isIrreducible_transpose_iff]
 
 /-- Relabelling by a permutation carries paths of the pattern quiver of `B.submatrix σ σ` to paths
 of the pattern quiver of `B`. -/

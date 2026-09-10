@@ -3,8 +3,8 @@ import Mathlib.Analysis.Matrix.Spectrum
 import Mathlib.Analysis.Normed.Algebra.Spectrum
 import Mathlib.LinearAlgebra.Eigenspace.Minpoly
 import Mathlib.LinearAlgebra.Matrix.Gershgorin
-import Mathlib.LinearAlgebra.Matrix.Irreducible.Defs
 import Mathlib.LinearAlgebra.Matrix.ToLinearEquiv
+import Numlib.LinearAlgebra.Sparse.Pattern
 import Numlib.LinearSolve.Stationary.Splitting
 
 /-!
@@ -22,10 +22,11 @@ iteration matrix `G_GS`.  Under strict row dominance both constants are `< 1`, s
 converge.
 
 Strict dominance in *every* row is more than convergence needs.  A matrix that is only weakly
-dominant, but is *irreducible* — its nonzero pattern has a strongly connected adjacency graph,
-`Matrix.IsIrreducibleAbs` — and strictly dominant in one row is still nonsingular, and Jacobi and
-Gauss–Seidel still converge for it ([saad2003iterative] Thm 4.7, Cor 4.8, Thm 4.9).  The engine is
-`Matrix.IsIrreducibleAbs.norm_diag_eq_of_mulVec_eq_zero`: at a row where the modulus of a kernel
+dominant, but is *irreducible* — its nonzero pattern has a strongly connected adjacency graph, which
+is `Matrix.IsPatternIrreducible` of `Numlib/LinearAlgebra/Sparse/Pattern.lean` — and strictly
+dominant in one row is still nonsingular, and Jacobi and Gauss–Seidel still converge for it
+([saad2003iterative] Thm 4.7, Cor 4.8, Thm 4.9).  The engine is
+`Matrix.IsPatternIrreducible.norm_diag_eq_of_mulVec_eq_zero`: at a row where the modulus of a kernel
 vector is maximal, weak dominance is forced to be an equality, and the maximum then propagates along
 the graph to every row.  The three convergence statements all apply it to a *pencil* — the matrix
 `A` with its diagonal, or its whole lower triangle, scaled by the eigenvalue in question — which for
@@ -349,50 +350,13 @@ section Irreducible
 
 variable {𝕜 : Type*} [RCLike 𝕜]
 
-/-- [saad2003iterative] irreducibility for a matrix with arbitrary entries: the adjacency graph of
-the nonzero pattern is strongly connected.  It is defined as irreducibility of the entrywise
-absolute value, so that Mathlib's `Matrix.IsIrreducible` — which asks for nonnegative entries — and
-its characterization `Matrix.isIrreducible_iff_exists_pow_pos` by positivity of an entry of some
-power apply verbatim. -/
-def IsIrreducibleAbs (A : Matrix n n 𝕜) : Prop := IsIrreducible (A.map fun x => ‖x‖)
-
-omit [Fintype n] [DecidableEq n] [LinearOrder n] in
-/-- The induction principle that every use of irreducibility goes through: a property of the indices
-which holds at one index and propagates along the nonzero entries of `A` holds at every index,
-because the adjacency graph of an irreducible matrix has a path from any index to any other. -/
-theorem IsIrreducibleAbs.forall_of_closed {A : Matrix n n 𝕜} (hA : A.IsIrreducibleAbs)
-    {P : n → Prop} (hstep : ∀ i j, P i → A i j ≠ 0 → P j) {i : n} (hi : P i) (j : n) : P j := by
-  obtain ⟨p, -⟩ := Matrix.IsIrreducible.connected hA i j
-  induction p with
-  | nil => exact hi
-  | cons p e ih =>
-    refine hstep _ _ ih ?_
-    have hpos := e.down
-    rw [Matrix.map_apply] at hpos
-    exact norm_pos_iff.mp hpos
-
-omit [LinearOrder n] in
-/-- Irreducibility in the sense of the adjacency graph is the algebraic one: between any two indices
-some power of the entrywise absolute value has a positive entry. -/
-theorem isIrreducibleAbs_iff (A : Matrix n n 𝕜) :
-    A.IsIrreducibleAbs ↔ ∀ i j, ∃ k > 0, 0 < ((A.map fun x => ‖x‖) ^ k) i j :=
-  isIrreducible_iff_exists_pow_pos fun i j => by
-    rw [Matrix.map_apply]
-    exact norm_nonneg _
-
-omit [Fintype n] [DecidableEq n] [LinearOrder n] in
-/-- Irreducibility is invariant under transposition. -/
-@[simp] theorem isIrreducibleAbs_transpose_iff {A : Matrix n n 𝕜} :
-    Aᵀ.IsIrreducibleAbs ↔ A.IsIrreducibleAbs := by
-  rw [IsIrreducibleAbs, IsIrreducibleAbs, transpose_map, isIrreducible_transpose_iff]
-
 /-- [saad2003iterative] *irreducibly diagonally dominant* matrices: irreducible, weakly row
 diagonally dominant, and strictly dominant in at least one row.  This is the hypothesis under which
 the Gershgorin argument still gives nonsingularity and convergence of Jacobi and Gauss–Seidel, with
 strict dominance in a single row instead of in all of them. -/
 structure IsIrreduciblyDiagDominant (A : Matrix n n 𝕜) : Prop where
   /-- The adjacency graph of the nonzero pattern is strongly connected. -/
-  irreducible : A.IsIrreducibleAbs
+  irreducible : A.IsPatternIrreducible
   /-- Every row is weakly diagonally dominant. -/
   dominant : ∀ i, ∑ j ∈ Finset.univ.erase i, ‖A i j‖ ≤ ‖A i i‖
   /-- At least one row is strictly diagonally dominant. -/
@@ -410,8 +374,8 @@ dominant and annihilates a nonzero vector, then every row of `B` is an equality 
 At a row `i` where `|x_i|` is maximal, weak dominance is forced to be an equality, and the maximum
 is attained again at every `j` with `b_ij ≠ 0`; the strong connectivity of `A` then propagates the
 maximum, hence the equality, to every row. -/
-theorem IsIrreducibleAbs.norm_diag_eq_of_mulVec_eq_zero {A B : Matrix n n 𝕜}
-    (hA : A.IsIrreducibleAbs) (hAB : ∀ i j, i ≠ j → A i j ≠ 0 → B i j ≠ 0)
+theorem IsPatternIrreducible.norm_diag_eq_of_mulVec_eq_zero {A B : Matrix n n 𝕜}
+    (hA : A.IsPatternIrreducible) (hAB : ∀ i j, i ≠ j → A i j ≠ 0 → B i j ≠ 0)
     (hdom : ∀ i, ∑ j ∈ Finset.univ.erase i, ‖B i j‖ ≤ ‖B i i‖)
     {x : n → 𝕜} (hx : x ≠ 0) (hBx : B *ᵥ x = 0) (i : n) :
     ‖B i i‖ = ∑ j ∈ Finset.univ.erase i, ‖B i j‖ := by
@@ -468,10 +432,10 @@ theorem IsIrreducibleAbs.norm_diag_eq_of_mulVec_eq_zero {A B : Matrix n n 𝕜}
 omit [LinearOrder n] in
 /-- **[saad2003iterative] Corollary 4.8**: an irreducible matrix that is weakly diagonally dominant,
 with strict dominance in at least one row, is nonsingular.  A vector in its kernel would make every
-row an equality row by `Matrix.IsIrreducibleAbs.norm_diag_eq_of_mulVec_eq_zero`, against the strict
-row.  Stated for a matrix `B` dominated off the diagonal by an irreducible `A`, which is how the
-convergence proofs below use it. -/
-theorem IsIrreducibleAbs.isUnit_of_dominant {A B : Matrix n n 𝕜} (hA : A.IsIrreducibleAbs)
+row an equality row by `Matrix.IsPatternIrreducible.norm_diag_eq_of_mulVec_eq_zero`, against the
+strict row.  Stated for a matrix `B` dominated off the diagonal by an irreducible `A`, which is how
+the convergence proofs below use it. -/
+theorem IsPatternIrreducible.isUnit_of_dominant {A B : Matrix n n 𝕜} (hA : A.IsPatternIrreducible)
     (hAB : ∀ i j, i ≠ j → A i j ≠ 0 → B i j ≠ 0)
     (hdom : ∀ i, ∑ j ∈ Finset.univ.erase i, ‖B i j‖ ≤ ‖B i i‖)
     (hstrict : ∃ i, ∑ j ∈ Finset.univ.erase i, ‖B i j‖ < ‖B i i‖) : IsUnit B := by
@@ -845,9 +809,9 @@ omit [LinearOrder n] in
 boundary of the union of the Gershgorin discs, then it lies on the boundary of *every* disc, that is
 `‖μ - a_ii‖ = ∑_{j ≠ i} ‖a_ij‖` for every `i`.  Being on the boundary of the union means being
 outside every open disc, which is the weak dominance hypothesis of
-`Matrix.IsIrreducibleAbs.norm_diag_eq_of_mulVec_eq_zero` for the resolvent `μ 1 - A`. -/
-theorem IsIrreducibleAbs.norm_sub_eq_of_mem_frontier {A : Matrix n n ℂ} (hA : A.IsIrreducibleAbs)
-    {μ : ℂ} (hμ : μ ∈ spectrum ℂ A)
+`Matrix.IsPatternIrreducible.norm_diag_eq_of_mulVec_eq_zero` for the resolvent `μ 1 - A`. -/
+theorem IsPatternIrreducible.norm_sub_eq_of_mem_frontier {A : Matrix n n ℂ}
+    (hA : A.IsPatternIrreducible) {μ : ℂ} (hμ : μ ∈ spectrum ℂ A)
     (hfr : μ ∈ frontier (⋃ i, Metric.closedBall (A i i)
       (∑ j ∈ Finset.univ.erase i, ‖A i j‖))) (i : n) :
     ‖μ - A i i‖ = ∑ j ∈ Finset.univ.erase i, ‖A i j‖ := by

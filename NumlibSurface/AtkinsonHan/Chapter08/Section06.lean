@@ -28,8 +28,13 @@ unbounded sets, and without them the extremal problems say nothing.
 ## Not formalized here
 
 * Theorem 8.6.3 (Ekeland–Temam), the existence of a saddle point for a convex–concave
-  lower/upper semicontinuous `L` on closed convex subsets of reflexive Banach spaces: it needs
-  weak compactness of bounded sets in a reflexive space, which Mathlib does not have.
+  lower/upper semicontinuous `L` on closed convex subsets of reflexive Banach spaces: the
+  hypotheses are statable, reflexivity being `NormedSpace.IsReflexive` of
+  `Numlib/Analysis/Normed/Module/Reflexive`, which is `Chapter02.definition_2_7_4`. What the proof
+  consumes is the *topological* weak compactness of a closed bounded convex set in a reflexive
+  space — Kakutani's theorem with Eberlein–Šmulian — of which only the sequential half is
+  available here, `Chapter02.theorem_2_7_5_mp`; the book states the theorem without proof, citing
+  Ekeland–Temam.
 * The abstract mixed formulation (8.6.21)–(8.6.22): the book states the problem and refers to
   Brezzi for every theorem about it, so there is nothing to formalize.
 * The model-problem computations (8.6.1)–(8.6.20) and Exercises 8.6.1–8.6.4, all of which are

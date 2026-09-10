@@ -6,6 +6,7 @@ Keep it free of dependencies on the rest of `Numlib` other than other upstreamin
 -/
 import Mathlib.Analysis.Calculus.FDeriv.Symmetric
 import Mathlib.Analysis.Calculus.LineDeriv.IntegrationByParts
+import Mathlib.Analysis.Complex.Basic
 import Mathlib.Analysis.Distribution.AEEqOfIntegralContDiff
 import Mathlib.Analysis.Distribution.TestFunction
 
@@ -56,6 +57,17 @@ quantifying over all multi-indices of that length.
   Leibniz rule, with both factors merely locally integrable, is not here.
 * `HasWeakIteratedFDerivOn.mono` and `HasWeakIteratedLineDerivOn.mono`: a weak derivative on `Ω`
   is a weak derivative on every smaller open set.
+* `HasWeakIteratedLineDerivOn.comp_continuousLinearMap`: a continuous linear map passes through
+  the weak derivative, and `HasWeakIteratedLineDerivOn.ofReal_iff`, its consequence that a real
+  function has a real weak derivative exactly when its complexification has the complexified one.
+* `MeasureTheory.LocallyMemLpOn.memLp_restrict_of_isCompact`: a function locally in `L^p` on `s`
+  is in `L^p` of every compact subset of `s`, for `p < ∞`; the `L^p` analogue of Mathlib's
+  `MeasureTheory.LocallyIntegrableOn.integrableOn_compact_subset`.
+* `ContDiff.iteratedFDeriv_congr_perm`: **the iterated derivative of a `C^∞` function is symmetric
+  in its arguments**, which Mathlib has only at order two (`ContDiffAt.isSymmSndFDerivAt`) or, at
+  every order, for analytic functions. The vehicle is `listFDeriv`, differentiation along the
+  entries of a *list* of directions, along which the commutation of two directional derivatives
+  propagates by an induction on `List.Perm`.
 
 ## Implementation notes
 
@@ -102,7 +114,7 @@ open scoped ContDiff Distributions ENNReal Topology
 namespace MeasureTheory
 
 variable {X G : Type*} [TopologicalSpace X] [MeasurableSpace X] [NormedAddCommGroup G]
-  {f : X → G} {s : Set X} {μ : Measure X}
+  {f : X → G} {s t : Set X} {μ : Measure X} {p : ℝ≥0∞}
 
 /-- A function is *locally `p`-integrable on `s`*, written `f ∈ L^p_loc(s)`, when every point of
 `s` has a neighbourhood within `s` on which `f` is `p`-integrable. For `p = 1` this is
@@ -117,6 +129,53 @@ theorem locallyMemLpOn_one_iff : LocallyMemLpOn f 1 s μ ↔ LocallyIntegrableOn
 
 alias ⟨LocallyMemLpOn.locallyIntegrableOn, LocallyIntegrableOn.locallyMemLpOn⟩ :=
   locallyMemLpOn_one_iff
+
+omit [TopologicalSpace X] in
+/-- `L^p` membership is stable under a union of two sets, for `p < ∞`. The exponent `p = ∞` is
+excluded only because the proof compares `p`-th powers of the `L^p` norms; the statement is true
+there too. -/
+theorem MemLp.union_of_ne_top (hp : p ≠ ⊤) (hs : MemLp f p (μ.restrict s))
+    (ht : MemLp f p (μ.restrict t)) : MemLp f p (μ.restrict (s ∪ t)) := by
+  refine ⟨aestronglyMeasurable_union_iff.2 ⟨hs.1, ht.1⟩, ?_⟩
+  rcases eq_or_ne p 0 with rfl | hp0
+  · simp
+  have hr : 0 < p.toReal := ENNReal.toReal_pos hp0 hp
+  have hrw : ∀ ν : Measure X, eLpNorm f p ν ^ p.toReal = ∫⁻ x, ‖f x‖ₑ ^ p.toReal ∂ν := fun ν ↦ by
+    rw [eLpNorm_eq_eLpNorm' hp0 hp, lintegral_rpow_enorm_eq_rpow_eLpNorm' hr]
+  have key : eLpNorm f p (μ.restrict (s ∪ t)) ^ p.toReal
+      ≤ eLpNorm f p (μ.restrict s) ^ p.toReal + eLpNorm f p (μ.restrict t) ^ p.toReal := by
+    rw [hrw, hrw, hrw]
+    exact lintegral_union_le _ _ _
+  have hfin : eLpNorm f p (μ.restrict (s ∪ t)) ^ p.toReal ≠ ⊤ :=
+    (key.trans_lt (ENNReal.add_lt_top.2
+      ⟨ENNReal.rpow_lt_top_of_nonneg hr.le hs.2.ne,
+        ENNReal.rpow_lt_top_of_nonneg hr.le ht.2.ne⟩)).ne
+  rw [lt_top_iff_ne_top]
+  intro hcon
+  rw [hcon, ENNReal.top_rpow_of_pos hr] at hfin
+  exact hfin rfl
+
+/-- Local `L^p` membership passes to subsets. -/
+theorem LocallyMemLpOn.mono_set (hf : LocallyMemLpOn f p s μ) (hts : t ⊆ s) :
+    LocallyMemLpOn f p t μ := fun x hx ↦
+  let ⟨u, hu, h⟩ := hf x (hts hx); ⟨u, nhdsWithin_mono x hts hu, h⟩
+
+/-- **A function locally in `L^p` on `s` is in `L^p` of every compact subset of `s`**, for
+`p < ∞`. This is the `L^p` analogue of
+`MeasureTheory.LocallyIntegrableOn.integrableOn_compact_subset`, and is proved the same way, by
+`IsCompact.induction_on`. -/
+theorem LocallyMemLpOn.memLp_restrict_of_isCompact (hf : LocallyMemLpOn f p s μ) (hp : p ≠ ⊤)
+    (hs : IsCompact s) : MemLp f p (μ.restrict s) :=
+  IsCompact.induction_on hs (by simp)
+    (fun _ _ hst ht ↦ ht.mono_measure (Measure.restrict_mono hst le_rfl))
+    (fun _ _ h₁ h₂ ↦ MemLp.union_of_ne_top hp h₁ h₂) hf
+
+/-- **A function locally in `L^p` on `s` is in `L^p` of every compact subset of `s`**, for
+`p < ∞`. -/
+theorem LocallyMemLpOn.memLp_restrict_of_compact_subset (hf : LocallyMemLpOn f p s μ)
+    (hp : p ≠ ⊤)
+    (hts : t ⊆ s) (ht : IsCompact t) : MemLp f p (μ.restrict t) :=
+  (hf.mono_set hts).memLp_restrict_of_isCompact hp ht
 
 /-- If `f` is locally integrable on `s` and `g` is continuous with compact support inside `s`,
 then `g • f` is integrable on the whole space. This is the version on a set of Mathlib's
@@ -234,6 +293,91 @@ theorem ContDiff.iteratedFDeriv_cons (hf : ContDiff ℝ ∞ f) (z : E) (y : Fin 
   simp
 
 end Calculus
+
+/-! ### Symmetry of the iterated derivative of a smooth function -/
+
+section Symmetry
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+  [NormedAddCommGroup F] [NormedSpace ℝ F] {f : E → F}
+
+/-- Differentiating `f` successively along the entries of a list of directions, the head of the
+list *innermost*: `listFDeriv [v₁, …, vₙ] f = ∂_{vₙ} ⋯ ∂_{v₁} f`.
+
+Indexing by a list rather than by a tuple is what makes `listFDeriv_congr_perm` an induction on
+`List.Perm`, whose `swap` constructor is exactly the transposition of the two innermost
+derivatives; `ContDiff.listFDeriv_ofFn` identifies this with `iteratedFDeriv`. -/
+noncomputable def listFDeriv (l : List E) (f : E → F) : E → F :=
+  l.foldl (fun g v ↦ fun z ↦ fderiv ℝ g z v) f
+
+/-- Differentiating along no directions at all leaves the function alone. -/
+@[simp]
+theorem listFDeriv_nil (f : E → F) : listFDeriv [] f = f := rfl
+
+/-- Peeling the head of the list off `listFDeriv` takes the derivative along it first. -/
+theorem listFDeriv_cons (v : E) (l : List E) (f : E → F) :
+    listFDeriv (v :: l) f = listFDeriv l (fun z ↦ fderiv ℝ f z v) := rfl
+
+/-- The derivative of a smooth function in a fixed direction is smooth. -/
+theorem ContDiff.fderiv_apply_right (hf : ContDiff ℝ ∞ f) (v : E) :
+    ContDiff ℝ ∞ fun z ↦ fderiv ℝ f z v :=
+  (hf.fderiv_right (m := ∞) le_rfl).clm_apply contDiff_const
+
+/-- Differentiating a smooth function along the entries of `List.ofFn y` is its `n`-th derivative
+evaluated at the tuple `y`. Each step is `ContDiff.iteratedFDeriv_succ_apply_left'`, which moves one
+derivative from the outside of the iterated derivative to the inside. -/
+theorem ContDiff.listFDeriv_ofFn (hf : ContDiff ℝ ∞ f) {n : ℕ} (y : Fin n → E) (x : E) :
+    listFDeriv (List.ofFn y) f x = iteratedFDeriv ℝ n f x y := by
+  induction n generalizing f with
+  | zero => simp [iteratedFDeriv_zero_apply]
+  | succ n ih =>
+    rw [List.ofFn_succ, listFDeriv_cons, ih (hf.fderiv_apply_right (y 0)),
+      hf.iteratedFDeriv_succ_apply_left' n y x]
+    rfl
+
+/-- **Two directional derivatives of a smooth function commute.** This is the symmetry of the
+second derivative, in the form in which `listFDeriv_congr_perm` consumes it: an equality of
+functions rather than of values, so that it may be applied under a further derivative. -/
+theorem ContDiff.fderiv_fderiv_comm (hf : ContDiff ℝ ∞ f) (v w : E) :
+    (fun z ↦ fderiv ℝ (fun y ↦ fderiv ℝ f y v) z w)
+      = fun z ↦ fderiv ℝ (fun y ↦ fderiv ℝ f y w) z v := by
+  funext x
+  have h1 : (fun z ↦ iteratedFDeriv ℝ 1 f z ![v]) = fun z ↦ fderiv ℝ f z v := by
+    funext z; rw [iteratedFDeriv_one_apply]; simp
+  have h2 := hf.fderiv_iteratedFDeriv_apply 1 ![v] w x
+  rw [h1, iteratedFDeriv_one_apply] at h2
+  simpa using h2
+
+/-- **Differentiating a smooth function along a list of directions does not depend on the order of
+the list.** The induction is on `List.Perm`: its `swap` constructor is the transposition of the two
+innermost derivatives, which is `ContDiff.fderiv_fderiv_comm`, and its `cons` constructor peels one
+derivative off and applies the induction hypothesis to the differentiated function, which is smooth
+again. -/
+theorem listFDeriv_congr_perm {l₁ l₂ : List E} (h : l₁.Perm l₂) {f : E → F}
+    (hf : ContDiff ℝ ∞ f) : listFDeriv l₁ f = listFDeriv l₂ f := by
+  induction h generalizing f with
+  | nil => rfl
+  | cons a _ ih => rw [listFDeriv_cons, listFDeriv_cons, ih (hf.fderiv_apply_right a)]
+  | swap a b l =>
+    rw [listFDeriv_cons, listFDeriv_cons, listFDeriv_cons, listFDeriv_cons,
+      hf.fderiv_fderiv_comm b a]
+  | trans _ _ ih₁ ih₂ => rw [ih₁ hf, ih₂ hf]
+
+/-- **The iterated derivative of a `C^∞` function is symmetric in its arguments**: it takes the same
+value at two tuples of directions that are permutations of each other.
+
+Mathlib has this for order two (`ContDiffAt.isSymmSndFDerivAt`) and, for any order, for analytic
+functions (`ContDiffAt.domDomCongr_iteratedFDeriv`, which asks for `ω`-smoothness); this is the
+`C^∞` statement of any order, obtained by transporting the commutation of two directional
+derivatives along a `List.Perm`. The two tuples are allowed to have different lengths — the
+hypothesis forces them to be equal — so that it applies to a pair of tuples whose lengths agree only
+propositionally, such as `Fin n` and `Fin (∑ i, α i)`. -/
+theorem ContDiff.iteratedFDeriv_congr_perm (hf : ContDiff ℝ ∞ f) {n₁ n₂ : ℕ}
+    {y₁ : Fin n₁ → E} {y₂ : Fin n₂ → E} (h : (List.ofFn y₁).Perm (List.ofFn y₂)) (x : E) :
+    iteratedFDeriv ℝ n₁ f x y₁ = iteratedFDeriv ℝ n₂ f x y₂ := by
+  rw [← hf.listFDeriv_ofFn y₁ x, ← hf.listFDeriv_ofFn y₂ x, listFDeriv_congr_perm h hf]
+
+end Symmetry
 
 /-! ### Test functions -/
 
@@ -822,6 +966,59 @@ theorem ae_eq_of_length_eq_zero (hn : n = 0) (h : HasWeakIteratedLineDerivOn y f
 end HasWeakIteratedLineDerivOn
 
 end Line
+
+/-! ### Weak derivatives under a continuous linear map -/
+
+/-- **A continuous linear map passes through the weak derivative**: if `w` is a weak derivative of
+`f` along the tuple `y` of directions on `Ω`, then `L ∘ w` is one of `L ∘ f`. Both sides of the
+integration by parts formula integrate integrable functions, so `L` commutes with the integrals,
+and `L` is `ℝ`-linear, so it commutes with the scalars `∂^n φ x` and `(-1)^n` as well. Completeness
+of `F` is what makes `MeasureTheory.integral` on `F` the Bochner integral rather than the junk
+value `0`, so without it the hypothesis carries no information; no completeness is needed of `G`,
+where the junk value makes the conclusion trivial. -/
+theorem HasWeakIteratedLineDerivOn.comp_continuousLinearMap {E F G : Type*}
+    [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E] [OpensMeasurableSpace E]
+    [NormedAddCommGroup F] [NormedSpace ℝ F] [CompleteSpace F]
+    [NormedAddCommGroup G] [NormedSpace ℝ G]
+    {n : ℕ} {y : Fin n → E} {f w : E → F} {Ω : Opens E} {μ : Measure E}
+    (h : HasWeakIteratedLineDerivOn y f w Ω μ) (L : F →L[ℝ] G) :
+    HasWeakIteratedLineDerivOn y (fun x ↦ L (f x)) (fun x ↦ L (w x)) Ω μ where
+  locallyIntegrableOn := h.locallyIntegrableOn.comp_continuousLinearMap L
+  locallyIntegrableOn_weakDeriv := h.locallyIntegrableOn_weakDeriv.comp_continuousLinearMap L
+  integral_smul_eq φ := by
+    by_cases hG : CompleteSpace G
+    · have i₁ : Integrable (fun x ↦ iteratedFDeriv ℝ n (φ : E → ℝ) x y • f x)
+          (μ.restrict (Ω : Set E)) := by
+        have h' := (h.integrable_smul (φ.iteratedFDerivApply n y)).integrableOn (s := (Ω : Set E))
+        simp only [TestFunction.iteratedFDerivApply_apply] at h'
+        exact h'
+      have i₂ : Integrable (fun x ↦ (φ : E → ℝ) x • w x) (μ.restrict (Ω : Set E)) :=
+        (h.integrable_smul_weakDeriv φ).integrableOn
+      calc ∫ x in (Ω : Set E), iteratedFDeriv ℝ n (φ : E → ℝ) x y • L (f x) ∂μ
+          = ∫ x in (Ω : Set E), L (iteratedFDeriv ℝ n (φ : E → ℝ) x y • f x) ∂μ := by
+            simp only [map_smul]
+        _ = L (∫ x in (Ω : Set E), iteratedFDeriv ℝ n (φ : E → ℝ) x y • f x ∂μ) :=
+            L.integral_comp_comm i₁
+        _ = L ((-1 : ℝ) ^ n • ∫ x in (Ω : Set E), (φ : E → ℝ) x • w x ∂μ) := by
+            rw [h.integral_smul_eq φ]
+        _ = (-1 : ℝ) ^ n • ∫ x in (Ω : Set E), (φ : E → ℝ) x • L (w x) ∂μ := by
+            rw [map_smul, ← L.integral_comp_comm i₂]
+            simp only [map_smul]
+    · simp only [integral_of_not_completeSpace hG, smul_zero]
+
+/-! ### The real and the complex form of one weak derivative -/
+
+/-- **A real function has a real weak derivative exactly when its complexification has the
+complexified one**: composing with the embedding `ℝ → ℂ` and with the real part, both continuous
+`ℝ`-linear maps, takes each statement to the other. -/
+theorem HasWeakIteratedLineDerivOn.ofReal_iff {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    [MeasurableSpace E] [OpensMeasurableSpace E] {n : ℕ} {y : Fin n → E} {f w : E → ℝ}
+    {Ω : Opens E} {μ : Measure E} :
+    HasWeakIteratedLineDerivOn y f w Ω μ ↔
+      HasWeakIteratedLineDerivOn y (fun x ↦ (f x : ℂ)) (fun x ↦ (w x : ℂ)) Ω μ := by
+  refine ⟨fun h ↦ ?_, fun h ↦ ?_⟩
+  · simpa using h.comp_continuousLinearMap Complex.ofRealCLM
+  · simpa using h.comp_continuousLinearMap Complex.reCLM
 
 /-! ### Classical derivatives are weak derivatives -/
 

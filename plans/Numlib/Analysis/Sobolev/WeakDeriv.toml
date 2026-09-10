@@ -6,6 +6,18 @@ source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definit
 id = "MeasureTheory.locallyMemLpOn_one_iff"
 
 [[node]]
+id = "MeasureTheory.MemLp.union_of_ne_top"
+
+[[node]]
+id = "MeasureTheory.LocallyMemLpOn.mono_set"
+
+[[node]]
+id = "MeasureTheory.LocallyMemLpOn.memLp_restrict_of_isCompact"
+
+[[node]]
+id = "MeasureTheory.LocallyMemLpOn.memLp_restrict_of_compact_subset"
+
+[[node]]
 id = "MeasureTheory.LocallyIntegrableOn.integrable_smul_left_of_tsupport_subset"
 
 [[node]]
@@ -22,6 +34,30 @@ id = "ContDiff.iteratedFDeriv_succ_apply_left'"
 
 [[node]]
 id = "ContDiff.iteratedFDeriv_cons"
+
+[[node]]
+id = "listFDeriv"
+
+[[node]]
+id = "listFDeriv_nil"
+
+[[node]]
+id = "listFDeriv_cons"
+
+[[node]]
+id = "ContDiff.fderiv_apply_right"
+
+[[node]]
+id = "ContDiff.listFDeriv_ofFn"
+
+[[node]]
+id = "ContDiff.fderiv_fderiv_comm"
+
+[[node]]
+id = "listFDeriv_congr_perm"
+
+[[node]]
+id = "ContDiff.iteratedFDeriv_congr_perm"
 
 [[node]]
 id = "TestFunction.eq_zero_of_notMem"
@@ -132,6 +168,12 @@ source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Lemma 7
 
 [[node]]
 id = "HasWeakIteratedLineDerivOn.ae_eq_of_length_eq_zero"
+
+[[node]]
+id = "HasWeakIteratedLineDerivOn.comp_continuousLinearMap"
+
+[[node]]
+id = "HasWeakIteratedLineDerivOn.ofReal_iff"
 
 [[node]]
 id = "ContDiffOn.continuousOn_iteratedFDeriv"

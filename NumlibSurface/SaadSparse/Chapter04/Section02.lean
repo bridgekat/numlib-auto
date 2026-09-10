@@ -404,8 +404,8 @@ theorem definition_4_5_iff {𝕜 : Type*} [RCLike 𝕜] (A : Matrix (Fin n) (Fin
       (definition_4_5_strict A ↔ A.IsStrictColDiagDominant) ∧
       (definition_4_5_irreducible A ↔ A.IsIrreduciblyColDiagDominant) :=
   ⟨Iff.rfl, Iff.rfl,
-    ⟨fun h => ⟨isIrreducibleAbs_transpose_iff.2 h.1, h.2.1, h.2.2⟩,
-      fun h => ⟨isIrreducibleAbs_transpose_iff.1 h.irreducible, h.dominant, h.exists_strict⟩⟩⟩
+    ⟨fun h => ⟨isPatternIrreducible_transpose_iff.2 h.1, h.2.1, h.2.2⟩,
+      fun h => ⟨isPatternIrreducible_transpose_iff.1 h.irreducible, h.dominant, h.exists_strict⟩⟩⟩
 
 /-! ### Theorem 4.6 (Gershgorin) -/
 
@@ -843,7 +843,7 @@ variable {n : ℕ}
 
 /-- **Saad, Theorem 4.7**: for an irreducible matrix, an eigenvalue on the boundary of the union of
 the Gershgorin discs lies on the boundary of *every* disc. -/
-theorem theorem_4_7 {A : Matrix (Fin n) (Fin n) ℂ} (hA : A.IsIrreducibleAbs) {μ : ℂ}
+theorem theorem_4_7 {A : Matrix (Fin n) (Fin n) ℂ} (hA : A.IsPatternIrreducible) {μ : ℂ}
     (hμ : μ ∈ spectrum ℂ A)
     (hfr : μ ∈ frontier (⋃ i, Metric.closedBall (A i i) (∑ j ∈ univ.erase i, ‖A i j‖)))
     (i : Fin n) : ‖μ - A i i‖ = ∑ j ∈ univ.erase i, ‖A i j‖ :=
@@ -865,8 +865,8 @@ theorem corollary_4_8_irred_col {𝕜 : Type*} [RCLike 𝕜] {A : Matrix (Fin n)
 variable {A : Matrix (Fin n) (Fin n) ℝ}
 
 /-- Complexification changes no entrywise absolute value, so it preserves irreducibility. -/
-theorem isIrreducibleAbs_complexify (h : A.IsIrreducibleAbs) :
-    (complexify A).IsIrreducibleAbs := by
+theorem isPatternIrreducible_complexify (h : A.IsPatternIrreducible) :
+    (complexify A).IsPatternIrreducible := by
   have hmap : (complexify A).map (fun x : ℂ => ‖x‖) = A.map fun x : ℝ => ‖x‖ := by
     ext i j; simp [complexify]
   change Matrix.IsIrreducible ((complexify A).map fun x : ℂ => ‖x‖)
@@ -876,7 +876,7 @@ theorem isIrreducibleAbs_complexify (h : A.IsIrreducibleAbs) :
 /-- Complexification preserves irreducible diagonal dominance. -/
 theorem isIrreduciblyDiagDominant_complexify (h : A.IsIrreduciblyDiagDominant) :
     (complexify A).IsIrreduciblyDiagDominant where
-  irreducible := isIrreducibleAbs_complexify h.irreducible
+  irreducible := isPatternIrreducible_complexify h.irreducible
   dominant i := by simpa using h.dominant i
   exists_strict := by
     obtain ⟨i, hi⟩ := h.exists_strict

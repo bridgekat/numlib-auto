@@ -77,31 +77,13 @@ id = "TemperedDistribution.MemSobolev.iteratedLineDerivOp"
 id = "TemperedDistribution.MemSobolev.of_iteratedLineDerivOp"
 
 [[node]]
-id = "List.perm_flatMap_replicate_update"
-
-[[node]]
-id = "multiIndexDirections_add_single_perm"
-
-[[node]]
-id = "HasWeakIteratedLineDerivOn.comp_continuousLinearMap"
-
-[[node]]
-id = "HasWeakIteratedLineDerivOn.ofReal_iff"
-
-[[node]]
 id = "MeasureTheory.memLp_ofReal_iff"
-
-[[node]]
-id = "ofFn_multiIndexTuple"
-
-[[node]]
-id = "exists_multiIndex_perm"
 
 [[node]]
 id = "TemperedDistribution.MemSobolev.of_iteratedLineDerivOp_basis"
 
 [[node]]
-id = "MemSobolevMultiIndex.memSobolev"
+id = "TemperedDistribution.MemSobolev.of_memSobolevMultiIndex"
 source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.4.1'
 
 [[node]]
@@ -109,7 +91,7 @@ id = "TemperedDistribution.MemSobolev.memSobolevMultiIndex"
 source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.4.1'
 
 [[node]]
-id = "memSobolevMultiIndex_iff_memSobolev"
+id = "TemperedDistribution.memSobolev_iff_memSobolevMultiIndex"
 source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Theorem 7.4.1'
 
 [[node]]

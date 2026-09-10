@@ -42,9 +42,16 @@ Weak convergence is written in the sequential forms `∀ v, ⟪uₙ, v⟫ → �
 rather than through a weak topology, because those are the forms in which the numerical-analysis
 literature states the hypotheses.
 
-The general Banach-space statements — reflexivity, Eberlein–Šmulian, weak sequential compactness of
-bounded sets in a reflexive space — are deliberately out of scope: Mathlib has no reflexivity class
-for Banach spaces, and everything the applications need happens in a Hilbert space.
+The general Banach-space statements are deliberately out of scope here, so that this file rests on
+Mathlib alone; everything the applications need happens in a Hilbert space. Two of the three do
+exist elsewhere in this project, in `Numlib/Analysis/Normed/Module/Reflexive.lean`: reflexivity, as
+the class `NormedSpace.IsReflexive`, and the weak sequential compactness of the bounded sets of a
+reflexive space, as `NormedSpace.exists_subseq_forall_dual_tendsto`, which subsumes
+`exists_subseq_weak_tendsto` below because a Hilbert space is reflexive. What is missing there too
+is the converse, that weak sequential compactness of the bounded sets forces reflexivity —
+[han2009theoretical] Theorem 2.7.5 read from right to left. It needs Goldstine's theorem, for which
+Mathlib has no weak-∗ bipolar theorem, and the sequential-to-topological half of Eberlein–Šmulian,
+of which Mathlib has nothing at all.
 -/
 
 open Filter Topology Metric

@@ -44,10 +44,12 @@ integer order `k` cut out by the weak derivatives is Mathlib's Bessel potential 
   `(1 + |ξ|²)^{1/2} = (1 + |ξ|²)^{-1/2} + |ξ|² (1 + |ξ|²)^{-1/2}`, the second summand being, up to
   the constant that Mathlib's convention for the Fourier transform contributes, the symbol of the
   Laplacian: `TemperedDistribution.besselPotential_one_eq`.
-* `MemSobolevMultiIndex.memSobolev` and `TemperedDistribution.MemSobolev.memSobolevMultiIndex`:
-  **the two descriptions of `H^k(ℝ^d)` agree.** An `L²` function lies in the Sobolev space
-  `W^{k,2}(ℝ^d)` of `Numlib/Analysis/Sobolev/MultiIndex.lean`, cut out by the weak derivatives
-  `∂^α` of order `|α| ≤ k`, exactly when it lies in Mathlib's Bessel potential space `H^k(ℝ^d)`.
+* `TemperedDistribution.memSobolev_iff_memSobolevMultiIndex`, with its two halves
+  `TemperedDistribution.MemSobolev.memSobolevMultiIndex` and
+  `TemperedDistribution.MemSobolev.of_memSobolevMultiIndex`: **the two descriptions of `H^k(ℝ^d)`
+  agree.** An `L²` function lies in the Sobolev space `W^{k,2}(ℝ^d)` of
+  `Numlib/Analysis/Sobolev/MultiIndex.lean`, cut out by the weak derivatives `∂^α` of order
+  `|α| ≤ k`, exactly when it lies in Mathlib's Bessel potential space `H^k(ℝ^d)`.
 * `memSobolevMultiIndex_ofReal_iff`: a real function lies in `W^{k,p}(Ω)` exactly when its
   complexification does.
 
@@ -871,105 +873,7 @@ end TemperedDistribution
 
 end Bessel
 
-/-! ### Lemma 1: incrementing one entry of a multi-index -/
-
-/-- Raising by one the exponent of a single index `i` in a `flatMap` of replicated blocks adds one
-more copy of `b i`, up to a permutation: the block of `b i` grows by one entry, and moving that
-entry to the front is a permutation. The list `l` of indices is required to be duplicate-free so
-that `i` names exactly one block. This is the general statement behind
-`multiIndexDirections_add_single_perm`. -/
-theorem List.perm_flatMap_replicate_update {ι E : Type*} [DecidableEq ι] (b : ι → E) (α : ι → ℕ)
-    (i : ι) (l : List ι) (hi : i ∈ l) (hnd : l.Nodup) :
-    (l.flatMap fun j ↦ List.replicate (if j = i then α j + 1 else α j) (b j)).Perm
-      (b i :: l.flatMap fun j ↦ List.replicate (α j) (b j)) := by
-  induction l with
-  | nil => simp at hi
-  | cons a t ih =>
-    rw [List.nodup_cons] at hnd
-    obtain ⟨hat, hndt⟩ := hnd
-    by_cases hai : a = i
-    · -- The incremented block is the head block, and the two sides are equal.
-      have hne : ∀ j ∈ t, ¬ j = i := fun j hj hji ↦ hat (by rw [hai, ← hji]; exact hj)
-      have h1 : ∀ j ∈ t, List.replicate (if j = i then α j + 1 else α j) (b j)
-          = List.replicate (α j) (b j) := fun j hj ↦ by rw [ite_eq_right (hne j hj)]
-      have key : ((a :: t).flatMap fun j ↦ List.replicate (if j = i then α j + 1 else α j) (b j))
-          = b i :: ((a :: t).flatMap fun j ↦ List.replicate (α j) (b j)) := by
-        rw [List.flatMap_cons, List.flatMap_cons, List.flatMap_congr h1, ite_eq_left hai, hai,
-          List.replicate_succ, List.cons_append]
-      rw [key]
-    · -- The incremented block is inside the tail; `List.perm_middle` moves `b i` to the front.
-      have hit : i ∈ t := (List.mem_cons.1 hi).resolve_left fun h ↦ hai h.symm
-      rw [List.flatMap_cons, List.flatMap_cons, ite_eq_right hai]
-      exact ((ih hit hndt).append_left _).trans List.perm_middle
-
-/-- **Incrementing the `i`-th entry of a multi-index prepends one copy of `b i`**: the list of
-directions naming `α + e_i` is a permutation of `b i` followed by the list naming `α`, where
-`e_i = Pi.single i 1`. The two lists are not equal: the extra copy of `b i` sits in the block of the
-index `i` and not at the head. -/
-theorem multiIndexDirections_add_single_perm {ι E : Type*} [Fintype ι] [LinearOrder ι]
-    [NormedAddCommGroup E] [NormedSpace ℝ E] (b : ι → E) (α : ι → ℕ) (i : ι) :
-    (multiIndexDirections b (α + Pi.single i 1)).Perm (b i :: multiIndexDirections b α) := by
-  have hfun : (fun j ↦ List.replicate ((α + Pi.single i 1 : ι → ℕ) j) (b j))
-      = fun j ↦ List.replicate (if j = i then α j + 1 else α j) (b j) := by
-    funext j
-    simp only [Pi.add_apply, Pi.single_apply]
-    split_ifs <;> simp
-  rw [multiIndexDirections, multiIndexDirections, hfun]
-  exact List.perm_flatMap_replicate_update b α i _ ((Finset.mem_sort _).2 (Finset.mem_univ i))
-    (Finset.sort_nodup _ _)
-
-/-! ### Lemma 2: weak derivatives under a continuous linear map -/
-
-/-- **A continuous linear map passes through the weak derivative**: if `w` is a weak derivative of
-`f` along the tuple `y` of directions on `Ω`, then `L ∘ w` is one of `L ∘ f`. Both sides of the
-integration by parts formula integrate integrable functions, so `L` commutes with the integrals,
-and `L` is `ℝ`-linear, so it commutes with the scalars `∂^n φ x` and `(-1)^n` as well. Completeness
-of `F` is what makes `MeasureTheory.integral` on `F` the Bochner integral rather than the junk
-value `0`, so without it the hypothesis carries no information; no completeness is needed of `G`,
-where the junk value makes the conclusion trivial. -/
-theorem HasWeakIteratedLineDerivOn.comp_continuousLinearMap {E F G : Type*}
-    [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E] [OpensMeasurableSpace E]
-    [NormedAddCommGroup F] [NormedSpace ℝ F] [CompleteSpace F]
-    [NormedAddCommGroup G] [NormedSpace ℝ G]
-    {n : ℕ} {y : Fin n → E} {f w : E → F} {Ω : Opens E} {μ : Measure E}
-    (h : HasWeakIteratedLineDerivOn y f w Ω μ) (L : F →L[ℝ] G) :
-    HasWeakIteratedLineDerivOn y (fun x ↦ L (f x)) (fun x ↦ L (w x)) Ω μ where
-  locallyIntegrableOn := h.locallyIntegrableOn.comp_continuousLinearMap L
-  locallyIntegrableOn_weakDeriv := h.locallyIntegrableOn_weakDeriv.comp_continuousLinearMap L
-  integral_smul_eq φ := by
-    by_cases hG : CompleteSpace G
-    · have i₁ : Integrable (fun x ↦ iteratedFDeriv ℝ n (φ : E → ℝ) x y • f x)
-          (μ.restrict (Ω : Set E)) := by
-        have h' := (h.integrable_smul (φ.iteratedFDerivApply n y)).integrableOn (s := (Ω : Set E))
-        simp only [TestFunction.iteratedFDerivApply_apply] at h'
-        exact h'
-      have i₂ : Integrable (fun x ↦ (φ : E → ℝ) x • w x) (μ.restrict (Ω : Set E)) :=
-        (h.integrable_smul_weakDeriv φ).integrableOn
-      calc ∫ x in (Ω : Set E), iteratedFDeriv ℝ n (φ : E → ℝ) x y • L (f x) ∂μ
-          = ∫ x in (Ω : Set E), L (iteratedFDeriv ℝ n (φ : E → ℝ) x y • f x) ∂μ := by
-            simp only [map_smul]
-        _ = L (∫ x in (Ω : Set E), iteratedFDeriv ℝ n (φ : E → ℝ) x y • f x ∂μ) :=
-            L.integral_comp_comm i₁
-        _ = L ((-1 : ℝ) ^ n • ∫ x in (Ω : Set E), (φ : E → ℝ) x • w x ∂μ) := by
-            rw [h.integral_smul_eq φ]
-        _ = (-1 : ℝ) ^ n • ∫ x in (Ω : Set E), (φ : E → ℝ) x • L (w x) ∂μ := by
-            rw [map_smul, ← L.integral_comp_comm i₂]
-            simp only [map_smul]
-    · simp only [integral_of_not_completeSpace hG, smul_zero]
-
-/-! ### Lemma 3: the real and the complex form of one weak derivative -/
-
-/-- **A real function has a real weak derivative exactly when its complexification has the
-complexified one**: composing with the embedding `ℝ → ℂ` and with the real part, both continuous
-`ℝ`-linear maps, takes each statement to the other. -/
-theorem HasWeakIteratedLineDerivOn.ofReal_iff {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
-    [MeasurableSpace E] [OpensMeasurableSpace E] {n : ℕ} {y : Fin n → E} {f w : E → ℝ}
-    {Ω : Opens E} {μ : Measure E} :
-    HasWeakIteratedLineDerivOn y f w Ω μ ↔
-      HasWeakIteratedLineDerivOn y (fun x ↦ (f x : ℂ)) (fun x ↦ (w x : ℂ)) Ω μ := by
-  refine ⟨fun h ↦ ?_, fun h ↦ ?_⟩
-  · simpa using h.comp_continuousLinearMap Complex.ofRealCLM
-  · simpa using h.comp_continuousLinearMap Complex.reCLM
+/-! ### The complexification of an `L^p` function -/
 
 /-- A real function lies in `L^p` exactly when its complexification does: the embedding `ℝ → ℂ` is
 a continuous linear map, and so is the real part, which inverts it on real scalars. -/
@@ -984,30 +888,6 @@ section Transfer
 variable {ι E : Type*} [Fintype ι] [LinearOrder ι]
   [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
   [MeasurableSpace E] [BorelSpace E]
-
-omit [NormedAddCommGroup E] [InnerProductSpace ℝ E] [FiniteDimensional ℝ E]
-  [MeasurableSpace E] [BorelSpace E] in
-/-- The list of directions naming a multi-index is the list of the entries of the tuple naming
-it. -/
-theorem ofFn_multiIndexTuple (b : ι → E) (α : ι → ℕ) :
-    List.ofFn (multiIndexTuple b α) = multiIndexDirections b α := by
-  refine List.ext_getElem (by simp [length_multiIndexDirections]) fun i h1 h2 ↦ ?_
-  simp [multiIndexTuple]
-
-omit [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E] in
-/-- **Every tuple of basis vectors is a permutation of the tuple naming a multi-index.** Counting
-how often each index occurs in the tuple gives the multi-index. -/
-theorem exists_multiIndex_perm (b : ι → E) {n : ℕ} (m : Fin n → ι) :
-    ∃ α : ι → ℕ, ∑ i, α i = n ∧
-      (List.ofFn fun j ↦ b (m j)).Perm (multiIndexDirections b α) := by
-  induction n with
-  | zero => exact ⟨0, by simp, by simp [multiIndexDirections]⟩
-  | succ n ih =>
-    obtain ⟨α, hα, hperm⟩ := ih (Fin.tail m)
-    refine ⟨α + Pi.single (m 0) 1, ?_, ?_⟩
-    · simp [Finset.sum_add_distrib, hα]
-    · rw [List.ofFn_succ]
-      exact (hperm.cons _).trans (multiIndexDirections_add_single_perm b α (m 0)).symm
 
 variable {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℂ F] [CompleteSpace F]
 
@@ -1051,12 +931,15 @@ open TemperedDistribution
 
 /-- **An `L²` function whose weak derivatives up to order `k` are `L²` lies in the Bessel
 potential space `H^k`.** -/
-theorem MemSobolevMultiIndex.memSobolev (b : OrthonormalBasis ι ℝ E) {k : ℕ}
-    {u : Lp ℂ 2 (volume : Measure E)}
+theorem TemperedDistribution.MemSobolev.of_memSobolevMultiIndex (b : OrthonormalBasis ι ℝ E)
+    {k : ℕ} {u : Lp ℂ 2 (volume : Measure E)}
     (h : MemSobolevMultiIndex b.toBasis (u : E → ℂ) k 2 ⊤ volume) :
     MemSobolev (k : ℝ) 2 (u : 𝓢'(E, ℂ)) := by
   refine MemSobolev.of_iteratedLineDerivOp_basis b fun n hn m ↦ ?_
-  obtain ⟨α, hα, hperm⟩ := exists_multiIndex_perm (b : ι → E) m
+  obtain ⟨α, hα, hperm⟩ : ∃ α : ι → ℕ, ∑ i, α i = n ∧
+      (List.ofFn fun j ↦ (b : ι → E) (m j)).Perm (multiIndexDirections (b : ι → E) α) :=
+    ⟨multiIndexCount m, sum_multiIndexCount m,
+      multiIndexDirections_multiIndexCount_perm (b : ι → E) m⟩
   obtain ⟨w, hw, hwL⟩ := h.exists_hasWeakIteratedLineDerivOn (α := α) (by omega)
   simp only [OrthonormalBasis.coe_toBasis] at hw
   rw [show ((⊤ : Opens E) : Set E) = Set.univ from rfl, Measure.restrict_univ] at hwL
@@ -1067,7 +950,7 @@ theorem MemSobolevMultiIndex.memSobolev (b : OrthonormalBasis ι ℝ E) {k : ℕ
       exact hwL.coeFn_toLp.symm)
   have hperm' : (List.ofFn fun j ↦ (b : ι → E) (m j)).Perm
       (List.ofFn (multiIndexTuple (b : ι → E) α)) := by
-    rw [ofFn_multiIndexTuple]; exact hperm
+    rw [← multiIndexDirections_eq_ofFn]; exact hperm
   rw [TemperedDistribution.iteratedLineDerivOp_congr_perm hperm',
     MeasureTheory.Lp.iteratedLineDerivOp_eq_of_hasWeakIteratedLineDerivOn hw']
   exact memSobolev_zero_iff.2 ⟨_, rfl⟩
@@ -1094,11 +977,12 @@ Mathlib's Bessel potential space.** An `L²` function has all its weak derivativ
 *Theoretical Numerical Analysis: A Functional Analysis Framework*, 3rd edition, Springer, 2009,
 Theorem 7.4.1 makes when its `H^k(ℝ^d)` is unfolded on both sides; the *norms* are not compared
 here. -/
-theorem memSobolevMultiIndex_iff_memSobolev (b : OrthonormalBasis ι ℝ E) {k : ℕ}
-    {u : Lp ℂ 2 (volume : Measure E)} :
-    MemSobolevMultiIndex b.toBasis (u : E → ℂ) k 2 ⊤ volume ↔
-      MemSobolev (k : ℝ) 2 (u : 𝓢'(E, ℂ)) :=
-  ⟨MemSobolevMultiIndex.memSobolev b, TemperedDistribution.MemSobolev.memSobolevMultiIndex b⟩
+theorem TemperedDistribution.memSobolev_iff_memSobolevMultiIndex (b : OrthonormalBasis ι ℝ E)
+    {k : ℕ} {u : Lp ℂ 2 (volume : Measure E)} :
+    MemSobolev (k : ℝ) 2 (u : 𝓢'(E, ℂ)) ↔
+      MemSobolevMultiIndex b.toBasis (u : E → ℂ) k 2 ⊤ volume :=
+  ⟨TemperedDistribution.MemSobolev.memSobolevMultiIndex b,
+    TemperedDistribution.MemSobolev.of_memSobolevMultiIndex b⟩
 
 end Agree
 

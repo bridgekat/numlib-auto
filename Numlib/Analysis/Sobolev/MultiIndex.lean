@@ -35,8 +35,6 @@ difference matters at `p = 2`, where only the norm here is induced by an inner p
   tuple, so that `∂^α v` is the weak derivative of `v` along `multiIndexTuple b α` in the sense of
   `HasWeakIteratedLineDerivOn`, and `multiIndexCount m`, the multi-index of a tuple `m` of basis
   indices, which counts how often each index occurs in it;
-* `listFDeriv l f`, differentiation of `f` along the entries of a list of directions, the vehicle of
-  the symmetry statement `ContDiff.iteratedFDeriv_congr_perm`;
 * `basisCoordProd b m`, the continuous multilinear form `y ↦ ∏ j, (b.repr (y j)) (m j)`, with which
   a continuous multilinear map is assembled from its values on tuples of basis vectors;
 * `SobolevMultiIndexTuple F ι k p Ω μ`, the ambient space: the `ℓ^p` product over the multi-indices
@@ -63,13 +61,14 @@ difference matters at `p = 2`, where only the norm here is induced by an inner p
 * `SobolevMultiIndex.memSobolevMultiIndex`, `MemSobolevMultiIndex.exists_sobolevMultiIndex` and
   `SobolevMultiIndex.ext_of_fn_ae_eq`: the type and the predicate describe the same functions, each
   function coming from exactly one element;
-* `ContDiff.iteratedFDeriv_congr_perm`: **the iterated derivative of a `C^∞` function is symmetric
-  in its arguments**, which Mathlib has only for order two or for analytic functions;
-* `MemSobolev.memSobolevMultiIndex` and `memSobolev_of_memSobolevMultiIndex`: **the tensor
-  formulation of `W^{k,p}(Ω)` in `Numlib/Analysis/Sobolev/Domain.lean` and the multi-index
-  formulation here describe the same functions** — one way the `∂^α` are the tensor derivative
-  evaluated at the tuple naming `α`, the other way the tensor is assembled from the `∂^α`, and the
-  symmetry above is what lets it be evaluated at an unsorted tuple of basis vectors.
+* `memSobolev_iff_memSobolevMultiIndex`, with its two halves `MemSobolev.memSobolevMultiIndex` and
+  `MemSobolevMultiIndex.memSobolev`: **the tensor formulation of `W^{k,p}(Ω)` in
+  `Numlib/Analysis/Sobolev/Domain.lean` and the multi-index formulation here describe the same
+  functions** — one way the `∂^α` are the tensor derivative evaluated at the tuple naming `α`, the
+  other way the tensor is assembled from the `∂^α`, and the symmetry of the iterated derivative of
+  a `C^∞` function, `ContDiff.iteratedFDeriv_congr_perm` of
+  `Numlib/Analysis/Sobolev/WeakDeriv.lean`, is what lets it be evaluated at an unsorted tuple of
+  basis vectors.
 
 ## Implementation notes
 
@@ -81,7 +80,7 @@ derivatives of order `n` by the operator norm of one tensor of `E [×n]→L[ℝ]
 finite-dimensional `E` the two are equivalent, the derivative tensors of a Sobolev function being
 symmetric, so mathematically they give the same space and the same topology and either will do for
 a Banach space statement. That they contain the same functions is
-`MemSobolev.memSobolevMultiIndex` and `memSobolev_of_memSobolevMultiIndex` below; that the two norms
+`MemSobolev.memSobolevMultiIndex` and `MemSobolevMultiIndex.memSobolev` below; that the two norms
 are equivalent is not formalized here, and the two formulations remain separate types with separate
 proofs.
 
@@ -105,7 +104,7 @@ basis fixed; here the basis is an explicit argument.
 
 `MemSobolev.memSobolevMultiIndex` sends the tensor formulation into this one: the tensor derivative
 of order `|α|` evaluated at `multiIndexTuple b α` is `∂^α`, and
-`memSobolev_of_memSobolevMultiIndex` is the converse — a function with all the `∂^α` in `L^p(Ω)`
+`MemSobolevMultiIndex.memSobolev` is the converse — a function with all the `∂^α` in `L^p(Ω)`
 has the tensor derivatives too. The proof of the converse recovers the tensor of order `n` from its
 values on the tuples of basis vectors, `basisCoordProd` carrying the extension by multilinearity.
 The values on a tuple of basis vectors that is not sorted
@@ -113,9 +112,9 @@ are `∂^α` of the *reordered* tuple, so the argument needs the symmetry of `it
 under permutations of its arguments for a `C^∞` function `φ`. Mathlib has that symmetry for `n = 2`
 (`ContDiffAt.isSymmSndFDerivAt`) and for analytic functions of any order
 (`ContDiffAt.domDomCongr_iteratedFDeriv`, which needs `ω`-smoothness) but not for `C^∞` functions of
-order `n ≥ 3`, and a test function is not analytic; `ContDiff.iteratedFDeriv_congr_perm` supplies it
-here, by transporting the commutation of two directional derivatives along a `List.Perm`. Only the
-functions are matched, not the norms.
+order `n ≥ 3`, and a test function is not analytic; `ContDiff.iteratedFDeriv_congr_perm` of
+`Numlib/Analysis/Sobolev/WeakDeriv.lean` supplies it, by transporting the commutation of two
+directional derivatives along a `List.Perm`. Only the functions are matched, not the norms.
 
 ### Upstream
 
@@ -214,91 +213,6 @@ theorem multiIndexDirections_eq_ofFn (b : ι → E) (α : ι → ℕ) :
   simp [multiIndexTuple]
 
 end Directions
-
-/-! ### Symmetry of the iterated derivative of a smooth function -/
-
-section Symmetry
-
-variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
-  [NormedAddCommGroup F] [NormedSpace ℝ F] {f : E → F}
-
-/-- Differentiating `f` successively along the entries of a list of directions, the head of the
-list *innermost*: `listFDeriv [v₁, …, vₙ] f = ∂_{vₙ} ⋯ ∂_{v₁} f`.
-
-Indexing by a list rather than by a tuple is what makes `listFDeriv_congr_perm` an induction on
-`List.Perm`, whose `swap` constructor is exactly the transposition of the two innermost
-derivatives; `ContDiff.listFDeriv_ofFn` identifies this with `iteratedFDeriv`. -/
-noncomputable def listFDeriv (l : List E) (f : E → F) : E → F :=
-  l.foldl (fun g v ↦ fun z ↦ fderiv ℝ g z v) f
-
-/-- Differentiating along no directions at all leaves the function alone. -/
-@[simp]
-theorem listFDeriv_nil (f : E → F) : listFDeriv [] f = f := rfl
-
-/-- Peeling the head of the list off `listFDeriv` takes the derivative along it first. -/
-theorem listFDeriv_cons (v : E) (l : List E) (f : E → F) :
-    listFDeriv (v :: l) f = listFDeriv l (fun z ↦ fderiv ℝ f z v) := rfl
-
-/-- The derivative of a smooth function in a fixed direction is smooth. -/
-theorem ContDiff.fderiv_apply_right (hf : ContDiff ℝ ∞ f) (v : E) :
-    ContDiff ℝ ∞ fun z ↦ fderiv ℝ f z v :=
-  (hf.fderiv_right (m := ∞) le_rfl).clm_apply contDiff_const
-
-/-- Differentiating a smooth function along the entries of `List.ofFn y` is its `n`-th derivative
-evaluated at the tuple `y`. Each step is `ContDiff.iteratedFDeriv_succ_apply_left'`, which moves one
-derivative from the outside of the iterated derivative to the inside. -/
-theorem ContDiff.listFDeriv_ofFn (hf : ContDiff ℝ ∞ f) {n : ℕ} (y : Fin n → E) (x : E) :
-    listFDeriv (List.ofFn y) f x = iteratedFDeriv ℝ n f x y := by
-  induction n generalizing f with
-  | zero => simp [iteratedFDeriv_zero_apply]
-  | succ n ih =>
-    rw [List.ofFn_succ, listFDeriv_cons, ih (hf.fderiv_apply_right (y 0)),
-      hf.iteratedFDeriv_succ_apply_left' n y x]
-    rfl
-
-/-- **Two directional derivatives of a smooth function commute.** This is the symmetry of the
-second derivative, in the form in which `listFDeriv_congr_perm` consumes it: an equality of
-functions rather than of values, so that it may be applied under a further derivative. -/
-theorem ContDiff.fderiv_fderiv_comm (hf : ContDiff ℝ ∞ f) (v w : E) :
-    (fun z ↦ fderiv ℝ (fun y ↦ fderiv ℝ f y v) z w)
-      = fun z ↦ fderiv ℝ (fun y ↦ fderiv ℝ f y w) z v := by
-  funext x
-  have h1 : (fun z ↦ iteratedFDeriv ℝ 1 f z ![v]) = fun z ↦ fderiv ℝ f z v := by
-    funext z; rw [iteratedFDeriv_one_apply]; simp
-  have h2 := hf.fderiv_iteratedFDeriv_apply 1 ![v] w x
-  rw [h1, iteratedFDeriv_one_apply] at h2
-  simpa using h2
-
-/-- **Differentiating a smooth function along a list of directions does not depend on the order of
-the list.** The induction is on `List.Perm`: its `swap` constructor is the transposition of the two
-innermost derivatives, which is `ContDiff.fderiv_fderiv_comm`, and its `cons` constructor peels one
-derivative off and applies the induction hypothesis to the differentiated function, which is smooth
-again. -/
-theorem listFDeriv_congr_perm {l₁ l₂ : List E} (h : l₁.Perm l₂) {f : E → F}
-    (hf : ContDiff ℝ ∞ f) : listFDeriv l₁ f = listFDeriv l₂ f := by
-  induction h generalizing f with
-  | nil => rfl
-  | cons a _ ih => rw [listFDeriv_cons, listFDeriv_cons, ih (hf.fderiv_apply_right a)]
-  | swap a b l =>
-    rw [listFDeriv_cons, listFDeriv_cons, listFDeriv_cons, listFDeriv_cons,
-      hf.fderiv_fderiv_comm b a]
-  | trans _ _ ih₁ ih₂ => rw [ih₁ hf, ih₂ hf]
-
-/-- **The iterated derivative of a `C^∞` function is symmetric in its arguments**: it takes the same
-value at two tuples of directions that are permutations of each other.
-
-Mathlib has this for order two (`ContDiffAt.isSymmSndFDerivAt`) and, for any order, for analytic
-functions (`ContDiffAt.domDomCongr_iteratedFDeriv`, which asks for `ω`-smoothness); this is the
-`C^∞` statement of any order, obtained by transporting the commutation of two directional
-derivatives along a `List.Perm`. The two tuples are allowed to have different lengths — the
-hypothesis forces them to be equal — so that it applies to a pair of tuples whose lengths agree only
-propositionally, such as `Fin n` and `Fin (∑ i, α i)`. -/
-theorem ContDiff.iteratedFDeriv_congr_perm (hf : ContDiff ℝ ∞ f) {n₁ n₂ : ℕ}
-    {y₁ : Fin n₁ → E} {y₂ : Fin n₂ → E} (h : (List.ofFn y₁).Perm (List.ofFn y₂)) (x : E) :
-    iteratedFDeriv ℝ n₁ f x y₁ = iteratedFDeriv ℝ n₂ f x y₂ := by
-  rw [← hf.listFDeriv_ofFn y₁ x, ← hf.listFDeriv_ofFn y₂ x, listFDeriv_congr_perm h hf]
-
-end Symmetry
 
 /-! ### The multi-index of a tuple of basis indices -/
 
@@ -695,12 +609,8 @@ arbitrary tuple of directions; multilinearity reduces it to the tuples of basis 
 the definition of `∂^α` supplies it for the *sorted* tuple only. The two agree because
 `iteratedFDeriv ℝ n φ x` is symmetric in its arguments for a test function `φ`
 (`ContDiff.iteratedFDeriv_congr_perm`), which is what makes this direction harder than the other
-one.
-
-The name is `memSobolev_of_memSobolevMultiIndex` and not `MemSobolevMultiIndex.memSobolev` because
-`Numlib/Analysis/Sobolev/Tempered.lean` has already taken the latter for the corresponding
-statement about Mathlib's Bessel potential spaces. -/
-theorem memSobolev_of_memSobolevMultiIndex (h : MemSobolevMultiIndex b f k p Ω μ) :
+one. -/
+theorem MemSobolevMultiIndex.memSobolev (h : MemSobolevMultiIndex b f k p Ω μ) :
     MemSobolev f k p Ω μ := by
   classical
   obtain ⟨u₀, hu₀, -⟩ := h.2 0 (by simp)
@@ -798,6 +708,17 @@ theorem memSobolev_of_memSobolevMultiIndex (h : MemSobolevMultiIndex b f k p Ω 
         refine congrArg _ (setIntegral_congr_fun Ω.isOpen.measurableSet fun x _ ↦ ?_)
         rw [hWapply x y, Finset.smul_sum]
         exact Finset.sum_congr rfl fun m _ ↦ smul_comm _ _ _
+
+variable (b) in
+/-- **The tensor formulation of `W^{k,p}(Ω)` and the multi-index formulation describe the same
+functions.** The two halves are `MemSobolev.memSobolevMultiIndex`, which evaluates the derivative
+tensor of order `|α|` at the tuple of directions naming `α`, and `MemSobolevMultiIndex.memSobolev`,
+which assembles the tensor of order `n` from the `∂^α` with `|α| = n`. Only the functions are
+matched: the two formulations carry different, though equivalent, norms, and that equivalence is
+not proved here. -/
+theorem memSobolev_iff_memSobolevMultiIndex :
+    MemSobolev f k p Ω μ ↔ MemSobolevMultiIndex b f k p Ω μ :=
+  ⟨MemSobolev.memSobolevMultiIndex, MemSobolevMultiIndex.memSobolev⟩
 
 end Space
 

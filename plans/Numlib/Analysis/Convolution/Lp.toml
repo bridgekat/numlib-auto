@@ -46,3 +46,18 @@ id = "ENNReal.lintegral_mul_mul_norm_pow_le"
 
 [[node]]
 id = "MeasureTheory.measurePreserving_sub_left_of_isAddRightInvariant"
+
+[[node]]
+id = "MeasureTheory.tendsto_integral_mul_of_tendsto_eLpNorm"
+
+[[node]]
+id = "MeasureTheory.tendsto_eLpNorm_one_of_tendsto_eLpNorm"
+
+[[node]]
+id = "MeasureTheory.enorm_integral_smul_le_of_bound"
+
+[[node]]
+id = "MeasureTheory.LocallyIntegrable.fderiv_convolution_left_apply"
+
+[[node]]
+id = "MeasureTheory.LocallyIntegrableOn.convolutionExistsAt"

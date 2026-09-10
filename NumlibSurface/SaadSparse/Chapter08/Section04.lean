@@ -102,13 +102,6 @@ theorem orthogonal_ker_eq_range (B : Matrix (Fin n) (Fin m) 𝕜) :
     (LinearMap.ker (Matrix.toEuclideanLin Bᴴ))ᗮ = LinearMap.range (Matrix.toEuclideanLin B) := by
   rw [← orthogonal_range_eq_ker, Submodule.orthogonal_orthogonal]
 
-/-- `A A⁻¹ z = z` for a nonsingular `A`. -/
-theorem apply_nonsing_inv {A : Matrix (Fin n) (Fin n) 𝕜} (hA : IsUnit A)
-    (z : EuclideanSpace 𝕜 (Fin n)) : (A ⬝ (A⁻¹ ⬝ z)) = z := by
-  rw [← toEuclideanLin_mul_apply, Matrix.mul_nonsing_inv _ ((isUnit_iff_isUnit_det A).1 hA),
-    Matrix.toEuclideanLin_one]
-  rfl
-
 /-! ### (8.30): the block system -/
 
 /-- **Saad (8.30)** and **Example 8.2**: the saddle-point block matrix `[[A, B], [Bᴴ, D]]`.
@@ -116,26 +109,6 @@ The block system of §8.4 is `D = 0`; the regularized system of Example 8.2 is `
 def saddleMatrix (A : Matrix (Fin n) (Fin n) 𝕜) (B : Matrix (Fin n) (Fin m) 𝕜)
     (D : Matrix (Fin m) (Fin m) 𝕜) : Matrix (Fin n ⊕ Fin m) (Fin n ⊕ Fin m) 𝕜 :=
   Matrix.fromBlocks A B Bᴴ D
-
-private theorem toEuclideanLin_zero_apply {k l : ℕ} (v : EuclideanSpace 𝕜 (Fin l)) :
-    ((0 : Matrix (Fin k) (Fin l) 𝕜) ⬝ v) = 0 := by
-  rw [map_zero]; rfl
-
-private theorem toEuclideanLin_one_apply {k : ℕ} (v : EuclideanSpace 𝕜 (Fin k)) :
-    ((1 : Matrix (Fin k) (Fin k) 𝕜) ⬝ v) = v := by
-  rw [Matrix.toEuclideanLin_one]; rfl
-
-private theorem toEuclideanLin_neg_apply {k l : ℕ} (M : Matrix (Fin k) (Fin l) 𝕜)
-    (v : EuclideanSpace 𝕜 (Fin l)) : ((-M) ⬝ v) = -(M ⬝ v) := by
-  rw [map_neg]; rfl
-
-private theorem toEuclideanLin_sub_apply {k l : ℕ} (M N : Matrix (Fin k) (Fin l) 𝕜)
-    (v : EuclideanSpace 𝕜 (Fin l)) : ((M - N) ⬝ v) = (M ⬝ v) - (N ⬝ v) := by
-  rw [map_sub]; rfl
-
-private theorem toEuclideanLin_smul_apply {k l : ℕ} (r : 𝕜) (M : Matrix (Fin k) (Fin l) 𝕜)
-    (v : EuclideanSpace 𝕜 (Fin l)) : ((r • M) ⬝ v) = r • (M ⬝ v) := by
-  rw [map_smul]; rfl
 
 private theorem ofLp_eq_add_iff {k : ℕ} (x y z : EuclideanSpace 𝕜 (Fin k)) :
     WithLp.ofLp x = WithLp.ofLp y + WithLp.ofLp z ↔ x = y + z := by
@@ -217,7 +190,7 @@ theorem isGalerkin_iff_saddleObjective_min (hA : A.PosDef)
     IsGalerkin (Matrix.toEuclideanLin A) b x₀ K x ↔
       x - x₀ ∈ K ∧ ∀ z, z - x₀ ∈ K → saddleObjective A b x ≤ saddleObjective A b z := by
   have hsc := (Matrix.posDef_iff_isSymmetricCoercive A).1 hA
-  have hstar : (A ⬝ (A⁻¹ ⬝ b)) = b := apply_nonsing_inv hA.isUnit b
+  have hstar : (A ⬝ (A⁻¹ ⬝ b)) = b := toEuclideanLin_mul_nonsing_inv_apply hA.isUnit b
   have hx0 := energyNorm_nonneg (Matrix.toEuclideanLin A) ((A⁻¹ ⬝ b) - x)
   rw [IsGalerkin.iff_energyNorm_min hsc hstar]
   refine and_congr_right fun _ => ?_
@@ -314,7 +287,7 @@ theorem schur_eq (hA : IsUnit A) (b : EuclideanSpace 𝕜 (Fin n)) (c y : Euclid
     {x : EuclideanSpace 𝕜 (Fin n)} (hx : x = (A⁻¹ ⬝ (b - (B ⬝ y)))) :
     (schur A B ⬝ y) = schurRhs A B b c ↔ ((A ⬝ x) + (B ⬝ y) = b ∧ (Bᴴ ⬝ x) = c) := by
   have h1 : (A ⬝ x) + (B ⬝ y) = b := by
-    rw [hx, apply_nonsing_inv hA]
+    rw [hx, toEuclideanLin_mul_nonsing_inv_apply hA]
     abel
   have h2 : (Bᴴ ⬝ x) = ((Bᴴ * A⁻¹) ⬝ b) - (schur A B ⬝ y) := by
     rw [hx, conjTranspose_inv_sub]
@@ -420,7 +393,8 @@ theorem uzawa_eq_splitting (hA : IsUnit A)
           (WithLp.ofLp (uzawaStep A B b c ω s).2)
       = Matrix.fromBlocks 0 (-B) 0 1 *ᵥ Sum.elim (WithLp.ofLp s.1) (WithLp.ofLp s.2)
           + Sum.elim (WithLp.ofLp b) (WithLp.ofLp (-(ω • c))) := by
-  have hx : (A ⬝ (uzawaStep A B b c ω s).1) = b - (B ⬝ s.2) := apply_nonsing_inv hA _
+  have hx : (A ⬝ (uzawaStep A B b c ω s).1) = b - (B ⬝ s.2) :=
+    toEuclideanLin_mul_nonsing_inv_apply hA _
   have hy : (uzawaStep A B b c ω s).2
       = s.2 + ω • ((Bᴴ ⬝ (uzawaStep A B b c ω s).1) - c) := rfl
   rw [fromBlocks_elim_eq_iff]
@@ -918,7 +892,7 @@ theorem problem_8_12_neg (hA : A.PosDef) (hB : Function.Injective (Matrix.toEucl
     rw [show (Matrix.toEuclideanLin B) p = (B ⬝ p) from rfl, h, map_zero]))
   have hfst : (A ⬝ (-(A⁻¹ ⬝ (B ⬝ p)))) + (B ⬝ p) = 0 := by
     rw [show (A ⬝ (-(A⁻¹ ⬝ (B ⬝ p)))) = -(A ⬝ (A⁻¹ ⬝ (B ⬝ p))) from map_neg _ _,
-      apply_nonsing_inv hA.isUnit]
+      toEuclideanLin_mul_nonsing_inv_apply hA.isUnit]
     abel
   rw [saddleMatrix_apply_blockVec, hfst, toEuclideanLin_zero_apply, add_zero, inner_blockVec,
     inner_zero_right, zero_add,

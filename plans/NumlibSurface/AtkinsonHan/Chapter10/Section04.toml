@@ -37,9 +37,11 @@ Example 10.4.2: for `-Δu = f` in `Ω` with `u = 0` on `Γ`, the weak problem `u
 `∫_Ω ∇u · ∇v = ∫_Ω f v` for all `v ∈ H¹₀(Ω)` and its discretization over a finite element subspace
 `V_h ⊆ H¹₀(Ω)` of piecewise polynomials of degree at most `k` on a regular triangulation of `Ω̄`
 each have a unique solution, and `‖u - u_h‖_{1,Ω} ≤ c h^k ‖u‖_{k+1,Ω}` when `u ∈ H^{k+1}(Ω)`.
-Not formalized: it is Theorem 10.4.1 on a concrete domain, so it needs `H¹₀(Ω)` and the finite
-element subspaces of it — both among the results the chapter's group description lists as
-needing Sobolev theory.
+Not formalized: it is Theorem 10.4.1 on a concrete domain. `H¹₀(Ω)` exists,
+`AtkinsonHan.Chapter07.definition_7_2_9` being proved; what is missing is Theorem 10.4.1 itself,
+the concrete finite element subspaces of that space — which the chapter's group description puts
+out of scope — and, through `AtkinsonHan.Chapter08.example_8_3_5`, the Poincaré inequality
+`AtkinsonHan.Chapter07.example_7_3_15`.
 '''
 deps = ["theorem_10_4_1", "AtkinsonHan.Chapter08.example_8_3_5"]
 
@@ -53,7 +55,7 @@ converges, `‖u - u_h‖_V → 0` as `h → 0`, and when `u ∈ H^{k+1}(Ω)` th
 `‖u - u_h‖_{1,Ω} ≤ c h^k |u|_{k+1,Ω}`. Not formalized: the error bound is Céa's inequality (10.4.3)
 with `v_h = Π_h u` and Theorem 10.3.9, and the convergence half rests on the density of the finite
 element spaces in `H¹`; the abstract convergence statement is already
-`Chapter09.corollary_9_1_4`, so what is missing is Sobolev, as the chapter's group description
-records.
+`Chapter09.corollary_9_1_4`, so what is missing is Theorem 10.3.9 and that density, not the Sobolev
+space, which exists (`AtkinsonHan.Chapter07.definition_7_2_2_multiIndex`, proved).
 '''
 deps = ["theorem_10_3_9", "AtkinsonHan.Chapter09.corollary_9_1_4"]

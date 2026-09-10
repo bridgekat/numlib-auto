@@ -142,6 +142,7 @@ import Numlib.LinearAlgebra.Matrix.Hessenberg
 import Numlib.LinearAlgebra.Matrix.Jordan
 import Numlib.LinearAlgebra.Matrix.KroneckerSum
 import Numlib.LinearAlgebra.Matrix.MMatrix
+import Numlib.LinearAlgebra.Matrix.NonsingularInverse
 import Numlib.LinearAlgebra.Matrix.Order
 import Numlib.LinearAlgebra.Matrix.PerronFrobenius
 import Numlib.LinearAlgebra.Matrix.QR
@@ -187,7 +188,6 @@ import Numlib.RingTheory.Polynomial.ChebyshevMinimax
 import Numlib.RingTheory.Polynomial.KernelPolynomial
 import Numlib.Topology.Algebra.Polynomial
 import Numlib.Topology.ContinuousMap.ArzelaAscoli
-import Numlib.Variational.AubinNitsche
 import Numlib.Variational.Forms
 import Numlib.Variational.Galerkin
 import Numlib.Variational.Inequality.Approximation

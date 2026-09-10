@@ -44,3 +44,9 @@ id = "isPatternIrreducible_iff_forall_submatrix_not_blockTriangular"
 
 [[node]]
 id = "not_isPatternIrreducible_iff_exists_submatrix_blockTriangular"
+
+[[node]]
+id = "IsPatternIrreducible.forall_of_closed"
+
+[[node]]
+id = "isPatternIrreducible_iff_exists_pow_pos"

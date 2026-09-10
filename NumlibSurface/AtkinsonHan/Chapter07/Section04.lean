@@ -220,7 +220,8 @@ theorem theorem_7_4_1_complex {k : ℕ} (v : Lp ℂ 2 (volume : Measure (Euclide
     MemSobolevMultiIndex (stdBasis d) (v : EuclideanSpace ℝ (Fin d) → ℂ) k 2 ⊤ volume ↔
       MemLp (fun ξ ↦ (((1 + ‖ξ‖ ^ 2) ^ ((k : ℝ) / 2) : ℝ) : ℂ) * (𝓕 v) ξ) 2 volume := by
   rw [← equation_7_4_2 (by positivity) v]
-  exact memSobolevMultiIndex_iff_memSobolev (EuclideanSpace.basisFun (Fin d) ℝ)
+  exact (TemperedDistribution.memSobolev_iff_memSobolevMultiIndex
+    (EuclideanSpace.basisFun (Fin d) ℝ)).symm
 
 /-- **Theorem 7.4.1**: a real function `v ∈ L^2(ℝ^d)` belongs to `H^k(ℝ^d)`, the `W^{k,2}(ℝ^d)` of
 Definition 7.2.2, exactly when `(1 + |ξ|^2)^{k/2} ℱv ∈ L^2(ℝ^d)`.

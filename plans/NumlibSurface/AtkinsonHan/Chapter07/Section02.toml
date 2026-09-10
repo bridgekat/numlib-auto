@@ -35,6 +35,14 @@ id = "definition_7_2_2_multiIndex_iff"
 id = "definition_7_2_2_multiIndex_of_definition_7_2_2"
 
 [[node]]
+id = "definition_7_2_2_of_definition_7_2_2_multiIndex"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.2'
+
+[[node]]
+id = "definition_7_2_2_iff_definition_7_2_2_multiIndex"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.2'
+
+[[node]]
 id = "definition_7_2_2_multiIndex_iff_exists"
 
 [[node]]

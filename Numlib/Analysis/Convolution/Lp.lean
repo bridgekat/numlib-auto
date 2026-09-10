@@ -45,6 +45,17 @@ Analysis, Sobolev Spaces and Partial Differential Equations*, Springer, 2011, ch
 * `ContDiffBump.tendsto_eLpNorm_convolution_sub`: mollification converges in `L^p`. For
   `f ∈ L^p(μ)` with `p ≠ ∞` and a family of bump functions whose outer radii tend to `0`, the
   mollifications `(φ i).normed μ ⋆ f` tend to `f` in `L^p`.
+* `MeasureTheory.tendsto_integral_mul_of_tendsto_eLpNorm`,
+  `MeasureTheory.tendsto_eLpNorm_one_of_tendsto_eLpNorm` and
+  `MeasureTheory.enorm_integral_smul_le_of_bound`: the estimates that pass to the limit in an
+  integral along a sequence converging in `L^p` -- Hölder's inequality in the limit, the comparison
+  of `L^1` with `L^p` on a finite measure, and the bound of an integral against a bounded scalar
+  factor.
+* `MeasureTheory.LocallyIntegrable.fderiv_convolution_left_apply`: differentiating a convolution in
+  a fixed direction moves the derivative onto the smooth, compactly supported factor, and
+  `MeasureTheory.LocallyIntegrableOn.convolutionExistsAt`: a convolution against a compactly
+  supported continuous function exists as soon as the other factor is locally integrable on an open
+  set containing the closed ball carrying the support.
 
 ## Implementation notes
 
@@ -867,5 +878,136 @@ theorem _root_.ContDiffBump.tendsto_eLpNorm_convolution_sub {ι : Type*} {l : Fi
   exact (ENNReal.rpow_le_rpow_iff hq0).1 hkey
 
 end Mollifier
+
+/-! ### Limits of `L^p` pairings
+
+Three estimates that are used to pass to the limit in an integral along a sequence converging in
+`L^p`: Hölder's inequality in the limit, the comparison of `L^1` with `L^p` on a finite measure,
+and the bound of an integral against a bounded scalar factor. -/
+
+section Limits
+
+/-- **Hölder's inequality in the limit**: if `a j → a₀` in `L^p` and `b ∈ L^q` with `p` and `q`
+Hölder conjugate, then the pairings `∫ b (a j)` converge to `∫ b a₀`. -/
+theorem tendsto_integral_mul_of_tendsto_eLpNorm {q : ℝ≥0∞} [ENNReal.HolderConjugate p q]
+    {a : ℕ → α → ℝ} {a₀ b : α → ℝ} (ha : ∀ j, MemLp (a j) p μ) (ha₀ : MemLp a₀ p μ)
+    (hb : MemLp b q μ)
+    (hlim : Tendsto (fun j ↦ eLpNorm (fun x ↦ a j x - a₀ x) p μ) atTop (𝓝 0)) :
+    Tendsto (fun j ↦ ∫ x, b x * a j x ∂μ) atTop (𝓝 (∫ x, b x * a₀ x ∂μ)) := by
+  have hint : ∀ c : α → ℝ, MemLp c p μ → Integrable (fun x ↦ b x * c x) μ := fun c hc ↦
+    memLp_one_iff_integrable.1 (hc.mul' hb)
+  have h0 : Tendsto (fun j ↦ eLpNorm (fun x ↦ a j x - a₀ x) p μ * eLpNorm b q μ) atTop (𝓝 0) := by
+    simpa using ENNReal.Tendsto.mul_const hlim (Or.inr hb.2.ne)
+  have hup : Tendsto (fun j ↦ (eLpNorm (fun x ↦ a j x - a₀ x) p μ * eLpNorm b q μ).toReal)
+      atTop (𝓝 0) := by
+    rw [show (0 : ℝ) = (0 : ℝ≥0∞).toReal by simp]
+    exact (ENNReal.tendsto_toReal (by simp)).comp h0
+  rw [tendsto_iff_norm_sub_tendsto_zero]
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds hup
+    (fun j ↦ norm_nonneg _) (fun j ↦ ?_)
+  · have hfin : eLpNorm (fun x ↦ a j x - a₀ x) p μ * eLpNorm b q μ ≠ ⊤ :=
+      ENNReal.mul_ne_top ((ha j).sub ha₀).2.ne hb.2.ne
+    have e : (∫ x, b x * a j x ∂μ) - ∫ x, b x * a₀ x ∂μ = ∫ x, b x * (a j x - a₀ x) ∂μ := by
+      rw [← integral_sub (hint _ (ha j)) (hint _ ha₀)]
+      exact integral_congr_ae (Eventually.of_forall fun x ↦ by ring)
+    have h1 : ‖∫ x, b x * (a j x - a₀ x) ∂μ‖ₑ ≤ eLpNorm (fun x ↦ b x * (a j x - a₀ x)) 1 μ := by
+      rw [eLpNorm_one_eq_lintegral_enorm]
+      exact enorm_integral_le_lintegral_enorm _
+    have h2 : eLpNorm (fun x ↦ b x * (a j x - a₀ x)) 1 μ
+        ≤ eLpNorm (fun x ↦ a j x - a₀ x) p μ * eLpNorm b q μ := by
+      have hs := eLpNorm_smul_le_mul_eLpNorm (𝕜 := ℝ) (p := q) (q := p) (r := 1)
+        (f := fun x ↦ a j x - a₀ x) (φ := b) ((ha j).1.sub ha₀.1) hb.1
+        (hpqr := ENNReal.HolderTriple.symm)
+      rw [mul_comm]
+      exact le_of_le_of_eq hs (by rfl)
+    rw [e]
+    calc ‖∫ x, b x * (a j x - a₀ x) ∂μ‖
+        = ‖∫ x, b x * (a j x - a₀ x) ∂μ‖ₑ.toReal := by
+          rw [← ofReal_norm, ENNReal.toReal_ofReal (norm_nonneg _)]
+      _ ≤ _ := ENNReal.toReal_mono hfin (h1.trans h2)
+
+/-- On a finite measure, convergence to zero in `L^p` implies convergence to zero in `L^1`: the
+exponents are ordered the other way from the inclusion of the spaces, and the loss is a power of
+the total mass. -/
+theorem tendsto_eLpNorm_one_of_tendsto_eLpNorm [IsFiniteMeasure μ] (hp : 1 ≤ p)
+    {h : ℕ → α → F} (hmeas : ∀ j, AEStronglyMeasurable (h j) μ)
+    (hlim : Tendsto (fun j ↦ eLpNorm (h j) p μ) atTop (𝓝 0)) :
+    Tendsto (fun j ↦ eLpNorm (h j) 1 μ) atTop (𝓝 0) := by
+  set C : ℝ≥0∞ := μ Set.univ ^ (1 / (1 : ℝ≥0∞).toReal - 1 / p.toReal) with hC
+  have hCfin : C ≠ ⊤ := by
+    refine ENNReal.rpow_ne_top_of_nonneg ?_ (measure_ne_top μ Set.univ)
+    simp only [ENNReal.toReal_one, div_one, sub_nonneg]
+    rcases eq_or_ne p ⊤ with rfl | hpt
+    · simp
+    · have h1 : (1 : ℝ) ≤ p.toReal := by
+        rw [← ENNReal.toReal_one]; exact ENNReal.toReal_mono hpt hp
+      rw [div_le_one (by linarith)]
+      exact h1
+  have hb : Tendsto (fun j ↦ eLpNorm (h j) p μ * C) atTop (𝓝 0) := by
+    simpa using ENNReal.Tendsto.mul_const hlim (Or.inr hCfin)
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds hb (fun _ ↦ zero_le)
+    (fun j ↦ ?_)
+  exact eLpNorm_le_eLpNorm_mul_rpow_measure_univ hp (hmeas j)
+
+/-- An integral against a bounded scalar factor is bounded by that factor times the `L^1` norm. -/
+theorem enorm_integral_smul_le_of_bound [NormedSpace ℝ F] {b : α → ℝ} {C : ℝ}
+    (hC : ∀ x, |b x| ≤ C) {h : α → F} :
+    ‖∫ x, b x • h x ∂μ‖ₑ ≤ ENNReal.ofReal C * eLpNorm h 1 μ := by
+  refine (enorm_integral_le_lintegral_enorm _).trans ?_
+  rw [eLpNorm_one_eq_lintegral_enorm, ← lintegral_const_mul' _ _ ENNReal.ofReal_ne_top]
+  refine lintegral_mono fun x ↦ ?_
+  rw [enorm_smul]
+  gcongr
+  simpa [Real.enorm_eq_ofReal_abs] using ENNReal.ofReal_le_ofReal (hC x)
+
+end Limits
+
+/-! ### Derivatives of a convolution -/
+
+section ConvolutionDeriv
+
+variable {E E₁ E₂ V : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+  [NormedAddCommGroup E₁] [NormedSpace ℝ E₁] [NormedAddCommGroup E₂] [NormedSpace ℝ E₂]
+  [NormedAddCommGroup V] [NormedSpace ℝ V]
+  [MeasurableSpace E] [FiniteDimensional ℝ E] [BorelSpace E]
+  {μ : Measure E} [μ.IsAddHaarMeasure] {L : E₁ →L[ℝ] E₂ →L[ℝ] V} {g : E → E₂}
+
+open scoped ContDiff in
+/-- Differentiating a convolution in a fixed direction moves the derivative onto the smooth,
+compactly supported factor. This is `HasCompactSupport.hasFDerivAt_convolution_left` with the
+`ContinuousLinearMap.precompL` bookkeeping unwound by evaluating at a direction. -/
+theorem LocallyIntegrable.fderiv_convolution_left_apply
+    (hg : LocallyIntegrable g μ) {φ : E → E₁} (hcφ : HasCompactSupport φ) (hφ : ContDiff ℝ ∞ φ)
+    (x v : E) :
+    fderiv ℝ (φ ⋆[L, μ] g) x v = ((fun t ↦ fderiv ℝ φ t v) ⋆[L, μ] g) x := by
+  rw [(hcφ.hasFDerivAt_convolution_left L (hφ.of_le (by simp)) hg x).fderiv]
+  have hex : ConvolutionExistsAt (fderiv ℝ φ) g x (L.precompL E) μ :=
+    HasCompactSupport.convolutionExists_left _ (hcφ.fderiv ℝ) (hφ.continuous_fderiv (by simp)) hg x
+  rw [convolution_def, ContinuousLinearMap.integral_apply hex, convolution_def]
+  rfl
+
+/-- A convolution against a compactly supported continuous function only sees the other factor on
+the closed ball whose radius is that of the support, so it exists as soon as that factor is
+locally integrable on an open set containing the ball. -/
+theorem LocallyIntegrableOn.convolutionExistsAt {U : Set E}
+    (hg : LocallyIntegrableOn g U μ) {φ : E → E₁} (hφ : Continuous φ) {ε : ℝ}
+    (hsupp : tsupport φ ⊆ closedBall 0 ε) {x : E} (hx : closedBall x ε ⊆ U) :
+    ConvolutionExistsAt φ g x L μ := by
+  have hcφ : HasCompactSupport φ :=
+    IsCompact.of_isClosed_subset (isCompact_closedBall 0 ε) isClosed_closure hsupp
+  set g' : E → E₂ := (closedBall x ε).indicator g with hg'
+  have hg'loc : LocallyIntegrable g' μ :=
+    ((hg.integrableOn_compact_subset hx (isCompact_closedBall x ε)).integrable_indicator
+      measurableSet_closedBall).locallyIntegrable
+  refine (HasCompactSupport.convolutionExists_left L hcφ hφ hg'loc x).congr
+    (Eventually.of_forall fun t ↦ ?_)
+  rcases eq_or_ne (φ t) 0 with h0 | h0
+  · simp [h0]
+  · have ht : t ∈ closedBall (0 : E) ε := hsupp (subset_tsupport _ h0)
+    have : x - t ∈ closedBall x ε := by
+      simpa [mem_closedBall, dist_eq_norm] using (by simpa using ht : ‖t‖ ≤ ε)
+    simp [hg', Set.indicator_of_mem this]
+
+end ConvolutionDeriv
 
 end MeasureTheory

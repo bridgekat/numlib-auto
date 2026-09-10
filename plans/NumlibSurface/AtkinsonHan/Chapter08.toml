@@ -3,28 +3,40 @@ Atkinson–Han, Chapter 8: weak formulations of elliptic boundary value problems
 sections are formalized — §8.2 (existence and uniqueness for operator equations), §8.3 (bilinear
 forms and Lax–Milgram), §8.6 (saddle points and duality) and §8.7 (the generalized Nečas
 Lax–Milgram lemma) — and the four concrete sections are genuine skips, each blocked on the same
-missing Sobolev theory rather than on anything numerical.
+missing piece of §7.3 rather than on anything numerical.
+
+The Sobolev *spaces* are no longer the obstruction. `W^{k,p}(Ω)` over an open set is
+`AtkinsonHan.Chapter07.definition_7_2_2_multiIndex`, `W_0^{k,p}(Ω)` is `definition_7_2_9` and the
+negative-order duals are `definition_7_2_12`, all proved; the weak derivative under them is
+`definition_7_1_3_multiIndex`. What is missing in every case below is the §7.3 structure theory over
+those spaces — the trace, Poincaré–Friedrichs, Deny–Lions — and that is what each entry names.
 
 * **§8.1, the model problem.** The weak form of `−Δu = f` with `u = 0` on `Γ` lives on `H¹₀(Ω)`
-  and needs the duality `H^{-1}(Ω) = (H¹₀(Ω))'` and integration by parts on `Ω`. §8.1 states no
-  numbered result; its content is the displays (8.1.1)–(8.1.4), which are that construction.
+  and pairs it with `H^{-1}(Ω)`; both spaces exist, `definition_7_2_9` and
+  `definition_7_2_12_hMinusOne`. What is missing is the Poincaré inequality (AH Example 7.3.15)
+  that makes the `H¹` seminorm a norm there, and the integration by parts on `Ω` identifying the
+  weak form with the boundary value problem. §8.1 states no numbered result; its content is the
+  displays (8.1.1)–(8.1.4), which are that construction.
 * **§8.4, linear elliptic boundary value problems.** Lemma 8.4.1 (the quotient norm on `H¹(Ω)/ℝ`
-  equivalent to the `H¹` seminorm) is a Deny–Lions equivalence; the weak formulations
-  (8.4.1)–(8.4.22) and Exercises 8.4.1–8.4.9 need the trace for the Dirichlet, Neumann and Robin
-  conditions, and 8.4.9 needs `H²₀(Ω)` and the second trace as well.
-* **§8.5, linearized elasticity.** Theorem 8.5.1 needs the trace on `Γ_D`, the space `H¹(Ω)^d`,
-  the symmetry conditions (8.5.6)–(8.5.8) and above all **Korn's inequality**, which no library
-  has.
-* **§8.8, a nonlinear problem.** Lemmas 8.8.1–8.8.4 and Theorem 8.8.5 are set on `W^{1,p}₀(Ω)`
-  and need the Poincaré inequality there (AH Theorem 7.3.13) and the reflexivity of that space.
-  The abstract residue — a coercive strictly convex functional on a closed convex set of a
-  Hilbert space attains a unique minimum — is AH Theorem 3.3.12 and is already in the library;
-  what is missing is only the function space.
+  equivalent to the `H¹` seminorm) is a Deny–Lions equivalence (AH Theorem 7.3.12); the weak
+  formulations (8.4.1)–(8.4.22) and Exercises 8.4.1–8.4.9 need the trace for the Dirichlet,
+  Neumann and Robin conditions, and 8.4.9 needs `H²₀(Ω)` and the second trace as well.
+* **§8.5, linearized elasticity.** Theorem 8.5.1 needs the trace on `Γ_D`, the linearized strain
+  over `[H¹(Ω)]^d`, the symmetry conditions (8.5.6)–(8.5.8) and above all **Korn's inequality**,
+  which no library has.
+* **§8.8, a nonlinear problem.** Lemmas 8.8.1–8.8.4 and Theorem 8.8.5 are set on `W^{1,p}₀(Ω)`,
+  which exists. What they need of it is the Poincaré inequality (AH Theorem 7.3.13) making
+  `(∫_Ω |∇v|^p)^{1/p}` a norm on it, and the reflexivity of that space — statable, since
+  `NormedSpace.IsReflexive` of `Numlib/Analysis/Normed/Module/Reflexive` is AH Definition 2.7.4,
+  but unproved for this space. The abstract residue — a coercive strictly convex functional on a
+  closed convex set of a reflexive space attains a unique minimum — is AH Theorem 3.3.12 and is
+  already in the library.
 
 Every well-posedness claim of §8.4 is `theorem_8_3_4`, every one of §8.5 is `theorem_8_3_3` with
 `theorem_8_3_4`, and §8.8's is AH Theorem 3.3.12: the abstract content of all four sections is
 already proved, and what is skipped is the verification that a particular boundary value problem
-satisfies its hypotheses. The obstruction is chapter 7 §7.3, whose exclusion
+satisfies its hypotheses. The obstruction is chapter 7 §7.3, of which only the density theorems
+7.3.1, 7.3.3 and 7.3.4 are proved, and whose exclusion
 `plans/NumlibSurface/AtkinsonHan/Chapter07.toml` records section by section.
 
 §8.4, §8.5 and §8.8 have a group each, holding no more than the section's numbered results as open

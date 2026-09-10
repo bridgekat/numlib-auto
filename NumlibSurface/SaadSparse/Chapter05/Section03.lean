@@ -3,6 +3,7 @@ import Mathlib.Geometry.Euclidean.Angle.Unoriented.Basic
 import Numlib.Analysis.InnerProductSpace.Coercive
 import Numlib.Analysis.InnerProductSpace.Energy
 import Numlib.Analysis.Matrix.ToEuclideanLin
+import Numlib.LinearAlgebra.Matrix.NonsingularInverse
 import Numlib.LinearSolve.Projection.Basic
 import Numlib.LinearSolve.Projection.OneDimensional
 import NumlibSurface.SaadSparse.Chapter05.Section01
@@ -140,16 +141,14 @@ theorem lemma_5_8 {B : Matrix (Fin n) (Fin n) ℝ} (hB : B.PosDef) (x : Fin n �
         (x ⬝ᵥ x) ^ 2 := by
   have hl : 0 < lambdaMin hB.1 := lambdaMin_pos hB
   have hsb := isSymmetricBoundedBy_toEuclideanLin hB.1
-  have hdet : IsUnit B.det := (isUnit_iff_isUnit_det B).mp hB.isUnit
-  have hBB : B *ᵥ (B⁻¹ *ᵥ x) = x := by
-    rw [mulVec_mulVec, mul_nonsing_inv _ hdet, one_mulVec]
+  have hBB : B *ᵥ (B⁻¹ *ᵥ x) = x := mulVec_nonsing_inv_mulVec hB.isUnit x
   have hy : toEuclideanLin B (WithLp.toLp 2 (B⁻¹ *ᵥ x)) = (WithLp.toLp 2 x : E n) :=
     congrArg (WithLp.toLp 2) hBB
   have hk := Projection.kantorovich_inequality hl hsb (WithLp.toLp 2 x : E n) hy
   rw [real_inner_apply_self] at hk
   have h1 : (inner ℝ (WithLp.toLp 2 (B⁻¹ *ᵥ x) : E n) (WithLp.toLp 2 x : E n))
       = (B⁻¹ *ᵥ x) ⬝ᵥ x := by
-    rw [inner_eq_dotProduct_star, dotProduct_comm]
+    rw [EuclideanSpace.inner_eq_star_dotProduct, dotProduct_comm]
     simp
   have h4 : ‖(WithLp.toLp 2 x : E n)‖ ^ 4 = (x ⬝ᵥ x) ^ 2 := by
     have h2 : ‖(WithLp.toLp 2 x : E n)‖ ^ 2 = x ⬝ᵥ x := real_norm_sq_eq_dotProduct _
@@ -305,11 +304,9 @@ error is controlled by the residual through the coercivity bound `μ ‖x‖₂ 
 geometric decay of `theorem_5_10` carries over to the iterates themselves. -/
 theorem theorem_5_10_tendsto (hA : A.IsPositiveReal) (b x₀ : E n) :
     Tendsto (fun k => (mrStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ ⬝ b)) := by
-  have hdet : IsUnit A.det := (isUnit_iff_isUnit_det A).mp (Chapter01.theorem_1_34 hA).1
   have hpos := lambdaMin_hermitianPart_pos hA
-  have hb : A *ᵥ (A⁻¹ *ᵥ WithLp.ofLp b) = WithLp.ofLp b := by
-    rw [mulVec_mulVec, mul_nonsing_inv _ hdet, one_mulVec]
-  have hstar : (A ⬝ (A⁻¹ ⬝ b)) = b := congrArg (WithLp.toLp 2) hb
+  have hstar : (A ⬝ (A⁻¹ ⬝ b)) = b :=
+    toEuclideanLin_mul_nonsing_inv_apply (Chapter01.theorem_1_34 hA).1 b
   have hres : ∀ y : E n, (A ⬝ ((A⁻¹ ⬝ b) - y)) = b - (A ⬝ y) := fun y => by
     rw [map_sub, hstar]
   refine Projection.tendsto_of_forall_norm_succ_le
@@ -419,10 +416,7 @@ theorem rnsd_norm_residual_le (hA : IsUnit A) (b x₀ : E n) (k : ℕ) :
       ((lambdaMax (posDef_transpose_mul_self hA).1 - lambdaMin (posDef_transpose_mul_self hA).1) /
           (lambdaMax (posDef_transpose_mul_self hA).1 +
             lambdaMin (posDef_transpose_mul_self hA).1)) ^ k * ‖b - (A ⬝ x₀)‖ := by
-  have hdet : IsUnit A.det := (isUnit_iff_isUnit_det A).mp hA
-  have hb : A *ᵥ (A⁻¹ *ᵥ WithLp.ofLp b) = WithLp.ofLp b := by
-    rw [mulVec_mulVec, mul_nonsing_inv _ hdet, one_mulVec]
-  have hstar : (A ⬝ (A⁻¹ ⬝ b)) = b := congrArg (WithLp.toLp 2) hb
+  have hstar : (A ⬝ (A⁻¹ ⬝ b)) = b := toEuclideanLin_mul_nonsing_inv_apply hA b
   have hnormal : ((Aᵀ * A) ⬝ (A⁻¹ ⬝ b)) = Aᵀ ⬝ b := by
     rw [toEuclideanLin_normal, hstar]
   have hfun : rnsdStep A b = sdStep (Aᵀ * A) (Aᵀ ⬝ b) := funext (rnsdStep_eq_sdStep_normal A b)
@@ -435,10 +429,7 @@ is nonsingular — it is Algorithm 5.2 for the SPD normal equations `AᵀA x = A
 applies. -/
 theorem rnsd_tendsto (hA : IsUnit A) (b x₀ : E n) :
     Tendsto (fun k => (rnsdStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ ⬝ b)) := by
-  have hdet : IsUnit A.det := (isUnit_iff_isUnit_det A).mp hA
-  have hb : A *ᵥ (A⁻¹ *ᵥ WithLp.ofLp b) = WithLp.ofLp b := by
-    rw [mulVec_mulVec, mul_nonsing_inv _ hdet, one_mulVec]
-  have hstar : (A ⬝ (A⁻¹ ⬝ b)) = b := congrArg (WithLp.toLp 2) hb
+  have hstar : (A ⬝ (A⁻¹ ⬝ b)) = b := toEuclideanLin_mul_nonsing_inv_apply hA b
   have hnormal : ((Aᵀ * A) ⬝ (A⁻¹ ⬝ b)) = Aᵀ ⬝ b := by
     rw [toEuclideanLin_normal, hstar]
   have hfun : rnsdStep A b = sdStep (Aᵀ * A) (Aᵀ ⬝ b) := funext (rnsdStep_eq_sdStep_normal A b)
@@ -490,14 +481,10 @@ theorem energyNorm_sdStep_sq_eq (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xs
             inner ℝ (A⁻¹ ⬝ (b - (A ⬝ x))) (b - (A ⬝ x)))) := by
   have hsc : (toEuclideanLin A).IsSymmetricCoercive :=
     (Matrix.posDef_iff_isSymmetricCoercive A).mp hA
-  have hdet : IsUnit A.det := (isUnit_iff_isUnit_det A).mp hA.isUnit
   -- the error is `A⁻¹ r`, so the energy norm of the error is `⟪A⁻¹ r, r⟫`
   have hAd : (A ⬝ (xstar - x)) = b - (A ⬝ x) := by rw [map_sub, hstar]
   have hd : xstar - x = (A⁻¹ ⬝ (b - (A ⬝ x))) := by
-    have h1 : A⁻¹ *ᵥ (A *ᵥ WithLp.ofLp (xstar - x)) = WithLp.ofLp (xstar - x) := by
-      rw [mulVec_mulVec, nonsing_inv_mul _ hdet, one_mulVec]
-    have h2 : (A⁻¹ ⬝ (A ⬝ (xstar - x))) = xstar - x := congrArg (WithLp.toLp 2) h1
-    rw [← hAd, h2]
+    rw [← hAd, toEuclideanLin_nonsing_inv_mul_apply hA.isUnit]
   have henergy : E_A A xstar x ^ 2 = inner ℝ (A⁻¹ ⬝ (b - (A ⬝ x))) (b - (A ⬝ x)) := by
     rw [E_A_eq_energyNorm, hsc.energyNorm_sq, hAd, ← hd, RCLike.re_to_real,
       real_inner_comm (b - (A ⬝ x)) (xstar - x), hd]
@@ -512,9 +499,8 @@ omit [NeZero n] in
 /-- Saad §5.3.2, "`A⁻¹` is also positive definite": the inverse of a positive real matrix is
 positive real, since `(A⁻¹ u, u) = (A v, v)` at `v = A⁻¹ u`. -/
 theorem isPositiveReal_inv (hA : A.IsPositiveReal) : A⁻¹.IsPositiveReal := by
-  have hdet : IsUnit A.det := (isUnit_iff_isUnit_det A).mp (Chapter01.theorem_1_34 hA).1
   intro u hu
-  have hv : A *ᵥ (A⁻¹ *ᵥ u) = u := by rw [mulVec_mulVec, mul_nonsing_inv _ hdet, one_mulVec]
+  have hv : A *ᵥ (A⁻¹ *ᵥ u) = u := mulVec_nonsing_inv_mulVec (Chapter01.theorem_1_34 hA).1 u
   have hne : A⁻¹ *ᵥ u ≠ 0 := fun hc => hu (by rw [← hv, hc, mulVec_zero])
   have h := hA (A⁻¹ *ᵥ u) hne
   rwa [hv, dotProduct_comm] at h
@@ -536,7 +522,6 @@ theorem equation_5_20 (hA : A.IsPositiveReal) (b x : E n) :
   set μ := lambdaMin (Matrix.hermitianPart_isHermitian A) with hμ
   set μ' := lambdaMin (Matrix.hermitianPart_isHermitian A⁻¹) with hμ'
   have hunit : IsUnit A := (Chapter01.theorem_1_34 hA).1
-  have hdet : IsUnit A.det := (isUnit_iff_isUnit_det A).mp hunit
   have hAr : (A ⬝ r) ≠ 0 := fun hc => h0 (injective_toEuclideanLin hunit (by rw [hc, map_zero]))
   have hrn : (0 : ℝ) < ‖r‖ ^ 2 := by positivity
   have hArn : (0 : ℝ) < ‖A ⬝ r‖ ^ 2 := by positivity
@@ -544,10 +529,7 @@ theorem equation_5_20 (hA : A.IsPositiveReal) (b x : E n) :
   have hμ'pos : 0 < μ' := lambdaMin_hermitianPart_pos (isPositiveReal_inv hA)
   have h1 : μ * ‖r‖ ^ 2 ≤ inner ℝ (A ⬝ r) r := by
     simpa [RCLike.re_to_real] using (Chapter01.isCoerciveWith_lambdaMin A) r
-  have hinv : (A⁻¹ ⬝ (A ⬝ r)) = r := by
-    have hrr : A⁻¹ *ᵥ (A *ᵥ WithLp.ofLp r) = WithLp.ofLp r := by
-      rw [mulVec_mulVec, nonsing_inv_mul _ hdet, one_mulVec]
-    exact congrArg (WithLp.toLp 2) hrr
+  have hinv : (A⁻¹ ⬝ (A ⬝ r)) = r := toEuclideanLin_nonsing_inv_mul_apply hunit r
   have h2 : μ' * ‖A ⬝ r‖ ^ 2 ≤ inner ℝ (A ⬝ r) r := by
     have hc := (Chapter01.isCoerciveWith_lambdaMin A⁻¹) (A ⬝ r)
     rw [hinv] at hc

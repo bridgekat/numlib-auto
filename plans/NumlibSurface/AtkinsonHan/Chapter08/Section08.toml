@@ -3,12 +3,14 @@ desc = '''
 Atkinson-Han §8.8, a nonlinear problem. No module is planned: the section studies
 `-div[(1 + |∇u|²)^{p/2-1} ∇u] = f` in `Ω` with `u = 0` on `Γ`, whose weak form (8.8.6) and energy
 (8.8.10) live on `V = W^{1,p}₀(Ω)` for `p ∈ (1, ∞)`, normed by `‖v‖_V = (∫_Ω |∇v|^p)^{1/p}`. That
-space needs weak derivatives on an open set, the Poincaré inequality of AH Theorem 7.3.13 for the
-norm equivalence, and reflexivity, none of which Mathlib has; the reflexivity in particular cannot
-even be stated. The abstract content of the section is AH Theorem 3.3.12 — a coercive, continuous,
-strictly convex functional on a reflexive space has a unique minimizer — together with
-`AtkinsonHan.Chapter05.theorem_5_3_19`, which is proved. The group exists so that the section's
-numbered results are on the record.
+space exists — `AtkinsonHan.Chapter07.definition_7_2_9` is `W_0^{k,p}(Ω)` over an `Opens` and is
+proved — and its reflexivity is statable, `NormedSpace.IsReflexive` of
+`Numlib/Analysis/Normed/Module/Reflexive` being AH Definition 2.7.4. What is missing is the
+Poincaré inequality of AH Theorem 7.3.13, which is what makes `‖v‖_V` a norm on `V` equivalent to
+`‖·‖_{1,p}`, and a proof that `V` is reflexive; neither is available. The abstract content of the
+section is AH Theorem 3.3.12 — a coercive, continuous, strictly convex functional on a reflexive
+space has a unique minimizer — together with `AtkinsonHan.Chapter05.theorem_5_3_19`, which is
+proved. The group exists so that the section's numbered results are on the record.
 '''
 
 [[node]]
@@ -16,8 +18,10 @@ id = "lemma_8_8_1"
 kind = "theorem"
 desc = '''Lemma 8.8.1: the energy functional `E(v) = (1/p) ∫_Ω (1 + |∇v|²)^{p/2} - ∫_Ω f v` of
 (8.8.10) is coercive on `V = W^{1,p}₀(Ω)`, since `E(v) ≥ (1/p) ‖v‖_V^p - ‖f‖_{V'} ‖v‖_V` and
-`p > 1`. Not formalized: the space `W^{1,p}₀(Ω)` does not exist in Mathlib, which has no weak
-derivative on an open set.'''
+`p > 1`. Not formalized: the space exists (`AtkinsonHan.Chapter07.definition_7_2_9`, proved); what
+is missing is the norm `‖v‖_V = (∫_Ω |∇v|^p)^{1/p}` on it, which is a norm equivalent to
+`‖·‖_{1,p}` only through the Poincaré inequality of AH Theorem 7.3.13, together with the duality
+pairing `‖f‖_{V'}` over it.'''
 deps = ["AtkinsonHan.Chapter07.definition_7_2_9"]
 
 [[node]]
@@ -25,8 +29,9 @@ id = "lemma_8_8_2"
 kind = "theorem"
 desc = '''Lemma 8.8.2: the energy functional (8.8.10) is continuous on `V = W^{1,p}₀(Ω)`, by an
 integral mean-value form of `E(u) - E(v)` bounded through Hölder's inequality.
-Not formalized: the space `W^{1,p}₀(Ω)` does not exist in Mathlib, which has no weak derivative
-on an open set.'''
+Not formalized: the space exists (`AtkinsonHan.Chapter07.definition_7_2_9`, proved); what is
+missing is its norm `‖·‖_V`, for which see `lemma_8_8_1`, and the Hölder estimate over `Ω` that the
+continuity argument runs on.'''
 deps = ["AtkinsonHan.Chapter07.definition_7_2_9"]
 
 [[node]]
@@ -34,8 +39,9 @@ id = "lemma_8_8_3"
 kind = "theorem"
 desc = '''Lemma 8.8.3: the energy functional (8.8.10) is strictly convex, which the book reduces
 to strict convexity of `ξ ↦ (1/p)(1 + |ξ|²)^{p/2}` on `ℝ^d` (Exercise 5.3.13). Not formalized: the
-space `W^{1,p}₀(Ω)` does not exist in Mathlib, which has no weak derivative on an open set; the
-finite-dimensional ingredient is separable from it and is elementary.'''
+space exists (`AtkinsonHan.Chapter07.definition_7_2_9`, proved) and only its norm `‖·‖_V` is
+missing, for which see `lemma_8_8_1`; the finite-dimensional ingredient is separable from all of
+that and is elementary.'''
 deps = ["AtkinsonHan.Chapter07.definition_7_2_9", "AtkinsonHan.Chapter05.proposition_5_3_13"]
 
 [[node]]
@@ -44,8 +50,9 @@ kind = "theorem"
 desc = '''Lemma 8.8.4: the energy functional (8.8.10) is Gateaux differentiable, with
 `⟨E'(u), v⟩ = ∫_Ω (1 + |∇u|²)^{p/2-1} ∇u · ∇v - ∫_Ω f v` (8.8.11); the proof dominates the
 difference quotient by `[1 + (|∇u| + |∇v|)²]^{(p-1)/2} |∇v| ∈ L¹(Ω)` and passes to the limit by
-dominated convergence. Not formalized: the space `W^{1,p}₀(Ω)` does not exist in Mathlib, which
-has no weak derivative on an open set.'''
+dominated convergence. Not formalized: the space exists
+(`AtkinsonHan.Chapter07.definition_7_2_9`, proved); what is missing is its norm `‖·‖_V`, for which
+see `lemma_8_8_1`, and the dominated-convergence passage under the integral over `Ω`.'''
 deps = ["AtkinsonHan.Chapter07.definition_7_2_9", "AtkinsonHan.Chapter05.HasGateauxDerivAt"]
 
 [[node]]
@@ -54,7 +61,9 @@ kind = "theorem"
 desc = '''Theorem 8.8.5: for `f ∈ V'` and `p ∈ (1, ∞)`, the weak formulation (8.8.6) and the
 minimization problem (8.8.9) are equivalent and both have a unique solution — by AH Theorem 3.3.12
 applied to the coercive, continuous, strictly convex `E` on the reflexive `V`, and by AH Theorem
-5.3.19 for the equivalence. Not formalized: it needs `W^{1,p}₀(Ω)` and its reflexivity, which
-Mathlib cannot express — there is no reflexivity class for Banach spaces — while the abstract half
-is `AtkinsonHan.Chapter05.theorem_5_3_19` together with AH Theorem 3.3.12.'''
+5.3.19 for the equivalence. Not formalized: `W^{1,p}₀(Ω)` exists
+(`AtkinsonHan.Chapter07.definition_7_2_9`, proved) and reflexivity is expressible, as
+`NormedSpace.IsReflexive`, which is `AtkinsonHan.Chapter02.definition_2_7_4`; what is missing is a
+proof that this space is reflexive, and the norm equivalence of AH Theorem 7.3.13. The abstract
+half is `AtkinsonHan.Chapter05.theorem_5_3_19` together with AH Theorem 3.3.12, both proved.'''
 deps = ["lemma_8_8_1", "lemma_8_8_2", "lemma_8_8_3", "lemma_8_8_4", "AtkinsonHan.Chapter05.theorem_5_3_19", "AtkinsonHan.Chapter02.definition_2_7_4"]

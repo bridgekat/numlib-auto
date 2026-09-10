@@ -1,7 +1,0 @@
-[[node]]
-id = "norm_map_sq_le_of_dual"
-source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 10.4.3"
-
-[[node]]
-id = "norm_map_le_of_dual_approx"
-source = "Atkinson–Han, Theoretical Numerical Analysis, Corollary 10.4.4"

@@ -42,8 +42,6 @@ Sobolev Spaces and Partial Differential Equations*, Springer, 2011, §4.4 and §
 * `HasWeakIteratedLineDerivOn.iteratedFDeriv_convolution` and
   `HasWeakIteratedFDerivOn.iteratedFDeriv_convolution`: **the commutation of the weak derivative
   with mollification**, in the tuple-by-tuple and the bundled readings.
-* `MeasureTheory.LocallyMemLpOn.memLp_restrict_of_isCompact`: a function locally in `L^p` on `Ω` is
-  in `L^p` of every compact subset of `Ω`.
 * `HasWeakIteratedLineDerivOn.exists_seq_contDiff_tendsto_eLpNorm`: **local approximation in
   `W^{k,p}`**, the mollifications of `f` converge to `f` and their classical derivatives to the
   weak derivative of `f`, in `L^p` of a relatively compact open subset of `Ω`.
@@ -271,7 +269,13 @@ theorem compConstSub_coe (Ω : Opens E) {φ : E → ℝ} (hφ : ContDiff ℝ ∞
 
 end TestFunction
 
-/-! ### Derivatives of a convolution -/
+/-! ### Derivatives of a convolution
+
+The first-order statement `MeasureTheory.LocallyIntegrable.fderiv_convolution_left_apply` and the
+existence criterion `MeasureTheory.LocallyIntegrableOn.convolutionExistsAt` are in
+`Numlib/Analysis/Convolution/Lp.lean`; the iterated form stays here because its induction runs on
+`ContDiff.iteratedFDeriv_succ_apply_left'` of `Numlib/Analysis/Sobolev/WeakDeriv.lean`, which that
+file does not import. -/
 
 section Convolution
 
@@ -279,20 +283,6 @@ variable {E₁ E₂ : Type*} [NormedAddCommGroup E₁] [NormedSpace ℝ E₁]
   [NormedAddCommGroup E₂] [NormedSpace ℝ E₂] [MeasurableSpace E] [FiniteDimensional ℝ E]
   [BorelSpace E] [CompleteSpace F] {μ : Measure E} [μ.IsAddHaarMeasure]
   {L : E₁ →L[ℝ] E₂ →L[ℝ] F} {g : E → E₂}
-
-omit [CompleteSpace F] in
-/-- Differentiating a convolution in a fixed direction moves the derivative onto the smooth,
-compactly supported factor. This is `HasCompactSupport.hasFDerivAt_convolution_left` with the
-`ContinuousLinearMap.precompL` bookkeeping unwound by evaluating at a direction. -/
-theorem MeasureTheory.LocallyIntegrable.fderiv_convolution_left_apply
-    (hg : LocallyIntegrable g μ) {φ : E → E₁} (hcφ : HasCompactSupport φ) (hφ : ContDiff ℝ ∞ φ)
-    (x v : E) :
-    fderiv ℝ (φ ⋆[L, μ] g) x v = ((fun t ↦ fderiv ℝ φ t v) ⋆[L, μ] g) x := by
-  rw [(hcφ.hasFDerivAt_convolution_left L (hφ.of_le (by simp)) hg x).fderiv]
-  have hex : ConvolutionExistsAt (fderiv ℝ φ) g x (L.precompL E) μ :=
-    HasCompactSupport.convolutionExists_left _ (hcφ.fderiv ℝ) (hφ.continuous_fderiv (by simp)) hg x
-  rw [convolution_def, ContinuousLinearMap.integral_apply hex, convolution_def]
-  rfl
 
 omit [CompleteSpace F] in
 /-- Differentiating a convolution `n` times along a tuple of directions moves all `n` derivatives
@@ -316,29 +306,6 @@ theorem MeasureTheory.LocallyIntegrable.iteratedFDeriv_convolution_left_apply
     rw [hconv.iteratedFDeriv_succ_apply_left' n y x, hfun, ih hψs hψc x (Fin.tail y)]
     exact congrArg (fun h ↦ (h ⋆[L, μ] g) x)
       (funext fun z ↦ (hφ.iteratedFDeriv_succ_apply_left' n y z).symm)
-
-omit [CompleteSpace F] in
-/-- A convolution against a compactly supported continuous function only sees the other factor on
-the closed ball whose radius is that of the support, so it exists as soon as that factor is
-locally integrable on an open set containing the ball. -/
-theorem MeasureTheory.LocallyIntegrableOn.convolutionExistsAt {U : Set E}
-    (hg : LocallyIntegrableOn g U μ) {φ : E → E₁} (hφ : Continuous φ) {ε : ℝ}
-    (hsupp : tsupport φ ⊆ closedBall 0 ε) {x : E} (hx : closedBall x ε ⊆ U) :
-    ConvolutionExistsAt φ g x L μ := by
-  have hcφ : HasCompactSupport φ :=
-    IsCompact.of_isClosed_subset (isCompact_closedBall 0 ε) isClosed_closure hsupp
-  set g' : E → E₂ := (closedBall x ε).indicator g with hg'
-  have hg'loc : LocallyIntegrable g' μ :=
-    ((hg.integrableOn_compact_subset hx (isCompact_closedBall x ε)).integrable_indicator
-      measurableSet_closedBall).locallyIntegrable
-  refine (HasCompactSupport.convolutionExists_left L hcφ hφ hg'loc x).congr
-    (Eventually.of_forall fun t ↦ ?_)
-  rcases eq_or_ne (φ t) 0 with h0 | h0
-  · simp [h0]
-  · have ht : t ∈ closedBall (0 : E) ε := hsupp (subset_tsupport _ h0)
-    have : x - t ∈ closedBall x ε := by
-      simpa [mem_closedBall, dist_eq_norm] using (by simpa using ht : ‖t‖ ≤ ε)
-    simp [hg', Set.indicator_of_mem this]
 
 end Convolution
 
@@ -449,103 +416,20 @@ theorem HasWeakIteratedFDerivOn.iteratedFDeriv_convolution {w : E → E [×n]→
 
 end Commutation
 
-/-! ### `L^p` estimates used in the limit
+/-! ### Hölder's inequality, locally
 
-A function locally in `L^p` on `Ω` is in `L^p` of every compact subset, Hölder's inequality in the
-two forms the limits below need, and the comparison of `L^1` with `L^p` on a finite measure. None
-of this is about mollification; it is the analytic small change of the product and chain rules at
-the end of the file. -/
+The local form of Hölder's inequality that the product rule needs. Its `L^p`-limit companions --
+`MeasureTheory.tendsto_integral_mul_of_tendsto_eLpNorm`,
+`MeasureTheory.tendsto_eLpNorm_one_of_tendsto_eLpNorm` and
+`MeasureTheory.enorm_integral_smul_le_of_bound` -- are in
+`Numlib/Analysis/Convolution/Lp.lean`, and the `L^p` analogues of local integrability on a compact
+subset are in `Numlib/Analysis/Sobolev/WeakDeriv.lean`, beside `MeasureTheory.LocallyMemLpOn`
+itself. -/
 
 namespace MeasureTheory
 
 variable {X G : Type*} [TopologicalSpace X] [MeasurableSpace X] [NormedAddCommGroup G]
   {f : X → G} {s t : Set X} {μ : Measure X} {p : ℝ≥0∞}
-
-omit [TopologicalSpace X] in
-/-- `L^p` membership is stable under a union of two sets, for `p < ∞`. The exponent `p = ∞` is
-excluded only because the proof compares `p`-th powers of the `L^p` norms; the statement is true
-there too. -/
-theorem MemLp.union_of_ne_top (hp : p ≠ ⊤) (hs : MemLp f p (μ.restrict s))
-    (ht : MemLp f p (μ.restrict t)) : MemLp f p (μ.restrict (s ∪ t)) := by
-  refine ⟨aestronglyMeasurable_union_iff.2 ⟨hs.1, ht.1⟩, ?_⟩
-  rcases eq_or_ne p 0 with rfl | hp0
-  · simp
-  have hr : 0 < p.toReal := ENNReal.toReal_pos hp0 hp
-  have key : eLpNorm f p (μ.restrict (s ∪ t)) ^ p.toReal
-      ≤ eLpNorm f p (μ.restrict s) ^ p.toReal + eLpNorm f p (μ.restrict t) ^ p.toReal := by
-    rw [← lintegral_rpow_enorm_eq_rpow_eLpNorm hp0 hp,
-      ← lintegral_rpow_enorm_eq_rpow_eLpNorm hp0 hp, ← lintegral_rpow_enorm_eq_rpow_eLpNorm hp0 hp]
-    exact lintegral_union_le _ _ _
-  have hfin : eLpNorm f p (μ.restrict (s ∪ t)) ^ p.toReal ≠ ⊤ :=
-    (key.trans_lt (ENNReal.add_lt_top.2
-      ⟨ENNReal.rpow_lt_top_of_nonneg hr.le hs.2.ne,
-        ENNReal.rpow_lt_top_of_nonneg hr.le ht.2.ne⟩)).ne
-  rw [lt_top_iff_ne_top]
-  intro hcon
-  rw [hcon, ENNReal.top_rpow_of_pos hr] at hfin
-  exact hfin rfl
-
-/-- Local `L^p` membership passes to subsets. -/
-theorem LocallyMemLpOn.mono_set (hf : LocallyMemLpOn f p s μ) (hts : t ⊆ s) :
-    LocallyMemLpOn f p t μ := fun x hx ↦
-  let ⟨u, hu, h⟩ := hf x (hts hx); ⟨u, nhdsWithin_mono x hts hu, h⟩
-
-/-- **A function locally in `L^p` on `s` is in `L^p` of every compact subset of `s`**, for
-`p < ∞`. This is the `L^p` analogue of
-`MeasureTheory.LocallyIntegrableOn.integrableOn_compact_subset`, and is proved the same way, by
-`IsCompact.induction_on`. -/
-theorem LocallyMemLpOn.memLp_restrict_of_isCompact (hf : LocallyMemLpOn f p s μ) (hp : p ≠ ⊤)
-    (hs : IsCompact s) : MemLp f p (μ.restrict s) :=
-  IsCompact.induction_on hs (by simp)
-    (fun _ _ hst ht ↦ ht.mono_measure (Measure.restrict_mono hst le_rfl))
-    (fun _ _ h₁ h₂ ↦ MemLp.union_of_ne_top hp h₁ h₂) hf
-
-/-- **A function locally in `L^p` on `s` is in `L^p` of every compact subset of `s`**, for
-`p < ∞`. -/
-theorem LocallyMemLpOn.memLp_restrict_of_compact_subset (hf : LocallyMemLpOn f p s μ)
-    (hp : p ≠ ⊤)
-    (hts : t ⊆ s) (ht : IsCompact t) : MemLp f p (μ.restrict t) :=
-  (hf.mono_set hts).memLp_restrict_of_isCompact hp ht
-
-omit [TopologicalSpace X] in
-/-- **Hölder's inequality in the limit**: if `a j → a₀` in `L^p` and `b ∈ L^q` with `p` and `q`
-Hölder conjugate, then the pairings `∫ b (a j)` converge to `∫ b a₀`. -/
-theorem tendsto_integral_mul_of_tendsto_eLpNorm {q : ℝ≥0∞} [ENNReal.HolderConjugate p q]
-    {a : ℕ → X → ℝ} {a₀ b : X → ℝ} (ha : ∀ j, MemLp (a j) p μ) (ha₀ : MemLp a₀ p μ)
-    (hb : MemLp b q μ)
-    (hlim : Tendsto (fun j ↦ eLpNorm (fun x ↦ a j x - a₀ x) p μ) atTop (𝓝 0)) :
-    Tendsto (fun j ↦ ∫ x, b x * a j x ∂μ) atTop (𝓝 (∫ x, b x * a₀ x ∂μ)) := by
-  have hint : ∀ c : X → ℝ, MemLp c p μ → Integrable (fun x ↦ b x * c x) μ := fun c hc ↦
-    memLp_one_iff_integrable.1 (hc.mul' hb)
-  have h0 : Tendsto (fun j ↦ eLpNorm (fun x ↦ a j x - a₀ x) p μ * eLpNorm b q μ) atTop (𝓝 0) := by
-    simpa using ENNReal.Tendsto.mul_const hlim (Or.inr hb.2.ne)
-  have hup : Tendsto (fun j ↦ (eLpNorm (fun x ↦ a j x - a₀ x) p μ * eLpNorm b q μ).toReal)
-      atTop (𝓝 0) := by
-    rw [show (0 : ℝ) = (0 : ℝ≥0∞).toReal by simp]
-    exact (ENNReal.tendsto_toReal (by simp)).comp h0
-  rw [tendsto_iff_norm_sub_tendsto_zero]
-  refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds hup
-    (fun j ↦ norm_nonneg _) (fun j ↦ ?_)
-  · have hfin : eLpNorm (fun x ↦ a j x - a₀ x) p μ * eLpNorm b q μ ≠ ⊤ :=
-      ENNReal.mul_ne_top ((ha j).sub ha₀).2.ne hb.2.ne
-    have e : (∫ x, b x * a j x ∂μ) - ∫ x, b x * a₀ x ∂μ = ∫ x, b x * (a j x - a₀ x) ∂μ := by
-      rw [← integral_sub (hint _ (ha j)) (hint _ ha₀)]
-      exact integral_congr_ae (Eventually.of_forall fun x ↦ by ring)
-    have h1 : ‖∫ x, b x * (a j x - a₀ x) ∂μ‖ₑ ≤ eLpNorm (fun x ↦ b x * (a j x - a₀ x)) 1 μ := by
-      rw [eLpNorm_one_eq_lintegral_enorm]
-      exact enorm_integral_le_lintegral_enorm _
-    have h2 : eLpNorm (fun x ↦ b x * (a j x - a₀ x)) 1 μ
-        ≤ eLpNorm (fun x ↦ a j x - a₀ x) p μ * eLpNorm b q μ := by
-      have hs := eLpNorm_smul_le_mul_eLpNorm (𝕜 := ℝ) (p := q) (q := p) (r := 1)
-        (f := fun x ↦ a j x - a₀ x) (φ := b) ((ha j).1.sub ha₀.1) hb.1
-        (hpqr := ENNReal.HolderTriple.symm)
-      rw [mul_comm]
-      exact le_of_le_of_eq hs (by rfl)
-    rw [e]
-    calc ‖∫ x, b x * (a j x - a₀ x) ∂μ‖
-        = ‖∫ x, b x * (a j x - a₀ x) ∂μ‖ₑ.toReal := by
-          rw [← ofReal_norm, ENNReal.toReal_ofReal (norm_nonneg _)]
-      _ ≤ _ := ENNReal.toReal_mono hfin (h1.trans h2)
 
 /-- **Hölder's inequality, locally**: the product of a function locally in `L^p` on `s` with one
 locally in `L^q` on `s`, for Hölder conjugate `p` and `q`, is locally integrable on `s`. -/
@@ -562,42 +446,6 @@ theorem LocallyMemLpOn.locallyIntegrableOn_mul {q : ℝ≥0∞} [ENNReal.HolderC
     hvb.mono_measure (Measure.restrict_mono Set.inter_subset_right le_rfl)
   have huv : MemLp (fun x ↦ u x * v x) 1 (μ.restrict (a ∩ b)) := MemLp.mul' hv' hu'
   exact memLp_one_iff_integrable.1 huv
-
-omit [TopologicalSpace X] in
-/-- On a finite measure, convergence to zero in `L^p` implies convergence to zero in `L^1`: the
-exponents are ordered the other way from the inclusion of the spaces, and the loss is a power of
-the total mass. -/
-theorem tendsto_eLpNorm_one_of_tendsto_eLpNorm [IsFiniteMeasure μ] (hp : 1 ≤ p)
-    {h : ℕ → X → G} (hmeas : ∀ j, AEStronglyMeasurable (h j) μ)
-    (hlim : Tendsto (fun j ↦ eLpNorm (h j) p μ) atTop (𝓝 0)) :
-    Tendsto (fun j ↦ eLpNorm (h j) 1 μ) atTop (𝓝 0) := by
-  set C : ℝ≥0∞ := μ univ ^ (1 / (1 : ℝ≥0∞).toReal - 1 / p.toReal) with hC
-  have hCfin : C ≠ ⊤ := by
-    refine ENNReal.rpow_ne_top_of_nonneg ?_ (measure_ne_top μ univ)
-    simp only [ENNReal.toReal_one, div_one, sub_nonneg]
-    rcases eq_or_ne p ⊤ with rfl | hpt
-    · simp
-    · have h1 : (1 : ℝ) ≤ p.toReal := by
-        rw [← ENNReal.toReal_one]; exact ENNReal.toReal_mono hpt hp
-      rw [div_le_one (by linarith)]
-      exact h1
-  have hb : Tendsto (fun j ↦ eLpNorm (h j) p μ * C) atTop (𝓝 0) := by
-    simpa using ENNReal.Tendsto.mul_const hlim (Or.inr hCfin)
-  refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds hb (fun _ ↦ zero_le)
-    (fun j ↦ ?_)
-  exact eLpNorm_le_eLpNorm_mul_rpow_measure_univ hp (hmeas j)
-
-omit [TopologicalSpace X] in
-/-- An integral against a bounded scalar factor is bounded by that factor times the `L^1` norm. -/
-theorem enorm_integral_smul_le_of_bound [NormedSpace ℝ G] {b : X → ℝ} {C : ℝ}
-    (hC : ∀ x, |b x| ≤ C) {h : X → G} :
-    ‖∫ x, b x • h x ∂μ‖ₑ ≤ ENNReal.ofReal C * eLpNorm h 1 μ := by
-  refine (enorm_integral_le_lintegral_enorm _).trans ?_
-  rw [eLpNorm_one_eq_lintegral_enorm, ← lintegral_const_mul' _ _ ENNReal.ofReal_ne_top]
-  refine lintegral_mono fun x ↦ ?_
-  rw [enorm_smul]
-  gcongr
-  simpa [Real.enorm_eq_ofReal_abs] using ENNReal.ofReal_le_ofReal (hC x)
 
 end MeasureTheory
 

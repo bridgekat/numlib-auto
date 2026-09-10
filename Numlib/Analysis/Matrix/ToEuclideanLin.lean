@@ -24,6 +24,20 @@ It also contains the fact that a unitary matrix acts as an isometry of `Euclidea
 `‖U *ᵥ v‖₂ = ‖v‖₂`: transport `U` along the star algebra equivalence `Matrix.toEuclideanCLM`
 and use that a unitary continuous linear endomorphism of a Hilbert space preserves the norm
 (`ContinuousLinearMap.norm_map_of_mem_unitary`).
+
+Three further groups of glue, each of which is otherwise re-proved wherever a matrix statement is
+transported to the operator picture:
+
+* the *applied* forms of the linear-equivalence laws, `toEuclideanLin (A - B) v =
+  toEuclideanLin A v - toEuclideanLin B v` and its companions for `0`, `1`, `-` and `•`, which are
+  `map_sub` and friends followed by the pointwise definition of the operations on linear maps;
+* *inversion*, `toEuclideanCLM A⁻¹ = Ring.inverse (toEuclideanCLM A)` for an invertible `A`,
+  reconciling Mathlib's junk-valued `Matrix.inv` with `Ring.inverse` on the operator algebra,
+  together with the two cancellations `toEuclideanLin A (toEuclideanLin A⁻¹ z) = z` and
+  `toEuclideanLin A⁻¹ (toEuclideanLin A z) = z` it gives;
+* the *shift* `A + r I` of a matrix by a multiple of the identity, the shape of a resolvent and of
+  every regularized or shifted system, whose image is the shift `toEuclideanCLM A + r • 1` of the
+  operator.
 -/
 
 namespace Matrix
@@ -123,5 +137,124 @@ theorem inner_toLp_mulVec_of_mem_unitaryGroup (hU : U ∈ Matrix.unitaryGroup n 
   exact ContinuousLinearMap.inner_map_map_of_mem_unitary (toEuclideanCLM_mem_unitary hU) _ _
 
 end Unitary
+
+section Applied
+
+/-! ### The applied forms of the linear-equivalence laws
+
+`Matrix.toEuclideanLin` is a linear equivalence, so `map_zero`, `map_neg`, `map_sub` and `map_smul`
+apply to it; each of the lemmas below is one of those followed by the pointwise definition of the
+corresponding operation on linear maps, in the form in which a proof about a vector wants it. -/
+
+variable {m : Type*}
+
+/-- The zero matrix sends every vector to `0`. -/
+theorem toEuclideanLin_zero_apply (v : EuclideanSpace 𝕜 n) :
+    toEuclideanLin (0 : Matrix m n 𝕜) v = 0 := by
+  rw [map_zero]; rfl
+
+/-- The negated matrix acts as the negated operator. -/
+theorem toEuclideanLin_neg_apply (A : Matrix m n 𝕜) (v : EuclideanSpace 𝕜 n) :
+    toEuclideanLin (-A) v = -toEuclideanLin A v := by
+  rw [map_neg]; rfl
+
+/-- A difference of matrices acts as the difference of the operators. -/
+theorem toEuclideanLin_sub_apply (A B : Matrix m n 𝕜) (v : EuclideanSpace 𝕜 n) :
+    toEuclideanLin (A - B) v = toEuclideanLin A v - toEuclideanLin B v := by
+  rw [map_sub]; rfl
+
+/-- A scalar multiple of a matrix acts as the scalar multiple of the operator. -/
+theorem toEuclideanLin_smul_apply (r : 𝕜) (A : Matrix m n 𝕜) (v : EuclideanSpace 𝕜 n) :
+    toEuclideanLin (r • A) v = r • toEuclideanLin A v := by
+  rw [map_smul]; rfl
+
+end Applied
+
+/-- The identity matrix fixes every vector; the applied form of `Matrix.toEuclideanLin_one`. -/
+theorem toEuclideanLin_one_apply (v : EuclideanSpace 𝕜 n) :
+    toEuclideanLin (1 : Matrix n n 𝕜) v = v := by
+  rw [toEuclideanLin_one]; rfl
+
+/-- `Matrix.toEuclideanCLM` is injective: two matrices that act as the same operator on
+`EuclideanSpace` are equal.  This is the injectivity of a star algebra equivalence, stated for the
+coercion its applications use; `StarAlgEquiv.injective` is stated for the underlying ring
+equivalence instead, and a goal closed by it comes out phrased in `toRingEquiv`. -/
+theorem toEuclideanCLM_injective :
+    Function.Injective (toEuclideanCLM (n := n) (𝕜 := 𝕜)) := fun _ _ h => by
+  simpa using congrArg (toEuclideanCLM (n := n) (𝕜 := 𝕜)).symm h
+
+section Inverse
+
+/-! ### Inversion
+
+Mathlib's `Matrix.inv` is a junk-valued inverse, defined for every square matrix and equal to `0`
+on a singular one, whereas the operator algebra `EuclideanSpace 𝕜 n →L[𝕜] EuclideanSpace 𝕜 n` has
+the junk-valued `Ring.inverse` of a monoid. The two agree under `Matrix.toEuclideanCLM` on
+invertible matrices, which is all that is ever needed; on singular ones both sides are `0` for
+`Matrix.inv` and `Ring.inverse` alike, but the operator side does not know that its argument came
+from a matrix, so the hypothesis stays. -/
+
+/-- A star algebra equivalence carries `Ring.inverse` to `Ring.inverse`: the image of the inverse of
+an invertible matrix is the inverse of its image. -/
+theorem toEuclideanCLM_ringInverse {A : Matrix n n 𝕜} (hA : IsUnit A) :
+    toEuclideanCLM (n := n) (𝕜 := 𝕜) (Ring.inverse A)
+      = Ring.inverse (toEuclideanCLM (n := n) (𝕜 := 𝕜) A) := by
+  have hu : IsUnit (toEuclideanCLM (n := n) (𝕜 := 𝕜) A) := hA.map _
+  refine hu.mul_left_cancel ?_
+  rw [← map_mul, Ring.mul_inverse_cancel _ hA, map_one, Ring.mul_inverse_cancel _ hu]
+
+/-- The operator of the inverse of an invertible matrix is the inverse operator, with Mathlib's
+junk-valued `Matrix.inv` on the left and `Ring.inverse` on the right. -/
+theorem toEuclideanCLM_nonsing_inv {A : Matrix n n 𝕜} (hA : IsUnit A) :
+    toEuclideanCLM (n := n) (𝕜 := 𝕜) A⁻¹
+      = Ring.inverse (toEuclideanCLM (n := n) (𝕜 := 𝕜) A) := by
+  rw [nonsing_inv_eq_ringInverse, toEuclideanCLM_ringInverse hA]
+
+/-- Applying an invertible matrix undoes applying its inverse, on `EuclideanSpace`: the applied
+form of `Matrix.mul_nonsing_inv`. -/
+theorem toEuclideanLin_mul_nonsing_inv_apply {A : Matrix n n 𝕜} (hA : IsUnit A)
+    (z : EuclideanSpace 𝕜 n) : toEuclideanLin A (toEuclideanLin A⁻¹ z) = z := by
+  have h : toEuclideanLin A (toEuclideanLin A⁻¹ z) = toEuclideanLin (A * A⁻¹) z := by
+    rw [toEuclideanLin_mul]; rfl
+  rw [h, mul_nonsing_inv _ ((isUnit_iff_isUnit_det A).mp hA), toEuclideanLin_one_apply]
+
+/-- Applying the inverse of an invertible matrix undoes applying the matrix, on `EuclideanSpace`:
+the applied form of `Matrix.nonsing_inv_mul`. -/
+theorem toEuclideanLin_nonsing_inv_mul_apply {A : Matrix n n 𝕜} (hA : IsUnit A)
+    (z : EuclideanSpace 𝕜 n) : toEuclideanLin A⁻¹ (toEuclideanLin A z) = z := by
+  have h : toEuclideanLin A⁻¹ (toEuclideanLin A z) = toEuclideanLin (A⁻¹ * A) z := by
+    rw [toEuclideanLin_mul]; rfl
+  rw [h, nonsing_inv_mul _ ((isUnit_iff_isUnit_det A).mp hA), toEuclideanLin_one_apply]
+
+end Inverse
+
+section Shift
+
+/-! ### Shifts by a multiple of the identity
+
+The shift `A + r I` is the shape of a resolvent, of a regularized system and of the half-steps of an
+alternating-direction sweep; its image under `Matrix.toEuclideanCLM` is the corresponding shift of
+the operator. -/
+
+/-- The shift `A + r I` of a matrix acts as the shift `toEuclideanCLM A + r • 1` of the operator. -/
+theorem toEuclideanCLM_add_smul_one (A : Matrix n n 𝕜) (r : 𝕜) :
+    toEuclideanCLM (n := n) (𝕜 := 𝕜) (A + r • 1)
+      = toEuclideanCLM (n := n) (𝕜 := 𝕜) A + r • 1 := by
+  rw [map_add, map_smul, map_one]
+
+/-- The shift `A - r I` of a matrix acts as the shift `toEuclideanCLM A - r • 1` of the operator. -/
+theorem toEuclideanCLM_sub_smul_one (A : Matrix n n 𝕜) (r : 𝕜) :
+    toEuclideanCLM (n := n) (𝕜 := 𝕜) (A - r • 1)
+      = toEuclideanCLM (n := n) (𝕜 := 𝕜) A - r • 1 := by
+  rw [map_sub, map_smul, map_one]
+
+/-- A nonsingular shift `A + r I` gives an invertible shifted operator. -/
+theorem isUnit_toEuclideanCLM_add_smul_one {A : Matrix n n 𝕜} {r : 𝕜}
+    (hA : IsUnit (A + r • (1 : Matrix n n 𝕜))) :
+    IsUnit (toEuclideanCLM (n := n) (𝕜 := 𝕜) A + r • 1) := by
+  have h := hA.map (toEuclideanCLM (n := n) (𝕜 := 𝕜))
+  rwa [toEuclideanCLM_add_smul_one] at h
+
+end Shift
 
 end Matrix

@@ -8,8 +8,9 @@ Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd
 2003, §7.3.
 
 **Algorithm 7.3** (BCG) is `bcg`, the five-vector recurrence `(x, r, r*, p, p*)` with
-`α_j = (r_j, r*_j)/(A p_j, p*_j)` and `β_j = (r_{j+1}, r*_{j+1})/(r_j, r*_j)`; `bcg_eq` identifies
-it with the backbone `BCG.iterate`, so that Proposition 7.2 (`proposition_7_2`) and the
+`α_j = (r_j, r*_j)/(A p_j, p*_j)` and `β_j = (r_{j+1}, r*_{j+1})/(r_j, r*_j)`, the two coefficients
+being `bcgAlpha` and `bcgBeta` (used again by the transpose-free variants of §7.4); `bcg_eq`
+identifies it with the backbone `BCG.iterate`, so that Proposition 7.2 (`proposition_7_2`) and the
 Petrov–Galerkin identification (`bcg_isPetrovGalerkin`) are read off `Numlib/Krylov/BiLanczos.lean`.
 `problem_7_7` and `problem_7_7_direction` are the two three-term recurrences P-7.7 asks for: they
 come from eliminating the directions, resp. the residuals, between lines 5, 6 and 9, and only the
@@ -113,6 +114,24 @@ theorem bcg_beta_eq (k : ℕ) : BCG.beta (op A) (op Aᴴ) b x₀ rs₀ k =
     inner 𝕜 (bcg A b x₀ rs₀ (k + 1)).rs (bcg A b x₀ rs₀ (k + 1)).r /
       inner 𝕜 (bcg A b x₀ rs₀ k).rs (bcg A b x₀ rs₀ k).r := by
   rw [bcg_eq, bcg_eq]; rfl
+
+/-- The step length `α_j` of **Algorithm 7.3**, read off the run of `bcg`. -/
+noncomputable abbrev bcgAlpha (j : ℕ) : 𝕜 := BCG.alpha (op A) (op Aᴴ) b x₀ rs₀ j
+
+/-- The direction coefficient `β_j` of **Algorithm 7.3**, read off the run of `bcg`. -/
+noncomputable abbrev bcgBeta (j : ℕ) : 𝕜 := BCG.beta (op A) (op Aᴴ) b x₀ rs₀ j
+
+/-- `α_j = (r_j, r*_j)/(A p_j, p*_j)`, the formula of **Algorithm 7.3**, line 4. -/
+theorem bcgAlpha_eq (j : ℕ) : bcgAlpha A b x₀ rs₀ j =
+    inner 𝕜 (bcg A b x₀ rs₀ j).rs (bcg A b x₀ rs₀ j).r /
+      inner 𝕜 (bcg A b x₀ rs₀ j).ps (op A (bcg A b x₀ rs₀ j).p) :=
+  bcg_alpha_eq A b x₀ rs₀ j
+
+/-- `β_j = (r_{j+1}, r*_{j+1})/(r_j, r*_j)`, the formula of **Algorithm 7.3**, line 8. -/
+theorem bcgBeta_eq (j : ℕ) : bcgBeta A b x₀ rs₀ j =
+    inner 𝕜 (bcg A b x₀ rs₀ (j + 1)).rs (bcg A b x₀ rs₀ (j + 1)).r /
+      inner 𝕜 (bcg A b x₀ rs₀ j).rs (bcg A b x₀ rs₀ j).r :=
+  bcg_beta_eq A b x₀ rs₀ j
 
 end BCG
 

@@ -13,9 +13,13 @@ Analysis Framework*, 3rd edition, Springer, 2009, §10.1.
 The section solves the two-point boundary value problem `−u'' + u = f` on `(0,1)` by piecewise
 linear and piecewise quadratic elements, and sketches the cubic Hermite element for the beam
 problem (10.1.16). The finite element method itself needs `V = {v ∈ H¹(0,1) : v(0) = 0}` and
-`H¹₀(0,1)`, which Mathlib does not have, so the displays (10.1.1)–(10.1.6) and (10.1.13)–(10.1.15)
-and Exercise 10.1.1 are out of scope. What the section says that is *not* about that space is
-finite-dimensional algebra, and it is what this file holds.
+`H¹₀(0,1)`. The spaces themselves exist — `Chapter07.definition_7_2_2_multiIndex` and
+`Chapter07.definition_7_2_9`, over an `Opens` of `EuclideanSpace ℝ (Fin 1)` here — but the
+one-sided boundary condition cutting out `V` needs a trace (AH Theorem 7.3.10) and the ellipticity
+needs the Poincaré inequality (`Chapter07.example_7_3_15`), neither of which is proved, so the
+displays (10.1.1)–(10.1.6) and (10.1.13)–(10.1.15) and Exercise 10.1.1 are out of scope. What the
+section says that is *not* about that space is finite-dimensional algebra, and it is what this file
+holds.
 
 ## Main definitions
 
@@ -53,17 +57,21 @@ at the outer ends and match in value and slope at `b` are both zero. The surroun
 ## Not formalized here
 
 **The finite element systems** (10.1.1)–(10.1.6), (10.1.13)–(10.1.15) and Exercise 10.1.1, whose
-space is `V = {v ∈ H¹(0,1) : v(0) = 0}`.  This is the softest of the chapter's Sobolev skips, since
-one-dimensional `H¹(a,b)` is the absolutely continuous functions with `L²` derivative, and Mathlib
-has `AbsolutelyContinuousOnInterval` with its almost-everywhere differentiability and the direction
-"an interval integral is absolutely continuous".  What is not there is the converse half of the
-fundamental theorem of calculus — `f(b) − f(a) = ∫ f'` for an absolutely continuous `f`, whose
-derivative is only an a.e. one — and that is the half `H¹(0,1)` is built on.  On top of it the space
-still needs its inner product, completeness, the embedding into `C[0,1]`, a Poincaré inequality and
-the density of the continuous piecewise linears; that is a backbone module of its own, not a
-paragraph in a surface file.
+space is `V = {v ∈ H¹(0,1) : v(0) = 0}`.  This is the softest of the chapter's Sobolev skips, and
+the space is no longer what is missing: membership of `H¹(0,1)` is
+`Chapter07.definition_7_2_2_multiIndex` over an `Opens` of `EuclideanSpace ℝ (Fin 1)`, and the
+backbone's `SobolevMultiIndex` (`Numlib/Analysis/Sobolev/MultiIndex.lean`) is that space as a
+type, complete and, at `p = 2`, carrying the inner product of Corollary 7.2.4.  What `V` needs on
+top of it is the one-dimensional reading the book uses: the embedding `H¹(0,1) ↪ C[0,1]` that
+gives `v(0)` a meaning (AH Theorem 7.3.7) and the Poincaré inequality that makes the seminorm a
+norm (AH Theorem 7.3.13), both of them open, together with the density of the continuous piecewise
+linears in `V`.  The classical route to the embedding is the converse half of the fundamental
+theorem of calculus — `f(b) − f(a) = ∫ f'` for an absolutely continuous `f` whose derivative is
+only an a.e. one — which Mathlib does not have: it has `AbsolutelyContinuousOnInterval` with its
+almost-everywhere differentiability and the direction "an interval integral is absolutely
+continuous", and not the converse.
 
-**(10.1.9)** needs neither: it is stated and proved below, from the eigenvalues
+**(10.1.9)** needs none of that: it is stated and proved below, from the eigenvalues
 `λ_k = 2 − 2 cos(k π h)` (`Matrix.symmTridiagonalToeplitz_hasEigenvalue_iff`) and the backbone's
 spectral-norm bridge `Matrix.IsHermitian.l2_opNorm_eq`.
 -/

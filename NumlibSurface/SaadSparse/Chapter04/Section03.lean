@@ -1,4 +1,5 @@
 import Numlib.LinearAlgebra.Matrix.Complexify
+import Numlib.LinearAlgebra.Matrix.NonsingularInverse
 import Numlib.LinearSolve.Stationary.ADI
 import NumlibSurface.SaadSparse.Chapter02.Section02
 
@@ -51,14 +52,6 @@ namespace SaadSparse.Chapter04
 variable {ι : Type*} [Fintype ι] [DecidableEq ι] {H V : Matrix ι ι ℝ} {r : ℝ}
 
 /-! ### Elementary facts used throughout -/
-
-private theorem mulVec_nonsing_inv_mulVec {M : Matrix ι ι ℝ} (hM : IsUnit M) (u : ι → ℝ) :
-    M *ᵥ (M⁻¹ *ᵥ u) = u := by
-  rw [mulVec_mulVec, mul_nonsing_inv _ ((isUnit_iff_isUnit_det M).mp hM), one_mulVec]
-
-private theorem nonsing_inv_mulVec_eq {M : Matrix ι ι ℝ} (hM : IsUnit M) {u v : ι → ℝ}
-    (h : M *ᵥ v = u) : M⁻¹ *ᵥ u = v := by
-  rw [← h, mulVec_mulVec, nonsing_inv_mul _ ((isUnit_iff_isUnit_det M).mp hM), one_mulVec]
 
 private theorem isUnit_smul_matrix {c : ℝ} (hc : c ≠ 0) {M : Matrix ι ι ℝ} (hM : IsUnit M) :
     IsUnit (c • M) := by
@@ -113,34 +106,6 @@ theorem equation_4_50 (H V : Matrix ι ι ℝ) (r : ℝ) (b x : ι → ℝ) :
   module
 
 /-! ### The bridge to the backbone -/
-
-private theorem toEuclideanCLM_injective :
-    Function.Injective (toEuclideanCLM (n := ι) (𝕜 := ℝ)) := fun _ _ h => by
-  simpa using congrArg (toEuclideanCLM (n := ι) (𝕜 := ℝ)).symm h
-
-private theorem toEuclideanCLM_ringInverse {M : Matrix ι ι ℝ} (hM : IsUnit M) :
-    toEuclideanCLM (𝕜 := ℝ) (Ring.inverse M) = Ring.inverse (toEuclideanCLM (𝕜 := ℝ) M) := by
-  have hu : IsUnit (toEuclideanCLM (n := ι) (𝕜 := ℝ) M) := hM.map _
-  refine hu.mul_left_cancel ?_
-  rw [← map_mul, Ring.mul_inverse_cancel _ hM, map_one, Ring.mul_inverse_cancel _ hu]
-
-private theorem toEuclideanCLM_nonsing_inv {M : Matrix ι ι ℝ} (hM : IsUnit M) :
-    toEuclideanCLM (𝕜 := ℝ) M⁻¹ = Ring.inverse (toEuclideanCLM (𝕜 := ℝ) M) := by
-  rw [nonsing_inv_eq_ringInverse, toEuclideanCLM_ringInverse hM]
-
-private theorem toEuclideanCLM_add_smul_one (H : Matrix ι ι ℝ) (r : ℝ) :
-    toEuclideanCLM (𝕜 := ℝ) (H + r • 1) = toEuclideanCLM (𝕜 := ℝ) H + (r : ℝ) • 1 := by
-  rw [map_add, map_smul, map_one]
-
-private theorem toEuclideanCLM_sub_smul_one (H : Matrix ι ι ℝ) (r : ℝ) :
-    toEuclideanCLM (𝕜 := ℝ) (H - r • 1) = toEuclideanCLM (𝕜 := ℝ) H - (r : ℝ) • 1 := by
-  rw [map_sub, map_smul, map_one]
-
-private theorem isUnit_toEuclideanCLM_add_smul_one
-    (hH : IsUnit (H + r • (1 : Matrix ι ι ℝ))) :
-    IsUnit (toEuclideanCLM (𝕜 := ℝ) H + (r : ℝ) • 1) := by
-  have h := hH.map (toEuclideanCLM (n := ι) (𝕜 := ℝ))
-  rwa [toEuclideanCLM_add_smul_one] at h
 
 /-- Saad (4.50): the iteration matrix of Algorithm 4.3 is the Peaceman–Rachford operator of
 `Numlib/LinearSolve/Stationary/ADI.lean`, read through `Matrix.toEuclideanCLM`. -/

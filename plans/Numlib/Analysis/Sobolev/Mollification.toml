@@ -17,13 +17,7 @@ id = "ContDiff.iteratedFDeriv_comp_const_sub"
 id = "TestFunction.compConstSub"
 
 [[node]]
-id = "MeasureTheory.LocallyIntegrable.fderiv_convolution_left_apply"
-
-[[node]]
 id = "MeasureTheory.LocallyIntegrable.iteratedFDeriv_convolution_left_apply"
-
-[[node]]
-id = "MeasureTheory.LocallyIntegrableOn.convolutionExistsAt"
 
 [[node]]
 id = "HasWeakIteratedLineDerivOn.convolution_iteratedFDeriv"
@@ -37,29 +31,8 @@ id = "HasWeakIteratedFDerivOn.iteratedFDeriv_convolution"
 source = 'Properties of mollifiers; see e.g. Evans, Partial Differential Equations, 2nd edition, section C.5'
 
 [[node]]
-id = "MeasureTheory.MemLp.union_of_ne_top"
-
-[[node]]
-id = "MeasureTheory.LocallyMemLpOn.mono_set"
-
-[[node]]
-id = "MeasureTheory.LocallyMemLpOn.memLp_restrict_of_isCompact"
-
-[[node]]
-id = "MeasureTheory.LocallyMemLpOn.memLp_restrict_of_compact_subset"
-
-[[node]]
 id = "HasWeakIteratedLineDerivOn.exists_seq_contDiff_tendsto_eLpNorm"
 source = 'The local half of the Meyers-Serrin theorem; see e.g. Adams and Fournier, Sobolev Spaces, 2nd edition, Theorem 3.17'
-
-[[node]]
-id = "MeasureTheory.tendsto_eLpNorm_one_of_tendsto_eLpNorm"
-
-[[node]]
-id = "MeasureTheory.enorm_integral_smul_le_of_bound"
-
-[[node]]
-id = "MeasureTheory.tendsto_integral_mul_of_tendsto_eLpNorm"
 
 [[node]]
 id = "MeasureTheory.LocallyMemLpOn.locallyIntegrableOn_mul"

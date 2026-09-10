@@ -32,30 +32,6 @@ id = "multiIndexTuple"
 id = "multiIndexDirections_eq_ofFn"
 
 [[node]]
-id = "listFDeriv"
-
-[[node]]
-id = "listFDeriv_nil"
-
-[[node]]
-id = "listFDeriv_cons"
-
-[[node]]
-id = "ContDiff.fderiv_apply_right"
-
-[[node]]
-id = "ContDiff.listFDeriv_ofFn"
-
-[[node]]
-id = "ContDiff.fderiv_fderiv_comm"
-
-[[node]]
-id = "listFDeriv_congr_perm"
-
-[[node]]
-id = "ContDiff.iteratedFDeriv_congr_perm"
-
-[[node]]
 id = "multiIndexCount"
 
 [[node]]
@@ -176,7 +152,11 @@ id = "SobolevMultiIndex.ext_of_fn_ae_eq"
 id = "MemSobolev.memSobolevMultiIndex"
 
 [[node]]
-id = "memSobolev_of_memSobolevMultiIndex"
+id = "MemSobolevMultiIndex.memSobolev"
+source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.2'
+
+[[node]]
+id = "memSobolev_iff_memSobolevMultiIndex"
 source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definition 7.2.2'
 
 [[node]]

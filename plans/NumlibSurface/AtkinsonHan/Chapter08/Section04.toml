@@ -1,9 +1,11 @@
 namespace = "AtkinsonHan.Chapter08"
 desc = '''
 Atkinson-Han §8.4, weak formulations of linear elliptic boundary value problems. No module is
-planned: every statement of the section quantifies over `H¹(Ω)` or `H¹₀(Ω)` and the trace
-`γ : H¹(Ω) → H^{1/2}(Γ)`, which the §7.3 Sobolev theory would have to supply first. The weak
-formulations (8.4.1)-(8.4.22) for the homogeneous and non-homogeneous Dirichlet, Neumann, pure
+planned: every statement of the section quantifies over `H¹(Ω)` or `H¹₀(Ω)` — both of which exist,
+as `AtkinsonHan.Chapter07.definition_7_2_2_multiIndex` and `definition_7_2_9` — together with the
+trace `γ : H¹(Ω) → H^{1/2}(Γ)` of AH Theorem 7.3.10, which does not: no library has a surface
+measure on a Lipschitz boundary. The weak formulations (8.4.1)-(8.4.22) for the homogeneous and
+non-homogeneous Dirichlet, Neumann, pure
 Neumann, mixed and general second-order problems, and Exercises 8.4.1-8.4.9, all rest on that
 same layer; their abstract content is `theorem_8_3_4`, which is proved. The group exists so that
 the section's one numbered result is on the record.
@@ -15,7 +17,8 @@ kind = "theorem"
 desc = '''Lemma 8.4.1: on a Lipschitz domain `Ω ⊆ ℝ^d`, the quotient norm
 `‖[v]‖_V = inf_{α ∈ ℝ} ‖v + α‖₁` on `V = H¹(Ω)/ℝ` is equivalent to the `H¹(Ω)` seminorm `|v|₁`;
 this is what makes `ā([u], [v]) = ∫_Ω ∇u · ∇v` elliptic on `V` and so gives the pure Neumann
-problem a unique solution. Not formalized: it needs `H¹(Ω)` on an open set and the Deny-Lions
-norm-equivalence theorem (AH Theorem 7.3.12), whose proof rests on Rellich-Kondrachov compactness;
-Mathlib has neither.'''
+problem a unique solution. Not formalized: `H¹(Ω)` on an open set exists,
+`AtkinsonHan.Chapter07.definition_7_2_2_multiIndex` being proved; what is missing is the Deny-Lions
+norm-equivalence theorem (AH Theorem 7.3.12), whose proof rests on the Rellich-Kondrachov compact
+embedding, which neither Mathlib nor this project has.'''
 deps = ["AtkinsonHan.Chapter07.theorem_7_3_12", "AtkinsonHan.Chapter07.definition_7_2_2_multiIndex"]

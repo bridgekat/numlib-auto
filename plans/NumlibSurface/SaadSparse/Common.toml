@@ -16,9 +16,6 @@ id = "complexify_strictUpper"
 id = "eigenvalues_le_lambdaMax"
 
 [[node]]
-id = "inner_eq_dotProduct_star"
-
-[[node]]
 id = "isSymmetricBoundedBy_toEuclideanLin"
 
 [[node]]

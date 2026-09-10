@@ -4,22 +4,48 @@ Sobolev spaces that this project needed and Mathlib lacks (natural home:
 the rest).
 
 Mathlib has Bessel potential spaces `H^{s,p}` of tempered distributions on all of `ℝ^d`
-(`Mathlib/Analysis/Distribution/Sobolev.lean`) and nothing about a *domain*. Four pieces of that
-gap are filled here, deliberately minimally, by `WeakDeriv`, `Domain`, `Space` and `MultiIndex`:
-the weak derivative on an open set with its uniqueness, its agreement with the classical derivative
-and its linearity; membership of `W^{k,p}(Ω)` of integer order with the Sobolev norm and seminorm;
-`W^{k,p}(Ω)` as a *type*, a closed subspace of an `ℓ^p` product of `L^p(Ω)` spaces and hence a
-Banach space (Theorem 7.2.3); and the same space with the derivatives indexed by the multi-indices
-of a basis, which is what carries the book's own norm and, at `p = 2`, its inner product, so that
-`H^k(Ω)` is a Hilbert space (Corollary 7.2.4). Together they serve Atkinson-Han, *Theoretical
-Numerical Analysis*, §7.1 and the integer-order half of §7.2.
+(`Mathlib/Analysis/Distribution/Sobolev.lean`) and nothing about a *domain*. Ten modules fill that
+gap here, deliberately minimally. Four carry the spaces themselves:
 
-All four are stopgaps for work that is on its way into Mathlib -- Mathlib PR 32305 and its
-continuation `grunweg/SobolevSlobodeckij` -- and the first three follow its names and argument
+* `WeakDeriv` -- the weak derivative on an open set with its uniqueness, its agreement with the
+  classical derivative and its linearity;
+* `Domain` -- membership of `W^{k,p}(Ω)` of integer order with the Sobolev norm and seminorm, and
+  the regularity of the boundary of a domain, `IsBoundaryOfClass` (Definition 7.2.1);
+* `Space` -- `W^{k,p}(Ω)` as a *type*, a closed subspace of an `ℓ^p` product of `L^p(Ω)` spaces and
+  hence a Banach space (Theorem 7.2.3), together with `SobolevZero`, the closure of `C_0^∞(Ω)` in
+  it, which is `W_0^{k,p}(Ω)` (Definition 7.2.9);
+* `MultiIndex` -- the same space with the derivatives indexed by the multi-indices of a basis,
+  which is what carries the book's own norm and, at `p = 2`, its inner product, so that `H^k(Ω)`
+  is a Hilbert space (Corollary 7.2.4).
+
+Six more are built on those:
+
+* `Mollification` -- convolution with a bump on the `ε`-erosion of `Ω`, the commutation of the weak
+  derivative with it, the product and chain rules, and local approximation in `W^{k,p}`;
+* `Density` -- the density of `C_0^∞(ℝ^d)` in `W^{k,p}(ℝ^d)` and the Meyers-Serrin theorem `H = W`,
+  that `C^∞(Ω) ∩ W^{k,p}(Ω)` is dense in `W^{k,p}(Ω)` for an arbitrary open `Ω` -- Theorems 7.3.1
+  and 7.3.4 -- along with the closedness of the weak derivative under `L^1` limits;
+* `RemovableSingularity` -- a classical derivative on `Ω ∖ {a}` is the weak derivative on all of
+  `Ω` once `∫_{B(a,δ)} ‖f‖ = o(δ)`, which is what the singular examples of §7.2 need;
+* `Slobodeckij` -- the fractional Sobolev-Slobodeckij spaces `W^{s,p}(Ω)` of real order, with the
+  Gagliardo seminorm (Definition 7.2.10), and `W_0^{s,p}(Ω)` (Definition 7.2.11);
+* `Tempered` -- on the whole space the weak derivative agrees with the distributional derivative of
+  Mathlib's `TemperedDistribution`, so the `W^{k,2}(ℝ^d)` cut out by weak derivatives is Mathlib's
+  Bessel potential space `H^k`;
+* `Periodic` -- the periodic spaces of §7.5, a separate story: they are graded by the decay of
+  Fourier coefficients, so no domain, boundary or weak derivative enters them at all, and the space
+  is a weighted `ℓ²(ℤ, ℂ)`.
+
+Together they serve Atkinson-Han, *Theoretical Numerical Analysis*, §7.1, §7.2, the density half of
+§7.3, and §7.5.
+
+`WeakDeriv`, `Domain` and `Space` are stopgaps for work that is on its way into Mathlib -- Mathlib
+PR 32305 and its continuation `grunweg/SobolevSlobodeckij` -- and follow its names and argument
 order so that the migration is a rename; they should be deleted, not extended, once that
-development lands. `MultiIndex` deliberately does not follow it: that development is tensor-valued
-and basis-free throughout, and the multi-index indexing is a step away from it, taken because the
-inner product of Corollary 7.2.4 is not a tensor norm.
+development lands. `MultiIndex` and `Slobodeckij` deliberately do not follow it: that development is
+tensor-valued and basis-free throughout, and the multi-index indexing is a step away from it, taken
+because neither the inner product of Corollary 7.2.4 nor the top-order sum of Definition 7.2.10 is
+a tensor norm.
 
 Two indexings of the derivative sit side by side, and the reason is the norm. `Space` measures all
 the derivatives of order `n` by the operator norm of a single tensor of `E [×n]→L[ℝ] F`, which is
@@ -34,14 +60,14 @@ recovers the derivative tensor from its multi-index components, waits on the sym
 `iteratedFDeriv` under permutations of its arguments for a `C^∞` function, which Mathlib has only
 for order two and for analytic functions.
 
-What is still missing is everything that makes the spaces worth having: `W_0^{k,p}(Ω)` as a space
-of boundary conditions, the fractional Sobolev-Slobodeckij spaces of Definition 7.2.10 and their
-negative-order duals, and the whole of §7.3 -- density of smooth functions, the extension operator,
-the trace, the Sobolev embeddings, Rellich-Kondrachov, Poincaré and Deny-Lions -- together with
-§7.4, §7.6 and the downstream sections that need them (§8.1, §8.4, §8.5, §8.8, chapter 10 beyond
-the Aubin-Nitsche lemma, chapter 13).
-
-The *periodic* spaces are a separate story: they are defined by the decay of Fourier coefficients,
-so no domain, boundary or weak derivative enters them. Serves Atkinson-Han, *Theoretical Numerical
-Analysis*, §7.5.
+What is still missing is the structure theory on a domain, which is what makes the spaces worth
+having. Of §7.3 only Theorems 7.3.1, 7.3.3 and 7.3.4 are here, the density of smooth functions on
+the whole space and on an arbitrary open set. Density up to the boundary on a Lipschitz domain
+(7.3.2), the extension operator (7.3.5), the Sobolev embeddings (7.3.7), Rellich-Kondrachov
+(7.3.8-7.3.9), the trace (7.3.10-7.3.11), Deny-Lions (7.3.12-7.3.14),
+Poincaré-Friedrichs (7.3.15-7.3.16) and Bramble-Hilbert (7.3.17) are all open, and with them §7.4,
+§7.6 and the downstream sections that need them (§8.1, §8.4, §8.5, §8.8, chapter 10 beyond the
+Aubin-Nitsche lemma, chapter 13). Two facts the source itself states without proof are unproved in
+`Slobodeckij` as well: that `W^{s,p}(Ω)` is complete, and that `C_0^∞(Ω) ⊆ W^{s,p}(Ω)`, so nothing
+yet produces a nonzero element of `SobolevSlobodeckijZero`.
 '''

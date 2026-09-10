@@ -132,24 +132,6 @@ section BCGPolynomials
 
 variable (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ rs₀ : EuclideanSpace 𝕜 (Fin n))
 
-/-- The step length `α_j` of **Algorithm 7.3**, read off the run of `bcg`. -/
-noncomputable abbrev bcgAlpha (j : ℕ) : 𝕜 := BCG.alpha (op A) (op Aᴴ) b x₀ rs₀ j
-
-/-- The direction coefficient `β_j` of **Algorithm 7.3**, read off the run of `bcg`. -/
-noncomputable abbrev bcgBeta (j : ℕ) : 𝕜 := BCG.beta (op A) (op Aᴴ) b x₀ rs₀ j
-
-/-- `α_j = (r_j, r*_j)/(A p_j, p*_j)`, the formula of **Algorithm 7.3**, line 4. -/
-theorem bcgAlpha_eq (j : ℕ) : bcgAlpha A b x₀ rs₀ j =
-    inner 𝕜 (bcg A b x₀ rs₀ j).rs (bcg A b x₀ rs₀ j).r /
-      inner 𝕜 (bcg A b x₀ rs₀ j).ps (op A (bcg A b x₀ rs₀ j).p) := by
-  rw [bcg_eq]; rfl
-
-/-- `β_j = (r_{j+1}, r*_{j+1})/(r_j, r*_j)`, the formula of **Algorithm 7.3**, line 8. -/
-theorem bcgBeta_eq (j : ℕ) : bcgBeta A b x₀ rs₀ j =
-    inner 𝕜 (bcg A b x₀ rs₀ (j + 1)).rs (bcg A b x₀ rs₀ (j + 1)).r /
-      inner 𝕜 (bcg A b x₀ rs₀ j).rs (bcg A b x₀ rs₀ j).r := by
-  rw [bcg_eq, bcg_eq]; rfl
-
 /-- The pair `(φ_j, π_j)` of (7.35)–(7.36), defined together because each recurrence feeds the
 other. -/
 private noncomputable def bcgPolyPair (A : Matrix (Fin n) (Fin n) 𝕜)

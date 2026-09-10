@@ -1,5 +1,5 @@
 import Numlib.Analysis.Calculus.CurvilinearLaplacian
-import Numlib.Variational.AubinNitsche
+import Numlib.Variational.Galerkin
 import NumlibSurface.AtkinsonHan.Chapter09.Section01
 
 /-!

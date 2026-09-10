@@ -73,13 +73,15 @@ needs the separable-subspace construction of Eberlein–Šmulian to turn the seq
 into the topological weak compactness Kakutani's argument consumes, of which Mathlib has nothing.
 
 Wherever the book applies Theorem 2.7.5 (its Theorems 3.3.8, 3.3.10, 3.3.12 and 3.3.14) the surface
-assumes the right-hand property directly, as the backbone's class `WeaklySeqCompactSpace` of
-`Numlib/Variational/WeakMinimization`; `theorem_2_7_5_mp` now makes that hypothesis derivable from
-reflexivity, though no instance `NormedSpace.IsReflexive ℝ V → WeaklySeqCompactSpace V` is
-registered, that belonging with the class. What the book leaves unproved beyond that is recorded in
-`Numlib/Variational/Minimization`. Example 2.7.3's uniform-integrability criterion (Dunford–Pettis)
-is not planned, and neither is part (b) of Exercise 2.7.4, the uniform convexity of `Lᵖ` by the
-Clarkson inequalities.
+assumes reflexivity itself, `NormedSpace.IsReflexive ℝ V`, which is Definition 2.7.4 by
+`definition_2_7_4_iff_isReflexive`. What those proofs consume is the right-hand property, the
+backbone's class `WeaklySeqCompactSpace` of `Numlib/Variational/WeakMinimization`, and instance
+search supplies it: the instance `WeaklySeqCompactSpace.of_isReflexive` is registered there beside
+the class, and is the forward half of Theorem 2.7.5 again, both it and `theorem_2_7_5_mp` being
+`NormedSpace.exists_subseq_forall_dual_tendsto`. What the book leaves unproved beyond that is
+recorded in `Numlib/Variational/Minimization`. Example 2.7.3's uniform-integrability criterion
+(Dunford–Pettis) is not planned, and neither is part (b) of Exercise 2.7.4, the uniform convexity
+of `Lᵖ` by the Clarkson inequalities.
 -/
 
 open Filter MeasureTheory Topology

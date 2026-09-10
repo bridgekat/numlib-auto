@@ -1,3 +1,4 @@
+import Numlib.LinearAlgebra.Matrix.NonsingularInverse
 import Numlib.LinearSolve.Projection.Additive
 import NumlibSurface.SaadSparse.Chapter05.Section01
 
@@ -120,7 +121,7 @@ theorem span_cols_mul (A : Matrix (Fin n) (Fin n) ℝ) (V : Matrix (Fin n) (Fin 
 cross Gram matrix `Xᵀ Y`. -/
 theorem inner_cols {m' : ℕ} (X : Matrix (Fin n) (Fin m) ℝ) (Y : Matrix (Fin n) (Fin m') ℝ)
     (k : Fin m) (l : Fin m') : inner ℝ (X.cols k) (Y.cols l) = (Xᵀ * Y) k l := by
-  rw [SaadSparse.inner_eq_dotProduct_star, Matrix.mul_apply]
+  rw [EuclideanSpace.inner_eq_star_dotProduct, Matrix.mul_apply]
   simp [dotProduct, Matrix.transpose_apply, mul_comm]
 
 variable {A : Matrix (Fin n) (Fin n) ℝ} {V : Matrix (Fin n) (Fin m) ℝ}
@@ -180,8 +181,7 @@ theorem projStep_isProjectionApprox {W : Matrix (Fin n) (Fin m) ℝ} {K L : Subm
         = V *ᵥ ((Wᵀ * A * V)⁻¹ *ᵥ (Wᵀ *ᵥ WithLp.ofLp (b - (A ⬝ x)))) := by
       rw [← mulVec_mulVec, ← mulVec_mulVec]
     exact congrArg (fun z : E n => x + z) (congrArg (WithLp.toLp 2) hmul)
-  rw [hstep, isProjectionApprox_add_iff hV hW, mulVec_mulVec,
-    mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).mp h), one_mulVec]
+  rw [hstep, isProjectionApprox_add_iff hV hW, mulVec_nonsing_inv_mulVec h]
 
 /-- Saad (5.7): with `W = V` the projection step is the backbone's Petrov–Galerkin step of the
 pair `(span V, span V)`. -/

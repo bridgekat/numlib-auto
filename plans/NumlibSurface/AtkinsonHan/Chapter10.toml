@@ -4,13 +4,20 @@ Atkinson–Han, Chapter 10: finite element analysis. Four sections: one-dimensio
 estimates via the reference element (10.3), and convergence of the finite element solution (10.4).
 
 **Which results are out of scope, precisely.** The chapter is not uniformly Sobolev-bound, and an
-earlier version of this plan said it was. The results that genuinely need a Sobolev space are
+earlier version of this plan said it was. Nor is the Sobolev *space* the obstruction any longer:
+`H^m(Ω)` over an open set is `AtkinsonHan.Chapter07.definition_7_2_2_multiIndex` with the seminorm
+`definition_7_2_2_multiIndex_norm`, and `H¹₀(Ω)` is `definition_7_2_9`, all proved. What is missing
+is the §7.3 structure theory over them, and one item below needs not even that. The results that
+still wait on Sobolev work of some kind are
 
-* Theorem 10.3.3, `|v̂ − Π̂ v̂|_{m,K̂} ≤ c |v̂|_{k+1,K̂}`, which needs `H^{k+1}(K̂)`, the embedding
-  `H^{k+1}(K̂) ↪ C(K̂)` and the Deny–Lions estimate — the Bramble–Hilbert lemma, which is Theorem
-  7.3.12 and is why the whole of Chapter 7 is skipped;
+* Theorem 10.3.3, `|v̂ − Π̂ v̂|_{m,K̂} ≤ c |v̂|_{k+1,K̂}`, which needs the embedding
+  `H^{k+1}(K̂) ↪ C(K̂)` (Theorem 7.3.7) and the Bramble–Hilbert estimate (Theorem 7.3.17, resting
+  on Deny–Lions, Theorem 7.3.12), all three of them open;
 * Theorem 10.3.4, the transformation `|v̂|_{m,K̂} ≤ c ‖T_K‖^m |det T_K|^{−1/2} |v|_{m,K}` of an `H^m`
-  seminorm under an affine change of variables;
+  seminorm under an affine change of variables. This one needs no §7.3 result at all: it is the
+  chain rule for a weak derivative along an affine map, of which
+  `HasWeakIteratedLineDerivOn.contDiff_comp` (`Numlib/Analysis/Sobolev/Mollification.lean`) is the
+  first-order form, plus the Jacobian factor in the `L²` norm. It is simply unwritten;
 * Theorem 10.3.5 and Corollary 10.3.7, which combine those two with Lemma 10.2.2, and
   Example 10.3.8, which is Corollary 10.3.7 at `k = 1` on a triangle;
 * Theorem 10.3.9, the global bound, which adds the additivity of the `H^m` norm over a

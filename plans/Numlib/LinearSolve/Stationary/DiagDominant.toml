@@ -46,28 +46,19 @@ id = "sassenfeld"
 id = "sassenfeld_eq"
 
 [[node]]
-id = "IsIrreducibleAbs"
-
-[[node]]
-id = "IsIrreducibleAbs.forall_of_closed"
-
-[[node]]
-id = "isIrreducibleAbs_iff"
-
-[[node]]
 id = "IsIrreduciblyDiagDominant"
 
 [[node]]
 id = "IsIrreduciblyColDiagDominant"
 
 [[node]]
-id = "IsIrreducibleAbs.norm_diag_eq_of_mulVec_eq_zero"
+id = "IsPatternIrreducible.norm_diag_eq_of_mulVec_eq_zero"
 
 [[node]]
-id = "IsIrreducibleAbs.norm_sub_eq_of_mem_frontier"
+id = "IsPatternIrreducible.norm_sub_eq_of_mem_frontier"
 
 [[node]]
-id = "IsIrreducibleAbs.isUnit_of_dominant"
+id = "IsPatternIrreducible.isUnit_of_dominant"
 
 [[node]]
 id = "IsIrreduciblyDiagDominant.isUnit"

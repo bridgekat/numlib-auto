@@ -50,33 +50,29 @@ theorem ofLp_toEuclideanLin (A : Matrix (Fin n) (Fin n) 𝕜) (x : EuclideanSpac
 theorem toEuclideanLin_toLp (A : Matrix (Fin n) (Fin n) 𝕜) (x : Fin n → 𝕜) :
     (A ⬝ WithLp.toLp 2 x) = WithLp.toLp 2 (A *ᵥ x) := rfl
 
-/-- Saad's inner product `(x, y) = ∑ xᵢ ȳᵢ` is Mathlib's `inner 𝕜 y x`. -/
-theorem inner_eq_dotProduct_star (x y : EuclideanSpace 𝕜 (Fin n)) :
-    inner 𝕜 y x = WithLp.ofLp x ⬝ᵥ star (WithLp.ofLp y) := rfl
-
 /-- Saad's `(A u, u)` for real `A` is the `dotProduct` `(A *ᵥ u) ⬝ᵥ u`. -/
 theorem real_inner_toEuclideanLin (A : Matrix (Fin n) (Fin n) ℝ) (u : EuclideanSpace ℝ (Fin n)) :
     inner ℝ u (A ⬝ u) = (A *ᵥ WithLp.ofLp u) ⬝ᵥ WithLp.ofLp u := by
-  rw [inner_eq_dotProduct_star]
+  rw [EuclideanSpace.inner_eq_star_dotProduct]
   simp
 
 /-- Saad's `(A x, y)` for real `A` is the `dotProduct` `(A *ᵥ x) ⬝ᵥ y`. -/
 theorem real_inner_toEuclideanLin' (A : Matrix (Fin n) (Fin n) ℝ)
     (x y : EuclideanSpace ℝ (Fin n)) :
     inner ℝ y (A ⬝ x) = (A *ᵥ WithLp.ofLp x) ⬝ᵥ WithLp.ofLp y := by
-  rw [inner_eq_dotProduct_star]
+  rw [EuclideanSpace.inner_eq_star_dotProduct]
   simp
 
 /-- Saad's `(A u, u)` for real `A`, in Mathlib's argument order `inner ℝ (A u) u`. -/
 theorem real_inner_apply_self (A : Matrix (Fin n) (Fin n) ℝ) (u : EuclideanSpace ℝ (Fin n)) :
     inner ℝ (A ⬝ u) u = (A *ᵥ WithLp.ofLp u) ⬝ᵥ WithLp.ofLp u := by
-  rw [inner_eq_dotProduct_star, dotProduct_comm]
+  rw [EuclideanSpace.inner_eq_star_dotProduct, dotProduct_comm]
   simp
 
 /-- Saad's `(A x, y)` for real `A`, in Mathlib's argument order `inner ℝ (A x) y`. -/
 theorem real_inner_apply (A : Matrix (Fin n) (Fin n) ℝ) (x y : EuclideanSpace ℝ (Fin n)) :
     inner ℝ (A ⬝ x) y = WithLp.ofLp y ⬝ᵥ (A *ᵥ WithLp.ofLp x) := by
-  rw [inner_eq_dotProduct_star]
+  rw [EuclideanSpace.inner_eq_star_dotProduct]
   simp
 
 omit [RCLike 𝕜] in
@@ -87,7 +83,7 @@ theorem toLp_injective : Function.Injective (WithLp.toLp 2 : (Fin n → 𝕜) �
 /-- The squared Euclidean norm as a `dotProduct` (real case). -/
 theorem real_norm_sq_eq_dotProduct (x : EuclideanSpace ℝ (Fin n)) :
     ‖x‖ ^ 2 = WithLp.ofLp x ⬝ᵥ WithLp.ofLp x := by
-  rw [← real_inner_self_eq_norm_sq, inner_eq_dotProduct_star]
+  rw [← real_inner_self_eq_norm_sq, EuclideanSpace.inner_eq_star_dotProduct]
   simp
 
 end Glue

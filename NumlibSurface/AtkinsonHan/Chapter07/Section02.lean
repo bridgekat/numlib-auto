@@ -15,10 +15,12 @@ Definition 7.2.2, the Sobolev space `W^{k,p}(Ω)` of integer order, is here in t
 §7.1. `definition_7_2_2 k p Ω v` is the bundled one: `v ∈ L^p(Ω)`, and for every order `n ≤ k` the
 derivative of order `n`, one object for all the multi-indices of that length, exists and lies in
 `L^p(Ω)`. `definition_7_2_2_multiIndex k p Ω v` is the book's: one `∂^α v ∈ L^p(Ω)` for each
-multi-index `α` with `|α| ≤ k`. The bundled reading implies the multi-index one,
-`definition_7_2_2_multiIndex_of_definition_7_2_2`; the converse holds mathematically but rests on
-the symmetry of the derivatives of a `C^∞` test function in its arguments, which Mathlib does not
-yet have past order two, so it is not proved here.
+multi-index `α` with `|α| ≤ k`. As predicates the two are equivalent,
+`definition_7_2_2_iff_definition_7_2_2_multiIndex`. The easy half is
+`definition_7_2_2_multiIndex_of_definition_7_2_2`; the other,
+`definition_7_2_2_of_definition_7_2_2_multiIndex`, rests on the symmetry of the derivatives of a
+`C^∞` test function in its arguments, which Mathlib does not have past order two and which the
+backbone supplies as `ContDiff.iteratedFDeriv_congr_perm`.
 
 The two readings differ in their *norms*, and that is why both are kept. The norm of
 Definition 7.2.2 sums the `L^p(Ω)` norms of the `∂^α` over the multi-indices `α` with `|α| ≤ k`;
@@ -161,10 +163,10 @@ is the set of `v ∈ L^p(Ω)` such that for each multi-index `α` with `|α| ≤
 `∂^α v` exists and lies in `L^p(Ω)`; when `p = 2` one writes `H^k(Ω) ≡ W^{k,2}(Ω)`.
 
 All the multi-indices of a given length are carried here by one derivative tensor.
-`definition_7_2_2_multiIndex` is the book's reading, one `α` at a time, and is the one to prefer
-when the two must be told apart: this one implies it, and the converse, though true, is not
-available (see `definition_7_2_2_multiIndex_of_definition_7_2_2`), so as a predicate this one may a
-priori be strictly stronger. The norm `‖v‖_{k,p,Ω}` and seminorm `|v|_{k,p,Ω}` attached to this
+`definition_7_2_2_multiIndex` is the book's reading, one `α` at a time. As predicates the two are
+equivalent, `definition_7_2_2_iff_definition_7_2_2_multiIndex`, so the choice between them is one
+of *norm* and not of content, and the multi-index reading is the one to prefer when the norm
+matters. The norm `‖v‖_{k,p,Ω}` and seminorm `|v|_{k,p,Ω}` attached to this
 reading are `sobolevNorm v k p Ω volume` and `sobolevSeminorm v k p Ω volume`; they sum over the
 orders `n ≤ k` rather than over the multi-indices, which is an equivalent but not identical norm.
 `definition_7_2_2_multiIndex_norm` carries the book's own norm; the *seminorm* `|v|_{k,p,Ω}` has no
@@ -214,17 +216,35 @@ theorem definition_7_2_2_multiIndex_iff (k : ℕ) (p : ℝ≥0∞)
   Iff.rfl
 
 /-- The bundled reading of Definition 7.2.2 gives the book's: the `∂^α v` are the derivative tensor
-of order `|α|` evaluated at the tuple of directions naming `α`.
-
-The converse is true but is not proved here. It builds the tensor of order `n` from its values on
-the tuples of coordinate directions, and the value on a tuple that is not in increasing order is
-`∂^α` of the reordered tuple, so it needs the symmetry of `iteratedFDeriv ℝ n φ x` under
-permutations of its arguments for a `C^∞` test function `φ`; Mathlib has that symmetry only for
-`n = 2` and for analytic functions, and a test function is not analytic. -/
+of order `|α|` evaluated at the tuple of directions naming `α`. The converse is
+`definition_7_2_2_of_definition_7_2_2_multiIndex`. -/
 theorem definition_7_2_2_multiIndex_of_definition_7_2_2 {k : ℕ} {p : ℝ≥0∞}
     {Ω : Opens (EuclideanSpace ℝ (Fin d))} {v : EuclideanSpace ℝ (Fin d) → ℝ}
     (h : definition_7_2_2 k p Ω v) : definition_7_2_2_multiIndex k p Ω v :=
   h.memSobolevMultiIndex
+
+/-- The book's reading of Definition 7.2.2 gives the bundled one, the converse of
+`definition_7_2_2_multiIndex_of_definition_7_2_2`: the derivative tensor of order `n` is built from
+its values on the tuples of coordinate directions, `∂^α v` for the multi-index `α` counting the
+occurrences of each direction, extended by multilinearity. The value on a tuple that is not in
+increasing order is `∂^α v` of the *reordered* tuple, so the argument needs the symmetry of
+`iteratedFDeriv ℝ n φ x` under permutations of its arguments for a `C^∞` test function `φ`; Mathlib
+has that symmetry only for `n = 2` and for analytic functions, and a test function is not analytic,
+so the backbone proves it as `ContDiff.iteratedFDeriv_congr_perm`. -/
+theorem definition_7_2_2_of_definition_7_2_2_multiIndex {k : ℕ} {p : ℝ≥0∞}
+    {Ω : Opens (EuclideanSpace ℝ (Fin d))} {v : EuclideanSpace ℝ (Fin d) → ℝ}
+    (h : definition_7_2_2_multiIndex k p Ω v) : definition_7_2_2 k p Ω v :=
+  MemSobolevMultiIndex.memSobolev h
+
+/-- **The two readings of Definition 7.2.2 describe the same functions.** A function belongs to
+`W^{k,p}(Ω)` in the bundled reading exactly when it does in the book's, one multi-index at a time.
+What the two readings do not share is the *norm*: `sobolevNorm` sums over the orders `n ≤ k` and
+the norm of Definition 7.2.2 over the multi-indices `α` with `|α| ≤ k`, and the equivalence of
+those two norms is not formalized. -/
+theorem definition_7_2_2_iff_definition_7_2_2_multiIndex {k : ℕ} {p : ℝ≥0∞}
+    {Ω : Opens (EuclideanSpace ℝ (Fin d))} {v : EuclideanSpace ℝ (Fin d) → ℝ} :
+    definition_7_2_2 k p Ω v ↔ definition_7_2_2_multiIndex k p Ω v :=
+  memSobolev_iff_memSobolevMultiIndex (stdBasis d)
 
 /-- Definition 7.2.2 in the book's indexing, read on the *type*
 `SobolevMultiIndex ℝ (stdBasis d) k p Ω volume`, which is `W^{k,p}(Ω)` carrying the norm

@@ -14,7 +14,11 @@ needs to be convex: convexity enters only in the uniqueness clause `IsMinOn.eq_o
 The infinite-dimensional theorems of the same section — existence on a closed convex set of a
 *reflexive* space — are in `Numlib.Variational.WeakMinimization`.  They rest on weak sequential
 compactness of bounded sets, which is what reflexivity is used for and which that module carries as
-the class `WeaklySeqCompactSpace`, Mathlib having no reflexivity class of its own.
+the class `WeaklySeqCompactSpace`.  Reflexivity itself is `NormedSpace.IsReflexive` of
+`Numlib.Analysis.Normed.Module.Reflexive`, and `WeaklySeqCompactSpace.of_isReflexive` is the
+instance that derives the class from it, so a reflexive space satisfies those hypotheses with no
+further assumption.  Mathlib has no reflexivity class for normed spaces of its own: its
+`Module.IsReflexive` is the algebraic double dual, a different condition.
 -/
 
 open Bornology

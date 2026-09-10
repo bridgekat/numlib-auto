@@ -188,7 +188,7 @@ theorem equation_1_2 {E : Type*} [NormedAddCommGroup E] [InnerProductSpace 𝕜 
   exact norm_inner_le_norm (𝕜 := 𝕜) y x
 
 /-- **Saad (1.4)–(1.5)**: the Euclidean inner product is `(x, y) = yᴴ x`, which is
-`SaadSparse.inner_eq_dotProduct_star`, and the adjoint identity `(A x, y) = (x, Aᴴ y)`. -/
+`EuclideanSpace.inner_eq_star_dotProduct`, and the adjoint identity `(A x, y) = (x, Aᴴ y)`. -/
 theorem equation_1_5 (A : Matrix (Fin n) (Fin n) 𝕜) (x y : EuclideanSpace 𝕜 (Fin n)) :
     inner 𝕜 y (A ⬝ x) = inner 𝕜 (Aᴴ ⬝ y) x := by
   rw [Matrix.toEuclideanLin_conjTranspose]

@@ -116,7 +116,7 @@ id = "corollary_4_8_irred"
 id = "corollary_4_8_irred_col"
 
 [[node]]
-id = "isIrreducibleAbs_complexify"
+id = "isPatternIrreducible_complexify"
 
 [[node]]
 id = "isIrreduciblyDiagDominant_complexify"

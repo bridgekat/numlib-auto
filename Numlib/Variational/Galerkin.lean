@@ -24,6 +24,9 @@ import Numlib.Variational.LaxMilgram
   ([han2009theoretical] Rem 9.2.2).
 * Strang's first lemma for the generalized Galerkin method on an abstract normed space `W`
   ([han2009theoretical] Thm 9.3.1).
+* The Aubin–Nitsche duality argument `norm_map_sq_le_of_dual` and its uniform form
+  `norm_map_le_of_dual_approx`, which bound the Galerkin error in a norm *weaker* than the one the
+  form is coercive in ([han2009theoretical] Thm 10.4.3, Cor 10.4.4).
 -/
 
 open scoped InnerProductSpace
@@ -804,3 +807,85 @@ theorem existsUnique_isGeneralizedGalerkinSolution (aN : W →ₗ[𝕜] W →ₗ
     exact congrArg Subtype.val (hTinj hTy)
 
 end Strang
+
+section AubinNitsche
+
+/-! ### The Aubin–Nitsche duality argument
+
+An error bound for a Galerkin approximation measured in a norm *weaker* than the one the form is
+coercive in.  The setting is two inner product spaces `V` and `H` and a continuous linear map `ι : V
+→L[𝕜] H`, standing for the embedding of the energy space into the pivot space; in the finite element
+application it is `H¹(Ω) ⊆ L²(Ω)`, but nothing below needs a function space.
+
+Given an error `e : V` that is orthogonal to a subspace `K` in the form `a` — which is what
+`IsGalerkinSolution.apply_sub_eq_zero` provides for `e = u - u_N` — and a solution `φ` of the *dual*
+problem `a v φ = ⟪ι v, ι e⟫` for all `v`, testing the dual problem at `v = e` gives `‖ι e‖² = a e
+φ`; orthogonality then replaces `φ` by `φ - w` for any `w ∈ K`, and boundedness of the form
+finishes:
+
+  `‖ι e‖² ≤ M ‖e‖ ‖φ - w‖`.
+
+That is the whole of the argument, and `norm_map_sq_le_of_dual` states it pointwise — no infimum, no
+supremum, and no existence claim for `φ`.  `norm_map_le_of_dual_approx` is the form in which it is
+used: if the dual solutions can be approximated from `K` to within `δ` times the norm of the datum,
+the error in the weaker norm gains the whole factor `δ`, `‖ι e‖ ≤ M δ ‖e‖`.  In a finite element
+space `δ` is of order `h`, which is where the extra power of `h` in an `L²` error estimate comes
+from; the bound on `δ` itself is elliptic regularity theory and is not part of the argument.
+
+The theorem is due to Aubin and to Nitsche; the account followed here is Theorem 10.4.3 and
+Corollary 10.4.4 of [han2009theoretical]. -/
+
+variable {H : Type*} [NormedAddCommGroup H] [InnerProductSpace 𝕜 H]
+
+/-- The Aubin–Nitsche estimate, pointwise form: for a form `a` bounded with constant `M`, an error
+`e` orthogonal to `K` in `a`, and a solution `φ` of the dual problem `a v φ = ⟪ι v, ι e⟫`,
+
+  `‖ι e‖ ^ 2 ≤ M * ‖e‖ * ‖φ - w‖`  for every `w ∈ K`.
+
+Testing the dual problem at `v = e` turns `‖ι e‖ ^ 2` into `a e φ`, orthogonality replaces `φ` by `φ
+- w`, and boundedness of `a` does the rest. -/
+theorem norm_map_sq_le_of_dual {a : SesqForm 𝕜 V} {M : ℝ} (hM : a.IsBoundedWith M)
+    {K : Submodule 𝕜 V} (ι : V →L[𝕜] H) {e : V} (horth : ∀ v ∈ K, a e v = 0) {φ : V}
+    (hφ : ∀ v : V, a v φ = inner 𝕜 (ι v) (ι e)) {w : V} (hw : w ∈ K) :
+    ‖ι e‖ ^ 2 ≤ M * ‖e‖ * ‖φ - w‖ := by
+  have hsub : a e (φ - w) = a e φ := by rw [map_sub, horth w hw, sub_zero]
+  calc ‖ι e‖ ^ 2 = RCLike.re (inner 𝕜 (ι e) (ι e) : 𝕜) := by
+        rw [inner_self_eq_norm_sq_to_K]; simp
+    _ = RCLike.re (a e (φ - w)) := by rw [hsub, hφ e]
+    _ ≤ ‖a e (φ - w)‖ := RCLike.re_le_norm _
+    _ ≤ M * ‖e‖ * ‖φ - w‖ := hM _ _
+
+/-- The Aubin–Nitsche estimate with a uniform bound on the approximation of the dual solutions: if
+every datum `g : H` gives a dual solution `φ` whose distance to `K` is at most `δ ‖g‖`, then an
+error `e` orthogonal to `K` in `a` satisfies `‖ι e‖ ≤ M * δ * ‖e‖`.
+
+The duality argument gains exactly the approximation power of the dual problem, which is one power
+of the mesh size more than the energy-norm estimate has. -/
+theorem norm_map_le_of_dual_approx {a : SesqForm 𝕜 V} {M δ : ℝ} (hM : a.IsBoundedWith M)
+    (hδ : 0 ≤ δ) {K : Submodule 𝕜 V} (ι : V →L[𝕜] H) {e : V} (horth : ∀ v ∈ K, a e v = 0)
+    (hdual : ∀ g : H, ∃ φ : V, (∀ v : V, a v φ = inner 𝕜 (ι v) g) ∧
+      Metric.infDist φ (K : Set V) ≤ δ * ‖g‖) :
+    ‖ι e‖ ≤ M * δ * ‖e‖ := by
+  have hKne : (K : Set V).Nonempty := ⟨0, K.zero_mem⟩
+  have hMe : 0 ≤ M * ‖e‖ := by
+    rcases eq_or_lt_of_le (norm_nonneg e) with h | h
+    · simp [← h]
+    · nlinarith [norm_nonneg (a e e), hM e e]
+  obtain ⟨φ, hφ, hφd⟩ := hdual (ι e)
+  rcases eq_or_lt_of_le (norm_nonneg (ι e)) with h0 | h0
+  · rw [← h0]
+    linarith [mul_nonneg hδ hMe]
+  · have key : ‖ι e‖ ^ 2 ≤ M * ‖e‖ * Metric.infDist φ (K : Set V) := by
+      rcases eq_or_lt_of_le hMe with hMe0 | hMe0
+      · have h := norm_map_sq_le_of_dual hM ι horth hφ K.zero_mem
+        rw [← hMe0] at h ⊢
+        simpa using h
+      · rw [← div_le_iff₀' hMe0, Metric.le_infDist hKne]
+        intro w hw
+        rw [div_le_iff₀' hMe0, dist_eq_norm]
+        exact norm_map_sq_le_of_dual hM ι horth hφ hw
+    have hle : ‖ι e‖ ^ 2 ≤ M * ‖e‖ * (δ * ‖ι e‖) :=
+      key.trans (mul_le_mul_of_nonneg_left hφd hMe)
+    exact le_of_mul_le_mul_right (by linarith : ‖ι e‖ * ‖ι e‖ ≤ M * δ * ‖e‖ * ‖ι e‖) h0
+
+end AubinNitsche

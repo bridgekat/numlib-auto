@@ -40,9 +40,14 @@ kind = "theorem"
 desc = '''Example 8.2.3: the Laplacian `L v = -Δv` on `L²(Ω)` is a closed operator that is not
 continuous, so the converse of the remark after Definition 8.2.2 fails. Closedness is the passage
 to the limit in `∫_Ω (-Δv_n) φ = -∫_Ω v_n Δφ` for every `φ ∈ C₀^∞(Ω)`, which identifies the limit
-`w` as `-Δv` in the distributional sense. Not formalized: it needs the distributional Laplacian on
-an open `Ω ⊆ ℝ^d`, and Mathlib's distribution theory (`TemperedDistribution`) lives on all of
-`ℝ^d`, with no weak derivative on a domain.'''
+`w` as `-Δv` in the distributional sense. Not formalized: the distributional Laplacian on an open
+`Ω ⊆ ℝ^d` is available — it is the weak derivative of `definition_7_1_3_multiIndex`, which is
+proved, and Mathlib's whole-space `TemperedDistribution` is not needed for it. What is missing is
+the assembly: `L` as an unbounded operator on `L²(Ω)` with domain the `v` whose distributional
+Laplacian lies in `L²(Ω)`, in the sense of Definition 8.2.2, and the passage to the limit above,
+for which the closedness of the weak derivative under `L¹` limits
+(`hasWeakIteratedFDerivOn_of_tendsto_eLpNorm_one` of `Numlib/Analysis/Sobolev/Density.lean`) is the
+tool.'''
 deps = ["AtkinsonHan.Chapter07.definition_7_1_3_multiIndex", "theorem_8_2_4"]
 
 [[node]]
@@ -51,8 +56,9 @@ kind = "theorem"
 desc = '''Example 8.2.6: the model problem `-Δu = f` in `Ω`, `u = 0` on `∂Ω` (8.2.3), read through
 Example 8.2.5. On `V = H¹₀(Ω)` with the seminorm as norm and `V' = H^{-1}(Ω)`, the operator
 `⟨Lu, v⟩ = ∫_Ω ∇u · ∇v` is linear and continuous with `‖L‖ = 1` and strongly monotone with
-`⟨Lv, v⟩ = ‖v‖_V²`, so every `f ∈ H^{-1}(Ω)` gives a unique weak solution. Not formalized: it
-needs `H¹₀(Ω)` — hence weak derivatives on an open set — the duality `H^{-1}(Ω) = (H¹₀(Ω))'`, and
-the Poincaré inequality that makes the seminorm a norm; the abstract content is `example_8_2_5`,
-which is proved.'''
+`⟨Lv, v⟩ = ‖v‖_V²`, so every `f ∈ H^{-1}(Ω)` gives a unique weak solution. Not formalized: `H¹₀(Ω)`
+and its dual `H^{-1}(Ω)` both exist, as `definition_7_2_9` and `definition_7_2_12_hMinusOne`, both
+proved; what is missing is the Poincaré inequality `example_7_3_15` that makes the seminorm a norm
+there, and with it the reading of `⟨Lu, v⟩ = ∫_Ω ∇u · ∇v` as a bounded strongly monotone operator
+into that dual. The abstract content is `example_8_2_5`, which is proved.'''
 deps = ["example_8_2_5", "AtkinsonHan.Chapter07.definition_7_2_9", "AtkinsonHan.Chapter07.definition_7_2_12", "AtkinsonHan.Chapter07.example_7_3_15"]

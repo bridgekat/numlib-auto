@@ -5,6 +5,7 @@ import Mathlib.RingTheory.Polynomial.DegreeLT
 import Mathlib.Topology.ContinuousMap.Compact
 import Mathlib.Topology.ContinuousMap.Polynomial
 import Numlib.Analysis.Convex.StrictConvexSpace
+import Numlib.Analysis.Normed.Module.Reflexive
 import Numlib.Analysis.Normed.Module.WeakDual
 import Numlib.Approximation.BestApprox
 import Numlib.Approximation.Chebyshev
@@ -81,12 +82,23 @@ monotone").
 
 ## Reflexivity
 
-Theorems 3.3.8, 3.3.10, 3.3.12 and 3.3.14 assume a reflexive Banach space, and Mathlib has no
-reflexivity class. What their proofs use of reflexivity is the book's own characterization of it,
-Theorem 2.7.5: every bounded sequence has a weakly convergent subsequence. That property is the
-class `WeaklySeqCompactSpace` of `Numlib.Variational.WeakMinimization`, and it is the hypothesis
-carried here in place of reflexivity; every Hilbert space is an instance of it, which is where this
-corpus applies these theorems. The book itself says as much in the paragraph before its
+Theorems 3.3.8, 3.3.10, 3.3.12 and 3.3.14 assume a reflexive Banach space, and that is the
+hypothesis they carry: `[NormedSpace.IsReflexive ℝ V]`, the reflexivity class of
+`Numlib.Analysis.Normed.Module.Reflexive`, which is the book's Definition 2.7.4 by
+`Chapter02.definition_2_7_4_iff_isReflexive`. Mathlib has no reflexivity class for normed spaces —
+its `Module.IsReflexive` is the *algebraic* double dual, a different condition — but this project
+does, and there is no reason for the surface to state a weaker hypothesis than the book's.
+Completeness is not asked separately: a reflexive space is a Banach space by
+`NormedSpace.completeSpace_of_isReflexive`, and none of the four proofs uses completeness anyway.
+
+What those proofs do use of reflexivity is the book's own characterization of it, Theorem 2.7.5:
+every bounded sequence has a weakly convergent subsequence. That property is the class
+`WeaklySeqCompactSpace` of `Numlib.Variational.WeakMinimization`, in which the backbone states the
+existence theorems, and instance search derives it from reflexivity through the instance
+`WeaklySeqCompactSpace.of_isReflexive` registered there. So the statements below read as the book
+writes them while their proofs delegate to backbone lemmas of greater generality. Every Hilbert
+space is reflexive, by `NormedSpace.instIsReflexiveOfInnerProductSpace`, which is where this corpus
+applies these theorems. The book itself says as much in the paragraph before its
 Theorem 3.3.13: "the reflexivity of `V` is used only to extract a weakly convergent subsequence
 from a bounded sequence in `K`".
 
@@ -438,17 +450,20 @@ section Reflexive
 
 variable {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V]
 
-set_option linter.unusedVariables false in
 /-- **Theorem 3.3.8.** A weakly sequentially lower semicontinuous functional on a nonempty bounded
 weakly sequentially closed subset of a reflexive Banach space attains its minimum.
 
-Reflexivity enters only through the book's own characterization of it (their Theorem 2.7.5), that
-every bounded sequence has a weakly convergent subsequence; that is the class
-`WeaklySeqCompactSpace`. Completeness is the book's hypothesis and is not used.
+`NormedSpace.IsReflexive ℝ V` is the book's Definition 2.7.4, by
+`Chapter02.definition_2_7_4_iff_isReflexive`. The book's "Banach" needs no hypothesis of its own,
+a reflexive space being complete by `NormedSpace.completeSpace_of_isReflexive`, and the proof does
+not use completeness in any case. Reflexivity enters only through the book's own characterization
+of it (their Theorem 2.7.5), that every bounded sequence has a weakly convergent subsequence: the
+backbone lemma is stated over the class `WeaklySeqCompactSpace`, which instance search derives from
+reflexivity through `WeaklySeqCompactSpace.of_isReflexive`.
 
 `IsWeakSeqClosed K` is the book's "weakly closed": their Definition 3.3.3 defines it sequentially,
 as "`vₙ ∈ K` and `vₙ ⇀ v` imply `v ∈ K`". -/
-theorem theorem_3_3_8 [CompleteSpace V] [WeaklySeqCompactSpace V] {K : Set V} {f : V → ℝ}
+theorem theorem_3_3_8 [NormedSpace.IsReflexive ℝ V] {K : Set V} {f : V → ℝ}
     (hne : K.Nonempty) (hbd : IsBounded K) (hKc : IsWeakSeqClosed K)
     (hf : WeakSeqLowerSemicontinuousOn f K) : ∃ u ∈ K, IsMinOn f K u :=
   exists_isMinOn_of_isWeakSeqClosed hne hbd hKc hf
@@ -479,11 +494,11 @@ theorem definition_3_3_9_iff (K : Set V) (f : V → ℝ) :
   · obtain ⟨R, hR⟩ := h M
     exact ⟨R, fun r hr x hx hxK => hR x hxK (hx ▸ hr)⟩
 
-set_option linter.unusedVariables false in
 /-- **Theorem 3.3.10.** The boundedness of `K` in Theorem 3.3.8 may be traded for coercivity of the
 functional: the book cuts the problem down to the sublevel set `{v ∈ K | f v ≤ f v₀}`, which
-coercivity makes bounded. -/
-theorem theorem_3_3_10 [CompleteSpace V] [WeaklySeqCompactSpace V] {K : Set V} {f : V → ℝ}
+coercivity makes bounded. The hypothesis on `V` is that of Theorem 3.3.8 and is read the same
+way. -/
+theorem theorem_3_3_10 [NormedSpace.IsReflexive ℝ V] {K : Set V} {f : V → ℝ}
     (hne : K.Nonempty) (hKc : IsWeakSeqClosed K) (hf : WeakSeqLowerSemicontinuousOn f K)
     (hcoer : IsCoerciveFunctionalOn f K) : ∃ u ∈ K, IsMinOn f K u :=
   exists_isMinOn_of_isCoerciveFunctionalOn hne hKc hf hcoer
@@ -510,7 +525,6 @@ theorem theorem_3_3_11_weakSeqLsc {K : Set V} {f : V → ℝ} (hf : ConvexOn ℝ
     (hlsc : LowerSemicontinuousOn f K) : WeakSeqLowerSemicontinuousOn f K :=
   hf.weakSeqLowerSemicontinuousOn hlsc
 
-set_option linter.unusedVariables false in
 /-- **Theorem 3.3.12.** In a reflexive Banach space, a convex lower semicontinuous functional on a
 nonempty closed convex set attains its minimum, provided the set is bounded or the functional is
 coercive. Every hypothesis here is for the norm topology: the two corollaries of Mazur's lemma
@@ -518,18 +532,17 @@ convert them to the weak hypotheses of Theorems 3.3.8 and 3.3.10.
 
 This is the infinite-dimensional twin of `theorem_3_3_13`, and `theorem_3_3_13_unique` is the
 uniqueness clause of both. -/
-theorem theorem_3_3_12 [CompleteSpace V] [WeaklySeqCompactSpace V] {K : Set V} {f : V → ℝ}
+theorem theorem_3_3_12 [NormedSpace.IsReflexive ℝ V] {K : Set V} {f : V → ℝ}
     (hne : K.Nonempty) (hcl : IsClosed K) (hconv : Convex ℝ K) (hf : ConvexOn ℝ K f)
     (hlsc : LowerSemicontinuousOn f K)
     (h : IsBounded K ∨ IsCoerciveFunctionalOn f K) : ∃ u ∈ K, IsMinOn f K u :=
   exists_isMinOn_of_convexOn hne hcl hconv hf hlsc h
 
-set_option linter.unusedVariables false in
 /-- **Theorem 3.3.14.** In a reflexive Banach space every point has a best approximation from a
 nonempty closed convex set: the distance to the point is convex, continuous and coercive, so this
 is the coercive case of Theorem 3.3.12. It is the infinite-dimensional twin of `theorem_3_3_15`;
 in a Hilbert space it is `theorem_3_4_3`. -/
-theorem theorem_3_3_14 [CompleteSpace V] [WeaklySeqCompactSpace V] {K : Set V} (hne : K.Nonempty)
+theorem theorem_3_3_14 [NormedSpace.IsReflexive ℝ V] {K : Set V} (hne : K.Nonempty)
     (hcl : IsClosed K) (hconv : Convex ℝ K) (u : V) : ∃ uhat, IsBestApprox K u uhat :=
   exists_isBestApprox_of_convex hne hcl hconv u
 

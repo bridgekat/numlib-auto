@@ -10,8 +10,9 @@ Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysi
 Analysis Framework*, 3rd edition, Springer, 2009, §10.3.
 
 The section estimates the finite element interpolation error on an element by transporting the
-problem to the reference element. The estimates themselves are Sobolev statements and are out of
-reach, but the two results this file holds are not:
+problem to the reference element. The estimates themselves are Sobolev statements and are not
+available yet — *Not formalized here* below says what each one waits on, which is no longer the
+Sobolev space — but the two results this file holds are not Sobolev statements at all:
 
 * **Theorem 10.3.1**, that nodal interpolation commutes with the affine pullback, is an algebraic
   identity between two finite sums. It is the backbone's `Approximation.nodalInterp_comp`, and the
@@ -56,9 +57,15 @@ Theorems 10.3.3, 10.3.4, 10.3.5, Corollary 10.3.7 and Theorem 10.3.9, the interp
 estimates: they are inequalities between `H^m` seminorms and rest on the Deny–Lions estimate
 (the Bramble–Hilbert lemma, Exercises 10.3.5 and 10.3.6), on the transformation of a Sobolev
 seminorm under an affine map, and — for the global bound — on the additivity of the `H^m` norm over
-a triangulation. Mathlib has no weak derivative on an open set of `ℝᵈ`, hence no `H^m(K)`. The same
-obstruction rules out Exercises 10.3.1, 10.3.2, 10.3.4 and 10.3.7. Exercise 10.3.3 (`h_K / ρ_K`
-bounded if and only if the minimal angles are bounded below) is Sobolev-free, and is
+a triangulation. `H^m(K)` is not the obstruction: the weak derivative on an open set of `ℝᵈ` is
+`Chapter07.definition_7_1_3_multiIndex` and the space with its norm and seminorm is
+`Chapter07.definition_7_2_2_multiIndex` with `Chapter07.definition_7_2_2_multiIndex_norm`, all
+proved. What is missing is §7.3 over them — Deny–Lions is Theorem 7.3.12, Bramble–Hilbert is
+Theorem 7.3.17, and the embedding `H^{k+1}(K̂) ↪ C(K̂)` that makes the interpolant of a Sobolev
+function meaningful is Theorem 7.3.7 — except for Theorem 10.3.4, the affine change of variables,
+which needs no §7.3 result and is simply unwritten. The same gap rules out Exercises 10.3.1,
+10.3.2, 10.3.4 and 10.3.7. Exercise 10.3.3 (`h_K / ρ_K` bounded if and only if the minimal angles
+are bounded below) is Sobolev-free, and is
 `exercise_10_3_3` below.
 -/
 

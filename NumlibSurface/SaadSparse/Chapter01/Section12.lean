@@ -90,7 +90,7 @@ noncomputable def obliqueProj (V W : Matrix (Fin n) (Fin m) 𝕜) : Matrix (Fin 
 theorem crossGram_cols (V W : Matrix (Fin n) (Fin m) 𝕜) :
     LinearMap.crossGram 𝕜 V.cols W.cols = Wᴴ * V := by
   ext i j
-  simp [LinearMap.crossGram, SaadSparse.inner_eq_dotProduct_star, Matrix.mul_apply, dotProduct,
+  simp [LinearMap.crossGram, EuclideanSpace.inner_eq_star_dotProduct, Matrix.mul_apply, dotProduct,
     mul_comm]
 
 /-- The book's `Wᴴ x` is the family of inner products `(x, w_i)` used by the backbone. -/
@@ -98,7 +98,7 @@ theorem conjTranspose_mulVec_eq_inner (W : Matrix (Fin n) (Fin m) 𝕜)
     (x : EuclideanSpace 𝕜 (Fin n)) :
     (Wᴴ *ᵥ WithLp.ofLp x) = fun i => inner 𝕜 (W.cols i) x := by
   funext i
-  simp [SaadSparse.inner_eq_dotProduct_star, mulVec, dotProduct, mul_comm]
+  simp [EuclideanSpace.inner_eq_star_dotProduct, mulVec, dotProduct, mul_comm]
 
 /-- Saad (1.66) is the backbone's `LinearMap.obliqueProjectionOfBases`. -/
 theorem toEuclideanLin_obliqueProj (V W : Matrix (Fin n) (Fin m) 𝕜) :
