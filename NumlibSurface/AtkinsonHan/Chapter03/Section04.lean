@@ -1,7 +1,7 @@
 import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.Analysis.InnerProductSpace.l2Space
 import Numlib.Analysis.Fourier.TrigonometricBasis
-import Numlib.Approximation.BestApprox
+import Numlib.Analysis.Normed.Module.BestApprox
 import Numlib.Approximation.OrthogonalPolynomial
 import NumlibSurface.AtkinsonHan.Chapter03.Section03
 

@@ -9,7 +9,7 @@ import Mathlib.Topology.ContinuousMap.StoneWeierstrass
 import Mathlib.Topology.ContinuousMap.Weierstrass
 import Numlib.Analysis.Fourier.TrigonometricBasis
 import Numlib.Analysis.InnerProductSpace.GramDeterminant
-import Numlib.Approximation.BestApprox
+import Numlib.Analysis.Normed.Module.BestApprox
 import Numlib.LinearAlgebra.Matrix.Cauchy
 
 /-!

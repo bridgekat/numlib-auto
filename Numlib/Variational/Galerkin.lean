@@ -1,6 +1,6 @@
 import Mathlib.Topology.MetricSpace.HausdorffDistance
 import Numlib.Analysis.InnerProductSpace.Projection.ObliqueProjection
-import Numlib.Approximation.BestApprox
+import Numlib.Analysis.Normed.Module.BestApprox
 import Numlib.LinearSolve.Projection.Optimality
 import Numlib.Variational.LaxMilgram
 

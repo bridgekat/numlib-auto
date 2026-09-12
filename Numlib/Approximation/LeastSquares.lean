@@ -1,4 +1,4 @@
-import Numlib.Approximation.BestApprox
+import Numlib.Analysis.Normed.Module.BestApprox
 import Numlib.IntegralEquations.Basic
 
 /-!

@@ -7,7 +7,7 @@ import Mathlib.Topology.ContinuousMap.Polynomial
 import Numlib.Analysis.Convex.StrictConvexSpace
 import Numlib.Analysis.Normed.Module.Reflexive
 import Numlib.Analysis.Normed.Module.WeakDual
-import Numlib.Approximation.BestApprox
+import Numlib.Analysis.Normed.Module.BestApprox
 import Numlib.Approximation.Chebyshev
 import Numlib.Variational.Minimization
 import Numlib.Variational.WeakMinimization
@@ -19,7 +19,7 @@ import NumlibSurface.AtkinsonHan.Chapter02.Section07
 
 Surface file for Kendall Atkinson and Weimin Han, *Theoretical Numerical Analysis: A Functional
 Analysis Framework*, 3rd edition, Springer, 2009, §3.3: the book's best approximation (3.3.3) is the
-backbone's `IsBestApprox` (`Numlib.Approximation.BestApprox`); `isBestApprox_iff_norm_eq_iInf` is
+backbone's `IsBestApprox` (`Numlib.Analysis.Normed.Module.BestApprox`); `isBestApprox_iff_norm_eq_iInf` is
 the bridge to the book's `‖u - û‖ = inf_{v ∈ K} ‖u - v‖` phrasing.
 
 Definitions 3.3.1–3.3.4 are restated here under their numbers: a convex set and a convex or

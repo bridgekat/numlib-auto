@@ -2,7 +2,7 @@ import Mathlib.MeasureTheory.Integral.IntervalIntegral.Periodic
 import Mathlib.NumberTheory.Harmonic.Bounds
 import Numlib.Analysis.Fourier.Dirichlet
 import Numlib.Analysis.Fourier.TrigonometricBasis
-import Numlib.Approximation.BestApprox
+import Numlib.Analysis.Normed.Module.BestApprox
 import Numlib.IntegralEquations.Basic
 
 /-!

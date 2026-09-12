@@ -5,9 +5,14 @@ import Mathlib.Analysis.Normed.Module.FiniteDimension
 import Mathlib.Topology.MetricSpace.HausdorffDistance
 
 /-!
-# Best approximation
+# Best approximation from a subset of a normed space
 
-`IsBestApprox K u v`: `v ∈ K` minimizes `‖u - v‖` over `K`. Existence from finite-dimensional
+`IsBestApprox K u v`: `v ∈ K` minimizes `‖u - v‖` over `K`. This is the metric projection onto a
+set, and the module is general functional analysis: existence, uniqueness and the Hilbert-space
+characterization are facts about normed and inner-product spaces with no approximation theory in
+them, which is why the file sits under `Analysis` rather than beside its consumers in
+`Approximation`. Those consumers, and the Fourier, eigenvalue and variational modules, all reach
+for it as the abstract form of a quasi-optimality estimate. Existence from finite-dimensional
 subspaces ([han2009theoretical] Thm 3.3.16, [kress1998numerical] Thm 3.50), uniqueness in strictly
 convex spaces ([han2009theoretical] Thm 3.3.21), the Hilbert-space characterizations
 ([han2009theoretical] Lemma 3.4.1, Thm 3.4.6; [kress1998numerical] Thm 3.51) as glue to Mathlib's

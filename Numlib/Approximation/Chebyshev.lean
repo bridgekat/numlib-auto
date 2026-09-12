@@ -7,7 +7,7 @@ import Mathlib.Topology.ContinuousMap.Compact
 import Mathlib.Topology.ContinuousMap.Polynomial
 import Mathlib.Topology.Order.IntermediateValue
 import Numlib.Analysis.Fourier.TrigonometricProduct
-import Numlib.Approximation.BestApprox
+import Numlib.Analysis.Normed.Module.BestApprox
 
 /-!
 # Best uniform approximation and equioscillation

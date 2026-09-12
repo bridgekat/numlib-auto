@@ -1,6 +1,6 @@
 import Mathlib.Analysis.Convex.Approximation
 import Numlib.Analysis.Convex.Gateaux
-import Numlib.Approximation.BestApprox
+import Numlib.Analysis.Normed.Module.BestApprox
 import Numlib.Variational.LaxMilgram
 
 /-!

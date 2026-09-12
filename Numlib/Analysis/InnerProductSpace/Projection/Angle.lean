@@ -1,7 +1,7 @@
 import Mathlib.Analysis.InnerProductSpace.Projection.Basic
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Inverse
 import Mathlib.Geometry.Euclidean.Angle.Unoriented.Basic
-import Numlib.Approximation.BestApprox
+import Numlib.Analysis.Normed.Module.BestApprox
 
 /-!
 # The angle between a vector and a subspace, and the gap between subspaces
@@ -49,7 +49,7 @@ whereas `cosAngle_of_mem`, `sin_angle` and `sinAngle_eq_zero_iff` need `u ≠ 0`
 The three `*_mul_norm` lemmas are the working form: a bound stated with an angle turns into a bound
 on a norm and back. `sinAngle_eq_inv_norm_mul_infDist` is the metric reading, `K.sinAngle u` being
 the distance from `u` to `K` relative to `‖u‖`, and it connects the angle to the best-approximation
-vocabulary of `Numlib.Approximation.BestApprox`.
+vocabulary of `Numlib.Analysis.Normed.Module.BestApprox`.
 
 For the gap, `gap_le_one` comes from the pointwise bound `norm_starProjection_sub_apply_le`, `‖(P_K
 - P_L) x‖ ≤ ‖x‖`, proved by splitting `P_K - P_L = P_K (1 - P_L) - P_Kᗮ P_L` into two orthogonal

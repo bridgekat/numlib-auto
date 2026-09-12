@@ -1,6 +1,6 @@
 import Mathlib.Analysis.InnerProductSpace.PiL2
 import Numlib.Analysis.InnerProductSpace.Projection.ObliqueProjection
-import Numlib.Approximation.BestApprox
+import Numlib.Analysis.Normed.Module.BestApprox
 import Numlib.Approximation.Interpolation
 import Numlib.Approximation.Trigonometric
 import NumlibSurface.AtkinsonHan.Chapter03.Section03

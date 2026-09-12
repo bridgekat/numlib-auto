@@ -1,5 +1,5 @@
 import Mathlib.MeasureTheory.Function.ContinuousMapDense
-import Numlib.Approximation.BestApprox
+import Numlib.Analysis.Normed.Module.BestApprox
 import Numlib.Approximation.Interpolation
 import Numlib.IntegralEquations.Basic
 import Numlib.IntegralEquations.L2Kernel

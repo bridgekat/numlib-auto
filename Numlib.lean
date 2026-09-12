@@ -32,6 +32,7 @@ import Numlib.Analysis.Matrix.SpectralNorm
 import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.Analysis.Normed.Algebra.SpectralRadius
 import Numlib.Analysis.Normed.Lp.SmoothApprox
+import Numlib.Analysis.Normed.Module.BestApprox
 import Numlib.Analysis.Normed.Module.DualSeparable
 import Numlib.Analysis.Normed.Module.NormEquivalence
 import Numlib.Analysis.Normed.Module.Reflexive
@@ -61,7 +62,6 @@ import Numlib.Analysis.Wavelet.Daubechies
 import Numlib.Analysis.Wavelet.Haar
 import Numlib.Analysis.Wavelet.Multiresolution
 import Numlib.Analysis.Wavelet.QuadratureMirror
-import Numlib.Approximation.BestApprox
 import Numlib.Approximation.Chebyshev
 import Numlib.Approximation.CompositeQuadrature
 import Numlib.Approximation.DiskQuadrature

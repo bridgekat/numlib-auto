@@ -1,5 +1,5 @@
 import Numlib.Analysis.Fourier.TrigonometricBasis
-import Numlib.Approximation.BestApprox
+import Numlib.Analysis.Normed.Module.BestApprox
 
 /-!
 # The Fourier truncation projection on `L²` of the circle

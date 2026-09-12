@@ -3,7 +3,7 @@ import Mathlib.Analysis.SpecificLimits.Basic
 import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
 import Mathlib.LinearAlgebra.Projection
 import Numlib.Analysis.InnerProductSpace.Projection.Angle
-import Numlib.Approximation.BestApprox
+import Numlib.Analysis.Normed.Module.BestApprox
 
 /-!
 # The power method and subspace iteration

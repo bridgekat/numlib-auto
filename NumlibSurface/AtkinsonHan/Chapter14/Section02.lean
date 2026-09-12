@@ -1,6 +1,6 @@
 import Mathlib.MeasureTheory.Constructions.Pi
 import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
-import Numlib.Approximation.BestApprox
+import Numlib.Analysis.Normed.Module.BestApprox
 import Numlib.Approximation.RidgePolynomial
 import NumlibSurface.AtkinsonHan.Chapter14.Section01
 

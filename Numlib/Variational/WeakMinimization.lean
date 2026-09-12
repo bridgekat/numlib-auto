@@ -4,7 +4,7 @@ import Mathlib.Topology.Semicontinuity.Basic
 import Numlib.Analysis.InnerProductSpace.WeakCompactness
 import Numlib.Analysis.Normed.Module.Reflexive
 import Numlib.Analysis.Normed.Module.WeakDual
-import Numlib.Approximation.BestApprox
+import Numlib.Analysis.Normed.Module.BestApprox
 import Numlib.Variational.Minimization
 
 /-!

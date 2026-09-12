@@ -5,7 +5,7 @@ import Mathlib.MeasureTheory.Function.LpSpace.ContinuousFunctions
 import Mathlib.Topology.Instances.AddCircle.Defs
 import Mathlib.Topology.MetricSpace.Holder
 import Numlib.Analysis.Normed.Operator.BanachSteinhaus
-import Numlib.Approximation.BestApprox
+import Numlib.Analysis.Normed.Module.BestApprox
 import Numlib.Approximation.Chebyshev
 import Numlib.Approximation.Jackson
 import Numlib.Approximation.LeastSquares
