@@ -3,6 +3,13 @@
  "packages":
  [{"type": "path",
    "scope": "",
+   "name": "audit",
+   "manifestFile": "lake-manifest.json",
+   "inherited": false,
+   "dir": "tools/audit",
+   "configFile": "lakefile.toml"},
+  {"type": "path",
+   "scope": "",
    "name": "tracker",
    "manifestFile": "lake-manifest.json",
    "inherited": false,

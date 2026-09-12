@@ -19,6 +19,10 @@ rev = "v4.34.0-rc2"
 name = "tracker"
 path = "tools/tracker"
 
+[[require]]
+name = "audit"
+path = "tools/audit"
+
 [[lean_lib]]
 name = "Numlib"
 

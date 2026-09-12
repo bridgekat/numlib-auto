@@ -1,0 +1,12 @@
+name = "audit"
+version = "0.1.0"
+defaultTargets = ["audit"]
+
+[[lean_lib]]
+name = "Audit"
+
+[[lean_exe]]
+name = "audit"
+root = "Main"
+# Imports the target project's modules to read their constants.
+supportInterpreter = true
