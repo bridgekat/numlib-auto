@@ -9,7 +9,7 @@ Specification-level versions of [fong2012cg] Thm 2.3–2.5 and Thm 3.1: for *any
 minimal-residual Krylov iterates of a symmetric coercive system (MINRES, CR, GMRES, …) started at
 `x₀ = 0`, `‖x_k‖` is nondecreasing, `‖x* - x_k‖` and `‖x* - x_k‖_A` are nonincreasing, and the
 normwise relative backward error is nonincreasing. Proved by identifying the iterates with the CR
-iterates (`CR.isMinResIterate` + uniqueness) and using the sign lemma of `Numlib/Krylov/CR`.
+iterates (`CR.isMinResidualIterate` + uniqueness) and using the sign lemma of `Numlib/Krylov/CR`.
 Alongside them, `‖A x_k‖` is nondecreasing from `x₀ = 0` ([choi2006iterative] Lemma 2.20), which
 needs neither symmetry nor coercivity.
 
@@ -24,33 +24,33 @@ open Krylov
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
   [FiniteDimensional 𝕜 E] {A : E →ₗ[𝕜] E} (hA : A.IsSymmetricCoercive) {b : E}
 
-namespace Krylov.IsMinResIterate
+namespace Krylov.IsMinResidualIterate
 
 include hA
 
 set_option linter.unusedSectionVars false in
 /-- Minimal-residual iterates of an SPD system coincide with the CR iterates. -/
-theorem eq_CR_iterate {x₀ : E} {k : ℕ} {x : E} (hx : IsMinResIterate A b x₀ k x) :
+theorem eq_CR_iterate {x₀ : E} {k : ℕ} {x : E} (hx : IsMinResidualIterate A b x₀ k x) :
     x = (CR.iterate A b x₀ k).x := by
   obtain ⟨y, -, huniq⟩ :=
-    existsUnique_isMinResIterate_of_injective hA.isCoercive.injective b x₀ k
-  exact (huniq x hx).trans (huniq _ (CR.isMinResIterate b x₀ hA k)).symm
+    existsUnique_isMinResidualIterate_of_injective hA.isCoercive.injective b x₀ k
+  exact (huniq x hx).trans (huniq _ (CR.isMinResidualIterate b x₀ hA k)).symm
 
 /-- [fong2012cg], Thm 2.3: `‖x_k‖` is nondecreasing (`x₀ = 0`). -/
-theorem norm_monotone {x : ℕ → E} (hx : ∀ k, IsMinResIterate A b 0 k (x k)) :
+theorem norm_monotone {x : ℕ → E} (hx : ∀ k, IsMinResidualIterate A b 0 k (x k)) :
     Monotone fun k => ‖x k‖ := by
   have h : ∀ k, x k = (CR.iterate A b 0 k).x := fun k => eq_CR_iterate hA (hx k)
   simpa only [h] using CR.norm_iterate_monotone b hA
 
 /-- [fong2012cg], Thm 2.4: `‖x* - x_k‖` is nonincreasing. -/
-theorem norm_error_antitone {x₀ : E} {x : ℕ → E} (hx : ∀ k, IsMinResIterate A b x₀ k (x k))
+theorem norm_error_antitone {x₀ : E} {x : ℕ → E} (hx : ∀ k, IsMinResidualIterate A b x₀ k (x k))
     {xstar : E} (hstar : A xstar = b) : Antitone fun k => ‖xstar - x k‖ := by
   have h : ∀ k, x k = (CR.iterate A b x₀ k).x := fun k => eq_CR_iterate hA (hx k)
   simpa only [h] using CR.norm_error_antitone b x₀ hA hstar
 
 /-- [fong2012cg], Thm 2.5: `‖x* - x_k‖_A` is nonincreasing. -/
 theorem energyNorm_error_antitone {x₀ : E} {x : ℕ → E}
-    (hx : ∀ k, IsMinResIterate A b x₀ k (x k)) {xstar : E} (hstar : A xstar = b) :
+    (hx : ∀ k, IsMinResidualIterate A b x₀ k (x k)) {xstar : E} (hstar : A xstar = b) :
     Antitone fun k => energyNorm A (xstar - x k) := by
   have h : ∀ k, x k = (CR.iterate A b x₀ k).x := fun k => eq_CR_iterate hA (hx k)
   simpa only [h] using CR.energyNorm_error_antitone b x₀ hA hstar
@@ -58,9 +58,9 @@ theorem energyNorm_error_antitone {x₀ : E} {x : ℕ → E}
 omit hA [FiniteDimensional 𝕜 E] in
 /-- [choi2006iterative], Lemma 2.20: for minimal-residual iterates from `x₀ = 0`, `‖A x_k‖` is
 nondecreasing in `k`. Indeed `A x_k ∈ A 𝒦_k` while `r_k = b - A x_k ⟂ A 𝒦_k`, so `‖A x_k‖² = ‖b‖² -
-‖r_k‖²`, and `‖r_k‖` is nonincreasing (`Krylov.IsMinResIterate.norm_residual_antitone`).  Neither
+‖r_k‖²`, and `‖r_k‖` is nonincreasing (`Krylov.IsMinResidualIterate.norm_residual_antitone`).  Neither
 symmetry nor coercivity of `A` is used. -/
-theorem norm_apply_monotone {x : ℕ → E} (hx : ∀ k, IsMinResIterate A b 0 k (x k)) :
+theorem norm_apply_monotone {x : ℕ → E} (hx : ∀ k, IsMinResidualIterate A b 0 k (x k)) :
     Monotone fun k => ‖A (x k)‖ := by
   have key : ∀ k, ‖A (x k)‖ ^ 2 + ‖b - A (x k)‖ ^ 2 = ‖b‖ ^ 2 := by
     intro k
@@ -80,7 +80,7 @@ theorem norm_apply_monotone {x : ℕ → E} (hx : ∀ k, IsMinResIterate A b 0 k
 /-- [fong2012cg], Thm 3.1: the normwise relative backward error `‖r_k‖ / (α ‖A‖ ‖x_k‖ + β ‖b‖)` is
 nonincreasing (`x₀ = 0`, `α ≥ 0`, `β > 0`). The denominator is positive at every step, so no junk
 division occurs. -/
-theorem backwardError_antitone {x : ℕ → E} (hx : ∀ k, IsMinResIterate A b 0 k (x k))
+theorem backwardError_antitone {x : ℕ → E} (hx : ∀ k, IsMinResidualIterate A b 0 k (x k))
     {normA α β : ℝ} (hα : 0 ≤ α) (hβ : 0 < β) (hnormA : 0 ≤ normA) (hb : b ≠ 0) :
     Antitone fun k => ‖b - A (x k)‖ / (α * normA * ‖x k‖ + β * ‖b‖) := by
   have hbpos : 0 < ‖b‖ := norm_pos_iff.2 hb
@@ -99,7 +99,7 @@ theorem backwardError_antitone {x : ℕ → E} (hx : ∀ k, IsMinResIterate A b 
 /-- The special case `‖r_k‖ / ‖x_k‖` ([fong2012cg], (3.5) with `β = 0`), from step `1` on: at `k =
 0` the quotient `‖b‖ / ‖0‖` is a junk value, so the statement is on `Set.Ici 1`. -/
 theorem norm_residual_div_norm_antitoneOn {x : ℕ → E}
-    (hx : ∀ k, IsMinResIterate A b 0 k (x k)) (hb : b ≠ 0) :
+    (hx : ∀ k, IsMinResidualIterate A b 0 k (x k)) (hb : b ≠ 0) :
     AntitoneOn (fun k => ‖b - A (x k)‖ / ‖x k‖) (Set.Ici 1) := by
   have hmono : Monotone fun k => ‖x k‖ := norm_monotone hA hx
   have h1 : 0 < ‖x 1‖ := by
@@ -112,7 +112,7 @@ theorem norm_residual_div_norm_antitoneOn {x : ℕ → E}
   rw [div_le_div_iff₀ hxj hxi]
   exact mul_le_mul (norm_residual_antitone hx hij) (hmono hij) (le_of_lt hxi) (norm_nonneg _)
 
-end Krylov.IsMinResIterate
+end Krylov.IsMinResidualIterate
 
 namespace Krylov.IsGalerkinIterate
 

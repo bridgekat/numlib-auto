@@ -23,11 +23,11 @@ nondegeneracy that makes such an approximation unique.
 
 **Algorithm 7.4** (QMR) is `qmr`, and it is not a new algorithm: it is Algorithm 6.12 run on the
 two-sided Lanczos basis, so the whole QGMRES layer of `Chapter06/Section05.lean` applies at
-`u := bilanczosV`, `h := bilanczosCoeff`. `qmr_isQuasiMinResIterate` is that instantiation, and
+`u := bilanczosV`, `h := bilanczosCoeff`. `qmr_isQuasiMinResidualIterate` is that instantiation, and
 after it (7.16)–(7.31) are the backbone quasi-minimal-residual theorems of
 `Numlib/Krylov/QuasiMinRes.lean` read through it: Proposition 7.3 is
-`Krylov.IsQuasiMinResIterate.norm_residual_le`, Theorem 7.4 is
-`Krylov.IsQuasiMinResIterate.norm_residual_le_mul` — the same theorem as Saad's Theorem 6.11 —
+`Krylov.IsQuasiMinResidualIterate.norm_residual_le`, Theorem 7.4 is
+`Krylov.IsQuasiMinResidualIterate.norm_residual_le_mul` — the same theorem as Saad's Theorem 6.11 —
 and (7.23), (7.24), Proposition 7.5 are `Krylov.inv_sq_norm_gamma`,
 `Krylov.inv_sq_norm_gamma_eq_sum` and `Krylov.exists_norm_gamma_div_givensC_le`.
 
@@ -399,10 +399,10 @@ variable {A b x₀ w₁}
 specification for the two-sided Lanczos data — it is `x_0 + V_m y` with `y` minimizing the
 quasi-residual `‖β e_1 - T̄_m y‖₂`. Everything after (7.17) is this identification plus a
 theorem of `Numlib/Krylov/QuasiMinRes.lean`. -/
-theorem qmr_isQuasiMinResIterate {m : ℕ} (hR : IsUnit (Chapter06.R (qmrCoeff A b x₀ w₁) m)) :
-    Krylov.IsQuasiMinResIterate (qmrV A b x₀ w₁) (qmrCoeff A b x₀ w₁) (Chapter06.β A b x₀ : 𝕜) x₀ m
+theorem qmr_isQuasiMinResidualIterate {m : ℕ} (hR : IsUnit (Chapter06.R (qmrCoeff A b x₀ w₁) m)) :
+    Krylov.IsQuasiMinResidualIterate (qmrV A b x₀ w₁) (qmrCoeff A b x₀ w₁) (Chapter06.β A b x₀ : 𝕜) x₀ m
       (qmr A b x₀ w₁ m) :=
-  Chapter06.qgmres_isQuasiMinResIterate x₀ _ _ _
+  Chapter06.qgmres_isQuasiMinResidualIterate x₀ _ _ _
     (fun _ _ hij => bilanczosCoeff_eq_zero_of_lt A _ _ hij) hR
 
 /-- **(7.16)**: `b - A (x_0 + V_m y) = V_{m+1}(β e_1 - T̄_m y)`. Taking norms gives (7.17); were
@@ -519,11 +519,11 @@ theorem proposition_7_3 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁
   have hprod := (equation_7_18 (A := A) (b := b) (x₀ := x₀) (w₁ := w₁) m).1
   rw [quasiResidualNorm_eq] at hprod
   rw [← hprod]
-  exact Krylov.IsQuasiMinResIterate.norm_residual_le
+  exact Krylov.IsQuasiMinResidualIterate.norm_residual_le
     (Krylov.HessenbergRelation₂.of_hessenbergRelation (bilanczos_hessenbergRelation h))
     (smul_qmrV_zero A b x₀ w₁)
     ((Chapter06.isUnit_R_iff _ (fun _ _ hij => bilanczosCoeff_eq_zero_of_lt A _ _ hij)).1 hR) hC
-    (qmr_isQuasiMinResIterate hR)
+    (qmr_isQuasiMinResidualIterate hR)
 
 /-- **Proposition 7.3**, the Cauchy–Schwarz form: for unit Lanczos vectors `‖V_{m+1}‖₂ ≤ √(m+1)`,
 so `‖b - A x^Q_m‖₂ ≤ √(m+1) |s_1 ⋯ s_m| ‖r_0‖₂`. -/
@@ -669,10 +669,10 @@ theorem equation_7_29 {m : ℕ}
       = ((‖Chapter06.s (qmrCoeff A b x₀ w₁) m‖ ^ 2 : ℝ) : 𝕜) • (b - op A (qmr A b x₀ w₁ m))
         + ((‖Chapter06.c (qmrCoeff A b x₀ w₁) m‖ ^ 2 : ℝ) : 𝕜)
           • (b - op A (lanczosSolve A b x₀ w₁ (m + 1))) := by
-  refine Krylov.IsQuasiMinResIterate.residual_eq_combination
+  refine Krylov.IsQuasiMinResidualIterate.residual_eq_combination
     (fun _ _ hij => bilanczosCoeff_eq_zero_of_lt A _ _ hij) hρ
-    (w := lanczosSolveY A b x₀ w₁ (m + 1)) (qmr_isQuasiMinResIterate hR)
-    (qmr_isQuasiMinResIterate hRm) ?_ (lanczosSolve_eq_add_sum A b x₀ w₁ (m + 1))
+    (w := lanczosSolveY A b x₀ w₁ (m + 1)) (qmr_isQuasiMinResidualIterate hR)
+    (qmr_isQuasiMinResidualIterate hRm) ?_ (lanczosSolve_eq_add_sum A b x₀ w₁ (m + 1))
   rw [← T_eq_hessenbergSqOf]
   exact T_mulVec_lanczosSolveY A b x₀ w₁ hT
 
@@ -690,10 +690,10 @@ theorem equation_7_30 {m : ℕ}
       = ((‖Chapter06.s (qmrCoeff A b x₀ w₁) m‖ ^ 2 : ℝ) : 𝕜) • qmr A b x₀ w₁ m
         + ((‖Chapter06.c (qmrCoeff A b x₀ w₁) m‖ ^ 2 : ℝ) : 𝕜)
           • lanczosSolve A b x₀ w₁ (m + 1) := by
-  refine Krylov.IsQuasiMinResIterate.eq_combination
+  refine Krylov.IsQuasiMinResidualIterate.eq_combination
     (fun _ _ hij => bilanczosCoeff_eq_zero_of_lt A _ _ hij) hρ
-    (w := lanczosSolveY A b x₀ w₁ (m + 1)) (qmr_isQuasiMinResIterate hR)
-    (qmr_isQuasiMinResIterate hRm) ?_ (lanczosSolve_eq_add_sum A b x₀ w₁ (m + 1))
+    (w := lanczosSolveY A b x₀ w₁ (m + 1)) (qmr_isQuasiMinResidualIterate hR)
+    (qmr_isQuasiMinResidualIterate hRm) ?_ (lanczosSolve_eq_add_sum A b x₀ w₁ (m + 1))
   rw [← T_eq_hessenbergSqOf]
   exact T_mulVec_lanczosSolveY A b x₀ w₁ hT
 

@@ -29,10 +29,10 @@ id = "BlockArnoldi.isGalerkin_blockSubspace_iff"
 id = "BlockArnoldi.isGalerkin_iff_mulVec_eq"
 
 [[node]]
-id = "BlockArnoldi.isMinRes_blockSubspace_iff"
+id = "BlockArnoldi.isMinResidual_blockSubspace_iff"
 
 [[node]]
-id = "BlockArnoldi.isMinRes_iff"
+id = "BlockArnoldi.isMinResidual_iff"
 
 [[node]]
 id = "BlockArnoldi.norm_residual_eq"

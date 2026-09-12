@@ -17,13 +17,13 @@ id = "Krylov.HessenbergRelation.residual_eq_of_mulVec_eq"
 id = "Krylov.IsGalerkinIterate.norm_residual_eq_div_norm_givensC"
 
 [[node]]
-id = "Krylov.IsMinResIterate.exists_mulVec_rotated_eq"
+id = "Krylov.IsMinResidualIterate.exists_mulVec_rotated_eq"
 
 [[node]]
-id = "Krylov.IsMinResIterate.norm_residual_eq_norm_gamma"
+id = "Krylov.IsMinResidualIterate.norm_residual_eq_norm_gamma"
 
 [[node]]
-id = "Krylov.IsMinResIterate.norm_residual_succ_eq"
+id = "Krylov.IsMinResidualIterate.norm_residual_succ_eq"
 
 [[node]]
 id = "Krylov.existsUnique_isGalerkinIterate_iff_isUnit"
@@ -66,7 +66,7 @@ id = "Krylov.givensQ_last_row_castSucc"
 id = "Krylov.givensQ_last_row_last"
 
 [[node]]
-id = "Krylov.IsMinResIterate.residual_eq_gamma_smul_sum"
+id = "Krylov.IsMinResidualIterate.residual_eq_gamma_smul_sum"
 source = "Saad, Iterative Methods for Sparse Linear Systems, (6.40)-(6.47)"
 
 [[node]]
@@ -100,7 +100,7 @@ id = "Krylov.isGalerkinIterate_iff_exists_mulVec_eq"
 id = "Krylov.isGalerkinIterate_iff_mulVec_eq"
 
 [[node]]
-id = "Krylov.isMinResIterate_iff_isMinOn"
+id = "Krylov.isMinResidualIterate_iff_isMinOn"
 
 [[node]]
 id = "Krylov.isUnit_hessenbergSq_iff_givensC_ne_zero"

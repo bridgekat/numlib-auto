@@ -24,7 +24,7 @@ proves therefore transports.
 ## Main statements
 
 * `Krylov.IsPreconditioner.isGalerkin_energyEnd_iff` and
-  `Krylov.IsPreconditioner.isMinRes_energyEnd_iff`: the Galerkin condition for `M⁻¹ A x = M⁻¹ b` in
+  `Krylov.IsPreconditioner.isMinResidual_energyEnd_iff`: the Galerkin condition for `M⁻¹ A x = M⁻¹ b` in
   the `M`-inner product *is* the Galerkin condition for `A x = b` in the original one, and the
   minimal-residual condition there is minimality of `‖b - A x‖_{M⁻¹}`;
 * `Krylov.PCG.iterate_eq_CG_iterate_withEnergy`: the preconditioned conjugate gradient iteration is
@@ -34,12 +34,12 @@ proves therefore transports.
   minimizes the `A`-norm of the error over `x₀ + 𝒦_k(M⁻¹ A, M⁻¹ r₀)` and obeys the Chebyshev bound
   with the condition number of the *generalized* eigenvalue problem `A x = λ M x`, which is the
   condition number of `M⁻¹ A`;
-* `Krylov.exists_aeval_of_isMinResIterate_preconditioned` and
-  `Krylov.isMinRes_of_isMinResIterate_rightPreconditioned` ([saad2003iterative], Proposition 9.1):
+* `Krylov.exists_aeval_of_isMinResidualIterate_preconditioned` and
+  `Krylov.isMinResidual_of_isMinResidualIterate_rightPreconditioned` ([saad2003iterative], Proposition 9.1):
   left and right preconditioning search the *same* affine space `x₀ + 𝒦_m(M⁻¹ A, M⁻¹ r₀)`, and
   differ only in the norm they minimize over it — `‖M⁻¹ (b - A x)‖` on the left, `‖b - A x‖` on the
   right;
-* `Krylov.FGMRES.isMinRes` and `Krylov.FGMRES.apply_eq_iff_coeff_eq_zero`: [saad2003iterative]
+* `Krylov.FGMRES.isMinResidual` and `Krylov.FGMRES.apply_eq_iff_coeff_eq_zero`: [saad2003iterative]
   Propositions 9.2 and 9.3 for flexible GMRES, whose search space is not a Krylov subspace at all,
   with `Krylov.FGMRES.apply_eq_of_coeff_eq_zero` the half of the latter that needs no orthonormal
   residual basis and so survives the breakdown step itself.
@@ -194,8 +194,8 @@ theorem norm_toEnergy_inv_sq (u : E) :
 the preconditioned system `M⁻¹ A x = M⁻¹ b` in the `M`-inner product is minimizing the `M⁻¹`-norm of
 the true residual `b - A x`, which is what left-preconditioned GMRES and MINRES do
 ([saad2003iterative], §9.3.1). -/
-theorem isMinRes_energyEnd_iff (b x₀ : E) (K : Submodule 𝕜 E) (x : E) :
-    IsMinRes (hM.energyEnd (Minv ∘ₗ A)) (hM.toEnergy (Minv b)) (hM.toEnergy x₀)
+theorem isMinResidual_energyEnd_iff (b x₀ : E) (K : Submodule 𝕜 E) (x : E) :
+    IsMinResidual (hM.energyEnd (Minv ∘ₗ A)) (hM.toEnergy (Minv b)) (hM.toEnergy x₀)
         (hM.energySubmodule K) (hM.toEnergy x) ↔
       (x - x₀ ∈ K ∧ ∀ y, y - x₀ ∈ K →
         energyNorm M (Minv (b - A x)) ≤ energyNorm M (Minv (b - A y))) := by
@@ -272,8 +272,8 @@ variable {M Minv A : E →ₗ[𝕜] E}
 /-- [saad2003iterative], Proposition 9.1 (left preconditioning): the left-preconditioned
 minimal-residual iterate — the one minimizing `‖M⁻¹ (b - A x)‖` — has the form `x = x₀ + s(M⁻¹ A)
 M⁻¹ r₀` with `deg s < m`. -/
-theorem exists_aeval_of_isMinResIterate_preconditioned
-    {b x₀ : E} {m : ℕ} {x : E} (hx : IsMinResIterate (Minv ∘ₗ A) (Minv b) x₀ m x) :
+theorem exists_aeval_of_isMinResidualIterate_preconditioned
+    {b x₀ : E} {m : ℕ} {x : E} (hx : IsMinResidualIterate (Minv ∘ₗ A) (Minv b) x₀ m x) :
     ∃ s : 𝕜[X], s.degree < m ∧ x = x₀ + aeval (Minv ∘ₗ A) s (Minv (b - A x₀)) := by
   have hr : Minv b - (Minv ∘ₗ A) x₀ = Minv (b - A x₀) := by
     rw [LinearMap.comp_apply, ← map_sub]
@@ -286,9 +286,9 @@ theorem exists_aeval_of_isMinResIterate_preconditioned
 for `A M⁻¹ u = b`, mapped back by `x = M⁻¹ u`, lies in the *same* affine space `x₀ + 𝒦_m(M⁻¹ A, M⁻¹
 r₀)` as the left-preconditioned one, and there it minimizes the true residual `‖b - A x‖` rather
 than the preconditioned one. -/
-theorem isMinRes_of_isMinResIterate_rightPreconditioned {b x₀ : E} {m : ℕ} {u₀ u : E}
-    (hx₀ : x₀ = Minv u₀) (hu : IsMinResIterate (A ∘ₗ Minv) b u₀ m u) :
-    IsMinRes A b x₀ (subspace (Minv ∘ₗ A) (Minv (b - A x₀)) m) (Minv u) := by
+theorem isMinResidual_of_isMinResidualIterate_rightPreconditioned {b x₀ : E} {m : ℕ} {u₀ u : E}
+    (hx₀ : x₀ = Minv u₀) (hu : IsMinResidualIterate (A ∘ₗ Minv) b u₀ m u) :
+    IsMinResidual A b x₀ (subspace (Minv ∘ₗ A) (Minv (b - A x₀)) m) (Minv u) := by
   have hr : b - (A ∘ₗ Minv) u₀ = b - A x₀ := by rw [LinearMap.comp_apply, hx₀]
   have hmap := map_subspace_comp A Minv (b - A x₀) m
   have hmem := hu.mem
@@ -470,14 +470,14 @@ FGMRES expands the *iterate* in arbitrary preconditioned directions `z_j = M_j�
 expanding the *residual* in the orthonormal Arnoldi basis `v_i`, so its search space is not a Krylov
 subspace; what makes the minimization work is only the two-family relation `A Z_m = V_{m+1} H̄_m` of
 [saad2003iterative] (9.22) together with orthonormality of `V_{m+1}`. This is
-`Krylov.IsQuasiMinResIterate.isMinOn_norm_residual` with the minimizer given explicitly. -/
-theorem isMinRes {A : E →ₗ[𝕜] E} {z v : ℕ → E} {h : ℕ → ℕ → 𝕜} {b x₀ : E} {β : 𝕜}
+`Krylov.IsQuasiMinResidualIterate.isMinOn_norm_residual` with the minimizer given explicitly. -/
+theorem isMinResidual {A : E →ₗ[𝕜] E} {z v : ℕ → E} {h : ℕ → ℕ → 𝕜} {b x₀ : E} {β : 𝕜}
     (hv : HessenbergRelation₂ A z v h) (hr : b - A x₀ = β • v 0) {m : ℕ}
     (hon : Orthonormal 𝕜 fun i : Fin (m + 1) => v (i : ℕ)) {y : Fin m → 𝕜}
     (hy : IsMinOn (quasiResidual h β m) Set.univ y) :
-    IsMinRes A b x₀ (Submodule.span 𝕜 (Set.range fun j : Fin m => z (j : ℕ)))
+    IsMinResidual A b x₀ (Submodule.span 𝕜 (Set.range fun j : Fin m => z (j : ℕ)))
       (x₀ + ∑ j, y j • z j) :=
-  IsQuasiMinResIterate.isMinOn_norm_residual hv hr hon ⟨y, hy, rfl⟩
+  IsQuasiMinResidualIterate.isMinOn_norm_residual hv hr hon ⟨y, hy, rfl⟩
 
 /-- The last row of the rectangular Hessenberg matrix carries only its subdiagonal entry. -/
 private theorem mulVec_hessenbergOf_last {h : ℕ → ℕ → 𝕜} (hH : ∀ i k, k + 1 < i → h i k = 0)

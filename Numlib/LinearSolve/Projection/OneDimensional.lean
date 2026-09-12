@@ -214,8 +214,8 @@ residual line `y ∈ x + span {r}`, `r = b - A x`.  Taking `L = A K` turns the m
 one-dimensional step, whose nondegeneracy is `A r ≠ 0`; where that fails every point of the line
 has the same residual `r`, and the step, which does nothing, minimizes trivially.  So no hypothesis
 on `A` is needed. -/
-theorem minResStep_isMinRes (x : E) :
-    IsMinRes A b x (𝕜 ∙ (b - A x)) (minResStep A b x) := by
+theorem minResStep_isMinResidual (x : E) :
+    IsMinResidual A b x (𝕜 ∙ (b - A x)) (minResStep A b x) := by
   have hmap : (𝕜 ∙ (b - A x)).map A = 𝕜 ∙ A (b - A x) := by
     rw [Submodule.map_span, Set.image_singleton]
   rcases eq_or_ne (A (b - A x)) 0 with h0 | h0
@@ -225,7 +225,7 @@ theorem minResStep_isMinRes (x : E) :
     obtain ⟨c, hc⟩ := Submodule.mem_span_singleton.1 hy
     have hy' : y = x + c • (b - A x) := by rw [hc]; abel
     rw [hstep, hy', map_add, map_smul, h0, smul_zero, add_zero]
-  · refine IsMinRes.iff_isPetrovGalerkin.2 ?_
+  · refine IsMinResidual.iff_isPetrovGalerkin.2 ?_
     rw [hmap]
     exact step1_isPetrovGalerkin (b - A x) (A (b - A x)) x fun hcon =>
       h0 (inner_self_eq_zero.1 hcon)
@@ -396,7 +396,7 @@ theorem norm_residual_minResStep_le {A : E →L[𝕜] E} {c : ℝ} (hc : 0 < c)
     (hA : (A : E →ₗ[𝕜] E).IsCoerciveWith c) (b x : E) :
     ‖b - A (minResStep (A : E →ₗ[𝕜] E) b x)‖ ≤
       Real.sqrt (1 - c ^ 2 / ‖A‖ ^ 2) * ‖b - A x‖ := by
-  have hmin := minResStep_isMinRes (A := (A : E →ₗ[𝕜] E)) (b := b) x
+  have hmin := minResStep_isMinResidual (A := (A : E →ₗ[𝕜] E)) (b := b) x
   set θ : ℝ := c / ‖A‖ ^ 2 with hθ
   have hθnn : 0 ≤ θ := by positivity
   have hstep := hmin.min (x + (θ : 𝕜) • (b - A x))

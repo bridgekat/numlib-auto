@@ -181,9 +181,9 @@ theorem proposition_5_1_ii (hA : IsUnit A) (K : Submodule ℝ (E n)) (b x₀ : E
     ∃! x, IsProjectionApprox A b x₀ K (K.map (toEuclideanLin A)) x := by
   have hinj : Set.InjOn (toEuclideanLin A) K :=
     fun u _ v _ huv => injective_toEuclideanLin hA huv
-  obtain ⟨x, hx, huniq⟩ := existsUnique_isMinRes_of_injOn (A := toEuclideanLin A) b x₀ K hinj
+  obtain ⟨x, hx, huniq⟩ := existsUnique_isMinResidual_of_injOn (A := toEuclideanLin A) b x₀ K hinj
   refine ⟨x, isProjectionApprox_iff.mpr hx.isPetrovGalerkin, fun y hy => ?_⟩
-  exact huniq y (IsMinRes.iff_isPetrovGalerkin.mpr (isProjectionApprox_iff.mp hy))
+  exact huniq y (IsMinResidual.iff_isPetrovGalerkin.mpr (isProjectionApprox_iff.mp hy))
 
 /-- Saad §5.1: `A` symmetric ⇒ the projected matrix `VᵀAV` is symmetric. -/
 theorem isSymm_transpose_mul_mul (hA : A.IsSymm) (V : Matrix (Fin n) (Fin m) ℝ) :
@@ -230,7 +230,7 @@ the residual norm over `x₀ + K`. -/
 theorem proposition_5_3 :
     IsProjectionApprox A b x₀ K (K.map (toEuclideanLin A)) x ↔
       (x - x₀ ∈ K ∧ ∀ y, y - x₀ ∈ K → R_A A b x ≤ R_A A b y) := by
-  rw [isProjectionApprox_iff, ← IsMinRes.iff_isPetrovGalerkin]
+  rw [isProjectionApprox_iff, ← IsMinResidual.iff_isPetrovGalerkin]
   exact ⟨fun h => ⟨h.mem, h.min⟩, fun h => ⟨h.1, h.2⟩⟩
 
 /-- Saad, Proposition 5.4: for `L = A K` the residual is `(I - P) r₀` with `P` the orthogonal
@@ -238,13 +238,13 @@ projector onto `A K`. -/
 theorem proposition_5_4 (hx : IsProjectionApprox A b x₀ K (K.map (toEuclideanLin A)) x) :
     b - (A ⬝ x) =
       (b - (A ⬝ x₀)) - (K.map (toEuclideanLin A)).starProjection (b - (A ⬝ x₀)) :=
-  (IsMinRes.iff_isPetrovGalerkin.mpr (isProjectionApprox_iff.mp hx)).residual_eq
+  (IsMinResidual.iff_isPetrovGalerkin.mpr (isProjectionApprox_iff.mp hx)).residual_eq
 
 /-- Saad §5.2.2: the residual norm does not increase. -/
 theorem norm_residual_le (hx : IsProjectionApprox A b x₀ K (K.map (toEuclideanLin A)) x) :
     ‖b - (A ⬝ x)‖ ≤ ‖b - (A ⬝ x₀)‖ :=
-  IsMinRes.norm_residual_le_norm_residual_zero
-    (IsMinRes.iff_isPetrovGalerkin.mpr (isProjectionApprox_iff.mp hx))
+  IsMinResidual.norm_residual_le_norm_residual_zero
+    (IsMinResidual.iff_isPetrovGalerkin.mpr (isProjectionApprox_iff.mp hx))
 
 /-- Saad, Proposition 5.5 (characterization): for `L = K` the error `x* - x̃` is `A`-orthogonal
 to `K`. -/

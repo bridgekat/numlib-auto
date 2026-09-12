@@ -15,19 +15,19 @@ orthonormal.
   (7.70)) are genuinely two-family, and the residual formulas `residual_eq`,
   `residual_eq_of_mulVec_eq` hold verbatim at this generality.
 * `Krylov.quasiResidual h β m y = ‖β e₁ - H̄_m y‖₂`, and the specification
-  `Krylov.IsQuasiMinResIterate z h β x₀ m x`, "`x = x₀ + Z_m y` with `y` minimizing the
+  `Krylov.IsQuasiMinResidualIterate z h β x₀ m x`, "`x = x₀ + Z_m y` with `y` minimizing the
   quasi-residual": QMR ([freund1991qmr]; [saad2003iterative] Algorithm 7.4), TFQMR (Algorithm 7.8),
   QGMRES and DQGMRES (Algorithms 6.12–6.13) and FGMRES (Algorithm 9.6) all satisfy it, each for its
-  own `z`, `v` and `h`. It is `Krylov.IsMinResIterate` when the residual basis is the Arnoldi one
-  (`Krylov.isQuasiMinResIterate_iff_isMinResIterate`); in general it minimizes something else, and
+  own `z`, `v` and `h`. It is `Krylov.IsMinResidualIterate` when the residual basis is the Arnoldi one
+  (`Krylov.isQuasiMinResidualIterate_iff_isMinResidualIterate`); in general it minimizes something else, and
   three theorems say by how much:
-  * `Krylov.IsQuasiMinResIterate.norm_residual_le`: `‖b - A x‖ ≤ C ‖γ_m‖` whenever `‖∑ w_i v_i‖ ≤ C
+  * `Krylov.IsQuasiMinResidualIterate.norm_residual_le`: `‖b - A x‖ ≤ C ‖γ_m‖` whenever `‖∑ w_i v_i‖ ≤ C
     ‖w‖₂` ([saad2003iterative] Proposition 7.3, (6.51), (7.83); `C = √(m+1)` for unit vectors by
     `Krylov.norm_sum_smul_le_sqrt_mul`);
-  * `Krylov.IsQuasiMinResIterate.norm_residual_le_mul`: `‖r^Q_m‖ ≤ (C/c) ‖b - A x'‖` for every `x'`
+  * `Krylov.IsQuasiMinResidualIterate.norm_residual_le_mul`: `‖r^Q_m‖ ≤ (C/c) ‖b - A x'‖` for every `x'`
     of the same affine space, when also `c ‖w‖₂ ≤ ‖∑ w_i v_i‖` — [saad2003iterative] Theorem 7.4 and
     Theorem 6.11, with `C/c` the conditioning of the residual basis;
-  * `Krylov.IsQuasiMinResIterate.isMinOn_norm_residual`: with an orthonormal residual basis and an
+  * `Krylov.IsQuasiMinResidualIterate.isMinOn_norm_residual`: with an orthonormal residual basis and an
     arbitrary `z`, the iterate genuinely minimizes `‖b - A x‖` over `x₀ + span {z_0, …, z_{m-1}}`
     ([saad2003iterative] Proposition 9.2, the optimality of FGMRES).
 * The harmonic relations between successive quasi-residual norms, in their pure Givens form as
@@ -35,7 +35,7 @@ orthonormal.
   `Krylov.inv_sq_norm_gamma_eq_sum` and `Krylov.exists_norm_gamma_div_givensC_le` are
   [saad2003iterative] (7.23), (7.24) and Proposition 7.5, as `Krylov.inv_sq_norm_residual_minRes`
   and `Krylov.exists_norm_residual_galerkin_le` are (6.65) and Proposition 6.15 for true residuals.
-* `Krylov.IsQuasiMinResIterate.eq_combination`: successive quasi-minimal-residual iterates are the
+* `Krylov.IsQuasiMinResidualIterate.eq_combination`: successive quasi-minimal-residual iterates are the
   smoothing combinations `x^Q_{m+1} = |s_m|² x^Q_m + |c_m|² x^F_{m+1}` of the previous
   quasi-minimal-residual iterate and the Galerkin iterate at the current step ([saad2003iterative]
   (7.29)–(7.30), (6.58); [zhou1994residual]).
@@ -189,7 +189,7 @@ namespace HessenbergRelation₂
 /-- [saad2003iterative], Proposition 7.3 and (6.51): if the residual basis satisfies `‖∑ w_i v_i‖ ≤
 C ‖w‖₂` then the true residual of `x₀ + Z_m y` is at most `C` times its quasi-residual — for *every*
 `y`, with no Givens hypothesis. The quasi-minimal-residual iterate specializes it at the minimizer,
-where the quasi-residual is `‖γ_m‖` (`Krylov.IsQuasiMinResIterate.norm_residual_le`). -/
+where the quasi-residual is `‖γ_m‖` (`Krylov.IsQuasiMinResidualIterate.norm_residual_le`). -/
 theorem norm_residual_le {A : E →ₗ[𝕜] E} {z v : ℕ → E} {h : ℕ → ℕ → 𝕜}
     (hv : HessenbergRelation₂ A z v h) {b x₀ : E} {β : 𝕜} (hr : b - A x₀ = β • v 0) {m : ℕ}
     {C : ℝ} (hC : ∀ w : Fin (m + 1) → 𝕜,
@@ -268,7 +268,7 @@ end QuasiResidual
 quasi-residual `‖β e₁ - H̄_m y‖₂`. QMR ([saad2003iterative], Algorithm 7.4), TFQMR (Algorithm 7.8),
 QGMRES and DQGMRES (Algorithms 6.12–6.13) and FGMRES (Algorithm 9.6) all satisfy it, each for its
 own `z`, `v` and `h`. -/
-def IsQuasiMinResIterate (z : ℕ → E) (h : ℕ → ℕ → 𝕜) (β : 𝕜) (x₀ : E) (m : ℕ) (x : E) : Prop :=
+def IsQuasiMinResidualIterate (z : ℕ → E) (h : ℕ → ℕ → 𝕜) (β : 𝕜) (x₀ : E) (m : ℕ) (x : E) : Prop :=
   ∃ y : Fin m → 𝕜, IsMinOn (quasiResidual h β m) Set.univ y ∧ x = x₀ + ∑ j, y j • z j
 
 /-- The norm of a combination of an orthonormal family is the Euclidean norm of its coefficients. -/
@@ -288,7 +288,7 @@ private theorem norm_sum_smul_eq_of_orthonormal {ι : Type*} [Fintype ι] {v : �
 
 /-- Cauchy–Schwarz: a combination of vectors of norm at most `1` obeys `‖∑ w_i v_i‖ ≤ √n ‖w‖₂`
 ([saad2003iterative], (6.51) and (7.83): `‖V_{m+1}‖₂ ≤ √(m+1)` for unit basis vectors). This is the
-constant `C` of `Krylov.IsQuasiMinResIterate.norm_residual_le` in the normalization the book uses.
+constant `C` of `Krylov.IsQuasiMinResidualIterate.norm_residual_le` in the normalization the book uses.
 -/
 theorem norm_sum_smul_le_sqrt_mul {n : ℕ} {v : ℕ → E} (hv : ∀ i, ‖v i‖ ≤ 1) (w : Fin n → 𝕜) :
     ‖∑ i, w i • v i‖ ≤ Real.sqrt n * ‖(WithLp.toLp 2 w : EuclideanSpace 𝕜 (Fin n))‖ := by
@@ -313,7 +313,7 @@ theorem norm_sum_smul_le_sqrt_mul {n : ℕ} {v : ℕ → E} (hv : ∀ i, ‖v i�
   have h9 := Real.sqrt_le_sqrt h8
   rwa [Real.sqrt_sq h4, Real.sqrt_sq h6] at h9
 
-namespace IsQuasiMinResIterate
+namespace IsQuasiMinResidualIterate
 
 variable {A : E →ₗ[𝕜] E} {z v : ℕ → E} {h : ℕ → ℕ → 𝕜} {b x₀ x : E} {β : 𝕜} {m : ℕ}
 
@@ -324,7 +324,7 @@ theorem norm_residual_le (hv : HessenbergRelation₂ A z v h) (hr : b - A x₀ =
     (hρ : ∀ k < m, givensRho h k ≠ 0) {C : ℝ}
     (hC : ∀ w : Fin (m + 1) → 𝕜,
       ‖∑ i, w i • v i‖ ≤ C * ‖(WithLp.toLp 2 w : EuclideanSpace 𝕜 (Fin (m + 1)))‖)
-    (hx : IsQuasiMinResIterate z h β x₀ m x) : ‖b - A x‖ ≤ C * ‖gamma h β m‖ := by
+    (hx : IsQuasiMinResidualIterate z h β x₀ m x) : ‖b - A x‖ ≤ C * ‖gamma h β m‖ := by
   obtain ⟨y, hy, rfl⟩ := hx
   refine (hv.norm_residual_le hr hC y).trans_eq ?_
   rw [quasiResidual_eq_norm_gamma h hv.eq_zero_of_lt hρ β hy]
@@ -340,7 +340,7 @@ theorem norm_residual_le_mul (hv : HessenbergRelation₂ A z v h) (hr : b - A x�
       c * ‖(WithLp.toLp 2 w : EuclideanSpace 𝕜 (Fin (m + 1)))‖ ≤ ‖∑ i, w i • v i‖)
     (hC : ∀ w : Fin (m + 1) → 𝕜,
       ‖∑ i, w i • v i‖ ≤ C * ‖(WithLp.toLp 2 w : EuclideanSpace 𝕜 (Fin (m + 1)))‖)
-    (hx : IsQuasiMinResIterate z h β x₀ m x) (w : Fin m → 𝕜) :
+    (hx : IsQuasiMinResidualIterate z h β x₀ m x) (w : Fin m → 𝕜) :
     ‖b - A x‖ ≤ C / c * ‖b - A (x₀ + ∑ j, w j • z j)‖ := by
   obtain ⟨y, hy, rfl⟩ := hx
   have hone : ‖(WithLp.toLp 2 (Pi.single (0 : Fin (m + 1)) (1 : 𝕜)) :
@@ -379,8 +379,8 @@ basis `v` — the iterate basis `z` staying arbitrary — the quasi-residual *is
 a quasi-minimal-residual iterate minimizes `‖b - A x‖` over `x₀ + span {z_0, …, z_{m-1}}`. -/
 theorem isMinOn_norm_residual (hv : HessenbergRelation₂ A z v h) (hr : b - A x₀ = β • v 0)
     (hon : Orthonormal 𝕜 fun i : Fin (m + 1) => v (i : ℕ))
-    (hx : IsQuasiMinResIterate z h β x₀ m x) :
-    IsMinRes A b x₀ (Submodule.span 𝕜 (Set.range fun j : Fin m => z (j : ℕ))) x := by
+    (hx : IsQuasiMinResidualIterate z h β x₀ m x) :
+    IsMinResidual A b x₀ (Submodule.span 𝕜 (Set.range fun j : Fin m => z (j : ℕ))) x := by
   obtain ⟨y, hy, rfl⟩ := hx
   have hnorm : ∀ u : Fin m → 𝕜,
       ‖b - A (x₀ + ∑ j, u j • z j)‖ = quasiResidual h β m u := fun u => by
@@ -398,7 +398,7 @@ theorem isMinOn_norm_residual (hv : HessenbergRelation₂ A z v h) (hr : b - A x
     rw [hwe, hnorm, hnorm]
     exact isMinOn_iff.mp hy c (Set.mem_univ c)
 
-end IsQuasiMinResIterate
+end IsQuasiMinResidualIterate
 
 /-- The Arnoldi vectors span `𝒦_m` as a `Fin m`-indexed family. -/
 private theorem span_range_arnoldi_vec (A : E →ₗ[𝕜] E) (r : E) (m : ℕ) :
@@ -415,16 +415,16 @@ private theorem span_range_arnoldi_vec (A : E →ₗ[𝕜] E) (r : E) (m : ℕ) 
 /-- For the Arnoldi basis — `z = v` orthonormal, `h = Arnoldi.coeff`, `m ≤ grade` — the
 quasi-minimal-residual specification *is* the minimal-residual specification. This is the book's
 "QGMRES coincides with GMRES when the orthogonalization is complete" ([saad2003iterative], §6.5.6),
-and it is what makes `Krylov.IsQuasiMinResIterate` a generalization of `Krylov.IsMinResIterate`
+and it is what makes `Krylov.IsQuasiMinResidualIterate` a generalization of `Krylov.IsMinResidualIterate`
 rather than a new object. -/
-theorem isQuasiMinResIterate_iff_isMinResIterate {A : E →ₗ[𝕜] E} {b x₀ : E}
+theorem isQuasiMinResidualIterate_iff_isMinResidualIterate {A : E →ₗ[𝕜] E} {b x₀ : E}
     [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))] {m : ℕ} (hm : m ≤ grade A (b - A x₀))
     (x : E) :
-    IsQuasiMinResIterate (Arnoldi.vec A (b - A x₀)) (Arnoldi.coeff A (b - A x₀))
-        (‖b - A x₀‖ : 𝕜) x₀ m x ↔ IsMinResIterate A b x₀ m x := by
+    IsQuasiMinResidualIterate (Arnoldi.vec A (b - A x₀)) (Arnoldi.coeff A (b - A x₀))
+        (‖b - A x₀‖ : 𝕜) x₀ m x ↔ IsMinResidualIterate A b x₀ m x := by
   constructor
   · rintro ⟨y, hy, rfl⟩
-    exact (isMinResIterate_iff_isMinOn hm y).mpr hy
+    exact (isMinResidualIterate_iff_isMinOn hm y).mpr hy
   · intro hx
     have hmem : x - x₀ ∈ Submodule.span 𝕜 (Set.range fun j : Fin m =>
         Arnoldi.vec A (b - A x₀) (j : ℕ)) := by
@@ -435,7 +435,7 @@ theorem isQuasiMinResIterate_iff_isMinResIterate {A : E →ₗ[𝕜] E} {b x₀ 
       rw [hy]
       abel
     rw [hxe] at hx
-    exact ⟨y, (isMinResIterate_iff_isMinOn hm y).mp hx, hxe⟩
+    exact ⟨y, (isMinResidualIterate_iff_isMinOn hm y).mp hx, hxe⟩
 
 /-! ### The harmonic relations between quasi-residual norms -/
 
@@ -687,7 +687,7 @@ private theorem coeff_eq_combination (hh : ∀ i j, j + 1 < i → h i j = 0) {m 
 
 variable {h}
 
-namespace IsQuasiMinResIterate
+namespace IsQuasiMinResidualIterate
 
 variable {A : E →ₗ[𝕜] E} {z v : ℕ → E} {b x₀ x x' xF : E} {β : 𝕜} {m : ℕ}
 
@@ -697,7 +697,7 @@ quasi-minimal-residual iterate and the Galerkin iterate at the current step — 
 QMR be implemented as quasi-minimal residual smoothing of BCG. -/
 theorem eq_combination (hh : ∀ i j, j + 1 < i → h i j = 0)
     (hρ : ∀ k < m + 1, givensRho h k ≠ 0) {w : Fin (m + 1) → 𝕜}
-    (hx : IsQuasiMinResIterate z h β x₀ (m + 1) x) (hx' : IsQuasiMinResIterate z h β x₀ m x')
+    (hx : IsQuasiMinResidualIterate z h β x₀ (m + 1) x) (hx' : IsQuasiMinResidualIterate z h β x₀ m x')
     (hw : (hessenbergSqOf h (m + 1)).mulVec w = firstVec β (m + 1))
     (hxF : xF = x₀ + ∑ j, w j • z j) :
     x = ((‖givensS h m‖ ^ 2 : ℝ) : 𝕜) • x' + ((‖givensC h m‖ ^ 2 : ℝ) : 𝕜) • xF := by
@@ -725,11 +725,11 @@ theorem eq_combination (hh : ∀ i j, j + 1 < i → h i j = 0)
   conv_lhs => rw [← hx0]
   module
 
-/-- The residual form of `Krylov.IsQuasiMinResIterate.eq_combination` ([saad2003iterative], (7.30)
+/-- The residual form of `Krylov.IsQuasiMinResidualIterate.eq_combination` ([saad2003iterative], (7.30)
 and (6.58)): `r^Q_{m+1} = |s_m|² r^Q_m + |c_m|² r^F_{m+1}`. -/
 theorem residual_eq_combination (hh : ∀ i j, j + 1 < i → h i j = 0)
     (hρ : ∀ k < m + 1, givensRho h k ≠ 0) {w : Fin (m + 1) → 𝕜}
-    (hx : IsQuasiMinResIterate z h β x₀ (m + 1) x) (hx' : IsQuasiMinResIterate z h β x₀ m x')
+    (hx : IsQuasiMinResidualIterate z h β x₀ (m + 1) x) (hx' : IsQuasiMinResidualIterate z h β x₀ m x')
     (hw : (hessenbergSqOf h (m + 1)).mulVec w = firstVec β (m + 1))
     (hxF : xF = x₀ + ∑ j, w j • z j) :
     b - A x = ((‖givensS h m‖ ^ 2 : ℝ) : 𝕜) • (b - A x') +
@@ -744,7 +744,7 @@ theorem residual_eq_combination (hh : ∀ i j, j + 1 < i → h i j = 0)
   conv_lhs => rw [← hb]
   module
 
-end IsQuasiMinResIterate
+end IsQuasiMinResidualIterate
 
 end Smoothing
 

@@ -7,10 +7,10 @@ id = "IsGalerkinIterate.energyNorm_error_le"
 id = "IsGalerkinIterate.energyNorm_error_le_div_eval_T"
 
 [[node]]
-id = "IsMinResIterate.norm_residual_le"
+id = "IsMinResidualIterate.norm_residual_le"
 
 [[node]]
-id = "IsMinResIterate.norm_residual_le_of_isCoerciveWith"
+id = "IsMinResidualIterate.norm_residual_le_of_isCoerciveWith"
 
 [[node]]
 id = "restarted_minRes_tendsto"

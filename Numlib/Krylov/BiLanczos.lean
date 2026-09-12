@@ -45,7 +45,7 @@ The two methods built on the process are here as well. `BCG` is the biconjugate 
 (`BCG.inner_residual_dualResidual_eq_zero`, `BCG.inner_dualDirection_apply_direction_eq_zero`, Prop
 7.2), which makes its iterate the Petrov–Galerkin iterate with `L = 𝒦_m(Aᴴ, r*₀)`
 (`BCG.isPetrovGalerkin`). `QMR` minimizes the *quasi*-residual `‖β e₁ - T̄_m y‖` rather than the
-residual itself (`QMR.IsQuasiMinRes`, (7.15)–(7.17)); `QMR.norm_residual_le_norm_quasiResidual` is
+residual itself (`QMR.IsQuasiMinResidual`, (7.15)–(7.17)); `QMR.norm_residual_le_norm_quasiResidual` is
 Prop 7.3 and `QMR.norm_residual_le` is Thm 7.4, the comparison `‖r^Q_m‖ ≤ κ₂(V_{m+1}) ‖r^G_m‖` with
 the GMRES residual. Because an abstract inner product space has no matrix `V_{m+1}`, the two
 singular-value bounds `c ‖z‖ ≤ ‖∑ z_i v_i‖ ≤ C ‖z‖` on the coordinate map are hypotheses and
@@ -1874,7 +1874,7 @@ y` for a coordinate vector `y` minimizing the quasi-residual `‖β e₁ - T̄_m
 v₁`. Replacing the true residual `‖V_{m+1} (β e₁ - T̄_m y)‖` by the norm of its coordinate vector
 turns the step into a small least-squares problem; the price is the factor `κ₂(V_{m+1})` of
 `QMR.norm_residual_le`. -/
-def IsQuasiMinRes (A B : E →ₗ[𝕜] E) (v₁ w₁ : E) (β : 𝕜) (x₀ : E) (m : ℕ) (x : E) : Prop :=
+def IsQuasiMinResidual (A B : E →ₗ[𝕜] E) (v₁ w₁ : E) (β : 𝕜) (x₀ : E) (m : ℕ) (x : E) : Prop :=
   ∃ y : Fin m → 𝕜, x = x₀ + ∑ j, y j • BiLanczos.vec A B v₁ w₁ (j : ℕ) ∧
     IsMinOn (fun z => ‖quasiResidual A B v₁ w₁ β m z‖) Set.univ y
 
@@ -1943,8 +1943,8 @@ theorem norm_residual_le (hs : NoSeriousBreakdown A B v₁ w₁) {m : ℕ}
       ‖∑ i, z i • vec A B v₁ w₁ (i : ℕ)‖)
     (hC : ∀ z : Fin (m + 1) → 𝕜, ‖∑ i, z i • vec A B v₁ w₁ (i : ℕ)‖ ≤
       C * ‖(WithLp.toLp 2 z : EuclideanSpace 𝕜 (Fin (m + 1)))‖)
-    {x xG : E} (hx : IsQuasiMinRes A B v₁ w₁ β x₀ m x)
-    (hG : Krylov.IsMinResIterate A b x₀ m xG) :
+    {x xG : E} (hx : IsQuasiMinResidual A B v₁ w₁ β x₀ m x)
+    (hG : Krylov.IsMinResidualIterate A b x₀ m xG) :
     ‖b - A x‖ ≤ C / c * ‖b - A xG‖ := by
   obtain ⟨y, rfl, hy⟩ := hx
   have hmem0 : xG - x₀ ∈ Krylov.subspace A v₁ m := by

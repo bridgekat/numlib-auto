@@ -69,10 +69,10 @@ Everything here is a specialization of the backbone:
 * (6.124)–(6.127) are the book's chain of real identities for the Chebyshev argument `1 + 2η`.
 * Theorem 6.30 is `Krylov.restarted_minRes_tendsto`: the work here is only to show that a cycle
   of GMRES(m) satisfies the backbone's per-cycle minimal-residual specification
-  (`gmres_isMinResIterate`), and to identify the book's constants `μ = λ_min((A + Aᵀ)/2)` and
+  (`gmres_isMinResidualIterate`), and to identify the book's constants `μ = λ_min((A + Aᵀ)/2)` and
   `σ = ‖A‖₂` with the backbone's coercivity constant and operator norm.
-* Lemma 6.31 is `Krylov.IsMinResIterate.norm_residual_le_norm_aeval` through the GMRES
-  identification `gmresFixed_isMinResIterate` of `Chapter06/Section05.lean`, and Proposition 6.32
+* Lemma 6.31 is `Krylov.IsMinResidualIterate.norm_residual_le_norm_aeval` through the GMRES
+  identification `gmresFixed_isMinResidualIterate` of `Chapter06/Section05.lean`, and Proposition 6.32
   adds the surface bound `norm_aeval_diagonal_mulVec_le` for a diagonalizable complex matrix.
 -/
 
@@ -631,15 +631,15 @@ variable {A}
 /-- The residual after one cycle of GMRES(m) is the minimal one over `x + 𝒦_m`: the book's rule
 "if `h_{j+1,j} = 0` then set `m := j`" stops the Arnoldi process only once `𝒦_m` has been
 exhausted, so the truncated cycle still minimizes over the whole of `𝒦_m`. -/
-theorem gmres_isMinResIterate (hAu : IsUnit A) (b y : 𝔼) (m : ℕ) :
-    Krylov.IsMinResIterate (op A) b y m (gmres A b y m) := by
+theorem gmres_isMinResidualIterate (hAu : IsUnit A) (b y : 𝔼) (m : ℕ) :
+    Krylov.IsMinResidualIterate (op A) b y m (gmres A b y m) := by
   have hsub : Krylov.subspace (op A) (b - op A y) (mEff A b y m) =
       Krylov.subspace (op A) (b - op A y) m := by
     rw [mEff, grade_v₁]
     rcases le_total m (Krylov.grade (op A) (r₀ A b y)) with h | h
     · rw [min_eq_left h]
     · rw [min_eq_right h, Krylov.subspace_eq_of_grade_le (op A) (b - op A y) h]
-  have h := gmresFixed_isMinResIterate A b y (mEff_le A b y m)
+  have h := gmresFixed_isMinResidualIterate A b y (mEff_le A b y m)
     (isUnit_R_of_isUnit A b y hAu (mEff_le A b y m))
   have hg : gmres A b y m = gmresFixed A b y (mEff A b y m) := rfl
   rw [hg]
@@ -657,13 +657,13 @@ private theorem mul_norm_le_norm_op {c : ℝ} (hc : (op A).IsCoerciveWith c) (z 
   · exact le_of_mul_le_mul_right (by nlinarith) h
 
 /-- Each cycle of GMRES(m) is a minimal-residual iterate over `𝒦_m` from the previous one. -/
-private theorem restarted_isMinResIterate (hAu : IsUnit A) (b x₀ : 𝔼) (m k : ℕ) :
-    Krylov.IsMinResIterate (op A) b (gmresRestarted A b m x₀ k) m
+private theorem restarted_isMinResidualIterate (hAu : IsUnit A) (b x₀ : 𝔼) (m k : ℕ) :
+    Krylov.IsMinResidualIterate (op A) b (gmresRestarted A b m x₀ k) m
       (gmresRestarted A b m x₀ (k + 1)) := by
   have h : gmresRestarted A b m x₀ (k + 1) = gmres A b (gmresRestarted A b m x₀ k) m :=
     Function.iterate_succ_apply' _ _ _
   rw [h]
-  exact gmres_isMinResIterate hAu b _ m
+  exact gmres_isMinResidualIterate hAu b _ m
 
 /-- **Theorem 6.30**, the rate: each cycle of GMRES(m) reduces the residual by at least the
 factor `√(1 - μ²/σ²)`, with `μ = λ_min((A + Aᵀ)/2)` and `σ = ‖A‖₂` — the book's (5.15), since one
@@ -673,10 +673,10 @@ theorem theorem_6_30_rate [NeZero n] (hA : ∀ x : 𝔼, x ≠ 0 → 0 < inner �
     ‖b - op A (gmresRestarted A b m x₀ (k + 1))‖ ≤
       Real.sqrt (1 - (⨅ i, (symmPart_isHermitian A).eigenvalues i) ^ 2 / ‖A‖ ^ 2) *
         ‖b - op A (gmresRestarted A b m x₀ k)‖ := by
-  have h := Krylov.IsMinResIterate.norm_residual_le_of_isCoerciveWith
+  have h := Krylov.IsMinResidualIterate.norm_residual_le_of_isCoerciveWith
     (A := LinearMap.toContinuousLinearMap (op A)) (iInf_eigenvalues_symmPart_pos A hA)
     (isCoerciveWith_op A) hm
-    (restarted_isMinResIterate (isUnit_of_forall_inner_pos A hA) b x₀ m k)
+    (restarted_isMinResidualIterate (isUnit_of_forall_inner_pos A hA) b x₀ m k)
   rwa [Matrix.l2_opNorm_eq_norm_toEuclideanLin A]
 
 /-- **Theorem 6.30**: if `A` is positive definite in the book's sense — `(A x, x) > 0` for every
@@ -684,7 +684,7 @@ real `x ≠ 0`, equivalently `(A + Aᵀ)/2` symmetric positive definite — then
 the solution for every `m ≥ 1`.
 
 This is the backbone's `Krylov.restarted_minRes_tendsto`: a cycle of Algorithm 6.11 satisfies the
-per-cycle minimal-residual specification (`gmres_isMinResIterate`), and coercivity turns the
+per-cycle minimal-residual specification (`gmres_isMinResidualIterate`), and coercivity turns the
 convergence of the residuals into convergence of the iterates. -/
 theorem theorem_6_30 [NeZero n] (hA : ∀ x : 𝔼, x ≠ 0 → 0 < inner ℝ (op A x) x) (b x₀ xstar : 𝔼)
     (hstar : op A xstar = b) {m : ℕ} (hm : 1 ≤ m) :
@@ -694,7 +694,7 @@ theorem theorem_6_30 [NeZero n] (hA : ∀ x : 𝔼, x ≠ 0 → 0 < inner ℝ (o
   have hres : Filter.Tendsto (fun k => ‖b - op A (gmresRestarted A b m x₀ k)‖)
       Filter.atTop (nhds 0) :=
     Krylov.restarted_minRes_tendsto (A := LinearMap.toContinuousLinearMap (op A)) hc hco hm _
-      (restarted_isMinResIterate (isUnit_of_forall_inner_pos A hA) b x₀ m)
+      (restarted_isMinResidualIterate (isUnit_of_forall_inner_pos A hA) b x₀ m)
   have hbound : ∀ k, ‖gmresRestarted A b m x₀ k - xstar‖ ≤
       ‖b - op A (gmresRestarted A b m x₀ k)‖ /
         ⨅ i, (symmPart_isHermitian A).eigenvalues i := by
@@ -720,7 +720,7 @@ theorem lemma_6_31 (b x₀ : 𝔼) {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)
       ∀ q' : ℝ[X], q'.degree < m →
         ‖((1 : 𝔼 →ₗ[ℝ] 𝔼) - op A ∘ₗ Polynomial.aeval (op A) q) (r₀ A b x₀)‖ ≤
           ‖((1 : 𝔼 →ₗ[ℝ] 𝔼) - op A ∘ₗ Polynomial.aeval (op A) q') (r₀ A b x₀)‖ := by
-  have hx := gmresFixed_isMinResIterate A b x₀ hm hR
+  have hx := gmresFixed_isMinResidualIterate A b x₀ hm hR
   obtain ⟨q, hq, hqe⟩ := (Krylov.mem_subspace_iff_exists_aeval (op A) (b - op A x₀)).1 hx.mem
   have hres : ∀ p : ℝ[X], b - op A (x₀ + Polynomial.aeval (op A) p (r₀ A b x₀)) =
       ((1 : 𝔼 →ₗ[ℝ] 𝔼) - op A ∘ₗ Polynomial.aeval (op A) p) (r₀ A b x₀) := by
@@ -829,7 +829,7 @@ theorem proposition_6_32 {A : Matrix (Fin n) (Fin n) ℂ} (b x₀ : 𝔼) (X : M
     (hX : IsUnit X) (lam : Fin n → ℂ) (hA : A = X * Matrix.diagonal lam * X⁻¹) {m : ℕ}
     (hm : m ≤ grade A (v₁ A b x₀)) (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m)) :
     ‖b - op A (gmresFixed A b x₀ m)‖ ≤ ‖X‖ * ‖X⁻¹‖ * epsMin lam m * ‖r₀ A b x₀‖ := by
-  have hx := gmresFixed_isMinResIterate A b x₀ hm hR
+  have hx := gmresFixed_isMinResidualIterate A b x₀ hm hR
   have key : ∀ p : {p : ℂ[X] // p.degree ≤ (m : WithBot ℕ) ∧ p.eval 0 = 1},
       ‖b - op A (gmresFixed A b x₀ m)‖ ≤
         ‖X‖ * ‖X⁻¹‖ * ‖r₀ A b x₀‖ * ⨆ i, ‖p.1.eval (lam i)‖ := by

@@ -245,7 +245,7 @@ id = "BiLanczos.zeta"
 id = "BiLanczos.zeta_eq_polyForm"
 
 [[node]]
-id = "QMR.IsQuasiMinRes"
+id = "QMR.IsQuasiMinResidual"
 
 [[node]]
 id = "QMR.norm_quasiResidual_eq_norm_gamma"

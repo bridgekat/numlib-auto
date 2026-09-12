@@ -421,7 +421,7 @@ because the Chebyshev residual polynomial is only one competitor in the minimiza
 Chebyshev acceleration is used where inner products are expensive, and why its analysis is a
 one-sided bound. -/
 theorem norm_residual_minRes_le_norm_residual_iterate {α β : ℝ} (hα : 0 < α) (hαβ : α < β)
-    {y : E} {k : ℕ} (hy : Krylov.IsMinResIterate A b x₀ k y) :
+    {y : E} {k : ℕ} (hy : Krylov.IsMinResidualIterate A b x₀ k y) :
     ‖b - A y‖ ≤ ‖(iterate A b x₀ ((β + α) / 2) ((β - α) / 2) k).r‖ := by
   have hγ : (0 : ℝ) ∉ Set.Icc α β := fun h => absurd (Set.mem_Icc.mp h).1 (by linarith)
   rw [residual_iterate_eq hα hαβ]

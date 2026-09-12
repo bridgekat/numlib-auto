@@ -19,22 +19,22 @@ id = "HessenbergRelation₂.residual_eq"
 id = "HessenbergRelation₂.residual_eq_of_mulVec_eq"
 
 [[node]]
-id = "IsQuasiMinResIterate"
+id = "IsQuasiMinResidualIterate"
 
 [[node]]
-id = "IsQuasiMinResIterate.eq_combination"
+id = "IsQuasiMinResidualIterate.eq_combination"
 
 [[node]]
-id = "IsQuasiMinResIterate.isMinOn_norm_residual"
+id = "IsQuasiMinResidualIterate.isMinOn_norm_residual"
 
 [[node]]
-id = "IsQuasiMinResIterate.norm_residual_le"
+id = "IsQuasiMinResidualIterate.norm_residual_le"
 
 [[node]]
-id = "IsQuasiMinResIterate.norm_residual_le_mul"
+id = "IsQuasiMinResidualIterate.norm_residual_le_mul"
 
 [[node]]
-id = "IsQuasiMinResIterate.residual_eq_combination"
+id = "IsQuasiMinResidualIterate.residual_eq_combination"
 
 [[node]]
 id = "exists_norm_gamma_div_givensC_le"
@@ -49,7 +49,7 @@ id = "inv_sq_norm_gamma"
 id = "inv_sq_norm_gamma_eq_sum"
 
 [[node]]
-id = "isQuasiMinResIterate_iff_isMinResIterate"
+id = "isQuasiMinResidualIterate_iff_isMinResidualIterate"
 
 [[node]]
 id = "norm_gamma_le"

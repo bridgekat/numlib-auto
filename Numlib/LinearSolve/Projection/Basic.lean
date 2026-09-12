@@ -12,7 +12,7 @@ The canonical Prop-valued specifications of a projection step ([saad2003iterativ
 
 * `IsPetrovGalerkin A b x₀ K L x`: `x ∈ x₀ + K` and `b - A x ⟂ L`;
 * `IsGalerkin A b x₀ K x`: the case `L = K` (FOM, CG, Lanczos method);
-* `IsMinRes A b x₀ K x`: `x ∈ x₀ + K` minimizes `‖b - A x‖` (GMRES, MINRES, CR);
+* `IsMinResidual A b x₀ K x`: `x ∈ x₀ + K` minimizes `‖b - A x‖` (GMRES, MINRES, CR);
 * `IsMinError xstar x₀ K x`: `x ∈ x₀ + K` minimizes `‖xstar - x‖` (SYMMLQ, CGNE).
 
 Well-posedness ([saad2003iterative] Prop 5.1), the residual formula ([saad2003iterative] Prop 5.4),
@@ -80,7 +80,7 @@ abbrev IsGalerkin (A : E →ₗ[𝕜] E) (b x₀ : E) (K : Submodule 𝕜 E) (x 
   IsPetrovGalerkin A b x₀ K K x
 
 /-- Minimal-residual specification: `x ∈ x₀ + K` minimizes `‖b - A x‖`. -/
-structure IsMinRes (A : E →ₗ[𝕜] E) (b x₀ : E) (K : Submodule 𝕜 E) (x : E) : Prop where
+structure IsMinResidual (A : E →ₗ[𝕜] E) (b x₀ : E) (K : Submodule 𝕜 E) (x : E) : Prop where
   mem : x - x₀ ∈ K
   min : ∀ y, y - x₀ ∈ K → ‖b - A x‖ ≤ ‖b - A y‖
 
@@ -146,14 +146,14 @@ end IsPetrovGalerkin
 theorem residual_eq_sub_apply_sub (A : E →ₗ[𝕜] E) (b x₀ y : E) :
     b - A y = (b - A x₀) - A (y - x₀) := by rw [map_sub]; abel
 
-namespace IsMinRes
+namespace IsMinResidual
 
 variable {A : E →ₗ[𝕜] E} {b x₀ : E} {K : Submodule 𝕜 E} {x : E}
 
 /-- [saad2003iterative], Prop 5.3: minimal residual over `x₀ + K` iff Petrov–Galerkin with `L = A
 K`. -/
 theorem iff_isPetrovGalerkin [FiniteDimensional 𝕜 K] :
-    IsMinRes A b x₀ K x ↔ IsPetrovGalerkin A b x₀ K (K.map A) x := by
+    IsMinResidual A b x₀ K x ↔ IsPetrovGalerkin A b x₀ K (K.map A) x := by
   constructor
   · rintro ⟨hmem, hmin⟩
     refine ⟨hmem, (Submodule.mem_orthogonal' _ _).2 fun u hu => ?_⟩
@@ -173,15 +173,15 @@ theorem iff_isPetrovGalerkin [FiniteDimensional 𝕜 K] :
     rw [← residual_eq_sub_apply_sub A b x₀ x]
     exact (Submodule.mem_orthogonal' _ _).1 horth w hw
 
-/-- The forward direction of `IsMinRes.iff_isPetrovGalerkin`: a minimal-residual iterate is
+/-- The forward direction of `IsMinResidual.iff_isPetrovGalerkin`: a minimal-residual iterate is
 Petrov–Galerkin with `L = A K`. -/
-theorem isPetrovGalerkin [FiniteDimensional 𝕜 K] (hx : IsMinRes A b x₀ K x) :
+theorem isPetrovGalerkin [FiniteDimensional 𝕜 K] (hx : IsMinResidual A b x₀ K x) :
     IsPetrovGalerkin A b x₀ K (K.map A) x :=
   (iff_isPetrovGalerkin).1 hx
 
 /-- [saad2003iterative], Prop 5.4: the residual of every minimal-residual iterate is `(1 - P_{A K})
 r₀`, with `r₀ = b - A x₀` and `P_{A K}` the orthogonal projection onto `A K`. -/
-theorem residual_eq [FiniteDimensional 𝕜 K] (hx : IsMinRes A b x₀ K x) :
+theorem residual_eq [FiniteDimensional 𝕜 K] (hx : IsMinResidual A b x₀ K x) :
     b - A x = (b - A x₀) - (K.map A).starProjection (b - A x₀) := by
   have hproj : (K.map A).starProjection (b - A x₀) = A (x - x₀) :=
     Submodule.eq_starProjection_of_mem_orthogonal' (Submodule.mem_map_of_mem hx.mem)
@@ -190,29 +190,29 @@ theorem residual_eq [FiniteDimensional 𝕜 K] (hx : IsMinRes A b x₀ K x) :
   rw [hproj, ← residual_eq_sub_apply_sub A b x₀ x]
 
 /-- The residual is unique even when the iterate is not. -/
-theorem residual_unique [FiniteDimensional 𝕜 K] (hx : IsMinRes A b x₀ K x) {x' : E}
-    (hx' : IsMinRes A b x₀ K x') : b - A x = b - A x' := by
+theorem residual_unique [FiniteDimensional 𝕜 K] (hx : IsMinResidual A b x₀ K x) {x' : E}
+    (hx' : IsMinResidual A b x₀ K x') : b - A x = b - A x' := by
   rw [hx.residual_eq, hx'.residual_eq]
 
 /-- A minimal-residual step never increases the residual norm, since the starting point `x₀` is
 itself a competitor in the minimization over `x₀ + K`. -/
-theorem norm_residual_le_norm_residual_zero (hx : IsMinRes A b x₀ K x) :
+theorem norm_residual_le_norm_residual_zero (hx : IsMinResidual A b x₀ K x) :
     ‖b - A x‖ ≤ ‖b - A x₀‖ :=
   hx.min x₀ (by simp)
 
 /-- Residual norms on nested subspaces are nonincreasing. -/
-theorem norm_residual_le {K' : Submodule 𝕜 E} {x' : E} (hx : IsMinRes A b x₀ K x)
-    (hx' : IsMinRes A b x₀ K' x') (hKK' : K ≤ K') : ‖b - A x'‖ ≤ ‖b - A x‖ :=
+theorem norm_residual_le {K' : Submodule 𝕜 E} {x' : E} (hx : IsMinResidual A b x₀ K x)
+    (hx' : IsMinResidual A b x₀ K' x') (hKK' : K ≤ K') : ‖b - A x'‖ ≤ ‖b - A x‖ :=
   hx'.min x (hKK' hx.mem)
 
 /-- Exactness: if some `y ∈ x₀ + K` solves the system, so does every minimal-residual iterate. -/
-theorem apply_eq_of_exists (hx : IsMinRes A b x₀ K x) {y : E} (hy : y - x₀ ∈ K) (hAy : A y = b) :
+theorem apply_eq_of_exists (hx : IsMinResidual A b x₀ K x) {y : E} (hy : y - x₀ ∈ K) (hAy : A y = b) :
     A x = b := by
   have h := hx.min y hy
   rw [hAy, sub_self, norm_zero] at h
   exact (sub_eq_zero.1 (norm_le_zero_iff.1 h)).symm
 
-end IsMinRes
+end IsMinResidual
 
 /-- Existence and characterization: `x₀ + P_K (x* - x₀)` is the minimal-error point.  Only the
 existence of the orthogonal projection onto `K` is needed, not finite dimension. -/
@@ -273,10 +273,10 @@ theorem existsUnique_isGalerkin_of_isCoercive (hA : A.IsCoercive) [FiniteDimensi
   exact ⟨x₀ + (z : E), hgal, fun y hy => hy.eq_of_forall hgal hKL⟩
 
 /-- A minimal-residual iterate always exists on a finite-dimensional `K`. -/
-theorem exists_isMinRes [FiniteDimensional 𝕜 K] : ∃ x, IsMinRes A b x₀ K x := by
+theorem exists_isMinResidual [FiniteDimensional 𝕜 K] : ∃ x, IsMinResidual A b x₀ K x := by
   obtain ⟨z, hz, hzeq⟩ := Submodule.mem_map.1
     (Submodule.starProjection_apply_mem (K.map A) (b - A x₀))
-  refine ⟨x₀ + z, IsMinRes.iff_isPetrovGalerkin.2 ⟨by simpa using hz, ?_⟩⟩
+  refine ⟨x₀ + z, IsMinResidual.iff_isPetrovGalerkin.2 ⟨by simpa using hz, ?_⟩⟩
   have h : b - A (x₀ + z) = (b - A x₀) - (K.map A).starProjection (b - A x₀) := by
     rw [map_add, hzeq]; abel
   rw [h]
@@ -311,9 +311,9 @@ theorem existsUnique_isPetrovGalerkin_of_finrank_eq {A : E →ₗ[𝕜] E} (b x�
 
 /-- [saad2003iterative], Prop 5.1 (ii): minimal residual with `A` injective on `K` is uniquely
 solvable. -/
-theorem existsUnique_isMinRes_of_injOn [FiniteDimensional 𝕜 K] (hinj : Set.InjOn A K) :
-    ∃! x, IsMinRes A b x₀ K x := by
-  obtain ⟨x, hx⟩ := exists_isMinRes (A := A) b x₀ K
+theorem existsUnique_isMinResidual_of_injOn [FiniteDimensional 𝕜 K] (hinj : Set.InjOn A K) :
+    ∃! x, IsMinResidual A b x₀ K x := by
+  obtain ⟨x, hx⟩ := exists_isMinResidual (A := A) b x₀ K
   refine ⟨x, hx, fun y hy => ?_⟩
   refine hy.isPetrovGalerkin.eq_of_forall hx.isPetrovGalerkin fun z hz hAz => ?_
   have h0 : A z = 0 :=

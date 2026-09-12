@@ -1,7 +1,7 @@
 namespace = "Krylov"
 
 [[node]]
-id = "IsGalerkinIterate.mrs_isMinResIterate"
+id = "IsGalerkinIterate.mrs_isMinResidualIterate"
 
 [[node]]
 id = "exists_norm_residual_galerkin_le"

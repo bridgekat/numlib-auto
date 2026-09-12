@@ -13,14 +13,14 @@ The section introduces no new method: every algorithm in it is a projection proc
 over the coordinate subspaces `K_i = span {e_i}`, run on one of the two normal-equations systems.
 This file says so declaration by declaration.
 
-* `neSorStep` is **Algorithm 8.1** (NE-SOR, Kaczmarz), one relaxation `x := x + δ_i Aᵀ e_i`;
-  `neSorStep_isPetrovGalerkin` is (8.12)–(8.15), the identification with the one-dimensional
+* `neSORStep` is **Algorithm 8.1** (NE-SOR, Kaczmarz), one relaxation `x := x + δ_i Aᵀ e_i`;
+  `neSORStep_isPetrovGalerkin` is (8.12)–(8.15), the identification with the one-dimensional
   Petrov–Galerkin step onto `span {Aᵀ e_i}` orthogonally to `span {e_i}`, after which the `i`-th
   component of the residual vanishes.
-* `nrSorStep` is **Algorithm 8.2** (NR-SOR), `x := x + δ_i e_i`; `nrSorStep_isGalerkin` is
+* `nrSORStep` is **Algorithm 8.2** (NR-SOR), `x := x + δ_i e_i`; `nrSORStep_isGalerkin` is
   (8.17)–(8.18), the Galerkin step for `AᵀA x = Aᵀ b` on `span {e_i}`, after which the `i`-th
   component of the normal-equations residual vanishes.
-* `sorSweep_eq_multiplicativeSweep` and `neSorSweep_eq_multiplicativeStep` put the two sweeps in
+* `sorSweep_eq_multiplicativeSweep` and `neSORSweep_eq_multiplicativeStep` put the two sweeps in
   the multiplicative projection process of §5.4 over the coordinate family — the NR-SOR sweep in
   the Galerkin form `SaadSparse.Chapter05.multiplicativeSweep`, the NE-SOR sweep in the backbone's
   Petrov–Galerkin `Projection.multiplicativeStep`, since its test spaces differ from its trial
@@ -42,7 +42,7 @@ This file says so declaration by declaration.
 * `blockCimmino` is (8.26)–(8.27), the same statement with `dim K_i > 1` and a least-squares
   subproblem in place of the scalar division.
 
-* `nrSorSweep_eq_sorStep` makes §8.2.1's back-reference to Chapter 4 good: a whole NR-SOR sweep is
+* `nrSORSweep_eq_sorStep` makes §8.2.1's back-reference to Chapter 4 good: a whole NR-SOR sweep is
   one SOR step (4.12) for the normal equations `AᵀA x = Aᵀ b`, and `sorSweep_tendsto` is then
   Theorem 4.10 applied to `AᵀA` — symmetric positive definite whenever `A` is nonsingular — so the
   sweep converges to the solution for every `0 < ω < 2`.
@@ -177,78 +177,78 @@ variable (A : Matrix (Fin n) (Fin n) ℝ) (b : E n) (ω : ℝ)
 /-- **Algorithm 8.1**, one relaxation (Kaczmarz's row projection, (8.11)–(8.15)):
 `x := x + δ_i Aᵀ e_i` with `δ_i = ω (β_i - (x, Aᵀ e_i))/‖Aᵀ e_i‖₂²`, where `Aᵀ e_i` is the `i`-th
 row of `A` and `β_i` the `i`-th component of `b`. -/
-noncomputable def neSorStep (i : Fin n) (x : E n) : E n :=
+noncomputable def neSORStep (i : Fin n) (x : E n) : E n :=
   x + (ω * inner ℝ (coordVec i) (b - (A ⬝ x)) / ‖Aᵀ ⬝ coordVec i‖ ^ 2) • (Aᵀ ⬝ coordVec i)
 
 /-- **Algorithm 8.1**: one forward NE-SOR sweep `i = 1, …, n`. -/
-noncomputable def neSorSweep (x : E n) : E n :=
-  (List.finRange n).foldl (fun y i => neSorStep A b ω i y) x
+noncomputable def neSORSweep (x : E n) : E n :=
+  (List.finRange n).foldl (fun y i => neSORStep A b ω i y) x
 
 /-- **Algorithm 8.2**, one relaxation ((8.16)–(8.18)): `x := x + δ_i e_i` with
 `δ_i = ω (r, A e_i)/‖A e_i‖₂²`, where `A e_i` is the `i`-th column of `A`. -/
-noncomputable def nrSorStep (i : Fin n) (x : E n) : E n :=
+noncomputable def nrSORStep (i : Fin n) (x : E n) : E n :=
   x + (ω * inner ℝ (A ⬝ coordVec i) (b - (A ⬝ x)) / ‖A ⬝ coordVec i‖ ^ 2) • coordVec i
 
 /-- **Algorithm 8.2**: one forward NR-SOR sweep `i = 1, …, n`. -/
-noncomputable def nrSorSweep (x : E n) : E n :=
-  (List.finRange n).foldl (fun y i => nrSorStep A b ω i y) x
+noncomputable def nrSORSweep (x : E n) : E n :=
+  (List.finRange n).foldl (fun y i => nrSORStep A b ω i y) x
 
 variable {A b ω}
 
 /-- The unrelaxed NE-SOR relaxation is the elementary step (5.12) with `v = Aᵀ e_i`,
 `w = e_i`. -/
-theorem neSorStep_eq_step1 (i : Fin n) (x : E n) :
-    neSorStep A b 1 i x = Chapter05.step1 A b (Aᵀ ⬝ coordVec i) (coordVec i) x := by
-  rw [neSorStep, Chapter05.step1, inner_normal'_coordVec, one_mul]
+theorem neSORStep_eq_step1 (i : Fin n) (x : E n) :
+    neSORStep A b 1 i x = Chapter05.step1 A b (Aᵀ ⬝ coordVec i) (coordVec i) x := by
+  rw [neSORStep, Chapter05.step1, inner_normal'_coordVec, one_mul]
 
 /-- The unrelaxed NR-SOR relaxation is the elementary step (5.12) for the normal equations
 `AᵀA x = Aᵀ b` with `v = w = e_i`. -/
-theorem nrSorStep_eq_step1 (i : Fin n) (x : E n) :
-    nrSorStep A b 1 i x = Chapter05.step1 (Aᵀ * A) (Aᵀ ⬝ b) (coordVec i) (coordVec i) x := by
-  rw [nrSorStep, Chapter05.step1, inner_normal_coordVec, normal_residual, inner_transpose', one_mul]
+theorem nrSORStep_eq_step1 (i : Fin n) (x : E n) :
+    nrSORStep A b 1 i x = Chapter05.step1 (Aᵀ * A) (Aᵀ ⬝ b) (coordVec i) (coordVec i) x := by
+  rw [nrSORStep, Chapter05.step1, inner_normal_coordVec, normal_residual, inner_transpose', one_mul]
 
 /-- **Saad (8.12)–(8.15)**: the unrelaxed NE-SOR relaxation is the Petrov–Galerkin step onto
 `K = span {Aᵀ e_i}` orthogonally to `L = span {e_i}`, and the `i`-th component of the new
 residual therefore vanishes. -/
-theorem neSorStep_isPetrovGalerkin (hi : (Aᵀ ⬝ coordVec i) ≠ 0) (x : E n) :
+theorem neSORStep_isPetrovGalerkin (hi : (Aᵀ ⬝ coordVec i) ≠ 0) (x : E n) :
     IsPetrovGalerkin (Matrix.toEuclideanLin A) b x (ℝ ∙ (Aᵀ ⬝ coordVec i)) (ℝ ∙ coordVec i)
-        (neSorStep A b 1 i x) ∧
-      inner ℝ (coordVec i) (b - (A ⬝ neSorStep A b 1 i x)) = 0 := by
+        (neSORStep A b 1 i x) ∧
+      inner ℝ (coordVec i) (b - (A ⬝ neSORStep A b 1 i x)) = 0 := by
   have hne : inner ℝ (coordVec i) (A ⬝ (Aᵀ ⬝ coordVec i)) ≠ 0 := by
     rw [inner_normal'_coordVec]
     exact pow_ne_zero 2 (norm_ne_zero_iff.2 hi)
   have hpg := Chapter05.isProjectionApprox_iff.1
     (Chapter05.step1_isProjectionApprox (A := A) (b := b) (x := x) (Aᵀ ⬝ coordVec i)
       (coordVec i) hne)
-  rw [← neSorStep_eq_step1] at hpg
+  rw [← neSORStep_eq_step1] at hpg
   exact ⟨hpg, (Submodule.mem_orthogonal_singleton_iff_inner_right).1 hpg.orth⟩
 
 /-- **Saad (8.17)–(8.18)**: the unrelaxed NR-SOR relaxation is the Galerkin step for
 `AᵀA x = Aᵀ b` on `span {e_i}`, and the `i`-th component of the new normal-equations residual
 therefore vanishes. -/
-theorem nrSorStep_isGalerkin (hi : (A ⬝ coordVec i) ≠ 0) (x : E n) :
+theorem nrSORStep_isGalerkin (hi : (A ⬝ coordVec i) ≠ 0) (x : E n) :
     IsGalerkin (Matrix.toEuclideanLin (Aᵀ * A)) (Aᵀ ⬝ b) x (ℝ ∙ coordVec i)
-        (nrSorStep A b 1 i x) ∧
-      inner ℝ (A ⬝ coordVec i) (b - (A ⬝ nrSorStep A b 1 i x)) = 0 := by
+        (nrSORStep A b 1 i x) ∧
+      inner ℝ (A ⬝ coordVec i) (b - (A ⬝ nrSORStep A b 1 i x)) = 0 := by
   have hne : inner ℝ (coordVec i) ((Aᵀ * A) ⬝ coordVec i) ≠ 0 := by
     rw [inner_normal_coordVec]
     exact pow_ne_zero 2 (norm_ne_zero_iff.2 hi)
   have hpg := Chapter05.isProjectionApprox_iff.1
     (Chapter05.step1_isProjectionApprox (A := Aᵀ * A) (b := (Aᵀ ⬝ b)) (x := x) (coordVec i)
       (coordVec i) hne)
-  rw [← nrSorStep_eq_step1] at hpg
+  rw [← nrSORStep_eq_step1] at hpg
   refine ⟨hpg, ?_⟩
   have h0 := (Submodule.mem_orthogonal_singleton_iff_inner_right).1 hpg.orth
-  rwa [show (Matrix.toEuclideanLin (Aᵀ * A)) (nrSorStep A b 1 i x)
-    = ((Aᵀ * A) ⬝ nrSorStep A b 1 i x) from rfl, normal_residual, inner_transpose'] at h0
+  rwa [show (Matrix.toEuclideanLin (Aᵀ * A)) (nrSORStep A b 1 i x)
+    = ((Aᵀ * A) ⬝ nrSORStep A b 1 i x) from rfl, normal_residual, inner_transpose'] at h0
 
 /-! ### The sweeps as multiplicative projection processes -/
 
 /-- **Saad §8.2**: the unrelaxed NR-SOR sweep is the multiplicative projection process of §5.4
 for the normal equations `AᵀA x = Aᵀ b` over the coordinate family — block Gauss–Seidel with
-`K_i = span {e_i}`. The NE-SOR sweep is `neSorSweep_eq_multiplicativeStep`. -/
+`K_i = span {e_i}`. The NE-SOR sweep is `neSORSweep_eq_multiplicativeStep`. -/
 theorem sorSweep_eq_multiplicativeSweep (h : ∀ i : Fin n, (A ⬝ coordVec i) ≠ 0) (x : E n) :
-    nrSorSweep A b 1 x = Chapter05.multiplicativeSweep (coordFamily n) (Aᵀ * A) (Aᵀ ⬝ b) x := by
+    nrSORSweep A b 1 x = Chapter05.multiplicativeSweep (coordFamily n) (Aᵀ * A) (Aᵀ ⬝ b) x := by
   have hne : ∀ i : Fin n, inner ℝ (coordVec i) ((Aᵀ * A) ⬝ coordVec i) ≠ 0 := fun i => by
     rw [inner_normal_coordVec]
     exact pow_ne_zero 2 (norm_ne_zero_iff.2 (h i))
@@ -261,24 +261,24 @@ theorem sorSweep_eq_multiplicativeSweep (h : ∀ i : Fin n, (A ⬝ coordVec i) �
           ((coordFamily n).subspace i) (Chapter05.isNondegeneratePair_subspace hunit i) y) x := by
     rw [Chapter05.multiplicativeSweep_eq hunit]
     rfl
-  have hfun : (fun (y : E n) (i : Fin n) => nrSorStep A b 1 i y)
+  have hfun : (fun (y : E n) (i : Fin n) => nrSORStep A b 1 i y)
       = fun (y : E n) (i : Fin n) => Projection.pairStep
           (Matrix.toEuclideanLin (Aᵀ * A)) (Aᵀ ⬝ b) ((coordFamily n).subspace i)
           ((coordFamily n).subspace i) (Chapter05.isNondegeneratePair_subspace hunit i) y :=
     funext fun y => funext fun i => by
       rw [pairStep_eq_step1 _ (coordFamily_subspace i) (coordFamily_subspace i) (hne i),
-        nrSorStep_eq_step1]
+        nrSORStep_eq_step1]
       rfl
-  rw [nrSorSweep, hrhs, hfun]
+  rw [nrSORSweep, hrhs, hfun]
   rfl
 
 /-- **Saad §8.2**: the unrelaxed NE-SOR sweep is the multiplicative *Petrov–Galerkin* process
 over the pairs `(span {Aᵀ e_i}, span {e_i})` — the same block Gauss–Seidel pattern of §5.4, in
 the backbone's form. It is not `SaadSparse.Chapter05.multiplicativeSweep`, whose test space is its
 trial space; the two coincide only for NR-SOR. -/
-theorem neSorSweep_eq_multiplicativeStep
+theorem neSORSweep_eq_multiplicativeStep
     (hne : ∀ i : Fin n, inner ℝ (coordVec i) (A ⬝ (Aᵀ ⬝ coordVec i)) ≠ 0) (x : E n) :
-    neSorSweep A b 1 x
+    neSORSweep A b 1 x
       = Projection.multiplicativeStep (Matrix.toEuclideanLin A) b
           (fun i => ℝ ∙ (Aᵀ ⬝ coordVec i)) (fun i => ℝ ∙ coordVec i)
           (fun i => isNondegeneratePair_span_singleton (hne i)) (List.finRange n) x := by
@@ -288,14 +288,14 @@ theorem neSorSweep_eq_multiplicativeStep
       = (List.finRange n).foldl (fun y i => Projection.pairStep (Matrix.toEuclideanLin A) b
           (ℝ ∙ (Aᵀ ⬝ coordVec i)) (ℝ ∙ coordVec i)
           (isNondegeneratePair_span_singleton (hne i)) y) x := rfl
-  have hfun : (fun (y : E n) (i : Fin n) => neSorStep A b 1 i y)
+  have hfun : (fun (y : E n) (i : Fin n) => neSORStep A b 1 i y)
       = fun (y : E n) (i : Fin n) => Projection.pairStep (Matrix.toEuclideanLin A) b
           (ℝ ∙ (Aᵀ ⬝ coordVec i)) (ℝ ∙ coordVec i)
           (isNondegeneratePair_span_singleton (hne i)) y :=
     funext fun y => funext fun i => by
-      rw [pairStep_eq_step1 _ rfl rfl (hne i), neSorStep_eq_step1]
+      rw [pairStep_eq_step1 _ rfl rfl (hne i), neSORStep_eq_step1]
       rfl
-  rw [neSorSweep, hrhs, hfun]
+  rw [neSORSweep, hrhs, hfun]
 
 /-! ### Algorithm 8.3: Cimmino's method -/
 
@@ -332,7 +332,7 @@ theorem cimmino_eq_additiveStep (h : ∀ i : Fin n, (A ⬝ coordVec i) ≠ 0) (x
   refine congrArg (fun z : E n => x + z) (Finset.sum_congr rfl fun i _ => ?_)
   rw [pairStep_eq_step1 _ (coordFamily_subspace i) (coordFamily_subspace i) (hne i),
     show Projection.step1 (Matrix.toEuclideanLin (Aᵀ * A)) (Aᵀ ⬝ b) (coordVec i) (coordVec i) x
-      = nrSorStep A b 1 i x from (nrSorStep_eq_step1 i x).symm, nrSorStep, add_sub_cancel_left,
+      = nrSORStep A b 1 i x from (nrSORStep_eq_step1 i x).symm, nrSORStep, add_sub_cancel_left,
     smul_smul, one_mul, mul_div_assoc]
 
 /-! ### (8.23)–(8.25): the projectors and the residual identity -/
@@ -505,14 +505,14 @@ variable (A b ω)
 
 /-- **P-8.3**: Cimmino's method in its original, *row* form — Jacobi for the normal equations of
 the second kind `A Aᵀ u = b`, written in `x = Aᵀ u`. Every correction `δ_i Aᵀ e_i` is the
-Kaczmarz relaxation `neSorStep` computed from the *same* residual, and they are added at once. -/
+Kaczmarz relaxation `neSORStep` computed from the *same* residual, and they are added at once. -/
 noncomputable def cimminoNE (x : E n) : E n :=
   x + ∑ i, (ω * inner ℝ (coordVec i) (b - (A ⬝ x)) / ‖Aᵀ ⬝ coordVec i‖ ^ 2) • (Aᵀ ⬝ coordVec i)
 
 variable {A b ω}
 
 /-- **P-8.3**: the row form of Cimmino's method is the additive *Petrov–Galerkin* process of §5.4
-over the pairs `(span {Aᵀ e_i}, span {e_i})`, exactly as `neSorSweep_eq_multiplicativeStep` makes
+over the pairs `(span {Aᵀ e_i}, span {e_i})`, exactly as `neSORSweep_eq_multiplicativeStep` makes
 Kaczmarz's method the multiplicative one over the same pairs. It is not
 `SaadSparse.Chapter05.additiveStep`, whose test space is its trial space; only the column form
 `cimmino` is of that kind. -/
@@ -526,7 +526,7 @@ theorem cimminoNE_eq_additiveStep
   refine congrArg (fun z : E n => x + z) (Finset.sum_congr rfl fun i _ => ?_)
   rw [pairStep_eq_step1 _ rfl rfl (hne i),
     show Projection.step1 (Matrix.toEuclideanLin A) b (Aᵀ ⬝ coordVec i) (coordVec i) x
-      = neSorStep A b 1 i x from (neSorStep_eq_step1 i x).symm, neSorStep, add_sub_cancel_left,
+      = neSORStep A b 1 i x from (neSORStep_eq_step1 i x).symm, neSORStep, add_sub_cancel_left,
     smul_smul, one_mul, mul_div_assoc]
 
 /-- **P-8.3**: the row form *is* Jacobi for `A Aᵀ u = b`, read through `x = Aᵀ u`. With
@@ -551,7 +551,7 @@ variable (A b ω)
 /-- **Saad (8.26)–(8.27)**: the block Cimmino step for a partition of the columns into blocks
 `V_1, …, V_p`: `x_new = x + ω ∑_i V_i d_i` with `d_i = (A_iᵀ A_i)⁻¹ A_iᵀ r` and `A_i = A V_i`.
 The scalar division of Algorithm 8.3 is replaced by the least-squares problem
-`min_d ‖r - A_i d‖₂` (`blockCimmino_isMinRes`). -/
+`min_d ‖r - A_i d‖₂` (`blockCimmino_isMinResidual`). -/
 noncomputable def blockCimmino (𝒱 : Chapter05.ProjFamily n) (x : E n) : E n :=
   x + ∑ i, ω • ((𝒱.V i * ((A * 𝒱.V i)ᵀ * (A * 𝒱.V i))⁻¹ * (A * 𝒱.V i)ᵀ) ⬝ (b - (A ⬝ x)))
 
@@ -573,7 +573,7 @@ theorem blockCimmino_eq_additiveStep (𝒱 : Chapter05.ProjFamily n) (x : E n) :
 /-- **Saad (8.26)–(8.27)**: the block correction `d_i` solves the least-squares problem
 `min_d ‖r - A_i d‖₂`, so each substep reduces the residual as far as the columns of `A_i`
 allow. This is §8.1's `equation_8_1` for the matrix `A_i = A V_i`. -/
-theorem blockCimmino_isMinRes {𝒱 : Chapter05.ProjFamily n} {i : Fin 𝒱.p}
+theorem blockCimmino_isMinResidual {𝒱 : Chapter05.ProjFamily n} {i : Fin 𝒱.p}
     (h : IsUnit ((A * 𝒱.V i)ᵀ * (A * 𝒱.V i))) (r : E n) :
     ∀ d : EuclideanSpace ℝ (Fin (𝒱.size i)),
       ‖r - ((A * 𝒱.V i) ⬝ ((((A * 𝒱.V i)ᵀ * (A * 𝒱.V i))⁻¹ * (A * 𝒱.V i)ᵀ) ⬝ r))‖
@@ -589,7 +589,7 @@ theorem blockCimmino_isMinRes {𝒱 : Chapter05.ProjFamily n} {i : Fin 𝒱.p}
 
 The back-reference to Chapter 4 that closes §8.2.1: `AᵀA` is symmetric positive definite when `A`
 is nonsingular, so Theorem 4.10 applies to it and the NR-SOR sweep converges for every
-`0 < ω < 2`. The bridge is `nrSorSweep_eq_sorStep`: a whole NR-SOR sweep *is* one SOR step for the
+`0 < ω < 2`. The bridge is `nrSORSweep_eq_sorStep`: a whole NR-SOR sweep *is* one SOR step for the
 normal equations, because relaxation `i` changes only the `i`-th entry and changes it by
 `ω (Aᵀ b - AᵀA x)_i / (AᵀA)_ii`, using the entries below `i` already updated and those above `i`
 not yet — which is the SOR recursion in the ordering `i = 1, …, n`.
@@ -608,14 +608,14 @@ theorem normal_diag (A : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) :
 
 /-- One NR-SOR relaxation changes only the `i`-th entry, and changes it by
 `ω (Aᵀ b - AᵀA x)_i / (AᵀA)_ii`. -/
-private theorem ofLp_nrSorStep (i : Fin n) (x : E n) :
-    WithLp.ofLp (nrSorStep A b ω i x)
+private theorem ofLp_nrSORStep (i : Fin n) (x : E n) :
+    WithLp.ofLp (nrSORStep A b ω i x)
       = Function.update (WithLp.ofLp x) i
           (WithLp.ofLp x i + ω * WithLp.ofLp ((Aᵀ ⬝ b) - ((Aᵀ * A) ⬝ x)) i / (Aᵀ * A) i i) := by
   have hnum : inner ℝ (A ⬝ coordVec i) (b - (A ⬝ x))
       = WithLp.ofLp ((Aᵀ ⬝ b) - ((Aᵀ * A) ⬝ x)) i := by
     rw [normal_residual, ← inner_transpose', inner_coordVec]
-  rw [nrSorStep, hnum, ← normal_diag]
+  rw [nrSORStep, hnum, ← normal_diag]
   funext j
   rw [WithLp.ofLp_add, WithLp.ofLp_smul, Pi.add_apply, Pi.smul_apply, smul_eq_mul]
   rcases eq_or_ne j i with rfl | hj
@@ -625,29 +625,29 @@ private theorem ofLp_nrSorStep (i : Fin n) (x : E n) :
     simp [coordVec, hj]
 
 /-- The relaxed entry after one NR-SOR relaxation. -/
-private theorem ofLp_nrSorStep_self (i : Fin n) (x : E n) :
-    WithLp.ofLp (nrSorStep A b ω i x) i
+private theorem ofLp_nrSORStep_self (i : Fin n) (x : E n) :
+    WithLp.ofLp (nrSORStep A b ω i x) i
       = WithLp.ofLp x i + ω * WithLp.ofLp ((Aᵀ ⬝ b) - ((Aᵀ * A) ⬝ x)) i / (Aᵀ * A) i i := by
-  rw [ofLp_nrSorStep, Function.update_self]
+  rw [ofLp_nrSORStep, Function.update_self]
 
 /-- Every other entry is left alone. -/
-private theorem ofLp_nrSorStep_of_ne {i j : Fin n} (hj : j ≠ i) (x : E n) :
-    WithLp.ofLp (nrSorStep A b ω i x) j = WithLp.ofLp x j := by
-  rw [ofLp_nrSorStep, Function.update_of_ne hj]
+private theorem ofLp_nrSORStep_of_ne {i j : Fin n} (hj : j ≠ i) (x : E n) :
+    WithLp.ofLp (nrSORStep A b ω i x) j = WithLp.ofLp x j := by
+  rw [ofLp_nrSORStep, Function.update_of_ne hj]
 
 /-- The first `k` relaxations of an NR-SOR sweep. -/
 private noncomputable def partialSweep (A : Matrix (Fin n) (Fin n) ℝ) (b : E n) (ω : ℝ) (k : ℕ)
     (x : E n) : E n :=
-  ((List.finRange n).take k).foldl (fun y i => nrSorStep A b ω i y) x
+  ((List.finRange n).take k).foldl (fun y i => nrSORStep A b ω i y) x
 
 private theorem partialSweep_succ {k : ℕ} (hk : k < n) (x : E n) :
-    partialSweep A b ω (k + 1) x = nrSorStep A b ω ⟨k, hk⟩ (partialSweep A b ω k x) := by
+    partialSweep A b ω (k + 1) x = nrSORStep A b ω ⟨k, hk⟩ (partialSweep A b ω k x) := by
   rw [partialSweep, partialSweep, List.take_add_one,
     List.getElem?_eq_getElem (by simpa using hk), List.foldl_append]
   simp
 
-private theorem partialSweep_card (x : E n) : partialSweep A b ω n x = nrSorSweep A b ω x := by
-  rw [partialSweep, nrSorSweep, List.take_of_length_le (by simp)]
+private theorem partialSweep_card (x : E n) : partialSweep A b ω n x = nrSORSweep A b ω x := by
+  rw [partialSweep, nrSORSweep, List.take_of_length_le (by simp)]
 
 /-- Entries from `k` on are untouched by the first `k` relaxations. -/
 private theorem ofLp_partialSweep_of_le (x : E n) :
@@ -662,7 +662,7 @@ private theorem ofLp_partialSweep_of_le (x : E n) :
     have hne : j ≠ ⟨k, hkn⟩ := by
       simp only [ne_eq, Fin.ext_iff]
       omega
-    rw [partialSweep_succ hkn, ofLp_nrSorStep_of_ne hne, ih hkn.le j (by omega)]
+    rw [partialSweep_succ hkn, ofLp_nrSORStep_of_ne hne, ih hkn.le j (by omega)]
 
 /-- Entries below `k` are frozen once the first `k` relaxations are done. -/
 private theorem ofLp_partialSweep_stable (x : E n) :
@@ -679,24 +679,24 @@ private theorem ofLp_partialSweep_stable (x : E n) :
     have hne : j ≠ ⟨l, hln⟩ := by
       simp only [ne_eq, Fin.ext_iff]
       omega
-    rw [partialSweep_succ hln, ofLp_nrSorStep_of_ne hne, ih hln.le k (by omega) j hj]
+    rw [partialSweep_succ hln, ofLp_nrSORStep_of_ne hne, ih hln.le k (by omega) j hj]
 
 /-- **Saad §8.2.1**: one NR-SOR sweep is one SOR step for the normal equations `AᵀA x = Aᵀ b`.
 Relaxation `i` sets the `i`-th entry from the entries already updated below `i` and the old ones
 above it, which is exactly the recursion (4.12) defines. -/
-theorem nrSorSweep_eq_sorStep (hd : IsUnit (Matrix.diagPart (Aᵀ * A))) (hω : ω ≠ 0) (x : E n) :
-    WithLp.ofLp (nrSorSweep A b ω x)
+theorem nrSORSweep_eq_sorStep (hd : IsUnit (Matrix.diagPart (Aᵀ * A))) (hω : ω ≠ 0) (x : E n) :
+    WithLp.ofLp (nrSORSweep A b ω x)
       = Chapter04.sorStep (Aᵀ * A) ω (WithLp.ofLp ((Aᵀ ⬝ b) : E n)) (WithLp.ofLp x) := by
   have hdiag : ∀ i : Fin n, (Aᵀ * A) i i ≠ 0 := (Matrix.isUnit_diagPart_iff _).1 hd
   have hres : (Chapter04.D (Aᵀ * A) - ω • Chapter04.E (Aᵀ * A)) *ᵥ
-      (WithLp.ofLp (nrSorSweep A b ω x) - WithLp.ofLp x)
+      (WithLp.ofLp (nrSORSweep A b ω x) - WithLp.ofLp x)
       = ω • (WithLp.ofLp ((Aᵀ ⬝ b) : E n) - (Aᵀ * A) *ᵥ WithLp.ofLp x) := by
     funext i
     -- the state after the first `i` relaxations agrees with the finished sweep below `i` and
     -- with the starting vector from `i` on
     have hzlt : ∀ j : Fin n, j < i →
         WithLp.ofLp (partialSweep A b ω (i : ℕ) x) j
-          = WithLp.ofLp (nrSorSweep A b ω x) j := by
+          = WithLp.ofLp (nrSORSweep A b ω x) j := by
       intro j hj
       rw [← partialSweep_card (A := A) (b := b) (ω := ω) x]
       exact (ofLp_partialSweep_stable x n le_rfl (i : ℕ) i.2.le j hj).symm
@@ -704,20 +704,20 @@ theorem nrSorSweep_eq_sorStep (hd : IsUnit (Matrix.diagPart (Aᵀ * A))) (hω : 
         WithLp.ofLp (partialSweep A b ω (i : ℕ) x) j = WithLp.ofLp x j := fun j hj =>
       ofLp_partialSweep_of_le x (i : ℕ) i.2.le j (by omega)
     -- the `i`-th entry of the finished sweep is the one relaxation `i` produced
-    have hyi : WithLp.ofLp (nrSorSweep A b ω x) i
+    have hyi : WithLp.ofLp (nrSORSweep A b ω x) i
         = WithLp.ofLp x i
           + ω * WithLp.ofLp ((Aᵀ ⬝ b) - ((Aᵀ * A) ⬝ partialSweep A b ω (i : ℕ) x)) i
             / (Aᵀ * A) i i := by
-      have h1 : WithLp.ofLp (nrSorSweep A b ω x) i
+      have h1 : WithLp.ofLp (nrSORSweep A b ω x) i
           = WithLp.ofLp (partialSweep A b ω ((i : ℕ) + 1) x) i := by
         rw [← partialSweep_card (A := A) (b := b) (ω := ω) x]
         exact ofLp_partialSweep_stable x n le_rfl ((i : ℕ) + 1) i.2 i (Nat.lt_succ_self _)
       have h2 : (⟨(i : ℕ), i.2⟩ : Fin n) = i := rfl
-      rw [h1, partialSweep_succ i.2, h2, ofLp_nrSorStep_self,
+      rw [h1, partialSweep_succ i.2, h2, ofLp_nrSORStep_self,
         ofLp_partialSweep_of_le x (i : ℕ) i.2.le i le_rfl]
     have hmv : ∀ w : E n, WithLp.ofLp ((Aᵀ ⬝ b) - ((Aᵀ * A) ⬝ w)) i
         = WithLp.ofLp ((Aᵀ ⬝ b) : E n) i - ((Aᵀ * A) *ᵥ WithLp.ofLp w) i := fun _ => rfl
-    have hkey : (Aᵀ * A) i i * (WithLp.ofLp (nrSorSweep A b ω x) i - WithLp.ofLp x i)
+    have hkey : (Aᵀ * A) i i * (WithLp.ofLp (nrSORSweep A b ω x) i - WithLp.ofLp x i)
         = ω * (WithLp.ofLp ((Aᵀ ⬝ b) : E n) i
           - ((Aᵀ * A) *ᵥ WithLp.ofLp (partialSweep A b ω (i : ℕ) x)) i) := by
       rw [hyi, add_sub_cancel_left, hmv, mul_div_cancel₀ _ (hdiag i)]
@@ -729,20 +729,20 @@ theorem nrSorSweep_eq_sorStep (hd : IsUnit (Matrix.diagPart (Aᵀ * A))) (hω : 
       change ∑ j, (Aᵀ * A) i j * w j = _
       exact (Finset.sum_filter_add_sum_filter_not _ _ _).symm
     have hlow : ∑ j ∈ Finset.univ.filter (· < i),
-          (Aᵀ * A) i j * (WithLp.ofLp (nrSorSweep A b ω x) j - WithLp.ofLp x j)
+          (Aᵀ * A) i j * (WithLp.ofLp (nrSORSweep A b ω x) j - WithLp.ofLp x j)
         = ((Aᵀ * A) *ᵥ WithLp.ofLp (partialSweep A b ω (i : ℕ) x)) i
           - ((Aᵀ * A) *ᵥ WithLp.ofLp x) i := by
       have hexp : ∑ j ∈ Finset.univ.filter (· < i),
-            (Aᵀ * A) i j * (WithLp.ofLp (nrSorSweep A b ω x) j - WithLp.ofLp x j)
+            (Aᵀ * A) i j * (WithLp.ofLp (nrSORSweep A b ω x) j - WithLp.ofLp x j)
           = ∑ j ∈ Finset.univ.filter (· < i),
-              (Aᵀ * A) i j * WithLp.ofLp (nrSorSweep A b ω x) j
+              (Aᵀ * A) i j * WithLp.ofLp (nrSORSweep A b ω x) j
             - ∑ j ∈ Finset.univ.filter (· < i), (Aᵀ * A) i j * WithLp.ofLp x j := by
         rw [← Finset.sum_sub_distrib]
         exact Finset.sum_congr rfl fun j _ => by ring
       have h1 : ∑ j ∈ Finset.univ.filter (· < i),
             (Aᵀ * A) i j * WithLp.ofLp (partialSweep A b ω (i : ℕ) x) j
           = ∑ j ∈ Finset.univ.filter (· < i),
-            (Aᵀ * A) i j * WithLp.ofLp (nrSorSweep A b ω x) j :=
+            (Aᵀ * A) i j * WithLp.ofLp (nrSORSweep A b ω x) j :=
         Finset.sum_congr rfl fun j hj => by rw [hzlt j (Finset.mem_filter.1 hj).2]
       have h2 : ∑ j ∈ Finset.univ.filter (fun j => ¬ j < i),
             (Aᵀ * A) i j * WithLp.ofLp (partialSweep A b ω (i : ℕ) x) j
@@ -757,7 +757,7 @@ theorem nrSorSweep_eq_sorStep (hd : IsUnit (Matrix.diagPart (Aᵀ * A))) (hω : 
     ring
   have hunit := Chapter04.isUnit_D_sub_smul_E hd hω
   have hstep : (Chapter04.D (Aᵀ * A) - ω • Chapter04.E (Aᵀ * A)) *ᵥ
-      (WithLp.ofLp (nrSorSweep A b ω x) - WithLp.ofLp x)
+      (WithLp.ofLp (nrSORSweep A b ω x) - WithLp.ofLp x)
       = (Chapter04.D (Aᵀ * A) - ω • Chapter04.E (Aᵀ * A)) *ᵥ
         (Chapter04.sorStep (Aᵀ * A) ω (WithLp.ofLp ((Aᵀ ⬝ b) : E n)) (WithLp.ofLp x)
           - WithLp.ofLp x) := by
@@ -767,9 +767,9 @@ theorem nrSorSweep_eq_sorStep (hd : IsUnit (Matrix.diagPart (Aᵀ * A))) (hω : 
 /-- **Saad §8.2.1**: because `AᵀA` is symmetric positive definite whenever `A` is nonsingular,
 Theorem 4.10 applies to it, and the NR-SOR sweep converges for every `0 < ω < 2` — from every
 starting vector, to the solution of the normal equations `AᵀA x = Aᵀ b`. The book states this as a
-back-reference to Chapter 4; `nrSorSweep_eq_sorStep` is what makes the reference legitimate. -/
+back-reference to Chapter 4; `nrSORSweep_eq_sorStep` is what makes the reference legitimate. -/
 theorem sorSweep_tendsto (hA : IsUnit A) (hω0 : 0 < ω) (hω2 : ω < 2) (x₀ : E n) :
-    Tendsto (fun k => WithLp.ofLp ((nrSorSweep A b ω)^[k] x₀)) atTop
+    Tendsto (fun k => WithLp.ofLp ((nrSORSweep A b ω)^[k] x₀)) atTop
       (𝓝 ((Aᵀ * A)⁻¹ *ᵥ WithLp.ofLp ((Aᵀ ⬝ b) : E n))) := by
   have hAdet : IsUnit A.det := (Matrix.isUnit_iff_isUnit_det A).1 hA
   have hinjVec : Function.Injective (Aᵀ * A).mulVec := by
@@ -799,14 +799,14 @@ theorem sorSweep_tendsto (hA : IsUnit A) (hω0 : 0 < ω) (hω2 : ω < 2) (x₀ :
   have hρ : Matrix.complexSpectralRadius
       ((Aᵀ * A).sorSplitting hd hω0.ne').iterationOperator < 1 :=
     (Chapter04.theorem_4_10 hsymm hposdiag hd hω0 hω2).2 hposdef
-  have hiter : ∀ k : ℕ, WithLp.ofLp ((nrSorSweep A b ω)^[k] x₀)
+  have hiter : ∀ k : ℕ, WithLp.ofLp ((nrSORSweep A b ω)^[k] x₀)
       = (Chapter04.sorStep (Aᵀ * A) ω (WithLp.ofLp ((Aᵀ ⬝ b) : E n)))^[k] (WithLp.ofLp x₀) := by
     intro k
     induction k with
     | zero => rfl
     | succ k ih =>
       rw [Function.iterate_succ_apply', Function.iterate_succ_apply', ← ih,
-        nrSorSweep_eq_sorStep hd hω0.ne']
+        nrSORSweep_eq_sorStep hd hω0.ne']
   simp only [hiter]
   rw [Chapter04.sorStep_eq hd hω0.ne']
   exact Chapter04.Splitting.tendsto_step _ hρ _ _

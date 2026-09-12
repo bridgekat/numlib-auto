@@ -57,7 +57,7 @@ approximation as Algorithm 6.9.
 
 **The hinge of the part is `isGMRESIterate_iff`** (6.29)–(6.30): the GMRES approximation, defined
 by the least-squares problem in Hessenberg coordinates, *is* the backbone's minimal-residual
-Krylov iterate `Krylov.IsMinResIterate` on `𝒦_m(A, r₀)`. Everything else — Proposition 6.9(2),
+Krylov iterate `Krylov.IsMinResidualIterate` on `𝒦_m(A, r₀)`. Everything else — Proposition 6.9(2),
 (6.41), (6.42), Proposition 6.10, the "at most `n` steps" remark — is a specialization of a
 backbone theorem through that equivalence, the Givens layer above, and the bridge family
 `arnoldiCGS_v₁`, `arnoldiCoeff_v₁`, `Hbar_v₁`, `grade_v₁` of `Chapter06/Common.lean` (the backbone
@@ -88,7 +88,7 @@ truncation supplies through the orthonormality of the first `k + 1` vectors of t
 orthogonalization process, which lives in `Chapter06/Section04.lean`.
 
 **Theorem 6.11** (Freund–Nachtigal) is `theorem_6_11`, two lines of
-`Krylov.IsQuasiMinResIterate.norm_residual_le_mul` once `qgmres_isQuasiMinResIterate` identifies
+`Krylov.IsQuasiMinResidualIterate.norm_residual_le_mul` once `qgmres_isQuasiMinResidualIterate` identifies
 Algorithm 6.12 as a quasi-minimal-residual iterate. The book factors `V_{m+1} = W S` with `W`
 orthonormal, which needs `V_{m+1}` to have full rank; the backbone needs only the two-sided bound
 `c ‖w‖₂ ≤ ‖V_{m+1} w‖₂ ≤ C ‖w‖₂`, whose ratio `C/c` is `κ₂(V_{m+1})`, and no factorization.
@@ -125,7 +125,7 @@ scale factors `τ_m` are `qmrsTau`.
 The bridge to the backbone is `smoothEta_eq` (the book's `η_m` is `Krylov.smoothingCoeff`) and
 `mrs_eq` (Algorithm 6.14 run on `(x^O_m, b - A x^O_m)` computes `Krylov.mrs`); Lemma 6.18
 (Weiss) is then `Krylov.inv_sq_norm_smoothing`, and "minimal residual smoothing of FOM gives
-GMRES" is `Krylov.IsGalerkinIterate.mrs_isMinResIterate`, both from
+GMRES" is `Krylov.IsGalerkinIterate.mrs_isMinResidualIterate`, both from
 `Numlib/Krylov/Relations.lean`. The remaining items — (6.77)–(6.79) and their QMRS analogues —
 are the short inductions the book performs, shared by the single private lemma
 `residual_eq_weighted`. §6.5.8 is real throughout in the book, so this part is written over `ℝ`.
@@ -707,22 +707,22 @@ def IsGMRESIterate (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (m : ℕ) (
 /-- **(6.29)–(6.30)**: the GMRES approximation is exactly the minimal-residual Krylov iterate on
 `𝒦_m(A, r_0)`; this is the identification from which the rest of §6.5 follows. -/
 theorem isGMRESIterate_iff {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) {x : 𝔼} :
-    IsGMRESIterate A b x₀ m x ↔ Krylov.IsMinResIterate (op A) b x₀ m x := by
+    IsGMRESIterate A b x₀ m x ↔ Krylov.IsMinResidualIterate (op A) b x₀ m x := by
   have hm' : m ≤ Krylov.grade (op A) (r₀ A b x₀) := by rwa [← grade_v₁]
   constructor
   · rintro ⟨y, hy, rfl⟩
     rw [krylovIterate_eq_sum]
-    exact (Krylov.isMinResIterate_iff_isMinOn hm' y).2 (by rwa [J_eq] at hy)
+    exact (Krylov.isMinResidualIterate_iff_isMinOn hm' y).2 (by rwa [J_eq] at hy)
   · intro hx
     obtain ⟨y, -, hxe⟩ := hx.exists_mulVec_rotated_eq hm'
     refine ⟨y, ?_, by rw [krylovIterate_eq_sum]; exact hxe⟩
     rw [J_eq]
-    exact (Krylov.isMinResIterate_iff_isMinOn hm' y).1 (by rwa [← hxe])
+    exact (Krylov.isMinResidualIterate_iff_isMinOn hm' y).1 (by rwa [← hxe])
 
 /-- The GMRES approximation exists at every step. -/
 theorem exists_isGMRESIterate {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) :
     ∃ x, IsGMRESIterate A b x₀ m x := by
-  obtain ⟨x, hx⟩ := Krylov.exists_isMinResIterate (op A) b x₀ m
+  obtain ⟨x, hx⟩ := Krylov.exists_isMinResidualIterate (op A) b x₀ m
   exact ⟨x, (isGMRESIterate_iff A b x₀ hm).2 hx⟩
 
 /-- `A` nonsingular makes `x ↦ A x` injective. -/
@@ -740,7 +740,7 @@ vector of `x_0 + 𝒦_m` minimizing (6.26). -/
 theorem existsUnique_isGMRESIterate {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) (hA : IsUnit A) :
     ∃! x, IsGMRESIterate A b x₀ m x := by
   obtain ⟨x, hx, huniq⟩ :=
-    Krylov.existsUnique_isMinResIterate_of_injective (injective_op_of_isUnit hA) b x₀ m
+    Krylov.existsUnique_isMinResidualIterate_of_injective (injective_op_of_isUnit hA) b x₀ m
   exact ⟨x, (isGMRESIterate_iff A b x₀ hm).2 hx,
     fun z hz => huniq z ((isGMRESIterate_iff A b x₀ hm).1 hz)⟩
 
@@ -809,9 +809,9 @@ theorem gmresFixed_isGMRESIterate {m : ℕ} (hR : IsUnit (R (arnoldiCoeff A (v�
   ⟨gmresY A b x₀ m, (proposition_6_9_2 A b x₀ hR).1, rfl⟩
 
 /-- Algorithm 6.9 computes the minimal-residual Krylov iterate. -/
-theorem gmresFixed_isMinResIterate {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀))
+theorem gmresFixed_isMinResidualIterate {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀))
     (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m)) :
-    Krylov.IsMinResIterate (op A) b x₀ m (gmresFixed A b x₀ m) :=
+    Krylov.IsMinResidualIterate (op A) b x₀ m (gmresFixed A b x₀ m) :=
   (isGMRESIterate_iff A b x₀ hm).1 (gmresFixed_isGMRESIterate A b x₀ hR)
 
 /-! ### Proposition 6.9(1), (6.41), (6.42) -/
@@ -832,7 +832,7 @@ theorem isUnit_R_of_isUnit {m : ℕ} (hA : IsUnit A) (hm : m ≤ grade A (v₁ A
   rcases lt_or_ge (k + 1) (Krylov.grade (op A) (r₀ A b x₀)) with h1 | h1
   · exact Krylov.givensRho_arnoldi_ne_zero h1
   · have hgal : ∃! x, Krylov.IsGalerkinIterate (op A) b x₀ (k + 1) x := by
-      obtain ⟨x, hx⟩ := Krylov.exists_isMinResIterate (op A) b x₀ (k + 1)
+      obtain ⟨x, hx⟩ := Krylov.exists_isMinResidualIterate (op A) b x₀ (k + 1)
       have hAx : op A x = b := hx.apply_eq_of_grade_le h1 hinj.injOn
       refine ⟨x, ⟨hx.mem, ?_⟩, fun z hz => hinj ?_⟩
       · rw [hAx, sub_self]
@@ -870,8 +870,8 @@ theorem equation_6_42 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀))
       ‖γ (arnoldiCoeff A (v₁ A b x₀)) (β A b x₀ : 𝕜) m‖ := by
   have hρ := (isUnit_R_iff _ (hessenberg_coeffs A b x₀)).1 hR
   rw [arnoldiCoeff_v₁] at hρ ⊢
-  exact Krylov.IsMinResIterate.norm_residual_eq_norm_gamma_of_givensRho_ne_zero
-    (by rwa [← grade_v₁]) hρ (gmresFixed_isMinResIterate A b x₀ hm hR)
+  exact Krylov.IsMinResidualIterate.norm_residual_eq_norm_gamma_of_givensRho_ne_zero
+    (by rwa [← grade_v₁]) hρ (gmresFixed_isMinResidualIterate A b x₀ hm hR)
 
 /-- (6.47) and (6.42): if `s_{m+1} = 0` the GMRES approximation at step `m+1` is exact. -/
 theorem apply_eq_of_s_eq_zero {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀))
@@ -915,7 +915,7 @@ theorem proposition_6_10 (hA : IsUnit A) {j : ℕ} (hj : 0 < j) (hjg : j ≤ gra
       Krylov.grade (op A) (r₀ A b x₀) ≤ j := by
     rw [arnoldiCoeff_v₁, ← hj1]
     exact Arnoldi.coeff_succ_self_eq_zero_iff (op A) (r₀ A b x₀) (j - 1)
-  have hx := gmresFixed_isMinResIterate A b x₀ hjg (isUnit_R_of_isUnit A b x₀ hA hjg)
+  have hx := gmresFixed_isMinResidualIterate A b x₀ hjg (isUnit_R_of_isUnit A b x₀ hA hjg)
   rw [hbd]
   refine ⟨fun hg => hx.apply_eq_of_grade_le hg (injective_op_of_isUnit hA).injOn, fun hex => ?_⟩
   exact Krylov.grade_le_of_apply_eq hx.mem hex
@@ -925,7 +925,7 @@ theorem gmres_apply_eq (hA : IsUnit A) {m : ℕ} (hmn : n ≤ m) : op A (gmres A
   have hg : grade A (v₁ A b x₀) ≤ n := grade_le_card A _
   have hmEff : mEff A b x₀ m = grade A (v₁ A b x₀) := min_eq_right (le_trans hg hmn)
   rw [gmres, hmEff]
-  exact (gmresFixed_isMinResIterate A b x₀ le_rfl
+  exact (gmresFixed_isMinResidualIterate A b x₀ le_rfl
     (isUnit_R_of_isUnit A b x₀ hA le_rfl)).apply_eq_of_grade_le (by rw [← grade_v₁])
     (injective_op_of_isUnit hA).injOn
 
@@ -1051,9 +1051,9 @@ theorem gmresHH_eq_add_sum (m : ℕ) :
 /-- §6.5.2: Algorithm 6.10 computes the minimal-residual Krylov iterate — the same vector as
 Algorithm 6.9. The Householder basis spans the same Krylov flag and is orthonormal, so the
 least-squares problem it solves is the same one, in another orthonormal basis. -/
-theorem gmresHH_isMinResIterate {m : ℕ} (hn : m + 1 ≤ n) (hm : m ≤ grade A (r₀ A b x₀))
+theorem gmresHH_isMinResidualIterate {m : ℕ} (hn : m + 1 ≤ n) (hm : m ≤ grade A (r₀ A b x₀))
     (hR : IsUnit (R (hhCoeff A (r₀ A b x₀)) m)) :
-    Krylov.IsMinResIterate (op A) b x₀ m (gmresHH A b x₀ m) := by
+    Krylov.IsMinResidualIterate (op A) b x₀ m (gmresHH A b x₀ m) := by
   have hrange : (Set.range fun i : Fin m => hhV A (r₀ A b x₀) (i : ℕ))
       = hhV A (r₀ A b x₀) '' Set.Iio m := by
     ext w
@@ -1080,13 +1080,13 @@ theorem gmresHH_isMinResIterate {m : ℕ} (hn : m + 1 ≤ n) (hm : m ≤ grade A
 theorem gmresHH_eq {m : ℕ} (hn : m + 1 ≤ n) (hm : m ≤ grade A (v₁ A b x₀)) (hA : IsUnit A)
     (hR : IsUnit (R (hhCoeff A (r₀ A b x₀)) m)) :
     gmresHH A b x₀ m = gmresFixed A b x₀ m := by
-  obtain ⟨xx, -, huniq⟩ := Krylov.existsUnique_isMinResIterate_of_injective
+  obtain ⟨xx, -, huniq⟩ := Krylov.existsUnique_isMinResidualIterate_of_injective
     (injective_op_of_isUnit hA) b x₀ m
   have hmr : m ≤ grade A (r₀ A b x₀) := by
     rw [grade_eq, ← grade_v₁]
     exact hm
-  rw [huniq _ (gmresHH_isMinResIterate A b x₀ hn hmr hR),
-    huniq _ (gmresFixed_isMinResIterate A b x₀ hm (isUnit_R_of_isUnit A b x₀ hA hm))]
+  rw [huniq _ (gmresHH_isMinResidualIterate A b x₀ hn hmr hR),
+    huniq _ (gmresFixed_isMinResidualIterate A b x₀ hm (isUnit_R_of_isUnit A b x₀ hA hm))]
 
 end Householder
 
@@ -1110,9 +1110,9 @@ theorem residual_eq_6_28 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) (y : Fin
 
 /-- **(6.29)–(6.30)**: the GMRES approximation is the unique vector of `x_0 + 𝒦_m` minimizing
 `‖b - A x‖₂`; equivalently, it is the backbone's minimal-residual Krylov iterate. -/
-theorem gmres_isMinResIterate_iff {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀))
+theorem gmres_isMinResidualIterate_iff {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀))
     {x : EuclideanSpace ℝ (Fin n)} :
-    IsGMRESIterate A b x₀ m x ↔ Krylov.IsMinResIterate (op A) b x₀ m x :=
+    IsGMRESIterate A b x₀ m x ↔ Krylov.IsMinResidualIterate (op A) b x₀ m x :=
   isGMRESIterate_iff A b x₀ hm
 
 /-- **(6.29)–(6.30)**, uniqueness: for nonsingular `A` there is exactly one GMRES approximation
@@ -1513,9 +1513,9 @@ theorem equation_6_51 {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ : 𝔼} {u : ℕ
 minimizing the quasi-residual `‖β e_1 - H̄_m y‖₂`. This is the identification that carries the
 general quasi-minimal-residual theory of `Numlib/Krylov/QuasiMinRes.lean` — which QMR, TFQMR and
 FGMRES also use — down to Algorithms 6.12 and 6.13. -/
-theorem qgmres_isQuasiMinResIterate (x₀ : 𝔼) (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (β : 𝕜)
+theorem qgmres_isQuasiMinResidualIterate (x₀ : 𝔼) (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (β : 𝕜)
     (hh : ∀ i j : ℕ, j + 1 < i → h i j = 0) {m : ℕ} (hR : IsUnit (R h m)) :
-    Krylov.IsQuasiMinResIterate u h β x₀ m (qgmres x₀ u h β m) :=
+    Krylov.IsQuasiMinResidualIterate u h β x₀ m (qgmres x₀ u h β m) :=
   ⟨qgmresY h β m, (isMinOn_lsq h β hh hR).1, by rw [qgmres, toEuclideanLin_colMatrix_apply]⟩
 
 /-- **Theorem 6.11** (Freund–Nachtigal). Assume that `m` steps of DQGMRES have been taken and
@@ -1526,7 +1526,7 @@ that the basis `V_{m+1}` produced by the incomplete orthogonalization satisfies
 `‖r^Q_m‖₂ ≤ κ₂(V_{m+1}) ‖r^G_m‖₂`, with `r^G_m` the residual of the `m`-th GMRES iterate.
 
 The book proves this by factoring `V_{m+1} = W S` with `W` orthonormal, which needs `V_{m+1}` to
-have full rank; the backbone's `Krylov.IsQuasiMinResIterate.norm_residual_le_mul` needs neither
+have full rank; the backbone's `Krylov.IsQuasiMinResidualIterate.norm_residual_le_mul` needs neither
 the factorization nor the full rank, only the two-sided bound, and gives the same estimate
 against *every* point of `x_0 + span {v_1, …, v_m}` — the GMRES iterate being the point that
 makes it sharpest. -/
@@ -1545,15 +1545,15 @@ theorem theorem_6_11 {A : Matrix (Fin n) (Fin n) 𝕜} (b x₀ : 𝔼) {u : ℕ 
   have hmem : gmresFixed A b x₀ m - x₀ ∈
       Submodule.span 𝕜 (Set.range fun i : Fin m => u (i : ℕ)) := by
     rw [hspan, krylov_eq]
-    exact (gmresFixed_isMinResIterate A b x₀ hm hRA).mem
+    exact (gmresFixed_isMinResidualIterate A b x₀ hm hRA).mem
   obtain ⟨w, hw⟩ := (Submodule.mem_span_range_iff_exists_fun 𝕜).1 hmem
   have hxG : gmresFixed A b x₀ m = x₀ + ∑ j, w j • u (j : ℕ) := by
     rw [hw]
     abel
   rw [hxG]
-  exact Krylov.IsQuasiMinResIterate.norm_residual_le_mul
+  exact Krylov.IsQuasiMinResidualIterate.norm_residual_le_mul
     (Krylov.HessenbergRelation₂.of_hessenbergRelation hu) hr hc0 hc hC
-    (qgmres_isQuasiMinResIterate x₀ u h β hu.eq_zero_of_lt hR) w
+    (qgmres_isQuasiMinResidualIterate x₀ u h β hu.eq_zero_of_lt hR) w
 
 /-! ### Algorithm 6.13 (DQGMRES) -/
 
@@ -1909,9 +1909,9 @@ theorem ρG_eq_norm_gamma {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀))
   equation_6_42 A b x₀ hm hR
 
 /-- Algorithm 6.9 computes the minimal-residual iterate at every step below the grade. -/
-theorem gmresFixed_isMinResIterate_of_lt {m : ℕ} (hm : m < grade A (v₁ A b x₀)) :
-    Krylov.IsMinResIterate (op A) b x₀ m (gmresFixed A b x₀ m) :=
-  gmresFixed_isMinResIterate A b x₀ hm.le (isUnit_R_of_lt_grade A b x₀ hm)
+theorem gmresFixed_isMinResidualIterate_of_lt {m : ℕ} (hm : m < grade A (v₁ A b x₀)) :
+    Krylov.IsMinResidualIterate (op A) b x₀ m (gmresFixed A b x₀ m) :=
+  gmresFixed_isMinResidualIterate A b x₀ hm.le (isUnit_R_of_lt_grade A b x₀ hm)
 
 /-- Algorithm 6.4 computes the Galerkin iterate whenever `H_m` is nonsingular. -/
 theorem fomFixed_isGalerkin {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀))
@@ -1922,15 +1922,15 @@ theorem fomFixed_isGalerkin {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀))
 /-- `ρ_m^G ≤ ρ_m^F`: the two iterates minimize over the same affine space. -/
 theorem ρG_le_ρF {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) (hH : FOMDefined A b x₀ m)
     (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m)) : ρG A b x₀ m ≤ ρF A b x₀ m :=
-  Krylov.norm_residual_minRes_le_galerkin (gmresFixed_isMinResIterate A b x₀ hm hR)
+  Krylov.norm_residual_minRes_le_galerkin (gmresFixed_isMinResidualIterate A b x₀ hm hR)
     (fomFixed_isGalerkin A b x₀ hm hH)
 
 /-- The GMRES residual norms are nonincreasing (`𝒦_m ⊆ 𝒦_{m+1}`). -/
 theorem ρG_succ_le {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀))
     (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) (m + 1))) :
     ρG A b x₀ (m + 1) ≤ ρG A b x₀ m :=
-  IsMinRes.norm_residual_le (gmresFixed_isMinResIterate_of_lt A b x₀ (by omega))
-    (gmresFixed_isMinResIterate A b x₀ hm hR)
+  IsMinResidual.norm_residual_le (gmresFixed_isMinResidualIterate_of_lt A b x₀ (by omega))
+    (gmresFixed_isMinResidualIterate A b x₀ hm hR)
     (Krylov.subspace_mono (op A) (b - op A x₀) (Nat.le_succ m))
 
 /-- The padded GMRES vector `(y_m; 0)` solves the system of step `m + 1` except in its last
@@ -1994,9 +1994,9 @@ variable {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : EuclideanSpace ℝ
 theorem ρG_succ {m : ℕ} (hm : m + 1 < grade A (v₁ A b x₀)) :
     ρG A b x₀ (m + 1) = ‖s (arnoldiCoeff A (v₁ A b x₀)) m‖ * ρG A b x₀ m := by
   rw [arnoldiCoeff_v₁]
-  exact Krylov.IsMinResIterate.norm_residual_succ_eq (by rw [← grade_v₁]; exact hm)
-    (gmresFixed_isMinResIterate_of_lt A b x₀ (by omega))
-    (gmresFixed_isMinResIterate_of_lt A b x₀ hm)
+  exact Krylov.IsMinResidualIterate.norm_residual_succ_eq (by rw [← grade_v₁]; exact hm)
+    (gmresFixed_isMinResidualIterate_of_lt A b x₀ (by omega))
+    (gmresFixed_isMinResidualIterate_of_lt A b x₀ hm)
 
 /-- **(6.62)**: `ρ_m^G = |s_1 s_2 ⋯ s_m| β`. -/
 theorem equation_6_62 {m : ℕ} (hm : m < grade A (v₁ A b x₀)) :
@@ -2014,7 +2014,7 @@ theorem ρF_eq_div_norm_c {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀))
   rw [arnoldiCoeff_v₁]
   exact Krylov.IsGalerkinIterate.norm_residual_eq_div_norm_givensC
     (by rw [← grade_v₁]; exact hm) (fomFixed_isGalerkin A b x₀ hm hH)
-    (gmresFixed_isMinResIterate A b x₀ hm (isUnit_R_of_fomDefined A b x₀ hm hH))
+    (gmresFixed_isMinResidualIterate A b x₀ hm (isUnit_R_of_fomDefined A b x₀ hm hH))
 
 /-- The subdiagonal Arnoldi entry survives the first `m` rotations unchanged. -/
 private theorem rotated_succ_row (h : ℕ → ℕ → ℝ) (m : ℕ) :
@@ -2076,8 +2076,8 @@ theorem equation_6_65 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀)) (hH : F
     (h0 : ρG A b x₀ (m + 1) ≠ 0) :
     1 / ρF A b x₀ (m + 1) ^ 2 + 1 / ρG A b x₀ m ^ 2 = 1 / ρG A b x₀ (m + 1) ^ 2 := by
   have hkey := Krylov.inv_sq_norm_residual_minRes
-    (gmresFixed_isMinResIterate_of_lt A b x₀ (by omega))
-    (gmresFixed_isMinResIterate A b x₀ hm (isUnit_R_of_fomDefined A b x₀ hm hH))
+    (gmresFixed_isMinResidualIterate_of_lt A b x₀ (by omega))
+    (gmresFixed_isMinResidualIterate A b x₀ hm (isUnit_R_of_fomDefined A b x₀ hm hH))
     (fomFixed_isGalerkin A b x₀ hm hH) (norm_ne_zero_iff.1 h0)
   linarith
 
@@ -2131,7 +2131,7 @@ theorem equation_6_66 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) (hH : ∀ i
     (h0 : ρG A b x₀ m ≠ 0) :
     ∑ i ∈ Finset.range (m + 1), 1 / ρF A b x₀ i ^ 2 = 1 / ρG A b x₀ m ^ 2 :=
   (Krylov.inv_sq_norm_residual_minRes_eq_sum (xF := fun i => fomFixed A b x₀ i)
-    (gmresFixed_isMinResIterate A b x₀ hm (isUnit_R_of_fomDefined A b x₀ hm (hH m le_rfl)))
+    (gmresFixed_isMinResidualIterate A b x₀ hm (isUnit_R_of_fomDefined A b x₀ hm (hH m le_rfl)))
     (fun i hi => fomFixed_isGalerkin A b x₀ (hi.trans hm) (hH i hi))
     (norm_ne_zero_iff.1 h0)).symm
 
@@ -2156,7 +2156,7 @@ theorem proposition_6_15 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀))
     (hH : ∀ i ≤ m, FOMDefined A b x₀ i) :
     ρG A b x₀ m ≤ ρFmin A b x₀ m ∧
       ρFmin A b x₀ m ≤ Real.sqrt (m + 1) * ρG A b x₀ m := by
-  have hG := gmresFixed_isMinResIterate A b x₀ hm
+  have hG := gmresFixed_isMinResidualIterate A b x₀ hm
     (isUnit_R_of_fomDefined A b x₀ hm (hH m le_rfl))
   constructor
   · refine le_ρFmin A b x₀ fun i hi' _ => ?_
@@ -2191,8 +2191,8 @@ theorem equation_6_74 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀)) (hA : I
     have := equation_6_35 h (givensRho_ne_zero_of_fomDefined A b x₀ hm hH)
     linarith
   have hcomb := Krylov.minRes_eq_combination
-    (gmresFixed_isMinResIterate_of_lt A b x₀ (by omega))
-    (gmresFixed_isMinResIterate A b x₀ hm hRm1) (fomFixed_isGalerkin A b x₀ hm hH)
+    (gmresFixed_isMinResidualIterate_of_lt A b x₀ (by omega))
+    (gmresFixed_isMinResidualIterate A b x₀ hm hRm1) (fomFixed_isGalerkin A b x₀ hm hH)
     (injective_op_of_isUnit hA) hF0
   rw [hcomb, hratio, hcs]
   norm_num
@@ -2226,7 +2226,7 @@ theorem problem_6_14 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀)) (hA : Is
       ρG A b x₀ (m + 1) ^ 2
         = s (arnoldiCoeff A (v₁ A b x₀)) m ^ 4 * ρG A b x₀ m ^ 2 +
           c (arnoldiCoeff A (v₁ A b x₀)) m ^ 4 * ρF A b x₀ (m + 1) ^ 2 := by
-  have hG := gmresFixed_isMinResIterate_of_lt A b x₀ (show m < grade A (v₁ A b x₀) by omega)
+  have hG := gmresFixed_isMinResidualIterate_of_lt A b x₀ (show m < grade A (v₁ A b x₀) by omega)
   have hF := fomFixed_isGalerkin A b x₀ hm hH
   have horth : inner ℝ (b - op A (gmresFixed A b x₀ m))
       (b - op A (fomFixed A b x₀ (m + 1))) = 0 :=
@@ -2282,7 +2282,7 @@ private theorem exists_galerkin_iff {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b 
     (h0 : ρG A b x₀ (m + 1) ≠ 0) :
     (∃ x, Krylov.IsGalerkinIterate (op A) b x₀ (m + 1) x) ↔ FOMDefined A b x₀ (m + 1) := by
   refine ⟨fun ⟨xF, hF⟩ => ?_, fun hH => ⟨_, fomFixed_isGalerkin A b x₀ hm hH⟩⟩
-  have hG := gmresFixed_isMinResIterate A b x₀ hm (isUnit_R_of_isUnit A b x₀ hA hm)
+  have hG := gmresFixed_isMinResidualIterate A b x₀ hm (isUnit_R_of_isUnit A b x₀ hA hm)
   have hkey := Krylov.IsGalerkinIterate.norm_residual_eq_div_norm_givensC
     (by rw [← grade_v₁]; exact hm) hF hG
   have hcne : Krylov.givensC (Arnoldi.coeff (op A) (r₀ A b x₀)) m ≠ 0 := by
@@ -2297,8 +2297,8 @@ when FOM breaks down there (`H_{m+1}` singular). -/
 theorem proposition_6_17 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀)) (hA : IsUnit A)
     (h0 : ρG A b x₀ (m + 1) ≠ 0) :
     gmresFixed A b x₀ (m + 1) = gmresFixed A b x₀ m ↔ ¬ FOMDefined A b x₀ (m + 1) := by
-  have hG := gmresFixed_isMinResIterate_of_lt A b x₀ (show m < grade A (v₁ A b x₀) by omega)
-  have hG' := gmresFixed_isMinResIterate A b x₀ hm (isUnit_R_of_isUnit A b x₀ hA hm)
+  have hG := gmresFixed_isMinResidualIterate_of_lt A b x₀ (show m < grade A (v₁ A b x₀) by omega)
+  have hG' := gmresFixed_isMinResidualIterate A b x₀ hm (isUnit_R_of_isUnit A b x₀ hA hm)
   have hbb := Krylov.norm_residual_minRes_eq_iff_not_exists_galerkin hG hG'
     (norm_ne_zero_iff.1 h0) (by rw [← grade_v₁]; exact hm)
   rw [← exists_galerkin_iff A b x₀ hm hA h0, ← hbb]
@@ -2307,8 +2307,8 @@ theorem proposition_6_17 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀)) (hA 
     rw [heq]
   · intro heq
     obtain ⟨z, -, huniq⟩ :=
-      Krylov.existsUnique_isMinResIterate_of_injective (injective_op_of_isUnit hA) b x₀ (m + 1)
-    have hGm : Krylov.IsMinResIterate (op A) b x₀ (m + 1) (gmresFixed A b x₀ m) := by
+      Krylov.existsUnique_isMinResidualIterate_of_injective (injective_op_of_isUnit hA) b x₀ (m + 1)
+    have hGm : Krylov.IsMinResidualIterate (op A) b x₀ (m + 1) (gmresFixed A b x₀ m) := by
       refine ⟨Krylov.subspace_mono (op A) (b - op A x₀) (Nat.le_succ m) hG.mem, fun y hy => ?_⟩
       rw [← heq]
       exact hG'.min y hy
@@ -2914,12 +2914,12 @@ theorem mrsX_sub_mem (xO rO : ℕ → 𝔼) {m : ℕ}
 
 /-- **§6.5.8**: minimal residual smoothing of a sequence of Galerkin (FOM) iterates produces the
 minimal-residual (GMRES) iterates. -/
-theorem mrs_isMinResIterate (hA : IsUnit A) (xO rO : ℕ → 𝔼)
+theorem mrs_isMinResidualIterate (hA : IsUnit A) (xO rO : ℕ → 𝔼)
     (hr : ∀ j, rO j = b - op A (xO j)) (m : ℕ)
     (hO : ∀ i ≤ m, Krylov.IsGalerkinIterate (op A) b x₀ i (xO i)) :
-    Krylov.IsMinResIterate (op A) b x₀ m (mrsX xO rO m) := by
+    Krylov.IsMinResidualIterate (op A) b x₀ m (mrsX xO rO m) := by
   rw [(mrs_eq A b xO rO hr m).1]
-  exact Krylov.IsGalerkinIterate.mrs_isMinResIterate (injective_op_of_isUnit hA) m hO
+  exact Krylov.IsGalerkinIterate.mrs_isMinResidualIterate (injective_op_of_isUnit hA) m hO
 
 /-- **§6.5.8**: minimal residual smoothing of the FOM approximations produces exactly the GMRES
 approximations. The FOM residuals are mutually orthogonal, so Lemma 6.18 applies at every step
@@ -2931,7 +2931,7 @@ theorem mrs_fom_eq_gmres (hA : IsUnit A) (rO : ℕ → 𝔼)
     mrsX (fomFixed A b x₀) rO m = gmresFixed A b x₀ m := by
   have hgal : ∀ i ≤ m, Krylov.IsGalerkinIterate (op A) b x₀ i (fomFixed A b x₀ i) :=
     fun i hi => fomFixed_isGalerkin A b x₀ (hi.trans hm) (hH i hi)
-  have hG := gmresFixed_isMinResIterate A b x₀ hm (isUnit_R_of_fomDefined A b x₀ hm (hH m le_rfl))
+  have hG := gmresFixed_isMinResidualIterate A b x₀ hm (isUnit_R_of_fomDefined A b x₀ hm (hH m le_rfl))
   have hrne : ∀ j ≤ m, rO j ≠ 0 := by
     intro j hj hz
     rw [hr j] at hz
@@ -2966,12 +2966,12 @@ theorem mrs_fom_eq_gmres (hA : IsUnit A) (rO : ℕ → 𝔼)
       field_simp at hsum'
       linarith
     nlinarith [norm_nonneg (mrsR (fomFixed A b x₀) rO m), hGpos, hsq]
-  have hmres : Krylov.IsMinResIterate (op A) b x₀ m (mrsX (fomFixed A b x₀) rO m) := by
+  have hmres : Krylov.IsMinResidualIterate (op A) b x₀ m (mrsX (fomFixed A b x₀) rO m) := by
     refine ⟨mrsX_sub_mem A b x₀ _ rO fun i hi => (hgal i hi).mem, fun y hy => ?_⟩
     rw [hnorm]
     exact hG.min y hy
   obtain ⟨z, -, huniq⟩ :=
-    Krylov.existsUnique_isMinResIterate_of_injective (injective_op_of_isUnit hA) b x₀ m
+    Krylov.existsUnique_isMinResidualIterate_of_injective (injective_op_of_isUnit hA) b x₀ m
   rw [huniq _ hmres, huniq _ hG]
 
 /-- **(6.79)** for a sequence of Galerkin (FOM) iterates, read off the backbone directly. -/
@@ -2997,8 +2997,8 @@ theorem problem_6_26 (hA : IsUnit A) (xO rO : ℕ → 𝔼) (hr : ∀ j, rO j = 
     have h := mrs_eq A b xO rO hr k
     rw [h.1]
     exact h.2
-  have hminres : ∀ k, Krylov.IsMinResIterate (op A) b x₀ k (mrsX xO rO k) :=
-    fun k => mrs_isMinResIterate A b x₀ hA xO rO hr k fun i _ => hO i
+  have hminres : ∀ k, Krylov.IsMinResidualIterate (op A) b x₀ k (mrsX xO rO k) :=
+    fun k => mrs_isMinResidualIterate A b x₀ hA xO rO hr k fun i _ => hO i
   have key : ∀ p q : ℕ, p < q →
       inner ℝ (op A (xO (p + 1) - mrsX xO rO p)) (op A (xO (q + 1) - mrsX xO rO q)) = 0 := by
     intro p q hpq
@@ -3012,7 +3012,7 @@ theorem problem_6_26 (hA : IsUnit A) (xO rO : ℕ → 𝔼) (hr : ∀ j, rO j = 
     have h1 : inner ℝ (op A (xO (p + 1) - mrsX xO rO p)) (mrsR xO rO q) = 0 := by
       rw [hres q]
       exact (Submodule.mem_orthogonal _ _).1
-        (Krylov.IsMinResIterate.residual_mem_orthogonal (hminres q)) _ hmem
+        (Krylov.IsMinResidualIterate.residual_mem_orthogonal (hminres q)) _ hmem
     have h2 : inner ℝ (op A (xO (p + 1) - mrsX xO rO p)) (rO (q + 1)) = 0 := by
       rw [hr (q + 1)]
       exact IsPetrovGalerkin.inner_residual_eq_zero (hO (q + 1))

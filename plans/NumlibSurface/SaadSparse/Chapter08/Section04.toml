@@ -34,7 +34,7 @@ id = "uzawa_eq_splitting"
 id = "corollary_8_1"
 
 [[node]]
-id = "equation_8_32_isMinRes"
+id = "equation_8_32_isMinResidual"
 
 [[node]]
 id = "arrowHurwicz"

@@ -20,10 +20,10 @@ id = "CR.inner_residual_apply_direction_eq_zero"
 id = "CR.inner_residual_apply_residual_eq_zero"
 
 [[node]]
-id = "CR.isMinResIterate"
+id = "CR.isMinResidualIterate"
 
 [[node]]
-id = "CR.isMinResIterate_of_no_breakdown"
+id = "CR.isMinResidualIterate_of_no_breakdown"
 
 [[node]]
 id = "CR.iterate"
@@ -65,7 +65,7 @@ id = "CR.span_direction_eq"
 id = "CR.step"
 
 [[node]]
-id = "Krylov.isMinResIterate_of_orthogonal_directions"
+id = "Krylov.isMinResidualIterate_of_orthogonal_directions"
 
 [[node]]
 id = "CR.norm_iterate_lt_of_pos"

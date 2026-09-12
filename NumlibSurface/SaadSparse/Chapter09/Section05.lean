@@ -18,10 +18,10 @@ is ever formed. **Algorithm 9.7** (left-preconditioned CGNR) is `pcgnr` and **Al
 carried is the true residual `r_j = b - A x_j`, and the direction vectors of Algorithm 9.8
 carry an extra `Aᴴ` — are the same ones.
 
-The two optimality properties are `pcgnr_isMinRes` and `pcgne_isMinError`: Algorithm 9.1 is a
+The two optimality properties are `pcgnr_isMinResidual` and `pcgne_isMinError`: Algorithm 9.1 is a
 Galerkin method over the preconditioned Krylov space (`pcg_isGalerkinIterate`), and the two
 readings of that condition through the adjoint are
-`isGalerkin_adjoint_comp_iff_isMinRes` and `isMinError_of_isGalerkin_comp_adjoint`, the
+`isGalerkin_adjoint_comp_iff_isMinResidual` and `isMinError_of_isGalerkin_comp_adjoint`, the
 general-subspace forms of what `Numlib/Krylov/NormalEquations` proves for the unpreconditioned
 Krylov space. Unlike the unpreconditioned case, the two search spaces now *differ*: Algorithm
 9.7 minimizes `‖b - A x‖₂` over `x₀ + 𝒦_m(M⁻¹ Aᴴ A, M⁻¹ Aᴴ r₀)` while Algorithm 9.8 minimizes
@@ -110,13 +110,13 @@ an arbitrary subspace `K`. -/
 /-- **CGNR's optimality over an arbitrary subspace.** A Galerkin iterate for the normal
 equations `Aᴴ A x = Aᴴ b` over `x₀ + K` is exactly a minimal-residual iterate for `A x = b`
 over `x₀ + K`: both say that `b - A x ⟂ A K`. This is
-`Krylov.isGalerkinIterate_adjoint_comp_iff_isMinRes` with the Krylov subspace it is stated for
+`Krylov.isGalerkinIterate_adjoint_comp_iff_isMinResidual` with the Krylov subspace it is stated for
 replaced by an arbitrary `K`. -/
-theorem isGalerkin_adjoint_comp_iff_isMinRes (A : Matrix (Fin n) (Fin n) 𝕜)
+theorem isGalerkin_adjoint_comp_iff_isMinResidual (A : Matrix (Fin n) (Fin n) 𝕜)
     (b x₀ : EuclideanSpace 𝕜 (Fin n)) (K : Submodule 𝕜 (EuclideanSpace 𝕜 (Fin n)))
     (x : EuclideanSpace 𝕜 (Fin n)) :
-    IsGalerkin (op Aᴴ ∘ₗ op A) (op Aᴴ b) x₀ K x ↔ IsMinRes (op A) b x₀ K x := by
-  rw [IsMinRes.iff_isPetrovGalerkin]
+    IsGalerkin (op Aᴴ ∘ₗ op A) (op Aᴴ b) x₀ K x ↔ IsMinResidual (op A) b x₀ K x := by
+  rw [IsMinResidual.iff_isPetrovGalerkin]
   constructor <;> rintro ⟨hmem, horth⟩
   · refine ⟨hmem, (Submodule.mem_orthogonal _ _).2 ?_⟩
     rintro _ ⟨w, hw, rfl⟩
@@ -270,10 +270,10 @@ theorem pcgnrX_eq (hMinv : (op M⁻¹).IsSymmetric) (b x₀ : EuclideanSpace �
 The coercivity hypothesis is the generalized eigenvalue bound `c (M x, x) ≤ ‖A x‖₂²` that makes
 `M⁻¹ Aᴴ A` symmetric coercive in the `M`-inner product; for a nonsingular `A` and a symmetric
 positive definite `M` it holds with `c = σ_min(A)²/λ_max(M)`. -/
-theorem pcgnr_isMinRes (hM : Krylov.IsPreconditioner (op M) (op M⁻¹)) {c : ℝ} (hc : 0 < c)
+theorem pcgnr_isMinResidual (hM : Krylov.IsPreconditioner (op M) (op M⁻¹)) {c : ℝ} (hc : 0 < c)
     (hcoer : ∀ x : 𝔼, c * RCLike.re (inner 𝕜 (op M x) x) ≤ ‖op A x‖ ^ 2)
     (b x₀ : EuclideanSpace 𝕜 (Fin n)) (m : ℕ) :
-    IsMinRes (op A) b x₀
+    IsMinResidual (op A) b x₀
         (Chapter06.krylov (M⁻¹ * (Aᴴ * A)) (op M⁻¹ (op Aᴴ (b - op A x₀))) m)
       (pcgnr A M b x₀ m).x := by
   have hinit : op Aᴴ b - op (Aᴴ * A) x₀ = op Aᴴ (b - op A x₀) := by
@@ -287,7 +287,7 @@ theorem pcgnr_isMinRes (hM : Krylov.IsPreconditioner (op M) (op M⁻¹)) {c : �
     hc hcoer' (op Aᴴ b) x₀ m
   rw [hinit, op_mul] at h
   rw [pcgnrX_eq hM.isSymmetric_inv]
-  exact (isGalerkin_adjoint_comp_iff_isMinRes A b x₀ _ _).1 h
+  exact (isGalerkin_adjoint_comp_iff_isMinResidual A b x₀ _ _).1 h
 
 end CGNR
 

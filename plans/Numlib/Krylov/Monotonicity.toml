@@ -10,22 +10,22 @@ id = "IsGalerkinIterate.norm_error_antitone"
 id = "IsGalerkinIterate.norm_monotone"
 
 [[node]]
-id = "IsMinResIterate.backwardError_antitone"
+id = "IsMinResidualIterate.backwardError_antitone"
 
 [[node]]
-id = "IsMinResIterate.energyNorm_error_antitone"
+id = "IsMinResidualIterate.energyNorm_error_antitone"
 
 [[node]]
-id = "IsMinResIterate.eq_CR_iterate"
+id = "IsMinResidualIterate.eq_CR_iterate"
 
 [[node]]
-id = "IsMinResIterate.norm_error_antitone"
+id = "IsMinResidualIterate.norm_error_antitone"
 
 [[node]]
-id = "IsMinResIterate.norm_monotone"
+id = "IsMinResidualIterate.norm_monotone"
 
 [[node]]
-id = "IsMinResIterate.norm_residual_div_norm_antitoneOn"
+id = "IsMinResidualIterate.norm_residual_div_norm_antitoneOn"
 
 [[node]]
-id = "IsMinResIterate.norm_apply_monotone"
+id = "IsMinResidualIterate.norm_apply_monotone"

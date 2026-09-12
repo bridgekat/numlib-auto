@@ -46,7 +46,7 @@ id = "IsPreconditioner.subspace_energyEnd"
 id = "IsPreconditioner.isGalerkin_energyEnd_iff"
 
 [[node]]
-id = "IsPreconditioner.isMinRes_energyEnd_iff"
+id = "IsPreconditioner.isMinResidual_energyEnd_iff"
 
 [[node]]
 id = "IsPreconditioner.isSymmetricBoundedBy_energyEnd"
@@ -55,10 +55,10 @@ id = "IsPreconditioner.isSymmetricBoundedBy_energyEnd"
 id = "IsPreconditioner.isSymmetricCoercive_energyEnd"
 
 [[node]]
-id = "exists_aeval_of_isMinResIterate_preconditioned"
+id = "exists_aeval_of_isMinResidualIterate_preconditioned"
 
 [[node]]
-id = "isMinRes_of_isMinResIterate_rightPreconditioned"
+id = "isMinResidual_of_isMinResidualIterate_rightPreconditioned"
 
 [[node]]
 id = "PCG.State"
@@ -94,7 +94,7 @@ id = "PCG.isGalerkinIterate"
 id = "PCG.energyNorm_error_le"
 
 [[node]]
-id = "FGMRES.isMinRes"
+id = "FGMRES.isMinResidual"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 9.2"
 
 [[node]]

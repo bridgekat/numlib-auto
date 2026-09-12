@@ -28,13 +28,13 @@ id = "adjoint_comp_isSymmetricCoercive_of_injective"
 id = "adjoint_residual"
 
 [[node]]
-id = "isGalerkinIterate_adjoint_comp_iff_isMinRes"
+id = "isGalerkinIterate_adjoint_comp_iff_isMinResidual"
 
 [[node]]
 id = "isMinError_of_isGalerkinIterate_comp_adjoint"
 
 [[node]]
-id = "IsMinRes.norm_residual_le_of_adjoint_comp"
+id = "IsMinResidual.norm_residual_le_of_adjoint_comp"
 
 [[node]]
 id = "CGNR.State"

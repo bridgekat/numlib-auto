@@ -31,7 +31,7 @@ id = "bcg_eq_lanczosSolve"
 id = "qmr"
 
 [[node]]
-id = "qmr_isQuasiMinResIterate"
+id = "qmr_isQuasiMinResidualIterate"
 
 [[node]]
 id = "equation_7_16"

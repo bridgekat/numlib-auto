@@ -26,11 +26,11 @@ degenerate case being one where `A` is a scalar and the iterates are exact from 
 * `Krylov.IsGalerkinIterate.energyNorm_error_le_div_eval_T` and
   `Krylov.IsGalerkinIterate.energyNorm_error_le`: the sharp Chebyshev bound and its geometric form
   ([saad2003iterative] Thm 6.29, (6.123) and (6.128); [han2009theoretical] Thm 5.6.1);
-* `Krylov.IsMinResIterate.norm_residual_le`: the same bound for the residual norm;
+* `Krylov.IsMinResidualIterate.norm_residual_le`: the same bound for the residual norm;
 * `Krylov.IsGalerkinIterate.energyNorm_error_succ_le`: the one-step Kantorovich contraction
   ([han2009theoretical] (5.6.4)), and `Krylov.sqrt_ratio_le_ratio` the comparison of the two rates
   ([han2009theoretical] (5.6.6));
-* `Krylov.IsMinResIterate.norm_residual_le_of_isCoerciveWith` and `Krylov.restarted_minRes_tendsto`:
+* `Krylov.IsMinResidualIterate.norm_residual_le_of_isCoerciveWith` and `Krylov.restarted_minRes_tendsto`:
   convergence of restarted minimal-residual iterations for a bounded coercive `A`
   ([saad2003iterative] Thm 6.30).
 -/
@@ -238,11 +238,11 @@ theorem IsGalerkinIterate.energyNorm_error_le {m : ℕ} {x xstar : E}
 
 /-- Minimal-residual iterates on symmetric coercive systems: the same Chebyshev bound for the
 residual norm, again with no strict spectral gap. -/
-theorem IsMinResIterate.norm_residual_le {m : ℕ} {x : E} (hx : IsMinResIterate A b x₀ m x) :
+theorem IsMinResidualIterate.norm_residual_le {m : ℕ} {x : E} (hx : IsMinResidualIterate A b x₀ m x) :
     ‖b - A x‖ ≤
       2 * ((Real.sqrt (lmax / lmin) - 1) / (Real.sqrt (lmax / lmin) + 1)) ^ m * ‖b - A x₀‖ := by
   rcases hll.lt_or_eq with hlt | rfl
-  · have h1 := Krylov.IsMinResIterate.norm_residual_le_norm_aeval hx (chebPoly 𝕜 m lmin lmax)
+  · have h1 := Krylov.IsMinResidualIterate.norm_residual_le_norm_aeval hx (chebPoly 𝕜 m lmin lmax)
       (chebPoly_degree_le m) (chebPoly_eval_zero hl hlt m)
     have h2 := hA.norm_aeval_map_apply_le (shifted m lmin lmax 0) (b - A x₀)
     exact h1.trans (h2.trans
@@ -277,9 +277,9 @@ theorem sqrt_ratio_le_ratio {κ : ℝ} (hκ : 1 ≤ κ) :
 /-- [saad2003iterative], Thm 6.30: for a bounded coercive `A`, restarted minimal-residual iterations
 (each cycle a minimal-residual iterate over `𝒦_m`, `m ≥ 1`) converge: each cycle contracts the
 residual by at least `√(1 - c²/‖A‖²)`, where `c` is the coercivity constant. -/
-theorem IsMinResIterate.norm_residual_le_of_isCoerciveWith {A : E →L[𝕜] E} {c : ℝ} (hc : 0 < c)
+theorem IsMinResidualIterate.norm_residual_le_of_isCoerciveWith {A : E →L[𝕜] E} {c : ℝ} (hc : 0 < c)
     (hA : (A : E →ₗ[𝕜] E).IsCoerciveWith c) {b x₀ x : E} {m : ℕ} (hm : 1 ≤ m)
-    (hx : IsMinResIterate (A : E →ₗ[𝕜] E) b x₀ m x) :
+    (hx : IsMinResidualIterate (A : E →ₗ[𝕜] E) b x₀ m x) :
     ‖b - A x‖ ≤ Real.sqrt (1 - c ^ 2 / ‖A‖ ^ 2) * ‖b - A x₀‖ := by
   have hmem : Projection.minResStep (A : E →ₗ[𝕜] E) b x₀ - x₀ ∈
       subspace (A : E →ₗ[𝕜] E) (b - A x₀) m := by
@@ -294,13 +294,13 @@ theorem IsMinResIterate.norm_residual_le_of_isCoerciveWith {A : E →L[𝕜] E} 
 /-- [saad2003iterative], Thm 6.30: restarted minimal-residual iteration converges for a bounded
 coercive `A`. Each cycle of `m ≥ 1` steps restarts from the previous cycle's output and contracts
 the residual by the factor `√(1 - c²/‖A‖²) < 1` of
-`Krylov.IsMinResIterate.norm_residual_le_of_isCoerciveWith`, so the residual norms tend to `0`
+`Krylov.IsMinResidualIterate.norm_residual_le_of_isCoerciveWith`, so the residual norms tend to `0`
 geometrically. Coercivity alone is what does this: it keeps `r` and `A r` from becoming orthogonal,
 so a single step of the cycle already gains a fixed fraction. No spectral hypothesis and no finite
 dimension are needed. -/
 theorem restarted_minRes_tendsto {A : E →L[𝕜] E} {c : ℝ} (hc : 0 < c)
     (hA : (A : E →ₗ[𝕜] E).IsCoerciveWith c) {b : E} {m : ℕ} (hm : 1 ≤ m) (x : ℕ → E)
-    (hx : ∀ k, IsMinResIterate (A : E →ₗ[𝕜] E) b (x k) m (x (k + 1))) :
+    (hx : ∀ k, IsMinResidualIterate (A : E →ₗ[𝕜] E) b (x k) m (x (k + 1))) :
     Filter.Tendsto (fun k => ‖b - A (x k)‖) Filter.atTop (nhds 0) := by
   rcases (norm_nonneg A).eq_or_lt with hA0 | hA0
   · -- `A = 0` forces `E = 0` by coercivity, so every residual vanishes.
@@ -333,7 +333,7 @@ theorem restarted_minRes_tendsto {A : E →L[𝕜] E} {c : ℝ} (hc : 0 < c)
       | zero => simp
       | succ k ih =>
           calc ‖b - A (x (k + 1))‖ ≤ q * ‖b - A (x k)‖ :=
-                IsMinResIterate.norm_residual_le_of_isCoerciveWith hc hA hm (hx k)
+                IsMinResidualIterate.norm_residual_le_of_isCoerciveWith hc hA hm (hx k)
             _ ≤ q * (q ^ k * ‖b - A (x 0)‖) := by gcongr
             _ = q ^ (k + 1) * ‖b - A (x 0)‖ := by ring
     refine squeeze_zero (fun k => norm_nonneg _) hbound ?_

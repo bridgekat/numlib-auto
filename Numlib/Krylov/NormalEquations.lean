@@ -11,10 +11,10 @@ The two ways of running a symmetric Krylov method on a system that is not symmet
 Nothing here is a new algorithm. The module records that the specifications of
 `Numlib/Krylov/Iterate` applied to `Aᴴ A` on the Krylov space `𝒦_m(Aᴴ A, Aᴴ r₀)` are, read back in
 the original variables, a minimal-residual specification for `A x = b`
-(`Krylov.isGalerkinIterate_adjoint_comp_iff_isMinRes`, CGNR) and a minimal-error specification
+(`Krylov.isGalerkinIterate_adjoint_comp_iff_isMinResidual`, CGNR) and a minimal-error specification
 (`Krylov.isMinError_of_isGalerkinIterate_comp_adjoint`, CGNE) — [saad2003iterative] two optimality
 properties of §8.3. Every convergence theorem of the CG layer then applies with the spectrum of `Aᴴ
-A`, that is with `κ(A)²` in place of `κ(A)` (`Krylov.IsMinRes.norm_residual_le_of_adjoint_comp`).
+A`, that is with `κ(A)²` in place of `κ(A)` (`Krylov.IsMinResidual.norm_residual_le_of_adjoint_comp`).
 `Krylov.CGNR.iterate` and `Krylov.CGNE.iterate` are the two recurrences as a program writes them —
 one application of `A` and one of `Aᴴ` per step, never forming a product — identified with the
 corresponding CG iterates.
@@ -121,11 +121,11 @@ A x = Aᴴ b` is exactly a minimal-residual iterate for `A x = b` over the same 
 𝒦_m(Aᴴ A, Aᴴ r₀)`.
 
 Both sides say that `b - A x` is orthogonal to `A 𝒦_m`: on the left because the residual of the
-normal equations is `Aᴴ (b - A x)`, on the right by `Krylov.IsMinRes.iff_isPetrovGalerkin`. -/
-theorem isGalerkinIterate_adjoint_comp_iff_isMinRes (m : ℕ) (x : E) :
+normal equations is `Aᴴ (b - A x)`, on the right by `Krylov.IsMinResidual.iff_isPetrovGalerkin`. -/
+theorem isGalerkinIterate_adjoint_comp_iff_isMinResidual (m : ℕ) (x : E) :
     IsGalerkinIterate (Astar ∘ₗ A) (Astar b) x₀ m x ↔
-      IsMinRes A b x₀ (subspace (Astar ∘ₗ A) (Astar (b - A x₀)) m) x := by
-  rw [IsMinRes.iff_isPetrovGalerkin]
+      IsMinResidual A b x₀ (subspace (Astar ∘ₗ A) (Astar (b - A x₀)) m) x := by
+  rw [IsMinResidual.iff_isPetrovGalerkin]
   constructor <;> rintro ⟨hmem, horth⟩
   · rw [adjoint_residual (A := A) (Astar := Astar) b x₀] at hmem
     refine ⟨hmem, (Submodule.mem_orthogonal _ _).2 ?_⟩
@@ -193,13 +193,13 @@ minimal-residual iterate over the normal-equations Krylov space satisfies `‖r_
 The condition number that appears is the condition number of `Aᴴ A`, whose square root is `κ(A)`;
 that squaring is the price of the normal equations, and it is the reason CGNR is slow on an
 ill-conditioned system. -/
-theorem IsMinRes.norm_residual_le_of_adjoint_comp {smin smax : ℝ} (hs : 0 < smin)
+theorem IsMinResidual.norm_residual_le_of_adjoint_comp {smin smax : ℝ} (hs : 0 < smin)
     (hss : smin ≤ smax) (hB : (Astar ∘ₗ A).IsSymmetricBoundedBy (smin ^ 2) (smax ^ 2))
     {b x₀ : E} {m : ℕ} {x xstar : E} (hstar : A xstar = b)
-    (hx : IsMinRes A b x₀ (subspace (Astar ∘ₗ A) (Astar (b - A x₀)) m) x) :
+    (hx : IsMinResidual A b x₀ (subspace (Astar ∘ₗ A) (Astar (b - A x₀)) m) x) :
     ‖b - A x‖ ≤ 2 * ((smax / smin - 1) / (smax / smin + 1)) ^ m * ‖b - A x₀‖ := by
   have hgal : IsGalerkinIterate (Astar ∘ₗ A) (Astar b) x₀ m x :=
-    (isGalerkinIterate_adjoint_comp_iff_isMinRes hadj b x₀ m x).2 hx
+    (isGalerkinIterate_adjoint_comp_iff_isMinResidual hadj b x₀ m x).2 hx
   have hstar' : (Astar ∘ₗ A) xstar = Astar b := by rw [LinearMap.comp_apply, hstar]
   have h := IsGalerkinIterate.energyNorm_error_le (by positivity)
     (by nlinarith : smin ^ 2 ≤ smax ^ 2) hB hgal hstar'

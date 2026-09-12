@@ -1,5 +1,5 @@
 namespace = "Krylov"
 
 [[node]]
-id = "IsMinResIterate.norm_residual_le_of_eigenvalues_mem_union_Icc"
+id = "IsMinResidualIterate.norm_residual_le_of_eigenvalues_mem_union_Icc"
 source = "Greenbaum, Iterative Methods for Solving Linear Systems, Theorem 3.1.1; Choi, Iterative Methods for Singular Linear Equations and Least-Squares Problems, Section 2.4"

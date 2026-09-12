@@ -4,22 +4,22 @@ namespace = "SaadSparse.Chapter08"
 id = "coordFamily"
 
 [[node]]
-id = "neSorStep"
+id = "neSORStep"
 
 [[node]]
-id = "neSorStep_isPetrovGalerkin"
+id = "neSORStep_isPetrovGalerkin"
 
 [[node]]
-id = "nrSorStep"
+id = "nrSORStep"
 
 [[node]]
-id = "nrSorStep_isGalerkin"
+id = "nrSORStep_isGalerkin"
 
 [[node]]
 id = "sorSweep_eq_multiplicativeSweep"
 
 [[node]]
-id = "neSorSweep_eq_multiplicativeStep"
+id = "neSORSweep_eq_multiplicativeStep"
 
 [[node]]
 id = "cimmino"
@@ -43,7 +43,7 @@ id = "equation_8_22"
 id = "blockCimmino"
 
 [[node]]
-id = "blockCimmino_isMinRes"
+id = "blockCimmino_isMinResidual"
 
 [[node]]
 id = "colNormDiag"
@@ -64,7 +64,7 @@ id = "cimminoNE_eq_jacobi"
 id = "normal_diag"
 
 [[node]]
-id = "nrSorSweep_eq_sorStep"
+id = "nrSORSweep_eq_sorStep"
 
 [[node]]
 id = "sorSweep_tendsto"

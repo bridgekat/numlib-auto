@@ -254,7 +254,7 @@ below. The group files under `plans/NumlibSurface/SaadSparse/` carry the reasoni
 result, and say what the declarations that are still to be written are to be.
 
 * **§7.4**, the transpose-free variants — the BCG residual and direction polynomials, CGS,
-  BiCGSTAB and TFQMR with their residual identities (7.32)–(7.83). The largest gap left in the
+  BICGSTAB and TFQMR with their residual identities (7.32)–(7.83). The largest gap left in the
   book, and an unblocked one: §7.3 supplies everything it rests on.
 * **§10.3**, the ILU factorizations — zero patterns (10.11), Theorems 10.1 and 10.2, Proposition
   10.4, ILU(0) and MILU — and **§10.4**, the `M̂` matrices (10.25)–(10.27) with Theorem 10.8.

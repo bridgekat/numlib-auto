@@ -53,16 +53,16 @@ theorem equation_4_1 (hA : A.PosDef) (k : ℕ) (hk : (cr A b (k + 1)).r ≠ 0) :
     ‖(cg A b (k + 1)).r‖
       = ‖(cr A b (k + 1)).r‖ /
         Real.sqrt (1 - ‖(cr A b (k + 1)).r‖ ^ 2 / ‖(cr A b k).r‖ ^ 2) := by
-  have hG := isMinresIterate_iff.1 (cr_isMinresIterate (b := b) hA k)
-  have hG' := isMinresIterate_iff.1 (cr_isMinresIterate (b := b) hA (k + 1))
+  have hG := isMINRESIterate_iff.1 (cr_isMINRESIterate (b := b) hA k)
+  have hG' := isMINRESIterate_iff.1 (cr_isMINRESIterate (b := b) hA (k + 1))
   have hF := cg_isGalerkinIterate (b := b) hA (k + 1)
   have h0 : b - Matrix.toEuclideanLin A (cr A b (k + 1)).x ≠ 0 := by rw [cr_res]; exact hk
   have key := Krylov.inv_sq_norm_residual_minRes hG hG' hF h0
   rw [cr_res, cr_res, cg_res] at key
   have hMle : ‖(cr A b (k + 1)).r‖ ≤ ‖(cr A b k).r‖ := by
-    have h := Krylov.IsMinResIterate.norm_residual_antitone
+    have h := Krylov.IsMinResidualIterate.norm_residual_antitone
       (x := fun j => (cr A b j).x)
-      (fun j => isMinresIterate_iff.1 (cr_isMinresIterate hA j)) (Nat.le_succ k)
+      (fun j => isMINRESIterate_iff.1 (cr_isMINRESIterate hA j)) (Nat.le_succ k)
     simp only at h
     rwa [cr_res, cr_res] at h
   have hMC : ‖(cr A b (k + 1)).r‖ ≤ ‖(cg A b (k + 1)).r‖ := by
@@ -83,13 +83,13 @@ theorem equation_4_1 (hA : A.PosDef) (k : ℕ) (hk : (cr A b (k + 1)).r ≠ 0) :
   field_simp
 
 /-- (4.1) for an arbitrary sequence of MINRES iterates, whose residual is `r_k^M = b − A x_k`. -/
-theorem equation_4_1_minres (hA : A.PosDef) {x : ℕ → Vec n} (hx : ∀ k, IsMinresIterate A b k (x k))
+theorem equation_4_1_minres (hA : A.PosDef) {x : ℕ → Vec n} (hx : ∀ k, IsMINRESIterate A b k (x k))
     (k : ℕ) (hk : b - A ⬝ x (k + 1) ≠ 0) :
     ‖(cg A b (k + 1)).r‖
       = ‖b - A ⬝ x (k + 1)‖ /
         Real.sqrt (1 - ‖b - A ⬝ x (k + 1)‖ ^ 2 / ‖b - A ⬝ x k‖ ^ 2) := by
   have hres : ∀ j, b - A ⬝ x j = (cr A b j).r := fun j => by
-    rw [(isMinresIterate_iff_eq_cr hA j (x j)).1 (hx j), ← cr_residual_eq]
+    rw [(isMINRESIterate_iff_eq_cr hA j (x j)).1 (hx j), ← cr_residual_eq]
   rw [hres] at hk
   rw [hres, hres]
   exact equation_4_1 hA k hk
@@ -120,19 +120,19 @@ theorem hessenberg_eq_lanczosT (hA : A.IsSymm) (k : ℕ) :
 
 /-- §4.2: `x_k^M = V_k y_k^M` where `y_k^M` minimizes `‖T̲_k y − β_1 e_1‖` (`β_1 = ‖b‖`). -/
 theorem minres_subproblem (hA : A.PosDef) (k : ℕ) (hk : k ≤ lanczosTerm A b) (y : Fin k → ℝ) :
-    IsMinresIterate A b k (∑ j, y j • lanczosVec A b j) ↔
+    IsMINRESIterate A b k (∑ j, y j • lanczosVec A b j) ↔
       IsMinOn (fun z : Fin k → ℝ =>
         ‖(WithLp.toLp 2 (Krylov.firstVec ‖b‖ (k + 1) - (lanczosT A b k).mulVec z) :
           Vec (k + 1))‖) Set.univ y := by
-  have hK := Krylov.isMinResIterate_iff_isMinOn (A := Matrix.toEuclideanLin A) (b := b) (x₀ := 0)
+  have hK := Krylov.isMinResidualIterate_iff_isMinOn (A := Matrix.toEuclideanLin A) (b := b) (x₀ := 0)
     (m := k) (by rwa [sub_mulVecE_zero]) y
   rw [sub_mulVecE_zero, hessenberg_eq_lanczosT (isSymm_of_posDef hA),
     RCLike.ofReal_real_eq_id, id_eq] at hK
-  rw [isMinresIterate_iff, ← hK, zero_add]
+  rw [isMINRESIterate_iff, ← hK, zero_add]
 
 /-- §4.2: for `k ≤ ℓ` the coordinate vector `y_k^M` of the MINRES iterate is unique. -/
 theorem minres_coeff_unique (hA : A.PosDef) (k : ℕ) (hk : k ≤ lanczosTerm A b) :
-    ∃! y : Fin k → ℝ, IsMinresIterate A b k (∑ j, y j • lanczosVec A b j) := by
+    ∃! y : Fin k → ℝ, IsMINRESIterate A b k (∑ j, y j • lanczosVec A b j) := by
   have hinj : Function.Injective fun j : Fin k => (⟨(j : ℕ), lt_of_lt_of_le j.2 hk⟩ :
       Fin (lanczosTerm A b)) := by
     intro i j hij
@@ -141,14 +141,14 @@ theorem minres_coeff_unique (hA : A.PosDef) (k : ℕ) (hk : k ≤ lanczosTerm A 
     (lanczosVec_orthonormal A b).comp
       (fun j : Fin k => (⟨(j : ℕ), lt_of_lt_of_le j.2 hk⟩ : Fin (lanczosTerm A b))) hinj
   have hli := horth.linearIndependent
-  obtain ⟨x, hx⟩ := Krylov.exists_isMinResIterate (Matrix.toEuclideanLin A) b 0 k
+  obtain ⟨x, hx⟩ := Krylov.exists_isMinResidualIterate (Matrix.toEuclideanLin A) b 0 k
   obtain ⟨y, hy⟩ := (mem_krylov_iff_exists_lanczos A b k x).1
     (sub_zero_mem_subspace_iff.1 hx.mem)
-  have hxy : IsMinresIterate A b k (∑ j, y j • lanczosVec A b (j : ℕ)) := by
-    rw [← hy]; exact isMinresIterate_iff.2 hx
+  have hxy : IsMINRESIterate A b k (∑ j, y j • lanczosVec A b (j : ℕ)) := by
+    rw [← hy]; exact isMINRESIterate_iff.2 hx
   refine ⟨y, hxy, fun z hz => ?_⟩
   have heq : ∑ j, z j • lanczosVec A b (j : ℕ) = ∑ j, y j • lanczosVec A b (j : ℕ) :=
-    isMinresIterate_unique hA hz hxy
+    isMINRESIterate_unique hA hz hxy
   have hzero : ∑ j, (z - y) j • lanczosVec A b (j : ℕ) = 0 := by
     simp only [Pi.sub_apply, sub_smul, Finset.sum_sub_distrib, heq, sub_self]
   funext j
@@ -178,7 +178,7 @@ iterations `1 ≤ j ≤ k`", a *local* hypothesis.  Its proof of Theorem 2.2 (d)
 hypothesis is therefore imposed up to the termination index `ℓ = crTerm A b`, which is how the
 paper's condition reads when it is read globally.  The second condition `p_jᵀ A p_j > 0` is then
 redundant, since `r_jᵀ A p_j = ρ_j ≠ 0` already forces `A p_j ≠ 0` (see
-`CR.norm_iterate_lt_of_pos`).  Under these hypotheses `CR.isMinResIterate_of_no_breakdown`
+`CR.norm_iterate_lt_of_pos`).  Under these hypotheses `CR.isMinResidualIterate_of_no_breakdown`
 identifies `x_k` with the MINRES iterate, so the property transfers to MINRES. -/
 theorem steihaug_cr (hA : A.IsSymm) (hpos : ∀ j < crTerm A b, 0 < (cr A b j).ρ) {i : ℕ}
     (hi : i < crTerm A b) : ‖(cr A b i).x‖ < ‖(cr A b (i + 1)).x‖ := by

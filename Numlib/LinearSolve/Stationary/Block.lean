@@ -230,14 +230,14 @@ theorem blockGaussSeidelSplitting_n (π : n → ι) (A : Matrix n n 𝕜)
 
 /-- **Block SOR** ([saad2003iterative], Algorithm 4.2) with parameter `ω`: `M = ω⁻¹ (D - ω E)`. With
 `π = id` it is `Matrix.sorSplitting`. -/
-noncomputable def blockSorSplitting (π : n → ι) (A : Matrix n n 𝕜)
+noncomputable def blockSORSplitting (π : n → ι) (A : Matrix n n 𝕜)
     (h : IsUnit (blockDiagPart π A)) {ω : 𝕜} (hω : ω ≠ 0) : Splitting A :=
   ⟨ω⁻¹ • blockDiagPart π A + blockStrictLower π A,
     isUnit_smul_blockDiagPart_add_blockStrictLower (inv_ne_zero hω) h⟩
 
 /-- Block Gauss–Seidel is block SOR with `ω = 1`. -/
-theorem blockSorSplitting_one (π : n → ι) (A : Matrix n n 𝕜) (h : IsUnit (blockDiagPart π A)) :
-    blockSorSplitting π A h (one_ne_zero (α := 𝕜)) = blockGaussSeidelSplitting π A h := by
+theorem blockSORSplitting_one (π : n → ι) (A : Matrix n n 𝕜) (h : IsUnit (blockDiagPart π A)) :
+    blockSORSplitting π A h (one_ne_zero (α := 𝕜)) = blockGaussSeidelSplitting π A h := by
   ext : 1
   change (1 : 𝕜)⁻¹ • blockDiagPart π A + blockStrictLower π A
     = blockDiagPart π A + blockStrictLower π A

@@ -13,7 +13,7 @@ the quadratic that folds the two onto it; that is
 `Polynomial.Chebyshev.exists_eval_zero_eq_one_abs_le_of_union_Icc` of
 `Numlib/RingTheory/Polynomial/ChebyshevMinimax.lean`, and the only work left here is to feed it to
 the optimality of a minimal-residual iterate.  The resulting bound
-(`Krylov.IsMinResIterate.norm_residual_le_of_eigenvalues_mem_union_Icc`) is on the *even* steps,
+(`Krylov.IsMinResidualIterate.norm_residual_le_of_eigenvalues_mem_union_Icc`) is on the *even* steps,
 because the competitor polynomial has degree `2k`, and its rate is governed by the two products of
 endpoints across the origin: the outer one `|a₁ b₂|` and the inner one `|b₁ a₂|`.
 
@@ -47,13 +47,13 @@ equal length, then a minimal-residual iterate over `𝒦_{2k}` satisfies
 
 Only the even steps are bounded: the competitor polynomial is a degree-`k` Chebyshev polynomial
 composed with a quadratic, hence of degree `2k`, and the residual norms are nonincreasing
-(`Krylov.IsMinResIterate.norm_residual_antitone`) so nothing is lost. -/
-theorem IsMinResIterate.norm_residual_le_of_eigenvalues_mem_union_Icc [FiniteDimensional 𝕜 E]
+(`Krylov.IsMinResidualIterate.norm_residual_antitone`) so nothing is lost. -/
+theorem IsMinResidualIterate.norm_residual_le_of_eigenvalues_mem_union_Icc [FiniteDimensional 𝕜 E]
     {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric) {a₁ b₁ a₂ b₂ : ℝ} (h₁ : a₁ < b₁) (hb₁ : b₁ < 0)
     (ha₂ : 0 < a₂) (h₂ : a₂ < b₂) (hlen : b₁ - a₁ = b₂ - a₂)
     (hspec : ∀ μ : 𝕜, Module.End.HasEigenvalue A μ →
       RCLike.re μ ∈ Set.Icc a₁ b₁ ∪ Set.Icc a₂ b₂)
-    {b x₀ x : E} {k : ℕ} (hx : IsMinResIterate A b x₀ (2 * k) x) :
+    {b x₀ x : E} {k : ℕ} (hx : IsMinResidualIterate A b x₀ (2 * k) x) :
     ‖b - A x‖ ≤
       2 * ((Real.sqrt |a₁ * b₂| - Real.sqrt |b₁ * a₂|) /
         (Real.sqrt |a₁ * b₂| + Real.sqrt |b₁ * a₂|)) ^ k * ‖b - A x₀‖ := by

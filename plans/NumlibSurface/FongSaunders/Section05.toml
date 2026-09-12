@@ -1,7 +1,7 @@
 namespace = "FongSaunders"
 
 [[node]]
-id = "MinresProfile"
+id = "MINRESProfile"
 
 [[node]]
 id = "MonotoneProfile"

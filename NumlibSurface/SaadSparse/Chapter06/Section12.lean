@@ -27,7 +27,7 @@ is a multiple of `p`".
 
 The band relation (6.129)–(6.130) is the backbone's `Krylov.BandRelation`, of bandwidth `p`, and
 not `Krylov.HessenbergRelation`, whose bandwidth is `1`. Block FOM and block GMRES are
-`IsGalerkin` and `IsMinRes` over `x₀^{(i)} + span {v_1, …, v_m}`, one right-hand side at a time;
+`IsGalerkin` and `IsMinResidual` over `x₀^{(i)} + span {v_1, …, v_m}`, one right-hand side at a time;
 (6.135)–(6.136) and the coordinate forms `blockFOM_iff` and `blockGMRES_iff` are the small banded
 systems they amount to. The Givens elimination with `p` rotations per column, for which the book
 states no result, is not formalized.
@@ -151,7 +151,7 @@ approximation over `x_0^{(i)} + span {v_1, …, v_m}`. At `m = k p` the search s
 Krylov subspace `𝒦_k(A, V_1)` (`span_ruhe_eq_blockKrylov`). -/
 def IsBlockGMRES (A : Matrix (Fin n) (Fin n) 𝕜) (B X₀ v : Fin p → 𝔼) (m : ℕ) (i : Fin p)
     (x : 𝔼) : Prop :=
-  IsMinRes (op A) (B i) (X₀ i) (Submodule.span 𝕜 (ruhe A v '' Set.Iio m)) x
+  IsMinResidual (op A) (B i) (X₀ i) (Submodule.span 𝕜 (ruhe A v '' Set.Iio m)) x
 
 /-- **§6.12**: the block FOM approximation to the `i`-th right-hand side, the Galerkin
 approximation over `x_0^{(i)} + span {v_1, …, v_m}`. -/
@@ -203,7 +203,7 @@ theorem blockGMRES_iff (hon : Orthonormal 𝕜 fun k : Fin (m + p) => ruhe A v (
           EuclideanSpace 𝕜 (Fin (m + p)))‖ ≤
           ‖(WithLp.toLp 2 (Krylov.firstBlockVec g p (m + p) - (HbarBlock A v m).mulVec z) :
             EuclideanSpace 𝕜 (Fin (m + p)))‖ :=
-  BlockArnoldi.isMinRes_iff (op A) v hon hr y
+  BlockArnoldi.isMinResidual_iff (op A) v hon hr y
 
 end Block
 

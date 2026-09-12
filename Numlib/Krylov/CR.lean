@@ -14,8 +14,8 @@ once.
 
 ## Main statements
 
-* `CR.isMinResIterate`: CR realises the minimal-residual specification of `Numlib/Krylov/Iterate`,
-  and `CR.isMinResIterate_of_no_breakdown` is the same for a symmetric, possibly indefinite or
+* `CR.isMinResidualIterate`: CR realises the minimal-residual specification of `Numlib/Krylov/Iterate`,
+  and `CR.isMinResidualIterate_of_no_breakdown` is the same for a symmetric, possibly indefinite or
   singular `A` as long as no breakdown occurs;
 * `CR.inner_apply_direction_eq_zero`, `CR.inner_residual_apply_direction_eq_zero`,
   `CR.inner_residual_apply_residual_eq_zero`: the orthogonality relations ([fong2012cg] Thm 2.1 /
@@ -27,7 +27,7 @@ once.
 * `CR.norm_iterate_monotone`, `CR.norm_error_antitone`, `CR.energyNorm_error_antitone`: the
   resulting monotonicity ([fong2012cg] Thm 2.3–2.5), with [steihaug1983conjugate] strict form for a
   symmetric but possibly indefinite `A` in `CR.norm_iterate_lt_of_pos`;
-* `Krylov.isMinResIterate_of_orthogonal_directions`: the general GCR lemma ([saad2003iterative]
+* `Krylov.isMinResidualIterate_of_orthogonal_directions`: the general GCR lemma ([saad2003iterative]
   Lemma 6.21), that any `AᴴA`-orthogonal direction sequence spanning the Krylov spaces yields
   minimal-residual iterates.
 -/
@@ -71,9 +71,9 @@ def init (A : E →ₗ[𝕜] E) (b x₀ : E) : State E :=
 applications of `CR.step` to `CR.init`. The approximate solution is `(iterate A b x₀ k).x`.
 
 On a symmetric coercive `A` this state realises the minimal-residual specification over `x₀ + 𝒦_k(A,
-r₀)` (`CR.isMinResIterate`). The specification, not this recurrence, is the canonical object:
+r₀)` (`CR.isMinResidualIterate`). The specification, not this recurrence, is the canonical object:
 everything proved of it holds of any method that meets it. On an indefinite `A` the recurrence can
-break down while the minimal-residual iterate still exists, and `CR.isMinResIterate_of_no_breakdown`
+break down while the minimal-residual iterate still exists, and `CR.isMinResidualIterate_of_no_breakdown`
 is what survives there. The definition is total either way, since Lean's `x / 0 = 0` gives the
 degenerate steps a value; once the residual vanishes the state stops moving. -/
 noncomputable def iterate (A : E →ₗ[𝕜] E) (b x₀ : E) (k : ℕ) : State E :=
@@ -523,7 +523,7 @@ private theorem subspace_le_dirSpan (k : ℕ)
 
 /-- The first `k` conjugate residual directions span the Krylov space: `span {p_0, …, p_{k-1}} =
 𝒦_k(A, r₀)`. This is what turns the orthogonality relations — which only say that `r_k` is
-`A`-orthogonal to the earlier directions — into the minimal-residual property `CR.isMinResIterate`,
+`A`-orthogonal to the earlier directions — into the minimal-residual property `CR.isMinResidualIterate`,
 since orthogonality to the span is what the specification asks for. Degenerate steps cost nothing: a
 direction whose image under `A` dies contributes no new dimension, and the residuals, which lie in
 the same span, still fill the Krylov space out. -/
@@ -536,8 +536,8 @@ theorem span_direction_eq (k : ℕ) :
         (residual_eq_zero_of_inner_self b x₀ hA) h)
 
 /-- CR realises the minimal-residual specification (`= MINRES = GMRES` on symmetric systems). -/
-theorem isMinResIterate (k : ℕ) : IsMinResIterate A b x₀ k (iterate A b x₀ k).x := by
-  refine IsMinRes.iff_isPetrovGalerkin.2 ⟨iterate_sub_mem A b x₀ k, ?_⟩
+theorem isMinResidualIterate (k : ℕ) : IsMinResidualIterate A b x₀ k (iterate A b x₀ k).x := by
+  refine IsMinResidual.iff_isPetrovGalerkin.2 ⟨iterate_sub_mem A b x₀ k, ?_⟩
   rw [← residual_eq, ← span_direction_eq b x₀ hA k, Submodule.map_span]
   refine Submodule.mem_orthogonal_span.2 ?_
   rintro _ ⟨_, ⟨i, rfl⟩, rfl⟩
@@ -550,7 +550,7 @@ correction. -/
 theorem residual_eq_zero_of_grade_le [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))] {k : ℕ}
     (hk : grade A (b - A x₀) ≤ k) : (iterate A b x₀ k).r = 0 := by
   rw [residual_eq, sub_eq_zero]
-  exact ((isMinResIterate b x₀ hA k).apply_eq_of_grade_le hk
+  exact ((isMinResidualIterate b x₀ hA k).apply_eq_of_grade_le hk
     hA.isCoercive.injective.injOn).symm
 
 /-- The third fact coercivity supplies: the iteration terminates, so every index is passed by a step
@@ -852,7 +852,7 @@ weakening it to nonvanishing is not enough: the paper's proof of Thm 2.2 (d) exp
 p_j⟫` negative and breaks the chain (f) ⇒ (d) ⇒ (e).  A separate nondegeneracy hypothesis `0 < re ⟪A
 p_j, p_j⟫` would be redundant, since `⟪r_j, A p_j⟫ = ⟪r_j, A r_j⟫ ≠ 0` already forces `A p_j ≠ 0`.
 
-Transfers to MINRES through `CR.isMinResIterate_of_no_breakdown`. -/
+Transfers to MINRES through `CR.isMinResidualIterate_of_no_breakdown`. -/
 theorem norm_iterate_lt_of_pos (hAs : A.IsSymmetric) {ℓ : ℕ}
     (hstop : (iterate A b 0 ℓ).r = 0)
     (hpos : ∀ j < ℓ, 0 < RCLike.re (inner 𝕜 (iterate A b 0 j).r (A (iterate A b 0 j).r)))
@@ -907,11 +907,11 @@ omit hA in
 k`), the iterate `x_k` is the minimal-residual iterate.
 
 The section's coercivity hypothesis is deliberately omitted here: carrying it would make this a
-special case of `CR.isMinResIterate` instead of the indefinite or singular statement. -/
-theorem isMinResIterate_of_no_breakdown (hA : A.IsSymmetric) (k : ℕ)
+special case of `CR.isMinResidualIterate` instead of the indefinite or singular statement. -/
+theorem isMinResidualIterate_of_no_breakdown (hA : A.IsSymmetric) (k : ℕ)
     (h1 : ∀ j < k, inner 𝕜 (iterate A b x₀ j).r (A (iterate A b x₀ j).r) ≠ 0)
     (h2 : ∀ j < k, (iterate A b x₀ j).q ≠ 0) :
-    IsMinResIterate A b x₀ k (iterate A b x₀ k).x := by
+    IsMinResidualIterate A b x₀ k (iterate A b x₀ k).x := by
   have halpha : ∀ j < k, alpha A (iterate A b x₀ j) ≠ 0 := by
     intro j hj
     rw [alpha]
@@ -928,7 +928,7 @@ theorem isMinResIterate_of_no_breakdown (hA : A.IsSymmetric) (k : ℕ)
       subspace A (b - A x₀) k :=
     le_antisymm (dirSpan_le_subspace A b x₀ k)
       (subspace_le_dirSpan b x₀ k fun i hi => apply_direction_mem_dirSpan b x₀ i (hdeg i hi))
-  refine IsMinRes.iff_isPetrovGalerkin.2 ⟨iterate_sub_mem A b x₀ k, ?_⟩
+  refine IsMinResidual.iff_isPetrovGalerkin.2 ⟨iterate_sub_mem A b x₀ k, ?_⟩
   rw [← residual_eq, ← hspan, Submodule.map_span]
   refine Submodule.mem_orthogonal_span.2 ?_
   rintro _ ⟨_, ⟨i, rfl⟩, rfl⟩
@@ -941,14 +941,14 @@ namespace Krylov
 /-- [saad2003iterative], Lemma 6.21 (GCR / ORTHOMIN / ORTHODIR): if `p_0, …, p_{m-1}` are
 `AᴴA`-orthogonal and span `𝒦_m(A, r₀)`, then `x_m = x₀ + ∑_j (⟪r_j, A p_j⟫ / ‖A p_j‖²) p_j` (with
 `r_j` the successive residuals) is the minimal-residual iterate. -/
-theorem isMinResIterate_of_orthogonal_directions {A : E →ₗ[𝕜] E} {b x₀ : E} {m : ℕ}
+theorem isMinResidualIterate_of_orthogonal_directions {A : E →ₗ[𝕜] E} {b x₀ : E} {m : ℕ}
     (p : ℕ → E) (horth : ∀ i < m, ∀ j < m, i ≠ j → inner 𝕜 (A (p i)) (A (p j)) = 0)
     (hne : ∀ i < m, A (p i) ≠ 0)
     (hspan : Submodule.span 𝕜 (Set.range fun i : Fin m => p i) = subspace A (b - A x₀) m)
     (x : ℕ → E) (hx0 : x 0 = x₀)
     (hstep : ∀ j, x (j + 1) = x j +
       (inner 𝕜 (A (p j)) (b - A (x j)) / inner 𝕜 (A (p j)) (A (p j))) • p j) :
-    IsMinResIterate A b x₀ m (x m) := by
+    IsMinResidualIterate A b x₀ m (x m) := by
   -- the residual recurrence `r_{j+1} = r_j - c_j A p_j`
   have hres : ∀ j, b - A (x (j + 1)) = (b - A (x j)) -
       (inner 𝕜 (A (p j)) (b - A (x j)) / inner 𝕜 (A (p j)) (A (p j))) • A (p j) := by
@@ -980,7 +980,7 @@ theorem isMinResIterate_of_orthogonal_directions {A : E →ₗ[𝕜] E} {b x₀ 
       intro hlm
       rw [hres l, inner_sub_right, inner_smul_right, ih (by omega),
         horth i hi l (by omega) (by omega), mul_zero, sub_zero]
-  refine IsMinRes.iff_isPetrovGalerkin.2 ⟨hspan ▸ hmem m le_rfl, ?_⟩
+  refine IsMinResidual.iff_isPetrovGalerkin.2 ⟨hspan ▸ hmem m le_rfl, ?_⟩
   rw [← hspan, Submodule.map_span]
   refine Submodule.mem_orthogonal_span.2 ?_
   rintro _ ⟨_, ⟨i, rfl⟩, rfl⟩

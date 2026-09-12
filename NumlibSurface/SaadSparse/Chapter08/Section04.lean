@@ -30,7 +30,7 @@ Three things carry the section.
   then Example 4.1 applied to `S`: convergence for every right-hand side and every start exactly
   when `0 < ω < 2/λ_max(S)`, with optimum `2/(λ_min + λ_max)`.
 
-`equation_8_32_isMinRes` is Saad's reason why the Stokes preconditioners work: for `c = 0` the
+`equation_8_32_isMinResidual` is Saad's reason why the Stokes preconditioners work: for `c = 0` the
 reduced system is the system of normal equations of the least-squares problem
 `min_y ‖b - B y‖_{A⁻¹}`. `arrowHurwicz` is **Algorithm 8.7** and `arrowHurwicz_eq_block` its
 block form; `example_8_2` is the regularized Schur complement `Bᴴ (ρ - A⁻¹) B`.
@@ -321,7 +321,7 @@ theorem schur_posDef (hA : A.PosDef) (hB : Function.Injective (Matrix.toEuclidea
 /-- **Saad §8.4**, the reason the Stokes preconditioners of the section work: for `c = 0` the
 reduced system `S y = Bᴴ A⁻¹ b` is the system of normal equations of the least-squares problem
 `min ‖b - B y‖_{A⁻¹}` in the `A⁻¹` inner product. -/
-theorem equation_8_32_isMinRes (hA : A.PosDef) (b : EuclideanSpace 𝕜 (Fin n))
+theorem equation_8_32_isMinResidual (hA : A.PosDef) (b : EuclideanSpace 𝕜 (Fin n))
     (y : EuclideanSpace 𝕜 (Fin m)) :
     (schur A B ⬝ y) = ((Bᴴ * A⁻¹) ⬝ b) ↔
       ∀ z ∈ LinearMap.range (Matrix.toEuclideanLin B),
@@ -829,7 +829,7 @@ reduced system (8.32) is one: if `y` solves `S y = g` then `x = A⁻¹ (b - B y)
 solution of the block system, for `c = 0` and for `c ≠ 0` alike.
 
 For `c = 0` the reduced system is the system of normal equations of `min_y ‖b - B y‖_{A⁻¹}`
-(`equation_8_32_isMinRes`), so the method P-8.5 (a) asks for is CGNR in the `A⁻¹` inner product;
+(`equation_8_32_isMinResidual`), so the method P-8.5 (a) asks for is CGNR in the `A⁻¹` inner product;
 forming `S y` costs one solve with `A`, which is what the problem's hint asks for.  Compared with
 Uzawa's method (`uzawa`, `uzawa_snd_eq_richardson`), which is Richardson's iteration for the same
 reduced system with a fixed `ω`, this replaces the fixed step length by the conjugate gradient

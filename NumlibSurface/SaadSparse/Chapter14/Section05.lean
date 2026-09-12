@@ -137,13 +137,13 @@ Both sides are written in the variable the split-preconditioned method iterates 
 the left, and `y` itself on the right, since `U_S = I` here.  `equation_14_51` turns the left-hand
 iterate back into Saad's `x_m`. -/
 theorem proposition_14_11 (hB : IsUnit B) (f : Fin p → ℝ) (g y₀ y : Fin q → ℝ) (k : ℕ) :
-    Krylov.IsMinResIterate (toEuclideanLin (precondMatrix B E F C 1 1))
+    Krylov.IsMinResidualIterate (toEuclideanLin (precondMatrix B E F C 1 1))
         (WithLp.toLp 2 ((blockLower B F 1)⁻¹ *ᵥ Sum.elim f g))
         (WithLp.toLp 2 (blockUpper B E 1 *ᵥ consistentGuess B E f y₀)) k
         (WithLp.toLp 2 (blockUpper B E 1 *ᵥ consistentGuess B E f y))
-      ↔ Krylov.IsMinResIterate (toEuclideanLin (schurComplement B E F C))
+      ↔ Krylov.IsMinResidualIterate (toEuclideanLin (schurComplement B E F C))
         (WithLp.toLp 2 (reducedRhs B F f g)) (WithLp.toLp 2 y₀) k (WithLp.toLp 2 y) := by
-  have h := isMinRes_iff_isMinRes_schurComplement (E := E) (F := F) (C := C) (LS := 1) (US := 1)
+  have h := isMinResidual_iff_isMinResidual_schurComplement (E := E) (F := F) (C := C) (LS := 1) (US := 1)
     hB isUnit_one isUnit_one f g y₀ y k
   rw [precondSchurComplement_one_one, ← reducedRhs_eq] at h
   simpa only [inv_one, Matrix.one_mulVec] using h
@@ -154,14 +154,14 @@ full system is `U_A x` for a consistent `x = (B⁻¹(f - E y); y)` — `equation
 `u` — and that `y` is the iterate of the same method on `S y = g'`. -/
 theorem proposition_14_11_form (hB : IsUnit B) (f : Fin p → ℝ) (g y₀ : Fin q → ℝ) (k : ℕ)
     {u : EuclideanSpace ℝ (Fin p ⊕ Fin q)}
-    (hu : Krylov.IsMinResIterate (toEuclideanLin (precondMatrix B E F C 1 1))
+    (hu : Krylov.IsMinResidualIterate (toEuclideanLin (precondMatrix B E F C 1 1))
       (WithLp.toLp 2 ((blockLower B F 1)⁻¹ *ᵥ Sum.elim f g))
       (WithLp.toLp 2 (blockUpper B E 1 *ᵥ consistentGuess B E f y₀)) k u) :
     ∃ y : Fin q → ℝ,
-      Krylov.IsMinResIterate (toEuclideanLin (schurComplement B E F C))
+      Krylov.IsMinResidualIterate (toEuclideanLin (schurComplement B E F C))
           (WithLp.toLp 2 (reducedRhs B F f g)) (WithLp.toLp 2 y₀) k (WithLp.toLp 2 y)
         ∧ u = WithLp.toLp 2 (blockUpper B E 1 *ᵥ consistentGuess B E f y) := by
-  obtain ⟨y, hy, hyu⟩ := exists_isMinRes_schurComplement (E := E) (F := F) (C := C) (LS := 1)
+  obtain ⟨y, hy, hyu⟩ := exists_isMinResidual_schurComplement (E := E) (F := F) (C := C) (LS := 1)
     (US := 1) hB isUnit_one isUnit_one f g y₀ k hu
   refine ⟨y, ?_, hyu⟩
   rw [precondSchurComplement_one_one, ← reducedRhs_eq] at hy
@@ -171,15 +171,15 @@ theorem proposition_14_11_form (hB : IsUnit B) (f : Fin p → ℝ) (g y₀ : Fin
 and their interface blocks are the iterates of the split-preconditioned reduced method. -/
 theorem proposition_14_12_form (hB : IsUnit B) (hLS : IsUnit LS) (hUS : IsUnit US) (f : Fin p → ℝ)
     (g y₀ : Fin q → ℝ) (k : ℕ) {u : EuclideanSpace ℝ (Fin p ⊕ Fin q)}
-    (hu : Krylov.IsMinResIterate (toEuclideanLin (precondMatrix B E F C LS US))
+    (hu : Krylov.IsMinResidualIterate (toEuclideanLin (precondMatrix B E F C LS US))
       (WithLp.toLp 2 ((blockLower B F LS)⁻¹ *ᵥ Sum.elim f g))
       (WithLp.toLp 2 (blockUpper B E US *ᵥ consistentGuess B E f y₀)) k u) :
     ∃ y : Fin q → ℝ,
-      Krylov.IsMinResIterate (toEuclideanLin (LS⁻¹ * schurComplement B E F C * US⁻¹))
+      Krylov.IsMinResidualIterate (toEuclideanLin (LS⁻¹ * schurComplement B E F C * US⁻¹))
           (WithLp.toLp 2 (LS⁻¹ *ᵥ reducedRhs B F f g)) (WithLp.toLp 2 (US *ᵥ y₀)) k
           (WithLp.toLp 2 (US *ᵥ y))
         ∧ u = WithLp.toLp 2 (blockUpper B E US *ᵥ consistentGuess B E f y) :=
-  exists_isMinRes_schurComplement hB hLS hUS f g y₀ k hu
+  exists_isMinResidual_schurComplement hB hLS hUS f g y₀ k hu
 
 /-- **The Galerkin form of Proposition 14.11**, for FOM, CG and the Lanczos method. -/
 theorem proposition_14_11_galerkin (hB : IsUnit B) (f : Fin p → ℝ) (g y₀ y : Fin q → ℝ) (k : ℕ) :
@@ -200,14 +200,14 @@ iterate of the full system at step `k` corresponds to the iterate of the same me
 `S y = g'` preconditioned on the left by `L_S` and on the right by `U_S`, from `y₀`. -/
 theorem proposition_14_12 (hB : IsUnit B) (hLS : IsUnit LS) (hUS : IsUnit US) (f : Fin p → ℝ)
     (g y₀ y : Fin q → ℝ) (k : ℕ) :
-    Krylov.IsMinResIterate (toEuclideanLin (precondMatrix B E F C LS US))
+    Krylov.IsMinResidualIterate (toEuclideanLin (precondMatrix B E F C LS US))
         (WithLp.toLp 2 ((blockLower B F LS)⁻¹ *ᵥ Sum.elim f g))
         (WithLp.toLp 2 (blockUpper B E US *ᵥ consistentGuess B E f y₀)) k
         (WithLp.toLp 2 (blockUpper B E US *ᵥ consistentGuess B E f y))
-      ↔ Krylov.IsMinResIterate (toEuclideanLin (LS⁻¹ * schurComplement B E F C * US⁻¹))
+      ↔ Krylov.IsMinResidualIterate (toEuclideanLin (LS⁻¹ * schurComplement B E F C * US⁻¹))
         (WithLp.toLp 2 (LS⁻¹ *ᵥ reducedRhs B F f g)) (WithLp.toLp 2 (US *ᵥ y₀)) k
         (WithLp.toLp 2 (US *ᵥ y)) :=
-  isMinRes_iff_isMinRes_schurComplement hB hLS hUS f g y₀ y k
+  isMinResidual_iff_isMinResidual_schurComplement hB hLS hUS f g y₀ y k
 
 /-- **The Galerkin form of Proposition 14.12**. -/
 theorem proposition_14_12_galerkin (hB : IsUnit B) (hLS : IsUnit LS) (hUS : IsUnit US)

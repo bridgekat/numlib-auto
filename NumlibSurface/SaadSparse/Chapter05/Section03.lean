@@ -120,7 +120,7 @@ theorem sdStep_min (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b) (x 
 residual line. -/
 theorem mrStep_min (b x y : E n)
     (hy : y - x ∈ (ℝ ∙ (b - (A ⬝ x)))) : R_A A b (mrStep A b x) ≤ R_A A b y :=
-  (Projection.minResStep_isMinRes x).min y hy
+  (Projection.minResStep_isMinResidual x).min y hy
 
 /-! ### Lemma 5.8 (Kantorovich) -/
 

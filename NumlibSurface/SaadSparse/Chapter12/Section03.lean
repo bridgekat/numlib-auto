@@ -216,7 +216,7 @@ This is the comparison that makes CG or GMRES preferable wherever inner products
 and Chebyshev acceleration preferable where they are not. -/
 theorem norm_residual_minRes_le_chebyshev {A : Matrix (Fin n) (Fin n) ℝ}
     {b x₀ y : EuclideanSpace ℝ (Fin n)} {α β : ℝ} (hα : 0 < α) (hαβ : α < β) {k : ℕ}
-    (hy : Krylov.IsMinResIterate (Matrix.toEuclideanLin A) b x₀ k y) :
+    (hy : Krylov.IsMinResidualIterate (Matrix.toEuclideanLin A) b x₀ k y) :
     ‖b - (A ⬝ y)‖ ≤ ‖(chebyshevIterate A b x₀ α β k).r‖ :=
   Preconditioner.Chebyshev.norm_residual_minRes_le_norm_residual_iterate hα hαβ hy
 

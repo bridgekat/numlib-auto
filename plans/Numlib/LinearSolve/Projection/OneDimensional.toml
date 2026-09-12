@@ -20,7 +20,7 @@ id = "Projection.kantorovich_inequality"
 id = "Projection.minResStep"
 
 [[node]]
-id = "Projection.minResStep_isMinRes"
+id = "Projection.minResStep_isMinResidual"
 
 [[node]]
 id = "Projection.norm_residual_minResStep_le"

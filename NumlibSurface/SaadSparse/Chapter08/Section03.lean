@@ -15,7 +15,7 @@ formed. **Algorithm 8.4** (CGNR) is `cgnr` and **Algorithm 8.5** (CGNE, Craig's 
 `Aᴴ A x = Aᴴ b` and of `A Aᴴ u = b` read through `x = Aᴴ u`, which is what
 `Numlib/Krylov/NormalEquations` proves in general.
 
-The two optimality properties are `cgnr_isMinRes` and `cgne_isMinError`. Over the *same* affine
+The two optimality properties are `cgnr_isMinResidual` and `cgne_isMinError`. Over the *same* affine
 subspace `x_0 + 𝒦_m(Aᴴ A, Aᴴ r_0)` — that is `subspace_adjoint_eq`, the section's closing
 observation, since `Aᴴ 𝒦_m(A Aᴴ, r_0)` is that space — CGNR minimizes the residual `‖b - A x‖₂`
 and CGNE the error `‖x_* - x‖₂`. `cgnr_norm_residual_le` is the price the book warns about at
@@ -277,11 +277,11 @@ variable {A : Matrix (Fin n) (Fin n) 𝕜} (b x₀ : EuclideanSpace 𝕜 (Fin n)
 /-- **Saad §8.3.1**, the optimality of CGNR: `x_m` minimizes `‖b - A x‖₂` over
 `x_0 + 𝒦_m(Aᴴ A, Aᴴ r_0)`. It is the same minimization GMRES performs, over a different
 subspace. -/
-theorem cgnr_isMinRes (hA : Function.Injective (op A)) (m : ℕ) :
-    IsMinRes (op A) b x₀ (Chapter06.krylov (Aᴴ * A) (op Aᴴ (b - op A x₀)) m) (cgnr A b x₀ m).x := by
+theorem cgnr_isMinResidual (hA : Function.Injective (op A)) (m : ℕ) :
+    IsMinResidual (op A) b x₀ (Chapter06.krylov (Aᴴ * A) (op Aᴴ (b - op A x₀)) m) (cgnr A b x₀ m).x := by
   have hgal := CG.isGalerkinIterate (op Aᴴ b) x₀ (isSymmetricCoercive_normal hA) m
   rw [cgnr_eq, krylov_conjTranspose_mul]
-  exact (Krylov.isGalerkinIterate_adjoint_comp_iff_isMinRes (inner_op_conjTranspose A) b x₀ m
+  exact (Krylov.isGalerkinIterate_adjoint_comp_iff_isMinResidual (inner_op_conjTranspose A) b x₀ m
     _).1 hgal
 
 /-- **Saad §8.3.2**, the optimality of CGNE: `x_m` minimizes the *error* `‖x_* - x‖₂` over the
@@ -322,9 +322,9 @@ theorem cgnr_norm_residual_le {smin smax : ℝ} (hs : 0 < smin) (hss : smin ≤ 
       (fun x => by
         nlinarith [hmin x, norm_nonneg (op A x), mul_nonneg hs.le (norm_nonneg x)])
       (fun x => by nlinarith [hmax x, norm_nonneg (op A x), norm_nonneg x])
-  have hx := cgnr_isMinRes b x₀ hA m
+  have hx := cgnr_isMinResidual b x₀ hA m
   rw [krylov_conjTranspose_mul] at hx
-  exact Krylov.IsMinRes.norm_residual_le_of_adjoint_comp (inner_op_conjTranspose A) hs hss hB
+  exact Krylov.IsMinResidual.norm_residual_le_of_adjoint_comp (inner_op_conjTranspose A) hs hss hB
     hstar hx
 
 end Optimality

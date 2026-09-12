@@ -41,7 +41,7 @@ residuals in the span of the `w`-vectors — with the bidiagonal coefficient arr
 B̄_m` of (7.72) and (7.81). It is stated for an arbitrary column scaling `Δ_{m+1}`, which is what
 P-7.9 asks about; `equation_7_76` is the FOM formula for the CGS iterates, likewise for an
 arbitrary scaling. With the scaling `δ_i = ‖w_i‖₂` of (7.73) the residual basis has unit columns,
-and `tfqmr_isQuasiMinResIterate` identifies Algorithm 7.8's `θ, c, τ, η, d` recurrence with the
+and `tfqmr_isQuasiMinResidualIterate` identifies Algorithm 7.8's `θ, c, τ, η, d` recurrence with the
 quasi-minimal-residual iterate of that relation — it is Algorithm 6.13 with `k = 1`, because `H̄_m`
 is bidiagonal — whence (7.83), `‖b - A x_m‖₂ ≤ √(m+1) τ_m`, as `equation_7_83`.
 Two hypotheses appear there, and both are bounded or conditional, because `∀ m, α_m ≠ 0` is
@@ -840,7 +840,7 @@ theorem equation_7_55 (j : ℕ) :
     (bicgstab A b x₀ rs₀ (j + 1)).x
         = Projection.minResStep (op A) b
             ((bicgstab A b x₀ rs₀ j).x + bicgstabAlpha A b x₀ rs₀ j • (bicgstab A b x₀ rs₀ j).p) ∧
-      IsMinRes (op A) b
+      IsMinResidual (op A) b
         ((bicgstab A b x₀ rs₀ j).x + bicgstabAlpha A b x₀ rs₀ j • (bicgstab A b x₀ rs₀ j).p)
         (𝕜 ∙ bicgstabS A b x₀ rs₀ j) (bicgstab A b x₀ rs₀ (j + 1)).x := by
   have hres : b - op A ((bicgstab A b x₀ rs₀ j).x
@@ -853,7 +853,7 @@ theorem equation_7_55 (j : ℕ) :
     rw [Projection.minResStep, Projection.step1, hres, bicgstab_succ_x]
     rfl
   refine ⟨hstep, ?_⟩
-  have := Projection.minResStep_isMinRes (A := op A) (b := b)
+  have := Projection.minResStep_isMinResidual (A := op A) (b := b)
     ((bicgstab A b x₀ rs₀ j).x + bicgstabAlpha A b x₀ rs₀ j • (bicgstab A b x₀ rs₀ j).p)
   rwa [hres, ← hstep] at this
 
@@ -1770,17 +1770,17 @@ theorem tfqmr_eq_qgmres (m : ℕ) (h : TFQMRNoBreakdown A b x₀ rs₀ m) :
 /-- **Algorithm 7.8 computes the quasi-minimal-residual iterate of the relation (7.70)**: `x_m =
 x_0 + U_m y` with `y` minimizing `‖δ_0 e_1 - H̄_m y‖₂`.  This is Algorithm 6.12 on the two-family
 data of `equation_7_70`, reached through Algorithm 6.13 with `k = 1`. -/
-theorem tfqmr_isQuasiMinResIterate (m : ℕ) (h : TFQMRNoBreakdown A b x₀ rs₀ m) :
-    Krylov.IsQuasiMinResIterate (tfqmrU A b x₀ rs₀) (tfqmrH A b x₀ rs₀)
+theorem tfqmr_isQuasiMinResidualIterate (m : ℕ) (h : TFQMRNoBreakdown A b x₀ rs₀ m) :
+    Krylov.IsQuasiMinResidualIterate (tfqmrU A b x₀ rs₀) (tfqmrH A b x₀ rs₀)
       (tfqmrDelta A b x₀ rs₀ 0) x₀ m (tfqmr A b x₀ rs₀ m).x := by
   rw [tfqmr_eq_qgmres m h]
-  exact Chapter06.qgmres_isQuasiMinResIterate x₀ _ _ _
+  exact Chapter06.qgmres_isQuasiMinResidualIterate x₀ _ _ _
     (fun i j hij => tfqmrH_eq_zero_of_succ_lt A b x₀ rs₀ hij)
     (Chapter06.isUnit_R _ (fun i j hij => tfqmrH_eq_zero_of_succ_lt A b x₀ rs₀ hij)
       fun k hk => (givensRho_pos k (h.mono (le_of_lt hk))).ne')
 
 /-- **(7.83)**: `‖b - A x_m‖₂ ≤ √(m+1) τ_m`.  The residual basis `R_{m+1} Δ_{m+1}⁻¹` has unit
-columns, so the constant of `Krylov.IsQuasiMinResIterate.norm_residual_le` is `√(m+1)`, and the
+columns, so the constant of `Krylov.IsQuasiMinResidualIterate.norm_residual_le` is `√(m+1)`, and the
 quasi-residual is `‖γ_m‖ = τ_m`. -/
 theorem equation_7_83 (m : ℕ) (h : TFQMRNoBreakdown A b x₀ rs₀ m)
     (hs : TFQMRNoSeriousBreakdown A b x₀ rs₀) :
@@ -1800,9 +1800,9 @@ theorem equation_7_83 (m : ℕ) (h : TFQMRNoBreakdown A b x₀ rs₀ m)
       = tfqmrDelta A b x₀ rs₀ 0 • (tfqmrDelta A b x₀ rs₀ 0)⁻¹ • tfqmrW A b x₀ rs₀ 0 := by
     rw [smul_smul, mul_inv_cancel₀ (h.delta_ne_zero (Nat.zero_le m)), one_smul]
     rfl
-  have hle := Krylov.IsQuasiMinResIterate.norm_residual_le hrel hr
+  have hle := Krylov.IsQuasiMinResidualIterate.norm_residual_le hrel hr
     (fun k hk => (givensRho_pos k (h.mono (le_of_lt hk))).ne')
-    (fun w => Krylov.norm_sum_smul_le_sqrt_mul hunit w) (tfqmr_isQuasiMinResIterate m h)
+    (fun w => Krylov.norm_sum_smul_le_sqrt_mul hunit w) (tfqmr_isQuasiMinResidualIterate m h)
   rw [norm_gamma_eq_tfqmrTau m h] at hle
   refine hle.trans_eq ?_
   norm_num

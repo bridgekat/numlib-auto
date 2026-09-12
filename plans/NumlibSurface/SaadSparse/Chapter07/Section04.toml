@@ -91,7 +91,7 @@ id = "tfqmr_eq_dqgmres"
 id = "tfqmr_eq_qgmres"
 
 [[node]]
-id = "tfqmr_isQuasiMinResIterate"
+id = "tfqmr_isQuasiMinResidualIterate"
 
 [[node]]
 id = "equation_7_83"

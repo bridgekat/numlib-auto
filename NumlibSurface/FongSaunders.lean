@@ -82,7 +82,7 @@ concerned.  The paper's own ambiguities, and the readings adopted for them, are 
   of Theorem 3.1 and `‖r_k‖/‖x_k‖` of Table 5.1 divide by `‖x_k‖`, which vanishes at `k = 0`. The
   paper's `E_0` is simply undefined there, whereas in Lean the ratio evaluates to `0`, which is
   *below* every later value: `Antitone` on all of `ℕ` would be false, not merely unstated. So
-  `theorem_3_1_minres`, `nrbe_minres_antitoneOn` and `MinresProfile.backwardError` are
+  `theorem_3_1_minres`, `nrbe_minres_antitoneOn` and `MINRESProfile.backwardError` are
   `AntitoneOn … (Set.Ici 1)`. When `β > 0` keeps the denominator positive at `k = 0` the honest
   statement is `Antitone` on all of `ℕ`, and that is what `nrbe_minres_antitone` says.
 

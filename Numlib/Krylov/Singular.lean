@@ -18,24 +18,24 @@ b` has no solution at all, following [choi2006iterative] Ch. 2–3.
   (`Lanczos.grade_le_card_eigenvalues`, `Lanczos.grade_le_card_eigenvalues_of_mem_range`).
 * **Compatible singular systems.** For `b ∈ range A` the minimal-residual iterate from `x₀ = 0` at
   `m ≥ grade` solves `A x = b` and is the minimum-norm solution, that is `A⁺ b`
-  (`Krylov.IsMinResIterate.isLeast_norm_of_grade_le`).
+  (`Krylov.IsMinResidualIterate.isLeast_norm_of_grade_le`).
 * **Incompatible systems.** At `m ≥ grade` the residual of *any* minimal-residual iterate is
   annihilated by `A`, hence orthogonal to `range A`
-  (`Krylov.IsMinResIterate.residual_mem_orthogonal_range_of_grade_le`), so the iterate already
+  (`Krylov.IsMinResidualIterate.residual_mem_orthogonal_range_of_grade_le`), so the iterate already
   solves the least-squares problem over the whole space.  The minimum-norm minimal-residual iterate
   — the MINRES-QLP specification — is in addition orthogonal to `ker A`, so it is the minimum-norm
-  least-squares solution `A⁺ b` (`Krylov.IsMinNormMinResIterate.isLeast_norm_of_grade_le`).  Every
+  least-squares solution `A⁺ b` (`Krylov.IsMinNormMinResidualIterate.isLeast_norm_of_grade_le`).  Every
   minimal-residual iterate is `X b` for a `{2,3}`-inverse `X` of `A`
-  (`Krylov.IsMinResIterate.exists_generalizedInverse`).
+  (`Krylov.IsMinResidualIterate.exists_generalizedInverse`).
 * **Residual norms and the tridiagonal matrix.** The Lanczos reading of the Givens layer of
   `Numlib/Krylov/Hessenberg`: `‖r_m‖ = ‖r₀‖ ∏_{k<m} |s_k|`
-  (`Krylov.IsMinResIterate.norm_residual_eq_prod_givensS`), and every bound on `A` is inherited by
+  (`Krylov.IsMinResidualIterate.norm_residual_eq_prod_givensS`), and every bound on `A` is inherited by
   the tridiagonal matrices `T̄_m` and `T_m` (`Lanczos.norm_toEuclideanLin_tridiagExt_le`,
   `Lanczos.norm_toEuclideanLin_tridiag_le`).
 * **The residual recurrence.** `Lanczos.residual_minRes_succ_eq` is [choi2006iterative] Lemma 2.18,
   `r_{m+1} = |s_m|² r_m - (s_m g_m) v_{m+1}`, the *vector* refinement of the norm identity above.
   It reads both residuals off the last row of the accumulated rotation
-  (`Krylov.IsMinResIterate.residual_eq_gamma_smul_sum`) and steps that row with
+  (`Krylov.IsMinResidualIterate.residual_eq_gamma_smul_sum`) and steps that row with
   `Krylov.givensQ_last_row_castSucc`; nothing in it is symmetry-specific.
 * **The image of the residual.** `Lanczos.apply_residual_minRes_eq` is [choi2006iterative] Lemma
   2.19: `A r_m` has only two components in the Lanczos basis, on `v_m` and `v_{m+1}`, with the
@@ -43,7 +43,7 @@ b` has no solution at all, following [choi2006iterative] Ch. 2–3.
   orthogonality of `A r_m` to the Krylov space, and this is where the Hermitian symmetry of
   `Arnoldi.coeff` for symmetric `A` is used.
 
-Everything about the specification level (`Krylov.IsMinResIterate`, `Krylov.IsMinNormMinResIterate`
+Everything about the specification level (`Krylov.IsMinResidualIterate`, `Krylov.IsMinNormMinResidualIterate`
 of `Numlib/Krylov/Iterate`) needs only symmetry of `A` and finite grade; the eigenvalue counts and
 the `T̄_m` bounds are where finite dimension enters.
 -/
@@ -144,14 +144,14 @@ private theorem finiteDimensional_sub_apply_zero (A : E →ₗ[𝕜] E) (b : E)
   rw [map_zero, sub_zero]
   infer_instance
 
-private theorem isMinRes_of_isMinResIterate_zero (hx : IsMinResIterate A b 0 m x) :
-    IsMinRes A b 0 (subspace A b m) x := by
-  have h : IsMinRes A b 0 (subspace A (b - A 0) m) x := hx
+private theorem isMinResidual_of_isMinResidualIterate_zero (hx : IsMinResidualIterate A b 0 m x) :
+    IsMinResidual A b 0 (subspace A b m) x := by
+  have h : IsMinResidual A b 0 (subspace A (b - A 0) m) x := hx
   rwa [map_zero, sub_zero] at h
 
-private theorem isMinResIterate_zero_iff_sub_mem (hx : IsMinResIterate A b 0 m x) {y : E} :
-    IsMinResIterate A b 0 m y ↔ y - x ∈ subspace A b m ⊓ LinearMap.ker A := by
-  have h := isMinResIterate_iff_sub_mem (A := A) (b := b) (x₀ := 0) (m := m) (x := y) hx
+private theorem isMinResidualIterate_zero_iff_sub_mem (hx : IsMinResidualIterate A b 0 m x) {y : E} :
+    IsMinResidualIterate A b 0 m y ↔ y - x ∈ subspace A b m ⊓ LinearMap.ker A := by
+  have h := isMinResidualIterate_iff_sub_mem (A := A) (b := b) (x₀ := 0) (m := m) (x := y) hx
   rwa [map_zero, sub_zero] at h
 
 /-- The `≤` form of `LinearMap.IsSymmetric.orthogonal_range`: for symmetric `A` the range is
@@ -173,15 +173,15 @@ theorem injOn_subspace_of_mem_range (hA : A.IsSymmetric) (hb : b ∈ LinearMap.r
   exact sub_eq_zero.1 ((inner_self_eq_zero (𝕜 := 𝕜)).1
     (Submodule.inner_right_of_mem_orthogonal hker horth))
 
-namespace IsMinResIterate
+namespace IsMinResidualIterate
 
 /-- [choi2006iterative], Theorem 2.25, exactness half: a compatible singular system is solved
 exactly at termination. Symmetry supplies the injectivity of `A` on `𝒦_grade` that
-`Krylov.IsMinResIterate.apply_eq_of_grade_le` asks for, because `b ∈ range A` puts the whole Krylov
+`Krylov.IsMinResidualIterate.apply_eq_of_grade_le` asks for, because `b ∈ range A` puts the whole Krylov
 space in `(ker A)ᗮ`. -/
 theorem apply_eq_of_mem_range_of_grade_le [FiniteDimensional 𝕜 (fullSubspace A b)]
     (hA : A.IsSymmetric) (hb : b ∈ LinearMap.range A) (hm : grade A b ≤ m)
-    (hx : IsMinResIterate A b 0 m x) : A x = b := by
+    (hx : IsMinResidualIterate A b 0 m x) : A x = b := by
   have := finiteDimensional_sub_apply_zero A b
   refine hx.apply_eq_of_grade_le ?_ ?_
   · rw [map_zero, sub_zero]
@@ -192,14 +192,14 @@ theorem apply_eq_of_mem_range_of_grade_le [FiniteDimensional 𝕜 (fullSubspace 
 /-- **[choi2006iterative], Theorem 2.25.** On a compatible system with symmetric `A`, the
 minimal-residual iterate from `x₀ = 0` at `m ≥ grade` is the minimum-norm solution of `A x = b`,
 that is, the pseudoinverse solution `A⁺ b`.  Exactness is
-`Krylov.IsMinResIterate.apply_eq_of_mem_range_of_grade_le` and minimality is
+`Krylov.IsMinResidualIterate.apply_eq_of_mem_range_of_grade_le` and minimality is
 `Krylov.norm_le_of_apply_eq`, which only needs `𝒦_m(A, b) ≤ (ker A)ᗮ`. -/
 theorem isLeast_norm_of_grade_le [FiniteDimensional 𝕜 (fullSubspace A b)] (hA : A.IsSymmetric)
-    (hb : b ∈ LinearMap.range A) (hm : grade A b ≤ m) (hx : IsMinResIterate A b 0 m x) :
+    (hb : b ∈ LinearMap.range A) (hm : grade A b ≤ m) (hx : IsMinResidualIterate A b 0 m x) :
     IsLeast (norm '' {y : E | A y = b}) ‖x‖ := by
   have hAx : A x = b := apply_eq_of_mem_range_of_grade_le hA hb hm hx
   have hxm : x ∈ subspace A b m := by
-    simpa using (isMinRes_of_isMinResIterate_zero hx).mem
+    simpa using (isMinResidual_of_isMinResidualIterate_zero hx).mem
   refine ⟨⟨x, hAx, rfl⟩, ?_⟩
   rintro _ ⟨y, hy, rfl⟩
   exact norm_le_of_apply_eq hA hxm hAx y hy
@@ -209,9 +209,9 @@ theorem isLeast_norm_of_grade_le [FiniteDimensional 𝕜 (fullSubspace A b)] (hA
 the Petrov–Galerkin condition `r ⟂ A 𝒦_m` into `A r ⟂ 𝒦_m`, and a vector of `𝒦_m ⊓ 𝒦_mᗮ` vanishes.
 -/
 theorem apply_residual_eq_zero_of_grade_le [FiniteDimensional 𝕜 (fullSubspace A b)]
-    (hA : A.IsSymmetric) (hm : grade A b ≤ m) (hx : IsMinResIterate A b 0 m x) :
+    (hA : A.IsSymmetric) (hm : grade A b ≤ m) (hx : IsMinResidualIterate A b 0 m x) :
     A (b - A x) = 0 := by
-  have hx' := isMinRes_of_isMinResIterate_zero hx
+  have hx' := isMinResidual_of_isMinResidualIterate_zero hx
   have hKg : subspace A b m = fullSubspace A b := by
     rw [subspace_eq_of_grade_le A b hm, subspace_grade_eq_fullSubspace]
   have hinvt : ∀ z ∈ subspace A b m, A z ∈ subspace A b m := by
@@ -236,7 +236,7 @@ theorem apply_residual_eq_zero_of_grade_le [FiniteDimensional 𝕜 (fullSubspace
 /-- At termination the residual is orthogonal to `range A`: the normal equations of the
 least-squares problem `min ‖b - A y‖` hold, whether or not the system is compatible. -/
 theorem residual_mem_orthogonal_range_of_grade_le [FiniteDimensional 𝕜 (fullSubspace A b)]
-    (hA : A.IsSymmetric) (hm : grade A b ≤ m) (hx : IsMinResIterate A b 0 m x) :
+    (hA : A.IsSymmetric) (hm : grade A b ≤ m) (hx : IsMinResidualIterate A b 0 m x) :
     b - A x ∈ (LinearMap.range A)ᗮ := by
   refine (Submodule.mem_orthogonal _ _).2 ?_
   rintro _ ⟨u, rfl⟩
@@ -246,7 +246,7 @@ theorem residual_mem_orthogonal_range_of_grade_le [FiniteDimensional 𝕜 (fullS
 merely over `𝒦_m`: the Krylov space has grown large enough to contain the least-squares solution.
 This is the first half of [choi2006iterative], Theorem 3.1. -/
 theorem norm_residual_le_of_grade_le [FiniteDimensional 𝕜 (fullSubspace A b)] (hA : A.IsSymmetric)
-    (hm : grade A b ≤ m) (hx : IsMinResIterate A b 0 m x) (y : E) : ‖b - A x‖ ≤ ‖b - A y‖ := by
+    (hm : grade A b ≤ m) (hx : IsMinResidualIterate A b 0 m x) (y : E) : ‖b - A x‖ ≤ ‖b - A y‖ := by
   have h0 : inner 𝕜 (b - A x) (A x - A y) = (0 : 𝕜) := by
     refine inner_eq_zero_symm.1 ?_
     exact (Submodule.mem_orthogonal _ _).1
@@ -267,7 +267,7 @@ is the *particular* `X` read off the QLP factorization, and the strengthening to
 (`A X A = A`) when `𝒦_m` contains `range A`, neither of which is formalized here.  The hypothesis `A
 x ≠ 0` cannot be dropped: for `A = 0` the only `{2,3}`-inverse is `0`, so no nonzero `x` is of the
 form `X b`. -/
-theorem exists_generalizedInverse (hx : IsMinResIterate A b 0 m x) (hAx : A x ≠ 0) :
+theorem exists_generalizedInverse (hx : IsMinResidualIterate A b 0 m x) (hAx : A x ≠ 0) :
     ∃ X : E →ₗ[𝕜] E, X ∘ₗ A ∘ₗ X = X ∧ (A ∘ₗ X).IsSymmetric ∧ X b = x := by
   have hne : inner 𝕜 (A x) (A x) ≠ (0 : 𝕜) := fun h => hAx (inner_self_eq_zero.1 h)
   obtain ⟨c, hcinv, hcconj⟩ :
@@ -298,24 +298,24 @@ moduli of the Givens sines.  For symmetric `A` the coefficient function `Arnoldi
 tridiagonal `T̄` (`Lanczos.hessenberg_eq_map_tridiagExt`), so these are the sines of
 [choi2006iterative] Lanczos rotations; the identity itself needs no symmetry. -/
 theorem norm_residual_eq_prod_givensS {x₀ : E} [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))]
-    (hm : m < grade A (b - A x₀)) (hx : IsMinResIterate A b x₀ m x) :
+    (hm : m < grade A (b - A x₀)) (hx : IsMinResidualIterate A b x₀ m x) :
     ‖b - A x‖ =
       (∏ k ∈ Finset.range m, ‖givensS (Arnoldi.coeff A (b - A x₀)) k‖) * ‖b - A x₀‖ := by
   rw [hx.norm_residual_eq_norm_gamma hm, norm_gamma_eq_prod]
   simp
 
-end IsMinResIterate
+end IsMinResidualIterate
 
-namespace IsMinNormMinResIterate
+namespace IsMinNormMinResidualIterate
 
 /-- The minimum-norm minimal-residual iterate is orthogonal to `𝒦_m ⊓ ker A`, the subspace along
-which the minimal-residual iterates vary (`Krylov.isMinResIterate_iff_sub_mem`). -/
-theorem inner_eq_zero_of_mem (hx : IsMinNormMinResIterate A b 0 m x) {z : E}
+which the minimal-residual iterates vary (`Krylov.isMinResidualIterate_iff_sub_mem`). -/
+theorem inner_eq_zero_of_mem (hx : IsMinNormMinResidualIterate A b 0 m x) {z : E}
     (hz : z ∈ subspace A b m ⊓ LinearMap.ker A) : inner 𝕜 x z = (0 : 𝕜) := by
   have hmin : ∀ w ∈ subspace A b m ⊓ LinearMap.ker A, ‖x - (0 : E)‖ ≤ ‖x - w‖ := by
     intro w hw
     rw [sub_zero]
-    refine hx.norm_le _ ((isMinResIterate_zero_iff_sub_mem hx.isMinResIterate).2 ?_)
+    refine hx.norm_le _ ((isMinResidualIterate_zero_iff_sub_mem hx.isMinResidualIterate).2 ?_)
     rw [sub_sub_cancel_left]
     exact Submodule.neg_mem _ hw
   have h := Submodule.inner_eq_zero_of_forall_norm_sub_le
@@ -324,18 +324,18 @@ theorem inner_eq_zero_of_mem (hx : IsMinNormMinResIterate A b 0 m x) {z : E}
 
 /-- At termination the minimum-norm minimal-residual iterate is orthogonal to `ker A`.  The Krylov
 space sits in `𝕜 ∙ r ⊔ (ker A)ᗮ` with `r = b - A x` the residual, which at termination lies in `ker
-A` (`Krylov.IsMinResIterate.apply_residual_eq_zero_of_grade_le`) and in `𝒦_m`; the minimum-norm
+A` (`Krylov.IsMinResidualIterate.apply_residual_eq_zero_of_grade_le`) and in `𝒦_m`; the minimum-norm
 condition kills the `r`-component. -/
 theorem mem_orthogonal_ker_of_grade_le [FiniteDimensional 𝕜 (fullSubspace A b)]
-    (hA : A.IsSymmetric) (hm : grade A b ≤ m) (hx : IsMinNormMinResIterate A b 0 m x) :
+    (hA : A.IsSymmetric) (hm : grade A b ≤ m) (hx : IsMinNormMinResidualIterate A b 0 m x) :
     x ∈ (LinearMap.ker A)ᗮ := by
-  have hx' := hx.isMinResIterate
+  have hx' := hx.isMinResidualIterate
   have hKg : subspace A b m = fullSubspace A b := by
     rw [subspace_eq_of_grade_le A b hm, subspace_grade_eq_fullSubspace]
   have hker : b - A x ∈ LinearMap.ker A :=
-    LinearMap.mem_ker.2 (IsMinResIterate.apply_residual_eq_zero_of_grade_le hA hm hx')
+    LinearMap.mem_ker.2 (IsMinResidualIterate.apply_residual_eq_zero_of_grade_le hA hm hx')
   have hxm : x ∈ subspace A b m := by
-    simpa using (isMinRes_of_isMinResIterate_zero hx').mem
+    simpa using (isMinResidual_of_isMinResidualIterate_zero hx').mem
   have hinvt : ∀ z ∈ subspace A b m, A z ∈ subspace A b m := by
     rw [hKg]
     exact (Module.End.mem_invtSubmodule_iff_forall_mem_of_mem A).1
@@ -372,20 +372,20 @@ theorem mem_orthogonal_ker_of_grade_le [FiniteDimensional 𝕜 (fullSubspace A b
 minimal-residual iterate from `x₀ = 0` — the MINRES-QLP specification — is the minimum-norm
 least-squares solution `A⁺ b`: it minimizes `‖b - A y‖` over the whole space, and has least norm
 among the minimizers.  No compatibility of the system and no injectivity of `A` is assumed; that is
-exactly what the minimum-norm clause of `Krylov.IsMinNormMinResIterate` buys over
-`Krylov.IsMinResIterate.isLeast_norm_of_grade_le`. -/
+exactly what the minimum-norm clause of `Krylov.IsMinNormMinResidualIterate` buys over
+`Krylov.IsMinResidualIterate.isLeast_norm_of_grade_le`. -/
 theorem isLeast_norm_of_grade_le [FiniteDimensional 𝕜 (fullSubspace A b)] (hA : A.IsSymmetric)
-    (hm : grade A b ≤ m) (hx : IsMinNormMinResIterate A b 0 m x) :
+    (hm : grade A b ≤ m) (hx : IsMinNormMinResidualIterate A b 0 m x) :
     IsLeast (norm '' {y : E | ∀ z : E, ‖b - A y‖ ≤ ‖b - A z‖}) ‖x‖ := by
-  have hx' := hx.isMinResIterate
+  have hx' := hx.isMinResidualIterate
   have hlsq : ∀ z : E, ‖b - A x‖ ≤ ‖b - A z‖ :=
-    IsMinResIterate.norm_residual_le_of_grade_le hA hm hx'
+    IsMinResidualIterate.norm_residual_le_of_grade_le hA hm hx'
   refine ⟨⟨x, hlsq, rfl⟩, ?_⟩
   rintro _ ⟨y, hy, rfl⟩
   have h0 : inner 𝕜 (b - A x) (A x - A y) = (0 : 𝕜) := by
     refine inner_eq_zero_symm.1 ?_
     exact (Submodule.mem_orthogonal _ _).1
-      (IsMinResIterate.residual_mem_orthogonal_range_of_grade_le hA hm hx') _
+      (IsMinResidualIterate.residual_mem_orthogonal_range_of_grade_le hA hm hx') _
       ⟨x - y, by rw [map_sub]⟩
   have hsplit : b - A y = (b - A x) + (A x - A y) := by abel
   have hsq : ‖b - A y‖ * ‖b - A y‖ = ‖b - A x‖ * ‖b - A x‖ + ‖A x - A y‖ * ‖A x - A y‖ := by
@@ -405,7 +405,7 @@ theorem isLeast_norm_of_grade_le [FiniteDimensional 𝕜 (fullSubspace A b)] (hA
     rwa [show x + (y - x) = y from by abel] at h
   nlinarith [norm_nonneg x, norm_nonneg y, norm_nonneg (y - x)]
 
-end IsMinNormMinResIterate
+end IsMinNormMinResidualIterate
 
 end Krylov
 
@@ -592,13 +592,13 @@ with `g_m = c̄_m γ_m` the `m`-th entry of the rotated right-hand side.  Choi's
 `r_k = s_k² r_{k-1} - φ_k c_k v_{k+1}` is this with `γ_m = ±φ_m`.
 
 Both residuals are read off the last row of the accumulated rotation
-(`Krylov.IsMinResIterate.residual_eq_gamma_smul_sum`), and one step of that row is
+(`Krylov.IsMinResidualIterate.residual_eq_gamma_smul_sum`), and one step of that row is
 `Krylov.givensQ_last_row_castSucc` and `Krylov.givensQ_last_row_last`; the `|s_m|²` is `s_m` from
 `γ_{m+1} = -s_m γ_m` times `conj s_m` from the row.  Nothing here is symmetry-specific — the same
 identity holds for GMRES — but this is where [choi2006iterative] uses it. -/
 theorem residual_minRes_succ_eq {m : ℕ} (hm : m + 1 ≤ grade A (b - A x₀))
     (hρ : ∀ k < m + 1, givensRho (Arnoldi.coeff A (b - A x₀)) k ≠ 0) {x x' : E}
-    (hx : IsMinResIterate A b x₀ m x) (hx' : IsMinResIterate A b x₀ (m + 1) x') :
+    (hx : IsMinResidualIterate A b x₀ m x) (hx' : IsMinResidualIterate A b x₀ (m + 1) x') :
     b - A x' =
       ((‖givensS (Arnoldi.coeff A (b - A x₀)) m‖ ^ 2 : ℝ) : 𝕜) • (b - A x) -
         (givensS (Arnoldi.coeff A (b - A x₀)) m *
@@ -658,7 +658,7 @@ triangular — which is the orthogonality `A r_m ⟂ 𝒦_m` — and `Krylov.rot
 names it at `l = m` and `l = m + 1`, the two columns a single application of `A` can reach. -/
 theorem apply_residual_minRes_eq (hA : A.IsSymmetric) {m : ℕ} (hm : m ≤ grade A (b - A x₀))
     (hρ : ∀ k < m, givensRho (Arnoldi.coeff A (b - A x₀)) k ≠ 0) {x : E}
-    (hx : IsMinResIterate A b x₀ m x) :
+    (hx : IsMinResidualIterate A b x₀ m x) :
     A (b - A x) =
       (gamma (Arnoldi.coeff A (b - A x₀)) (‖b - A x₀‖ : 𝕜) m *
           (starRingEnd 𝕜) (rotated (Arnoldi.coeff A (b - A x₀)) m m m)) •
@@ -715,7 +715,7 @@ theorem apply_residual_minRes_eq (hA : A.IsSymmetric) {m : ℕ} (hm : m ≤ grad
 theorem norm_apply_residual_minRes_eq (hA : A.IsSymmetric) {m : ℕ}
     (hm : m + 1 < grade A (b - A x₀))
     (hρ : ∀ k < m, givensRho (Arnoldi.coeff A (b - A x₀)) k ≠ 0) {x : E}
-    (hx : IsMinResIterate A b x₀ m x) :
+    (hx : IsMinResidualIterate A b x₀ m x) :
     ‖A (b - A x)‖ = ‖b - A x‖ *
       Real.sqrt (‖rotated (Arnoldi.coeff A (b - A x₀)) m m m‖ ^ 2 +
         ‖rotated (Arnoldi.coeff A (b - A x₀)) m m (m + 1)‖ ^ 2) := by

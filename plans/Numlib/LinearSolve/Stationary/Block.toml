@@ -29,7 +29,7 @@ id = "blockGaussSeidelSplitting"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Algorithm 4.1"
 
 [[node]]
-id = "blockSorSplitting"
+id = "blockSORSplitting"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Algorithm 4.2"
 
 [[node]]

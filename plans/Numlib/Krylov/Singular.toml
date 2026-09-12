@@ -14,28 +14,28 @@ id = "Lanczos.grade_le_card_eigenvalues_of_mem_range"
 id = "Lanczos.grade_le_card_eigenvalues"
 
 [[node]]
-id = "Krylov.IsMinResIterate.isLeast_norm_of_grade_le"
+id = "Krylov.IsMinResidualIterate.isLeast_norm_of_grade_le"
 
 [[node]]
-id = "Krylov.IsMinResIterate.apply_residual_eq_zero_of_grade_le"
+id = "Krylov.IsMinResidualIterate.apply_residual_eq_zero_of_grade_le"
 
 [[node]]
-id = "Krylov.IsMinResIterate.residual_mem_orthogonal_range_of_grade_le"
+id = "Krylov.IsMinResidualIterate.residual_mem_orthogonal_range_of_grade_le"
 
 [[node]]
-id = "Krylov.IsMinResIterate.norm_residual_le_of_grade_le"
+id = "Krylov.IsMinResidualIterate.norm_residual_le_of_grade_le"
 
 [[node]]
-id = "Krylov.IsMinResIterate.exists_generalizedInverse"
+id = "Krylov.IsMinResidualIterate.exists_generalizedInverse"
 
 [[node]]
-id = "Krylov.IsMinResIterate.norm_residual_eq_prod_givensS"
+id = "Krylov.IsMinResidualIterate.norm_residual_eq_prod_givensS"
 
 [[node]]
-id = "Krylov.IsMinNormMinResIterate.mem_orthogonal_ker_of_grade_le"
+id = "Krylov.IsMinNormMinResidualIterate.mem_orthogonal_ker_of_grade_le"
 
 [[node]]
-id = "Krylov.IsMinNormMinResIterate.isLeast_norm_of_grade_le"
+id = "Krylov.IsMinNormMinResidualIterate.isLeast_norm_of_grade_le"
 
 [[node]]
 id = "Lanczos.norm_toEuclideanLin_tridiagExt_le"

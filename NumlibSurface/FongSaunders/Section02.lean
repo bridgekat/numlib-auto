@@ -299,12 +299,12 @@ theorem crAlpha_eq (k : ℕ) :
 
 /-- MINRES at step `k`: `x ∈ 𝒦_k(A, b)` minimizes `‖b − A x‖` over `𝒦_k(A, b)` (the paper's
 (2.1) with `x₀ = 0`).  Theorems "and hence MINRES" quantify over sequences satisfying this. -/
-def IsMinresIterate (A : Matrix (Fin n) (Fin n) ℝ) (b : Vec n) (k : ℕ) (x : Vec n) : Prop :=
+def IsMINRESIterate (A : Matrix (Fin n) (Fin n) ℝ) (b : Vec n) (k : ℕ) (x : Vec n) : Prop :=
   x ∈ krylov A b k ∧ ∀ y ∈ krylov A b k, ‖b - A ⬝ x‖ ≤ ‖b - A ⬝ y‖
 
 /-- The surface MINRES specification is the backbone one at `x₀ = 0`. -/
-theorem isMinresIterate_iff {k : ℕ} {x : Vec n} :
-    IsMinresIterate A b k x ↔ Krylov.IsMinResIterate (toEuclideanLin A) b 0 k x := by
+theorem isMINRESIterate_iff {k : ℕ} {x : Vec n} :
+    IsMINRESIterate A b k x ↔ Krylov.IsMinResidualIterate (toEuclideanLin A) b 0 k x := by
   have hK : Krylov.subspace (toEuclideanLin A) (b - toEuclideanLin A 0) k = krylov A b k := by
     rw [krylov_eq, map_zero, sub_zero]
   constructor
@@ -315,7 +315,7 @@ theorem isMinresIterate_iff {k : ℕ} {x : Vec n} :
     exact ⟨hmem, fun y hy => hmin y (by rw [sub_zero, hK]; exact hy)⟩
 
 /-- R2.2, last item: by definition a MINRES iterate minimizes the residual over `𝒦_k`. -/
-theorem minres_norm_residual_le {k : ℕ} {x y : Vec n} (hx : IsMinresIterate A b k x)
+theorem minres_norm_residual_le {k : ℕ} {x y : Vec n} (hx : IsMINRESIterate A b k x)
     (hy : y ∈ krylov A b k) : ‖b - A ⬝ x‖ ≤ ‖b - A ⬝ y‖ := hx.2 y hy
 
 /-! ### One-step unfoldings of the two recurrences -/
@@ -454,23 +454,23 @@ theorem cg_unique_min (hA : A.PosDef) {k : ℕ} {x : Vec n} (hx : x ∈ krylov A
 /-! ### R2.2: MINRES minimizes `‖r_k‖`; CR and MINRES coincide on spd systems (§2.2) -/
 
 /-- §2.2: CR minimizes the residual over `𝒦_k`, i.e. it is a MINRES iterate. -/
-theorem cr_isMinresIterate (hA : A.PosDef) (k : ℕ) : IsMinresIterate A b k (cr A b k).x := by
-  rw [isMinresIterate_iff, cr_x]
-  exact CR.isMinResIterate b 0 (isSymmetricCoercive_of_posDef hA) k
+theorem cr_isMINRESIterate (hA : A.PosDef) (k : ℕ) : IsMINRESIterate A b k (cr A b k).x := by
+  rw [isMINRESIterate_iff, cr_x]
+  exact CR.isMinResidualIterate b 0 (isSymmetricCoercive_of_posDef hA) k
 
 /-- §2.2: MINRES iterates are unique on an spd system. -/
-theorem isMinresIterate_unique (hA : A.PosDef) {k : ℕ} {x y : Vec n}
-    (hx : IsMinresIterate A b k x) (hy : IsMinresIterate A b k y) : x = y := by
-  rw [Krylov.IsMinResIterate.eq_CR_iterate (isSymmetricCoercive_of_posDef hA)
-      (isMinresIterate_iff.1 hx),
-    Krylov.IsMinResIterate.eq_CR_iterate (isSymmetricCoercive_of_posDef hA)
-      (isMinresIterate_iff.1 hy)]
+theorem isMINRESIterate_unique (hA : A.PosDef) {k : ℕ} {x y : Vec n}
+    (hx : IsMINRESIterate A b k x) (hy : IsMINRESIterate A b k y) : x = y := by
+  rw [Krylov.IsMinResidualIterate.eq_CR_iterate (isSymmetricCoercive_of_posDef hA)
+      (isMINRESIterate_iff.1 hx),
+    Krylov.IsMinResidualIterate.eq_CR_iterate (isSymmetricCoercive_of_posDef hA)
+      (isMINRESIterate_iff.1 hy)]
 
 /-- §2.2: "CR and MINRES must generate the same iterates on spd systems". -/
-theorem isMinresIterate_iff_eq_cr (hA : A.PosDef) (k : ℕ) (x : Vec n) :
-    IsMinresIterate A b k x ↔ x = (cr A b k).x :=
-  ⟨fun hx => isMinresIterate_unique hA hx (cr_isMinresIterate hA k),
-    fun hx => hx ▸ cr_isMinresIterate hA k⟩
+theorem isMINRESIterate_iff_eq_cr (hA : A.PosDef) (k : ℕ) (x : Vec n) :
+    IsMINRESIterate A b k x ↔ x = (cr A b k).x :=
+  ⟨fun hx => isMINRESIterate_unique hA hx (cr_isMINRESIterate hA k),
+    fun hx => hx ▸ cr_isMINRESIterate hA k⟩
 
 /-! ### R2.3: well-definedness and termination (§2.3) -/
 
@@ -510,7 +510,7 @@ theorem cr_residual_eq_zero_iff (hA : A.PosDef) (k : ℕ) :
     rw [h] at h2
     have hx : A ⬝ (cr A b k).x = b := (sub_eq_zero.1 h2.symm).symm
     have hle := Krylov.grade_le_of_apply_eq
-      (sub_zero_mem_subspace_iff.2 (cr_isMinresIterate hA k).1) hx
+      (sub_zero_mem_subspace_iff.2 (cr_isMINRESIterate hA k).1) hx
     rwa [sub_mulVecE_zero] at hle
   · intro h
     rw [cr_r]
@@ -697,9 +697,9 @@ theorem theorem_2_3_cr (hA : A.PosDef) : Monotone fun k => ‖(cr A b k).x‖ :=
 
 /-- Theorem 2.3 for MINRES: `‖x_k‖` increases monotonically. -/
 theorem theorem_2_3_minres (hA : A.PosDef) {x : ℕ → Vec n}
-    (hx : ∀ k, IsMinresIterate A b k (x k)) : Monotone fun k => ‖x k‖ :=
-  Krylov.IsMinResIterate.norm_monotone (isSymmetricCoercive_of_posDef hA)
-    fun k => isMinresIterate_iff.1 (hx k)
+    (hx : ∀ k, IsMINRESIterate A b k (x k)) : Monotone fun k => ‖x k‖ :=
+  Krylov.IsMinResidualIterate.norm_monotone (isSymmetricCoercive_of_posDef hA)
+    fun k => isMINRESIterate_iff.1 (hx k)
 
 /-- Theorem 2.3, strict form: `‖x_k‖ < ‖x_{k+1}‖` while `r_k ≠ 0`. -/
 theorem theorem_2_3_strict (hA : A.PosDef) {k : ℕ} (hk : (cr A b k).r ≠ 0) :
@@ -726,9 +726,9 @@ theorem theorem_2_4_cr (hA : A.PosDef) {xstar : Vec n} (hstar : A ⬝ xstar = b)
 
 /-- Theorem 2.4 for MINRES: `‖x* − x_k‖` decreases monotonically. -/
 theorem theorem_2_4_minres (hA : A.PosDef) {xstar : Vec n} (hstar : A ⬝ xstar = b) {x : ℕ → Vec n}
-    (hx : ∀ k, IsMinresIterate A b k (x k)) : Antitone fun k => ‖xstar - x k‖ :=
-  Krylov.IsMinResIterate.norm_error_antitone (isSymmetricCoercive_of_posDef hA)
-    (fun k => isMinresIterate_iff.1 (hx k)) hstar
+    (hx : ∀ k, IsMINRESIterate A b k (x k)) : Antitone fun k => ‖xstar - x k‖ :=
+  Krylov.IsMinResidualIterate.norm_error_antitone (isSymmetricCoercive_of_posDef hA)
+    (fun k => isMINRESIterate_iff.1 (hx k)) hstar
 
 /-! ### R2.8: Theorem 2.5 -/
 
@@ -740,11 +740,11 @@ theorem theorem_2_5_cr_antitone (hA : A.PosDef) {xstar : Vec n} (hstar : A ⬝ x
 
 /-- Theorem 2.5 for MINRES, nonstrict form. -/
 theorem theorem_2_5_minres_antitone (hA : A.PosDef) {xstar : Vec n} (hstar : A ⬝ xstar = b)
-    {x : ℕ → Vec n} (hx : ∀ k, IsMinresIterate A b k (x k)) :
+    {x : ℕ → Vec n} (hx : ∀ k, IsMINRESIterate A b k (x k)) :
     Antitone fun k => energyNorm A (xstar - x k) := by
   simp only [energyNorm_eq]
-  exact Krylov.IsMinResIterate.energyNorm_error_antitone (isSymmetricCoercive_of_posDef hA)
-    (fun k => isMinresIterate_iff.1 (hx k)) hstar
+  exact Krylov.IsMinResidualIterate.energyNorm_error_antitone (isSymmetricCoercive_of_posDef hA)
+    (fun k => isMINRESIterate_iff.1 (hx k)) hstar
 
 /-- Theorem 2.5 for CR, strict form: `‖x* − x_{k+1}‖_A < ‖x* − x_k‖_A` while `r_k ≠ 0`. -/
 theorem theorem_2_5_cr (hA : A.PosDef) {xstar : Vec n} (hstar : A ⬝ xstar = b) {k : ℕ}
@@ -773,9 +773,9 @@ theorem theorem_2_5_cr (hA : A.PosDef) {xstar : Vec n} (hstar : A ⬝ xstar = b)
 
 /-- Theorem 2.5 for MINRES, strict form. -/
 theorem theorem_2_5_minres (hA : A.PosDef) {xstar : Vec n} (hstar : A ⬝ xstar = b) {x : ℕ → Vec n}
-    (hx : ∀ k, IsMinresIterate A b k (x k)) {k : ℕ} (hk : b - A ⬝ x k ≠ 0) :
+    (hx : ∀ k, IsMINRESIterate A b k (x k)) {k : ℕ} (hk : b - A ⬝ x k ≠ 0) :
     energyNorm A (xstar - x (k + 1)) < energyNorm A (xstar - x k) := by
-  have he : ∀ j, x j = (cr A b j).x := fun j => (isMinresIterate_iff_eq_cr hA j (x j)).1 (hx j)
+  have he : ∀ j, x j = (cr A b j).x := fun j => (isMINRESIterate_iff_eq_cr hA j (x j)).1 (hx j)
   rw [he, he]
   refine theorem_2_5_cr hA hstar (k := k) ?_
   rw [cr_residual_eq]

@@ -163,7 +163,7 @@ id = "qmrs_eq_6_79"
 id = "quasiResidualNorm"
 
 [[node]]
-id = "qgmres_isQuasiMinResIterate"
+id = "qgmres_isQuasiMinResidualIterate"
 
 [[node]]
 id = "theorem_6_11"

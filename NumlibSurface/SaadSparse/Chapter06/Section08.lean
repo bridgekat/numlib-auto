@@ -26,7 +26,7 @@ particular case where `A` is Hermitian" — the iterate `x_j` is the minimal-res
 
 Indices are `0`-based, as in the book. Division by a vanishing quantity is `0` in Lean, which
 reproduces the book's breakdown behaviour; the indefinite case is covered by
-`crX_isMinResIterate_of_no_breakdown`, which asks only that the quantities the algorithm
+`crX_isMinResidualIterate_of_no_breakdown`, which asks only that the quantities the algorithm
 divides by are nonzero.
 
 Definitions are polymorphic in `𝕜`; the numbered results are stated over `ℝ` with `A`
@@ -244,20 +244,20 @@ theorem span_crP_eq (hA : A.PosDef) (m : ℕ) :
 
 /-- **Algorithm 6.20 realises the minimal-residual specification**: this is the sense in which
 §6.8 obtains the conjugate residual algorithm from GMRES for Hermitian `A`. -/
-theorem crX_isMinResIterate (hA : A.PosDef) (j : ℕ) :
-    Krylov.IsMinResIterate (op A) b x₀ j (crX A b x₀ j) := by
+theorem crX_isMinResidualIterate (hA : A.PosDef) (j : ℕ) :
+    Krylov.IsMinResidualIterate (op A) b x₀ j (crX A b x₀ j) := by
   rw [crX_eq_CR A b x₀ (isSymmetricCoercive_op_of_posDef hA).isSymmetric]
-  exact CR.isMinResIterate b x₀ (isSymmetricCoercive_op_of_posDef hA) j
+  exact CR.isMinResidualIterate b x₀ (isSymmetricCoercive_op_of_posDef hA) j
 
 /-- The minimal-residual property in the book's Hermitian (possibly indefinite) generality: as
 long as Algorithm 6.20 does not divide by zero, `x_j` minimizes the residual over
 `x_0 + 𝒦_j(A, r_0)`. -/
-theorem crX_isMinResIterate_of_no_breakdown (hA : (op A).IsSymmetric) {j : ℕ}
+theorem crX_isMinResidualIterate_of_no_breakdown (hA : (op A).IsSymmetric) {j : ℕ}
     (h1 : ∀ i < j, inner 𝕜 (op A (crR A b x₀ i)) (crR A b x₀ i) ≠ 0)
     (h2 : ∀ i < j, crAp A b x₀ i ≠ 0) :
-    Krylov.IsMinResIterate (op A) b x₀ j (crX A b x₀ j) := by
+    Krylov.IsMinResidualIterate (op A) b x₀ j (crX A b x₀ j) := by
   rw [crX_eq_CR A b x₀ hA]
-  refine CR.isMinResIterate_of_no_breakdown b x₀ hA j (fun i hi => ?_) fun i hi => ?_
+  refine CR.isMinResidualIterate_of_no_breakdown b x₀ hA j (fun i hi => ?_) fun i hi => ?_
   · rw [← crR_eq_CR A b x₀ hA, ← hA (crR A b x₀ i) (crR A b x₀ i)]
     exact h1 i hi
   · rw [← crAp_eq_CR A b x₀ hA]
@@ -268,9 +268,9 @@ produce the same approximation at every step, both being the minimal-residual it
 theorem crX_eq_gmresFixed (hA : A.PosDef) {j : ℕ} (hj : j ≤ grade A (v₁ A b x₀)) :
     crX A b x₀ j = gmresFixed A b x₀ j := by
   obtain ⟨z, -, hz⟩ :=
-    Krylov.existsUnique_isMinResIterate_of_injective (injective_op_of_isUnit hA.isUnit) b x₀ j
-  rw [hz _ (crX_isMinResIterate hA j),
-    hz _ (gmresFixed_isMinResIterate A b x₀ hj (isUnit_R_of_isUnit A b x₀ hA.isUnit hj))]
+    Krylov.existsUnique_isMinResidualIterate_of_injective (injective_op_of_isUnit hA.isUnit) b x₀ j
+  rw [hz _ (crX_isMinResidualIterate hA j),
+    hz _ (gmresFixed_isMinResidualIterate A b x₀ hj (isUnit_R_of_isUnit A b x₀ hA.isUnit hj))]
 
 end General
 
@@ -293,17 +293,17 @@ theorem algorithm_6_20_orthogonality (hA : A.PosDef) {i j : ℕ} (h : i ≠ j) :
 
 /-- **§6.8**: Algorithm 6.20 is the Hermitian case of GMRES — its iterate minimizes the residual
 norm over `x_0 + 𝒦_j(A, r_0)`. -/
-theorem algorithm_6_20_isMinResIterate (hA : A.PosDef) (j : ℕ) :
-    Krylov.IsMinResIterate (op A) b x₀ j (crX A b x₀ j) :=
-  crX_isMinResIterate hA j
+theorem algorithm_6_20_isMinResidualIterate (hA : A.PosDef) (j : ℕ) :
+    Krylov.IsMinResidualIterate (op A) b x₀ j (crX A b x₀ j) :=
+  crX_isMinResidualIterate hA j
 
 /-- **§6.8**: for Hermitian, possibly indefinite, `A` the conjugate residual iterate still
 minimizes the residual, as long as the algorithm does not break down. -/
-theorem algorithm_6_20_isMinResIterate_of_no_breakdown (hA : A.IsSymm) {j : ℕ}
+theorem algorithm_6_20_isMinResidualIterate_of_no_breakdown (hA : A.IsSymm) {j : ℕ}
     (h1 : ∀ i < j, inner ℝ (op A (crR A b x₀ i)) (crR A b x₀ i) ≠ 0)
     (h2 : ∀ i < j, crAp A b x₀ i ≠ 0) :
-    Krylov.IsMinResIterate (op A) b x₀ j (crX A b x₀ j) :=
-  crX_isMinResIterate_of_no_breakdown (isSymmetric_op_of_isSymm hA) h1 h2
+    Krylov.IsMinResidualIterate (op A) b x₀ j (crX A b x₀ j) :=
+  crX_isMinResidualIterate_of_no_breakdown (isSymmetric_op_of_isSymm hA) h1 h2
 
 /-- **§6.8**: the conjugate residual algorithm and full GMRES compute the same approximations
 for a symmetric positive definite `A`. -/

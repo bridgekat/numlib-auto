@@ -25,7 +25,7 @@ import Numlib.Krylov.Relations
 
 The residual itself, not only its norm, is read off the rotations: as long as no rotation has
 degenerated, `r^G_m = γ_m ∑_i conj (Q_m)_{m,i} v_i`
-(`Krylov.IsMinResIterate.residual_eq_gamma_smul_sum`), because the rotated residual is carried by
+(`Krylov.IsMinResidualIterate.residual_eq_gamma_smul_sum`), because the rotated residual is carried by
 its last entry alone (`Krylov.givensQ_mulVec_firstVec_sub_mulVec`) and undoing the unitary `Q_m`
 multiplies that entry by the conjugate of its last row. That last row steps by
 `Krylov.givensQ_last_row_castSucc` and `Krylov.givensQ_last_row_last`, which is what turns the
@@ -449,8 +449,8 @@ theorem residual_galerkin_eq {m : ℕ} (hm : 0 < m) (y : Fin m → 𝕜)
 
 /-- GMRES ([saad2003iterative], (6.29)–(6.30)): `x₀ + V_m y` is the minimal-residual iterate iff `y`
 minimizes `‖β e₁ - H̄_m z‖₂`. -/
-theorem isMinResIterate_iff_isMinOn {m : ℕ} (hm : m ≤ grade A (b - A x₀)) (y : Fin m → 𝕜) :
-    IsMinResIterate A b x₀ m (x₀ + ∑ j, y j • Arnoldi.vec A (b - A x₀) j) ↔
+theorem isMinResidualIterate_iff_isMinOn {m : ℕ} (hm : m ≤ grade A (b - A x₀)) (y : Fin m → 𝕜) :
+    IsMinResidualIterate A b x₀ m (x₀ + ∑ j, y j • Arnoldi.vec A (b - A x₀) j) ↔
       IsMinOn (fun z : Fin m → 𝕜 => ‖(WithLp.toLp 2 (firstVec (‖b - A x₀‖ : 𝕜) (m + 1) -
         (Arnoldi.hessenberg A (b - A x₀) m).mulVec z) : EuclideanSpace 𝕜 (Fin (m + 1)))‖)
         Set.univ y := by
@@ -527,7 +527,7 @@ noncomputable def gvec (β : 𝕜) (k : ℕ) : 𝕜 := starRingEnd 𝕜 (givensC
 
 /-- [saad2003iterative], (6.47): the last entry of the rotated right-hand side obeys `γ_{k+1} = -s_k
 γ_k`. This is the second defining clause of `Krylov.gamma` stated as a rewritable equation. Since
-`‖r_m‖ = |γ_m|` (`Krylov.IsMinResIterate.norm_residual_eq_norm_gamma`), it is the residual
+`‖r_m‖ = |γ_m|` (`Krylov.IsMinResidualIterate.norm_residual_eq_norm_gamma`), it is the residual
 recurrence of the minimal-residual iteration, and the induction step behind `‖γ_m‖ = ∏_{k<m} |s_k|
 ‖β‖`. -/
 theorem gamma_succ (β : 𝕜) (k : ℕ) : gamma h β (k + 1) = -givensS h k * gamma h β k := rfl
@@ -1483,7 +1483,7 @@ norm is `|γ_m|` and its coordinate vector solves the triangular system `R_m y =
 ([saad2003iterative], (6.41)–(6.43)). -/
 private theorem minres_rotated_of_givensRho_ne_zero {m : ℕ} (hm : m ≤ grade A (b - A x₀))
     (hρ : ∀ k < m, givensRho (Arnoldi.coeff A (b - A x₀)) k ≠ 0) {x : E}
-    (hx : IsMinResIterate A b x₀ m x) :
+    (hx : IsMinResidualIterate A b x₀ m x) :
     ‖b - A x‖ = ‖gamma (Arnoldi.coeff A (b - A x₀)) (‖b - A x₀‖ : 𝕜) m‖ ∧
       ∃ y : Fin m → 𝕜,
         (hessenbergSqOf (rotated (Arnoldi.coeff A (b - A x₀)) m) m).mulVec y =
@@ -1494,7 +1494,7 @@ private theorem minres_rotated_of_givensRho_ne_zero {m : ℕ} (hm : m ≤ grade 
   obtain ⟨y, hy⟩ := (mem_subspace_iff_exists_coeffs A (b - A x₀) m _).mp hx.mem
   have hxe : x = x₀ + ∑ j, y j • Arnoldi.vec A (b - A x₀) j := by rw [← hy]; abel
   rw [hxe] at hx
-  have hmin := (isMinResIterate_iff_isMinOn hm y).mp hx
+  have hmin := (isMinResidualIterate_iff_isMinOn hm y).mp hx
   rw [isMinOn_iff] at hmin
   obtain ⟨z, hz⟩ := Matrix.mulVec_surjective_iff_isUnit.mpr
     (isUnit_hessenbergSqOf_rotated_self (Arnoldi.coeff A (b - A x₀)) hh hρ)
@@ -1523,11 +1523,11 @@ private theorem minres_rotated_of_givensRho_ne_zero {m : ℕ} (hm : m ≤ grade 
   rw [hxe, norm_residual_eq_norm_firstVec_sub_mulVec hm y]
   exact hPG
 
-/-- The breakdown case of `IsMinResIterate.exists_mulVec_rotated_eq`: some rotation before step `m`
+/-- The breakdown case of `IsMinResidualIterate.exists_mulVec_rotated_eq`: some rotation before step `m`
 degenerates. -/
 private theorem minres_rotated_of_breakdown {m : ℕ} (hm : m ≤ grade A (b - A x₀))
     (hρ : ¬∀ k < m, givensRho (Arnoldi.coeff A (b - A x₀)) k ≠ 0) {x : E}
-    (hx : IsMinResIterate A b x₀ m x) :
+    (hx : IsMinResidualIterate A b x₀ m x) :
     ∃ y : Fin m → 𝕜, (hessenbergSqOf (rotated (Arnoldi.coeff A (b - A x₀)) m) m).mulVec y =
         (fun i : Fin m => gvec (Arnoldi.coeff A (b - A x₀)) (‖b - A x₀‖ : 𝕜) i) ∧
       x = x₀ + ∑ j, y j • Arnoldi.vec A (b - A x₀) j := by
@@ -1549,7 +1549,7 @@ private theorem minres_rotated_of_breakdown {m : ℕ} (hm : m ≤ grade A (b - A
   obtain ⟨y, hy⟩ := (mem_subspace_iff_exists_coeffs A (b - A x₀) (k + 1) _).mp hx.mem
   have hxe : x = x₀ + ∑ j, y j • Arnoldi.vec A (b - A x₀) j := by rw [← hy]; abel
   rw [hxe] at hx
-  have hmin := (isMinResIterate_iff_isMinOn hm y).mp hx
+  have hmin := (isMinResidualIterate_iff_isMinOn hm y).mp hx
   rw [isMinOn_iff] at hmin
   -- the leading `k × k` triangular block is nonsingular; pad its solution by a zero
   obtain ⟨y', hy'⟩ := Matrix.mulVec_surjective_iff_isUnit.mpr
@@ -1614,33 +1614,33 @@ statement is **false**.  Counterexample: `𝕜 = E = ℝ`, `A = 0`, `b = 1`, `x�
 x‖ = 1`, while `h₀₀ = ⟪v₀, A v₀⟫ = 0` and `h₁₀ = 0` give `ρ₀ = 0`, hence `s₀ = 0 / 0 = 0` and `γ₁ =
 -s₀ γ₀ = 0`.  With `m < grade` one gets `Arnoldi.coeff A r₀ (k+1) k ≠ 0`, hence `ρ_k ≠ 0`, for every
 `k < m`, which is what the proof needs (`givensQ` unitary and `R_m` nonsingular).  The `m = grade`
-case is covered by `IsMinResIterate.norm_residual_eq_norm_gamma_of_givensRho_ne_zero`, which assumes
+case is covered by `IsMinResidualIterate.norm_residual_eq_norm_gamma_of_givensRho_ne_zero`, which assumes
 exactly that. -/
-theorem IsMinResIterate.norm_residual_eq_norm_gamma {m : ℕ} (hm : m < grade A (b - A x₀)) {x : E}
-    (hx : IsMinResIterate A b x₀ m x) :
+theorem IsMinResidualIterate.norm_residual_eq_norm_gamma {m : ℕ} (hm : m < grade A (b - A x₀)) {x : E}
+    (hx : IsMinResidualIterate A b x₀ m x) :
     ‖b - A x‖ = ‖gamma (Arnoldi.coeff A (b - A x₀)) (‖b - A x₀‖ : 𝕜) m‖ :=
   (minres_rotated_of_givensRho_ne_zero hm.le
     (fun k hk => givensRho_arnoldi_ne_zero (by omega)) hx).1
 
 /-- [saad2003iterative], (6.42) at the boundary `m = grade`: `‖r^G_m‖ = |γ_m|` holds for every `m ≤
 grade` at which no rotation has degenerated, which is the hypothesis
-`IsMinResIterate.norm_residual_eq_norm_gamma` derives from `m < grade`. -/
-theorem IsMinResIterate.norm_residual_eq_norm_gamma_of_givensRho_ne_zero {m : ℕ}
+`IsMinResidualIterate.norm_residual_eq_norm_gamma` derives from `m < grade`. -/
+theorem IsMinResidualIterate.norm_residual_eq_norm_gamma_of_givensRho_ne_zero {m : ℕ}
     (hm : m ≤ grade A (b - A x₀))
     (hρ : ∀ k < m, givensRho (Arnoldi.coeff A (b - A x₀)) k ≠ 0) {x : E}
-    (hx : IsMinResIterate A b x₀ m x) :
+    (hx : IsMinResidualIterate A b x₀ m x) :
     ‖b - A x‖ = ‖gamma (Arnoldi.coeff A (b - A x₀)) (‖b - A x₀‖ : 𝕜) m‖ :=
   (minres_rotated_of_givensRho_ne_zero hm hρ hx).1
 
 /-- [saad2003iterative], (6.43)/(6.30): the minimal-residual iterate is `x₀ + V_m y` with `R_m y =
 g_m`.
 
-Unlike `IsMinResIterate.norm_residual_eq_norm_gamma` this holds up to and including `m = grade`. At
+Unlike `IsMinResidualIterate.norm_residual_eq_norm_gamma` this holds up to and including `m = grade`. At
 the boundary the last rotation may degenerate (`ρ_{m-1} = 0`), and then `R_m` is singular — but its
 last row and the last entry `g_{m-1} = c̄_{m-1} γ_{m-1}` of the right-hand side both vanish, so the
 system is still consistent and the minimal-residual coordinates solve it. -/
-theorem IsMinResIterate.exists_mulVec_rotated_eq {m : ℕ} (hm : m ≤ grade A (b - A x₀)) {x : E}
-    (hx : IsMinResIterate A b x₀ m x) :
+theorem IsMinResidualIterate.exists_mulVec_rotated_eq {m : ℕ} (hm : m ≤ grade A (b - A x₀)) {x : E}
+    (hx : IsMinResidualIterate A b x₀ m x) :
     ∃ y : Fin m → 𝕜, (hessenbergSqOf (rotated (Arnoldi.coeff A (b - A x₀)) m) m).mulVec y =
         (fun i : Fin m => gvec (Arnoldi.coeff A (b - A x₀)) (‖b - A x₀‖ : 𝕜) i) ∧
       x = x₀ + ∑ j, y j • Arnoldi.vec A (b - A x₀) j := by
@@ -1688,10 +1688,10 @@ entry by the conjugate of the last row.
 The hypothesis `hρ` — no rotation has degenerated before step `m` — is what makes `Q_m` unitary; it
 follows from `m < grade` through `Krylov.givensRho_arnoldi_ne_zero` and holds at `m = grade` exactly
 when the last rotation is nondegenerate, which is the same hypothesis
-`Krylov.IsMinResIterate.norm_residual_eq_norm_gamma_of_givensRho_ne_zero` carries. -/
-theorem IsMinResIterate.residual_eq_gamma_smul_sum {m : ℕ} (hm : m ≤ grade A (b - A x₀))
+`Krylov.IsMinResidualIterate.norm_residual_eq_norm_gamma_of_givensRho_ne_zero` carries. -/
+theorem IsMinResidualIterate.residual_eq_gamma_smul_sum {m : ℕ} (hm : m ≤ grade A (b - A x₀))
     (hρ : ∀ k < m, givensRho (Arnoldi.coeff A (b - A x₀)) k ≠ 0) {x : E}
-    (hx : IsMinResIterate A b x₀ m x) :
+    (hx : IsMinResidualIterate A b x₀ m x) :
     b - A x = ∑ i : Fin (m + 1),
       (gamma (Arnoldi.coeff A (b - A x₀)) (‖b - A x₀‖ : 𝕜) m *
           (starRingEnd 𝕜) (givensQ (Arnoldi.coeff A (b - A x₀)) m (Fin.last m) i)) •
@@ -1729,8 +1729,8 @@ theorem IsMinResIterate.residual_eq_gamma_smul_sum {m : ℕ} (hm : m ≤ grade A
 As for `norm_residual_eq_norm_gamma`, the hypothesis `m + 1 < grade` is strict: the same
 counterexample (`𝕜 = E = ℝ`, `A = 0`, `b = 1`, `x₀ = 0`, `m = 0`, `grade = 1`) has `‖b - A x'‖ = 1`
 but `‖s₀‖ * ‖b - A x‖ = 0`. -/
-theorem IsMinResIterate.norm_residual_succ_eq {m : ℕ} (hm : m + 1 < grade A (b - A x₀)) {x x' : E}
-    (hx : IsMinResIterate A b x₀ m x) (hx' : IsMinResIterate A b x₀ (m + 1) x') :
+theorem IsMinResidualIterate.norm_residual_succ_eq {m : ℕ} (hm : m + 1 < grade A (b - A x₀)) {x x' : E}
+    (hx : IsMinResidualIterate A b x₀ m x) (hx' : IsMinResidualIterate A b x₀ (m + 1) x') :
     ‖b - A x'‖ = ‖givensS (Arnoldi.coeff A (b - A x₀)) m‖ * ‖b - A x‖ := by
   rw [hx'.norm_residual_eq_norm_gamma hm, hx.norm_residual_eq_norm_gamma (by omega),
     gamma_succ, norm_mul, norm_neg]
@@ -1781,7 +1781,7 @@ strictly below the grade, so `r_mm ≠ 0`, i.e. `c_m ≠ 0`; equivalently `H_{m+
 (`isUnit_hessenbergSq_iff_givensC_ne_zero`). -/
 theorem IsGalerkinIterate.norm_residual_eq_div_norm_givensC {m : ℕ}
     (hm : m + 1 ≤ grade A (b - A x₀)) {xF xG : E} (hF : IsGalerkinIterate A b x₀ (m + 1) xF)
-    (hG : IsMinResIterate A b x₀ (m + 1) xG) :
+    (hG : IsMinResidualIterate A b x₀ (m + 1) xG) :
     ‖b - A xF‖ = ‖b - A xG‖ / ‖givensC (Arnoldi.coeff A (b - A x₀)) m‖ := by
   have hh : ∀ i j : ℕ, j + 1 < i → Arnoldi.coeff A (b - A x₀) i j = 0 :=
     fun i j hij => Arnoldi.coeff_eq_zero_of_lt A (b - A x₀) hij

@@ -11,8 +11,8 @@ Surface file for Yousef Saad, *Iterative Methods for Sparse Linear Systems*, 2nd
 
 **Lemma 6.21** with (6.104)–(6.105) says that *any* sequence of directions `p_0, …, p_{m-1}`
 that is `AᴴA`-orthogonal and spans `𝒦_m(A, r_0)` produces the minimal-residual approximation by
-the one-line update (6.105); it is `isMinResIterate_of_orthogonalDirections` below, a direct
-specialization of the backbone `Krylov.isMinResIterate_of_orthogonal_directions`
+the one-line update (6.105); it is `isMinResidualIterate_of_orthogonalDirections` below, a direct
+specialization of the backbone `Krylov.isMinResidualIterate_of_orthogonal_directions`
 (`Numlib/Krylov/CR.lean`), and `equation_6_104` is the resulting closed form.
 
 The section's three algorithms are the three ways the book builds such a sequence:
@@ -24,7 +24,7 @@ the same way (6.107); **ORTHOMIN(k)** is `orthomin`, GCR with lines 6–7 trunca
 function.
 
 The full versions satisfy the minimal-residual specification, so `gcr` and `orthodir` compute
-the GMRES approximation (`gcrX_isMinResIterate`, `orthodirX_isMinResIterate`,
+the GMRES approximation (`gcrX_isMinResidualIterate`, `orthodirX_isMinResidualIterate`,
 `gcrX_eq_gmresFixed`, `orthodirX_eq_gmresFixed`). The truncated and restarted variants
 ORTHOMIN(k) and GCR(m) (`gcrRestarted`, **Algorithm 6.21** with restarts) satisfy no global
 specification and the book proves nothing about them; the one statement it does make,
@@ -64,16 +64,16 @@ private theorem apply_mem_krylov_succ {v x : 𝔼} {m : ℕ} (h : x ∈ krylov A
 with `A p_i ≠ 0` and span `𝒦_m(A, r_0)`, then the sequence produced by the update (6.105)
 `x_{j+1} = x_j + ((r_j, A p_j)/(A p_j, A p_j)) p_j` reaches the minimal-residual approximation
 of `x_0 + 𝒦_m(A, r_0)` at step `m`. -/
-theorem isMinResIterate_of_orthogonalDirections {m : ℕ} (p : ℕ → 𝔼)
+theorem isMinResidualIterate_of_orthogonalDirections {m : ℕ} (p : ℕ → 𝔼)
     (horth : ∀ i < m, ∀ l < m, i ≠ l → inner 𝕜 (op A (p i)) (op A (p l)) = 0)
     (hne : ∀ i < m, op A (p i) ≠ 0)
     (hspan : Submodule.span 𝕜 (Set.range fun i : Fin m => p (i : ℕ)) = krylov A (r₀ A b x₀) m)
     (x : ℕ → 𝔼) (hx0 : x 0 = x₀)
     (hstep : ∀ j, x (j + 1) = x j +
       (inner 𝕜 (op A (p j)) (b - op A (x j)) / inner 𝕜 (op A (p j)) (op A (p j))) • p j) :
-    Krylov.IsMinResIterate (op A) b x₀ m (x m) := by
+    Krylov.IsMinResidualIterate (op A) b x₀ m (x m) := by
   rw [krylov_eq] at hspan
-  exact Krylov.isMinResIterate_of_orthogonal_directions p horth hne hspan x hx0 hstep
+  exact Krylov.isMinResidualIterate_of_orthogonal_directions p horth hne hspan x hx0 hstep
 
 /-- The residual of a sequence updated along the directions `p_j` with coefficients `c_j`. -/
 private theorem residual_eq_sub_sum (p x : ℕ → 𝔼) (c : ℕ → 𝕜)
@@ -359,10 +359,10 @@ theorem span_gcrP_eq {m : ℕ} (hne : ∀ i < m, op A (gcrP A b x₀ i) ≠ 0)
 
 /-- **GCR is mathematically equivalent to full GMRES**: Algorithm 6.21 realises the
 minimal-residual specification on `𝒦_m(A, r_0)`, by Lemma 6.21. -/
-theorem gcrX_isMinResIterate {m : ℕ} (hne : ∀ i < m, op A (gcrP A b x₀ i) ≠ 0)
+theorem gcrX_isMinResidualIterate {m : ℕ} (hne : ∀ i < m, op A (gcrP A b x₀ i) ≠ 0)
     (hm : m ≤ grade A (r₀ A b x₀)) :
-    Krylov.IsMinResIterate (op A) b x₀ m (gcrX A b x₀ m) := by
-  refine isMinResIterate_of_orthogonalDirections A b x₀ (gcrP A b x₀)
+    Krylov.IsMinResidualIterate (op A) b x₀ m (gcrX A b x₀ m) := by
+  refine isMinResidualIterate_of_orthogonalDirections A b x₀ (gcrP A b x₀)
     (inner_apply_gcrP_eq_zero A b x₀ hne) hne (span_gcrP_eq A b x₀ hne hm) (gcrX A b x₀)
     (gcrX_zero A b x₀) fun j => ?_
   rw [gcrX_succ, gcrAlpha_eq, gcrR_eq_residual]
@@ -449,10 +449,10 @@ theorem span_orthodirP_eq {m : ℕ} (hne : ∀ i < m, op A (orthodirP A b x₀ i
     (orthodirP_mem_krylov A b x₀) hm
 
 /-- **ORTHODIR is mathematically equivalent to full GMRES**, by Lemma 6.21. -/
-theorem orthodirX_isMinResIterate {m : ℕ} (hne : ∀ i < m, op A (orthodirP A b x₀ i) ≠ 0)
+theorem orthodirX_isMinResidualIterate {m : ℕ} (hne : ∀ i < m, op A (orthodirP A b x₀ i) ≠ 0)
     (hm : m ≤ grade A (r₀ A b x₀)) :
-    Krylov.IsMinResIterate (op A) b x₀ m (orthodirX A b x₀ m) := by
-  refine isMinResIterate_of_orthogonalDirections A b x₀ (orthodirP A b x₀)
+    Krylov.IsMinResidualIterate (op A) b x₀ m (orthodirX A b x₀ m) := by
+  refine isMinResidualIterate_of_orthogonalDirections A b x₀ (orthodirP A b x₀)
     (inner_apply_orthodirP_eq_zero A b x₀ hne) hne (span_orthodirP_eq A b x₀ hne hm)
     (orthodirX A b x₀) (orthodirX_zero A b x₀) fun j => ?_
   rw [orthodirX_succ, orthodirAlpha_eq, orthodirR_eq_residual]
@@ -534,9 +534,9 @@ theorem gcrX_eq_gmresFixed (hA : IsUnit A) {m : ℕ} (hne : ∀ i < m, op A (gcr
     (hm : m ≤ grade A (r₀ A b x₀)) : gcrX A b x₀ m = gmresFixed A b x₀ m := by
   have hm' : m ≤ grade A (v₁ A b x₀) := by rwa [← grade_r₀_eq_grade_v₁]
   obtain ⟨z, -, hz⟩ :=
-    Krylov.existsUnique_isMinResIterate_of_injective (injective_op_of_isUnit hA) b x₀ m
-  rw [hz _ (gcrX_isMinResIterate A b x₀ hne hm),
-    hz _ (gmresFixed_isMinResIterate A b x₀ hm' (isUnit_R_of_isUnit A b x₀ hA hm'))]
+    Krylov.existsUnique_isMinResidualIterate_of_injective (injective_op_of_isUnit hA) b x₀ m
+  rw [hz _ (gcrX_isMinResidualIterate A b x₀ hne hm),
+    hz _ (gmresFixed_isMinResidualIterate A b x₀ hm' (isUnit_R_of_isUnit A b x₀ hA hm'))]
 
 /-- **ORTHODIR computes the GMRES approximation** (§6.9). -/
 theorem orthodirX_eq_gmresFixed (hA : IsUnit A) {m : ℕ}
@@ -544,9 +544,9 @@ theorem orthodirX_eq_gmresFixed (hA : IsUnit A) {m : ℕ}
     orthodirX A b x₀ m = gmresFixed A b x₀ m := by
   have hm' : m ≤ grade A (v₁ A b x₀) := by rwa [← grade_r₀_eq_grade_v₁]
   obtain ⟨z, -, hz⟩ :=
-    Krylov.existsUnique_isMinResIterate_of_injective (injective_op_of_isUnit hA) b x₀ m
-  rw [hz _ (orthodirX_isMinResIterate A b x₀ hne hm),
-    hz _ (gmresFixed_isMinResIterate A b x₀ hm' (isUnit_R_of_isUnit A b x₀ hA hm'))]
+    Krylov.existsUnique_isMinResidualIterate_of_injective (injective_op_of_isUnit hA) b x₀ m
+  rw [hz _ (orthodirX_isMinResidualIterate A b x₀ hne hm),
+    hz _ (gmresFixed_isMinResidualIterate A b x₀ hm' (isUnit_R_of_isUnit A b x₀ hA hm'))]
 
 end General
 
@@ -569,10 +569,10 @@ theorem lemma_6_21 {m : ℕ} (p : ℕ → EuclideanSpace ℝ (Fin n))
     (x : ℕ → EuclideanSpace ℝ (Fin n)) (hx0 : x 0 = x₀)
     (hstep : ∀ j, x (j + 1) = x j +
       (inner ℝ (op A (p j)) (b - op A (x j)) / inner ℝ (op A (p j)) (op A (p j))) • p j) :
-    Krylov.IsMinResIterate (op A) b x₀ m (x m) ∧
+    Krylov.IsMinResidualIterate (op A) b x₀ m (x m) ∧
       x m = x₀ + ∑ i ∈ Finset.range m,
         (inner ℝ (op A (p i)) (r₀ A b x₀) / inner ℝ (op A (p i)) (op A (p i))) • p i :=
-  ⟨isMinResIterate_of_orthogonalDirections A b x₀ p horth hne hspan x hx0 hstep,
+  ⟨isMinResidualIterate_of_orthogonalDirections A b x₀ p horth hne hspan x hx0 hstep,
     equation_6_104 A b x₀ p horth x hx0 hstep⟩
 
 /-- **§6.9**: **Algorithm 6.21** (GCR) is mathematically equivalent to the full GMRES algorithm
@@ -581,9 +581,9 @@ theorem lemma_6_21 {m : ℕ} (p : ℕ → EuclideanSpace ℝ (Fin n))
 theorem algorithm_6_21_eq_gmres (hA : IsUnit A) {m : ℕ} (hne : ∀ i < m, op A (gcrP A b x₀ i) ≠ 0)
     (hm : m ≤ grade A (r₀ A b x₀)) :
     (∀ i < m, ∀ l < m, i ≠ l → inner ℝ (op A (gcrP A b x₀ i)) (op A (gcrP A b x₀ l)) = 0) ∧
-      Krylov.IsMinResIterate (op A) b x₀ m (gcrX A b x₀ m) ∧
+      Krylov.IsMinResidualIterate (op A) b x₀ m (gcrX A b x₀ m) ∧
       gcrX A b x₀ m = gmresFixed A b x₀ m :=
-  ⟨inner_apply_gcrP_eq_zero A b x₀ hne, gcrX_isMinResIterate A b x₀ hne hm,
+  ⟨inner_apply_gcrP_eq_zero A b x₀ hne, gcrX_isMinResidualIterate A b x₀ hne hm,
     gcrX_eq_gmresFixed A b x₀ hA hne hm⟩
 
 /-- **§6.9**: **ORTHODIR** is mathematically equivalent to the full GMRES algorithm. -/
@@ -591,9 +591,9 @@ theorem orthodir_eq_gmres (hA : IsUnit A) {m : ℕ}
     (hne : ∀ i < m, op A (orthodirP A b x₀ i) ≠ 0) (hm : m ≤ grade A (r₀ A b x₀)) :
     (∀ i < m, ∀ l < m, i ≠ l →
         inner ℝ (op A (orthodirP A b x₀ i)) (op A (orthodirP A b x₀ l)) = 0) ∧
-      Krylov.IsMinResIterate (op A) b x₀ m (orthodirX A b x₀ m) ∧
+      Krylov.IsMinResidualIterate (op A) b x₀ m (orthodirX A b x₀ m) ∧
       orthodirX A b x₀ m = gmresFixed A b x₀ m :=
-  ⟨inner_apply_orthodirP_eq_zero A b x₀ hne, orthodirX_isMinResIterate A b x₀ hne hm,
+  ⟨inner_apply_orthodirP_eq_zero A b x₀ hne, orthodirX_isMinResidualIterate A b x₀ hne hm,
     orthodirX_eq_gmresFixed A b x₀ hA hne hm⟩
 
 /-- **§6.9**: **ORTHOMIN(k)** coincides with GCR as long as the window `k` is at least the

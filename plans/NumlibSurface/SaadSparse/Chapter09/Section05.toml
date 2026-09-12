@@ -7,7 +7,7 @@ id = "pcgnr"
 id = "pcgnr_eq"
 
 [[node]]
-id = "pcgnr_isMinRes"
+id = "pcgnr_isMinResidual"
 
 [[node]]
 id = "pcgne"

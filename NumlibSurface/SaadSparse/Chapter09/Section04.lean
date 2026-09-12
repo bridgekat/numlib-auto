@@ -241,10 +241,10 @@ theorem proposition_9_2 (M : ℕ → Matrix (Fin n) (Fin n) 𝕜) (A : Matrix (F
     (b x₀ : EuclideanSpace 𝕜 (Fin n)) {m : ℕ} (hr : Chapter06.r₀ A b x₀ ≠ 0)
     (hbreak : ∀ j, j < m → fgmresW M A (Chapter06.v₁ A b x₀) j ≠ 0)
     (hR : IsUnit (Chapter06.R (fgmresCoeff M A (Chapter06.v₁ A b x₀)) m)) :
-    IsMinRes (op A) b x₀
+    IsMinResidual (op A) b x₀
       (Submodule.span 𝕜 (Set.range fun j : Fin m => fgmresZ M A (Chapter06.v₁ A b x₀) (j : ℕ)))
       (fgmres M A b x₀ m) :=
-  Krylov.FGMRES.isMinRes (equation_9_22 M A _) (residual_eq_smul_fgmresV M A b x₀)
+  Krylov.FGMRES.isMinResidual (equation_9_22 M A _) (residual_eq_smul_fgmresV M A b x₀)
     (orthonormal_fgmresV (Chapter06.norm_v₁ A b x₀ hr) hbreak) (isMinOn_fgmresY M A b x₀ hR)
 
 /-- **Proposition 9.3**: if the initial residual is nonzero, the previous steps have not broken

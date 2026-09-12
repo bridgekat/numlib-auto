@@ -282,7 +282,7 @@ theorem nrbePhi_cg_antitone (hA : A.PosDef) (hα : 0 ≤ α) (hβ : 0 ≤ β) :
 
 /-- R3.5 for MINRES: `φ_k` decreases monotonically. -/
 theorem nrbePhi_minres_antitone (hA : A.PosDef) (hα : 0 ≤ α) (hβ : 0 ≤ β) {x : ℕ → Vec n}
-    (hx : ∀ k, IsMinresIterate A b k (x k)) : Antitone fun k => nrbePhi A b α β (x k) :=
+    (hx : ∀ k, IsMINRESIterate A b k (x k)) : Antitone fun k => nrbePhi A b α β (x k) :=
   nrbePhi_antitone_of_monotone hα hβ (theorem_2_3_minres hA hx)
 
 /-! ### R3.6: Theorem 3.1 -/
@@ -290,10 +290,10 @@ theorem nrbePhi_minres_antitone (hA : A.PosDef) (hα : 0 ≤ α) (hβ : 0 ≤ β
 /-- A MINRES iterate is nonzero from step `1` on, so the ratio `‖r_k‖/‖x_k‖` is meaningful
 there. -/
 theorem minres_iterate_ne_zero (hA : A.PosDef) (hb : b ≠ 0) {x : ℕ → Vec n}
-    (hx : ∀ k, IsMinresIterate A b k (x k)) {k : ℕ} (hk : 1 ≤ k) : x k ≠ 0 := by
+    (hx : ∀ k, IsMINRESIterate A b k (x k)) {k : ℕ} (hk : 1 ≤ k) : x k ≠ 0 := by
   have h1 : x 1 ≠ 0 := by
-    rw [Krylov.IsMinResIterate.eq_CR_iterate (isSymmetricCoercive_of_posDef hA)
-      (isMinresIterate_iff.1 (hx 1))]
+    rw [Krylov.IsMinResidualIterate.eq_CR_iterate (isSymmetricCoercive_of_posDef hA)
+      (isMINRESIterate_iff.1 (hx 1))]
     exact CR.iterate_one_x_ne_zero b (isSymmetricCoercive_of_posDef hA) hb
   have hmono := theorem_2_3_minres hA hx hk
   simp only at hmono
@@ -301,19 +301,19 @@ theorem minres_iterate_ne_zero (hA : A.PosDef) (hb : b ≠ 0) {x : ℕ → Vec n
 
 /-- R3.6: the normwise relative backward error decreases monotonically for MINRES (`β > 0`). -/
 theorem nrbe_minres_antitone (hA : A.PosDef) (hb : b ≠ 0) (hα : 0 ≤ α) (hβ : 0 < β)
-    {x : ℕ → Vec n} (hx : ∀ k, IsMinresIterate A b k (x k)) :
+    {x : ℕ → Vec n} (hx : ∀ k, IsMINRESIterate A b k (x k)) :
     Antitone fun k => nrbe A b α β (x k) :=
-  Krylov.IsMinResIterate.backwardError_antitone (isSymmetricCoercive_of_posDef hA)
-    (fun k => isMinresIterate_iff.1 (hx k)) hα hβ (norm_nonneg A) hb
+  Krylov.IsMinResidualIterate.backwardError_antitone (isSymmetricCoercive_of_posDef hA)
+    (fun k => isMINRESIterate_iff.1 (hx k)) hα hβ (norm_nonneg A) hb
 
 /-- R3.6 with `β = 0` allowed: on `k ≥ 1` the backward error is still antitone.  The restriction
 to `Set.Ici 1` is necessary in Lean: at `k = 0` the ratio `‖r_0‖/‖x_0‖` is `‖b‖/0 = 0`. -/
 theorem nrbe_minres_antitoneOn (hA : A.PosDef) (hb : b ≠ 0) (hα : 0 < α) (hβ : 0 ≤ β)
-    {x : ℕ → Vec n} (hx : ∀ k, IsMinresIterate A b k (x k)) :
+    {x : ℕ → Vec n} (hx : ∀ k, IsMINRESIterate A b k (x k)) :
     AntitoneOn (fun k => nrbe A b α β (x k)) (Set.Ici 1) := by
   rcases eq_or_lt_of_le hβ with hβ0 | hβ0
-  · have hkey := Krylov.IsMinResIterate.norm_residual_div_norm_antitoneOn
-      (isSymmetricCoercive_of_posDef hA) (fun k => isMinresIterate_iff.1 (hx k)) hb
+  · have hkey := Krylov.IsMinResidualIterate.norm_residual_div_norm_antitoneOn
+      (isSymmetricCoercive_of_posDef hA) (fun k => isMINRESIterate_iff.1 (hx k)) hb
     have hrw : ∀ y : Vec n, nrbe A b α β y = (α * ‖A‖)⁻¹ * (‖b - A ⬝ y‖ / ‖y‖) := by
       intro y
       rw [nrbe, ← hβ0, zero_mul, add_zero, div_eq_mul_inv, mul_inv, div_eq_mul_inv]
@@ -329,7 +329,7 @@ theorem nrbe_minres_antitoneOn (hA : A.PosDef) (hb : b ≠ 0) (hα : 0 < α) (h�
 `‖f_k‖/‖b‖` decrease monotonically.  The row for `‖E_k‖/‖A‖` starts at `k = 1`: at `k = 0` the
 paper's `E_0` is undefined and Lean's is `0`. -/
 theorem theorem_3_1_minres (hA : A.PosDef) (hb : b ≠ 0) (hα : 0 < α) (hβ : 0 < β)
-    {x : ℕ → Vec n} (hx : ∀ k, IsMinresIterate A b k (x k)) :
+    {x : ℕ → Vec n} (hx : ∀ k, IsMINRESIterate A b k (x k)) :
     AntitoneOn (fun k => ‖nrbePertA A b α β (x k)‖ / ‖A‖) (Set.Ici 1) ∧
       Antitone fun k => ‖nrbePertb A b α β (x k)‖ / ‖b‖ := by
   have hA0 : A ≠ 0 := ne_zero_of_posDef hA hb
@@ -354,20 +354,20 @@ theorem theorem_3_1_minres (hA : A.PosDef) (hb : b ≠ 0) (hα : 0 < α) (hβ : 
 theorem theorem_3_1_cr (hA : A.PosDef) (hb : b ≠ 0) (hα : 0 < α) (hβ : 0 < β) :
     AntitoneOn (fun k => ‖nrbePertA A b α β (cr A b k).x‖ / ‖A‖) (Set.Ici 1) ∧
       Antitone fun k => ‖nrbePertb A b α β (cr A b k).x‖ / ‖b‖ :=
-  theorem_3_1_minres hA hb hα hβ (cr_isMinresIterate hA)
+  theorem_3_1_minres hA hb hα hβ (cr_isMINRESIterate hA)
 
 /-! ### R3.7: MINRES stops no later than CG under the rule (3.4) with `α = 0` -/
 
 /-- The MINRES residual never exceeds the CG residual at the same step. -/
 theorem minres_norm_residual_le_cg (hA : A.PosDef) (k : ℕ) {x : Vec n}
-    (hx : IsMinresIterate A b k x) : ‖b - A ⬝ x‖ ≤ ‖(cg A b k).r‖ := by
+    (hx : IsMINRESIterate A b k x) : ‖b - A ⬝ x‖ ≤ ‖(cg A b k).r‖ := by
   rw [cg_residual_eq]
   exact hx.2 _ (cg_mem_krylov hA k)
 
 /-- With the stopping rule `‖r_k‖ ≤ β ‖b‖` (rule (3.4) with `α = 0`) MINRES stops no later
 than CG. -/
 theorem minres_stops_first (hA : A.PosDef) (β : ℝ) {x : ℕ → Vec n}
-    (hx : ∀ k, IsMinresIterate A b k (x k)) (k : ℕ) (hcg : ‖(cg A b k).r‖ ≤ β * ‖b‖) :
+    (hx : ∀ k, IsMINRESIterate A b k (x k)) (k : ℕ) (hcg : ‖(cg A b k).r‖ ≤ β * ‖b‖) :
     ‖b - A ⬝ x k‖ ≤ β * ‖b‖ :=
   (minres_norm_residual_le_cg hA k (hx k)).trans hcg
 

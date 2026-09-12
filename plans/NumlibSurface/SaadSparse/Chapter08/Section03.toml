@@ -7,7 +7,7 @@ id = "cgnr"
 id = "cgnr_eq"
 
 [[node]]
-id = "cgnr_isMinRes"
+id = "cgnr_isMinResidual"
 
 [[node]]
 id = "cgne"

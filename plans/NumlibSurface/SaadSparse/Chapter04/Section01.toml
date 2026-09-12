@@ -31,7 +31,7 @@ id = "affineStep"
 id = "backwardGsStep"
 
 [[node]]
-id = "backwardSorStep"
+id = "backwardSORStep"
 
 [[node]]
 id = "f_ssor"

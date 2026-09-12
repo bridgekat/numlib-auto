@@ -10,10 +10,10 @@ id = "gmresRight"
 id = "gmresRight_eq"
 
 [[node]]
-id = "gmresLeft_isMinRes"
+id = "gmresLeft_isMinResidual"
 
 [[node]]
-id = "gmresRight_isMinRes"
+id = "gmresRight_isMinResidual"
 
 [[node]]
 id = "equation_9_18"

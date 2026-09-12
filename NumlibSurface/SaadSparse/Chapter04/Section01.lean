@@ -301,13 +301,13 @@ noncomputable def sorStep (A : Matrix (Fin n) (Fin n) ℝ) (ω : ℝ) (b x : Fin
   (D A - ω • E A)⁻¹ *ᵥ ((ω • F A + (1 - ω) • D A) *ᵥ x + ω • b)
 
 /-- Saad §4.1: the backward SOR step. -/
-noncomputable def backwardSorStep (A : Matrix (Fin n) (Fin n) ℝ) (ω : ℝ) (b x : Fin n → ℝ) :
+noncomputable def backwardSORStep (A : Matrix (Fin n) (Fin n) ℝ) (ω : ℝ) (b x : Fin n → ℝ) :
     Fin n → ℝ :=
   (D A - ω • F A)⁻¹ *ᵥ ((ω • E A + (1 - ω) • D A) *ᵥ x + ω • b)
 
 /-- Saad §4.1: the SSOR step, a forward SOR sweep followed by a backward one. -/
 noncomputable def ssorStep (A : Matrix (Fin n) (Fin n) ℝ) (ω : ℝ) (b : Fin n → ℝ) :
-    (Fin n → ℝ) → (Fin n → ℝ) := backwardSorStep A ω b ∘ sorStep A ω b
+    (Fin n → ℝ) → (Fin n → ℝ) := backwardSORStep A ω b ∘ sorStep A ω b
 
 /-- Saad (4.11): `ω A = (D - ω E) - (ω F + (1 - ω) D)`. -/
 theorem omega_smul_decomp (A : Matrix (Fin n) (Fin n) ℝ) (ω : ℝ) :
@@ -346,8 +346,8 @@ theorem sorStep_spec (h : IsUnit (diagPart A)) (hω : ω ≠ 0) (b x : Fin n →
   mulVec_inv_mulVec (isUnit_D_sub_smul_E h hω) _
 
 /-- Saad §4.1: the backward SOR step solves `(D - ω F) x' = [ω E + (1 - ω) D] x + ω b`. -/
-theorem backwardSorStep_spec (h : IsUnit (diagPart A)) (hω : ω ≠ 0) (b x : Fin n → ℝ) :
-    (D A - ω • F A) *ᵥ backwardSorStep A ω b x = (ω • E A + (1 - ω) • D A) *ᵥ x + ω • b :=
+theorem backwardSORStep_spec (h : IsUnit (diagPart A)) (hω : ω ≠ 0) (b x : Fin n → ℝ) :
+    (D A - ω • F A) *ᵥ backwardSORStep A ω b x = (ω • E A + (1 - ω) • D A) *ᵥ x + ω • b :=
   mulVec_inv_mulVec (isUnit_D_sub_smul_F h hω) _
 
 /-- Saad §4.1: SOR with `ω = 1` is Gauss–Seidel. -/
@@ -366,11 +366,11 @@ theorem sorStep_sub (h : IsUnit (diagPart A)) (hω : ω ≠ 0) (b x : Fin n → 
   abel
 
 /-- The backward SOR sweep in residual form. -/
-theorem backwardSorStep_sub (h : IsUnit (diagPart A)) (hω : ω ≠ 0) (b x : Fin n → ℝ) :
-    (D A - ω • F A) *ᵥ (backwardSorStep A ω b x - x) = ω • (b - A *ᵥ x) := by
+theorem backwardSORStep_sub (h : IsUnit (diagPart A)) (hω : ω ≠ 0) (b x : Fin n → ℝ) :
+    (D A - ω • F A) *ᵥ (backwardSORStep A ω b x - x) = ω • (b - A *ᵥ x) := by
   have h1 : ω • (b - A *ᵥ x) = ω • b - (ω • A) *ᵥ x := by
     rw [smul_sub, smul_mulVec]
-  rw [mulVec_sub, backwardSorStep_spec h hω b x, h1, omega_smul_decomp' A ω]
+  rw [mulVec_sub, backwardSORStep_spec h hω b x, h1, omega_smul_decomp' A ω]
   simp only [sub_mulVec, add_mulVec]
   abel
 
@@ -448,7 +448,7 @@ theorem ssorStep_eq (h : IsUnit (diagPart A)) (hω : ω ≠ 0) (hω2 : ω ≠ 2)
   refine (Splitting.step_eq_of_mulVec _ b x _ ?_).symm
   rw [← M_ssor_eq h hω hω2]
   exact ssor_key h hω hω2 b x (sorStep A ω b x) (ssorStep A ω b x) (sorStep_sub h hω b x)
-    (backwardSorStep_sub h hω b (sorStep A ω b x))
+    (backwardSORStep_sub h hω b (sorStep A ω b x))
 
 /-! ### The closed form (4.13)–(4.14) of the SSOR iteration -/
 
@@ -465,7 +465,7 @@ noncomputable def f_ssor (A : Matrix (Fin n) (Fin n) ℝ) (ω : ℝ) (b : Fin n 
 /-- Saad (4.13)–(4.14): the SSOR sweep is the affine iteration `x ↦ G_ω x + f_ω`. -/
 theorem ssorStep_eq_affine (A : Matrix (Fin n) (Fin n) ℝ) (ω : ℝ) (b x : Fin n → ℝ) :
     ssorStep A ω b x = G_ssor A ω *ᵥ x + f_ssor A ω b := by
-  simp only [ssorStep, Function.comp_apply, backwardSorStep, sorStep, G_ssor, f_ssor,
+  simp only [ssorStep, Function.comp_apply, backwardSORStep, sorStep, G_ssor, f_ssor,
     ← mulVec_mulVec, mulVec_add, add_mulVec, one_mulVec, mulVec_smul, smul_add]
   abel
 

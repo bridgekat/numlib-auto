@@ -33,7 +33,7 @@ id = "krylov_subspace_map_of_comp_eq"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 14.11, (14.54)"
 
 [[node]]
-id = "isMinRes_map_iff"
+id = "isMinResidual_map_iff"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 14.11"
 
 [[node]]
@@ -41,7 +41,7 @@ id = "isGalerkin_map_iff"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 14.11"
 
 [[node]]
-id = "isMinResIterate_map_iff"
+id = "isMinResidualIterate_map_iff"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 14.11"
 
 [[node]]
@@ -97,15 +97,15 @@ id = "krylov_subspace_eq_map_of_consistent"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 14.11, (14.52)-(14.54)"
 
 [[node]]
-id = "isMinRes_iff_isMinRes_schurComplement"
+id = "isMinResidual_iff_isMinResidual_schurComplement"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Propositions 14.11 and 14.12"
 
 [[node]]
-id = "exists_isMinResIterate_of_isMinResIterate_map"
+id = "exists_isMinResidualIterate_of_isMinResidualIterate_map"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 14.11"
 
 [[node]]
-id = "exists_isMinRes_schurComplement"
+id = "exists_isMinResidual_schurComplement"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Proposition 14.11, (14.51)"
 
 [[node]]

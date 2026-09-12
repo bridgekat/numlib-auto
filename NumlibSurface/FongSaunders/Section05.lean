@@ -13,7 +13,7 @@ Surface file for D. C.-L. Fong and M. A. Saunders, *CG versus MINRES: an empiric
 Journal for Science **17** (2012) 44–62 (Report SOL 2011-2R), §5.
 
 Table 5.1 collects the monotonicity properties of CG and MINRES on a symmetric positive definite
-system.  `MonotoneProfile` and `MinresProfile` package the rows of the table; `cg_profile`,
+system.  `MonotoneProfile` and `MINRESProfile` package the rows of the table; `cg_profile`,
 `minres_profile` and `cr_profile` are the table's ↗/↘ entries, assembled from §2 and §3.  The two
 "not monotonic" entries of the CG column are read as the existence of counterexamples and proved
 by explicit computation on diagonal matrices.
@@ -55,7 +55,7 @@ structure MonotoneProfile (A : Matrix (Fin n) (Fin n) ℝ) (xstar : Vec n) (x : 
 
 /-- All five rows of Table 5.1, i.e. the MINRES column: the three rows of `MonotoneProfile`
 together with the monotone residual norm and the monotone backward error. -/
-structure MinresProfile (A : Matrix (Fin n) (Fin n) ℝ) (b xstar : Vec n) (x : ℕ → Vec n) : Prop
+structure MINRESProfile (A : Matrix (Fin n) (Fin n) ℝ) (b xstar : Vec n) (x : ℕ → Vec n) : Prop
     extends MonotoneProfile A xstar x where
   /-- `‖r_k‖ ↘` (Hestenes–Stiefel Thm 7:2). -/
   norm_residual : Antitone fun k => ‖b - A ⬝ x k‖
@@ -80,20 +80,20 @@ theorem cg_profile (hA : A.PosDef) {xstar : Vec n} (hstar : A ⬝ xstar = b) :
 
 /-- Table 5.1, MINRES column (all five rows). -/
 theorem minres_profile (hA : A.PosDef) (hb : b ≠ 0) {xstar : Vec n} (hstar : A ⬝ xstar = b)
-    {x : ℕ → Vec n} (hx : ∀ k, IsMinresIterate A b k (x k)) : MinresProfile A b xstar x where
+    {x : ℕ → Vec n} (hx : ∀ k, IsMINRESIterate A b k (x k)) : MINRESProfile A b xstar x where
   norm_iterate := theorem_2_3_minres hA hx
   norm_error := theorem_2_4_minres hA hstar hx
   energyNorm_error := theorem_2_5_minres_antitone hA hstar hx
   norm_residual :=
-    Krylov.IsMinResIterate.norm_residual_antitone fun k => isMinresIterate_iff.1 (hx k)
+    Krylov.IsMinResidualIterate.norm_residual_antitone fun k => isMINRESIterate_iff.1 (hx k)
   backwardError :=
-    Krylov.IsMinResIterate.norm_residual_div_norm_antitoneOn
-      (isSymmetricCoercive_of_posDef hA) (fun k => isMinresIterate_iff.1 (hx k)) hb
+    Krylov.IsMinResidualIterate.norm_residual_div_norm_antitoneOn
+      (isSymmetricCoercive_of_posDef hA) (fun k => isMINRESIterate_iff.1 (hx k)) hb
 
 /-- Table 5.1, MINRES column, for the CR iterates (which are the MINRES iterates, R2.2). -/
 theorem cr_profile (hA : A.PosDef) (hb : b ≠ 0) {xstar : Vec n} (hstar : A ⬝ xstar = b) :
-    MinresProfile A b xstar fun k => (cr A b k).x :=
-  minres_profile hA hb hstar fun k => cr_isMinresIterate hA k
+    MINRESProfile A b xstar fun k => (cr A b k).x :=
+  minres_profile hA hb hstar fun k => cr_isMINRESIterate hA k
 
 /-! ### R5.2: the two "not monotonic" entries of the CG column
 
@@ -257,7 +257,7 @@ on which MINRES gives non-monotonic solution norms, and hence non-monotonic back
 `A ≻ 0`, and this is the witness that the hypothesis cannot be dropped.
 
 `A` is nonsingular (`det A = −2`), so the MINRES iterate is unique at every step
-(`Krylov.existsUnique_isMinResIterate_of_injective`) and the two theorems below can be quantified
+(`Krylov.existsUnique_isMinResidualIterate_of_injective`) and the two theorems below can be quantified
 over *every* sequence of MINRES iterates without assuming positive definiteness anywhere.
 -/
 
@@ -349,8 +349,8 @@ private theorem inner_mulVecE_eq_zero_of_generators {m : ℕ} {A : Matrix (Fin n
 
 /-- A point of `𝒦_k` whose residual is orthogonal to `A 𝒦_k` is a MINRES iterate: the
 normal-equations characterization of the least-squares minimizer, specialized to `𝒦_k`. -/
-private theorem isMinresIterate_of_orth {k : ℕ} {x : Vec n} (hmem : x ∈ krylov A b k)
-    (horth : ∀ z ∈ krylov A b k, ⟪b - A ⬝ x, A ⬝ z⟫_ℝ = 0) : IsMinresIterate A b k x := by
+private theorem isMINRESIterate_of_orth {k : ℕ} {x : Vec n} (hmem : x ∈ krylov A b k)
+    (horth : ∀ z ∈ krylov A b k, ⟪b - A ⬝ x, A ⬝ z⟫_ℝ = 0) : IsMINRESIterate A b k x := by
   refine ⟨hmem, fun y hy => ?_⟩
   have hres : b - A ⬝ y = (b - A ⬝ x) - A ⬝ (y - x) := by rw [mulVecE_sub]; abel
   have h0 : ⟪b - A ⬝ x, A ⬝ (y - x)⟫_ℝ = 0 := horth _ (Submodule.sub_mem _ hy hmem)
@@ -359,8 +359,8 @@ private theorem isMinresIterate_of_orth {k : ℕ} {x : Vec n} (hmem : x ∈ kryl
     ring
   nlinarith [norm_nonneg (b - A ⬝ y), norm_nonneg (b - A ⬝ x), sq_nonneg ‖A ⬝ (y - x)‖]
 
-private theorem isMinresIterate_x4one : IsMinresIterate A4 b4 1 x4one := by
-  refine isMinresIterate_of_orth ?_ (inner_mulVecE_eq_zero_of_generators ?_)
+private theorem isMINRESIterate_x4one : IsMINRESIterate A4 b4 1 x4one := by
+  refine isMINRESIterate_of_orth ?_ (inner_mulVecE_eq_zero_of_generators ?_)
   · have hb : b4 ∈ krylov A4 b4 1 := by
       simp only [krylov]
       exact Submodule.subset_span ⟨0, by simp [one_mulVecE]⟩
@@ -375,8 +375,8 @@ private theorem isMinresIterate_x4one : IsMinresIterate A4 b4 1 x4one := by
     rw [pow_zero, one_mulVecE, inner_eq, ofLp_res_one, ofLp_A4_b4]
     norm_num [Fin.sum_univ_three, cons_val_two, tail_cons, head_cons]
 
-private theorem isMinresIterate_x4two : IsMinresIterate A4 b4 2 x4two := by
-  refine isMinresIterate_of_orth ?_ (inner_mulVecE_eq_zero_of_generators ?_)
+private theorem isMINRESIterate_x4two : IsMINRESIterate A4 b4 2 x4two := by
+  refine isMINRESIterate_of_orth ?_ (inner_mulVecE_eq_zero_of_generators ?_)
   · have hb : b4 ∈ krylov A4 b4 2 := by
       simp only [krylov]
       exact Submodule.subset_span ⟨0, by simp [one_mulVecE]⟩
@@ -399,10 +399,10 @@ private theorem isMinresIterate_x4two : IsMinresIterate A4 b4 2 x4two := by
 
 /-- The MINRES iterate of the witness system is unique at every step, because `A` is
 nonsingular. -/
-private theorem eq_of_isMinresIterate {k : ℕ} {x y : Vec 3} (hx : IsMinresIterate A4 b4 k x)
-    (hy : IsMinresIterate A4 b4 k y) : x = y := by
-  obtain ⟨z, _, hz⟩ := Krylov.existsUnique_isMinResIterate_of_injective injective_A4 b4 0 k
-  rw [hz x (isMinresIterate_iff.1 hx), hz y (isMinresIterate_iff.1 hy)]
+private theorem eq_of_isMINRESIterate {k : ℕ} {x y : Vec 3} (hx : IsMINRESIterate A4 b4 k x)
+    (hy : IsMINRESIterate A4 b4 k y) : x = y := by
+  obtain ⟨z, _, hz⟩ := Krylov.existsUnique_isMinResidualIterate_of_injective injective_A4 b4 0 k
+  rw [hz x (isMINRESIterate_iff.1 hx), hz y (isMINRESIterate_iff.1 hy)]
 
 private theorem norm_sq_x4one : ‖x4one‖ ^ 2 = 8 / 49 := by
   rw [real_norm_sq_eq]
@@ -445,10 +445,10 @@ theorem indefinite_witness :
 Theorem 2.3 fails as soon as `A ≻ 0` is dropped. -/
 theorem minres_norm_iterate_not_monotone :
     ∃ (A : Matrix (Fin 3) (Fin 3) ℝ) (b : Vec 3), A.IsSymm ∧ IsUnit A.det ∧
-      ∀ x : ℕ → Vec 3, (∀ k, IsMinresIterate A b k (x k)) → ¬ Monotone fun k => ‖x k‖ := by
+      ∀ x : ℕ → Vec 3, (∀ k, IsMINRESIterate A b k (x k)) → ¬ Monotone fun k => ‖x k‖ := by
   refine ⟨A4, b4, isSymm_A4, isUnit_det_A4, fun x hx hmono => ?_⟩
-  have h1 : x 1 = x4one := eq_of_isMinresIterate (hx 1) isMinresIterate_x4one
-  have h2 : x 2 = x4two := eq_of_isMinresIterate (hx 2) isMinresIterate_x4two
+  have h1 : x 1 = x4one := eq_of_isMINRESIterate (hx 1) isMINRESIterate_x4one
+  have h2 : x 2 = x4two := eq_of_isMINRESIterate (hx 2) isMINRESIterate_x4two
   have hle := hmono (by norm_num : (1 : ℕ) ≤ 2)
   simp only [h1, h2] at hle
   nlinarith [norm_sq_x4one, norm_sq_x4two, norm_nonneg x4one, norm_nonneg x4two]
@@ -458,11 +458,11 @@ not monotonic either — `(‖r_1‖/‖x_1‖)² = 21/4 < 8 = (‖r_2‖/‖x_2
 without `A ≻ 0`.  This is the content of Figure 4.6. -/
 theorem minres_backwardError_not_antitoneOn :
     ∃ (A : Matrix (Fin 3) (Fin 3) ℝ) (b : Vec 3), A.IsSymm ∧ IsUnit A.det ∧
-      ∀ x : ℕ → Vec 3, (∀ k, IsMinresIterate A b k (x k)) →
+      ∀ x : ℕ → Vec 3, (∀ k, IsMINRESIterate A b k (x k)) →
         ¬ AntitoneOn (fun k => ‖b - A ⬝ x k‖ / ‖x k‖) (Set.Ici 1) := by
   refine ⟨A4, b4, isSymm_A4, isUnit_det_A4, fun x hx hanti => ?_⟩
-  have h1 : x 1 = x4one := eq_of_isMinresIterate (hx 1) isMinresIterate_x4one
-  have h2 : x 2 = x4two := eq_of_isMinresIterate (hx 2) isMinresIterate_x4two
+  have h1 : x 1 = x4one := eq_of_isMINRESIterate (hx 1) isMINRESIterate_x4one
+  have h2 : x 2 = x4two := eq_of_isMINRESIterate (hx 2) isMINRESIterate_x4two
   have hx1p : 0 < ‖x4one‖ := by nlinarith [norm_sq_x4one, norm_nonneg x4one]
   have hx2p : 0 < ‖x4two‖ := by nlinarith [norm_sq_x4two, norm_nonneg x4two]
   have hle := hanti (Set.mem_Ici.2 le_rfl) (Set.mem_Ici.2 (by norm_num)) (by norm_num : (1:ℕ) ≤ 2)
