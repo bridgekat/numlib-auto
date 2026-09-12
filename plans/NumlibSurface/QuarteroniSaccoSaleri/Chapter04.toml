@@ -1,0 +1,26 @@
+desc = '''
+Quarteroni–Sacco–Saleri, Chapter 4: iterative methods for linear systems (§4.1–4.6). One module per
+section: §4.1 consistency, convergence and the convergence factors of a linear stationary iteration;
+§4.2 the splitting methods (Jacobi, JOR, Gauss–Seidel, SOR, SSOR, their block forms) and the a priori
+convergence theory for diagonally dominant, symmetric positive definite and consistently ordered
+matrices; §4.3 stationary and nonstationary Richardson, preconditioning, the gradient and conjugate
+gradient methods, PCG and ADI; §4.4 Krylov subspaces, Arnoldi, FOM, GMRES, Lanczos and CR; §4.5 the
+two-sided Lanczos process for unsymmetric systems; §4.6 stopping criteria. §4.7 (applications) states
+no numbered result and has no module; the exercises the text cites (1, 12, 13, 14) are nodes of the
+sections that cite them.
+
+Conventions. Vectors are `Fin n → ℝ` with `A *ᵥ x` and `x ⬝ᵥ y` in the componentwise sections
+(§4.1, §4.2, §4.6) and `EuclideanSpace ℝ (Fin n)` with `Matrix.toEuclideanLin` where an inner
+product is the subject (§4.3–4.5), the two pictures being related by `WithLp.toLp 2`. The book's
+`A = D - E - F` is `D = diagPart A`, `E = -strictLower A`, `F = -strictUpper A`; its energy norm
+`‖x‖_A = (Ax, x)^{1/2}` is `Real.sqrt ((A *ᵥ x) ⬝ᵥ x)` on functions and `energyNorm (toEuclideanLin A)`
+on Euclidean vectors; its `ρ(B)` is `Matrix.complexSpectralRadius B` (real matrices are complexified
+before any spectral statement, `Numlib/LinearAlgebra/Matrix/Complexify`); its `K₂(A)` is
+`NormedRing.condNumber A` under `Matrix.Norms.L2Operator`. The book's iteration matrices and sweeps
+are the splittings of `Numlib/LinearSolve/Stationary/Splitting` and the sweeps of
+`Numlib/LinearSolve/Stationary/Sweep`; every convergence result is a specialization of
+`Numlib/LinearSolve/Stationary/{Basic,SPD,DiagDominant,ConsistentlyOrdered,Richardson,ADI}`, and the
+Krylov material of `Numlib/LinearSolve/Projection/*` and `Numlib/Krylov/*`. This library imports no
+other surface library; the glue it shares with `SaadSparse` (complexification of splittings, the
+sweep/splitting identities) is planned as backbone extensions and consumed from there.
+'''

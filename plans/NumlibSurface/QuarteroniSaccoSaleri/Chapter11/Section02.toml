@@ -1,0 +1,68 @@
+namespace = "QuarteroniSaccoSaleri.Chapter11"
+desc = '''
+§11.2, one-step methods: the grid, Definition 11.2 (one-step versus multistep), the four
+elementary methods (11.7)–(11.10) and Definition 11.3 (explicit versus implicit). Scalar
+restatements of `Numlib/ODE/OneStep`.
+'''
+
+[[node]]
+id = "grid"
+kind = "definition"
+desc = '''§11.2: `t_n = t₀ + n h` and `N_h = max {n : t_n ≤ t₀ + T}`, as `ODE.node t₀ h n` and
+`ODE.gridCount T h`, with the lemma `node_gridCount_le : node t₀ h (gridCount T h) ≤ t₀ + T` and
+`t₀ + T < node t₀ h (gridCount T h + 1)` for `h > 0`. ★'''
+deps = ["ODE.node", "ODE.gridCount"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 11.2'
+
+[[node]]
+id = "definition_11_2"
+kind = "definition"
+desc = '''A one-step method: a rule by which `u_{n+1}` depends only on `u_n` (and `t_n`, `h`, `f`),
+formalized as a step relation `ODE.OneStep.StepRel ℝ` produced by an `ODE.OneStep.Method ℝ`; a
+scalar increment function is `ODE.OneStep.Increment ℝ` and its method is
+`fun f => ODE.OneStep.ofIncrement (Φ f)`. Everything else is a multistep method (§11.5,
+`ODE.LinearMultistep`, Definition 11.7).'''
+deps = ["ODE.OneStep.StepRel", "ODE.OneStep.Method", "ODE.OneStep.Increment", "ODE.OneStep.ofIncrement"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 11.2'
+
+[[node]]
+id = "equation_11_7"
+kind = "definition"
+desc = '''Forward Euler, `u_{n+1} = u_n + h f_n`: `equation_11_7 f := ODE.OneStep.forwardEuler f` at
+`E = ℝ`, with `equation_11_7_iterate : (ODE.OneStep.iterate (forwardEuler f) h t₀ y₀ (n+1)).2 = u_n + h * f t_n u_n`.'''
+deps = ["ODE.OneStep.forwardEuler", "ODE.OneStep.iterate"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.7'
+
+[[node]]
+id = "equation_11_8"
+kind = "definition"
+desc = '''Backward Euler, `u_{n+1} = u_n + h f_{n+1}`: `ODE.OneStep.backwardEuler f`, whose orbits
+satisfy `u (n+1) = u n + h * f t_{n+1} (u (n+1))` (`ODE.OneStep.isOrbit_ofIncrement_iff`).'''
+deps = ["ODE.OneStep.backwardEuler", "ODE.OneStep.isOrbit_ofIncrement_iff"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.8'
+
+[[node]]
+id = "equation_11_9"
+kind = "definition"
+desc = '''Crank–Nicolson (trapezoidal), `u_{n+1} = u_n + (h/2)(f_n + f_{n+1})`:
+`ODE.OneStep.crankNicolson f`.'''
+deps = ["ODE.OneStep.crankNicolson"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.9'
+
+[[node]]
+id = "equation_11_10"
+kind = "definition"
+desc = 'Heun, `u_{n+1} = u_n + (h/2)(f_n + f(t_{n+1}, u_n + h f_n))`: `ODE.OneStep.heun f`.'
+deps = ["ODE.OneStep.heun"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.10'
+
+[[node]]
+id = "definition_11_3"
+kind = "definition"
+desc = '''Explicit and implicit methods: an increment `Φ : ODE.OneStep.Increment ℝ` is explicit iff
+`ODE.OneStep.IsExplicit Φ` (`u_{n+1}` is computed directly from `u_n`), implicit otherwise
+(`u_{n+1}` enters `Φ` through `f`). With `definition_11_3_examples`: forward Euler and Heun are
+explicit; backward Euler and Crank–Nicolson are implicit for the field `f t y = y` (for which
+`Φ` does depend on `v`). ★'''
+deps = ["ODE.OneStep.IsExplicit", "QuarteroniSaccoSaleri.Chapter11.equation_11_7", "QuarteroniSaccoSaleri.Chapter11.equation_11_8", "QuarteroniSaccoSaleri.Chapter11.equation_11_9", "QuarteroniSaccoSaleri.Chapter11.equation_11_10"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 11.3'

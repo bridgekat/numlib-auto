@@ -1,0 +1,26 @@
+desc = '''
+Quarteroni–Sacco–Saleri, Chapter 6: rootfinding for nonlinear equations in one real variable
+(§6.1–6.6; §6.7 is applications and §6.8 exercises).
+
+The chapter's methods (bisection, chord, secant, regula falsi, Newton, fixed-point iteration,
+Newton–Horner, Muller, Aitken/Steffensen, modified and adaptive Newton) are the backbone's
+`Nonlinear/Bisection`, `Nonlinear/Secant`, `Nonlinear/ScalarNewton`, `Nonlinear/FixedPoint`,
+`Nonlinear/Order` and `RingTheory/Polynomial/Horner`; the surface restates each numbered item on
+`ℝ → ℝ` with the book's hypotheses (`C^k` on a neighbourhood or an interval, `f(a) f(b) < 0`) and
+proves it by specializing. Roots of multiplicity `m` are `IsRootOfMultiplicity`
+(`Analysis/Calculus/RootMultiplicity`); the conditioning of a root (§6.1) is chapter 2's
+`Conditioning.absCondNumber_of_local_left_inverse` and `Conditioning.absCondNumber_eq_top_of_deriv_eq_zero`.
+
+Groups: `Basics` (Definition 6.1 and the remark on the convergence factor, which precede §6.1),
+`Section01`–`Section06`; the two exercises the text uses, Exercise 2 ((6.22)–(6.23)) and Exercise 5
+(Steffensen), live in `Section03` and `Section06` where they are cited. Numbered MATLAB Programs
+46–56 are not nodes. The Dekker–Brent method (§6.2.3) is described but nothing is stated about it
+beyond a cited superlinear order, so it has no node.
+
+Readings adopted (see `notes/book-errata.md` once merged): every error-ratio limit ((6.18),
+(6.21), (6.22), (6.31), (6.34)) needs the orbit to avoid the root, which the book never says; the
+remark after Definition 6.1 has "necessary" for "sufficient"; Property 6.4's range `0 ≤ i ≤ p` must
+read `1 ≤ i ≤ p`; (6.20) has the sign of the logarithm wrong (`R = -log|φ'(α)|`, as (4.5)); the last
+clause of Property 6.7 concerns iteration functions with `φ'(α) = 1` at a multiple root (Steffensen),
+not arbitrary first-order methods; bisection's bound (6.8) improves to `(b - a)/2^{k+1}`.
+'''

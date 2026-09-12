@@ -114,3 +114,33 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 10.4.3"
 [[node]]
 id = "norm_map_le_of_dual_approx"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Corollary 10.4.4"
+
+[[node]]
+id = "seminorm_sub_le_of_galerkin_orthogonal"
+kind = "theorem"
+desc = '''**Céa's lemma in a seminorm.** For a real vector space `V` (no topology needed), a seminorm
+`q : Seminorm ℝ V`, a bilinear form `a : V →ₗ[ℝ] V →ₗ[ℝ] ℝ` bounded and coercive *relative to `q`*
+(`|a u v| ≤ M q u q v` and `c q v ² ≤ a v v` with `c > 0`), a submodule `K`, `uh ∈ K` with the
+Galerkin orthogonality `∀ v ∈ K, a (u - uh) v = 0`, and any `w ∈ K`:
+`q (u - uh) ≤ M / c * q (u - w)`. The proof is the two-line proof of the norm case (`c q(e)² ≤ a(e, e)
+= a(e, u - w) ≤ M q(e) q(u - w)`), and the point of stating it for a seminorm is
+Quarteroni–Sacco–Saleri Theorem 12.3 and Theorem 12.4, whose form is coercive and bounded for the
+`H¹` *seminorm* `|·|_{H¹(0,1)}` on `H¹₀(0,1)` with the book's constants (`α₀` and
+`‖α‖_∞ + C_P² ‖γ‖_∞`), which the inner product norm of `H¹` would not reproduce. The existing
+`IsGalerkinSolution.norm_sub_le` is the case `q = ‖·‖`. Prototype: `notes/qss/ch12/proto/GalerkinSeminorm.lean`
+of the chapter 12 planning report. ★'''
+deps = []
+
+[[node]]
+id = "seminorm_sub_le_of_generalizedGalerkin"
+kind = "theorem"
+desc = '''**Strang's first lemma in a seminorm.** With `q`, `V` as above, a perturbed form `aN` bounded
+(`|aN w v| ≤ M q w q v`) and coercive (`c q v ² ≤ aN v v`, `c > 0`) relative to `q`, a functional
+`ℓN`, `uN ∈ K` with `∀ v ∈ K, aN uN v = ℓN v`, an element `u` with the consistency defect
+`∀ w ∈ K, |aN u w - ℓN w| ≤ δ q w` (`δ ≥ 0`), and `w ∈ K`:
+`q (u - uN) ≤ (1 + M / c) * q (u - w) + δ / c`. The existing `strang_first` is the norm case on a
+normed space (and its hypotheses only quantify over `K`, which this one may copy). Used for the
+stabilized advection–diffusion schemes of `Numlib/Variational/AdvectionDiffusion.lean`
+(Quarteroni–Sacco–Saleri Theorem 12.4): there the defect is the stabilization term
+`b(ů, w) = ε φ(Pe) ∫ ů' w'`, so `δ = ε φ(Pe) |ů|_{H¹}`. ★★'''
+deps = ["seminorm_sub_le_of_galerkin_orthogonal", "strang_first"]

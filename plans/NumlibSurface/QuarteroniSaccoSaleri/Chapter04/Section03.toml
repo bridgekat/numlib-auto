@@ -1,0 +1,478 @@
+namespace = "QuarteroniSaccoSaleri.Chapter04"
+desc = '''
+Quarteroni–Sacco–Saleri §4.3: stationary and nonstationary Richardson methods (4.23)–(4.25) and their
+convergence theory (Theorems 4.8–4.9, (4.29), Corollary 4.1), preconditioning (Remark 4.2 and the
+generalized eigenvalue bound (4.33); the catalogue of preconditioners in §4.3.2 states no result and
+its Programs 17–18 are not nodes), the gradient method ((4.34)–(4.37), Theorem 4.10), optimality and
+conjugate directions (Definition 4.4, (4.41)–(4.46), Theorems 4.11–4.12, Property 4.6, Exercises
+12–14, which the text cites), the preconditioned conjugate gradient method of §4.3.5 and the
+alternating-direction method of §4.3.6 ((4.50) and its two spectral-radius bounds). Examples 4.4–4.7
+are MATLAB experiments and Remark 4.3 is prose on rounding; none is a node.
+
+Vectors are `EuclideanSpace ℝ (Fin n)`, written `𝔼`, matrices act through `op A = toEuclideanLin A`,
+and the inner product is Mathlib's `inner ℝ`; the energy norm is `energyNorm (op A)`. Every
+convergence rate is a specialization of `Numlib/LinearSolve/Stationary/Richardson`,
+`Numlib/LinearSolve/Projection/{Optimality,OneDimensional,ConjugateDirection}`, `Numlib/Krylov/CG`,
+`Numlib/Krylov/Convergence/CG`, `Numlib/Krylov/Preconditioned` and `Numlib/LinearSolve/Stationary/ADI`.
+The CG and PCG algorithms are defined here in the book's own letters (its `β_k` carries the opposite
+sign to the backbone's) and identified with `CG.iterate`/`Krylov.PCG.iterate`, as
+`SaadSparse.Chapter06.cg_eq_CG` does for Saad's Algorithm 6.18.
+'''
+
+[[node]]
+id = "richardsonStep"
+kind = "definition"
+desc = '''(4.23): `richardsonStep A P α b x = x + α • (P⁻¹ *ᵥ (b - A *ᵥ x))` on `Fin n → ℝ`, the stationary
+preconditioned Richardson step with acceleration parameter `α`; for `IsUnit P`, `α ≠ 0` it is
+`Stationary.Splitting.mulVecStep (preconditionedRichardson A hP hα) b`, with iteration matrix
+`R_α = 1 - α • (P⁻¹ * A)` (`Stationary.Splitting.preconditionedRichardson_iterationOperator`); at
+`P = D A` and `α = 1` it is Jacobi, at `P = D A - E A` Gauss–Seidel. A lemma `richardsonStep_eq`
+records the identification. ★'''
+deps = ["Stationary.Splitting.preconditionedRichardson", "Stationary.Splitting.preconditionedRichardson_iterationOperator", "Stationary.Splitting.mulVecStep_eq_add_inv_mulVec"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.23'
+
+[[node]]
+id = "nonstationaryRichardson"
+kind = "definition"
+desc = '''(4.24)–(4.25): `nonstationaryRichardson A P α b x₀ k` is the sequence `x_{k+1} = x_k + α_k P⁻¹ r_k`,
+i.e. `Richardson.iterate (op A) (op P⁻¹) α b x₀`, and the residual satisfies
+`r_{k+1} = r_k - α_k • A z_k` with `z_k = P⁻¹ r_k` (`Richardson.residual_iterate_succ`), which is the
+algorithm (4.25). ★'''
+deps = ["Richardson.iterate", "Richardson.residual_iterate_succ"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.24'
+
+[[node]]
+id = "theorem_4_8"
+kind = "theorem"
+desc = '''Theorem 4.8: for `IsUnit P` and every real `α`, the stationary Richardson method converges from
+every `x₀` for every `b` iff `∀ λ ∈ spectrum ℂ (complexify (P⁻¹ * A)), 1 < 2 * λ.re / (α * ‖λ‖ ^ 2)`.
+`Stationary.Splitting.complexSpectralRadius_one_sub_smul_lt_one_iff_forall` for `M = P⁻¹ A`,
+`richardsonStep`, and `theorem_4_1` (for `α ≠ 0`; at `α = 0` both sides are false when `n ≠ 0`,
+the iteration being stationary at `x₀`). ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.richardsonStep", "QuarteroniSaccoSaleri.Chapter04.theorem_4_1", "Stationary.Splitting.complexSpectralRadius_one_sub_smul_lt_one_iff_forall"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 4.8'
+
+[[node]]
+id = "theorem_4_9"
+kind = "theorem"
+desc = '''Theorem 4.9, convergence: if `IsUnit P` and `P⁻¹ * A` has real positive eigenvalues, all in
+`[λ_n, λ_1]` with `0 < λ_n` and both attained
+(`spectrum ℂ (complexify (P⁻¹ * A)) ⊆ Complex.ofReal '' Set.Icc λ_n λ_1`, `λ_n, λ_1 ∈ spectrum ℝ (P⁻¹ * A)`),
+then the stationary Richardson method converges (from every `x₀`, for every `b`) iff `0 < α < 2 / λ_1`.
+`Stationary.Splitting.complexSpectralRadius_one_sub_smul_lt_one_iff`, `theorem_4_1`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.richardsonStep", "QuarteroniSaccoSaleri.Chapter04.theorem_4_1", "Stationary.Splitting.complexSpectralRadius_one_sub_smul_lt_one_iff"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 4.9'
+
+[[node]]
+id = "theorem_4_9_optimal"
+kind = "theorem"
+desc = '''Theorem 4.9, (4.27)–(4.28): under the same hypotheses `α_opt = 2 / (λ_1 + λ_n)` minimizes
+`α ↦ complexSpectralRadius (1 - α • (P⁻¹ * A))` over `α > 0` (`IsMinOn … (Set.Ioi 0) α_opt`) and
+`complexSpectralRadius (1 - α_opt • (P⁻¹ * A)) = ENNReal.ofReal ((λ_1 - λ_n) / (λ_1 + λ_n))`.
+`Stationary.Splitting.isMinOn_complexSpectralRadius_one_sub_smul`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.theorem_4_9", "Stationary.Splitting.isMinOn_complexSpectralRadius_one_sub_smul"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.28'
+
+[[node]]
+id = "richardson_monotone_of_posDef"
+kind = "theorem"
+desc = '''The sentence after Theorem 4.9: if `P⁻¹ * A` is symmetric positive definite (`(P⁻¹ * A).PosDef`, the
+book's hypothesis, which forces `A` and `P` to commute when both are symmetric), and `0 < α < 2/λ_1`,
+then the Richardson iteration is monotone in `‖·‖₂` and, when also `A.PosDef`, in `‖·‖_A`:
+`‖R_α *ᵥ e‖ ≤ ρ(R_α) ‖e‖` and `(A *ᵥ (R_α *ᵥ e)) ⬝ᵥ (R_α *ᵥ e) ≤ ρ(R_α)² ((A *ᵥ e) ⬝ᵥ e)` with `ρ(R_α) < 1`.
+`R_α` is symmetric, so `‖R_α‖₂ = ρ(R_α)` (`Matrix.l2_opNorm_eq_complexSpectralRadius_of_isHermitian`);
+for the `A`-norm, `A R_α = A - α A P⁻¹ A` is symmetric when `P⁻¹ A` is, so `R_α` is `A`-self-adjoint
+and `Stationary.Splitting.energyInner_iterationOperator_comm`'s consequence applies — or simply
+`Stationary.Splitting.energyNorm_mulVec_iterationOperator_le_complexSpectralRadius` when `P` is
+symmetric. ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.theorem_4_9", "Matrix.l2_opNorm_eq_complexSpectralRadius_of_isHermitian", "Stationary.Splitting.energyNorm_mulVec_iterationOperator_le_complexSpectralRadius"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 4.9'
+
+[[node]]
+id = "equation_4_29"
+kind = "theorem"
+desc = '''(4.29): if `M = P⁻¹ * A` is symmetric positive definite then, with `K₂ = NormedRing.condNumber M`
+(`ℓ²` operator norm), `ρ_opt = (K₂ - 1)/(K₂ + 1)` and `α_opt = 2 ‖A⁻¹ * P‖₂ / (K₂ + 1)`, i.e.
+`complexSpectralRadius (1 - α_opt • M) = ENNReal.ofReal ((K₂ - 1) / (K₂ + 1))` and
+`2 / (λ_1 + λ_n) = 2 * ‖M⁻¹‖ / (K₂ + 1)` (note `M⁻¹ = A⁻¹ P`).
+`Stationary.Splitting.complexSpectralRadius_one_sub_smul_optimal_eq_condNumber`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.theorem_4_9_optimal", "Stationary.Splitting.complexSpectralRadius_one_sub_smul_optimal_eq_condNumber", "NormedRing.condNumber"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.29'
+
+[[node]]
+id = "corollary_4_1"
+kind = "theorem"
+desc = '''Corollary 4.1, unpreconditioned: for `A.PosDef` the stationary Richardson method with `P = 1`
+converges for `0 < α < 2 / λ_max(A)` — the range the book omits and Theorem 4.9 supplies; without it
+the "convergent" clause is false (`α = 3/λ_max` gives `ρ(R_α) ≥ 2`), see the errata — and for
+*every* `α` the estimate (4.30) holds: `(A *ᵥ (R_α *ᵥ e)) ⬝ᵥ (R_α *ᵥ e) ≤ ρ(R_α) ^ 2 * ((A *ᵥ e) ⬝ᵥ e)`
+with `R_α = 1 - α • A`, `ρ(R_α) = (complexSpectralRadius R_α).toReal`, i.e. `‖e_{k+1}‖_A ≤ ρ(R_α) ‖e_k‖_A`.
+`Stationary.Splitting.energyNorm_preconditionedRichardson_mulVec_le` at `P = 1` (or the existing
+`Stationary.Splitting.richardson_complexSpectralRadius_lt_one_iff` for the range) and `theorem_4_9`.
+★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.theorem_4_9", "QuarteroniSaccoSaleri.Chapter04.richardsonStep", "Stationary.Splitting.energyNorm_preconditionedRichardson_mulVec_le", "Stationary.Splitting.richardson_complexSpectralRadius_lt_one_iff"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Corollary 4.1'
+
+[[node]]
+id = "corollary_4_1_preconditioned"
+kind = "theorem"
+desc = '''Corollary 4.1, preconditioned, in the generality of the book's closing remark ("the inequality
+(4.30) holds even if only `P` and `A` are symmetric positive definite"): for `A.PosDef`, `P.PosDef`
+and every `α ≠ 0`, with `R_α = 1 - α • (P⁻¹ * A)`,
+`(A *ᵥ (R_α *ᵥ e)) ⬝ᵥ (R_α *ᵥ e) ≤ ρ(R_α) ^ 2 * ((A *ᵥ e) ⬝ᵥ e)`. The book's own hypothesis adds
+"`P⁻¹ A` symmetric positive definite", which is unnecessary (`R_α` is `A`-self-adjoint because
+`A R_α = A - α A P⁻¹ A` is symmetric for symmetric `P`) and is dropped.
+`Stationary.Splitting.energyNorm_preconditionedRichardson_mulVec_le`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.corollary_4_1", "Stationary.Splitting.energyNorm_preconditionedRichardson_mulVec_le"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Corollary 4.1'
+
+[[node]]
+id = "remark_4_2"
+kind = "theorem"
+desc = '''Remark 4.2, (4.32): for real symmetric `A` and `P.PosDef`, `λ ∈ spectrum ℂ (complexify (P⁻¹ * A))`
+iff there is `x ≠ 0` with `A x = λ P x` (the generalized eigenvalue problem), every such `λ` is real,
+and for a real eigenvector `x`, `λ = (A *ᵥ x ⬝ᵥ x) / (P *ᵥ x ⬝ᵥ x)` (the generalized Rayleigh quotient).
+`Matrix.mem_spectrum_inv_mul_iff_exists_mulVec_eq_smul` and `Matrix.spectrum_inv_mul_subset_of_posDef`
+of `Numlib/Eigen/Pencil`; the quotient formula is `dotProduct` of the eigenvalue equation with `x`.
+★★'''
+deps = ["Matrix.mem_spectrum_inv_mul_iff_exists_mulVec_eq_smul", "Matrix.spectrum_inv_mul_subset_of_posDef"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 4.2'
+
+[[node]]
+id = "equation_4_33"
+kind = "theorem"
+desc = '''(4.33): for real symmetric `A` and `P.PosDef`, every eigenvalue `λ` of `P⁻¹ A` satisfies
+`λ_min(A) / λ_max(P) ≤ λ ≤ λ_max(A) / λ_min(P)`, where `λ_min`, `λ_max` are the extreme eigenvalues of
+the symmetric matrices (`Matrix.IsHermitian.eigenvalues`); stated for `λ_min(A) ≥ 0` as printed (the
+book's context has `A` positive definite; for indefinite `A` the lower bound is
+`λ_min(A)/λ_min(P)`). `Matrix.spectrum_inv_mul_subset_Icc_div`. ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.remark_4_2", "Matrix.spectrum_inv_mul_subset_Icc_div"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.33'
+
+[[node]]
+id = "energy"
+kind = "definition"
+desc = '''The energy of the system, `Φ y = 1/2 * inner ℝ (op A y) y - inner ℝ y b` on `𝔼`
+(`Φ(y) = ½ yᵀ A y - yᵀ b`). ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.34'
+
+[[node]]
+id = "equation_4_34"
+kind = "theorem"
+desc = '''(4.34): for symmetric `A` (`A.IsSymm`), `HasGradientAt (energy A b) (op A y - b) y` for every `y`
+(the gradient of `Φ` is `A y - b`; for general `A` it is `½ (Aᵀ + A) y - b`). Fréchet derivative of a
+quadratic form (`HasFDerivAt` of `inner` and `LinearMap`), then `HasGradientAt` via
+`hasGradientAt_iff_hasFDerivAt`. Consequently a critical point of `Φ` solves `A x = b`. ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.energy"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.34'
+
+[[node]]
+id = "equation_4_35"
+kind = "theorem"
+desc = '''(4.35) and the display before it: for `A.PosDef` and `op A x = b`,
+`energy A b y = energy A b x + 1/2 * inner ℝ (op A (y - x)) (y - x)` for all `y`, hence
+`1/2 * energyNorm (op A) (y - x) ^ 2 = energy A b y - energy A b x`, and `x` is the strict global
+minimizer of `Φ` (`energy A b x < energy A b y` for `y ≠ x`). Expand; it is
+`LinearMap.IsSymmetricCoercive.energyNorm_error_sq_eq` in the book's letters, and the `⇒` direction of
+`IsGalerkin.iff_energyNorm_min` with `K = ⊤`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.energy", "LinearMap.IsSymmetricCoercive.energyNorm_error_sq_eq", "Matrix.posDef_iff_isSymmetricCoercive"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.35'
+
+[[node]]
+id = "gradientStep"
+kind = "definition"
+desc = '''(4.36)–(4.37), the gradient (steepest descent) method: `gradientStep A b x = x + α • r` with
+`r = b - op A x`, `α = inner ℝ r r / inner ℝ r (op A r)`; it is `Projection.steepestDescentStep (op A) b x`
+(`gradientStep_eq`), and iterating it is the nonstationary Richardson method with `P = 1` and the
+dynamic parameter (4.37) (`Richardson.iterate_gradient_eq_steepestDescentStep`). ★'''
+deps = ["Projection.steepestDescentStep", "Richardson.iterate_gradient_eq_steepestDescentStep"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.37'
+
+[[node]]
+id = "theorem_4_10"
+kind = "theorem"
+desc = '''Theorem 4.10: for `A.PosDef` and `op A x = b`, the gradient method converges from every `x₀`,
+`Tendsto (fun k => (gradientStep A b)^[k] x₀) atTop (𝓝 x)`, and (4.38)
+`energyNorm (op A) (x - gradientStep A b y) ≤ (K₂ - 1) / (K₂ + 1) * energyNorm (op A) (x - y)` for
+every `y`, with `K₂ = NormedRing.condNumber A = λ_max/λ_min` (`Matrix.IsHermitian.l2_opNorm_eq`,
+`l2_opNorm_inv_eq`). `Projection.energyNorm_steepestDescentStep_le` with the eigenvalue bounds
+`Matrix.IsHermitian.isSymmetricBoundedBy_toEuclideanLin`, and `Projection.tendsto_of_forall_norm_succ_le`
+for the convergence. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.gradientStep", "Projection.energyNorm_steepestDescentStep_le", "Projection.tendsto_of_forall_norm_succ_le", "Matrix.IsHermitian.isSymmetricBoundedBy_toEuclideanLin", "Matrix.IsHermitian.l2_opNorm_eq", "Matrix.IsHermitian.l2_opNorm_inv_eq", "NormedRing.condNumber"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 4.10'
+
+[[node]]
+id = "definition_4_4"
+kind = "definition"
+desc = '''Definition 4.4: `IsOptimalWrt A b x p : Prop := ∀ t : ℝ, energy A b x ≤ energy A b (x + t • p)`,
+"`x` is optimal with respect to the direction `p`", and `IsOptimalWrtSubspace A b x V := ∀ p ∈ V, IsOptimalWrt A b x p`
+for a subspace `V`. (The book writes "a direction `x^{(k)}`" for what is a point.) ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.energy"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 4.4'
+
+[[node]]
+id = "definition_4_4_iff"
+kind = "theorem"
+desc = '''The two displays after Definition 4.4: for `A.PosDef` and `p ≠ 0`,
+`IsOptimalWrt A b x p ↔ inner ℝ p (b - op A x) = 0` (`p ⟂ r`), and
+`IsOptimalWrtSubspace A b x V ↔ b - op A x ∈ Vᗮ`; hence, for finite-dimensional `V` and
+`x ∈ x₀ + V`, optimality with respect to `V` is the Galerkin condition `IsGalerkin (op A) b x₀ V x`.
+`inner_residual_eq_zero_iff_forall_quadratic_add_smul_le` and `isGalerkin_iff_forall_quadratic_le`.
+★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.definition_4_4", "inner_residual_eq_zero_iff_forall_quadratic_add_smul_le", "isGalerkin_iff_forall_quadratic_le", "IsGalerkin"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 4.4'
+
+[[node]]
+id = "optimal_preserved_iff_conjugate"
+kind = "theorem"
+desc = '''The display `0 = pᵀ r^{(k+1)} = pᵀ(r^{(k)} - A q) = -pᵀ A q` after (4.40): if `x` is optimal with
+respect to `p` and `x' = x + q`, then `x'` is optimal with respect to `p` iff `inner ℝ p (op A q) = 0`
+(`A`-conjugacy of `p` and `q`), for `A.PosDef`, `p ≠ 0`. From `definition_4_4_iff` and
+`r' = r - A q`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.definition_4_4_iff"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 4.4'
+
+[[node]]
+id = "cgStep"
+kind = "definition"
+desc = '''The conjugate gradient iteration of §4.3.4 in the book's letters, on the state `(x, r, p)`:
+`α = inner ℝ p r / inner ℝ p (op A p)` (4.39), `x' = x + α • p`, `r' = r - α • op A p`,
+`β = inner ℝ (op A p) r' / inner ℝ (op A p) p`, `p' = r' - β • p` (4.41) — note the *minus* sign,
+which is the book's convention and makes its `β_k` the negative of the backbone's `CG.beta`. `cg A b x₀ k`
+iterates `cgStep` from `(x₀, b - op A x₀, b - op A x₀)`; `cgX`, `cgR`, `cgP`, `cgAlpha`, `cgBeta`
+read the components. ★'''
+deps = ["CG.step", "CG.init", "CG.iterate"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.41'
+
+[[node]]
+id = "cg_eq_CG"
+kind = "theorem"
+desc = '''For `A.PosDef`, `cg A b x₀ k = CG.iterate (op A) b x₀ k` componentwise (`cgX = (CG.iterate …).x`,
+`cgR = .r`, `cgP = .p`), `cgAlpha A b x₀ k = CG.alpha …` and `cgBeta A b x₀ k = -CG.beta …`. Induction
+on `k`; the step-length identity `⟪p, r⟫ = ‖r‖²` is `CG.inner_residual_direction_eq` and the
+`β` identity is `equation_4_45`. This is the pivot: every property of the backbone recurrence
+transfers to the book's CG. Same shape as `SaadSparse.Chapter06.cg_eq_CG`. ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.cgStep", "CG.iterate", "CG.alpha", "CG.beta", "CG.inner_residual_direction_eq", "Matrix.posDef_iff_isSymmetricCoercive"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.41'
+
+[[node]]
+id = "equation_4_42"
+kind = "theorem"
+desc = '''(4.42): the CG directions are `A`-conjugate, `inner ℝ (op A (cgP A b x₀ j)) (cgP A b x₀ (k + 1)) = 0`
+for `j ≤ k`, and more generally for `i ≠ j`; the book's induction is `CG.inner_apply_direction_eq_zero`
+through `cg_eq_CG`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.cg_eq_CG", "CG.inner_apply_direction_eq_zero"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.42'
+
+[[node]]
+id = "equation_4_44"
+kind = "theorem"
+desc = '''(4.43)–(4.44): `inner ℝ (cgP A b x₀ j) (cgR A b x₀ k) = 0` for `j < k` — the residual is orthogonal to
+`V_k = span {p_0, …, p_{k-1}} = span {r_0, …, r_{k-1}}`, and this span is the Krylov subspace
+`Krylov.subspace (op A) r₀ k` (`CG.span_direction_eq`, `CG.span_residual_eq`); also the residuals are
+mutually orthogonal (`CG.inner_residual_eq_zero`). `CG.inner_residual_direction_eq_zero` through
+`cg_eq_CG`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.cg_eq_CG", "CG.inner_residual_direction_eq_zero", "CG.inner_residual_eq_zero", "CG.span_direction_eq", "CG.span_residual_eq"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.44'
+
+[[node]]
+id = "equation_4_45"
+kind = "theorem"
+desc = '''(4.45) and Exercise 13: while `cgR A b x₀ k ≠ 0`,
+`cgAlpha A b x₀ k = ‖cgR A b x₀ k‖ ^ 2 / inner ℝ (cgP A b x₀ k) (op A (cgP A b x₀ k))` and
+`cgBeta A b x₀ k = -(‖cgR A b x₀ (k + 1)‖ ^ 2 / ‖cgR A b x₀ k‖ ^ 2)`. The sign: with the book's
+`p_{k+1} = r_{k+1} - β_k p_k` (4.41) and `β_k = (A p_k)ᵀ r_{k+1} / (A p_k)ᵀ p_k`, the solution of
+Exercise 13 gives `(A p_k)ᵀ r_{k+1} = -‖r_{k+1}‖²/α_k` and `α_k (A p_k)ᵀ p_k = +‖r_k‖²` (the book
+prints a minus sign there), so `β_k = -‖r_{k+1}‖²/‖r_k‖²`; (4.45) as printed, `β_k = +‖r_{k+1}‖²/‖r_k‖²`,
+is inconsistent with (4.41) and is corrected here (see the errata). From `cg_eq_CG`, `CG.alpha`,
+`CG.beta`, `CG.inner_residual_direction_eq`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.cg_eq_CG", "CG.alpha", "CG.beta", "CG.inner_residual_direction_eq"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.45'
+
+[[node]]
+id = "equation_4_46"
+kind = "theorem"
+desc = '''(4.46) and Exercise 14, the three-term recurrence of the residuals: while `cgR A b x₀ j ≠ 0` for
+`j ≤ k`, with `α_j = cgAlpha`, `β_j = cgBeta` (book's sign) and `r_{-1}`-term absent at `k = 0`,
+`op A (cgR A b x₀ k) = -(1/α_k) • r_{k+1} + (1/α_k - β_{k-1}/α_{k-1}) • r_k + (β_{k-1}/α_{k-1}) • r_{k-1}`
+for `k ≥ 1`. The last coefficient is `β_{k-1}/α_{k-1}`, not the printed `β_k/α_{k-1}` (errata);
+derived from `A p_k = (r_k - r_{k+1})/α_k` and `p_k = r_k - β_{k-1} p_{k-1}` as the solution of
+Exercise 14 does. It is `CG.residual_succ_eq_three_term` (in Saad's `γ_k = ⟪r_k, r_k⟫/⟪A r_k, r_k⟫`,
+`ρ_k` form) re-expressed; the identification `1/α_k - β_{k-1}/α_{k-1} = 1/γ_k` is the translation.
+★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.cg_eq_CG", "QuarteroniSaccoSaleri.Chapter04.equation_4_45", "CG.residual_succ_eq_three_term", "CG.gamma", "CG.rho"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.46'
+
+[[node]]
+id = "theorem_4_11"
+kind = "theorem"
+desc = '''Theorem 4.11: for `A.PosDef`, any conjugate-direction method terminates after at most `n` steps
+with the exact solution: for every `ConjugateDirection.IsConjugateFamily (op A) p` with `p i ≠ 0`,
+`op A (ConjugateDirection.iterate (op A) b x₀ p n) = b` (`n = Module.finrank ℝ 𝔼`). The
+book's proof — `x^{(k)}` is optimal with respect to `p^{(0)}, …, p^{(k-1)}`, so `r^{(n)} ⟂ ℝⁿ` — is
+`ConjugateDirection.isGalerkin_iterate` and `ConjugateDirection.iterate_eq_of_finrank_le`. ★'''
+deps = ["ConjugateDirection.IsConjugateFamily", "ConjugateDirection.iterate", "ConjugateDirection.iterate_eq_of_finrank_le", "ConjugateDirection.isGalerkin_iterate", "Matrix.posDef_iff_isSymmetricCoercive"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 4.11'
+
+[[node]]
+id = "theorem_4_12_terminates"
+kind = "theorem"
+desc = '''Theorem 4.12, finite termination: for `A.PosDef` and `op A x = b`, `cgX A b x₀ n = x` (indeed
+`cgR A b x₀ k = 0` for `k ≥ Krylov.grade (op A) r₀`, and the grade is at most `n`). Either through
+`theorem_4_11` and `CG.iterate_x_eq_conjugateDirection_iterate`, as the book does, or directly by
+`CG.residual_eq_zero_of_grade_le` and `Krylov.grade_le_finrank` through `cg_eq_CG`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.cg_eq_CG", "QuarteroniSaccoSaleri.Chapter04.theorem_4_11", "CG.iterate_x_eq_conjugateDirection_iterate", "CG.residual_eq_zero_of_grade_le", "Krylov.grade_le_finrank"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 4.12'
+
+[[node]]
+id = "theorem_4_12_orthogonal"
+kind = "theorem"
+desc = '''Theorem 4.12, second clause, read correctly: the error `e^{(k)} = x^{(k)} - x` is `A`-orthogonal
+(not, as printed, orthogonal) to `p^{(j)}` for `j < k`: `inner ℝ (op A (cgX A b x₀ k - x)) (cgP A b x₀ j) = 0`,
+which is `⟪r_k, p_j⟫ = 0`, i.e. `equation_4_44`; Euclidean orthogonality `⟪e_k, p_j⟫ = 0` is false in
+general (errata). ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.equation_4_44"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 4.12'
+
+[[node]]
+id = "theorem_4_12_bound"
+kind = "theorem"
+desc = '''Theorem 4.12, (4.47): for `A.PosDef` with extreme eigenvalues `λ_n < λ_1` (so `K₂ = λ_1/λ_n > 1`),
+`op A x = b` and `c = (√K₂ - 1)/(√K₂ + 1)`,
+`energyNorm (op A) (x - cgX A b x₀ k) ≤ 2 * c ^ k / (1 + c ^ (2 * k)) * energyNorm (op A) (x - x₀)`
+for every `k`. `CG.isGalerkinIterate` (through `cg_eq_CG`),
+`Krylov.IsGalerkinIterate.energyNorm_error_le_div_eval_T` (the sharp form `1/T_k((λ_1+λ_n)/(λ_1-λ_n))`)
+and `Polynomial.Chebyshev.one_div_eval_T_eq_two_mul_pow_div`, with `K₂ = NormedRing.condNumber A`
+identified with `λ_1/λ_n` as in `theorem_4_10`. In the degenerate case `λ_1 = λ_n` the iterate is exact
+from `k = 1` and the printed bound reads `0 ≤ …` for `k ≥ 1`; record it as a separate clause via
+`Krylov.IsGalerkinIterate.energyNorm_error_le`. ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.cg_eq_CG", "CG.isGalerkinIterate", "Krylov.IsGalerkinIterate.energyNorm_error_le_div_eval_T", "Krylov.IsGalerkinIterate.energyNorm_error_le", "Polynomial.Chebyshev.one_div_eval_T_eq_two_mul_pow_div", "Matrix.IsHermitian.isSymmetricBoundedBy_toEuclideanLin", "NormedRing.condNumber"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.47'
+
+[[node]]
+id = "equation_4_49"
+kind = "theorem"
+desc = '''(4.48)–(4.49), the polynomial characterization used in the proof of Theorem 4.12: for `A.PosDef`,
+`op A x = b`, `energyNorm (op A) (x - cgX A b x₀ (k+1)) = ⨅ q ∈ {q : ℝ[X] | natDegree q ≤ k + 1 ∧ q.eval 0 = 1}, energyNorm (op A) (aeval (op A) q (x - x₀))`
+(the book takes `x₀ = 0`, where `x - x₀ = x`). `Krylov.IsGalerkinIterate.energyNorm_error_eq_iInf`
+through `CG.isGalerkinIterate`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.cg_eq_CG", "CG.isGalerkinIterate", "Krylov.IsGalerkinIterate.energyNorm_error_eq_iInf"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.49'
+
+[[node]]
+id = "property_4_6"
+kind = "theorem"
+desc = '''Property 4.6, the value: for `0 < λ_n < λ_1` and every `k`, over polynomials `q : ℝ[X]` with
+`natDegree q ≤ k + 1` and `q.eval 0 = 1`, `sSup ((fun t => |q.eval t|) '' Set.Icc λ_n λ_1) ≥ 1 / C_{k+1}`
+with `C_{k+1} = (Chebyshev.T (k+1)).eval ((λ_1 + λ_n)/(λ_1 - λ_n))`, and the polynomial
+`p_{k+1} = Polynomial.Chebyshev.shifted (k+1) λ_n λ_1 0` — which is `T_{k+1}((λ_1 + λ_n - 2ξ)/(λ_1 - λ_n))/C_{k+1}`
+— attains it. `Polynomial.Chebyshev.one_div_eval_T_le_sSup_abs_eval_of_eval_zero` and
+`sSup_abs_eval_shifted`. ★'''
+deps = ["Polynomial.Chebyshev.shifted", "Polynomial.Chebyshev.one_div_eval_T_le_sSup_abs_eval_of_eval_zero", "Polynomial.Chebyshev.sSup_abs_eval_shifted"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 4.6'
+
+[[node]]
+id = "property_4_6_unique"
+kind = "theorem"
+desc = '''Property 4.6, uniqueness ("admits a unique solution"): a polynomial of degree `≤ k + 1` with
+`q.eval 0 = 1` whose supremum of `|q|` on `[λ_n, λ_1]` equals `1/C_{k+1}` is `shifted (k+1) λ_n λ_1 0`.
+`Polynomial.Chebyshev.eq_shifted_of_sSup_abs_eval_eq`; the book states it without proof. ★★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.property_4_6", "Polynomial.Chebyshev.eq_shifted_of_sSup_abs_eval_eq"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 4.6'
+
+[[node]]
+id = "exercise_4_12"
+kind = "theorem"
+desc = '''Exercise 12 (cited after Definition 4.4): the gradient method does not keep optimality two steps
+later. A witness: `A = !![1, 0; 0, 3]`, `b = 0`, `x₀ = ![1, 1]`; then `r₀ = -![1, 3]`,
+`x₁ = ![9/14, -1/14]`, `x₂ = ![3/28, 3/28]`, `r₂ = -![3/28, 9/28]` and `inner ℝ r₂ r₀ = 30/28 ≠ 0`,
+so `¬ IsOptimalWrt A b x₂ r₀` by `definition_4_4_iff` (while `x₁` is optimal with respect to `r₀`,
+`⟪r₁, r₀⟫ = 0`). A finite computation with `gradientStep`; `norm_num`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.gradientStep", "QuarteroniSaccoSaleri.Chapter04.definition_4_4_iff"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 4.12'
+
+[[node]]
+id = "pcgStep"
+kind = "definition"
+desc = '''The preconditioned conjugate gradient iteration of §4.3.5 in the book's letters, for `P.PosDef`:
+state `(x, r, p)`, `α = inner ℝ p r / inner ℝ p (op A p)`, `x' = x + α • p`, `r' = r - α • op A p`,
+`z' = op P⁻¹ r'`, `β = inner ℝ (op A p) z' / inner ℝ (op A p) p`, `p' = z' - β • p`; `pcg A P b x₀ k`
+iterates it from `(x₀, r₀, P⁻¹ r₀)`. ★'''
+deps = ["Krylov.PCG.step", "Krylov.PCG.init", "Krylov.PCG.iterate"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 4.3.5'
+
+[[node]]
+id = "pcg_eq_PCG"
+kind = "theorem"
+desc = '''For `A.PosDef`, `P.PosDef`: `pcg A P b x₀ k = Krylov.PCG.iterate (op A) (op P) (op P⁻¹) b x₀ k`
+componentwise (with `Krylov.IsPreconditioner (op P) (op P⁻¹)` from positive definiteness), the
+book's `β` being the negative of `Krylov.PCG.beta`. Induction, as `cg_eq_CG`; the identity
+`⟪p, r⟫ = ⟪r, P⁻¹ r⟫` along the iteration is the preconditioned form of
+`CG.inner_residual_direction_eq` (`Krylov.PCG.iterate_eq_CG_iterate_withEnergy`). ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.pcgStep", "Krylov.PCG.iterate", "Krylov.PCG.alpha", "Krylov.PCG.beta", "Krylov.IsPreconditioner", "Krylov.PCG.iterate_eq_CG_iterate_withEnergy"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 4.3.5'
+
+[[node]]
+id = "pcg_energyNorm_error_le"
+kind = "theorem"
+desc = '''§4.3.5, "the error estimate is the same as for the nonpreconditioned method, provided to replace
+`A` by `P⁻¹ A`": for `A.PosDef`, `P.PosDef`, `op A x = b`, and the generalized eigenvalues of
+`A y = λ P y` in `[λ_n, λ_1]` (`λ_n ⟪P y, y⟫ ≤ ⟪A y, y⟫ ≤ λ_1 ⟪P y, y⟫`), with `κ = λ_1/λ_n`,
+`energyNorm (op A) (x - (pcg A P b x₀ k).x) ≤ 2 * ((√κ - 1)/(√κ + 1)) ^ k * energyNorm (op A) (x - x₀)`.
+`Krylov.PCG.energyNorm_error_le` through `pcg_eq_PCG`; the sharp form (4.47) with `K₂(P⁻¹ A)` follows
+the same way from `Krylov.PCG.isGalerkinIterate` and `theorem_4_12_bound`'s ingredients. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.pcg_eq_PCG", "Krylov.PCG.energyNorm_error_le", "Krylov.PCG.isGalerkinIterate"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 4.3.5'
+
+[[node]]
+id = "adiStep"
+kind = "definition"
+desc = '''(4.50), the alternating-direction (Peaceman–Rachford) step for `A = A₁ + A₂` with parameters
+`α₁ α₂ : ℝ`: `adiStep A₁ A₂ α₁ α₂ b x = (1 + α₂ • A₂)⁻¹ *ᵥ ((1 - α₂ • A₁) *ᵥ y + α₂ • b)` where
+`y = (1 + α₁ • A₁)⁻¹ *ᵥ ((1 - α₁ • A₂) *ᵥ x + α₁ • b)` is the half step `x^{(k+1/2)}`, on `Fin n → ℝ`.
+★'''
+deps = ["Stationary.peacemanRachfordTwo"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.50'
+
+[[node]]
+id = "equation_4_50"
+kind = "theorem"
+desc = '''The display after (4.50): for `α₁ α₂ > 0` and `A₁`, `A₂` positive definite (so `1 + α_i A_j` are
+invertible), `adiStep A₁ A₂ α₁ α₂ b = affineStep B f` with
+`B = (1 + α₂ • A₂)⁻¹ * (1 - α₂ • A₁) * (1 + α₁ • A₁)⁻¹ * (1 - α₁ • A₂)` and
+`f = (α₁ • ((1 - α₂ • A₁) * (1 + α₁ • A₁)⁻¹) + α₂ • 1) *ᵥ b`; and `toEuclideanCLM B = Stationary.peacemanRachfordTwo (op A₁) (op A₂) (1/α₁) (1/α₂)`
+(the backbone's parameters are the reciprocals `r_i = 1/α_i`). Ring algebra. ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.adiStep", "QuarteroniSaccoSaleri.Chapter04.affineStep", "Stationary.peacemanRachfordTwo"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.50'
+
+[[node]]
+id = "adi_spectralRadius_le"
+kind = "theorem"
+desc = '''§4.3.6, the estimate `ρ(B) ≤ max_i |(1 - α₂ λ_i⁽¹⁾)/(1 + α₁ λ_i⁽¹⁾)| · max_i |(1 - α₁ λ_i⁽²⁾)/(1 + α₂ λ_i⁽²⁾)|`
+for `A₁.PosDef`, `A₂.PosDef`, `α₁ α₂ > 0`, the maxima over the eigenvalues
+(`Matrix.IsHermitian.eigenvalues`) of `A₁` and `A₂`; `B` as in `equation_4_50`.
+`Stationary.spectralRadius_peacemanRachfordTwo_le` (which needs no commutativity of `A₁`, `A₂`). ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.equation_4_50", "Stationary.spectralRadius_peacemanRachfordTwo_le"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.50'
+
+[[node]]
+id = "adi_tendsto"
+kind = "theorem"
+desc = '''§4.3.6, "the method converges if `ρ(B) < 1`, which is always verified if `α₁ = α₂ = α > 0`": for
+`A₁.PosDef`, `A₂.PosDef`, `α > 0` and `(A₁ + A₂) *ᵥ x = b`,
+`Tendsto (fun k => (adiStep A₁ A₂ α α b)^[k] x₀) atTop (𝓝 x)` for every `x₀`.
+`Stationary.tendsto_peacemanRachford` with `r = 1/α` through `equation_4_50` (coercivity of `A₁`, `A₂`
+suffices; symmetry is not used). ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.equation_4_50", "Stationary.tendsto_peacemanRachford", "Stationary.peacemanRachfordTwo_self"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.50'
+
+[[node]]
+id = "adi_spectralRadius_le_sq"
+kind = "theorem"
+desc = '''§4.3.6, last display: if the eigenvalues of `A₁` and `A₂` lie in `[γ, δ]`, `0 < γ ≤ δ`, then with
+`α₁ = α₂ = 1/√(δ γ)`, `complexSpectralRadius B ≤ ENNReal.ofReal (((1 - √(γ/δ))/(1 + √(γ/δ))) ^ 2)`.
+`Stationary.spectralRadius_peacemanRachford_le_of_spectrum_subset` (`r = √(γδ)`). The book's
+"provided `γ/δ → 0` as the size of `A` grows" is not a hypothesis. ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.equation_4_50", "Stationary.spectralRadius_peacemanRachford_le_of_spectrum_subset"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.50'

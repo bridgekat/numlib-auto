@@ -1,0 +1,58 @@
+namespace = "QuarteroniSaccoSaleri.Chapter05"
+desc = '''
+§5.8, eigenvectors and the SVD. Hessenberg inverse iteration (§5.8.1) is the invariance of
+inverse iteration under a unitary change of coordinates; the eigenvector of a simple eigenvalue
+read off the Schur form (§5.8.2, the triangular system (5.56)) is a new node in
+`LinearAlgebra/Matrix/Schur`; the Golub–Kahan–Reinsch SVD (§5.8.3) contributes the
+bidiagonalization (5.57) as an existence statement and its QR phase as not formalized. The
+rounding-error claims are not formalized.
+'''
+
+[[node]]
+id = "inverseIterate_conj"
+kind = "theorem"
+desc = '''§5.8.1: for `H = Qᴴ A Q` with `Q` unitary, the inverse iteration on `H` from `Qᴴ q₀` is `Qᴴ`
+of the inverse iteration on `A` from `q₀`: `Krylov.inverseIterate (toEuclideanLin H) μ (Qᴴ q₀) k
+= Qᴴ (Krylov.inverseIterate (toEuclideanLin A) μ q₀ k)`, so `x = Q q` recovers the eigenvector of
+`A` from the one of `H`. Backbone `Krylov.inverseIterate_conj_linearIsometryEquiv` (new; the power
+method version `Krylov.powerIterate_conj_linearIsometryEquiv` first). ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter05.inverseIterate", "Krylov.inverseIterate_conj_linearIsometryEquiv"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.8.1'
+
+[[node]]
+id = "equation_5_56"
+kind = "theorem"
+desc = '''§5.8.2, (5.56): let `T : Matrix (Fin N) (Fin N) ℂ` be upper triangular and `k` an index with
+`T k k = λ` and `T i i ≠ λ` for `i ≠ k` (`λ` simple). Then the vector `y` with `y k = 1`, `y i = 0`
+for `i > k`, and `(y i)_{i < k} = -(T₁₁ - λ I)⁻¹ v` for `T₁₁ = T.submatrix (Fin.castLE _) (Fin.castLE
+_)` the leading `k × k` block and `v i = T i k`, satisfies `T *ᵥ y = λ • y` and `y ≠ 0`; and for
+`A = Q T Qᴴ` with `Q` unitary, `x = Q *ᵥ y` is an eigenvector of `A` for `λ` (Exercise 9's
+similarity). Backbone `Matrix.IsUpperTriangular.mulVec_schurEigenvector` (new) and
+`Matrix.mulVec_conj_eq_smul_of_mulVec_eq_smul`. ★★'''
+deps = ["Matrix.IsUpperTriangular.schurEigenvector", "Matrix.IsUpperTriangular.mulVec_schurEigenvector", "Matrix.mulVec_conj_eq_smul_of_mulVec_eq_smul"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.56)'
+
+[[node]]
+id = "equation_5_57"
+kind = "theorem"
+desc = '''(5.57), the Golub–Kahan bidiagonalization: for `A : Matrix (Fin M) (Fin N) ℝ` with `N ≤ M`
+there are orthogonal `U : Matrix (Fin M) (Fin M) ℝ`, `V : Matrix (Fin N) (Fin N) ℝ` such that
+`Uᵀ A V` vanishes below row `N` and its leading `N × N` block `B` is upper bidiagonal (`B i j = 0`
+unless `j = i` or `j = i + 1`, `Matrix.IsUpperBidiagonal`). Backbone
+`Matrix.exists_orthogonal_mul_mul_orthogonal_isUpperBidiagonal` (new, `LinearAlgebra/Matrix/QR`),
+by alternating left and right Householder reflectors — the two-sided analogue of
+`Matrix.exists_unitary_mul_upperTriangular`. ★★★'''
+deps = ["Matrix.IsUpperBidiagonal", "Matrix.exists_orthogonal_mul_mul_orthogonal_isUpperBidiagonal"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.57)'
+
+[[node]]
+id = "golubKahan_svd"
+kind = "theorem"
+desc = '''§5.8.3, the iterative phase: the implicit QR iteration on the bidiagonal `B` produces
+orthogonal `W`, `Z` with `Wᵀ B Z = diag σ`, and `U = 𝒰 diag(W, I)`, `V = 𝒱 Z` is the SVD of `A`;
+the computed singular values are those of `A + δA` with `‖δA‖₂ ≤ C_{mn} u ‖A‖₂`. Not formalized:
+the iteration is described only by its limit, whose existence is the SVD itself (Property 1.7,
+`LinearAlgebra/Matrix/SVD`), and the error bound is a floating-point statement the book cites
+without proof.'''
+deps = ["QuarteroniSaccoSaleri.Chapter05.equation_5_57"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.8.3'

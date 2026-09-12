@@ -1,0 +1,158 @@
+namespace = "QuarteroniSaccoSaleri.Chapter04"
+desc = '''
+Quarteroni–Sacco–Saleri §4.1: the linear iteration `x_{k+1} = B x_k + f` (4.2) on `Fin n → ℝ`,
+consistency (Definition 4.1), Example 4.1, the convergence theorem `ρ(B) < 1` (Theorem 4.1) with its
+corollary for a consistent matrix norm, and the convergence factors and rates of Definition 4.2 with
+the asymptotic rate (4.5). Remark 4.1 (order, stationarity and linearity of a general iteration) is a
+classification and has no node. Exercise 1 is cited by the text after Definition 4.2 and is a node.
+'''
+
+[[node]]
+id = "affineStep"
+kind = "definition"
+desc = '''`affineStep B f x = B *ᵥ x + f` for `B : Matrix (Fin n) (Fin n) ℝ`, `f x : Fin n → ℝ`: one step of
+the linear iterative method (4.2); the `k`-th iterate from `x₀` is `(affineStep B f)^[k] x₀`. It is
+`Stationary.step (toEuclideanCLM B) (toLp f)` read on plain functions (a lemma `toLp_affineStep`
+records this and is how every backbone statement is transported). ★'''
+deps = ["Stationary.step"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.2'
+
+[[node]]
+id = "definition_4_1"
+kind = "definition"
+desc = '''`IsConsistent A b B f : Prop := B *ᵥ (A⁻¹ *ᵥ b) + f = A⁻¹ *ᵥ b`: the method (4.2) is consistent with
+`A x = b` when the solution `x = A⁻¹ b` is a fixed point of `x ↦ B x + f` (meaningful for `IsUnit A`,
+the standing assumption of §3.2). ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.affineStep"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 4.1'
+
+[[node]]
+id = "definition_4_1_iff"
+kind = "theorem"
+desc = '''For `IsUnit A`: `IsConsistent A b B f ↔ f = (1 - B) *ᵥ (A⁻¹ *ᵥ b)`, the "equivalently" of
+Definition 4.1. Rearrange. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.definition_4_1"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 4.1'
+
+[[node]]
+id = "example_4_1_consistent"
+kind = "theorem"
+desc = '''Example 4.1: the method `x_{k+1} = -x_k + b` for `2 I x = b` is consistent:
+`IsConsistent (2 • 1) b (-1) b` for every `b`. `(2 • 1)⁻¹ *ᵥ b = b / 2` and `-b/2 + b = b/2`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.definition_4_1"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 4.1'
+
+[[node]]
+id = "example_4_1_iterate"
+kind = "theorem"
+desc = '''Example 4.1, non-convergence from `x₀ = 0`: `(affineStep (-1) b)^[2 * k] 0 = 0` and
+`(affineStep (-1) b)^[2 * k + 1] 0 = b` for every `k`; hence for `b ≠ 0` the sequence has no limit
+(`¬ ∃ x, Tendsto (fun k => (affineStep (-1) b)^[k] 0) atTop (𝓝 x)`), the two subsequences having
+different limits. Induction on `k`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.affineStep"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 4.1'
+
+[[node]]
+id = "example_4_1_tendsto"
+kind = "theorem"
+desc = '''Example 4.1, convergence from `x₀ = b/2`: `(affineStep (-1) b)^[k] ((1/2 : ℝ) • b) = (1/2 : ℝ) • b` for
+all `k`, so the iteration converges (it is stationary at the solution). ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.affineStep"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 4.1'
+
+[[node]]
+id = "theorem_4_1"
+kind = "theorem"
+desc = '''Theorem 4.1: for `IsUnit A` and a consistent method `IsConsistent A b B f`,
+`(∀ x₀, Tendsto (fun k => (affineStep B f)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b))) ↔ complexSpectralRadius B < 1`.
+`→`: the error `e_k = B^k e_0` (`Stationary.step_iterate_sub` on functions, which is (4.4), stated
+as the auxiliary `affineStep_iterate_sub`) tends to `0` for every `e_0`, so `B^k → 0` and
+`Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one`; `←`: the same identity with `B^k → 0`. The
+book's converse argument through an eigenvector of modulus `> 1` (and, unmentioned, the case
+`ρ = 1`) is subsumed by the backbone equivalence. Differs from `SaadSparse.Chapter04.theorem_4_1` in
+fixing the consistent `f` and quantifying over `x₀` only. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.affineStep", "QuarteroniSaccoSaleri.Chapter04.definition_4_1", "Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one", "Stationary.step_iterate_sub", "Matrix.complexSpectralRadius"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 4.1'
+
+[[node]]
+id = "equation_4_4"
+kind = "theorem"
+desc = '''(4.4): for a consistent method with `IsUnit A`, `(affineStep B f)^[k] x₀ - A⁻¹ *ᵥ b = (B ^ k) *ᵥ (x₀ - A⁻¹ *ᵥ b)`,
+the error recursion `e_k = B^k e_0` read off `Stationary.step_iterate_sub` (the function-space form
+`affineStep_iterate_sub` is `SaadSparse.Chapter04.affineStep_iterate_sub`, reproved here or, better,
+supplied by a backbone matrix form). §4.6 starts from it. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.affineStep", "QuarteroniSaccoSaleri.Chapter04.definition_4_1", "Stationary.step_iterate_sub"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.4'
+
+[[node]]
+id = "tendsto_of_algebraNorm_lt_one"
+kind = "theorem"
+desc = '''The remark after Theorem 4.1 ("a sufficient condition for convergence is `‖B‖ < 1` for any matrix
+norm", via (1.23) and Theorem 1.5): for a consistent method, `IsUnit A`, and an algebra norm
+`N : AlgebraNorm ℝ (Matrix (Fin n) (Fin n) ℝ)` with `N B < 1`, the iteration converges from every
+`x₀`. From `Matrix.tendsto_pow_of_algebraNorm_lt_one` and `equation_4_4`, or from
+`spectralRadius_le_algebraNorm` and `theorem_4_1`. (`SaadSparse.Chapter04.corollary_4_2` is the same
+statement.) ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.theorem_4_1", "QuarteroniSaccoSaleri.Chapter04.equation_4_4", "Matrix.tendsto_pow_of_algebraNorm_lt_one", "spectralRadius_le_algebraNorm"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 4.1'
+
+[[node]]
+id = "definition_4_2_factor"
+kind = "definition"
+desc = '''Definition 4.2 (1): `convergenceFactor B m = ‖B ^ m‖`, the convergence factor after `m` steps, in
+the `ℓ²` operator norm (`open scoped Matrix.Norms.L2Operator`); the book's "any matrix norm" is
+fixed to the Euclidean one here, and `definition_4_2_eq` identifies it with the backbone's
+`Stationary.convergenceFactor (toEuclideanCLM B) m` through `Matrix.l2_opNorm_eq_norm_toEuclideanLin`.
+★'''
+deps = ["Stationary.convergenceFactor", "Matrix.l2_opNorm_eq_norm_toEuclideanLin"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 4.2'
+
+[[node]]
+id = "definition_4_2_averageFactor"
+kind = "definition"
+desc = '''Definition 4.2 (2): `averageConvergenceFactor B m = ‖B ^ m‖ ^ (1 / m : ℝ)`, the average convergence
+factor after `m` steps; equals `Stationary.averageConvergenceFactor (toEuclideanCLM B) m`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.definition_4_2_factor", "Stationary.averageConvergenceFactor"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 4.2'
+
+[[node]]
+id = "definition_4_2_rate"
+kind = "definition"
+desc = '''Definition 4.2 (3): `averageConvergenceRate B m = -(1 / m : ℝ) * Real.log ‖B ^ m‖`, the average
+convergence rate `R_m(B)`; equals `Stationary.averageConvergenceRate (toEuclideanCLM B) m`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.definition_4_2_factor", "Stationary.averageConvergenceRate"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 4.2'
+
+[[node]]
+id = "equation_4_5"
+kind = "theorem"
+desc = '''(4.5): the asymptotic convergence rate. For `complexSpectralRadius B ≠ 0`,
+`Tendsto (averageConvergenceRate B) atTop (𝓝 (-Real.log (complexSpectralRadius B).toReal))`; the
+limit `R(B) = -log ρ(B)` is the surface `asymptoticConvergenceRate B`. Directly
+`Matrix.tendsto_averageConvergenceRate` (Gelfand's formula, the book's "Property 1.13"). The book
+also notes that `ρ(B)` is then the asymptotic convergence factor,
+`averageConvergenceFactor B m → ρ(B)`, which is `Matrix.tendsto_pow_rpow_complexSpectralRadius`
+verbatim and may be recorded as `equation_4_5_factor`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.definition_4_2_rate", "Matrix.tendsto_averageConvergenceRate", "Matrix.tendsto_pow_rpow_complexSpectralRadius"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.5'
+
+[[node]]
+id = "equation_4_5_symm"
+kind = "theorem"
+desc = '''The symmetric case of (4.5): for `B.IsHermitian` (real symmetric), `ρ(B) ≠ 0` and `m ≥ 1`,
+`averageConvergenceRate B m = -Real.log (complexSpectralRadius B).toReal`, because
+`‖B^m‖₂ = ρ(B)^m` (`Matrix.IsHermitian.l2_opNorm_pow` and
+`Matrix.l2_opNorm_eq_complexSpectralRadius_of_isHermitian`) and `-(1/m) log ρ^m = -log ρ`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.definition_4_2_rate", "Matrix.IsHermitian.l2_opNorm_pow", "Matrix.l2_opNorm_eq_complexSpectralRadius_of_isHermitian"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.5'
+
+[[node]]
+id = "exercise_4_1"
+kind = "theorem"
+desc = '''Exercise 1 (cited after Definition 4.2, for the non-monotonicity of `‖B^m‖`): for
+`B = !![a, 4; 0, a]` with `0 < a < 1`, `complexSpectralRadius B = ENNReal.ofReal a < 1` (the
+characteristic polynomial is `(X - a)²`), while `averageConvergenceFactor B 1 = ‖B‖₂ > 1` since
+`‖B‖₂ ≥ ‖B e₂‖ = √(16 + a²) > 1`. Two clauses: the spectral radius (`Matrix.mem_spectrum_complexify_iff`
+with `Matrix.charpoly_fin_two`) and the witness `m = 1`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.definition_4_2_averageFactor", "Matrix.mem_spectrum_complexify_iff", "Matrix.complexSpectralRadius"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 4.1'

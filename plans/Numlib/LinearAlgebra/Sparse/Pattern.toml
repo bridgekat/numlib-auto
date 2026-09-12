@@ -50,3 +50,6 @@ id = "IsPatternIrreducible.forall_of_closed"
 
 [[node]]
 id = "isPatternIrreducible_iff_exists_pow_pos"
+
+[[node]]
+id = "isPatternIrreducible_iff_nonempty_path"

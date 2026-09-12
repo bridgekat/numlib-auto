@@ -15,9 +15,6 @@ id = "Matrix.IsSelfAdjointWrt"
 id = "Matrix.energyInner"
 
 [[node]]
-id = "Matrix.hermitianPart"
-
-[[node]]
 id = "Matrix.skewPart"
 
 [[node]]

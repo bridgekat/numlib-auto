@@ -1,0 +1,156 @@
+namespace = "ODE"
+desc = '''
+The Cauchy problem `y' = f(t, y)`, `y(t₀) = y₀` on a real normed space, as the numerical-analysis
+books state it (Quarteroni–Sacco–Saleri §11.1 and §11.9; Kress §10.1): a solution on a set of
+times, the equivalent integral equation (11.2), Liapunov stability of the problem (Definition
+11.1) and asymptotic stability (11.6), the stability of the problem under a global Lipschitz
+condition with the book's constant `(1 + T) e^{LT}` (through the integral Gronwall lemma of
+`Analysis/ODE/Gronwall`), and global existence and uniqueness for a field continuous on
+`[t₀, t₀ + T] × E` and uniformly Lipschitz in the state (§11.1 item 2, Property 11.5).
+
+What Mathlib has and what it lacks. `IsPicardLindelof` and the theorems of
+`Mathlib/Analysis/ODE/ExistUnique.lean` give *local* existence on a short interval, and
+`Numlib/Analysis/ODE/PicardLindelof` adds uniqueness on the ball; uniqueness for a globally
+Lipschitz field is `ODE_solution_unique` (`Icc`, right derivatives). Global *existence* for a
+globally Lipschitz field on a whole compact interval is not in Mathlib: it is obtained here by the
+Bielecki contraction — the Picard operator `y ↦ y₀ + ∫_{t₀}^t f(τ, y τ) dτ` is a contraction on
+`C(Icc t₀ (t₀ + T), E)` under the weighted norm `sup e^{-β(t - t₀)} ‖y t‖`, `β > L` — which
+`Numlib/IntegralEquations/Basic` already implements for *real-valued* Volterra operators
+(`IntegralOperator.Bielecki`, `IntegralOperator.exists_contractingWith_iterate_volterra`). The
+existence node below either generalizes that space to `E`-valued functions or chains local
+Picard–Lindelöf steps of a fixed length `min(1/(2L), …)` along the interval; the desc records both
+routes. A third route avoids the weighted norm: the `n`-th Picard iterate is a contraction with
+constant `(LT)^n / n!` (`IntegralOperator.norm_iterate_volterra_sub_le` is that estimate for the
+real case), and `Nonlinear/FixedPoint`'s `exists_unique_fixedPoint_of_iterate_contractingWith`
+closes.
+
+The solution predicate takes the derivative *within* the time set, so that on `Icc t₀ (t₀ + T)`
+the endpoints carry one-sided derivatives with no case split, as `FiniteDifference.IsSolution`
+in `Numlib/FiniteDifference/LaxEquivalence` does. Everything is stated for a time-dependent field
+`f : ℝ → E → E`; the autonomous case is the instance `f t = g`.
+'''
+
+[[node]]
+id = "IsSolutionOn"
+kind = "definition"
+desc = '''`ODE.IsSolutionOn f t₀ y₀ I y : Prop` for `f : ℝ → E → E`, `y : ℝ → E`, `I : Set ℝ`:
+`y t₀ = y₀ ∧ ∀ t ∈ I, HasDerivWithinAt y (f t (y t)) I t`. The solution of the Cauchy problem
+(11.1) on the set `I` (an interval containing `t₀`), with the derivative taken within `I`.'''
+deps = []
+
+[[node]]
+id = "isSolutionOn_iff_integral"
+kind = "theorem"
+desc = '''The integral form (11.2). Let `E` be complete, `0 ≤ T`, `f` continuous on
+`Icc t₀ (t₀ + T) ×ˢ univ` as a function of `(t, v)`, and `y` continuous on `Icc t₀ (t₀ + T)`. Then
+`IsSolutionOn f t₀ y₀ (Icc t₀ (t₀ + T)) y ↔ ∀ t ∈ Icc t₀ (t₀ + T), y t = y₀ + ∫ τ in t₀..t, f τ (y τ)`.
+Proof: `→` is the fundamental theorem of calculus for the continuous integrand `τ ↦ f τ (y τ)`
+(`intervalIntegral.integral_eq_sub_of_hasDerivAt_of_le` on `[t₀, t]`); `←` is
+`intervalIntegral.integral_hasDerivWithinAt_right`, and `y t₀ = y₀` is the empty integral. The
+continuity of `y` is a hypothesis of the reverse direction only in the sense that the integral
+must exist; the forward direction gives it. ★'''
+deps = ["ODE.IsSolutionOn"]
+
+[[node]]
+id = "IsLiapunovStable"
+kind = "definition"
+desc = '''Definition 11.1, Liapunov stability of the Cauchy problem on a set `I`:
+`∃ C > 0, ∀ ε > 0, ∀ (δ₀ : E) (δ : ℝ → E), ‖δ₀‖ < ε → ContinuousOn δ I → (∀ t ∈ I, ‖δ t‖ < ε) →
+∀ y z, IsSolutionOn f t₀ y₀ I y → IsSolutionOn (fun t v => f t v + δ t) t₀ (y₀ + δ₀) I z →
+∀ t ∈ I, ‖y t - z t‖ < C * ε`. The book adds "with `ε` small enough that the perturbed solution
+exists"; quantifying over the solutions that exist makes that clause vacuous when none does, which
+is the standard reading. The constant is independent of `ε` and of the perturbation; it may depend
+on `I`.'''
+deps = ["ODE.IsSolutionOn"]
+
+[[node]]
+id = "IsAsymptoticallyStable"
+kind = "definition"
+desc = '''(11.6): the problem is Liapunov stable on every `Icc t₀ (t₀ + T)`, `T > 0`, and for every
+perturbation `(δ₀, δ)` with `‖δ₀‖ < ε`, `δ` continuous, `‖δ t‖ < ε` for all `t`, and every pair of
+solutions `y`, `z` of the unperturbed and perturbed problems on `Ici t₀`,
+`Tendsto (fun t => ‖y t - z t‖) atTop (𝓝 0)`.'''
+deps = ["ODE.IsLiapunovStable"]
+
+[[node]]
+id = "norm_sub_le_of_lipschitz"
+kind = "theorem"
+desc = '''The estimate of §11.1 behind stability: let `0 ≤ T`, `L : ℝ≥0`, `f t` be `L`-Lipschitz
+for every `t ∈ Icc t₀ (t₀ + T)`, `‖δ₀‖ ≤ ε`, `‖δ t‖ ≤ ε` on the interval, and let `y`, `z` solve
+the unperturbed and the perturbed problem (`f + δ`, datum `y₀ + δ₀`) on `Icc t₀ (t₀ + T)`. Then
+`‖y t - z t‖ ≤ (1 + (t - t₀)) * ε * Real.exp (L * (t - t₀))` for all `t` in the interval.
+Proof: `w = z - y` satisfies `w' = f(t, z) - f(t, y) + δ` within the interval, so
+`‖w t‖ ≤ ‖δ₀‖ + ∫_{t₀}^t ‖δ‖ + L ∫_{t₀}^t ‖w‖ ≤ (1 + (t - t₀)) ε + L ∫_{t₀}^t ‖w‖` (mean value
+inequality or the integral form `isSolutionOn_iff_integral` — the integral form needs `f`
+continuous, so use instead `norm_le_gronwallBound_of_norm_deriv_right_le` from Mathlib with
+`K = L`, `ε` and `δ₀`, which gives the bound `gronwallBound ‖δ₀‖ L ε (t - t₀) =
+‖δ₀‖ e^{L s} + (ε/L)(e^{L s} - 1) ≤ (1 + s) ε e^{L s}` for `s = t - t₀`, using `e^{Ls} - 1 ≤ L s e^{Ls}`).
+The book's route through Lemma 11.1 with `g t = (1 + (t - t₀)) ε` is
+`Gronwall.le_mul_exp_of_le_add_integral` and needs the continuity of `w`, which the derivative
+gives. Either route is short. ★★'''
+deps = ["ODE.IsSolutionOn", "Gronwall.le_mul_exp_of_le_add_integral"]
+
+[[node]]
+id = "isLiapunovStable_of_lipschitz"
+kind = "theorem"
+desc = '''§11.1: a field `L`-Lipschitz in the state on `Icc t₀ (t₀ + T)`, `T > 0`, gives a Liapunov
+stable Cauchy problem on `Icc t₀ (t₀ + T)` for every datum `y₀`, with `C = (1 + T) exp (L T)`
+(the book's `K_I = T`). Immediate from `norm_sub_le_of_lipschitz` and `t - t₀ ≤ T`; the strict
+inequality `< C ε` comes from `(1 + s) e^{Ls} ε ≤ (1 + T) e^{LT} ε` being strict when `ε > 0`
+and `C` is taken as `(1 + T) e^{LT} + 1`, or from the non-strict version with the constant
+doubled. ★'''
+deps = ["ODE.IsLiapunovStable", "ODE.norm_sub_le_of_lipschitz"]
+
+[[node]]
+id = "exists_isSolutionOn_of_lipschitz"
+kind = "theorem"
+desc = '''Global existence (§11.1 item 2; Property 11.5 in `ℝⁿ`). Let `E` be complete, `0 ≤ T`,
+`f` continuous on `Icc t₀ (t₀ + T) ×ˢ univ` (as a map of `(t, v)`) and `f t` `L`-Lipschitz for
+every `t` in the interval. Then for every `y₀` there is `y : ℝ → E` with
+`IsSolutionOn f t₀ y₀ (Icc t₀ (t₀ + T)) y`. Proof routes, in order of preference: (a) the Picard
+operator `P y = y₀ + ∫_{t₀}^· f(τ, y τ)` on `C(Icc t₀ (t₀ + T), E)` satisfies
+`‖P^n y - P^n z‖_∞ ≤ (L T)^n / n! ‖y - z‖_∞` (induction on `n` with the iterated integral
+`∫_{t₀}^t (τ - t₀)^{n-1}/(n-1)! dτ = (t - t₀)^n / n!`), so some iterate is a contraction and
+`exists_unique_fixedPoint_of_iterate_contractingWith` (`Numlib/Nonlinear/FixedPoint`) gives the
+fixed point, which solves the problem by `isSolutionOn_iff_integral`; this is
+`IntegralOperator.norm_iterate_volterra_sub_le` generalized from `ℝ` to `E`. (b) The Bielecki
+weighted norm, generalizing `IntegralOperator.Bielecki` to `E`-valued functions. (c) Chain
+Mathlib's `IsPicardLindelof.exists_eq_forall_mem_Icc_hasDerivWithinAt` over subintervals of
+length `≤ a/(2M)` — awkward because the bound `M` on `f` must be renewed on each ball. Route (a)
+is recommended. ★★★'''
+deps = ["ODE.IsSolutionOn", "ODE.isSolutionOn_iff_integral"]
+
+[[node]]
+id = "isSolutionOn_unique_of_lipschitz"
+kind = "theorem"
+desc = '''Global uniqueness: if `f t` is `L`-Lipschitz for `t ∈ Icc t₀ (t₀ + T)` and `y`, `z` both
+satisfy `IsSolutionOn f t₀ y₀ (Icc t₀ (t₀ + T))`, then `EqOn y z (Icc t₀ (t₀ + T))`. This is
+Mathlib's `ODE_solution_unique` (`Icc a b`, right derivatives on `Ico a b`) after converting
+`HasDerivWithinAt … (Icc …)` to `HasDerivWithinAt … (Ici t)` by `HasDerivWithinAt.mono_of_mem_nhdsWithin`;
+alternatively `norm_sub_le_of_lipschitz` with `ε = 0`. ★'''
+deps = ["ODE.IsSolutionOn", "ODE.norm_sub_le_of_lipschitz"]
+
+[[node]]
+id = "existsUnique_isSolutionOn_of_lipschitz"
+kind = "theorem"
+desc = '''Property 11.5 as a single statement: under the hypotheses of
+`exists_isSolutionOn_of_lipschitz`, for every `y₀` there is exactly one `y` with
+`IsSolutionOn f t₀ y₀ (Icc t₀ (t₀ + T)) y ∧ ∀ t ∉ Icc t₀ (t₀ + T), y t = y₀` (the values off the
+interval are pinned so that `∃!` makes sense for functions on `ℝ`); moreover `y` is continuously
+differentiable on the interval in the sense that `t ↦ f t (y t)` is continuous there. Combination
+of the two previous nodes. ★'''
+deps = ["ODE.exists_isSolutionOn_of_lipschitz", "ODE.isSolutionOn_unique_of_lipschitz"]
+
+[[node]]
+id = "exists_isSolutionOn_of_lipschitzOnWith"
+kind = "theorem"
+desc = '''Local existence and uniqueness (§11.1 item 1) in the book's constants: if `f` is
+continuous on `Icc (t₀ - r_J) (t₀ + r_J) ×ˢ closedBall y₀ r_Σ`, `L`-Lipschitz in the state there,
+bounded by `M` there, then for every `0 < r < min r_J (r_Σ / M)` there is a unique solution on
+`Icc (t₀ - r) (t₀ + r)` with values in `closedBall y₀ r_Σ`. This is
+`IsPicardLindelof.exists_unique_mem_closedBall_hasDerivWithinAt` (`Numlib/Analysis/ODE/PicardLindelof`)
+with `a = r_Σ`, `r = 0`, `L = M`, `K = L`, packaged in `IsSolutionOn`; the book's third bound
+`r₀ < 1/L` is not needed (it is an artefact of the sup-norm contraction proof) and is dropped.
+Already stated in the surface as `AtkinsonHan.Chapter05.theorem_5_2_4_ode`; this node is the
+backbone form. ★'''
+deps = ["ODE.IsSolutionOn", "IsPicardLindelof.exists_unique_mem_closedBall_hasDerivWithinAt"]

@@ -31,3 +31,6 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Section 3.7.3"
 [[node]]
 id = "IsUnisolvent.norm_interpCLM"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Section 3.7.3"
+
+[[node]]
+id = "isUnisolvent_iff_forall_eq_zero"

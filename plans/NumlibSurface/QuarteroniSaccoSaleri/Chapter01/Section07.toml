@@ -1,0 +1,123 @@
+namespace = "QuarteroniSaccoSaleri.Chapter01"
+desc = '''
+Quarteroni–Sacco–Saleri §1.7, eigenvalues and eigenvectors: the spectrum as roots of the
+characteristic polynomial, (1.6) `det = ∏ λ_i`, `tr = ∑ λ_i`, the spectra of `Aᵀ` and `Aᴴ`,
+conjugate pairs for real matrices, Cayley–Hamilton, the spectral radius (1.7) and its rules
+`ρ(Aᴴ) = ρ(A)`, `ρ(αA) = |α| ρ(A)`, `ρ(Aᵏ) = ρ(A)ᵏ`, the spectrum of a block triangular matrix,
+geometric versus algebraic multiplicity, defective matrices, and invariant subspaces (Definition
+1.13). An eigenvalue is `μ ∈ spectrum ℂ A`, an eigenvector `x ≠ 0` with `A *ᵥ x = μ • x`, the
+eigenspace `Module.End.eigenspace (Matrix.toLin' A) μ`; the algebraic multiplicity is
+`A.charpoly.rootMultiplicity μ` and the geometric one `finrank (eigenspace)`.
+'''
+
+[[node]]
+id = "mem_spectrum_iff_exists_mulVec_eq_smul"
+kind = "theorem"
+desc = '''`μ ∈ spectrum ℂ A ↔ ∃ x : Fin n → ℂ, x ≠ 0 ∧ A *ᵥ x = μ • x`: the book's definition of an eigenvalue/eigenvector is membership in Mathlib's spectrum (backbone `Matrix.hasEigenvalue_toEuclideanLin_iff` and `Module.End.HasEigenvalue.exists_hasEigenvector`). ★'''
+deps = ["Matrix.hasEigenvalue_toEuclideanLin_iff"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.7'
+
+[[node]]
+id = "vecMul_eq_smul_iff_conjTranspose_mulVec"
+kind = "theorem"
+desc = '''Left eigenvectors: `star y ᵥ* A = μ • star y ↔ Aᴴ *ᵥ y = star μ • y` (`Matrix.star_mulVec`, `conjTranspose_conjTranspose`), so a left eigenvector of `A` for `μ` is an eigenvector of `Aᴴ` for `conj μ`; and the Rayleigh quotient of an eigenvector recovers its eigenvalue, `A *ᵥ x = μ • x → x ≠ 0 → (star x ⬝ᵥ (A *ᵥ x)) / (star x ⬝ᵥ x) = μ`. ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.7'
+
+[[node]]
+id = "mem_spectrum_iff_isRoot_charpoly"
+kind = "theorem"
+desc = '''The characteristic equation: `μ ∈ spectrum ℂ A ↔ A.charpoly.IsRoot μ` (`Matrix.mem_spectrum_iff_isRoot_charpoly`; `A.charpoly = det (X • 1 - C A)`, the book's `det (A - λ I)` up to the sign `(-1)^n`), `A.charpoly.natDegree = n` (`Matrix.charpoly_natDegree_eq_dim`) and over `ℂ` it has `n` roots with multiplicity, `A.charpoly.roots.card = n` (`IsAlgClosed.splits_codomain`, `Polynomial.natDegree_eq_card_roots`). ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.7'
+
+[[node]]
+id = "equation_1_6"
+kind = "theorem"
+desc = '''`A.det = A.charpoly.roots.prod ∧ A.trace = A.charpoly.roots.sum` for `A : Matrix (Fin n) (Fin n) ℂ`: the determinant is the product and the trace the sum of the eigenvalues counted with algebraic multiplicity (`Matrix.det_eq_prod_roots_charpoly`, `Matrix.trace_eq_sum_roots_charpoly`). ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (1.6)'
+
+[[node]]
+id = "spectrum_transpose"
+kind = "theorem"
+desc = '''`spectrum ℂ Aᵀ = spectrum ℂ A` (`Matrix.charpoly_transpose`) and `spectrum ℂ Aᴴ = star '' spectrum ℂ A` (the characteristic polynomial of `Aᴴ` is the conjugate of that of `A`; `spectrum.star_mem_resolventSet_iff`), so `μ` is an eigenvalue of `A` iff `conj μ` is one of `Aᴴ`. ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.7'
+
+[[node]]
+id = "star_mem_spectrum_complexify_iff"
+kind = "theorem"
+desc = '''For a real matrix `A : Matrix (Fin n) (Fin n) ℝ`, `star μ ∈ spectrum ℂ (Matrix.complexify A) ↔ μ ∈ spectrum ℂ (Matrix.complexify A)`: complex eigenvalues of a real matrix occur in conjugate pairs, because `p_A` has real coefficients. Backbone `Matrix.star_mem_spectrum_complexify_iff`. ★'''
+deps = ["Matrix.star_mem_spectrum_complexify_iff"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.7'
+
+[[node]]
+id = "cayleyHamilton"
+kind = "theorem"
+desc = '''`Polynomial.aeval A A.charpoly = 0`: a matrix annihilates its characteristic polynomial (`Matrix.aeval_self_charpoly`). ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.7'
+
+[[node]]
+id = "equation_1_7"
+kind = "theorem"
+desc = '''The spectral radius: `spectralRadius ℂ A = ⨆ μ ∈ spectrum ℂ A, (‖μ‖₊ : ℝ≥0∞)` (the definition), it is attained, `∃ μ ∈ spectrum ℂ A, (‖μ‖₊ : ℝ≥0∞) = spectralRadius ℂ A` (`spectrum.exists_nnnorm_eq_spectralRadius_of_nonempty`, the spectrum being nonempty in finite dimension), and is finite; for a real matrix the book's `ρ(A)` is `Matrix.complexSpectralRadius A = spectralRadius ℂ (complexify A)` (`Numlib/LinearAlgebra/Matrix/Complexify`), since `spectrum ℝ A` may miss the complex eigenvalues. ★'''
+deps = ["Matrix.complexSpectralRadius"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (1.7)'
+
+[[node]]
+id = "spectralRadius_conjTranspose"
+kind = "theorem"
+desc = '''`spectralRadius ℂ Aᴴ = spectralRadius ℂ A`, from `spectrum_transpose` and `nnnorm_star`; also `spectralRadius ℂ Aᵀ = spectralRadius ℂ A`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter01.spectrum_transpose"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.7'
+
+[[node]]
+id = "spectralRadius_smul"
+kind = "theorem"
+desc = '''`spectralRadius ℂ (α • A) = ‖α‖₊ * spectralRadius ℂ A` for `α : ℂ` (backbone `spectralRadius_smul`, `Numlib/Analysis/Normed/Algebra/SpectralRadius`), and `(c • A).complexSpectralRadius = ‖c‖₊ * A.complexSpectralRadius` for real `A`, `c` (`Matrix.complexSpectralRadius_smul`). ★'''
+deps = ["_root_.spectralRadius_smul", "Matrix.complexSpectralRadius_smul"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.7'
+
+[[node]]
+id = "spectralRadius_pow"
+kind = "theorem"
+desc = '''`spectralRadius ℂ (A ^ k) = spectralRadius ℂ A ^ k` for every `k : ℕ` (backbone `spectralRadius_pow`), and `(A ^ k).complexSpectralRadius = A.complexSpectralRadius ^ k` for real `A` (`Matrix.complexSpectralRadius_pow`). Exercise 8's general form, `spectrum ℂ (aeval A P) = P '' spectrum ℂ A`, is Mathlib's `spectrum.map_polynomial_aeval_of_nonempty`. ★'''
+deps = ["_root_.spectralRadius_pow", "Matrix.complexSpectralRadius_pow"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.7'
+
+[[node]]
+id = "spectrum_of_blockTriangular"
+kind = "theorem"
+desc = '''For a block upper triangular `A` (`Matrix.BlockTriangular A b` for `b : Fin n → α`, `α` linearly ordered) the characteristic polynomial is the product of those of the diagonal blocks, `A.charpoly = ∏ k ∈ image b univ, (A.toSquareBlock b k).charpoly` (`Matrix.BlockTriangular.charpoly`), hence `spectrum ℂ A = ⋃ k, spectrum ℂ (A.toSquareBlock b k)`; in particular the eigenvalues of a triangular matrix are its diagonal entries, `spectrum ℂ A = Set.range (fun i => A i i)` when `A.IsUpperTriangular` (`spectrum_of_isUpperTriangular`, stated as a second declaration). ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.7'
+
+[[node]]
+id = "finrank_eigenspace_eq"
+kind = "theorem"
+desc = '''The geometric multiplicity: `Module.finrank ℂ (Module.End.eigenspace (Matrix.toLin' A) μ) = n - (A - μ • 1).rank`, the eigenspace being `ker (A - μ I)` (`Module.End.eigenspace_def`, `Matrix.rank_add_finrank_ker_mulVecLin`). ★'''
+deps = ["Matrix.rank_add_finrank_ker_mulVecLin"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.7'
+
+[[node]]
+id = "finrank_eigenspace_le_rootMultiplicity"
+kind = "theorem"
+desc = '''The geometric multiplicity never exceeds the algebraic one: `finrank ℂ (eigenspace (toLin' A) μ) ≤ A.charpoly.rootMultiplicity μ`. Backbone `Matrix.finrank_eigenspace_le_rootMultiplicity_charpoly` (`Numlib/LinearAlgebra/Matrix/Jordan`). ★'''
+deps = ["Matrix.finrank_eigenspace_le_rootMultiplicity_charpoly"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.7'
+
+[[node]]
+id = "IsDefective"
+kind = "definition"
+desc = '''`IsDefective (A : Matrix (Fin n) (Fin n) ℂ) : Prop := ∃ μ ∈ spectrum ℂ A, finrank ℂ (eigenspace (toLin' A) μ) < A.charpoly.rootMultiplicity μ`: `A` has an eigenvalue whose geometric multiplicity is strictly less than its algebraic one. Used by §1.8 ("diagonalizable iff nondefective"). ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.7'
+
+[[node]]
+id = "definition_1_13"
+kind = "theorem"
+desc = '''A subspace `S` is invariant under `A` when `S.map (Matrix.toLin' A) ≤ S` (the book's `A S ⊂ S`); every eigenspace is invariant: `(Module.End.eigenspace (toLin' A) μ).map (toLin' A) ≤ Module.End.eigenspace (toLin' A) μ` (`Module.End.mem_eigenspace_iff`: `A x = μ x` gives `A (A x) = μ (A x)`). ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 1.13'

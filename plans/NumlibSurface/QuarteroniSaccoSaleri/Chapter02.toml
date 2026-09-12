@@ -1,0 +1,23 @@
+desc = '''
+Quarteroni–Sacco–Saleri, Chapter 2: principles of numerical mathematics (§2.1–2.6).
+
+The chapter fixes the vocabulary the rest of the book judges its methods by — well-posedness and
+condition number of a problem (§2.1), consistency, stability and convergence of a method and the
+relations between them (§2.2), a priori versus a posteriori analysis (§2.3), the sources of error
+(§2.4) — and then the floating-point number system `𝔽(β, t, L, U)` with its rounding and machine
+operations (§2.5). The vocabulary is the backbone's `Numlib/Conditioning/Problem` and
+`Numlib/Conditioning/Method`; the number system is `Numlib/FloatingPoint/System`, an instance of
+the relational `FloatingPoint.RoundingModel`. Each section group restates the book's definitions
+under the book's numbers with `_eq`/`_iff` lemmas to the backbone, and states the Examples that
+compute a concrete fact (the condition numbers of the quadratic, of a linear system, of a root, of
+a sum; the toy system `𝔽(2, 3, -1, 2)`) as theorems.
+
+Sections with no group: §2.3 (Examples 2.8 and 2.9 describe what forward, backward and a
+posteriori analyses would estimate and state nothing; the analyses are carried out in §3.1 and
+§6.1, whose groups use `Conditioning.backwardError`) and §2.4 (prose). §2.6 has a group for the
+two exercises the main text cites, Exercise 11 for (2.37) and Exercise 12 for the failure of
+associativity.
+
+Real scalars throughout; the backbone statements are over `NontriviallyNormedField` or an ordered
+field and are specialized here to `ℝ` (and to `ℚ` for the decidable toy system).
+'''

@@ -1,0 +1,42 @@
+namespace = "QuarteroniSaccoSaleri.Chapter03"
+desc = '''
+§3.11, approximate computation of `K(A)`: the lower-bound principle behind every condition
+estimator, the estimate (3.70) and its LU form (3.72), and `K₂(A) = K₂(R)`. Backbone:
+`Numlib/LinearSolve/Direct/Refinement`. The lookahead heuristic (3.71) for choosing `d`, Program 14
+and Example 3.9 state no theorem and are not nodes; Exercise 15, which the text cites, is in
+`Section15`.
+'''
+
+[[node]]
+id = "equation_3_70"
+kind = "theorem"
+desc = '''§3.11, (3.70): for nonsingular `A` and `d ≠ 0`, `‖A⁻¹ d‖ / ‖d‖ ≤ ‖A⁻¹‖` (`γ(d) ≤ ‖A⁻¹‖`), and with `x`,
+`y` solving `Rᵀ x = d`, `R y = x`, the ratio `‖y‖ / ‖x‖ = ‖R⁻¹ x‖ / ‖x‖ ≤ ‖R⁻¹‖`;
+`norm_apply_div_le_norm_inverse`. ★'''
+deps = ["norm_apply_div_le_norm_inverse"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.70)'
+
+[[node]]
+id = "condEstimate"
+kind = "definition"
+desc = '''§3.11: the estimate `K̂₁(A) = ‖R‖₁ ‖y‖₁ / ‖x‖₁`, and its LU form (3.72) `K̂₁(A) = ‖A‖₁ ‖y‖₁ / ‖x‖₁` with
+`(L U)ᵀ x = d`, `L U y = x`: `condEstimate` of `Numlib/LinearSolve/Direct/Refinement` on the
+operator of `A` in the `1`-norm (chapter 1's `‖·‖₁`). ★'''
+deps = ["_root_.condEstimate", "QuarteroniSaccoSaleri.Chapter03.equation_3_70"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.11'
+
+[[node]]
+id = "condEstimate_le"
+kind = "theorem"
+desc = '''§3.11: `K̂₁(A) ≤ K₁(A)` for every probe `d ≠ 0` — the estimator never overestimates;
+`condEstimate_le_condNumber`. ★'''
+deps = ["condEstimate_le_condNumber", "QuarteroniSaccoSaleri.Chapter03.condEstimate"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.11'
+
+[[node]]
+id = "condNumber_two_eq_of_qr"
+kind = "theorem"
+desc = '''§3.11, "`K₂(A) = K₂(R)` due to Property 1.8" (Exercise 14): if `A = Q R` with `Q` orthogonal then
+`K₂(A) = K₂(R)`; `Matrix.l2_opNorm_unitary_mul`. ★'''
+deps = ["Matrix.l2_opNorm_unitary_mul", "QuarteroniSaccoSaleri.Chapter03.definition_3_1"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.11'

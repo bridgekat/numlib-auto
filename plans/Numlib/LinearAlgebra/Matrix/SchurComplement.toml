@@ -56,3 +56,32 @@ id = "mul_blockDiagonal'_mul"
 [[node]]
 id = "schurComplement_fromBlocks_blockDiagonal'"
 source = "Saad, Iterative Methods for Sparse Linear Systems, (14.16)"
+
+[[node]]
+id = "fromBlocks_eq_mul_fromBlocks_of_mul_eq"
+kind = "theorem"
+desc = '''QSS §3.8.1's display: if `A₁₁ = L₁₁ * D₁ * R₁₁` with `L₁₁`, `D₁`, `R₁₁` units, then
+`fromBlocks A₁₁ A₁₂ A₂₁ A₂₂ = fromBlocks L₁₁ 0 L₂₁ 1 * fromBlocks D₁ 0 0 Δ₂ * fromBlocks R₁₁ R₁₂ 0 1`
+with `L₂₁ = A₂₁ R₁₁⁻¹ D₁⁻¹`, `R₁₂ = D₁⁻¹ L₁₁⁻¹ A₁₂` and `Δ₂ = A₂₂ - L₂₁ D₁ R₁₂`, and `Δ₂` is the Schur
+complement `A₂₂ - A₂₁ A₁₁⁻¹ A₁₂`. Refactor the middle block of
+`Matrix.fromBlocks_eq_mul_fromBlocks_schurComplement`. ★'''
+deps = ["Matrix.fromBlocks_eq_mul_fromBlocks_schurComplement", "Matrix.schurComplement"]
+
+[[node]]
+id = "PosDef.schurComplement_loewner_le"
+kind = "theorem"
+desc = '''For `A.PosDef`, `A.schurComplement ≤ A.toBlocks₂₂` in the Loewner order (scoped `MatrixOrder`): the
+difference `A₂₁ A₁₁⁻¹ A₁₂ = A₂₁ A₁₁⁻¹ A₂₁ᴴ` is positive semidefinite. ★'''
+deps = ["Matrix.PosDef.schurComplement"]
+
+[[node]]
+id = "PosDef.condNumber_schurComplement_le"
+kind = "theorem"
+desc = '''QSS Remark 3.6 (Axelsson, Lemma 3.12): for `A.PosDef`, in the spectral norm
+(`Matrix.Norms.L2Operator`), `κ A.schurComplement ≤ κ A`. `λ_max(S) ≤ λ_max(A₂₂) ≤ λ_max(A)` by the
+Loewner bound and Rayleigh quotients on a principal submatrix, and `λ_min(S) ≥ λ_min(A)` because
+`S⁻¹` is the `(2,2)` block of `A⁻¹` (`Matrix.toBlocks₂₂_inv_eq_inv_schurComplement`), so
+`λ_max(S⁻¹) ≤ λ_max(A⁻¹)`; then `Matrix.IsHermitian.l2_opNorm_eq` / `l2_opNorm_inv_eq` of
+`Analysis/Matrix/SpectralNorm`. The principal-submatrix Rayleigh bound is the easy half of Cauchy
+interlacing (`Eigen/MinMax` EXT on the skeleton, chapter 5). ★★★'''
+deps = ["Matrix.PosDef.schurComplement_loewner_le", "Matrix.toBlocks₂₂_inv_eq_inv_schurComplement", "Matrix.IsHermitian.l2_opNorm_eq", "Matrix.IsHermitian.l2_opNorm_inv_eq", "NormedRing.condNumber"]

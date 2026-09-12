@@ -140,3 +140,16 @@ id = "Krylov.rotated_succ_eq_of_lt"
 
 [[node]]
 id = "Krylov.rotated_succ_self"
+
+[[node]]
+id = "Krylov.givensMatrix_eq_planeEmbed"
+kind = "theorem"
+desc = '''`Krylov.givensMatrix h k m = Matrix.planeEmbed (⟨k, _⟩ : Fin (m+1)) ⟨k+1, _⟩ !![conj (givensC h
+k), conj (givensS h k); -givensS h k, givensC h k]` for `k < m` (and `= 1` for `k ≥ m`, where the
+plane is out of range). With it `Krylov.givensMatrix_mem_unitaryGroup` is
+`Matrix.planeEmbed_mem_unitaryGroup_iff` plus the `2 × 2` identity `|c|² + |s|² = 1`
+(`Krylov.norm_givensC_sq_add_norm_givensS_sq`), and the row-combination lemmas behind
+`Krylov.givensMatrix_mul_hessenbergOf_rotated` are `Matrix.planeEmbed_mul_apply`. A refactor of
+the existing proofs to go through these is optional; the identity itself is what a reader needs
+to recognize the two rotations as one object. ★'''
+deps = ["Krylov.givensMatrix", "Matrix.planeEmbed", "Matrix.planeEmbed_mem_unitaryGroup_iff", "Krylov.givensMatrix_mem_unitaryGroup"]

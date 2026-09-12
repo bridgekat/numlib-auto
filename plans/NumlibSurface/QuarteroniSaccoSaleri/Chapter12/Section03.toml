@@ -1,0 +1,85 @@
+namespace = "QuarteroniSaccoSaleri.Chapter12"
+desc = '''
+§12.3, the spectral collocation method for `-u'' = f` on `(-1, 1)` at the Legendre–Gauss–Lobatto
+nodes: the collocation problem (12.36), the discrete scalar product (12.37), the equivalent
+discrete weak form (12.38), the stability bound, and Theorem 12.2. The definitions live on the
+polynomials `P_n` and use chapter 10's Legendre–Gauss–Lobatto nodes and weights (expected in
+`Numlib/Approximation/GaussLobatto.lean` or the `Quadrature` EXT of chapter 10's plan; the ids
+below are the names this plan expects and must be reconciled with chapter 10's). The analysis —
+the norm equivalence `‖v_n‖_{L²} ≤ ‖v_n‖_n ≤ √3 ‖v_n‖_{L²}` quoted from [CHQZ88], the quadrature
+error (10.36) with weighted Sobolev norms, and the interpolation estimate (10.22) — is quoted by
+the book, and Theorem 12.2 is a "not formalized" node. Note the book's slip: `P_n^0` is defined
+with `p(0) = p(1) = 0` on `[0, 1]` although the problem is on `(-1, 1)`; the nodes use `p(±1) = 0`.
+'''
+
+[[node]]
+id = "equation_12_36"
+kind = "definition"
+desc = '''The spectral collocation problem (12.36): `IsSpectralCollocationSolution n f p` for a real polynomial
+`p` says `p.natDegree ≤ n`, `p.eval (-1) = 0`, `p.eval 1 = 0`, and `-(derivative (derivative p)).eval (x_j) = f
+(x_j)` at the interior Legendre–Gauss–Lobatto nodes `x_1, …, x_{n-1}` of `[-1, 1]` (chapter 10's
+`Quadrature.exists_gaussLobatto n`). `L_n v = L (I_n v)` with `I_n` the interpolant at all `n + 1`
+nodes (`Lagrange.interpolateCLM`) agrees with `L v` on `P_n` (`equation_12_36_interpolant`). The
+algebraic form `A_sp u = f` with `A_sp = D̃²`, `D̃` the pseudo-spectral differentiation matrix (10.73)
+with its first and last rows and columns removed, is `equation_12_36_matrix`, depending on chapter
+10's `pseudoSpectralDerivMatrix` (§10.10.3). ★'''
+deps = ["Quadrature.exists_gaussLobatto", "Lagrange.interpolateCLM"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.36)'
+
+[[node]]
+id = "equation_12_37"
+kind = "definition"
+desc = '''The discrete scalar product (12.37): `(u, v)_n = ∑_{j=0}^n u(x_j) v(x_j) w_j` with the
+Legendre–Gauss–Lobatto weights `w_j` (chapter 10's `Quadrature.legendreLobattoWeight_eq n`), and
+`‖u‖_n = (u, u)_n^{1/2}`; `equation_12_37_exact`: `(u, v)_n = ∫_{-1}^1 u v` whenever `u v ∈ P_{2n-1}`
+(chapter 10's exactness of the Gauss–Lobatto rule, §10.2/§10.4), and `‖f‖_n ≤ √2 ‖f‖_∞` (the weights are
+positive and sum to `2`). ★'''
+deps = ["Quadrature.legendreLobattoWeight_eq", "Quadrature.exists_gaussLobatto"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.37)'
+
+[[node]]
+id = "equation_12_38"
+kind = "theorem"
+desc = '''(12.38): the collocation problem is equivalent to the discrete weak form — `p` solves (12.36) iff
+`p ∈ P_n^0` and `(L_n p, v_n)_n = (f, v_n)_n` for all `v_n ∈ P_n^0`. Forwards: both sides are sums over
+the interior nodes (the endpoint terms vanish since `v_n(±1) = 0`) with positive weights, so the
+collocation equations give the identity; backwards: test with the Lagrange basis polynomial of an
+interior node. Also `equation_12_38_energy`: `(L_n v_n, v_n)_n = (L_n v_n, v_n) = ‖v_n'‖²_{L²(-1,1)}` for
+`v_n ∈ P_n^0`, by exactness on `P_{2n-1}` (`v_n'' v_n ∈ P_{2n-2}`) and integration by parts. ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_36", "QuarteroniSaccoSaleri.Chapter12.equation_12_37"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.38)'
+
+[[node]]
+id = "equation_12_38_stability"
+kind = "theorem"
+desc = '''The stability bound after (12.38): `‖u_n'‖_{L²(-1,1)} ≤ √6 C_P ‖f‖_∞` for the collocation solution,
+hence uniqueness. Not formalized: the proof uses the norm equivalence `‖v_n‖_{L²} ≤ ‖v_n‖_n ≤ √3
+‖v_n‖_{L²}` on `P_n`, which the book quotes from [CHQZ88, p. 286] — it rests on the Gauss–Lobatto
+quadrature error for the square of the top Legendre coefficient, a chapter 10 fact that is not planned
+there either. If chapter 10 supplies it, the statement follows from `equation_12_38_energy`, `(f, u_n)_n
+≤ ‖f‖_n ‖u_n‖_n`, and Poincaré (`SobolevInterval.norm_le_of_eq_integral` at `(b - a) = 2`).'''
+deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_38", "SobolevInterval.norm_le_of_eq_integral"]
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.3, the stability estimate after (12.38)'''
+
+[[node]]
+id = "theorem_12_2"
+kind = "theorem"
+desc = '''Theorem 12.2: for `f ∈ H^s(-1, 1)`, `s ≥ 1`, the spectral collocation solution satisfies
+`‖u' - u_n'‖_{L²(-1,1)} ≤ C n^{-s} (‖f‖_{H^s(-1,1)} + ‖u‖_{H^{s+1}(-1,1)})` with `C` independent of `n`.
+Statable with `SobolevInterval s (-1) 1` for the norms. Not formalized: the proof quotes the
+Gauss–Lobatto quadrature error `|(f, v_n) - (f, v_n)_n| ≤ C n^{-s} ‖f‖_{H^s} ‖v_n‖_{L²}` (10.36) and the
+interpolation estimate (10.22), both from [CHQZ88] with weighted Sobolev norms, which chapter 10 marks
+"not formalized"; the book proves neither. The elementary steps of the proof (Galerkin orthogonality
+against the quadrature defect, Young's inequality (12.40) = Exercise 12.8, Poincaré) are available.'''
+deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_38", "QuarteroniSaccoSaleri.Chapter12.exercise_12_8", "SobolevInterval"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 12.2'
+
+[[node]]
+id = "exercise_12_8"
+kind = "theorem"
+desc = '''Exercise 12.8, Young's inequality (12.40), used in the proofs of Theorems 12.2 and 12.4:
+`a * b ≤ ε * a ^ 2 + b ^ 2 / (4 * ε)` for all real `a b` and `ε > 0`. `nlinarith [sq_nonneg (2 * ε * a - b)]`
+after clearing the denominator; Mathlib's `Real.young_inequality` is the `p, q` form and not this
+one. ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 12.8 and equation (12.40)'

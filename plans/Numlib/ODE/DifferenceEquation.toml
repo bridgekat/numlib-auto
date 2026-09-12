@@ -1,0 +1,130 @@
+desc = '''
+The analytic half of Quarteroni–Sacco–Saleri §11.4 and the root conditions of §11.6.2: the root
+condition of a complex polynomial (every root in the closed unit disc, roots on the circle simple;
+Definition 11.10), the strong root condition (Definition 11.11), and Lemma 11.3 — the solutions of
+a linear recurrence over `ℂ` are bounded uniformly in terms of their initial data and source,
+`‖u_n‖ ≤ M (max_{j<k} ‖u_j‖ + ∑_{l=k}^n ‖φ_l‖)`, iff the characteristic polynomial satisfies the
+root condition — with the two one-sided statements it splits into, the decay criterion (all
+solutions tend to zero iff all roots lie in the open disc, the multistep form of Definition
+11.6), and the real-coefficient corollary that a violated root condition produces an unbounded
+*real* solution (the ingredient of the necessity halves of Theorems 11.4 and 11.5; the book's
+choice `ε (r + r̄)^n` for a complex root is wrong, the real and imaginary parts of `r^n` are what
+work).
+
+The sufficiency half of Lemma 11.3 is the real proof of the file: through the Duhamel formula
+(11.42) of `Numlib/Algebra/LinearRecurrence` the solution is a combination of the Kronecker
+fundamental solutions `ψ_j`, so it suffices to bound `sup_n ‖ψ_j^{(n)}‖`; each `ψ_j` is a
+combination of the `n^s r^n` (over `ℂ` the characteristic polynomial splits), and `n^s r^n` is
+bounded when `|r| < 1` (`tendsto_pow_const_mul_const_pow_of_abs_lt_one`) and when `|r| = 1`,
+`s = 0`; the root condition excludes `|r| > 1` and `|r| = 1` with `s ≥ 1`. The necessity half
+exhibits `r^n` or `n r^n`. Polynomials are in `ℂ[X]`; a real method's `ρ` is read through
+`Polynomial.map (algebraMap ℝ ℂ)`.
+
+Consumers: `ODE/Multistep` (Theorems 11.4, 11.5, absolute stability §11.6.4) and the
+boundary-value difference equations of chapter 12.
+'''
+
+[[node]]
+id = "Polynomial.SatisfiesRootCondition"
+kind = "definition"
+desc = '''Definition 11.10 for `P : ℂ[X]`: `∀ r : ℂ, P.IsRoot r → ‖r‖ ≤ 1 ∧ (‖r‖ = 1 → P.rootMultiplicity r = 1)`.
+Every root lies in the closed unit disc and the roots on the unit circle are simple.'''
+deps = []
+
+[[node]]
+id = "Polynomial.satisfiesRootCondition_iff_derivative"
+kind = "theorem"
+desc = '''The book's formulation (11.56): for `P ≠ 0`, `P.SatisfiesRootCondition ↔ ∀ r, P.IsRoot r →
+‖r‖ ≤ 1 ∧ (‖r‖ = 1 → ¬ (Polynomial.derivative P).IsRoot r)`. Mathlib's
+`Polynomial.one_lt_rootMultiplicity_iff_isRoot` (characteristic zero) and
+`Polynomial.rootMultiplicity_pos`. ★'''
+deps = ["Polynomial.SatisfiesRootCondition"]
+
+[[node]]
+id = "Polynomial.SatisfiesStrongRootCondition"
+kind = "definition"
+desc = '''Definition 11.11: `P.SatisfiesRootCondition ∧ ∀ r, P.IsRoot r → r ≠ 1 → ‖r‖ < 1` — the
+root condition, and `1` is the only root on the unit circle (11.57).'''
+deps = ["Polynomial.SatisfiesRootCondition"]
+
+[[node]]
+id = "LinearRecurrence.norm_kroneckerSol_le_of_satisfiesRootCondition"
+kind = "theorem"
+desc = '''The core estimate: for `E : LinearRecurrence ℂ` with `E.charPoly.SatisfiesRootCondition`
+there is `M` with `‖E.kroneckerSol j n‖ ≤ M` for all `j : Fin E.order` and all `n`.
+Proof: `charPoly` splits over `ℂ`, so `kroneckerSol j ∈ span (fundamentalSol)`
+(`span_fundamentalSol_eq_solSpace`), i.e. `kroneckerSol j = ∑_p γ_p n^{s_p} r_p^n`; each
+fundamental solution is bounded: `|r| < 1` gives `n^s |r|^n → 0` hence bounded
+(`tendsto_pow_const_mul_const_pow_of_abs_lt_one`), and `|r| = 1` forces `s = 0` by the root
+condition, where `|r^n| = 1`. Finite sums of bounded sequences are bounded. ★★'''
+deps = ["Polynomial.SatisfiesRootCondition", "LinearRecurrence.kroneckerSol", "LinearRecurrence.span_fundamentalSol_eq_solSpace"]
+
+[[node]]
+id = "LinearRecurrence.norm_le_of_satisfiesRootCondition"
+kind = "theorem"
+desc = '''Lemma 11.3, sufficiency: for `E : LinearRecurrence ℂ` with `0 < E.order =: k` and
+`E.charPoly.SatisfiesRootCondition` there is `M > 0` such that for all `φ u : ℕ → ℂ` with
+`E.IsSolutionWith φ u` and all `n`,
+`‖u n‖ ≤ M * ((⨆ j : Fin k, ‖u j‖) + ∑ l ∈ Finset.Icc k n, ‖φ l‖)` (11.63).
+Proof: the Duhamel formula `eq_sum_kroneckerSol_add_sum` and the triangle inequality with the
+bound `‖ψ_j^{(n)}‖ ≤ M₀` of the previous node; `M = k M₀` works (the book's `(p+1) M`). ★★'''
+deps = ["LinearRecurrence.norm_kroneckerSol_le_of_satisfiesRootCondition", "LinearRecurrence.eq_sum_kroneckerSol_add_sum"]
+
+[[node]]
+id = "LinearRecurrence.exists_isSolution_not_bddAbove_of_not_satisfiesRootCondition"
+kind = "theorem"
+desc = '''Lemma 11.3, necessity, in the form the multistep theorems use: for `E : LinearRecurrence ℂ`,
+if `¬ E.charPoly.SatisfiesRootCondition` then there is a solution `u` of the homogeneous
+recurrence with `¬ BddAbove (Set.range fun n => ‖u n‖)`. Proof: a root `r` with `‖r‖ > 1` gives
+`u n = r^n` (`geom_sol_iff_root_charPoly`; `‖r‖^n → ∞`); a root with `‖r‖ = 1` and
+multiplicity `≥ 2` gives `u n = n r^n` (`isSolution_mul_pow_of_one_lt_rootMultiplicity`;
+`‖n r^n‖ = n`). ★'''
+deps = ["Polynomial.SatisfiesRootCondition", "LinearRecurrence.isSolution_mul_pow_of_one_lt_rootMultiplicity"]
+
+[[node]]
+id = "LinearRecurrence.exists_forall_norm_le_iff_satisfiesRootCondition"
+kind = "theorem"
+desc = '''Lemma 11.3 as an equivalence: for `E : LinearRecurrence ℂ` with `0 < E.order`,
+`(∃ M > 0, ∀ φ u, E.IsSolutionWith φ u → ∀ n, ‖u n‖ ≤ M * ((⨆ j : Fin E.order, ‖u j‖) + ∑ l ∈ Finset.Icc E.order n, ‖φ l‖))
+↔ E.charPoly.SatisfiesRootCondition`. `←` is the sufficiency node; `→`: an unbounded homogeneous
+solution (previous node, `φ = 0`) contradicts the bound, whose right-hand side is then the constant
+`M max_j ‖u_j‖`. ★'''
+deps = ["LinearRecurrence.norm_le_of_satisfiesRootCondition", "LinearRecurrence.exists_isSolution_not_bddAbove_of_not_satisfiesRootCondition"]
+
+[[node]]
+id = "LinearRecurrence.forall_tendsto_zero_iff"
+kind = "theorem"
+desc = '''The decay criterion behind the absolute root condition (§11.6.4): for
+`E : LinearRecurrence ℂ`, `(∀ u, E.IsSolution u → Tendsto u atTop (𝓝 0)) ↔ ∀ r, E.charPoly.IsRoot r → ‖r‖ < 1`.
+`←`: every solution is a combination of `n^s r^n` with `|r| < 1`, each tending to zero
+(`tendsto_pow_const_mul_const_pow_of_abs_lt_one`); `→`: a root with `‖r‖ ≥ 1` gives the solution
+`r^n`, which does not tend to zero. ★★'''
+deps = ["LinearRecurrence.span_fundamentalSol_eq_solSpace"]
+
+[[node]]
+id = "LinearRecurrence.forall_bddAbove_iff_satisfiesRootCondition"
+kind = "theorem"
+desc = '''Remark 11.3's `𝒜*` criterion: for `E : LinearRecurrence ℂ`,
+`(∀ u, E.IsSolution u → BddAbove (Set.range fun n => ‖u n‖)) ↔ E.charPoly.SatisfiesRootCondition`.
+The homogeneous specialization of the previous two nodes. ★'''
+deps = ["LinearRecurrence.norm_le_of_satisfiesRootCondition", "LinearRecurrence.exists_isSolution_not_bddAbove_of_not_satisfiesRootCondition"]
+
+[[node]]
+id = "LinearRecurrence.map"
+kind = "definition"
+desc = '''`E.map (f : R →+* S) : LinearRecurrence S` with the same order and coefficients `f ∘ coeffs`,
+with `charPoly_map : (E.map f).charPoly = E.charPoly.map f` and
+`isSolution_map : E.IsSolution u → (E.map f).IsSolution (f ∘ u)`. The bridge from a real
+recurrence (a real multistep method) to the complex one whose roots are discussed. ★'''
+deps = []
+
+[[node]]
+id = "LinearRecurrence.exists_isSolution_real_not_bddAbove_of_not_satisfiesRootCondition"
+kind = "theorem"
+desc = '''The real form of the necessity: for `E : LinearRecurrence ℝ`, if
+`¬ (E.map (algebraMap ℝ ℂ)).charPoly.SatisfiesRootCondition` then there is a *real* solution `u`
+of `E` with `¬ BddAbove (Set.range fun n => |u n|)`. Proof: take the unbounded complex solution
+`w` of the complexified recurrence; `Re ∘ w` and `Im ∘ w` are real solutions (the coefficients
+are real), and `‖w n‖ ≤ |Re (w n)| + |Im (w n)|`, so one of them is unbounded. This replaces the
+book's `ε (r + r̄)^n`, which is not a solution. ★'''
+deps = ["LinearRecurrence.map", "LinearRecurrence.exists_isSolution_not_bddAbove_of_not_satisfiesRootCondition"]

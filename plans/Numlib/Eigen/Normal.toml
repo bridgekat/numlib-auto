@@ -42,3 +42,15 @@ id = "LinearMap.IsStarNormal.apply_eigenvectorBasis"
 
 [[node]]
 id = "Matrix.IsStarNormal.spectral_theorem"
+
+[[node]]
+id = "Matrix.IsStarNormal.exists_unitary_conj_diagonal_of_commute"
+kind = "theorem"
+desc = '''For `A B : Matrix n n ℂ` both normal with `Commute A B`, there is `U ∈ unitaryGroup n ℂ` and `d e : n → ℂ` with `star U * A * U = diagonal d` and `star U * B * U = diagonal e`; consequently `star U * (A + B) * U = diagonal (d + e)`, i.e. the eigenvalues of `A + B` are `λ_i + ξ_i` for eigenvalues of `A` and `B` sharing the eigenvector `U e_i` (Quarteroni–Sacco–Saleri §1.8, item 3 after Property 1.5). Proof: `B` commutes with `A`, hence with `Aᴴ = q(A)` (`IsStarNormal.exists_aeval_eq_conjTranspose`, the finite-dimensional Fuglede theorem for free), so `B` preserves each eigenspace of `A` (`Module.End.mapsTo_eigenspace_of_comm`); restricted to an eigenspace `B` is still normal, and induction on the number of distinct eigenvalues (or the orthogonal direct sum `IsStarNormal.direct_sum_isInternal`) produces a common orthonormal eigenbasis; alternatively decompose `A = H₁ + i H₂`, `B = H₃ + i H₄` into commuting Hermitian parts and apply Mathlib's `LinearMap.IsSymmetric.iSup_iInf_eq_top_of_commute` to the family of four. ★★'''
+deps = ["Matrix.IsStarNormal.spectral_theorem", "Matrix.IsStarNormal.exists_aeval_eq_conjTranspose", "LinearMap.IsStarNormal.direct_sum_isInternal"]
+
+[[node]]
+id = "Matrix.IsStarNormal.eq_sum_smul_vecMulVec"
+kind = "theorem"
+desc = '''The spectral decomposition of a normal matrix as a sum of rank-one projectors: with `U`, `d` from `IsStarNormal.spectral_theorem`, `A = ∑ i, d i • vecMulVec (Uᵀ i) (star (Uᵀ i))`, Quarteroni–Sacco–Saleri §1.8 item 2, `A = U Λ Uᴴ = ∑ λ_i u_i u_iᴴ`. Proof: expand `U * diagonal d * star U` entrywise (`mul_apply`, `diagonal_mul`, `vecMulVec_apply`). ★'''
+deps = ["Matrix.IsStarNormal.spectral_theorem"]

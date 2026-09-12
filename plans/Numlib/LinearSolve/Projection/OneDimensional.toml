@@ -51,3 +51,17 @@ source = "Saad, Iterative Methods for Sparse Linear Systems, (5.20) and Theorem 
 [[node]]
 id = "Projection.tendsto_of_forall_norm_succ_le"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Theorems 5.9 and 5.10"
+
+[[node]]
+id = "Projection.energyNorm_step1_sq_eq"
+kind = "theorem"
+desc = '''(7.37)–(7.38): for symmetric coercive `A`, `A xstar = b`, a direction `d` with
+`re ⟪A d, d⟫ ≠ 0`, and the exact step `x' = step1 A b d d x` (whose coefficient is
+`⟪d, r⟫ / ⟪d, A d⟫`, (7.36)),
+`energyNorm A (xstar - x') ^ 2 = energyNorm A (xstar - x) ^ 2 - (re ⟪d, b - A x⟫) ^ 2 / re ⟪A d, d⟫`,
+equivalently `= ρ · ‖xstar - x‖_A²` with `ρ = 1 - σ`,
+`σ = (re ⟪d, r⟫)² / (re ⟪A d, d⟫ · ‖xstar - x‖_A²)` when `x ≠ xstar` (using
+`‖xstar - x‖_A² = re ⟪A⁻¹ r, r⟫`, `IsSymmetricCoercive.energyNorm_error_sq_eq`). Proof: expand
+`‖e - α d‖_A²` and substitute `α`. Corollary `energyNorm_step1_lt`: `ρ < 1` unless `⟪d, r⟫ = 0`,
+in which case `x' = x`. `energyNorm_steepestDescentStep_sq_eq` is the case `d = r`. ★★'''
+deps = ["Projection.step1", "Projection.energyNorm_steepestDescentStep_sq_eq"]

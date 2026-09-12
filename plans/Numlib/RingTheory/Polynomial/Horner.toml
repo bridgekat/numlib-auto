@@ -1,0 +1,111 @@
+namespace = "Polynomial"
+desc = '''
+Horner's scheme and synthetic division, on the path Mathlib would use. The nested evaluation
+(6.25) is a left fold over `coeffList p` (Mathlib's coefficient list, leading coefficient first),
+`hornerEval`; the intermediate values `b_k` of the recurrence (6.26) are, for `k ≥ 1`, the
+coefficients of the quotient `p /ₘ (X - C z)` — Mathlib already has that recurrence as
+`Polynomial.coeff_divByMonic_X_sub_C_rec` (`Algebra/Polynomial/Div.lean:456`) — and `b_0 = p.eval z`
+is the remainder, `modByMonic_X_sub_C_eq_C_eval` (`:577`). What Mathlib lacks and this module adds
+is the *evaluation* identity `(p /ₘ (X - C z)).eval z = p.derivative.eval z`, the fact that makes the
+Newton–Horner method compute `p'(z)` by a second synthetic division, the scan form of the recurrence
+as a list, and the link between the fold and the quotient. Deflation is `mul_divByMonic_eq_iff_isRoot`
+(`Div.lean:592`) plus a lemma on the root multiset of the quotient. Descartes' rule (Property 6.5)
+is Mathlib's `Polynomial.roots_countP_pos_le_signVariations` (`Algebra/Polynomial/RuleOfSigns.lean:379`)
+and its parity clause is proposed in `RingTheory/Polynomial/RuleOfSigns`; Cauchy's bound (Property
+6.6) is `Polynomial.IsRoot.norm_lt_cauchyBound` (`Analysis/Polynomial/CauchyBound.lean:74`).
+The prototype `notes/qss/ch06/proto/Horner.lean` proves the synthetic-division identity and the derivative
+identity outright.
+
+Sources: Quarteroni–Sacco–Saleri, Numerical Mathematics, §6.4.1–6.4.2 ((6.25)–(6.29)); Kress,
+Numerical Analysis, §6.3; Higham, Accuracy and Stability, §5.1 (Horner's rule, whose rounding
+analysis would go into `FloatingPoint/`).
+'''
+
+[[node]]
+id = "hornerEval"
+kind = "definition"
+desc = '''`Polynomial.hornerEval (l : List R) (z : R) : R := l.foldl (fun b a => a + b * z) 0` for a
+semiring `R`: nested multiplication (6.25)–(6.26) over the coefficient list `[a_n, …, a_0]`,
+`b ← a_n; b ← a_k + b z`. ★'''
+deps = []
+
+[[node]]
+id = "hornerEval_coeffList"
+kind = "theorem"
+desc = '''`hornerEval p.coeffList z = p.eval z` for `p : R[X]`, `R` a semiring: Horner's scheme
+evaluates the polynomial. Induction on the degree through `coeffList_eq_cons_leadingCoeff` /
+`coeffList_eraseLead` (`Algebra/Polynomial/CoeffList.lean:68,114`) — or, cleaner, prove the general
+fold identity `hornerEval l z = ∑ i, l.reverse[i] z^i` and use `coeffList`'s definition
+`(List.range P.degree.succ).reverse.map P.coeff` with `eval_eq_sum_range`. ★'''
+deps = ["Polynomial.hornerEval"]
+
+[[node]]
+id = "hornerScan"
+kind = "definition"
+desc = '''`Polynomial.hornerScan (l : List R) (z : R) : List R`, the list `[b_n, b_{n-1}, …, b_0]` of all
+partial values of `hornerEval` (`List.scanl (fun b a => a + b * z) 0 l` without the leading `0`):
+the output vector `b` of the book's Program 52. `hornerScan_getLast : (hornerScan l z).getLast? =
+some (hornerEval l z)`. ★'''
+deps = ["Polynomial.hornerEval"]
+
+[[node]]
+id = "hornerScan_coeffList"
+kind = "theorem"
+desc = '''**The recurrence (6.26) computes the quotient:** for `p : R[X]` over a commutative ring
+with `p ≠ 0`, `hornerScan p.coeffList z = (p /ₘ (X - C z)).coeffList ++ [p.eval z]` when
+`0 < p.natDegree` (and `= [p.eval z]` for constants). The `b_k`, `k ≥ 1`, are the coefficients
+`b_{k} = (p /ₘ (X - C z)).coeff (k - 1)` by Mathlib's `coeff_divByMonic_X_sub_C_rec` read from the
+top (`coeff n = coeff p (n+1) + z * coeff (n+1)` with `(p /ₘ (X - C z)).coeff (natDegree - 1) =
+leadingCoeff p`, `leadingCoeff_divByMonic_X_sub_C`, `Div.lean:798`), and `b_0 = p.eval z` is
+`hornerEval_coeffList`. The list bookkeeping (`coeffList` of the quotient has length `natDegree`) is
+the whole difficulty. ★★'''
+deps = ["Polynomial.hornerScan", "Polynomial.hornerEval_coeffList"]
+
+[[node]]
+id = "eq_X_sub_C_mul_divByMonic_add_C_eval"
+kind = "theorem"
+desc = '''**Synthetic division:** `p = (X - C z) * (p /ₘ (X - C z)) + C (p.eval z)` for `p : R[X]`
+over a commutative ring — the display before (6.29), "`p_n(x) = b_0 + (x - z) q_{n-1}(x; z)`". One
+line from `modByMonic_add_div` and `modByMonic_X_sub_C_eq_C_eval` (proved in the prototype). The
+"associated polynomial" `q_{n-1}(·; z)` of (6.27) *is* `p /ₘ (X - C z)`; no separate definition. ★'''
+deps = []
+
+[[node]]
+id = "eval_divByMonic_X_sub_C_self"
+kind = "theorem"
+desc = '''**`p'(z) = q(z; z)`:** `(p /ₘ (X - C z)).eval z = p.derivative.eval z` for `p : R[X]` over a
+commutative ring. Differentiate `eq_X_sub_C_mul_divByMonic_add_C_eval` (`derivative_mul`,
+`derivative_X_sub_C`) and evaluate at `z`, where the `(X - C z) q'` term vanishes (proved in the
+prototype). Not in Mathlib (grepped `eval.*divByMonic`, `divByMonic.*derivative` in
+`Algebra/Polynomial/`, `RingTheory/Polynomial/`: nothing). It is the identity that makes one
+synthetic division of the quotient deliver the derivative for Newton's method. ★'''
+deps = ["Polynomial.eq_X_sub_C_mul_divByMonic_add_C_eval"]
+
+[[node]]
+id = "roots_divByMonic_X_sub_C"
+kind = "theorem"
+desc = '''**Deflation removes one copy of the root:** for `p : K[X]` over a field (or a domain),
+`p ≠ 0`, `p.IsRoot r`: `p.roots = (p /ₘ (X - C r)).roots + {r}` (multisets), so the remaining roots
+of `p` are those of the deflated polynomial, with multiplicities. From
+`mul_divByMonic_eq_iff_isRoot`, `roots_mul`, `roots_X_sub_C`. The deflation loop of §6.4.1 (find a
+root of `p_m`, divide, repeat) is then a `List`-recursion the surface can write if wanted; the book
+proves nothing about the loop beyond this identity. ★'''
+deps = []
+
+[[node]]
+id = "_root_.NewtonHorner.step"
+kind = "definition"
+desc = '''`NewtonHorner.step (p : K[X]) (z : K) : K := z - p.eval z / (p /ₘ (X - C z)).eval z` for a
+field `K` (`ℝ` or `ℂ`): the Newton–Horner step (6.29), the derivative supplied by synthetic
+division. (In the root namespace `NewtonHorner`, not `Polynomial`.) ★'''
+deps = []
+
+[[node]]
+id = "_root_.NewtonHorner.step_eq"
+kind = "theorem"
+desc = '''`NewtonHorner.step p z = z - p.eval z / p.derivative.eval z`, i.e. it is
+`Newton.scalarStep (fun x => p.eval x) (fun x => p.derivative.eval x) z` for `K = ℝ` — so every
+scalar Newton theorem applies to it (quadratic convergence at a simple root, factor `1 - 1/m` at a
+root of multiplicity `m` = `rootMultiplicity`, via `Polynomial.isRootOfMultiplicity_eval_iff`). By
+`eval_divByMonic_X_sub_C_self` (proved in the prototype). ★'''
+deps = ["NewtonHorner.step", "Polynomial.eval_divByMonic_X_sub_C_self"]

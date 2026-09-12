@@ -1,0 +1,375 @@
+desc = '''
+Sobolev spaces on an interval: `H^m(a, b) = W^{m,2}(a, b)` and `H^1_0(a, b)`, with the
+one-dimensional facts that have no analogue in higher dimension.
+
+`SobolevInterval m a b` is *not* a new space: it is the backbone's multi-index Sobolev space
+`SobolevMultiIndex ℝ (Module.Basis.singleton Unit ℝ) m 2 (Opens.Ioo a b) volume` of
+`Numlib/Analysis/Sobolev/MultiIndex.lean`, read on `E = ℝ` with the one-element basis, so that
+its components are the weak derivatives `u, u', …, u^{(m)}` in `L²(a, b)` and it is a Hilbert
+space for the inner product `(u, v)_{H^m} = ∑_{j ≤ m} (u^{(j)}, v^{(j)})_{L²}` on the nose
+(`SobolevMultiIndex.inner_eq`). The tensor formulation `Sobolev ℝ m 2 Ω volume` of
+`Numlib/Analysis/Sobolev/Space.lean` is *not* usable here: its ambient `PiLp` of `Lp` spaces of
+continuous multilinear maps carries no `InnerProductSpace` instance, and everything downstream
+(Lax–Milgram, Céa, Aubin–Nitsche in `Numlib/Variational`) is stated on an inner product space.
+`H^1_0(a, b)` is accordingly `SobolevMultiIndexZero`, the closure of the test functions in the
+multi-index space, added to `Numlib/Analysis/Sobolev/MultiIndex.lean` by this plan.
+
+What is one-dimensional: an `L¹` function whose weak derivative vanishes is a.e. constant
+(du Bois-Reymond), so a function with weak derivative `w ∈ L¹(a, b)` is a.e. equal to
+`c + ∫_a^x w`, an absolutely continuous function on `[a, b]` (Mathlib's
+`AbsolutelyContinuousOnInterval`, `IntervalIntegrable.absolutelyContinuousOnInterval_intervalIntegral`).
+Everything else follows from that representation by elementary integral estimates: the
+embedding `H^1(a, b) ↪ C[a, b]` with an explicit constant, the fundamental theorem of calculus
+in `H^1`, integration by parts, the product rule (through a Fubini identity for products of
+antiderivatives — no Lebesgue differentiation theorem is needed anywhere), Poincaré's inequality
+on `H^1_0` with constant `(b - a)/√2`, and the characterization
+`H^1_0(a, b) = {u ∈ H^1(a, b) : u(a) = u(b) = 0}`.
+
+Consumers: Quarteroni–Sacco–Saleri §12.4–12.5 (weak formulation, Galerkin, finite elements on
+an interval), §8.3 Theorem 8.3 (interpolation error in `H^m` seminorms, in
+`Numlib/Approximation/SobolevInterpolation`), §13.2–13.3 (the heat equation in one space
+dimension); Atkinson–Han Examples 1.2.28(b), 1.3.7, 2.4.2, 2.5.9, which `notes/frontier.md`
+blocker 8 lists as needing exactly this module.
+
+Conventions: `a < b` is a hypothesis of every theorem that needs it, never of the definitions;
+the measure is `volume.restrict (Ioo a b)`; `Opens.Ioo a b` is the open interval as an element
+of `Opens ℝ`, which is what `HasWeakIteratedLineDerivOn` takes. The `L²(a, b)` type is
+`Lp ℝ 2 (volume.restrict (Ioo a b))`. Prototype: `notes/qss/ch12/proto/SobolevInterval.lean` of the chapter 12
+planning report (elaborates).
+'''
+
+[[node]]
+id = "TopologicalSpace.Opens.Ioo"
+kind = "definition"
+desc = '''`Opens.Ioo a b : Opens ℝ` is the open interval `(a, b)` as an open set, `⟨Set.Ioo a b, isOpen_Ioo⟩`,
+with the simp lemma `coe_Ioo : (Opens.Ioo a b : Set ℝ) = Set.Ioo a b`. Mathlib has no such
+constructor (grepped `Opens.Ioo`, `def Ioo` in `Mathlib/Topology/Sets/Opens.lean`). ★'''
+deps = []
+
+[[node]]
+id = "HasWeakDerivOn"
+kind = "definition"
+desc = '''`HasWeakDerivOn f w a b : Prop`, the first-order weak derivative on the interval `(a, b)` for
+`f w : ℝ → ℝ`: `HasWeakIteratedLineDerivOn (fun _ : Fin 1 ↦ (1 : ℝ)) f w (Opens.Ioo a b) volume`
+of `Numlib/Analysis/Sobolev/WeakDeriv.lean`. Companion `hasWeakDerivOn_iff`: it unfolds to
+`LocallyIntegrableOn f (Ioo a b)`, `LocallyIntegrableOn w (Ioo a b)` and
+`∫ x in Ioo a b, deriv φ x * f x = -∫ x in Ioo a b, φ x * w x` for every `φ : 𝓓(Opens.Ioo a b, ℝ)`,
+using `iteratedDeriv_eq_iteratedFDeriv` to turn `iteratedFDeriv ℝ 1 φ x (fun _ ↦ 1)` into
+`deriv φ x`. ★'''
+deps = ["TopologicalSpace.Opens.Ioo", "HasWeakIteratedLineDerivOn"]
+
+[[node]]
+id = "HasWeakIteratedDerivOn"
+kind = "definition"
+desc = '''`HasWeakIteratedDerivOn k f w a b : Prop := HasWeakIteratedLineDerivOn (fun _ : Fin k ↦ (1 : ℝ))
+f w (Opens.Ioo a b) volume`, the `k`-th weak derivative on `(a, b)`; `HasWeakIteratedDerivOn 1` is
+`HasWeakDerivOn` by `hasWeakIteratedDerivOn_one`. `multiIndexTuple_singleton`: for the one-element
+basis `Module.Basis.singleton Unit ℝ` and `α : Unit → ℕ`, `multiIndexTuple b α` is the constant
+tuple `fun _ ↦ 1` (up to the cast `Fin (∑ i, α i) = Fin (α ())`), so membership of
+`SobolevMultiIndex ℝ (Module.Basis.singleton Unit ℝ) m 2 (Opens.Ioo a b) volume` asks exactly for
+`HasWeakIteratedDerivOn j` for `j ≤ m`. ★'''
+deps = ["HasWeakDerivOn", "multiIndexTuple"]
+
+[[node]]
+id = "HasWeakDerivOn.hasWeakIteratedDerivOn_succ"
+kind = "theorem"
+desc = '''Chaining first-order weak derivatives: if `HasWeakDerivOn f v a b` and
+`HasWeakIteratedDerivOn k v w a b` then `HasWeakIteratedDerivOn (k + 1) f w a b`. Proof: for a test
+function `φ`, `φ'` is again a test function (`TestFunction.lineDerivCLM`), and
+`∫ φ^{(k+1)} f = -∫ φ^{(k)} v = (-1)^{k+1} ∫ φ w`. Note that the converse direction (splitting an
+iterated weak derivative into first-order steps) is *not* a lemma about one function: it needs the
+intermediate derivatives to exist, which is what membership of `H^{k+1}` supplies
+(`memSobolevInterval_succ_iff`). ★'''
+deps = ["HasWeakDerivOn", "HasWeakIteratedDerivOn"]
+
+[[node]]
+id = "hasWeakDerivOn_of_contDiffOn"
+kind = "theorem"
+desc = '''A classical derivative is a weak derivative on an interval: if `ContDiffOn ℝ 1 f (Ioo a b)` and
+`f`, `deriv f` are locally integrable on `(a, b)`, then `HasWeakDerivOn f (deriv f) a b`. This is
+`ContDiffOn.hasWeakIteratedFDerivOn` read through `HasWeakIteratedFDerivOn.lineDeriv` at the
+direction `1`. Also the iterated form `hasWeakIteratedDerivOn_of_contDiffOn` with
+`iteratedDerivWithin k f (Ioo a b)`. ★'''
+deps = ["HasWeakDerivOn", "ContDiffOn.hasWeakIteratedFDerivOn"]
+
+[[node]]
+id = "hasWeakDerivOn_integral"
+kind = "theorem"
+desc = '''The antiderivative of an integrable function is weakly differentiable: for `w` with
+`IntegrableOn w (Ioo a b)` (so `IntervalIntegrable w volume a x` for `x ∈ [a, b]`) and any `c : ℝ`,
+`HasWeakDerivOn (fun x ↦ c + ∫ t in a..x, w t) w a b`. Proof: for a test function `φ` on `(a, b)`,
+`∫_a^b φ'(x) (∫_a^x w) dx = ∫_a^b w(t) (∫_t^b φ') dt = ∫_a^b w(t) (φ(b) - φ(t)) dt = -∫ w φ` by
+Fubini on the triangle `{a < t < x < b}` (`MeasureTheory.integral_prod` / `integral_integral_swap`
+with the indicator of the triangle; both factors are integrable on the bounded interval), and
+`φ(b) = 0` since `φ` has compact support in `(a, b)`. The constant `c` contributes
+`c ∫ φ' = 0`. ★★'''
+deps = ["HasWeakDerivOn"]
+
+[[node]]
+id = "ae_eq_const_of_hasWeakDerivOn_zero"
+kind = "theorem"
+desc = '''**du Bois-Reymond's lemma on an interval.** If `HasWeakDerivOn f 0 a b` (that is,
+`∫ φ' f = 0` for every test function `φ` on `(a, b)`, `f` locally integrable) and `a < b`, then
+`∃ c : ℝ, f =ᵐ[volume.restrict (Ioo a b)] fun _ ↦ c`. Proof: fix a test function `ψ₀` with
+`∫ ψ₀ = 1` (exists: a bump in `(a, b)`, normalized). For any test function `φ`, the function
+`χ(x) = ∫_a^x (φ - (∫ φ) ψ₀)` is smooth with compact support in `(a, b)` — its integrand has zero
+total integral, so `χ` vanishes near both endpoints — hence is a test function with `χ' = φ -
+(∫ φ) ψ₀`. Then `0 = ∫ χ' f = ∫ φ f - (∫ φ)(∫ ψ₀ f)`, so with `c = ∫ ψ₀ f`, `∫ φ (f - c) = 0` for
+all `φ`, and Mathlib's `IsOpen.ae_eq_zero_of_integral_contDiff_smul_eq_zero` gives `f - c = 0`
+a.e. on `(a, b)`. The construction of `χ` as a `TestFunction` (smoothness of an antiderivative,
+compact support from the vanishing mean) is the only work. ★★'''
+deps = ["HasWeakDerivOn"]
+
+[[node]]
+id = "HasWeakDerivOn.exists_ae_eq_integral"
+kind = "theorem"
+desc = '''**The absolutely continuous representative.** If `a < b`, `HasWeakDerivOn f w a b` and
+`IntegrableOn w (Ioo a b)`, then `∃ c : ℝ, f =ᵐ[volume.restrict (Ioo a b)] fun x ↦ c + ∫ t in a..x, w t`.
+Proof: `f - ∫_a^x w` has weak derivative `w - w = 0` by `hasWeakDerivOn_integral` and linearity
+(`HasWeakIteratedLineDerivOn.sub`), so it is a.e. constant by `ae_eq_const_of_hasWeakDerivOn_zero`.
+Corollary `HasWeakDerivOn.exists_continuousOn_ae_eq`: there is `g` continuous on `Icc a b`,
+absolutely continuous on `[a, b]` (`IntervalIntegrable.absolutelyContinuousOnInterval_intervalIntegral`),
+a.e. equal to `f` on `(a, b)`, with `g y - g x = ∫ t in x..y, w t` for `x, y ∈ Icc a b`. ★★'''
+deps = ["hasWeakDerivOn_integral", "ae_eq_const_of_hasWeakDerivOn_zero"]
+
+[[node]]
+id = "integral_mul_add_mul_of_eq_integral"
+kind = "theorem"
+desc = '''The Leibniz identity for antiderivatives of integrable functions: if `w₁ w₂` are integrable on
+`(a, b)` and `g_i x = c_i + ∫ t in a..x, w_i t`, then for `x ∈ Icc a b`,
+`g₁ x * g₂ x - c₁ * c₂ = ∫ t in a..x, (w₁ t * g₂ t + g₁ t * w₂ t)`. Proof: expand
+`(∫_a^x w₁)(∫_a^x w₂)` as a double integral over the square and split it along the diagonal into
+two triangles (Fubini, `integral_prod`), each of which is one of the two terms on the right; the
+cross terms with the constants are the fundamental theorem of calculus for continuous functions.
+This is what replaces the Lebesgue differentiation theorem: Mathlib's
+`intervalIntegral.integral_mul_deriv_eq_deriv_mul` needs everywhere-differentiability, and the
+FTC for absolutely continuous functions (`f b - f a = ∫ f'`) is not in Mathlib
+(`Mathlib/MeasureTheory/Function/AbsolutelyContinuous.lean` has a.e. differentiability only). ★★'''
+deps = []
+
+[[node]]
+id = "SobolevInterval"
+kind = "definition"
+desc = '''`SobolevInterval m a b : Type`, the Sobolev space `H^m(a, b) = W^{m,2}(a, b)`, as the `abbrev`
+`SobolevMultiIndex ℝ (Module.Basis.singleton Unit ℝ) m 2 (Opens.Ioo a b) volume`. Being an
+`abbrev`, it inherits `InnerProductSpace ℝ` and `CompleteSpace` from
+`Numlib/Analysis/Sobolev/MultiIndex.lean` (`example : InnerProductSpace ℝ (SobolevInterval m a b)
+:= inferInstance` elaborates). Also `MemSobolevInterval f m a b : Prop`, the predicate
+`MemSobolevMultiIndex (Module.Basis.singleton Unit ℝ) f m 2 (Opens.Ioo a b) volume`, and
+`SobolevInterval.fn u : ℝ → ℝ`, the function of an element (`SobolevMultiIndex.fn`). ★'''
+deps = ["TopologicalSpace.Opens.Ioo", "SobolevMultiIndex", "MemSobolevMultiIndex"]
+
+[[node]]
+id = "SobolevInterval.deriv"
+kind = "definition"
+desc = '''`SobolevInterval.deriv u j : Lp ℝ 2 (volume.restrict (Ioo a b))` for `u : SobolevInterval m a b`
+and `j : Fin (m + 1)`, the `j`-th weak derivative `u^{(j)}`: the component of `u` at the
+multi-index `SobolevInterval.derivIndex m j : MultiIndexLE Unit m`, `⟨fun _ ↦ j, _⟩`.
+`SobolevInterval.deriv_zero : ⇑(deriv u 0) =ᵐ fn u` (from `SobolevMultiIndex.weakDeriv_zero`),
+`SobolevInterval.hasWeakIteratedDerivOn_deriv : HasWeakIteratedDerivOn j (fn u) (deriv u j) a b`,
+and `SobolevInterval.hasWeakDerivOn_deriv_succ : HasWeakDerivOn (deriv u j) (deriv u (j + 1)) a b`
+for `j < m` — the latter because applying the order-`j` identity to the test function `φ'` and
+comparing with the order-`(j+1)` identity gives `∫ φ' u^{(j)} = -∫ φ u^{(j+1)}`. ★'''
+deps = ["SobolevInterval", "HasWeakIteratedDerivOn", "SobolevMultiIndex.weakDeriv"]
+
+[[node]]
+id = "SobolevInterval.norm_sq_eq"
+kind = "theorem"
+desc = '''`‖u‖ ^ 2 = ∑ j : Fin (m + 1), ‖SobolevInterval.deriv u j‖ ^ 2` and
+`SobolevInterval.inner_eq : ⟪u, v⟫ = ∑ j, ⟪deriv u j, deriv v j⟫_{L²}` — the norm (10.35) and inner
+product of `H^m(a, b)` as the book writes them, from `SobolevMultiIndex.inner_eq` and the bijection
+`Fin (m + 1) ≃ MultiIndexLE Unit m`, `j ↦ derivIndex m j`. Consequences `SobolevInterval.norm_deriv_le
+: ‖deriv u j‖ ≤ ‖u‖`. ★'''
+deps = ["SobolevInterval.deriv", "SobolevMultiIndex.inner_eq"]
+
+[[node]]
+id = "SobolevInterval.seminorm"
+kind = "definition"
+desc = '''The Sobolev seminorm `|u|_{H^m(a, b)} = ‖u^{(m)}‖_{L²(a, b)}` as a bundled
+`SobolevInterval.seminorm m a b : Seminorm ℝ (SobolevInterval m a b)` (the composition of the
+`L²` norm with the continuous linear projection onto the top component), with
+`SobolevInterval.seminorm_apply : seminorm m a b u = ‖deriv u (Fin.last m)‖` and
+`SobolevInterval.seminorm_le_norm : seminorm m a b u ≤ ‖u‖`. Bundled as a `Seminorm` so that the
+seminorm forms of Céa's and Strang's lemmas (`seminorm_sub_le_of_galerkin_orthogonal` in
+`Numlib/Variational/Galerkin.lean`) apply to it directly; this is the `|·|_{H¹(0,1)}` of
+Quarteroni–Sacco–Saleri (12.49). ★'''
+deps = ["SobolevInterval.deriv"]
+
+[[node]]
+id = "memSobolevInterval_succ_iff"
+kind = "theorem"
+desc = '''`MemSobolevInterval f (m + 1) a b ↔ MemLp f 2 (volume.restrict (Ioo a b)) ∧ ∃ w, HasWeakDerivOn f w a b
+∧ MemSobolevInterval w m a b`, the recursive description of `H^{m+1}(a, b)`: a function is in
+`H^{m+1}` exactly when it is in `L²` with a weak derivative in `H^m`. Forwards, the weak
+derivatives of `w = f'` of orders `≤ m` are those of `f` of orders `≤ m + 1`
+(`SobolevInterval.hasWeakDerivOn_deriv_succ`'s argument); backwards,
+`HasWeakDerivOn.hasWeakIteratedDerivOn_succ`. With `memSobolevInterval_one_iff : MemSobolevInterval f 1
+a b ↔ MemLp f 2 _ ∧ ∃ w, HasWeakDerivOn f w a b ∧ MemLp w 2 _` — the book's (12.42) without the
+boundary condition. ★★'''
+deps = ["SobolevInterval", "HasWeakDerivOn.hasWeakIteratedDerivOn_succ", "SobolevInterval.deriv"]
+
+[[node]]
+id = "SobolevInterval.toContinuousMap"
+kind = "definition"
+desc = '''**`H^1(a, b) ↪ C[a, b]`.** For `a < b`, the continuous linear map
+`SobolevInterval.toContinuousMap hab : SobolevInterval 1 a b →L[ℝ] C(Icc a b, ℝ)` sending `u` to its
+continuous representative `g_u(x) = c_u + ∫ t in a..x, u' t`, where the constant is chosen
+*linearly* in `u`, `c_u = (b - a)⁻¹ ∫_a^b (u(t) - ∫_a^t u') dt`, which by
+`HasWeakDerivOn.exists_ae_eq_integral` is the constant making `g_u =ᵐ u` on `(a, b)`
+(`SobolevInterval.coe_toContinuousMap_ae_eq`). Boundedness is `norm_toContinuousMap_le` below.
+`SobolevInterval.toContinuousMap_eq_of_continuousOn`: any `g` continuous on `Icc a b` with
+`fn u =ᵐ g` on `(a, b)` equals `toContinuousMap hab u` on all of `Icc a b` (two continuous functions
+a.e. equal on a dense open subset of the interval agree everywhere), so the representative is
+canonical. For `m ≥ 1` compose with `SobolevInterval.inclusionCLM : SobolevInterval (m + 1) a b →L[ℝ]
+SobolevInterval m a b` (forget the top derivative). ★★★ (the linear choice of the constant, the a.e.
+equality and the two continuity proofs).'''
+deps = ["SobolevInterval.deriv", "HasWeakDerivOn.exists_ae_eq_integral"]
+
+[[node]]
+id = "SobolevInterval.norm_toContinuousMap_le"
+kind = "theorem"
+desc = '''The embedding constant: for `a < b` and `u : SobolevInterval 1 a b`,
+`‖toContinuousMap hab u‖ ≤ ((b - a) ^ (-1/2 : ℝ) + (b - a) ^ (1/2 : ℝ)) * ‖u‖` in the supremum norm of
+`C(Icc a b, ℝ)`; also the pointwise `|g_u x| ≤ … * ‖u‖`. Proof: `|g(x)| ≤ |g(y)| + |∫_y^x u'| ≤ |g(y)|
++ √(b - a) ‖u'‖_{L²}` by Cauchy–Schwarz; average over `y ∈ (a, b)`: `|g(x)| ≤ (b - a)⁻¹ ∫ |g| +
+√(b - a) ‖u'‖ ≤ (b - a)^{-1/2} ‖u‖_{L²} + (b - a)^{1/2} ‖u'‖_{L²}`, and both `L²` norms are `≤ ‖u‖`
+(`norm_deriv_le`). ★★'''
+deps = ["SobolevInterval.toContinuousMap", "SobolevInterval.norm_sq_eq"]
+
+[[node]]
+id = "SobolevInterval.toContinuousMap_sub_eq_integral"
+kind = "theorem"
+desc = '''The fundamental theorem of calculus in `H^1(a, b)`: for `x y ∈ Icc a b`,
+`toContinuousMap hab u y - toContinuousMap hab u x = ∫ t in x..y, deriv u 1 t`, and
+`SobolevInterval.absolutelyContinuousOnInterval_toContinuousMap : AbsolutelyContinuousOnInterval
+(fun x ↦ toContinuousMap hab u ⟨x, _⟩) a b` (extended by the endpoint values outside `[a, b]`),
+from Mathlib's `IntervalIntegrable.absolutelyContinuousOnInterval_intervalIntegral`. ★'''
+deps = ["SobolevInterval.toContinuousMap"]
+
+[[node]]
+id = "SobolevInterval.integral_deriv_mul_add_mul_deriv"
+kind = "theorem"
+desc = '''Integration by parts in `H^1(a, b)`: for `a < b` and `u v : SobolevInterval 1 a b`, with
+`g_u = toContinuousMap hab u`, `g_v` likewise,
+`∫ t in a..b, (deriv u 1 t * g_v t + g_u t * deriv v 1 t) = g_u b * g_v b - g_u a * g_v a`.
+From `integral_mul_add_mul_of_eq_integral` applied to the two representatives. Corollaries:
+`SobolevInterval.integral_deriv_mul_contDiffOn` (`∫_a^b u' ψ = [g_u ψ]_a^b - ∫_a^b u ψ'` for `ψ`
+continuously differentiable on `Icc a b`, e.g. a coefficient `β ∈ C¹[0, 1]`), and the product rule
+`SobolevInterval.memSobolevInterval_mul : MemSobolevInterval (g_u * g_v) 1 a b` with
+`HasWeakDerivOn (g_u * g_v) (u' g_v + g_u v') a b` (from the Leibniz identity and
+`hasWeakDerivOn_integral`; `u' g_v` is integrable as a product of an `L²` and a bounded
+function). ★★'''
+deps = ["integral_mul_add_mul_of_eq_integral", "SobolevInterval.toContinuousMap_sub_eq_integral", "hasWeakDerivOn_integral"]
+
+[[node]]
+id = "SobolevIntervalZero"
+kind = "definition"
+desc = '''`SobolevIntervalZero a b : Submodule ℝ (SobolevInterval 1 a b)`, the space `H^1_0(a, b)`: the
+`abbrev` `SobolevMultiIndexZero ℝ (Module.Basis.singleton Unit ℝ) 1 2 (Opens.Ioo a b) volume`, the
+closure of the image of `C_0^∞(a, b)` in `H^1(a, b)` (the multi-index twin of
+`Numlib/Analysis/Sobolev/Space.lean`'s `SobolevZero`, added to
+`Numlib/Analysis/Sobolev/MultiIndex.lean` by this plan). A closed submodule of a Hilbert space, so
+a Hilbert space (`CompleteSpace`). ★'''
+deps = ["SobolevInterval", "SobolevMultiIndexZero"]
+
+[[node]]
+id = "SobolevIntervalZero.toContinuousMap_eq_zero"
+kind = "theorem"
+desc = '''An element of `H^1_0(a, b)` vanishes at both endpoints: for `a < b` and `u ∈ SobolevIntervalZero
+a b`, `toContinuousMap hab u ⟨a, _⟩ = 0 ∧ toContinuousMap hab u ⟨b, _⟩ = 0`. Proof: point evaluation
+at `a` composed with `toContinuousMap` is a continuous linear functional on `H^1(a, b)`
+(`norm_toContinuousMap_le`), it vanishes on the test functions (a test function's representative is
+itself, and it vanishes near the endpoints), hence on their closure. ★★'''
+deps = ["SobolevIntervalZero", "SobolevInterval.norm_toContinuousMap_le", "SobolevInterval.toContinuousMap"]
+
+[[node]]
+id = "mem_sobolevIntervalZero_of_toContinuousMap_eq_zero"
+kind = "theorem"
+desc = '''The converse: for `a < b` and `u : SobolevInterval 1 a b` whose representative vanishes at `a`
+and at `b`, `u ∈ SobolevIntervalZero a b`. Together with the previous node this is
+`mem_sobolevIntervalZero_iff : u ∈ SobolevIntervalZero a b ↔ g_u a = 0 ∧ g_u b = 0`, the book's
+(12.42) `H^1_0(0,1) = {v ∈ L² : v' ∈ L², v(0) = v(1) = 0}`. Proof in two steps. (1) *Cut-off*: with
+`χ_ε` smooth, `0 ≤ χ_ε ≤ 1`, `χ_ε = 0` on `[a, a + ε] ∪ [b - ε, b]`, `χ_ε = 1` on `[a + 2ε, b - 2ε]`,
+`|χ_ε'| ≤ C/ε`, one has `g χ_ε → g` in `H^1`: the derivative term `‖g χ_ε'‖_{L²}` is controlled by
+the Hardy-type bound `|g(x)| ≤ √(x - a) ‖u'‖_{L²(a, x)}` (from `g(a) = 0` and Cauchy–Schwarz), which
+gives `‖g χ_ε'‖²_{L²(a, a+2ε)} ≤ 2 C² ‖u'‖²_{L²(a, a+2ε)} → 0`, and symmetrically at `b`. (2)
+*Mollify*: `g χ_ε` extended by zero lies in `W^{1,2}(ℝ)` (its derivative is the zero extension of
+`(g χ_ε)'`, by the representation), and `MemSobolev.tendsto_sobolevNorm_convolution_sub` of
+`Numlib/Analysis/Sobolev/Density.lean` gives smooth compactly supported approximants, which for small
+radii are test functions on `(a, b)`. ★★★ (the only genuinely long proof of the module; nothing
+downstream in chapter 12 needs it except the literal restatement of (12.42) and the `C¹₀ ⊆ H¹₀`
+inclusion behind Remark 12.1 — see `SobolevInterval.norm_le_of_eq_integral` for the way around).'''
+deps = ["SobolevIntervalZero", "SobolevInterval.toContinuousMap", "MemSobolev.tendsto_sobolevNorm_convolution_sub"]
+
+[[node]]
+id = "SobolevInterval.norm_le_of_eq_integral"
+kind = "theorem"
+desc = '''**Poincaré's inequality, elementary form.** For `a < b`, `w ∈ L²(a, b)` and
+`g x = ∫ t in a..x, w t` (so `g a = 0`): `eLpNorm g 2 (volume.restrict (Ioo a b)) ≤ ((b - a) / √2) *
+eLpNorm w 2 _`, or in real form `‖g‖_{L²(a,b)} ≤ ((b - a)/√2) ‖w‖_{L²(a,b)}`. Proof: `|g(x)|² ≤
+(x - a) ∫_a^x w² ≤ (x - a) ‖w‖²` by Cauchy–Schwarz, and `∫_a^b (x - a) dx = (b - a)²/2`. The same
+holds for `g x = -∫ t in x..b, w t` (vanishing at `b`). This is the form that covers the book's
+Remark 12.1 for `v ∈ C¹[a, b]` with `v(a) = v(b) = 0` without any density argument. ★'''
+deps = []
+
+[[node]]
+id = "SobolevIntervalZero.norm_deriv_zero_le"
+kind = "theorem"
+desc = '''**Poincaré's inequality on `H^1_0(a, b)`** (Quarteroni–Sacco–Saleri (12.16), with the explicit
+constant `C_P = (b - a)/√2`): for `a < b` and `u ∈ SobolevIntervalZero a b`,
+`‖deriv u 0‖ ≤ ((b - a) / √2) * ‖deriv u 1‖` in `L²(a, b)`. Proof: both sides are continuous in the
+`H^1` norm, and on a test function it is `SobolevInterval.norm_le_of_eq_integral` for `g = φ`,
+`w = φ'`; pass to the closure. Consequences: `SobolevIntervalZero.norm_le_seminorm : ‖u‖ ≤
+√(1 + (b - a)²/2) * seminorm 1 a b u`, so `|·|_{H¹}` is a norm on `H^1_0(a, b)` equivalent to
+`‖·‖_{H¹}`, and `SobolevIntervalZero.seminorm_eq_zero_iff : seminorm 1 a b u = 0 ↔ u = 0`. ★★'''
+deps = ["SobolevIntervalZero", "SobolevInterval.norm_le_of_eq_integral", "SobolevInterval.seminorm"]
+
+[[node]]
+id = "memSobolevInterval_of_piecewise_contDiffOn"
+kind = "theorem"
+desc = '''Continuous piecewise-`C¹` functions lie in `H^1(a, b)`: for a partition `x : Fin (N + 2) → ℝ`,
+`StrictMono x`, `x 0 = a`, `x (Fin.last _) = b`, and `g : ℝ → ℝ` continuous on `Icc a b`, `C¹` on each
+open panel `Ioo (x j) (x (j+1))` with the panel derivatives bounded by a common `C`,
+`MemSobolevInterval g 1 a b` with `HasWeakDerivOn g w a b` for `w` the piecewise derivative (any
+values at the nodes). Proof: on each panel `g` is the integral of its derivative (FTC,
+`intervalIntegral.integral_eq_sub_of_hasDerivAt_of_le` with continuity up to the panel's ends);
+continuity of `g` at the nodes glues these into `g x = g a + ∫_a^x w` on `[a, b]`, and
+`hasWeakDerivOn_integral` finishes. This is what puts the finite element spaces `X_h^k` inside
+`H^1(0, 1)` (Quarteroni–Sacco–Saleri §12.4.5, "since functions in `H^1_0` are continuous it makes
+sense to consider `X_h^k`"), and the elements with `g a = g b = 0` inside `H^1_0` through
+`mem_sobolevIntervalZero_of_toContinuousMap_eq_zero`. ★★'''
+deps = ["hasWeakDerivOn_integral", "SobolevInterval"]
+
+[[node]]
+id = "ContDiffMapIcc.toSobolevInterval"
+kind = "definition"
+desc = '''`C^k[a, b] → H^k(a, b)`: for `hab : a ≤ b` with `a < b`, the linear map
+`ContDiffMapIcc.toSobolevInterval : ContDiffMapIcc hab k →ₗ[ℝ] SobolevInterval k a b` sending `u` to
+the element whose `j`-th component is `u.deriv j` (extended by constants off `[a, b]`; a classical
+derivative is a weak derivative, `hasWeakIteratedDerivOn_of_contDiffOn`), with
+`ContDiffMapIcc.norm_toSobolevInterval_le : ‖toSobolevInterval u‖ ≤ √(b - a) * ‖u‖`
+(each `‖u^{(j)}‖_{L²} ≤ √(b - a) ‖u^{(j)}‖_∞`), and `ContDiffMapIcc.toSobolevInterval_injective`. This
+is the map whose completion Atkinson–Han call `H^m(a, b)` in Examples 1.2.28(b) and 2.4.2; the
+statement that its range is dense is *not* planned here (it is the one-dimensional Meyers–Serrin up
+to the boundary and nothing in chapter 12 needs it). ★★'''
+deps = ["SobolevInterval", "hasWeakDerivOn_of_contDiffOn", "ContDiffMapIcc"]
+
+[[node]]
+id = "SobolevInterval.derivCLM"
+kind = "definition"
+desc = '''Weak differentiation `d/dx : H^{m+1}(a, b) →L[ℝ] H^m(a, b)`,
+`SobolevInterval.derivCLM m a b : SobolevInterval (m + 1) a b →L[ℝ] SobolevInterval m a b`, `u ↦ u'`
+with components `deriv u (j + 1)`; membership by `SobolevInterval.hasWeakDerivOn_deriv_succ`'s
+argument, norm at most `1` (`SobolevInterval.norm_derivCLM_le`). Atkinson–Han Example 2.4.2 is
+`m = 0`; Quarteroni–Sacco–Saleri §13 uses it on `H^1`. ★'''
+deps = ["SobolevInterval.deriv", "memSobolevInterval_succ_iff"]
+
+[[node]]
+id = "SobolevIntervalZero.norm_le_seminorm"
+kind = "theorem"
+desc = '''The `H¹` norm and the `H¹` seminorm are equivalent on `H^1_0(a, b)`: for `a < b` and
+`u ∈ SobolevIntervalZero a b`, `‖u‖ ≤ √(1 + (b - a) ^ 2 / 2) * seminorm 1 a b u`, hence
+`seminorm 1 a b u = 0 ↔ u = 0` (`SobolevIntervalZero.seminorm_eq_zero_iff`). Immediate from
+`SobolevIntervalZero.norm_deriv_zero_le` and `SobolevInterval.norm_sq_eq`; it is what makes the
+Dirichlet form of `Numlib/Variational/EllipticInterval` coercive for the `H¹` norm. ★'''
+deps = ["SobolevIntervalZero.norm_deriv_zero_le", "SobolevInterval.norm_sq_eq", "SobolevInterval.seminorm"]

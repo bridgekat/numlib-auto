@@ -8,3 +8,30 @@ id = "nonsing_inv_mulVec_mulVec"
 
 [[node]]
 id = "nonsing_inv_mulVec_eq"
+
+[[node]]
+id = "add_mul_mul_mul_inv_eq_sub_of_isUnit_one_add"
+kind = "theorem"
+desc = '''The Sherman–Morrison–Woodbury formula in the form of QSS (3.57), with a possibly *singular* middle
+factor: for `C : Matrix n n K` with `IsUnit C`, `U : Matrix n m K`, `B : Matrix m m K`, `V : Matrix
+m n K`, if `IsUnit (1 + B * V * C⁻¹ * U)` then
+`(C + U * B * V)⁻¹ = C⁻¹ - C⁻¹ * U * (1 + B * V * C⁻¹ * U)⁻¹ * B * V * C⁻¹`.
+Mathlib's `Matrix.add_mul_mul_inv_eq_sub` needs `IsUnit B` (it inverts `B`), and its binomial variant
+`Matrix.add_mul_mul_inv_eq_sub'` needs `IsUnit (B + B V C⁻¹ U B)`, neither of which the book
+assumes; the direct verification `(C + U B V) * RHS = 1` (multiply out, then `U * (1 + B V C⁻¹ U)
+= U + U B V C⁻¹ U` cancels the inverse) is a `noncomm_ring`-style computation followed by
+`Matrix.inv_eq_right_inv`. Upstreaming candidate beside Mathlib's Woodbury section. ★'''
+deps = []
+
+[[node]]
+id = "inv_add_vecMulVec"
+kind = "theorem"
+desc = '''The Sherman–Morrison formula, Quarteroni–Sacco–Saleri (3.57) as used in §7.2.7: for
+`A : Matrix n n R` over a field (or a commutative ring, with `IsUnit A`) and `u v : n → R` with
+`1 + v ⬝ᵥ (A⁻¹ *ᵥ u) ≠ 0` (a unit),
+`(A + vecMulVec u v)⁻¹ = A⁻¹ - (1 / (1 + v ⬝ᵥ (A⁻¹ *ᵥ u))) • vecMulVec (A⁻¹ *ᵥ u) (v ᵥ* A⁻¹)`,
+together with `IsUnit (A + vecMulVec u v)`. Proof: Mathlib's Woodbury identity
+`Matrix.add_mul_mul_inv_eq_sub` with a `1 × 1` middle factor (`U = replicateCol u`,
+`V = replicateRow v`, `C = 1`), or directly by multiplying out. Chapter 3's agent may propose the
+same lemma for (3.57); one copy suffices. ★★'''
+deps = []

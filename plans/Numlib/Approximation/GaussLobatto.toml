@@ -1,0 +1,247 @@
+namespace = "Quadrature"
+desc = '''
+Gauss–Lobatto quadrature: the rule with `n + 1` nodes including both endpoints of the interval
+carrying the weight, exact on the polynomials of degree at most `2n - 1`, and the closed forms of
+the Chebyshev and Legendre Gauss and Gauss–Lobatto rules.
+
+The general construction is not the textbook's "choose `a, b` so that `p_{n+1} + a p_n + b p_{n-1}`
+vanishes at `±1`" but its equivalent: the Lobatto nodal polynomial is `ω̄ = (X² - 1) q_{n-1}` with
+`q_{n-1}` the `(n-1)`-st monic orthogonal polynomial of the *modified* weight `(1 - x²) μ`, which is
+again a weight carried by `[-1, 1]`. Then `q_{n-1}` has `n - 1` simple roots in `(-1, 1)`
+(`OrthogonalPolynomial.root_family_mem_Ioo`), `ω̄` is `μ`-orthogonal to `P_{n-2}` because
+`∫ ω̄ p ∂μ = ∫ q_{n-1} p ∂((1 - x²)μ)`, and Jacobi's theorem `Quadrature.isExactOnMeasure_add_iff`
+at `m = n - 1` gives exactness `2n - 1` for the interpolatory rule. Positivity of the weights uses
+the test polynomials `(1 - x²) (q/(x - x̄_i))²` (degree `2n - 2`) at interior nodes and
+`(1 ∓ x) q²` (degree `2n - 1`) at the endpoints. The textbook form of `ω̄` is recovered by
+expanding it in the orthogonal family.
+
+Remark 10.2 of Quarteroni–Sacco–Saleri — the interior nodes are the extrema of the `n`-th Jacobi
+polynomial — is the identity `(J_n^{(α,β)})' = n J_{n-1}^{(α+1,β+1)}` in monic form, proved by one
+integration by parts, and it specializes to Legendre (`L_n'`) and Chebyshev (`T_n' = n U_{n-1}`,
+Mathlib's `T_derivative_eq_U`, with `integral_eval_U_mul_eval_U_sqrt` of
+`Numlib/Analysis/SpecialFunctions/ChebyshevIntegral` the orthogonality of `U` for `√(1 - x²)`).
+
+Closed forms: the Chebyshev–Gauss rule is Mathlib's `Polynomial.Chebyshev.integral_eq_sumZeroes`;
+the Chebyshev–Gauss–Lobatto rule at the extrema `cos (jπ/n)` (Mathlib's
+`Polynomial.Chebyshev.node`) with weights `π/(d_j n)` is proved here by the discrete
+orthogonality of cosines; the Legendre weights `2/((1 - x_j²) L_{n+1}'(x_j)²)` and
+`2/(n(n+1) L_n(x_j)²)` come from the Christoffel–Darboux identity
+(`Krylov/OrthogonalPolynomials.christoffel_darboux`, stated there for an abstract orthonormal
+family) and the Legendre differential equation. The discrete Chebyshev and Legendre transforms
+(Quarteroni–Sacco–Saleri (10.31), (10.40)) are the instances of
+`Quadrature.interpolate_eq_sum_discreteInner_smul`.
+
+Consumers: Quarteroni–Sacco–Saleri §10.2–10.4, §10.10.3 (pseudo-spectral differentiation at the
+Chebyshev–Gauss–Lobatto nodes) and §12.4–13 (spectral collocation); Kress §9.3 states the Lobatto
+rule as an exercise.
+'''
+
+[[node]]
+id = "_root_.OrthogonalPolynomial.isWeight_withDensity_one_sub_sq"
+kind = "theorem"
+desc = '''For `hw : IsWeight μ` with `μ (Icc (-1) 1)ᶜ = 0`, the modified measure
+`μ.withDensity (fun x => ENNReal.ofReal (1 - x^2))` is again a weight carried by `[-1, 1]`: its
+moments are moments of `μ`, and the density is positive on `(-1, 1)`, where `μ` puts positive mass
+outside every finite set (the endpoints `±1` are a finite set). ★'''
+deps = ["OrthogonalPolynomial.IsWeight"]
+
+[[node]]
+id = "lobattoNodal"
+kind = "definition"
+desc = '''The Lobatto nodal polynomial, `lobattoNodal μ n = (X^2 - 1) * family (μ.withDensity (1 - x²))
+(n - 1)` for `1 ≤ n`: monic of degree `n + 1`, vanishing at `±1`. ★'''
+deps = ["OrthogonalPolynomial.family"]
+
+[[node]]
+id = "integral_lobattoNodal_mul_of_degree_le"
+kind = "theorem"
+desc = '''For `hw : IsWeight μ` carried by `[-1, 1]`, `1 ≤ n` and `p` with `p.degree ≤ (n - 2 : ℕ)` (the
+statement is vacuous at `n = 1`): `∫ t, (lobattoNodal μ n).eval t * p.eval t ∂μ = 0`. Unfold: the
+integrand is `q_{n-1} p · (1 - t²)` against `μ`, i.e. `q_{n-1} p` against the modified weight
+(`integral_withDensity_eq_integral_smul`), and `OrthogonalPolynomial.integral_family_mul_of_degree_lt`
+applies. ★'''
+deps = ["Quadrature.lobattoNodal", "OrthogonalPolynomial.isWeight_withDensity_one_sub_sq", "OrthogonalPolynomial.integral_family_mul_of_degree_lt"]
+
+[[node]]
+id = "lobattoNodal_eq_add_smul"
+kind = "theorem"
+desc = '''The textbook form (Quarteroni–Sacco–Saleri (10.17)): for `hw : IsWeight μ` carried by `[-1, 1]`
+and `1 ≤ n` there are `a b : ℝ` with `lobattoNodal μ n = family μ (n+1) + C a * family μ n + C b *
+family μ (n-1)`, and `a, b` are the unique reals making the right side vanish at `±1`. Expand the
+monic degree-`(n+1)` polynomial `ω̄ - family μ (n+1)` (degree `≤ n`) in the family basis; its
+coefficients on `p_k` for `k ≤ n - 2` are `∫ ω̄ p_k / normSq` by orthogonality of the family and
+vanish by `integral_lobattoNodal_mul_of_degree_le`. Uniqueness: the `2 × 2` system for `(a, b)`
+has determinant `p_n(1) p_{n-1}(-1) - p_n(-1) p_{n-1}(1) ≠ 0` since the roots of `p_n` and
+`p_{n-1}` are in `(-1, 1)` and the signs at `±1` alternate — or simply because two monic
+degree-`(n+1)` solutions differ by an element of `span {p_n, p_{n-1}}` vanishing at `±1` and
+orthogonal to `P_{n-2}`, which the first part identifies with `0`. ★★'''
+deps = ["Quadrature.lobattoNodal", "Quadrature.integral_lobattoNodal_mul_of_degree_le", "OrthogonalPolynomial.family", "OrthogonalPolynomial.integral_family_mul_family"]
+
+[[node]]
+id = "exists_gaussLobatto"
+kind = "theorem"
+desc = '''**Gauss–Lobatto quadrature** (Quarteroni–Sacco–Saleri (10.18)). For `hw : IsWeight μ` with
+`μ (Icc (-1) 1)ᶜ = 0` and `1 ≤ n`:
+`∃ x w : Fin (n+1) → ℝ, Function.Injective x ∧ x 0 = -1 ∧ x (Fin.last n) = 1 ∧ (∀ i, x i ∈ Icc (-1) 1)
+∧ (∀ i, 0 < w i) ∧ IsExactOnMeasure μ w x (2n - 1)`, with `Lagrange.nodal univ x = lobattoNodal μ n`
+and `IsInterpolatoryMeasure μ w x`. Nodes: `±1` and the `n - 1` simple roots of `q_{n-1}` in
+`(-1, 1)` (`OrthogonalPolynomial.exists_injective_family_eq_prod`, `root_family_mem_Ioo` for the
+modified weight), sorted so that `x 0 = -1`, `x n = 1` (a `Fin`-indexed enumeration through
+`Finset.orderEmbOfFin`). Exactness: `isExactOnMeasure_add_iff` at `m = n - 1` with
+`integral_lobattoNodal_mul_of_degree_le`. Positivity: for an interior node `x_i`, integrate the
+nonnegative `(1 - t²)(q(t)/(t - x_i))²` of degree `2n - 2`, which vanishes at every node but `x_i`,
+so `w_i · (1 - x_i²) q'(x_i)² = ∫ … ∂μ > 0`; for the endpoints, `(1 - t) q(t)²` and `(1 + t) q(t)²`
+of degree `2n - 1`. ★★★'''
+deps = ["Quadrature.lobattoNodal", "Quadrature.integral_lobattoNodal_mul_of_degree_le", "Quadrature.isExactOnMeasure_add_iff", "OrthogonalPolynomial.isWeight_withDensity_one_sub_sq", "OrthogonalPolynomial.root_family_mem_Ioo", "OrthogonalPolynomial.exists_injective_family_eq_prod", "Quadrature.IsExactOnMeasure", "Quadrature.IsInterpolatoryMeasure"]
+
+[[node]]
+id = "derivative_family_jacobiMeasure"
+kind = "theorem"
+desc = '''**The derivative of a Jacobi polynomial is a Jacobi polynomial of the shifted weight**
+(Quarteroni–Sacco–Saleri Remark 10.2). For `-1 < α`, `-1 < β` and `1 ≤ n`:
+`derivative (family (jacobiMeasure α β) n) = C (n : ℝ) * family (jacobiMeasure (α+1) (β+1)) (n-1)`.
+Both sides are `n` times a monic polynomial of degree `n - 1`, so it suffices that the left side is
+orthogonal to `P_{n-2}` for `(1-x)^{α+1}(1+x)^{β+1} dx`: for `deg p ≤ n - 2`,
+`∫ (J_n)' p (1-x)^{α+1}(1+x)^{β+1} dx = -∫ J_n [p (1-x)^{α+1}(1+x)^{β+1}]' dx` (integration by parts on
+`(-1, 1)`, boundary terms vanish since `α + 1, β + 1 > 0`), and
+`[p (1-x)^{α+1}(1+x)^{β+1}]' = (1-x)^α (1+x)^β · r` with `r = (1-x)(1+x) p' + p ((β+1)(1-x) - (α+1)(1+x))`
+of degree `≤ n - 1`, killed by `J_n ⊥ P_{n-1}`. Hence the interior Gauss–Lobatto nodes of the Jacobi
+weight are the roots of `(J_n^{(α,β)})'`: the modified weight `(1 - x²) · jacobiMeasure α β` is
+`jacobiMeasure (α+1) (β+1)`. The integration by parts with `rpow` weights on an open interval
+(`intervalIntegral.integral_mul_deriv_eq_deriv_mul` with limits at the endpoints) is the real
+work. ★★★'''
+deps = ["OrthogonalPolynomial.jacobiMeasure", "OrthogonalPolynomial.isWeight_jacobiMeasure", "OrthogonalPolynomial.family", "OrthogonalPolynomial.integral_family_mul_of_degree_lt", "OrthogonalPolynomial.monic_family"]
+
+[[node]]
+id = "derivative_legendre_eq_family"
+kind = "theorem"
+desc = '''The Legendre case of Remark 10.2 (Quarteroni–Sacco–Saleri (10.33)): for `1 ≤ n`,
+`derivative (legendre n) = C (n * (legendre n).leadingCoeff) * family (legendreMeasure.withDensity
+(1 - x²)) (n - 1)`, so the interior Legendre–Gauss–Lobatto nodes are the zeros of `L_n'`. Either
+`derivative_family_jacobiMeasure` at `α = β = 0` with `jacobiMeasure_zero_zero` and
+`family_eq_legendre`, or directly by the same integration by parts with polynomial weights
+(`intervalIntegral.integral_mul_deriv_eq_deriv_mul`, no `rpow`). ★★'''
+deps = ["Quadrature.derivative_family_jacobiMeasure", "OrthogonalPolynomial.jacobiMeasure_zero_zero", "OrthogonalPolynomial.family_eq_legendre", "Quadrature.lobattoNodal"]
+
+[[node]]
+id = "_root_.Polynomial.Chebyshev.lobattoWeight"
+kind = "definition"
+desc = '''The Chebyshev–Gauss–Lobatto weights (Quarteroni–Sacco–Saleri (10.21)): `lobattoWeight n j = if
+j = 0 ∨ j = n then π / (2n) else π / n`, i.e. `π/(d_j n)` with `d_0 = d_n = 2`, `d_j = 1`. ★'''
+deps = []
+
+[[node]]
+id = "_root_.Polynomial.Chebyshev.sumExtrema"
+kind = "definition"
+desc = '''The Chebyshev–Gauss–Lobatto sum `sumExtrema n P = ∑ j ∈ range (n+1), lobattoWeight n j * P.eval
+(node n j)` over the extrema `node n j = cos (jπ/n)` of `T_n` (Mathlib's
+`Polynomial.Chebyshev.node`), the companion of Mathlib's `sumZeroes`. ★'''
+deps = ["Polynomial.Chebyshev.lobattoWeight"]
+
+[[node]]
+id = "_root_.Polynomial.Chebyshev.integral_eq_sumExtrema"
+kind = "theorem"
+desc = '''**Chebyshev–Gauss–Lobatto quadrature**: for `n ≠ 0` and `P.degree < 2n`,
+`∫ x, P.eval x ∂measureT = sumExtrema n P`. Proof as Mathlib's `integral_eq_sumZeroes`: reduce to
+`P = T_k`, `k < 2n`, by linearity (`Sequence.span_degreeLT (chebyshevTsequence ℝ)`); there
+`sumExtrema n (T_k) = (π/n) [cos(0)/2 + ∑_{0<j<n} cos(kjπ/n) + cos(kπ)/2]`, the trapezoidal sum of
+`cos (kθ)` over `θ_j = jπ/n`, which equals `(π/2n) ∑_{j < 2n} cos (kjπ/n)` by the symmetry
+`cos(k(2n - j)π/n) = cos(kjπ/n)`, and `Quadrature.sum_exp_angleNode` at `N = 2n`, `p = k` gives
+`π δ_{k0}` for `0 ≤ k < 2n` (the real part of a sum of `2n`-th roots of unity); the left side is
+`π δ_{k0}` by `integral_eval_T_real_measureT_zero` / `_of_ne_zero`. ★★'''
+deps = ["Polynomial.Chebyshev.sumExtrema", "Quadrature.sum_exp_angleNode"]
+
+[[node]]
+id = "_root_.Polynomial.Chebyshev.discreteInner_T_T"
+kind = "theorem"
+desc = '''The discrete norms of the Chebyshev polynomials for the Gauss–Lobatto rule (the hint of
+Quarteroni–Sacco–Saleri Exercise 10.2): with `(f, g)_n = discreteInner (lobattoWeight n) (node n)`,
+`(T_k, T_l)_n = 0` for `k ≠ l ≤ n`, `(T_k, T_k)_n = ∫ T_k² ∂measureT` (`= π` for `k = 0`, `π/2` for
+`0 < k < n`) and `(T_n, T_n)_n = π = 2 ∫ T_n² ∂measureT`. The cases `k + l < 2n` are
+`integral_eq_sumExtrema` on `T_k T_l`; the case `k = l = n` is the direct sum
+`∑_j (π/(d_j n)) cos²(jπ) = π`. ★★'''
+deps = ["Polynomial.Chebyshev.integral_eq_sumExtrema", "Quadrature.discreteInner", "Polynomial.Chebyshev.lobattoWeight"]
+
+[[node]]
+id = "_root_.Polynomial.Chebyshev.interpolate_eq_sum_cdt"
+kind = "theorem"
+desc = '''**The Chebyshev discrete transform** (Quarteroni–Sacco–Saleri (10.29)–(10.31), Exercise 10.2):
+for `n ≠ 0` and `f : ℝ → ℝ`, the interpolant at the Gauss–Lobatto nodes is
+`Lagrange.interpolate univ (fun j : Fin (n+1) => node n j) (f ∘ node n) = ∑ k ∈ range (n+1),
+Polynomial.C (2/(n d_k) * ∑ j ∈ range (n+1), d_j⁻¹ * cos (k j π / n) * f (node n j)) * T ℝ k`, with
+`d_j = 2` for `j ∈ {0, n}` and `1` otherwise. `interpolate_eq_sum_discreteInner_smul` for the rule
+`(lobattoWeight n, node n)` in the basis `T_k` (rather than the monic `family`; the same argument,
+since `T_0, …, T_n` are `(·,·)_n`-orthogonal by `discreteInner_T_T`), with
+`T_k (node n j) = cos (kjπ/n)` (`T_real_cos`) and the values of `(T_k, T_k)_n`. ★★'''
+deps = ["Polynomial.Chebyshev.discreteInner_T_T", "Quadrature.interpolate_eq_sum_discreteInner_smul", "Polynomial.Chebyshev.integral_eq_sumExtrema"]
+
+[[node]]
+id = "legendreGaussWeight_eq"
+kind = "theorem"
+desc = '''The Legendre–Gauss weights (Quarteroni–Sacco–Saleri (10.32)): for the `n + 1`-node Gauss rule of
+`legendreMeasure` with nodes the zeros `x_j` of `L_{n+1}`, `w_j = 2 / ((1 - x_j²) L_{n+1}'(x_j)²)`.
+Proof: `w_j = ∫ ℓ_j = ∫ L_{n+1}(t)/((t - x_j) L_{n+1}'(x_j)) dt`; by the confluent Christoffel–Darboux
+identity (`christoffel_darboux_div` of `Numlib/Krylov/OrthogonalPolynomials`, transported to the
+orthonormal Legendre family) `∑_{k ≤ n} (2k+1)/2 · L_k(t) L_k(x_j) = ((n+1)/2) (L_{n+1}(t) L_n(x_j)
+- L_n(t) L_{n+1}(x_j))/(t - x_j) = ((n+1)/2) L_n(x_j) L_{n+1}(t)/(t - x_j)`, whose integral is
+`L_0(x_j) · 1 · 2/2 = 1`, so `w_j = 2/((n+1) L_n(x_j) L_{n+1}'(x_j))`; the Legendre identity
+`(1 - x²) L_{n+1}'(x) = (n+1)(L_n(x) - x L_{n+1}(x))` (from `legendre_ode` / the recurrence) at the
+root `x_j` turns this into the stated form. ★★★'''
+deps = ["Quadrature.exists_gauss", "OrthogonalPolynomial.family_eq_legendre", "Polynomial.legendre_recurrence", "Quadrature.IsInterpolatoryMeasure"]
+
+[[node]]
+id = "legendreLobattoWeight_eq"
+kind = "theorem"
+desc = '''The Legendre–Gauss–Lobatto weights (Quarteroni–Sacco–Saleri (10.34)): for `1 ≤ n` and the rule of
+`exists_gaussLobatto` for `legendreMeasure`, `w_j = 2 / (n (n+1) L_n(x̄_j)²)` for every `j`
+(endpoints included, where `L_n(±1)² = 1` gives `2/(n(n+1))`). Proof sketch: the interior nodes
+are the roots of `L_n'` (`derivative_legendre_eq_family`), and the Lobatto nodal polynomial is
+`ω̄(t) = (1 - t²) L_n'(t)` up to a constant, with `ω̄'(t) = -n(n+1) L_n(t)` by the Legendre
+differential equation (`Polynomial.legendre_ode`); so the Lagrange basis is
+`ℓ_j(t) = (1 - t²) L_n'(t) / ((t - x̄_j) · (-n(n+1) L_n(x̄_j)))` and
+`w_j = -(n(n+1) L_n(x̄_j))⁻¹ ∫_{-1}^1 (1 - t²) L_n'(t)/(t - x̄_j) dt`. The remaining integral is
+`-2 L_n(x̄_j) / ... `: expand `(1 - t²) L_n'(t)/(t - x̄_j)`, a polynomial of degree `n`, in the
+Legendre basis; only its `L_0` coefficient survives the integral, and it is computed from the
+identities `(1 - t²) L_n'(t) = n (L_{n-1}(t) - t L_n(t))` and the Christoffel–Darboux formula
+(`Krylov/OrthogonalPolynomials.christoffel_darboux_div`) at the root `x̄_j` of `L_n'`, which gives
+the value `-2 L_n(x̄_j)`, hence `w_j = 2/(n(n+1) L_n(x̄_j)²)`. The endpoint case is the same
+computation at `x̄ = ±1` with `L_n(±1) = (±1)^n`. Reference: Davis–Rabinowitz, *Methods of
+Numerical Integration*, §2.7; [CHQZ88] §2.3. ★★★'''
+deps = ["Quadrature.exists_gaussLobatto", "Quadrature.derivative_legendre_eq_family", "OrthogonalPolynomial.family_eq_legendre", "Polynomial.legendre_recurrence"]
+
+[[node]]
+id = "discreteInner_legendre_legendre"
+kind = "theorem"
+desc = '''The discrete norms of the Legendre polynomials for the Legendre–Gauss–Lobatto rule (the hint of
+Quarteroni–Sacco–Saleri Exercise 10.6): `(L_k, L_l)_n = 0` for `k ≠ l ≤ n`, `(L_k, L_k)_n =
+2/(2k+1)` for `k < n` (exactness `2n - 1 ≥ 2k`, `discreteInner_eq_integral_of_degree_le`) and
+`(L_n, L_n)_n = 2/n` (from `legendreLobattoWeight_eq`: `∑_j w_j L_n(x̄_j)² = (n+1) · 2/(n(n+1))`). ★'''
+deps = ["Quadrature.legendreLobattoWeight_eq", "Quadrature.discreteInner_eq_integral_of_degree_le", "Polynomial.integral_legendre_mul_legendre"]
+
+[[node]]
+id = "interpolate_eq_sum_dlt"
+kind = "theorem"
+desc = '''**The discrete Legendre transform** (Quarteroni–Sacco–Saleri (10.38)–(10.40), Exercise 10.6): for
+the Legendre–Gauss–Lobatto rule `(w, x̄)` with `1 ≤ n`, the interpolant at its nodes is
+`∑_{k ≤ n} f̃_k L_k` with `f̃_k = ((2k+1)/(n(n+1))) ∑_j L_k(x̄_j) f(x̄_j)/L_n(x̄_j)²` for `k < n` and
+`f̃_n = (1/(n+1)) ∑_j f(x̄_j)/L_n(x̄_j)`. `interpolate_eq_sum_discreteInner_smul` in the basis `L_k`
+with `discreteInner_legendre_legendre` and `legendreLobattoWeight_eq` substituted. ★★'''
+deps = ["Quadrature.interpolate_eq_sum_discreteInner_smul", "Quadrature.discreteInner_legendre_legendre", "Quadrature.legendreLobattoWeight_eq"]
+
+[[node]]
+id = "laguerreGaussWeight_eq"
+kind = "theorem"
+desc = '''The Gauss–Laguerre weights (Quarteroni–Sacco–Saleri (10.41)): for the `n`-node Gauss rule of
+`laguerreMeasure` with nodes the zeros `x_k` of `ℒ_n`, `w_k = (n!)² x_k / ℒ_{n+1}(x_k)²`. The same
+Christoffel–Darboux computation as `legendreGaussWeight_eq` with the Laguerre norms `(n!)²` and the
+identity `x ℒ_n'(x) = n ℒ_n(x) - n² ℒ_{n-1}(x)` at a root together with the recurrence
+`ℒ_{n+1}(x_k) = -n² ℒ_{n-1}(x_k)`. ★★★'''
+deps = ["Quadrature.exists_gauss", "OrthogonalPolynomial.family_laguerreMeasure_eq", "Polynomial.laguerre_succ_succ", "Polynomial.integral_laguerre_mul_laguerre"]
+
+[[node]]
+id = "hermiteGaussWeight_eq"
+kind = "theorem"
+desc = '''The Gauss–Hermite weights (Quarteroni–Sacco–Saleri (10.42)): for the `n`-node Gauss rule of
+`hermiteMeasure` with nodes the zeros `x_k` of `H_n`, `w_k = 2^{n+1} n! √π / H_{n+1}(x_k)²`. As
+`laguerreGaussWeight_eq`, with `H_n' = 2n H_{n-1}` and `H_{n+1}(x_k) = -2n H_{n-1}(x_k)` at a root. ★★★'''
+deps = ["Quadrature.exists_gauss", "OrthogonalPolynomial.family_hermiteMeasure_eq", "Polynomial.physHermite_succ_succ", "Polynomial.integral_physHermite_mul_physHermite"]

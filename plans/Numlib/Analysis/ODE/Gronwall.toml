@@ -1,0 +1,88 @@
+namespace = "Gronwall"
+desc = '''
+Gronwall's lemma in *integral* form (Quarteroni–Sacco–Saleri Lemma 11.1, Quarteroni–Valli Lemma
+1.4.1): if `φ t ≤ g t + ∫_{t₀}^t p φ` on `[t₀, t₀ + T]` with `p ≥ 0`, `g` continuous and
+nondecreasing and `φ` continuous, then `φ t ≤ g t exp (∫_{t₀}^t p)`.
+
+Mathlib's `Mathlib/Analysis/ODE/Gronwall.lean` has the *differential* form only
+(`le_gronwallBound_of_liminf_deriv_right_le`, `norm_le_gronwallBound_of_norm_deriv_right_le`, and
+the trajectory comparisons `dist_le_of_approx_trajectories_ODE`), with a constant `δ` in place of
+`g` and a constant `K` in place of `p`. The integral form with a continuous weight is proved by
+differentiating the majorant `Ψ t = ∫_{t₀}^t p φ`: `Ψ' = p φ ≤ p (g + Ψ)`, so
+`(Ψ exp(-∫p))' ≤ p g exp(-∫p)`, integrate and use that `g` is nondecreasing to pull it out of the
+integral; the fundamental theorem of calculus for a continuous integrand is
+`intervalIntegral.integral_hasDerivAt_right`. The book's version with `p` merely integrable is the
+same argument through the absolutely continuous `Ψ`; it is planned as a separate node because the
+derivative of an integral of an `L¹` function is only almost everywhere, and the module can ship
+with the continuous version first (which is all that §11.1 and Property 11.5 use, with `p ≡ L`).
+
+Consumers: `Analysis/ODE/Cauchy` (Liapunov stability under a Lipschitz field), the stability
+of the Cauchy problem in Kress chapter 10, and the energy estimates of the semi-discrete
+parabolic problems of chapter 13 (`Variational/Evolution`), where the integral form with a
+time-dependent weight is what the continuous energy inequality delivers.
+
+The two `_of_hasDerivWithinAt_le` nodes are the *differential* forms with forcing that
+Quarteroni–Sacco–Saleri chapter 13 uses for its energy estimates, which Mathlib's
+`norm_le_gronwallBound_of_norm_deriv_right_le` (constant coefficient, no exponential-decay form) does
+not give directly.
+'''
+
+[[node]]
+id = "le_mul_exp_integral_of_continuousOn"
+kind = "theorem"
+desc = '''Integral Gronwall lemma, continuous weight. Let `0 ≤ T`, `p g φ : ℝ → ℝ` be continuous
+on `Icc t₀ (t₀ + T)` with `0 ≤ p t` there and `g` monotone on `Icc t₀ (t₀ + T)`. If
+`φ t ≤ g t + ∫ τ in t₀..t, p τ * φ τ` for all `t ∈ Icc t₀ (t₀ + T)`, then
+`φ t ≤ g t * Real.exp (∫ τ in t₀..t, p τ)` for all such `t`.
+Proof: with `Ψ t = ∫ τ in t₀..t, p τ * φ τ` (differentiable on the interval, `Ψ' = p φ` by
+`intervalIntegral.integral_hasDerivAt_right`), `Ψ' ≤ p (g + Ψ)`, hence
+`d/dt (Ψ t * exp (-∫ p)) ≤ p t * g t * exp (-∫_{t₀}^t p)`; integrate from `t₀` to `t`, bound
+`g τ ≤ g t` for `τ ≤ t`, and evaluate `∫_{t₀}^t p exp(-∫_{t₀}^τ p) = 1 - exp(-∫_{t₀}^t p)`; then
+`φ t ≤ g t + Ψ t ≤ g t exp (∫_{t₀}^t p)`. The monotonicity of `g` is used exactly once. ★★'''
+deps = []
+
+[[node]]
+id = "le_mul_exp_integral"
+kind = "theorem"
+desc = '''Integral Gronwall lemma as the book states it (Lemma 11.1): the same conclusion as
+`le_mul_exp_integral_of_continuousOn` with `p` only `IntervalIntegrable p volume t₀ (t₀ + T)` and
+nonnegative on the interval, `g` and `φ` continuous on `Icc t₀ (t₀ + T)`, `g` monotone there.
+Proof idea: the majorant `Ψ` is absolutely continuous with a.e. derivative `p φ`; run the same
+computation with `intervalIntegral.integral_eq_sub_of_hasDerivAt_of_le` replaced by its
+a.e.-derivative form (`integral_eq_sub_of_hasDeriv_right_of_le` after establishing that
+`t ↦ Ψ t exp(-∫ p)` has a right derivative a.e. and is continuous) — or approximate `p` from
+below by continuous functions and pass to the limit in the continuous version. Not needed by
+chapter 11 beyond the case `p ≡ L`; planned so that the module states the lemma as printed. ★★★'''
+deps = ["Gronwall.le_mul_exp_integral_of_continuousOn"]
+
+[[node]]
+id = "le_mul_exp_of_le_add_integral"
+kind = "theorem"
+desc = '''The constant-coefficient instance used in §11.1: if `φ` is continuous on
+`Icc t₀ (t₀ + T)`, `0 ≤ L`, `g` is continuous and monotone there, and
+`φ t ≤ g t + L * ∫ τ in t₀..t, φ τ` on the interval, then `φ t ≤ g t * Real.exp (L * (t - t₀))`.
+This is `le_mul_exp_integral_of_continuousOn` with `p ≡ L`, with the integral of the constant
+evaluated. ★'''
+deps = ["Gronwall.le_mul_exp_integral_of_continuousOn"]
+
+[[node]]
+id = "le_exp_neg_mul_add_integral_of_hasDerivWithinAt_le"
+kind = "theorem"
+desc = '''Linear differential inequality with constant coefficient and forcing (the form behind the
+heat equation's energy decay): if `E : ℝ → ℝ` has `HasDerivWithinAt E (E' t) (Icc 0 T) t` for `t ∈
+Icc 0 T`, `g` is continuous on `Icc 0 T`, and `E' t ≤ -γ * E t + g t` there, then for `t ∈ Icc 0 T`,
+`E t ≤ exp (-γ * t) * E 0 + ∫ s in (0:ℝ)..t, exp (γ * (s - t)) * g s`. Proof: `(e^{γt} E)' ≤ e^{γt} g`
+and the monotonicity of the integral (`image_le_of_deriv_right_le_deriv_boundary` or
+`intervalIntegral.integral_mono_on` after the fundamental theorem of calculus for the derivative
+within `Icc`). Quarteroni–Sacco–Saleri (13.7). ★★'''
+deps = []
+
+[[node]]
+id = "le_mul_exp_integral_of_hasDerivWithinAt_le"
+kind = "theorem"
+desc = '''Differential Gronwall with variable coefficient and forcing: if `Φ : ℝ → ℝ` has
+`HasDerivWithinAt Φ (Φ' t) (Icc 0 T) t`, `p g : ℝ → ℝ` are continuous and nonnegative on `Icc 0 T`,
+and `Φ' t ≤ p t * Φ t + g t` there, then for `t ∈ Icc 0 T`, `Φ t ≤ (Φ 0 + ∫ s in (0:ℝ)..t, g s) * exp (∫
+s in (0:ℝ)..t, p s)`. Proof: `(e^{-P} Φ)' ≤ e^{-P} g ≤ g` with `P(t) = ∫₀ᵗ p ≥ 0`, integrate, multiply
+by `e^{P(t)}`. Quarteroni–Sacco–Saleri (13.67), and the differential form of Lemma 11.1. ★★'''
+deps = []

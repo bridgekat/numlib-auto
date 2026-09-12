@@ -15,3 +15,6 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, (3.2.6)"
 [[node]]
 id = "exists_sub_interpolate_eq"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Section 3.2.2"
+
+[[node]]
+id = "nodal"

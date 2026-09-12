@@ -1,0 +1,130 @@
+namespace = "Matrix"
+desc = '''
+Forward and backward substitution as total functions on a finite linear order (Quarteroni–Sacco–Saleri
+(3.22)–(3.23)), by well-founded recursion on the number of indices below (above) `i`, with junk
+division at a zero diagonal entry; correctness for triangular matrices with nonzero diagonal, which
+is the same as nonsingularity; the solve `x = backSubst U (forwardSubst L b)` from an LU
+factorization; the inverse of a triangular matrix through its columns (3.26) and its leading blocks
+(3.27)–(3.28), the latter being Mathlib's `Matrix.BlockTriangular.inv_toBlock`; and the two
+exact-arithmetic lemmas of Higham §8.2 behind the componentwise error bounds of QSS §3.2.2 — Lemma
+8.6, `(|U⁻¹| |U|)_{ij} ≤ 2^{j-i}` when the diagonal dominates its row entrywise, and Lemma 8.8,
+`(|U⁻¹| |U|)_{ij} ≤ i + j - 1` and `cond(U) ≤ 2n - 1` for a row diagonally dominant triangular
+matrix, which is also the `2n - 1` of QSS §3.1.2.
+
+Over a `Field K`; the two Higham lemmas over a linearly ordered field with `Matrix.abs` of
+`LinearAlgebra/Matrix/Order`. The floating-point counterpart is `FloatingPoint/Substitution`.
+Prototype: `notes/qss/ch03/proto/ProtoSubstitution.lean`.
+'''
+
+[[node]]
+id = "forwardSubst"
+kind = "definition"
+desc = '''QSS (3.22): `forwardSubst L b i = (b i - ∑ j ∈ (univ.filter (· < i)).attach, L i j * forwardSubst L b
+j) / L i i`, terminating on `#{j | j < i}` (prototype's `decreasing_by` proves it). ★'''
+deps = []
+
+[[node]]
+id = "forwardSubst_apply"
+kind = "theorem"
+desc = '''The unfolding lemma `forwardSubst L b i = (b i - ∑ j ∈ univ.filter (· < i), L i j * forwardSubst L b
+j) / L i i` without the `attach`, the form (3.22) is read in. ★'''
+deps = ["Matrix.forwardSubst"]
+
+[[node]]
+id = "backSubst"
+kind = "definition"
+desc = '''QSS (3.23): `backSubst U b i = (b i - ∑ j ∈ (univ.filter (i < ·)).attach, U i j * backSubst U b j) /
+U i i`, terminating on `#{j | i < j}`. Equivalently `forwardSubst` on `nᵒᵈ`
+(`backSubst_eq_forwardSubst_toDual`), which halves the proofs below. ★'''
+deps = ["Matrix.forwardSubst"]
+
+[[node]]
+id = "mulVec_forwardSubst"
+kind = "theorem"
+desc = '''Correctness: `L.IsLowerTriangular → (∀ i, L i i ≠ 0) → L *ᵥ forwardSubst L b = b`. Row `i` of the
+product is `∑_{j ≤ i} L i j x j = L i i x i + ∑_{j<i} L i j x j = b i` by the unfolding. ★'''
+deps = ["Matrix.forwardSubst", "Matrix.forwardSubst_apply"]
+
+[[node]]
+id = "forwardSubst_eq_of_mulVec_eq"
+kind = "theorem"
+desc = '''`L.IsLowerTriangular → (∀ i, L i i ≠ 0) → L *ᵥ x = b → forwardSubst L b = x` — the solution is
+unique and it is the one substitution computes (strong induction along the order). ★'''
+deps = ["Matrix.forwardSubst", "Matrix.mulVec_forwardSubst"]
+
+[[node]]
+id = "mulVec_backSubst"
+kind = "theorem"
+desc = '''`U.IsUpperTriangular → (∀ i, U i i ≠ 0) → U *ᵥ backSubst U b = b`, and `backSubst_eq_of_mulVec_eq`. ★'''
+deps = ["Matrix.backSubst", "Matrix.mulVec_forwardSubst"]
+
+[[node]]
+id = "isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular"
+kind = "theorem"
+desc = '''`U.IsUpperTriangular → (IsUnit U ↔ ∀ i, U i i ≠ 0)`, from `Matrix.det_of_isUpperTriangular` and
+`Matrix.isUnit_iff_isUnit_det`; the lower version too. This is the sentence opening QSS §3.2. ★'''
+deps = []
+
+[[node]]
+id = "luSolve"
+kind = "definition"
+desc = '''`luSolve L U b = backSubst U (forwardSubst L b)`: solving `L y = b`, `U x = y` (QSS §3.3.1). ★'''
+deps = ["Matrix.forwardSubst", "Matrix.backSubst"]
+
+[[node]]
+id = "mulVec_luSolve"
+kind = "theorem"
+desc = '''`IsLU A L U → (∀ i, U i i ≠ 0) → A *ᵥ luSolve L U b = b`, and the pivoted form `IsLU (σ.permMatrix K
+* A) L U → A *ᵥ luSolve L U (σ.permMatrix K *ᵥ b) = b` (QSS §3.5: solve `L y = P b`, `U x = y`).
+★'''
+deps = ["Matrix.luSolve", "Matrix.mulVec_forwardSubst", "Matrix.mulVec_backSubst", "Matrix.IsLU"]
+
+[[node]]
+id = "inv_col_eq_backSubst"
+kind = "theorem"
+desc = '''QSS (3.26): for `U` upper triangular with nonzero diagonal, `(fun r => U⁻¹ r i) = backSubst U
+(Pi.single i 1)` — the columns of the inverse are the substitution solutions of `U v = e_i`. ★'''
+deps = ["Matrix.backSubst", "Matrix.mulVec_backSubst", "Matrix.isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular"]
+
+[[node]]
+id = "inv_toBlock_le_of_isUpperTriangular"
+kind = "theorem"
+desc = '''QSS (3.27): `(U.toBlock (· ≤ k) (· ≤ k))⁻¹ = U⁻¹.toBlock (· ≤ k) (· ≤ k)` for `U` upper triangular
+with nonzero diagonal — the leading block of the inverse is the inverse of the leading block, so
+the columns of `U⁻¹` are found from the leading-block systems `U^{(k)} v'_k = e_1`. This is Mathlib's
+`Matrix.BlockTriangular.inv_toBlock` with `b = fun i => decide (k < i)`… more precisely
+`toBlock_inverse_eq_zero` and `inv_toBlock`; the node is the translation to `· ≤ k`. ★'''
+deps = []
+
+[[node]]
+id = "inv_apply_of_isUpperTriangular"
+kind = "theorem"
+desc = '''QSS (3.28), the inversion recurrence: for `U` upper triangular with nonzero diagonal, `U⁻¹ k k = (U
+k k)⁻¹`, `U⁻¹ i k = 0` for `k < i`, and `U⁻¹ i k = -(U i i)⁻¹ * ∑ j ∈ univ.filter (fun j => i < j ∧ j
+≤ k), U i j * U⁻¹ j k` for `i < k`. From `U * U⁻¹ = 1` read at `(i, k)` and the triangularity of
+`U⁻¹` (`Matrix.blockTriangular_inv_of_blockTriangular`). ★★'''
+deps = ["Matrix.isUnit_iff_forall_diag_ne_zero_of_isUpperTriangular"]
+
+[[node]]
+id = "abs_inv_mul_abs_apply_le_two_pow"
+kind = "theorem"
+desc = '''Higham Lemma 8.6 (behind QSS §3.2.2's `2^{n-i+1}` bound): over a linearly ordered field, if `U` is
+upper triangular with `∀ i j, i < j → |U i j| ≤ |U i i|` and nonzero diagonal, then `(U⁻¹.abs * U.abs)
+i j ≤ 2 ^ #{k | i ≤ k ∧ k < j}` for `i ≤ j` (`= 2^{j-i}` on `Fin N`) and `= 0` for `j < i`. Proof:
+`V = D⁻¹ U` is unit upper triangular with `|v_ij| ≤ 1`, and `|(V⁻¹)_{ij}| ≤ 2^{j-i-1}` for `i < j`
+by the recurrence `inv_apply_of_isUpperTriangular`; then `w_ij = ∑_{i ≤ k ≤ j} |(V⁻¹)_{ik}| |v_kj| ≤
+1 + ∑_{i<k≤j} 2^{k-i-1} = 2^{j-i}`. Hence `‖U⁻¹.abs * U.abs‖_∞ ≤ 2^n - 1`
+(`linfty_opNorm_abs_inv_mul_abs_le`). ★★'''
+deps = ["Matrix.inv_apply_of_isUpperTriangular"]
+
+[[node]]
+id = "abs_inv_mul_abs_apply_le_of_isDiagDominant"
+kind = "theorem"
+desc = '''Higham Lemma 8.8 (the `2n - 1` of QSS §3.1.2 and the "diagonally dominant" clause of §3.2.2): for
+`U` upper triangular and row diagonally dominant (`Matrix.IsDiagDominant U`, weak) with nonzero
+diagonal, `(U⁻¹.abs * U.abs) i j ≤ #{k | k ≤ i} + #{k | k ≤ j} - 1` (`= i + j - 1` in `1`-based
+indexing), and `‖U⁻¹.abs * U.abs‖_∞ ≤ 2 n - 1`. Proof: `V = D⁻¹ U` and `V⁻¹` both have entries of
+modulus at most `1` (row dominance of `V` gives `|(V⁻¹)_{ij}| ≤ 1` by the recurrence), so `w_ij ≤
+#{i ≤ k ≤ j}`… Higham's count. The book's triangular-M-matrix-with-positive-`b` claim in §3.1.2 is
+this lemma read on `|A⁻¹||A||x|` with `x = A⁻¹ b ≥ 0`. ★★'''
+deps = ["Matrix.inv_apply_of_isUpperTriangular", "Matrix.IsDiagDominant"]

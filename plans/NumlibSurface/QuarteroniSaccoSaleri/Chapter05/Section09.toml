@@ -1,0 +1,121 @@
+namespace = "QuarteroniSaccoSaleri.Chapter05"
+desc = '''
+§5.9, the generalized eigenvalue problem, over the new `Numlib/Eigen/Pencil`: the pencil `(A, B)`,
+its spectrum (5.58), regularity, the characteristic polynomial and the eigenvalue at infinity,
+Example 5.14, the reduction to a standard problem when `B` is nonsingular (§5.9.1), the
+generalized Schur decomposition (Property 5.10) and the simultaneous diagonalization of a
+symmetric-definite pencil (Theorem 5.7). The QZ iteration and the QR–Cholesky algorithm are
+described without a theorem and are not nodes; the rounding-error claim after the QR–Cholesky
+algorithm is not formalized.
+'''
+
+[[node]]
+id = "pencilSpectrum"
+kind = "definition"
+desc = '''§5.9: for `A B : Matrix n n ℂ`, `σ(A, B) = {μ | det (A - μ B) = 0}` is `Matrix.pencilSpectrum
+A B`; an eigenpair (5.58) is `A x = λ B x` with `x ≠ 0`, `Matrix.HasPencilEigenvector A B λ x`,
+and `Matrix.mem_pencilSpectrum_iff_exists` identifies the two. `B = 1` recovers the standard
+problem, `Matrix.pencilSpectrum_one`. ★'''
+deps = ["Matrix.pencilSpectrum", "Matrix.HasPencilEigenvector", "Matrix.mem_pencilSpectrum_iff_exists", "Matrix.pencilSpectrum_one"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.58)'
+
+[[node]]
+id = "isRegularPencil"
+kind = "definition"
+desc = '''The pencil is *regular* when `p(z) = det (A - z B)` is not identically zero,
+`Matrix.IsRegularPencil A B := Matrix.pencilPoly A B ≠ 0`; `p` is its characteristic polynomial,
+`Matrix.pencilPoly`, with `Matrix.pencilPoly_eval`. When regular of degree `k`, the eigenvalues are
+the `k` roots of `p` together with `∞` with multiplicity `n - k`
+(`Matrix.pencilInftyMultiplicity`); `Matrix.mem_pencilSpectrum_iff_isRoot`. ★'''
+deps = ["Matrix.IsRegularPencil", "Matrix.pencilPoly", "Matrix.pencilPoly_eval", "Matrix.mem_pencilSpectrum_iff_isRoot", "Matrix.pencilInftyMultiplicity"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.9'
+
+[[node]]
+id = "example_5_14_conj"
+kind = "theorem"
+desc = '''Example 5.14, first pencil: `A = diagonal ![-1, 1]`, `B = ![![0, 1], ![1, 0]]` has `pencilPoly
+A B = X² + 1` and `pencilSpectrum A B = {I, -I}` — a symmetric pencil with non-real eigenvalues. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter05.pencilSpectrum", "QuarteroniSaccoSaleri.Chapter05.isRegularPencil"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 5.14'
+
+[[node]]
+id = "example_5_14_infty"
+kind = "theorem"
+desc = '''Example 5.14, second pencil: `A = diagonal ![-1, 0]`, `B = diagonal ![0, 1]` has `pencilPoly A
+B = X`, hence is regular of degree `1 < 2`, `pencilSpectrum A B = {0}` and
+`pencilInftyMultiplicity A B = 1`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter05.pencilSpectrum", "QuarteroniSaccoSaleri.Chapter05.isRegularPencil"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 5.14'
+
+[[node]]
+id = "example_5_14_singular"
+kind = "theorem"
+desc = '''Example 5.14, third pencil: `A = ![![1, 2], ![0, 0]]`, `B = diagonal ![1, 0]` has `pencilPoly A
+B = 0`, so the pencil is singular and `pencilSpectrum A B = Set.univ`
+(`Matrix.pencilSpectrum_eq_univ_of_not_isRegularPencil`). ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter05.pencilSpectrum", "QuarteroniSaccoSaleri.Chapter05.isRegularPencil", "Matrix.pencilSpectrum_eq_univ_of_not_isRegularPencil"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 5.14'
+
+[[node]]
+id = "pencilSpectrum_eq_spectrum_of_isUnit"
+kind = "theorem"
+desc = '''§5.9.1: the pencil has `n` finite eigenvalues (`natDegree (pencilPoly A B) = card n`) iff `B` is
+nonsingular, and then `σ(A, B) = spectrum ℂ C` for the solution `C = B⁻¹ A` of `B C = A`.
+`Matrix.natDegree_pencilPoly_eq_card_iff` and `Matrix.pencilSpectrum_eq_spectrum_of_isUnit`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter05.isRegularPencil", "Matrix.natDegree_pencilPoly_eq_card_iff", "Matrix.pencilSpectrum_eq_spectrum_of_isUnit"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.9.1'
+
+[[node]]
+id = "property_5_10"
+kind = "theorem"
+desc = '''Property 5.10 (generalized Schur decomposition): for a regular pencil `(A, B)` over `ℂ` there
+are unitary `U`, `Z` with `T = Uᴴ A Z` and `S = Uᴴ B Z` upper triangular, and
+`σ(A, B) = {t_ii / s_ii | s_ii ≠ 0}`, the indices with `s_ii = 0` (and then `t_ii ≠ 0`, by
+regularity) accounting for the eigenvalue `∞`. `Matrix.exists_unitary_pencil_isUpperTriangular`
+and `Matrix.pencilSpectrum_eq_of_isUpperTriangular`. ★★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter05.isRegularPencil", "Matrix.exists_unitary_pencil_isUpperTriangular", "Matrix.pencilSpectrum_eq_of_isUpperTriangular"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.10'
+
+[[node]]
+id = "generalizedRealSchur"
+kind = "theorem"
+desc = '''The generalized *real* Schur form stated after Property 5.10: for real `A`, `B` with `(A, B)`
+regular there are orthogonal `Ũ`, `Z̃` with `Ũᵀ A Z̃` quasi upper triangular (`BlockTriangular p`
+with blocks of size `≤ 2`) and `Ũᵀ B Z̃` upper triangular. Not formalized in this round: the real
+analogue of `property_5_10` needs the real Schur induction of
+`Numlib/LinearAlgebra/Matrix/RealSchur` run on the pencil `B⁻¹ A` (or on a shifted regular
+pencil) together with a QR factorization of `B Z̃`, and nothing downstream in the book uses it.
+The book states it without proof (citing [GL89] §7.7).'''
+deps = ["QuarteroniSaccoSaleri.Chapter05.property_5_10"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.9.1'
+
+[[node]]
+id = "theorem_5_7"
+kind = "theorem"
+desc = '''Theorem 5.7 (symmetric-definite pencils): for `A : Matrix n n ℝ` symmetric and `B` symmetric
+positive definite there are a nonsingular `X : Matrix n n ℝ` and `d : n → ℝ` with
+`Xᵀ A X = diagonal d` and `Xᵀ B X = 1`, and `pencilSpectrum A B = Set.range d` (real eigenvalues;
+the columns of `X` are eigenvectors, `A x_i = d_i B x_i`, and are linearly independent since `X`
+is invertible). `Matrix.exists_simultaneous_diagonalization`, the `RCLike` backbone statement
+(`Xᴴ B X = 1`, `Xᴴ A X = diagonal (d i : 𝕜)`) read over `ℝ`. ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter05.pencilSpectrum", "Matrix.exists_simultaneous_diagonalization"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 5.7'
+
+[[node]]
+id = "theorem_5_7_eigenvectors"
+kind = "theorem"
+desc = '''Theorem 5.7, the eigenvector clause spelled out: with `X`, `d` as above, each column `x_i = Xᵀ
+_ i` satisfies `A *ᵥ x_i = d i • (B *ᵥ x_i)` (`Matrix.HasPencilEigenvector A B (d i) x_i`), and the
+family of columns is linearly independent. From `Xᵀ A X = diagonal d`, `Xᵀ B X = 1` and the
+invertibility of `X`: `A X = X⁻ᵀ diagonal d = B X diagonal d`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter05.theorem_5_7", "Matrix.HasPencilEigenvector"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 5.7'
+
+[[node]]
+id = "qrCholesky_stability"
+kind = "theorem"
+desc = '''The stability statement after the QR–Cholesky algorithm: a computed eigenvalue `λ̂` satisfies
+`λ̂ ∈ σ(H⁻ᵀ A H⁻¹ + E)` with `‖E‖₂ ≃ u ‖A‖₂ ‖B⁻¹‖₂`. Not formalized: a floating-point statement
+the book cites from [GL89] p. 464 without proof.'''
+deps = ["QuarteroniSaccoSaleri.Chapter05.theorem_5_7"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.9.2'

@@ -2,10 +2,12 @@ namespace = "SaadSparse.Chapter01"
 
 [[node]]
 id = "IsSimilar"
+deprecated = '''Replaced by the backbone's `Matrix.IsSimilar` (Numlib/LinearAlgebra/Matrix/Similar); the Saad surface delegates to it.'''
 source = "Saad, Iterative Methods for Sparse Linear Systems, Definition 1.5"
 
 [[node]]
 id = "IsSimilar.refl"
+deprecated = '''Replaced by the backbone's `Matrix.IsSimilar.refl` (Numlib/LinearAlgebra/Matrix/Similar).'''
 
 [[node]]
 id = "IsSimilar.symm"
@@ -65,6 +67,7 @@ id = "IsSimilar.sub_smul_one"
 
 [[node]]
 id = "IsSimilar.pow"
+deprecated = '''Replaced by the backbone's `Matrix.IsSimilar.pow` (Numlib/LinearAlgebra/Matrix/Similar).'''
 
 [[node]]
 id = "finrank_ker_mulVecLin_eq_of_isSimilar"

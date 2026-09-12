@@ -1,0 +1,264 @@
+namespace = "FiniteDifference"
+desc = '''
+The centred finite difference discretization of the two-point boundary value problem
+`-u'' = f` on `(a, b)`, `u(a) = u(b) = 0`, and of its variable-coefficient form
+`-(α u')' + γ u = f`: the grid, the grid functions, the discrete operator `L_h`, the trapezoidal
+discrete inner product with its `L²`-, `H¹`- and maximum norms, the energy identities
+(summation by parts, symmetry and positivity of `L_h`, the discrete Poincaré inequality), the
+consistency (truncation) error by Taylor expansion, and the convergence theorem `‖u - u_h‖_∞ ≤
+((b - a)² / 96) h² ‖f''‖_∞` — Quarteroni–Sacco–Saleri §12.2, stated on a general interval
+`[a, b]` (the book has `[0, 1]`).
+
+Indexing: `n` is the number of *interior* nodes, the nodes are `Fin (n + 2)`, the panels
+`Fin (n + 1)`, `h = (b - a)/(n + 1)`; the book's `n` subintervals with `n - 1` interior nodes is
+this with `n - 1`. A grid function is `Fin (n + 2) → ℝ`, its supremum norm is the `‖·‖` of the
+`Pi` type, and `gridZero n` is the subspace `V_h^0` of those vanishing at both ends. On `V_h^0`
+the operator `L_h` is `h⁻² · tridiag(-1, 2, -1)` on the interior values
+(`Matrix.symmTridiagonalToeplitz` of `Numlib/LinearAlgebra/Matrix/TridiagonalToeplitz.lean`), and
+that is how every spectral or inverse-positivity fact enters.
+
+**Route to the convergence theorem.** The book characterizes `u_h` by a discrete Green's function
+`G^k = h G(x_·, x_k)` (its Exercises 6–7) and sums it to get the maximum-norm stability
+`‖u_h‖_∞ ≤ ‖f_h‖_∞ / 8`. This module instead uses the *comparison principle of an M-matrix*
+(`Matrix.IsMMatrix.norm_inv_mulVec_le` of `Numlib/LinearAlgebra/Matrix/MMatrix.lean`): `tridiag(-1,
+2, -1)` is an M-matrix (Stieltjes, from the positive definiteness already in the library), and the
+discrete parabola `w_j = (x_j - a)(b - x_j)/2` satisfies `L_h w = 1` exactly, so
+`‖L_h⁻¹ τ‖_∞ ≤ ‖w‖_∞ ‖τ‖_∞ ≤ ((b - a)²/8) ‖τ‖_∞`. It is the same constant by the same
+inequality, without the explicit inverse; the explicit inverse (which *is* the discrete Green's
+function) is proved once in `TridiagonalToeplitz.lean` for the surface restatement of Exercises
+6–7 and (12.26), and it also gives `A⁻¹ ≥ 0` directly. The energy-method stability (12.17) is
+kept as well, since it is the one that generalizes to variable coefficients and to §13.
+
+The consistency error is stated for `u` with a Lipschitz third derivative (the book's Remark
+12.2, `C^{3,1}`), with the constant `M h²/12` sharper than the book's `M h²`; the `C⁴` form with
+`h² ‖u⁗‖_∞ / 12` and the book's `h² ‖f''‖_∞ / 12` (using `u⁗ = -f''`) are corollaries.
+Prototype: `notes/qss/ch12/proto/BoundaryValue.lean` of the chapter 12 planning report (elaborates).
+'''
+
+[[node]]
+id = "uniformGrid"
+kind = "definition"
+desc = '''`uniformGrid a b n : Fin (n + 2) → ℝ`, the nodes `x_j = a + j h`, `h = (b - a)/(n + 1)`, `j = 0, …,
+n + 1`; `uniformGrid_zero`, `uniformGrid_last`, `uniformGrid_succ_sub : x_{j+1} - x_j = h`,
+`uniformGrid_strictMono` for `a < b`. Also `gridStep a b n = (b - a)/(n + 1)` for the step. ★'''
+deps = []
+
+[[node]]
+id = "gridZero"
+kind = "definition"
+desc = '''`gridZero n : Submodule ℝ (Fin (n + 2) → ℝ)`, the grid functions `V_h^0` with `v 0 = 0` and
+`v (Fin.last (n + 1)) = 0`; `interior n : (Fin (n + 2) → ℝ) →ₗ[ℝ] (Fin n → ℝ)`, `v ↦ (v_1, …, v_n)`,
+and `ofInterior n : (Fin n → ℝ) →ₗ[ℝ] (Fin (n + 2) → ℝ)`, extension by zero, with
+`interior_ofInterior`, `ofInterior_interior_of_mem : v ∈ gridZero n → ofInterior n (interior n v) = v`,
+and `interior_injective_on_gridZero`. The supremum norm on grid functions is the `‖·‖` of
+`Fin (n + 2) → ℝ`; no separate definition. ★'''
+deps = []
+
+[[node]]
+id = "discreteLaplacian"
+kind = "definition"
+desc = '''The discrete operator `L_h` of Quarteroni–Sacco–Saleri (12.9): `discreteLaplacian n h :
+(Fin (n + 2) → ℝ) →ₗ[ℝ] (Fin n → ℝ)`, `(L_h w)_j = -(w_{j+1} - 2 w_j + w_{j-1}) / h²` for the interior
+nodes `j = 1, …, n`, read as a linear map from grid functions to interior grid functions. ★'''
+deps = ["FiniteDifference.gridZero"]
+
+[[node]]
+id = "discreteLaplacian_eq_mulVec"
+kind = "theorem"
+desc = '''On `V_h^0`, `L_h` is the finite difference matrix `A_fd = h⁻² tridiag(-1, 2, -1)` of (12.8):
+for `w ∈ gridZero n`, `discreteLaplacian n h w = (h ^ 2)⁻¹ • (Matrix.symmTridiagonalToeplitz n (-1) 2
+*ᵥ interior n w)`; and for every `w`, the same plus the boundary contributions
+`-(h²)⁻¹ (w 0 • e_1 + w (n+1) • e_n)`. Consequences read off `TridiagonalToeplitz.lean`: `A_fd` is
+symmetric (`symmTridiagonalToeplitz_isSymm`), positive definite
+(`posDef_symmTridiagonalToeplitz_neg_one_two`, the book's quadratic form identity `xᵀ A_fd x = h⁻²[x_1²
++ x_n² + ∑ (x_i - x_{i-1})²]`), an M-matrix (`isMMatrix_symmTridiagonalToeplitz_neg_one_two`), and
+`discreteLaplacian_injective_on_gridZero`: `L_h w = 0 → w = 0` on `V_h^0`. ★'''
+deps = ["FiniteDifference.discreteLaplacian", "Matrix.symmTridiagonalToeplitz", "Matrix.posDef_symmTridiagonalToeplitz_neg_one_two", "Matrix.isMMatrix_symmTridiagonalToeplitz_neg_one_two"]
+
+[[node]]
+id = "discreteInner"
+kind = "definition"
+desc = '''The trapezoidal discrete inner product of §12.2.1: `discreteInner n h w v = h * ∑ k, c_k * w k * v k`
+with `c_0 = c_{n+1} = 1/2` and `c_k = 1` otherwise (the composite trapezoidal rule (9.13) applied
+to `w v`); `discreteNorm n h v = √(discreteInner n h v v)`, the norm `‖v_h‖_h`. On `gridZero n` the
+endpoint terms vanish: `discreteInner_eq_sum_interior : v ∈ gridZero n → discreteInner n h w v = h *
+∑ i, w i.succ.castSucc * interior n v i`. It is an inner product on `Fin (n + 2) → ℝ` for `h > 0`
+(`discreteInner_self_nonneg`, `discreteInner_self_eq_zero_iff`, symmetric, bilinear); recorded as
+lemmas rather than an `InnerProductSpace` instance, which would clash with the `Pi` norm. ★'''
+deps = ["FiniteDifference.gridZero"]
+
+[[node]]
+id = "discreteH1Seminorm"
+kind = "definition"
+desc = '''The discrete `H¹` seminorm (12.12): `discreteH1Seminorm n h v = √(h * ∑ j : Fin (n + 1), ((v_{j+1} -
+v_j)/h)²)`, a norm on `V_h^0` (`discreteH1Seminorm_eq_zero_iff : v ∈ gridZero n → (discreteH1Seminorm
+n h v = 0 ↔ v = 0)`, the "positive definite" clause of Lemma 12.1: all increments zero and `v_0 = 0`
+force `v = 0`). Also the discrete derivative `discreteDeriv n h v : Fin (n + 1) → ℝ`, `(v_{j+1} -
+v_j)/h`, of Remark 12.1, with `discreteH1Seminorm_eq_norm_discreteDeriv` relating it to the
+discrete `L²` norm on the `n + 1` panel midpoints. ★'''
+deps = ["FiniteDifference.gridZero"]
+
+[[node]]
+id = "sum_sub_mul_eq_sub_sum"
+kind = "theorem"
+desc = '''Summation by parts in the form of §12.2.1: for `w v : Fin (n + 2) → ℝ`,
+`∑ j : Fin (n + 1), (w j.succ - w j.castSucc) * v j.castSucc = w (last) * v (last) - w 0 * v 0 - ∑ j :
+Fin (n + 1), (v j.succ - v j.castSucc) * w j.succ`. Mathlib's `Finset.sum_range_by_parts` is Abel's
+summation with partial sums and does not give this shape directly; prove by telescoping
+`Finset.sum_range_succ_sub_sum` after expanding `w_{j+1} v_{j+1} - w_j v_j = (w_{j+1} - w_j) v_j +
+(v_{j+1} - v_j) w_{j+1}`. ★'''
+deps = []
+
+[[node]]
+id = "discreteInner_discreteLaplacian_eq"
+kind = "theorem"
+desc = '''The energy identity behind Lemma 12.1: for `h > 0` and `w v ∈ gridZero n`,
+`h * ∑ i, discreteLaplacian n h w i * interior n v i = h⁻¹ * ∑ j : Fin (n + 1), (w_{j+1} - w_j) *
+(v_{j+1} - v_j)`. Two summations by parts (`sum_sub_mul_eq_sub_sum`) with the boundary terms killed
+by `w, v ∈ V_h^0`. Consequences: `discreteInner_discreteLaplacian_comm` (Lemma 12.1, symmetry:
+`(L_h w, v)_h = (w, L_h v)_h` on `V_h^0`), `discreteInner_discreteLaplacian_self` ((12.13):
+`(L_h v, v)_h = discreteH1Seminorm n h v ^ 2`), and `discreteInner_discreteLaplacian_self_pos`
+(Lemma 12.1, positivity: `0 < (L_h v, v)_h` for `v ∈ V_h^0`, `v ≠ 0`). The left-hand side is
+`discreteInner n h (ofInterior n (L_h w)) v`, which the endpoint weights do not see. ★★'''
+deps = ["FiniteDifference.discreteLaplacian", "FiniteDifference.discreteInner", "FiniteDifference.discreteH1Seminorm", "FiniteDifference.sum_sub_mul_eq_sub_sum"]
+
+[[node]]
+id = "discreteNorm_le_discreteH1Seminorm"
+kind = "theorem"
+desc = '''**The discrete Poincaré inequality**, Lemma 12.2 on a general interval: for `h > 0` and
+`v ∈ gridZero n`, `discreteNorm n h v ≤ ((n + 1) * h / √2) * discreteH1Seminorm n h v`; with
+`(n + 1) h = b - a` this is `‖v‖_h ≤ ((b - a)/√2) ‖|v|‖_h`, the book's `1/√2` on `[0, 1]`. Proof as in
+the book: `v_j = h ∑_{k<j} d_k` with `d_k` the discrete derivative, so `v_j² ≤ h² j ∑_{k<j} d_k²`
+(Cauchy–Schwarz in the form `(∑_{k<j} d_k)² ≤ j ∑ d_k²`, Mathlib's `sq_sum_le_card_mul_sum_sq`, which
+is the book's (12.15) "Minkowski inequality", Exercise 12.4), then `h ∑_j v_j² ≤ h³ (∑_{j ≤ n} j)
+∑_k d_k² ≤ h² ((n + 1)²/2) · h ∑ d_k²`. The same bound holds with `n + 1` replaced by the smaller
+`√(n (n + 1))` — the book's `(n - 1) n / 2` — which is not worth stating. ★★'''
+deps = ["FiniteDifference.discreteInner", "FiniteDifference.discreteH1Seminorm", "FiniteDifference.gridZero"]
+
+[[node]]
+id = "discreteNorm_le_of_discreteLaplacian_eq"
+kind = "theorem"
+desc = '''**Stability by the energy method**, (12.17) on a general interval: if `h > 0`, `u ∈ gridZero n` and
+`discreteLaplacian n h u = interior n f` for a grid function `f`, then
+`discreteNorm n h u ≤ (((n + 1) h)² / 2) * discreteNorm n h f` and
+`discreteH1Seminorm n h u ≤ ((n + 1) h / √2) * discreteNorm n h f`. Proof: `‖|u|‖_h² = (L_h u, u)_h =
+(f, u)_h ≤ ‖f‖_h ‖u‖_h ≤ ‖f‖_h ((n+1)h/√2) ‖|u|‖_h` (Cauchy–Schwarz for `discreteInner`, then the
+discrete Poincaré inequality), so `‖|u|‖_h ≤ ((n+1)h/√2) ‖f‖_h`, and once more Poincaré. On `[0, 1]`:
+`‖u_h‖_h ≤ ‖f_h‖_h / 2`. Uniqueness of the finite difference solution is the case `f = 0`
+(already `discreteLaplacian_injective_on_gridZero`); existence is the invertibility of `A_fd`. ★★'''
+deps = ["FiniteDifference.discreteInner_discreteLaplacian_eq", "FiniteDifference.discreteNorm_le_discreteH1Seminorm"]
+
+[[node]]
+id = "truncationError"
+kind = "definition"
+desc = '''The local truncation error (12.18): `truncationError a b n u f : Fin n → ℝ`,
+`τ_j = (L_h (u ∘ uniformGrid a b n))_j - f (x_j)` for `u f : ℝ → ℝ`, with `h = (b - a)/(n + 1)`. With
+`discreteLaplacian_comp_sub : discreteLaplacian n h (u ∘ x - v) = L_h (u ∘ x) - L_h v` this gives
+Remark 12.3's error equation (12.22), `error_eq_of_discreteLaplacian_eq : L_h (u ∘ x - u_h) =
+truncationError a b n u f` whenever `L_h u_h = f ∘ x` on the interior. ★'''
+deps = ["FiniteDifference.discreteLaplacian", "FiniteDifference.uniformGrid"]
+
+[[node]]
+id = "abs_truncationError_le_of_lipschitzOnWith"
+kind = "theorem"
+desc = '''**Consistency under a Lipschitz third derivative** (Remark 12.2): if `u` is `C³` on `Icc a b`
+with `LipschitzOnWith M (iteratedDerivWithin 3 u (Icc a b)) (Icc a b)`, `u'' = -f` on `Icc a b`, and
+`a < b`, then every interior node satisfies `|truncationError a b n u f j| ≤ M * h ^ 2 / 12`, so
+`‖truncationError a b n u f‖ ≤ M h²/12` in the supremum norm. Proof: Taylor's formula with integral
+remainder of order 3 at `x_j` in both directions (`Quadrature.eq_taylorSum_add_integral` of
+`Numlib/Approximation/Quadrature.lean`, or Mathlib's `taylor_mean_remainder`), which gives the book's
+(12.21) `τ_j = h⁻² (R₄(x_j + h) + R₄(x_j - h))` with `R₄(x_j ± h) = ± ∫ (u^{(3)}(t) - u^{(3)}(x_j)) (x_j ± h -
+t)²/2 dt`, and `|R₄| ≤ M ∫_0^h s (h - s)²/2 ds = M h⁴/24`. The book states the weaker `M h²`. ★★'''
+deps = ["FiniteDifference.truncationError"]
+
+[[node]]
+id = "abs_truncationError_le_of_contDiffOn"
+kind = "theorem"
+desc = '''**Consistency for `C⁴` solutions**, the book's (12.19)–(12.20): if `u` is `C⁴` on `Icc a b` with
+`u'' = -f` there, `a < b`, then (i) `truncationError_eq_of_contDiffOn`: for each interior `j` there
+are `ξ ∈ Ioo (x_{j-1}) x_j`, `η ∈ Ioo x_j (x_{j+1})` with `τ_j = -(h²/24) (u⁗ ξ + u⁗ η)`
+(Lagrange remainder, `taylor_mean_remainder_lagrange` with `n = 3`; note the book's (12.19) has the
+opposite sign, see the errata); (ii) `|τ_j| ≤ (h²/12) * sSup (|u⁗| '' Icc a b)`; and (iii) with `f`
+`C²` and `u⁗ = -f''`, the book's `‖τ_h‖_{h,∞} ≤ h² ‖f''‖_∞ / 12` (12.20). (ii) is also the
+Lipschitz node with `M = ‖u⁗‖_∞` (`ContDiffOn` on a compact convex set gives the Lipschitz constant
+by the mean value theorem, `Convex.lipschitzOnWith_of_nnnorm_deriv_le`). ★★'''
+deps = ["FiniteDifference.truncationError", "FiniteDifference.abs_truncationError_le_of_lipschitzOnWith"]
+
+[[node]]
+id = "discreteLaplacian_parabola"
+kind = "theorem"
+desc = '''The comparison function: for `w_j = (x_j - a) (b - x_j) / 2` on the uniform grid,
+`discreteLaplacian n h (w) = 1` (every interior entry equals `1`) — the second difference of a
+quadratic sequence with leading coefficient `-h²/2 · h⁻²`; and `‖w‖ ≤ (b - a)² / 8` in the
+supremum norm (`(x - a)(b - x) ≤ (b - a)²/4`). This is the grid function the book obtains as
+`T_h 1` in Exercise 12.7. ★'''
+deps = ["FiniteDifference.discreteLaplacian", "FiniteDifference.uniformGrid"]
+
+[[node]]
+id = "norm_le_of_discreteLaplacian_eq"
+kind = "theorem"
+desc = '''**Stability in the maximum norm** (12.28), by the M-matrix comparison principle: for `h > 0`,
+`h = (b - a)/(n + 1)`, `u ∈ gridZero n` with `discreteLaplacian n h u = g` (any `g : Fin n → ℝ`),
+`‖u‖ ≤ ((b - a) ^ 2 / 8) * ‖g‖` in the supremum norms. Proof: `interior u = h² A⁻¹ g` with
+`A = tridiag(-1, 2, -1)`, an M-matrix; `Matrix.IsMMatrix.norm_inv_mulVec_le` with the comparison
+vector `interior (parabola)/h²` (`A *ᵥ (w/h²) = 1` by `discreteLaplacian_parabola`) gives `‖interior
+u‖ ≤ ‖w‖ ‖g‖ ≤ ((b - a)²/8) ‖g‖`, and the two endpoint values are `0`. Also
+`nonneg_of_discreteLaplacian_nonneg` (the discrete maximum principle of §12.2: `0 ≤ L_h u → 0 ≤ u` on
+`V_h^0`, from `Matrix.IsMMatrix.nonneg_of_mulVec_nonneg`). ★★'''
+deps = ["FiniteDifference.discreteLaplacian_eq_mulVec", "FiniteDifference.discreteLaplacian_parabola", "Matrix.IsMMatrix.norm_inv_mulVec_le", "Matrix.IsMMatrix.nonneg_of_mulVec_nonneg", "Matrix.isMMatrix_symmTridiagonalToeplitz_neg_one_two"]
+
+[[node]]
+id = "norm_sub_le_of_discreteLaplacian_eq"
+kind = "theorem"
+desc = '''**Convergence of the centred scheme**, Quarteroni–Sacco–Saleri Theorem 12.1 on `[a, b]`: let
+`a < b`, `u : ℝ → ℝ` be `C⁴` on `Icc a b` with `u'' = -f` on `Icc a b` and `u a = u b = 0`, `f` `C²`
+on `Icc a b`, and let `u_h ∈ gridZero n` solve `discreteLaplacian n h u_h = f ∘ uniformGrid` on the
+interior with `h = (b - a)/(n + 1)`. Then `‖u ∘ uniformGrid a b n - u_h‖ ≤ ((b - a) ^ 2 / 96) * h ^ 2
+* sSup (|f''| '' Icc a b)`; on `[0, 1]` this is (12.27), `h² ‖f''‖_∞ / 96`. Proof: the error
+`e = u ∘ x - u_h` lies in `V_h^0`, `L_h e = τ_h` (`error_eq_of_discreteLaplacian_eq`), so
+`norm_le_of_discreteLaplacian_eq` gives `‖e‖ ≤ ((b - a)²/8) ‖τ_h‖` and
+`abs_truncationError_le_of_contDiffOn` gives `‖τ_h‖ ≤ h² ‖f''‖_∞/12`. Stated with the solution `u`
+as a hypothesis rather than produced from `f` (existence and `C⁴` regularity of the solution for
+`f ∈ C²` is the Green's function representation of §12.1, a surface node). The variant with the
+`C^{3,1}` hypothesis of Remark 12.2, `‖e‖ ≤ ((b - a)²/96) M h²`, comes for free. ★'''
+deps = ["FiniteDifference.norm_le_of_discreteLaplacian_eq", "FiniteDifference.abs_truncationError_le_of_contDiffOn", "FiniteDifference.truncationError"]
+
+[[node]]
+id = "variableCoeffOperator"
+kind = "definition"
+desc = '''The variable-coefficient operator of §12.2.3, (12.32)–(12.33): for coefficient functions
+`α γ : ℝ → ℝ`, `variableCoeffOperator a b n α γ : (Fin (n + 2) → ℝ) →ₗ[ℝ] (Fin n → ℝ)`,
+`(L_h w)_j = -(J_{j+1/2}(w) - J_{j-1/2}(w))/h + γ(x_j) w_j` with the midpoint fluxes
+`J_{j+1/2}(w) = α(x_{j+1/2}) (w_{j+1} - w_j)/h`, `x_{j+1/2} = (x_j + x_{j+1})/2`. With `α = 1`, `γ = 0`
+it is `discreteLaplacian` (`variableCoeffOperator_one_zero`). Also `variableCoeffMatrix a b n α γ :
+Matrix (Fin n) (Fin n) ℝ`, the matrix (12.34) `h⁻² tridiag(a, d, a) + diag(c)` with `a_j = -α_{j+1/2}`
+(the book omits the sign, see the errata), `d_j = α_{j-1/2} + α_{j+1/2}`, `c_j = γ_j`, and
+`variableCoeffOperator_eq_mulVec` on `gridZero n`. ★'''
+deps = ["FiniteDifference.discreteLaplacian", "FiniteDifference.uniformGrid"]
+
+[[node]]
+id = "variableCoeffMatrix_posDef"
+kind = "theorem"
+desc = '''For `α ≥ α₀ > 0` and `γ ≥ 0` on `Icc a b` (and `h > 0`), `(variableCoeffMatrix a b n α γ).PosDef`
+and it is symmetric; the quadratic form is `xᵀ A x = h⁻² [α_{1/2} x_1² + ∑_{j} α_{j+1/2} (x_{j+1} -
+x_j)² + α_{n+1/2} x_n²] + ∑ γ_j x_j²`, the variable-coefficient version of the identity in §12.2 for
+`A_fd`. Also `variableCoeffMatrix_isStrictDiagDominant`: strictly diagonally dominant by rows when
+`γ > 0` on the nodes (`Matrix.IsStrictDiagDominant` of `Numlib/LinearSolve/Stationary/DiagDominant.lean`),
+and `variableCoeffMatrix_isMMatrix` when `γ ≥ 0`, by Stieltjes
+(`Matrix.IsMMatrix.of_posDef_of_offDiag_nonpos`). The book claims the first two; the convergence
+analysis it says "can be carried out by extending straightforwardly" §12.2.1–12.2.2 is not
+planned. ★★'''
+deps = ["FiniteDifference.variableCoeffOperator", "Matrix.IsStrictDiagDominant", "Matrix.IsMMatrix.of_posDef_of_offDiag_nonpos"]
+
+[[node]]
+id = "neumannBoundaryRow"
+kind = "definition"
+desc = '''The mirror-imaging discretization of a Neumann condition `J(u)(b) = α u'(b) = g₁` at the last
+node, (12.35) and the display after it: the equation `-α_{n+1/2} u_n / h² + (α_{n+1/2}/h² + γ_{n+1}/2)
+u_{n+1} = g₁/h + f_{n+1}/2` appended to the interior equations, as a predicate
+`IsNeumannSolution a b n α γ f d₀ g₁ u` on grid functions (Dirichlet `u 0 = d₀` at the left end,
+the modified row at the right). The Robin rows of Exercise 12.10, `λ u + μ u' = g` at either end,
+are `IsRobinSolution` with the rows displayed in the exercise's solution (with the missing prime on
+`u'`, see the errata). Definitions only; the book proves nothing about them ("second-order
+accurate" is asserted, not shown). ★'''
+deps = ["FiniteDifference.variableCoeffOperator"]

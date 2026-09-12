@@ -1,0 +1,221 @@
+namespace = "QuarteroniSaccoSaleri.Chapter02"
+desc = '''
+Quarteroni–Sacco–Saleri §2.2: stability of numerical methods, and §2.2.1, the relations between
+stability and convergence.
+
+The vocabulary is `Numlib/Conditioning/Method`: consistency (2.13), strong consistency and its
+multistep form (2.14), the per-`n` condition numbers (2.17) as `Conditioning.relCondNumberWithin (Gn
+n)`, the asymptotic ones `K^num` as `Conditioning.asymptoticRelCondNumber`, Definition 2.2 as
+`Conditioning.IsConvergent`. The section's numbered results are (2.19) (the first-order formula for
+the approximate problems), (2.21) (the sufficient criterion for convergence), and the three
+statements of §2.2.1: convergence implies stability (2.24), consistency gives `x_n(d) → x(d)` under
+a uniform inverse bound (2.25), and the equivalence theorem, whose evolution-equation form
+([Lax65], [RM67]) is the backbone's `FiniteDifference.isStable_iff_isConvergent`.
+
+The Examples: 2.5 (Newton's method is strongly consistent; the composite midpoint rule is
+consistent for continuous integrands and strongly consistent for affine ones — the book's
+"piecewise linear" is an erratum, see the report), 2.6 (the condition number of a sum in the
+`1`-norm is `(|a| + |b|) / |a + b|`), 2.7 (`x₋ = 1/x₊`, and the frozen-iterate reading of the
+asymptotic condition number `|p| / √(p² - 1)` of Newton's method on `x² - 2px + 1`).
+'''
+
+[[node]]
+id = "example_2_5_newtonResidual"
+kind = "definition"
+desc = '''`example_2_5_newtonResidual (n : ℕ) (x : Fin 2 → ℝ) (f : ℝ → ℝ) : ℝ := x 0 - x 1 + f (x 1) /
+deriv f (x 1)`: Newton's method (2.15) written in the two-step form (2.14), `F_n(x_n, x_{n-1}, f) =
+x_n - x_{n-1} + f(x_{n-1}) / f'(x_{n-1})`, the datum being the function `f`. (`x 0` is `x_n`, `x 1`
+is `x_{n-1}`.) ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 2.5'
+
+[[node]]
+id = "example_2_5_newton"
+kind = "theorem"
+desc = '''**Example 2.5, Newton's method is strongly consistent**:
+`Conditioning.IsStronglyConsistentMultistep (q := 1) (fun x (f : ℝ → ℝ) => f x) example_2_5_newtonResidual
+univ`: for every root `α` of `f`, `F_n(α, α, f) = 0` for all `n`. `simp` with `f α = 0`. Proved in
+the prototype `notes/qss/ch02/proto/Method.lean`. The same fact for the backbone iteration is
+`Newton.step_eq_self_of_eq_zero` (`Numlib/Nonlinear/Newton.lean:43`). ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter02.example_2_5_newtonResidual", "Conditioning.IsStronglyConsistentMultistep"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 2.5'
+
+[[node]]
+id = "example_2_5_midpointRule"
+kind = "definition"
+desc = '''`example_2_5_midpointRule (a b : ℝ) (n : ℕ) (f : C(Icc a b, ℝ)) : ℝ := H * ∑ k ∈ Finset.range n,
+f ⟨a + (k + 1/2) H, _⟩` with `H = (b - a) / n` (for `n = 0` the sum is empty): the composite
+midpoint rule `x_n = H ∑_{k=1}^n f((t_k + t_{k+1}) / 2)` of Example 2.5, on the datum space
+`C(Icc a b, ℝ)` (a normed group, so the `Conditioning` predicates apply). The membership proof of
+the midpoint in `Icc a b` needs `a ≤ b` and `k < n`; define with `Set.projIcc` to avoid the
+dependent proof. ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 2.5'
+
+[[node]]
+id = "example_2_5_midpoint_consistent"
+kind = "theorem"
+desc = '''**Example 2.5, the composite midpoint rule is consistent**: for `a ≤ b`,
+`Conditioning.IsConsistent (fun (x : ℝ) (f : C(Icc a b, ℝ)) => x - ∫ t in a..b, f (projIcc a b _ t))
+(fun n x f => x - example_2_5_midpointRule a b n f) univ`, i.e. `M_n f → ∫_a^b f` for every continuous
+`f`. This is the Riemann-sum theorem `Quadrature.tendsto_compositeSum`
+(`Numlib/Approximation/CompositeQuadrature.lean:204`) with `N n = n`, `t n j = a + j H`, one node per
+panel at the midpoint with weight `1`; the residual at the exact solution `x = ∫ f` is `∫ f - M_n
+f → 0`. ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter02.example_2_5_midpointRule", "Conditioning.IsConsistent", "Quadrature.tendsto_compositeSum"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 2.5'
+
+[[node]]
+id = "example_2_5_midpoint_stronglyConsistent"
+kind = "theorem"
+desc = '''**Example 2.5, strong consistency of the midpoint rule for affine integrands**: for `f = fun t
+=> c₀ + c₁ * t` (restricted to `Icc a b`) and every `n ≥ 1`, `example_2_5_midpointRule a b n f = ∫ t in
+a..b, (c₀ + c₁ t)`; so on the admissible data `S = {affine functions}` the method is strongly
+consistent, `Conditioning.IsStronglyConsistent F Fn S` with `F`, `Fn` as in
+`example_2_5_midpoint_consistent`. The midpoint rule integrates affine functions exactly on each
+panel (`∫_{t_k}^{t_{k+1}} (c₀ + c₁ t) = H (c₀ + c₁ (t_k + t_{k+1})/2)`), and the panels sum. The book
+says "provided `f` is a piecewise linear polynomial", which is false for a kink not on every mesh
+(`|t|` on `[-1, 1]` with `n = 1`): the correct hypothesis is affine, or linear on every panel of
+every mesh, which is the same thing. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter02.example_2_5_midpointRule", "Conditioning.IsStronglyConsistent"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 2.5'
+
+[[node]]
+id = "example_2_6"
+kind = "theorem"
+desc = '''**Example 2.6 (sum and subtraction)**: for the sum `f (a, b) = a + b` on `WithLp 1 (ℝ × ℝ)`
+(the `‖·‖₁` norm of (1.13), `WithLp.prod_norm_eq_of_L1`) and `a + b ≠ 0`,
+`Conditioning.relCondNumber (fun p : WithLp 1 (ℝ × ℝ) => p.1 + p.2) univ (a, b) = ENNReal.ofReal ((|a| +
+|b|) / |a + b|)`. By (2.7) (`Conditioning.relCondNumber_eq_enorm_fderiv`): `f` is linear with
+`f' = f`, whose operator norm from `ℓ¹` to `ℝ` is `1` (`|a + b| ≤ |a| + |b|`, attained at `(1,
+0)`), and `‖(a, b)‖₁ / |a + b|` is the factor. The book writes `≃`; it is an identity. ★★'''
+deps = ["Conditioning.relCondNumber_eq_enorm_fderiv"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 2.6'
+
+[[node]]
+id = "example_2_6_same_sign"
+kind = "theorem"
+desc = '''**Example 2.6, same signs**: if `0 ≤ a * b` and `(a, b) ≠ 0` then `Conditioning.relCondNumber (fun
+p : WithLp 1 (ℝ × ℝ) => p.1 + p.2) univ (a, b) = 1`: summing two numbers of the same sign is a
+well-conditioned operation (`|a + b| = |a| + |b|`). ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter02.example_2_6"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 2.6'
+
+[[node]]
+id = "example_2_7_prod"
+kind = "theorem"
+desc = '''**Example 2.7, the stable formula for `x₋`**: for `1 ≤ p`, `(p + √(p² - 1)) * (p - √(p² - 1)) =
+1`, so `x₋ = 1 / x₊` (`Real.mul_self_sqrt`, `ring`). ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 2.7'
+
+[[node]]
+id = "example_2_7_newtonStep"
+kind = "definition"
+desc = '''`example_2_7_newtonStep (p x : ℝ) : ℝ := x - (x ^ 2 - 2 * p * x + 1) / (2 * x - 2 * p)`: one step
+of Newton's method for `x² - 2px + 1 = 0`, as a function of the datum `p` and the previous iterate
+`x` — the map `f_n(p)` of Example 2.7 with `x_{n-1}` held fixed. ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 2.7'
+
+[[node]]
+id = "equation_2_19"
+kind = "theorem"
+desc = '''**(2.19)**: for the resolvent `Gn n` of the `n`-th approximate problem, `HasFDerivAt (Gn n) G' d
+→ S ∈ 𝓝 d → Conditioning.absCondNumber (Gn n) S d = ‖G'‖ₑ`, and the relative form with the factor
+`‖d‖ₑ / ‖Gn n d‖ₑ` for `d ≠ 0`, `Gn n d ≠ 0`: the first-order formula for `K_n`, `K_{abs,n}` of
+(2.17) is (2.7) applied to `Gn n`. `Conditioning.absCondNumber_eq_enorm_fderiv`,
+`Conditioning.relCondNumber_eq_enorm_fderiv`. ★'''
+deps = ["Conditioning.absCondNumber_eq_enorm_fderiv", "Conditioning.relCondNumber_eq_enorm_fderiv"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (2.19)'
+
+[[node]]
+id = "example_2_7"
+kind = "theorem"
+desc = '''**Example 2.7, the asymptotic condition number of Newton's method on `x² - 2px + 1`**: for `1 <
+p` and `x ∈ {p + √(p² - 1), p - √(p² - 1)}` (the previous iterate frozen at a root, which is the
+limit the book's `K_n(p) → K^num(p)` computes), `Conditioning.relCondNumber (fun q => example_2_7_newtonStep
+q x) univ p = ENNReal.ofReal (|p| / √(p² - 1))`, "in perfect agreement with the value (2.8)". By
+`equation_2_19`: `∂/∂q [x - (x² - 2qx + 1)/(2x - 2q)] = (x² - 1) / (2 (x - q)²)`; at a root `x² - 1 =
+2(px - 1) = ±2 √(p² - 1) x`, `(x - p)² = p² - 1` and `N_p(x) = x`, so `|∂N/∂p| |p| / |x| = |p| /
+√(p² - 1)`. The book's intermediate `K_n(p) ≃ |p| / |x_n - p|` is a heuristic and is not a node.
+★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter02.example_2_7_newtonStep", "QuarteroniSaccoSaleri.Chapter02.equation_2_19", "QuarteroniSaccoSaleri.Chapter02.example_2_7_prod"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 2.7'
+
+[[node]]
+id = "definition_2_2"
+kind = "definition"
+desc = '''**Definition 2.2, (2.20)**: `definition_2_2 (G : D → X) (Gn : ℕ → D → X) (S : Set D) (d : D) :
+Prop := ∀ ε > 0, ∃ n₀ : ℕ, ∃ δ > 0, ∀ n > n₀, ∀ δd, ‖δd‖ < δ → d + δd ∈ S → ‖G d - Gn n (d + δd)‖ ≤ ε`:
+the numerical method (2.12) with resolvents `Gn` is convergent at the admissible datum `d` of the
+problem with resolvent `G`. ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 2.2'
+
+[[node]]
+id = "definition_2_2_iff"
+kind = "theorem"
+desc = '`definition_2_2 G Gn S d ↔ Conditioning.IsConvergent G Gn S d`, by `Iff.rfl`. ★'
+deps = ["QuarteroniSaccoSaleri.Chapter02.definition_2_2", "Conditioning.IsConvergent"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 2.2'
+
+[[node]]
+id = "equation_2_21"
+kind = "theorem"
+desc = '''**(2.21), the sufficient criterion for convergence**: if the problem satisfies (2.3) at `d`
+(`∃ η > 0, Conditioning.absCondNumberWithin G S d η ≠ ⊤`) and for every `ε > 0` there are `n₀` and
+`δ > 0` with `‖G (d + δd) - Gn n (d + δd)‖ ≤ ε / 2` for `n > n₀` and admissible `‖δd‖ < δ`, then
+`definition_2_2 G Gn S d`. The book's argument: `‖x(d) - x_n(d + δd)‖ ≤ K ‖δd‖ + ε/2`. The Lipschitz
+bound gives `ContinuousWithinAt G S d` (`Conditioning.absCondNumberWithin_ne_top_iff`), then
+`Conditioning.isConvergent_of_forall_norm_sub_le`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter02.definition_2_2_iff", "Conditioning.isConvergent_of_forall_norm_sub_le", "Conditioning.absCondNumberWithin_ne_top_iff"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (2.21)'
+
+[[node]]
+id = "equation_2_24"
+kind = "theorem"
+desc = '''**§2.2.1, stability is necessary for convergence ((2.24))**: `d ∈ S → definition_2_2 G Gn S d
+→ Conditioning.IsStable Gn S d` — for `n` large the numerical solutions depend continuously on the
+data, uniformly in `n`. `Conditioning.IsConvergent.isStable`. The book's stronger reading, a
+Lipschitz bound `‖δx_n‖ ≤ C ‖δd_n‖` for `n` large, does not follow from (2.20) (see the report), so
+the node states the equicontinuity form. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter02.definition_2_2_iff", "Conditioning.IsConvergent.isStable"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (2.24)'
+
+[[node]]
+id = "equation_2_25"
+kind = "theorem"
+desc = '''**§2.2.1, consistency gives `x_n(d) → x(d)` ((2.25))**: if `F (G d) d = 0`, `Fn n (Gn n d) d = 0`
+for all `n`, `Conditioning.IsConsistent F Fn S`, `d ∈ S`, and the approximate problems have a uniform
+inverse bound `‖x - y‖ ≤ M ‖Fn n x d - Fn n y d‖` (`∀ n, AntilipschitzWith M (fun x => Fn n x d)`,
+the rigorous form of the book's "`∂F_n/∂x` invertible" with `‖(∂F_n/∂x)⁻¹‖ ≤ M`), then
+`Tendsto (fun n => Gn n d) atTop (𝓝 (G d))`. `Conditioning.tendsto_of_isConsistent`. ★'''
+deps = ["Conditioning.tendsto_of_isConsistent"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (2.25)'
+
+[[node]]
+id = "laxRichtmyerEquivalence"
+kind = "theorem"
+desc = '''**§2.2.1, the equivalence theorem in the book's abstract setting** ("for a consistent numerical
+method, stability is equivalent to convergence"): under `d ∈ S`, `ContinuousWithinAt G S d`, `F (G
+d) d = 0`, `∀ n, Fn n (Gn n d) d = 0`, `Conditioning.IsConsistent F Fn S` and a uniform inverse bound
+`∀ n, AntilipschitzWith M (fun x => Fn n x d)`, `Conditioning.IsStable Gn S d ↔ definition_2_2 G Gn S
+d`. `Conditioning.isStable_iff_isConvergent`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter02.definition_2_2_iff", "Conditioning.isStable_iff_isConvergent"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §2.2.1'
+
+[[node]]
+id = "laxRichtmyerEquivalence_ivp"
+kind = "theorem"
+desc = '''**§2.2.1, the Lax–Richtmyer theorem for linear well-posed initial value problems** (the
+"rigorous proof … in [Lax65] and [RM67]" the book refers to): for a real Banach space `V`, an
+evolution family `S : ℝ → V →L[ℝ] V` with `S 0 = 1` and `t ↦ S t u` continuous on `Icc 0 T`, and a
+one-step scheme `C : ℝ → V →L[ℝ] V` with `‖C Δt‖ ≤ c₁` for `Δt ∈ Ioc 0 Δ₀` that is consistent on a
+dense set (`FiniteDifference.IsConsistent S C T Δ₀ D`), `FiniteDifference.IsStable C T Δ₀ ↔
+FiniteDifference.IsConvergent S C T Δ₀`. `FiniteDifference.isStable_iff_isConvergent`
+(`Numlib/FiniteDifference/LaxEquivalence.lean:446`) with `𝕜 = ℝ`. This is a different formal
+statement from `laxRichtmyerEquivalence` (stability there is a bound on the powers `C Δt ^ m`),
+recorded under the same book paragraph. ★'''
+deps = ["FiniteDifference.isStable_iff_isConvergent"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §2.2.1'

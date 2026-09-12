@@ -1,0 +1,101 @@
+namespace = "QuarteroniSaccoSaleri.Chapter13"
+desc = '''
+§13.6, linear hyperbolic systems `u_t + A u_x = 0` with a constant real matrix `A`: hyperbolicity
+as real diagonalizability, strict hyperbolicity, the characteristic variables `w = T⁻¹ u`, the
+decoupled scalar equations, the solution formula, the domain of dependence (13.31), the
+nonlinear definition of Remark 13.2, and §13.6.1, the wave equation (13.33) as the first-order
+system (13.35) with eigenvalues `±γ`. All of it is linear algebra over `Matrix (Fin p) (Fin p) ℝ`
+plus §13.5's scalar theory, in `Numlib/Analysis/PDE/Transport`. Remark 13.3 (the conic-section
+classification) is heuristic prose and is skipped; the count of boundary conditions at each end is
+prose.
+'''
+
+[[node]]
+id = "equation_13_30"
+kind = "definition"
+desc = '''A classical solution of the system (13.30): `u : ℝ → ℝ → (Fin p → ℝ)` differentiable in
+both variables with `∂_t u x t + A *ᵥ ∂_x u x t = 0` for `t ≥ 0` and `u x 0 = u₀ x`:
+`Transport.IsSystemSolution A u₀ u`. ★'''
+deps = ["Transport.IsSystemSolution"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.30)'
+
+[[node]]
+id = "isHyperbolic"
+kind = "definition"
+desc = '''The system (13.30) is hyperbolic when `A` is diagonalizable with real eigenvalues: `∃ T Λ
+: Matrix (Fin p) (Fin p) ℝ, IsUnit T ∧ Λ = diagonal lam ∧ A = T * Λ * T⁻¹` for some `lam : Fin p →
+ℝ`; strictly hyperbolic when moreover `lam` is injective. The columns `ω^k` of `T` are right
+eigenvectors, `A ω^k = lam k • ω^k` (`Transport.IsHyperbolic.mulVec_col`).
+`Transport.IsHyperbolic A`, `Transport.IsStrictlyHyperbolic A`. ★'''
+deps = ["Transport.IsHyperbolic", "Transport.IsStrictlyHyperbolic"]
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.6, hyperbolic and strictly hyperbolic systems'''
+
+[[node]]
+id = "characteristicVariables"
+kind = "theorem"
+desc = '''The characteristic variables: if `A = T Λ T⁻¹` and `u` solves (13.30), then `w x t = T⁻¹
+*ᵥ u x t` solves the decoupled system `∂_t w + Λ ∂_x w = 0`, i.e. each component solves the scalar
+equation `∂_t w_k + lam k ∂_x w_k = 0` with datum `(T⁻¹ u₀)_k`
+(`Transport.IsSystemSolution.characteristicVariables`). ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_30", "QuarteroniSaccoSaleri.Chapter13.isHyperbolic", "QuarteroniSaccoSaleri.Chapter13.equation_13_26", "Transport.IsSystemSolution.characteristicVariables"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.6, w = T⁻¹u and ∂w/∂t + Λ ∂w/∂x = 0'
+
+[[node]]
+id = "hyperbolicSystem_solution"
+kind = "theorem"
+desc = '''The solution formula: for `A = T Λ T⁻¹` and differentiable `u₀`, `u x t = ∑_k (T⁻¹ *ᵥ u₀
+(x - lam k * t)) k • ω^k` (with `ω^k` the `k`-th column of `T`) solves (13.30)
+(`Transport.isSystemSolution_sum`), and it is the only `C¹` solution
+(`Transport.IsSystemSolution.eq_sum`, from §13.5's scalar uniqueness applied to each
+characteristic variable). ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.characteristicVariables", "QuarteroniSaccoSaleri.Chapter13.equation_13_26_solution", "Transport.isSystemSolution_sum", "Transport.IsSystemSolution.eq_sum"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.6, u(x,t) = Σ w_k(x − λ_k t, 0) ω^k'
+
+[[node]]
+id = "equation_13_31"
+kind = "definition"
+desc = '''The domain of dependence (13.31) of `u(x̄, t̄)`: `D (t̄, x̄) = {x | ∃ k, x = x̄ - lam k *
+t̄} = Set.range (fun k => x̄ - lam k * t̄)`, the feet of the `p` characteristics through `(x̄, t̄)`:
+`Transport.domainOfDependence lam x̄ t̄`; the solution formula shows `u x̄ t̄` depends only on `u₀`
+restricted to it (`Transport.IsSystemSolution.eq_of_eqOn_domainOfDependence`). ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.hyperbolicSystem_solution", "Transport.domainOfDependence"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.31)'
+
+[[node]]
+id = "remark_13_2"
+kind = "definition"
+desc = '''Remark 13.2: the nonlinear system (13.32) `∂_t u + ∂_x (g u) = 0` with flux `g : (Fin p →
+ℝ) → (Fin p → ℝ)` is hyperbolic (at a state `u`) when the Jacobian `A u = (∂ g_i / ∂ u_j)` (the
+matrix of `fderiv ℝ g u`) is diagonalizable with `p` real eigenvalues: `Transport.IsHyperbolic
+(LinearMap.toMatrix' (fderiv ℝ g u))`. A definition only. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.isHyperbolic"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 13.2'
+
+[[node]]
+id = "equation_13_33"
+kind = "definition"
+desc = '''The wave equation (13.33)–(13.34): `u : ℝ → ℝ → ℝ` twice differentiable on `[α, β] × [0,
+∞)` with `∂_tt u - γ² ∂_xx u = f`, `u x 0 = u₀ x`, `∂_t u x 0 = v₀ x`, `u α t = u β t = 0`:
+`Transport.IsWaveSolution γ f u₀ v₀ α β u`. ★'''
+deps = ["Transport.IsWaveSolution"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (13.33)–(13.34)'
+
+[[node]]
+id = "equation_13_35"
+kind = "theorem"
+desc = '''(13.35): if `u` solves the wave equation with `f = 0` (the book's system is homogeneous)
+and `u` is `C²` (symmetric mixed partials), then `ω = (∂_x u, ∂_t u)` solves `∂_t ω + A ∂_x ω = 0`
+with `A = !![0, -1; -γ², 0]` and initial data `(u₀', v₀)`; with a source `f` the system has right
+side `(0, f)`. `Transport.IsWaveSolution.isSystemSolution`. ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_33", "QuarteroniSaccoSaleri.Chapter13.equation_13_30", "Transport.IsWaveSolution.isSystemSolution"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.35)'
+
+[[node]]
+id = "waveMatrix_isHyperbolic"
+kind = "theorem"
+desc = '''The matrix `A = !![0, -1; -γ², 0]` of (13.35) has the two eigenvalues `±γ` with
+eigenvectors `(1, ∓γ)`, so for `γ ≠ 0` the system is strictly hyperbolic:
+`Transport.IsStrictlyHyperbolic (waveMatrix γ)` with `T = !![1, 1; -γ, γ]`, `Λ = diagonal ![γ,
+-γ]`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_35", "QuarteroniSaccoSaleri.Chapter13.isHyperbolic"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.6.1, the eigenvalues ±γ of A'

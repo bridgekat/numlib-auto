@@ -1,0 +1,28 @@
+namespace = "QuarteroniSaccoSaleri.Chapter03"
+desc = '''
+§3.6, computing the inverse: the columns of `A⁻¹` from `P A = L U` by `2n` triangular solves, and the
+Faddeev–LeVerrier formula. Backbone: `Numlib/LinearSolve/Direct/Substitution`,
+`Numlib/LinearAlgebra/Matrix/FaddeevLeVerrier` (new).
+'''
+
+[[node]]
+id = "inv_col_eq_luSolve"
+kind = "theorem"
+desc = '''§3.6: with `P A = L U` (`Matrix.IsLU (P * A) L U`, `U` with nonzero diagonal), the `i`-th column of
+`A⁻¹` is `x_i = Matrix.luSolve L U (P *ᵥ e_i)`, i.e. the solution of `L y_i = P e_i`, `U x_i = y_i`;
+from `Matrix.mulVec_luSolve` and `Matrix.nonsing_inv_mulVec_eq`. ★'''
+deps = ["Matrix.mulVec_luSolve", "Matrix.luSolve", "QuarteroniSaccoSaleri.Chapter03.equation_3_52"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.6'
+
+[[node]]
+id = "faddeevLeverrier"
+kind = "theorem"
+desc = '''§3.6, the Faddeev–LeVerrier formula: with `B₀ = 1`, `α_k = tr(A B_{k-1}) / k`, `B_k = -A B_{k-1} + α_k
+1` for `k = 1, …, n`, one has `B_n = 0`, and if `α_n ≠ 0` then `A⁻¹ = B_{n-1} / α_n`
+(`Matrix.faddeevLeverrier_inv`, with the recurrence `Matrix.faddeevB`, `Matrix.faddeevAlpha`). The
+`α_k` are the coefficients of the characteristic polynomial, `charpoly A = ∑ (-1)^k α_k X^{n-k}` up
+to sign, and `B_n = 0` is Cayley–Hamilton; the identity `α_k = tr(A B_{k-1}) / k` is the trace
+identity `d/dt det(t - A) = tr(adj(t - A))` (Mathlib: `Matrix.derivative_det_one_add_X_smul`,
+`Matrix.trace_eq_neg_charpoly_coeff`) and Newton's identities. ★★★'''
+deps = ["Matrix.faddeevLeverrier_inv"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.6'

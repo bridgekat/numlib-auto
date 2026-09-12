@@ -1,0 +1,252 @@
+namespace = "QuarteroniSaccoSaleri.Chapter11"
+desc = '''
+§11.6, analysis of multistep methods: the consistency and order conditions (Theorem 11.3), the
+characteristic polynomials and the root conditions (Definitions 11.10–11.12), zero-stability
+(Definition 11.13) and its equivalence with the root condition (Theorem 11.4, Lemma 11.3), the
+zero-stability of the one-step, Adams, midpoint, Simpson and BDF methods, convergence (Theorem
+11.5, Corollary 11.1), the first Dahlquist barrier (Property 11.1), absolute stability of multistep
+methods, A- and ϑ-stability, the second Dahlquist barrier (Property 11.2), Remark 11.3 and relative
+stability (11.66). Scalar restatements of `Numlib/ODE/Multistep` and `Numlib/ODE/DifferenceEquation`.
+'''
+
+[[node]]
+id = "theorem_11_3"
+kind = "theorem"
+desc = '''The multistep method (11.45) is consistent iff `∑_{j=0}^p a_j = 1` and
+`-∑_{j=0}^p j a_j + ∑_{j=-1}^p b_j = 1` (11.52): `M.IsConsistent ↔ M.orderCondition 0 ∧ M.orderCondition 1`,
+`ODE.LinearMultistep.isConsistent_iff`. And (`theorem_11_3_order`) for `q ≥ 1` the method has
+order `q` (along every `C^{q+1}` solution) iff moreover
+`∑_{j=0}^p (-j)^i a_j + i ∑_{j=-1}^p (-j)^{i-1} b_j = 1` for `i = 2, …, q`:
+`ODE.LinearMultistep.hasOrder_iff`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter11.definition_11_9", "ODE.LinearMultistep.orderCondition", "ODE.LinearMultistep.isConsistent_iff", "ODE.LinearMultistep.hasOrder_iff"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 11.3'
+
+[[node]]
+id = "equation_11_54"
+kind = "theorem"
+desc = '''Applied to the test problem (11.24), the method gives the linear difference equation
+`u_{n+1} = ∑ a_j u_{n-j} + hλ ∑_{j=-1}^p b_j u_{n-j}`, of the form (11.29) with characteristic
+polynomial `Π(r) = ρ(r) - hλ σ(r)` (11.55): for `1 - hλ b_{-1} ≠ 0`,
+`M.IsOrbit (testField λ) h 0 u ↔ (M.toLinearRecurrence (hλ)).IsSolution u`, and
+`(M.toLinearRecurrence z).charPoly = (1 - z b_{-1})⁻¹ Π`. `ODE.LinearMultistep.toLinearRecurrence`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_45", "QuarteroniSaccoSaleri.Chapter11.testProblem", "ODE.LinearMultistep.toLinearRecurrence", "ODE.LinearMultistep.charPoly"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.54'
+
+[[node]]
+id = "characteristicPolynomials"
+kind = "definition"
+desc = '''The first and second characteristic polynomials `ρ(r) = r^{p+1} - ∑_{j=0}^p a_j r^{p-j}` and
+`σ(r) = b_{-1} r^{p+1} + ∑_{j=0}^p b_j r^{p-j}`, and `Π(r) = ρ(r) - hλ σ(r)` (11.55):
+`ODE.LinearMultistep.rho`, `ODE.LinearMultistep.sigma`, `ODE.LinearMultistep.charPoly`; the roots
+`r_j(hλ)` of `Π` and `r_j = r_j(0)` of `ρ`; and the consistency root: a consistent method has
+`ρ(1) = 0` (`consistencyRoot`, `ODE.LinearMultistep.rho_isRoot_one`). ★'''
+deps = ["ODE.LinearMultistep.rho", "ODE.LinearMultistep.sigma", "ODE.LinearMultistep.charPoly", "ODE.LinearMultistep.rho_isRoot_one", "QuarteroniSaccoSaleri.Chapter11.theorem_11_3"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.55'
+
+[[node]]
+id = "definition_11_10"
+kind = "definition"
+desc = '''The root condition: all roots `r_j` of `ρ` satisfy `|r_j| ≤ 1`, and those with `|r_j| = 1`
+are simple, i.e. `ρ'(r_j) ≠ 0` (11.56): `M.SatisfiesRootCondition`, with the derivative form
+`Polynomial.satisfiesRootCondition_iff_derivative`.'''
+deps = ["QuarteroniSaccoSaleri.Chapter11.characteristicPolynomials", "ODE.LinearMultistep.SatisfiesRootCondition", "Polynomial.satisfiesRootCondition_iff_derivative"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 11.10'
+
+[[node]]
+id = "definition_11_11"
+kind = "definition"
+desc = '''The strong root condition: the root condition and `r₀ = 1` is the only root on the unit
+circle, i.e. `|r_j| < 1` for `j = 1, …, p` (11.57): `M.SatisfiesStrongRootCondition`.'''
+deps = ["QuarteroniSaccoSaleri.Chapter11.definition_11_10", "ODE.LinearMultistep.SatisfiesStrongRootCondition"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 11.11'
+
+[[node]]
+id = "definition_11_12"
+kind = "definition"
+desc = '''The absolute root condition (for a given `λ`): there is `h₀ > 0` with `|r_j(hλ)| < 1` for
+all `j` and all `h ≤ h₀`: `M.SatisfiesAbsRootCondition λ`.'''
+deps = ["QuarteroniSaccoSaleri.Chapter11.characteristicPolynomials", "ODE.LinearMultistep.SatisfiesAbsRootCondition"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 11.12'
+
+[[node]]
+id = "definition_11_13"
+kind = "definition"
+desc = '''Zero-stability of the multistep method (11.45) for the Cauchy problem with field `f` on
+`[t₀, t₀ + T]`: `∃ h₀ > 0, ∃ C > 0` with `|z_n^{(h)} - u_n^{(h)}| ≤ C ε` for `h ∈ (0, h₀]`, `n ≤ N_h`,
+whenever `|δ_k| ≤ ε` for `k ≤ N_h`, `z` solves (11.59) and `u` solves (11.60) from the same
+starting values `w_k` (11.58): `M.IsZeroStable f t₀ T`.'''
+deps = ["ODE.LinearMultistep.IsZeroStable", "QuarteroniSaccoSaleri.Chapter11.equation_11_45"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 11.13'
+
+[[node]]
+id = "theorem_11_4"
+kind = "theorem"
+desc = '''Equivalence of zero-stability and the root condition: for a (consistent) multistep method,
+the root condition holds iff the method is zero-stable for every Cauchy problem with `f`
+uniformly Lipschitz in `y`: `ODE.LinearMultistep.isZeroStable_iff_satisfiesRootCondition`, with
+the two directions `theorem_11_4_mpr` (root condition ⇒ zero-stable for every Lipschitz `f`,
+`ODE.LinearMultistep.isZeroStable_of_satisfiesRootCondition`) and `theorem_11_4_mp` (zero-stable
+for `y' = 0` ⇒ root condition, `ODE.LinearMultistep.satisfiesRootCondition_of_isZeroStable`).
+Consistency is stated as in the book but not used; the necessity proof replaces the book's
+witnesses `ε r_i^n` and `ε (r_i + r̄_i)^n` by a scaled real solution (see the errata). ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter11.definition_11_13", "QuarteroniSaccoSaleri.Chapter11.definition_11_10", "ODE.LinearMultistep.isZeroStable_iff_satisfiesRootCondition", "ODE.LinearMultistep.isZeroStable_of_satisfiesRootCondition", "ODE.LinearMultistep.satisfiesRootCondition_of_isZeroStable"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 11.4'
+
+[[node]]
+id = "lemma_11_3"
+kind = "theorem"
+desc = '''There is `M > 0` such that every solution `u` of the difference equation (11.28) satisfies
+`|u_n| ≤ M (max_{j<k} |u_j| + ∑_{l=k}^n |φ_l|)` for all `n` (11.63), iff the root condition holds for
+the polynomial (11.30). Over `ℂ`: `LinearRecurrence.exists_forall_norm_le_iff_satisfiesRootCondition`;
+for a real equation the bound for real sequences follows from the complex one and the converse
+from the real unbounded solution `LinearRecurrence.exists_isSolution_real_not_bddAbove_of_not_satisfiesRootCondition`.
+The book cites [Gau97] Theorem 6.3.2 without proof. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_28", "QuarteroniSaccoSaleri.Chapter11.definition_11_10", "LinearRecurrence.exists_forall_norm_le_iff_satisfiesRootCondition", "LinearRecurrence.exists_isSolution_real_not_bddAbove_of_not_satisfiesRootCondition"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Lemma 11.3'
+
+[[node]]
+id = "equation_11_65"
+kind = "theorem"
+desc = '''The zero-stability estimate: under the root condition and the Lipschitz condition, for
+`h ≤ h₀ = 1/Q`, `|w_n^{(h)}| ≤ 2M e^{TQ} {(p+1) Δ_{[0,p]} + T Δ_{[p+1,n]}}` with
+`Q = 2(p+2) β L M`, `β = max |β_j|`, `Δ` the maxima of the perturbations.
+`ODE.LinearMultistep.norm_sub_le_of_satisfiesRootCondition`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter11.theorem_11_4", "ODE.LinearMultistep.norm_sub_le_of_satisfiesRootCondition"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.65'
+
+[[node]]
+id = "oneStep_zeroStable"
+kind = "theorem"
+desc = '''§11.6.3: consistent one-step methods (`p = 0`) have `ρ(r) = r - 1`, satisfy the root
+condition and are zero-stable; Adams methods have `ρ(r) = r^{p+1} - r^p`, roots `1` and `0`
+(multiplicity `p`), and are zero-stable (`adams_zeroStable`); the midpoint and Simpson methods
+have `ρ(r) = r² - 1`, roots `±1`, and are zero-stable (`midpoint_zeroStable`, `simpson_zeroStable`).
+`ODE.LinearMultistep.ofOneStep`, `ODE.LinearMultistep.adams_satisfiesRootCondition`,
+`ODE.LinearMultistep.midpoint`, `ODE.LinearMultistep.simpson`, with `theorem_11_4`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter11.theorem_11_4", "QuarteroniSaccoSaleri.Chapter11.definition_11_7", "QuarteroniSaccoSaleri.Chapter11.equation_11_49", "QuarteroniSaccoSaleri.Chapter11.equation_11_43", "QuarteroniSaccoSaleri.Chapter11.equation_11_44", "ODE.LinearMultistep.adams_satisfiesRootCondition", "ODE.LinearMultistep.ofOneStep"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 11.6.3'
+
+[[node]]
+id = "bdf_zeroStable"
+kind = "theorem"
+desc = '''The BDF methods of Table 11.2 are zero-stable for `p ≤ 5` ([Cry73]): `(bdf k).SatisfiesRootCondition`
+for `k : Fin 6`. Proved through `ODE.LinearMultistep.bdf_satisfiesRootCondition` for `k ≤ 2`; for
+`k = 3, 4, 5` the spurious roots of `ρ` are the roots of a cubic, quartic and quintic and must be
+located inside the unit disc by a Schur–Cohn/Jury test — real work (★★★), not yet planned in the
+backbone; the node stays open until it is. The book quotes the result without proof.'''
+deps = ["QuarteroniSaccoSaleri.Chapter11.bdf", "QuarteroniSaccoSaleri.Chapter11.definition_11_10", "ODE.LinearMultistep.bdf_satisfiesRootCondition"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 11.6.3'
+
+[[node]]
+id = "theorem_11_5"
+kind = "theorem"
+desc = '''Convergence: a consistent multistep method is convergent (for every Lipschitz Cauchy
+problem, with the error on the starting values tending to zero) iff it satisfies the root
+condition; and it converges with order `q` when it has order `q` and the starting errors are
+`O(h^q)`. `theorem_11_5_mpr`: `ODE.LinearMultistep.isConvergentFor_of_satisfiesRootCondition`
+(with the order clause `theorem_11_5_order`); `theorem_11_5_mp`:
+`ODE.LinearMultistep.satisfiesRootCondition_of_isConvergentFor` on `y' = 0`, `y(0) = 0`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter11.theorem_11_4", "QuarteroniSaccoSaleri.Chapter11.definition_11_9", "ODE.LinearMultistep.IsConvergentFor", "ODE.LinearMultistep.isConvergentFor_of_satisfiesRootCondition", "ODE.LinearMultistep.satisfiesRootCondition_of_isConvergentFor"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 11.5'
+
+[[node]]
+id = "corollary_11_1"
+kind = "theorem"
+desc = '''Equivalence theorem (Lax–Richtmyer): a consistent multistep method is convergent iff it is
+zero-stable and the error on the starting values tends to zero.
+`ODE.LinearMultistep.isConvergentFor_iff_isZeroStable`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter11.theorem_11_5", "QuarteroniSaccoSaleri.Chapter11.theorem_11_4", "ODE.LinearMultistep.isConvergentFor_iff_isZeroStable"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Corollary 11.1'
+
+[[node]]
+id = "property_11_1"
+kind = "theorem"
+desc = '''First Dahlquist barrier: there is no zero-stable `p`-step linear multistep method of order
+greater than `p + 1` if `p` is odd, `p + 2` if `p` is even; as a statement,
+`M.p + 1 = p → M.SatisfiesRootCondition → M.HasOrder q → q ≤ p + (if Even p then 2 else 1)`.
+Not formalized: the proof (Dahlquist 1956; Hairer–Nørsett–Wanner III.3) needs the
+`(ζ+1)/(ζ-1)` transform of `ρ` and `σ`, the positivity of the coefficients of `(ξ/log((1+ξ)/(1-ξ)))`-type
+series, and the counting of sign changes forced by the root condition — a substantial piece of
+complex analysis with no Mathlib support; the book states it without proof (citing [Dah63]).'''
+deps = ["QuarteroniSaccoSaleri.Chapter11.definition_11_10", "QuarteroniSaccoSaleri.Chapter11.definition_11_9"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 11.1'
+
+[[node]]
+id = "absoluteStability"
+kind = "theorem"
+desc = '''§11.6.4: the multistep method on the test problem is absolutely stable at `hλ` iff all
+roots of `Π(hλ)` lie in the open unit disc, so the absolute root condition (Definition 11.12) is
+necessary and sufficient for absolute stability for all `h ≤ h₀`; the region of absolute
+stability `𝒜` is `M.absStabilityRegion` with `z ∈ 𝒜 ↔ 1 - z b_{-1} ≠ 0 ∧ ∀ r, Π_z(r) = 0 → |r| < 1`.
+`ODE.LinearMultistep.mem_absStabilityRegion_iff`, `ODE.LinearMultistep.SatisfiesAbsRootCondition`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter11.equation_11_54", "QuarteroniSaccoSaleri.Chapter11.definition_11_12", "QuarteroniSaccoSaleri.Chapter11.definition_11_6", "ODE.LinearMultistep.absStabilityRegion", "ODE.LinearMultistep.mem_absStabilityRegion_iff"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 11.6.4'
+
+[[node]]
+id = "thetaStable"
+kind = "definition"
+desc = '''A-stable and ϑ-stable multistep methods: `M.IsAStable` (`𝒜 ⊇ ℂ⁻`) and, for `ϑ ∈ (0, π/2)`,
+`M.IsThetaStable ϑ` (`𝒜` contains the sector `{z : -ϑ < π - arg z < ϑ}`). With
+`crankNicolson_aStable` and `backwardEuler_aStable` as multistep methods
+(`ODE.LinearMultistep.absStabilityRegion_ofOneStep`).'''
+deps = ["QuarteroniSaccoSaleri.Chapter11.absoluteStability", "ODE.LinearMultistep.IsAStable", "ODE.LinearMultistep.IsThetaStable", "ODE.LinearMultistep.absStabilityRegion_ofOneStep"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 11.6.4'
+
+[[node]]
+id = "property_11_2"
+kind = "theorem"
+desc = '''Second Dahlquist barrier: an explicit linear multistep method is neither A-stable nor
+ϑ-stable; no A-stable linear multistep method has order greater than 2; for every
+`ϑ ∈ (0, π/2)` there exist ϑ-stable `p`-step methods of order `p` only for `p = 3` and `p = 4`
+(as printed; the standard statement, Widlund 1967, is that such methods exist for `p = 3, 4`,
+with the trapezoidal rule having the smallest error constant among A-stable methods).
+Not formalized: the order-2 barrier is Dahlquist's 1963 theorem, proved through the
+`(ζ+1)/(ζ-1)` transform and the positivity of a real part (a Riesz–Herglotz-type argument),
+and the ϑ-stability statement is Widlund's; neither has Mathlib support and the book quotes
+both without proof ([Wid67]). The explicit clause alone is reachable — `Π` is then a polynomial
+of degree `p + 1` in `r` whose roots cannot all stay in the disc as `|z| → ∞` (the product of the
+roots is `-(a_p + z b_p)`, unbounded in `z`) — and is planned as `property_11_2_explicit` (★★).'''
+deps = ["QuarteroniSaccoSaleri.Chapter11.thetaStable", "QuarteroniSaccoSaleri.Chapter11.absoluteStability", "QuarteroniSaccoSaleri.Chapter11.definition_11_9"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 11.2'
+
+[[node]]
+id = "property_11_2_explicit"
+kind = "theorem"
+desc = '''The reachable clause of Property 11.2: an explicit consistent linear multistep method
+(`b_{-1} = 0`, `IsGenuine`) is not A-stable and not ϑ-stable for any `ϑ ∈ (0, π/2)`: the constant
+coefficient of `Π_z = ρ - zσ` is `-(a_p + z b_p)`, so the product of its `p + 1` roots has modulus
+`|a_p + z b_p| → ∞` along the negative real axis when `b_p ≠ 0` (and when `b_p = 0` one shifts to
+the last nonzero `b_j`, or argues with `Π_z(r)/r^{p+1} → -z σ(r)/r^{p+1}`, i.e. for fixed `r` on the
+circle `|Π_z(r)| = |ρ(r) - zσ(r)| ≥ |z| |σ(r)| - |ρ(r)|` is large while `Π_z` is monic — some root
+has modulus `≥ (|a_p + z b_p|)^{1/(p+1)} > 1`). `Polynomial.Splits.coeff_zero_eq_prod_roots_of_monic`
+over `ℂ`. ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter11.thetaStable", "QuarteroniSaccoSaleri.Chapter11.absoluteStability", "QuarteroniSaccoSaleri.Chapter11.characteristicPolynomials"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 11.2'
+
+[[node]]
+id = "remark_11_3"
+kind = "definition"
+desc = '''The milder region `𝒜* = {z : ∃ C > 0, |u_n| ≤ C ∀ n ≥ 0}` of [BD74]:
+`M.absStabilityRegionStar`, with `𝒜 ⊆ 𝒜*`; `remark_11_3_midpoint`: for the midpoint method
+`𝒜 = ∅` while `𝒜* = {αi : |α| < 1}` — the book prints `α ∈ [-1, 1]`, but at `α = ±1` the root
+`±i` of `r² ∓ 2ir - 1` is double and `n (±i)^n` is unbounded (see the errata)
+(`ODE.LinearMultistep.absStabilityRegion_midpoint`); `remark_11_3_zeroStable`: zero-stable
+methods are those with `0 ∈ 𝒜*` (`ODE.LinearMultistep.zero_mem_absStabilityRegionStar_iff` with
+`theorem_11_4`). The sentence "if `𝒜` is nonempty then `𝒜*` is its closure" is not formalized:
+it is false in general (a rational stability function can have `|R| = 1` on a set with empty
+interior away from the closure of `{|R| < 1}`) and unused. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter11.absoluteStability", "QuarteroniSaccoSaleri.Chapter11.equation_11_43", "QuarteroniSaccoSaleri.Chapter11.theorem_11_4", "ODE.LinearMultistep.absStabilityRegionStar", "ODE.LinearMultistep.absStabilityRegion_midpoint", "ODE.LinearMultistep.zero_mem_absStabilityRegionStar_iff"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 11.3'
+
+[[node]]
+id = "equation_11_66"
+kind = "definition"
+desc = '''Relative stability: `∀ h ≤ h₀, ∃ C > 0, |u_n| ≤ C (|u_0| + … + |u_p|)` for all `n ≥ p + 1`,
+for the method on the test problem (11.24) with a given `λ`: `relativelyStable M λ h₀`, read
+with the bound over the grid of a fixed bounded interval `n ≤ N_h` — as printed, over all `n`,
+it fails for every method with a principal root of modulus `> 1` (e.g. `Re λ > 0`), and the claim
+that the strong root condition implies it is left unformalized (see the open questions). Only
+the definition is a node; "(11.66) implies zero-stability" is then `theorem_11_4` on the test
+problem.'''
+deps = ["QuarteroniSaccoSaleri.Chapter11.definition_11_11", "QuarteroniSaccoSaleri.Chapter11.equation_11_54"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.66'

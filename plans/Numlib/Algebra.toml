@@ -1,0 +1,4 @@
+desc = '''
+Mathlib-shaped algebra that Mathlib does not have yet, at Mathlib's paths: `Algebra/LinearRecurrence`
+extends `Mathlib/Algebra/LinearRecurrence.lean`. Upstreaming candidates.
+'''

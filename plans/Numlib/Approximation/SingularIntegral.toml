@@ -1,0 +1,91 @@
+namespace = "Quadrature"
+desc = '''
+The elementary analysis behind the treatment of singular integrals in [quarteroni2000numerical]
+§9.8: an integrand `φ(x)/(x - a)^μ`, `0 ≤ μ < 1`, with `φ` smooth; the *subtraction* of the Taylor
+polynomial of `φ` at the endpoint (Method 2), whose singular part `Φ_p(x)/(x - a)^μ` integrates in
+closed form (9.51) and whose remainder `(φ - Φ_p)/(x - a)^μ` is `C^p` up to the endpoint with
+vanishing derivatives there (the claim after (9.52)); the truncation estimate (9.48) of Method 1;
+and, for unbounded intervals, the decay criterion for integrability and the inversion `x = 1/t`
+(9.55). Nothing here is a quadrature rule: these are the identities and regularity facts that let
+the composite Newton–Cotes error formulae of `Numlib/Approximation/NewtonCotes` be applied to a
+regularized integrand. The operator-level theory of product integration for weakly singular
+kernels is `Numlib/IntegralEquations/ProductIntegration` and is not repeated.
+
+Mathlib has the improper integrals (`MeasureTheory.integral_Ioi_of_hasDerivAt_of_tendsto`,
+`intervalIntegral_tendsto_integral_Ioi`, `integral_Iic_add_Ioi`), the power integrals
+(`integral_rpow`, `intervalIntegrable_rpow'` for exponents `> -1`,
+`integrableOn_Ioi_rpow_of_lt` for exponents `< -1`), the Taylor formula with Lagrange remainder
+(`taylor_mean_remainder_lagrange`, `taylor_mean_remainder_bound`) and the change of variables
+`integral_comp_rpow_Ioi` (with `p = -1` it is the inversion). What it lacks and this module adds is
+the *iterated differentiability* of `(x - a)^{-μ} (φ(x) - Φ_p(x))` at the singular endpoint, which
+is the one genuinely delicate statement (★★★) and the only one the surface cannot state directly
+from Mathlib.
+'''
+
+[[node]]
+id = "abs_integral_div_rpow_le"
+kind = "theorem"
+desc = '''**The a priori bound of §9.8.2.** For `a < b`, `0 ≤ μ < 1` and `φ` measurable on `(a, b]`
+with `|φ x| ≤ M`: `x ↦ φ x / (x - a)^μ` is integrable on `Ioc a b` and
+`|∫ x in a..b, φ x / (x - a)^μ| ≤ M * (b - a)^(1 - μ) / (1 - μ)`. Integrability from
+`intervalIntegrable_rpow'` (exponent `-μ > -1`) after the shift `x ↦ x - a`, the bound from
+`integral_rpow`. ★'''
+deps = []
+
+[[node]]
+id = "integral_pow_div_rpow"
+kind = "theorem"
+desc = '''`∫ x in a..b, (x - a)^k / (x - a)^μ = (b - a)^(k + 1 - μ) / (k + 1 - μ)` for `a < b`, `k : ℕ`,
+`0 ≤ μ < 1`; hence (9.51): with `Φ_p(x) = ∑_{k ≤ p} φ^{(k)}(a) (x - a)^k / k!`,
+`∫ x in a..b, Φ_p x / (x - a)^μ = (b - a)^(1 - μ) * ∑ k ∈ range (p + 1), (b - a)^k * φ^{(k)}(a) / (k! * (k + 1 - μ))`
+(`integral_taylorWithin_div_rpow`, stated with `taylorWithinEval φ p (Icc a b) a` or an explicit
+sum). Two nodes; `integral_rpow` and linearity. ★'''
+deps = []
+
+[[node]]
+id = "abs_integral_taylorRemainder_div_rpow_le"
+kind = "theorem"
+desc = '''**The truncation estimate (9.48).** For `a < a + ε`, `0 ≤ μ < 1`, `φ` of class `C^{p+1}` on
+`Icc a (a + ε)` with `|φ^{(p+1)}| ≤ M` there,
+`|∫ x in a..(a + ε), (φ x - taylorWithinEval φ p (Icc a (a + ε)) a x) / (x - a)^μ|
+  ≤ ε^(p + 2 - μ) / ((p + 1)! * (p + 2 - μ)) * M`.
+`taylor_mean_remainder_bound` gives `|φ x - Φ_p x| ≤ M (x - a)^{p+1}/(p+1)!`; integrate
+`(x - a)^{p + 1 - μ}`. ★'''
+deps = ["Quadrature.integral_pow_div_rpow"]
+
+[[node]]
+id = "contDiffOn_taylorRemainder_div_rpow"
+kind = "theorem"
+desc = '''**Regularity of the subtracted integrand** (the claim after (9.52)). For `a < b`,
+`0 ≤ μ < 1`, `φ` of class `C^{p+1}` on an open `U ⊇ Icc a b`, the function
+`g x = if x = a then 0 else (φ x - taylorWithinEval φ p U a x) / (x - a)^μ` is of class `C^p` on
+`Icc a b` — `ContDiffOn ℝ p g (Icc a b)` — with `iteratedDerivWithin j g (Icc a b) a = 0` for
+`j ≤ p`, and for `j ≤ p` the derivative `g^{(j)}` is `O((x - a)^{p + 1 - j - μ})` near `a`. Away
+from `a` this is the quotient rule; at `a` it is the Leibniz formula
+`g^{(j)} = ∑_{i ≤ j} C(j, i) R^{(j-i)} · D^i (x - a)^{-μ}` with `R = φ - Φ_p` and
+`R^{(j-i)} = O((x - a)^{p + 1 - j + i})` (Taylor's theorem for the derivative of the remainder),
+each term being `O((x - a)^{p + 1 - j - μ}) → 0`; one-sided differentiability at `a` by the mean
+value theorem (`HasDerivWithinAt` from `tendsto` of the difference quotient). This is the
+hypothesis under which the composite Newton–Cotes error formula applies to `g` when `p ≥ n + 2`
+(even `n`) or `p ≥ n + 1` (odd `n`). ★★★'''
+deps = []
+
+[[node]]
+id = "integrableOn_Ioi_of_tendsto_rpow_mul"
+kind = "theorem"
+desc = '''**The decay criterion of §9.8.3.** If `f` is continuous on `Ici a` (or locally integrable
+there) and `x^(1 + ρ) * f x → 0` as `x → ∞` for some `ρ > 0`, then `IntegrableOn f (Ioi a)`.
+Eventually `|f x| ≤ x^(-(1 + ρ))`, which is integrable on `Ioi c` for `c > 0` by
+`integrableOn_Ioi_rpow_of_lt`; the compact piece `[a, c]` by continuity
+(`ContinuousOn.integrableOn_Icc`). Hence `∫_a^∞ f = lim_{t → ∞} ∫_a^t f`
+(`intervalIntegral_tendsto_integral_Ioi`), the book's (9.53). ★★'''
+deps = []
+
+[[node]]
+id = "integral_Ioi_eq_integral_Ioo_inv"
+kind = "theorem"
+desc = '''**The inversion `x = 1/t`** (9.55): for `0 < c` and `f` integrable on `Ioi c`,
+`∫ x in Ioi c, f x = ∫ t in Ioo 0 (1 / c), f (1 / t) / t ^ 2`. Mathlib's `integral_comp_rpow_Ioi`
+at `p = -1` is the statement on `Ioi 0`; restrict to `Ioi c` by the indicator of `Ioi c`, whose
+preimage under `t ↦ 1/t` is `Ioo 0 (1/c)`. ★★'''
+deps = []

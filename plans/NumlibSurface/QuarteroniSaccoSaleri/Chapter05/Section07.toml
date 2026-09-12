@@ -1,0 +1,81 @@
+namespace = "QuarteroniSaccoSaleri.Chapter05"
+desc = '''
+§5.7, the QR iteration with shifts. The section has no numbered theorem; its content is the
+definitions of the single-shift iteration (5.52), the Rayleigh shift (5.53), the stopping test
+(5.54) and the double-shift step (5.55), the similarity of the shifted iterates, and three
+unproved claims: the rate `|(λ_j - μ)/(λ_{j-1} - μ)|^k` for a fixed shift, the quadratic
+convergence of the Rayleigh shift, and the same for the Francis double shift. The fixed-shift
+claim is Property 5.9 for `A - μ I` (the shifted iteration is the unshifted one on `A - μ I`,
+translated back); the two quadratic-convergence claims are recorded as not formalized. Examples
+5.10–5.13 are numerical and Programs 36–37 are not nodes.
+'''
+
+[[node]]
+id = "shiftedQrIterate"
+kind = "definition"
+desc = '''(5.52): the QR iteration with fixed shift `μ`, `T (k+1) = R Q + μ I` where `Q R = T k - μ I`;
+`Matrix.shiftedQrIterate A μ k` of the backbone, built from `Matrix.shiftedQrStep μ T = qrR (T -
+μ • 1) * qrQ (T - μ • 1) + μ • 1`. ★'''
+deps = ["Matrix.shiftedQrStep", "Matrix.shiftedQrIterate"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.52)'
+
+[[node]]
+id = "shiftedQrIterate_eq_conj"
+kind = "theorem"
+desc = '''The similarity displayed after (5.52): `R Q + μ I = Qᵀ (T - μ I) Q + μ I = Qᵀ T Q`, so every
+shifted iterate is orthogonally similar to `A`. `Matrix.shiftedQrStep_eq_conj`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter05.shiftedQrIterate", "Matrix.shiftedQrStep_eq_conj"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.52)'
+
+[[node]]
+id = "shiftedQrIterate_eq_qrIterate"
+kind = "theorem"
+desc = '''The fixed-shift iteration is the basic iteration on the shifted matrix:
+`shiftedQrIterate A μ k = qrIterate (A - μ • 1) k + μ • 1`. Consequently the convergence claim of
+§5.7.1 — the subdiagonal `t_{j,j-1}^{(k)}` tends to zero at the rate `|(λ_j - μ)/(λ_{j-1} - μ)|^k`
+when `|λ_1 - μ| > … > |λ_n - μ|` — is `property_5_9` and `equation_5_37` for `A - μ I`, under the
+same general-position hypothesis. `Matrix.shiftedQrIterate_eq_qrIterate_sub_add` (new). ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter05.shiftedQrIterate", "Matrix.shiftedQrIterate_eq_qrIterate_sub_add", "QuarteroniSaccoSaleri.Chapter05.property_5_9", "QuarteroniSaccoSaleri.Chapter05.equation_5_37"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.7.1'
+
+[[node]]
+id = "equation_5_53"
+kind = "definition"
+desc = '''(5.53), the Rayleigh-quotient shift: the iteration `T (k+1) = shiftedQrStep (T k (last) (last))
+(T k)` on `Matrix (Fin (N+1)) (Fin (N+1)) ℝ`, the shift at each step being the current last
+diagonal entry; `Matrix.rayleighShiftQrIterate` of the backbone. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter05.shiftedQrIterate", "Matrix.rayleighShiftQrIterate"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.53)'
+
+[[node]]
+id = "equation_5_53_quadratic"
+kind = "theorem"
+desc = '''The quadratic convergence of the single-shift iteration (5.52)–(5.53): if
+`|t_{n,n-1}^{(k)}| / ‖T⁽⁰⁾‖₂ = η_k < 1` then `|t_{n,n-1}^{(k+1)}| / ‖T⁽⁰⁾‖₂ = O(η_k²)`. Not
+formalized: a local convergence theorem for Rayleigh quotient iteration on Hessenberg matrices
+([Dem97] pp. 161–163), which the book states without proof and the backbone has no Rayleigh
+quotient iteration for (`Numlib/Eigen/PowerMethod` records that it is not formalized either).'''
+deps = ["QuarteroniSaccoSaleri.Chapter05.equation_5_53"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.53)'
+
+[[node]]
+id = "equation_5_55"
+kind = "definition"
+desc = '''(5.55), the double-shift step over `ℂ`: for a `2 × 2` trailing block with complex conjugate
+eigenvalues `λ, conj λ`, two consecutive shifted steps, `T (k+1) = shiftedQrStep λ (T k)` and
+`T (k+2) = shiftedQrStep (conj λ) (T (k+1))`, on `Matrix (Fin N) (Fin N) ℂ`;
+`Matrix.doubleShiftQrStep T λ := shiftedQrStep (conj λ) (shiftedQrStep λ T)`. The real
+(Francis) implementation that avoids complex arithmetic is not defined; the book only sketches
+it. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter05.shiftedQrIterate", "Matrix.doubleShiftQrStep"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.55)'
+
+[[node]]
+id = "doubleShiftQr_quadratic"
+kind = "theorem"
+desc = '''The claim that the QR iteration with Francis shift converges quadratically. Not formalized: the
+book states it without proof (citing [Fra61], [GL89] §7.5, [Dem97] §4.4.5), notes that special
+matrices defeat it (Exercise 14), and calls a shift strategy that guarantees convergence for all
+matrices an open problem.'''
+deps = ["QuarteroniSaccoSaleri.Chapter05.equation_5_55"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.7.2'

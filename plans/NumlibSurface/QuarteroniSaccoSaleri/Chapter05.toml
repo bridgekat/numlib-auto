@@ -1,0 +1,22 @@
+desc = '''
+Quarteroni–Sacco–Saleri, Chapter 5: approximation of eigenvalues and eigenvectors. Localization
+(§5.1: Hirsch, the three Gershgorin theorems, reducibility), conditioning of the eigenproblem
+(§5.2: Bauer–Fike, the first-order perturbation of a simple eigenvalue and of its eigenvector, the
+a posteriori residual bounds), the power and inverse iterations (§5.3), the QR iteration and its
+convergence (§5.4–5.5), the Hessenberg–QR machinery of Householder reflectors and Givens
+rotations (§5.6), shifts (§5.7), eigenvectors and the SVD (§5.8), matrix pencils (§5.9), the
+Jacobi, Sturm–Givens and Lanczos methods for symmetric matrices (§5.10–5.11), and the two
+applications of §5.12.
+
+Almost all of §5.1–5.3 and §5.10–5.11 is a restatement of `Numlib/Eigen/{Perturbation,
+PowerMethod, QRAlgorithm, Jacobi, KrylovEigen, MinMax, RayleighRitz, ReducedResolvent}` and of
+`Numlib/LinearAlgebra/Sparse/Pattern`; §5.6–5.9 drive the new backbone modules
+`LinearAlgebra/Matrix/PlaneRotation`, `Eigen/Pencil`, `Eigen/Sturm` and the extensions of
+`LinearAlgebra/Matrix/{QR, Hessenberg, Schur, RealSchur}` and `Eigen/{QRAlgorithm, Deflation}`.
+
+The book works over `ℂ^n` in §5.1–5.3 and §5.9 and over real matrices from §5.4 on; the surface
+follows it: complex `Matrix n n ℂ` (or `EuclideanSpace ℂ n`) where the book says `ℂ^{n×n}`, real
+`Matrix (Fin N) (Fin N) ℝ` where it says `ℝ^{n×n}`. Programs 26–45 are not nodes; the method each
+implements is the backbone `iterate` that the corresponding theorem is about. Numerical examples
+(5.1–5.13, 5.15–5.18) are skipped; Example 5.14 (three pencils) is a node.
+'''

@@ -1,0 +1,45 @@
+namespace = "Matrix"
+desc = '''
+The Faddeev–LeVerrier recurrence for the characteristic polynomial and the inverse of a square matrix
+over a field of characteristic zero (Quarteroni–Sacco–Saleri §3.6; Faddeev–Faddeeva 1963): `B₀ = 1`,
+`α_k = tr(A B_{k-1}) / k`, `B_k = α_k 1 - A B_{k-1}`. Then `B_n = 0` and, when `α_n ≠ 0` (i.e. `det A
+≠ 0`), `A⁻¹ = B_{n-1} / α_n`. The `α_k` are, up to sign, the coefficients of `charpoly A`, and the
+identity behind the recurrence is `d/dt det(t 1 - A) = tr(adjugate(t 1 - A))`, which Mathlib has as
+`Matrix.derivative_det_one_add_X_smul` (`Mathlib/LinearAlgebra/Matrix/Charpoly/Coeff.lean`), together
+with the coefficient identities of the same file; the sum-of-principal-minors description of the
+coefficients is also there. Mathlib has no Faddeev–LeVerrier (grepped `Faddeev`, `LeVerrier`,
+`Leverrier`).
+'''
+
+[[node]]
+id = "faddeevB"
+kind = "definition"
+desc = '''`faddeevB A : ℕ → Matrix n n K` and `faddeevAlpha A : ℕ → K` by mutual recursion: `faddeevB A 0 = 1`,
+`faddeevAlpha A (k+1) = trace (A * faddeevB A k) / (k + 1)`, `faddeevB A (k+1) = faddeevAlpha A (k+1)
+• 1 - A * faddeevB A k`. `[CharZero K]`. ★'''
+deps = []
+
+[[node]]
+id = "faddeevB_eq_sum_charpoly_coeff"
+kind = "theorem"
+desc = '''`faddeevB A k = ∑ i ∈ range (k + 1), (charpoly A).coeff (n - i) • A ^ (k - i)` (Horner's partial sums
+of the characteristic polynomial evaluated at `A`, `n = Fintype.card n`) and `faddeevAlpha A k = -
+(charpoly A).coeff (n - k)`. Induction on `k` with the trace identity: `tr(A B_{k-1}) = ∑_{i<k} c_{n-i}
+tr(A^{k-i})` and Newton's identities for the power sums of the eigenvalues, or directly
+`Matrix.derivative_det_one_add_X_smul` read coefficientwise. ★★★'''
+deps = ["Matrix.faddeevB"]
+
+[[node]]
+id = "faddeevB_card_eq_zero"
+kind = "theorem"
+desc = '''`faddeevB A (Fintype.card n) = 0` — Cayley–Hamilton (`Matrix.aeval_self_charpoly`) through
+`faddeevB_eq_sum_charpoly_coeff`. ★'''
+deps = ["Matrix.faddeevB_eq_sum_charpoly_coeff"]
+
+[[node]]
+id = "faddeevLeverrier_inv"
+kind = "theorem"
+desc = '''`faddeevAlpha A (Fintype.card n) ≠ 0 → A⁻¹ = (faddeevAlpha A (Fintype.card n))⁻¹ • faddeevB A
+(Fintype.card n - 1)`: from `B_n = 0`, `A B_{n-1} = α_n 1`, and `α_n = ± det A`
+(`Matrix.charpoly_coeff_zero`… the constant coefficient is `(-1)^n det A`). ★'''
+deps = ["Matrix.faddeevB_card_eq_zero", "Matrix.faddeevB_eq_sum_charpoly_coeff"]

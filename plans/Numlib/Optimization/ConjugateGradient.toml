@@ -1,0 +1,65 @@
+namespace = "NonlinearCG"
+desc = '''
+Nonlinear conjugate gradient methods (Quarteroni–Sacco–Saleri Remark 7.2; Nocedal–Wright §5.2):
+the direction recurrence `d_{k+1} = -g_{k+1} + β_{k+1} d_k` with the Fletcher–Reeves and
+Polak–Ribière choices of `β`, driven by an arbitrary step-length rule, on a real inner product
+space with the gradient `g : E → E` as data; and the theorem that on the quadratic
+`½ ⟪A x, x⟫ - ⟪b, x⟫` with exact line searches both choices reproduce the linear CG iterates of
+`Numlib/Krylov/CG` (so that everything proved there — finite termination, optimality, the
+`√κ` rate — applies). The linear theory itself is not repeated: exact steps along a direction,
+steepest descent and Kantorovich's inequality are `Numlib/LinearSolve/Projection/OneDimensional`,
+conjugate directions are `Numlib/LinearSolve/Projection/ConjugateDirection`, and the gradient of
+the quadratic is `hasGradientAt_energyFunctional` in `Numlib/Analysis/InnerProductSpace/Energy`.
+'''
+
+[[node]]
+id = "State"
+kind = "definition"
+desc = '''`structure NonlinearCG.State (E)` with the current point `x`, its gradient `g` and the
+current direction `d`. ★'''
+deps = []
+
+[[node]]
+id = "betaFletcherReeves"
+kind = "definition"
+desc = '''`betaFletcherReeves (gOld gNew : E) : ℝ := ‖gNew‖ ^ 2 / ‖gOld‖ ^ 2`, the Fletcher–Reeves
+coefficient of Remark 7.2. ★'''
+deps = []
+
+[[node]]
+id = "betaPolakRibiere"
+kind = "definition"
+desc = '''`betaPolakRibiere (gOld gNew : E) : ℝ := ⟪gNew, gNew - gOld⟫ / ‖gOld‖ ^ 2`, the
+Polak–Ribière coefficient of Remark 7.2. ★'''
+deps = []
+
+[[node]]
+id = "step"
+kind = "definition"
+desc = '''`NonlinearCG.step (g : E → E) (β : E → E → ℝ) (α : State E → ℝ) (s : State E) : State E`:
+`x' = s.x + α s • s.d`, `g' = g x'`, `d' = -g' + β s.g g' • s.d`. The step length is an oracle
+`α`, so that exact line searches, Armijo–Wolfe searches and the quadratic case are all instances;
+`NonlinearCG.init g x₀ := ⟨x₀, g x₀, -g x₀⟩` (the book's `β₁ = 0`) and
+`NonlinearCG.iterate g β α x₀ k := (step g β α)^[k] (init g x₀)`. ★'''
+deps = ["NonlinearCG.State"]
+
+[[node]]
+id = "iterate"
+kind = "definition"
+desc = '''The nonlinear CG iterates, see `NonlinearCG.step`; with the recurrence lemma
+`iterate_succ`. ★'''
+deps = ["NonlinearCG.step"]
+
+[[node]]
+id = "iterate_eq_CG_iterate_of_quadratic"
+kind = "theorem"
+desc = '''Agreement with linear CG on a quadratic. Let `A : E →ₗ[ℝ] E` be symmetric coercive,
+`g x := A x - b` (the gradient of `½ ⟪A x, x⟫ - ⟪b, x⟫`, `hasGradientAt_energyFunctional`), and let
+`α` be the exact line search along `d`, `α s = ⟪s.d, -s.g⟫ / ⟪A s.d, s.d⟫` (the minimizer of the
+quadratic along the line, (7.36)). Then for `β = betaFletcherReeves` and for `β = betaPolakRibiere`,
+`(NonlinearCG.iterate g β α x₀ k).x = (CG.iterate A b x₀ k).x`, `.g = -(CG.iterate A b x₀ k).r` and
+`.d = (CG.iterate A b x₀ k).p`, as long as the residual has not vanished. Proof by induction: the
+exact step is `CG.alpha` because `⟪p_k, r_k⟫ = ⟪r_k, r_k⟫` (`CG.inner_residual_direction_eq`),
+`betaFletcherReeves` is literally `CG.beta`, and `betaPolakRibiere = betaFletcherReeves` on the
+CG iterates by `CG.inner_residual_eq_zero`. ★★'''
+deps = ["NonlinearCG.iterate", "NonlinearCG.betaFletcherReeves", "NonlinearCG.betaPolakRibiere", "CG.iterate", "CG.beta", "CG.alpha", "CG.inner_residual_eq_zero", "CG.inner_residual_direction_eq", "hasGradientAt_energyFunctional"]

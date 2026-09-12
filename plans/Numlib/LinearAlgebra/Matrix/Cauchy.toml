@@ -8,3 +8,36 @@ id = "det_cauchy"
 
 [[node]]
 id = "det_cauchy_ne_zero"
+
+[[node]]
+id = "hilbert"
+kind = "definition"
+desc = '''`Matrix.hilbert n : Matrix (Fin n) (Fin n) K` with entries `1 / (i + j + 1)` (`0`-based), the book's
+`h_ij = 1 / (i + j - 1)`; `hilbert_apply`. Over a field of characteristic zero, so that it can be read
+in `ℚ` and in `ℝ`. ★'''
+deps = []
+
+[[node]]
+id = "hilbert_eq_cauchy"
+kind = "theorem"
+desc = '''`hilbert n = cauchy (fun i : Fin n => (i : K) + 1) (fun j => (j : K))`, so `Matrix.det_cauchy` gives
+its determinant in closed form (`det_hilbert`). ★'''
+deps = ["Matrix.hilbert", "Matrix.cauchy"]
+
+[[node]]
+id = "isUnit_hilbert"
+kind = "theorem"
+desc = '''The Hilbert matrix is nonsingular: `IsUnit (hilbert n)`, from `Matrix.det_cauchy_ne_zero` (the `x i`
+are distinct, the `y j` are distinct, `x i + y j > 0`). ★'''
+deps = ["Matrix.hilbert_eq_cauchy", "Matrix.det_cauchy_ne_zero"]
+
+[[node]]
+id = "posDef_hilbert"
+kind = "theorem"
+desc = '''`(hilbert n : Matrix (Fin n) (Fin n) ℝ).PosDef` (QSS §3.4.2 factors `H₃ = L D Lᵀ` with positive `D`;
+Example 3.2 runs GEM on it without pivoting). Two routes: Sylvester's criterion
+`Matrix.posDef_iff_forall_det_leadingPrincipalSubmatrix_pos` of `LinearAlgebra/Matrix/Cholesky`
+with `det_cauchy > 0` for the leading blocks (every factor `(x_j - x_i)(y_j - y_i)` and `x_i + y_j`
+is positive), or the Gram matrix of `t ↦ t^i` on `L²(0, 1)`. The first is short once Sylvester
+exists. ★★'''
+deps = ["Matrix.hilbert_eq_cauchy", "Matrix.det_cauchy", "Matrix.posDef_iff_forall_det_leadingPrincipalSubmatrix_pos"]

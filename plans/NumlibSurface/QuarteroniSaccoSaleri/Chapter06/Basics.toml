@@ -1,0 +1,40 @@
+namespace = "QuarteroniSaccoSaleri.Chapter06"
+desc = '''
+The chapter's opening definitions: the order of convergence of a real sequence (Definition 6.1) as
+the book writes it, its equivalence with the backbone's `ConvergesWithOrder`, and the remark on the
+convergence factor for `p = 1`.
+'''
+
+[[node]]
+id = "definition_6_1"
+kind = "definition"
+desc = '''**Definition 6.1:** `definition_6_1 (x : ℕ → ℝ) (α : ℝ) (p : ℝ) : Prop := 1 ≤ p ∧ Tendsto x
+atTop (𝓝 α) ∧ ∃ C > 0, ∃ k₀ : ℕ, ∀ k ≥ k₀, |x (k + 1) - α| / |x k - α| ^ p ≤ C` — the book's
+quotient form (6.2) with its explicit threshold `k₀` and the restriction `p ≥ 1`. Lean's `a / 0 = 0`
+makes the quotient `0` when `x k = α`, which is harmless: it is a bound, and a term equal to `α`
+imposes nothing (the book's quotient is undefined there). ★'''
+deps = ["ConvergesWithOrder"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 6.1'
+
+[[node]]
+id = "definition_6_1_iff"
+kind = "theorem"
+desc = '''`definition_6_1 x α p ↔ 1 ≤ p ∧ ConvergesWithOrder x α p` under `∀ᶠ k in atTop, x k ≠ α`
+(`div_le_iff` with `|x k - α| ^ p > 0`; `Filter.eventually_atTop` for `∃ k₀, ∀ k ≥ k₀`). The
+hypothesis is needed: at a term with `x k = α` the quotient form reads `0 ≤ C` (Lean's `a / 0 = 0`)
+while the product form `|x (k+1) - α| ≤ C · 0` forces `x (k+1) = α` — true for a fixed-point orbit
+that has landed on `α`, not for an arbitrary sequence. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter06.definition_6_1", "ConvergesWithOrder"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 6.1'
+
+[[node]]
+id = "definition_6_1_convergenceFactor"
+kind = "theorem"
+desc = '''The remark after Definition 6.1, in its true direction: if `0 < C < 1` and `∀ k ≥ k₀,
+|x (k + 1) - α| ≤ C * |x k - α|` then `definition_6_1 x α 1`, and `C` is then called the
+convergence factor. The book says a factor `C < 1` is "necessary" for convergence when `p = 1`;
+what holds is that it is sufficient, and that a bound (6.2) with `C ≥ 1` and `p = 1` says nothing
+about convergence (any bounded ratio sequence qualifies). From
+`convergesWithOrder_one_of_eventually_norm_sub_succ_le` and `definition_6_1_iff`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter06.definition_6_1", "QuarteroniSaccoSaleri.Chapter06.definition_6_1_iff", "convergesWithOrder_one_of_eventually_norm_sub_succ_le"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, remark following Definition 6.1'

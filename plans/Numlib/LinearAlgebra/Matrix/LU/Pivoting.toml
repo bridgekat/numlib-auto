@@ -1,0 +1,167 @@
+namespace = "Matrix"
+desc = '''
+Pivoting and the growth factor of Gaussian elimination (QSS §3.5, §3.10; Higham §9.3–9.4).
+
+Two levels. The *specification* level says what pivoting achieves: every square matrix over
+`RCLike 𝕜` (or a linearly ordered field) has a row permutation `σ` with `P A = L U`, `P` the
+permutation matrix of `σ`, and all multipliers of modulus at most one (partial pivoting, QSS
+(3.52)); and a row and a column permutation with `P A Q = L U` (complete pivoting). The *algorithm*
+level is the GEM stage recurrence of `LU/Elimination` with a pivot-row choice inserted before each
+step — `gemPivotStage A piv k` for an arbitrary strategy `piv : Matrix (Fin N) (Fin N) 𝕜 → Fin N →
+Fin N` choosing a row `≥ k`, with `partialPivotRow` (the row of maximal modulus in the current
+column) as the strategy of GEPP — together with the accumulated permutation, so that
+`gemPivotStage … N = U` and `P A = L U` are theorems about the recurrence.
+
+The growth factor `ρ_N = max_{i,j,k} |a^{(k)}_{ij}| / max_{i,j} |a_ij|` (QSS (3.66)) is defined on
+the *exact* stages, over `ℝ`; the book defines it on the computed stages, and Higham (after his
+Theorem 9.5) explains why the exact one is the one that can be bounded. The bounds of QSS §3.10 —
+`2^{N-1}` under partial pivoting, `1` for symmetric positive definite matrices, `2` for
+tridiagonal and for column diagonally dominant matrices, `N` for Hessenberg matrices — are nodes
+here; Bohte's band bound and Wilkinson's complete-pivoting bound are recorded as not formalized.
+The rounding-error theorem that consumes the growth factor is `FloatingPoint/LU`.
+'''
+
+[[node]]
+id = "exists_permMatrix_mul_isLU"
+kind = "theorem"
+desc = '''QSS (3.52), existence of `P A = L U` with bounded multipliers: for `A : Matrix n n 𝕜`, `[RCLike 𝕜]`,
+`∃ (σ : Equiv.Perm n) (L U : Matrix n n 𝕜), IsLU (σ.permMatrix 𝕜 * A) L U ∧ ∀ i j, ‖L i j‖ ≤ 1`.
+No nonsingularity is needed (a zero pivot column is skipped with `L`'s column zero). Proof by
+strong induction along the order: at the smallest index choose a row of maximal modulus in the
+current column, swap, eliminate (`elimStep`), recurse on the trailing block; the multipliers are
+`≤ 1` by the choice. On a general linear order the "swap" is the transposition
+`Equiv.swap k r`, and `σ` accumulates as a product of transpositions each fixing the indices
+already processed. ★★★'''
+deps = ["Matrix.IsLU", "Matrix.elimStep"]
+
+[[node]]
+id = "exists_permMatrix_mul_mul_permMatrix_isLU"
+kind = "theorem"
+desc = '''Complete pivoting (QSS §3.5, `P A Q = L U`): `∃ (σ τ : Equiv.Perm n) (L U), IsLU (σ.permMatrix 𝕜 *
+A * τ.permMatrix 𝕜) L U ∧ ∀ i j, ‖L i j‖ ≤ 1 ∧ ∀ i j, ‖U i j‖ ≤ ‖U i i‖` — the last clause (the
+pivot dominates its row, hence the multipliers of the transposed problem too) is what complete
+pivoting buys and what `growthFactor_le_of_completePivoting` would use. Same induction with the
+pivot chosen in the whole trailing block. ★★★'''
+deps = ["Matrix.IsLU", "Matrix.elimStep"]
+
+[[node]]
+id = "IsLU.eq_of_permMatrix_mul"
+kind = "theorem"
+desc = '''QSS §3.5, last sentence before Program 9: the `L` of `P A = L U` consists of the multipliers of GEM
+without pivoting applied to `P A` — i.e. if `IsLU (P A) L U` and the strict leading principal
+submatrices of `P A` are nonsingular then `L = gemLower (P A)` and `U = gemStage (P A) N`. Immediate
+from `IsLU.unique` and `isLU_gemLower_gemStage`. ★'''
+deps = ["Matrix.IsLU.unique", "Matrix.isLU_gemLower_gemStage"]
+
+[[node]]
+id = "partialPivotRow"
+kind = "definition"
+desc = '''The partial-pivoting strategy: `partialPivotRow M k` is a row `r ≥ k` maximizing `‖M r k‖` over
+`r ≥ k` (`Finset.exists_max_image` on `univ.filter (k ≤ ·)`, chosen by `Classical.choose`, or the
+first such row on `Fin N` for determinism). Spec lemmas: `k ≤ partialPivotRow M k` and
+`∀ r, k ≤ r → ‖M r k‖ ≤ ‖M (partialPivotRow M k) k‖`. ★'''
+deps = []
+
+[[node]]
+id = "gemPivotStage"
+kind = "definition"
+desc = '''GEM with a pivoting strategy `piv`, on `Fin N`: the state is a pair `(M, σ)` of the current matrix
+and the accumulated row permutation; `gemPivotStage A piv 0 = (A, 1)`, and step `k < N` sets
+`r := piv M ⟨k, _⟩`, `M' := (Equiv.swap ⟨k,_⟩ r).permMatrix 𝕜 * M`, and returns `(elimStep M' ⟨k,_⟩,
+Equiv.swap ⟨k,_⟩ r * σ)`. `gemPivotStage A partialPivotRow` is GEPP; `gemPivotStage A (fun _ k => k)`
+is `gemStage`. The book's (3.51) `U = M_{n-1} P_{n-1} ⋯ M_1 P_1 A` is `gemPivotStage_eq_prod`. ★★'''
+deps = ["Matrix.elimStep", "Matrix.partialPivotRow", "Matrix.gemStage"]
+
+[[node]]
+id = "gemPivotStage_permMatrix_mul_isLU"
+kind = "theorem"
+desc = '''QSS (3.52) for the recurrence: if `piv` chooses rows `≥ k` and no pivot of the pivoted stages is
+zero, then `IsLU (σ.permMatrix 𝕜 * A) L (gemPivotStage A piv N).1` where `σ = (gemPivotStage A piv
+N).2` and `L` collects the multipliers *permuted by the later swaps* (the book's `L = P M⁻¹`;
+concretely `L = gemLower (σ.permMatrix 𝕜 * A)` by `IsLU.eq_of_permMatrix_mul`). With
+`partialPivotRow` every multiplier has modulus `≤ 1` (`gemPivotStage_partial_abs_multiplier_le_one`),
+and a zero pivot occurs only when the whole trailing column is zero, i.e. when `A` is singular
+(`gemPivotStage_partial_pivot_ne_zero_of_isUnit`). ★★★ (the bookkeeping of the accumulated
+permutation against the already-computed multipliers is the well-known nuisance of this proof).'''
+deps = ["Matrix.gemPivotStage", "Matrix.partialPivotRow", "Matrix.IsLU", "Matrix.gemLower", "Matrix.IsLU.eq_of_permMatrix_mul"]
+
+[[node]]
+id = "growthFactor"
+kind = "definition"
+desc = '''QSS (3.66) on the exact stages: for `A : Matrix (Fin N) (Fin N) ℝ`, `growthFactor A =
+(⨆ k : Fin N, ⨆ i j, |gemStage A k i j|) / ⨆ i j, |A i j|` (junk `0` for `A = 0`). For GEPP use
+`growthFactor (σ.permMatrix ℝ * A)` with `σ` the permutation `gemPivotStage A partialPivotRow N`
+produces — by `IsLU.eq_of_permMatrix_mul` the stages of GEM on `P A` are the pivoted stages up to
+the row order, and the sup over all entries does not see the order. ★'''
+deps = ["Matrix.gemStage"]
+
+[[node]]
+id = "growthFactor_le_two_pow"
+kind = "theorem"
+desc = '''QSS §3.10 "the growth factor can be bounded by `2^{n-1}`": if every multiplier has modulus at most
+one, `∀ k (hk : k < N) i, ⟨k,hk⟩ < i → |gemStage A k i ⟨k,hk⟩ / gemStage A k ⟨k,hk⟩ ⟨k,hk⟩| ≤ 1`,
+then `growthFactor A ≤ 2 ^ (N - 1)`. Each stage at most doubles the largest entry
+(`|a - m a'| ≤ 2 max`), by induction on `k`. Combined with
+`gemPivotStage_partial_abs_multiplier_le_one` this is the bound for GEPP. ★★'''
+deps = ["Matrix.growthFactor", "Matrix.gemStage", "Matrix.elimStep"]
+
+[[node]]
+id = "growthFactor_eq_one_of_posDef"
+kind = "theorem"
+desc = '''QSS §3.10 (3): for a symmetric positive definite `A`, `growthFactor A = 1` (Higham §10.1.1): every
+stage's trailing block is again positive definite (a Schur complement of a positive definite matrix,
+`Matrix.PosDef.schurComplement`), the largest entry of a positive definite matrix is on the
+diagonal, and the diagonal entries decrease from stage to stage (`a_ii - a_ik²/a_kk ≤ a_ii`). ★★'''
+deps = ["Matrix.growthFactor", "Matrix.gemStage", "Matrix.PosDef.schurComplement"]
+
+[[node]]
+id = "growthFactor_le_two_of_isTridiagonal"
+kind = "theorem"
+desc = '''QSS §3.10 (1), tridiagonal case: for a tridiagonal `A` with GEPP, the growth factor is at most `2`
+(the `p = 1` case of Bohte's bound, Higham Theorem 9.11). Direct: with partial pivoting on a
+tridiagonal matrix each stage changes one entry, `|a_{k+1,k+1}^{(k+1)}| ≤ |a_{k+1,k+1}| + |c_k|`
+after a swap or `≤ |a_{k+1,k+1}| + |a_{k+1,k}| |c_k| / |a_kk| ≤ 2 max |a|`. State for `gemPivotStage
+A partialPivotRow` via `growthFactor (σ.permMatrix ℝ * A) ≤ 2`. ★★★ (adjacent swaps preserve the
+banded shape; that invariant is the work).'''
+deps = ["Matrix.growthFactor", "Matrix.gemPivotStage", "Matrix.partialPivotRow", "Matrix.IsTridiagonal"]
+
+[[node]]
+id = "growthFactor_le_card_of_isUpperHessenberg"
+kind = "theorem"
+desc = '''QSS §3.10 (2), Higham Theorem 9.10 (Wilkinson): for an upper Hessenberg `A` with GEPP,
+`growthFactor (σ.permMatrix ℝ * A) ≤ N`. Each stage adds at most one multiple (of modulus `≤ 1`) of
+a row to the row below, so the entries of stage `k` are bounded by `(k+1) max |a|`. ★★★ (same
+shape-invariant as the tridiagonal case: partial pivoting on a Hessenberg matrix only swaps
+adjacent rows).'''
+deps = ["Matrix.growthFactor", "Matrix.gemPivotStage", "Matrix.partialPivotRow", "Matrix.IsUpperHessenberg"]
+
+[[node]]
+id = "growthFactor_le_two_of_isColDiagDominant"
+kind = "theorem"
+desc = '''QSS §3.10 (4), Higham Theorem 9.9: for a nonsingular matrix strictly diagonally dominant by columns,
+GEM without pivoting has `growthFactor A ≤ 2` (and GEPP performs no interchanges, so the two agree).
+Column dominance of every stage's trailing block (`schurComplementSingle_isColDiagDominant`, the
+lemma behind `exists_isLU_of_isColDiagDominant`) gives `∑_{i>k} |a_ik^{(k)}| ≤ |a_kk^{(k)}|`, hence
+`|a_ij^{(k+1)}| ≤ |a_ij^{(k)}| + |a_ik^{(k)}| |a_kj^{(k)}|/|a_kk^{(k)}|` sums over `i` to at most
+`2 max`. ★★★'''
+deps = ["Matrix.growthFactor", "Matrix.gemStage", "Matrix.exists_isLU_of_isColDiagDominant"]
+
+[[node]]
+id = "growthFactor_le_of_hasBandwidth"
+kind = "theorem"
+desc = '''QSS §3.10 (1), Higham Theorem 9.11 (Bohte): for `A` with upper and lower bandwidth `p`, GEPP has
+`growthFactor ≤ 2^{2p-1} - (p-1) 2^{p-2}`. Not formalized: the book states it without proof, and
+Bohte's argument tracks the propagation of the band under row interchanges (each swap widens the
+upper band by up to `p`) with a combinatorial count that has no counterpart in the library; the
+tridiagonal case `p = 1` is `growthFactor_le_two_of_isTridiagonal`. ★★★'''
+deps = ["Matrix.growthFactor", "Matrix.gemPivotStage", "Matrix.HasLowerBandwidth", "Matrix.HasUpperBandwidth"]
+
+[[node]]
+id = "growthFactor_le_of_completePivoting"
+kind = "theorem"
+desc = '''QSS §3.10, complete pivoting: `growthFactor ≤ √N (2 · 3^{1/2} ⋯ N^{1/(N-1)})^{1/2}` (Wilkinson 1961).
+Not formalized: the book states it without proof; the proof is Hadamard's determinant inequality
+applied to the leading blocks of the pivoted stages together with the pivot-dominance clause of
+`exists_permMatrix_mul_mul_permMatrix_isLU`. Hadamard's inequality is not in Mathlib (grepped
+`Hadamard` under `Mathlib/LinearAlgebra/Matrix`: only `HadamardMatrix`, a different object). ★★★'''
+deps = ["Matrix.growthFactor", "Matrix.exists_permMatrix_mul_mul_permMatrix_isLU"]

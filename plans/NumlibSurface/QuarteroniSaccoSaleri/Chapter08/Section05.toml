@@ -1,0 +1,112 @@
+namespace = "QuarteroniSaccoSaleri.Chapter08"
+desc = '''
+QSS §8.5: the two-dimensional case — tensor-product Lagrange interpolation on a rectangle
+(§8.5.1), the ill-posed bilinear example of Remark 8.1, and piecewise interpolation on a
+triangulation (§8.5.2): the affine map (8.34) from the reference triangle, the space `𝒫_k`
+(8.35) with `dim 𝒫_k(T) = (k+1)(k+2)/2`, the reference-element identity behind (8.38), and the
+error estimates (8.39)–(8.40), which are not formalized (`notes/qss/planning-brief.md` §2: the
+multi-dimensional estimates are out of scope).
+
+The algebra is `Numlib/Approximation/NodalInterpolation` (`Approximation.nodalInterp`,
+`Approximation.IsNodalBasis`, `Approximation.nodalInterp_comp`) and
+`Numlib/Approximation/MvPolynomial` (`Approximation.mvPolyLE`, `Approximation.finrank_mvPolyLE`).
+The triangulation itself (admissibility, the global nodes `z_i`, `𝒫_k^c(Ω)`, (8.36)–(8.37)) is
+a definition with no numbered result attached in one dimension's reach, and is not planned;
+Example 8.7 is a table and is skipped.
+'''
+
+[[node]]
+id = "tensorProductInterp"
+kind = "definition"
+desc = '''`Π_{n,m} f (x, y) = ∑_i ∑_j f (x_i, y_j) l_i(x) l_j(y)` on `[a, b] × [c, d]`:
+`tensorProductInterp x y f := Approximation.nodalInterp (fun (i, j) => (x i, y j)) (fun (i, j) (s, t) => l_i s * l_j t) f`
+for injective `x : Fin (n + 1) → ℝ`, `y : Fin (m + 1) → ℝ` and `f : ℝ × ℝ → ℝ`, with
+`l_i = fun s => (Lagrange.basis Finset.univ x i).eval s`. ★'''
+deps = ["Approximation.nodalInterp"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.5.1'
+
+[[node]]
+id = "tensorProductInterp_apply_node"
+kind = "theorem"
+desc = '''`tensorProductInterp x y f (x i, y j) = f (x i, y j)`: the product shape functions are a nodal
+basis (`Approximation.IsNodalBasis`, from `equation_8_3` in each variable), so
+`Approximation.IsNodalBasis.nodalInterp_apply_node`. Also `tensorProductInterp_mem`: the interpolant
+is a polynomial of degree `≤ n` in `x` and `≤ m` in `y` (a member of the span of the monomials
+`x^p y^q`, `p ≤ n`, `q ≤ m`). ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter08.tensorProductInterp", "QuarteroniSaccoSaleri.Chapter08.equation_8_3", "Approximation.IsNodalBasis"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.5.1'
+
+[[node]]
+id = "remark_8_1"
+kind = "theorem"
+desc = '''Remark 8.1: interpolation by `p(x, y) = a₃ x y + a₂ x + a₁ y + a₀` at the four nodes
+`(-1, 0), (0, -1), (1, 0), (0, 1)` is not uniquely solvable: the interpolation problem of
+`Numlib/Approximation/Unisolvent` for the span `Q₁` of `1, x, y, xy` in `C(ℝ², ℝ)` (or in
+`MvPolynomial (Fin 2) ℝ`) and the four point evaluations is not unisolvent,
+`¬ Approximation.IsUnisolvent Q₁ L`, because `xy ∈ Q₁` is nonzero and vanishes at all four nodes
+(`Approximation.isUnisolvent_iff_forall_eq_zero`). Equivalently, `a₃` is free: `xy` solves the
+homogeneous problem. ★'''
+deps = ["Approximation.IsUnisolvent", "Approximation.isUnisolvent_iff_forall_eq_zero"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 8.1'
+
+[[node]]
+id = "equation_8_34"
+kind = "definition"
+desc = '''(8.34): the affine map `F_T x̂ = B_T x̂ + b_T` from the reference triangle with vertices
+`(0,0), (1,0), (0,1)` onto the triangle with vertices `a₁, a₂, a₃ ∈ ℝ²`: `B_T = [a₂ - a₁ | a₃ - a₁]`,
+`b_T = a₁`, as an `AffineMap ℝ (Fin 2 → ℝ) (Fin 2 → ℝ)` (or `ℝ × ℝ`); `equation_8_34_vertex`: it
+sends the reference vertices to `a₁, a₂, a₃`, and it is a bijection iff `det B_T ≠ 0`, i.e. iff the
+three vertices are not collinear (`equation_8_34_bijective`). ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.34)'
+
+[[node]]
+id = "equation_8_35_finrank"
+kind = "theorem"
+desc = '''`d_k = dim 𝒫_k(T) = (k + 1)(k + 2)/2` for a triangle `T ⊆ ℝ²` (nonempty interior): the
+space `𝒫_k(Ω)` of (8.35), polynomials of total degree `≤ k` in two variables restricted to `T`,
+is `Approximation.mvPolyLE T k` for `ι = Fin 2`, and `Approximation.finrank_mvPolyLE` gives
+`(k + 2).choose 2 = (k + 1)(k + 2)/2`. ★'''
+deps = ["Approximation.mvPolyLE", "Approximation.finrank_mvPolyLE"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.35), §8.5.2'
+
+[[node]]
+id = "equation_8_38_comp"
+kind = "theorem"
+desc = '''The reference-element identity behind (8.38) and `l_{j,T} = l̂_j ∘ F_T⁻¹`: for the local
+nodes `ẑ_m` and basis functions `l̂_m` on the reference triangle and the affine bijection
+`F = equation_8_34 a₁ a₂ a₃`, the element interpolant
+`Π_T^k f = Approximation.nodalInterp (F ∘ ẑ) (fun m => l̂_m ∘ F⁻¹) f` satisfies
+`Π_T^k f = (Approximation.nodalInterp ẑ l̂ (f ∘ F)) ∘ F⁻¹`; `Approximation.nodalInterp_comp`, whose
+only hypothesis is that `F⁻¹ ∘ F = id`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter08.equation_8_34", "Approximation.nodalInterp_comp"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.38)'
+
+[[node]]
+id = "equation_8_39"
+kind = "theorem"
+desc = '''(8.39): for a triangle `T` of diameter `h_T`, `f ∈ C^{k+1}(T)` and the `𝒫_k` Lagrange
+interpolant `Π_T^k f` at the `d_k` local nodes, `‖f - Π_T^k f‖_{∞,T} ≤ C h_T^{k+1} ‖f^{(k+1)}‖_{∞,T}`
+with `C` independent of `h_T` and `f` (`‖f^{(k+1)}‖_{∞,T}` the supremum of the `(k+1)`-st
+derivative tensor). Not formalized: the brief rules the two-dimensional interpolation estimates
+out of scope, and the book quotes Ciarlet–Lions Theorem 16.1, whose proof is the Bramble–Hilbert
+lemma over `W^{k+1,∞}`. Honest caveat for a future pass: the sup-norm case is elementary — Taylor's
+theorem at a point of `T` (`taylor_mean_remainder_bound` in several variables via
+`ContDiff` along segments) plus the boundedness of the reference basis functions, which are
+polynomials in the barycentric coordinates and so bounded on `T` by a constant depending on `k`
+only — and needs no shape regularity; it is a `★★★` bookkeeping project, not a blocker.'''
+deps = ["QuarteroniSaccoSaleri.Chapter08.equation_8_38_comp"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.39)'
+
+[[node]]
+id = "equation_8_40"
+kind = "theorem"
+desc = '''(8.40): on a regular triangulation `𝒯_h` of a polygon `Ω` (`max_T h_T/ρ_T ≤ σ`) with mesh
+`h`, `‖f - Π_h^k f‖_{∞,Ω} ≤ C h^{k+1} ‖f^{(k+1)}‖_{∞,Ω}` for every `f ∈ C^{k+1}(Ω)`. Not formalized:
+it needs the triangulation and the global interpolant `Π_h^k` of (8.37), which are not planned
+(no numbered one-dimensional result depends on them), and it rests on `equation_8_39`. Reading: for
+the sup norm the regularity assumption is superfluous — (8.40) is the maximum of (8.39) over the
+elements — and is inherited from the Sobolev-norm version of the cited theorem; recorded in the
+report's errata.'''
+deps = ["QuarteroniSaccoSaleri.Chapter08.equation_8_39"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.40)'

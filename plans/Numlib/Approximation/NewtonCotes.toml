@@ -1,0 +1,483 @@
+namespace = "Quadrature"
+desc = '''
+Newton–Cotes quadrature: the interpolatory rules at equispaced nodes, closed (`x_0 = a`, `x_n = b`,
+`h = (b - a)/n`) and open (`x_0 = a + h`, `x_n = b - h`, `h = (b - a)/(n + 2)`), their weights
+`h w_i` with `w_i` the integrals of the cardinal polynomials `φ_i(t) = ∏_{k ≠ i} (t - k)/(i - k)`
+over `[0, n]` (closed) or `[-1, n + 1]` (open) — independent of the interval, symmetric under
+`i ↦ n - i` —, the midpoint rule with its composite form, the discrete mean value theorem that
+turns a sum of panel errors into one value of a derivative, the error formulae of the classical
+rules with their exact constants, the general error characterization of Theorem 9.2 of
+[quarteroni2000numerical] through the Peano kernel, the composite error (Theorem 9.3), the
+convergence of composite rules with nonnegative weights (Property 9.1), and the Hermite quadrature
+rules of §9.5 with the corrected trapezoidal rule.
+
+The trapezoidal and Simpson rules, their one-panel Peano identities, their composite mean value
+forms and the Euler–Maclaurin form of the trapezoidal error already live in
+`Numlib/Approximation/CompositeQuadrature` (`Quadrature.trapezoidSum`, `Quadrature.simpsonSum`,
+`Quadrature.sub_composite_trapezoid_eq`, `Quadrature.sub_composite_simpson_eq`,
+`Quadrature.integral_peanoKernel_mul_eq`); this module adds the midpoint rule in the same style,
+identifies the three as the Newton–Cotes rules `n = 0` (open), `1`, `2` (closed), and states the
+general theory. Rules are plain real functions of `(f, a, b)` as in `CompositeQuadrature`, not
+`C(X, ℝ)` functionals; the bridge to `Quadrature.IsInterpolatory`/`Quadrature.IsExactOn` on
+`C(Set.Icc a b, ℝ)` is one lemma (`isExactOn_closedNewtonCotes`).
+
+Design decisions. (1) The weights are *defined* by the integer-node integrals, so that the
+interval-independence of the book's unnumbered display is the theorem
+`closedNewtonCotes_eq_sum_integral_basis` (change of variables `x = a + t h`) rather than a
+definition. (2) Exactness to degree `n + 1` for even `n` is proved from symmetry alone
+(`integral_eq_closedNewtonCotes_of_even`), which is cheap and is what the surface's "degree of
+exactness" clauses need; the *sharp* error formula (9.19)–(9.20) with its sign-definite constant is
+the expensive part and is isolated in the `exists_sub_…NewtonCotes_eq_of_…` nodes. (3) The
+route to Theorem 9.2 is the Peano kernel theorem `Quadrature.error_eq_integral_peanoKernel` at
+order `n + 1` (even `n`) or `n` (odd `n`), exactly as `CompositeQuadrature` does for `n = 1, 2`:
+the error is `∫ K f^{(n+2)}`, the kernel has one sign on `[a, b]`, and its integral is the error at
+one monomial, which the nodal polynomial computes. The sign constancy of the kernel is the real
+content (Isaacson–Keller pp. 308–314, Brass–Petras *Quadrature Theory* §4.2): for the closed rule
+with even `n` it is equivalent to the positivity of `W(x) = ∫_a^x ω_{n+1}` on `(a, b)`, proved by
+the ratio `|ω(t + h)/ω(t)| = (t - a + h)/(b - t) < 1` on the left half, which makes the
+successive panel integrals of `ω` alternate in sign with decreasing modulus, and by the antisymmetry
+of `ω` about the midpoint for the right half. The book's own route through
+`d/dx f[x_0, …, x_n, x] = f[x_0, …, x_n, x, x]` (its (9.22), Exercise 4) needs confluent divided
+differences and is not taken; (9.22) itself is a node of `Approximation/DividedDifference` (EXT).
+
+Consumers: [quarteroni2000numerical] §9.2–9.5, §9.7–9.8 (every error estimate of the chapter is an
+instance), §10.2 (Newton–Cotes versus Gauss), §11–13 (the trapezoidal and midpoint rules as
+one-step ODE and finite-difference quadratures); [kress1998numerical] §9.1–9.2, [han2009theoretical]
+Example 12.4.5.
+'''
+
+[[node]]
+id = "midpointRule"
+kind = "definition"
+desc = '''The midpoint (rectangle) rule `(b - a) * f ((a + b) / 2)` (9.5), as a real-valued function
+of `f : ℝ → ℝ` and the endpoints, in the style of `Quadrature.trapezoidSum`. ★'''
+deps = []
+
+[[node]]
+id = "midpointSum"
+kind = "definition"
+desc = '''The composite midpoint sum `H ∑_{k < m} g (a + (k + 1/2) H)` on the uniform mesh of `m`
+panels of width `H` (9.7), `midpointSum g a H m := ∑ k ∈ Finset.range m, H * g (a + (k + 1/2) * H)`.
+★'''
+deps = []
+
+[[node]]
+id = "sub_midpoint_eq_integral_peanoKernel"
+kind = "theorem"
+desc = '''**The Peano identity for the midpoint rule on one panel.** For `g` with `HasDerivAt g (g' x) x`
+and `HasDerivAt g' (g'' x) x` on `uIcc α β` and `g''` interval integrable,
+`∫_α^β g - (β - α) g((α + β)/2) = ∫_α^β K(t) g''(t) dt` with the kernel
+`K(t) = (t - α)²/2` for `t ≤ (α + β)/2` and `(β - t)²/2` for `t ≥ (α + β)/2` (write it as
+`if t ≤ (α + β)/2 then (t - α)^2/2 else (β - t)^2/2`). Two integrations by parts on each half
+panel, as in `Quadrature.sub_trapezoid_eq_integral_peanoKernel`; the kernel is nonnegative. ★★'''
+deps = ["Quadrature.midpointRule"]
+
+[[node]]
+id = "integral_midpointKernel"
+kind = "theorem"
+desc = '''The midpoint kernel integrates to `(β - α)³/24` over the panel: `∫_α^β K = (β - α)^3/24`.
+Two integrals of quadratics (`integral_pow` after `intervalIntegral.integral_add_adjacent_intervals`
+at the midpoint). ★'''
+deps = ["Quadrature.sub_midpoint_eq_integral_peanoKernel"]
+
+[[node]]
+id = "exists_sub_midpoint_eq"
+kind = "theorem"
+desc = '''**The midpoint error in mean value form** (9.6): for `a < b`, `g` with derivatives `g'`, `g''`
+on `Icc a b` and `g''` continuous there, `∃ ξ ∈ Icc a b, ∫_a^b g - midpointRule g a b
+= ((b - a)/2)^3/3 * g'' ξ`. The kernel is nonnegative and integrates to `(b - a)³/24 = h³/3` with
+`h = (b - a)/2`; trap the error between `m (b - a)³/24` and `M (b - a)³/24` with `m ≤ g'' ≤ M`
+and apply the intermediate value theorem (the pattern of `Quadrature.sub_composite_trapezoid_eq`
+with `N = 1`). ★★'''
+deps = ["Quadrature.sub_midpoint_eq_integral_peanoKernel", "Quadrature.integral_midpointKernel"]
+
+[[node]]
+id = "sub_composite_midpoint_eq"
+kind = "theorem"
+desc = '''**The composite midpoint error in mean value form** (9.8): for `a < b`, `0 < m`,
+`H = (b - a)/m`, `g` of class `C²` on `Icc a b` (derivative chain `g'`, `g''`, `g''` continuous),
+`∃ ξ ∈ Icc a b, ∫_a^b g - midpointSum g a H m = (b - a)/24 * H^2 * g'' ξ`. Sum the panel errors
+of `exists_sub_midpoint_eq` — each is `H³/24 g''(ξ_k)` — and collect them with the discrete mean
+value theorem `ContinuousOn.exists_sum_mul_eq_mul_sum` (`δ_k = 1`), as the book does. ★★'''
+deps = ["Quadrature.midpointSum", "Quadrature.exists_sub_midpoint_eq", "ContinuousOn.exists_sum_mul_eq_mul_sum"]
+
+[[node]]
+id = "tendsto_midpointSum"
+kind = "theorem"
+desc = '''The composite midpoint rule converges for every continuous integrand as the mesh tends to
+zero: for `a ≤ b`, `g` continuous on `Icc a b`, `N : ℕ → ℕ` with `N n → ∞` and `hs n = (b - a)/N n`,
+`Tendsto (fun n => midpointSum g a (hs n) (N n)) atTop (𝓝 (∫ g))`. An instance of
+`Quadrature.tendsto_compositeSum` with the one-node panel rule of weight `1` at the panel midpoint,
+exactly as `Quadrature.tendsto_trapezoidSum` is. ★'''
+deps = ["Quadrature.midpointSum", "Quadrature.tendsto_compositeSum"]
+
+[[node]]
+id = "intNode"
+kind = "definition"
+desc = '''The integer nodes `intNode n i = (i : ℝ)` for `i : Fin (n + 1)`, the reference nodes of every
+Newton–Cotes rule. ★'''
+deps = []
+
+[[node]]
+id = "cardinalPoly"
+kind = "definition"
+desc = '''The cardinal polynomial `φ_i = Lagrange.basis Finset.univ (intNode n) i ∈ ℝ[X]`,
+`φ_i(t) = ∏_{k ≠ i} (t - k)/(i - k)`. ★'''
+deps = ["Quadrature.intNode"]
+
+[[node]]
+id = "intNodal"
+kind = "definition"
+desc = '''The nodal polynomial at the integer nodes, `π_{n+1}(t) = ∏_{i ≤ n} (t - i)`, as
+`∏ i : Fin (n + 1), (X - C (intNode n i))`. ★'''
+deps = ["Quadrature.intNode"]
+
+[[node]]
+id = "intNodal_comp_sub"
+kind = "theorem"
+desc = '''Antisymmetry of the nodal polynomial about the midpoint `n/2`:
+`(intNodal n).eval (n - t) = (-1)^(n + 1) * (intNodal n).eval t`. Reindex the product by
+`Fin.rev`. ★'''
+deps = ["Quadrature.intNodal"]
+
+[[node]]
+id = "newtonCotesWeight"
+kind = "definition"
+desc = '''The closed Newton–Cotes weight `w_i = ∫_0^n φ_i(t) dt`,
+`newtonCotesWeight n i := ∫ t in (0 : ℝ)..n, (cardinalPoly n i).eval t`, the book's unnumbered
+display after (9.18) (Table 9.2, left). ★'''
+deps = ["Quadrature.cardinalPoly"]
+
+[[node]]
+id = "openNewtonCotesWeight"
+kind = "definition"
+desc = '''The open Newton–Cotes weight `w_i = ∫_{-1}^{n+1} φ_i(t) dt`,
+`openNewtonCotesWeight n i := ∫ t in (-1 : ℝ)..(n + 1), (cardinalPoly n i).eval t` (Table 9.2,
+right). ★'''
+deps = ["Quadrature.cardinalPoly"]
+
+[[node]]
+id = "closedNewtonCotes"
+kind = "definition"
+desc = '''The closed Newton–Cotes rule with `n + 1` nodes on `[a, b]`,
+`closedNewtonCotes n f a b := (b - a)/n * ∑ i : Fin (n + 1), newtonCotesWeight n i * f (a + i * ((b - a)/n))`
+(meaningful for `n ≥ 1`; for `n = 0` it is `0 * …`, junk). ★'''
+deps = ["Quadrature.newtonCotesWeight"]
+
+[[node]]
+id = "openNewtonCotes"
+kind = "definition"
+desc = '''The open Newton–Cotes rule with `n + 1` interior nodes on `[a, b]`, `h = (b - a)/(n + 2)`,
+`openNewtonCotes n f a b := h * ∑ i : Fin (n + 1), openNewtonCotesWeight n i * f (a + (i + 1) * h)`.
+★'''
+deps = ["Quadrature.openNewtonCotesWeight"]
+
+[[node]]
+id = "compositeNewtonCotes"
+kind = "definition"
+desc = '''The composite closed Newton–Cotes rule (9.25) on `m` panels of `[a, b]`:
+`∑ j ∈ Finset.range m, closedNewtonCotes n f (a + j H) (a + (j + 1) H)`, `H = (b - a)/m`. ★'''
+deps = ["Quadrature.closedNewtonCotes"]
+
+[[node]]
+id = "newtonCotesWeight_symm"
+kind = "theorem"
+desc = '''Symmetry of the closed weights, `newtonCotesWeight n (Fin.rev i) = newtonCotesWeight n i`
+(the book: `w_i = w_{n-i}`). The substitution `t ↦ n - t` (`intervalIntegral.integral_comp_sub_left`)
+carries `φ_i` to `φ_{n-i}`, by `Lagrange.basis` at the reflected nodes. ★★'''
+deps = ["Quadrature.newtonCotesWeight"]
+
+[[node]]
+id = "openNewtonCotesWeight_symm"
+kind = "theorem"
+desc = '''Symmetry of the open weights, `openNewtonCotesWeight n (Fin.rev i) = openNewtonCotesWeight n i`;
+the same substitution on `[-1, n + 1]`. ★★'''
+deps = ["Quadrature.openNewtonCotesWeight"]
+
+[[node]]
+id = "sum_newtonCotesWeight"
+kind = "theorem"
+desc = '''`∑ i, newtonCotesWeight n i = n`: the cardinal polynomials sum to `1` (`Lagrange.sum_basis`),
+so the weights sum to the length of `[0, n]`. Likewise `sum_openNewtonCotesWeight : ∑ i,
+openNewtonCotesWeight n i = n + 2`; state both in this node's clause or as two nodes. ★'''
+deps = ["Quadrature.newtonCotesWeight", "Quadrature.openNewtonCotesWeight"]
+
+[[node]]
+id = "closedNewtonCotes_eq_sum_integral_basis"
+kind = "theorem"
+desc = '''**The weights do not depend on the interval.** For `0 < n` and `a < b`, with the equispaced
+nodes `x_i = a + i h`, `h = (b - a)/n`,
+`closedNewtonCotes n f a b = ∑ i, (∫ t in a..b, (Lagrange.basis Finset.univ x i).eval t) * f (x i)`:
+the closed rule is the Lagrange quadrature formula (9.2) at the equispaced nodes. The change of
+variables `x = a + t h` (`intervalIntegral.integral_comp_mul_add`) takes `l_i(x)` to `φ_i(t)`, the
+identity `(x - x_k)/(x_i - x_k) = (t - k)/(i - k)` being the book's display before (9.18). The open
+analogue `openNewtonCotes_eq_sum_integral_basis` with `x_i = a + (i + 1) h`, `h = (b - a)/(n + 2)`.
+★★'''
+deps = ["Quadrature.closedNewtonCotes", "Quadrature.openNewtonCotes", "Quadrature.cardinalPoly"]
+
+[[node]]
+id = "integral_eq_closedNewtonCotes_of_degree_le"
+kind = "theorem"
+desc = '''**Exactness to degree `n`.** For `0 < n`, `a < b` and `p : ℝ[X]` with `p.degree ≤ n`,
+`∫ t in a..b, p.eval t = closedNewtonCotes n (fun t => p.eval t) a b`. From
+`closedNewtonCotes_eq_sum_integral_basis` and `Lagrange.eq_interpolate` (a polynomial of degree
+`≤ n` is its own interpolant at `n + 1` distinct nodes). The open analogue
+`integral_eq_openNewtonCotes_of_degree_le`. ★'''
+deps = ["Quadrature.closedNewtonCotes_eq_sum_integral_basis"]
+
+[[node]]
+id = "isExactOn_closedNewtonCotes"
+kind = "theorem"
+desc = '''The bridge to the functional vocabulary of `Numlib/Approximation/Quadrature`: on
+`X = Set.Icc a b` with `L = f ↦ ∫ f`, the weights `h w_i` and nodes `⟨a + i h, _⟩` satisfy
+`Quadrature.IsExactOn L w x n`, hence `Quadrature.IsInterpolatory L w x` by
+`Quadrature.isInterpolatory_iff_isExactOn`. ★'''
+deps = ["Quadrature.integral_eq_closedNewtonCotes_of_degree_le", "Quadrature.IsInterpolatory"]
+
+[[node]]
+id = "integral_eq_closedNewtonCotes_of_even"
+kind = "theorem"
+desc = '''**Even `n`: exactness to degree `n + 1` from symmetry.** For even `n > 0`, `a < b` and
+`p.degree ≤ n + 1`, `∫_a^b p = closedNewtonCotes n p a b`. Write `p = q + c (X - C ((a + b)/2))^(n+1)`
+with `q.degree ≤ n`; the odd power about the midpoint integrates to `0` over `[a, b]`, and the rule
+annihilates it too because the nodes are symmetric about the midpoint and the weights satisfy
+`newtonCotesWeight_symm`. The same argument gives `integral_eq_openNewtonCotes_of_even`. ★★'''
+deps = ["Quadrature.integral_eq_closedNewtonCotes_of_degree_le", "Quadrature.newtonCotesWeight_symm", "Quadrature.openNewtonCotesWeight_symm"]
+
+[[node]]
+id = "newtonCotesWeight_one"
+kind = "theorem"
+desc = '''Table 9.2 for the trapezoidal rule, `newtonCotesWeight 1 = ![1/2, 1/2]`, together with
+`newtonCotesWeight_two = ![1/3, 4/3, 1/3]` (Simpson), `newtonCotesWeight_three = ![3/8, 9/8, 9/8, 3/8]`,
+`openNewtonCotesWeight_zero = ![2]` (midpoint) and `openNewtonCotesWeight_two = ![8/3, -4/3, 8/3]`
+(the first open rule with a negative weight). Each is `Lagrange.basis` unfolded on `Fin.univ`
+(`Fin.prod_univ_succ`) and `integral_pow`/`norm_num`. One node per table entry, or one node with
+five clauses. ★'''
+deps = ["Quadrature.newtonCotesWeight", "Quadrature.openNewtonCotesWeight"]
+
+[[node]]
+id = "closedNewtonCotes_one"
+kind = "theorem"
+desc = '''`closedNewtonCotes 1 f a b = (b - a)/2 * (f a + f b)` (the trapezoidal rule (9.11), equal to
+`Quadrature.trapezoidSum f a (b - a) 1`), `closedNewtonCotes 2 f a b = (b - a)/6 * (f a + 4 f ((a + b)/2) + f b)`
+(Simpson (9.15), equal to `Quadrature.simpsonSum f a (b - a) 1`) and
+`openNewtonCotes 0 f a b = midpointRule f a b`. From the table node. ★'''
+deps = ["Quadrature.newtonCotesWeight_one", "Quadrature.closedNewtonCotes", "Quadrature.openNewtonCotes", "Quadrature.midpointRule", "Quadrature.trapezoidSum", "Quadrature.simpsonSum"]
+
+[[node]]
+id = "newtonCotesM"
+kind = "definition"
+desc = '''The constant `M_n = ∫_0^n t π_{n+1}(t) dt` of (9.19) for the closed rules,
+`newtonCotesM n := ∫ t in (0 : ℝ)..n, t * (intNodal n).eval t`; and `newtonCotesK n :=
+∫ t in (0 : ℝ)..n, (intNodal n).eval t` (`K_n` of (9.20)), `openNewtonCotesM n := ∫_{-1}^{n+1} t π_{n+1}`,
+`openNewtonCotesK n := ∫_{-1}^{n+1} π_{n+1}`. Four definitions. ★'''
+deps = ["Quadrature.intNodal"]
+
+[[node]]
+id = "integral_intNodal_pos_of_even"
+kind = "theorem"
+desc = '''**Positivity of `W`.** For even `n > 0` and `0 < x < n`, `0 < ∫ t in (0 : ℝ)..x, (intNodal n).eval t`.
+This is the sign constancy behind Theorem 9.2 ([IK66] p. 309). Proof: on `(k, k + 1)` the nodal
+polynomial has the sign `(-1)^(n - k)` (count the negative factors), so it is positive on `(0, 1)`;
+for `t ∈ (k, k + 1)` with `k + 1 < n/2` the ratio `|π(t + 1)/π(t)| = (t + 1)/(n - t) < 1`
+(`intNodal_succ_div`), so the unit-panel integrals `I_k = ∫_k^{k+1} π` alternate in sign with
+strictly decreasing modulus up to the middle; an alternating sum with decreasing terms and positive
+first term is positive, so `W(k) > 0` for `1 ≤ k ≤ n/2`, and `W` is monotone on each panel, so
+`W > 0` on `(0, n/2]`; finally `W(n - x) = W(x)` by `intNodal_comp_sub` (with `W(n) = 0`) covers
+`(n/2, n)`. ★★★'''
+deps = ["Quadrature.intNodal", "Quadrature.intNodal_comp_sub"]
+
+[[node]]
+id = "newtonCotesM_neg"
+kind = "theorem"
+desc = '''`newtonCotesM n < 0` for even `n > 0`: integrating by parts, `M_n = [t W(t)]_0^n - ∫_0^n W
+= -∫_0^n W < 0` since `W(n) = 0` (antisymmetry) and `W > 0` inside. Companions:
+`newtonCotesK_neg : newtonCotesK n < 0` for odd `n` (the nodal polynomial is even about the midpoint
+and its panel integrals decrease toward the centre, with the outer ones negative),
+`openNewtonCotesM_pos` for even `n` and `openNewtonCotesK_pos` for odd `n` (the same analysis on
+`[-1, n + 1]`; the outer panels `(-1, 0)` and `(n, n + 1)` dominate with the positive sign). The
+open cases are the parts of Theorem 9.2 the book states without proof. ★★★'''
+deps = ["Quadrature.newtonCotesM", "Quadrature.integral_intNodal_pos_of_even"]
+
+[[node]]
+id = "peanoKernel_closedNewtonCotes_nonpos_of_even"
+kind = "theorem"
+desc = '''**Sign constancy of the Peano kernel** of the closed rule with even `n`: with the weights
+`h w_i`, nodes `a + i h` and order `m = n + 1`, `Quadrature.peanoKernel a b w x (n + 1) t ≤ 0` for
+every `t ∈ Icc a b`. Equivalent to `integral_intNodal_pos_of_even` through the identity, for a
+rule exact to degree `n + 1`, `K_{n+1}(t) = -(1/(n+1)!) ∫_a^b W(x) ∂_x[(x - t)_+^{n+1}]' … `; the
+clean statement to prove is Steffensen's: the Peano kernel of a Newton–Cotes rule of highest
+exactness is definite. If the route through `W` is taken instead (the book's), this node is the
+identity `∫_a^b f[x_0, …, x_n, x] ω_{n+1}(x) dx = -∫_a^b W(x) d/dx f[x_0, …, x_n, x] dx` plus
+`DividedDifference.hasDerivAt_newton_snoc`; either way it is the hard node of the module. Odd `n`
+(order `m = n`, kernel nonpositive) and the open rules (kernels nonnegative) are the companions
+`peanoKernel_closedNewtonCotes_nonpos_of_odd`, `peanoKernel_openNewtonCotes_nonneg_of_even`,
+`peanoKernel_openNewtonCotes_nonneg_of_odd`. ★★★'''
+deps = ["Quadrature.closedNewtonCotes", "Quadrature.peanoKernel", "Quadrature.integral_intNodal_pos_of_even"]
+
+[[node]]
+id = "integral_peanoKernel_closedNewtonCotes_of_even"
+kind = "theorem"
+desc = '''The kernel integral is the error at one monomial: for even `n > 0`,
+`∫_a^b K_{n+1} = (newtonCotesM n / (n + 2)!) * h^(n + 3)`, `h = (b - a)/n`. Peano's theorem at
+`F 0 = (x - a)^{n+2}/(n+2)!` gives `∫ K = E(x^{n+2}/(n+2)!)`; since the rule is exact to degree
+`n + 1`, `E(x^{n+2}) = E(ω_{n+1}(x)(x - x_n)) = ∫_a^b ω_{n+1}(x)(x - x_n) dx` (the rule sees `0`),
+and `x = a + τ h`, `t = n - τ` turn this into `h^{n+3} ∫_0^n t π_{n+1}(t) dt` — the book's
+computation after (9.23). Odd `n`: `∫ K_n = (newtonCotesK n / (n + 1)!) h^(n + 2)`; open rules
+alike with `h = (b - a)/(n + 2)`. ★★'''
+deps = ["Quadrature.error_eq_integral_peanoKernel", "Quadrature.integral_eq_closedNewtonCotes_of_even", "Quadrature.newtonCotesM", "Quadrature.intNodal_comp_sub"]
+
+[[node]]
+id = "exists_sub_closedNewtonCotes_eq_of_even"
+kind = "theorem"
+desc = '''**Theorem 9.2, closed rules, even `n`** (9.19). For even `n > 0`, `a < b`, `f` of class
+`C^{n+2}` on an open `U ⊇ Icc a b` (`ContDiffOn ℝ (n + 2) f U`),
+`∃ ξ ∈ Set.Ioo a b, ∫_a^b f - closedNewtonCotes n f a b
+  = newtonCotesM n / (n + 2)! * ((b - a)/n)^(n + 3) * iteratedDeriv (n + 2) f ξ`.
+Peano's theorem at order `n + 1` (`Quadrature.error_eq_integral_peanoKernel` with the derivative
+chain `iteratedDeriv k f`), the sign-definite kernel and its integral, and the intermediate value
+theorem; `ξ` can be taken in the open interval because the kernel is nonzero on a set of positive
+measure. Companions with the same shape: `exists_sub_closedNewtonCotes_eq_of_odd` (9.20):
+`newtonCotesK n / (n + 1)! * h^(n + 2) * f^{(n+1)}(η)` for `f ∈ C^{n+1}`;
+`exists_sub_openNewtonCotes_eq_of_even`, `exists_sub_openNewtonCotes_eq_of_odd` with
+`openNewtonCotesM`, `openNewtonCotesK` and `h = (b - a)/(n + 2)`. Sanity checks: `n = 2` gives
+`-h⁵/90 f⁗(ξ)` (9.16), `n = 1` gives `-h³/12 f''` (9.12), open `n = 0` gives `h³/3 f''` (9.6). ★★★'''
+deps = ["Quadrature.peanoKernel_closedNewtonCotes_nonpos_of_even", "Quadrature.integral_peanoKernel_closedNewtonCotes_of_even", "Quadrature.error_eq_integral_peanoKernel"]
+
+[[node]]
+id = "not_integral_eq_closedNewtonCotes_of_even"
+kind = "theorem"
+desc = '''The degree of exactness of the closed rule with even `n` is *exactly* `n + 1`: there is a
+polynomial of degree `n + 2` (the monomial `X^(n+2)`) on which the rule is not exact. From
+`exists_sub_closedNewtonCotes_eq_of_even` at `f = x^{n+2}` (whose `(n+2)`-nd derivative is the
+nonzero constant `(n+2)!`) and `newtonCotesM_neg`. Odd `n`: degree exactly `n`, from `K_n ≠ 0`.
+In the functional vocabulary this is `Quadrature.degreeOfExactness L w x = n + 1`. ★'''
+deps = ["Quadrature.exists_sub_closedNewtonCotes_eq_of_even", "Quadrature.newtonCotesM_neg"]
+
+[[node]]
+id = "exists_sub_compositeNewtonCotes_eq_of_even"
+kind = "theorem"
+desc = '''**Theorem 9.3, even `n`** (9.26), with the corrected constant. For even `n > 0`, `a < b`,
+`0 < m`, `H = (b - a)/m`, `f ∈ C^{n+2}` on an open `U ⊇ Icc a b`,
+`∃ ξ ∈ Icc a b, ∫_a^b f - compositeNewtonCotes n f a b m
+  = (b - a) / (n + 2)! * (newtonCotesM n / n^(n + 3)) * H^(n + 2) * iteratedDeriv (n + 2) f ξ`.
+**Erratum:** the book prints `M_n/(n + 2)^{n+3}`; the closed panel spacing is `h_j = H/n`, not
+`H/(n + 2)` (the proof mixes the open spacing in), and `n = 2` must return the composite Simpson
+constant `-(b - a) H⁴/2880`, which `n^{n+3} = 32` does and `4^5 = 1024` does not. Proof: sum the
+panel formulae `exists_sub_closedNewtonCotes_eq_of_even` and collect the `m` values `f^{(n+2)}(ξ_j)`
+with `ContinuousOn.exists_sum_mul_eq_mul_sum`. Odd `n` (9.27):
+`exists_sub_compositeNewtonCotes_eq_of_odd`, constant `(b - a)/(n + 1)! * (newtonCotesK n / n^(n + 2)) * H^(n + 1)`
+(the book's constant for the odd case is right). ★★'''
+deps = ["Quadrature.compositeNewtonCotes", "Quadrature.exists_sub_closedNewtonCotes_eq_of_even", "ContinuousOn.exists_sum_mul_eq_mul_sum"]
+
+[[node]]
+id = "abs_sub_compositeNewtonCotes_le"
+kind = "theorem"
+desc = '''**Property 9.1 for Newton–Cotes rules with nonnegative weights.** For `0 < n` with
+`∀ i, 0 ≤ newtonCotesWeight n i`, `a ≤ b`, `f` continuous on `Icc a b`, `0 < m`, `H = (b - a)/m`,
+and `ε` with `|f u - f v| ≤ ε` whenever `u, v ∈ Icc a b`, `|u - v| ≤ H`:
+`|∫_a^b f - compositeNewtonCotes n f a b m| ≤ (b - a) * ε`. This is `Quadrature.abs_sub_compositeSum_le`
+with the panel weights `ω_i = w_i / n` (nonnegative, summing to one by `sum_newtonCotesWeight`) and
+the panel nodes at fractions `i/n`. The constant is `1`, better than the book's `2 (b - a) Ω(f; H)`.
+`tendsto_compositeNewtonCotes` is the limit statement `compositeNewtonCotes n f a b m → ∫ f` as
+`m → ∞`, from `Quadrature.tendsto_compositeSum`. ★★'''
+deps = ["Quadrature.compositeNewtonCotes", "Quadrature.sum_newtonCotesWeight", "Quadrature.abs_sub_compositeSum_le", "Quadrature.tendsto_compositeSum"]
+
+[[node]]
+id = "hermiteBasisL"
+kind = "definition"
+desc = '''The Hermite cardinal polynomials of (9.28) at distinct nodes `x : Fin (n + 1) → ℝ`:
+`hermiteBasisL x k = (1 - (ω''(x_k)/ω'(x_k)) (X - C (x_k))) * (l_k)^2` and
+`hermiteBasisM x k = (X - C (x_k)) * (l_k)^2`, with `l_k = Lagrange.basis Finset.univ x k` and
+`ω = ∏ (X - C (x_i))`. Two definitions. ★'''
+deps = []
+
+[[node]]
+id = "hermiteBasisL_eval_node"
+kind = "theorem"
+desc = '''The duality relations: `(hermiteBasisL x k).eval (x j) = if j = k then 1 else 0`,
+`(derivative (hermiteBasisL x k)).eval (x j) = 0`, `(hermiteBasisM x k).eval (x j) = 0`,
+`(derivative (hermiteBasisM x k)).eval (x j) = if j = k then 1 else 0`, for injective `x`.
+The `ω''/ω'` factor is chosen exactly to kill `(l_k²)'(x_k) = 2 l_k'(x_k)`, and
+`l_k'(x_k) = ω''(x_k)/(2 ω'(x_k))`. Four clauses. ★★'''
+deps = ["Quadrature.hermiteBasisL"]
+
+[[node]]
+id = "hermiteQuadrature"
+kind = "definition"
+desc = '''The Hermite quadrature rule (9.29): for nodes `x`, `hermiteQuadrature x a b f f' :=
+∑ k, (∫ t in a..b, (hermiteBasisL x k).eval t) * f (x k) + ∑ k, (∫ t in a..b, (hermiteBasisM x k).eval t) * f' (x k)`.
+★'''
+deps = ["Quadrature.hermiteBasisL"]
+
+[[node]]
+id = "integral_eq_hermiteQuadrature_of_degree_le"
+kind = "theorem"
+desc = '''**Hermite quadrature has degree of exactness `2n + 1`**: for injective `x : Fin (n + 1) → ℝ`
+and `p : ℝ[X]` with `p.degree ≤ 2n + 1`,
+`∫_a^b p = hermiteQuadrature x a b (fun t => p.eval t) (fun t => (derivative p).eval t)`. By
+`Hermite.isUnisolvent`/`Hermite.eq_interpolate` and the duality relations,
+`p = ∑ p(x_k) L_k + ∑ p'(x_k) M_k` (both sides agree with multiplicity two at every node and have
+degree `≤ 2n + 1`); integrate. ★★'''
+deps = ["Quadrature.hermiteQuadrature", "Quadrature.hermiteBasisL_eval_node", "Hermite.isUnisolvent"]
+
+[[node]]
+id = "correctedTrapezoid"
+kind = "definition"
+desc = '''The corrected trapezoidal rule (9.30),
+`correctedTrapezoid f f' a b := (b - a)/2 * (f a + f b) + (b - a)^2/12 * (f' a - f' b)`, and its
+composite form (9.32) `correctedTrapezoidSum f f' a b m := Quadrature.trapezoidSum f a ((b - a)/m) m + ((b - a)/m)^2/12 * (f' a - f' b)`.
+Two definitions. ★'''
+deps = ["Quadrature.trapezoidSum"]
+
+[[node]]
+id = "hermiteQuadrature_two_eq_correctedTrapezoid"
+kind = "theorem"
+desc = '''The Hermite rule at the two nodes `a, b` is the corrected trapezoidal rule:
+`hermiteQuadrature ![a, b] a b f f' = correctedTrapezoid f f' a b` for `a ≠ b` — the weights
+`α_0 = α_1 = (b - a)/2`, `β_0 = -β_1 = (b - a)²/12` of the book. Integrate four explicit cubics. ★'''
+deps = ["Quadrature.hermiteQuadrature", "Quadrature.correctedTrapezoid"]
+
+[[node]]
+id = "exists_sub_correctedTrapezoid_eq"
+kind = "theorem"
+desc = '''**The corrected trapezoidal error** (9.31): for `a < b` and `g` with a derivative chain
+`g', g'', g₃, g₄` on `Icc a b`, `g₄` continuous,
+`∃ ξ ∈ Icc a b, ∫_a^b g - correctedTrapezoid g g' a b = (b - a)^5/720 * g₄ ξ`.
+`Quadrature.integral_peanoKernel_mul_eq` already says the trapezoidal error equals
+`-((b - a)²/12)(g'(b) - g'(a)) + ∫ (t - a)²(t - b)² g₄(t)/24 dt`, i.e. the corrected trapezoidal
+error is `∫ (t - a)²(t - b)²/24 · g₄`; the kernel is nonnegative and integrates to `(b - a)⁵/720`
+(`Quadrature.integral_peanoKernel_sq`); intermediate value theorem. ★'''
+deps = ["Quadrature.correctedTrapezoid", "Quadrature.integral_peanoKernel_mul_eq", "Quadrature.integral_peanoKernel_sq", "Quadrature.sub_trapezoid_eq_integral_peanoKernel"]
+
+[[node]]
+id = "correctedTrapezoidSum_eq_sum"
+kind = "theorem"
+desc = '''The composite corrected trapezoidal rule is the sum of the panel rules: for `0 < m`,
+`correctedTrapezoidSum f f' a b m = ∑ j ∈ range m, correctedTrapezoid f f' (x_j) (x_{j+1})`,
+`x_j = a + j H`; the derivative terms at the interior nodes cancel (telescoping), which is the
+book's remark after (9.32). ★'''
+deps = ["Quadrature.correctedTrapezoid"]
+
+[[node]]
+id = "sub_correctedTrapezoidSum_eq"
+kind = "theorem"
+desc = '''**The composite corrected trapezoidal error in mean value form**: for `a < b`, `0 < m`,
+`H = (b - a)/m`, `g ∈ C⁴` on `Icc a b` (derivative chain, `g₄` continuous),
+`∃ ξ ∈ Icc a b, ∫_a^b g - correctedTrapezoidSum g g' a b m = (b - a) * H^4/720 * g₄ ξ` — the
+order-`4` behaviour Example 9.5 observes. Sum the panel identities and apply the discrete mean
+value theorem. ★★'''
+deps = ["Quadrature.correctedTrapezoidSum_eq_sum", "Quadrature.exists_sub_correctedTrapezoid_eq", "ContinuousOn.exists_sum_mul_eq_mul_sum"]
+
+[[node]]
+id = "abs_sub_simpson_add_estimate_le"
+kind = "theorem"
+desc = '''**The adaptive Simpson error estimator, made rigorous** ((9.42)–(9.44)). For `α < β`,
+`h₀ = (β - α)/2`, `g ∈ C⁴` on `Icc α β` with `|g₄ u - g₄ v| ≤ ω` for all `u, v ∈ Icc α β`, let
+`S = simpsonSum g α (β - α) 1` and `S₂ = simpsonSum g α ((β - α)/2) 2`. Then
+`|(∫_α^β g - S₂) + (S - S₂)/15| ≤ h₀^5/1350 * ω`. From the two mean value formulae
+`∫ g - S = -h₀⁵/90 g₄(ξ)` and `∫ g - S₂ = -h₀⁵/1440 · (g₄(ξ₁) + g₄(ξ₂))/2`
+(`Quadrature.sub_composite_simpson_eq` with `N = 1, 2`): the combination is
+`h₀⁵ (g₄(ξ) - A)/1350` with `A` the average. The book's `|I - S₂| ≃ |S - S₂|/15` is this with
+`ω` neglected; note the sign, `I - S₂ ≈ -(S - S₂)/15`. ★★'''
+deps = ["Quadrature.sub_composite_simpson_eq", "Quadrature.simpsonSum"]

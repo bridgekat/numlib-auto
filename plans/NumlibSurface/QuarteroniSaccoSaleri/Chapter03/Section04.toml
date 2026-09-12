@@ -1,0 +1,129 @@
+namespace = "QuarteroniSaccoSaleri.Chapter03"
+desc = '''
+§3.4, other factorizations: `LDMᵀ` and `LDLᵀ` (Theorem 3.5), Cholesky (Theorem 3.6 with the recurrence
+(3.45) and its backward error), and QR (Definition 3.1, Property 3.3, Gram–Schmidt (3.49) and the
+modified variant). Backbone: `Numlib/LinearAlgebra/Matrix/LU` (`IsLDM`), `Cholesky`, `QR`,
+`LeastSquares` (`IsQR`), `Numlib/FloatingPoint/LU`, `Numlib/Analysis/InnerProductSpace/GramSchmidt`.
+Example 3.4 (a numerical comparison) and Programs 7–8 are not nodes.
+'''
+
+[[node]]
+id = "theorem_3_5"
+kind = "theorem"
+desc = '''Theorem 3.5: if all leading principal minors of `A : Matrix (Fin n) (Fin n) ℝ` are nonzero (orders `1,
+…, n`; the book says "all the principal minors", its proof uses the leading ones), there are unique
+`L` unit lower triangular, `D` diagonal, `Mᵀ` unit upper triangular with `A = L D Mᵀ`;
+`Matrix.existsUnique_isLDM`. ★'''
+deps = ["Matrix.existsUnique_isLDM", "Matrix.IsLDM", "QuarteroniSaccoSaleri.Chapter03.theorem_3_4"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 3.5'
+
+[[node]]
+id = "ldl_of_isSymm"
+kind = "theorem"
+desc = '''§3.4.2, first paragraph: if `A` is symmetric (and Theorem 3.5's hypothesis holds) then `M = L`, the
+`LDLᵀ` factorization; and if `A` is also positive definite the diagonal of `D` is positive.
+`Matrix.IsLDM.eq_of_isSymm`, `Matrix.IsLDM.diag_pos_of_posDef`. The displayed `H₃ = L D Lᵀ` with `D =
+diag(1, 1/12, 1/180)` is a checkable instance (`norm_num` on `3 × 3` rationals) worth adding as
+`ldl_hilbert_three` if cheap. ★'''
+deps = ["Matrix.IsLDM.eq_of_isSymm", "Matrix.IsLDM.diag_pos_of_posDef", "QuarteroniSaccoSaleri.Chapter03.theorem_3_5"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.4.2'
+
+[[node]]
+id = "theorem_3_6"
+kind = "theorem"
+desc = '''Theorem 3.6, (3.44): for symmetric positive definite `A : Matrix (Fin n) (Fin n) ℝ` there is a unique
+upper triangular `H` with positive diagonal and `A = Hᵀ H`; `Matrix.existsUnique_isCholesky`
+(`Matrix.IsCholesky A H`). ★'''
+deps = ["Matrix.existsUnique_isCholesky", "Matrix.IsCholesky"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 3.6'
+
+[[node]]
+id = "equation_3_45"
+kind = "theorem"
+desc = '''(3.45): the entries `h_ij` of `Hᵀ` are `h_11 = √a_11`, `h_ij = (a_ij - ∑_{k<j} h_ik h_jk) / h_jj` for
+`j < i`, `h_ii = (a_ii - ∑_{k<i} h_ik²)^{1/2}` — the total function `Matrix.cholesky A`, which is
+`Hᵀ` for the `H` of Theorem 3.6 (`Matrix.isCholesky_cholesky`, `Matrix.cholesky_eq_of_isCholesky`).
+★'''
+deps = ["Matrix.cholesky", "Matrix.isCholesky_cholesky", "QuarteroniSaccoSaleri.Chapter03.theorem_3_6"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.45)'
+
+[[node]]
+id = "cholesky_backward_error"
+kind = "theorem"
+desc = '''§3.4.2, stability of (3.45): the computed factor `H̃` satisfies `H̃ᵀ H̃ = A + δA`. The book quotes
+Wilkinson's normwise `‖δA‖₂ ≤ 8 n (n+1) u ‖A‖₂` under `2 n (n+1) u ≤ 1 - (n+1) u`; the surface
+states the componentwise Higham Theorem 10.3, `|δA| ≤ γ_{n+1} |H̃ᵀ| |H̃|` for an admissible
+`FloatingPoint.RoundsCholesky m A H̃` with `(n+1) u < 1` (`FloatingPoint.exists_roundsCholesky_eq_add`),
+from which a normwise bound with a different constant follows; Wilkinson's constant itself is not
+reproduced (see the chapter report). ★'''
+deps = ["FloatingPoint.exists_roundsCholesky_eq_add", "FloatingPoint.RoundsCholesky"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.4.2'
+
+[[node]]
+id = "definition_3_1"
+kind = "definition"
+desc = '''Definition 3.1: `A : Matrix (Fin m) (Fin n) ℝ`, `n ≤ m`, admits a QR factorization if `A = Q R` with `Q
+∈ orthogonalGroup (Fin m) ℝ` and `R` upper trapezoidal with zero rows from the `(n+1)`-st on;
+`Matrix.IsQR A Q R` of `Numlib/LinearAlgebra/Matrix/LeastSquares`, and every such `A` has one
+(`Matrix.exists_isQR`, from the Householder triangularization
+`Matrix.exists_unitary_mul_upperTriangular`). ★'''
+deps = ["Matrix.IsQR", "Matrix.exists_unitary_mul_upperTriangular"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 3.1'
+
+[[node]]
+id = "property_3_3"
+kind = "theorem"
+desc = '''Property 3.3, existence, (3.47)–(3.48): from a QR factorization of a rank-`n` `A`, `Q̃ = Q(1:m, 1:n)`
+and `R̃ = R(1:n, 1:n)` satisfy `A = Q̃ R̃`, `Q̃ᵀ Q̃ = 1`, `R̃` upper triangular; `Matrix.IsQR.reduced`
+and its clause lemmas. ★'''
+deps = ["Matrix.IsQR.reduced", "QuarteroniSaccoSaleri.Chapter03.definition_3_1"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 3.3'
+
+[[node]]
+id = "property_3_3_unique"
+kind = "theorem"
+desc = '''Property 3.3, uniqueness: the reduced factorization `A = Q̃ R̃` (`Q̃ᵀ Q̃ = 1`, `R̃` upper triangular) is
+unique *once the diagonal of `R̃` is normalized positive* — as printed, uniqueness fails (`Q̃ D, D R̃`
+for a diagonal `D` of signs); the normalization is implicit in the book, whose `R̃` "coincides with
+the Cholesky factor". `Matrix.qr_unique`. ★'''
+deps = ["Matrix.qr_unique", "QuarteroniSaccoSaleri.Chapter03.property_3_3"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 3.3'
+
+[[node]]
+id = "property_3_3_cholesky"
+kind = "theorem"
+desc = '''Property 3.3, last clause: `R̃` with positive diagonal is the Cholesky factor `H` of the symmetric
+positive definite `Aᵀ A`, `Aᵀ A = R̃ᵀ R̃`; `Matrix.cholesky_conjTranspose_mul_self_of_qr` and
+`Matrix.posDef_conjTranspose_mul_self_of_linearIndependent`. Also the sentence after (3.49): the
+diagonal entries of `R̃` are all nonzero iff `A` has full rank (`Matrix.linearIndependent_of_qr`). ★'''
+deps = ["Matrix.cholesky_conjTranspose_mul_self_of_qr", "Matrix.posDef_conjTranspose_mul_self_of_linearIndependent", "QuarteroniSaccoSaleri.Chapter03.property_3_3_unique", "QuarteroniSaccoSaleri.Chapter03.theorem_3_6"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 3.3'
+
+[[node]]
+id = "property_3_3_range"
+kind = "theorem"
+desc = '''After Property 3.3: if `A` has full column rank, the columns of `Q̃` form an orthonormal basis of
+`range A` (the column space, `Submodule.span ℝ (Set.range Aᵀ)`); `Matrix.IsQR.span_reducedQ_eq`
+(`R̃` invertible). ★'''
+deps = ["Matrix.IsQR.reduced", "QuarteroniSaccoSaleri.Chapter03.property_3_3"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 3.3'
+
+[[node]]
+id = "equation_3_49"
+kind = "theorem"
+desc = '''(3.49), Gram–Schmidt: for linearly independent `x : Fin n → EuclideanSpace ℝ (Fin m)`, the vectors `q
+= gramSchmidt ℝ x` satisfy `q 0 = x 0` and `q (k+1) = x (k+1) - ∑ i ≤ k, (⟪q i, x (k+1)⟫ / ⟪q i, q
+i⟫) • q i`, are pairwise orthogonal, and `q̃ = gramSchmidtNormed ℝ x` are the columns of `Q̃` with `R̃ i
+j = ⟪q̃ i, x j⟫`; Mathlib's `gramSchmidt_def''`, `gramSchmidt_orthogonal`, and `Matrix.exists_qr` of
+`Numlib/LinearAlgebra/Matrix/QR` for the identification with (3.47). ★'''
+deps = ["Matrix.exists_qr", "QuarteroniSaccoSaleri.Chapter03.property_3_3"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.49)'
+
+[[node]]
+id = "modifiedGramSchmidt_eq"
+kind = "theorem"
+desc = '''§3.4.3, the display after Program 8: the modified Gram–Schmidt vector `a^{(k)}_{k+1}`, obtained by
+subtracting the projections on `q̃_1, …, q̃_k` one after the other, equals the classical `a_{k+1} -
+∑_{j ≤ k} ⟪q̃_j, a_{k+1}⟫ q̃_j`; `InnerProductSpace.modifiedGramSchmidtSweep_eq_sub_sum`. ★'''
+deps = ["InnerProductSpace.modifiedGramSchmidtSweep_eq_sub_sum", "QuarteroniSaccoSaleri.Chapter03.equation_3_49"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.4.3'

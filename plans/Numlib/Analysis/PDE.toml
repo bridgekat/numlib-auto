@@ -1,0 +1,9 @@
+desc = '''
+Classical (pointwise) theory of the model partial differential equations that the numerical
+chapters approximate, at the level of differentiable functions of two real variables: no Sobolev
+space, no weak solution, no existence theory beyond explicit formulas. `Transport` is the linear
+first-order scalar equation and constant-coefficient hyperbolic systems, solved along
+characteristics. The heat equation's classical theory (maximum principle, smoothing) is a known
+blocker (`notes/frontier.md` §9) and is not planned; its energy estimate for a classical solution
+is stated in the surface directly.
+'''

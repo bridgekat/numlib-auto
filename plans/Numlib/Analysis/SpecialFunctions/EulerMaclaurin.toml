@@ -1,0 +1,106 @@
+namespace = "EulerMaclaurin"
+desc = '''
+The Euler–Maclaurin summation formula in the form the trapezoidal rule uses
+([quarteroni2000numerical] Property 9.3, (9.36)): for `f ∈ C^{2k+2}` and `h = (b - a)/m`,
+
+`T_m(f) = ∫_a^b f + ∑_{i=1}^{k} B_{2i}/(2i)! h^{2i} (f^{(2i-1)}(b) - f^{(2i-1)}(a))
+          + B_{2k+2}/(2k+2)! h^{2k+2} (b - a) f^{(2k+2)}(η)`,
+
+with `B_j` Mathlib's `bernoulli j : ℚ` (the `B₁ = -1/2` convention; only even indices occur) and
+`T_m` the composite trapezoidal sum `Quadrature.trapezoidSum`.
+
+Mathlib supplies everything about the Bernoulli polynomials that the proof needs:
+`bernoulliFun k x = (Polynomial.bernoulli k).eval x` (in `Mathlib/NumberTheory/ZetaValues.lean`)
+with `hasDerivAt_bernoulliFun : HasDerivAt (bernoulliFun (k+1)) ((k+1) * bernoulliFun k x) x`,
+`bernoulliFun_eval_zero`, `bernoulliFun_endpoints_eq_of_ne_one` (`B_k(1) = B_k(0)` for `k ≠ 1`),
+`integral_bernoulliFun_eq_zero`, `bernoulli_eq_zero_of_odd`, the Fourier expansion
+`hasSum_one_div_nat_pow_mul_cos` (`∑ cos(2πnx)/n^{2k}` in terms of `B_{2k}(x)`) and
+`hasSum_zeta_nat`. Mathlib has **no** Euler–Maclaurin formula (`grep -rn "Euler.Maclaurin\|Maclaurin"
+Mathlib/` finds only the Leibniz series file and `ZetaValues`; `periodizedBernoulli` exists but is
+used only for Fourier coefficients).
+
+The proof is the classical one. On the reference panel `[0, 1]`, `2k + 1` integrations by parts
+against `B_1(t) = t - 1/2`, `B_2/2!`, … give the one-panel identity with the integral remainder
+`-(1/(2k+1)!) ∫_0^1 B_{2k+1}(t) g^{(2k+1)}(t) dt`; the odd Bernoulli numbers vanish, which is why
+only even powers appear. One more integration by parts and the fact that `B_{2k+2}(t) - B_{2k+2}`
+has one sign on `[0, 1]` (from the Fourier expansion: it is a constant times `∑ (cos 2πnt - 1)/n^{2k+2}`)
+with integral `-B_{2k+2}` turn the remainder into the mean value form. The panels of the composite
+rule are the reference panel scaled by `h`, their boundary terms telescope, and the discrete mean
+value theorem `ContinuousOn.exists_sum_mul_eq_mul_sum` collects the `m` remainders.
+
+Relation to the existing backbone: `Quadrature.abs_sub_trapezoidSum_add_le` in
+`Numlib/Approximation/CompositeQuadrature` is the case `k = 1` as a bound (`B_4/4! = -1/720`);
+it stays, being what the Nyström expansion of Atkinson–Han Example 12.4.6 consumes. Consumers:
+`Numlib/Approximation/Extrapolation` (Romberg), [quarteroni2000numerical] §9.6–9.7, §10.9
+(periodic integrands: all boundary terms vanish, giving spectral accuracy of the trapezoidal rule —
+the alternative route to `Numlib/Approximation/TrapezoidExactness`), [kress1998numerical] §9.4.
+'''
+
+[[node]]
+id = "integral_eq_sub_sum_sub_integral"
+kind = "theorem"
+desc = '''**The one-panel Euler–Maclaurin identity with integral remainder.** For `g : ℝ → ℝ` of class
+`C^{2k+1}` (`ContDiff ℝ (2k+1) g`, or a derivative chain on `Icc 0 1`),
+`∫_0^1 g = (g 0 + g 1)/2 - ∑ i ∈ Finset.Icc 1 k, bernoulli (2i)/(2i)! * (g^{(2i-1)}(1) - g^{(2i-1)}(0))
+  - (1/(2k+1)!) ∫_0^1 bernoulliFun (2k+1) t * g^{(2k+1)}(t) dt`.
+Induction on `k`. Base: `∫ g = [B_1 g]_0^1 - ∫ B_1 g' = (g 0 + g 1)/2 - ∫ B_1 g'`. Step: two
+integrations by parts with `B_{j+1}/(j+1)` as the antiderivative of `B_j`
+(`hasDerivAt_bernoulliFun`, `intervalIntegral.integral_mul_deriv_eq_deriv_mul`); the boundary term
+of the odd step vanishes because `bernoulli (2i+1) = 0` for `i ≥ 1` and `B_j(0) = B_j(1)` for
+`j ≠ 1`. ★★★'''
+deps = []
+
+[[node]]
+id = "bernoulliFun_sub_bernoulli_sign"
+kind = "theorem"
+desc = '''`0 ≤ (-1)^k * (bernoulliFun (2k) t - bernoulli (2k))` for `0 < k` and `t ∈ Icc 0 1`
+(`k = 1`: `t² - t ≤ 0`; `k = 2`: `t²(t-1)² ≥ 0`). From Mathlib's `hasSum_one_div_nat_pow_mul_cos`:
+`B_{2k}(t) = (-1)^{k+1} 2 (2k)!/(2π)^{2k} ∑_{n ≥ 1} cos(2πnt)/n^{2k}`, so
+`B_{2k}(t) - B_{2k} = (-1)^{k+1} 2 (2k)!/(2π)^{2k} ∑ (cos(2πnt) - 1)/n^{2k}`, and every term of the
+series is `≤ 0`. Alternatively by induction through the derivative recursion and the zeros of the
+odd polynomials at `0, 1/2, 1`, which is more work. ★★'''
+deps = []
+
+[[node]]
+id = "integral_bernoulliFun_sub_bernoulli"
+kind = "theorem"
+desc = '''`∫_0^1 (bernoulliFun (2k) t - bernoulli (2k)) dt = -bernoulli (2k)` for `0 < k`, from
+`integral_bernoulliFun_eq_zero`. ★'''
+deps = []
+
+[[node]]
+id = "exists_integral_eq_mul"
+kind = "theorem"
+desc = '''**The one-panel identity with the mean value remainder**: for `g ∈ C^{2k+2}` on `Icc 0 1`,
+`∃ η ∈ Icc 0 1, ∫_0^1 g = (g 0 + g 1)/2 - ∑ i ∈ Icc 1 k, bernoulli (2i)/(2i)! * (g^{(2i-1)}(1) - g^{(2i-1)}(0))
+  - bernoulli (2k+2)/(2k+2)! * g^{(2k+2)}(η)`.
+Apply `integral_eq_sub_sum_sub_integral` at `k + 1`, then write the last boundary term as
+`bernoulli (2k+2)/(2k+2)! ∫_0^1 g^{(2k+2)}` and combine with the integral remainder into
+`(1/(2k+2)!) ∫_0^1 (bernoulli (2k+2) - bernoulliFun (2k+2) t) g^{(2k+2)}(t) dt`; the weight has one
+sign and integrates to `bernoulli (2k+2)`; intermediate value theorem. ★★'''
+deps = ["EulerMaclaurin.integral_eq_sub_sum_sub_integral", "EulerMaclaurin.bernoulliFun_sub_bernoulli_sign", "EulerMaclaurin.integral_bernoulliFun_sub_bernoulli"]
+
+[[node]]
+id = "trapezoidSum_eq_integral_add_sum_add_mul"
+kind = "theorem"
+desc = '''**Property 9.3, the Euler–Maclaurin expansion of the composite trapezoidal rule** (9.36).
+For `a < b`, `k : ℕ`, `f` of class `C^{2k+2}` on an open `U ⊇ Icc a b`, `0 < m`, `h = (b - a)/m`:
+`∃ η ∈ Set.Ioo a b, Quadrature.trapezoidSum f a h m
+  = ∫_a^b f + ∑ i ∈ Finset.Icc 1 k, bernoulli (2i)/(2i)! * h^(2i) * (iteratedDeriv (2i-1) f b - iteratedDeriv (2i-1) f a)
+    + bernoulli (2k+2)/(2k+2)! * h^(2k+2) * (b - a) * iteratedDeriv (2k+2) f η`
+(Bernoulli numbers cast `ℚ → ℝ`). Scale `exists_integral_eq_mul` to each panel `[x_j, x_{j+1}]`
+through `g(t) = f(x_j + t h)` (`iteratedDeriv` of the composition is `h^r f^{(r)}`,
+`intervalIntegral.integral_comp_mul_add`), sum over `j`: the interior boundary terms telescope, and
+the `m` remainders `h^{2k+3} B_{2k+2}/(2k+2)! f^{(2k+2)}(η_j)` are collected by
+`ContinuousOn.exists_sum_mul_eq_mul_sum` into `(b - a) h^{2k+2} …`. `η` in the open interval
+because the mean value weight is nonzero on a set of positive measure. ★★★'''
+deps = ["EulerMaclaurin.exists_integral_eq_mul", "Quadrature.trapezoidSum", "ContinuousOn.exists_sum_mul_eq_mul_sum"]
+
+[[node]]
+id = "_root_.bernoulli_eq_tsum_two_div_pow"
+kind = "theorem"
+desc = '''The book's definition of the Bernoulli numbers agrees with Mathlib's: for `0 < j`,
+`(bernoulli (2j) : ℝ) = (-1)^(j-1) * (2j)! * ∑' n : ℕ, 2 / (2 * (n + 1) * π)^(2j)`. From Mathlib's
+`hasSum_zeta_nat : HasSum (fun n => 1/n^(2j)) ((-1)^(j+1) * 2^(2j-1) * π^(2j) * bernoulli (2j) / (2j)!)`
+by clearing constants. ★'''
+deps = []

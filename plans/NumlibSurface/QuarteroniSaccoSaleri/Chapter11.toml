@@ -1,0 +1,17 @@
+desc = '''
+Quarteroni–Sacco–Saleri, Chapter 11: numerical solution of ordinary differential equations. The
+Cauchy problem, its Liapunov stability and Gronwall's lemma (§11.1); one-step methods, zero-
+stability, convergence and absolute stability (§11.2–11.3); linear difference equations (§11.4);
+linear multistep methods — Adams, BDF, the order conditions, the root conditions, the Dahlquist
+equivalence theorem, absolute stability, predictor–corrector schemes (§11.5–11.7); Runge–Kutta
+methods, embedded pairs, implicit families and stability functions (§11.8); systems (§11.9) and
+stiffness (§11.10). §11.11 (a pendulum and an arterial-wall model) states no numbered result and
+has no group; the exercises the main text cites (1–5, 12 with (11.91)) are in `Section12`.
+
+The backbone it specializes is `Numlib/Analysis/ODE/{Gronwall,Cauchy,LinearSystem}`,
+`Numlib/Algebra/LinearRecurrence` and `Numlib/ODE/{Gronwall,OneStep,DifferenceEquation,Multistep,RungeKutta}`,
+all stated for a real normed space `E`; the surface reads them at `E = ℝ` (scalar chapter,
+§11.2–11.8), at `E = ℂ` for the test equation, and at `E = EuclideanSpace ℝ (Fin n)` in §11.9.
+The book's `Φ(t_n, u_n, f_n; h)` becomes an increment `Φ t u v h` with `f` built in; the book's
+grid is `ODE.node t₀ h n`, `ODE.gridCount T h`.
+'''

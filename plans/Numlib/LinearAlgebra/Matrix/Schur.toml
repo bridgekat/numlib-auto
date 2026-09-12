@@ -11,3 +11,38 @@ source = "Saad, Numerical Methods for Large Eigenvalue Problems, Theorem 1.5"
 [[node]]
 id = "exists_unitary_conj_upperTriangular"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 1.9"
+
+[[node]]
+id = "mulVec_conj_eq_smul_of_mulVec_eq_smul"
+kind = "theorem"
+desc = '''Similarity moves eigenvectors: `A *ᵥ x = μ • x → IsUnit U → (U⁻¹ * A * U) *ᵥ (U⁻¹ *ᵥ x) = μ •
+(U⁻¹ *ᵥ x)`, and the unitary form `(Uᴴ * A * U) *ᵥ (Uᴴ *ᵥ x) = μ • (Uᴴ *ᵥ x)` for `U ∈ unitaryGroup
+n 𝕜`. Quarteroni–Sacco–Saleri Exercise 5.9, used by §5.8.1–5.8.2 to carry an eigenvector of the
+Hessenberg or Schur form back to `A` (`x = Q y`). ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 5.9'
+
+[[node]]
+id = "IsUpperTriangular.schurEigenvector"
+kind = "definition"
+desc = '''The eigenvector of an upper triangular `T : Matrix (Fin N) (Fin N) 𝕜` for a *simple* diagonal
+entry `T k k = λ` (Quarteroni–Sacco–Saleri §5.8.2, (5.56)): `schurEigenvector T k : Fin N → 𝕜` is
+`1` at `k`, `0` at `i > k`, and on `i < k` the solution `y₁ = -(T₁₁ - λ I)⁻¹ v` of the leading
+triangular system, `T₁₁ = T.submatrix (Fin.castLE hk) (Fin.castLE hk)`, `v i = T (castLE i) k`
+(defined through `Matrix.inv`, total; meaningful when `T i i ≠ λ` for `i < k`). ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.56)'
+
+[[node]]
+id = "IsUpperTriangular.mulVec_schurEigenvector"
+kind = "theorem"
+desc = '''For `T` upper triangular and `k` with `T i i ≠ T k k` for all `i ≠ k` (in fact only `i < k` is
+used for the triangular solve, and `i > k` for the vanishing tail being forced),
+`T *ᵥ schurEigenvector T k = T k k • schurEigenvector T k` and `schurEigenvector T k ≠ 0` (its
+`k`-th entry is `1`). Rows `> k`: `y` vanishes there and `T` is upper triangular. Row `k`: `T k k
+· 1`. Rows `i < k`: `(T₁₁ y₁) i + v i = λ (y₁) i` is the defining system. Together with
+`mulVec_conj_eq_smul_of_mulVec_eq_smul` and `exists_unitary_conj_upperTriangular` this computes an
+eigenvector of `A` for each simple eigenvalue from its Schur form, which is what LAPACK's `trevc`
+does. ★★'''
+deps = ["Matrix.IsUpperTriangular.schurEigenvector", "Matrix.mulVec_conj_eq_smul_of_mulVec_eq_smul", "Matrix.exists_unitary_conj_upperTriangular"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.56)'

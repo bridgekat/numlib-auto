@@ -1,0 +1,92 @@
+namespace = "QuarteroniSaccoSaleri.Chapter03"
+desc = '''
+§3.12, improving the accuracy of GEM: scaling (§3.12.1) with the Skeel condition number of Remark
+3.7, and iterative refinement (§3.12.2) as a stationary iteration. Backbone:
+`Numlib/LinearSolve/Direct/Refinement`, `Numlib/LinearSolve/Perturbation/Componentwise`. Example
+3.10 (numerical) and the heuristic `K_∞(A) ≃ β^{t(1-1/p)}` are not nodes; the two finite-precision
+convergence factors of §3.12.2 are recorded as not formalized.
+'''
+
+[[node]]
+id = "scaledSystem"
+kind = "theorem"
+desc = '''§3.12.1: for nonsingular diagonal `D₁`, `D₂`, `A x = b ↔ (D₁ A D₂) y = D₁ b` with `y = D₂⁻¹ x` (row
+scaling: `D₂ = 1`); `Matrix.scaled_mulVec_eq_iff`. The claim `‖D₂⁻¹(x̂ - x)‖_∞/‖D₂⁻¹ x‖_∞ ≃ u
+K_∞(D₁ A D₂)` is (3.69) applied to the scaled system and is not a separate node. ★'''
+deps = ["Matrix.scaled_mulVec_eq_iff"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.12.1'
+
+[[node]]
+id = "remark_3_7"
+kind = "definition"
+desc = '''Remark 3.7: the Skeel condition numbers `cond(A) = ‖|A⁻¹| |A|‖_∞` and `cond(A, x) = ‖|A⁻¹| |A| |x|‖_∞
+/ ‖x‖_∞` (the book's display is garbled, `‖|A⁻¹| A |x| x‖_∞`, and is read this way):
+`Matrix.skeelCond`, `Matrix.skeelCondAt`. ★'''
+deps = ["Matrix.skeelCond", "Matrix.skeelCondAt"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 3.7'
+
+[[node]]
+id = "remark_3_7_iSup"
+kind = "theorem"
+desc = 'Remark 3.7: `cond(A) = sup_{x ≠ 0} cond(A, x)`; `Matrix.skeelCond_eq_iSup_skeelCondAt`. ★'
+deps = ["Matrix.skeelCond_eq_iSup_skeelCondAt", "QuarteroniSaccoSaleri.Chapter03.remark_3_7"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 3.7'
+
+[[node]]
+id = "remark_3_7_scaling"
+kind = "theorem"
+desc = '''Remark 3.7: `cond(D A, x) = cond(A, x)` for nonsingular diagonal `D`, unlike `K(A)`;
+`Matrix.skeelCondAt_diagonal_mul`. ★'''
+deps = ["Matrix.skeelCondAt_diagonal_mul", "QuarteroniSaccoSaleri.Chapter03.remark_3_7"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 3.7'
+
+[[node]]
+id = "iterativeRefinementStep"
+kind = "definition"
+desc = '''§3.12.2, steps 1–3: `x^{(i+1)} = x^{(i)} + z` with `r^{(i)} = b - A x^{(i)}` and `A z = r^{(i)}` solved
+through the LU factorization, i.e. `z = C r^{(i)}` with `C` the (approximate) inverse the LU solve
+realizes: `Refinement.step C A b`. The stopping test (step 4) is not a node. ★'''
+deps = ["Refinement.step"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.12.2'
+
+[[node]]
+id = "iterativeRefinement_exact"
+kind = "theorem"
+desc = '''§3.12.2: "in absence of rounding errors, the process would stop at the first step, yielding the
+exact solution" — with `C = A⁻¹`, `Refinement.step C A b x = A⁻¹ b` for every `x`;
+`Refinement.step_eq_of_eq_inverse`. ★'''
+deps = ["Refinement.step_eq_of_eq_inverse", "QuarteroniSaccoSaleri.Chapter03.iterativeRefinementStep"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.12.2'
+
+[[node]]
+id = "iterativeRefinement_convergence"
+kind = "theorem"
+desc = '''§3.12.2, the exact-arithmetic content of the convergence claim: the iteration is the stationary
+iteration with matrix `1 - C A` (`Refinement.step_eq_stationary_step`), so the error is multiplied by
+at most `‖1 - C A‖` per step when `‖1 - C A‖ < 1` (`Refinement.norm_iterate_sub_le`) and it
+converges for every start iff `ρ(1 - C A) < 1` (`Refinement.forall_tendsto_iff_spectralRadius_lt_one`).
+★'''
+deps = ["Refinement.step_eq_stationary_step", "Refinement.norm_iterate_sub_le", "Refinement.forall_tendsto_iff_spectralRadius_lt_one", "QuarteroniSaccoSaleri.Chapter03.iterativeRefinementStep"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.12.2'
+
+[[node]]
+id = "iterativeRefinement_fixedPrecision"
+kind = "theorem"
+desc = '''§3.12.2, FPR: "if `‖|A⁻¹| |L̂| |Û|‖_∞` is sufficiently small, the relative error is reduced at each
+step by a factor `ρ ≃ 2 n cond(A, x) u`" (Higham Theorem 12.2). Not formalized: the statement is
+asymptotic ("`≃`", "sufficiently small") in the book and in Higham; a rigorous form is Higham's
+Theorem 12.3 (one step, componentwise backward error `≤ 2 γ_{n+1}` plus a first-order term), whose
+formalization is a substantial componentwise analysis on top of `FloatingPoint/LU` and is left for
+a later round. ★★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter03.iterativeRefinementStep", "QuarteroniSaccoSaleri.Chapter03.remark_3_7", "QuarteroniSaccoSaleri.Chapter03.equation_3_64"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.12.2'
+
+[[node]]
+id = "iterativeRefinement_mixedPrecision"
+kind = "theorem"
+desc = '''§3.12.2, MPR: with residuals in double the working precision, `ρ ≃ u`, independent of the condition
+number (Higham Theorem 12.1). Not formalized, for the same reason as `iterativeRefinement_fixedPrecision`;
+the model would also need two `RoundingModel`s (working and residual precision), which
+`FloatingPoint/Model` supports but nothing yet uses. ★★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter03.iterativeRefinementStep", "QuarteroniSaccoSaleri.Chapter03.iterativeRefinement_fixedPrecision"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.12.2'

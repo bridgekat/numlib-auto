@@ -29,15 +29,19 @@ id = "corollary_4_8_strict"
 
 [[node]]
 id = "gaussSeidel_complexSpectralRadius_lt_one"
+deprecated = '''Moves to the backbone as `Matrix.gaussSeidel_complexSpectralRadius_lt_one` (Numlib/LinearSolve/Stationary/DiagDominant).'''
 
 [[node]]
 id = "isStrictDiagDominant_complexify"
+deprecated = '''Moves to the backbone as `Matrix.isStrictDiagDominant_complexify` (Numlib/LinearSolve/Stationary/DiagDominant).'''
 
 [[node]]
 id = "isUnit_diagPart_complexify"
+deprecated = '''Moves to the backbone as `Matrix.isUnit_diagPart_complexify` (Numlib/LinearAlgebra/Matrix/Complexify).'''
 
 [[node]]
 id = "jacobi_complexSpectralRadius_lt_one"
+deprecated = '''Moves to the backbone as `Matrix.jacobi_complexSpectralRadius_lt_one` (Numlib/LinearSolve/Stationary/DiagDominant).'''
 
 [[node]]
 id = "proposition_4_12_alpha"

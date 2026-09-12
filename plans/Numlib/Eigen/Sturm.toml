@@ -1,0 +1,197 @@
+desc = '''
+Sturm sequences of a real symmetric tridiagonal matrix and Givens' bisection method
+(Quarteroni–Sacco–Saleri §5.10.2; Wilkinson, *The Algebraic Eigenvalue Problem*, Ch. 5 §§36–39;
+Golub–Van Loan §8.5.2; Kress §7.4 exercises). The matrix is `Matrix.symmTridiagonalOf d b n`, built
+from `ℕ`-indexed diagonal `d` and off-diagonal `b` so that its leading principal submatrix of order
+`i` is the same construction at `i`, which is what makes the recurrence statable without `Fin`
+casts (the same device as `Krylov.hessenbergOf` in `Numlib/Krylov/Hessenberg`). The Sturm sequence
+`Sturm.seq d b : ℕ → ℝ[X]` is `p_0 = 1`, `p_1 = d_0 - X`, `p_{i+2} = (d_{i+1} - X) p_{i+1} -
+b_i² p_i`, and `p_i = det (T_i - X) = (-1)^i charpoly T_i`.
+
+Two theorems (Property 5.11). *Strict interlacing*: when every `b_i ≠ 0` the eigenvalues of
+`T_{i-1}` strictly separate those of `T_i`. The weak form is Cauchy's interlacing theorem for a
+principal submatrix (`Matrix.IsHermitian.eigenvalues₀_submatrix_interlace`, planned in
+`Numlib/Eigen/MinMax` on top of Courant–Fischer); strictness comes from
+`Sturm.eval_ne_zero_or_eval_ne_zero`, consecutive members of the sequence have no common root
+(a common root would propagate down the recurrence to `p_0 = 1`), together with the simplicity of
+the eigenvalues of an unreduced tridiagonal matrix (an eigenvector is determined by its first
+entry through the recurrence). *The sign-change count*: with the convention that a vanishing
+`p_i(μ)` takes the sign opposite to `p_{i-1}(μ)`, the number of sign changes in `p_0(μ), …,
+p_n(μ)` is the number of eigenvalues of `T_n` that are `≤ μ`, with multiplicity —
+`Polynomial.countRootsIn (Set.Iic μ)` of `Numlib/Topology/Algebra/Polynomial`. The book says
+"strictly less than `μ`", which is the same off the spectrum; at an eigenvalue its own convention
+counts `μ` (for `n = 1`, `μ = d_0`, the sequence `1, 0` has one sign change). The proof is an
+induction on `n` through strict interlacing and the intermediate value theorem.
+
+Givens' method is bisection on the count: the Gershgorin interval `[α, β]` encloses the spectrum,
+and the `i`-th largest eigenvalue lies in `(a, b]` exactly when `s(a) ≤ n - i < s(b)`, an
+invariant each bisection step preserves while halving the interval.
+
+Prototype: `notes/qss/ch05/proto/Sturm.lean` (elaborates with `sorry`).
+'''
+
+[[node]]
+id = "Matrix.symmTridiagonalOf"
+kind = "definition"
+desc = '''`Matrix.symmTridiagonalOf (d b : ℕ → R) (n : ℕ) : Matrix (Fin n) (Fin n) R` over `[Zero R]`:
+`d i` on the diagonal, `b i` at `(i, i+1)` and `(i+1, i)`, zero elsewhere. `symmTridiagonalOf d b
+(i+1)` has `symmTridiagonalOf d b i` as its leading principal submatrix
+(`Matrix.symmTridiagonalOf_submatrix_castSucc`). With `d` constant `2` and `b` constant `-1` it is
+`Matrix.symmTridiagonalToeplitz n (-1) 2` (`Matrix.symmTridiagonalOf_const`). ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.10.2'
+
+[[node]]
+id = "Matrix.isTridiagonal_symmTridiagonalOf"
+kind = "theorem"
+desc = '''`(symmTridiagonalOf d b n).IsTridiagonal` and `Matrix.isSymm_symmTridiagonalOf`, hence
+`Matrix.isHermitian_symmTridiagonalOf` over `ℝ`. ★'''
+deps = ["Matrix.symmTridiagonalOf"]
+
+[[node]]
+id = "Sturm.seq"
+kind = "definition"
+desc = '''`Sturm.seq (d b : ℕ → ℝ) : ℕ → ℝ[X]`, `seq 0 = 1`, `seq 1 = C (d 0) - X`, `seq (i+2) = (C (d
+(i+1)) - X) * seq (i+1) - C (b i) ^ 2 * seq i` — Quarteroni–Sacco–Saleri (5.65), `0`-based. ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.65)'
+
+[[node]]
+id = "Sturm.seq_eq_det"
+kind = "theorem"
+desc = '''`seq d b i = ((symmTridiagonalOf d b i).map C - X • 1).det`, by two-step induction with the
+Laplace expansion of the tridiagonal determinant along its last row
+(`Matrix.det_succ_row` twice). ★★'''
+deps = ["Sturm.seq", "Matrix.symmTridiagonalOf"]
+
+[[node]]
+id = "Sturm.seq_eq_charpoly"
+kind = "theorem"
+desc = '''`seq d b i = (-1) ^ i * (symmTridiagonalOf d b i).charpoly`; `Sturm.natDegree_seq : (seq d b
+i).natDegree = i` and `Sturm.leadingCoeff_seq = (-1)^i`. ★'''
+deps = ["Sturm.seq_eq_det"]
+
+[[node]]
+id = "Sturm.eval_ne_zero_or_eval_ne_zero"
+kind = "theorem"
+desc = '''If `b i ≠ 0` for all `i`, consecutive members have no common root: `(seq d b i).eval μ ≠ 0 ∨
+(seq d b (i+1)).eval μ ≠ 0`. Induction: a common root of `p_{i+1}, p_i` is a root of `p_{i-1}`
+by the recurrence (dividing by `b_{i-1}² ≠ 0`), down to `p_0 = 1`. ★'''
+deps = ["Sturm.seq"]
+
+[[node]]
+id = "Sturm.isRoot_seq_succ_of_isRoot"
+kind = "theorem"
+desc = '''At a common-root-free sequence, if `p_i(μ) = 0` then `p_{i-1}(μ)` and `p_{i+1}(μ)` have opposite
+signs: `(seq (i+1)).eval μ * (seq (i-1)).eval μ < 0`, from the recurrence `p_{i+1}(μ) = -b_{i-1}²
+p_{i-1}(μ)`. The lemma behind the sign convention. ★'''
+deps = ["Sturm.eval_ne_zero_or_eval_ne_zero"]
+
+[[node]]
+id = "Sturm.eigenvalues_simple"
+kind = "theorem"
+desc = '''An unreduced symmetric tridiagonal matrix has simple eigenvalues: for `b i ≠ 0` for all `i`,
+every root of `(symmTridiagonalOf d b n).charpoly` has multiplicity one (equivalently,
+`finrank (eigenspace μ) = 1` and the matrix is diagonalizable, so algebraic = geometric
+multiplicity). Proof: an eigenvector `x` with `x 0 = 0` is `0` by the recurrence `b_i x_{i+1} =
+(μ - d_i) x_i - b_{i-1} x_{i-1}`, so the eigenspace has dimension `≤ 1`, and a real symmetric
+matrix is diagonalizable. ★★'''
+deps = ["Matrix.symmTridiagonalOf"]
+
+[[node]]
+id = "Sturm.eigenvalues_strictInterlace"
+kind = "theorem"
+desc = '''**Strict interlacing** (Quarteroni–Sacco–Saleri Property 5.11): for `b i ≠ 0` for all `i`, with
+`hT : (symmTridiagonalOf d b (i+1)).IsHermitian`, `hT' : (symmTridiagonalOf d b i).IsHermitian` and
+`k : Fin i`, `hT.eigenvalues₀ ⟨k+1, _⟩ < hT'.eigenvalues₀ ⟨k, _⟩ ∧ hT'.eigenvalues₀ ⟨k, _⟩ <
+hT.eigenvalues₀ ⟨k, _⟩` (`eigenvalues₀` sorted decreasingly). Weak interlacing is
+`Matrix.IsHermitian.eigenvalues₀_submatrix_interlace` for the leading principal submatrix;
+equality in either inequality would make a root of `p_i` a root of `p_{i+1}`, against
+`Sturm.eval_ne_zero_or_eval_ne_zero` — using `Sturm.eigenvalues_simple` to see that a repeated
+value in the sorted list of `T_{i+1}` is impossible, so that the weak chain `λ_{k+1}(T_{i+1}) ≤
+λ_k(T_i) ≤ λ_k(T_{i+1})` collapses only through a shared root. ★★★'''
+deps = ["Sturm.seq_eq_charpoly", "Sturm.eval_ne_zero_or_eval_ne_zero", "Sturm.eigenvalues_simple", "Matrix.IsHermitian.eigenvalues₀_submatrix_interlace"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.11'
+
+[[node]]
+id = "Sturm.sign"
+kind = "definition"
+desc = '''`Sturm.sign d b μ : ℕ → ℝ`: `sign 0 = 1`; `sign (i+1) = -sign i` if `(seq (i+1)).eval μ = 0`,
+otherwise the sign (`±1`) of `(seq (i+1)).eval μ`. The book's convention for a vanishing member. ★'''
+deps = ["Sturm.seq"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.11'
+
+[[node]]
+id = "Sturm.signChanges"
+kind = "definition"
+desc = '''`Sturm.signChanges d b n μ : ℕ := ((Finset.range n).filter fun i => sign d b μ (i+1) ≠ sign d b μ
+i).card`, the number `s(μ)` of sign changes in `p_0(μ), …, p_n(μ)`. ★'''
+deps = ["Sturm.sign"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.11'
+
+[[node]]
+id = "Sturm.signChanges_eq_countRootsIn"
+kind = "theorem"
+desc = '''**The Sturm count** (Quarteroni–Sacco–Saleri Property 5.11): for `b i ≠ 0` for all `i` and every
+`μ : ℝ`, `signChanges d b n μ = (symmTridiagonalOf d b n).charpoly.countRootsIn (Set.Iic μ)`, the
+number of eigenvalues `≤ μ` with multiplicity (all simple, by `Sturm.eigenvalues_simple`). Proof
+by induction on `n`: the roots of `p_{n+1}` strictly interlace those of `p_n`
+(`Sturm.eigenvalues_strictInterlace`), so between consecutive roots of `p_n` the sign of
+`p_{n+1}` is determined, and passing from `n` to `n+1` adds a sign change exactly when `μ` is at
+or above the new root that the interlacing places, which is one more root `≤ μ`; the convention
+at a zero of `p_n` is what keeps the count monotone through the roots of `p_n`
+(`Sturm.isRoot_seq_succ_of_isRoot`). Wilkinson Ch. 5 §37; Golub–Van Loan Thm 8.5.1. ★★★'''
+deps = ["Sturm.signChanges", "Sturm.eigenvalues_strictInterlace", "Sturm.isRoot_seq_succ_of_isRoot", "Sturm.seq_eq_charpoly", "Sturm.eigenvalues_simple"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.11'
+
+[[node]]
+id = "Sturm.signChanges_monotone"
+kind = "theorem"
+desc = '''`Monotone (signChanges d b n)` and `signChanges d b n μ = n` for `μ ≥ β`, `= 0` for `μ < α`, the
+Gershgorin bounds; immediate from the count. ★'''
+deps = ["Sturm.signChanges_eq_countRootsIn", "Sturm.spectrum_subset_Icc"]
+
+[[node]]
+id = "Sturm.spectrum_subset_Icc"
+kind = "theorem"
+desc = '''Gershgorin for the tridiagonal matrix (Program 44): every real eigenvalue `μ` of
+`symmTridiagonalOf d b n` satisfies `α ≤ μ ≤ β` with `α = min_i (d i - |b (i-1)| - |b i|)`, `β =
+max_i (d i + |b (i-1)| + |b i|)`, the boundary terms `b (-1)`, `b (n-1)` read as `0`. From
+`Matrix.spectrum_subset_iUnion_closedBall` (complexified) or Mathlib's `eigenvalue_mem_ball`. ★'''
+deps = ["Matrix.symmTridiagonalOf", "Matrix.spectrum_subset_iUnion_closedBall"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.10.2'
+
+[[node]]
+id = "Sturm.bisectionStep"
+kind = "definition"
+desc = '''`Sturm.bisectionStep d b n idx (a, b') : ℝ × ℝ`: with `c = (a + b')/2`, `(a, c)` if `n - idx <
+signChanges d b n c`, else `(c, b')`; `Sturm.bisectionIterate d b n idx ab r` iterates it `r`
+times. `idx` is the `1`-based rank of the eigenvalue from the largest, as in Program 42. ★'''
+deps = ["Sturm.signChanges"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.10.2'
+
+[[node]]
+id = "Sturm.bisectionIterate"
+kind = "definition"
+desc = '''`Sturm.bisectionIterate d b n idx ab : ℕ → ℝ × ℝ`, `0 ↦ ab`, `r+1 ↦ bisectionStep (… r)`. ★'''
+deps = ["Sturm.bisectionStep"]
+
+[[node]]
+id = "Sturm.bisectionIterate_length"
+kind = "theorem"
+desc = '''`(bisectionIterate d b n idx (a, b') r).2 - (bisectionIterate … r).1 = (b' - a) / 2 ^ r`. ★'''
+deps = ["Sturm.bisectionIterate"]
+
+[[node]]
+id = "Sturm.eigenvalues₀_mem_bisectionIterate"
+kind = "theorem"
+desc = '''For `b i ≠ 0`, `1 ≤ idx ≤ n`, and `(a, b')` with `signChanges d b n a ≤ n - idx < signChanges
+d b n b'` (which `(α, β)` of `Sturm.spectrum_subset_Icc` satisfies, taking `a` slightly below
+`α`), the `idx`-th largest eigenvalue `hT.eigenvalues₀ ⟨idx - 1, _⟩` lies in `Set.Ioc a_r b_r` for
+every `r`, where `(a_r, b_r) = bisectionIterate d b n idx (a, b') r`. The invariant is preserved
+by construction and, by `Sturm.signChanges_eq_countRootsIn`, `s(a) ≤ n - idx < s(b')` says that
+at most `n - idx` eigenvalues are `≤ a` and at least `n - idx + 1` are `≤ b'`, i.e. the
+`idx`-th largest is in `(a, b']`. With `Sturm.bisectionIterate_length` this is the error bound
+`(β - α) 2^{-(r+1)}` for the midpoint. ★★'''
+deps = ["Sturm.bisectionIterate", "Sturm.signChanges_eq_countRootsIn", "Sturm.spectrum_subset_Icc"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.10.2'

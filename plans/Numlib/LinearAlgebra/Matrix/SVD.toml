@@ -58,3 +58,69 @@ source = "Kress, Numerical Analysis, Theorem 5.10"
 [[node]]
 id = "tendsto_tikhonov_of_norm_toEuclideanLin_sub_eq"
 source = "Kress, Numerical Analysis, Theorem 5.10"
+
+[[node]]
+id = "sq_singularValues"
+
+[[node]]
+id = "toEuclideanLin_rightSingularBasis_eq_zero"
+
+[[node]]
+id = "inner_toEuclideanLin_rightSingularBasis"
+
+[[node]]
+id = "card_singularValues_ne_zero"
+
+[[node]]
+id = "norm_toEuclideanLin_le_iSup_singularValues"
+
+[[node]]
+id = "l2_opNorm_eq_iSup_singularValues"
+
+[[node]]
+id = "mul_pinv_mul_self"
+
+[[node]]
+id = "pinv_mul_self_mul_pinv"
+
+[[node]]
+id = "rectDiagonal"
+kind = "definition"
+desc = '''`Matrix.rectDiagonal {m n : ℕ} (σ : ℕ → 𝕜) : Matrix (Fin m) (Fin n) 𝕜 := of fun i j => if (i : ℕ) = j then σ i else 0`, the rectangular "diagonal" matrix `diag(σ₀, …, σ_{p-1}) ∈ 𝕜^{m×n}`, `p = min m n`, of Quarteroni–Sacco–Saleri (1.9); entries `σ i` with `i ≥ p` are never read. API: `rectDiagonal_apply`, `rectDiagonal_transpose`, `conjTranspose_rectDiagonal`, `rectDiagonal_mulVec` (`(Σ x) i = σ i * x i` when `i < n`, else `0`), `rectDiagonal_mul_rectDiagonal`. ★'''
+deps = []
+
+[[node]]
+id = "exists_svd"
+kind = "theorem"
+desc = '''**Singular value decomposition**, Quarteroni–Sacco–Saleri Property 1.7: for `A : Matrix (Fin m) (Fin n) 𝕜` (`RCLike 𝕜`) there are `U ∈ unitaryGroup (Fin m) 𝕜` and `V ∈ unitaryGroup (Fin n) 𝕜` with `star U * A * V = rectDiagonal fun i => ((toEuclideanLin A).singularValues i : 𝕜)`, the diagonal carrying Mathlib's sorted singular values `σ₀ ≥ σ₁ ≥ … ≥ 0` (`LinearMap.singularValues_antitone`, `LinearMap.singularValues_nonneg`). Over `𝕜 = ℝ` the factors are orthogonal (`unitaryGroup (Fin m) ℝ = orthogonalGroup`), which is the book's real case. Proof: sort `Matrix.rightSingularBasis` by decreasing `singularValues` (an `Equiv (Fin n) n`-reindexing — `Tuple.sort`/`Fintype.equivFin` with `Matrix.IsHermitian.eigenvalues₀_antitone` already delivers the sorted eigenvalues of `Aᴴ A`, and `LinearMap.sq_singularValues_fin` identifies them with the squares of `LinearMap.singularValues`); `V` has the sorted right singular vectors as columns; the first `rank A` columns of `U` are `A v_j / σ_j` (orthonormal by `inner_toEuclideanLin_rightSingularBasis`) and the rest complete them to an orthonormal basis of `EuclideanSpace 𝕜 (Fin m)` (`Orthonormal.exists_orthonormalBasis_extension`); `A v_j = 0` for the zero singular values (`toEuclideanLin_rightSingularBasis_eq_zero`) gives the zero columns of `Σ`. ★★★'''
+deps = ["Matrix.rectDiagonal", "Matrix.singularValues", "Matrix.rightSingularBasis", "Matrix.toEuclideanLin_rightSingularBasis_eq_zero", "Matrix.inner_toEuclideanLin_rightSingularBasis"]
+
+[[node]]
+id = "singularValues_eq_of_svd"
+kind = "theorem"
+desc = '''Uniqueness of the singular values: if `star U * A * V = rectDiagonal (ofReal ∘ σ)` with `U`, `V` unitary, `σ` antitone and nonnegative, then `σ i = (toEuclideanLin A).singularValues i` for `i < min m n`; and, unsorted, the multiset `{σ i | i < n}` is that of `Matrix.singularValues A` (through `Aᴴ A = V Σᴴ Σ Vᴴ` and `Matrix.IsHermitian.eigenvalues_eq_eigenvalues_iff`/charpoly roots). Quarteroni–Sacco–Saleri (1.10), `σ_i(A) = √λ_i(Aᴴ A)`, read as "the singular values of any SVD are the square roots of the eigenvalues of `Aᴴ A`". ★★'''
+deps = ["Matrix.rectDiagonal", "Matrix.singularValues", "Matrix.sq_singularValues"]
+
+[[node]]
+id = "IsHermitian.exists_equiv_singularValues_eq_abs_eigenvalues"
+kind = "theorem"
+desc = '''For Hermitian `A : Matrix n n 𝕜` there is a permutation `e : n ≃ n` with `A.singularValues (e i) = |hA.eigenvalues i|` for all `i`: the singular values of a Hermitian matrix are the moduli of its eigenvalues (Quarteroni–Sacco–Saleri §1.9 after (1.10); Exercise 11 asks the same for normal matrices, which follows from `Matrix.IsStarNormal.spectral_theorem` by the same argument). Proof: `Aᴴ A = A²` has eigenvalues `λ_i²` (`hA.spectral_theorem` squared, `Matrix.IsHermitian.eigenvalues_eq_eigenvalues_iff` or matching the charpoly root multisets `roots_charpoly_eq_eigenvalues`), and `singularValues = √eigenvalues(Aᴴ A)`. ★★'''
+deps = ["Matrix.singularValues", "Matrix.sq_singularValues"]
+
+[[node]]
+id = "ker_mulVecLin_eq_span_of_svd"
+kind = "theorem"
+desc = '''From an SVD `star U * A * V = rectDiagonal σ` (`U`, `V` unitary), `LinearMap.ker A.mulVecLin = span 𝕜 {Vᵀ j | j : Fin n, (j : ℕ) ≥ m ∨ σ j = 0}`, the span of the right singular vectors of the vanishing singular values (`v_{r+1}, …, v_n` in Quarteroni–Sacco–Saleri §1.9 when the values are sorted), and `LinearMap.range A.mulVecLin = span 𝕜 {Uᵀ i | i : Fin m, (i : ℕ) < n ∧ σ i ≠ 0}` (`range_mulVecLin_eq_span_of_svd`, `u_1, …, u_r`). Proof: `A = U Σ Vᴴ`, `V` maps the standard basis to its columns, `Σ` kills exactly the coordinates with `σ_j = 0`. Together with `card_singularValues_ne_zero` this is the book's "rank `r`, kernel, range" paragraph. ★★'''
+deps = ["Matrix.rectDiagonal", "Matrix.exists_svd"]
+
+[[node]]
+id = "pinv_eq_of_svd"
+kind = "theorem"
+desc = '''Quarteroni–Sacco–Saleri Definition 1.15 agrees with the module's `pinv`: if `star U * A * V = rectDiagonal (ofReal ∘ σ)` with `U`, `V` unitary and `σ ≥ 0`, then `A.pinv = V * rectDiagonal (ofReal ∘ fun i => (σ i)⁻¹) * star U` — Lean's `0⁻¹ = 0` produces exactly `Σ⁺ = diag(1/σ₁, …, 1/σ_r, 0, …, 0)` of (1.11) with no case split. Proof: the right-hand side satisfies the four Moore–Penrose identities (`rectDiagonal` algebra) and `pinv_unique` identifies it. Corollaries stated beside it: `pinv_eq_inv_gram_mul_conjTranspose (h : A.rank = n) : A.pinv = (Aᴴ * A)⁻¹ * Aᴴ` (the book's "`rank A = n < m`" case, `gramPinv` being the inverse of the invertible Gram matrix) and `pinv_eq_inv (hA : IsUnit A) : A.pinv = A⁻¹`. ★★'''
+deps = ["Matrix.rectDiagonal", "Matrix.pinv", "Matrix.pinv_unique"]
+
+[[node]]
+id = "norm_pinv_le_of_normalEquations"
+
+[[node]]
+id = "norm_toEuclideanLin_pinv_sub_eq_iInf"

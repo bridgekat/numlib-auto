@@ -9,3 +9,22 @@ id = "LinearMap.exists_orthonormalBasis_quasiUpperTriangular"
 
 [[node]]
 id = "Matrix.exists_orthogonal_conj_quasiUpperTriangular"
+
+[[node]]
+id = "Matrix.exists_orthogonal_conj_quasiUpperTriangular_of_irreducible_blocks"
+kind = "theorem"
+desc = '''The real Schur form with *irreducible* `2 × 2` blocks (Quarteroni–Sacco–Saleri Property 5.8;
+Golub–Van Loan Thm 7.4.1): for `A : Matrix (Fin N) (Fin N) ℝ`, `∃ Q ∈ orthogonalGroup (Fin N) ℝ, ∃
+p : Fin N → ℕ, Monotone p ∧ (∀ k, (univ.filter fun i => p i = k).card ≤ 2) ∧ (Qᵀ * A * Q).BlockTriangular
+p ∧ ∀ k, (univ.filter fun i => p i = k).card = 2 → ∀ μ : ℝ, μ ∉ spectrum ℝ ((Qᵀ * A * Q).toBlock
+(fun i => p i = k) (fun i => p i = k))` — every `2 × 2` diagonal block has no real eigenvalue,
+hence a complex-conjugate pair. Sharpening of `Matrix.exists_orthogonal_conj_quasiUpperTriangular`:
+post-process each `2 × 2` block that has a real eigenvalue by the `2 × 2` real Schur rotation
+(a plane rotation `Matrix.planeRotation i (i+1) c s` with `(c, s)` from a unit eigenvector, which
+triangularizes the block and, being supported on the two rows/columns of the block, keeps the
+block triangular structure with the finer index `p'` splitting that block in two). Alternatively,
+strengthen the operator-level induction `LinearMap.exists_invariant_finrank_le_two` to peel a
+*one*-dimensional invariant subspace whenever the operator has a real eigenvalue, so that a
+two-dimensional block arises only from an irreducible quadratic factor. ★★'''
+deps = ["Matrix.exists_orthogonal_conj_quasiUpperTriangular", "LinearMap.exists_invariant_finrank_le_two"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.8'

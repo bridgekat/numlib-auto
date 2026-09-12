@@ -1,0 +1,60 @@
+namespace = "QuarteroniSaccoSaleri.Chapter13"
+desc = '''
+§13.1, the heat equation: the initial boundary value problem (13.1)–(13.4) as a classical-solution
+predicate, the sine-series solution (13.5) for finite sine data, the energy and the a priori
+estimate (13.7). Everything is stated for classical solutions on `[0, 1] × [0, T]`, which is what
+the book's derivation ("interchanged differentiation and integration", integration by parts)
+uses; the weak formulation is §13.3's (13.12).
+'''
+
+[[node]]
+id = "IsHeatSolution"
+kind = "definition"
+desc = '''The classical Dirichlet problem (13.1)–(13.4) on `[0, 1] × [0, T]`: for `ν > 0`,
+`f : ℝ → ℝ → ℝ` (as `f x t`) and `u₀ : ℝ → ℝ`, a function `u : ℝ → ℝ → ℝ` (as `u x t`) is a
+solution when for every `(x, t) ∈ [0, 1] × [0, T]` the partial derivatives exist as
+`HasDerivWithinAt (fun t => u x t) (u_t x t) (Icc 0 T) t`, `HasDerivWithinAt (fun x => u x t)
+(u_x x t) (Icc 0 1) x`, `HasDerivWithinAt (fun x => u_x x t) (u_xx x t) (Icc 0 1) x`, with
+`u_t x t - ν * u_xx x t = f x t`, `u 0 t = 0`, `u 1 t = 0` and `u x 0 = u₀ x`; the derivative
+functions `u_t`, `u_x`, `u_xx` are existentially quantified inside the predicate and required
+continuous on the rectangle. ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (13.1)–(13.4)'
+
+[[node]]
+id = "equation_13_5"
+kind = "theorem"
+desc = '''(13.5) for finite sine data: with `ν = 1`, `f = 0` and `u₀ x = ∑ n ∈ Finset.range N, c n *
+sin (n π x)`, the function `u x t = ∑ n ∈ Finset.range N, c n * exp (-(n π)² t) * sin (n π x)`
+satisfies `IsHeatSolution 1 0 u₀ u` for every `T`, and `c n = 2 ∫₀¹ u₀ x sin (n π x) dx` for
+`1 ≤ n < N` (orthogonality of the sines, `∫₀¹ sin (m π x) sin (n π x) dx = δ_{mn} / 2`). The
+book's infinite series for general `u₀` is the classical theory and is not claimed. Proof: termwise
+differentiation of a finite sum, `Real.sin`, `Real.exp` derivative rules. ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.IsHeatSolution"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.5)'
+
+[[node]]
+id = "energy"
+kind = "definition"
+desc = '''The energy `E t = ∫ x in (0 : ℝ)..1, u x t ^ 2` of a function `u : ℝ → ℝ → ℝ`, and
+`F t = ∫ x in (0 : ℝ)..1, f x t ^ 2` of the source. ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.1, the energy E(t)'
+
+[[node]]
+id = "equation_13_7"
+kind = "theorem"
+desc = '''(13.7), the a priori energy estimate for a classical solution: if `IsHeatSolution ν f u₀
+u` on `[0, 1] × [0, T]` with `ν > 0`, then for `γ = ν / C_P ^ 2` (with `C_P` the Poincaré
+constant of `(0, 1)` from (12.16), `C_P = 1` in the sharp form `‖v‖ ≤ ‖v'‖` for `v` vanishing at
+`0`, or any constant for which (12.16) holds) and every `t ∈ [0, T]`,
+`energy u t ≤ exp (-γ t) * energy u 0 + (1 / γ) * ∫ s in (0 : ℝ)..t, exp (γ (s - t)) * F s`.
+Proof, as the book: `E` is differentiable on `[0, T]` with `E' = 2 ∫ u u_t` (differentiation under
+the integral, `hasDerivAt_integral_of_dominated_loc_of_deriv_le` with the continuity of `u_t` on
+the compact rectangle); `∫ u u_xx = -∫ u_x ^ 2` by integration by parts with the boundary values
+`u 0 t = u 1 t = 0` (`intervalIntegral.integral_mul_deriv_eq_deriv_mul`); Cauchy–Schwarz
+`∫ f u ≤ √F √E`; Poincaré `E ≤ C_P ^ 2 ∫ u_x ^ 2` for `x ↦ u x t`, which vanishes at `0`; Young
+`2 √F √E ≤ γ E + F / γ`; the resulting `E' + γ E ≤ F / γ` is integrated by the differential
+Gronwall lemma with forcing. ★★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.IsHeatSolution", "QuarteroniSaccoSaleri.Chapter13.energy", "Gronwall.le_exp_neg_mul_add_integral_of_hasDerivWithinAt_le"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.7)'

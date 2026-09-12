@@ -1,0 +1,200 @@
+namespace = "LinearRecurrence"
+desc = '''
+Closed forms for linear recurrences with constant coefficients, extending Mathlib's
+`LinearRecurrence` (`Mathlib/Algebra/LinearRecurrence.lean`: `IsSolution`, `mkSol`, `solSpace`
+of rank `order`, `charPoly`, and `geom_sol_iff_root_charPoly` — the geometric sequence `q^n` is a
+solution iff `q` is a root). Mathlib's file says closed forms are "currently not implemented";
+this module implements the part Quarteroni–Sacco–Saleri §11.4 (and every ODE book) needs.
+
+Contents. The inhomogeneous recurrence `u (n + k) = ∑ a_i u (n + i) + φ (n + k)` (11.28) and its
+solution with prescribed initial data; the multiple-root fundamental solutions `n ↦ n^s q^n`,
+`s < rootMultiplicity q`; their linear independence and, when the characteristic polynomial
+splits, their spanning of `solSpace` (11.33) — the count `∑ mult = order` is
+`Polynomial.splits_iff_card_roots`, so independence plus a dimension count suffices; the
+fundamental solutions `ψ_j` with Kronecker initial data (11.34), the representation
+`u_n = ∑ u_j ψ_j^{(n)}` (11.35) and the discrete Duhamel formula (11.42) for the inhomogeneous
+equation; the nonsingularity of the transposed Vandermonde matrix `R` of (11.37) (Mathlib's
+`Matrix.det_vandermonde_ne_zero_iff` with `Matrix.det_transpose`).
+
+The convention is Mathlib's: `IsSolution u ↔ ∀ n, u (n + k) = ∑ i : Fin k, coeffs i * u (n + i)`,
+so the book's `u_{n+k} + α_{k-1} u_{n+k-1} + … + α_0 u_n = 0` has `coeffs i = -α_i`, and
+`charPoly = X^k - ∑ coeffs i X^i` is the book's `Π`. Multiple roots need `CharZero` (the
+derivative test) and are stated over a field for the basis statements. Consumers:
+`ODE/DifferenceEquation` (Lemma 11.3), `ODE/Multistep` (Theorem 11.4), the three-term recurrences
+of `Krylov/OrthogonalPolynomials` if they ever need closed forms, and chapter 12's tridiagonal
+boundary value problems.
+'''
+
+[[node]]
+id = "IsSolutionWith"
+kind = "definition"
+desc = '''`E.IsSolutionWith φ u : Prop` for `E : LinearRecurrence R`, `φ u : ℕ → R` over a
+`CommSemiring R`: `∀ n, u (n + E.order) = ∑ i, E.coeffs i * u (n + i) + φ (n + E.order)`, the
+inhomogeneous recurrence (11.28) with source `φ` (indexed like the book, at `n + k`). Note
+`E.IsSolutionWith 0 u ↔ E.IsSolution u`.'''
+deps = []
+
+[[node]]
+id = "isSolutionWith_zero_iff"
+kind = "theorem"
+desc = '`E.IsSolutionWith 0 u ↔ E.IsSolution u`. `simp`. ★'
+deps = ["LinearRecurrence.IsSolutionWith"]
+
+[[node]]
+id = "mkSolWith"
+kind = "definition"
+desc = '''`E.mkSolWith φ init : ℕ → R`: the solution of the inhomogeneous recurrence with source `φ`
+and initial values `init : Fin E.order → R`, defined by well-founded recursion exactly as
+Mathlib's `mkSol` with `+ φ n` added in the recursive branch. With `isSolutionWith_mkSolWith` and
+`mkSolWith_eq_init` and the uniqueness `eq_mkSolWith_of_isSolutionWith_of_eq_init` (any solution
+with those initial values is `mkSolWith`), all copied from the homogeneous proofs.'''
+deps = ["LinearRecurrence.IsSolutionWith"]
+
+[[node]]
+id = "isSolutionWith_mkSolWith"
+kind = "theorem"
+desc = '''`E.IsSolutionWith φ (E.mkSolWith φ init)`. Unfold one step of the recursion, as
+`is_sol_mkSol`. ★'''
+deps = ["LinearRecurrence.mkSolWith"]
+
+[[node]]
+id = "eq_mkSolWith_of_isSolutionWith_of_eq_init"
+kind = "theorem"
+desc = '''Uniqueness for the inhomogeneous recurrence: if `E.IsSolutionWith φ u` and
+`u i = init i` for `i : Fin E.order`, then `u = E.mkSolWith φ init`. Strong induction on `n`, as
+`eq_mk_of_is_sol_of_eq_init`. ★'''
+deps = ["LinearRecurrence.mkSolWith", "LinearRecurrence.isSolutionWith_mkSolWith"]
+
+[[node]]
+id = "isSolutionWith_sub"
+kind = "theorem"
+desc = '''Over a `CommRing`, the difference of two solutions with the same source is a solution of
+the homogeneous recurrence: `E.IsSolutionWith φ u → E.IsSolutionWith φ v → E.IsSolution (u - v)`;
+and `E.IsSolution w → E.IsSolutionWith φ u → E.IsSolutionWith φ (u + w)`. So the solutions with
+source `φ` are a coset of `solSpace`. ★'''
+deps = ["LinearRecurrence.IsSolutionWith"]
+
+[[node]]
+id = "isSolution_pow_mul_pow"
+kind = "theorem"
+desc = '''The multiple-root fundamental solutions (§11.4, the sequences `n^s r_j^n`). Over a
+`CommRing R` with `CharZero R` (needed so that `Polynomial.derivative` detects multiplicity): if
+`s < E.charPoly.rootMultiplicity q`, then `E.IsSolution fun n => (n : R) ^ s * q ^ n`.
+Proof: `(n+k)^s q^{n+k} - ∑ coeffs_i (n+i)^s q^{n+i} = q^n (θ^s Π)(q)` up to the shift, where
+`θ = X d/dX`; more concretely, define `P_m = X^m · Π^{(m)}`-type combinations and show by induction
+on `s` that the relation evaluated at `q` is a linear combination of `Π(q), Π'(q), …, Π^{(s)}(q)`,
+all zero when `s < mult`. Cleanest route: prove the identity
+`∑_i c_i (n+i)^s q^{n+i} = q^n ∑_{m ≤ s} S(s, m) (something)` is painful; instead use the operator
+identity: for a polynomial `P` and `w_n = P(n) q^n`, the shift `w_{n+1} = P(n+1) q^{n+1}`; the
+recurrence applied to `n ↦ n^s q^n` equals `q^n` times `(X D)^s Π` evaluated at `q`, where
+`(X D)^s Π` is a combination of `X^m Π^{(m)}`, `m ≤ s` (`Polynomial.iterate_derivative` API). ★★★
+for the general `s`; the cases `s = 0` (Mathlib's `geom_sol_iff_root_charPoly`) and `s = 1`
+(`n q^n`, needs `Π(q) = Π'(q) = 0`) are ★★ and are what Lemma 11.3's necessity direction and
+every multistep example use — split off `isSolution_mul_pow_of_one_lt_rootMultiplicity` for
+`s = 1` as its own node.'''
+deps = []
+
+[[node]]
+id = "isSolution_mul_pow_of_one_lt_rootMultiplicity"
+kind = "theorem"
+desc = '''The `s = 1` case: over a `CommRing R` with `CharZero R`, if
+`1 < E.charPoly.rootMultiplicity q` (equivalently `Π(q) = 0` and `Π'(q) = 0`, Mathlib's
+`Polynomial.one_lt_rootMultiplicity_iff_isRoot`), then `E.IsSolution fun n => (n : R) * q ^ n`.
+Direct computation: `(n+k) q^{n+k} - ∑ c_i (n+i) q^{n+i} = n q^n Π(q) + q^{n+1} Π'(q)`. ★★'''
+deps = []
+
+[[node]]
+id = "kroneckerSol"
+kind = "definition"
+desc = '''`E.kroneckerSol j : ℕ → R := E.mkSol (Pi.single j 1)` for `j : Fin E.order`: the
+fundamental solution `ψ_j` of (11.34), with `ψ_j^{(i)} = δ_{ij}` for `i < k`.'''
+deps = []
+
+[[node]]
+id = "eq_sum_kroneckerSol"
+kind = "theorem"
+desc = '''(11.35): if `E.IsSolution u` then `u n = ∑ j : Fin E.order, u j * E.kroneckerSol j n` for
+every `n`. Both sides are solutions with the same initial values; `eq_iff_eqOn_range_order`. ★'''
+deps = ["LinearRecurrence.kroneckerSol"]
+
+[[node]]
+id = "eq_sum_kroneckerSol_add_sum"
+kind = "theorem"
+desc = '''The discrete Duhamel formula (11.42). Over a `CommRing`, with `0 < E.order =: k`, if
+`E.IsSolutionWith φ u` then for every `n`
+`u n = ∑ j : Fin k, u j * E.kroneckerSol j n + ∑ l ∈ Finset.Icc k n, φ l * E.kroneckerSol ⟨k - 1, _⟩ (n - l + (k - 1))`,
+where the second sum is empty for `n < k` (the book's `ψ_{k-1}^{(i)} = 0` for `i < 0`). Proof:
+the right-hand side solves the inhomogeneous recurrence — the first sum is homogeneous, and the
+second is a sum of shifted copies of `ψ_{k-1}`, each of which solves the homogeneous equation for
+`n ≥ l` with the initial data `0, …, 0, 1` at `n = l - k + 1, …, l`, hence contributes exactly
+`φ l` to the equation at index `l` — and has the initial values `u j`; conclude by
+`eq_mkSolWith_of_isSolutionWith_of_eq_init`. Index bookkeeping is the whole difficulty. ★★'''
+deps = ["LinearRecurrence.kroneckerSol", "LinearRecurrence.IsSolutionWith", "LinearRecurrence.eq_mkSolWith_of_isSolutionWith_of_eq_init"]
+
+[[node]]
+id = "RootIndex"
+kind = "definition"
+desc = '''Over a field `K` with `DecidableEq K`: `E.RootIndex := Σ r : E.charPoly.roots.toFinset,
+Fin (E.charPoly.rootMultiplicity (r : K))`, the index set `{(r_j, s) : s < m_j}` of the
+fundamental solutions (11.33). It is a `Fintype` of cardinality `∑_j m_j = card roots`.'''
+deps = []
+
+[[node]]
+id = "fundamentalSol"
+kind = "definition"
+desc = '''`E.fundamentalSol (p : E.RootIndex) : ℕ → K := fun n => (n : K) ^ (p.2 : ℕ) * (p.1 : K) ^ n`,
+the sequence `n^s r^n`.'''
+deps = ["LinearRecurrence.RootIndex"]
+
+[[node]]
+id = "isSolution_fundamentalSol"
+kind = "theorem"
+desc = '''Over a field of characteristic zero, `E.IsSolution (E.fundamentalSol p)` for every root
+index `p`; `isSolution_pow_mul_pow`. ★'''
+deps = ["LinearRecurrence.fundamentalSol", "LinearRecurrence.isSolution_pow_mul_pow"]
+
+[[node]]
+id = "linearIndependent_fundamentalSol"
+kind = "theorem"
+desc = '''Over a field of characteristic zero, `LinearIndependent K E.fundamentalSol` (as elements of
+`ℕ → K`). Proof: a relation `∑_{j,s} γ_{js} n^s r_j^n = 0` for all `n` with distinct `r_j`
+forces every polynomial `∑_s γ_{js} n^s` to vanish: the standard argument by the generalized
+Vandermonde determinant, or by induction on the number of distinct roots — divide by `r_1^n`,
+apply the difference operator `Δ` enough times to kill the polynomial in front of `r_1^n` (it
+lowers the degree of that polynomial and keeps the others as `(r_j/r_1)^n` times polynomials of
+the same degree with nonzero leading coefficient since `r_j/r_1 ≠ 1`) and use the induction
+hypothesis. Mathlib has `LinearIndependent` for exponentials over `ℂ` in some forms
+(`Complex.linearIndependent_exp`?) — grep before proving; the polynomial-times-exponential
+version is not there. ★★★'''
+deps = ["LinearRecurrence.fundamentalSol"]
+
+[[node]]
+id = "span_fundamentalSol_eq_solSpace"
+kind = "theorem"
+desc = '''(11.33): over a field of characteristic zero, if `E.charPoly.Splits` then
+`Submodule.span K (Set.range E.fundamentalSol) = E.solSpace`. The span is contained in `solSpace`
+by `isSolution_fundamentalSol`; `Fintype.card E.RootIndex = E.charPoly.roots.card = E.order` by
+`Polynomial.splits_iff_card_roots` (and `charPoly_degree_eq_order`, `Multiset.toFinset_sum_count_eq`,
+`Polynomial.count_roots`); linear independence gives `finrank (span) = order = finrank solSpace`
+(`solSpace_rank`), so the submodules agree (`Submodule.eq_of_le_of_finrank_eq`). Over `ℂ` the
+splitting hypothesis is automatic (`IsAlgClosed.splits`). ★★'''
+deps = ["LinearRecurrence.linearIndependent_fundamentalSol", "LinearRecurrence.isSolution_fundamentalSol"]
+
+[[node]]
+id = "det_vandermonde_transpose_ne_zero"
+kind = "theorem"
+desc = '''Exercise 5 / (11.37): for injective `r : Fin n → K` over a field (or integral domain),
+`(Matrix.vandermonde r).transpose.det ≠ 0`. `Matrix.det_transpose` and Mathlib's
+`Matrix.det_vandermonde_ne_zero_iff`. The book's `R = (r_m^i)` is `(vandermonde r)ᵀ`. ★'''
+deps = []
+
+[[node]]
+id = "eq_sum_smul_pow_of_injective_roots"
+kind = "theorem"
+desc = '''Exercise 4 / (11.32): over a field, if `E.charPoly` splits with simple roots — i.e.
+`E.charPoly.roots.Nodup` and `E.charPoly.Splits` — then every solution is
+`u n = ∑ j, γ j * (r j) ^ n` for the enumeration `r` of the roots and a unique `γ`, namely the
+solution of the Vandermonde system `∑ j, γ j * (r j)^i = u i`, `i < k`. Special case of
+`span_fundamentalSol_eq_solSpace` where every multiplicity is `1`, with the coefficients made
+explicit through `det_vandermonde_transpose_ne_zero`. ★★'''
+deps = ["LinearRecurrence.span_fundamentalSol_eq_solSpace", "LinearRecurrence.det_vandermonde_transpose_ne_zero"]

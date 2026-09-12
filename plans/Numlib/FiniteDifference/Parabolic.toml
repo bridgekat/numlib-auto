@@ -1,0 +1,151 @@
+namespace = "FiniteDifference"
+desc = '''
+The θ-method for the linear system of ordinary differential equations `M u' + A u = f` with
+symmetric positive definite `M` (the mass matrix) and `A` (the stiffness matrix): the
+semi-discretization in space of a parabolic problem by finite differences (`M = 1`, `A = ν
+h⁻² tridiag(-1, 2, -1)`) or by finite elements (Galerkin in a basis), and its time-stepping
+`(M + θ Δt A) u^{k+1} = (M - (1-θ) Δt A) u^k + Δt (θ f^{k+1} + (1-θ) f^k)`.
+
+The module is the matrix face of `Numlib/Variational/Evolution`, which it imports: in the
+`M`-inner product `⟪x, y⟫_M = xᵀ M y` (Mathlib's `Matrix.PosDef.toInnerProductSpace`) the operator
+`B = M⁻¹ A` is symmetric positive, the semi-discrete system is the Galerkin ODE for the form `(x, y)
+↦ xᵀ A y`, the θ-step is `IsThetaStep` for that form, and the stability results — unconditional for
+`θ ≥ ½`, conditional on `(1 - 2θ) λ_max Δt ≤ 2` for `θ < ½`, with `λ_max` the largest generalized
+eigenvalue of the pencil `(A, M)`, given here as the quadratic-form bound `xᵀ A x ≤ λ_max xᵀ M x` —
+are the form-level theorems read in that inner product. The coordinate bridge
+`isSemidiscreteGalerkin_iff_isSemidiscrete` says that a Galerkin semi-discretization in a basis `φ`
+is this system with `M`, `A` the Gram matrices of the inner product and of the form
+(Quarteroni–Sacco–Saleri, *Numerical Mathematics*, (13.14)).
+
+The exact asymptotic-stability threshold (`u^k → 0` for every `u^0` iff every amplification
+factor `r_θ(λ_i Δt)` has modulus `< 1`) needs the generalized eigenvalues themselves, i.e. the
+simultaneous diagonalization of the symmetric-definite pencil planned in `Numlib/Eigen/Pencil`;
+for `M = 1` and the finite difference Laplacian it is the discrete sine eigenbasis of
+`Numlib/LinearAlgebra/Matrix/TridiagonalToeplitz`, which gives the classical `Δt ≤ h² / (2ν)` for
+forward Euler with the exact threshold `Δt · λ_max(ν A_fd) < 2`.
+'''
+
+[[node]]
+id = "IsSemidiscrete"
+kind = "definition"
+desc = '''`IsSemidiscrete (M A : Matrix n n ℝ) (f : ℝ → n → ℝ) (u₀ : n → ℝ) (T : ℝ) (u : ℝ → n → ℝ) : Prop :=
+u 0 = u₀ ∧ ∃ u', ∀ t ∈ Icc 0 T, HasDerivWithinAt u (u' t) (Icc 0 T) t ∧ M *ᵥ u' t + A *ᵥ u t = f t`:
+the system `M u' + A u = f` (Quarteroni–Sacco–Saleri (13.8) with `M = 1`, (13.14) in general). ★'''
+deps = []
+
+[[node]]
+id = "IsSemidiscrete.iff_normalForm"
+kind = "theorem"
+desc = '''For invertible `M`: `IsSemidiscrete M A f u₀ T u ↔ IsSemidiscrete 1 (M⁻¹ * A) (fun t => M⁻¹ *ᵥ f
+t) u₀ T u`, the normal form `u' = -M⁻¹ A u + M⁻¹ f` (13.15). ★'''
+deps = ["FiniteDifference.IsSemidiscrete"]
+
+[[node]]
+id = "isSemidiscreteGalerkin_iff_isSemidiscrete"
+kind = "theorem"
+desc = '''The coordinate bridge: for a basis `φ : Module.Basis ι ℝ K` of a finite-dimensional real inner
+product space `K`, `u : ℝ → K` with coordinates `ξ t = φ.repr (u t)`, a time-independent form `a`
+and `F t v = ⟪f t, v⟫`: `Variational.IsSemidiscreteGalerkin (fun _ => a) F u₀ T u ↔ IsSemidiscrete
+(SesqForm.gramMatrix (innerSL ℝ) φ) (SesqForm.gramMatrix a φ) (fun t i => F t (φ i)) (φ.repr u₀) T
+ξ`. Differentiability transfers along the linear equivalence `φ.repr`; the equation is tested on
+the basis. (Quarteroni–Sacco–Saleri (13.13) ⟺ (13.14), with `M_{ij} = ∫ φ_j φ_i` the mass matrix
+and `A_{ij} = a(φ_j, φ_i)`.) ★★'''
+deps = ["FiniteDifference.IsSemidiscrete", "Variational.IsSemidiscreteGalerkin", "SesqForm.gramMatrix"]
+
+[[node]]
+id = "massMatrix_posDef"
+kind = "theorem"
+desc = '''The mass matrix of a basis is positive definite: `(SesqForm.gramMatrix (innerSL ℝ) φ).PosDef`
+for any linearly independent family `φ` — `SesqForm.gramMatrix_posDef` with
+`SesqForm.innerSL_isCoerciveWith`. ★'''
+deps = ["SesqForm.gramMatrix_posDef", "SesqForm.innerSL_isCoerciveWith"]
+
+[[node]]
+id = "thetaStep"
+kind = "definition"
+desc = '''`thetaStep (M A : Matrix n n ℝ) (θ Δt : ℝ) (f₀ f₁ u : n → ℝ) : n → ℝ := (M + (θ * Δt) • A)⁻¹ *ᵥ
+((M - ((1 - θ) * Δt) • A) *ᵥ u + Δt • (θ • f₁ + (1 - θ) • f₀))`, one step of the θ-method
+(Quarteroni–Sacco–Saleri (13.10), (13.16)); `thetaAmplification M A θ Δt := (M + (θ * Δt) • A)⁻¹ *
+(M - ((1 - θ) * Δt) • A)` its homogeneous part, `thetaStep_eq_mulVec_add`. ★'''
+deps = []
+
+[[node]]
+id = "mulVec_thetaStep"
+kind = "theorem"
+desc = '''For `M.PosDef`, `A.PosDef` (or merely `A.PosSemidef`), `0 ≤ θ`, `0 ≤ Δt`: `(M + (θ * Δt) • A) *ᵥ
+thetaStep M A θ Δt f₀ f₁ u = (M - ((1 - θ) * Δt) • A) *ᵥ u + Δt • (θ • f₁ + (1 - θ) • f₀)`, because
+`M + θ Δt A` is positive definite, hence invertible; and the equivalence with the divided form `M
+(u' - u)/Δt + A (θ u' + (1-θ) u) = θ f₁ + (1-θ) f₀` for `Δt > 0` (`thetaStep_iff`). ★'''
+deps = ["FiniteDifference.thetaStep"]
+
+[[node]]
+id = "_root_.Variational.IsThetaStep.iff_thetaStep"
+kind = "theorem"
+desc = '''Coordinates of the form-level step: with `φ`, `M`, `A` as in `isSemidiscreteGalerkin_iff_
+isSemidiscrete`, `Variational.IsThetaStep a θ Δt ℓ₀ ℓ₁ u u' ↔ φ.repr u' = thetaStep M A θ Δt (fun i
+=> ℓ₀ (φ i)) (fun i => ℓ₁ (φ i)) (φ.repr u)` for `θ ≥ 0`, `Δt > 0`, `a` positive
+(Quarteroni–Sacco–Saleri (13.17) ⟺ (13.16)). ★'''
+deps = ["FiniteDifference.thetaStep", "FiniteDifference.mulVec_thetaStep", "Variational.IsThetaStep", "SesqForm.gramMatrix"]
+
+[[node]]
+id = "thetaStep_dotProduct_mulVec_le"
+kind = "theorem"
+desc = '''Unconditional stability in the `M`-norm for `½ ≤ θ ≤ 1`: for `M.PosDef`, `A.PosSemidef`, `1/2 ≤
+θ`, `0 < Δt` and `u' = thetaStep M A θ Δt 0 0 u`, `u' ⬝ᵥ (M *ᵥ u') ≤ u ⬝ᵥ (M *ᵥ u)`. Proof: in
+`Matrix.PosDef.toInnerProductSpace M`, `u'` is the `Variational.IsThetaStep` of `u` for the form `(x,
+y) ↦ x ⬝ᵥ A y` (which is `⟪M⁻¹ A x, y⟫_M`), and `Variational.IsThetaStep.norm_le_of_half_le` applies.
+(The prototype `notes/qss/ch13/proto/ThetaMethod.lean` states it.) ★★'''
+deps = ["FiniteDifference.thetaStep", "Variational.IsThetaStep.norm_le_of_half_le"]
+
+[[node]]
+id = "thetaStep_dotProduct_mulVec_le_of_le"
+kind = "theorem"
+desc = '''Conditional stability for `0 ≤ θ < ½`: if moreover `∀ w, w ⬝ᵥ (A *ᵥ w) ≤ lmax * (w ⬝ᵥ (M *ᵥ
+w))` (every generalized eigenvalue of `(A, M)` is `≤ lmax`) and `(1 - 2 * θ) * lmax * Δt ≤ 2`, then
+`u' ⬝ᵥ (M *ᵥ u') ≤ u ⬝ᵥ (M *ᵥ u)`. From `Variational.IsThetaStep.norm_le_of_le_of_lt_half` in the
+`M`-inner product, where the form `x ⬝ᵥ A y` is symmetric with `0 ≤ a(x,x) ≤ lmax ‖x‖²_M`. ★★'''
+deps = ["FiniteDifference.thetaStep", "Variational.IsThetaStep.norm_le_of_le_of_lt_half"]
+
+[[node]]
+id = "thetaAmplification_hasEigenvalue_iff"
+kind = "theorem"
+desc = '''The spectrum of the θ-step: for `M.PosDef`, `A.PosDef`, `θ ≥ 0`, `Δt > 0`, `μ` is an
+eigenvalue of `thetaAmplification M A θ Δt` iff `μ = (1 - (1 - θ) * lam * Δt) / (1 + θ * lam * Δt)` for
+a generalized eigenvalue `lam` of the pencil `(A, M)` (`det (A - lam • M) = 0`). Proof: the
+simultaneous diagonalization `A = Wᵀ⁻¹ Λ W⁻¹`, `M = Wᵀ⁻¹ W⁻¹` of a symmetric-definite pencil
+(chapter 5's `Matrix.exists_simultaneous_diagonalization`, `Numlib/Eigen/Pencil`, expected
+node) turns `thetaAmplification` into `W diag(r_θ(λ_i Δt)) W⁻¹`. ★★'''
+deps = ["FiniteDifference.thetaStep", "Matrix.exists_simultaneous_diagonalization"]
+
+[[node]]
+id = "forall_tendsto_thetaStep_iff"
+kind = "theorem"
+desc = '''Asymptotic stability iff strict contraction on every mode: under the previous hypotheses,
+`(∀ u₀, Tendsto (fun k => (thetaAmplification M A θ Δt ^ k) *ᵥ u₀) atTop (𝓝 0)) ↔ ∀ lam, det (A - lam
+• M) = 0 → |1 - (1 - θ) * lam * Δt| < 1 + θ * lam * Δt`; for `θ ≥ 1/2` the right side always holds,
+for `θ < 1/2` it is `(1 - 2θ) lam Δt < 2` for every generalized eigenvalue. From
+`Stationary.forall_tendsto_iff_spectralRadius_lt_one` (`Numlib/LinearSolve/Stationary/Basic`) over
+`ℂ` through `Matrix.complexify`, and `thetaAmplification_hasEigenvalue_iff` (all eigenvalues real).
+(Quarteroni–Sacco–Saleri §13.2's "asymptotically stable", (13.11).) ★★'''
+deps = ["FiniteDifference.thetaAmplification_hasEigenvalue_iff", "Stationary.forall_tendsto_iff_spectralRadius_lt_one"]
+
+[[node]]
+id = "forwardEuler_heat_tendsto_iff"
+kind = "theorem"
+desc = '''The finite difference heat equation, `M = 1`, `A = (ν / h²) • symmTridiagonalToeplitz m (-1)
+2`, `h = 1/(m+1)`, `θ = 0`: for `ν, Δt > 0`, `(∀ u₀, Tendsto (fun k => ((1 - Δt • A) ^ k) *ᵥ u₀) atTop
+(𝓝 0)) ↔ Δt * (4 ν / h² * sin (m π h / 2) ^ 2) < 2` (the largest eigenvalue of `A` is `(4ν/h²)
+sin²(mπh/2)`, `Matrix.symmTridiagonalToeplitz_hasEigenvalue_iff`); hence `Δt ≤ h² / (2ν)` suffices
+(`forwardEuler_heat_tendsto_of_le`), which is Quarteroni–Sacco–Saleri's (13.11) ⟹ `Δt < h²/(2ν)` read
+correctly (the book's "iff" is not exact, the threshold being `h²/(2ν sin²(mπh/2)) > h²/(2ν)`).
+Special case of `forall_tendsto_thetaStep_iff` with `M = 1` where no pencil is needed. (Stated in
+`notes/qss/ch13/proto/ThetaMethod.lean`.) ★★'''
+deps = ["FiniteDifference.forall_tendsto_thetaStep_iff", "Matrix.symmTridiagonalToeplitz_hasEigenvalue_iff"]
+
+[[node]]
+id = "backwardEuler_tendsto"
+kind = "theorem"
+desc = '''Backward Euler is unconditionally asymptotically stable: for `M.PosDef`, `A.PosDef`, `Δt > 0`
+and every `u₀`, `(thetaAmplification M A 1 Δt ^ k) *ᵥ u₀ → 0`, since the eigenvalues `1 / (1 + lam Δt)`
+lie in `(0, 1)`. From `forall_tendsto_thetaStep_iff`. ★'''
+deps = ["FiniteDifference.forall_tendsto_thetaStep_iff"]

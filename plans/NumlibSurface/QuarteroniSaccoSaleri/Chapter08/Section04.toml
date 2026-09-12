@@ -1,0 +1,80 @@
+namespace = "QuarteroniSaccoSaleri.Chapter08"
+desc = '''
+QSS §8.4: Hermite–Birkhoff interpolation — existence and uniqueness of the Hermite interpolant
+`H_{N-1}` at distinct nodes with multiplicities `m_i` (quoted from Davis), its representation
+(8.32) in the Hermite characteristic polynomials `L_ik`, the error formula with the nodal
+polynomial `Ω_N` (8.33), and the osculatory case `m_i = 1` of Example 8.6 with its explicit
+basis `A_i, B_i`.
+
+The backbone is `Numlib/Approximation/Hermite`: `Hermite.interpolate x m f` (degree `< N`,
+`N = ∑ (m i + 1)`), `Hermite.isUnisolvent`, `Hermite.nodal` and `Hermite.exists_sub_interpolate_eq`.
+The recursive formula for the `L_ij` in terms of the `l_ij` is not a node: the book gives it as
+an algorithm and states nothing about it. The general Hermite–*Birkhoff* problem (derivative data
+with gaps, Exercise 9's nonexistence) is not treated by the book beyond that exercise, which the
+text does not cite.
+'''
+
+[[node]]
+id = "hermite_existsUnique"
+kind = "theorem"
+desc = '''§8.4, the existence and uniqueness quoted from [Dav63]: for injective `x : Fin (n + 1) → ℝ`,
+multiplicities `m : Fin (n + 1) → ℕ` with `N = ∑ i, (m i + 1)`, and data `y i k` (`k ≤ m i`), there
+is exactly one `H : ℝ[X]` with `H.degree < N` and `(derivative^[k] H).eval (x i) = y i k` for all `i`
+and `k ≤ m i`. `Hermite.isUnisolvent`. ★'''
+deps = ["Hermite.isUnisolvent"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.4'
+
+[[node]]
+id = "hermiteBasis"
+kind = "definition"
+desc = '''The Hermite characteristic polynomials `L_ik ∈ 𝒫_{N-1}`, `k ≤ m i`, defined by
+`(derivative^[p] L_ik).eval (x j) = if i = j ∧ k = p then 1 else 0`: `hermiteBasis x m i k` is the
+unique such polynomial given by `hermite_existsUnique` (`Classical.choose`), with
+`hermiteBasis_spec` for its defining property and `degree_hermiteBasis_lt`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter08.hermite_existsUnique"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.4'
+
+[[node]]
+id = "equation_8_32"
+kind = "theorem"
+desc = '''(8.32): `Hermite.interpolate x m f = ∑ i, ∑ k ∈ range (m i + 1), C (iteratedDeriv k f (x i)) * hermiteBasis x m i k`
+for injective `x`. Both sides have degree `< N` and the same derivative data at the nodes
+(`Hermite.eval_iterate_derivative_interpolate`, `hermiteBasis_spec`, `Polynomial.iterate_derivative_sum`),
+so they agree by the uniqueness in `hermite_existsUnique` (`Hermite.eq_interpolate`). ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter08.hermiteBasis", "Hermite.interpolate"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.32)'
+
+[[node]]
+id = "equation_8_33"
+kind = "theorem"
+desc = '''The error formula of §8.4 with the nodal polynomial (8.33): for `f` of class `C^N`, injective
+nodes `x i ∈ Icc a b` with `∑ i, (m i + 1) = N`, and `t ∈ Icc a b`, there is `ξ ∈ Icc a b` with
+`f t - (Hermite.interpolate x m f).eval t = iteratedDeriv N f ξ / N! * ∏ i, (t - x i)^(m i + 1)`,
+the product being `Ω_N(t) = (Hermite.nodal x m).eval t`. `Hermite.exists_sub_interpolate_eq`. The
+book writes "`∀ x ∈ ℝ`" with `ξ ∈ I(x; x_0, …, x_n)`; take `[a, b]` to be that hull. ★'''
+deps = ["Hermite.exists_sub_interpolate_eq", "Hermite.nodal"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.33)'
+
+[[node]]
+id = "example_8_6_deriv_basis"
+kind = "theorem"
+desc = '''Example 8.6, the derivative of a Lagrange characteristic polynomial at its own node:
+`(derivative (Lagrange.basis Finset.univ x i)).eval (x i) = ∑ k ∈ univ.erase i, 1 / (x i - x k)`
+for injective `x`. Logarithmic differentiation of the product `∏_{k ≠ i} (X - x_k)/(x_i - x_k)`:
+`Polynomial.derivative_prod` and evaluation at `x i`, where every factor but one is `1`. ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter08.equation_8_3"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 8.6'
+
+[[node]]
+id = "example_8_6"
+kind = "theorem"
+desc = '''Example 8.6, osculatory interpolation (`m i = 1` for all `i`, `N = 2n + 2`): with
+`l_i = Lagrange.basis Finset.univ x i`, `A_i = (1 - 2 (X - x_i) l_i'(x_i)) l_i²` and
+`B_i = (X - x_i) l_i²`,
+`Hermite.interpolate x 1 f = ∑ i, C (f (x i)) * A_i + C (deriv f (x i)) * B_i` for injective `x`.
+Verify `A_i(x_j) = δ_ij`, `A_i'(x_j) = 0`, `B_i(x_j) = 0`, `B_i'(x_j) = δ_ij` from `equation_8_3`
+and `example_8_6_deriv_basis` (product rule; `l_i²` and its derivative `2 l_i l_i'` vanish at
+`x_j ≠ x_i`, and at `x_i`: `A_i'(x_i) = -2 l_i'(x_i) + 2 l_i'(x_i) = 0`), then conclude by the
+uniqueness `Hermite.eq_interpolate`, both sides having degree `≤ 2n + 1`. ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter08.equation_8_3", "QuarteroniSaccoSaleri.Chapter08.example_8_6_deriv_basis", "Hermite.interpolate", "Hermite.isUnisolvent"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 8.6'

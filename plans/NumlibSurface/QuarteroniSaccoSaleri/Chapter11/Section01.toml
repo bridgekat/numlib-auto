@@ -1,0 +1,89 @@
+namespace = "QuarteroniSaccoSaleri.Chapter11"
+desc = '''
+§11.1, the Cauchy problem: the integral form (11.2), local and global existence and uniqueness,
+Liapunov and asymptotic stability (Definition 11.1), stability under a uniform Lipschitz
+condition, and Gronwall's lemma (Lemma 11.1). Scalar (`E = ℝ`) restatements of
+`Numlib/Analysis/ODE/Cauchy` and `Numlib/Analysis/ODE/Gronwall`.
+'''
+
+[[node]]
+id = "cauchyProblem"
+kind = "definition"
+desc = '''(11.1): `cauchyProblem f t₀ y₀ I y : Prop := ODE.IsSolutionOn f t₀ y₀ I y` for
+`f : ℝ → ℝ → ℝ`, `I : Set ℝ` an interval containing `t₀`: `y t₀ = y₀` and
+`HasDerivWithinAt y (f t (y t)) I t` for `t ∈ I`. The book's `y ∈ C¹(I)` is the consequence
+`ContinuousOn (fun t => f t (y t)) I` when `f` is continuous.'''
+deps = ["ODE.IsSolutionOn"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.1'
+
+[[node]]
+id = "equation_11_2"
+kind = "theorem"
+desc = '''For `f` continuous on `Icc t₀ (t₀ + T) × ℝ`, `0 ≤ T`, and `y` continuous on the interval,
+`cauchyProblem f t₀ y₀ (Icc t₀ (t₀ + T)) y ↔ ∀ t ∈ Icc t₀ (t₀ + T), y t - y₀ = ∫ τ in t₀..t, f τ (y τ)`
+— the Cauchy problem is equivalent to the integral equation (11.2). `ODE.isSolutionOn_iff_integral`
+at `E = ℝ`, rearranged. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter11.cauchyProblem", "ODE.isSolutionOn_iff_integral"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 11.2'
+
+[[node]]
+id = "localExistenceUniqueness"
+kind = "theorem"
+desc = '''§11.1 item 1: if `f` is continuous on `J × Σ` with `J = Icc (t₀ - r_J) (t₀ + r_J)`,
+`Σ = Icc (y₀ - r_Σ) (y₀ + r_Σ)`, `|f(t, y₁) - f(t, y₂)| ≤ L |y₁ - y₂|` there (11.3) and `|f| ≤ M`
+there, then for every `0 < r₀ < min r_J (r_Σ / M)` the Cauchy problem has exactly one solution on
+`Icc (t₀ - r₀) (t₀ + r₀)` with values in `Σ`. `ODE.exists_isSolutionOn_of_lipschitzOnWith` at
+`E = ℝ`; the book's third constraint `r₀ < 1/L` is dropped (see the errata). ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter11.cauchyProblem", "ODE.exists_isSolutionOn_of_lipschitzOnWith"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 11.1'
+
+[[node]]
+id = "globalExistenceUniqueness"
+kind = "theorem"
+desc = '''§11.1 item 2: if `f` is continuous on `Icc t₀ (t₀ + T) × ℝ` and uniformly Lipschitz in
+`y`, `|f(t, y₁) - f(t, y₂)| ≤ L |y₁ - y₂|` for all `t` in the interval and all `y₁ y₂`, then the
+Cauchy problem has exactly one solution on `Icc t₀ (t₀ + T)`.
+`ODE.existsUnique_isSolutionOn_of_lipschitz` at `E = ℝ`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter11.cauchyProblem", "ODE.existsUnique_isSolutionOn_of_lipschitz"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 11.1'
+
+[[node]]
+id = "definition_11_1"
+kind = "definition"
+desc = '''Liapunov stability of the Cauchy problem on a bounded interval `I`:
+`definition_11_1 f t₀ y₀ I := ODE.IsLiapunovStable f t₀ y₀ I` — there is `C > 0` such that for
+every `ε > 0` and every perturbation `(δ₀, δ)` with `|δ₀| < ε`, `δ` continuous on `I`,
+`|δ t| < ε` on `I`, every solution `y` of (11.1) and every solution `z` of the perturbed problem
+(11.4) `z' = f(t, z) + δ(t)`, `z t₀ = y₀ + δ₀`, satisfy `|y t - z t| < C ε` on `I` (11.5).'''
+deps = ["QuarteroniSaccoSaleri.Chapter11.cauchyProblem", "ODE.IsLiapunovStable"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 11.1'
+
+[[node]]
+id = "definition_11_1_asymptotic"
+kind = "definition"
+desc = '''Asymptotic stability (11.6): Liapunov stable on every bounded `Icc t₀ (t₀ + T)` and
+`|y t - z t| → 0` as `t → +∞` for the perturbed solutions on `Ici t₀`;
+`ODE.IsAsymptoticallyStable f t₀ y₀`.'''
+deps = ["QuarteroniSaccoSaleri.Chapter11.definition_11_1", "ODE.IsAsymptoticallyStable"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 11.1'
+
+[[node]]
+id = "isLiapunovStable_of_lipschitz"
+kind = "theorem"
+desc = '''§11.1: uniform Lipschitz continuity of `f` in `y` on `Icc t₀ (t₀ + T)` (constant `L`)
+implies Liapunov stability there, with `C = (1 + K_I) e^{L K_I}`, `K_I = T`; and the estimate
+`|y t - z t| ≤ (1 + |t - t₀|) ε e^{L |t - t₀|}` behind it.
+`ODE.isLiapunovStable_of_lipschitz` and `ODE.norm_sub_le_of_lipschitz` at `E = ℝ`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter11.definition_11_1", "ODE.isLiapunovStable_of_lipschitz", "ODE.norm_sub_le_of_lipschitz"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 11.1'
+
+[[node]]
+id = "lemma_11_1"
+kind = "theorem"
+desc = '''Gronwall's lemma: let `p` be integrable and nonnegative on `(t₀, t₀ + T)`, `g` and `φ`
+continuous on `Icc t₀ (t₀ + T)` with `g` nondecreasing; if `φ t ≤ g t + ∫ τ in t₀..t, p τ * φ τ` on
+the interval then `φ t ≤ g t * exp (∫ τ in t₀..t, p τ)` there. `Gronwall.le_mul_exp_integral`;
+the continuous-`p` case, which is all §11.1 uses, is `Gronwall.le_mul_exp_integral_of_continuousOn`
+and can be stated first as `lemma_11_1_continuous`. ★'''
+deps = ["Gronwall.le_mul_exp_integral", "Gronwall.le_mul_exp_integral_of_continuousOn"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Lemma 11.1'

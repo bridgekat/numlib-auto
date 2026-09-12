@@ -1,0 +1,488 @@
+namespace = "FiniteDifference.Hyperbolic"
+desc = '''
+Finite difference schemes for the linear transport equation `u_t + a u_x = 0` on the grid `x_j = j
+Δx`, `t^n = n Δt`, `λ = Δt / Δx`: the forward Euler/centred, Lax–Friedrichs, Lax–Wendroff and
+upwind stencils, their numerical fluxes and artificial-viscosity forms, the implicit backward
+Euler/centred scheme, and the leap-frog and Newmark schemes for the wave equation; then their
+analysis — consistency and order through Taylor expansion of the *initial datum*, the CFL
+condition as a necessary condition by finite speed of propagation, stability of each scheme
+(monotonicity in `ℓ¹`/`ℓ^∞`, amplification factors in `ℓ²`), the unconditional instability of the
+centred explicit scheme, the exact amplification factor `e^{-iakΔt}` with the amplification and
+dispersion errors, and the equivalent (modified) equations.
+
+**Consistency is one-variable Taylor.** The exact solution is `u(x, t) = u₀(x - a t)`, so the local
+truncation error of a stencil `c` at the grid point `(x_j, t^n)` is, with `ξ = x_j - a t^n` the foot
+of the characteristic, `τ = [u₀(ξ - aΔt) - ∑_s c_s u₀(ξ - sΔx)] / Δt` — a combination of values of
+the single-variable function `u₀` near `ξ`, bounded by Mathlib's `taylor_mean_remainder_bound`.
+The orders `O(Δt + Δx²)`, `O(Δx²/Δt + Δt + Δx²)`, `O(Δt² + Δx²)`, `O(Δt + Δx)` of Table 13.1 in
+Quarteroni–Sacco–Saleri, *Numerical Mathematics*, come out with explicit constants.
+
+**The CFL condition is necessary, not sufficient.** With `|aλ| > 1` and fixed `λ`, the numerical
+value at `(0, 1)` never sees the datum at `-a`, where the exact solution reads it
+(`Stencil.iterate_apply_congr_of_eqOn`), so a bump datum defeats every three-point explicit
+scheme. Sufficiency is scheme by scheme: monotone stencils under CFL for upwind and
+Lax–Friedrichs, the symbol bound for Lax–Wendroff, and never for forward Euler/centred, whose
+symbol `1 - iλa sin φ` has modulus `> 1`. Quarteroni–Sacco–Saleri §13.8.3 says "necessary and
+sufficient"; the module records why that is false.
+
+**Modified equations are higher-order consistency.** The equivalent equation `v_t + a v_x = μ v_xx
++ ν v_xxx` of a scheme is the statement that a smooth solution of *it*, inserted in the scheme,
+leaves a residual of higher order than a solution of the transport equation does; the
+coefficients are forced by cancelling the leading terms after `v_tt`, `v_ttt` are rewritten
+through the modified equation itself. This is the rigorous content of the formal derivation of
+§13.9.1 and of Warming–Hyett's method; the coefficients are those of Table 13.2 (the text's value
+of `ν` for upwind is wrong, see the surface plan).
+
+The periodic-grid computations use `Numlib/FiniteDifference/VonNeumann`; the stencils and the
+whole-line `ℓ^p` theory are `Numlib/FiniteDifference/Stencil`; the exact solution is
+`Numlib/Analysis/PDE/Transport`. Consumers beyond the book: any text on hyperbolic difference
+schemes (Strikwerda, LeVeque) states exactly these results for exactly these schemes.
+'''
+
+[[node]]
+id = "forwardEulerCentred"
+kind = "definition"
+desc = '''`forwardEulerCentred a lam : Stencil := Stencil.threePoint (lam * a / 2) 1 (-(lam * a / 2))`:
+`u_j^{n+1} = u_j^n - (λa/2)(u_{j+1}^n - u_{j-1}^n)`. ★'''
+deps = ["FiniteDifference.Stencil.threePoint"]
+
+[[node]]
+id = "laxFriedrichs"
+kind = "definition"
+desc = '''`laxFriedrichs a lam := Stencil.threePoint ((1 + lam * a) / 2) 0 ((1 - lam * a) / 2)`:
+`u_j^{n+1} = ½(u_{j+1}^n + u_{j-1}^n) - (λa/2)(u_{j+1}^n - u_{j-1}^n)`. ★'''
+deps = ["FiniteDifference.Stencil.threePoint"]
+
+[[node]]
+id = "laxWendroff"
+kind = "definition"
+desc = '''`laxWendroff a lam := Stencil.threePoint (lam * a / 2 * (1 + lam * a)) (1 - (lam * a) ^ 2) (lam
+* a / 2 * (lam * a - 1))`: `u_j^{n+1} = u_j^n - (λa/2)(u_{j+1}^n - u_{j-1}^n) + (λ²a²/2)(u_{j+1}^n -
+2u_j^n + u_{j-1}^n)`. ★'''
+deps = ["FiniteDifference.Stencil.threePoint"]
+
+[[node]]
+id = "upwind"
+kind = "definition"
+desc = '''`upwind a lam := Stencil.threePoint (lam * max a 0) (1 - lam * |a|) (lam * max (-a) 0)`:
+`u_j^{n+1} = u_j^n - (λa/2)(u_{j+1}^n - u_{j-1}^n) + (λ|a|/2)(u_{j+1}^n - 2u_j^n + u_{j-1}^n)`;
+`upwind_eq_of_pos : 0 < a → upwind a lam = threePoint (lam * a) (1 - lam * a) 0` and `upwind_eq_of_neg`.
+★'''
+deps = ["FiniteDifference.Stencil.threePoint"]
+
+[[node]]
+id = "artificialViscosity"
+kind = "definition"
+desc = '''`artificialViscosity a lam Δx k := Stencil.threePoint (lam * a / 2 + k / (2 * Δx ^ 2)) (1 - k /
+Δx ^ 2) (-(lam * a / 2) + k / (2 * Δx ^ 2))`: forward Euler/centred plus the diffusion `(k/2)(u_{j+1}
+- 2u_j + u_{j-1})/Δx²`. ★'''
+deps = ["FiniteDifference.Stencil.threePoint"]
+
+[[node]]
+id = "forwardEulerCentred_eq_ofFlux"
+kind = "theorem"
+desc = '''`forwardEulerCentred a lam = Stencil.ofFlux lam (a/2) (a/2)`; likewise
+`laxFriedrichs_eq_ofFlux : lam ≠ 0 → laxFriedrichs a lam = ofFlux lam (a/2 + 1/(2 lam)) (a/2 - 1/(2
+lam))`, `laxWendroff_eq_ofFlux : laxWendroff a lam = ofFlux lam (a/2 + lam a²/2) (a/2 - lam a²/2)`,
+`upwind_eq_ofFlux : upwind a lam = ofFlux lam ((a + |a|)/2) ((a - |a|)/2)`. Four `Finsupp.ext` +
+`ring` (with `max a 0 = (a + |a|)/2`). ★'''
+deps = ["FiniteDifference.Hyperbolic.forwardEulerCentred", "FiniteDifference.Hyperbolic.laxFriedrichs", "FiniteDifference.Hyperbolic.laxWendroff", "FiniteDifference.Hyperbolic.upwind", "FiniteDifference.Stencil.ofFlux"]
+
+[[node]]
+id = "laxFriedrichs_eq_artificialViscosity"
+kind = "theorem"
+desc = '''With `lam = Δt / Δx`, `Δx ≠ 0`: `laxFriedrichs a lam = artificialViscosity a lam Δx (Δx ^ 2)`,
+`laxWendroff_eq_artificialViscosity : laxWendroff a lam = artificialViscosity a lam Δx (a ^ 2 * Δt ^
+2)`, `upwind_eq_artificialViscosity : upwind a lam = artificialViscosity a lam Δx (|a| * Δx * Δt)`
+(Table 13.1's artificial viscosities). ★'''
+deps = ["FiniteDifference.Hyperbolic.laxFriedrichs", "FiniteDifference.Hyperbolic.laxWendroff", "FiniteDifference.Hyperbolic.upwind", "FiniteDifference.Hyperbolic.artificialViscosity"]
+
+[[node]]
+id = "centredDiffCLM"
+kind = "definition"
+desc = '''The centred difference `D₀ u j = u (j + 1) - u (j - 1)` as `centredDiffCLM : lp (fun _ : ℤ =>
+ℝ) 2 →L[ℝ] lp (fun _ : ℤ => ℝ) 2` (`Stencil.lpCLM (threePoint (-1) 0 1) 2`), with
+`isSkewAdjoint_centredDiffCLM : ⟪D₀ u, v⟫ = -⟪u, D₀ v⟫` (shift by `1` is the adjoint of shift by
+`-1`), hence `⟪D₀ u, u⟫ = 0` — the telescoping sum of Quarteroni–Sacco–Saleri, Exercise 13.7. ★'''
+deps = ["FiniteDifference.Stencil.lpCLM"]
+
+[[node]]
+id = "backwardEulerCentred"
+kind = "definition"
+desc = '''The backward Euler/centred solution operator on `ℓ²(ℤ)`: `B = 1 + (lam a / 2) • centredDiffCLM`
+satisfies `⟪B u, u⟫ = ‖u‖²`, so it is coercive with constant `1` and
+`ContinuousLinearMap.exists_equiv_of_isCoerciveWith` gives `B⁻¹` with `‖B⁻¹‖ ≤ 1`;
+`backwardEulerCentred a lam : lp (fun _ : ℤ => ℝ) 2 →L[ℝ] lp … 2 := B⁻¹`, with
+`backwardEulerCentred_spec : B (backwardEulerCentred a lam u) = u`, i.e. `u^{n+1} + (λa/2)(u_{j+1}^{n+1}
+- u_{j-1}^{n+1}) = u^n_j`. ★★'''
+deps = ["FiniteDifference.Hyperbolic.centredDiffCLM", "ContinuousLinearMap.exists_equiv_of_isCoerciveWith"]
+
+[[node]]
+id = "norm_backwardEulerCentred_apply_le"
+kind = "theorem"
+desc = '''`‖backwardEulerCentred a lam u‖ ≤ ‖u‖` for every `u ∈ ℓ²(ℤ)`, every `a`, `lam`: with `w =
+B⁻¹u`, `‖w‖² = ⟪B w, w⟫ = ⟪u, w⟫ ≤ ‖u‖ ‖w‖`. Unconditional `‖·‖_{Δ,2}` stability of the implicit
+centred scheme (Quarteroni–Sacco–Saleri §13.8.2 and Exercise 13.7). ★'''
+deps = ["FiniteDifference.Hyperbolic.backwardEulerCentred"]
+
+[[node]]
+id = "IsLeapFrog"
+kind = "definition"
+desc = '''`IsLeapFrog γ lam (u : ℕ → ℤ → ℝ) : Prop := ∀ n j, u (n+2) j - 2 * u (n+1) j + u n j = (γ *
+lam) ^ 2 * (u (n+1) (j+1) - 2 * u (n+1) j + u (n+1) (j-1))`, the three-level scheme for `u_tt = γ²
+u_xx`. ★'''
+deps = []
+
+[[node]]
+id = "IsNewmark"
+kind = "definition"
+desc = '''`IsNewmark γ lam Δt β θ (u v : ℕ → ℤ → ℝ) : Prop`: with `w n j := u n (j+1) - 2 * u n j + u n
+(j-1)`, `∀ n j, u (n+1) j - u n j = Δt * v n j + (γ * lam)^2 * (β * w (n+1) j + (1/2 - β) * w n j) ∧ v
+(n+1) j - v n j = (γ * lam)^2 / Δt * (θ * w (n+1) j + (1 - θ) * w n j)`. ★'''
+deps = []
+
+[[node]]
+id = "truncationError"
+kind = "definition"
+desc = '''`truncationError (c : Stencil) (a Δt Δx : ℝ) (u₀ : ℝ → ℝ) (ξ : ℝ) : ℝ := (u₀ (ξ - a * Δt) -
+c.sum (fun s cs => cs * u₀ (ξ - s * Δx))) / Δt`: the local truncation error of the scheme `c` for
+`u_t + a u_x = 0` on the exact solution `u₀(x - at)`, at the grid point whose characteristic foot is
+`ξ` (`truncationError_eq`: it equals `(u(x_j, t^{n+1}) - (c u(·, t^n))_j)/Δt` with `ξ = x_j - a
+t^n`). ★'''
+deps = ["FiniteDifference.Stencil"]
+
+[[node]]
+id = "IsOfOrder"
+kind = "definition"
+desc = '''Consistency and order for a family of stencils `c : ℝ → ℝ → Stencil` (in `Δt`, `Δx`):
+`IsOfOrder c a u₀ p q : Prop := ∃ C δ₀, 0 < δ₀ ∧ ∀ Δt Δx, 0 < Δt → Δt ≤ δ₀ → 0 < Δx → Δx ≤ δ₀ → ∀ ξ,
+|truncationError (c Δt Δx) a Δt Δx u₀ ξ| ≤ C * (Δt ^ p + Δx ^ q)`, and `IsConsistent c a u₀ :=
+Tendsto (fun (Δt, Δx) => ⨆ ξ, |τ|) (𝓝[>] 0 ×ˢ 𝓝[>] 0) (𝓝 0)`; `IsOfOrder.isConsistent` for `p, q ≥
+1`. (Quarteroni–Sacco–Saleri §13.8.1.) ★'''
+deps = ["FiniteDifference.Hyperbolic.truncationError"]
+
+[[node]]
+id = "abs_truncationError_forwardEulerCentred_le"
+kind = "theorem"
+desc = '''For `u₀` twice differentiable with `|u₀''| ≤ M₂` and three times with `|u₀⁽³⁾| ≤ M₃`
+everywhere, `lam = Δt/Δx`, `Δt, Δx > 0`: `|truncationError (forwardEulerCentred a lam) a Δt Δx u₀ ξ| ≤
+a ^ 2 / 2 * M₂ * Δt + |a| / 6 * M₃ * Δx ^ 2`. Taylor at `ξ`: `u₀(ξ - aΔt) = u₀ - aΔt u₀' + R₂`, `|R₂|
+≤ (a²Δt²/2) M₂`; `u₀(ξ ± Δx) = u₀ ± Δx u₀' + (Δx²/2) u₀'' ± R₃^±`, `|R₃^±| ≤ (Δx³/6) M₃`, so the
+centred difference is `2Δx u₀' + (R₃^+ - R₃^-)`. ★★'''
+deps = ["FiniteDifference.Hyperbolic.forwardEulerCentred", "FiniteDifference.Hyperbolic.truncationError"]
+
+[[node]]
+id = "abs_truncationError_laxFriedrichs_le"
+kind = "theorem"
+desc = '''Under the same hypotheses, `|truncationError (laxFriedrichs a lam) a Δt Δx u₀ ξ| ≤ M₂ / 2 *
+Δx ^ 2 / Δt + a ^ 2 / 2 * M₂ * Δt + |a| / 6 * M₃ * Δx ^ 2`: the previous computation plus `u₀ -
+½(u₀(ξ+Δx) + u₀(ξ-Δx)) = -(Δx²/2) u₀''(η)` in modulus `≤ (Δx²/2) M₂`. ★★'''
+deps = ["FiniteDifference.Hyperbolic.laxFriedrichs", "FiniteDifference.Hyperbolic.truncationError"]
+
+[[node]]
+id = "abs_truncationError_laxWendroff_le"
+kind = "theorem"
+desc = '''For `u₀` with `|u₀⁽³⁾| ≤ M₃`, `|u₀⁽⁴⁾| ≤ M₄`, `lam = Δt/Δx`: `|truncationError (laxWendroff a
+lam) a Δt Δx u₀ ξ| ≤ C * (Δt ^ 2 + Δx ^ 2)` with `C = |a|³ M₃ / 6 + |a| M₃ / 6 + a² M₄ Δx²/24 · (…)`
+— state it with an explicit `C` depending on `a`, `M₃`, `M₄` and a bound `Δx ≤ 1`. Expansion: `u₀(ξ -
+aΔt) - u₀ = -aΔt u₀' + (a²Δt²/2) u₀'' - (a³Δt³/6) u₀⁽³⁾(η)`; `(λa/2)(u₀(ξ+Δx) - u₀(ξ-Δx)) = aΔt u₀'
++ (λaΔx³/6)(…)`; `(λ²a²/2)(u₀(ξ+Δx) - 2u₀ + u₀(ξ-Δx)) = (a²Δt²/2) u₀'' + O(λ²a²Δx⁴ M₄)`; the first
+and second order terms cancel exactly. ★★'''
+deps = ["FiniteDifference.Hyperbolic.laxWendroff", "FiniteDifference.Hyperbolic.truncationError"]
+
+[[node]]
+id = "abs_truncationError_upwind_le"
+kind = "theorem"
+desc = '''For `u₀` with `|u₀''| ≤ M₂`: `|truncationError (upwind a lam) a Δt Δx u₀ ξ| ≤ a ^ 2 / 2 * M₂ *
+Δt + |a| / 2 * M₂ * Δx`. For `a > 0` the stencil reads `u₀ - λa(u₀ - u₀(ξ - Δx))` and `u₀ - u₀(ξ -
+Δx) = Δx u₀' - (Δx²/2) u₀''(η)`. ★★'''
+deps = ["FiniteDifference.Hyperbolic.upwind", "FiniteDifference.Hyperbolic.truncationError"]
+
+[[node]]
+id = "IsConvergent"
+kind = "definition"
+desc = '''Convergence of a family of stencils for the datum `u₀` over the horizon `T`: `IsConvergent
+a u₀ c T : Prop := ∀ ε > 0, ∃ δ₀ > 0, ∀ Δt Δx, 0 < Δt → Δt ≤ δ₀ → 0 < Δx → Δx ≤ δ₀ → ∀ n j, n * Δt ≤
+T → |u₀ (j * Δx - a * (n * Δt)) - (Stencil.apply (c Δt Δx))^[n] (fun i => u₀ (i * Δx)) j| ≤ ε`
+(Quarteroni–Sacco–Saleri, end of §13.8.1). ★'''
+deps = ["FiniteDifference.Stencil"]
+
+[[node]]
+id = "CFL"
+kind = "definition"
+desc = '''`CFL a lam : Prop := |a * lam| ≤ 1`, the Courant–Friedrichs–Lewy condition for `u_t + a u_x =
+0` with `lam = Δt/Δx`; `CFL.of_variable` for a speed field `a(x,t)`: `Δt ≤ Δx / ⨆ |a|`; `CFL.system`
+for a hyperbolic system: `∀ k, |lam k * Δt / Δx| ≤ 1`. ★'''
+deps = []
+
+[[node]]
+id = "not_isConvergent_of_one_lt_abs_mul"
+kind = "theorem"
+desc = '''**The CFL condition is necessary.** Let `lam > 0` with `1 < |a| * lam`, and let `c : ℝ → ℝ →
+Stencil` be any family of three-point stencils (`(c Δt Δx).support ⊆ {-1, 0, 1}`). Then there is a
+smooth compactly supported `u₀ : ℝ → ℝ` (a `ContDiffBump` centred at `-a` with `rOut = (|a| -
+1/lam)/2`) such that `¬ IsConvergent a u₀ (fun Δt Δx => c Δt Δx) 1` when the family is restricted to
+`Δx = Δt / lam`: at `(x, t) = (0, 1)` with `Δt = 1/n`, `(c^n u₀(·Δx))_0` depends on `u₀` on `{|x| ≤ n
+Δx = 1/lam}` where `u₀ = 0`, while `u₀(0 - a · 1) = 1`. So the error at that point is `1` for every
+`n`. Via `Stencil.iterate_apply_congr_of_eqOn` with `r = 1`, `v = 0`. ★★'''
+deps = ["FiniteDifference.Hyperbolic.IsConvergent", "FiniteDifference.Hyperbolic.CFL", "FiniteDifference.Stencil.iterate_apply_congr_of_eqOn"]
+
+[[node]]
+id = "upwind_isMonotone"
+kind = "theorem"
+desc = '''`0 ≤ lam * |a| → lam * |a| ≤ 1 → Stencil.IsMonotone (upwind a lam)`; and
+`laxFriedrichs_isMonotone : |lam * a| ≤ 1 → Stencil.IsMonotone (laxFriedrichs a lam)`. Hence, by
+`Stencil.IsMonotone.norm_lpCLM_le_one`, both schemes are nonexpansive in every `ℓ^p` under CFL (`ℓ¹`
+in Quarteroni–Sacco–Saleri §13.8.3, `ℓ^∞` in (13.53)). ★'''
+deps = ["FiniteDifference.Hyperbolic.upwind", "FiniteDifference.Hyperbolic.laxFriedrichs", "FiniteDifference.Stencil.IsMonotone"]
+
+[[node]]
+id = "amplificationFactor_forwardEulerCentred"
+kind = "theorem"
+desc = '''On the periodic grid (`N ≥ 3`, `φ = 2πk/N`): `amplificationFactor (Stencil.toPeriodic N
+(forwardEulerCentred a lam)) k = 1 - I * (lam * a) * sin φ`, with `‖·‖ ^ 2 = 1 + (lam a)² sin² φ`; so
+`1 < ‖γ_k‖` whenever `a ≠ 0` and `sin φ ≠ 0` (`one_lt_norm_amplificationFactor_forwardEulerCentred`).
+From `amplificationFactor_toPeriodic_threePoint` and `e^{iφ} - e^{-iφ} = 2i sin φ`. ★'''
+deps = ["FiniteDifference.Hyperbolic.forwardEulerCentred", "FiniteDifference.amplificationFactor_toPeriodic_threePoint"]
+
+[[node]]
+id = "forwardEulerCentred_not_isStableFamily"
+kind = "theorem"
+desc = '''Unconditional instability of the centred explicit scheme: for `a ≠ 0` and `lam > 0`, the
+family indexed by `N` (with `Δx N = 2π/N`, `Δt N = lam * Δx N`, `Q N = toEuclideanCLM (periodicScheme
+(toPeriodic N (forwardEulerCentred a lam)))` on `E N = EuclideanSpace ℂ (Fin N)`) is not
+`IsStableFamily`. Proof: for `4 ∣ N` the mode `k = N/4` has `sin φ = 1` and `‖γ_k‖ = √(1 + lam²a²) =:
+ρ > 1`; `norm_amplificationFactor_pow_le` gives `‖Q N ^ n‖ ≥ ρ^n`; for any `T, C, δ₀` choose `N` a
+multiple of `4` with `Δt N ≤ δ₀` and `n = ⌊T / Δt N⌋` so large that `ρ^n > C`. ★★'''
+deps = ["FiniteDifference.Hyperbolic.amplificationFactor_forwardEulerCentred", "FiniteDifference.norm_amplificationFactor_pow_le", "FiniteDifference.IsStableFamily"]
+
+[[node]]
+id = "amplificationFactor_upwind"
+kind = "theorem"
+desc = '''`amplificationFactor (toPeriodic N (upwind a lam)) k = 1 - lam * a * (1 - exp (-(I φ)))` for
+`a > 0`, `= 1 - lam * a * (exp (I φ) - 1)` for `a < 0`, and in both cases `‖γ_k‖ ^ 2 = 1 - 2 lam |a|
+(1 - lam |a|) (1 - cos φ)`. `norm_amplificationFactor_upwind_le_one_iff`: for `N ≥ 2`, `(∀ k, ‖γ_k‖ ≤
+1) ↔ lam * |a| ≤ 1`. (Quarteroni–Sacco–Saleri Exercise 13.6; the book's `a < 0` formula has the
+wrong sign in the exponent, harmless for the modulus.) ★★'''
+deps = ["FiniteDifference.Hyperbolic.upwind", "FiniteDifference.amplificationFactor_toPeriodic_threePoint"]
+
+[[node]]
+id = "amplificationFactor_laxFriedrichs"
+kind = "theorem"
+desc = '''`amplificationFactor (toPeriodic N (laxFriedrichs a lam)) k = cos φ - I * (lam * a) * sin φ`,
+`‖γ_k‖ ^ 2 = cos² φ + (lam a)² sin² φ`; `norm_amplificationFactor_laxFriedrichs_le_one_iff`: for `N ≥
+3`, `(∀ k, ‖γ_k‖ ≤ 1) ↔ |lam * a| ≤ 1`. ★'''
+deps = ["FiniteDifference.Hyperbolic.laxFriedrichs", "FiniteDifference.amplificationFactor_toPeriodic_threePoint"]
+
+[[node]]
+id = "amplificationFactor_laxWendroff"
+kind = "theorem"
+desc = '''`amplificationFactor (toPeriodic N (laxWendroff a lam)) k = 1 - (lam a)² (1 - cos φ) - I (lam
+a) sin φ`, with `‖γ_k‖ ^ 2 = 1 - 4 (lam a)² (1 - (lam a)²) sin⁴(φ/2)` (use `1 - cos φ = 2 sin²(φ/2)`,
+`sin² φ = (1 - cos φ)(1 + cos φ)`); `norm_amplificationFactor_laxWendroff_le_one_iff`: for `N ≥ 2`,
+`(∀ k, ‖γ_k‖ ≤ 1) ↔ |lam * a| ≤ 1`. With `Stencil.norm_lpCLM_two_le_of_symbol_le` this gives the
+`ℓ²(ℤ)` stability of Lax–Wendroff under CFL (`laxWendroff_norm_lpCLM_two_le_one`). ★★'''
+deps = ["FiniteDifference.Hyperbolic.laxWendroff", "FiniteDifference.amplificationFactor_toPeriodic_threePoint", "FiniteDifference.Stencil.norm_lpCLM_two_le_of_symbol_le"]
+
+[[node]]
+id = "amplificationFactor_backwardEulerCentred"
+kind = "theorem"
+desc = '''The periodic backward Euler/centred scheme `periodicTwoLevel (toPeriodic N (threePoint
+(-(lam a/2)) 1 (lam a/2))) (Pi.single 0 1)` has `amplificationFactor₂ … k = 1 / (1 + I (lam a) sin φ)`,
+of modulus `≤ 1` for every `lam`, `a`, `k`. ★'''
+deps = ["FiniteDifference.periodicTwoLevel", "FiniteDifference.amplificationFactor_toPeriodic_threePoint"]
+
+[[node]]
+id = "exactAmplification"
+kind = "definition"
+desc = '''`exactAmplification a Δt (k : ℤ) : ℂ := exp (-(I * a * k * Δt))`, the factor by which the exact
+solution multiplies the `k`-th harmonic per time step: `u₀ = e^{ikx}` gives `u(x, t^n) = e^{ikx}
+g_k^n` (`exactAmplification_pow`); `phaseAngle k Δx := k * Δx`, so `g_k = exp (-(I a lam φ_k))`
+(`exactAmplification_eq_phaseAngle`); `norm_exactAmplification : ‖g_k‖ = 1`. ★'''
+deps = []
+
+[[node]]
+id = "amplificationError"
+kind = "definition"
+desc = '''`amplificationError (γ : ℂ) : ℝ := ‖γ‖` (the ratio `‖γ_k‖ / ‖g_k‖`, `‖g_k‖ = 1`), and
+`dispersionError (a lam φ : ℝ) (γ : ℂ) : ℝ := -Complex.arg γ / (a * lam * φ)`: writing `γ_k = ‖γ_k‖
+e^{-iωΔt}`, `ω Δt = -arg γ_k` and the ratio of the numerical phase speed `ω/k` to `a` is
+`-arg γ_k / (a k Δt) = -arg γ_k / (a lam φ_k)`. Quarteroni–Sacco–Saleri §13.9; for the exact factor
+both errors are `1` (`amplificationError_exactAmplification`,
+`dispersionError_exactAmplification` for `|a lam φ| < π`). ★'''
+deps = ["FiniteDifference.Hyperbolic.exactAmplification"]
+
+[[node]]
+id = "residual"
+kind = "definition"
+desc = '''The residual of a stencil on a smooth function of two variables: `residual (c : Stencil) (Δt
+Δx : ℝ) (v : ℝ → ℝ → ℝ) (x t : ℝ) : ℝ := (v x (t + Δt) - c.sum (fun s cs => cs * v (x - s * Δx) t)) /
+Δt`. On `v = u₀(x - at)` it is `truncationError`. ★'''
+deps = ["FiniteDifference.Stencil"]
+
+[[node]]
+id = "residual_threePoint_expansion"
+kind = "theorem"
+desc = '''The general three-point expansion: for `v` with continuous partial derivatives up to order
+`4` bounded by `M` on a neighbourhood of `(x, t)` containing `[x - Δx, x + Δx] × [t, t + Δt]`,
+`|residual (threePoint cm c0 cp) Δt Δx v x t - (∂_t v + (Δt/2) ∂_tt v + (Δt²/6) ∂_ttt v - Δt⁻¹ ((cm +
+c0 + cp - 1) v + Δx (cp - cm) ∂_x v + (Δx²/2)(cp + cm) ∂_xx v + (Δx³/6)(cp - cm) ∂_xxx v))| ≤ M (Δt³/24
++ (|cm| + |cp|) Δx⁴ / (24 Δt))`, all derivatives at `(x, t)`. Two one-variable Taylor expansions
+(in `t` and in `x`) with Lagrange remainders. Every modified-equation computation is algebra on
+top of this. ★★★'''
+deps = ["FiniteDifference.Hyperbolic.residual", "FiniteDifference.Stencil.threePoint"]
+
+[[node]]
+id = "abs_residual_upwind_sub_le"
+kind = "theorem"
+desc = '''Quarteroni–Sacco–Saleri (13.57)–(13.58) for upwind with `a > 0`: `|residual (upwind a lam) Δt
+Δx v x t - (∂_t v + a ∂_x v)| ≤ (Δt/2) M₂ + (a Δx/2) M₂` and `|residual … - (∂_t v + (Δt/2) ∂_tt v + a
+∂_x v - (a Δx/2) ∂_xx v)| ≤ (Δt²/6) M₃ + (a Δx²/6) M₃` with `M₂`, `M₃` bounds on the second, third
+partial derivatives near `(x, t)`. Special case of `residual_threePoint_expansion` at lower order,
+or directly. ★★'''
+deps = ["FiniteDifference.Hyperbolic.residual", "FiniteDifference.Hyperbolic.upwind"]
+
+[[node]]
+id = "IsModifiedSolution"
+kind = "definition"
+desc = '''`IsModifiedSolution a μ ν (v : ℝ → ℝ → ℝ) : Prop`: `v` is `C³` (as a function on `ℝ × ℝ`) and `∂_t
+v + a ∂_x v = μ ∂_xx v + ν ∂_xxx v` everywhere — a classical solution of the equivalent equation
+(13.56). ★'''
+deps = []
+
+[[node]]
+id = "abs_residual_upwind_le_of_isModifiedSolution"
+kind = "theorem"
+desc = '''The second-order equivalent equation of upwind (Quarteroni–Sacco–Saleri (13.59)): for `a >
+0`, `μ = a Δx / 2 - a² Δt / 2`, and `v` an `IsModifiedSolution a μ 0` with second and third partial
+derivatives bounded by `M`, `|residual (upwind a lam) Δt Δx v x t| ≤ C(a, M) (Δt² + Δt Δx + Δx²)`
+for `lam = Δt/Δx`. Proof: `abs_residual_upwind_sub_le` (second form); differentiate the modified
+equation in `t` and `x` (with `ContDiffAt.isSymmSndFDerivAt` for the mixed partials) to get `∂_tt v
+= a² ∂_xx v + μ (∂_xxt v - a ∂_xxx v)`, whose correction is `O(|μ| M) = O(Δx + Δt)`; substitute, and
+the `∂_xx v` coefficient `μ + a²Δt/2 - aΔx/2` vanishes. ★★★'''
+deps = ["FiniteDifference.Hyperbolic.abs_residual_upwind_sub_le", "FiniteDifference.Hyperbolic.IsModifiedSolution"]
+
+[[node]]
+id = "abs_residual_upwind_le_of_isModifiedSolution_third"
+kind = "theorem"
+desc = '''The third-order equivalent equation of upwind (Table 13.2 of Quarteroni–Sacco–Saleri, the
+Warming–Hyett coefficients): for `a > 0`, `lam = Δt/Δx` fixed, `μ = a Δx / 2 - a² Δt / 2`, `ν = -(a /
+6) (Δx² - 3 a Δx Δt + 2 a² Δt²)`, and `v` an `IsModifiedSolution a μ ν` with partial derivatives up
+to order `4` bounded by `M`: `|residual (upwind a lam) Δt Δx v x t| ≤ C(a, lam, M) Δx³`. From
+`residual_threePoint_expansion` with `∂_tt v = a² ∂_xx v - 2 a μ ∂_xxx v + O(Δx²)` and `∂_ttt v = -a³
+∂_xxx v + O(Δx)`, both from the modified equation; the `∂_xxx` coefficient vanishes for the stated
+`ν` (and only for it). ★★★'''
+deps = ["FiniteDifference.Hyperbolic.residual_threePoint_expansion", "FiniteDifference.Hyperbolic.IsModifiedSolution"]
+
+[[node]]
+id = "abs_residual_laxFriedrichs_le_of_isModifiedSolution"
+kind = "theorem"
+desc = '''Lax–Friedrichs' equivalent equation (Table 13.2): with `lam = Δt/Δx` fixed, `μ = (Δx² / (2
+Δt)) (1 - (a lam)²)`, `ν = (a Δx² / 3) (1 - (a lam)²)`, an `IsModifiedSolution a μ ν` with bounded
+fourth derivatives has `|residual (laxFriedrichs a lam) Δt Δx v x t| ≤ C Δx³`. Same method as the upwind third-order node
+(Quarteroni–Sacco–Saleri, Exercise 13.8). ★★★'''
+deps = ["FiniteDifference.Hyperbolic.residual_threePoint_expansion", "FiniteDifference.Hyperbolic.IsModifiedSolution", "FiniteDifference.Hyperbolic.laxFriedrichs"]
+
+[[node]]
+id = "upwind_eq_of_pos"
+kind = "theorem"
+desc = '''`0 < a → upwind a lam = Stencil.threePoint (lam * a) (1 - lam * a) 0` (Quarteroni–Sacco–Saleri
+(13.50)), and `upwind_eq_of_neg : a < 0 → upwind a lam = threePoint 0 (1 + lam * a) (-(lam * a))`. ★'''
+deps = ["FiniteDifference.Hyperbolic.upwind"]
+
+[[node]]
+id = "laxFriedrichs_eq_ofFlux"
+kind = "theorem"
+desc = '''`lam ≠ 0 → laxFriedrichs a lam = Stencil.ofFlux lam (a / 2 + 1 / (2 * lam)) (a / 2 - 1 / (2 *
+lam))`: the Lax–Friedrichs numerical flux `½[a(u + v) - λ⁻¹(v - u)]`. ★'''
+deps = ["FiniteDifference.Hyperbolic.laxFriedrichs", "FiniteDifference.Stencil.ofFlux"]
+
+[[node]]
+id = "laxWendroff_eq_ofFlux"
+kind = "theorem"
+desc = '''`laxWendroff a lam = Stencil.ofFlux lam (a / 2 + lam * a ^ 2 / 2) (a / 2 - lam * a ^ 2 / 2)`: the
+flux `½[a(u + v) - λa²(v - u)]`. ★'''
+deps = ["FiniteDifference.Hyperbolic.laxWendroff", "FiniteDifference.Stencil.ofFlux"]
+
+[[node]]
+id = "upwind_eq_ofFlux"
+kind = "theorem"
+desc = '''`upwind a lam = Stencil.ofFlux lam ((a + |a|) / 2) ((a - |a|) / 2)`: the flux `½[a(u + v) - |a|(v
+- u)]`. ★'''
+deps = ["FiniteDifference.Hyperbolic.upwind", "FiniteDifference.Stencil.ofFlux"]
+
+[[node]]
+id = "laxWendroff_eq_artificialViscosity"
+kind = "theorem"
+desc = '''With `lam = Δt / Δx`, `Δx ≠ 0`: `laxWendroff a lam = artificialViscosity a lam Δx (a ^ 2 * Δt ^ 2)`
+(artificial viscosity `k = a²Δt²`, Table 13.1). ★'''
+deps = ["FiniteDifference.Hyperbolic.laxWendroff", "FiniteDifference.Hyperbolic.artificialViscosity"]
+
+[[node]]
+id = "upwind_eq_artificialViscosity"
+kind = "theorem"
+desc = '''With `lam = Δt / Δx`, `Δx ≠ 0`: `upwind a lam = artificialViscosity a lam Δx (|a| * Δx * Δt)`
+(artificial viscosity `k = |a| Δx Δt`, Table 13.1). ★'''
+deps = ["FiniteDifference.Hyperbolic.upwind", "FiniteDifference.Hyperbolic.artificialViscosity"]
+
+[[node]]
+id = "isSkewAdjoint_centredDiffCLM"
+kind = "theorem"
+desc = '''`⟪centredDiffCLM u, v⟫ = -⟪u, centredDiffCLM v⟫` on `ℓ²(ℤ)`, hence `⟪centredDiffCLM u, u⟫ = 0`:
+`∑_j (u_{j+1} - u_{j-1}) v_j = ∑_j u_j (v_{j-1} - v_{j+1})` by reindexing the two absolutely convergent
+sums. ★'''
+deps = ["FiniteDifference.Hyperbolic.centredDiffCLM"]
+
+[[node]]
+id = "laxFriedrichs_isMonotone"
+kind = "theorem"
+desc = '''`|lam * a| ≤ 1 → Stencil.IsMonotone (laxFriedrichs a lam)`: the weights `(1 ± λa)/2` are
+nonnegative and sum to `1`. ★'''
+deps = ["FiniteDifference.Hyperbolic.laxFriedrichs", "FiniteDifference.Stencil.IsMonotone"]
+
+[[node]]
+id = "IsConsistent"
+kind = "definition"
+desc = '''`IsConsistent (c : ℝ → ℝ → Stencil) (a : ℝ) (u₀ : ℝ → ℝ) : Prop`: `⨆ ξ, |truncationError (c Δt Δx)
+a Δt Δx u₀ ξ| → 0` as `(Δt, Δx) → (0, 0)` within `(0, ∞)²` (Quarteroni–Sacco–Saleri §13.8.1);
+`IsOfOrder.isConsistent` for orders `p, q ≥ 1`. ★'''
+deps = ["FiniteDifference.Hyperbolic.truncationError", "FiniteDifference.Hyperbolic.IsOfOrder"]
+
+[[node]]
+id = "norm_amplificationFactor_upwind_le_one_iff"
+kind = "theorem"
+desc = '''For `N ≥ 2` (so that some `φ_k = 2πk/N` has `cos φ_k < 1`): `(∀ k, ‖amplificationFactor (toPeriodic N
+(upwind a lam)) k‖ ≤ 1) ↔ lam * |a| ≤ 1` — the CFL condition (Quarteroni–Sacco–Saleri, Exercise 13.6).
+From `‖γ_k‖² = 1 - 2 lam |a| (1 - lam |a|)(1 - cos φ_k)`. ★'''
+deps = ["FiniteDifference.Hyperbolic.amplificationFactor_upwind"]
+
+[[node]]
+id = "phaseAngle"
+kind = "definition"
+desc = '''`phaseAngle (k : ℤ) (Δx : ℝ) : ℝ := k * Δx`, the phase angle `φ_k` of the `k`-th harmonic on a grid
+of spacing `Δx`; `exactAmplification_eq_phaseAngle : exactAmplification a Δt k = exp (-(I * a * lam *
+phaseAngle k Δx))` for `lam = Δt / Δx`. ★'''
+deps = ["FiniteDifference.Hyperbolic.exactAmplification"]
+
+[[node]]
+id = "norm_exactAmplification"
+kind = "theorem"
+desc = '''`‖exactAmplification a Δt k‖ = 1`: the exact solution neither amplifies nor damps any harmonic. ★'''
+deps = ["FiniteDifference.Hyperbolic.exactAmplification"]
+
+[[node]]
+id = "dispersionError"
+kind = "definition"
+desc = '''`dispersionError (a lam φ : ℝ) (γ : ℂ) : ℝ := -Complex.arg γ / (a * lam * φ)`, the ratio of the
+numerical phase speed `ω/k` (with `γ = ‖γ‖ e^{-iωΔt}`) to the exact speed `a`
+(Quarteroni–Sacco–Saleri §13.9, `ε_d(k) = ω/(ka)`); `dispersionError_exactAmplification : |a lam φ|
+< π → dispersionError a lam φ (exactAmplification a Δt k) = 1` for `φ = phaseAngle k Δx`. ★'''
+deps = ["FiniteDifference.Hyperbolic.exactAmplification", "FiniteDifference.Hyperbolic.phaseAngle"]
+
+[[node]]
+id = "abs_residual_laxWendroff_le_of_isModifiedSolution"
+kind = "theorem"
+desc = '''Lax–Wendroff's equivalent equation (Table 13.2): with `lam = Δt/Δx` fixed, `μ = 0`, `ν = (a Δx² / 6)
+((a lam)² - 1)`, an `IsModifiedSolution a 0 ν` with bounded fourth derivatives has `|residual
+(laxWendroff a lam) Δt Δx v x t| ≤ C Δx³`. Same method as the upwind third-order node. ★★★'''
+deps = ["FiniteDifference.Hyperbolic.residual_threePoint_expansion", "FiniteDifference.Hyperbolic.IsModifiedSolution", "FiniteDifference.Hyperbolic.laxWendroff"]

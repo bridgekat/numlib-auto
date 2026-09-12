@@ -1,0 +1,160 @@
+namespace = "QuarteroniSaccoSaleri.Chapter01"
+desc = '''
+Quarteroni–Sacco–Saleri §1.1–1.6: vector spaces, matrices, operations, trace and determinant, rank
+and kernel, special matrices. The numbered items that are Mathlib's own structures carry no
+declaration: Definition 1.1 (`Module K V`), 1.2 (`Submodule`, with `Submodule.span` and the
+direct sum `DirectSum.IsInternal`/`IsCompl`), 1.4 (`Matrix.submatrix` along strictly monotone
+maps; the book's "contiguous" is a slip, its principal submatrices `A(1:k, 1:k)` are
+`Matrix.leadingPrincipalSubmatrix` of `Numlib/LinearAlgebra/Matrix/LU`), 1.5 (`Matrix.fromBlocks`,
+`Matrix.blockDiagonal'`), 1.7 (`Matrix.transpose`), 1.8 (`Matrix.conjTranspose`), 1.9
+(`Matrix.IsSymm`, `Aᵀ = -A`, `Matrix.orthogonalGroup`), 1.10 (`Matrix.IsHermitian`,
+`Matrix.unitaryGroup`, `IsStarNormal`), 1.11 (`LinearMap`); the elementary matrices of §1.3
+(`Equiv.swap` permutation matrices `Equiv.Perm.permMatrix`/`Matrix.swap`, `Matrix.transvection`);
+the trace and determinant with their listed properties (`Matrix.trace`, `Matrix.det_apply`,
+`det_transpose`, `det_mul`, `det_nonsing_inv`, `det_conjTranspose`, `det_smul`,
+`det_zero_of_row_eq`, `det_permute`, `det_diagonal`, `isUnit_iff_isUnit_det`, `inv_diagonal`,
+`det_of_mem_unitary`); the range and kernel `LinearMap.range`/`LinearMap.ker` of
+`Matrix.mulVecLin`. Examples 1.1 and 1.2 are prose.
+
+What does carry a declaration: linear independence and dimension (Definition 1.3, Property 1.1,
+Example 1.3), invertibility (Definition 1.6, Property 1.2), matrices as linear maps (Property 1.3,
+Example 1.4 with its sign erratum), block operations (Property 1.4), the Laplace rule (1.4), the
+rank as the maximal order of a nonvanishing minor (Definition 1.12, a theorem against
+`Matrix.rank`), the rank–nullity relations and Example 1.5, the five equivalent forms of
+nonsingularity, the determinant of block diagonal and triangular matrices, closure of triangular
+and unit triangular matrices, and the banded shapes of §1.6.3 as instances of the backbone's
+bandwidth predicates.
+'''
+
+[[node]]
+id = "definition_1_3"
+kind = "theorem"
+desc = '''Definition 1.3 aligned with Mathlib: for `v : Fin m → V` over a field `K`, `LinearIndependent K v ↔ ∀ α : Fin m → K, ∑ i, α i • v i = 0 → ∀ i, α i = 0` (`Fintype.linearIndependent_iff`). A basis is `Basis ι K V` and the components of the decomposition are `b.repr v`. ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 1.3'
+
+[[node]]
+id = "property_1_1"
+kind = "theorem"
+desc = '''If `V` has a basis `b : Basis (Fin n) K V` then (a) every linearly independent `v : ι → V` (`Fintype ι`) has `Fintype.card ι ≤ n` (`LinearIndependent.fintype_card_le_finrank` with `Module.finrank_eq_card_basis`) and (b) every other basis `b' : Basis ι K V` has `Fintype.card ι = n` (`Module.finrank_eq_card_basis` twice); `n = Module.finrank K V` is the dimension. ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 1.1'
+
+[[node]]
+id = "example_1_3"
+kind = "theorem"
+desc = '''`Module.finrank 𝕜 (Fin n → 𝕜) = n` (`Module.finrank_fin_fun`) and the canonical basis `Pi.basisFun 𝕜 (Fin n)` has `(e_i)_j = δ_ij` (`Pi.basisFun_apply`, `Pi.single`). The book's other clause, that `C^p([a, b])` is infinite-dimensional, is not restated (it needs the monomials restricted to `[a, b]` to be independent; nothing later uses it). ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 1.3'
+
+[[node]]
+id = "definition_1_6"
+kind = "theorem"
+desc = '''For `A : Matrix (Fin n) (Fin n) 𝕜`: `(∃ B, A * B = 1 ∧ B * A = 1) ↔ IsUnit A` (`isUnit_iff_exists`; one-sided suffices by `Matrix.mul_eq_one_comm`), the inverse is `A⁻¹` (`Matrix.mul_nonsing_inv`), `(A⁻¹)⁻¹ = A` (`Matrix.nonsing_inv_nonsing_inv`) and `(A * B)⁻¹ = B⁻¹ * A⁻¹` for units (`Matrix.mul_inv_rev`). ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 1.6'
+
+[[node]]
+id = "property_1_2"
+kind = "theorem"
+desc = '''`IsUnit A ↔ LinearIndependent 𝕜 Aᵀ` (the columns of `A` are independent): Mathlib's `Matrix.linearIndependent_cols_iff_isUnit`. ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 1.2'
+
+[[node]]
+id = "permMatrix_mem_orthogonalGroup"
+kind = "theorem"
+desc = '''§1.3 and after Definition 1.9: for every `σ : Equiv.Perm (Fin n)`, `σ.permMatrix ℝ ∈ Matrix.orthogonalGroup (Fin n) ℝ`, hence so is every product of permutation matrices (the group is closed under multiplication), and `(σ.permMatrix ℝ)⁻¹ = (σ.permMatrix ℝ)ᵀ`; the elementary permutation matrix `P^{(i,j)}` of (1.2) is the case `σ = Equiv.swap i j`, and `P^{(i,j)} * A` exchanges rows `i` and `j` (`Equiv.Perm.permMatrix_mul`-style lemma, or `Matrix.swap` of `Mathlib/LinearAlgebra/Matrix/Swap.lean`). Chapter 3's pivoting (`P A = L U`) wants this in `Numlib/LinearAlgebra/Matrix/LU`; stated here as the book does. ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.3, equation (1.2)'
+
+[[node]]
+id = "property_1_3"
+kind = "theorem"
+desc = '''For every linear map `f : (Fin n → ℂ) →ₗ[ℂ] (Fin m → ℂ)` there is a unique `A : Matrix (Fin m) (Fin n) ℂ` with `∀ x, f x = A *ᵥ x`, namely `LinearMap.toMatrix' f`; conversely `x ↦ A *ᵥ x` is linear (`Matrix.mulVecLin`). Both from the linear equivalence `Matrix.toLin'`. ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 1.3'
+
+[[node]]
+id = "example_1_4"
+kind = "theorem"
+desc = '''For `G θ := !![Real.cos θ, Real.sin θ; -Real.sin θ, Real.cos θ]`: `G θ ∈ Matrix.orthogonalGroup (Fin 2) ℝ`, `(G θ).det = 1`, and `G θ *ᵥ ![x₁, x₂] = ![x₁ cos θ + x₂ sin θ, -x₁ sin θ + x₂ cos θ]`, which is the point `(x₁, x₂)` rotated by the angle `-θ` (under `Complex.equivRealProd`, multiplication by `exp (-θ i)`, Mathlib's `Complex.rotation`). Book erratum: the text calls `G(θ)` the *counterclockwise* rotation by `θ`; as printed it is the clockwise one (the counterclockwise matrix is `[[c, -s], [s, c]]`). `G θ` is the transpose of the backbone's `Matrix.planeRotation 0 1 c s` (`Numlib/Eigen/Jacobi`), which chapter 5 will move to `LinearAlgebra/Matrix/PlaneRotation`. ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 1.4'
+
+[[node]]
+id = "property_1_4"
+kind = "theorem"
+desc = '''Block operations in the `2 × 2` block form (`Matrix.fromBlocks`), which the general `k × l` partition reduces to by induction: `c • fromBlocks A B C D = fromBlocks (c • A) (c • B) (c • C) (c • D)` (`fromBlocks_smul`), `(fromBlocks A B C D)ᵀ = fromBlocks Aᵀ Cᵀ Bᵀ Dᵀ` (`fromBlocks_transpose`), `fromBlocks A B C D + fromBlocks A' B' C' D' = fromBlocks (A + A') …` (`fromBlocks_add`), and `fromBlocks A B C D * fromBlocks A' B' C' D' = fromBlocks (A * A' + B * C') …` (`fromBlocks_multiply`). Mathlib. ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 1.4'
+
+[[node]]
+id = "equation_1_4"
+kind = "theorem"
+desc = '''The Laplace rule: for `A : Matrix (Fin (n+1)) (Fin (n+1)) 𝕜` and any row `i`, `A.det = ∑ j, (-1) ^ (i + j : ℕ) * A i j * (A.submatrix i.succAbove j.succAbove).det` (`Matrix.det_succ_row`); and the inverse through the cofactors, `A⁻¹ = A.det⁻¹ • A.adjugate` with `A.adjugate j i = (-1)^(i+j) det A_ij` (`Matrix.inv_def`, `Matrix.adjugate_apply`/`adjugate_fin_succ_eq_det_submatrix`). ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (1.4)'
+
+[[node]]
+id = "definition_1_12"
+kind = "theorem"
+desc = '''The book's definition of the rank agrees with Mathlib's `Matrix.rank` (the dimension of the range): `A.rank = sSup {k | ∃ (r : Fin k ↪ Fin m) (c : Fin k ↪ Fin n), (A.submatrix r c).det ≠ 0}` for `A : Matrix (Fin m) (Fin n) 𝕜`, and `A` has full rank, `A.rank = min m n`, iff some minor of order `min m n` does not vanish. Backbone `Matrix.rank_eq_sup_card_det_submatrix_ne_zero`. ★'''
+deps = ["Matrix.rank_eq_sup_card_det_submatrix_ne_zero"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 1.12'
+
+[[node]]
+id = "rank_transpose"
+kind = "theorem"
+desc = '''§1.5, relation 1: `Aᵀ.rank = A.rank` (`Matrix.rank_transpose`) and, for complex `A`, `Aᴴ.rank = A.rank` (`Matrix.rank_conjTranspose`); "row rank equals column rank". The rank is the dimension of `range (A) = {A x}` of (1.5) by definition (`Matrix.rank_eq_finrank_range_toLin`). ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.5, equation (1.5)'
+
+[[node]]
+id = "rank_add_finrank_ker"
+kind = "theorem"
+desc = '''§1.5, relation 2: `A.rank + Module.finrank 𝕜 (LinearMap.ker A.mulVecLin) = n` for `A : Matrix (Fin m) (Fin n) 𝕜` (`LinearMap.finrank_range_add_finrank_ker` with `Module.finrank_fin_fun`; the square case is the backbone's `Matrix.rank_add_finrank_ker_mulVecLin`). For a nonsingular square `A`, `A.rank = n` and `ker = ⊥`. ★'''
+deps = ["Matrix.rank_add_finrank_ker_mulVecLin"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.5'
+
+[[node]]
+id = "example_1_5"
+kind = "theorem"
+desc = '''For `A := !![1, 1, 0; 1, -1, 1] : Matrix (Fin 2) (Fin 3) ℝ`: `A.rank = 2`, `finrank (ker A.mulVecLin) = 1` and `finrank (ker Aᵀ.mulVecLin) = 0`. Proof: the leading `2 × 2` minor is `-2 ≠ 0` (so rank `≥ 2` by `Matrix.card_le_rank_of_det_submatrix_ne_zero`, and `≤ 2` by `rank_le_card_height`), then the two rank–nullity relations. ★'''
+deps = ["Matrix.card_le_rank_of_det_submatrix_ne_zero", "QuarteroniSaccoSaleri.Chapter01.rank_add_finrank_ker", "QuarteroniSaccoSaleri.Chapter01.rank_transpose"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 1.5'
+
+[[node]]
+id = "nonsingular_tfae"
+kind = "theorem"
+desc = '''For `A : Matrix (Fin n) (Fin n) ℂ`, `List.TFAE [IsUnit A, A.det ≠ 0, LinearMap.ker A.mulVecLin = ⊥, A.rank = n, LinearIndependent ℂ A ∧ LinearIndependent ℂ Aᵀ, (0 : ℂ) ∉ spectrum ℂ A]` — the five equivalent forms of nonsingularity at the end of §1.5, plus "no null eigenvalue" from §1.7. Mathlib: `isUnit_iff_isUnit_det`, `isUnit_iff_ne_zero`, `Matrix.mulVec_injective_iff_isUnit` with `LinearMap.ker_eq_bot`, `Matrix.rank_of_isUnit`/`rank_eq_finrank_iff`, `linearIndependent_rows_iff_isUnit`, `linearIndependent_cols_iff_isUnit`, `spectrum.zero_notMem_iff`. ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.5'
+
+[[node]]
+id = "det_blockDiagonal'"
+kind = "theorem"
+desc = '''§1.6.1: the determinant of a block diagonal matrix is the product of the determinants of the blocks, `(Matrix.blockDiagonal' M).det = ∏ i, (M i).det` for blocks of varying sizes. Backbone `Matrix.det_blockDiagonal'` (`Numlib/LinearAlgebra/Matrix/BlockDiagonal`); the equal-size case is Mathlib's `Matrix.det_blockDiagonal`. ★'''
+deps = ["Matrix.det_blockDiagonal'"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.6.1'
+
+[[node]]
+id = "det_of_isTriangular"
+kind = "theorem"
+desc = '''§1.6.2, first bullet: for `L : Matrix (Fin n) (Fin n) 𝕜` lower triangular (`L.IsLowerTriangular`, i.e. `BlockTriangular L OrderDual.toDual`) or upper triangular, `L.det = ∏ i, L i i` (`Matrix.det_of_isLowerTriangular`, `Matrix.det_of_isUpperTriangular`). ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.6.2'
+
+[[node]]
+id = "isTriangular_inv_mul"
+kind = "theorem"
+desc = '''§1.6.2, bullets 2–4: the inverse of an invertible lower (upper) triangular matrix is lower (upper) triangular (`Matrix.blockTriangular_inv_of_blockTriangular`); the product of two lower triangular matrices is lower triangular (`Matrix.BlockTriangular.mul`), and of two upper trapezoidal `Matrix (Fin m) (Fin n)` ones upper trapezoidal (`Matrix.HasLowerBandwidth.mul` at band `0`); the product of two unit lower triangular matrices (diagonal `1`) is unit lower triangular (`Matrix.IsUnitLowerTriangular.mul`). ★'''
+deps = ["Matrix.HasLowerBandwidth.mul", "Matrix.IsUnitLowerTriangular.mul"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.6.2'
+
+[[node]]
+id = "hasBandwidth_iff_shape"
+kind = "theorem"
+desc = '''§1.6.3, the banded vocabulary as instances of the backbone predicates `Matrix.HasLowerBandwidth p` / `Matrix.HasUpperBandwidth q` (`Numlib/LinearAlgebra/Matrix/Hessenberg`): diagonal `↔ (0, 0)`, lower trapezoidal `↔ HasUpperBandwidth 0`, upper trapezoidal `↔ HasLowerBandwidth 0`, tridiagonal `↔ (1, 1)` (`Matrix.IsTridiagonal`), upper bidiagonal `(0, 1)`, lower bidiagonal `(1, 0)`, upper Hessenberg `↔ HasLowerBandwidth 1` (`Matrix.IsUpperHessenberg`), lower Hessenberg `↔ HasUpperBandwidth 1`; `tridiag_n(b, d, c)` is `Matrix.tridiagonalOf b d c` and `tridiag_n(β, δ, γ)` is `Matrix.tridiagonalToeplitz n β δ γ`, both tridiagonal. Backbone `Matrix.hasLowerBandwidth_zero_iff` and companions. ★'''
+deps = ["Matrix.hasLowerBandwidth_zero_iff", "Matrix.tridiagonalOf", "Matrix.tridiagonalToeplitz"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.6.3'

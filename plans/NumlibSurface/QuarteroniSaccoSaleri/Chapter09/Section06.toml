@@ -1,0 +1,68 @@
+namespace = "QuarteroniSaccoSaleri.Chapter09"
+desc = '''
+§9.6, Richardson extrapolation and Romberg integration: the one-step order gain, the table (9.34),
+Property 9.2, the Euler–Maclaurin formula (Property 9.3) with the book's series definition of the
+Bernoulli numbers, the Romberg recursion (9.37) and its convergence. Examples 9.6 and 9.7 are
+numerical tables and are skipped. Backbone: `Numlib/Approximation/Extrapolation` and
+`Numlib/Analysis/SpecialFunctions/EulerMaclaurin`.
+'''
+
+[[node]]
+id = "richardsonStep"
+kind = "theorem"
+desc = '''The unnumbered claim after (9.33): if `𝒜(h) = α₀ + α_p h^p + ⋯ + α_k h^k + R(h)`, `|R| ≤ C h^{k+1}`
+(an approximation of order `p`), then `ℬ(h) = (𝒜(δh) - δ^p 𝒜(h))/(1 - δ^p)` approximates `α₀` to
+order at least `p + 1`: `Richardson.hasExpansion_step` with `α_1 = ⋯ = α_{p-1} = 0` kills `α_p`,
+so `|ℬ - α₀| ≤ C' h^{p+1}` (state for the sampled sequence). Also `α̃_i ≠ 0 ↔ α_i ≠ 0`. ★'''
+deps = ["Richardson.hasExpansion_step", "Richardson.step"]
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §9.6 (order gain of one extrapolation step)'''
+
+[[node]]
+id = "property_9_2"
+kind = "theorem"
+desc = '''Property 9.2 (9.35): for `n ≥ 0`, `δ ∈ (0, 1)` and `𝒜` with the expansion (9.33) to order
+`k ≥ n`, the table (9.34) satisfies `𝒜_{m,q} = α₀ + O((δ^m h)^{q+1})` for `0 ≤ q ≤ m ≤ n`,
+with a constant independent of `m`. **Reading:** the book prints `𝒜_{m,n}` for `m = 0, …, n`,
+but (9.34) defines `𝒜_{m,q}` only for `m ≥ q`; the intended statement, [Com95] Prop. 4.1, is the
+one above. ★'''
+deps = ["Richardson.exists_abs_table_sub_le", "Richardson.table"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 9.2'
+
+[[node]]
+id = "property_9_3"
+kind = "theorem"
+desc = '''Property 9.3, the Euler–Maclaurin formula (9.36): for `f ∈ C^{2k+2}([a, b])`, `k ≥ 0`,
+`m ≥ 1`, `h_m = (b - a)/m`, `∃ η ∈ Ioo a b, I_{1,m}(f) = ∫_a^b f + ∑_{i=1}^k B_{2i}/(2i)! h_m^{2i} (f^{(2i-1)}(b) - f^{(2i-1)}(a))
++ B_{2k+2}/(2k+2)! h_m^{2k+2} (b - a) f^{(2k+2)}(η)`, with `I_{1,m} = Quadrature.trapezoidSum f a h_m m`
+and `B_j = bernoulli j`. ★'''
+deps = ["EulerMaclaurin.trapezoidSum_eq_integral_add_sum_add_mul"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 9.3'
+
+[[node]]
+id = "bernoulliNumber_eq"
+kind = "theorem"
+desc = '''The book's definition of the Bernoulli numbers in Property 9.3,
+`B_{2j} = (-1)^{j-1} [∑_{n ≥ 1} 2/(2nπ)^{2j}] (2j)!` for `j ≥ 1`, agrees with Mathlib's `bernoulli (2j)`
+used in `property_9_3`. ★'''
+deps = ["bernoulli_eq_tsum_two_div_pow"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 9.3 (definition of `B_{2j}`)'
+
+[[node]]
+id = "equation_9_37"
+kind = "theorem"
+desc = '''(9.37) with `h = b - a`, `δ = 1/2`, i.e. the Romberg algorithm: with `𝒜_{m,0} = T((b - a)/2^m)`
+the composite trapezoidal sum on `2^m` panels, `𝒜_{m,q+1} = (4^{q+1} 𝒜_{m,q} - 𝒜_{m-1,q})/(4^{q+1} - 1)`;
+`Romberg.table f a b` satisfies both displays. Two clauses (`Romberg.table_zero`,
+`Romberg.table_succ`). The equation (9.37) itself is the Richardson recursion in the parameter
+`h_m²`, `δ^{2(q+1)}` in place of `δ^{q+1}`. ★'''
+deps = ["Romberg.table", "Romberg.table_succ"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (9.37) and the Romberg algorithm'
+
+[[node]]
+id = "rombergConvergence"
+kind = "theorem"
+desc = '''The unnumbered convergence result after (9.37): `𝒜_{m,n} = ∫_a^b f + O(h_s^{2(n+1)})`,
+`h_s = (b - a)/2^m`, for `f ∈ C^{2n+2}([a, b])` and `n ≤ m`: `∃ C, ∀ m ≥ n, |Romberg.table f a b m n - ∫ f| ≤ C h_s^{2(n+1)}`.
+★'''
+deps = ["Romberg.exists_abs_table_sub_integral_le", "QuarteroniSaccoSaleri.Chapter09.property_9_2", "QuarteroniSaccoSaleri.Chapter09.property_9_3"]
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §9.6.1 (convergence of Romberg integration)'''

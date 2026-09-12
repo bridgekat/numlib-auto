@@ -114,3 +114,16 @@ id = "Krylov.compressionBy_residual_le"
 
 [[node]]
 id = "Krylov.compressionBy_residual_le'"
+
+[[node]]
+id = "LinearMap.IsSymmetric.eigenvalues_le_eigenvalues_compression"
+kind = "theorem"
+desc = '''The lower half of Cauchy interlacing for Ritz values: for symmetric `A` on `E` with `finrank E
+= n`, `K` with `finrank K = m ≤ n`, and `i : Fin m`, `hA.eigenvalues hn (castLE (i + (n - m))) ≤
+(compression.isSymmetric A K hA).eigenvalues hm i`. The companion of
+`LinearMap.IsSymmetric.eigenvalues_compression_le`; the instance of
+`LinearMap.IsSymmetric.eigenvalues_restrict_interlace` (`Eigen/MinMax`) at the compression through
+`Krylov.rayleighQuotient_compression`. At the last index it is Quarteroni–Sacco–Saleri (5.67),
+`λ_m(H_m) ≥ λ_n(A)`. ★'''
+deps = ["LinearMap.IsSymmetric.eigenvalues_compression_le", "LinearMap.IsSymmetric.eigenvalues_restrict_interlace", "Krylov.rayleighQuotient_compression"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.67)'

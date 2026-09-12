@@ -1,0 +1,249 @@
+namespace = "BSpline"
+desc = '''
+# B-splines
+
+The normalized B-splines `B_{i,k}` of degree `k` on a nondecreasing knot sequence `x : ℕ → ℝ`,
+*defined* by the Cox–de Boor recursion (Quarteroni–Sacco–Saleri, *Numerical Mathematics*, (8.54))
+and *characterized*, at distinct knots, as the scaled divided differences of the truncated power
+`s ↦ (s - t)_+^k` (their Definition 8.2, (8.51)–(8.53)); their support, nonnegativity, partition of
+unity, piecewise polynomial structure and smoothness; the B-spline basis of the spline space of
+`Numlib/Approximation/Spline` on an extended knot sequence with `k` fictitious knots at each end
+((8.55)–(8.57)); B-splines with coincident knots (Remark 8.3), the cubic B-spline on uniform knots
+(Example 8.9), Boehm's knot insertion (Remark 8.4); and parametric B-spline curves with their
+locality and convex-hull properties (§8.7.1). References beyond the book: de Boor, *A Practical
+Guide to Splines*, chapters IX–XI; Schumaker, *Spline Functions: Basic Theory*, chapter 4.
+
+## Design
+
+* The recursion is the definition because it makes sense for *nondecreasing* knots, coincident
+  ones included, with the convention `0/0 = 0` in the weights `ω_{i,d}(t) = (t - x_i)/(x_{i+d} - x_i)`;
+  the divided-difference form of Definition 8.2 needs distinct knots (or the confluent divided
+  differences of `Numlib/Approximation/NewtonForm`), and is proved as a theorem. `bspline x k i`
+  is the book's `B_{i,k+1}` (their second index is the *order* `k + 1`).
+* The degree-`0` B-spline is the indicator of the half-open `[x_i, x_{i+1})`, so that the
+  partition of unity holds pointwise everywhere on `[x_k, x_{n+1})` and not merely almost
+  everywhere; the book's `[x_i, x_{i+1}]` in (8.54) cannot be right at the shared knots.
+* Knots are indexed by `ℕ`; the book's `x_{-k}, …, x_{n+k}` of (8.55) are shifted by `k`, so the
+  data knots are `x_k = a < x_{k+1} < ⋯ < x_{n+k} = b` and the `n + k` basis splines are
+  `bspline x k i` for `i < n + k`.
+* Curves take values in an arbitrary real vector space `E`; the control points are `P : ℕ → E`.
+
+Prototype: `notes/qss/ch08/proto/BSpline.lean` of the chapter 8 planning pass elaborates the definition, the
+Definition 8.2 identity, support, positivity, partition of unity, smoothness, linear independence,
+the endpoint value (8.57) and the two curve properties with `sorry`.
+
+## Consumers
+
+QSS §8.6.2 and §8.7.1; the B-spline collocation and Galerkin methods of Atkinson–Han chapter 12
+would use the basis property; nothing else in the current corpus.
+'''
+
+[[node]]
+id = "weight"
+kind = "definition"
+desc = '''`weight x i d t = if x (i + d) = x i then 0 else (t - x i) / (x (i + d) - x i)`, the Cox–de Boor
+weight `ω_{i,d}(t)` with de Boor's convention `0/0 = 0`. ★'''
+deps = []
+
+[[node]]
+id = "bspline"
+kind = "definition"
+desc = '''**The normalized B-spline** `bspline x k i : ℝ → ℝ` of degree `k` on the knots
+`x i, …, x (i + k + 1)`, by recursion on `k` (QSS (8.54)): `bspline x 0 i` is the indicator of
+`Ico (x i) (x (i + 1))`, and
+`bspline x (d + 1) i t = weight x i (d + 1) t * bspline x d i t + (1 - weight x (i + 1) (d + 1) t) * bspline x d (i + 1) t`.
+`bspline_zero` and `bspline_succ` are the two equations. ★'''
+deps = ["BSpline.weight"]
+
+[[node]]
+id = "bspline_eq_zero_of_notMem"
+kind = "theorem"
+desc = '''**Support**: for nondecreasing `x`, `bspline x k i t = 0` when `t ∉ Ico (x i) (x (i + k + 1))`;
+induction on `k`, both terms of the recursion vanishing outside the union of the two smaller
+supports. ★'''
+deps = ["BSpline.bspline"]
+
+[[node]]
+id = "bspline_nonneg"
+kind = "theorem"
+desc = '''**Positivity** (quoted from de Boor in QSS §8.6.2): for nondecreasing `x`, `0 ≤ bspline x k i t`.
+Induction: on the support of `bspline x d i` the weight `ω_{i,d+1}(t)` lies in `[0, 1]` and on the
+support of `bspline x d (i+1)` so does `1 - ω_{i+1,d+1}(t)`; off those supports the corresponding
+term is zero by `bspline_eq_zero_of_notMem`. ★★'''
+deps = ["BSpline.bspline", "BSpline.bspline_eq_zero_of_notMem"]
+
+[[node]]
+id = "sum_bspline"
+kind = "theorem"
+desc = '''**Partition of unity**: for nondecreasing `x` and `t ∈ Ico (x k) (x (n + 1))`,
+`∑ i ∈ Finset.range (n + 1), bspline x k i t = 1`. Induction on `k`: rewrite each `bspline x (d+1) i t`
+by the recursion, regroup the sum by the degree-`d` splines (`bspline x d j t` receives the
+coefficient `ω_{j,d+1}(t) + 1 - ω_{j,d+1}(t) = 1` for `d + 1 ≤ j ≤ n`, while the boundary terms
+`j = d` and `j = n + 1` vanish on the range of `t` by `bspline_eq_zero_of_notMem`), and apply the
+inductive hypothesis on `Ico (x d) (x (n+1)) ⊇ Ico (x (d+1)) (x (n+1))`. ★★'''
+deps = ["BSpline.bspline", "BSpline.bspline_eq_zero_of_notMem"]
+
+[[node]]
+id = "exists_eqOn_bspline"
+kind = "theorem"
+desc = '''**Piecewise polynomial**: for nondecreasing `x` and every `j`, there is `p : ℝ[X]` with
+`p.degree ≤ k` and `EqOn (bspline x k i) p.eval (Ico (x j) (x (j + 1)))`. Induction on `k`: the
+weights are affine in `t` and the restriction of the recursion to a knot interval is a combination
+of two polynomials of degree `≤ d` with affine coefficients. ★'''
+deps = ["BSpline.bspline"]
+
+[[node]]
+id = "bspline_eq_sum_truncPow"
+kind = "theorem"
+desc = '''**The explicit form** (QSS (8.53)): for strictly increasing `x` and `1 ≤ k`,
+`bspline x k i t = (x (i+k+1) - x i) * ∑ j : Fin (k + 2), Quadrature.truncPow k (x (i + j)) t / ∏ l ∈ univ.erase j, (x (i + j) - x (i + l))`.
+Proof by induction on `k` using the recursion on the left and, on the right, the Leibniz-type
+identity for divided differences of `(s - t)_+^{k}` = `(s - t) · (s - t)_+^{k-1}`
+(`DividedDifference.newton_mul` with the affine factor `s - t`, whose divided differences of order
+`≥ 2` vanish), which is exactly the Cox–de Boor recursion in divided-difference form
+(de Boor, chapter IX, (13)–(14)). For `k = 0` the sides differ at the knots (`Ico` against the
+truncated power's `Ioc`), which is why `1 ≤ k`. ★★★'''
+deps = ["BSpline.bspline", "Quadrature.truncPow", "DividedDifference.newton_mul", "DividedDifference.newton_succ"]
+
+[[node]]
+id = "bspline_eq_mul_newton_truncPow"
+kind = "theorem"
+desc = '''**Definition 8.2 as a theorem** (QSS (8.51)): for strictly increasing `x` and `1 ≤ k`,
+`bspline x k i t = (x (i+k+1) - x i) * DividedDifference.newton (fun s => Quadrature.truncPow k s t) (fun j : Fin (k+2) => x (i + j))`;
+`bspline_eq_sum_truncPow` and the definition of `DividedDifference.newton` (whose denominators are
+`∏_{l ≠ j} (x_{i+j} - x_{i+l})`, the book's `ω'_{k+2}(x_{i+j})` of (8.18)). ★'''
+deps = ["BSpline.bspline_eq_sum_truncPow", "DividedDifference.newton"]
+
+[[node]]
+id = "contDiff_bspline"
+kind = "theorem"
+desc = '''**Smoothness at simple knots**: for strictly increasing `x` and `1 ≤ k`,
+`ContDiff ℝ (k - 1) (bspline x k i)`. From `bspline_eq_sum_truncPow`: `t ↦ (c - t)_+^k` is `C^{k-1}`
+(its derivatives of order `< k` are continuous across `c`, both one-sided values being `0`), and a
+finite combination of such functions is `C^{k-1}`. ★★'''
+deps = ["BSpline.bspline_eq_sum_truncPow"]
+
+[[node]]
+id = "bspline_mem_splineSpace"
+kind = "theorem"
+desc = '''For `hx : Spline.IsPartition a b n (fun j => x (j + k))` (the data knots are
+`x k, …, x (n + k)`) and nondecreasing `x`, the restriction of `bspline x k i` to `Icc a b` lies in
+`Spline.splineSpace a b n (fun j => x (j + k)) k (k - 1)` for `1 ≤ k` and `i < n + k`:
+`contDiff_bspline` at simple interior knots (the fictitious knots may coincide, but they lie
+outside `(a, b)` and only the pieces inside `[a, b]` are seen; the smoothness *at* `a` and `b` is
+not required by `splineSpace`, which only asks for `C^{k-1}` on `Icc a b` — a one-sided condition
+at the ends), and `exists_eqOn_bspline`. ★★'''
+deps = ["BSpline.contDiff_bspline", "BSpline.exists_eqOn_bspline", "Spline.splineSpace", "Spline.IsPartition"]
+
+[[node]]
+id = "linearIndependent_bspline"
+kind = "theorem"
+desc = '''**Linear independence** (behind QSS (8.56)): for nondecreasing `x` with `x j < x (j + 1)` for
+`k ≤ j < n + k`, the `n + k` functions `t ↦ bspline x k i t`, `i < n + k`, restricted to
+`Icc (x k) (x (n + k))`, are linearly independent. Proof (de Boor, Theorem IX.1): on each knot
+interval `[x_j, x_{j+1})`, `k ≤ j < n + k`, only `B_{j-k}, …, B_j` are nonzero and they are
+linearly independent there — by induction on `k` through the recursion, or from
+`bspline_eq_sum_truncPow`: a vanishing combination on the interval is a vanishing combination of
+`(x_l - t)_+^k` for `l` ranging over `k + 1` knots to the right of the interval… the cleanest route
+is the *dual functionals* argument or, more elementary, induction on `k` with the derivative
+recursion `B'_{i,k} = k (B_{i,k-1}/(x_{i+k} - x_i) - B_{i+1,k-1}/(x_{i+k+1} - x_{i+1}))`
+(`deriv_bspline`, worth stating). ★★★'''
+deps = ["BSpline.bspline", "BSpline.bspline_eq_zero_of_notMem", "BSpline.exists_eqOn_bspline"]
+
+[[node]]
+id = "exists_basis_bspline"
+kind = "theorem"
+desc = '''**The B-spline basis of the spline space** (QSS (8.56)): under the hypotheses of
+`bspline_mem_splineSpace` and `linearIndependent_bspline`, there is a
+`Module.Basis (Fin (n + k)) ℝ (Spline.splineSpace a b n (fun j => x (j + k)) k (k - 1))` whose `i`-th
+vector is the restriction of `bspline x k i`: `n + k` independent vectors in a space of dimension
+`n + k` (`Spline.finrank_splineSpace`), `Module.basisOfLinearIndependentOfCardEqFinrank`. Hence every
+spline is uniquely `∑_{i < n + k} c_i B_{i,k}` on `[a, b]`, the `c_i` being its B-spline
+coefficients. ★★'''
+deps = ["BSpline.linearIndependent_bspline", "BSpline.bspline_mem_splineSpace", "Spline.finrank_splineSpace"]
+
+[[node]]
+id = "bspline_apply_of_coincident_left"
+kind = "theorem"
+desc = '''**Coincident knots at the left** (QSS Remark 8.3): if `x (i - 1) < x i = ⋯ = x (i + k) < x (i + k + 1)`
+then `bspline x k i t = ((x (i+k+1) - t)/(x (i+k+1) - x i))^k` for `t ∈ Ico (x i) (x (i+k+1))` and
+`0` otherwise; and `bspline_apply_of_coincident_right`: if `x i < x (i+1) = ⋯ = x (i+k+1)` then
+`bspline x k i t = ((t - x i)/(x (i+k+1) - x i))^k` on `Ico (x i) (x (i+k+1))`. Induction on `k`
+through the recursion: with `x i = x (i+k)` the first weight is `0` by convention and the first
+term drops, and the remaining term is `(1 - ω_{i+1,k})` times the degree-`(k-1)` case. The book
+states the first with the closed interval `[x_i, x_{i+k+1}]`, which is wrong at the right end
+where the formula gives `0` anyway; harmless. ★★'''
+deps = ["BSpline.bspline", "BSpline.weight"]
+
+[[node]]
+id = "bspline_uniform_cubic"
+kind = "theorem"
+desc = '''**The cubic B-spline on uniform knots** (QSS Example 8.9): for `x j = x₀ + j h`, `h > 0`,
+`6 h³ * bspline x 3 i t` equals `(t - x_i)³` on `[x_i, x_{i+1})`,
+`h³ + 3h²(t - x_{i+1}) + 3h(t - x_{i+1})² - 3(t - x_{i+1})³` on `[x_{i+1}, x_{i+2})`,
+`h³ + 3h²(x_{i+3} - t) + 3h(x_{i+3} - t)² - 3(x_{i+3} - t)³` on `[x_{i+2}, x_{i+3})`,
+`(x_{i+4} - t)³` on `[x_{i+3}, x_{i+4})`, and `0` elsewhere. Unfold the recursion four times on each
+of the four intervals (`simp [bspline, weight, Set.mem_Ico]` with the case analysis, then `ring`),
+or read it off `bspline_eq_sum_truncPow`. ★★'''
+deps = ["BSpline.bspline", "BSpline.weight"]
+
+[[node]]
+id = "sum_smul_bspline_left"
+kind = "theorem"
+desc = '''**Endpoint values with `k + 1` coincident knots** (QSS (8.57)): if `x j = x k` for all
+`j ≤ k` and `x k < x (k + 1)`, then `∑ i ∈ range (n + k), c i * bspline x k i (x k) = c 0`; and
+`sum_smul_bspline_right` at `b = x (n + k)` with `x j = x (n + k)` for `n + k ≤ j ≤ n + 2k`, where
+the value is the left limit `c (n + k - 1)` — state it as the limit `𝓝[<] b`, since the half-open
+convention makes every `B_{i,k}` vanish *at* `b`; or, better, state both as values of the
+continuous extension `t ↦ ∑ c_i B_{i,k}(t)` on `Icc a b`. Only `B_{0,k}(a) = 1` by
+`bspline_apply_of_coincident_left`, the others vanishing at `a` by `bspline_eq_zero_of_notMem` or
+by the same formula. ★★'''
+deps = ["BSpline.bspline_apply_of_coincident_left", "BSpline.bspline_eq_zero_of_notMem"]
+
+[[node]]
+id = "insertKnot"
+kind = "definition"
+desc = '''**Boehm's knot insertion** (QSS Remark 8.4): `insertKnot x j x̃ : ℕ → ℝ` is the knot sequence
+with `x̃ ∈ [x j, x (j+1))` inserted after position `j` (`y i = x i` for `i ≤ j`, `y (j+1) = x̃`,
+`y i = x (i-1)` after), and `insertKnotCoeff x k j x̃ c : ℕ → ℝ` the new coefficients
+`d i = ω_i c i + (1 - ω_i) c (i - 1)` with `ω_i = 1` for `i ≤ j - k`, `ω_i = (x̃ - x i)/(x (i+k) - x i)`
+for `j - k < i ≤ j`, `ω_i = 0` for `i > j`. The book prints `d_i = ω_i c_i + (1 - ω_i) c_i`, a
+misprint for `c_{i-1}` (`notes/book-errata.md`). ★'''
+deps = []
+
+[[node]]
+id = "sum_smul_bspline_insertKnot"
+kind = "theorem"
+desc = '''**Knot insertion preserves the spline** (Remark 8.4): for nondecreasing `x`,
+`∑ i, insertKnotCoeff x k j x̃ c i * bspline (insertKnot x j x̃) k i t = ∑ i, c i * bspline x k i t`
+(sums over the appropriate ranges). Proof: the one-knot insertion formula for a single B-spline,
+`B_{i,k}(x) = ω_i B̃_{i,k} + (1 - ω_{i+1}) B̃_{i+1,k}` (Boehm 1980; de Boor, chapter X, (10)),
+proved by induction on `k` from the Cox–de Boor recursion; then regroup the sum. ★★★'''
+deps = ["BSpline.insertKnot", "BSpline.bspline"]
+
+[[node]]
+id = "curve"
+kind = "definition"
+desc = '''**The parametric B-spline curve** (QSS §8.7.1, the B-spline analogue of (8.58)):
+`curve x k P N t = ∑ i ∈ range N, bspline x k i t • P i : E` for control points `P : ℕ → E` in a real
+vector space. ★'''
+deps = ["BSpline.bspline"]
+
+[[node]]
+id = "curve_mem_convexHull"
+kind = "theorem"
+desc = '''**Convex hull property** (QSS §8.7.1, property 2): for nondecreasing `x`, `k + 1 ≤ N` and
+`t ∈ Ico (x k) (x (N - k + 1))`, `curve x k P N t ∈ convexHull ℝ (P '' Iio N)`: the coefficients
+are nonnegative (`bspline_nonneg`) and sum to one (`sum_bspline`), so
+`Convex.sum_mem`/`mem_convexHull_of_...`. In fact it lies in the hull of the `k + 1` points
+`P_{j-k}, …, P_j` for `t ∈ [x_j, x_{j+1})`, the *local* convex hull, by the support property. ★'''
+deps = ["BSpline.curve", "BSpline.bspline_nonneg", "BSpline.sum_bspline", "BSpline.bspline_eq_zero_of_notMem"]
+
+[[node]]
+id = "curve_update_eq_of_notMem"
+kind = "theorem"
+desc = '''**Locality** (QSS §8.7.1, property 1): for nondecreasing `x`, moving the control point `P j`
+to `Q` changes the curve only on `[x j, x (j + k + 1))`:
+`t ∉ Ico (x j) (x (j+k+1)) → curve x k (Function.update P j Q) N t = curve x k P N t`;
+`bspline_eq_zero_of_notMem`. ★'''
+deps = ["BSpline.curve", "BSpline.bspline_eq_zero_of_notMem"]

@@ -1,0 +1,20 @@
+desc = '''
+Quarteroni–Sacco–Saleri, Chapter 12: two-point boundary value problems. Finite differences
+(§12.2), spectral collocation (§12.3), the Galerkin method with finite elements (§12.4),
+advection–diffusion and stabilization (§12.5), and a glance at two dimensions (§12.6). §12.7
+(applications: lubrication of a slider, spore concentration) states no numbered result and has
+no group; §12.8 is the exercises, of which those the main text cites are nodes in the section
+that cites them.
+
+The book works on `[0, 1]`; the backbone works on `[a, b]`, and the surface restates at `a = 0`,
+`b = 1`. Its `H^1(0,1)`, `H^1_0(0,1)`, `|·|_{H¹}` are `SobolevInterval 1 0 1`,
+`SobolevIntervalZero 0 1`, `SobolevInterval.seminorm 1 0 1` of
+`Numlib/Analysis/Sobolev/Interval.lean`; its finite difference operator `L_h`, discrete inner
+product and norms are `Numlib/FiniteDifference/BoundaryValue.lean` with `n - 1` interior nodes
+where the book has `n` subintervals; its bilinear form (12.44), Galerkin problem, finite element
+spaces, stiffness matrices and stabilized schemes are `Numlib/Variational/{EllipticInterval,
+FiniteElementInterval, AdvectionDiffusion}.lean`; its distributions (§12.4.2) are Mathlib's
+`Distribution` on the open set `(0, 1)`. Two-dimensional statements (§12.6 beyond the five-point
+matrix, Property 12.2) and the spectral estimate Theorem 12.2 are stated and marked "not
+formalized".
+'''

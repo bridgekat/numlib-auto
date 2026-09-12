@@ -1,0 +1,179 @@
+namespace = "QuarteroniSaccoSaleri.Chapter06"
+desc = '''
+§6.3, fixed-point iterations `x^{(k+1)} = φ(x^{(k)})`: Theorem 6.1 with its limit (6.18), the
+asymptotic convergence rate (6.20) (sign corrected), Ostrowski's Property 6.3, Remark 6.2, Example
+6.6, Property 6.4, and §6.3.1's application to the chord and Newton methods including the
+multiple-root formula (6.22) and the modified Newton method (6.23) with Exercise 6.2. The
+iteration (6.17) itself is `φ^[k] x₀` and needs no definition; (6.19) is the mean value theorem
+inside the proof of Theorem 6.1 and is not a node.
+'''
+
+[[node]]
+id = "theorem_6_1"
+kind = "theorem"
+desc = '''**Theorem 6.1 (convergence of fixed-point iterations), existence, uniqueness and
+convergence:** `a ≤ b`, `φ : [a, b] → [a, b]` (`MapsTo φ (Icc a b) (Icc a b)`), `φ ∈ C¹[a, b]`
+(`∀ x ∈ Icc a b, HasDerivWithinAt φ (φ' x) (Icc a b) x` with `ContinuousOn φ' (Icc a b)`), and
+`∃ K < 1, ∀ x ∈ Icc a b, |φ' x| ≤ K`. Then `φ` has a unique fixed point `α ∈ [a, b]` and for every
+`x₀ ∈ [a, b]` the sequence `φ^[k] x₀` converges to `α`. Restates
+`exists_unique_fixedPoint_Icc_of_abs_deriv_le` (`Nonlinear/FixedPoint`), which does not need the
+continuity of `φ'`. ★'''
+deps = ["exists_unique_fixedPoint_Icc_of_abs_deriv_le"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 6.1'
+
+[[node]]
+id = "theorem_6_1_limit"
+kind = "theorem"
+desc = '''**Theorem 6.1, (6.18):** under the hypotheses of `theorem_6_1`, for the fixed point `α` and
+every `x₀ ∈ [a, b]` whose orbit never equals `α` (`∀ k, φ^[k] x₀ ≠ α`),
+`Tendsto (fun k => (φ^[k+1] x₀ - α) / (φ^[k] x₀ - α)) atTop (𝓝 (φ' α))`. The book omits the
+"never equals `α`" clause, without which the quotient is `0/0` from some index on.
+`tendsto_sub_div_sub_of_hasDerivAt` (`Nonlinear/Order`) with `HasDerivWithinAt` upgraded to
+`HasDerivAt` at interior points; at an endpoint `α ∈ {a, b}` the orbit approaches `α` from inside
+`[a, b]`, and the one-sided derivative version (`hasDerivWithinAt_iff_tendsto_slope` on
+`𝓝[Icc a b \ {α}] α`) is what is used — state the node with `HasDerivWithinAt` and prove it from
+the within-slope characterization. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter06.theorem_6_1", "tendsto_sub_div_sub_of_hasDerivAt"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.18)'
+
+[[node]]
+id = "equation_6_20"
+kind = "definition"
+desc = '''**(6.20), the asymptotic convergence rate:** `equation_6_20 (φ' : ℝ → ℝ) (α : ℝ) : ℝ :=
+-Real.log |φ' α|`, with `|φ'(α)|` the asymptotic convergence factor. The book prints
+`R = -log(1/|φ'(α)|)`, which is `≤ 0` for a convergent method; the intended quantity, by analogy
+with (4.5) `R(B) = -log ρ(B)` and chapter 4's Definition 4.2, is `-log|φ'(α)|` (book erratum). ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.20)'
+
+[[node]]
+id = "property_6_3"
+kind = "theorem"
+desc = '''**Property 6.3 (Ostrowski):** let `α` be a fixed point of `φ`, continuous and
+differentiable on a neighbourhood `J` of `α` (`∀ᶠ x in 𝓝 α, DifferentiableAt ℝ φ x`). If
+`|φ'(α)| < 1` then `∃ δ > 0, ∀ x₀, |x₀ - α| < δ → Tendsto (fun k => φ^[k] x₀) atTop (𝓝 α)`.
+`tendsto_iterate_of_abs_deriv_lt_one` (`Nonlinear/FixedPoint`), which needs only
+differentiability at `α`; the neighbourhood hypothesis is carried for fidelity and unused. ★'''
+deps = ["tendsto_iterate_of_abs_deriv_lt_one"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 6.3'
+
+[[node]]
+id = "remark_6_2"
+kind = "theorem"
+desc = '''**Remark 6.2:** if `φ α = α`, `φ` differentiable at `α` with `|φ'(α)| > 1`, and `x₀` starts
+an orbit with `φ^[k] x₀ ≠ α` for all `k`, then the orbit does not converge to `α`; moreover the
+error eventually grows at every step (`∀ᶠ k, |φ^[k+1] x₀ - α| > |φ^[k] x₀ - α|` if the orbit
+converged — which is the contradiction). `not_tendsto_iterate_of_one_lt_abs_deriv`. The case
+`|φ'(α)| = 1` is undecided (Example 6.6). ★'''
+deps = ["not_tendsto_iterate_of_one_lt_abs_deriv"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 6.2'
+
+[[node]]
+id = "example_6_6_tendsto"
+kind = "theorem"
+desc = '''**Example 6.6, first half:** for `φ x = x - x ^ 3` (fixed point `0`, `φ'(0) = 1`) and
+`x₀ ∈ Icc (-1) 1`, the orbit satisfies `φ^[k] x₀ ∈ Ioo (-1) 1` for `k ≥ 1` and
+`Tendsto (fun k => φ^[k] x₀) atTop (𝓝 0)` (with `φ^[k] (±1) = 0` for `k ≥ 1`). For `0 < x < 1`,
+`0 < x - x³ < x`, so the orbit is positive and decreasing, hence convergent to a fixed point in
+`[0, 1)`, and `0` is the only one; symmetric for negative `x`. ★★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 6.6'
+
+[[node]]
+id = "example_6_6_not_tendsto"
+kind = "theorem"
+desc = '''**Example 6.6, second half:** for `φ x = x + x ^ 3` (fixed point `0`, `φ'(0) = 1`) and every
+`x₀ ≠ 0`, `¬ Tendsto (fun k => φ^[k] x₀) atTop (𝓝 0)`: `|x + x³| > |x|` for `x ≠ 0`, so
+`|φ^[k] x₀|` is strictly increasing from `|x₀| > 0` (in fact `→ ∞`, the book's "diverges"). ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 6.6'
+
+[[node]]
+id = "property_6_4"
+kind = "theorem"
+desc = '''**Property 6.4:** let `p : ℕ`, `φ ∈ C^{p+1}(J)` on a neighbourhood of a fixed point `α`
+(`ContDiffAt ℝ (p + 1) φ α`, `φ α = α`), `φ^{(i)}(α) = 0` for `1 ≤ i ≤ p` (the book's `0 ≤ i ≤ p`
+is a misprint) and `φ^{(p+1)}(α) ≠ 0`. Then, for `p ≥ 1`, the fixed-point method has order `p + 1`
+— `∃ ε > 0, ∀ x₀ ∈ ball α ε, definition_6_1 (fun k => φ^[k] x₀) α (p + 1)` — and along every orbit
+converging to `α` with `φ^[k] x₀ ≠ α` for all `k` the limit (6.21) holds:
+`(x^{(k+1)} - α) / (x^{(k)} - α)^{p+1} → φ^{(p+1)}(α) / (p+1)!`. Two conclusions, two backbone
+nodes: `hasIterationOrder_of_iteratedDeriv_eq_zero` and
+`tendsto_sub_div_pow_of_iteratedDeriv_eq_zero` (`Nonlinear/Order`); for `p = 0` only the limit
+holds (convergence must be assumed, as the proof's first line does). ★'''
+deps = ["hasIterationOrder_of_iteratedDeriv_eq_zero", "tendsto_sub_div_pow_of_iteratedDeriv_eq_zero", "QuarteroniSaccoSaleri.Chapter06.definition_6_1", "QuarteroniSaccoSaleri.Chapter06.definition_6_1_iff"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 6.4'
+
+[[node]]
+id = "chordIterationFunction_deriv"
+kind = "theorem"
+desc = '''**§6.3.1, the chord method:** with `φ_chord x = x - (b - a)/(f b - f a) · f x` and
+`q = (f b - f a)/(b - a)`, `HasDerivAt φ_chord (1 - f'(α)/q) α` whenever `HasDerivAt f (f' α) α`;
+so `φ_chord'(α) = 1` when `f'(α) = 0`, and `|φ_chord'(α)| < 1 ↔ 0 < f'(α)/q < 2`, i.e. `q` has the
+sign of `f'(α)` and `(b - a) < 2 (f b - f a) / f'(α)`. `Chord.hasDerivAt_step`,
+`Chord.abs_one_sub_div_lt_one_iff`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter06.chord", "Chord.hasDerivAt_step", "Chord.abs_one_sub_div_lt_one_iff"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 6.3.1'
+
+[[node]]
+id = "chord_tendsto"
+kind = "theorem"
+desc = '''**§6.3.1: the chord method converges linearly** when `0 < f'(α)/q < 2`: `f α = 0`,
+`HasDerivAt f (f' α) α`, `0 < f'(α)/q ∧ f'(α)/q < 2` ⟹ `∃ δ > 0, ∀ x₀, |x₀ - α| < δ →
+Tendsto (chord f a b x₀) atTop (𝓝 α)`, and `definition_6_1 (chord f a b x₀) α 1` with convergence
+factor `|1 - f'(α)/q|` (when `f'(α) ≠ q`; in the "lucky case" `f'(α) = q` the order exceeds one).
+`Chord.tendsto_iterate` through `property_6_3`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter06.chord", "QuarteroniSaccoSaleri.Chapter06.chordIterationFunction_deriv", "Chord.tendsto_iterate", "QuarteroniSaccoSaleri.Chapter06.definition_6_1"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 6.3.1'
+
+[[node]]
+id = "newtonIterationFunction_deriv"
+kind = "theorem"
+desc = '''**§6.3.1, Newton's method at a simple root:** with `φ_Newt x = x - f x / f' x`, `f α = 0`,
+`f ∈ C²` near `α` and `f'(α) ≠ 0`: `φ_Newt'(α) = 0`; and with `f ∈ C³`,
+`φ_Newt''(α) = f''(α) / f'(α)`. `Newton.hasDerivAt_scalarStep`, `Newton.deriv2_scalarStep_root`.
+With `property_6_4` (`p = 1`) this is the statement "Newton's method is of order 2" promised in
+§6.2.2 — `newton_order_two`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter06.newton", "Newton.hasDerivAt_scalarStep", "Newton.deriv2_scalarStep_root"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 6.3.1'
+
+[[node]]
+id = "newton_order_two"
+kind = "theorem"
+desc = '''**Newton's method is of order 2** (§6.2.2, "see Section 6.3.1"): `f α = 0`, `ContDiffAt ℝ 2 f α`,
+`deriv f α ≠ 0` ⟹ `∃ ε > 0, ∀ x₀ ∈ ball α ε, definition_6_1 (newton f (deriv f) x₀) α 2`, and along
+orbits avoiding `α` the limit `(x^{(k+1)} - α)/(x^{(k)} - α)² → f''(α)/(2 f'(α))` for `f ∈ C³`.
+`Newton.hasIterationOrder_scalarStep_two` and `property_6_4` with `newtonIterationFunction_deriv`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter06.newton", "Newton.hasIterationOrder_scalarStep_two", "QuarteroniSaccoSaleri.Chapter06.property_6_4", "QuarteroniSaccoSaleri.Chapter06.newtonIterationFunction_deriv", "QuarteroniSaccoSaleri.Chapter06.definition_6_1", "QuarteroniSaccoSaleri.Chapter06.definition_6_1_iff"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 6.3.1'
+
+[[node]]
+id = "equation_6_22"
+kind = "theorem"
+desc = '''**(6.22):** if `α` is a root of `f` of multiplicity `m > 1` (`IsRootOfMultiplicity f α m`,
+`f ∈ C^{m+1}` near `α`), then `φ_Newt'(α) = 1 - 1/m` in the sense
+`(φ_Newt x - α)/(x - α) → 1 - 1/m` as `x → α`, `x ≠ α`; consequently Newton's method is no longer
+second order but converges linearly with factor `1 - 1/m`.
+`Newton.tendsto_scalarStep_sub_div_of_isRootOfMultiplicity`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter06.newton", "Newton.tendsto_scalarStep_sub_div_of_isRootOfMultiplicity", "IsRootOfMultiplicity"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.22)'
+
+[[node]]
+id = "equation_6_23"
+kind = "definition"
+desc = '''**(6.23), the modified Newton method:** `modifiedNewton f f' m x₀ k :=
+(Newton.modifiedScalarStep f f' m)^[k] x₀`, `x^{(k+1)} = x^{(k)} - m f(x^{(k)}) / f'(x^{(k)})`. ★'''
+deps = ["Newton.modifiedScalarStep"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.23)'
+
+[[node]]
+id = "exercise_6_2"
+kind = "theorem"
+desc = '''**Exercise 6.2** (cited by §6.3.1 for (6.22) and (6.23)): let `f` be `m` times
+differentiable with `f(α) = … = f^{(m-1)}(α) = 0`, `f^{(m)}(α) ≠ 0` (`IsRootOfMultiplicity f α m`,
+`1 ≤ m`; the proofs need `f ∈ C^{m+2}` near `α`). Then (6.22) holds — `equation_6_22` — and the
+modified Newton method (6.23) has order 2: `∃ ε > 0, ∀ x₀ ∈ ball α ε,
+definition_6_1 (modifiedNewton f (deriv f) m x₀) α 2`. The hint `f x = (x - α)^m h x`, `h α ≠ 0`, is
+`IsRootOfMultiplicity.exists_eq_pow_mul`; the order-2 claim is
+`Newton.exists_ball_abs_modifiedScalarStep_sub_le`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter06.equation_6_22", "QuarteroniSaccoSaleri.Chapter06.equation_6_23", "Newton.exists_ball_abs_modifiedScalarStep_sub_le", "IsRootOfMultiplicity.exists_eq_pow_mul", "QuarteroniSaccoSaleri.Chapter06.definition_6_1", "QuarteroniSaccoSaleri.Chapter06.definition_6_1_iff"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 6.2'

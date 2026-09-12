@@ -1,0 +1,24 @@
+desc = '''
+Quarteroni–Sacco–Saleri, Chapter 3: direct methods for the solution of linear systems. Real square
+systems `A x = b`, `A : Matrix (Fin n) (Fin n) ℝ`, except in §3.13 (rectangular `Matrix (Fin m)
+(Fin n) ℝ`).
+
+Conventions of the chapter's surface files:
+
+* Matrix norms are the induced `p`-norms `‖A‖_p` and condition numbers `K_p(A) = ‖A‖_p ‖A⁻¹‖_p` as
+  restated by chapter 1 (§1.11, (1.21)/(3.4)) from the backbone `NormedRing.condNumber` — the same
+  object as `Matrix.condNumberLp` of `NumlibSurface/SaadSparse/Chapter01`. Where the book says
+  "for a matrix norm" (Theorems 3.1–3.3, Property 3.1) the surface theorem is stated for the
+  operator `A` acting on `PiLp p (Fin n → ℝ)` with a `Fact (1 ≤ p)`, and specialized statements
+  use `p = ∞` through Mathlib's scoped `Matrix.Norms.Operator` (maximum absolute row sum), the
+  norm the componentwise material (§3.1.2, §3.10, §3.12) is written in.
+* Rounding-error statements are in the relational model of `Numlib/FloatingPoint/Model`: the
+  book's `u = ½ β^{1-t}` is the model's `m.u`, and `n u / (1 - n u)` is `FloatingPoint.gamma m.u n`.
+* The unit-lower LU factorization is the backbone specification `Matrix.IsLU`; "the" factorization
+  is the unique one when the strict leading principal submatrices are nonsingular (Theorem 3.4).
+  Gaussian elimination is `Matrix.gemStage`; forward and backward substitution are
+  `Matrix.forwardSubst`, `Matrix.backSubst`.
+
+Numbered MATLAB programs are not nodes; the numerical examples (3.2, 3.4, 3.6, 3.8's run, 3.9,
+3.10, 3.12) and the operation counts are skipped, as recorded in the chapter report.
+'''

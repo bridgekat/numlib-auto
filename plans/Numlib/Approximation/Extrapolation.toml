@@ -1,0 +1,139 @@
+desc = '''
+Richardson extrapolation and Romberg integration ([quarteroni2000numerical] §9.6). A quantity
+`𝒜(h)` with an asymptotic expansion `α₀ + α₁ h + ⋯ + α_k h^k + R(h)`, `|R(h)| ≤ C h^{k+1}`, is
+sampled at the geometric sequence `h_m = δ^m h`, `0 < δ < 1`; the combination
+`(𝒜(δ h) - δ^p 𝒜(h))/(1 - δ^p)` kills the `h^p` term and keeps an expansion of the same shape,
+and iterating gives the triangular table (9.34) whose `q`-th column converges at order `q + 1`
+(Property 9.2). Romberg integration is the table built on the composite trapezoidal sums with
+`2^m` panels, whose expansion in `h²` is the Euler–Maclaurin formula of
+`Numlib/Analysis/SpecialFunctions/EulerMaclaurin`; its first column is the composite Simpson rule.
+
+Everything is stated for the *sampled* sequence `A : ℕ → ℝ`, `A m = 𝒜(δ^m h)`, because that is
+what the algorithm consumes and it lets Romberg's `η = h_m² = (1/4)^m (b - a)²` be an instance
+without a square root: `Richardson.HasExpansion A δ h α k C` says
+`|A m - ∑_{i ≤ k} α i (δ^m h)^i| ≤ C (δ^m h)^{k+1}` for every `m`. The constants are explicit
+and independent of `m`, so the `O(·)` of the book is a genuine bound.
+
+Namespaces `Richardson` (the general table) and `Romberg` (the trapezoidal instance). The
+a posteriori estimator of §9.7.1, (9.40), is the two-term case `Richardson.abs_sub_sub_estimate_le`.
+Consumers: [quarteroni2000numerical] §9.6–9.7, §10.10 (extrapolated difference quotients,
+Example 9.6), §11 (extrapolation of one-step methods); [kress1998numerical] §9.5.
+'''
+
+[[node]]
+id = "Richardson.HasExpansion"
+kind = "definition"
+desc = '''`Richardson.HasExpansion (A : ℕ → ℝ) (δ h : ℝ) (α : ℕ → ℝ) (k : ℕ) (C : ℝ) : Prop :=
+∀ m, |A m - ∑ i ∈ Finset.range (k + 1), α i * (δ ^ m * h) ^ i| ≤ C * (δ ^ m * h) ^ (k + 1)` —
+(9.33) sampled at `h_m = δ^m h`. ★'''
+deps = []
+
+[[node]]
+id = "Richardson.step"
+kind = "definition"
+desc = '''One extrapolation step of order `p`, `Richardson.step A δ p m := (A (m + 1) - δ ^ p * A m) / (1 - δ ^ p)`
+— the book's `ℬ(h) = (𝒜(δ h) - δ^p 𝒜(h))/(1 - δ^p)` at `h = δ^m h`. ★'''
+deps = []
+
+[[node]]
+id = "Richardson.table"
+kind = "definition"
+desc = '''The extrapolation table (9.34): `table A δ m 0 = A m`,
+`table A δ m (q + 1) = (table A δ m q - δ ^ (q + 1) * table A δ (m - 1) q) / (1 - δ ^ (q + 1))`
+(structural recursion on `q`; entries with `m < q` are junk, as `m - 1` truncates). ★'''
+deps = []
+
+[[node]]
+id = "Richardson.table_succ"
+kind = "theorem"
+desc = '''`table A δ (m + 1) (q + 1) = step (fun m => table A δ m q) δ (q + 1) m`: the next column is
+one step applied to the previous one. `simp [table, step]`. ★'''
+deps = ["Richardson.table", "Richardson.step"]
+
+[[node]]
+id = "Richardson.hasExpansion_step"
+kind = "theorem"
+desc = '''**One step keeps the expansion and kills the `h^p` term.** If `HasExpansion A δ h α k C`,
+`0 < δ < 1`, `0 < h`, `0 < p ≤ k`, then
+`HasExpansion (step A δ p) δ h (fun i => α i * (δ ^ i - δ ^ p) / (1 - δ ^ p)) k (C * (δ ^ (k + 1) + δ ^ p) / (1 - δ ^ p))`.
+The new coefficients are the book's `α̃_i = α_i (δ^i - δ^p)/(1 - δ^p)`: `α̃_0 = α_0`, `α̃_p = 0`,
+and `α̃_i ≠ 0 ↔ α_i ≠ 0` for `i ≠ p`. Subtract the two expansions, `A (m + 1)` at parameter
+`δ · (δ^m h)`; triangle inequality for the remainder. ★★'''
+deps = ["Richardson.HasExpansion", "Richardson.step"]
+
+[[node]]
+id = "Richardson.hasExpansion_table"
+kind = "theorem"
+desc = '''The `q`-th column, `q ≤ k`, has an expansion with `α₀` unchanged and `α_1, …, α_q` zero:
+`∃ α' C', α' 0 = α 0 ∧ (∀ i, 1 ≤ i → i ≤ q → α' i = 0) ∧ HasExpansion (fun m => table A δ (m + q) q) δ (δ ^ q * h) α' k C'`
+hmm — simpler: `HasExpansion (fun m => table A δ (m + q) q) δ h α' k C'` where the row shift
+`m + q` makes the entry a function of the parameter `δ^m h` of its *first* ingredient. Induction on
+`q` with `table_succ` and `hasExpansion_step`. ★★'''
+deps = ["Richardson.table_succ", "Richardson.hasExpansion_step"]
+
+[[node]]
+id = "Richardson.exists_abs_table_sub_le"
+kind = "theorem"
+desc = '''**Property 9.2** (9.35), in the reading `A_{m,q} = α₀ + O((δ^m h)^{q+1})` for `q ≤ m`.
+If `HasExpansion A δ h α k C`, `0 < δ < 1`, `0 < h` and `q ≤ k`, then
+`∃ C', ∀ m, q ≤ m → |table A δ m q - α 0| ≤ C' * (δ ^ m * h) ^ (q + 1)` with `C'` independent of
+`m`. From `hasExpansion_table`: the surviving terms are `α'_i (δ^{m-q} h)^i` for `q < i ≤ k` and
+the remainder; bound `(δ^{m-q} h)^i ≤ (δ^{m-q} h)^{q+1} h^{i-q-1}` and absorb `δ^{-q(q+1)}`.
+The book indexes (9.35) as `A_{m,n}` for `m = 0, …, n`, which (9.34) does not define; this node
+is the intended statement. ★★'''
+deps = ["Richardson.hasExpansion_table"]
+
+[[node]]
+id = "Richardson.abs_sub_sub_estimate_le"
+kind = "theorem"
+desc = '''**The a posteriori estimator** behind (9.40): if `∀ m, |A m - α₀ - c (δ^m h)^p| ≤ C (δ^m h)^q`
+with `p < q`, `0 < δ < 1`, then for every `m`
+`|α₀ - A (m + 1) - δ ^ p / (1 - δ ^ p) * (A (m + 1) - A m)| ≤ C * (δ ^ q + δ ^ p) / (1 - δ ^ p) * (δ ^ m * h) ^ q`.
+With `δ = 1/2`: `α₀ - A(2m) ≈ (A(2m) - A(m))/(2^p - 1)`, the book's (9.40) with `p = n + p_book`,
+and the neglected term is of the next order. Algebra on the two expansions. ★★'''
+deps = ["Richardson.HasExpansion"]
+
+[[node]]
+id = "Romberg.table"
+kind = "definition"
+desc = '''`Romberg.table f a b := Richardson.table (fun m => Quadrature.trapezoidSum f a ((b - a) / 2 ^ m) (2 ^ m)) (1 / 4)`:
+the extrapolation table of the composite trapezoidal sums on `2^m` panels in the parameter
+`η_m = h_m² = (b - a)²/4^m`. ★'''
+deps = ["Richardson.table", "Quadrature.trapezoidSum"]
+
+[[node]]
+id = "Romberg.table_succ"
+kind = "theorem"
+desc = '''The Romberg recursion (the display after (9.37)):
+`table f a b m (q + 1) = (4 ^ (q + 1) * table f a b m q - table f a b (m - 1) q) / (4 ^ (q + 1) - 1)`.
+Unfold `Richardson.table` and clear the denominator `1 - 4^{-(q+1)}`. ★'''
+deps = ["Romberg.table"]
+
+[[node]]
+id = "Romberg.table_one_eq_simpsonSum"
+kind = "theorem"
+desc = '''The first extrapolated column is composite Simpson:
+`table f a b (m + 1) 1 = Quadrature.simpsonSum f a ((b - a) / 2 ^ m) (2 ^ m)`, i.e.
+`(4 T_{2N} - T_N)/3 = S_N`. Reindex the `2N`-panel trapezoidal sum by parity. ★★'''
+deps = ["Romberg.table_succ", "Quadrature.simpsonSum"]
+
+[[node]]
+id = "Romberg.hasExpansion_trapezoidSum"
+kind = "theorem"
+desc = '''**Euler–Maclaurin as a Richardson expansion.** For `a < b`, `f ∈ C^{2k+2}` on an open
+`U ⊇ Icc a b`, there is `C` with
+`Richardson.HasExpansion (fun m => Quadrature.trapezoidSum f a ((b - a) / 2 ^ m) (2 ^ m)) (1 / 4) ((b - a) ^ 2) α k C`
+where `α 0 = ∫_a^b f` and `α i = bernoulli (2i)/(2i)! * (f^{(2i-1)}(b) - f^{(2i-1)}(a))` for
+`1 ≤ i ≤ k`; `C = |bernoulli (2k+2)|/(2k+2)! * (b - a) * sup |f^{(2k+2)}|`. Direct from
+`EulerMaclaurin.trapezoidSum_eq_integral_add_sum_add_mul` with `h_m² = (1/4)^m (b - a)²`. ★★'''
+deps = ["Richardson.HasExpansion", "EulerMaclaurin.trapezoidSum_eq_integral_add_sum_add_mul"]
+
+[[node]]
+id = "Romberg.exists_abs_table_sub_integral_le"
+kind = "theorem"
+desc = '''**Convergence of Romberg integration** (the display after (9.37)): for `a < b`,
+`f ∈ C^{2q+2}` on an open `U ⊇ Icc a b`,
+`∃ C, ∀ m, q ≤ m → |table f a b m q - ∫_a^b f| ≤ C * ((b - a) / 2 ^ m) ^ (2 * (q + 1))`.
+`Richardson.exists_abs_table_sub_le` applied to `hasExpansion_trapezoidSum` with `k = q`, and
+`((1/4)^m (b - a)²)^{q+1} = ((b - a)/2^m)^{2(q+1)}`. ★'''
+deps = ["Romberg.hasExpansion_trapezoidSum", "Richardson.exists_abs_table_sub_le"]

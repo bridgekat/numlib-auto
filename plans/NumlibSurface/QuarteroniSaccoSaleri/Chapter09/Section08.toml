@@ -1,0 +1,132 @@
+namespace = "QuarteroniSaccoSaleri.Chapter09"
+desc = '''
+§9.8, singular integrals: finite jumps (9.46), integrable endpoint singularities `φ(x)/(x - a)^μ`
+with the a priori bound, Method 1 (truncation, (9.47)–(9.49)), Method 2 (subtraction of the Taylor
+polynomial, (9.51)–(9.52)), the Fresnel series of Example 9.10, and unbounded intervals
+((9.53)–(9.55), the decay criterion, Gauss–Laguerre and Gauss–Hermite as Method 3). Examples 9.11
+and 9.12 are numerical and are skipped (9.12's `I_2 ≤ e^{-c}` is a one-line inequality the text
+does not rely on). Backbone: `Numlib/Approximation/SingularIntegral`, the Laguerre and Hermite
+weights of `Numlib/Approximation/OrthogonalPolynomial`, and Mathlib's improper integrals.
+'''
+
+[[node]]
+id = "equation_9_46"
+kind = "theorem"
+desc = '''(9.46): for `f` integrable on `[a, c]` and `[c, b]`, `∫_a^b f = ∫_a^c f + ∫_c^b f`
+(`intervalIntegral.integral_add_adjacent_intervals`); so a function continuous and bounded on
+`[a, c)` and `(c, b]` with a finite jump at `c` is integrated by any rule applied to the two pieces.
+★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (9.46)'
+
+[[node]]
+id = "singularIntegral_bound"
+kind = "theorem"
+desc = '''The a priori bound of §9.8.2: for `f(x) = φ(x)/(x - a)^μ`, `0 ≤ μ < 1`, `|φ| ≤ M` on `(a, b]`,
+`f` is integrable and `|∫_a^b f| ≤ M (b - a)^{1-μ}/(1 - μ)`. ★'''
+deps = ["Quadrature.abs_integral_div_rpow_le"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §9.8.2 (a priori bound)'
+
+[[node]]
+id = "equation_9_47"
+kind = "theorem"
+desc = '''(9.47), Taylor's formula with Lagrange remainder at `a`: for `φ ∈ C^{p+1}` and `x ∈ (a, b]`,
+`φ x = Φ_p x + (x - a)^{p+1}/(p + 1)! φ^{(p+1)}(ξ)` for some `ξ ∈ (a, x)`, `Φ_p` the Taylor
+polynomial `∑_{k ≤ p} φ^{(k)}(a) (x - a)^k/k!`. Mathlib's `taylor_mean_remainder_lagrange`. ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (9.47)'
+
+[[node]]
+id = "equation_9_48"
+kind = "theorem"
+desc = '''(9.48), the truncation error of Method 1: replacing `I_1 = ∫_a^{a+ε} φ/(x - a)^μ` by
+`ε^{1-μ} ∑_{k ≤ p} ε^k φ^{(k)}(a)/(k! (k + 1 - μ))` makes an error
+`|E_1| ≤ ε^{p+2-μ}/((p + 1)! (p + 2 - μ)) max_{[a, a+ε]} |φ^{(p+1)}|`. Two clauses: the closed form of
+the truncated sum (`Quadrature.integral_pow_div_rpow`) and the bound. ★'''
+deps = ["Quadrature.abs_integral_taylorRemainder_div_rpow_le", "Quadrature.integral_pow_div_rpow"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (9.48)'
+
+[[node]]
+id = "equation_9_49"
+kind = "theorem"
+desc = '''(9.49), the a priori bound for `I_2 = ∫_{a+ε}^b φ/(x - a)^μ` by the composite closed
+Newton–Cotes rule with even `n` on `m` panels: `|E_2| ≤ 𝓜^{(n+2)}(ε) (b - a - ε)/(n + 2)! |M_n|/n^{n+3} ((b - a - ε)/m)^{n+2}`
+with `𝓜^{(n+2)}(ε) = max_{[a+ε, b]} |d^{n+2}/dx^{n+2} (φ/(x - a)^μ)|`. Theorem 9.3 on `[a + ε, b]`
+(the book's `n^{n+3}` here is consistent with the corrected `theorem_9_3_even`). ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter09.theorem_9_3_even"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (9.49)'
+
+[[node]]
+id = "example_9_10"
+kind = "theorem"
+desc = '''Example 9.10, the Fresnel integral by termwise integration:
+`∫_0^{π/2} cos x/√x dx = ∑_{k ≥ 0} (-1)^k/(2k)! (π/2)^{2k+1/2}/(2k + 1/2)` (as `HasSum`).
+Expand `cos`, integrate `x^{2k-1/2}` on `(0, π/2]` (`integral_rpow`), and exchange sum and integral
+by dominated convergence (`MeasureTheory.integral_tsum` or `hasSum_integral_of_dominated_convergence`
+with the bound `cosh(π/2)/√x`, integrable). ★★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 9.10'
+
+[[node]]
+id = "equation_9_51"
+kind = "theorem"
+desc = '''(9.51), the exact singular part of Method 2:
+`∫_a^b Φ_p(x)/(x - a)^μ dx = (b - a)^{1-μ} ∑_{k ≤ p} (b - a)^k φ^{(k)}(a)/(k! (k + 1 - μ))`. ★'''
+deps = ["Quadrature.integral_pow_div_rpow"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (9.51)'
+
+[[node]]
+id = "equation_9_52"
+kind = "theorem"
+desc = '''(9.52) and the sentence after it: `I_1 = ∫_a^b g` with `g = (φ - Φ_p)/(x - a)^μ`, and `g`
+"does not blow up at `a`, since its first `p` derivatives are finite at `a`": `g` extended by `0`
+at `a` is `C^p` on `[a, b]` with `g^{(j)}(a) = 0` for `j ≤ p`, so the composite Newton–Cotes error
+formula (Theorem 9.3) applies to it when `p ≥ n + 2` (`n` even) or `p ≥ n + 1` (`n` odd). ★★★ in
+the backbone. ★'''
+deps = ["Quadrature.contDiffOn_taylorRemainder_div_rpow", "QuarteroniSaccoSaleri.Chapter09.theorem_9_3_even"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (9.52)'
+
+[[node]]
+id = "equation_9_54"
+kind = "theorem"
+desc = '''(9.53)–(9.54): `∫_a^∞ f = lim_{t → ∞} ∫_a^t f` when `f` is integrable on `[a, ∞)`
+(`MeasureTheory.intervalIntegral_tendsto_integral_Ioi`), and for `f` integrable on `ℝ`,
+`∫_{-∞}^{∞} f = ∫_{-∞}^c f + ∫_c^∞ f` for every `c` (`MeasureTheory.integral_Iic_add_Ioi`), "the
+value not depending on the choice of `c`". ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (9.53)–(9.54)'
+
+[[node]]
+id = "integrable_of_tendsto_rpow_mul"
+kind = "theorem"
+desc = '''The sufficient condition of §9.8.3: if `f` is continuous on `[a, ∞)` and
+`x^{1+ρ} f(x) → 0` as `x → ∞` for some `ρ > 0`, then `f` is integrable on `[a, ∞)`. ★'''
+deps = ["Quadrature.integrableOn_Ioi_of_tendsto_rpow_mul"]
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §9.8.3 (sufficient condition for integrability)'''
+
+[[node]]
+id = "equation_9_55"
+kind = "theorem"
+desc = '''(9.55), Method 2 for unbounded intervals: for `c > 0` and `f` integrable on `[c, ∞)`,
+`∫_c^∞ f(x) dx = ∫_0^{1/c} f(1/t) t^{-2} dt`. ★'''
+deps = ["Quadrature.integral_Ioi_eq_integral_Ioo_inv"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (9.55)'
+
+[[node]]
+id = "gaussLaguerre"
+kind = "theorem"
+desc = '''Method 3 of §9.8.3, Gauss–Laguerre: for every `n` there are `n` distinct nodes (the zeros of
+the `n`-th orthogonal polynomial of the weight `e^{-x}` on `(0, ∞)`) and positive weights with
+`∑ w_i p(x_i) = ∫_0^∞ p(x) e^{-x} dx` for every `p ∈ ℙ_{2n-1}`. `Quadrature.exists_gauss` at
+`OrthogonalPolynomial.isWeight_laguerreMeasure`; the identification of the nodes with the Laguerre
+zeros is §10.5. ★'''
+deps = ["Quadrature.exists_gauss", "OrthogonalPolynomial.isWeight_laguerreMeasure"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §9.8.3, Method 3 (Laguerre)'
+
+[[node]]
+id = "gaussHermite"
+kind = "theorem"
+desc = '''Method 3 of §9.8.3, Gauss–Hermite: the same for the weight `e^{-x²}` on `ℝ`,
+`Quadrature.exists_gauss` at `OrthogonalPolynomial.isWeight_hermiteMeasure`. ★'''
+deps = ["Quadrature.exists_gauss", "OrthogonalPolynomial.isWeight_hermiteMeasure"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §9.8.3, Method 3 (Hermite)'

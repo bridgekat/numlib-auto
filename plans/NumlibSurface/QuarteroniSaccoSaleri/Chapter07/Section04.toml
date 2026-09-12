@@ -1,0 +1,45 @@
+namespace = "QuarteroniSaccoSaleri.Chapter07"
+desc = '''
+§7.4.1, the nonlinear system of semiconductor device simulation `F(u) = A u + φ(u) - b = 0` (7.57)
+with `A = (λ/h)² tridiag(-1, 2, -1)` and `φ_i(u) = 2K sinh(u_i)`, and its variational form (7.58):
+the identification `F = ∇f`, the uniform (strong) convexity of `f` in the energy norm claimed in
+the text and proved in Exercise 7.5, and the unique minimizer that Property 7.10 then provides.
+The damped Newton method (7.59)–(7.61) and the nonlinear Gauss–Seidel method of §7.4.2 are
+algorithms with no stated result and have no nodes; the superlinear convergence of damped Newton
+for this problem is quoted from Ortega–Rheinboldt Thm 14.4.3 and is not planned.
+'''
+
+[[node]]
+id = "equation_7_58"
+kind = "theorem"
+desc = '''(7.57)–(7.58): for `A : Matrix (Fin n) (Fin n) ℝ` symmetric positive definite, `K > 0` and
+`b`, the functional `f u = ½ uᵀ A u + 2K ∑ i, cosh (u i) - bᵀ u` has
+`gradient f u = A u + φ u - b = F u` with `φ u i = 2K sinh (u i)`, so the zeros of (7.57) are the
+critical points of (7.58) (the book prints `2 ∑ cosh(u_i))` with a stray parenthesis and without
+the factor `K`; `∇(2K ∑ cosh) = 2K sinh` fixes it). Hessian: `A + 2K diag(cosh (u i))`, the matrix
+of the linearized problem (7.59). ★'''
+deps = ["energyFunctional", "hasGradientAt_energyFunctional"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 7.58'
+
+[[node]]
+id = "exercise_7_5"
+kind = "theorem"
+desc = '''Exercise 7.5, cited in §7.4.1: the functional (7.58) is uniformly convex on `ℝⁿ`,
+`λ f u + (1 - λ) f v - f (λ u + (1 - λ) v) > ½ λ (1 - λ) ‖u - v‖_A²` for `u ≠ v` and `λ ∈ (0, 1)`,
+with `‖·‖_A` the energy norm (1.28) of `A`. Proof: the quadratic part gives the identity
+`λ q(u) + (1-λ) q(v) - q(λu + (1-λ)v) = ½ λ(1-λ) ‖u - v‖_A²` exactly, the linear part contributes
+`0`, and `cosh` is strictly convex (`Real.cosh`, second derivative `cosh > 0`,
+`strictConvexOn_of_deriv2_pos`), strictly positive in at least one coordinate where `u i ≠ v i`.
+Since `‖·‖_A ≥ √λmin(A) ‖·‖₂`, this is (7.49) with `ρ = λmin(A)/2` in the Euclidean norm — the
+text's "`ρ = 1/2`" is in the energy norm. Surface only. ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter07.equation_7_58", "QuarteroniSaccoSaleri.Chapter07.IsStronglyConvexOn"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 7.5'
+
+[[node]]
+id = "equation_7_58_existsUnique"
+kind = "theorem"
+desc = '''The consequence drawn in §7.4.1: by `exercise_7_5` and Property 7.10 (with `Ω = univ`, `f`
+continuous), (7.58) has a unique minimizer `ustar ∈ ℝⁿ`, which is the unique solution of the
+nonlinear system (7.57), `F ustar = 0`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter07.exercise_7_5", "QuarteroniSaccoSaleri.Chapter07.property_7_10", "QuarteroniSaccoSaleri.Chapter07.equation_7_58"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 7.4.1'

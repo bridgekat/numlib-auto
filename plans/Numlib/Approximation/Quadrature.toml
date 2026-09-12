@@ -69,3 +69,152 @@ source = "Kress, Numerical Analysis, Section 9.2"
 [[node]]
 id = "abs_error_le_integral_abs_peanoKernel"
 source = "Kress, Numerical Analysis, Section 9.2"
+
+[[node]]
+id = "IsExactOnMeasure"
+kind = "definition"
+desc = '''`IsExactOnMeasure μ w x d`, for `μ : Measure ℝ`, weights `w : Fin n → ℝ`, nodes `x : Fin n → ℝ`
+and `d : ℕ`: `∀ p : ℝ[X], p.degree ≤ d → ∑ i, w i * p.eval (x i) = ∫ t, p.eval t ∂μ`. The
+polynomial-level "degree of exactness `d` with respect to the weight `μ`", the statement
+`exists_gauss` and `not_forall_eq_integral_of_degree_le` are already about; `IsExactOn` lives on
+`C(X, ℝ)` for a compact `X` and cannot host an unbounded weight (Laguerre, Hermite). With
+`IsExactOnMeasure.mono` (exactness to `d` gives exactness to `e ≤ d`). ★'''
+deps = []
+
+[[node]]
+id = "IsInterpolatoryMeasure"
+kind = "definition"
+desc = '''`IsInterpolatoryMeasure μ w x` for `n + 1` nodes: `∀ i, w i = ∫ t, (Lagrange.basis univ x i).eval t
+∂μ` — the weights are the integrals of the Lagrange basis polynomials, Quarteroni–Sacco–Saleri
+(10.14). The measure-level twin of `IsInterpolatory`. ★'''
+deps = []
+
+[[node]]
+id = "isInterpolatoryMeasure_iff_isExactOnMeasure"
+kind = "theorem"
+desc = '''For `hw : IsWeight μ` and injective `x : Fin (n+1) → ℝ`, `IsInterpolatoryMeasure μ w x ↔
+IsExactOnMeasure μ w x n`. The twin of `isInterpolatory_iff_isExactOn`: a rule exact on `P_n`
+applied to `ℓ_i` gives `w i = ∫ ℓ_i`, and conversely every `p ∈ P_n` is `∑ p(x i) ℓ_i`
+(`Lagrange.eq_interpolate_of_eval_eq` / `Lagrange.interpolate` for `degree < card`). ★'''
+deps = ["Quadrature.IsExactOnMeasure", "Quadrature.IsInterpolatoryMeasure", "OrthogonalPolynomial.IsWeight"]
+
+[[node]]
+id = "isExactOnMeasure_add_iff"
+kind = "theorem"
+desc = '''**Jacobi's theorem** (Quarteroni–Sacco–Saleri Theorem 10.1). For `hw : IsWeight μ`, `1 ≤ m`,
+injective `x : Fin (n+1) → ℝ` and any `w`:
+`IsExactOnMeasure μ w x (n + m) ↔ IsInterpolatoryMeasure μ w x ∧ ∀ p : ℝ[X], p.degree ≤ (m - 1 : ℕ) →
+∫ t, (Lagrange.nodal univ x).eval t * p.eval t ∂μ = 0`.
+(⇐) divide `f ∈ P_{n+m}` by the monic nodal polynomial `ω`: `f = ω q + r` with `deg q ≤ m - 1`,
+`deg r ≤ n` (`Polynomial.modByMonic`, `divByMonic`, `degree_modByMonic_lt`,
+`natDegree_divByMonic`); the rule kills `ω q` (it vanishes at the nodes) and so does the integral
+by the orthogonality; on `r` the rule is exact by `isInterpolatoryMeasure_iff_isExactOnMeasure`.
+(⇒) exactness to `n + m ≥ n` gives interpolatory by the same lemma; for `p ∈ P_{m-1}`, `ω p ∈ P_{n+m}`
+and vanishes at the nodes, so `∫ ω p = ∑ w_i ω(x_i) p(x_i) = 0`. ★★'''
+deps = ["Quadrature.IsExactOnMeasure", "Quadrature.IsInterpolatoryMeasure", "Quadrature.isInterpolatoryMeasure_iff_isExactOnMeasure"]
+
+[[node]]
+id = "not_isExactOnMeasure_two_mul_add_two"
+kind = "theorem"
+desc = '''For `hw : IsWeight μ` and any `w x : Fin (n+1) → ℝ`, `¬ IsExactOnMeasure μ w x (2n + 2)`
+(Quarteroni–Sacco–Saleri Corollary 10.1). A restatement of `not_forall_eq_integral_of_degree_le`
+at `n + 1` nodes: `degree ≤ 2(n+1)` is `degree ≤ 2n + 2`. ★'''
+deps = ["Quadrature.IsExactOnMeasure", "Quadrature.not_forall_eq_integral_of_degree_le"]
+
+[[node]]
+id = "isExactOnMeasure_two_mul_add_one_iff"
+kind = "theorem"
+desc = '''**The Gauss nodes are the roots of the orthogonal polynomial** (Quarteroni–Sacco–Saleri
+(10.16)). For `hw : IsWeight μ` and injective `x : Fin (n+1) → ℝ`:
+`IsExactOnMeasure μ w x (2n + 1) ↔ Lagrange.nodal univ x = OrthogonalPolynomial.family μ (n+1) ∧
+IsInterpolatoryMeasure μ w x`. From `isExactOnMeasure_add_iff` at `m = n + 1`: `ω ⊥ P_n` and `ω`
+monic of degree `n + 1` force `ω = family μ (n+1)` (expand `ω - family` in the family basis,
+`OrthogonalPolynomial.integral_family_mul_of_degree_lt`; it has degree `≤ n` and is orthogonal to
+`P_n`, hence to itself, hence zero by `IsWeight`), and conversely `family μ (n+1) ⊥ P_n`. ★★'''
+deps = ["Quadrature.isExactOnMeasure_add_iff", "OrthogonalPolynomial.integral_family_mul_of_degree_lt", "OrthogonalPolynomial.family"]
+
+[[node]]
+id = "isExactOnMeasure_iff_isExactOn"
+kind = "theorem"
+desc = '''The bridge to the functional level: for `a < b`, `μ` a finite measure with `μ (Icc a b)ᶜ = 0`,
+nodes `x : Fin n → Icc a b` and `L : C(Icc a b, ℝ) →L[ℝ] ℝ` the integration functional
+`f ↦ ∫ t, f t ∂(μ.comap Subtype.val)`, `IsExactOnMeasure μ w (Subtype.val ∘ x) d ↔ IsExactOn L w x
+d`. Membership in `polyLE (Icc a b) d` is restriction of a polynomial of degree `≤ d`
+(`polyLE`), and `integral_subtype_comap` moves the integral. This is what lets
+`tendsto_of_nonneg` (Szegő–Pólya) apply to Gauss and Gauss–Lobatto rules stated at the measure
+level. ★★'''
+deps = ["Quadrature.IsExactOnMeasure", "Quadrature.IsExactOn", "polyLE"]
+
+[[node]]
+id = "isExactOnMeasure_map_affine"
+kind = "theorem"
+desc = '''Change of interval (Quarteroni–Sacco–Saleri Remark 10.3). For `c ≠ 0`, `d : ℝ` and
+`φ t = c * t + d`: `IsExactOnMeasure μ w x r → IsExactOnMeasure (Measure.map φ μ) w (φ ∘ x) r`
+(`p ∘ φ` is a polynomial of the same degree, `Polynomial.comp` with `natDegree_comp`); and for
+Lebesgue measure, `Measure.map φ (volume.restrict (Icc (-1) 1)) = |c| • volume.restrict (Icc (d - |c|)
+(d + |c|))` (`Real.map_volume_mul_left`, `Measure.map_add_right`), so with `c = (b - a)/2`,
+`d = (a + b)/2` a rule exact on `P_r` on `[-1, 1]` gives the rule with nodes `φ ξ_j` and weights
+`((b - a)/2) β_j` exact on `P_r` on `[a, b]`. ★★'''
+deps = ["Quadrature.IsExactOnMeasure"]
+
+[[node]]
+id = "discreteInner"
+kind = "definition"
+desc = '''The **discrete inner product** of a rule, `discreteInner w x f g = ∑ i, w i * f (x i) * g (x i)`
+for `f g : ℝ → ℝ` (Quarteroni–Sacco–Saleri (10.28), (10.51)): a positive semidefinite symmetric
+bilinear form, an inner product on the polynomials of degree `< n` when the `n` nodes are
+distinct and the weights positive (`discreteInner_self_eq_zero_iff`, the book's Exercise 10.4:
+a polynomial of degree `< n` vanishing at `n` nodes is zero). ★'''
+deps = []
+
+[[node]]
+id = "discreteInner_eq_integral_of_degree_le"
+kind = "theorem"
+desc = '''For `IsExactOnMeasure μ w x d` and polynomials `p q` with `p.degree + q.degree ≤ d`,
+`discreteInner w x p.eval q.eval = ∫ t, p.eval t * q.eval t ∂μ` — the discrete inner product of two
+polynomials agrees with the weighted one as long as the rule integrates their product exactly. ★'''
+deps = ["Quadrature.discreteInner", "Quadrature.IsExactOnMeasure"]
+
+[[node]]
+id = "discreteInner_family_family"
+kind = "theorem"
+desc = '''**Discrete orthogonality.** For `hw : IsWeight μ`, `1 ≤ n`, and a rule with `n + 1` nodes
+exact to degree `2n - 1` (`IsExactOnMeasure μ w x (2n - 1)`), the monic orthogonal polynomials
+`p_0, …, p_n` are orthogonal for `discreteInner w x`: `discreteInner w x (p_j) (p_k) = 0` for
+`j ≠ k`, `j, k ≤ n`, and `discreteInner w x p_k p_k = normSq μ k` for `k < n`. For `j + k ≤ 2n - 1`
+this is `discreteInner_eq_integral_of_degree_le`; the case `j = k = n` is not covered and is left
+open (it is where the Gauss and Gauss–Lobatto rules differ: `normSq μ n` for Gauss, larger for
+Lobatto — the book's Exercise 10.2 hint `‖T_n‖_n² = 2‖T_n‖_w²`). ★'''
+deps = ["Quadrature.discreteInner_eq_integral_of_degree_le", "OrthogonalPolynomial.integral_family_mul_family", "OrthogonalPolynomial.normSq"]
+
+[[node]]
+id = "interpolate_eq_sum_discreteInner_smul"
+kind = "theorem"
+desc = '''**The interpolant at the nodes of a rule is the discrete truncation** (Quarteroni–Sacco–Saleri
+(10.4)–(10.5), (10.29), (10.38), §10.7). For `hw : IsWeight μ`, `1 ≤ n`, injective `x : Fin (n+1) →
+ℝ`, positive `w` with `IsExactOnMeasure μ w x (2n - 1)`, and any `f : ℝ → ℝ`:
+`Lagrange.interpolate univ x (f ∘ x) = ∑ k : Fin (n+1), C (discreteInner w x f p_k / discreteInner
+w x p_k p_k) * p_k` with `p_k = family μ k`. Proof: `p_0, …, p_n` is a basis of `P_n` (degrees
+`0, …, n`), so the interpolant `Π f ∈ P_n` is `∑ c_k p_k`; pair with `p_j` in `discreteInner`, use
+`discreteInner_family_family` and `Π f (x i) = f (x i)` to read off `c_j`; the denominators are
+positive since `discreteInner` is an inner product on `P_n`. ★★'''
+deps = ["Quadrature.discreteInner", "Quadrature.discreteInner_family_family", "Quadrature.IsExactOnMeasure", "OrthogonalPolynomial.family"]
+
+[[node]]
+id = "exists_gauss_error_eq"
+kind = "theorem"
+desc = '''**The Gauss remainder** (Quarteroni–Sacco–Saleri (10.41)–(10.42) on a compact interval). For
+`hw : IsWeight μ` with `μ (Icc a b)ᶜ = 0`, `a < b`, the `n`-node Gauss rule `(w, x)` of
+`exists_gauss`, and `f` of class `C^{2n}` on `[a, b]`: `∃ ξ ∈ Icc a b, ∫ t, f t ∂μ - ∑ i, w i * f (x
+i) = iteratedDeriv (2n) f ξ / (2n)! * normSq μ n`. Proof: let `H` be the Hermite interpolant of
+`f` with double nodes at the `x i` (`Hermite.interpolate x (fun _ => 1) f`, degree `< 2n`); the
+rule is exact on `H` and `H (x i) = f (x i)`, so the error is `∫ (f - H) ∂μ`;
+`Hermite.exists_sub_interpolate_eq` gives `f t - H t = f^{(2n)}(ξ_t)/(2n)! · ω(t)²` with
+`ω = family μ n`; the quotient `g t = (f t - H t)/ω(t)²` (defined off the nodes, measurable) lies
+between `inf` and `sup` of `f^{(2n)}/(2n)!` on `[a, b]`, so `∫ g ω² ∂μ = c ∫ ω² ∂μ` with `c` in
+that range, and the intermediate value theorem on `[a, b]` (compact, connected, `f^{(2n)}`
+continuous) produces `ξ`. ★★★'''
+deps = ["Quadrature.exists_gauss", "Hermite.exists_sub_interpolate_eq", "OrthogonalPolynomial.normSq", "OrthogonalPolynomial.exists_injective_family_eq_prod"]
+
+[[node]]
+id = "IsExactOn"

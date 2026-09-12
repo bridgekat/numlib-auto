@@ -1,0 +1,37 @@
+desc = '''
+The conditioning layer: the abstract vocabulary in which every numerical method of the corpus is
+judged, after Quarteroni–Sacco–Saleri, *Numerical Mathematics*, Chapter 2, "Principles of
+Numerical Mathematics".
+
+A *problem* is `F x d = 0` with datum `d : D` and unknown `x : X`, both in normed groups, and the
+residual `F x d` in a third; its *resolvent* is the map `G : D → X` from admissible data to
+solutions (`Conditioning.IsResolvent`). A *numerical method* is a family `Fn n x d` of approximate
+problems with resolvents `Gn n`. Everything is `Prop`-valued predicates and `ℝ≥0∞`-valued
+quantities on these plain functions, never a bundle of data: a problem *is* well posed, a method
+*is* consistent, stable, convergent; a datum *has* a condition number, possibly `⊤`.
+
+Two modules:
+
+* `Conditioning/Problem` — well-posedness, the absolute and relative condition numbers as suprema
+  of amplification ratios over a set of admissible perturbations, their limit as the perturbation
+  size tends to zero, the first-order formula through the Fréchet derivative, and the two model
+  instances: a linear problem (the condition number `κ` of `Numlib/Analysis/Normed/Ring/CondNumber`)
+  and the root of a function (the local inverse).
+* `Conditioning/Method` — consistency, strong consistency, stability (equicontinuity of the
+  numerical resolvents, with a Lipschitz variant and the asymptotic condition number),
+  convergence, the relations between them ending in the abstract equivalence theorem, and the
+  backward error with "forward error ≤ condition number × backward error".
+
+Design rules: condition numbers take values in `ℝ≥0∞` so that an ill-conditioned datum has
+condition number `⊤` rather than a junk value, and so that no `BddAbove` side condition is ever
+needed; they are indexed by the set of admissible data `S` and, where a size enters, by the radius
+`η` of the perturbations, the limit `η → 0` being an infimum by monotonicity. The
+finite-dimensional evolution-scheme form of the same vocabulary (uniformly bounded powers of a
+scheme, Lax–Richtmyer) is `Numlib/FiniteDifference/LaxEquivalence` and stays there; the two are
+different notions and neither is stated through the other.
+
+Consumers: the book's Chapters 3 (`κ(A)` and the perturbation theory of linear systems), 6
+(conditioning of roots, §6.1), 11 (Liapunov stability as continuous dependence on the initial
+datum) and 13 (the vocabulary of §13.1), and the same vocabulary in Higham Chapter 1 and
+Atkinson–Han §2.4.
+'''

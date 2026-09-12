@@ -40,3 +40,52 @@ source = "Saad, Numerical Methods for Large Eigenvalue Problems, (3.45)"
 [[node]]
 id = "eigenvectorCondNumber_eq_inv_dist_of_isSymmetric"
 source = "Saad, Numerical Methods for Large Eigenvalue Problems, (3.45)"
+
+[[node]]
+id = "spectralProjector_apply_of_finrank_eq_one"
+kind = "theorem"
+desc = '''The spectral projector of a simple eigenvalue in terms of a right and a left eigenvector: for
+`A : Module.End 𝕜 E` on a finite-dimensional inner product space over an algebraically closed
+`𝕜`, `A u = l • u`, `u ≠ 0`, `⟪w, A y⟫ = l ⟪w, y⟫` for all `y`, `w ≠ 0` and `finrank
+(A.maxGenEigenspace l) = 1`: `Krylov.spectralProjector A (· = l) x = (⟪w, x⟫ / ⟪w, u⟫) • u`. Proof:
+both sides are `u`-multiples agreeing on `u` (`Krylov.spectralProjector_apply_of_mem`) and
+vanishing on the complementary invariant subspace `W = ⨆_{μ ≠ l} maxGenEigenspace μ`, on which
+`w` vanishes (a left eigenvector for `l` is orthogonal to the generalized eigenvectors of every
+`μ ≠ l`: test `(A - μ)^N z = 0` against `w`, each application of `A - μ` multiplying `⟪w, ·⟫` by
+`l - μ ≠ 0`). The denominator is nonzero by
+`Module.End.inner_ne_zero_of_finrank_maxGenEigenspace_eq_one`. This identifies the normalization
+`⟪w, v t⟫ = ⟪w, u⟫` of the branch built by `Module.End.hasDerivAt_eigenvalue_perturbation` with
+the projector normalization `P (v t) = u` that the eigenvector derivative below assumes. ★★'''
+deps = ["Krylov.spectralProjector", "Krylov.spectralProjector_apply_of_mem", "Module.End.inner_ne_zero_of_finrank_maxGenEigenspace_eq_one"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 5.4'
+
+[[node]]
+id = "deriv_eigenvector_perturbation"
+kind = "theorem"
+desc = '''**The derivative of an eigenvector** (Saad, *Large Eigenvalue Problems*, (3.43);
+Quarteroni–Sacco–Saleri Property 5.5's first-order term): for `A B : E →ₗ[𝕜] E` (`𝕜`
+algebraically closed, `E` finite-dimensional normed) and a branch `t ↦ (mu t, u t)` with
+`HasDerivAt u u' 0`, `HasDerivAt mu mu' 0`, `A (u t) + t • B (u t) = mu t • u t` for all `t`, `mu
+0 = l`, normalized by `Krylov.spectralProjector A (· = l) (u t) = u 0` for all `t`: `u' = -
+reducedResolvent A l (B (u 0))`. Proof: differentiate the eigen-equation, `(A - l) u' = mu' • u 0
+- B (u 0)`; differentiate the normalization, `P u' = 0`; apply `reducedResolvent_apply_sub_smul`
+(`S(l)(1 - P)(A - l) x = x - P x`) to `x = u'`, and `S(l)(1 - P) (u 0) = 0` since `u 0 = P (u 0)`
+lies in the generalized eigenspace (`reducedResolvent_apply_of_mem_maxGenEigenspace`… the
+statement there is for the restricted action; here the kernel of `reducedResolvent` contains
+`maxGenEigenspace l`). The branch exists by `Module.End.hasDerivAt_eigenvalue_perturbation` and
+`spectralProjector_apply_of_finrank_eq_one`. ★★'''
+deps = ["Module.End.reducedResolvent", "Module.End.reducedResolvent_apply_sub_smul", "Module.End.spectralProjector_apply_of_finrank_eq_one"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.5'
+
+[[node]]
+id = "norm_deriv_eigenvector_perturbation_le"
+kind = "theorem"
+desc = '''The norm form, for `A B : E →L[𝕜] E`: under the hypotheses of `deriv_eigenvector_perturbation`,
+`‖u'‖ ≤ eigenvectorCondNumber A l * ‖B‖ * ‖u 0‖`; from `norm_reducedResolvent_apply_le` and
+`ContinuousLinearMap.le_opNorm`. With `eigenvectorCondNumber_eq_inv_dist_of_isSymmetric` this is
+Quarteroni–Sacco–Saleri's `‖x_k(ε) - x_k‖ ≤ ε ‖E‖ / min_{j ≠ k} |λ_k - λ_j| + o(ε)` for a
+Hermitian `A`; for a non-normal `A` the correct constant is the condition number of the
+eigenvector, not the reciprocal gap (the book's Property 5.5 states the gap for every
+diagonalizable `A`, which is false — see `notes/book-errata.md`). ★'''
+deps = ["Module.End.deriv_eigenvector_perturbation", "Module.End.norm_reducedResolvent_apply_le", "Module.End.eigenvectorCondNumber"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.5'

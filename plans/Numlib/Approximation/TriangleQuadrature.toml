@@ -1,0 +1,101 @@
+namespace = "Quadrature"
+desc = '''
+Quadrature on the reference triangle `T̂ = {(x, y) : x, y ≥ 0, x + y ≤ 1}` and, by the affine map
+onto a triangle `T`, on `T` ([quarteroni2000numerical] §9.9.2). The vocabulary is
+`Approximation.IsExactOn μ w x m` of `Numlib/Approximation/Hyperinterpolation` — exactness on
+the multivariate polynomials of total degree at most `m` against a measure — with
+`μ = volume.restrict refTriangle` on `Fin 2 → ℝ`, which is the book's Definition 9.1 verbatim.
+The module has the monomial integrals `∫_{T̂} x^a y^b = a! b!/(a + b + 2)!`, the reduction of
+exactness to monomials, the four rules the book displays — the centroid rule (9.58) and the vertex
+rule (9.59), both exact to degree `1`; the edge-midpoint rule and the seven-point rule, exact to
+degrees `2` and `3` — and the transport of a rule from `T̂` to `T` by the affine map, with the
+weights scaled by `2 |T|`.
+
+Property 9.4 (the `O(h^{n+1})` error of a composite rule of degree `n` on a triangulation) is
+**not** here: it is a Bramble–Hilbert estimate in two dimensions, out of reach
+(`notes/frontier.md`), and stays a "not formalized" node of the surface.
+
+The composite rule (9.57) over a triangulation is a finite sum of transported rules; without a
+triangulation structure in the backbone (none exists; `Numlib/Geometry/Euclidean/TriangleShape`
+has the shape regularity of a single triangle) it is stated for an arbitrary finite family of
+triangles, `∑ T, ∑ j, α_j^T f(z_j^T)`, and the surface defines (9.58)–(9.59) that way.
+'''
+
+[[node]]
+id = "refTriangle"
+kind = "definition"
+desc = '''`refTriangle : Set (Fin 2 → ℝ) := {x | 0 ≤ x 0 ∧ 0 ≤ x 1 ∧ x 0 + x 1 ≤ 1}`, the reference
+triangle with vertices `(0, 0)`, `(1, 0)`, `(0, 1)`; `measurableSet_refTriangle`, and
+`volume_refTriangle : volume refTriangle = ENNReal.ofReal (1 / 2)` (it is `regionBetween 0 (1 - ·)
+(Icc 0 1)` up to the coordinate identification `Fin 2 → ℝ ≃ ℝ × ℝ`; `volume_regionBetween_eq_integral`).
+★★'''
+deps = []
+
+[[node]]
+id = "integral_refTriangle_pow_mul_pow"
+kind = "theorem"
+desc = '''`∫ x in refTriangle, x 0 ^ a * x 1 ^ b = a! * b! / (a + b + 2)!` (Dirichlet's integral on the
+simplex). Fubini (`MeasureTheory.integral_prod` through `MeasurableEquiv.piFinTwo`) reduces it to
+`∫_0^1 x^a (1 - x)^{b+1}/(b + 1) dx`, a Beta integral: `Complex.betaIntegral` and
+`Complex.Gamma_mul_Gamma_eq_betaIntegral` in Mathlib, or induction on `b` by parts. ★★'''
+deps = ["Quadrature.refTriangle"]
+
+[[node]]
+id = "isExactOn_iff_forall_monomial"
+kind = "theorem"
+desc = '''Exactness on the polynomials of total degree `≤ m` is exactness on the monomials:
+`Approximation.IsExactOn μ w x m ↔ ∀ d : Fin 2 →₀ ℕ, d.degree ≤ m → ∑ k, w k * ∏ i, x k i ^ d i = ∫ y, ∏ i, y i ^ d i ∂μ`
+(for `μ` finite on the support of the polynomials, so that the integrals exist). Linearity of both
+sides and `MvPolynomial.induction_on`/`MvPolynomial.sum_monomial_eq`. Stated for a general
+`Fintype ι`, it belongs in `Hyperinterpolation` as an API lemma; placed here because this module is
+its first consumer. ★★'''
+deps = ["Approximation.IsExactOn"]
+
+[[node]]
+id = "isExactOn_centroid"
+kind = "theorem"
+desc = '''The centroid rule `|T̂| f(1/3, 1/3)` is exact to degree `1` on `T̂`:
+`Approximation.IsExactOn (volume.restrict refTriangle) (fun _ : Fin 1 => 1/2) (fun _ => ![1/3, 1/3]) 1`,
+and not to degree `2` (`not_isExactOn_centroid_two`: on `x²`, `1/18 ≠ 1/12`). Monomials `1, x, y`
+by `integral_refTriangle_pow_mul_pow` and `isExactOn_iff_forall_monomial`. The book's (9.58) on
+`T̂`. ★'''
+deps = ["Quadrature.isExactOn_iff_forall_monomial", "Quadrature.integral_refTriangle_pow_mul_pow"]
+
+[[node]]
+id = "isExactOn_vertex"
+kind = "theorem"
+desc = '''The vertex ("trapezoidal") rule `(|T̂|/3) ∑_j f(a_j)` is exact to degree `1` on `T̂`:
+`Approximation.IsExactOn (volume.restrict refTriangle) (fun _ : Fin 3 => 1/6) ![![0, 0], ![1, 0], ![0, 1]] 1`,
+and not to degree `2` (on `x²`: `1/6 ≠ 1/12`). The book's (9.59) on `T̂`. ★'''
+deps = ["Quadrature.isExactOn_iff_forall_monomial", "Quadrature.integral_refTriangle_pow_mul_pow"]
+
+[[node]]
+id = "isExactOn_edgeMidpoint"
+kind = "theorem"
+desc = '''The three-point edge-midpoint rule `(|T̂|/3) ∑_j f(m_j)` is exact to degree `2`:
+`Approximation.IsExactOn (volume.restrict refTriangle) (fun _ : Fin 3 => 1/6) ![![1/2, 0], ![0, 1/2], ![1/2, 1/2]] 2`
+— the book's first symmetric formula (`I_3`). Six monomials. ★'''
+deps = ["Quadrature.isExactOn_iff_forall_monomial", "Quadrature.integral_refTriangle_pow_mul_pow"]
+
+[[node]]
+id = "isExactOn_sevenPoint"
+kind = "theorem"
+desc = '''The seven-point rule `(|T̂|/60)(3 ∑ f(a_j) + 8 ∑ f(m_j) + 27 f(centroid))` is exact to
+degree `3`: weights `![1/40, 1/40, 1/40, 1/15, 1/15, 1/15, 9/40]` at the three vertices, three edge
+midpoints and the centroid — the book's second symmetric formula (`I_7`). Ten monomials. ★'''
+deps = ["Quadrature.isExactOn_iff_forall_monomial", "Quadrature.integral_refTriangle_pow_mul_pow"]
+
+[[node]]
+id = "isExactOn_affineImage"
+kind = "theorem"
+desc = '''**Transport of a rule by an affine map.** For an invertible affine map `F x = A x + c` of
+`Fin 2 → ℝ`, a rule exact to degree `m` on `T̂` transports to a rule exact to degree `m` on
+`F '' T̂`: `Approximation.IsExactOn (volume.restrict (F '' refTriangle)) (fun k => |det A| * w k) (fun k => F (x k)) m`.
+A polynomial of total degree `≤ m` composed with `F` has total degree `≤ m`
+(`MvPolynomial.totalDegree_aeval_le` or `Approximation.MvPolynomial` API), and
+`MeasureTheory.integral_image_eq_integral_abs_det_fderiv_smul` (or `Measure.addHaar_image_linearMap`)
+gives the Jacobian. For a triangle `T` with vertices `a₁, a₂, a₃`, `|det A| = 2 |T|`, which is the
+book's `α_T^{(j)} = 2|T| ∫_{T̂} l̂_j`; the specializations `k = 0`: weight `|T|` at the centroid,
+`k = 1`: weights `|T|/3` at the vertices, are `isExactOn_centroid`/`isExactOn_vertex` transported.
+★★'''
+deps = ["Approximation.IsExactOn", "Quadrature.refTriangle"]

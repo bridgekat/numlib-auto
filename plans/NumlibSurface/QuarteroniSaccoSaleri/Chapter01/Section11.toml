@@ -1,0 +1,191 @@
+namespace = "QuarteroniSaccoSaleri.Chapter01"
+desc = '''
+Quarteroni–Sacco–Saleri §1.11, matrix norms: Definitions 1.19–1.21 (matrix norm = definite
+`Seminorm ℝ (Matrix m n ℝ)`, consistency = `Matrix.IsConsistent`, submultiplicativity), Example 1.7
+(Frobenius), Theorem 1.1 (the induced norm `Matrix.inducedNorm`), the `1`- and `∞`-norm formulas,
+Theorem 1.2 (the spectral norm) with the unnumbered estimates that follow it, Theorem 1.3
+(consistency, `‖I‖ = 1`, submultiplicativity), §1.11.1 (Theorem 1.4, Property 1.13, (1.23),
+Property 1.14) and §1.11.2 (convergent matrices, Theorem 1.5, (1.24)–(1.26)); everything from
+`Numlib/Analysis/Matrix/OperatorNorm`, `Numlib/Analysis/Normed/Algebra/SpectralRadius`,
+`Numlib/LinearAlgebra/Matrix/{Complexify, EpsilonNorm}` and `Numlib/Analysis/Normed/Module/NormEquivalence`.
+The book works in `ℝ^{m×n}` for the definitions and in `ℂ^{n×n}` for the spectral statements; the
+nodes follow, with real matrices carrying `Matrix.complexSpectralRadius`. Remark 1.1 is prose
+(it points to Property 1.13) and has no node. Book erratum: after Property 1.13 the text calls
+`ρ` "a sub-multiplicative seminorm"; it is neither subadditive nor submultiplicative
+(`spectralRadius_not_subadditive`).
+'''
+
+[[node]]
+id = "definition_1_20"
+kind = "theorem"
+desc = '''A matrix norm `N : Matrix (Fin m) (Fin n) ℝ → ℝ` is compatible (consistent) with vector norms `q` on `ℝᵐ` and `p` on `ℝⁿ` iff `∀ A x, q (A *ᵥ x) ≤ N A * p x`: `Matrix.IsConsistent N q p` by `Iff.rfl`; the square case takes `q = p`. ★'''
+deps = ["Matrix.IsConsistent"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 1.20'
+
+[[node]]
+id = "definition_1_21"
+kind = "theorem"
+desc = '''Submultiplicativity `‖A B‖ ≤ ‖A‖ ‖B‖` for the family of induced `p`-norms on all sizes: `Matrix.lpOpNorm r (A * B) ≤ Matrix.lpOpNorm r A * Matrix.lpOpNorm r B` for `A : Matrix (Fin n) (Fin m) ℝ`, `B : Matrix (Fin m) (Fin q) ℝ` (backbone `Matrix.lpOpNorm_mul_le`); for a single square size it is the `mul_le'` field of a `RingSeminorm`/`AlgebraNorm`. ★'''
+deps = ["Matrix.lpOpNorm_mul_le"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 1.21'
+
+[[node]]
+id = "maxEntryNorm_not_submultiplicative"
+kind = "theorem"
+desc = '''The book's counterexample: the entrywise maximum norm `‖A‖_Δ = max |a_ij|` (Mathlib's default `‖·‖` on `Matrix`, `Matrix.norm_def`) is a matrix norm but not submultiplicative: for `A = B = !![1, 1; 1, 1]`, `‖A * B‖ = 2 > 1 = ‖A‖ * ‖B‖`. ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.11'
+
+[[node]]
+id = "exists_consistent_vectorNorm"
+kind = "theorem"
+desc = '''Every submultiplicative matrix norm has a consistent vector norm: for a definite `N : Seminorm ℂ (Matrix (Fin n) (Fin n) ℂ)` with `N (A * B) ≤ N A * N B` and any `y ≠ 0`, `p x := N (vecMulVec x (star y))` is a definite seminorm with `Matrix.IsConsistent N p p`. Backbone `Matrix.exists_isConsistent_of_mul_le`. ★'''
+deps = ["Matrix.exists_isConsistent_of_mul_le"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.11'
+
+[[node]]
+id = "example_1_7"
+kind = "theorem"
+desc = '''The Frobenius norm (scoped `Matrix.Norms.Frobenius`): `‖A‖ ^ 2 = ∑ i j, ‖A i j‖ ^ 2 = re (trace (A * Aᴴ))` (book erratum: (1.18) prints `‖A‖_F = tr(A Aᴴ)` without the square root), it is consistent with the Euclidean norm, `‖toLp 2 (A *ᵥ x)‖ ≤ ‖A‖ * ‖toLp 2 x‖` (backbone `Matrix.frobenius_norm_mulVec_le`), and `‖(1 : Matrix (Fin n) (Fin n) ℂ)‖ = √n` (`Matrix.frobenius_nnnorm_one`). ★'''
+deps = ["Matrix.frobenius_norm_mulVec_le"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 1.7, equation (1.18)'
+
+[[node]]
+id = "theorem_1_1"
+kind = "theorem"
+desc = '''For a vector norm (definite seminorm) `p` on `ℝⁿ`, the function `‖A‖ := sup_{x ≠ 0} p (A x) / p x = sup_{p x = 1} p (A x)` (`Matrix.inducedNorm p p`, with `Matrix.inducedNorm_eq_iSup_div` for the equality of (1.19) and (1.20)) is a matrix norm: `Matrix.inducedSeminorm p p hp` gives nonnegativity, homogeneity and the triangle inequality, and `Matrix.inducedNorm_eq_zero_iff` gives `‖A‖ = 0 ↔ A = 0`. Rectangular version with `q` on `ℝᵐ` stated too. ★'''
+deps = ["Matrix.inducedNorm", "Matrix.inducedSeminorm", "Matrix.inducedNorm_eq_zero_iff", "Matrix.inducedNorm_eq_iSup_div"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 1.1'
+
+[[node]]
+id = "lpOpNorm_one_and_top"
+kind = "theorem"
+desc = '''The column sum norm and the row sum norm: `Matrix.lpOpNorm 1 A = ↑(univ.sup fun j => ∑ i, ‖A i j‖₊)` and `Matrix.lpOpNorm ⊤ A = ↑(univ.sup fun i => ∑ j, ‖A i j‖₊)` for `A : Matrix (Fin m) (Fin n) ℝ`; the `p`-norm `‖A‖_p = sup ‖A x‖_p / ‖x‖_p` is `Matrix.lpOpNorm p A = Matrix.inducedNorm (lpSeminorm p) (lpSeminorm p) A`. Backbone `Matrix.lpOpNorm_one_eq_sup_sum_norm`, `Matrix.lpOpNorm_top` with `Matrix.linfty_opNorm_def`, `Matrix.lpOpNorm_eq_inducedNorm`. ★'''
+deps = ["Matrix.lpOpNorm", "Matrix.lpOpNorm_one_eq_sup_sum_norm", "Matrix.lpOpNorm_top", "Matrix.lpOpNorm_eq_inducedNorm"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.11'
+
+[[node]]
+id = "lpOpNorm_one_eq_linfty_opNorm_transpose"
+kind = "theorem"
+desc = '''`‖A‖₁ = ‖Aᵀ‖_∞`, and `‖A‖₁ = ‖A‖_∞` for self-adjoint or real symmetric `A`: `Matrix.lpOpNorm 1 A = Matrix.lpOpNorm ⊤ Aᵀ`, and `A.IsHermitian → Matrix.lpOpNorm 1 A = Matrix.lpOpNorm ⊤ A`. Backbone `Matrix.lpOpNorm_one_eq_linfty_opNorm_transpose`. ★'''
+deps = ["Matrix.lpOpNorm_one_eq_linfty_opNorm_transpose"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.11'
+
+[[node]]
+id = "theorem_1_2"
+kind = "theorem"
+desc = '''(1.21): for `A : Matrix (Fin m) (Fin n) ℂ` with the scoped `L2Operator` norm, `‖A‖ = √(ρ(Aᴴ A)) = √(ρ(A Aᴴ)) = σ₁(A)`, stated as `(‖A‖₊ : ℝ≥0∞) ^ 2 = spectralRadius ℂ (Aᴴ * A) ∧ (‖A‖₊ : ℝ≥0∞) ^ 2 = spectralRadius ℂ (A * Aᴴ)` (backbone `Matrix.l2_opNorm_sq_eq_spectralRadius_conjTranspose_mul_self`) and `‖A‖ = ⨆ i, A.singularValues i = (toEuclideanLin A).singularValues 0` (`Matrix.l2_opNorm_eq_iSup_singularValues`, `Matrix.exists_svd`); for real `A` the same with `complexSpectralRadius`. ★'''
+deps = ["Matrix.l2_opNorm_sq_eq_spectralRadius_conjTranspose_mul_self", "Matrix.l2_opNorm_eq_iSup_singularValues"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 1.2, equation (1.21)'
+
+[[node]]
+id = "theorem_1_2_hermitian"
+kind = "theorem"
+desc = '''(1.22): for Hermitian `A : Matrix (Fin n) (Fin n) ℂ`, `(‖A‖₊ : ℝ≥0∞) = spectralRadius ℂ A`, and for real symmetric `A`, `(‖A‖₊ : ℝ≥0∞) = A.complexSpectralRadius` (scoped `L2Operator`). Backbone `Matrix.IsHermitian.l2_opNorm_eq_spectralRadius`. ★'''
+deps = ["Matrix.IsHermitian.l2_opNorm_eq_spectralRadius"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 1.2, equation (1.22)'
+
+[[node]]
+id = "theorem_1_2_unitary"
+kind = "theorem"
+desc = '''`‖A‖₂ = 1` for `A ∈ unitaryGroup (Fin n) ℂ`, `n ≠ 0` (scoped `L2Operator`). Backbone `Matrix.l2_opNorm_of_mem_unitaryGroup`. ★'''
+deps = ["Matrix.l2_opNorm_of_mem_unitaryGroup"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 1.2'
+
+[[node]]
+id = "l2_opNorm_bounds"
+kind = "theorem"
+desc = '''The four unnumbered estimates after Theorem 1.2, for square `A : Matrix (Fin n) (Fin n) ℂ` with `‖·‖₂ = Matrix.lpOpNorm 2`: `max_{i,j} |a_ij| ≤ ‖A‖₂ ≤ n max_{i,j} |a_ij|`; `n^{-1/2} ‖A‖_∞ ≤ ‖A‖₂ ≤ n^{1/2} ‖A‖_∞`; `n^{-1/2} ‖A‖₁ ≤ ‖A‖₂ ≤ n^{1/2} ‖A‖₁`; `‖A‖₂ ≤ √(‖A‖₁ ‖A‖_∞)`. Backbone `Matrix.norm_entry_le_l2_opNorm`, `Matrix.l2_opNorm_le_sqrt_card_mul_linfty_opNorm`, `Matrix.l2_opNorm_sq_le_lpOpNorm_one_mul_linfty_opNorm`. ★'''
+deps = ["Matrix.norm_entry_le_l2_opNorm", "Matrix.l2_opNorm_le_sqrt_card_mul_linfty_opNorm", "Matrix.l2_opNorm_sq_le_lpOpNorm_one_mul_linfty_opNorm"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.11'
+
+[[node]]
+id = "l2_opNorm_le_lpOpNorm_of_isStarNormal"
+kind = "theorem"
+desc = '''For normal `A : Matrix (Fin n) (Fin n) ℂ` and every `p` with `1 ≤ p` (the book says `p ≥ 2`; the restriction is unnecessary), `Matrix.lpOpNorm 2 A ≤ Matrix.lpOpNorm p A`. Backbone `Matrix.l2_opNorm_le_lpOpNorm_of_isStarNormal`. ★'''
+deps = ["Matrix.l2_opNorm_le_lpOpNorm_of_isStarNormal"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.11'
+
+[[node]]
+id = "exercise_1_16"
+kind = "theorem"
+desc = '''Cited by §1.11 (Exercise 17's table needs it): `‖A‖_F ^ 2 = ∑ i, A.singularValues i ^ 2` for `A : Matrix (Fin m) (Fin n) ℝ` (scoped `Frobenius`), hence `‖A‖₂ ≤ ‖A‖_F ≤ √(rank A) ‖A‖₂`. Backbone `Matrix.frobenius_norm_sq_eq_sum_sq_singularValues`, `Matrix.l2_opNorm_le_frobenius_norm`. ★'''
+deps = ["Matrix.frobenius_norm_sq_eq_sum_sq_singularValues", "Matrix.l2_opNorm_le_frobenius_norm"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 1.16'
+
+[[node]]
+id = "theorem_1_3"
+kind = "theorem"
+desc = '''For the norm `‖|·|‖ = Matrix.inducedNorm p p` induced by a vector norm `p` on `ℝⁿ`: (1) `p (A *ᵥ x) ≤ inducedNorm p p A * p x` (consistency, `Matrix.isConsistent_inducedNorm`); (2) `inducedNorm p p 1 = 1` (`Matrix.inducedNorm_one`); (3) `inducedNorm p p (A * B) ≤ inducedNorm p p A * inducedNorm p p B` (`Matrix.inducedNorm_mul_le`). Corollary: the `p`-norms are submultiplicative (`definition_1_21`), and submultiplicativity alone gives only `1 ≤ ‖I‖`. ★'''
+deps = ["Matrix.isConsistent_inducedNorm", "Matrix.inducedNorm_one", "Matrix.inducedNorm_mul_le"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 1.3'
+
+[[node]]
+id = "theorem_1_4"
+kind = "theorem"
+desc = '''`ρ(A) ≤ ‖A‖` for every consistent matrix norm, `A : Matrix (Fin n) (Fin n) ℂ`: `Matrix.IsConsistent N p p → spectralRadius ℂ A ≤ ENNReal.ofReal (N A)` (backbone `Matrix.spectralRadius_le_of_isConsistent`, the book's eigenvector argument). ★'''
+deps = ["Matrix.spectralRadius_le_of_isConsistent"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 1.4'
+
+[[node]]
+id = "theorem_1_4_real"
+kind = "theorem"
+desc = '''Theorem 1.4 for a real matrix and a real consistent pair `(N, p)`: `A.complexSpectralRadius ≤ ENNReal.ofReal (N A)`; in particular `A.complexSpectralRadius ≤ ENNReal.ofReal (Matrix.lpOpNorm r A)` for every `r`. Backbone `Matrix.complexSpectralRadius_le_of_isConsistent`, `Matrix.complexSpectralRadius_le_inducedNorm` (the eigenvector may be complex, so the proof differs from the book's). ★'''
+deps = ["Matrix.complexSpectralRadius_le_of_isConsistent", "Matrix.complexSpectralRadius_le_inducedNorm"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 1.4'
+
+[[node]]
+id = "property_1_13"
+kind = "theorem"
+desc = '''For `A : Matrix (Fin n) (Fin n) ℂ` and `ε > 0` there is a vector norm `p` on `ℂⁿ` whose induced (hence consistent) matrix norm satisfies `Matrix.inducedNorm p p A ≤ (spectralRadius ℂ A).toReal + ε`; for real `A`, the same with a real `p` and `complexSpectralRadius`. Backbone `Matrix.exists_inducedNorm_le_spectralRadius_add`, `Matrix.exists_inducedNorm_le_complexSpectralRadius_add` (the ε-norm of `Numlib/LinearAlgebra/Matrix/EpsilonNorm`). ★'''
+deps = ["Matrix.exists_inducedNorm_le_spectralRadius_add", "Matrix.exists_inducedNorm_le_complexSpectralRadius_add"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 1.13'
+
+[[node]]
+id = "equation_1_23"
+kind = "theorem"
+desc = '''`ρ(A) = inf ‖A‖`, the infimum over the induced (consistent) norms: `(A.complexSpectralRadius).toReal = ⨅ p : {p : Seminorm ℝ (Fin n → ℝ) // definite}, Matrix.inducedNorm p p A` for real `A`. Backbone `Matrix.complexSpectralRadius_eq_iInf_inducedNorm`. The book's infimum over all consistent norms has the same value (each is `≥ ρ(A)` by Theorem 1.4). ★'''
+deps = ["Matrix.complexSpectralRadius_eq_iInf_inducedNorm"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (1.23)'
+
+[[node]]
+id = "spectralRadius_not_subadditive"
+kind = "theorem"
+desc = '''What is true and what is false in the sentence "the spectral radius is a sub-multiplicative seminorm": true, `ρ` vanishes on nonzero matrices — every triangular matrix with zero diagonal, e.g. `N := !![0, 1; 0, 0]`, has `spectralRadius ℂ N = 0` (nilpotent, `spectrum` ⊆ `{0}`); false, `ρ` is not subadditive, `spectralRadius ℂ (N + Nᵀ) = 1 > 0 = spectralRadius ℂ N + spectralRadius ℂ Nᵀ`, and not submultiplicative, `spectralRadius ℂ (N * Nᵀ) = 1 > 0`. (Homogeneity, `spectralRadius_smul`, does hold.) Book erratum. ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.11.1'
+
+[[node]]
+id = "property_1_14"
+kind = "theorem"
+desc = '''Gelfand's formula for an arbitrary matrix norm: for a definite `N : Seminorm ℝ (Matrix (Fin n) (Fin n) ℝ)` and real `A`, `Tendsto (fun m : ℕ => N (A ^ m) ^ (1 / m : ℝ)) atTop (𝓝 (A.complexSpectralRadius).toReal)`; for complex `A` and the scoped `L2Operator` norm, `Tendsto (fun m => ‖A ^ m‖₊ ^ (1 / m : ℝ)) atTop (𝓝 (spectralRadius ℂ A))` (Mathlib `spectrum.pow_nnnorm_pow_one_div_tendsto_nhds_spectralRadius`). Consistency is not needed. Backbone `Matrix.tendsto_pow_rpow_complexSpectralRadius` and `Seminorm.tendsto_rpow_one_div`. ★'''
+deps = ["Matrix.tendsto_pow_rpow_complexSpectralRadius", "Seminorm.tendsto_rpow_one_div"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 1.14'
+
+[[node]]
+id = "tendsto_iff_tendsto_seminorm"
+kind = "theorem"
+desc = '''§1.11.2, convergence of a sequence of matrices does not depend on the norm: for definite `N : Seminorm ℝ (Matrix (Fin n) (Fin n) ℝ)` and `M : ℕ → Matrix (Fin n) (Fin n) ℝ`, `Tendsto M atTop (𝓝 B) ↔ Tendsto (fun k => N (M k - B)) atTop (𝓝 0)`; a matrix is *convergent* when `A ^ k → 0`. From `Seminorm.exists_bounds` on the finite-dimensional space of matrices. ★'''
+deps = ["Seminorm.exists_bounds"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.11.2'
+
+[[node]]
+id = "theorem_1_5"
+kind = "theorem"
+desc = '''(1.24): `Tendsto (fun k => A ^ k) atTop (𝓝 0) ↔ A.complexSpectralRadius < 1` for real `A` (backbone `Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one`) and `↔ spectralRadius ℂ A < 1` for complex `A` (`spectralRadius_lt_one_iff_tendsto_pow` on the Banach algebra `Matrix (Fin n) (Fin n) ℂ`). ★'''
+deps = ["Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one", "spectralRadius_lt_one_iff_tendsto_pow"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 1.5, equation (1.24)'
+
+[[node]]
+id = "theorem_1_5_series"
+kind = "theorem"
+desc = '''(1.25): the geometric series `∑ A^k` converges iff `ρ(A) < 1` (`Summable (fun k => A ^ k) ↔ spectralRadius ℂ A < 1`, backbone `summable_pow_iff_spectralRadius_lt_one`; real form `Matrix.summable_pow_iff_complexSpectralRadius_lt_one`), and then `1 - A` is a unit with `HasSum (fun k => A ^ k) (1 - A)⁻¹` (`Matrix.hasSum_pow_inv_one_sub_of_complexSpectralRadius_lt_one`, `hasSum_pow_inverse_one_sub_of_spectralRadius_lt_one`). ★'''
+deps = ["summable_pow_iff_spectralRadius_lt_one", "Matrix.hasSum_pow_inv_one_sub_of_complexSpectralRadius_lt_one", "hasSum_pow_inverse_one_sub_of_spectralRadius_lt_one"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 1.5, equation (1.25)'
+
+[[node]]
+id = "equation_1_26"
+kind = "theorem"
+desc = '''For an induced norm `‖·‖ = Matrix.inducedNorm p p` with `‖A‖ < 1` (real `A`): `1 / (1 + ‖A‖) ≤ ‖(1 - A)⁻¹‖ ≤ 1 / (1 - ‖A‖)`. Backbone `Matrix.inducedNorm_inv_one_sub_le`. Remark 1.1 (that such a norm exists whenever `A` is convergent) is `property_1_13` and has no separate node. ★'''
+deps = ["Matrix.inducedNorm_inv_one_sub_le", "QuarteroniSaccoSaleri.Chapter01.property_1_13"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (1.26)'

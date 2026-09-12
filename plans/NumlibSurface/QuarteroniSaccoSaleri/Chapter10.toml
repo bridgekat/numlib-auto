@@ -1,0 +1,20 @@
+desc = '''
+Quarteroni–Sacco–Saleri, Chapter 10: orthogonal polynomials in approximation theory (§10.1–10.12).
+
+Generalized Fourier series and the best `L²_w` approximation (§10.1), Jacobi's characterization of
+the degree of exactness, Gauss and Gauss–Lobatto quadrature (§10.2), the Chebyshev and Legendre
+instances with their discrete transforms (§10.3–10.4), Gauss–Laguerre and Gauss–Hermite rules
+(§10.5), continuous and discrete least squares (§10.7), the polynomial of best uniform approximation
+(§10.8), the discrete Fourier transform and the FFT (§10.9), finite-difference and pseudo-spectral
+differentiation (§10.10), the Fourier, Laplace and Z transforms (§10.11) and wavelets (§10.12).
+§10.6 (MATLAB programs) and §10.13 (applications) contribute no nodes.
+
+The chapter's weighted-Sobolev spectral estimates ((10.22), (10.24), (10.26)–(10.27), (10.36)–
+(10.37), the four estimates of §10.9 and (10.71)) are quoted from Canuto–Hussaini–Quarteroni–Zang
+without proof; they are stated here as "not formalized" nodes against the norm `equation_10_23`.
+Everything else is a specialization of `Numlib/Approximation/{OrthogonalPolynomial, Quadrature,
+GaussLobatto, Chebyshev, Interpolation}`, `Numlib/Analysis/Fourier/DFT`,
+`Numlib/FiniteDifference/Derivative`, `Numlib/Analysis/SpecialFunctions/LaplaceTransform`,
+`Numlib/Analysis/Wavelet/{ContinuousTransform, Multiresolution, Haar}`, or of Mathlib's Fourier
+transform and Chebyshev polynomials.
+'''

@@ -1,0 +1,37 @@
+desc = '''
+Quarteroni–Sacco–Saleri, *Numerical Mathematics*, Chapter 1, "Foundations of Matrix Analysis": the
+linear-algebra background the rest of the book cites — vector spaces and matrices (§1.1–1.3), trace
+and determinant (§1.4), rank and kernel (§1.5), the special shapes (§1.6), eigenvalues (§1.7),
+similarity and the canonical forms (§1.8), the SVD (§1.9), inner products and vector norms (§1.10),
+matrix norms and the spectral radius (§1.11), positive definite, diagonally dominant and M-matrices
+(§1.12). Almost everything is Mathlib or existing backbone, restated in the book's notation.
+
+Layout, following `NumlibSurface/SaadSparse/Chapter01`: one module `Basics` for the definition-only
+sections §1.1–1.6 (whose numbered items are Mathlib's structures, listed in its module doc, plus
+the handful of statements — Properties 1.1–1.4, the Laplace rule, Definition 1.12's minor
+characterization of the rank, the nonsingularity list, the triangular and banded vocabulary — that
+carry a declaration), and one module `SectionNN` for each of §1.7–1.12, which are where the
+chapter's theorems are. §1.13 (exercises) contributes `exercise_1_12` (cited by §1.9) and
+`exercise_1_16` (cited by §1.11 and proved in the backbone on the way to the Frobenius–spectral
+inequalities); the other exercises are not used by the main text and are not nodes.
+
+Conventions. The book's scalar product `(x, y)` is linear in its *first* argument, so it is
+Mathlib's `inner 𝕜 y x`; the book's `A x` for `A : Matrix (Fin n) (Fin n) 𝕜` and `x` a Euclidean
+vector is `Matrix.toEuclideanLin A x`, or `A *ᵥ x` on plain functions. A "vector norm" of
+Definition 1.17 is a definite `Seminorm 𝕜 V` and a "matrix norm" of Definition 1.19 a definite
+`Seminorm 𝕜 (Matrix m n 𝕜)`; the induced norms of §1.11 are `Matrix.inducedNorm` and the
+`p`-norms `Matrix.lpOpNorm p` of `Numlib/Analysis/Matrix/OperatorNorm`, and the three scoped
+Mathlib instances `Matrix.Norms.Operator` (`‖·‖_∞`), `Matrix.Norms.L2Operator` (`‖·‖₂`) and
+`Matrix.Norms.Frobenius` are opened declaration by declaration. The spectral radius of a complex
+matrix is `spectralRadius ℂ A`, that of a real one `Matrix.complexSpectralRadius A`. Similarity is
+the backbone's `Matrix.IsSimilar` (`Numlib/LinearAlgebra/Matrix/Similar`). Indices are `0`-based.
+
+Book errata and readings recorded in the section groups: Example 1.4's matrix is the rotation by
+`-θ`, not by `θ`; Property 1.9's equality case needs "linearly dependent", not "`y = α x`";
+Property 1.10 as printed is the reverse triangle inequality with `C = 1`, the intended statement is
+Lipschitz continuity with respect to the component norm; (1.18) omits a square root; §1.11 calls the
+spectral radius a "sub-multiplicative seminorm", which it is not (neither subadditive nor
+submultiplicative); the remark "`‖A‖₂ ≤ ‖A‖_p` for normal `A` and `p ≥ 2`" holds for every `p ≥ 1`;
+Property 1.20 as stated needs no hypothesis beyond the three it lists but is a one-line corollary of
+Property 1.19.
+'''

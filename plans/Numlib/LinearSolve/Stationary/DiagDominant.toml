@@ -80,3 +80,92 @@ id = "IsIrreduciblyDiagDominant.gaussSeidel_spectralRadius_lt_one"
 
 [[node]]
 id = "gaussSeidel_spectralRadius_lt_one_of_col"
+
+[[node]]
+id = "isStrictDiagDominant_iff"
+kind = "theorem"
+desc = '''`A.IsStrictDiagDominant ↔ ∀ i, ∑ j ∈ univ.erase i, ‖A i j‖ < ‖A i i‖` and `A.IsStrictColDiagDominant ↔ ∀ i, ∑ j ∈ univ.erase i, ‖A j i‖ < ‖A i i‖`: the unfolding lemmas, so that a surface can align the book's displays without knowing how the predicates are spelled (`IsStrictColDiagDominant` is defined through the transpose). `Iff.rfl`, or `transpose_apply` plus `Iff.rfl`. ★'''
+deps = ["Matrix.IsStrictDiagDominant", "Matrix.IsStrictColDiagDominant"]
+
+[[node]]
+id = "IsStrictDiagDominant.posDef"
+kind = "theorem"
+desc = '''A Hermitian, strictly row diagonally dominant matrix with positive diagonal is positive definite: `A.IsHermitian → A.IsStrictDiagDominant → (∀ i, 0 < re (A i i)) → A.PosDef` (Quarteroni–Sacco–Saleri §1.12, after Definition 1.24, for real symmetric `A`). Proof: by Gershgorin (`Matrix.eigenvalue_mem_ball`) every eigenvalue lies in a disc centred at `a_ii` of radius `< a_ii`, so has positive real part; the eigenvalues of a Hermitian matrix are real, so all are positive, and `IsHermitian.posDef_iff_eigenvalues_pos` concludes. ★★'''
+deps = ["Matrix.IsStrictDiagDominant"]
+
+[[node]]
+id = "IsDiagDominant"
+kind = "definition"
+desc = '''Weak row diagonal dominance, QSS Definition 1.24: `∀ i, ∑ j ∈ univ.erase i, ‖A i j‖ ≤ ‖A i i‖`. This is
+the `dominant` field of `Matrix.IsIrreduciblyDiagDominant`, factored out; `IsStrictDiagDominant.isDiagDominant`
+and `IsIrreduciblyDiagDominant.isDiagDominant` are the two projections. Over `RCLike 𝕜`, like the
+strict version. ★'''
+deps = ["Matrix.IsStrictDiagDominant"]
+
+[[node]]
+id = "IsColDiagDominant"
+kind = "definition"
+desc = 'Weak column dominance, `Aᵀ.IsDiagDominant`, following `Matrix.IsStrictColDiagDominant`. ★'
+deps = ["Matrix.IsDiagDominant"]
+
+[[node]]
+id = "IsDiagDominant.diag_ne_zero_of_isUnit"
+kind = "theorem"
+desc = '''A nonsingular weakly row-dominant matrix has a nowhere-zero diagonal (a zero diagonal entry forces a
+zero row; Higham's parenthesis in the proof of Theorem 9.9). ★'''
+deps = ["Matrix.IsDiagDominant"]
+
+[[node]]
+id = "IsColDiagDominant.schurComplementSingle"
+kind = "theorem"
+desc = '''One step of Gaussian elimination preserves column dominance (Higham Theorem 13.8 with `1 × 1`
+blocks; Wilkinson): if `A.IsColDiagDominant` and `A p p ≠ 0` then
+`(A.schurComplementSingle p).IsColDiagDominant` (`Matrix.schurComplementSingle` of
+`LinearAlgebra/Matrix/SchurComplement`); and the row version `IsDiagDominant.schurComplementSingle`.
+This is the lemma behind `Matrix.exists_isLU_of_isColDiagDominant` and
+`Matrix.growthFactor_le_two_of_isColDiagDominant`. Column `j ≠ p` of the complement:
+`∑_{i ≠ j,p} |a_ij - a_ip a_pj / a_pp| ≤ ∑_{i ≠ j,p} |a_ij| + |a_pj| ∑_{i ≠ j,p} |a_ip| / |a_pp|
+≤ (|a_jj| - |a_pj|) + |a_pj| (1 - |a_jp| / |a_pp|) ≤ |a_jj - a_jp a_pj / a_pp|`. ★★★'''
+deps = ["Matrix.IsColDiagDominant", "Matrix.schurComplementSingle"]
+
+[[node]]
+id = "isStrictDiagDominant_complexify"
+kind = "theorem"
+desc = '''`A.IsStrictDiagDominant → (complexify A).IsStrictDiagDominant` for a real matrix; entrywise, since
+complexification preserves absolute values. Currently `SaadSparse.Chapter04.isStrictDiagDominant_complexify`;
+both surfaces need it. ★'''
+deps = ["Matrix.IsStrictDiagDominant", "Matrix.complexify"]
+
+[[node]]
+id = "jacobi_complexSpectralRadius_lt_one"
+kind = "theorem"
+desc = '''For a real strictly row diagonally dominant `A`,
+`complexSpectralRadius (jacobiSplitting A h.isUnit_diagPart).iterationOperator < 1`. It is
+`jacobi_spectralRadius_lt_one` for `complexify A` transported through
+`Stationary.Splitting.complexify_iterationOperator` and `Matrix.complexify_diagPart`. Currently
+`SaadSparse.Chapter04.jacobi_complexSpectralRadius_lt_one`. ★'''
+deps = ["Matrix.jacobi_spectralRadius_lt_one", "Matrix.isStrictDiagDominant_complexify", "Stationary.Splitting.complexify_iterationOperator"]
+
+[[node]]
+id = "gaussSeidel_complexSpectralRadius_lt_one"
+kind = "theorem"
+desc = '''For a real strictly row diagonally dominant `A`,
+`complexSpectralRadius (gaussSeidelSplitting A h.isUnit_diagPart).iterationOperator < 1`; the real
+form of `gaussSeidel_spectralRadius_lt_one`. Currently
+`SaadSparse.Chapter04.gaussSeidel_complexSpectralRadius_lt_one`. ★'''
+deps = ["Matrix.gaussSeidel_spectralRadius_lt_one", "Matrix.isStrictDiagDominant_complexify", "Stationary.Splitting.complexify_iterationOperator"]
+
+[[node]]
+id = "sorSplitting_spectralRadius_lt_one_of_le_one"
+kind = "theorem"
+desc = '''Quarteroni–Sacco–Saleri, Property 4.3, last sentence: for `A : Matrix n n 𝕜` strictly row
+diagonally dominant and `0 < ω ≤ 1`, `spectralRadius ℂ (sorSplitting A h hω).iterationOperator < 1`
+(with the real-matrix corollary `sorSplitting_complexSpectralRadius_lt_one_of_le_one`). The pencil
+argument of `gaussSeidel_spectralRadius_lt_one`: an eigenpair `G_ω x = λ x` with `|λ| ≥ 1` gives
+`λ (D + ωL) x = ((1 - ω) D - ωU) x`; at a row `i` where `|x_i| = ‖x‖_∞`,
+`|λ - (1 - ω)| |a_ii| |x_i| ≤ ω |λ| σ₁ |x_i| + ω σ₂ |x_i|` with `σ₁ = ∑_{j<i} |a_ij|`,
+`σ₂ = ∑_{j>i} |a_ij|`, and `|λ - (1 - ω)| ≥ |λ| - (1 - ω) ≥ ω |λ|` for `|λ| ≥ 1`, `0 < ω ≤ 1`, so
+`ω |λ| |a_ii| ≤ ω |λ| (σ₁ + σ₂) < ω |λ| |a_ii|`, a contradiction. Equivalently: the pencil
+`(λ - (1 - ω)) D + λ ω L + ω U` is strictly diagonally dominant for `|λ| ≥ 1`, hence nonsingular
+(`IsStrictDiagDominant.isUnit`), yet annihilates `x`. ★★'''
+deps = ["Matrix.IsStrictDiagDominant", "Matrix.IsStrictDiagDominant.isUnit", "Matrix.gaussSeidel_spectralRadius_lt_one", "Matrix.sorSplitting_iterationOperator"]

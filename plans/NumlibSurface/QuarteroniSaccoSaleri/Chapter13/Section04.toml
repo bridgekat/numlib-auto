@@ -1,0 +1,23 @@
+namespace = "QuarteroniSaccoSaleri.Chapter13"
+desc = '''
+§13.4, space–time finite elements (cG(1)dG(q)) for the heat equation. The section defines the
+space–time spaces `Q_q(S_k)`, `V_{h,Δt}`, `Y_{h,k}`, the jump `[v^k]`, the cG(1)dG(q) method and
+its algebraic forms for `q = 0` (backward Euler with the projection matrix `B_{k,k-1}` on the right)
+and `q = 1` (the `2 × 2` block system). None of these is numbered, and the only numbered result is
+the error estimate (13.25), quoted from [EEHJ96] without proof. The section contributes that one
+node, not formalized. Example 13.2 is a numerical experiment and is skipped.
+'''
+
+[[node]]
+id = "equation_13_25"
+kind = "theorem"
+desc = '''(13.25): for the cG(1)dG(1) space–time discretization of the heat equation (13.12) on
+`[0,1] × [0,T]` with time slabs `I_k`, piecewise linear continuous elements in space and
+discontinuous piecewise linear elements in time, assuming `V_{h,k-1} ⊄ V_{h,k}` is allowed (the
+meshes may change between slabs), `‖u(t^n) - U^n‖_{L²(0,1)} ≤ C(u_{0h}, f, u, n)(Δt² + h²)`.
+Not formalized: the book quotes [EEHJ96]; the proof is a duality (Aubin–Nitsche in space–time)
+argument needing the discrete backward parabolic problem and parabolic regularity of the heat
+equation, i.e. the classical heat-equation theory recorded as a blocker in `notes/frontier.md`;
+the space–time spaces themselves are not planned.'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_12"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.25)'

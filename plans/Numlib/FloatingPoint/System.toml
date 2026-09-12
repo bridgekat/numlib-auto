@@ -1,0 +1,455 @@
+namespace = "FloatingPoint"
+desc = '''
+The floating-point number system `𝔽(β, t, L, U)` of Quarteroni–Sacco–Saleri §2.5.2–2.5.6 as a
+concrete instance of the relational model of `Numlib/FloatingPoint/Model`.
+
+`FloatingPoint.System` bundles the parameters (base `β ≥ 2`, `t ≥ 1` significant digits, exponent
+range `L ≤ U`). Everything else is stated over an ordered field `K` (`[Field K] [LinearOrder K]
+[IsStrictOrderedRing K]`, with `[FloorRing K]` where a rounding function is defined), never over
+`ℝ` alone, so that the system can be instantiated on `ℚ` for decidable examples and on `ℝ` for
+analysis. `System.numbers s K : Set K` is the set of normalized numbers `± m β^(e - t)`, `β^(t-1) ≤
+m ≤ β^t - 1`, `L ≤ e ≤ U`, together with `0`, in the book's mantissa convention (2.29) `x = ±
+0.a₁…a_t × β^e`, so `|x| ∈ [β^(e-1), β^e)`; `System.denormalized s K` are the numbers `± m β^(L -
+t)` with `1 ≤ m < β^(t-1)`. `xmin`, `xmax`, `machineEps = β^(1-t)`, `unitRoundoff = ½ β^(1-t)`,
+`exponent x = Int.log β |x| + 1` (Mathlib's `Int.log`) and `ulp x = β^(exponent x - t)` are the
+book's quantities.
+
+**Rounding is a total function.** `System.round s : K → K` rounds the mantissa `|x| β^(t - e)` to
+the nearest integer with Mathlib's `round` (halves up, which is the book's (2.32) `a_{t+1} ≥ β/2 ↦
+a_t + 1`) and restores sign and exponent; `System.chop` uses `⌊·⌋`. The exponent range is *not*
+consulted by the rounding function, so **Property 2.1 holds unconditionally**: `|round x - x| ≤ u
+|x|` for every `x` (`abs_round_sub_le`), and the book's hypothesis `x_min ≤ |x| ≤ x_max` is
+exactly what makes `round x ∈ 𝔽` (`round_mem_numbers`). This is Higham's convention "barring
+overflow and underflow", and it makes the model instance `System.roundingModel s K :
+RoundingModel K` (`Rounds x y := y = round x`, `u = unitRoundoff`) total and functional, so every
+theorem of `FloatingPoint/InnerProduct` and `FloatingPoint/Stationary` specializes to the actual
+computed values `fl(…)` of `𝔽` with no side conditions; overflow is the separate statement
+`round_notMem_numbers`. `System.choppingModel` is the same with `u = machineEps`.
+
+**Machine operations** are `System.op s f x y = round (f (round x) (round y))` for an exact
+operation `f`, with `add`, `sub`, `mul`, `div` as abbreviations (the book's `x ∘ y = fl(fl(x) ∘
+fl(y))`, §2.5.6). On machine numbers `op f x y = round (f x y)`, whence (2.36) for every operation
+at once; (2.37) and the two bounds of Exercise 2.12 are stated for arbitrary operands with their
+second-order terms explicit. The round-digit discussion of §2.5.6 is about hardware and has no
+counterpart: in this idealization the exact sum is rounded, which is the "with round digit" case.
+
+The finite-representation density of §2.5.1 (`exists_int_mul_zpow_sub_abs_lt`), the IEEE
+parameter sets (`ieeeSingle = ⟨2, 24, -125, 128⟩`, `ieeeDouble = ⟨2, 53, -1021, 1024⟩`, §2.5.4)
+and the book's toy system `𝔽(2, 3, -1, 2)` (Example 2.11, kept in the surface) are here too.
+
+Searched and not reused: Mathlib's `Mathlib/Data/FP/Basic.lean` (an `unsafe`, theorem-free
+`FP.Float` with `FloatCfg`; no rounding lemmas), `Int.log` (reused for the exponent), `round`
+and `abs_sub_round` in `Mathlib/Algebra/Order/Round.lean` (reused). LeanSearch queries "floating
+point rounding relative error", "machine epsilon" return nothing relevant.
+
+Consumers: the book's §3.2.2, §3.3.2, §3.10 (backward error of substitution and Gaussian
+elimination, stated in the `RoundingModel` and instantiated here), Higham Chapter 2 (`fl`,
+Theorem 2.2, Theorem 2.3) and every finite-precision statement of the corpus that wants an
+actual number system rather than the abstract model.
+
+Prototype: `notes/qss/ch02/proto/System.lean` of the 2026-09-12 chapter-2 plan; every statement below
+elaborated there, and `roundingModel`, `choppingModel`, `exists_round_eq_mul_one_add`,
+`op_eq_round_of_mem`, `exists_op_eq_mul_one_add`, `add_comm`, `ieeeDouble_unitRoundoff` are proved
+modulo the two `sorry`-ed rounding lemmas they use.
+'''
+
+[[node]]
+id = "exists_int_mul_zpow_sub_abs_lt"
+kind = "theorem"
+desc = '''**Density of finite positional expansions** (Quarteroni–Sacco–Saleri §2.5.1, the unnumbered
+property after Example 2.10): for `β ≥ 2` (a natural number), `x : K` in an Archimedean ordered
+field and `ε > 0`, there are `m : ℤ` and `k : ℕ` with `|m * β ^ (-k : ℤ) - x| < ε`. Take `k` with
+`β ^ (-k) < ε` (`exists_pow_lt_of_lt_one` or `tendsto_pow_atTop_nhds_zero_of_lt_one` on `β⁻¹`) and
+`m = ⌊x β^k⌋`. ★'''
+deps = []
+
+[[node]]
+id = "System"
+kind = "definition"
+desc = '''`structure System` with fields `β t : ℕ`, `L U : ℤ`, `two_le_β : 2 ≤ β`, `one_le_t : 1 ≤ t`,
+`L_le_U : L ≤ U`: the parameters of the floating-point number system `𝔽(β, t, L, U)`
+(Quarteroni–Sacco–Saleri §2.5.2). ★'''
+deps = []
+
+[[node]]
+id = "System.numbers"
+kind = "definition"
+desc = '''`System.numbers s K : Set K := {x | x = 0 ∨ ∃ (σ : ℤˣ) (m : ℕ) (e : ℤ), β^(t-1) ≤ m ∧ m ≤ β^t
+- 1 ∧ L ≤ e ∧ e ≤ U ∧ x = σ * m * β^(e - t)}`: the normalized floating-point numbers `𝔽(β, t, L,
+U)` of Quarteroni–Sacco–Saleri §2.5.2 (the display defining `𝔽` together with the normalization
+`a₁ ≠ 0`, i.e. `m ≥ β^(t-1)`), as a subset of an ordered field `K`. ★'''
+deps = ["FloatingPoint.System"]
+
+[[node]]
+id = "System.denormalized"
+kind = "definition"
+desc = '''`System.denormalized s K : Set K := {x | ∃ (σ : ℤˣ) (m : ℕ), 1 ≤ m ∧ m ≤ β^(t-1) - 1 ∧ x = σ
+* m * β^(L - t)}`: the de-normalized numbers `𝔽_D`, mantissas below `β^(t-1)` at the minimum
+exponent (Quarteroni–Sacco–Saleri §2.5.2). ★'''
+deps = ["FloatingPoint.System"]
+
+[[node]]
+id = "System.xmin"
+kind = "definition"
+desc = '`System.xmin s K : K := β ^ (L - 1)`, the smallest positive normalized number (2.30). ★'
+deps = ["FloatingPoint.System"]
+
+[[node]]
+id = "System.xmax"
+kind = "definition"
+desc = '`System.xmax s K : K := β ^ U * (1 - β ^ (-t))`, the largest normalized number (2.30). ★'
+deps = ["FloatingPoint.System"]
+
+[[node]]
+id = "System.machineEps"
+kind = "definition"
+desc = '`System.machineEps s K : K := β ^ (1 - t)`, the machine epsilon `ε_M` (§2.5.3). ★'
+deps = ["FloatingPoint.System"]
+
+[[node]]
+id = "System.unitRoundoff"
+kind = "definition"
+desc = '''`System.unitRoundoff s K : K := (1/2) * β ^ (1 - t)`, the roundoff unit `u = ½ ε_M` of (2.34).
+★'''
+deps = ["FloatingPoint.System"]
+
+[[node]]
+id = "System.zero_mem_numbers"
+kind = "theorem"
+desc = '`0 ∈ s.numbers K`. ★'
+deps = ["FloatingPoint.System.numbers"]
+
+[[node]]
+id = "System.neg_mem_numbers"
+kind = "theorem"
+desc = '''`x ∈ s.numbers K → -x ∈ s.numbers K` (Quarteroni–Sacco–Saleri §2.5.2, "if `x ∈ 𝔽` then also
+`-x ∈ 𝔽`"): negate the sign unit `σ`. ★'''
+deps = ["FloatingPoint.System.numbers"]
+
+[[node]]
+id = "System.xmin_le_abs"
+kind = "theorem"
+desc = '''**(2.30), lower bound**: `x ∈ s.numbers K → x ≠ 0 → s.xmin K ≤ |x|`, since `m ≥ β^(t-1)` and
+`e ≥ L` give `m β^(e-t) ≥ β^(t-1) β^(L-t) = β^(L-1)`. ★'''
+deps = ["FloatingPoint.System.numbers", "FloatingPoint.System.xmin"]
+
+[[node]]
+id = "System.abs_le_xmax"
+kind = "theorem"
+desc = '''**(2.30), upper bound**: `x ∈ s.numbers K → |x| ≤ s.xmax K`, since `m ≤ β^t - 1` and `e ≤ U`
+give `m β^(e-t) ≤ (β^t - 1) β^(U-t) = β^U (1 - β^(-t))`. ★'''
+deps = ["FloatingPoint.System.numbers", "FloatingPoint.System.xmax"]
+
+[[node]]
+id = "System.mem_numbers_iff_exists_unique"
+kind = "theorem"
+desc = '''**Uniqueness of the normalized representation** (Quarteroni–Sacco–Saleri §2.5.2, "to enforce
+uniqueness … `a₁ ≠ 0`"): for `x ≠ 0`, `x ∈ s.numbers K ↔ ∃! p : ℤˣ × ℕ × ℤ, β^(t-1) ≤ p.2.1 ∧ p.2.1 ≤
+β^t - 1 ∧ L ≤ p.2.2 ∧ p.2.2 ≤ U ∧ x = p.1 * p.2.1 * β^(p.2.2 - t)`. The exponent is forced to be
+`exponent x` because `β^(e-1) ≤ |x| < β^e` (`Int.log` characterization, `Int.zpow_log_le_self`,
+`Int.lt_zpow_succ_log_self`), the sign by the sign of `x`, and then `m = |x| β^(t-e)`. ★★'''
+deps = ["FloatingPoint.System.numbers", "FloatingPoint.System.exponent"]
+
+[[node]]
+id = "System.finset"
+kind = "definition"
+desc = '''`System.finset s K : Finset K`, the normalized numbers as a finset: `{0}` united with the
+images of `Finset.Icc (β^(t-1)) (β^t - 1) ×ˢ Finset.Icc L U` under `(m, e) ↦ m β^(e-t)` and under
+`(m, e) ↦ -(m β^(e-t))`. ★'''
+deps = ["FloatingPoint.System"]
+
+[[node]]
+id = "System.coe_finset"
+kind = "theorem"
+desc = '''`(s.finset K : Set K) = s.numbers K` (`Finset.coe_union`, `Finset.coe_image`, and `ℤˣ` has
+the two elements `1`, `-1`: `Int.units_eq_one_or`). ★'''
+deps = ["FloatingPoint.System.finset", "FloatingPoint.System.numbers"]
+
+[[node]]
+id = "System.card_finset"
+kind = "theorem"
+desc = '''**The cardinality of `𝔽`** (Quarteroni–Sacco–Saleri §2.5.2): `((s.finset K).card : ℤ) = 2 *
+(β - 1) * β^(t-1) * (U - L + 1) + 1`. The three pieces of the union are pairwise disjoint
+(positive, negative, zero) and the two images are injective by
+`mem_numbers_iff_exists_unique`; `Finset.card_image_of_injOn`, `Nat.card_Icc`, `Int.card_Icc`,
+and `β^t - 1 - β^(t-1) + 1 = (β - 1) β^(t-1)`. ★★'''
+deps = ["FloatingPoint.System.finset", "FloatingPoint.System.mem_numbers_iff_exists_unique"]
+
+[[node]]
+id = "System.exponent"
+kind = "definition"
+desc = '''`System.exponent s x : ℤ := Int.log s.β |x| + 1`, the exponent `e` of the normalized
+representation `|x| = 0.a₁a₂… × β^e`, i.e. the unique `e` with `β^(e-1) ≤ |x| < β^e` (`0` for `x =
+0`, a junk value that no lemma uses). Needs `[FloorRing K]` (for `Int.log`). ★'''
+deps = ["FloatingPoint.System"]
+
+[[node]]
+id = "System.zpow_exponent_sub_one_le_abs"
+kind = "theorem"
+desc = '''For `x ≠ 0`, `β ^ (s.exponent x - 1) ≤ |x|` and `|x| < β ^ s.exponent x`, from
+`Int.zpow_log_le_self` and `Int.lt_zpow_succ_log_self` (Mathlib `Data/Int/Log.lean:96,104`). ★'''
+deps = ["FloatingPoint.System.exponent"]
+
+[[node]]
+id = "System.ulp"
+kind = "definition"
+desc = '''`System.ulp s x : K := β ^ (s.exponent x - t)`, the unit in the last place at `x`: the spacing
+of `𝔽` in the binade `[β^(e-1), β^e)` containing `|x|` (Quarteroni–Sacco–Saleri §2.5.3, "the
+numbers of `𝔽` that belong to such an interval are equally spaced and have distance `β^(e-t)`",
+read in the mantissa convention (2.29): see the errata). ★'''
+deps = ["FloatingPoint.System.exponent"]
+
+[[node]]
+id = "System.numbers_inter_Ico"
+kind = "theorem"
+desc = '''**The binade is an arithmetic progression** (§2.5.3): for `L ≤ e ≤ U`, `s.numbers K ∩ Ico (β
+^ (e-1)) (β ^ e) = (fun m : ℕ => m * β ^ (e - t)) '' Icc (β^(t-1)) (β^t - 1)`. `⊇` is the
+definition; `⊆` uses uniqueness of the exponent (`mem_numbers_iff_exists_unique`). ★★'''
+deps = ["FloatingPoint.System.numbers", "FloatingPoint.System.mem_numbers_iff_exists_unique"]
+
+[[node]]
+id = "System.ulp_bounds"
+kind = "theorem"
+desc = '''**The spacing bounds of §2.5.3**: for `x ≠ 0`, `β⁻¹ * s.machineEps K * |x| < s.ulp x ∧ s.ulp x
+≤ s.machineEps K * |x|`, i.e. the distance between consecutive numbers near `x` is between
+`β⁻¹ ε_M |x|` (strictly) and `ε_M |x|`. From `β^(e-1) ≤ |x| < β^e` and `ulp x = β^(e-t) = ε_M
+β^(e-1)`. The book says "at least `β⁻¹ ε_M |x|`"; the inequality is strict. ★'''
+deps = ["FloatingPoint.System.ulp", "FloatingPoint.System.machineEps", "FloatingPoint.System.zpow_exponent_sub_one_le_abs"]
+
+[[node]]
+id = "System.ulp_div_eq_inv_mantissa"
+kind = "theorem"
+desc = '''**(2.31)**: for `x = σ * m * β^(e - t) ∈ 𝔽` with `β^(t-1) ≤ m ≤ β^t - 1`, `L ≤ e ≤ U`,
+`s.ulp x / |x| = 1 / m`: the relative distance to the next number depends only on the mantissa
+(wobbling precision). Uses `exponent x = e` from `mem_numbers_iff_exists_unique`. ★'''
+deps = ["FloatingPoint.System.ulp", "FloatingPoint.System.mem_numbers_iff_exists_unique"]
+
+[[node]]
+id = "System.isLeast_machineEps"
+kind = "theorem"
+desc = '''**The machine epsilon is the gap above `1`** (§2.5.3: "`ε_M` represents the distance between
+the number `1` and the nearest floating-point number"): if `L ≤ 1 ≤ U` then `IsLeast {δ : K | 0 <
+δ ∧ 1 + δ ∈ s.numbers K} (s.machineEps K)`. `1 = β^(t-1) β^(1-t)` and `1 + ε_M = (β^(t-1) + 1)
+β^(1-t)` are in `𝔽` with exponent `1`; a number of `𝔽` in `(1, 1 + ε_M)` would lie in the binade
+`[1, β)` and be of the form `m β^(1-t)` with `β^(t-1) < m < β^(t-1) + 1` (`numbers_inter_Ico`),
+impossible. ★★'''
+deps = ["FloatingPoint.System.machineEps", "FloatingPoint.System.numbers_inter_Ico"]
+
+[[node]]
+id = "System.round"
+kind = "definition"
+desc = '''`System.round s x : K := if x = 0 then 0 else sign x * round (|x| * β ^ (t - exponent x)) * β
+^ (exponent x - t)` with Mathlib's `round : K → ℤ` (nearest integer, halves up): **rounding to
+nearest (2.32)** of Quarteroni–Sacco–Saleri §2.5.5, as a total function on `K` (`[FloorRing K]`).
+The mantissa `|x| β^(t-e) ∈ [β^(t-1), β^t)` is rounded to the nearest integer; when it rounds up
+to `β^t` the result is `β^e`, a normalized number of exponent `e + 1`. `SignType.sign x` cast to
+`K` (`Mathlib/Data/Sign/Defs`). ★'''
+deps = ["FloatingPoint.System.exponent"]
+
+[[node]]
+id = "System.chop"
+kind = "definition"
+desc = '`System.chop s x : K`, the same with `⌊·⌋` in place of `round`: **chopping** (§2.5.5). ★'
+deps = ["FloatingPoint.System.exponent"]
+
+[[node]]
+id = "System.round_zero"
+kind = "theorem"
+desc = '''`s.round 0 = 0`, and `System.round_neg : s.round (-x) = -s.round x` (rounding is odd,
+because the mantissa and exponent depend on `|x|` only). ★'''
+deps = ["FloatingPoint.System.round"]
+
+[[node]]
+id = "System.round_round"
+kind = "theorem"
+desc = '''`s.round (s.round x) = s.round x`: rounding is idempotent, for every `x` (no range hypothesis).
+The rounded mantissa `m'` is an integer in `[β^(t-1), β^t]`; if `m' < β^t` the result has the same
+exponent and integer mantissa `m'`, if `m' = β^t` it is `β^e`, with exponent `e + 1` and mantissa
+`β^(t-1)`; either way the mantissa is an integer and `round` fixes it (`round_intCast`). Needed
+whenever a machine result is fed into another machine operation (`abs_add_add_sub_le`), since
+`round (x ⊕ y) = x ⊕ y` cannot come from `round_eq_self` without a range hypothesis. ★★'''
+deps = ["FloatingPoint.System.round", "FloatingPoint.System.zpow_exponent_sub_one_le_abs"]
+
+[[node]]
+id = "System.round_eq_self"
+kind = "theorem"
+desc = '''`x ∈ s.numbers K → s.round x = x` ("`fl(x) = x` if `x ∈ 𝔽`", §2.5.5): the mantissa `|x|
+β^(t-e)` is the integer `m` (`mem_numbers_iff_exists_unique`), and `round (m : K) = m`
+(`round_intCast`). ★'''
+deps = ["FloatingPoint.System.round", "FloatingPoint.System.mem_numbers_iff_exists_unique"]
+
+[[node]]
+id = "System.round_mem_numbers"
+kind = "theorem"
+desc = '''`s.xmin K ≤ |x| → |x| ≤ s.xmax K → s.round x ∈ s.numbers K`: rounding a number in the range
+of `𝔽` lands in `𝔽`. The exponent `e = exponent x` satisfies `L ≤ e ≤ U` (from the range), the
+rounded mantissa `m' = round (|x| β^(t-e))` satisfies `β^(t-1) ≤ m' ≤ β^t`; if `m' ≤ β^t - 1` the
+result is normalized with exponent `e`; if `m' = β^t` the result is `β^e = β^(t-1) β^(e+1-t)`,
+normalized with exponent `e + 1`, and `e + 1 ≤ U` because `m' = β^t` forces `|x| β^(t-e) ≥ β^t -
+1/2`, i.e. `|x| ≥ β^e - ½β^(e-t)`, which with `|x| ≤ x_max = β^U - β^(U-t)` rules out `e = U`.
+★★'''
+deps = ["FloatingPoint.System.round", "FloatingPoint.System.numbers", "FloatingPoint.System.xmin", "FloatingPoint.System.xmax", "FloatingPoint.System.zpow_exponent_sub_one_le_abs"]
+
+[[node]]
+id = "System.round_mono"
+kind = "theorem"
+desc = '''`Monotone (s.round : K → K)` ("`fl(x) ≤ fl(y)` if `x ≤ y`", §2.5.5). For `0 < x ≤ y` in the
+same binade this is monotonicity of `round`; across binades, `round x ≤ β^(exponent x) ≤ β^(exponent
+y - 1) ≤ round y`, the first because the rounded mantissa is `≤ β^t`, the last because it is `≥
+β^(t-1)`; then extend to signs by `round_neg` and `round_zero`. ★★'''
+deps = ["FloatingPoint.System.round", "FloatingPoint.System.round_zero", "FloatingPoint.System.zpow_exponent_sub_one_le_abs"]
+
+[[node]]
+id = "System.abs_sub_round_le"
+kind = "theorem"
+desc = '''**The absolute rounding error** (the display `E(x) ≤ ½ β^(-t+e)` closing §2.5.5): `|x -
+s.round x| ≤ (1/2) * s.ulp x` for every `x`, from Mathlib's `abs_sub_round` (`|μ - round μ| ≤
+1/2`, `Algebra/Order/Round.lean:193`) scaled by `β^(e-t)`. ★'''
+deps = ["FloatingPoint.System.round", "FloatingPoint.System.ulp"]
+
+[[node]]
+id = "System.abs_round_sub_le"
+kind = "theorem"
+desc = '''**Property 2.1 (rounding), unconditional**: `|s.round x - x| ≤ s.unitRoundoff K * |x|` for
+every `x : K`. From `abs_sub_round_le` and `ulp x = β^(1-t) β^(e-1) ≤ β^(1-t) |x|`
+(`zpow_exponent_sub_one_le_abs`). The book's hypothesis `x_min ≤ |x| ≤ x_max` is not needed for
+the bound, only for `round x ∈ 𝔽`. ★'''
+deps = ["FloatingPoint.System.abs_sub_round_le", "FloatingPoint.System.unitRoundoff", "FloatingPoint.System.zpow_exponent_sub_one_le_abs"]
+
+[[node]]
+id = "System.abs_chop_sub_le"
+kind = "theorem"
+desc = '''**Property 2.1 (chopping)**: `|s.chop x - x| ≤ s.machineEps K * |x|` for every `x`, from
+`Int.sub_one_lt_floor` (`|μ - ⌊μ⌋| < 1`) and the same scaling; the unit roundoff of chopping is
+`ε_M = β^(1-t)` (Higham, *Accuracy and Stability*, Theorem 2.2). ★'''
+deps = ["FloatingPoint.System.chop", "FloatingPoint.System.machineEps", "FloatingPoint.System.zpow_exponent_sub_one_le_abs"]
+
+[[node]]
+id = "System.round_notMem_numbers"
+kind = "theorem"
+desc = '''**Overflow** (Remark 2.2): `β ^ U ≤ |x| → s.round x ∉ s.numbers K`, because `|round x| ≥
+β^(exponent x - 1) ≥ β^U > x_max ≥` every element of `𝔽` (`abs_le_xmax`). Numbers between `x_max`
+and `β^U` may still round to `x_max`, so the book's "not defined for `|x| > x_max`" is read as
+this statement; underflow needs no statement, since `round` is total and `abs_round_sub_le` is
+unconditional. ★'''
+deps = ["FloatingPoint.System.round", "FloatingPoint.System.abs_le_xmax", "FloatingPoint.System.zpow_exponent_sub_one_le_abs"]
+
+[[node]]
+id = "System.roundingModel"
+kind = "definition"
+desc = '''`System.roundingModel s K : RoundingModel K` with `u := s.unitRoundoff K`, `Rounds x y := y =
+s.round x`, and `abs_sub_le := abs_round_sub_le`: **`𝔽(β, t, L, U)` with rounding to nearest is
+an instance of the standard model** of `Numlib/FloatingPoint/Model.lean:42`, with `u = ½
+β^(1-t)`. Total and functional; overflow is `round_notMem_numbers`, not a restriction of the
+relation. Proved in the prototype from `abs_round_sub_le`. ★'''
+deps = ["FloatingPoint.System.round", "FloatingPoint.System.unitRoundoff", "FloatingPoint.System.abs_round_sub_le", "FloatingPoint.RoundingModel"]
+
+[[node]]
+id = "System.choppingModel"
+kind = "definition"
+desc = '''`System.choppingModel s K : RoundingModel K` with `u := s.machineEps K` and `Rounds x y := y =
+s.chop x`, from `abs_chop_sub_le`. Proved in the prototype. ★'''
+deps = ["FloatingPoint.System.chop", "FloatingPoint.System.machineEps", "FloatingPoint.System.abs_chop_sub_le", "FloatingPoint.RoundingModel"]
+
+[[node]]
+id = "System.roundingModel_u"
+kind = "theorem"
+desc = '''`(s.roundingModel K).u = s.unitRoundoff K` and `System.roundingModel_rounds_iff : (s.roundingModel
+K).Rounds x y ↔ y = s.round x`, both `rfl`; the unfolding lemmas through which
+`FloatingPoint/InnerProduct` statements are read for `𝔽`. ★'''
+deps = ["FloatingPoint.System.roundingModel"]
+
+[[node]]
+id = "System.exists_round_eq_mul_one_add"
+kind = "theorem"
+desc = '''**Property 2.1 in the book's form (2.33)**: `∃ δ : K, |δ| ≤ s.unitRoundoff K ∧ s.round x = x *
+(1 + δ)`, from `RoundingModel.Rounds.exists_delta` (`Model.lean:54`) on `roundingModel`. Proved in
+the prototype. ★'''
+deps = ["FloatingPoint.System.roundingModel", "FloatingPoint.RoundingModel.Rounds.exists_delta"]
+
+[[node]]
+id = "System.op"
+kind = "definition"
+desc = '''`System.op s (f : K → K → K) (x y : K) : K := s.round (f (s.round x) (s.round y))`: the
+**machine operation** `x ∘ y = fl(fl(x) ∘ fl(y))` attached to an exact operation `∘ = f`
+(Quarteroni–Sacco–Saleri §2.5.6), with the abbreviations `System.add := op (· + ·)`, `System.sub
+:= op (· - ·)`, `System.mul := op (· * ·)`, `System.div := op (· / ·)`. ★'''
+deps = ["FloatingPoint.System.round"]
+
+[[node]]
+id = "System.add_comm"
+kind = "theorem"
+desc = '''`s.add x y = s.add y x`, and `System.mul_comm`: the machine sum and product are commutative
+(§2.5.6, "properties of standard arithmetic that are preserved"). Proved in the prototype. ★'''
+deps = ["FloatingPoint.System.op"]
+
+[[node]]
+id = "System.op_eq_round_of_mem"
+kind = "theorem"
+desc = '''`x ∈ s.numbers K → y ∈ s.numbers K → s.op f x y = s.round (f x y)`: on machine numbers the
+operands need no rounding (`round_eq_self`). Proved in the prototype. ★'''
+deps = ["FloatingPoint.System.op", "FloatingPoint.System.round_eq_self"]
+
+[[node]]
+id = "System.exists_op_eq_mul_one_add"
+kind = "theorem"
+desc = '''**(2.36)**: for `x, y ∈ s.numbers K` and any exact operation `f`, `∃ δ, |δ| ≤ s.unitRoundoff
+K ∧ s.op f x y = f x y * (1 + δ)`; in particular for `+`, `-`, `*`, `/`. The book's caveat about
+the round digit does not arise: the machine operation rounds the exact result. Proved in the
+prototype from `op_eq_round_of_mem` and `exists_round_eq_mul_one_add`. ★'''
+deps = ["FloatingPoint.System.op_eq_round_of_mem", "FloatingPoint.System.exists_round_eq_mul_one_add"]
+
+[[node]]
+id = "System.rounds_op"
+kind = "theorem"
+desc = '''`x ∈ s.numbers K → y ∈ s.numbers K → (s.roundingModel K).Rounds (f x y) (s.op f x y)`: a
+machine operation on machine numbers is an admissible rounding of the exact result in the model,
+which is what plugs `𝔽` into `FloatingPoint.RoundsSum`, `RoundsDot` and `RoundsAffineStep`
+(`Numlib/FloatingPoint/InnerProduct.lean`, `Stationary.lean`). `rfl` after `op_eq_round_of_mem`.
+★'''
+deps = ["FloatingPoint.System.roundingModel", "FloatingPoint.System.op_eq_round_of_mem"]
+
+[[node]]
+id = "System.abs_add_sub_le"
+kind = "theorem"
+desc = '''**(2.37), Exercise 2.11**, for arbitrary operands and with no range hypothesis: `|s.add x y -
+(x + y)| ≤ u (1 + u) (|x| + |y|) + u |x + y|` with `u = s.unitRoundoff K`. Split `x ⊕ y - (x + y) =
+(fl(fl x + fl y) - (fl x + fl y)) + (fl x - x) + (fl y - y)`; the first term is `≤ u |fl x + fl y|
+≤ u (|x + y| + u |x| + u |y|)` and the others `≤ u |x|`, `u |y|`, all by `abs_round_sub_le`.
+Dividing by `|x + y|` gives the book's display. ★'''
+deps = ["FloatingPoint.System.op", "FloatingPoint.System.abs_round_sub_le"]
+
+[[node]]
+id = "System.abs_add_add_sub_le"
+kind = "theorem"
+desc = '''**Exercise 2.12, first bound**, with the second-order term explicit: for `x, y, z ∈ s.numbers
+K`, `|s.add (s.add x y) z - (x + y + z)| ≤ (2 |x + y| + |z|) u + |x + y| u²`. With `x ⊕ y = (x +
+y)(1 + δ₁)` (`exists_op_eq_mul_one_add`) and `(x ⊕ y) ⊕ z = ((x ⊕ y) + z)(1 + δ₂)` (Property 2.1
+on the exact sum of the machine number `x ⊕ y`, which is in `𝔽` only under a range hypothesis —
+but `abs_round_sub_le` needs none, so state it through `round` directly), the error is `(x + y)δ₁
++ ((x + y)(1 + δ₁) + z)δ₂`. The book writes `C₁ ≃ (2|x + y| + |z|) u`, dropping the `u²` term.
+The second bound `|x ⊕ (y ⊕ z) - (x + y + z)| ≤ (|x| + 2|y + z|) u + |y + z| u²` is
+`System.abs_add_add_sub_le'`, by symmetry (`add_comm` and relabeling). ★'''
+deps = ["FloatingPoint.System.exists_op_eq_mul_one_add", "FloatingPoint.System.abs_round_sub_le", "FloatingPoint.System.round_round"]
+
+[[node]]
+id = "System.ieeeSingle"
+kind = "definition"
+desc = '''`System.ieeeSingle : System := ⟨2, 24, -125, 128, …⟩`, the IEC 559 / IEEE 754 basic single
+format `𝔽(2, 24, -125, 128)` (Quarteroni–Sacco–Saleri §2.5.4). ★'''
+deps = ["FloatingPoint.System"]
+
+[[node]]
+id = "System.ieeeDouble"
+kind = "definition"
+desc = '''`System.ieeeDouble : System := ⟨2, 53, -1021, 1024, …⟩`, the IEC 559 / IEEE 754 basic double
+format `𝔽(2, 53, -1021, 1024)` (§2.5.4). ★'''
+deps = ["FloatingPoint.System"]
+
+[[node]]
+id = "System.ieeeDouble_unitRoundoff"
+kind = "theorem"
+desc = '''`ieeeDouble.unitRoundoff ℚ = 2 ^ (-53 : ℤ)` and `System.ieeeSingle_unitRoundoff :
+ieeeSingle.unitRoundoff ℚ = 2 ^ (-24 : ℤ)`; `simp [unitRoundoff]; norm_num`. Proved in the
+prototype (double). ★'''
+deps = ["FloatingPoint.System.ieeeDouble", "FloatingPoint.System.unitRoundoff"]

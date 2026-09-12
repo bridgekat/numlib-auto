@@ -1,0 +1,128 @@
+namespace = "QuarteroniSaccoSaleri.Chapter05"
+desc = '''
+§5.1, geometrical location of the eigenvalues: the norm bound (5.1), Hirsch (Theorem 5.1), the
+Gershgorin row and column discs (Theorem 5.2, (5.6)), the three Gershgorin theorems (Properties
+5.1, 5.2, 5.4), reducibility (Definition 5.1) and its graph characterization (Property 5.3).
+Everything is a restatement: the discs and the counting theorem are `Numlib/Eigen/Perturbation`,
+reducibility is `Numlib/LinearAlgebra/Sparse/Pattern`, and the third Gershgorin theorem is
+`Matrix.IsPatternIrreducible.norm_sub_eq_of_mem_frontier` of
+`Numlib/LinearSolve/Stationary/DiagDominant`. Hirsch's imaginary-part half is a new backbone node.
+Example 5.1 is a numerical table and is skipped.
+'''
+
+[[node]]
+id = "equation_5_1"
+kind = "theorem"
+desc = '''(5.1): for `A : Matrix n n ℂ` and every `μ ∈ spectrum ℂ A`, `‖μ‖ ≤ ‖A‖` for any consistent
+(submultiplicative, `‖1‖ ≤ 1`-normalized) matrix norm — stated for the three scoped norms of
+Mathlib (`‖·‖_1`, `‖·‖_2`, `‖·‖_∞`) through Chapter 1's Theorem 1.4, or for an arbitrary
+`AlgebraNorm ℂ (Matrix n n ℂ)` through `spectrum.norm_le_norm_of_mem`. Cross-chapter: the id of
+Chapter 1's node is assumed to be `theorem_1_4`. ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.1)'
+
+[[node]]
+id = "theorem_5_1_re"
+kind = "theorem"
+desc = '''Theorem 5.1 (Hirsch), real part: for `A : Matrix n n ℂ` with Hermitian part
+`H = (A + Aᴴ)/2` (`Matrix.hermitianPart A`, Hermitian with real eigenvalues
+`hH.eigenvalues : n → ℝ`) and every `μ ∈ spectrum ℂ A`,
+`(⨅ i, hH.eigenvalues i) ≤ μ.re ∧ μ.re ≤ ⨆ i, hH.eigenvalues i` (with `[Nonempty n]`).
+Direct from `Matrix.hirsch_re`. ★'''
+deps = ["Matrix.hirsch_re", "Matrix.hermitianPart"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 5.1'
+
+[[node]]
+id = "theorem_5_1_im"
+kind = "theorem"
+desc = '''Theorem 5.1 (Hirsch), imaginary part: with `S = (A - Aᴴ)/(2i)` (`Matrix.skewHermitianPart
+A`, Hermitian) and every `μ ∈ spectrum ℂ A`, `(⨅ i, hS.eigenvalues i) ≤ μ.im ∧ μ.im ≤ ⨆ i,
+hS.eigenvalues i`. Direct from `Matrix.hirsch_im`. ★'''
+deps = ["Matrix.hirsch_im", "Matrix.skewHermitianPart"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 5.1'
+
+[[node]]
+id = "theorem_5_2"
+kind = "theorem"
+desc = '''Theorem 5.2 (Gershgorin row circles): for `A : Matrix n n ℂ`,
+`spectrum ℂ A ⊆ ⋃ i, Metric.closedBall (A i i) (∑ j ∈ univ.erase i, ‖A i j‖)`. This is
+`Matrix.spectrum_subset_iUnion_closedBall` verbatim. ★'''
+deps = ["Matrix.spectrum_subset_iUnion_closedBall"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 5.2'
+
+[[node]]
+id = "equation_5_6"
+kind = "theorem"
+desc = '''(5.6), the column circles: `spectrum ℂ A ⊆ ⋃ j, Metric.closedBall (A j j) (∑ i ∈ univ.erase
+j, ‖A i j‖)`; `Matrix.spectrum_subset_iUnion_closedBall_col` verbatim. ★'''
+deps = ["Matrix.spectrum_subset_iUnion_closedBall_col"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.6)'
+
+[[node]]
+id = "property_5_1"
+kind = "theorem"
+desc = '''Property 5.1 (first Gershgorin theorem): `spectrum ℂ A ⊆ S_R ∩ S_C`, the intersection of the
+unions of the row discs and of the column discs. `Set.subset_inter` of the two previous nodes. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter05.theorem_5_2", "QuarteroniSaccoSaleri.Chapter05.equation_5_6"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.1'
+
+[[node]]
+id = "property_5_2"
+kind = "theorem"
+desc = '''Property 5.2 (second Gershgorin theorem): if `τ : Finset n` has `τ.card = m` and the union
+`S₁` of the row discs indexed by `τ` is disjoint from the union `S₂` of the remaining discs, then
+`S₁` contains exactly `m` eigenvalues counted with algebraic multiplicity:
+`A.charpoly.countRootsIn S₁ = m`, and consequently the remaining `card n - m` roots lie in `S₂`.
+`Matrix.card_spectrum_of_disjoint_gershgorin` gives the first clause; the second is the count
+`countRootsIn (S₁ ∪ S₂) = card n` (all roots lie in the union by `theorem_5_2`) minus the first.
+The book indexes the discs `1..m` and `m+1..n`; a `Finset` is the same data. ★'''
+deps = ["Matrix.card_spectrum_of_disjoint_gershgorin", "QuarteroniSaccoSaleri.Chapter05.theorem_5_2"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.2'
+
+[[node]]
+id = "definition_5_1"
+kind = "definition"
+desc = '''Definition 5.1: `IsReducible (A : Matrix n n ℂ) : Prop` — there are a permutation
+`σ : Equiv.Perm n` and a proper nonempty `s : Finset n` (the index set of the leading block
+`B₁₁`) such that `(A.submatrix σ σ) i j = 0` for all `i ∉ s`, `j ∈ s`, that is
+`P A Pᵀ = [[B₁₁, B₁₂], [0, B₂₂]]` with square diagonal blocks. `IsIrreducible A := ¬ IsReducible A`.
+★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 5.1'
+
+[[node]]
+id = "definition_5_1_iff"
+kind = "theorem"
+desc = '''Definition 5.1 agrees with the backbone: for `[Nontrivial n]`,
+`IsReducible A ↔ ¬ A.IsPatternIrreducible`. This is
+`Matrix.not_isPatternIrreducible_iff_exists_submatrix_blockTriangular` after replacing the block
+set `s` by its complement (the backbone's form zeroes the entries from `s` to `sᶜ`, the book's
+those from `sᶜ` to `s`). The `1 × 1` case is genuinely different (a `1 × 1` zero matrix is
+pattern-reducible but not reducible in the book's sense); the hypothesis records it. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter05.definition_5_1", "Matrix.not_isPatternIrreducible_iff_exists_submatrix_blockTriangular"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 5.1'
+
+[[node]]
+id = "property_5_3"
+kind = "theorem"
+desc = '''Property 5.3: a real matrix `A : Matrix n n ℝ` on at least two indices (`[Nontrivial n]`) is
+irreducible iff its oriented graph is strongly connected — for every pair of *distinct* vertices
+`i ≠ j` there is an oriented path from `i` to `j`, the arrow `i ⟶ j` meaning `A i j ≠ 0`. The
+backbone form is `Matrix.isPatternIrreducible_iff_nonempty_path` (paths of positive length between
+every pair, in `Matrix.adjQuiver`); through `definition_5_1_iff`. Reading: the book's "strongly
+connected" quantifies over distinct vertices; with `[Nontrivial n]` the two readings agree because
+a path `i → j → i` exists whenever paths between distinct vertices do. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter05.definition_5_1_iff", "Matrix.isPatternIrreducible_iff_nonempty_path"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.3'
+
+[[node]]
+id = "property_5_4"
+kind = "theorem"
+desc = '''Property 5.4 (third Gershgorin theorem): for `A : Matrix n n ℂ` irreducible
+(`¬ IsReducible A`, `[Nontrivial n]`) and `μ ∈ spectrum ℂ A` lying on the boundary of the union
+`S_R` of the row discs (`μ ∈ frontier (⋃ i, closedBall (A i i) r_i)`), `μ` lies on the boundary of
+every disc: `∀ i, ‖μ - A i i‖ = ∑ j ∈ univ.erase i, ‖A i j‖`. This is
+`Matrix.IsPatternIrreducible.norm_sub_eq_of_mem_frontier` of
+`Numlib/LinearSolve/Stationary/DiagDominant.lean:813` verbatim, after `definition_5_1_iff`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter05.definition_5_1_iff", "Matrix.IsPatternIrreducible.norm_sub_eq_of_mem_frontier"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.4'

@@ -17,15 +17,6 @@ id = "IsMMatrix.isMMatrix_schurComplementSingle"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 10.1"
 
 [[node]]
-id = "elimMultipliers"
-
-[[node]]
-id = "elimMul"
-
-[[node]]
-id = "elimStep"
-
-[[node]]
 id = "IsMMatrix.isMMatrix_elimStep"
 source = "Saad, Iterative Methods for Sparse Linear Systems, Theorem 10.1"
 

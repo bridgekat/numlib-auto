@@ -12,3 +12,19 @@ id = "integral_mul_periodise"
 
 [[node]]
 id = "integral_fourierChar_mul_periodise"
+
+[[node]]
+id = "Real.tsum_fourierIntegral_sub_div_eq_tsum_smul"
+kind = "theorem"
+desc = '''**The transform of a sampled signal is the periodization of its transform**
+(Quarteroni–Sacco–Saleri (10.82)). For `g : ℝ → ℂ` continuous with compact support (or, more
+generally, continuous with `g =O[cocompact] |x|^{-b}` for some `b > 1` and `∑_k |𝓕 g (ν + k/Δt)|`
+summable), `Δt > 0` and every `ν : ℝ`:
+`∑' j : ℤ, 𝓕 g (ν - j / Δt) = Δt * ∑' k : ℤ, g (k Δt) * exp (-2π i ν k Δt)`.
+Proof: apply Mathlib's Poisson summation `Real.tsum_eq_tsum_fourier_of_rpow_decay_of_summable` to
+`h t = Δt · g (Δt t) exp (-2πi ν Δt t)` at `x = 0`: `∑_k h k = ∑_n 𝓕 h n`, and the scaling and
+modulation rules give `𝓕 h n = 𝓕 g ((n + ν Δt)/Δt) = 𝓕 g (ν + n/Δt)`; reindex `n ↦ -j`. The
+periodisation `∑_j 𝓕 g (ν - j/Δt)` is `periodise (1/Δt) (𝓕 g) ν` of this module. For a `g`
+supported in `[0, T₀]` the right side is the finite trapezoidal sum `Δt ∑_{k Δt ∈ [0, T₀]} …`, the
+book's `Ĩ(ν)`. ★★'''
+deps = ["periodise"]

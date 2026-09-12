@@ -1,0 +1,169 @@
+namespace = "QuarteroniSaccoSaleri.Chapter05"
+desc = '''
+§5.2, stability and conditioning of the eigenproblem. A priori: Bauer–Fike (Theorem 5.3, its
+normal case (5.9)), the first-order perturbation of a simple eigenvalue (Theorem 5.4, in the branch
+form of `Numlib/Eigen/Perturbation`), the condition number (5.11), and the eigenvector perturbation
+(Property 5.5, through `Numlib/Eigen/ReducedResolvent`). A posteriori: the Hermitian residual
+bounds (Theorem 5.5, Property 5.6) and the diagonalizable one (Property 5.7).
+
+Two readings are recorded here rather than in the book's generality. Theorem 5.3 is stated for the
+`2`-norm only (the book says any `p`-norm; the backbone `Matrix.bauer_fike` is `‖·‖_2`). Property
+5.5 is stated for a *Hermitian* `A` and with the projector normalization of the branch: as printed,
+for a general diagonalizable `A` with `‖·‖_2`-normalized eigenvectors, the constant
+`1 / min_{j ≠ k} |λ_k - λ_j|` is false (the first-order coefficient is the norm of the reduced
+resolvent, `Module.End.eigenvectorCondNumber`, which equals the reciprocal gap only for a normal
+`A`; see `notes/book-errata.md` entry proposed in the report). (5.12) is a heuristic
+order-of-magnitude statement and is skipped; Example 5.2 is a table.
+'''
+
+[[node]]
+id = "theorem_5_3"
+kind = "theorem"
+desc = '''Theorem 5.3 (Bauer–Fike), `p = 2`: for a diagonalizable `A = X D X⁻¹` (`X : Matrix n n ℂ`
+invertible, `D = diagonal d`), `E : Matrix n n ℂ` and `μ ∈ spectrum ℂ (A + E)`,
+`∃ i, ‖μ - d i‖ ≤ K₂(X) * ‖E‖₂` with `K₂(X) = ‖X‖₂ ‖X⁻¹‖₂ = NormedRing.condNumber X` under
+`Matrix.Norms.L2Operator`. `Matrix.bauer_fike` verbatim. The book's "any matrix `p`-norm" is not
+formalized beyond `p = 2`: the proof only uses `‖(D - μ)⁻¹‖_p = 1 / min |λ - μ|` for a diagonal
+matrix, which holds for `p = 1, ∞` as well, but Mathlib has those norms only as scoped instances
+and the backbone states the theorem once. ★'''
+deps = ["Matrix.bauer_fike"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 5.3'
+
+[[node]]
+id = "equation_5_9"
+kind = "theorem"
+desc = '''(5.9), the normal case: for `A : Matrix n n ℂ` with `IsStarNormal A`, `E : Matrix n n ℂ`
+and `μ ∈ spectrum ℂ (A + E)`, `∃ λ ∈ spectrum ℂ A, ‖μ - λ‖ ≤ ‖E‖₂`. Proof: the spectral theorem
+for normal matrices (`Matrix.IsStarNormal.spectral_theorem`) writes `A = U D Uᴴ` with `U` unitary,
+`NormedRing.condNumber U = 1` because the `2`-norm of a unitary matrix and of its inverse is `1`
+(`CStarRing.norm_coe_unitary`), and `theorem_5_3` applies. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter05.theorem_5_3", "Matrix.IsStarNormal.spectral_theorem"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.9)'
+
+[[node]]
+id = "theorem_5_4"
+kind = "theorem"
+desc = '''Theorem 5.4, the estimate (5.10) in branch form: let `A B : E →L[ℂ] E` on a
+finite-dimensional inner product space with `‖B‖ = 1` (the book's `E`), `u` a unit right
+eigenvector and `w` a unit left eigenvector (`∀ y, ⟪w, A y⟫ = λ ⟪w, y⟫`) of `λ` with `⟪w, u⟫ ≠ 0`,
+and `t ↦ (mu t, v t)` any branch of eigenpairs of `A + t B` with `mu 0 = λ`, `v 0 = u`,
+`HasDerivAt mu mu' 0` and `HasDerivAt v v' 0`. Then `‖mu'‖ ≤ 1 / ‖⟪w, u⟫‖`. This is
+`Module.End.norm_deriv_eigenvalue_perturbation_le` with `Module.End.eigenvalueCondNumber ℂ u w =
+1 / ‖⟪w, u⟫‖` for unit vectors (prototype `notes/qss/ch05/proto/EigenBranch.lean`, `theorem_5_4`, proved). The
+book's hypothesis "A diagonalizable" is not needed; the derivative is with respect to a complex
+`t` (the book's real `ε` is the restriction). ★'''
+deps = ["Module.End.norm_deriv_eigenvalue_perturbation_le", "Module.End.eigenvalueCondNumber"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 5.4'
+
+[[node]]
+id = "theorem_5_4_branch"
+kind = "theorem"
+desc = '''Theorem 5.4, the existence of the branch `λ(ε), x(ε)` the statement presupposes: under the
+same eigen-relations, with `λ` simple in the sense that every eigenvector for `λ` is a multiple of
+`u`, there are `mu : ℂ → ℂ`, `v : ℂ → E` with `mu 0 = λ`, `v 0 = u`, eventually
+`A (v t) + t • B (v t) = mu t • v t`, `v` differentiable at `0` and
+`HasDerivAt mu (⟪w, B u⟫ / ⟪w, u⟫) 0`. This is `Module.End.hasDerivAt_eigenvalue_perturbation`
+verbatim (built by the inverse function theorem, not by continuity of polynomial roots as in the
+book). ★'''
+deps = ["Module.End.hasDerivAt_eigenvalue_perturbation"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 5.4'
+
+[[node]]
+id = "theorem_5_4_inner_ne_zero"
+kind = "theorem"
+desc = '''The first step of the book's proof of Theorem 5.4: for a *simple* eigenvalue `λ` (algebraic
+multiplicity one, `finrank (maxGenEigenspace A λ) = 1`) of `A : Matrix n n ℂ`, a right eigenvector
+`x ≠ 0` and a left eigenvector `y ≠ 0` satisfy `yᴴ x ≠ 0`. Matrix form of the new backbone node
+`Module.End.inner_ne_zero_of_finrank_maxGenEigenspace_eq_one`. The book proves it from the
+biorthogonality of the columns of `X` and `Y = X⁻ᴴ` for diagonalizable `A`; the backbone proof
+needs no diagonalizability. ★'''
+deps = ["Module.End.inner_ne_zero_of_finrank_maxGenEigenspace_eq_one"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 5.4'
+
+[[node]]
+id = "equation_5_11"
+kind = "definition"
+desc = '''(5.11): the condition number of the eigenvalue `λ`, `κ(λ) = 1 / |yᴴ x|` for unit right and
+left eigenvectors `x`, `y`; defined as `Module.End.eigenvalueCondNumber ℂ x y`, which for unit
+vectors is literally `1 / ‖⟪y, x⟫‖`. ★'''
+deps = ["Module.End.eigenvalueCondNumber"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.11)'
+
+[[node]]
+id = "equation_5_11_one_le"
+kind = "theorem"
+desc = '`1 ≤ κ(λ)` whenever `yᴴ x ≠ 0`; `Module.End.one_le_eigenvalueCondNumber`. ★'
+deps = ["QuarteroniSaccoSaleri.Chapter05.equation_5_11", "Module.End.one_le_eigenvalueCondNumber"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.11)'
+
+[[node]]
+id = "equation_5_11_normal"
+kind = "theorem"
+desc = '''For a normal `A` the left and right eigenvectors of a simple eigenvalue coincide up to scale
+and `κ(λ) = 1`; `Module.End.eigenvalueCondNumber_eq_one_of_isStarNormal`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter05.equation_5_11", "Module.End.eigenvalueCondNumber_eq_one_of_isStarNormal"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.11)'
+
+[[node]]
+id = "eigenvalueCondNumber_conj_unitary"
+kind = "theorem"
+desc = '''The unnumbered invariance after (5.11): for `U` unitary, `Ã = Uᴴ A U` has right and left
+eigenvectors `Uᴴ x`, `Uᴴ y` for `λ`, and `κ̃(λ) = |yᴴ U Uᴴ x|⁻¹ = κ(λ)`. Stated as
+`eigenvalueCondNumber ℂ (Uᴴ x) (Uᴴ y) = eigenvalueCondNumber ℂ x y` for a unitary `U` — an
+isometry preserves norms and inner products. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter05.equation_5_11"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.2.1'
+
+[[node]]
+id = "property_5_5"
+kind = "theorem"
+desc = '''Property 5.5, stated for a Hermitian `A : E →L[ℂ] E` (finite-dimensional) and in the
+normalization of the backbone branch: let `λ_k` be a simple eigenvalue with unit eigenvector
+`u`, `δ_k = min_{j ≠ k} |λ_k - λ_j|` (the distance from `λ_k` to the rest of the spectrum),
+`‖E‖ = 1`, and `t ↦ (mu t, v t)` the branch of eigenpairs of `A + t E` of `theorem_5_4_branch`
+normalized by `⟪u, v t⟫ = 1` (for a Hermitian `A` this is the spectral-projector normalization
+`P (v t) = u`). Then `v` is differentiable at `0` with `‖v'‖ ≤ 1 / δ_k`, hence
+`‖v ε - u‖ ≤ ε / δ_k + o(ε)` as `ε → 0`. Proof: `Module.End.norm_deriv_eigenvector_perturbation_le`
+gives `‖v'‖ ≤ Cond(u) ‖E‖ ‖u‖` and
+`Module.End.eigenvectorCondNumber_eq_inv_dist_of_isSymmetric` evaluates `Cond(u) = 1 / δ_k`; the
+`o(ε)` form is `HasDerivAt.isLittleO`. Errata: (i) the book's `O(ε²)` needs a `C²` branch, which
+the statement does not provide — `o(ε)` is what differentiability gives; (ii) for a non-normal
+diagonalizable `A` the constant `1/δ_k` is false (the correct first-order constant is
+`Module.End.eigenvectorCondNumber`), so the Hermitian hypothesis is added; (iii) the book
+normalizes `‖x_k(ε)‖₂ = 1`, which differs from `⟪u, v t⟫ = 1` by a factor `1 + O(ε²)` and does not
+change the first-order bound, but the surface states the normalization the branch actually has. ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter05.theorem_5_4_branch", "Module.End.norm_deriv_eigenvector_perturbation_le", "Module.End.eigenvectorCondNumber_eq_inv_dist_of_isSymmetric"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.5'
+
+[[node]]
+id = "theorem_5_5"
+kind = "theorem"
+desc = '''Theorem 5.5: for a Hermitian `A : Matrix n n ℂ`, an approximate pair `(λ̂ : ℝ, x̂ ≠ 0)` and the
+residual `r̂ = A x̂ - λ̂ x̂`, `∃ λ ∈ spectrum ℂ A, ‖λ̂ - λ‖ ≤ ‖r̂‖₂ / ‖x̂‖₂`. This is
+`LinearMap.IsSymmetric.exists_hasEigenvalue_dist_le` for `toEuclideanLin A`, whose eigenvalues
+are the spectrum (`Matrix.hasEigenvalue_toEuclideanLin_iff`). The book's `λ̂` is real: the
+Rayleigh quotient of a Hermitian matrix is real, and for a complex `λ̂` the bound holds with
+`Re λ̂` in its place by the same expansion. ★'''
+deps = ["LinearMap.IsSymmetric.exists_hasEigenvalue_dist_le"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 5.5'
+
+[[node]]
+id = "property_5_6"
+kind = "theorem"
+desc = '''Property 5.6: for a Hermitian `A` with orthonormal eigenvectors `u_i` and eigenvalues `λ_i`
+(`hA.eigenvectorBasis`, `hA.eigenvalues`), an approximate pair `(λ̂, x̂)` with residual `r̂`, a set
+`s` of indices (the book's `1..m`) and `δ > 0` with `δ ≤ |λ_i - λ̂|` for all `i ∉ s`, the Euclidean
+distance from `x̂` to `U_m = span {u_i | i ∈ s}` is at most `‖r̂‖₂ / δ`. The book's extra hypothesis
+`|λ_i - λ̂| ≤ ‖r̂‖` for `i ∈ s` is not used by the proof and is dropped. Backbone:
+`LinearMap.IsSymmetric.dist_eigenvectorSpan_le_norm_residual_div` (new). ★'''
+deps = ["LinearMap.IsSymmetric.dist_eigenvectorSpan_le_norm_residual_div"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.6'
+
+[[node]]
+id = "property_5_7"
+kind = "theorem"
+desc = '''Property 5.7: for a diagonalizable `A = X D X⁻¹ : Matrix n n ℂ`, an approximate pair
+`(λ̂, x̂ ≠ 0)` with `‖A x̂ - λ̂ x̂‖₂ ≤ ε ‖x̂‖₂`, `∃ i, ‖λ̂ - d i‖ ≤ ε ‖X⁻¹‖₂ ‖X‖₂`. This is
+`Matrix.bauer_fike_residual` applied to `x̂ / ‖x̂‖`. ★'''
+deps = ["Matrix.bauer_fike_residual"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.7'

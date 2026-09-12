@@ -1,0 +1,231 @@
+namespace = "QuarteroniSaccoSaleri.Chapter10"
+desc = '''
+§10.11: the Fourier transform (Definition 10.1, Property 10.3, the five properties
+(10.75)–(10.77), Examples 10.5–10.6), linear time-invariant systems (10.80)–(10.82, Example 10.7),
+the Laplace transform (Definition 10.2, Example 10.8, Property 10.4, Example 10.9) and the
+Z-transform (Definition 10.3). The book's Fourier transform `F(ν) = ∫ f(t) e^{-2πiνt} dt` is
+exactly Mathlib's `𝓕 f` (`Real.fourierIntegral`, `Real.fourier_real_eq_integral_exp_smul`), with
+no renormalization; the Laplace and Z transforms are
+`Numlib/Analysis/SpecialFunctions/LaplaceTransform`; the remaining Fourier facts Mathlib lacks are
+`Numlib/Analysis/Fourier/FourierIntegral`.
+'''
+
+[[node]]
+id = "definition_10_1"
+kind = "definition"
+desc = '''Definition 10.1: for `f ∈ L¹(ℝ)` (`Integrable f`), the Fourier transform
+`F(ν) = ∫ f(t) e^{-2πiνt} dt` is Mathlib's `𝓕 f ν`, by `Real.fourier_real_eq_integral_exp_smul`.
+A definition-level restatement `bookFourier f = 𝓕 f`. ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 10.1'
+
+[[node]]
+id = "property_10_3"
+kind = "theorem"
+desc = '''Property 10.3 (inversion theorem): for `f ∈ L¹(ℝ)` with `F = 𝓕 f ∈ L¹(ℝ)`, the function
+`g(t) = ∫ F(ν) e^{2πiνt} dν = 𝓕⁻ F t` is continuous, tends to `0` at `±∞`, and `f = g` almost
+everywhere. Continuity is `Real.continuous_fourierIntegral` (backbone, from Mathlib's
+`VectorFourier.fourierIntegral_continuous`), decay is the Riemann–Lebesgue lemma
+`Real.zero_at_infty_fourier` composed with negation, and `f = g` a.e. is
+`Real.ae_eq_fourierInv_fourier`; at every continuity point of `f` the equality is pointwise,
+Mathlib's `MeasureTheory.Integrable.fourierInv_fourier_eq` (hypotheses: `Integrable f`,
+`Integrable (𝓕 f)`, `ContinuousAt f v`). The Cauchy principal value of the book is the Bochner
+integral since `F ∈ L¹`. ★'''
+deps = ["Real.continuous_fourierIntegral", "Real.ae_eq_fourierInv_fourier", "QuarteroniSaccoSaleri.Chapter10.definition_10_1"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 10.3'
+
+[[node]]
+id = "equation_10_75"
+kind = "theorem"
+desc = '''(10.75), property 1: `𝓕 (α f + β g) = α 𝓕 f + β 𝓕 g` and likewise for `𝓕⁻`, for integrable
+`f, g` and `α, β ∈ ℂ`. Mathlib's `VectorFourier.fourierIntegral_add` and
+`fourierIntegral_const_smul`, or `Real.fourierIntegral` as a linear map. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter10.definition_10_1"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.75)'
+
+[[node]]
+id = "property_scaling"
+kind = "theorem"
+desc = '''§10.11.1, property 2 (scaling): for `α ≠ 0` and `f_α(t) = f(αt)`,
+`𝓕 f_α ν = |α|⁻¹ 𝓕 f (ν/α)`. Restates `Real.fourierIntegral_comp_mul_left`. ★'''
+deps = ["Real.fourierIntegral_comp_mul_left", "QuarteroniSaccoSaleri.Chapter10.definition_10_1"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.11.1, property 2 (scaling)'
+
+[[node]]
+id = "property_duality"
+kind = "theorem"
+desc = '''§10.11.1, property 3 (duality): if `f, 𝓕 f ∈ L¹` and `f` is continuous, then `g(t) = 𝓕 f (-t)`
+has Fourier transform `𝓕 g = f`. From Mathlib's `Continuous.fourierInv_fourier_eq` and
+`fourierInv_eq_fourier_comp_neg` (`𝓕⁻ F = 𝓕 (F ∘ neg)`). The book states it with no hypotheses;
+the continuity (or a.e. equality, via `property_10_3`) is needed. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter10.property_10_3"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.11.1, property 3 (duality)'
+
+[[node]]
+id = "property_parity"
+kind = "theorem"
+desc = '''§10.11.1, property 4 (parity): if `f` is real-valued, integrable and even then `𝓕 f` is
+real-valued and even; if `f` is real and odd then `𝓕 f` is purely imaginary and odd. Restates
+`Real.fourierIntegral_even_real` and `Real.fourierIntegral_odd_real`. ★'''
+deps = ["Real.fourierIntegral_even_real", "Real.fourierIntegral_odd_real", "QuarteroniSaccoSaleri.Chapter10.definition_10_1"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.11.1, property 4 (parity)'
+
+[[node]]
+id = "equation_10_76"
+kind = "theorem"
+desc = '''(10.76)–(10.77), property 5: for `f, g ∈ L¹(ℝ)`, `𝓕 (f ⋆ g) = 𝓕 f · 𝓕 g` with the convolution
+`(f ⋆ g)(t) = ∫ f(τ) g(t - τ) dτ` (Mathlib's `Real.fourier_mul_convolution_eq` and
+`MeasureTheory.convolution`); and `𝓕 (f g) = 𝓕 f ⋆ 𝓕 g` under the additional hypotheses
+`𝓕 f, 𝓕 g ∈ L¹` with `f, g` continuous (`Real.fourier_mul_eq_convolution`; Mathlib has the
+Schwartz-class form `SchwartzMap.fourier_convolution`). The book states the second identity for
+`f, g ∈ L¹` only, which is insufficient (`𝓕 f ⋆ 𝓕 g` need not exist). ★'''
+deps = ["Real.fourier_mul_eq_convolution", "QuarteroniSaccoSaleri.Chapter10.definition_10_1"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.76)–(10.77)'
+
+[[node]]
+id = "example_10_5_rect"
+kind = "theorem"
+desc = '''Example 10.5, the rectangular function: for `A, T > 0` and `r = A · 1_{[-T/2, T/2]}`,
+`𝓕 r ν = A T sin (πνT)/(πνT)` for `ν ≠ 0` and `𝓕 r 0 = A T`. Direct integration of `e^{-2πiνt}`
+over the interval (`integral_exp_mul_complex`). ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter10.definition_10_1"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 10.5, the rectangular function'
+
+[[node]]
+id = "example_10_5_saw"
+kind = "theorem"
+desc = '''Example 10.5, the sawtooth `s(t) = 2At/T` on `[-T/2, T/2]`, `0` elsewhere:
+`𝓕 s ν = i (A T/(πνT)) (cos (πνT) - sin (πνT)/(πνT))` for `ν ≠ 0`, purely imaginary and odd.
+Integration by parts on the interval (`intervalIntegral.integral_mul_deriv_eq_deriv_mul`). ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter10.definition_10_1", "QuarteroniSaccoSaleri.Chapter10.property_parity"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 10.5, the sawtooth function'
+
+[[node]]
+id = "example_10_6"
+kind = "theorem"
+desc = '''Example 10.6, (10.78)–(10.79): as tempered distributions, `𝓕 (A) = A δ_0` and
+`𝓕 (A cos (2πν₀ t)) = (A/2)(δ_{ν₀} + δ_{-ν₀})`, where `δ_a` is the Dirac mass (10.79),
+`⟨δ_a, φ⟩ = φ(a)`. Mathlib: `TemperedDistribution.fourierTransformCLM`, the embedding
+`Function.HasTemperateGrowth.toTemperedDistribution` of the bounded smooth functions, and
+`TemperedDistribution.delta` with `toTemperedDistribution_dirac_eq_delta`. Proof: pair with a
+Schwartz `φ` and use the inversion formula `𝓕 φ` integrates to `φ 0` (i.e. `𝓕⁻ (𝓕 φ) 0 = φ 0`);
+the cosine case by Euler's formula and the modulation rule. ★★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter10.definition_10_1"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 10.6, (10.78)–(10.79)'
+
+[[node]]
+id = "equation_10_80"
+kind = "theorem"
+desc = '''(10.80): for a linear shift-invariant system `S` and admissible inputs `f, g`,
+`S(f ⋆ g) = f ⋆ S(g)`. Not formalized: the book's "physical linear system" is not a defined
+mathematical object — no domain, no continuity — and the identity requires `S` to commute with
+the integral defining the convolution (true for a bounded translation-invariant operator on `L¹`
+or `L²` by a Bochner-integral argument), which the book neither assumes nor proves. Its
+consequences `u = i ⋆ h` and (10.81) are stated for a system *given* as a convolution.'''
+deps = ["QuarteroniSaccoSaleri.Chapter10.equation_10_76"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.80)'
+
+[[node]]
+id = "equation_10_81"
+kind = "theorem"
+desc = '''(10.81): if the output of a system is the convolution `u = i ⋆ h` with the impulse response
+`h ∈ L¹` and the input `i ∈ L¹`, then `U(ν) = I(ν) H(ν)` for the transforms `U = 𝓕 u`, `I = 𝓕 i`,
+`H = 𝓕 h` (the transfer function). This is (10.76). ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter10.equation_10_76"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.81)'
+
+[[node]]
+id = "example_10_7"
+kind = "theorem"
+desc = '''Example 10.7, the ideal low-pass filter: for `ν₀ > 0` and `H = 1_{[-ν₀/2, ν₀/2]}`, the impulse
+response `h = 𝓕⁻ H` is `h(t) = ν₀ sin (πν₀t)/(πν₀t)` (`h 0 = ν₀`), and for `i ∈ L¹` the output
+`u = i ⋆ h` — read through (10.81) — has spectrum `I H`, i.e. `I` on `|ν| ≤ ν₀/2` and `0` outside.
+The first claim is `example_10_5_rect` under `𝓕⁻ = 𝓕 ∘ neg` with `A = 1`, `T = ν₀`; the second
+is (10.81) provided `h ∈ L¹`, which fails (`sinc ∉ L¹`) — state the spectrum identity for
+`i ∈ L¹ ∩ L²` through Plancherel, or only the first claim. ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter10.example_10_5_rect", "QuarteroniSaccoSaleri.Chapter10.equation_10_81"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 10.7'
+
+[[node]]
+id = "equation_10_82"
+kind = "theorem"
+desc = '''(10.82), the sampling (aliasing) formula: for a continuous `i : ℝ → ℂ` vanishing outside
+`[0, T₀]`, `Δt > 0` and every `ν`,
+`Ĩ(ν) = Δt ∑_{k ∈ ℤ} i(kΔt) e^{-2πiνkΔt} = ∑_{j ∈ ℤ} I(ν - j/Δt)` — the trapezoidal approximation of
+`I(ν) = ∫_0^{T₀} i(t) e^{-2πiνt} dt` is the periodic repetition of `I` with period `1/Δt`. Restates
+`Real.tsum_fourierIntegral_sub_div_eq_tsum_smul` (backbone EXT of `Analysis/Fourier/Periodisation`,
+from Mathlib's Poisson summation `Real.tsum_eq_tsum_fourier_of_rpow_decay_of_summable`). The
+book's derivation through the sampled signal `i_s = ∑ i(kΔt) δ(· - kΔt)` is distributional; the
+statement needs `i` continuous (the book's `i` may jump at `0` and `T₀`, where the trapezoidal
+sum then sees the average of the one-sided limits). ★★'''
+deps = ["Real.tsum_fourierIntegral_sub_div_eq_tsum_smul", "QuarteroniSaccoSaleri.Chapter10.definition_10_1"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.82)'
+
+[[node]]
+id = "definition_10_2"
+kind = "definition"
+desc = '''Definition 10.2: for `f ∈ L¹_loc[0, ∞)` and `s = σ + iω ∈ ℂ`, the Laplace integral
+`∫_0^∞ f(t) e^{-st} dt = lim_{T→∞} ∫_0^T f(t) e^{-st} dt`, and, where it exists, the Laplace
+transform `L(s) = ℒ[f](s)`. These are `LaplaceTransform.Converges f s` and
+`LaplaceTransform.laplaceTransform f s`; the relation to the Fourier transform,
+`L(σ + iω) = 𝓕 (e^{-σt} f̃)(ω/2π)` with `f̃` the extension of `f` by zero, is
+`LaplaceTransform.laplaceTransform_eq_fourier` (the argument `ω/2π` because Definition 10.1's
+transform carries `e^{-2πiνt}`; the book writes `F(e^{-σt} f̃)` without the argument). ★'''
+deps = ["LaplaceTransform.Converges", "LaplaceTransform.laplaceTransform", "LaplaceTransform.laplaceTransform_eq_fourier"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 10.2'
+
+[[node]]
+id = "example_10_8"
+kind = "theorem"
+desc = '''Example 10.8: the Laplace transform of the unit step `f = 1_{(0, ∞)}` is `L(s) = 1/s`, and the
+Laplace integral converges exactly when `Re s > 0`. Restates
+`LaplaceTransform.laplaceTransform_indicator_Ioi` and
+`LaplaceTransform.converges_indicator_Ioi_iff`. ★'''
+deps = ["LaplaceTransform.laplaceTransform_indicator_Ioi", "LaplaceTransform.converges_indicator_Ioi_iff", "QuarteroniSaccoSaleri.Chapter10.definition_10_2"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 10.8'
+
+[[node]]
+id = "property_10_4"
+kind = "theorem"
+desc = '''Property 10.4: if the Laplace integral of `f ∈ L¹_loc[0, ∞)` converges at `s̄` then it
+converges at every `s` with `Re s > Re s̄`; hence with `λ = inf {Re s : the integral converges}`
+(the abscissa of convergence, `LaplaceTransform.abscissaOfConvergence f : EReal`) the integral
+converges on the half-plane `Re s > λ`, and everywhere when `λ = -∞`. Restates
+`LaplaceTransform.converges_of_re_lt` and
+`LaplaceTransform.converges_of_abscissaOfConvergence_lt`. ★'''
+deps = ["LaplaceTransform.converges_of_re_lt", "LaplaceTransform.abscissaOfConvergence", "LaplaceTransform.converges_of_abscissaOfConvergence_lt", "QuarteroniSaccoSaleri.Chapter10.definition_10_2"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 10.4'
+
+[[node]]
+id = "example_10_9"
+kind = "theorem"
+desc = '''Example 10.9, (10.83): for `y ∈ C¹[0, ∞)` solving `y' + a y = g` with `y(0) = y₀`, and `s` at
+which the Laplace integrals of `y`, `y'` and `g` converge absolutely with `e^{-st} y(t) → 0`,
+`s Y(s) - y₀ + a Y(s) = G(s)`. Restates `LaplaceTransform.laplaceTransform_deriv` plus linearity.
+The closed form for the unit-step forcing, `y(t) = (1 - e^{-at})/a + y₀ e^{-at}`, is verified by
+differentiation (`example_10_9_solution`), not by inverting the transform, which the book does by
+table lookup. ★'''
+deps = ["LaplaceTransform.laplaceTransform_deriv", "QuarteroniSaccoSaleri.Chapter10.definition_10_2"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 10.9, (10.83)'
+
+[[node]]
+id = "example_10_9_solution"
+kind = "theorem"
+desc = '''Example 10.9, the solution: for `a ≠ 0`, `y(t) = (1/a)(1 - e^{-at}) + y₀ e^{-at}` satisfies
+`y' + a y = 1` on `(0, ∞)` and `y(0) = y₀`. Direct differentiation. ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 10.9, the solution formula'
+
+[[node]]
+id = "definition_10_3"
+kind = "definition"
+desc = '''Definition 10.3: the Z-transform of the samples `f(nΔt)`, `Z(z) = ∑_{n ≥ 0} f(nΔt) z^{-n}`, is
+`zTransform f Δt z`, and the series converges for `|z| > R = limsup_n |f(nΔt)|^{1/n}`
+(`summable_zTransform`, the Cauchy–Hadamard root test). Its relation to the Laplace transform of
+the piecewise constant `f₀ = f(nΔt)` on `(nΔt, (n+1)Δt)`,
+`ℒ[f₀](s) = ((1 - e^{-sΔt})/s) ∑_n f(nΔt) e^{-nsΔt}`, is `LaplaceTransform.laplaceTransform_stepFun`,
+so the Z-transform is the discrete Laplace transform under `z = e^{sΔt}`. Erratum: the book writes
+`z = e^{-sΔt}`; with `Z(z) = ∑ f(nΔt) z^{-n}` and `Z^d(s) = ∑ f(nΔt) e^{-nsΔt}` the substitution is
+`z = e^{sΔt}`. ★'''
+deps = ["zTransform", "summable_zTransform", "LaplaceTransform.laplaceTransform_stepFun", "QuarteroniSaccoSaleri.Chapter10.definition_10_2"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 10.3, (10.84)'

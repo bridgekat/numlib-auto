@@ -1,0 +1,116 @@
+namespace = "QuarteroniSaccoSaleri.Chapter09"
+desc = '''
+§9.9, multidimensional numerical integration: the reduction formula (9.56), the composite rules on
+a triangulation (9.57)–(9.59) with their local weights, Definition 9.1 (degree of exactness on the
+reference triangle, which is `Approximation.IsExactOn` of `Numlib/Approximation/Hyperinterpolation`
+at `volume.restrict refTriangle`), Property 9.4 (not formalized: a Bramble–Hilbert estimate in two
+dimensions), the two symmetric formulae, and the Monte Carlo method: the mean value identity,
+(9.60), the strong law and (9.61). Backbone: `Numlib/Approximation/TriangleQuadrature` and
+`Numlib/Approximation/MonteCarlo`. The midpoint and trapezoidal reduction formulae (Programs 78–79)
+are algorithms the text states nothing about beyond their definition and are not nodes.
+'''
+
+[[node]]
+id = "equation_9_56"
+kind = "theorem"
+desc = '''(9.56), the reduction formula for a domain normal to the `x` axis: for `φ₁ ≤ φ₂` continuous on
+`[a, b]` and `f` integrable on `Ω = {(x, y) : a ≤ x ≤ b, φ₁ x ≤ y ≤ φ₂ x}`
+(`regionBetween φ₁ φ₂ (Icc a b)`), `∫_Ω f = ∫_a^b (∫_{φ₁ x}^{φ₂ x} f(x, y) dy) dx`.
+`MeasureTheory.integral_prod` on the indicator of `regionBetween` (measurable by
+`measurableSet_regionBetween`). ★★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (9.56)'
+
+[[node]]
+id = "equation_9_57"
+kind = "definition"
+desc = '''(9.57): the composite interpolatory rule on a finite family of triangles
+`I_k^c(f) = ∑_T ∑_{j < d_k} α_j^T f(z̃_j^T)`, defined here for an arbitrary finite family of
+triangles `T : ι → Affine.Simplex ℝ (Fin 2 → ℝ) 2` with local weights and nodes given by transport
+of a reference rule (`Quadrature.isExactOn_affineImage`); (9.58) is the instance with the centroid
+rule (weights `|T|`) and (9.59) with the vertex rule (weights `|T|/3`). Three definitions. ★'''
+deps = ["Quadrature.isExactOn_affineImage", "Quadrature.refTriangle"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (9.57)–(9.59)'
+
+[[node]]
+id = "triangleWeight_eq"
+kind = "theorem"
+desc = '''The local weights on `T` from the reference triangle:
+`α_T^{(j)} = ∫_T l_{j,T} = 2|T| ∫_{T̂} l̂_j`, and in particular `α_T^{(0)} = |T|` for `k = 0` and
+`α_T^{(j)} = |T|/3` for `k = 1` (`∫_{T̂} λ_j = 1/6`, `|T̂| = 1/2`). The Jacobian of the affine map
+`T̂ → T` is `2|T|` (`Quadrature.isExactOn_affineImage`); the two values from
+`Quadrature.integral_refTriangle_pow_mul_pow`. ★'''
+deps = ["Quadrature.isExactOn_affineImage", "Quadrature.integral_refTriangle_pow_mul_pow"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §9.9.2 (local weights `α_T^{(j)}`)'
+
+[[node]]
+id = "definition_9_1"
+kind = "definition"
+desc = '''Definition 9.1: the rule (9.57) has degree of exactness `n` if `I_k^{T̂}(p) = ∫_{T̂} p` for
+every `p ∈ ℙ_n(T̂)`. `definition_9_1 w x n := Approximation.IsExactOn (volume.restrict Quadrature.refTriangle) w x n`
+(the multivariate polynomials of total degree `≤ n` are (8.35)), with the `Iff` lemma unfolding it
+to the book's sentence. ★'''
+deps = ["Approximation.IsExactOn", "Quadrature.refTriangle"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 9.1'
+
+[[node]]
+id = "property_9_4"
+kind = "theorem"
+desc = '''Property 9.4: if the rule (9.57) has degree of exactness `n ≥ 0` on `Ω` and nonnegative
+weights, there is `K_n` independent of `h` with `|E_k^c(f)| ≤ K_n h^{n+1} |Ω| M_{n+1}` for every
+`f ∈ C^{n+1}(Ω)`, `M_{n+1}` the maximum of the moduli of the derivatives of order `n + 1` and `h`
+the maximum edge length. Not formalized: this is a Bramble–Hilbert estimate on each triangle (the
+error of a rule exact on `ℙ_n` is bounded by the best `ℙ_n`-approximation error of `f` on `T`,
+which is `O(h_T^{n+1} M_{n+1})` by a multivariate Taylor expansion with shape-regularity constants),
+and the two-dimensional polynomial approximation on a simplex with constants uniform in the
+triangle is `notes/frontier.md`'s known blocker; the book states it without proof ([IK66]
+pp. 361–362). The one-dimensional analogue is Theorem 9.3.'''
+deps = ["QuarteroniSaccoSaleri.Chapter09.definition_9_1", "QuarteroniSaccoSaleri.Chapter09.equation_9_57"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 9.4'
+
+[[node]]
+id = "equation_9_58_degreeOfExactness"
+kind = "theorem"
+desc = '''"The composite formulae (9.58) and (9.59) both have degree of exactness equal to `1`": on the
+reference triangle the centroid rule and the vertex rule are exact on `ℙ_1` and not on `ℙ_2`. Two
+clauses. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter09.definition_9_1", "Quadrature.isExactOn_centroid", "Quadrature.isExactOn_vertex"]
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §9.9.2 (degree of exactness of (9.58)–(9.59))'''
+
+[[node]]
+id = "symmetricFormulae"
+kind = "theorem"
+desc = '''The two symmetric formulae displayed after Property 9.4: `I_3(f) = (|T|/3) ∑ f(a_{(j)}^T)` at the
+edge midpoints has degree of exactness `2`, and
+`I_7(f) = (|T|/60)(3 ∑ f(a_T^{(i)}) + 8 ∑ f(a_{(j)}^T) + 27 f(a_T))` has degree of exactness `3`
+(on `T̂`, hence on every `T` by transport). ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter09.definition_9_1", "Quadrature.isExactOn_edgeMidpoint", "Quadrature.isExactOn_sevenPoint"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §9.9.2 (symmetric formulae `I_3`, `I_7`)'
+
+[[node]]
+id = "monteCarlo_mean"
+kind = "theorem"
+desc = '''The first display of §9.9.3: `∫_Ω f = |Ω| ∫_{ℝⁿ} |Ω|⁻¹ χ_Ω f = |Ω| μ(f)`, `μ(f)` the mean of
+`f(X)` for `X` uniform on `Ω` with density `|Ω|⁻¹ χ_Ω`, for `Ω ⊆ ℝⁿ` measurable of finite positive
+volume. ★'''
+deps = ["MonteCarlo.setIntegral_eq_volume_mul_integral_cond"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §9.9.3 (integral as a mean value)'
+
+[[node]]
+id = "monteCarlo_strongLaw"
+kind = "theorem"
+desc = '''"The strong law of large numbers ensures with probability `1` the convergence of the average
+`I_N(f) = (∑_{i ≤ N} f(X_i))/N` (9.60) to the mean value `μ(f)` as `N → ∞`", for mutually (pairwise
+suffices) independent `X_i` with the uniform law on `Ω`. `MonteCarlo.tendsto_sampleMean_ae`
+together with `monteCarlo_mean`. ★'''
+deps = ["MonteCarlo.tendsto_sampleMean_ae", "MonteCarlo.sampleMean", "QuarteroniSaccoSaleri.Chapter09.monteCarlo_mean"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (9.60) and the strong law'
+
+[[node]]
+id = "equation_9_61"
+kind = "theorem"
+desc = '''(9.61): `σ(I_N(f)) = σ(f)/√N`, i.e. `Var(I_N(f)) = Var(f(X))/N`, for independent identically
+distributed samples with `f(X) ∈ L²`; hence the `O(N^{-1/2})` statistical error, independent of the
+dimension `n`. ★'''
+deps = ["MonteCarlo.variance_sampleMean", "MonteCarlo.meas_ge_le_sampleMean"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (9.61)'

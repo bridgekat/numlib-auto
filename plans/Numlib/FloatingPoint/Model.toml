@@ -26,3 +26,6 @@ id = "IsRelPert.mul"
 
 [[node]]
 id = "IsRelPert.div"
+
+[[node]]
+id = "gamma_mono"

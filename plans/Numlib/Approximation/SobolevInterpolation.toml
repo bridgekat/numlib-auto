@@ -1,0 +1,141 @@
+desc = '''
+# Piecewise Lagrange interpolation in `L²` and `H^m` seminorms
+
+The error of piecewise polynomial interpolation of degree `k` on a partition of mesh `h`, measured
+in the `L²` norms of the derivatives of order `m ≤ k + 1` rather than in the supremum norm:
+`‖(f - Π_h^k f)^{(m)}‖_{L²(a,b)} ≤ h^{k+1-m} ‖f^{(k+1)}‖_{L²(a,b)}` for `f ∈ H^{k+1}(a, b)`.
+This is Quarteroni–Sacco–Saleri, *Numerical Mathematics*, Theorem 8.3 (they prove the case
+`k = 1` and quote Quarteroni–Valli for the rest), and it is the approximation estimate behind the
+convergence of the `P_k` finite element method in one dimension (QSS Property 12.1 through Céa's
+lemma, `Numlib/Variational/Galerkin`). The constant is `1` for every `k` and `m` in the proof
+below, which is sharper than the book's unspecified `C`.
+
+## The proof, and why no Sobolev space appears in the core statements
+
+On one panel `[u, v]` of length `≤ h`, let `e = f - p` with `p` the interpolant at `k + 1` distinct
+nodes of the panel. The generalized Rolle theorem
+(`exists_iteratedDeriv_eq_zero_of_forall_eq_zero`, `Numlib/Approximation/Interpolation`) gives
+zeros `ξ_j` of `e^{(j)}` in the panel for every `j ≤ k`. Since `p^{(k+1)} = 0`,
+`e^{(k)}(t) = ∫_{ξ_k}^t g` where `g` is the `(k+1)`-st derivative of `f`, so by Cauchy–Schwarz
+`|e^{(k)}(t)| ≤ √h ‖g‖_{L²(u,v)}`, and each of the `k - m` integrations `e^{(j)}(t) = ∫_{ξ_j}^t
+e^{(j+1)}` gains a factor `h`: `|e^{(m)}(t)| ≤ h^{k-m} √h ‖g‖_{L²(u,v)}`. Squaring and integrating
+over the panel gives `∫_u^v |e^{(m)}|² ≤ h^{2(k+1-m)} ∫_u^v g²`, and summing over the panels gives
+the theorem. Nothing in this uses more of `f` than: `f` is `C^k` on `[a, b]` and
+`f^{(k)}(t) - f^{(k)}(s) = ∫_s^t g` for an `L²` function `g` — the *absolutely continuous
+representative* of an `H^{k+1}(a, b)` function. The core statements take exactly that hypothesis
+(`f`, `g`, and the integral identity), so that they can be written now against
+`Numlib/Approximation/Interpolation` alone; a final section restates them for `MemSobolev f (k+1) 2
+(Ioo a b)` once `Numlib/Analysis/Sobolev/Interval` (chapter 12's module) supplies the
+representative and identifies the seminorm. The interface needed from that module is exactly:
+
+* `MemSobolev.exists_contDiff_repr` (name to be fixed there): an `f ∈ H^{k+1}(a, b)` agrees a.e. on
+  `(a, b)` with a function `f̃` of class `C^k` on `Icc a b` whose `k`-th derivative satisfies
+  `f̃^{(k)}(t) - f̃^{(k)}(s) = ∫_s^t g` with `g` (a representative of) the weak derivative of order
+  `k + 1`, `g ∈ L²(a, b)`;
+* `sobolevSeminorm_eq_integral_sq` (name to be fixed there): for such `f`,
+  `sobolevSeminorm f m 2 (Ioo a b) volume ^ 2 = ∫_a^b |f̃^{(m)}|²` for `m ≤ k`, and `= ∫_a^b g²` for
+  `m = k + 1`;
+* that a continuous function with a piecewise polynomial structure is in `H^1(a, b)` with weak
+  derivative the piecewise derivative (`memSobolev_one_of_piecewise` — needed to read
+  `f - Π_h^k f` as an element of `H^1(a, b)` and no more, since `Π_h^k f` is only `C^0`; for
+  `m ≥ 2` the book's left side must be read panel by panel, as the statements below do).
+
+Prototype: `notes/qss/ch08/proto/SobolevInterpolation.lean` of the chapter 8 planning pass elaborates the three
+core statements and the `k = 1` corollary with `sorry`.
+
+## Conventions
+
+The interpolant on the panel `j` is `panelPoly node j F : ℝ[X]` from
+`Numlib/Approximation/Interpolation`, where `F : C(Icc a b, ℝ)` is the restriction of `f`; the
+broken-norm sum `∑_j ∫_{x_j}^{x_{j+1}} |f^{(m)} - (panelPoly node j F)^{(m)}|²` is the statement
+for all `m`, and for `m = 0, 1` it is the honest `L²(a, b)` norm of `(f - Π_h^k f)^{(m)}`, which
+`integral_sq_sub_piecewisePolyInterpCLM_le` states through `piecewisePolyInterpCLM`.
+'''
+
+[[node]]
+id = "integral_sq_iteratedDeriv_sub_le"
+kind = "theorem"
+desc = '''**The panel estimate.** For `u < v`, `v - u ≤ h`, `f` of class `C^k`, `g` interval
+integrable on `[u, v]` with `iteratedDeriv k f t - iteratedDeriv k f s = ∫ r in s..t, g r` for all
+`s, t ∈ Icc u v`, a polynomial `p` of degree `≤ k` with `p.eval (y i) = f (y i)` at `k + 1` distinct
+points `y i ∈ Icc u v`, and `m ≤ k`:
+`∫ t in u..v, (iteratedDeriv m f t - (derivative^[m] p).eval t)^2 ≤ h^(2 (k + 1 - m)) * ∫ t in u..v, g t ^ 2`.
+Proof: the module doc's Rolle-and-integrate argument; the pointwise bound is
+`abs_iteratedDeriv_sub_le`, and squaring it and integrating over a panel of length `≤ h` gives the
+claim. The `m = k + 1` case is the trivial `∫ g² ≤ ∫ g²` and is not stated. ★★★'''
+deps = ["abs_iteratedDeriv_sub_le"]
+
+[[node]]
+id = "abs_iteratedDeriv_sub_le"
+kind = "theorem"
+desc = '''**The pointwise panel estimate** (QSS (8.30)–(8.31) for general `k`): under the hypotheses
+of `integral_sq_iteratedDeriv_sub_le` and for `t ∈ Icc u v`,
+`|iteratedDeriv m f t - (derivative^[m] p).eval t| ≤ h ^ (k - m) * √h * √(∫ t in u..v, g t ^ 2)`.
+Proof by downward induction on `m` from `m = k`: `e := f - p` is `C^k` and vanishes at the `k + 1`
+nodes, so `exists_iteratedDeriv_eq_zero_of_forall_eq_zero` gives `ξ_j ∈ Icc u v` with
+`e^{(j)}(ξ_j) = 0` for every `j ≤ k` (apply it to `e` with `n := j - 1` and the first `j + 1`
+nodes). For `m = k`: `e^{(k)}(t) = e^{(k)}(t) - e^{(k)}(ξ_k) = ∫_{ξ_k}^t g` since `p^{(k)}` is
+constant, and Cauchy–Schwarz (`intervalIntegral.integral_mul_le_...`, or
+`MeasureTheory.integral_mul_le_Lp_mul_Lq_of_nonneg` at `p = q = 2`) with `|t - ξ_k| ≤ h` gives
+`√h ‖g‖_{L²(u,v)}`. For `m < k`: `e^{(m)}(t) = ∫_{ξ_m}^t e^{(m+1)}` by the fundamental theorem of
+calculus (`intervalIntegral.integral_eq_sub_of_hasDerivAt`, `e^{(m)}` being `C^1`), and the
+integrand is bounded by the inductive bound, over an interval of length `≤ h`. ★★★'''
+deps = ["exists_iteratedDeriv_eq_zero_of_forall_eq_zero"]
+
+[[node]]
+id = "sum_integral_sq_sub_panelPoly_le"
+kind = "theorem"
+desc = '''**Theorem 8.3 in broken form, constant `1`.** For a panel node system
+`hnode : IsPanelNodes n k x node` on `a = x 0 < ⋯ < x (n + 1) = b` whose panels have length `≤ h`,
+`f` of class `C^k` with `iteratedDeriv k f t - iteratedDeriv k f s = ∫ r in s..t, g r` on `Icc a b`
+and `g` interval integrable on `[a, b]`, `F : C(Icc a b, ℝ)` the restriction of `f`, and `m ≤ k`:
+`∑ j ∈ range (n + 1), ∫ t in (x j)..(x (j + 1)), (iteratedDeriv m f t - (derivative^[m] (panelPoly node j F)).eval t)^2
+  ≤ h ^ (2 (k + 1 - m)) * ∫ t in a..b, g t ^ 2`.
+Apply `integral_sq_iteratedDeriv_sub_le` on each panel — the panel polynomial interpolates `F = f`
+at the panel's `k + 1` nodes by `Lagrange.eval_interpolate_at_node`, and `p.degree ≤ k` by
+`Lagrange.degree_interpolate_le` — and sum, using `intervalIntegral.sum_integral_adjacent_intervals`
+for `∫_a^b g² = ∑_j ∫_{x_j}^{x_{j+1}} g²`. ★★'''
+deps = ["integral_sq_iteratedDeriv_sub_le", "IsPanelNodes", "panelPoly"]
+
+[[node]]
+id = "integral_sq_sub_piecewisePolyInterpCLM_le"
+kind = "theorem"
+desc = '''**Theorem 8.3 for `m = 0`, in `L²(a, b)`.** Under the hypotheses of
+`sum_integral_sq_sub_panelPoly_le`, with `G : ℝ → ℝ` any function agreeing on `Icc a b` with
+`piecewisePolyInterpCLM n k x node F`:
+`∫ t in a..b, (f t - G t)^2 ≤ h ^ (2 (k + 1)) * ∫ t in a..b, g t ^ 2`.
+Split `[a, b]` at the breakpoints and use `piecewisePolyInterpCLM_apply_of_mem` on each panel, so
+that the integrand is the `m = 0` integrand of the broken form. State `m = 1` likewise
+(`integral_sq_deriv_sub_piecewisePolyInterpCLM_le`), with `deriv G` in place of `G` on the interior
+of each panel, where `G` is the panel polynomial; the derivative of `G` at the breakpoints is
+irrelevant to the integral. ★★'''
+deps = ["sum_integral_sq_sub_panelPoly_le", "piecewisePolyInterpCLM", "piecewisePolyInterpCLM_apply_of_mem"]
+
+[[node]]
+id = "integral_sq_sub_piecewiseLinearInterpCLM_le"
+kind = "theorem"
+desc = '''**QSS (8.27), `C₁ = 1`**: on a partition `a = x 0 < ⋯ < x (n+1) = b` of mesh `≤ h`, for `f`
+of class `C¹` with `deriv f t - deriv f s = ∫ r in s..t, g r` on `Icc a b`, `g` interval integrable,
+`F` the restriction of `f` and `G` agreeing on `Icc a b` with `piecewiseLinearInterpCLM n x F`:
+`∫ t in a..b, (f t - G t)^2 ≤ h ^ 4 * ∫ t in a..b, g t ^ 2`, and (`C₂ = 1`) the derivative form
+`∑ j, ∫ t in (x j)..(x (j+1)), (deriv f t - (f (x (j+1)) - f (x j)) / (x (j+1) - x j))^2 ≤ h ^ 2 * ∫ t in a..b, g t ^ 2`
+as `integral_sq_deriv_sub_piecewiseLinearInterpCLM_le`. The `k = 1` case of
+`integral_sq_sub_piecewisePolyInterpCLM_le`, the piecewise linear operator being the degree-one
+panel operator with the breakpoints as nodes (`piecewiseLinearInterpCLM_apply_of_mem`). ★★'''
+deps = ["integral_sq_sub_piecewisePolyInterpCLM_le", "piecewiseLinearInterpCLM", "piecewiseLinearInterpCLM_apply_of_mem"]
+
+[[node]]
+id = "sobolevSeminorm_sub_piecewisePolyInterp_le"
+kind = "theorem"
+desc = '''**Theorem 8.3 over `H^{k+1}(a, b)`** — the bridge to `Numlib/Analysis/Sobolev/Interval`:
+for `f` with `MemSobolev f (k + 1) 2 (Ioo a b) volume` (the backbone's `W^{k+1,2}` of
+`Numlib/Analysis/Sobolev/Domain`, on the open interval), `m ≤ 1`, and `Π_h^k f` the piecewise
+interpolant of its continuous representative, `sobolevSeminorm (f - Π_h^k f) m 2 (Ioo a b) volume ≤
+h^{k+1-m} · sobolevSeminorm f (k+1) 2 (Ioo a b) volume`, i.e. (8.26) for `m = 0, 1` with `C = 1`;
+for `2 ≤ m ≤ k + 1` the same with the left side read panel by panel
+(`sum_integral_sq_sub_panelPoly_le`). Not writable until that module exists: it needs the interval
+facts named in the module doc — the `C^k` representative with absolutely continuous `k`-th
+derivative, the identification of `sobolevSeminorm` at `p = 2` with `∫ |f^{(m)}|²`, and membership
+of a continuous piecewise polynomial in `H^1(a, b)`. Once they exist the proof is
+`integral_sq_sub_piecewisePolyInterpCLM_le` applied to the representative. ★★ given the interface'''
+deps = ["integral_sq_sub_piecewisePolyInterpCLM_le", "sum_integral_sq_sub_panelPoly_le"]

@@ -1,0 +1,141 @@
+namespace = "QuarteroniSaccoSaleri.Chapter06"
+desc = '''
+§6.4, zeros of algebraic equations: Descartes' rule of signs (Property 6.5) and Cauchy's bound
+(Property 6.6) from Mathlib, Horner's scheme (6.25)–(6.27) and synthetic division (6.28), the
+deflation identity, the Newton–Horner method (6.29) with `p'(z) = q(z; z)`, and Muller's method
+(6.30) with its cited order. Polynomials are `ℝ[X]` (the book's real coefficients); where the book
+speaks of complex roots (Property 6.6, Newton–Horner in complex arithmetic) the statement is over
+`ℂ` through `p.map Complex.ofReal`. Examples 6.7–6.8 are tables of computed roots and have no node;
+the deflation *procedure* (steps 1–3 of §6.4.1) is captured by `deflation` and the two step
+definitions, as the brief prescribes for algorithms.
+'''
+
+[[node]]
+id = "property_6_5"
+kind = "theorem"
+desc = '''**Property 6.5 (Descartes' rule of signs), first half:** for `p : ℝ[X]`, the number `k` of
+positive real roots counted with multiplicity, `p.roots.countP (0 < ·)`, satisfies
+`k ≤ p.signVariations`. Mathlib's `Polynomial.roots_countP_pos_le_signVariations`
+(`Mathlib/Algebra/Polynomial/RuleOfSigns.lean:379`); Mathlib's `signVariations` ignores zero
+coefficients, as the book's "number of sign changes in `{a_j}`" must. ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 6.5'
+
+[[node]]
+id = "property_6_5_parity"
+kind = "theorem"
+desc = '''**Property 6.5, second half:** `ν - k` is even, `Even (p.signVariations - p.roots.countP (0 < ·))`
+for `p ≠ 0`. Not in Mathlib; the backbone's `Polynomial.even_signVariations_sub_roots_countP_pos`
+(`RingTheory/Polynomial/RuleOfSigns`). ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter06.property_6_5", "Polynomial.even_signVariations_sub_roots_countP_pos"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 6.5'
+
+[[node]]
+id = "property_6_6"
+kind = "theorem"
+desc = '''**Property 6.6 (Cauchy's theorem):** for `p : ℝ[X]` of degree `n ≥ 1` with coefficients
+`a_k` and every complex zero `z` of `p` (`(p.map Complex.ofReal).IsRoot z`),
+`‖z‖ ≤ 1 + η` with `η = max_{0 ≤ k ≤ n-1} |a_k / a_n|`. Mathlib's
+`Polynomial.IsRoot.norm_lt_cauchyBound` (`Mathlib/Analysis/Polynomial/CauchyBound.lean:74`) gives
+the strict inequality `‖z‖₊ < cauchyBound p` with `cauchyBound p = (sup_{i < natDegree} ‖coeff i‖₊) /
+‖leadingCoeff‖₊ + 1` (`:33`), which is `1 + η` (`Finset.sup` over `range n` of `‖a_i‖₊ / ‖a_n‖₊`
+equals `(sup ‖a_i‖₊) / ‖a_n‖₊`; `cauchyBound_smul`-style normalization). Mathlib's form is stronger
+(strict) and holds over any normed division ring; the surface converts `ℝ≥0` to `ℝ` and the
+`Finset.sup` to the book's `max`. ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 6.6'
+
+[[node]]
+id = "equation_6_26"
+kind = "theorem"
+desc = '''**(6.25)–(6.26), Horner's scheme:** the nested form evaluates the polynomial,
+`Polynomial.hornerEval p.coeffList z = p.eval z`, and the intermediate values `b_k` of the
+synthetic division algorithm are `b_n = a_n`, `b_k = a_k + b_{k+1} z` with `b_0 = p(z)` —
+`Polynomial.hornerScan_coeffList`, whose recurrence is Mathlib's
+`Polynomial.coeff_divByMonic_X_sub_C_rec`. ★'''
+deps = ["Polynomial.hornerEval_coeffList", "Polynomial.hornerScan_coeffList"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.26)'
+
+[[node]]
+id = "equation_6_27"
+kind = "definition"
+desc = '''**(6.27), the associated polynomial** `q_{n-1}(x; z) = ∑_{k=1}^n b_k x^{k-1}`:
+`associatedPolynomial (p : ℝ[X]) (z : ℝ) : ℝ[X] := p /ₘ (X - C z)`, with
+`associatedPolynomial_coeff : (associatedPolynomial p z).coeff (k - 1) = b_k` for `1 ≤ k ≤ n` from
+`equation_6_26`, and `natDegree (associatedPolynomial p z) = n - 1` (`natDegree_divByMonic`). ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter06.equation_6_26"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.27)'
+
+[[node]]
+id = "equation_6_28"
+kind = "theorem"
+desc = '''**(6.28), division of polynomials:** for `h : ℝ[X]` of degree `≤ n` and `g : ℝ[X]` of degree
+`m ≤ n`, `g ≠ 0`, there are unique `δ` with `degree δ ≤ n - m` and `ρ` with `degree ρ < m` such
+that `h = g * δ + ρ`. Existence is `EuclideanDomain.quotient_mul_add_remainder_eq` with
+`Polynomial.degree_mod_lt` and `degree_div_le`-type bounds, uniqueness from
+`Polynomial.degree_add_eq_left_of_degree_lt`; for monic `g` it is `div_modByMonic_unique`
+(`Mathlib/Algebra/Polynomial/Div.lean`). The book states `ρ ∈ P_{m-1}`, i.e. `degree ρ < m`. ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.28)'
+
+[[node]]
+id = "hornerDivision"
+kind = "theorem"
+desc = '''The display after (6.28): `p = C b_0 + (X - C z) * associatedPolynomial p z` with
+`b_0 = p.eval z`, i.e. dividing `p_n` by `x - z` gives quotient `q_{n-1}(·; z)` and remainder
+`p_n(z)`. `Polynomial.eq_X_sub_C_mul_divByMonic_add_C_eval`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter06.equation_6_27", "Polynomial.eq_X_sub_C_mul_divByMonic_add_C_eval"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 6.4.1'
+
+[[node]]
+id = "deflation"
+kind = "theorem"
+desc = '''**Deflation:** if `z` is a zero of `p` then `p = (X - C z) * associatedPolynomial p z`
+(Mathlib's `Polynomial.mul_divByMonic_eq_iff_isRoot`) and the roots of `associatedPolynomial p z`
+are the remaining `n - 1` roots of `p`: `p.roots = (associatedPolynomial p z).roots + {z}`
+(`Polynomial.roots_divByMonic_X_sub_C`). ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter06.equation_6_27", "QuarteroniSaccoSaleri.Chapter06.hornerDivision", "Polynomial.roots_divByMonic_X_sub_C"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 6.4.1'
+
+[[node]]
+id = "derivative_eq_associatedPolynomial"
+kind = "theorem"
+desc = '''**§6.4.2, `p_n'(z) = q_{n-1}(z; z)`:** `p.derivative.eval z = (associatedPolynomial p z).eval z`
+(from `p' = q + (x - z) q'`). `Polynomial.eval_divByMonic_X_sub_C_self`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter06.equation_6_27", "Polynomial.eval_divByMonic_X_sub_C_self"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 6.4.2'
+
+[[node]]
+id = "equation_6_29"
+kind = "definition"
+desc = '''**(6.29), the Newton–Horner method:** `newtonHorner (p : ℝ[X]) (r₀ : ℝ) (k : ℕ) : ℝ :=
+(NewtonHorner.step p)^[k] r₀`, `r^{(k+1)} = r^{(k)} - p_n(r^{(k)}) / q_{n-1}(r^{(k)}; r^{(k)})`, and
+`newtonHorner_eq_newton : newtonHorner p r₀ k = newton (fun x => p.eval x) (fun x => p.derivative.eval x)
+r₀ k` (`NewtonHorner.step_eq`), so that `newton_order_two` and `equation_6_22` (with
+`Polynomial.isRootOfMultiplicity_eval_iff`) describe its convergence. The complex-arithmetic variant
+the book recommends for complex roots is the same definition over `ℂ[X]`. ★'''
+deps = ["NewtonHorner.step", "NewtonHorner.step_eq", "QuarteroniSaccoSaleri.Chapter06.newton", "QuarteroniSaccoSaleri.Chapter06.derivative_eq_associatedPolynomial"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.29)'
+
+[[node]]
+id = "equation_6_30"
+kind = "definition"
+desc = '''**(6.30), Muller's method:** `muller (f : ℝ → ℝ) (x₀ x₁ x₂ : ℝ) (k : ℕ) : ℝ :=
+((Muller.step f)^[k] (x₀, x₁, x₂)).2.2`, `x^{(k+1)} = x^{(k)} - 2 f(x^{(k)}) / (w ∓ √(w² - 4 f(x^{(k)})
+f[x^{(k)}, x^{(k-1)}, x^{(k-2)}]))` with the sign maximizing the modulus of the denominator. Real
+arithmetic only (see `Muller.step`); the book's `x^{(3)}` formula before (6.30) is the same step
+before rationalization. ★'''
+deps = ["Muller.step"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.30)'
+
+[[node]]
+id = "muller_order"
+kind = "theorem"
+desc = '''The convergence claim after (6.30): for `f ∈ C³(J)` near a root `α` with `f'(α) ≠ 0`, the
+error `e^{(k)} = α - x^{(k)}` of Muller's method satisfies `|e^{(k+1)}| / |e^{(k)}|^p → |f⁽³⁾(α) / f'(α)| / 6`
+with `p ≈ 1.84` the real root of `p³ = p² + p + 1`. Not formalized: the book quotes Hildebrand
+without proof; the backbone's `Muller.exists_ball_convergesWithOrder` states the order-`p` part
+(without the limit constant) as a ★★★ open node with the route, and nothing else in the corpus
+uses it. This node restates the book's limit form and depends on it.'''
+deps = ["QuarteroniSaccoSaleri.Chapter06.equation_6_30", "Muller.exists_ball_convergesWithOrder"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 6.4.3'

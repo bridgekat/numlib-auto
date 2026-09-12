@@ -162,3 +162,31 @@ source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Definit
 [[node]]
 id = "SobolevMultiIndex.inner_eq"
 source = 'Atkinson and Han, Theoretical Numerical Analysis, 3rd edition, Corollary 7.2.4'
+
+[[node]]
+id = "SobolevMultiIndex.testFunctions"
+kind = "definition"
+desc = '''The image of the test functions `C_0^∞(Ω)` in `SobolevMultiIndex F b k p Ω μ`: the submodule of
+the elements whose function agrees, off a null set of `Ω`, with some `φ : 𝓓(Ω, F)` — the twin of
+`Sobolev.testFunctions` of `Numlib/Analysis/Sobolev/Space.lean` for the multi-index formulation.
+With `TestFunction.exists_mem_sobolevMultiIndex_testFunctions`: every test function is the function
+of an element of it (a test function is smooth with compact support, so all its `∂^α` lie in
+`L^p(Ω)` for a measure finite on compacts; `ContDiffOn.hasWeakIteratedFDerivOn` and
+`HasWeakIteratedFDerivOn.lineDeriv`). ★'''
+deps = ["SobolevMultiIndex", "MemSobolevMultiIndex.exists_sobolevMultiIndex"]
+
+[[node]]
+id = "SobolevMultiIndexZero"
+kind = "definition"
+desc = '''`SobolevMultiIndexZero F b k p Ω μ : Submodule ℝ (SobolevMultiIndex F b k p Ω μ)`, the space
+`W_0^{k,p}(Ω)` in the multi-index formulation: the topological closure of
+`SobolevMultiIndex.testFunctions`. Needed because `SobolevZero` of `Numlib/Analysis/Sobolev/Space.lean`
+lives on the tensor formulation, which is not an inner product space in Lean (its ambient space is a
+`PiLp` of `Lp` spaces of continuous multilinear maps, for which Mathlib has no
+`InnerProductSpace` instance), while at `p = 2` this one is a closed subspace of a Hilbert space —
+which is what Lax–Milgram and Galerkin need for `H^1_0(a, b)` in `Numlib/Analysis/Sobolev/Interval.lean`
+and for `H^1_0(Ω)` in general. With the instance `SobolevMultiIndexZero.instCompleteSpace`
+(a closed submodule of a complete space) and `SobolevMultiIndexZero.isClosed`. No comparison with
+`SobolevZero` is planned: the two closures live in different normed types whose norms are
+equivalent but not formally compared (see the module doc of `MultiIndex.lean`). ★'''
+deps = ["SobolevMultiIndex.testFunctions", "SobolevMultiIndex.instCompleteSpace"]

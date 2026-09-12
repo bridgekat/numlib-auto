@@ -1,0 +1,144 @@
+namespace = "Matrix"
+desc = '''
+Least-squares solutions of `A x = b` for `A : Matrix m n 𝕜`, `[RCLike 𝕜]`, in the operator picture
+of `LinearAlgebra/Matrix/SVD` — `Matrix.toEuclideanLin A` on `EuclideanSpace`, so that the
+pseudoinverse results there (`Matrix.norm_toEuclideanLin_pinv_sub_eq_iInf`,
+`Matrix.norm_pinv_le_of_normalEquations`) apply verbatim. Contents (Quarteroni–Sacco–Saleri §3.13):
+
+* `IsLeastSquaresSolution A b x` (3.73) and its characterization by the normal equations `Aᴴ A x =
+  Aᴴ b` (3.74), the projection theorem in coordinates;
+* full column rank: the unique solution `(Aᴴ A)⁻¹ Aᴴ b`, equal to `A⁺ b`, and `Aᴴ A` positive
+  definite;
+* the QR route, Theorem 3.8: with a full QR factorization `A = Q R` (`Q` unitary `m × m`, `R` upper
+  trapezoidal) the solution is `R̃⁻¹ Q̃ᴴ b` through the reduced factors, and the minimum of the
+  residual is the sum of the squares of the trailing components of `Qᴴ b`; the reduced QR
+  factorization of Property 3.3 obtained from a full one;
+* the minimal-norm least-squares solution (3.76) and Theorem 3.9: it is `A⁺ b`, uniquely;
+* the underdetermined full-row-rank case, `A⁺ = Aᴴ (A Aᴴ)⁻¹` (§3.13, last paragraph).
+
+The QR factorizations themselves are `LinearAlgebra/Matrix/QR` (`Matrix.exists_qr`, `Matrix.qr_unique`,
+`Matrix.exists_unitary_mul_upperTriangular`); the Cholesky identification of `R̃` is
+`LinearAlgebra/Matrix/Cholesky`. Prototype: `notes/qss/ch03/proto/ProtoCholeskyLS.lean` (there with the
+dot product; use `EuclideanSpace` norms in the module).
+'''
+
+[[node]]
+id = "IsLeastSquaresSolution"
+kind = "definition"
+desc = '''QSS (3.73): `IsLeastSquaresSolution A b x ↔ ∀ y, ‖toEuclideanLin A x - b‖ ≤ ‖toEuclideanLin A y -
+b‖`, for `b : EuclideanSpace 𝕜 m`, `x : EuclideanSpace 𝕜 n`. ★'''
+deps = []
+
+[[node]]
+id = "isLeastSquaresSolution_iff_normalEquations"
+kind = "theorem"
+desc = '''QSS (3.74): `IsLeastSquaresSolution A b x ↔ toEuclideanLin (Aᴴ * A) x = toEuclideanLin Aᴴ b`. The
+residual `A x - b` is orthogonal to the range of `A` iff `x` minimizes — the projection theorem
+(`Submodule.norm_eq_iInf_iff_inner_eq_zero` on the finite-dimensional range), and `⟪A y, A x - b⟫
+= ⟪y, Aᴴ(A x - b)⟫` (`Matrix.inner_toEuclideanLin_apply`-style adjoint identities of
+`Analysis/Matrix/ToEuclideanLin`). The book derives it from `∇Φ = 0`; the projection form needs no
+calculus. ★★'''
+deps = ["Matrix.IsLeastSquaresSolution"]
+
+[[node]]
+id = "posDef_conjTranspose_mul_self_of_linearIndependent"
+kind = "theorem"
+desc = '''QSS §3.13: `LinearIndependent 𝕜 Aᵀ → (Aᴴ * A).PosDef` (full column rank). Mathlib's
+`Matrix.PosDef.conjTranspose_mul_self A (h : Function.Injective A.mulVec)`, plus
+`Matrix.mulVec_injective_iff_linearIndependent` for the hypothesis. ★'''
+deps = []
+
+[[node]]
+id = "existsUnique_isLeastSquaresSolution"
+kind = "theorem"
+desc = '''QSS §3.13 after (3.74): `LinearIndependent 𝕜 Aᵀ → ∃! x, IsLeastSquaresSolution A b x`, the
+solution being `toEuclideanLin ((Aᴴ * A)⁻¹ * Aᴴ) b`. From the normal equations and `(Aᴴ A).PosDef.isUnit`.
+★'''
+deps = ["Matrix.isLeastSquaresSolution_iff_normalEquations", "Matrix.posDef_conjTranspose_mul_self_of_linearIndependent"]
+
+[[node]]
+id = "pinv_eq_inv_conjTranspose_mul_self_mul_conjTranspose"
+kind = "theorem"
+desc = '''`LinearIndependent 𝕜 Aᵀ → A.pinv = (Aᴴ * A)⁻¹ * Aᴴ`: both satisfy the Penrose conditions
+(`Matrix.pinv_unique` of `LinearAlgebra/Matrix/SVD`). Also `gramPinv = (Aᴴ A)⁻¹` in this case. ★'''
+deps = ["Matrix.posDef_conjTranspose_mul_self_of_linearIndependent", "Matrix.pinv_unique"]
+
+[[node]]
+id = "isLeastSquaresSolution_iff_eq_pinv_of_linearIndependent"
+kind = "theorem"
+desc = 'Full column rank: `IsLeastSquaresSolution A b x ↔ x = toEuclideanLin A.pinv b`. ★'
+deps = ["Matrix.existsUnique_isLeastSquaresSolution", "Matrix.pinv_eq_inv_conjTranspose_mul_self_mul_conjTranspose"]
+
+[[node]]
+id = "IsQR"
+kind = "definition"
+desc = '''QSS Definition 3.1 (full QR): for `A : Matrix (Fin M) (Fin N) 𝕜` with `N ≤ M`, `IsQR A Q R` says `Q
+∈ unitaryGroup (Fin M) 𝕜`, `R` is upper trapezoidal — `∀ i j, (j : ℕ) < i → R i j = 0`, which makes
+the rows from `N` on vanish — and `A = Q * R`. Existence, `exists_isQR`, is
+`Matrix.exists_unitary_mul_upperTriangular` of `LinearAlgebra/Matrix/QR` with `Q = Pᴴ`, `R = P A`. ★'''
+deps = ["Matrix.exists_unitary_mul_upperTriangular"]
+
+[[node]]
+id = "IsQR.reduced"
+kind = "definition"
+desc = '''QSS Property 3.3, (3.48): from `IsQR A Q R` the reduced factors `Q̃ = Q.submatrix id Fin.castLE`
+(`M × N`, the first `N` columns) and `R̃ = R.submatrix Fin.castLE Fin.castLE` (`N × N`, the leading
+block), with `A = Q̃ * R̃` (the trailing rows of `R` are zero), `Q̃ᴴ * Q̃ = 1` and `R̃.IsUpperTriangular`
+(`IsQR.reducedQ_mul_reducedR`, `IsQR.conjTranspose_reducedQ_mul`, `IsQR.reducedR_isUpperTriangular`).
+Uniqueness as the book states it needs a sign normalization (`Q̃ D, D⁻¹ R̃` with unimodular diagonal
+`D` is another such pair): with `0 < R̃ i i` it is `Matrix.qr_unique`, and full rank makes the
+diagonal nonzero, so the normalization is always available. The range clause — the columns of `Q̃`
+are an orthonormal basis of the column space of `A` when `A` has full column rank — is
+`IsQR.span_reducedQ_eq` (`R̃` invertible). ★'''
+deps = ["Matrix.IsQR", "Matrix.qr_unique"]
+
+[[node]]
+id = "isLeastSquaresSolution_of_qr"
+kind = "theorem"
+desc = '''QSS Theorem 3.8, (3.75): for `A = Q̃ R̃` with `Q̃ᴴ Q̃ = 1` and `R̃` upper triangular with nonzero
+diagonal (any reduced QR, in particular `Matrix.exists_qr`), `IsLeastSquaresSolution A b
+(toEuclideanLin (R̃⁻¹ * Q̃ᴴ) b)`. Directly: it solves the normal equations, `Aᴴ A x = R̃ᴴ Q̃ᴴ Q̃ R̃ R̃⁻¹ Q̃ᴴ b
+= R̃ᴴ Q̃ᴴ b = Aᴴ b`. ★'''
+deps = ["Matrix.IsLeastSquaresSolution", "Matrix.isLeastSquaresSolution_iff_normalEquations"]
+
+[[node]]
+id = "norm_sub_sq_eq_of_isQR"
+kind = "theorem"
+desc = '''QSS Theorem 3.8, the value of the minimum: for `IsQR A Q R` with `A` of full column rank,
+`‖toEuclideanLin A x* - b‖² = ∑ i ∈ univ.filter (N ≤ ·), ‖(toEuclideanLin Qᴴ b) i‖²` at the
+solution `x*`, and more generally `‖A x - b‖² = ‖R̃ x - Q̃ᴴ b‖² + ∑_{i ≥ N} |(Qᴴ b)_i|²` for every `x`
+(the book's display in the proof). Unitary invariance `‖Q y‖ = ‖y‖` (`Matrix.norm_mulVec_of_mem_unitaryGroup`
+in `Analysis/Matrix/ToEuclideanLin`) and the block shape of `R`. ★★'''
+deps = ["Matrix.IsQR", "Matrix.IsQR.reduced", "Matrix.isLeastSquaresSolution_of_qr"]
+
+[[node]]
+id = "IsMinNormLeastSquaresSolution"
+kind = "definition"
+desc = '''QSS (3.76): `IsLeastSquaresSolution A b x ∧ ∀ y, IsLeastSquaresSolution A b y → ‖x‖ ≤ ‖y‖`. ★'''
+deps = ["Matrix.IsLeastSquaresSolution"]
+
+[[node]]
+id = "isMinNormLeastSquaresSolution_pinv"
+kind = "theorem"
+desc = '''QSS Theorem 3.9, existence: `IsMinNormLeastSquaresSolution A b (toEuclideanLin A.pinv b)`. The two
+clauses are `Matrix.norm_toEuclideanLin_pinv_sub_eq_iInf` and `Matrix.norm_pinv_le_of_normalEquations`
+of `LinearAlgebra/Matrix/SVD`, through `isLeastSquaresSolution_iff_normalEquations`. ★'''
+deps = ["Matrix.IsMinNormLeastSquaresSolution", "Matrix.isLeastSquaresSolution_iff_normalEquations", "Matrix.norm_toEuclideanLin_pinv_sub_eq_iInf", "Matrix.norm_pinv_le_of_normalEquations"]
+
+[[node]]
+id = "IsMinNormLeastSquaresSolution.eq_pinv"
+kind = "theorem"
+desc = '''QSS Theorem 3.9, uniqueness: `IsMinNormLeastSquaresSolution A b x → x = toEuclideanLin A.pinv b`.
+Two least-squares solutions differ by an element of `ker A`; `A⁺ b ∈ (ker A)ᗮ` (it lies in the range
+of `Aᴴ`, `pinv = gramPinv * Aᴴ`), so `‖x‖² = ‖A⁺ b‖² + ‖x - A⁺ b‖²` and minimality forces `x = A⁺ b`.
+★★'''
+deps = ["Matrix.IsMinNormLeastSquaresSolution", "Matrix.isMinNormLeastSquaresSolution_pinv"]
+
+[[node]]
+id = "pinv_eq_conjTranspose_mul_inv_self_mul_conjTranspose"
+kind = "theorem"
+desc = '''The underdetermined case (QSS §3.13, last paragraph): `LinearIndependent 𝕜 A` (full row rank, `m ≤
+n`) `→ A.pinv = Aᴴ * (A * Aᴴ)⁻¹`, so the minimal-norm solution of the consistent system `A x = b`
+is `Aᴴ (A Aᴴ)⁻¹ b`; the book reaches it through the QR factorization of `Aᴴ`, `Aᴴ = Q̃ R̃`, as
+`Q̃ R̃⁻ᴴ b` (`minNorm_eq_of_qr_conjTranspose`, the same identity). Penrose conditions again. ★'''
+deps = ["Matrix.pinv_unique", "Matrix.isMinNormLeastSquaresSolution_pinv"]

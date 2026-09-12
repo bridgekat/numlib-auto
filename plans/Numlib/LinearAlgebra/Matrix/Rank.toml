@@ -20,3 +20,21 @@ id = "kerMulVecLinBlockDiagonal'Equiv"
 
 [[node]]
 id = "finrank_ker_mulVecLin_blockDiagonal'"
+
+[[node]]
+id = "card_le_rank_of_det_submatrix_ne_zero"
+kind = "theorem"
+desc = '''If `r : Fin k → m` and `c : Fin k → n` are injective and `(A.submatrix r c).det ≠ 0` (`A : Matrix m n K`, `K` a field), then `k ≤ A.rank`: a nonvanishing minor of order `k` forces rank at least `k`. From `Matrix.rank_submatrix_le` (rank of a submatrix is at most the rank) and `Matrix.rank_of_isUnit`/`rank_eq_finrank_range_toLin` for the square submatrix with nonzero determinant. ★'''
+deps = []
+
+[[node]]
+id = "exists_det_submatrix_ne_zero"
+kind = "theorem"
+desc = '''There are injective `r : Fin A.rank → m` and `c : Fin A.rank → n` with `(A.submatrix r c).det ≠ 0`: a matrix of rank `k` has a nonsingular `k × k` submatrix. Proof: choose `k` linearly independent columns (`exists_linearIndependent` in the column span, `rank_eq_finrank_span_cols`), so `A.submatrix id c` has rank `k` and injective transpose; then `k` linearly independent rows of that `m × k` matrix (`rank_transpose`), and a square matrix with independent rows is a unit (`linearIndependent_rows_iff_isUnit`). ★★'''
+deps = []
+
+[[node]]
+id = "rank_eq_sup_card_det_submatrix_ne_zero"
+kind = "theorem"
+desc = '''Quarteroni–Sacco–Saleri Definition 1.12 as a theorem: `A.rank = sSup {k | ∃ (r : Fin k ↪ m) (c : Fin k ↪ n), (A.submatrix r c).det ≠ 0}` (the set is bounded by `min (card m) (card n)` and contains `0` with the empty minor `det = 1`). The two previous nodes are the two inequalities. Full rank, `A.rank = min (card m) (card n)`, is then "some minor of maximal order does not vanish". ★'''
+deps = ["Matrix.card_le_rank_of_det_submatrix_ne_zero", "Matrix.exists_det_submatrix_ne_zero"]

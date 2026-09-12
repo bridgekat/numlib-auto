@@ -1,0 +1,217 @@
+namespace = "QuarteroniSaccoSaleri.Chapter03"
+desc = '''
+§3.1, stability analysis of linear systems: the condition number and its elementary properties
+(§3.1.1, with Remark 3.1 on the distance to singularity), the forward a priori analysis (Theorems
+3.1–3.3 and the componentwise bounds (3.15)–(3.16), Example 3.1), the backward a priori analysis
+(Property 3.1, (3.19)) and the a posteriori analysis ((3.20)–(3.21) and the computed-residual
+bound). Everything normwise is a specialization of `Numlib/LinearSolve/Perturbation` and
+`Numlib/Analysis/Normed/Ring/CondNumber`; the componentwise part is
+`Numlib/LinearSolve/Perturbation/Componentwise`. `K_p(A)` is chapter 1's restatement of (3.4).
+'''
+
+[[node]]
+id = "one_le_condNumber"
+kind = "theorem"
+desc = '''§3.1.1: `1 ≤ K_p(A)` for nonsingular `A : Matrix (Fin n) (Fin n) ℝ`, `n ≠ 0`, since `1 = ‖A A⁻¹‖ ≤
+‖A‖ ‖A⁻¹‖`. `NormedRing.one_le_condNumber` on the operator. ★'''
+deps = ["NormedRing.one_le_condNumber"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.1.1'
+
+[[node]]
+id = "condNumber_inv"
+kind = "theorem"
+desc = '§3.1.1: `K_p(A⁻¹) = K_p(A)`; `NormedRing.condNumber_inverse`. ★'
+deps = ["NormedRing.condNumber_inverse"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.1.1'
+
+[[node]]
+id = "condNumber_smul"
+kind = "theorem"
+desc = '§3.1.1: `α ≠ 0 → K_p(α • A) = K_p(A)`; `NormedRing.condNumber_smul`. ★'
+deps = ["NormedRing.condNumber_smul"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.1.1'
+
+[[node]]
+id = "condNumber_two_of_orthogonal"
+kind = "theorem"
+desc = '''§3.1.1: `A ∈ orthogonalGroup (Fin n) ℝ → K₂(A) = 1`, because `‖A‖₂ = 1 = ‖Aᵀ‖₂` (unitary invariance,
+`Matrix.l2_opNorm_unitary_mul` of chapter 1's `Analysis/Matrix/OperatorNorm`) and `A⁻¹ = Aᵀ`. ★'''
+deps = ["Matrix.l2_opNorm_unitary_mul"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.1.1'
+
+[[node]]
+id = "condNumber_two_eq_div_singularValues"
+kind = "theorem"
+desc = '''§3.1.1: for nonsingular `A`, `K₂(A) = σ₁(A) / σₙ(A)`, the ratio of the largest and smallest singular
+values: `Matrix.condNumber_l2_eq_div_singularValues` of `Numlib/LinearAlgebra/Matrix/SVD`. ★'''
+deps = ["Matrix.condNumber_l2_eq_div_singularValues"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.1.1'
+
+[[node]]
+id = "equation_3_5"
+kind = "theorem"
+desc = '''(3.5): for symmetric positive definite `A`, `K₂(A) = λ_max / λ_min` (`= ρ(A) ρ(A⁻¹)`);
+`Matrix.PosDef.condNumber_l2_eq_div_eigenvalues`. ★'''
+deps = ["Matrix.PosDef.condNumber_l2_eq_div_eigenvalues"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.5)'
+
+[[node]]
+id = "remark_3_1"
+kind = "theorem"
+desc = '''Remark 3.1, (3.6): `dist_p(A) = min {‖δA‖_p / ‖A‖_p : A + δA singular} = 1 / K_p(A)` for nonsingular
+`A`, as an `IsLeast` statement (Kahan). `ContinuousLinearEquiv.isLeast_dist_singular` on the
+operator on `PiLp p (Fin n → ℝ)`. ★★'''
+deps = ["ContinuousLinearEquiv.isLeast_dist_singular"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 3.1'
+
+[[node]]
+id = "equation_3_7"
+kind = "theorem"
+desc = '''(3.7), corrected: if `‖δA‖_p ‖A⁻¹‖_p < 1` then `A + δA` is nonsingular. The book prints
+`‖δA‖_p ‖A‖_p < 1` and states the implication the other way ("if `A + δA` is nonsingular then
+(3.7)"), which is false (`δA = A`); Theorem 3.1's proof uses (3.7) in the corrected reading, "`A⁻¹
+δA` has norm less than 1". `NormedRing.norm_le_of_not_isUnit_add` contrapositive /
+`Units.isUnit_add_of_norm_lt`. ★'''
+deps = ["NormedRing.norm_le_of_not_isUnit_add"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.7)'
+
+[[node]]
+id = "theorem_3_1"
+kind = "theorem"
+desc = '''Theorem 3.1, (3.9): `A` nonsingular, `‖δA‖ ‖A⁻¹‖ < 1`, `A x = b`, `b ≠ 0`, `(A + δA)(x + δx) = b +
+δb` give `‖δx‖ / ‖x‖ ≤ K(A) / (1 - K(A) ‖δA‖ / ‖A‖) * (‖δb‖ / ‖b‖ + ‖δA‖ / ‖A‖)`, in the induced
+`p`-norm. `relative_error_le_condNumber` with `y = x + δx`; the denominator `1 - K ‖δA‖/‖A‖ = 1 -
+‖A⁻¹‖ ‖δA‖`. ★'''
+deps = ["relative_error_le_condNumber", "QuarteroniSaccoSaleri.Chapter03.equation_3_7"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 3.1'
+
+[[node]]
+id = "theorem_3_2"
+kind = "theorem"
+desc = '''Theorem 3.2, upper inequality of (3.11): with `δA = 0`, `‖δx‖ / ‖x‖ ≤ K(A) ‖δb‖ / ‖b‖`;
+`ContinuousLinearEquiv.relative_error_le_condNumber_mul_relative_residual`. ★'''
+deps = ["ContinuousLinearEquiv.relative_error_le_condNumber_mul_relative_residual"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 3.2'
+
+[[node]]
+id = "theorem_3_2_lower"
+kind = "theorem"
+desc = '''Theorem 3.2, lower inequality of (3.11): `(1 / K(A)) ‖δb‖ / ‖b‖ ≤ ‖δx‖ / ‖x‖`;
+`ContinuousLinearEquiv.relative_residual_le_condNumber_mul_relative_error`, dividing by `K ≥ 1`. ★'''
+deps = ["ContinuousLinearEquiv.relative_residual_le_condNumber_mul_relative_error", "QuarteroniSaccoSaleri.Chapter03.one_le_condNumber"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 3.2'
+
+[[node]]
+id = "theorem_3_3"
+kind = "theorem"
+desc = '''Theorem 3.3, (3.13): `‖δA‖ ≤ γ ‖A‖`, `‖δb‖ ≤ γ ‖b‖`, `γ K(A) < 1` give `‖δx‖ / ‖x‖ ≤ 2γ / (1 - γ K(A))
+K(A)`; `relative_error_le_of_norm_le_mul`. ★'''
+deps = ["relative_error_le_of_norm_le_mul", "QuarteroniSaccoSaleri.Chapter03.theorem_3_1"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 3.3'
+
+[[node]]
+id = "theorem_3_3_sum"
+kind = "theorem"
+desc = '''Theorem 3.3, (3.12): under the same hypotheses `‖x + δx‖ / ‖x‖ ≤ (1 + γ K(A)) / (1 - γ K(A))`;
+`norm_add_div_le_of_norm_le_mul`. ★'''
+deps = ["norm_add_div_le_of_norm_le_mul", "QuarteroniSaccoSaleri.Chapter03.theorem_3_3"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 3.3'
+
+[[node]]
+id = "equation_3_15"
+kind = "theorem"
+desc = '''(3.15): if `|δA| ≤ γ |A|`, `|δb| ≤ γ |b|` entrywise and `γ ‖|A⁻¹| |A|‖_∞ < 1`, then
+`‖δx‖_∞ / ‖x‖_∞ ≤ γ ‖|A⁻¹||A||x| + |A⁻¹||b|‖_∞ / ((1 - γ ‖|A⁻¹||A|‖_∞) ‖x‖_∞) ≤ 2γ / (1 - γ
+‖|A⁻¹||A|‖_∞) ‖|A⁻¹||A|‖_∞`; `Matrix.norm_sub_le_of_abs_le_abs`. The book's second line prints
+`‖A⁻¹||A|‖_∞`, read as `‖|A⁻¹||A|‖_∞`. ★'''
+deps = ["Matrix.norm_sub_le_of_abs_le_abs"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.15)'
+
+[[node]]
+id = "equation_3_16_a"
+kind = "theorem"
+desc = '''(3.16), `δb = 0`: `|δx_i| ≤ γ |r_(i)ᵀ| |A| |x + δx|` with `r_(i)ᵀ = e_iᵀ A⁻¹`;
+`Matrix.abs_sub_apply_le_of_abs_le_abs`. ★'''
+deps = ["Matrix.abs_sub_apply_le_of_abs_le_abs"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.16)'
+
+[[node]]
+id = "equation_3_16_b"
+kind = "theorem"
+desc = '''(3.16), `δA = 0`: `|δx_i| / |x_i| ≤ γ |r_(i)ᵀ| |b| / |r_(i)ᵀ b|` when `x_i ≠ 0`;
+`Matrix.abs_sub_apply_div_le_of_abs_le_abs`. ★'''
+deps = ["Matrix.abs_sub_apply_div_le_of_abs_le_abs"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.16)'
+
+[[node]]
+id = "example_3_1"
+kind = "theorem"
+desc = '''Example 3.1, (3.17): for `0 < α < 1`, `A = !![α, α⁻¹; 0, α⁻¹]`, `b = ![α² + α⁻¹, α⁻¹]`, `x = ![α, 1]`:
+`A *ᵥ x = b`, `|A⁻¹| |A| |x| = ![α + 2 α⁻², 1] = |A⁻¹| |b|`, and the amplification factor of (3.16)
+for the largest component is `|r_(2)ᵀ| |A| |x| / |x₂| = 1`. Compute `A⁻¹ = !![α⁻¹, -α⁻¹; 0, α]`;
+`norm_num`/`field_simp`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter03.equation_3_16_a"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 3.1'
+
+[[node]]
+id = "property_3_1_isUnit"
+kind = "theorem"
+desc = '''Property 3.1, first clause: with `R = A C - 1` and `‖R‖ < 1` (any induced norm), `A` and `C` are
+nonsingular; `isUnit_of_norm_mul_sub_one_lt` (matrices are Dedekind-finite:
+`Matrix.mul_eq_one_comm`). ★'''
+deps = ["isUnit_of_norm_mul_sub_one_lt"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 3.1'
+
+[[node]]
+id = "property_3_1_inv"
+kind = "theorem"
+desc = '''Property 3.1, (3.18) first bound: `‖A⁻¹‖ ≤ ‖C‖ / (1 - ‖R‖)`;
+`NormedRing.norm_inverse_le_of_norm_mul_sub_one_lt`. ★'''
+deps = ["NormedRing.norm_inverse_le_of_norm_mul_sub_one_lt", "QuarteroniSaccoSaleri.Chapter03.property_3_1_isUnit"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 3.1'
+
+[[node]]
+id = "property_3_1_sub"
+kind = "theorem"
+desc = '''Property 3.1, (3.18) second display: `‖R‖ / ‖A‖ ≤ ‖C - A⁻¹‖ ≤ ‖C‖ ‖R‖ / (1 - ‖R‖)`;
+`NormedRing.norm_mul_sub_one_div_norm_le_norm_sub_inverse` and
+`NormedRing.norm_sub_inverse_le_of_norm_mul_sub_one_lt`. ★'''
+deps = ["NormedRing.norm_mul_sub_one_div_norm_le_norm_sub_inverse", "NormedRing.norm_sub_inverse_le_of_norm_mul_sub_one_lt", "QuarteroniSaccoSaleri.Chapter03.property_3_1_isUnit"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 3.1'
+
+[[node]]
+id = "equation_3_19"
+kind = "theorem"
+desc = '''(3.19): interpreting `C` as `(A + δA)⁻¹`, i.e. `δA = C⁻¹ - A`, if `‖R‖ < 1` then `‖δA‖ ≤ ‖R‖ ‖A‖ /
+(1 - ‖R‖)`; `NormedRing.norm_sub_le_of_norm_mul_sub_one_lt` (with the hypothesis on `‖C A - 1‖`
+where the roles are exchanged — see that node). ★'''
+deps = ["NormedRing.norm_sub_le_of_norm_mul_sub_one_lt", "QuarteroniSaccoSaleri.Chapter03.property_3_1_inv"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.19)'
+
+[[node]]
+id = "equation_3_20"
+kind = "theorem"
+desc = '''(3.20), a posteriori: for `A x = b`, any `y`, `r = b - A y`, `e = y - x`, if `‖A C - 1‖ < 1` then `‖e‖
+≤ ‖r‖ ‖C‖ / (1 - ‖A C - 1‖)`; `norm_error_le_of_norm_mul_sub_one_lt`. ★'''
+deps = ["norm_error_le_of_norm_mul_sub_one_lt", "QuarteroniSaccoSaleri.Chapter03.property_3_1_inv"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.20)'
+
+[[node]]
+id = "equation_3_21"
+kind = "theorem"
+desc = '''(3.21): `‖e‖ / ‖x‖ ≤ K(A) ‖r‖ / ‖b‖` for `b ≠ 0`; `relative_error_le_condNumber_mul_relative_residual`.
+Also the display in §3.10 before Example 3.8, `‖x - x̂‖/‖x‖ ≤ K(A) ‖r̂‖ / (‖A‖ ‖x‖) ≤ K(A) ‖r̂‖ / ‖b‖`. ★'''
+deps = ["relative_error_le_condNumber_mul_relative_residual"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (3.21)'
+
+[[node]]
+id = "computedResidualErrorBound"
+kind = "theorem"
+desc = '''§3.1.4, last display (the LAPACK estimate): if the computed residual `r̂ = fl(b - A y)` is an
+admissible `FloatingPoint.RoundsAffineStep m (-A) b y r̂` with `(n + 1) u < 1`, then
+`‖e‖_∞ / ‖y‖_∞ ≤ ‖|A⁻¹| (|r̂| + γ_{n+1} (|A| |y| + |b|))‖_∞ / ‖y‖_∞` for `y ≠ 0`, where `γ_{n+1}
+= (n+1) u / (1 - (n+1) u)` is `FloatingPoint.gamma m.u (n + 1)`.
+`FloatingPoint.exists_roundsAffineStep_eq_add` supplies `|δr| ≤ γ_{n+1}(|A||y| + |b|)` and
+`Matrix.norm_sub_le_of_computedResidual` does the rest. ★'''
+deps = ["Matrix.norm_sub_le_of_computedResidual", "FloatingPoint.exists_roundsAffineStep_eq_add"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 3.1.4'

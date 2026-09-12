@@ -20,3 +20,60 @@ id = "dft_radix_two"
 
 [[node]]
 id = "dft_radix_two_add"
+
+[[node]]
+id = "_root_.DFT.coeff"
+kind = "definition"
+desc = '''The discrete Fourier coefficients of `f : ℝ → ℂ` on the `N` equispaced nodes `x_j = 2πj/N`
+(`Quadrature.angleNode N j`) over the frequency window `m, m+1, …, m+N-1` (`m : ℤ`):
+`DFT.coeff N m f k = N⁻¹ ∑_{j<N} f (x_j) exp (-i (k + m) x_j)` for `k : ℕ` (used for `k < N`). The
+textbook's (10.52) is `m = -N/2` for even `N`; the classical unshifted DFT is `m = 0`. ★'''
+deps = ["Quadrature.angleNode"]
+
+[[node]]
+id = "_root_.DFT.interp"
+kind = "definition"
+desc = '''The discrete Fourier series `DFT.interp N m f x = ∑_{k<N} DFT.coeff N m f k * exp (i (k + m) x)`,
+a trigonometric polynomial with frequencies in the window (Quarteroni–Sacco–Saleri (10.53)). ★'''
+deps = ["DFT.coeff"]
+
+[[node]]
+id = "_root_.DFT.sum_exp_neg_sub"
+kind = "theorem"
+desc = '''Discrete orthogonality of the exponentials (Quarteroni–Sacco–Saleri Lemma 10.1, (10.54)): for
+`0 < N` and `j, l < N`, `(2π/N) ∑_{k<N} exp (-i (l - j) x_k) = if j = l then 2π else 0`. This is
+`Quadrature.sum_exp_angleNode` at `p = j - l`, where `N ∣ j - l ↔ j = l` because `|j - l| < N`. ★'''
+deps = ["Quadrature.sum_exp_angleNode", "Quadrature.angleNode"]
+
+[[node]]
+id = "_root_.DFT.interp_angleNode"
+kind = "theorem"
+desc = '''**The discrete Fourier series interpolates at the nodes** (Quarteroni–Sacco–Saleri (10.55)):
+for `0 < N`, every window `m`, every `f` and `j < N`, `DFT.interp N m f (x_j) = f (x_j)`. Substitute
+the definition, exchange the two finite sums, and apply `DFT.sum_exp_neg_sub`; the window offset
+`m` cancels between `coeff` and `interp`. ★★'''
+deps = ["DFT.interp", "DFT.sum_exp_neg_sub"]
+
+[[node]]
+id = "_root_.DFT.coeff_eq_dft_mulVec"
+kind = "theorem"
+desc = '''The matrix form: for `0 < N`, `DFT.coeff N m f k = N⁻¹ ((Matrix.dft N)ᴴ *ᵥ (fun j : Fin N => ω^(-(m j))
+* f (x_j))) k` with `ω = exp (2πi/N)` — the windowed coefficients are the unshifted conjugate DFT of
+the modulated samples `ω^{-mj} f(x_j)`; for `m = -N/2` the modulation is `(-1)^j`. So the book's
+matrices `T` and `C = T⁻¹` are `N⁻¹ (dft N)ᴴ · diag(ω^{-mj})` and its inverse from
+`Matrix.inv_conjTranspose_dft`. ★'''
+deps = ["DFT.coeff", "Matrix.dft", "Matrix.inv_conjTranspose_dft"]
+
+[[node]]
+id = "_root_.DFT.coeff_eq_tsum_fourierCoeff"
+kind = "theorem"
+desc = '''**Aliasing.** For `f : ℝ → ℂ` continuous and `2π`-periodic with absolutely summable Fourier
+coefficients `f̂ : ℤ → ℂ` (`fourierCoeff` on `AddCircle (2π)`, `Summable f̂`), and `0 < N`, `k < N`:
+`DFT.coeff N m f k = ∑' j : ℤ, f̂ (k + m + j N)` — the discrete coefficient is the sum of the exact
+coefficients at all frequencies congruent to `k + m` mod `N`. Proof: `f (x_j) = ∑' p, f̂ p exp (i p
+x_j)` (uniform convergence of an absolutely summable Fourier series, `hasSum_fourier_series_of_summable`),
+exchange the finite sum over `j` with the `tsum` (`tsum_sum` / `Summable.sum`), and
+`Quadrature.sum_exp_angleNode` at `p - (k + m)` keeps exactly the multiples of `N`. This is the
+identity behind every interpolation-error estimate of Quarteroni–Sacco–Saleri §10.9 and the
+"aliasing" the brief asks for; its `L²` form for `f ∈ H^s` is not planned. ★★'''
+deps = ["DFT.coeff", "Quadrature.sum_exp_angleNode"]

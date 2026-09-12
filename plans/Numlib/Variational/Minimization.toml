@@ -13,3 +13,33 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.13"
 [[node]]
 id = "IsMinOn.eq_of_strictConvexOn"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Theorem 3.3.13"
+
+[[node]]
+id = "StrongConvexOn.isCoerciveFunctionalOn"
+kind = "theorem"
+desc = '''A strongly convex function on a convex set `K` of a real inner product space that is
+bounded below on some ball around a point of `K` — in particular a lower semicontinuous one — is
+coercive on `K`: `StrongConvexOn K m f`, `0 < m`, `x₀ ∈ K`, `∃ r > 0, BddBelow (f '' (K ∩ ball x₀ r))`
+imply `IsCoerciveFunctionalOn f K`. Proof: for `y ∈ K` with `‖y - x₀‖ > r`, the point
+`z = (1 - t) • x₀ + t • y` with `t = r / (2 ‖y - x₀‖)` lies in `K ∩ ball x₀ r`, and the strong
+convexity inequality `f z ≤ (1-t) f x₀ + t f y - (m/2) t (1-t) ‖y - x₀‖²` rearranges to
+`f y ≥ (f z - (1-t) f x₀) / t + (m/2)(1-t) ‖y - x₀‖² ≥ C + (m/4) ‖y - x₀‖²` using the lower
+bound on `f z` (note `1/t ≤ 2‖y - x₀‖/r` and `(f z - f x₀)/t ≥ -(|f x₀| + |inf|) · 2‖y - x₀‖/r`,
+which is dominated by the quadratic term). Mathlib's `StrongConvexOn s m f` is
+`UniformConvexOn s (fun r => m / 2 * r ^ 2) f`, so the book's constant `ρ` in (7.49) is `m / 2`.
+★★'''
+deps = ["IsCoerciveFunctionalOn"]
+
+[[node]]
+id = "existsUnique_isMinOn_of_strongConvexOn"
+kind = "theorem"
+desc = '''Property 7.10, corrected: on a finite-dimensional real inner product space, if `K` is
+nonempty, closed and convex, `f` is lower semicontinuous on `K` and `StrongConvexOn K m f` with
+`0 < m`, then `∃! x, x ∈ K ∧ IsMinOn f K x`, and every local minimizer of `f` on `K` is that point
+(`IsMinOn.of_isLocalMinOn_of_convexOn`, Mathlib). The book omits the semicontinuity, without
+which the statement fails: `f x = (x - 1)²` on `[0, 1)` and `f 1 = 5` is strongly convex on the
+closed convex `[0, 1]` and has no minimizer. Proof: existence from
+`exists_isMinOn_of_isClosed_of_finiteDimensional` with `StrongConvexOn.isCoerciveFunctionalOn`
+(lower semicontinuity at `x₀` gives the local lower bound), uniqueness from
+`IsMinOn.eq_of_strictConvexOn` with `StrongConvexOn.strictConvexOn`. ★★'''
+deps = ["StrongConvexOn.isCoerciveFunctionalOn", "exists_isMinOn_of_isClosed_of_finiteDimensional", "IsMinOn.eq_of_strictConvexOn"]

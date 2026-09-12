@@ -1,0 +1,54 @@
+namespace = "QuarteroniSaccoSaleri.Chapter12"
+desc = '''
+§12.1, the model problem `-u'' = f` on `(0, 1)`, `u(0) = u(1) = 0`: the Green's function (12.4),
+the representation formula (12.3) with the resulting existence, uniqueness and regularity, the
+monotonicity property and the maximum principle (12.5). Everything is classical calculus on
+`[0, 1]` — interval integrals and the fundamental theorem of calculus — and needs no backbone
+beyond Mathlib; the Green's function reappears in §12.2 as `h⁻¹` times the inverse of the finite
+difference matrix (`Matrix.inv_symmTridiagonalToeplitz_neg_one_two_apply`).
+'''
+
+[[node]]
+id = "greenFunction"
+kind = "definition"
+desc = '''The Green's function (12.4): `greenFunction x s = if s ≤ x then s * (1 - x) else x * (1 - s)`, equivalently
+`min x s * (1 - max x s)`. Properties, each a node clause: `greenFunction_symm` (`G x s = G s x`),
+`greenFunction_nonneg` on `[0,1]²`, `greenFunction_zero_left`/`_one_left` (`G 0 s = G 1 s = 0`),
+`greenFunction_continuous`, and `integral_greenFunction : ∫ s in (0:ℝ)..1, greenFunction x s = x * (1 - x) / 2`.
+★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.4)'
+
+[[node]]
+id = "equation_12_3"
+kind = "theorem"
+desc = '''The representation formula: if `u` is `C²` on `Icc 0 1` with `-u'' = f` on `Ioo 0 1`, `f` continuous
+on `Icc 0 1`, and `u 0 = u 1 = 0`, then `u x = ∫ s in (0:ℝ)..1, greenFunction x s * f s` for `x ∈ Icc 0 1`
+(the book's derivation: `u = c₁ + c₂ x - ∫_0^x (x - s) f(s) ds` by two integrations, then the boundary
+conditions). Companion `equation_12_3_solution`: conversely, for every `f` continuous on `Icc 0 1` the
+function `x ↦ ∫ G(x, s) f(s) ds` is `C²` on `Icc 0 1`, satisfies `-u'' = f` and vanishes at `0` and `1`;
+so the problem has a unique `C²` solution. Regularity `f ∈ C^m ⟹ u ∈ C^{m+2}` from `u'' = -f`. The
+uniqueness half is what Theorem 12.1 assumes when it speaks of "the corresponding solution". ★★
+(differentiating under the integral with the kink at `s = x`: split the integral at `x` and use
+`intervalIntegral.integral_hasDerivAt_right`).'''
+deps = ["QuarteroniSaccoSaleri.Chapter12.greenFunction"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.3)'
+
+[[node]]
+id = "equation_12_3_monotone"
+kind = "theorem"
+desc = '''The monotonicity property stated after (12.4): if `f` is continuous and nonnegative on `Icc 0 1` then
+the solution `u` of (12.1)–(12.2) is nonnegative on `Icc 0 1` — from (12.3) and `greenFunction_nonneg`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_3", "QuarteroniSaccoSaleri.Chapter12.greenFunction"]
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §12.1, the monotonicity property after (12.4)'''
+
+[[node]]
+id = "equation_12_5"
+kind = "theorem"
+desc = '''The maximum principle (12.5): for `f` continuous on `Icc 0 1` and `u` the solution of (12.1)–(12.2),
+`‖u‖_∞ ≤ ‖f‖_∞ / 8`, stated as `∀ x ∈ Icc 0 1, |u x| ≤ (1/8) * sSup (|f| '' Icc 0 1)` (or with
+`ContinuousMap` norms on `C(Icc 0 1, ℝ)`). Proof: `|u x| ≤ ‖f‖_∞ ∫ G(x, s) ds = ‖f‖_∞ x(1 - x)/2 ≤ ‖f‖_∞/8`.
+The book writes `f ∈ C⁰(0,1)` here; continuity on the closed interval is what (12.3) used and what
+makes `‖f‖_∞` finite. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter12.equation_12_3", "QuarteroniSaccoSaleri.Chapter12.greenFunction"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.5)'

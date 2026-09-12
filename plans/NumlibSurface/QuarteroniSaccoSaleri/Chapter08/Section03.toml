@@ -1,0 +1,91 @@
+namespace = "QuarteroniSaccoSaleri.Chapter08"
+desc = '''
+QSS §8.3: piecewise Lagrange interpolation — the space `X_h^k` (8.22), the piecewise interpolant
+`Π_h^k f` with `n = k` equally spaced nodes per panel, the uniform estimate (8.23), and the `L²`
+estimates of Theorem 8.3 with its `k = 1` case (8.27).
+
+The piecewise interpolant is `piecewisePolyInterpCLM K k x node` of
+`Numlib/Approximation/Interpolation` (breakpoints `x 0 = a < ⋯ < x K = b`, i.e. `n := K - 1`
+in that module's indexing, and the panel node system `node j i = x j + (i/k)(x (j+1) - x j)`);
+the space `X_h^k` is `Spline.splineSpace a b K x k 0` of `Numlib/Approximation/Spline`; the `L²`
+estimates are `Numlib/Approximation/SobolevInterpolation`. The book's `L²(a, b)` of (8.24)–(8.25)
+is Mathlib's `Lp ℝ 2 (volume.restrict (Ioo a b))`; the statements below are written with interval
+integrals of squares, which is the same thing without the quotient. Example 8.5 is a table and is
+skipped.
+'''
+
+[[node]]
+id = "equispacedPanelNodes"
+kind = "definition"
+desc = '''The `k + 1` equally spaced nodes of every panel, `equispacedPanelNodes x k j i := x j + (i / k) (x (j + 1) - x j)`
+as points of `Icc a b`, and `isPanelNodes_equispacedPanelNodes : IsPanelNodes (K - 1) k x (equispacedPanelNodes x k)`
+for a partition with `K ≥ 1` panels and `k ≥ 1` (distinctness of the nodes within a panel, and the
+endpoint conditions `node j 0 = x j`, `node j k = x (j+1)`). ★'''
+deps = ["IsPanelNodes"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.3'
+
+[[node]]
+id = "piecewiseLagrangeInterp"
+kind = "definition"
+desc = '''`Π_h^k`: `piecewiseLagrangeInterp x K k := piecewisePolyInterpCLM (K - 1) k x (equispacedPanelNodes x k)`,
+and `piecewiseLagrangeInterp_apply_of_mem`: on the panel `[x j, x (j+1)]` it is the Lagrange
+interpolant of `f` at that panel's nodes (`piecewisePolyInterpCLM_apply_of_mem`). ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter08.equispacedPanelNodes", "piecewisePolyInterpCLM", "piecewisePolyInterpCLM_apply_of_mem"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.3'
+
+[[node]]
+id = "equation_8_22"
+kind = "theorem"
+desc = '''(8.22): `X_h^k = {v ∈ C⁰[a, b] : v|_{I_j} ∈ 𝒫_k ∀ j}` is `Spline.splineSpace a b K x k 0`, and
+it is the range of the piecewise interpolation operator:
+`LinearMap.range (piecewiseLagrangeInterp x K k) = Spline.splineSpace a b K x k 0` for `k ≥ 1`.
+`⊆` is `piecewiseLagrangeInterp_apply_of_mem` (a Lagrange interpolant is a polynomial of degree
+`≤ k` on each panel and the operator's values are continuous); `⊇` because a `v ∈ X_h^k` is
+reproduced by the operator, being a polynomial of degree `≤ k` on each panel and hence its own
+Lagrange interpolant there (`Lagrange.eq_interpolate_of_eval_eq`). ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter08.piecewiseLagrangeInterp", "Spline.splineSpace"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.22)'
+
+[[node]]
+id = "equation_8_23"
+kind = "theorem"
+desc = '''(8.23): for `f` of class `C^{k+1}` (a `C^{k+1}` map `ℝ → ℝ` agreeing with `F : C(Icc a b, ℝ)`
+on `[a, b]`), a partition of mesh `h = max_j (x (j+1) - x j)` and `k ≥ 1`,
+`‖F - piecewiseLagrangeInterp x K k F‖ ≤ h^(k+1) / (k + 1)! * M` whenever `|f^{(k+1)}| ≤ M` on
+`[a, b]`, so `C = 1/(k+1)!` in the book's `C h^{k+1} ‖f^{(k+1)}‖_∞`.
+`norm_sub_piecewisePolyInterpCLM_le` with the nodal polynomial of a panel bounded by `W = h^{k+1}`
+(each factor `|t - node j i| ≤ h`). ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter08.piecewiseLagrangeInterp", "norm_sub_piecewisePolyInterpCLM_le"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.23)'
+
+[[node]]
+id = "theorem_8_3"
+kind = "theorem"
+desc = '''Theorem 8.3, (8.26) with `C = 1`, in the form the backbone proves: for `k ≥ 1`, `0 ≤ m ≤ k`, `f`
+of class `C^k` on `[a, b]` whose `k`-th derivative is the integral of a square-integrable `g`
+(`iteratedDeriv k f t - iteratedDeriv k f s = ∫ r in s..t, g r` on `[a, b]` — the concrete meaning
+of "`f^{(m)} ∈ L²(a, b)` for `m ≤ k + 1`", `g` being `f^{(k+1)}`), a partition of mesh `≤ h` and
+`F` the restriction of `f`,
+`∑ j < K, ∫ t in x j..x (j+1), (iteratedDeriv m f t - (derivative^[m] (panelPoly (equispacedPanelNodes x k) j F)).eval t)^2 ≤ h^(2 (k + 1 - m)) * ∫ t in a..b, g t ^ 2`,
+i.e. `‖(f - Π_h^k f)^{(m)}‖_{L²} ≤ h^{k+1-m} ‖f^{(k+1)}‖_{L²}` panel by panel (for `m ≥ 2` the
+derivative of `Π_h^k f` exists only inside the panels, which is how the book's left side must be
+read; for `m = 0, 1` it is the honest `L²(a, b)` norm, `theorem_8_3_L2`). The case `m = k + 1` is
+trivial. `SobolevInterpolation`'s `sum_integral_sq_sub_panelPoly_le` and
+`integral_sq_sub_piecewisePolyInterpCLM_le`; the restatement over `MemSobolev f (k+1) 2 (Ioo a b)`
+is `sobolevSeminorm_sub_piecewisePolyInterp_le` there, pending `Numlib/Analysis/Sobolev/Interval`.
+★'''
+deps = ["QuarteroniSaccoSaleri.Chapter08.piecewiseLagrangeInterp", "sum_integral_sq_sub_panelPoly_le", "integral_sq_sub_piecewisePolyInterpCLM_le"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 8.3'
+
+[[node]]
+id = "equation_8_27"
+kind = "theorem"
+desc = '''(8.27), `k = 1` with `C₁ = C₂ = 1`: for `f` of class `C¹` with `f'(t) - f'(s) = ∫_s^t g` on
+`[a, b]`, `g` square-integrable, a partition of mesh `≤ h`, and `Π_h^1 f = piecewiseLinearInterpCLM`,
+`∫ t in a..b, (f t - Π_h^1 f t)^2 ≤ h^4 * ∫ t in a..b, g t ^ 2` and
+`∑ j, ∫ t in x j..x (j+1), (f' t - (Π_h^1 f)' t)^2 ≤ h^2 * ∫ t in a..b, g t ^ 2`, the slope of
+`Π_h^1 f` on the panel `j` being `(f (x (j+1)) - f (x j)) / (x (j+1) - x j)`.
+`integral_sq_sub_piecewiseLinearInterpCLM_le` and `integral_sq_deriv_sub_piecewiseLinearInterpCLM_le`
+of `Numlib/Approximation/SobolevInterpolation`. ★'''
+deps = ["integral_sq_sub_piecewiseLinearInterpCLM_le", "QuarteroniSaccoSaleri.Chapter08.theorem_8_3"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.27)'

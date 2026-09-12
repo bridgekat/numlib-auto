@@ -51,3 +51,23 @@ id = "energyNorm"
 
 [[node]]
 id = "energyNorm_nonneg"
+
+[[node]]
+id = "energyFunctional"
+kind = "definition"
+desc = '''`energyFunctional (A : E →ₗ[𝕜] E) (b : E) (x : E) : ℝ := RCLike.re (inner 𝕜 (A x) x) / 2 - RCLike.re (inner 𝕜 b x)`,
+the quadratic `½ xᵀ A x - bᵀ x` of (7.35), the functional `IsGalerkin.quadratic_le` in
+`Numlib/LinearSolve/Projection/Optimality` bounds without naming. ★'''
+deps = []
+
+[[node]]
+id = "hasGradientAt_energyFunctional"
+kind = "theorem"
+desc = '''For a real inner product space and a symmetric continuous `A` (given as `A : E →L[ℝ] E`, or
+`A : E →ₗ[ℝ] E` with `[FiniteDimensional ℝ E]`), `HasGradientAt (energyFunctional A b) (A x - b) x`
+for every `x`, equivalently `HasFDerivAt (energyFunctional A b) (InnerProductSpace.toDual ℝ E (A x - b)) x`;
+`A x - b = -r` is the negative residual, `∇f = Ax - b` in the book's notation, and the derivative
+of the gradient map is `A` itself (the Hessian `H = A`). Proof:
+`energyFunctional A b (x + v) - energyFunctional A b x = ⟪A x - b, v⟫ + ½ ⟪A v, v⟫` by symmetry.
+★'''
+deps = ["energyFunctional"]

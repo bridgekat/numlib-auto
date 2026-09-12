@@ -1,0 +1,26 @@
+namespace = "QuarteroniSaccoSaleri.Chapter08"
+desc = '''
+QSS §8.8, applications: the finite element analysis of a clamped beam with piecewise cubic
+Hermite elements (§8.8.1) and the tomographic reconstruction by parametric splines (§8.8.2). Per
+the planning brief an applications section contributes nodes only for numbered results; the one
+here is (8.64), the canonical cubic Hermite basis on the reference interval, which chapter 12
+(the `P_3`-Hermite Galerkin space) reuses. The variational problem (8.60), its unique solvability
+in `V ⊆ H²(0, L)`, the system (8.67)–(8.69), the claim that `M = A - B C⁻¹ Bᵀ` is s.p.d. and the
+CG experiments are not nodes: (8.60)'s well-posedness is Lax–Milgram on a fourth-order form over
+a one-dimensional `H²_0`, which belongs to chapter 12's Sobolev module if anywhere, and the rest
+is numerics.
+'''
+
+[[node]]
+id = "equation_8_64"
+kind = "theorem"
+desc = '''(8.64): the cubic Hermite basis of `[0, 1]`, `φ̂_0^{(0)} = 1 - 3x̂² + 2x̂³`, `φ̂_0^{(1)} = x̂ - 2x̂² + x̂³`,
+`φ̂_1^{(0)} = 3x̂² - 2x̂³`, `φ̂_1^{(1)} = -x̂² + x̂³`, is dual to the values and derivatives at `0` and `1`
+((8.62) on the reference element): `φ̂_i^{(0)}(j) = δ_ij`, `(φ̂_i^{(0)})'(j) = 0`, `φ̂_i^{(1)}(j) = 0`,
+`(φ̂_i^{(1)})'(j) = δ_ij` for `i, j ∈ {0, 1}`; and consequently
+`Hermite.interpolate ![0, 1] ![1, 1] f = C (f 0) * φ̂_0^{(0)} + C (deriv f 0) * φ̂_0^{(1)} + C (f 1) * φ̂_1^{(0)} + C (deriv f 1) * φ̂_1^{(1)}`
+(`equation_8_64_hermite`, by the uniqueness `Hermite.eq_interpolate`; it is `example_8_6` at the
+two nodes `0, 1`). Direct evaluation of the four cubics and their derivatives (`norm_num`,
+`Polynomial.eval`, `Polynomial.derivative`). ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter08.example_8_6", "Hermite.interpolate"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.64)'

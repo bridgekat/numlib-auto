@@ -1,0 +1,118 @@
+namespace = "QuarteroniSaccoSaleri.Chapter13"
+desc = '''
+§13.2, finite differences for the heat equation: the semi-discrete system (13.8), the θ-method
+(13.9)–(13.10), the asymptotic stability of forward Euler (13.11) read off the eigenvalues
+`μ_i = (4 / h²) sin²(i π h / 2)` of `A_fd = h⁻² tridiag(-1, 2, -1)`, the unconditional stability of
+backward Euler, and Exercise 1 (the truncation error of the θ-method). The matrix `A_fd` and its
+eigenvalues are chapter 12's (12.8) and its Exercise 3; here they are
+`Matrix.symmTridiagonalToeplitz` and `Matrix.symmTridiagonalToeplitz_hasEigenvalue_iff` of the
+backbone.
+
+The book's "iff" in (13.11) ⇔ `Δt < h² / (2ν)` is not exact: the spectral radius is `< 1` iff
+`Δt μ_max < 2` with `μ_max = (4 / h²) sin²((n - 1) π h / 2) < 4 / h²`, so `Δt ≤ h² / (2ν)` is
+sufficient (even with equality) and the exact threshold is slightly larger; the nodes state the
+exact condition and the book's as a corollary.
+'''
+
+[[node]]
+id = "laplacianFD"
+kind = "definition"
+desc = '''`A_fd = h⁻² tridiag(-1, 2, -1)` of order `n - 1` on the grid `x_i = i h`, `h = 1 / n`:
+`laplacianFD n = (n : ℝ) ^ 2 • Matrix.symmTridiagonalToeplitz (n - 1) (-1) 2`. This is chapter
+12's (12.8); if chapter 12's plan provides it under another name, this node is an alias. ★'''
+deps = ["Matrix.symmTridiagonalToeplitz"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (12.8), used in (13.8)'
+
+[[node]]
+id = "equation_13_8"
+kind = "definition"
+desc = '''The semi-discrete heat equation (13.8): `u : ℝ → (Fin (n - 1) → ℝ)` solves it on `[0, T]`
+when `HasDerivWithinAt u (-ν • laplacianFD n *ᵥ u t + f t) (Icc 0 T) t` for `t ∈ [0, T]` and
+`u 0 = u₀`, where `f t i = f (x_{i+1}) t` are the nodal source values. Stated as
+`FiniteDifference.IsSemidiscrete 1 (ν • laplacianFD n) f u₀ T u` of the backbone. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.laplacianFD", "FiniteDifference.IsSemidiscrete"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.8)'
+
+[[node]]
+id = "equation_13_10"
+kind = "definition"
+desc = '''One step of the θ-method (13.10) for (13.8): `u^{k+1} = (1 + ν θ Δt A_fd)⁻¹ ((1 - ν Δt (1
+- θ) A_fd) u^k + g^{k+1})`, `g^{k+1} = Δt (θ f^{k+1} + (1 - θ) f^k)`, as
+`FiniteDifference.thetaStep 1 (ν • laplacianFD n) θ Δt (f k) (f (k + 1)) (u k)`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.laplacianFD", "FiniteDifference.thetaStep"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (13.9)–(13.10)'
+
+[[node]]
+id = "equation_13_9_iff"
+kind = "theorem"
+desc = '''(13.9) and (13.10) are the same recursion: for `θ ≥ 0`, `Δt ≥ 0`, `u^{k+1}` satisfies
+`(u^{k+1} - u^k) / Δt = -ν A_fd (θ u^{k+1} + (1 - θ) u^k) + θ f^{k+1} + (1 - θ) f^k` iff
+`u^{k+1} = equation_13_10 …`; the matrix `1 + ν θ Δt A_fd` is invertible because `A_fd` is
+positive definite (`Matrix.posDef_symmTridiagonalToeplitz_neg_one_two`). ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_10", "FiniteDifference.mulVec_thetaStep", "Matrix.posDef_symmTridiagonalToeplitz_neg_one_two"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equations (13.9)–(13.10)'
+
+[[node]]
+id = "equation_13_11"
+kind = "theorem"
+desc = '''(13.11): with `f = 0` and `θ = 0`, `u^k = (1 - ν Δt A_fd)^k u^0`, and `u^k → 0` for
+every `u^0` iff `ρ(1 - ν Δt A_fd) < 1` (spectral radius over `ℂ`, `Matrix.complexSpectralRadius`).
+This is `Stationary.forall_tendsto_iff_spectralRadius_lt_one` applied to the real symmetric
+matrix through `Matrix.complexify`. ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_10", "Stationary.forall_tendsto_iff_spectralRadius_lt_one"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.11)'
+
+[[node]]
+id = "laplacianFD_hasEigenvalue_iff"
+kind = "theorem"
+desc = '''The eigenvalues of `A_fd` are `μ_i = (4 / h²) sin²(i π h / 2)`, `i = 1, …, n - 1`,
+`h = 1 / n`: `Module.End.HasEigenvalue (toLin' (laplacianFD n)) μ ↔ ∃ i : Fin (n - 1), μ =
+4 * n ^ 2 * sin ((i + 1) π / (2 n)) ^ 2`. From `Matrix.symmTridiagonalToeplitz_hasEigenvalue_iff`
+(`2 - 2 cos θ = 4 sin²(θ / 2)`). Chapter 12, Exercise 3, cited here as "Exercise 3". ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.laplacianFD", "Matrix.symmTridiagonalToeplitz_hasEigenvalue_iff"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.2, the eigenvalues μ_i of A_fd'
+
+[[node]]
+id = "equation_13_11_iff"
+kind = "theorem"
+desc = '''The exact form of the forward Euler stability condition: `ρ(1 - ν Δt A_fd) < 1 ↔ Δt *
+ν * μ_max < 2`, `μ_max = (4 / h²) sin²((n - 1) π h / 2)`, for `ν, Δt > 0` (the eigenvalues of
+`1 - ν Δt A_fd` are `1 - ν Δt μ_i ∈ (-1, 1)` iff `ν Δt μ_i < 2` for the largest `μ_i`; they are
+all `< 1` automatically). `FiniteDifference.forwardEuler_heat_tendsto_iff` of the backbone. ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_11", "QuarteroniSaccoSaleri.Chapter13.laplacianFD_hasEigenvalue_iff", "FiniteDifference.forwardEuler_heat_tendsto_iff"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.2, the condition Δt < h²/(2ν)'
+
+[[node]]
+id = "equation_13_11_of_le"
+kind = "theorem"
+desc = '''The book's condition: `Δt ≤ h² / (2 ν)` implies `ρ(1 - ν Δt A_fd) < 1`, hence forward
+Euler is asymptotically stable (`u^k → 0` for every `u^0`). The book writes "iff" with a strict
+inequality; the strict converse is false, see the group description (book erratum, recorded in
+the report). From `equation_13_11_iff` and `μ_max < 4 / h²`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_11_iff"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.2, the condition Δt < h²/(2ν)'
+
+[[node]]
+id = "backwardEuler_tendsto"
+kind = "theorem"
+desc = '''Backward Euler (`θ = 1`) is unconditionally asymptotically stable: for every `ν, Δt > 0`
+and `u^0`, `((1 + ν Δt A_fd)⁻¹)^k u^0 → 0`, because the eigenvalues `1 / (1 + ν Δt μ_i)` lie in
+`(0, 1)`. `FiniteDifference.backwardEuler_tendsto` of the backbone specialized to `A_fd`. ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_10", "QuarteroniSaccoSaleri.Chapter13.laplacianFD_hasEigenvalue_iff", "FiniteDifference.backwardEuler_tendsto"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.2, the backward Euler case θ = 1'
+
+[[node]]
+id = "exercise_13_1"
+kind = "theorem"
+desc = '''Exercise 1, cited in §13.2 for the accuracy of the θ-method: let `u` be a classical
+solution of (13.1)–(13.3) with `u_tt` and `u_xxxx` continuous on `[0, 1] × [0, T]` (and `u_ttt`
+when `θ = 1/2`). The local truncation error `τ_i^k = (u(x_i, t^{k+1}) - u(x_i, t^k)) / Δt + ν
+(-δ²_x u)(x_i, ·)(θ at t^{k+1}, (1 - θ) at t^k) - (θ f(x_i, t^{k+1}) + (1 - θ) f(x_i, t^k))`, with
+`δ²_x v(x) = (v(x - h) - 2 v(x) + v(x + h)) / h²`, satisfies `|τ_i^k| ≤ C (Δt + h²)` for
+`θ ≠ 1/2` and `|τ_i^k| ≤ C (Δt² + h²)` for `θ = 1/2`, with `C` depending on the bounds of the
+derivatives named. Proof: `δ²_x u - u_xx = O(h²)` by the fourth-derivative Taylor bound of a
+second difference (chapter 10's difference-quotient bounds), and the time part is the truncation
+error of the θ-method for `y' = g(t)` with `g = ν u_xx + f = u_t`, of order 1, or 2 when
+`θ = 1/2` (chapter 11's one-step θ-method). ★★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_10", "QuarteroniSaccoSaleri.Chapter13.IsHeatSolution", "FiniteDifference.iteratedDeriv_two_sub_secondCentredDiff_eq", "ODE.OneStep.norm_lte_theta_le"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 13.1'

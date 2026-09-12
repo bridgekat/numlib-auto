@@ -98,3 +98,73 @@ source = "Atkinson–Han, Theoretical Numerical Analysis, Example 3.4.8"
 
 [[node]]
 id = "coe_hilbertBasis"
+
+[[node]]
+id = "family_eq_legendre"
+
+[[node]]
+id = "legendreMeasure"
+
+[[node]]
+id = "isWeight_legendreMeasure"
+
+[[node]]
+id = "integral_family_mul_of_degree_lt"
+
+[[node]]
+id = "normSq"
+
+[[node]]
+id = "alpha"
+
+[[node]]
+id = "beta"
+
+[[node]]
+id = "degree_family"
+
+[[node]]
+id = "monic_family"
+
+[[node]]
+id = "root_family_mem_Ioo"
+kind = "theorem"
+desc = '''**The roots of an orthogonal polynomial lie inside the interval carrying the weight.** For
+`hw : IsWeight μ`, `a < b` with `μ (Icc a b)ᶜ = 0`, `1 ≤ n` and `x₀` with `(family μ n).eval x₀ =
+0`: `x₀ ∈ Ioo a b`. Proof: the roots are real and simple (`exists_injective_family_eq_prod`), so
+`family μ n = (X - C x₀) * q` with `q` of degree `n - 1` and `q (x₀) ≠ 0`; if `x₀ ≤ a` then
+`∫ family · q ∂μ = ∫ (t - x₀) q(t)² ∂μ ≥ 0` with equality only if `q = 0` μ-a.e., impossible for a
+weight, contradicting `integral_family_mul_of_degree_lt`; symmetrically for `x₀ ≥ b`. Gives the
+"nodes are internal to `(-1, 1)`" of Quarteroni–Sacco–Saleri §10.2. ★★'''
+deps = ["OrthogonalPolynomial.exists_injective_family_eq_prod", "OrthogonalPolynomial.integral_family_mul_of_degree_lt", "OrthogonalPolynomial.IsWeight"]
+
+[[node]]
+id = "_root_.Polynomial.legendre_eq_sum"
+kind = "theorem"
+desc = '''The explicit form of the Legendre polynomial (Quarteroni–Sacco–Saleri (10.12)):
+`legendre k = C (2^k : ℝ)⁻¹ * ∑ l ∈ range (k/2 + 1), C ((-1)^l * k.choose l * (2k - 2l).choose k) *
+X^(k - 2l)`. From Rodrigues' formula: expand `(X² - 1)^k = ∑_l (-1)^l C(k,l) X^{2k-2l}`
+(`Polynomial.sub_pow` / `add_pow`), differentiate `k` times term by term
+(`Polynomial.iterate_derivative_X_pow_eq_smul`, the terms with `2k - 2l < k` vanish), and simplify
+`(2k-2l)!/((k-2l)! k!) = C(2k-2l, k)`. ★★'''
+deps = ["Polynomial.legendre"]
+
+[[node]]
+id = "jacobiMatrix"
+kind = "definition"
+desc = '''The **Jacobi matrix** of a weight, `jacobiMatrix μ n : Matrix (Fin n) (Fin n) ℝ`: symmetric
+tridiagonal with diagonal `alpha μ i` and off-diagonal `√(beta μ i)` — the matrix Quarteroni–
+Sacco–Saleri's Programs 85–87 (`JacM = diag(a) + diag(√b, ±1)`) diagonalize to obtain Gauss
+nodes and weights (Golub–Welsch). ★'''
+deps = ["OrthogonalPolynomial.alpha", "OrthogonalPolynomial.beta"]
+
+[[node]]
+id = "charpoly_jacobiMatrix"
+kind = "theorem"
+desc = '''For `hw : IsWeight μ`, `(jacobiMatrix μ n).charpoly = family μ n`, so the Gauss nodes are the
+eigenvalues of the Jacobi matrix. Induction on `n` with the Laplace expansion of the
+tridiagonal determinant along the last row, which is the three-term recurrence
+`three_term_recurrence` (the symmetrization by `√β` leaves the characteristic polynomial
+unchanged: the product of the two off-diagonal entries is `beta μ i`). The Golub–Welsch weight
+formula `w_j = β_0 · (first component of the normalized eigenvector)²` is not planned. ★★'''
+deps = ["OrthogonalPolynomial.jacobiMatrix", "OrthogonalPolynomial.three_term_recurrence", "OrthogonalPolynomial.family"]

@@ -1,0 +1,14 @@
+desc = '''
+Numerical optimization (Quarteroni–Sacco–Saleri §7.2–7.3; Nocedal–Wright, Dennis–Schnabel,
+Bertsekas as the general references): descent methods and their optimality conditions
+(`Descent`), inexact line searches and the global convergence of descent methods
+(`LineSearch`), nonlinear conjugate gradients as an extension of `Numlib/Krylov/CG`
+(`ConjugateGradient`), symmetric secant updates of the Hessian (`QuasiNewton`), and constrained
+optimization: Lagrange multipliers, Karush–Kuhn–Tucker points, penalty and augmented-Lagrangian
+methods (`Constrained`). Everything is stated on a real normed or inner product space with the
+derivative carried as data `f' : E → E →L[ℝ] ℝ` (as `Numlib/Analysis/Convex/Gateaux` does), and
+the surface specializes to `EuclideanSpace ℝ (Fin n)`. The quadratic case — exact line search
+along a direction, steepest descent, conjugate directions, Kantorovich's inequality — is
+`Numlib/LinearSolve/Projection/OneDimensional`, `Numlib/LinearSolve/Projection/ConjugateDirection`
+and `Numlib/Krylov/CG`, not repeated here.
+'''

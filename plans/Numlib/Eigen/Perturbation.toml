@@ -81,3 +81,80 @@ source = "Saad, Numerical Methods for Large Eigenvalue Problems, Theorem 3.12"
 [[node]]
 id = "Module.End.hasDerivAt_eigenvalue_perturbation"
 source = "Saad, Numerical Methods for Large Eigenvalue Problems, Section 3.2.1"
+
+[[node]]
+id = "Matrix.hermitianPart"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 5.1'
+
+[[node]]
+id = "Matrix.skewHermitianPart"
+kind = "definition"
+desc = 'See `Matrix.hermitianPart`. ★'
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 5.1'
+
+[[node]]
+id = "Matrix.hirsch_re"
+kind = "theorem"
+desc = '''**Hirsch / Bendixson, matrix form** (Quarteroni–Sacco–Saleri Theorem 5.1, real part): for `A :
+Matrix n n ℂ` with `[Nonempty n]`, `hH := isHermitian_hermitianPart A` and `μ ∈ spectrum ℂ A`,
+`(⨅ i, hH.eigenvalues i) ≤ μ.re ∧ μ.re ≤ ⨆ i, hH.eigenvalues i`. Proof: `re ⟪A u, u⟫ = re ⟪H u,
+u⟫` for every `u`, so `re_hasEigenvalue_mem_Icc_of_symmetricPart` applies with the bounds
+`Matrix.IsHermitian.isSymmetricBoundedBy_toEuclideanLin` at the extreme eigenvalues of `H`. ★'''
+deps = ["Matrix.hermitianPart", "re_hasEigenvalue_mem_Icc_of_symmetricPart"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 5.1'
+
+[[node]]
+id = "Matrix.hirsch_im"
+kind = "theorem"
+desc = '''Quarteroni–Sacco–Saleri Theorem 5.1, imaginary part: with `hS := isHermitian_skewHermitianPart
+A`, `(⨅ i, hS.eigenvalues i) ≤ μ.im ∧ μ.im ≤ ⨆ i, hS.eigenvalues i` for `μ ∈ spectrum ℂ A`. This is
+`Matrix.hirsch_re` for `(-I) • A`, whose Hermitian part is `S` and whose spectrum is `-I` times
+that of `A` (`spectrum.smul_eq_smul`), since `re (-I μ) = im μ`. ★'''
+deps = ["Matrix.skewHermitianPart", "Matrix.hirsch_re"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 5.1'
+
+[[node]]
+id = "Module.End.inner_ne_zero_of_finrank_maxGenEigenspace_eq_one"
+kind = "theorem"
+desc = '''At a simple eigenvalue a right and a left eigenvector are not orthogonal: for `A : E →ₗ[𝕜] E`
+on a finite-dimensional inner product space, `A u = l • u`, `u ≠ 0`, `⟪w, A y⟫ = l ⟪w, y⟫` for all
+`y` (i.e. `A† w = conj l • w`), `w ≠ 0`, and `finrank 𝕜 (A.maxGenEigenspace l) = 1`, one has `⟪w,
+u⟫ ≠ 0`. Proof: if `⟪w, u⟫ = 0` then `u ∈ (𝕜 ∙ w)ᗮ = range (A - l)` (the range of `A - l` is the
+orthogonal complement of `ker (A - l)† = ker (A† - conj l)`, which is `𝕜 ∙ w` when the left
+eigenspace is one-dimensional — and it is, `finrank (eigenspace A† (conj l)) = finrank
+(eigenspace A l) = 1`); so `u = (A - l) z` for some `z`, and then `(A - l)² z = 0` with `(A - l)
+z = u ≠ 0`, making `z` a generalized eigenvector of index `2` and `finrank maxGenEigenspace ≥ 2`.
+The first paragraph of Quarteroni–Sacco–Saleri's proof of Theorem 5.4, without their
+diagonalizability. The hypothesis `hne` of `Module.End.hasDerivAt_eigenvalue_perturbation` is
+therefore a theorem at an algebraically simple eigenvalue. ★★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 5.4'
+
+[[node]]
+id = "Module.End.hasDerivAt_eigenvalue_perturbation_of_finrank_eq_one"
+kind = "theorem"
+desc = '''`Module.End.hasDerivAt_eigenvalue_perturbation` under the single hypothesis that `l` is
+algebraically simple, `finrank 𝕜 ((A : E →ₗ[𝕜] E).maxGenEigenspace l) = 1`, with `u` any nonzero
+eigenvector and `w` any nonzero left eigenvector: the two hypotheses `hne` and `hsimple` of the
+existing theorem follow from `Module.End.inner_ne_zero_of_finrank_maxGenEigenspace_eq_one` and
+`Krylov.maxGenEigenspace_eq_eigenspace_of_finrank_eq_one`. The packaged form of the branch that
+Theorem 5.4 of Quarteroni–Sacco–Saleri presupposes ("`λ` simple"). ★'''
+deps = ["Module.End.hasDerivAt_eigenvalue_perturbation", "Module.End.inner_ne_zero_of_finrank_maxGenEigenspace_eq_one"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 5.4'
+
+[[node]]
+id = "LinearMap.IsSymmetric.dist_eigenvectorSpan_le_norm_residual_div"
+kind = "theorem"
+desc = '''A posteriori bound for an approximate eigenvector against a *group* of eigenvectors
+(Quarteroni–Sacco–Saleri Property 5.6; Isaacson–Keller pp. 142–143): for symmetric `T` on a
+finite-dimensional inner product space with `hn : finrank 𝕜 E = n`, eigenpairs `(hT.eigenvalues hn
+i, hT.eigenvectorBasis hn i)`, a set `s : Finset (Fin n)`, an approximate pair `(θ : ℝ, x)` with
+residual `r = T x - θ • x`, and `δ > 0` with `δ ≤ |hT.eigenvalues hn i - θ|` for all `i ∉ s`:
+`‖x - (hT.eigenvectorSpan hn s).starProjection x‖ ≤ ‖r‖ / δ`. Proof: expand `x = ∑ α_i u_i`; the
+component of `x` orthogonal to the span is `∑_{i ∉ s} α_i u_i`, and `‖r‖² = ∑ |α_i|² (λ_i - θ)² ≥
+δ² ∑_{i ∉ s} |α_i|²`. The book's extra hypothesis `|λ_i - θ| ≤ ‖r‖` for `i ∈ s` plays no role.
+Generalizes `LinearMap.IsSymmetric.sin_angle_le_norm_residual_div` (one eigenvalue's eigenspace)
+to any set of indices; the eigenvalue case follows by taking `s` the indices with `λ_i = λ`. ★★'''
+deps = ["LinearMap.IsSymmetric.eigenvectorSpan", "LinearMap.IsSymmetric.sin_angle_le_norm_residual_div"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.6'

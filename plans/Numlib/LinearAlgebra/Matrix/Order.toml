@@ -29,3 +29,6 @@ id = "EntrywiseNonneg.pow"
 
 [[node]]
 id = "EntrywiseNonneg.mulVec_nonneg"
+
+[[node]]
+id = "EntrywiseNonneg.mulVec_mono"

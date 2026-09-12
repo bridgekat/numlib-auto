@@ -1,0 +1,129 @@
+namespace = "QuarteroniSaccoSaleri.Chapter08"
+desc = '''
+QSS §8.7: splines in parametric form — the parametric cubic spline of a point sequence, the
+cumulative-length parametrization and its geometric invariance (quoted from Späth); §8.7.1:
+Bernstein polynomials with their recursion and basis property, Bézier curves (8.58), de
+Casteljau's construction, the reversal property, and the two properties of parametric B-spline
+curves (locality of a control point, containment in the convex hull).
+
+The backbone is `Numlib/Approximation/Spline` (`Spline.cubicInterp`, `Spline.cubicInterp_affine`),
+`Numlib/Approximation/Bezier` (`Bezier.curve`, `Bezier.casteljau`, the Bernstein lemmas) and
+`Numlib/Approximation/BSpline` (`BSpline.curve`). Points are in `EuclideanSpace ℝ (Fin 2)`
+for the parametric splines (the chord length is the Euclidean distance) and in an arbitrary real
+vector space `E` for Bézier and B-spline curves. Programs 68–70 are not nodes; the variation
+diminishing property is not stated by the book and is not a node.
+'''
+
+[[node]]
+id = "parametricCubicSpline"
+kind = "definition"
+desc = '''The parametric spline `S_3(t) = (s_{3,x}(t), s_{3,y}(t))` of points `P : ℕ → EuclideanSpace ℝ (Fin 2)`
+and a parameter partition `0 = t 0 < ⋯ < t n = T`: `parametricCubicSpline t n P : ℝ → EuclideanSpace ℝ (Fin 2)`,
+each coordinate the natural cubic spline `Spline.naturalInterp t (fun i => P i c)` (the book does
+not fix the end conditions; natural is taken, and the statements below hold for any closure of
+type (8.48) with end data transforming correctly). `parametricCubicSpline_apply_node`: it passes
+through the `P i` at `t i`. ★'''
+deps = ["Spline.cubicInterp"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.7'
+
+[[node]]
+id = "cumulativeLength"
+kind = "definition"
+desc = '''The cumulative-length parametrization: `l_i = dist (P (i-1)) (P i)` and
+`cumulativeLength P i = ∑_{k=1}^{i} l_k`, `cumulativeLength P 0 = 0`; it is strictly increasing
+when consecutive points are distinct (`strictMono_cumulativeLength`), so it is a partition. ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.7'
+
+[[node]]
+id = "cumulativeLengthSpline_invariant"
+kind = "theorem"
+desc = '''The geometric invariance quoted from [SL89]: for an isometry `Q` of the plane (an
+`AffineIsometryEquiv` of `EuclideanSpace ℝ (Fin 2)`, or a `LinearIsometryEquiv` plus a
+translation), the cumulative-length spline of `Q ∘ P` is `Q ∘` the cumulative-length spline of `P`:
+`cumulativeLength (Q ∘ P) = cumulativeLength P` (distances are preserved) and
+`parametricCubicSpline (cumulativeLength P) n (Q ∘ P) = Q ∘ parametricCubicSpline (cumulativeLength P) n P`
+on `[0, T]`, by `Spline.cubicInterp_affine` (linearity in the data plus reproduction of constants).
+★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter08.parametricCubicSpline", "QuarteroniSaccoSaleri.Chapter08.cumulativeLength", "Spline.cubicInterp_affine"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.7 (Späth)'
+
+[[node]]
+id = "bernsteinRecursion"
+kind = "theorem"
+desc = '''The recursion of §8.7.1: `b_{n,0}(t) = (1 - t)^n` and
+`b_{n,k}(t) = (1 - t) b_{n-1,k}(t) + t b_{n-1,k-1}(t)` for `1 ≤ k ≤ n`, for
+`b_{n,k} = bernsteinPolynomial ℝ n k` evaluated at `t`; `bernsteinPolynomial.succ_succ`,
+`bernsteinPolynomial.succ_zero`, and `bernsteinPolynomial` unfolded at `k = 0`. Also
+`bernstein_mem_polyLE : b_{n,k} ∈ 𝒫_n` (`bernsteinPolynomial.degree_le`). ★'''
+deps = ["bernsteinPolynomial.succ_succ", "bernsteinPolynomial.degree_le"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.7.1'
+
+[[node]]
+id = "bernsteinBasis"
+kind = "theorem"
+desc = '''"`{b_{n,k}, k = 0, …, n}` provides a basis for `𝒫_n`": a `Module.Basis (Fin (n + 1)) ℝ (polyLE (Icc 0 1) n)`
+with `k`-th vector `t ↦ (bernsteinPolynomial ℝ n k).eval t`; `bernsteinPolynomial.exists_basis_polyLE`.
+★'''
+deps = ["bernsteinPolynomial.exists_basis_polyLE"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.7.1'
+
+[[node]]
+id = "equation_8_58"
+kind = "definition"
+desc = '''(8.58), the Bézier curve of the control points `P_0, …, P_n ∈ E`:
+`bezierCurve P t := Bezier.curve P t = ∑ k, b_{n,k}(t) • P k`, `0 ≤ t ≤ 1`; and
+`equation_8_58_mem_convexHull`: it is a weighted average of the `P_k`, hence in their convex hull
+for `t ∈ [0, 1]` (`Bezier.curve_mem_convexHull`). ★'''
+deps = ["Bezier.curve", "Bezier.curve_mem_convexHull"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (8.58)'
+
+[[node]]
+id = "deCasteljau"
+kind = "theorem"
+desc = '''De Casteljau's construction of §8.7.1: with `P_{i,1}(t) = (1 - t) P_i + t P_{i+1}` and the
+iteration `P_{i,r+1}(t) = (1 - t) P_{i,r}(t) + t P_{i+1,r}(t)`,
+`P_{0,n}(t) = (1 - t) P_{0,n-1}(t) + t P_{1,n-1}(t) = B_n(P_0, …, P_n; t)`:
+`Bezier.casteljau t P = Bezier.curve P t` (`Bezier.casteljau_eq_curve`), with the one-step identity
+`Bezier.curve_succ`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter08.equation_8_58", "Bezier.casteljau", "Bezier.casteljau_eq_curve"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.7.1'
+
+[[node]]
+id = "bezier_reverse"
+kind = "theorem"
+desc = '''"`B_n(P_0, …, P_n; t)` coincides with `B_n(P_n, …, P_0; t)` apart from the orientation":
+`Bezier.curve (P ∘ Fin.rev) t = Bezier.curve P (1 - t)`, so the two curves have the same image on
+`[0, 1]`; `Bezier.curve_rev`. Also `bezier_endpoints`: `B_n(P; 0) = P_0`, `B_n(P; 1) = P_n`
+(`Bezier.curve_zero`, `Bezier.curve_one`). ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter08.equation_8_58", "Bezier.curve_rev", "Bezier.curve_zero"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.7.1'
+
+[[node]]
+id = "parametricBSpline"
+kind = "definition"
+desc = '''The parametric B-spline curve, "(8.58) with the B-splines in place of the Bernstein
+polynomials": `parametricBSpline x k P N t := BSpline.curve x k P N t = ∑_{i < N} B_{i,k+1}(t) • P i`
+for control points `P : ℕ → E` and a nondecreasing knot sequence. ★'''
+deps = ["BSpline.curve"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.7.1'
+
+[[node]]
+id = "parametricBSpline_local"
+kind = "theorem"
+desc = '''§8.7.1, property 1: perturbing the vertex `P_j` changes the curve only around it — for
+`t ∉ [x_j, x_{j+k+1})`, `parametricBSpline x k (Function.update P j Q) N t = parametricBSpline x k P N t`.
+`BSpline.curve_update_eq_of_notMem`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter08.parametricBSpline", "BSpline.curve_update_eq_of_notMem"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.7.1 property 1'
+
+[[node]]
+id = "parametricBSpline_mem_convexHull"
+kind = "theorem"
+desc = '''§8.7.1, property 2: the parametric B-spline "is always contained within the convex hull of
+the polygon": for `k + 1 ≤ N` and `t ∈ [x_k, x_{N-k+1})`,
+`parametricBSpline x k P N t ∈ convexHull ℝ (P '' Iio N)`; `BSpline.curve_mem_convexHull`. The
+first half of the sentence, "better approximates the control polygon than the Bézier curve", is
+not a mathematical statement and is not a node. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter08.parametricBSpline", "BSpline.curve_mem_convexHull"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §8.7.1 property 2'

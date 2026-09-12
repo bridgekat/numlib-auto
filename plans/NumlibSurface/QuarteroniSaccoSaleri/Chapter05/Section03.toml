@@ -1,0 +1,109 @@
+namespace = "QuarteroniSaccoSaleri.Chapter05"
+desc = '''
+§5.3, the power method and inverse iteration. The iteration (5.17) is `Krylov.powerIterate` of
+`Numlib/Eigen/PowerMethod` (closed form (5.18) is its definition), Theorem 5.6 is the
+diagonalizable specialization of `Krylov.exists_norm_inv_pow_smul_pow_apply_sub_le`, the
+convergence of the Rayleigh quotients `ν^(k) → λ₁` and the symmetric rate (5.23) are new backbone
+nodes, and inverse iteration (5.28) is `Krylov.inverseIterate` with
+`Krylov.tendsto_smul_inverseIterate`. The a posteriori estimates (5.25)–(5.26), (5.29) are
+heuristic (`≃`) and are skipped; the exact backward-error identity (5.24) behind them is
+`isLeast_eigen_backwardError`. Example 5.3 is numerical and is skipped; Exercise 10, which the
+text uses for the case `α₁ = 0`, is in `Section13`.
+'''
+
+[[node]]
+id = "powerIterate"
+kind = "definition"
+desc = '''(5.17): the power method on `A : Matrix n n ℂ` from a unit `q₀ : EuclideanSpace ℂ n`,
+`q k := Krylov.powerIterate (toEuclideanLin A) q₀ k` (the normalized iterate `A^k q₀ / ‖A^k q₀‖`),
+with the Rayleigh quotient `ν k := ⟪q k, A (q k)⟫`. The recurrence `q (k+1) = A q k / ‖A q k‖` is
+`Krylov.powerIterate_succ`. ★'''
+deps = ["Krylov.powerIterate", "Krylov.powerIterate_succ"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.17)'
+
+[[node]]
+id = "equation_5_18"
+kind = "theorem"
+desc = '''(5.18): `q k = A^k q₀ / ‖A^k q₀‖₂` for `k ≥ 1`; `Krylov.powerIterate_eq_smul`
+(definitional). ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter05.powerIterate", "Krylov.powerIterate_eq_smul"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.18)'
+
+[[node]]
+id = "theorem_5_6"
+kind = "theorem"
+desc = '''Theorem 5.6: let `A : Matrix n n ℂ` be diagonalizable with unit eigenvectors `x : n → E`,
+`A x_i = λ_i x_i`, spanning, with a dominant index `1` such that `‖λ_i‖ < ‖λ_1‖` for `i ≠ 1`, and
+`q₀ = ∑ α_i x_i` with `α_1 ≠ 0`. Then for the rescaled iterate
+`q̃ k = (‖A^k q₀‖ / (α_1 λ_1^k)) • q k = x_1 + ∑_{i ≠ 1} (α_i/α_1) (λ_i/λ_1)^k x_i` (5.22),
+`‖q̃ k - x_1‖ ≤ C ‖λ_2/λ_1‖^k` for all `k ≥ 1`, where `‖λ_2‖ = max_{i ≠ 1} ‖λ_i‖` and
+`C = ∑_{i ≠ 1} ‖α_i / α_1‖`. Backbone: `Krylov.norm_inv_pow_smul_pow_apply_sub_le_of_eigenbasis`
+(new), the exact-rate form available under diagonalizability; the general
+`Krylov.exists_norm_inv_pow_smul_pow_apply_sub_le` only gives the rate `(r/‖λ_1‖)^k` for
+`r > ‖λ_2‖`. Erratum: the book's constant `C = (∑ (α_i/α_1)²)^{1/2}` comes from the step
+`‖∑ c_i x_i‖₂ ≤ (∑ c_i²)^{1/2}`, which needs the `x_i` orthonormal, i.e. `A` normal; for a general
+diagonalizable `A` the triangle inequality gives `C = ∑ ‖α_i/α_1‖`, and the theorem's "there
+exists a constant `C`" is what is proved. ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter05.powerIterate", "Krylov.norm_inv_pow_smul_pow_apply_sub_le_of_eigenbasis"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 5.6'
+
+[[node]]
+id = "theorem_5_6_rayleigh"
+kind = "theorem"
+desc = '''The consequence drawn after Theorem 5.6: under its hypotheses the Rayleigh quotients converge,
+`Tendsto (fun k => ν k) atTop (nhds λ_1)`. Backbone `Krylov.tendsto_inner_powerIterate` (new):
+`c_k • q k → u` with `‖c_k‖ = 1` (`Krylov.tendsto_smul_powerIterate`) and the Rayleigh quotient
+is invariant under unimodular rescaling. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter05.powerIterate", "Krylov.tendsto_inner_powerIterate"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 5.6'
+
+[[node]]
+id = "equation_5_23"
+kind = "theorem"
+desc = '''(5.23), the symmetric case: for `A : Matrix n n ℝ` symmetric with orthonormal eigenvectors
+`x_i`, eigenvalues `λ_1, …, λ_n` with `|λ_1| > |λ_2| ≥ … ≥ |λ_n|` (`|λ_2| = max_{i ≠ 1} |λ_i|`),
+and `cos θ₀ = |x_1ᵀ q₀| ≠ 0`, `|λ_1 - ν k| ≤ |λ_1 - λ_n| tan²θ₀ |λ_2/λ_1|^{2k}` for all `k`.
+Backbone `LinearMap.IsSymmetric.abs_sub_rayleigh_powerIterate_le` (new). ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter05.powerIterate", "LinearMap.IsSymmetric.abs_sub_rayleigh_powerIterate_le"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.23)'
+
+[[node]]
+id = "equation_5_24"
+kind = "theorem"
+desc = '''(5.24): with `r k = A (q k) - ν k • q k` and `E k = -(r k) (q k)ᴴ` (the rank-one matrix
+`x ↦ -⟪q k, x⟫ r k`), `‖E k‖₂ = ‖r k‖₂` and `(A + E k) (q k) = ν k • q k`, so `ν k` is an exact
+eigenvalue of the perturbed matrix `A + E k`; `isLeast_eigen_backwardError` (which also says no
+smaller perturbation does it). ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter05.powerIterate", "isLeast_eigen_backwardError"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.24)'
+
+[[node]]
+id = "inverseIterate"
+kind = "definition"
+desc = '''(5.28): inverse iteration with shift `μ ∉ spectrum ℂ A`,
+`q k := Krylov.inverseIterate (toEuclideanLin A) μ q₀ k` (the power method on `(A - μ I)⁻¹`),
+with `σ k := ⟪q k, A (q k)⟫` computed on `A` itself. ★'''
+deps = ["Krylov.inverseIterate", "Krylov.inverseIterate_eq_powerIterate"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.28)'
+
+[[node]]
+id = "inverseIterate_tendsto"
+kind = "theorem"
+desc = '''The convergence stated after (5.28): if `A` is diagonalizable, `μ ∉ spectrum ℂ A`, `λ_m` is the
+unique eigenvalue closest to `μ` ((5.27): `‖λ_m - μ‖ < ‖λ_i - μ‖` for `i ≠ m`, so `λ_m` is
+simple), and `q₀` has a nonzero component `α_m x_m` along `x_m`, then `q̃ k := (ξ_m^k α_m)⁻¹ ‖z_k‖
+• q k → x_m` — the essential convergence `∃ c_k, ‖c_k‖ = 1 ∧ c_k • q k → x_m/‖x_m‖` — and
+`σ k → λ_m`. `Krylov.tendsto_smul_inverseIterate` for the vector and
+`Krylov.tendsto_inner_inverseIterate` (new) for the Rayleigh quotient. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter05.inverseIterate", "Krylov.tendsto_smul_inverseIterate", "Krylov.tendsto_inner_inverseIterate"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.28)'
+
+[[node]]
+id = "powerIterate_of_eq"
+kind = "theorem"
+desc = '''§5.3.3, case 1 (`λ_2 = λ_1`, coincident dominant eigenvalues): the method still converges, to a
+vector of `span {x_1, x_2}`, and `ν k → λ_1`. This is `Krylov.tendsto_smul_powerIterate` with `u
+= α_1 x_1 + α_2 x_2` the whole `λ_1`-component of `q₀` (the backbone never assumed `λ_1` simple,
+only that the `λ_1`-component of `q₀` is an eigenvector, which a semi-simple `λ_1` guarantees). ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter05.powerIterate", "Krylov.tendsto_smul_powerIterate", "Krylov.tendsto_inner_powerIterate"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.3.3'

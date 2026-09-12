@@ -1,0 +1,45 @@
+desc = '''
+Numerical methods for the Cauchy problem `y' = f(t, y)`, `y(t₀) = y₀`, on a real normed space
+`E` (Quarteroni–Sacco–Saleri, *Numerical Mathematics*, chapter 11; Kress chapter 10 will reuse
+it). The analytic prerequisites — the Cauchy problem itself, Liapunov stability, the integral
+Gronwall lemma, global existence for a Lipschitz field, the linear system `y' = A y` — live in
+`Numlib/Analysis/ODE`; this directory holds the *methods* and their analysis.
+
+Layout, in import order:
+
+* `ODE/Gronwall`: the discrete Gronwall lemma in the summed form the books use, derived from
+  Mathlib's recursive `discrete_gronwall` (`Mathlib/Analysis/ODE/DiscreteGronwall.lean`); shared
+  with the θ-method analysis of chapter 13.
+* `ODE/OneStep`: the grid `t_n = t₀ + n h`, `N_h = ⌊T/h⌋`; one-step methods as step relations
+  `S h t u v` and increment functions `Φ t u v h` (implicit methods depend on `v`); orbits and
+  perturbed orbits; local and global truncation error, consistency, order; zero-stability,
+  Theorem 11.1; convergence, Theorem 11.2; forward/backward Euler, Crank–Nicolson, Heun with
+  their orders; the test equation, absolute stability, the region of absolute stability and
+  A-stability.
+* `ODE/DifferenceEquation`: the analytic half of §11.4 over Mathlib's `LinearRecurrence` and the
+  algebraic extension `Numlib/Algebra/LinearRecurrence`: the root condition of a polynomial,
+  bounded solutions iff the root condition (Lemma 11.3), decay iff all roots inside the disc,
+  unbounded real solutions when the root condition fails.
+* `ODE/Multistep`: linear multistep methods `u_{n+1} = ∑ a_j u_{n-j} + h ∑_{j=-1}^p b_j f_{n-j}`
+  as a structure of coefficients; orbits; the operator `L[w; h]`; truncation error, consistency,
+  order and the algebraic order conditions (Theorem 11.3); the characteristic polynomials `ρ`,
+  `σ`, `Π = ρ - zσ`; root conditions; zero-stability and Theorem 11.4; convergence, Theorem 11.5
+  and the Dahlquist equivalence theorem; Adams–Bashforth, Adams–Moulton, BDF, midpoint and
+  Simpson as instances; absolute stability of multistep methods; predictor–corrector schemes.
+* `ODE/RungeKutta`: Butcher tableaux, the stage relation, explicit stages by recursion, the
+  step relation as a one-step method, the consistency condition `∑ b_i = 1`, the order-two
+  conditions for two-stage explicit methods, the classical fourth-order method, embedded pairs,
+  the Gauss–Legendre/Radau/Lobatto tableaux of §11.8.3 as data, and the stability function
+  `R(z) = 1 + z bᵀ (I - z A)⁻¹ 𝟙`.
+
+Conventions. Everything is vector-valued from the start: `E` is a real normed space (complete
+where a solution has to exist), the test equation lives on `ℂ`. The horizon is `Icc t₀ (t₀ + T)`
+with `N_h = ⌊T / h⌋₊` steps, the book's `N_h`. Limits in `h` are along `𝓝[>] 0`; "order `p`"
+is `=O[𝓝[>] 0] (h ^ p)`. A method is a *step relation* rather than a function so that implicit
+methods, whose step is the solution of a nonlinear equation, need no solvability hypothesis to be
+defined; increment functions give relations through `OneStep.ofIncrement`, and the explicit
+`iterate` is provided for the `State`/`step`/`iterate` style of the rest of the library. Zero-
+stability and convergence are properties of a method *for one Cauchy problem*, as in the book;
+the "for every Lipschitz problem" quantification appears only in the theorems that need it
+(Theorem 11.4, Theorem 11.5).
+'''

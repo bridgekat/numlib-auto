@@ -86,3 +86,38 @@ id = "tendsto_piecewisePolyInterpCLM"
 
 [[node]]
 id = "Lagrange.exists_sub_interpolate_eq_of_contDiffOn"
+
+[[node]]
+id = "Lagrange.norm_interpolateCLM_chebyshev_le"
+kind = "theorem"
+desc = '''**The Lebesgue constant of the Chebyshev nodes grows logarithmically** (Rivlin, *An
+Introduction to the Approximation of Functions*, Theorem 1.2; Quarteroni–Sacco–Saleri (10.25)):
+for the `n + 1` nodes `x_j = cos ((2j+1)π/(2(n+1)))` in `X = Icc (-1) 1`,
+`‖Lagrange.interpolateCLM x‖ ≤ (2/π) * Real.log (n + 1) + 1`. By `Lagrange.norm_interpolateCLM` the
+norm is `max_t ∑_j |ℓ_j(t)|`; with `t = cos θ` and `ℓ_j(t) = T_{n+1}(t)/((t - x_j) T_{n+1}'(x_j))`
+the Lebesgue function is `(1/(n+1)) ∑_j |cos((n+1)θ) sin θ_j / (cos θ - cos θ_j)|`, and Rivlin's
+estimate bounds it through `∑_j |sin θ_j/(cos θ - cos θ_j)|` by a comparison with the harmonic sum.
+A cruder bound `≤ 1 + (2/π) log (n+1) + c` with an explicit `c` is acceptable for every consumer
+(the book uses only the logarithmic growth). Compare `norm_trigInterpCLM_le` of
+`Numlib/Approximation/TrigonometricInterpolation`, the same estimate for equispaced trigonometric
+interpolation, whose proof route (Lebesgue function of translates of the Dirichlet kernel) is the
+model. ★★★'''
+deps = ["Lagrange.norm_interpolateCLM", "Lagrange.interpolateCLM"]
+
+[[node]]
+id = "Lagrange.basisCM"
+
+[[node]]
+id = "Lagrange.interpolateCLM_apply"
+
+[[node]]
+id = "Lagrange.isIdempotentElem_interpolateCLM"
+
+[[node]]
+id = "Lagrange.range_interpolateCLM"
+
+[[node]]
+id = "panelPoly"
+
+[[node]]
+id = "piecewiseLinearInterpCLM_apply_of_mem"

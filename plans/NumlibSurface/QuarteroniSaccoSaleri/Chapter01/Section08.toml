@@ -1,0 +1,94 @@
+namespace = "QuarteroniSaccoSaleri.Chapter01"
+desc = '''
+Quarteroni–Sacco–Saleri §1.8, similarity transformations: Definition 1.14 (similar, unitarily
+similar) as the backbone's `Matrix.IsSimilar`/`Matrix.IsUnitarilySimilar`
+(`Numlib/LinearAlgebra/Matrix/Similar`), invariance of spectrum and characteristic polynomial,
+`σ(AB) ∖ {0} = σ(BA) ∖ {0}`, the Schur decomposition (Property 1.5,
+`Numlib/LinearAlgebra/Matrix/Schur`) with its three consequences (Hermitian, normal, commuting
+normal matrices), the Jordan canonical form (Property 1.6, `Numlib/LinearAlgebra/Matrix/Jordan`),
+"diagonalizable iff nondefective", the principal-vector recursion (1.8) and Example 1.6.
+'''
+
+[[node]]
+id = "definition_1_14"
+kind = "theorem"
+desc = '''Alignment of Definition 1.14 with the backbone: `Matrix.IsSimilar A B ↔ ∃ C, IsUnit C ∧ B = C⁻¹ * A * C` (`Iff.rfl`) and `Matrix.IsUnitarilySimilar A B ↔ ∃ U ∈ unitaryGroup (Fin n) ℂ, B = star U * A * U`; the transformation `A ↦ C⁻¹ A C` is the similarity transformation. ★'''
+deps = ["Matrix.IsSimilar", "Matrix.IsUnitarilySimilar"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 1.14'
+
+[[node]]
+id = "charpoly_eq_of_isSimilar"
+kind = "theorem"
+desc = '''Similar matrices share the characteristic polynomial and the spectrum, `Matrix.IsSimilar A B → A.charpoly = B.charpoly ∧ spectrum ℂ A = spectrum ℂ B`, and `(μ, C⁻¹ x)` is an eigenpair of `C⁻¹ A C` when `(μ, x)` is one of `A` (the displayed computation of §1.8). Backbone `Matrix.IsSimilar.charpoly_eq`, `Matrix.IsSimilar.mulVec_eq_smul`. ★'''
+deps = ["Matrix.IsSimilar.charpoly_eq", "Matrix.IsSimilar.mulVec_eq_smul"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.8'
+
+[[node]]
+id = "spectrum_mul_comm"
+kind = "theorem"
+desc = '''For `A : Matrix (Fin n) (Fin m) ℂ` and `B : Matrix (Fin m) (Fin n) ℂ`, `spectrum ℂ (A * B) \\ {0} = spectrum ℂ (B * A) \\ {0}` and hence `spectralRadius ℂ (A * B) = spectralRadius ℂ (B * A)`. Square case: Mathlib's `spectrum.nonzero_mul_comm`; rectangular: `Matrix.charpoly_mul_comm'` (`X^m (AB).charpoly = X^n (BA).charpoly`) gives the same nonzero roots. The spectral radii agree because removing `0` does not change a supremum of norms unless the spectrum is `{0}` on both sides. ★★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.8'
+
+[[node]]
+id = "property_1_5"
+kind = "theorem"
+desc = '''**Schur decomposition**: for `A : Matrix (Fin n) (Fin n) ℂ` there is `U ∈ unitaryGroup (Fin n) ℂ` with `T := star U * A * U` upper triangular and `A.charpoly = ∏ i, (X - C (T i i))`, so the diagonal of `T` lists the eigenvalues of `A` with multiplicity. Backbone `Matrix.exists_unitary_conj_upperTriangular`. ★'''
+deps = ["Matrix.exists_unitary_conj_upperTriangular"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 1.5'
+
+[[node]]
+id = "property_1_5_hermitian"
+kind = "theorem"
+desc = '''§1.8 consequence 1: a Hermitian `A` is unitarily similar to a *real* diagonal matrix, `star U * A * U = diagonal (ofReal ∘ d)` with `U = hA.eigenvectorUnitary`, `d = hA.eigenvalues` (`Matrix.IsHermitian.spectral_theorem`), the columns of `U` are eigenvectors (`A *ᵥ Uᵀ i = d i • Uᵀ i`, `Matrix.IsHermitian.eigenvectorUnitary_mulVec`) forming an orthonormal basis (`hA.eigenvectorBasis`); and every Schur form of a Hermitian matrix is diagonal: `T` Hermitian and upper triangular implies `T.IsDiag` (entries below the diagonal vanish, those above are their conjugates). ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.8'
+
+[[node]]
+id = "property_1_5_diagonalizable_iff"
+kind = "theorem"
+desc = '''§1.8 consequence 1, last sentence: `(∃ d, Matrix.IsSimilar A (diagonal d)) ↔ ∃ (d : Fin n → ℂ) (v : Fin n → Fin n → ℂ), LinearIndependent ℂ v ∧ ∀ j, A *ᵥ v j = d j • v j` — a matrix is similar to a diagonal matrix iff its eigenvectors form a basis. Backbone `Matrix.isSimilar_diagonal_iff_exists_basis_eigenvectors`. ★'''
+deps = ["Matrix.isSimilar_diagonal_iff_exists_basis_eigenvectors"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.8'
+
+[[node]]
+id = "property_1_5_normal"
+kind = "theorem"
+desc = '''§1.8 consequence 2: `IsStarNormal A ↔ ∃ U ∈ unitaryGroup (Fin n) ℂ, ∃ d, star U * A * U = diagonal d` (backbone `Matrix.IsStarNormal.spectral_theorem`), and the spectral decomposition `A = U * diagonal d * star U = ∑ i, d i • vecMulVec (Uᵀ i) (star (Uᵀ i))` (`Matrix.IsStarNormal.eq_sum_smul_vecMulVec`). ★'''
+deps = ["Matrix.IsStarNormal.spectral_theorem", "Matrix.IsStarNormal.eq_sum_smul_vecMulVec"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.8'
+
+[[node]]
+id = "property_1_5_commute"
+kind = "theorem"
+desc = '''§1.8 consequence 3: for normal `A`, `B` with `A * B = B * A` there is a unitary `U` diagonalizing both, `star U * A * U = diagonal d`, `star U * B * U = diagonal e`, so that `star U * (A + B) * U = diagonal (d + e)`: the eigenvalues of `A + B` are the sums `λ_i + ξ_i` of eigenvalues of `A` and `B` for a common eigenvector. Backbone `Matrix.IsStarNormal.exists_unitary_conj_diagonal_of_commute` (`Numlib/Eigen/Normal`). ★'''
+deps = ["Matrix.IsStarNormal.exists_unitary_conj_diagonal_of_commute"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.8'
+
+[[node]]
+id = "property_1_6"
+kind = "theorem"
+desc = '''**Jordan canonical form**: for `A : Matrix (Fin n) (Fin n) ℂ` there are a unit `X`, an index type of eigenvalues `μ : ι → ℂ` and block sizes, with `X⁻¹ * A * X` equal (up to the reindexing `Fin n ≃ Σ …`) to `blockDiagonal'` of Jordan blocks `Matrix.jordanBlock k (μ i)` grouped by eigenvalue; the blocks of size `> 1` belong to defective eigenvalues. Backbone `Matrix.exists_conj_blockDiagonal'_jordanForm` (`Numlib/LinearAlgebra/Matrix/Jordan`), stated in exactly that grouped shape. ★'''
+deps = ["Matrix.exists_conj_blockDiagonal'_jordanForm"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 1.6'
+
+[[node]]
+id = "property_1_6_diagonalizable_iff_nondefective"
+kind = "theorem"
+desc = '''§1.8 after Property 1.6: `(∃ d, Matrix.IsSimilar A (diagonal d)) ↔ ¬ IsDefective A` — a matrix can be diagonalized by a similarity transformation iff it is nondefective; in particular normal matrices are diagonalizable. Backbone `Matrix.isSimilar_diagonal_iff_forall_finrank_eigenspace_eq_rootMultiplicity` together with `finrank_eigenspace_le_rootMultiplicity` (so that `¬ IsDefective` is termwise equality). ★'''
+deps = ["Matrix.isSimilar_diagonal_iff_forall_finrank_eigenspace_eq_rootMultiplicity", "QuarteroniSaccoSaleri.Chapter01.IsDefective", "QuarteroniSaccoSaleri.Chapter01.finrank_eigenspace_le_rootMultiplicity"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 1.8'
+
+[[node]]
+id = "equation_1_8"
+kind = "theorem"
+desc = '''The principal vectors: if `X⁻¹ * A * X` is a Jordan form, the columns `x_l, x_{l+1}, …` of `X` belonging to the block `J_{k_i}(λ_i)` satisfy `A x_l = λ_i x_l` and `A x_j = λ_i x_j + x_{j-1}` for the following `k_i - 1` columns. Backbone `Matrix.mulVec_eq_of_conj_jordanForm`. ★'''
+deps = ["Matrix.mulVec_eq_of_conj_jordanForm"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (1.8)'
+
+[[node]]
+id = "example_1_6"
+kind = "theorem"
+desc = '''For the explicit `6 × 6` rational matrices `A`, `J` (Jordan blocks `J₂(2)`, `J₃(3)`, `J₁(2)`) and `X` of the example: `A * X = X * J`, `IsUnit X` (so `X⁻¹ * A * X = J`), `J = blockDiagonal'` of `jordanBlock 2 2`, `jordanBlock 3 3`, `jordanBlock 1 2` up to reindexing, and the three displayed checks `A x₃ = 3 x₃`, `A x₄ = 3 x₄ + x₃`, `A x₅ = 3 x₅ + x₄` (0-based: columns `2, 3, 4`). A `norm_num`/`decide` computation over `ℚ` (`Matrix.mul_apply`, `Fin.sum_univ_succ`); the invertibility from `X.det ≠ 0` by the same means. ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter01.equation_1_8"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 1.6'

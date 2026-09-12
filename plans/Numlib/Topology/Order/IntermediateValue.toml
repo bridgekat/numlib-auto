@@ -1,0 +1,23 @@
+desc = '''
+The discrete mean value theorem for continuous functions on an interval: a convex combination of
+values of `u ∈ C[a, b]` is a value of `u` — for nonnegative weights `δ_j` and points `x_j ∈ [a, b]`
+there is `ξ ∈ [a, b]` with `∑ δ_j u(x_j) = (∑ δ_j) u(ξ)` (Quarteroni–Sacco–Saleri Theorem 9.1). It is
+the intermediate value theorem applied between the points where `u` attains its extremes, and it is
+what turns a quadrature error written as a weighted sum of derivative values into a single derivative
+value (the Newton–Cotes error formulas of `Numlib/Approximation/NewtonCotes` and the Euler–Maclaurin
+remainder of `Numlib/Analysis/SpecialFunctions/EulerMaclaurin`). It is placed with the intermediate
+value theorem, on the path Mathlib's `Topology/Order/IntermediateValue` would give it, so that the
+analysis modules that use it import no approximation theory.
+'''
+
+[[node]]
+id = "ContinuousOn.exists_sum_mul_eq_mul_sum"
+kind = "theorem"
+desc = '''**The discrete mean value theorem** (Theorem 9.1). For `a ≤ b`, `u` continuous on `Icc a b`,
+finitely many points `x j ∈ Icc a b` (`j : ι`, `[Fintype ι]`) and nonnegative constants `δ j`,
+there is `η ∈ Icc a b` with `∑ j, δ j * u (x j) = u η * ∑ j, δ j`. Proof: `u` attains its minimum
+`u x̲` and maximum `u x̄` on the compact interval (`IsCompact.exists_isMinOn`); the sum lies between
+`u x̲ ∑ δ` and `u x̄ ∑ δ`; `intermediate_value_uIcc` on `x ↦ u x * ∑ δ` between `x̲` and `x̄` gives
+`η`. When `∑ δ = 0` any `η` works. The book's "all of the same sign" is this statement applied to
+`-δ`; state only the nonnegative case. ★'''
+deps = []

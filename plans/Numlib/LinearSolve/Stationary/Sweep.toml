@@ -1,0 +1,117 @@
+desc = '''
+The classical stationary iterations as *functions on vectors*: the splitting step
+`x ↦ x + M⁻¹ (b - A x)` on `n → 𝕜`, and the componentwise sweeps of Jacobi/JOR, Gauss–Seidel/SOR,
+backward SOR and SSOR, each proved equal to the step of its splitting from
+`Numlib/LinearSolve/Stationary/Splitting`. The splitting is the object the convergence theory is
+about; the sweep is what a textbook writes down (Quarteroni–Sacco–Saleri (4.6)–(4.7), (4.10),
+(4.13), (4.15); Saad (4.5)–(4.13); Kress §4.1), and the equality between them is the one lemma every
+surface needs before it can quote any convergence theorem. The Saad surface proves these equalities
+privately (`SaadSparse.Chapter04.jacobiStep_eq`, `gsStep_eq`, `sorStep_eq`, `ssorStep_eq` in
+`NumlibSurface/SaadSparse/Chapter04/Section01.lean`); a second surface must not repeat them, so they
+move here. Stated for `Matrix n n 𝕜` over a field with `[LinearOrder n]` (the sweep order) and
+vectors `n → 𝕜`, with no analysis.
+
+Design: a sweep is *defined* by its matrix formula (`sorSweep A ω b x = (D + ω L)⁻¹ *ᵥ (((1 - ω) • D - ω • U) *ᵥ x + ω • b)`)
+and the componentwise recursion (4.15) is a *theorem* about it, obtained by solving the triangular
+system row by row; this keeps the definition total and index-type-agnostic and puts the induction
+where it belongs.
+'''
+
+[[node]]
+id = "Stationary.Splitting.mulVecStep"
+kind = "definition"
+desc = '''For `A : Matrix n n 𝕜` and `s : Splitting A`, `mulVecStep s b x = s.m⁻¹ *ᵥ (s.n *ᵥ x + b)`: one step
+of the iteration `P x_{k+1} = N x_k + b` (Quarteroni–Sacco–Saleri (4.6); Saad (4.28)) on `n → 𝕜`. ★'''
+deps = ["Stationary.Splitting", "Stationary.Splitting.n"]
+
+[[node]]
+id = "Stationary.Splitting.mulVecStep_eq_add_inv_mulVec"
+kind = "theorem"
+desc = '''`mulVecStep s b x = x + s.m⁻¹ *ᵥ (b - A *ᵥ x)`: the update form (4.7) "solve `P z = r`, add"
+(Quarteroni–Sacco–Saleri (4.7), (4.25) with `α = 1`). From `s.m_sub_n`. ★'''
+deps = ["Stationary.Splitting.mulVecStep", "Stationary.Splitting.m_sub_n"]
+
+[[node]]
+id = "Stationary.Splitting.mulVecStep_eq_iterationOperator_mulVec_add"
+kind = "theorem"
+desc = '''`mulVecStep s b x = s.iterationOperator *ᵥ x + s.m⁻¹ *ᵥ b`: the step is the affine iteration with
+matrix `B = P⁻¹ N` and vector `f = P⁻¹ b` (Quarteroni–Sacco–Saleri, sentence after (4.6)), so that
+over `𝕜 = ℝ` or `ℂ` it is `Stationary.step (toEuclideanCLM s.iterationOperator) (toLp (s.m⁻¹ b))`
+under `WithLp.toLp 2`, and the whole theory of `Numlib/LinearSolve/Stationary/Basic` applies to it.
+Include that transport as a second clause `Stationary.Splitting.toLp_mulVecStep`. ★'''
+deps = ["Stationary.Splitting.mulVecStep", "Stationary.Splitting.iterationOperator_eq"]
+
+[[node]]
+id = "Stationary.Splitting.mulVecStep_fixed_iff"
+kind = "theorem"
+desc = '''`mulVecStep s b x = x ↔ A *ᵥ x = b`: consistency of the splitting iteration (Quarteroni–Sacco–Saleri
+Definition 4.1 for the method (4.6); Saad (4.29)). From `Splitting.eq_iterationOperator_mul_add_iff`
+or directly. ★'''
+deps = ["Stationary.Splitting.mulVecStep", "Stationary.Splitting.eq_iterationOperator_mul_add_iff"]
+
+[[node]]
+id = "Matrix.jorSweep"
+kind = "definition"
+desc = '''The JOR sweep `jorSweep A ω b x i = ω / A i i * (b i - ∑ j ∈ univ.erase i, A i j * x j) + (1 - ω) * x i`
+(Quarteroni–Sacco–Saleri, display after (4.11); `ω = 1` is the Jacobi formula (4.10)). Defined
+componentwise, since every component depends only on `x`. ★'''
+deps = ["Matrix.jorSplitting"]
+
+[[node]]
+id = "Matrix.jorSweep_eq_mulVecStep"
+kind = "theorem"
+desc = '''For `h : IsUnit (diagPart A)` and `ω ≠ 0`, `jorSweep A ω b = Stationary.Splitting.mulVecStep (jorSplitting A h hω) b`,
+and at `ω = 1`, `jorSweep A 1 b = mulVecStep (jacobiSplitting A h) b`. Row `i` of
+`ω⁻¹ D y = (ω⁻¹ D - A) x + b` is the sweep formula; `mulVec` of a diagonal inverse is division by the
+diagonal entry. Currently `SaadSparse.Chapter04.jacobiStep_eq`. ★'''
+deps = ["Matrix.jorSweep", "Stationary.Splitting.mulVecStep", "Matrix.jorSplitting", "Matrix.jacobiSplitting"]
+
+[[node]]
+id = "Matrix.sorSweep"
+kind = "definition"
+desc = '''The SOR sweep as a function: `sorSweep A ω b x = (diagPart A + ω • strictLower A)⁻¹ *ᵥ (((1 - ω) • diagPart A - ω • strictUpper A) *ᵥ x + ω • b)`,
+Quarteroni–Sacco–Saleri (4.16) multiplied through by `D`; `ω = 1` is Gauss–Seidel (4.13). ★'''
+deps = ["Matrix.sorSplitting"]
+
+[[node]]
+id = "Matrix.sorSweep_apply"
+kind = "theorem"
+desc = '''The componentwise recursion (4.15) of Quarteroni–Sacco–Saleri: for `A i i ≠ 0` for all `i` and every
+`i`, writing `y = sorSweep A ω b x`,
+`y i = ω / A i i * (b i - ∑ j ∈ univ.filter (· < i), A i j * y j - ∑ j ∈ univ.filter (i < ·), A i j * x j) + (1 - ω) * x i`.
+Row `i` of `(D + ωL) y = ((1 - ω) D - ω U) x + ω b`, the lower triangular system read as a recursion
+along the linear order of `n`; the Gauss–Seidel case `ω = 1` is (4.13). Currently
+`SaadSparse.Chapter04.sorStep_apply`/`gsStep_apply` on `Fin n`. ★★'''
+deps = ["Matrix.sorSweep"]
+
+[[node]]
+id = "Matrix.sorSweep_eq_mulVecStep"
+kind = "theorem"
+desc = '''`sorSweep A ω b = Stationary.Splitting.mulVecStep (sorSplitting A h hω) b` for `h : IsUnit (diagPart A)`,
+`ω ≠ 0`, and `sorSweep A 1 b = mulVecStep (gaussSeidelSplitting A h) b` via `sorSplitting_one`. So the
+SOR sweep is `x ↦ x + (ω⁻¹ D - E)⁻¹ (b - A x)`, the display after (4.17). Scale the defining system by
+`ω⁻¹`. Currently `SaadSparse.Chapter04.sorStep_eq`, `gsStep_eq`. ★'''
+deps = ["Matrix.sorSweep", "Stationary.Splitting.mulVecStep", "Matrix.sorSplitting", "Matrix.sorSplitting_one"]
+
+[[node]]
+id = "Matrix.backwardSorSweep"
+kind = "definition"
+desc = '''`backwardSorSweep A ω b x = (diagPart A + ω • strictUpper A)⁻¹ *ᵥ (((1 - ω) • diagPart A - ω • strictLower A) *ᵥ x + ω • b)`,
+the backward SOR sweep of Quarteroni–Sacco–Saleri §4.2.6 (`ω = 1`: backward Gauss–Seidel). ★'''
+deps = ["Matrix.backwardSorSplitting"]
+
+[[node]]
+id = "Matrix.backwardSorSweep_eq_mulVecStep"
+kind = "theorem"
+desc = '''`backwardSorSweep A ω b = Stationary.Splitting.mulVecStep (backwardSorSplitting A h hω) b`. ★'''
+deps = ["Matrix.backwardSorSweep", "Stationary.Splitting.mulVecStep", "Matrix.backwardSorSplitting"]
+
+[[node]]
+id = "Matrix.ssorSweep_eq_mulVecStep"
+kind = "theorem"
+desc = '''One SSOR step is a forward sweep followed by a backward sweep:
+`backwardSorSweep A ω b (sorSweep A ω b x) = Stationary.Splitting.mulVecStep (ssorSplitting A h hω hω2) b x`
+(Quarteroni–Sacco–Saleri §4.2.6, the elimination of `x^{(k+1/2)}`; at `ω = 1` the symmetric
+Gauss–Seidel method with `B_SGS`, `b_SGS` of (4.21)). From `ssorSplitting_iterationOperator_eq_mul`
+and the affine forms of the two sweeps. Currently `SaadSparse.Chapter04.ssorStep_eq`. ★★'''
+deps = ["Matrix.sorSweep_eq_mulVecStep", "Matrix.backwardSorSweep_eq_mulVecStep", "Matrix.ssorSplitting_iterationOperator_eq_mul", "Stationary.Splitting.mulVecStep_eq_iterationOperator_mulVec_add"]

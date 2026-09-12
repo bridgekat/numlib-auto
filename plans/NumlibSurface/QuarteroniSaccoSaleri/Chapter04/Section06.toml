@@ -1,0 +1,84 @@
+namespace = "QuarteroniSaccoSaleri.Chapter04"
+desc = '''
+Quarteroni–Sacco–Saleri §4.6: stopping criteria for the linear iteration (4.2) — the error reduction
+`‖e_k‖/‖e_0‖ ≤ ‖B^k‖` and the iteration count (4.68)–(4.69), the increment-based a posteriori and
+a priori bounds (4.71)–(4.72) with the increment ratio as a lower bound for `‖B‖`, and the
+residual-based bounds of §4.6.2 through the condition number. (4.70) and the indicator (4.73) are
+heuristics (`≃`, "should not be regarded as an upper bound") and Examples 4.11–4.12 are numerical;
+none is a node. Norms are the `ℓ²` norms of `EuclideanSpace ℝ (Fin n)` and the induced operator norm
+(`Matrix.Norms.L2Operator`); the statements transfer to any pair of compatible norms, which the
+backbone (`Numlib/LinearSolve/Stationary/Basic`, stated on a normed space) already provides.
+'''
+
+[[node]]
+id = "norm_error_le_convergenceFactor"
+kind = "theorem"
+desc = '''The first display of §4.6: for a consistent method with `IsUnit A`, `‖e_k‖ ≤ ‖B^k‖ ‖e_0‖`, i.e.
+`‖toLp ((affineStep B f)^[k] x₀ - A⁻¹ *ᵥ b)‖ ≤ convergenceFactor B k * ‖toLp (x₀ - A⁻¹ *ᵥ b)‖`.
+`Stationary.norm_step_iterate_sub_le` with `equation_4_4`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.equation_4_4", "QuarteroniSaccoSaleri.Chapter04.definition_4_2_factor", "Stationary.norm_step_iterate_sub_le"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.68'
+
+[[node]]
+id = "equation_4_69"
+kind = "theorem"
+desc = '''(4.68)–(4.69): if `convergenceFactor B k ≤ ε` then `‖e_k‖ ≤ ε ‖e_0‖` (4.68); and for `0 < ‖B^k‖ < 1`
+and `0 < ε < 1`, `convergenceFactor B k ≤ ε ↔ -Real.log ε / averageConvergenceRate B k ≤ k`
+(4.69), `R_k(B)` being positive there. From `norm_error_le_convergenceFactor` and monotonicity of
+`Real.log`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.norm_error_le_convergenceFactor", "QuarteroniSaccoSaleri.Chapter04.definition_4_2_rate"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.69'
+
+[[node]]
+id = "equation_4_71"
+kind = "theorem"
+desc = '''(4.71): for a consistent method with `IsUnit A`, `‖e_{k+1}‖ ≤ ‖B‖ ‖e_k‖` along the iteration.
+`equation_4_4` at one step and `ContinuousLinearMap.le_opNorm` (or `Matrix.l2_opNorm_mulVec`). ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.equation_4_4"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.71'
+
+[[node]]
+id = "equation_4_72"
+kind = "theorem"
+desc = '''(4.72), the a posteriori increment test: for a consistent method with `IsUnit A` and `‖B‖ < 1`,
+`‖x - x_{k+1}‖ ≤ ‖B‖ / (1 - ‖B‖) * ‖x_{k+1} - x_k‖` with `x = A⁻¹ b`.
+`Stationary.norm_iterate_sub_le'` on `EuclideanSpace ℝ (Fin n)` through `toLp_affineStep`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.affineStep", "QuarteroniSaccoSaleri.Chapter04.definition_4_1", "Stationary.norm_iterate_sub_le'"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.72'
+
+[[node]]
+id = "equation_4_72_apriori"
+kind = "theorem"
+desc = '''The display after (4.72), the a priori form: under the same hypotheses,
+`‖x - x_{k+1}‖ ≤ ‖B‖ ^ (k + 1) / (1 - ‖B‖) * ‖x_1 - x_0‖`. `Stationary.norm_iterate_sub_le`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.affineStep", "QuarteroniSaccoSaleri.Chapter04.definition_4_1", "Stationary.norm_iterate_sub_le"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.72'
+
+[[node]]
+id = "increment_succ_le"
+kind = "theorem"
+desc = '''§4.6.1, the estimate of `‖B‖`: `x_{k+1} - x_k = B (x_k - x_{k-1})`, hence `δ_{k+1} ≤ ‖B‖ δ_k` with
+`δ_{j+1} = ‖x_{j+1} - x_j‖`, so the ratio `c = δ_{k+1}/δ_k` is a lower bound for `‖B‖`. The identity
+is `Stationary.step_iterate_succ_sub`; the indicator (4.73) built from `c` is a heuristic and is not
+a node. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.affineStep", "Stationary.step_iterate_succ_sub"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.73'
+
+[[node]]
+id = "residual_stopping_abs"
+kind = "theorem"
+desc = '''§4.6.2, first display: for `IsUnit A` and any `y` (an iterate), if `‖b - A y‖ ≤ ε` then
+`‖A⁻¹ b - y‖ ≤ ‖A⁻¹‖ * ε` (`ℓ²` norms), since `x - y = A⁻¹ (b - A y)`. ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.73'
+
+[[node]]
+id = "residual_stopping_rel"
+kind = "theorem"
+desc = '''§4.6.2, second display, the normalized residual test: for `IsUnit A`, `b ≠ 0` and any `y`, if
+`‖b - A y‖ / ‖b‖ ≤ ε` then `‖A⁻¹ b - y‖ / ‖A⁻¹ b‖ ≤ NormedRing.condNumber A * ε`, with
+`K(A) = ‖A‖ ‖A⁻¹‖` in the `ℓ²` operator norm. `relative_error_le_condNumber_mul_relative_residual`
+of `Numlib/LinearSolve/Perturbation` on `toEuclideanCLM A`. The preconditioned variant
+`‖P⁻¹ r_k‖/‖P⁻¹ r₀‖ ≤ ε` is a criterion, not a result, and has no node. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter04.residual_stopping_abs", "NormedRing.condNumber", "relative_error_le_condNumber_mul_relative_residual"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation 4.73'

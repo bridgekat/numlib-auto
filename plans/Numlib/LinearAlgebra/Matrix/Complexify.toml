@@ -67,3 +67,125 @@ id = "tendsto_pow_rpow_linfty_opNorm"
 
 [[node]]
 id = "complexSpectralRadius_transpose"
+
+[[node]]
+id = "charpoly_complexify"
+
+[[node]]
+id = "complexify_pow"
+
+[[node]]
+id = "star_mem_spectrum_complexify_iff"
+kind = "theorem"
+desc = '''For `A : Matrix n n ℝ` and `μ : ℂ`, `star μ ∈ spectrum ℂ (complexify A) ↔ μ ∈ spectrum ℂ (complexify A)`: the complex eigenvalues of a real matrix come in conjugate pairs (Quarteroni–Sacco–Saleri §1.7, "since `p_A` has real coefficients"). Proof: `charpoly_complexify` says the characteristic polynomial is the image of a real polynomial, whose roots are closed under conjugation (`Polynomial.aeval_conj`/`Complex.conj_eval`-style: `(p.map ofRealHom).eval (conj z) = conj ((p.map ofRealHom).eval z)`), and `mem_spectrum_iff_isRoot_charpoly`. Also the multiplicities agree (`rootMultiplicity` of `μ` and `conj μ` coincide), which chapter 5's real Schur form wants. ★'''
+deps = ["Matrix.charpoly_complexify"]
+
+[[node]]
+id = "complexSpectralRadius_pow"
+kind = "theorem"
+desc = '''`(A ^ k).complexSpectralRadius = A.complexSpectralRadius ^ k` for every `k` (the module has only `≤`, `complexSpectralRadius_pow_le`): Quarteroni–Sacco–Saleri §1.7, `ρ(Aᵏ) = ρ(A)ᵏ`, and Exercise 8. From the complex Banach-algebra statement `spectralRadius_pow` of the `Numlib/Analysis/Normed/Algebra/SpectralRadius` EXT through `complexify_pow`. ★'''
+deps = ["Matrix.complexify_pow", "Matrix.complexSpectralRadius", "spectralRadius_pow"]
+
+[[node]]
+id = "hasSum_pow_inv_one_sub_of_complexSpectralRadius_lt_one"
+kind = "theorem"
+desc = '''For `A : Matrix n n ℝ` with `A.complexSpectralRadius < 1`: `HasSum (fun k => A ^ k) (1 - A)⁻¹`, and conversely `Summable (fun k => A ^ k) → A.complexSpectralRadius < 1` (`summable_pow_iff_complexSpectralRadius_lt_one`): the real form of Quarteroni–Sacco–Saleri Theorem 1.5, (1.24)–(1.25). Forward: `isUnit_one_sub_of_complexSpectralRadius_lt_one` gives the unit; the partial sums satisfy `(∑_{k<K} Aᵏ) = (1 - A^K) (1 - A)⁻¹` (`Matrix.geom_sum_eq_sub_pow_mul` of `Numlib/LinearAlgebra/Matrix/MMatrix`, which should move here or to a shared spot since it uses nothing about M-matrices) and `A^K → 0` by `tendsto_pow_iff_complexSpectralRadius_lt_one`. Converse: a summable sequence tends to zero, so `A^k → 0`. The complex-algebra version is `hasSum_pow_inverse_one_sub_of_spectralRadius_lt_one` in the `SpectralRadius` EXT; this one is its real transcript, kept because `complexify` does not commute with `Matrix.inv` for free (it does: `complexify` is a ring hom, `map_inv`-style lemma `complexify_inv` is a one-liner worth stating). ★'''
+deps = ["Matrix.isUnit_one_sub_of_complexSpectralRadius_lt_one", "Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one", "Matrix.geom_sum_eq_sub_pow_mul"]
+
+[[node]]
+id = "complexify_sub"
+desc = '''`complexify (A - B) = complexify A - complexify B`. With the four nodes below this is the
+`SaadSparse.complexify_*` family of `NumlibSurface/SaadSparse/Common.lean`, which is general matrix
+glue that the Saad surface should not own: the Quarteroni–Sacco–Saleri surface needs every one of
+them and may not import a sibling surface. Move, do not duplicate. ★'''
+
+[[node]]
+id = "complexify_diagPart"
+kind = "theorem"
+desc = '''`complexify (diagPart A) = diagPart (complexify A)` (`@[simp]`), so the splitting
+`A = D - E - F` may be formed before or after passing to `ℂ`. Currently
+`SaadSparse.complexify_diagPart`. ★'''
+deps = ["Matrix.complexify"]
+
+[[node]]
+id = "complexify_strictLower"
+kind = "theorem"
+desc = '''`complexify (strictLower A) = strictLower (complexify A)` (`@[simp]`). Currently
+`SaadSparse.complexify_strictLower`. ★'''
+deps = ["Matrix.complexify"]
+
+[[node]]
+id = "complexify_strictUpper"
+kind = "theorem"
+desc = '''`complexify (strictUpper A) = strictUpper (complexify A)` (`@[simp]`). Currently
+`SaadSparse.complexify_strictUpper`. ★'''
+deps = ["Matrix.complexify"]
+
+[[node]]
+id = "complexify_inv"
+kind = "theorem"
+desc = '''`complexify A⁻¹ = (complexify A)⁻¹`, for every real matrix (both sides are `0` when `A` is not a
+unit, by `isUnit_complexify_iff`). Currently `SaadSparse.complexify_inv`. ★'''
+deps = ["Matrix.complexify", "Matrix.isUnit_complexify_iff"]
+
+[[node]]
+id = "isUnit_diagPart_complexify"
+kind = "theorem"
+desc = '''`IsUnit (diagPart A) → IsUnit (diagPart (complexify A))`, the hypothesis transfer that lets a real
+Jacobi / Gauss–Seidel / SOR splitting be complexified. Currently
+`SaadSparse.Chapter04.isUnit_diagPart_complexify`. ★'''
+deps = ["Matrix.complexify_diagPart", "Matrix.isUnit_complexify_iff"]
+
+[[node]]
+id = "isHermitian_complexify_iff"
+
+[[node]]
+id = "posDef_complexify_iff"
+kind = "theorem"
+desc = '''`(complexify A).PosDef ↔ A.PosDef` for a real matrix. This is the private
+`posDef_complexify_iff` of `Numlib/LinearSolve/Stationary/SPD.lean` (line 389), to be made public here
+where every consumer can reach it: the complex quadratic form of a real symmetric matrix at
+`x + i y` is the sum of the real forms at `x` and `y`. ★'''
+deps = ["Matrix.complexify", "Matrix.isHermitian_complexify_iff"]
+
+[[node]]
+id = "IsTridiagonal.complexify"
+kind = "theorem"
+desc = '''`A.IsTridiagonal → (complexify A).IsTridiagonal`, for `Matrix.IsTridiagonal` of
+`Numlib/LinearAlgebra/Matrix/Hessenberg`; entrywise, since complexification preserves zeros. Needed to
+read the Gauss–Seidel/Jacobi relation `ρ(B_GS) = ρ(B_J)²` for a real tridiagonal matrix off
+`Matrix.IsTridiagonal.isConsistentlyOrdered`, which is stated over `ℂ`. ★'''
+deps = ["Matrix.complexify", "Matrix.IsTridiagonal"]
+
+[[node]]
+id = "spectrum_complexify_affine"
+kind = "theorem"
+desc = '''Spectral mapping for affine images of a real matrix: for `c d : ℝ` with `d ≠ 0`,
+`spectrum ℂ (complexify (c • 1 + d • X)) = (fun μ : ℂ => c + d * μ) '' spectrum ℂ (complexify X)`.
+Private today as `mem_spectrum_complexify_affine_iff` in `Numlib/LinearSolve/Stationary/SPD.lean`
+(line 308); it is what every relaxation argument uses — JOR `(1 - ω) 1 + ω B_J`, Richardson
+`1 - α M` — and belongs here. From Mathlib's `spectrum.add_mem_iff`/`spectrum.smul_eq_smul` or
+directly from `mem_spectrum_complexify_iff`. ★'''
+deps = ["Matrix.complexify", "Matrix.mem_spectrum_complexify_iff"]
+
+[[node]]
+id = "complexSpectralRadius_affine_le"
+kind = "theorem"
+desc = '''The relaxation estimate behind Quarteroni–Sacco–Saleri Theorem 4.6: for `0 < ω ≤ 1`,
+`complexSpectralRadius ((1 - ω) • 1 + ω • X) ≤ ENNReal.ofReal (1 - ω) + ω * complexSpectralRadius X`
+(with `ENNReal` scalar multiplication read through `ofReal`). Each eigenvalue `(1 - ω) + ω μ` of the
+relaxed matrix has modulus `≤ (1 - ω) + ω |μ|` by the triangle inequality, so the supremum obeys the
+same bound; `spectrum_complexify_affine` supplies the eigenvalues. Consequently
+`complexSpectralRadius X < 1 → complexSpectralRadius ((1 - ω) • 1 + ω • X) < 1`. ★'''
+deps = ["Matrix.complexSpectralRadius", "Matrix.spectrum_complexify_affine"]
+
+[[node]]
+id = "tendsto_averageConvergenceRate"
+kind = "theorem"
+desc = '''Quarteroni–Sacco–Saleri (4.5) for a real matrix, in the `ℓ²` operator norm
+(`open scoped Matrix.Norms.L2Operator`): if `complexSpectralRadius G ≠ 0` then
+`-(1 / m : ℝ) * Real.log ‖G ^ m‖ → -Real.log (complexSpectralRadius G).toReal`. It is
+`tendsto_pow_rpow_complexSpectralRadius` composed with `Real.log`, as `Stationary.tendsto_averageConvergenceRate`
+does it at the operator level; the same statement holds in the maximum-row-sum norm through
+`tendsto_pow_rpow_linfty_opNorm`. ★'''
+deps = ["Matrix.tendsto_pow_rpow_complexSpectralRadius", "Matrix.complexSpectralRadius"]

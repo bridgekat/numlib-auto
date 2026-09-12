@@ -1,0 +1,70 @@
+namespace = "QuarteroniSaccoSaleri.Chapter05"
+desc = '''
+§5.5, the basic QR iteration and its convergence. Property 5.9 is `Matrix.tendsto_qrIterate` of
+`Numlib/Eigen/QRAlgorithm` *with one hypothesis the book omits*: the leading principal minors of
+`X⁻¹` must be nonzero (Golub–Van Loan Theorem 7.3.1's "`X⁻¹` has an LU factorization"), which is
+the backbone's general-position hypothesis `hgen`. Without it the statement is false — `A = diag
+(1, 2)` is fixed by the iteration and its diagonal is not in decreasing order. The rate (5.37) is
+a new backbone node in the weakened form this library uses (any `r > |λ_i|` in place of `|λ_i|`),
+and the symmetric case is the Hermitian invariance of the iteration. Remark 5.2 (LR iteration)
+is a node for its similarity identity. Example 5.4 is numerical and is skipped.
+'''
+
+[[node]]
+id = "property_5_9"
+kind = "theorem"
+desc = '''Property 5.9 (convergence of the QR method), with the missing hypothesis: let `A : Matrix (Fin
+N) (Fin N) ℝ` be diagonalizable, `A = X D X⁻¹`, `D = diagonal l`, with `|l 0| > |l 1| > … >
+|l (N-1)| > 0`, and assume every leading principal submatrix of `X⁻¹` is nonsingular. Then the
+iterates `T k = qrIterate A k` satisfy `T k i j → 0` for `j < i` and `T k i i → l i`. This is
+`Matrix.tendsto_qrIterate` after `Matrix.disjoint_span_euclideanCol_iff_isUnit_leadingPrincipal`
+(new) translates the minor condition into the general-position hypothesis
+`Disjoint (span (e_J)) (span (x_{Jᶜ}))` for lower sets `J`. The book's `|λ_n| > 0` is implicit
+(it assumes the QR factorization at every step, which `Matrix.qrQ` provides regardless, but the
+identification of the factors needs `IsUnit A.det`). ★★'''
+deps = ["Matrix.tendsto_qrIterate", "Matrix.disjoint_span_euclideanCol_iff_isUnit_leadingPrincipal", "QuarteroniSaccoSaleri.Chapter05.qrIterate"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.9'
+
+[[node]]
+id = "property_5_9_counterexample"
+kind = "theorem"
+desc = '''Why the hypothesis is needed: for `A = diagonal ![1, 2]`, `qrIterate A k = A` for all `k`
+(`qrQ A = 1`, `qrR A = A`, since the diagonal is positive), so the diagonal of the limit is
+`(1, 2)`, not `(λ_1, λ_2) = (2, 1)` as (5.36) requires. The missing hypothesis fails: `X = ![![0,
+1], ![1, 0]]` for the decreasing ordering and its leading `1 × 1` minor is `0`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter05.qrIterate"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.9'
+
+[[node]]
+id = "equation_5_37"
+kind = "theorem"
+desc = '''(5.37), the convergence rate, weakened: under the hypotheses of `property_5_9`, for every
+`i ≥ 1` and every `r` with `|l i| < r`, there is `C` with `|T k i (i-1)| ≤ C (r / |l (i-1)|)^k`
+for all `k`. The book's `O(|λ_i/λ_{i-1}|^k)` is the case `r = |l i|`, which the backbone's gap
+estimate `Krylov.exists_gap_subspaceIterate_span_image_le` gives only up to an arbitrarily small
+loss in the base, exactly as for the power method (Theorem 5.6's rate is stated there with the
+exact base only under diagonalizability with an eigenbasis; here the subspace-iteration route
+loses it). Backbone `Matrix.exists_abs_qrIterate_apply_le` (new). ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter05.property_5_9", "Matrix.exists_abs_qrIterate_apply_le"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.37)'
+
+[[node]]
+id = "property_5_9_symm"
+kind = "theorem"
+desc = '''Property 5.9, the symmetric case: if in addition `A` is symmetric then `T k` tends to a diagonal
+matrix, i.e. also `T k i j → 0` for `i < j` and `T k → diagonal l` entrywise. Each iterate is
+symmetric (`Matrix.isHermitian_qrIterate`, new: `qrIterate A k = Q̃ᵀ A Q̃`), so the upper
+triangle is the transpose of the lower. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter05.property_5_9", "Matrix.isHermitian_qrIterate"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.9'
+
+[[node]]
+id = "remark_5_2"
+kind = "theorem"
+desc = '''Remark 5.2 (LR iteration): if `A = L R` with `L` unit lower triangular and `R` upper
+triangular (invertible `L`), then `R L = L⁻¹ A L` is similar to `A`. Stated for any such
+factorization: `∀ L R, L * R = A → IsUnit L → R * L = L⁻¹ * A * L`; existence and uniqueness of the
+factorization under nonzero leading minors is Chapter 3's Theorem 3.4 (`LinearAlgebra/Matrix/LU`,
+proposed by chapter 3's agent — depend on its LU node once its id is fixed). ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 5.2'

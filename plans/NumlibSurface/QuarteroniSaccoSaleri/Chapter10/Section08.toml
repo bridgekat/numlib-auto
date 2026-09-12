@@ -1,0 +1,64 @@
+namespace = "QuarteroniSaccoSaleri.Chapter10"
+desc = '''
+§10.8: the polynomial of best uniform approximation (10.47), the Chebyshev equioscillation theorem
+(Property 10.1), the de la Vallée Poussin theorem (Property 10.2) and the Lebesgue-constant bound
+on the interpolation error. Everything is `Numlib/Approximation/Chebyshev` on `X = Icc a b` with the
+subspace `polyLE X n`, and the Lebesgue lemma of `Numlib/Analysis/Normed/Module/BestApprox`.
+'''
+
+[[node]]
+id = "equation_10_47"
+kind = "definition"
+desc = '''(10.47): for `f ∈ C[a, b]`, `p_n^* ∈ P_n` is a polynomial of best approximation when
+`‖f - p_n^*‖_∞ = min_{p ∈ P_n} ‖f - p‖_∞`, i.e. `IsBestApprox (polyLE (Icc a b) n) f p_n^*`; and
+`E_n^*(f) = inf_{p ∈ P_n} ‖f - p‖_∞` is `Metric.infDist f (polyLE (Icc a b) n)`. Definitions only,
+naming the backbone objects for the section. ★'''
+deps = ["polyLE", "IsBestApprox"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.47)'
+
+[[node]]
+id = "property_10_1_existsUnique"
+kind = "theorem"
+desc = '''Property 10.1, first clause: for `a < b`, `f ∈ C[a, b]` and `n ≥ 0`, the polynomial of best
+approximation exists and is unique. Restates `existsUnique_isBestApprox_polyLE`. ★'''
+deps = ["existsUnique_isBestApprox_polyLE", "QuarteroniSaccoSaleri.Chapter10.equation_10_47"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 10.1'
+
+[[node]]
+id = "property_10_1_equioscillates"
+kind = "theorem"
+desc = '''Property 10.1, second clause (Chebyshev equioscillation): there are `n + 2` points
+`x_0 < ⋯ < x_{n+1}` in `[a, b]` and `σ = ±1` with `f(xⱼ) - p_n^*(xⱼ) = σ (-1)^j E_n^*(f)`. Restates
+`IsBestApprox.equioscillates_of_polyLE` (`Equioscillates (f - p) (n + 2)`), whose converse
+`isBestApprox_of_equioscillates` the book does not state but the backbone has. ★'''
+deps = ["IsBestApprox.equioscillates_of_polyLE", "Equioscillates", "QuarteroniSaccoSaleri.Chapter10.property_10_1_existsUnique"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 10.1'
+
+[[node]]
+id = "property_10_1_interpolates"
+kind = "theorem"
+desc = '''The consequence drawn after Property 10.1: there are `n + 1` points `x̃_0 < ⋯ < x̃_n` with
+`x_k < x̃_k < x_{k+1}` at which `p_n^*(x̃ⱼ) = f(x̃ⱼ)`, so `p_n^*` interpolates `f` at `n + 1` nodes.
+The intermediate value theorem for the continuous `f - p_n^*` between two consecutive alternation
+points of opposite sign. ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter10.property_10_1_equioscillates"]
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.8, the interpolation property of the best approximation'''
+
+[[node]]
+id = "property_10_2"
+kind = "theorem"
+desc = '''Property 10.2 (de la Vallée Poussin): if `q_n ∈ P_n` and `n + 2` points `x_0 < ⋯ < x_{n+1}`
+of `[a, b]` satisfy `f(xⱼ) - q_n(xⱼ) = (-1)^j eⱼ` with all `eⱼ` nonzero of the same sign, then
+`min_j |eⱼ| ≤ E_n^*(f)`. Restates `le_infDist_of_alternates`. ★'''
+deps = ["le_infDist_of_alternates", "QuarteroniSaccoSaleri.Chapter10.equation_10_47"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 10.2'
+
+[[node]]
+id = "interpolation_error_le_lebesgue"
+kind = "theorem"
+desc = '''The unnumbered bound at the end of §10.8: for `n + 1` distinct nodes in `[a, b]`,
+`‖f - Π_n f‖_∞ ≤ (1 + Λ_n) E_n^*(f)`, with `Λ_n = ‖∑ᵢ |lᵢ|‖_∞` the Lebesgue constant (8.11).
+The Lebesgue lemma `norm_sub_apply_le_of_isIdempotentElem` for the projection
+`Lagrange.interpolateCLM x` whose norm is `Λ_n` by `Lagrange.norm_interpolateCLM`. ★'''
+deps = ["norm_sub_apply_le_of_isIdempotentElem", "Lagrange.norm_interpolateCLM", "Lagrange.interpolateCLM", "QuarteroniSaccoSaleri.Chapter10.equation_10_47"]
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §10.8, the bound ‖f − Π_n f‖_∞ ≤ (1 + Λ_n) E_n^*(f)'''

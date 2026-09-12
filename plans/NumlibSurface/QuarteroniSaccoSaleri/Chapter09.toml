@@ -1,0 +1,28 @@
+desc = '''
+Quarteroni–Sacco–Saleri, Chapter 9: numerical integration. Quadrature rules as weighted sums
+(§9.1), the midpoint, trapezoidal and Simpson rules with their composite forms and error constants
+(§9.2), Newton–Cotes formulae and the error characterization of Theorem 9.2 (§9.3), composite
+Newton–Cotes rules, Theorem 9.3 and the convergence for continuous integrands of Property 9.1
+(§9.4), Hermite quadrature and the corrected trapezoidal rule (§9.5), Richardson extrapolation,
+Property 9.2, the Euler–Maclaurin formula (Property 9.3) and Romberg integration (§9.6), automatic
+integration with its a posteriori estimators (§9.7), singular integrals (§9.8), multidimensional
+integration with Definition 9.1, Property 9.4 and the Monte Carlo method (§9.9). §9.10
+(applications) states no numbered result and has no group; the three exercises the text cites
+(1, 4, 9) are nodes of the sections they concern.
+
+The backbone under it: `Numlib/Approximation/Quadrature` and `CompositeQuadrature` (rules as
+functionals, exactness, interpolatory rules, the Peano kernel, the trapezoidal and Simpson rules
+with their composite mean value errors), the new `Numlib/Approximation/NewtonCotes` (midpoint
+rule, Newton–Cotes weights, Theorems 9.1–9.3, Property 9.1, Hermite quadrature, the corrected
+trapezoidal rule, the adaptive Simpson estimator), `Numlib/Approximation/Extrapolation`
+(Richardson, Romberg), `Numlib/Analysis/SpecialFunctions/EulerMaclaurin` (Property 9.3),
+`Numlib/Approximation/SingularIntegral` (§9.8), `Numlib/Approximation/TriangleQuadrature` and
+`Numlib/Approximation/MonteCarlo` (§9.9), and the Laguerre and Hermite weights of
+`Numlib/Approximation/OrthogonalPolynomial` (§9.8.3, Method 3).
+
+Two errata are carried by the nodes: Theorem 9.3's constant `M_n/(n+2)^{n+3}` is `M_n/n^{n+3}`
+for the closed rules (`theorem_9_3_even`), and Property 9.2 indexes an undefined entry
+(`property_9_2`). The heuristic estimates (9.39)–(9.40) and (9.43)–(9.44), written with `≃`, are
+stated as identities with an explicit remainder. Property 9.4 is the chapter's one "not
+formalized" node (a two-dimensional Bramble–Hilbert estimate).
+'''

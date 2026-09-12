@@ -1,0 +1,29 @@
+desc = '''
+Quarteroni–Sacco–Saleri, Chapter 7: nonlinear systems and numerical optimization. §7.1 (systems
+`F(x) = 0` in `ℝⁿ`: Newton's method and Theorem 7.1, cyclic and inexact variants, the
+difference-Jacobian method of Property 7.1, Broyden's method and Property 7.2, fixed-point
+iterations with Definition 7.1, Theorem 7.2 and Property 7.3) is `Section01`; §7.2 (unconstrained
+minimization: Property 7.4, descent methods and Theorem 7.3, line searches and Property 7.5, the
+quadratic case with Lemma 7.1 and Property 7.6, nonlinear CG of Remark 7.2, Newton-like methods,
+Properties 7.7–7.8, secant updates) is `Section02`; §7.3 (constrained minimization: Properties
+7.9–7.17, Definitions 7.2–7.3) is `Section03`; §7.4's application to the semiconductor system,
+through Exercise 7.5, is `Section04`. §7.2.1's direct search methods (Hooke–Jeeves, Nelder–Mead)
+make no statement and have no nodes.
+
+Vector space: `EuclideanSpace ℝ (Fin n)` throughout, as the other surfaces do for `ℝⁿ`; Theorem
+7.1 is stated for an arbitrary finite-dimensional real normed space because the book allows "any
+vector norm" with the induced (consistent) matrix norm. Jacobian and Hessian matrices are the
+matrices of `fderiv` in the standard basis (`jacobianMatrix`, `hessianMatrix`, surface
+definitions with bridge lemmas to `fderiv`), and spectral radii are `Matrix.complexSpectralRadius`.
+Backbone: `Numlib/Nonlinear/{Newton,FixedPoint,DifferenceJacobian,QuasiNewton}`,
+`Numlib/Optimization/*`, `Numlib/LinearSolve/Projection/{OneDimensional,ConjugateDirection}`,
+`Numlib/Krylov/CG`, `Numlib/Variational/Minimization`, `Numlib/Analysis/Convex/Gateaux`.
+
+Two results are not formalized, with the reason in their nodes: Property 7.2 (Dennis–Moré
+superlinear convergence of Broyden's method) and Property 7.17 (the uniform local analysis of
+the augmented Lagrangian). Corrections to the book's statements are recorded in the nodes that
+carry them: Property 7.4 (c) needs `∇f(x*) = 0`; Property 7.10 needs lower semicontinuity;
+Property 7.11's first part needs regularity; Property 7.16 gives cluster points, not convergence;
+Remark 7.1's Richardson identity has `J_F(x^{(k)})` in place of `I - J_{G_N}(x^{(k)})`; Example
+7.7's augmented Lagrangian has no global minimizer (it does have a strict local one at `0`).
+'''

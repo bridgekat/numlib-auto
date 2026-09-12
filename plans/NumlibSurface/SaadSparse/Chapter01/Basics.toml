@@ -19,10 +19,8 @@ id = "equation_1_2"
 id = "trace_eq_sum_eigenvalues"
 
 [[node]]
-id = "_root_.Matrix.lpOpNorm"
-
-[[node]]
 id = "lpOpNorm_one"
+deprecated = '''Replaced by the backbone's `Matrix.lpOpNorm_one_eq_sup_sum_norm` (Numlib/Analysis/Matrix/OperatorNorm); the Saad surface delegates to it.'''
 
 [[node]]
 id = "equation_1_14"

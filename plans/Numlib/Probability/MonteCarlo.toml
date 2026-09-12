@@ -1,0 +1,67 @@
+namespace = "MonteCarlo"
+desc = '''
+Monte Carlo integration ([quarteroni2000numerical] §9.9.3): the integral over a bounded
+measurable `Ω ⊆ ℝ^d` of positive finite volume is `|Ω|` times the mean of `f(X)` for `X` uniform
+on `Ω`, the uniform law being Mathlib's conditional measure `volume[|Ω]`
+(`ProbabilityTheory.cond`); the sample mean `I_N(f) = (1/N) ∑_{i<N} f(X_i)` (9.60) of pairwise
+independent identically distributed samples converges to the mean almost surely — Mathlib's strong
+law `ProbabilityTheory.strong_law_ae` (Etemadi's version, pairwise independence suffices) applied
+to `f ∘ X_i` — and its variance is `Var(f(X))/N` (9.61), from
+`ProbabilityTheory.IndepFun.variance_sum` and `ProbabilityTheory.variance_smul`, so that
+Chebyshev's inequality `ProbabilityTheory.meas_ge_le_variance_div_sq` gives the `N^{-1/2}`
+confidence bound. Nothing is dimension-dependent, which is the book's point.
+
+Placement: this is the only probabilistic module of the backbone; it sits under `Approximation`
+beside the quadrature files because it is a quadrature rule with random nodes, and it should move
+to a `Numlib/Probability/` directory if a second probabilistic topic arrives (chapter 10's
+pseudo-random generators do not need it). Everything is stated on an abstract probability space
+`(Ω, μ)` with `X i : Ω → (Fin d → ℝ)`; the identification of `μ[f ∘ X 0]` with
+`|Ω|⁻¹ ∫_Ω f` is the separate lemma `setIntegral_eq_volume_mul_integral_cond` under the
+hypothesis that the law of `X 0` is `volume[|Ω]`.
+'''
+
+[[node]]
+id = "sampleMean"
+kind = "definition"
+desc = '''`sampleMean f X N ω := (N : ℝ)⁻¹ * ∑ i ∈ Finset.range N, f (X i ω)`, the Monte Carlo estimate
+`I_N(f)` of (9.60), for `f : (Fin d → ℝ) → ℝ` and samples `X : ℕ → Ω → (Fin d → ℝ)`. ★'''
+deps = []
+
+[[node]]
+id = "setIntegral_eq_volume_mul_integral_cond"
+kind = "theorem"
+desc = '''`∫ x in s, f x = (volume s).toReal * ∫ x, f x ∂(volume[|s])` for `s` measurable with
+`volume s ≠ 0`, `volume s ≠ ⊤` and `f` integrable on `s` — the book's `∫_Ω f = |Ω| μ(f)` with
+`μ(f)` the mean under the uniform density `|Ω|⁻¹ χ_Ω`. `ProbabilityTheory.cond` is
+`(volume s)⁻¹ • volume.restrict s`; `MeasureTheory.integral_smul_measure`. ★'''
+deps = []
+
+[[node]]
+id = "tendsto_sampleMean_ae"
+kind = "theorem"
+desc = '''**The strong law for Monte Carlo integration.** For measurable `f`, samples `X` with
+`Integrable (f ∘ X 0) μ`, `Pairwise ((· ⟂ᵢ[μ] ·) on X)` and `∀ i, IdentDistrib (X i) (X 0) μ μ`:
+`∀ᵐ ω ∂μ, Tendsto (fun N => sampleMean f X N ω) atTop (𝓝 (μ[f ∘ X 0]))`. Direct from
+`ProbabilityTheory.strong_law_ae (fun i => f ∘ X i)` with `IndepFun.comp` and `IdentDistrib.comp`
+(prototype elaborated and closed). ★'''
+deps = ["MonteCarlo.sampleMean"]
+
+[[node]]
+id = "variance_sampleMean"
+kind = "theorem"
+desc = '''**(9.61)**: under the hypotheses of `tendsto_sampleMean_ae` with `MemLp (f ∘ X 0) 2 μ` and `μ`
+a probability measure, `variance (sampleMean f X N) μ = variance (f ∘ X 0) μ / N` for `0 < N`, i.e.
+`σ(I_N(f)) = σ(f)/√N`. `ProbabilityTheory.IndepFun.variance_sum` (pairwise independence) and
+`ProbabilityTheory.variance_smul`; identical distribution gives equal variances
+(`IdentDistrib.variance_eq` or through `IdentDistrib.integral_eq` of `X²` and `X`). ★★'''
+deps = ["MonteCarlo.sampleMean"]
+
+[[node]]
+id = "meas_ge_le_sampleMean"
+kind = "theorem"
+desc = '''Chebyshev for the Monte Carlo error: under the hypotheses of `variance_sampleMean`, for
+`0 < c`, `μ {ω | c ≤ |sampleMean f X N ω - μ[f ∘ X 0]|} ≤ ENNReal.ofReal (variance (f ∘ X 0) μ / (N * c^2))`
+— the statistical `O(N^{-1/2})` error bound the book reads off (9.61).
+`ProbabilityTheory.meas_ge_le_variance_div_sq` and `variance_sampleMean`, with
+`μ[sampleMean f X N] = μ[f ∘ X 0]` from identical distribution. ★'''
+deps = ["MonteCarlo.variance_sampleMean"]

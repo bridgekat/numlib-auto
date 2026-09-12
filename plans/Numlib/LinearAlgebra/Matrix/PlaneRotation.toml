@@ -1,0 +1,145 @@
+namespace = "Matrix"
+desc = '''
+Plane (Givens) rotations, and the more general embedding of a `2 × 2` matrix into a coordinate
+plane. This is a refactor: `Matrix.planeRotation` and its thirteen lemmas now in
+`Numlib/Eigen/Jacobi.lean` (lines 100–190 and 360–520: `planeRotation`, `planeRotation_apply`,
+`mul_planeRotation_apply`, `transpose_planeRotation_mul_apply`, `transpose_planeRotation_mul_self`,
+`conj_planeRotation_apply_of_ne`, `conj_planeRotation_apply_jj`, `conj_planeRotation_apply_kk`,
+`conj_planeRotation_apply_jk`, `conj_planeRotation_apply_col_j`, `conj_planeRotation_apply_col_k`,
+`conj_planeRotation_apply_row_j`, `conj_planeRotation_apply_row_k`) move here unchanged in name and
+statement, so `Numlib/Eigen/Jacobi` keeps compiling after adding the import; the ids stay in the
+`Jacobi` plan group only until the move, after which they belong to this group.
+
+The shared primitive is `Matrix.planeEmbed j k G`: the identity outside rows and columns `j`, `k`
+and the `2 × 2` matrix `G` on that block. A rotation is `planeEmbed j k !![c, -s; s, c]`, the
+Jacobi convention (rows `j`, `k` equal to `(c, -s)`, `(s, c)`, so `Gᵀ` rotates counterclockwise as
+in Quarteroni–Sacco–Saleri (5.44) with `s ↦ -s`); the complex Givens rotation of
+`Numlib/Krylov/Hessenberg.lean` (`Krylov.givensMatrix`, `!![conj c, conj s; -s, c]` at the plane
+`(k, k+1)` of `Fin (m+1)`) is another instance, and the bridge lemma
+`Krylov.givensMatrix_eq_planeEmbed` (planned in `Krylov/Hessenberg`) lets its unitarity and its
+row/column action come from here. Everything about `planeEmbed` is stated over a semiring or
+ring, with `[DecidableEq n]` and no order on `n`; the Givens pair `(c, s)` that annihilates one
+entry of a real vector, (5.44)/(5.51) of Quarteroni–Sacco–Saleri, is real.
+
+Consumers: `Numlib/Eigen/Jacobi` (Jacobi's method), `Numlib/LinearAlgebra/Matrix/QR` (the Givens
+QR factorization of a Hessenberg matrix), `Numlib/Krylov/Hessenberg` (the progressive QR
+factorization of GMRES/MINRES), and Kress §7.3.
+'''
+
+[[node]]
+id = "planeEmbed"
+kind = "definition"
+desc = '''`planeEmbed (j k : n) (G : Matrix (Fin 2) (Fin 2) R) : Matrix n n R` over `[Zero R] [One R]
+[DecidableEq n]`: entry `(j, j) = G 0 0`, `(j, k) = G 0 1`, `(k, j) = G 1 0`, `(k, k) = G 1 1`,
+the rest of rows and columns `j`, `k` zero, and the identity elsewhere. For `j = k` the definition
+is degenerate and no lemma assumes anything about it beyond `hjk : j ≠ k`. ★'''
+deps = []
+
+[[node]]
+id = "planeEmbed_apply"
+kind = "theorem"
+desc = '''The entries of `planeEmbed j k G` for `j ≠ k`, as a nested `if` on the row and the column. ★'''
+deps = ["Matrix.planeEmbed"]
+
+[[node]]
+id = "planeRotation"
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.43)'
+
+[[node]]
+id = "mul_planeEmbed_apply"
+kind = "theorem"
+desc = '''Right multiplication combines columns `j` and `k`: for `j ≠ k` and `M : Matrix n n R` over a
+`NonAssocSemiring`, `(M * planeEmbed j k G) p q = if q = j then M p j * G 0 0 + M p k * G 1 0 else
+if q = k then M p j * G 0 1 + M p k * G 1 1 else M p q`. Generalizes `mul_planeRotation_apply`. ★'''
+deps = ["Matrix.planeEmbed_apply"]
+
+[[node]]
+id = "planeEmbed_mul_apply"
+kind = "theorem"
+desc = '''Left multiplication combines rows `j` and `k`: `(planeEmbed j k G * M) p q = if p = j then
+G 0 0 * M j q + G 0 1 * M k q else if p = k then G 1 0 * M j q + G 1 1 * M k q else M p q`.
+Generalizes `transpose_planeRotation_mul_apply` (Programs 34–35 of Quarteroni–Sacco–Saleri are
+these two formulas). ★'''
+deps = ["Matrix.planeEmbed_apply"]
+
+[[node]]
+id = "planeEmbed_mul_planeEmbed"
+kind = "theorem"
+desc = '''Two embeddings in the same plane compose as their `2 × 2` factors: `planeEmbed j k G *
+planeEmbed j k G' = planeEmbed j k (G * G')` for `j ≠ k`. ★'''
+deps = ["Matrix.planeEmbed_mul_apply"]
+
+[[node]]
+id = "planeEmbed_one"
+kind = "theorem"
+desc = '`planeEmbed j k 1 = 1` for `j ≠ k`. ★'
+deps = ["Matrix.planeEmbed_apply"]
+
+[[node]]
+id = "planeEmbed_transpose"
+kind = "theorem"
+desc = '''`(planeEmbed j k G)ᵀ = planeEmbed j k Gᵀ` for `j ≠ k`, and `planeEmbed_conjTranspose` with `ᴴ`
+over a `[Star R]` with `star 0 = 0`, `star 1 = 1`. ★'''
+deps = ["Matrix.planeEmbed_apply"]
+
+[[node]]
+id = "det_planeEmbed"
+kind = "theorem"
+desc = '''`(planeEmbed j k G).det = G.det` over a commutative ring, `j ≠ k`: expand along the rows other
+than `j`, `k` (or conjugate by the transposition `(j k)` into a `fromBlocks` form). ★★'''
+deps = ["Matrix.planeEmbed_apply"]
+
+[[node]]
+id = "planeEmbed_mem_unitaryGroup_iff"
+kind = "theorem"
+desc = '''Over `[RCLike 𝕜]` (or any `StarRing`), for `j ≠ k`: `planeEmbed j k G ∈ unitaryGroup n 𝕜 ↔ G ∈
+unitaryGroup (Fin 2) 𝕜`. From `planeEmbed_conjTranspose`, `planeEmbed_mul_planeEmbed` and
+`planeEmbed_one` for `←`, and reading the `2 × 2` block of `Pᴴ P = 1` for `→`. Gives
+`Krylov.givensMatrix_mem_unitaryGroup` and `transpose_planeRotation_mul_self` at once. ★'''
+deps = ["Matrix.planeEmbed_transpose", "Matrix.planeEmbed_mul_planeEmbed", "Matrix.planeEmbed_one"]
+
+[[node]]
+id = "planeRotation_mem_orthogonalGroup"
+kind = "theorem"
+desc = '''`planeRotation j k c s ∈ orthogonalGroup n ℝ` when `j ≠ k` and `c ^ 2 + s ^ 2 = 1`; the
+existing `transpose_planeRotation_mul_self` restated as group membership (over a commutative
+ring with trivial star, `c² + s² = 1`). ★'''
+deps = ["Matrix.planeRotation", "Matrix.planeEmbed_mem_unitaryGroup_iff"]
+
+[[node]]
+id = "givensPair"
+kind = "definition"
+desc = '''`givensPair (a b : ℝ) : ℝ × ℝ := if a = 0 ∧ b = 0 then (1, 0) else (a / √(a² + b²), b /
+√(a² + b²))`, the cosine and sine `(c, s)` with `c a + s b = √(a² + b²)` and `-s a + c b = 0`:
+Quarteroni–Sacco–Saleri (5.44) with `c = x_i/α`, `s = -x_k/α` read in the `planeRotation` sign
+convention (their `s` is `-s` here), and Program 33 up to the choice of branch. ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.51)'
+
+[[node]]
+id = "givensPair_sq_add_sq"
+kind = "theorem"
+desc = '`(givensPair a b).1 ^ 2 + (givensPair a b).2 ^ 2 = 1`. ★'
+deps = ["Matrix.givensPair"]
+
+[[node]]
+id = "givensPair_fst_mul_add_snd_mul"
+kind = "theorem"
+desc = '`c * a + s * b = √(a² + b²)` and `-s * a + c * b = 0` for `(c, s) = givensPair a b`. ★'
+deps = ["Matrix.givensPair"]
+
+[[node]]
+id = "transpose_planeRotation_givensPair_mulVec"
+kind = "theorem"
+desc = '''For `j ≠ k`, `x : n → ℝ` and `G = planeRotation j k c s` with `(c, s) = givensPair (x j) (x k)`:
+`(Gᵀ *ᵥ x) k = 0`, `(Gᵀ *ᵥ x) j = √(x j ² + x k ²)`, and `(Gᵀ *ᵥ x) q = x q` for `q ∉ {j, k}`.
+Quarteroni–Sacco–Saleri (5.44), the annihilation of one entry of a vector. ★'''
+deps = ["Matrix.givensPair_fst_mul_add_snd_mul", "Matrix.planeEmbed_mul_apply", "Matrix.planeRotation"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.44)'
+
+[[node]]
+id = "planeEmbed_mulVec_apply_of_ne"
+kind = "theorem"
+desc = '''`(planeEmbed j k G *ᵥ x) q = x q` for `q ≠ j`, `q ≠ k`, and the two-entry formulas at `j` and `k`;
+the vector form of `planeEmbed_mul_apply`. ★'''
+deps = ["Matrix.planeEmbed_apply"]

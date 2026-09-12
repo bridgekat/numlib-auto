@@ -1,0 +1,151 @@
+namespace = "Matrix"
+desc = '''
+Secant updates of a Hessian approximation for minimization (Quarteroni–Sacco–Saleri §7.2.7;
+Dennis–Schnabel §9.1–9.2; Nocedal–Wright §6.1): on `Matrix n n ℝ`, the rank-one secant update
+(7.42) with an arbitrary scaling vector `c`, the symmetric rank-one update SR1 (7.43) and its
+inverse form (7.44) through the Sherman–Morrison formula, the Powell-symmetric-Broyden update PSB
+(7.46) as the limit of the symmetrization iteration (7.45), its least-change characterization in
+the Frobenius norm among symmetric matrices satisfying the secant equation, and its bounded
+deterioration; and the DFP and BFGS updates with the preservation of positive definiteness under
+the curvature condition `⟪y, s⟫ > 0`, which the book defers to Dennis–Schnabel §9.2 and which
+Nocedal–Wright make central. Matrices rather than operators: every statement here is about
+symmetry and the Frobenius norm, which are matrix notions; the operator form of the
+nonsymmetric update is `Broyden.update` in `Numlib/Nonlinear/QuasiNewton`. The Frobenius norm is
+`Matrix.frobeniusNormedAddCommGroup` as a local instance.
+'''
+
+[[node]]
+id = "rankOneSecantUpdate"
+kind = "definition"
+desc = '''(7.42): `rankOneSecantUpdate (B : Matrix n n ℝ) (s y c : n → ℝ) :=
+B + (1 / (c ⬝ᵥ s)) • vecMulVec (y - B *ᵥ s) c`; with `c = s` it is `Matrix.broydenUpdate`. ★'''
+deps = []
+
+[[node]]
+id = "rankOneSecantUpdate_mulVec"
+kind = "theorem"
+desc = 'The secant equation: `c ⬝ᵥ s ≠ 0 → rankOneSecantUpdate B s y c *ᵥ s = y`. ★'
+deps = ["Matrix.rankOneSecantUpdate"]
+
+[[node]]
+id = "sr1Update"
+kind = "definition"
+desc = '''(7.43), the symmetric rank-one update: `sr1Update B s y := rankOneSecantUpdate B s y (y - B *ᵥ s)`,
+i.e. `B + ((y - B s)(y - B s)ᵀ) / ((y - B s)ᵀ s)`. ★'''
+deps = ["Matrix.rankOneSecantUpdate"]
+
+[[node]]
+id = "sr1Update_isSymm"
+kind = "theorem"
+desc = '''`B.IsSymm → (sr1Update B s y).IsSymm`, and `sr1Update_mulVec : (y - B *ᵥ s) ⬝ᵥ s ≠ 0 →
+sr1Update B s y *ᵥ s = y`. ★'''
+deps = ["Matrix.sr1Update"]
+
+[[node]]
+id = "sr1Update_inv"
+kind = "theorem"
+desc = '''(7.44), the inverse SR1 update: if `B` is symmetric and invertible, `C = B⁻¹`,
+`(y - B *ᵥ s) ⬝ᵥ s ≠ 0` and `(s - C *ᵥ y) ⬝ᵥ y ≠ 0`, then
+`(sr1Update B s y)⁻¹ = C + vecMulVec (s - C *ᵥ y) (s - C *ᵥ y) / ((s - C *ᵥ y) ⬝ᵥ y)`. Proof:
+`Matrix.inv_add_vecMulVec` (Sherman–Morrison, `Numlib/LinearAlgebra/Matrix/NonsingularInverse`)
+with `u = v = (y - B s) / ‖·‖`, and the identity `C (y - B s) = -(s - C y)`. ★★'''
+deps = ["Matrix.sr1Update", "Matrix.inv_add_vecMulVec"]
+
+[[node]]
+id = "symmetrizationStep"
+kind = "definition"
+desc = '''One double step of (7.45): `symmetrizationStep s y c B := let B₁ := rankOneSecantUpdate B s y c;
+(B₁ + B₁ᵀ) / 2`, so that `B^{(2j+2)} = (symmetrizationStep s y c)^[j+1] B_k`. ★'''
+deps = ["Matrix.rankOneSecantUpdate"]
+
+[[node]]
+id = "generalSymmetricUpdate"
+kind = "definition"
+desc = '''(7.46) with an arbitrary scaling vector `c`: `generalSymmetricUpdate B s y c :=
+B + (vecMulVec (y - B s) c + vecMulVec c (y - B s)) / (c ⬝ᵥ s) - (((y - B s) ⬝ᵥ s) / (c ⬝ᵥ s) ^ 2) • vecMulVec c c`,
+symmetric when `B` is and satisfying the secant equation when `c ⬝ᵥ s ≠ 0`. ★'''
+deps = []
+
+[[node]]
+id = "psbUpdate"
+kind = "definition"
+desc = '''(7.46) with `c = s`, the Powell-symmetric-Broyden update:
+`psbUpdate B s y := generalSymmetricUpdate B s y s`, i.e.
+`B + (vecMulVec (y - B s) s + vecMulVec s (y - B s)) / (s ⬝ᵥ s) - (((y - B s) ⬝ᵥ s) / (s ⬝ᵥ s) ^ 2) • vecMulVec s s`. ★'''
+deps = ["Matrix.generalSymmetricUpdate"]
+
+[[node]]
+id = "psbUpdate_isSymm"
+kind = "theorem"
+desc = '''`B.IsSymm → (psbUpdate B s y).IsSymm`, and `psbUpdate_mulVec : s ≠ 0 → psbUpdate B s y *ᵥ s = y`
+(expand: the correction applied to `s` is `(y - B s) + s ((y-Bs)⬝s)/(s⬝s) - s ((y-Bs)⬝s)/(s⬝s)`). ★'''
+deps = ["Matrix.psbUpdate"]
+
+[[node]]
+id = "tendsto_symmetrizationStep_iterate"
+kind = "theorem"
+desc = '''(7.45) converges to (7.46) (Dennis–Schnabel, the discussion preceding Thm 9.1.1; Powell
+1970): for `c ⬝ᵥ s ≠ 0` and every `B`, `Tendsto (fun j => (symmetrizationStep s y c)^[j] B) atTop
+(𝓝 (generalSymmetricUpdate B s y c))`. Proof: the map `T = symmetrizationStep s y c` is affine,
+`T B = B + (R(B) cᵀ + c R(B)ᵀ) / (2 cᵀ s)` with `R(B) = y - B s`; writing `B = B̄ + Δ` around the
+claimed limit `B̄`, which is a fixed point of `T` (because `B̄ s = y`), the difference `Δ_j` obeys
+`Δ_{j+1} = Δ_j - (Δ_j s cᵀ + c sᵀ Δ_jᵀ) / (2 cᵀ s)`, whose restriction to the two-dimensional
+invariant subspace spanned by the rank-one pieces has spectral radius `1/2` (it halves the
+component `Δ s`), so `Δ_j → 0`. The statement is a finite-dimensional linear-algebra computation;
+the difficulty is only in organizing it. ★★★'''
+deps = ["Matrix.symmetrizationStep", "Matrix.generalSymmetricUpdate"]
+
+[[node]]
+id = "frobenius_norm_psbUpdate_sub_le"
+kind = "theorem"
+desc = '''Least change (Dennis–Schnabel Thm 9.1.1): if `B` is symmetric, `s ≠ 0`, `B'` is symmetric
+and `B' *ᵥ s = y`, then `‖psbUpdate B s y - B‖_F ≤ ‖B' - B‖_F`, with equality only for
+`B' = psbUpdate B s y`. Proof: with `P = vecMulVec s s / (s ⬝ᵥ s)` and `Δ = B' - B` (symmetric,
+`Δ s = y - B s`), `psbUpdate B s y - B = Δ P + P Δ - P Δ P = Δ - (1 - P) Δ (1 - P)`, and
+`Δ ↦ Δ - (1 - P) Δ (1 - P)` is the Frobenius-orthogonal projection onto the complement of the
+subspace `{(1 - P) Z (1 - P)}`; so the update is the projection of `Δ` and is no longer than `Δ`.
+Needs the Frobenius norm as `‖Z‖_F² = trace (Zᵀ Z)` and `trace ((1-P) Z (1-P) W) = 0` for `W` in
+the range of the projection; Mathlib has no inner-product-space instance for the Frobenius norm,
+so the orthogonality is done by hand through `Matrix.trace`. ★★★'''
+deps = ["Matrix.psbUpdate", "Matrix.psbUpdate_isSymm"]
+
+[[node]]
+id = "frobenius_norm_psbUpdate_sub_le_add"
+kind = "theorem"
+desc = '''Bounded deterioration of PSB (Dennis–Schnabel Lemma 9.1.2), the last display of §7.2.7: if
+the Hessian `H : EuclideanSpace ℝ n → Matrix n n ℝ` is symmetric and `L`-Lipschitz in the Frobenius
+norm on a convex `D` containing `x` and `x₊ = x + s`, and `y = ∇f x₊ - ∇f x` with `∇f` having
+derivative `H`, then `‖psbUpdate B s y - H x₊‖_F ≤ ‖B - H x‖_F + 3 * L * ‖s‖`. Proof: apply the
+least-change property with `B' = H x₊ + (the PSB correction that makes `B'` satisfy the secant
+equation)`; the mean value bound `‖y - H x₊ s‖ ≤ (L/2) ‖s‖²` and `‖H x₊ - H x‖_F ≤ L ‖s‖` give the
+constants (`1 + 2 · 1/2 · 2 = 3`). ★★★'''
+deps = ["Matrix.frobenius_norm_psbUpdate_sub_le"]
+
+[[node]]
+id = "dfpUpdate"
+kind = "definition"
+desc = '''The Davidon–Fletcher–Powell update of the Hessian approximation (Dennis–Schnabel (9.2.7),
+Nocedal–Wright (6.13)): `dfpUpdate B s y := (1 - ρ • vecMulVec y s) * B * (1 - ρ • vecMulVec s y) +
+ρ • vecMulVec y y` with `ρ = 1 / (y ⬝ᵥ s)`. Not in the book's text (deferred to [DS83] §9.2);
+included because it is what the next optimization source will ask for. ★'''
+deps = []
+
+[[node]]
+id = "bfgsUpdate"
+kind = "definition"
+desc = '''The Broyden–Fletcher–Goldfarb–Shanno update (Nocedal–Wright (6.19)):
+`bfgsUpdate B s y := B - (vecMulVec (B *ᵥ s) (B *ᵥ s)) / (s ⬝ᵥ (B *ᵥ s)) + vecMulVec y y / (y ⬝ᵥ s)`;
+it is the DFP update of the inverse, `(bfgsUpdate B s y)⁻¹ = dfpUpdate B⁻¹ y s` (`bfgsUpdate_inv`,
+★★ via Sherman–Morrison–Woodbury, `Matrix.add_mul_mul_inv_eq_sub`). Satisfies the secant equation
+`bfgsUpdate B s y *ᵥ s = y` and preserves symmetry. ★'''
+deps = []
+
+[[node]]
+id = "bfgsUpdate_posDef"
+kind = "theorem"
+desc = '''Preservation of positive definiteness under the curvature condition (Nocedal–Wright §6.1,
+Dennis–Schnabel Thm 9.2.1): if `B.PosDef` and `0 < y ⬝ᵥ s`, then `(bfgsUpdate B s y).PosDef`, and
+likewise `dfpUpdate_posDef`. Proof for BFGS: for `z ≠ 0`,
+`zᵀ B₊ z = zᵀ B z - (zᵀ B s)² / (sᵀ B s) + (yᵀ z)² / (yᵀ s) ≥ 0` by Cauchy–Schwarz in the `B`-inner
+product, with equality forcing `z ∥ s` and then `(yᵀ z)² / (yᵀ s) > 0`. ★★'''
+deps = ["Matrix.bfgsUpdate", "Matrix.dfpUpdate"]

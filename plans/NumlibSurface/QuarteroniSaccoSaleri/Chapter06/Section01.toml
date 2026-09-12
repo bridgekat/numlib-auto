@@ -1,0 +1,98 @@
+namespace = "QuarteroniSaccoSaleri.Chapter06"
+desc = '''
+§6.1, conditioning of a nonlinear equation `φ(x) = d`: the condition numbers (6.3) of a simple root
+through chapter 2's `Conditioning` instance of the root problem, the multiple-root asymptotics
+(6.4)–(6.6) as limits (the book's `≃` and `≲`), the polynomial-perturbation estimate (6.7), and
+Example 6.1. Example 6.2 (Wilkinson's polynomial, a table) and Remark 6.1 (an analogy with §3.1.2)
+are prose and have no node.
+'''
+
+[[node]]
+id = "equation_6_3_abs"
+kind = "theorem"
+desc = '''**(6.3), absolute:** for `φ : ℝ → ℝ` continuously differentiable near a root `α` of
+`f = φ - d` with `f'(α) = φ'(α) ≠ 0` and `G` a continuous local inverse of `φ` at `d` (the
+resolvent, `∀ᶠ y in 𝓝 d, φ (G y) = y`, `G d = α`), the first-order absolute condition number of the
+root problem is `Conditioning.absCondNumber G univ d = ‖deriv f α‖ₑ⁻¹` — the book's
+`K_abs(d) ≃ 1 / |f'(α)|`. Direct instance of `Conditioning.absCondNumber_of_local_left_inverse`
+(chapter 2's plan, `Conditioning/Problem`), with `HasStrictDerivAt` supplied by `C¹`
+(`ContDiffAt.hasStrictDerivAt`). ★'''
+deps = ["Conditioning.absCondNumber_of_local_left_inverse"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.3)'
+
+[[node]]
+id = "equation_6_3_rel"
+kind = "theorem"
+desc = '''**(6.3), relative:** under the hypotheses of `equation_6_3_abs` with `d ≠ 0`, `α ≠ 0`,
+`Conditioning.relCondNumber G univ d = ‖deriv f α‖ₑ⁻¹ * (‖d‖ₑ / ‖α‖ₑ)`, the book's
+`K(d) ≃ |d| / (|α| |f'(α)|)`. Instance of `Conditioning.relCondNumber_of_local_left_inverse`. ★'''
+deps = ["Conditioning.relCondNumber_of_local_left_inverse", "QuarteroniSaccoSaleri.Chapter06.equation_6_3_abs"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.3)'
+
+[[node]]
+id = "equation_6_4"
+kind = "theorem"
+desc = '''**(6.4), the multiple-root case, in its two rigorous forms.** (i) If `α` is a root of `f`
+of multiplicity `m ≥ 2` then the root problem has infinite first-order absolute condition number:
+`Conditioning.absCondNumber G univ d = ⊤` for any continuous local inverse `G` — chapter 2's
+`Conditioning.absCondNumber_eq_top_of_deriv_eq_zero` (`f'(α) = 0`). (ii) The asymptotic the book
+writes as `K_abs ≃ |m! δd / f^{(m)}(α)|^{1/m} / |δd|`: for `f ∈ C^m` near `α` with
+`IsRootOfMultiplicity f α m`, `|x - α| / |f x|^{1/m} → (m! / |f^{(m)}(α)|)^{1/m}` as `x → α`, `x ≠ α`
+(`IsRootOfMultiplicity.tendsto_abs_sub_div_abs_rpow`), i.e. a perturbation `δd = f(α + δα)` of
+the datum moves the root by `|δα| ~ (m!/|f^{(m)}(α)|)^{1/m} |δd|^{1/m}`. The book's `K_abs(d)` in
+(6.4) depends on `δd` and is not a condition number in the sense of Definition 2.1; (i) and (ii)
+together are its content. ★'''
+deps = ["Conditioning.absCondNumber_eq_top_of_deriv_eq_zero", "IsRootOfMultiplicity", "IsRootOfMultiplicity.tendsto_abs_sub_div_abs_rpow"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.4)'
+
+[[node]]
+id = "equation_6_5"
+kind = "theorem"
+desc = '''**(6.5), error versus residual at a simple root:** if `f ∈ C¹` near `α`, `f α = 0`,
+`f'(α) ≠ 0` and `α ≠ 0`, then for every `c > 1 / |f'(α)|`, for all `α̂` close enough to `α`,
+`|α̂ - α| / |α| ≤ c * |f α̂| / |α|` — the book's `|α̂ - α|/|α| ≲ |r̂| / (|f'(α)| |α|)` with `r̂ = f α̂`,
+the symbol `≲` read as "for every constant above the asymptotic one, eventually". The `m = 1` case
+of `IsRootOfMultiplicity.eventually_abs_sub_le_mul_abs_rpow`, divided by `|α|`. ★'''
+deps = ["IsRootOfMultiplicity.eventually_abs_sub_le_mul_abs_rpow"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.5)'
+
+[[node]]
+id = "equation_6_6"
+kind = "theorem"
+desc = '''**(6.6), error versus residual at a root of multiplicity `m`:** if `f ∈ C^m` near `α`,
+`IsRootOfMultiplicity f α m`, `1 ≤ m`, `α ≠ 0`, then for every
+`c > (m! / (|f^{(m)}(α)| |α|^m))^{1/m}`, for all `α̂` near `α`, `|α̂ - α| / |α| ≤ c * |f α̂| ^ (1/m)`.
+`IsRootOfMultiplicity.eventually_abs_sub_le_mul_abs_rpow` divided by `|α|`, with
+`(m!/|f^{(m)}(α)|)^{1/m} / |α| = (m!/(|f^{(m)}(α)| |α|^m))^{1/m}` (`Real.rpow_natCast`,
+`Real.mul_rpow`). ★'''
+deps = ["IsRootOfMultiplicity", "IsRootOfMultiplicity.eventually_abs_sub_le_mul_abs_rpow", "QuarteroniSaccoSaleri.Chapter06.equation_6_5"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.6)'
+
+[[node]]
+id = "equation_6_7"
+kind = "theorem"
+desc = '''**(6.7), sensitivity of a polynomial root to a perturbation of the coefficients:** let
+`p q : ℝ[X]`, `α ≠ 0` a real root of `p` with `p.rootMultiplicity α = m ≥ 1`. Then for every
+`c > (m! / (|(derivative^[m] p).eval α| |α|^m))^{1/m}` there is `δ > 0` such that every real root
+`α̂` of `p + q` with `|α̂ - α| < δ` satisfies `|α̂ - α| / |α| ≤ c * |q.eval α̂| ^ (1/m)`. Since
+`(p + q).eval α̂ = 0`, the residual of `p` at `α̂` is `p.eval α̂ = -q.eval α̂`, and `equation_6_6`
+applies to `f = p.eval` with `IsRootOfMultiplicity` from `Polynomial.isRootOfMultiplicity_eval_iff`
+and `iteratedDeriv m (p.eval) α = (derivative^[m] p).eval α`. The book's complex roots
+(`α_i ∈ ℂ`) need the complex version of `RootMultiplicity`, which is not planned: state the real
+case and note it. ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter06.equation_6_6", "Polynomial.isRootOfMultiplicity_eval_iff"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (6.7)'
+
+[[node]]
+id = "example_6_1"
+kind = "theorem"
+desc = '''**Example 6.1:** for `0 < ε`, the roots of `(X - 1)^4 - C ε` in `ℂ[X]` are exactly the four
+numbers `1 + ε^(1/4) * I^k`, `k = 0, 1, 2, 3` — the roots of the perturbed polynomial are simple,
+lie on the circle of radius `ε^(1/4)` about `1` at angular spacing `π/2`, and each has relative
+error `|α̂ - 1| / 1 = ε^(1/4)` from the fourfold root `α = 1` of `p₄ = (X - 1)^4`; so (6.7) is an
+equality in this case (`m = 4`, `p₄^{(4)} = 24 = 4!`, `q = -ε`, `|q(α̂)|^{1/4} = ε^{1/4}`). Roots
+of `z^4 = ε` via `Complex.mem_rootsOfUnity`-style algebra or `Polynomial.nthRoots`
+(`Mathlib/Algebra/Polynomial/Roots.lean`, `mem_nthRoots`), with `ε^(1/4) := Real.rpow ε (1/4)` and
+`(ε^(1/4))^4 = ε`. ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 6.1'

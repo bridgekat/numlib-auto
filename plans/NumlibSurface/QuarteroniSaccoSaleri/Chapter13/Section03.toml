@@ -1,0 +1,334 @@
+namespace = "QuarteroniSaccoSaleri.Chapter13"
+desc = '''
+§13.3, the finite element approximation of the heat equation and §13.3.1, the stability analysis
+of the θ-method. The semi-discrete Galerkin problem (13.13) is a linear ODE on the
+finite-dimensional trial space `V_h` with the `L²` inner product; its energy estimate, its matrix
+form (13.14) with the mass matrix `M`, the θ-method (13.16)–(13.17), the backward Euler energy
+inequalities (13.19)–(13.21), Definition 13.1, the discrete eigenproblem (13.22) and the θ-method
+stability dichotomy with (13.23) are all specializations of `Numlib/Variational/Evolution`
+(form level) and `Numlib/FiniteDifference/Parabolic` (matrix level). The weak problem (13.12) on
+`V = H¹₀(0, 1)` is stated as a definition through chapter 12's `Analysis/Sobolev/Interval`; its
+well-posedness is not claimed (Bochner-space theory).
+
+The finite element space is chapter 12's (12.57) with `k = 1`, its hat basis `φ_j` and the
+stiffness matrix `A_fe = (ν / h) tridiag(-1, 2, -1)` on the uniform mesh `h = 1 / n`; the mass
+matrix `M = (h / 6) tridiag(1, 4, 1)` is new here. Both are `Matrix.symmTridiagonalToeplitz`, so
+the generalized eigenvalues of the pencil `(A_fe, M)` are explicit, `λ_h^i = (6ν / h²)(1 - cos
+θ_i) / (2 + cos θ_i)`, `θ_i = iπh`, and the unnumbered inverse estimate `c₁ h⁻² ≤ λ_h^{N_h} ≤ c₂
+h⁻²` (cited from [QV94]) is proved outright with `c₁ = 3ν`, `c₂ = 12ν`
+(`pencil_maxEigenvalue_bounds`). The pseudo-spectral estimate (13.24) is out of scope (no spectral
+stiffness matrix in the plan) and the convergence estimates after (13.23) are not formalized.
+
+Erratum: the hint of Exercise 2 gives `m_ij = (h/6)·{1/2 (i ≠ j), 1 (i = j)}`; the exact integrals
+are `∫φ_i² = 2h/3` and `∫φ_iφ_{i±1} = h/6`, i.e. `M = (h/6) tridiag(1, 4, 1)`, which is what Program
+100 assembles (`2h/(3k)` on the diagonal, `h/(6k)` off it). The nodes use the correct values.
+'''
+
+[[node]]
+id = "heatForm"
+kind = "definition"
+desc = '''The bilinear form of (13.12), `a(u, v) = ν ∫₀¹ u' v'`, on `H¹₀(0, 1)` as a bounded form
+`SesqForm ℝ (H¹₀(0,1))`, through chapter 12's `Analysis/Sobolev/Interval` (weak derivative in
+`L²`). This is (12.44) with `α = ν`, `β = γ = 0`; if chapter 12 provides the form under a name
+(`QuarteroniSaccoSaleri.Chapter12.diffusionForm` or similar), this node is that form at those
+coefficients. ★'''
+deps = ["SobolevIntervalZero"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.12), the form a(·,·)'
+
+[[node]]
+id = "equation_13_12"
+kind = "definition"
+desc = '''The weak heat equation (13.12): `u : ℝ → H¹₀(0, 1)` solves it on `[0, T]` with data
+`f : ℝ → L²(0, 1)`, `u₀` when `u 0 = u₀` and, for `t ∈ [0, T]`, `u` has a derivative `u' t` in
+`L²(0,1)` within `Icc 0 T` (as a curve in `L²`, `HasDerivWithinAt (fun t => (u t : L²)) (u' t)
+(Icc 0 T) t`) with `⟪u' t, v⟫_{L²} + heatForm ν (u t) v = ⟪f t, v⟫_{L²}` for all `v ∈ H¹₀(0, 1)`.
+Stated as `Variational.IsSemidiscreteGalerkin` with `K = H¹₀(0,1)` viewed inside `L²`; only the
+definition is claimed — existence and uniqueness of weak solutions (Bochner-space theory,
+Lions' theorem) are not formalized. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.heatForm", "Variational.IsSemidiscreteGalerkin"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.12)'
+
+[[node]]
+id = "equation_13_13"
+kind = "definition"
+desc = '''The semi-discrete Galerkin problem (13.13): for a finite-dimensional subspace `V_h ≤
+H¹₀(0, 1)` and `u_{0h} ∈ V_h`, `u_h : ℝ → V_h` satisfies `⟪u_h' t, v_h⟫_{L²} + heatForm ν (u_h t)
+v_h = ⟪f t, v_h⟫_{L²}` for all `v_h ∈ V_h`, `t ∈ [0, T]`, and `u_h 0 = u_{0h}`:
+`Variational.IsSemidiscreteGalerkin (heatForm ν restricted to V_h) (t ↦ ⟪f t, ·⟫) u_{0h} T u_h`
+on the inner product space `V_h` with the `L²` inner product. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.heatForm", "Variational.IsSemidiscreteGalerkin"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.13)'
+
+[[node]]
+id = "equation_13_13_energy"
+kind = "theorem"
+desc = '''The a priori estimate for the semi-discrete solution (the display after (13.13)):
+`E_h(t) ≤ e^{-γt} E_h(0) + γ⁻¹ ∫₀ᵗ e^{γ(s-t)} F(s) ds` with `E_h(t) = ‖u_h t‖²_{L²}`, `F(s) = ‖f
+s‖²_{L²}`, `γ = ν / C_P²`, where `C_P` is the Poincaré constant of (12.16) on `(0, 1)`. Proof:
+`Variational.IsSemidiscreteGalerkin.norm_sq_le_exp` with the `L²`-coercivity `γ ‖v_h‖²_{L²} ≤
+heatForm ν v_h v_h` from Poincaré, and `|⟪f t, v⟫| ≤ ‖f t‖ ‖v‖`. ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_13", "Variational.IsSemidiscreteGalerkin.norm_sq_le_exp", "SobolevIntervalZero.norm_deriv_zero_le"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.3, the estimate for E_h(t)'
+
+[[node]]
+id = "massMatrix"
+kind = "definition"
+desc = '''The mass matrix of the piecewise linear space (12.57) on the uniform mesh `h = 1/n`,
+`M_{ij} = ∫₀¹ φ_j φ_i`: `massMatrix n = (1 / (6 n)) • Matrix.symmTridiagonalToeplitz (n - 1) 1 4`,
+i.e. `2h/3` on the diagonal and `h/6` on the two neighbouring diagonals. ★'''
+deps = ["Matrix.symmTridiagonalToeplitz"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.14), the mass matrix M'
+
+[[node]]
+id = "massMatrix_apply_eq_integral"
+kind = "theorem"
+desc = '''`massMatrix n i j = ∫ x in (0:ℝ)..1, φ_j x * φ_i x` for the hat functions `φ_i` of the
+uniform mesh (chapter 12's basis of (12.57) with `k = 1`): `∫ φ_i² = 2h/3`, `∫ φ_i φ_{i+1} = h/6`,
+`∫ φ_i φ_j = 0` for `|i - j| ≥ 2`. This corrects the hint of Exercise 2 (see the group
+description). ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.massMatrix", "FiniteElement.hatFunction"]
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.3, M = (m_ij), and Exercise 13.2 (hint)'''
+
+[[node]]
+id = "massMatrix_posDef"
+kind = "theorem"
+desc = '''`massMatrix n` is symmetric positive definite: `Matrix.posDef_symmTridiagonalToeplitz`
+with `2 · |1| < 4`, or `SesqForm.gramMatrix_posDef` for the `L²` inner product in the hat basis. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.massMatrix", "Matrix.posDef_symmTridiagonalToeplitz"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.3, "Since it is nonsingular"'
+
+[[node]]
+id = "equation_13_14"
+kind = "theorem"
+desc = '''(13.14): with `u_h t = ∑_j ξ_j(t) φ_j` in the hat basis, `u_h` solves (13.13) iff the
+coefficient vector `ξ : ℝ → (Fin (n-1) → ℝ)` solves `M ξ' + A_fe ξ = f_fe` with `M = massMatrix
+n`, `A_fe = SesqForm.gramMatrix (heatForm ν) φ` (chapter 12's stiffness matrix `(ν/h)
+tridiag(-1,2,-1)`) and `f_fe t i = ⟪f t, φ_i⟫`: `FiniteDifference.IsSemidiscrete M A_fe f_fe ξ₀ T
+ξ`. From `FiniteDifference.isSemidiscreteGalerkin_iff_isSemidiscrete`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_13", "QuarteroniSaccoSaleri.Chapter13.massMatrix", "FiniteDifference.isSemidiscreteGalerkin_iff_isSemidiscrete", "FiniteElement.stiffnessMatrix"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.14)'
+
+[[node]]
+id = "equation_13_15"
+kind = "theorem"
+desc = '''(13.15), the normal form: since `M` is invertible, `ξ` solves (13.14) iff `ξ' = -M⁻¹ A_fe
+ξ + M⁻¹ f_fe`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_14", "QuarteroniSaccoSaleri.Chapter13.massMatrix_posDef"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.15)'
+
+[[node]]
+id = "equation_13_16"
+kind = "definition"
+desc = '''The θ-method (13.16) for (13.14): `ξ^{k+1} = FiniteDifference.thetaStep M A_fe θ Δt (f_fe
+t^k) (f_fe t^{k+1}) ξ^k`, i.e. `M (ξ^{k+1} - ξ^k)/Δt + A_fe (θ ξ^{k+1} + (1-θ) ξ^k) = θ f^{k+1} + (1-θ)
+f^k`; the matrix of the system is `K = Δt⁻¹ M + θ A_fe`, symmetric positive definite
+(`Matrix.PosDef.add`, `posDef_smul`). ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_14", "FiniteDifference.thetaStep", "FiniteDifference.mulVec_thetaStep"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.16)'
+
+[[node]]
+id = "exercise_13_2"
+kind = "theorem"
+desc = '''Exercise 2 (mass lumping): the composite trapezoidal rule (9.11) on the nodes `x_i`
+applied to `∫₀¹ φ_j φ_i` gives `h ∑_k φ_j(x_k) φ_i(x_k) = h δ_ij`, so the lumped mass matrix is
+`M̃ = h • 1`, which is nonsingular; and the exact integrals are those of
+`massMatrix_apply_eq_integral` (the hint's values are wrong, see the group description). ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.massMatrix_apply_eq_integral", "Quadrature.trapezoidSum"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 13.2'
+
+[[node]]
+id = "equation_13_17"
+kind = "definition"
+desc = '''The θ-method on the Galerkin problem, (13.17): `u_h^{k+1}` is the θ-step from `u_h^k` when
+`⟪(u_h^{k+1} - u_h^k)/Δt, v_h⟫ + a(θ u_h^{k+1} + (1-θ) u_h^k, v_h) = θ F^{k+1}(v_h) + (1-θ) F^k(v_h)`
+for all `v_h ∈ V_h`, with `F^k(v) = ⟪f t^k, v⟫`: `Variational.IsThetaStep (heatForm ν|V_h) θ Δt F^k
+F^{k+1} u_h^k u_h^{k+1}`. Equivalent to (13.16) in coordinates
+(`Variational.IsThetaStep.iff_thetaStep`). ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_13", "Variational.IsThetaStep", "Variational.IsThetaStep.iff_thetaStep"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.17)'
+
+[[node]]
+id = "equation_13_18"
+kind = "theorem"
+desc = '''(13.18): `heatForm ν v v = ν ‖v'‖²_{L²(0,1)}` for `v ∈ H¹₀(0,1)`, `v'` the weak derivative.
+Immediate from the definition of the form. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.heatForm"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.18)'
+
+[[node]]
+id = "exercise_13_3"
+kind = "theorem"
+desc = '''Exercise 3, the inequality of its hint: `∫₀¹ (u - v) u ≥ ½ (‖u‖²_{L²} - ‖v‖²_{L²})` for
+`u, v ∈ L²(0, 1)`, i.e. `⟪u - v, u⟫ ≥ ½(‖u‖² - ‖v‖²)`, which is
+`Variational.half_norm_sq_sub_le_inner_sub`; and from it (13.19). ★'''
+deps = ["Variational.half_norm_sq_sub_le_inner_sub", "QuarteroniSaccoSaleri.Chapter13.equation_13_19"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 13.3'
+
+[[node]]
+id = "equation_13_19"
+kind = "theorem"
+desc = '''(13.19): for the backward Euler step (`θ = 1`, `F = 0`) of (13.17), `‖u_h^{k+1}‖²_{L²} + 2 ν
+Δt ‖∂_x u_h^{k+1}‖²_{L²} ≤ ‖u_h^k‖²_{L²}`. From `Variational.IsThetaStep.norm_sq_add_two_mul_le`
+and (13.18). ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_17", "QuarteroniSaccoSaleri.Chapter13.equation_13_18", "Variational.IsThetaStep.norm_sq_add_two_mul_le"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.19)'
+
+[[node]]
+id = "equation_13_20"
+kind = "theorem"
+desc = '''(13.20): for a backward Euler sequence `u_h^0 = u_{0h}`, `u_h^{k+1}` the θ = 1 step from
+`u_h^k` with `F = 0`, and every `n ≥ 1`, `‖u_h^n‖²_{L²} + 2 ν Δt ∑_{k < n} ‖∂_x u_h^{k+1}‖²_{L²} ≤
+‖u_{0h}‖²_{L²}` (telescoping (13.19)): `Variational.IsThetaStep.norm_sq_add_sum_le`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_19", "Variational.IsThetaStep.norm_sq_add_sum_le"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.20)'
+
+[[node]]
+id = "equation_13_21"
+kind = "theorem"
+desc = '''(13.21), with source: for the backward Euler sequence with `F^k(v) = ⟪f^k, v⟫`, and `γ =
+ν / C_P²` the `L²`-coercivity constant of `heatForm ν` (Poincaré), `‖u_h^n‖² + ν Δt ∑_{k<n}
+‖∂_x u_h^{k+1}‖² ≤ C (‖u_{0h}‖² + ∑_{k=1}^n Δt ‖f^k‖²)` with `C = max 1 γ⁻¹`, independent of `h`
+and `Δt`. From `Variational.IsThetaStep.norm_sq_add_sum_le_of_coercive`. The book's factor `2ν`
+on the derivative sum becomes `ν` because the source is absorbed with Young's inequality against
+half the coercive term; the alternative with `2ν` and `C(n) = (1 - Δt)^{-n}` (discrete Gronwall,
+`Δt ≤ 1/2`) is `Variational.IsThetaStep.norm_sq_add_sum_le_of_le` and may be used instead. ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_19", "Variational.IsThetaStep.norm_sq_add_sum_le_of_coercive", "SobolevIntervalZero.norm_deriv_zero_le"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.21)'
+
+[[node]]
+id = "remark_13_1"
+kind = "theorem"
+desc = '''Remark 13.1 and Exercise 4: for any bilinear form `a` on `V_h` that is coercive with
+constant `α` in the `L²` norm (`α ‖v‖² ≤ a v v`), the backward Euler sequence satisfies `‖u_h^n‖²
++ 2 Δt ∑_{k<n} a(u_h^{k+1}, u_h^{k+1}) ≤ ‖u_{0h}‖²` (so (13.20) with `ν ‖∂_x ·‖²` replaced by
+`a(·,·)`, hence with `α ‖·‖²_{H¹₀}`), and the (13.21) analogue with `C = max 1 α⁻¹`. Continuity of
+`a` is not needed. These are exactly the backbone statements
+`Variational.IsThetaStep.norm_sq_add_sum_le(_of_coercive)`, which assume only positivity or
+coercivity. ★'''
+deps = ["Variational.IsThetaStep.norm_sq_add_sum_le", "Variational.IsThetaStep.norm_sq_add_sum_le_of_coercive"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 13.1 and Exercise 13.4'
+
+[[node]]
+id = "exercise_13_4"
+kind = "theorem"
+desc = '''Exercise 4 is `remark_13_1` with the hypotheses (12.54)–(12.55): `a` continuous with
+constant `M` and coercive with constant `α` on `V = H¹₀(0,1)`; since `‖v‖_{L²} ≤ ‖v‖_{H¹₀}`, `a` is
+`L²`-coercive with the same `α`, and (13.20)–(13.21) hold with `ν` replaced by `α`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.remark_13_1"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 13.4'
+
+[[node]]
+id = "definition_13_1"
+kind = "definition"
+desc = '''Definition 13.1: `λ` is an eigenvalue and `w ∈ V` an eigenvector of the bilinear form `a`
+when `w ≠ 0` and `a(w, v) = λ ⟪w, v⟫_{L²}` for all `v ∈ V`: `Variational.IsFormEigenpair a λ w` on
+`V = H¹₀(0, 1)` with the `L²` inner product. The following sentence of the book (a symmetric
+coercive form has an unbounded sequence of positive eigenvalues whose eigenfunctions form a
+basis of `V`) is the spectral theorem for compact self-adjoint resolvents and is not claimed
+(it needs Rellich on the interval; only the finite-dimensional statement (13.22) is used). ★'''
+deps = ["Variational.IsFormEigenpair"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Definition 13.1'
+
+[[node]]
+id = "equation_13_22"
+kind = "theorem"
+desc = '''(13.22) and its algebraic form: `(λ_h, w_h)` with `w_h = ∑ ξ_j φ_j ∈ V_h` is an
+eigenpair of `heatForm ν` on `V_h` iff `A_fe ξ = λ_h M ξ`, `ξ ≠ 0`
+(`Variational.isFormEigenpair_iff_gramMatrix_mulVec`); all eigenvalues are positive
+(`Variational.IsFormEigenpair.pos_of_coercive`), and `V_h` has an `L²`-orthonormal basis of
+eigenvectors (`Variational.exists_orthonormalBasis_isFormEigenpair`, the spectral theorem for
+the symmetric positive operator `toOperator a` on `V_h`). ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.definition_13_1", "QuarteroniSaccoSaleri.Chapter13.equation_13_14", "Variational.isFormEigenpair_iff_gramMatrix_mulVec", "Variational.exists_orthonormalBasis_isFormEigenpair"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.22)'
+
+[[node]]
+id = "pencil_hasEigenvalue_iff"
+kind = "theorem"
+desc = '''The eigenvalues of the form `heatForm ν` on the uniform-mesh `P₁` space, i.e. of the
+pencil `(A_fe, M)` with `A_fe = (ν/h) tridiag(-1,2,-1)`, `M = (h/6) tridiag(1,4,1)`, `h = 1/n`, are
+`λ_h^i = (6 ν / h²) (1 - cos θ_i) / (2 + cos θ_i)`, `θ_i = i π h`, `i = 1, …, n - 1`. Proof: both
+matrices are diagonalized by the sine vectors `Matrix.sineVec`
+(`Matrix.symmTridiagonalToeplitz_mulVec_sineVec`), with eigenvalues `(ν/h)(2 - 2cos θ_i)` and
+`(h/6)(4 + 2 cos θ_i)`, so the sine vectors are the generalized eigenvectors with the quotient
+eigenvalues, and they span. ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.massMatrix", "QuarteroniSaccoSaleri.Chapter13.equation_13_22", "Matrix.symmTridiagonalToeplitz_mulVec_sineVec", "Matrix.sineOrthonormalBasis"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.3.1, the eigenvalues λ_h^i'
+
+[[node]]
+id = "pencil_maxEigenvalue_bounds"
+kind = "theorem"
+desc = '''The unnumbered inverse estimate of §13.3.1 (cited from [QV94] §6.3.2), on the uniform
+mesh with `n ≥ 2`: `3 ν h⁻² ≤ λ_h^{N_h} ≤ 12 ν h⁻²` for the largest eigenvalue `λ_h^{N_h} = max_i
+λ_h^i`. Proof: `g(θ) = (1 - cos θ)/(2 + cos θ)` is increasing on `[0, π]` and `≤ 2`, so `λ_h^{N_h}
+= (6ν/h²) g(π - πh) ≤ 12 ν h⁻²`; and `g(π - πh) = (1 + cos πh)/(2 - cos πh) ≥ 1/2` for `h ≤ 1/2`.
+The book prints `λ_h^{N_h} = c₂ h⁻²` for the upper bound; read `≤`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.pencil_hasEigenvalue_iff"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.3.1, c₁h⁻² ≤ λ_h^{N_h} ≤ c₂h⁻²'
+
+[[node]]
+id = "thetaMethod_eigen_recursion"
+kind = "theorem"
+desc = '''The θ-method in the eigenbasis (the display before the stability conclusion): if `u_h^k =
+∑_i u_i^k w_h^i` in an `L²`-orthonormal eigenbasis `(λ_h^i, w_h^i)` of `a` on `V_h`, and `u_h^{k+1}`
+is the θ-step of `u_h^k` with `F = 0`, then `u_i^{k+1} = u_i^k (1 - (1-θ) λ_h^i Δt) / (1 + θ λ_h^i
+Δt)` for every `i` (for `θ ≥ 0`, `Δt > 0`, `λ_h^i > 0` the denominator is positive).
+`Variational.IsThetaStep.inner_eq_of_isFormEigenpair`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_17", "QuarteroniSaccoSaleri.Chapter13.equation_13_22", "Variational.IsThetaStep.inner_eq_of_isFormEigenpair"]
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.3.1, u_i^{k+1} = u_i^k [1 - (1-θ)λΔt]/[1 + θλΔt]'''
+
+[[node]]
+id = "thetaMethod_stable_of_half_le"
+kind = "theorem"
+desc = '''Unconditional stability for `1/2 ≤ θ ≤ 1`: for every `Δt > 0` and every θ-step `u_h^{k+1}`
+of `u_h^k` with `F = 0`, `‖u_h^{k+1}‖_{L²} ≤ ‖u_h^k‖_{L²}`, hence `‖u_h^n‖ ≤ ‖u_{0h}‖` for all `n`.
+`Variational.IsThetaStep.norm_le_of_half_le`, whose proof is the energy identity `½(‖u'‖² - ‖u‖²)
+= -Δt a(w,w) - (θ - ½)‖u' - u‖²` with `w = θu' + (1-θ)u`, valid for any positive form (no symmetry
+needed; the book's eigenbasis proof assumes symmetry). ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_17", "Variational.IsThetaStep.norm_le_of_half_le"]
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.3.1, "if θ ≥ 1/2 the θ-method is unconditionally stable"'''
+
+[[node]]
+id = "thetaMethod_stable_iff_of_lt_half"
+kind = "theorem"
+desc = '''Conditional stability for `0 ≤ θ < 1/2`, for the symmetric form: with `λ_h^{N_h}` the
+largest eigenvalue of `a` on `V_h`, the θ-step with `F = 0` satisfies `‖u_h^{k+1}‖ ≤ ‖u_h^k‖` for
+every `u_h^k ∈ V_h` iff `Δt ≤ 2 / ((1 - 2θ) λ_h^{N_h})`. Proof: in the eigenbasis the step multiplies
+the `i`-th coefficient by `r_i = (1 - (1-θ)λ_iΔt)/(1 + θλ_iΔt)`, and `|r_i| ≤ 1 ↔ (1-2θ)λ_iΔt ≤ 2`;
+the norm of the step is `max_i |r_i|`, attained at `λ_{N_h}`. The book derives `< 1` and `Δt <
+2/(…)` and concludes with `≤`; the stability inequality is the non-strict one.
+`Variational.IsThetaStep.forall_norm_le_iff_of_lt_half`. ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.thetaMethod_eigen_recursion", "Variational.IsThetaStep.forall_norm_le_iff_of_lt_half"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.3.1, Δt ≤ 2/((1-2θ)λ_h^{N_h})'
+
+[[node]]
+id = "equation_13_23"
+kind = "theorem"
+desc = '''(13.23): for `0 ≤ θ < 1/2` on the uniform `P₁` mesh, the θ-method is stable (`‖u_h^{k+1}‖
+≤ ‖u_h^k‖` for all data) whenever `Δt ≤ C₁(θ) h²` with `C₁(θ) = 1 / (6 ν (1 - 2θ))`, from
+`thetaMethod_stable_iff_of_lt_half` and `λ_h^{N_h} ≤ 12 ν h⁻²`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.thetaMethod_stable_iff_of_lt_half", "QuarteroniSaccoSaleri.Chapter13.pencil_maxEigenvalue_bounds"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.23)'
+
+[[node]]
+id = "equation_13_24"
+kind = "theorem"
+desc = '''(13.24): for a pseudo-spectral Galerkin discretization of degree `N`, the θ-method with
+`0 ≤ θ < 1/2` is stable only if `Δt ≤ C₂(θ) N⁻⁴`, because the largest eigenvalue of the spectral
+stiffness matrix grows like `N⁴`. Not formalized: the plan has no spectral (Legendre/Chebyshev
+Galerkin) stiffness matrix, and the `O(N⁴)` bound on its largest eigenvalue is a polynomial
+inverse inequality (Markov's inequality in `L²` form, `‖p'‖ ≤ C N² ‖p‖`) that the book states
+without proof, citing [QV94].'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.thetaMethod_stable_iff_of_lt_half"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, equation (13.24)'
+
+[[node]]
+id = "thetaMethod_convergence"
+kind = "theorem"
+desc = '''The convergence estimates after (13.24): `‖u(t^k) - u_h^k‖_{L²} ≤ C(u₀, f, u)(Δt^{p(θ)} +
+h^{r+1})` with `p(θ) = 1` for `θ ≠ 1/2`, `p(1/2) = 2`, and for `f = 0`, `θ ∈ {1, 1/2}`, the
+improved `‖u(t^k) - u_h^k‖ ≤ C[(h/√t^k)^{r+1} + (Δt/t^k)^{p(θ)}] ‖u₀‖`. Not formalized: the book
+quotes [QV94] pp. 394–395; the proofs need the `L²` projection error `O(h^{r+1})` in `H²`-type
+norms of the exact solution and parabolic regularity (smoothing estimates `‖u_t(t)‖ ≤ C ‖u₀‖ / t`)
+for the improved form, i.e. the classical theory of the heat equation that is a known blocker.'''
+deps = ["QuarteroniSaccoSaleri.Chapter13.equation_13_17", "QuarteroniSaccoSaleri.Chapter13.equation_13_21"]
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §13.3.1, the convergence result ‖u(t^k) − u_h^k‖ ≤ C(Δt^{p(θ)} + h^{r+1})'''

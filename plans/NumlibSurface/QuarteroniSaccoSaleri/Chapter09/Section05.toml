@@ -1,0 +1,61 @@
+namespace = "QuarteroniSaccoSaleri.Chapter09"
+desc = '''
+§9.5, Hermite quadrature: the rule (9.29) obtained by integrating the Hermite interpolant (9.28),
+its degree of exactness `2n + 1`, the corrected trapezoidal rule (9.30) with its error (9.31), the
+composite form (9.32) and its order-`4` error, and Exercise 9 (cited in Example 9.5). Example 9.5
+is a numerical table and is skipped.
+'''
+
+[[node]]
+id = "hermiteQuadrature_degreeOfExactness"
+kind = "theorem"
+desc = '''"Formula (9.29) has degree of exactness equal to `2n + 1`": for distinct nodes
+`x : Fin (n + 1) → ℝ` and `p ∈ ℙ_{2n+1}`, `∫_a^b p = Quadrature.hermiteQuadrature x a b p p'`, the
+weights being `α_k = ∫ 𝓛_k`, `β_k = ∫ 𝓜_k` with `𝓛_k`, `𝓜_k` the polynomials of (9.28). ★'''
+deps = ["Quadrature.integral_eq_hermiteQuadrature_of_degree_le"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (9.28)–(9.29)'
+
+[[node]]
+id = "equation_9_30"
+kind = "theorem"
+desc = '''(9.30): the Hermite rule with `n = 1` at the nodes `a, b` is the corrected trapezoidal rule
+`(b - a)/2 (f a + f b) + (b - a)²/12 (f' a - f' b)`, with `α_0 = α_1 = (b - a)/2`,
+`β_0 = -β_1 = (b - a)²/12`. ★'''
+deps = ["Quadrature.hermiteQuadrature_two_eq_correctedTrapezoid", "Quadrature.correctedTrapezoid"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (9.30)'
+
+[[node]]
+id = "equation_9_31"
+kind = "theorem"
+desc = '''(9.31): for `f ∈ C⁴([a, b])`, `∃ ξ ∈ Icc a b, ∫_a^b f - correctedTrapezoid f f' a b = h^5/720 * f⁗(ξ)`,
+`h = b - a`. ★'''
+deps = ["Quadrature.exists_sub_correctedTrapezoid_eq"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (9.31)'
+
+[[node]]
+id = "equation_9_32"
+kind = "theorem"
+desc = '''(9.32) and the sentence after it: the composite corrected trapezoidal rule on `m` panels is
+`(b - a)/m {(f(x_0) + f(x_m))/2 + f(x_1) + ⋯ + f(x_{m-1})} + ((b - a)/m)²/12 (f'(a) - f'(b))`,
+the derivative terms at the interior nodes cancelling; i.e.
+`∑_j correctedTrapezoid f f' x_j x_{j+1} = correctedTrapezoidSum f f' a b m`. ★'''
+deps = ["Quadrature.correctedTrapezoidSum_eq_sum", "Quadrature.trapezoidSum_eq"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (9.32)'
+
+[[node]]
+id = "compositeCorrectedTrapezoidalError"
+kind = "theorem"
+desc = '''The order-`4` error of (9.32) that Example 9.5 observes: for `f ∈ C⁴([a, b])`, `H = (b - a)/m`,
+`∃ ξ ∈ Icc a b, ∫_a^b f - correctedTrapezoidSum f f' a b m = (b - a) H^4/720 * f⁗(ξ)`. ★'''
+deps = ["Quadrature.sub_correctedTrapezoidSum_eq"]
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §9.5 (composite corrected trapezoidal formula, Example 9.5)'''
+
+[[node]]
+id = "exercise_9_9"
+kind = "theorem"
+desc = '''Exercise 9 (cited in Example 9.5), `|E_1^corr(f)| ≃ 4 |E_2(f)|`, in its exact form: the error
+constants of (9.31) and (9.16) on the same interval are `h⁵/720` and `-h⁵/(90·32) = -h⁵/2880`
+(`h = b - a`), in the ratio `-4`; so `E_1^corr(f) = -4 E_2(f)` for `f` with constant fourth
+derivative. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter09.equation_9_31", "QuarteroniSaccoSaleri.Chapter09.equation_9_16"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 9.9'

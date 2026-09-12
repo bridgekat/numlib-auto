@@ -111,3 +111,86 @@ id = "Krylov.hasEigenvalue_of_hasEigenvalue_inverse"
 
 [[node]]
 id = "Krylov.tendsto_smul_inverseIterate"
+
+[[node]]
+id = "Krylov.tendsto_inner_powerIterate"
+kind = "theorem"
+desc = '''The Rayleigh quotients of the power method converge: for a continuous `A : Module.End 𝕜 E` on
+an inner product space, under the hypotheses of `Krylov.tendsto_smul_powerIterate` (`A u = l • u`,
+`l ≠ 0`, `‖u‖ = 1`, `x₀ = u + w` with the orbit of `w` decaying faster than `‖l‖^k`),
+`Tendsto (fun k => ⟪powerIterate A x₀ k, A (powerIterate A x₀ k)⟫) atTop (nhds l)`. Proof: with
+`c_k • q_k → u`, `‖c_k‖ = 1`, `⟪q_k, A q_k⟫ = ⟪c_k q_k, A (c_k q_k)⟫ → ⟪u, A u⟫ = l`. The book's
+`ν^(k) → λ_1` (Quarteroni–Sacco–Saleri Theorem 5.6, the sentence after it), and the packaged
+form `Krylov.exists_eq_add_tendsto`-style for diagonalizable matrices. ★'''
+deps = ["Krylov.tendsto_smul_powerIterate", "Krylov.powerIterate"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 5.6'
+
+[[node]]
+id = "Krylov.tendsto_inner_inverseIterate"
+kind = "theorem"
+desc = '''The same for inverse iteration with the Rayleigh quotient computed on `A` itself: under the
+hypotheses of `Krylov.tendsto_smul_inverseIterate`, `⟪inverseIterate A σ x₀ k, A (inverseIterate A
+σ x₀ k)⟫ → l`, the eigenvalue of `A` nearest the shift. Quarteroni–Sacco–Saleri (5.28),
+`σ^(k) → λ_m`. ★'''
+deps = ["Krylov.tendsto_smul_inverseIterate", "Krylov.inverseIterate"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.28)'
+
+[[node]]
+id = "Krylov.norm_inv_pow_smul_pow_apply_sub_le_of_eigenbasis"
+kind = "theorem"
+desc = '''The power method's exact rate for a diagonalizable operator (Quarteroni–Sacco–Saleri Theorem
+5.6): given eigenpairs `A (x i) = l i • x i` with `‖x i‖ = 1` for `i : ι` (finite), a
+distinguished `i₀` with `‖l i‖ ≤ ρ < ‖l i₀‖`… stated as: for `x₀ = ∑ α_i x_i` with `α i₀ ≠ 0` and
+`‖l i‖ ≤ ρ` for `i ≠ i₀`, `‖(α i₀ * l i₀ ^ k)⁻¹ • (A ^ k) x₀ - x i₀‖ ≤ (∑_{i ≠ i₀} ‖α i / α i₀‖) *
+(ρ / ‖l i₀‖) ^ k` for all `k`. Direct from `(A^k) x₀ = ∑ α_i l_i^k x_i` and the triangle
+inequality; no orthogonality is needed, and none is available — the book's constant `(∑ (α_i/α_1)²)^{1/2}`
+holds only for orthonormal `x_i` (normal `A`), see the errata. The general
+`Krylov.exists_norm_inv_pow_smul_pow_apply_sub_le` gives the same rate up to `ρ ↦ r > ρ` without
+an eigenbasis. ★'''
+deps = ["Krylov.powerIterate", "Krylov.exists_norm_inv_pow_smul_pow_apply_sub_le"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 5.6'
+
+[[node]]
+id = "LinearMap.IsSymmetric.abs_sub_rayleigh_powerIterate_le"
+kind = "theorem"
+desc = '''The quadratic rate of the Rayleigh quotient for a symmetric operator (Quarteroni–Sacco–Saleri
+(5.23); Golub–Van Loan Thm 8.2.1): for symmetric `A` on a finite-dimensional inner product space
+with `hn : finrank 𝕜 E = n`, sorted eigenvalues `λ = hA.eigenvalues hn` and eigenvector basis `u
+= hA.eigenvectorBasis hn`, an index `i₀` with `|λ i| ≤ ρ < |λ i₀|` for all `i ≠ i₀`, and a unit
+`x₀` with `⟪u i₀, x₀⟫ ≠ 0`, `cos θ₀ = ‖⟪u i₀, x₀⟫‖`: for every `k`,
+`|λ i₀ - re ⟪q_k, A q_k⟫| ≤ (λ_max - λ_min) * tan²θ₀ * (ρ / |λ i₀|)^(2k)` where `q_k = powerIterate
+A x₀ k`, `λ_max = λ 0`, `λ_min = λ (n-1)`, `tan²θ₀ = (1 - cos²θ₀)/cos²θ₀`. Proof: with `x₀ = ∑
+α_i u_i`, `re ⟪q_k, A q_k⟫ = ∑ |α_i|² λ_i^{2k+1} / ∑ |α_i|² λ_i^{2k}`, so `λ_{i₀} - ν_k = ∑_{i ≠
+i₀} |α_i|² λ_i^{2k} (λ_{i₀} - λ_i) / ∑ |α_i|² λ_i^{2k}`, bounded by `(λ_max - λ_min) ρ^{2k} ∑_{i ≠
+i₀} |α_i|² / (|α_{i₀}|² |λ_{i₀}|^{2k})`; the book states it for the dominant `i₀ = 0`, where the
+left side is nonnegative. ★★'''
+deps = ["Krylov.powerIterate", "LinearMap.IsSymmetric.rayleighQuotient_mem_Icc"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.23)'
+
+[[node]]
+id = "Krylov.powerIterate_conj_linearIsometryEquiv"
+kind = "theorem"
+desc = '''The power method commutes with a change of orthonormal coordinates: for a linear isometry
+equivalence `U : F ≃ₗᵢ[𝕜] E`, `powerIterate (U.symm ∘ₗ A ∘ₗ U) (U.symm x₀) k = U.symm (powerIterate
+A x₀ k)`, since `(U⁻¹ A U)^k = U⁻¹ A^k U` and `U` preserves norms. Likewise
+`Krylov.inverseIterate_conj_linearIsometryEquiv` for `inverseIterate` (the shifted inverse
+conjugates too: `Ring.inverse (U⁻¹ (A - σ) U) = U⁻¹ Ring.inverse (A - σ) U`). Quarteroni–Sacco–Saleri
+§5.8.1, inverse iteration on the Hessenberg form `H = Qᵀ A Q` with `x = Q q`. ★'''
+deps = ["Krylov.powerIterate", "Krylov.inverseIterate"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.8.1'
+
+[[node]]
+id = "Krylov.inverseIterate_conj_linearIsometryEquiv"
+kind = "theorem"
+desc = 'See `Krylov.powerIterate_conj_linearIsometryEquiv`. ★'
+deps = ["Krylov.powerIterate_conj_linearIsometryEquiv", "Krylov.inverseIterate_eq_powerIterate"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.8.1'
+
+[[node]]
+id = "Krylov.powerIterate_eq_smul"
+
+[[node]]
+id = "Krylov.inverseIterate_eq_powerIterate"
+
+[[node]]
+id = "Krylov.spectralProjector_apply_of_mem"

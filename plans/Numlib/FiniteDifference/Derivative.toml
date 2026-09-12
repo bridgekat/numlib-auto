@@ -1,0 +1,164 @@
+namespace = "FiniteDifference"
+desc = '''
+Finite-difference approximation of derivatives of a function of one real variable: the forward,
+backward and centred difference quotients and the second centred difference, each with its
+Taylor truncation error in mean-value form; the general implicit ("compact") scheme
+`α u_{i-1} + u_i + α u_{i+1} = (β/2h)(f_{i+1} - f_{i-1}) + (γ/4h)(f_{i+2} - f_{i-2})`, its consistency
+error and the order conditions; and the differentiation matrix `D_{ij} = ℓ_j'(x_i)` of Lagrange
+interpolation, through which the pseudo-spectral derivative at a node set is a matrix–vector
+product. The material is Quarteroni–Sacco–Saleri §10.10 (also Kress §9.5's numerical
+differentiation and the stencils of every finite-difference scheme in chapters 12–13).
+
+Every mean-value error is Mathlib's `taylor_mean_remainder_lagrange` at one or two expansion
+points; where the book states a single intermediate point for a two-sided difference, the two
+Lagrange remainders are averaged and the intermediate value theorem for the continuous top
+derivative supplies the single point. The compact-scheme expansion is stated as an
+`IsBigO (𝓝 0)` in `h` at a fixed point, which is what the order conditions consume; the book's
+printed expansion carries a spurious factor `1/2` on its `h²` terms (see the surface node
+`equation_10_68`), and the coefficients here are the correct ones.
+
+The differentiation matrix is stated for arbitrary distinct nodes; the explicit entries at the
+Chebyshev–Gauss–Lobatto nodes (Quarteroni–Sacco–Saleri (10.73), with its erratum) are the last
+node. The two-dimensional stencils and the grid-function operators of chapters 12–13 are
+`FiniteDifference/BoundaryValue` and `FiniteDifference/Hyperbolic`, not here.
+'''
+
+[[node]]
+id = "forwardDiff"
+kind = "definition"
+desc = '`forwardDiff f h x = (f (x + h) - f x) / h`, Quarteroni–Sacco–Saleri (10.59). ★'
+deps = []
+
+[[node]]
+id = "backwardDiff"
+kind = "definition"
+desc = '`backwardDiff f h x = (f x - f (x - h)) / h`, Quarteroni–Sacco–Saleri (10.63). ★'
+deps = []
+
+[[node]]
+id = "centredDiff"
+kind = "definition"
+desc = '''`centredDiff f h x = (f (x + h) - f (x - h)) / (2 * h)`, Quarteroni–Sacco–Saleri (10.61). ★'''
+deps = []
+
+[[node]]
+id = "secondCentredDiff"
+kind = "definition"
+desc = '''`secondCentredDiff f h x = (f (x + h) - 2 * f x + f (x - h)) / h ^ 2`, Quarteroni–Sacco–Saleri
+(10.65). ★'''
+deps = []
+
+[[node]]
+id = "deriv_sub_forwardDiff_eq"
+kind = "theorem"
+desc = '''For `0 < h` and `ContDiffOn ℝ 2 f (Icc x (x + h))`: `∃ ξ ∈ Ioo x (x + h), deriv f x -
+forwardDiff f h x = -(h / 2) * iteratedDeriv 2 f ξ` (Quarteroni–Sacco–Saleri (10.60)).
+`taylor_mean_remainder_lagrange` with `n = 1`, `x₀ = x`, at `x + h`, divided by `h`; the `Within`
+derivatives agree with `deriv`/`iteratedDeriv` on the interior. ★'''
+deps = ["FiniteDifference.forwardDiff"]
+
+[[node]]
+id = "deriv_sub_backwardDiff_eq"
+kind = "theorem"
+desc = '''For `0 < h` and `ContDiffOn ℝ 2 f (Icc (x - h) x)`: `∃ ξ ∈ Ioo (x - h) x, deriv f x -
+backwardDiff f h x = (h / 2) * iteratedDeriv 2 f ξ` (Quarteroni–Sacco–Saleri (10.64)). The
+forward case at `x₀ = x`, point `x - h`. ★'''
+deps = ["FiniteDifference.backwardDiff"]
+
+[[node]]
+id = "deriv_sub_centredDiff_eq"
+kind = "theorem"
+desc = '''For `0 < h` and `ContDiffOn ℝ 3 f (Icc (x - h) (x + h))`: `∃ ξ ∈ Ioo (x - h) (x + h), deriv f x -
+centredDiff f h x = -(h ^ 2 / 6) * iteratedDeriv 3 f ξ` (Quarteroni–Sacco–Saleri (10.62)). Two
+Lagrange remainders with `n = 2` at `x ± h` give `-(h²/12)(f^{(3)}(ξ₊) + f^{(3)}(ξ₋))`; the average of two
+values of the continuous `f^{(3)}` on the interval is attained (`intermediate_value_Icc`). ★★'''
+deps = ["FiniteDifference.centredDiff"]
+
+[[node]]
+id = "iteratedDeriv_two_sub_secondCentredDiff_eq"
+kind = "theorem"
+desc = '''For `0 < h` and `ContDiffOn ℝ 4 f (Icc (x - h) (x + h))`: `∃ θ ∈ Ioo 0 1, ∃ ω ∈ Ioo 0 1,
+iteratedDeriv 2 f x - secondCentredDiff f h x = -(h ^ 2 / 24) * (iteratedDeriv 4 f (x + θ * h) +
+iteratedDeriv 4 f (x - ω * h))` (Quarteroni–Sacco–Saleri (10.66), in the book's two-point form).
+Two Lagrange remainders with `n = 3` at `x ± h`; the odd terms cancel. The single-point form
+`-(h²/12) f⁗(ξ)` follows by the intermediate value theorem as in `deriv_sub_centredDiff_eq`. ★★'''
+deps = ["FiniteDifference.secondCentredDiff"]
+
+[[node]]
+id = "compactError"
+kind = "definition"
+desc = '''The consistency error of the compact scheme with parameters `α β γ` at `x` with step `h`
+(Quarteroni–Sacco–Saleri (10.68)): `compactError α β γ f x h = α f'(x - h) + f'(x) + α f'(x + h) -
+(β/(2h) (f(x+h) - f(x-h)) + γ/(4h) (f(x+2h) - f(x-2h)))`, with `f' = deriv f`. ★'''
+deps = []
+
+[[node]]
+id = "compactError_expansion"
+kind = "theorem"
+desc = '''For `ContDiffAt ℝ 7 f x`:
+`(fun h => compactError α β γ f x h - ((2α + 1 - β - γ) f'(x) + h² (α - β/6 - 2γ/3) f^{(3)}(x) + h⁴ (α/12
+- β/120 - 2γ/15) f⁽⁵⁾(x))) =O[𝓝 0] fun h => h ^ 6`. Taylor expansions of `f` to order `6` and of
+`f'` to order `5` at `x` (`taylor_isBigO` / `ContDiffAt.hasFTaylorSeriesUpTo` and
+`taylorWithinEval` with `taylor_mean_remainder_bound`), substituted and collected: the even
+powers of `h` cancel in the antisymmetric differences and the odd ones in the symmetric sum of
+`f'`. ★★'''
+deps = ["FiniteDifference.compactError"]
+
+[[node]]
+id = "compactError_isBigO_pow_two"
+kind = "theorem"
+desc = '''Order `2`: if `2α + 1 = β + γ` then `(fun h => compactError α β γ f x h) =O[𝓝 0] fun h => h ^ 2`
+for `ContDiffAt ℝ 7 f x`; order `4`: if moreover `6α = β + 4γ` then `=O[𝓝 0] fun h => h ^ 4`
+(`compactError_isBigO_pow_four`). From `compactError_expansion`, the vanishing coefficients
+leaving `h²`- resp. `h⁴`-multiples plus `O(h⁶)`. ★'''
+deps = ["FiniteDifference.compactError_expansion"]
+
+[[node]]
+id = "compactError_isBigO_pow_six"
+kind = "theorem"
+desc = '''Order `6`: if `2α + 1 = β + γ`, `6α = β + 4γ` and `10α = β + 16γ`, then `(fun h => compactError
+α β γ f x h) =O[𝓝 0] fun h => h ^ 6` for `ContDiffAt ℝ 7 f x`. All three coefficients of
+`compactError_expansion` vanish. ★'''
+deps = ["FiniteDifference.compactError_expansion"]
+
+[[node]]
+id = "order_six_unique"
+kind = "theorem"
+desc = '''The three order-`6` conditions have the unique solution `α = 1/3 ∧ β = 14/9 ∧ γ = 1/9`
+(Quarteroni–Sacco–Saleri (10.69)); `linarith`. ★'''
+deps = []
+
+[[node]]
+id = "_root_.Lagrange.derivMatrix"
+kind = "definition"
+desc = '''The differentiation matrix of `n + 1` nodes, `Lagrange.derivMatrix x : Matrix (Fin (n+1)) (Fin
+(n+1)) ℝ`, `D i j = (derivative (Lagrange.basis univ x j)).eval (x i)` (Quarteroni–Sacco–Saleri
+§10.10.3). ★'''
+deps = []
+
+[[node]]
+id = "_root_.Lagrange.eval_derivative_interpolate_node"
+kind = "theorem"
+desc = '''For injective `x : Fin (n+1) → ℝ`, `f : ℝ → ℝ` and `i`:
+`(derivative (Lagrange.interpolate univ x (f ∘ x))).eval (x i) = (Lagrange.derivMatrix x *ᵥ (f ∘ x)) i`
+(Quarteroni–Sacco–Saleri (10.72)): the derivative of the interpolant at the nodes is the
+differentiation matrix applied to the nodal values. Linearity of `derivative` and `eval` over
+`Lagrange.interpolate_apply`'s sum `∑ f (x j) • basis j`. ★'''
+deps = ["Lagrange.derivMatrix"]
+
+[[node]]
+id = "_root_.Lagrange.chebyshevLobattoDerivMatrix_apply"
+kind = "theorem"
+desc = '''The explicit differentiation matrix at the Chebyshev–Gauss–Lobatto nodes `x̄_j = -cos (jπ/n)`,
+`1 ≤ n` (Quarteroni–Sacco–Saleri (10.73), [CHQZ88] p. 69 with the node order reversed):
+`D_{lj} = (d_l/d_j) (-1)^{l+j}/(x̄_l - x̄_j)` for `l ≠ j`, `D_{jj} = -x̄_j/(2(1 - x̄_j²))` for
+`1 ≤ j ≤ n - 1`, `D_{00} = -(2n² + 1)/6`, `D_{nn} = (2n² + 1)/6`, where `d_0 = d_n = 2`, `d_j = 1`
+otherwise. (The book prints `D_{nn} = (2n²+1)/3`; `D` has zero trace and its interior diagonal is
+odd under `j ↦ n - j`, so `D_{nn} = -D_{00}`.) Proof: `ℓ_j(t) = ω̄(t)/((t - x̄_j) ω̄'(x̄_j))` with
+`ω̄ = (t² - 1) T_n'(t)` up to a constant, so `ℓ_j'(x̄_l) = ω̄'(x̄_l)/((x̄_l - x̄_j) ω̄'(x̄_j))` for `l ≠ j`
+and `ℓ_j'(x̄_j) = ω̄''(x̄_j)/(2 ω̄'(x̄_j))`; the values `ω̄'(x̄_l) = (-1)^l d_l n²` (up to the common
+constant) and `ω̄''(x̄_j)` come from the Chebyshev differential equation
+`(1 - t²) T_n'' - t T_n' + n² T_n = 0` (Mathlib's `one_sub_X_sq_mul_derivative_derivative_T_eq_poly_in_T`)
+and `T_n(x̄_j) = (-1)^j`, `T_n'(±1) = ±n²`-type values (`derivative_T_eval_one`,
+`iterate_derivative_T_eval_one`). ★★★'''
+deps = ["Lagrange.derivMatrix"]

@@ -1,0 +1,8 @@
+desc = '''
+Direct methods for `A x = b`: the substitution solves for triangular systems and the inverse of a
+triangular matrix (`Substitution`), and the two accuracy-improving devices of Quarteroni–Sacco–Saleri
+§3.11–3.12 — scaling, iterative refinement as a stationary iteration, and condition-number
+estimation (`Refinement`). The factorizations themselves are `LinearAlgebra/Matrix/LU`,
+`LinearAlgebra/Matrix/Cholesky` and `LinearAlgebra/Matrix/QR`; their rounding-error analyses are
+`FloatingPoint/Substitution` and `FloatingPoint/LU`.
+'''

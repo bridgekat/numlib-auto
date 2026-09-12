@@ -1,0 +1,275 @@
+namespace = "QuarteroniSaccoSaleri.Chapter02"
+desc = '''
+Quarteroni–Sacco–Saleri §2.5: machine representation of numbers — the positional system
+(§2.5.1), the floating-point number system `𝔽(β, t, L, U)` (§2.5.2), its distribution (§2.5.3),
+the IEEE parameters (§2.5.4), rounding and Property 2.1 (§2.5.5), and the machine operations
+(§2.5.6).
+
+Everything specializes `Numlib/FloatingPoint/System`. The book's `𝔽` is defined by digit strings
+`(-1)^s β^e ∑_{i=1}^t a_i β^{-i}`; the surface restates it in that form (`floatingPointNumbers`) and
+proves it equal to the backbone's integer-mantissa form `FloatingPoint.System.numbers`. The
+rounding (2.32) is restated digit-wise, for even `β` as the book assumes, and identified with
+`FloatingPoint.System.round`. Property 2.1 is stated with the book's range hypothesis, although the
+backbone bound needs none. Example 2.11 is decided over `ℚ`. The unnumbered facts the text asserts
+— cardinality of `𝔽`, the smallest de-normalized number, the spacing bounds, `ε_M` as the gap
+above `1`, commutativity and the failure of associativity of `⊕` — are nodes under descriptive
+names.
+
+Skipped: Example 2.10 (a numeral written in two bases), Remark 2.3 (MATLAB `eps`), Remark 2.4
+(the IEC 559 closed arithmetic, NaN, Table 2.3), Tables 2.1–2.2, the flop counts and the
+round-digit hardware discussion of §2.5.6.
+'''
+
+[[node]]
+id = "positionalDensity"
+kind = "theorem"
+desc = '''**§2.5.1, finite positional expansions are dense**: for `2 ≤ β`, every `x : ℝ` and `ε > 0`, `∃
+(m : ℤ) (k : ℕ), |m * (β : ℝ) ^ (-(k : ℤ)) - x| < ε` — "any real number can be approximated by
+numbers having a finite representation". `FloatingPoint.exists_int_mul_zpow_sub_abs_lt` over `ℝ`.
+★'''
+deps = ["FloatingPoint.exists_int_mul_zpow_sub_abs_lt"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §2.5.1, the property after Example 2.10'
+
+[[node]]
+id = "floatingPointNumbers"
+kind = "definition"
+desc = '''`floatingPointNumbers (β t : ℕ) (L U : ℤ) : Set ℝ := {0} ∪ {x | ∃ (s : Bool) (e : ℤ) (a : Fin t →
+ℕ), (∀ i, a i ≤ β - 1) ∧ a ⟨0, _⟩ ≠ 0 ∧ L ≤ e ∧ e ≤ U ∧ x = (-1) ^ s.toNat * β ^ e * ∑ i, a i * β ^
+(-(i + 1 : ℤ))}` (for `t ≥ 1`): the book's `𝔽(β, t, L, U)` as digit strings, with the
+normalization `a₁ ≠ 0`. ★'''
+deps = []
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §2.5.2, the display defining 𝔽(β, t, L, U)'
+
+[[node]]
+id = "floatingPointNumbers_eq"
+kind = "theorem"
+desc = '''For `s : FloatingPoint.System`, `floatingPointNumbers s.β s.t s.L s.U = s.numbers ℝ`: the digit
+form equals the integer-mantissa form `± m β^(e - t)`, `β^(t-1) ≤ m ≤ β^t - 1`. The mantissa is
+`m = ∑ a_i β^(t - i)` (`Nat.ofDigits` of the reversed digit list), and every `m` in that range has
+a unique such digit expansion of length `t` with a nonzero leading digit (`Nat.digits_len`,
+`Nat.ofDigits_digits`, `Nat.digits_lt_base`, `Nat.getLast_digit_ne_zero`). ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter02.floatingPointNumbers", "FloatingPoint.System.numbers"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §2.5.2'
+
+[[node]]
+id = "equation_2_30"
+kind = "theorem"
+desc = '''**(2.30)**: for `x ∈ s.numbers ℝ`, `x ≠ 0`, `s.xmin ℝ ≤ |x| ∧ |x| ≤ s.xmax ℝ` with `x_min =
+β^(L-1)`, `x_max = β^U (1 - β^(-t))`. `FloatingPoint.System.xmin_le_abs`,
+`FloatingPoint.System.abs_le_xmax`. ★'''
+deps = ["FloatingPoint.System.xmin_le_abs", "FloatingPoint.System.abs_le_xmax"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (2.30)'
+
+[[node]]
+id = "cardFloatingPoint"
+kind = "theorem"
+desc = '''**§2.5.2, the cardinality of `𝔽`**: `(Set.ncard (s.numbers ℝ) : ℤ) = 2 (β - 1) β^(t-1) (U - L +
+1) + 1`. `FloatingPoint.System.card_finset` with `coe_finset` and `Set.ncard_coe_finset`. ★'''
+deps = ["FloatingPoint.System.card_finset", "FloatingPoint.System.coe_finset"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §2.5.2, the display for card 𝔽'
+
+[[node]]
+id = "denormalizedMin"
+kind = "theorem"
+desc = '''**§2.5.2, the smallest de-normalized number**: `IsLeast {x ∈ s.denormalized ℝ | 0 < x} ((β : ℝ) ^
+(s.L - s.t))`, and every de-normalized number lies in `(-β^(L-1), β^(L-1)) = (-x_min, x_min)`.
+Directly from `FloatingPoint.System.denormalized`: the mantissas are `1 ≤ m ≤ β^(t-1) - 1` at the
+exponent `L`. ★'''
+deps = ["FloatingPoint.System.denormalized", "FloatingPoint.System.xmin"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §2.5.2, the paragraph on 𝔽_D'
+
+[[node]]
+id = "example_2_11_system"
+kind = "definition"
+desc = '''`example_2_11_system : FloatingPoint.System := ⟨2, 3, -1, 2, _, _, _⟩`, the system `𝔽(2, 3, -1,
+2)` of Example 2.11. ★'''
+deps = ["FloatingPoint.System"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 2.11'
+
+[[node]]
+id = "example_2_11"
+kind = "theorem"
+desc = '''**Example 2.11**: the positive numbers of `𝔽(2, 3, -1, 2)` are the sixteen listed ones: `{x : ℚ |
+x ∈ example_2_11_system.numbers ℚ ∧ 0 < x} = {7/2, 3, 5/2, 2, 7/4, 3/2, 5/4, 1, 7/8, 3/4, 5/8, 1/2,
+7/16, 3/8, 5/16, 1/4}`. Over `ℚ` so that both inclusions are finite case analyses: `m ∈ {4, 5, 6,
+7}`, `e ∈ {-1, 0, 1, 2}`, `norm_num` on each of the sixteen products `m 2^(e-3)`. ★★'''
+deps = ["QuarteroniSaccoSaleri.Chapter02.example_2_11_system", "FloatingPoint.System.numbers"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 2.11'
+
+[[node]]
+id = "example_2_11_bounds"
+kind = "theorem"
+desc = '''**Example 2.11, the bounds**: `example_2_11_system.xmin ℚ = 1/4 ∧ example_2_11_system.xmax ℚ = 7/2`,
+and the count `((example_2_11_system.finset ℚ).card : ℤ) = 2 * 16 + 1` from `cardFloatingPoint`
+(`(β - 1) β^(t-1) (U - L + 1) = 1 · 4 · 4 = 16` strictly positive numbers). `norm_num [xmin, xmax]`.
+★'''
+deps = ["QuarteroniSaccoSaleri.Chapter02.example_2_11_system", "FloatingPoint.System.xmin", "FloatingPoint.System.xmax", "FloatingPoint.System.card_finset"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 2.11'
+
+[[node]]
+id = "example_2_11_denormalized"
+kind = "theorem"
+desc = '''**Example 2.11, the de-normalized numbers**: `{x : ℚ | x ∈ example_2_11_system.denormalized ℚ ∧ 0
+< x} = {3/16, 1/8, 1/16}`, and the smallest is `β^(L-t) = 2^(-4) = 1/16`. Mantissas `m ∈ {1, 2, 3}`
+at exponent `-1`, `norm_num`. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter02.example_2_11_system", "FloatingPoint.System.denormalized", "QuarteroniSaccoSaleri.Chapter02.denormalizedMin"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 2.11'
+
+[[node]]
+id = "spacing"
+kind = "theorem"
+desc = '''**§2.5.3, the distribution of the floating-point numbers**: for `L ≤ e ≤ U`, the numbers of `𝔽`
+in `[β^(e-1), β^e)` are `m β^(e-t)`, `β^(t-1) ≤ m ≤ β^t - 1`, equally spaced with distance `β^(e -
+t)` (`FloatingPoint.System.numbers_inter_Ico`); and for `x ≠ 0` the spacing `ulp x = β^(exponent x -
+t)` near `x` satisfies `β⁻¹ ε_M |x| < ulp x ≤ ε_M |x|` (`FloatingPoint.System.ulp_bounds`), the book's
+"at least `β⁻¹ ε_M |x|` and at most `ε_M |x|`". Stated in the mantissa convention (2.29), `x = 0.a₁…
+× β^e`, in which the binade of exponent `e` is `[β^(e-1), β^e)`; the book's sentence "having
+fixed an interval of the form `[β^e, β^(e+1)]` … distance `β^(e-t)`" uses the other convention (see
+the report). ★'''
+deps = ["FloatingPoint.System.numbers_inter_Ico", "FloatingPoint.System.ulp_bounds"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §2.5.3'
+
+[[node]]
+id = "equation_2_31"
+kind = "theorem"
+desc = '''**(2.31)**: for `x = σ m β^(e - t) ∈ 𝔽` with `β^(t-1) ≤ m ≤ β^t - 1`, `L ≤ e ≤ U`, the relative
+distance to the next number is `ulp x / |x| = 1 / m` — it depends only on the mantissa, decreasing
+from `β^(1-t)` at `m = β^(t-1)` across each binade (wobbling precision).
+`FloatingPoint.System.ulp_div_eq_inv_mantissa`. ★'''
+deps = ["FloatingPoint.System.ulp_div_eq_inv_mantissa"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (2.31)'
+
+[[node]]
+id = "machineEps_isLeast"
+kind = "theorem"
+desc = '''**§2.5.3, the machine epsilon**: if `L ≤ 1 ≤ U` then `IsLeast {δ : ℝ | 0 < δ ∧ 1 + δ ∈ s.numbers ℝ}
+(s.machineEps ℝ)` with `ε_M = β^(1-t)`: "the distance between the number `1` and the nearest
+floating-point number [above it], and therefore the smallest number of `𝔽` such that `1 + ε_M > 1`
+[in `𝔽`]". `FloatingPoint.System.isLeast_machineEps`. ★'''
+deps = ["FloatingPoint.System.isLeast_machineEps"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §2.5.3'
+
+[[node]]
+id = "ieeeUnitRoundoff"
+kind = "theorem"
+desc = '''**§2.5.4, the IEC 559 basic formats**: `FloatingPoint.System.ieeeSingle = ⟨2, 24, -125, 128, …⟩`,
+`FloatingPoint.System.ieeeDouble = ⟨2, 53, -1021, 1024, …⟩`, with `ieeeSingle.unitRoundoff ℝ = 2 ^ (-24
+: ℤ) ∧ ieeeDouble.unitRoundoff ℝ = 2 ^ (-53 : ℤ)`. `FloatingPoint.System.ieeeDouble_unitRoundoff`. ★'''
+deps = ["FloatingPoint.System.ieeeSingle", "FloatingPoint.System.ieeeDouble", "FloatingPoint.System.ieeeDouble_unitRoundoff"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §2.5.4'
+
+[[node]]
+id = "equation_2_32"
+kind = "theorem"
+desc = '''**(2.32), the rounding as a digit rule**: for even `β` (the book's standing assumption in
+§2.5.1) and `x ≠ 0` with exponent `e = s.exponent x`, mantissa `μ = |x| β^(t - e)` and next digit
+`a_{t+1} = ⌊μ β⌋ % β` (as a natural number), `s.round x = sign x * (⌊μ⌋ + if β / 2 ≤ a_{t+1} then 1
+else 0) * β^(e - t)`: the book's "`ã_t = a_t` if `a_{t+1} < β/2`, `a_t + 1` if `a_{t+1} ≥ β/2`". For
+even `β`, `a_{t+1} ≥ β/2 ⟺ fract μ ≥ 1/2 ⟺ round μ = ⌊μ⌋ + 1` (`round_eq`, `Int.floor` of `β μ`);
+for odd `β` the digit rule is not rounding to nearest, which is why the hypothesis is there. ★★'''
+deps = ["FloatingPoint.System.round", "FloatingPoint.System.exponent"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (2.32)'
+
+[[node]]
+id = "fl_eq_self_of_mem"
+kind = "theorem"
+desc = '''**§2.5.5**: `x ∈ s.numbers ℝ → s.round x = x` ("`fl(x) = x` if `x ∈ 𝔽`").
+`FloatingPoint.System.round_eq_self`. ★'''
+deps = ["FloatingPoint.System.round_eq_self"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §2.5.5, the sentence after (2.32)'
+
+[[node]]
+id = "fl_mono"
+kind = "theorem"
+desc = '''**§2.5.5, the monotonicity property**: `x ≤ y → s.round x ≤ s.round y` for all real `x, y`.
+`FloatingPoint.System.round_mono`. ★'''
+deps = ["FloatingPoint.System.round_mono"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §2.5.5, the sentence after (2.32)'
+
+[[node]]
+id = "remark_2_2"
+kind = "theorem"
+desc = '''**Remark 2.2 (overflow and underflow)**: (i) overflow — for `β^U ≤ |x|`, `s.round x ∉ s.numbers ℝ`
+(`FloatingPoint.System.round_notMem_numbers`; the book's "`fl(x)` is not defined for `|x| > x_max`" is
+read as: outside `𝔽`); (ii) underflow — for `0 < |x| < x_min` the rounding is still defined and
+still satisfies `|s.round x - x| ≤ u |x|` (`FloatingPoint.System.abs_round_sub_le`, which has no range
+hypothesis), "the operation of rounding is defined anyway". ★'''
+deps = ["FloatingPoint.System.round_notMem_numbers", "FloatingPoint.System.abs_round_sub_le"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 2.2'
+
+[[node]]
+id = "property_2_1"
+kind = "theorem"
+desc = '''**Property 2.1, (2.33)–(2.34)**: if `s.xmin ℝ ≤ |x| ≤ s.xmax ℝ` then `∃ δ : ℝ, |δ| ≤ u ∧ s.round x
+= x * (1 + δ)` with `u = s.unitRoundoff ℝ = (1/2) β^(1-t) = ε_M / 2`, and moreover `s.round x ∈ s.numbers
+ℝ`. `FloatingPoint.System.exists_round_eq_mul_one_add` (which needs no range hypothesis) and
+`FloatingPoint.System.round_mem_numbers` (which does). ★'''
+deps = ["FloatingPoint.System.exists_round_eq_mul_one_add", "FloatingPoint.System.round_mem_numbers", "FloatingPoint.System.unitRoundoff"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 2.1'
+
+[[node]]
+id = "property_2_1_chop"
+kind = "theorem"
+desc = '''**Property 2.1 for chopping** (the book's parenthetical "in the chopping one would take `ã_t =
+a_t`", with the unit roundoff `β^(1-t)` of Higham Theorem 2.2): `∃ δ : ℝ, |δ| ≤ s.machineEps ℝ ∧ s.chop
+x = x * (1 + δ)`. `FloatingPoint.System.abs_chop_sub_le` through `RoundingModel.Rounds.exists_delta` on
+`FloatingPoint.System.choppingModel`. ★'''
+deps = ["FloatingPoint.System.choppingModel", "FloatingPoint.System.abs_chop_sub_le"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 2.1'
+
+[[node]]
+id = "equation_2_35"
+kind = "theorem"
+desc = '''**(2.35), the relative error of rounding**: for `x ≠ 0`, `|x - s.round x| / |x| ≤ s.unitRoundoff
+ℝ`. `FloatingPoint.System.abs_round_sub_le` and `div_le_iff₀`. ★'''
+deps = ["FloatingPoint.System.abs_round_sub_le"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (2.35)'
+
+[[node]]
+id = "roundAbsError"
+kind = "theorem"
+desc = '''**§2.5.5, the absolute error of rounding** (the display `E(x) ≤ ½ β^(-t+e)` closing the
+section): `|x - s.round x| ≤ (1/2) * β ^ (s.exponent x - s.t)`. `FloatingPoint.System.abs_sub_round_le`.
+★'''
+deps = ["FloatingPoint.System.abs_sub_round_le"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §2.5.5, the display after (2.35)'
+
+[[node]]
+id = "machineOp"
+kind = "definition"
+desc = '''`machineOp (s : FloatingPoint.System) (f : ℝ → ℝ → ℝ) (x y : ℝ) : ℝ := s.round (f (s.round x)
+(s.round y))`, the machine operation `x ∘ y = fl(fl(x) ∘ fl(y))` of §2.5.6, with `machineOp_eq :
+machineOp s f = s.op f` by `rfl`; `s.add`, `s.sub`, `s.mul`, `s.div` are `⊕`, `⊖`, `⊗`, `⊘`. ★'''
+deps = ["FloatingPoint.System.op"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §2.5.6, the display defining x ∘ y'
+
+[[node]]
+id = "equation_2_36"
+kind = "theorem"
+desc = '''**(2.36)**: for `x, y ∈ s.numbers ℝ` and each of `f ∈ {(·+·), (·-·), (·*·), (·/·)}`, `∃ δ : ℝ, |δ| ≤
+s.unitRoundoff ℝ ∧ s.op f x y = f x y * (1 + δ)` — the machine result is the exact result up to a
+relative error `u`. `FloatingPoint.System.exists_op_eq_mul_one_add`. The book says this "will require
+an additional assumption … the round digit" for subtraction; in this idealized arithmetic the exact
+difference is rounded, so the assumption is built in. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter02.machineOp", "FloatingPoint.System.exists_op_eq_mul_one_add"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (2.36)'
+
+[[node]]
+id = "machineOp_comm"
+kind = "theorem"
+desc = '''**§2.5.6, commutativity is preserved**: `s.add x y = s.add y x` and `s.mul x y = s.mul y x`.
+`FloatingPoint.System.add_comm`. ★'''
+deps = ["FloatingPoint.System.add_comm"]
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §2.5.6, the paragraph on properties preserved and lost'''
+
+[[node]]
+id = "machineAdd_not_assoc"
+kind = "theorem"
+desc = '''**§2.5.6, associativity is lost**: in `𝔽(10, 2, -1, 2)` over `ℚ`, with `x = 1`, `y = z = 4/100`
+(all three in `𝔽`), `s.add (s.add x y) z = 1` while `s.add x (s.add y z) = 11/10`, so `s.add (s.add x
+y) z ≠ s.add x (s.add y z)`: `fl(1.04) = 1.0`, `fl(1.0 + 0.04) = 1.0`, but `fl(0.08) = 0.08` and
+`fl(1.08) = 1.1`. Computation with `FloatingPoint.System.round` on `ℚ`: `Int.log 10` of the operands
+(`Int.log` is defined through `Nat.log`/`Nat.clog` and evaluates by `norm_num`/`decide` on
+concrete rationals) and `round` of the concrete mantissas `10.4 ↦ 10`, `10.8 ↦ 11`. ★★'''
+deps = ["FloatingPoint.System.op", "FloatingPoint.System.round"]
+source = '''Quarteroni–Sacco–Saleri, Numerical Mathematics, §2.5.6, the display x ⊕ (y ⊕ z) ≠ (x ⊕ y) ⊕ z'''

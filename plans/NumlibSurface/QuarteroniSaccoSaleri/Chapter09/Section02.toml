@@ -1,0 +1,98 @@
+namespace = "QuarteroniSaccoSaleri.Chapter09"
+desc = '''
+§9.2, the midpoint, trapezoidal and Cavalieri–Simpson formulae with their composite forms: the
+error formulae (9.6), (9.8), (9.12), (9.16) and the two unnumbered composite errors, and the
+discrete mean value theorem (Theorem 9.1). The rules themselves are the backbone's
+`Quadrature.midpointRule`, `Quadrature.midpointSum` (new, `Numlib/Approximation/NewtonCotes`),
+`Quadrature.trapezoidSum` and `Quadrature.simpsonSum` (`Numlib/Approximation/CompositeQuadrature`);
+the single-panel trapezoidal and Simpson formulae are the composite sums with one panel. Example
+9.1 is a numerical table and is skipped; Exercise 1, cited in Example 9.4, is here.
+'''
+
+[[node]]
+id = "theorem_9_1"
+kind = "theorem"
+desc = '''Theorem 9.1 (discrete mean value theorem): for `u` continuous on `[a, b]`, points
+`x_0, …, x_s ∈ [a, b]` and constants `δ_0, …, δ_s ≥ 0`, there is `η ∈ [a, b]` with
+`∑ δ_j u(x_j) = u(η) ∑ δ_j` (9.9). The backbone lemma with `ι = Fin (s + 1)`; the book's "all of the
+same sign" follows by negating `δ`. ★'''
+deps = ["ContinuousOn.exists_sum_mul_eq_mul_sum"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 9.1'
+
+[[node]]
+id = "equation_9_6"
+kind = "theorem"
+desc = '''(9.6), the midpoint error: for `a < b` and `f ∈ C²([a, b])`,
+`∃ ξ ∈ Icc a b, ∫_a^b f - (b - a) f((a + b)/2) = h^3/3 * f''(ξ)` with `h = (b - a)/2`. The book
+puts `ξ` in the open interval; the closed one is what the mean value argument gives, and the open
+statement follows from the strict positivity of the kernel if wanted. ★'''
+deps = ["Quadrature.exists_sub_midpoint_eq"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (9.6)'
+
+[[node]]
+id = "midpoint_degreeOfExactness"
+kind = "theorem"
+desc = '''"The midpoint rule has degree of exactness equal to `1`": exact on every polynomial of degree
+`≤ 1` (its second derivative vanishes in (9.6)) and not on `x²`. Two clauses. ★'''
+deps = ["QuarteroniSaccoSaleri.Chapter09.equation_9_6"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §9.2.1 (degree of exactness)'
+
+[[node]]
+id = "equation_9_8"
+kind = "theorem"
+desc = '''(9.8), the composite midpoint error: for `a < b`, `m ≥ 1`, `H = (b - a)/m` and
+`f ∈ C²([a, b])`, `∃ ξ ∈ Icc a b, ∫_a^b f - Quadrature.midpointSum f a H m = (b - a)/24 * H^2 * f''(ξ)`.
+★'''
+deps = ["Quadrature.sub_composite_midpoint_eq", "QuarteroniSaccoSaleri.Chapter09.theorem_9_1"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (9.8)'
+
+[[node]]
+id = "equation_9_12"
+kind = "theorem"
+desc = '''(9.12), the trapezoidal error: for `a < b` and `f ∈ C²([a, b])`,
+`∃ ξ ∈ Icc a b, ∫_a^b f - (b - a)/2 * (f a + f b) = -h^3/12 * f''(ξ)`, `h = b - a`.
+`Quadrature.sub_composite_trapezoid_eq` with `N = 1` and `trapezoidSum f a (b - a) 1` unfolded. ★'''
+deps = ["Quadrature.sub_composite_trapezoid_eq"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (9.12)'
+
+[[node]]
+id = "compositeTrapezoidalError"
+kind = "theorem"
+desc = '''The unnumbered composite trapezoidal error after (9.14): for `a < b`, `m ≥ 1`,
+`H = (b - a)/m`, `f ∈ C²([a, b])`,
+`∃ ξ ∈ Icc a b, ∫_a^b f - Quadrature.trapezoidSum f a H m = -(b - a)/12 * H^2 * f''(ξ)`;
+with `Quadrature.trapezoidSum_eq` the sum is the book's (9.14). ★'''
+deps = ["Quadrature.sub_composite_trapezoid_eq", "Quadrature.trapezoidSum_eq"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §9.2.2 (composite trapezoidal error)'
+
+[[node]]
+id = "equation_9_16"
+kind = "theorem"
+desc = '''(9.16), the Cavalieri–Simpson error: for `a < b` and `f ∈ C⁴([a, b])`,
+`∃ ξ ∈ Icc a b, ∫_a^b f - (b - a)/6 * (f a + 4 f((a + b)/2) + f b) = -h^5/90 * f⁗(ξ)`,
+`h = (b - a)/2`. `Quadrature.sub_composite_simpson_eq` with `N = 1`: `-(b - a)^5/2880 = -h^5/90`.
+"Degree of exactness `3`" is `Quadrature.integral_eq_simpson_of_natDegree_le` plus non-exactness on
+`x⁴`. ★'''
+deps = ["Quadrature.sub_composite_simpson_eq", "Quadrature.integral_eq_simpson_of_natDegree_le"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, (9.16)'
+
+[[node]]
+id = "compositeSimpsonError"
+kind = "theorem"
+desc = '''The unnumbered composite Simpson error after (9.17): for `a < b`, `m ≥ 1`, `H = (b - a)/m`,
+`f ∈ C⁴([a, b])`, `∃ ξ ∈ Icc a b, ∫_a^b f - Quadrature.simpsonSum f a H m = -(b - a)/180 * (H/2)^4 * f⁗(ξ)`
+(`= -(b - a) H⁴/2880 f⁗(ξ)`); `simpsonSum` on `m` panels is the book's (9.17) with nodes
+`x_k = a + k H/2`. ★'''
+deps = ["Quadrature.sub_composite_simpson_eq"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, §9.2.3 (composite Simpson error)'
+
+[[node]]
+id = "exercise_9_1"
+kind = "theorem"
+desc = '''Exercise 1 (cited in Example 9.4), `|E_1(f)| ≃ 2 |E_0(f)|`, in its exact form: the error
+constants of (9.12) and (9.6) are in the ratio `-2`, i.e. the trapezoidal Peano kernel integrates to
+`-(b - a)^3/12` and the midpoint kernel to `(b - a)^3/24`; so for `f ∈ C²` with `f''` constant,
+`E_1(f) = -2 E_0(f)` exactly (state: `∫ f - trapezoid = -2 (∫ f - midpoint)` for quadratic `f`).
+★'''
+deps = ["Quadrature.integral_peanoKernel", "Quadrature.integral_midpointKernel", "QuarteroniSaccoSaleri.Chapter09.equation_9_6", "QuarteroniSaccoSaleri.Chapter09.equation_9_12"]
+source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Exercise 9.1'

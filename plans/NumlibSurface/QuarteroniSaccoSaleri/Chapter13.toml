@@ -1,0 +1,51 @@
+desc = '''
+Quarteroni–Sacco–Saleri, Chapter 13: parabolic and hyperbolic initial boundary value problems.
+
+The chapter has one numbered theorem (13.1, von Neumann's sufficient condition), one numbered
+definition (13.1, eigenpairs of a bilinear form), four remarks, three examples and ten exercises,
+all ten of which the main text cites; most of its content is carried by numbered equations, which
+are nodes here whenever the text treats them as results. The plan is organized by section:
+
+* §13.1 (`Section01`): the heat equation, its sine-series solution (13.5) for finite sine data and
+  the energy estimate (13.7), stated for a classical solution so that differentiation under the
+  integral and integration by parts are elementary; no Bochner-space theory is needed.
+* §13.2 (`Section02`): the semi-discrete finite difference system (13.8) and the θ-method
+  (13.9)–(13.10), forward Euler's stability condition (13.11) through the discrete sine
+  eigenbasis of `tridiag(-1, 2, -1)` (`Numlib/LinearAlgebra/Matrix/TridiagonalToeplitz`), and
+  Exercise 1 (truncation error of the θ-method).
+* §13.3 (`Section03`): the semi-discrete Galerkin problem (13.13), its matrix form (13.14) with the
+  mass matrix, mass lumping (Exercise 2), and the whole stability analysis of §13.3.1: the
+  backward Euler energy inequalities (13.19)–(13.21) (Exercises 3–4, Remark 13.1), Definition 13.1
+  and the discrete eigenproblem (13.22), the θ-method stability dichotomy and (13.23). The
+  backbone for this is the new `Numlib/Variational/Evolution` (form level) and
+  `Numlib/FiniteDifference/Parabolic` (matrix level).
+* §13.4 (`Section04`): the space–time (cG(1)dG(q)) method; only the cited error estimate (13.25),
+  not formalized.
+* §13.5–13.6 (`Section05`, `Section06`): characteristics, the exact solution of the transport
+  problem, the Burgers example, hyperbolic systems and characteristic variables, the domain of
+  dependence, the wave equation as a first-order system.
+* §13.7–13.9 (`Section07`–`Section09`): the finite difference schemes for `u_t + a u_x = 0`, their
+  consistency and order (Table 13.1), the stability definition (13.46)–(13.47), the CFL condition
+  as a necessary condition through the domain of dependence (with the book's "necessary and
+  sufficient" corrected), the `ℓ¹`/`ℓ^∞` stability of upwind and Lax–Friedrichs, von Neumann
+  analysis and Theorem 13.1 on the periodic grid (`Numlib/FiniteDifference/VonNeumann`), the
+  amplification factors of every scheme, dissipation and dispersion, and the equivalent
+  equations (13.56)–(13.60) with Table 13.2. Backbone: `Numlib/FiniteDifference/Stencil`,
+  `Numlib/FiniteDifference/Hyperbolic`.
+* §13.10 (`Section10`): continuous and discontinuous Galerkin semi-discretizations of the
+  transport problem, their energy estimates (13.66)–(13.69), and backward Euler in time (13.70).
+
+Exercises are placed in the section whose text cites them: 1 in §13.2; 2, 3, 4 in §13.3; 5 in
+§13.7; 6, 7 in §13.8; 8 in §13.9; 9, 10 in §13.10. The applications section §13.11 states no
+numbered result. The transport schemes are stated on the periodic grid `Fin N` wherever a Fourier
+argument is used (which is how the book proves Theorem 13.1) and on `ℤ` for the pointwise and
+`ℓ^p` arguments (domain of dependence, monotone schemes).
+
+Cross-chapter nodes this chapter expects (to be reconciled by the orchestrator): from chapter 10,
+Lemma 10.1 (`Matrix.conjTranspose_dft_mul_dft`) and the Taylor bounds of difference quotients
+(`Numlib/FiniteDifference/Derivative`); from chapter 11, Lemma 11.1 (integral Gronwall,
+`Numlib/Analysis/ODE/Gronwall`), Lemma 11.2 (discrete Gronwall, `Numlib/ODE/Gronwall`) and the
+θ-method as a one-step method (`Numlib/ODE/OneStep`); from chapter 12, `H¹(a, b)`, `H¹₀(0, 1)`
+and Poincaré (12.16) (`Numlib/Analysis/Sobolev/Interval`), `A_fd` (12.8) and its eigenvalues
+(`Numlib/FiniteDifference/BoundaryValue`), the finite element space (12.57) with its hat basis.
+'''

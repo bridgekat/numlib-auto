@@ -1,0 +1,216 @@
+namespace = "Conditioning"
+desc = '''
+Consistency, stability and convergence of a numerical method, and the backward error
+(Quarteroni–Sacco–Saleri §2.2–2.3).
+
+Setting as in `Conditioning/Problem`: the problem `F x d = 0` on admissible data `S` with
+resolvent `G`, and a method given by approximate problems `Fn : ℕ → X → D → Y` with resolvents
+`Gn : ℕ → D → X`. The parameter `n` is the book's discretization parameter; a method indexed by a
+mesh size `h → 0` is written with `n ↦ h n`.
+
+Consistency (2.13) and strong consistency are stated for the *solution relation* `F x d = 0`, not
+the resolvent, so that they make sense without uniqueness (Newton's method approximates *a* root).
+The multistep form (2.14) takes the `q + 1` consecutive iterates as a vector `Fin (q + 1) → X`.
+Stability of a method is *equicontinuity of the tail of the numerical resolvents at the datum*
+(`IsStable`); the Lipschitz form (2.16)–(2.17) with a constant uniform in `n` is `IsLipschitzStable`,
+which is finiteness of the asymptotic condition number `K^num_abs = limsup_n K_{abs,n}`
+(`asymptoticAbsCondNumber`). The book's per-`n` condition numbers `K_n`, `K_{abs,n}` of (2.17) and
+their first-order formulas (2.19) are `Conditioning.relCondNumberWithin (Gn n)` and
+`Conditioning.relCondNumber_eq_enorm_fderiv` applied to `Gn n`; no new definition. Convergence is
+Definition 2.2 verbatim.
+
+The relations of §2.2.1 are stated with honest hypotheses: convergence implies the equicontinuity
+stability (not a Lipschitz one — `Gn n d = d + √|d| / n` at `d = 0` is convergent and consistent
+but no `Gn n` is Lipschitz at `0`); stability plus pointwise convergence gives convergence; and
+consistency gives pointwise convergence when the approximate problems admit a uniform inverse bound
+`‖x - y‖ ≤ M ‖Fn n x d - Fn n y d‖` (`AntilipschitzWith`), which is what the book's "`∂Fn/∂x`
+invertible" argument (2.25) really uses. Together they are the abstract equivalence theorem
+`isStable_iff_isConvergent`. The evolution-scheme Lax–Richtmyer theorem is
+`FiniteDifference.isStable_iff_isConvergent` in `Numlib/FiniteDifference/LaxEquivalence` and is not
+an instance of this one (its stability is a bound on powers of an operator).
+
+The backward error of §2.3 is the infimum size of a data perturbation for which a computed `x̂`
+is an exact solution, and the module ends with "forward error ≤ condition number × backward
+error". `LinearSolve/Perturbation.lean` has the *normwise, weighted* backward error of a linear
+system (Rigal–Gaches) as the root-namespace `backwardError`; that one stays, and the chapter-3 plan
+should relate the two.
+
+Prototype: `notes/qss/ch02/proto/Method.lean` of the 2026-09-12 chapter-2 plan; every statement below elaborated
+there, and `IsStronglyConsistent.isConsistent`, `isStable_iff_isConvergent` (from its two halves)
+are proved.
+'''
+
+[[node]]
+id = "IsConsistent"
+kind = "definition"
+desc = '''`IsConsistent F Fn S : Prop := ∀ d ∈ S, ∀ x, F x d = 0 → Tendsto (fun n => Fn n x d) atTop
+(𝓝 0)`: the exact solution makes the residual of the approximate problems tend to zero
+(Quarteroni–Sacco–Saleri (2.13)). ★'''
+deps = []
+
+[[node]]
+id = "IsStronglyConsistent"
+kind = "definition"
+desc = '''`IsStronglyConsistent F Fn S : Prop := ∀ d ∈ S, ∀ x, F x d = 0 → ∀ n, Fn n x d = 0`: every
+exact solution solves every approximate problem (Quarteroni–Sacco–Saleri §2.2, "strongly
+consistent"). ★'''
+deps = []
+
+[[node]]
+id = "IsStronglyConsistentMultistep"
+kind = "definition"
+desc = '''`IsStronglyConsistentMultistep (q := q) F Fn S` for `Fn : ℕ → (Fin (q + 1) → X) → D → Y`:
+`∀ d ∈ S, ∀ x, F x d = 0 → ∀ n, Fn n (fun _ => x) d = 0`, strong consistency of the multistep
+form (2.14) `Fn (x_n, …, x_{n-q}, d) = 0`: the constant sequence at an exact solution solves it.
+★'''
+deps = []
+
+[[node]]
+id = "IsStronglyConsistent.isConsistent"
+kind = "theorem"
+desc = '''Strong consistency implies consistency (`tendsto_const_nhds`). Proved in the prototype.
+★'''
+deps = ["Conditioning.IsStronglyConsistent", "Conditioning.IsConsistent"]
+
+[[node]]
+id = "IsStable"
+kind = "definition"
+desc = '''`IsStable Gn S d : Prop := ∀ ε > 0, ∃ n₀, ∃ δ > 0, ∀ n ≥ n₀, ∀ δd, ‖δd‖ < δ → d + δd ∈ S →
+‖Gn n (d + δd) - Gn n d‖ ≤ ε`: the numerical solutions depend continuously on the datum,
+uniformly in `n` for `n` large (equicontinuity of the tail at `d`). This is the notion of
+stability for which the book's "convergent ⟹ stable" (2.24) is true. ★'''
+deps = []
+
+[[node]]
+id = "IsLipschitzStable"
+kind = "definition"
+desc = '''`IsLipschitzStable Gn S d : Prop := ∃ η > 0, ∃ n₀, ∃ K : ℝ≥0, ∀ n ≥ n₀, absCondNumberWithin
+(Gn n) S d η ≤ K`: the book's (2.16)–(2.17) with the constant `K_n(η, d)` uniform in `n`. ★'''
+deps = ["Conditioning.absCondNumberWithin"]
+
+[[node]]
+id = "IsLipschitzStable.isStable"
+kind = "theorem"
+desc = '''`IsLipschitzStable Gn S d → IsStable Gn S d`: a uniform Lipschitz bound is a uniform
+modulus of continuity (`δ := min η (ε / (K + 1))`, through `absCondNumberWithin_ne_top_iff`). ★'''
+deps = ["Conditioning.IsLipschitzStable", "Conditioning.IsStable", "Conditioning.absCondNumberWithin_ne_top_iff"]
+
+[[node]]
+id = "asymptoticAbsCondNumber"
+kind = "definition"
+desc = '''`asymptoticAbsCondNumber Gn S d η : ℝ≥0∞ := limsup (fun n => absCondNumberWithin (Gn n) S d
+η) atTop`: the absolute asymptotic condition number `K^num_abs = lim_k sup_{n ≥ k} K_{abs,n}` of
+Quarteroni–Sacco–Saleri §2.2 (the display after (2.17)), over perturbations of size `< η`. The
+book lets the datum `d_n` vary with `n`; here the datum is fixed and a data approximation is
+composed into `Gn n` when needed. ★'''
+deps = ["Conditioning.absCondNumberWithin"]
+
+[[node]]
+id = "asymptoticRelCondNumber"
+kind = "definition"
+desc = '''`asymptoticRelCondNumber Gn S d η := limsup (fun n => relCondNumberWithin (Gn n) S d η)
+atTop`, the relative asymptotic condition number `K^num`. ★'''
+deps = ["Conditioning.relCondNumberWithin"]
+
+[[node]]
+id = "isLipschitzStable_iff_asymptoticAbsCondNumber_ne_top"
+kind = "theorem"
+desc = '''`IsLipschitzStable Gn S d ↔ ∃ η > 0, asymptoticAbsCondNumber Gn S d η ≠ ⊤`: a method is
+Lipschitz stable iff its asymptotic condition number over some neighbourhood is finite. In `ℝ≥0∞`,
+`limsup u atTop = ⨅ n₀, ⨆ n ≥ n₀, u n`, so `limsup ≠ ⊤` iff some tail is bounded by a finite
+`K` (`Filter.limsup_eq_iInf_iSup_of_nat`, `ENNReal` order facts). ★★'''
+deps = ["Conditioning.IsLipschitzStable", "Conditioning.asymptoticAbsCondNumber"]
+
+[[node]]
+id = "IsConvergent"
+kind = "definition"
+desc = '''`IsConvergent G Gn S d : Prop := ∀ ε > 0, ∃ n₀, ∃ δ > 0, ∀ n > n₀, ∀ δd, ‖δd‖ < δ → d + δd
+∈ S → ‖G d - Gn n (d + δd)‖ ≤ ε`: Quarteroni–Sacco–Saleri Definition 2.2, (2.20), verbatim, for
+the resolvents `G` of the problem and `Gn n` of the approximate problems at the datum `d`. ★'''
+deps = []
+
+[[node]]
+id = "IsConvergent.tendsto"
+kind = "theorem"
+desc = '''`IsConvergent G Gn S d → d ∈ S → Tendsto (fun n => Gn n d) atTop (𝓝 (G d))`: the case `δd
+= 0` of convergence. ★'''
+deps = ["Conditioning.IsConvergent"]
+
+[[node]]
+id = "isConvergent_of_forall_norm_sub_le"
+kind = "theorem"
+desc = '''**(2.21)**: if `ContinuousWithinAt G S d` and for every `ε > 0` there are `n₀` and `δ > 0`
+with `‖G (d + δd) - Gn n (d + δd)‖ ≤ ε` for all `n > n₀` and admissible `‖δd‖ < δ`, then
+`IsConvergent G Gn S d`. Triangle inequality through `G (d + δd)`, with continuity of `G` supplying
+`‖G d - G (d + δd)‖ ≤ ε` for `δd` small; the book uses the Lipschitz condition (2.3) here, but
+continuity is all that is needed. ★'''
+deps = ["Conditioning.IsConvergent"]
+
+[[node]]
+id = "IsConvergent.isStable"
+kind = "theorem"
+desc = '''**Convergence implies stability, the necessary condition of §2.2.1 ((2.24))**: `d ∈ S →
+IsConvergent G Gn S d → IsStable Gn S d`. From (2.20) at `δd` and at `0`: `‖Gn n (d + δd) - Gn n
+d‖ ≤ ‖Gn n (d + δd) - G d‖ + ‖G d - Gn n d‖ ≤ 2ε`. The book's conclusion "bounded by a constant of
+the order of `K(δ, d)` times `‖δd‖`" is a Lipschitz bound that does not follow (see the module
+description); this is the statement that does. ★'''
+deps = ["Conditioning.IsConvergent", "Conditioning.IsStable"]
+
+[[node]]
+id = "tendsto_of_isConsistent"
+kind = "theorem"
+desc = '''**Consistency plus a uniform inverse bound gives pointwise convergence ((2.25))**: if `d
+∈ S`, `F (G d) d = 0`, `Fn n (Gn n d) d = 0` for all `n`, `IsConsistent F Fn S` and `∀ n,
+AntilipschitzWith M (fun x => Fn n x d)` for one `M : ℝ≥0`, then `Tendsto (fun n => Gn n d) atTop
+(𝓝 (G d))`. Indeed `‖G d - Gn n d‖ ≤ M ‖Fn n (G d) d - Fn n (Gn n d) d‖ = M ‖Fn n (G d) d‖ → 0`
+(`AntilipschitzWith.le_mul_dist`). The antilipschitz hypothesis is the rigorous content of the
+book's "`∂Fn/∂x` invertible" mean-value argument, which fails as an equality in a normed space. ★'''
+deps = ["Conditioning.IsConsistent"]
+
+[[node]]
+id = "isConvergent_of_isStable"
+kind = "theorem"
+desc = '''**Stability plus pointwise convergence gives convergence (the sufficient condition of
+§2.2.1)**: `ContinuousWithinAt G S d → IsStable Gn S d → Tendsto (fun n => Gn n d) atTop (𝓝 (G d))
+→ IsConvergent G Gn S d`. The `ε/3` argument: `‖G d - Gn n (d + δd)‖ ≤ ‖G d - Gn n d‖ + ‖Gn n d -
+Gn n (d + δd)‖`, the first term small for `n` large, the second by stability. (Continuity of `G`
+is not needed for this direction; keep the hypothesis out if the proof does not use it.) ★'''
+deps = ["Conditioning.IsStable", "Conditioning.IsConvergent"]
+
+[[node]]
+id = "isStable_iff_isConvergent"
+kind = "theorem"
+desc = '''**The equivalence theorem in the abstract setting** ("for a consistent numerical method,
+stability is equivalent to convergence", Quarteroni–Sacco–Saleri §2.2.1): under `d ∈ S`,
+`ContinuousWithinAt G S d`, `F (G d) d = 0`, `∀ n, Fn n (Gn n d) d = 0`, `IsConsistent F Fn S` and
+a uniform antilipschitz bound on `fun x => Fn n x d`, `IsStable Gn S d ↔ IsConvergent G Gn S d`.
+Proved in the prototype from `isConvergent_of_isStable`, `tendsto_of_isConsistent` and
+`IsConvergent.isStable`. ★'''
+deps = ["Conditioning.isConvergent_of_isStable", "Conditioning.tendsto_of_isConsistent", "Conditioning.IsConvergent.isStable"]
+
+[[node]]
+id = "backwardError"
+kind = "definition"
+desc = '''`backwardError F S d xhat : ℝ≥0∞ := ⨅ (δd : D) (_ : d + δd ∈ S) (_ : F xhat (d + δd) = 0),
+‖δd‖ₑ`: the backward error of a computed solution `x̂`, the smallest size of a perturbation of the
+datum for which `x̂` is an exact solution (Quarteroni–Sacco–Saleri §2.3, "backward analysis");
+`⊤` when no such perturbation exists. ★'''
+deps = []
+
+[[node]]
+id = "backwardError_eq_zero_of_eq"
+kind = "theorem"
+desc = '`d ∈ S → F xhat d = 0 → backwardError F S d xhat = 0` (take `δd = 0`). ★'
+deps = ["Conditioning.backwardError"]
+
+[[node]]
+id = "enorm_sub_le_absCondNumberWithin_mul_backwardError"
+kind = "theorem"
+desc = '''**Forward error ≤ condition number × backward error**: if `IsResolvent F S G` and
+`backwardError F S d xhat < ENNReal.ofReal η`, then `‖xhat - G d‖ₑ ≤ absCondNumberWithin G S d η *
+backwardError F S d xhat`. For every admissible `δd` with `F xhat (d + δd) = 0` and `‖δd‖ < η`,
+`xhat = G (d + δd)` and `‖G (d + δd) - G d‖ₑ ≤ absCondNumberWithin … * ‖δd‖ₑ` by `le_iSup₂`; take the
+infimum over such `δd` (`ENNReal.mul_iInf` with the hypothesis restricting to `‖δd‖ < η`; the
+infimum over the restricted set equals the unrestricted one because the latter is `< ofReal η`).
+★★'''
+deps = ["Conditioning.backwardError", "Conditioning.absCondNumberWithin", "Conditioning.IsResolvent"]
