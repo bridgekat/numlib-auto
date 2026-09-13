@@ -1,4 +1,5 @@
 import Numlib.Eigen.Normal
+import Numlib.Eigen.Perturbation
 import Numlib.Eigen.PowerMethod
 
 /-!
@@ -20,7 +21,14 @@ which determines it, and its norm is the condition number of the eigenvector,
 `Module.End.eigenvectorCondNumber` ([saad2011numerical], Def 3.2). The name is earned by
 [saad2011numerical]'s (3.43): along a differentiable branch of eigenpairs of `A + t B` normalized by
 `P u(t) = u`, the eigenvector moves at the rate `u'(0) = -S(l)(1 - P) B u`, so
-`‖u'(0)‖ ≤ Cond(u) ‖B‖ ‖u‖`.
+`‖u'(0)‖ ≤ Cond(u) ‖B‖ ‖u‖`. Both are proved here, as
+`Module.End.deriv_eigenvector_perturbation` and
+`Module.End.norm_deriv_eigenvector_perturbation_le`; they are the first-order term of
+[quarteroni2000numerical] Property 5.5, whose constant `1 / min_{j ≠ k} |λ_k - λ_j|` is the
+condition number only for a normal `A`. At an algebraically simple eigenvalue the projector is
+`P x = (⟪w, x⟫ / ⟪w, u⟫) u` for a left eigenvector `w`
+(`Module.End.spectralProjector_apply_of_finrank_eq_one`), which identifies the normalization
+`⟪w, u(t)⟫ = ⟪w, u⟫` of the branch built in `Numlib/Eigen/Perturbation` with `P u(t) = u`.
 
 For a **normal** operator the condition number is computed:
 `Module.End.eigenvectorCondNumber_eq_inv_infDist_of_isStarNormal` is
@@ -383,5 +391,144 @@ theorem eigenvectorCondNumber_eq_inv_dist_of_isSymmetric (hA : A.IsSymmetric) (l
     ((LinearMap.isSymmetric_iff_isSelfAdjoint A).1 hA).isStarNormal l
 
 end Normal
+
+section Deriv
+
+variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
+variable [IsAlgClosed 𝕜] [FiniteDimensional 𝕜 E]
+
+/-- **The derivative of an eigenvector** ([saad2011numerical], (3.43); the first-order term of
+[quarteroni2000numerical] Property 5.5): along a branch `t ↦ (mu t, u t)` of eigenpairs of
+`A + t B` through `(l, u 0)`, differentiable at `0` and normalized by `P (u t) = u 0` for the
+spectral projector `P` of `l`, the eigenvector moves at the rate `u' = -S(l)(1 - P) B (u 0)`, with
+`S(l)(1 - P) = reducedResolvent A l`.
+
+Differentiating the eigen-equation gives `(A - l) u' = mu' • u 0 - B (u 0)`, differentiating the
+normalization gives `P u' = 0`, so `u' = (1 - P) u' = S(l)(1 - P)(A - l) u'`
+(`Module.End.reducedResolvent_apply_sub_smul`), and `S(l)(1 - P)` kills `u 0`, which lies in the
+generalized eigenspace of `l`. -/
+theorem deriv_eigenvector_perturbation {A B : Module.End 𝕜 E} {u : 𝕜 → E} {mu : 𝕜 → 𝕜} {u' : E}
+    {mu' l : 𝕜} (hu : HasDerivAt u u' 0) (hmu : HasDerivAt mu mu' 0)
+    (heig : ∀ t, A (u t) + t • B (u t) = mu t • u t) (hlam : mu 0 = l)
+    (hnorm : ∀ t, Krylov.spectralProjector A (· = l) (u t) = u 0) :
+    u' = -(reducedResolvent A l (B (u 0))) := by
+  set P := Krylov.spectralProjector A (· = l) with hP
+  have hA : HasDerivAt (fun t : 𝕜 => A (u t)) (A u') 0 := by
+    simpa [Function.comp_def] using
+      (LinearMap.toContinuousLinearMap A).hasFDerivAt.comp_hasDerivAt (0 : 𝕜) hu
+  have hB : HasDerivAt (fun t : 𝕜 => B (u t)) (B u') 0 := by
+    simpa [Function.comp_def] using
+      (LinearMap.toContinuousLinearMap B).hasFDerivAt.comp_hasDerivAt (0 : 𝕜) hu
+  have hPd : HasDerivAt (fun t : 𝕜 => P (u t)) (P u') 0 := by
+    simpa [Function.comp_def] using
+      (LinearMap.toContinuousLinearMap P).hasFDerivAt.comp_hasDerivAt (0 : 𝕜) hu
+  -- differentiate the eigen-equation
+  have htB : HasDerivAt (fun t : 𝕜 => t • B (u t)) (B (u 0)) 0 := by
+    have hid : HasDerivAt (fun t : 𝕜 => t) 1 0 := hasDerivAt_id 0
+    have h := HasDerivAt.smul hid hB
+    rw [zero_smul, one_smul, zero_add] at h
+    exact h
+  have hf : HasDerivAt (fun t : 𝕜 => mu t • u t) (A u' + B (u 0)) 0 :=
+    HasDerivAt.congr_of_eventuallyEq (hA.add htB)
+      (Filter.Eventually.of_forall fun t => (heig t).symm)
+  have hderiv : A u' + B (u 0) = mu 0 • u' + mu' • u 0 := hf.unique (HasDerivAt.smul hmu hu)
+  rw [hlam] at hderiv
+  -- differentiate the normalization
+  have hPu' : P u' = 0 := by
+    have hconst : HasDerivAt (fun t : 𝕜 => P (u t)) 0 0 :=
+      (hasDerivAt_const (0 : 𝕜) (u 0)).congr_of_eventuallyEq
+        (Filter.Eventually.of_forall fun t => hnorm t)
+    exact hPd.unique hconst
+  -- assemble
+  have hsub : (A - l • (1 : Module.End 𝕜 E)) u' = mu' • u 0 - B (u 0) := by
+    simp only [LinearMap.sub_apply, LinearMap.smul_apply, Module.End.one_apply]
+    have : A u' = l • u' + mu' • u 0 - B (u 0) := by rw [← hderiv]; abel
+    rw [this]
+    abel
+  have hkey := reducedResolvent_apply_sub_smul A l u'
+  rw [hsub, ← hP, hPu', sub_zero, map_sub, map_smul] at hkey
+  have hu0 : u 0 ∈ A.maxGenEigenspace l := by
+    rw [← hnorm 0]
+    exact spectralProjector_apply_mem_maxGenEigenspace A l (u 0)
+  rw [reducedResolvent_apply_of_mem_maxGenEigenspace A l hu0, smul_zero, zero_sub] at hkey
+  exact hkey.symm
+
+/-- **The condition number of an eigenvector bounds its first-order motion**
+([saad2011numerical], §3.3.2; [quarteroni2000numerical] Property 5.5, corrected): under the
+hypotheses of `Module.End.deriv_eigenvector_perturbation`, for `A B : E →L[𝕜] E`,
+`‖u'‖ ≤ Cond(u) ‖B‖ ‖u 0‖`. With `Module.End.eigenvectorCondNumber_eq_inv_dist_of_isSymmetric`
+this is the book's `‖x_k(ε) - x_k‖ ≤ ε ‖E‖ / min_{j ≠ k} |λ_k - λ_j| + o(ε)` for a Hermitian `A`;
+for a non-normal `A` the constant is the condition number of the eigenvector and not the reciprocal
+gap. -/
+theorem norm_deriv_eigenvector_perturbation_le {A B : E →L[𝕜] E} {u : 𝕜 → E} {mu : 𝕜 → 𝕜}
+    {u' : E} {mu' l : 𝕜} (hu : HasDerivAt u u' 0) (hmu : HasDerivAt mu mu' 0)
+    (heig : ∀ t, A (u t) + t • B (u t) = mu t • u t) (hlam : mu 0 = l)
+    (hnorm : ∀ t, Krylov.spectralProjector (A : E →ₗ[𝕜] E) (· = l) (u t) = u 0) :
+    ‖u'‖ ≤ eigenvectorCondNumber (A : E →ₗ[𝕜] E) l * ‖B‖ * ‖u 0‖ := by
+  rw [deriv_eigenvector_perturbation (A := (A : E →ₗ[𝕜] E)) (B := (B : E →ₗ[𝕜] E)) hu hmu heig
+    hlam hnorm, norm_neg]
+  calc ‖reducedResolvent (A : E →ₗ[𝕜] E) l ((B : E →ₗ[𝕜] E) (u 0))‖
+      ≤ eigenvectorCondNumber (A : E →ₗ[𝕜] E) l * ‖(B : E →ₗ[𝕜] E) (u 0)‖ :=
+        norm_reducedResolvent_apply_le _ _ _
+    _ ≤ eigenvectorCondNumber (A : E →ₗ[𝕜] E) l * (‖B‖ * ‖u 0‖) :=
+        mul_le_mul_of_nonneg_left (B.le_opNorm (u 0)) (eigenvectorCondNumber_nonneg _ _)
+    _ = _ := by ring
+
+end Deriv
+
+section Simple
+
+variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
+variable [IsAlgClosed 𝕜] [FiniteDimensional 𝕜 E] {A : Module.End 𝕜 E} {l : 𝕜}
+
+omit [IsAlgClosed 𝕜] [FiniteDimensional 𝕜 E] in
+/-- A left eigenvector for `l` is orthogonal to every generalized eigenvector for an eigenvalue
+`μ ≠ l`: testing `(A - μ)^k z = 0` against `w` multiplies `⟪w, z⟫` by `(l - μ)^k ≠ 0`. -/
+theorem inner_eq_zero_of_mem_iSup_maxGenEigenspace {w : E}
+    (hw : ∀ y, (inner 𝕜 w (A y) : 𝕜) = l * inner 𝕜 w y) {z : E}
+    (hz : z ∈ ⨆ μ, ⨆ _ : μ ≠ l, A.maxGenEigenspace μ) : (inner 𝕜 w z : 𝕜) = 0 := by
+  have hpow : ∀ (μ : 𝕜) (k : ℕ) (y : E),
+      (inner 𝕜 w (((A - μ • (1 : Module.End 𝕜 E)) ^ k) y) : 𝕜) = (l - μ) ^ k * inner 𝕜 w y := by
+    intro μ k
+    induction k with
+    | zero => intro y; simp
+    | succ k ih =>
+      intro y
+      rw [pow_succ, Module.End.mul_apply, ih, LinearMap.sub_apply, LinearMap.smul_apply,
+        Module.End.one_apply, inner_sub_right, inner_smul_right, hw, pow_succ]
+      ring
+  have hle : (⨆ μ, ⨆ _ : μ ≠ l, A.maxGenEigenspace μ) ≤ (𝕜 ∙ w)ᗮ := by
+    refine iSup₂_le fun μ hμ z hz => ?_
+    rw [Submodule.mem_orthogonal_singleton_iff_inner_right]
+    obtain ⟨k, hk⟩ := (Module.End.mem_maxGenEigenspace A μ z).mp hz
+    have h := hpow μ k z
+    rw [hk, inner_zero_right] at h
+    exact (mul_eq_zero.mp h.symm).resolve_left (pow_ne_zero _ (sub_ne_zero.mpr hμ.symm))
+  exact Submodule.mem_orthogonal_singleton_iff_inner_right.mp (hle hz)
+
+/-- **The spectral projector of a simple eigenvalue** in terms of a right eigenvector `u` and a
+left eigenvector `w`: `P x = (⟪w, x⟫ / ⟪w, u⟫) • u` ([saad2011numerical], (3.42)). Both sides are
+multiples of `u` that agree on `u` and vanish on the complementary invariant subspace, on which `w`
+vanishes; the denominator is nonzero by
+`Module.End.inner_ne_zero_of_finrank_maxGenEigenspace_eq_one`. This identifies the normalization
+`⟪w, v t⟫ = ⟪w, u⟫` of the branch of `Module.End.hasDerivAt_eigenvalue_perturbation` with the
+projector normalization `P (v t) = u` of `Module.End.deriv_eigenvector_perturbation`. -/
+theorem spectralProjector_apply_of_finrank_eq_one {u w : E} (hAu : A u = l • u) (hu : u ≠ 0)
+    (hw : ∀ y, (inner 𝕜 w (A y) : 𝕜) = l * inner 𝕜 w y) (hw0 : w ≠ 0)
+    (hsimple : Module.finrank 𝕜 (Module.End.maxGenEigenspace A l) = 1) (x : E) :
+    Krylov.spectralProjector A (· = l) x = ((inner 𝕜 w x : 𝕜) / inner 𝕜 w u) • u := by
+  have hne := inner_ne_zero_of_finrank_maxGenEigenspace_eq_one hAu hu hw hw0 hsimple
+  have hPx : Krylov.spectralProjector A (· = l) x ∈ 𝕜 ∙ u := by
+    rw [← maxGenEigenspace_eq_span_singleton_of_finrank_eq_one hAu hu hsimple]
+    exact spectralProjector_apply_mem_maxGenEigenspace A l x
+  obtain ⟨c, hc⟩ := Submodule.mem_span_singleton.mp hPx
+  have hwx : (inner 𝕜 w x : 𝕜) = c * inner 𝕜 w u := by
+    have h0 := inner_eq_zero_of_mem_iSup_maxGenEigenspace hw
+      (Krylov.sub_spectralProjector_mem (B := A) (p := (· = l)) x)
+    rw [inner_sub_right, sub_eq_zero, ← hc, inner_smul_right] at h0
+    exact h0
+  rw [← hc, hwx, mul_div_assoc, div_self hne, mul_one]
+
+end Simple
 
 end Module.End

@@ -234,11 +234,13 @@ import Numlib.Eigen.KrylovEigen
 import Numlib.Eigen.MinMax
 import Numlib.Eigen.Normal
 import Numlib.Eigen.NumericalRange
+import Numlib.Eigen.Pencil
 import Numlib.Eigen.Perturbation
 import Numlib.Eigen.PowerMethod
 import Numlib.Eigen.QRAlgorithm
 import Numlib.Eigen.RayleighRitz
 import Numlib.Eigen.ReducedResolvent
+import Numlib.Eigen.Sturm
 import Numlib.FiniteDifference.LaxEquivalence
 import Numlib.FiniteDifference.TwoLevel
 import Numlib.FloatingPoint.InnerProduct

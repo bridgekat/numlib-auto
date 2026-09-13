@@ -1,6 +1,7 @@
 import Mathlib.Analysis.InnerProductSpace.Adjoint
 import Mathlib.LinearAlgebra.Charpoly.Basic
 import Mathlib.LinearAlgebra.Eigenspace.Charpoly
+import Numlib.LinearAlgebra.Matrix.QR
 
 /-!
 # Wielandt deflation of a computed eigenpair
@@ -60,6 +61,16 @@ Nothing in that theorem uses `v = u` or the normalization: only `u ∈ S`. The b
 Σ Qᴴ` of [saad2011numerical] Prop 4.2 is `LinearMap.wielandtDeflate` iterated over the columns of
 `Q` (`LinearMap.wielandtDeflate_wielandtDeflate` composes two steps into one rank-two modification),
 and the same theorem applies at each step.
+
+### Householder deflation
+
+The matrix form used by [quarteroni2000numerical] (Remark 5.3, §5.12.2) is different: instead of
+displacing the eigenvalue it *removes* it. The reflector `H` that sends the computed eigenvector `x`
+to a multiple of `e₀` conjugates `A` into a matrix whose first column is `l e₀`
+(`Matrix.householder_conj_eigenvector_col`), and Laplace expansion along that column shows that
+the trailing `N × N` block carries the remaining eigenvalues with their multiplicities,
+`A.charpoly = (X - C l) * A₂.charpoly` (`Matrix.charpoly_householder_conj_eigenvector`). The next
+eigenpair is then computed on a matrix one size smaller.
 -/
 
 open Polynomial
@@ -255,3 +266,99 @@ theorem schurWielandtDeflate_invtSubmodule {A : E →ₗ[𝕜] E} {u : E} {S : S
     (Submodule.smul_mem _ _ hu)
 
 end LinearMap
+
+namespace Matrix
+
+variable {𝕜 : Type*} [RCLike 𝕜]
+
+section Householder
+
+variable {n : Type*} [Fintype n] [DecidableEq n]
+
+/-- **Householder deflation** ([quarteroni2000numerical] Remark 5.3): for an eigenpair
+`A x = l x`, `x ≠ 0`, and the reflector `H = householder (householderVec x i₀)` that sends `x` to a
+multiple of `e_{i₀}` (`Matrix.householder_mulVec_eq_smul_single`), the similar matrix `H A H` has
+`i₀`-th column `l e_{i₀}`: `e_{i₀}` is an eigenvector of `H A H` for `l`, because `H A H (H x) = H A
+x = l H x` and `H x` is a nonzero multiple of `e_{i₀}`. -/
+theorem householder_conj_eigenvector_col (A : Matrix n n 𝕜) {x : n → 𝕜} {l : 𝕜}
+    (hx : A *ᵥ x = l • x) (hx0 : x ≠ 0) (i₀ : n) :
+    (householder (householderVec x i₀) * A * householder (householderVec x i₀)).col i₀
+      = Pi.single i₀ l := by
+  set H := householder (householderVec x i₀) with hH
+  have hHH : H * H = 1 := householder_mul_self (star_dotProduct_householderVec_self hx0 i₀)
+  have hHx := householder_mulVec_eq_smul_single hx0 i₀
+  rw [← hH] at hHx
+  set α : 𝕜 := -(phase (x i₀) * ((‖(WithLp.toLp 2 x : EuclideanSpace 𝕜 n)‖ : 𝕜))) with hα
+  have hα0 : α ≠ 0 := by
+    rw [hα, neg_ne_zero]
+    refine mul_ne_zero (norm_ne_zero_iff.mp (by rw [norm_phase]; exact one_ne_zero)) ?_
+    have : (WithLp.toLp 2 x : EuclideanSpace 𝕜 n) ≠ 0 := by simpa using hx0
+    simpa using norm_ne_zero_iff.mpr this
+  have key : (H * A * H) *ᵥ (H *ᵥ x) = l • (H *ᵥ x) := by
+    rw [mulVec_mulVec, Matrix.mul_assoc, Matrix.mul_assoc, hHH, Matrix.mul_one, ← mulVec_mulVec,
+      hx, mulVec_smul]
+  rw [hHx, mulVec_smul, smul_smul, mul_comm, ← smul_smul] at key
+  have key' := smul_right_injective (n → 𝕜) hα0 key
+  rw [mulVec_single_one] at key'
+  rw [key', ← Pi.single_smul, smul_eq_mul, mul_one]
+
+/-- **Householder deflation**, entrywise ([quarteroni2000numerical] Remark 5.3): the `i₀`-th column
+of `H A H` is `l e_{i₀}`, that is, `(H A H) i₀ i₀ = l` and `(H A H) i i₀ = 0` for `i ≠ i₀`. -/
+theorem householder_conj_eigenvector_apply (A : Matrix n n 𝕜) {x : n → 𝕜} {l : 𝕜}
+    (hx : A *ᵥ x = l • x) (hx0 : x ≠ 0) (i₀ i : n) :
+    (householder (householderVec x i₀) * A * householder (householderVec x i₀)) i i₀
+      = if i = i₀ then l else 0 := by
+  have h := congrFun (householder_conj_eigenvector_col A hx hx0 i₀) i
+  rw [col_apply] at h
+  rw [h, Pi.single_apply]
+
+end Householder
+
+section Charpoly
+
+variable {N : ℕ}
+
+/-- The characteristic matrix of a principal submatrix along `Fin.succ` is the principal submatrix
+of the characteristic matrix. -/
+private theorem charmatrix_submatrix_succ (M : Matrix (Fin (N + 1)) (Fin (N + 1)) 𝕜) :
+    (charmatrix M).submatrix Fin.succ Fin.succ = charmatrix (M.submatrix Fin.succ Fin.succ) := by
+  ext i j
+  simp [charmatrix_apply, diagonal_apply, Fin.succ_inj]
+
+/-- The characteristic polynomial of a matrix whose first column is `l e₀` factors as `(X - l)`
+times that of the trailing principal submatrix: Laplace expansion along the first column. -/
+theorem charpoly_eq_mul_charpoly_submatrix_succ_of_col_zero
+    {M : Matrix (Fin (N + 1)) (Fin (N + 1)) 𝕜} {l : 𝕜} (hM : M.col 0 = Pi.single 0 l) :
+    M.charpoly = (X - C l) * (M.submatrix Fin.succ Fin.succ).charpoly := by
+  have hcol : ∀ i, M i 0 = (Pi.single (0 : Fin (N + 1)) l : Fin (N + 1) → 𝕜) i := fun i =>
+    congrFun hM i
+  rw [charpoly, det_succ_column_zero, Fin.sum_univ_succ, Finset.sum_eq_zero, add_zero]
+  · rw [charmatrix_apply_eq, hcol, Pi.single_eq_same, Fin.succAbove_zero, charmatrix_submatrix_succ]
+    simp [charpoly]
+  · intro i _
+    rw [charmatrix_apply, hcol, Pi.single_eq_of_ne (Fin.succ_ne_zero i), map_zero, sub_zero,
+      diagonal_apply_ne _ (Fin.succ_ne_zero i)]
+    simp
+
+/-- **Householder deflation removes one copy of the eigenvalue** ([quarteroni2000numerical] Remark
+5.3; §5.12.2): for an eigenpair `A x = l x` of an `(N + 1) × (N + 1)` matrix and
+`A₁ = H A H` with `H` the reflector sending `x` to a multiple of `e₀`, the trailing `N × N` block
+`A₂ = A₁.submatrix Fin.succ Fin.succ` satisfies `A.charpoly = (X - C l) * A₂.charpoly`: the
+eigenvalues of `A₂` are those of `A` with one copy of `l` removed, with multiplicities. Wielandt
+deflation (`LinearMap.charpoly_wielandtDeflate`) instead moves `l` to `l - σ` and keeps the size. -/
+theorem charpoly_householder_conj_eigenvector (A : Matrix (Fin (N + 1)) (Fin (N + 1)) 𝕜)
+    {x : Fin (N + 1) → 𝕜} {l : 𝕜} (hx : A *ᵥ x = l • x) (hx0 : x ≠ 0) :
+    A.charpoly = (X - C l) *
+      ((householder (householderVec x 0) * A * householder (householderVec x 0)).submatrix
+        Fin.succ Fin.succ).charpoly := by
+  set H := householder (householderVec x 0) with hH
+  have hHH : H * H = 1 := householder_mul_self (star_dotProduct_householderVec_self hx0 0)
+  have hsim : A.charpoly = (H * A * H).charpoly := by
+    rw [charpoly_mul_comm, ← Matrix.mul_assoc, hHH, Matrix.one_mul]
+  rw [hsim]
+  exact charpoly_eq_mul_charpoly_submatrix_succ_of_col_zero
+    (householder_conj_eigenvector_col A hx hx0 0)
+
+end Charpoly
+
+end Matrix

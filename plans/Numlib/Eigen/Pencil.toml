@@ -1,263 +1,130 @@
 namespace = "Matrix"
-desc = '''
-Matrix pencils `(A, B)` and the generalized eigenvalue problem `A x = λ B x`
-(Quarteroni–Sacco–Saleri §5.9; Golub–Van Loan §7.7; Saad, *Large Eigenvalue Problems* Ch. 9).
-The characteristic polynomial `pencilPoly A B = det (A - X B)` is defined over any commutative
-ring; a pencil is *regular* when it is nonzero, and then has `natDegree ≤ card n` finite
-eigenvalues (the roots) plus the eigenvalue `∞` with multiplicity `card n - natDegree`, which is
-zero exactly when `B` is invertible. Over a field the spectrum `pencilSpectrum A B = {μ | det (A -
-μ B) = 0}` is the set of `μ` with a nonzero `x` such that `A x = μ B x`; for `B = 1` it is
-`spectrum K A`, and for invertible `B` it is `spectrum K (B⁻¹ A)`, the reduction to a standard
-problem.
-
-Two structure theorems. The **generalized Schur decomposition** (Quarteroni–Sacco–Saleri Property
-5.10): a regular complex pencil is simultaneously triangularized by two unitary matrices, `Uᴴ A Z
-= T`, `Uᴴ B Z = S`, and its finite eigenvalues are the ratios `t_ii / s_ii` with `s_ii ≠ 0`. The
-proof reduces to the Schur form of one matrix: pick `μ₀` with `A - μ₀ B` invertible (regularity),
-triangularize `(A - μ₀ B)⁻¹ B = Z T₀ Zᴴ` (`Numlib/LinearAlgebra/Matrix/Schur`), QR-factor `(A - μ₀
-B) Z = U S₀` (`Numlib/LinearAlgebra/Matrix/QR`); then `Uᴴ B Z = S₀ T₀` and `Uᴴ A Z = S₀ + μ₀ S₀ T₀`
-are upper triangular. The **symmetric-definite case** (Theorem 5.7): for `A` Hermitian and `B`
-positive definite there is an invertible `M` with `Mᴴ B M = 1` and `Mᴴ A M` real diagonal, whose
-diagonal is the spectrum of the pencil; `M = H⁻¹ U` for a Cholesky-type factor `B = Hᴴ H` (from
-Mathlib's `LDL.lower_conj_diag`, or the Cholesky factorization of `LinearAlgebra/Matrix/Cholesky`
-once it exists) and the unitary eigenbasis `U` of the Hermitian `H⁻ᴴ A H⁻¹`. The eigenvalues of a
-symmetric-definite pencil are therefore real, and positive when `A` is positive definite too —
-which is what the θ-method analysis of Quarteroni–Sacco–Saleri §13.3.1 (`M u' + A u = f` with
-`M`, `A` symmetric positive definite) needs.
-
-The real generalized Schur form (quasi-triangular `Ũᵀ A Z̃`) and the QZ iteration are not
-planned: nothing downstream uses them.
-
-Prototype: `notes/qss/ch05/proto/Pencil.lean` (elaborates with `sorry`).
-
-The last three nodes are what Quarteroni–Sacco–Saleri chapter 4 needs of a *real symmetric-definite*
-pencil in the `P⁻¹ A` form: the eigenvalues of `P⁻¹ A` are the generalized Rayleigh quotients
-`(A x, x)/(P x, x)`, real, and enclosed by `λ_min(A)/λ_max(P) ≤ λ ≤ λ_max(A)/λ_min(P)` (their Remark
-4.2 and (4.33)); the consumers are Theorem 4.4 (JOR, `P = D`), Theorem 4.9 in its preconditioned form
-and Corollary 4.1. They are the matrix transports of `Krylov.IsPreconditioner.isSymmetricBoundedBy_energyEnd`
-(`Numlib/Krylov/Preconditioned`) and of `pencilSpectrum_subset_range_ofReal_of_posDef` through
-`pencilSpectrum_eq_spectrum_of_isUnit`.
-'''
 
 [[node]]
 id = "mem_spectrum_inv_mul_iff_exists_mulVec_eq_smul"
-kind = "theorem"
-desc = '''For real `A P : Matrix n n ℝ` with `IsUnit P` and `μ : ℂ`,
-`μ ∈ spectrum ℂ (complexify (P⁻¹ * A)) ↔ ∃ x : n → ℂ, x ≠ 0 ∧ complexify A *ᵥ x = μ • (complexify P *ᵥ x)`
-(Quarteroni–Sacco–Saleri (4.32)): eigenvalues of the preconditioned matrix are the generalized
-eigenvalues. Multiply the eigenvector equation of `P⁻¹ A` by `P`. ★'''
-deps = ["Matrix.mem_spectrum_complexify_iff", "Matrix.complexify_inv"]
 
 [[node]]
 id = "spectrum_inv_mul_subset_of_posDef"
-kind = "theorem"
-desc = '''For real symmetric `A` and `P.PosDef`, if `lmin * (P *ᵥ x ⬝ᵥ x) ≤ A *ᵥ x ⬝ᵥ x ≤ lmax * (P *ᵥ x ⬝ᵥ x)`
-for all real `x`, then `spectrum ℂ (complexify (P⁻¹ * A)) ⊆ Complex.ofReal '' Set.Icc lmin lmax`;
-moreover `lmin ∈ spectrum ℝ (P⁻¹ * A)` when the lower bound is attained at some `x ≠ 0` (and
-likewise `lmax`), which is the form Theorem 4.9's endpoint hypotheses take. Proof: `P⁻¹ A` is
-self-adjoint in the `P`-inner product with quadratic form `⟪A x, x⟫` (`Krylov.IsPreconditioner.isSymmetricBoundedBy_energyEnd`
-on `EuclideanSpace ℂ n`, after `posDef_complexify_iff`), and a symmetric operator with quadratic
-form in `[lmin, lmax]` has spectrum there (`LinearMap.IsSymmetric.isSymmetricBoundedBy_iff_forall_hasEigenvalue`).
-Prototype: `notes/qss/ch04/proto/Richardson.lean`, last theorem. ★★'''
-deps = ["Matrix.mem_spectrum_inv_mul_iff_exists_mulVec_eq_smul", "Krylov.IsPreconditioner.isSymmetricBoundedBy_energyEnd", "LinearMap.IsSymmetric.isSymmetricBoundedBy_iff_forall_hasEigenvalue", "Matrix.posDef_complexify_iff"]
 
 [[node]]
 id = "spectrum_inv_mul_subset_Icc_div"
-kind = "theorem"
-desc = '''Quarteroni–Sacco–Saleri (4.33): for real symmetric `A` and `P.PosDef`, every eigenvalue `λ` of
-`P⁻¹ A` is real with `λ_min(A) / λ_max(P) ≤ λ ≤ λ_max(A) / λ_min(P)`, where `λ_min`, `λ_max` are
-the extreme eigenvalues (the values of the Rayleigh quotient on `n → ℝ`; use
-`Matrix.IsHermitian.eigenvalues` extremes, or state with any `a ≤ ⟪A x, x⟫/‖x‖² ≤ a'`,
-`0 < p ≤ ⟪P x, x⟫/‖x‖² ≤ p'` as hypotheses and conclude `λ ∈ [a/p', a'/p]` when `a ≥ 0`, with the
-two-sided sign cases spelled out). From `spectrum_inv_mul_subset_of_posDef`: for `a ≥ 0`,
-`(a/p') ⟪P x, x⟫ ≤ a ‖x‖² ≤ ⟪A x, x⟫ ≤ a' ‖x‖² ≤ (a'/p) ⟪P x, x⟫`; the book's Courant–Fischer
-route (`Numlib/Eigen/MinMax`) is not needed. ★★'''
-deps = ["Matrix.spectrum_inv_mul_subset_of_posDef"]
 
 [[node]]
 id = "pencilPoly"
-kind = "definition"
-desc = '''`pencilPoly (A B : Matrix n n R) : R[X] := (A.map C - (X : R[X]) • B.map C).det` over a
-`CommRing R`, the characteristic polynomial `det (A - z B)` of the pencil. ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.9'
 
 [[node]]
 id = "pencilPoly_eval"
-kind = "theorem"
-desc = '''`(pencilPoly A B).eval μ = (A - μ • B).det`; `RingHom.map_det` with the evaluation homomorphism.
-★'''
-deps = ["Matrix.pencilPoly"]
 
 [[node]]
 id = "pencilPoly_one"
-kind = "theorem"
-desc = '`pencilPoly A 1 = (-1) ^ card n * A.charpoly` (`charpoly = det (X - A)`). ★'
-deps = ["Matrix.pencilPoly"]
 
 [[node]]
 id = "natDegree_pencilPoly_le"
-kind = "theorem"
-desc = '''`(pencilPoly A B).natDegree ≤ Fintype.card n`; Mathlib's `Matrix.natDegree_det_X_add_C_le`
-applied to `det (X • (-B).map C + A.map C)`. ★'''
-deps = ["Matrix.pencilPoly"]
 
 [[node]]
 id = "coeff_pencilPoly_card"
-kind = "theorem"
-desc = '''`(pencilPoly A B).coeff (card n) = (-1) ^ card n * B.det`; Mathlib's
-`Matrix.coeff_det_X_add_C_card`. ★'''
-deps = ["Matrix.pencilPoly"]
 
 [[node]]
 id = "IsRegularPencil"
-kind = "definition"
-desc = '`IsRegularPencil A B : Prop := pencilPoly A B ≠ 0`. ★'
-deps = ["Matrix.pencilPoly"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.9'
 
 [[node]]
 id = "isRegularPencil_of_isUnit"
-kind = "theorem"
-desc = '''`IsUnit B.det → IsRegularPencil A B` (the leading coefficient is a unit), and
-`isRegularPencil_one : IsRegularPencil A 1`. ★'''
-deps = ["Matrix.IsRegularPencil", "Matrix.coeff_pencilPoly_card"]
 
 [[node]]
 id = "pencilInftyMultiplicity"
-kind = "definition"
-desc = '''`pencilInftyMultiplicity A B : ℕ := card n - (pencilPoly A B).natDegree`, the multiplicity of the
-eigenvalue `∞` of a regular pencil. ★'''
-deps = ["Matrix.pencilPoly"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.9'
 
 [[node]]
 id = "pencilSpectrum"
-kind = "definition"
-desc = '''`pencilSpectrum (A B : Matrix n n K) : Set K := {μ | (A - μ • B).det = 0}` over a field `K`. ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.9'
 
 [[node]]
 id = "HasPencilEigenvector"
-kind = "definition"
-desc = '''`HasPencilEigenvector A B μ x : Prop := x ≠ 0 ∧ A *ᵥ x = μ • (B *ᵥ x)`, the eigenpair of
-Quarteroni–Sacco–Saleri (5.58). ★'''
-deps = []
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.58)'
 
 [[node]]
 id = "mem_pencilSpectrum_iff_exists"
-kind = "theorem"
-desc = '''`μ ∈ pencilSpectrum A B ↔ ∃ x, HasPencilEigenvector A B μ x`; `Matrix.exists_mulVec_eq_zero_iff`
-for `A - μ • B`. ★'''
-deps = ["Matrix.pencilSpectrum", "Matrix.HasPencilEigenvector"]
 
 [[node]]
 id = "mem_pencilSpectrum_iff_isRoot"
-kind = "theorem"
-desc = '`μ ∈ pencilSpectrum A B ↔ (pencilPoly A B).IsRoot μ`. ★'
-deps = ["Matrix.pencilSpectrum", "Matrix.pencilPoly_eval"]
 
 [[node]]
 id = "pencilSpectrum_one"
-kind = "theorem"
-desc = '''`pencilSpectrum A 1 = spectrum K A`; `Matrix.mem_spectrum_iff_isRoot_charpoly` or the determinant
-characterization of units. ★'''
-deps = ["Matrix.pencilSpectrum"]
 
 [[node]]
 id = "pencilSpectrum_eq_spectrum_of_isUnit"
-kind = "theorem"
-desc = '''For `IsUnit B`, `pencilSpectrum A B = spectrum K (B⁻¹ * A)`: `det (A - μ B) = det B · det (B⁻¹ A
-- μ)`. Quarteroni–Sacco–Saleri §5.9.1, the reduction to the standard problem `C x = λ x` with `B C
-= A`. ★'''
-deps = ["Matrix.pencilSpectrum", "Matrix.pencilSpectrum_one"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.9.1'
 
 [[node]]
 id = "natDegree_pencilPoly_eq_card_iff"
-kind = "theorem"
-desc = '''`(pencilPoly A B).natDegree = card n ↔ IsUnit B.det`: the pencil has `n` finite eigenvalues iff
-`B` is nonsingular. From `coeff_pencilPoly_card` and `natDegree_pencilPoly_le`. ★'''
-deps = ["Matrix.coeff_pencilPoly_card", "Matrix.natDegree_pencilPoly_le"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Section 5.9.1'
 
 [[node]]
 id = "pencilSpectrum_eq_univ_of_not_isRegularPencil"
-kind = "theorem"
-desc = '''A singular pencil has every scalar as an eigenvalue: `¬ IsRegularPencil A B → pencilSpectrum A
-B = Set.univ`; and conversely over an infinite field a regular pencil has finitely many
-eigenvalues, `IsRegularPencil A B → (pencilSpectrum A B).Finite` (roots of a nonzero polynomial). ★'''
-deps = ["Matrix.IsRegularPencil", "Matrix.mem_pencilSpectrum_iff_isRoot"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Example 5.14'
 
 [[node]]
 id = "IsRegularPencil.exists_isUnit_sub_smul"
-kind = "theorem"
-desc = '''For a regular pencil over an infinite field there is `μ₀` with `IsUnit (A - μ₀ • B)`: a nonzero
-polynomial has a non-root. The first step of the generalized Schur decomposition. ★'''
-deps = ["Matrix.IsRegularPencil", "Matrix.pencilPoly_eval"]
 
 [[node]]
 id = "exists_unitary_pencil_isUpperTriangular"
-kind = "theorem"
-desc = '''**Generalized Schur decomposition** (Quarteroni–Sacco–Saleri Property 5.10; Golub–Van Loan Thm
-7.7.1): for `A B : Matrix n n ℂ` with `[LinearOrder n]` and `IsRegularPencil A B`, `∃ U ∈
-unitaryGroup n ℂ, ∃ Z ∈ unitaryGroup n ℂ, (star U * A * Z).IsUpperTriangular ∧ (star U * B *
-Z).IsUpperTriangular`. Proof: take `μ₀` from `IsRegularPencil.exists_isUnit_sub_smul`, `A₀ = A - μ₀
-B` invertible; Schur-triangularize `A₀⁻¹ B = Z T₀ Zᴴ` (`Matrix.exists_unitary_conj_upperTriangular`);
-QR-factor `A₀ Z = U S₀` with `U` unitary and `S₀` upper triangular
-(`Matrix.exists_unitary_mul_upperTriangular`, transported from `Fin N` to `n` through
-`Fintype.orderIsoFinOfCardEq`); then `Uᴴ B Z = Uᴴ A₀ Z T₀ = S₀ T₀` and `Uᴴ A Z = S₀ + μ₀ S₀ T₀`, both
-upper triangular as products and sums of upper triangular matrices (`Matrix.BlockTriangular.mul`,
-`.add`). ★★★ — mostly bookkeeping between `Fin N` and `n`, and the Schur theorem's `star Q * A *
-Q` form versus the two-sided form here.'''
-deps = ["Matrix.IsRegularPencil.exists_isUnit_sub_smul", "Matrix.exists_unitary_conj_upperTriangular", "Matrix.exists_unitary_mul_upperTriangular"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.10'
 
 [[node]]
 id = "pencilPoly_of_isUpperTriangular"
-kind = "theorem"
-desc = '''For `T S` upper triangular, `pencilPoly T S = ∏ i, (C (T i i) - X * C (S i i))`;
-`Matrix.det_of_isUpperTriangular` for the triangular polynomial matrix. ★'''
-deps = ["Matrix.pencilPoly"]
 
 [[node]]
 id = "pencilSpectrum_eq_of_isUpperTriangular"
-kind = "theorem"
-desc = '''For `T S : Matrix n n K` upper triangular, `pencilSpectrum T S = {μ | ∃ i, T i i = μ * S i i}`,
-which for `S i i ≠ 0` is the ratio `T i i / S i i` and for `S i i = 0`, `T i i ≠ 0` contributes
-nothing (the eigenvalue `∞`); the reading of Property 5.10's eigenvalue formula. Also
-`pencilSpectrum_conj_unitary : pencilSpectrum (star U * A * Z) (star U * B * Z) = pencilSpectrum
-A B` for unitary (or merely invertible) `U`, `Z`. ★'''
-deps = ["Matrix.pencilPoly_of_isUpperTriangular", "Matrix.mem_pencilSpectrum_iff_isRoot"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.10'
 
 [[node]]
 id = "exists_simultaneous_diagonalization"
-kind = "theorem"
-desc = '''**Symmetric-definite pencils** (Quarteroni–Sacco–Saleri Theorem 5.7): over `[RCLike 𝕜]`, for
-`A` Hermitian and `B` positive definite (`open scoped ComplexOrder`), `∃ (M : Matrix n n 𝕜) (d :
-n → ℝ), IsUnit M ∧ star M * B * M = 1 ∧ star M * A * M = diagonal (fun i => (d i : 𝕜)) ∧
-pencilSpectrum A B = Set.range (fun i => (d i : 𝕜))`. Proof: `B = Hᴴ H` with `H` invertible
-(from `LDL.lower_conj_diag`: `B = L D Lᴴ` with `D` positive diagonal, `H = D^{1/2} Lᴴ`; or the
-Cholesky node of `LinearAlgebra/Matrix/Cholesky` when available); `C = H⁻ᴴ A H⁻¹` is Hermitian, so
-`Matrix.IsHermitian.spectral_theorem` gives unitary `U` with `Uᴴ C U = diagonal (d i : 𝕜)`; set
-`M = H⁻¹ U`. The spectrum identity is `pencilSpectrum_conj_unitary` for the invertible congruence
-plus `pencilSpectrum_eq_of_isUpperTriangular` for two diagonal matrices (or directly `det (D - μ)
-= ∏ (d i - μ)`). ★★'''
-deps = ["Matrix.pencilSpectrum", "Matrix.pencilSpectrum_eq_of_isUpperTriangular"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 5.7'
 
 [[node]]
 id = "pencilSpectrum_subset_range_ofReal_of_posDef"
-kind = "theorem"
-desc = '''Corollary of the simultaneous diagonalization: a symmetric-definite pencil has real
-eigenvalues, `pencilSpectrum A B ⊆ Set.range ((↑) : ℝ → 𝕜)`, and when `A` is also positive
-definite they are positive, `μ ∈ pencilSpectrum A B → 0 < RCLike.re μ`; the columns `x_i = M e_i`
-are `B`-orthonormal eigenvectors, `HasPencilEigenvector A B (d i) (Mᵀ i)`, and are linearly
-independent. The form the θ-method stability analysis of Quarteroni–Sacco–Saleri §13.3.1
-consumes. ★'''
-deps = ["Matrix.exists_simultaneous_diagonalization", "Matrix.HasPencilEigenvector"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Theorem 5.7'
+
+[[node]]
+id = "mem_pencilSpectrum_iff_det"
+
+[[node]]
+id = "isRegularPencil_one"
+
+[[node]]
+id = "mem_spectrum_iff_exists_mulVec_eq_smul"
+
+[[node]]
+id = "IsRegularPencil.finite_pencilSpectrum"
+
+[[node]]
+id = "pencilSpectrum_mul_mul_of_isUnit"
+
+[[node]]
+id = "pencilSpectrum_diagonal"
+
+[[node]]
+id = "exists_unitary_mul_isUpperTriangular"
+
+[[node]]
+id = "PosDef.exists_isUnit_conj_eq_one"
+
+[[node]]
+id = "hasPencilEigenvector_col_of_conj_eq_diagonal"
+
+[[node]]
+id = "star_col_dotProduct_mulVec_col_of_conj_eq_one"
+
+[[node]]
+id = "re_pos_of_mem_pencilSpectrum_of_posDef"
+
+[[node]]
+id = "mem_spectrum_inv_mul_of_forall_mul_le_of_eq"
+
+[[node]]
+id = "mem_spectrum_inv_mul_of_forall_le_mul_of_eq"
+
+[[node]]
+id = "spectrum_inv_mul_subset_Icc_min_div_max_div"

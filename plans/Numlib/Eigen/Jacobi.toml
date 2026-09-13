@@ -63,29 +63,10 @@ source = "Kress, Numerical Analysis, Theorem 7.14"
 
 [[node]]
 id = "offDiagNormSq_conj_planeRotation_of_apply_eq_zero"
-kind = "theorem"
-desc = '''The Jacobi decrease identity for *any* annihilating rotation: for symmetric `A : Matrix n n ℝ`,
-`j ≠ k`, `c ^ 2 + s ^ 2 = 1` and `G = planeRotation j k c s` with `(Gᵀ * A * G) j k = 0`,
-`offDiagNormSq (Gᵀ * A * G) = offDiagNormSq A - 2 * A j k ^ 2`. The existing
-`offDiagNormSq_jacobiStep` is this at the backbone's root `jacobiTan`; the proof there
-(`sum_sq_conj_eq` for the Frobenius invariance and `sum_diag_sq_jacobiStep` for the two changed
-diagonal entries) uses only `c² + s² = 1` and the annihilation, and should be refactored to go
-through this lemma. Quarteroni–Sacco–Saleri (5.64) for their rotation (5.61)–(5.62), which takes
-the other root of `t² + 2ηt - 1 = 0`. ★★'''
-deps = ["Matrix.offDiagNormSq", "Matrix.planeRotation", "Matrix.sum_sq_conj_eq", "Matrix.offDiagNormSq_jacobiStep"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.64)'
 
 [[node]]
 id = "jacobiTanSmall"
-kind = "definition"
-desc = '''The numerically preferred root: `jacobiTanSmall A j k := if A j k = 0 then 0 else if 0 ≤ η then
-1 / (η + √(1 + η²)) else -1 / (-η + √(1 + η²))` with `η = (A k k - A j j) / (2 * A j k)`, the root
-of `t² + 2ηt - 1 = 0` of modulus `≤ 1` (Quarteroni–Sacco–Saleri (5.61)–(5.62), Program 39;
-Golub–Van Loan Alg 8.4.1); `jacobiTanSmall_mul_jacobiTan : jacobiTanSmall A j k * jacobiTan A j k
-= -1` when `A j k ≠ 0` (the two roots have product `-1`), and `abs_jacobiTanSmall_le_one`. With
-`jacobiCosSmall = 1/√(1 + t²)`, `jacobiSinSmall = c t`, the rotation annihilates `a_jk`
-(`jacobiSmall_annihilate`, the same polynomial identity as `jacobi_annihilate`). ★'''
-deps = ["Matrix.jacobiTan", "Matrix.jacobi_annihilate"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Equation (5.61)'
 
 [[node]]
@@ -105,3 +86,36 @@ id = "offDiagNormSq_add_sum_diag_sq_real"
 
 [[node]]
 id = "sum_sq_conj_eq"
+
+[[node]]
+id = "sum_diag_sq_conj_planeRotation_of_apply_eq_zero"
+
+[[node]]
+id = "jacobiTanSmall_eq_neg_jacobiTan"
+
+[[node]]
+id = "jacobiTanSmall_sq"
+
+[[node]]
+id = "abs_jacobiTanSmall_le_one"
+
+[[node]]
+id = "jacobiCosSmall"
+
+[[node]]
+id = "jacobiSinSmall"
+
+[[node]]
+id = "jacobiCosSmall_eq"
+
+[[node]]
+id = "jacobiSinSmall_eq_neg"
+
+[[node]]
+id = "jacobiCosSmall_sq_add_jacobiSinSmall_sq"
+
+[[node]]
+id = "jacobiSmall_annihilate"
+
+[[node]]
+id = "jacobiRotation_eq_planeRotation_small"

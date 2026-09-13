@@ -4,6 +4,7 @@ to Mathlib conventions with a view to contributing it to Mathlib.
 Natural home: `Mathlib.Analysis.InnerProductSpace.NormalSpectrum`.
 Keep it free of dependencies on the rest of `Numlib` other than other upstreaming candidates.
 -/
+import Mathlib.Analysis.InnerProductSpace.JointEigenspace
 import Mathlib.Analysis.InnerProductSpace.Spectrum
 import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
 import Mathlib.LinearAlgebra.Lagrange
@@ -45,6 +46,17 @@ The route avoids both Schur triangulation and the Jordan form, neither of which 
   (`LinearMap.IsStarNormal.aeval_eq_adjoint_of_eval_eq`), and Lagrange interpolation supplies one
   (`LinearMap.IsStarNormal.exists_aeval_eq_adjoint`).
   `Matrix.IsStarNormal.exists_aeval_eq_conjTranspose` is the matrix form, `Aᴴ = q(A)`.
+* Two commuting normal operators have a common orthonormal eigenbasis
+  (`LinearMap.IsStarNormal.exists_orthonormalBasis_eigenvector_of_commute`), and two commuting
+  normal matrices are simultaneously unitarily diagonalizable
+  (`Matrix.IsStarNormal.exists_unitary_conj_diagonal_of_commute`), which is what makes the
+  eigenvalues of `A + B` sums of eigenvalues of `A` and of `B` ([quarteroni2000numerical] §1.8).
+  The proof splits each operator into commuting Hermitian parts and uses Mathlib's joint eigenbasis
+  of a commuting family of symmetric operators; the four parts commute because the adjoint of a
+  normal operator is a polynomial in it.
+* `Matrix.IsStarNormal.spectral_theorem` is the unitary diagonalization of a normal matrix, and
+  `Matrix.IsStarNormal.eq_sum_smul_vecMulVec` reads it as the sum of rank-one projectors
+  `A = ∑ λ_i u_i u_iᴴ` onto the orthonormal eigenvectors.
 
 ## Implementation notes
 
@@ -364,6 +376,157 @@ theorem IsStarNormal.apply_eigenvectorBasis (hA : IsStarNormal A) (hn : Module.f
 
 end EigenvectorBasis
 
+/-! ### Commuting normal operators -/
+
+/-- In an algebraically closed `RCLike` field the imaginary unit is nonzero: `-1` is a square, and
+if `I = 0` every scalar is real. -/
+theorem _root_.RCLike.I_ne_zero_of_isAlgClosed [IsAlgClosed 𝕜] : (RCLike.I : 𝕜) ≠ 0 := by
+  intro hI
+  obtain ⟨z, hz⟩ := IsAlgClosed.exists_pow_nat_eq (-1 : 𝕜) two_pos
+  have hzr := RCLike.re_add_im z
+  rw [hI, mul_zero, add_zero] at hzr
+  rw [← hzr, ← RCLike.ofReal_pow] at hz
+  have h : (RCLike.re z) ^ 2 = -1 := by exact_mod_cast hz
+  nlinarith [sq_nonneg (RCLike.re z)]
+
+/-- The Hermitian part `(X + X†)/2` of an operator. -/
+private noncomputable def hermPart (X : E →ₗ[𝕜] E) : E →ₗ[𝕜] E := (2⁻¹ : 𝕜) • (X + X.adjoint)
+
+/-- The Hermitian matrix `(X - X†)/(2i)`, so that `X = hermPart X + i • skewPart X`. -/
+private noncomputable def skewPart (X : E →ₗ[𝕜] E) : E →ₗ[𝕜] E :=
+  (2 * RCLike.I : 𝕜)⁻¹ • (X - X.adjoint)
+
+private theorem hermPart_isSymmetric (X : E →ₗ[𝕜] E) : (hermPart X).IsSymmetric := by
+  intro x y
+  simp only [hermPart, smul_apply, add_apply, inner_smul_left, inner_smul_right, inner_add_left,
+    inner_add_right, adjoint_inner_left, adjoint_inner_right, map_inv₀, RCLike.conj_ofNat]
+  ring
+
+private theorem skewPart_isSymmetric (X : E →ₗ[𝕜] E) : (skewPart X).IsSymmetric := by
+  intro x y
+  simp only [skewPart, smul_apply, sub_apply, inner_smul_left, inner_smul_right, inner_sub_left,
+    inner_sub_right, adjoint_inner_left, adjoint_inner_right, map_inv₀, map_mul, RCLike.conj_ofNat,
+    RCLike.conj_I]
+  rw [mul_neg, inv_neg]
+  ring
+
+private theorem hermPart_add_I_smul_skewPart (hI : (RCLike.I : 𝕜) ≠ 0) (X : E →ₗ[𝕜] E) :
+    hermPart X + (RCLike.I : 𝕜) • skewPart X = X := by
+  rw [hermPart, skewPart, smul_smul, mul_inv, ← mul_assoc, mul_comm (RCLike.I : 𝕜),
+    mul_assoc, mul_inv_cancel₀ hI, mul_one, ← smul_add,
+    show X + X.adjoint + (X - X.adjoint) = (2 : 𝕜) • X by module, smul_smul,
+    inv_mul_cancel₀ two_ne_zero, one_smul]
+
+private theorem commute_parts {X Y : E →ₗ[𝕜] E} (h₁ : Commute X Y) (h₂ : Commute X Y.adjoint)
+    (h₃ : Commute X.adjoint Y) (h₄ : Commute X.adjoint Y.adjoint) :
+    Commute (hermPart X) (hermPart Y) ∧ Commute (hermPart X) (skewPart Y) ∧
+      Commute (skewPart X) (hermPart Y) ∧ Commute (skewPart X) (skewPart Y) := by
+  simp only [hermPart, skewPart]
+  refine ⟨?_, ?_, ?_, ?_⟩ <;> refine Commute.smul_left (Commute.smul_right ?_ _) _
+  · exact (h₁.add_right h₂).add_left (h₃.add_right h₄)
+  · exact (h₁.sub_right h₂).add_left (h₃.sub_right h₄)
+  · exact (h₁.add_right h₂).sub_left (h₃.add_right h₄)
+  · exact (h₁.sub_right h₂).sub_left (h₃.sub_right h₄)
+
+omit [FiniteDimensional 𝕜 E] in
+/-- A polynomial in `X` commutes with everything `X` commutes with. -/
+private theorem commute_aeval_of_commute {X Y : E →ₗ[𝕜] E} (h : Commute Y X) (q : 𝕜[X]) :
+    Commute Y (aeval X q) :=
+  Algebra.commute_of_mem_adjoin_singleton_of_commute (aeval_mem_adjoin_singleton 𝕜 X) h
+
+/-- **Commuting normal operators have a common orthonormal eigenbasis** ([quarteroni2000numerical]
+§1.8; the finite-dimensional case of the spectral theorem for commuting normal operators): over an
+algebraically closed `RCLike` field, two normal operators that commute are simultaneously
+diagonalized by an orthonormal basis.
+
+The proof avoids restrictions to eigenspaces: write `X = H(X) + i S(X)` with `H(X) = (X + X†)/2`
+and `S(X) = (X - X†)/(2i)` both symmetric, note that all four of `A, A†, B, B†` commute — `A` with
+`A†` by normality, `A` with `B` by hypothesis, `A` with `B†` because `B† = q(B)` is a polynomial in
+`B` (`LinearMap.IsStarNormal.exists_aeval_eq_adjoint`), and the rest by adjunction — so that the
+four symmetric parts commute pairwise, and take the joint eigenbasis Mathlib provides for a
+commuting family of symmetric operators
+(`LinearMap.IsSymmetric.directSum_isInternal_of_pairwise_commute`). -/
+theorem IsStarNormal.exists_orthonormalBasis_eigenvector_of_commute [IsAlgClosed 𝕜]
+    {A B : E →ₗ[𝕜] E} (hA : IsStarNormal A) (hB : IsStarNormal B) (hAB : Commute A B) {n : ℕ}
+    (hn : Module.finrank 𝕜 E = n) :
+    ∃ (b : OrthonormalBasis (Fin n) 𝕜 E) (d e : Fin n → 𝕜),
+      (∀ i, A (b i) = d i • b i) ∧ ∀ i, B (b i) = e i • b i := by
+  classical
+  have hI : (RCLike.I : 𝕜) ≠ 0 := RCLike.I_ne_zero_of_isAlgClosed
+  -- the four operators commute pairwise
+  obtain ⟨qA, hqA⟩ := IsStarNormal.exists_aeval_eq_adjoint hA
+  obtain ⟨qB, hqB⟩ := IsStarNormal.exists_aeval_eq_adjoint hB
+  have hAA' : Commute A A.adjoint := by
+    have := hA.star_comm_self.symm
+    rwa [star_eq_adjoint] at this
+  have hBB' : Commute B B.adjoint := by
+    have := hB.star_comm_self.symm
+    rwa [star_eq_adjoint] at this
+  have hAB' : Commute A B.adjoint := by
+    have := commute_aeval_of_commute hAB qB
+    rwa [hqB] at this
+  have hA'B : Commute A.adjoint B := by
+    have := commute_aeval_of_commute hAB.symm qA
+    rw [hqA] at this
+    exact this.symm
+  have hA'B' : Commute A.adjoint B.adjoint := by
+    have h := congrArg LinearMap.adjoint hAB.eq
+    rw [Module.End.mul_eq_comp, Module.End.mul_eq_comp, adjoint_comp, adjoint_comp] at h
+    exact h.symm
+  obtain ⟨-, cAA₂, -, -⟩ := commute_parts (Commute.refl A) hAA' hAA'.symm (Commute.refl _)
+  obtain ⟨cAB₁, cAB₂, cAB₃, cAB₄⟩ := commute_parts hAB hAB' hA'B hA'B'
+  obtain ⟨-, cBB₂, -, -⟩ := commute_parts (Commute.refl B) hBB' hBB'.symm (Commute.refl _)
+  -- the commuting family of symmetric parts
+  set T : Fin 4 → E →ₗ[𝕜] E := ![hermPart A, skewPart A, hermPart B, skewPart B] with hT
+  have hTsymm : ∀ i, (T i).IsSymmetric := by
+    intro i
+    fin_cases i
+    · exact hermPart_isSymmetric A
+    · exact skewPart_isSymmetric A
+    · exact hermPart_isSymmetric B
+    · exact skewPart_isSymmetric B
+  have cAA₂' := cAA₂.symm
+  have cAB₁' := cAB₁.symm
+  have cAB₂' := cAB₂.symm
+  have cAB₃' := cAB₃.symm
+  have cAB₄' := cAB₄.symm
+  have cBB₂' := cBB₂.symm
+  have hTcomm : Pairwise (Function.onFun Commute T) := by
+    intro i j hij
+    fin_cases i <;> fin_cases j <;> simp only [hT, Function.onFun] <;>
+      first | exact absurd rfl hij | assumption
+  -- the joint eigenspaces, indexed by the finitely many nonzero ones
+  set V : (Fin 4 → 𝕜) → Submodule 𝕜 E := fun α => ⨅ j, Module.End.eigenspace (T j) (α j)
+    with hVdef
+  have hVfam := IsSymmetric.orthogonalFamily_iInf_eigenspaces hTsymm
+  have htop : ⨆ α, V α = ⊤ := IsSymmetric.iSup_iInf_eq_top_of_commute hTsymm hTcomm
+  have hfin : {α | V α ≠ ⊥}.Finite := by
+    refine (Set.Finite.pi fun j => Module.End.finite_hasEigenvalue (T j)).subset fun α hα => ?_
+    refine Set.mem_univ_pi.mpr fun j => Module.End.hasEigenvalue_iff.mpr fun hbot => hα ?_
+    exact le_bot_iff.mp ((iInf_le _ j).trans hbot.le)
+  let _ : Fintype {α // V α ≠ ⊥} := hfin.fintype
+  have hVfam' : OrthogonalFamily 𝕜 (fun α : {α // V α ≠ ⊥} => V α)
+      fun α => (V α).subtypeₗᵢ := hVfam.comp Subtype.coe_injective
+  have hV : DirectSum.IsInternal fun α : {α // V α ≠ ⊥} => V α := by
+    refine hVfam'.isInternal_iff.mpr ?_
+    rw [iSup_ne_bot_subtype, htop, Submodule.top_orthogonal_eq_bot]
+  set b := hV.subordinateOrthonormalBasis hn hVfam' with hb
+  set idx : Fin n → Fin 4 → 𝕜 := fun a => (hV.subordinateOrthonormalBasisIndex hn a hVfam').val
+    with hidx
+  have hmem : ∀ a j, T j (b a) = idx a j • b a := fun a j =>
+    Module.End.mem_eigenspace_iff.mp
+      ((Submodule.mem_iInf _).mp (hV.subordinateOrthonormalBasis_subordinate hn a hVfam') j)
+  refine ⟨b, fun a => idx a 0 + RCLike.I * idx a 1, fun a => idx a 2 + RCLike.I * idx a 3,
+    fun a => ?_, fun a => ?_⟩
+  · have h0 := hmem a 0
+    have h1 := hmem a 1
+    simp only [hT, Matrix.cons_val_zero, Matrix.cons_val_one] at h0 h1
+    rw [← hermPart_add_I_smul_skewPart hI A, add_apply, smul_apply, h0, h1, smul_smul, add_smul]
+  · have h2 := hmem a 2
+    have h3 := hmem a 3
+    simp only [hT, Matrix.cons_val] at h2 h3
+    rw [← hermPart_add_I_smul_skewPart hI B, add_apply, smul_apply, h2, h3, smul_smul, add_smul]
+
 end LinearMap
 
 namespace Matrix
@@ -429,6 +592,30 @@ private theorem exists_orthonormalBasis_eigenvector [IsAlgClosed 𝕜] {A : Matr
   rw [OrthonormalBasis.reindex_apply]
   simpa [toLpLin_apply] using congrArg WithLp.ofLp h
 
+/-- The change-of-basis matrix `U` from the standard basis to an orthonormal basis of eigenvectors
+diagonalizes: `Uᴴ A U = diagonal d`. This is the step from an eigenbasis to a unitary
+diagonalization, shared by the spectral theorems for one normal matrix and for a commuting pair. -/
+theorem conjTranspose_toMatrix_mul_mul_toMatrix_eq_diagonal
+    (c : OrthonormalBasis n 𝕜 (EuclideanSpace 𝕜 n)) {A : Matrix n n 𝕜} {d : n → 𝕜}
+    (hcd : ∀ j, A *ᵥ ⇑(c j) = d j • ⇑(c j)) :
+    ((EuclideanSpace.basisFun n 𝕜).toBasis.toMatrix c.toBasis)ᴴ * A
+      * (EuclideanSpace.basisFun n 𝕜).toBasis.toMatrix c.toBasis = diagonal d := by
+  set U : Matrix n n 𝕜 := (EuclideanSpace.basisFun n 𝕜).toBasis.toMatrix c.toBasis with hU
+  have hUmem : U ∈ Matrix.unitaryGroup n 𝕜 :=
+    (EuclideanSpace.basisFun n 𝕜).toMatrix_orthonormalBasis_mem_unitary c
+  have hentry : ∀ i j, U i j = ⇑(c j) i := fun _ _ => rfl
+  have hAU : A * U = U * diagonal d := by
+    ext i j
+    have h1 : (A *ᵥ ⇑(c j)) i = d j * ⇑(c j) i := by rw [hcd j]; rfl
+    calc (A * U) i j = (A *ᵥ ⇑(c j)) i := by
+          rw [Matrix.mul_apply, Matrix.mulVec_apply_eq_sum]
+          exact Finset.sum_congr rfl fun k _ => by rw [hentry k j]
+      _ = d j * ⇑(c j) i := h1
+      _ = U i j * d j := by rw [hentry i j, mul_comm]
+      _ = (U * diagonal d) i j := (Matrix.mul_diagonal _ _ _ _).symm
+  rw [Matrix.mul_assoc, hAU, ← Matrix.mul_assoc, ← Matrix.star_eq_conjTranspose,
+    (Unitary.mem_iff.1 hUmem).1, Matrix.one_mul]
+
 /-- **The spectral theorem for normal matrices**: a square matrix over an algebraically closed field
 is normal exactly when it is unitarily similar to a diagonal matrix.  The forward direction
 assembles the orthonormal eigenbasis `LinearMap.IsStarNormal.eigenvectorBasis` into the
@@ -441,23 +628,8 @@ theorem IsStarNormal.spectral_theorem [IsAlgClosed 𝕜] {A : Matrix n n 𝕜} :
   constructor
   · intro hA
     obtain ⟨c, d, hcd⟩ := exists_orthonormalBasis_eigenvector hA
-    refine ⟨(EuclideanSpace.basisFun n 𝕜).toBasis.toMatrix c.toBasis,
-      (EuclideanSpace.basisFun n 𝕜).toMatrix_orthonormalBasis_mem_unitary c, d, ?_⟩
-    set U : Matrix n n 𝕜 := (EuclideanSpace.basisFun n 𝕜).toBasis.toMatrix c.toBasis with hU
-    have hUmem : U ∈ Matrix.unitaryGroup n 𝕜 :=
-      (EuclideanSpace.basisFun n 𝕜).toMatrix_orthonormalBasis_mem_unitary c
-    have hentry : ∀ i j, U i j = ⇑(c j) i := fun _ _ => rfl
-    have hAU : A * U = U * Matrix.diagonal d := by
-      ext i j
-      have h1 : (A *ᵥ ⇑(c j)) i = d j * ⇑(c j) i := by rw [hcd j]; rfl
-      calc (A * U) i j = (A *ᵥ ⇑(c j)) i := by
-            rw [Matrix.mul_apply, Matrix.mulVec_apply_eq_sum]
-            exact Finset.sum_congr rfl fun k _ => by rw [hentry k j]
-        _ = d j * ⇑(c j) i := h1
-        _ = U i j * d j := by rw [hentry i j, mul_comm]
-        _ = (U * Matrix.diagonal d) i j := (Matrix.mul_diagonal _ _ _ _).symm
-    rw [Matrix.mul_assoc, hAU, ← Matrix.mul_assoc, ← Matrix.star_eq_conjTranspose,
-      (Unitary.mem_iff.1 hUmem).1, Matrix.one_mul]
+    exact ⟨_, (EuclideanSpace.basisFun n 𝕜).toMatrix_orthonormalBasis_mem_unitary c, d,
+      conjTranspose_toMatrix_mul_mul_toMatrix_eq_diagonal c hcd⟩
   · rintro ⟨U, hUmem, d, hd⟩
     have hstar : star U * U = 1 := (Unitary.mem_iff.1 hUmem).1
     have hstar' : U * star U = 1 := (Unitary.mem_iff.1 hUmem).2
@@ -487,5 +659,70 @@ theorem IsStarNormal.spectral_theorem [IsAlgClosed 𝕜] {A : Matrix n n 𝕜} :
       _ = U * (Matrix.diagonal d * Matrix.diagonal (star d)) * Uᴴ := by rw [hdiag]
       _ = U * Matrix.diagonal d * Uᴴ * (U * Matrix.diagonal (star d) * Uᴴ) := (key _ _).symm
       _ = A * Aᴴ := by rw [← hAH, ← hA]
+
+/-- **Commuting normal matrices are simultaneously unitarily diagonalizable**
+([quarteroni2000numerical] §1.8, the third consequence of the Schur decomposition): for normal
+`A`, `B` with `A * B = B * A` there is a unitary `U` with `Uᴴ A U = diagonal d` and
+`Uᴴ B U = diagonal e`; then `Uᴴ (A + B) U = diagonal (d + e)`, so the eigenvalues of `A + B` are
+the sums `d i + e i` of eigenvalues of `A` and `B` sharing the eigenvector `U e_i`. The matrix
+form of `LinearMap.IsStarNormal.exists_orthonormalBasis_eigenvector_of_commute`. -/
+theorem IsStarNormal.exists_unitary_conj_diagonal_of_commute [IsAlgClosed 𝕜] {A B : Matrix n n 𝕜}
+    (hA : IsStarNormal A) (hB : IsStarNormal B) (hAB : Commute A B) :
+    ∃ U ∈ unitaryGroup n 𝕜, ∃ d e : n → 𝕜,
+      star U * A * U = diagonal d ∧ star U * B * U = diagonal e := by
+  have hTA := isStarNormal_toEuclideanLin_iff.2 hA
+  have hTB := isStarNormal_toEuclideanLin_iff.2 hB
+  have hTAB : Commute (toEuclideanLin A) (toEuclideanLin B) := by
+    change toEuclideanLin A * toEuclideanLin B = toEuclideanLin B * toEuclideanLin A
+    rw [← toEuclideanLin_mul', ← toEuclideanLin_mul', hAB.eq]
+  obtain ⟨b, d, e, hd, he⟩ :=
+    LinearMap.IsStarNormal.exists_orthonormalBasis_eigenvector_of_commute hTA hTB hTAB
+      finrank_euclideanSpace
+  set eq : Fin (Fintype.card n) ≃ n := Fintype.equivOfCardEq (Fintype.card_fin _) with heq
+  set c := b.reindex eq with hc
+  refine ⟨_, (EuclideanSpace.basisFun n 𝕜).toMatrix_orthonormalBasis_mem_unitary c,
+    fun j => d (eq.symm j), fun j => e (eq.symm j), ?_, ?_⟩
+  · rw [star_eq_conjTranspose]
+    refine conjTranspose_toMatrix_mul_mul_toMatrix_eq_diagonal c fun j => ?_
+    have h := hd (eq.symm j)
+    rw [hc, OrthonormalBasis.reindex_apply]
+    simpa [toLpLin_apply] using congrArg WithLp.ofLp h
+  · rw [star_eq_conjTranspose]
+    refine conjTranspose_toMatrix_mul_mul_toMatrix_eq_diagonal c fun j => ?_
+    have h := he (eq.symm j)
+    rw [hc, OrthonormalBasis.reindex_apply]
+    simpa [toLpLin_apply] using congrArg WithLp.ofLp h
+
+/-- A unitary diagonalization `Uᴴ A U = diagonal d` written as a sum of rank-one projectors onto
+the columns of `U`: `A = ∑ i, d i • u_i u_iᴴ` ([quarteroni2000numerical] §1.8, display after
+Property 1.5). -/
+theorem eq_sum_smul_vecMulVec_of_conj_eq_diagonal {U A : Matrix n n 𝕜}
+    (hU : U ∈ unitaryGroup n 𝕜) {d : n → 𝕜} (hd : star U * A * U = diagonal d) :
+    A = ∑ i, d i • vecMulVec (Uᵀ i) (star (Uᵀ i)) := by
+  have hstar : star U * U = 1 := (Unitary.mem_iff.1 hU).1
+  have hstar' : U * star U = 1 := (Unitary.mem_iff.1 hU).2
+  have hA : A = U * diagonal d * star U := by
+    rw [← hd]
+    calc A = U * star U * A * (U * star U) := by rw [hstar', Matrix.one_mul, Matrix.mul_one]
+      _ = U * (star U * A * U) * star U := by simp only [Matrix.mul_assoc]
+  rw [hA]
+  ext i j
+  rw [Matrix.sum_apply, Matrix.mul_apply]
+  simp only [mul_diagonal, smul_apply, vecMulVec_apply, transpose_apply, Pi.star_apply,
+    star_apply, smul_eq_mul]
+  refine Finset.sum_congr rfl fun k _ => ?_
+  ring
+
+/-- **The spectral decomposition of a normal matrix** as a sum of rank-one projectors
+([quarteroni2000numerical] §1.8, second consequence of the Schur decomposition): a normal matrix
+over an algebraically closed field is `A = U Λ Uᴴ = ∑ i, λ_i u_i u_iᴴ` for the unitary `U` of
+`Matrix.IsStarNormal.spectral_theorem`, whose columns `u_i = Uᵀ i` are an orthonormal eigenbasis. -/
+theorem IsStarNormal.eq_sum_smul_vecMulVec [IsAlgClosed 𝕜] {A : Matrix n n 𝕜}
+    (hA : IsStarNormal A) :
+    ∃ U ∈ unitaryGroup n 𝕜, ∃ d : n → 𝕜, star U * A * U = diagonal d ∧
+      A = ∑ i, d i • vecMulVec (Uᵀ i) (star (Uᵀ i)) := by
+  obtain ⟨U, hU, d, hd⟩ := IsStarNormal.spectral_theorem.mp hA
+  rw [← star_eq_conjTranspose] at hd
+  exact ⟨U, hU, d, hd, eq_sum_smul_vecMulVec_of_conj_eq_diagonal hU hd⟩
 
 end Matrix

@@ -20,27 +20,14 @@ id = "schurWielandtDeflate_invtSubmodule"
 
 [[node]]
 id = "_root_.Matrix.householder_conj_eigenvector_apply"
-kind = "theorem"
-desc = '''**Householder deflation** (Quarteroni–Sacco–Saleri Remark 5.3; Datta Thm 8.5.4): for `A :
-Matrix (Fin (N+1)) (Fin (N+1)) 𝕜`, an eigenpair `A *ᵥ x = l • x` with `x ≠ 0`, and the reflector
-`H = householder (householderVec x 0)` (so `H *ᵥ x = α • Pi.single 0 1` by
-`householder_mulVec_eq_smul_single`), the matrix `A₁ = H * A * H` has first column `l • e₀`:
-`A₁ i 0 = 0` for `i ≠ 0` and `A₁ 0 0 = l`. Proof: `A₁ (H x) = H A x = l H x` and `H x = α e₀`
-with `α ≠ 0`, so `A₁ e₀ = l e₀`. ★'''
-deps = ["Matrix.householder", "Matrix.householderVec", "Matrix.householder_mulVec_eq_smul_single", "Matrix.householder_mul_self"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 5.3'
 
 [[node]]
 id = "_root_.Matrix.charpoly_householder_conj_eigenvector"
-kind = "theorem"
-desc = '''With `A₁ = H * A * H` as above and `A₂ = A₁.submatrix Fin.succ Fin.succ` (the trailing `N × N`
-block), `A₁.charpoly = (X - C l) * A₂.charpoly`, and `A.charpoly = A₁.charpoly` (similarity), so
-the eigenvalues of `A₂` are those of `A` with one copy of `l` removed. Proof: `A₁` is block upper
-triangular with first block `l` (its first column is `l e₀`), and the characteristic polynomial
-of a block triangular matrix is the product — `Matrix.det_fromBlocks_zero₂₁` after
-`Matrix.reindex` along `Fin.succ`, or `Matrix.det_succ_column_zero` directly. The companion of
-`LinearMap.charpoly_wielandtDeflate`: Wielandt deflation moves `l` to `l - σ`, Householder
-deflation removes it and shrinks the matrix; Quarteroni–Sacco–Saleri use the latter with the
-power method (§5.12.2). ★★'''
-deps = ["Matrix.householder_conj_eigenvector_apply"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Remark 5.3'
+
+[[node]]
+id = "_root_.Matrix.householder_conj_eigenvector_col"
+
+[[node]]
+id = "_root_.Matrix.charpoly_eq_mul_charpoly_submatrix_succ_of_col_zero"

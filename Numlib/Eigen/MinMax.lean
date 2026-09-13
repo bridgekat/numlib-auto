@@ -1,5 +1,6 @@
 import Mathlib.Analysis.InnerProductSpace.Rayleigh
 import Mathlib.Analysis.InnerProductSpace.Spectrum
+import Numlib.Analysis.Matrix.ToEuclideanLin
 
 /-!
 # Courant–Fischer: the variational characterization of eigenvalues
@@ -34,6 +35,11 @@ i`.
 * `LinearMap.IsSymmetric.isGreatest_rayleighQuotient_orthogonal`: Rayleigh's recursive form, the
   maximum over the vectors orthogonal to the `i` leading eigenvectors.
 * `LinearMap.IsSymmetric.abs_eigenvalues_sub_le`: Weyl's inequality, one eigenvalue index at a time.
+* `LinearMap.IsSymmetric.eigenvalues_interlace_of_linearIsometry` and its two faces
+  `LinearMap.IsSymmetric.eigenvalues_restrict_interlace` (a subspace) and
+  `Matrix.IsHermitian.eigenvalues₀_submatrix_interlace` (a principal submatrix): Cauchy interlacing,
+  `λ_{i + (n - m)}(T) ≤ λ_i(S) ≤ λ_i(T)` whenever the quadratic form of `S` on an `m`-dimensional
+  space is that of `T` pulled back along a linear isometry.
 
 ## Implementation notes
 
@@ -509,3 +515,127 @@ theorem abs_eigenvalues_sub_le_opNorm {A B : E →L[𝕜] E} (hA : (A : E →ₗ
   exact (A - B).le_opNorm x
 
 end LinearMap.IsSymmetric
+
+namespace LinearMap.IsSymmetric
+
+variable [FiniteDimensional 𝕜 E] {n : ℕ} {T : E →ₗ[𝕜] E} (hT : T.IsSymmetric)
+    (hn : Module.finrank 𝕜 E = n)
+include hT
+
+/-! ### Cauchy interlacing -/
+
+/-- **Cauchy interlacing** along a linear isometry: if `S` is symmetric on an `m`-dimensional `F`,
+`ι : F →ₗᵢ[𝕜] E` is a linear isometry and the quadratic form of `S` is that of `T` pulled back along
+`ι`, `re ⟪S y, y⟫ = re ⟪T (ι y), ι y⟫`, then the sorted eigenvalues interlace:
+`λ_{i + (n - m)}(T) ≤ λ_i(S) ≤ λ_i(T)`. Both inequalities are Courant–Fischer: the subspaces of `F`
+are, through `ι`, among the subspaces of `E` of the same dimension, so every max–min or min–max
+competitor for `S` is one for `T`. -/
+theorem eigenvalues_interlace_of_linearIsometry {F : Type*} [NormedAddCommGroup F]
+    [InnerProductSpace 𝕜 F] [FiniteDimensional 𝕜 F] {S : F →ₗ[𝕜] F} (hS : S.IsSymmetric)
+    {m : ℕ} (hm : Module.finrank 𝕜 F = m) (hmn : m ≤ n) (ι : F →ₗᵢ[𝕜] E)
+    (hSι : ∀ y, RCLike.re (inner 𝕜 (S y) y) = RCLike.re (inner 𝕜 (T (ι y)) (ι y))) (i : Fin m) :
+    hT.eigenvalues hn ⟨(i : ℕ) + (n - m), by omega⟩ ≤ hS.eigenvalues hm i ∧
+      hS.eigenvalues hm i ≤ hT.eigenvalues hn (Fin.castLE hmn i) := by
+  have hRQ : ∀ y, S.rayleighQuotient y = T.rayleighQuotient (ι y) := fun y => by
+    rw [LinearMap.rayleighQuotient, LinearMap.rayleighQuotient, hSι, ι.norm_map]
+  have hinj : Function.Injective ι.toLinearMap := ι.injective
+  have hi := i.isLt
+  constructor
+  · obtain ⟨⟨S', hS', hb⟩, -⟩ := hS.isLeast_eigenvalues hm i
+    refine (hT.isLeast_eigenvalues hn ⟨(i : ℕ) + (n - m), by omega⟩).2
+      ⟨S'.map ι.toLinearMap, ?_, ?_⟩
+    · rw [← (Submodule.equivMapOfInjective _ hinj S').finrank_eq, hS']
+      simp only
+      omega
+    · rintro _ ⟨y, hy, rfl⟩ hx0
+      rw [LinearIsometry.coe_toLinearMap, ← hRQ]
+      exact hb y hy fun h => hx0 (by simp [h])
+  · obtain ⟨⟨S', hS', hb⟩, -⟩ := hS.isGreatest_eigenvalues hm i
+    refine (hT.isGreatest_eigenvalues hn (Fin.castLE hmn i)).2 ⟨S'.map ι.toLinearMap, ?_, ?_⟩
+    · rw [← (Submodule.equivMapOfInjective _ hinj S').finrank_eq, hS']
+      rfl
+    · rintro _ ⟨y, hy, rfl⟩ hx0
+      rw [LinearIsometry.coe_toLinearMap, ← hRQ]
+      exact hb y hy fun h => hx0 (by simp [h])
+
+/-- **Cauchy interlacing** for the restriction of the quadratic form to a subspace: for a symmetric
+`S : K →ₗ[𝕜] K` on an `m`-dimensional subspace `K` of `E` whose quadratic form is that of `T`,
+`re ⟪S y, y⟫ = re ⟪T y, y⟫` for `y : K`, the sorted eigenvalues satisfy
+`λ_{i + (n - m)}(T) ≤ λ_i(S) ≤ λ_i(T)`. The upper inequality is
+`LinearMap.IsSymmetric.eigenvalues_compression_le` of `Numlib/Eigen/RayleighRitz` when `S` is the
+compression; stated with the quadratic-form hypothesis, it applies to the compression
+(`Krylov.rayleighQuotient_compression`) and to a principal submatrix alike
+([saad2011numerical] Theorem 1.10; [golub1989matrix] Theorem 8.1.7; the weak half of
+[quarteroni2000numerical] Property 5.11). -/
+theorem eigenvalues_restrict_interlace {K : Submodule 𝕜 E} {S : K →ₗ[𝕜] K} (hS : S.IsSymmetric)
+    {m : ℕ} (hm : Module.finrank 𝕜 K = m) (hmn : m ≤ n)
+    (hSK : ∀ y : K, RCLike.re (inner 𝕜 (S y) y) = RCLike.re (inner 𝕜 (T y) (y : E))) (i : Fin m) :
+    hT.eigenvalues hn ⟨(i : ℕ) + (n - m), by omega⟩ ≤ hS.eigenvalues hm i ∧
+      hS.eigenvalues hm i ≤ hT.eigenvalues hn (Fin.castLE hmn i) :=
+  hT.eigenvalues_interlace_of_linearIsometry hn hS hm hmn K.subtypeₗᵢ hSK i
+
+end LinearMap.IsSymmetric
+
+namespace Matrix
+
+variable {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n]
+
+/-- A matrix `V` with orthonormal columns, `Vᴴ V = 1`, acts as a linear isometry
+`EuclideanSpace 𝕜 m →ₗᵢ EuclideanSpace 𝕜 n`. -/
+noncomputable def toEuclideanLinearIsometry {V : Matrix n m 𝕜} (hV : Vᴴ * V = 1) :
+    EuclideanSpace 𝕜 m →ₗᵢ[𝕜] EuclideanSpace 𝕜 n where
+  toLinearMap := toEuclideanLin V
+  norm_map' y := by
+    have h : inner 𝕜 (toEuclideanLin V y) (toEuclideanLin V y) = inner 𝕜 y y := by
+      rw [← toEuclideanLin_conjTranspose_inner_left, ← Matrix.toEuclideanLin_mul_apply, hV,
+        toEuclideanLin_one, LinearMap.id_apply]
+    rw [← sq_eq_sq₀ (norm_nonneg _) (norm_nonneg _), ← inner_self_eq_norm_sq (𝕜 := 𝕜),
+      ← inner_self_eq_norm_sq (𝕜 := 𝕜), h]
+
+/-- The isometry of `Matrix.toEuclideanLinearIsometry` acts as `toEuclideanLin V`. -/
+@[simp]
+theorem toEuclideanLinearIsometry_apply {V : Matrix n m 𝕜} (hV : Vᴴ * V = 1)
+    (y : EuclideanSpace 𝕜 m) : toEuclideanLinearIsometry hV y = toEuclideanLin V y := rfl
+
+/-- **Cauchy interlacing for a compression `Vᴴ A V`** with `Vᴴ V = 1` ([saad2011numerical]
+Theorem 1.10; [golub1989matrix] Theorem 8.1.7): the sorted eigenvalues
+(`Matrix.IsHermitian.eigenvalues₀`, decreasing) of the `m × m` Hermitian matrix `Vᴴ A V` interlace
+those of the `n × n` Hermitian `A`, `λ_{k + (n - m)}(A) ≤ λ_k(Vᴴ A V) ≤ λ_k(A)`. -/
+theorem IsHermitian.eigenvalues₀_conjTranspose_mul_mul_interlace {A : Matrix n n 𝕜}
+    (hA : A.IsHermitian) {V : Matrix n m 𝕜} (hV : Vᴴ * V = 1) (hB : (Vᴴ * A * V).IsHermitian)
+    (hmn : Fintype.card m ≤ Fintype.card n) (k : Fin (Fintype.card m)) :
+    hA.eigenvalues₀ ⟨(k : ℕ) + (Fintype.card n - Fintype.card m), by omega⟩ ≤ hB.eigenvalues₀ k ∧
+      hB.eigenvalues₀ k ≤ hA.eigenvalues₀ (Fin.castLE hmn k) :=
+  (isSymmetric_toEuclideanLin_iff.mpr hA).eigenvalues_interlace_of_linearIsometry
+    finrank_euclideanSpace (isSymmetric_toEuclideanLin_iff.mpr hB) finrank_euclideanSpace hmn
+    (toEuclideanLinearIsometry hV) (fun y => by
+      rw [toEuclideanLinearIsometry_apply, Matrix.toEuclideanLin_mul_apply,
+        Matrix.toEuclideanLin_mul_apply, toEuclideanLin_conjTranspose_inner_left]) k
+
+/-- **Cauchy interlacing for a principal submatrix** ([quarteroni2000numerical] Property 5.11, the
+weak inequalities; [golub1989matrix] Theorem 8.1.7): for a Hermitian `A` and an injective
+`f : m → n`, the sorted eigenvalues of `A.submatrix f f` interlace those of `A`,
+`λ_{k + (n - m)}(A) ≤ λ_k(A.submatrix f f) ≤ λ_k(A)`. It is the compression by the matrix
+`V = (1 : Matrix n n 𝕜).submatrix id f` of the selected columns of the identity, for which
+`Vᴴ A V = A.submatrix f f`. -/
+theorem IsHermitian.eigenvalues₀_submatrix_interlace {A : Matrix n n 𝕜} (hA : A.IsHermitian)
+    {f : m → n} (hf : Function.Injective f) (hB : (A.submatrix f f).IsHermitian)
+    (k : Fin (Fintype.card m)) :
+    hA.eigenvalues₀ ⟨(k : ℕ) + (Fintype.card n - Fintype.card m),
+        by have := Fintype.card_le_of_injective f hf; omega⟩ ≤ hB.eigenvalues₀ k ∧
+      hB.eigenvalues₀ k ≤ hA.eigenvalues₀ (Fin.castLE (Fintype.card_le_of_injective f hf) k) := by
+  set V : Matrix n m 𝕜 := (1 : Matrix n n 𝕜).submatrix (Equiv.refl n) f with hVdef
+  have hVH : Vᴴ = (1 : Matrix n n 𝕜).submatrix f (Equiv.refl n) := by
+    rw [hVdef, conjTranspose_submatrix, conjTranspose_one]
+  have hVV : Vᴴ * V = 1 := by
+    rw [hVH, hVdef, one_submatrix_mul f (Equiv.refl n), submatrix_submatrix]
+    simpa using submatrix_one_embedding (α := 𝕜) ⟨f, hf⟩
+  have hVAV : Vᴴ * A * V = A.submatrix f f := by
+    rw [hVH, hVdef, Matrix.mul_assoc, mul_submatrix_one (Equiv.refl n) f,
+      one_submatrix_mul f (Equiv.refl n), submatrix_submatrix]
+    simp
+  have h := hA.eigenvalues₀_conjTranspose_mul_mul_interlace hVV (hVAV ▸ hB)
+    (Fintype.card_le_of_injective f hf) k
+  convert h using 3 <;> exact hVAV.symm
+
+end Matrix

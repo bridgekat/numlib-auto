@@ -66,36 +66,23 @@ id = "Submodule.exists_mem_inf_ne_zero"
 
 [[node]]
 id = "LinearMap.IsSymmetric.eigenvalues_restrict_interlace"
-kind = "theorem"
-desc = '''**Cauchy interlacing** for the restriction of the quadratic form to a subspace, operator form:
-for symmetric `T` on `E` with `hn : finrank 𝕜 E = n`, a subspace `K` with `hm : finrank 𝕜 K = m`,
-and `S := (T.restrict-by-projection : K →ₗ K)` the compression — here stated without the
-compression: for any symmetric `S : K →ₗ[𝕜] K` with `re ⟪S y, y⟫ = re ⟪T y, y⟫` for all `y : K` —
-the sorted eigenvalues satisfy, for `i : Fin m`, `hT.eigenvalues hn (Fin.castLE hmn (i + (n - m)))
-≤ hS.eigenvalues hm i ≤ hT.eigenvalues hn (Fin.castLE hmn i)`. The right inequality is
-`LinearMap.IsSymmetric.eigenvalues_compression_le` of `Eigen/RayleighRitz` (max–min over fewer
-subspaces); the left one is the same argument with `isLeast_eigenvalues` (min–max over
-subspaces of `K` of dimension `m - i`, each of which is a subspace of `E` of dimension `m - i ≥
-n - (i + (n - m))`). Stated with the quadratic-form hypothesis, as this file prefers, so that it
-applies to the compression (`Krylov.rayleighQuotient_compression`) and to a principal submatrix
-alike. ★★'''
-deps = ["LinearMap.IsSymmetric.isGreatest_eigenvalues", "LinearMap.IsSymmetric.isLeast_eigenvalues", "LinearMap.IsSymmetric.exists_mem_ne_zero_rayleighQuotient_le", "LinearMap.IsSymmetric.exists_mem_ne_zero_le_rayleighQuotient"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.11'
 
 [[node]]
 id = "Matrix.IsHermitian.eigenvalues₀_submatrix_interlace"
-kind = "theorem"
-desc = '''Cauchy interlacing for a principal submatrix: for `A : Matrix n n 𝕜` Hermitian, `f : m → n`
-injective, `hB : (A.submatrix f f).IsHermitian`, and `k : Fin (card m)`,
-`hA.eigenvalues₀ ⟨k + (card n - card m), _⟩ ≤ hB.eigenvalues₀ k ∧ hB.eigenvalues₀ k ≤
-hA.eigenvalues₀ ⟨k, _⟩` (Mathlib's `eigenvalues₀` are sorted decreasingly). From
-`LinearMap.IsSymmetric.eigenvalues_restrict_interlace` with `K = span {e_{f j}}`, on which the
-quadratic form of `toEuclideanLin A` is that of the submatrix. The weak half of
-Quarteroni–Sacco–Saleri Property 5.11 and the lemma every Sturm-sequence argument starts from;
-also Saad, *Large Eigenvalue Problems*, Thm 1.10 (interlacing for bordered matrices) and Golub–Van
-Loan Thm 8.1.7. ★★'''
-deps = ["LinearMap.IsSymmetric.eigenvalues_restrict_interlace"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.11'
 
 [[node]]
 id = "LinearMap.IsSymmetric.rayleighQuotient_mem_Icc"
+
+[[node]]
+id = "LinearMap.IsSymmetric.eigenvalues_interlace_of_linearIsometry"
+
+[[node]]
+id = "Matrix.toEuclideanLinearIsometry"
+
+[[node]]
+id = "Matrix.toEuclideanLinearIsometry_apply"
+
+[[node]]
+id = "Matrix.IsHermitian.eigenvalues₀_conjTranspose_mul_mul_interlace"

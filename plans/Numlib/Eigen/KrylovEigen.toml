@@ -87,18 +87,4 @@ source = "Saad, Numerical Methods for Large Eigenvalue Problems, Theorem 6.8"
 
 [[node]]
 id = "Lanczos.eigenvalues_tridiag_eq_eigenvalues_compression"
-kind = "theorem"
-desc = '''The Lanczos matrix is the compression in the Lanczos basis: for symmetric `A` and `b` with
-`hm : finrank 𝕜 (Krylov.subspace A b m) = m` (no breakdown before step `m`), the real symmetric
-tridiagonal `Lanczos.tridiag A b m : Matrix (Fin m) (Fin m) ℝ` is the matrix of `compression A
-(Krylov.subspace A b m)` in the orthonormal basis `Arnoldi.vec A b 0, …, vec (m-1)` of the Krylov
-subspace, so `(Lanczos.tridiag_isSymm m).eigenvalues₀` (Mathlib, sorted decreasingly, over
-`Fin m`) coincide with `(compression.isSymmetric A _ hA).eigenvalues hm` (`Fin m`, sorted
-decreasingly). Through `Arnoldi.hessenbergRelation` (`A v_j = ∑ h_ij v_i`) and
-`Krylov.isRitzPair_of_mulVec_eq_smul`-style transport of eigenvectors between the matrix and the
-compression, or directly by `LinearMap.toMatrix` of the compression in the basis `vec`. This is
-what turns `Lanczos.kaniel_paige_saad`, a statement about Ritz values, into
-Quarteroni–Sacco–Saleri Property 5.12, a statement about the eigenvalues `η_i` of `H_m`; the
-book's §5.11 works entirely with `H_m`. ★★'''
-deps = ["Lanczos.tridiag", "Arnoldi.hessenbergRelation", "Lanczos.kaniel_paige_saad"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.12'

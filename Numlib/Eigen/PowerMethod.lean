@@ -4,6 +4,7 @@ import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
 import Mathlib.LinearAlgebra.Projection
 import Numlib.Analysis.InnerProductSpace.Projection.Angle
 import Numlib.Analysis.Normed.Module.BestApprox
+import Numlib.Eigen.MinMax
 
 /-!
 # The power method and subspace iteration
@@ -61,6 +62,22 @@ explicit: `Krylov.tendsto_smul_powerIterate` divides out `(λ/‖λ‖)^k` and
 `Krylov.exists_norm_eq_one_tendsto_smul_powerIterate` is the existential form. The phase-free
 alternative is `Krylov.tendsto_norm_sub_smul_powerIterate`: the eigenvalue residual `‖A x_k - λ
 x_k‖` tends to `0`, so the iterates are approximate eigenvectors for `λ`.
+
+## Rayleigh quotients, the diagonalizable rate, and changes of coordinates
+
+`Krylov.tendsto_inner_powerIterate` and `Krylov.tendsto_inner_inverseIterate` are the convergence
+of the Rayleigh quotients `⟪q_k, A q_k⟫` to the eigenvalue, which a unimodular factor does not see
+([quarteroni2000numerical] Theorem 5.6 and (5.28)).
+`Krylov.norm_inv_pow_smul_pow_apply_sub_le_of_eigenbasis` is the exact rate `(ρ/‖λ‖)^k` when an
+eigenbasis is available ([quarteroni2000numerical] Theorem 5.6), with the triangle-inequality
+constant `∑ ‖α_i/α_{i₀}‖` — the book's `(∑ (α_i/α_1)²)^{1/2}` needs the eigenbasis orthonormal.
+For a symmetric operator the Rayleigh quotient converges at the *square* of that rate,
+`LinearMap.IsSymmetric.abs_sub_rayleigh_powerIterate_le` ([quarteroni2000numerical] (5.23);
+[golub1989matrix] Theorem 8.2.1). Finally
+`Krylov.powerIterate_conj_linearIsometryEquiv` and
+`Krylov.inverseIterate_conj_linearIsometryEquiv` say that both iterations commute with a change of
+orthonormal coordinates, which is why they may be run on a Hessenberg or tridiagonal form
+([quarteroni2000numerical] §5.8.1).
 
 ## Inverse iteration
 
@@ -132,6 +149,29 @@ exactly one `s ∈ S₀` (`Krylov.existsUnique_mem_spectralProjector_eq`).
 -/
 
 open Filter Topology
+
+/-- Conjugation of an endomorphism by a linear equivalence commutes with `Ring.inverse`: `e.conj`
+is a ring isomorphism (`LinearEquiv.conjRingEquiv`), so it carries units to units and the inverse of
+a unit to the inverse of its image, and both sides vanish on non-units. (A general fact about
+`Ring.inverse` and ring isomorphisms; natural home `Mathlib.Algebra.Module.Equiv.Basic`.) -/
+theorem LinearEquiv.conj_ringInverse {R M M₂ : Type*} [CommSemiring R] [AddCommMonoid M]
+    [Module R M] [AddCommMonoid M₂] [Module R M₂] (e : M ≃ₗ[R] M₂) (A : Module.End R M) :
+    e.conj (Ring.inverse A) = Ring.inverse (e.conj A) := by
+  have hmul : ∀ f g : Module.End R M, e.conj (f * g) = e.conj f * e.conj g := fun f g =>
+    LinearEquiv.conj_comp e g f
+  have hone : e.conj 1 = 1 := LinearEquiv.conj_id e
+  have hconj : ∀ f, e.conjRingEquiv f = e.conj f := fun f => rfl
+  by_cases hA : IsUnit A
+  · have h1 : e.conj A * e.conj (Ring.inverse A) = 1 := by
+      rw [← hmul, Ring.mul_inverse_cancel _ hA, hone]
+    have h2 : e.conj (Ring.inverse A) * e.conj A = 1 := by
+      rw [← hmul, Ring.inverse_mul_cancel _ hA, hone]
+    exact (Ring.inverse_unit ⟨e.conj A, e.conj (Ring.inverse A), h1, h2⟩).symm
+  · have hB : ¬ IsUnit (e.conj A) := fun h => by
+      have := h.map e.conjRingEquiv.symm
+      rw [← hconj, RingEquiv.symm_apply_apply] at this
+      exact hA this
+    rw [Ring.inverse_non_unit _ hA, Ring.inverse_non_unit _ hB, map_zero]
 
 namespace Krylov
 
@@ -1261,4 +1301,287 @@ theorem exists_gap_subspaceIterate_span_image_le [FiniteDimensional 𝕜 E]
 
 end SubspaceIteration
 
+section Conjugation
+
+variable {𝕜 E F : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
+  [NormedAddCommGroup F] [NormedSpace 𝕜 F]
+
+/-- The power method commutes with a change of orthonormal coordinates: for a linear isometry
+equivalence `U : F ≃ₗᵢ[𝕜] E`, the power iteration of `U⁻¹ A U` from `U⁻¹ x₀` is `U⁻¹` of the power
+iteration of `A` from `x₀`, because `(U⁻¹ A U)^k = U⁻¹ A^k U` and `U` preserves norms. This is what
+lets [quarteroni2000numerical] §5.8.1 run the iteration on the Hessenberg form `H = Qᴴ A Q` and
+recover the eigenvector of `A` as `x = Q q`. -/
+theorem powerIterate_conj_linearIsometryEquiv (U : F ≃ₗᵢ[𝕜] E) (A : Module.End 𝕜 E) (x₀ : E)
+    (k : ℕ) :
+    powerIterate (U.symm.toLinearEquiv.conj A) (U.symm x₀) k = U.symm (powerIterate A x₀ k) := by
+  have hpow : ∀ j : ℕ, ((U.symm.toLinearEquiv.conj A) ^ j) (U.symm x₀) = U.symm ((A ^ j) x₀) := by
+    intro j
+    induction j with
+    | zero => simp
+    | succ j ih =>
+      rw [pow_succ', Module.End.mul_apply, ih, pow_succ', Module.End.mul_apply,
+        LinearEquiv.conj_apply_apply]
+      simp
+  rw [powerIterate, powerIterate, hpow, map_smul, LinearIsometryEquiv.norm_map]
+
+/-- Inverse iteration commutes with a change of orthonormal coordinates, the shifted inverse
+conjugating along (`LinearEquiv.conj_ringInverse`): [quarteroni2000numerical] §5.8.1. -/
+theorem inverseIterate_conj_linearIsometryEquiv (U : F ≃ₗᵢ[𝕜] E) (A : Module.End 𝕜 E) (σ : 𝕜)
+    (x₀ : E) (k : ℕ) :
+    inverseIterate (U.symm.toLinearEquiv.conj A) σ (U.symm x₀) k
+      = U.symm (inverseIterate A σ x₀ k) := by
+  have h1 : U.symm.toLinearEquiv.conj (1 : Module.End 𝕜 E) = 1 := LinearEquiv.conj_id _
+  rw [inverseIterate, inverseIterate, ← powerIterate_conj_linearIsometryEquiv,
+    LinearEquiv.conj_ringInverse, map_sub, map_smul, h1]
+
+end Conjugation
+
+section Eigenbasis
+
+variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
+
+/-- **The power method's exact rate for a diagonalizable operator**
+([quarteroni2000numerical] Theorem 5.6): for eigenpairs `A (x i) = l i • x i` with unit `x i`, a
+distinguished index `i₀` with `l i₀ ≠ 0` and `‖l i‖ ≤ ρ` for `i ≠ i₀`, and a starting vector
+`x₀ = ∑ α i • x i` with `α i₀ ≠ 0`, the rescaled iterate `(α i₀ l i₀ ^ k)⁻¹ A^k x₀` is within
+`(∑_{i ≠ i₀} ‖α i / α i₀‖) (ρ / ‖l i₀‖)^k` of `x i₀`, for every `k`.
+
+The constant is the one the triangle inequality gives; the book's `(∑ (α_i/α_1)²)^{1/2}` needs the
+`x i` orthonormal, that is, a normal `A`. The general
+`Krylov.exists_norm_inv_pow_smul_pow_apply_sub_le` gives the same rate with any `r > ρ` in place of
+`ρ` and no eigenbasis. -/
+theorem norm_inv_pow_smul_pow_apply_sub_le_of_eigenbasis {ι : Type*} [Fintype ι] [DecidableEq ι]
+    {A : Module.End 𝕜 E} {x : ι → E} {l : ι → 𝕜} (hx : ∀ i, A (x i) = l i • x i)
+    (hx1 : ∀ i, ‖x i‖ = 1) {i₀ : ι} (hl₀ : l i₀ ≠ 0) {ρ : ℝ} (hρ : ∀ i, i ≠ i₀ → ‖l i‖ ≤ ρ)
+    {α : ι → 𝕜} (hα : α i₀ ≠ 0) {x₀ : E} (hx₀ : x₀ = ∑ i, α i • x i) (k : ℕ) :
+    ‖(α i₀ * l i₀ ^ k)⁻¹ • (A ^ k) x₀ - x i₀‖
+      ≤ (∑ i ∈ Finset.univ.erase i₀, ‖α i / α i₀‖) * (ρ / ‖l i₀‖) ^ k := by
+  have hpow : ∀ i, (A ^ k) (x i) = l i ^ k • x i := fun i => by
+    induction k with
+    | zero => simp
+    | succ k ih =>
+      rw [pow_succ', Module.End.mul_apply, ih, map_smul, hx, smul_smul, ← pow_succ]
+  have hne : α i₀ * l i₀ ^ k ≠ 0 := mul_ne_zero hα (pow_ne_zero k hl₀)
+  have hexp : (α i₀ * l i₀ ^ k)⁻¹ • (A ^ k) x₀ - x i₀
+      = ∑ i ∈ Finset.univ.erase i₀, ((α i / α i₀) * (l i / l i₀) ^ k) • x i := by
+    rw [hx₀, map_sum, Finset.smul_sum, ← Finset.add_sum_erase _ _ (Finset.mem_univ i₀),
+      map_smul, hpow, smul_smul, smul_smul, mul_assoc, inv_mul_cancel₀ hne, one_smul,
+      add_sub_cancel_left]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    rw [map_smul, hpow, smul_smul, smul_smul]
+    congr 1
+    rw [div_pow, mul_inv, div_eq_mul_inv, div_eq_mul_inv]
+    ring
+  rw [hexp, Finset.sum_mul]
+  refine (norm_sum_le _ _).trans (Finset.sum_le_sum fun i hi => ?_)
+  rw [norm_smul, hx1, mul_one, norm_mul, norm_pow, norm_div, norm_div]
+  gcongr
+  exact hρ i (Finset.ne_of_mem_erase hi)
+
+end Eigenbasis
+
+section RayleighQuotient
+
+variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
+
+/-- The Rayleigh quotients `⟪q k, A (q k)⟫` of a sequence that converges essentially to a unit
+eigenvector `u` for `l` converge to `l`: a unimodular factor does not change `⟪q, A q⟫`, and
+`⟪u, A u⟫ = l` for a unit eigenvector. -/
+theorem tendsto_inner_apply_of_tendsto_smul {A : Module.End 𝕜 E} (hA : Continuous A) {l : 𝕜}
+    {u : E} (hu : A u = l • u) (hu1 : ‖u‖ = 1) {q : ℕ → E} {c : ℕ → 𝕜} (hc : ∀ k, ‖c k‖ = 1)
+    (hq : Tendsto (fun k => c k • q k) atTop (𝓝 u)) :
+    Tendsto (fun k => (inner 𝕜 (q k) (A (q k)) : 𝕜)) atTop (𝓝 l) := by
+  have hcont : Continuous fun v : E => (inner 𝕜 v (A v) : 𝕜) := continuous_id.inner hA
+  have hlim := (hcont.tendsto u).comp hq
+  have hval : (inner 𝕜 u (A u) : 𝕜) = l := by
+    rw [hu, inner_smul_right, inner_self_eq_norm_sq_to_K, hu1]
+    simp
+  have heq : ∀ k, (inner 𝕜 (c k • q k) (A (c k • q k)) : 𝕜) = inner 𝕜 (q k) (A (q k)) := by
+    intro k
+    rw [map_smul, inner_smul_left, inner_smul_right, ← mul_assoc, RCLike.conj_mul, hc k]
+    simp
+  simpa only [Function.comp_def, heq, hval] using hlim
+
+/-- **The Rayleigh quotients of the power method converge to the dominant eigenvalue**
+([quarteroni2000numerical] Theorem 5.6, the remark after it): under the hypotheses of
+`Krylov.tendsto_smul_powerIterate`, `⟪q k, A (q k)⟫ → l` for the normalized iterates `q k`. -/
+theorem tendsto_inner_powerIterate {A : Module.End 𝕜 E} (hA : Continuous A) {l : 𝕜} {u w x₀ : E}
+    (hl : l ≠ 0) (hu : A u = l • u) (hu0 : u ≠ 0)
+    (hw : w ∈ ⨆ μ, ⨆ _ : μ ≠ l, A.maxGenEigenspace μ)
+    (hdom : ∀ μ, μ ≠ l → A.HasEigenvalue μ → ‖μ‖ < ‖l‖) (hx₀ : x₀ = u + w) :
+    Tendsto (fun k => (inner 𝕜 (powerIterate A x₀ k) (A (powerIterate A x₀ k)) : 𝕜)) atTop
+      (𝓝 l) := by
+  obtain ⟨c, hc, hlim⟩ := exists_norm_eq_one_tendsto_smul_powerIterate hl hu hu0 hw hdom hx₀
+  have hun : ‖u‖ ≠ 0 := norm_ne_zero_iff.mpr hu0
+  refine tendsto_inner_apply_of_tendsto_smul hA (u := (‖u‖ : 𝕜)⁻¹ • u) ?_ ?_ hc hlim
+  · rw [map_smul, hu, smul_comm]
+  · rw [norm_smul, norm_inv, RCLike.norm_ofReal, abs_of_nonneg (norm_nonneg u),
+      inv_mul_cancel₀ hun]
+
+/-- **The Rayleigh quotients of inverse iteration converge to the eigenvalue nearest the shift**
+([quarteroni2000numerical] (5.28), `σ^(k) → λ_m`): under the hypotheses of
+`Krylov.tendsto_smul_inverseIterate`, the Rayleigh quotients computed on `A` itself at the
+normalized inverse iterates converge to `l`. -/
+theorem tendsto_inner_inverseIterate {A : Module.End 𝕜 E} (hA : Continuous A) {σ l : 𝕜}
+    {u w x₀ : E} (hσ : IsUnit (A - σ • (1 : Module.End 𝕜 E))) (hu : A u = l • u) (hu0 : u ≠ 0)
+    (hw : w ∈ ⨆ μ, ⨆ _ : μ ≠ l, A.maxGenEigenspace μ)
+    (hdom : ∀ μ, μ ≠ l → A.HasEigenvalue μ → ‖l - σ‖ < ‖μ - σ‖) (hx₀ : x₀ = u + w) :
+    Tendsto (fun k => (inner 𝕜 (inverseIterate A σ x₀ k) (A (inverseIterate A σ x₀ k)) : 𝕜))
+      atTop (𝓝 l) := by
+  have hlim := tendsto_smul_inverseIterate hσ hu hu0 hw hdom hx₀
+  have hlσ : l - σ ≠ 0 := by
+    intro h
+    rw [sub_eq_zero] at h
+    subst h
+    obtain ⟨V, hV⟩ := hσ.exists_left_inv
+    have h0 : (A - l • (1 : Module.End 𝕜 E)) u = 0 := by simp [hu]
+    have := congrArg V h0
+    rw [← Module.End.mul_apply, hV, Module.End.one_apply, map_zero] at this
+    exact hu0 this
+  have hun : ‖u‖ ≠ 0 := norm_ne_zero_iff.mpr hu0
+  have hc : ∀ k : ℕ, ‖((l - σ) / (‖l - σ‖ : 𝕜)) ^ k‖ = 1 := fun k => by
+    rw [norm_pow, norm_div, RCLike.norm_ofReal, abs_of_nonneg (norm_nonneg _),
+      div_self (norm_ne_zero_iff.mpr hlσ), one_pow]
+  refine tendsto_inner_apply_of_tendsto_smul hA (u := (‖u‖ : 𝕜)⁻¹ • u) ?_ ?_ hc hlim
+  · rw [map_smul, hu, smul_comm]
+  · rw [norm_smul, norm_inv, RCLike.norm_ofReal, abs_of_nonneg (norm_nonneg u),
+      inv_mul_cancel₀ hun]
+
+end RayleighQuotient
+
 end Krylov
+
+namespace LinearMap.IsSymmetric
+
+variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
+  [FiniteDimensional 𝕜 E] {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric)
+include hA
+
+/-- The eigenbasis coordinates of `A ^ k x` are those of `x` scaled by the `k`-th powers of the
+eigenvalues. -/
+theorem repr_pow_apply {n : ℕ} (hn : Module.finrank 𝕜 E = n) (x : E) (k : ℕ) (i : Fin n) :
+    (hA.eigenvectorBasis hn).repr ((A ^ k) x) i
+      = (hA.eigenvalues hn i : 𝕜) ^ k * (hA.eigenvectorBasis hn).repr x i := by
+  induction k with
+  | zero => simp
+  | succ k ih =>
+    rw [pow_succ', Module.End.mul_apply, hA.eigenvectorBasis_apply_self_apply hn, ih, pow_succ']
+    ring
+
+omit [FiniteDimensional 𝕜 E] in
+/-- The Rayleigh quotient of the normalized power iterate is the Rayleigh quotient of `A ^ k x₀`. -/
+theorem re_inner_powerIterate_eq_div (x₀ : E) (k : ℕ) :
+    RCLike.re (inner 𝕜 (Krylov.powerIterate A x₀ k) (A (Krylov.powerIterate A x₀ k)))
+      = RCLike.re (inner 𝕜 (A ((A ^ k) x₀)) ((A ^ k) x₀)) / ‖(A ^ k) x₀‖ ^ 2 := by
+  set y := (A ^ k) x₀ with hy
+  rcases eq_or_ne y 0 with h0 | h0
+  · rw [(Krylov.powerIterate_eq_zero_iff A x₀ k).mpr h0, h0]
+    simp
+  have hq : Krylov.powerIterate A x₀ k = ((‖y‖⁻¹ : ℝ) : 𝕜) • y := by
+    rw [Krylov.powerIterate, RCLike.ofReal_inv]
+  rw [hq, map_smul, inner_smul_left, inner_smul_right, RCLike.conj_ofReal, ← mul_assoc,
+    ← RCLike.ofReal_mul, RCLike.re_ofReal_mul, ← hA y y, div_eq_mul_inv, sq, mul_inv]
+  ring
+
+/-- **Quadratic convergence of the Rayleigh quotient in the symmetric power method**
+([quarteroni2000numerical] (5.23); [golub1989matrix] Theorem 8.2.1): for a symmetric `A` with
+eigenpairs `(hA.eigenvalues hn i, hA.eigenvectorBasis hn i)`, an index `i₀` with
+`hA.eigenvalues hn i₀ ≠ 0` and `|λ i| ≤ ρ` for `i ≠ i₀`, bounds `a ≤ λ i ≤ b` on all the
+eigenvalues, and a unit starting vector `x₀` with `c = ‖⟪u i₀, x₀⟫‖ ≠ 0` (`cos θ₀` in the book),
+the Rayleigh quotients `ν_k = re ⟪q_k, A q_k⟫` of the power iterates satisfy
+
+`|λ i₀ - ν_k| ≤ (b - a) · ((1 - c²)/c²) · (ρ / |λ i₀|)^(2k)`,
+
+with `(1 - c²)/c² = tan² θ₀`. The book states it for the dominant `i₀` with `a, b` the extreme
+eigenvalues (`LinearMap.IsSymmetric.eigenvalues_antitone`); the bound does not need `ρ < |λ i₀|`,
+which only makes the rate a contraction. In the eigenbasis, `ν_k = ∑ λ_i^{2k+1} |c_i|² / ∑ λ_i^{2k}
+|c_i|²`, so `λ_{i₀} - ν_k = ∑_{i ≠ i₀} (λ_{i₀} - λ_i) λ_i^{2k} |c_i|² / ∑ λ_i^{2k} |c_i|²`, whose
+numerator is at most `(b - a) ρ^{2k} (1 - c²)` and whose denominator is at least
+`λ_{i₀}^{2k} c²`. -/
+theorem abs_sub_rayleigh_powerIterate_le {n : ℕ} (hn : Module.finrank 𝕜 E = n) {i₀ : Fin n}
+    (hl₀ : hA.eigenvalues hn i₀ ≠ 0) {ρ : ℝ} (hρ : ∀ i, i ≠ i₀ → |hA.eigenvalues hn i| ≤ ρ)
+    {a b : ℝ} (hab : ∀ i, hA.eigenvalues hn i ∈ Set.Icc a b) {x₀ : E} (hx₀ : ‖x₀‖ = 1)
+    (hc : (inner 𝕜 (hA.eigenvectorBasis hn i₀) x₀ : 𝕜) ≠ 0) (k : ℕ) :
+    |hA.eigenvalues hn i₀ - RCLike.re (inner 𝕜 (Krylov.powerIterate A x₀ k)
+        (A (Krylov.powerIterate A x₀ k)))|
+      ≤ (b - a) * ((1 - ‖(inner 𝕜 (hA.eigenvectorBasis hn i₀) x₀ : 𝕜)‖ ^ 2)
+          / ‖(inner 𝕜 (hA.eigenvectorBasis hn i₀) x₀ : 𝕜)‖ ^ 2)
+        * (ρ / |hA.eigenvalues hn i₀|) ^ (2 * k) := by
+  set lam := hA.eigenvalues hn with hlam
+  set v := hA.eigenvectorBasis hn with hv
+  set wgt : Fin n → ℝ := fun i => ‖v.repr x₀ i‖ ^ 2 with hwgt
+  have hcw : ‖(inner 𝕜 (hA.eigenvectorBasis hn i₀) x₀ : 𝕜)‖ ^ 2 = wgt i₀ := by
+    rw [hwgt, ← OrthonormalBasis.repr_apply_apply]
+  have hw0 : ∀ i, 0 ≤ wgt i := fun i => sq_nonneg _
+  have hwpos : 0 < wgt i₀ := by
+    rw [← hcw]
+    exact pow_pos (norm_pos_iff.mpr hc) 2
+  have hsum : ∑ i, wgt i = 1 := by
+    rw [hwgt, ← hA.norm_sq_eq_sum_norm_repr_sq hn, hx₀, one_pow]
+  have hw₀le : wgt i₀ ≤ 1 := hsum ▸ Finset.single_le_sum (fun i _ => hw0 i) (Finset.mem_univ i₀)
+  set D := ∑ i, lam i ^ (2 * k) * wgt i with hD
+  set N := ∑ i, lam i ^ (2 * k + 1) * wgt i with hN
+  -- the norm and the quadratic form of `A ^ k x₀` in eigencoordinates
+  have hrepr : ∀ i, ‖v.repr ((A ^ k) x₀) i‖ ^ 2 = lam i ^ (2 * k) * wgt i := fun i => by
+    rw [hv, hA.repr_pow_apply hn, norm_mul, norm_pow, RCLike.norm_ofReal, mul_pow, ← pow_mul,
+      mul_comm k 2, pow_mul, sq_abs, ← pow_mul]
+  have hnorm : ‖(A ^ k) x₀‖ ^ 2 = D := by
+    rw [hA.norm_sq_eq_sum_norm_repr_sq hn, hD]
+    exact Finset.sum_congr rfl fun i _ => hrepr i
+  have hform : RCLike.re (inner 𝕜 (A ((A ^ k) x₀)) ((A ^ k) x₀)) = N := by
+    rw [hA.re_inner_apply_self_eq_sum hn, hN]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    rw [hrepr i, pow_succ]
+    ring
+  have hlow : lam i₀ ^ (2 * k) * wgt i₀ ≤ D :=
+    Finset.single_le_sum (f := fun i => lam i ^ (2 * k) * wgt i)
+      (fun i _ => mul_nonneg ((even_two_mul k).pow_nonneg _) (hw0 i)) (Finset.mem_univ i₀)
+  have hl2 : 0 < lam i₀ ^ (2 * k) := (even_two_mul k).pow_pos hl₀
+  have hDpos : 0 < D := lt_of_lt_of_le (mul_pos hl2 hwpos) hlow
+  -- the numerator
+  have hnum : lam i₀ * D - N = ∑ i ∈ Finset.univ.erase i₀, (lam i₀ - lam i) * lam i ^ (2 * k)
+      * wgt i := by
+    rw [hD, hN, Finset.mul_sum, ← Finset.sum_sub_distrib,
+      ← Finset.add_sum_erase _ _ (Finset.mem_univ i₀), pow_succ]
+    rw [show lam i₀ * (lam i₀ ^ (2 * k) * wgt i₀) - lam i₀ ^ (2 * k) * lam i₀ * wgt i₀ = 0 by ring,
+      zero_add]
+    exact Finset.sum_congr rfl fun i _ => by rw [pow_succ]; ring
+  have hab' : ∀ i, |lam i₀ - lam i| ≤ b - a := fun i => by
+    have h1 := hab i₀
+    have h2 := hab i
+    rw [abs_le]
+    constructor <;> linarith [h1.1, h1.2, h2.1, h2.2]
+  have hρk : 0 ≤ ρ ^ (2 * k) := (even_two_mul k).pow_nonneg ρ
+  have hba : 0 ≤ b - a := by
+    have h := hab i₀
+    linarith [h.1, h.2]
+  have hnum_le : |lam i₀ * D - N| ≤ (b - a) * ρ ^ (2 * k) * (1 - wgt i₀) := by
+    rw [hnum]
+    refine (Finset.abs_sum_le_sum_abs _ _).trans ?_
+    have hrest : ∑ i ∈ Finset.univ.erase i₀, wgt i = 1 - wgt i₀ := by
+      rw [← hsum, ← Finset.add_sum_erase _ _ (Finset.mem_univ i₀)]
+      ring
+    rw [← hrest, Finset.mul_sum]
+    refine Finset.sum_le_sum fun i hi => ?_
+    have hi' := Finset.ne_of_mem_erase hi
+    rw [abs_mul, abs_mul, abs_of_nonneg (hw0 i), abs_pow]
+    have hρi : |lam i| ^ (2 * k) ≤ ρ ^ (2 * k) :=
+      pow_le_pow_left₀ (abs_nonneg _) (hρ i hi') _
+    exact mul_le_mul (mul_le_mul (hab' i) hρi (by positivity) hba) le_rfl (hw0 i)
+      (mul_nonneg hba hρk)
+  -- assemble
+  have habs : |lam i₀| ^ (2 * k) = lam i₀ ^ (2 * k) := by
+    rw [pow_mul, sq_abs, ← pow_mul]
+  rw [hA.re_inner_powerIterate_eq_div, hform, hnorm, hcw, div_pow, habs]
+  have hkey : lam i₀ - N / D = (lam i₀ * D - N) / D := by
+    field_simp
+  rw [hkey, abs_div, abs_of_pos hDpos, div_le_iff₀ hDpos]
+  have hw1 : 0 ≤ 1 - wgt i₀ := by linarith
+  calc |lam i₀ * D - N| ≤ (b - a) * ρ ^ (2 * k) * (1 - wgt i₀) := hnum_le
+    _ = (b - a) * ((1 - wgt i₀) / wgt i₀) * (ρ ^ (2 * k) / lam i₀ ^ (2 * k))
+          * (lam i₀ ^ (2 * k) * wgt i₀) := by
+        field_simp
+    _ ≤ (b - a) * ((1 - wgt i₀) / wgt i₀) * (ρ ^ (2 * k) / lam i₀ ^ (2 * k)) * D := by
+        gcongr
+
+end LinearMap.IsSymmetric

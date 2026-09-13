@@ -246,6 +246,111 @@ theorem jacobi_annihilate :
   rw [jacobiSin]
   linear_combination (jacobiCos A j k ^ 2) * h
 
+/-! ### The book's parametrization of the angle
+
+[quarteroni2000numerical] (5.61)–(5.62) and [golub1989matrix] Algorithm 8.4.1 parametrize the
+rotation by the root of `t² + 2ηt - 1 = 0` of modulus at most one, `η = (a_kk - a_jj)/(2 a_jk)`.
+Their rotation matrix carries `+s` where `Matrix.planeRotation` carries `-s`, and the two sign
+conventions cancel: their `t` is `-jacobiTan`, their `(c, s)` is `(jacobiCos, -jacobiSin)`, and the
+rotation matrix they build is `Matrix.jacobiRotation` itself. The planning note that the two
+tangents are the two roots of one quadratic, with product `-1`, was mistaken: they are roots of
+the two quadratics `t² ∓ 2ηt - 1 = 0`, both of modulus at most one, and negatives of each other. -/
+
+omit [Fintype n] [DecidableEq n] in
+/-- The root of `t² + 2ηt - 1 = 0` of modulus at most one, `η = (a_kk - a_jj)/(2 a_jk)`: the
+tangent [quarteroni2000numerical] (5.61)–(5.62) prescribe, `1/(η + √(1 + η²))` for `η ≥ 0` and
+`-1/(-η + √(1 + η²))` for `η < 0`; it is `0` when `a_jk` already vanishes. It is `-jacobiTan`
+(`Matrix.jacobiTanSmall_eq_neg_jacobiTan`), the sign being absorbed by the book's convention for
+the rotation matrix. -/
+noncomputable def jacobiTanSmall : ℝ :=
+  if A j k = 0 then 0
+  else if 0 ≤ (A k k - A j j) / (2 * A j k) then
+    1 / ((A k k - A j j) / (2 * A j k) + Real.sqrt (1 + ((A k k - A j j) / (2 * A j k)) ^ 2))
+  else -1 / (-((A k k - A j j) / (2 * A j k)) + Real.sqrt (1 + ((A k k - A j j) / (2 * A j k)) ^ 2))
+
+omit [Fintype n] [DecidableEq n] in
+/-- The book's tangent is the negative of the backbone's: `1/(η + √(1 + η²)) = √(1 + η²) - η`. -/
+theorem jacobiTanSmall_eq_neg_jacobiTan : jacobiTanSmall A j k = -jacobiTan A j k := by
+  rw [jacobiTanSmall, jacobiTan]
+  split_ifs with h hθ
+  · simp
+  · set η := (A k k - A j j) / (2 * A j k) with hη
+    have hnn : (0 : ℝ) ≤ 1 + η ^ 2 := by positivity
+    have hsq := Real.sq_sqrt hnn
+    have hs := Real.sqrt_nonneg (1 + η ^ 2)
+    have hsq' : Real.sqrt (η ^ 2 + 1) = Real.sqrt (1 + η ^ 2) := by rw [add_comm]
+    have hd : η + Real.sqrt (1 + η ^ 2) ≠ 0 := by
+      have : 0 < η + Real.sqrt (1 + η ^ 2) := by nlinarith
+      exact this.ne'
+    rw [hsq', div_eq_iff hd]
+    nlinarith [hsq]
+  · set η := (A k k - A j j) / (2 * A j k) with hη
+    have hθ' : η < 0 := lt_of_not_ge hθ
+    have hnn : (0 : ℝ) ≤ 1 + η ^ 2 := by positivity
+    have hsq := Real.sq_sqrt hnn
+    have hs := Real.sqrt_nonneg (1 + η ^ 2)
+    have hsq' : Real.sqrt (η ^ 2 + 1) = Real.sqrt (1 + η ^ 2) := by rw [add_comm]
+    have hd : -η + Real.sqrt (1 + η ^ 2) ≠ 0 := by
+      have : 0 < -η + Real.sqrt (1 + η ^ 2) := by nlinarith
+      exact this.ne'
+    rw [hsq', div_eq_iff hd]
+    nlinarith [hsq]
+
+omit [Fintype n] [DecidableEq n] in
+/-- `jacobiTanSmall` is a root of `t² + 2ηt - 1 = 0`. -/
+theorem jacobiTanSmall_sq (h : A j k ≠ 0) :
+    jacobiTanSmall A j k ^ 2 + 2 * ((A k k - A j j) / (2 * A j k)) * jacobiTanSmall A j k - 1
+      = 0 := by
+  rw [jacobiTanSmall_eq_neg_jacobiTan]
+  linear_combination jacobiTan_sq A j k h
+
+omit [Fintype n] [DecidableEq n] in
+/-- The book's root has modulus at most one. -/
+theorem abs_jacobiTanSmall_le_one : |jacobiTanSmall A j k| ≤ 1 := by
+  rw [jacobiTanSmall_eq_neg_jacobiTan, abs_neg]
+  exact abs_jacobiTan_le_one A j k
+
+/-- The cosine of the book's Jacobi angle, `1/√(1 + t²)`. -/
+noncomputable def jacobiCosSmall : ℝ := 1 / Real.sqrt (1 + jacobiTanSmall A j k ^ 2)
+
+/-- The sine of the book's Jacobi angle, `c t`. -/
+noncomputable def jacobiSinSmall : ℝ := jacobiTanSmall A j k * jacobiCosSmall A j k
+
+omit [Fintype n] [DecidableEq n] in
+/-- The book's cosine is the backbone's. -/
+theorem jacobiCosSmall_eq : jacobiCosSmall A j k = jacobiCos A j k := by
+  rw [jacobiCosSmall, jacobiCos, jacobiTanSmall_eq_neg_jacobiTan, neg_sq]
+
+omit [Fintype n] [DecidableEq n] in
+/-- The book's sine is the negative of the backbone's. -/
+theorem jacobiSinSmall_eq_neg : jacobiSinSmall A j k = -jacobiSin A j k := by
+  rw [jacobiSinSmall, jacobiSin, jacobiTanSmall_eq_neg_jacobiTan, jacobiCosSmall_eq, neg_mul]
+
+omit [Fintype n] [DecidableEq n] in
+/-- `c² + s² = 1` for the book's angle. -/
+theorem jacobiCosSmall_sq_add_jacobiSinSmall_sq :
+    jacobiCosSmall A j k ^ 2 + jacobiSinSmall A j k ^ 2 = 1 := by
+  rw [jacobiCosSmall_eq, jacobiSinSmall_eq_neg, neg_sq]
+  exact jacobiCos_sq_add_jacobiSin_sq A j k
+
+omit [Fintype n] [DecidableEq n] in
+/-- The book's angle annihilates the off-diagonal entry ([quarteroni2000numerical] (5.60)), in the
+book's sign convention for the rotation: `(c² - s²) a_jk - c s (a_kk - a_jj) = 0`. This is
+`Matrix.jacobi_annihilate` with `s ↦ -s`. -/
+theorem jacobiSmall_annihilate :
+    (jacobiCosSmall A j k ^ 2 - jacobiSinSmall A j k ^ 2) * A j k
+      - jacobiCosSmall A j k * jacobiSinSmall A j k * (A k k - A j j) = 0 := by
+  rw [jacobiCosSmall_eq, jacobiSinSmall_eq_neg, neg_sq]
+  linear_combination jacobi_annihilate A j k
+
+omit [Fintype n] in
+/-- The rotation matrix the book builds from `(c, s) = (jacobiCosSmall, jacobiSinSmall)` — with
+`+s` in position `(j, k)`, which in the backbone's convention is `planeRotation j k c (-s)` — is
+the backbone's Jacobi rotation. -/
+theorem jacobiRotation_eq_planeRotation_small :
+    jacobiRotation A j k = planeRotation j k (jacobiCosSmall A j k) (-jacobiSinSmall A j k) := by
+  rw [jacobiRotation, jacobiCosSmall_eq, jacobiSinSmall_eq_neg, neg_neg]
+
 /-- A Jacobi rotation is orthogonal, so a Jacobi step is an orthogonal similarity. -/
 theorem transpose_jacobiRotation_mul_self (hjk : j ≠ k) :
     (jacobiRotation A j k)ᵀ * jacobiRotation A j k = 1 :=
@@ -325,33 +430,63 @@ private theorem sum_split (hjk : j ≠ k) (f : n → ℝ) :
   rw [← Finset.add_sum_erase _ f (Finset.mem_univ j),
     ← Finset.add_sum_erase _ f (Finset.mem_erase.2 ⟨Ne.symm hjk, Finset.mem_univ k⟩), add_assoc]
 
-/-- A Jacobi step moves exactly `2 a_jk²` of mass onto the diagonal. -/
-theorem sum_diag_sq_jacobiStep (hA : A.IsSymm) (hjk : j ≠ k) :
-    ∑ i, (jacobiStep A j k i i) ^ 2 = ∑ i, (A i i) ^ 2 + 2 * (A j k) ^ 2 := by
-  have htail : ∑ i ∈ (Finset.univ.erase j).erase k, (jacobiStep A j k i i) ^ 2
+/-- A plane rotation that annihilates the entry `a_jk` of a symmetric matrix moves exactly
+`2 a_jk²` of mass onto the diagonal, whatever the angle: only `c² + s² = 1` and the annihilation
+are used. -/
+theorem sum_diag_sq_conj_planeRotation_of_apply_eq_zero (hA : A.IsSymm) (hjk : j ≠ k)
+    (hcs : c ^ 2 + s ^ 2 = 1)
+    (h0 : ((planeRotation j k c s)ᵀ * A * planeRotation j k c s) j k = 0) :
+    ∑ i, (((planeRotation j k c s)ᵀ * A * planeRotation j k c s) i i) ^ 2
+      = ∑ i, (A i i) ^ 2 + 2 * (A j k) ^ 2 := by
+  have hsym : A k j = A j k := hA.apply j k
+  set G := planeRotation j k c s with hG
+  have htail : ∑ i ∈ (Finset.univ.erase j).erase k, ((Gᵀ * A * G) i i) ^ 2
       = ∑ i ∈ (Finset.univ.erase j).erase k, (A i i) ^ 2 := by
     refine Finset.sum_congr rfl fun i hi => ?_
     obtain ⟨hik, hi'⟩ := Finset.mem_erase.1 hi
     obtain ⟨hij, -⟩ := Finset.mem_erase.1 hi'
-    rw [jacobiStep_apply_diag_of_ne A hjk hij hik]
-  have hpoly := sq_add_sq_of_rotation (jacobiCos_sq_add_jacobiSin_sq A j k)
-    (jacobi_annihilate A j k)
-  rw [sum_split hjk (fun i => (jacobiStep A j k i i) ^ 2), sum_split hjk (fun i => (A i i) ^ 2),
-    htail, jacobiStep_apply_jj A hA hjk, jacobiStep_apply_kk A hA hjk]
+    rw [hG, conj_planeRotation_apply_of_ne hjk A hij hik hij hik]
+  rw [hG, conj_planeRotation_apply_jk hjk, hsym] at h0
+  have hpoly := sq_add_sq_of_rotation (u := A j j) (v := A k k) (w := A j k) hcs
+    (by linear_combination h0)
+  rw [sum_split hjk (fun i => ((Gᵀ * A * G) i i) ^ 2), sum_split hjk (fun i => (A i i) ^ 2),
+    htail, hG, conj_planeRotation_apply_jj hjk, conj_planeRotation_apply_kk hjk, hsym]
   linarith [hpoly]
 
-/-- **[kress1998numerical], Lemma 7.13**: a Jacobi step decreases the off-diagonal mass by exactly
-twice the square of the annihilated entry. The Frobenius mass is unchanged by the orthogonal
-similarity, and the two-by-two block moves `2 a_jk²` of it onto the diagonal. -/
-theorem offDiagNormSq_jacobiStep (hA : A.IsSymm) (hjk : j ≠ k) :
-    offDiagNormSq (jacobiStep A j k) = offDiagNormSq A - 2 * (A j k) ^ 2 := by
-  have hF : ∑ i, ∑ q, ((jacobiStep A j k) i q) ^ 2 = ∑ i, ∑ q, (A i q) ^ 2 := by
-    rw [jacobiStep]
-    exact sum_sq_conj_eq A _ (transpose_jacobiRotation_mul_self A j k hjk)
-  have h1 := offDiagNormSq_add_sum_diag_sq_real (jacobiStep A j k)
+/-- **The Jacobi decrease identity for any annihilating rotation** ([kress1998numerical], Lemma
+7.13; [quarteroni2000numerical] (5.64)): a plane rotation `G` in the `(j, k)`-plane with
+`(Gᵀ A G) j k = 0` decreases the off-diagonal mass of a symmetric `A` by exactly `2 a_jk²`. The
+Frobenius mass is unchanged by the orthogonal similarity, and the two-by-two block moves `2 a_jk²`
+of it onto the diagonal. The backbone's own root `Matrix.jacobiTan` and the book's other root
+`Matrix.jacobiTanSmall` both qualify. -/
+theorem offDiagNormSq_conj_planeRotation_of_apply_eq_zero (hA : A.IsSymm) (hjk : j ≠ k)
+    (hcs : c ^ 2 + s ^ 2 = 1)
+    (h0 : ((planeRotation j k c s)ᵀ * A * planeRotation j k c s) j k = 0) :
+    offDiagNormSq ((planeRotation j k c s)ᵀ * A * planeRotation j k c s)
+      = offDiagNormSq A - 2 * (A j k) ^ 2 := by
+  have hF : ∑ i, ∑ q, (((planeRotation j k c s)ᵀ * A * planeRotation j k c s) i q) ^ 2
+      = ∑ i, ∑ q, (A i q) ^ 2 :=
+    sum_sq_conj_eq A _ (transpose_planeRotation_mul_self hjk hcs)
+  have h1 := offDiagNormSq_add_sum_diag_sq_real
+    ((planeRotation j k c s)ᵀ * A * planeRotation j k c s)
   have h2 := offDiagNormSq_add_sum_diag_sq_real A
-  have hD := sum_diag_sq_jacobiStep A hA hjk
+  have hD := sum_diag_sq_conj_planeRotation_of_apply_eq_zero A hA hjk hcs h0
   linarith
+
+/-- A Jacobi step moves exactly `2 a_jk²` of mass onto the diagonal. -/
+theorem sum_diag_sq_jacobiStep (hA : A.IsSymm) (hjk : j ≠ k) :
+    ∑ i, (jacobiStep A j k i i) ^ 2 = ∑ i, (A i i) ^ 2 + 2 * (A j k) ^ 2 :=
+  sum_diag_sq_conj_planeRotation_of_apply_eq_zero A hA hjk (jacobiCos_sq_add_jacobiSin_sq A j k)
+    (jacobiStep_apply_eq_zero A hA hjk)
+
+/-- **[kress1998numerical], Lemma 7.13**: a Jacobi step decreases the off-diagonal mass by exactly
+twice the square of the annihilated entry; the instance of
+`Matrix.offDiagNormSq_conj_planeRotation_of_apply_eq_zero` at the backbone's root
+`Matrix.jacobiTan`. -/
+theorem offDiagNormSq_jacobiStep (hA : A.IsSymm) (hjk : j ≠ k) :
+    offDiagNormSq (jacobiStep A j k) = offDiagNormSq A - 2 * (A j k) ^ 2 :=
+  offDiagNormSq_conj_planeRotation_of_apply_eq_zero A hA hjk (jacobiCos_sq_add_jacobiSin_sq A j k)
+    (jacobiStep_apply_eq_zero A hA hjk)
 
 /-- A Jacobi step preserves symmetry, being an orthogonal similarity. -/
 theorem isSymm_jacobiStep {A : Matrix n n ℝ} (hA : A.IsSymm) (j k : n) :

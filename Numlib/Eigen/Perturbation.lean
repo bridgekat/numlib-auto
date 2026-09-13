@@ -13,6 +13,8 @@ import Numlib.Analysis.InnerProductSpace.Projection.Angle
 import Numlib.Analysis.Normed.Ring.CondNumber
 import Numlib.Eigen.MinMax
 import Numlib.Eigen.Normal
+import Numlib.Eigen.PowerMethod
+import Numlib.LinearAlgebra.Matrix.HermitianPart
 import Numlib.LinearAlgebra.Matrix.NonsingularInverse
 import Numlib.Topology.Algebra.Polynomial
 
@@ -1161,3 +1163,225 @@ theorem card_spectrum_of_isolated_gershgorin (A : Matrix n n ℂ) (i : n) {S S' 
   simpa using this
 
 end Matrix
+
+/-! ### Hirsch's bounds
+
+[quarteroni2000numerical] Theorem 5.1 (Hirsch): the real and the imaginary part of every eigenvalue
+of `A` lie between the extreme eigenvalues of the Hermitian part `H = (A + Aᴴ)/2` and of the matrix
+`S = (A - Aᴴ)/(2i)` respectively. Both are Bendixson's theorem
+`re_hasEigenvalue_mem_Icc_of_symmetricPart` read through `Matrix.toEuclideanLin`, the imaginary
+half being the real half for `-i A`, whose Hermitian part is `S`. -/
+
+namespace Matrix
+
+variable {n : Type*} [Fintype n] [DecidableEq n]
+
+/-- Bendixson's theorem for matrices: if `H` is Hermitian and its quadratic form is the real part
+of that of `A`, every eigenvalue of `A` has real part between the extreme eigenvalues of `H`. -/
+theorem re_mem_Icc_eigenvalues_of_mem_spectrum {A H : Matrix n n 𝕜} (hH : H.IsHermitian)
+    (hHA : ∀ x : EuclideanSpace 𝕜 n, RCLike.re (inner 𝕜 (toEuclideanLin H x) x)
+      = RCLike.re (inner 𝕜 (toEuclideanLin A x) x))
+    {μ : 𝕜} (hμ : μ ∈ spectrum 𝕜 A) :
+    RCLike.re μ ∈ Set.Icc (⨅ i, hH.eigenvalues i) (⨆ i, hH.eigenvalues i) := by
+  refine re_hasEigenvalue_mem_Icc_of_symmetricPart (hH.isSymmetricBoundedBy_toEuclideanLin
+    fun i => ⟨ciInf_le (Set.finite_range _).bddBelow i, le_ciSup (Set.finite_range _).bddAbove i⟩)
+    hHA ((hasEigenvalue_toEuclideanLin_iff A μ).mpr hμ)
+
+/-- **Hirsch's theorem, real part** ([quarteroni2000numerical] Theorem 5.1; Bendixson): the real
+part of every eigenvalue of `A` lies between the smallest and the largest eigenvalue of the
+Hermitian part `H = (A + Aᴴ)/2`. -/
+theorem hirsch_re (A : Matrix n n 𝕜) {μ : 𝕜} (hμ : μ ∈ spectrum 𝕜 A) :
+    RCLike.re μ ∈ Set.Icc (⨅ i, (hermitianPart_isHermitian A).eigenvalues i)
+      (⨆ i, (hermitianPart_isHermitian A).eigenvalues i) :=
+  re_mem_Icc_eigenvalues_of_mem_spectrum _ (re_inner_hermitianPart A) hμ
+
+/-- **Hirsch's theorem, imaginary part** ([quarteroni2000numerical] Theorem 5.1): the imaginary
+part of every eigenvalue of `A` lies between the smallest and the largest eigenvalue of
+`S = (A - Aᴴ)/(2i)`. It is the real part of the theorem for `-i A`, whose Hermitian part is `S`
+and whose eigenvalues are `-i` times those of `A`. -/
+theorem hirsch_im (A : Matrix n n ℂ) {μ : ℂ} (hμ : μ ∈ spectrum ℂ A) :
+    μ.im ∈ Set.Icc (⨅ i, (skewHermitianPart_isHermitian A).eigenvalues i)
+      (⨆ i, (skewHermitianPart_isHermitian A).eigenvalues i) := by
+  have hμ' : (-Complex.I) • μ ∈ spectrum ℂ ((-Complex.I) • A) := by
+    rw [show (-Complex.I) = (Units.mk0 (-Complex.I) (neg_ne_zero.mpr Complex.I_ne_zero) : ℂ)
+      from rfl, ← Units.smul_def, ← Units.smul_def, spectrum.unit_smul_eq_smul]
+    exact Set.smul_mem_smul_set hμ
+  have h := re_mem_Icc_eigenvalues_of_mem_spectrum (skewHermitianPart_isHermitian A)
+    (fun x => by rw [← hermitianPart_neg_I_smul, re_inner_hermitianPart]) hμ'
+  simpa [Complex.mul_re] using h
+
+end Matrix
+
+/-! ### Algebraically simple eigenvalues
+
+At an eigenvalue of algebraic multiplicity one — `finrank (maxGenEigenspace A l) = 1` — the two
+hypotheses that `Module.End.hasDerivAt_eigenvalue_perturbation` carries separately, `⟪w, u⟫ ≠ 0`
+and the geometric simplicity `∀ z, A z = l • z → ∃ c, z = c • u`, are theorems. The first is the
+opening paragraph of the proof of [quarteroni2000numerical] Theorem 5.4, without its
+diagonalizability. -/
+
+namespace Module.End
+
+variable [FiniteDimensional 𝕜 E]
+
+/-- At an eigenvalue of algebraic multiplicity one, the maximal generalized eigenspace is the line
+through any eigenvector. -/
+theorem maxGenEigenspace_eq_span_singleton_of_finrank_eq_one {A : E →ₗ[𝕜] E} {l : 𝕜} {u : E}
+    (hAu : A u = l • u) (hu : u ≠ 0)
+    (hsimple : Module.finrank 𝕜 (Module.End.maxGenEigenspace A l) = 1) :
+    Module.End.maxGenEigenspace A l = 𝕜 ∙ u := by
+  have hle : (𝕜 ∙ u) ≤ Module.End.maxGenEigenspace A l :=
+    (Submodule.span_singleton_le_iff_mem _ _).2
+      (Module.End.eigenspace_le_maxGenEigenspace (Module.End.mem_eigenspace_iff.2 hAu))
+  exact (Submodule.eq_of_le_of_finrank_le hle (by rw [hsimple, finrank_span_singleton hu])).symm
+
+/-- **A right and a left eigenvector for an algebraically simple eigenvalue are not orthogonal**
+([quarteroni2000numerical] Theorem 5.4, first step of the proof; [saad2011numerical] §3.2.1): if
+`A u = l u` with `u ≠ 0`, `⟪w, A y⟫ = l ⟪w, y⟫` for all `y` with `w ≠ 0`, and
+`finrank (maxGenEigenspace A l) = 1`, then `⟪w, u⟫ ≠ 0`.
+
+Were `⟪w, u⟫ = 0`, `u` would lie in `(𝕜 ∙ w)ᗮ`, which is the range of `A - l`: that range is
+contained in `(𝕜 ∙ w)ᗮ` because `w` is a left eigenvector, and both have codimension one, the
+kernel of `A - l` being the line through `u`. So `u = (A - l) z` for some `z`, which makes `z` a
+generalized eigenvector of index two — `(A - l)² z = 0` with `(A - l) z ≠ 0` — inside a generalized
+eigenspace that is only a line. This is why the hypothesis `hne` of
+`Module.End.hasDerivAt_eigenvalue_perturbation` is automatic at an algebraically simple eigenvalue.
+-/
+theorem inner_ne_zero_of_finrank_maxGenEigenspace_eq_one {A : E →ₗ[𝕜] E} {l : 𝕜} {u w : E}
+    (hAu : A u = l • u) (hu : u ≠ 0) (hw : ∀ y, (inner 𝕜 w (A y) : 𝕜) = l * inner 𝕜 w y)
+    (hw0 : w ≠ 0) (hsimple : Module.finrank 𝕜 (Module.End.maxGenEigenspace A l) = 1) :
+    (inner 𝕜 w u : 𝕜) ≠ 0 := by
+  intro hwu
+  set B : E →ₗ[𝕜] E := A - l • 1 with hBdef
+  have hBapply : ∀ y, B y = A y - l • y := fun y => by simp [hBdef]
+  have hBu : B u = 0 := by rw [hBapply, hAu, sub_self]
+  -- the kernel of `B` is the line through `u`
+  have hker : LinearMap.ker B = 𝕜 ∙ u := by
+    rw [hBdef, ← Module.End.eigenspace_def,
+      ← Krylov.maxGenEigenspace_eq_eigenspace_of_finrank_eq_one hsimple]
+    exact maxGenEigenspace_eq_span_singleton_of_finrank_eq_one hAu hu hsimple
+  -- the range of `B` is the orthogonal complement of `w`
+  have hrange_le : LinearMap.range B ≤ (𝕜 ∙ w)ᗮ := by
+    rintro _ ⟨y, rfl⟩
+    rw [Submodule.mem_orthogonal_singleton_iff_inner_right, hBapply, inner_sub_right,
+      inner_smul_right, hw, sub_self]
+  have hrange : LinearMap.range B = (𝕜 ∙ w)ᗮ := by
+    refine Submodule.eq_of_le_of_finrank_le hrange_le ?_
+    have h1 := LinearMap.finrank_range_add_finrank_ker B
+    have h2 := Submodule.finrank_add_finrank_orthogonal (𝕜 ∙ w)
+    rw [hker, finrank_span_singleton hu] at h1
+    rw [finrank_span_singleton hw0] at h2
+    omega
+  -- so `u = B z` for some `z`, a generalized eigenvector of index two
+  have humem : u ∈ LinearMap.range B := by
+    rw [hrange, Submodule.mem_orthogonal_singleton_iff_inner_right]
+    exact hwu
+  obtain ⟨z, hz⟩ := humem
+  have hzmem : z ∈ Module.End.maxGenEigenspace A l := by
+    rw [Module.End.mem_maxGenEigenspace]
+    exact ⟨2, by rw [pow_two, Module.End.mul_apply, ← hBdef, hz, hBu]⟩
+  rw [maxGenEigenspace_eq_span_singleton_of_finrank_eq_one hAu hu hsimple,
+    Submodule.mem_span_singleton] at hzmem
+  obtain ⟨c, rfl⟩ := hzmem
+  rw [map_smul, hBu, smul_zero] at hz
+  exact hu hz.symm
+
+/-- **A simple eigenvalue moves differentiably**, under the single hypothesis that it is
+algebraically simple: `Module.End.hasDerivAt_eigenvalue_perturbation` with its two hypotheses
+`⟪w, u⟫ ≠ 0` and geometric simplicity replaced by `finrank (maxGenEigenspace A l) = 1`, for any
+nonzero eigenvector `u` and any nonzero left eigenvector `w`. This is the branch that
+[quarteroni2000numerical] Theorem 5.4 presupposes when it calls `λ` simple. -/
+theorem hasDerivAt_eigenvalue_perturbation_of_finrank_eq_one {A B : E →L[𝕜] E} {l : 𝕜}
+    {u w : E} (hAu : A u = l • u) (hu : u ≠ 0)
+    (hw : ∀ y, (inner 𝕜 w (A y) : 𝕜) = l * inner 𝕜 w y) (hw0 : w ≠ 0)
+    (hsimple : Module.finrank 𝕜 (Module.End.maxGenEigenspace (A : E →ₗ[𝕜] E) l) = 1) :
+    ∃ (mu : 𝕜 → 𝕜) (v : 𝕜 → E) (v' : E), mu 0 = l ∧ v 0 = u ∧
+      (∀ᶠ t in nhds (0 : 𝕜), A (v t) + t • B (v t) = mu t • v t) ∧
+      HasDerivAt v v' 0 ∧
+      HasDerivAt mu (inner 𝕜 w (B u) / inner 𝕜 w u) 0 := by
+  refine hasDerivAt_eigenvalue_perturbation hAu hw
+    (inner_ne_zero_of_finrank_maxGenEigenspace_eq_one (A := (A : E →ₗ[𝕜] E)) hAu hu hw hw0
+      hsimple) fun z hz => ?_
+  have hz' : z ∈ Module.End.maxGenEigenspace (A : E →ₗ[𝕜] E) l :=
+    Module.End.eigenspace_le_maxGenEigenspace (Module.End.mem_eigenspace_iff.2 hz)
+  rw [maxGenEigenspace_eq_span_singleton_of_finrank_eq_one (A := (A : E →ₗ[𝕜] E)) hAu hu hsimple,
+    Submodule.mem_span_singleton] at hz'
+  obtain ⟨c, rfl⟩ := hz'
+  exact ⟨c, rfl⟩
+
+end Module.End
+
+/-! ### The distance to a group of eigenvectors -/
+
+namespace LinearMap.IsSymmetric
+
+variable [FiniteDimensional 𝕜 E] {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric)
+include hA
+
+/-- A vector is orthogonal to `hA.eigenvectorSpan hn s` exactly when its eigenbasis coordinates
+vanish on `s`. -/
+theorem mem_orthogonal_eigenvectorSpan_iff {n : ℕ} (hn : Module.finrank 𝕜 E = n)
+    {s : Finset (Fin n)} {x : E} :
+    x ∈ (hA.eigenvectorSpan hn s)ᗮ ↔ ∀ i ∈ s, (hA.eigenvectorBasis hn).repr x i = 0 := by
+  rw [← Submodule.span_singleton_le_iff_mem, ← Submodule.isOrtho_iff_le, Submodule.isOrtho_comm,
+    eigenvectorSpan, Submodule.isOrtho_span]
+  simp only [Set.mem_image, Finset.mem_coe, Set.mem_singleton_iff, forall_exists_index, and_imp,
+    forall_apply_eq_imp_iff₂, forall_eq, OrthonormalBasis.repr_apply_apply]
+
+/-- **The distance from an approximate eigenvector to a group of eigenvectors**
+([quarteroni2000numerical] Property 5.6; Isaacson–Keller, *Analysis of Numerical Methods*,
+pp. 142–143): for a symmetric `A` with eigenpairs `(hA.eigenvalues hn i, hA.eigenvectorBasis hn
+i)`, an approximate pair `(θ, x)` with residual `r = A x - θ x`, and a set `s` of indices such that
+every eigenvalue *outside* `s` is at distance at least `δ > 0` from `θ`, the distance from `x` to
+the span of the eigenvectors indexed by `s` is at most `‖r‖ / δ`.
+
+The book also assumes `|λ_i - θ| ≤ ‖r‖` for `i ∈ s`; that hypothesis plays no role. Taking `s` to
+be the indices of one eigenvalue recovers `LinearMap.IsSymmetric.sin_angle_le_norm_residual_div`,
+the residual bound for a single eigenspace.
+
+The proof is the one of that theorem: split `x = p + q` along the span and its complement, both
+`A`-invariant; the residual splits as `(A - θ) p + (A - θ) q` with orthogonal terms, so
+`‖r‖ ≥ ‖(A - θ) q‖`, and in the eigenbasis `‖(A - θ) q‖² = ∑_{i ∉ s} (λ_i - θ)² |q_i|² ≥ δ² ‖q‖²`.
+-/
+theorem dist_eigenvectorSpan_le_norm_residual_div {n : ℕ} (hn : Module.finrank 𝕜 E = n)
+    (s : Finset (Fin n)) (θ : ℝ) (x : E) {δ : ℝ} (hδ : 0 < δ)
+    (hsep : ∀ i ∉ s, δ ≤ |hA.eigenvalues hn i - θ|) :
+    ‖x - (hA.eigenvectorSpan hn s).starProjection x‖ ≤ ‖A x - (θ : 𝕜) • x‖ / δ := by
+  set W : Submodule 𝕜 E := hA.eigenvectorSpan hn s with hWdef
+  set p : E := W.starProjection x with hpdef
+  set q : E := x - p with hqdef
+  have hpmem : p ∈ W := W.starProjection_apply_mem x
+  have hqmem : q ∈ Wᗮ := W.sub_starProjection_mem_orthogonal x
+  have hpres : A p - (θ : 𝕜) • p ∈ W :=
+    (hA.mem_eigenvectorSpan_iff hn).mpr fun i hi => by
+      rw [hA.repr_sub_smul hn, (hA.mem_eigenvectorSpan_iff hn).mp hpmem i hi, mul_zero]
+  have hqres : A q - (θ : 𝕜) • q ∈ Wᗮ :=
+    (hA.mem_orthogonal_eigenvectorSpan_iff hn).mpr fun i hi => by
+      rw [hA.repr_sub_smul hn, (hA.mem_orthogonal_eigenvectorSpan_iff hn).mp hqmem i hi, mul_zero]
+  have hsplit : A x - (θ : 𝕜) • x = (A p - (θ : 𝕜) • p) + (A q - (θ : 𝕜) • q) := by
+    rw [hqdef, map_sub, smul_sub]
+    abel
+  have hpyth : ‖A x - (θ : 𝕜) • x‖ ^ 2
+      = ‖A p - (θ : 𝕜) • p‖ ^ 2 + ‖A q - (θ : 𝕜) • q‖ ^ 2 := by
+    rw [hsplit]
+    simp only [pow_two]
+    exact norm_add_sq_eq_norm_sq_add_norm_sq_of_inner_eq_zero _ _
+      (Submodule.inner_right_of_mem_orthogonal hpres hqres)
+  have hlow : δ * ‖q‖ ≤ ‖A q - (θ : 𝕜) • q‖ := by
+    have hsq : (δ * ‖q‖) ^ 2 ≤ ‖A q - (θ : 𝕜) • q‖ ^ 2 := by
+      rw [mul_pow, hA.norm_residual_sq hn θ q, hA.norm_sq_eq_sum_norm_repr_sq hn q,
+        Finset.mul_sum]
+      refine Finset.sum_le_sum fun i _ => ?_
+      by_cases hi : i ∈ s
+      · rw [(hA.mem_orthogonal_eigenvectorSpan_iff hn).mp hqmem i hi]
+        simp
+      · refine mul_le_mul_of_nonneg_right ?_ (sq_nonneg _)
+        have h := hsep i hi
+        nlinarith [sq_abs (hA.eigenvalues hn i - θ), abs_nonneg (hA.eigenvalues hn i - θ)]
+    exact le_of_sq_le_sq hsq (norm_nonneg _)
+  rw [le_div_iff₀ hδ, mul_comm]
+  refine hlow.trans ?_
+  nlinarith [hpyth, norm_nonneg (A x - (θ : 𝕜) • x), norm_nonneg (A q - (θ : 𝕜) • q),
+    sq_nonneg ‖A p - (θ : 𝕜) • p‖]
+
+end LinearMap.IsSymmetric

@@ -1,6 +1,7 @@
 import Numlib.Analysis.InnerProductSpace.Projection.Angle
 import Numlib.Eigen.RayleighRitz
 import Numlib.Krylov.Convergence.Polynomial
+import Numlib.Krylov.Lanczos
 import Numlib.RingTheory.Polynomial.ChebyshevEllipse
 import Numlib.RingTheory.Polynomial.ChebyshevMinimax
 
@@ -1088,6 +1089,41 @@ theorem sin_angle_ritzVector_le {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric) (v :
           (subspace A v m).sinAngle u :=
   hA.sin_angle_ritzVector_le hδ0
     (fun _x hx => Arnoldi.norm_starProjection_apply_le_of_mem_orthogonal A v hA hm hx) hθ hδ hu hu0
+
+/-- **The Lanczos matrix is the compression in the Lanczos basis** ([saad2003iterative], Thm 6.19,
+read through `Arnoldi.hessenbergSq_eq_toMatrix_compression`): for symmetric `A` and no breakdown
+before step `m` (`finrank 𝒦_m = m`), the sorted eigenvalues of the real symmetric tridiagonal
+`Lanczos.tridiag A b m` are the sorted eigenvalues of `compression A 𝒦_m`, the Ritz values. The two
+matrices `T_m` and `H_m = V_mᴴ A V_m` are the same, so the two characteristic polynomials agree
+and so do their sorted real root lists. This is what turns `Lanczos.kaniel_paige_saad`, a
+statement about Ritz values, into [quarteroni2000numerical] Property 5.12, a statement about the
+eigenvalues of `H_m`. -/
+theorem eigenvalues_tridiag_eq_eigenvalues_compression {A : E →ₗ[𝕜] E} (b : E)
+    [FiniteDimensional 𝕜 (fullSubspace A b)] (hA : A.IsSymmetric) {m : ℕ}
+    (hm : Module.finrank 𝕜 (subspace A b m) = m) :
+    (Matrix.isHermitian_iff_isSymm.mpr (tridiag_isSymm A b m)).eigenvalues₀
+      = (compression.isSymmetric A (subspace A b m) hA).eigenvalues hm
+        ∘ Fin.cast (Fintype.card_fin m) := by
+  have hmg : m ≤ grade A b := by
+    rw [finrank_subspace] at hm
+    exact min_eq_left_iff.mp hm
+  set hT := Matrix.isHermitian_iff_isSymm.mpr (tridiag_isSymm A b m) with hTdef
+  have hchar : (compression A (subspace A b m)).charpoly
+      = (tridiag A b m).charpoly.map (algebraMap ℝ 𝕜) := by
+    rw [← LinearMap.charpoly_toMatrix _ (Arnoldi.orthonormalBasis A b hmg).toBasis,
+      ← Arnoldi.hessenbergSq_eq_toMatrix_compression A b hmg, hessenbergSq_eq_map_tridiag b hA,
+      Matrix.charpoly_map]
+  have hcast : List.ofFn ((compression.isSymmetric A (subspace A b m) hA).eigenvalues hm
+      ∘ Fin.cast (Fintype.card_fin m))
+      = List.ofFn ((compression.isSymmetric A (subspace A b m) hA).eigenvalues hm) :=
+    (List.ofFn_congr (Fintype.card_fin m).symm
+      ((compression.isSymmetric A (subspace A b m) hA).eigenvalues hm)).symm
+  rw [← List.ofFn_inj, ← Matrix.IsHermitian.sort_roots_charpoly_eq_eigenvalues₀, hcast,
+    ← LinearMap.IsSymmetric.sort_roots_charpoly_eq_eigenvalues, hchar,
+    hT.splits_charpoly.roots_map, Multiset.map_map]
+  congr 2
+  ext x
+  simp
 
 end Lanczos
 

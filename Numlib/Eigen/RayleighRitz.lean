@@ -685,6 +685,20 @@ theorem eigenvalues_compression_le [FiniteDimensional 𝕜 E] {A : E →ₗ[𝕜
   obtain ⟨⟨S, -, hS, hb⟩, -⟩ := hA.isGreatest_eigenvalues_compression K hm i
   exact (hA.isGreatest_eigenvalues hn (Fin.castLE hmn i)).2 ⟨S, hS, hb⟩
 
+/-- **Cauchy interlacing**, from above: the `i`-th Ritz value on an `m`-dimensional `K` is at least
+the `(i + (n - m))`-th eigenvalue of `A`, both families sorted decreasingly — the companion of
+`eigenvalues_compression_le`, and at the last index [quarteroni2000numerical] (5.67),
+`λ_m(H_m) ≥ λ_n(A)`. It is the lower half of
+`LinearMap.IsSymmetric.eigenvalues_restrict_interlace` at the compression, whose Rayleigh quotient
+is that of `A` (`Krylov.rayleighQuotient_compression`). -/
+theorem eigenvalues_le_eigenvalues_compression [FiniteDimensional 𝕜 E] {A : E →ₗ[𝕜] E}
+    (hA : A.IsSymmetric) (K : Submodule 𝕜 E) {n m : ℕ} (hn : Module.finrank 𝕜 E = n)
+    (hm : Module.finrank 𝕜 K = m) (hmn : m ≤ n) (i : Fin m) :
+    hA.eigenvalues hn ⟨(i : ℕ) + (n - m), by omega⟩
+      ≤ (compression.isSymmetric A K hA).eigenvalues hm i :=
+  (hA.eigenvalues_restrict_interlace hn (compression.isSymmetric A K hA) hm hmn
+    (fun y => by rw [compression.inner_apply]) i).1
+
 /-- **The Ritz values increase with the subspace**, which is the mechanism behind the convergence of
 Davidson's method ([saad2011numerical], Thm 8.1): enlarging the approximation space can only improve
 every Ritz value, both families being sorted decreasingly.
