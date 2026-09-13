@@ -1,5 +1,6 @@
 import Mathlib.Analysis.RCLike.Basic
 import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
+import Numlib.LinearAlgebra.Matrix.Complexify
 import Numlib.LinearAlgebra.Matrix.Hessenberg
 import Numlib.LinearSolve.Stationary.Basic
 
@@ -13,6 +14,11 @@ for Jacobi, Gauss–Seidel, SOR, SSOR and Richardson ([saad2003iterative] §4.1,
 roles of the letters; [higham2002accuracy] Ch. 17). [saad2003iterative] writes the splitting as `A =
 D - E - F` with `D` the diagonal and `-E`, `-F` the strictly lower and strictly upper triangular
 parts, which corresponds to `D = diagPart A`, `E = -strictLower A`, `F = -strictUpper A`.
+
+The Jacobi and Gauss–Seidel splittings of a real matrix commute with `Matrix.complexify`
+(`Matrix.complexify_jacobi_iterationOperator`, `Matrix.complexify_gaussSeidel_iterationOperator`),
+which is how their spectral radii — `Matrix.complexSpectralRadius`, defined through the
+complexification — are read off the complex theory.
 -/
 
 namespace Stationary
@@ -93,24 +99,6 @@ open Stationary
 
 variable {n : Type*} [Fintype n] [DecidableEq n] [LinearOrder n]
 variable {𝕜 : Type*} [Field 𝕜]
-
-omit [LinearOrder n] in
-/-- The diagonal part of `A` is a unit exactly when every diagonal entry of `A` is nonzero.  This is
-the hypothesis every splitting below is built on. -/
-theorem isUnit_diagPart_iff (A : Matrix n n 𝕜) : IsUnit (diagPart A) ↔ ∀ i, A i i ≠ 0 := by
-  rw [isUnit_iff_isUnit_det, diagPart, det_diagonal, isUnit_iff_ne_zero, Finset.prod_ne_zero_iff]
-  simp [Matrix.diag]
-
-omit [LinearOrder n] in
-/-- The inverse of the diagonal part is the diagonal matrix of the inverses.  Every entrywise
-computation with a splitting goes through this, because `Matrix.inv_diagonal` inverts the diagonal
-in the Pi ring and is therefore `0` when one entry vanishes. -/
-theorem inv_diagPart {A : Matrix n n 𝕜} (h : IsUnit (diagPart A)) :
-    (diagPart A)⁻¹ = diagonal fun i => (A i i)⁻¹ := by
-  have hd := (isUnit_diagPart_iff A).mp h
-  refine inv_eq_left_inv ?_
-  rw [diagPart, diagonal_mul_diagonal, ← diagonal_one]
-  exact congrArg _ (funext fun i => inv_mul_cancel₀ (hd i))
 
 /-- A triangular matrix whose diagonal entries are nonzero is a unit. -/
 private theorem isUnit_of_isLowerTriangular {M : Matrix n n 𝕜} (hM : M.IsLowerTriangular)
@@ -259,5 +247,33 @@ theorem sorSplitting_one (A : Matrix n n 𝕜) (h : IsUnit (diagPart A)) :
   ext : 1
   change (1 : 𝕜)⁻¹ • diagPart A + strictLower A = diagPart A + strictLower A
   rw [inv_one, one_smul]
+
+section Complexify
+
+omit [LinearOrder n] in
+/-- The Jacobi iteration matrix of `complexify A` is the complexification of that of `A`. -/
+theorem complexify_jacobi_iterationOperator (A : Matrix n n ℝ) (h : IsUnit (diagPart A))
+    (h' : IsUnit (diagPart (complexify A))) :
+    complexify (jacobiSplitting A h).iterationOperator =
+      (jacobiSplitting (complexify A) h').iterationOperator := by
+  have e1 : (jacobiSplitting A h).iterationOperator = 1 - Ring.inverse (diagPart A) * A := rfl
+  have e2 : (jacobiSplitting (complexify A) h').iterationOperator
+      = 1 - Ring.inverse (diagPart (complexify A)) * complexify A := rfl
+  rw [e1, e2, ← complexify_diagPart, complexify_one_sub_inverse_mul]
+
+/-- The Gauss–Seidel iteration matrix of `complexify A` is the complexification of that of `A`. -/
+theorem complexify_gaussSeidel_iterationOperator (A : Matrix n n ℝ) (h : IsUnit (diagPart A))
+    (h' : IsUnit (diagPart (complexify A))) :
+    complexify (gaussSeidelSplitting A h).iterationOperator =
+      (gaussSeidelSplitting (complexify A) h').iterationOperator := by
+  have e1 : (gaussSeidelSplitting A h).iterationOperator
+      = 1 - Ring.inverse (diagPart A + strictLower A) * A := rfl
+  have e2 : (gaussSeidelSplitting (complexify A) h').iterationOperator
+      = 1 - Ring.inverse (diagPart (complexify A) + strictLower (complexify A)) * complexify A :=
+    rfl
+  rw [e1, e2, ← complexify_diagPart, ← complexify_strictLower, ← complexify_add,
+    complexify_one_sub_inverse_mul]
+
+end Complexify
 
 end Matrix

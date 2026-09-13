@@ -6,7 +6,7 @@ Gershgorin row and column discs (Theorem 5.2, (5.6)), the three Gershgorin theor
 Everything is a restatement: the discs and the counting theorem are `Numlib/Eigen/Perturbation`,
 reducibility is `Numlib/LinearAlgebra/Sparse/Pattern`, and the third Gershgorin theorem is
 `Matrix.IsPatternIrreducible.norm_sub_eq_of_mem_frontier` of
-`Numlib/LinearSolve/Stationary/DiagDominant`. Hirsch's imaginary-part half is a new backbone node.
+`Numlib/LinearAlgebra/Matrix/DiagDominant`. Hirsch's imaginary-part half is a new backbone node.
 Example 5.1 is a numerical table and is skipped.
 '''
 
@@ -123,6 +123,6 @@ desc = '''Property 5.4 (third Gershgorin theorem): for `A : Matrix n n ℂ` irre
 `S_R` of the row discs (`μ ∈ frontier (⋃ i, closedBall (A i i) r_i)`), `μ` lies on the boundary of
 every disc: `∀ i, ‖μ - A i i‖ = ∑ j ∈ univ.erase i, ‖A i j‖`. This is
 `Matrix.IsPatternIrreducible.norm_sub_eq_of_mem_frontier` of
-`Numlib/LinearSolve/Stationary/DiagDominant.lean:813` verbatim, after `definition_5_1_iff`. ★'''
+`Numlib/LinearAlgebra/Matrix/DiagDominant` verbatim, after `definition_5_1_iff`. ★'''
 deps = ["QuarteroniSaccoSaleri.Chapter05.definition_5_1_iff", "Matrix.IsPatternIrreducible.norm_sub_eq_of_mem_frontier"]
 source = 'Quarteroni–Sacco–Saleri, Numerical Mathematics, Property 5.4'

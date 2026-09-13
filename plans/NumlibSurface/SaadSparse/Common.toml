@@ -1,22 +1,6 @@
 namespace = "SaadSparse"
 
 [[node]]
-id = "complexify_diagPart"
-deprecated = '''Moves to the backbone as `Matrix.complexify_diagPart` (Numlib/LinearAlgebra/Matrix/Complexify): glue every matrix surface needs.'''
-
-[[node]]
-id = "complexify_inv"
-deprecated = 'Moves to the backbone as `Matrix.complexify_inv` (Numlib/LinearAlgebra/Matrix/Complexify).'
-
-[[node]]
-id = "complexify_strictLower"
-deprecated = '''Moves to the backbone as `Matrix.complexify_strictLower` (Numlib/LinearAlgebra/Matrix/Complexify).'''
-
-[[node]]
-id = "complexify_strictUpper"
-deprecated = '''Moves to the backbone as `Matrix.complexify_strictUpper` (Numlib/LinearAlgebra/Matrix/Complexify).'''
-
-[[node]]
 id = "eigenvalues_le_lambdaMax"
 
 [[node]]

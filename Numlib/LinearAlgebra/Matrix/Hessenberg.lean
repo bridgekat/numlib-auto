@@ -24,7 +24,9 @@ Gauss–Seidel and SOR iterations.
 * `Matrix.IsUpperHessenbergRect`: the rectangular `(m + 1) × m` form of the same condition, as in
   the matrix `H̄ₘ` of the Arnoldi process.
 * `Matrix.strictLower`, `Matrix.strictUpper`, `Matrix.diagPart`: the three parts a matrix splits
-  into, `Matrix.diagPart_add_strictLower_add_strictUpper`.
+  into, `Matrix.diagPart_add_strictLower_add_strictUpper`; over a field, the diagonal part is a
+  unit exactly when the diagonal has no zero (`Matrix.isUnit_diagPart_iff`), and its inverse is
+  then the diagonal of the inverses (`Matrix.inv_diagPart`).
 
 ## Implementation notes
 
@@ -117,5 +119,29 @@ theorem diagPart_add_strictLower_add_strictUpper [DecidableEq n] [AddCommMonoid 
 theorem diagPart_sub_neg_strictLower_sub_neg_strictUpper [DecidableEq n] [AddCommGroup R]
     (A : Matrix n n R) : diagPart A - (-strictLower A) - (-strictUpper A) = A := by
   rw [sub_neg_eq_add, sub_neg_eq_add, diagPart_add_strictLower_add_strictUpper]
+
+section DiagPart
+
+variable {𝕜 : Type*} [Field 𝕜] [Fintype n] [DecidableEq n]
+
+omit [LinearOrder n] in
+/-- The diagonal part of `A` is a unit exactly when every diagonal entry of `A` is nonzero.  This is
+the hypothesis every classical splitting is built on. -/
+theorem isUnit_diagPart_iff (A : Matrix n n 𝕜) : IsUnit (diagPart A) ↔ ∀ i, A i i ≠ 0 := by
+  rw [isUnit_iff_isUnit_det, diagPart, det_diagonal, isUnit_iff_ne_zero, Finset.prod_ne_zero_iff]
+  simp [Matrix.diag]
+
+omit [LinearOrder n] in
+/-- The inverse of the diagonal part is the diagonal matrix of the inverses.  Every entrywise
+computation with a splitting goes through this, because `Matrix.inv_diagonal` inverts the diagonal
+in the Pi ring and is therefore `0` when one entry vanishes. -/
+theorem inv_diagPart {A : Matrix n n 𝕜} (h : IsUnit (diagPart A)) :
+    (diagPart A)⁻¹ = diagonal fun i => (A i i)⁻¹ := by
+  have hd := (isUnit_diagPart_iff A).mp h
+  refine inv_eq_left_inv ?_
+  rw [diagPart, diagonal_mul_diagonal, ← diagonal_one]
+  exact congrArg _ (funext fun i => inv_mul_cancel₀ (hd i))
+
+end DiagPart
 
 end Matrix

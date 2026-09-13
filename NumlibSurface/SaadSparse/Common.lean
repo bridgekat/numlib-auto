@@ -135,48 +135,6 @@ section Complexify
 
 variable {n : ℕ}
 
-/-- Complexification is additive; the `simp` form at `Fin n` of `Matrix.complexify_sub`. -/
-@[simp]
-theorem complexify_sub (A B : Matrix (Fin n) (Fin n) ℝ) :
-    complexify (A - B) = complexify A - complexify B := by
-  ext i j; simp [complexify]
-
-/-- Complexification commutes with taking the diagonal part, so the splitting `A = D - E - F`
-of (4.2) may be formed before or after passing to `ℂ`.  This, with the two companions below, is
-what lets a real iteration matrix be analysed through the spectral radius of its
-complexification. -/
-@[simp]
-theorem complexify_diagPart (A : Matrix (Fin n) (Fin n) ℝ) :
-    complexify (diagPart A) = diagPart (complexify A) := by
-  ext i j; by_cases h : i = j <;> simp [complexify, diagPart_apply, h]
-
-/-- Complexification commutes with taking the strict lower part, the `-E` of the splitting
-`A = D - E - F` of (4.2). -/
-@[simp]
-theorem complexify_strictLower (A : Matrix (Fin n) (Fin n) ℝ) :
-    complexify (strictLower A) = strictLower (complexify A) := by
-  ext i j; by_cases h : j < i <;> simp [complexify, strictLower_apply, h]
-
-/-- Complexification commutes with taking the strict upper part, the `-F` of the splitting
-`A = D - E - F` of (4.2). -/
-@[simp]
-theorem complexify_strictUpper (A : Matrix (Fin n) (Fin n) ℝ) :
-    complexify (strictUpper A) = strictUpper (complexify A) := by
-  ext i j; by_cases h : i < j <;> simp [complexify, strictUpper_apply, h]
-
-/-- Complexification commutes with inversion. -/
-theorem complexify_inv (A : Matrix (Fin n) (Fin n) ℝ) : complexify A⁻¹ = (complexify A)⁻¹ := by
-  by_cases hA : IsUnit A
-  · have h1 : complexify A⁻¹ * complexify A = 1 := by
-      rw [← complexify_mul, nonsing_inv_mul _ ((isUnit_iff_isUnit_det A).mp hA), complexify_one]
-    exact (inv_eq_left_inv h1).symm
-  · have h0 : A⁻¹ = 0 :=
-      nonsing_inv_apply_not_isUnit A fun h => hA ((isUnit_iff_isUnit_det A).mpr h)
-    have h0' : (complexify A)⁻¹ = 0 :=
-      nonsing_inv_apply_not_isUnit _ fun h => hA ((isUnit_complexify_iff A).mp
-        ((isUnit_iff_isUnit_det _).mpr h))
-    rw [h0, h0', complexify_zero]
-
 /-- The Euclidean norm of `A x` is unchanged by complexification of both. -/
 theorem norm_complexify_mulVec (A : Matrix (Fin n) (Fin n) ℝ) (x : Fin n → ℝ) :
     ‖(WithLp.toLp 2 (complexify A *ᵥ fun i => (x i : ℂ)) : EuclideanSpace ℂ (Fin n))‖ =

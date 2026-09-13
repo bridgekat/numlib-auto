@@ -12,6 +12,7 @@ import Mathlib.LinearAlgebra.Matrix.Charpoly.Eigs
 import Mathlib.LinearAlgebra.Matrix.Hermitian
 import Mathlib.Topology.Instances.Matrix
 import Numlib.Analysis.Normed.Algebra.SpectralRadius
+import Numlib.LinearAlgebra.Matrix.Hessenberg
 
 /-!
 # Complexification of real matrices
@@ -49,6 +50,13 @@ corollaries at the end of the file.
 * `Matrix.limsup_norm_pow_mulVec_rpow_le` and
   `Matrix.exists_limsup_norm_pow_mulVec_rpow_eq`: the spectral radius bounds every specific
   convergence factor `limsup (‖Gᵏ d₀‖/‖d₀‖) ^ (1/k)`, and some `d₀` attains it.
+
+Complexification is a ring homomorphism, and the algebraic lemmas at the top of the file say so
+operation by operation (`Matrix.complexify_add`, `Matrix.complexify_mul`, `Matrix.complexify_inv`,
+…).  It also commutes with the diagonal, strictly lower and strictly upper parts of
+`Numlib/LinearAlgebra/Matrix/Hessenberg.lean` (`Matrix.complexify_diagPart` and its companions),
+which is what lets the classical splittings of a real matrix be formed before or after passing to
+`ℂ`.
 -/
 
 open Filter Topology
@@ -66,15 +74,19 @@ def complexify (A : Matrix n n ℝ) : Matrix n n ℂ := A.map Complex.ofReal
 @[simp] theorem complexify_zero : complexify (0 : Matrix n n ℝ) = 0 := by
   ext i j; simp
 
+/-- Complexification is additive. -/
 theorem complexify_add (A B : Matrix n n ℝ) : complexify (A + B) = complexify A + complexify B := by
   ext i j; simp
 
+/-- Complexification commutes with negation. -/
 theorem complexify_neg (A : Matrix n n ℝ) : complexify (-A) = -complexify A := by
   ext i j; simp
 
+/-- Complexification commutes with subtraction. -/
 theorem complexify_sub (A B : Matrix n n ℝ) : complexify (A - B) = complexify A - complexify B := by
   ext i j; simp
 
+/-- Complexification commutes with real scalar multiplication, the scalar being read in `ℂ`. -/
 theorem complexify_smul (c : ℝ) (A : Matrix n n ℝ) :
     complexify (c • A) = (c : ℂ) • complexify A := by
   ext i j; simp
@@ -117,10 +129,31 @@ private def complexifyₗ : Matrix n n ℝ →ₗ[ℝ] Matrix n n ℂ where
   map_add' := complexify_add
   map_smul' c A := by ext i j; simp [Complex.real_smul]
 
+/-- Complexification commutes with taking the strict lower part. -/
+@[simp]
+theorem complexify_strictLower [LinearOrder n] (A : Matrix n n ℝ) :
+    complexify (strictLower A) = strictLower (complexify A) := by
+  ext i j; by_cases h : j < i <;> simp [complexify, strictLower_apply, h]
+
+/-- Complexification commutes with taking the strict upper part. -/
+@[simp]
+theorem complexify_strictUpper [LinearOrder n] (A : Matrix n n ℝ) :
+    complexify (strictUpper A) = strictUpper (complexify A) := by
+  ext i j; by_cases h : i < j <;> simp [complexify, strictUpper_apply, h]
+
 variable [DecidableEq n]
 
 @[simp] theorem complexify_one : complexify (1 : Matrix n n ℝ) = 1 :=
   Matrix.map_one _ Complex.ofReal_zero Complex.ofReal_one
+
+/-- Complexification commutes with taking the diagonal part, so the splitting `A = D - E - F` of
+the classical stationary iterations may be formed before or after passing to `ℂ`.  This, with
+`Matrix.complexify_strictLower` and `Matrix.complexify_strictUpper`, is what lets a real iteration
+matrix be analysed through the spectral radius of its complexification. -/
+@[simp]
+theorem complexify_diagPart (A : Matrix n n ℝ) :
+    complexify (diagPart A) = diagPart (complexify A) := by
+  ext i j; by_cases h : i = j <;> simp [complexify, diagPart_apply, h]
 
 variable [Fintype n]
 
@@ -141,6 +174,35 @@ available. -/
 theorem isUnit_complexify_iff (A : Matrix n n ℝ) : IsUnit (complexify A) ↔ IsUnit A := by
   rw [Matrix.isUnit_iff_isUnit_det, Matrix.isUnit_iff_isUnit_det, det_complexify]
   simp [isUnit_iff_ne_zero]
+
+/-- Complexification commutes with inversion; both sides are `0` when `A` is not a unit, by
+`Matrix.isUnit_complexify_iff`. -/
+theorem complexify_inv (A : Matrix n n ℝ) : complexify A⁻¹ = (complexify A)⁻¹ := by
+  by_cases hA : IsUnit A
+  · have h1 : complexify A⁻¹ * complexify A = 1 := by
+      rw [← complexify_mul, nonsing_inv_mul _ ((isUnit_iff_isUnit_det A).mp hA), complexify_one]
+    exact (inv_eq_left_inv h1).symm
+  · have h0 : A⁻¹ = 0 :=
+      nonsing_inv_apply_not_isUnit A fun h => hA ((isUnit_iff_isUnit_det A).mpr h)
+    have h0' : (complexify A)⁻¹ = 0 :=
+      nonsing_inv_apply_not_isUnit _ fun h => hA ((isUnit_complexify_iff A).mp
+        ((isUnit_iff_isUnit_det _).mpr h))
+    rw [h0, h0', complexify_zero]
+
+/-- Complexification commutes with the iteration operator `1 - m⁻¹ a` of a splitting
+(`Stationary.Splitting.iterationOperator` of `Numlib/LinearSolve/Stationary/Splitting.lean`),
+here written out with `Ring.inverse`. -/
+theorem complexify_one_sub_inverse_mul (m A : Matrix n n ℝ) :
+    complexify (1 - Ring.inverse m * A) = 1 - Ring.inverse (complexify m) * complexify A := by
+  rw [complexify_sub, complexify_one, complexify_mul, ← nonsing_inv_eq_ringInverse,
+    ← nonsing_inv_eq_ringInverse, complexify_inv]
+
+/-- The diagonal part of the complexification is a unit as soon as that of `A` is: the hypothesis
+transfer that lets a real Jacobi, Gauss–Seidel or SOR splitting be complexified. -/
+theorem isUnit_diagPart_complexify {A : Matrix n n ℝ} (h : IsUnit (diagPart A)) :
+    IsUnit (diagPart (complexify A)) := by
+  rw [← complexify_diagPart, isUnit_complexify_iff]
+  exact h
 
 /-- `charpoly (complexify A) = charpoly A` mapped to `ℂ` (Mathlib: `Matrix.charpoly_map`). -/
 theorem charpoly_complexify (A : Matrix n n ℝ) :

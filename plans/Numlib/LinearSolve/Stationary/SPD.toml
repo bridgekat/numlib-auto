@@ -122,8 +122,10 @@ splitting of `complexify A` with `m = complexify s.m` (a unit by `isUnit_complex
 iteration operator is the complexification of `s.iterationOperator`
 (`Stationary.Splitting.complexify_iterationOperator`). This is the private pair
 `complexSplitting`/`complexSplitting_iterationOperator` at lines 430–447 of the module, made public
-so that a surface can move a real splitting to `ℂ` without re-deriving it — the Saad surface did so
-by hand for Jacobi and Gauss–Seidel (`SaadSparse.Chapter04.complexify_jacobi_iterationOperator`). ★'''
+so that a surface can move a real splitting to `ℂ` without re-deriving it; the Jacobi and
+Gauss–Seidel cases are done by hand in `Matrix.complexify_jacobi_iterationOperator` and
+`Matrix.complexify_gaussSeidel_iterationOperator` of `Numlib/LinearSolve/Stationary/Splitting`, which
+should become instances of this. ★'''
 deps = ["Stationary.Splitting", "Matrix.complexify", "Matrix.isUnit_complexify_iff"]
 
 [[node]]

@@ -184,7 +184,7 @@ deps = ["Matrix.IsLDM"]
 id = "exists_isLU_of_isDiagDominant"
 kind = "theorem"
 desc = '''QSS Property 3.2 (rows), Higham Theorem 9.9 (Wilkinson): a *nonsingular* matrix that is (weakly)
-diagonally dominant by rows, `Matrix.IsDiagDominant A` of `LinearSolve/Stationary/DiagDominant`,
+diagonally dominant by rows, `Matrix.IsDiagDominant A` of `LinearAlgebra/Matrix/DiagDominant`,
 has an LU factorization: `∃ L U, IsLU A L U`. Nonsingularity is not in the book's statement and is
 needed: `!![0, 0; 1, 1]` is weakly row dominant and has no unit-lower LU factorization
 (`u₁₁ = 0` forces `l₂₁ · 0 = 1`). Proof: the strict leading principal submatrices of a

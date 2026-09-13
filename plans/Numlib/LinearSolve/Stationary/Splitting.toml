@@ -11,9 +11,6 @@ id = "Matrix.gaussSeidelSplitting_n"
 id = "Matrix.isUnit_diagPart_add_strictLower"
 
 [[node]]
-id = "Matrix.isUnit_diagPart_iff"
-
-[[node]]
 id = "Matrix.jacobiSplitting"
 
 [[node]]
@@ -57,6 +54,12 @@ id = "Stationary.Splitting.richardson_iterationOperator"
 
 [[node]]
 id = "Stationary.Splitting"
+
+[[node]]
+id = "Matrix.complexify_jacobi_iterationOperator"
+
+[[node]]
+id = "Matrix.complexify_gaussSeidel_iterationOperator"
 
 [[node]]
 id = "Matrix.backwardSorSplitting"

@@ -1,0 +1,115 @@
+namespace = "Matrix"
+desc = '''The matrix-analytic layer of diagonal dominance, split out of `Numlib/LinearSolve/Stationary/DiagDominant`
+so that foundation modules (`LinearAlgebra/Matrix/MMatrix`, `LinearAlgebra/Matrix/LU`) can name the
+predicates without importing the theory of stationary iterations: the strict, column and irreducible
+dominance predicates, their nonsingularity theorems (Saad, *Iterative Methods for Sparse Linear
+Systems*, Theorem 4.7 and Corollary 4.8), Gershgorin's boundary theorem for irreducible matrices, and
+the transfer of every predicate along `Matrix.complexify`. Everything whose statement or proof
+mentions a splitting or an iteration matrix stays in the stationary module.'''
+
+[[node]]
+id = "IsStrictColDiagDominant"
+
+[[node]]
+id = "IsStrictColDiagDominant.transpose_iff"
+
+[[node]]
+id = "IsStrictDiagDominant"
+
+[[node]]
+id = "IsStrictDiagDominant.diag_ne_zero"
+
+[[node]]
+id = "IsStrictDiagDominant.isUnit"
+
+[[node]]
+id = "IsStrictDiagDominant.isUnit_diagPart"
+
+[[node]]
+id = "IsStrictColDiagDominant.isUnit"
+
+[[node]]
+id = "IsIrreduciblyDiagDominant"
+
+[[node]]
+id = "IsIrreduciblyColDiagDominant"
+
+[[node]]
+id = "IsPatternIrreducible.norm_diag_eq_of_mulVec_eq_zero"
+
+[[node]]
+id = "IsPatternIrreducible.isUnit_of_dominant"
+
+[[node]]
+id = "IsIrreduciblyDiagDominant.isUnit"
+
+[[node]]
+id = "IsIrreduciblyDiagDominant.diag_ne_zero"
+
+[[node]]
+id = "IsIrreduciblyDiagDominant.isUnit_diagPart"
+
+[[node]]
+id = "exists_mulVec_eq_zero_of_mem_spectrum"
+
+[[node]]
+id = "IsPatternIrreducible.norm_sub_eq_of_mem_frontier"
+
+[[node]]
+id = "isStrictDiagDominant_complexify"
+
+[[node]]
+id = "isStrictColDiagDominant_complexify"
+
+[[node]]
+id = "isPatternIrreducible_complexify"
+
+[[node]]
+id = "isIrreduciblyDiagDominant_complexify"
+
+[[node]]
+id = "isStrictDiagDominant_iff"
+kind = "theorem"
+desc = '''`A.IsStrictDiagDominant ↔ ∀ i, ∑ j ∈ univ.erase i, ‖A i j‖ < ‖A i i‖` and `A.IsStrictColDiagDominant ↔ ∀ i, ∑ j ∈ univ.erase i, ‖A j i‖ < ‖A i i‖`: the unfolding lemmas, so that a surface can align the book's displays without knowing how the predicates are spelled (`IsStrictColDiagDominant` is defined through the transpose). `Iff.rfl`, or `transpose_apply` plus `Iff.rfl`. ★'''
+deps = ["Matrix.IsStrictDiagDominant", "Matrix.IsStrictColDiagDominant"]
+
+[[node]]
+id = "IsStrictDiagDominant.posDef"
+kind = "theorem"
+desc = '''A Hermitian, strictly row diagonally dominant matrix with positive diagonal is positive definite: `A.IsHermitian → A.IsStrictDiagDominant → (∀ i, 0 < re (A i i)) → A.PosDef` (Quarteroni–Sacco–Saleri §1.12, after Definition 1.24, for real symmetric `A`). Proof: by Gershgorin (`Matrix.eigenvalue_mem_ball`) every eigenvalue lies in a disc centred at `a_ii` of radius `< a_ii`, so has positive real part; the eigenvalues of a Hermitian matrix are real, so all are positive, and `IsHermitian.posDef_iff_eigenvalues_pos` concludes. ★★'''
+deps = ["Matrix.IsStrictDiagDominant"]
+
+[[node]]
+id = "IsDiagDominant"
+kind = "definition"
+desc = '''Weak row diagonal dominance, QSS Definition 1.24: `∀ i, ∑ j ∈ univ.erase i, ‖A i j‖ ≤ ‖A i i‖`. This is
+the `dominant` field of `Matrix.IsIrreduciblyDiagDominant`, factored out; `IsStrictDiagDominant.isDiagDominant`
+and `IsIrreduciblyDiagDominant.isDiagDominant` are the two projections. Over `RCLike 𝕜`, like the
+strict version. ★'''
+deps = ["Matrix.IsStrictDiagDominant"]
+
+[[node]]
+id = "IsColDiagDominant"
+kind = "definition"
+desc = 'Weak column dominance, `Aᵀ.IsDiagDominant`, following `Matrix.IsStrictColDiagDominant`. ★'
+deps = ["Matrix.IsDiagDominant"]
+
+[[node]]
+id = "IsDiagDominant.diag_ne_zero_of_isUnit"
+kind = "theorem"
+desc = '''A nonsingular weakly row-dominant matrix has a nowhere-zero diagonal (a zero diagonal entry forces a
+zero row; Higham's parenthesis in the proof of Theorem 9.9). ★'''
+deps = ["Matrix.IsDiagDominant"]
+
+[[node]]
+id = "IsColDiagDominant.schurComplementSingle"
+kind = "theorem"
+desc = '''One step of Gaussian elimination preserves column dominance (Higham Theorem 13.8 with `1 × 1`
+blocks; Wilkinson): if `A.IsColDiagDominant` and `A p p ≠ 0` then
+`(A.schurComplementSingle p).IsColDiagDominant` (`Matrix.schurComplementSingle` of
+`LinearAlgebra/Matrix/SchurComplement`); and the row version `IsDiagDominant.schurComplementSingle`.
+This is the lemma behind `Matrix.exists_isLU_of_isColDiagDominant` and
+`Matrix.growthFactor_le_two_of_isColDiagDominant`. Column `j ≠ p` of the complement:
+`∑_{i ≠ j,p} |a_ij - a_ip a_pj / a_pp| ≤ ∑_{i ≠ j,p} |a_ij| + |a_pj| ∑_{i ≠ j,p} |a_ip| / |a_pp|
+≤ (|a_jj| - |a_pj|) + |a_pj| (1 - |a_jp| / |a_pp|) ≤ |a_jj - a_jp a_pj / a_pp|`. ★★★'''
+deps = ["Matrix.IsColDiagDominant", "Matrix.schurComplementSingle"]

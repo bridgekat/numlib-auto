@@ -1,0 +1,331 @@
+import Mathlib.LinearAlgebra.Matrix.Gershgorin
+import Mathlib.LinearAlgebra.Matrix.ToLinearEquiv
+import Numlib.LinearAlgebra.Matrix.Complexify
+import Numlib.LinearAlgebra.Matrix.Hessenberg
+import Numlib.LinearAlgebra.Sparse.Pattern
+
+/-!
+# Diagonally dominant matrices
+
+Strict (row / column) diagonal dominance and irreducible diagonal dominance, and the
+nonsingularity theorems they carry ([saad2003iterative] Definition 4.5, Theorem 4.7 and
+Corollary 4.8; [kress1998numerical] (4.4)–(4.5) and Theorem 4.7; [quarteroni2000numerical]
+Definition 1.24).  This is the matrix-analytic layer only: nothing here mentions a splitting or an
+iteration.  The convergence of the Jacobi and Gauss–Seidel iterations for these matrices, the
+explicit `‖·‖_∞` contraction constants and the Gershgorin pencil arguments are in
+`Numlib/LinearSolve/Stationary/DiagDominant.lean`, which builds on this module and on
+`Numlib/LinearSolve/Stationary/Splitting.lean`.  The split lets the foundation modules —
+`Numlib/LinearAlgebra/Matrix/MMatrix.lean`, the LU factorization — name the dominance predicates
+without importing the theory of stationary iterations.
+
+## Main definitions
+
+* `Matrix.IsStrictDiagDominant`, `Matrix.IsStrictColDiagDominant`: `∑_{j ≠ i} |a_ij| < |a_ii|` for
+  every row `i`, and the same by columns.
+* `Matrix.IsIrreduciblyDiagDominant`, `Matrix.IsIrreduciblyColDiagDominant`: [saad2003iterative]
+  Definition 4.5, the irreducible relaxation — weak dominance in every row, strict dominance in at
+  least one, and a strongly connected nonzero pattern (`Matrix.IsPatternIrreducible` of
+  `Numlib/LinearAlgebra/Sparse/Pattern.lean`).
+
+## Main results
+
+* `Matrix.IsStrictDiagDominant.isUnit`, `Matrix.IsStrictColDiagDominant.isUnit`: strictly
+  diagonally dominant matrices are nonsingular (Mathlib's `Matrix.det_ne_zero_of_sum_row_lt_diag`,
+  the Gershgorin form), with `Matrix.IsStrictDiagDominant.isUnit_diagPart` for the diagonal part.
+* `Matrix.IsPatternIrreducible.norm_diag_eq_of_mulVec_eq_zero`: the engine of the irreducible
+  theory.  At a row where the modulus of a kernel vector is maximal, weak dominance is forced to be
+  an equality, and the maximum then propagates along the adjacency graph to every row.
+  `Matrix.IsPatternIrreducible.isUnit_of_dominant` and `Matrix.IsIrreduciblyDiagDominant.isUnit`
+  are [saad2003iterative] Corollary 4.8, and
+  `Matrix.IsPatternIrreducible.norm_sub_eq_of_mem_frontier` is his Theorem 4.7 — an eigenvalue of
+  an irreducible matrix on the boundary of the union of the Gershgorin discs lies on the boundary
+  of every disc.  The engine is stated for a matrix `B` dominated off the diagonal by an
+  irreducible `A`, because the convergence proofs apply it to a *pencil* (the matrix with its
+  diagonal, or its lower triangle, scaled by an eigenvalue) rather than to the matrix itself.
+* `Matrix.isStrictDiagDominant_complexify`, `Matrix.isIrreduciblyDiagDominant_complexify`,
+  `Matrix.isPatternIrreducible_complexify`: complexification changes no entrywise absolute value,
+  so it preserves all three notions.  The last is here, rather than in
+  `Numlib/LinearAlgebra/Sparse/Pattern.lean` or `Numlib/LinearAlgebra/Matrix/Complexify.lean`,
+  because this is the first module that imports both.
+-/
+
+namespace Matrix
+
+variable {n : Type*} [Fintype n] [DecidableEq n]
+
+section Spectrum
+
+variable {K : Type*} [Field K]
+
+/-- A point of the spectrum of a matrix is an eigenvalue: it comes with a nonzero vector in the
+kernel of the resolvent. -/
+theorem exists_mulVec_eq_zero_of_mem_spectrum {M : Matrix n n K} {μ : K}
+    (hμ : μ ∈ spectrum K M) : ∃ x ≠ 0, (μ • (1 : Matrix n n K) - M) *ᵥ x = 0 := by
+  rw [spectrum.mem_iff, Algebra.algebraMap_eq_smul_one, isUnit_iff_isUnit_det,
+    isUnit_iff_ne_zero, not_not] at hμ
+  exact Matrix.exists_mulVec_eq_zero_iff.mpr hμ
+
+end Spectrum
+
+variable {𝕜 : Type*} [RCLike 𝕜]
+
+section Strict
+
+/-- Row strict diagonal dominance: `∑_{j ≠ i} |a_ij| < |a_ii|` for every row `i`. -/
+def IsStrictDiagDominant (A : Matrix n n 𝕜) : Prop :=
+  ∀ i, ∑ j ∈ Finset.univ.erase i, ‖A i j‖ < ‖A i i‖
+
+/-- Column strict diagonal dominance: `∑_{i ≠ j} |a_ij| < |a_jj|` for every column `j`. -/
+def IsStrictColDiagDominant (A : Matrix n n 𝕜) : Prop :=
+  ∀ j, ∑ i ∈ Finset.univ.erase j, ‖A i j‖ < ‖A j j‖
+
+/-- Column dominance of `A` is row dominance of `Aᵀ`; true by definition, and the bridge along which
+the column-dominance criterion for Jacobi is deduced from the row one. -/
+theorem IsStrictColDiagDominant.transpose_iff (A : Matrix n n 𝕜) :
+    A.transpose.IsStrictDiagDominant ↔ A.IsStrictColDiagDominant := Iff.rfl
+
+/-- A strictly row diagonally dominant matrix has no zero on its diagonal: `|a_ii|` strictly exceeds
+a sum of norms, hence is positive. -/
+theorem IsStrictDiagDominant.diag_ne_zero {A : Matrix n n 𝕜} (hA : A.IsStrictDiagDominant) (i : n) :
+    A i i ≠ 0 :=
+  norm_pos_iff.mp (lt_of_le_of_lt (Finset.sum_nonneg fun _ _ => norm_nonneg _) (hA i))
+
+/-- The diagonal part of a strictly row diagonally dominant matrix is invertible, so the Jacobi,
+Gauss–Seidel and SOR splittings of such a matrix (`Numlib/LinearSolve/Stationary/Splitting.lean`)
+are all defined; this is the hypothesis every convergence statement about them carries. -/
+theorem IsStrictDiagDominant.isUnit_diagPart {A : Matrix n n 𝕜} (hA : A.IsStrictDiagDominant) :
+    IsUnit (diagPart A) :=
+  (isUnit_diagPart_iff A).mpr hA.diag_ne_zero
+
+/-- Strictly diagonally dominant matrices are invertible ([saad2003iterative], Theorem 4.6; also
+[kress1998numerical]).  Mathlib: `Matrix.det_ne_zero_of_sum_row_lt_diag`. -/
+theorem IsStrictDiagDominant.isUnit {A : Matrix n n 𝕜} (hA : A.IsStrictDiagDominant) :
+    IsUnit A :=
+  (isUnit_iff_isUnit_det A).mpr (isUnit_iff_ne_zero.mpr (det_ne_zero_of_sum_row_lt_diag hA))
+
+/-- Strictly column diagonally dominant matrices are invertible: the transpose is strictly row
+dominant, and a matrix and its transpose have the same determinant. -/
+theorem IsStrictColDiagDominant.isUnit {A : Matrix n n 𝕜} (hA : A.IsStrictColDiagDominant) :
+    IsUnit A := by
+  have h := ((IsStrictColDiagDominant.transpose_iff A).mpr hA).isUnit
+  rwa [isUnit_iff_isUnit_det, det_transpose, ← isUnit_iff_isUnit_det] at h
+
+end Strict
+
+section Irreducible
+
+/-- [saad2003iterative] *irreducibly diagonally dominant* matrices (Definition 4.5): irreducible,
+weakly row diagonally dominant, and strictly dominant in at least one row.  This is the hypothesis
+under which the Gershgorin argument still gives nonsingularity and convergence of Jacobi and
+Gauss–Seidel, with strict dominance in a single row instead of in all of them. -/
+structure IsIrreduciblyDiagDominant (A : Matrix n n 𝕜) : Prop where
+  /-- The adjacency graph of the nonzero pattern is strongly connected. -/
+  irreducible : A.IsPatternIrreducible
+  /-- Every row is weakly diagonally dominant. -/
+  dominant : ∀ i, ∑ j ∈ Finset.univ.erase i, ‖A i j‖ ≤ ‖A i i‖
+  /-- At least one row is strictly diagonally dominant. -/
+  exists_strict : ∃ i, ∑ j ∈ Finset.univ.erase i, ‖A i j‖ < ‖A i i‖
+
+/-- The column form of [saad2003iterative] Definition 4.5: `A` is irreducibly diagonally dominant by
+columns when its transpose is by rows. -/
+def IsIrreduciblyColDiagDominant (A : Matrix n n 𝕜) : Prop := Aᵀ.IsIrreduciblyDiagDominant
+
+/-- **[saad2003iterative] Theorem 4.7**, in the form its applications use.  Let `A` be irreducible
+and let `B` have a nonzero entry wherever `A` has one off the diagonal.  If `B` is weakly diagonally
+dominant and annihilates a nonzero vector, then every row of `B` is an equality row.
+
+At a row `i` where `|x_i|` is maximal, weak dominance is forced to be an equality, and the maximum
+is attained again at every `j` with `b_ij ≠ 0`; the strong connectivity of `A` then propagates the
+maximum, hence the equality, to every row. -/
+theorem IsPatternIrreducible.norm_diag_eq_of_mulVec_eq_zero {A B : Matrix n n 𝕜}
+    (hA : A.IsPatternIrreducible) (hAB : ∀ i j, i ≠ j → A i j ≠ 0 → B i j ≠ 0)
+    (hdom : ∀ i, ∑ j ∈ Finset.univ.erase i, ‖B i j‖ ≤ ‖B i i‖)
+    {x : n → 𝕜} (hx : x ≠ 0) (hBx : B *ᵥ x = 0) (i : n) :
+    ‖B i i‖ = ∑ j ∈ Finset.univ.erase i, ‖B i j‖ := by
+  obtain ⟨j₀, hj₀⟩ := Function.ne_iff.mp hx
+  have hne : Nonempty n := ⟨j₀⟩
+  set M : ℝ := Finset.univ.sup' Finset.univ_nonempty fun j => ‖x j‖ with hM
+  have hle : ∀ j, ‖x j‖ ≤ M := fun j => Finset.le_sup' (fun j => ‖x j‖) (Finset.mem_univ j)
+  have hMpos : 0 < M := lt_of_lt_of_le (norm_pos_iff.mpr hj₀) (hle j₀)
+  -- the row relation at an index where the maximum modulus is attained
+  have hkey : ∀ k, ‖x k‖ = M →
+      ‖B k k‖ = (∑ j ∈ Finset.univ.erase k, ‖B k j‖) ∧
+        ∀ j ∈ Finset.univ.erase k, B k j ≠ 0 → ‖x j‖ = M := by
+    intro k hxk
+    have hrow : (∑ j ∈ Finset.univ.erase k, B k j * x j) + B k k * x k = 0 := by
+      have hk := congrFun hBx k
+      rw [mulVec, dotProduct] at hk
+      simpa using (Finset.sum_erase_add Finset.univ (fun j => B k j * x j)
+        (Finset.mem_univ k)).trans (by simpa using hk)
+    have h1 : ‖B k k‖ * M ≤ ∑ j ∈ Finset.univ.erase k, ‖B k j‖ * ‖x j‖ := by
+      have heq : B k k * x k = -∑ j ∈ Finset.univ.erase k, B k j * x j := by
+        linear_combination hrow
+      calc ‖B k k‖ * M = ‖B k k * x k‖ := by rw [norm_mul, hxk]
+        _ = ‖∑ j ∈ Finset.univ.erase k, B k j * x j‖ := by rw [heq, norm_neg]
+        _ ≤ ∑ j ∈ Finset.univ.erase k, ‖B k j * x j‖ := norm_sum_le _ _
+        _ = ∑ j ∈ Finset.univ.erase k, ‖B k j‖ * ‖x j‖ := by
+            exact Finset.sum_congr rfl fun j _ => norm_mul _ _
+    have h2 : ∀ j ∈ Finset.univ.erase k, ‖B k j‖ * ‖x j‖ ≤ ‖B k j‖ * M :=
+      fun j _ => mul_le_mul_of_nonneg_left (hle j) (norm_nonneg _)
+    have h3 : ∑ j ∈ Finset.univ.erase k, ‖B k j‖ * ‖x j‖ ≤
+        (∑ j ∈ Finset.univ.erase k, ‖B k j‖) * M := by
+      rw [Finset.sum_mul]
+      exact Finset.sum_le_sum h2
+    have h4 : ‖B k k‖ = ∑ j ∈ Finset.univ.erase k, ‖B k j‖ := by
+      refine le_antisymm ?_ (hdom k)
+      exact le_of_mul_le_mul_right (h1.trans h3) hMpos
+    refine ⟨h4, fun j hj hBkj => ?_⟩
+    have h5 : ∑ j ∈ Finset.univ.erase k, ‖B k j‖ * ‖x j‖ =
+        ∑ j ∈ Finset.univ.erase k, ‖B k j‖ * M := by
+      refine le_antisymm (Finset.sum_le_sum h2) ?_
+      rw [← Finset.sum_mul, ← h4]
+      exact h1
+    have h6 := (Finset.sum_eq_sum_iff_of_le h2).mp h5 j hj
+    exact mul_left_cancel₀ (norm_ne_zero_iff.mpr hBkj) h6
+  -- the maximum is attained everywhere, by irreducibility
+  obtain ⟨k₀, -, hk₀⟩ := Finset.exists_mem_eq_sup' Finset.univ_nonempty fun j => ‖x j‖
+  have hall : ∀ j, ‖x j‖ = M := by
+    refine hA.forall_of_closed (P := fun j => ‖x j‖ = M) (fun a b ha hab => ?_) (hM.trans hk₀).symm
+    rcases eq_or_ne a b with rfl | hab'
+    · exact ha
+    · exact (hkey a ha).2 b (Finset.mem_erase.mpr ⟨hab'.symm, Finset.mem_univ b⟩)
+        (hAB a b hab' hab)
+  exact (hkey i (hall i)).1
+
+/-- **[saad2003iterative] Corollary 4.8**: an irreducible matrix that is weakly diagonally dominant,
+with strict dominance in at least one row, is nonsingular.  A vector in its kernel would make every
+row an equality row by `Matrix.IsPatternIrreducible.norm_diag_eq_of_mulVec_eq_zero`, against the
+strict row.  Stated for a matrix `B` dominated off the diagonal by an irreducible `A`, which is how
+the convergence proofs of `Numlib/LinearSolve/Stationary/DiagDominant.lean` use it. -/
+theorem IsPatternIrreducible.isUnit_of_dominant {A B : Matrix n n 𝕜} (hA : A.IsPatternIrreducible)
+    (hAB : ∀ i j, i ≠ j → A i j ≠ 0 → B i j ≠ 0)
+    (hdom : ∀ i, ∑ j ∈ Finset.univ.erase i, ‖B i j‖ ≤ ‖B i i‖)
+    (hstrict : ∃ i, ∑ j ∈ Finset.univ.erase i, ‖B i j‖ < ‖B i i‖) : IsUnit B := by
+  obtain ⟨i, hi⟩ := hstrict
+  rw [isUnit_iff_isUnit_det, isUnit_iff_ne_zero]
+  intro hdet
+  obtain ⟨x, hx, hBx⟩ := Matrix.exists_mulVec_eq_zero_iff.mpr hdet
+  exact hi.ne' (hA.norm_diag_eq_of_mulVec_eq_zero hAB hdom hx hBx i)
+
+/-- An irreducibly diagonally dominant matrix is nonsingular ([saad2003iterative], Corollary 4.8).
+-/
+theorem IsIrreduciblyDiagDominant.isUnit {A : Matrix n n 𝕜} (hA : A.IsIrreduciblyDiagDominant) :
+    IsUnit A :=
+  hA.irreducible.isUnit_of_dominant (fun _ _ _ hij => hij) hA.dominant hA.exists_strict
+
+/-- An irreducibly diagonally dominant matrix has no zero on its diagonal: a zero diagonal entry
+would force its whole row to vanish, which an irreducible matrix of size at least two forbids, while
+for a matrix of size one the strict row is the diagonal entry itself. -/
+theorem IsIrreduciblyDiagDominant.diag_ne_zero {A : Matrix n n 𝕜}
+    (hA : A.IsIrreduciblyDiagDominant) (i : n) : A i i ≠ 0 := by
+  intro h0
+  have hzero : ∀ j, A i j = 0 := by
+    have hsum := hA.dominant i
+    rw [h0, norm_zero] at hsum
+    have hall := (Finset.sum_eq_zero_iff_of_nonneg fun j _ => norm_nonneg (A i j)).mp
+      (le_antisymm hsum (Finset.sum_nonneg fun _ _ => norm_nonneg _))
+    intro j
+    rcases eq_or_ne j i with rfl | hj
+    · exact h0
+    · exact norm_eq_zero.mp (hall j (Finset.mem_erase.mpr ⟨hj, Finset.mem_univ j⟩))
+  have hsub : ∀ j : n, j = i :=
+    hA.irreducible.forall_of_closed (P := fun j => j = i)
+      (fun a b ha hab => absurd (hzero b) (ha ▸ hab)) rfl
+  obtain ⟨k, hk⟩ := hA.exists_strict
+  rw [show Finset.univ.erase k = (∅ : Finset n) from Finset.eq_empty_of_forall_notMem fun j hj =>
+    (Finset.ne_of_mem_erase hj) ((hsub j).trans (hsub k).symm), Finset.sum_empty, hsub k, h0,
+    norm_zero] at hk
+  exact lt_irrefl 0 hk
+
+/-- The diagonal part of an irreducibly diagonally dominant matrix is invertible, so the Jacobi,
+Gauss–Seidel and SOR splittings of such a matrix are defined. -/
+theorem IsIrreduciblyDiagDominant.isUnit_diagPart {A : Matrix n n 𝕜}
+    (hA : A.IsIrreduciblyDiagDominant) : IsUnit (diagPart A) :=
+  (isUnit_diagPart_iff A).mpr hA.diag_ne_zero
+
+end Irreducible
+
+section Gershgorin
+
+/-- **[saad2003iterative] Theorem 4.7**: if `A` is irreducible and an eigenvalue of `A` lies on the
+boundary of the union of the Gershgorin discs, then it lies on the boundary of *every* disc, that is
+`‖μ - a_ii‖ = ∑_{j ≠ i} ‖a_ij‖` for every `i`.  Being on the boundary of the union means being
+outside every open disc, which is the weak dominance hypothesis of
+`Matrix.IsPatternIrreducible.norm_diag_eq_of_mulVec_eq_zero` for the resolvent `μ 1 - A`. -/
+theorem IsPatternIrreducible.norm_sub_eq_of_mem_frontier {A : Matrix n n ℂ}
+    (hA : A.IsPatternIrreducible) {μ : ℂ} (hμ : μ ∈ spectrum ℂ A)
+    (hfr : μ ∈ frontier (⋃ i, Metric.closedBall (A i i)
+      (∑ j ∈ Finset.univ.erase i, ‖A i j‖))) (i : n) :
+    ‖μ - A i i‖ = ∑ j ∈ Finset.univ.erase i, ‖A i j‖ := by
+  have hBapp : ∀ k j, (μ • (1 : Matrix n n ℂ) - A) k j = if k = j then μ - A k k else -A k j := by
+    intro k j
+    rcases eq_or_ne k j with rfl | hkj
+    · simp
+    · simp [Matrix.one_apply_ne hkj, hkj]
+  have hBnorm : ∀ k j, k ≠ j → ‖(μ • (1 : Matrix n n ℂ) - A) k j‖ = ‖A k j‖ := fun k j hkj => by
+    rw [hBapp, ite_eq_right hkj, norm_neg]
+  have hBdiag : ∀ k, ‖(μ • (1 : Matrix n n ℂ) - A) k k‖ = ‖μ - A k k‖ := fun k => by
+    rw [hBapp, ite_eq_left rfl]
+  have hsum : ∀ k, ∑ j ∈ Finset.univ.erase k, ‖(μ • (1 : Matrix n n ℂ) - A) k j‖ =
+      ∑ j ∈ Finset.univ.erase k, ‖A k j‖ :=
+    fun k => Finset.sum_congr rfl fun j hj => hBnorm k j (Finset.ne_of_mem_erase hj).symm
+  have hnotint : μ ∉ interior (⋃ k, Metric.closedBall (A k k)
+      (∑ j ∈ Finset.univ.erase k, ‖A k j‖)) := hfr.2
+  have hge : ∀ k, ∑ j ∈ Finset.univ.erase k, ‖(μ • (1 : Matrix n n ℂ) - A) k j‖ ≤
+      ‖(μ • (1 : Matrix n n ℂ) - A) k k‖ := by
+    intro k
+    rw [hsum, hBdiag]
+    by_contra hlt
+    refine hnotint (interior_maximal (Metric.ball_subset_closedBall.trans
+      (Set.subset_iUnion (fun k => Metric.closedBall (A k k)
+        (∑ j ∈ Finset.univ.erase k, ‖A k j‖)) k)) Metric.isOpen_ball ?_)
+    rw [Metric.mem_ball, dist_eq_norm]
+    exact not_le.mp hlt
+  obtain ⟨x, hx, hBx⟩ := exists_mulVec_eq_zero_of_mem_spectrum hμ
+  have hkey := hA.norm_diag_eq_of_mulVec_eq_zero
+    (fun k j hkj hAkj => by rw [hBapp, ite_eq_right hkj]; simpa using hAkj) hge hx hBx i
+  rwa [hBdiag, hsum] at hkey
+
+end Gershgorin
+
+section Complexify
+
+variable {A : Matrix n n ℝ}
+
+/-- The complexification of a real strictly row diagonally dominant matrix is strictly row
+diagonally dominant: complexification preserves every entrywise absolute value. -/
+theorem isStrictDiagDominant_complexify (h : A.IsStrictDiagDominant) :
+    (complexify A).IsStrictDiagDominant := by
+  intro i
+  simpa using h i
+
+/-- The complexification of a real strictly column diagonally dominant matrix is strictly column
+diagonally dominant. -/
+theorem isStrictColDiagDominant_complexify (h : A.IsStrictColDiagDominant) :
+    (complexify A).IsStrictColDiagDominant := by
+  intro j
+  simpa using h j
+
+omit [Fintype n] [DecidableEq n] in
+/-- Complexification changes no entrywise absolute value, so it preserves irreducibility of the
+nonzero pattern. -/
+theorem isPatternIrreducible_complexify (h : A.IsPatternIrreducible) :
+    (complexify A).IsPatternIrreducible := by
+  have hmap : (complexify A).map (fun x : ℂ => ‖x‖) = A.map fun x : ℝ => ‖x‖ := by
+    ext i j; simp [complexify]
+  change Matrix.IsIrreducible ((complexify A).map fun x : ℂ => ‖x‖)
+  rw [hmap]
+  exact h
+
+/-- Complexification preserves irreducible diagonal dominance. -/
+theorem isIrreduciblyDiagDominant_complexify (h : A.IsIrreduciblyDiagDominant) :
+    (complexify A).IsIrreduciblyDiagDominant where
+  irreducible := isPatternIrreducible_complexify h.irreducible
+  dominant i := by simpa using h.dominant i
+  exists_strict := by
+    obtain ⟨i, hi⟩ := h.exists_strict
+    exact ⟨i, by simpa using hi⟩
+
+end Complexify
+
+end Matrix

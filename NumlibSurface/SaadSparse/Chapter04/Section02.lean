@@ -442,71 +442,9 @@ theorem corollary_4_8_col {𝕜 : Type*} [RCLike 𝕜] {A : Matrix (Fin n) (Fin 
   have hT : IsUnit Aᵀ := ((IsStrictColDiagDominant.transpose_iff A).mpr h).isUnit
   rwa [isUnit_iff_isUnit_det, det_transpose, ← isUnit_iff_isUnit_det] at hT
 
-/-! ### Complexification of the classical splittings -/
-
-/-- Complexification commutes with the iteration operator `1 - m⁻¹ a` of a splitting. -/
-theorem complexify_one_sub_inverse_mul (m A : Matrix (Fin n) (Fin n) ℝ) :
-    complexify (1 - Ring.inverse m * A) = 1 - Ring.inverse (complexify m) * complexify A := by
-  rw [complexify_sub, complexify_one, complexify_mul, ← nonsing_inv_eq_ringInverse,
-    ← nonsing_inv_eq_ringInverse, complexify_inv]
-
-/-- The complexification of a real strictly diagonally dominant matrix is strictly diagonally
-dominant. -/
-theorem isStrictDiagDominant_complexify {A : Matrix (Fin n) (Fin n) ℝ}
-    (h : A.IsStrictDiagDominant) : (complexify A).IsStrictDiagDominant := by
-  intro i
-  simpa using h i
-
-/-- The diagonal part of the complexification is a unit as soon as that of `A` is. -/
-theorem isUnit_diagPart_complexify {A : Matrix (Fin n) (Fin n) ℝ} (h : IsUnit (diagPart A)) :
-    IsUnit (diagPart (complexify A)) := by
-  rw [← complexify_diagPart, isUnit_complexify_iff]
-  exact h
-
-/-- The Jacobi iteration matrix of `complexify A` is the complexification of that of `A`. -/
-theorem complexify_jacobi_iterationOperator (A : Matrix (Fin n) (Fin n) ℝ)
-    (h : IsUnit (diagPart A)) (h' : IsUnit (diagPart (complexify A))) :
-    complexify (jacobiSplitting A h).iterationOperator =
-      (jacobiSplitting (complexify A) h').iterationOperator := by
-  have e1 : (jacobiSplitting A h).iterationOperator = 1 - Ring.inverse (diagPart A) * A := rfl
-  have e2 : (jacobiSplitting (complexify A) h').iterationOperator
-      = 1 - Ring.inverse (diagPart (complexify A)) * complexify A := rfl
-  rw [e1, e2, ← complexify_diagPart, complexify_one_sub_inverse_mul]
-
-/-- The Gauss–Seidel iteration matrix of `complexify A` is the complexification of that of `A`. -/
-theorem complexify_gaussSeidel_iterationOperator (A : Matrix (Fin n) (Fin n) ℝ)
-    (h : IsUnit (diagPart A)) (h' : IsUnit (diagPart (complexify A))) :
-    complexify (gaussSeidelSplitting A h).iterationOperator =
-      (gaussSeidelSplitting (complexify A) h').iterationOperator := by
-  have e1 : (gaussSeidelSplitting A h).iterationOperator
-      = 1 - Ring.inverse (diagPart A + strictLower A) * A := rfl
-  have e2 : (gaussSeidelSplitting (complexify A) h').iterationOperator
-      = 1 - Ring.inverse (diagPart (complexify A) + strictLower (complexify A)) * complexify A :=
-    rfl
-  rw [e1, e2, ← complexify_diagPart, ← complexify_strictLower, ← complexify_add,
-    complexify_one_sub_inverse_mul]
-
 /-! ### Theorem 4.9 -/
 
 variable {A : Matrix (Fin n) (Fin n) ℝ}
-
-/-- Saad, Theorem 4.9 (Jacobi, strict row dominance): the Jacobi iteration matrix has spectral
-radius `< 1`. -/
-theorem jacobi_complexSpectralRadius_lt_one (h : A.IsStrictDiagDominant)
-    (hd : IsUnit (diagPart A)) :
-    complexSpectralRadius (jacobiSplitting A hd).iterationOperator < 1 := by
-  have h' := isUnit_diagPart_complexify hd
-  rw [complexSpectralRadius, complexify_jacobi_iterationOperator A hd h']
-  exact jacobi_spectralRadius_lt_one _ (isStrictDiagDominant_complexify h) h'
-
-/-- Saad, Theorem 4.9 (Gauss–Seidel, strict row dominance): the Gauss–Seidel iteration matrix has
-spectral radius `< 1`. -/
-theorem gaussSeidel_complexSpectralRadius_lt_one (h : A.IsStrictDiagDominant)
-    (hd : IsUnit (diagPart A)) :
-    complexSpectralRadius (gaussSeidelSplitting A hd).iterationOperator < 1 := by
-  have h' := isUnit_diagPart_complexify hd
-  rw [complexSpectralRadius, complexify_gaussSeidel_iterationOperator A hd h']
-  exact gaussSeidel_spectralRadius_lt_one _ (isStrictDiagDominant_complexify h) h'
 
 /-- Saad, Theorem 4.9 (Jacobi): for a strictly diagonally dominant `A` the Jacobi iteration
 converges to the solution from every starting vector. -/
@@ -528,15 +466,8 @@ theorem theorem_4_9_gs (h : A.IsStrictDiagDominant) (b x₀ : Fin n → ℝ) :
 `Matrix.jacobi_spectralRadius_lt_one_of_col`. -/
 theorem theorem_4_9_jacobi_col (h : A.IsStrictColDiagDominant) (hd : IsUnit (diagPart A))
     (b x₀ : Fin n → ℝ) : Tendsto (fun k => (jacobiStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b)) := by
-  have h' := isUnit_diagPart_complexify hd
-  have hcol : (complexify A).IsStrictColDiagDominant := by
-    intro j
-    simpa using h j
-  have hρ : complexSpectralRadius (jacobiSplitting A hd).iterationOperator < 1 := by
-    rw [complexSpectralRadius, complexify_jacobi_iterationOperator A hd h']
-    exact jacobi_spectralRadius_lt_one_of_col _ hcol h'
   rw [jacobiStep_eq hd]
-  exact Splitting.tendsto_step _ hρ b x₀
+  exact Splitting.tendsto_step _ (jacobi_complexSpectralRadius_lt_one_of_col h hd) b x₀
 
 end DiagonallyDominant
 
@@ -864,65 +795,25 @@ theorem corollary_4_8_irred_col {𝕜 : Type*} [RCLike 𝕜] {A : Matrix (Fin n)
 
 variable {A : Matrix (Fin n) (Fin n) ℝ}
 
-/-- Complexification changes no entrywise absolute value, so it preserves irreducibility. -/
-theorem isPatternIrreducible_complexify (h : A.IsPatternIrreducible) :
-    (complexify A).IsPatternIrreducible := by
-  have hmap : (complexify A).map (fun x : ℂ => ‖x‖) = A.map fun x : ℝ => ‖x‖ := by
-    ext i j; simp [complexify]
-  change Matrix.IsIrreducible ((complexify A).map fun x : ℂ => ‖x‖)
-  rw [hmap]
-  exact h
-
-/-- Complexification preserves irreducible diagonal dominance. -/
-theorem isIrreduciblyDiagDominant_complexify (h : A.IsIrreduciblyDiagDominant) :
-    (complexify A).IsIrreduciblyDiagDominant where
-  irreducible := isPatternIrreducible_complexify h.irreducible
-  dominant i := by simpa using h.dominant i
-  exists_strict := by
-    obtain ⟨i, hi⟩ := h.exists_strict
-    exact ⟨i, by simpa using hi⟩
-
-/-- Saad, Theorem 4.9 (Jacobi, irreducible dominance): the Jacobi iteration matrix of an irreducibly
-diagonally dominant matrix has spectral radius `< 1`. -/
-theorem jacobi_complexSpectralRadius_lt_one_irred (h : A.IsIrreduciblyDiagDominant) :
-    complexSpectralRadius (jacobiSplitting A h.isUnit_diagPart).iterationOperator < 1 := by
-  have h' := isUnit_diagPart_complexify h.isUnit_diagPart
-  rw [complexSpectralRadius, complexify_jacobi_iterationOperator A h.isUnit_diagPart h']
-  exact (isIrreduciblyDiagDominant_complexify h).jacobi_spectralRadius_lt_one h'
-
-/-- Saad, Theorem 4.9 (Gauss–Seidel, irreducible dominance). -/
-theorem gaussSeidel_complexSpectralRadius_lt_one_irred (h : A.IsIrreduciblyDiagDominant) :
-    complexSpectralRadius (gaussSeidelSplitting A h.isUnit_diagPart).iterationOperator < 1 := by
-  have h' := isUnit_diagPart_complexify h.isUnit_diagPart
-  rw [complexSpectralRadius, complexify_gaussSeidel_iterationOperator A h.isUnit_diagPart h']
-  exact (isIrreduciblyDiagDominant_complexify h).gaussSeidel_spectralRadius_lt_one h'
-
 /-- **Saad, Theorem 4.9** (Jacobi), the irreducibly diagonally dominant half: the Jacobi iteration
 converges to the solution from every starting vector. -/
 theorem theorem_4_9_jacobi_irred (h : A.IsIrreduciblyDiagDominant) (b x₀ : Fin n → ℝ) :
     Tendsto (fun k => (jacobiStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b)) := by
   rw [jacobiStep_eq h.isUnit_diagPart]
-  exact Splitting.tendsto_step _ (jacobi_complexSpectralRadius_lt_one_irred h) b x₀
+  exact Splitting.tendsto_step _ (h.jacobi_complexSpectralRadius_lt_one h.isUnit_diagPart) b x₀
 
 /-- **Saad, Theorem 4.9** (Gauss–Seidel), the irreducibly diagonally dominant half. -/
 theorem theorem_4_9_gs_irred (h : A.IsIrreduciblyDiagDominant) (b x₀ : Fin n → ℝ) :
     Tendsto (fun k => (gsStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b)) := by
   rw [gsStep_eq h.isUnit_diagPart]
-  exact Splitting.tendsto_step _ (gaussSeidel_complexSpectralRadius_lt_one_irred h) b x₀
+  exact Splitting.tendsto_step _ (h.gaussSeidel_complexSpectralRadius_lt_one h.isUnit_diagPart) b x₀
 
 /-- Saad, Theorem 4.9 (Gauss–Seidel) under strict *column* diagonal dominance, the reading of
 Definition 4.5 as printed. -/
 theorem theorem_4_9_gs_col (h : A.IsStrictColDiagDominant) (hd : IsUnit (diagPart A))
     (b x₀ : Fin n → ℝ) : Tendsto (fun k => (gsStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b)) := by
-  have h' := isUnit_diagPart_complexify hd
-  have hcol : (complexify A).IsStrictColDiagDominant := by
-    intro j
-    simpa using h j
-  have hρ : complexSpectralRadius (gaussSeidelSplitting A hd).iterationOperator < 1 := by
-    rw [complexSpectralRadius, complexify_gaussSeidel_iterationOperator A hd h']
-    exact Matrix.gaussSeidel_spectralRadius_lt_one_of_col _ hcol h'
   rw [gsStep_eq hd]
-  exact Splitting.tendsto_step _ hρ b x₀
+  exact Splitting.tendsto_step _ (gaussSeidel_complexSpectralRadius_lt_one_of_col h hd) b x₀
 
 end Irreducible
 

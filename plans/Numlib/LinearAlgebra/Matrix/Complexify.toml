@@ -94,47 +94,24 @@ deps = ["Matrix.isUnit_one_sub_of_complexSpectralRadius_lt_one", "Matrix.tendsto
 
 [[node]]
 id = "complexify_sub"
-desc = '''`complexify (A - B) = complexify A - complexify B`. With the four nodes below this is the
-`SaadSparse.complexify_*` family of `NumlibSurface/SaadSparse/Common.lean`, which is general matrix
-glue that the Saad surface should not own: the Quarteroni–Sacco–Saleri surface needs every one of
-them and may not import a sibling surface. Move, do not duplicate. ★'''
 
 [[node]]
 id = "complexify_diagPart"
-kind = "theorem"
-desc = '''`complexify (diagPart A) = diagPart (complexify A)` (`@[simp]`), so the splitting
-`A = D - E - F` may be formed before or after passing to `ℂ`. Currently
-`SaadSparse.complexify_diagPart`. ★'''
-deps = ["Matrix.complexify"]
 
 [[node]]
 id = "complexify_strictLower"
-kind = "theorem"
-desc = '''`complexify (strictLower A) = strictLower (complexify A)` (`@[simp]`). Currently
-`SaadSparse.complexify_strictLower`. ★'''
-deps = ["Matrix.complexify"]
 
 [[node]]
 id = "complexify_strictUpper"
-kind = "theorem"
-desc = '''`complexify (strictUpper A) = strictUpper (complexify A)` (`@[simp]`). Currently
-`SaadSparse.complexify_strictUpper`. ★'''
-deps = ["Matrix.complexify"]
 
 [[node]]
 id = "complexify_inv"
-kind = "theorem"
-desc = '''`complexify A⁻¹ = (complexify A)⁻¹`, for every real matrix (both sides are `0` when `A` is not a
-unit, by `isUnit_complexify_iff`). Currently `SaadSparse.complexify_inv`. ★'''
-deps = ["Matrix.complexify", "Matrix.isUnit_complexify_iff"]
+
+[[node]]
+id = "complexify_one_sub_inverse_mul"
 
 [[node]]
 id = "isUnit_diagPart_complexify"
-kind = "theorem"
-desc = '''`IsUnit (diagPart A) → IsUnit (diagPart (complexify A))`, the hypothesis transfer that lets a real
-Jacobi / Gauss–Seidel / SOR splitting be complexified. Currently
-`SaadSparse.Chapter04.isUnit_diagPart_complexify`. ★'''
-deps = ["Matrix.complexify_diagPart", "Matrix.isUnit_complexify_iff"]
 
 [[node]]
 id = "isHermitian_complexify_iff"

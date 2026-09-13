@@ -243,7 +243,7 @@ desc = '''For `α ≥ α₀ > 0` and `γ ≥ 0` on `Icc a b` (and `h > 0`), `(va
 and it is symmetric; the quadratic form is `xᵀ A x = h⁻² [α_{1/2} x_1² + ∑_{j} α_{j+1/2} (x_{j+1} -
 x_j)² + α_{n+1/2} x_n²] + ∑ γ_j x_j²`, the variable-coefficient version of the identity in §12.2 for
 `A_fd`. Also `variableCoeffMatrix_isStrictDiagDominant`: strictly diagonally dominant by rows when
-`γ > 0` on the nodes (`Matrix.IsStrictDiagDominant` of `Numlib/LinearSolve/Stationary/DiagDominant.lean`),
+`γ > 0` on the nodes (`Matrix.IsStrictDiagDominant` of `Numlib/LinearAlgebra/Matrix/DiagDominant.lean`),
 and `variableCoeffMatrix_isMMatrix` when `γ ≥ 0`, by Stieltjes
 (`Matrix.IsMMatrix.of_posDef_of_offDiag_nonpos`). The book claims the first two; the convergence
 analysis it says "can be carried out by extending straightforwardly" §12.2.1–12.2.2 is not

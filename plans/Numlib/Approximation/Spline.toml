@@ -28,7 +28,7 @@ splines; de Boor, *A Practical Guide to Splines*, is the reference for what the 
   continuous at `x_i` iff the moments satisfy row `i` of the M-continuity system (8.47); that is
   the equivalence `moment_eq_of_contDiffOn` / `contDiffOn_cubicSplineFun`, and everything about
   existence and uniqueness is then linear algebra on `momentMatrix`, whose strict diagonal
-  dominance is `Matrix.IsStrictDiagDominant` of `Numlib/LinearSolve/Stationary/DiagDominant`.
+  dominance is `Matrix.IsStrictDiagDominant` of `Numlib/LinearAlgebra/Matrix/DiagDominant`.
 * The closure of (8.48), `2 M_0 + λ_0 M_1 = d_0`, `μ_n M_{n-1} + 2 M_n = d_n` with
   `0 ≤ λ_0, μ_n ≤ 1`, is taken as the primary parameter (`closure : ℝ × ℝ × ℝ × ℝ`): the natural
   spline is `(0, 0, 0, 0)`, the clamped spline with `s'(a) = f'_0`, `s'(b) = f'_n` is

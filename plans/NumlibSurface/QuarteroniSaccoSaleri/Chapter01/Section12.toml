@@ -9,7 +9,7 @@ the remarks after them come from Mathlib's `PosDef` API, `Numlib/LinearAlgebra/M
 (Sylvester, the factorization, the largest-entry remark) and
 `Numlib/Analysis/InnerProductSpace/{Coercive, Energy}` (the energy norm (1.28)); Definition 1.24
 and the positive-definiteness criterion for dominant matrices from
-`Numlib/LinearSolve/Stationary/DiagDominant`; Definition 1.25, the discrete maximum principle and
+`Numlib/LinearAlgebra/Matrix/DiagDominant`; Definition 1.25, the discrete maximum principle and
 Properties 1.19–1.20 from `Numlib/LinearAlgebra/Matrix/MMatrix`.
 '''
 

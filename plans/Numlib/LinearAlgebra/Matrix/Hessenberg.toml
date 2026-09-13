@@ -22,6 +22,9 @@ id = "diagPart_add_strictLower_add_strictUpper"
 id = "diagPart_sub_neg_strictLower_sub_neg_strictUpper"
 
 [[node]]
+id = "isUnit_diagPart_iff"
+
+[[node]]
 id = "strictLower"
 
 [[node]]
